@@ -11,6 +11,9 @@
 <title>Upgrading from Samba-2.x to Samba-3.0.20</title>
 
 <para>
+<indexterm><primary>Samba differences</primary></indexterm>
+<indexterm><primary>changed parameters</primary></indexterm>
+<indexterm><primary>simple guide</primary></indexterm>
 This chapter deals exclusively with the differences between Samba-3.0.20 and Samba-2.2.8a.
 It points out where configuration parameters have changed, and provides a simple guide for 
 the move from 2.2.x to 3.0.20.
@@ -28,6 +31,8 @@ will use the <filename>smbpasswd</filename> database.
 </para>
 
 <para>
+<indexterm><primary>behavior approximately same</primary></indexterm>
+<indexterm><primary>differing protocol</primary></indexterm>
 So why say that <emphasis>behavior should be approximately the same as Samba-2.2.x</emphasis>? Because
 Samba-3.0.20 can negotiate new protocols, such as support for native Unicode, that may result in
 differing protocol code paths being taken. The new behavior under such circumstances is not
@@ -36,6 +41,10 @@ preserved across the upgrade.
 </para>
 
 <para>
+<indexterm><primary>LDAP backend</primary></indexterm>
+<indexterm><primary>database</primary></indexterm>
+<indexterm><primary>pdbedit</primary></indexterm>
+<indexterm><primary>Samba-3-compatible LDAP backend</primary></indexterm>
 If the Samba-2.2.x system is using an LDAP backend, and there is no time to update the LDAP
 database, then make sure that <smbconfoption name="passdb backend">ldapsam_compat</smbconfoption>
 is specified in the &smb.conf; file. For the rest, behavior should remain more or less the same.
@@ -54,30 +63,37 @@ The major new features are:
 </para>
 
 <orderedlist numeration="arabic">
-	<listitem><para>
+	<listitem><para> 
+<indexterm><primary>ADS</primary></indexterm>
+<indexterm><primary>LDAP/Kerberos</primary></indexterm>
 	Active Directory support. This release is able to join an ADS realm
 	as a member server and authenticate users using LDAP/Kerberos.
 	</para></listitem>
 
 	<listitem><para>
+<indexterm><primary>Unicode</primary></indexterm>
+<indexterm><primary>multibyte character sets</primary></indexterm>
 	Unicode support. Samba will now negotiate Unicode on the wire, and
 	internally there is a much better infrastructure for multibyte
 	and Unicode character sets.
 	</para></listitem>
 
 	<listitem><para>
+<indexterm><primary>authentication system</primary></indexterm>
 	New authentication system. The internal authentication system has
 	been almost completely rewritten. Most of the changes are internal,
 	but the new authoring system is also very configurable.
 	</para></listitem>
 
 	<listitem><para>
+<indexterm><primary>filename mangling</primary></indexterm>
 	New filename mangling system. The filename mangling system has been
 	completely rewritten. An internal database now stores mangling maps
 	persistently.
 	</para></listitem>
 
 	<listitem><para>
+<indexterm><primary>net command</primary></indexterm>
 	New <quote>net</quote> command. A new <quote>net</quote> command has been added. It is
 	somewhat similar to the <quote>net</quote> command in Windows. Eventually, we
 	plan to replace a bunch of other utilities (such as smbpasswd)
@@ -85,34 +101,48 @@ The major new features are:
 	</para></listitem>
 
 	<listitem><para>
+<indexterm><primary>status32 codes</primary></indexterm>
 	Samba now negotiates NT-style status32 codes on the wire. This
 	considerably improves error handling.
 	</para></listitem>
 
 	<listitem><para>
+<indexterm><primary>printer attributes publishing</primary></indexterm>
 	Better Windows 200x/XP printing support, including publishing
 	printer attributes in Active Directory.
 	</para></listitem>
 
 	<listitem><para>
+<indexterm><primary>RPC modules</primary></indexterm>
+<indexterm><primary>passdb backends</primary></indexterm>
+<indexterm><primary>character sets</primary></indexterm>
 	New loadable RPC modules for passdb backends and character sets.
 	</para></listitem>
 
 	<listitem><para>
+<indexterm><primary>dual-daemon winbindd</primary></indexterm>
 	New default dual-daemon winbindd support for better performance.
 	</para></listitem>
 
 	<listitem><para>
+<indexterm><primary>migrating</primary></indexterm>
+<indexterm><primary>maintaining ids</primary></indexterm>
+<indexterm><primary>SID</primary></indexterm>
 	Support for migrating from a Windows NT 4.0 domain to a Samba
 	domain and maintaining user, group, and domain SIDs.
 	</para></listitem>
 
 	<listitem><para>
+<indexterm><primary>trust relationships</primary></indexterm>
+<indexterm><primary>domain controllers</primary></indexterm>
 	Support for establishing trust relationships with Windows NT 4.0
 	domain controllers.
 	</para></listitem>
 
 	<listitem><para>
+<indexterm><primary>Winbind architecture</primary></indexterm>
+<indexterm><primary>LDAP directory</primary></indexterm>
+<indexterm><primary>ID mapping</primary></indexterm>
 	Initial support for a distributed Winbind architecture using
 	an LDAP directory for storing SID to UID/GID mappings.
 	</para></listitem>
@@ -122,6 +152,8 @@ The major new features are:
 	</para></listitem>
 
 	<listitem><para>
+<indexterm><primary>SMB signing</primary></indexterm>
+<indexterm><primary>security settings</primary></indexterm>
 	Full support for client and server SMB signing to ensure
 	compatibility with default Windows 2003 security settings.
 	</para></listitem>
@@ -145,6 +177,7 @@ complete descriptions of new or modified parameters.
 <sect2>
 <title>Removed Parameters</title>
 
+<indexterm><primary>deleted parameters</primary></indexterm>
 <para>In alphabetical order, these are the parameters eliminated for Samba 3.0.20.</para>
 
 <itemizedlist>
@@ -178,6 +211,8 @@ complete descriptions of new or modified parameters.
 <para>New parameters in Samba 3.0.20 are grouped by function):</para>
 
 <para>Remote Management</para>
+
+<indexterm><primary>new parameters</primary></indexterm>
 
 <itemizedlist>
 	<listitem><para>abort shutdown script </para></listitem>
@@ -397,14 +432,19 @@ complete descriptions of new or modified parameters.
 
 	<orderedlist>
 		<listitem><para>
+<indexterm><primary>Windows domain</primary></indexterm>
+<indexterm><primary>getpwnam() call</primary></indexterm>
+<indexterm><primary>NT_STATUS_LOGON_FAILURE</primary></indexterm>
 		When operating as a member of a Windows domain, Samba-2.2 would
 		map any users authenticated by the remote DC to the <quote>guest account</quote>
 		if a UID could not be obtained via the getpwnam() call. Samba-3
-		rejects the connection as <?latex \linebreak ?>NT_STATUS_LOGON_FAILURE. There is no
+		rejects the connection as NT_STATUS_LOGON_FAILURE. There is no
 		current workaround to re-establish the Samba-2.2 behavior.
 		</para></listitem>
 
 		<listitem><para>
+<indexterm><primary>add user script</primary></indexterm>
+<indexterm><primary>add machine script</primary></indexterm>
 		When adding machines to a Samba-2.2 controlled domain, the
 		<quote>add user script</quote> was used to create the UNIX identity of the
 		machine trust account. Samba-3 introduces a new <quote>add machine
@@ -426,6 +466,7 @@ complete descriptions of new or modified parameters.
 
 	<orderedlist>
 		<listitem><para>
+<indexterm><primary>encrypted passwords</primary></indexterm>
 		Encrypted passwords have been enabled by default in order to
 		interoperate better with out-of-the-box Windows client
 		installations. This does mean that either (a) a Samba account
@@ -434,25 +475,27 @@ complete descriptions of new or modified parameters.
 		</para></listitem>
 
 		<listitem><para>
+<indexterm><primary>ADS</primary></indexterm>
+<indexterm><primary>Kerberos</primary></indexterm>
+<indexterm><primary>LDAP</primary></indexterm>
 		Inclusion of new <smbconfoption name="security">ads</smbconfoption> option for integration
 		with an Active Directory domain using the native Windows Kerberos 5 and LDAP protocols.
 		</para></listitem>
 	</orderedlist>
 
 	<para>
-	Samba-3 also includes the possibility of setting up chains
-	of authentication methods 
-	(<smbconfoption name="auth methods"/>) and account
-	storage backends 
-	(<smbconfoption name="passdb backend"/>). 
-	Please refer to the &smb.conf;
-	man page and Chapter 10, <link linkend="passdb">Account Information Databases</link>, for details. While both parameters assume sane default
-	values, it is likely that you will need to understand what the
-	values actually mean in order to ensure Samba operates correctly.
+<indexterm><primary>account storage backends</primary></indexterm>
+	Samba-3 also includes the possibility of setting up chains of authentication methods (<smbconfoption
+	name="auth methods"/>) and account storage backends (<smbconfoption name="passdb backend"/>).  Please refer to
+	the &smb.conf; man page and <link linkend="passdb">Account Information Databases</link>, for
+	details. While both parameters assume sane default values, it is likely that you will need to understand what
+	the values actually mean in order to ensure Samba operates correctly.
 	</para>
 
 	<para>
 <indexterm><primary>pdbedit</primary></indexterm>
+<indexterm><primary>smbpasswd</primary></indexterm>
+<indexterm><primary>net tool</primary></indexterm>
 	Certain functions of the <command>smbpasswd</command> tool have been split between the
 	new <command>smbpasswd</command> utility, the <command>net</command> tool, and the new <command>pdbedit</command>
 	utility. See the respective man pages for details.
@@ -471,6 +514,10 @@ complete descriptions of new or modified parameters.
 		<title>New Schema</title>
 
 		<para>
+<indexterm><primary>object class</primary></indexterm>
+<indexterm><primary>sambaSamAccount</primary></indexterm>
+<indexterm><primary>LDIF</primary></indexterm>
+<indexterm><primary>attributes</primary></indexterm>
 		A new object class (sambaSamAccount) has been introduced to replace
 		the old sambaAccount. This change aids in the renaming of attributes
 		to prevent clashes with attributes from other vendors. There is a
@@ -480,6 +527,7 @@ complete descriptions of new or modified parameters.
 
 		<para>
 		Example:
+<indexterm><primary>ldapsearch</primary></indexterm>
 		</para>
 		<para><screen>
 		&prompt;ldapsearch .... -LLL -b "ou=people,dc=..." &gt; old.ldif
@@ -487,27 +535,34 @@ complete descriptions of new or modified parameters.
 		</screen></para>
 
 		<para>
+<indexterm><primary>net</primary><secondary>getlocalsid</secondary></indexterm>
 		The &lt;DOM SID&gt; can be obtained by running 
 <screen>
 &prompt;<userinput>net getlocalsid &lt;DOMAINNAME&gt;</userinput>
 </screen>
+<indexterm><primary>PDC</primary></indexterm>
 		on the Samba PDC as root.
 		</para>
 
 		<para>
 		Under Samba-2.x the domain SID can be obtained by executing:
+<indexterm><primary>smbpasswd</primary></indexterm>
 <screen>
 &prompt;<userinput>smbpasswd -S &lt;DOMAINNAME&gt;</userinput>
 </screen>
 		</para>
 
 		<para>
-		The old sambaAccount schema may still be used by specifying the
+<indexterm><primary>old sambaAccount</primary></indexterm>
+<indexterm><primary>ldapsam_compat</primary></indexterm>
+<indexterm><primary>object class declaration</primary></indexterm>
+<indexterm><primary>samba.schema</primary></indexterm>
+		The old <literal>sambaAccount</literal> schema may still be used by specifying the
 		<parameter>ldapsam_compat</parameter> passdb backend. However, the sambaAccount and
 		associated attributes have been moved to the historical section of
 		the schema file and must be uncommented before use if needed.
-		The Samba-2.2 object class declaration for a sambaAccount has not changed
-		in the Samba-3 samba.schema file.
+		The Samba-2.2 object class declaration for a <literal>sambaAccount</literal> has not changed
+		in the Samba-3 <filename>samba.schema</filename> file.
 		</para>
 
 		<para>
@@ -516,7 +571,13 @@ complete descriptions of new or modified parameters.
 
 		<itemizedlist>
 			<listitem><para>
-			sambaDomain &smbmdash; domain information used to allocate RIDs
+<indexterm><primary>sambaDomain</primary></indexterm>
+<indexterm><primary>domain information</primary></indexterm>
+<indexterm><primary>RID</primary></indexterm>
+<indexterm><primary>ldap suffix</primary></indexterm>
+<indexterm><primary>ldapsam</primary></indexterm>
+<indexterm><primary>idmap</primary></indexterm>
+			<literal>sambaDomain</literal> &smbmdash; domain information used to allocate RIDs
 			for users and groups as necessary. The attributes are added
 			in <quote>ldap suffix</quote> directory entry automatically if
 			an idmap UID/GID range has been set and the <quote>ldapsam</quote>
@@ -524,6 +585,9 @@ complete descriptions of new or modified parameters.
 			</para></listitem>
 
 			<listitem><para>
+<indexterm><primary>sambaGroupMapping</primary></indexterm>
+<indexterm><primary>ldap group suffix</primary></indexterm>
+<indexterm><primary>net groupmap</primary></indexterm>
 			sambaGroupMapping &smbmdash; an object representing the
 			relationship between a posixGroup and a Windows
 			group/SID. These entries are stored in the <quote>ldap
@@ -531,13 +595,19 @@ complete descriptions of new or modified parameters.
 			</para></listitem>
 
 			<listitem><para>
-			sambaUNIXIdPool &smbmdash; created in the <quote>ldap idmap suffix</quote> entry
+<indexterm><primary>sambaUNIXIdPool</primary></indexterm>
+<indexterm><primary>ldap idmap suffix</primary></indexterm>
+<indexterm><primary>idmap UID</primary></indexterm>
+<indexterm><primary>idmap GID</primary></indexterm>
+			<literal>sambaUNIXIdPool</literal> &smbmdash; created in the <quote>ldap idmap suffix</quote> entry
 			automatically and contains the next available <quote>idmap UID</quote> and
 			<quote>idmap GID</quote>.
 			</para></listitem>
 
 			<listitem><para>
-			sambaIdmapEntry &smbmdash; object storing a mapping between a
+<indexterm><primary>sambaIdmapEntry</primary></indexterm>
+<indexterm><primary>idmap_ldap module</primary></indexterm>
+			<literal>sambaIdmapEntry</literal> &smbmdash; object storing a mapping between a
 			SID and a UNIX UID/GID. These objects are created by the
 			idmap_ldap module as needed.
 			</para></listitem>
@@ -549,7 +619,14 @@ complete descriptions of new or modified parameters.
 		<title>New Suffix for Searching</title>
 
 		<para>
-		The following new smb.conf parameters have been added to aid in directing
+<indexterm><primary>LDAP queries</primary></indexterm>
+<indexterm><primary>passdb backend</primary></indexterm>
+<indexterm><primary>ldap suffix</primary></indexterm>
+<indexterm><primary>ldap user suffix</primary></indexterm>
+<indexterm><primary>ldap machine suffix</primary></indexterm>
+<indexterm><primary>ldap group suffix</primary></indexterm>
+<indexterm><primary>ldap idmap suffix</primary></indexterm>
+		The following new &smb.conf; parameters have been added to aid in directing
 		certain LDAP queries when <parameter>passdb backend = ldapsam://...</parameter> has been
 		specified.
 		</para>
@@ -563,9 +640,11 @@ complete descriptions of new or modified parameters.
 		</itemizedlist>
 
 		<para>
+<indexterm><primary>ldap suffix</primary></indexterm>
+<indexterm><primary>subsuffix parameters</primary></indexterm>
 		If an <parameter>ldap suffix</parameter> is defined, it will be appended to all of the
 		remaining subsuffix parameters. In this case, the order of the suffix
-		listings in smb.conf is important. Always place the <parameter>ldap suffix</parameter> first
+		listings in &smb.conf; is important. Always place the <parameter>ldap suffix</parameter> first
 		in the list.
 		</para>
 
@@ -595,6 +674,7 @@ complete descriptions of new or modified parameters.
 		</smbconfblock>
 
 		<para>
+<indexterm><primary>NFS</primary></indexterm>
 		This configuration allows Winbind installations on multiple servers to
 		share a UID/GID number space, thus avoiding the interoperability problems
 		with NFS that were present in Samba-2.2.
