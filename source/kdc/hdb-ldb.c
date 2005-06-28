@@ -109,6 +109,8 @@ static HDBFlags uf2HDBFlags(krb5_context context, int userAccountControl, enum h
 	/* mark the principal as invalid to start with */
 	flags.invalid = 1;
 
+	flags.renewable = 1;
+
 	/* Account types - clear the invalid bit if it turns out to be valid */
 	if (userAccountControl & UF_NORMAL_ACCOUNT) {
 		if (ent_type == HDB_LDB_ENT_TYPE_CLIENT || ent_type == HDB_LDB_ENT_TYPE_ANY) {
