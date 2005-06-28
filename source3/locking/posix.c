@@ -332,7 +332,7 @@ static BOOL delete_posix_lock_entry_by_index(files_struct *fsp, size_t entry)
 		if (entry < count-1) {
 			memmove(&locks[entry], &locks[entry+1], sizeof(*locks)*((count-1) - entry));
 		}
-		dbuf.dsize -= sizeof(*locks);
+		dbuf.dsize -= sizeof(struct posix_lock);
 		tdb_store(posix_lock_tdb, kbuf, dbuf, TDB_REPLACE);
 	}
 
@@ -360,10 +360,11 @@ static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T s
 	char *tp;
 
 	dbuf.dptr = NULL;
+	dbuf.dsize = 0;
 
 	dbuf = tdb_fetch(posix_lock_tdb, kbuf);
 
-	*pentry_num = (size_t)(dbuf.dsize / sizeof(pl));
+	*pentry_num = (size_t)(dbuf.dsize / sizeof(struct posix_lock));
 
 	/*
 	 * Add new record.
@@ -374,15 +375,15 @@ static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T s
 	pl.size = size;
 	pl.lock_type = lock_type;
 
-	tp = SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(pl));
+	tp = SMB_REALLOC(dbuf.dptr, dbuf.dsize + sizeof(struct posix_lock));
 	if (!tp) {
 		DEBUG(0,("add_posix_lock_entry: Realloc fail !\n"));
 		goto fail;
 	} else
 		dbuf.dptr = tp;
 
-	memcpy(dbuf.dptr + dbuf.dsize, &pl, sizeof(pl));
-	dbuf.dsize += sizeof(pl);
+	memcpy(dbuf.dptr + dbuf.dsize, &pl, sizeof(struct posix_lock));
+	dbuf.dsize += sizeof(struct posix_lock);
 
 	if (tdb_store(posix_lock_tdb, kbuf, dbuf, TDB_REPLACE) == -1) {
 		DEBUG(0,("add_posix_lock: Failed to add lock entry on file %s\n", fsp->fsp_name));
@@ -443,7 +444,7 @@ static int delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T
 
 	/* There are existing locks - find a match. */
 	locks = (struct posix_lock *)dbuf.dptr;
-	count = (size_t)(dbuf.dsize / sizeof(*locks));
+	count = (size_t)(dbuf.dsize / sizeof(struct posix_lock));
 
 	/*
 	 * Search for and delete the first record that matches the
@@ -466,9 +467,9 @@ static int delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T
 				tdb_delete(posix_lock_tdb, kbuf);
 			} else {
 				if (i < count-1) {
-					memmove(&locks[i], &locks[i+1], sizeof(*locks)*((count-1) - i));
+					memmove(&locks[i], &locks[i+1], sizeof(struct posix_lock)*((count-1) - i));
 				}
-				dbuf.dsize -= sizeof(*locks);
+				dbuf.dsize -= sizeof(struct posix_lock);
 				tdb_store(posix_lock_tdb, kbuf, dbuf, TDB_REPLACE);
 			}
 			count--;
@@ -530,12 +531,12 @@ static int map_posix_lock_type( files_struct *fsp, enum brl_type lock_type)
 		return F_WRLCK;
 	}
 
-  /*
-   * This return should be the most normal, as we attempt
-   * to always open files read/write.
-   */
+	/*
+	 * This return should be the most normal, as we attempt
+	 * to always open files read/write.
+	 */
 
-  return (lock_type == READ_LOCK) ? F_RDLCK : F_WRLCK;
+	return (lock_type == READ_LOCK) ? F_RDLCK : F_WRLCK;
 }
 
 /****************************************************************************
@@ -545,7 +546,7 @@ static int map_posix_lock_type( files_struct *fsp, enum brl_type lock_type)
 ****************************************************************************/
 
 static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
-								SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count)
+				SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count)
 {
 	SMB_OFF_T offset = (SMB_OFF_T)u_offset;
 	SMB_OFF_T count = (SMB_OFF_T)u_count;
@@ -722,10 +723,10 @@ BOOL is_posix_locked(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_co
  */
 
 struct lock_list {
-    struct lock_list *next;
-    struct lock_list *prev;
-    SMB_OFF_T start;
-    SMB_OFF_T size;
+	struct lock_list *next;
+	struct lock_list *prev;
+	SMB_OFF_T start;
+	SMB_OFF_T size;
 };
 
 /****************************************************************************
@@ -749,7 +750,7 @@ static struct lock_list *posix_lock_list(TALLOC_CTX *ctx, struct lock_list *lhea
 		return lhead;
 	
 	locks = (struct posix_lock *)dbuf.dptr;
-	num_locks = (size_t)(dbuf.dsize / sizeof(*locks));
+	num_locks = (size_t)(dbuf.dsize / sizeof(struct posix_lock));
 
 	/*
 	 * Check the current lock list on this dev/inode pair.
@@ -1128,7 +1129,7 @@ BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u
 	num_overlapped_entries = delete_posix_lock_entry(fsp, offset, count, &deleted_lock);
 
 	if (num_overlapped_entries == -1) {
-        smb_panic("release_posix_lock: unable find entry to delete !\n");
+		smb_panic("release_posix_lock: unable find entry to delete !\n");
 	}
 
 	/*
