@@ -235,7 +235,6 @@ static void popt_common_credentials_callback(poptContext con,
 		exit(1);
 #else
 		lp_set_cmdline("gensec:krb5", "True");
-		lp_set_cmdline("gensec:ms_krb5", "True");
 #endif
 		break;
 
