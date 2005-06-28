@@ -74,7 +74,7 @@ For more info on these packages, Samba, and Linux (and other UNIX-based systems)
 		to the <guimenu>Names List</guimenu> or specify a  WINS server (NetBIOS 
 		Nameserver in IBM and RFC terminology). For Warp Connect, you 
 		may need to download an update for <constant>IBM Peer</constant> to bring it on 
-		the same level as Warp 4. See the Web page (John, which page do you mean???????).</para>
+		the same level as Warp 4. See the IBM OS/2 Warp Web page<./para>
 	</sect2>
 	
 	<sect2>
@@ -219,7 +219,7 @@ It is presumably a Windows for Workgroups bug.</para>
 <title>Speed Improvement</title>
 
 <para>
-	Note that some people have found that setting <parameter>DefaultRcvWindow</parameter> in
+Note that some people have found that setting <parameter>DefaultRcvWindow</parameter> in
 the <smbconfsection name="[MSTCP]"/> section of the 
 <filename>SYSTEM.INI</filename> file under Windows for Workgroups to 3072 gives a
 big improvement.
