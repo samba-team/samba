@@ -17,23 +17,22 @@
 <title>Macintosh Clients</title>
 
 <para>
-Yes. <ulink url="http://www.thursby.com/">Thursby</ulink> has a CIFS client/server called <ulink url="http://www.thursby.com/products/dave.html">DAVE</ulink>.
-They test it against Windows 95, Windows NT/200x/XP, and Samba for
-compatibility issues. At the time of this writing, DAVE was at version
-4.1. Please refer to Thursby's Web site for more information regarding this
-product.
+<indexterm><primary>DAVE</primary></indexterm>
+Yes. <ulink url="http://www.thursby.com/">Thursby</ulink> has a CIFS client/server called <ulink
+url="http://www.thursby.com/products/dave.html">DAVE</ulink>.  They test it against Windows 95, Windows
+NT/200x/XP, and Samba for compatibility issues. At the time of this writing, DAVE was at version 5.1. Please
+refer to Thursby's Web site for more information regarding this product.
 </para>
 
 <para> 
-Alternatives include two free implementations of AppleTalk for
-several kinds of UNIX machines and several more commercial ones.
-These products allow you to run file services and print services
-natively to Macintosh users, with no additional support required on
-the Macintosh. The two free implementations are 
-<ulink url="http://www.umich.edu/~rsug/netatalk/">Netatalk</ulink> and 
-<ulink url="http://www.cs.mu.oz.au/appletalk/atalk.html">CAP</ulink>. 
-What Samba offers MS Windows users, these packages offer to Macs. 
-For more info on these packages, Samba, and Linux (and other UNIX-based systems), see
+<indexterm><primary>Netatalk</primary></indexterm>
+<indexterm><primary>CAP</primary></indexterm>
+Alternatives include two free implementations of AppleTalk for several kinds of UNIX machines and several more
+commercial ones.  These products allow you to run file services and print services natively to Macintosh
+users, with no additional support required on the Macintosh. The two free implementations are <ulink
+url="http://www.umich.edu/~rsug/netatalk/">Netatalk</ulink> and <ulink
+url="http://www.cs.mu.oz.au/appletalk/atalk.html">CAP</ulink>.  What Samba offers MS Windows users, these
+packages offer to Macs.  For more info on these packages, Samba, and Linux (and other UNIX-based systems), see
 <ulink noescape="1" url="http://www.eats.com/linux_mac_win.html">http://www.eats.com/linux_mac_win.html.</ulink>
 </para>
 
@@ -140,21 +139,18 @@ For more info on these packages, Samba, and Linux (and other UNIX-based systems)
 for Workgroups. The early TCP/IP stacks had lots of bugs.</para>
 
 <para> 
-Microsoft has released an incremental upgrade to its TCP/IP 32-bit
-VxD drivers. The latest release can be found at
-ftp.microsoft.com, located in <filename>/Softlib/MSLFILES/TCP32B.EXE</filename>.
-There is an update.txt file there that describes the problems that were
-fixed. New files include <filename>WINSOCK.DLL</filename>, 
-<filename>TELNET.EXE</filename>, 
-<filename>WSOCK.386</filename>, 
-<filename>VNBT.386</filename>,
-<filename>WSTCP.386</filename>, 
-<filename>TRACERT.EXE</filename>, 
-<filename>NETSTAT.EXE</filename>, and 
-<filename>NBTSTAT.EXE</filename>.
+Microsoft has released an incremental upgrade to its TCP/IP 32-bit VxD drivers. The latest release can be
+found at ftp.microsoft.com, located in <filename>/Softlib/MSLFILES/TCP32B.EXE</filename>.  There is an
+update.txt file there that describes the problems that were fixed. New files include
+<filename>WINSOCK.DLL</filename>, <filename>TELNET.EXE</filename>, <filename>WSOCK.386</filename>,
+<filename>VNBT.386</filename>, <filename>WSTCP.386</filename>, <filename>TRACERT.EXE</filename>,
+<filename>NETSTAT.EXE</filename>, and <filename>NBTSTAT.EXE</filename>.
 </para>
 
-<para>More information about this patch is available in <ulink url="http://support.microsoft.com/kb/q99891/">Knowledge Base article 99891</ulink>.</para>
+<para>
+More information about this patch is available in <ulink
+url="http://support.microsoft.com/kb/q99891/">Knowledge Base article 99891</ulink>.
+</para>
 
 </sect2>
 
@@ -183,13 +179,12 @@ Often Windows for Workgroups will totally ignore a password you give it in a dia
 <title>Configuring Windows for Workgroups Password Handling</title>
 
 <para>
-There is a program call <filename>admincfg.exe</filename>
-on the last disk (disk 8) of the WFW 3.11 disk set. To install it,
-type <userinput>EXPAND A:\ADMINCFG.EX_ C:\WINDOWS\ADMINCFG.EXE</userinput>.
-Then add an icon for it via the <application>Program Manager</application> <guimenu>New</guimenu> menu. 
-This program allows you to control how WFW handles passwords,
-Disable Password Caching and so on,
-for use with <smbconfoption name="security">user</smbconfoption>.
+<indexterm><primary>admincfg.exe</primary></indexterm>
+There is a program call <filename>admincfg.exe</filename> on the last disk (disk 8) of the WFW 3.11 disk set.
+To install it, type <userinput>EXPAND A:\ADMINCFG.EX_ C:\WINDOWS\ADMINCFG.EXE</userinput>.  Then add an icon
+for it via the <application>Program Manager</application> <guimenu>New</guimenu> menu.  This program allows
+you to control how WFW handles passwords, Disable Password Caching and so on, for use with <smbconfoption
+name="security">user</smbconfoption>.
 </para>
 
 </sect2>
@@ -215,7 +210,7 @@ It is presumably a Windows for Workgroups bug.</para>
 
 </sect2>
 
-<sect2>
+<sect2 id="speedimpr">
 <title>Speed Improvement</title>
 
 <para>
@@ -240,7 +235,8 @@ person even reported a speed drop of a factor of 30 when he went from
 
 <para>
 When using Windows 95 OEM SR2, the following updates are recommended where Samba
-is being used. Please note that the above change (John, specify the change???????) will affect you once these
+is being used. Please note that the changes documented in 
+<link linkend="speedimpr">Speed Improvement</link> will affect you once these
 updates  have been installed.
 </para>
 
