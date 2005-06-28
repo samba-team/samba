@@ -86,6 +86,7 @@ libroken_la_SOURCES =		\
 	snprintf.c		\
 	socket.c		\
 	strcollect.c		\
+	strpool.c		\
 	timeval.c		\
 	tm2time.c		\
 	unvis.c			\
