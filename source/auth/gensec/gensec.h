@@ -105,8 +105,6 @@ struct gensec_security_ops_wrapper {
 #define GENSEC_INTERFACE_VERSION 0
 
 struct gensec_security {
-	gensec_password_callback password_callback;
-	void *password_callback_private;
 	const struct gensec_security_ops *ops;
 	void *private_data;
 	struct cli_credentials *credentials;
@@ -125,5 +123,3 @@ struct gensec_critical_sizes {
 };
 
 
-/* pre-declare schannel structure for schannel backend */       
-struct schannel_state;
