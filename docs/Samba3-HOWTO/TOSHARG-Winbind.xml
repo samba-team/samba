@@ -718,9 +718,11 @@ group:      files winbind
 </programlisting></para>
 
 <para>	
-<indexterm><primary></primary></indexterm>
-<indexterm><primary></primary></indexterm>
-<indexterm><primary></primary></indexterm>
+<indexterm><primary>winbindd</primary></indexterm>
+<indexterm><primary>ldconfig</primary></indexterm>
+<indexterm><primary>libnss_winbind</primary></indexterm>
+<indexterm><primary>grep</primary></indexterm>
+<indexterm><primary>dynamic link loader</primary></indexterm>
 The libraries needed by the <command>winbindd</command> daemon will be automatically 
 entered into the <command>ldconfig</command> cache the next time 
 your system reboots, but it is faster (and you do not need to reboot) if you do it manually:
@@ -728,11 +730,39 @@ your system reboots, but it is faster (and you do not need to reboot) if you do 
 &rootprompt;<userinput>/sbin/ldconfig -v | grep winbind</userinput>
 </screen>
 This makes <filename>libnss_winbind</filename> available to winbindd and reports the current
-search path that is used by the dynamic link loader.
+search path that is used by the dynamic link loader. The use of the <command>grep</command>
+filters the output of the <command>ldconfig</command> command so that we may see proof that
+this library is indeed recognized by the dynamic link loader.
 </para>
 
 <para>
-The dynamic link-loader managment interface 
+<indexterm><primary>dynamic link loader</primary></indexterm>
+<indexterm><primary>crle</primary></indexterm>
+<indexterm><primary>/usr/local/lib</primary></indexterm>
+<indexterm><primary>link loader configuration</primary></indexterm>
+<indexterm><primary>object module dependencies</primary></indexterm>
+The Sun Solaris dynamic link loader management tool is called <command>crle</command>. The 
+use of this tool is necessary to instruct the dynamic link loader to search directories that
+contain library files that were not supplied as part of the original operating system platform.
+The following example shows how to use this tool to add the directory <filename>/usr/local/lib</filename>
+to the dynamic link loader's search path:
+<screen>
+&rootprompt; crle -u -l /usr/lib:/usr/local/lib
+</screen>
+When executed without arguments, <command>crle</command> reports the current dynamic 
+link loader configuration. This is demonstrated here:
+<screen>
+&rootprompt; crle
+
+Configuration file [version 4]: /var/ld/ld.config
+  Default Library Path (ELF):   /lib:/usr/lib:/usr/local/lib
+  Trusted Directories (ELF):    /lib/secure:/usr/lib/secure  (system default)
+
+Command line:
+  crle -c /var/ld/ld.config -l /lib:/usr/lib:/usr/local/lib
+</screen>
+From this it is apparent that the <filename>/usr/local/lib</filename> directory is be included
+in the search dynamic link libraries in order to satisfy object module dependencies.
 </para>
 
 </sect3>
@@ -743,6 +773,12 @@ The dynamic link-loader managment interface
 <para>(This section is only for those running AIX.)</para>
 
 <para>
+<indexterm><primary>AIX</primary></indexterm>
+<indexterm><primary>Winbind</primary></indexterm>
+<indexterm><primary>/usr/lib/security</primary></indexterm>
+<indexterm><primary>authentication module API</primary></indexterm>
+<indexterm><primary>/usr/lib/security/methods.cfg</primary></indexterm>
+<indexterm><primary>PAM module</primary></indexterm>
 The Winbind AIX identification module gets built as <filename>libnss_winbind.so</filename> in the
 nsswitch directory of the Samba source. This file can be copied to <filename>/usr/lib/security</filename>,
 and the AIX naming convention would indicate that it should be named WINBIND. A stanza like the following:
@@ -767,10 +803,13 @@ Management Guide: Operating System and Devices.</ulink>
 <title>Configure smb.conf</title>
 
 <para>
+<indexterm><primary>winbind</primary></indexterm>
+<indexterm><primary>man page</primary></indexterm>
+<indexterm><primary>winbindd</primary></indexterm>
 Several parameters are needed in the &smb.conf; file to control the behavior of &winbindd;. These
 are described in more detail in the <citerefentry><refentrytitle>winbindd</refentrytitle>
 <manvolnum>8</manvolnum></citerefentry> man page. My &smb.conf; file, as shown in <link
-linkend="winbindcfg">Example 23.5.1</link>, was modified to include the necessary entries in the [global] section.
+linkend="winbindcfg">the smb.conf for Winbind Setup</link>, was modified to include the necessary entries in the [global] section.
 </para>
 
 <example id="winbindcfg">
@@ -799,11 +838,23 @@ linkend="winbindcfg">Example 23.5.1</link>, was modified to include the necessar
 <title>Join the Samba Server to the PDC Domain</title>
 
 <para>
+<indexterm><primary>domain security</primary></indexterm>
+<indexterm><primary>PDC</primary></indexterm>
+<indexterm><primary>BDC</primary></indexterm>
 All machines that will participate in domain security should be members of
 the domain. This applies also to the PDC and all BDCs.
 </para>
 
 <para>
+<indexterm><primary>joining domain</primary></indexterm>
+<indexterm><primary>domain join</primary></indexterm>
+<indexterm><primary>net</primary><secondary>rpc</secondary><tertiary>join</tertiary></indexterm>
+<indexterm><primary>smbd</primary></indexterm>
+<indexterm><primary>PDC</primary></indexterm>
+<indexterm><primary>domain controller</primary></indexterm>
+<indexterm><primary>MS DCE RPC</primary></indexterm>
+<indexterm><primary>DCE RPC</primary></indexterm>
+<indexterm><primary>RPC</primary></indexterm>
 The process of joining a domain requires the use of the <command>net rpc join</command>
 command. This process communicates with the domain controller it will register with
 (usually the PDC) via MS DCE RPC. This means, of course, that the <command>smbd</command>
@@ -812,6 +863,9 @@ start Samba on a PDC so that it can join its own domain.
 </para>
 
 <para>
+<indexterm><primary>PDC</primary></indexterm>
+<indexterm><primary>administrative privileges</primary></indexterm>
+<indexterm><primary>Administrator</primary></indexterm>
 Enter the following command to make the Samba server join the 
 domain, where <replaceable>PDC</replaceable> is the name of 
 your PDC and <replaceable>Administrator</replaceable> is 
@@ -819,16 +873,21 @@ a domain user who has administrative privileges in the domain.
 </para>
 	
 <note><para>
+<indexterm><primary>domain controller</primary></indexterm>
+<indexterm><primary>PDC</primary></indexterm>
+<indexterm><primary>tcp ports</primary></indexterm>
+<indexterm><primary>udp ports</primary></indexterm>
 Before attempting to join a machine to the domain, verify that Samba is running
 on the target domain controller (usually PDC) and that it is capable of being reached via ports
 137/udp, 135/tcp, 139/tcp, and 445/tcp (if Samba or Windows Server 2Kx).
 </para></note>
 
 <para>
+<indexterm><primary>net</primary><secondary>rpc</secondary><tertiary>join</tertiary></indexterm>
+The use of the <command>net rpc join</command> facility is shown here:
+<screen>
 &rootprompt;<userinput>/usr/local/samba/bin/net rpc join -S PDC -U Administrator</userinput>
-</para>
-
-<para>
+</screen>
 The proper response to the command should be <quote>Joined the domain 
 <replaceable>DOMAIN</replaceable></quote> where <replaceable>DOMAIN</replaceable> 
 is your domain name.
@@ -840,104 +899,109 @@ is your domain name.
 <title>Starting and Testing the <command>winbindd</command> Daemon</title>
 
 <para>
+<indexterm><primary>startup script</primary></indexterm>
+<indexterm><primary>winbindd</primary></indexterm>
+<indexterm><primary>Winbind services</primary></indexterm>
 Eventually, you will want to modify your Samba startup script to 
 automatically invoke the winbindd daemon when the other parts of 
 Samba start, but it is possible to test out just the Winbind
 portion first. To start up Winbind services, enter the following 
 command as root:
-</para>
-	
-<para>
+<screen>
 &rootprompt;<userinput>/usr/local/samba/sbin/winbindd</userinput>
+</screen>
+Use the appropriate path to the location of the <command>winbindd</command> executable file.
 </para>
 
 <note><para>
+<indexterm><primary>Winbind</primary></indexterm>
+<indexterm><primary>/usr/local/samba</primary></indexterm>
 The command to start up Winbind services assumes that Samba has been installed in the <filename>/usr/local/samba</filename>
 directory tree. You may need to search for the location of Samba files if this is not the
 location of <command>winbindd</command> on your system.
 </para></note>
 
 <para>
+<indexterm><primary>Winbindd</primary></indexterm>
+<indexterm><primary>dual daemon mode</primary></indexterm>
 Winbindd can now also run in <quote>dual daemon mode</quote>. This will make it 
 run as two processes. The first will answer all requests from the cache,
 thus making responses to clients faster. The other will
 update the cache for the query to which the first has just responded.
 The advantage of this is that responses stay accurate and are faster. 
 You can enable dual daemon mode by adding <option>-B</option> to the command line:
-</para>
-
-<para>
+<screen>
 &rootprompt;<userinput>/usr/local/samba/sbin/winbindd -B</userinput>
+</screen>
 </para>
 
 <para>
+<indexterm><primary>paranoid</primary></indexterm>
+<indexterm><primary>daemon running</primary></indexterm>
 I'm always paranoid and like to make sure the daemon is really running.
-</para>
-
-<para>
+<screen>
 &rootprompt;<userinput>ps -ae | grep winbindd</userinput>
+</screen>
 </para>
-<para>
-This command should produce output like the following if the daemon is running.
 
-</para>
+<para>
+<indexterm><primary>winbindd</primary></indexterm>
+This command should produce output like the following if the daemon is running.
 <screen>
 3025 ?        00:00:00 winbindd
 </screen>
+</para>
 
 <para>
+<indexterm><primary>PDC</primary></indexterm>
+<indexterm><primary>wbinfo</primary></indexterm>
 Now, for the real test, try to get some information about the users on your PDC:
-</para>
-
-<para>
+<screen>
 &rootprompt;<userinput>/usr/local/samba/bin/wbinfo -u</userinput>
-</para>
-
-<para>	
+</screen>
 This should echo back a list of users on your Windows users on 
 your PDC. For example, I get the following response:
-</para>
-
-<para><screen>
-	CEO\Administrator
-	CEO\burdell
-	CEO\Guest
-	CEO\jt-ad
-	CEO\krbtgt
-	CEO\TsInternetUser
-</screen></para>
-
-<para>
+<screen>
+CEO\Administrator
+CEO\burdell
+CEO\Guest
+CEO\jt-ad
+CEO\krbtgt
+CEO\TsInternetUser
+</screen>
 Obviously, I have named my domain <quote>CEO</quote> and my <smbconfoption name="winbind separator"/> is <quote>\</quote>.
 </para>
 
 <para>
+<indexterm><primary>wbinfo</primary></indexterm>
+<indexterm><primary>PDC</primary></indexterm>
 You can do the same sort of thing to get group information from the PDC:
-</para>
-
-<para><screen>
+<screen>
 &rootprompt;<userinput>/usr/local/samba/bin/wbinfo -g</userinput>
-	CEO\Domain Admins
-	CEO\Domain Users
-	CEO\Domain Guests
-	CEO\Domain Computers
-	CEO\Domain Controllers
-	CEO\Cert Publishers
-	CEO\Schema Admins
-	CEO\Enterprise Admins
-	CEO\Group Policy Creator Owners
+CEO\Domain Admins
+CEO\Domain Users
+CEO\Domain Guests
+CEO\Domain Computers
+CEO\Domain Controllers
+CEO\Cert Publishers
+CEO\Schema Admins
+CEO\Enterprise Admins
+CEO\Group Policy Creator Owners
 </screen></para>
 
 <para>
+<indexterm><primary>getent</primary></indexterm>
+<indexterm><primary>PDC</primary></indexterm>
+<indexterm><primary>/etc/passwd</primary></indexterm>
+<indexterm><primary>UID</primary></indexterm>
+<indexterm><primary>GID</primary></indexterm>
+<indexterm><primary>home directories</primary></indexterm>
+<indexterm><primary>default shells</primary></indexterm>
 The function <command>getent</command> can now be used to get unified 
 lists of both local and PDC users and groups. Try the following command:
-</para>
-
-<para>
+<screen>
 &rootprompt;<userinput>getent passwd</userinput>
-</para>
-	
-<para>
+</screen>
 You should get a list that looks like your <filename>/etc/passwd</filename> 
 list followed by the domain users with their new UIDs, GIDs, home 
 directories, and default shells.
@@ -945,10 +1009,9 @@ directories, and default shells.
 
 <para>
 The same thing can be done for groups with the command:
-</para>
-
-<para>
+<screen>
 &rootprompt;<userinput>getent group</userinput>
+</screen>
 </para>
 
 </sect3>
@@ -961,6 +1024,15 @@ The same thing can be done for groups with the command:
 <title>Linux</title>
 
 <para>
+<indexterm><primary>winbindd daemon</primary></indexterm>
+<indexterm><primary>smbd</primary></indexterm>
+<indexterm><primary>nmbd</primary></indexterm>
+<indexterm><primary>/etc/init.d/smb</primary></indexterm>
+<indexterm><primary>/etc/init.d/samba</primary></indexterm>
+<indexterm><primary>/usr/local/samba/bin</primary></indexterm>
+<indexterm><primary></primary></indexterm>
+<indexterm><primary></primary></indexterm>
+<indexterm><primary></primary></indexterm>
 The &winbindd; daemon needs to start up after the &smbd; and &nmbd; daemons are running. 
 To accomplish this task, you need to modify the startup scripts of your system.
 They are located at <filename>/etc/init.d/smb</filename> in Red Hat Linux and in 
@@ -969,9 +1041,7 @@ script to add commands to invoke this daemon in the proper sequence. My
 startup script starts up &smbd;, &nmbd;, and &winbindd; from the 
 <filename>/usr/local/samba/bin</filename> directory directly. The <command>start</command> 
 function in the script looks like this:
-</para>
-
-<para><programlisting>
+<programlisting>
 start() {
         KIND="SMB"
         echo -n $"Starting $KIND services: "
@@ -1045,6 +1115,12 @@ for details.
 </para>
 
 <para>
+<indexterm><primary>Solaris 9</primary></indexterm>
+<indexterm><primary>/etc/init.d/samba.server</primary></indexterm>
+<indexterm><primary>/usr/local/samba/bin</primary></indexterm>
+<indexterm><primary>smbd</primary></indexterm>
+<indexterm><primary>nmbd</primary></indexterm>
+<indexterm><primary>winbindd</primary></indexterm>
 On Solaris, you need to modify the <filename>/etc/init.d/samba.server</filename> startup script. It
 usually only starts smbd and nmbd but should now start winbindd, too. If you have Samba installed in
 <filename>/usr/local/samba/bin</filename>, the file could contains something like this:
@@ -1103,11 +1179,11 @@ usually only starts smbd and nmbd but should now start winbindd, too. If you hav
 <para>
 Again, if you would like to run Samba in dual daemon mode, replace:
 <programlisting>
-	/usr/local/samba/sbin/winbindd
+/usr/local/samba/sbin/winbindd
 </programlisting>
 in the script above with:
 <programlisting>
-	/usr/local/samba/sbin/winbindd -B
+/usr/local/samba/sbin/winbindd -B
 </programlisting>
 </para>
 
@@ -1116,6 +1192,8 @@ in the script above with:
 <sect4>
 <title>Restarting</title>
 <para>
+<indexterm><primary>daemons</primary></indexterm>
+<indexterm><primary>local user</primary></indexterm>
 If you restart the &smbd;, &nmbd;, and &winbindd; daemons at this point, you
 should be able to connect to the Samba server as a domain member just as
 if you were a local user.
@@ -1127,6 +1205,10 @@ if you were a local user.
 <title>Configure Winbind and PAM</title>
 
 <para>
+<indexterm><primary>winbindd</primary></indexterm>
+<indexterm><primary>authentication</primary></indexterm>
+<indexterm><primary>PAM</primary></indexterm>
+<indexterm><primary>/etc/pam.d</primary></indexterm>
 If you have made it this far, you know that <command>winbindd</command> and Samba are working
 together. If you want to use Winbind to provide authentication for other 
 services, keep reading. The PAM configuration files need to be altered in
@@ -1135,42 +1217,50 @@ this step. (Did you remember to make backups of your original
 </para>
 
 <para>
+<indexterm><primary>NSS</primary></indexterm>
+<indexterm><primary>../source/nsswitch</primary></indexterm>
+<indexterm><primary>pam_winbind.so</primary></indexterm>
+<indexterm><primary>/lib/security</primary></indexterm>
+<indexterm><primary>Solaris</primary></indexterm>
+<indexterm><primary>/usr/lib/security</primary></indexterm>
 You will need a PAM module to use winbindd with these other services. This 
 module will be compiled in the <filename>../source/nsswitch</filename> directory
 by invoking the command:
-</para>
-
-<para>
+<screen>
 &rootprompt;<userinput>make nsswitch/pam_winbind.so</userinput>
-</para>
-
-<para>
+</screen>
 from the <filename>../source</filename> directory. The
 <filename>pam_winbind.so</filename> file should be copied to the location of
 your other PAM security modules. On my Red Hat system, this was the
 <filename>/lib/security</filename> directory. On Solaris, the PAM security 
 modules reside in <filename>/usr/lib/security</filename>.
-</para>
-
-<para>
+<screen>
 &rootprompt;<userinput>cp ../samba/source/nsswitch/pam_winbind.so /lib/security</userinput>
+</screen>
 </para>
 
 <sect4>
 <title>Linux/FreeBSD-Specific PAM Configuration</title>
 
 <para>
+<indexterm><primary>/etc/pam.d/samba</primary></indexterm>
 The <filename>/etc/pam.d/samba</filename> file does not need to be changed. I 
 just left this file as it was:
-</para>
-
-
-<para><programlisting>
-	auth    required        /lib/security/pam_stack.so service=system-auth
-	account required        /lib/security/pam_stack.so service=system-auth
+<programlisting>
+auth    required  /lib/security/pam_stack.so service=system-auth
+account required  /lib/security/pam_stack.so service=system-auth
 </programlisting></para>
 
-<para>
+<para> 
+<indexterm><primary>Winbind</primary></indexterm>
+<indexterm><primary>authentication service</primary></indexterm>
+<indexterm><primary>login</primary></indexterm>
+<indexterm><primary>console</primary></indexterm>
+<indexterm><primary>telnet logins</primary></indexterm>
+<indexterm><primary>ftp service</primary></indexterm>
+<indexterm><primary>/etc/xinetd.d</primary></indexterm>
+<indexterm><primary>/etc/inetd.conf</primary></indexterm>
+<indexterm><primary>/etc/xinetd.d/telnet</primary></indexterm>
 The other services that I modified to allow the use of Winbind 
 as an authentication service were the normal login on the console (or a terminal 
 session), telnet logins, and ftp service. In order to enable these 
@@ -1179,9 +1269,7 @@ services, you may first need to change the entries in
 Red Hat Linux 7.1 and later uses the new xinetd.d structure, in this case you need 
 to change the lines in <filename>/etc/xinetd.d/telnet</filename> 
 and <filename>/etc/xinetd.d/wu-ftp</filename> from 
-</para>
-
-<para><programlisting>
+<programlisting>
 	enable = no
 </programlisting>
 to
@@ -1190,6 +1278,9 @@ to
 </programlisting></para>
 
 <para>	
+<indexterm><primary>ftp services</primary></indexterm>
+<indexterm><primary>home directory template</primary></indexterm>
+<indexterm><primary>domain users</primary></indexterm>
 For ftp services to work properly, you will also need to either 
 have individual directories for the domain users already present on 
 the server or change the home directory template to a general
@@ -1198,14 +1289,16 @@ the &smb.conf; global entry
 <smbconfoption name="template homedir"/>.
 </para>
 
-<note>
-	<para>The directory in <smbconfoption name="template homedir"/> is not created automatically! Use pam_mkhomedir or pre-create 
-		the directories of users to make sure users can log in on UNIX with 
-		their own home directory.
-	</para>
-</note>
+<note><para>
+<indexterm><primary>pam_mkhomedir</primary></indexterm>
+The directory in <smbconfoption name="template homedir"/> is not created automatically! Use pam_mkhomedir or
+pre-create the directories of users to make sure users can log in on UNIX with their own home directory.
+</para></note>
 
 <para>
+<indexterm><primary>/etc/pam.d/ftp</primary></indexterm>
+<indexterm><primary>Winbind</primary></indexterm>
+<indexterm><primary>ftp access</primary></indexterm>
 The <filename>/etc/pam.d/ftp</filename> file can be changed 
 to allow Winbind ftp access in a manner similar to the
 samba file. My <filename>/etc/pam.d/ftp</filename> file was 
@@ -1222,6 +1315,7 @@ session    required     /lib/security/pam_stack.so service=system-auth
 </programlisting></para>
 
 <para>
+<indexterm><primary>/etc/pam.d/login</primary></indexterm>
 The <filename>/etc/pam.d/login</filename> file can be changed in nearly the 
 same way. It now looks like this:
 <programlisting>
@@ -1235,9 +1329,10 @@ account    required     /lib/security/pam_stack.so service=system-auth
 password   required     /lib/security/pam_stack.so service=system-auth
 session    required     /lib/security/pam_stack.so service=system-auth
 session    optional     /lib/security/pam_console.so
-</programlisting></para>
-
-<para>
+</programlisting>
+<indexterm><primary>pam_winbind.so</primary></indexterm>
+<indexterm><primary>pam_securetty.so</primary></indexterm>
+<indexterm><primary>pam_unix.so</primary></indexterm>
 In this case, I added the <programlisting>auth sufficient /lib/security/pam_winbind.so</programlisting> 
 lines as before, but also added the <programlisting>required pam_securetty.so</programlisting>
 above it to disallow root logins over the network. I also added a 
@@ -1252,14 +1347,14 @@ double prompts for passwords.
 <title>Solaris-Specific Configuration</title>
 
 <para>
+<indexterm><primary>/etc/pam.conf</primary></indexterm>
+<indexterm><primary></primary></indexterm>
 The <filename>/etc/pam.conf</filename> needs to be changed. I changed this file so my Domain
 users can log on both locally as well as with telnet. The following are the changes
 that I made. You can customize the <filename>pam.conf</filename> file as per your requirements, but
 be sure of those changes because in the worst case it will leave your system
 nearly impossible to boot.
-</para>
-
-<para><programlisting>
+<programlisting>
 #
 #ident "@(#)pam.conf 1.14 99/09/16 SMI"
 #
@@ -1322,6 +1417,7 @@ dtsession auth required /usr/lib/security/$ISA/pam_unix.so.1
 </programlisting></para>
 
 <para>
+<indexterm><primary>winbind.so</primary></indexterm>
 I also added a <parameter>try_first_pass</parameter> line after the <filename>winbind.so</filename>
 line to get rid of annoying double prompts for passwords.
 </para>
@@ -1342,8 +1438,13 @@ configured in the pam.conf.
 <sect1>
 <title>Conclusion</title>
 
-<para>The Winbind system, through the use of the NSS, 
-PAMs, and appropriate 
+<para>
+<indexterm><primary>Winbind</primary></indexterm>
+<indexterm><primary>NSS</primary></indexterm>
+<indexterm><primary>PAM</primary></indexterm>
+<indexterm><primary>RPC calls</primary></indexterm>
+<indexterm><primary>domain users</primary></indexterm>
+The Winbind system, through the use of the NSS, PAMs, and appropriate 
 Microsoft RPC calls, have allowed us to provide seamless 
 integration of Microsoft Windows NT domain users on a
 UNIX system. The result is a great reduction in the administrative 
@@ -1382,8 +1483,6 @@ cost of running a mixed UNIX and NT network.</para>
 
 	<sect2>
 	<title>NSCD Problem Warning</title>
-
-	<?latex \nopagebreak ?>
 
 	<warning><para>
 	Do not under any circumstances run <command>nscd</command> on any system
