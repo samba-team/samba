@@ -11,6 +11,10 @@
 <title>Features and Benefits</title>
 
 <para>
+<indexterm><primary>backup</primary></indexterm>
+<indexterm><primary>UNIX system files</primary></indexterm>
+<indexterm><primary>system tools</primary></indexterm>
+<indexterm><primary>Samba mailing lists</primary></indexterm>
 The Samba project is over 10 years old. During the early history
 of Samba, UNIX administrators were its key implementors. UNIX administrators
 use UNIX system tools to backup UNIX system files. Over the past
@@ -25,6 +29,8 @@ in general on the Samba mailing lists.
 <title>Discussion of Backup Solutions</title>
 
 <para>
+<indexterm><primary>Meccano set</primary></indexterm>
+<indexterm><primary>training course</primary></indexterm>
 During discussions at a Microsoft Windows training course, one of
 the pro-UNIX delegates stunned the class when he pointed out that Windows
 NT4 is limiting compared with UNIX. He likened UNIX to a Meccano set
@@ -33,6 +39,8 @@ and, in combination, capable of achieving any desired outcome.
 </para>
 
 <para>
+<indexterm><primary>networking advocates</primary></indexterm>
+<indexterm><primary>clear purpose preferred</primary></indexterm>
 One of the Windows networking advocates retorted that if she wanted a
 Meccano set, she would buy one. She made it clear that a complex single
 tool that does more than is needed but does it with a clear purpose and
@@ -40,6 +48,9 @@ intent is preferred by some like her.
 </para>
 
 <para>
+<indexterm><primary>due diligence</primary></indexterm>
+<indexterm><primary>research</primary></indexterm>
+<indexterm><primary>backup solution</primary></indexterm>
 Please note that all information here is provided as is and without recommendation
 of fitness or suitability. The network administrator is strongly encouraged to
 perform due diligence research before implementing any backup solution, whether free
@@ -62,12 +73,22 @@ The following three free software projects might also merit consideration.
 
 	<para>
 	<indexterm><primary>BackupPC</primary></indexterm>
+<indexterm><primary>rsync</primary></indexterm>
+<indexterm><primary>rsyncd</primary></indexterm>
 	BackupPC version 2.0.0 has been released on <ulink url="http://backuppc.sourceforge.net">SourceForge</ulink>.
 	 New features include support for <command>rsync/rsyncd</command> and internationalization of the CGI interface
 	(including English, French, Spanish, and German).
 	</para>
 
 	<para>
+<indexterm><primary>BackupPC</primary></indexterm>
+<indexterm><primary>laptops</primary></indexterm>
+<indexterm><primary>SMB</primary></indexterm>
+<indexterm><primary>smbclient</primary></indexterm>
+<indexterm><primary>tar</primary></indexterm>
+<indexterm><primary>rsh</primary></indexterm>
+<indexterm><primary>ssh</primary></indexterm>
+<indexterm><primary>rsync</primary></indexterm>
 	BackupPC is a high-performance Perl-based package for backing up Linux,
 	UNIX, and Windows PCs and laptops to a server's disk. BackupPC is highly
 	configurable and easy to install and maintain. SMB (via smbclient),
@@ -76,6 +97,9 @@ The following three free software projects might also merit consideration.
 	</para>
 
 	<para>
+<indexterm><primary>RAID</primary></indexterm>
+<indexterm><primary>local disk</primary></indexterm>
+<indexterm><primary>network storage</primary></indexterm>
 	Given the ever-decreasing cost of disks and RAID systems, it is now
 	practical and cost effective to backup a large number of machines onto
 	a server's local disk or network storage. This is what BackupPC does.
@@ -88,6 +112,7 @@ The following three free software projects might also merit consideration.
 	</para>
 
 	<para>
+<indexterm><primary>GNU GPL</primary></indexterm>
 	BackupPC is free software distributed under a GNU GPL license.
 	BackupPC runs on Linux/UNIX/freenix servers and has been tested
 	on Linux, UNIX, Windows 9x/Me, Windows 98, Windows 200x, Windows XP, and Mac OSX clients.
@@ -98,14 +123,25 @@ The following three free software projects might also merit consideration.
 	<sect2>
 	<title>Rsync</title>
 
-	<para><command>rsync</command> is a flexible program for efficiently copying files or
+	<para>
+<indexterm><primary>rsync</primary></indexterm>
+<indexterm><primary>ftp</primary></indexterm>
+<indexterm><primary>http</primary></indexterm>
+<indexterm><primary>scp</primary></indexterm>
+<indexterm><primary>rcp</primary></indexterm>
+<indexterm><primary>checksum-search</primary></indexterm>
+	<command>rsync</command> is a flexible program for efficiently copying files or
 		directory trees.</para>
 
 	<para><command>rsync</command> has many options to select which files will be copied
 	  and how they are to be transferred. It may be used as an
 	  alternative to <command>ftp, http, scp</command>, or <command>rcp</command>.</para>
 
-	<para>The rsync remote-update protocol allows rsync to transfer just
+	<para>
+<indexterm><primary>remote-update protocol</primary></indexterm>
+<indexterm><primary>transfer differences</primary></indexterm>
+<indexterm><primary>differences</primary></indexterm>
+	The rsync remote-update protocol allows rsync to transfer just
 	  the differences between two sets of files across the network link,
 	  using an efficient checksum-search algorithm described in the
 	  technical report that accompanies the rsync package.</para>
@@ -166,6 +202,8 @@ The following three free software projects might also merit consideration.
 
 	<para>
 	<indexterm><primary>Amanda</primary></indexterm>
+<indexterm><primary>native dump</primary></indexterm>
+<indexterm><primary>GNU tar</primary></indexterm>
 	Amanda, the Advanced Maryland Automatic Network Disk Archiver, is a backup system that
 	allows the administrator of a LAN to set up a single master backup server to back up
 	multiple hosts to a single large capacity tape drive. Amanda uses native dump and/or
