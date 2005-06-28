@@ -74,7 +74,7 @@ For more info on these packages, Samba, and Linux (and other UNIX-based systems)
 		to the <guimenu>Names List</guimenu> or specify a  WINS server (NetBIOS 
 		Nameserver in IBM and RFC terminology). For Warp Connect, you 
 		may need to download an update for <constant>IBM Peer</constant> to bring it on 
-		the same level as Warp 4. See the IBM OS/2 Warp Web page<./para>
+		the same level as Warp 4. See the IBM OS/2 Warp Web page</para>
 	</sect2>
 	
 	<sect2>
