@@ -297,7 +297,6 @@ NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 	(*gensec_security)->gensec_role = GENSEC_CLIENT;
-	(*gensec_security)->password_callback = NULL;
 
 	return status;
 }
