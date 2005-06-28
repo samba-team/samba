@@ -118,15 +118,7 @@ void sign_outgoing_message(struct request_buffer *out, DATA_BLOB *mac_key, uint_
 
 	/* Calculate the 16 byte MAC and place first 8 bytes into the field. */
 	MD5Init(&md5_ctx);
-
-	/* NB. When making and verifying SMB signatures, Windows apparently
-		zero-pads the key to 128 bits if it isn't long enough.
-		From Nalin Dahyabhai <nalin@redhat.com> */
         MD5Update(&md5_ctx, mac_key->data, mac_key->length);
-        if (mac_key->length < sizeof(key_buf)) {
-                memset(key_buf, 0, sizeof(key_buf));
-                MD5Update(&md5_ctx, key_buf, sizeof(key_buf) - mac_key->length);
-        }
 	MD5Update(&md5_ctx, 
 		  out->buffer + NBT_HDR_SIZE, 
 		  out->size - NBT_HDR_SIZE);
