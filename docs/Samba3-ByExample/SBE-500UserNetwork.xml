@@ -958,6 +958,7 @@ hosts:      files dns wins
 <smbconfoption name="interfaces">eth1, lo</smbconfoption>
 <smbconfoption name="bind interfaces only">Yes</smbconfoption>
 <smbconfoption name="passdb backend">tdbsam</smbconfoption>
+<smbconfoption name="smb ports">139</smbconfoption>
 <smbconfoption name="add user script">/usr/sbin/useradd -m '%u'</smbconfoption>
 <smbconfoption name="delete user script">/usr/sbin/userdel -r '%u'</smbconfoption>
 <smbconfoption name="add group script">/usr/sbin/groupadd '%g'</smbconfoption>
@@ -967,11 +968,6 @@ hosts:      files dns wins
 <smbconfoption name="preferred master">Yes</smbconfoption>
 <smbconfoption name="wins support">Yes</smbconfoption>
 <smbconfoption name="include">/etc/samba/dc-common.conf</smbconfoption>
-
-<smbconfsection name="[IPC$]"/>
-<smbconfoption name="path">/tmp</smbconfoption>
-<smbconfoption name="hosts allow">172.16.0.0/16, 127.0.0.1</smbconfoption>
-<smbconfoption name="hosts deny">0.0.0.0/0</smbconfoption>
 
 <smbconfsection name="[accounts]"/>
 <smbconfoption name="comment">Accounting Files</smbconfoption>
