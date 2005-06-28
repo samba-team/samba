@@ -32,11 +32,12 @@
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "auth/auth.h"
 
-#ifdef KRB5_DO_VERIFY_PAC
-static NTSTATUS kerberos_pac_checksum(DATA_BLOB pac_data,
-					 struct PAC_SIGNATURE_DATA *sig,
-					 struct smb_krb5_context *smb_krb5_context,
-					 uint32 keyusage)
+static NTSTATUS kerberos_pac_checksum(TALLOC_CTX *mem_ctx, 
+				      DATA_BLOB pac_data,
+				      struct PAC_SIGNATURE_DATA *sig,
+				      struct smb_krb5_context *smb_krb5_context,
+				      krb5_keyblock *keyblock,
+				      uint32_t keyusage)
 {
 	krb5_error_code ret;
 	krb5_crypto crypto;
@@ -49,9 +50,9 @@ static NTSTATUS kerberos_pac_checksum(DATA_BLOB pac_data,
 
 
 	ret = krb5_crypto_init(smb_krb5_context->krb5_context,
-				&gensec_krb5_state->keyblock,
-				0,
-				&crypto);
+			       keyblock,
+			       0,
+			       &crypto);
 	if (ret) {
 		DEBUG(0,("krb5_crypto_init() failed\n"));
 		return NT_STATUS_FOOBAR;
@@ -65,10 +66,14 @@ static NTSTATUS kerberos_pac_checksum(DATA_BLOB pac_data,
 					   pac_data.length,
 					   &cksum);
 		if (!ret) {
-			DEBUG(0,("PAC Verified: keyusage: %d\n", keyusage));
+			DEBUG(0, ("PAC Verified: keyusage: %d\n", keyusage));
 			break;
+		} else {
+			DEBUG(2, ("PAC Verification failed: %s\n", 
+				  smb_get_krb5_error_message(smb_krb5_context->krb5_context, ret, mem_ctx)));
 		}
 	}
+
 	krb5_crypto_destroy(smb_krb5_context->krb5_context, crypto);
 
 	if (ret) {
@@ -80,23 +85,22 @@ static NTSTATUS kerberos_pac_checksum(DATA_BLOB pac_data,
 
 	return NT_STATUS_OK;
 }
-#endif
 
-NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
+ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 			     struct PAC_LOGON_INFO **logon_info_out,
 			     DATA_BLOB blob,
-			     struct smb_krb5_context *smb_krb5_context)
+			     struct smb_krb5_context *smb_krb5_context,
+			     krb5_keyblock *keyblock)
 {
 	NTSTATUS status;
 	struct PAC_SIGNATURE_DATA srv_sig;
-	struct PAC_SIGNATURE_DATA *srv_sig_ptr;
+	struct PAC_SIGNATURE_DATA *srv_sig_ptr = NULL;
 	struct PAC_SIGNATURE_DATA kdc_sig;
-	struct PAC_SIGNATURE_DATA *kdc_sig_ptr;
+	struct PAC_SIGNATURE_DATA *kdc_sig_ptr = NULL;
 	struct PAC_LOGON_INFO *logon_info = NULL;
 	struct PAC_DATA pac_data;
-#ifdef KRB5_DO_VERIFY_PAC
-	DATA_BLOB tmp_blob = data_blob(NULL, 0);
-#endif
+	DATA_BLOB modified_pac_blob = data_blob_talloc(mem_ctx, blob.data, blob.length);
+	DATA_BLOB tmp_blob;
 	int i;
 
 	status = ndr_pull_struct_blob(&blob, mem_ctx, &pac_data,
@@ -156,39 +160,11 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 		DEBUG(0,("PAC no kdc_key\n"));
 		return NT_STATUS_FOOBAR;
 	}
-#ifdef KRB5_DO_VERIFY_PAC
-	/* clear the kdc_key */
-/*	memset((void *)kdc_sig_ptr , '\0', sizeof(*kdc_sig_ptr));*/
 
-	status = ndr_push_struct_blob(&tmp_blob, mem_ctx, &pac_data,
-					      (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	status = ndr_pull_struct_blob(&tmp_blob, mem_ctx, &pac_data,
-					(ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("can't parse the PAC\n"));
-		return status;
-	}
-	/*NDR_PRINT_DEBUG(PAC_DATA, &pac_data);*/
+	memset(&modified_pac_blob.data[modified_pac_blob.length - 48],
+	       '\0', 48);
 
-	/* verify by kdc_key */
-	status = kerberos_pac_checksum(tmp_blob, &kdc_sig, smb_krb5_context, 0);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/* clear the service_key */
-/*	memset((void *)srv_sig_ptr , '\0', sizeof(*srv_sig_ptr));*/
-
-	status = ndr_push_struct_blob(&tmp_blob, mem_ctx, &pac_data,
-					      (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	status = ndr_pull_struct_blob(&tmp_blob, mem_ctx, &pac_data,
+	status = ndr_pull_struct_blob(&modified_pac_blob, mem_ctx, &pac_data,
 					(ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("can't parse the PAC\n"));
@@ -197,12 +173,13 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 	NDR_PRINT_DEBUG(PAC_DATA, &pac_data);
 
 	/* verify by servie_key */
-	status = kerberos_pac_checksum(tmp_blob, &srv_sig, smb_krb5_context, 0);
+	status = kerberos_pac_checksum(mem_ctx, 
+				       modified_pac_blob, &srv_sig, 
+				       smb_krb5_context, keyblock, 0);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-#endif
 	DEBUG(0,("account_name: %s [%s]\n",
 		 logon_info->info3.base.account_name.string, 
 		 logon_info->info3.base.full_name.string));
