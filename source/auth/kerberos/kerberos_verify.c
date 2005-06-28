@@ -34,7 +34,7 @@
 
 #ifdef HAVE_KRB5
 
-static DATA_BLOB unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data)
+DATA_BLOB unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data)
 {
 	DATA_BLOB out;
 	DATA_BLOB pac_contents = data_blob(NULL, 0);

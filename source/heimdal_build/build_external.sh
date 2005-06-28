@@ -60,19 +60,6 @@ build_bison() {
     cd $TOP || exit 1
 }
 
-build_awk() {
-    f=$1
-    dir=`dirname $f`
-    file=`basename $f`
-    base=`basename $f .h.in`
-    echo Building $f
-    cd $dir && $AWK -f $base.awk $base.h.in > gen.c
-    $CC -I$TOP/heimdal_build -I$TOP -Iheimdal/lib/roken -DHAVE_CONFIG_H -o gen gen.c || exit 1
-    ./gen > $base.h || exit 1
-    rm -f gen gen.c
-    cd $TOP || exit 1
-}
-
 build_cp() {
     f=$1
     dir=`dirname $f`
@@ -89,7 +76,6 @@ build_lex heimdal/lib/asn1/lex.l
 build_lex heimdal/lib/com_err/lex.l
 build_bison heimdal/lib/com_err/parse.y
 build_bison heimdal/lib/asn1/parse.y
-build_awk heimdal/lib/roken/roken.h.in
 
 make bin/asn1_compile || exit 1
 build_asn1 heimdal/lib/hdb/hdb.asn1 hdb_asn1
