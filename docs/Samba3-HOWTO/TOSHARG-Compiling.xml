@@ -8,6 +8,7 @@
 	
 	<pubdate> 22 May 2001 </pubdate>
 	<pubdate> 18 March 2003 </pubdate>
+	<pubdate> June 2005 </pubdate>
 </chapterinfo>
 
 <title>How to Compile Samba</title>
@@ -73,12 +74,11 @@ Use the URL
 <title>Access via Subversion</title>
 
 <para>
-You can also access the source code via a 
-normal Subversion client. This gives you much more control over what you can 
-do with the repository and allows you to check out whole source trees 
-and keep them up to date via normal Subversion commands. This is the 
-preferred method of access if you are a developer and not
-just a casual browser.
+<indexterm><primary>Subversion</primary></indexterm>
+You can also access the source code via a normal Subversion client. This gives you much more control over what
+you can do with the repository and allows you to check out whole source trees and keep them up to date via
+normal Subversion commands. This is the preferred method of access if you are a developer and not just a
+casual browser.
 </para>
 
 <para>In order to be able to download the Samba sources off Subversion, you need 
@@ -103,10 +103,9 @@ To gain access via anonymous Subversion, use the following steps.
 	<step>
 	<para>
 	Run the command 
-	</para>
-	
-	<para>
+	<screen>
 	<userinput>svn co svn://svnanon.samba.org/samba/trunk samba</userinput>.
+	</screen>
 	</para>
 	
 	<para>
@@ -116,26 +115,22 @@ To gain access via anonymous Subversion, use the following steps.
 	</para>
 	
 	<para>
-		Subversion branches other then trunk can be obtained by adding branches/BRANCH_NAME
-	to the URL you check out. A list of branch names 
-	can be found on the <quote>Development</quote> page of the Samba Web site. A common
-	request is to obtain the latest 3.0 release code. This could be done by 
-	using the following command:
-	</para>
-	
-	<para>
-		<userinput>svn co svn://svnanon.samba.org/samba/branches/SAMBA_3_0 samba_3</userinput>.
+	Subversion branches other then trunk can be obtained by adding branches/BRANCH_NAME to the URL you check
+	out. A list of branch names can be found on the <quote>Development</quote> page of the Samba Web site. A
+	common request is to obtain the latest 3.0 release code. This could be done by using the following command:
+	<screen>
+	<userinput>svn co svn://svnanon.samba.org/samba/branches/SAMBA_3_0 samba_3</userinput>.
+	</screen>
 	</para>
 	</step>
 
 	<step>
 	<para>
-	Whenever you want to merge in the latest code changes, use 
-	the following command from within the Samba directory: 
-	</para>
-	
-	<para>
+	Whenever you want to merge in the latest code changes, use the following command from within the Samba
+	directory:
+	<screen>
 	<userinput>svn update</userinput>
+	</screen>
 	</para>
 	</step>
 </procedure>
@@ -172,6 +167,7 @@ To gain access via anonymous Subversion, use the following steps.
 
 <para>
 <indexterm><primary>GPG</primary></indexterm>
+<indexterm><primary>PGP</primary></indexterm>
 It is strongly recommended that you verify the PGP signature for any source file before
 installing it. Even if you're not downloading from a mirror site, verifying PGP signatures
 should be a standard reflex. Many people today use the GNU GPG tool set in place of PGP.
@@ -193,30 +189,24 @@ With that said, go ahead and download the following files:
 <indexterm><primary>PGP</primary></indexterm>
 The first file is the PGP signature for the Samba source file; the other is the Samba public
 PGP key itself. Import the public PGP key with:
-</para>
-
 <screen>
 &prompt;<userinput>gpg --import samba-pubkey.asc</userinput>
 </screen>
-
-<para>
 and verify the Samba source code integrity with:
-</para>
-
 <screen>
 &prompt;<userinput>gzip -d samba-3.0.20.tar.gz</userinput>
 &prompt;<userinput>gpg --verify samba-3.0.20.tar.asc</userinput>
 </screen>
+</para>
 
 <para>
 If you receive a message like, <quote>Good signature from Samba Distribution Verification Key...,</quote>
 then all is well. The warnings about trust relationships can be ignored. An
 example of what you would not want to see would be:
+<screen>
+gpg: BAD signature from <quote>Samba Distribution Verification Key</quote>
+</screen>
 </para>
-
-<para><screen>
-     gpg: BAD signature from <quote>Samba Distribution Verification Key</quote>
-</screen></para>
 
 </sect1>
 
@@ -225,6 +215,7 @@ example of what you would not want to see would be:
 	
 	<para>
 	<indexterm><primary>autogen.sh</primary></indexterm>
+<indexterm><primary>configure</primary></indexterm>
 	After the source tarball has been unpacked, the next step involves
 	configuration to match Samba to your operating system platform.
 	If your source directory does not contain the <command>configure</command> script,
@@ -441,6 +432,7 @@ netbios-ns dgram udp wait root /usr/local/samba/bin/nmbd nmbd
 </programlisting>
 	</para>
 
+<indexterm><primary>/etc/inetd.conf</primary></indexterm>
 	<para>
 	The exact syntax of <filename>/etc/inetd.conf</filename> 
 	varies between UNIXes. Look at the other entries in inetd.conf 
@@ -479,6 +471,7 @@ netbios-ns dgram udp wait root /usr/local/samba/bin/nmbd nmbd
 	<para>
 	Restart <application>inetd</application>, perhaps just send it a HUP,
 	like this:
+<indexterm><primary>killall</primary></indexterm>
 <screen>
 &rootprompt;<userinput>killall -HUP inetd</userinput>
 </screen>
@@ -491,6 +484,7 @@ netbios-ns dgram udp wait root /usr/local/samba/bin/nmbd nmbd
 		
 	<para>
 	<indexterm><primary>daemon</primary></indexterm>
+<indexterm><primary>startsmb</primary></indexterm>
 	To start the server as a daemon, you should create a script something
 	like this one, perhaps calling it <filename>startsmb</filename>.
 	</para>
@@ -498,7 +492,7 @@ netbios-ns dgram udp wait root /usr/local/samba/bin/nmbd nmbd
 <para><programlisting>
 #!/bin/sh
 /usr/local/samba/bin/smbd -D 
-/usr/local/samba/bin/winbindd
+/usr/local/samba/bin/winbindd -B
 /usr/local/samba/bin/nmbd -D 
 </programlisting></para>
 
