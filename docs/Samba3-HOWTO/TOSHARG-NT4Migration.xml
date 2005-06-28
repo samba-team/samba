@@ -9,6 +9,8 @@
 <title>Migration from NT4 PDC to Samba-3 PDC</title>
 
 <para>
+<indexterm><primary>migrate</primary></indexterm>
+<indexterm><primary>domain control</primary></indexterm>
 This is a rough guide to assist those wishing to migrate from NT4 domain control to
 Samba-3-based domain control.
 </para>
@@ -17,12 +19,14 @@ Samba-3-based domain control.
 <title>Planning and Getting Started</title>
 
 <para>
+<indexterm><primary>show-stopper-type</primary></indexterm>
 In the IT world there is often a saying that all problems are encountered because of
 poor planning. The corollary to this saying is that not all problems can be anticipated
 and planned for. Then again, good planning will anticipate most show-stopper-type situations.
 </para>
 
 <para>
+<indexterm><primary>migration plan</primary></indexterm>
 Those wishing to migrate from MS Windows NT4 domain control to a Samba-3 domain control
 environment would do well to develop a detailed migration plan. So here are a few pointers to
 help migration get underway.
@@ -32,6 +36,7 @@ help migration get underway.
 <title>Objectives</title>
 
 <para>
+<indexterm><primary>migration process</primary></indexterm>
 The key objective for most organizations is to make the migration from MS Windows NT4 
 to Samba-3 domain control as painless as possible. One of the challenges you may experience
 in your migration process may well be convincing management that the new environment
@@ -40,10 +45,17 @@ pressure to return to a Microsoft-based platform solution at the first sign of t
 </para>
 
 <para>
+<indexterm><primary>change motivations</primary></indexterm>
 Before attempting a migration to a Samba-3-controlled network, make every possible effort to
 gain all-round commitment to the change. Know precisely <emphasis>why</emphasis> the change
 is important for the organization. Possible motivations to make a change include:
 </para>
+
+<indexterm><primary>manageability</primary></indexterm>
+<indexterm><primary>functionality</primary></indexterm>
+<indexterm><primary>operating costs</primary></indexterm>
+<indexterm><primary>support exposure</primary></indexterm>
+<indexterm><primary>licensing</primary></indexterm>
 
 <itemizedlist>
     <listitem><para>Improve network manageability.</para></listitem>
@@ -55,6 +67,12 @@ is important for the organization. Possible motivations to make a change include
 </itemizedlist>
 
 <para>
+<indexterm><primary>alternative solution</primary></indexterm>
+<indexterm><primary>advantages</primary></indexterm>
+<indexterm><primary>core values</primary></indexterm>
+<indexterm><primary>migration</primary></indexterm>
+<indexterm><primary>ADS</primary></indexterm>
+<indexterm><primary>without ADS</primary></indexterm>
 Make sure everyone knows that Samba-3 is not MS Windows NT4. Samba-3 offers
 an alternative solution that is both different from MS Windows NT4 and offers 
 advantages compared with it. Gain recognition that Samba-3 lacks many of the
@@ -65,6 +83,12 @@ MS Windows 2000 and beyond (with or without Active Directory services).
 <para>
 What are the features that Samba-3 cannot provide?
 </para>
+
+<indexterm><primary>Active Directory Server</primary></indexterm>
+<indexterm><primary>Group Policy Objects</primary></indexterm>
+<indexterm><primary>Machine Policy Objects</primary></indexterm>
+<indexterm><primary>Logon Scripts</primary></indexterm>
+<indexterm><primary>Access Controls</primary></indexterm>
 
 <itemizedlist>
 	<listitem><para>Active Directory Server.</para></listitem>
@@ -78,6 +102,23 @@ What are the features that Samba-3 cannot provide?
 The features that Samba-3 does provide and that may be of compelling interest to your site
 include:
 </para>
+
+<indexterm><primary>ownership cost</primary></indexterm>
+<indexterm><primary>Global support</primary></indexterm>
+<indexterm><primary>Dynamic SMB servers</primary></indexterm>
+<indexterm><primary>on-the-fly logon scripts</primary></indexterm>
+<indexterm><primary>on-the-fly policy files</primary></indexterm>
+<indexterm><primary>stability</primary></indexterm>
+<indexterm><primary>reliability</primary></indexterm>
+<indexterm><primary>performance</primary></indexterm>
+<indexterm><primary>availability</primary></indexterm>
+<indexterm><primary>Manageability</primary></indexterm>
+<indexterm><primary>backend authentication</primary></indexterm>
+<indexterm><primary>tdbsam</primary></indexterm>
+<indexterm><primary>ldapsam</primary></indexterm>
+<indexterm><primary>mysqlsam</primary></indexterm>
+<indexterm><primary>single-sign-on</primary></indexterm>
+<indexterm><primary>distribute authentication systems</primary></indexterm>
 
 <itemizedlist>
 	<listitem><para>Lower cost of ownership.</para></listitem>
@@ -93,6 +134,7 @@ include:
 </itemizedlist>
 
 <para>
+<indexterm><primary>successful migration</primary></indexterm>
 Before migrating a network from MS Windows NT4 to Samba-3, consider all necessary factors. Users
 should be educated about changes they may experience so the change will be a welcome one
 and not become an obstacle to the work they need to do. The following sections explain factors that will 
@@ -103,6 +145,22 @@ help ensure a successful migration.
 <title>Domain Layout</title>
 
 <para>
+<indexterm><primary>domain controller</primary></indexterm>
+<indexterm><primary>backup domain controller</primary></indexterm>
+<indexterm><primary>secondary controller</primary></indexterm>
+<indexterm><primary>domain member</primary></indexterm>
+<indexterm><primary>standalone server</primary></indexterm>
+<indexterm><primary>network security</primary></indexterm>
+<indexterm><primary>domain context</primary></indexterm>
+<indexterm><primary>PDC</primary></indexterm>
+<indexterm><primary>BDCs</primary></indexterm>
+<indexterm><primary>LDAP</primary></indexterm>
+<indexterm><primary>authentication backend</primary></indexterm>
+<indexterm><primary>complex organization</primary></indexterm>
+<indexterm><primary>LDAP database</primary></indexterm>
+<indexterm><primary>master server</primary></indexterm>
+<indexterm><primary>slave servers</primary></indexterm>
+<indexterm><primary>multiple domains</primary></indexterm>
 Samba-3 can be configured as a domain controller, a backup domain controller (probably best called
 a secondary controller), a domain member, or a standalone server. The Windows network security
 domain context should be sized and scoped before implementation. Particular attention needs to be
@@ -114,19 +172,24 @@ a master server and multiple slave servers) that can simultaneously serve multip
 </para>
 
 <para>
+<indexterm><primary>network bandwidth</primary></indexterm>
 From a design perspective, the number of users per server as well as the number of servers per
 domain should be scaled taking into consideration server capacity and network bandwidth.
 </para>
 
 <para>
+<indexterm><primary>network segment</primary></indexterm>
+<indexterm><primary>multiple network segments</primary></indexterm>
+<indexterm><primary>domain controller</primary></indexterm>
+<indexterm><primary>ping</primary></indexterm>
+<indexterm><primary>BDC</primary></indexterm>
+<indexterm><primary>remote segment</primary></indexterm>
 A physical network segment may house several domains. Each may span multiple network segments.
 Where domains span routed network segments, consider and test the performance implications of
 the design and layout of a network. A centrally located domain controller that is designed to
 serve multiple routed network segments may result in severe performance problems. Check the
-response time (ping timing) between the remote segment and the PDC. If
-it's long (more than 100 ms),
-locate a BDC on the remote segment to serve as the local authentication and
-access control server.
+response time (ping timing) between the remote segment and the PDC. If it's long (more than 100 ms),
+locate a BDC on the remote segment to serve as the local authentication and access control server.
 </para>
 </sect3>
 
@@ -134,6 +197,8 @@ access control server.
 <title>Server Share and Directory Layout</title>
 
 <para>
+<indexterm><primary>Simplicity is king</primary></indexterm>
+<indexterm><primary>well-controlled network</primary></indexterm>
 There are cardinal rules to effective network design that cannot be broken with impunity.
 The most important rule: Simplicity is king in every well-controlled network. Every part of
 the infrastructure must be managed; the more complex it is, the greater will be the demand
@@ -141,6 +206,12 @@ of keeping systems secure and functional.
 </para>
 
 <para>
+<indexterm><primary>disk space</primary></indexterm>
+<indexterm><primary>backed up</primary></indexterm>
+<indexterm><primary>tape</primary></indexterm>
+<indexterm><primary>backup</primary></indexterm>
+<indexterm><primary>validate every backup</primary></indexterm>
+<indexterm><primary>disaster recovery</primary></indexterm>
 Keep in mind the nature of how data must be shared. Physical disk space layout should be considered
 carefully. Some data must be backed up. The simpler the disk layout, the easier it will be to
 keep track of backup needs. Identify what backup media will meet your needs; consider backup to tape,
@@ -150,12 +221,20 @@ backup, test, and validate every backup; create a disaster recovery plan and pro
 </para>
 
 <para>
+<indexterm><primary>access control needs</primary></indexterm>
+<indexterm><primary>group permissions</primary></indexterm>
+<indexterm><primary>sticky bit</primary></indexterm>
 Users should be grouped according to data access control needs. File and directory access 
 is best controlled via group permissions, and the use of the <quote>sticky bit</quote> on group-controlled
 directories may substantially avoid file access complaints from Samba share users.
 </para>
 
 <para>
+<indexterm><primary>network administrators</primary></indexterm>
+<indexterm><primary>document design</primary></indexterm>
+<indexterm><primary>simple access controls</primary></indexterm>
+<indexterm><primary>obtuse complexity</primary></indexterm>
+<indexterm><primary>document design</primary></indexterm>
 Inexperienced  network administrators often attempt elaborate techniques to set access
 controls on files, directories, shares, as well as in share definitions.
 Keep your design and implementation simple and document your design extensively. Have others
@@ -171,6 +250,7 @@ complexity.
 <title>Logon Scripts</title>
 
 <para>
+<indexterm><primary>Logon scripts</primary></indexterm>
 Logon scripts can help to ensure that all users gain the share and printer connections they need.
 </para>
 
@@ -182,6 +262,7 @@ the <smbconfoption name="root preexec"/> parameters to the <smbconfsection name=
 </para>
 
 <para>
+<indexterm><primary>kixstart</primary></indexterm>
 Some sites prefer to use a tool such as <command>kixstart</command> to establish a controlled
 user environment. In any case, you may wish to do a Google search for logon script process controls.
 In particular, you may wish to explore the use of the Microsoft Knowledge Base article KB189105 that
@@ -200,6 +281,7 @@ Management.
 
 <para>
 <indexterm><primary>SID</primary></indexterm>
+<indexterm><primary>NTuser.DAT</primary></indexterm>
 Profiles may also be managed using the Samba-3 tool <command>profiles</command>. This tool allows the MS
 Windows NT-style security identifiers (SIDs) that are stored inside the profile
 <filename>NTuser.DAT</filename> file to be changed to the SID of the Samba-3 domain.
@@ -210,6 +292,10 @@ Windows NT-style security identifiers (SIDs) that are stored inside the profile
 <title>User and Group Accounts</title>
 
 <para>
+<indexterm><primary>migrate account settings</primary></indexterm>
+<indexterm><primary>migrate user</primary></indexterm>
+<indexterm><primary>migrate group</primary></indexterm>
+<indexterm><primary>map</primary></indexterm>
 It is possible to migrate all account settings from an MS Windows NT4 domain to Samba-3. Before
 attempting to migrate user and group accounts, you are STRONGLY advised to create in Samba-3 the
 groups that are present on the MS Windows NT4 domain <emphasis>AND</emphasis> to map them to
@@ -233,6 +319,9 @@ The approximate migration process is described below.
 	</para></listitem>
 
 	<listitem><para>
+<indexterm><primary>domain controller</primary></indexterm>
+<indexterm><primary>netlogon share</primary></indexterm>
+<indexterm><primary>BDC</primary></indexterm>
 	Samba-3 is set up as a domain controller with netlogon share, profile share, and so on. Configure the &smb.conf; file
 	to function as a BDC: <parameter>domain master = No</parameter>.
 	</para></listitem>
@@ -248,16 +337,18 @@ The approximate migration process is described below.
 	</para></step>
 
 	<step><para>
-	<indexterm><primary>net</primary><secondary>rpc</secondary></indexterm>
+	<indexterm><primary>net</primary><secondary>rpc</secondary><tertiary>join</tertiary></indexterm>
 	<userinput>net rpc join -S <replaceable>NT4PDC</replaceable> -w <replaceable>DOMNAME</replaceable> -U
 	Administrator%<replaceable>passwd</replaceable></userinput>
 	</para></step>
 
 	<step><para>
+<indexterm><primary>net</primary><secondary>rpc</secondary><tertiary>vampire</tertiary></indexterm>
 	<userinput>net rpc vampire -S <replaceable>NT4PDC</replaceable> -U 
 	administrator%<replaceable>passwd</replaceable></userinput>
 	</para></step>
 
+<indexterm><primary>pdbedit</primary></indexterm>
 	<step><para><userinput>pdbedit -L</userinput></para>
 		<para>Note: Did the users migrate?</para>
 	</step>
@@ -277,9 +368,9 @@ net groupmap modify ntgroup="Domain Users"  unixgroup=users
 net groupmap modify ntgroup="Domain Guests" unixgroup=nobody
 
 # Now for our added domain global groups
-net groupmap add ntgroup="Designers" unixgroup=designers type=d rid=3200
-net groupmap add ntgroup="Engineers" unixgroup=engineers type=d rid=3210
-net groupmap add ntgroup="QA Team"   unixgroup=qateam    type=d rid=3220
+net groupmap add ntgroup="Designers" unixgroup=designers type=d
+net groupmap add ntgroup="Engineers" unixgroup=engineers type=d
+net groupmap add ntgroup="QA Team"   unixgroup=qateam    type=d
 </programlisting>
 	</para></step>
 
@@ -435,6 +526,12 @@ being contemplated.
 		<para>
 		Samba permits Access Control points to be set:
 		</para>
+
+<indexterm><primary>share ACLs</primary></indexterm>
+<indexterm><primary>UNIX permissions</primary></indexterm>
+<indexterm><primary>POSIX ACLS</primary></indexterm>
+<indexterm><primary>share stanza controls</primary></indexterm>
+
 		<itemizedlist>
 			<listitem><para>On the share itself &smbmdash; using share ACLs.</para></listitem>
 			<listitem><para>On the file system &smbmdash; using UNIX permissions on files and directories.</para>
@@ -445,9 +542,14 @@ being contemplated.
 
         <varlistentry><term>Policies (migrate or create new ones)</term><listitem>
 		<para>
+<indexterm><primary>policies</primary></indexterm>
+<indexterm><primary>NTConfig.POL</primary></indexterm>
 		Exercise great caution when making registry changes; use the right tool and be aware
 		that changes made through NT4-style <filename>NTConfig.POL</filename> files can leave
 		permanent changes.
+<indexterm><primary>Group Policy Editor</primary></indexterm>
+<indexterm><primary>tattoo effect</primary></indexterm>
+<indexterm><primary>permanent changes</primary></indexterm>
 		</para>
                 <itemizedlist>
                         <listitem><para>Using Group Policy Editor (NT4).</para></listitem>
@@ -457,7 +559,9 @@ being contemplated.
         </varlistentry>
 
         <varlistentry><term>User and Group Profiles</term><listitem>
-                <para>
+		<para>
+<indexterm><primary>NTUser.DAT</primary></indexterm>
+<indexterm><primary>SIDs</primary></indexterm>
 		Platform-specific, so use platform tool to change from a local to a roaming profile.
 		Can use new profiles tool to change SIDs (<filename>NTUser.DAT</filename>).
 		</para>
