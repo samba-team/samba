@@ -102,6 +102,7 @@ static BOOL add_fd_to_close_entry(files_struct *fsp)
 	char *tp;
 
 	dbuf.dptr = NULL;
+	dbuf.dsize = 0;
 
 	dbuf = tdb_fetch(posix_pending_close_tdb, kbuf);
 
@@ -330,7 +331,7 @@ static BOOL delete_posix_lock_entry_by_index(files_struct *fsp, size_t entry)
 		tdb_delete(posix_lock_tdb, kbuf);
 	} else {
 		if (entry < count-1) {
-			memmove(&locks[entry], &locks[entry+1], sizeof(*locks)*((count-1) - entry));
+			memmove(&locks[entry], &locks[entry+1], sizeof(struct posix_lock)*((count-1) - entry));
 		}
 		dbuf.dsize -= sizeof(struct posix_lock);
 		tdb_store(posix_lock_tdb, kbuf, dbuf, TDB_REPLACE);
