@@ -1,3 +1,11 @@
+2005-06-28  Luke Howard  <lukeh@padl.com>
+
+	* kcm/connect.c: fix arguments to kcm_log() when reporting
+	  sendmsg() error
+
+	* kcm/connect.c: don't send socket address in msghdr, it
+	  returns an already connected error on Linux
+
 2005-06-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/kaserver.c: log the kaserver requests, avoid shadowing
