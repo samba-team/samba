@@ -381,6 +381,19 @@ warnerr(int doerrno, const char *fmt, va_list ap)
 void * ROKEN_LIB_FUNCTION
 rk_realloc(void *, size_t);
 
+struct rk_strpool;
+
+char * ROKEN_LIB_FUNCTION
+rk_strpoolcollect(struct rk_strpool *);
+
+struct rk_strpool * ROKEN_LIB_FUNCTION
+rk_strpoolprintf(struct rk_strpool *, const char *, ...)
+    __attribute__ ((format (printf, 1, 0)));;
+
+void ROKEN_LIB_FUNCTION
+rk_strpoolfree(struct rk_strpool *);
+
+
 ROKEN_CPP_END
 
 #endif /* __ROKEN_COMMON_H__ */
