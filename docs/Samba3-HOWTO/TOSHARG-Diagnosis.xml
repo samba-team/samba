@@ -14,6 +14,7 @@
 <title>Introduction</title>
 
 <para>
+<indexterm><primary>validate</primary></indexterm>
 This file contains a list of tests you can perform to validate your
 Samba server. It also tells you what the likely cause of the problem
 is if it fails any one of these steps. If it passes all these tests,
@@ -71,6 +72,9 @@ Some commands shown did not exist in earlier versions.
 </para></note>
 
 <para>
+<indexterm><primary>error messages</primary></indexterm>
+<indexterm><primary>name resolution</primary></indexterm>
+<indexterm><primary>/etc/resolv.conf</primary></indexterm>
 Please pay attention to the error messages you receive. If any error message
 reports that your server is being unfriendly, you should first check that your
 IP name resolution is correctly set up. Make sure your <filename>/etc/resolv.conf</filename>
@@ -78,13 +82,21 @@ file points to name servers that really do exist.
 </para>
 
 <para>
+<indexterm><primary>DNS server access</primary></indexterm>
+<indexterm><primary>name resolution</primary></indexterm>
+<indexterm><primary>dns proxy</primary></indexterm>
+<indexterm><primary>testparm</primary></indexterm>
 Also, if you do not have DNS server access for name resolution, please check
-that the settings for your &smb.conf; file results in <command>dns proxy = no</command>. The
+that the settings for your &smb.conf; file results in <parameter>dns proxy = no</parameter>. The
 best way to check this is with <command>testparm smb.conf</command>.
 </para>
 
 
 <para>
+<indexterm><primary>log files</primary></indexterm>
+<indexterm><primary>tail</primary></indexterm>
+<indexterm><primary>/usr/local/samba/var</primary></indexterm>
+<indexterm><primary>/var/log/samba</primary></indexterm>
 <indexterm><primary>log files</primary><secondary>monitoring</secondary></indexterm>
 It is helpful to monitor the log files during testing by using the
 <command>tail -F log_file_name</command> in a separate
@@ -117,6 +129,8 @@ configuration file is faulty.
 </para>
 
 <note><para>
+<indexterm><primary>/etc/samba</primary></indexterm>
+<indexterm><primary>/usr/local/samba/lib</primary></indexterm>
 Your &smb.conf; file may be located in <filename>/etc/samba</filename>
 or in <filename>/usr/local/samba/lib</filename>.
 </para></note>
@@ -124,6 +138,7 @@ or in <filename>/usr/local/samba/lib</filename>.
 
 <step performance="required">
 <para>
+<indexterm><primary>ping</primary></indexterm>
 Run the command <command>ping BIGSERVER</command> from the PC and
 <command>ping ACLIENT</command> from the UNIX box. If you do not get a valid response,
 then your TCP/IP software is not correctly installed. 
@@ -134,13 +149,20 @@ You will need to start a <quote>DOS prompt</quote> window on the PC to run ping.
 </para>
 
 <para>
-If you get a message saying <quote><errorname>host not found</errorname></quote> or a similar message, then your DNS
-software or <filename>/etc/hosts</filename> file is not correctly set up.
-It is possible to run Samba without DNS entries for the server and client, but it is assumed
-you do have correct entries for the remainder of these tests. 
+<indexterm><primary>/etc/hosts</primary></indexterm>
+<indexterm><primary>DNS</primary></indexterm>
+<indexterm><primary>/etc/resolv.conf</primary></indexterm>
+If you get a message saying <quote><errorname>host not found</errorname></quote> or a similar message, then
+your DNS software or <filename>/etc/hosts</filename> file is not correctly set up.  If using DNS, check that
+the <filename>/etc/resolv.conf</filename> has correct, current, entries in it. It is possible to run
+Samba without DNS entries for the server and client, but it is assumed you do have correct entries for the
+remainder of these tests.
 </para>
 
 <para>
+<indexterm><primary>firewall</primary></indexterm>
+<indexterm><primary>iptables</primary></indexterm>
+<indexterm><primary>ipchains</primary></indexterm>
 Another reason why ping might fail is if your host is running firewall 
 software. You will need to relax the rules to let in the workstation
 in question, perhaps by allowing access from another subnet (on Linux
@@ -156,6 +178,8 @@ This is a common problem that is often overlooked.
 </note>
 
 <para>
+<indexterm><primary>iptables</primary></indexterm>
+<indexterm><primary>ipchains</primary></indexterm>
 If you wish to check what firewall rules may be present in a system under test, simply run
 <command>iptables -L -v</command>, or if <parameter>ipchains</parameter>-based firewall rules are in use,
 <command>ipchains -L -v</command>.
@@ -198,6 +222,12 @@ on the UNIX box. You should get back a list of available shares.
 </para>
 
 <para>
+<indexterm><primary>bad password</primary></indexterm>
+<indexterm><primary>hosts allow</primary></indexterm>
+<indexterm><primary>hosts deny</primary></indexterm>
+<indexterm><primary>valid users</primary></indexterm>
+<indexterm><primary>guest account</primary></indexterm>
+<indexterm><primary>invalid users</primary></indexterm>
 If you get an error message containing the string <quote>bad password</quote>, then
 you probably have either an incorrect <parameter>hosts allow</parameter>, 
 <parameter>hosts deny</parameter>, or <parameter>valid users</parameter> line in your 
@@ -207,7 +237,8 @@ temporarily remove any <parameter>hosts allow</parameter>, <parameter>hosts deny
 </para>
 
 <para>
-If you get a message <quote><errorname>connection refused</errorname></quote> response, then the <command>smbd</command> server may
+<indexterm><primary>inetd.conf</primary></indexterm>
+If you get a message <literal>connection refused</literal> response, then the <command>smbd</command> server may
 not be running. If you installed it in <filename>inetd.conf</filename>, then you probably edited
 that file incorrectly. If you installed it as a daemon, then check that
 it is running and check that the netbios-ssn port is in a LISTEN
@@ -224,7 +255,7 @@ the network super daemon.
 </para></note>
 
 <para>
-If you get a message saying <quote><errorname>session request failed,</errorname></quote> the server refused the
+If you get a message saying <literal>session request failed,</literal> the server refused the
 connection. If it says <quote>Your server software is being unfriendly,</quote> then
 it's probably because you have invalid command line parameters to &smbd;,
 or a similar fatal problem with the initial startup of &smbd;. Also
@@ -252,6 +283,7 @@ the &smb.conf; file entries as shown in <link linkend="modif1">the next example<
 </example>
 
 <para>
+<indexterm><primary>loopback adapter</primary></indexterm>
 In <link linkend="modif1">Configuration for Allowing Connections Only from a Certain Subnet</link>, no
 allowance has been made for any session requests that will automatically translate to the loopback adapter
 address 127.0.0.1.  To solve this problem, change these lines as shown in <link linkend="modif2">the following
@@ -278,6 +310,11 @@ lot of frustration!
 </para>
 
 <para>
+<indexterm><primary>subnet mask</primary></indexterm>
+<indexterm><primary>broadcast address</primary></indexterm>
+<indexterm><primary>log.nmbd</primary></indexterm>
+<indexterm><primary>network interface</primary></indexterm>
+<indexterm><primary>IP address</primary></indexterm>
 And yet another possible cause for failure of this test is when the subnet mask and/or broadcast address
 settings are incorrect. Please check that the network interface IP address/broadcast address/subnet mask
 settings are correct and that Samba has correctly noted these in the <filename>log.nmbd</filename> file.
@@ -288,12 +325,16 @@ settings are correct and that Samba has correctly noted these in the <filename>l
 <step performance="required">
 
 <para>
+<indexterm><primary>nmblookup</primary></indexterm>
 Run the command <command>nmblookup -B BIGSERVER __SAMBA__</command>.
 You should get back the IP address of your Samba server.
 </para>
 
 <para>
-If you do not, then nmbd is incorrectly installed. Check your <filename>inetd.conf</filename>
+<indexterm><primary>inetd.conf</primary></indexterm>
+<indexterm><primary>nmbd</primary></indexterm>
+<indexterm><primary>port 137</primary></indexterm>
+If you do not, then &nmbd; is incorrectly installed. Check your <filename>inetd.conf</filename>
 if you run it from there, or that the daemon is running and listening to UDP port 137.
 </para>
 
@@ -309,6 +350,7 @@ inetd.
 <step performance="required">
 
 <para>
+<indexterm><primary>nmblookup</primary></indexterm>
 Run the command <command>nmblookup -B ACLIENT `*'</command>.
 </para>
 
@@ -336,16 +378,15 @@ This time we are trying the same as the previous test but are trying
 it via a broadcast to the default broadcast address. A number of
 NetBIOS/TCP/IP hosts on the network should respond, although Samba may
 not catch all of the responses in the short time it listens. You
-should see the <quote><errorname>got a positive name query response</errorname></quote>
+should see the <literal>got a positive name query response</literal>
 messages from several hosts.
 </para>
 
 <para>
-If this does not give a result similar to the previous test, then
-nmblookup isn't correctly getting your broadcast address through its
-automatic mechanism. In this case you should experiment with the
-<smbconfoption name="interfaces"/> option in &smb.conf; to manually configure your IP
-address, broadcast, and netmask. 
+<indexterm><primary>nmblookup</primary></indexterm>
+If this does not give a result similar to the previous test, then nmblookup isn't correctly getting your
+broadcast address through its automatic mechanism. In this case you should experiment with the <smbconfoption
+name="interfaces"/> option in &smb.conf; to manually configure your IP address, broadcast, and netmask.
 </para>
 
 <para>
@@ -422,6 +463,10 @@ If it says <quote><errorname>bad password,</errorname></quote> then the likely c
 </orderedlist>
 
 <para>
+<indexterm><primary>dir</primary></indexterm>
+<indexterm><primary>get</primary></indexterm>
+<indexterm><primary>put</primary></indexterm>
+<indexterm><primary>help command</primary></indexterm>
 Once connected, you should be able to use the commands <command>dir</command>, <command>get</command>,
 <command>put</command>, and so on. Type <command>help command</command> for instructions. You should
 especially check that the amount of free disk space shown is correct when you type <command>dir</command>.
@@ -432,13 +477,15 @@ especially check that the amount of free disk space shown is correct when you ty
 <step performance="required">
 
 <para>
+<indexterm><primary>net view</primary></indexterm>
 On the PC, type the command <command>net view \\BIGSERVER</command>. You will 
 need to do this from within a DOS prompt window. You should get back a 
 list of shares available on the server.
 </para>
 
 <para>
-If you get a message <quote><errorname>network name not found</errorname></quote> or similar error, then NetBIOS
+<indexterm><primary>nmbd</primary></indexterm>
+If you get a message <literal>network name not found</literal> or similar error, then NetBIOS
 name resolution is not working. This is usually caused by a problem in <command>nmbd</command>.
 To overcome it, you could do one of the following (you only need to choose one of them):
 </para>
