@@ -27,10 +27,8 @@
 #include "includes.h"
 #include "nterr.h"
 
-#define MAX_MSDFS_JUNCTIONS 256
-
 #undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_SRV
+#define DBGC_CLASS DBGC_MSDFS
 
 /**********************************************************************
  api_dfs_exist
