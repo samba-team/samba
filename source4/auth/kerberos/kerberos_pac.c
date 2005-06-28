@@ -42,7 +42,6 @@ static NTSTATUS kerberos_pac_checksum(TALLOC_CTX *mem_ctx,
 	krb5_error_code ret;
 	krb5_crypto crypto;
 	Checksum cksum;
-	int i;
 
 	cksum.cksumtype		= (CKSUMTYPE)sig->type;
 	cksum.checksum.length	= sizeof(sig->signature);
@@ -57,30 +56,21 @@ static NTSTATUS kerberos_pac_checksum(TALLOC_CTX *mem_ctx,
 		DEBUG(0,("krb5_crypto_init() failed\n"));
 		return NT_STATUS_FOOBAR;
 	}
-	for (i=0; i < 40; i++) {
-		keyusage = i;
-		ret = krb5_verify_checksum(smb_krb5_context->krb5_context,
-					   crypto,
-					   keyusage,
-					   pac_data.data,
-					   pac_data.length,
-					   &cksum);
-		if (!ret) {
-			DEBUG(0, ("PAC Verified: keyusage: %d\n", keyusage));
-			break;
-		} else {
-			DEBUG(2, ("PAC Verification failed: %s\n", 
-				  smb_get_krb5_error_message(smb_krb5_context->krb5_context, ret, mem_ctx)));
-		}
+	ret = krb5_verify_checksum(smb_krb5_context->krb5_context,
+				   crypto,
+				   KRB5_KU_OTHER_CKSUM,
+				   pac_data.data,
+				   pac_data.length,
+				   &cksum);
+	if (ret) {
+		DEBUG(2, ("PAC Verification failed: %s\n", 
+			  smb_get_krb5_error_message(smb_krb5_context->krb5_context, ret, mem_ctx)));
 	}
 
 	krb5_crypto_destroy(smb_krb5_context->krb5_context, crypto);
 
 	if (ret) {
-		DEBUG(0,("NOT verifying PAC checksums yet!\n"));
-		//return NT_STATUS_LOGON_FAILURE;
-	} else {
-		DEBUG(0,("PAC checksums verified!\n"));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	return NT_STATUS_OK;
@@ -100,7 +90,6 @@ static NTSTATUS kerberos_pac_checksum(TALLOC_CTX *mem_ctx,
 	struct PAC_LOGON_INFO *logon_info = NULL;
 	struct PAC_DATA pac_data;
 	DATA_BLOB modified_pac_blob = data_blob_talloc(mem_ctx, blob.data, blob.length);
-	DATA_BLOB tmp_blob;
 	int i;
 
 	status = ndr_pull_struct_blob(&blob, mem_ctx, &pac_data,
@@ -109,7 +98,6 @@ static NTSTATUS kerberos_pac_checksum(TALLOC_CTX *mem_ctx,
 		DEBUG(0,("can't parse the PAC\n"));
 		return status;
 	}
-	NDR_PRINT_DEBUG(PAC_DATA, &pac_data);
 
 	if (pac_data.num_buffers < 3) {
 		/* we need logon_ingo, service_key and kdc_key */
@@ -161,16 +149,10 @@ static NTSTATUS kerberos_pac_checksum(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_FOOBAR;
 	}
 
-	memset(&modified_pac_blob.data[modified_pac_blob.length - 48],
-	       '\0', 48);
-
-	status = ndr_pull_struct_blob(&modified_pac_blob, mem_ctx, &pac_data,
-					(ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("can't parse the PAC\n"));
-		return status;
-	}
-	NDR_PRINT_DEBUG(PAC_DATA, &pac_data);
+	memset(&modified_pac_blob.data[modified_pac_blob.length - 20],
+	       '\0', 16);
+	memset(&modified_pac_blob.data[modified_pac_blob.length - 44],
+	       '\0', 16);
 
 	/* verify by servie_key */
 	status = kerberos_pac_checksum(mem_ctx, 
