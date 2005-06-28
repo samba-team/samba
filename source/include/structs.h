@@ -111,14 +111,11 @@ struct auth_serversupplied_info;
 struct auth_session_info;
 
 struct creds_CredentialState;
-struct ntlmssp_state;
 struct auth_methods;
 struct schannel_state;
 struct spnego_data;
 struct gensec_security;
 struct gensec_security_ops;
-typedef NTSTATUS (*gensec_password_callback)(struct gensec_security *gensec_security, TALLOC_CTX *mem_ctx, 
-					     char **password);
 struct gensec_ntlmssp_state;
 
 struct asn1_data;
@@ -263,5 +260,7 @@ struct arcfour_state;
 union libnet_SamDump;
 struct websrv_context;
 struct EspRequest;
-
+struct PAC_LOGON_INFO;
 struct kdc_server;
+struct smb_krb5_context;
+
