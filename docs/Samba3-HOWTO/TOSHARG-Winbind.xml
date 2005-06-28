@@ -121,7 +121,7 @@
 
 	<figure id="winbind_idmap">
 	<title>Winbind Idmap</title>
-	<imagefile scale="50">idmap_winbind_no_loop</imagefile>
+	<imagefile scale="45">idmap_winbind_no_loop</imagefile>
 	</figure>
 
 </sect1>
