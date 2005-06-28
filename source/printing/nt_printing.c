@@ -1659,12 +1659,11 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 		slprintf(new_name, sizeof(new_name)-1, "%s/%s", architecture, driver->driverpath);	
 		slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->driverpath);	
 		if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-			NTSTATUS status;
 			driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
 			if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 				DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 						new_name, old_name));
-				*perr = ntstatus_to_werror(status);
+				*perr = WERR_ACCESS_DENIED;
 				ver = -1;
 			}
 		} 
@@ -1675,12 +1674,11 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 			slprintf(new_name, sizeof(new_name)-1, "%s/%s", architecture, driver->datafile);	
 			slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->datafile);	
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-				NTSTATUS status;
 				driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
 				if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
-					*perr = ntstatus_to_werror(status);
+					*perr = WERR_ACCESS_DENIED;
 					ver = -1;
 				}
 			}
@@ -1693,12 +1691,11 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 			slprintf(new_name, sizeof(new_name)-1, "%s/%s", architecture, driver->configfile);	
 			slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->configfile);	
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-				NTSTATUS status;
 				driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
 				if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
-					*perr = ntstatus_to_werror(status);
+					*perr = WERR_ACCESS_DENIED;
 					ver = -1;
 				}
 			}
@@ -1712,12 +1709,11 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 			slprintf(new_name, sizeof(new_name)-1, "%s/%s", architecture, driver->helpfile);	
 			slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->helpfile);	
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-				NTSTATUS status;
 				driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
 				if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
-					*perr = ntstatus_to_werror(status);
+					*perr = WERR_ACCESS_DENIED;
 					ver = -1;
 				}
 			}
@@ -1740,12 +1736,11 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 				slprintf(new_name, sizeof(new_name)-1, "%s/%s", architecture, driver->dependentfiles[i]);	
 				slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->dependentfiles[i]);	
 				if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-					NTSTATUS status;
 					driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
 					if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 						DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 								new_name, old_name));
-						*perr = ntstatus_to_werror(status);
+						*perr = WERR_ACCESS_DENIED;
 						ver = -1;
 					}
 				}
