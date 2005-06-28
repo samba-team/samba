@@ -61,6 +61,7 @@ ADD_OBJ_FILES = \
 	heimdal/lib/gssapi/add_oid_set_member.o \
 	heimdal/lib/gssapi/arcfour.o \
 	heimdal/lib/gssapi/ccache_name.o \
+	heimdal/lib/gssapi/copy_ccache.o \
 	heimdal/lib/gssapi/cfx.o \
 	heimdal/lib/gssapi/compat.o \
 	heimdal/lib/gssapi/context_time.o \
