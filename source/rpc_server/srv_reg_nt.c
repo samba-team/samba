@@ -41,7 +41,7 @@
 
 /* no idea if this is correct, just use the file access bits for now */
 
-struct generic_mapping reg_map = { REG_KEY_READ, REG_KEY_WRITE, REG_KEY_EXECUTE, REG_KEY_ALL };
+static struct generic_mapping reg_generic_map = { REG_KEY_READ, REG_KEY_WRITE, REG_KEY_EXECUTE, REG_KEY_ALL };
 
 /********************************************************************
 ********************************************************************/
@@ -51,6 +51,7 @@ NTSTATUS registry_access_check( SEC_DESC *sec_desc, NT_USER_TOKEN *token,
 {
 	NTSTATUS result;
 		
+	se_map_generic( &access_desired, &reg_generic_map );
 	se_access_check( sec_desc, token, access_desired, access_granted, &result );
 	
 	return result;
@@ -1020,12 +1021,12 @@ static WERROR make_default_reg_sd( TALLOC_CTX *ctx, SEC_DESC **psd )
 
 	/* basic access for Everyone */
 
-	init_sec_access(&mask, reg_map.generic_execute | reg_map.generic_read );
+	init_sec_access(&mask, reg_generic_map.generic_execute | reg_generic_map.generic_read );
 	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 
 	/* add Full Access 'BUILTIN\Administrators' */
 
-	init_sec_access(&mask, reg_map.generic_all);
+	init_sec_access(&mask, reg_generic_map.generic_all);
 	sid_copy(&adm_sid, &global_sid_Builtin);
 	sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
 	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
