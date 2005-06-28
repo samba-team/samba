@@ -9,6 +9,7 @@
 <title>Advanced Network Management</title>
 
 <para>
+<indexterm><primary>access control</primary></indexterm>
 This section documents peripheral issues that are of great importance to network
 administrators who want to improve network resource access control, to automate the user
 environment, and to make their lives a little easier.
@@ -49,6 +50,7 @@ and the Server Manager?
 
 <para>
 <indexterm><primary>Nexus.exe</primary></indexterm>
+<indexterm><primary>Windows 9x/Me</primary></indexterm>
 Microsoft distributes a version of these tools called <filename>Nexus.exe</filename> for installation 
 on <application>Windows 9x/Me</application> systems. The tools set includes:
 </para>
@@ -66,6 +68,8 @@ url="ftp://ftp.microsoft.com/Softlib/MSLFILES/NEXUS.EXE">Nexus</ulink> link.
 
 <para>
 <indexterm><primary>SRVTOOLS.EXE</primary></indexterm>
+<indexterm><primary>User Manager for Domains</primary></indexterm>
+<indexterm><primary>Server Manager</primary></indexterm>
 The <application>Windows NT 4.0</application> version of the User Manager for 
 Domains and Server Manager are available from Microsoft
 <ulink url="ftp://ftp.microsoft.com/Softlib/MSLFILES/SRVTOOLS.EXE">via ftp</ulink>.
@@ -77,6 +81,8 @@ Domains and Server Manager are available from Microsoft
 <title>Remote Desktop Management</title>
 
 <para>
+<indexterm><primary>remote desktop management</primary></indexterm>
+<indexterm><primary>network environment</primary></indexterm>
 There are a number of possible remote desktop management solutions that range from free
 through costly. Do not let that put you off. Sometimes the most costly solution is the
 most cost effective. In any case, you will need to draw your own conclusions as to which
@@ -94,12 +100,17 @@ is the best tool in your network environment.
 	</para>
 
 		<para><quote>
+<indexterm><primary>remote desktop capabilities</primary></indexterm>
 		I have a wonderful Linux/Samba server running as PDC for a network. Now I would like to add remote
 		desktop capabilities so users outside could login to the system and get their desktop up from home or
 		another country.
 		</quote></para>
 
 		<para><quote>
+<indexterm><primary>Windows Terminal server</primary></indexterm>
+<indexterm><primary>BDC</primary></indexterm>
+<indexterm><primary>PDC</primary></indexterm>
+<indexterm><primary>remote login</primary></indexterm>
 		Is there a way to accomplish this? Do I need a Windows Terminal server?  Do I need to configure it so
 		it is a member of the domain or a BDC or PDC? Are there any hacks for MS Windows XP to enable remote login
 		even if the computer is in a domain?
@@ -111,18 +122,26 @@ is the best tool in your network environment.
 		</para>
 
 	<para>
+<indexterm><primary>Remote X protocol</primary></indexterm>
+<indexterm><primary>VNC/RFB</primary></indexterm>
+<indexterm><primary>rdesktop/RDP</primary></indexterm>
 	It implements an easy-to-use interface to the Remote X protocol as
 	well as incorporating VNC/RFB and rdesktop/RDP into it, but at a speed
 	performance much better than anything you may have ever seen.
 	</para>
 
 	<para>
+<indexterm><primary>modem/ISDN</primary></indexterm>
 	Remote X is not new at all, but what they did achieve successfully is
 	a new way of compression and caching technologies that makes the thing
 	fast enough to run even over slow modem/ISDN connections.
 	</para>
 
 	<para>
+<indexterm><primary>KDE konqueror</primary></indexterm>
+<indexterm><primary>mouse-over</primary></indexterm>
+<indexterm><primary>rdesktop</primary></indexterm>
+<indexterm><primary></primary></indexterm>
 	I test drove their (public) Red Hat machine in Italy, over a loaded
 	Internet connection, with enabled thumbnail previews in KDE konqueror,
 	which popped up immediately on <quote>mouse-over</quote>. From inside that (remote X)
@@ -132,6 +151,10 @@ is the best tool in your network environment.
 	</para>
 
 	<para>
+<indexterm><primary>NX</primary></indexterm>
+<indexterm><primary>TightVNC</primary></indexterm>
+<indexterm><primary>rdesktop</primary></indexterm>
+<indexterm><primary>Remote X</primary></indexterm>
 	NX performs better on my local LAN than any of the other <quote>pure</quote>
 	connection methods I use from time to time: TightVNC, rdesktop or
 	Remote X. It is even faster than a direct crosslink connection between
@@ -139,6 +162,9 @@ is the best tool in your network environment.
 	</para>
 
 	<para>
+<indexterm><primary>Remote X</primary></indexterm>
+<indexterm><primary>KDE session</primary></indexterm>
+<indexterm><primary>copy'n'paste</primary></indexterm>
 	I even got sound playing from the Remote X app to my local boxes, and
 	had a working <quote>copy'n'paste</quote> from an NX  window (running a KDE session
 	in Italy) to my Mozilla mailing agent. These guys are certainly doing
@@ -168,6 +194,7 @@ is the best tool in your network environment.
 	</para>
 
 	<para>
+<indexterm><primary>GPL</primary></indexterm>
 	Now the best thing for last: All the core compression and caching
 	technologies are released under the GPL and available as source code
 	to anybody who wants to build on it! These technologies are working,
@@ -204,6 +231,11 @@ is the best tool in your network environment.
 		</para></listitem>
 
 		<listitem><para>
+<indexterm><primary>OSS/Free Software</primary></indexterm>
+<indexterm><primary>LTSP</primary></indexterm>
+<indexterm><primary>KDE</primary></indexterm>
+<indexterm><primary>GNOME</primary></indexterm>
+<indexterm><primary>NoMachine</primary></indexterm>
 		NoMachine is encouraging and offering help to OSS/Free Software implementations
 		for such a front-end too, even if it means competition to them (they have written
 		to this effect even to the LTSP, KDE, and GNOME developer mailing lists).
@@ -337,7 +369,6 @@ Those wishing to use a more elaborate or capable logon processing system should 
 <para>
 <indexterm><primary>rundll32</primary></indexterm>
 Printers may be added automatically during logon script processing through the use of:
-
 <screen>
 &dosprompt;<userinput>rundll32 printui.dll,PrintUIEntry /?</userinput>
 </screen>
