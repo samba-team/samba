@@ -737,6 +737,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	OM_uint32 maj_stat, min_stat;
 	gss_buffer_desc name_token;
 	gss_buffer_desc pac;
+	krb5_keyblock *keyblock;
 	
 	mem_ctx = talloc_named(gensec_gssapi_state, 0, "gensec_gssapi_session_info context"); 
 	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
@@ -768,9 +769,13 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	}
 	account_name = principal;
 	
+	maj_stat = gss_krb5_copy_service_keyblock(&min_stat, 
+						  gensec_gssapi_state->gssapi_context, 
+						  &keyblock);
+
 	maj_stat = gsskrb5_extract_authz_data_from_sec_context(&min_stat, 
 							       gensec_gssapi_state->gssapi_context, 
-							       1,
+							       KRB5_AUTHDATA_IF_RELEVANT,
 							       &pac);
 	
 	if (maj_stat == 0) {
@@ -780,7 +785,8 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		
 		/* decode and verify the pac */
 		nt_status = kerberos_decode_pac(mem_ctx, &logon_info, pac_blob,
-						gensec_gssapi_state->smb_krb5_context);
+						gensec_gssapi_state->smb_krb5_context,
+						keyblock);
 
 		if (NT_STATUS_IS_OK(nt_status)) {
 			union netr_Validation validation;

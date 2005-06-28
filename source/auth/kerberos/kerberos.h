@@ -101,6 +101,9 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 int kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc, 
 			       const char *principal, const char *password, 
 			       time_t *expire_time, time_t *kdc_time);
+int kerberos_kinit_keyblock_cc(krb5_context ctx, krb5_ccache cc, 
+			       const char *principal, krb5_keyblock *keyblock,
+			       time_t *expire_time, time_t *kdc_time);
 krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
 							krb5_principal host_princ,
 							int enctype);
@@ -124,5 +127,10 @@ NTSTATUS create_memory_keytab(TALLOC_CTX *parent_ctx,
 			      struct cli_credentials *machine_account,
 			      struct smb_krb5_context *smb_krb5_context,
 			      krb5_keytab *keytab);
+NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
+			     struct PAC_LOGON_INFO **logon_info_out,
+			     DATA_BLOB blob,
+			     struct smb_krb5_context *smb_krb5_context,
+			     krb5_keyblock *keyblock);
 #endif /* HAVE_KRB5 */
 
