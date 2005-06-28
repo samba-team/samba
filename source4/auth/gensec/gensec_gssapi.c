@@ -3,8 +3,8 @@
 
    Kerberos backend for GENSEC
    
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004
-   Copyright (C) Stefan Metzmacher <metze@samba.org> 2005
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
+   Copyright (C) Stefan Metzmacher <metze@samba.org> 2004-2005
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -224,6 +224,7 @@ static NTSTATUS gensec_gssapi_server_start(struct gensec_security *gensec_securi
 static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_security)
 {
 	struct gensec_gssapi_state *gensec_gssapi_state;
+	struct cli_credentials *creds = gensec_get_credentials(gensec_security);
 	NTSTATUS nt_status;
 	gss_buffer_desc name_token;
 	OM_uint32 maj_stat, min_stat;
@@ -251,8 +252,8 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	name_token.value = cli_credentials_get_principal(gensec_get_credentials(gensec_security), 
-							 gensec_gssapi_state),
+	name_token.value = cli_credentials_get_principal(creds, 
+							 gensec_gssapi_state);
 	name_token.length = strlen(name_token.value);
 
 	maj_stat = gss_import_name (&min_stat,
@@ -267,7 +268,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	}
 
 	nt_status = kinit_to_ccache(gensec_gssapi_state, 
-				    gensec_get_credentials(gensec_security),
+				    creds,
 				    gensec_gssapi_state->smb_krb5_context, 
 				    &gensec_gssapi_state->ccache, &gensec_gssapi_state->ccache_name);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -724,16 +725,22 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 					 struct auth_session_info **_session_info) 
 {
 	NTSTATUS nt_status;
+	TALLOC_CTX *mem_ctx;
 	struct gensec_gssapi_state *gensec_gssapi_state = gensec_security->private_data;
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info = NULL;
+	struct PAC_LOGON_INFO *logon_info;
 	char *p;
 	char *principal;
 	const char *account_name;
 	const char *realm;
 	OM_uint32 maj_stat, min_stat;
 	gss_buffer_desc name_token;
+	gss_buffer_desc pac;
 	
+	mem_ctx = talloc_named(gensec_gssapi_state, 0, "gensec_gssapi_session_info context"); 
+	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
+
 	maj_stat = gss_display_name (&min_stat,
 				     gensec_gssapi_state->client_name,
 				     &name_token,
@@ -742,11 +749,14 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		return NT_STATUS_FOOBAR;
 	}
 
-	principal = talloc_strndup(gensec_gssapi_state, name_token.value, name_token.length);
+	principal = talloc_strndup(mem_ctx, name_token.value, name_token.length);
 
 	gss_release_buffer(&min_stat, &name_token);
 
-	NT_STATUS_HAVE_NO_MEMORY(principal);
+	if (!principal) {
+		talloc_free(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	p = strchr(principal, '@');
 	if (p) {
@@ -757,24 +767,56 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		realm = lp_realm();
 	}
 	account_name = principal;
+	
+	maj_stat = gsskrb5_extract_authz_data_from_sec_context(&min_stat, 
+							       gensec_gssapi_state->gssapi_context, 
+							       1,
+							       &pac);
+	
+	if (maj_stat == 0) {
+		DATA_BLOB pac_blob = data_blob_talloc(mem_ctx, pac.value, pac.length);
+		pac_blob = unwrap_pac(mem_ctx, &pac_blob);
+		gss_release_buffer(&min_stat, &pac);
+		
+		/* decode and verify the pac */
+		nt_status = kerberos_decode_pac(mem_ctx, &logon_info, pac_blob,
+						gensec_gssapi_state->smb_krb5_context);
 
-	/* IF we have the PAC - otherwise we need to get this
-	 * data from elsewere - local ldb, or (TODO) lookup of some
-	 * kind... 
-	 *
-	 * when heimdal can generate the PAC, we should fail if there's
-	 * no PAC present
-	 */
+		if (NT_STATUS_IS_OK(nt_status)) {
+			union netr_Validation validation;
+			validation.sam3 = &logon_info->info3;
+			nt_status = make_server_info_netlogon_validation(gensec_gssapi_state, 
+									 account_name,
+									 3, &validation,
+									 &server_info); 
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				talloc_free(mem_ctx);
+				return nt_status;
+			}
+		} else {
+			maj_stat = 1;
+		}
+	}
+	
+	if (maj_stat) {
+		/* IF we have the PAC - otherwise we need to get this
+		 * data from elsewere - local ldb, or (TODO) lookup of some
+		 * kind... 
+		 *
+		 * when heimdal can generate the PAC, we should fail if there's
+		 * no PAC present
+		 */
 
-	{
 		DATA_BLOB user_sess_key = data_blob(NULL, 0);
 		DATA_BLOB lm_sess_key = data_blob(NULL, 0);
 		/* TODO: should we pass the krb5 session key in here? */
-		nt_status = sam_get_server_info(gensec_gssapi_state, account_name, realm,
+		nt_status = sam_get_server_info(mem_ctx, account_name, realm,
 						user_sess_key, lm_sess_key,
 						&server_info);
-		talloc_free(principal);
-		NT_STATUS_NOT_OK_RETURN(nt_status);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			talloc_free(mem_ctx);
+			return nt_status;
+		}
 	}
 
 	/* references the server_info into the session_info */
