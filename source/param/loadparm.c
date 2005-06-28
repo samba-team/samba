@@ -925,7 +925,11 @@ static void init_globals(void)
 	do_parameter("max connections", "-1");
 
 	do_parameter("dcerpc endpoint servers", "epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg dssetup");
+#ifdef WITH_KRB5
+	do_parameter("server services", "smb rpc nbt ldap cldap web kdc");
+#else
 	do_parameter("server services", "smb rpc nbt ldap cldap web");
+#endif
 	do_parameter("ntptr providor", "simple_ldb");
 	do_parameter("auth methods", "anonymous sam_ignoredomain");
 	do_parameter("smb passwd file", dyn_SMB_PASSWD_FILE);
