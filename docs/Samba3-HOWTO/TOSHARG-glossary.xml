@@ -13,7 +13,7 @@
 	</glossentry>
 
 	<glossentry>
-                <glossterm>Active Directory Service</glossterm>
+		<glossterm>Active Directory Service</glossterm>
 		<acronym>ADS</acronym>
 		<glossdef><para>
 		A service unique to Microsoft Windows 200x servers that provides a centrally managed
@@ -201,6 +201,23 @@
 		to enable correct PostScript page layout for a particular PostScript printer.
 		</para></glossdef>
 	</glossentry>
+
+	<glossentry>
+        <glossterm>Remote Procedure Call</glossterm>
+        <acronym>RPC</acronym>
+        <glossdef><para>
+		RPCs are a means for executing network operations. The RPC protocol is independent of transport protocols. RPC
+		does not try to implement any kind of reliability and the application that uses RPCs must be aware of the type
+		of transport protocol underneath RPC. An RPC is like a programatic a jump subroutine over a network. RPCs used
+		in the UNIX environment are specified in RFC 1050. RPC is a powerful technique for constructing distributed,
+		client-server based applications. It is based on extending the notion of conventional, or local procedure
+		calling, so that the called procedure need not exist in the same address space as the calling procedure. The
+		two processes may be on the same system, or they may be on different systems with a network connecting them.
+		By using RPC, programmers of distributed applications avoid the details of the interface with the network. The
+		transport independence of RPC isolates the application from the physical and logical elements of the data
+		communications mechanism and allows the application to use a variety of transports.
+        </para></glossdef>
+    </glossentry>
 
 	<glossentry>
 		<glossterm>Server Message Block</glossterm>
