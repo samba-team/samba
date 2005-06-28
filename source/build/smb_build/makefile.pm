@@ -545,8 +545,12 @@ proto_test:
 	@[ -f $(builddir)/include/proto.h ] || $(MAKE) proto
 
 clean: delheaders
-	@echo Removing objects and binaries
-	@-rm -f $(_ALL_OBJS_OBJS) bin/* bin/.*_*
+	@echo Removing objects
+	@-rm -f $(_ALL_OBJS_OBJS)
+	@echo Removing binaries
+	@-rm -f bin/*
+	@echo Removing dummy targets
+	@-rm -f bin/.*_*
 	@echo Removing generated files
 	@-rm -rf librpc/gen_*
 
