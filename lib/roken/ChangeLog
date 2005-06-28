@@ -1,3 +1,13 @@
+2005-06-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am (libroken_la_SOURCES): += strpool.c
+	
+	* roken-common.h: add strpool, a printf collector to make it
+	eaiser to collect strings into one string
+	
+	* strpool.c: add strpool, a printf collector to make it eaiser to
+	collect strings into one string
+
 2005-06-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* base64.c: Add const, from Andrew Abartlet <abartlet@samba.org>
