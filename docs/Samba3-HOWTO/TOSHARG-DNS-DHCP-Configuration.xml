@@ -11,6 +11,8 @@
 <title>Features and Benefits</title>
 
 <para>
+<indexterm><primary>Dynamic Host Configuration Protocol</primary><see>DHCP</see></indexterm>
+<indexterm><primary>Domain Name System</primary><see>DNS</see></indexterm>
 There are few subjects in the UNIX world that might raise as much contention as
 Domain Name System (DNS) and Dynamic Host Configuration Protocol (DHCP).
 Not all opinions held for or against particular implementations of DNS and DHCP
@@ -24,6 +26,7 @@ notebook computer into a network port and have things <quote>just work.</quote>
 </para>
 
 <para>
+<indexterm><primary>ADS</primary></indexterm>
 UNIX administrators have a point. Many of the normative practices in the Microsoft
 Windows world at best border on bad practice from a security perspective.
 Microsoft Windows networking protocols allow workstations to arbitrarily register
@@ -35,26 +38,28 @@ that are equally perplexing to UNIX administrators. Welcome to the new world!
 <para>
 <indexterm><primary>ISC</primary><secondary>DNS</secondary></indexterm>
 <indexterm><primary>ISC</primary><secondary>DHCP</secondary></indexterm>
+<indexterm><primary>Dynamic DNS</primary><see>DDNS</see></indexterm>
 The purpose of this chapter is to demonstrate the configuration of the Internet
 Software Consortium (ISC) DNS and DHCP servers to provide dynamic services that are
 compatible with their equivalents in the Microsoft Windows 2000 Server products.
 </para>
 
 <para>
-This chapter provides no more than a working example of
-configuration files for both DNS and DHCP servers. The examples used match
-configuration examples used elsewhere in this document.
+This chapter provides no more than a working example of configuration files for both DNS and DHCP servers. The
+examples used match configuration examples used elsewhere in this document.
 </para>
 
 <para>
-This chapter explicitly does not provide a tutorial, nor does it pretend to be
-a reference guide on DNS and DHCP, as this is well beyond the scope and intent
-of this document as a whole. Anyone who wants more detailed reference materials
-on DNS or DHCP should visit the ISC Web site at
-<ulink noescape="1" url="http://www.isc.org"> http://www.isc.org</ulink>.
-Those wanting a written text might also be interested in the O'Reilly publications on DNS, see the
-<ulink url="http://www.oreilly.com/catalog/dns/index.htm">O'Reilly</ulink> web site, and the
-<ulink url="http://www.bind9.net/books-dhcp">BIND9.NET</ulink> web site for details.
+<indexterm><primary>DNS</primary></indexterm>
+<indexterm><primary>DHCP</primary></indexterm>
+<indexterm><primary>BIND9.NET</primary></indexterm>
+This chapter explicitly does not provide a tutorial, nor does it pretend to be a reference guide on DNS and
+DHCP, as this is well beyond the scope and intent of this document as a whole. Anyone who wants more detailed
+reference materials on DNS or DHCP should visit the ISC Web site at <ulink noescape="1"
+url="http://www.isc.org"> http://www.isc.org</ulink>.  Those wanting a written text might also be interested
+in the O'Reilly publications on DNS, see the <ulink
+url="http://www.oreilly.com/catalog/dns/index.htm">O'Reilly</ulink> web site, and the <ulink
+url="http://www.bind9.net/books-dhcp">BIND9.NET</ulink> web site for details.
 The books are:
 </para>
 
@@ -70,17 +75,19 @@ The books are:
 <title>Example Configuration</title>
 
 <para>
-The DNS is to the Internet what water is to life. Nearly all
-information resources (host names) are resolved to their Internet protocol (IP) addresses through DNS.
-Windows networking tried hard to avoid the complexities of DNS, but alas, DNS won.
 <indexterm><primary>WINS</primary></indexterm>
-The alternative to DNS, the Windows Internet Name Service (WINS) &smbmdash; an artifact of
-NetBIOS networking over the TCP/IP protocols &smbmdash; has demonstrated scalability problems as
-well as a flat, nonhierarchical namespace that became unmanageable as the size and
-complexity of information technology networks grew.
+<indexterm><primary>DNS</primary></indexterm>
+The DNS is to the Internet what water is to life. Nearly all information resources (host names) are resolved
+to their Internet protocol (IP) addresses through DNS.  Windows networking tried hard to avoid the
+complexities of DNS, but alas, DNS won.  <indexterm><primary>WINS</primary></indexterm> The alternative to
+DNS, the Windows Internet Name Service (WINS) &smbmdash; an artifact of NetBIOS networking over the TCP/IP
+protocols &smbmdash; has demonstrated scalability problems as well as a flat, nonhierarchical namespace that
+became unmanageable as the size and complexity of information technology networks grew.
 </para>
 
 <para>
+<indexterm><primary>RFC 1001</primary></indexterm>
+<indexterm><primary>RFC 1002</primary></indexterm>
 WINS is a Microsoft implementation of the RFC1001/1002 NetBIOS Name Service (NBNS).
 It allows NetBIOS clients (like Microsoft Windows machines) to register an arbitrary
 machine name that the administrator or user has chosen together with the IP
@@ -283,6 +290,8 @@ $ORIGIN 1.168.192.in-addr.arpa.
 	</para>
 
 	<para>
+<indexterm><primary>BIND</primary></indexterm>
+<indexterm><primary>dynamic registration files</primary></indexterm>
 	The configuration files shown here were copied from a fully working system. All dynamically registered
 	entries have been removed. In addition to these files, BIND version 9 will
 	create for each of the dynamic registration files a file that has a 
