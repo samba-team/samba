@@ -9,25 +9,28 @@
 <title>SWAT: The Samba Web Administration Tool</title>
 
 <para>
-There are many and varied opinions regarding the usefulness of SWAT.
-No matter how hard one tries to produce the perfect configuration tool, it remains
-an object of personal taste. SWAT is a tool that allows Web-based configuration
-of Samba. It has a wizard that may help to get Samba configured
-quickly, it has context-sensitive help on each &smb.conf; parameter, it provides for monitoring of current state
-of connection information, and it allows networkwide MS Windows network password
-management.
+<indexterm><primary>configuration tool</primary></indexterm>
+<indexterm><primary>SWAT</primary></indexterm>
+<indexterm><primary>Web-based configuration</primary></indexterm>
+There are many and varied opinions regarding the usefulness of SWAT.  No matter how hard one tries to produce
+the perfect configuration tool, it remains an object of personal taste. SWAT is a tool that allows Web-based
+configuration of Samba. It has a wizard that may help to get Samba configured quickly, it has
+context-sensitive help on each &smb.conf; parameter, it provides for monitoring of current state of connection
+information, and it allows networkwide MS Windows network password management.
 </para>
 
 <sect1>
 <title>Features and Benefits</title>
 
 <para>
+<indexterm><primary>internetworking super daemon</primary></indexterm>
 SWAT is a facility that is part of the Samba suite. The main executable is called
 <command>swat</command> and is invoked by the internetworking super daemon.
 See <link linkend="xinetd">appropriate section</link> for details.
 </para>
 
 <para>
+<indexterm><primary>man</primary></indexterm>
 SWAT uses integral Samba components to locate parameters supported by the particular
 version of Samba. Unlike tools and utilities that are external to Samba, SWAT is always
 up to date as known Samba parameters change. SWAT provides context-sensitive help for each
@@ -35,6 +38,9 @@ configuration parameter, directly from <command>man</command> page entries.
 </para>
 
 <para>
+<indexterm><primary>documentation</primary></indexterm>
+<indexterm><primary>configuration files</primary></indexterm>
+<indexterm><primary>internal ordering</primary></indexterm>
 Some network administrators believe that it is a good idea to write systems
 documentation inside configuration files, and for them SWAT will always be a nasty tool. SWAT
 does not store the configuration file in any intermediate form; rather, it stores only the
@@ -45,6 +51,7 @@ Additionally, the parameters will be written back in internal ordering.
 </para>
 
 <note><para>
+<indexterm><primary>stripped of comments</primary></indexterm>
 Before using SWAT, please be warned &smbmdash; SWAT will completely replace your &smb.conf; with
 a fully optimized file that has been stripped of all comments you might have placed there
 and only nondefault settings will be written to the file.
@@ -56,6 +63,7 @@ and only nondefault settings will be written to the file.
 <title>Guidelines and Technical Tips</title>
 
 <para>
+<indexterm><primary>internationalization support</primary></indexterm>
 This section aims to unlock the dark secrets behind how SWAT may be made to work,
 how it can be made more secure, and how to solve internationalization support problems.
 </para>
@@ -64,6 +72,7 @@ how it can be made more secure, and how to solve internationalization support pr
 <title>Validate SWAT Installation</title>
 
 <para>
+<indexterm><primary>SWAT binary support</primary></indexterm>
 The very first step that should be taken before attempting to configure a host
 system for SWAT operation is to check that it is installed. This may seem a trivial
 point to some, but several Linux distributions do not install SWAT by default,
@@ -72,6 +81,7 @@ on the distribution media.
 </para>
 
 <para>
+<indexterm><primary>swat</primary></indexterm>
 When you have confirmed that SWAT is installed, it is necessary to validate
 that the installation includes the binary <command>swat</command> file as well
 as all the supporting text and Web files. A number of operating system distributions
@@ -80,6 +90,8 @@ in the past have failed to include the necessary support files, even though the
 </para>
 
 <para>
+<indexterm><primary>inetd</primary></indexterm>
+<indexterm><primary>xinetd</primary></indexterm>
 Finally, when you are sure that SWAT has been fully installed, please check that SWAT
 is enabled in the control file for the internetworking super-daemon (inetd or xinetd)
 that is used on your operating system platform. 
@@ -89,6 +101,9 @@ that is used on your operating system platform.
 <title>Locating the <command>SWAT</command> File</title>
 
 <para>
+<indexterm><primary>/usr/local/samba/bin</primary></indexterm>
+<indexterm><primary>/usr/sbin</primary></indexterm>
+<indexterm><primary>/opt/samba/bin</primary></indexterm>
 To validate that SWAT is installed, first locate the <command>swat</command> binary
 file on the system. It may be found under the following directories:</para>
 <para><simplelist>
@@ -109,6 +124,9 @@ The following methods may be helpful.
 </para>
 
 <para>
+<indexterm><primary>swat</primary></indexterm>
+<indexterm><primary>operating system search path</primary></indexterm>
+<indexterm><primary>swat command-line options</primary></indexterm>
 If <command>swat</command> is in your current operating system search path, it will be easy to 
 find it. You can ask what are the command-line options for <command>swat</command> as shown here:
 <screen>
@@ -274,6 +292,10 @@ as shown.
 </para>
 
 <para>
+<indexterm><primary>swat</primary></indexterm>
+<indexterm><primary>/usr/sbin</primary></indexterm>
+<indexterm><primary>/usr/share/samba/swat</primary></indexterm>
+<indexterm><primary>/usr/local/samba/swat</primary></indexterm>
 Both of the previous examples assume that the <command>swat</command> binary has been
 located in the <filename>/usr/sbin</filename> directory. In addition to the above,
 SWAT will use a directory access point from which it will load its Help files
@@ -283,6 +305,8 @@ location using Samba defaults will be <filename>/usr/local/samba/swat</filename>
 </para>
 
 <para>
+<indexterm><primary>SWAT permission allowed</primary></indexterm>
+<indexterm><primary>password change facility</primary></indexterm>
 Access to SWAT will prompt for a logon. If you log onto SWAT as any non-root user,
 the only permission allowed is to view certain aspects of configuration as well as
 access to the password change facility. The buttons that will be exposed to the non-root
@@ -305,6 +329,7 @@ full change and commit ability. The buttons that will be exposed include
 
 
 <para>
+<indexterm><primary>SSL</primary></indexterm>
 <indexterm><primary>swat</primary><secondary>security</secondary></indexterm>
 Many people have asked about how to set up SWAT with SSL to allow for secure remote
 administration of Samba. Here is a method that works, courtesy of Markus Krieger.
@@ -316,12 +341,15 @@ Modifications to the SWAT setup are as follows:
 
 <procedure>
 	<step><para>
+<indexterm><primary>OpenSSL</primary></indexterm>
 	Install OpenSSL.
 	</para></step>
 
 	<step><para>
+<indexterm><primary>certificate</primary></indexterm>
+<indexterm><primary>private key</primary></indexterm>
 	Generate certificate and private key.
-
+<indexterm><primary>/usr/bin/openssl</primary></indexterm>
 <screen>
 &rootprompt;<userinput>/usr/bin/openssl req -new -x509 -days 365 -nodes -config \
 	/usr/share/doc/packages/stunnel/stunnel.cnf \
@@ -333,6 +361,7 @@ Modifications to the SWAT setup are as follows:
 	</para></step>
 
 	<step><para>
+<indexterm><primary>stunnel</primary></indexterm>
 	Start <command>stunnel</command>.
 
 <screen>
@@ -342,8 +371,8 @@ Modifications to the SWAT setup are as follows:
 </procedure>
 
 <para>
-Afterward, simply connect to SWAT by using the URL <ulink noescape="1" url="https://myhost:901">https://myhost:901</ulink>, accept the certificate,
-and the SSL connection is up.
+Afterward, simply connect to SWAT by using the URL <ulink noescape="1"
+url="https://myhost:901">https://myhost:901</ulink>, accept the certificate, and the SSL connection is up.
 </para>
 
 </sect2>
@@ -373,11 +402,16 @@ To enable this feature:
 </itemizedlist>
 
 <para>
+<indexterm><primary>msg file</primary></indexterm>
+<indexterm><primary>Japanese</primary></indexterm>
+<indexterm><primary>French</primary></indexterm>
+<indexterm><primary>English</primary></indexterm>
 The name of the <command>msg</command> file is the same as the language ID sent by the browser. For
 example, <emphasis>en</emphasis> means English, <emphasis>ja</emphasis> means Japanese, <emphasis>fr</emphasis> means French.
 </para>
 
 <para>
+<indexterm><primary>locale</primary></indexterm>
 If you do not like some of messages, or there are no <command>msg</command> files for
 your locale, you can create them simply by copying the <command>en.msg</command> files
 to the directory for <quote>your language ID.msg</quote> and filling in proper strings
@@ -387,11 +421,13 @@ to each <quote>msgstr</quote>. For example, in <filename>it.msg</filename>, the
 msgid "Set Default"
 msgstr "Imposta Default"
 </screen>
+<indexterm><primary>msg</primary></indexterm>
 and so on. If you find a mistake or create a new <command>msg</command> file, please email it
 to us so we will consider it in the next release of Samba. The <command>msg</command> file should be encoded in UTF-8.
 </para>
 
 <para>
+<indexterm><primary>UTF-8 encoding</primary></indexterm>
 Note that if you enable this feature and the <smbconfoption name="display charset"/> is not
 matched to your browser's setting, the SWAT display may be corrupted.  In a future version of
 Samba, SWAT will always display messages with UTF-8 encoding. You will then not need to set
@@ -416,7 +452,7 @@ documents that have been found useful for solving Windows networking problems.
 
 <para>
 The SWAT title page provides access to the latest Samba documentation. The manual page for
-each Samba component is accessible from this page, as are the Samba HOWTO-Collection (this 
+each Samba component is accessible from this page, as are the Samba3-HOWTO (this 
 document) as well as the O'Reilly book <quote>Using Samba.</quote>
 </para>
 
