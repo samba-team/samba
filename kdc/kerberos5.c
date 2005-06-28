@@ -844,7 +844,7 @@ as_rep(KDC_REQ *req,
 		continue;
 	    }
 
-	  try_next_key:
+	try_next_key:
 	    ret = krb5_crypto_init(context, &pa_key->key, 0, &crypto);
 	    if (ret) {
 		kdc_log(0, "krb5_crypto_init failed: %s",
@@ -916,7 +916,7 @@ as_rep(KDC_REQ *req,
 	size_t len;
 	krb5_data foo_data;
 
-      use_pa: 
+    use_pa: 
 	method_data.len = 0;
 	method_data.val = NULL;
 
@@ -978,6 +978,29 @@ as_rep(KDC_REQ *req,
 	goto out;
     }
 	
+    {
+	struct rk_strpool *p = NULL;
+	char *str;
+	int i;
+
+	for (i = 0; i < b->etype.len; i++) {
+	    ret = krb5_enctype_to_string(context, b->etype.val[i], &str);
+	    if (ret == 0) {
+		p = rk_strpoolprintf(p, "%s", str);
+		free(str);
+	    } else
+		p = rk_strpoolprintf(p, "%d", b->etype.val[i]);
+	    if (p && i + 1 < b->etype.len)
+		p = rk_strpoolprintf(p, ", ");
+	    if (p == NULL) {
+		kdc_log(0, "out of meory");
+		goto out;
+	    }
+	}
+	str = rk_strpoolcollect(p);
+	kdc_log(0, "Client supported enctypes: %s", str);
+	free(str);
+    }
     {
 	char *cet;
 	char *set;
@@ -1203,7 +1226,7 @@ as_rep(KDC_REQ *req,
 		       client->kvno, reply_key, &e_text, reply);
     free_EncTicketPart(&et);
     free_EncKDCRepPart(&ek);
-  out:
+ out:
     free_AS_REP(&rep);
     if(ret){
 	krb5_mk_error(context,
@@ -1217,7 +1240,7 @@ as_rep(KDC_REQ *req,
 		      reply);
 	ret = 0;
     }
-  out2:
+ out2:
 #ifdef PKINIT
     if (pkp)
 	pk_free_client_param(context, pkp);
@@ -1724,7 +1747,7 @@ get_krbtgt_realm(const PrincipalName *p)
 	return NULL;
 }
 
-static Realm
+static const char *
 find_rpath(Realm crealm, Realm srealm)
 {
     const char *new_realm = krb5_config_get_string(context,
@@ -1733,7 +1756,7 @@ find_rpath(Realm crealm, Realm srealm)
 						   crealm,
 						   srealm,
 						   NULL);
-    return (Realm)new_realm;
+    return new_realm;
 }
 	    
 
@@ -2029,7 +2052,8 @@ tgs_rep2(KDC_REQ_BODY *b,
 	ret = db_fetch(sp, &server);
 
 	if(ret){
-	    Realm req_rlm, new_rlm;
+	    const char *new_rlm;
+	    Realm req_rlm;
 	    krb5_realm *realms;
 
 	    if ((req_rlm = get_krbtgt_realm(&sp->name)) != NULL) {
