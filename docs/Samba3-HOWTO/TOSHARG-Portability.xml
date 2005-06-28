@@ -9,7 +9,10 @@
 
 <title>Portability</title>
 
-<para>Samba works on a wide range of platforms, but the interface all the 
+<para>
+<indexterm><primary>platforms</primary></indexterm>
+<indexterm><primary>compatible</primary></indexterm>
+Samba works on a wide range of platforms, but the interface all the 
 platforms provide is not always compatible. This chapter contains 
 platform-specific information about compiling and using Samba.</para>
 
@@ -17,6 +20,8 @@ platform-specific information about compiling and using Samba.</para>
 <title>HPUX</title>
 
 <para>
+<indexterm><primary>/etc/logingroup</primary></indexterm>
+<indexterm><primary>/etc/group</primary></indexterm>
 Hewlett-Packard's implementation of supplementary groups is nonstandard (for
 historical reasons). There are two group files, <filename>/etc/group</filename> and
 <filename>/etc/logingroup</filename>; the system maps UIDs to numbers using the former, but
@@ -35,10 +40,13 @@ to initgroups() are run as users, not in any groups with GIDs outside the
 allowed range.
 </para>
 
-<para>This is documented in the HP manual pages under setgroups(2) and passwd(4).
+<para>
+This is documented in the HP manual pages under setgroups(2) and passwd(4).
 </para>
 
 <para>
+<indexterm><primary>gcc</primary></indexterm>
+<indexterm><primary>ANSI compiler</primary></indexterm>
 On HP-UX you must use gcc or the HP ANSI compiler. The free compiler
 that comes with HP-UX is not ANSI compliant and cannot compile Samba.
 </para>
@@ -169,11 +177,12 @@ You should then remove the line:
 By default during installation, some versions of Red Hat Linux add an
 entry to <filename>/etc/hosts</filename> as follows:
 <programlisting>
-	127.0.0.1 loopback "hostname"."domainname"
+127.0.0.1 loopback "hostname"."domainname"
 </programlisting>
 </para>
 	
 <para>
+<indexterm><primary>loopback interface</primary></indexterm>
 This causes Samba to loop back onto the loopback interface.
 The result is that Samba fails to communicate correctly with
 the world and therefore may fail to correctly negotiate who
@@ -212,15 +221,8 @@ be stuck in F_SETLKW64 loops.
 </para>
 
 <para>
-Sun released patches for Solaris 2.6, 8, and 9. The patch for Solaris 7
-has not been released yet.
-</para>
-
-<para>
+Please check with Sun support for current patches needed to fix this bug.
 The patch revision for 2.6 is 105181-34, for 8 is 108528-19, and for 9 is 112233-04.
-</para>
-
-<para>
 After the installation of these patches, it is recommended to reconfigure
 and rebuild Samba.
 </para>
