@@ -71,6 +71,22 @@
 	</para>
 
 	<para>
+<indexterm><primary>printers</primary></indexterm>
+<indexterm><primary>meta-service</primary></indexterm>
+<indexterm><primary>printcap</primary></indexterm>
+<indexterm><primary>lpstat</primary></indexterm>
+<indexterm><primary>CUPS API</primary></indexterm>
+<indexterm><primary>browseable</primary></indexterm>
+	The <literal>printers</literal> meta-service will cause every printer that is either specified in a
+	<literal>printcap</literal> file, via the <command>lpstat</command>,  or via the CUPS API, to be
+	published as a shared print queue. The <literal>printers</literal> stanza in the &smb.conf; file can
+	be set as not browseable. If it is set to be browseable, then it will be visible as if it is a share.
+	That makes no sense given that this meta-service is responsible only for making UNIX system printers
+	available as Windows print queues. If a <literal>comment</literal> parameter is specified, the value
+	of it will be displayed as part of the printer name in Windows Explorer browse lists.
+	</para>
+
+	<para>
 	<indexterm><primary>stanza</primary></indexterm>
 	Each section of the &smb.conf; file that specifies a share, or a meta-service, is called a stanza.
 	The <literal>global</literal> stanza specifies settings that affect all the other stanzas in the
