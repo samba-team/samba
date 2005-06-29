@@ -160,7 +160,9 @@
 			This daemon should be started when Samba is a member of a Windows NT4 or ADS domain. It is also needed when
 			Samba has trust relationships with another domain. The <command>winbindd</command> daemon will check the
 			&smb.conf; file for the presence of the <parameter>idmap uid</parameter> and <parameter>idmap gid</parameter>
-			parameters. If they are not found, <command>winbindd</command> will bail out and refuse to start.
+			parameters. If they are are found, <command>winbindd</command> will use the values specified for
+			for UID and GID allocation. If these parameters are not specified, <command>winbindd</command>
+			will start but it will not be able to allocate UIDs or GIDs.
 			</para></listitem>
 		</varlistentry>
 	</variablelist>
