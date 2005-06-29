@@ -249,12 +249,12 @@ DES_rand_data(unsigned char *data, int size)
     RETSIGTYPE (*ochld)(int);
     pid_t pid;
 #endif
-    char *rnd_devices[] = {"/dev/random",
+    const char *rnd_devices[] = {"/dev/random",
 			   "/dev/srandom",
 			   "/dev/urandom",
 			   "/dev/arandom",
 			   NULL};
-    char **p;
+    const char **p;
 
     for(p = rnd_devices; *p; p++) {
       int fd = open(*p, O_RDONLY | O_NDELAY);
