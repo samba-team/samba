@@ -378,10 +378,6 @@ int regval_ctr_delvalue( REGVAL_CTR *ctr, const char *name )
 {
 	int 	i;
 	
-	/* search for the value */
-	if (!(ctr->num_values))
-		return 0;
-	
 	for ( i=0; i<ctr->num_values; i++ ) {
 		if ( strequal( ctr->values[i]->valuename, name ) )
 			break;
@@ -395,7 +391,7 @@ int regval_ctr_delvalue( REGVAL_CTR *ctr, const char *name )
 	/* If 'i' was not the last element, just shift everything down one */
 	ctr->num_values--;
 	if ( i < ctr->num_values )
-		memmove( ctr->values[i], ctr->values[i+1], sizeof(REGISTRY_VALUE*)*(ctr->num_values-i) );
+		memmove( &ctr->values[i], &ctr->values[i+1], sizeof(REGISTRY_VALUE*)*(ctr->num_values-i) );
 	
 	return ctr->num_values;
 }
