@@ -75,7 +75,7 @@ static krb5_error_code ads_keytab_verify_ticket(TALLOC_CTX *mem_ctx, krb5_contex
 						const char *service,
 						const DATA_BLOB *ticket, krb5_data *p_packet, 
 						krb5_ticket **pp_tkt,
-						krb5_keyblock *keyblock)
+						krb5_keyblock **keyblock)
 {
 	krb5_error_code ret = 0;
 	krb5_keytab keytab = NULL;
@@ -149,7 +149,9 @@ static krb5_error_code ads_keytab_verify_ticket(TALLOC_CTX *mem_ctx, krb5_contex
 				p_packet->length = ticket->length;
 				p_packet->data = (krb5_pointer)ticket->data;
 				*pp_tkt = NULL;
-				ret = krb5_rd_req(context, &auth_context, p_packet, kt_entry.principal, keytab, NULL, pp_tkt);
+				ret = krb5_rd_req_return_keyblock(context, &auth_context, p_packet, 
+								  kt_entry.principal, keytab, 
+								  NULL, pp_tkt, keyblock);
 				if (ret) {
 					last_error_message = smb_get_krb5_error_message(context, ret, mem_ctx);
 					DEBUG(10, ("ads_keytab_verify_ticket: krb5_rd_req(%s) failed: %s\n",
@@ -224,7 +226,7 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx,
 						 krb5_principal salt_princ,
 						 const DATA_BLOB *ticket, krb5_data *p_packet, 
 						 krb5_ticket **pp_tkt,
-						 krb5_keyblock *keyblock)
+						 krb5_keyblock **keyblock)
 {
 	krb5_error_code ret = 0;
 	krb5_error_code our_ret;
@@ -274,9 +276,10 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx,
 
 		krb5_free_keyblock(context, key);
 
-		our_ret = krb5_rd_req(context, &auth_context, p_packet, 
-				      NULL,
-				      NULL, NULL, pp_tkt);
+		our_ret = krb5_rd_req_return_keyblock(context, &auth_context, p_packet, 
+						      NULL,
+						      NULL, NULL, pp_tkt,
+						      keyblock);
 		if (!our_ret) {
 	
 			DEBUG(10,("ads_secrets_verify_ticket: enc type [%u] decrypted message !\n",
@@ -311,7 +314,7 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx,
 			    const DATA_BLOB *ticket, 
 			    char **principal, DATA_BLOB *auth_data,
 			    DATA_BLOB *ap_rep,
-			    krb5_keyblock *keyblock)
+			    krb5_keyblock **keyblock)
 {
 	NTSTATUS sret = NT_STATUS_LOGON_FAILURE;
 	krb5_data packet;

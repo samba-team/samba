@@ -40,7 +40,8 @@
 #include "system/iconv.h"
 
 enum hdb_ldb_ent_type 
-{ HDB_LDB_ENT_TYPE_CLIENT, HDB_LDB_ENT_TYPE_SERVER, HDB_LDB_ENT_TYPE_KRBTGT, HDB_LDB_ENT_TYPE_ANY };
+{ HDB_LDB_ENT_TYPE_CLIENT, HDB_LDB_ENT_TYPE_SERVER, 
+  HDB_LDB_ENT_TYPE_KRBTGT, HDB_LDB_ENT_TYPE_ANY };
 
 static const char * const krb5_attrs[] = {
 	"objectClass",
@@ -980,9 +981,10 @@ static krb5_error_code LDB_destroy(krb5_context context, HDB *db)
 	return 0;
 }
 
-krb5_error_code hdb_ldb_create(krb5_context context, struct HDB **db, const char *arg)
+krb5_error_code hdb_ldb_create(TALLOC_CTX *mem_ctx, 
+			       krb5_context context, struct HDB **db, const char *arg)
 {
-	*db = talloc(NULL, HDB);
+	*db = talloc(mem_ctx, HDB);
 	if (!*db) {
 		krb5_set_error_string(context, "malloc: out of memory");
 		return ENOMEM;
@@ -990,8 +992,8 @@ krb5_error_code hdb_ldb_create(krb5_context context, struct HDB **db, const char
 
 	(*db)->hdb_master_key_set = 0;
 	(*db)->hdb_db = NULL;
-	/* in future, we could cache the connect here, but for now KISS */
 
+	/* Setup the link to LDB */
 	(*db)->hdb_db = samdb_connect(db);
 	if ((*db)->hdb_db == NULL) {
 		krb5_warnx(context, "hdb_ldb_create: samdb_connect failed!");

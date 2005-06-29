@@ -357,6 +357,10 @@
 		[out,ref]     policy_handle *group_handle
 		);
 
+	/* Group attributes */
+	const int SE_GROUP_MANDATORY = 0x0001;
+	const int SE_GROUP_ENABLED_BY_DEFAULT = 0x0002;
+	const int SE_GROUP_ENABLED = 0x0004;
 
 	/************************/
 	/* Function    0x14     */
@@ -816,17 +820,17 @@
 
 	typedef [public] struct {
 		uint32 rid;
-		uint32 type;
-	} samr_RidWithType;
+		uint32 attributes;
+	} samr_RidWithAttribute;
 
 	typedef [public] struct {
 		uint32     count;
-		[size_is(count)] samr_RidWithType *rids;
-	} samr_RidWithTypeArray;
+		[size_is(count)] samr_RidWithAttribute *rids;
+	} samr_RidWithAttributeArray;
 
 	NTSTATUS samr_GetGroupsForUser(
 		[in,ref]   policy_handle *user_handle,
-		[out]      samr_RidWithTypeArray  *rids
+		[out]      samr_RidWithAttributeArray  *rids
 		);
 
 	/************************/
