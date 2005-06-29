@@ -206,7 +206,7 @@ static BOOL reg_io_hdrbuf_sec(uint32 ptr, uint32 *ptr3, BUFHDR *hdr_sec,
  Inits a registry key create request
 ********************************************************************/
 
-void init_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
+void init_reg_q_create_key_ex(REG_Q_CREATE_KEY_EX *q_c, POLICY_HND *hnd,
                            char *name, char *key_class, uint32 access_desired,
                            SEC_DESC_BUF *sec_buf)
 {
@@ -234,13 +234,13 @@ void init_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
 Marshalls a registry key create request
 ********************************************************************/
 
-BOOL reg_io_q_create_key(const char *desc,  REG_Q_CREATE_KEY *q_u,
+BOOL reg_io_q_create_key_ex(const char *desc,  REG_Q_CREATE_KEY_EX *q_u,
                          prs_struct *ps, int depth)
 {
 	if ( !q_u )
 		return False;
 
-	prs_debug(ps, depth, desc, "reg_io_q_create_key");
+	prs_debug(ps, depth, desc, "reg_io_q_create_key_ex");
 	depth++;
 
 	if(!prs_align(ps))
@@ -285,13 +285,13 @@ BOOL reg_io_q_create_key(const char *desc,  REG_Q_CREATE_KEY *q_u,
 Unmarshalls a registry key create response
 ********************************************************************/
 
-BOOL reg_io_r_create_key(const char *desc,  REG_R_CREATE_KEY *r_u,
+BOOL reg_io_r_create_key_ex(const char *desc,  REG_R_CREATE_KEY_EX *r_u,
                          prs_struct *ps, int depth)
 {
 	if ( !r_u )
 		return False;
 
-	prs_debug(ps, depth, desc, "reg_io_r_create_key");
+	prs_debug(ps, depth, desc, "reg_io_r_create_key_ex");
 	depth++;
 
 	if(!prs_align(ps))
@@ -299,7 +299,7 @@ BOOL reg_io_r_create_key(const char *desc,  REG_R_CREATE_KEY *r_u,
 	
 	if(!smb_io_pol_hnd("", &r_u->handle, ps, depth))
 		return False;
-	if(!prs_uint32("unknown", ps, depth, &r_u->unknown))
+	if(!prs_uint32("disposition", ps, depth, &r_u->disposition))
 		return False;
 
 	if(!prs_werror("status", ps, depth, &r_u->status))

@@ -30,18 +30,11 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-#define REGSTR_PRODUCTTYPE		"ProductType"
-#define REG_PT_WINNT			"WinNT"
-#define REG_PT_LANMANNT			"LanmanNT"
-#define REG_PT_SERVERNT			"ServerNT"
-
 #define OUR_HANDLE(hnd) (((hnd)==NULL)?"NULL":(IVAL((hnd)->data5,4)==(uint32)sys_getpid()?"OURS":"OTHER")), \
 ((unsigned int)IVAL((hnd)->data5,4)),((unsigned int)sys_getpid())
 
 
-/* no idea if this is correct, just use the file access bits for now */
-
-struct generic_mapping reg_map = { REG_KEY_READ, REG_KEY_WRITE, REG_KEY_EXECUTE, REG_KEY_ALL };
+static struct generic_mapping reg_generic_map = { REG_KEY_READ, REG_KEY_WRITE, REG_KEY_EXECUTE, REG_KEY_ALL };
 
 /********************************************************************
 ********************************************************************/
@@ -51,6 +44,7 @@ NTSTATUS registry_access_check( SEC_DESC *sec_desc, NT_USER_TOKEN *token,
 {
 	NTSTATUS result;
 		
+	se_map_generic( &access_desired, &reg_generic_map );
 	se_access_check( sec_desc, token, access_desired, access_granted, &result );
 	
 	return result;
@@ -265,9 +259,7 @@ static BOOL get_subkey_information( REGISTRY_KEY *key, uint32 *maxnum, uint32 *m
 }
 
 /********************************************************************
- retrieve information about the values.  We don't store values 
- here.  The registry tdb is intended to be a frontend to oether 
- Samba tdb's (such as ntdrivers.tdb).
+ retrieve information about the values.  
  *******************************************************************/
  
 static BOOL get_value_information( REGISTRY_KEY *key, uint32 *maxnum, 
@@ -293,7 +285,7 @@ static BOOL get_value_information( REGISTRY_KEY *key, uint32 *maxnum,
 	
 	for ( i=0; i<num_values && val; i++ ) 
 	{
-		lenmax  = MAX(lenmax,  strlen(val->valuename)+1 );
+		lenmax  = MAX(lenmax,  val->valuename ? strlen(val->valuename)+1 : 0 );
 		sizemax = MAX(sizemax, val->size );
 		
 		val = regval_ctr_specific_value( &values, i );
@@ -460,7 +452,7 @@ WERROR _reg_query_value(pipes_struct *p, REG_Q_QUERY_VALUE *q_u, REG_R_QUERY_VAL
 	DEBUG(5,("reg_info: looking up value: [%s]\n", name));
 
 	regval_ctr_init( &regvals );
-
+	
 	for ( i=0; fetch_reg_values_specific(regkey, &val, i); i++ ) 
 	{
 		DEBUG(10,("_reg_info: Testing value [%s]\n", val->valuename));
@@ -1020,12 +1012,12 @@ static WERROR make_default_reg_sd( TALLOC_CTX *ctx, SEC_DESC **psd )
 
 	/* basic access for Everyone */
 
-	init_sec_access(&mask, reg_map.generic_execute | reg_map.generic_read );
+	init_sec_access(&mask, reg_generic_map.generic_execute | reg_generic_map.generic_read );
 	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 
 	/* add Full Access 'BUILTIN\Administrators' */
 
-	init_sec_access(&mask, reg_map.generic_all);
+	init_sec_access(&mask, reg_generic_map.generic_all);
 	sid_copy(&adm_sid, &global_sid_Builtin);
 	sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
 	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
@@ -1105,7 +1097,7 @@ WERROR _reg_save_key(pipes_struct *p, REG_Q_SAVE_KEY  *q_u, REG_R_SAVE_KEY *r_u)
 /*******************************************************************
  ********************************************************************/
 
-WERROR _reg_create_key(pipes_struct *p, REG_Q_CREATE_KEY  *q_u, REG_R_CREATE_KEY *r_u)
+WERROR _reg_create_key_ex(pipes_struct *p, REG_Q_CREATE_KEY_EX *q_u, REG_R_CREATE_KEY_EX *r_u)
 {
 	REGISTRY_KEY *parent = find_regkey_index_by_hnd(p, &q_u->handle);
 	REGISTRY_KEY *newparent;
@@ -1222,6 +1214,12 @@ WERROR _reg_set_value(pipes_struct *p, REG_Q_SET_VALUE  *q_u, REG_R_SET_VALUE *r
 		
 	rpcstr_pull( valuename, q_u->name.string->buffer, sizeof(valuename), q_u->name.string->uni_str_len*2, 0 );
 
+	/* verify the name */
+
+	if ( !*valuename )
+		return WERR_INVALID_PARAM;
+
+	DEBUG(8,("_reg_set_value: Setting value for [%s:%s]\n", key->name, valuename));
 		
 	regval_ctr_init( &values );
 	
@@ -1355,6 +1353,11 @@ WERROR _reg_delete_value(pipes_struct *p, REG_Q_DELETE_VALUE  *q_u, REG_R_DELETE
 		return WERR_ACCESS_DENIED;
 
 	rpcstr_pull( valuename, q_u->name.string->buffer, sizeof(valuename), q_u->name.string->uni_str_len*2, 0 );
+
+	if ( !*valuename )
+		return WERR_INVALID_PARAM;
+
+	DEBUG(8,("_reg_delete_value: Setting value for [%s:%s]\n", key->name, valuename));
 
 	regval_ctr_init( &values );
 	

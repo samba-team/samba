@@ -399,7 +399,7 @@ static int regdb_unpack_values(REGVAL_CTR *values, char *buf, int buflen)
 	int 		len = 0;
 	uint32		type;
 	pstring		valuename;
-	int		size;
+	uint32		size;
 	uint8		*data_p;
 	uint32 		num_values = 0;
 	int 		i;
@@ -413,17 +413,21 @@ static int regdb_unpack_values(REGVAL_CTR *values, char *buf, int buflen)
 	for ( i=0; i<num_values; i++ ) {
 		/* unpack the next regval */
 		
+		type = REG_NONE;
+		size = 0;
+		data_p = NULL;
 		len += tdb_unpack(buf+len, buflen-len, "fdB",
 				  valuename,
 				  &type,
 				  &size,
 				  &data_p);
 				
-		/* add the new value */
-		
-		regval_ctr_addvalue( values, valuename, type, (const char *)data_p, size );
+		/* add the new value. Paranoid protective code -- make sure data_p is valid */
 
-		SAFE_FREE(data_p); /* 'B' option to tdbpack does a malloc() */
+		if ( size && data_p ) {
+			regval_ctr_addvalue( values, valuename, type, (const char *)data_p, size );
+			SAFE_FREE(data_p); /* 'B' option to tdb_unpack does a malloc() */
+		}
 
 		DEBUG(8,("specific: [%s], len: %d\n", valuename, size));
 	}

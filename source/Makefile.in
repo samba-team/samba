@@ -181,6 +181,8 @@ ERRORMAP_OBJ = libsmb/errormap.o
 
 PASSCHANGE_OBJ = libsmb/passchange.o
 
+SOCKET_WRAPPER_OBJ = lib/socket_wrapper.o
+
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
 LIB_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
@@ -202,7 +204,7 @@ LIB_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/pam_errors.o intl/lang_tdb.o \
 	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
 	  lib/module.o lib/ldap_escape.o @CHARSET_STATIC@ \
-	  lib/secdesc.o lib/secace.o lib/secacl.o 
+	  lib/secdesc.o lib/secace.o lib/secacl.o @SOCKWRAP@
 
 LIB_NONSMBD_OBJ = $(LIB_OBJ) lib/dummysmbd.o lib/dummyroot.o
 
@@ -333,7 +335,6 @@ GROUPDB_OBJ = groupdb/mapping.o
 
 PROFILE_OBJ = profile/profile.o
 PROFILES_OBJ = utils/profiles.o
-EDITREG_OBJ = utils/editreg.o
 
 OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o
 
@@ -861,11 +862,7 @@ bin/net@EXEEXT@: $(NET_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/profiles@EXEEXT@: $(PROFILES_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(PROFILES_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@
-
-bin/editreg@EXEEXT@: $(EDITREG_OBJ) @BUILD_POPT@ bin/.dummy
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(EDITREG_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@
+	@$(CC) $(FLAGS) -o $@ $(PROFILES_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ @SOCKWRAP@
 
 bin/smbspool@EXEEXT@: $(CUPS_OBJ) bin/.dummy
 	@echo Linking $@
@@ -1290,15 +1287,15 @@ bin/libmsrpc.a: $(LIBMSRPC_PICOBJ)
 
 bin/tdbbackup@EXEEXT@: $(TDBBACKUP_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(DYNEXP) $(TDBBACKUP_OBJ)
+	@$(CC) $(FLAGS) -o $@ $(DYNEXP) $(TDBBACKUP_OBJ) @SOCKWRAP@
 
 bin/tdbtool@EXEEXT@: $(TDBTOOL_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(DYNEXP) $(TDBTOOL_OBJ)
+	@$(CC) $(FLAGS) -o $@ $(DYNEXP) $(TDBTOOL_OBJ) @SOCKWRAP@
 
 bin/tdbdump@EXEEXT@: $(TDBDUMP_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(DYNEXP) $(TDBDUMP_OBJ)
+	@$(CC) $(FLAGS) -o $@ $(DYNEXP) $(TDBDUMP_OBJ) @SOCKWRAP@
 
 bin/t_strcmp@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_strcmp.o
 	$(CC) $(FLAGS) -o $@ $(DYNEXP) $(LIBS) torture/t_strcmp.o -L ./bin -lbigballofmud
@@ -1532,9 +1529,6 @@ headers:
 	$(MAKE) client/client_proto.h; \
 	$(MAKE) utils/ntlm_auth_proto.h; \
 	$(MAKE) utils/net_proto.h;
-
-prebuiltheaders:
-	$(MAKE) include/tdbsam2_parse_info.h
 
 proto: headers 
 
