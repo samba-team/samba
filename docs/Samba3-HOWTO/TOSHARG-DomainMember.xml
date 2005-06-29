@@ -939,7 +939,7 @@ and it may be detrimental.
 <indexterm><primary>KDC</primary></indexterm>
 <indexterm><primary>_kerberos.REALM.NAME</primary></indexterm>
 Microsoft ADS automatically create SRV records in the DNS zone 
-<parameter>_kerberos.REALM.NAME</parameter> for each KDC in the realm. This is part
+<parameter>_kerberos._tcp.REALM.NAME</parameter> for each KDC in the realm. This is part
 of the installation and configuration process used to create an Active Directory domain.
 A KDC is a Kerberos Key Distribution Center and forms an integral part of the Microsoft
 active directory infrastructure.
