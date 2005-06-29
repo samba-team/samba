@@ -567,7 +567,7 @@ static int net_afs_key(int argc, const char **argv)
 	struct afs_keyfile keyfile;
 
 	if (argc != 2) {
-		d_printf("usage: 'net afskey <keyfile> cell'\n");
+		d_printf("usage: 'net afs key <keyfile> cell'\n");
 		return -1;
 	}
 
