@@ -82,7 +82,7 @@
 		<acronym>EMF</acronym>
 		<glossdef>
 			<para>
-			An intermediate file format used by Microsoft <?latex \linebreak ?>Windows-based servers and clients. EMF files may be
+			An intermediate file format used by Microsoft Windows-based servers and clients. EMF files may be
 			rendered into a page description language by a print processor.
 		</para>
 		</glossdef>

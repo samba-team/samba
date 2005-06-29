@@ -20,6 +20,7 @@
 <title>Features and Benefits</title>
 
 <para>
+<indexterm><primary>use computer anywhere</primary></indexterm>
 Every industry eventually matures. One of the great areas of maturation is in
 the focus that has been given over the past decade to make it possible for anyone
 anywhere to use a computer. It has not always been that way. In fact, not so long
@@ -35,6 +36,7 @@ is deserving of special mention.
 </para>
 
 <para>
+<indexterm><primary>codepages</primary></indexterm>
 Samba-2.x supported a single locale through a mechanism called 
 <emphasis>codepages</emphasis>. Samba-3 is destined to become a truly transglobal
 file- and printer-sharing platform.
@@ -46,6 +48,7 @@ file- and printer-sharing platform.
 <title>What Are Charsets and Unicode?</title>
 
 <para>
+<indexterm><primary>character set</primary></indexterm>
 Computers communicate in numbers. In texts, each number is 
 translated to a corresponding letter. The meaning that will be assigned 
 to a certain number depends on the <emphasis>character set (charset)
@@ -53,6 +56,8 @@ to a certain number depends on the <emphasis>character set (charset)
 </para>
 
 <para>
+<indexterm><primary>charset</primary></indexterm>
+<indexterm><primary>ASCII</primary></indexterm>
 A charset can be seen as a table that is used to translate numbers to 
 letters. Not all computers use the same charset (there are charsets 
 with German umlauts, Japanese characters, and so on). The American Standard Code
@@ -62,6 +67,8 @@ encoding scheme used by computers to date. This employs a charset that contains
 </para>
 
 <para>
+<indexterm><primary>multibyte charsets</primary></indexterm>
+<indexterm><primary>extended characters</primary></indexterm>
 There are also charsets that support extended characters, but those need at least
 twice as much storage space as does ASCII encoding. Such charsets can contain
 <command>256 * 256 = 65536</command> characters, which is more than all possible
@@ -70,13 +77,18 @@ more then one byte to store one character.
 </para>
 
 <para>
+<indexterm><primary>unicode</primary></indexterm>
 One standardized multibyte charset encoding scheme is known as
 <ulink url="http://www.unicode.org/">unicode</ulink>.  A big advantage of using a
 multibyte charset is that you only need one. There is no need to make sure two
 computers use the same charset when they are communicating.
 </para>
 
-<para>Old Windows clients use single-byte charsets, named 
+<para>
+<indexterm><primary>single-byte charsets</primary></indexterm>
+<indexterm><primary>SMB/CIFS</primary></indexterm>
+<indexterm><primary>negotiating the charset</primary></indexterm>
+Old Windows clients use single-byte charsets, named 
 <parameter>codepages</parameter>, by Microsoft. However, there is no support for 
 negotiating the charset to be used in the SMB/CIFS protocol. Thus, you 
 have to make sure you are using the same charset when talking to an older client.
@@ -88,6 +100,8 @@ Newer clients (Windows NT, 200x, XP) talk Unicode over the wire.
 <title>Samba and Charsets</title>
 
 <para>
+<indexterm><primary>Unicode</primary></indexterm>
+<indexterm><primary>character sets</primary></indexterm>
 As of Samba-3, Samba can (and will) talk Unicode over the wire. Internally, 
 Samba knows of three kinds of character sets: 
 </para>
@@ -96,11 +110,13 @@ Samba knows of three kinds of character sets:
 	<varlistentry>
 		<term><smbconfoption name="unix charset"/></term>
 		<listitem><para>
+<indexterm><primary>UTF-8</primary></indexterm>
+<indexterm><primary>CP850</primary></indexterm>
 		This is the charset used internally by your operating system. 
 		The default is <constant>UTF-8</constant>, which is fine for most 
 		systems and covers all characters in all languages. The default
 		in previous Samba releases was to save filenames in the encoding of the 
-		clients &smbmdash; for example, cp850 for Western European countries.
+		clients &smbmdash; for example, CP850 for Western European countries.
 		</para></listitem>
 	</varlistentry>
 
@@ -127,9 +143,12 @@ Samba knows of three kinds of character sets:
 <sect1>
 <title>Conversion from Old Names</title>
 
-<para>Because previous Samba versions did not do any charset conversion, 
+<para>
+<indexterm><primary>charset conversion</primary></indexterm>
+Because previous Samba versions did not do any charset conversion, 
 characters in filenames are usually not correct in the UNIX charset but only 
-for the local charset used by the DOS/Windows clients.</para>
+for the local charset used by the DOS/Windows clients.
+</para>
 
 <para>Bjoern Jacke has written a utility named <ulink url="http://j3e.de/linux/convmv/">convmv</ulink>
 that can convert whole directory structures to different charsets with one single command. 
@@ -145,12 +164,20 @@ Setting up Japanese charsets is quite difficult. This is mainly because:
 </para>
 
 <itemizedlist>
-	<listitem><para>The Windows character set is extended from the original legacy Japanese
+	<listitem><para>
+<indexterm><primary>JIS X 0208</primary></indexterm>
+		The Windows character set is extended from the original legacy Japanese
 		standard (JIS X 0208) and is not standardized. This means that the strictly
 		standardized implementation cannot support the full Windows character set.
 	</para></listitem>
 
-	<listitem><para> Mainly for historical reasons, there are several encoding methods in
+	<listitem><para>
+<indexterm><primary>Shift_JIS</primary></indexterm>
+<indexterm><primary>EUC-JP</primary></indexterm>
+<indexterm><primary>CAP</primary></indexterm>
+<indexterm><primary>HEX</primary></indexterm>
+<indexterm><primary>Japanese</primary></indexterm>
+		Mainly for historical reasons, there are several encoding methods in
 		Japanese, which are not fully compatible with each other. There are
 		two major encoding methods. One is the Shift_JIS series used in Windows
 		and some UNIXes. The other is the EUC-JP series used in most UNIXes
@@ -174,7 +201,12 @@ Setting up Japanese charsets is quite difficult. This is mainly because:
 		the charset parameters depends on the implementation of iconv() you are using.
 		</para>
 
-		<para>Though 2-byte fixed UCS-2 encoding is used in Windows internally,
+		<para>
+<indexterm><primary>UCS-2</primary></indexterm>
+<indexterm><primary>Shift_JIS</primary></indexterm>
+<indexterm><primary>ASCII</primary></indexterm>
+<indexterm><primary>English</primary></indexterm>
+		Though 2-byte fixed UCS-2 encoding is used in Windows internally,
 		Shift_JIS series encoding is usually used in Japanese environments
 		as ASCII encoding is in English environments.
 	</para></listitem>
@@ -183,6 +215,7 @@ Setting up Japanese charsets is quite difficult. This is mainly because:
 <sect2><title>Basic Parameter Setting</title>
 
 	<para>
+<indexterm><primary>CP932</primary></indexterm>
 	The <smbconfoption name="dos charset"/> and 
 	<smbconfoption name="display charset"/>
 	should be set to the locale compatible with the character set 
@@ -191,6 +224,9 @@ Setting up Japanese charsets is quite difficult. This is mainly because:
 	</para>
 
 	<para>
+<indexterm><primary>Shift_JIS</primary></indexterm>
+<indexterm><primary>UTF-8</primary></indexterm>
+<indexterm><primary>EUC-JP</primary></indexterm>
 	The <smbconfoption name="unix charset"/> can be either Shift_JIS series,
 	EUC-JP series, or UTF-8. UTF-8 is always available, but the availability of other locales
 	and the name itself depends on the system.
@@ -246,6 +282,8 @@ Setting up Japanese charsets is quite difficult. This is mainly because:
 
 		<varlistentry><term>EUC-JP series</term>
 			<listitem><para>
+<indexterm><primary>EUC-JP</primary></indexterm>
+<indexterm><primary>Japanese UNIX</primary></indexterm>
 			EUC-JP series means a locale that is equivalent to the industry
 			standard called EUC-JP, widely used in Japanese UNIX (although EUC
 			contains specifications for languages other than Japanese, such as
@@ -256,10 +294,20 @@ Setting up Japanese charsets is quite difficult. This is mainly because:
 			</para>
 
 			<para>
+<indexterm><primary>EUC-JP</primary></indexterm>
+<indexterm><primary>UNIX</primary></indexterm>
+<indexterm><primary>Linux</primary></indexterm>
+<indexterm><primary>FreeBSD</primary></indexterm>
+<indexterm><primary>Solaris</primary></indexterm>
+<indexterm><primary>IRIX</primary></indexterm>
+<indexterm><primary>Tru64 UNIX</primary></indexterm>
+<indexterm><primary>Japanese locale</primary></indexterm>
+<indexterm><primary>Shift_JIS</primary></indexterm>
+<indexterm><primary>UTF-8</primary></indexterm>
 			Since EUC-JP is usually used on open source UNIX, Linux, and FreeBSD, and on commercial-based UNIX, Solaris,
 			IRIX, and Tru64 UNIX as Japanese locale (however, it is also possible on Solaris to use Shift_JIS and UTF-8,
 			and on Tru64 UNIX it is possible to use Shift_JIS). To use EUC-JP series, most Japanese filenames created from
-			Windows can be referred to also on UNIX. Also, most Japanized free software work mainly with EUC-JP only.
+			Windows can be referred to also on UNIX. Also, most Japanized free software works mainly with EUC-JP only.
 			</para>
 
 			<para>
@@ -274,6 +322,7 @@ Setting up Japanese charsets is quite difficult. This is mainly because:
 			</para>
 
 			<para>
+<indexterm><primary>eucJP-ms locale</primary></indexterm>
 			Moreover, if you built Samba using differently installed libiconv,
 			the eucJP-ms locale included in libiconv and EUC-JP series locale
 			included in the operating system may not be compatible. In this case, you may need to
@@ -311,6 +360,9 @@ Setting up Japanese charsets is quite difficult. This is mainly because:
 			</para>
 
 			<para>
+<indexterm><primary>Windows</primary></indexterm>
+<indexterm><primary>Java</primary></indexterm>
+<indexterm><primary>Unicode UTF-8</primary></indexterm>
 			In addition, although it is not directly concerned with Samba, since
 			there is a delicate difference between the iconv() function, which is
 			generally used on UNIX, and the functions used on other platforms,
@@ -320,6 +372,7 @@ Setting up Japanese charsets is quite difficult. This is mainly because:
 			</para>
 
 			<para>
+<indexterm><primary>Mac OS X </primary></indexterm>
 			Although Mac OS X uses UTF-8 as its encoding method for filenames,
 			it uses an extended UTF-8 specification that Samba cannot handle, so
 			UTF-8 locale is not available for Mac OS X.
@@ -329,6 +382,9 @@ Setting up Japanese charsets is quite difficult. This is mainly because:
 
 		<varlistentry><term>Shift_JIS series + vfs_cap (CAP encoding)</term>
 			<listitem><para>
+<indexterm><primary>CAP</primary></indexterm>
+<indexterm><primary>NetAtalk</primary></indexterm>
+<indexterm><primary>Macintosh</primary></indexterm>
 			CAP encoding means a specification used in CAP and NetAtalk, file
 			server software for Macintosh. In the case of CAP encoding, for
 			example, if a Japanese filename consists of 0x8ba4 and 0x974c, and
@@ -366,10 +422,11 @@ Setting up Japanese charsets is quite difficult. This is mainly because:
 
 			<para>
 			To use CAP encoding on Samba-3, you should use the unix charset parameter and VFS 
-			as in Example 29.5.1:
+			as in <link linkend="vfscap-intl">the VFS CAP smb.conf file</link>.
 			</para>
 
-<example><title>VFS CAP</title>
+<example id="vfscap-intl">
+<title>VFS CAP</title>
 	<smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfcomment>the locale name "CP932" may be different</smbconfcomment>
@@ -382,6 +439,10 @@ Setting up Japanese charsets is quite difficult. This is mainly because:
 </example>
 
 			<para>
+<indexterm><primary>CP932</primary></indexterm>
+<indexterm><primary>libiconv</primary></indexterm>
+<indexterm><primary>unix charset</primary></indexterm>
+<indexterm><primary>cap-share</primary></indexterm>
 			You should set CP932 if using GNU libiconv for unix charset. With this setting,
 			filenames in the <quote>cap-share</quote> share are written with CAP encoding.
 			</para>
@@ -409,8 +470,6 @@ Here is some additional information regarding individual implementations:
 			Using the patched libiconv-1.8, these settings are available:
 			</para>
 
-
-<!-- FIXME: Convert to diagram ? -->
 <programlisting>
 dos charset = CP932
 unix charset = CP932 / eucJP-ms / UTF-8
@@ -435,13 +494,12 @@ display charset = CP932
 
 			<para>
 			Using the above glibc, these setting are available:
+			<smbconfblock>
+			<smbconfoption name="dos charset">CP932</smbconfoption>
+			<smbconfoption name="unix charset">CP932 / eucJP-ms / UTF-8</smbconfoption>
+			<smbconfoption name="display charset">CP932</smbconfoption>
+			</smbconfblock>
 			</para>
-
-<smbconfblock>
-<smbconfoption name="dos charset">CP932</smbconfoption>
-<smbconfoption name="unix charset">CP932 / eucJP-ms / UTF-8</smbconfoption>
-<smbconfoption name="display charset">CP932</smbconfoption>
-</smbconfblock>
 
 			<para>
 			Other Japanese locales (for example, Shift_JIS and EUC-JP) should not

@@ -78,7 +78,7 @@ much. The correct settings are very dependent on your local network.
 <para>
 The socket option TCP_NODELAY is the one that seems to make the biggest single difference
 for most networks. Many people report that adding
-<?latex \linebreak ?><smbconfoption name="socket options">TCP_NODELAY</smbconfoption>
+<smbconfoption name="socket options">TCP_NODELAY</smbconfoption>
 doubles the read performance of a Samba drive. The best explanation I have seen for
 this is that the Microsoft TCP/IP stack is slow in sending TCP ACKs.
 </para>
