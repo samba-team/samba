@@ -2211,7 +2211,8 @@ static WERROR get_printer_dataex( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL *printe
 				  uint32 *needed, uint32 in_size  )
 {
 	REGISTRY_VALUE 		*val;
-	int			size, data_len;
+	uint32			size;
+	int			data_len;
 	
 	if ( !(val = get_printer_data( printer->info_2, key, value)) )
 		return WERR_BADFILE;
@@ -8030,7 +8031,7 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 			result = WERR_NOMEM;
 			goto done;
 		}
-		data_len = (size_t)regval_size(val);
+		data_len = regval_size(val);
 		memcpy( *data_out, regval_data_p(val), data_len );
 		*out_data_len = data_len;
 	}
@@ -9250,7 +9251,7 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	int		i;
 	REGISTRY_VALUE	*val;
 	char		*value_name;
-	int		data_len;
+	uint32		data_len;
 	
 
 	DEBUG(4,("_spoolss_enumprinterdataex\n"));

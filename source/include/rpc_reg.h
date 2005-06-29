@@ -34,7 +34,7 @@
 #define REG_OPEN_HKPD		0x03
 #define REG_OPEN_HKU		0x04
 #define REG_CLOSE		0x05
-#define REG_CREATE_KEY		0x06
+#define REG_CREATE_KEY_EX	0x06
 #define REG_DELETE_KEY		0x07
 #define REG_DELETE_VALUE	0x08
 #define REG_ENUM_KEY		0x09
@@ -225,13 +225,13 @@ typedef struct {
 	uint32 ptr3;
 	SEC_DESC_BUF *data;
 	uint32 unknown_2; /* 0x0000 0000 */
-} REG_Q_CREATE_KEY;
+} REG_Q_CREATE_KEY_EX;
 
 typedef struct {
 	POLICY_HND handle;
-	uint32 unknown;
+	uint32 disposition;
 	WERROR status; 
-} REG_R_CREATE_KEY;
+} REG_R_CREATE_KEY_EX;
 
 /***********************************************/
 

@@ -1544,7 +1544,7 @@ NTSTATUS _lsa_lookup_priv_value(pipes_struct *p, LSA_Q_LOOKUP_PRIV_VALUE *q_u, L
 		
 	unistr2_to_ascii(name, &q_u->privname.unistring, sizeof(name));
 	
-	DEBUG(10,("_lsa_priv_get_dispname: name = %s\n", name));
+	DEBUG(10,("_lsa_lookup_priv_value: name = %s\n", name));
 
 	if ( !se_priv_from_name( name, &mask ) )
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
