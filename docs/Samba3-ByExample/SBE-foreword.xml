@@ -4,38 +4,35 @@
 <preface lang="en-US">
 <title>Foreword</title>
 
-<sect1><title>By John M. Weathersby, OSSI</title>
+<sect1><title>By John M. Weathersby, Executive Director, OSSI</title>
 <blockquote>
-<attribution>
-Executive Director, Open Source Software Institute
-</attribution>
 
 <para>
 The Open Source Software Institute (OSSI) is comprised of representatives from a broad spectrum of business and
 non-business organizations that share a common interest in the promotion of development and implementation
-of open-source software solutions globally, and in particular within the United States of America.
+of open source software solutions globally, and in particular within the United States of America.
 </para>
 
 <para>
 The OSSI has global affiliations with like-minded organizations. Our affiliate in the United Kingdom is the
-Open Source Consortium. Both the OSSI and the OSC share a common objective to expand the use of open-source
+Open Source Consortium (OSC). Both the OSSI and the OSC share a common objective to expand the use of open source
 software in federal, state, and municipal government agencies; and in academic institutions. We represent
 businesses that provide professional support services that answer the needs of our target organizational
 information technology consumers in an effective and cost-efficient manner.
 </para>
 
 <para>
-Open source software has matured greatly over the past 5 years with the result that an increasing number of
-people who hold key decision-making positions want to know how the business model works. They
+Open source software has matured greatly over the past five years with the result that an increasing number of
+people who hold key decisionmaking positions want to know how the business model works. They
 want to understand how problems get resolved, how questions get answered, and how the development model
-is sustained. Information and Communications Technology directors in defense organizations, and in other
+is sustained. Information and communications technology directors in defense organizations, and in other
 government agencies that deal with sensitive information, want to become familiar with development road-maps
-and, in particular, seek to evaluate the track record of the main-stream open-source project teams.
+and, in particular, seek to evaluate the track record of the mainstream open source project teams.
 </para>
 
 <para>
 Wherever the OSSI gains entrance to new opportunities we find that Microsoft Windows technologies are the 
-benchmark against which open-source software solutions are measured. Two open-source software projects
+benchmark against which open source software solutions are measured. Two open source software projects
 are key to our ability to present a structured and convincing proposition that there are alternatives
 to the incumbent proprietary means of meeting information technology needs. They are the Apache Web Server
 and Samba.
@@ -44,7 +41,7 @@ and Samba.
 <para>
 Just as the Apache Web Server is the standard in web serving technology, Samba is the definitive standard
 for providing interoperability with UNIX systems and other non-Microsoft operating system platforms. Both
-open-source applications have a truly remarkable track record that extends well over a decade. Both have
+open source applications have a truly remarkable track record that extends for more than a decade. Both have
 demonstrated the unique capacity to innovate and maintain a level of development that has not only kept
 pace with demands, but, in many areas, each project has also proven to be an industry leader.
 </para>
@@ -58,8 +55,8 @@ it and keep it current might prove difficult.
 </para>
 
 <para>
-This second edition of the book, <quote>Samba-3 by Example</quote>, barely one year following the release
-of the first edition, has removed all concerns and is proof that open-source solutions are a compelling choice.
+This second edition of the book, <emphasis>Samba-3 by Example</emphasis>, barely one year following the release
+of the first edition, has removed all concerns and is proof that open source solutions are a compelling choice.
 The first edition was released shortly following the release of Samba version 3.0 itself, and has become
 the authoritative instrument for training and for guiding deployment.
 </para>

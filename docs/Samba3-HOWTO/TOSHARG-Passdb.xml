@@ -881,8 +881,13 @@ Samba provides two tools for management of user and machine accounts:
 </para>
 
 <para>
+<indexterm><primary>pdbedit</primary></indexterm>
+<indexterm><primary>password aging</primary></indexterm>
+<indexterm><primary>failed logins</primary></indexterm>
 The <command>pdbedit</command> can be used to manage account policies in addition to
-Samba user account information.
+Samba user account information. The policy management capability is used to administer
+domain default settings for password aging and management controls to handle failed login
+attempts.
 </para>
 
 <para>
@@ -897,7 +902,7 @@ is being added to the <command>net</command> toolset (see <link linkend="NetComm
 </para>
 
 	<sect2>
-	<title>The <command>smbpasswd</command> Command</title>
+	<title>The <command>smbpasswd</command> Utility</title>
 	
 		<para>
 <indexterm><primary>smbpasswd</primary></indexterm>
@@ -998,7 +1003,7 @@ is being added to the <command>net</command> toolset (see <link linkend="NetComm
 	</sect2>
 
 	<sect2 id="pdbeditthing">
-	<title>The <command>pdbedit</command> Command</title>
+	<title>The <command>pdbedit</command> Utility</title>
 
 		<para>
 		<indexterm><primary>pdbedit</primary></indexterm>
@@ -1012,6 +1017,21 @@ is being added to the <command>net</command> toolset (see <link linkend="NetComm
 			<listitem><para>add, remove, or modify user accounts.</para></listitem>
 			<listitem><para>list user accounts.</para></listitem>
 			<listitem><para>migrate user accounts.</para></listitem>
+		</itemizedlist>
+
+		<para>
+		Domain global policy controls available include:
+		</para>
+
+		<itemizedlist>
+			<listitem><para>Maximum Password Age</para></listitem>
+			<listitem><para>Minimum Password Age</para></listitem>
+			<listitem><para>Mimimum Password Length</para></listitem>
+			<listitem><para>Password Uniqueness (remembers number of prior passwords)</para></listitem>
+			<listitem><para>Account Lockout</para></listitem>
+			<listitem><para>Bad Logon Attempts</para></listitem>
+			<listitem><para>Lockout Reset Delay</para></listitem>
+			<listitem><para>Lockout Duration</para></listitem>
 		</itemizedlist>
 
 		<para>
