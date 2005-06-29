@@ -419,22 +419,22 @@ static BOOL api_reg_save_key(pipes_struct *p)
 /*******************************************************************
  ******************************************************************/
 
-static BOOL api_reg_create_key(pipes_struct *p)
+static BOOL api_reg_create_key_ex(pipes_struct *p)
 {
-	REG_Q_CREATE_KEY q_u;
-	REG_R_CREATE_KEY r_u;
+	REG_Q_CREATE_KEY_EX q_u;
+	REG_R_CREATE_KEY_EX r_u;
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	if(!reg_io_q_create_key("", &q_u, data, 0))
+	if(!reg_io_q_create_key_ex("", &q_u, data, 0))
 		return False;
 		
-	r_u.status = _reg_create_key(p, &q_u, &r_u);
+	r_u.status = _reg_create_key_ex(p, &q_u, &r_u);
 
-	if(!reg_io_r_create_key("", &r_u, rdata, 0))
+	if(!reg_io_r_create_key_ex("", &r_u, rdata, 0))
 		return False;
 
 	return True;
@@ -584,7 +584,7 @@ static struct api_struct api_reg_cmds[] =
       { "REG_GETVERSION"         , REG_GETVERSION         , api_reg_getversion       },
       { "REG_SAVE_KEY"           , REG_SAVE_KEY           , api_reg_save_key         },
       { "REG_RESTORE_KEY"        , REG_RESTORE_KEY        , api_reg_restore_key      },
-      { "REG_CREATE_KEY"         , REG_CREATE_KEY         , api_reg_create_key       },
+      { "REG_CREATE_KEY_EX"      , REG_CREATE_KEY_EX      , api_reg_create_key_ex    },
       { "REG_SET_VALUE"          , REG_SET_VALUE          , api_reg_set_value        },
       { "REG_DELETE_KEY"         , REG_DELETE_KEY         , api_reg_delete_key       },
       { "REG_DELETE_VALUE"       , REG_DELETE_VALUE       , api_reg_delete_value     },

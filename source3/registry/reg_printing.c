@@ -38,7 +38,6 @@ static const char *top_level_keys[MAX_TOP_LEVEL_KEYS] = {
 	"Forms",
 	"Printers" 
 };
-	
 
 /**********************************************************************
  It is safe to assume that every registry path passed into on of 
@@ -832,6 +831,7 @@ static int handle_printing_subpath( char *key, REGSUBKEY_CTR *subkeys, REGVAL_CT
 	return result;
 
 }
+
 /**********************************************************************
  Enumerate registry subkey names given a registry path.  
  Caller is responsible for freeing memory to **subkeys
@@ -840,7 +840,6 @@ static int handle_printing_subpath( char *key, REGSUBKEY_CTR *subkeys, REGVAL_CT
 static int printing_subkey_info( const char *key, REGSUBKEY_CTR *subkey_ctr )
 {
 	char 		*path;
-	BOOL		top_level = False;
 	int		num_subkeys = 0;
 	
 	DEBUG(10,("printing_subkey_info: key=>[%s]\n", key));
@@ -849,25 +848,22 @@ static int printing_subkey_info( const char *key, REGSUBKEY_CTR *subkey_ctr )
 	
 	/* check to see if we are dealing with the top level key */
 	
-	if ( !path )
-		top_level = True;
-		
-	if ( top_level ) {
-		/* check between the two top level keys here */
-		
-		if ( strequal( KEY_PRINTING, key ) ) {
-			regsubkey_ctr_addkey( subkey_ctr, "Environments" );
-			regsubkey_ctr_addkey( subkey_ctr, "Forms" );
-		}
-		else if ( strequal( KEY_PRINTING_2K, key ) ) {
-			regsubkey_ctr_addkey( subkey_ctr, "Printers" );
-		}
-	}
-	else
+	if ( path ) {
 		num_subkeys = handle_printing_subpath( path, subkey_ctr, NULL );
+		SAFE_FREE( path );
+		return num_subkeys;
+	}
 	
-	SAFE_FREE( path );
-	
+	/* handle top level keys here */
+		
+	if ( strequal( KEY_PRINTING, key ) ) {
+		regsubkey_ctr_addkey( subkey_ctr, "Environments" );
+		regsubkey_ctr_addkey( subkey_ctr, "Forms" );
+	}
+	else if ( strequal( KEY_PRINTING_2K, key ) ) {
+		regsubkey_ctr_addkey( subkey_ctr, "Printers" );
+	}
+
 	return num_subkeys;
 }
 
@@ -879,25 +875,22 @@ static int printing_subkey_info( const char *key, REGSUBKEY_CTR *subkey_ctr )
 static int printing_value_info( const char *key, REGVAL_CTR *val )
 {
 	char 		*path;
-	BOOL		top_level = False;
 	int		num_values = 0;
 	
 	DEBUG(10,("printing_value_info: key=>[%s]\n", key));
 	
 	path = trim_reg_path( key );
-	
-	/* check to see if we are dealing with the top level key */
-	
-	if ( !path )
-		top_level = True;
-	
-	/* fill in values from the getprinterdata_printer_server() */
-	if ( top_level ) {
-		if ( strequal( key, KEY_PRINTING_PORTS ) ) 
-			num_values = fill_ports_values( val );
-	} else
-		num_values = handle_printing_subpath( path, NULL, val );
 		
+	if ( path ) {
+		num_values = handle_printing_subpath( path, NULL, val );
+		SAFE_FREE( path );
+		return num_values;
+	}
+	
+	/* top level key */
+	
+	if ( strequal( key, KEY_PRINTING_PORTS ) ) 
+		num_values = fill_ports_values( val );
 	
 	return num_values;
 }

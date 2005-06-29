@@ -82,25 +82,22 @@ extern const SE_PRIV se_restore;
 #define PR_LOG_ON_SERVICE      0x0010
 
 
+typedef struct {
+	uint32 high;
+	uint32 low;
+} LUID;
+
+typedef struct {
+	LUID luid;
+	uint32 attr;
+} LUID_ATTR;
+
 #ifndef _BOOL
 typedef int BOOL;
 #define _BOOL       /* So we don't typedef BOOL again in vfs.h */
 #endif
 
-typedef struct LUID
-{
-	uint32 low;
-	uint32 high;
-} LUID;
-
-typedef struct LUID_ATTR
-{
-	LUID luid;
-	uint32 attr;
-} LUID_ATTR;
-
-typedef struct privilege_set
-{
+typedef struct {
 	TALLOC_CTX *mem_ctx;
 	BOOL ext_ctx;
 	uint32 count;
@@ -108,10 +105,11 @@ typedef struct privilege_set
 	LUID_ATTR *set;
 } PRIVILEGE_SET;
 
-typedef struct _PRIVS {
+typedef struct {
 	SE_PRIV se_priv;
 	const char *name;
 	const char *description;
+	LUID luid;
 } PRIVS;
 
 #endif /* PRIVILEGES_H */
