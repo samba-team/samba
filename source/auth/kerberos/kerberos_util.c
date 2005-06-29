@@ -174,6 +174,7 @@ static int free_ccache(void *ptr) {
 			ret = kerberos_kinit_keyblock_cc(smb_krb5_context->krb5_context, *ccache, 
 							 cli_credentials_get_principal(credentials, mem_ctx), 
 							 &keyblock, NULL, &kdc_time);
+			krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &keyblock);
 		}
 	}
 
