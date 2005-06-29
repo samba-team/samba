@@ -174,6 +174,28 @@ make_anonymous_principalname (PrincipalName *pn)
     return 0;
 }
 
+static void
+log_timestamp(const char *type,
+	      KerberosTime authtime, KerberosTime *starttime, 
+	      KerberosTime endtime, KerberosTime *renew_till)
+{
+    char atime[100], stime[100], etime[100], rtime[100];
+    
+    krb5_format_time(context, authtime, atime, sizeof(atime), TRUE); 
+    if (starttime)
+	krb5_format_time(context, *starttime, stime, sizeof(stime), TRUE); 
+    else
+	strlcpy(stime, "unset", sizeof(stime));
+    krb5_format_time(context, endtime, etime, sizeof(etime), TRUE); 
+    if (renew_till)
+	krb5_format_time(context, *renew_till, rtime, sizeof(rtime), TRUE); 
+    else
+	strlcpy(rtime, "unset", sizeof(rtime));
+    
+    kdc_log(5, "%s authtime: %s starttime: %s endtype: %s renew till: %s",
+	    type, atime, stime, etime, rtime);
+}
+
 static krb5_error_code
 encode_reply(KDC_REP *rep, EncTicketPart *et, EncKDCRepPart *ek, 
 	     krb5_enctype etype, 
@@ -1222,6 +1244,9 @@ as_rep(KDC_REQ *req,
 	rep.padata = NULL;
     }
 
+    log_timestamp("AS-REQ", et.authtime, et.starttime, 
+		  et.endtime, et.renew_till);
+
     ret = encode_reply(&rep, &et, &ek, setype, server->kvno, &skey->key,
 		       client->kvno, reply_key, &e_text, reply);
     free_EncTicketPart(&et);
@@ -1633,7 +1658,10 @@ tgs_make_reply(KDC_REQ_BODY *b,
     ek.renew_till = et.renew_till;
     ek.srealm = rep.ticket.realm;
     ek.sname = rep.ticket.sname;
-	    
+    
+    log_timestamp("TGS-REQ", et.authtime, et.starttime, 
+		  et.endtime, et.renew_till);
+
     /* It is somewhat unclear where the etype in the following
        encryption should come from. What we have is a session
        key in the passed tgt, and a list of preferred etypes
