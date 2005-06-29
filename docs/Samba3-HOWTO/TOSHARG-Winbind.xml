@@ -333,26 +333,22 @@
 <indexterm><primary>remote management</primary></indexterm>
 <indexterm><primary>user authentication</primary></indexterm>
 <indexterm><primary>print spooling</primary></indexterm>
-		Over the last few years, efforts have been underway 
-		by various Samba Team members to decode various aspects of 
-		the Microsoft Remote Procedure Call (MSRPC) system. This 
-		system is used for most network-related operations between 
-		Windows NT machines, including remote management, user authentication,
-		and print spooling. Although initially this work was done 
-		to aid the implementation of Primary Domain Controller (PDC) 
-		functionality in Samba, it has also yielded a body of code that 
-		can be used for other purposes.</para>
+		Over the last few years, efforts have been underway by various Samba Team members to implement various aspects of
+		the Microsoft Remote Procedure Call (MSRPC) system. This system is used for most network-related operations
+		between Windows NT machines, including remote management, user authentication, and print spooling. Although
+		initially this work was done to aid the implementation of Primary Domain Controller (PDC) functionality in
+		Samba, it has also yielded a body of code that can be used for other purposes.
+		</para>
 		
 		<para>
 <indexterm><primary>MSRPC</primary></indexterm>
 <indexterm><primary>enumerate domain users</primary></indexterm>
 <indexterm><primary>enumerate domain groups</primary></indexterm>
-		Winbind uses various MSRPC calls to enumerate domain users 
-		and groups and to obtain detailed information about individual 
-		users or groups. Other MSRPC calls can be used to authenticate 
-		NT domain users and to change user passwords. By directly querying 
-		a Windows PDC for user and group information, Winbind maps the 
-		NT account information onto UNIX user and group names.</para>
+		Winbind uses various MSRPC calls to enumerate domain users and groups and to obtain detailed information about
+		individual users or groups. Other MSRPC calls can be used to authenticate NT domain users and to change user
+		passwords. By directly querying a Windows PDC for user and group information, Winbind maps the NT account
+		information onto UNIX user and group names.
+		</para>
 	</sect2>
 	
 	<sect2>

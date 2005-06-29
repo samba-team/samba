@@ -2238,7 +2238,7 @@ sambaNTPassword: 878D8014606CDA29677A44EFA1353FC7
 
 			<para>
 			For example, you can set `identifier:fullname column' to
-			something like <?latex \linebreak ?><command>CONCAT(Firstname,' ',Surname)</command>
+			something like <command>CONCAT(Firstname,' ',Surname)</command>
 			</para>
 
 			<para>
