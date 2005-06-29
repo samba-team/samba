@@ -881,6 +881,11 @@ Samba provides two tools for management of user and machine accounts:
 </para>
 
 <para>
+The <command>pdbedit</command> can be used to manage account policies in addition to
+Samba user account information.
+</para>
+
+<para>
 <indexterm><primary>smbpasswd</primary></indexterm>
 <indexterm><primary>storage mechanism</primary></indexterm>
 <indexterm><primary>SambaSAMAccount</primary></indexterm>
