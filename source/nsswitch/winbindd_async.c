@@ -1372,16 +1372,19 @@ static void query_user_recv(TALLOC_CTX *mem_ctx, BOOL success,
 			    void *c, void *private_data)
 {
 	void (*cont)(void *priv, BOOL succ, const char *acct_name,
-		     const char *full_name, uint32 group_rid) = c;
+		     const char *full_name, const char *homedir, 
+		     const char *shell, uint32 group_rid) = c;
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger query_user\n"));
-		cont(private_data, False, NULL, NULL, -1);
+		cont(private_data, False, NULL, NULL, NULL, NULL, -1);
 		return;
 	}
 
 	cont(private_data, True, response->data.user_info.acct_name,
 	     response->data.user_info.full_name,
+	     response->data.user_info.homedir,
+	     response->data.user_info.shell,
 	     response->data.user_info.group_rid);
 }
 
@@ -1390,6 +1393,8 @@ void query_user_async(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 		      void (*cont)(void *private_data, BOOL success,
 				   const char *acct_name,
 				   const char *full_name,
+				   const char *homedir,
+				   const char *shell,
 				   uint32 group_rid),
 		      void *private_data)
 {

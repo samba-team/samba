@@ -1,5 +1,5 @@
 /*
- *  idmap_ad: map between Active Directory and RFC 2307 accounts
+ *  idmap_ad: map between Active Directory and RFC 2307 or "Services for Unix" (SFU) Accounts
  *  Copyright (C) 2001-2004 PADL Software Pty Ltd. All rights reserved.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -37,13 +37,11 @@
 #define DBGC_CLASS DBGC_IDMAP
 
 #ifndef ATTR_UIDNUMBER
-/* #define ATTR_UIDNUMBER "msSFU30UidNumber" */
-#define ATTR_UIDNUMBER "uidNumber"
+#define ATTR_UIDNUMBER ADS_ATTR_SFU_UIDNUMBER_OID
 #endif
 
 #ifndef ATTR_GIDNUMBER
-/* #define ATTR_GIDNUMBER "msSFU30GidNumber" */
-#define ATTR_GIDNUMBER "gidNumber"
+#define ATTR_GIDNUMBER ADS_ATTR_SFU_GIDNUMBER_OID
 #endif
 
 #define WINBIND_CCACHE_NAME "MEMORY:winbind_ccache"
@@ -52,6 +50,33 @@ NTSTATUS init_module(void);
 
 static ADS_STRUCT *ad_idmap_ads = NULL;
 static char *ad_idmap_uri = NULL;
+
+static char *attr_uidnumber = NULL;
+static char *attr_gidnumber = NULL;
+
+static BOOL ad_idmap_check_attr_mapping(ADS_STRUCT *ads)
+{
+	if (attr_uidnumber != NULL && attr_gidnumber != NULL) {
+		return True;
+	}
+
+	if (lp_winbind_sfu_support()) {
+	
+		if (!ads_check_sfu_mapping(ads)) {
+			DEBUG(0,("ad_idmap_check_attr_mapping: failed to check for SFU schema\n"));
+			return False;
+		}
+
+		attr_uidnumber = SMB_STRDUP(ads->schema.sfu_uidnumber_attr);
+		attr_gidnumber = SMB_STRDUP(ads->schema.sfu_gidnumber_attr);
+
+	} else {
+		attr_uidnumber = SMB_STRDUP("uidNumber");
+		attr_gidnumber = SMB_STRDUP("gidNumber");
+	}
+
+	return True;
+}
 
 static ADS_STRUCT *ad_idmap_cached_connection(void)
 {
@@ -129,6 +154,11 @@ static ADS_STRUCT *ad_idmap_cached_connection(void)
 	}
 
 	ads->is_mine = False;
+
+	if (!ad_idmap_check_attr_mapping(ads)) {
+		DEBUG(1, ("ad_idmap_init: failed to check attribute mapping\n"));
+		return NULL;
+	}
 
 	ad_idmap_ads = ads;
 	return ads;
@@ -300,9 +330,9 @@ static NTSTATUS ad_idmap_get_id_from_sid(unid_t *unid, int *id_type, const DOM_S
 		break;
 	}
 
-	if (!ads_pull_uint32(ads, msg, (*id_type == ID_GROUPID) ? ATTR_GIDNUMBER : ATTR_UIDNUMBER, &uid)) {
+	if (!ads_pull_uint32(ads, msg, (*id_type == ID_GROUPID) ? attr_gidnumber : attr_uidnumber, &uid)) {
 		DEBUG(1, ("ad_idmap_get_id_from_sid: ads_pull_uint32: could not read attribute '%s'\n",
-			(*id_type == ID_GROUPID) ? ATTR_GIDNUMBER : ATTR_UIDNUMBER));
+			(*id_type == ID_GROUPID) ? attr_gidnumber : attr_uidnumber));
 		goto done;
 	}
 
@@ -341,6 +371,9 @@ static NTSTATUS ad_idmap_close(void)
 		ad_idmap_ads = NULL;
 	}
 
+	SAFE_FREE(attr_uidnumber);
+	SAFE_FREE(attr_gidnumber);
+	
 	return NT_STATUS_OK;
 }
 
