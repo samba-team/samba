@@ -58,6 +58,7 @@ struct cli_credentials {
 
 	struct creds_CredentialState *netlogon_creds;
 	enum netr_SchannelType secure_channel_type;
+	int kvno;
 
 	/* We are flagged to get machine account details from the
 	 * secrets.ldb when we are asked for a username or password */

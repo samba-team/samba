@@ -617,6 +617,7 @@ isCriticalSystemObject: TRUE
 unicodePwd: ${JOINPASS}
 servicePrincipalName: HOST/${DNSNAME}
 servicePrincipalName: HOST/${NETBIOSNAME}
+msDS-KeyVersionNumber: 1
 
 dn: CN=krbtgt,CN=Users,${BASEDN}
 objectClass: top
