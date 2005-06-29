@@ -348,6 +348,31 @@ here is incomplete &smbmdash; you are warned.
 		</note>
 
 		</sect3>
+
+		<sect3>
+		<title>Custom System Policy Templates</title>
+
+		<para>
+		Over the past year there has been a bit of talk regarding the creation of customized
+		templates for the Windows Sytem Policy Editor. A recent announcement on the Samba mailing
+		list is worthy of mention.
+		</para>
+
+		<para>
+		Mike Petersen has announced the availability of a template file he has created. This custom System Policy
+		Editor Template will allow you to successfully control Microsoft Windows Workstations from an SMB Server, such
+		as Samba. This template has been tested on a few networks, although if you find any problems with any of these
+		policies, or have any ideas for additional policies, let me know at mailto:mgpeter@pcc-services.com.  This
+		Template includes many policies for Windows XP to allow it to behave better in a professional enviornment.
+		</para>
+
+		<para>
+		For further information please see the <ulink
+		url="http://www.pcc-services.com/custom_poledit.html">Petersen</ulink> Computer Consulting web site. There is
+		a download link for the template file.
+		</para>
+
+		</sect3>
 	</sect2>
 </sect1>
 

@@ -157,6 +157,8 @@ The chapters in this part each cover specific Samba features.
 	<xi:include href="TOSHARG-Portability.xml"/>
 	<xi:include href="TOSHARG-Other-Clients.xml"/>
 	<xi:include href="TOSHARG-Speed.xml"/>
+	<xi:include href="TOSHARG-SecureLDAP.xml"/>
+	<xi:include href="TOSHARG-Support.xml"/>
 	<xi:include href="TOSHARG-DNS-DHCP-Configuration.xml"/>
 
 <!-- Comment out the following line to include the manpages.
