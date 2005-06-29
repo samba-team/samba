@@ -3,7 +3,7 @@
 
    Kerberos utility functions for GENSEC
    
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -149,10 +149,34 @@ static int free_ccache(void *ptr) {
 	mem_ctx->ccache = *ccache;
 
 	talloc_set_destructor(mem_ctx, free_ccache);
-	ret = kerberos_kinit_password_cc(smb_krb5_context->krb5_context, *ccache, 
-					 cli_credentials_get_principal(credentials, mem_ctx), 
-					 password, NULL, &kdc_time);
-	
+
+	if (password) {
+		ret = kerberos_kinit_password_cc(smb_krb5_context->krb5_context, *ccache, 
+						 cli_credentials_get_principal(credentials, mem_ctx), 
+						 password, NULL, &kdc_time);
+	} else {
+		/* No password available, try to use a keyblock instead */
+
+		krb5_keyblock keyblock;
+		const struct samr_Password *mach_pwd;
+		mach_pwd = cli_credentials_get_nt_hash(credentials, mem_ctx);
+		if (!mach_pwd) {
+			talloc_free(mem_ctx);
+			DEBUG(1, ("kinit_to_ccache: No password available for kinit\n"));
+			return NT_STATUS_WRONG_PASSWORD;
+		}
+		ret = krb5_keyblock_init(smb_krb5_context->krb5_context,
+					 ENCTYPE_ARCFOUR_HMAC,
+					 mach_pwd->hash, sizeof(mach_pwd->hash), 
+					 &keyblock);
+		
+		if (ret == 0) {
+			ret = kerberos_kinit_keyblock_cc(smb_krb5_context->krb5_context, *ccache, 
+							 cli_credentials_get_principal(credentials, mem_ctx), 
+							 &keyblock, NULL, &kdc_time);
+		}
+	}
+
 	/* cope with ticket being in the future due to clock skew */
 	if ((unsigned)kdc_time > time(NULL)) {
 		time_t t = time(NULL);
@@ -206,17 +230,6 @@ static int free_keytab(void *ptr) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	password_s = talloc_strdup(mem_ctx, cli_credentials_get_password(machine_account));
-	if (!password_s) {
-		DEBUG(1, ("create_memory_keytab: Could not obtain password for our local machine account!\n"));
-		talloc_free(mem_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-	password.data = password_s;
-	password.length = strlen(password_s);
-	
-	/* this string should be unique */
-	
 	ret = krb5_kt_resolve(smb_krb5_context->krb5_context, "MEMORY_WILDCARD:", keytab);
 	if (ret) {
 		DEBUG(1,("failed to generate a new krb5 keytab: %s\n", 
@@ -239,30 +252,81 @@ static int free_keytab(void *ptr) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
+	password_s = talloc_strdup(mem_ctx, cli_credentials_get_password(machine_account));
+	if (!password_s) {
+		/* If we don't have the plaintext password, try for
+		 * the MD4 password hash */
+
+		krb5_keytab_entry entry;
+		const struct samr_Password *mach_pwd;
+		mach_pwd = cli_credentials_get_nt_hash(machine_account, mem_ctx);
+		if (!mach_pwd) {
+			talloc_free(mem_ctx);
+			DEBUG(1, ("create_memory_keytab: Domain trust informaton for account %s not available\n",
+				  cli_credentials_get_principal(machine_account, mem_ctx)));
+			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		}
+		ret = krb5_keyblock_init(smb_krb5_context->krb5_context,
+					 ENCTYPE_ARCFOUR_HMAC,
+					 mach_pwd->hash, sizeof(mach_pwd->hash), 
+					 &entry.keyblock);
+		if (ret) {
+			DEBUG(1, ("create_memory_keytab: krb5_keyblock_init failed: %s\n",
+				  smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
+							     ret, mem_ctx)));
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		entry.principal = salt_princ;
+		entry.vno       = cli_credentials_get_kvno(machine_account);
+		ret = krb5_kt_add_entry(smb_krb5_context->krb5_context, *keytab, &entry);
+		if (ret) {
+			DEBUG(1, ("Failed to add ARCFOUR_HMAC (only) entry for %s to keytab: %s",
+				  cli_credentials_get_principal(machine_account, mem_ctx), 
+				  smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
+							     ret, mem_ctx)));
+			talloc_free(mem_ctx);
+			krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &entry.keyblock);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		
+		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &entry.keyblock);
+		return NT_STATUS_OK;
+	}
+		
+	/* good, we actually have the real plaintext */
+
 	ret = get_kerberos_allowed_etypes(smb_krb5_context->krb5_context, 
 					  &enctypes);
 	if (ret) {
 		DEBUG(1,("create_memory_keytab: getting encrption types failed (%s)\n",
 			 error_message(ret)));
+		talloc_free(mem_ctx);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
+	password.data = discard_const_p(char *, password_s);
+	password.length = strlen(password_s);
+	
 	for (i=0; enctypes[i]; i++) {
 		krb5_keytab_entry entry;
 		ret = create_kerberos_key_from_string(smb_krb5_context->krb5_context, 
 						      salt_princ, &password, &entry.keyblock, enctypes[i]);
 		if (ret) {
+			talloc_free(mem_ctx);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 
                 entry.principal = salt_princ;
-                entry.vno       = 0 /* replace with real kvno */;
+                entry.vno       = cli_credentials_get_kvno(machine_account);
 		ret = krb5_kt_add_entry(smb_krb5_context->krb5_context, *keytab, &entry);
 		if (ret) {
 			DEBUG(1, ("Failed to add entry for %s to keytab: %s",
 				  cli_credentials_get_principal(machine_account, mem_ctx), 
 				  smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
 							     ret, mem_ctx)));
+			talloc_free(mem_ctx);
+			krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &entry.keyblock);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 		
@@ -273,3 +337,5 @@ static int free_keytab(void *ptr) {
 
 	return NT_STATUS_OK;
 }
+
+

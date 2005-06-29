@@ -64,6 +64,60 @@ kerb_prompter(krb5_context ctx, void *data,
 /*
   simulate a kinit, putting the tgt in the given credentials cache. 
   Orignally by remus@snapserver.com
+ 
+  This version is built to use a keyblock, rather than needing the
+  original password.
+*/
+ int kerberos_kinit_keyblock_cc(krb5_context ctx, krb5_ccache cc, 
+				const char *principal, krb5_keyblock *keyblock,
+				time_t *expire_time, time_t *kdc_time)
+{
+	krb5_error_code code = 0;
+	krb5_principal me;
+	krb5_creds my_creds;
+	krb5_get_init_creds_opt options;
+
+	if ((code = krb5_parse_name(ctx, principal, &me))) {
+		return code;
+	}
+
+	krb5_get_init_creds_opt_init(&options);
+
+	if ((code = krb5_get_init_creds_keyblock(ctx, &my_creds, me, keyblock,
+						 0, NULL, &options))) {
+		krb5_free_principal(ctx, me);
+		return code;
+	}
+	
+	if ((code = krb5_cc_initialize(ctx, cc, me))) {
+		krb5_free_cred_contents(ctx, &my_creds);
+		krb5_free_principal(ctx, me);
+		return code;
+	}
+	
+	if ((code = krb5_cc_store_cred(ctx, cc, &my_creds))) {
+		krb5_free_cred_contents(ctx, &my_creds);
+		krb5_free_principal(ctx, me);
+		return code;
+	}
+	
+	if (expire_time) {
+		*expire_time = (time_t) my_creds.times.endtime;
+	}
+
+	if (kdc_time) {
+		*kdc_time = (time_t) my_creds.times.starttime;
+	}
+
+	krb5_free_cred_contents(ctx, &my_creds);
+	krb5_free_principal(ctx, me);
+	
+	return 0;
+}
+
+/*
+  simulate a kinit, putting the tgt in the given credentials cache. 
+  Orignally by remus@snapserver.com
 */
  int kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc, 
 			       const char *principal, const char *password, 
