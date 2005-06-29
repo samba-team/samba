@@ -1,6 +1,7 @@
 #######################
 # Start SUBSYSTEM HEIMDAL_KDC
 [SUBSYSTEM::HEIMDAL_KDC]
+TARGET_CFLAGS = -Iheimdal_build -Iheimdal/kdc -Iheimdal/lib/des -Iheimdal/lib/roken -Iheimdal/include 
 ADD_OBJ_FILES = \
 	heimdal/kdc/default_config.o \
 	heimdal/kdc/kerberos5.o \
@@ -18,6 +19,7 @@ NOPROTO = YES
 #######################
 # Start SUBSYSTEM HEIMDAL_HDB
 [SUBSYSTEM::HEIMDAL_HDB]
+TARGET_CFLAGS = -Iheimdal_build -Iheimdal/kdc -Iheimdal/lib/des -Iheimdal/lib/roken -Iheimdal/include 
 ADD_OBJ_FILES = \
 	heimdal/lib/hdb/db.o \
 	heimdal/lib/hdb/hdb.o \
@@ -372,7 +374,7 @@ REQUIRED_SUBSYSTEMS = ASN1_COMPILER
 NOPROTO = YES
 TARGET_CFLAGS = -Iheimdal_build -Iheimdal/kdc -Iheimdal/lib/des -Iheimdal/lib/roken -Iheimdal/include 
 REQUIRED_SUBSYSTEMS = \
-		HEIMDAL_KDC HEIMDAL_HDB HEIMDAL_GSSAPI HEIMDAL_KRB5 \
+		HEIMDAL_GSSAPI HEIMDAL_KRB5 \
 		HEIMDAL_ASN1 HEIMDAL_DES HEIMDAL_ROKEN HEIMDAL_COM_ERR
 # End SUBSYSTEM HEIMDAL
 #######################

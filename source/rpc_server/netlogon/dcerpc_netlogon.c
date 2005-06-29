@@ -503,64 +503,9 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 	nt_status = auth_check_password(auth_context, mem_ctx, user_info, &server_info);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	sam = talloc_zero(mem_ctx, struct netr_SamBaseInfo);
-	NT_STATUS_HAVE_NO_MEMORY(sam);
+	nt_status = auth_convert_server_info_sambaseinfo(mem_ctx, server_info, &sam);
 
-	sam->last_logon = server_info->last_logon;
-	sam->last_logoff = server_info->last_logoff;
-	sam->acct_expiry = server_info->acct_expiry;
-	sam->last_password_change = server_info->last_password_change;
-	sam->allow_password_change = server_info->allow_password_change;
-	sam->force_password_change = server_info->force_password_change;
-
-	sam->account_name.string = server_info->account_name;
-	sam->full_name.string = server_info->full_name;
-	sam->logon_script.string = server_info->logon_script;
-	sam->profile_path.string = server_info->profile_path;
-	sam->home_directory.string = server_info->home_directory;
-	sam->home_drive.string = server_info->home_drive;
-
-	sam->logon_count = server_info->logon_count;
-	sam->bad_password_count = sam->bad_password_count;
-	sam->rid = server_info->account_sid->sub_auths[server_info->account_sid->num_auths-1];
-	sam->primary_gid = server_info->primary_group_sid->sub_auths[server_info->primary_group_sid->num_auths-1];
-
-	sam->groups.count = 0;
-	sam->groups.rids = NULL;
-
-	if (server_info->n_domain_groups > 0) {
-		int i;
-		sam->groups.rids = talloc_array(mem_ctx, struct samr_RidWithType,
-						server_info->n_domain_groups);
-
-		if (sam->groups.rids == NULL)
-			return NT_STATUS_NO_MEMORY;
-
-		for (i=0; i<server_info->n_domain_groups; i++) {
-			
-			struct dom_sid *group_sid = server_info->domain_groups[i];
-			sam->groups.rids[sam->groups.count].rid =
-				group_sid->sub_auths[group_sid->num_auths-1];
-			sam->groups.rids[sam->groups.count].type = 7;
-			sam->groups.count += 1;
-		}
-	}
-
-	sam->user_flags = 0; /* TODO: w2k3 uses 0x120 - what is this? */
-	sam->acct_flags = server_info->acct_flags;
-	sam->logon_server.string = lp_netbios_name();
-	sam->domain.string = server_info->domain_name;
-
-	sam->domain_sid = dom_sid_dup(mem_ctx, server_info->account_sid);
-	NT_STATUS_HAVE_NO_MEMORY(sam->domain_sid);
-	sam->domain_sid->num_auths--;
-
-	ZERO_STRUCT(sam->unknown);
-
-	ZERO_STRUCT(sam->key);
-	if (server_info->user_session_key.length == sizeof(sam->key.key)) {
-		memcpy(sam->key.key, server_info->user_session_key.data, sizeof(sam->key.key));
-	}
+	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	/* Don't crypt an all-zero key, it would give away the NETLOGON pipe session key */
 	/* It appears that level 6 is not individually encrypted */
@@ -576,12 +521,6 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 		}
 	}
 
-	ZERO_STRUCT(sam->LMSessKey);
-	if (server_info->lm_session_key.length == sizeof(sam->LMSessKey.key)) {
-		memcpy(sam->LMSessKey.key, server_info->lm_session_key.data, 
-		       sizeof(sam->LMSessKey.key));
-	}
-	
 	/* Don't crypt an all-zero key, it would give away the NETLOGON pipe session key */
 	/* It appears that level 6 is not individually encrypted */
 	if ((r->in.validation_level != 6) 

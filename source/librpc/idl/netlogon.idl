@@ -140,6 +140,10 @@ interface netlogon
 		uint8 key[8];
 	} netr_LMSessionKey;
 
+	/* Flags for user_flags below */
+	const int NETLOGON_EXTRA_SIDS = 0x0020;
+	const int NETLOGON_RESOURCE_GROUPS = 0x0200;
+
 	typedef struct {
 		NTTIME last_logon;
 		NTTIME last_logoff;
@@ -157,7 +161,7 @@ interface netlogon
 		uint16 bad_password_count;
 		uint32 rid;
 		uint32 primary_gid;
-		samr_RidWithTypeArray groups;
+		samr_RidWithAttributeArray groups;
 		uint32 user_flags;
 		netr_UserSessionKey key;
 		netr_String logon_server;

@@ -97,7 +97,7 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 			   const DATA_BLOB *ticket, 
 			   char **principal, DATA_BLOB *auth_data,
 			   DATA_BLOB *ap_rep,
-			   krb5_keyblock *keyblock);
+			   krb5_keyblock **keyblock);
 int kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc, 
 			       const char *principal, const char *password, 
 			       time_t *expire_time, time_t *kdc_time);
@@ -132,5 +132,10 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 			     DATA_BLOB blob,
 			     struct smb_krb5_context *smb_krb5_context,
 			     krb5_keyblock *keyblock);
+krb5_error_code kerberos_encode_pac(TALLOC_CTX *mem_ctx,
+				    struct auth_serversupplied_info *server_info,
+				    krb5_context context,
+				    krb5_keyblock *keyblock,
+				    krb5_data *pac);
 #endif /* HAVE_KRB5 */
 
