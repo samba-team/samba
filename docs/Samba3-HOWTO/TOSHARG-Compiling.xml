@@ -147,12 +147,13 @@ To gain access via anonymous Subversion, use the following steps.
 	<para>
 	<indexterm><primary>rsync</primary></indexterm>
 	<indexterm><primary>ftp</primary></indexterm>
-	<parameter>pserver.samba.org</parameter> also exports unpacked copies of most parts of the Subversion 
-	tree at the Samba <ulink noescape="1" url="ftp://pserver.samba.org/pub/unpacked">pserver</ulink> 
-	location and also via anonymous rsync at the Samba
-	<ulink noescape="1" url="rsync://pserver.samba.org/ftp/unpacked/">rsync</ulink> server location. 
-	I recommend using rsync rather than ftp.
-	See <ulink noescape="1" url="http://rsync.samba.org/">the rsync home page</ulink> for more info on rsync.                      
+	<parameter>pserver.samba.org</parameter> also exports unpacked copies of most parts of the Subversion tree
+	at the Samba <ulink noescape="1" url="ftp://pserver.samba.org/pub/unpacked">pserver</ulink> location and also
+	via anonymous rsync at the Samba <ulink noescape="1"
+	url="rsync://pserver.samba.org/ftp/unpacked/">rsync</ulink> server location.  I recommend using rsync rather
+	than ftp, because rsync is capable of compressing data streams, but it is also more useful than FTP because
+	during a partial update it will transfer only the data that is missing plus a small overhead.  See <ulink
+	noescape="1" url="http://rsync.samba.org/">the rsync home page</ulink> for more info on rsync.
 	</para>
 
 	<para>
