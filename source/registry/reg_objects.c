@@ -94,7 +94,7 @@ int regsubkey_ctr_delkey( REGSUBKEY_CTR *ctr, const char *keyname )
 
 	/* update if we have any keys left */
 	ctr->num_subkeys--;
-	if ( ctr->num_subkeys )
+	if ( i < ctr->num_subkeys )
 		memmove( &ctr->subkeys[i], &ctr->subkeys[i+1], sizeof(char*) * (ctr->num_subkeys-i) );
 	
 	return ctr->num_subkeys;
@@ -232,7 +232,7 @@ uint8* regval_data_p( REGISTRY_VALUE *val )
 /**********************************************************************
  *********************************************************************/
 
-int regval_size( REGISTRY_VALUE *val )
+uint32 regval_size( REGISTRY_VALUE *val )
 {
 	return val->size;
 }
@@ -392,10 +392,10 @@ int regval_ctr_delvalue( REGVAL_CTR *ctr, const char *name )
 	if ( i == ctr->num_values )
 		return ctr->num_values;
 	
-	/* just shift everything down one */
+	/* If 'i' was not the last element, just shift everything down one */
 	ctr->num_values--;
-	if ( ctr->num_values )
-		memmove( ctr->values[i], ctr->values[i+1], sizeof(REGISTRY_VALUE)*(ctr->num_values-i) );
+	if ( i < ctr->num_values )
+		memmove( ctr->values[i], ctr->values[i+1], sizeof(REGISTRY_VALUE*)*(ctr->num_values-i) );
 	
 	return ctr->num_values;
 }
