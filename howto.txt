@@ -63,12 +63,12 @@ Run this:
   $ ./configure.developer -C
 
 If you did not include heimdal, run this:
-  $ make
+  $ make proto all
 
 If you did include Heimdal, a different step is required:
-  $ make HEIMDAL_EXTERNAL all
+  $ make proto HEIMDAL_EXTERNAL all
 
-If you have gcc 3.4 or newer, then run "make pch" before "make" to
+If you have gcc 3.4 or newer, then substitue "pch" for "proto" to
 greatly speed up the compile process (about 5x faster).
 
 
