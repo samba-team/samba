@@ -388,7 +388,7 @@ rk_strpoolcollect(struct rk_strpool *);
 
 struct rk_strpool * ROKEN_LIB_FUNCTION
 rk_strpoolprintf(struct rk_strpool *, const char *, ...)
-    __attribute__ ((format (printf, 1, 0)));;
+    __attribute__ ((format (printf, 2, 0)));;
 
 void ROKEN_LIB_FUNCTION
 rk_strpoolfree(struct rk_strpool *);
