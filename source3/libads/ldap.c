@@ -2388,6 +2388,43 @@ static time_t ads_parse_time(const char *str)
 }
 
 
+const char *ads_get_attrname_by_oid(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char * oid)
+{
+	ADS_STATUS rc;
+	int count = 0;
+	void *res = NULL;
+	char *expr = NULL;
+	const char *attrs[] = { "lDAPDisplayName", NULL };
+
+	if (ads == NULL || mem_ctx == NULL || oid == NULL) {
+		goto done;
+	}
+
+	expr = talloc_asprintf(mem_ctx, "(attributeId=%s)", oid);
+	if (expr == NULL) {
+		goto done;
+	}
+
+	rc = ads_do_search_retry(ads, ads->config.schema_path, 
+			LDAP_SCOPE_SUBTREE, expr, attrs, &res);
+	if (!ADS_ERR_OK(rc)) {
+		goto done;
+	}
+
+	count = ads_count_replies(ads, res);
+	if (count == 0 || !res) {
+		goto done;
+	}
+
+	return ads_pull_string(ads, mem_ctx, res, "lDAPDisplayName");
+	
+done:
+	DEBUG(0,("ads_get_attrname_by_oid: failed to retrieve name for oid: %s\n", 
+		oid));
+	
+	return NULL;
+}
+
 /**
  * Find the servers name and realm - this can be done before authentication 
  *  The ldapServiceName field on w2k  looks like this:
@@ -2397,12 +2434,15 @@ static time_t ads_parse_time(const char *str)
  **/
 ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 {
-	const char *attrs[] = {"ldapServiceName", "currentTime", NULL};
+	const char *attrs[] = {"ldapServiceName", 
+			       "currentTime", 
+			       "schemaNamingContext", NULL};
 	ADS_STATUS status;
 	void *res;
 	char *value;
 	char *p;
 	char *timestr;
+	char *schema_path;
 	TALLOC_CTX *ctx;
 
 	if (!(ctx = talloc_init("ads_server_info"))) {
@@ -2428,6 +2468,16 @@ ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 		talloc_destroy(ctx);
 		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
 	}
+
+	schema_path = ads_pull_string(ads, ctx, res, "schemaNamingContext");
+	if (!schema_path) {
+		ads_msgfree(ads, res);
+		talloc_destroy(ctx);
+		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
+	}
+
+	SAFE_FREE(ads->config.schema_path);
+	ads->config.schema_path = SMB_STRDUP(schema_path);
 
 	ads_msgfree(ads, res);
 
@@ -2473,6 +2523,50 @@ ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 	talloc_destroy(ctx);
 
 	return ADS_SUCCESS;
+}
+
+/**
+ * Check for "Services for Unix"-Schema and load some attributes into the ADS_STRUCT
+ * @param ads connection to ads server
+ * @return BOOL status of search (False if one or more attributes couldn't be
+ * found in Active Directory)
+ **/ 
+BOOL ads_check_sfu_mapping(ADS_STRUCT *ads) 
+{ 
+	BOOL ret = False; 
+	TALLOC_CTX *ctx = NULL; 
+	const char *gidnumber, *uidnumber, *homedir, *shell;
+
+	ctx = talloc_init("ads_check_sfu_mapping");
+	if (ctx == NULL)
+		goto done;
+
+	gidnumber = ads_get_attrname_by_oid(ads, ctx, ADS_ATTR_SFU_GIDNUMBER_OID);
+	if (gidnumber == NULL)
+		goto done;
+	ads->schema.sfu_gidnumber_attr = SMB_STRDUP(gidnumber);
+
+	uidnumber = ads_get_attrname_by_oid(ads, ctx, ADS_ATTR_SFU_UIDNUMBER_OID);
+	if (uidnumber == NULL)
+		goto done;
+	ads->schema.sfu_uidnumber_attr = SMB_STRDUP(uidnumber);
+
+	homedir = ads_get_attrname_by_oid(ads, ctx, ADS_ATTR_SFU_HOMEDIR_OID);
+	if (homedir == NULL)
+		goto done;
+	ads->schema.sfu_homedir_attr = SMB_STRDUP(homedir);
+	
+	shell = ads_get_attrname_by_oid(ads, ctx, ADS_ATTR_SFU_SHELL_OID);
+	if (shell == NULL)
+		goto done;
+	ads->schema.sfu_shell_attr = SMB_STRDUP(shell);
+
+	ret = True;
+done:
+	if (ctx)
+		talloc_destroy(ctx);
+	
+	return ret;
 }
 
 /**

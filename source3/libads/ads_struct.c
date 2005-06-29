@@ -132,8 +132,13 @@ void ads_destroy(ADS_STRUCT **ads)
 
 		SAFE_FREE((*ads)->config.realm);
 		SAFE_FREE((*ads)->config.bind_path);
+		SAFE_FREE((*ads)->config.schema_path);
 		SAFE_FREE((*ads)->config.ldap_server_name);
 		
+		SAFE_FREE((*ads)->schema.sfu_uidnumber_attr);
+		SAFE_FREE((*ads)->schema.sfu_gidnumber_attr);
+		SAFE_FREE((*ads)->schema.sfu_shell_attr);
+		SAFE_FREE((*ads)->schema.sfu_homedir_attr);
 		
 		ZERO_STRUCTP(*ads);
 

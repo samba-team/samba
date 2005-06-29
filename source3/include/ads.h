@@ -36,9 +36,19 @@ typedef struct {
 	struct {
 		char *realm;
 		char *bind_path;
+		char *schema_path;
 		char *ldap_server_name;
 		time_t current_time;
 	} config;
+
+	/* info derived from the servers schema */
+	struct {
+		char *sfu_homedir_attr;
+		char *sfu_shell_attr;
+		char *sfu_uidnumber_attr;
+		char *sfu_gidnumber_attr;
+	} schema;
+
 } ADS_STRUCT;
 
 /* there are 5 possible types of errors the ads subsystem can produce */
@@ -77,10 +87,16 @@ typedef void **ADS_MODLIST;
 #define ADS_RECONNECT_TIME 5
 
 /* ldap control oids */
-#define ADS_PAGE_CTL_OID "1.2.840.113556.1.4.319"
-#define ADS_NO_REFERRALS_OID "1.2.840.113556.1.4.1339"
-#define ADS_SERVER_SORT_OID "1.2.840.113556.1.4.473"
-#define ADS_PERMIT_MODIFY_OID "1.2.840.113556.1.4.1413"
+#define ADS_PAGE_CTL_OID 	"1.2.840.113556.1.4.319"
+#define ADS_NO_REFERRALS_OID 	"1.2.840.113556.1.4.1339"
+#define ADS_SERVER_SORT_OID 	"1.2.840.113556.1.4.473"
+#define ADS_PERMIT_MODIFY_OID 	"1.2.840.113556.1.4.1413"
+
+/* ldap attribute oids (Services for Unix) */
+#define ADS_ATTR_SFU_UIDNUMBER_OID 	"1.2.840.113556.1.6.18.1.310"
+#define ADS_ATTR_SFU_GIDNUMBER_OID 	"1.2.840.113556.1.6.18.1.311"
+#define ADS_ATTR_SFU_HOMEDIR_OID 	"1.2.840.113556.1.6.18.1.344"
+#define ADS_ATTR_SFU_SHELL_OID 		"1.2.840.113556.1.6.18.1.312"
 
 /* UserFlags for userAccountControl */
 #define UF_SCRIPT	 			0x00000001

@@ -101,6 +101,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			
 			(*info)[i].acct_name = talloc_strdup(mem_ctx, username );
 			(*info)[i].full_name = talloc_strdup(mem_ctx, fullname );
+			(*info)[i].homedir = NULL;
+			(*info)[i].shell = NULL;
 			sid_compose(&(*info)[i].user_sid, &domain->sid, rid);
 			
 			/* For the moment we set the primary group for
@@ -352,7 +354,10 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 						    &user->uni_user_name);
 		user_info->full_name = unistr2_tdup(mem_ctx,
 						    &user->uni_full_name);
-								
+		
+		user_info->homedir = NULL;
+		user_info->shell = NULL;
+						
 		SAFE_FREE(user);
 				
 		return NT_STATUS_OK;
@@ -388,6 +393,8 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 					    &ctr->info.id21->uni_user_name);
 	user_info->full_name = unistr2_tdup(mem_ctx, 
 					    &ctr->info.id21->uni_full_name);
+	user_info->homedir = NULL;
+	user_info->shell = NULL;
 
 	return NT_STATUS_OK;
 }                                   

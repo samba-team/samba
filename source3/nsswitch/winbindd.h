@@ -84,6 +84,8 @@ struct getent_state {
 struct getpwent_user {
 	fstring name;                        /* Account name */
 	fstring gecos;                       /* User information */
+	fstring homedir;                     /* User Home Directory */
+	fstring shell;                       /* User Login Shell */
 	DOM_SID user_sid;                    /* NT user and primary group SIDs */
 	DOM_SID group_sid;
 };
@@ -103,6 +105,8 @@ extern struct winbindd_state server_state;  /* Server information */
 typedef struct {
 	char *acct_name;
 	char *full_name;
+	char *homedir;
+	char *shell;
 	DOM_SID user_sid;                    /* NT user and primary group SIDs */
 	DOM_SID group_sid;
 } WINBIND_USERINFO;

@@ -30,15 +30,50 @@
 
 extern userdom_struct current_user_info;
 
+static BOOL fillup_pw_field(const char *lp_template, 
+			    const char *username, 
+			    const char *domname,
+			    uid_t uid,
+			    gid_t gid,
+			    const char *in, 
+			    fstring out)
+{
+	char *templ;
+
+	if (out == NULL)
+		return False;
+
+	if (in && !strequal(in,"") && lp_security() == SEC_ADS && lp_winbind_sfu_support()) {
+		safe_strcpy(out, in, sizeof(fstring) - 1);
+		return True;
+	}
+
+	/* Home directory and shell - use template config parameters.  The
+	   defaults are /tmp for the home directory and /bin/false for
+	   shell. */
+	
+	/* The substitution of %U and %D in the 'template homedir' is done
+	   by alloc_sub_specified() below. */
+
+	templ = alloc_sub_specified(lp_template, username, domname, uid, gid);
+		
+	if (!templ)
+		return False;
+
+	safe_strcpy(out, templ, sizeof(fstring) - 1);
+	SAFE_FREE(templ);
+		
+	return True;
+	
+}
 /* Fill a pwent structure with information we have obtained */
 
 static BOOL winbindd_fill_pwent(char *dom_name, char *user_name, 
 				DOM_SID *user_sid, DOM_SID *group_sid,
-				char *full_name, struct winbindd_pw *pw)
+				char *full_name, char *homedir, char *shell,
+				struct winbindd_pw *pw)
 {
 	fstring output_username;
-	char *homedir;
-	char *shell;
 	fstring sid_string;
 	
 	if (!pw || !dom_name || !user_name)
@@ -79,24 +114,13 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 
 	fstrcpy(current_user_info.domain, dom_name);
 
-	homedir = alloc_sub_specified(lp_template_homedir(), user_name, dom_name, pw->pw_uid, pw->pw_gid);
-
-	if (!homedir)
-		return False;
-	
-	safe_strcpy(pw->pw_dir, homedir, sizeof(pw->pw_dir) - 1);
-	
-	SAFE_FREE(homedir);
-	
-	shell = alloc_sub_specified(lp_template_shell(), user_name, dom_name, pw->pw_uid, pw->pw_gid);
-
-	if (!shell)
+	if (!fillup_pw_field(lp_template_homedir(), user_name, dom_name, 
+			     pw->pw_uid, pw->pw_gid, homedir, pw->pw_dir))
 		return False;
 
-	safe_strcpy(pw->pw_shell, shell, 
-		    sizeof(pw->pw_shell) - 1);
-	
-	SAFE_FREE(shell);
+	if (!fillup_pw_field(lp_template_shell(), user_name, dom_name, 
+			     pw->pw_uid, pw->pw_gid, shell, pw->pw_shell))
+		return False;
 
 	/* Password - set to "x" as we can't generate anything useful here.
 	   Authentication can be done using the pam_winbind module. */
@@ -136,6 +160,8 @@ enum winbindd_result winbindd_dual_userinfo(struct winbindd_domain *domain,
 
 	fstrcpy(state->response.data.user_info.acct_name, user_info.acct_name);
 	fstrcpy(state->response.data.user_info.full_name, user_info.full_name);
+	fstrcpy(state->response.data.user_info.homedir, user_info.homedir);
+	fstrcpy(state->response.data.user_info.shell, user_info.shell);
 	if (!sid_peek_check_rid(&domain->sid, &user_info.group_sid,
 				&state->response.data.user_info.group_rid)) {
 		DEBUG(1, ("Could not extract group rid out of %s\n",
@@ -151,6 +177,8 @@ struct getpwsid_state {
 	struct winbindd_domain *domain;
 	char *username;
 	char *fullname;
+	char *homedir;
+	char *shell;
 	DOM_SID user_sid;
 	uid_t uid;
 	DOM_SID group_sid;
@@ -159,7 +187,10 @@ struct getpwsid_state {
 
 static void getpwsid_queryuser_recv(void *private_data, BOOL success,
 				    const char *acct_name,
-				    const char *full_name, uint32 group_rid);
+				    const char *full_name, 
+				    const char *homedir,
+				    const char *shell,
+				    uint32 group_rid);
 static void getpwsid_sid2uid_recv(void *private_data, BOOL success, uid_t uid);
 static void getpwsid_sid2gid_recv(void *private_data, BOOL success, gid_t gid);
 
@@ -194,7 +225,10 @@ static void winbindd_getpwsid(struct winbindd_cli_state *state,
 	
 static void getpwsid_queryuser_recv(void *private_data, BOOL success,
 				    const char *acct_name,
-				    const char *full_name, uint32 group_rid)
+				    const char *full_name, 
+				    const char *homedir,
+				    const char *shell,
+				    uint32 group_rid)
 {
 	struct getpwsid_state *s =
 		talloc_get_type_abort(private_data, struct getpwsid_state);
@@ -208,6 +242,8 @@ static void getpwsid_queryuser_recv(void *private_data, BOOL success,
 
 	s->username = talloc_strdup(s->state->mem_ctx, acct_name);
 	s->fullname = talloc_strdup(s->state->mem_ctx, full_name);
+	s->homedir = talloc_strdup(s->state->mem_ctx, homedir);
+	s->shell = talloc_strdup(s->state->mem_ctx, shell);
 	sid_copy(&s->group_sid, &s->domain->sid);
 	sid_append_rid(&s->group_sid, group_rid);
 
@@ -238,8 +274,6 @@ static void getpwsid_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 		talloc_get_type_abort(private_data, struct getpwsid_state);
 	struct winbindd_pw *pw;
 	fstring output_username;
-	char *homedir;
-	char *shell;
 
 	if (!success) {
 		DEBUG(5, ("Could not query user's %s\\%s\n gid",
@@ -256,32 +290,19 @@ static void getpwsid_sid2gid_recv(void *private_data, BOOL success, gid_t gid)
 	safe_strcpy(pw->pw_name, output_username, sizeof(pw->pw_name) - 1);
 	safe_strcpy(pw->pw_gecos, s->fullname, sizeof(pw->pw_gecos) - 1);
 
-	/* Home directory and shell - use template config parameters.  The
-	   defaults are /tmp for the home directory and /bin/false for
-	   shell. */
-	
-	/* The substitution of %U and %D in the 'template homedir' is done
-	   by alloc_sub_specified() below. */
-
 	fstrcpy(current_user_info.domain, s->domain->name);
 
-	homedir = alloc_sub_specified(lp_template_homedir(), s->username,
-				      s->domain->name, pw->pw_uid, pw->pw_gid);
-	if (homedir == NULL) {
+	if (!fillup_pw_field(lp_template_homedir(), s->username, s->domain->name, 
+			     pw->pw_uid, pw->pw_gid, s->homedir, pw->pw_dir)) {
 		DEBUG(5, ("Could not compose homedir\n"));
 		goto failed;
 	}
-	safe_strcpy(pw->pw_dir, homedir, sizeof(pw->pw_dir) - 1);
-	SAFE_FREE(homedir);
-	
-	shell = alloc_sub_specified(lp_template_shell(), s->username,
-				    s->domain->name, pw->pw_uid, pw->pw_gid);
-	if (shell == NULL) {
+
+	if (!fillup_pw_field(lp_template_shell(), s->username, s->domain->name, 
+			     pw->pw_uid, pw->pw_gid, s->shell, pw->pw_shell)) {
 		DEBUG(5, ("Could not compose shell\n"));
 		goto failed;
 	}
-	safe_strcpy(pw->pw_shell, shell, sizeof(pw->pw_shell) - 1);
-	SAFE_FREE(shell);
 
 	/* Password - set to "x" as we can't generate anything useful here.
 	   Authentication can be done using the pam_winbind module. */
@@ -555,7 +576,20 @@ static BOOL get_sam_user_entries(struct getent_state *ent, TALLOC_CTX *mem_ctx)
 			fstrcpy(name_list[ent->num_sam_entries + i].gecos, 
 				info[i].full_name); 
 		}
-		
+		if (!info[i].homedir) {
+			fstrcpy(name_list[ent->num_sam_entries + i].homedir, "");
+		} else {
+			fstrcpy(name_list[ent->num_sam_entries + i].homedir, 
+				info[i].homedir); 
+		}
+		if (!info[i].shell) {
+			fstrcpy(name_list[ent->num_sam_entries + i].shell, "");
+		} else {
+			fstrcpy(name_list[ent->num_sam_entries + i].shell, 
+				info[i].shell); 
+		}
+	
+	
 		/* User and group ids */
 		sid_copy(&name_list[ent->num_sam_entries+i].user_sid,
 			 &info[i].user_sid);
@@ -658,6 +692,8 @@ void winbindd_getpwent(struct winbindd_cli_state *state)
 			&name_list[ent->sam_entry_index].user_sid,
 			&name_list[ent->sam_entry_index].group_sid,
 			name_list[ent->sam_entry_index].gecos,
+			name_list[ent->sam_entry_index].homedir,
+			name_list[ent->sam_entry_index].shell,
 			&user_list[user_list_ndx]);
 		
 		ent->sam_entry_index++;
