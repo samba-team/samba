@@ -250,6 +250,8 @@ krb5_DES_string_to_key(krb5_context context,
     return 0;
 }
 
+#ifdef ENABLE_AFS_STRING_TO_KEY
+
 /* This defines the Andrew string_to_key function.  It accepts a password
  * string as input and converts its via a one-way encryption algorithm to a DES
  * encryption key.  It is compatible with the original Andrew authentication
@@ -345,6 +347,7 @@ DES_AFS3_string_to_key(krb5_context context,
     memset(&key, 0, sizeof(key));
     return 0;
 }
+#endif /* ENABLE_AFS_STRING_TO_KEY */
 
 static void
 krb5_DES_random_to_key(krb5_context context,
@@ -870,11 +873,13 @@ static struct salt_type des_salt[] = {
 	"pw-salt",
 	krb5_DES_string_to_key
     },
+#ifdef ENABLE_AFS_STRING_TO_KEY
     {
 	KRB5_AFS3_SALT,
 	"afs3-salt",
 	DES_AFS3_string_to_key
     },
+#endif
     { 0 }
 };
 
