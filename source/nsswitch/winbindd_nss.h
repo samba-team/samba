@@ -325,6 +325,8 @@ struct winbindd_response {
 		struct {
 			fstring acct_name;
 			fstring full_name;
+			fstring homedir;
+			fstring shell;
 			uint32 group_rid;
 		} user_info;
 	} data;
