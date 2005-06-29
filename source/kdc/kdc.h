@@ -24,8 +24,10 @@
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 #include "heimdal/kdc/kdc.h"
+#include "kdc/pac-glue.h"
 
-krb5_error_code hdb_ldb_create(krb5_context context, struct HDB **db, const char *arg);
+krb5_error_code hdb_ldb_create(TALLOC_CTX *mem_ctx, 
+			       krb5_context context, struct HDB **db, const char *arg);
 
 /* hold all the info needed to send a reply */
 struct kdc_reply {

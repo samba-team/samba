@@ -29,6 +29,8 @@
 #include "system/network.h"
 #include "dlinklist.h"
 
+
+
 /*
   handle fd send events on a KDC socket
 */
@@ -276,7 +278,7 @@ static void kdc_task_init(struct task_server *task)
 	}
 	kdc->config->num_db = 1;
 		
-	ret = hdb_ldb_create(kdc->smb_krb5_context->krb5_context, 
+	ret = hdb_ldb_create(kdc, kdc->smb_krb5_context->krb5_context, 
 			     &kdc->config->db[0], lp_sam_url());
 	if (ret != 0) {
 		DEBUG(1, ("kdc_task_init: hdb_ldb_create fails: %s\n", 

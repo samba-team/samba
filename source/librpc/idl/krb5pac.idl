@@ -16,37 +16,39 @@ interface krb5pac
 	typedef struct {
 		NTTIME logon_time;
 		[flag(STR_SIZE2|STR_NOTERM|STR_BYTESIZE)] string account_name;
-	} PAC_UNKNOWN_10;
+		[value(0)] uint32 _pad; 
+	} PAC_LOGON_NAME;
 
 	typedef [flag(NDR_PAHEX)] struct {
 		uint32 type;
 		uint8 signature[16];
+		[value(0)] uint32 _pad; 
 	} PAC_SIGNATURE_DATA;
 
 	typedef struct {
 		uint32 unknown[5];
 		netr_SamInfo3 info3;
 		dom_sid2 *res_group_dom_sid;
-		samr_RidWithTypeArray res_groups;
+		samr_RidWithAttributeArray res_groups;
     	} PAC_LOGON_INFO;
 
 	const uint8 PAC_TYPE_LOGON_INFO = 1;
 	const uint8 PAC_TYPE_SRV_CHECKSUM = 6;
 	const uint8 PAC_TYPE_KDC_CHECKSUM = 7;
-	const uint8 PAC_TYPE_UNKNOWN_10 = 10;
+	const uint8 PAC_TYPE_LOGON_NAME = 10;
 
-	typedef [nodiscriminant] union {
+	typedef [nodiscriminant,gensize,flag(NDR_ALIGN8)] union {
 		[case(PAC_TYPE_LOGON_INFO)]	PAC_LOGON_INFO logon_info;
 		[case(PAC_TYPE_SRV_CHECKSUM)]	PAC_SIGNATURE_DATA srv_cksum;
 		[case(PAC_TYPE_KDC_CHECKSUM)]	PAC_SIGNATURE_DATA kdc_cksum;
-		[case(PAC_TYPE_UNKNOWN_10)]	PAC_UNKNOWN_10 type_10;
+		[case(PAC_TYPE_LOGON_NAME)]	PAC_LOGON_NAME logon_name;
 	} PAC_INFO;
 
 	typedef struct {
 		uint32 type;
-		uint32 size;
+		[value(ndr_size_PAC_INFO(info,type,ndr->flags))] uint32 size;
 		[relative,switch_is(type)] PAC_INFO *info;
-		uint32 _pad;
+		[value(0)] uint32 _pad; /* Top half of a 64 bit pointer? */
 	} PAC_BUFFER;
 
 	typedef [public,flag(NDR_ALIGN8)] struct {

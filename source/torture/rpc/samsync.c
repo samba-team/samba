@@ -629,8 +629,8 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 				for (j = 0; j < count; j++) {
 					if ((getgroups.out.rids->rids[i].rid == 
 					     info3->base.groups.rids[j].rid)
-					    && (getgroups.out.rids->rids[i].type == 
-						info3->base.groups.rids[j].type)) {
+					    && (getgroups.out.rids->rids[i].attributes == 
+						info3->base.groups.rids[j].attributes)) {
 							matched[i] = True;
 						}
 				}

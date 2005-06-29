@@ -47,7 +47,7 @@ struct gensec_krb5_state {
 	krb5_auth_context auth_context;
 	krb5_ccache ccache;
 	krb5_data ticket;
-	krb5_keyblock keyblock;
+	krb5_keyblock *keyblock;
 	char *peer_principal;
 };
 
@@ -61,8 +61,8 @@ static int gensec_krb5_destory(void *ptr)
 	}
 	/* ccache freed in a child destructor */
 
-	krb5_free_keyblock_contents(gensec_krb5_state->smb_krb5_context->krb5_context, 
-				    &gensec_krb5_state->keyblock);
+	krb5_free_keyblock(gensec_krb5_state->smb_krb5_context->krb5_context, 
+			   &gensec_krb5_state->keyblock);
 		
 	if (gensec_krb5_state->auth_context) {
 		krb5_auth_con_free(gensec_krb5_state->smb_krb5_context->krb5_context, 

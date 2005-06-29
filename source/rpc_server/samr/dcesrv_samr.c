@@ -2757,7 +2757,7 @@ static NTSTATUS samr_GetGroupsForUser(struct dcesrv_call_state *dce_call, TALLOC
 	struct samr_domain_state *d_state;
 	struct ldb_message **res;
 	const char * const attrs[2] = { "objectSid", NULL };
-	struct samr_RidWithTypeArray *array;
+	struct samr_RidWithAttributeArray *array;
 	int count;
 
 	DCESRV_PULL_HANDLE(h, r->in.user_handle, SAMR_HANDLE_USER);
@@ -2774,7 +2774,7 @@ static NTSTATUS samr_GetGroupsForUser(struct dcesrv_call_state *dce_call, TALLOC
 	if (count < 0)
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 
-	array = talloc(mem_ctx, struct samr_RidWithTypeArray);
+	array = talloc(mem_ctx, struct samr_RidWithAttributeArray);
 	if (array == NULL)
 		return NT_STATUS_NO_MEMORY;
 
@@ -2783,7 +2783,7 @@ static NTSTATUS samr_GetGroupsForUser(struct dcesrv_call_state *dce_call, TALLOC
 
 	if (count > 0) {
 		int i;
-		array->rids = talloc_array(mem_ctx, struct samr_RidWithType,
+		array->rids = talloc_array(mem_ctx, struct samr_RidWithAttribute,
 					    count);
 
 		if (array->rids == NULL)
@@ -2801,7 +2801,7 @@ static NTSTATUS samr_GetGroupsForUser(struct dcesrv_call_state *dce_call, TALLOC
 
 			array->rids[array->count].rid =
 				group_sid->sub_auths[group_sid->num_auths-1];
-			array->rids[array->count].type = 7;
+			array->rids[array->count].attributes = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
 			array->count += 1;
 		}
 	}
