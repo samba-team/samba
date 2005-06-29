@@ -210,6 +210,16 @@ if test "$enable_mmap" = "no"; then
 	AC_DEFINE(NO_MMAP, 1, [Define if you don't want to use mmap.])
 fi
 
+AC_ARG_ENABLE(afs-string-to-key,
+	AS_HELP_STRING([--disable-afs-string-to-key],
+	[disable use of weak AFS string-to-key functions]),
+	[], [enable_afs_string_to_key=yes])
+
+if test "$enable_afs_string_to_key" = "yes"; then
+	AC_DEFINE(ENABLE_AFS_STRING_TO_KEY, 1, [Define if want to use the weak AFS string to key functions.])
+fi
+
+
 rk_CHECK_MAN
 
 rk_TEST_PACKAGE(readline,
