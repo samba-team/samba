@@ -504,6 +504,7 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 		"realm",
 		"secureChannelType",
 		"ntPwdHash",
+		"msDS-KeyVersionNumber",
 		NULL
 	};
 	
@@ -594,6 +595,8 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 		cli_credentials_set_password(cred, password, CRED_SPECIFIED);
 	}
 
+	cli_credentials_set_kvno(cred, ldb_msg_find_int(msgs[0], "msDS-KeyVersionNumber", 0));
+	
 	talloc_free(mem_ctx);
 	
 	return NT_STATUS_OK;
@@ -649,6 +652,25 @@ void cli_credentials_set_secure_channel_type(struct cli_credentials *cred,
 enum netr_SchannelType cli_credentials_get_secure_channel_type(struct cli_credentials *cred)
 {
 	return cred->secure_channel_type;
+}
+
+/** 
+ * Set Kerberos KVNO
+ */
+
+void cli_credentials_set_kvno(struct cli_credentials *cred,
+			      int kvno)
+{
+	cred->kvno = kvno;
+}
+
+/**
+ * Return Kerberos KVNO
+ */
+
+int cli_credentials_get_kvno(struct cli_credentials *cred)
+{
+	return cred->kvno;
 }
 
 /**
