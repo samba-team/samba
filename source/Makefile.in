@@ -1151,6 +1151,11 @@ bin/idmap_rid.@SHLIBEXT@: sam/idmap_rid.@PICSUFFIX@
 	@$(SHLD) $(LDSHFLAGS) -o $@ sam/idmap_rid.@PICSUFFIX@ \
 		@SONAMEFLAG@`basename $@`
 
+bin/idmap_ad.@SHLIBEXT@: sam/idmap_ad.@PICSUFFIX@
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ sam/idmap_ad.@PICSUFFIX@ \
+		@SONAMEFLAG@`basename $@`
+
 bin/weird.@SHLIBEXT@: $(DEVEL_HELP_WEIRD_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(DEVEL_HELP_WEIRD_OBJ:.o=.@PICSUFFIX@) \
