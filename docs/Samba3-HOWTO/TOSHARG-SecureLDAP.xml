@@ -8,6 +8,7 @@
 
 	<para>
 	<indexterm><primary>Transport Layer Seccurity, TLS</primary><secondary>Introduction</secondary></indexterm>
+<indexterm><primary>ACL</primary></indexterm>
 	Up until now, we have discussed the straight forward configuration of <trademark>OpenLDAP</trademark>,
 	with some advanced features such as ACLs. This does not however, deal with the fact that the network
 	transmissions are still in plain text. This is where <firstterm>Transport Layer Security (TLS)</firstterm>
@@ -15,18 +16,23 @@
 	</para> 
 
 	<para>
+<indexterm><primary>RFC 2830</primary></indexterm>
 	<trademark>OpenLDAP</trademark> clients and servers are capable of using the Transport Layer Security (TLS)
 	framework to provide integrity and confidentiality protections in accordance with - <ulink
-	url="http://rfc.net/rfc2830.html">RFC2830</ulink>; <emphasis>Lightweight Directory Access Protocol (v3):
+	url="http://rfc.net/rfc2830.html">RFC 2830</ulink>; <emphasis>Lightweight Directory Access Protocol (v3):
 	Extension for Transport Layer Security.</emphasis>
 	</para>
 
 	<para>
+<indexterm><primary>X.509 certificates</primary></indexterm>
 	TLS uses X.509 certificates. All servers are required to have valid certificates, whereas client certificates
 	are optional. We will only be discussing server certificates.
 	</para>
 
 	<tip><para>
+<indexterm><primary>DN</primary></indexterm>
+<indexterm><primary>CN</primary></indexterm>
+<indexterm><primary>FQDN</primary></indexterm>
 	The DN of a server certificate must use the CN attribute to name the server, and the CN must carry the
 	server's fully qualified domain name (FQDN). Additional alias names and wildcards may be present in the
 	<option>subjectAltName</option> certificate extension. More details on server certificate names are in <ulink
@@ -51,6 +57,7 @@
 	<title>Generating the Certificate Authority</title>
 
 	<para>
+<indexterm><primary>Certificate Authority</primary><see>CA</see></indexterm>
 	In order to create the relevant certificates, we need to become our own Certificate Authority (CA).
 	<footnote><para>We could however, get our generated server certificate signed by proper CAs, like <ulink
 	url="http://www.thawte.com/">Thawte</ulink> and <ulink url="http://www.verisign.com/">VeriSign</ulink>, which
@@ -59,6 +66,7 @@
 	</para>
 
 	<para>
+<indexterm><primary>OpenSSL</primary></indexterm>
 	We will be using the <ulink url="http://www.openssl.org">OpenSSL</ulink> <footnote><para>The downside to
 	making our own CA, is that the certificate is not automatically recognised by clients, like the commercial
 	ones are.</para></footnote> software for this, which is included with every great <trademark
@@ -233,7 +241,8 @@ X509v3 extensions:
 	    F7:84:87:25:C4:E8:46:6D:0F:47:27:91:F0:16:E0:86:6A:EE:A3:CE
 	X509v3 Authority Key Identifier:
 	    keyid:27:44:63:3A:CB:09:DC:B1:FF:32:CC:93:23:A4:F1:B4:D5:F0:7E:CC
-	    DirName:/C=AU/ST=NSW/L=Sydney/O=Abmas/OU=IT/CN=ldap.abmas.biz/emailAddress=support@abmas.biz
+	    DirName:/C=AU/ST=NSW/L=Sydney/O=Abmas/OU=IT/
+						CN=ldap.abmas.biz/emailAddress=support@abmas.biz
 	    serial:00
 
 Certificate is to be certified until Mar  6 18:22:26 2006 EDT (365 days)
