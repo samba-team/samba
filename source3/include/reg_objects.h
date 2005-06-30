@@ -47,18 +47,5 @@ typedef struct {
 	char            **subkeys;
 } REGSUBKEY_CTR;
 
-/* represent a registry key with all its subkeys and values */
-
-struct _regobj_key;
-
-typedef struct _regobj_key {
-	TALLOC_CTX *ctx;
-
-	char *name;
-
-	REGVAL_CTR values;
-	REGSUBKEY_CTR subkeys;
-} REGOBJ_KEY;
-
 #endif /* _REG_OBJECTS_H */
 

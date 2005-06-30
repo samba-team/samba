@@ -25,6 +25,19 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+struct reg_dyn_tree {
+	/* full key path in normalized form */
+	const char *path;
+	
+	/* callbscks for fetch/store operations */
+	int ( *fetch_subkeys) ( const char *path, REGSUBKEY_CTR *subkeys );
+	BOOL (*store_subkeys) ( const char *path, REGSUBKEY_CTR *subkeys );
+	int  (*fetch_values)  ( const char *path, REGVAL_CTR *values );
+	BOOL (*store_values)  ( const char *path, REGVAL_CTR *values );
+};
+
+#if 0	/* UNUSED */
+
 #define MAX_TOP_LEVEL_KEYS	3
 
 /* some symbolic indexes into the top_level_keys */
@@ -99,29 +112,6 @@ static char* trim_reg_path( const char *path )
 	else
 		return NULL;
 }
-
-/**********************************************************************
- *********************************************************************/
- 
-static int fill_ports_values( REGVAL_CTR *values )
-{
-	int numlines, i;
-	char **lines;
-	UNISTR2	data;
-	WERROR result;
-
-	result = enumports_hook( &numlines, &lines );
-
-	if ( !W_ERROR_IS_OK(result) )
-		return -1;
-
-	init_unistr2( &data, "", UNI_STR_TERMINATE);
-	for ( i=0; i<numlines; i++ )
-		regval_ctr_addvalue( values, lines[i], REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
-
-	return numlines;
-}
- 
 
 /**********************************************************************
  handle enumeration of subkeys below KEY_PRINTING\Environments
@@ -457,84 +447,6 @@ static int print_subpath_forms( char *key, REGSUBKEY_CTR *subkeys )
 }
 
 /**********************************************************************
- handle enumeration of values below KEY_PRINTING\Forms
- *********************************************************************/
- 
-static int print_subpath_values_forms( char *key, REGVAL_CTR *val )
-{
-	int 		num_values = 0;
-	uint32 		data[8];
-	int		form_index = 1;
-	
-	DEBUG(10,("print_values_forms: key=>[%s]\n", key ? key : "NULL" ));
-	
-	/* handle ..\Forms\ */
-	
-	if ( !key )
-	{
-		nt_forms_struct *forms_list = NULL;
-		nt_forms_struct *form = NULL;
-		int i;
-		
-		if ( (num_values = get_ntforms( &forms_list )) == 0 ) 
-			return 0;
-		
-		DEBUG(10,("print_subpath_values_forms: [%d] user defined forms returned\n",
-			num_values));
-
-		/* handle user defined forms */
-				
-		for ( i=0; i<num_values; i++ )
-		{
-			form = &forms_list[i];
-			
-			data[0] = form->width;
-			data[1] = form->length;
-			data[2] = form->left;
-			data[3] = form->top;
-			data[4] = form->right;
-			data[5] = form->bottom;
-			data[6] = form_index++;
-			data[7] = form->flag;
-			
-			regval_ctr_addvalue( val, form->name, REG_BINARY, (char*)data, sizeof(data) );
-		
-		}
-		
-		SAFE_FREE( forms_list );
-		forms_list = NULL;
-		
-		/* handle built-on forms */
-		
-		if ( (num_values = get_builtin_ntforms( &forms_list )) == 0 ) 
-			return 0;
-		
-		DEBUG(10,("print_subpath_values_forms: [%d] built-in forms returned\n",
-			num_values));
-			
-		for ( i=0; i<num_values; i++ )
-		{
-			form = &forms_list[i];
-			
-			data[0] = form->width;
-			data[1] = form->length;
-			data[2] = form->left;
-			data[3] = form->top;
-			data[4] = form->right;
-			data[5] = form->bottom;
-			data[6] = form_index++;
-			data[7] = form->flag;
-					
-			regval_ctr_addvalue( val, form->name, REG_BINARY, (char*)data, sizeof(data) );
-		}
-		
-		SAFE_FREE( forms_list );
-	}
-	
-	return num_values;
-}
-
-/**********************************************************************
  handle enumeration of subkeys below KEY_PRINTING\Printers
  *********************************************************************/
  
@@ -867,54 +779,343 @@ static int printing_subkey_info( const char *key, REGSUBKEY_CTR *subkey_ctr )
 	return num_subkeys;
 }
 
+#endif	/* UNUSED */
+
 /**********************************************************************
- Enumerate registry values given a registry path.  
- Caller is responsible for freeing memory 
  *********************************************************************/
 
-static int printing_value_info( const char *key, REGVAL_CTR *val )
+static int key_forms_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 {
-	char 		*path;
-	int		num_values = 0;
+	return 0;
+}
+
+static BOOL key_forms_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
+{
+	return True;
+}
+
+static int key_forms_fetch_values( const char *key, REGVAL_CTR *values )
+{
+	int 		num_values = 0;
+	uint32 		data[8];
+	int		form_index = 1;
+	int i;
 	
-	DEBUG(10,("printing_value_info: key=>[%s]\n", key));
+	DEBUG(10,("print_values_forms: key=>[%s]\n", key ? key : "NULL" ));
 	
-	path = trim_reg_path( key );
+	nt_forms_struct *forms_list = NULL;
+	nt_forms_struct *form = NULL;
 		
-	if ( path ) {
-		num_values = handle_printing_subpath( path, NULL, val );
-		SAFE_FREE( path );
-		return num_values;
+	if ( (num_values = get_ntforms( &forms_list )) == 0 ) 
+		return 0;
+		
+	DEBUG(10,("hive_forms_fetch_values: [%d] user defined forms returned\n",
+		num_values));
+
+	/* handle user defined forms */
+				
+	for ( i=0; i<num_values; i++ ) {
+		form = &forms_list[i];
+			
+		data[0] = form->width;
+		data[1] = form->length;
+		data[2] = form->left;
+		data[3] = form->top;
+		data[4] = form->right;
+		data[5] = form->bottom;
+		data[6] = form_index++;
+		data[7] = form->flag;
+			
+		regval_ctr_addvalue( values, form->name, REG_BINARY, (char*)data, sizeof(data) );	
+	}
+		
+	SAFE_FREE( forms_list );
+	forms_list = NULL;
+		
+	/* handle built-on forms */
+		
+	if ( (num_values = get_builtin_ntforms( &forms_list )) == 0 ) 
+		return 0;
+		
+	DEBUG(10,("print_subpath_values_forms: [%d] built-in forms returned\n",
+		num_values));
+			
+	for ( i=0; i<num_values; i++ ) {
+		form = &forms_list[i];
+			
+		data[0] = form->width;
+		data[1] = form->length;
+		data[2] = form->left;
+		data[3] = form->top;
+		data[4] = form->right;
+		data[5] = form->bottom;
+		data[6] = form_index++;
+		data[7] = form->flag;
+					
+		regval_ctr_addvalue( values, form->name, REG_BINARY, (char*)data, sizeof(data) );
+	}
+		
+	SAFE_FREE( forms_list );
+	
+	return regval_ctr_numvals( values );
+}
+
+static BOOL key_forms_store_values( const char *key, REGVAL_CTR *values )
+{
+	return True;
+}
+
+/**********************************************************************
+ *********************************************************************/
+
+static int key_printer_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
+{
+	return 0;
+}
+
+static BOOL key_printer_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
+{
+	return True;
+}
+
+static int key_printer_fetch_values( const char *key, REGVAL_CTR *values )
+{
+	return 0;
+}
+
+static BOOL key_printer_store_values( const char *key, REGVAL_CTR *values )
+{
+	return True;
+}
+
+/**********************************************************************
+ *********************************************************************/
+
+static int key_driver_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
+{
+	return 0;
+}
+
+static BOOL key_driver_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
+{
+	return True;
+}
+
+static int key_driver_fetch_values( const char *key, REGVAL_CTR *values )
+{
+	return 0;
+}
+
+static BOOL key_driver_store_values( const char *key, REGVAL_CTR *values )
+{
+	return True;
+}
+
+/**********************************************************************
+ *********************************************************************/
+
+static int key_print_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
+{
+	return 0;
+}
+
+static BOOL key_print_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
+{
+	return True;
+}
+
+static int key_print_fetch_values( const char *key, REGVAL_CTR *values )
+{
+	return 0;
+}
+
+static BOOL key_print_store_values( const char *key, REGVAL_CTR *values )
+{
+	return True;
+}
+
+/**********************************************************************
+ *********************************************************************/
+
+static int key_ports_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
+{
+	return 0;
+}
+
+static BOOL key_ports_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
+{
+	return True;
+}
+
+static int key_ports_fetch_values( const char *key, REGVAL_CTR *values )
+{
+	int numlines, i;
+	char **lines;
+	UNISTR2	data;
+	WERROR result;
+
+	if ( !W_ERROR_IS_OK(result = enumports_hook( &numlines, &lines )) )
+		return -1;
+
+	init_unistr2( &data, "", UNI_STR_TERMINATE);
+	for ( i=0; i<numlines; i++ )
+		regval_ctr_addvalue( values, lines[i], REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+	
+	return regval_ctr_numvals( values );
+}
+
+static BOOL key_ports_store_values( const char *key, REGVAL_CTR *values )
+{
+	return True;
+}
+
+/**********************************************************************
+ *********************************************************************/
+
+static int key_monitor_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
+{
+	return regdb_fetch_keys( key, subkeys );
+}
+
+static BOOL key_monitor_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
+{
+	return regdb_store_keys( key, subkeys );
+}
+
+static int key_monitor_fetch_values( const char *key, REGVAL_CTR *values )
+{
+	return regdb_fetch_values( key, values );
+}
+
+static BOOL key_monitor_store_values( const char *key, REGVAL_CTR *values )
+{
+	return regdb_store_values( key, values );
+}
+
+/**********************************************************************
+ Structure to hold dispatch table of ops for various printer keys.
+ Make sure to always store deeper keys along the same path first so 
+ we ge a more specific match.
+ *********************************************************************/
+
+static struct reg_dyn_tree print_registry[] = {
+{ "HKLM/SYSTEM/CURRENTCONTROLSET/CONTROL/PRINT/MONITORS",
+	&key_monitor_fetch_keys, 
+	&key_monitor_store_keys,
+	&key_monitor_fetch_values,
+	&key_monitor_store_values },
+{ "HKLM/SYSTEM/CURRENTCONTROLSET/CONTROL/PRINT/FORMS", 
+	&key_forms_fetch_keys, 
+	&key_forms_store_keys, 
+	&key_forms_fetch_values,
+	&key_forms_store_values },
+{ "HKLM/SYSTEM/CURRENTCONTROLSET/CONTROL/PRINT/PRINTERS", 
+	&key_printer_fetch_keys,
+	&key_printer_store_keys,
+	&key_printer_fetch_values,
+	&key_printer_store_values },
+{ "HKLM/SYSTEM/CURRENTCONTROLSET/CONTROL/PRINT/ENVIRONMENTS",
+	&key_driver_fetch_keys,
+	&key_driver_store_keys,
+	&key_driver_fetch_values,
+	&key_driver_store_values },
+{ "HKLM/SYSTEM/CURRENTCONTROLSET/CONTROL/PRINT",
+	&key_print_fetch_keys,
+	&key_print_store_keys,
+	&key_print_fetch_values,
+	&key_print_store_values },
+{ "HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION/PRINT/PRINTERS",
+	&key_printer_fetch_keys,
+	&key_printer_store_keys,
+	&key_printer_fetch_values,
+	&key_printer_store_values },
+{ "HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION/PRINT",
+	&key_print_fetch_keys,
+	&key_print_store_keys,
+	&key_print_fetch_values,
+	&key_print_store_values },
+{ "HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION/PORTS",
+	&key_ports_fetch_keys,
+	&key_ports_store_keys,
+	&key_ports_fetch_values,
+	&key_ports_store_values },
+	
+{ NULL, NULL, NULL, NULL, NULL }
+};
+
+
+/**********************************************************************
+ *********************************************************************/
+ 
+static int match_registry_path( const char *key )
+{
+	int i;
+	pstring path;
+	
+	if ( !key )
+		return -1;
+
+	pstrcpy( path, key );
+	normalize_reg_path( path );
+	
+	for ( i=0; print_registry[i].path; i++ ) {
+		if ( strncmp( path, print_registry[i].path, strlen(print_registry[i].path) ) == 0 )
+			return i;
 	}
 	
-	/* top level key */
-	
-	if ( strequal( key, KEY_PRINTING_PORTS ) ) 
-		num_values = fill_ports_values( val );
-	
-	return num_values;
+	return -1;
 }
 
 /**********************************************************************
- Stub function which always returns failure since we don't want
- people storing printing information directly via regostry calls
- (for now at least)
  *********************************************************************/
-
-static BOOL printing_store_subkey( const char *key, REGSUBKEY_CTR *subkeys )
+ 
+static int regprint_fetch_reg_keys( const char *key, REGSUBKEY_CTR *subkeys )
 {
-	return True;
+	int i = match_registry_path( key );
+	
+	if ( i == -1 )
+		return -1;
+	
+	return print_registry[i].fetch_subkeys( key, subkeys );
 }
 
 /**********************************************************************
- Stub function which always returns failure since we don't want
- people storing printing information directly via regostry calls
- (for now at least)
  *********************************************************************/
 
-static BOOL printing_store_value( const char *key, REGVAL_CTR *val )
+static BOOL regprint_store_reg_keys( const char *key, REGSUBKEY_CTR *subkeys )
 {
-	return True;
+	int i = match_registry_path( key );
+	
+	if ( i == -1 )
+		return False;
+	
+	return print_registry[i].store_subkeys( key, subkeys );
+}
+
+/**********************************************************************
+ *********************************************************************/
+
+static int regprint_fetch_reg_values( const char *key, REGVAL_CTR *values )
+{
+	int i = match_registry_path( key );
+	
+	if ( i == -1 )
+		return -1;
+	
+	return print_registry[i].fetch_values( key, values );
+}
+
+/**********************************************************************
+ *********************************************************************/
+
+static BOOL regprint_store_reg_values( const char *key, REGVAL_CTR *values )
+{
+	int i = match_registry_path( key );
+	
+	if ( i == -1 )
+		return False;
+	
+	return print_registry[i].store_values( key, values );
 }
 
 /* 
@@ -922,10 +1123,10 @@ static BOOL printing_store_value( const char *key, REGVAL_CTR *val )
  */
  
 REGISTRY_OPS printing_ops = {
-	printing_subkey_info,
-	printing_value_info,
-	printing_store_subkey,
-	printing_store_value,
+	regprint_fetch_reg_keys,
+	regprint_fetch_reg_values,
+	regprint_store_reg_keys,
+	regprint_store_reg_values,
 	NULL
 };
 
