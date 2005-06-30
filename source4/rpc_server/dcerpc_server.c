@@ -399,16 +399,15 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code
 	pkt.u.fault.status = fault_code;
 
 	rep = talloc(call, struct dcesrv_call_reply);
-	if (!rep) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(rep);
 
-	status = ncacn_push_auth(&rep->data, call, &pkt, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	rep->data = talloc(call, DATA_BLOB);
+	NT_STATUS_HAVE_NO_MEMORY(rep->data);
 
-	dcerpc_set_frag_length(&rep->data, rep->data.length);
+	status = ncacn_push_auth(rep->data, call, &pkt, NULL);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	dcerpc_set_frag_length(rep->data, rep->data->length);
 
 	DLIST_ADD_END(call->replies, rep, struct dcesrv_call_reply *);
 	DLIST_ADD_END(call->conn->call_list, call, struct dcesrv_call_state *);
@@ -436,16 +435,15 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 	pkt.u.bind_nak.num_versions = 0;
 
 	rep = talloc(call, struct dcesrv_call_reply);
-	if (!rep) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(rep);
 
-	status = ncacn_push_auth(&rep->data, call, &pkt, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	rep->data = talloc(call, DATA_BLOB);
+	NT_STATUS_HAVE_NO_MEMORY(rep->data);
 
-	dcerpc_set_frag_length(&rep->data, rep->data.length);
+	status = ncacn_push_auth(rep->data, call, &pkt, NULL);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	dcerpc_set_frag_length(rep->data, rep->data->length);
 
 	DLIST_ADD_END(call->replies, rep, struct dcesrv_call_reply *);
 	DLIST_ADD_END(call->conn->call_list, call, struct dcesrv_call_state *);
@@ -571,17 +569,16 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	}
 
 	rep = talloc(call, struct dcesrv_call_reply);
-	if (!rep) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(rep);
 
-	status = ncacn_push_auth(&rep->data, call, &pkt, 
-				  call->conn->auth_state.auth_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	rep->data = talloc(call, DATA_BLOB);
+	NT_STATUS_HAVE_NO_MEMORY(rep->data);
 
-	dcerpc_set_frag_length(&rep->data, rep->data.length);
+	status = ncacn_push_auth(rep->data, call, &pkt, 
+				 call->conn->auth_state.auth_info);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	dcerpc_set_frag_length(rep->data, rep->data->length);
 
 	DLIST_ADD_END(call->replies, rep, struct dcesrv_call_reply *);
 	DLIST_ADD_END(call->conn->call_list, call, struct dcesrv_call_state *);
@@ -713,17 +710,16 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	}
 
 	rep = talloc(call, struct dcesrv_call_reply);
-	if (!rep) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(rep);
 
-	status = ncacn_push_auth(&rep->data, call, &pkt, 
-				  call->conn->auth_state.auth_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	rep->data = talloc(call, DATA_BLOB);
+	NT_STATUS_HAVE_NO_MEMORY(rep->data);
 
-	dcerpc_set_frag_length(&rep->data, rep->data.length);
+	status = ncacn_push_auth(rep->data, call, &pkt, 
+				 call->conn->auth_state.auth_info);
+	NT_STATUS_IS_OK_RETURN(status);
+
+	dcerpc_set_frag_length(rep->data, rep->data->length);
 
 	DLIST_ADD_END(call->replies, rep, struct dcesrv_call_reply *);
 	DLIST_ADD_END(call->conn->call_list, call, struct dcesrv_call_state *);
@@ -844,6 +840,9 @@ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 		rep = talloc(call, struct dcesrv_call_reply);
 		NT_STATUS_HAVE_NO_MEMORY(rep);
 
+		rep->data = talloc(call, DATA_BLOB);
+		NT_STATUS_HAVE_NO_MEMORY(rep->data);
+
 		length = stub.length;
 		if (length + DCERPC_RESPONSE_LENGTH > call->conn->cli_max_recv_frag) {
 			/* the 32 is to cope with signing data */
@@ -869,11 +868,11 @@ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 		pkt.u.response.stub_and_verifier.data = stub.data;
 		pkt.u.response.stub_and_verifier.length = length;
 
-		if (!dcesrv_auth_response(call, &rep->data, &pkt)) {
+		if (!dcesrv_auth_response(call, rep->data, &pkt)) {
 			return dcesrv_fault(call, DCERPC_FAULT_OTHER);		
 		}
 
-		dcerpc_set_frag_length(&rep->data, rep->data.length);
+		dcerpc_set_frag_length(rep->data, rep->data->length);
 
 		DLIST_ADD_END(call->replies, rep, struct dcesrv_call_reply *);
 		
@@ -1127,13 +1126,13 @@ NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn,
 	}
 	rep = call->replies;
 
-	status = write_fn(private_data, &rep->data, &nwritten);
+	status = write_fn(private_data, rep->data, &nwritten);
 	NT_STATUS_IS_ERR_RETURN(status);
 
-	rep->data.length -= nwritten;
-	rep->data.data += nwritten;
+	rep->data->length -= nwritten;
+	rep->data->data += nwritten;
 
-	if (rep->data.length == 0) {
+	if (rep->data->length == 0) {
 		/* we're done with this section of the call */
 		DLIST_REMOVE(call->replies, rep);
 	}

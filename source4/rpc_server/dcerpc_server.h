@@ -104,7 +104,7 @@ struct dcesrv_call_state {
 
 	struct dcesrv_call_reply {
 		struct dcesrv_call_reply *next, *prev;
-		DATA_BLOB data;
+		DATA_BLOB *data;
 	} *replies;
 
 	/* this is used by the boilerplate code to generate DCERPC faults */
