@@ -62,7 +62,7 @@ static int gensec_krb5_destory(void *ptr)
 	/* ccache freed in a child destructor */
 
 	krb5_free_keyblock(gensec_krb5_state->smb_krb5_context->krb5_context, 
-			   &gensec_krb5_state->keyblock);
+			   gensec_krb5_state->keyblock);
 		
 	if (gensec_krb5_state->auth_context) {
 		krb5_auth_con_free(gensec_krb5_state->smb_krb5_context->krb5_context, 
@@ -444,7 +444,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 
 	/* decode and verify the pac */
 	nt_status = kerberos_decode_pac(gensec_krb5_state, &logon_info, gensec_krb5_state->pac,
-					gensec_krb5_state->smb_krb5_context, &(gensec_krb5_state->keyblock));
+					gensec_krb5_state->smb_krb5_context, (gensec_krb5_state->keyblock));
 
 	/* IF we have the PAC - otherwise we need to get this
 	 * data from elsewere - local ldb, or (TODO) lookup of some
