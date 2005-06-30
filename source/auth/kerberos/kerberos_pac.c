@@ -222,11 +222,13 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
  krb5_error_code kerberos_encode_pac(TALLOC_CTX *mem_ctx,
 				     struct auth_serversupplied_info *server_info,
 				     krb5_context context,
-				     krb5_keyblock *keyblock,
+				     krb5_keyblock *krbtgt_keyblock,
+				     krb5_keyblock *server_keyblock,
 				     krb5_data *pac)
 {
 	NTSTATUS nt_status;
 	DATA_BLOB tmp_blob = data_blob(NULL, 0);
+	DATA_BLOB server_checksum_blob;
 	krb5_error_code ret;
 	struct PAC_DATA *pac_data = talloc(mem_ctx, struct PAC_DATA);
 	struct netr_SamBaseInfo *sam;
@@ -279,7 +281,10 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	
 	/* First, just get the keytypes filled in (and lengths right, eventually) */
 	ret = make_pac_checksum(mem_ctx, tmp_blob, &pac_data->buffers[2].info->srv_cksum,
-				context, keyblock);
+				context, krbtgt_keyblock);
+
+	ret = make_pac_checksum(mem_ctx, tmp_blob, &pac_data->buffers[3].info->srv_cksum,
+				context, server_keyblock);
 	if (ret) {
 		DEBUG(2, ("making PAC checksum failed: %s\n", 
 			  smb_get_krb5_error_message(context, ret, mem_ctx)));
@@ -303,9 +308,22 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 
 	/* Then sign the result of the previous push, where the sig was zero'ed out */
 	ret = make_pac_checksum(mem_ctx, tmp_blob, &pac_data->buffers[3].info->srv_cksum,
-				context, keyblock);
+				context, server_keyblock);
 
-	/* And push it out to the world.  This relies on determanistic pointer values */
+	/* Push the Server checksum out */
+	nt_status = ndr_push_struct_blob(&server_checksum_blob, mem_ctx, &pac_data->buffers[3].info->srv_cksum,
+					 (ndr_push_flags_fn_t)ndr_push_PAC_SIGNATURE_DATA);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(1, ("PAC push failed: %s\n", nt_errstr(nt_status)));
+		talloc_free(pac_data);
+		return EINVAL;
+	}
+
+	/* Then sign the result of the previous push, where the sig was zero'ed out */
+	ret = make_pac_checksum(mem_ctx, server_checksum_blob, &pac_data->buffers[2].info->kdc_cksum,
+				context, krbtgt_keyblock);
+
+	/* And push it out again, this time to the world.  This relies on determanistic pointer values */
 	nt_status = ndr_push_struct_blob(&tmp_blob, mem_ctx, pac_data,
 					 (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
 	if (!NT_STATUS_IS_OK(nt_status)) {
