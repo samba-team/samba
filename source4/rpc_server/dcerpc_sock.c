@@ -38,18 +38,17 @@ struct dcesrv_socket_context {
 /*
   write_fn callback for dcesrv_output()
 */
-static ssize_t dcerpc_write_fn(void *private, DATA_BLOB *out)
+static NTSTATUS dcerpc_write_fn(void *private_data, DATA_BLOB *out, size_t *nwritten)
 {
 	NTSTATUS status;
-	struct socket_context *sock = private;
+	struct socket_context *sock = talloc_get_type(private_data, struct socket_context);
 	size_t sendlen;
 
 	status = socket_send(sock, out, &sendlen, 0);
-	if (NT_STATUS_IS_ERR(status)) {
-		return -1;
-	}
+	NT_STATUS_IS_ERR_RETURN(status);
 
-	return sendlen;
+	*nwritten = sendlen;
+	return status;
 }
 
 static void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, const char *reason)
