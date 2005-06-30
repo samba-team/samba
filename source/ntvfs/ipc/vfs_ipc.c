@@ -350,6 +350,18 @@ static NTSTATUS ipc_copy(struct ntvfs_module_context *ntvfs,
 	return NT_STATUS_ACCESS_DENIED;
 }
 
+static NTSTATUS ipc_readx_dcesrv_output(void *private_data, DATA_BLOB *out, size_t *nwritten)
+{
+	DATA_BLOB *blob = private_data;
+
+	if (out->length < blob->length) {
+		blob->length = out->length;
+	}
+	memcpy(blob->data, out->data, blob->length);
+	*nwritten = blob->length;
+	return NT_STATUS_OK;
+}
+
 /*
   read from a file
 */
@@ -380,7 +392,7 @@ static NTSTATUS ipc_read(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (data.length != 0) {
-		status = dcesrv_output_blob(p->dce_conn, &data);
+		status = dcesrv_output(p->dce_conn, &data, ipc_readx_dcesrv_output);
 		if (NT_STATUS_IS_ERR(status)) {
 			return status;
 		}
@@ -604,6 +616,22 @@ static NTSTATUS ipc_search_close(struct ntvfs_module_context *ntvfs,
 	return NT_STATUS_ACCESS_DENIED;
 }
 
+static NTSTATUS ipc_trans_dcesrv_output(void *private_data, DATA_BLOB *out, size_t *nwritten)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	DATA_BLOB *blob = private_data;
+
+	if (out->length > blob->length) {
+		status = STATUS_BUFFER_OVERFLOW;
+	}
+
+	if (out->length < blob->length) {
+		blob->length = out->length;
+	}
+	memcpy(blob->data, out->data, blob->length);
+	*nwritten = blob->length;
+	return status;
+}
 
 /* SMBtrans - handle a DCERPC command */
 static NTSTATUS ipc_dcerpc_cmd(struct ntvfs_module_context *ntvfs,
@@ -638,7 +666,7 @@ static NTSTATUS ipc_dcerpc_cmd(struct ntvfs_module_context *ntvfs,
 	  async calls. Again, we only expect NT_STATUS_OK. If the call fails then
 	  the error is encoded at the dcerpc level
 	*/
-	status = dcesrv_output_blob(p->dce_conn, &trans->out.data);
+	status = dcesrv_output(p->dce_conn, &trans->out.data, ipc_trans_dcesrv_output);
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
