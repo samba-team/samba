@@ -1,4 +1,10 @@
+2005-06-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* base64.h: remove variable names
+	
 2005-06-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* roken-common.h: fix format attribute
 
 	* Makefile.am (libroken_la_SOURCES): += strpool.c
 	
