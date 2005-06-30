@@ -4,6 +4,7 @@
    test DOS extended attributes
 
    Copyright (C) Andrew Tridgell 2004
+   Copyright (C) Guenter Kukkukk 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,6 +34,8 @@
 		ret = False; \
 		goto done; \
 	}} while (0)
+
+static	BOOL maxeadebug = 0; /* need that here, to allow no file delete in debug case */
 
 static BOOL check_ea(struct smbcli_state *cli, 
 		     const char *fname, const char *eaname, const char *value)
@@ -137,6 +140,226 @@ done:
 
 
 /*
+ * Helper function to retrieve the max. ea size for one ea name
+ */
+static int test_one_eamax(struct smbcli_state *cli, const int fnum, 
+			  const char *eaname, DATA_BLOB eablob, 
+			  const int eastart, const int eadebug) 
+{
+	NTSTATUS status;
+	struct ea_struct eastruct;
+	union smb_setfileinfo setfile;
+	int i, high, low, maxeasize;
+
+	setfile.generic.level = RAW_SFILEINFO_EA_SET;
+	setfile.generic.file.fnum = fnum;
+	setfile.ea_set.in.num_eas = 1;
+	setfile.ea_set.in.eas = &eastruct;
+	setfile.ea_set.in.eas->flags = 0;
+	setfile.ea_set.in.eas->name.s = eaname;
+	setfile.ea_set.in.eas->value = eablob;
+
+	maxeasize = eablob.length;
+	i = eastart;
+	low = 0;
+	high = maxeasize;
+
+	do {
+		if (eadebug) {
+			printf ("Testing EA size: %d\n", i);
+		}
+		setfile.ea_set.in.eas->value.length = i;
+
+		status = smb_raw_setfileinfo(cli->tree, &setfile);
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
+			if (eadebug) {
+				printf ("[%s] EA size %d succeeded! "
+					"(high=%d low=%d)\n", 
+					eaname, i, high, low);
+			}
+			low = i;
+			if (low == maxeasize) {
+				printf ("Max. EA size for \"%s\"=%d "
+					"[but could be possibly larger]\n", 
+					eaname, low);
+				break;
+			}
+			if (high - low == 1 && high != maxeasize) {
+				printf ("Max. EA size for \"%s\"=%d\n", 
+					eaname, low);
+				break;
+			}
+			i += (high - low + 1) / 2;
+		} else {
+			if (eadebug) {
+				printf ("[%s] EA size %d failed!    "
+					"(high=%d low=%d) [0x%08x %s]\n", 
+					eaname, i, high, low, 
+					NT_STATUS_V(status), 
+					nt_errstr(status));
+			}
+			high = i;
+			if (high - low <= 1) {
+				printf ("Max. EA size for \"%s\"=%d\n", 
+					eaname, low);
+				break;
+			}
+			i -= (high - low + 1) / 2;
+		}
+	} while (True);
+
+	return low;
+}
+
+/*
+ * Test for maximum ea size - more than one ea name is checked.
+ *
+ * Additional parameters can be passed, to allow further testing:
+ *
+ *             default
+ * maxeasize    65536   limit the max. size for a single EA name
+ * maxeanames     101   limit of the number of tested names
+ * maxeastart       1   this EA size is used to test for the 1st EA (atm)
+ * maxeadebug       0   if set True, further debug output is done - in addition
+ *                      the testfile is not deleted for further inspection!
+ *
+ * Set some/all of these options on the cmdline with:
+ * --option torture:maxeasize=1024 --option torture:maxeadebug=1 ...
+ *
+ */
+static BOOL test_max_eas(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	union smb_open io;
+	const char *fname = BASEDIR "\\ea_max.txt";
+	int fnum = -1;
+	BOOL ret = True;
+	BOOL err = False;
+
+	int       i, j, k, last, total;
+	DATA_BLOB eablob;
+	char      *eaname = NULL;
+	int       maxeasize;
+	int       maxeanames;
+	int       maxeastart;
+
+	printf("TESTING SETFILEINFO MAX. EA_SET\n");
+
+	maxeasize  = lp_parm_int(-1, "torture", "maxeasize", 65536);
+	maxeanames = lp_parm_int(-1, "torture", "maxeanames", 101);
+	maxeastart = lp_parm_int(-1, "torture", "maxeastart", 1);
+	maxeadebug = lp_parm_int(-1, "torture", "maxeadebug", 0);
+
+	/* Do some sanity check on possibly passed parms */
+	if (maxeasize <= 0) {
+		printf("Invalid parameter 'maxeasize=%d'",maxeasize);
+		err = True;
+	}
+	if (maxeanames <= 0) {
+		printf("Invalid parameter 'maxeanames=%d'",maxeanames);
+		err = True;
+	}
+	if (maxeastart <= 0) {
+		printf("Invalid parameter 'maxeastart=%d'",maxeastart);
+		err = True;
+	}
+	if (maxeadebug < 0) {
+		printf("Invalid parameter 'maxeadebug=%d'",maxeadebug);
+		err = True;
+	}
+	if (err) {
+	  printf("\n\n");
+	  goto done;
+	}
+	if (maxeastart > maxeasize) {
+		maxeastart = maxeasize;
+		printf ("'maxeastart' outside range - corrected to %d\n", 
+			maxeastart);
+	}
+	printf("MAXEA parms: maxeasize=%d maxeanames=%d maxeastart=%d"
+	       " maxeadebug=%d\n", maxeasize, maxeanames, maxeastart, 
+	       maxeadebug);
+
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = 
+		NTCREATEX_SHARE_ACCESS_READ | 
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.fnum;
+	
+	eablob = data_blob_talloc(mem_ctx, NULL, maxeasize);
+	if (eablob.data == NULL) {
+		goto done;
+	}
+	/* 
+	 * Fill in some EA data - the offset could be easily checked 
+	 * during a hexdump.
+	 */
+	for (i = 0, k = 0; i < eablob.length / 4; i++, k+=4) {
+		eablob.data[k]   = k & 0xff;
+		eablob.data[k+1] = (k >>  8) & 0xff;
+		eablob.data[k+2] = (k >> 16) & 0xff;
+		eablob.data[k+3] = (k >> 24) & 0xff;
+	}
+
+	i = eablob.length % 4;
+	if (i-- > 0) { 
+		eablob.data[k] = k & 0xff;
+		if (i-- > 0) { 
+			eablob.data[k+1] = (k >>  8) & 0xff;
+			if (i-- > 0) { 
+				eablob.data[k+2] = (k >> 16) & 0xff;
+			}
+		}
+	}
+	/*
+	 * Filesystems might allow max. EAs data for different EA names.
+	 * So more than one EA name should be checked.
+	 */
+	total = 0;
+	last  = maxeastart;
+
+	for (i = 0; i < maxeanames; i++) {
+		if (eaname != NULL) {
+			talloc_free(eaname);
+		}
+		eaname = talloc_asprintf(mem_ctx, "MAX%d", i);
+		if(eaname == NULL) {
+			goto done;
+		}
+		j = test_one_eamax(cli, fnum, eaname, eablob, last, maxeadebug);
+		if (j <= 0) {
+			break;
+		}
+		total += j;
+		last = j;
+	}
+
+	printf("Total EA size:%d\n", total);
+	if (i == maxeanames) {
+		printf ("NOTE: More EAs could be available!\n");
+	} 
+	if (total == 0) {
+		ret = False;
+	}
+done:
+	smbcli_close(cli->tree, fnum);
+	return ret;
+}
+
+/*
   test using NTTRANS CREATE to create a file with an initial EA set
 */
 static BOOL test_nttrans_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
@@ -237,11 +460,15 @@ BOOL torture_raw_eas(void)
 		return False;
 	}
 
+	ret &= test_max_eas(cli, mem_ctx);
 	ret &= test_eas(cli, mem_ctx);
 	ret &= test_nttrans_create(cli, mem_ctx);
 
 	smb_raw_exit(cli->session);
-	smbcli_deltree(cli->tree, BASEDIR);
+	if (!maxeadebug) {
+		/* in no ea debug case, all files are gone now */
+		smbcli_deltree(cli->tree, BASEDIR);
+	}
 
 	torture_close_connection(cli);
 	talloc_free(mem_ctx);
