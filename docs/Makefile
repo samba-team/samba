@@ -74,15 +74,16 @@ validate: $(addsuffix -validate,$(MAIN_DOCS))
 # Intermediate docbook docs
 #
 $(DOCBOOKDIR)/%.xml: %/index.xml xslt/expand-sambadoc.xsl
-	mkdir -p $(@D)
-	$(XSLTPROC) --stringparam latex.imagebasedir "$*/" --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
+	@echo "Converting Samba-specific tags..."
+	@mkdir -p $(@D)
+	@$(XSLTPROC) --stringparam latex.imagebasedir "$*/" --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
 
 $(DOCBOOKDIR)/manpages-3/%.xml: $(MANPAGEDIR3)/%.xml xslt/expand-sambadoc.xsl
-	mkdir -p $(@D)
+	@mkdir -p $(@D)
 	$(XSLTPROC) --xinclude --stringparam noreference 1 --output $@ xslt/expand-sambadoc.xsl $<
 
 $(DOCBOOKDIR)/manpages-3/index.xml: $(MANPAGES3) xslt/manpage-summary.xsl
-	mkdir -p $(@D)
+	@mkdir -p $(@D)
 	echo "<article><variablelist>" > $@
 	$(XSLTPROC) xslt/manpage-summary.xsl $(MANPAGES3) >> $@
 	echo "</variablelist></article>" >> $@
@@ -90,16 +91,16 @@ $(DOCBOOKDIR)/manpages-3/index.xml: $(MANPAGES3) xslt/manpage-summary.xsl
 # HTML docs
 
 $(HTMLDIR)/index.html: htmldocs.html
-	mkdir -p $(@D)
+	@mkdir -p $(@D)
 	cp $< $@
 	
 $(HTMLDIR)/%/index.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/%/samba.css xslt/html-chunk.xsl %-images-html-chunks
-	mkdir -p $(@D)
+	@mkdir -p $(@D)
 	$(XSLTPROC) --stringparam base.dir "$(HTMLDIR)/$*/" xslt/html-chunk.xsl $<
 
 # Single large HTML files
 $(OUTPUTDIR)/%/samba.css: xslt/html/samba.css
-	mkdir -p $(@D)
+	@mkdir -p $(@D)
 	cp $< $@
 
 $(patsubst %,$(HTMLDIR)/%.html,$(MAIN_DOCS)): $(HTMLDIR)/%.html: %-images-html-single
@@ -109,22 +110,24 @@ $(HTMLDIR)/%.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/samba.css xslt/html.xsl
 
 # Attributions
 %-attributions.xml: 
-	$(XSLTPROC) --xinclude -o $@ xslt/generate-attributions.xsl $*/index.xml 
+	@echo "Generating attributions file $@ from $*/"
+	@$(XSLTPROC) --xinclude -o $@ xslt/generate-attributions.xsl $*/index.xml 
 
 # Text files
 $(TXTDIR)/%.txt: $(HTMLDIR)/%.html
-	mkdir -p $(@D)
+	@mkdir -p $(@D)
 	$(HTML2TEXT) -nobs -style pretty -o $@ $<
 
 # Tex files
 %.tex: %/index.xml xslt/latex.xsl
-	mkdir -p $(@D)
-	$(XSLTPROC) $(DB2LATEX_ARGS) --stringparam latex.imagebasedir "$*/" --xinclude --output $@ xslt/latex.xsl $<
+	@echo "Generating $@..."
+	@mkdir -p $(@D)
+	@$(XSLTPROC) $(DB2LATEX_ARGS) --stringparam latex.imagebasedir "$*/" --xinclude --output $@ xslt/latex.xsl $<
 
 latexfigures: $(LATEX_FIGURES)
 
 $(PDFDIR)/%.pdf: %.pdf
-	mkdir -p $(@D)
+	@mkdir -p $(@D)
 	cp $< $@
 
 %.idx: %.tex latexfigures
@@ -135,7 +138,8 @@ $(PDFDIR)/%.pdf: %.pdf
 
 # Dependency files
 %.d: $(DOCBOOKDIR)/%.xml xslt/generate-dependencies.xsl
-	$(XSLTPROC) \
+	@echo "Generating dependency file for $*" 
+	@$(XSLTPROC) \
 		--novalid \
 		--stringparam txtbasedir "$(TXTDIR)/$*/" \
 		--stringparam target "$*" \
@@ -176,8 +180,8 @@ endif
 
 # DVI files
 $(DVIDIR)/%.dvi: %.dvi
-	mkdir -p $(@D)
-	cp $< $@
+	@mkdir -p $(@D)
+	@cp $< $@
 
 %.dvi: %.tex %.idx %-images-latex-eps
 	-$(LATEX) $< 
@@ -196,17 +200,17 @@ $(DVIDIR)/%.dvi: %.dvi
 
 # PostScript files
 $(PSDIR)/%.ps: $(DVIDIR)/%.dvi
-	mkdir -p $(@D)
+	@mkdir -p $(@D)
 	$(DVIPS) -o $@ $<
 
 # Fo
 $(FODIR)/%.fo: $(DOCBOOKDIR)/%.xml
-	mkdir -p $(@D)
+	@mkdir -p $(@D)
 	$(XSLTPROC) --output $@ xslt/fo.xsl $<
 
 # PDF thru Fo
 $(FOPDFDIR)/%.pdf: $(FODIR)/%.fo
-	mkdir -p $(@D)
+	@mkdir -p $(@D)
 	JAVA_OPTS=-Xmx250m $(FOP) -q -d $< -pdf $@
 
 $(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml %-images-htmlhelp
@@ -217,12 +221,12 @@ $(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml %-images-htmlhelp
 
 # Plucker docs
 $(PLUCKERDIR)/%.pdb: $(HTMLDIR)/%.html 
-	mkdir -p $(@D)
+	@mkdir -p $(@D)
 	$(PLUCKERBUILD) -v -V 2 --stayonhost --zlib-compression -f $* -p $(PLUCKERDIR) file:$< 
 
 # Texinfo docs
 $(TEXINFODIR)/%.texi: $(DOCBOOKDIR)/%.xml
-	mkdir -p $(@D)
+	@mkdir -p $(@D)
 	cd $(@D) && $(DB2TEXI) $(shell pwd)/$<
 
 $(TEXINFODIR)/%.info: $(TEXINFODIR)/%.texi
@@ -235,29 +239,31 @@ $(SMBDOTCONFDOC)/parameters.all.xml: $(wildcard $(SMBDOTCONFDOC)/*/*.xml) $(SMBD
 	$(SMBDOTCONFDOC)/generate-file-list.sh $(SMBDOTCONFDOC) > $@
 
 $(SMBDOTCONFDOC)/parameters.global.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/generate-context.xsl
-	$(XSLTPROC) --xinclude --param smb.context "'G'" --output $(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/generate-context.xsl $<
+	@echo "Generating list of global smb.conf options" 
+	@$(XSLTPROC) --xinclude --param smb.context "'G'" --output $(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/generate-context.xsl $<
 
 $(SMBDOTCONFDOC)/parameters.service.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/generate-context.xsl
-	$(XSLTPROC) --xinclude --param smb.context "'S'" --output $(SMBDOTCONFDOC)/parameters.service.xml $(SMBDOTCONFDOC)/generate-context.xsl $<
+	@echo "Generating list of share-mode smb.conf options" 
+	@$(XSLTPROC) --xinclude --param smb.context "'S'" --output $(SMBDOTCONFDOC)/parameters.service.xml $(SMBDOTCONFDOC)/generate-context.xsl $<
 
 $(OUTPUTDIR)/%: $(DOCBOOKDIR)/%.xml xslt/man.xsl
-	mkdir -p $(@D)
+	@mkdir -p $(@D)
 	$(XSLTPROC) --output $@ xslt/man.xsl $<
 
 # Individual smb.conf parameters
 smb.conf-chunks: $(patsubst $(SMBDOTCONFDOC)/%.xml,$(HTMLDIR)/smb.conf/%.html,$(wildcard $(SMBDOTCONFDOC)/*/*.xml))
 	
 $(HTMLDIR)/smb.conf/%.html: $(SMBDOTCONFDOC)/%.xml
-	mkdir -p $(@D)
+	@mkdir -p $(@D)
 	$(XSLTPROC) --output $@ xslt/smb.conf-html.xsl $<
 
 # Pearson compatible XML
 $(PEARSONDIR)/%.xml: %/index.xml xslt/pearson.xsl
-	mkdir -p $(@D)
+	@mkdir -p $(@D)
 	$(XSLTPROC) --xinclude --output $@ xslt/sambadoc2pearson.xsl $<
 
 $(PEARSONDIR)/%.report.html: $(PEARSONDIR)/%.xml
-	mkdir -p $(@D)
+	@mkdir -p $(@D)
 	-$(XMLLINT) --valid --noout $< 2> $@
 
 # Validation verification
@@ -270,13 +276,13 @@ undocumented: $(SMBDOTCONFDOC)/parameters.all.xml scripts/find_missing_doc.pl sc
 	@$(PERL) scripts/find_missing_manpages.pl $(SRCDIR)
 
 samples: $(DOCBOOKDIR)/Samba3-HOWTO.xml xslt/extract-examples.xsl scripts/indent-smb.conf.pl
-	mkdir -p $(EXAMPLESDIR)
+	@mkdir -p $(EXAMPLESDIR)
 	$(XSLTPROC) --xinclude xslt/extract-examples.xsl $< > /dev/null 2> examples/README
 	for I in examples/*.conf; do { ./scripts/indent-smb.conf.pl < $$I > $$I.tmp; mv $$I.tmp $$I; } done
 
 # Archiving
 archive: pdf
-	mkdir -p $(ARCHIVEDIR)
+	@mkdir -p $(ARCHIVEDIR)
 	cp $(PDFDIR)/Samba3-HOWTO.pdf $(ARCHIVEDIR)/TOSHARG-$(DATETIME).pdf
 	cp $(PDFDIR)/Samba3-ByExample.pdf $(ARCHIVEDIR)/S3bE-$(DATETIME).pdf
 
@@ -290,19 +296,20 @@ xslt/man.xsl:
 xslt/pearson.xsl:
 
 clobber: clean
-	rm Makefile.settings config.status config.log configure
+	@rm Makefile.settings config.status config.log configure
 
 clean: 
-	rm -rf $(OUTPUTDIR)/* $(DOCBOOKDIR)
-	rm -f $(patsubst %.dia,%.png,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia))) \
+	@echo "Cleaning up..." 
+	@rm -rf $(OUTPUTDIR)/* $(DOCBOOKDIR)
+	@rm -f $(patsubst %.dia,%.png,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia))) \
 			$(patsubst %.dia,%.pdf,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia))) \
 			$(patsubst %.dia,%.eps,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia)))
-	rm -f *.xml *.d *.tpt *.tex *.loc *.toc *.lof *.glo *.idx *.aux
-	rm -f *-images-html*
-	rm -f *-images-latex-* latexfigures
-	rm -f xslt/figures/*pdf
-	rm -f $(SMBDOTCONFDOC)/parameters.*.xml
-	rm -f $(addsuffix .*,$(MAIN_DOCS))
+	@rm -f *.xml *.d *.tpt *.tex *.loc *.toc *.lof *.glo *.idx *.aux
+	@rm -f *-images-html*
+	@rm -f *-images-latex-* latexfigures
+	@rm -f xslt/figures/*pdf
+	@rm -f $(SMBDOTCONFDOC)/parameters.*.xml
+	@rm -f $(addsuffix .*,$(MAIN_DOCS))
 
 # Always keep intermediate files if we can
 .SECONDARY:
