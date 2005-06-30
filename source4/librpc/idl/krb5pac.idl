@@ -19,7 +19,7 @@ interface krb5pac
 		[value(0)] uint32 _pad; 
 	} PAC_LOGON_NAME;
 
-	typedef [flag(NDR_PAHEX)] struct {
+	typedef [public,flag(NDR_PAHEX)] struct {
 		uint32 type;
 		uint8 signature[16];
 		[value(0)] uint32 _pad; 
