@@ -80,6 +80,8 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("ntvfs_init_connection failed for service %s\n", 
 			  lp_servicename(tcon->service)));
+		req->tcon = NULL;
+		talloc_free(tcon);
 		return status;
 	}
 
@@ -87,6 +89,8 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 	status = ntvfs_connect(req, lp_servicename(snum));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("make_connection: NTVFS make connection failed!\n"));
+		req->tcon = NULL;
+		talloc_free(tcon);
 		return status;
 	}
 
