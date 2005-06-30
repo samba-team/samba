@@ -45,9 +45,9 @@
 #endif
 
 int ROKEN_LIB_FUNCTION
-base64_encode(const void *data, int size, char **str);
+base64_encode(const void *, int, char **);
 
 int ROKEN_LIB_FUNCTION
-base64_decode(const char *str, void *data);
+base64_decode(const char *, void *);
 
 #endif
