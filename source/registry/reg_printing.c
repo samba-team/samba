@@ -591,7 +591,7 @@ static int key_driver_fetch_values( const char *key, REGVAL_CTR *values )
 	int		env_subkey_type = 0;
 	
 	
-	DEBUG(8,("print_subpath_values_environments: Enter key => [%s]\n", key ? key : "NULL"));
+	DEBUG(8,("key_driver_fetch_values: Enter key => [%s]\n", key ? key : "NULL"));
 
 	keystr = remaining_path( key + strlen(KEY_ENVIRONMENTS) );	
 	
@@ -633,6 +633,11 @@ static int key_driver_fetch_values( const char *key, REGVAL_CTR *values )
 		
 	keystr = subkeypath;
 	reg_split_path( keystr, &base, &subkeypath );
+
+	/* no values under Version-XX */
+
+	if ( !subkeypath )
+		return 0;
 		
 	version = atoi(&base[strlen(base)-1]);
 
@@ -716,7 +721,7 @@ static int key_driver_fetch_values( const char *key, REGVAL_CTR *values )
 	
 	SAFE_FREE( buffer );
 		
-	DEBUG(8,("print_subpath_values_environments: Exit\n"));
+	DEBUG(8,("key_driver_fetch_values: Exit\n"));
 	
 	return regval_ctr_numvals( values );
 }

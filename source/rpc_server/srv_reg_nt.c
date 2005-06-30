@@ -490,11 +490,15 @@ WERROR _reg_query_key(pipes_struct *p, REG_Q_QUERY_KEY *q_u, REG_R_QUERY_KEY *r_
 	if ( !regkey )
 		return WERR_BADFID; 
 	
-	if ( !get_subkey_information( regkey, &r_u->num_subkeys, &r_u->max_subkeylen ) )
+	if ( !get_subkey_information( regkey, &r_u->num_subkeys, &r_u->max_subkeylen ) ) {
+		DEBUG(0,("_reg_query_key: get_subkey_information() failed!\n"));
 		return WERR_ACCESS_DENIED;
+	}
 		
-	if ( !get_value_information( regkey, &r_u->num_values, &r_u->max_valnamelen, &r_u->max_valbufsize ) )
+	if ( !get_value_information( regkey, &r_u->num_values, &r_u->max_valnamelen, &r_u->max_valbufsize ) ) {
+		DEBUG(0,("_reg_query_key: get_value_information() failed!\n"));
 		return WERR_ACCESS_DENIED;	
+	}
 
 		
 	r_u->sec_desc = 0x00000078;	/* size for key's sec_desc */
