@@ -130,6 +130,21 @@ AC_SUBST(bindir)
 AC_SUBST(sbindir)
 AC_SUBST(swatdir)
 
+#################################################
+# set prefix for 'make test'
+selftest_prefix="./"
+AC_SUBST(selftest_prefix)
+AC_ARG_WITH(selftest-prefix,
+[  --with-selftest-prefix=DIR    The prefix where make test will be runned (\$selftest_prefix)],
+[ case "$withval" in
+  yes|no)
+    AC_MSG_WARN([--with-selftest-prefix called without argument - will use default])
+  ;;
+  * )
+    selftest_prefix="$withval"
+    ;;
+  esac])
+
 developer=no
 AC_ARG_ENABLE(developer, [  --enable-developer      Turn on developer warnings and debugging (default=no)],
     [if test x$enable_developer = xyes; then
