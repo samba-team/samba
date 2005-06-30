@@ -38,7 +38,7 @@ libkdc_la_SOURCES = \
 	process.c	 \
 	rx.h
 
-libkdc_la_LDFLAGS = -version-info 1:0:0 -Wl,--version-script,./exports
+libkdc_la_LDFLAGS = -version-info 1:0:0
 
 hprop_LDADD = \
 	$(top_builddir)/lib/hdb/libhdb.la \
