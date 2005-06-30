@@ -21,6 +21,8 @@ krb5-config: krb5-config.in
 		-e "s!@LIB_dbopen\@!$(LIB_dbopen)!g" \
 		-e "s!@INCLUDE_des\@!$(INCLUDE_des)!g" \
 		-e "s!@LIB_des_appl\@!$(LIB_des_appl)!g" \
+		-e "s!@LIB_dlopen\@!$(LIB_dlopen)!g" \
+		-e "s!@LIB_door_create\@!$(LIB_door_create)!g" \
 		-e "s!@LIBS\@!$(LIBS)!g" \
 		$(srcdir)/krb5-config.in > $@.new
 	mv $@.new $@

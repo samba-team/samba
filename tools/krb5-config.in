@@ -100,7 +100,8 @@ if test "$do_libs" = "yes"; then
 	;;
     esac
     lib_flags="$lib_flags -lkrb5 -lasn1 -lcom_err @LIB_des_appl@ -lroken"
-    lib_flags="$lib_flags @LIB_crypt@ @LIB_dbopen@ @LIBS@"
+    lib_flags="$lib_flags @LIB_crypt@ @LIB_dbopen@ @LIB_dlopen@"
+    lib_flags="$lib_flags @LIB_door_create@ @LIBS@"
     echo $lib_flags
 fi
 if test "$do_cflags" = "yes"; then
