@@ -695,13 +695,15 @@ get_name_conversion(krb5_context context, const char *realm, const char *name)
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_425_conv_principal_ext(krb5_context context,
-			    const char *name,
-			    const char *instance,
-			    const char *realm,
-			    krb5_boolean (*func)(krb5_context, krb5_principal),
-			    krb5_boolean resolve,
-			    krb5_principal *princ)
+krb5_425_conv_principal_ext2(krb5_context context,
+			     const char *name,
+			     const char *instance,
+			     const char *realm,
+			     krb5_boolean (*func)(krb5_context, 
+						  void *, krb5_principal),
+			     void *funcctx,
+			     krb5_boolean resolve,
+			     krb5_principal *princ)
 {
     const char *p;
     krb5_error_code ret;
@@ -732,7 +734,7 @@ krb5_425_conv_principal_ext(krb5_context context,
     if(p){
 	instance = p;
 	ret = krb5_make_principal(context, &pr, realm, name, instance, NULL);
-	if(func == NULL || (*func)(context, pr)){
+	if(func == NULL || (*func)(context, funcctx, pr)){
 	    *princ = pr;
 	    return 0;
 	}
@@ -789,7 +791,7 @@ krb5_425_conv_principal_ext(krb5_context context,
 				      NULL);
 	    free (inst);
 	    if(ret == 0) {
-		if(func == NULL || (*func)(context, pr)){
+		if(func == NULL || (*func)(context, funcctx, pr)){
 		    *princ = pr;
 		    return 0;
 		}
@@ -801,7 +803,7 @@ krb5_425_conv_principal_ext(krb5_context context,
 	snprintf(host, sizeof(host), "%s.%s", instance, realm);
 	strlwr(host);
 	ret = krb5_make_principal(context, &pr, realm, name, host, NULL);
-	if((*func)(context, pr)){
+	if((*func)(context, funcctx, pr)){
 	    *princ = pr;
 	    return 0;
 	}
@@ -828,7 +830,7 @@ krb5_425_conv_principal_ext(krb5_context context,
 	for(d = domains; d && *d; d++){
 	    snprintf(host, sizeof(host), "%s.%s", instance, *d);
 	    ret = krb5_make_principal(context, &pr, realm, name, host, NULL);
-	    if(func == NULL || (*func)(context, pr)){
+	    if(func == NULL || (*func)(context, funcctx, pr)){
 		*princ = pr;
 		krb5_config_free_strings(domains);
 		return 0;
@@ -852,7 +854,7 @@ krb5_425_conv_principal_ext(krb5_context context,
     snprintf(host, sizeof(host), "%s.%s", instance, p);
 local_host:
     ret = krb5_make_principal(context, &pr, realm, name, host, NULL);
-    if(func == NULL || (*func)(context, pr)){
+    if(func == NULL || (*func)(context, funcctx, pr)){
 	*princ = pr;
 	return 0;
     }
@@ -878,7 +880,7 @@ no_host:
 	name = p;
     
     ret = krb5_make_principal(context, &pr, realm, name, instance, NULL);
-    if(func == NULL || (*func)(context, pr)){
+    if(func == NULL || (*func)(context, funcctx, pr)){
 	*princ = pr;
 	return 0;
     }
@@ -886,6 +888,34 @@ no_host:
     krb5_clear_error_string (context);
     return HEIM_ERR_V4_PRINC_NO_CONV;
 }
+
+static krb5_boolean
+convert_func(krb5_context conxtext, void *funcctx, krb5_principal principal)
+{
+    krb5_boolean (*func)(krb5_context, krb5_principal) = funcctx;
+    return (*func)(conxtext, principal);
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_425_conv_principal_ext(krb5_context context,
+			    const char *name,
+			    const char *instance,
+			    const char *realm,
+			    krb5_boolean (*func)(krb5_context, krb5_principal),
+			    krb5_boolean resolve,
+			    krb5_principal *principal)
+{
+    return krb5_425_conv_principal_ext2(context,
+					name,
+					instance,
+					realm,
+					func ? convert_func : NULL,
+					func,
+					resolve,
+					principal);
+}
+
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_425_conv_principal(krb5_context context,
