@@ -216,6 +216,14 @@ struct smbcli_request *smb_raw_trans_send_backend(struct smbcli_tree *tree,
 	size_t namelen = 0;
 	uint16_t data_disp, data_length, max_data;
 
+	if (parms->in.params.length > UINT16_MAX ||
+	    parms->in.data.length > UINT16_MAX) {
+		DEBUG(3,("Attempt to send invalid trans2 request (params %u, data %u)\n",
+			 parms->in.params.length, parms->in.data.length));
+		return NULL;
+	}
+	    
+
 	if (command == SMBtrans)
 		padding = 1;
 	else
