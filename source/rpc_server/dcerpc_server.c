@@ -1100,20 +1100,19 @@ NTSTATUS dcesrv_input(struct dcesrv_connection *dce_conn, const DATA_BLOB *data)
 
   The first argument to write_fn() will be 'private', the second will
   be a pointer to a buffer containing the data to be sent and the 3rd
-  will be the number of bytes to be sent.
+  will be a pointer to a size_t variable that will be set to the
+  number of bytes that are consumed from the output.
 
-  write_fn() should return the number of bytes successfully written.
-
-  this will return STATUS_BUFFER_OVERFLOW if there is more to be written
   from the current fragment
 */
 NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn, 
-		       void *private,
-		       ssize_t (*write_fn)(void *, DATA_BLOB *))
+		       void *private_data,
+		       NTSTATUS (*write_fn)(void *private_data, DATA_BLOB *output, size_t *nwritten))
 {
+	NTSTATUS status;
 	struct dcesrv_call_state *call;
 	struct dcesrv_call_reply *rep;
-	ssize_t nwritten;
+	size_t nwritten;
 
 	call = dce_conn->call_list;
 	if (!call || !call->replies) {
@@ -1128,12 +1127,8 @@ NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn,
 	}
 	rep = call->replies;
 
-	nwritten = write_fn(private, &rep->data);
-	if (nwritten == -1) {
-		/* TODO: hmm, how do we cope with this? destroy the
-		   connection perhaps? */
-		return NT_STATUS_UNSUCCESSFUL;
-	}
+	status = write_fn(private_data, &rep->data, &nwritten);
+	NT_STATUS_IS_ERR_RETURN(status);
 
 	rep->data.length -= nwritten;
 	rep->data.data += nwritten;
@@ -1141,8 +1136,6 @@ NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn,
 	if (rep->data.length == 0) {
 		/* we're done with this section of the call */
 		DLIST_REMOVE(call->replies, rep);
-	} else {
-		return STATUS_BUFFER_OVERFLOW;
 	}
 
 	if (call->replies == NULL) {
@@ -1151,31 +1144,7 @@ NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn,
 		talloc_free(call);
 	}
 
-	return NT_STATUS_OK;
-}
-
-
-/*
-  write_fn() for dcesrv_output_blob()
-*/
-static ssize_t dcesrv_output_blob_write_fn(void *private, DATA_BLOB *out)
-{
-	DATA_BLOB *blob = private;
-	if (out->length < blob->length) {
-		blob->length = out->length;
-	}
-	memcpy(blob->data, out->data, blob->length);
-	return blob->length;
-}
-
-/*
-  a simple wrapper for dcesrv_output() for when we want to output
-  into a data blob
-*/
-NTSTATUS dcesrv_output_blob(struct dcesrv_connection *dce_conn, 
-			    DATA_BLOB *blob)
-{
-	return dcesrv_output(dce_conn, blob, dcesrv_output_blob_write_fn);
+	return status;
 }
 
 static NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx, const char **endpoint_servers, uint32_t state_flags, struct dcesrv_context **_dce_ctx)
