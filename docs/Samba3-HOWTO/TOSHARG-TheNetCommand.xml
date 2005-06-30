@@ -309,7 +309,8 @@ SupportEngrs (S-1-5-21-72630-4128915-11681869-3007) -> SupportEngrs
 	hosting a Samba server, are implemented using a UID/GID identity tuple. Samba does not in any way override
 	or replace UNIX file system semantics. Thus it is necessary that all Windows networking operations that
 	access the file system provide a mechanism that maps a Windows user to a particular UNIX/Linux group
-	account. The user account must also map to a locally known UID.
+	account. The user account must also map to a locally known UID. Note that the <command>net</command>
+	command does not call any RPC-functions here but directly accesses the passdb.
 	</para>
 
 	<para>
@@ -366,7 +367,7 @@ SupportEngrs (S-1-5-21-72630-4128915-11681869-3007) -> SupportEngrs
 &rootprompt; net groupmap add ntgroup=Pixies unixgroup=pixies type=l
 </screen>
 	Supported mapping types are 'd' (domain global) and 'l' (domain local), a domain local group is Samba is
-	treated as local to the individual Samba serverr. Local groups can be used with Samba to enable multiple
+	treated as local to the individual Samba server. Local groups can be used with Samba to enable multiple
 	nested group support.
 	</para>
 
@@ -394,8 +395,8 @@ SupportEngrs (S-1-5-21-72630-4128915-11681869-3007) -> SupportEngrs
 
 	<note><para>
 	This command is not documented in the man pages; it is implemented in the source code, but it does not
-	work. The example given documents (from the source code) how it should work. Watch the release notes
-	of a future release to see when this may have been fixed.
+	work at this time. The example given documents, from the source code, how it should work. Watch the
+	release notes of a future release to see when this may have been fixed.
 	</para></note>
 
 	<para>
@@ -640,7 +641,7 @@ exit 0
 </example>
 
 		<step><para>
-		Ensure that every Windows workstation Adminsitrator account has the same password that you
+		Ensure that every Windows workstation Administrator account has the same password that you
 		have used in the script shown in <link linkend="magicnetlogon">the Netlogon Example smb.conf
 		file</link>
 		</para></step>
@@ -761,6 +762,14 @@ TorridGroup
 BOP Shop
 Emergency Services
 </screen>
+	</para>
+
+	<para>
+	It is also possible to rename user accounts:
+<indexterm><primary>net</primary><secondary>rpc</secondary><tertiary>user rename</tertiary></indexterm>oldusername newusername
+	Note that this operation does not yet work against Samba Servers. It is, however, possible to rename useraccounts on
+	Windows Servers.
+
 	</para>
 
 	</sect2>
@@ -1284,9 +1293,9 @@ Storing SID S-1-5-21-726309263-4128913605-1168186429 \
 	The target machine may be local or remote and is specified by the -S option. It must be noted
 	that the addition and deletion of shares using this tool depends on the availability of a suitable
 	interface script. The interface scripts Sambas <command>smbd</command> uses are called
-	<smbconfoption name="add share script"/> and <smbconfoption name="delete share script"/>.
-	A set of example scripts are provided in the Samba source code tarball in the directory
-	<filename>~samba/examples/scripts</filename>.
+	<smbconfoption name="add share command"/>, <smbconfoption name="delete share command"/> and
+	<smbconfoption name="change share command"/> A set of example scripts are provided in the Samba source
+	code tarball in the directory <filename>~samba/examples/scripts</filename>.
 	</para>
 
 	<para>
@@ -1368,7 +1377,7 @@ kyocera
 
 	<para>
 	The <command>net rpc share</command> command may be used to migrate shares, directories,
-	files, printers, and all relevant data from a Windows server to a Samba server.
+	files, and all relevant data from a Windows server to a Samba server.
 	</para>
 
 	<para>
@@ -1388,7 +1397,7 @@ kyocera
 	server is called MESSER, the source Windows NT4 server is called PEPPY, and the target Samba
 	server is called GONZALES, the machine MESSER can be used to effect the migration of all data
 	(files and shares) from PEPPY to GONZALES. If the target machine is not specified, the local
-	server is assumed by default.
+	server is assumed by default - as net's general rule of thumb .
 	</para>
 
 	<para>
@@ -1483,8 +1492,9 @@ net rpc share MIGRATE SHARES &lt;share-name&gt; -S &lt;source&gt;
 
 	<para>
 	Transfer of files from one server to another has always been a challenge for MS Windows
-	administrators because Windows NT and 200X servers do not include the tools needed. The
-	<command>xcopy</command> is not capable of preserving file and directory ACLs. Microsoft does provide a
+	administrators because Windows NT and 200X servers do not always include the tools needed. The
+	<command>xcopy</command> from Windows NT is not capable of preserving file and directory ACLs, 
+	it does so only with Windows 200x. Microsoft does provide a
 	utility that can copy ACLs (security settings) called <command>scopy</command>, but it is provided only
 	as part of the Windows NT or 200X Server Resource Kit.
 	</para>
@@ -1554,13 +1564,30 @@ net rpc share MIGRATE FILES &lt;share-name&gt; -S &lt;source&gt;
 	</para>
 
 	</sect3>
+	
+	<sect3>
+	<title>Share-ACL Migration</title>
+	<para>
+	It is possible to have share-ACLs (security descriptors) that won't allow you, even as Administrator, to
+	copy any files or directories into it. Therefor the migration of the share-ACLs has been put into a separate
+	function:
+<indexterm><primary>net</primary><secondary>rpc</secondary><tertiary>share migrate security</tertiary></indexterm>
+<screen>
+&rootprompt; net rpc share migrate security -S nt4box -U administrator%secret
+</screen>
+	</para>
+
+	<para>
+	This command will only copy the share-ACL of each share on nt4box to your local samba-system.
+	</para>
+	</sect3>
 
 	<sect3>
 	<title>Simultaneous Share and File Migration</title>
 
 	<para>
-	The operating mode shown here is just a combination of the previous two. It first migrates
-	share definitions and then all shared files and directories:
+	The operating mode shown here is just a combination of the previous three. It first migrates
+	share definitions and then all shared files and directories and finally migrates the share-ACLs:
 <screen>
 net rpc share MIGRATE ALL &lt;share-name&gt; -S &lt;source&gt;
     [--exclude=share1, share2] [--acls] [--attrs] [--timestamps] [-v]
