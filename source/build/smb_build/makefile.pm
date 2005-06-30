@@ -148,10 +148,10 @@ basics: idl proto_exists
 test: @DEFAULT_TEST_TARGET@
 
 test-swrap: all
-	./script/tests/selftest.sh `pwd`/prefix-test SOCKET_WRAPPER
+	./script/tests/selftest.sh @selftest_prefix@/prefix-test SOCKET_WRAPPER
 
 test-noswrap: all
-	./script/tests/selftest.sh `pwd`/prefix-test
+	./script/tests/selftest.sh @selftest_prefix@/prefix-test
 
 __EOD__
 }
