@@ -2024,7 +2024,11 @@ particular note.
 </para>
 
 <sect2>
-<title>How Can One Flush the Samba NetBIOS Name Cache without Restarting Samba?</title>
+<title>Flushing the Samba NetBIOS Name Cache</title>
+
+<para>
+How Can One Flush the Samba NetBIOS Name Cache without Restarting Samba?
+</para>
 
 <para>
 <indexterm><primary>flush name cache</primary></indexterm>
