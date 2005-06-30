@@ -1634,8 +1634,10 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	
 	if (strcmp(path, lp_pathname(snum)) || strcmp(comment, lp_comment(snum)) ) 
 	{
-		if (!lp_change_share_cmd() || !*lp_change_share_cmd()) 
+		if (!lp_change_share_cmd() || !*lp_change_share_cmd()) {
+			DEBUG(10,("_srv_net_share_set_info: No change share command\n"));
 			return WERR_ACCESS_DENIED;
+		}
 
 		slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
 				lp_change_share_cmd(), dyn_CONFIGFILE, share_name, path, comment);
@@ -1870,8 +1872,10 @@ WERROR _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 	if (user.uid != sec_initial_uid()  && !is_disk_op ) 
 		return WERR_ACCESS_DENIED;
 
-	if (!lp_delete_share_cmd() || !*lp_delete_share_cmd())
+	if (!lp_delete_share_cmd() || !*lp_delete_share_cmd()) {
+		DEBUG(10,("_srv_net_share_del: No delete share command\n"));
 		return WERR_ACCESS_DENIED;
+	}
 		
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"",
 			lp_delete_share_cmd(), dyn_CONFIGFILE, lp_servicename(snum));
