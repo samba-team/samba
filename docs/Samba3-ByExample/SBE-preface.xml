@@ -551,7 +551,33 @@
 		avoid Samba configuration options that will weigh the server down. MS distributed file
 		services to make your network fly and much more. This chapter contains a good deal of 
 		<quote>Did I tell you about this...?</quote> type of hints to help keep your name on the top
-		performers list. (John, should there be entries for Chapter 14 and Apps A & C ???????)
+		performers list.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>Chapter 14 &smbmdash; Samba Support.</term><listitem>
+		<para>
+		This chapter has been added specifically to help those who are seeking professional
+		paid support for Samba. The critics of Open Source Software often assert that
+		there is no support for free software. Some critics argue that free software 
+		undermines the service that proprietary commercial software vendors depend on.
+		This chapter explains what are the support options for Samba and the fact that
+		a growing number of businesses make money by providing commercial paid-for
+		Samba support.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>Appendix A &smbmdash; A Collection of Useful Tid-bits.</term><listitem>
+		<para>
+		Sometimes it seems that there is not a good place for certain odds and ends that
+		impact Samba deployment. Some readers would argue that everyone can be expected
+		to know this information, or at least be able to find it easily. So to avoid
+		offending a reader's sensitivities, the tid-bits have been placed in this Appendix.
+		Do check out the contents, you may find something of value among the loose ends.
 		</para>
 		</listitem>
 		</varlistentry>

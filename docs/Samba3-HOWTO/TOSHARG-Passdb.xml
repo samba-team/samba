@@ -902,7 +902,7 @@ is being added to the <command>net</command> toolset (see <link linkend="NetComm
 </para>
 
 	<sect2>
-	<title>The <command>smbpasswd</command> Utility</title>
+	<title>The <command>smbpasswd</command> Tool</title>
 	
 		<para>
 <indexterm><primary>smbpasswd</primary></indexterm>
@@ -1003,36 +1003,164 @@ is being added to the <command>net</command> toolset (see <link linkend="NetComm
 	</sect2>
 
 	<sect2 id="pdbeditthing">
-	<title>The <command>pdbedit</command> Utility</title>
+	<title>The <command>pdbedit</command> Tool</title>
 
 		<para>
 		<indexterm><primary>pdbedit</primary></indexterm>
 		<indexterm><primary>User Management</primary></indexterm>
+		<indexterm><primary>account policy</primary></indexterm>
 		<indexterm><primary>User Accounts</primary><secondary>Adding/Deleting</secondary></indexterm>
 		<command>pdbedit</command> is a tool that can be used only by root. It is used to
-		manage the passdb backend. <command>pdbedit</command> can be used to:
+		manage the passdb backend, as well as domain-wide account policy settings. <command>pdbedit</command> 
+		can be used to:
 		</para>
 
 		<itemizedlist>
 			<listitem><para>add, remove, or modify user accounts.</para></listitem>
 			<listitem><para>list user accounts.</para></listitem>
 			<listitem><para>migrate user accounts.</para></listitem>
+			<listitem><para>migrate group accounts.</para></listitem>
+			<listitem><para>manage account policies.</para></listitem>
+			<listitem><para>manage domain access policy settings.</para></listitem>
 		</itemizedlist>
 
 		<para>
-		Domain global policy controls available include:
+		<indexterm><primary>Sarbanes-Oxley</primary></indexterm>
+		Under the terms of the Sarbanes-Oxley Act of 2002, American businessies and organizations are mandated to
+		implement a series of <literal>internal controls</literal> and procedures to communicate, store,
+		and protect financial data. The Sarbanes-Oxley Act has far reaching implications in respect of:
 		</para>
 
-		<itemizedlist>
-			<listitem><para>Maximum Password Age</para></listitem>
-			<listitem><para>Minimum Password Age</para></listitem>
-			<listitem><para>Mimimum Password Length</para></listitem>
-			<listitem><para>Password Uniqueness (remembers number of prior passwords)</para></listitem>
-			<listitem><para>Account Lockout</para></listitem>
-			<listitem><para>Bad Logon Attempts</para></listitem>
-			<listitem><para>Lockout Reset Delay</para></listitem>
-			<listitem><para>Lockout Duration</para></listitem>
-		</itemizedlist>
+		<orderedlist>
+			<listitem><para>Who has access to information systems that store financial data.</para></listitem>
+			<listitem><para>How personal and finacial information is treated among employees and business
+				partners.</para></listitem>
+			<listitem><para>How security vulnerabilities are managed.</para></listitem>
+			<listitem><para>Security and patch level maintenance for all information systems.</para></listitem>
+			<listitem><para>How information systems changes are documented and tracked.</para></listitem>
+			<listitem><para>How information access controls are implemented and managed.</para></listitem>
+			<listitem><para>Auditability of all information systems in respect of change and security.</para></listitem>
+			<listitem><para>Disciplinary procedures and controls to ensure privacy.</para></listitem>
+		</orderedlist>
+
+		<para>
+		<indexterm><primary>accountability</primary></indexterm>
+		<indexterm><primary>compliance</primary></indexterm>
+		In short, the Sarbanes-Oxley Act of 2002 is an instrument that enforces accountability in respect of
+		business related information systems so as to ensure the compliance of all information systems that
+		are used to store personal information and particularly for financial records processing. Similar
+		accountabilities are being demanded around the world.
+		</para>
+
+		<para>
+		<indexterm><primary>laws</primary></indexterm>
+		<indexterm><primary>regulations</primary></indexterm>
+		<indexterm><primary>pdbedit</primary></indexterm>
+		<indexterm><primary>access controls</primary></indexterm>
+		<indexterm><primary>manage accounts</primary></indexterm>
+		The need to be familiar with the Samba tools and facilities that permit information systems operation
+		in compliance with government laws and regulations is clear to all. The <command>pdbedit</command> is
+		currently the only Samba tool that provides the capacity to manage account and systems access controls
+		and policies. During the remaining life-cycle of the Samba-3 series it is possible the new tools may
+		be implemented to aid in this important area.
+		</para>
+
+		<para>
+		Domain global policy controls available in Windows NT4 compared with Samba
+		is shown in <link linkend="policycontrols">NT4 Domain v's Samba Policy Controls</link>.
+		</para>
+
+		<table id="policycontrols">
+		<title>NT4 Domain v's Samba Policy Controls</title>
+            <tgroup cols="5">
+                <colspec align="left" colwidth="2*"/>
+                <colspec align="left" colwidth="2*"/>
+                <colspec align="center" colwidth="1*"/>
+                <colspec align="center" colwidth="1*"/>
+                <colspec align="center" colwidth="1*"/>
+                <thead>
+                    <row>
+                        <entry><para>NT4 policy Name</para></entry>
+                        <entry><para>Samba Policy Name</para></entry>
+                        <entry><para>NT4 Range</para></entry>
+                        <entry><para>Samba Range</para></entry>
+                        <entry><para>Samba Default</para></entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+					<entry><para>Maximum Password Age</para></entry>
+					<entry><para>maximum password age</para></entry>
+					<entry><para>0 - 999 (days)</para></entry>
+					<entry><para>0 - 4294967295 (sec)</para></entry>
+					<entry><para>4294967295</para></entry>
+                    </row>
+                    <row>
+					<entry><para>Minimum Password Age</para></entry>
+					<entry><para>minimum password age</para></entry>
+					<entry><para>0 - 999 (days)</para></entry>
+					<entry><para>0 - 4294967295 (sec)</para></entry>
+					<entry><para>0</para></entry>
+                    </row>
+                    <row>
+					<entry><para>Mimimum Password Length</para></entry>
+					<entry><para>min password length</para></entry>
+					<entry><para>1 - 14 (Chars)</para></entry>
+					<entry><para>0 - 4294967295 (Chars)</para></entry>
+					<entry><para>5</para></entry>
+                    </row>
+                    <row>
+					<entry><para>Password Uniqueness</para></entry>
+					<entry><para>password history</para></entry>
+					<entry><para>0 - 23 (#)</para></entry>
+					<entry><para>0 - 4294967295 (#)</para></entry>
+					<entry><para>0</para></entry>
+                    </row>
+                    <row>
+					<entry><para>Account Lockout - Reset count after</para></entry>
+					<entry><para>reset count minutes</para></entry>
+					<entry><para>1 - 99998 (min)</para></entry>
+					<entry><para>0 - 4294967295 (min)</para></entry>
+					<entry><para>30</para></entry>
+                    </row>
+                    <row>
+					<entry><para>Lockout after bad logon attempts</para></entry>
+					<entry><para>bad lockout attempt</para></entry>
+					<entry><para>0 - 998 (#)</para></entry>
+					<entry><para>0 - 4294967295 (#)</para></entry>
+					<entry><para>0</para></entry>
+                    </row>
+                    <row>
+					<entry><para>*** Not Known ***</para></entry>
+					<entry><para>disconnect time</para></entry>
+					<entry><para>TBA</para></entry>
+					<entry><para>0 - 4294967295</para></entry>
+					<entry><para>0</para></entry>
+                    </row>
+                    <row>
+					<entry><para>Lockout Duration</para></entry>
+					<entry><para>lockout duration</para></entry>
+					<entry><para>1 - 99998 (min)</para></entry>
+					<entry><para>0 - 4294967295 (min)</para></entry>
+					<entry><para>30</para></entry>
+                    </row>
+                    <row>
+					<entry><para>Users must log on in order to change password</para></entry>
+					<entry><para>user must logon to change password</para></entry>
+					<entry><para>0/1</para></entry>
+					<entry><para>0 - 4294967295</para></entry>
+					<entry><para>0</para></entry>
+                    </row>
+                    <row>
+					<entry><para>*** Registry Setting ***</para></entry>
+					<entry><para>refuse machine password change</para></entry>
+					<entry><para>0/1</para></entry>
+					<entry><para>0 - 4294967295</para></entry>
+					<entry><para>0</para></entry>
+                    </row>
+				</tbody>
+			</tgroup>
+		</table>
 
 		<para>
 		<indexterm><primary>pdbedit</primary></indexterm>
@@ -1053,17 +1181,47 @@ is being added to the <command>net</command> toolset (see <link linkend="NetComm
 		<link linkend="XMLpassdb">XML</link> password backend section of this chapter.
 		</para>
 
+		<sect3>
+		<title>User Account Management</title>
+
 		<para>
-<indexterm><primary>tdbsam</primary></indexterm>
-		The following is an example of the user account information that is stored in
-		a tdbsam password backend. This listing was produced by running:
+<indexterm><primary>pdbedit</primary></indexterm>
+<indexterm><primary>smbpasswd</primary></indexterm>
+<indexterm><primary>system accounts</primary></indexterm>
+<indexterm><primary>user account</primary></indexterm>
+<indexterm><primary>domain user manager</primary></indexterm>
+<indexterm><primary>add user script</primary></indexterm>
+<indexterm><primary>interface scripts</primary></indexterm>
+		The <command>pdbedit</command> tool, like the <command>smbpasswd</command> tool, requires
+		that a POSIX user account already exists in the UNIX/Linux system accounts database (backend).
+		Neither tool will call out to the operating system to create a user account because this is
+		considered to be the responsibility of the system administrator. When the Windows NT4 domain
+		user manager is used to add an account, Samba will implement the <literal>add user script</literal>
+		(as well as the other interface scripts) to ensure that user, group and machine accounts are
+		correctly created and changed. The use of the <command>pdbedit</command> tool does not
+		make use of these interface scripts.
 		</para>
 
+		<para>
+<indexterm><primary>pdbedit</primary></indexterm>
+<indexterm><primary>POSIX account</primary></indexterm>
+		Before attempting to use the <command>pdbedit</command> tool to manage user and machine
+		accounts, make certain that a system (POSIX) account has already been created.
+		</para>
+
+		<sect4>
+		<title>Listing User and Machine Accounts</title>
+
+		<para>
+<indexterm><primary>tdbsam</primary></indexterm>
+<indexterm><primary>password backend</primary></indexterm>
+		The following is an example of the user account information that is stored in
+		a tdbsam password backend. This listing was produced by running:
 <screen>
 &prompt;<userinput>pdbedit -Lv met</userinput>
 UNIX username:        met
-NT username:
-Account Flags:        [UX         ]
+NT username:          met
+Account Flags:        [U          ]
 User SID:             S-1-5-21-1449123459-1407424037-3116680435-2004
 Primary Group SID:    S-1-5-21-1449123459-1407424037-3116680435-1201
 Full Name:            Melissa E Terpstra
@@ -1082,6 +1240,272 @@ Password last set:    Sat, 14 Dec 2002 14:37:03 GMT
 Password can change:  Sat, 14 Dec 2002 14:37:03 GMT
 Password must change: Mon, 18 Jan 2038 20:14:07 GMT
 </screen>
+		</para>
+
+		<para>
+<indexterm><primary>smbpasswd format</primary></indexterm>
+		Accounts can also be listed in the older <literal>smbpasswd</literal> format:
+<screen>
+&rootprompt;<userinput>pdbedit -Lw</userinput>
+root:0:84B0D8E14D158FF8417EAF50CFAC29C3:
+     AF6DD3FD4E2EA8BDE1695A3F05EFBF52:[U          ]:LCT-42681AB8:
+jht:1000:6BBC4159020A52741486235A2333E4D2:
+     CC099521AD554A3C3CF2556274DBCFBC:[U          ]:LCT-40D75B5B:
+rcg:1002:E95D4331A6F23AF8AAD3B435B51404EE:
+     BB0F2C39B04CA6100F0E535DF8314B43:[U          ]:LCT-40D7C5A3:
+afw:1003:1AAFA7F9F6DC1DEAAAD3B435B51404EE:
+     CE92C2F9471594CDC4E7860CA6BC62DB:[T          ]:LCT-40DA501F:
+met:1004:A2848CB7E076B435AAD3B435B51404EE:
+     F25F5D3405085C555236B80B7B22C0D2:[U          ]:LCT-4244FAB8:
+aurora$:1005:060DE593EA638B8ACC4A19F14D2FF2BB:
+     060DE593EA638B8ACC4A19F14D2FF2BB:[W          ]:LCT-4173E5CC:
+temptation$:1006:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:
+     A96703C014E404E33D4049F706C45EE9:[W          ]:LCT-42BF0C57:
+vaioboss$:1001:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:
+     88A30A095160072784C88F811E89F98A:[W          ]:LCT-41C3878D:
+frodo$:1008:15891DC6B843ECA41249940C814E316B:
+     B68EADCCD18E17503D3DAD3E6B0B9A75:[W          ]:LCT-42B7979F:
+marvel$:1011:BF709959C3C94E0B3958B7B84A3BB6F3:
+     C610EFE9A385A3E8AA46ADFD576E6881:[W          ]:LCT-40F07A4
+</screen>
+		</para>
+
+		</sect4>
+
+		<sect4>
+		<title>Adding User Accounts</title>
+
+		<para>
+<indexterm><primary>pdbedit</primary></indexterm>
+<indexterm><primary>add a user account</primary></indexterm>
+<indexterm><primary>standalone server</primary></indexterm>
+<indexterm><primary>domain</primary></indexterm>
+<indexterm><primary>SambaSAMAccount</primary></indexterm>
+		The <command>pdbedit</command> can be used to add a user account to a standalone server
+		or to a domain. In the example shown here the account for the user <literal>vlaan</literal>
+		has been created before attempting to add the SambaSAMAccount.
+<screen>
+&rootprompt; pdbedit -a vlaan
+new password: secretpw
+retype new password: secretpw
+Unix username:        vlaan
+NT username:          vlaan
+Account Flags:        [U          ]
+User SID:             S-1-5-21-726309263-4128913605-1168186429-3014
+Primary Group SID:    S-1-5-21-726309263-4128913605-1168186429-513
+Full Name:            Victor Laan
+Home Directory:       \\frodo\vlaan
+HomeDir Drive:        H:
+Logon Script:         scripts\logon.bat
+Profile Path:         \\frodo\profiles\vlaan
+Domain:               &example.workgroup;
+Account desc:         Guest User
+Workstations:
+Munged dial:
+Logon time:           0
+Logoff time:          Mon, 18 Jan 2038 20:14:07 GMT
+Kickoff time:         Mon, 18 Jan 2038 20:14:07 GMT
+Password last set:    Wed, 29 Jun 2005 19:35:12 GMT
+Password can change:  Wed, 29 Jun 2005 19:35:12 GMT
+Password must change: Mon, 18 Jan 2038 20:14:07 GMT
+Last bad password   : 0
+Bad password count  : 0
+Logon hours         : FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+</screen>
+		</para>
+
+		</sect4>
+
+		<sect4>
+		<title>Deleting Accounts</title>
+
+		<para>
+<indexterm><primary>account deleted</primary></indexterm>
+<indexterm><primary>SambaSAMAccount</primary></indexterm>
+<indexterm><primary>pdbedit</primary></indexterm>
+<indexterm><primary>passdb backend</primary></indexterm>
+		An account can be deleted from the SambaSAMAccount database
+<screen>
+&rootprompt; pdbedit -x vlaan
+</screen>
+		The account is removed without further screen output. The account is removed only from the
+		SambaSAMAccount (passdb backend) database, it is not removed from the UNIX account backend.
+		</para>
+
+		<para>
+<indexterm><primary>delete user script</primary></indexterm>
+<indexterm><primary>pdbedit</primary></indexterm>
+		The use of the NT4 domain user manager to delete an account will trigger the <parameter>delete user
+		script</parameter>, but not the <command>pdbedit</command> tool.
+		</para>
+
+		</sect4>
+
+		<sect4>
+		<title>Changing User Accounts</title>
+
+		<para>
+<indexterm><primary>pdbedit</primary></indexterm>
+		Refer to the <command>pdbedit</command> man page for a full synopsis of all operations
+		that are available with this tool.
+		</para>
+
+		<para>
+<indexterm><primary>pdbedit</primary></indexterm>
+		An example of a simple change in the user account information is the change of the full name
+		information shown here:
+<screen>
+&rootprompt; pdbedit -r --fullname="Victor Aluicious Laan" vlaan
+...
+Primary Group SID:    S-1-5-21-726309263-4128913605-1168186429-513
+Full Name:            Victor Aluicious Laan
+Home Directory:       \\frodo\vlaan
+...
+</screen>
+		</para>
+
+		<para>
+<indexterm><primary>grace time</primary></indexterm>
+<indexterm><primary>password expired</primary></indexterm>
+<indexterm><primary>expired password</primary></indexterm>
+		Let us assume for a moment that a user's password has expired and the user is unable to
+		change the password at this time. It may be necessary to give the user additional grace time
+		so that it is possible to continue to work with the account and the original password. This
+		demonstrates how the password expiration settings may be updated
+<screen>
+&rootprompt; pdbedit -Lv vlaan
+...
+Password last set:    Sun, 09 Sep 2001 22:21:40 GMT
+Password can change:  Thu, 03 Jan 2002 15:08:35 GMT
+Password must change: Thu, 03 Jan 2002 15:08:35 GMT
+Last bad password   : Thu, 03 Jan 2002 15:08:35 GMT
+Bad password count  : 2
+...
+</screen>
+<indexterm><primary>bad logon attempts</primary></indexterm>
+<indexterm><primary>lock the account</primary></indexterm>
+		The user has recorded 2 bad logon attempts and the next will lock the account, but the
+		password is also expired. Here is how this account can be reset:
+<screen>
+&rootprompt; pdbedit -z vlaan
+...
+Password last set:    Sun, 09 Sep 2001 22:21:40 GMT
+Password can change:  Thu, 03 Jan 2002 15:08:35 GMT
+Password must change: Thu, 03 Jan 2002 15:08:35 GMT
+Last bad password   : 0
+Bad password count  : 0
+...
+</screen>
+		The <literal>Password must change:</literal> parameter can be reset like this:
+<screen>
+&rootprompt; pdbedit --pwd-must-change-time=1200000000 vlaan
+...
+Password last set:    Sun, 09 Sep 2001 22:21:40 GMT
+Password can change:  Thu, 03 Jan 2002 15:08:35 GMT
+Password must change: Thu, 10 Jan 2008 14:20:00 GMT
+...
+</screen>
+		Another way to use this tools is to set the date like this:
+<screen>
+&rootprompt; pdbedit --pwd-must-change-time="2010-01-01" \
+              --time-format="%Y-%m-%d" vlaan
+...
+Password last set:    Sun, 09 Sep 2001 22:21:40 GMT
+Password can change:  Thu, 03 Jan 2002 15:08:35 GMT
+Password must change: Fri, 01 Jan 2010 00:00:00 GMT
+...
+</screen>
+<indexterm><primary>strptime</primary></indexterm>
+<indexterm><primary>time format</primary></indexterm>
+		Refer to the strptime man page for specific time format information.
+		</para>
+
+		<para>
+<indexterm><primary>pdbedit</primary></indexterm>
+<indexterm><primary>SambaSAMAccount</primary></indexterm>
+		Please refer to the pdbedit man page for further information relating to SambaSAMAccount
+		management.
+		</para>
+
+		</sect4>
+
+		<sect4>
+		<title>Domain Account Policy Managment</title>
+
+		<para>
+<indexterm><primary>domain account access policies</primary></indexterm>
+<indexterm><primary>access policies</primary></indexterm>
+		To view the domain account access policies that may be configured execute:
+<screen>
+&rootprompt; pdbedit -P ?
+No account policy by that name
+Account policy names are :
+min password length
+password history
+user must logon to change password
+maximum password age
+minimum password age
+lockout duration
+reset count minutes
+bad lockout attempt
+disconnect time
+refuse machine password change
+</screen>
+		</para>
+
+		<para>
+		Commands will be executed to establish controls for our domain as follows:
+		</para>
+
+		<orderedlist>
+			<listitem><para>min password length = 8 characters.</para></listitem>
+			<listitem><para>password history = last 4 passwords.</para></listitem>
+			<listitem><para>maximum password age = 90 days.</para></listitem>
+			<listitem><para>minimum password age = 7 days.</para></listitem>
+			<listitem><para>bad lockout attempt = 8 bad logon attempts.</para></listitem>
+			<listitem><para>lockout duration = forever, account must be manually reenabled.</para></listitem>
+		</orderedlist>
+
+		<para>
+		The following command execution will achieve these settings:
+<screen>
+&rootprompt; pdbedit -P "min password length" -C 8
+account policy value for min password length was 5
+account policy value for min password length is now 8
+&rootprompt; pdbedit -P "password history" -C 4
+account policy value for password history was 0
+account policy value for password history is now 4
+&rootprompt; pdbedit -P "maximum password age" -C 90
+account policy value for maximum password age was 4294967295
+account policy value for maximum password age is now 90
+&rootprompt; pdbedit -P "minimum password age" -C 7
+account policy value for minimum password age was 0
+account policy value for minimum password age is now 7
+&rootprompt; pdbedit -P "bad lockout attempt" -C 8
+account policy value for bad lockout attempt was 0
+account policy value for bad lockout attempt is now 8
+&rootprompt; pdbedit -P "lockout duration" -C -1
+account policy value for lockout duration was 30
+account policy value for lockout duration is now 4294967295
+</screen>
+		</para>
+
+<note><para>
+To set the maximum (infinite) lockout time use the value of -1.
+</para></note>
+
+<warning><para>
+Account policies must be set individually on each PDC and BDC. At this time (Samba 3.0.11 to Samba 3.0.14a)
+account policies are not replicated automatically. This may be fixed before Samba 3.0.20 ships or some
+time there after.
+</para></warning>
+
+		</sect4>
+
+		</sect3>
+
+		<sect3>
+		<title>Account Migration</title>
 
 		<para>
 		<indexterm><primary>pdbedit</primary></indexterm>
@@ -1113,6 +1537,7 @@ Password must change: Mon, 18 Jan 2038 20:14:07 GMT
 			</para></step>
 		</procedure>
 
+	</sect3>
 	</sect2>
 </sect1>
 
