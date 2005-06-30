@@ -25,6 +25,19 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+/* registrt paths used in the print_registry[] */
+
+#define KEY_MONITORS		"HKLM/SYSTEM/CURRENTCONTROLSET/CONTROL/PRINT/MONITORS"
+#define KEY_FORMS		"HKLM/SYSTEM/CURRENTCONTROLSET/CONTROL/PRINT/FORMS"
+#define KEY_CONTROL_PRINTERS	"HKLM/SYSTEM/CURRENTCONTROLSET/CONTROL/PRINT/PRINTERS"
+#define KEY_ENVIRONMENTS	"HKLM/SYSTEM/CURRENTCONTROLSET/CONTROL/PRINT/ENVIRONMENTS"
+#define KEY_CONTROL_PRINT	"HKLM/SYSTEM/CURRENTCONTROLSET/CONTROL/PRINT"
+#define KEY_WINNT_PRINTERS	"HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION/PRINT/PRINTERS"
+#define KEY_WINNT_PRINT		"HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION/PRINT"
+#define KEY_PORTS		"HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION/PORTS"
+
+/* callback table for various registry paths below the ones we service in this module */
+	
 struct reg_dyn_tree {
 	/* full key path in normalized form */
 	const char *path;
@@ -51,67 +64,6 @@ static const char *top_level_keys[MAX_TOP_LEVEL_KEYS] = {
 	"Forms",
 	"Printers" 
 };
-
-/**********************************************************************
- It is safe to assume that every registry path passed into on of 
- the exported functions here begins with KEY_PRINTING else
- these functions would have never been called.  This is a small utility
- function to strip the beginning of the path and make a copy that the 
- caller can modify.  Note that the caller is responsible for releasing
- the memory allocated here.
- **********************************************************************/
-
-static char* trim_reg_path( const char *path )
-{
-	const char *p;
-	uint16 key_len = strlen(path);
-	uint16 base_key_len;
-
-	int key_printing_len = strlen( KEY_PRINTING );
-	int key_printing2k_len = strlen( KEY_PRINTING_2K );
-	int key_printing_ports_len = strlen( KEY_PRINTING_PORTS );
-
-
-	
-	/* 
-	 * sanity check...this really should never be True.
-	 * It is only here to prevent us from accessing outside
-	 * the path buffer in the extreme case.
-	 */
-	
-	if ( (key_len < key_printing_len) 
-		&& (key_len < key_printing2k_len) 
-		&& (key_len < key_printing_ports_len) )
-	{
-		DEBUG(0,("trim_reg_path: Registry path too short! [%s]\n", path));
-		return NULL;
-	}
-
-	base_key_len = 0;
-	if ( StrnCaseCmp( KEY_PRINTING, path, key_printing_len ) == 0 ) {
-		base_key_len = key_printing_len;
-	}
-	else if ( StrnCaseCmp( KEY_PRINTING_2K, path, key_printing2k_len ) == 0 ) {
-		base_key_len = key_printing2k_len;
-	}
-	else if ( StrnCaseCmp( KEY_PRINTING_PORTS, path, key_printing2k_len ) == 0 ) {
-		base_key_len = key_printing_ports_len;
-	}
-	else {
-		DEBUG(0,("trim_reg_path: invalid path [%s]\n", path ));
-		return NULL;
-	}
-	
-	p = path + base_key_len;
-	
-	if ( *p == '\\' )
-		p++;
-	
-	if ( *p )
-		return SMB_STRDUP(p);
-	else
-		return NULL;
-}
 
 /**********************************************************************
  handle enumeration of subkeys below KEY_PRINTING\Environments
@@ -780,6 +732,30 @@ static int printing_subkey_info( const char *key, REGSUBKEY_CTR *subkey_ctr )
 }
 
 #endif	/* UNUSED */
+/**********************************************************************
+ move to next non-delimter character
+*********************************************************************/
+
+static char* remaining_path( const char *key )
+{
+	static pstring new_path;
+	char *p;
+	
+	if ( !key || !*key )
+		return NULL;
+
+	pstrcpy( new_path, key );
+	normalize_reg_path( new_path );
+	
+	p = strchr( new_path, '/' );
+	
+	if ( p )
+		p++;
+	else
+		p = new_path;
+		
+	return p;
+}
 
 /**********************************************************************
  *********************************************************************/
@@ -939,6 +915,12 @@ static BOOL key_print_store_values( const char *key, REGVAL_CTR *values )
 
 static int key_ports_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 {
+	char *p = remaining_path( key + strlen(KEY_PORTS) );
+	
+	/* no keys below ports */
+	if ( p )
+		return -1;
+		
 	return 0;
 }
 
@@ -953,6 +935,11 @@ static int key_ports_fetch_values( const char *key, REGVAL_CTR *values )
 	char **lines;
 	UNISTR2	data;
 	WERROR result;
+	char *p = remaining_path( key + strlen(KEY_PORTS) );
+	
+	/* no keys below ports */
+	if ( p )
+		return -1;
 
 	if ( !W_ERROR_IS_OK(result = enumports_hook( &numlines, &lines )) )
 		return -1;
@@ -999,42 +986,42 @@ static BOOL key_monitor_store_values( const char *key, REGVAL_CTR *values )
  *********************************************************************/
 
 static struct reg_dyn_tree print_registry[] = {
-{ "HKLM/SYSTEM/CURRENTCONTROLSET/CONTROL/PRINT/MONITORS",
+{ KEY_MONITORS,
 	&key_monitor_fetch_keys, 
 	&key_monitor_store_keys,
 	&key_monitor_fetch_values,
 	&key_monitor_store_values },
-{ "HKLM/SYSTEM/CURRENTCONTROLSET/CONTROL/PRINT/FORMS", 
+{ KEY_FORMS, 
 	&key_forms_fetch_keys, 
 	&key_forms_store_keys, 
 	&key_forms_fetch_values,
 	&key_forms_store_values },
-{ "HKLM/SYSTEM/CURRENTCONTROLSET/CONTROL/PRINT/PRINTERS", 
+{ KEY_CONTROL_PRINTERS, 
 	&key_printer_fetch_keys,
 	&key_printer_store_keys,
 	&key_printer_fetch_values,
 	&key_printer_store_values },
-{ "HKLM/SYSTEM/CURRENTCONTROLSET/CONTROL/PRINT/ENVIRONMENTS",
+{ KEY_ENVIRONMENTS,
 	&key_driver_fetch_keys,
 	&key_driver_store_keys,
 	&key_driver_fetch_values,
 	&key_driver_store_values },
-{ "HKLM/SYSTEM/CURRENTCONTROLSET/CONTROL/PRINT",
+{ KEY_CONTROL_PRINT,
 	&key_print_fetch_keys,
 	&key_print_store_keys,
 	&key_print_fetch_values,
 	&key_print_store_values },
-{ "HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION/PRINT/PRINTERS",
+{ KEY_WINNT_PRINTERS,
 	&key_printer_fetch_keys,
 	&key_printer_store_keys,
 	&key_printer_fetch_values,
 	&key_printer_store_values },
-{ "HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION/PRINT",
+{ KEY_WINNT_PRINT,
 	&key_print_fetch_keys,
 	&key_print_store_keys,
 	&key_print_fetch_values,
 	&key_print_store_values },
-{ "HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION/PORTS",
+{ KEY_PORTS,
 	&key_ports_fetch_keys,
 	&key_ports_store_keys,
 	&key_ports_fetch_values,
