@@ -353,3 +353,16 @@ const char *iface_best_ip(const char *dest)
 	}
 	return iface_n_ip(0);
 }
+
+/*
+  return True if an IP is one one of our local networks
+*/
+BOOL iface_is_local(const char *dest)
+{
+	struct in_addr ip;
+	ip.s_addr = interpret_addr(dest);
+	if (iface_find(ip, True)) {
+		return True;
+	}
+	return False;
+}

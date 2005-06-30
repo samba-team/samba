@@ -66,8 +66,21 @@ static void nbtlist_handler(struct nbt_name_request *req)
 			c->state = SMBCLI_REQUEST_ERROR;
 			c->status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 		} else {
+			struct nbt_name_query *q = &state->io_queries[i];
 			c->state = SMBCLI_REQUEST_DONE;
-			state->reply_addr = talloc_steal(state, state->io_queries[i].out.reply_addrs[0]);
+			/* favor a local address if possible */
+			state->reply_addr = NULL;
+			for (i=0;i<q->out.num_addrs;i++) {
+				if (iface_is_local(q->out.reply_addrs[i])) {
+					state->reply_addr = talloc_steal(state, 
+									 q->out.reply_addrs[i]);
+					break;
+				}
+			}
+			if (state->reply_addr == NULL) {
+				state->reply_addr = talloc_steal(state, 
+								 q->out.reply_addrs[0]);
+			}
 		}
 	}
 
