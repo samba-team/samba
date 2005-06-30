@@ -40,12 +40,12 @@ static TDB_CONTEXT *tdb_reg;
    KEY_PRINTING_2K in include/rpc_reg.h)   --jerry */
 
 static const char *builtin_registry_paths[] = {
-	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print",
-	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Ports",
-	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print",
+	KEY_PRINTING_2K,
+	KEY_PRINTING_PORTS,
+	KEY_PRINTING,
+	KEY_SHARES,
+	KEY_EVENTLOG,
 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\ProductOptions",
-	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Shares",
-	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\EventLog",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\TcpIp\\Parameters",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Netlogon\\Parameters",
 	"HKU",
