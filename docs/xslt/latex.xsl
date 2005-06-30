@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version='1.0'>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version='1.0'
+	xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <xsl:import href="http://db2latex.sourceforge.net/xsl/docbook.xsl"/>
 <xsl:import href="strip-references.xsl"/>
 
@@ -140,6 +141,76 @@
 	<xsl:value-of select="$latex.imagebasedir"/><xsl:text>images/</xsl:text>
 	<xsl:value-of select="text()"/>
 	<xsl:text>}&#10;</xsl:text>
+</xsl:template>
+
+<!-- smb.conf documentation -->
+
+<xsl:template match="description"><xsl:apply-templates/></xsl:template>
+
+<xsl:template match="value"><xsl:apply-templates/></xsl:template>
+
+<xsl:template match="synonym"><xsl:apply-templates/></xsl:template>
+
+<xsl:template match="related"><xsl:apply-templates/></xsl:template>
+
+<xsl:template match="//samba:parameterlist">
+	<xsl:apply-templates>
+		<xsl:sort select="varlistentry/term/anchor"/>
+	</xsl:apply-templates>
+</xsl:template>
+
+<xsl:template match="value/comment">
+	<xsl:text>&#10;# </xsl:text>
+	<xsl:apply-templates/>
+</xsl:template>
+
+<xsl:template match="//samba:parameter">
+	<xsl:text>\subsubsection{</xsl:text><xsl:value-of select="@name"/><xsl:text>}&#10;</xsl:text>
+	<xsl:text>\index{</xsl:text><xsl:value-of select="@name"/><xsl:text>|it}&#10;</xsl:text>
+
+	<xsl:for-each select="synonym">
+	<xsl:text>\subsubsection{</xsl:text><xsl:value-of select="."/><xsl:text>}&#10;</xsl:text>
+	<xsl:text>\index{</xsl:text><xsl:value-of select="."/><xsl:text>|it}&#10;</xsl:text>
+	<xsl:text>This parameter is a synonym for \smbconfoption{</xsl:text><xsl:value-of select="../@name"/><xsl:text>}.</xsl:text>
+	</xsl:for-each>
+
+	<xsl:variable name="context">
+		<xsl:text> (</xsl:text>
+		<xsl:value-of select="@context"/>
+		<xsl:text>)</xsl:text>
+	</xsl:variable>
+
+	<!-- Print default value-->
+	<xsl:text>&#10;</xsl:text>
+	<xsl:text>Default: </xsl:text>
+	<xsl:text>\emph{</xsl:text>
+	<xsl:choose>
+		<xsl:when test="value[@type='default'] != ''">
+			<xsl:value-of select="@name"/>
+			<xsl:text> = </xsl:text>
+			<xsl:apply-templates select="value"/>
+		</xsl:when>
+		<xsl:otherwise>
+			<xsl:text>No default</xsl:text>
+		</xsl:otherwise>
+	</xsl:choose>
+	<xsl:text>}</xsl:text>
+	<xsl:text>&#10;</xsl:text>
+
+	<!-- Generate list of examples -->
+	<xsl:text>&#10;</xsl:text>
+	<xsl:for-each select="value[@type='example']">
+		<xsl:text>&#10;</xsl:text>
+		<xsl:text>Example: </xsl:text>
+		<xsl:text>\emph{</xsl:text><xsl:value-of select="../@name"/>
+		<xsl:text> = </xsl:text>
+		<xsl:apply-templates select="."/>
+		<xsl:text>}</xsl:text>
+		<xsl:text>&#10;</xsl:text>
+	</xsl:for-each>
+
+	<!-- Description -->
+	<xsl:apply-templates select="description"/>
 </xsl:template>
 
 </xsl:stylesheet>
