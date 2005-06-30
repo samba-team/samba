@@ -2193,6 +2193,7 @@ uint32 del_a_printer(const char *sharename)
 static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 {
 	pstring key;
+	fstring norm_sharename;
 	char *buf;
 	int buflen, len;
 	WERROR ret;
@@ -2273,6 +2274,11 @@ static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 		goto again;
 	}
 	
+
+	/* normalize the key */
+
+	fstrcpy( norm_sharename, info->sharename );
+	strlower_m( norm_sharename );
 
 	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, info->sharename);
 
@@ -3490,17 +3496,22 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *se
 	TDB_DATA kbuf, dbuf;
 	fstring printername;
 	char adevice[MAXDEVICENAME];
+	fstring norm_sharename;
 		
 	ZERO_STRUCT(info);
 
-	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, sharename);
+	/* normalize case */
+	fstrcpy( norm_sharename, sharename );
+	strlower_m( norm_sharename );
+
+	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, norm_sharename);
 
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
 
 	dbuf = tdb_fetch(tdb_printers, kbuf);
 	if (!dbuf.dptr)
-		return get_a_printer_2_default(info_ptr, servername, sharename);
+		return get_a_printer_2_default(info_ptr, servername, norm_sharename);
 
 	len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "dddddddddddfffffPfffff",
 			&info.attributes,
@@ -3534,7 +3545,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *se
 	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", servername);
 
 	if ( lp_force_printername(snum) )
-		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, sharename );
+		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, norm_sharename );
 	else 
 		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, info.printername);
 
@@ -4867,7 +4878,7 @@ WERROR delete_printer_driver( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct cur
  Store a security desc for a printer.
 ****************************************************************************/
 
-WERROR nt_printing_setsec(const char *printername, SEC_DESC_BUF *secdesc_ctr)
+WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 {
 	SEC_DESC_BUF *new_secdesc_ctr = NULL;
 	SEC_DESC_BUF *old_secdesc_ctr = NULL;
@@ -4875,6 +4886,10 @@ WERROR nt_printing_setsec(const char *printername, SEC_DESC_BUF *secdesc_ctr)
 	TALLOC_CTX *mem_ctx = NULL;
 	fstring key;
 	WERROR status;
+	fstring norm_sharename;
+
+	fstrcpy( norm_sharename, sharename );
+	strlower_m( norm_sharename );
 
 	mem_ctx = talloc_init("nt_printing_setsec");
 	if (mem_ctx == NULL)
@@ -4891,7 +4906,7 @@ WERROR nt_printing_setsec(const char *printername, SEC_DESC_BUF *secdesc_ctr)
 		SEC_DESC *psd = NULL;
 		size_t size;
 
-		nt_printing_getsec(mem_ctx, printername, &old_secdesc_ctr);
+		nt_printing_getsec(mem_ctx, norm_sharename, &old_secdesc_ctr);
 
 		/* Pick out correct owner and group sids */
 
@@ -4937,12 +4952,12 @@ WERROR nt_printing_setsec(const char *printername, SEC_DESC_BUF *secdesc_ctr)
 		goto out;
 	}
 
-	slprintf(key, sizeof(key)-1, "SECDESC/%s", printername);
+	slprintf(key, sizeof(key)-1, "SECDESC/%s", norm_sharename);
 
 	if (tdb_prs_store(tdb_printers, key, &ps)==0) {
 		status = WERR_OK;
 	} else {
-		DEBUG(1,("Failed to store secdesc for %s\n", printername));
+		DEBUG(1,("Failed to store secdesc for %s\n", norm_sharename));
 		status = WERR_BADFUNC;
 	}
 
@@ -5044,24 +5059,28 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
  Get a security desc for a printer.
 ****************************************************************************/
 
-BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *printername, SEC_DESC_BUF **secdesc_ctr)
+BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **secdesc_ctr)
 {
 	prs_struct ps;
 	fstring key;
 	char *temp;
+	fstring norm_sharename;
 
-	if (strlen(printername) > 2 && (temp = strchr(printername + 2, '\\'))) {
-		printername = temp + 1;
+	if (strlen(sharename) > 2 && (temp = strchr(sharename + 2, '\\'))) {
+		sharename = temp + 1;
 	}
 
 	/* Fetch security descriptor from tdb */
 
-	slprintf(key, sizeof(key)-1, "SECDESC/%s", printername);
+	fstrcpy( norm_sharename, sharename );
+	strlower_m( norm_sharename );
+
+	slprintf(key, sizeof(key)-1, "SECDESC/%s", norm_sharename);
 
 	if (tdb_prs_fetch(tdb_printers, key, &ps, ctx)!=0 ||
 	    !sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
 
-		DEBUG(4,("using default secdesc for %s\n", printername));
+		DEBUG(4,("using default secdesc for %s\n", norm_sharename));
 
 		if (!(*secdesc_ctr = construct_default_printer_sdb(ctx))) {
 			return False;
@@ -5113,7 +5132,7 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *printername, SEC_DESC_BUF *
 
 			/* Set it */
 
-			nt_printing_setsec(printername, *secdesc_ctr);
+			nt_printing_setsec(norm_sharename, *secdesc_ctr);
 		}
 	}
 
@@ -5122,7 +5141,7 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *printername, SEC_DESC_BUF *
 		int i;
 
 		DEBUG(10, ("secdesc_ctr for %s has %d aces:\n", 
-			   printername, the_acl->num_aces));
+			   norm_sharename, the_acl->num_aces));
 
 		for (i = 0; i < the_acl->num_aces; i++) {
 			fstring sid_str;
