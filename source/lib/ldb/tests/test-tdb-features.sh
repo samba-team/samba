@@ -81,18 +81,17 @@ changetype: modify
 add: j
 j: 0x100
 EOF
-checkcount 1 '(i=0x100)'
-checkcount 0 '(i=256)'
+checkcount 1 '(j=0x100)'
+checkcount 0 '(j=256)'
 
 echo "Adding wildcard attribute"
-echo "marking i as INTEGER"
 cat <<EOF | bin/ldbmodify || exit 1
 dn: @ATTRIBUTES
 changetype: modify
 add: *
 *: INTEGER
 EOF
-checkcount 1 '(i=0x100)'
-checkcount 1 '(i=256)'
+checkcount 1 '(j=0x100)'
+checkcount 1 '(j=256)'
 
 rm -f $LDB_URL
