@@ -27,7 +27,8 @@
  krb5_error_code samba_get_pac(krb5_context context, 
 			      struct krb5_kdc_configuration *config,
 			      krb5_principal client, 
-			      krb5_keyblock *keyblock, 
+			      krb5_keyblock *krbtgt_keyblock, 
+			      krb5_keyblock *server_keyblock, 
 			      krb5_data *pac) 
 {
 	krb5_error_code ret;
@@ -64,13 +65,13 @@
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Getting user info for PAC failed: %s\n",
 			  nt_errstr(nt_status)));
-		talloc_free(mem_ctx);
 		return EINVAL;
 	}
 
 	ret = kerberos_encode_pac(mem_ctx, server_info, 
 				  context, 
-				  keyblock,
+				  krbtgt_keyblock,
+				  server_keyblock,
 				  pac);
 
 	talloc_free(mem_ctx);
