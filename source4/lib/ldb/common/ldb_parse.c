@@ -172,7 +172,7 @@ char *ldb_binary_encode(void *mem_ctx, struct ldb_val val)
 	unsigned char *buf = val.data;
 
 	for (i=0;i<val.length;i++) {
-		if (!isprint(buf[i]) || strchr(" *()\\&|!", buf[i])) {
+		if (!isprint(buf[i]) || strchr(" *()\\&|!\"", buf[i])) {
 			len += 2;
 		}
 	}
@@ -181,7 +181,7 @@ char *ldb_binary_encode(void *mem_ctx, struct ldb_val val)
 
 	len = 0;
 	for (i=0;i<val.length;i++) {
-		if (!isprint(buf[i]) || strchr(" *()\\&|!", buf[i])) {
+		if (!isprint(buf[i]) || strchr(" *()\\&|!\"", buf[i])) {
 			snprintf(ret+len, 4, "\\%02X", buf[i]);
 			len += 3;
 		} else {
