@@ -1,3 +1,23 @@
+2005-06-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/kdc_locl.h: indent, remove dup prototypes
+	
+	* kdc/libkdc: don't pollute namespace, generate public headerfile
+
+	* lib/krb5/principal.c: add krb5_425_conv_principal_ext2 that work
+	just like krb5_425_conv_principal_ext but takes a context variable
+	for the verification function
+	
+	* kdc/Makefile.am: there is no export script, not pretend there is
+
+	* kdc: Merge in the libkdc/kdc configuration split from Andrew
+	Bartlet <abartlet@samba.org>
+
+	* lib/krb5/crypto.c: optionally compile in support for string2key
+	
+	* configure.in: add --disable-afs-string-to-key to allow removal
+	of support for afs string2key (and dependency on crypt)
+
 2005-06-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/kerberos5.c: Add logging of all timestamps in AS-REQ and
