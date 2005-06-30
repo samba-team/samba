@@ -123,7 +123,7 @@ int fetch_dynamic_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 	normalize_reg_path( path );
 	
 	for ( i=0; dynamic_values[i].path; i++ ) {
-		if ( strequal( path, dynamic_values[i].path ) )
+		if ( strcmp( path, dynamic_values[i].path ) == 0 )
 			return dynamic_values[i].fetch_values( val );
 	}
 	
@@ -143,7 +143,7 @@ BOOL check_dynamic_reg_values( REGISTRY_KEY *key )
 	
 	for ( i=0; dynamic_values[i].path; i++ ) {
 		/* can't write to dynamic keys */
-		if ( strequal( path, dynamic_values[i].path ) )
+		if ( strcmp( path, dynamic_values[i].path ) == 0 )
 			return True;
 	}
 	
