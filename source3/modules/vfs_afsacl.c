@@ -31,11 +31,11 @@
 
 #define MAXSIZE 2048
 
-extern DOM_SID global_sid_World;
-extern DOM_SID global_sid_Builtin_Administrators;
-extern DOM_SID global_sid_Builtin_Backup_Operators;
-extern DOM_SID global_sid_Authenticated_Users;
-extern DOM_SID global_sid_NULL;
+extern const DOM_SID global_sid_World;
+extern const DOM_SID global_sid_Builtin_Administrators;
+extern const DOM_SID global_sid_Builtin_Backup_Operators;
+extern const DOM_SID global_sid_Authenticated_Users;
+extern const DOM_SID global_sid_NULL;
 
 static char space_replacement = '%';
 
