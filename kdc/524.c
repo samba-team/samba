@@ -44,7 +44,7 @@ RCSID("$Id$");
 
 static krb5_error_code
 fetch_server (krb5_context context, 
-	      struct krb5_kdc_configuration *config,
+	      krb5_kdc_configuration *config,
 	      const Ticket *t,
 	      char **spn,
 	      hdb_entry **server,
@@ -66,7 +66,7 @@ fetch_server (krb5_context context,
 		krb5_get_err_text(context, ret));
 	return ret;
     }
-    ret = db_fetch(context, config, sprinc, server);
+    ret = _kdc_db_fetch(context, config, sprinc, server);
     krb5_free_principal(context, sprinc);
     if (ret) {
 	kdc_log(context, config, 0,
@@ -81,7 +81,7 @@ fetch_server (krb5_context context,
 
 static krb5_error_code
 log_524 (krb5_context context, 
-	 struct krb5_kdc_configuration *config,
+	 krb5_kdc_configuration *config,
 	 const EncTicketPart *et,
 	 const char *from,
 	 const char *spn)
@@ -111,7 +111,7 @@ log_524 (krb5_context context,
 
 static krb5_error_code
 verify_flags (krb5_context context, 
-	      struct krb5_kdc_configuration *config,
+	      krb5_kdc_configuration *config,
 	      const EncTicketPart *et,
 	      const char *spn)
 {
@@ -133,7 +133,7 @@ verify_flags (krb5_context context,
 
 static krb5_error_code
 set_address (krb5_context context, 
-	     struct krb5_kdc_configuration *config,
+	     krb5_kdc_configuration *config,
 	     EncTicketPart *et,
 	     struct sockaddr *addr,
 	     const char *from)
@@ -185,7 +185,7 @@ set_address (krb5_context context,
 
 static krb5_error_code
 encrypt_v4_ticket(krb5_context context, 
-		  struct krb5_kdc_configuration *config,
+		  krb5_kdc_configuration *config,
 		  void *buf, 
 		  size_t len, 
 		  krb5_keyblock *skey, 
@@ -219,9 +219,10 @@ encrypt_v4_ticket(krb5_context context,
 
 static krb5_error_code
 encode_524_response(krb5_context context, 
-		    struct krb5_kdc_configuration *config,
-		    const char *spn, const EncTicketPart et, const Ticket *t,
-		    hdb_entry *server, EncryptedData *ticket, int *kvno)
+		    krb5_kdc_configuration *config,
+		    const char *spn, const EncTicketPart et,
+		    const Ticket *t, hdb_entry *server, 
+		    EncryptedData *ticket, int *kvno)
 {
     krb5_error_code ret;
     int use_2b;
@@ -252,15 +253,15 @@ encode_524_response(krb5_context context,
 	    return KRB5KDC_ERR_POLICY;
 	}
 
-	ret = encode_v4_ticket(context, config, 
-			       buf + sizeof(buf) - 1, sizeof(buf),
-			       &et, &t->sname, &len);
+	ret = _kdc_encode_v4_ticket(context, config, 
+				    buf + sizeof(buf) - 1, sizeof(buf),
+				    &et, &t->sname, &len);
 	if(ret){
 	    kdc_log(context, config, 0,
 		    "Failed to encode v4 ticket (%s)", spn);
 	    return ret;
 	}
-	ret = get_des_key(context, server, TRUE, FALSE, &skey);
+	ret = _kdc_get_des_key(context, server, TRUE, FALSE, &skey);
 	if(ret){
 	    kdc_log(context, config, 0,
 		    "no suitable DES key for server (%s)", spn);
@@ -285,10 +286,10 @@ encode_524_response(krb5_context context,
  */
 
 krb5_error_code
-do_524(krb5_context context, 
-       struct krb5_kdc_configuration *config,
-       const Ticket *t, krb5_data *reply,
-       const char *from, struct sockaddr *addr)
+_kdc_do_524(krb5_context context, 
+	    krb5_kdc_configuration *config,
+	    const Ticket *t, krb5_data *reply,
+	    const char *from, struct sockaddr *addr)
 {
     krb5_error_code ret = 0;
     krb5_crypto crypto;
@@ -369,7 +370,7 @@ do_524(krb5_context context,
 			      server, &ticket, &kvno);
     free_EncTicketPart(&et);
 
-out:
+ out:
     /* make reply */
     memset(buf, 0, sizeof(buf));
     sp = krb5_storage_from_mem(buf, sizeof(buf));
@@ -389,6 +390,6 @@ out:
     if(spn)
 	free(spn);
     if(server)
-	free_ent (context, server);
+	_kdc_free_ent (context, server);
     return ret;
 }

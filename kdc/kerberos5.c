@@ -118,7 +118,7 @@ find_etype(krb5_context context, hdb_entry *princ,
 
 static krb5_error_code
 find_keys(krb5_context context, 
-	  struct krb5_kdc_configuration *config,
+	  krb5_kdc_configuration *config,
 	  hdb_entry *client,
 	  hdb_entry *server, 
 	  Key **ckey,
@@ -181,7 +181,7 @@ make_anonymous_principalname (PrincipalName *pn)
 
 static void
 log_timestamp(krb5_context context, 
-	      struct krb5_kdc_configuration *config,
+	      krb5_kdc_configuration *config,
 	      const char *type,
 	      KerberosTime authtime, KerberosTime *starttime, 
 	      KerberosTime endtime, KerberosTime *renew_till)
@@ -206,7 +206,7 @@ log_timestamp(krb5_context context,
 
 static krb5_error_code
 encode_reply(krb5_context context,
-	     struct krb5_kdc_configuration *config,
+	     krb5_kdc_configuration *config,
 	     KDC_REP *rep, EncTicketPart *et, EncKDCRepPart *ek, 
 	     krb5_enctype etype, 
 	     int skvno, EncryptionKey *skey,
@@ -356,7 +356,7 @@ make_etype_info_entry(krb5_context context, ETYPE_INFO_ENTRY *ent, Key *key)
 
 static krb5_error_code
 get_pa_etype_info(krb5_context context, 
-		  struct krb5_kdc_configuration *config,
+		  krb5_kdc_configuration *config,
 		  METHOD_DATA *md, hdb_entry *client, 
 		  ENCTYPE *etypes, unsigned int etypes_len)
 {
@@ -519,7 +519,7 @@ only_older_enctype_p(const KDC_REQ *req)
 
 static krb5_error_code
 get_pa_etype_info2(krb5_context context, 
-		   struct krb5_kdc_configuration *config,
+		   krb5_kdc_configuration *config,
 		   METHOD_DATA *md, hdb_entry *client, 
 		   ENCTYPE *etypes, unsigned int etypes_len)
 {
@@ -604,21 +604,23 @@ get_pa_etype_info2(krb5_context context,
  */
 
 krb5_error_code
-check_flags(krb5_context context, 
-	    struct krb5_kdc_configuration *config,
-	    hdb_entry *client, const char *client_name,
-	    hdb_entry *server, const char *server_name,
-	    krb5_boolean is_as_req)
+_kdc_check_flags(krb5_context context, 
+		 krb5_kdc_configuration *config,
+		 hdb_entry *client, const char *client_name,
+		 hdb_entry *server, const char *server_name,
+		 krb5_boolean is_as_req)
 {
     if(client != NULL) {
 	/* check client */
 	if (client->flags.invalid) {
-	    kdc_log(context, config, 0, "Client (%s) has invalid bit set", client_name);
+	    kdc_log(context, config, 0, 
+		    "Client (%s) has invalid bit set", client_name);
 	    return KRB5KDC_ERR_POLICY;
 	}
 	
 	if(!client->flags.client){
-	    kdc_log(context, config, 0, "Principal may not act as client -- %s", 
+	    kdc_log(context, config, 0,
+		    "Principal may not act as client -- %s", 
 		    client_name);
 	    return KRB5KDC_ERR_POLICY;
 	}
@@ -685,7 +687,7 @@ check_flags(krb5_context context,
 
 static krb5_boolean
 check_addresses(krb5_context context,        
-		struct krb5_kdc_configuration *config,
+		krb5_kdc_configuration *config,
 		HostAddresses *addresses, const struct sockaddr *from)
 {
     krb5_error_code ret;
@@ -708,12 +710,12 @@ check_addresses(krb5_context context,
 }
 
 krb5_error_code
-as_rep(krb5_context context, 
-       struct krb5_kdc_configuration *config,
-       KDC_REQ *req, 
-       krb5_data *reply,
-       const char *from,
-       struct sockaddr *from_addr)
+_kdc_as_rep(krb5_context context, 
+	    krb5_kdc_configuration *config,
+	    KDC_REQ *req, 
+	    krb5_data *reply,
+	    const char *from,
+	    struct sockaddr *from_addr)
 {
     KDC_REQ_BODY *b = &req->req_body;
     AS_REP rep;
@@ -764,7 +766,7 @@ as_rep(krb5_context context,
     kdc_log(context, config, 0, "AS-REQ %s from %s for %s", 
 	    client_name, from, server_name);
 
-    ret = db_fetch(context, config, client_princ, &client);
+    ret = _kdc_db_fetch(context, config, client_princ, &client);
     if(ret){
 	kdc_log(context, config, 0, "UNKNOWN -- %s: %s", client_name,
 		krb5_get_err_text(context, ret));
@@ -772,7 +774,7 @@ as_rep(krb5_context context,
 	goto out;
     }
 
-    ret = db_fetch(context, config, server_princ, &server);
+    ret = _kdc_db_fetch(context, config, server_princ, &server);
     if(ret){
 	kdc_log(context, config, 0, "UNKNOWN -- %s: %s", server_name,
 		krb5_get_err_text(context, ret));
@@ -780,8 +782,10 @@ as_rep(krb5_context context,
 	goto out;
     }
 
-    ret = check_flags(context, config, 
-		      client, client_name, server, server_name, TRUE);
+    ret = _kdc_check_flags(context, config, 
+			   client, client_name,
+			   server, server_name,
+			   TRUE);
     if(ret)
 	goto out;
 
@@ -815,25 +819,26 @@ as_rep(krb5_context context,
 	if (pa) {
 	    char *client_cert = NULL;
 
-	    ret = pk_rd_padata(context, req, pa, &pkp);
+	    ret = _pk_rd_padata(context, req, pa, &pkp);
 	    if (ret) {
 		ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
-		kdc_log(context, config, 5, "Failed to decode PKINIT PA-DATA -- %s", 
+		kdc_log(context, config, 5, 
+			"Failed to decode PKINIT PA-DATA -- %s", 
 			client_name);
 		goto ts_enc;
 	    }
 	    if (ret == 0 && pkp == NULL)
 		goto ts_enc;
 
-	    ret = pk_check_client(context, 
-				  client_princ, 
-				  client,
-				  pkp,
-				  &client_cert);
+	    ret = _pk_check_client(context, 
+				   client_princ, 
+				   client,
+				   pkp,
+				   &client_cert);
 	    if (ret) {
 		e_text = "PKINIT certificate not allowed to "
 		    "impersonate principal";
-		pk_free_client_param(context, pkp);
+		_pk_free_client_param(context, pkp);
 		pkp = NULL;
 		goto ts_enc;
 	    }
@@ -917,7 +922,7 @@ as_rep(krb5_context context,
 		e_text = "Failed to decrypt PA-DATA";
 		kdc_log(context, config, 
 			5, "Failed to decrypt PA-DATA -- %s",
-			 client_name);
+			client_name);
 		ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
 		continue;
 	    }
@@ -932,7 +937,7 @@ as_rep(krb5_context context,
 		ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
 		kdc_log(context, config, 
 			5, "Failed to decode PA-ENC-TS_ENC -- %s",
-			 client_name);
+			client_name);
 		continue;
 	    }
 	    free_PA_ENC_TS_ENC(&p);
@@ -1270,8 +1275,8 @@ as_rep(krb5_context context,
     reply_key = &ckey->key;
 #if PKINIT
     if (pkp) {
-	ret = pk_mk_pa_reply(context, pkp, client, req,
-			     &reply_key, rep.padata);
+	ret = _pk_mk_pa_reply(context, pkp, client, req,
+			      &reply_key, rep.padata);
 	if (ret)
 	    goto out;
     }
@@ -1309,7 +1314,7 @@ as_rep(krb5_context context,
  out2:
 #ifdef PKINIT
     if (pkp)
-	pk_free_client_param(context, pkp);
+	_pk_free_client_param(context, pkp);
 #endif
     if (client_princ)
 	krb5_free_principal(context, client_princ);
@@ -1318,16 +1323,16 @@ as_rep(krb5_context context,
 	krb5_free_principal(context, server_princ);
     free(server_name);
     if(client)
-	free_ent(context, client);
+	_kdc_free_ent(context, client);
     if(server)
-	free_ent(context, server);
+	_kdc_free_ent(context, server);
     return ret;
 }
 
 
 static krb5_error_code
 check_tgs_flags(krb5_context context,        
-		struct krb5_kdc_configuration *config,
+		krb5_kdc_configuration *config,
 		KDC_REQ_BODY *b, EncTicketPart *tgt, EncTicketPart *et)
 {
     KDCOptions f = b->kdc_options;
@@ -1448,7 +1453,7 @@ check_tgs_flags(krb5_context context,
 
 static krb5_error_code
 fix_transited_encoding(krb5_context context, 
-		       struct krb5_kdc_configuration *config,
+		       krb5_kdc_configuration *config,
 		       krb5_boolean check_policy,
 		       TransitedEncoding *tr, 
 		       EncTicketPart *et, 
@@ -1545,7 +1550,7 @@ fix_transited_encoding(krb5_context context,
 
 static krb5_error_code
 tgs_make_reply(krb5_context context, 
-	       struct krb5_kdc_configuration *config,
+	       krb5_kdc_configuration *config,
 	       KDC_REQ_BODY *b, 
 	       EncTicketPart *tgt, 
 	       EncTicketPart *adtkt, 
@@ -1755,7 +1760,7 @@ tgs_make_reply(krb5_context context,
 
 static krb5_error_code
 tgs_check_authenticator(krb5_context context, 
-			struct krb5_kdc_configuration *config,
+			krb5_kdc_configuration *config,
 	                krb5_auth_context ac,
 			KDC_REQ_BODY *b, 
 			const char **e_text,
@@ -1869,7 +1874,7 @@ need_referral(krb5_context context, krb5_principal server, krb5_realm **realms)
 
 static krb5_error_code
 tgs_rep2(krb5_context context, 
-	 struct krb5_kdc_configuration *config,
+	 krb5_kdc_configuration *config,
 	 KDC_REQ_BODY *b,
 	 PA_DATA *tgs_req,
 	 krb5_data *reply,
@@ -1918,7 +1923,7 @@ tgs_rep2(krb5_context context,
 				       ap_req.ticket.sname,
 				       ap_req.ticket.realm);
     
-    ret = db_fetch(context, config, princ, &krbtgt);
+    ret = _kdc_db_fetch(context, config, princ, &krbtgt);
 
     if(ret) {
 	char *p;
@@ -2117,7 +2122,7 @@ tgs_rep2(krb5_context context,
 		goto out2;
 	    }
 	    _krb5_principalname2krb5_principal(&p, t->sname, t->realm);
-	    ret = db_fetch(context, config, p, &uu);
+	    ret = _kdc_db_fetch(context, config, p, &uu);
 	    krb5_free_principal(context, p);
 	    if(ret){
 		if (ret == HDB_ERR_NOENTRY)
@@ -2156,7 +2161,7 @@ tgs_rep2(krb5_context context,
 	    kdc_log(context, config, 0,
 		    "TGS-REQ %s from %s for %s", cpn, from, spn);
     server_lookup:
-	ret = db_fetch(context, config, sp, &server);
+	ret = _kdc_db_fetch(context, config, sp, &server);
 
 	if(ret){
 	    const char *new_rlm;
@@ -2205,7 +2210,7 @@ tgs_rep2(krb5_context context,
 	    goto out;
 	}
 
-	ret = db_fetch(context, config, cp, &client);
+	ret = _kdc_db_fetch(context, config, cp, &client);
 	if(ret)
 	    kdc_log(context, config, 1, "Client not found in database: %s: %s",
 		    cpn, krb5_get_err_text(context, ret));
@@ -2235,8 +2240,10 @@ tgs_rep2(krb5_context context,
 	    
 	}
 
-	ret = check_flags(context, config, 
-			  client, cpn, server, spn, FALSE);
+	ret = _kdc_check_flags(context, config, 
+			       client, cpn,
+			       server, spn,
+			       FALSE);
 	if(ret)
 	    goto out;
 
@@ -2274,11 +2281,11 @@ tgs_rep2(krb5_context context,
 	free(cpn);
 	    
 	if(server)
-	    free_ent(context, server);
+	    _kdc_free_ent(context, server);
 	if(client)
-	    free_ent(context, client);
+	    _kdc_free_ent(context, client);
     }
-out2:
+ out2:
     if(ret) {
 	krb5_mk_error(context,
 		      ret,
@@ -2305,19 +2312,19 @@ out2:
     }
 
     if(krbtgt)
-	free_ent(context, krbtgt);
+	_kdc_free_ent(context, krbtgt);
 
     return ret;
 }
 
 
 krb5_error_code
-tgs_rep(krb5_context context, 
-	struct krb5_kdc_configuration *config,
-	KDC_REQ *req, 
-	krb5_data *data,
-	const char *from,
-	struct sockaddr *from_addr)
+_kdc_tgs_rep(krb5_context context, 
+	     krb5_kdc_configuration *config,
+	     KDC_REQ *req, 
+	     krb5_data *data,
+	     const char *from,
+	     struct sockaddr *from_addr)
 {
     krb5_error_code ret;
     int i = 0;

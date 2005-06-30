@@ -35,10 +35,19 @@ libkdc_la_SOURCES = \
 	524.c		\
 	kerberos4.c	\
 	kaserver.c	\
-	process.c	 \
+	process.c	\
 	rx.h
 
+
+$(libkdc_la_OBJECTS): $(srcdir)/kdc-protos.h
+
 libkdc_la_LDFLAGS = -version-info 1:0:0
+
+CHECK_SYMBOLS = -lib kdc -version krb5_kdc kdc_ _kdc_
+
+$(srcdir)/kdc-protos.h:
+	cd $(srcdir) && perl ../cf/make-proto.pl -q -P comment -o kdc-protos.h $(libkdc_la_SOURCES) || rm -f kdc-protos.h
+
 
 hprop_LDADD = \
 	$(top_builddir)/lib/hdb/libhdb.la \
@@ -81,4 +90,4 @@ LDADD = $(top_builddir)/lib/hdb/libhdb.la \
 
 kdc_LDADD = libkdc.la $(LIB_pidfile)
 
-include_HEADERS = kdc.h
+include_HEADERS = kdc.h kdc-protos.h

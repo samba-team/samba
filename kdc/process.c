@@ -43,7 +43,7 @@ RCSID("$Id$");
 
 int
 krb5_kdc_process_generic_request(krb5_context context, 
-				 struct krb5_kdc_configuration *config,
+				 krb5_kdc_configuration *config,
 				 unsigned char *buf, 
 				 size_t len, 
 				 krb5_data *reply,
@@ -56,27 +56,27 @@ krb5_kdc_process_generic_request(krb5_context context,
     krb5_error_code ret;
     size_t i;
 
-    gettimeofday(&now, NULL);
+    gettimeofday(&_kdc_now, NULL);
     if(decode_AS_REQ(buf, len, &req, &i) == 0){
-	ret = as_rep(context, config, &req, reply, from, addr);
+	ret = _kdc_as_rep(context, config, &req, reply, from, addr);
 	free_AS_REQ(&req);
 	return ret;
     }else if(decode_TGS_REQ(buf, len, &req, &i) == 0){
-	ret = tgs_rep(context, config, &req, reply, from, addr);
+	ret = _kdc_tgs_rep(context, config, &req, reply, from, addr);
 	free_TGS_REQ(&req);
 	return ret;
     }else if(decode_Ticket(buf, len, &ticket, &i) == 0){
-	ret = do_524(context, config, &ticket, reply, from, addr);
+	ret = _kdc_do_524(context, config, &ticket, reply, from, addr);
 	free_Ticket(&ticket);
 	return ret;
-    } else if(maybe_version4(buf, len)){
+    } else if(_kdc_maybe_version4(buf, len)){
 	*prependlength = FALSE; /* elbitapmoc sdrawkcab XXX */
-	do_version4(context, config, buf, len, reply, from, 
-		    (struct sockaddr_in*)addr);
+	_kdc_do_version4(context, config, buf, len, reply, from, 
+			 (struct sockaddr_in*)addr);
 	return 0;
     } else if (config->enable_kaserver) {
-	ret = do_kaserver(context, config, buf, len, reply, from,
-			  (struct sockaddr_in*)addr);
+	ret = _kdc_do_kaserver(context, config, buf, len, reply, from,
+			       (struct sockaddr_in*)addr);
 	return ret;
     }
 			  
@@ -90,25 +90,26 @@ krb5_kdc_process_generic_request(krb5_context context,
  * This only processes krb5 requests
  */
 
-int krb5_kdc_process_krb5_request(krb5_context context, 
-				  struct krb5_kdc_configuration *config,
-				  unsigned char *buf, 
-				  size_t len, 
-				  krb5_data *reply,
-				  const char *from,
-				  struct sockaddr *addr)
+int
+krb5_kdc_process_krb5_request(krb5_context context, 
+			      krb5_kdc_configuration *config,
+			      unsigned char *buf, 
+			      size_t len, 
+			      krb5_data *reply,
+			      const char *from,
+			      struct sockaddr *addr)
 {
     KDC_REQ req;
     krb5_error_code ret;
     size_t i;
 
-    gettimeofday(&now, NULL);
+    gettimeofday(&_kdc_now, NULL);
     if(decode_AS_REQ(buf, len, &req, &i) == 0){
-	ret = as_rep(context, config, &req, reply, from, addr);
+	ret = _kdc_as_rep(context, config, &req, reply, from, addr);
 	free_AS_REQ(&req);
 	return ret;
     }else if(decode_TGS_REQ(buf, len, &req, &i) == 0){
-	ret = tgs_rep(context, config, &req, reply, from, addr);
+	ret = _kdc_tgs_rep(context, config, &req, reply, from, addr);
 	free_TGS_REQ(&req);
 	return ret;
     }

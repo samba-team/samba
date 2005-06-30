@@ -35,13 +35,13 @@
 
 RCSID("$Id$");
 
-struct timeval now;
+struct timeval _kdc_now;
 
 krb5_error_code
-db_fetch(krb5_context context,
-	 struct krb5_kdc_configuration *config,
-	 krb5_principal principal,
-	 hdb_entry **h)
+_kdc_db_fetch(krb5_context context,
+	      krb5_kdc_configuration *config,
+	      krb5_principal principal,
+	      hdb_entry **h)
 {
     hdb_entry *ent;
     krb5_error_code ret = HDB_ERR_NOENTRY;
@@ -74,7 +74,7 @@ db_fetch(krb5_context context,
 }
 
 void
-free_ent(krb5_context context, hdb_entry *ent)
+_kdc_free_ent(krb5_context context, hdb_entry *ent)
 {
     hdb_free_entry (context, ent);
     free (ent);

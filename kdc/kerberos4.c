@@ -49,7 +49,7 @@ swap32(u_int32_t x)
 #endif /* swap32 */
 
 int
-maybe_version4(unsigned char *buf, int len)
+_kdc_maybe_version4(unsigned char *buf, int len)
 {
     return len > 0 && *buf == 4;
 }
@@ -67,7 +67,7 @@ valid_princ(krb5_context context,
 	    void *funcctx,
 	    krb5_principal princ)
 {
-    struct krb5_kdc_configuration *config = funcctx;
+    krb5_kdc_configuration *config = funcctx;
     krb5_error_code ret;
     char *s;
     hdb_entry *ent;
@@ -75,7 +75,7 @@ valid_princ(krb5_context context,
     ret = krb5_unparse_name(context, princ, &s);
     if (ret)
 	return FALSE;
-    ret = db_fetch(context, config, princ, &ent);
+    ret = _kdc_db_fetch(context, config, princ, &ent);
     if (ret) {
 	kdc_log(context, config, 7, "Lookup %s failed: %s", s,
 		krb5_get_err_text (context, ret));
@@ -84,13 +84,13 @@ valid_princ(krb5_context context,
     }
     kdc_log(context, config, 7, "Lookup %s succeeded", s);
     free(s);
-    free_ent(context, ent);
+    _kdc_free_ent(context, ent);
     return TRUE;
 }
 
 krb5_error_code
-db_fetch4(krb5_context context,
-	  struct krb5_kdc_configuration *config,
+_kdc_db_fetch4(krb5_context context,
+	  krb5_kdc_configuration *config,
 	  const char *name, const char *instance, const char *realm,
 	  hdb_entry **ent)
 {
@@ -101,7 +101,7 @@ db_fetch4(krb5_context context,
 				       valid_princ, config, 0, &p);
     if(ret)
 	return ret;
-    ret = db_fetch(context, config, p, ent);
+    ret = _kdc_db_fetch(context, config, p, ent);
     krb5_free_principal(context, p);
     return ret;
 }
@@ -115,13 +115,13 @@ db_fetch4(krb5_context context,
  */
 
 krb5_error_code
-do_version4(krb5_context context, 
-	    struct krb5_kdc_configuration *config,
-	    unsigned char *buf,
-	    size_t len,
-	    krb5_data *reply,
-	    const char *from,
-	    struct sockaddr_in *addr)
+_kdc_do_version4(krb5_context context, 
+		 krb5_kdc_configuration *config,
+		 unsigned char *buf,
+		 size_t len,
+		 krb5_data *reply,
+		 const char *from,
+		 struct sockaddr_in *addr)
 {
     krb5_storage *sp;
     krb5_error_code ret;
@@ -181,7 +181,7 @@ do_version4(krb5_context context,
 	kdc_log(context, config, 0, "AS-REQ (krb4) %s from %s for %s",
 		client_name, from, server_name);
 
-	ret = db_fetch4(context, config, name, inst, realm, &client);
+	ret = _kdc_db_fetch4(context, config, name, inst, realm, &client);
 	if(ret) {
 	    kdc_log(context, config, 0, "Client not found in database: %s: %s",
 		    client_name, krb5_get_err_text(context, ret));
@@ -189,7 +189,7 @@ do_version4(krb5_context context,
 			   "principal unknown");
 	    goto out1;
 	}
-	ret = db_fetch4(context, config, sname, sinst, 
+	ret = _kdc_db_fetch4(context, config, sname, sinst, 
 			config->v4_realm, &server);
 	if(ret){
 	    kdc_log(context, config, 0, "Server not found in database: %s: %s",
@@ -199,10 +199,10 @@ do_version4(krb5_context context,
 	    goto out1;
 	}
 
-	ret = check_flags (context, config, 
-			   client, client_name,
-			   server, server_name,
-			   TRUE);
+	ret = _kdc_check_flags (context, config, 
+				client, client_name,
+				server, server_name,
+				TRUE);
 	if (ret) {
 	    /* good error code? */
 	    make_err_reply(context, reply, KERB_ERR_NAME_EXP,
@@ -227,7 +227,7 @@ do_version4(krb5_context context,
 	    goto out1;
 	}
 
-	ret = get_des_key(context, client, FALSE, FALSE, &ckey);
+	ret = _kdc_get_des_key(context, client, FALSE, FALSE, &ckey);
 	if(ret){
 	    kdc_log(context, config, 0, "no suitable DES key for client");
 	    make_err_reply(context, reply, KDC_NULL_KEY, 
@@ -249,7 +249,7 @@ do_version4(krb5_context context,
 	}
 #endif
 	
-	ret = get_des_key(context, server, TRUE, FALSE, &skey);
+	ret = _kdc_get_des_key(context, server, TRUE, FALSE, &skey);
 	if(ret){
 	    kdc_log(context, config, 0, "no suitable DES key for server");
 	    /* XXX */
@@ -360,7 +360,7 @@ do_version4(krb5_context context,
 	    goto out2;
 	}
 
-	ret = db_fetch(context, config, tgt_princ, &tgt);
+	ret = _kdc_db_fetch(context, config, tgt_princ, &tgt);
 	if(ret){
 	    char *s;
 	    s = kdc_log_msg(context, config, 0, "Ticket-granting ticket not "
@@ -382,7 +382,7 @@ do_version4(krb5_context context,
 	    goto out2;
 	}
 
-	ret = get_des_key(context, tgt, TRUE, FALSE, &tkey);
+	ret = _kdc_get_des_key(context, tgt, TRUE, FALSE, &tkey);
 	if(ret){
 	    kdc_log(context, config, 0, 
 		    "no suitable DES key for krbtgt (krb4)");
@@ -455,7 +455,7 @@ do_version4(krb5_context context,
 	    goto out2;
 	}
 	
-	ret = db_fetch4(context, config, ad.pname, ad.pinst, ad.prealm, &client);
+	ret = _kdc_db_fetch4(context, config, ad.pname, ad.pinst, ad.prealm, &client);
 	if(ret && ret != HDB_ERR_NOENTRY) {
 	    char *s;
 	    s = kdc_log_msg(context, config, 0,
@@ -475,7 +475,7 @@ do_version4(krb5_context context,
 	    goto out2;
 	}
 
-	ret = db_fetch4(context, config, sname, sinst, config->v4_realm, &server);
+	ret = _kdc_db_fetch4(context, config, sname, sinst, config->v4_realm, &server);
 	if(ret){
 	    char *s;
 	    s = kdc_log_msg(context, config, 0,
@@ -486,10 +486,10 @@ do_version4(krb5_context context,
 	    goto out2;
 	}
 
-	ret = check_flags (context, config, 
-			   client, client_name,
-			   server, server_name,
-			   FALSE);
+	ret = _kdc_check_flags (context, config, 
+				client, client_name,
+				server, server_name,
+				FALSE);
 	if (ret) {
 	    /* good error code? */
 	    make_err_reply(context, reply, KERB_ERR_NAME_EXP,
@@ -497,7 +497,7 @@ do_version4(krb5_context context,
 	    goto out2;
 	}
 
-	ret = get_des_key(context, server, TRUE, FALSE, &skey);
+	ret = _kdc_get_des_key(context, server, TRUE, FALSE, &skey);
 	if(ret){
 	    kdc_log(context, config, 0, 
 		    "no suitable DES key for server (krb4)");
@@ -598,7 +598,7 @@ do_version4(krb5_context context,
 	if(tgt_princ)
 	    krb5_free_principal(context, tgt_princ);
 	if(tgt)
-	    free_ent(context, tgt);
+	    _kdc_free_ent(context, tgt);
 	break;
     }
     case AUTH_MSG_ERR_REPLY:
@@ -621,18 +621,18 @@ do_version4(krb5_context context,
     if(sinst)
 	free(sinst);
     if(client)
-	free_ent(context, client);
+	_kdc_free_ent(context, client);
     if(server)
-	free_ent(context, server);
+	_kdc_free_ent(context, server);
     krb5_storage_free(sp);
     return 0;
 }
 
 krb5_error_code
-encode_v4_ticket(krb5_context context, 
-		 struct krb5_kdc_configuration *config,
-		 void *buf, size_t len, const EncTicketPart *et,
-		 const PrincipalName *service, size_t *size)
+_kdc_encode_v4_ticket(krb5_context context, 
+		      krb5_kdc_configuration *config,
+		      void *buf, size_t len, const EncTicketPart *et,
+		      const PrincipalName *service, size_t *size)
 {
     krb5_storage *sp;
     krb5_error_code ret;
@@ -718,9 +718,9 @@ encode_v4_ticket(krb5_context context,
 }
 
 krb5_error_code
-get_des_key(krb5_context context, 
-	    hdb_entry *principal, krb5_boolean is_server, 
-	    krb5_boolean prefer_afs_key, Key **ret_key)
+_kdc_get_des_key(krb5_context context, 
+		 hdb_entry *principal, krb5_boolean is_server, 
+		 krb5_boolean prefer_afs_key, Key **ret_key)
 {
     Key *v5_key = NULL, *v4_key = NULL, *afs_key = NULL, *server_key = NULL;
     int i;

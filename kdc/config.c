@@ -132,7 +132,7 @@ usage(int ret)
 }
 
 static void
-get_dbinfo(krb5_context context, struct krb5_kdc_configuration *config)
+get_dbinfo(krb5_context context, krb5_kdc_configuration *config)
 {
     const krb5_config_binding *top_binding = NULL;
     const krb5_config_binding *db_binding;
@@ -254,9 +254,9 @@ add_one_address (krb5_context context, const char *str, int first)
     krb5_free_addresses (context, &tmp);
 }
 
-struct krb5_kdc_configuration *configure(krb5_context context, int argc, char **argv)
+krb5_kdc_configuration *configure(krb5_context context, int argc, char **argv)
 {
-    struct krb5_kdc_configuration *config = malloc(sizeof(*config));
+    krb5_kdc_configuration *config = malloc(sizeof(*config));
     krb5_error_code ret;
     int optidx = 0;
     const char *p;
@@ -516,7 +516,7 @@ struct krb5_kdc_configuration *configure(krb5_context context, int argc, char **
 	if (x509_anchors == NULL)
 	    krb5_errx(context, 1, "pkinit enabled but no X509 anchors");
 
-	pk_initialize(user_id, x509_anchors);
+	_pk_initialize(user_id, x509_anchors);
 
 	config->enable_pkinit_princ_in_cert = 
 	    krb5_config_get_bool_default(context, 

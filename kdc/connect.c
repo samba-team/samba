@@ -137,7 +137,7 @@ add_port_string (krb5_context context,
 
 static void
 add_standard_ports (krb5_context context, 		 
-		    struct krb5_kdc_configuration *config,
+		    krb5_kdc_configuration *config,
 		    int family)
 {
     add_port_service(context, family, "kerberos", 88, "udp");
@@ -166,7 +166,7 @@ add_standard_ports (krb5_context context,
 
 static void
 parse_ports(krb5_context context, 		 
-	    struct krb5_kdc_configuration *config,
+	    krb5_kdc_configuration *config,
 	    const char *str)
 {
     char *pos = NULL;
@@ -248,7 +248,7 @@ reinit_descrs (struct descr *d, int n)
 
 static void 
 init_socket(krb5_context context, 
-	    struct krb5_kdc_configuration *config,
+	    krb5_kdc_configuration *config,
 	    struct descr *d, krb5_address *a, int family, int type, int port)
 {
     krb5_error_code ret;
@@ -313,7 +313,7 @@ init_socket(krb5_context context,
 
 static int
 init_sockets(krb5_context context, 
-	     struct krb5_kdc_configuration *config,
+	     krb5_kdc_configuration *config,
 	     struct descr **desc)
 {
     krb5_error_code ret;
@@ -400,7 +400,7 @@ addr_to_string(krb5_context context,
 
 static void
 do_request(krb5_context context, 
-	   struct krb5_kdc_configuration *config,
+	   krb5_kdc_configuration *config,
 	   void *buf, size_t len, krb5_boolean prependlength,
 	   struct descr *d)
 {
@@ -447,7 +447,7 @@ do_request(krb5_context context,
 
 static void
 handle_udp(krb5_context context, 
-	   struct krb5_kdc_configuration *config,
+	   krb5_kdc_configuration *config,
 	   struct descr *d)
 {
     unsigned char *buf;
@@ -510,7 +510,7 @@ de_http(char *buf)
 
 static void
 add_new_tcp (krb5_context context, 
-	     struct krb5_kdc_configuration *config,
+	     krb5_kdc_configuration *config,
 	     struct descr *d, int parent, int child)
 {
     int s;
@@ -546,7 +546,7 @@ add_new_tcp (krb5_context context,
 
 static int
 grow_descr (krb5_context context, 
-	    struct krb5_kdc_configuration *config,
+	    krb5_kdc_configuration *config,
 	    struct descr *d, size_t n)
 {
     if (d->size - d->len < n) {
@@ -580,7 +580,7 @@ grow_descr (krb5_context context,
 
 static int
 handle_vanilla_tcp (krb5_context context, 
-		    struct krb5_kdc_configuration *config,
+		    krb5_kdc_configuration *config,
 		    struct descr *d)
 {
     krb5_storage *sp;
@@ -607,7 +607,7 @@ handle_vanilla_tcp (krb5_context context,
 
 static int
 handle_http_tcp (krb5_context context, 
-		 struct krb5_kdc_configuration *config,
+		 krb5_kdc_configuration *config,
 		 struct descr *d)
 {
     char *s, *p, *t;
@@ -714,7 +714,7 @@ handle_http_tcp (krb5_context context,
 
 static void
 handle_tcp(krb5_context context, 
-	   struct krb5_kdc_configuration *config,
+	   krb5_kdc_configuration *config,
 	   struct descr *d, int idx, int min_free)
 {
     unsigned char buf[1024];
@@ -773,7 +773,7 @@ handle_tcp(krb5_context context,
 
 void
 loop(krb5_context context, 
-     struct krb5_kdc_configuration *config)
+     krb5_kdc_configuration *config)
 {
     struct descr *d;
     int ndescr;

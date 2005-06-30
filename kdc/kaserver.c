@@ -390,7 +390,7 @@ unparse_auth_args (krb5_storage *sp,
 
 static void
 do_authenticate (krb5_context context, 
-		 struct krb5_kdc_configuration *config,
+		 krb5_kdc_configuration *config,
 		 struct rx_header *hdr,
 		 krb5_storage *sp,
 		 struct sockaddr_in *addr,
@@ -432,7 +432,7 @@ do_authenticate (krb5_context context,
     kdc_log(context, config, 0, "AS-REQ (kaserver) %s from %s for %s",
 	    client_name, from, server_name);
 
-    ret = db_fetch4 (context, config, name, instance, 
+    ret = _kdc_db_fetch4 (context, config, name, instance, 
 		     config->v4_realm, &client_entry);
     if (ret) {
 	kdc_log(context, config, 0, "Client not found in database: %s: %s",
@@ -441,7 +441,7 @@ do_authenticate (krb5_context context,
 	goto out;
     }
 
-    ret = db_fetch4 (context, config, "krbtgt", 
+    ret = _kdc_db_fetch4 (context, config, "krbtgt", 
 		     config->v4_realm, config->v4_realm, &server_entry);
     if (ret) {
 	kdc_log(context, config, 0, "Server not found in database: %s: %s",
@@ -450,17 +450,17 @@ do_authenticate (krb5_context context,
 	goto out;
     }
 
-    ret = check_flags (context, config,
-		       client_entry, client_name,
-		       server_entry, server_name,
-		       TRUE);
+    ret = _kdc_check_flags (context, config,
+			    client_entry, client_name,
+			    server_entry, server_name,
+			    TRUE);
     if (ret) {
 	make_error_reply (hdr, KAPWEXPIRED, reply);
 	goto out;
     }
 
     /* find a DES key */
-    ret = get_des_key(context, client_entry, FALSE, TRUE, &ckey);
+    ret = _kdc_get_des_key(context, client_entry, FALSE, TRUE, &ckey);
     if(ret){
 	kdc_log(context, config, 0, "no suitable DES key for client");
 	make_error_reply (hdr, KANOKEYS, reply);
@@ -468,7 +468,7 @@ do_authenticate (krb5_context context,
     }
 
     /* find a DES key */
-    ret = get_des_key(context, server_entry, TRUE, TRUE, &skey);
+    ret = _kdc_get_des_key(context, server_entry, TRUE, TRUE, &skey);
     if(ret){
 	kdc_log(context, config, 0, "no suitable DES key for server");
 	make_error_reply (hdr, KANOKEYS, reply);
@@ -530,7 +530,7 @@ do_authenticate (krb5_context context,
 			 chal + 1, "tgsT",
 			 &ckey->key, reply);
 
-out:
+ out:
     if (request.length) {
 	memset (request.data, 0, request.length);
 	krb5_data_free (&request);
@@ -540,9 +540,9 @@ out:
     if (instance)
 	free (instance);
     if (client_entry)
-	free_ent (context, client_entry);
+	_kdc_free_ent (context, client_entry);
     if (server_entry)
-	free_ent (context, server_entry);
+	_kdc_free_ent (context, server_entry);
 }
 
 static krb5_error_code
@@ -601,7 +601,7 @@ unparse_getticket_args (krb5_storage *sp,
 
 static void
 do_getticket (krb5_context context, 
-	      struct krb5_kdc_configuration *config,
+	      krb5_kdc_configuration *config,
 	      struct rx_header *hdr,
 	      krb5_storage *sp,
 	      struct sockaddr_in *addr,
@@ -647,7 +647,7 @@ do_getticket (krb5_context context,
     snprintf (server_name, sizeof(server_name),
 	      "%s.%s@%s", name, instance, config->v4_realm);
 
-    ret = db_fetch4 (context, config, name, instance, config->v4_realm, &server_entry);
+    ret = _kdc_db_fetch4 (context, config, name, instance, config->v4_realm, &server_entry);
     if (ret) {
 	kdc_log(context, config, 0, "Server not found in database: %s: %s",
 		server_name, krb5_get_err_text(context, ret));
@@ -655,7 +655,7 @@ do_getticket (krb5_context context,
 	goto out;
     }
 
-    ret = db_fetch4 (context, config, "krbtgt", 
+    ret = _kdc_db_fetch4 (context, config, "krbtgt", 
 		     config->v4_realm, config->v4_realm, &krbtgt_entry);
     if (ret) {
 	kdc_log(context, config, 0,
@@ -667,7 +667,7 @@ do_getticket (krb5_context context,
     }
 
     /* find a DES key */
-    ret = get_des_key(context, krbtgt_entry, TRUE, TRUE, &kkey);
+    ret = _kdc_get_des_key(context, krbtgt_entry, TRUE, TRUE, &kkey);
     if(ret){
 	kdc_log(context, config, 0, "no suitable DES key for krbtgt");
 	make_error_reply (hdr, KANOKEYS, reply);
@@ -675,7 +675,7 @@ do_getticket (krb5_context context,
     }
 
     /* find a DES key */
-    ret = get_des_key(context, server_entry, TRUE, TRUE, &skey);
+    ret = _kdc_get_des_key(context, server_entry, TRUE, TRUE, &skey);
     if(ret){
 	kdc_log(context, config, 0, "no suitable DES key for server");
 	make_error_reply (hdr, KANOKEYS, reply);
@@ -728,7 +728,7 @@ do_getticket (krb5_context context,
     kdc_log(context, config, 0, "TGS-REQ (kaserver) %s from %s for %s",
 	    client_name, from, server_name);
 
-    ret = db_fetch4 (context, config, 
+    ret = _kdc_db_fetch4 (context, config, 
 		     ad.pname, ad.pinst, ad.prealm, &client_entry);
     if(ret && ret != HDB_ERR_NOENTRY) {
 	kdc_log(context, config, 0,
@@ -745,10 +745,10 @@ do_getticket (krb5_context context,
 	goto out;
     }
 
-    ret = check_flags (context, config, 
-		       client_entry, client_name,
-		       server_entry, server_name,
-		       FALSE);
+    ret = _kdc_check_flags (context, config, 
+			    client_entry, client_name,
+			    server_entry, server_name,
+			    FALSE);
     if (ret) {
 	make_error_reply (hdr, KAPWEXPIRED, reply);
 	goto out;
@@ -803,7 +803,7 @@ do_getticket (krb5_context context,
 			 0, "gtkt",
 			 &ad.session, reply);
     
-out:
+ out:
     _krb5_krb_free_auth_data(context, &ad);
     if (aticket.length) {
 	memset (aticket.data, 0, aticket.length);
@@ -820,19 +820,19 @@ out:
     if (instance)
 	free (instance);
     if (krbtgt_entry)
-	free_ent (context, krbtgt_entry);
+	_kdc_free_ent (context, krbtgt_entry);
     if (server_entry)
-	free_ent (context, server_entry);
+	_kdc_free_ent (context, server_entry);
 }
 
 krb5_error_code
-do_kaserver(krb5_context context, 
-	    struct krb5_kdc_configuration *config,
-	    unsigned char *buf,
-	    size_t len,
-	    krb5_data *reply,
-	    const char *from,
-	    struct sockaddr_in *addr)
+_kdc_do_kaserver(krb5_context context, 
+		 krb5_kdc_configuration *config,
+		 unsigned char *buf,
+		 size_t len,
+		 krb5_data *reply,
+		 const char *from,
+		 struct sockaddr_in *addr)
 {
     krb5_error_code ret = 0;
     struct rx_header hdr;

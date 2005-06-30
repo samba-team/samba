@@ -36,7 +36,7 @@ RCSID("$Id$");
 
 void
 kdc_openlog(krb5_context context, 
-	    struct krb5_kdc_configuration *config)
+	    krb5_kdc_configuration *config)
 {
     char **s = NULL, **p;
     krb5_initlog(context, "kdc", &config->logf);
@@ -54,7 +54,7 @@ kdc_openlog(krb5_context context,
 
 char*
 kdc_log_msg_va(krb5_context context, 
-	       struct krb5_kdc_configuration *config,
+	       krb5_kdc_configuration *config,
 	       int level, const char *fmt, va_list ap)
 {
     char *msg;
@@ -64,7 +64,7 @@ kdc_log_msg_va(krb5_context context,
 
 char*
 kdc_log_msg(krb5_context context, 
-	    struct krb5_kdc_configuration *config,
+	    krb5_kdc_configuration *config,
 	    int level, const char *fmt, ...)
 {
     va_list ap;
@@ -77,7 +77,7 @@ kdc_log_msg(krb5_context context,
 
 void
 kdc_log(krb5_context context, 
-	struct krb5_kdc_configuration *config,
+	krb5_kdc_configuration *config,
 	int level, const char *fmt, ...)
 {
     va_list ap;

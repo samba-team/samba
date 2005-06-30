@@ -53,7 +53,7 @@ main(int argc, char **argv)
 {
     krb5_error_code ret;
     krb5_context context;
-    struct krb5_kdc_configuration *config;
+    krb5_kdc_configuration *config;
 
     setprogname(argv[0]);
     

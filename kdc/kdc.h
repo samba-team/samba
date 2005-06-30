@@ -49,7 +49,7 @@ enum krb5_kdc_trpolicy {
     TRPOLICY_ALWAYS_HONOUR_REQUEST
 };
 
-struct krb5_kdc_configuration {
+typedef struct krb5_kdc_configuration {
     krb5_boolean require_preauth; /* require preauth for all principals */
     time_t kdc_warn_pwexpire; /* time before expiration to print a warning */
 
@@ -74,7 +74,7 @@ struct krb5_kdc_configuration {
     krb5_boolean enable_pkinit_princ_in_cert;
 
     krb5_log_facility *logf;
-};
+} krb5_kdc_configuration;
 
 #include <kdc-protos.h>
 
