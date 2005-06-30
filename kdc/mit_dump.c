@@ -168,7 +168,6 @@ fix_salt(krb5_context context, hdb_entry *ent, int key_num)
     {
 	size_t len;
 	int i;
-	krb5_error_code ret;
 	char *p;
 	    
 	len = 0;
@@ -219,7 +218,7 @@ int
 mit_prop_dump(void *arg, const char *file)
 {
     krb5_error_code ret;
-    char buf [1024];
+    char line [2048];
     FILE *f;
     int lineno = 0;
     struct hdb_entry ent;
@@ -230,8 +229,8 @@ mit_prop_dump(void *arg, const char *file)
     if(f == NULL)
 	return errno;
     
-    while(fgets(buf, sizeof(buf), f)) {
-	char *p = buf, *q;
+    while(fgets(line, sizeof(line), f)) {
+	char *p = line, *q;
 
 	int i;
 

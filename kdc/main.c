@@ -39,9 +39,8 @@
 RCSID("$Id$");
 
 sig_atomic_t exit_flag = 0;
-krb5_context context;
 
-extern int detach_from_console;
+int detach_from_console = -1;
 
 static RETSIGTYPE
 sigterm(int sig)
@@ -53,6 +52,9 @@ int
 main(int argc, char **argv)
 {
     krb5_error_code ret;
+    krb5_context context;
+    struct krb5_kdc_configuration *config;
+
     setprogname(argv[0]);
     
     ret = krb5_init_context(&context);
@@ -61,32 +63,7 @@ main(int argc, char **argv)
     else if (ret)
 	errx (1, "krb5_init_context failed: %d", ret);
 
-    configure(argc, argv);
-
-    if(databases == NULL) {
-	db = malloc(sizeof(*db));
-	num_db = 1;
-	ret = hdb_create(context, &db[0], NULL);
-	if(ret)
-	    krb5_err(context, 1, ret, "hdb_create %s", HDB_DEFAULT_DB);
-	ret = hdb_set_master_keyfile(context, db[0], NULL);
-	if (ret)
-	    krb5_err(context, 1, ret, "hdb_set_master_keyfile");
-    } else {
-	struct dbinfo *d;
-	int i;
-	/* count databases */
-	for(d = databases, i = 0; d; d = d->next, i++);
-	db = malloc(i * sizeof(*db));
-	for(d = databases, num_db = 0; d; d = d->next, num_db++) {
-	    ret = hdb_create(context, &db[num_db], d->dbname);
-	    if(ret)
-		krb5_err(context, 1, ret, "hdb_create %s", d->dbname);
-	    ret = hdb_set_master_keyfile(context, db[num_db], d->mkey_file);
-	    if (ret)
-		krb5_err(context, 1, ret, "hdb_set_master_keyfile");
-	}
-    }
+    config = configure(context, argc, argv);
 
 #ifdef HAVE_SIGACTION
     {
@@ -112,7 +89,7 @@ main(int argc, char **argv)
     if (detach_from_console)
 	daemon(0, 0);
     pidfile(NULL);
-    loop();
+    loop(context, config);
     krb5_free_context(context);
     return 0;
 }

@@ -4,6 +4,8 @@ include $(top_srcdir)/Makefile.am.common
 
 AM_CPPFLAGS += $(INCLUDE_krb4) $(INCLUDE_des) -I$(srcdir)/../lib/krb5
 
+lib_LTLIBRARIES = libkdc.la
+
 bin_PROGRAMS = string2key
 
 sbin_PROGRAMS = kstash
@@ -19,20 +21,24 @@ kstash_SOURCES = kstash.c headers.h
 
 string2key_SOURCES = string2key.c headers.h
 
-kdc_SOURCES = \
+kdc_SOURCES = connect.c	\
 	config.c	\
-	connect.c	\
+	main.c
+
+libkdc_la_SOURCES = \
+	default_config.c \
 	kdc_locl.h	\
 	kerberos5.c	\
 	pkinit.c	\
 	log.c		\
-	main.c		\
 	misc.c		\
 	524.c		\
 	kerberos4.c	\
 	kaserver.c	\
+	process.c	 \
 	rx.h
 
+libkdc_la_LDFLAGS = -version-info 1:0:0 -Wl,--version-script,./exports
 
 hprop_LDADD = \
 	$(top_builddir)/lib/hdb/libhdb.la \
@@ -54,6 +60,16 @@ hpropd_LDADD = \
 	$(LIB_roken) \
 	$(DBLIB) 
 
+libkdc_la_LIBADD = \
+	$(top_builddir)/lib/hdb/libhdb.la \
+	$(LIB_openldap) \
+	$(top_builddir)/lib/krb5/libkrb5.la \
+	$(LIB_kdb) $(LIB_krb4) \
+	$(LIB_des) \
+	$(top_builddir)/lib/asn1/libasn1.la \
+	$(LIB_roken) \
+	$(DBLIB) 
+
 LDADD = $(top_builddir)/lib/hdb/libhdb.la \
 	$(LIB_openldap) \
 	$(top_builddir)/lib/krb5/libkrb5.la \
@@ -63,5 +79,6 @@ LDADD = $(top_builddir)/lib/hdb/libhdb.la \
 	$(LIB_roken) \
 	$(DBLIB)
 
-kdc_LDADD = $(LDADD) $(LIB_pidfile)
+kdc_LDADD = libkdc.la $(LIB_pidfile)
 
+include_HEADERS = kdc.h

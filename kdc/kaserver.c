@@ -240,7 +240,8 @@ krb5_store_xdr_data(krb5_storage *sp,
 
 
 static krb5_error_code
-create_reply_ticket (struct rx_header *hdr,
+create_reply_ticket (krb5_context context, 
+		     struct rx_header *hdr,
 		     Key *skey,
 		     char *name, char *instance, char *realm,
 		     struct sockaddr_in *addr,
@@ -388,7 +389,9 @@ unparse_auth_args (krb5_storage *sp,
 }
 
 static void
-do_authenticate (struct rx_header *hdr,
+do_authenticate (krb5_context context, 
+		 struct krb5_kdc_configuration *config,
+		 struct rx_header *hdr,
 		 krb5_storage *sp,
 		 struct sockaddr_in *addr,
 		 const char *from,
@@ -422,30 +425,33 @@ do_authenticate (struct rx_header *hdr,
     }
 
     snprintf (client_name, sizeof(client_name), "%s.%s@%s",
-	      name, instance, v4_realm);
+	      name, instance, config->v4_realm);
     snprintf (server_name, sizeof(server_name), "%s.%s@%s",
-	      "krbtgt", v4_realm, v4_realm);
+	      "krbtgt", config->v4_realm, config->v4_realm);
 
-    kdc_log(0, "AS-REQ (kaserver) %s from %s for %s",
+    kdc_log(context, config, 0, "AS-REQ (kaserver) %s from %s for %s",
 	    client_name, from, server_name);
 
-    ret = db_fetch4 (name, instance, v4_realm, &client_entry);
+    ret = db_fetch4 (context, config, name, instance, 
+		     config->v4_realm, &client_entry);
     if (ret) {
-	kdc_log(0, "Client not found in database: %s: %s",
+	kdc_log(context, config, 0, "Client not found in database: %s: %s",
 		client_name, krb5_get_err_text(context, ret));
 	make_error_reply (hdr, KANOENT, reply);
 	goto out;
     }
 
-    ret = db_fetch4 ("krbtgt", v4_realm, v4_realm, &server_entry);
+    ret = db_fetch4 (context, config, "krbtgt", 
+		     config->v4_realm, config->v4_realm, &server_entry);
     if (ret) {
-	kdc_log(0, "Server not found in database: %s: %s",
+	kdc_log(context, config, 0, "Server not found in database: %s: %s",
 		server_name, krb5_get_err_text(context, ret));
 	make_error_reply (hdr, KANOENT, reply);
 	goto out;
     }
 
-    ret = check_flags (client_entry, client_name,
+    ret = check_flags (context, config,
+		       client_entry, client_name,
 		       server_entry, server_name,
 		       TRUE);
     if (ret) {
@@ -454,17 +460,17 @@ do_authenticate (struct rx_header *hdr,
     }
 
     /* find a DES key */
-    ret = get_des_key(client_entry, FALSE, TRUE, &ckey);
+    ret = get_des_key(context, client_entry, FALSE, TRUE, &ckey);
     if(ret){
-	kdc_log(0, "no suitable DES key for client");
+	kdc_log(context, config, 0, "no suitable DES key for client");
 	make_error_reply (hdr, KANOKEYS, reply);
 	goto out;
     }
 
     /* find a DES key */
-    ret = get_des_key(server_entry, TRUE, TRUE, &skey);
+    ret = get_des_key(context, server_entry, TRUE, TRUE, &skey);
     if(ret){
-	kdc_log(0, "no suitable DES key for server");
+	kdc_log(context, config, 0, "no suitable DES key for server");
 	make_error_reply (hdr, KANOKEYS, reply);
 	goto out;
     }
@@ -488,7 +494,7 @@ do_authenticate (struct rx_header *hdr,
 
     /* check for the magic label */
     if (memcmp ((char *)request.data + 4, "gTGS", 4) != 0) {
-	kdc_log(0, "preauth failed for %s", client_name);
+	kdc_log(context, config, 0, "preauth failed for %s", client_name);
 	make_error_reply (hdr, KABADREQUEST, reply);
 	goto out;
     }
@@ -515,11 +521,12 @@ do_authenticate (struct rx_header *hdr,
 
     life = krb_time_to_life(kdc_time, kdc_time + max_life);
 
-    create_reply_ticket (hdr, skey,
-			 name, instance, v4_realm,
+    create_reply_ticket (context, 
+			 hdr, skey,
+			 name, instance, config->v4_realm,
 			 addr, life, server_entry->kvno,
 			 max_seq_len,
-			 "krbtgt", v4_realm,
+			 "krbtgt", config->v4_realm,
 			 chal + 1, "tgsT",
 			 &ckey->key, reply);
 
@@ -533,9 +540,9 @@ out:
     if (instance)
 	free (instance);
     if (client_entry)
-	free_ent (client_entry);
+	free_ent (context, client_entry);
     if (server_entry)
-	free_ent (server_entry);
+	free_ent (context, server_entry);
 }
 
 static krb5_error_code
@@ -593,7 +600,9 @@ unparse_getticket_args (krb5_storage *sp,
 }
 
 static void
-do_getticket (struct rx_header *hdr,
+do_getticket (krb5_context context, 
+	      struct krb5_kdc_configuration *config,
+	      struct rx_header *hdr,
 	      krb5_storage *sp,
 	      struct sockaddr_in *addr,
 	      const char *from,
@@ -636,36 +645,39 @@ do_getticket (struct rx_header *hdr,
     }
 
     snprintf (server_name, sizeof(server_name),
-	      "%s.%s@%s", name, instance, v4_realm);
+	      "%s.%s@%s", name, instance, config->v4_realm);
 
-    ret = db_fetch4 (name, instance, v4_realm, &server_entry);
+    ret = db_fetch4 (context, config, name, instance, config->v4_realm, &server_entry);
     if (ret) {
-	kdc_log(0, "Server not found in database: %s: %s",
+	kdc_log(context, config, 0, "Server not found in database: %s: %s",
 		server_name, krb5_get_err_text(context, ret));
 	make_error_reply (hdr, KANOENT, reply);
 	goto out;
     }
 
-    ret = db_fetch4 ("krbtgt", v4_realm, v4_realm, &krbtgt_entry);
+    ret = db_fetch4 (context, config, "krbtgt", 
+		     config->v4_realm, config->v4_realm, &krbtgt_entry);
     if (ret) {
-	kdc_log(0, "Server not found in database: %s.%s@%s: %s",
-		"krbtgt", v4_realm, v4_realm, krb5_get_err_text(context, ret));
+	kdc_log(context, config, 0,
+		"Server not found in database: %s.%s@%s: %s",
+		"krbtgt", config->v4_realm,  config->v4_realm,
+		krb5_get_err_text(context, ret));
 	make_error_reply (hdr, KANOENT, reply);
 	goto out;
     }
 
     /* find a DES key */
-    ret = get_des_key(krbtgt_entry, TRUE, TRUE, &kkey);
+    ret = get_des_key(context, krbtgt_entry, TRUE, TRUE, &kkey);
     if(ret){
-	kdc_log(0, "no suitable DES key for krbtgt");
+	kdc_log(context, config, 0, "no suitable DES key for krbtgt");
 	make_error_reply (hdr, KANOKEYS, reply);
 	goto out;
     }
 
     /* find a DES key */
-    ret = get_des_key(server_entry, TRUE, TRUE, &skey);
+    ret = get_des_key(context, server_entry, TRUE, TRUE, &skey);
     if(ret){
-	kdc_log(0, "no suitable DES key for server");
+	kdc_log(context, config, 0, "no suitable DES key for server");
 	make_error_reply (hdr, KANOKEYS, reply);
 	goto out;
     }
@@ -679,17 +691,19 @@ do_getticket (struct rx_header *hdr,
 	char *sinstance = NULL;
 
 	ret = _krb5_krb_decomp_ticket(context, &aticket, &kkey->key, 
-				      v4_realm, &sname, &sinstance, &ad);
+				      config->v4_realm, &sname,
+				      &sinstance, &ad);
 	if (ret) {
-	    kdc_log(0, "kaserver: decomp failed for %s.%s with %d",
+	    kdc_log(context, config, 0,
+		    "kaserver: decomp failed for %s.%s with %d",
 		    sname, sinstance, ret);
 	    make_error_reply (hdr, KABADTICKET, reply);
 	    goto out;
 	}
 
 	if (strcmp (sname, "krbtgt") != 0
-	    || strcmp (sinstance, v4_realm) != 0) {
-	    kdc_log(0, "no TGT: %s.%s for %s.%s@%s",
+	    || strcmp (sinstance, config->v4_realm) != 0) {
+	    kdc_log(context, config, 0, "no TGT: %s.%s for %s.%s@%s",
 		    sname, sinstance,
 		    ad.pname, ad.pinst, ad.prealm);
 	    make_error_reply (hdr, KABADTICKET, reply);
@@ -701,7 +715,7 @@ do_getticket (struct rx_header *hdr,
 	free(sinstance);
 
 	if (kdc_time > _krb5_krb_life_to_time(ad.time_sec, ad.life)) {
-	    kdc_log(0, "TGT expired: %s.%s@%s",
+	    kdc_log(context, config, 0, "TGT expired: %s.%s@%s",
 		    ad.pname, ad.pinst, ad.prealm);
 	    make_error_reply (hdr, KABADTICKET, reply);
 	    goto out;
@@ -711,24 +725,28 @@ do_getticket (struct rx_header *hdr,
     snprintf (client_name, sizeof(client_name),
 	      "%s.%s@%s", ad.pname, ad.pinst, ad.prealm);
 
-    kdc_log(0, "TGS-REQ (kaserver) %s from %s for %s",
+    kdc_log(context, config, 0, "TGS-REQ (kaserver) %s from %s for %s",
 	    client_name, from, server_name);
 
-    ret = db_fetch4 (ad.pname, ad.pinst, ad.prealm, &client_entry);
+    ret = db_fetch4 (context, config, 
+		     ad.pname, ad.pinst, ad.prealm, &client_entry);
     if(ret && ret != HDB_ERR_NOENTRY) {
-	kdc_log(0, "Client not found in database: (krb4) %s: %s",
+	kdc_log(context, config, 0,
+		"Client not found in database: (krb4) %s: %s",
 		client_name, krb5_get_err_text(context, ret));
 	make_error_reply (hdr, KANOENT, reply);
 	goto out;
     }
-    if (client_entry == NULL && strcmp(ad.prealm, v4_realm) == 0) {
-	kdc_log(0, "Local client not found in database: (krb4) "
+    if (client_entry == NULL && strcmp(ad.prealm, config->v4_realm) == 0) {
+	kdc_log(context, config, 0, 
+		"Local client not found in database: (krb4) "
 		"%s", client_name);
 	make_error_reply (hdr, KANOENT, reply);
 	goto out;
     }
 
-    ret = check_flags (client_entry, client_name,
+    ret = check_flags (context, config, 
+		       client_entry, client_name,
 		       server_entry, server_name,
 		       FALSE);
     if (ret) {
@@ -776,7 +794,8 @@ do_getticket (struct rx_header *hdr,
 
     life = _krb5_krb_time_to_life(kdc_time, kdc_time + max_life);
 
-    create_reply_ticket (hdr, skey,
+    create_reply_ticket (context, 
+			 hdr, skey,
 			 ad.pname, ad.pinst, ad.prealm,
 			 addr, life, server_entry->kvno,
 			 max_seq_len,
@@ -801,13 +820,15 @@ out:
     if (instance)
 	free (instance);
     if (krbtgt_entry)
-	free_ent (krbtgt_entry);
+	free_ent (context, krbtgt_entry);
     if (server_entry)
-	free_ent (server_entry);
+	free_ent (context, server_entry);
 }
 
 krb5_error_code
-do_kaserver(unsigned char *buf,
+do_kaserver(krb5_context context, 
+	    struct krb5_kdc_configuration *config,
+	    unsigned char *buf,
 	    size_t len,
 	    krb5_data *reply,
 	    const char *from,
@@ -852,10 +873,10 @@ do_kaserver(unsigned char *buf,
     switch (op) {
     case AUTHENTICATE :
     case AUTHENTICATE_V2 :
-	do_authenticate (&hdr, sp, addr, from, reply);
+	do_authenticate (context, config, &hdr, sp, addr, from, reply);
 	break;
     case GETTICKET :
-	do_getticket (&hdr, sp, addr, from, reply);
+	do_getticket (context, config, &hdr, sp, addr, from, reply);
 	break;
     case AUTHENTICATE_OLD :
     case CHANGEPASSWORD :

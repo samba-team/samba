@@ -39,40 +39,18 @@
 #define __KDC_LOCL_H__
 
 #include "headers.h"
+#include "kdc.h"
 
-extern krb5_context context;
-
-extern int require_preauth;
 extern sig_atomic_t exit_flag;
 extern size_t max_request;
-extern time_t kdc_warn_pwexpire;
-extern struct dbinfo {
-    char *realm;
-    char *dbname;
-    char *mkey_file;
-    struct dbinfo *next;
-} *databases;
-extern HDB **db;
-extern int num_db;
 extern const char *port_str;
 extern krb5_addresses explicit_addresses;
 
 extern int enable_http;
-extern krb5_boolean encode_as_rep_as_tgs_rep;
-extern krb5_boolean check_ticket_addresses;
-extern krb5_boolean allow_null_ticket_addresses;
-extern krb5_boolean allow_anonymous;
-enum { TRPOLICY_ALWAYS_CHECK,
-       TRPOLICY_ALLOW_PER_PRINCIPAL, 
-       TRPOLICY_ALWAYS_HONOUR_REQUEST };
-extern int trpolicy;
-extern int enable_524;
-extern int enable_v4_cross_realm;
 
-#ifdef PKINIT
-extern int enable_pkinit;
-extern int enable_pkinit_princ_in_cert;
-#endif
+#define DETACH_IS_DEFAULT FALSE
+
+extern int detach_from_console;
 
 #define _PATH_KDC_CONF		HDB_DB_DIR "/kdc.conf"
 #define DEFAULT_LOG_DEST	"0-1/FILE:" HDB_DB_DIR "/kdc.log"
@@ -80,30 +58,56 @@ extern int enable_pkinit_princ_in_cert;
 extern struct timeval now;
 #define kdc_time (now.tv_sec)
 
-krb5_error_code as_rep (KDC_REQ*, krb5_data*, const char*, struct sockaddr*);
-void configure (int, char**);
-krb5_error_code db_fetch (krb5_principal, hdb_entry**);
-void free_ent(hdb_entry *);
-void kdc_log (int, const char*, ...)
-    __attribute__ ((format (printf, 2,3)));
+krb5_error_code as_rep (krb5_context context, 
+			struct krb5_kdc_configuration *config,
+			KDC_REQ*, krb5_data*, const char*, struct sockaddr*);
+struct krb5_kdc_configuration *configure(krb5_context context, int argc, char **argv);
+krb5_error_code
+db_fetch(krb5_context, struct krb5_kdc_configuration *,
+	 krb5_principal, hdb_entry **);
+void free_ent(krb5_context context, hdb_entry *);
+void kdc_log (krb5_context context, 
+	      struct krb5_kdc_configuration *config,
+	      int, const char*, ...)
+    __attribute__ ((format (printf, 4,5)));
 
-char* kdc_log_msg (int, const char*, ...)
-    __attribute__ ((format (printf, 2,3)));
-char* kdc_log_msg_va (int, const char*, va_list)
-    __attribute__ ((format (printf, 2,0)));
-void kdc_openlog (void);
-void loop (void);
+char* kdc_log_msg (krb5_context context, 
+		   struct krb5_kdc_configuration *config,
+		   int, const char*, ...)
+    __attribute__ ((format (printf, 4,5)));
+char* kdc_log_msg_va (krb5_context context, 
+		      struct krb5_kdc_configuration *config,
+		      int, const char*, va_list)
+    __attribute__ ((format (printf, 4,0)));
+void
+kdc_openlog(krb5_context context, 
+	    struct krb5_kdc_configuration *config);
+void
+loop(krb5_context context, 
+     struct krb5_kdc_configuration *config);
 void set_master_key (EncryptionKey);
-krb5_error_code tgs_rep (KDC_REQ*, krb5_data*, const char*, struct sockaddr *);
+krb5_error_code tgs_rep (krb5_context context, 
+			 struct krb5_kdc_configuration *config,
+			 KDC_REQ*, krb5_data*, const char*, struct sockaddr *);
 Key* unseal_key (Key*);
-krb5_error_code check_flags(hdb_entry *client, const char *client_name,
+krb5_error_code
+check_flags(krb5_context context, 
+	    struct krb5_kdc_configuration *config,
+	    hdb_entry *client, const char *client_name,
 			    hdb_entry *server, const char *server_name,
 			    krb5_boolean is_as_req);
 
-krb5_error_code get_des_key(hdb_entry*, krb5_boolean, krb5_boolean, Key**);
-krb5_error_code encode_v4_ticket (void*, size_t, const EncTicketPart*, 
-				  const PrincipalName*, size_t*);
-krb5_error_code do_524 (const Ticket*, krb5_data*, const char*, struct sockaddr*);
+krb5_error_code get_des_key(krb5_context context, hdb_entry*, krb5_boolean, krb5_boolean, Key**);
+krb5_error_code
+encode_v4_ticket(krb5_context context, 
+		 struct krb5_kdc_configuration *config,
+		 void *buf, size_t len, const EncTicketPart *et,
+		 const PrincipalName *service, size_t *size);
+krb5_error_code
+do_524(krb5_context context, 
+       struct krb5_kdc_configuration *config,
+       const Ticket *t, krb5_data *reply,
+       const char *from, struct sockaddr *addr);
 
 #ifdef HAVE_OPENSSL
 #define des_new_random_key des_random_key
@@ -130,18 +134,27 @@ void pk_free_client_param(krb5_context, pk_client_params *);
  * Kerberos 4
  */
 
-extern char *v4_realm;
-extern int enable_v4;
-extern krb5_boolean enable_kaserver;
-
-krb5_error_code db_fetch4 (const char*, const char*, const char*, hdb_entry**);
-krb5_error_code do_version4 (unsigned char*, size_t, krb5_data*, const char*, 
+krb5_error_code db_fetch4 (krb5_context context, 
+			   struct krb5_kdc_configuration *config,
+			   const char*, const char*, const char*, hdb_entry**);
+krb5_error_code do_version4 (krb5_context context, 
+			     struct krb5_kdc_configuration *config,
+			     unsigned char*, size_t, krb5_data*, const char*, 
 			     struct sockaddr_in*);
 int maybe_version4 (unsigned char*, int);
 
-krb5_error_code do_kaserver (unsigned char*, size_t, krb5_data*, const char*, 
+krb5_error_code do_kaserver (krb5_context context, 
+			     struct krb5_kdc_configuration *config,
+			     unsigned char*, size_t, krb5_data*, const char*, 
 			     struct sockaddr_in*);
 
-
+int kdc_process_generic_request(krb5_context context, 
+				struct krb5_kdc_configuration *config,
+				unsigned char *buf, 
+				size_t len, 
+				krb5_data *reply,
+				krb5_boolean *prependlength,
+				const char *from,
+				struct sockaddr *addr);
 
 #endif /* __KDC_LOCL_H__ */

@@ -34,51 +34,56 @@
 #include "kdc_locl.h"
 RCSID("$Id$");
 
-static krb5_log_facility *logf;
-
 void
-kdc_openlog(void)
+kdc_openlog(krb5_context context, 
+	    struct krb5_kdc_configuration *config)
 {
     char **s = NULL, **p;
-    krb5_initlog(context, "kdc", &logf);
+    krb5_initlog(context, "kdc", &config->logf);
     s = krb5_config_get_strings(context, NULL, "kdc", "logging", NULL);
     if(s == NULL)
 	s = krb5_config_get_strings(context, NULL, "logging", "kdc", NULL);
     if(s){
 	for(p = s; *p; p++)
-	    krb5_addlog_dest(context, logf, *p);
+	    krb5_addlog_dest(context, config->logf, *p);
 	krb5_config_free_strings(s);
     }else
-	krb5_addlog_dest(context, logf, DEFAULT_LOG_DEST);
-    krb5_set_warn_dest(context, logf);
+	krb5_addlog_dest(context, config->logf, DEFAULT_LOG_DEST);
+    krb5_set_warn_dest(context, config->logf);
 }
 
 char*
-kdc_log_msg_va(int level, const char *fmt, va_list ap)
+kdc_log_msg_va(krb5_context context, 
+	       struct krb5_kdc_configuration *config,
+	       int level, const char *fmt, va_list ap)
 {
     char *msg;
-    krb5_vlog_msg(context, logf, &msg, level, fmt, ap);
+    krb5_vlog_msg(context, config->logf, &msg, level, fmt, ap);
     return msg;
 }
 
 char*
-kdc_log_msg(int level, const char *fmt, ...)
+kdc_log_msg(krb5_context context, 
+	    struct krb5_kdc_configuration *config,
+	    int level, const char *fmt, ...)
 {
     va_list ap;
     char *s;
     va_start(ap, fmt);
-    s = kdc_log_msg_va(level, fmt, ap);
+    s = kdc_log_msg_va(context, config, level, fmt, ap);
     va_end(ap);
     return s;
 }
 
 void
-kdc_log(int level, const char *fmt, ...)
+kdc_log(krb5_context context, 
+	struct krb5_kdc_configuration *config,
+	int level, const char *fmt, ...)
 {
     va_list ap;
     char *s;
     va_start(ap, fmt);
-    s = kdc_log_msg_va(level, fmt, ap);
+    s = kdc_log_msg_va(context, config, level, fmt, ap);
     if(s) free(s);
     va_end(ap);
 }

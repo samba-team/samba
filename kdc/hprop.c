@@ -586,7 +586,7 @@ parse_source_type(const char *s)
 
 static void
 iterate (krb5_context context,
-	 const char *database,
+	 const char *database_name,
 	 HDB *db,
 	 int type,
 	 struct prop_data *pd)
@@ -595,7 +595,7 @@ iterate (krb5_context context,
 
     switch(type) {
     case HPROP_KRB4_DUMP:
-	ret = v4_prop_dump(pd, database);
+	ret = v4_prop_dump(pd, database_name);
 	break;
 #ifdef KRB4
     case HPROP_KRB4_DB:
@@ -606,12 +606,12 @@ iterate (krb5_context context,
 	break;
 #endif /* KRB4 */
     case HPROP_KASERVER:
-	ret = ka_dump(pd, database);
+	ret = ka_dump(pd, database_name);
 	if(ret)
 	    krb5_err(context, 1, ret, "ka_dump");
 	break;
     case HPROP_MIT_DUMP:
-	ret = mit_prop_dump(pd, database);
+	ret = mit_prop_dump(pd, database_name);
 	if (ret)
 	    krb5_errx(context, 1, "mit_prop_dump: %s",
 		      krb5_get_err_text(context, ret));
@@ -626,7 +626,7 @@ iterate (krb5_context context,
 
 static int
 dump_database (krb5_context context, int type,
-	       const char *database, HDB *db)
+	       const char *database_name, HDB *db)
 {
     krb5_error_code ret;
     struct prop_data pd;
@@ -636,7 +636,7 @@ dump_database (krb5_context context, int type,
     pd.auth_context = NULL;
     pd.sock         = STDOUT_FILENO;
 	
-    iterate (context, database, db, type, &pd);
+    iterate (context, database_name, db, type, &pd);
     krb5_data_zero (&data);
     ret = krb5_write_message (context, &pd.sock, &data);
     if (ret)
@@ -647,15 +647,15 @@ dump_database (krb5_context context, int type,
 
 static int
 propagate_database (krb5_context context, int type,
-		    const char *database, 
+		    const char *database_name, 
 		    HDB *db, krb5_ccache ccache,
-		    int optind, int argc, char **argv)
+		    int optidx, int argc, char **argv)
 {
     krb5_principal server;
     krb5_error_code ret;
     int i;
 
-    for(i = optind; i < argc; i++){
+    for(i = optidx; i < argc; i++){
 	krb5_auth_context auth_context;
 	int fd;
 	struct prop_data pd;
@@ -721,7 +721,7 @@ propagate_database (krb5_context context, int type,
 	pd.auth_context = auth_context;
 	pd.sock         = fd;
 
-	iterate (context, database, db, type, &pd);
+	iterate (context, database_name, db, type, &pd);
 
 	krb5_data_zero (&data);
 	ret = krb5_write_priv_message(context, auth_context, &fd, &data);
@@ -747,13 +747,13 @@ main(int argc, char **argv)
     krb5_context context;
     krb5_ccache ccache = NULL;
     HDB *db = NULL;
-    int optind = 0;
+    int optidx = 0;
 
     int type = 0;
 
     setprogname(argv[0]);
 
-    if(getarg(args, num_args, argc, argv, &optind))
+    if(getarg(args, num_args, argc, argv, &optidx))
 	usage(1);
 
     if(help_flag)
@@ -865,7 +865,7 @@ main(int argc, char **argv)
 	dump_database (context, type, database, db);
     else
 	propagate_database (context, type, database, 
-			    db, ccache, optind, argc, argv);
+			    db, ccache, optidx, argc, argv);
 
     if(ccache != NULL)
 	krb5_cc_destroy(context, ccache);

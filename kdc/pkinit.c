@@ -49,9 +49,6 @@ RCSID("$Id$");
 #include <openssl/asn1.h>
 #include <openssl/err.h>
 
-int enable_pkinit = 0;
-int enable_pkinit_princ_in_cert = 0;
-
 /* XXX copied from lib/krb5/pkinit.c */
 struct krb5_pk_identity {
     EVP_PKEY *private_key;

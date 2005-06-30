@@ -1,6 +1,9 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
+ *
+ * Copyright (c) 2005 Andrew Bartlett <abartlet@samba.org>
+ * 
  * All rights reserved. 
  *
  * Redistribution and use in source and binary forms, with or without 
@@ -31,52 +34,48 @@
  * SUCH DAMAGE. 
  */
 
-#include "kdc_locl.h"
+/* 
+ * $Id$ 
+ */
 
-RCSID("$Id$");
+#ifndef __KDC_H__
+#define __KDC_H__
 
-struct timeval now;
+#include <krb5.h>
 
-krb5_error_code
-db_fetch(krb5_context context,
-	 struct krb5_kdc_configuration *config,
-	 krb5_principal principal,
-	 hdb_entry **h)
-{
-    hdb_entry *ent;
-    krb5_error_code ret = HDB_ERR_NOENTRY;
-    int i;
+enum krb5_kdc_trpolicy {
+    TRPOLICY_ALWAYS_CHECK,
+    TRPOLICY_ALLOW_PER_PRINCIPAL, 
+    TRPOLICY_ALWAYS_HONOUR_REQUEST
+};
 
-    ent = malloc (sizeof (*ent));
-    if (ent == NULL)
-	return ENOMEM;
-    ent->principal = principal;
+struct krb5_kdc_configuration {
+    krb5_boolean require_preauth; /* require preauth for all principals */
+    time_t kdc_warn_pwexpire; /* time before expiration to print a warning */
 
-    for(i = 0; i < config->num_db; i++) {
-	ret = config->db[i]->hdb_open(context, config->db[i], O_RDONLY, 0);
-	if (ret) {
-	    kdc_log(context, config, 0, "Failed to open database: %s", 
-		    krb5_get_err_text(context, ret));
-	    continue;
-	}
-	ret = config->db[i]->hdb_fetch(context, 
-				       config->db[i],
-				       HDB_F_DECRYPT,
-				       ent);
-	config->db[i]->hdb_close(context, config->db[i]);
-	if(ret == 0) {
-	    *h = ent;
-	    return 0;
-	}
-    }
-    free(ent);
-    return ret;
-}
+    struct HDB **db;
+    int num_db;
 
-void
-free_ent(krb5_context context, hdb_entry *ent)
-{
-    hdb_free_entry (context, ent);
-    free (ent);
-}
+    krb5_boolean encode_as_rep_as_tgs_rep; /* bug compatibility */
+	
+    krb5_boolean check_ticket_addresses;
+    krb5_boolean allow_null_ticket_addresses;
+    krb5_boolean allow_anonymous;
+    enum krb5_kdc_trpolicy trpolicy;
 
+    char *v4_realm;
+    krb5_boolean enable_v4;
+    krb5_boolean enable_kaserver;
+	
+    krb5_boolean enable_524;
+    krb5_boolean enable_v4_cross_realm;
+
+    krb5_boolean enable_pkinit;
+    krb5_boolean enable_pkinit_princ_in_cert;
+
+    krb5_log_facility *logf;
+};
+
+#include <kdc-protos.h>
+
+#endif

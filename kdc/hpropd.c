@@ -215,7 +215,7 @@ main(int argc, char **argv)
     krb5_keytab keytab;
     int fd;
     HDB *db;
-    int optind = 0;
+    int optidx = 0;
     char *tmp_db;
     krb5_log_facility *fac;
     int nprincs;
@@ -235,7 +235,7 @@ main(int argc, char **argv)
 	;
     krb5_set_warn_dest(context, fac);
   
-    if(getarg(args, num_args, argc, argv, &optind))
+    if(getarg(args, num_args, argc, argv, &optidx))
 	usage(1);
 
 #ifdef KRB4
@@ -253,8 +253,8 @@ main(int argc, char **argv)
 	exit(0);
     }
     
-    argc -= optind;
-    argv += optind;
+    argc -= optidx;
+    argv += optidx;
 
     if (argc != 0)
 	usage(1);
