@@ -172,7 +172,7 @@ static WERROR spoolss_check_server_name(struct dcesrv_call_state *dce_call,
 	/* DNS NAME is ok
 	 * TODO: we need to check if aliases are also ok
 	 */
-	if (lp_realm() != NULL) {
+	if (lp_realm()) {
 		str = talloc_asprintf(mem_ctx, "%s.%s",
 						lp_netbios_name(),
 						lp_realm());
