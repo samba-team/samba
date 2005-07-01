@@ -432,10 +432,13 @@ char *share_mode_str(int num, share_mode_entry *e)
 {
 	static pstring share_str;
 
-	slprintf(share_str, sizeof(share_str)-1, "share_mode_entry[%d]: \
-pid = %lu, share_mode = 0x%x, desired_access = 0x%x, port = 0x%x, type= 0x%x, file_id = %lu, dev = 0x%x, inode = %.0f",
-	num, (unsigned long)e->pid, e->share_mode, (unsigned int)e->desired_access, e->op_port, e->op_type, e->share_file_id,
-	(unsigned int)e->dev, (double)e->inode );
+	slprintf(share_str, sizeof(share_str)-1, "share_mode_entry[%d]: "
+		 "pid = %lu, share_access = 0x%x, create_options = 0x%x, "
+		 "access_mask = 0x%x, port = 0x%x, type= 0x%x, file_id = %lu, "
+		 "dev = 0x%x, inode = %.0f",
+		 num, (unsigned long)e->pid, e->share_access, e->create_options,
+		 e->access_mask, e->op_port, e->op_type, e->share_file_id,
+		 (unsigned int)e->dev, (double)e->inode );
 
 	return share_str;
 }
@@ -559,8 +562,9 @@ static void fill_share_mode(char *p, files_struct *fsp, uint16 port, uint16 op_t
 
 	memset(e, '\0', sizeof(share_mode_entry));
 	e->pid = sys_getpid();
-	e->share_mode = fsp->share_mode;
-	e->desired_access = fsp->desired_access;
+	e->share_access = fsp->share_access;
+	e->create_options = fsp->create_options;
+	e->access_mask = fsp->access_mask;
 	e->op_port = port;
 	e->op_type = op_type;
 	memcpy(x, &fsp->open_time, sizeof(struct timeval));
@@ -581,16 +585,17 @@ BOOL share_modes_identical( share_mode_entry *e1, share_mode_entry *e2)
 		e1->share_file_id == e2->share_file_id &&
 		e1->dev == e2->dev &&
 		e1->inode == e2->inode &&
-		(e1->share_mode & ~DELETE_ON_CLOSE_FLAG) != (e2->share_mode & ~DELETE_ON_CLOSE_FLAG)) {
-			DEBUG(0,("PANIC: share_modes_identical: share_mode missmatch (e1 = %u, e2 = %u). Logic error.\n",
-				(unsigned int)(e1->share_mode & ~DELETE_ON_CLOSE_FLAG),
-				(unsigned int)(e2->share_mode & ~DELETE_ON_CLOSE_FLAG) ));
+		(e1->share_access) != (e2->share_access)) {
+			DEBUG(0,("PANIC: share_modes_identical: share_mode "
+				 "mismatch (e1 = 0x%x, e2 = 0x%x). Logic error.\n",
+				 (unsigned int)e1->share_access,
+				 (unsigned int)e2->share_access ));
 		smb_panic("PANIC: share_modes_identical logic error.\n");
 	}
 #endif
 
 	return (e1->pid == e2->pid &&
-		(e1->share_mode & ~DELETE_ON_CLOSE_FLAG) == (e2->share_mode & ~DELETE_ON_CLOSE_FLAG) &&
+		(e1->share_access) == (e2->share_access) &&
 		e1->dev == e2->dev &&
 		e1->inode == e2->inode &&
 		e1->share_file_id == e2->share_file_id );
@@ -891,9 +896,10 @@ BOOL modify_delete_flag( SMB_DEV_T dev, SMB_INO_T inode, BOOL delete_on_close)
 
 	/* Set/Unset the delete on close element. */
 	for (i=0;i<data->u.num_share_mode_entries;i++,shares++) {
-		shares->share_mode = (delete_on_close ?
-                            (shares->share_mode | DELETE_ON_CLOSE_FLAG) :
-                            (shares->share_mode & ~DELETE_ON_CLOSE_FLAG) );
+		shares->create_options =
+			(delete_on_close ?
+			 (shares->create_options | FILE_DELETE_ON_CLOSE) :
+			 (shares->create_options & ~FILE_DELETE_ON_CLOSE) );
 	}
 
 	/* store it back */

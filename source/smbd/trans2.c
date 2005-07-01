@@ -717,20 +717,20 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 {
 	char *params = *pparams;
 	char *pdata = *ppdata;
-	int16 open_mode;
-	int16 open_attr;
+	int deny_mode;
+	int32 open_attr;
 	BOOL oplock_request;
 #if 0
 	BOOL return_additional_info;
 	int16 open_sattr;
 	time_t open_time;
 #endif
-	int16 open_ofun;
+	int open_ofun;
 	int32 open_size;
 	char *pname;
 	pstring fname;
 	SMB_OFF_T size=0;
-	int fmode=0,mtime=0,rmode;
+	int fattr=0,mtime=0;
 	SMB_INO_T inode = 0;
 	SMB_STRUCT_STAT sbuf;
 	int smb_action = 0;
@@ -740,6 +740,10 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	struct ea_list *ea_list = NULL;
 	uint16 flags = 0;
 	NTSTATUS status;
+	uint32 access_mask;
+	uint32 share_mode;
+	uint32 create_disposition;
+	uint32 create_options = 0;
 
 	/*
 	 * Ensure we have enough parameters to perform the operation.
@@ -750,7 +754,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	}
 
 	flags = SVAL(params, 0);
-	open_mode = SVAL(params, 2);
+	deny_mode = SVAL(params, 2);
 	open_attr = SVAL(params,6);
         oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
         if (oplock_request) {
@@ -766,16 +770,18 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	open_size = IVAL(params,14);
 	pname = &params[28];
 
-	if (IS_IPC(conn))
+	if (IS_IPC(conn)) {
 		return(ERROR_DOS(ERRSRV,ERRaccess));
+	}
 
 	srvstr_get_path(inbuf, fname, pname, sizeof(fname), -1, STR_TERMINATE, &status, False);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}
 
-	DEBUG(3,("call_trans2open %s mode=%d attr=%d ofun=%d size=%d\n",
-		fname,open_mode, open_attr, open_ofun, open_size));
+	DEBUG(3,("call_trans2open %s deny_mode=0x%x attr=%d ofun=0x%x size=%d\n",
+		fname, (unsigned int)deny_mode, (unsigned int)open_attr,
+		(unsigned int)open_ofun, open_size));
 
 	/* XXXX we need to handle passed times, sattr and flags */
 
@@ -788,11 +794,12 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 	}
 
-	/* Strange open mode mapping. */
-	if (open_ofun == 0) {
-		if (GET_OPEN_MODE(open_mode) == DOS_OPEN_EXEC) {
-			open_ofun = FILE_EXISTS_FAIL | FILE_CREATE_IF_NOT_EXIST;
-		}
+	if (!map_open_params_to_ntcreate(fname, deny_mode, open_ofun,
+				&access_mask,
+				&share_mode,
+				&create_disposition,
+				&create_options)) {
+		return ERROR_DOS(ERRDOS, ERRbadaccess);
 	}
 
 	/* Any data in this call is an EA list. */
@@ -822,8 +829,14 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 		}
 	}
 
-	fsp = open_file_shared(conn,fname,&sbuf,open_mode,open_ofun,(uint32)open_attr,
-		oplock_request, &rmode,&smb_action);
+	fsp = open_file_ntcreate(conn,fname,&sbuf,
+		access_mask,
+		share_mode,
+		create_disposition,
+		create_options,
+		open_attr,
+		oplock_request,
+		&smb_action);
       
 	if (!fsp) {
 		talloc_destroy(ctx);
@@ -835,10 +848,10 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	}
 
 	size = get_file_size(sbuf);
-	fmode = dos_mode(conn,fname,&sbuf);
+	fattr = dos_mode(conn,fname,&sbuf);
 	mtime = sbuf.st_mtime;
 	inode = sbuf.st_ino;
-	if (fmode & aDIR) {
+	if (fattr & aDIR) {
 		talloc_destroy(ctx);
 		close_file(fsp,False);
 		return(ERROR_DOS(ERRDOS,ERRnoaccess));
@@ -861,10 +874,10 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	*pparams = params;
 
 	SSVAL(params,0,fsp->fnum);
-	SSVAL(params,2,fmode);
+	SSVAL(params,2,open_attr);
 	put_dos_date2(params,4, mtime);
 	SIVAL(params,8, (uint32)size);
-	SSVAL(params,12,rmode);
+	SSVAL(params,12,open_ofun);
 	SSVAL(params,16,0); /* Padding. */
 
 	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
@@ -2726,7 +2739,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	files_struct *fsp = NULL;
 	TALLOC_CTX *ea_ctx = NULL;
 	struct ea_list *ea_list = NULL;
-	uint32 desired_access = 0x12019F; /* Default - GENERIC_EXECUTE mapping from Windows */
+	uint32 access_mask = 0x12019F; /* Default - GENERIC_EXECUTE mapping from Windows */
 
 	if (!params)
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
@@ -2785,7 +2798,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			}
 			pos = fsp->position_information;
 			delete_pending = fsp->delete_on_close;
-			desired_access = fsp->desired_access;
+			access_mask = fsp->access_mask;
 		}
 	} else {
 		NTSTATUS status = NT_STATUS_OK;
@@ -3160,7 +3173,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 		case SMB_FILE_ACCESS_INFORMATION:
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_ACCESS_INFORMATION\n"));
-			SIVAL(pdata,0,desired_access);
+			SIVAL(pdata,0,access_mask);
 			data_size = 4;
 			break;
 
@@ -3458,7 +3471,7 @@ NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close, u
 		 * Only allow delete on close for files/directories opened with delete intent.
 		 */
 
-		if (!(fsp->desired_access & DELETE_ACCESS)) {
+		if (!(fsp->access_mask & DELETE_ACCESS)) {
 			DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but delete access denied.\n",
 				fsp->fsp_name ));
 			return NT_STATUS_ACCESS_DENIED;
@@ -3648,7 +3661,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			 * Doing a DELETE_ON_CLOSE should cancel a print job.
 			 */
 			if ((info_level == SMB_SET_FILE_DISPOSITION_INFO) && CVAL(pdata,0)) {
-				fsp->share_mode = FILE_DELETE_ON_CLOSE;
+				fsp->create_options |= FILE_DELETE_ON_CLOSE;
 
 				DEBUG(3,("call_trans2setfilepathinfo: Cancelling print job (%s)\n", fsp->fsp_name ));
 	
@@ -3881,8 +3894,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
  
 				if (fd == -1) {
 					files_struct *new_fsp = NULL;
-					int access_mode = 0;
-					int action = 0;
  
 					if(global_oplock_break) {
 						/* Queue this file modify as we are the process of an oplock break.  */
@@ -3894,14 +3905,18 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 						return -1;
 					}
  
-					new_fsp = open_file_shared1(conn, fname, &sbuf,FILE_WRITE_DATA,
-									SET_OPEN_MODE(DOS_OPEN_RDWR),
-									(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
+					new_fsp = open_file_ntcreate(conn, fname, &sbuf,
+									FILE_WRITE_DATA,
+									FILE_SHARE_READ|FILE_SHARE_WRITE,
+									FILE_OPEN,
+									0,
 									FILE_ATTRIBUTE_NORMAL,
-									INTERNAL_OPEN_ONLY, &access_mode, &action);
+									INTERNAL_OPEN_ONLY,
+									NULL);
  
-					if (new_fsp == NULL)
+					if (new_fsp == NULL) {
 						return(UNIXERROR(ERRDOS,ERRbadpath));
+					}
 					ret = vfs_allocate_file_space(new_fsp, allocation_size);
 					if (SMB_VFS_FSTAT(new_fsp,new_fsp->fd,&new_sbuf) != 0) {
 						DEBUG(3,("call_trans2setfilepathinfo: fstat of fnum %d failed (%s)\n",
@@ -4422,8 +4437,6 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 		if (fd == -1) {
 			files_struct *new_fsp = NULL;
-			int access_mode = 0;
-			int action = 0;
 
 			if(global_oplock_break) {
 				/* Queue this file modify as we are the process of an oplock break.  */
@@ -4435,22 +4448,27 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				return -1;
 			}
 
-			new_fsp = open_file_shared(conn, fname, &sbuf,
-						SET_OPEN_MODE(DOS_OPEN_RDWR),
-						(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
+			new_fsp = open_file_ntcreate(conn, fname, &sbuf,
+						FILE_WRITE_DATA,
+						FILE_SHARE_READ|FILE_SHARE_WRITE,
+						FILE_OPEN,
+						0,
 						FILE_ATTRIBUTE_NORMAL,
-						INTERNAL_OPEN_ONLY, &access_mode, &action);
+						INTERNAL_OPEN_ONLY,
+						NULL);
 	
-			if (new_fsp == NULL)
+			if (new_fsp == NULL) {
 				return(UNIXERROR(ERRDOS,ERRbadpath));
+			}
 			ret = vfs_set_filelen(new_fsp, size);
 			close_file(new_fsp,True);
 		} else {
 			ret = vfs_set_filelen(fsp, size);
 		}
 
-		if (ret == -1)
+		if (ret == -1) {
 			return (UNIXERROR(ERRHRD,ERRdiskfull));
+		}
 	}
 
 	/*

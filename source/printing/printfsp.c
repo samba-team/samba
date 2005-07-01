@@ -28,7 +28,7 @@ open a print file and setup a fsp for it. This is a wrapper around
 print_job_start().
 ***************************************************************************/
 
-files_struct *print_fsp_open(connection_struct *conn, char *fname)
+files_struct *print_fsp_open(connection_struct *conn, const char *fname)
 {
 	int jobid;
 	SMB_STRUCT_STAT sbuf;
@@ -40,10 +40,11 @@ files_struct *print_fsp_open(connection_struct *conn, char *fname)
 
 	fstrcpy( name, "Remote Downlevel Document");
 	if (fname) {
-		char *p = strrchr(fname, '/');
+		const char *p = strrchr(fname, '/');
 		fstrcat(name, " ");
-		if (!p)
+		if (!p) {
 			p = fname;
+		}
 		fstrcat(name, p);
 	}
 
@@ -70,7 +71,6 @@ files_struct *print_fsp_open(connection_struct *conn, char *fname)
 	fsp->can_lock = True;
 	fsp->can_read = False;
 	fsp->can_write = True;
-	fsp->share_mode = 0;
 	fsp->print_file = True;
 	fsp->modified = False;
 	fsp->oplock_type = NO_OPLOCK;
@@ -91,14 +91,15 @@ files_struct *print_fsp_open(connection_struct *conn, char *fname)
 }
 
 /****************************************************************************
-print a file - called on closing the file
+ Print a file - called on closing the file.
 ****************************************************************************/
+
 void print_fsp_end(files_struct *fsp, BOOL normal_close)
 {
 	uint32 jobid;
 	fstring sharename;
 
-	if (fsp->share_mode == FILE_DELETE_ON_CLOSE) {
+	if (fsp->create_options & FILE_DELETE_ON_CLOSE) {
 		/*
 		 * Truncate the job. print_job_end will take
 		 * care of deleting it for us. JRA.

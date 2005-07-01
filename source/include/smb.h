@@ -107,44 +107,32 @@ typedef int BOOL;
 #define DOS_OPEN_FCB 0xF
 
 /* define shifts and masks for share and open modes. */
-#define OPEN_MODE_MASK 0xF
-#define SHARE_MODE_SHIFT 4
-#define SHARE_MODE_MASK 0x7
-#define GET_OPEN_MODE(x) ((x) & OPEN_MODE_MASK)
-#define SET_OPEN_MODE(x) ((x) & OPEN_MODE_MASK)
-#define GET_DENY_MODE(x) (((x)>>SHARE_MODE_SHIFT) & SHARE_MODE_MASK)
-#define SET_DENY_MODE(x) (((x) & SHARE_MODE_MASK) <<SHARE_MODE_SHIFT)
+#define OPENX_MODE_MASK 0xF
+#define DENY_MODE_SHIFT 4
+#define DENY_MODE_MASK 0x7
+#define GET_OPENX_MODE(x) ((x) & OPENX_MODE_MASK)
+#define SET_OPENX_MODE(x) ((x) & OPENX_MODE_MASK)
+#define GET_DENY_MODE(x) (((x)>>DENY_MODE_SHIFT) & DENY_MODE_MASK)
+#define SET_DENY_MODE(x) (((x) & DENY_MODE_MASK) <<DENY_MODE_SHIFT)
 
 /* Sync on open file (not sure if used anymore... ?) */
 #define FILE_SYNC_OPENMODE (1<<14)
 #define GET_FILE_SYNC_OPENMODE(x) (((x) & FILE_SYNC_OPENMODE) ? True : False)
 
-/* allow delete on open file mode (used by NT SMB's). */
-#define ALLOW_SHARE_DELETE (1<<15)
-#define GET_ALLOW_SHARE_DELETE(x) (((x) & ALLOW_SHARE_DELETE) ? True : False)
-#define SET_ALLOW_SHARE_DELETE(x) ((x) ? ALLOW_SHARE_DELETE : 0)
-
-/* delete on close flag (used by NT SMB's). */
-#define DELETE_ON_CLOSE_FLAG (1<<16)
-#define GET_DELETE_ON_CLOSE_FLAG(x) (((x) & DELETE_ON_CLOSE_FLAG) ? True : False)
-#define SET_DELETE_ON_CLOSE_FLAG(x) ((x) ? DELETE_ON_CLOSE_FLAG : 0)
-
 /* open disposition values */
-#define FILE_EXISTS_FAIL 0
-#define FILE_EXISTS_OPEN 1
-#define FILE_EXISTS_TRUNCATE 2
+#define OPENX_FILE_EXISTS_FAIL 0
+#define OPENX_FILE_EXISTS_OPEN 1
+#define OPENX_FILE_EXISTS_TRUNCATE 2
 
 /* mask for open disposition. */
-#define FILE_OPEN_MASK 0x3
+#define OPENX_FILE_OPEN_MASK 0x3
 
-#define GET_FILE_OPEN_DISPOSITION(x) ((x) & FILE_OPEN_MASK)
-#define SET_FILE_OPEN_DISPOSITION(x) ((x) & FILE_OPEN_MASK)
+#define GET_FILE_OPENX_DISPOSITION(x) ((x) & FILE_OPEN_MASK)
+#define SET_FILE_OPENX_DISPOSITION(x) ((x) & FILE_OPEN_MASK)
 
 /* The above can be OR'ed with... */
-#define FILE_CREATE_IF_NOT_EXIST 0x10
-#define FILE_FAIL_IF_NOT_EXIST 0
-
-#define GET_FILE_CREATE_DISPOSITION(x) ((x) & (FILE_CREATE_IF_NOT_EXIST|FILE_FAIL_IF_NOT_EXIST))
+#define OPENX_FILE_CREATE_IF_NOT_EXIST 0x10
+#define OPENX_FILE_FAIL_IF_NOT_EXIST 0
 
 /* share types */
 #define STYPE_DISKTREE  0	/* Disk drive */
@@ -428,8 +416,9 @@ typedef struct files_struct {
 	write_bmpx_struct *wbmpx_ptr;
 	write_cache *wcp;
 	struct timeval open_time;
-	int share_mode;
-	uint32 desired_access;
+	uint32 access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
+	uint32 share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */
+	uint32 create_options;		/* NTCreateX "special" options such as delete on close. */
 	BOOL pending_modtime_owner;
 	time_t pending_modtime;
 	time_t last_write_time;
@@ -641,8 +630,9 @@ typedef struct {
 	pid_t pid;
 	uint16 op_port;
 	uint16 op_type;
-	int share_mode;
-	uint32 desired_access;
+	uint32 access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
+	uint32 share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */
+	uint32 create_options;		/* NTCreateX "special" options such as delete on close. */
 	struct timeval time;
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
@@ -1174,12 +1164,12 @@ struct bitmap {
 #define FILE_FLAG_POSIX_SEMANTICS  0x01000000L
 
 /* CreateDisposition field. */
-#define FILE_SUPERSEDE 0
-#define FILE_OPEN 1
-#define FILE_CREATE 2
-#define FILE_OPEN_IF 3
-#define FILE_OVERWRITE 4
-#define FILE_OVERWRITE_IF 5
+#define FILE_SUPERSEDE 0		/* File exists overwrite/supersede. File not exist create. */
+#define FILE_OPEN 1			/* File exists open. File not exist fail. */
+#define FILE_CREATE 2			/* File exists fail. File not exist create. */
+#define FILE_OPEN_IF 3			/* File exists open. File not exist create. */
+#define FILE_OVERWRITE 4		/* File exists overwrite. File not exist fail. */
+#define FILE_OVERWRITE_IF 5		/* File exists overwrite. File not exist create. */
 
 /* CreateOptions field. */
 #define FILE_DIRECTORY_FILE       0x0001
@@ -1191,6 +1181,10 @@ struct bitmap {
 #define FILE_RANDOM_ACCESS        0x0800
 #define FILE_DELETE_ON_CLOSE      0x1000
 #define FILE_OPEN_BY_FILE_ID	  0x2000
+
+/* Private create options used by the ntcreatex processing code. From Samba4. */
+#define NTCREATEX_OPTIONS_PRIVATE_DENY_DOS     0x01000000
+#define NTCREATEX_OPTIONS_PRIVATE_DENY_FCB     0x02000000
 
 /* Responses when opening a file. */
 #define FILE_WAS_SUPERSEDED 0
@@ -1444,35 +1438,35 @@ extern int chain_size;
 #define LOCKING_ANDX_CANCEL_LOCK 0x8
 #define LOCKING_ANDX_LARGE_FILES 0x10
 
-/* Oplock levels */
-#define OPLOCKLEVEL_NONE 0
-#define OPLOCKLEVEL_II 1
-
 /*
  * Bits we test with.
  */
-
+                                                                                                                              
 #define NO_OPLOCK 0
 #define EXCLUSIVE_OPLOCK 1
 #define BATCH_OPLOCK 2
 #define LEVEL_II_OPLOCK 4
 #define INTERNAL_OPEN_ONLY 8
 
-#define EXCLUSIVE_OPLOCK_TYPE(lck) ((lck) & (EXCLUSIVE_OPLOCK|BATCH_OPLOCK))
-#define BATCH_OPLOCK_TYPE(lck) ((lck) & BATCH_OPLOCK)
-#define LEVEL_II_OPLOCK_TYPE(lck) ((lck) & LEVEL_II_OPLOCK)
+#define EXCLUSIVE_OPLOCK_TYPE(lck) ((lck) & ((unsigned int)EXCLUSIVE_OPLOCK|(unsigned int)BATCH_OPLOCK))
+#define BATCH_OPLOCK_TYPE(lck) ((lck) & (unsigned int)BATCH_OPLOCK)
+#define LEVEL_II_OPLOCK_TYPE(lck) ((lck) & (unsigned int)LEVEL_II_OPLOCK)
+
+/*
+ * On the wire return values for oplock types.
+ */
 
 #define CORE_OPLOCK_GRANTED (1<<5)
 #define EXTENDED_OPLOCK_GRANTED (1<<15)
-
-/*
- * Return values for oplock types.
- */
 
 #define NO_OPLOCK_RETURN 0
 #define EXCLUSIVE_OPLOCK_RETURN 1
 #define BATCH_OPLOCK_RETURN 2
 #define LEVEL_II_OPLOCK_RETURN 3
+
+/* Oplock levels */
+#define OPLOCKLEVEL_NONE 0
+#define OPLOCKLEVEL_II 1
 
 /*
  * Loopback command offsets.

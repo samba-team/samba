@@ -219,9 +219,10 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	 * delete on close flag was set in the entry we just deleted.
 	 */
 
-	if ((share_entry_count == 0) && share_entry && 
-			GET_DELETE_ON_CLOSE_FLAG(share_entry->share_mode) )
+	if ((share_entry_count == 0) && share_entry &&
+			(share_entry->create_options & FILE_DELETE_ON_CLOSE)) {
 		delete_on_close = True;
+	}
 
 	SAFE_FREE(share_entry);
 
