@@ -509,6 +509,7 @@ verify_trusted_ca(PA_PK_AS_REQ_19 *r)
 
 krb5_error_code
 _pk_rd_padata(krb5_context context,
+	      krb5_kdc_configuration *config,
 	      KDC_REQ *req,
 	      PA_DATA *pa,
 	      pk_client_params **ret_params)
@@ -523,7 +524,7 @@ _pk_rd_padata(krb5_context context,
 
     *ret_params = NULL;
     
-    if (!enable_pkinit) {
+    if (!config->enable_pkinit) {
 	krb5_clear_error_string(context);
 	return 0;
     }
@@ -812,7 +813,7 @@ _pk_rd_padata(krb5_context context,
      * are ignored for now.
      */
 
-    kdc_log(0, "PK-INIT request of type %s", type);
+    kdc_log(context, config, 0, "PK-INIT request of type %s", type);
 
  out:
 
@@ -821,7 +822,7 @@ _pk_rd_padata(krb5_context context,
     krb5_data_free(&eContent);
     free_oid(&eContentType);
     if (ret)
-	pk_free_client_param(context, client_params);
+	_pk_free_client_param(context, client_params);
     else
 	*ret_params = client_params;
     return ret;
@@ -1170,6 +1171,7 @@ pk_mk_pa_reply_dh(krb5_context context,
 
 krb5_error_code
 _pk_mk_pa_reply(krb5_context context,
+		krb5_kdc_configuration *config,
 		pk_client_params *client_params,
 		const hdb_entry *client,
 		const KDC_REQ *req,
@@ -1183,7 +1185,7 @@ _pk_mk_pa_reply(krb5_context context,
     int pa_type;
     int i;
 
-    if (!enable_pkinit) {
+    if (!config->enable_pkinit) {
 	krb5_clear_error_string(context);
 	return 0;
     }
@@ -1375,6 +1377,7 @@ _pk_mk_pa_reply(krb5_context context,
 
 static int
 pk_principal_from_X509(krb5_context context, 
+		       krb5_kdc_configuration *config,
 		       struct krb5_pk_cert *client_cert, 
 		       krb5_principal *principal)
 {
@@ -1410,7 +1413,8 @@ pk_principal_from_X509(krb5_context context,
 
 	ret = decode_KRB5PrincipalName(p, len, &kn, &size);
 	if (ret) {
-	    kdc_log(0, "Decoding kerberos name in certificate failed: %s",
+	    kdc_log(context, config, 0,
+		    "Decoding kerberos name in certificate failed: %s",
 		    krb5_get_err_text(context, ret));
 	    continue;
 	}
@@ -1433,6 +1437,7 @@ pk_principal_from_X509(krb5_context context,
 
 krb5_error_code
 _pk_check_client(krb5_context context,
+		 krb5_kdc_configuration *config,
 		 krb5_principal client_princ,
 		 const hdb_entry *client,
 		 pk_client_params *client_params,
@@ -1465,8 +1470,9 @@ _pk_check_client(krb5_context context,
     }
     OPENSSL_free(subject);
 
-    if (enable_pkinit_princ_in_cert) {
-	ret = pk_principal_from_X509(context, client_cert, &cert_princ);
+    if (config->enable_pkinit_princ_in_cert) {
+	ret = pk_principal_from_X509(context, config, 
+				     client_cert, &cert_princ);
 	if (ret == 0) {
 	    b = krb5_principal_compare(context, client_princ, cert_princ);
 	    krb5_free_principal(context, cert_princ);
@@ -1492,7 +1498,9 @@ _pk_check_client(krb5_context context,
 }
 
 static krb5_error_code
-add_principal_mapping(const char *principal_name, const char * subject)
+add_principal_mapping(krb5_context context, 
+		      const char *principal_name,
+		      const char * subject)
 {
    struct pk_allowed_princ *tmp;
    krb5_principal principal;
@@ -1522,7 +1530,10 @@ add_principal_mapping(const char *principal_name, const char * subject)
 
 
 krb5_error_code
-_pk_initialize(const char *user_id, const char *x509_anchors)
+_pk_initialize(krb5_context context,
+	       krb5_kdc_configuration *config,
+	       const char *user_id,
+	       const char *x509_anchors)
 {
     const char *mapping_file; 
     krb5_error_code ret;
@@ -1542,7 +1553,7 @@ _pk_initialize(const char *user_id, const char *x509_anchors)
 				   NULL);
     if (ret) {
 	krb5_warn(context, ret, "PKINIT: failed to load");
-	enable_pkinit = 0;
+	config->enable_pkinit = 0;
 	return ret;
     }
 
@@ -1579,7 +1590,7 @@ _pk_initialize(const char *user_id, const char *x509_anchors)
 	}
 	*subject_name++ = '\0';
 
-	ret = add_principal_mapping(p, subject_name);
+	ret = add_principal_mapping(context, p, subject_name);
 	if (ret) {
 	    krb5_warn(context, ret, "failed to add line %lu \":\" :%s\n",
 		      lineno, buf);

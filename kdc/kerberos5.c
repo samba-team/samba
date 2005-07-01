@@ -819,7 +819,7 @@ _kdc_as_rep(krb5_context context,
 	if (pa) {
 	    char *client_cert = NULL;
 
-	    ret = _pk_rd_padata(context, req, pa, &pkp);
+	    ret = _pk_rd_padata(context, config, req, pa, &pkp);
 	    if (ret) {
 		ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
 		kdc_log(context, config, 5, 
@@ -830,7 +830,8 @@ _kdc_as_rep(krb5_context context,
 	    if (ret == 0 && pkp == NULL)
 		goto ts_enc;
 
-	    ret = _pk_check_client(context, 
+	    ret = _pk_check_client(context,
+				   config,
 				   client_princ, 
 				   client,
 				   pkp,
@@ -1275,7 +1276,7 @@ _kdc_as_rep(krb5_context context,
     reply_key = &ckey->key;
 #if PKINIT
     if (pkp) {
-	ret = _pk_mk_pa_reply(context, pkp, client, req,
+	ret = _pk_mk_pa_reply(context, config, pkp, client, req,
 			      &reply_key, rep.padata);
 	if (ret)
 	    goto out;

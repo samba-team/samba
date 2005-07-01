@@ -46,6 +46,7 @@ static RETSIGTYPE
 sigterm(int sig)
 {
     exit_flag = sig;
+    _exit(3);
 }
 
 int

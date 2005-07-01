@@ -106,16 +106,22 @@ _kdc_do_524(krb5_context context,
 
 #ifdef PKINIT
 typedef struct pk_client_params pk_client_params;
-krb5_error_code _pk_initialize(const char *, const char *);
-krb5_error_code _pk_rd_padata(krb5_context, KDC_REQ *,
-			      PA_DATA *, pk_client_params **);
+krb5_error_code _pk_initialize(krb5_context,
+			       krb5_kdc_configuration *, 
+			       const char *,
+			       const char *);
+krb5_error_code _pk_rd_padata(krb5_context, krb5_kdc_configuration *, 
+			      KDC_REQ *, PA_DATA *, pk_client_params **);
 krb5_error_code	_pk_mk_pa_reply(krb5_context,
+				krb5_kdc_configuration *, 
 				pk_client_params *,
 				const hdb_entry *,
 				const KDC_REQ *,
 				krb5_keyblock **,
 				METHOD_DATA *);
-krb5_error_code _pk_check_client(krb5_context, krb5_principal,
+krb5_error_code _pk_check_client(krb5_context, 
+				 krb5_kdc_configuration *,
+				 krb5_principal,
 				 const hdb_entry *, 
 				 pk_client_params *, char **);
 void _pk_free_client_param(krb5_context, pk_client_params *);
