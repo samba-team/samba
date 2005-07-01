@@ -350,14 +350,14 @@ static NTSTATUS ipc_copy(struct ntvfs_module_context *ntvfs,
 	return NT_STATUS_ACCESS_DENIED;
 }
 
-static NTSTATUS ipc_readx_dcesrv_output(void *private_data, DATA_BLOB *output, size_t *nwritten)
+static NTSTATUS ipc_readx_dcesrv_output(void *private_data, DATA_BLOB *out, size_t *nwritten)
 {
 	DATA_BLOB *blob = private_data;
 
-	if (output->length < blob->length) {
-		blob->length = output->length;
+	if (out->length < blob->length) {
+		blob->length = out->length;
 	}
-	memcpy(blob->data, output->data, blob->length);
+	memcpy(blob->data, out->data, blob->length);
 	*nwritten = blob->length;
 	return NT_STATUS_OK;
 }
@@ -616,33 +616,20 @@ static NTSTATUS ipc_search_close(struct ntvfs_module_context *ntvfs,
 	return NT_STATUS_ACCESS_DENIED;
 }
 
-struct ipctp_dcesrv_output {
-	struct smbsrv_request *req;
-	struct smb_trans2 *trans;
-};
-static NTSTATUS ipc_trans_dcesrv_output(void *private_data, DATA_BLOB *_output, size_t *nwritten)
+static NTSTATUS ipc_trans_dcesrv_output(void *private_data, DATA_BLOB *out, size_t *nwritten)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	DATA_BLOB *output;
-	struct ipctp_dcesrv_output *ipctp = private_data;
+	DATA_BLOB *blob = private_data;
 
-	/*
-	 * do it the fast way without doing an extra memcpy()
-	 *
-	 * we need to reference the the DATA_BLOB itself,
-	 * because out->data isn't always a valid talloc pointer
-	 */
-	output = talloc_reference(ipctp->req, _output);
-	NT_STATUS_HAVE_NO_MEMORY(output);
-
-	if (output->length > ipctp->trans->in.max_data) {
+	if (out->length > blob->length) {
 		status = STATUS_BUFFER_OVERFLOW;
 	}
 
-	ipctp->trans->out.data.data	= output->data;
-	ipctp->trans->out.data.length	= MIN(ipctp->trans->in.max_data, output->length);
-
-	*nwritten = ipctp->trans->out.data.length;
+	if (out->length < blob->length) {
+		blob->length = out->length;
+	}
+	memcpy(blob->data, out->data, blob->length);
+	*nwritten = blob->length;
 	return status;
 }
 
@@ -651,36 +638,38 @@ static NTSTATUS ipc_dcerpc_cmd(struct ntvfs_module_context *ntvfs,
 			       struct smbsrv_request *req, struct smb_trans2 *trans)
 {
 	struct pipe_state *p;
-	struct ipc_private *ipcp = ntvfs->private_data;
-	struct ipctp_dcesrv_output ipctp;
+	struct ipc_private *private = ntvfs->private_data;
 	NTSTATUS status;
 
 	/* the fnum is in setup[1] */
-	p = pipe_state_find(ipcp, trans->in.setup[1]);
-	if (!p) return NT_STATUS_INVALID_HANDLE;
+	p = pipe_state_find(private, trans->in.setup[1]);
+	if (!p) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
-	/*
-	 * just to be sure we doesn't have something uninitialized
-	 * the real work is done in the dcesrv_output() callback
-	 */
-	trans->out.data = data_blob(NULL, 0);
+	trans->out.data = data_blob_talloc(req, NULL, trans->in.max_data);
+	if (!trans->out.data.data) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* pass the data to the dcerpc server. Note that we don't
 	   expect this to fail, and things like NDR faults are not
 	   reported at this stage. Those sorts of errors happen in the
 	   dcesrv_output stage */
 	status = dcesrv_input(p->dce_conn, &trans->in.data);
-	NT_STATUS_NOT_OK_RETURN(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	/*
 	  now ask the dcerpc system for some output. This doesn't yet handle
-	  async calls. Again, we only expect NT_STATUS_OK or STATUS_BUFFER_OVERFLOW.
-	  If the call fails then the error is encoded at the dcerpc level
+	  async calls. Again, we only expect NT_STATUS_OK. If the call fails then
+	  the error is encoded at the dcerpc level
 	*/
-	ipctp.req	= req;
-	ipctp.trans	= trans;
-	status = dcesrv_output(p->dce_conn, &ipctp, ipc_trans_dcesrv_output);
-	NT_STATUS_IS_ERR_RETURN(status);
+	status = dcesrv_output(p->dce_conn, &trans->out.data, ipc_trans_dcesrv_output);
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
+	}
 
 	trans->out.setup_count = 0;
 	trans->out.setup = NULL;
