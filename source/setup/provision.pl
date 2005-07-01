@@ -30,7 +30,7 @@ sub nttime()
 	my $t = time();
 	$t += (369.0*365.25*24*60*60-(3.0*24*60*60+6.0*60*60));
 	$t *= 1.0e7;
-	return sprintf("%lld", $t);
+	return sprintf("%.0f", $t);
 }
 
 # generate a random guid. Not a good algorithm.
@@ -325,7 +325,7 @@ if ($opt_help ||
 	ShowHelp();
 }
 
-$opt_realm=uc($opt_realm);
+$opt_realm=lc($opt_realm);
 $opt_domain=uc($opt_domain);
 $opt_hostname=lc($opt_hostname);
 $netbiosname=uc($opt_hostname);
