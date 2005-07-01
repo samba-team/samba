@@ -37,15 +37,15 @@ damage performance unduly, follow these steps:
 First, you need to canonicalize all the files in the directory to have one case, upper or lower &smbmdash; take your
 pick (I chose upper because all my files were already uppercase names). Then set up a new custom share for the
 application as follows:
-<screen>
-[bigshare]
-        path = /home/jeremy/tmp/manyfilesdir
-        read only = no
-        case sensitive = True
-        default case = upper
-        preserve case = no
-        short preserve case = no
-</screen>
+<smbconfblock>
+<smbconfsection name="[bigshare]"/>
+<smbconfoption name="path">/data/manyfilesdir</smbconfoption>
+<smbconfoption name="read only">no</smbconfoption>
+<smbconfoption name="case sensitive">True</smbconfoption>
+<smbconfoption name="default case">upper</smbconfoption>
+<smbconfoption name="preserve case">no</smbconfoption>
+<smbconfoption name="short preserve case">no</smbconfoption>
+</smbconfblock>
 </para>
 
 <para>
