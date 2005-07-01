@@ -31,7 +31,7 @@ interface dcerpc
 		uint32 assoc_group_id;
 		uint8  num_contexts;
 		dcerpc_ctx_list ctx_list[num_contexts];
-		[flag(NDR_ALIGN8)]    DATA_BLOB _pad;
+		[flag(NDR_ALIGN4)]    DATA_BLOB _pad;
 		[flag(NDR_REMAINING)] DATA_BLOB auth_info;
 	} dcerpc_bind;
 
