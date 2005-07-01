@@ -227,13 +227,13 @@
 	</glossentry>
 
 	<glossentry>
-		<glossterm>The Official Samba-3 HOWTO and Reference Guide</glossterm>
-		<acronym>TOSHARG</acronym>
+		<glossterm>The Official Samba-3 HOWTO and Reference Guide, Second Edition</glossterm>
+		<acronym>TOSHARG2</acronym>
 		<glossdef><para>
-		This book makes repeated reference to <quote>The Official Samba-3 HOWTO and Reference Guide</quote>
-		by John H. Terpstra and Jelmer R. Vernooij. This publication is available from
-		Amazon.com. Publisher: Prentice Hall PTR (October 2003),
-		ISBN: 0131453556.
+		This book makes repeated reference to <quote>The Official Samba-3 HOWTO and Reference Guide, Second
+		Edition</quote> by John H. Terpstra and Jelmer R. Vernooij. This publication is available from
+		Amazon.com. Publisher: Prentice Hall PTR (August 2005),
+		ISBN: 013122282.
 		</para></glossdef>
 	</glossentry>
 
