@@ -3,10 +3,18 @@
 
 export LDB_URL="tdbtest.ldb"
 
+PATH=bin:$PATH
+export PATH
+
 rm -f tdbtest.ldb
 
-. tests/test-generic.sh
+if [ -z "$LDBDIR" ]; then
+    LDBDIR="."
+    export LDBDIR
+fi
 
-. tests/test-extended.sh
+. $LDBDIR/tests/test-generic.sh
 
-. tests/test-tdb-features.sh
+. $LDBDIR/tests/test-extended.sh
+
+. $LDBDIR/tests/test-tdb-features.sh
