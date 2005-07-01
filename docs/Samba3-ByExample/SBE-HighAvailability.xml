@@ -531,7 +531,7 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.
 	<indexterm><primary>distributed</primary></indexterm>
 	Microsoft DFS (distributed file system) technology has been implemented in Samba. MSDFS permits
 	data to be accessed from a single share and yet to actually be distributed across multiple actual
-	servers. Refer to <emphasis>TOSHARG</emphasis>, Chapter 19, for information regarding
+	servers. Refer to <emphasis>TOSHARG2</emphasis>, Chapter 19, for information regarding
 	implementation of an MSDFS installation.
 	</para>
 

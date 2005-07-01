@@ -1976,7 +1976,7 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 
 		<para>
 		Oh, I did not think you would notice that. It is there so that it can be used. This is more fully discussed
-		in <emphasis>TOSHARG</emphasis>, which has a full chapter dedicated to the subject. While we are on the 
+		in <emphasis>TOSHARG2</emphasis>, which has a full chapter dedicated to the subject. While we are on the 
 		subject, it should be noted that you should definitely not use SWAT on any system that makes use 
 		of &smb.conf; <parameter>include</parameter> files because SWAT optimizes them out into an aggregated 
 		file but leaves in place a broken reference to the top-layer include file. SWAT was not designed to 

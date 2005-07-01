@@ -3492,7 +3492,7 @@ structuralObjectClass: organizationalUnit
 	</para>
 
 	<para>
-	You should research the options for logon script implementation by referring to <emphasis>TOSHARG</emphasis>, Chapter 24,
+	You should research the options for logon script implementation by referring to <emphasis>TOSHARG2</emphasis>, Chapter 24,
 	Section 24.4. A quick Web search will bring up a host of options. One of the most popular logon
 	facilities in use today is called <ulink url="http://www.kixtart.org">KiXtart</ulink>.
 	</para>
@@ -4248,7 +4248,7 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 		<para>
 		There are people in the Linux and open source community who feel that SWAT is dangerous
 		and insecure. Many will not touch it with a barge-pole. By not introducing SWAT, I
-		hope to have brought their interests on board. SWAT is well covered is <emphasis>TOSHARG</emphasis>.
+		hope to have brought their interests on board. SWAT is well covered is <emphasis>TOSHARG2</emphasis>.
 		</para>
 
 	</answer>

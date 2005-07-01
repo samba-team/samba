@@ -128,7 +128,7 @@ The chapters in this part each cover specific Samba features.
 	<xi:include href="TOSHARG-Backup.xml"/>
 	<xi:include href="TOSHARG-HighAvailability.xml"/>
 	<xi:include href="TOSHARG-LargeFile.xml"/>
-	<!--	<xi:include href="TOSHARG-SecureLDAP.xml"/> -->
+	<xi:include href="TOSHARG-ConfigSmarts.xml"/>
 
 </part>
 

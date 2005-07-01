@@ -18,8 +18,8 @@
 	This chapter lays the groundwork for understanding the basics of Samba operation. 
 	Instead of a bland technical discussion, each principle is demonstrated by way of a 
 	real-world scenario for which a working solution<footnote><para>The examples given mirror those documented
-	in The Official Samba-3 HOWTO and Reference Guide (TOSHARG) Chapter 2, Section 2.3.1. You may gain additional
-	insight from the standalone server configurations covered in TOSHARG, sections 2.3.1.2 through 2.3.1.4.
+	in The Official Samba-3 HOWTO and Reference Guide, Second Edition (TOSHARG2) Chapter 2, Section 2.3.1. You may gain additional
+	insight from the standalone server configurations covered in TOSHARG2, sections 2.3.1.2 through 2.3.1.4.
 	</para></footnote> is fully described.
 	</para>
 
@@ -548,7 +548,7 @@ Password changed
 /data/officefiles/invitations
 /data/officefiles/misc
 </programlisting>
-				<indexterm><primary>TOSHARG</primary></indexterm>
+				<indexterm><primary>TOSHARG2</primary></indexterm>
 				The <command>chown</command> operation sets the owner to the user <constant>abmas</constant>
 				and the group to <constant>office</constant> on all directories just created.  It recursively
 				sets the permissions so that the owner and group have SUID/SGID with read, write, and execute
@@ -556,7 +556,7 @@ Password changed
 				directories are created with the same owner and group as the directory in which they are
 				created. Any new directories created still have the same owner, group, and permissions as the
 				directory they are in. This should eliminate all permissions-based file access problems.  For
-				more information on this subject, refer to TOSHARG<footnote>The Official Samba-3 HOWTO and
+				more information on this subject, refer to TOSHARG2<footnote>The Official Samba-3 HOWTO and
 				Reference Guide, Chapter 15, File, Directory and Share Access Controls.</footnote> or refer
 				to the UNIX man page for the <command>chmod</command> and the <command>chown</command> commands.
 				</para></step>

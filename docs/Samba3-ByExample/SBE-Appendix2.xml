@@ -118,9 +118,9 @@
 	</para>
 
 	<para>
-	Recommended preparatory reading: <emphasis>The Official Samba-3 HOWTO and Reference Guide</emphasis> (TOSHARG) 
-	Chapter 9, <quote>Network Browsing,</quote> and Chapter 3, <quote>Server Types and 
-	Security Modes.</quote>
+	Recommended preparatory reading: <emphasis>The Official Samba-3 HOWTO and Reference Guide, Second
+	Edition</emphasis> (TOSHARG2) Chapter 9, <quote>Network Browsing,</quote> and Chapter 3,
+	<quote>Server Types and Security Modes.</quote>
 	</para>
 
 	<sect2>
@@ -686,7 +686,7 @@
 
 	  	<para>
 		<indexterm><primary>IPC$</primary></indexterm>
-		The <constant>IPC$</constant> share serves a vital purpose<footnote><para>TOSHARG, Sect 4.5.1</para></footnote> 
+		The <constant>IPC$</constant> share serves a vital purpose<footnote><para>TOSHARG2, Sect 4.5.1</para></footnote> 
 		in SMB/CIFS-based networking.  A Windows client connects to this resource to obtain the list of 
 		resources that are available on the server. The server responds with the shares and print queues that
 		are available. In most but not all cases, the connection is made with a <constant>NULL</constant>
@@ -947,7 +947,7 @@
 		database and thus must be stored elsewhere on the UNIX system in a manner that Samba can
 		use. Samba-2.x permitted such encrypted passwords to be stored in the <constant>smbpasswd</constant>
 		file or in an LDAP database. Samba-3 permits use of multiple <parameter>passdb backend</parameter>
-		databases in concurrent deployment. Refer to <emphasis>TOSHARG</emphasis>, Chapter 10, <quote>Account Information Databases.</quote>
+		databases in concurrent deployment. Refer to <emphasis>TOSHARG2</emphasis>, Chapter 10, <quote>Account Information Databases.</quote>
 		</para></listitem>
 	</itemizedlist>
 
@@ -1010,7 +1010,7 @@
 		<indexterm><primary>DMB</primary></indexterm>
 		This is a broadcast announcement by which the Windows machine is attempting to
 		locate a Domain Master Browser (DMB) in the event that it might exist on the network.
-		Refer to <emphasis>TOSHARG,</emphasis> Chapter 9, Section 9.7, <quote>Technical Overview of Browsing,</quote>
+		Refer to <emphasis>TOSHARG2,</emphasis> Chapter 9, Section 9.7, <quote>Technical Overview of Browsing,</quote>
 		for details regarding the function of the DMB and its role in network browsing.
 		</para>
 
@@ -1151,10 +1151,10 @@
 		<para>
 		<indexterm><primary>WINS</primary></indexterm>
 		<indexterm><primary>NetBIOS</primary></indexterm>
-		Yes, there are two ways to do this. The first involves use of WINS (See <emphasis>TOSHARG</emphasis>, Chapter 9, 
+		Yes, there are two ways to do this. The first involves use of WINS (See <emphasis>TOSHARG2</emphasis>, Chapter 9, 
 		Section 9.5, <quote>WINS &smbmdash; The Windows Inter-networking Name Server</quote>); the
 		alternate method involves disabling the use of NetBIOS over TCP/IP. This second method requires
-		a correctly configured DNS server (see <emphasis>TOSHARG</emphasis>, Chapter 9, Section 9.3, <quote>Discussion</quote>).
+		a correctly configured DNS server (see <emphasis>TOSHARG2</emphasis>, Chapter 9, Section 9.3, <quote>Discussion</quote>).
 		</para>
 
 		<para>
