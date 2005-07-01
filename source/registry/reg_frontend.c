@@ -31,7 +31,7 @@ extern REGISTRY_OPS shares_reg_ops;
 extern REGISTRY_OPS regdb_ops;		/* these are the default */
 
 /* array of REGISTRY_HOOK's which are read into a tree for easy access */
-#define REG_TDB_ONLY		1
+/* #define REG_TDB_ONLY		1 */
 
 REGISTRY_HOOK reg_hooks[] = {
 #ifndef REG_TDB_ONLY 
