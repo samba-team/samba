@@ -393,7 +393,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, uint32_t server_id
 
 	status = socket_listen(msg->sock, msg->path, 0, 50, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Unable to setup messaging listener for '%s'\n", msg->path));
+		DEBUG(0,("Unable to setup messaging listener for '%s':%s\n", msg->path, nt_errstr(status)));
 		talloc_free(msg);
 		return NULL;
 	}
