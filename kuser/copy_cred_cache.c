@@ -113,7 +113,7 @@ main(int argc, char **argv)
 {
     krb5_error_code ret;
     krb5_context context;
-    int optind = 0;
+    int optidx = 0;
     const char *from_name, *to_name;
     krb5_ccache from_ccache, to_ccache;
     krb5_flags whichfields = 0;
@@ -124,7 +124,7 @@ main(int argc, char **argv)
 
     memset(&mcreds, 0, sizeof(mcreds));
 
-    if (getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
+    if (getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optidx))
 	usage(1);
 
     if (help_flag)
@@ -134,8 +134,8 @@ main(int argc, char **argv)
 	print_version(NULL);
 	exit(0);
     }
-    argc -= optind;
-    argv += optind;
+    argc -= optidx;
+    argv += optidx;
 
     if (argc < 1 || argc > 2)
 	usage(1);

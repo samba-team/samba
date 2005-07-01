@@ -68,12 +68,12 @@ main (int argc, char **argv)
     krb5_error_code ret;
     krb5_context context;
     krb5_ccache  ccache;
-    int optind = 0;
+    int optidx = 0;
     int exit_val = 0;
 
     setprogname (argv[0]);
 
-    if(getarg(args, num_args, argc, argv, &optind))
+    if(getarg(args, num_args, argc, argv, &optidx))
 	usage(1);
   
     if (help_flag)
@@ -84,8 +84,8 @@ main (int argc, char **argv)
 	exit(0);
     }
   
-    argc -= optind;
-    argv += optind;
+    argc -= optidx;
+    argv += optidx;
 
     if (argc != 0)
 	usage (1);

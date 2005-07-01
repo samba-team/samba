@@ -712,7 +712,7 @@ main (int argc, char **argv)
     krb5_context context;
     krb5_ccache  ccache;
     krb5_principal principal;
-    int optind = 0;
+    int optidx = 0;
     krb5_deltat ticket_life = 0;
 
     setprogname (argv[0]);
@@ -723,7 +723,7 @@ main (int argc, char **argv)
     else if (ret)
 	errx(1, "krb5_init_context failed: %d", ret);
   
-    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optidx))
 	usage(1);
     
     if (help_flag)
@@ -734,8 +734,8 @@ main (int argc, char **argv)
 	exit(0);
     }
 
-    argc -= optind;
-    argv += optind;
+    argc -= optidx;
+    argv += optidx;
 
     if (argv[0]) {
 	ret = krb5_parse_name (context, argv[0], &principal);
