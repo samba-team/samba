@@ -435,7 +435,11 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 			return ndr_push_error(ndr, NDR_ERR_CHARCNV, 
 					      "Bad character conversion");
 		}
-		ndr->offset += byte_mul*d_len;
+		ndr->offset += ret;
+		if ((byte_mul*d_len) > ret) {
+			uint32_t _padding_len = (byte_mul*d_len) - ret;
+			NDR_CHECK(ndr_push_zero(ndr, _padding_len));
+		}
 		break;
 
 	default:
