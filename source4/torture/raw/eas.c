@@ -35,7 +35,7 @@
 		goto done; \
 	}} while (0)
 
-static	BOOL maxeadebug = 0; /* need that here, to allow no file delete in debug case */
+static	BOOL maxeadebug; /* need that here, to allow no file delete in debug case */
 
 static BOOL check_ea(struct smbcli_state *cli, 
 		     const char *fname, const char *eaname, const char *value)
@@ -460,9 +460,36 @@ BOOL torture_raw_eas(void)
 		return False;
 	}
 
-	ret &= test_max_eas(cli, mem_ctx);
 	ret &= test_eas(cli, mem_ctx);
 	ret &= test_nttrans_create(cli, mem_ctx);
+
+	smb_raw_exit(cli->session);
+
+	torture_close_connection(cli);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+/* 
+   test max EA size
+*/
+BOOL torture_max_eas(void)
+{
+	struct smbcli_state *cli;
+	BOOL ret = True;
+	TALLOC_CTX *mem_ctx;
+
+	if (!torture_open_connection(&cli)) {
+		return False;
+	}
+
+	mem_ctx = talloc_init("torture_raw_eas");
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return False;
+	}
+
+	ret &= test_max_eas(cli, mem_ctx);
 
 	smb_raw_exit(cli->session);
 	if (!maxeadebug) {
