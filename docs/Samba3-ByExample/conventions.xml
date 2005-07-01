@@ -11,9 +11,16 @@
     <itemizedlist>
       <listitem>
 	<para>
-	TOSHARG is used as an abbreviation for the book, <emphasis>The Official Samba-3
-	HOWTO and Reference Guide,</emphasis> Editors: John H. Terpstra and Jelmer R. Vernooij,
-	Publisher: Prentice Hall PTR, www.phptr.com/perens.
+	TOSHARG2 is used as an abbreviation for the book, <quote>The Official Samba-3
+	HOWTO and Reference Guide, Second Edition</quote> Editors: John H. Terpstra and Jelmer R. Vernooij,
+	Publisher: Prentice Hall, ISBN: 0131882228.
+	</para>
+      </listitem>
+
+      <listitem>
+	<para>
+	S3bE2 is used as an abbreviation for the book, <quote>Samba-3 by Example, Second Edition</quote> 
+	Editors: John H. Terpstra, Publisher: Prentice Hall, ISBN: 013188221X.
 	</para>
       </listitem>
 

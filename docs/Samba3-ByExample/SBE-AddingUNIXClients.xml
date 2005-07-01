@@ -1855,7 +1855,7 @@ administrator:x:1000:1013:Administrator:/home/BE/administrator:/bin/bash
         In the case of an NT4 or Samba-3-style domain the <parameter>realm</parameter> is not used, and the
         command used to join the domain is <command>net rpc join</command>. The above example also demonstrates
         advanced error reporting techniques that are documented in the chapter called "Reporting Bugs" in
-	<quote>The Official Samba-3 HOWTO and Reference Guide</quote> (TOSHARG).
+	<quote>The Official Samba-3 HOWTO and Reference Guide, Second Edition</quote> (TOSHARG2).
         </para>
 
         <para>
