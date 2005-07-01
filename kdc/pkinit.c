@@ -271,7 +271,8 @@ pk_encrypt_key(krb5_context context,
 }
 
 void
-_pk_free_client_param(krb5_context context, pk_client_params *client_params)
+_kdc_pk_free_client_param(krb5_context context, 
+			  pk_client_params *client_params)
 {
     if (client_params->certificate)
 	_krb5_pk_cert_free(client_params->certificate);
@@ -508,11 +509,11 @@ verify_trusted_ca(PA_PK_AS_REQ_19 *r)
 #endif /* 0 */
 
 krb5_error_code
-_pk_rd_padata(krb5_context context,
-	      krb5_kdc_configuration *config,
-	      KDC_REQ *req,
-	      PA_DATA *pa,
-	      pk_client_params **ret_params)
+_kdc_pk_rd_padata(krb5_context context,
+		  krb5_kdc_configuration *config,
+		  KDC_REQ *req,
+		  PA_DATA *pa,
+		  pk_client_params **ret_params)
 {
     pk_client_params *client_params;
     krb5_error_code ret;
@@ -822,7 +823,7 @@ _pk_rd_padata(krb5_context context,
     krb5_data_free(&eContent);
     free_oid(&eContentType);
     if (ret)
-	_pk_free_client_param(context, client_params);
+	_kdc_pk_free_client_param(context, client_params);
     else
 	*ret_params = client_params;
     return ret;
@@ -1170,13 +1171,13 @@ pk_mk_pa_reply_dh(krb5_context context,
  */
 
 krb5_error_code
-_pk_mk_pa_reply(krb5_context context,
-		krb5_kdc_configuration *config,
-		pk_client_params *client_params,
-		const hdb_entry *client,
-		const KDC_REQ *req,
-		krb5_keyblock **reply_key,
-		METHOD_DATA *md)
+_kdc_pk_mk_pa_reply(krb5_context context,
+		    krb5_kdc_configuration *config,
+		    pk_client_params *client_params,
+		    const hdb_entry *client,
+		    const KDC_REQ *req,
+		    krb5_keyblock **reply_key,
+		    METHOD_DATA *md)
 {
     krb5_error_code ret;
     void *buf;
@@ -1436,12 +1437,12 @@ pk_principal_from_X509(krb5_context context,
 /* XXX match with issuer too ? */
 
 krb5_error_code
-_pk_check_client(krb5_context context,
-		 krb5_kdc_configuration *config,
-		 krb5_principal client_princ,
-		 const hdb_entry *client,
-		 pk_client_params *client_params,
-		 char **subject_name)
+_kdc_pk_check_client(krb5_context context,
+		     krb5_kdc_configuration *config,
+		     krb5_principal client_princ,
+		     const hdb_entry *client,
+		     pk_client_params *client_params,
+		     char **subject_name)
 {
     struct krb5_pk_cert *client_cert = client_params->certificate;
     krb5_principal cert_princ;
@@ -1530,10 +1531,10 @@ add_principal_mapping(krb5_context context,
 
 
 krb5_error_code
-_pk_initialize(krb5_context context,
-	       krb5_kdc_configuration *config,
-	       const char *user_id,
-	       const char *x509_anchors)
+_kdc_pk_initialize(krb5_context context,
+		   krb5_kdc_configuration *config,
+		   const char *user_id,
+		   const char *x509_anchors)
 {
     const char *mapping_file; 
     krb5_error_code ret;

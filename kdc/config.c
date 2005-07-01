@@ -516,7 +516,7 @@ krb5_kdc_configuration *configure(krb5_context context, int argc, char **argv)
 	if (x509_anchors == NULL)
 	    krb5_errx(context, 1, "pkinit enabled but no X509 anchors");
 
-	_pk_initialize(context, config, user_id, x509_anchors);
+	_kdc_pk_initialize(context, config, user_id, x509_anchors);
 
 	config->enable_pkinit_princ_in_cert = 
 	    krb5_config_get_bool_default(context, 

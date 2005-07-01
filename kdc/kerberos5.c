@@ -819,7 +819,7 @@ _kdc_as_rep(krb5_context context,
 	if (pa) {
 	    char *client_cert = NULL;
 
-	    ret = _pk_rd_padata(context, config, req, pa, &pkp);
+	    ret = _kdc_pk_rd_padata(context, config, req, pa, &pkp);
 	    if (ret) {
 		ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
 		kdc_log(context, config, 5, 
@@ -830,16 +830,16 @@ _kdc_as_rep(krb5_context context,
 	    if (ret == 0 && pkp == NULL)
 		goto ts_enc;
 
-	    ret = _pk_check_client(context,
-				   config,
-				   client_princ, 
-				   client,
-				   pkp,
-				   &client_cert);
+	    ret = _kdc_pk_check_client(context,
+				       config,
+				       client_princ, 
+				       client,
+				       pkp,
+				       &client_cert);
 	    if (ret) {
 		e_text = "PKINIT certificate not allowed to "
 		    "impersonate principal";
-		_pk_free_client_param(context, pkp);
+		_kdc_pk_free_client_param(context, pkp);
 		pkp = NULL;
 		goto ts_enc;
 	    }
@@ -1276,7 +1276,7 @@ _kdc_as_rep(krb5_context context,
     reply_key = &ckey->key;
 #if PKINIT
     if (pkp) {
-	ret = _pk_mk_pa_reply(context, config, pkp, client, req,
+	ret = _kdc_pk_mk_pa_reply(context, config, pkp, client, req,
 			      &reply_key, rep.padata);
 	if (ret)
 	    goto out;
@@ -1315,7 +1315,7 @@ _kdc_as_rep(krb5_context context,
  out2:
 #ifdef PKINIT
     if (pkp)
-	_pk_free_client_param(context, pkp);
+	_kdc_pk_free_client_param(context, pkp);
 #endif
     if (client_princ)
 	krb5_free_principal(context, client_princ);
