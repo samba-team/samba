@@ -838,11 +838,29 @@ static BOOL test_GetForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		r.in.buffer = &blob;
 		r.in.offered = r.out.needed;
 		status = dcerpc_spoolss_GetForm(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("GetForm failed - %s\n",
+				nt_errstr(status));
+			return False;
+		}
+
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			printf("GetForm failed - %s\n",
+				win_errstr(r.out.result));
+			return False;
+		}
 
 		if (!r.out.info) {
 			printf("No form info returned\n");
 			return False;
 		}
+	}
+
+
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("GetForm failed - %s\n",
+			win_errstr(r.out.result));
+		return False;
 	}
 
 	return True;
@@ -853,6 +871,7 @@ static BOOL test_EnumForms(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct spoolss_EnumForms r;
+	BOOL ret = True;
 
 	r.in.handle = handle;
 	r.in.level = 1;
@@ -890,7 +909,7 @@ static BOOL test_EnumForms(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		info = r.out.info;
 
 		for (j = 0; j < r.out.count; j++) {
-			test_GetForm(p, mem_ctx, handle, info[j].info1.form_name);
+			if (!print_server) ret &= test_GetForm(p, mem_ctx, handle, info[j].info1.form_name);
 		}
 	}
 
@@ -933,7 +952,7 @@ static BOOL test_DeleteForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_AddForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-		  struct policy_handle *handle)
+		  struct policy_handle *handle, BOOL print_server)
 {
 	struct spoolss_AddForm r;
 	struct spoolss_AddFormInfo1 addform;
@@ -961,9 +980,11 @@ static BOOL test_AddForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("AddForm failed - %s\n", nt_errstr(status));
+		printf("AddForm failed - %s\n", win_errstr(r.out.result));
 		goto done;
 	}
+
+	if (!print_server) ret &= test_GetForm(p, mem_ctx, handle, form_name);
 
 	{
 		struct spoolss_SetForm sf;
@@ -995,6 +1016,8 @@ static BOOL test_AddForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 	}
+
+	if (!print_server) ret &= test_GetForm(p, mem_ctx, handle, form_name);
 
  done:
 	if (!test_DeleteForm(p, mem_ctx, handle, form_name)) {
@@ -1821,7 +1844,7 @@ static BOOL test_OpenPrinterEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	if (!test_AddForm(p, mem_ctx, &handle)) {
+	if (!test_AddForm(p, mem_ctx, &handle, False)) {
 		ret = False;
 	}
 
@@ -2073,6 +2096,8 @@ BOOL torture_rpc_spoolss(void)
 	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "DsPresent");
 
 	ret &= test_EnumForms(ctx->p, ctx, &ctx->server_handle, True);
+
+	ret &= test_AddForm(ctx->p, ctx, &ctx->server_handle, True);
 
 	ret &= test_EnumPorts(ctx);
 

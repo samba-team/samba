@@ -144,28 +144,50 @@ static WERROR spoolss_check_server_name(struct dcesrv_call_state *dce_call,
 					const char *server_name)
 {
 	BOOL ret;
-	const char *ip_str;
+	char *str;
 
+	/* NULL is ok */
 	if (!server_name) return WERR_OK;
 
+	/* "" is ok */
 	ret = strequal("",server_name);
 	if (ret) return WERR_OK;
 
+	/* just "\\" is invalid */
+	if (strequal("\\\\", server_name)) {
+		return WERR_INVALID_PRINTER_NAME;
+	}
+
+	/* then we need "\\" */
 	if (strncmp("\\\\", server_name, 2) != 0) {
 		return WERR_INVALID_PRINTER_NAME;
 	}
 
 	server_name += 2;
 
+	/* NETBIOS NAME is ok */
 	ret = strequal(lp_netbios_name(), server_name);
 	if (ret) return WERR_OK;
 
-	/* TODO: check dns name here ? */
+	/* DNS NAME is ok
+	 * TODO: we need to check if aliases are also ok
+	 */
+	if (lp_realm() != NULL) {
+		str = talloc_asprintf(mem_ctx, "%s.%s",
+						lp_netbios_name(),
+						lp_realm());
+		W_ERROR_HAVE_NO_MEMORY(str);
 
-	ip_str = socket_get_my_addr(dce_call->conn->srv_conn->socket, mem_ctx);
-	W_ERROR_HAVE_NO_MEMORY(ip_str);
+		ret = strequal(str, server_name);
+		talloc_free(str);
+		if (ret) return WERR_OK;
+	}
 
-	ret = strequal(ip_str, server_name);
+	str = socket_get_my_addr(dce_call->conn->srv_conn->socket, mem_ctx);
+	W_ERROR_HAVE_NO_MEMORY(str);
+
+	ret = strequal(str, server_name);
+	talloc_free(str);
 	if (ret) return WERR_OK;
 
 	return WERR_INVALID_PRINTER_NAME;
@@ -650,9 +672,10 @@ static WERROR spoolss_GetForm(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 
 	switch (handle->type) {
 		case NTPTR_HANDLE_SERVER:
-			status = ntptr_GetPrintServerForm(handle, mem_ctx, r);
-			W_ERROR_NOT_OK_RETURN(status);
-			break;
+			/*
+			 * stupid, but w2k3 returns WERR_BADFID here?
+			 */
+			return WERR_BADFID;
 		case NTPTR_HANDLE_PRINTER:
 			status = ntptr_GetPrinterForm(handle, mem_ctx, r);
 			W_ERROR_NOT_OK_RETURN(status);

@@ -112,18 +112,6 @@ WERROR ntptr_AddPrintServerForm(struct ntptr_GenericHandle *server, TALLOC_CTX *
 	return server->ntptr->ops->AddPrintServerForm(server, mem_ctx, r);
 }
 
-WERROR ntptr_GetPrintServerForm(struct ntptr_GenericHandle *server, TALLOC_CTX *mem_ctx,
-				struct spoolss_GetForm *r)
-{
-	if (server->type != NTPTR_HANDLE_SERVER) {
-		return WERR_FOOBAR;
-	}
-	if (!server->ntptr->ops->GetPrintServerForm) {
-		return WERR_NOT_SUPPORTED;
-	}
-	return server->ntptr->ops->GetPrintServerForm(server, mem_ctx, r);
-}
-
 WERROR ntptr_SetPrintServerForm(struct ntptr_GenericHandle *server, TALLOC_CTX *mem_ctx,
 				struct spoolss_SetForm *r)
 {
