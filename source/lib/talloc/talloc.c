@@ -59,8 +59,9 @@
 
 
 #define MAX_TALLOC_SIZE 0x10000000
-#define TALLOC_MAGIC 0xe814ec4f
-#define TALLOC_MAGIC_FREE 0x7faebef3
+#define TALLOC_MAGIC 0xe814ec70
+#define TALLOC_FLAG_FREE 0x01
+#define TALLOC_FLAG_LOOP 0x02
 #define TALLOC_MAGIC_REFERENCE ((const char *)1)
 
 /* by default we abort when given a bad pointer (such as when talloc_free() is called 
@@ -100,7 +101,7 @@ struct talloc_chunk {
 	talloc_destructor_t destructor;
 	const char *name;
 	union {
-		unsigned magic;
+		unsigned flags;
 		double align_dummy;
 	} u;
 };
@@ -109,14 +110,12 @@ struct talloc_chunk {
 static struct talloc_chunk *talloc_chunk_from_ptr(const void *ptr)
 {
 	struct talloc_chunk *tc = discard_const_p(struct talloc_chunk, ptr)-1;
-	if (tc->u.magic != TALLOC_MAGIC) { 
-		if (tc->u.magic == TALLOC_MAGIC_FREE) {
-			TALLOC_ABORT("Bad talloc magic value - double free"); 
-		} else {
-			TALLOC_ABORT("Bad talloc magic value - unknown value"); 
-		}
+	if ((tc->u.flags & ~0xF) != TALLOC_MAGIC) { 
+		TALLOC_ABORT("Bad talloc magic value - unknown value"); 
 	}
-
+	if (tc->u.flags & TALLOC_FLAG_FREE) {
+		TALLOC_ABORT("Bad talloc magic value - double free"); 
+	}
 	return tc;
 }
 
@@ -183,7 +182,7 @@ void *_talloc(const void *context, size_t size)
 	if (tc == NULL) return NULL;
 
 	tc->size = size;
-	tc->u.magic = TALLOC_MAGIC;
+	tc->u.flags = TALLOC_MAGIC;
 	tc->destructor = NULL;
 	tc->child = NULL;
 	tc->name = NULL;
@@ -537,6 +536,11 @@ int talloc_free(void *ptr)
 		return -1;
 	}
 
+	if (tc->u.flags & TALLOC_FLAG_LOOP) {
+		/* we have a free loop - stop looping */
+		return 0;
+	}
+
 	if (tc->destructor) {
 		talloc_destructor_t d = tc->destructor;
 		if (d == (talloc_destructor_t)-1) {
@@ -550,6 +554,8 @@ int talloc_free(void *ptr)
 		tc->destructor = NULL;
 	}
 
+	tc->u.flags |= TALLOC_FLAG_LOOP;
+
 	talloc_free_children(ptr);
 
 	if (tc->parent) {
@@ -562,7 +568,7 @@ int talloc_free(void *ptr)
 		if (tc->next) tc->next->prev = tc->prev;
 	}
 
-	tc->u.magic = TALLOC_MAGIC_FREE;
+	tc->u.flags |= TALLOC_FLAG_FREE;
 
 	free(tc);
 	return 0;
@@ -602,7 +608,7 @@ void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *n
 	}
 
 	/* by resetting magic we catch users of the old memory */
-	tc->u.magic = TALLOC_MAGIC_FREE;
+	tc->u.flags |= TALLOC_FLAG_FREE;
 
 #if ALWAYS_REALLOC
 	new_ptr = malloc(size + sizeof(*tc));
@@ -614,12 +620,12 @@ void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *n
 	new_ptr = realloc(tc, size + sizeof(*tc));
 #endif
 	if (!new_ptr) {	
-		tc->u.magic = TALLOC_MAGIC; 
+		tc->u.flags &= ~TALLOC_FLAG_FREE; 
 		return NULL; 
 	}
 
 	tc = new_ptr;
-	tc->u.magic = TALLOC_MAGIC;
+	tc->u.flags &= ~TALLOC_FLAG_FREE; 
 	if (tc->parent) {
 		tc->parent->child = new_ptr;
 	}
@@ -714,10 +720,19 @@ off_t talloc_total_size(const void *ptr)
 
 	tc = talloc_chunk_from_ptr(ptr);
 
+	if (tc->u.flags & TALLOC_FLAG_LOOP) {
+		return 0;
+	}
+
+	tc->u.flags |= TALLOC_FLAG_LOOP;
+
 	total = tc->size;
 	for (c=tc->child;c;c=c->next) {
 		total += talloc_total_size(c+1);
 	}
+
+	tc->u.flags &= ~TALLOC_FLAG_LOOP;
+
 	return total;
 }
 
@@ -729,10 +744,19 @@ off_t talloc_total_blocks(const void *ptr)
 	off_t total = 0;
 	struct talloc_chunk *c, *tc = talloc_chunk_from_ptr(ptr);
 
+	if (tc->u.flags & TALLOC_FLAG_LOOP) {
+		return 0;
+	}
+
+	tc->u.flags |= TALLOC_FLAG_LOOP;
+
 	total++;
 	for (c=tc->child;c;c=c->next) {
 		total += talloc_total_blocks(c+1);
 	}
+
+	tc->u.flags &= ~TALLOC_FLAG_LOOP;
+
 	return total;
 }
 
@@ -758,6 +782,12 @@ void talloc_report_depth(const void *ptr, FILE *f, int depth)
 {
 	struct talloc_chunk *c, *tc = talloc_chunk_from_ptr(ptr);
 
+	if (tc->u.flags & TALLOC_FLAG_LOOP) {
+		return;
+	}
+
+	tc->u.flags |= TALLOC_FLAG_LOOP;
+
 	for (c=tc->child;c;c=c->next) {
 		if (c->name == TALLOC_MAGIC_REFERENCE) {
 			struct talloc_reference_handle *handle = (void *)(c+1);
@@ -774,7 +804,7 @@ void talloc_report_depth(const void *ptr, FILE *f, int depth)
 			talloc_report_depth(c+1, f, depth+1);
 		}
 	}
-
+	tc->u.flags &= ~TALLOC_FLAG_LOOP;
 }
 
 /*
