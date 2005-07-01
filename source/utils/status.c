@@ -119,6 +119,11 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 			case DENY_READ: d_printf("DENY_READ  "); break;
 			case DENY_WRITE:printf("DENY_WRITE "); break;
 			case DENY_FCB:  d_printf("DENY_FCB "); break;
+			default: {
+				d_printf("unknown-please report ! e->share_access = 0x%x, e->create_options = 0x%x\n",
+					(unsigned int)e->share_access, (unsigned int)e->create_options );
+				break;
+			}
 		}
 		d_printf("0x%-8x  ",(unsigned int)e->access_mask);
 		if (e->access_mask & (FILE_READ_DATA|FILE_WRITE_DATA)) {
