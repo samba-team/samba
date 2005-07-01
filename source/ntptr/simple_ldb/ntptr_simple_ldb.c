@@ -160,6 +160,53 @@ static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC
 		r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
 		r->out.data.value	= 1;
 		return WERR_OK;
+	} else if (strcmp("OSVersion", r->in.value_name) == 0) {
+		DATA_BLOB blob;
+		NTSTATUS status;
+		struct spoolss_OSVersion os;
+
+		os.major		= dcesrv_common_get_version_major(mem_ctx, NULL);
+		os.minor		= dcesrv_common_get_version_minor(mem_ctx, NULL);
+		os.build		= dcesrv_common_get_version_build(mem_ctx, NULL);
+		os.extra_string		= "";
+
+		status = ndr_push_struct_blob(&blob, mem_ctx, &os, (ndr_push_flags_fn_t)ndr_push_spoolss_OSVersion);
+		if (!NT_STATUS_IS_OK(status)) {
+			return WERR_GENERAL_FAILURE;
+		}
+
+		r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_BINARY;
+		r->out.data.binary	= blob;
+		return WERR_OK;
+	} else if (strcmp("OSVersionEx", r->in.value_name) == 0) {
+		DATA_BLOB blob;
+		NTSTATUS status;
+		struct spoolss_OSVersionEx os_ex;
+
+		os_ex.major		= dcesrv_common_get_version_major(mem_ctx, NULL);
+		os_ex.minor		= dcesrv_common_get_version_minor(mem_ctx, NULL);
+		os_ex.build		= dcesrv_common_get_version_build(mem_ctx, NULL);
+		os_ex.extra_string		= "";
+		os_ex.unknown2		= 0;
+		os_ex.unknown3		= 0;
+
+		status = ndr_push_struct_blob(&blob, mem_ctx, &os_ex, (ndr_push_flags_fn_t)ndr_push_spoolss_OSVersionEx);
+		if (!NT_STATUS_IS_OK(status)) {
+			return WERR_GENERAL_FAILURE;
+		}
+
+		r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_BINARY;
+		r->out.data.binary	= blob;
+		return WERR_OK;
+	} else if (strcmp("DNSMachineName", r->in.value_name) == 0) {
+		if (!lp_realm()) return WERR_INVALID_PARAM;
+
+		r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_STRING;
+		r->out.data.string	= talloc_asprintf(mem_ctx, "%s.%s",
+								   lp_netbios_name(),
+								   lp_realm());
+		W_ERROR_HAVE_NO_MEMORY(r->out.data.string);
+		return WERR_OK;
 	}
 
 	return WERR_INVALID_PARAM;
