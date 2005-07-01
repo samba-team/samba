@@ -47,4 +47,6 @@ done
 
 testit "CLDAP" bin/smbtorture $TORTURE_OPTIONS //$SERVER/_none_ LDAP-CLDAP || failed=`expr $failed + 1`
 
-
+LDBDIR=lib/ldb
+export LDBDIR
+testit "ldb tests" $LDBDIR/tests/test-tdb.sh
