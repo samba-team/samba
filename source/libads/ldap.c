@@ -2397,28 +2397,28 @@ const char *ads_get_attrname_by_oid(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const 
 	const char *attrs[] = { "lDAPDisplayName", NULL };
 
 	if (ads == NULL || mem_ctx == NULL || OID == NULL) {
-		goto done;
+		goto failed;
 	}
 
 	expr = talloc_asprintf(mem_ctx, "(attributeId=%s)", OID);
 	if (expr == NULL) {
-		goto done;
+		goto failed;
 	}
 
 	rc = ads_do_search_retry(ads, ads->config.schema_path, 
 			LDAP_SCOPE_SUBTREE, expr, attrs, &res);
 	if (!ADS_ERR_OK(rc)) {
-		goto done;
+		goto failed;
 	}
 
 	count = ads_count_replies(ads, res);
 	if (count == 0 || !res) {
-		goto done;
+		goto failed;
 	}
 
 	return ads_pull_string(ads, mem_ctx, res, "lDAPDisplayName");
 	
-done:
+failed:
 	DEBUG(0,("ads_get_attrname_by_oid: failed to retrieve name for oid: %s\n", 
 		OID));
 	
