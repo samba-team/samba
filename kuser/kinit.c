@@ -57,7 +57,7 @@ struct getarg_strings extra_addresses;
 int anonymous_flag	= 0;
 char *lifetime 		= NULL;
 char *renew_life	= NULL;
-char *server		= NULL;
+char *server_str	= NULL;
 char *cred_cache	= NULL;
 char *start_str		= NULL;
 struct getarg_strings etype_str;
@@ -116,7 +116,7 @@ static struct getargs args[] = {
     { "renewable-life",	'r', arg_string, &renew_life,
       "renewable lifetime of tickets", "time" },
 
-    { "server", 	'S', arg_string, &server,
+    { "server", 	'S', arg_string, &server_str,
       "server to get ticket for", "principal" },
 
     { "start-time",	's', arg_string, &start_str,
@@ -536,7 +536,7 @@ get_new_tickets(krb5_context context,
 					  principal,
 					  kt,
 					  start_time,
-					  server,
+					  server_str,
 					  opt);
 	krb5_kt_close(context, kt);
     } else if (pk_user_id) {
@@ -547,7 +547,7 @@ get_new_tickets(krb5_context context,
 					    krb5_prompter_posix,
 					    NULL,
 					    start_time,
-					    server,
+					    server_str,
 					    opt);
     } else if (!interactive) {
 	krb5_warnx(context, "Not interactive, failed to get initial ticket");
@@ -574,7 +574,7 @@ get_new_tickets(krb5_context context,
 					    krb5_prompter_posix,
 					    NULL,
 					    start_time,
-					    server,
+					    server_str,
 					    opt);
     }
     krb5_get_init_creds_opt_free(opt);
@@ -690,18 +690,18 @@ renew_func(void *ptr)
 
 
     ret = renew_validate(ctx->context, renewable_flag, validate_flag,
-			     ctx->ccache, server, ctx->ticket_life);
+			     ctx->ccache, server_str, ctx->ticket_life);
     if (ret)
 	get_new_tickets(ctx->context, ctx->principal, 
 			ctx->ccache, ctx->ticket_life, 0);
 
     if(get_v4_tgt || convert_524)
-	do_524init(ctx->context, ctx->ccache, NULL, server);
+	do_524init(ctx->context, ctx->ccache, NULL, server_str);
     if(do_afslog && k_hasafs())
 	krb5_afslog(ctx->context, ctx->ccache, NULL, NULL);
 
     expire = ticket_lifetime(ctx->context, ctx->ccache, ctx->principal,
-			     server) / 2;
+			     server_str) / 2;
     return expire + 1;
 }
 
@@ -836,7 +836,7 @@ main (int argc, char **argv)
 
     if(renew_flag || validate_flag) {
 	ret = renew_validate(context, renew_flag, validate_flag, 
-			     ccache, server, ticket_life);
+			     ccache, server_str, ticket_life);
 	exit(ret != 0);
     }
 
@@ -844,14 +844,14 @@ main (int argc, char **argv)
 	get_new_tickets(context, principal, ccache, ticket_life, 1);
 
     if(get_v4_tgt || convert_524)
-	do_524init(context, ccache, NULL, server);
+	do_524init(context, ccache, NULL, server_str);
     if(do_afslog && k_hasafs())
 	krb5_afslog(context, ccache, NULL, NULL);
     if(argc > 1) {
 	struct renew_ctx ctx;
 	time_t timeout;
 
-	timeout = ticket_lifetime(context, ccache, principal, server) / 2;
+	timeout = ticket_lifetime(context, ccache, principal, server_str) / 2;
 
 	ctx.context = context;
 	ctx.ccache = ccache;
