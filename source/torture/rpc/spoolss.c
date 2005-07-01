@@ -100,7 +100,6 @@ static BOOL test_OpenPrinter_server(struct test_spoolss_context *ctx)
 
 	op.in.printername	= talloc_asprintf(ctx, "\\\\%s", dcerpc_server_name(ctx->p));
 	op.in.datatype		= NULL;
-	op.in.devmode_ctr.size	= 0;
 	op.in.devmode_ctr.devmode= NULL;
 	op.in.access_mask	= 0;
 	op.out.handle		= &ctx->server_handle;
@@ -1328,9 +1327,7 @@ static BOOL test_PausePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.handle		= handle;
 	r.in.level		= 0;
 	r.in.info.info1		= NULL;
-	r.in.devmode_ctr.size	= 0;
 	r.in.devmode_ctr.devmode= NULL;
-	r.in.secdesc_ctr.size	= 0;
 	r.in.secdesc_ctr.sd	= NULL;
 	r.in.command		= SPOOLSS_PRINTER_CONTROL_PAUSE;
 
@@ -1360,9 +1357,7 @@ static BOOL test_ResumePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.handle		= handle;
 	r.in.level		= 0;
 	r.in.info.info1		= NULL;
-	r.in.devmode_ctr.size	= 0;
 	r.in.devmode_ctr.devmode= NULL;
-	r.in.secdesc_ctr.size	= 0;
 	r.in.secdesc_ctr.sd	= NULL;
 	r.in.command		= SPOOLSS_PRINTER_CONTROL_RESUME;
 
@@ -1663,7 +1658,6 @@ static BOOL test_OpenPrinter_badname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	op.in.printername	= name;
 	op.in.datatype		= NULL;
-	op.in.devmode_ctr.size	= 0;
 	op.in.devmode_ctr.devmode= NULL;
 	op.in.access_mask	= 0;
 	op.out.handle		= &handle;
@@ -1686,7 +1680,6 @@ static BOOL test_OpenPrinter_badname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	opEx.in.printername		= name;
 	opEx.in.datatype		= NULL;
-	opEx.in.devmode_ctr.size	= 0;
 	opEx.in.devmode_ctr.devmode	= NULL;
 	opEx.in.access_mask		= 0;
 	opEx.in.level			= 1;
@@ -1744,7 +1737,6 @@ static BOOL test_OpenPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r.in.printername	= talloc_asprintf(mem_ctx, "\\\\%s\\%s", dcerpc_server_name(p), name);
 	r.in.datatype		= NULL;
-	r.in.devmode_ctr.size	= 0;
 	r.in.devmode_ctr.devmode= NULL;
 	r.in.access_mask	= SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle		= &handle;
@@ -1794,7 +1786,6 @@ static BOOL call_OpenPrinterEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	r.in.datatype		= NULL;
-	r.in.devmode_ctr.size	= 0;
 	r.in.devmode_ctr.devmode= NULL;
 	r.in.access_mask	= SEC_FLAG_MAXIMUM_ALLOWED;
 	r.in.level		= 1;

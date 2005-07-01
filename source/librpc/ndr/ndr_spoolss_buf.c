@@ -523,3 +523,9 @@ NTSTATUS ndr_push_spoolss_SetPrinterData(struct ndr_push *ndr, int flags, const 
 	}
 	return NT_STATUS_OK;
 }
+
+uint32_t _ndr_size_spoolss_DeviceMode(struct spoolss_DeviceMode *devmode, uint32_t flags)
+{
+	if (!devmode) return 0;
+	return ndr_size_spoolss_DeviceMode(devmode,flags);
+}
