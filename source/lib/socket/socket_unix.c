@@ -101,7 +101,7 @@ static NTSTATUS unixdom_connect(struct socket_context *sock,
 	int ret;
 
 	if (strlen(srv_address)+1 > sizeof(srv_addr.sun_path)) {
-		return NT_STATUS_INVALID_PARAMETER;
+		return NT_STATUS_OBJECT_PATH_INVALID;
 	}
 
 	ZERO_STRUCT(srv_addr);
@@ -124,7 +124,7 @@ static NTSTATUS unixdom_listen(struct socket_context *sock,
 	int ret;
 
 	if (strlen(my_address)+1 > sizeof(my_addr.sun_path)) {
-		return NT_STATUS_INVALID_PARAMETER;
+		return NT_STATUS_OBJECT_PATH_INVALID;
 	}
 
 	/* delete if it already exists */
@@ -259,7 +259,7 @@ static NTSTATUS unixdom_sendto(struct socket_context *sock,
 	struct sockaddr_un srv_addr;
 
 	if (strlen(dest_addr)+1 > sizeof(srv_addr.sun_path)) {
-		return NT_STATUS_INVALID_PARAMETER;
+		return NT_STATUS_OBJECT_PATH_INVALID;
 	}
 
 	ZERO_STRUCT(srv_addr);
