@@ -2085,6 +2085,9 @@ BOOL torture_rpc_spoolss(void)
 	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "DefaultSpoolDirectory");
 	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "Architecture");
 	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "DsPresent");
+	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "OSVersion");
+	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "OSVersionEx");
+	ret &= test_GetPrinterData(ctx->p, ctx, &ctx->server_handle, "DNSMachineName");
 
 	ret &= test_EnumForms(ctx->p, ctx, &ctx->server_handle, True);
 

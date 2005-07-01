@@ -724,15 +724,37 @@
 	/* Function: 0x1a */
 	const string SPOOLSS_ARCHITECTURE_NT_X86		= "Windows NT x86";
 
+	typedef [public,gensize] struct {
+		[value(ndr_size_spoolss_OSVersion(r,ndr->flags))] uint32 _ndr_size;
+		uint32 major;
+		uint32 minor;
+		uint32 build;
+		[value(2)] uint32 unknown;
+		[subcontext(0),subcontext_size(256)] nstring extra_string;
+	} spoolss_OSVersion;
+
+	typedef [public,gensize] struct {
+		[value(ndr_size_spoolss_OSVersionEx(r,ndr->flags))] uint32 _ndr_size;
+		uint32 major;
+		uint32 minor;
+		uint32 build;
+		[value(2)] uint32 unknown1;
+		[subcontext(0),subcontext_size(256)] nstring extra_string;
+		uint32 unknown2;/* service pack number? I saw 0 from w2k3 and 1 from winxp sp1*/
+		uint32 unknown3;/* hmm? w2k3: 131346(0x20112) winxp sp1: 503382272 0x1E010100 */
+	} spoolss_OSVersionEx;
+
 	typedef [v1_enum] enum {
 		SPOOLSS_PRINTER_DATA_TYPE_NULL = 0,
 		SPOOLSS_PRINTER_DATA_TYPE_STRING = 1,
+		SPOOLSS_PRINTER_DATA_TYPE_BINARY = 3,
 		SPOOLSS_PRINTER_DATA_TYPE_UINT32 = 4
 	} spoolss_PrinterDataType;
 
 	typedef [nodiscriminant,gensize] union {
 		[case(SPOOLSS_PRINTER_DATA_TYPE_NULL)];
 		[case(SPOOLSS_PRINTER_DATA_TYPE_STRING)] nstring string;
+		[case(SPOOLSS_PRINTER_DATA_TYPE_BINARY),flag(NDR_REMAINING)] DATA_BLOB binary;
 		[case(SPOOLSS_PRINTER_DATA_TYPE_UINT32)] uint32 value;
 		[default,flag(NDR_REMAINING)] DATA_BLOB data;
 	} spoolss_PrinterData;
