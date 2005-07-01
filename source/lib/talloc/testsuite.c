@@ -818,6 +818,26 @@ static BOOL test_speed(void)
 }
 
 
+BOOL test_lifeless(void)
+{
+	char *top = talloc_new(NULL);
+	char *parent, *child; 
+	char *child_owner = talloc_new(NULL);
+
+	printf("TESTING TALLOC_UNLINK LOOP\n");
+
+	parent = talloc_strdup(top, "parent");
+	child = talloc_strdup(parent, "child");  
+	talloc_reference(child, parent);
+	talloc_reference(child_owner, child); 
+	talloc_unlink(top, parent);
+	talloc_free(child);
+	talloc_report_full(top, stdout);
+	talloc_free(top);
+	return True;
+}
+
+
 BOOL torture_local_talloc(void) 
 {
 	BOOL ret = True;
@@ -834,6 +854,7 @@ BOOL torture_local_talloc(void)
 	ret &= test_unref_reparent();
 	ret &= test_realloc_fn();
 	ret &= test_type();
+	ret &= test_lifeless();
 	if (ret) {
 		ret &= test_speed();
 	}
