@@ -63,7 +63,8 @@ struct builtin_regkey_value {
 };
 
 static struct builtin_regkey_value builtin_registry_values[] = {
-	{ "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", 	"SystemRoot", 	REG_SZ, 	{ "c:\\Windows" } },
+	{ "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",         "SystemRoot",          REG_SZ,  { "c:\\Windows" } },
+	{ "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Ports",  "Samba Printer Port",  REG_SZ,  { "" } },
 	{ NULL, NULL, 0, { NULL } }
 };
 
