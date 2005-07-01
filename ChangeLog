@@ -1,5 +1,13 @@
+2005-07-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc: adapt pkinit code to libkdc split
+
 2005-06-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* tools/Makefile.am: add depency on LIB_dlopen and LIB_door_create
+	
+	* tools/krb5-config.in: add depency on LIB_dlopen and LIB_door_create
+	
 	* kdc/kdc_locl.h: indent, remove dup prototypes
 	
 	* kdc/libkdc: don't pollute namespace, generate public headerfile
