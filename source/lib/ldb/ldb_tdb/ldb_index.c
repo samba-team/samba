@@ -118,9 +118,8 @@ static char *ldb_dn_key(struct ldb_context *ldb,
 		talloc_free(attr_folded);
 		return NULL;
 	}
-	
 	if (ldb_should_b64_encode(&v)) {
-		char *vstr = ldb_base64_encode(ldb, value->data, value->length);
+		char *vstr = ldb_base64_encode(ldb, v.data, v.length);
 		if (!vstr) return NULL;
 		ret = talloc_asprintf(ldb, "%s:%s::%s", LTDB_INDEX, attr_folded, vstr);
 		talloc_free(vstr);

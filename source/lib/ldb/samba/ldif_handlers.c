@@ -85,7 +85,29 @@ static int ldb_comparison_objectSid(struct ldb_context *ldb,
 	    strncmp(v2->data, "S-", 2) == 0) {
 		return strcmp(v1->data, v2->data);
 	}
+	if (strncmp(v1->data, "S-", 2) == 0) {
+		struct ldb_val v;
+		int ret;
+		if (ldif_read_objectSid(ldb, v1, &v) != 0) {
+			return -1;
+		}
+		ret = ldb_comparison_binary(ldb, &v, v2);
+		talloc_free(v.data);
+		return ret;
+	}
 	return ldb_comparison_binary(ldb, v1, v2);
+}
+
+/*
+  canonicalise a objectSid
+*/
+static int ldb_canonicalise_objectSid(struct ldb_context *ldb, const struct ldb_val *in,
+				      struct ldb_val *out)
+{
+	if (strncmp(in->data, "S-", 2) == 0) {
+		return ldif_read_objectSid(ldb, in, out);
+	}
+	return ldb_handler_copy(ldb, in, out);
 }
 
 
@@ -95,7 +117,7 @@ static const struct ldb_attrib_handler samba_handlers[] = {
 		.flags           = 0,
 		.ldif_read_fn    = ldif_read_objectSid,
 		.ldif_write_fn   = ldif_write_objectSid,
-		.canonicalise_fn = ldb_handler_copy,
+		.canonicalise_fn = ldb_canonicalise_objectSid,
 		.comparison_fn   = ldb_comparison_objectSid
 	}
 };
