@@ -164,6 +164,91 @@ done:
 }
 
 
+/*
+  test delete on close 
+*/
+static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	struct smb_unlink io;
+	struct smb_rmdir dio;
+	NTSTATUS status;
+	BOOL ret = True;
+	int fnum;
+	const char *fname = BASEDIR "\\test.txt";
+	const char *dname = BASEDIR "\\test.dir";
+	union smb_setfileinfo sfinfo;
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return False;
+	}
+
+	dio.in.path = dname;
+
+	io.in.pattern = fname;
+	io.in.attrib = 0;
+	status = smb_raw_unlink(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+	printf("Testing with delete_on_close 0\n");
+	fnum = create_complex_file(cli, mem_ctx, fname);
+
+	sfinfo.disposition_info.level = RAW_SFILEINFO_DISPOSITION_INFORMATION;
+	sfinfo.disposition_info.file.fnum = fnum;
+	sfinfo.disposition_info.in.delete_on_close = 0;
+	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smbcli_close(cli->tree, fnum);
+
+	status = smb_raw_unlink(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("Testing with delete_on_close 1\n");
+	fnum = create_complex_file(cli, mem_ctx, fname);
+	sfinfo.disposition_info.file.fnum = fnum;
+	sfinfo.disposition_info.in.delete_on_close = 1;
+	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smbcli_close(cli->tree, fnum);
+
+	status = smb_raw_unlink(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+
+	printf("Testing with directory and delete_on_close 0\n");
+	fnum = create_directory_handle(cli->tree, dname);
+
+	sfinfo.disposition_info.level = RAW_SFILEINFO_DISPOSITION_INFORMATION;
+	sfinfo.disposition_info.file.fnum = fnum;
+	sfinfo.disposition_info.in.delete_on_close = 0;
+	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smbcli_close(cli->tree, fnum);
+
+	status = smb_raw_rmdir(cli->tree, &dio);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("Testing with directory delete_on_close 1\n");
+	fnum = create_directory_handle(cli->tree, dname);
+	sfinfo.disposition_info.file.fnum = fnum;
+	sfinfo.disposition_info.in.delete_on_close = 1;
+	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smbcli_close(cli->tree, fnum);
+
+	status = smb_raw_rmdir(cli->tree, &dio);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+done:
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
+	return ret;
+}
+
+
 /* 
    basic testing of unlink calls
 */
@@ -179,9 +264,8 @@ BOOL torture_raw_unlink(void)
 
 	mem_ctx = talloc_init("torture_raw_unlink");
 
-	if (!test_unlink(cli, mem_ctx)) {
-		ret = False;
-	}
+	ret &= test_unlink(cli, mem_ctx);
+	ret &= test_delete_on_close(cli, mem_ctx);
 
 	torture_close_connection(cli);
 	talloc_free(mem_ctx);
