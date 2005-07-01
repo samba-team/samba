@@ -93,12 +93,12 @@ bitswap32(int32_t b)
 
 static void
 parse_ticket_flags(krb5_context context,
-		   const char *flags_string, krb5_ticket_flags *ret_flags)
+		   const char *string, krb5_ticket_flags *ret_flags)
 {
     TicketFlags ff;
-    int flags = parse_flags(flags_string, asn1_TicketFlags_units(), 0);
+    int flags = parse_flags(string, asn1_TicketFlags_units(), 0);
     if (flags == -1)	/* XXX */
-	krb5_errx(context, 1, "bad flags specified: \"%s\"", flags_string);
+	krb5_errx(context, 1, "bad flags specified: \"%s\"", string);
 
     memset(&ff, 0, sizeof(ff));
     ff.proxy = 1;
