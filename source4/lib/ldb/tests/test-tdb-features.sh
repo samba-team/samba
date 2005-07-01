@@ -10,41 +10,41 @@ checkcount() {
     n=`bin/ldbsearch "$expression" | grep ^dn | wc -l`
     if [ $n != $count ]; then
 	echo "Got $n but expected $count for $expression"
-	bin/ldbsearch "$expression"
+	$VALGRIND bin/ldbsearch "$expression"
 	exit 1
     fi
     echo "OK: $count $expression"
 }
 
 echo "Testing case sensitve search"
-cat <<EOF | bin/ldbadd || exit 1
+cat <<EOF | $VALGRIND bin/ldbadd || exit 1
 dn: cn=t1,cn=TEST
+objectClass: testclass
 test: foo
 EOF
 
 
-echo $ldif | bin/ldbadd || exit 1
-bin/ldbsearch
+echo $ldif | $VALGRIND bin/ldbadd || exit 1
 
 checkcount 1 '(test=foo)'
 checkcount 0 '(test=FOO)'
 checkcount 0 '(test=fo*)'
 
 echo "Making case insensitive"
-cat <<EOF | bin/ldbmodify || exit 1
+cat <<EOF | $VALGRIND bin/ldbmodify || exit 1
 dn: @ATTRIBUTES
 changetype: add
 add: test
 test: CASE_INSENSITIVE
 EOF
 
-echo $ldif | bin/ldbmodify || exit 1
+echo $ldif | $VALGRIND bin/ldbmodify || exit 1
 checkcount 1 '(test=foo)'
 checkcount 1 '(test=FOO)'
 checkcount 0 '(test=fo*)'
 
 echo "adding wildcard"
-cat <<EOF | bin/ldbmodify || exit 1
+cat <<EOF | $VALGRIND bin/ldbmodify || exit 1
 dn: @ATTRIBUTES
 changetype: modify
 add: test
@@ -55,7 +55,7 @@ checkcount 1 '(test=FOO)'
 checkcount 1 '(test=fo*)'
 
 echo "adding i"
-cat <<EOF | bin/ldbmodify || exit 1
+cat <<EOF | $VALGRIND bin/ldbmodify || exit 1
 dn: cn=t1,cn=TEST
 changetype: modify
 add: i
@@ -65,7 +65,7 @@ checkcount 1 '(i=0x100)'
 checkcount 0 '(i=256)'
 
 echo "marking i as INTEGER"
-cat <<EOF | bin/ldbmodify || exit 1
+cat <<EOF | $VALGRIND bin/ldbmodify || exit 1
 dn: @ATTRIBUTES
 changetype: modify
 add: i
@@ -75,7 +75,7 @@ checkcount 1 '(i=0x100)'
 checkcount 1 '(i=256)'
 
 echo "adding j"
-cat <<EOF | bin/ldbmodify || exit 1
+cat <<EOF | $VALGRIND bin/ldbmodify || exit 1
 dn: cn=t1,cn=TEST
 changetype: modify
 add: j
@@ -85,7 +85,7 @@ checkcount 1 '(j=0x100)'
 checkcount 0 '(j=256)'
 
 echo "Adding wildcard attribute"
-cat <<EOF | bin/ldbmodify || exit 1
+cat <<EOF | $VALGRIND bin/ldbmodify || exit 1
 dn: @ATTRIBUTES
 changetype: modify
 add: *
@@ -93,5 +93,19 @@ add: *
 EOF
 checkcount 1 '(j=0x100)'
 checkcount 1 '(j=256)'
+
+echo "Testing class search"
+checkcount 0 '(objectClass=otherclass)'
+checkcount 1 '(objectClass=testclass)'
+
+echo "Adding subclass"
+cat <<EOF | $VALGRIND bin/ldbmodify || exit 1
+dn: @SUBCLASSES
+changetype: add
+add: otherclass
+otherclass: testclass
+EOF
+checkcount 1 '(objectClass=otherclass)'
+checkcount 1 '(objectClass=testclass)'
 
 rm -f $LDB_URL
