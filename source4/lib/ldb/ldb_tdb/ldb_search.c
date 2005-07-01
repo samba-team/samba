@@ -92,8 +92,9 @@ static int msg_add_all_elements(struct ldb_module *module, struct ldb_message *r
 	unsigned int i;
 
 	for (i=0;i<msg->num_elements;i++) {
-		int flags = ltdb_attribute_flags(module, msg->elements[i].name);
-		if ((msg->dn[0] != '@') && (flags & LTDB_FLAG_HIDDEN)) {
+		const struct ldb_attrib_handler *h;
+		h = ldb_attrib_handler(ldb, msg->elements[i].name);
+		if ((msg->dn[0] != '@') && (h->flags & LDB_ATTR_FLAG_HIDDEN)) {
 			continue;
 		}
 		if (msg_add_element(ldb, ret, &msg->elements[i]) != 0) {
@@ -195,7 +196,7 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
 int ltdb_has_wildcard(struct ldb_module *module, const char *attr_name, 
 		      const struct ldb_val *val)
 {
-	int flags;
+	const struct ldb_attrib_handler *h;
 
 	/* all attribute types recognise the "*" wildcard */
 	if (val->length == 1 && strncmp((char *)val->data, "*", 1) == 0) {
@@ -206,8 +207,8 @@ int ltdb_has_wildcard(struct ldb_module *module, const char *attr_name,
 		return 0;
 	}
 
-	flags = ltdb_attribute_flags(module, attr_name);
-	if (flags & LTDB_FLAG_WILDCARD) {
+	h = ldb_attrib_handler(module->ldb, attr_name);
+	if (h->flags & LDB_ATTR_FLAG_WILDCARD) {
 		return 1;
 	}
 
@@ -415,8 +416,8 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	}
 
 	/* see if it matches the given expression */
-	if (!ltdb_message_match(sinfo->module, msg, sinfo->tree, 
-				sinfo->base, sinfo->scope)) {
+	if (!ldb_match_message(sinfo->module->ldb, msg, sinfo->tree, 
+			       sinfo->base, sinfo->scope)) {
 		talloc_free(msg);
 		return 0;
 	}

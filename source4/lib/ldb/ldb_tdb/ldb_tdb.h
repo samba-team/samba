@@ -45,20 +45,11 @@ struct ltdb_private {
 #define LTDB_SEQUENCE_NUMBER "sequenceNumber"
 #define LTDB_OBJECTCLASS "objectClass"
 
-/* well known attribute flags */
-#define LTDB_FLAG_CASE_INSENSITIVE (1<<0)
-#define LTDB_FLAG_INTEGER          (1<<1)
-#define LTDB_FLAG_WILDCARD         (1<<2)
-#define LTDB_FLAG_OBJECTCLASS      (1<<3)
-#define LTDB_FLAG_HIDDEN           (1<<4)
-#define LTDB_FLAG_NONE             0 
-
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_cache.c  */
 
 int ltdb_cache_reload(struct ldb_module *module);
 int ltdb_cache_load(struct ldb_module *module);
 int ltdb_increase_sequence_number(struct ldb_module *module);
-int ltdb_attribute_flags(struct ldb_module *module, const char *attr_name);
 int ltdb_check_at_attributes_values(const struct ldb_val *value);
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_index.c  */
@@ -110,16 +101,6 @@ int ltdb_delete_noindex(struct ldb_module *module, const char *dn);
 int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *msg);
 int ltdb_lock_read(struct ldb_module *module);
 int ltdb_unlock_read(struct ldb_module *module);
-
-/* The following definitions come from lib/ldb/ldb_tdb/ldb_match.c  */
-int ltdb_val_equal(struct ldb_module *module,
-		  const char *attr_name,
-		  const struct ldb_val *v1, const struct ldb_val *v2);
-int ltdb_message_match(struct ldb_module *module, 
-		      struct ldb_message *msg,
-		      struct ldb_parse_tree *tree,
-		      const char *base,
-		      enum ldb_scope scope);
 
 int ltdb_index_del_value(struct ldb_module *module, const char *dn, 
 			 struct ldb_message_element *el, int v_idx);

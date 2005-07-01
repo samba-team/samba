@@ -68,6 +68,23 @@ struct ldb_module_ops {
 	const char * (*errstring)(struct ldb_module *);
 };
 
+
+/*
+  schema related information needed for matching rules
+*/
+struct ldb_schema {
+	/* attribute handling table */
+	unsigned num_attrib_handlers;
+	struct ldb_attrib_handler *attrib_handlers;
+
+	/* objectclass information */
+	unsigned num_classes;
+	struct ldb_subclass {
+		char *name;
+		char **subclasses;
+	} *classes;
+};
+
 /*
   every ldb connection is started by establishing a ldb_context
 */
@@ -85,9 +102,7 @@ struct ldb_context {
 		void *value;
 	} *opaque;
 
-	/* ldif attribute handling table */
-	unsigned ldif_num_handlers;
-	struct ldb_ldif_handler *ldif_handlers;
+	struct ldb_schema schema;
 };
 
 /* the modules init function */
@@ -145,5 +160,35 @@ int lsqlite3_connect(struct ldb_context *ldb,
 		     const char *options[]);
 struct ldb_module *timestamps_module_init(struct ldb_context *ldb, const char *options[]);
 struct ldb_module *schema_module_init(struct ldb_context *ldb, const char *options[]);
+
+const struct ldb_attrib_handler *ldb_attrib_handler(struct ldb_context *ldb,
+						    const char *attrib);
+
+int ldb_match_message(struct ldb_context *ldb, 
+		      struct ldb_message *msg,
+		      struct ldb_parse_tree *tree,
+		      const char *base,
+		      enum ldb_scope scope);
+
+void ldb_remove_attrib_handler(struct ldb_context *ldb, const char *attrib);
+const struct ldb_attrib_handler *ldb_attrib_handler_syntax(struct ldb_context *ldb,
+							   const char *syntax);
+int ldb_set_attrib_handlers(struct ldb_context *ldb, 
+			    const struct ldb_attrib_handler *handlers, 
+			    unsigned num_handlers);
+int ldb_setup_wellknown_attributes(struct ldb_context *ldb);
+
+struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn);
+char *ldb_dn_linearize(void *mem_ctx, struct ldb_dn *edn);
+int ldb_dn_compare(struct ldb_dn *edn0, struct ldb_dn *edn1);
+struct ldb_dn *ldb_dn_casefold(struct ldb_context *ldb, struct ldb_dn *edn);
+const char **ldb_subclass_list(struct ldb_context *ldb, const char *class);
+void ldb_subclass_remove(struct ldb_context *ldb, const char *class);
+int ldb_subclass_add(struct ldb_context *ldb, const char *class, const char *subclass);
+
+int ldb_handler_copy(struct ldb_context *ldb, 
+		     const struct ldb_val *in, struct ldb_val *out);
+int ldb_comparison_binary(struct ldb_context *ldb, 
+			  const struct ldb_val *v1, const struct ldb_val *v2);
 
 #endif
