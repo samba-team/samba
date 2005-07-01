@@ -49,6 +49,12 @@ struct reg_dyn_tree {
 	BOOL (*store_values)  ( const char *path, REGVAL_CTR *values );
 };
 
+/*********************************************************************
+ *********************************************************************
+ ** Utility Functions
+ *********************************************************************
+ *********************************************************************/
+
 
 /**********************************************************************
  move to next non-delimter character
@@ -94,7 +100,10 @@ static char* dos_basename ( char *path )
 	return p;
 }
 
-/**********************************************************************
+/*********************************************************************
+ *********************************************************************
+ ** "HKLM/SYSTEM/CURRENTCONTROLSET/CONTROL/PRINT/FORMS"
+ *********************************************************************
  *********************************************************************/
 
 static int key_forms_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
@@ -108,6 +117,9 @@ static int key_forms_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 		
 	return 0;
 }
+
+/**********************************************************************
+ *********************************************************************/
 
 static int key_forms_fetch_values( const char *key, REGVAL_CTR *values )
 {
@@ -170,7 +182,11 @@ static int key_forms_fetch_values( const char *key, REGVAL_CTR *values )
 	return regval_ctr_numvals( values );
 }
 
-/**********************************************************************
+/*********************************************************************
+ *********************************************************************
+ ** "HKLM/SYSTEM/CURRENTCONTROLSET/CONTROL/PRINT/PRINTERS"
+ ** "HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION/PRINT/PRINTERS"
+ *********************************************************************
  *********************************************************************/
 
 static int key_printer_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
@@ -242,27 +258,118 @@ done:
 	return num_subkeys;
 }
 
+/**********************************************************************
+ *********************************************************************/
+
 static BOOL key_printer_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
 {
 	return True;
 }
 
-static int key_printer_fetch_values( const char *key, REGVAL_CTR *values )
+/**********************************************************************
+ *********************************************************************/
+
+static void fill_in_printer_values( NT_PRINTER_INFO_LEVEL_2 *info2, REGVAL_CTR *values )
 {
-	int 		num_values = 0;
-	char		*keystr, *key2 = NULL;
-	char		*base, *new_path;
-	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
-	NT_PRINTER_INFO_LEVEL_2 *info2;
 	DEVICEMODE	*devmode;
 	prs_struct	prs;
 	uint32		offset;
-	int		snum;
-	fstring		printername; 
-	NT_PRINTER_DATA	*p_data;
-	int		i, key_index;
 	UNISTR2		data;
+	char 		*p;
+	uint32 printer_status = PRINTER_STATUS_OK;
+	int snum;
+	
+	regval_ctr_addvalue( values, "Attributes",       REG_DWORD, (char*)&info2->attributes,       sizeof(info2->attributes) );
+	regval_ctr_addvalue( values, "Priority",         REG_DWORD, (char*)&info2->priority,         sizeof(info2->attributes) );
+	regval_ctr_addvalue( values, "ChangeID",         REG_DWORD, (char*)&info2->changeid,         sizeof(info2->changeid) );
+	regval_ctr_addvalue( values, "Default Priority", REG_DWORD, (char*)&info2->default_priority, sizeof(info2->default_priority) );
+	
+	/* lie and say everything is ok since we don't want to call print_queue_length() to get the real status */
+	regval_ctr_addvalue( values, "Status",           REG_DWORD, (char*)&printer_status,          sizeof(info2->status) );
+
+	regval_ctr_addvalue( values, "StartTime",        REG_DWORD, (char*)&info2->starttime,        sizeof(info2->starttime) );
+	regval_ctr_addvalue( values, "UntilTime",        REG_DWORD, (char*)&info2->untiltime,        sizeof(info2->untiltime) );
+
+	/* strip the \\server\ from this string */
+	if ( !(p = strrchr( info2->printername, '\\' ) ) )
+		p = info2->printername;
+	else
+		p++;
+	init_unistr2( &data, p, UNI_STR_TERMINATE);
+	regval_ctr_addvalue( values, "Name", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+
+	init_unistr2( &data, info2->location, UNI_STR_TERMINATE);
+	regval_ctr_addvalue( values, "Location", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+
+	init_unistr2( &data, info2->comment, UNI_STR_TERMINATE);
+	regval_ctr_addvalue( values, "Description", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+
+	init_unistr2( &data, info2->parameters, UNI_STR_TERMINATE);
+	regval_ctr_addvalue( values, "Parameters", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+
+	init_unistr2( &data, info2->portname, UNI_STR_TERMINATE);
+	regval_ctr_addvalue( values, "Port", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+
+	init_unistr2( &data, info2->sharename, UNI_STR_TERMINATE);
+	regval_ctr_addvalue( values, "Share Name", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+
+	init_unistr2( &data, info2->drivername, UNI_STR_TERMINATE);
+	regval_ctr_addvalue( values, "Printer Driver", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+
+	init_unistr2( &data, info2->sepfile, UNI_STR_TERMINATE);
+	regval_ctr_addvalue( values, "Separator File", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+
+	init_unistr2( &data, "WinPrint", UNI_STR_TERMINATE);
+	regval_ctr_addvalue( values, "Print Processor",  REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+
+	init_unistr2( &data, "RAW", UNI_STR_TERMINATE);
+	regval_ctr_addvalue( values, "Datatype", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+
+		
+	/* use a prs_struct for converting the devmode and security 
+	   descriptor to REG_BINARY */
+	
+	prs_init( &prs, MAX_PDU_FRAG_LEN, regval_ctr_getctx(values), MARSHALL);
+
+	/* stream the device mode */
+		
+	snum = lp_servicenumber(info2->sharename);
+	if ( (devmode = construct_dev_mode( snum )) != NULL ) {			
+		if ( spoolss_io_devmode( "devmode", &prs, 0, devmode ) ) {
+			offset = prs_offset( &prs );
+			regval_ctr_addvalue( values, "Default Devmode", REG_BINARY, prs_data_p(&prs), offset );
+		}
+	}
+		
+	prs_mem_clear( &prs );
+	prs_set_offset( &prs, 0 );
+		
+	/* stream the printer security descriptor */
+	
+	if ( info2->secdesc_buf && info2->secdesc_buf->len )  {
+		if ( sec_io_desc("sec_desc", &info2->secdesc_buf->sec, &prs, 0 ) ) {
+			offset = prs_offset( &prs );
+			regval_ctr_addvalue( values, "Security", REG_BINARY, prs_data_p(&prs), offset );
+		}
+	}
+
+	prs_mem_free( &prs );
+
+	return;		
+}
+
+/**********************************************************************
+ *********************************************************************/
+
+static int key_printer_fetch_values( const char *key, REGVAL_CTR *values )
+{
+	int 		num_values;
+	char		*keystr;
+	char		*printername, *printerdatakey;
+	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
+	NT_PRINTER_DATA	*p_data;
 	pstring 	path;
+	int		i, key_index;
 	
 	/* 
 	 * Theres are tw cases to deal with here
@@ -280,132 +387,31 @@ static int key_printer_fetch_values( const char *key, REGVAL_CTR *values )
 	else
 		keystr = remaining_path( key + strlen(KEY_CONTROL_PRINTERS) );
 	
-	if ( !keystr ) {
-		/* top level key has no values */
-		goto done;
-	}
+	/* top level key has no values */
 	
-	key2 = SMB_STRDUP( keystr );
-	keystr = key2;
-	reg_split_path( keystr, &base, &new_path );
+	if ( !keystr )
+		return 0;
 	
-	fstrcpy( printername, base );
+	/* lookup the printer object */
 	
-	if ( !new_path ) {
-		char *p;
-		uint32 printer_status = PRINTER_STATUS_OK;
-
-		/* we are dealing with the printer itself */
-
-		if ( !W_ERROR_IS_OK( get_a_printer(NULL, &printer, 2, printername) ) )
-			goto done;
-
-		info2 = printer->info_2;
-		
-
-		regval_ctr_addvalue( values, "Attributes",       REG_DWORD, (char*)&info2->attributes,       sizeof(info2->attributes) );
-		regval_ctr_addvalue( values, "Priority",         REG_DWORD, (char*)&info2->priority,         sizeof(info2->attributes) );
-		regval_ctr_addvalue( values, "ChangeID",         REG_DWORD, (char*)&info2->changeid,         sizeof(info2->changeid) );
-		regval_ctr_addvalue( values, "Default Priority", REG_DWORD, (char*)&info2->default_priority, sizeof(info2->default_priority) );
-
-		/* lie and say everything is ok since we don't want to call print_queue_length() to get the real status */
-		regval_ctr_addvalue( values, "Status",           REG_DWORD, (char*)&printer_status,          sizeof(info2->status) );
-
-		regval_ctr_addvalue( values, "StartTime",        REG_DWORD, (char*)&info2->starttime,        sizeof(info2->starttime) );
-		regval_ctr_addvalue( values, "UntilTime",        REG_DWORD, (char*)&info2->untiltime,        sizeof(info2->untiltime) );
-
-		/* strip the \\server\ from this string */
-		if ( !(p = strrchr( info2->printername, '\\' ) ) )
-			p = info2->printername;
-		else
-			p++;
-		init_unistr2( &data, p, UNI_STR_TERMINATE);
-		regval_ctr_addvalue( values, "Name", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
-
-		init_unistr2( &data, info2->location, UNI_STR_TERMINATE);
-		regval_ctr_addvalue( values, "Location", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
-
-		init_unistr2( &data, info2->comment, UNI_STR_TERMINATE);
-		regval_ctr_addvalue( values, "Description", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
-
-		init_unistr2( &data, info2->parameters, UNI_STR_TERMINATE);
-		regval_ctr_addvalue( values, "Parameters", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
-
-		init_unistr2( &data, info2->portname, UNI_STR_TERMINATE);
-		regval_ctr_addvalue( values, "Port", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
-
-		init_unistr2( &data, info2->sharename, UNI_STR_TERMINATE);
-		regval_ctr_addvalue( values, "Share Name", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
-
-		init_unistr2( &data, info2->drivername, UNI_STR_TERMINATE);
-		regval_ctr_addvalue( values, "Printer Driver", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
-
-		init_unistr2( &data, info2->sepfile, UNI_STR_TERMINATE);
-		regval_ctr_addvalue( values, "Separator File", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
-
-		init_unistr2( &data, "WinPrint", UNI_STR_TERMINATE);
-		regval_ctr_addvalue( values, "Print Processor",  REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
-
-		init_unistr2( &data, "RAW", UNI_STR_TERMINATE);
-		regval_ctr_addvalue( values, "Datatype", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
-
-		
-		/* use a prs_struct for converting the devmode and security 
-		   descriptor to REG_BINARY */
-		
-		prs_init( &prs, MAX_PDU_FRAG_LEN, regval_ctr_getctx(values), MARSHALL);
-
-		/* stream the device mode */
-		
-		snum = lp_servicenumber(info2->sharename);
-		if ( (devmode = construct_dev_mode( snum )) != NULL )
-		{			
-			if ( spoolss_io_devmode( "devmode", &prs, 0, devmode ) ) {
-			
-				offset = prs_offset( &prs );
-				
-				regval_ctr_addvalue( values, "Default Devmode", REG_BINARY, prs_data_p(&prs), offset );
-			}
-			
-			
-		}
-		
-		prs_mem_clear( &prs );
-		prs_set_offset( &prs, 0 );
-		
-		if ( info2->secdesc_buf && info2->secdesc_buf->len ) 
-		{
-			if ( sec_io_desc("sec_desc", &info2->secdesc_buf->sec, &prs, 0 ) ) {
-			
-				offset = prs_offset( &prs );
-			
-				regval_ctr_addvalue( values, "Security", REG_BINARY, prs_data_p(&prs), offset );
-			}
-		}
-
-		prs_mem_free( &prs );
-		
-		num_values = regval_ctr_numvals( values );	
-		
-		goto done;
-		
-	}
-		
-	/* now enumerate the key */
-	
+	reg_split_path( keystr, &printername, &printerdatakey );
 	if ( !W_ERROR_IS_OK( get_a_printer(NULL, &printer, 2, printername) ) )
 		goto done;
-	
+		
+	if ( !printerdatakey ) {
+		fill_in_printer_values( printer->info_2, values );
+		goto done;
+	}
+		
 	/* iterate over all printer data and fill the regval container */
 	
 	p_data = &printer->info_2->data;
-	if ( (key_index = lookup_printerkey( p_data, new_path )) == -1  ) {
-		DEBUG(10,("key_printer_fetch_values: Unknown keyname [%s]\n", new_path));
+	if ( (key_index = lookup_printerkey( p_data, printerdatakey )) == -1  ) {
+		DEBUG(10,("key_printer_fetch_values: Unknown keyname [%s]\n", printerdatakey));
 		goto done;
 	}
 	
-	num_values = regval_ctr_numvals( &p_data->keys[key_index].values );
-	
+	num_values = regval_ctr_numvals( &p_data->keys[key_index].values );	
 	for ( i=0; i<num_values; i++ )
 		regval_ctr_copyvalue( values, regval_ctr_specific_value(&p_data->keys[key_index].values, i) );
 			
@@ -414,20 +420,22 @@ done:
 	if ( printer )
 		free_a_printer( &printer, 2 );
 		
-	SAFE_FREE( key2 ); 
-	
-	return num_values;
+	return regval_ctr_numvals( values );
 }
+
+/**********************************************************************
+ *********************************************************************/
 
 static BOOL key_printer_store_values( const char *key, REGVAL_CTR *values )
 {
 	return True;
 }
 
-/**********************************************************************
+/*********************************************************************
+ *********************************************************************
+ ** "HKLM/SYSTEM/CURRENTCONTROLSET/CONTROL/PRINT/ENVIRONMENTS"
+ *********************************************************************
  *********************************************************************/
-#define ENVIRONMENT_DRIVERS	1
-#define ENVIRONMENT_PRINTPROC	2
 
 static int key_driver_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 {
@@ -445,7 +453,6 @@ static int key_driver_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 	char *keystr, *base, *subkeypath;
 	pstring key2;
 	int num_subkeys = -1;
-	int env_subkey_type = 0;
 	int version;
 
 	DEBUG(10,("key_driver_fetch_keys key=>[%s]\n", key ? key : "NULL" ));
@@ -492,17 +499,8 @@ static int key_driver_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 		
 	/* ...\Print\Environements\...\Drivers\ */
 	
-	if ( strequal(base, "Drivers") )
-		env_subkey_type = ENVIRONMENT_DRIVERS;
-	else if ( strequal(base, "Print Processors") )
-		env_subkey_type = ENVIRONMENT_PRINTPROC;
-	else
-		/* invalid path */
-		return -1;
-	
 	if ( !subkeypath ) {
-		switch ( env_subkey_type ) {
-		case ENVIRONMENT_DRIVERS:
+		if ( strequal(base, "Drivers") ) {
 			switch ( env_index ) {
 				case 0:	/* Win9x */
 					regsubkey_ctr_addkey( subkeys, "Version-0" );
@@ -514,29 +512,37 @@ static int key_driver_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 			}
 		
 			return regsubkey_ctr_numkeys( subkeys );
-		
-		case ENVIRONMENT_PRINTPROC:
+		} else if ( strequal(base, "Print Processors") ) {
 			if ( env_index == 1 || env_index == 5 || env_index == 6 )
 				regsubkey_ctr_addkey( subkeys, "winprint" );
 				
 			return regsubkey_ctr_numkeys( subkeys );
-		}
+		} else
+			return -1;	/* bad path */
 	}
 	
 	/* we finally get to enumerate the drivers */
 	
-	keystr = subkeypath;
-	reg_split_path( keystr, &base, &subkeypath );
+	/* only one possible subkey below PrintProc key */
 
-	/* get thr print processors key out of the way */
-	if ( env_subkey_type == ENVIRONMENT_PRINTPROC ) {
-		if ( !strequal( base, "winprint" ) )
+	if ( strequal(base, "Print Processors") ) {
+		keystr = subkeypath;
+		reg_split_path( keystr, &base, &subkeypath );
+
+		/* no subkeys below this point */
+
+		if ( subkeypath )
 			return -1;
-		return !subkeypath ? 0 : -1;
+
+		/* only allow one keyname here -- 'winprint' */
+
+		return strequal( base, "winprint" ) ? 0 : -1;
 	}
 	
 	/* only dealing with drivers from here on out */
-	
+
+	keystr = subkeypath;
+	reg_split_path( keystr, &base, &subkeypath );
 	version = atoi(&base[strlen(base)-1]);
 			
 	switch (env_index) {
@@ -567,117 +573,45 @@ static int key_driver_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 	return 0;
 }
 
-static BOOL key_driver_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
+
+/**********************************************************************
+ *********************************************************************/
+
+static void fill_in_driver_values( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3, REGVAL_CTR *values )
 {
-	return True;
-}
-
-static int key_driver_fetch_values( const char *key, REGVAL_CTR *values )
-{
-	char 		*keystr, *base, *subkeypath;
-	pstring 	key2;
-	fstring		arch_environment;
-	fstring		driver;
-	int		version;
-	NT_PRINTER_DRIVER_INFO_LEVEL	driver_ctr;
-	NT_PRINTER_DRIVER_INFO_LEVEL_3	*info3;
-	WERROR		w_result;
-	char 		*buffer = NULL;
-	char		*buffer2 = NULL;
-	int		buffer_size = 0;
-	int 		i, length;
-	char 		*filename;
-	UNISTR2		data;
-	int		env_subkey_type = 0;
-	
-	
-	DEBUG(8,("key_driver_fetch_values: Enter key => [%s]\n", key ? key : "NULL"));
-
-	keystr = remaining_path( key + strlen(KEY_ENVIRONMENTS) );	
-	
-	if ( !keystr )
-		return 0;
-		
-	/* The only keys below KEY_PRINTING\Environments is the 
-	   specific printer driver info */
-	
-	/* environment */
-	
-	pstrcpy( key2, keystr);
-	keystr = key2;
-	reg_split_path( keystr, &base, &subkeypath );
-	if ( !subkeypath ) 
-		return 0;
-	fstrcpy( arch_environment, base );
-	
-	/* Driver */
-	
-	keystr = subkeypath;
-	reg_split_path( keystr, &base, &subkeypath );
-
-	if ( strequal(base, "Drivers") )
-		env_subkey_type = ENVIRONMENT_DRIVERS;
-	else if ( strequal(base, "Print Processors") )
-		env_subkey_type = ENVIRONMENT_PRINTPROC;
-	else
-		/* invalid path */
-		return -1;
-	
-	if ( !subkeypath )
-		return 0;
-
-	/* for now bail out if we are seeing anything other than the drivers key */
-	
-	if ( env_subkey_type == ENVIRONMENT_PRINTPROC )
-		return 0;
-		
-	keystr = subkeypath;
-	reg_split_path( keystr, &base, &subkeypath );
-
-	/* no values under Version-XX */
-
-	if ( !subkeypath )
-		return 0;
-		
-	version = atoi(&base[strlen(base)-1]);
-
-	/* printer driver name */
-	
-	keystr = subkeypath;
-	reg_split_path( keystr, &base, &subkeypath );
-	/* don't go any deeper for now */
-	if ( subkeypath )
-		return 0;
-	fstrcpy( driver, base );
-
-	w_result = get_a_printer_driver( &driver_ctr, 3, driver, arch_environment, version );
-
-	if ( !W_ERROR_IS_OK(w_result) )
-		return -1;
-		
-	/* build the values out of the driver information */
-	info3 = driver_ctr.info_3;
+	char *buffer = NULL;
+	char *buffer2 = NULL;
+	int buffer_size = 0;
+	int i, length;
+	char *filename;
+	UNISTR2	data;
 	
 	filename = dos_basename( info3->driverpath );
 	init_unistr2( &data, filename, UNI_STR_TERMINATE);
-	regval_ctr_addvalue( values, "Driver",             REG_SZ,       (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+	regval_ctr_addvalue( values, "Driver", REG_SZ, (char*)data.buffer, 
+		data.uni_str_len*sizeof(uint16) );
 	
 	filename = dos_basename( info3->configfile );
 	init_unistr2( &data, filename, UNI_STR_TERMINATE);
-	regval_ctr_addvalue( values, "Configuration File", REG_SZ,       (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+	regval_ctr_addvalue( values, "Configuration File", REG_SZ, (char*)data.buffer, 
+		data.uni_str_len*sizeof(uint16) );
 	
 	filename = dos_basename( info3->datafile );
 	init_unistr2( &data, filename, UNI_STR_TERMINATE);
-	regval_ctr_addvalue( values, "Data File",          REG_SZ,       (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+	regval_ctr_addvalue( values, "Data File", REG_SZ, (char*)data.buffer, 
+		data.uni_str_len*sizeof(uint16) );
 	
 	filename = dos_basename( info3->helpfile );
 	init_unistr2( &data, filename, UNI_STR_TERMINATE);
-	regval_ctr_addvalue( values, "Help File",          REG_SZ,       (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+	regval_ctr_addvalue( values, "Help File", REG_SZ, (char*)data.buffer, 
+		data.uni_str_len*sizeof(uint16) );
 	
 	init_unistr2( &data, info3->defaultdatatype, UNI_STR_TERMINATE);
-	regval_ctr_addvalue( values, "Data Type",          REG_SZ,       (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
+	regval_ctr_addvalue( values, "Data Type", REG_SZ, (char*)data.buffer, 
+		data.uni_str_len*sizeof(uint16) );
 	
-	regval_ctr_addvalue( values, "Version",            REG_DWORD,    (char*)&info3->cversion, sizeof(info3->cversion) );
+	regval_ctr_addvalue( values, "Version", REG_DWORD, (char*)&info3->cversion, 
+		sizeof(info3->cversion) );
 	
 	if ( info3->dependentfiles ) {
 		/* place the list of dependent files in a single 
@@ -716,24 +650,117 @@ static int key_driver_fetch_values( const char *key, REGVAL_CTR *values )
 	}
 	
 	regval_ctr_addvalue( values, "Dependent Files",    REG_MULTI_SZ, buffer, buffer_size );
+		
+	SAFE_FREE( buffer );
+	
+	return;
+}
+
+/**********************************************************************
+ *********************************************************************/
+
+static int driver_arch_fetch_values( char *key, REGVAL_CTR *values )
+{
+	char 		*keystr, *base, *subkeypath;
+	fstring		arch_environment;
+	fstring		driver;
+	int		version;
+	NT_PRINTER_DRIVER_INFO_LEVEL	driver_ctr;
+	WERROR		w_result;
+
+	reg_split_path( key, &base, &subkeypath );
+	
+	/* no values in 'Environments\Drivers\Windows NT x86' */
+	
+	if ( !subkeypath ) 
+		return 0;
+		
+	/* We have the Architecture string and some subkey name:
+	   Currently we only support
+	   * Drivers
+	   * Print Processors
+	   Anything else is an error.
+	   */
+
+	fstrcpy( arch_environment, base );
+	
+	keystr = subkeypath;
+	reg_split_path( keystr, &base, &subkeypath );
+
+	if ( strequal(base, "Print Processors") )
+		return 0;
+
+	/* only Drivers key can be left */
+		
+	if ( !strequal(base, "Drivers") )
+		return -1;
+			
+	if ( !subkeypath )
+		return 0;
+	
+	/* We know that we have Architechure\Drivers with some subkey name
+	   The subkey name has to be Version-XX */
+	
+	keystr = subkeypath;
+	reg_split_path( keystr, &base, &subkeypath );
+
+	if ( !subkeypath )
+		return 0;
+		
+	version = atoi(&base[strlen(base)-1]);
+
+	/* BEGIN PRINTER DRIVER NAME BLOCK */
+	
+	keystr = subkeypath;
+	reg_split_path( keystr, &base, &subkeypath );
+	
+	/* don't go any deeper for now */
+	
+	fstrcpy( driver, base );
+	
+	w_result = get_a_printer_driver( &driver_ctr, 3, driver, arch_environment, version );
+
+	if ( !W_ERROR_IS_OK(w_result) )
+		return -1;
+		
+	fill_in_driver_values( driver_ctr.info_3, values ); 
 	
 	free_a_printer_driver( driver_ctr, 3 );
-	
-	SAFE_FREE( buffer );
-		
+
+	/* END PRINTER DRIVER NAME BLOCK */
+
+						
 	DEBUG(8,("key_driver_fetch_values: Exit\n"));
 	
 	return regval_ctr_numvals( values );
 }
 
-static BOOL key_driver_store_values( const char *key, REGVAL_CTR *values )
+/**********************************************************************
+ *********************************************************************/
+
+static int key_driver_fetch_values( const char *key, REGVAL_CTR *values )
 {
-	return True;
+	char *keystr;
+	pstring subkey;
+	
+	DEBUG(8,("key_driver_fetch_values: Enter key => [%s]\n", key ? key : "NULL"));
+
+	/* no values in the Environments key */
+	
+	if ( !(keystr = remaining_path( key + strlen(KEY_ENVIRONMENTS) )) )
+		return 0;
+	
+	pstrcpy( subkey, keystr);
+	
+	/* pass off to handle subkeys */
+	
+	return driver_arch_fetch_values( subkey, values );
 }
 
-/**********************************************************************
- Deal with the 'Print' key the same whether it came from SYSTEM
- or SOFTWARE
+/*********************************************************************
+ *********************************************************************
+ ** "HKLM/SYSTEM/CURRENTCONTROLSET/CONTROL/PRINT"
+ *********************************************************************
  *********************************************************************/
 
 static int key_print_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
@@ -754,56 +781,11 @@ static int key_print_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 }
 
 /**********************************************************************
- If I can get rid of the 'enumports command', this code becomes 
- a tdb lookup.
- *********************************************************************/
-
-static int key_ports_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
-{
-	/* no keys below ports */
-	
-	if ( remaining_path( key + strlen(KEY_PORTS) ) )
-		return -1;
-		
-	return 0;
-}
-
-static BOOL key_ports_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
-{
-	return True;
-}
-
-static int key_ports_fetch_values( const char *key, REGVAL_CTR *values )
-{
-	int numlines, i;
-	char **lines;
-	UNISTR2	data;
-	WERROR result;
-	char *p = remaining_path( key + strlen(KEY_PORTS) );
-	
-	/* no keys below ports */
-	if ( p )
-		return -1;
-
-	if ( !W_ERROR_IS_OK(result = enumports_hook( &numlines, &lines )) )
-		return -1;
-
-	init_unistr2( &data, "", UNI_STR_TERMINATE);
-	for ( i=0; i<numlines; i++ )
-		regval_ctr_addvalue( values, lines[i], REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
-	
-	return regval_ctr_numvals( values );
-}
-
-static BOOL key_ports_store_values( const char *key, REGVAL_CTR *values )
-{
-	return True;
-}
-
-/**********************************************************************
- Structure to hold dispatch table of ops for various printer keys.
- Make sure to always store deeper keys along the same path first so 
- we ge a more specific match.
+ *********************************************************************
+ ** Structure to hold dispatch table of ops for various printer keys.
+ ** Make sure to always store deeper keys along the same path first so 
+ ** we ge a more specific match.
+ *********************************************************************
  *********************************************************************/
 
 static struct reg_dyn_tree print_registry[] = {
@@ -825,9 +807,9 @@ static struct reg_dyn_tree print_registry[] = {
 	&key_printer_store_values },
 { KEY_ENVIRONMENTS,
 	&key_driver_fetch_keys,
-	&key_driver_store_keys,
+	NULL,
 	&key_driver_fetch_values,
-	&key_driver_store_values },
+	NULL },
 { KEY_CONTROL_PRINT,
 	&key_print_fetch_keys,
 	NULL,
@@ -839,18 +821,26 @@ static struct reg_dyn_tree print_registry[] = {
 	&key_printer_fetch_values,
 	&key_printer_store_values },
 { KEY_PORTS,
-	&key_ports_fetch_keys,
-	&key_ports_store_keys,
-	&key_ports_fetch_values,
-	&key_ports_store_values },
+	&regdb_fetch_keys, 
+	&regdb_store_keys,
+	&regdb_fetch_values,
+	&regdb_store_values },
 	
 { NULL, NULL, NULL, NULL, NULL }
 };
 
 
 /**********************************************************************
+ *********************************************************************
+ ** Main reg_printing interface functions
+ *********************************************************************
  *********************************************************************/
- 
+
+/***********************************************************************
+ Lookup a key in the print_registry table, returning its index.
+ -1 on failure
+ **********************************************************************/
+
 static int match_registry_path( const char *key )
 {
 	int i;
@@ -870,9 +860,9 @@ static int match_registry_path( const char *key )
 	return -1;
 }
 
-/**********************************************************************
- *********************************************************************/
- 
+/***********************************************************************
+ **********************************************************************/
+
 static int regprint_fetch_reg_keys( const char *key, REGSUBKEY_CTR *subkeys )
 {
 	int i = match_registry_path( key );
