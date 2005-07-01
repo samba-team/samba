@@ -1062,7 +1062,7 @@ index default               sub
 <smbconfoption name="syslog">0</smbconfoption>
 <smbconfoption name="log file">/var/log/samba/%m</smbconfoption>
 <smbconfoption name="max log size">0</smbconfoption>
-<smbconfoption name="smb ports">139 445</smbconfoption>
+<smbconfoption name="smb ports">139</smbconfoption>
 <smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
 <smbconfoption name="time server">Yes</smbconfoption>
 <smbconfoption name="printcap name">CUPS</smbconfoption>
@@ -1182,7 +1182,7 @@ index default               sub
 <smbconfoption name="syslog">0</smbconfoption>
 <smbconfoption name="log file">/var/log/samba/%m</smbconfoption>
 <smbconfoption name="max log size">50</smbconfoption>
-<smbconfoption name="smb ports">139 445</smbconfoption>
+<smbconfoption name="smb ports">139</smbconfoption>
 <smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
 <smbconfoption name="printcap name">CUPS</smbconfoption>
 <smbconfoption name="show add printer wizard">No</smbconfoption>
