@@ -245,7 +245,6 @@ static int ldb_comparison_objectclass(struct ldb_context *ldb,
 	if (ret == 0) {
 		return 0;
 	}
-	fprintf(stderr, "looing for %s %s\n", v1->data, v2->data);
 	subclasses = ldb_subclass_list(ldb, v1->data);
 	if (subclasses == NULL) {
 		return ret;
