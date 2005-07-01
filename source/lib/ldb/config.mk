@@ -50,7 +50,6 @@ ADD_OBJ_FILES = \
 		lib/ldb/ldb_tdb/ldb_search.o \
 		lib/ldb/ldb_tdb/ldb_pack.o \
 		lib/ldb/ldb_tdb/ldb_index.o \
-		lib/ldb/ldb_tdb/ldb_match.o \
 		lib/ldb/ldb_tdb/ldb_cache.o
 REQUIRED_SUBSYSTEMS = \
 		LIBTDB
@@ -70,6 +69,9 @@ ADD_OBJ_FILES = \
 		lib/ldb/common/ldb_utf8.o \
 		lib/ldb/common/ldb_debug.o \
 		lib/ldb/common/ldb_modules.o \
+		lib/ldb/common/ldb_match.o \
+		lib/ldb/common/ldb_attributes.o \
+		lib/ldb/common/attrib_handlers.o \
 		lib/ldb/common/ldb_dn.o
 REQUIRED_SUBSYSTEMS = \
 		LIBREPLACE LIBTALLOC LDBSAMBA

@@ -186,16 +186,40 @@ char *ldb_binary_encode(void *ctx, struct ldb_val val);
 
 
 /*
-  functions for controlling ldif encode/decode
+  functions for controlling attribute handling
 */
-typedef int (*ldb_ldif_handler_t)(struct ldb_context *, const struct ldb_val *, struct ldb_val *);
+typedef int (*ldb_attr_handler_t)(struct ldb_context *, const struct ldb_val *, struct ldb_val *);
+typedef int (*ldb_attr_comparison_t)(struct ldb_context *, const struct ldb_val *, const struct ldb_val *);
 
-struct ldb_ldif_handler {
+struct ldb_attrib_handler {
 	const char *attr;
-	ldb_ldif_handler_t read_fn;
-	ldb_ldif_handler_t write_fn;
+
+	/* LDB_ATTR_FLAG_* */
+	unsigned flags;
+
+	/* convert from ldif to binary format */
+	ldb_attr_handler_t ldif_read_fn;
+
+	/* convert from binary to ldif format */
+	ldb_attr_handler_t ldif_write_fn;
+	
+	/* canonicalise a value, for use by indexing and dn construction */
+	ldb_attr_handler_t canonicalise_fn;
+
+	/* compare two values */
+	ldb_attr_comparison_t comparison_fn;
 };
 
+#define LDB_ATTR_FLAG_HIDDEN     (1<<0)
+#define LDB_ATTR_FLAG_WILDCARD   (1<<1)
+
+/* well-known ldap attribute syntaxes - see rfc2252 section 4.3.2 */
+#define LDB_SYNTAX_DN                   "1.3.6.1.4.1.1466.115.121.1.12"
+#define LDB_SYNTAX_DIRECTORY_STRING     "1.3.6.1.4.1.1466.115.121.1.15"
+#define LDB_SYNTAX_INTEGER              "1.3.6.1.4.1.1466.115.121.1.27"
+#define LDB_SYNTAX_OCTET_STRING         "1.3.6.1.4.1.1466.115.121.1.40"
+#define LDB_SYNTAX_WILDCARD             "LDB_SYNTAX_WILDCARD"
+#define LDB_SYNTAX_OBJECTCLASS          "LDB_SYNTAX_OBJECTCLASS"
 
 /*
   initialise a ldb context
@@ -296,9 +320,9 @@ struct ldb_ldif *ldb_ldif_read_string(struct ldb_context *ldb, const char *s);
 int ldb_ldif_write_file(struct ldb_context *ldb, FILE *f, const struct ldb_ldif *msg);
 char *ldb_base64_encode(void *mem_ctx, const char *buf, int len);
 int ldb_base64_decode(char *s);
-int ldb_ldif_add_handlers(struct ldb_context *ldb, 
-			  const struct ldb_ldif_handler *handlers, 
-			  unsigned num_handlers);
+int ldb_attrib_add_handlers(struct ldb_context *ldb, 
+			    const struct ldb_attrib_handler *handlers, 
+			    unsigned num_handlers);
 
 
 /* useful functions for ldb_message structure manipulation */

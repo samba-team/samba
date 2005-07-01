@@ -45,68 +45,6 @@
 #endif
 
 /*
-  add to the list of ldif handlers for this ldb context
-*/
-int ldb_ldif_add_handlers(struct ldb_context *ldb, 
-			  const struct ldb_ldif_handler *handlers, 
-			  unsigned num_handlers)
-{
-	struct ldb_ldif_handler *h;
-	h = talloc_realloc(ldb, ldb->ldif_handlers,
-			   struct ldb_ldif_handler,
-			   ldb->ldif_num_handlers + num_handlers);
-	if (h == NULL) {
-		ldb_oom(ldb);
-		return -1;
-	}
-	ldb->ldif_handlers = h;
-	memcpy(h + ldb->ldif_num_handlers, 
-	       handlers, sizeof(*h) * num_handlers);
-	ldb->ldif_num_handlers += num_handlers;
-	return 0;
-}
-			  
-
-/*
-  default function for ldif read/write
-*/
-static int ldb_ldif_default(struct ldb_context *ldb, const struct ldb_val *in, 
-			    struct ldb_val *out)
-{
-	*out = *in;
-	return 0;
-}
-
-
-/*
-  return a function for reading an ldif encoded attributes into a ldb_val
-*/
-static ldb_ldif_handler_t ldb_ldif_read_fn(struct ldb_context *ldb, const char *attr)
-{
-	int i;
-	for (i=0;i<ldb->ldif_num_handlers;i++) {
-		if (ldb_attr_cmp(attr, ldb->ldif_handlers[i].attr) == 0) {
-			return ldb->ldif_handlers[i].read_fn;
-		}
-	}
-	return ldb_ldif_default;
-}
-
-/*
-  return a function for writing an ldif encoded attribute from a ldb_val
-*/
-static ldb_ldif_handler_t ldb_ldif_write_fn(struct ldb_context *ldb, const char *attr)
-{
-	int i;
-	for (i=0;i<ldb->ldif_num_handlers;i++) {
-		if (ldb_attr_cmp(attr, ldb->ldif_handlers[i].attr) == 0) {
-			return ldb->ldif_handlers[i].write_fn;
-		}
-	}
-	return ldb_ldif_default;
-}
-
-/*
   
 */
 static int ldb_read_data_file(void *mem_ctx, struct ldb_val *value)
@@ -356,6 +294,10 @@ int ldb_ldif_write(struct ldb_context *ldb,
 	}
 
 	for (i=0;i<msg->num_elements;i++) {
+		const struct ldb_attrib_handler *h;
+
+		h = ldb_attrib_handler(ldb, msg->elements[i].name);
+
 		if (ldif->changetype == LDB_CHANGETYPE_MODIFY) {
 			switch (msg->elements[i].flags & LDB_FLAG_MOD_MASK) {
 			case LDB_FLAG_MOD_ADD:
@@ -374,10 +316,8 @@ int ldb_ldif_write(struct ldb_context *ldb,
 		}
 
 		for (j=0;j<msg->elements[i].num_values;j++) {
-			ldb_ldif_handler_t write_fn = ldb_ldif_write_fn(ldb, 
-								      msg->elements[i].name);
 			struct ldb_val v;
-			ret = write_fn(ldb, &msg->elements[i].values[j], &v);
+			ret = h->ldif_write_fn(ldb, &msg->elements[i].values[j], &v);
 			CHECK_RET;
 			if (ldb_should_b64_encode(&v)) {
 				ret = fprintf_fn(private_data, "%s:: ", 
@@ -650,7 +590,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 	msg->dn = value.data;
 
 	while (next_attr(ldif, &s, &attr, &value) == 0) {
-		ldb_ldif_handler_t read_fn;
+		const struct ldb_attrib_handler *h;		
 		struct ldb_message_element *el;
 		int ret, empty = 0;
 
@@ -696,7 +636,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 		
 		el = &msg->elements[msg->num_elements-1];
 
-		read_fn = ldb_ldif_read_fn(ldb, attr);
+		h = ldb_attrib_handler(ldb, attr);
 
 		if (msg->num_elements > 0 && ldb_attr_cmp(attr, el->name) == 0 &&
 		    flags == el->flags) {
@@ -707,7 +647,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 			if (!el->values) {
 				goto failed;
 			}
-			ret = read_fn(ldb, &value, &el->values[el->num_values]);
+			ret = h->ldif_read_fn(ldb, &value, &el->values[el->num_values]);
 			if (ret != 0) {
 				goto failed;
 			}
@@ -731,7 +671,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 				goto failed;
 			}
 			el->num_values = 1;
-			ret = read_fn(ldb, &value, &el->values[0]);
+			ret = h->ldif_read_fn(ldb, &value, &el->values[0]);
 			if (ret != 0) {
 				goto failed;
 			}

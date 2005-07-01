@@ -43,6 +43,14 @@
 struct ldb_context *ldb_init(void *mem_ctx)
 {
 	struct ldb_context *ldb = talloc_zero(mem_ctx, struct ldb_context);
+	int ret;
+
+	ret = ldb_setup_wellknown_attributes(ldb);
+	if (ret != 0) {
+		talloc_free(ldb);
+		return NULL;
+	}
+
 	return ldb;
 }
 
