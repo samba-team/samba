@@ -1134,8 +1134,8 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_connection *c,
 					TALLOC_CTX *mem_ctx,
 					void *struct_ptr,
 					size_t struct_size,
-					NTSTATUS (*ndr_push)(struct ndr_push *, int, void *),
-					NTSTATUS (*ndr_pull)(struct ndr_pull *, int, void *))
+					ndr_push_flags_fn_t ndr_push,
+					ndr_pull_flags_fn_t ndr_pull)
 {
 	void *st;
 	struct ndr_pull *pull;
