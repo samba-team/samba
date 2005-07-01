@@ -2388,7 +2388,7 @@ static time_t ads_parse_time(const char *str)
 }
 
 
-const char *ads_get_attrname_by_oid(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char * oid)
+const char *ads_get_attrname_by_oid(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char * OID)
 {
 	ADS_STATUS rc;
 	int count = 0;
@@ -2396,11 +2396,11 @@ const char *ads_get_attrname_by_oid(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const 
 	char *expr = NULL;
 	const char *attrs[] = { "lDAPDisplayName", NULL };
 
-	if (ads == NULL || mem_ctx == NULL || oid == NULL) {
+	if (ads == NULL || mem_ctx == NULL || OID == NULL) {
 		goto done;
 	}
 
-	expr = talloc_asprintf(mem_ctx, "(attributeId=%s)", oid);
+	expr = talloc_asprintf(mem_ctx, "(attributeId=%s)", OID);
 	if (expr == NULL) {
 		goto done;
 	}
@@ -2420,7 +2420,7 @@ const char *ads_get_attrname_by_oid(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const 
 	
 done:
 	DEBUG(0,("ads_get_attrname_by_oid: failed to retrieve name for oid: %s\n", 
-		oid));
+		OID));
 	
 	return NULL;
 }
