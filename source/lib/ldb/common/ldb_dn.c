@@ -1,7 +1,7 @@
 /* 
    ldb database library
 
-   Copyright (C) Simo Sorce 2004
+   Copyright (C) Simo Sorce 2005
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -40,22 +40,22 @@
 #include "ldb/include/ldb_dn.h"
 
 
-#define LDB_DN_NULL_RETURN(x) do { if (!x) return NULL; } while(0) 
+#define LDB_DN_NULL_FAILED(x) if (!(x)) goto failed
 
 static char *escape_string(void *mem_ctx, const char *src)
 {
 	const char *p, *s;
-	char *d, *dst;
+	char *d, *dst=NULL;
 
-	LDB_DN_NULL_RETURN(src);
+	LDB_DN_NULL_FAILED(src);
 
 	/* allocate destination string, it will be at most 3 times the source */
 	dst = d = talloc_array(mem_ctx, char, strlen(src) * 3 + 1);
-	LDB_DN_NULL_RETURN(dst);
+	LDB_DN_NULL_FAILED(dst);
 
 	p = s = src;
 
-	while (p) {
+	while (*p) {
 		p += strcspn(p, ",=\n+<>#;\\\"");
 		if (*p == '\0') /* no special s found, all ok */
 			break;
@@ -73,17 +73,20 @@ static char *escape_string(void *mem_ctx, const char *src)
 	memcpy(d, s, &src[strlen(src)] - s + 1);
 
 	return dst;
+failed:
+	talloc_free(dst);
+	return NULL;
 }
 
 static char *unescape_string(void *mem_ctx, const char *src)
 {
 	unsigned x;
-	char *p, *dst, *end;
+	char *p, *dst=NULL, *end;
 
-	LDB_DN_NULL_RETURN(src);
+	LDB_DN_NULL_FAILED(src);
 
 	dst = p = talloc_strdup(mem_ctx, src);
-	LDB_DN_NULL_RETURN(dst);
+	LDB_DN_NULL_FAILED(dst);
 
 	end = &dst[strlen(dst)];
 
@@ -115,6 +118,9 @@ static char *unescape_string(void *mem_ctx, const char *src)
 	}
 
 	return dst;
+failed:
+	talloc_free(dst);
+	return NULL;
 }
 
 static char *seek_to_separator(char *string, const char *separator)
@@ -123,7 +129,7 @@ static char *seek_to_separator(char *string, const char *separator)
 
 	p = strchr(string, '=');
 
-	LDB_DN_NULL_RETURN(p);
+	LDB_DN_NULL_FAILED(p);
 
 	p++;
 
@@ -134,7 +140,7 @@ static char *seek_to_separator(char *string, const char *separator)
 		p++;
 		while (*p != '\"') {
 			p = strchr(p, '\"');
-			LDB_DN_NULL_RETURN(p);
+			LDB_DN_NULL_FAILED(p);
 
 			if (*(p - 1) == '\\')
 				p++;
@@ -144,6 +150,9 @@ static char *seek_to_separator(char *string, const char *separator)
 	p += strcspn(p, separator);
 
 	return p;
+
+failed:
+	return NULL;
 }
 
 static char *ldb_dn_trim_string(char *string, const char *edge)
@@ -169,16 +178,16 @@ static struct ldb_dn_attribute *ldb_dn_explode_attribute(void *mem_ctx, char *ra
 	char *p;
 
 	at = talloc(mem_ctx, struct ldb_dn_attribute);
-	LDB_DN_NULL_RETURN(at);
+	LDB_DN_NULL_FAILED(at);
 
 	p = strchr(raw_attribute, '=');
 
-	LDB_DN_NULL_RETURN(p);
+	LDB_DN_NULL_FAILED(p);
 
 	*p = '\0';
 
 	at->name = talloc_strdup(at, ldb_dn_trim_string(raw_attribute, " \n"));
-	LDB_DN_NULL_RETURN(at->name);
+	LDB_DN_NULL_FAILED(at->name);
 
 	p++;
 
@@ -196,9 +205,13 @@ static struct ldb_dn_attribute *ldb_dn_explode_attribute(void *mem_ctx, char *ra
 	}
 	/* no quotes means we must unescape the string */
 	at->value = unescape_string(at, p);
-	LDB_DN_NULL_RETURN(at->value);
+	LDB_DN_NULL_FAILED(at->value);
 
 	return at;
+
+failed:
+	talloc_free(at);
+	return NULL;
 }
 
 static struct ldb_dn_component *explode_component(void *mem_ctx, char *raw_component)
@@ -207,7 +220,7 @@ static struct ldb_dn_component *explode_component(void *mem_ctx, char *raw_compo
 	char *p;
 
 	dc = talloc(mem_ctx, struct ldb_dn_component);
-	LDB_DN_NULL_RETURN(dc);
+	LDB_DN_NULL_FAILED(dc);
 
 	dc->attr_num = 0;
 	dc->attributes = NULL;
@@ -220,7 +233,7 @@ static struct ldb_dn_component *explode_component(void *mem_ctx, char *raw_compo
 
 		/* terminate the current attribute and return pointer to the next one */
 		t = seek_to_separator(p, "+");
-		LDB_DN_NULL_RETURN(t);
+		LDB_DN_NULL_FAILED(t);
 
 		if (*t) { /* here there is a separator */
 			*t = '\0'; /*terminate */
@@ -231,11 +244,11 @@ static struct ldb_dn_component *explode_component(void *mem_ctx, char *raw_compo
 		dc->attributes = talloc_realloc(dc, dc->attributes,
 						struct ldb_dn_attribute *,
 						dc->attr_num + 1);
-		LDB_DN_NULL_RETURN(dc->attributes);
+		LDB_DN_NULL_FAILED(dc->attributes);
 
 		/* store the exploded attirbute in the main structure */
 		dc->attributes[dc->attr_num] = ldb_dn_explode_attribute(dc->attributes, p);
-		LDB_DN_NULL_RETURN(dc->attributes[dc->attr_num]);
+		LDB_DN_NULL_FAILED(dc->attributes[dc->attr_num]);
 
 		dc->attr_num++;
 
@@ -245,6 +258,9 @@ static struct ldb_dn_component *explode_component(void *mem_ctx, char *raw_compo
 	} while(*p);
 
 	return dc;
+failed:
+	talloc_free(dc);
+	return NULL;
 }
 
 /* FIXME: currently consider a dn composed of only case insensitive attributes
@@ -291,7 +307,7 @@ struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn)
 
 	/* Allocate a structure to hold the exploded DN */
 	edn = talloc(mem_ctx, struct ldb_dn);
-	LDB_DN_NULL_RETURN(edn);
+	LDB_DN_NULL_FAILED(edn);
 
 	/* Initially there are no components */
 	edn->comp_num = 0;
@@ -299,7 +315,7 @@ struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn)
 
 	pdn = p = talloc_strdup(edn, dn);
 	if (!pdn)
-		goto error;
+		goto failed;
 
 	/* get the components */
 	do {
@@ -308,7 +324,7 @@ struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn)
 		/* terminate the current component and return pointer to the next one */
 		t = seek_to_separator(p, ",;");
 		if (t == NULL)
-			goto error;
+			goto failed;
 
 		if (*t) { /* here there is a separator */
 			*t = '\0'; /*terminate */
@@ -320,12 +336,12 @@ struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn)
 						 struct ldb_dn_component *,
 						 edn->comp_num + 1);
 		if (edn->components == NULL)
-			goto error;
+			goto failed;
 
 		/* store the exploded component in the main structure */
 		edn->components[edn->comp_num] = explode_component(edn->components, p);
 		if (edn->components[edn->comp_num] == NULL)
-			goto error;
+			goto failed;
 
 		edn->comp_num++;
 
@@ -340,39 +356,39 @@ struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn)
 	talloc_free(pdn);
 	return edn;
 
-error:
+failed:
 	talloc_free(edn);
 	return NULL;
 }
 
 char *ldb_dn_linearize(void *mem_ctx, struct ldb_dn *edn)
 {
-	char *dn, *format, *ename, *evalue;
+	char *dn, *ename, *evalue;
+	const char *format;
 	int i, j;
 
 	dn = talloc_strdup(mem_ctx, "");
-	LDB_DN_NULL_RETURN(dn);
+	LDB_DN_NULL_FAILED(dn);
 
 	for (i = 0; i < edn->comp_num; i++) {
 		if (i != 0) {
 			dn = talloc_append_string(mem_ctx, dn, ",");
 		}
 		for (j = 0; j < edn->components[i]->attr_num; j++) {
-			if (i != 0 && j == 0)
-				format = ",%s=%s";
-			else if (i == 0 && j == 0)
+			if (j == 0) {
 				format = "%s=%s";
-			else
+			} else {
 				format = "+%s=%s";
+			}
 
-			ename = escape_string(mem_ctx, edn->components[i]->attributes[j]->name);
-			LDB_DN_NULL_RETURN(ename);
+			ename = escape_string(dn, edn->components[i]->attributes[j]->name);
+			LDB_DN_NULL_FAILED(ename);
 
-			evalue = escape_string(mem_ctx, edn->components[i]->attributes[j]->value);
-			LDB_DN_NULL_RETURN(evalue);
+			evalue = escape_string(dn, edn->components[i]->attributes[j]->value);
+			LDB_DN_NULL_FAILED(evalue);
 
 			dn = talloc_asprintf_append(dn, format, ename, evalue);
-			LDB_DN_NULL_RETURN(dn);
+			LDB_DN_NULL_FAILED(dn);
 
 			talloc_free(ename);
 			talloc_free(evalue);
@@ -380,6 +396,9 @@ char *ldb_dn_linearize(void *mem_ctx, struct ldb_dn *edn)
 	}
 
 	return dn;
+failed:
+	talloc_free(dn);
+	return NULL;
 }
 
 /* FIXME: currently consider a dn composed of only case insensitive attributes
@@ -414,6 +433,8 @@ int ldb_dn_compare(struct ldb_dn *edn0, struct ldb_dn *edn1)
 				return k;
 		}
 	}
+
+	return 0;
 }
 
 /*
@@ -421,45 +442,50 @@ int ldb_dn_compare(struct ldb_dn *edn0, struct ldb_dn *edn1)
   attribute values of case insensitive attributes. We also need to remove
   extraneous spaces between elements
 */
-struct ldb_dn *ldb_dn_casefold(void *mem_ctx, struct ldb_dn *edn, void *user_data,
-				int (* case_fold_attr_fn)(void * user_data, char * attr))
+struct ldb_dn *ldb_dn_casefold(struct ldb_context *ldb, struct ldb_dn *edn)
 {
 	struct ldb_dn *cedn;
 	int i, j;
 
-	cedn = talloc(mem_ctx, struct ldb_dn);
-	LDB_DN_NULL_RETURN(cedn);
+	cedn = talloc(ldb, struct ldb_dn);
+	LDB_DN_NULL_FAILED(cedn);
 
 	cedn->comp_num = edn->comp_num;
 	cedn->components = talloc_array(cedn, struct ldb_dn_component *, edn->comp_num);
-	LDB_DN_NULL_RETURN(cedn->components);
+	LDB_DN_NULL_FAILED(cedn->components);
 
 	for (i = 0; i < edn->comp_num; i++) {
 		struct ldb_dn_component *dc;
 
 		dc = talloc(cedn->components, struct ldb_dn_component);
-		LDB_DN_NULL_RETURN(dc);
+		LDB_DN_NULL_FAILED(dc);
 
 		dc->attr_num = edn->components[i]->attr_num;
 		dc->attributes = edn->components[i]->attributes;
-		LDB_DN_NULL_RETURN(dc->attributes);
+		LDB_DN_NULL_FAILED(dc->attributes);
 
 		for (j = 0; j < edn->components[i]->attr_num; j++) {
 			struct ldb_dn_attribute *at;
+			struct ldb_val v0, v;
+			const struct ldb_attrib_handler *h;
 
 			at = talloc(dc->attributes, struct ldb_dn_attribute);
-			LDB_DN_NULL_RETURN(at);
+			LDB_DN_NULL_FAILED(at);
 
 			at->name = ldb_casefold(at, edn->components[i]->attributes[j]->name);
-			LDB_DN_NULL_RETURN(at->name);
+			LDB_DN_NULL_FAILED(at->name);
 
-			if (case_fold_attr_fn(user_data, at->name)) {
-				at->value = ldb_casefold(at, edn->components[i]->attributes[j]->value);
-			} else {
-				at->value = talloc_strdup(at, edn->components[i]->attributes[j]->value);
+			h = ldb_attrib_handler(ldb, at->name);
+			/* at->value should be a ldb_val, work around
+			   this for now .... */
+			v0.data = edn->components[i]->attributes[j]->value;
+			v0.length = strlen(v0.data);
+			if (h->canonicalise_fn(ldb, &v0, &v) != 0) {
+				return NULL;
 			}
-			LDB_DN_NULL_RETURN(at->value);
 
+			talloc_steal(at, v.data);
+			at->value = v.data;
 			dc->attributes[j] = at;
 		}
 
@@ -467,5 +493,9 @@ struct ldb_dn *ldb_dn_casefold(void *mem_ctx, struct ldb_dn *edn, void *user_dat
 	}
 
 	return cedn;
+
+failed:
+	talloc_free(cedn);
+	return NULL;
 }
 

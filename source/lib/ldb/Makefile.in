@@ -44,7 +44,7 @@ LIB_FLAGS=-Llib -lldb $(LDAP_LIBS) $(SQLITE3_LIBS) $(GCOV_LIBS) @LIBS@
 TDB_OBJ=$(TDBDIR)/common/tdb.o $(TDBDIR)/common/spinlock.o
 TALLOC_OBJ=$(TALLOCDIR)/talloc.o
 
-LDB_TDB_OBJ=ldb_tdb/ldb_match.o ldb_tdb/ldb_tdb.o \
+LDB_TDB_OBJ=ldb_tdb/ldb_tdb.o \
 	ldb_tdb/ldb_pack.o ldb_tdb/ldb_search.o ldb_tdb/ldb_index.o \
 	ldb_tdb/ldb_cache.o
 
@@ -52,7 +52,8 @@ LDB_TDB_OBJ=ldb_tdb/ldb_match.o ldb_tdb/ldb_tdb.o \
 COMMON_OBJ=common/ldb.o common/ldb_ldif.o \
 	   common/ldb_parse.o common/ldb_msg.o common/ldb_utf8.o \
 	   common/ldb_debug.o common/ldb_modules.o \
-	   common/ldb_dn.o
+	   common/ldb_dn.o common/ldb_match.o common/ldb_attributes.o \
+	   common/attrib_handlers.o
 
 MODULES_OBJ=modules/timestamps.o modules/schema.o
 

@@ -84,8 +84,8 @@ int ldb_dn_cmp(const char *dn1, const char *dn2)
   compare two attributes
   return 0 for match
 */
-int ldb_attr_cmp(const char *dn1, const char *dn2)
+int ldb_attr_cmp(const char *attr1, const char *attr2)
 {
-	return ldb_caseless_cmp(dn1, dn2);
+	return ldb_caseless_cmp(attr1, attr2);
 }
 

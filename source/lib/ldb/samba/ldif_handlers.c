@@ -75,9 +75,29 @@ static int ldif_write_objectSid(struct ldb_context *ldb, const struct ldb_val *i
 	return 0;
 }
 
+/*
+  compare two objectSids
+*/
+static int ldb_comparison_objectSid(struct ldb_context *ldb, 
+				    const struct ldb_val *v1, const struct ldb_val *v2)
+{
+	if (strncmp(v1->data, "S-", 2) == 0 &&
+	    strncmp(v2->data, "S-", 2) == 0) {
+		return strcmp(v1->data, v2->data);
+	}
+	return ldb_comparison_binary(ldb, v1, v2);
+}
 
-static const struct ldb_ldif_handler samba_handlers[] = {
-	{ "objectSid", ldif_read_objectSid, ldif_write_objectSid }
+
+static const struct ldb_attrib_handler samba_handlers[] = {
+	{ 
+		.attr            = "objectSid",
+		.flags           = 0,
+		.ldif_read_fn    = ldif_read_objectSid,
+		.ldif_write_fn   = ldif_write_objectSid,
+		.canonicalise_fn = ldb_handler_copy,
+		.comparison_fn   = ldb_comparison_objectSid
+	}
 };
 
 /*
@@ -85,5 +105,5 @@ static const struct ldb_ldif_handler samba_handlers[] = {
 */
 int ldb_register_samba_handlers(struct ldb_context *ldb)
 {
-	return ldb_ldif_add_handlers(ldb, samba_handlers, ARRAY_SIZE(samba_handlers));
+	return ldb_set_attrib_handlers(ldb, samba_handlers, ARRAY_SIZE(samba_handlers));
 }

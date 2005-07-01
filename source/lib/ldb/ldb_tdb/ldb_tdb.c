@@ -41,19 +41,8 @@
 #include "ldb/include/ldb_dn.h"
 #include "ldb/ldb_tdb/ldb_tdb.h"
 
-#define LDBLOCK	"INT_LDBLOCK"
+#define LDBLOCK	"@INT_LDBLOCK"
 
-
-/*
-  callback function used in call to ldb_dn_fold() for determining whether an
-  attribute type requires case folding.
-*/
-static int ltdb_case_fold_attr_required(void * user_data, char *attr)
-{
-	struct ldb_module *module = talloc_get_type(user_data, struct ldb_module);
-
-	return ltdb_attribute_flags(module, attr) & LTDB_FLAG_CASE_INSENSITIVE;
-}
 
 /*
   form a TDB_DATA for a record key
@@ -68,9 +57,6 @@ struct TDB_DATA ltdb_key(struct ldb_module *module, const char *dn)
 	TDB_DATA key;
 	char *key_str = NULL;
 	char *dn_folded = NULL;
-	const char *prefix = LTDB_INDEX ":";
-	const char *s;
-	int flags;
 
 	/*
 	  most DNs are case insensitive. The exception is index DNs for
@@ -78,52 +64,22 @@ struct TDB_DATA ltdb_key(struct ldb_module *module, const char *dn)
 
 	  there are 3 cases dealt with in this code:
 
-	  1) if the dn doesn't start with @INDEX: then uppercase the attribute
+	  1) if the dn doesn't start with @ then uppercase the attribute
              names and the attributes values of case insensitive attributes
-	  2) if the dn starts with @INDEX:attr and 'attr' is a case insensitive
-	     attribute then uppercase whole dn
-	  3) if the dn starts with @INDEX:attr and 'attr' is a case sensitive
-	     attribute then uppercase up to the value of the attribute, but 
-	     not the value itself
+	  2) if the dn starts with @ then leave it alone - the indexing code handles
+	     the rest
 	*/
-	if (strncmp(dn, prefix, strlen(prefix)) == 0 &&
-	    (s = strchr(dn+strlen(prefix), ':'))) {
-		char *attr_name, *attr_name_folded;
-		attr_name = talloc_strndup(ldb, dn+strlen(prefix), (s-(dn+strlen(prefix))));
-		if (!attr_name) {
-			goto failed;
-		}
-		flags = ltdb_attribute_flags(module, attr_name);
-		
-		if (flags & LTDB_FLAG_CASE_INSENSITIVE) {
-			dn_folded = ldb_casefold(ldb, dn);
-		} else {
-			attr_name_folded = ldb_casefold(ldb, attr_name);
-			if (!attr_name_folded) {
-				goto failed;
-			}
-			dn_folded = talloc_asprintf(ldb, "%s:%s:%s",
-						    prefix, attr_name_folded,
-						    s+1);
-			talloc_free(attr_name_folded);
-		}
-		talloc_free(attr_name);
-	}
-	/* special cases for tdb */
-	else if (*dn == '@' || strncmp(LDBLOCK, dn, strlen(LDBLOCK)) == 0) {
-
+	if (*dn == '@') {
 		dn_folded = talloc_strdup(ldb, dn);
-	}
-	else {
+	} else {
 		struct ldb_dn *edn, *cedn;
 
 		edn = ldb_dn_explode(ldb, dn);
 		if (!edn)
 			goto failed;
 
-		cedn = ldb_dn_casefold(ldb, edn, module,
-					ltdb_case_fold_attr_required);
-		if (!edn)
+		cedn = ldb_dn_casefold(ldb, edn);
+		if (!cedn)
 			goto failed;
 
                 dn_folded = ldb_dn_linearize(ldb, cedn);
@@ -563,6 +519,7 @@ static int msg_delete_element(struct ldb_module *module,
 	unsigned int i;
 	int found;
 	struct ldb_message_element *el;
+	const struct ldb_attrib_handler *h;
 
 	found = find_element(msg, name);
 	if (found == -1) {
@@ -571,8 +528,10 @@ static int msg_delete_element(struct ldb_module *module,
 
 	el = &msg->elements[found];
 
+	h = ldb_attrib_handler(ldb, el->name);
+
 	for (i=0;i<el->num_values;i++) {
-		if (ltdb_val_equal(module, msg->elements[i].name, &el->values[i], val)) {
+		if (h->comparison_fn(ldb, &el->values[i], val) == 0) {
 			if (i<el->num_values-1) {
 				memmove(&el->values[i], &el->values[i+1],
 					sizeof(el->values[i])*(el->num_values-(i+1)));

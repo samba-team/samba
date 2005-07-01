@@ -38,5 +38,4 @@ struct ldb_dn {
 struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn);
 char *ldb_dn_linearize(void *mem_ctx, struct ldb_dn *edn);
 int ldb_dn_compare(struct ldb_dn *edn0, struct ldb_dn *edn1);
-struct ldb_dn *ldb_dn_casefold(void *mem_ctx, struct ldb_dn *edn, void *user_data,
-				int (* case_fold_attr_fn)(void * user_data, char * attr));
+struct ldb_dn *ldb_dn_casefold(struct ldb_context *ldb, struct ldb_dn *edn);

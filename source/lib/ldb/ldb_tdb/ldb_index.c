@@ -101,17 +101,45 @@ static char *ldb_dn_key(struct ldb_context *ldb,
 			const char *attr, const struct ldb_val *value)
 {
 	char *ret = NULL;
+	struct ldb_val v;
+	const struct ldb_attrib_handler *h;
+	char *attr_folded;
 
-	if (ldb_should_b64_encode(value)) {
+	attr_folded = ldb_casefold(ldb, attr);
+	if (!attr_folded) {
+		return NULL;
+	}
+
+	h = ldb_attrib_handler(ldb, attr);
+	if (h->canonicalise_fn(ldb, value, &v) != 0) {
+		/* canonicalisation can be refused. For example, 
+		   a attribute that takes wildcards will refuse to canonicalise
+		   if the value contains a wildcard */
+		talloc_free(attr_folded);
+		return NULL;
+	}
+	
+	if (ldb_should_b64_encode(&v)) {
 		char *vstr = ldb_base64_encode(ldb, value->data, value->length);
 		if (!vstr) return NULL;
-		ret = talloc_asprintf(ldb, "%s:%s::%s", LTDB_INDEX, attr, vstr);
+		ret = talloc_asprintf(ldb, "%s:%s::%s", LTDB_INDEX, attr_folded, vstr);
 		talloc_free(vstr);
+		if (v.data != value->data) {
+			talloc_free(v.data);
+		}
+		talloc_free(attr_folded);
 		return ret;
 	}
 
-	return talloc_asprintf(ldb, "%s:%s:%.*s", 
-			       LTDB_INDEX, attr, value->length, (char *)value->data);
+	ret = talloc_asprintf(ldb, "%s:%s:%.*s", 
+			      LTDB_INDEX, attr_folded, v.length, (char *)v.data);
+
+	if (v.data != value->data) {
+		talloc_free(v.data);
+	}
+	talloc_free(attr_folded);
+
+	return ret;
 }
 
 /*
@@ -234,46 +262,50 @@ static int ltdb_index_dn_objectclass(struct ldb_module *module,
 				     struct dn_list *list)
 {
 	struct ldb_context *ldb = module->ldb;
-	struct ltdb_private *ltdb = module->private_data;
 	unsigned int i;
 	int ret;
 	const char *target = tree->u.simple.value.data;
+	const char **subclasses;
 
 	list->count = 0;
 	list->dn = NULL;
 
 	ret = ltdb_index_dn_simple(module, tree, index_list, list);
 
-	for (i=0;i<ltdb->cache->subclasses->num_elements;i++) {
-		struct ldb_message_element *el = &ltdb->cache->subclasses->elements[i];
-		if (ldb_attr_cmp(el->name, target) == 0) {
-			unsigned int j;
-			for (j=0;j<el->num_values;j++) {
-				struct ldb_parse_tree tree2;
-				struct dn_list *list2;
-				tree2.operation = LDB_OP_SIMPLE;
-				tree2.u.simple.attr = talloc_strdup(list, LTDB_OBJECTCLASS);
-				if (!tree2.u.simple.attr) {
-					return -1;
-				}
-				tree2.u.simple.value = el->values[j];
-				list2 = talloc(list, struct dn_list);
-				if (list2 == NULL) {
-					return -1;
-				}
-				if (ltdb_index_dn_objectclass(module, &tree2, 
-							      index_list, list2) == 1) {
-					if (list->count == 0) {
-						*list = *list2;
-						ret = 1;
-					} else {
-						list_union(ldb, list, list2);
-						talloc_free(list2);
-					}
-				}
-				talloc_free(tree2.u.simple.attr);
+	subclasses = ldb_subclass_list(module->ldb, target);
+
+	if (subclasses == NULL) {
+		return ret;
+	}
+
+	for (i=0;subclasses[i];i++) {
+		struct ldb_parse_tree tree2;
+		struct dn_list *list2;
+		tree2.operation = LDB_OP_SIMPLE;
+		tree2.u.simple.attr = talloc_strdup(list, LTDB_OBJECTCLASS);
+		if (!tree2.u.simple.attr) {
+			return -1;
+		}
+		tree2.u.simple.value.data = talloc_strdup(tree2.u.simple.attr, subclasses[i]);
+		if (tree2.u.simple.value.data == NULL) {
+			return -1;			
+		}
+		tree2.u.simple.value.length = strlen(subclasses[i]);
+		list2 = talloc(list, struct dn_list);
+		if (list2 == NULL) {
+			return -1;
+		}
+		if (ltdb_index_dn_objectclass(module, &tree2, 
+					      index_list, list2) == 1) {
+			if (list->count == 0) {
+				*list = *list2;
+				ret = 1;
+			} else {
+				list_union(ldb, list, list2);
+				talloc_free(list2);
 			}
 		}
+		talloc_free(tree2.u.simple.attr);
 	}
 
 	return ret;
@@ -607,7 +639,7 @@ static int ldb_index_filter(struct ldb_module *module, struct ldb_parse_tree *tr
 		}
 
 		ret = 0;
-		if (ltdb_message_match(module, msg, tree, base, scope) == 1) {
+		if (ldb_match_message(module->ldb, msg, tree, base, scope) == 1) {
 			ret = ltdb_add_attr_results(module, msg, attrs, &count, res);
 		}
 		talloc_free(msg);
@@ -799,6 +831,10 @@ int ltdb_index_add(struct ldb_module *module, const struct ldb_message *msg)
 	int ret;
 	unsigned int i, j;
 
+	if (msg->dn[0] == '@') {
+		return 0;
+	}
+
 	if (ltdb->cache->indexlist->num_elements == 0) {
 		/* no indexed fields */
 		return 0;
@@ -833,6 +869,10 @@ int ltdb_index_del_value(struct ldb_module *module, const char *dn,
 	char *dn_key;
 	int ret, i;
 	unsigned int j;
+
+	if (dn[0] == '@') {
+		return 0;
+	}
 
 	dn_key = ldb_dn_key(ldb, el->name, &el->values[v_idx]);
 	if (!dn_key) {
@@ -894,6 +934,10 @@ int ltdb_index_del(struct ldb_module *module, const struct ldb_message *msg)
 	struct ltdb_private *ltdb = module->private_data;
 	int ret;
 	unsigned int i, j;
+
+	if (msg->dn[0] == '@') {
+		return 0;
+	}
 
 	/* find the list of indexed fields */	
 	if (ltdb->cache->indexlist->num_elements == 0) {

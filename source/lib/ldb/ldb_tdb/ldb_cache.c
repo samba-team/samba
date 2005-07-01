@@ -37,6 +37,11 @@
 #include "ldb/include/ldb_private.h"
 #include "ldb/ldb_tdb/ldb_tdb.h"
 
+#define LTDB_FLAG_CASE_INSENSITIVE (1<<0)
+#define LTDB_FLAG_INTEGER          (1<<1)
+#define LTDB_FLAG_WILDCARD         (1<<2)
+#define LTDB_FLAG_HIDDEN           (1<<3)
+#define LTDB_FLAG_OBJECTCLASS      (1<<4)
 
 /* valid attribute flags */
 static const struct {
@@ -47,9 +52,179 @@ static const struct {
 	{ "INTEGER", LTDB_FLAG_INTEGER },
 	{ "WILDCARD", LTDB_FLAG_WILDCARD },
 	{ "HIDDEN", LTDB_FLAG_HIDDEN },
-	{ "NONE", LTDB_FLAG_NONE },
+	{ "NONE", 0 },
 	{ NULL, 0 }
 };
+
+
+/*
+  de-register any special handlers for @ATTRIBUTES
+*/
+static void ltdb_attributes_unload(struct ldb_module *module)
+{
+	struct ltdb_private *ltdb = module->private_data;
+	struct ldb_message *msg;
+	int i;
+
+	if (ltdb->cache->attributes == NULL) {
+		/* no previously loaded attributes */
+		return;
+	}
+
+	msg = ltdb->cache->attributes;
+	for (i=0;i<msg->num_elements;i++) {
+		const struct ldb_attrib_handler *h;
+		/* this is rather ugly - a consequence of const handling */
+		h = ldb_attrib_handler(module->ldb, msg->elements[i].name);
+		ldb_remove_attrib_handler(module->ldb, msg->elements[i].name);
+		if (strcmp(h->attr, msg->elements[i].name) == 0) {
+			talloc_steal(msg, h->attr);
+		}
+	}
+
+	talloc_free(ltdb->cache->attributes);
+	ltdb->cache->attributes = NULL;
+}
+
+/*
+  add up the attrib flags for a @ATTRIBUTES element
+*/
+static int ltdb_attributes_flags(struct ldb_message_element *el, unsigned *v)
+{
+	int i;
+	unsigned value = 0;
+	for (i=0;i<el->num_values;i++) {
+		int j;
+		for (j=0;ltdb_valid_attr_flags[j].name;j++) {
+			if (strcmp(ltdb_valid_attr_flags[j].name, 
+				   el->values[i].data) == 0) {
+				value |= ltdb_valid_attr_flags[j].value;
+				break;
+			}
+		}
+		if (ltdb_valid_attr_flags[j].name == NULL) {
+			return -1;
+		}
+	}
+	*v = value;
+	return 0;
+}
+
+/*
+  register any special handlers from @ATTRIBUTES
+*/
+static int ltdb_attributes_load(struct ldb_module *module)
+{
+	struct ltdb_private *ltdb = module->private_data;
+	struct ldb_message *msg = ltdb->cache->attributes;
+	int i;
+
+	if (ltdb_search_dn1(module, LTDB_ATTRIBUTES, msg) == -1) {
+		goto failed;
+	}
+	/* mapping these flags onto ldap 'syntaxes' isn't strictly correct,
+	   but its close enough for now */
+	for (i=0;i<msg->num_elements;i++) {
+		unsigned flags;
+		const char *syntax;
+		const struct ldb_attrib_handler *h;
+		struct ldb_attrib_handler h2;
+
+		if (ltdb_attributes_flags(&msg->elements[i], &flags) != 0) {
+			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Invalid @ATTRIBUTES element for '%s'\n", msg->elements[i].name);
+			goto failed;
+		}
+		switch (flags & ~LTDB_FLAG_HIDDEN) {
+		case 0:
+			syntax = LDB_SYNTAX_OCTET_STRING;
+			break;
+		case LTDB_FLAG_WILDCARD:
+		case LTDB_FLAG_WILDCARD | LTDB_FLAG_CASE_INSENSITIVE:
+			syntax = LDB_SYNTAX_WILDCARD;
+			break;
+		case LTDB_FLAG_CASE_INSENSITIVE:
+			syntax = LDB_SYNTAX_DIRECTORY_STRING;
+			break;
+		case LTDB_FLAG_INTEGER:
+			syntax = LDB_SYNTAX_INTEGER;
+			break;
+		default:
+			ldb_debug(module->ldb, LDB_DEBUG_ERROR, 
+				  "Invalid flag combination 0x%x for '%s' in @ATTRIBUTES\n",
+				  flags, msg->elements[i].name);
+			goto failed;
+		}
+
+		h = ldb_attrib_handler_syntax(module->ldb, syntax);
+		if (h == NULL) {
+			ldb_debug(module->ldb, LDB_DEBUG_ERROR, 
+				  "Invalid attribute syntax '%s' for '%s' in @ATTRIBUTES\n",
+				  syntax, msg->elements[i].name);
+			goto failed;
+		}
+		h2 = *h;
+		h2.attr = talloc_strdup(module, msg->elements[i].name);
+		if (ldb_set_attrib_handlers(module->ldb, &h2, 1) != 0) {
+			goto failed;
+		}
+	}
+
+	return 0;
+failed:
+	return -1;
+}
+
+
+/*
+  register any subclasses from @SUBCLASSES
+*/
+static int ltdb_subclasses_load(struct ldb_module *module)
+{
+	struct ltdb_private *ltdb = module->private_data;
+	struct ldb_message *msg = ltdb->cache->subclasses;
+	int i, j;
+
+	if (ltdb_search_dn1(module, LTDB_SUBCLASSES, msg) == -1) {
+		goto failed;
+	}
+
+	for (i=0;i<msg->num_elements;i++) {
+		struct ldb_message_element *el = &msg->elements[i];
+		for (j=0;j<el->num_values;j++) {
+			if (ldb_subclass_add(module->ldb, el->name, el->values[j].data) != 0) {
+				goto failed;
+			}
+		}
+	}
+
+	return 0;
+failed:
+	return -1;
+}
+
+
+/*
+  de-register any @SUBCLASSES
+*/
+static void ltdb_subclasses_unload(struct ldb_module *module)
+{
+	struct ltdb_private *ltdb = module->private_data;
+	struct ldb_message *msg;
+	int i;
+
+	if (ltdb->cache->subclasses == NULL) {
+		/* no previously loaded subclasses */
+		return;
+	}
+
+	msg = ltdb->cache->subclasses;
+	for (i=0;i<msg->num_elements;i++) {
+		ldb_subclass_remove(module->ldb, msg->elements[i].name);
+	}
+
+	talloc_free(ltdb->cache->subclasses);
+	ltdb->cache->subclasses = NULL;
+}
 
 
 /*
@@ -122,6 +297,8 @@ static void ltdb_cache_free(struct ldb_module *module)
 */
 int ltdb_cache_reload(struct ldb_module *module)
 {
+	ltdb_attributes_unload(module);
+	ltdb_subclasses_unload(module);
 	ltdb_cache_free(module);
 	return ltdb_cache_load(module);
 }
@@ -176,9 +353,11 @@ int ltdb_cache_load(struct ldb_module *module)
 	talloc_free(ltdb->cache->last_attribute.name);
 	memset(&ltdb->cache->last_attribute, 0, sizeof(ltdb->cache->last_attribute));
 
+	ltdb_attributes_unload(module);
+	ltdb_subclasses_unload(module);
+
 	talloc_free(ltdb->cache->indexlist);
 	talloc_free(ltdb->cache->subclasses);
-	talloc_free(ltdb->cache->attributes);
 
 	ltdb->cache->indexlist = talloc_zero(ltdb->cache, struct ldb_message);
 	ltdb->cache->subclasses = talloc_zero(ltdb->cache, struct ldb_message);
@@ -192,10 +371,11 @@ int ltdb_cache_load(struct ldb_module *module)
 	if (ltdb_search_dn1(module, LTDB_INDEXLIST, ltdb->cache->indexlist) == -1) {
 		goto failed;
 	}
-	if (ltdb_search_dn1(module, LTDB_SUBCLASSES, ltdb->cache->subclasses) == -1) {
+
+	if (ltdb_attributes_load(module) == -1) {
 		goto failed;
 	}
-	if (ltdb_search_dn1(module, LTDB_ATTRIBUTES, ltdb->cache->attributes) == -1) {
+	if (ltdb_subclasses_load(module) == -1) {
 		goto failed;
 	}
 
