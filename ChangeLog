@@ -1,4 +1,10 @@
 2005-07-01  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* kdc: prefix pkinit symbols with _kdc
+
+	* kuser/kinit.c: avoid shadowing variables
+	
+	* kuser: s/optind/optidx/
 
 	* kdc: adapt pkinit code to libkdc split
 
@@ -21,7 +27,7 @@
 	* kdc: Merge in the libkdc/kdc configuration split from Andrew
 	Bartlet <abartlet@samba.org>
 
-	* lib/krb5/crypto.c: optionally compile in support for string2key
+	* lib/krb5/crypto.c: optionally compile in support for afs string2key
 	
 	* configure.in: add --disable-afs-string-to-key to allow removal
 	of support for afs string2key (and dependency on crypt)
@@ -189,6 +195,10 @@
 	* kdc/kerberos5.c (tgs_rep2): rename loop to nloop to avoid shadow
 	warning
 
+2005-06-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Release 0.7, see branch
+	
 2005-06-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/Makefile.am: TESTS += test_mem libkrb5_la_SOURCES +=
