@@ -22,10 +22,6 @@ dn: cn=t1,cn=TEST
 objectClass: testclass
 test: foo
 EOF
-
-
-echo $ldif | $VALGRIND bin/ldbadd || exit 1
-
 checkcount 1 '(test=foo)'
 checkcount 0 '(test=FOO)'
 checkcount 0 '(test=fo*)'
@@ -107,5 +103,29 @@ otherclass: testclass
 EOF
 checkcount 1 '(objectClass=otherclass)'
 checkcount 1 '(objectClass=testclass)'
+
+echo "Adding index"
+cat <<EOF | $VALGRIND bin/ldbadd || exit 1
+dn: @INDEXLIST
+@IDXATTR: i
+@IDXATTR: test
+EOF
+checkcount 1 '(i=0x100)'
+checkcount 1 '(i=256)'
+checkcount 0 '(i=-256)'
+checkcount 1 '(test=foo)'
+checkcount 1 '(test=FOO)'
+checkcount 1 '(test=fo*)'
+
+echo "making test case sensitive"
+cat <<EOF | $VALGRIND bin/ldbmodify || exit 1
+dn: @ATTRIBUTES
+changetype: modify
+replace: test
+test: NONE
+EOF
+checkcount 1 '(test=foo)'
+checkcount 0 '(test=FOO)'
+checkcount 0 '(test=fo*)'
 
 rm -f $LDB_URL
