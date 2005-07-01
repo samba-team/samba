@@ -56,7 +56,7 @@
 		uint32 unknown29;
 	} spoolss_PrinterInfo0;
 
-	typedef struct {
+	typedef [gensize] struct {
 	        string32 devicename;
 		uint16 specversion;
 		uint16 driverversion;
@@ -282,8 +282,8 @@
 	/******************/
 	/* Function: 0x01 */
 	typedef struct {
-		uint32 size;
-		[subcontext(4),subcontext_size(size)] spoolss_DeviceMode *devmode;
+		[value(_ndr_size_spoolss_DeviceMode(devmode, ndr->flags))] uint32 _ndr_size;
+		[subcontext(4),subcontext_size(_ndr_size)] spoolss_DeviceMode *devmode;
 	} spoolss_DevmodeContainer;
 
 	WERROR spoolss_OpenPrinter(
@@ -349,7 +349,7 @@
 		[in] 	 uint32 level,
 		[in] 	 DATA_BLOB *buffer,
 		[in] 	 uint32 offered,
-		[out,subcontext(4),switch_is(level)] spoolss_JobInfo *info,
+		[out,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_JobInfo *info,
 		[out] 	 uint32 needed
 	);
 
@@ -419,17 +419,12 @@
 		[default];
 	} spoolss_SetPrinterInfo;
 
-	typedef struct {
-		uint32 size;
-		[subcontext(4),subcontext_size(size)] security_descriptor *sd;
-	} spoolss_SecDescContainer;
-
 	WERROR spoolss_SetPrinter(
 		[in,ref] policy_handle *handle,
 		[in] uint32 level,
 		[in,switch_is(level)] spoolss_SetPrinterInfo info,
 		[in] spoolss_DevmodeContainer devmode_ctr,
-		[in] spoolss_SecDescContainer secdesc_ctr,
+		[in] sec_desc_buf secdesc_ctr,
 		[in] spoolss_PrinterControl command
 	);
 
@@ -440,7 +435,7 @@
 		[in] 	 uint32 level,
 		[in] 	 DATA_BLOB *buffer,
 		[in] 	 uint32 offered,
-		[out,subcontext(4),switch_is(level)] spoolss_PrinterInfo *info,
+		[out,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_PrinterInfo *info,
 		[out] 	 uint32 needed
 	);
 
@@ -591,7 +586,7 @@
 		[in] uint32 level,
 		[in] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out,subcontext(4),switch_is(level)] spoolss_DriverDirectoryInfo *info,
+		[out,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_DriverDirectoryInfo *info,
 		[out] uint32 needed
 	);
 
@@ -759,7 +754,7 @@
 		[in] 	 unistr value_name,
 		[in] 	 uint32 offered,
 		[out] 	 spoolss_PrinterDataType type,
-		[out,subcontext(4),switch_is(type)] spoolss_PrinterData data,
+		[out,subcontext(4),subcontext_size(offered),switch_is(type)] spoolss_PrinterData data,
 		[out] 	 uint32 needed
 	);
 
@@ -859,7 +854,7 @@
 		[in] uint32 level,
 		[in] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out,subcontext(4),switch_is(level)] spoolss_FormInfo *info,
+		[out,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_FormInfo *info,
 		[out] uint32 needed
 	);
 

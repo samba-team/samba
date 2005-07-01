@@ -72,6 +72,8 @@ struct spoolss_EndPagePrinter;
 struct spoolss_WritePrinter;
 struct spoolss_ReadPrinter;
 
+struct spoolss_DeviceMode;
+
 struct ntptr_context;
 struct ntptr_GenericHandle;
 
