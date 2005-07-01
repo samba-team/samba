@@ -1243,6 +1243,11 @@ NTSTATUS pvfs_change_create_options(struct pvfs_state *pvfs,
 		return NT_STATUS_CANNOT_DELETE;
 	}
 
+	if (f->handle->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
+		f->handle->create_options = create_options;
+		return NT_STATUS_OK;
+	}
+
 	lck = odb_lock(req, pvfs->odb_context, &f->handle->odb_locking_key);
 	if (lck == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
