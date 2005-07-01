@@ -72,6 +72,12 @@ uint32_t dcesrv_common_get_version_minor(TALLOC_CTX *mem_ctx, struct dcesrv_cont
 }
 
 /* This hardcoded value should go into a ldb database! */
+uint32_t dcesrv_common_get_version_build(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
+{
+	return lp_parm_int(-1, "server_info", "version_build", 3790);
+}
+
+/* This hardcoded value should go into a ldb database! */
 uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct dcesrv_context *dce_ctx)
 {
 	return lp_default_server_announce();
