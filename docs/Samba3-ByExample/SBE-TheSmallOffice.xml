@@ -224,7 +224,7 @@
 		of this package may have been patched to resolve this bug.  If your operating
 		platform has this bug, it means that attempts to add a Windows Domain Group that
 		has either a space or uppercase characters in it will fail. See
-		<emphasis>TOSHARG</emphasis>, Chapter 11, Section 11.3.1, Example 11.1, for
+		<emphasis>TOSHARG2</emphasis>, Chapter 11, Section 11.3.1, Example 11.1, for
 		more information.
 		</para>
 
@@ -772,8 +772,9 @@ $rootprompt; ps ax | grep winbind
 14295 ?        S     0:00 /usr/sbin/winbindd -B
 </screen>
 			The <command>winbindd</command> daemon is running in split mode (normal), so there are also
-			two instances of it. For more information regarding <command>winbindd</command>, see <emphasis>TOSHARG</emphasis>,
-			Chapter 23, Section 23.3. The single instance of <command>smbd</command> is normal.
+			two instances of it. For more information regarding <command>winbindd</command>, see
+			<emphasis>TOSHARG2</emphasis>, Chapter 23, Section 23.3. The single instance of
+			<command>smbd</command> is normal.
 			</para></step>
 	
 			<step><para>

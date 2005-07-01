@@ -520,9 +520,9 @@ Given 500 Users and 2 years:
 		<listitem><para>
 		<indexterm><primary>User Mode</primary></indexterm>
 		The &smb.conf; file specifies that the Samba server will operate in (default) <parameter>
-		security = user</parameter> mode<footnote><para>See <emphasis>TOSHARG</emphasis>, Chapter 3.
+		security = user</parameter> mode<footnote><para>See <emphasis>TOSHARG2</emphasis>, Chapter 3.
 		This is necessary so that Samba can act as a Domain Controller (PDC); see
-		<emphasis>TOSHARG</emphasis>, Chapter 4, for additional information.</para></footnote>
+		<emphasis>TOSHARG2</emphasis>, Chapter 4, for additional information.</para></footnote>
 		(User Mode).
 		</para></listitem>
 
@@ -1908,7 +1908,7 @@ $rootprompt; ps ax | grep winbind
 14295 ?        S     0:00 /usr/sbin/winbindd -B
 </screen>
 			The <command>winbindd</command> daemon is running in split mode (normal), so there are also
-			two instances<footnote><para>For more information regarding winbindd, see <emphasis>TOSHARG</emphasis>, 
+			two instances<footnote><para>For more information regarding winbindd, see <emphasis>TOSHARG2</emphasis>, 
 			Chapter 23, Section 23.3. The single instance of <command>smbd</command> is normal. One additional
 			<command>smbd</command> slave process is spawned for each SMB/CIFS client 
 			connection.</para></footnote> of it.
@@ -2452,7 +2452,7 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 		</para>
 
 		<para>
-		The guideline provided in <emphasis>TOSHARG</emphasis>, Chapter 10, Section 10.1.2,
+		The guideline provided in <emphasis>TOSHARG2</emphasis>, Chapter 10, Section 10.1.2,
 		is to limit the number of accounts in the tdbsam backend to 250. This is the point
 		at which most networks tend to want backup domain controllers (BDCs). Samba-3 does
 		not provide a mechanism for replicating tdbsam data so it can be used by a BDC. The
@@ -2630,7 +2630,7 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 		expression that may be up to 1024 characters in length and that represents an IP address. 
 		A NetBIOS name is always 16 characters long. The 16<superscript>th</superscript> character
 		is a name type indicator. A specific name type is registered<footnote><para>
-		See <emphasis>TOSHARG</emphasis>, Chapter 9, for more information.</para></footnote> for each 
+		See <emphasis>TOSHARG2</emphasis>, Chapter 9, for more information.</para></footnote> for each 
 		type of service that is provided by the Windows server or client and that may be registered
 		where a WINS server is in use.
 		</para>
@@ -2651,7 +2651,7 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 
 		<para>
 		Windows 200x Active Directory requires the registration in the DNS zone for the domain it 
-		controls of service locator<footnote><para>See TOSHARG, Chapter 9, Section 9.3.3.</para></footnote> records 
+		controls of service locator<footnote><para>See TOSHARG2, Chapter 9, Section 9.3.3.</para></footnote> records 
 		that Windows clients and servers will use to locate Kerberos and LDAP services. ADS also 
 		requires the registration of special records that are called global catalog (GC) entries 
 		and site entries by which domain controllers and other essential ADS servers may be located. 
