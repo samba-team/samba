@@ -189,20 +189,15 @@ static int key_forms_fetch_values( const char *key, REGVAL_CTR *values )
  *********************************************************************
  *********************************************************************/
 
-static int key_printer_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
+/*********************************************************************
+ strip off prefix for printers key.  DOes return a pointer to static 
+ memory.
+ *********************************************************************/
+
+static char* strip_printers_prefix( const char *key )
 {
-	int n_services = lp_numservices();	
-	int snum;
-	fstring sname;
-	int i;
-	int num_subkeys = 0;
-	char *keystr;
-	char *base, *new_path;
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	fstring *subkey_names = NULL;
+	char *subkeypath;
 	pstring path;
-	
-	DEBUG(10,("print_subpath_printers: key=>[%s]\n", key ? key : "NULL" ));
 	
 	pstrcpy( path, key );
 	normalize_reg_path( path );
@@ -210,12 +205,33 @@ static int key_printer_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 	/* normalizing the path does not change length, just key delimiters and case */
 
 	if ( strncmp( path, KEY_WINNT_PRINTERS, strlen(KEY_WINNT_PRINTERS) ) == 0 )
-		keystr = remaining_path( key + strlen(KEY_WINNT_PRINTERS) );
+		subkeypath = remaining_path( key + strlen(KEY_WINNT_PRINTERS) );
 	else
-		keystr = remaining_path( key + strlen(KEY_CONTROL_PRINTERS) );
+		subkeypath = remaining_path( key + strlen(KEY_CONTROL_PRINTERS) );
+		
+	return subkeypath;
+}
+
+/*********************************************************************
+ *********************************************************************/
+ 
+static int key_printer_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
+{
+	int n_services = lp_numservices();	
+	int snum;
+	fstring sname;
+	int i;
+	int num_subkeys = 0;
+	char *printers_key;
+	char *base, *new_path;
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
+	fstring *subkey_names = NULL;
 	
+	DEBUG(10,("print_subpath_printers: key=>[%s]\n", key ? key : "NULL" ));
 	
-	if ( !keystr ) {
+	printers_key = strip_printers_prefix( key );	
+	
+	if ( !printers_key ) {
 		/* enumerate all printers */
 		
 		for (snum=0; snum<n_services; snum++) {
@@ -238,7 +254,7 @@ static int key_printer_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 
 	/* get information for a specific printer */
 	
-	reg_split_path( keystr, &base, &new_path );
+	reg_split_path( printers_key, &base, &new_path );
 
 		if ( !W_ERROR_IS_OK( get_a_printer(NULL, &printer, 2, base) ) )
 		goto done;
@@ -263,7 +279,16 @@ done:
 
 static BOOL key_printer_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
 {
-	return True;
+	char *printers_key;
+	
+	printers_key = strip_printers_prefix( key );
+	
+	if ( !printers_key ) {
+		/* have to deal with some new or deleted printer */
+		return False;
+	}
+
+	return False;
 }
 
 /**********************************************************************
@@ -364,37 +389,24 @@ static void fill_in_printer_values( NT_PRINTER_INFO_LEVEL_2 *info2, REGVAL_CTR *
 static int key_printer_fetch_values( const char *key, REGVAL_CTR *values )
 {
 	int 		num_values;
-	char		*keystr;
+	char		*printers_key;
 	char		*printername, *printerdatakey;
 	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
 	NT_PRINTER_DATA	*p_data;
-	pstring 	path;
 	int		i, key_index;
 	
-	/* 
-	 * Theres are tw cases to deal with here
-	 * (1) enumeration of printer_info_2 values
-	 * (2) enumeration of the PrinterDriverData subney
-	 */
-	 
-	pstrcpy( path, key );
-	normalize_reg_path( path );
-
-	/* normalizing the path does not change length, just key delimiters and case */
-
-	if ( strncmp( path, KEY_WINNT_PRINTERS, strlen(KEY_WINNT_PRINTERS) ) == 0 )
-		keystr = remaining_path( key + strlen(KEY_WINNT_PRINTERS) );
-	else
-		keystr = remaining_path( key + strlen(KEY_CONTROL_PRINTERS) );
+	printers_key = strip_printers_prefix( key );	
 	
-	/* top level key has no values */
+	/* top level key values stored in the registry has no values */
 	
-	if ( !keystr )
-		return 0;
+	if ( !printers_key ) {
+		/* normalize to the 'HKLM\SOFTWARE\...\Print\Printers' ket */
+		return regdb_fetch_values( KEY_WINNT_PRINTERS, values );
+	}
 	
 	/* lookup the printer object */
 	
-	reg_split_path( keystr, &printername, &printerdatakey );
+	reg_split_path( printers_key, &printername, &printerdatakey );
 	if ( !W_ERROR_IS_OK( get_a_printer(NULL, &printer, 2, printername) ) )
 		goto done;
 		
@@ -403,12 +415,15 @@ static int key_printer_fetch_values( const char *key, REGVAL_CTR *values )
 		goto done;
 	}
 		
-	/* iterate over all printer data and fill the regval container */
+	/* iterate over all printer data keys and fill the regval container */
 	
 	p_data = &printer->info_2->data;
 	if ( (key_index = lookup_printerkey( p_data, printerdatakey )) == -1  ) {
+		/* failure....should never happen if the client has a valid open handle first */
 		DEBUG(10,("key_printer_fetch_values: Unknown keyname [%s]\n", printerdatakey));
-		goto done;
+		if ( printer )
+			free_a_printer( &printer, 2 );
+		return -1;
 	}
 	
 	num_values = regval_ctr_numvals( &p_data->keys[key_index].values );	
@@ -428,7 +443,18 @@ done:
 
 static BOOL key_printer_store_values( const char *key, REGVAL_CTR *values )
 {
-	return True;
+	char *printers_key;
+	
+	printers_key = strip_printers_prefix( key );
+	
+	/* values in the top level key get stored in the registry */
+
+	if ( !printers_key ) {
+		/* normalize on thw 'HKLM\SOFTWARE\....\Print\Printers' ket */
+		return regdb_store_values( KEY_WINNT_PRINTERS, values );
+	}
+	
+	return False;
 }
 
 /*********************************************************************
