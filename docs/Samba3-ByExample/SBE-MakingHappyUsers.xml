@@ -1869,7 +1869,7 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 	<smbconfoption name="syslog">0</smbconfoption>
 	<smbconfoption name="log file">/var/log/samba/%m</smbconfoption>
 	<smbconfoption name="max log size">50</smbconfoption>
-	<smbconfoption name="smb ports">139 445</smbconfoption>
+	<smbconfoption name="smb ports">139</smbconfoption>
 	<smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
 	<smbconfoption name="time server">Yes</smbconfoption>
 	<smbconfoption name="printcap name">CUPS</smbconfoption>
@@ -3203,7 +3203,7 @@ smb: \> q
 	<smbconfoption name="syslog">0</smbconfoption>
 	<smbconfoption name="log file">/var/log/samba/%m</smbconfoption>
 	<smbconfoption name="max log size">50</smbconfoption>
-	<smbconfoption name="smb ports">139 445</smbconfoption>
+	<smbconfoption name="smb ports">139</smbconfoption>
 	<smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
 	<smbconfoption name="printcap name">CUPS</smbconfoption>
 	<smbconfoption name="show add printer wizard">No</smbconfoption>
@@ -3243,7 +3243,7 @@ smb: \> q
 	<smbconfoption name="syslog">0</smbconfoption>
 	<smbconfoption name="log file">/var/log/samba/%m</smbconfoption>
 	<smbconfoption name="max log size">50</smbconfoption>
-	<smbconfoption name="smb ports">139 445</smbconfoption>
+	<smbconfoption name="smb ports">139</smbconfoption>
 	<smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
 	<smbconfoption name="printcap name">CUPS</smbconfoption>
 	<smbconfoption name="show add printer wizard">No</smbconfoption>

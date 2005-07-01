@@ -660,7 +660,7 @@ Join to 'MEGANET2' failed.
 <smbconfoption name="syslog">0</smbconfoption>
 <smbconfoption name="log file">/var/log/samba/%m</smbconfoption>
 <smbconfoption name="max log size">50</smbconfoption>
-<smbconfoption name="smb ports">139 445</smbconfoption>
+<smbconfoption name="smb ports">139</smbconfoption>
 <smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
 <smbconfoption name="printcap name">CUPS</smbconfoption>
 <smbconfoption name="wins server">192.168.2.1</smbconfoption>
@@ -939,7 +939,7 @@ MEGANET2+PIOps:x:10005:
 <smbconfoption name="syslog">0</smbconfoption>
 <smbconfoption name="log file">/var/log/samba/%m</smbconfoption>
 <smbconfoption name="max log size">0</smbconfoption>
-<smbconfoption name="smb ports">139 445</smbconfoption>
+<smbconfoption name="smb ports">139</smbconfoption>
 <smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
 <smbconfoption name="printcap name">CUPS</smbconfoption>
 <smbconfoption name="wins server">192.168.2.1</smbconfoption>
@@ -1038,7 +1038,7 @@ Joined domain MEGANET2.
 <smbconfoption name="winbind enable local accounts">Yes</smbconfoption>
 <smbconfoption name="log file">/var/log/samba/%m</smbconfoption>
 <smbconfoption name="max log size">0</smbconfoption>
-<smbconfoption name="smb ports">139 445</smbconfoption>
+<smbconfoption name="smb ports">139</smbconfoption>
 <smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
 <smbconfoption name="printcap name">CUPS</smbconfoption>
 <smbconfoption name="wins server">192.168.2.1</smbconfoption>
