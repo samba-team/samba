@@ -35,6 +35,7 @@ enum ntptr_HandleType {
 struct ntptr_GenericHandle {
 	enum ntptr_HandleType type;
 	struct ntptr_context *ntptr;
+	const char *object_name;
 	uint32_t access_mask;
 	void *private_data;
 };
@@ -68,8 +69,6 @@ struct ntptr_ops {
 				       struct spoolss_EnumForms *r);
 	WERROR (*AddPrintServerForm)(struct ntptr_GenericHandle *server, TALLOC_CTX *mem_ctx,
 				     struct spoolss_AddForm *r);
-	WERROR (*GetPrintServerForm)(struct ntptr_GenericHandle *server, TALLOC_CTX *mem_ctx,
-				     struct spoolss_GetForm *r);
 	WERROR (*SetPrintServerForm)(struct ntptr_GenericHandle *server, TALLOC_CTX *mem_ctx,
 				     struct spoolss_SetForm *r);
 	WERROR (*DeletePrintServerForm)(struct ntptr_GenericHandle *server, TALLOC_CTX *mem_ctx,
