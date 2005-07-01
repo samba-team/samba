@@ -823,7 +823,7 @@ echo -e "\nNAT firewall done.\n"
 <smbconfoption name="syslog">0</smbconfoption>
 <smbconfoption name="log file">/var/log/samba/%m</smbconfoption>
 <smbconfoption name="max log size">50</smbconfoption>
-<smbconfoption name="smb ports">139 445</smbconfoption>
+<smbconfoption name="smb ports">139</smbconfoption>
 <smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
 <smbconfoption name="time server">Yes</smbconfoption>
 <smbconfoption name="printcap name">CUPS</smbconfoption>
@@ -1852,7 +1852,7 @@ Loaded services file OK.
     syslog = 0
     log file = /var/log/samba/%m
     max log size = 50
-    smb ports = 139 445
+    smb ports = 139
     name resolve order = wins bcast hosts
     time server = Yes
     printcap name = CUPS
@@ -2536,7 +2536,7 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 		The default order by which Samba-3 attempts to communicate with MS Windows clients is via port 445 (the TCP port
 		used by Windows clients when NetBIOS-less SMB over TCP/IP is in use). TCP port 139 is the primary port used for NetBIOS
 		over TCP/IP. In this configuration Windows network operations are predicated around NetBIOS over TCP/IP. By
-		specifying the use of port 139 before port 445, the intent is to reduce unsuccessful service connection attempts.
+		specifying the use of only port 139, the intent is to reduce unsuccessful service connection attempts.
 		The result of this is improved network performance. Where Samba-3 is installed as an Active Directory Domain
 		member, the default behavior is highly beneficial and should not be changed.
 		</para>
