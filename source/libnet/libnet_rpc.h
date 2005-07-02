@@ -18,6 +18,34 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+
+/*
+ * struct definition for connecting to a dcerpc inferface
+ */
+
+enum libnet_RpcConnect_level {
+	LIBNET_RPC_CONNECT_SERVER,      /* connect to a standalone rpc server */
+	LIBNET_RPC_CONNECT_PDC          /* connect to a domain pdc */
+};
+
+struct libnet_RpcConnect {
+	enum libnet_RpcConnect_level level;
+
+	struct {
+		const char *domain_name;
+		const char *dcerpc_iface_name;
+		const char *dcerpc_iface_uuid;
+		uint32_t dcerpc_iface_version;
+	} in;
+	struct {
+		struct dcerpc_pipe *dcerpc_pipe;
+		const char *error_string;
+	} out;
+};
+
+
+
+
 /* struct and enum for finding a domain controller */
 enum libnet_find_pdc_level {
 	LIBNET_FIND_PDC_GENERIC
@@ -36,43 +64,4 @@ union libnet_find_pdc {
 			const char *pdc_name;
 		} out;
 	} generic;
-};
-
-/* struct and enum for connecting to a dcerpc inferface */
-enum libnet_rpc_connect_level {
-	LIBNET_RPC_CONNECT_STANDARD,
-	LIBNET_RPC_CONNECT_PDC
-};
-
-union libnet_rpc_connect {
-	/* connect to a standard server */
-	struct {
-		enum libnet_rpc_connect_level level;
-
-		struct {
-			const char *server_name;
-			const char *dcerpc_iface_name;
-			const char *dcerpc_iface_uuid;
-			uint32_t dcerpc_iface_version;
-		} in;
-
-		struct _libnet_rpc_connect_out {
-			struct dcerpc_pipe *dcerpc_pipe;
-			const char *error_string;
-		} out;
-	} standard;
-
-	/* connect to a domain PDC */
-	struct {
-		enum libnet_rpc_connect_level level;
-
-		struct {
-			const char *domain_name;
-			const char *dcerpc_iface_name;
-			const char *dcerpc_iface_uuid;
-			uint32_t dcerpc_iface_version;
-		} in;
-
-		struct _libnet_rpc_connect_out out;
-	} pdc;
 };
