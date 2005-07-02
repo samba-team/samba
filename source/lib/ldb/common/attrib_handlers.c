@@ -34,10 +34,10 @@
 /*
   default handler that just copies a ldb_val.
 */
-int ldb_handler_copy(struct ldb_context *ldb, 
+int ldb_handler_copy(struct ldb_context *ldb, void *mem_ctx,
 		     const struct ldb_val *in, struct ldb_val *out)
 {
-	*out = ldb_val_dup(ldb, in);
+	*out = ldb_val_dup(mem_ctx, in);
 	if (out->data == NULL) {
 		ldb_oom(ldb);
 		return -1;
@@ -49,11 +49,11 @@ int ldb_handler_copy(struct ldb_context *ldb,
   a case folding copy handler, removing leading and trailing spaces and
   multiple internal spaces
 */
-static int ldb_handler_fold(struct ldb_context *ldb, 
+static int ldb_handler_fold(struct ldb_context *ldb, void *mem_ctx,
 			    const struct ldb_val *in, struct ldb_val *out)
 {
 	uint8_t *s1, *s2;
-	out->data = talloc_size(ldb, strlen(in->data)+1);
+	out->data = talloc_size(mem_ctx, strlen(in->data)+1);
 	if (out->data == NULL) {
 		ldb_oom(ldb);
 		return -1;
@@ -78,20 +78,20 @@ static int ldb_handler_fold(struct ldb_context *ldb,
   a case folding copy handler, removing leading and trailing spaces and
   multiple internal spaces, and checking for wildcard characters
 */
-static int ldb_handler_fold_wildcard(struct ldb_context *ldb, 
+static int ldb_handler_fold_wildcard(struct ldb_context *ldb, void *mem_ctx,
 				     const struct ldb_val *in, struct ldb_val *out)
 {
 	if (strchr(in->data, '*')) {
 		return -1;
 	}
-	return ldb_handler_fold(ldb, in, out);
+	return ldb_handler_fold(ldb, mem_ctx, in, out);
 }
 
 /*
   canonicalise a ldap Integer
   rfc2252 specifies it should be in decimal form
 */
-static int ldb_canonicalise_Integer(struct ldb_context *ldb, 
+static int ldb_canonicalise_Integer(struct ldb_context *ldb, void *mem_ctx,
 				    const struct ldb_val *in, struct ldb_val *out)
 {
 	char *end;
@@ -99,7 +99,7 @@ static int ldb_canonicalise_Integer(struct ldb_context *ldb,
 	if (*end != 0) {
 		return -1;
 	}
-	out->data = talloc_asprintf(ldb, "%lld", i);
+	out->data = talloc_asprintf(mem_ctx, "%lld", i);
 	if (out->data == NULL) {
 		return -1;
 	}
@@ -110,7 +110,7 @@ static int ldb_canonicalise_Integer(struct ldb_context *ldb,
 /*
   compare two Integers
 */
-static int ldb_comparison_Integer(struct ldb_context *ldb, 
+static int ldb_comparison_Integer(struct ldb_context *ldb, void *mem_ctx,
 				  const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	return strtoll(v1->data, NULL, 0) - strtoll(v2->data, NULL, 0);
@@ -119,7 +119,7 @@ static int ldb_comparison_Integer(struct ldb_context *ldb,
 /*
   compare two binary blobs
 */
-int ldb_comparison_binary(struct ldb_context *ldb, 
+int ldb_comparison_binary(struct ldb_context *ldb, void *mem_ctx,
 			  const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	if (v1->length != v2->length) {
@@ -133,7 +133,7 @@ int ldb_comparison_binary(struct ldb_context *ldb,
   and leading and trailing whitespace
   see rfc2252 section 8.1
 */
-static int ldb_comparison_fold(struct ldb_context *ldb, 
+static int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 			       const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	const char *s1=v1->data, *s2=v2->data;
@@ -159,7 +159,8 @@ static int ldb_comparison_fold(struct ldb_context *ldb,
   see rfc2252 section 8.1
   handles wildcards
 */
-static int ldb_comparison_fold_wildcard(struct ldb_context *ldb, 
+static int ldb_comparison_fold_wildcard(struct ldb_context *ldb,
+					void *mem_ctx,
 					const struct ldb_val *v1, 
 					const struct ldb_val *v2)
 {
@@ -187,40 +188,49 @@ static int ldb_comparison_fold_wildcard(struct ldb_context *ldb,
 /*
   canonicalise a attribute in DN format
 */
-static int ldb_canonicalise_dn(struct ldb_context *ldb, 
+static int ldb_canonicalise_dn(struct ldb_context *ldb, void *mem_ctx,
 			       const struct ldb_val *in, struct ldb_val *out)
 {
-	struct ldb_dn *dn2=NULL, *dn1 = ldb_dn_explode(ldb, in->data);
+	struct ldb_dn *dn1, *dn2;
+	int ret = -1;
+
+	out->length = 0;
 	out->data = NULL;
+
+	dn1 = ldb_dn_explode(mem_ctx, in->data);
 	if (dn1 == NULL) {
-		goto failed;
+		return -1;
 	}
 	dn2 = ldb_dn_casefold(ldb, dn1);
-	if (dn2 == NULL) goto failed;
+	if (dn2 == NULL) {
+		goto done;
+	}
 
-	out->data = ldb_dn_linearize(ldb, dn2);
-	if (out->data == NULL) goto failed;
+	out->data = ldb_dn_linearize(mem_ctx, dn2);
+	if (out->data == NULL) {
+		goto done;
+	}
+	out->length = strlen(out->data);
 
+	ret = 0;
+
+done:
 	talloc_free(dn1);
 	talloc_free(dn2);
-	return 0;
 
-failed:
-	talloc_free(dn1);
-	talloc_free(dn2);
-	return -1;
+	return ret;
 }
 
 /*
   compare two dns
 */
-static int ldb_comparison_dn(struct ldb_context *ldb, 
+static int ldb_comparison_dn(struct ldb_context *ldb, void *mem_ctx,
 			     const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	struct ldb_val cv1, cv2;
 	int ret;
-	if (ldb_canonicalise_dn(ldb, v1, &cv1) != 0 ||
-	    ldb_canonicalise_dn(ldb, v2, &cv2) != 0) {
+	if (ldb_canonicalise_dn(ldb, mem_ctx, v1, &cv1) != 0 ||
+	    ldb_canonicalise_dn(ldb, mem_ctx, v2, &cv2) != 0) {
 		goto failed;
 	}
 	ret = strcmp(cv1.data, cv2.data);
@@ -236,12 +246,12 @@ failed:
 /*
   compare two objectclasses, looking at subclasses
 */
-static int ldb_comparison_objectclass(struct ldb_context *ldb, 
+static int ldb_comparison_objectclass(struct ldb_context *ldb, void *mem_ctx,
 				      const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	int ret, i;
 	const char **subclasses;
-	ret = ldb_comparison_fold(ldb, v1, v2);
+	ret = ldb_comparison_fold(ldb, mem_ctx, v1, v2);
 	if (ret == 0) {
 		return 0;
 	}
@@ -253,7 +263,7 @@ static int ldb_comparison_objectclass(struct ldb_context *ldb,
 		struct ldb_val vs;
 		vs.data = discard_const(subclasses[i]);
 		vs.length = strlen(subclasses[i]);
-		if (ldb_comparison_objectclass(ldb, &vs, v2) == 0) {
+		if (ldb_comparison_objectclass(ldb, mem_ctx, &vs, v2) == 0) {
 			return 0;
 		}
 	}

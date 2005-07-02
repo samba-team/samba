@@ -120,7 +120,7 @@ static int ldb_match_leaf(struct ldb_context *ldb,
 	h = ldb_attrib_handler(ldb, el->name);
 
 	for (i=0;i<el->num_values;i++) {
-		if (h->comparison_fn(ldb, &tree->u.simple.value, 
+		if (h->comparison_fn(ldb, ldb, &tree->u.simple.value, 
 				     &el->values[i]) == 0) {
 			return 1;
 		}

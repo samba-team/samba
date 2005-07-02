@@ -38,7 +38,6 @@
 #include "includes.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
-#include "ldb/include/ldb_dn.h"
 #include "ldb/ldb_tdb/ldb_tdb.h"
 
 #define LDBLOCK	"@INT_LDBLOCK"
@@ -531,7 +530,7 @@ static int msg_delete_element(struct ldb_module *module,
 	h = ldb_attrib_handler(ldb, el->name);
 
 	for (i=0;i<el->num_values;i++) {
-		if (h->comparison_fn(ldb, &el->values[i], val) == 0) {
+		if (h->comparison_fn(ldb, ldb, &el->values[i], val) == 0) {
 			if (i<el->num_values-1) {
 				memmove(&el->values[i], &el->values[i+1],
 					sizeof(el->values[i])*(el->num_values-(i+1)));

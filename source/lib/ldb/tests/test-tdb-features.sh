@@ -2,7 +2,7 @@
 
 echo "Running tdb feature tests"
 
-rm -f $LDB_URL
+mv $LDB_URL $LDB_URL.2
 
 checkcount() {
     count=$1
@@ -128,4 +128,3 @@ checkcount 1 '(test=foo)'
 checkcount 0 '(test=FOO)'
 checkcount 0 '(test=fo*)'
 
-rm -f $LDB_URL
