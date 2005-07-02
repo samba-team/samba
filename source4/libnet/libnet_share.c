@@ -27,18 +27,18 @@ NTSTATUS libnet_ListShares(struct libnet_context *ctx,
 			   TALLOC_CTX *mem_ctx, struct libnet_ListShares *r)
 {
 	NTSTATUS status;
-	union libnet_rpc_connect c;
+	struct libnet_RpcConnect c;
 	struct srvsvc_NetShareEnumAll s;
 	uint32_t resume_handle;
 	struct srvsvc_NetShareCtr0 ctr0;
 
-	c.standard.level 			= LIBNET_RPC_CONNECT_STANDARD;
-	c.standard.in.server_name		= r->in.server_name;
-	c.standard.in.dcerpc_iface_name		= DCERPC_SRVSVC_NAME;
-	c.standard.in.dcerpc_iface_uuid		= DCERPC_SRVSVC_UUID;
-	c.standard.in.dcerpc_iface_version	= DCERPC_SRVSVC_VERSION;
+	c.level                      = LIBNET_RPC_CONNECT_SERVER;
+	c.in.domain_name             = r->in.server_name;
+	c.in.dcerpc_iface_name       = DCERPC_SRVSVC_NAME;
+	c.in.dcerpc_iface_uuid       = DCERPC_SRVSVC_UUID;
+	c.in.dcerpc_iface_version    = DCERPC_SRVSVC_VERSION;
 
-	status = libnet_rpc_connect(ctx, mem_ctx, &c);
+	status = libnet_RpcConnect(ctx, mem_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
 						      "Connection to SRVSVC pipe of server %s "
@@ -55,7 +55,7 @@ NTSTATUS libnet_ListShares(struct libnet_context *ctx,
 
 	ZERO_STRUCT(ctr0);
 
-	status = dcerpc_srvsvc_NetShareEnumAll(c.standard.out.dcerpc_pipe, mem_ctx, &s);
+	status = dcerpc_srvsvc_NetShareEnumAll(c.out.dcerpc_pipe, mem_ctx, &s);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
@@ -72,7 +72,7 @@ NTSTATUS libnet_ListShares(struct libnet_context *ctx,
 	r->out.ctr = s.out.ctr;
 
 disconnect:
-	talloc_free(c.standard.out.dcerpc_pipe);
+	talloc_free(c.out.dcerpc_pipe);
 
 	return status;	
 }
@@ -82,16 +82,16 @@ NTSTATUS libnet_AddShare(struct libnet_context *ctx,
 			 TALLOC_CTX *mem_ctx, struct libnet_AddShare *r)
 {
 	NTSTATUS status;
-	union libnet_rpc_connect c;
+	struct libnet_RpcConnect c;
 	struct srvsvc_NetShareAdd s;
 
-	c.standard.level 			= LIBNET_RPC_CONNECT_STANDARD;
-	c.standard.in.server_name		= r->in.server_name;
-	c.standard.in.dcerpc_iface_name		= DCERPC_SRVSVC_NAME;
-	c.standard.in.dcerpc_iface_uuid		= DCERPC_SRVSVC_UUID;
-	c.standard.in.dcerpc_iface_version	= DCERPC_SRVSVC_VERSION;
+	c.level                     = LIBNET_RPC_CONNECT_SERVER;
+	c.in.domain_name            = r->in.server_name;
+	c.in.dcerpc_iface_name      = DCERPC_SRVSVC_NAME;
+	c.in.dcerpc_iface_uuid      = DCERPC_SRVSVC_UUID;
+	c.in.dcerpc_iface_version   = DCERPC_SRVSVC_VERSION;
 
-	status = libnet_rpc_connect(ctx, mem_ctx, &c);
+	status = libnet_RpcConnect(ctx, mem_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
 						      "Connection to SRVSVC pipe of server %s "
@@ -104,7 +104,7 @@ NTSTATUS libnet_AddShare(struct libnet_context *ctx,
 	s.in.info.info2 	= &r->in.share;
 	s.in.server_unc		= talloc_asprintf(mem_ctx, "\\\\%s", r->in.server_name);
  
-	status = dcerpc_srvsvc_NetShareAdd(c.standard.out.dcerpc_pipe, mem_ctx,&s);	
+	status = dcerpc_srvsvc_NetShareAdd(c.out.dcerpc_pipe, mem_ctx,&s);	
 
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
@@ -113,7 +113,7 @@ NTSTATUS libnet_AddShare(struct libnet_context *ctx,
 						      r->in.server_name, nt_errstr(status));
 	}
 
-	talloc_free(c.standard.out.dcerpc_pipe);
+	talloc_free(c.out.dcerpc_pipe);
 	
 	return status;
 }
@@ -123,16 +123,16 @@ NTSTATUS libnet_DelShare(struct libnet_context *ctx,
 			 TALLOC_CTX *mem_ctx, struct libnet_DelShare *r)
 {
 	NTSTATUS status;
-	union libnet_rpc_connect c;
+	struct libnet_RpcConnect c;
 	struct srvsvc_NetShareDel s;
 
-	c.standard.level 			= LIBNET_RPC_CONNECT_STANDARD;
-	c.standard.in.server_name		= r->in.server_name;
-	c.standard.in.dcerpc_iface_name		= DCERPC_SRVSVC_NAME;
-	c.standard.in.dcerpc_iface_uuid		= DCERPC_SRVSVC_UUID;
-	c.standard.in.dcerpc_iface_version	= DCERPC_SRVSVC_VERSION;
+	c.level                      = LIBNET_RPC_CONNECT_SERVER;
+	c.in.domain_name             = r->in.server_name;
+	c.in.dcerpc_iface_name       = DCERPC_SRVSVC_NAME;
+	c.in.dcerpc_iface_uuid       = DCERPC_SRVSVC_UUID;
+	c.in.dcerpc_iface_version    = DCERPC_SRVSVC_VERSION;
 
-	status = libnet_rpc_connect(ctx, mem_ctx, &c);
+	status = libnet_RpcConnect(ctx, mem_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
 						      "Connection to SRVSVC pipe of server %s "
@@ -144,7 +144,7 @@ NTSTATUS libnet_DelShare(struct libnet_context *ctx,
 	s.in.server_unc = talloc_asprintf(mem_ctx, "\\\\%s", r->in.server_name);
 	s.in.share_name = r->in.share_name;
 
-	status = dcerpc_srvsvc_NetShareDel(c.standard.out.dcerpc_pipe, mem_ctx, &s);
+	status = dcerpc_srvsvc_NetShareDel(c.out.dcerpc_pipe, mem_ctx, &s);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
 						      "srvsvc_NetShareDel on server '%s' failed"
@@ -152,7 +152,7 @@ NTSTATUS libnet_DelShare(struct libnet_context *ctx,
 						      r->in.server_name, nt_errstr(status));
 	}
 
-	talloc_free(c.standard.out.dcerpc_pipe);
+	talloc_free(c.out.dcerpc_pipe);
 
 	return status;
 }

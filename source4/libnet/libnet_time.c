@@ -29,19 +29,19 @@
 static NTSTATUS libnet_RemoteTOD_srvsvc(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_RemoteTOD *r)
 {
         NTSTATUS status;
-	union libnet_rpc_connect c;
+	struct libnet_RpcConnect c;
 	struct srvsvc_NetRemoteTOD tod;
 	struct tm tm;
 
 	/* prepare connect to the SRVSVC pipe of a timeserver */
-	c.standard.level			= LIBNET_RPC_CONNECT_STANDARD;
-	c.standard.in.server_name		= r->srvsvc.in.server_name;
-	c.standard.in.dcerpc_iface_name		= DCERPC_SRVSVC_NAME;
-	c.standard.in.dcerpc_iface_uuid		= DCERPC_SRVSVC_UUID;
-	c.standard.in.dcerpc_iface_version	= DCERPC_SRVSVC_VERSION;
+	c.level                    = LIBNET_RPC_CONNECT_SERVER;
+	c.in.domain_name           = r->srvsvc.in.server_name;
+	c.in.dcerpc_iface_name     = DCERPC_SRVSVC_NAME;
+	c.in.dcerpc_iface_uuid     = DCERPC_SRVSVC_UUID;
+	c.in.dcerpc_iface_version  = DCERPC_SRVSVC_VERSION;
 
 	/* 1. connect to the SRVSVC pipe of a timeserver */
-	status = libnet_rpc_connect(ctx, mem_ctx, &c);
+	status = libnet_RpcConnect(ctx, mem_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->srvsvc.out.error_string = talloc_asprintf(mem_ctx,
 						"Connection to SRVSVC pipe of server '%s' failed: %s\n",
@@ -50,10 +50,10 @@ static NTSTATUS libnet_RemoteTOD_srvsvc(struct libnet_context *ctx, TALLOC_CTX *
 	}
 
 	/* prepare srvsvc_NetrRemoteTOD */
-	tod.in.server_unc = talloc_asprintf(mem_ctx, "\\%s", c.standard.in.server_name);
+	tod.in.server_unc = talloc_asprintf(mem_ctx, "\\%s", c.in.domain_name);
 
 	/* 2. try srvsvc_NetRemoteTOD */
-	status = dcerpc_srvsvc_NetRemoteTOD(c.pdc.out.dcerpc_pipe, mem_ctx, &tod);
+	status = dcerpc_srvsvc_NetRemoteTOD(c.out.dcerpc_pipe, mem_ctx, &tod);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->srvsvc.out.error_string = talloc_asprintf(mem_ctx,
 						"srvsvc_NetrRemoteTOD on server '%s' failed: %s\n",
@@ -88,7 +88,7 @@ static NTSTATUS libnet_RemoteTOD_srvsvc(struct libnet_context *ctx, TALLOC_CTX *
 
 disconnect:
 	/* close connection */
-	talloc_free(c.standard.out.dcerpc_pipe);
+	talloc_free(c.out.dcerpc_pipe);
 
 	return status;
 }
