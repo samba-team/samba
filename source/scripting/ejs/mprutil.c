@@ -218,9 +218,9 @@ struct MprVar mprWERROR(WERROR status)
 /*
   set a pointer in a existing MprVar
 */
-void mprSetPtr(struct MprVar *v, const char *propname, void *p)
+void mprSetPtr(struct MprVar *v, const char *propname, const void *p)
 {
-	struct MprVar val = mprCreatePtrVar(p, talloc_get_name(p));
+	struct MprVar val = mprCreatePtrVar(discard_const(p), NULL);
 	mprCreateProperty(v, propname, &val);
 }
 

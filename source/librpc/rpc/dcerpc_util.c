@@ -85,6 +85,20 @@ const struct dcerpc_interface_table *idl_iface_by_uuid(const char *uuid)
 	return NULL;
 }
 
+/*
+  find a dcerpc call on an interface by name
+*/
+const struct dcerpc_interface_call *dcerpc_iface_find_call(const struct dcerpc_interface_table *iface,
+							   const char *name)
+{
+	int i;
+	for (i=0;i<iface->num_calls;i++) {
+		if (strcmp(iface->calls[i].name, name) == 0) {
+			return &iface->calls[i];
+		}
+	}
+	return NULL;
+}
 
 /* 
    push a ncacn_packet into a blob, potentially with auth info
