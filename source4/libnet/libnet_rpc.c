@@ -87,29 +87,26 @@ NTSTATUS libnet_find_pdc(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union 
  * @return nt status of the call
  **/
 
-static NTSTATUS libnet_rpc_connect_standard(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_rpc_connect *r)
+static NTSTATUS libnet_RpcConnectSrv(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_RpcConnect *r)
 {
 	NTSTATUS status;
 	const char *binding = NULL;
 
-	binding = talloc_asprintf(mem_ctx, "ncacn_np:%s",
-					r->standard.in.server_name);
+	binding = talloc_asprintf(mem_ctx, "ncacn_np:%s", r->in.domain_name);
 
-	status = dcerpc_pipe_connect(mem_ctx, 
-				     &r->standard.out.dcerpc_pipe,
-				     binding,
-				     r->standard.in.dcerpc_iface_uuid,
-				     r->standard.in.dcerpc_iface_version,
+	status = dcerpc_pipe_connect(mem_ctx, &r->out.dcerpc_pipe,
+				     binding, r->in.dcerpc_iface_uuid,r->in.dcerpc_iface_version,
 				     ctx->cred, ctx->event_ctx);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		r->standard.out.error_string = talloc_asprintf(mem_ctx, 
-						"dcerpc_pipe_connect to pipe %s failed with %s\n",
-						r->standard.in.dcerpc_iface_name, binding);
+		r->out.error_string = talloc_asprintf(mem_ctx,
+						      "dcerpc_pipe_connect to pipe %s failed with %s\n",
+						      r->in.dcerpc_iface_name, binding);
 		return status;
 	}
 
-	r->standard.out.error_string = NULL;
+	r->out.error_string = NULL;
+	ctx->pipe = r->out.dcerpc_pipe;
 
 	return status;
 }
@@ -124,30 +121,36 @@ static NTSTATUS libnet_rpc_connect_standard(struct libnet_context *ctx, TALLOC_C
  * @return nt status of the call
  **/
 
-static NTSTATUS libnet_rpc_connect_pdc(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_rpc_connect *r)
+static NTSTATUS libnet_RpcConnectPdc(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_RpcConnect *r)
 {
 	NTSTATUS status;
-	union libnet_rpc_connect r2;
-	union libnet_find_pdc f;
+	struct libnet_RpcConnect r2;
+	struct libnet_Lookup f;
+	char address[16];
 
-	f.generic.level			= LIBNET_FIND_PDC_GENERIC;
-	f.generic.in.domain_name	= r->pdc.in.domain_name;
+	f.in.hostname  = r->in.domain_name;
+	f.in.methods   = NULL;
+	f.out.address  = &address;
 
-	status = libnet_find_pdc(ctx, mem_ctx, &f);
+	status = libnet_LookupPdc(ctx, mem_ctx, &f);
 	if (!NT_STATUS_IS_OK(status)) {
+		r->out.error_string = talloc_asprintf(mem_ctx, "libnet_LookupPdc failed: %s",
+						      nt_errstr(status));
 		return status;
 	}
 
-	r2.standard.level			= LIBNET_RPC_CONNECT_STANDARD;
-	r2.standard.in.server_name		= f.generic.out.pdc_name;
-	r2.standard.in.dcerpc_iface_name	= r->standard.in.dcerpc_iface_name;
-	r2.standard.in.dcerpc_iface_uuid	= r->standard.in.dcerpc_iface_uuid;
-	r2.standard.in.dcerpc_iface_version	= r->standard.in.dcerpc_iface_version;
+	r2.level		    = LIBNET_RPC_CONNECT_SERVER;
+	r2.in.domain_name	    = talloc_strdup(mem_ctx, *f.out.address);
+	r2.in.dcerpc_iface_name     = r->in.dcerpc_iface_name;
+	r2.in.dcerpc_iface_uuid	    = r->in.dcerpc_iface_uuid;
+	r2.in.dcerpc_iface_version  = r->in.dcerpc_iface_version;
 	
-	status = libnet_rpc_connect(ctx, mem_ctx, &r2);
+	status = libnet_RpcConnect(ctx, mem_ctx, &r2);
 
-	r->pdc.out.dcerpc_pipe		= r2.standard.out.dcerpc_pipe;
-	r->pdc.out.error_string		= r2.standard.out.error_string;
+	r->out.dcerpc_pipe          = r2.out.dcerpc_pipe;
+	r->out.error_string	    = r2.out.error_string;
+
+	ctx->pipe = r->out.dcerpc_pipe;
 
 	return status;
 }
@@ -162,13 +165,15 @@ static NTSTATUS libnet_rpc_connect_pdc(struct libnet_context *ctx, TALLOC_CTX *m
  * @return nt status of the call
  **/
 
-NTSTATUS libnet_rpc_connect(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_rpc_connect *r)
+NTSTATUS libnet_RpcConnect(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_RpcConnect *r)
 {
-	switch (r->standard.level) {
-		case LIBNET_RPC_CONNECT_STANDARD:
-			return libnet_rpc_connect_standard(ctx, mem_ctx, r);
+	NTSTATUS status;
+
+	switch (r->level) {
+		case LIBNET_RPC_CONNECT_SERVER:
+			return libnet_RpcConnectSrv(ctx, mem_ctx, r);
 		case LIBNET_RPC_CONNECT_PDC:
-			return libnet_rpc_connect_pdc(ctx, mem_ctx, r);
+			return libnet_RpcConnectPdc(ctx, mem_ctx, r);
 	}
 
 	return NT_STATUS_INVALID_LEVEL;
