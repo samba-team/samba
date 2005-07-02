@@ -197,7 +197,8 @@ ADD_OBJ_FILES = \
 		torture/libnet/userman.o \
 		torture/libnet/domain.o \
 		torture/libnet/libnet_lookup.o \
-		torture/libnet/libnet_user.o
+		torture/libnet/libnet_user.o \
+		torture/libnet/libnet_rpc.o
 REQUIRED_SUBSYSTEMS = \
 		NDR_ALL RPC_NDR_SAMR LIBNET
 # End SUBSYSTEM TORTURE_NET
