@@ -20,7 +20,7 @@ echo "Showing renamed record"
 $VALGRIND ldbsearch '(uid=uham)' || exit 1
 
 echo "Starting ldbtest"
-time $VALGRIND ldbtest --num-records 1000 --num-searches 10  || exit 1
+time $VALGRIND ldbtest --num-records 100 --num-searches 10  || exit 1
 
 echo "Adding index"
 $VALGRIND ldbadd $LDBDIR/tests/test-index.ldif  || exit 1
@@ -46,7 +46,7 @@ $VALGRIND ldbsearch '(objectclass=)' uid || exit 1
 $VALGRIND ldbsearch -b 'cn=Hampster Ursula,ou=Alumni Association,ou=People,o=University of Michigan,c=TEST' -s base "" sn || exit 1
 
 echo "Starting ldbtest indexed"
-time $VALGRIND ldbtest --num-records 1000 --num-searches 5000  || exit 1
+time $VALGRIND ldbtest --num-records 100 --num-searches 500  || exit 1
 
 echo "Testing one level search"
 count=`$VALGRIND ldbsearch -b 'ou=Groups,o=University of Michigan,c=TEST' -s one 'objectclass=*' none |grep ^dn | wc -l`
