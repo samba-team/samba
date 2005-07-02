@@ -213,3 +213,29 @@ struct MprVar mprWERROR(WERROR status)
 
 	return res;
 }
+
+
+/*
+  set a pointer in a existing MprVar
+*/
+void mprSetPtr(struct MprVar *v, const char *propname, void *p)
+{
+	struct MprVar val = mprCreatePtrVar(p, talloc_get_name(p));
+	mprCreateProperty(v, propname, &val);
+}
+
+/*
+  get a pointer from a MprVar
+*/
+void *mprGetPtr(struct MprVar *v, const char *propname)
+{
+	struct MprVar *val;
+	val = mprGetProperty(v, propname, NULL);
+	if (val == NULL) {
+		return NULL;
+	}
+	if (val->type != MPR_TYPE_PTR) {
+		return NULL;
+	}
+	return val->ptr;
+}
