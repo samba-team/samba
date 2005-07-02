@@ -9,12 +9,17 @@ release.
 The following development objectives for future releases
 are in progress:
 ----------------------------------------------------------------------------
-Samba-3.0.0		The Domain Integration Release.
+Samba-3.0.20	The release that is focussing on scalability and domain
+				integration and migration. See the WHATSNEW.txt file for
+				update notes.
 
 Samba-3.0.x		Improvements in Management and Migration tools, &
-			general code stabilization work.
+				general code stabilization work. It is recommended to use
+				only stable releases in production environments. You have
+				been duly warned!
 
-Samba-3.x.x		Requirements are currently under discussion.
+Samba-3.1.x		The test bed for all new developments. Do NOT use in any
+				production environment.
 
 Samba-4			Danger Will Robinson, a big code clean up with major
 			system redesign. More will be announced as this work
