@@ -188,8 +188,8 @@ char *ldb_binary_encode(void *ctx, struct ldb_val val);
 /*
   functions for controlling attribute handling
 */
-typedef int (*ldb_attr_handler_t)(struct ldb_context *, const struct ldb_val *, struct ldb_val *);
-typedef int (*ldb_attr_comparison_t)(struct ldb_context *, const struct ldb_val *, const struct ldb_val *);
+typedef int (*ldb_attr_handler_t)(struct ldb_context *, void *mem_ctx, const struct ldb_val *, struct ldb_val *);
+typedef int (*ldb_attr_comparison_t)(struct ldb_context *, void *mem_ctx, const struct ldb_val *, const struct ldb_val *);
 
 struct ldb_attrib_handler {
 	const char *attr;
