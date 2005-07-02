@@ -181,7 +181,15 @@ struct poptOption popt_common_version[] = {
  */
 
 
-static BOOL dont_ask = False;
+static BOOL dont_ask;
+
+/*
+  disable asking for a password
+*/
+void popt_common_dont_ask(void)
+{
+	dont_ask = True;
+}
 
 static void popt_common_credentials_callback(poptContext con, 
 						enum poptCallbackReason reason,
