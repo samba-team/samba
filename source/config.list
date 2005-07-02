@@ -49,3 +49,4 @@ lib/com/config.mk
 scripting/config.mk
 kdc/config.mk
 lib/replace/config.mk
+scripting/ejs/config.mk

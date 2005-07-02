@@ -4,6 +4,7 @@
    Standalone client for ejs scripting.
 
    Copyright (C) Tim Potter <tpot@samba.org> 2005
+   Copyright (C) Andrew Tridgell 2005
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "lib/cmdline/popt_common.h"
 #include "dynconfig.h"
 #include "lib/ejs/ejs.h"
 
@@ -30,7 +32,7 @@ void ejs_exception(const char *reason)
 	exit(127);
 }
 
- int main(int argc, const char *argv[])
+ int main(int argc, const char **argv)
 {
 	EjsId eid;
 	EjsHandle handle = 0;
@@ -39,27 +41,38 @@ void ejs_exception(const char *reason)
 	size_t script_size;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	const char **argv_list = NULL;
+	const char *fname;
 	struct MprVar v, *return_var;
 	int exit_status, i;
+	poptContext pc;
+	int opt;
+	struct poptOption long_options[] = {
+		POPT_AUTOHELP
+		POPT_COMMON_SAMBA
+		POPT_COMMON_CREDENTIALS
+		POPT_COMMON_VERSION
+		POPT_TABLEEND
+	};
 
-	if (argc < 2) {
-		fprintf(stderr, "Usage: %s <scriptfile>\n", argv[0]);
-		exit(127);
-	}
+	popt_common_dont_ask();
 
-	setup_logging(argv[0],DEBUG_STDOUT);
+	pc = poptGetContext("smbscript", argc, argv, long_options, 0);
 
-	if (!lp_load(dyn_CONFIGFILE)) {
-		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",
-			argv[0], dyn_CONFIGFILE);
-		exit(127);
-	}
+	poptSetOtherOptionHelp(pc, "<script> <args> ...");
 
-	load_interfaces();
+	while((opt = poptGetNextOpt(pc)) != -1) /* noop */ ;
 
 	smbscript_init_subsystems;
 
 	mprSetCtx(mem_ctx);
+
+	argv = poptGetArgs(pc);
+	if (argv == NULL ||
+	    argv[0] == NULL) {
+		poptPrintUsage(pc, stdout, 0);
+		exit(1);
+	}
+	fname = argv[0];
 
 	if (ejsOpen(NULL, NULL, NULL) != 0) {
 		fprintf(stderr, "smbscript: ejsOpen(): unable to initialise "
@@ -76,15 +89,15 @@ void ejs_exception(const char *reason)
 	}
 
 	/* setup ARGV[] in the ejs environment */
-	for (i=2;i<argc;i++) {
+	for (i=1;argv[i];i++) {
 		argv_list = str_list_add(argv_list, argv[i]);
 	}
 	v = mprList("ARGV", argv_list);
-	mprSetPropertyValue(&v, "length", mprCreateIntegerVar(argc - 2));
+	mprSetPropertyValue(&v, "length", mprCreateIntegerVar(i-1));
 	mprCreateProperty(ejsGetGlobalObject(eid), "ARGV", &v);
 
 	/* load the script and advance past interpreter line*/
-	script = file_load(argv[1], &script_size);
+	script = file_load(fname, &script_size);
 
 	if ((script_size > 2) && script[0] == '#' && script[1] == '!') {
 		script += 2;
