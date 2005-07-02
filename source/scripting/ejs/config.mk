@@ -1,4 +1,15 @@
 #######################
+# Start LIBRARY EJSRPC
+[SUBSYSTEM::EJSRPC]
+OBJ_FILES = \
+		scripting/ejs/ejsrpc.o \
+		scripting/ejs/ejs_echo.o
+REQUIRED_SUBSYSTEMS = RPC_NDR_ECHO
+NOPROTO = YES
+# End SUBSYSTEM EJSRPC
+#######################
+
+#######################
 # Start LIBRARY SMBCALLS
 [SUBSYSTEM::SMBCALLS]
 OBJ_FILES = \
@@ -9,7 +20,7 @@ OBJ_FILES = \
 		scripting/ejs/smbcalls_cli.o \
 		scripting/ejs/smbcalls_rpc.o \
 		scripting/ejs/mprutil.o
-REQUIRED_SUBSYSTEMS = AUTH EJS LIBBASIC RPC_NDR_ECHO
+REQUIRED_SUBSYSTEMS = AUTH EJS LIBBASIC RPC_NDR_ECHO EJSRPC
 # End SUBSYSTEM SMBCALLS
 #######################
 
