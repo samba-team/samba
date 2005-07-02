@@ -24,6 +24,7 @@
 #include "lib/ejs/ejs.h"
 #include "librpc/gen_ndr/ndr_echo.h"
 #include "lib/cmdline/popt_common.h"
+#include "scripting/ejs/ejsrpc.h"
 
 /*
   connect to an rpc server
@@ -61,9 +62,13 @@ static int ejs_rpc_connect(MprVarHandle eid, int argc, struct MprVar **argv)
 	status = dcerpc_pipe_connect(mprMemCtx(), &p, binding, 
 				     iface->uuid, iface->if_version, 
 				     cmdline_credentials, NULL);
-	if (NT_STATUS_IS_OK(status)) {
-		mprSetPtr(conn, "pipe", p);
-	}
+	if (!NT_STATUS_IS_OK(status)) goto done;
+
+	/* callers don't allocate ref vars in the ejs interface */
+	p->conn->flags |= DCERPC_NDR_REF_ALLOC;
+
+	mprSetPtr(conn, "pipe", p);
+	mprSetPtr(conn, "iface", iface);
 
 done:
 	ejsSetReturnValue(eid, mprNTSTATUS(status));
@@ -78,10 +83,15 @@ done:
 */
 static int ejs_rpc_call(MprVarHandle eid, int argc, struct MprVar **argv)
 {
-	struct dcerpc_pipe *p;
 	struct MprVar *conn, *io;
-	const char *call;
+	const struct dcerpc_interface_table *iface;
+	struct dcerpc_pipe *p;
+	const char *callname;
+	const struct dcerpc_interface_call *call;
 	NTSTATUS status;
+	void *ptr;
+	struct rpc_request *req;
+	int callnum;
 
 	if (argc != 3 ||
 	    argv[0]->type != MPR_TYPE_OBJECT ||
@@ -91,17 +101,62 @@ static int ejs_rpc_call(MprVarHandle eid, int argc, struct MprVar **argv)
 		return -1;
 	}
 	    
-	conn = argv[0];
-	call = mprToString(argv[1]);
-	io   = argv[2];
+	conn     = argv[0];
+	callname = mprToString(argv[1]);
+	io       = argv[2];
 
+	/* get the pipe info */
 	p = mprGetPtr(conn, "pipe");
-	if (p == NULL) {
+	iface = mprGetPtr(conn, "iface");
+	if (p == NULL || iface == NULL) {
 		ejsSetErrorMsg(eid, "rpc_call invalid pipe");
 		return -1;
 	}
 
-	status = NT_STATUS_NOT_IMPLEMENTED;
+	/* find the call by name */
+	call = dcerpc_iface_find_call(iface, callname);
+	if (call == NULL) {
+		status = NT_STATUS_OBJECT_NAME_INVALID;
+		goto done;
+	}
+	callnum = call - iface->calls;
+
+	/* allocate the C structure */
+	ptr = talloc_zero_size(mprMemCtx(), call->struct_size);
+	if (ptr == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	/* convert the mpr object into a C structure */
+	status = ejs_pull_rpc(io, ptr, (ejs_pull_function_t)ejs_pull_echo_AddOne);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	/* if requested, print the structure */
+	if (p->conn->flags & DCERPC_DEBUG_PRINT_IN) {
+		ndr_print_function_debug(call->ndr_print, call->name, NDR_IN, ptr);
+	}
+
+	/* make the actual call */
+	req = dcerpc_ndr_request_send(p, NULL, iface, callnum, ptr, ptr);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		talloc_free(ptr);
+		goto done;
+	}
+	status = dcerpc_ndr_request_recv(req);
+
+	/* print the 'out' structure, if needed */
+	if (p->conn->flags & DCERPC_DEBUG_PRINT_OUT) {
+		ndr_print_function_debug(call->ndr_print, call->name, NDR_OUT, ptr);
+	}
+
+	status = ejs_push_rpc(io, ptr, (ejs_push_function_t)ejs_push_echo_AddOne);
+
+	talloc_free(ptr);
+done:
 	ejsSetReturnValue(eid, mprNTSTATUS(status));
 	return 0;
 }
@@ -114,3 +169,5 @@ void smb_setup_ejs_rpc(void)
 	ejsDefineCFunction(-1, "rpc_connect", ejs_rpc_connect, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineCFunction(-1, "rpc_call", ejs_rpc_call, NULL, MPR_VAR_SCRIPT_HANDLE);
 }
+
+
