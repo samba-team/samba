@@ -45,10 +45,12 @@ struct lookup_state {
  * @param io arguments and result of the call
  */
 
-struct composite_context *libnet_Lookup_send(struct libnet_Lookup *io)
+struct composite_context *libnet_Lookup_send(struct libnet_context *ctx,
+					     struct libnet_Lookup *io)
 {
 	struct composite_context *c;
 	struct lookup_state *s;
+	const char** methods;
 
 	if (!io) return NULL;
 
@@ -69,11 +71,18 @@ struct composite_context *libnet_Lookup_send(struct libnet_Lookup *io)
 	s->hostname.scope  = NULL;
 	s->address         = io->out.address;
 
+	/* name resolution methods */
+	if (io->in.methods) {
+		methods = io->in.methods;
+	} else {
+		methods = (const char**)ctx->name_res_methods;
+	}
+
 	c->private  = s;
 	c->state    = SMBCLI_REQUEST_SEND;
 
 	/* send resolve request */
-	s->resolve_ctx = resolve_name_send(&s->hostname, c->event_ctx, io->in.methods);
+	s->resolve_ctx = resolve_name_send(&s->hostname, c->event_ctx, methods);
 
 	return c;
 
@@ -113,9 +122,10 @@ NTSTATUS libnet_Lookup_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
  * @return nt status code of execution
  */
 
-NTSTATUS libnet_Lookup(TALLOC_CTX *mem_ctx, struct libnet_Lookup *io)
+NTSTATUS libnet_Lookup(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
+		       struct libnet_Lookup *io)
 {
-	struct composite_context *c = libnet_Lookup_send(io);
+	struct composite_context *c = libnet_Lookup_send(ctx, io);
 	return libnet_Lookup_recv(c, mem_ctx, io);
 }
 
@@ -129,10 +139,11 @@ NTSTATUS libnet_Lookup(TALLOC_CTX *mem_ctx, struct libnet_Lookup *io)
 /**
  * Sends asynchronous LookupHost request
  */
-struct composite_context* libnet_LookupHost_send(struct libnet_Lookup *io)
+struct composite_context* libnet_LookupHost_send(struct libnet_context *ctx,
+						 struct libnet_Lookup *io)
 {
 	io->in.type = NBT_NAME_SERVER;
-	return libnet_Lookup_send(io);
+	return libnet_Lookup_send(ctx, io);
 }
 
 
@@ -140,9 +151,10 @@ struct composite_context* libnet_LookupHost_send(struct libnet_Lookup *io)
 /**
  * Synchronous version of LookupHost call
  */
-NTSTATUS libnet_LookupHost(TALLOC_CTX *mem_ctx, struct libnet_Lookup *io)
+NTSTATUS libnet_LookupHost(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
+			   struct libnet_Lookup *io)
 {
-	struct composite_context *c = libnet_LookupHost_send(io);
+	struct composite_context *c = libnet_LookupHost_send(ctx, io);
 	return libnet_Lookup_recv(c, mem_ctx, io);
 }
 
@@ -150,18 +162,20 @@ NTSTATUS libnet_LookupHost(TALLOC_CTX *mem_ctx, struct libnet_Lookup *io)
 /**
  * Sends asynchronous LookupPdc request
  */
-struct composite_context* libnet_LookupPdc_send(struct libnet_Lookup *io)
+struct composite_context* libnet_LookupPdc_send(struct libnet_context *ctx,
+						struct libnet_Lookup *io)
 {
 	io->in.type = NBT_NAME_PDC;
-	return libnet_Lookup_send(io);
+	return libnet_Lookup_send(ctx, io);
 }
 
 
 /**
  * Synchronous version of LookupPdc
  */
-NTSTATUS libnet_LookupPdc(TALLOC_CTX *mem_ctx, struct libnet_Lookup *io)
+NTSTATUS libnet_LookupPdc(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
+			  struct libnet_Lookup *io)
 {
-	struct composite_context *c = libnet_LookupPdc_send(io);
+	struct composite_context *c = libnet_LookupPdc_send(ctx, io);
 	return libnet_Lookup_recv(c, mem_ctx, io);
 }
