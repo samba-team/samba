@@ -425,7 +425,7 @@ sa = 0x%x, share = 0x%x\n", (num), (unsigned int)(am), (unsigned int)(right), (u
 	CHECK_MASK(4, entry->access_mask, FILE_READ_DATA | FILE_EXECUTE,
 		   share_access, FILE_SHARE_READ);
 
-	CHECK_MASK(4, entry->access_mask, DELETE_ACCESS,
+	CHECK_MASK(5, entry->access_mask, DELETE_ACCESS,
 		   share_access, FILE_SHARE_DELETE);
 	CHECK_MASK(6, entry->access_mask, DELETE_ACCESS,
 		   share_access, FILE_SHARE_DELETE);
