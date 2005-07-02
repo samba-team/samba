@@ -41,6 +41,21 @@
 
 #define LDB_DN_NULL_FAILED(x) if (!(x)) goto failed
 
+static int ldb_dn_is_valid_attribute_name(const char *name)
+{
+	while (*name) {
+		if (! isascii(*name)) {
+			return 0;
+		}
+		if (! (isalnum(*name) || *name == '-')) {
+			return 0;
+		}
+		name++;
+	}
+
+	return 1;
+}
+
 static char *ldb_dn_escape_value(void *mem_ctx, struct ldb_val value)
 {
 	const char *p, *s, *src;
@@ -249,6 +264,10 @@ static struct ldb_dn_component ldb_dn_explode_component(void *mem_ctx, char *raw
 	dc.name = talloc_strdup(mem_ctx, ldb_dn_trim_string(raw_component, " \n"));
 	if (!dc.name)
 		return dc;
+
+	if (! ldb_dn_is_valid_attribute_name(dc.name)) {
+		goto failed;
+	}
 
 	ret = get_quotes_position(p, &qs, &qe);
 
