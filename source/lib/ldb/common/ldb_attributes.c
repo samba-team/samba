@@ -60,10 +60,16 @@ int ldb_set_attrib_handlers(struct ldb_context *ldb,
   default function for read/write/canonicalise
 */
 static int ldb_default_copy(struct ldb_context *ldb, 
+			    void *mem_ctx,
 			    const struct ldb_val *in, 
 			    struct ldb_val *out)
 {
-	*out = *in;
+	*out = ldb_val_dup(mem_ctx, in);
+
+	if (out->length == 0) {
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -71,6 +77,7 @@ static int ldb_default_copy(struct ldb_context *ldb,
   default function for comparison
 */
 static int ldb_default_cmp(struct ldb_context *ldb, 
+			    void *mem_ctx,
 			   const struct ldb_val *v1, 
 			   const struct ldb_val *v2)
 {

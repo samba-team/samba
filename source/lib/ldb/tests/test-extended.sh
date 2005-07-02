@@ -2,7 +2,7 @@
 
 echo "Running extended search tests"
 
-rm -f $LDB_URL
+mv $LDB_URL $LDB_URL.1
 
 cat <<EOF | bin/ldbadd || exit 1
 dn: cn=testrec1,cn=TEST
@@ -67,4 +67,3 @@ checkcount 1 '(i1:1.2.840.113556.1.4.804:=8388608)'
 # this is one that w2k gives
 checkcount 3 '(|(|(&(!(groupType:1.2.840.113556.1.4.803:=1))(groupType:1.2.840.113556.1.4.803:=2147483648)(groupType:1.2.840.113556.1.4.804:=10))(samAccountType=805306368))(samAccountType=805306369))'
 
-rm -f $LDB_URL

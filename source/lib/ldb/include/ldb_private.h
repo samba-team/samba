@@ -1,8 +1,9 @@
 /* 
    ldb database library
 
-   Copyright (C) Andrew Tridgell  2004
+   Copyright (C) Andrew Tridgell    2004
    Copyright (C) Stefan Metzmacher  2004
+   Copyright (C) Simo Sorce         2004
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -105,6 +106,16 @@ struct ldb_context {
 	struct ldb_schema schema;
 };
 
+/* internal ldb exploded dn structures */
+struct ldb_dn_component {
+	char *name;
+	struct ldb_val value;
+};
+struct ldb_dn {
+	int comp_num;
+	struct ldb_dn_component *components;
+};
+
 /* the modules init function */
 typedef struct ldb_module *(*ldb_module_init_function)(struct ldb_context *ldb, const char *options[]);
 
@@ -178,17 +189,22 @@ int ldb_set_attrib_handlers(struct ldb_context *ldb,
 			    unsigned num_handlers);
 int ldb_setup_wellknown_attributes(struct ldb_context *ldb);
 
+
+/* The following definitions come from lib/ldb/common/ldb_dn.c  */
 struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn);
-char *ldb_dn_linearize(void *mem_ctx, struct ldb_dn *edn);
-int ldb_dn_compare(struct ldb_dn *edn0, struct ldb_dn *edn1);
-struct ldb_dn *ldb_dn_casefold(struct ldb_context *ldb, struct ldb_dn *edn);
+char *ldb_dn_linearize(void *mem_ctx, const struct ldb_dn *edn);
+int ldb_dn_compare(struct ldb_context *ldb, const struct ldb_dn *edn0, const struct ldb_dn *edn1);
+struct ldb_dn *ldb_dn_casefold(struct ldb_context *ldb, const struct ldb_dn *edn);
+
+
+/* The following definitions come from lib/ldb/common/ldb_attributes.c  */
 const char **ldb_subclass_list(struct ldb_context *ldb, const char *class);
 void ldb_subclass_remove(struct ldb_context *ldb, const char *class);
 int ldb_subclass_add(struct ldb_context *ldb, const char *class, const char *subclass);
 
-int ldb_handler_copy(struct ldb_context *ldb, 
+int ldb_handler_copy(struct ldb_context *ldb, void *mem_ctx,
 		     const struct ldb_val *in, struct ldb_val *out);
-int ldb_comparison_binary(struct ldb_context *ldb, 
+int ldb_comparison_binary(struct ldb_context *ldb, void *mem_ctx,
 			  const struct ldb_val *v1, const struct ldb_val *v2);
 
 #endif

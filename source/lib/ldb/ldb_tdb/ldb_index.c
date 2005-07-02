@@ -111,7 +111,7 @@ static char *ldb_dn_key(struct ldb_context *ldb,
 	}
 
 	h = ldb_attrib_handler(ldb, attr);
-	if (h->canonicalise_fn(ldb, value, &v) != 0) {
+	if (h->canonicalise_fn(ldb, ldb, value, &v) != 0) {
 		/* canonicalisation can be refused. For example, 
 		   a attribute that takes wildcards will refuse to canonicalise
 		   if the value contains a wildcard */

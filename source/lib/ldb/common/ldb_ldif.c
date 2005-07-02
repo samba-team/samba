@@ -317,7 +317,7 @@ int ldb_ldif_write(struct ldb_context *ldb,
 
 		for (j=0;j<msg->elements[i].num_values;j++) {
 			struct ldb_val v;
-			ret = h->ldif_write_fn(ldb, &msg->elements[i].values[j], &v);
+			ret = h->ldif_write_fn(ldb, ldb, &msg->elements[i].values[j], &v);
 			CHECK_RET;
 			if (ldb_should_b64_encode(&v)) {
 				ret = fprintf_fn(private_data, "%s:: ", 
@@ -647,7 +647,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 			if (!el->values) {
 				goto failed;
 			}
-			ret = h->ldif_read_fn(ldb, &value, &el->values[el->num_values]);
+			ret = h->ldif_read_fn(ldb, ldif, &value, &el->values[el->num_values]);
 			if (ret != 0) {
 				goto failed;
 			}
@@ -671,7 +671,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 				goto failed;
 			}
 			el->num_values = 1;
-			ret = h->ldif_read_fn(ldb, &value, &el->values[0]);
+			ret = h->ldif_read_fn(ldb, ldif, &value, &el->values[0]);
 			if (ret != 0) {
 				goto failed;
 			}

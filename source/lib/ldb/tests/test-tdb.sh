@@ -7,6 +7,8 @@ PATH=bin:$PATH
 export PATH
 
 rm -f tdbtest.ldb
+rm -f tdbtest.ldb.1
+rm -f tdbtest.ldb.2
 
 if [ -z "$LDBDIR" ]; then
     LDBDIR="."
