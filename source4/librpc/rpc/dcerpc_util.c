@@ -1016,7 +1016,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(TALLOC_CTX *tmp_ctx,
 				 pipe_uuid, nt_errstr(status)));
 			return status;
 		}
-		DEBUG(1,("Mapped to DCERPC/NP pipe %s\n", binding->endpoint));
+		DEBUG(2,("Mapped to DCERPC/NP pipe %s\n", binding->endpoint));
 	}
 
 	pipe_name = binding->endpoint;
@@ -1050,7 +1050,7 @@ static NTSTATUS dcerpc_pipe_connect_ncalrpc(TALLOC_CTX *tmp_ctx,
 				 pipe_uuid, nt_errstr(status)));
 			return status;
 		}
-		DEBUG(1,("Mapped to DCERPC/LRPC identifier %s\n", binding->endpoint));
+		DEBUG(2,("Mapped to DCERPC/LRPC identifier %s\n", binding->endpoint));
 	}
 
 	status = dcerpc_pipe_open_pipe(p->conn, binding->endpoint);
@@ -1111,7 +1111,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(TALLOC_CTX *tmp_ctx,
 				 pipe_uuid, nt_errstr(status)));
 			return status;
 		}
-		DEBUG(1,("Mapped to DCERPC/TCP port %s\n", binding->endpoint));
+		DEBUG(2,("Mapped to DCERPC/TCP port %s\n", binding->endpoint));
 	}
 
 	port = atoi(binding->endpoint);
