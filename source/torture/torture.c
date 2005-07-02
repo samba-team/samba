@@ -2347,6 +2347,7 @@ static struct {
 	{"NET-API-LOOKUPHOST", torture_lookup_host, 0},
 	{"NET-API-LOOKUPPDC", torture_lookup_pdc, 0},
 	{"NET-API-CREATEUSER", torture_createuser, 0},
+	{"NET-API-RPCCONNECT", torture_rpc_connect, 0},
 
 	{NULL, NULL, 0}};
 
