@@ -322,7 +322,7 @@ section</link> for an example of the minimum required settings.
 <smbconfoption name="ldap group suffix">ou=Groups</smbconfoption>
 <smbconfoption name="ldap machine suffix">ou=Computers</smbconfoption>
 <smbconfoption name="ldap idmap suffix">ou=Idmap</smbconfoption>
-<smbconfoption name="ldap admin dn">cn=Manager,dc=quenya,dc=org</smbconfoption>
+<smbconfoption name="ldap admin dn">cn=sambadmin,dc=quenya,dc=org</smbconfoption>
 </smbconfblock>
 </example>
 
@@ -686,7 +686,7 @@ Setup for Being a BDC</link>.
 <smbconfoption name="ldap group suffix">ou=Groups</smbconfoption>
 <smbconfoption name="ldap machine suffix">ou=Computers</smbconfoption>
 <smbconfoption name="ldap idmap suffix">ou=Idmap</smbconfoption>
-<smbconfoption name="ldap admin dn">cn=Manager,dc=quenya,dc=org</smbconfoption>
+<smbconfoption name="ldap admin dn">cn=sambadmin,dc=quenya,dc=org</smbconfoption>
 <smbconfoption name="idmap backend">ldap:ldap://master-ldap.quenya.org</smbconfoption>
 <smbconfoption name="idmap uid">10000-20000</smbconfoption>
 <smbconfoption name="idmap gid">10000-20000</smbconfoption>
