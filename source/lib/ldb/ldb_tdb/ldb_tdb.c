@@ -56,6 +56,8 @@ struct TDB_DATA ltdb_key(struct ldb_module *module, const char *dn)
 	TDB_DATA key;
 	char *key_str = NULL;
 	char *dn_folded = NULL;
+	struct ldb_dn *edn = NULL;
+	struct ldb_dn *cedn = NULL;
 
 	/*
 	  most DNs are case insensitive. The exception is index DNs for
@@ -71,8 +73,6 @@ struct TDB_DATA ltdb_key(struct ldb_module *module, const char *dn)
 	if (*dn == '@') {
 		dn_folded = talloc_strdup(ldb, dn);
 	} else {
-		struct ldb_dn *edn, *cedn;
-
 		edn = ldb_dn_explode(ldb, dn);
 		if (!edn)
 			goto failed;
@@ -89,10 +89,6 @@ struct TDB_DATA ltdb_key(struct ldb_module *module, const char *dn)
 		talloc_free(cedn);
 	}
 
-	if (!dn_folded) {
-		goto failed;
-	}
-
 	key_str = talloc_asprintf(ldb, "DN=%s", dn_folded);
 	talloc_free(dn_folded);
 
@@ -101,11 +97,13 @@ struct TDB_DATA ltdb_key(struct ldb_module *module, const char *dn)
 	}
 
 	key.dptr = key_str;
-	key.dsize = strlen(key_str)+1;
+	key.dsize = strlen(key_str) + 1;
 
 	return key;
 
 failed:
+	talloc_free(edn);
+	talloc_free(cedn);
 	errno = ENOMEM;
 	key.dptr = NULL;
 	key.dsize = 0;
