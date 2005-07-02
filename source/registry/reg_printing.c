@@ -215,7 +215,7 @@ static char* strip_printers_prefix( const char *key )
 /*********************************************************************
  *********************************************************************/
  
-static int key_printer_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
+static int key_printers_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 {
 	int n_services = lp_numservices();	
 	int snum;
@@ -223,11 +223,11 @@ static int key_printer_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 	int i;
 	int num_subkeys = 0;
 	char *printers_key;
-	char *base, *new_path;
+	char *printername, *printerdatakey;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	fstring *subkey_names = NULL;
 	
-	DEBUG(10,("print_subpath_printers: key=>[%s]\n", key ? key : "NULL" ));
+	DEBUG(10,("key_printers_fetch_keys: key=>[%s]\n", key ? key : "NULL" ));
 	
 	printers_key = strip_printers_prefix( key );	
 	
@@ -254,12 +254,12 @@ static int key_printer_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 
 	/* get information for a specific printer */
 	
-	reg_split_path( printers_key, &base, &new_path );
+	reg_split_path( printers_key, &printername, &printerdatakey );
 
-		if ( !W_ERROR_IS_OK( get_a_printer(NULL, &printer, 2, base) ) )
+	if ( !W_ERROR_IS_OK( get_a_printer(NULL, &printer, 2, printername) ) )
 		goto done;
 
-	num_subkeys = get_printer_subkeys( &printer->info_2->data, new_path?new_path:"", &subkey_names );
+	num_subkeys = get_printer_subkeys( &printer->info_2->data, printerdatakey?printerdatakey:"", &subkey_names );
 	
 	for ( i=0; i<num_subkeys; i++ )
 		regsubkey_ctr_addkey( subkeys, subkey_names[i] );
@@ -277,18 +277,59 @@ done:
 /**********************************************************************
  *********************************************************************/
 
-static BOOL key_printer_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
+static BOOL add_printers_by_registry( REGSUBKEY_CTR *subkeys )
+{
+	return False;
+}
+
+/**********************************************************************
+ *********************************************************************/
+
+static BOOL key_printers_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
 {
 	char *printers_key;
+	char *printername, *printerdatakey;
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
+	int i, num_subkeys;
+	char *subkeyname;
 	
 	printers_key = strip_printers_prefix( key );
 	
 	if ( !printers_key ) {
 		/* have to deal with some new or deleted printer */
+		return add_printers_by_registry( subkeys );
+	}
+	
+	reg_split_path( printers_key, &printername, &printerdatakey );
+	
+	/* lookup the printer */
+	
+	if ( !W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, printername)) ) {
+		DEBUG(0,("key_printers_store_keys: Tried to store subkey for bad printername %s\n", 
+			printername));
 		return False;
 	}
 
-	return False;
+	num_subkeys = regsubkey_ctr_numkeys( subkeys );
+	for ( i=0; i<num_subkeys; i++ ) {
+		subkeyname = regsubkey_ctr_specific_key(subkeys, i);
+		/* add any missing printer keys */
+		if ( lookup_printerkey(&printer->info_2->data, subkeyname) == -1 ) {
+			if ( add_new_printer_key( &printer->info_2->data, subkeyname ) == -1 ) 
+				return False;
+		}
+	}
+	
+	/* write back to disk */
+	
+	mod_a_printer( printer, 2 );
+	
+	/* cleanup */
+	
+	if ( printer )
+		free_a_printer( &printer, 2 );
+
+	return True;
 }
 
 /**********************************************************************
@@ -386,7 +427,7 @@ static void fill_in_printer_values( NT_PRINTER_INFO_LEVEL_2 *info2, REGVAL_CTR *
 /**********************************************************************
  *********************************************************************/
 
-static int key_printer_fetch_values( const char *key, REGVAL_CTR *values )
+static int key_printers_fetch_values( const char *key, REGVAL_CTR *values )
 {
 	int 		num_values;
 	char		*printers_key;
@@ -420,7 +461,7 @@ static int key_printer_fetch_values( const char *key, REGVAL_CTR *values )
 	p_data = &printer->info_2->data;
 	if ( (key_index = lookup_printerkey( p_data, printerdatakey )) == -1  ) {
 		/* failure....should never happen if the client has a valid open handle first */
-		DEBUG(10,("key_printer_fetch_values: Unknown keyname [%s]\n", printerdatakey));
+		DEBUG(10,("key_printers_fetch_values: Unknown keyname [%s]\n", printerdatakey));
 		if ( printer )
 			free_a_printer( &printer, 2 );
 		return -1;
@@ -441,7 +482,7 @@ done:
 /**********************************************************************
  *********************************************************************/
 
-static BOOL key_printer_store_values( const char *key, REGVAL_CTR *values )
+static BOOL key_printers_store_values( const char *key, REGVAL_CTR *values )
 {
 	char *printers_key;
 	
@@ -827,10 +868,10 @@ static struct reg_dyn_tree print_registry[] = {
 	&key_forms_fetch_values,
 	NULL },
 { KEY_CONTROL_PRINTERS, 
-	&key_printer_fetch_keys,
-	&key_printer_store_keys,
-	&key_printer_fetch_values,
-	&key_printer_store_values },
+	&key_printers_fetch_keys,
+	&key_printers_store_keys,
+	&key_printers_fetch_values,
+	&key_printers_store_values },
 { KEY_ENVIRONMENTS,
 	&key_driver_fetch_keys,
 	NULL,
@@ -842,10 +883,10 @@ static struct reg_dyn_tree print_registry[] = {
 	NULL,
 	NULL },
 { KEY_WINNT_PRINTERS,
-	&key_printer_fetch_keys,
-	&key_printer_store_keys,
-	&key_printer_fetch_values,
-	&key_printer_store_values },
+	&key_printers_fetch_keys,
+	&key_printers_store_keys,
+	&key_printers_fetch_values,
+	&key_printers_store_values },
 { KEY_PORTS,
 	&regdb_fetch_keys, 
 	&regdb_store_keys,

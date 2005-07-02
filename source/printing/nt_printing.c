@@ -2125,8 +2125,17 @@ static int pack_values(NT_PRINTER_DATA *data, char *buf, int buflen)
 	for ( i=0; i<data->num_keys; i++ ) {	
 		val_ctr = &data->keys[i].values;
 		num_values = regval_ctr_numvals( val_ctr );
+
+		/* pack the keyname followed by a empty value */
+
+		len += tdb_pack(buf+len, buflen-len, "pPdB", 
+				&data->keys[i].name,
+				data->keys[i].name, 
+				REG_NONE,
+				0,
+				NULL);
 		
-		/* loop over all values */
+		/* now loop over all values */
 		
 		for ( j=0; j<num_values; j++ ) {
 			/* pathname should be stored as <key>\<value> */
@@ -2520,7 +2529,7 @@ int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
  Allocate and initialize a new slot.
 ***************************************************************************/
  
-static int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
+int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
 {
 	NT_PRINTER_KEY	*d;
 	int		key_index;
@@ -2530,9 +2539,12 @@ static int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
 	
 	/* allocate another slot in the NT_PRINTER_KEY array */
 	
-	d = SMB_REALLOC_ARRAY( data->keys, NT_PRINTER_KEY, data->num_keys+1);
-	if ( d )
-		data->keys = d;
+	if ( !(d = SMB_REALLOC_ARRAY( data->keys, NT_PRINTER_KEY, data->num_keys+1)) ) {
+		DEBUG(0,("add_new_printer_key: Realloc() failed!\n"));
+		return -1;
+	}
+
+	data->keys = d;
 	
 	key_index = data->num_keys;
 	
@@ -2579,7 +2591,7 @@ int lookup_printerkey( NT_PRINTER_DATA *data, const char *name )
 /****************************************************************************
  ***************************************************************************/
 
-uint32 get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **subkeys )
+int get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **subkeys )
 {
 	int	i, j;
 	int	key_len;
@@ -2590,14 +2602,42 @@ uint32 get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **su
 	
 	if ( !data )
 		return 0;
+
+	if ( !key )
+		return -1;
+
+	/* special case of asking for the top level printer data registry key names */
+
+	if ( strlen(key) == 0 ) {
+		for ( i=0; i<data->num_keys; i++ ) {
 		
+			/* found a match, so allocate space and copy the name */
+			
+			if ( !(ptr = SMB_REALLOC_ARRAY( subkeys_ptr, fstring, num_subkeys+2)) ) {
+				DEBUG(0,("get_printer_subkeys: Realloc failed for [%d] entries!\n", 
+					num_subkeys+1));
+				SAFE_FREE( subkeys );
+				return -1;
+			}
+			
+			subkeys_ptr = ptr;
+			fstrcpy( subkeys_ptr[num_subkeys], data->keys[i].name );
+			num_subkeys++;
+		}
+
+		goto done;
+	}
+		
+	/* asking for the subkeys of some key */
+	/* subkey paths are stored in the key name using '\' as the delimiter */
+
 	for ( i=0; i<data->num_keys; i++ ) {
 		if ( StrnCaseCmp(data->keys[i].name, key, strlen(key)) == 0 ) {
-			/* match sure it is a subkey and not the key itself */
 			
+			/* if we found the exact key, then break */
 			key_len = strlen( key );
 			if ( strlen(data->keys[i].name) == key_len )
-				continue;
+				break;
 			
 			/* get subkey path */
 
@@ -2634,7 +2674,13 @@ uint32 get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **su
 		
 	}
 	
-	/* tag of the end */
+	/* return error if the key was not found */
+	
+	if ( i == data->num_keys )
+		return -1;
+	
+done:
+	/* tag off the end */
 	
 	if (num_subkeys)
 		fstrcpy(subkeys_ptr[num_subkeys], "" );
@@ -3275,6 +3321,15 @@ static int unpack_values(NT_PRINTER_DATA *printer_data, char *buf, int buflen)
 				  &type,
 				  &size,
 				  &data_p);
+
+		/* lookup for subkey names which have a type of REG_NONE */
+		/* there's no data with this entry */
+
+		if ( type == REG_NONE ) {
+			if ( (key_index=lookup_printerkey( printer_data, string)) == -1 )
+				add_new_printer_key( printer_data, string );
+			continue;
+		}
 	
 		/*
 		 * break of the keyname from the value name.  
