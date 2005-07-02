@@ -25,12 +25,15 @@ struct libnet_context {
 	 */
 	struct cli_credentials *cred;
 
-	/* dcerpc pipes */
-	struct dcerpc_pipe *samr;
+	/* pipe */
+	struct dcerpc_pipe *pipe;
 
 	/* opened handles */
 	struct policy_handle domain_handle;
 	struct policy_handle user_handle;
+
+	/* name resolution methods */
+	char **name_res_methods;
 
 	struct event_context *event_ctx;
 };
