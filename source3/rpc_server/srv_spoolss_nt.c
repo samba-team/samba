@@ -583,7 +583,7 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 		
 		DEBUGADD(10, ("printername: %s\n", printername));
 		
-			free_a_printer( &printer, 2);
+		free_a_printer( &printer, 2);
 	}
 
 	if ( !found ) {
