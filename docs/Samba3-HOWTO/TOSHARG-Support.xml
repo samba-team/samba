@@ -7,10 +7,11 @@
 <para>
 <indexterm><primary>support</primary></indexterm>
 One of the most difficult to answer questions in the information technology industry is, <quote>What is
-support?</quote>. That question often irritates some folks, as much as common answers may annoy others.
+support?</quote>. That question irritates some folks, as much as common answers may annoy others.
 </para>
 
 <para>
+<indexterm><primary>customers</primary></indexterm>
 The most aggravating situation pertaining to support is typified when, as a Linux user, a call is made to
 an Internet service provider who, instead of listening to the problem to find a solution, blandly replies:
 <quote>Oh, Linux? We do not support Linux!</quote>. It has happened to me, and similar situations happen
@@ -20,26 +21,33 @@ is dished out.
 </para>
 
 <para>
-<indexterm><primary>support definition</primary></indexterm>
 One way to consider support is to view it as consisting of the right answer, in the right place,
 at the right time, no matter the situation. Support is all that it takes to take away pain, disruption,
 inconvenience, loss of productivity, disorientation, uncertainty, and real or perceived risk.
 </para>
 
 <para>
+<indexterm><primary>provided services</primary></indexterm>
+<indexterm><primary>services provided</primary></indexterm>
+<indexterm><primary>customer expected</primary></indexterm>
 One of the forces that has become a driving force for the adoption of open source software is the fact that
 many IT businesses have provided services that have perhaps failed to deliver what the customer expected, or
 that have been found wanting for other reasons.
 </para>
 
 <para>
+<indexterm><primary>consumer expects</primary></indexterm>
+<indexterm><primary>problem resolution</primary></indexterm>
 In recognition of the need for needs satisfaction as the primary experience an information technology user or
 consumer expects, the information provided in this chapter may help someone to avoid an unpleasant experience
 in respect of problem resolution.
 </para>
 
 <para>
-In the open source software arena there are two support options: free support and paid-for, or commercial,
+<indexterm><primary>free support</primary></indexterm>
+<indexterm><primary>paid-for support</primary></indexterm>
+<indexterm><primary>commercial support</primary></indexterm>
+In the open source software arena there are two support options: free support and paid-for (commercial)
 support.
 </para>
 
@@ -47,25 +55,36 @@ support.
 	<title>Free Support</title>
 
 	<para>
+<indexterm><primary>user groups</primary></indexterm>
+<indexterm><primary>mailing lists</primary></indexterm>
+<indexterm><primary>interactive help</primary></indexterm>
+<indexterm><primary>help</primary></indexterm>
+<indexterm><primary>mutual assistance</primary></indexterm>
+<indexterm><primary>assistance</primary></indexterm>
 	Free support may be obtained from friends, colleagues, user groups, mailing lists, and interactive help
-	facilities such as chat rooms such as the Internet relay chat (IRC) channels that provide user
+	facilities. An example of an interactive dacility is the Internet relay chat (IRC) channels that host user
 	supported mutual assistance.
 	</para>
 
 	<para>
-	The Samba project maintains a mailing list that is commonly used to discuss solutions to Samba
-	deployments. Information regarding subscription to the Samba mailing list can be found on the
-	Samba <ulink url="https://lists.samba.org/mailman/">web</ulink> site. The public mailing list
-	that can be used to obtain free, user contributed, support is called the <literal>samba</literal>
-	list. The email address for this list is at <literal>mail:samba@samba.org</literal>.
+<indexterm><primary>mailing list</primary></indexterm>
+<indexterm><primary>deployment</primary></indexterm>
+<indexterm><primary>subscription</primary></indexterm>
+<indexterm><primary>IRC</primary></indexterm>
+<indexterm><primary>project</primary></indexterm>
+	The Samba project maintains a mailing list that is commonly used to discuss solutions to Samba deployments.
+	Information regarding subscription to the Samba mailing list can be found on the Samba <ulink
+	url="https://lists.samba.org/mailman/">web</ulink> site. The public mailing list that can be used to obtain
+	free, user contributed, support is called the <literal>samba</literal> list. The email address for this list
+	is at <literal>mail:samba@samba.org</literal>.  Information regarding the Samba IRC channels may be found on
+	the Samba <ulink url="http://www.samba.org/samba.irc.html">IRC</ulink> web page.
 	</para>
 
 	<para>
-	Information regarding the Samba IRC channels may be found on the Samba <ulink
-	url="http://www.samba.org/samba.irc.html">IRC</ulink> web page.
-	</para>
-
-	<para>
+<indexterm><primary>free support</primary></indexterm>
+<indexterm><primary>qualified problem</primary></indexterm>
+<indexterm><primary>requesting payment</primary></indexterm>
+<indexterm><primary>professional support</primary></indexterm>
 	As a general rule, it is considered poor net behavior to contact a Samba Team member directly
 	for free support. Most active members of the Samba Team work exceptionally long hours to assist
 	users who have demonstrated a qualified problem. Some team members may respond to direct email
@@ -75,6 +94,9 @@ support.
 	</para>
 
 	<para>
+<indexterm><primary>bug report</primary></indexterm>
+<indexterm><primary>problem report</primary></indexterm>
+<indexterm><primary>code maintainer</primary></indexterm>
 	When you stumble across a Samba bug, often the quickest way to get it resolved is by posting
 	a bug <ulink url="https://bugzilla.samba.org/">report</ulink>. All such reports are mailed to
 	the responsible code maintainer for action. The better the report, and the more serious it is,
@@ -84,6 +106,7 @@ support.
 	</para>
 
 	<para>
+<indexterm><primary>purchase support</primary></indexterm>
 	We all recognize that sometimes free support does not provide the answer that is sought within
 	the time-frame required. At other times the problem is elusive and you may lack the experience
 	necessary to isolate the problem and thus to resolve it. This is a situation where is may be
@@ -109,22 +132,27 @@ support.
 	</itemizedlist>
 
 	<para>
-	Information regarding companies that provide professional Samba support can be obtained by performing
-	a Google search, as well as by reference to the Samba
-	<ulink url="http://www.samba.org/samba/support.html">Support</ulink> web page. Companies who notify
-	the Samba Team that they provide commercial support are given a free listing that is sorted by the country
-	of origin. Multiple listings are permitted, however no guarantee is offered. It is left to you to qualify a
-	support provider and to satisfy yourself that both the company and its staff are able to deliver what is
-	required of them. </para>
-
-	<para>
-	In deference to the policy within the Samba Team to treat all commercial support providers equally
-	and to show no preference, Samba Team members who provide commercial support are lumped in with
-	everyone else. You are encouraged to obtain the services needed from a company in your local area.
-	The open source movement is pro-community, so do what you can to help a local business to prosper.
+<indexterm><primary>commercial support</primary></indexterm>
+<indexterm><primary>country of origin</primary></indexterm>
+	Information regarding companies that provide professional Samba support can be obtained by performing a Google
+	search, as well as by reference to the Samba <ulink
+	url="http://www.samba.org/samba/support.html">Support</ulink> web page. Companies who notify the Samba Team
+	that they provide commercial support are given a free listing that is sorted by the country of origin.
+	Multiple listings are permitted, however no guarantee is offered. It is left to you to qualify a support
+	provider and to satisfy yourself that both the company and its staff are able to deliver what is required of
+	them.
 	</para>
 
 	<para>
+<indexterm><primary>commercial support</primary></indexterm>
+	The policy within the Samba Team is to treat all commercial support providers equally and to show no
+	preference. As a result, Samba Team members who provide commercial support are lumped in with everyone else.
+	You are encouraged to obtain the services needed from a company in your local area. The open source movement
+	is pro-community; so do what you can to help a local business to prosper.
+	</para>
+
+	<para>
+<indexterm><primary>unsupported software</primary></indexterm>
 	Open source software support can be found in any quality, at any price and in any place you can
 	to obtain it. Over 180 companies around the world provide Samba support, there is no excuse for
 	suffering in the mistaken belief that Samba is unsupported software &smbmdash; it is supported.
