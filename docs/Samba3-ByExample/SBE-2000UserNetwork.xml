@@ -955,6 +955,18 @@ modifyTimestamp: 20031227004338Z
 		implement additional slave LDAP servers as required.
 		</para></step>
 
+		<step><para>
+		On each machine (PDC and BDCs) after the respective &smb.conf; files have been created as shown in
+		<link linkend="ch7-massmbconfA">Primary Domain Controller &smb.conf; File &smbmdash; Part A + B + C</link> and
+		on BDCs the <link linkend="ch7-slvsmbocnfA">Backup Domain Controller &smb.conf; File &smbmdash; Part A
+		+ B + C</link> execute the following:
+<screen>
+&rootprompt; smbpasswd -w buttercup
+</screen>
+		This will install in the <filename>secrets.tdb</filename> file the password that Samba will need to
+		manage (write to) the LDAP Master server to perform account updates.
+		</para></step>
+
 	</procedure>
 
 <example id="ch7-LDAP-master">
@@ -982,7 +994,7 @@ replica     host=lapdc.abmas.biz:389
             bindmethod=simple credentials=not24get
 
 access to attrs=sambaLMPassword,sambaNTPassword
-           by dn="cn=updateuser,dc=abmas,dc=biz" write
+           by dn="cn=sambaadmin,dc=abmas,dc=biz" write
            by * none
 
 replogfile  /var/lib/ldap/replogfile
@@ -1087,7 +1099,7 @@ index default               sub
 <smbconfoption name="ldap user suffix">ou=People</smbconfoption>
 <smbconfoption name="ldap group suffix">ou=Groups</smbconfoption>
 <smbconfoption name="ldap idmap suffix">ou=Idmap</smbconfoption>
-<smbconfoption name="ldap admin dn">cn=Manager,dc=abmas,dc=biz</smbconfoption>
+<smbconfoption name="ldap admin dn">cn=sambaadmin,dc=abmas,dc=biz</smbconfoption>
 <smbconfoption name="idmap backend">ldap://massive.abmas.biz</smbconfoption>
 <smbconfoption name="idmap uid">10000-20000</smbconfoption>
 <smbconfoption name="idmap gid">10000-20000</smbconfoption>
@@ -1198,7 +1210,7 @@ index default               sub
 <smbconfoption name="ldap user suffix">ou=People</smbconfoption>
 <smbconfoption name="ldap group suffix">ou=Groups</smbconfoption>
 <smbconfoption name="ldap idmap suffix">ou=Idmap</smbconfoption>
-<smbconfoption name="ldap admin dn">cn=Manager,dc=abmas,dc=biz</smbconfoption>
+<smbconfoption name="ldap admin dn">cn=sambaadmin,dc=abmas,dc=biz</smbconfoption>
 <smbconfoption name="utmp">Yes</smbconfoption>
 <smbconfoption name="idmap backend">ldap://massive.abmas.biz</smbconfoption>
 <smbconfoption name="idmap uid">10000-20000</smbconfoption>
