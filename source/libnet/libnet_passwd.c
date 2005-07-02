@@ -35,7 +35,7 @@
 static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_ChangePassword *r)
 {
         NTSTATUS status;
-	union libnet_rpc_connect c;
+	struct libnet_RpcConnect c;
 #if 0
 	struct policy_handle user_handle;
 	struct samr_Password hash1, hash2, hash3, hash4, hash5, hash6;
@@ -52,14 +52,14 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 	uint8_t old_lm_hash[16], new_lm_hash[16];
 
 	/* prepare connect to the SAMR pipe of the users domain PDC */
-	c.pdc.level			= LIBNET_RPC_CONNECT_PDC;
-	c.pdc.in.domain_name		= r->samr.in.domain_name;
-	c.pdc.in.dcerpc_iface_name	= DCERPC_SAMR_NAME;
-	c.pdc.in.dcerpc_iface_uuid	= DCERPC_SAMR_UUID;
-	c.pdc.in.dcerpc_iface_version	= DCERPC_SAMR_VERSION;
+	c.level                    = LIBNET_RPC_CONNECT_PDC;
+	c.in.domain_name           = r->samr.in.domain_name;
+	c.in.dcerpc_iface_name     = DCERPC_SAMR_NAME;
+	c.in.dcerpc_iface_uuid     = DCERPC_SAMR_UUID;
+	c.in.dcerpc_iface_version  = DCERPC_SAMR_VERSION;
 
 	/* 1. connect to the SAMR pipe of users domain PDC (maybe a standalone server or workstation) */
-	status = libnet_rpc_connect(ctx, mem_ctx, &c);
+	status = libnet_RpcConnect(ctx, mem_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"Connection to SAMR pipe of PDC of domain '%s' failed: %s\n",
@@ -68,7 +68,7 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 	}
 
 	/* prepare password change for account */
-	server.string = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(c.pdc.out.dcerpc_pipe));
+	server.string = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(c.out.dcerpc_pipe));
 	account.string = r->samr.in.account_name;
 
 	E_md4hash(r->samr.in.oldpassword, old_nt_hash);
@@ -96,7 +96,7 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 	pw3.in.password3 = NULL;
 
 	/* 2. try samr_ChangePasswordUser3 */
-	status = dcerpc_samr_ChangePasswordUser3(c.pdc.out.dcerpc_pipe, mem_ctx, &pw3);
+	status = dcerpc_samr_ChangePasswordUser3(c.out.dcerpc_pipe, mem_ctx, &pw3);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_ChangePasswordUser3 failed: %s\n",
@@ -139,7 +139,7 @@ ChangePasswordUser2:
 	pw2.in.lm_verifier = &lm_verifier;
 
 	/* 3. try samr_ChangePasswordUser2 */
-	status = dcerpc_samr_ChangePasswordUser2(c.pdc.out.dcerpc_pipe, mem_ctx, &pw2);
+	status = dcerpc_samr_ChangePasswordUser2(c.out.dcerpc_pipe, mem_ctx, &pw2);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_ChangePasswordUser2 failed: %s\n",
@@ -164,7 +164,7 @@ ChangePasswordUser2:
 
 OemChangePasswordUser2:
 	/* prepare samr_OemChangePasswordUser2 */
-	a_server.string = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(c.pdc.out.dcerpc_pipe));
+	a_server.string = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(c.out.dcerpc_pipe));
 	a_account.string = r->samr.in.account_name;
 
 	encode_pw_buffer(lm_pass.data, r->samr.in.newpassword, STR_ASCII);
@@ -177,7 +177,7 @@ OemChangePasswordUser2:
 	oe2.in.hash = &lm_verifier;
 
 	/* 4. try samr_OemChangePasswordUser2 */
-	status = dcerpc_samr_OemChangePasswordUser2(c.pdc.out.dcerpc_pipe, mem_ctx, &oe2);
+	status = dcerpc_samr_OemChangePasswordUser2(c.out.dcerpc_pipe, mem_ctx, &oe2);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_OemChangePasswordUser2 failed: %s\n",
@@ -247,7 +247,7 @@ ChangePasswordUser:
 #endif
 disconnect:
 	/* close connection */
-	talloc_free(c.pdc.out.dcerpc_pipe);
+	talloc_free(c.out.dcerpc_pipe);
 
 	return status;
 }
@@ -502,7 +502,7 @@ static NTSTATUS libnet_SetPassword_samr_handle(struct libnet_context *ctx, TALLO
 static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_SetPassword *r)
 {
 	NTSTATUS status;
-	union libnet_rpc_connect c;
+	struct libnet_RpcConnect c;
 	struct samr_Connect sc;
 	struct policy_handle p_handle;
 	struct samr_LookupDomain ld;
@@ -515,14 +515,14 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	union libnet_SetPassword r2;
 
 	/* prepare connect to the SAMR pipe of users domain PDC */
-	c.pdc.level			= LIBNET_RPC_CONNECT_PDC;
-	c.pdc.in.domain_name		= r->samr.in.domain_name;
-	c.pdc.in.dcerpc_iface_name	= DCERPC_SAMR_NAME;
-	c.pdc.in.dcerpc_iface_uuid	= DCERPC_SAMR_UUID;
-	c.pdc.in.dcerpc_iface_version	= DCERPC_SAMR_VERSION;
+	c.level                     = LIBNET_RPC_CONNECT_PDC;
+	c.in.domain_name            = r->samr.in.domain_name;
+	c.in.dcerpc_iface_name      = DCERPC_SAMR_NAME;
+	c.in.dcerpc_iface_uuid      = DCERPC_SAMR_UUID;
+	c.in.dcerpc_iface_version   = DCERPC_SAMR_VERSION;
 
 	/* 1. connect to the SAMR pipe of users domain PDC (maybe a standalone server or workstation) */
-	status = libnet_rpc_connect(ctx, mem_ctx, &c);
+	status = libnet_RpcConnect(ctx, mem_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 							   "Connection to SAMR pipe of PDC of domain '%s' failed: %s\n",
@@ -537,7 +537,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	sc.out.connect_handle = &p_handle;
 
 	/* 2. do a samr_Connect to get a policy handle */
-	status = dcerpc_samr_Connect(c.pdc.out.dcerpc_pipe, mem_ctx, &sc);
+	status = dcerpc_samr_Connect(c.out.dcerpc_pipe, mem_ctx, &sc);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_Connect failed: %s\n",
@@ -551,7 +551,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	ld.in.domain_name = &d_name;
 
 	/* 3. do a samr_LookupDomain to get the domain sid */
-	status = dcerpc_samr_LookupDomain(c.pdc.out.dcerpc_pipe, mem_ctx, &ld);
+	status = dcerpc_samr_LookupDomain(c.out.dcerpc_pipe, mem_ctx, &ld);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_LookupDomain for [%s] failed: %s\n",
@@ -567,7 +567,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	od.out.domain_handle = &d_handle;
 
 	/* 4. do a samr_OpenDomain to get a domain handle */
-	status = dcerpc_samr_OpenDomain(c.pdc.out.dcerpc_pipe, mem_ctx, &od);
+	status = dcerpc_samr_OpenDomain(c.out.dcerpc_pipe, mem_ctx, &od);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_OpenDomain for [%s] failed: %s\n",
@@ -586,7 +586,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	ln.in.names[0].string = r->samr.in.account_name;
 
 	/* 5. do a samr_LookupNames to get the users rid */
-	status = dcerpc_samr_LookupNames(c.pdc.out.dcerpc_pipe, mem_ctx, &ln);
+	status = dcerpc_samr_LookupNames(c.out.dcerpc_pipe, mem_ctx, &ln);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_LookupNames for [%s] failed: %s\n",
@@ -611,7 +611,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	ou.out.user_handle = &u_handle;
 
 	/* 6. do a samr_OpenUser to get a user handle */
-	status = dcerpc_samr_OpenUser(c.pdc.out.dcerpc_pipe, mem_ctx, &ou);
+	status = dcerpc_samr_OpenUser(c.out.dcerpc_pipe, mem_ctx, &ou);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_OpenUser for [%s] failed: %s\n",
@@ -623,7 +623,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	r2.samr_handle.in.account_name	= r->samr.in.account_name;
 	r2.samr_handle.in.newpassword	= r->samr.in.newpassword;
 	r2.samr_handle.in.user_handle   = &u_handle;
-	r2.samr_handle.in.dcerpc_pipe   = c.pdc.out.dcerpc_pipe;
+	r2.samr_handle.in.dcerpc_pipe   = c.out.dcerpc_pipe;
 
 	status = libnet_SetPassword(ctx, mem_ctx, &r2);
 
@@ -631,7 +631,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 
 disconnect:
 	/* close connection */
-	talloc_free(c.pdc.out.dcerpc_pipe);
+	talloc_free(c.out.dcerpc_pipe);
 
 	return status;
 }
