@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "lib/cmdline/popt_common.h"
 #include "libnet/libnet.h"
 #include "libnet/composite.h"
 #include "libcli/composite/monitor.h"
@@ -30,17 +31,21 @@ BOOL torture_lookup(void)
 {
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
+	struct libnet_context *ctx;
 	struct libnet_Lookup lookup;
 	const char address[16];
 
 	mem_ctx = talloc_init("test_lookup");
 
+	ctx = libnet_context_init(NULL);
+	ctx->cred = cmdline_credentials;
+
 	lookup.in.hostname = lp_netbios_name();
 	lookup.in.methods  = lp_name_resolve_order();
 	lookup.in.type     = NBT_NAME_CLIENT;
-	lookup.out.address = (const char**)&address;
+	lookup.out.address = &address;
 
-	status = libnet_Lookup(mem_ctx, &lookup);
+	status = libnet_Lookup(ctx, mem_ctx, &lookup);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Couldn't lookup name %s: %s\n", lookup.in.hostname, nt_errstr(status));
@@ -55,16 +60,20 @@ BOOL torture_lookup_host(void)
 {
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
+	struct libnet_context *ctx;
 	struct libnet_Lookup lookup;
 	const char address[16];
 
 	mem_ctx = talloc_init("test_lookup_host");
 
+	ctx = libnet_context_init(NULL);
+	ctx->cred = cmdline_credentials;
+
 	lookup.in.hostname = lp_netbios_name();
 	lookup.in.methods  = lp_name_resolve_order();
-	lookup.out.address = (const char**)&address;
+	lookup.out.address = &address;
 
-	status = libnet_LookupHost(mem_ctx, &lookup);
+	status = libnet_LookupHost(ctx, mem_ctx, &lookup);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Couldn't lookup host %s: %s\n", lookup.in.hostname, nt_errstr(status));
@@ -79,16 +88,20 @@ BOOL torture_lookup_pdc(void)
 {
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
+	struct libnet_context *ctx;
 	struct libnet_Lookup lookup;
 	const char address[16];
 
 	mem_ctx = talloc_init("test_lookup_pdc");
 
+	ctx = libnet_context_init(NULL);
+	ctx->cred = cmdline_credentials;
+
 	lookup.in.hostname = lp_workgroup();
 	lookup.in.methods  = lp_name_resolve_order();
-	lookup.out.address = (const char**)&address;
+	lookup.out.address = &address;
 
-	status = libnet_LookupPdc(mem_ctx, &lookup);
+	status = libnet_LookupPdc(ctx, mem_ctx, &lookup);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Couldn't lookup pdc %s: %s\n", lookup.in.hostname, nt_errstr(status));
