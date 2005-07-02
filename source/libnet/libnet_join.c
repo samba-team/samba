@@ -47,7 +47,7 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx,
 				       TALLOC_CTX *mem_ctx, union libnet_JoinDomain *r)
 {
 	NTSTATUS status;
-	union libnet_rpc_connect c;
+	struct libnet_RpcConnect c;
 	struct samr_Connect sc;
 	struct policy_handle p_handle;
 	struct samr_LookupDomain ld;
@@ -70,14 +70,14 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx,
 	int policy_min_pw_len = 0;
 
 	/* prepare connect to the SAMR pipe of users domain PDC */
-	c.pdc.level			= LIBNET_RPC_CONNECT_PDC;
-	c.pdc.in.domain_name		= r->samr.in.domain_name;
-	c.pdc.in.dcerpc_iface_name	= DCERPC_SAMR_NAME;
-	c.pdc.in.dcerpc_iface_uuid	= DCERPC_SAMR_UUID;
-	c.pdc.in.dcerpc_iface_version	= DCERPC_SAMR_VERSION;
+	c.level                     = LIBNET_RPC_CONNECT_PDC;
+	c.in.domain_name            = r->samr.in.domain_name;
+	c.in.dcerpc_iface_name      = DCERPC_SAMR_NAME;
+	c.in.dcerpc_iface_uuid      = DCERPC_SAMR_UUID;
+	c.in.dcerpc_iface_version   = DCERPC_SAMR_VERSION;
 
 	/* 1. connect to the SAMR pipe of users domain PDC (maybe a standalone server or workstation) */
-	status = libnet_rpc_connect(ctx, mem_ctx, &c);
+	status = libnet_RpcConnect(ctx, mem_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"Connection to SAMR pipe of PDC of domain '%s' failed: %s\n",
@@ -92,7 +92,7 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx,
 	sc.out.connect_handle = &p_handle;
 
 	/* 2. do a samr_Connect to get a policy handle */
-	status = dcerpc_samr_Connect(c.pdc.out.dcerpc_pipe, mem_ctx, &sc);
+	status = dcerpc_samr_Connect(c.out.dcerpc_pipe, mem_ctx, &sc);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_Connect failed: %s\n",
@@ -115,7 +115,7 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx,
 	ld.in.domain_name = &d_name;
 
 	/* 3. do a samr_LookupDomain to get the domain sid */
-	status = dcerpc_samr_LookupDomain(c.pdc.out.dcerpc_pipe, mem_ctx, &ld);
+	status = dcerpc_samr_LookupDomain(c.out.dcerpc_pipe, mem_ctx, &ld);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_LookupDomain for [%s] failed: %s\n",
@@ -140,7 +140,7 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx,
 	od.out.domain_handle = &d_handle;
 
 	/* 4. do a samr_OpenDomain to get a domain handle */
-	status = dcerpc_samr_OpenDomain(c.pdc.out.dcerpc_pipe, mem_ctx, &od);
+	status = dcerpc_samr_OpenDomain(c.out.dcerpc_pipe, mem_ctx, &od);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_OpenDomain for [%s] failed: %s\n",
@@ -160,7 +160,7 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx,
 	cu.out.access_granted = &access_granted;
 
 	/* 4. do a samr_CreateUser2 to get an account handle, or an error */
-	status = dcerpc_samr_CreateUser2(c.pdc.out.dcerpc_pipe, mem_ctx, &cu);
+	status = dcerpc_samr_CreateUser2(c.out.dcerpc_pipe, mem_ctx, &cu);
 	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 			r->samr.out.error_string = talloc_asprintf(mem_ctx,
 								   "samr_CreateUser2 for [%s] failed: %s\n",
@@ -179,7 +179,7 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx,
 		ln.in.names[0].string = r->samr.in.account_name;
 		
 		/* 5. do a samr_LookupNames to get the users rid */
-		status = dcerpc_samr_LookupNames(c.pdc.out.dcerpc_pipe, mem_ctx, &ln);
+		status = dcerpc_samr_LookupNames(c.out.dcerpc_pipe, mem_ctx, &ln);
 		if (!NT_STATUS_IS_OK(status)) {
 			r->samr.out.error_string = talloc_asprintf(mem_ctx,
 								   "samr_LookupNames for [%s] failed: %s\n",
@@ -205,7 +205,7 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx,
 		ou.out.user_handle = &u_handle;
 		
 		/* 6. do a samr_OpenUser to get a user handle */
-		status = dcerpc_samr_OpenUser(c.pdc.out.dcerpc_pipe, mem_ctx, &ou);
+		status = dcerpc_samr_OpenUser(c.out.dcerpc_pipe, mem_ctx, &ou);
 		if (!NT_STATUS_IS_OK(status)) {
 			r->samr.out.error_string = talloc_asprintf(mem_ctx,
 								   "samr_OpenUser for [%s] failed: %s\n",
@@ -216,7 +216,7 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx,
 
 	pwp.in.user_handle = &u_handle;
 
-	status = dcerpc_samr_GetUserPwInfo(c.pdc.out.dcerpc_pipe, mem_ctx, &pwp);
+	status = dcerpc_samr_GetUserPwInfo(c.out.dcerpc_pipe, mem_ctx, &pwp);
 	if (NT_STATUS_IS_OK(status)) {
 		policy_min_pw_len = pwp.out.info.min_password_length;
 	}
@@ -227,7 +227,7 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx,
 	r2.samr_handle.in.account_name	= r->samr.in.account_name;
 	r2.samr_handle.in.newpassword	= r->samr.out.join_password;
 	r2.samr_handle.in.user_handle   = &u_handle;
-	r2.samr_handle.in.dcerpc_pipe   = c.pdc.out.dcerpc_pipe;
+	r2.samr_handle.in.dcerpc_pipe   = c.out.dcerpc_pipe;
 
 	status = libnet_SetPassword(ctx, mem_ctx, &r2);
 
@@ -241,7 +241,7 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx,
 	qui.in.user_handle = &u_handle;
 	qui.in.level = 16;
 	
-	status = dcerpc_samr_QueryUserInfo(c.pdc.out.dcerpc_pipe, mem_ctx, &qui);
+	status = dcerpc_samr_QueryUserInfo(c.out.dcerpc_pipe, mem_ctx, &qui);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr.out.error_string
 			= talloc_asprintf(mem_ctx,
@@ -276,7 +276,7 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx,
 		sui.in.info = &u_info;
 		sui.in.level = 16;
 		
-		dcerpc_samr_SetUserInfo(c.pdc.out.dcerpc_pipe, mem_ctx, &sui);
+		dcerpc_samr_SetUserInfo(c.out.dcerpc_pipe, mem_ctx, &sui);
 		if (!NT_STATUS_IS_OK(status)) {
 			r->samr.out.error_string
 				= talloc_asprintf(mem_ctx,
@@ -288,7 +288,7 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx,
 
 disconnect:
 	/* close connection */
-	talloc_free(c.pdc.out.dcerpc_pipe);
+	talloc_free(c.out.dcerpc_pipe);
 
 	return status;
 }

@@ -27,26 +27,26 @@
 NTSTATUS libnet_CreateUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_CreateUser *r)
 {
 	NTSTATUS status;
-	union libnet_rpc_connect cn;
-	union libnet_find_pdc fp;
+	struct libnet_RpcConnect cn;
+	struct libnet_Lookup fp;
 	struct libnet_rpc_domain_open dom_io;
 	struct libnet_rpc_useradd user_io;
 	
 	/* find domain pdc */
-	fp.generic.level             = LIBNET_FIND_PDC_GENERIC;
-	fp.generic.in.domain_name    = r->in.domain_name;
+	fp.in.hostname    = r->in.domain_name;
+	fp.in.methods     = NULL;
 
-	status = libnet_find_pdc(ctx, mem_ctx, &fp);
+	status = libnet_LookupPdc(ctx, mem_ctx, &fp);
 	if (!NT_STATUS_IS_OK(status)) return status;
 
 	/* connect rpc service of remote server */
-	cn.standard.level                      = LIBNET_RPC_CONNECT_PDC;
-	cn.standard.in.server_name             = fp.generic.out.pdc_name;
-	cn.standard.in.dcerpc_iface_name       = DCERPC_SAMR_NAME;
-	cn.standard.in.dcerpc_iface_uuid       = DCERPC_SAMR_UUID;
-	cn.standard.in.dcerpc_iface_version    = DCERPC_SAMR_VERSION;
+	cn.level                      = LIBNET_RPC_CONNECT_PDC;
+	cn.in.domain_name             = talloc_strdup(mem_ctx, *fp.out.address);
+	cn.in.dcerpc_iface_name       = DCERPC_SAMR_NAME;
+	cn.in.dcerpc_iface_uuid       = DCERPC_SAMR_UUID;
+	cn.in.dcerpc_iface_version    = DCERPC_SAMR_VERSION;
 
-	status = libnet_rpc_connect(ctx, mem_ctx, &cn);
+	status = libnet_RpcConnect(ctx, mem_ctx, &cn);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
 						      "Connection to SAMR pipe domain '%s' PDC failed: %s\n",
@@ -54,13 +54,13 @@ NTSTATUS libnet_CreateUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		return status;
 	}
 
-	ctx->samr = cn.pdc.out.dcerpc_pipe;
+	ctx->pipe = cn.out.dcerpc_pipe;
 
 	/* open connected domain */
 	dom_io.in.domain_name   = r->in.domain_name;
 	dom_io.in.access_mask   = SEC_FLAG_MAXIMUM_ALLOWED;
 	
-	status = libnet_rpc_domain_open(ctx->samr, mem_ctx, &dom_io);
+	status = libnet_rpc_domain_open(ctx->pipe, mem_ctx, &dom_io);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
 						      "Creating user account failed: %s\n",
@@ -74,7 +74,7 @@ NTSTATUS libnet_CreateUser(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	user_io.in.username       = r->in.user_name;
 	user_io.in.domain_handle  = dom_io.out.domain_handle;
 
-	status = libnet_rpc_useradd(ctx->samr, mem_ctx, &user_io);
+	status = libnet_rpc_useradd(ctx->pipe, mem_ctx, &user_io);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_asprintf(mem_ctx,
 						      "Creating user account failed: %s\n",
