@@ -29,6 +29,6 @@
 struct config_functions {
 	NTSTATUS (*init)(char *params);
 	NTSTATUS (*load)(BOOL (*sfunc)(const char *),BOOL (*pfunc)(const char *, const char *));
-	NTSTATUS (*close)(void);
+	NTSTATUS (*closemod)(void);
 };
 #endif /* _MODCONF_H_ */

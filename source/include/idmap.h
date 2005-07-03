@@ -50,7 +50,7 @@ struct idmap_methods {
 	NTSTATUS (*set_mapping)(const DOM_SID *sid, unid_t id, int id_type);
 
 	/* Called when backend is unloaded */
-	NTSTATUS (*close)(void);
+	NTSTATUS (*close_fn)(void);
 
 	/* Called to dump backend status */
 	void (*status)(void);

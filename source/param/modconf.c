@@ -92,5 +92,5 @@ BOOL modconf_load(BOOL (*sfunc)(const char *),BOOL (*pfunc)(const char *, const 
 
 NTSTATUS modconf_close(void)
 {
-	return module.fns->close();
+	return module.fns->closemod();
 }

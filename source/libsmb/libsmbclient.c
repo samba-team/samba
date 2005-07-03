@@ -4953,7 +4953,7 @@ static int smbc_print_file_ctx(SMBCCTX *c_file, const char *fname, SMBCCTX *c_pr
         if ((int)(fid2 = c_print->open_print_job(c_print, printq)) < 0) {
 
                 saverr = errno;  /* Save errno */
-                c_file->close(c_file, fid1);
+                c_file->close_fn(c_file, fid1);
                 errno = saverr;
                 return -1;
 
@@ -4966,8 +4966,8 @@ static int smbc_print_file_ctx(SMBCCTX *c_file, const char *fname, SMBCCTX *c_pr
                 if ((c_print->write(c_print, fid2, buf, bytes)) < 0) {
 
                         saverr = errno;
-                        c_file->close(c_file, fid1);
-                        c_print->close(c_print, fid2);
+                        c_file->close_fn(c_file, fid1);
+                        c_print->close_fn(c_print, fid2);
                         errno = saverr;
 
                 }
@@ -4976,8 +4976,8 @@ static int smbc_print_file_ctx(SMBCCTX *c_file, const char *fname, SMBCCTX *c_pr
 
         saverr = errno;
 
-        c_file->close(c_file, fid1);  /* We have to close these anyway */
-        c_print->close(c_print, fid2);
+        c_file->close_fn(c_file, fid1);  /* We have to close these anyway */
+        c_print->close_fn(c_print, fid2);
 
         if (bytes < 0) {
 
@@ -5152,7 +5152,7 @@ SMBCCTX * smbc_new_context(void)
         context->creat                             = smbc_creat_ctx;
         context->read                              = smbc_read_ctx;
         context->write                             = smbc_write_ctx;
-        context->close                             = smbc_close_ctx;
+        context->close_fn                          = smbc_close_ctx;
         context->unlink                            = smbc_unlink_ctx;
         context->rename                            = smbc_rename_ctx;
         context->lseek                             = smbc_lseek_ctx;
@@ -5206,7 +5206,7 @@ int smbc_free_context(SMBCCTX * context, int shutdown_ctx)
                 
                 f = context->internal->_files;
                 while (f) {
-                        context->close(context, f);
+                        context->close_fn(context, f);
                         f = f->next;
                 }
                 context->internal->_files = NULL;
