@@ -29,16 +29,19 @@
 
 BOOL torture_lookup(void)
 {
+	BOOL ret;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 	struct libnet_context *ctx;
 	struct libnet_Lookup lookup;
-	const char address[16];
+	const char *address;
 
 	mem_ctx = talloc_init("test_lookup");
 
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;
+
+	address = talloc_array(ctx, const char, 16);
 
 	lookup.in.hostname = lp_netbios_name();
 	lookup.in.methods  = lp_name_resolve_order();
@@ -49,25 +52,33 @@ BOOL torture_lookup(void)
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Couldn't lookup name %s: %s\n", lookup.in.hostname, nt_errstr(status));
-		return False;
+		ret = False;
+		goto done;
 	}
 
-	return True;
+	ret = True;
+
+done:
+	talloc_free(mem_ctx);
+	return ret;
 }
 
 
 BOOL torture_lookup_host(void)
 {
+	BOOL ret;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 	struct libnet_context *ctx;
 	struct libnet_Lookup lookup;
-	const char address[16];
+	const char *address;
 
 	mem_ctx = talloc_init("test_lookup_host");
 
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;
+
+	address = talloc_array(mem_ctx, const char, 16);
 
 	lookup.in.hostname = lp_netbios_name();
 	lookup.in.methods  = lp_name_resolve_order();
@@ -77,25 +88,33 @@ BOOL torture_lookup_host(void)
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Couldn't lookup host %s: %s\n", lookup.in.hostname, nt_errstr(status));
-		return False;
+		ret = False;
+		goto done;
 	}
 
-	return True;
+	ret = True;
+
+done:
+	talloc_free(mem_ctx);
+	return ret;
 }
 
 
 BOOL torture_lookup_pdc(void)
 {
+	BOOL ret;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 	struct libnet_context *ctx;
 	struct libnet_Lookup lookup;
-	const char address[16];
+	const char *address;
 
 	mem_ctx = talloc_init("test_lookup_pdc");
 
 	ctx = libnet_context_init(NULL);
 	ctx->cred = cmdline_credentials;
+
+	address = talloc_array(mem_ctx, const char, 16);
 
 	lookup.in.hostname = lp_workgroup();
 	lookup.in.methods  = lp_name_resolve_order();
@@ -105,8 +124,13 @@ BOOL torture_lookup_pdc(void)
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Couldn't lookup pdc %s: %s\n", lookup.in.hostname, nt_errstr(status));
-		return False;
+		ret = False;
+		goto done;
 	}
 
-	return True;
+	ret = True;
+
+done:
+	talloc_free(mem_ctx);
+	return ret;
 }
