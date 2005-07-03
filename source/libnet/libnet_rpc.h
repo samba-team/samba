@@ -42,26 +42,3 @@ struct libnet_RpcConnect {
 		const char *error_string;
 	} out;
 };
-
-
-
-
-/* struct and enum for finding a domain controller */
-enum libnet_find_pdc_level {
-	LIBNET_FIND_PDC_GENERIC
-};
-
-union libnet_find_pdc {
-	/* find to a domains PDC */
-	struct {
-		enum libnet_find_pdc_level level;
-
-		struct {
-			const char *domain_name;
-		} in;
-
-		struct	{
-			const char *pdc_name;
-		} out;
-	} generic;
-};
