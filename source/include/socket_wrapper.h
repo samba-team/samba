@@ -32,17 +32,17 @@ ssize_t swrap_sendto(int  s,  const  void *buf, size_t len, int flags, const str
 int swrap_close(int);
 
 #ifdef SOCKET_WRAPPER_REPLACE
-#define accept 				swrap_accept
-#define connect 			swrap_connect
-#define bind 				swrap_bind
-#define getpeername 		swrap_getpeername
-#define getsockname 		swrap_getsockname
-#define getsockopt 			swrap_getsockopt
-#define setsockopt 			swrap_setsockopt
-#define recvfrom 			swrap_recvfrom
-#define sendto 				swrap_sendto
-#define socket				swrap_socket
-#define close				swrap_close
+#define accept(s,addr,addrlen)		swrap_accept(s,addr,addrlen)
+#define connect(s,serv_addr,addrlen)	swrap_connect(s,serv_addr,addrlen)
+#define bind(s,myaddr,addrlen)		swrap_bind(s,myaddr,addrlen)
+#define getpeername(s,name,addrlen)	swrap_getpeername(s,name,addrlen)
+#define getsockname(s,name,addrlen)	swrap_getsockname(s,name,addrlen)
+#define getsockopt(s,level,optname,optval,optlen) swrap_getsockopt(s,level,optname,optval,optlen)
+#define setsockopt(s,level,optname,optval,optlen) swrap_setsockopt(s,level,optname,optval,optlen)
+#define recvfrom(s,buf,len,flags,from,fromlen) 	  swrap_recvfrom(s,buf,len,flags,from,fromlen)
+#define sendto(s,buf,len,flags,to,tolen)          swrap_sendto(s,buf,len,flags,to,tolen)
+#define socket(domain,type,protocol)	swrap_socket(domain,type,protocol)
+#define close(s)			swrap_close(s)
 #endif
 
 #endif /* __SOCKET_WRAPPER_H__ */

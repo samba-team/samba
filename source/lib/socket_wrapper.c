@@ -19,21 +19,20 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef _SAMBA_BUILD_
 #include "includes.h"
-#include "system/network.h"
-#else
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <errno.h>
-#include <sys/un.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdio.h>
-#include "dlinklist.h"
+
+#ifdef SOCKET_WRAPPER_REPLACE
+#undef accept
+#undef connect
+#undef bind
+#undef getpeername
+#undef getsockname
+#undef getsockopt
+#undef setsockopt
+#undef recvfrom
+#undef sendto
+#undef socket
+#undef close
 #endif
 
 /* LD_PRELOAD doesn't work yet, so REWRITE_CALLS is all we support
@@ -53,6 +52,10 @@
 #define real_socket socket
 #define real_close close
 #endif
+
+#undef malloc
+#undef calloc
+#undef strdup
 
 static struct sockaddr *sockaddr_dup(const void *data, socklen_t len)
 {
@@ -95,8 +98,8 @@ static int convert_un_in(const struct sockaddr_un *un, struct sockaddr_in *in, s
 	}
 
 	in->sin_family = AF_INET;
-	in->sin_port = 1025; /* Default to 1025 */
-	p = strchr(un->sun_path, '/');
+	in->sin_port = htons(1025); /* Default to 1025 */
+	p = strrchr(un->sun_path, '/');
 	if (p) p++; else p = un->sun_path;
 
 	if (sscanf(p, "sock_ip_%d_%u", &type, &prt) == 2) {
@@ -107,9 +110,20 @@ static int convert_un_in(const struct sockaddr_un *un, struct sockaddr_in *in, s
 	return 0;
 }
 
-static int convert_in_un(int type, const struct sockaddr_in *in, struct sockaddr_un *un)
+static int convert_in_un(struct socket_info *si, const struct sockaddr_in *in, struct sockaddr_un *un)
 {
+	int type = si->type;
 	uint16_t prt = ntohs(in->sin_port);
+	if (prt == 0) {
+		struct stat st;
+		/* handle auto-allocation of ephemeral ports */
+		prt = 5000;
+		do {
+			snprintf(un->sun_path, sizeof(un->sun_path), "%s/sock_ip_%d_%u", 
+				 getenv("SOCKET_WRAPPER_DIR"), type, ++prt);
+		} while (stat(un->sun_path, &st) == 0 && prt < 10000);
+		((struct sockaddr_in *)si->myname)->sin_port = htons(prt);
+	} 
 	snprintf(un->sun_path, sizeof(un->sun_path), "%s/sock_ip_%d_%u", 
 		 getenv("SOCKET_WRAPPER_DIR"), type, prt);
 	return 0;
@@ -126,7 +140,7 @@ static struct socket_info *find_socket_info(int fd)
 	return NULL;
 }
 
-static int sockaddr_convert_to_un(const struct socket_info *si, const struct sockaddr *in_addr, socklen_t in_len, 
+static int sockaddr_convert_to_un(struct socket_info *si, const struct sockaddr *in_addr, socklen_t in_len, 
 					 struct sockaddr_un *out_addr)
 {
 	if (!out_addr)
@@ -136,7 +150,7 @@ static int sockaddr_convert_to_un(const struct socket_info *si, const struct soc
 
 	switch (in_addr->sa_family) {
 	case AF_INET:
-		return convert_in_un(si->type, (const struct sockaddr_in *)in_addr, out_addr);
+		return convert_in_un(si, (const struct sockaddr_in *)in_addr, out_addr);
 	case AF_UNIX:
 		memcpy(out_addr, in_addr, sizeof(*out_addr));
 		return 0;
@@ -229,14 +243,57 @@ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	memset(child_si, 0, sizeof(*child_si));
 
 	child_si->fd = fd;
+	child_si->bound = 1;
 
-	if (addr && addrlen) {
-		child_si->myname_len = *addrlen;
-		child_si->myname = sockaddr_dup(addr, *addrlen);
-	}
+	child_si->myname_len = parent_si->myname_len;
+	child_si->myname = sockaddr_dup(parent_si->myname, parent_si->myname_len);
+
+	child_si->peername_len = *addrlen;
+	child_si->peername = sockaddr_dup(addr, *addrlen);
+
+	DLIST_ADD(sockets, child_si);
 
 	return fd;
 }
+
+/* using sendto() or connect() on an unbound socket would give the
+   recipient no way to reply, as unlike UDP and TCP, a unix domain
+   socket can't auto-assign emphemeral port numbers, so we need to
+   assign it here */
+static int swrap_auto_bind(struct socket_info *si)
+{
+	struct sockaddr_un un_addr;
+	struct sockaddr_in in;
+	int i;
+	
+	un_addr.sun_family = AF_UNIX;
+	
+	for (i=0;i<1000;i++) {
+		snprintf(un_addr.sun_path, sizeof(un_addr.sun_path), 
+			 "%s/sock_ip_%u_%u", getenv("SOCKET_WRAPPER_DIR"), 
+			 SOCK_DGRAM, i + 10000);
+		if (bind(si->fd, (struct sockaddr *)&un_addr, 
+			 sizeof(un_addr)) == 0) {
+			si->tmp_path = strdup(un_addr.sun_path);
+			si->bound = 1;
+			break;
+		}
+	}
+	if (i == 1000) {
+		return -1;
+	}
+	
+	memset(&in, 0, sizeof(in));
+	in.sin_family = AF_INET;
+	in.sin_port   = htons(i);
+	in.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	
+	si->myname_len = sizeof(in);
+	si->myname = sockaddr_dup(&in, si->myname_len);
+	si->bound = 1;
+	return 0;
+}
+
 
 int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t addrlen)
 {
@@ -254,6 +311,11 @@ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t addrlen)
 	    htonl(INADDR_LOOPBACK)) {
 		errno = ENETUNREACH;
 		return -1;
+	}
+
+	if (si->bound == 0 && si->domain != AF_UNIX) {
+		ret = swrap_auto_bind(si);
+		if (ret == -1) return -1;
 	}
 
 	ret = sockaddr_convert_to_un(si, (const struct sockaddr *)serv_addr, addrlen, &un_addr);
@@ -280,6 +342,14 @@ int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 		return real_bind(s, myaddr, addrlen);
 	}
 
+	si->myname_len = addrlen;
+	si->myname = sockaddr_dup(myaddr, addrlen);
+
+	if (myaddr->sa_family == AF_INET &&
+	    ((const struct sockaddr_in *)myaddr)->sin_addr.s_addr == 0) {
+		((struct sockaddr_in *)si->myname)->sin_addr.s_addr = 
+			htonl(INADDR_LOOPBACK);
+	}
 	ret = sockaddr_convert_to_un(si, (const struct sockaddr *)myaddr, addrlen, &un_addr);
 	if (ret == -1) return -1;
 
@@ -289,8 +359,6 @@ int swrap_bind(int s, const struct sockaddr *myaddr, socklen_t addrlen)
 			sizeof(struct sockaddr_un));
 
 	if (ret == 0) {
-		si->myname_len = addrlen;
-		si->myname = sockaddr_dup(myaddr, addrlen);
 		si->bound = 1;
 	}
 
@@ -402,6 +470,7 @@ ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr 
 	return ret;
 }
 
+
 ssize_t swrap_sendto(int  s,  const  void *buf, size_t len, int flags, const struct sockaddr *to, socklen_t tolen)
 {
 	struct sockaddr_un un_addr;
@@ -412,31 +481,10 @@ ssize_t swrap_sendto(int  s,  const  void *buf, size_t len, int flags, const str
 		return real_sendto(s, buf, len, flags, to, tolen);
 	}
 
-	/* using sendto() on an unbound DGRAM socket would give the
-	   recipient no way to reply, as unlike UDP, a unix domain socket
-	   can't auto-assign emphemeral port numbers, so we need to assign
-	   it here */
-	if (si->bound == 0 && si->type == SOCK_DGRAM) {
-		int i;
-
-		un_addr.sun_family = AF_UNIX;
-
-		for (i=0;i<1000;i++) {
-			snprintf(un_addr.sun_path, sizeof(un_addr.sun_path), 
-				 "%s/sock_ip_%u_%u", getenv("SOCKET_WRAPPER_DIR"), 
-				 SOCK_DGRAM, i + 10000);
-			if (bind(si->fd, (struct sockaddr *)&un_addr, 
-				 sizeof(un_addr)) == 0) {
-				si->tmp_path = strdup(un_addr.sun_path);
-				si->bound = 1;
-				break;
-			}
-		}
-		if (i == 1000) {
-			return -1;
-		}
+	if (si->bound == 0 && si->domain != AF_UNIX) {
+		ret = swrap_auto_bind(si);
+		if (ret == -1) return -1;
 	}
-	
 
 	ret = sockaddr_convert_to_un(si, to, tolen, &un_addr);
 	if (ret == -1) return -1;
