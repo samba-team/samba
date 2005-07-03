@@ -2563,6 +2563,38 @@ int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
 /****************************************************************************
  search for a registry key name in the existing printer data
  ***************************************************************************/
+
+int delete_printer_key( NT_PRINTER_DATA *data, const char *name )
+{
+	int i;
+	NT_PRINTER_KEY *printer_key;
+	
+	for ( i=0; i<data->num_keys; i++ ) {
+		if ( strequal( data->keys[i].name, name ) ) {
+		
+			/* cleanup memory */
+			
+			printer_key = &data->keys[i];
+			SAFE_FREE( printer_key->name );
+			regval_ctr_destroy( &printer_key->values );
+			
+			/* if not the end of the array, move remaining elements down one slot */
+			
+			data->num_keys--;
+			if ( data->num_keys && (i < data->num_keys) )
+				memmove( &data->keys[i], &data->keys[i+1], sizeof(NT_PRINTER_KEY)*(data->num_keys-i) );
+				
+			break;
+		}
+	}
+	
+
+	return data->num_keys;
+}
+
+/****************************************************************************
+ search for a registry key name in the existing printer data
+ ***************************************************************************/
  
 int lookup_printerkey( NT_PRINTER_DATA *data, const char *name )
 {
