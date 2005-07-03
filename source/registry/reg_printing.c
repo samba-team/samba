@@ -290,8 +290,9 @@ static BOOL key_printers_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
 	char *printers_key;
 	char *printername, *printerdatakey;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	int i, num_subkeys;
+	int i, num_subkeys, num_existing_keys;
 	char *subkeyname;
+	fstring *existing_subkeys = NULL;
 	
 	printers_key = strip_printers_prefix( key );
 	
@@ -309,12 +310,29 @@ static BOOL key_printers_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
 			printername));
 		return False;
 	}
+	
+	/* get the top level printer keys */
+	
+	num_existing_keys = get_printer_subkeys( &printer->info_2->data, "", &existing_subkeys );
+	
+	for ( i=0; i<num_existing_keys; i++ ) {
+	
+		/* remove the key if it has been deleted */
+		
+		if ( !regsubkey_ctr_key_exists( subkeys, existing_subkeys[i] ) ) {
+			DEBUG(5,("key_printers_store_keys: deleting key %s\n", 
+				existing_subkeys[i]));
+			delete_printer_key( &printer->info_2->data, existing_subkeys[i] );
+		}
+	}
 
 	num_subkeys = regsubkey_ctr_numkeys( subkeys );
 	for ( i=0; i<num_subkeys; i++ ) {
 		subkeyname = regsubkey_ctr_specific_key(subkeys, i);
 		/* add any missing printer keys */
 		if ( lookup_printerkey(&printer->info_2->data, subkeyname) == -1 ) {
+			DEBUG(5,("key_printers_store_keys: adding key %s\n", 
+				existing_subkeys[i]));
 			if ( add_new_printer_key( &printer->info_2->data, subkeyname ) == -1 ) 
 				return False;
 		}
