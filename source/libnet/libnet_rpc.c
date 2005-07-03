@@ -126,7 +126,7 @@ static NTSTATUS libnet_RpcConnectPdc(struct libnet_context *ctx, TALLOC_CTX *mem
 	NTSTATUS status;
 	struct libnet_RpcConnect r2;
 	struct libnet_Lookup f;
-	char address[16];
+	const char *address = talloc_array(ctx, const char, 16);
 
 	f.in.hostname  = r->in.domain_name;
 	f.in.methods   = NULL;
