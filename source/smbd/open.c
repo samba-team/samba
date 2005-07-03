@@ -322,8 +322,12 @@ static BOOL open_file(files_struct *fsp,
 	fsp->vuid = current_user.vuid;
 	fsp->file_pid = global_smbpid;
 	fsp->can_lock = True;
-	fsp->can_read = ((flags & O_WRONLY)==0);
-	fsp->can_write = ((flags & (O_WRONLY|O_RDWR))!=0);
+	fsp->can_read = (access_mask & (FILE_READ_DATA)) ? True : False;
+	if (!CAN_WRITE(conn)) {
+		fsp->can_write = False;
+	} else {
+		fsp->can_write = (access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) ? True : False;
+	}
 	fsp->print_file = False;
 	fsp->modified = False;
 	fsp->oplock_type = NO_OPLOCK;
@@ -894,10 +898,13 @@ new_dos_attr = 0x%x returned_unx_mode = 0%o\n",
  Try and find a duplicated file handle.
 ****************************************************************************/
 
-static files_struct *fcb_or_dos_open(connection_struct *conn, const char *fname,
-					SMB_DEV_T dev, SMB_INO_T inode)
+static files_struct *fcb_or_dos_open(connection_struct *conn, const char *fname, SMB_DEV_T dev, SMB_INO_T inode,
+					uint32 access_mask,
+					uint32 share_access,
+					uint32 create_options)
 {
 	files_struct *fsp;
+	files_struct *dup_fsp;
 
 	DEBUG(5,("fcb_or_dos_open: attempting old open semantics for file %s.\n", fname ));
 
@@ -929,7 +936,13 @@ access_mask = 0x%x\n", fsp->fsp_name, fsp->fd, (unsigned int)fsp->vuid, (unsigne
 		return NULL;
 	}
 
-	return fsp;
+	/* We need to duplicate this fsp. */
+	dup_fsp = dup_file_fsp(fsp, access_mask, share_access, create_options);
+	if (!dup_fsp) {
+		return NULL;
+	}
+
+	return dup_fsp;
 }
 
 /****************************************************************************
@@ -1294,11 +1307,7 @@ share_access=0x%x create_disposition = 0x%x create_options=0x%x unix mode=0%o op
 	 */
 
 	if (access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) {
-		if ((access_mask & (FILE_READ_DATA|FILE_EXECUTE)) == 0) {
-			flags = O_WRONLY;
-		} else {
-			flags = O_RDWR;
-		}
+		flags = O_RDWR;
 	} else {
 		flags = O_RDONLY;
 	}
@@ -1354,6 +1363,31 @@ share_access=0x%x create_disposition = 0x%x create_options=0x%x unix mode=0%o op
 						  &all_current_opens_are_level_II);
 		if(num_share_modes == -1) {
 
+			if (!internal_only_open) {
+				NTSTATUS status;
+				get_saved_error_triple(NULL, NULL, &status);
+				if (NT_STATUS_EQUAL(status,NT_STATUS_SHARING_VIOLATION)) {
+					/* Check if this can be done with the deny_dos and fcb calls. */
+					if (create_options & (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS|
+								NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
+						files_struct *fsp_dup = fcb_or_dos_open(conn, fname, dev, inode,
+											access_mask,
+											share_access,
+											create_options);
+
+						if (fsp_dup) {
+							unlock_share_entry(conn, dev, inode);
+							file_free(fsp);
+							if (pinfo) {
+								*pinfo = FILE_WAS_OPENED;
+							}
+							conn->num_files_open++;
+							return fsp_dup;
+						}
+					}
+				}
+			}
+
 			/*
 			 * This next line is a subtlety we need for MS-Access. If a file open will
 			 * fail due to share permissions and also for security (access)
@@ -1390,20 +1424,6 @@ with flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 				NTSTATUS status;
 				get_saved_error_triple(NULL, NULL, &status);
 				if (NT_STATUS_EQUAL(status,NT_STATUS_SHARING_VIOLATION)) {
-					/* Check if this can be done with the deny_dos and fcb calls. */
-					if (create_options & (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS|
-								NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
-						files_struct *fsp_dup = fcb_or_dos_open(conn, fname, dev, inode);
-						if (fsp_dup) {
-							unlock_share_entry(conn, dev, inode);
-							if (fsp_open) {
-								fd_close(conn, fsp);
-							}
-							file_free(fsp);
-							return fsp_dup;
-						}
-					}
-
 					/* The fsp->open_time here represents
 					 * the current time of day. */
 					defer_open_sharing_error(conn,
@@ -1491,25 +1511,32 @@ with flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 						  &all_current_opens_are_level_II);
 
 		if(num_share_modes == -1) {
-			/* 
-			 * If we're returning a share violation, ensure we cope with
-			 * the braindead 1 second delay.
-			 */
-
 			NTSTATUS status;
 			get_saved_error_triple(NULL, NULL, &status);
 			if (NT_STATUS_EQUAL(status,NT_STATUS_SHARING_VIOLATION)) {
 				/* Check if this can be done with the deny_dos and fcb calls. */
 				if (create_options & (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS|
 							NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
-					files_struct *fsp_dup = fcb_or_dos_open(conn, fname, dev, inode);
+					files_struct *fsp_dup = fcb_or_dos_open(conn, fname, dev, inode,
+										access_mask,
+										share_access,
+										create_options);
 					if (fsp_dup) {
 						unlock_share_entry(conn, dev, inode);
 						fd_close(conn, fsp);
 						file_free(fsp);
+						if (pinfo) {
+							*pinfo = FILE_WAS_OPENED;
+						}
+						conn->num_files_open++;
 						return fsp_dup;
 					}
 				}
+
+				/* 
+				 * If we're returning a share violation, ensure we cope with
+				 * the braindead 1 second delay.
+				 */
 
 				/* The fsp->open_time here represents the current time of day. */
 				defer_open_sharing_error(conn, &fsp->open_time, fname, dev, inode);

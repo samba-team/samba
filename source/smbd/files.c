@@ -506,3 +506,50 @@ void file_chain_restore(void)
 {
 	chain_fsp = oplock_save_chain_fsp;
 }
+
+files_struct *dup_file_fsp(files_struct *fsp,
+				uint32 access_mask,
+				uint32 share_access,
+				uint32 create_options)
+{
+	files_struct *dup_fsp = file_new(fsp->conn);
+
+	if (!dup_fsp) {
+		return NULL;
+	}
+
+	dup_fsp->fd = fsp->fd;
+	dup_fsp->dev = fsp->dev;
+	dup_fsp->inode = fsp->inode;
+	dup_fsp->delete_on_close = fsp->delete_on_close;
+	dup_fsp->pos = fsp->pos;
+	dup_fsp->initial_allocation_size = fsp->initial_allocation_size;
+	dup_fsp->position_information = fsp->position_information;
+	dup_fsp->mode = fsp->mode;
+	dup_fsp->file_pid = fsp->file_pid;
+	dup_fsp->vuid = fsp->vuid;
+	dup_fsp->open_time = fsp->open_time;
+	dup_fsp->access_mask = access_mask;
+	dup_fsp->share_access = share_access;
+	dup_fsp->create_options = create_options;
+	dup_fsp->pending_modtime_owner = fsp->pending_modtime_owner;
+	dup_fsp->pending_modtime = fsp->pending_modtime;
+	dup_fsp->last_write_time = fsp->last_write_time;
+	dup_fsp->oplock_type = fsp->oplock_type;
+	dup_fsp->can_lock = fsp->can_lock;
+	dup_fsp->can_read = (access_mask & (FILE_READ_DATA)) ? True : False;
+	if (!CAN_WRITE(fsp->conn)) {
+		dup_fsp->can_write = False;
+	} else {
+		dup_fsp->can_write = (access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) ? True : False;
+	}
+	dup_fsp->print_file = fsp->print_file;
+	dup_fsp->modified = fsp->modified;
+	dup_fsp->is_directory = fsp->is_directory;
+	dup_fsp->is_stat = fsp->is_stat;
+	dup_fsp->directory_delete_on_close = fsp->directory_delete_on_close;
+	dup_fsp->aio_write_behind = fsp->aio_write_behind;
+        string_set(&dup_fsp->fsp_name,fsp->fsp_name);
+
+	return dup_fsp;
+}
