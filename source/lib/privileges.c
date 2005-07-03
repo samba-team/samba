@@ -541,8 +541,10 @@ BOOL grant_privilege(const DOM_SID *sid, const SE_PRIV *priv_mask)
 	
 	if ( get_privileges( sid, &old_mask ) )
 		se_priv_copy( &new_mask, &old_mask );
-	else
+	else {
+		se_priv_copy( &old_mask, &se_priv_none );
 		se_priv_copy( &new_mask, &se_priv_none );
+	}
 
 	se_priv_add( &new_mask, priv_mask );
 
