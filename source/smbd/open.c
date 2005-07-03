@@ -414,6 +414,7 @@ static BOOL share_conflict(connection_struct *conn,
 		return False;
 	}
 
+#if 1 /* JRA TEST - Superdebug. */
 #define CHECK_MASK(num, am, right, sa, share) \
 	DEBUG(10,("share_conflict: [%d] am (0x%x) & right (0x%x) = 0x%x\n", \
 		(unsigned int)(num), (unsigned int)(am), (unsigned int)(right), (unsigned int)(am)&(right) )); \
@@ -423,8 +424,19 @@ static BOOL share_conflict(connection_struct *conn,
 		DEBUG(10,("share_conflict: check %d conflict am = 0x%x, right = 0x%x, \
 sa = 0x%x, share = 0x%x\n", (num), (unsigned int)(am), (unsigned int)(right), (unsigned int)(sa), \
 			(unsigned int)(share) )); \
+		set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION); \
 		return True; \
 	}
+#else
+#define CHECK_MASK(num, am, right, sa, share) \
+	if (((am) & (right)) && !((sa) & (share))) { \
+		DEBUG(10,("share_conflict: check %d conflict am = 0x%x, right = 0x%x, \
+sa = 0x%x, share = 0x%x\n", (num), (unsigned int)(am), (unsigned int)(right), (unsigned int)(sa), \
+			(unsigned int)(share) )); \
+		set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION); \
+		return True; \
+	}
+#endif
 
 	CHECK_MASK(1, entry->access_mask, FILE_WRITE_DATA | FILE_APPEND_DATA,
 		   share_access, FILE_SHARE_WRITE);
@@ -446,6 +458,8 @@ sa = 0x%x, share = 0x%x\n", (num), (unsigned int)(am), (unsigned int)(right), (u
 			(create_options & FILE_DELETE_ON_CLOSE)) {
 		DEBUG(10,("share_conflict: conflict due to delete on close (entry options = 0x%x \
 create options = 0x%x\n", (unsigned int)entry->create_options, (unsigned int)create_options ));
+		/* Is this the right error ? */
+		set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
 		return True;
 	}
 
@@ -885,7 +899,14 @@ static files_struct *fcb_or_dos_open(connection_struct *conn, const char *fname,
 {
 	files_struct *fsp;
 
+	DEBUG(5,("fcb_or_dos_open: attempting old open semantics for file %s.\n", fname ));
+
 	for(fsp = file_find_di_first(dev, inode); fsp; fsp = file_find_di_next(fsp)) {
+
+		DEBUG(10,("fcb_or_dos_open: checking file %s, fd = %d, vuid = %u, file_pid = %u, create_options = 0x%x \
+access_mask = 0x%x\n", fsp->fsp_name, fsp->fd, (unsigned int)fsp->vuid, (unsigned int)fsp->file_pid,
+				(unsigned int)fsp->create_options, (unsigned int)fsp->access_mask ));
+
 		if (fsp->fd != -1 &&
 				fsp->vuid == current_user.vuid &&
 				fsp->file_pid == global_smbpid &&
@@ -893,6 +914,7 @@ static files_struct *fcb_or_dos_open(connection_struct *conn, const char *fname,
 				                      NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) &&
 				(fsp->access_mask & FILE_WRITE_DATA) &&
 				strequal(fsp->fsp_name, fname)) {
+			DEBUG(10,("fcb_or_dos_open: file match\n"));
 			break;
 		}
 	}
@@ -903,6 +925,7 @@ static files_struct *fcb_or_dos_open(connection_struct *conn, const char *fname,
                                                                                                                     
 	/* quite an insane set of semantics ... */
 	if (is_executable(fname) && (fsp->create_options & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS)) {
+		DEBUG(10,("fcb_or_dos_open: file fail due to is_executable.\n"));
 		return NULL;
 	}
 
@@ -1367,7 +1390,6 @@ with flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 				NTSTATUS status;
 				get_saved_error_triple(NULL, NULL, &status);
 				if (NT_STATUS_EQUAL(status,NT_STATUS_SHARING_VIOLATION)) {
-
 					/* Check if this can be done with the deny_dos and fcb calls. */
 					if (create_options & (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS|
 								NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
