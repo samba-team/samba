@@ -236,16 +236,16 @@ static WERROR sptr_EnumPrintServerForms(struct ntptr_GenericHandle *server, TALL
 		for (i=0; i < count; i++) {
 			info[i].info1.flags		= samdb_result_uint(msgs[i], "flags", SPOOLSS_FORM_BUILTIN);
 
-			info[i].info1.form_name		= samdb_result_string(msgs[i], "form_name", NULL);
+			info[i].info1.form_name		= samdb_result_string(msgs[i], "form-name", NULL);
 			W_ERROR_HAVE_NO_MEMORY(info[i].info1.form_name);
 
-			info[i].info1.size.width	= samdb_result_uint(msgs[i], "size_width", 0);
-			info[i].info1.size.height	= samdb_result_uint(msgs[i], "size_height", 0);
+			info[i].info1.size.width	= samdb_result_uint(msgs[i], "size-width", 0);
+			info[i].info1.size.height	= samdb_result_uint(msgs[i], "size-height", 0);
 
-			info[i].info1.area.left		= samdb_result_uint(msgs[i], "area_left", 0);
-			info[i].info1.area.top		= samdb_result_uint(msgs[i], "area_top", 0);
-			info[i].info1.area.right	= samdb_result_uint(msgs[i], "area_right", 0);
-			info[i].info1.area.bottom	= samdb_result_uint(msgs[i], "area_bottom", 0);
+			info[i].info1.area.left		= samdb_result_uint(msgs[i], "area-left", 0);
+			info[i].info1.area.top		= samdb_result_uint(msgs[i], "area-top", 0);
+			info[i].info1.area.right	= samdb_result_uint(msgs[i], "area-right", 0);
+			info[i].info1.area.bottom	= samdb_result_uint(msgs[i], "area-bottom", 0);
 		}
 		break;
 	default:
@@ -277,7 +277,7 @@ static WERROR sptr_AddPrintServerForm(struct ntptr_GenericHandle *server, TALLOC
 			return WERR_FOOBAR;
 		}
 		count = sptr_db_search(sptr_db, mem_ctx, "CN=Forms,CN=PrintServer", &msgs, attrs,
-				       "(&(form_name=%s)(objectClass=form))",
+				       "(&(form-name=%s)(objectClass=form))",
 				       r->in.info.info1->form_name);
 
 		if (count == 1) return WERR_FOOBAR;
@@ -292,21 +292,21 @@ static WERROR sptr_AddPrintServerForm(struct ntptr_GenericHandle *server, TALLOC
 		W_ERROR_HAVE_NO_MEMORY(msg);
 
 		/* add core elements to the ldb_message for the Form */
-		msg->dn = talloc_asprintf(msg, "form_name=%s,CN=Forms,CN=PrintServer",
+		msg->dn = talloc_asprintf(msg, "form-name=%s,CN=Forms,CN=PrintServer",
 						r->in.info.info1->form_name);
 		SET_STRING(sptr_db, msg, "objectClass", "form");
 
 		SET_UINT(sptr_db, msg, "flags", r->in.info.info1->flags);
 
-		SET_STRING(sptr_db, msg, "form_name", r->in.info.info1->form_name);
+		SET_STRING(sptr_db, msg, "form-name", r->in.info.info1->form_name);
 
-		SET_UINT(sptr_db, msg, "size_width", r->in.info.info1->size.width);
-		SET_UINT(sptr_db, msg, "size_height", r->in.info.info1->size.height);
+		SET_UINT(sptr_db, msg, "size-width", r->in.info.info1->size.width);
+		SET_UINT(sptr_db, msg, "size-height", r->in.info.info1->size.height);
 
-		SET_UINT(sptr_db, msg, "area_left", r->in.info.info1->area.left);
-		SET_UINT(sptr_db, msg, "area_top", r->in.info.info1->area.top);
-		SET_UINT(sptr_db, msg, "area_right", r->in.info.info1->area.right);
-		SET_UINT(sptr_db, msg, "area_bottom", r->in.info.info1->area.bottom);
+		SET_UINT(sptr_db, msg, "area-left", r->in.info.info1->area.left);
+		SET_UINT(sptr_db, msg, "area-top", r->in.info.info1->area.top);
+		SET_UINT(sptr_db, msg, "area-right", r->in.info.info1->area.right);
+		SET_UINT(sptr_db, msg, "area-bottom", r->in.info.info1->area.bottom);
 		break;
 	default:
 		return WERR_UNKNOWN_LEVEL;
@@ -342,7 +342,7 @@ static WERROR sptr_SetPrintServerForm(struct ntptr_GenericHandle *server, TALLOC
 		}
 
 		count = sptr_db_search(sptr_db, mem_ctx, "CN=Forms,CN=PrintServer", &msgs, attrs,
-				       "(&(form_name=%s)(objectClass=form))",
+				       "(&(form-name=%s)(objectClass=form))",
 				       r->in.info.info1->form_name);
 
 		if (count == 0) return WERR_FOOBAR;
@@ -362,15 +362,15 @@ static WERROR sptr_SetPrintServerForm(struct ntptr_GenericHandle *server, TALLOC
 
 		SET_UINT(sptr_db, msg, "flags", r->in.info.info1->flags);
 
-		SET_STRING(sptr_db, msg, "form_name", r->in.info.info1->form_name);
+		SET_STRING(sptr_db, msg, "form-name", r->in.info.info1->form_name);
 
-		SET_UINT(sptr_db, msg, "size_width", r->in.info.info1->size.width);
-		SET_UINT(sptr_db, msg, "size_height", r->in.info.info1->size.height);
+		SET_UINT(sptr_db, msg, "size-width", r->in.info.info1->size.width);
+		SET_UINT(sptr_db, msg, "size-height", r->in.info.info1->size.height);
 
-		SET_UINT(sptr_db, msg, "area_left", r->in.info.info1->area.left);
-		SET_UINT(sptr_db, msg, "area_top", r->in.info.info1->area.top);
-		SET_UINT(sptr_db, msg, "area_right", r->in.info.info1->area.right);
-		SET_UINT(sptr_db, msg, "area_bottom", r->in.info.info1->area.bottom);
+		SET_UINT(sptr_db, msg, "area-left", r->in.info.info1->area.left);
+		SET_UINT(sptr_db, msg, "area-top", r->in.info.info1->area.top);
+		SET_UINT(sptr_db, msg, "area-right", r->in.info.info1->area.right);
+		SET_UINT(sptr_db, msg, "area-bottom", r->in.info.info1->area.bottom);
 		break;
 	default:
 		return WERR_UNKNOWN_LEVEL;
@@ -404,7 +404,7 @@ static WERROR sptr_DeletePrintServerForm(struct ntptr_GenericHandle *server, TAL
 	}
 
 	count = sptr_db_search(sptr_db, mem_ctx, "CN=Forms,CN=PrintServer", &msgs, attrs,
-			       "(&(form_name=%s)(objectclass=form))",
+			       "(&(form-name=%s)(objectclass=form))",
 			       r->in.form_name);
 
 	if (count == 0) return WERR_FOOBAR;
@@ -613,22 +613,22 @@ static WERROR sptr_EnumPorts(struct ntptr_context *ntptr, TALLOC_CTX *mem_ctx,
 	switch (r->in.level) {
 	case 1:
 		for (i = 0; i < count; i++) {
-			info[i].info1.port_name		= samdb_result_string(msgs[i], "port_name", "");
+			info[i].info1.port_name		= samdb_result_string(msgs[i], "port-name", "");
 			W_ERROR_HAVE_NO_MEMORY(info[i].info1.port_name);
 		}
 		break;
 	case 2:
 		for (i=0; i < count; i++) {
-			info[i].info2.port_name		= samdb_result_string(msgs[i], "port_name", "");
+			info[i].info2.port_name		= samdb_result_string(msgs[i], "port-name", "");
 			W_ERROR_HAVE_NO_MEMORY(info[i].info2.port_name);
 
-			info[i].info2.monitor_name	= samdb_result_string(msgs[i], "monitor_name", "");
+			info[i].info2.monitor_name	= samdb_result_string(msgs[i], "monitor-name", "");
 			W_ERROR_HAVE_NO_MEMORY(info[i].info2.monitor_name);
 
 			info[i].info2.description	= samdb_result_string(msgs[i], "description", "");
 			W_ERROR_HAVE_NO_MEMORY(info[i].info2.description);
 
-			info[i].info2.port_type		= samdb_result_uint(msgs[i], "port_type", SPOOLSS_PORT_TYPE_WRITE);
+			info[i].info2.port_type		= samdb_result_uint(msgs[i], "port-type", SPOOLSS_PORT_TYPE_WRITE);
 			info[i].info2.reserved		= samdb_result_uint(msgs[i], "reserved", 0);
 		}
 		break;
@@ -663,19 +663,19 @@ static WERROR sptr_EnumMonitors(struct ntptr_context *ntptr, TALLOC_CTX *mem_ctx
 	switch (r->in.level) {
 	case 1:
 		for (i = 0; i < count; i++) {
-			info[i].info1.monitor_name	= samdb_result_string(msgs[i], "monitor_name", "");
+			info[i].info1.monitor_name	= samdb_result_string(msgs[i], "monitor-name", "");
 			W_ERROR_HAVE_NO_MEMORY(info[i].info1.monitor_name);
 		}
 		break;
 	case 2:
 		for (i=0; i < count; i++) {
-			info[i].info2.monitor_name	= samdb_result_string(msgs[i], "monitor_name", "");
+			info[i].info2.monitor_name	= samdb_result_string(msgs[i], "monitor-name", "");
 			W_ERROR_HAVE_NO_MEMORY(info[i].info2.monitor_name);
 
 			info[i].info2.environment	= samdb_result_string(msgs[i], "environment", "");
 			W_ERROR_HAVE_NO_MEMORY(info[i].info2.environment);
 
-			info[i].info2.dll_name		= samdb_result_string(msgs[i], "dll_name", "");
+			info[i].info2.dll_name		= samdb_result_string(msgs[i], "dll-name", "");
 			W_ERROR_HAVE_NO_MEMORY(info[i].info2.dll_name);
 		}
 		break;
@@ -709,7 +709,7 @@ static WERROR sptr_GetPrinterForm(struct ntptr_GenericHandle *printer, TALLOC_CT
 	W_ERROR_HAVE_NO_MEMORY(base_dn);
 
 	count = sptr_db_search(sptr_db, mem_ctx, base_dn, &msgs, NULL,
-			       "(&(form_name=%s)(objectClass=form))",
+			       "(&(form-name=%s)(objectClass=form))",
 			       r->in.form_name);
 
 	if (count == 0) return WERR_FOOBAR;
@@ -723,16 +723,16 @@ static WERROR sptr_GetPrinterForm(struct ntptr_GenericHandle *printer, TALLOC_CT
 	case 1:
 		info->info1.flags	= samdb_result_uint(msgs[0], "flags", SPOOLSS_FORM_BUILTIN);
 
-		info->info1.form_name	= samdb_result_string(msgs[0], "form_name", NULL);
+		info->info1.form_name	= samdb_result_string(msgs[0], "form-name", NULL);
 		W_ERROR_HAVE_NO_MEMORY(info->info1.form_name);
 
-		info->info1.size.width	= samdb_result_uint(msgs[0], "size_width", 0);
-		info->info1.size.height	= samdb_result_uint(msgs[0], "size_height", 0);
+		info->info1.size.width	= samdb_result_uint(msgs[0], "size-width", 0);
+		info->info1.size.height	= samdb_result_uint(msgs[0], "size-height", 0);
 
-		info->info1.area.left	= samdb_result_uint(msgs[0], "area_left", 0);
-		info->info1.area.top	= samdb_result_uint(msgs[0], "area_top", 0);
-		info->info1.area.right	= samdb_result_uint(msgs[0], "area_right", 0);
-		info->info1.area.bottom	= samdb_result_uint(msgs[0], "area_bottom", 0);
+		info->info1.area.left	= samdb_result_uint(msgs[0], "area-left", 0);
+		info->info1.area.top	= samdb_result_uint(msgs[0], "area-top", 0);
+		info->info1.area.right	= samdb_result_uint(msgs[0], "area-right", 0);
+		info->info1.area.bottom	= samdb_result_uint(msgs[0], "area-bottom", 0);
 		break;
 	default:
 		return WERR_UNKNOWN_LEVEL;
