@@ -367,6 +367,7 @@ static BOOL is_executable(const char *fname)
 
 /****************************************************************************
  Check if we can open a file with a share mode.
+ Returns True if conflict, False if not.
 ****************************************************************************/
 
 static BOOL share_conflict(connection_struct *conn,
@@ -611,7 +612,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
 			share_mode_entry *share_entry = &old_shares[i];
 
 			/* someone else has a share lock on it, check to see if we can too */
-			if (!share_conflict(conn, share_entry, access_mask,
+			if (share_conflict(conn, share_entry, access_mask,
 						share_access, create_options,
 						fname, p_flags)) {
 				SAFE_FREE(old_shares);
