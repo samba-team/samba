@@ -550,6 +550,8 @@ static BOOL run_tcon_test(void)
 	cli->tree = tree1;  /* restore initial tree */
 	cli->tree->tid = cnum1;
 
+	smbcli_unlink(tree1, fname);
+
 	if (!torture_close_connection(cli)) {
 		return False;
 	}
