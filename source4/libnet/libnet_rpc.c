@@ -22,61 +22,6 @@
 #include "libcli/nbt/libnbt.h"
 #include "libnet/libnet.h"
 
-/**
- * Finds a domain pdc (generic part)
- * 
- * @param ctx initialised libnet context
- * @param mem_ctx memory context of this call
- * @param r data structure containing necessary parameters and return values
- * @return nt status of the call
- **/
-
-static NTSTATUS libnet_find_pdc_generic(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, 
-					union libnet_find_pdc *r)
-{
-	const char *address;
-	NTSTATUS status;
-	struct nbt_name name;
-
-	if (is_ipaddress(r->generic.in.domain_name)) {
-		r->generic.out.pdc_name = r->generic.in.domain_name;
-		return NT_STATUS_OK;
-	}
-
-	make_nbt_name(&name, r->generic.in.domain_name, NBT_NAME_PDC);
-
-	status = resolve_name(&name, mem_ctx, &address);
-	if (!NT_STATUS_IS_OK(status)) {
-		name.type = NBT_NAME_SERVER;
-		status = resolve_name(&name, mem_ctx, &address);
-	}
-	NT_STATUS_NOT_OK_RETURN(status);
-
-	r->generic.out.pdc_name = talloc_strdup(mem_ctx, address);
-
-	return NT_STATUS_OK;
-}
-
-
-/**
- * Finds a domain pdc function
- * 
- * @param ctx initialised libnet context
- * @param mem_ctx memory context of this call
- * @param r data structure containing necessary parameters and return values
- * @return nt status of the call
- **/
-
-NTSTATUS libnet_find_pdc(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_find_pdc *r)
-{
-	switch (r->generic.level) {
-		case LIBNET_FIND_PDC_GENERIC:
-			return libnet_find_pdc_generic(ctx, mem_ctx, r);
-	}
-
-	return NT_STATUS_INVALID_LEVEL;
-}
-
 
 /**
  * Connects rpc pipe on remote server
