@@ -353,14 +353,14 @@ NTSTATUS idmap_close(void)
 	if (proxyonly)
 		return NT_STATUS_OK;
 
-	ret = cache_map->close();
+	ret = cache_map->close_fn();
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(3, ("idmap_close: failed to close local tdb cache!\n"));
 	}
 	cache_map = NULL;
 
 	if (remote_map) {
-		ret = remote_map->close();
+		ret = remote_map->close_fn();
 		if (!NT_STATUS_IS_OK(ret)) {
 			DEBUG(3, ("idmap_close: failed to close remote idmap repository!\n"));
 		}

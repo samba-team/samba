@@ -379,7 +379,7 @@ struct _SMBCCTX {
 	off_t      (*lseek)   (SMBCCTX *c, SMBCFILE * file, off_t offset, int whence);
 	int        (*stat)    (SMBCCTX *c, const char *fname, struct stat *st);
 	int        (*fstat)   (SMBCCTX *c, SMBCFILE *file, struct stat *st);
-	int        (*close)   (SMBCCTX *c, SMBCFILE *file);
+	int        (*close_fn) (SMBCCTX *c, SMBCFILE *file);
 
 	/** callable functions for dirs
 	 */ 
