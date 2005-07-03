@@ -2326,7 +2326,9 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 	START_PROFILE(SMBlockread);
 
 	CHECK_FSP(fsp,conn);
-	CHECK_READ(fsp);
+	if (!CHECK_READ(fsp,inbuf)) {
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	}
 
 	release_level_2_oplocks_on_change(fsp);
 
@@ -2420,7 +2422,9 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int 
 	START_PROFILE(SMBread);
 
 	CHECK_FSP(fsp,conn);
-	CHECK_READ(fsp);
+	if (!CHECK_READ(fsp,inbuf)) {
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	}
 
 	numtoread = SVAL(inbuf,smb_vwv1);
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
@@ -2605,7 +2609,9 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	}
 
 	CHECK_FSP(fsp,conn);
-	CHECK_READ(fsp);
+	if (!CHECK_READ(fsp,inbuf)) {
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	}
 
 	set_message(outbuf,12,0,True);
 
@@ -2685,7 +2691,9 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	}
 
 	CHECK_FSP(fsp,conn);
-	CHECK_WRITE(fsp);
+	if (!CHECK_WRITE(fsp)) {
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	}
   
 	tcount = IVAL(inbuf,smb_vwv1);
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv3);
@@ -2819,7 +2827,9 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf,
 	START_PROFILE(SMBwriteunlock);
 	
 	CHECK_FSP(fsp,conn);
-	CHECK_WRITE(fsp);
+	if (!CHECK_WRITE(fsp)) {
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	}
 
 	numtowrite = SVAL(inbuf,smb_vwv1);
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
@@ -2833,10 +2843,11 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf,
 	/* The special X/Open SMB protocol handling of
 	   zero length writes is *NOT* done for
 	   this call */
-	if(numtowrite == 0)
+	if(numtowrite == 0) {
 		nwritten = 0;
-	else
+	} else {
 		nwritten = write_file(fsp,data,startpos,numtowrite);
+	}
   
 	if (lp_syncalways(SNUM(conn)))
 		sync_file(conn,fsp);
@@ -2890,7 +2901,9 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
 	}
 
 	CHECK_FSP(fsp,conn);
-	CHECK_WRITE(fsp);
+	if (!CHECK_WRITE(fsp)) {
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	}
 
 	numtowrite = SVAL(inbuf,smb_vwv1);
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
@@ -2971,7 +2984,9 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 	}
 
 	CHECK_FSP(fsp,conn);
-	CHECK_WRITE(fsp);
+	if (!CHECK_WRITE(fsp)) {
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	}
 
 	set_message(outbuf,6,0,True);
   
@@ -3276,7 +3291,9 @@ int reply_writeclose(connection_struct *conn,
 	START_PROFILE(SMBwriteclose);
 
 	CHECK_FSP(fsp,conn);
-	CHECK_WRITE(fsp);
+	if (!CHECK_WRITE(fsp)) {
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	}
 
 	numtowrite = SVAL(inbuf,smb_vwv1);
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
@@ -3642,7 +3659,9 @@ int reply_printwrite(connection_struct *conn, char *inbuf,char *outbuf, int dum_
 	}
 
 	CHECK_FSP(fsp,conn);
-	CHECK_WRITE(fsp);
+	if (!CHECK_WRITE(fsp)) {
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	}
 
 	numtowrite = SVAL(smb_buf(inbuf),1);
 	data = smb_buf(inbuf) + 3;
@@ -5255,7 +5274,9 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
 	outsize = set_message(outbuf,8,0,True);
 
 	CHECK_FSP(fsp,conn);
-	CHECK_READ(fsp);
+	if (!CHECK_READ(fsp,inbuf)) {
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	}
 
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv1);
 	maxcount = SVAL(inbuf,smb_vwv3);
@@ -5383,7 +5404,9 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	START_PROFILE(SMBwriteBmpx);
 
 	CHECK_FSP(fsp,conn);
-	CHECK_WRITE(fsp);
+	if (!CHECK_WRITE(fsp)) {
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	}
 	if (HAS_CACHED_ERROR(fsp)) {
 		return(CACHED_ERROR(fsp));
 	}
@@ -5487,7 +5510,9 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
 	START_PROFILE(SMBwriteBs);
 
 	CHECK_FSP(fsp,conn);
-	CHECK_WRITE(fsp);
+	if (!CHECK_WRITE(fsp)) {
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	}
 
 	tcount = SVAL(inbuf,smb_vwv1);
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);

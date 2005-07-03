@@ -70,6 +70,7 @@ files_struct *print_fsp_open(connection_struct *conn, const char *fname)
 	fsp->pos = -1;
 	fsp->can_lock = True;
 	fsp->can_read = False;
+	fsp->access_mask = FILE_GENERIC_WRITE;
 	fsp->can_write = True;
 	fsp->print_file = True;
 	fsp->modified = False;

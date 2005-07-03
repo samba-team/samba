@@ -524,13 +524,17 @@ static int map_posix_lock_type( files_struct *fsp, enum brl_type lock_type)
 		 */
 		DEBUG(10,("map_posix_lock_type: Downgrading write lock to read due to read-only file.\n"));
 		return F_RDLCK;
-	} else if((lock_type == READ_LOCK) && !fsp->can_read) {
+	}
+#if 0
+	/* We no longer open files write-only. */
+	 else if((lock_type == READ_LOCK) && !fsp->can_read) {
 		/*
 		 * Ditto for read locks on write only files.
 		 */
 		DEBUG(10,("map_posix_lock_type: Changing read lock to write due to write-only file.\n"));
 		return F_WRLCK;
 	}
+#endif
 
 	/*
 	 * This return should be the most normal, as we attempt
