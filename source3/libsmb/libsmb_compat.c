@@ -163,7 +163,7 @@ int smbc_open(const char *furl, int flags, mode_t mode)
 
 	fd = add_fd(file);
 	if (fd == -1) 
-		statcont->close(statcont, file);
+		statcont->close_fn(statcont, file);
 	return fd;
 }
 
@@ -180,7 +180,7 @@ int smbc_creat(const char *furl, mode_t mode)
 	fd = add_fd(file);
 	if (fd == -1) {
 		/* Hmm... should we delete the file too ? I guess we could try */
-		statcont->close(statcont, file);
+		statcont->close_fn(statcont, file);
 		statcont->unlink(statcont, furl);
 	}
 	return fd;
@@ -209,7 +209,7 @@ int smbc_close(int fd)
 {
 	SMBCFILE * file = find_fd(fd);
 	del_fd(fd);
-	return statcont->close(statcont, file);
+	return statcont->close_fn(statcont, file);
 }
 
 int smbc_unlink(const char *fname)

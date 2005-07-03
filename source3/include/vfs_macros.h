@@ -28,7 +28,7 @@
 ********************************************************************/
 
 /* Disk operations */    
-#define SMB_VFS_CONNECT(conn, service, user) ((conn)->vfs.ops.connect((conn)->vfs.handles.connect, (conn), (service), (user)))
+#define SMB_VFS_CONNECT(conn, service, user) ((conn)->vfs.ops.connect_fn((conn)->vfs.handles.connect_hnd, (conn), (service), (user)))
 #define SMB_VFS_DISCONNECT(conn) ((conn)->vfs.ops.disconnect((conn)->vfs.handles.disconnect, (conn)))
 #define SMB_VFS_DISK_FREE(conn, path, small_query, bsize, dfree ,dsize) ((conn)->vfs.ops.disk_free((conn)->vfs.handles.disk_free, (conn), (path), (small_query), (bsize), (dfree), (dsize)))
 #define SMB_VFS_GET_QUOTA(conn, qtype, id, qt) ((conn)->vfs.ops.get_quota((conn)->vfs.handles.get_quota, (conn), (qtype), (id), (qt)))
@@ -47,7 +47,7 @@
     
 /* File operations */
 #define SMB_VFS_OPEN(conn, fname, flags, mode) ((conn)->vfs.ops.open((conn)->vfs.handles.open, (conn), (fname), (flags), (mode)))
-#define SMB_VFS_CLOSE(fsp, fd) ((fsp)->conn->vfs.ops.close((fsp)->conn->vfs.handles.close, (fsp), (fd)))
+#define SMB_VFS_CLOSE(fsp, fd) ((fsp)->conn->vfs.ops.close_fn((fsp)->conn->vfs.handles.close_hnd, (fsp), (fd)))
 #define SMB_VFS_READ(fsp, fd, data, n) ((fsp)->conn->vfs.ops.read((fsp)->conn->vfs.handles.read, (fsp), (fd), (data), (n)))
 #define SMB_VFS_PREAD(fsp, fd, data, n, off) ((fsp)->conn->vfs.ops.pread((fsp)->conn->vfs.handles.pread, (fsp), (fd), (data), (n), (off)))
 #define SMB_VFS_WRITE(fsp, fd, data, n) ((fsp)->conn->vfs.ops.write((fsp)->conn->vfs.handles.write, (fsp), (fd), (data), (n)))
@@ -138,7 +138,7 @@
 ********************************************************************/
 
 /* Disk operations */    
-#define SMB_VFS_OPAQUE_CONNECT(conn, service, user) ((conn)->vfs_opaque.ops.connect((conn)->vfs_opaque.handles.connect, (conn), (service), (user)))
+#define SMB_VFS_OPAQUE_CONNECT(conn, service, user) ((conn)->vfs_opaque.ops.connect_fn((conn)->vfs_opaque.handles.connect_hnd, (conn), (service), (user)))
 #define SMB_VFS_OPAQUE_DISCONNECT(conn) ((conn)->vfs_opaque.ops.disconnect((conn)->vfs_opaque.handles.disconnect, (conn)))
 #define SMB_VFS_OPAQUE_DISK_FREE(conn, path, small_query, bsize, dfree ,dsize) ((conn)->vfs_opaque.ops.disk_free((conn)->vfs_opaque.handles.disk_free, (conn), (path), (small_query), (bsize), (dfree), (dsize)))
 #define SMB_VFS_OPAQUE_GET_QUOTA(conn, qtype, id, qt) ((conn)->vfs_opaque.ops.get_quota((conn)->vfs_opaque.handles.get_quota, (conn), (qtype), (id), (qt)))
@@ -157,7 +157,7 @@
     
 /* File operations */
 #define SMB_VFS_OPAQUE_OPEN(conn, fname, flags, mode) ((conn)->vfs_opaque.ops.open((conn)->vfs_opaque.handles.open, (conn), (fname), (flags), (mode)))
-#define SMB_VFS_OPAQUE_CLOSE(fsp, fd) ((fsp)->conn->vfs_opaque.ops.close((fsp)->conn->vfs_opaque.handles.close, (fsp), (fd)))
+#define SMB_VFS_OPAQUE_CLOSE(fsp, fd) ((fsp)->conn->vfs_opaque.ops.close_fn((fsp)->conn->vfs_opaque.handles.close_hnd, (fsp), (fd)))
 #define SMB_VFS_OPAQUE_READ(fsp, fd, data, n) ((fsp)->conn->vfs_opaque.ops.read((fsp)->conn->vfs_opaque.handles.read, (fsp), (fd), (data), (n)))
 #define SMB_VFS_OPAQUE_PREAD(fsp, fd, data, n, off) ((fsp)->conn->vfs_opaque.ops.pread((fsp)->conn->vfs_opaque.handles.pread, (fsp), (fd), (data), (n), (off)))
 #define SMB_VFS_OPAQUE_WRITE(fsp, fd, data, n) ((fsp)->conn->vfs_opaque.ops.write((fsp)->conn->vfs_opaque.handles.write, (fsp), (fd), (data), (n)))
@@ -248,7 +248,7 @@
 ********************************************************************/
 
 /* Disk operations */    
-#define SMB_VFS_NEXT_CONNECT(handle, conn, service, user) ((handle)->vfs_next.ops.connect((handle)->vfs_next.handles.connect, (conn), (service), (user)))
+#define SMB_VFS_NEXT_CONNECT(handle, conn, service, user) ((handle)->vfs_next.ops.connect_fn((handle)->vfs_next.handles.connect_hnd, (conn), (service), (user)))
 #define SMB_VFS_NEXT_DISCONNECT(handle, conn) ((handle)->vfs_next.ops.disconnect((handle)->vfs_next.handles.disconnect, (conn)))
 #define SMB_VFS_NEXT_DISK_FREE(handle, conn, path, small_query, bsize, dfree ,dsize) ((handle)->vfs_next.ops.disk_free((handle)->vfs_next.handles.disk_free, (conn), (path), (small_query), (bsize), (dfree), (dsize)))
 #define SMB_VFS_NEXT_GET_QUOTA(handle, conn, qtype, id, qt) ((handle)->vfs_next.ops.get_quota((handle)->vfs_next.handles.get_quota, (conn), (qtype), (id), (qt)))
@@ -268,7 +268,7 @@
     
 /* File operations */
 #define SMB_VFS_NEXT_OPEN(handle, conn, fname, flags, mode) ((handle)->vfs_next.ops.open((handle)->vfs_next.handles.open, (conn), (fname), (flags), (mode)))
-#define SMB_VFS_NEXT_CLOSE(handle, fsp, fd) ((handle)->vfs_next.ops.close((handle)->vfs_next.handles.close, (fsp), (fd)))
+#define SMB_VFS_NEXT_CLOSE(handle, fsp, fd) ((handle)->vfs_next.ops.close_fn((handle)->vfs_next.handles.close_hnd, (fsp), (fd)))
 #define SMB_VFS_NEXT_READ(handle, fsp, fd, data, n) ((handle)->vfs_next.ops.read((handle)->vfs_next.handles.read, (fsp), (fd), (data), (n)))
 #define SMB_VFS_NEXT_PREAD(handle, fsp, fd, data, n, off) ((handle)->vfs_next.ops.pread((handle)->vfs_next.handles.pread, (fsp), (fd), (data), (n), (off)))
 #define SMB_VFS_NEXT_WRITE(handle, fsp, fd, data, n) ((handle)->vfs_next.ops.write((handle)->vfs_next.handles.write, (fsp), (fd), (data), (n)))

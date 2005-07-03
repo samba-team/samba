@@ -213,7 +213,7 @@ struct vfs_ops {
 	struct vfs_fn_pointers {
 		/* Disk operations */
 		
-		int (*connect)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *service, const char *user);
+		int (*connect_fn)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *service, const char *user);
 		void (*disconnect)(struct vfs_handle_struct *handle, struct connection_struct *conn);
 		SMB_BIG_UINT (*disk_free)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
 			SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
@@ -235,7 +235,7 @@ struct vfs_ops {
 		/* File operations */
 		
 		int (*open)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *fname, int flags, mode_t mode);
-		int (*close)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd);
+		int (*close_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd);
 		ssize_t (*read)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, void *data, size_t n);
 		ssize_t (*pread)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, void *data, size_t n, SMB_OFF_T offset);
 		ssize_t (*write)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, const void *data, size_t n);
@@ -326,7 +326,7 @@ struct vfs_ops {
 	struct vfs_handles_pointers {
 		/* Disk operations */
 
-		struct vfs_handle_struct *connect;
+		struct vfs_handle_struct *connect_hnd;
 		struct vfs_handle_struct *disconnect;
 		struct vfs_handle_struct *disk_free;
 		struct vfs_handle_struct *get_quota;
@@ -347,7 +347,7 @@ struct vfs_ops {
 		/* File operations */
 
 		struct vfs_handle_struct *open;
-		struct vfs_handle_struct *close;
+		struct vfs_handle_struct *close_hnd;
 		struct vfs_handle_struct *read;
 		struct vfs_handle_struct *pread;
 		struct vfs_handle_struct *write;
