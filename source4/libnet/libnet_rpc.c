@@ -112,8 +112,6 @@ static NTSTATUS libnet_RpcConnectPdc(struct libnet_context *ctx, TALLOC_CTX *mem
 
 NTSTATUS libnet_RpcConnect(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_RpcConnect *r)
 {
-	NTSTATUS status;
-
 	switch (r->level) {
 		case LIBNET_RPC_CONNECT_SERVER:
 			return libnet_RpcConnectSrv(ctx, mem_ctx, r);
