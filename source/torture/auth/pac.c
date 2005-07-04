@@ -251,6 +251,7 @@ static BOOL torture_pac_saved_check(void)
 					 (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("can't parse the PAC\n"));
+		talloc_free(mem_ctx);
 		return False;
 	}
 
@@ -258,10 +259,23 @@ static BOOL torture_pac_saved_check(void)
 					 (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("PAC push failed: %s\n", nt_errstr(nt_status)));
+		talloc_free(mem_ctx);
 		return False;
 	}
 
 	/* dump_data(0,validate_blob.data,validate_blob.length); */
+
+	/* all we can check is the length of the buffers,
+	 * to check that the alignment and padding is ok,
+	 * we can't compare the bytes, because we use a different algorithm
+	 * to create the pointer values
+	 */
+	if (tmp_blob.length != validate_blob.length) {
+		DEBUG(0, ("PAC push failed orignial buffer length[%u] != created buffer length[%u]\n",
+				tmp_blob.length, validate_blob.length));
+		talloc_free(mem_ctx);
+		return False;
+	}
 
 	talloc_free(mem_ctx);
 	return True;
