@@ -56,7 +56,9 @@ typedef uint32_t WERROR;
 
 #define NT_STATUS_IS_OK(x) (NT_STATUS_V(x) == 0)
 #define NT_STATUS_IS_ERR(x) ((NT_STATUS_V(x) & 0xc0000000) == 0xc0000000)
-#define NT_STATUS_EQUAL(x,y) (NT_STATUS_V(x) == NT_STATUS_V(y))
+/* checking for DOS error mapping here is ugly, but unfortunately the
+   alternative is a very intrusive rewrite of the torture code */
+#define NT_STATUS_EQUAL(x,y) (NT_STATUS_IS_DOS(x)||NT_STATUS_IS_DOS(y)?ntstatus_dos_equal(x,y):NT_STATUS_V(x) == NT_STATUS_V(y))
 
 #define NT_STATUS_HAVE_NO_MEMORY(x) do { \
 	if (!(x)) {\
