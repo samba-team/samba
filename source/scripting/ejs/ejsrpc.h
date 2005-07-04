@@ -45,3 +45,14 @@ NTSTATUS ejs_pull_uint32(struct ejs_rpc *ejs,
 			 struct MprVar *v, const char *name, uint32_t *r);
 NTSTATUS ejs_push_uint32(struct ejs_rpc *ejs, 
 			 struct MprVar *v, const char *name, uint32_t r);
+
+/* echo calls - PLEASE LEAVE THESE HERE TILL PIDL KNOWS HOW TO
+   GENERATE THEM */
+
+#include "librpc/gen_ndr/ndr_echo.h"
+
+NTSTATUS ejs_pull_echo_AddOne(struct ejs_rpc *ejs, 
+			      struct MprVar *v, struct echo_AddOne *r);
+NTSTATUS ejs_push_echo_AddOne(struct ejs_rpc *ejs, 
+			      struct MprVar *v, 
+			      const struct echo_AddOne *r);
