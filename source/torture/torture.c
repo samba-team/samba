@@ -1347,7 +1347,9 @@ static BOOL run_vuidtest(void)
 	}
 
 	if (!NT_STATUS_EQUAL(cli->transport->error.e.nt_status, 
-			     NT_STATUS_DOS(ERRSRV, ERRbaduid))) {
+			     NT_STATUS_DOS(ERRSRV, ERRbaduid)) &&
+	    !NT_STATUS_EQUAL(cli->transport->error.e.nt_status, 
+			     NT_STATUS_INVALID_HANDLE)) {
 		printf("ERROR: qfileinfo should have returned DOS error "
 		       "ERRSRV:ERRbaduid\n  but returned %s\n",
 		       smbcli_errstr(cli->tree));
