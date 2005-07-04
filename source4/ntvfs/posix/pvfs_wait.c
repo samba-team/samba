@@ -181,5 +181,5 @@ NTSTATUS pvfs_cancel(struct ntvfs_module_context *ntvfs, struct smbsrv_request *
 		}
 	}
 
-	return NT_STATUS_UNSUCCESSFUL;
+	return NT_STATUS_DOS(ERRDOS, ERRcancelviolation);
 }

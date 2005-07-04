@@ -263,7 +263,7 @@ static NTSTATUS pvfs_lock_cancel(struct pvfs_state *pvfs, struct smbsrv_request 
 		}
 	}
 
-	return NT_STATUS_UNSUCCESSFUL;
+	return NT_STATUS_DOS(ERRDOS, ERRcancelviolation);
 }
 
 
@@ -324,7 +324,7 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 	if (lck->lockx.in.mode & LOCKING_ANDX_CHANGE_LOCKTYPE) {
 		/* this seems to not be supported by any windows server,
 		   or used by any clients */
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_DOS(ERRDOS, ERRnoatomiclocks);
 	}
 
 	if (lck->lockx.in.mode & LOCKING_ANDX_OPLOCK_RELEASE) {
