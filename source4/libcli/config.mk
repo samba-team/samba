@@ -1,6 +1,5 @@
 [SUBSYSTEM::LIBCLI_UTILS]
 ADD_OBJ_FILES = libcli/util/asn1.o \
-		libcli/util/smberr.o \
 		libcli/util/doserr.o \
 		libcli/util/errormap.o \
 		libcli/util/clierror.o \
