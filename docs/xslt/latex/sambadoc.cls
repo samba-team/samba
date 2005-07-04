@@ -38,6 +38,7 @@
 	\RequirePackage{geometry}
 	\geometry{
 	twoside,
+	openright,
 	papersize={7in,9.25in},
 	lmargin=.75in,
 	rmargin=.75in,
