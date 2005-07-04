@@ -118,7 +118,9 @@ static BOOL torture_pac_self_check(void)
 		talloc_free(mem_ctx);
 		return False;
 	}
-	
+
+	/* dump_data(0,tmp_blob.data,tmp_blob.length); */
+
 	/* Now check that we can read it back */
 	nt_status = kerberos_decode_pac(mem_ctx, &pac_info,
 					tmp_blob,
@@ -190,8 +192,9 @@ static BOOL torture_pac_saved_check(void)
 {
 	NTSTATUS nt_status;
 	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "PAC saved check");
-	DATA_BLOB tmp_blob;
+	DATA_BLOB tmp_blob, validate_blob;
 	struct PAC_LOGON_INFO *pac_info;
+	struct PAC_DATA pac_data;
 	krb5_keyblock server_keyblock;
 	uint8_t server_bytes[16];
 	
@@ -225,6 +228,10 @@ static BOOL torture_pac_saved_check(void)
 
 	tmp_blob = data_blob_const(saved_pac, sizeof(saved_pac));
 
+	/*tmp_blob.data = file_load(lp_parm_string(-1,"torture","pac_file"), &tmp_blob.length);*/
+
+	/*dump_data(0,tmp_blob.data,tmp_blob.length);*/
+
 	/* Decode and verify the signaure on the PAC */
 	nt_status = kerberos_decode_pac(mem_ctx, &pac_info,
 					tmp_blob,
@@ -239,6 +246,23 @@ static BOOL torture_pac_saved_check(void)
 		talloc_free(mem_ctx);
 		return False;
 	}
+
+	nt_status = ndr_pull_struct_blob(&tmp_blob, mem_ctx, &pac_data,
+					 (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0,("can't parse the PAC\n"));
+		return False;
+	}
+
+	nt_status = ndr_push_struct_blob(&validate_blob, mem_ctx, &pac_data,
+					 (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("PAC push failed: %s\n", nt_errstr(nt_status)));
+		return False;
+	}
+
+	/* dump_data(0,validate_blob.data,validate_blob.length); */
+
 	talloc_free(mem_ctx);
 	return True;
 }

@@ -111,7 +111,7 @@ static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx,
 				if (!pac_data.buffers[i].info) {
 					break;
 				}
-				logon_info = &pac_data.buffers[i].info->logon_info;
+				logon_info = pac_data.buffers[i].info->logon_info.i;
 				break;
 			case PAC_TYPE_SRV_CHECKSUM:
 				if (!pac_data.buffers[i].info) {
@@ -230,9 +230,17 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	struct PAC_DATA *pac_data = talloc(mem_ctx, struct PAC_DATA);
 	struct netr_SamBaseInfo *sam;
 	struct timeval tv = timeval_current();
+	union PAC_INFO *u_LOGON_INFO;
+	struct PAC_LOGON_INFO *LOGON_INFO;
+	union PAC_INFO *u_LOGON_NAME;
+	struct PAC_LOGON_NAME *LOGON_NAME;
+	union PAC_INFO *u_KDC_CHECKSUM;
+	struct PAC_SIGNATURE_DATA *KDC_CHECKSUM;
+	union PAC_INFO *u_SRV_CHECKSUM;
+	struct PAC_SIGNATURE_DATA *SRV_CHECKSUM;
 
 	enum {
-		PAC_BUF_LOGON_TYPE = 0,
+		PAC_BUF_LOGON_INFO = 0,
 		PAC_BUF_LOGON_NAME = 1,
 		PAC_BUF_KDC_CHECKSUM = 2,
 		PAC_BUF_SRV_CHECKSUM = 3,
@@ -249,52 +257,78 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	pac_data->buffers = talloc_array(pac_data, 
 					 struct PAC_BUFFER,
 					 pac_data->num_buffers);
-
 	if (!pac_data->buffers) {
 		talloc_free(pac_data);
 		return ENOMEM;
 	}
 
-	pac_data->buffers[PAC_BUF_LOGON_TYPE].type = PAC_TYPE_LOGON_INFO;
-	pac_data->buffers[PAC_BUF_LOGON_TYPE].info = talloc_zero(pac_data->buffers,
-								 union PAC_INFO);
+	/* LOGON_INFO */
+	u_LOGON_INFO = talloc_zero(pac_data->buffers, union PAC_INFO);
+	if (!u_LOGON_INFO) {
+		talloc_free(pac_data);
+		return ENOMEM;
+	}
+	pac_data->buffers[PAC_BUF_LOGON_INFO].type = PAC_TYPE_LOGON_INFO;
+	pac_data->buffers[PAC_BUF_LOGON_INFO].info = u_LOGON_INFO;
 
-	nt_status = auth_convert_server_info_sambaseinfo(pac_data->buffers[0].info,
-							 server_info, &sam);
+	/* LOGON_NAME */
+	u_LOGON_NAME = talloc_zero(pac_data->buffers, union PAC_INFO);
+	if (!u_LOGON_NAME) {
+		talloc_free(pac_data);
+		return ENOMEM;
+	}
+	pac_data->buffers[PAC_BUF_LOGON_NAME].type = PAC_TYPE_LOGON_NAME;
+	pac_data->buffers[PAC_BUF_LOGON_NAME].info = u_LOGON_NAME;
+	LOGON_NAME = &u_LOGON_NAME->logon_name;
+
+	/* KDC_CHECKSUM */
+	u_KDC_CHECKSUM = talloc_zero(pac_data->buffers, union PAC_INFO);
+	if (!u_KDC_CHECKSUM) {
+		talloc_free(pac_data);
+		return ENOMEM;
+	}
+	pac_data->buffers[PAC_BUF_KDC_CHECKSUM].type = PAC_TYPE_KDC_CHECKSUM;
+	pac_data->buffers[PAC_BUF_KDC_CHECKSUM].info = u_KDC_CHECKSUM;
+	KDC_CHECKSUM = &u_KDC_CHECKSUM->kdc_cksum;
+
+	/* SRV_CHECKSUM */
+	u_SRV_CHECKSUM = talloc_zero(pac_data->buffers, union PAC_INFO);
+	if (!u_SRV_CHECKSUM) {
+		talloc_free(pac_data);
+		return ENOMEM;
+	}
+	pac_data->buffers[PAC_BUF_SRV_CHECKSUM].type = PAC_TYPE_SRV_CHECKSUM;
+	pac_data->buffers[PAC_BUF_SRV_CHECKSUM].info = u_SRV_CHECKSUM;
+	SRV_CHECKSUM = &u_SRV_CHECKSUM->srv_cksum;
+
+	/* now the real work begins... */
+
+	LOGON_INFO = talloc_zero(u_LOGON_INFO, struct PAC_LOGON_INFO);
+	if (!LOGON_INFO) {
+		talloc_free(pac_data);
+		return ENOMEM;
+	}
+	nt_status = auth_convert_server_info_sambaseinfo(LOGON_INFO, server_info, &sam);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("Getting Samba info failed: %s\n", nt_errstr(nt_status)));
 		talloc_free(pac_data);
 		return EINVAL;
 	}
 
-	pac_data->buffers[PAC_BUF_LOGON_TYPE].info->logon_info.info3.base = *sam;
-	pac_data->buffers[PAC_BUF_LOGON_TYPE].size
-		= ndr_size_PAC_INFO(pac_data->buffers[PAC_BUF_LOGON_TYPE].info,
-				    pac_data->buffers[PAC_BUF_LOGON_TYPE].type, 
-				    0);
-	pac_data->buffers[PAC_BUF_LOGON_TYPE]._pad = 0;
-	
-	pac_data->buffers[PAC_BUF_LOGON_NAME].type = PAC_TYPE_LOGON_NAME;
-	pac_data->buffers[PAC_BUF_LOGON_NAME].info = talloc_zero(pac_data->buffers,
-						union PAC_INFO);
-	pac_data->buffers[PAC_BUF_LOGON_NAME].info->logon_name.account_name
-		= server_info->account_name;
-	pac_data->buffers[PAC_BUF_LOGON_NAME].info->logon_name.logon_time
-		= timeval_to_nttime(&tv);
-	pac_data->buffers[PAC_BUF_LOGON_NAME].size
-		= ndr_size_PAC_INFO(pac_data->buffers[PAC_BUF_LOGON_NAME].info,
-				    pac_data->buffers[PAC_BUF_LOGON_NAME].type, 
-				    0);
-	pac_data->buffers[PAC_BUF_LOGON_NAME]._pad = 0;
+	u_LOGON_INFO->logon_info.unknown[0]	= 0x00081001;
+	u_LOGON_INFO->logon_info.unknown[1]	= 0xCCCCCCCC;
+	u_LOGON_INFO->logon_info.unknown[2]	= 0x000001C8;
+	u_LOGON_INFO->logon_info.unknown[3]	= 0x00000000;
+	u_LOGON_INFO->logon_info.i		= LOGON_INFO;
+	LOGON_INFO->info3.base = *sam;
+
+	LOGON_NAME->account_name	= server_info->account_name;
+	LOGON_NAME->logon_time		= timeval_to_nttime(&tv);
 
 
-	pac_data->buffers[PAC_BUF_KDC_CHECKSUM].type = PAC_TYPE_KDC_CHECKSUM;
-	pac_data->buffers[PAC_BUF_KDC_CHECKSUM].info = talloc_zero(pac_data->buffers,
-						union PAC_INFO);
+
 	/* First, just get the keytypes filled in (and lengths right, eventually) */
-	ret = make_pac_checksum(mem_ctx, zero_blob, 
-				&pac_data->buffers[PAC_BUF_KDC_CHECKSUM].info->kdc_cksum,
-				context, krbtgt_keyblock);
+	ret = make_pac_checksum(mem_ctx, zero_blob, KDC_CHECKSUM, context, krbtgt_keyblock);
 	if (ret) {
 		DEBUG(2, ("making krbtgt PAC checksum failed: %s\n", 
 			  smb_get_krb5_error_message(context, ret, mem_ctx)));
@@ -302,19 +336,7 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
-	pac_data->buffers[PAC_BUF_KDC_CHECKSUM].size
-		= ndr_size_PAC_INFO(pac_data->buffers[PAC_BUF_KDC_CHECKSUM].info,
-				    pac_data->buffers[PAC_BUF_KDC_CHECKSUM].type, 
-				    0);
-	pac_data->buffers[PAC_BUF_KDC_CHECKSUM]._pad = 0;
-
-
-	pac_data->buffers[PAC_BUF_SRV_CHECKSUM].type = PAC_TYPE_SRV_CHECKSUM;
-	pac_data->buffers[PAC_BUF_SRV_CHECKSUM].info = talloc_zero(pac_data->buffers,
-						union PAC_INFO);
-	ret = make_pac_checksum(mem_ctx, zero_blob, 
-				&pac_data->buffers[PAC_BUF_SRV_CHECKSUM].info->srv_cksum,
-				context, server_keyblock);
+	ret = make_pac_checksum(mem_ctx, zero_blob, SRV_CHECKSUM, context, server_keyblock);
 	if (ret) {
 		DEBUG(2, ("making server PAC checksum failed: %s\n", 
 			  smb_get_krb5_error_message(context, ret, mem_ctx)));
@@ -322,16 +344,10 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
-	pac_data->buffers[PAC_BUF_SRV_CHECKSUM].size
-		= ndr_size_PAC_INFO(pac_data->buffers[PAC_BUF_SRV_CHECKSUM].info,
-				    pac_data->buffers[PAC_BUF_SRV_CHECKSUM].type, 
-				    0);
-	pac_data->buffers[PAC_BUF_SRV_CHECKSUM]._pad = 0;
-
 	/* But wipe out the actual signatures */
-	ZERO_STRUCT(pac_data->buffers[PAC_BUF_KDC_CHECKSUM].info->kdc_cksum.signature);
-	ZERO_STRUCT(pac_data->buffers[PAC_BUF_SRV_CHECKSUM].info->srv_cksum.signature);
-	
+	ZERO_STRUCT(KDC_CHECKSUM->signature);
+	ZERO_STRUCT(SRV_CHECKSUM->signature);
+
 	nt_status = ndr_push_struct_blob(&tmp_blob, mem_ctx, pac_data,
 					 (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -341,12 +357,11 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Then sign the result of the previous push, where the sig was zero'ed out */
-	ret = make_pac_checksum(mem_ctx, tmp_blob, &pac_data->buffers[3].info->srv_cksum,
+	ret = make_pac_checksum(mem_ctx, tmp_blob, SRV_CHECKSUM,
 				context, server_keyblock);
 
 	/* Push the Server checksum out */
-	nt_status = ndr_push_struct_blob(&server_checksum_blob, mem_ctx, 
-					 &pac_data->buffers[PAC_BUF_SRV_CHECKSUM].info->srv_cksum,
+	nt_status = ndr_push_struct_blob(&server_checksum_blob, mem_ctx, SRV_CHECKSUM,
 					 (ndr_push_flags_fn_t)ndr_push_PAC_SIGNATURE_DATA);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("PAC_SIGNATURE push failed: %s\n", nt_errstr(nt_status)));
@@ -354,10 +369,14 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 		return EINVAL;
 	}
 
-	/* Then sign the result of the previous push, where the sig was zero'ed out */
-	ret = make_pac_checksum(mem_ctx, server_checksum_blob, 
-				&pac_data->buffers[PAC_BUF_KDC_CHECKSUM].info->kdc_cksum,
-				context, krbtgt_keyblock);
+	/* Then sign Server checksum */
+	ret = make_pac_checksum(mem_ctx, server_checksum_blob, KDC_CHECKSUM, context, krbtgt_keyblock);
+	if (ret) {
+		DEBUG(2, ("making krbtgt PAC checksum failed: %s\n", 
+			  smb_get_krb5_error_message(context, ret, mem_ctx)));
+		talloc_free(pac_data);
+		return ret;
+	}
 
 	/* And push it out again, this time to the world.  This relies on determanistic pointer values */
 	nt_status = ndr_push_struct_blob(&tmp_blob, mem_ctx, pac_data,
