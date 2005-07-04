@@ -1086,9 +1086,9 @@ nss_base_passwd dc=abmas,dc=biz?sub
 
 			<para>
 			<itemizedlist>
-			<listitem><para>User accounts are stored under the DIT: ou=Users,dc=abmas,dc=biz</para></listitem>
-			<listitem><para>User login accounts are under the DIT: ou=People,ou-Users,dc=abmas,dc=biz</para></listitem>
-			<listitem><para>Computer accounts are under the DIT: ou=Computers,ou=Users,dc=abmas,dc=biz</para></listitem>
+			<listitem><para>User accounts are stored under the DIT: ou=Users, dc=abmas, dc=biz</para></listitem>
+			<listitem><para>User login accounts are under the DIT: ou=People, ou-Users, dc=abmas, dc=biz</para></listitem>
+			<listitem><para>Computer accounts are under the DIT: ou=Computers, ou=Users, dc=abmas, dc=biz</para></listitem>
 			</itemizedlist>
 			</para>
 
@@ -2110,7 +2110,6 @@ my $smbldap_bind_conf="/etc/smbldap-tools/smbldap_bind.conf";
 		The interactive use of this script for the PDC is demonstrated here:
 <screen>
 &rootprompt; /opt/IDEALX/sbin/configure.pl 
-merlin:/opt/IDEALX/sbin # ./configure.pl 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
        smbldap-tools script configuration
        -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
