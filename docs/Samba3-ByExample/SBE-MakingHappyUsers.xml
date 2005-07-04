@@ -1086,9 +1086,9 @@ nss_base_passwd dc=abmas,dc=biz?sub
 
 			<para>
 			<itemizedlist>
-			<listitem><para>All user accounts are stored under the DIT: ou=Users,dc=abmas,dc=biz</para></listitem>
-			<listitem><para>All user login accounts are under the DIT: ou=People,ou-Users,dc=abmas,dc=biz</para></listitem>
-			<listitem><para>All computer accounts are under the DIT: ou=Computers,ou=Users,dc=abmas,dc=biz</para></listitem>
+			<listitem><para>User accounts are stored under the DIT: ou=Users,dc=abmas,dc=biz</para></listitem>
+			<listitem><para>User login accounts are under the DIT: ou=People,ou-Users,dc=abmas,dc=biz</para></listitem>
+			<listitem><para>Computer accounts are under the DIT: ou=Computers,ou=Users,dc=abmas,dc=biz</para></listitem>
 			</itemizedlist>
 			</para>
 
@@ -2111,23 +2111,24 @@ my $smbldap_bind_conf="/etc/smbldap-tools/smbldap_bind.conf";
 <screen>
 &rootprompt; /opt/IDEALX/sbin/configure.pl 
 merlin:/opt/IDEALX/sbin # ./configure.pl 
--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
        smbldap-tools script configuration
        -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 Before starting, check
  . if your samba controller is up and running.
- . if the domain SID is defined (you can get it with the 'net getlocalsid')
+ . if the domain SID is defined (you can get it with the
+                                                    'net getlocalsid')
 
  . you can leave the configuration using the Crtl-c key combination
  . empty value can be set with the "." character
--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 Looking for configuration files...
 
 Samba Config File Location [/etc/samba/smb.conf] > 
 smbldap-tools configuration file Location (global parameters)
-                             [/etc/opt/IDEALX/smbldap-tools/smbldap.conf] > 
+                        [/etc/opt/IDEALX/smbldap-tools/smbldap.conf] > 
 smbldap Config file Location (bind parameters) 
-                        [/etc/opt/IDEALX/smbldap-tools/smbldap_bind.conf] > 
+                   [/etc/opt/IDEALX/smbldap-tools/smbldap_bind.conf] > 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 Let's start configuring the smbldap-tools scripts ...
 
@@ -2136,19 +2137,21 @@ Let's start configuring the smbldap-tools scripts ...
 . netbios name: netbios name of the samba controler
   netbios name [MASSIVE] > 
 . logon drive: local path to which the home directory 
-                         will be connected (for NT Workstations). Ex: 'H:'
+                    will be connected (for NT Workstations). Ex: 'H:'
   logon drive [H:] > 
-. logon home: home directory location (for Win95/98 or NT Workstation).
+. logon home: home directory location (for Win95/98 or NT Workstation)
   (use %U as username) Ex:'\\MASSIVE\%U'
-  logon home (press the "." character if you don't want homeDirectory) 
-                                                          [\\MASSIVE\%U] > 
+  logon home (press the "." character if you don't want homeDirectory)
+                                                     [\\MASSIVE\%U] > 
 . logon path: directory where roaming profiles are stored. 
-                                                 Ex:'\\MASSIVE\profiles\%U'
-  logon path (press the "." character if you don't want roaming profile) 
-                                                      [\\%L\profiles\%U] > 
-. home directory prefix (use %U as username) [/home/%U] > /data/users/%U
+                                            Ex:'\\MASSIVE\profiles\%U'
+  logon path (press the "." character
+               if you don't want roaming profile) [\\%L\profiles\%U] >
+. home directory prefix (use %U as username)
+                                           [/home/%U] > /data/users/%U
 . default users' homeDirectory mode [700] > 
-. default user netlogon script (use %U as username) [scripts\logon.bat] > 
+. default user netlogon script (use %U as username)
+                                                 [scripts\logon.bat] >
   default password validation time (time in days) [45] > 900
 . ldap suffix [dc=abmas,dc=biz] > 
 . ldap group suffix [ou=Groups] > 
@@ -2158,23 +2161,24 @@ Let's start configuring the smbldap-tools scripts ...
 . sambaUnixIdPooldn: object where you want to store the next uidNumber
   and gidNumber available for new users and groups
   sambaUnixIdPooldn object (relative to ${suffix}) 
-                                            [sambaDomainName=MEGANET2] > 
+                                          [sambaDomainName=MEGANET2] > 
 . ldap master server: IP adress or DNS name of the master 
-                                                  (writable) ldap server
+                                                (writable) ldap server
   ldap master server [massive.abmas.biz] > 
 . ldap master port [389] > 
 . ldap master bind dn [cn=Manager,dc=abmas,dc=biz] > 
 . ldap master bind password [] > 
 . ldap slave server: IP adress or DNS name of the slave ldap server: 
-                                              can also be the master one
+                                            can also be the master one
   ldap slave server [massive.abmas.biz] > 
 . ldap slave port [389] > 
 . ldap slave bind dn [cn=Manager,dc=abmas,dc=biz] > 
 . ldap slave bind password [] > 
 . ldap tls support (1/0) [0] > 
 . SID for domain MEGANET2: SID of the domain 
-                        (can be obtained with 'net getlocalsid MASSIVE')
-  SID for domain MEGANET2 [S-1-5-21-3504140859-1010554828-2431957765]] > 
+                      (can be obtained with 'net getlocalsid MASSIVE')
+  SID for domain MEGANET2
+                        [S-1-5-21-3504140859-1010554828-2431957765]] >
 . unix password encryption: encryption used for unix passwords
   unix password encryption (CRYPT, MD5, SMD5, SSHA, SHA) [SSHA] > MD5
 . default user gidNumber [513] > 
@@ -2185,9 +2189,9 @@ Let's start configuring the smbldap-tools scripts ...
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 backup old configuration files:
   /etc/opt/IDEALX/smbldap-tools/smbldap.conf->
-                         /etc/opt/IDEALX/smbldap-tools/smbldap.conf.old
+                        /etc/opt/IDEALX/smbldap-tools/smbldap.conf.old
   /etc/opt/IDEALX/smbldap-tools/smbldap_bind.conf->
-                    /etc/opt/IDEALX/smbldap-tools/smbldap_bind.conf.old
+                   /etc/opt/IDEALX/smbldap-tools/smbldap_bind.conf.old
 writing new configuration file:
   /etc/opt/IDEALX/smbldap-tools/smbldap.conf done.
   /etc/opt/IDEALX/smbldap-tools/smbldap_bind.conf done.
