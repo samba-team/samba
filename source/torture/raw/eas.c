@@ -194,9 +194,8 @@ static int test_one_eamax(struct smbcli_state *cli, const int fnum,
 		} else {
 			if (eadebug) {
 				printf ("[%s] EA size %d failed!    "
-					"(high=%d low=%d) [0x%08x %s]\n", 
+					"(high=%d low=%d) [%s]\n", 
 					eaname, i, high, low, 
-					NT_STATUS_V(status), 
 					nt_errstr(status));
 			}
 			high = i;

@@ -550,7 +550,7 @@ BOOL torture_test_delete(void)
 
 	status = smbcli_nt_delete_on_close(cli1->tree, fnum1, True);
 
-	if (NT_STATUS_V(status) != NT_STATUS_V(NT_STATUS_CANNOT_DELETE)) {
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_CANNOT_DELETE)) {
 		printf("(%s) setting delete_on_close should fail with NT_STATUS_CANNOT_DELETE. Got %s instead)\n", 
 		       __location__, smbcli_errstr(cli1->tree));
 		correct = False;
@@ -585,7 +585,7 @@ BOOL torture_test_delete(void)
 		goto fail;
 	} else {
 		status = smbcli_nt_error(cli1->tree);
-		if (NT_STATUS_V(status) != NT_STATUS_V(NT_STATUS_CANNOT_DELETE)) {
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_CANNOT_DELETE)) {
 			printf("(%s) setting delete_on_close on open should fail with NT_STATUS_CANNOT_DELETE. Got %s instead)\n", 
 			       __location__, smbcli_errstr(cli1->tree));
 			correct = False;

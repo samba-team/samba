@@ -31,7 +31,7 @@
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%s) Incorrect status %s - should be %s\n", \
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; \
+		ret = False; exit(1); \
 		goto done; \
 	}} while (0)
 
@@ -129,21 +129,21 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 		session3->vuid = session->vuid;
 		setup.in.sesskey = cli->transport->negotiate.sesskey;
-		setup.in.capabilities = 0; /* force a non extended security login (should fail) */
+		setup.in.capabilities &= ~CAP_EXTENDED_SECURITY; /* force a non extended security login (should fail) */
 		setup.in.workgroup = lp_workgroup();
 	
 		setup.in.credentials = cmdline_credentials;
 	
 
 		status = smb_composite_sesssetup(session3, &setup);
-		CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+		CHECK_STATUS(status, NT_STATUS_LOGON_FAILURE);
 
 		printf("create a fouth anonymous security context on the same transport, without extended security\n");
 		session4 = smbcli_session_init(cli->transport, mem_ctx, False);
 
 		session4->vuid = session->vuid;
 		setup.in.sesskey = cli->transport->negotiate.sesskey;
-		setup.in.capabilities = 0; /* force a non extended security login (should fail) */
+		setup.in.capabilities &= ~CAP_EXTENDED_SECURITY; /* force a non extended security login (should fail) */
 		setup.in.workgroup = lp_workgroup();
 		
 		anon_creds = cli_credentials_init(mem_ctx);
@@ -202,7 +202,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("the new vuid should not now be accessible\n");
 	status = smb_raw_write(tree, &wr);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRSRV, ERRbaduid));
+	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
 	printf("second logoff for the new vuid should fail\n");
 	status = smb_raw_ulogoff(session);

@@ -281,7 +281,7 @@ BOOL torture_locktest2(void)
 		correct = False;
 	} else {
 		if (!check_error(__location__, cli, 
-				 ERRDOS, ERRlock, 
+				 ERRDOS, ERRnotlocked, 
 				 NT_STATUS_RANGE_NOT_LOCKED)) return False;
 	}
 
@@ -290,7 +290,7 @@ BOOL torture_locktest2(void)
 		correct = False;
 	} else {
 		if (!check_error(__location__, cli, 
-				 ERRDOS, ERRlock, 
+				 ERRDOS, ERRnotlocked, 
 				 NT_STATUS_RANGE_NOT_LOCKED)) return False;
 	}
 
@@ -851,7 +851,7 @@ BOOL torture_locktest7(void)
 
 	if (smbcli_write(cli1->tree, fnum1, 0, buf, 130, 4) != 4) {
 		printf("pid1 unable to write to the range 130:4, error was %s\n", smbcli_errstr(cli1->tree));
-		if (NT_STATUS_V(smbcli_nt_error(cli1->tree)) != NT_STATUS_V(NT_STATUS_FILE_LOCK_CONFLICT)) {
+		if (!NT_STATUS_EQUAL(smbcli_nt_error(cli1->tree), NT_STATUS_FILE_LOCK_CONFLICT)) {
 			printf("Incorrect error (should be NT_STATUS_FILE_LOCK_CONFLICT) (%s)\n", 
 			       __location__);
 			goto fail;
@@ -872,7 +872,7 @@ BOOL torture_locktest7(void)
 
 	if (smbcli_write(cli1->tree, fnum1, 0, buf, 130, 4) != 4) {
 		printf("pid2 unable to write to the range 130:4, error was %s\n", smbcli_errstr(cli1->tree));
-		if (NT_STATUS_V(smbcli_nt_error(cli1->tree)) != NT_STATUS_V(NT_STATUS_FILE_LOCK_CONFLICT)) {
+		if (!NT_STATUS_EQUAL(smbcli_nt_error(cli1->tree), NT_STATUS_FILE_LOCK_CONFLICT)) {
 			printf("Incorrect error (should be NT_STATUS_FILE_LOCK_CONFLICT) (%s)\n",
 			       __location__);
 			goto fail;
@@ -915,7 +915,7 @@ BOOL torture_locktest7(void)
 	if (smbcli_read(cli1->tree, fnum1, buf, 130, 4) != 4) {
 		printf("pid2 unable to read the range 130:4, error was %s\n", 
 		       smbcli_errstr(cli1->tree));
-		if (NT_STATUS_V(smbcli_nt_error(cli1->tree)) != NT_STATUS_V(NT_STATUS_FILE_LOCK_CONFLICT)) {
+		if (!NT_STATUS_EQUAL(smbcli_nt_error(cli1->tree), NT_STATUS_FILE_LOCK_CONFLICT)) {
 			printf("Incorrect error (should be NT_STATUS_FILE_LOCK_CONFLICT) (%s)\n",
 			       __location__);
 			goto fail;
@@ -929,7 +929,7 @@ BOOL torture_locktest7(void)
 	if (smbcli_write(cli1->tree, fnum1, 0, buf, 130, 4) != 4) {
 		printf("pid2 unable to write to the range 130:4, error was %s\n", 
 		       smbcli_errstr(cli1->tree));
-		if (NT_STATUS_V(smbcli_nt_error(cli1->tree)) != NT_STATUS_V(NT_STATUS_FILE_LOCK_CONFLICT)) {
+		if (!NT_STATUS_EQUAL(smbcli_nt_error(cli1->tree), NT_STATUS_FILE_LOCK_CONFLICT)) {
 			printf("Incorrect error (should be NT_STATUS_FILE_LOCK_CONFLICT) (%s)\n",
 			       __location__);
 			goto fail;

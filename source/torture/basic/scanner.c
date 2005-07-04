@@ -33,11 +33,11 @@ look for a partial hit
 ****************************************************************************/
 static void trans2_check_hit(const char *format, int op, int level, NTSTATUS status)
 {
-	if (NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_INVALID_LEVEL) ||
-	    NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_NOT_IMPLEMENTED) ||
-	    NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_NOT_SUPPORTED) ||
-	    NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_UNSUCCESSFUL) ||
-	    NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_INVALID_INFO_CLASS)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_LEVEL) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_UNSUCCESSFUL) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS)) {
 		return;
 	}
 #if VERBOSE
@@ -311,11 +311,11 @@ look for a partial hit
 ****************************************************************************/
 static void nttrans_check_hit(const char *format, int op, int level, NTSTATUS status)
 {
-	if (NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_INVALID_LEVEL) ||
-	    NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_NOT_IMPLEMENTED) ||
-	    NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_NOT_SUPPORTED) ||
-	    NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_UNSUCCESSFUL) ||
-	    NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_INVALID_INFO_CLASS)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_LEVEL) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_UNSUCCESSFUL) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS)) {
 		return;
 	}
 #if VERBOSE

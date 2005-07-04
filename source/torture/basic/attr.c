@@ -130,15 +130,15 @@ BOOL torture_openattrtest(void)
 			if (fnum1 == -1) {
 				for (l = 0; l < ARRAY_SIZE(attr_results); l++) {
 					if (attr_results[l].num == k) {
-						printf("[%d] trunc open 0x%x -> 0x%x of %s failed - should have succeeded !(0x%x:%s)\n",
+						printf("[%d] trunc open 0x%x -> 0x%x of %s failed - should have succeeded !(%s)\n",
 								k, open_attrs_table[i],
 								open_attrs_table[j],
-								fname, NT_STATUS_V(smbcli_nt_error(cli1->tree)), smbcli_errstr(cli1->tree));
+								fname, smbcli_errstr(cli1->tree));
 						correct = False;
 						CHECK_MAX_FAILURES(error_exit);
 					}
 				}
-				if (NT_STATUS_V(smbcli_nt_error(cli1->tree)) != NT_STATUS_V(NT_STATUS_ACCESS_DENIED)) {
+				if (!NT_STATUS_EQUAL(smbcli_nt_error(cli1->tree), NT_STATUS_ACCESS_DENIED)) {
 					printf("[%d] trunc open 0x%x -> 0x%x failed with wrong error code %s\n",
 							k, open_attrs_table[i], open_attrs_table[j],
 							smbcli_errstr(cli1->tree));

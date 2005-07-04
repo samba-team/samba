@@ -193,10 +193,10 @@ BOOL check_error(const char *location, struct smbcli_state *c,
 		class = NT_STATUS_DOS_CLASS(status);
 		num = NT_STATUS_DOS_CODE(status);
                 if (eclass != class || ecode != num) {
-                        printf("unexpected error code class=%d code=%d\n", 
-                               (int)class, (int)num);
-                        printf(" expected %d/%d %s (at %s)\n", 
-                               (int)eclass, (int)ecode, nt_errstr(nterr), location);
+                        printf("unexpected error code %s\n", nt_errstr(status));
+                        printf(" expected %s or %s (at %s)\n", 
+			       nt_errstr(NT_STATUS_DOS(eclass, ecode)), 
+                               nt_errstr(nterr), location);
                         return False;
                 }
         } else {
