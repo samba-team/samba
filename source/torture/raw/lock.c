@@ -496,14 +496,14 @@ static BOOL test_async(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.lockx.in.timeout = 0;
 	io.lockx.in.mode = LOCKING_ANDX_CANCEL_LOCK;
 	status = smb_raw_lock(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_UNSUCCESSFUL);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRcancelviolation));
 
 	/* cancel with the wrong bits set */
 	lock[0].offset = 100;
 	io.lockx.in.timeout = 0;
 	io.lockx.in.mode = LOCKING_ANDX_CANCEL_LOCK;
 	status = smb_raw_lock(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_UNSUCCESSFUL);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRcancelviolation));
 
 	/* cancel the right range */
 	lock[0].offset = 100;
@@ -640,7 +640,7 @@ static BOOL test_changetype(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	/* windows server don't seem to support this */
 	io.lockx.in.mode = LOCKING_ANDX_CHANGE_LOCKTYPE;
 	status = smb_raw_lock(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_UNSUCCESSFUL);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRnoatomiclocks));
 
 	if (smbcli_write(cli->tree, fnum, 0, &c, 100, 1) == 1) {
 		printf("allowed write after lock change (%s)\n", __location__);
