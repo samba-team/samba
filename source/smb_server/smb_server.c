@@ -528,7 +528,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 
 	/* see if the vuid is valid */
 	if ((flags & AS_USER) && !req->session) {
-		req_reply_error(req, NT_STATUS_DOS(ERRSRV, ERRbaduid));
+		req_reply_error(req, NT_STATUS_INVALID_HANDLE);
 		return;
 	}
 
