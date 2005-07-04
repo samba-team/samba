@@ -124,12 +124,8 @@ struct smbcli_transport {
 
 	/* the error fields from the last message */
 	struct {
-		enum {ETYPE_NONE, ETYPE_DOS, ETYPE_NT, ETYPE_SOCKET, ETYPE_NBT} etype;
+		enum {ETYPE_NONE, ETYPE_SMB, ETYPE_SOCKET, ETYPE_NBT} etype;
 		union {
-			struct {
-				uint8_t eclass;
-				uint16_t ecode;
-			} dos;
 			NTSTATUS nt_status;
 			enum {SOCKET_READ_TIMEOUT,
 			      SOCKET_READ_EOF,

@@ -29,11 +29,7 @@
 const char *smbcli_errstr(struct smbcli_tree *tree)
 {   
 	switch (tree->session->transport->error.etype) {
-	case ETYPE_DOS:
-		return dos_errstr(
-			tree->session->transport->error.e.dos.eclass, 
-			tree->session->transport->error.e.dos.ecode);
-	case ETYPE_NT:
+	case ETYPE_SMB:
 		return nt_errstr(tree->session->transport->error.e.nt_status);
 
 	case ETYPE_SOCKET:
@@ -53,13 +49,9 @@ const char *smbcli_errstr(struct smbcli_tree *tree)
 NTSTATUS smbcli_nt_error(struct smbcli_tree *tree)
 {
 	switch (tree->session->transport->error.etype) {
-	case ETYPE_NT:
+	case ETYPE_SMB:
 		return tree->session->transport->error.e.nt_status;
 
-	case ETYPE_DOS:
-		return dos_to_ntstatus(
-			tree->session->transport->error.e.dos.eclass,
-			tree->session->transport->error.e.dos.ecode);
 	case ETYPE_SOCKET:
 		return NT_STATUS_UNSUCCESSFUL;
 
@@ -74,29 +66,8 @@ NTSTATUS smbcli_nt_error(struct smbcli_tree *tree)
 }
 
 
-/* Return the DOS error from the last packet - an error class and an error
-   code. */
-void smbcli_dos_error(struct smbcli_state *cli, uint8_t *eclass, uint32_t *ecode)
-{
-	if (cli->transport->error.etype == ETYPE_DOS) {
-		ntstatus_to_dos(cli->transport->error.e.nt_status, 
-				eclass, ecode);
-		return;
-	}
-
-	if (eclass) *eclass = cli->transport->error.e.dos.eclass;
-	if (ecode)  *ecode  = cli->transport->error.e.dos.ecode;
-}
-
-
 /* Return true if the last packet was an error */
 BOOL smbcli_is_error(struct smbcli_tree *tree)
 {
 	return NT_STATUS_IS_ERR(smbcli_nt_error(tree));
-}
-
-/* Return true if the last error was a DOS error */
-BOOL smbcli_is_dos_error(struct smbcli_tree *tree)
-{
-	return tree->session->transport->error.etype == ETYPE_DOS;
 }

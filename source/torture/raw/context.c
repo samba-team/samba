@@ -202,11 +202,11 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("the new vuid should not now be accessible\n");
 	status = smb_raw_write(tree, &wr);
-	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRSRV, ERRbaduid));
 
 	printf("second logoff for the new vuid should fail\n");
 	status = smb_raw_ulogoff(session);
-	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRSRV, ERRbaduid));
 	talloc_free(session);
 
 	printf("the fnum should have been auto-closed\n");
