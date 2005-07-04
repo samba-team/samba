@@ -1,9 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   Kerberos backend for GENSEC
+   Create and parse the krb5 PAC
    
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Luke Howard 2002-2003
    Copyright (C) Stefan Metzmacher 2004-2005
@@ -92,8 +92,6 @@ static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx,
 	DATA_BLOB modified_pac_blob = data_blob_talloc(mem_ctx, blob.data, blob.length);
 	int i;
 
-	file_save("/tmp/pac.in", blob.data, blob.length);
-
 	status = ndr_pull_struct_blob(&blob, mem_ctx, &pac_data,
 					(ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -155,8 +153,6 @@ static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx,
 	       '\0', 16);
 	memset(&modified_pac_blob.data[modified_pac_blob.length - 44],
 	       '\0', 16);
-
-	file_save("/tmp/pac.in.blanked", modified_pac_blob.data, modified_pac_blob.length);
 
 	/* verify by service_key */
 	status = check_pac_checksum(mem_ctx, 
@@ -224,9 +220,10 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 				     krb5_context context,
 				     krb5_keyblock *krbtgt_keyblock,
 				     krb5_keyblock *server_keyblock,
-				     krb5_data *pac)
+				     DATA_BLOB *pac)
 {
 	NTSTATUS nt_status;
+	DATA_BLOB zero_blob = data_blob(NULL, 0);
 	DATA_BLOB tmp_blob = data_blob(NULL, 0);
 	DATA_BLOB server_checksum_blob;
 	krb5_error_code ret;
@@ -234,11 +231,19 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	struct netr_SamBaseInfo *sam;
 	struct timeval tv = timeval_current();
 
+	enum {
+		PAC_BUF_LOGON_TYPE = 0,
+		PAC_BUF_LOGON_NAME = 1,
+		PAC_BUF_KDC_CHECKSUM = 2,
+		PAC_BUF_SRV_CHECKSUM = 3,
+		PAC_BUF_NUM_BUFFERS = 4
+	};
+
 	if (!pac_data) {
 		return ENOMEM;
 	}
 
-	pac_data->num_buffers = 4;
+	pac_data->num_buffers = PAC_BUF_NUM_BUFFERS;
 	pac_data->version = 0;
 
 	pac_data->buffers = talloc_array(pac_data, 
@@ -249,9 +254,10 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 		talloc_free(pac_data);
 		return ENOMEM;
 	}
-	pac_data->buffers[0].type = PAC_TYPE_LOGON_INFO;
-	pac_data->buffers[0].info = talloc_zero(pac_data->buffers,
-						union PAC_INFO);
+
+	pac_data->buffers[PAC_BUF_LOGON_TYPE].type = PAC_TYPE_LOGON_INFO;
+	pac_data->buffers[PAC_BUF_LOGON_TYPE].info = talloc_zero(pac_data->buffers,
+								 union PAC_INFO);
 
 	nt_status = auth_convert_server_info_sambaseinfo(pac_data->buffers[0].info,
 							 server_info, &sam);
@@ -261,81 +267,109 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 		return EINVAL;
 	}
 
-	pac_data->buffers[0].info->logon_info.info3.base = *sam;
-
-	pac_data->buffers[1].type = PAC_TYPE_LOGON_NAME;
-	pac_data->buffers[1].info = talloc_zero(pac_data->buffers,
-						union PAC_INFO);
-	pac_data->buffers[1].info->logon_name.account_name
-		= server_info->account_name;
-	pac_data->buffers[1].info->logon_name.logon_time
-		= timeval_to_nttime(&tv);
-
-	pac_data->buffers[2].type = PAC_TYPE_KDC_CHECKSUM;
-	pac_data->buffers[2].info = talloc_zero(pac_data->buffers,
-						union PAC_INFO);
-
-	pac_data->buffers[3].type = PAC_TYPE_SRV_CHECKSUM;
-	pac_data->buffers[3].info = talloc_zero(pac_data->buffers,
-						union PAC_INFO);
+	pac_data->buffers[PAC_BUF_LOGON_TYPE].info->logon_info.info3.base = *sam;
+	pac_data->buffers[PAC_BUF_LOGON_TYPE].size
+		= ndr_size_PAC_INFO(pac_data->buffers[PAC_BUF_LOGON_TYPE].info,
+				    pac_data->buffers[PAC_BUF_LOGON_TYPE].type, 
+				    0);
+	pac_data->buffers[PAC_BUF_LOGON_TYPE]._pad = 0;
 	
-	/* First, just get the keytypes filled in (and lengths right, eventually) */
-	ret = make_pac_checksum(mem_ctx, tmp_blob, &pac_data->buffers[2].info->srv_cksum,
-				context, krbtgt_keyblock);
+	pac_data->buffers[PAC_BUF_LOGON_NAME].type = PAC_TYPE_LOGON_NAME;
+	pac_data->buffers[PAC_BUF_LOGON_NAME].info = talloc_zero(pac_data->buffers,
+						union PAC_INFO);
+	pac_data->buffers[PAC_BUF_LOGON_NAME].info->logon_name.account_name
+		= server_info->account_name;
+	pac_data->buffers[PAC_BUF_LOGON_NAME].info->logon_name.logon_time
+		= timeval_to_nttime(&tv);
+	pac_data->buffers[PAC_BUF_LOGON_NAME].size
+		= ndr_size_PAC_INFO(pac_data->buffers[PAC_BUF_LOGON_NAME].info,
+				    pac_data->buffers[PAC_BUF_LOGON_NAME].type, 
+				    0);
+	pac_data->buffers[PAC_BUF_LOGON_NAME]._pad = 0;
 
-	ret = make_pac_checksum(mem_ctx, tmp_blob, &pac_data->buffers[3].info->srv_cksum,
-				context, server_keyblock);
+
+	pac_data->buffers[PAC_BUF_KDC_CHECKSUM].type = PAC_TYPE_KDC_CHECKSUM;
+	pac_data->buffers[PAC_BUF_KDC_CHECKSUM].info = talloc_zero(pac_data->buffers,
+						union PAC_INFO);
+	/* First, just get the keytypes filled in (and lengths right, eventually) */
+	ret = make_pac_checksum(mem_ctx, zero_blob, 
+				&pac_data->buffers[PAC_BUF_KDC_CHECKSUM].info->kdc_cksum,
+				context, krbtgt_keyblock);
 	if (ret) {
-		DEBUG(2, ("making PAC checksum failed: %s\n", 
+		DEBUG(2, ("making krbtgt PAC checksum failed: %s\n", 
 			  smb_get_krb5_error_message(context, ret, mem_ctx)));
 		talloc_free(pac_data);
 		return ret;
 	}
 
+	pac_data->buffers[PAC_BUF_KDC_CHECKSUM].size
+		= ndr_size_PAC_INFO(pac_data->buffers[PAC_BUF_KDC_CHECKSUM].info,
+				    pac_data->buffers[PAC_BUF_KDC_CHECKSUM].type, 
+				    0);
+	pac_data->buffers[PAC_BUF_KDC_CHECKSUM]._pad = 0;
+
+
+	pac_data->buffers[PAC_BUF_SRV_CHECKSUM].type = PAC_TYPE_SRV_CHECKSUM;
+	pac_data->buffers[PAC_BUF_SRV_CHECKSUM].info = talloc_zero(pac_data->buffers,
+						union PAC_INFO);
+	ret = make_pac_checksum(mem_ctx, zero_blob, 
+				&pac_data->buffers[PAC_BUF_SRV_CHECKSUM].info->srv_cksum,
+				context, server_keyblock);
+	if (ret) {
+		DEBUG(2, ("making server PAC checksum failed: %s\n", 
+			  smb_get_krb5_error_message(context, ret, mem_ctx)));
+		talloc_free(pac_data);
+		return ret;
+	}
+
+	pac_data->buffers[PAC_BUF_SRV_CHECKSUM].size
+		= ndr_size_PAC_INFO(pac_data->buffers[PAC_BUF_SRV_CHECKSUM].info,
+				    pac_data->buffers[PAC_BUF_SRV_CHECKSUM].type, 
+				    0);
+	pac_data->buffers[PAC_BUF_SRV_CHECKSUM]._pad = 0;
+
 	/* But wipe out the actual signatures */
-	ZERO_STRUCT(pac_data->buffers[2].info->kdc_cksum.signature);
-	ZERO_STRUCT(pac_data->buffers[3].info->srv_cksum.signature);
+	ZERO_STRUCT(pac_data->buffers[PAC_BUF_KDC_CHECKSUM].info->kdc_cksum.signature);
+	ZERO_STRUCT(pac_data->buffers[PAC_BUF_SRV_CHECKSUM].info->srv_cksum.signature);
 	
 	nt_status = ndr_push_struct_blob(&tmp_blob, mem_ctx, pac_data,
 					 (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(1, ("PAC push failed: %s\n", nt_errstr(nt_status)));
+		DEBUG(1, ("PAC (presig) push failed: %s\n", nt_errstr(nt_status)));
 		talloc_free(pac_data);
 		return EINVAL;
 	}
-
-	file_save("/tmp/pac.out.blank", tmp_blob.data, tmp_blob.length);
 
 	/* Then sign the result of the previous push, where the sig was zero'ed out */
 	ret = make_pac_checksum(mem_ctx, tmp_blob, &pac_data->buffers[3].info->srv_cksum,
 				context, server_keyblock);
 
 	/* Push the Server checksum out */
-	nt_status = ndr_push_struct_blob(&server_checksum_blob, mem_ctx, &pac_data->buffers[3].info->srv_cksum,
+	nt_status = ndr_push_struct_blob(&server_checksum_blob, mem_ctx, 
+					 &pac_data->buffers[PAC_BUF_SRV_CHECKSUM].info->srv_cksum,
 					 (ndr_push_flags_fn_t)ndr_push_PAC_SIGNATURE_DATA);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(1, ("PAC push failed: %s\n", nt_errstr(nt_status)));
+		DEBUG(1, ("PAC_SIGNATURE push failed: %s\n", nt_errstr(nt_status)));
 		talloc_free(pac_data);
 		return EINVAL;
 	}
 
 	/* Then sign the result of the previous push, where the sig was zero'ed out */
-	ret = make_pac_checksum(mem_ctx, server_checksum_blob, &pac_data->buffers[2].info->kdc_cksum,
+	ret = make_pac_checksum(mem_ctx, server_checksum_blob, 
+				&pac_data->buffers[PAC_BUF_KDC_CHECKSUM].info->kdc_cksum,
 				context, krbtgt_keyblock);
 
 	/* And push it out again, this time to the world.  This relies on determanistic pointer values */
 	nt_status = ndr_push_struct_blob(&tmp_blob, mem_ctx, pac_data,
 					 (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(1, ("PAC push failed: %s\n", nt_errstr(nt_status)));
+		DEBUG(1, ("PAC (final) push failed: %s\n", nt_errstr(nt_status)));
 		talloc_free(pac_data);
 		return EINVAL;
 	}
 
-	file_save("/tmp/pac.out.signed", tmp_blob.data, tmp_blob.length);
+	*pac = tmp_blob;
 
-	ret = krb5_data_copy(pac, tmp_blob.data, tmp_blob.length);
-	
 	talloc_free(pac_data);
 	return ret;
 }

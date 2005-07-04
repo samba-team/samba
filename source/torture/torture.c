@@ -2317,6 +2317,7 @@ static struct {
 	{"LOCAL-BINDING", torture_local_binding_string, 0},
 	{"LOCAL-IDTREE", torture_local_idtree, 0},
 	{"LOCAL-SOCKET", torture_local_socket, 0},
+	{"LOCAL-PAC", torture_pac, 0},
 
 	/* COM (Component Object Model) testers */
 	{"COM-SIMPLE", torture_com_simple, 0 },
