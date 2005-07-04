@@ -57,7 +57,7 @@ P_GLOBAL   = 1
 FOOTER = """##### end of smbparm.y ##########################################
 #################################################################"""
 
-TESTPARM = "/opt/src/samba-cvs/samba-3.0/source/bin/testparm"
+TESTPARM = "/usr/bin/testparm"
 
 ## fields in Samba's parameter table
 displayName = 0
@@ -89,7 +89,7 @@ obj_table = {
 ## First thing is to build the dictionary of parmeter names  ##
 ## based on the output from testparm                         ##
 
-cmd = "/opt/samba/bin/testparm -s -v /dev/null"
+cmd = "/usr/bin/testparm -s -v /dev/null"
 ( status, testparm_output ) = commands.getstatusoutput( cmd )
 if status:
 	sys.stderr.write( "Failed to execute testparm!\n%s\n" % testparm_output )
@@ -111,7 +111,8 @@ for input_str in lines:
 	parts[0] = string.strip( parts[0] )
 	parts[1] = string.strip( parts[1] )
 	key = string.upper( string.join(string.split(parts[0]), "") )
-	def_values[key] = parts[1]
+	new = parts[1].replace('\\', '\\\\')
+	def_values[key] = new
 
 ## open loadparm.c and get the entire list of parameters ##
 ## including synonums                                    ##
@@ -153,6 +154,7 @@ while True:
 		key = string.upper( string.join(string.split(name), "") )
 		var_name = string.strip( parm[variable] )
 		
+
 		## try to catch synonyms -- if the parameter was not reported ##
 		## by testparm, then save it and come back after we will out  ##
 		## the variable list                                          ##
