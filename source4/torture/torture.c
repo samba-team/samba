@@ -185,14 +185,13 @@ NTSTATUS torture_rpc_connection_transport(TALLOC_CTX *parent_ctx,
 BOOL check_error(const char *location, struct smbcli_state *c, 
 		 uint8_t eclass, uint32_t ecode, NTSTATUS nterr)
 {
-        if (smbcli_is_dos_error(c->tree)) {
-                uint8_t class;
-                uint32_t num;
-
-                /* Check DOS error */
-
-                smbcli_dos_error(c, &class, &num);
-
+	NTSTATUS status;
+	
+	status = smbcli_nt_error(c->tree);
+	if (NT_STATUS_IS_DOS(status)) {
+		int class, num;
+		class = NT_STATUS_DOS_CLASS(status);
+		num = NT_STATUS_DOS_CODE(status);
                 if (eclass != class || ecode != num) {
                         printf("unexpected error code class=%d code=%d\n", 
                                (int)class, (int)num);
@@ -200,15 +199,8 @@ BOOL check_error(const char *location, struct smbcli_state *c,
                                (int)eclass, (int)ecode, nt_errstr(nterr), location);
                         return False;
                 }
-
         } else {
-                NTSTATUS status;
-
-                /* Check NT error */
-
-                status = smbcli_nt_error(c->tree);
-
-                if (NT_STATUS_V(nterr) != NT_STATUS_V(status)) {
+                if (!NT_STATUS_EQUAL(nterr, status)) {
                         printf("unexpected error code %s\n", nt_errstr(status));
                         printf(" expected %s (at %s)\n", nt_errstr(nterr), location);
                         return False;
@@ -1354,9 +1346,8 @@ static BOOL run_vuidtest(void)
 		correct = False;
 	}
 
-	if ( (cli->transport->error.etype != ETYPE_DOS) ||
-	     (cli->transport->error.e.dos.eclass != ERRSRV) ||
-	     (cli->transport->error.e.dos.ecode != ERRbaduid) ) {
+	if (!NT_STATUS_EQUAL(cli->transport->error.e.nt_status, 
+			     NT_STATUS_DOS(ERRSRV, ERRbaduid))) {
 		printf("ERROR: qfileinfo should have returned DOS error "
 		       "ERRSRV:ERRbaduid\n  but returned %s\n",
 		       smbcli_errstr(cli->tree));
