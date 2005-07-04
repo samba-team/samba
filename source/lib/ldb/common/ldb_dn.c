@@ -361,22 +361,20 @@ failed:
 char *ldb_dn_linearize(void *mem_ctx, const struct ldb_dn *edn)
 {
 	char *dn, *value;
-	const char *format = "%s=%s";
 	int i;
 
 	dn = talloc_strdup(mem_ctx, "");
 	LDB_DN_NULL_FAILED(dn);
 
 	for (i = 0; i < edn->comp_num; i++) {
-
-		if (i != 0) {
-			format = ",%s=%s";
-		}
-
 		value = ldb_dn_escape_value(dn, edn->components[i].value);
 		LDB_DN_NULL_FAILED(value);
 
-		dn = talloc_asprintf_append(dn, format, edn->components[i].name, value);
+		if (i == 0) {
+			dn = talloc_asprintf_append(dn, "%s=%s", edn->components[i].name, value);
+		} else {
+			dn = talloc_asprintf_append(dn, ",%s=%s", edn->components[i].name, value);
+		}
 		LDB_DN_NULL_FAILED(dn);
 
 		talloc_free(value);
