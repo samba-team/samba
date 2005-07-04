@@ -1156,7 +1156,7 @@ NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
 	struct utimbuf unix_times;
 
 	if (io->generic.level == RAW_CLOSE_SPLCLOSE) {
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_DOS(ERRSRV, ERRerror);
 	}
 
 	if (io->generic.level != RAW_CLOSE_CLOSE) {
