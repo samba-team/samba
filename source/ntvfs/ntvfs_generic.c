@@ -272,7 +272,7 @@ static NTSTATUS map_openx_open(uint16_t flags, uint16_t open_mode,
 			SEC_RIGHTS_FILE_WRITE;
 		break;
 	default:
-		return NT_STATUS_INVALID_LOCK_SEQUENCE;
+		return NT_STATUS_DOS(ERRDOS, ERRbadaccess);
 	}
 
 	switch (open_mode & OPENX_MODE_DENY_MASK) {
@@ -311,7 +311,7 @@ static NTSTATUS map_openx_open(uint16_t flags, uint16_t open_mode,
 		io2->generic.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
 		break;
 	default:
-		return NT_STATUS_INVALID_LOCK_SEQUENCE;
+		return NT_STATUS_DOS(ERRDOS, ERRbadaccess);
 	}
 
 	switch (open_func) {
@@ -336,7 +336,7 @@ static NTSTATUS map_openx_open(uint16_t flags, uint16_t open_mode,
 			io2->generic.in.open_disposition = NTCREATEX_DISP_CREATE;
 			break;
 		}
-		return NT_STATUS_INVALID_LOCK_SEQUENCE;
+		return NT_STATUS_DOS(ERRDOS, ERRbadaccess);
 	}
 
 	return NT_STATUS_OK;
