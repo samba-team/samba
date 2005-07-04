@@ -24,7 +24,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 
-size_t _ndr_size_PAC_INFO(const union PAC_INFO *r, uint32_t level, int flags)
+static size_t _ndr_size_PAC_INFO(const union PAC_INFO *r, uint32_t level, int flags)
 {
 	size_t s = ndr_size_PAC_INFO(r, level, flags);
 	switch (level) {
@@ -35,7 +35,7 @@ size_t _ndr_size_PAC_INFO(const union PAC_INFO *r, uint32_t level, int flags)
 	}
 }
 
-size_t _subcontext_size_PAC_INFO(const union PAC_INFO *r, uint32_t level, int flags)
+static size_t _subcontext_size_PAC_INFO(const union PAC_INFO *r, uint32_t level, int flags)
 {
 	size_t s = ndr_size_PAC_INFO(r, level, flags);
 	return NDR_ROUND(s,8);
