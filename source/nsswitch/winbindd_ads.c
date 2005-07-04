@@ -95,7 +95,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 		return NULL;
 	}
 
-	if (lp_winbind_sfu_support() && (!ads_check_sfu_mapping(ads))) {
+	if (use_nss_info("sfu") && (!ads_check_sfu_mapping(ads))) {
 		DEBUG(0,("ads_cached_connection: failed to check sfu attributes\n"));
 		return NULL;
 	}
@@ -163,7 +163,9 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	i = 0;
 
 	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
-		char *name, *gecos, *homedir, *shell;
+		char *name, *gecos;
+		char *homedir = NULL;
+		char *shell = NULL;
 		uint32 group;
 		uint32 atype;
 
@@ -175,9 +177,11 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 
 		name = ads_pull_username(ads, mem_ctx, msg);
 		gecos = ads_pull_string(ads, mem_ctx, msg, "name");
-		homedir = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_homedir_attr);
-		shell = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_shell_attr);
-
+		if (use_nss_info("sfu")) {
+			homedir = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_homedir_attr);
+			shell = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_shell_attr);
+		}
+	
 		if (!ads_pull_sid(ads, msg, "objectSid",
 				  &(*info)[i].user_sid)) {
 			DEBUG(1,("No sid for %s !?\n", name));
@@ -418,8 +422,11 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	info->acct_name = ads_pull_username(ads, mem_ctx, msg);
 	info->full_name = ads_pull_string(ads, mem_ctx, msg, "name");
-	info->homedir = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_homedir_attr);
-	info->shell = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_shell_attr);
+
+	if (use_nss_info("sfu")) {
+		info->homedir = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_homedir_attr);
+		info->shell = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_shell_attr);
+	}
 
 	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &group_rid)) {
 		DEBUG(1,("No primary group for %s !?\n",
