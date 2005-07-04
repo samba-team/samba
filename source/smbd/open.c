@@ -625,6 +625,7 @@ static int open_mode_check(connection_struct *conn,
 		
 		for(i = 0; i < num_share_modes; i++) {
 			share_mode_entry *share_entry = &old_shares[i];
+			BOOL opb_ret;
 			
 #if defined(DEVELOPER)
 			validate_my_share_entries(i, share_entry);
@@ -639,56 +640,58 @@ static int open_mode_check(connection_struct *conn,
 			 * we must break it before continuing.
 			 */
 
-			if (cause_oplock_break(*p_oplock_request,
-					       share_entry->op_type,
-					       access_mask)) {
-				BOOL opb_ret;
-
-				DEBUG(5,("open_mode_check: oplock_request = "
-					 "%d, breaking oplock (%x) on file "
-					 "%s, dev = %x, inode = %.0f\n",
-					 *p_oplock_request,
-					 share_entry->op_type, fname,
-					 (unsigned int)dev, (double)inode));
-				
-				/* Ensure the reply for the open uses the
-				 * correct sequence number. */
-				/* This isn't a real deferred packet as it's
-				 * response will also increment the sequence.
-				 */
-				srv_defer_sign_response(get_current_mid());
-
-				/* Oplock break - unlock to request it. */
-				unlock_share_entry(conn, dev, inode);
-				
-				opb_ret = request_oplock_break(share_entry);
-				
-				/* Now relock. */
-				lock_share_entry(conn, dev, inode);
-				
-				if(opb_ret == False) {
-					DEBUG(0,("open_mode_check: FAILED when breaking "
-						 "oplock (%x) on file %s, dev = %x, "
-						 "inode = %.0f\n",
-						 old_shares[i].op_type, fname,
-						 (unsigned int)dev, (double)inode));
-					SAFE_FREE(old_shares);
-					set_saved_error_triple(ERRDOS, ERRbadshare,
-							       NT_STATUS_SHARING_VIOLATION);
-					return -1;
+			if (!cause_oplock_break(*p_oplock_request,
+						share_entry->op_type,
+						access_mask)) {
+				if (!LEVEL_II_OPLOCK_TYPE(share_entry->op_type)) {
+					*p_all_current_opens_are_level_II = False;
 				}
-				
-				broken_entry = SMB_MALLOC_P(struct share_mode_entry_list);
-				if (!broken_entry) {
-					smb_panic("open_mode_check: malloc fail.\n");
-				}
-				broken_entry->entry = *share_entry;
-				DLIST_ADD(broken_entry_list, broken_entry);
-				broke_oplock = True;
-				
-			} else if (!LEVEL_II_OPLOCK_TYPE(share_entry->op_type)) {
-				*p_all_current_opens_are_level_II = False;
+				continue;
 			}
+
+			/* This is an oplock break */
+
+			DEBUG(5,("open_mode_check: oplock_request = %d, "
+				 "breaking oplock (%x) on file %s, "
+				 "dev = %x, inode = %.0f\n",
+				 *p_oplock_request, share_entry->op_type,
+				 fname, (unsigned int)dev, (double)inode));
+				
+			/* Ensure the reply for the open uses the correct
+			 * sequence number. */
+			/* This isn't a real deferred packet as it's response
+			 * will also increment the sequence.
+			 */
+			srv_defer_sign_response(get_current_mid());
+
+			/* Oplock break - unlock to request it. */
+			unlock_share_entry(conn, dev, inode);
+				
+			opb_ret = request_oplock_break(share_entry);
+				
+			/* Now relock. */
+			lock_share_entry(conn, dev, inode);
+				
+			if (!opb_ret) {
+				DEBUG(0,("open_mode_check: FAILED when breaking "
+					 "oplock (%x) on file %s, dev = %x, "
+					 "inode = %.0f\n",
+					 old_shares[i].op_type, fname,
+					 (unsigned int)dev, (double)inode));
+				SAFE_FREE(old_shares);
+				set_saved_error_triple(ERRDOS, ERRbadshare,
+						       NT_STATUS_SHARING_VIOLATION);
+				return -1;
+			}
+				
+			broken_entry = SMB_MALLOC_P(struct share_mode_entry_list);
+			if (!broken_entry) {
+				smb_panic("open_mode_check: malloc fail.\n");
+			}
+			broken_entry->entry = *share_entry;
+			DLIST_ADD(broken_entry_list, broken_entry);
+			broke_oplock = True;
+				
 		} /* end for */
 		
 		if (broke_oplock) {
