@@ -38,7 +38,7 @@
 	\RequirePackage{geometry}
 	\geometry{
 	twoside,
-	openright,
+	openleft,
 	papersize={7in,9.25in},
 	lmargin=.75in,
 	rmargin=.75in,
@@ -321,7 +321,8 @@ page \thepage \space undefined}}%
 	backgroundcolor=\color[gray]{0.93},
 	frame=single,
 	frameround=tttt,
-	prebreak={\space\linebreaksign}
+	prebreak={\space\linebreaksign},
+	basicstyle=\small
 }
 
 \newcommand{\smbconfsection}[1]{\emph{#1}}

@@ -8,7 +8,7 @@
 	at compile time.</para>
 
 	<para>This option is used to control the tcp port number used to contact
-	the <link linkend="LDAPSERVER"><parameter moreinfo="none">ldap server</parameter></link>.
+		the <smbconfoption name="ldap server"/>.
 	The default is to use the stand LDAPS port 636.</para>
 </description>
 <related>ldap ssl</related>

@@ -154,9 +154,11 @@
 <xsl:template match="related"><xsl:apply-templates/></xsl:template>
 
 <xsl:template match="//samba:parameterlist">
+	<xsl:text>\begin{description}&#10;</xsl:text>
 	<xsl:apply-templates>
-		<xsl:sort select="varlistentry/term/anchor"/>
+		<xsl:sort select="samba:parameter/@name"/>
 	</xsl:apply-templates>
+	<xsl:text>\end{description}&#10;</xsl:text>
 </xsl:template>
 
 <xsl:template match="value/comment">
@@ -164,12 +166,16 @@
 	<xsl:apply-templates/>
 </xsl:template>
 
+<xsl:template match="/">
+	<xsl:apply-templates/>
+</xsl:template>
+
 <xsl:template match="//samba:parameter">
-	<xsl:text>\subsubsection{</xsl:text><xsl:value-of select="@name"/><xsl:text>}&#10;</xsl:text>
+	<xsl:text>\item[{</xsl:text><xsl:value-of select="@name"/><xsl:text>}]&#10;</xsl:text>
 	<xsl:text>\index{</xsl:text><xsl:value-of select="@name"/><xsl:text>|it}&#10;</xsl:text>
 
 	<xsl:for-each select="synonym">
-	<xsl:text>\subsubsection{</xsl:text><xsl:value-of select="."/><xsl:text>}&#10;</xsl:text>
+	<xsl:text>\item[{</xsl:text><xsl:value-of select="."/><xsl:text>}]&#10;</xsl:text>
 	<xsl:text>\index{</xsl:text><xsl:value-of select="."/><xsl:text>|it}&#10;</xsl:text>
 	<xsl:text>This parameter is a synonym for \smbconfoption{</xsl:text><xsl:value-of select="../@name"/><xsl:text>}.</xsl:text>
 	</xsl:for-each>

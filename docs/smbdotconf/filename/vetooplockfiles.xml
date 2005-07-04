@@ -3,12 +3,12 @@
 				 type="string"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
  <description>
-	<para>This parameter is only valid when the <link linkend="OPLOCKS">
-	<parameter moreinfo="none">oplocks</parameter></link>
+	<para>This parameter is only valid when the 
+			<smbconfoption name="oplocks"/>
 	parameter is turned on for a share. It allows the Samba administrator
 	to selectively turn off the granting of oplocks on selected files that
 	match a wildcarded list, similar to the wildcarded list used in the
-	<link linkend="VETOFILES"><parameter moreinfo="none">veto files</parameter></link> 
+	<smbconfoption name="veto files"/> 
 	parameter.</para>
 
 
