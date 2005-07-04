@@ -138,6 +138,6 @@ krb5_error_code kerberos_encode_pac(TALLOC_CTX *mem_ctx,
 				    krb5_context context,
 				    krb5_keyblock *krbtgt_keyblock,
 				    krb5_keyblock *server_keyblock,
-				    krb5_data *pac);
+				    DATA_BLOB *pac);
 #endif /* HAVE_KRB5 */
 

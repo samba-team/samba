@@ -37,6 +37,7 @@
 	struct auth_serversupplied_info *server_info;
 	char *username, *p;
 	const char *realm;
+	DATA_BLOB tmp_blob;
 	TALLOC_CTX *mem_ctx = talloc_named(config, 0, "samba_get_pac context");
 	if (!mem_ctx) {
 		return ENOMEM;
@@ -73,9 +74,16 @@
 				  context, 
 				  krbtgt_keyblock,
 				  server_keyblock,
-				  pac);
+				  &tmp_blob);
 
+	if (ret) {
+		DEBUG(1, ("PAC encoding failed: %s\n", 
+			  smb_get_krb5_error_message(context, ret, mem_ctx)));
+		talloc_free(mem_ctx);
+		return ret;
+	}
+
+	ret = krb5_data_copy(pac, tmp_blob.data, tmp_blob.length);
 	talloc_free(mem_ctx);
-	
 	return ret;
 }
