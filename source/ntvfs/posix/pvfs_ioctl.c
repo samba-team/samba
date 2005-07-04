@@ -30,7 +30,7 @@
 static NTSTATUS pvfs_ioctl_old(struct ntvfs_module_context *ntvfs,
 			struct smbsrv_request *req, union smb_ioctl *io)
 {
-	return NT_STATUS_UNSUCCESSFUL;
+	return NT_STATUS_DOS(ERRSRV, ERRerror);
 }
 
 /*

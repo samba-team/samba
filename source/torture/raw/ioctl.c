@@ -57,7 +57,7 @@ static BOOL test_ioctl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	ctl.ioctl.in.request = 0xFFFF;
 
 	status = smb_raw_ioctl(cli->tree, mem_ctx, &ctl);
-	CHECK_STATUS(status, NT_STATUS_UNSUCCESSFUL);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRSRV, ERRerror));
 
  	printf("Trying QUERY_JOB_INFO\n");
  	ctl.ioctl.level = RAW_IOCTL_IOCTL;
@@ -65,12 +65,12 @@ static BOOL test_ioctl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	ctl.ioctl.in.request = IOCTL_QUERY_JOB_INFO;
 
 	status = smb_raw_ioctl(cli->tree, mem_ctx, &ctl);
-	CHECK_STATUS(status, NT_STATUS_UNSUCCESSFUL);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRSRV, ERRerror));
 
  	printf("Trying bad handle\n");
 	ctl.ioctl.in.fnum = fnum+1;
 	status = smb_raw_ioctl(cli->tree, mem_ctx, &ctl);
-	CHECK_STATUS(status, NT_STATUS_UNSUCCESSFUL);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRSRV, ERRerror));
 
 done:
 	smbcli_close(cli->tree, fnum);
