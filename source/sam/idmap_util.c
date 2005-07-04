@@ -184,3 +184,17 @@ NTSTATUS idmap_sid_to_gid(const DOM_SID *sid, gid_t *gid, uint32 flags)
 
 	return ret;
 }
+
+/* placeholder for checking lp_winbind_nss_info() */
+BOOL use_nss_info(const char *info)
+{
+	int i;
+	const char **list = lp_winbind_nss_info();
+
+	for (i=0; list[i]; i++) {
+		if (strequal(list[i], info))
+			return True;
+	}
+
+	return False;
+}
