@@ -204,6 +204,7 @@ static BOOL open_file(files_struct *fsp,
 {
 	int accmode = (flags & O_ACCMODE);
 	int local_flags = flags;
+	BOOL file_existed = VALID_STAT(*psbuf);
 
 	fsp->fh->fd = -1;
 	fsp->oplock_type = NO_OPLOCK;
@@ -273,14 +274,13 @@ static BOOL open_file(files_struct *fsp,
 		 * open flags. JRA.
 		 */
 
-		if (VALID_STAT(*psbuf) && S_ISFIFO(psbuf->st_mode)) {
+		if (file_existed && S_ISFIFO(psbuf->st_mode)) {
 			local_flags |= O_NONBLOCK;
 		}
 #endif
 
 		/* Don't create files with Microsoft wildcard characters. */
-		if ((local_flags & O_CREAT) &&
-		    !VALID_STAT(*psbuf) &&
+		if ((local_flags & O_CREAT) && !file_existed &&
 		    ms_has_wild(fname))  {
 			set_saved_error_triple(ERRDOS, ERRinvalidname,
 					       NT_STATUS_OBJECT_NAME_INVALID);
@@ -298,7 +298,7 @@ static BOOL open_file(files_struct *fsp,
 		}
 
 		/* Inherit the ACL if the file was created. */
-		if ((local_flags & O_CREAT) && !VALID_STAT(*psbuf)) {
+		if ((local_flags & O_CREAT) && !file_existed) {
 			inherit_access_acl(conn, fname, unx_mode);
 		}
 
@@ -306,7 +306,7 @@ static BOOL open_file(files_struct *fsp,
 		fsp->fh->fd = -1; /* What we used to call a stat open. */
 	}
 
-	if (!VALID_STAT(*psbuf)) {
+	if (!file_existed) {
 		int ret;
 
 		if (fsp->fh->fd == -1) {
