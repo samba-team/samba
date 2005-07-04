@@ -111,8 +111,7 @@ struct talloc_chunk {
 static struct talloc_chunk *talloc_chunk_from_ptr(const void *ptr)
 {
 	const char *pp = ptr;
-	pp -= TC_HDR_SIZE;
-	struct talloc_chunk *tc = discard_const_p(struct talloc_chunk, pp);
+	struct talloc_chunk *tc = discard_const_p(struct talloc_chunk, pp - TC_HDR_SIZE);
 	if ((tc->flags & ~0xF) != TALLOC_MAGIC) { 
 		TALLOC_ABORT("Bad talloc magic value - unknown value"); 
 	}
