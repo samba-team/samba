@@ -1442,7 +1442,7 @@ acl mynet {
 
 acl seconddns {
         123.45.54.32;
-}
+};
 </screen>
 </example>
 
