@@ -56,7 +56,7 @@ BOOL dcesrv_auth_bind(struct dcesrv_call_state *call)
 
 	status = gensec_server_start(dce_conn, &auth->gensec_security, call->event_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
+		DEBUG(1, ("Failed to start GENSEC for DCERPC server: %s\n", nt_errstr(status)));
 		return False;
 	}
 
@@ -64,8 +64,9 @@ BOOL dcesrv_auth_bind(struct dcesrv_call_state *call)
 					       auth->auth_info->auth_level);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start GENSEC mech-specific server code (%d): %s\n", 
+		DEBUG(1, ("Failed to start GENSEC mechanism for DCERPC server: auth_type=%d, auth_level=%d: %s\n", 
 			  (int)auth->auth_info->auth_type,
+			  (int)auth->auth_info->auth_level,
 			  nt_errstr(status)));
 		return False;
 	}
