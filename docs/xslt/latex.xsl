@@ -219,4 +219,7 @@
 	<xsl:apply-templates select="description"/>
 </xsl:template>
 
+<xsl:template match="refsect1[title='VERSION']"/>
+<xsl:template match="refsect1[title='AUTHOR']"/>
+
 </xsl:stylesheet>
