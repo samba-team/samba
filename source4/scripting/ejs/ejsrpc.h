@@ -30,19 +30,18 @@ typedef NTSTATUS (*ejs_push_function_t)(struct ejs_rpc *, struct MprVar *, const
 
 NTSTATUS ejs_pull_rpc(struct MprVar *v, void *ptr, ejs_pull_function_t ejs_pull);
 NTSTATUS ejs_push_rpc(struct MprVar *v, const void *ptr, ejs_push_function_t ejs_push);
+
+NTSTATUS ejs_pull_uint8(struct ejs_rpc *ejs, 
+			struct MprVar *v, const char *name, uint8_t *r);
+NTSTATUS ejs_push_uint8(struct ejs_rpc *ejs, 
+			struct MprVar *v, const char *name, uint8_t r);
+
+NTSTATUS ejs_pull_uint16(struct ejs_rpc *ejs, 
+			 struct MprVar *v, const char *name, uint16_t *r);
+NTSTATUS ejs_push_uint16(struct ejs_rpc *ejs, 
+			 struct MprVar *v, const char *name, uint16_t r);
+
 NTSTATUS ejs_pull_uint32(struct ejs_rpc *ejs, 
 			 struct MprVar *v, const char *name, uint32_t *r);
 NTSTATUS ejs_push_uint32(struct ejs_rpc *ejs, 
 			 struct MprVar *v, const char *name, uint32_t r);
-
-
-/* echo calls */
-
-#include "librpc/gen_ndr/ndr_echo.h"
-
-NTSTATUS ejs_pull_echo_AddOne(struct ejs_rpc *ejs, 
-			      struct MprVar *v, struct echo_AddOne *r);
-NTSTATUS ejs_push_echo_AddOne(struct ejs_rpc *ejs, 
-			      struct MprVar *v, 
-			      const struct echo_AddOne *r);
-
