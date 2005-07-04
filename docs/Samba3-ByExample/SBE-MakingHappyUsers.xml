@@ -3099,10 +3099,13 @@ maryv:1003:System User
 bldg1$:1006:bldg1$
 
 &rootprompt; net groupmap list
-Domain Admins (S-1-5-21-3504140859-...-2431957765-512) -> Domain Admins
+Domain Admins (S-1-5-21-3504140859-...-2431957765-512) ->
+                                                        Domain Admins
 Domain Users (S-1-5-21-3504140859-...-2431957765-513) -> Domain Users
-Domain Guests (S-1-5-21-3504140859-...-2431957765-514) -> Domain Guests
-Administrators (S-1-5-21-3504140859-...-2431957765-544) -> Administrators
+Domain Guests (S-1-5-21-3504140859-...-2431957765-514) -> 
+                                                        Domain Guests
+Administrators (S-1-5-21-3504140859-...-2431957765-544) ->
+                                                       Administrators
 ...
 Accounts (S-1-5-21-3504140859-1010554828-2431957765-3001) -> Accounts
 Finances (S-1-5-21-3504140859-1010554828-2431957765-3003) -> Finances
