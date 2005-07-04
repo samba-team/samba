@@ -552,6 +552,25 @@ static void free_broken_entry_list(struct share_mode_entry_list *broken_entry_li
 	}
 }
 
+static BOOL cause_oplock_break(int request, int existing, uint32 access_mask)
+{
+	if ((access_mask == DELETE_ACCESS) &&
+	    (request == NO_OPLOCK)) {
+		/* This is a delete request */
+		return (BATCH_OPLOCK_TYPE(existing) != 0);
+	}
+
+	if (EXCLUSIVE_OPLOCK_TYPE(existing) && (request != NO_OPLOCK)) {
+		return True;
+	}
+
+	if ((existing != NO_OPLOCK) && (request == NO_OPLOCK)) {
+		return True;
+	}
+
+	return False;
+}
+
 /****************************************************************************
  Deal with open deny mode and oplock break processing.
  Invarient: Share mode must be locked on entry and exit.
@@ -605,7 +624,6 @@ static int open_mode_check(connection_struct *conn,
 		*p_all_current_opens_are_level_II = True;
 		
 		for(i = 0; i < num_share_modes; i++) {
-			BOOL cause_oplock_break = False;
 			share_mode_entry *share_entry = &old_shares[i];
 			
 #if defined(DEVELOPER)
@@ -620,20 +638,10 @@ static int open_mode_check(connection_struct *conn,
 			 * Check if someone has an oplock on this file. If so
 			 * we must break it before continuing.
 			 */
-			
-			/* Was this a delete this file request ? */
-			if (!*p_oplock_request && access_mask == DELETE_ACCESS &&
-			    !BATCH_OPLOCK_TYPE(share_entry->op_type)) {
-				/* Don't break the oplock in this case. */
-				cause_oplock_break = False;
-			} else if((*p_oplock_request &&
-				   EXCLUSIVE_OPLOCK_TYPE(share_entry->op_type)) ||
-				  (!*p_oplock_request &&
-				   (share_entry->op_type != NO_OPLOCK))) {
-				cause_oplock_break = True;
-			}
 
-			if(cause_oplock_break) {
+			if (cause_oplock_break(*p_oplock_request,
+					       share_entry->op_type,
+					       access_mask)) {
 				BOOL opb_ret;
 
 				DEBUG(5,("open_mode_check: oplock_request = "
