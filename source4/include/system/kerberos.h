@@ -20,10 +20,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/* setup correct defines for capabilities of our version of heimdal */
-/* Whether to have KRB5 support */
-#define HAVE_KRB5 1
-
 /* Whether the krb5_address struct has a addrtype property */
 /* #undef HAVE_ADDRTYPE_IN_KRB5_ADDRESS */
 /* Whether the krb5_address struct has a addr_type property */
