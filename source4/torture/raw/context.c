@@ -31,7 +31,7 @@
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%s) Incorrect status %s - should be %s\n", \
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = False; exit(1); \
+		ret = False; \
 		goto done; \
 	}} while (0)
 
