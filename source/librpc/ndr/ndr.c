@@ -325,9 +325,9 @@ NTSTATUS ndr_push_error(struct ndr_push *ndr, enum ndr_err_code err, const char 
   we use magic in pidl to make them easier to cope with
 */
 NTSTATUS ndr_pull_subcontext_header(struct ndr_pull *ndr, 
-					   size_t header_size,
-					   ssize_t size_is,
-					   struct ndr_pull *ndr2)
+				    size_t header_size,
+				    ssize_t size_is,
+				    struct ndr_pull *ndr2)
 {
 	ndr2->flags = ndr->flags;
 
@@ -704,7 +704,7 @@ size_t ndr_size_union(const void *p, int flags, uint32_t level, ndr_push_flags_f
 	if (!ndr) return 0;
 	ndr->flags |= flags | LIBNDR_FLAG_NO_NDR_SIZE;
 	ndr_push_set_switch_value(ndr, p, level);
-	status = push(ndr, NDR_SCALARS|NDR_BUFFERS, discard_const(p));
+	status = push(ndr, NDR_SCALARS|NDR_BUFFERS, p);
 	if (!NT_STATUS_IS_OK(status)) {
 		return 0;
 	}
