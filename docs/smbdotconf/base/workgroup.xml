@@ -7,7 +7,7 @@
         <para>This controls what workgroup your server will 
 	appear to be in when queried by clients. Note that this parameter 
 	also controls the Domain name used with 
-        the <link linkend="SECURITYEQUALSDOMAIN"><command moreinfo="none">security = domain</command></link>
+	the <smbconfoption name="security">domain</smbconfoption>
 		setting.</para>
 </description>
 <value type="default">WORKGROUP</value>

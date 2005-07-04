@@ -13,11 +13,11 @@
 	If set to <constant>no</constant> Samba will never produce these 
 	broadcasts. If set to <constant>yes</constant> Samba will produce 
 	Lanman announce broadcasts at a frequency set by the parameter 
-	<parameter moreinfo="none">lm interval</parameter>. If set to <constant>auto</constant> 
+	<smbconfoption name="lm interval"/>. If set to <constant>auto</constant> 
 	Samba will not send Lanman announce broadcasts by default but will 
 	listen for them. If it hears such a broadcast on the wire it will 
 	then start sending them at a frequency set by the parameter 
-	<parameter moreinfo="none">lm interval</parameter>.</para>
+	<smbconfoption name="lm interval"/>.</para>
 </description>
 
 <related>lm interval</related>

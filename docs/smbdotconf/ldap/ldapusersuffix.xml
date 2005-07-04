@@ -5,7 +5,7 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter specifies where users are added to the tree. 
-	If this parameter is not specified, the value from <command>ldap suffix</command>.</para>
+		If this parameter is not specified, the value from <smbconfoption name="ldap suffix"/>.</para>
 
 </description>
 <value type="default"/>

@@ -13,8 +13,8 @@
 	<para>If this is set to <constant>yes</constant>, on startup, <command moreinfo="none">nmbd</command> 
 	will force an election, and it will have a slight advantage in 
 	winning the election.  It is recommended that this parameter is 
-	used in conjunction with <command moreinfo="none"><link linkend="DOMAINMASTER">
-	<parameter moreinfo="none">domain master</parameter></link> = yes</command>, so 
+	used in conjunction with 
+			<smbconfoption name="domain master">yes</smbconfoption>, so 
 	that <command moreinfo="none">nmbd</command> can guarantee becoming a domain master.</para>
 		
 	<para>Use this option with caution, because if there are several 

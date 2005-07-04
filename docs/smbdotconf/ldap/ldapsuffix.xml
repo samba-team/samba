@@ -5,9 +5,8 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>Specifies where user and machine accounts are added to the
-	tree. Can be overriden by <command moreinfo="none">ldap user
-	suffix</command> and <command moreinfo="none">ldap machine
-	suffix</command>. It also used as the base dn for all ldap
+		tree. Can be overriden by <smbconfoption name="ldap user suffix"/> and 
+		<smbconfoption name="ldap machine suffix"/>. It also used as the base dn for all ldap
 searches. </para>
 </description>
 <value type="default"></value>

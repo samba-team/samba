@@ -5,8 +5,7 @@
 <description>
 	<para> This controls if new filenames are created
 	with the case that the client passes, or if they are forced to 
-	be the <link linkend="DEFAULTCASE"><parameter moreinfo="none">default case
-	</parameter></link>.</para>
+	be the <smbconfoption name="default case"/>.</para>
 	<para>See the section on <link linkend="NAMEMANGLINGSECT">NAME MANGLING</link> for a fuller discussion.</para>
 </description>
 

@@ -6,7 +6,7 @@
 <description>
 	<para>This parameters specifies the suffix that is 
 	used when storing idmap mappings. If this parameter 
-	is unset, the value of <parameter>ldap suffix</parameter>
+	is unset, the value of <smbconfoption name="ldap suffix"/>
 	will be used instead.</para>
 </description>
 <value type="default"></value>

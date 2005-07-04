@@ -10,10 +10,9 @@
 	any file it touches from becoming executable under UNIX.  This can 
 	be quite annoying for shared source code, documents, etc...</para>
 
-	<para>Note that this requires the <parameter moreinfo="none">create mask</parameter>
+<para>Note that this requires the <smbconfoption name="create mask"/>
 	parameter to be set such that owner execute bit is not masked out 
-	(i.e. it must include 100). See the parameter <link linkend="CREATEMASK">
-	<parameter moreinfo="none">create mask</parameter></link> for details.</para>
+	(i.e. it must include 100). See the parameter <smbconfoption name="create mask"/> for details.</para>
 </description>
 
 <value type="default">yes</value>

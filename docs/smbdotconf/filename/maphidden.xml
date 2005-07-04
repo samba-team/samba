@@ -6,10 +6,9 @@
 	<para>This controls whether DOS style hidden files 
 	should be mapped to the UNIX world execute bit.</para>
 
-	<para>Note that this requires the <parameter moreinfo="none">create mask</parameter> 
+<para>Note that this requires the <smbconfoption name="create mask"/> 
 	to be set such that the world execute bit is not masked out (i.e. 
-	it must include 001). See the parameter <link linkend="CREATEMASK">
-	<parameter moreinfo="none">create mask</parameter></link> for details.</para>
+	it must include 001). See the parameter <smbconfoption name="create mask"/> for details.</para>
 
 </description>
 <value type="boolean">no</value>

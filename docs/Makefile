@@ -151,16 +151,16 @@ $(PDFDIR)/%.pdf: %.pdf
 
 	@echo >> $@
 	@echo "\$$(HTMLDIR)/%: $*/%" >> $@
-	@echo "	mkdir -p \$$(@D)" >> $@
-	@echo "	cp \$$< \$$@" >> $@
+	@echo "	@mkdir -p \$$(@D)" >> $@
+	@echo "	@cp \$$< \$$@" >> $@
 	@echo >> $@
 	@echo "\$$(HTMLDIR)/$*/%: $*/%" >> $@
-	@echo "	mkdir -p \$$(@D)" >> $@
-	@echo "	cp \$$< \$$@" >> $@
+	@echo "	@mkdir -p \$$(@D)" >> $@
+	@echo "	@cp \$$< \$$@" >> $@
 	@echo >> $@
 	@echo "\$$(HTMLHELPDIR)/$*/%: $*/%" >> $@
-	@echo "	mkdir -p \$$(@D)" >> $@
-	@echo "	cp \$$< \$$@" >> $@
+	@echo "	@mkdir -p \$$(@D)" >> $@
+	@echo "	@cp \$$< \$$@" >> $@
 	@echo >> $@
 	@echo "$*-images-html-single: \$$(addprefix \$$(HTMLDIR)/, \$$($*-images-html))" >> $@
 	@echo "$*-images-html-chunks: \$$(addprefix \$$(HTMLDIR)/$*/, \$$($*-images-html))" >> $@
@@ -187,10 +187,10 @@ $(DVIDIR)/%.dvi: %.dvi
 	-$(LATEX) $< 
 
 %.eps: %.dia
-	$(DIA) -t eps-builtin -e $@ $<
+	@$(DIA) -t eps-builtin -e $@ $<
 
 %.png: %.dia
-	$(DIA) -e $@ $<
+	@$(DIA) -e $@ $<
 
 %.pdf: %.eps
 	$(EPSTOPDF) $<
