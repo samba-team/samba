@@ -50,7 +50,7 @@
 	textwidth=5in,
 	headsep=.25in,
 	footskip=.025in}
-	\usepackage[letter,cam,cross,center]{crop}
+	%\usepackage[letter,cam,cross,center]{crop}
 \fi
 
 %====================== Define special fonts
