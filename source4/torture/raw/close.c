@@ -135,7 +135,7 @@ BOOL torture_raw_close(void)
 	io.splclose.level = RAW_CLOSE_SPLCLOSE;
 	io.splclose.in.fnum = fnum;
 	status = smb_raw_close(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_UNSUCCESSFUL);
+	CHECK_STATUS(status, NT_STATUS_DOS(ERRSRV, ERRerror));
 
 	printf("testing flush\n");
 	smbcli_close(cli->tree, fnum);
