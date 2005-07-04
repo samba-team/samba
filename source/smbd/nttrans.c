@@ -677,7 +677,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n",
 						 NT_STATUS_EQUAL(status,NT_STATUS_CANNOT_DELETE))) {
 			restore_case_semantics(conn, file_attributes);
 			END_PROFILE(SMBntcreateX);
-			return ERROR_NT(status);
+			return ERROR_NT(NT_STATUS_ACCESS_DENIED);
 		}
 	}
 
