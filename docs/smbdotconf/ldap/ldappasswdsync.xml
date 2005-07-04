@@ -11,8 +11,7 @@
 	change via SAMBA.  
 	</para>
 
-	<para>The <parameter moreinfo="none">ldap passwd
-	sync</parameter> can be set to one of three values: </para>
+	<para>The <smbconfoption name="ldap passwd sync"/> can be set to one of three values: </para>
 	
 	<itemizedlist>
 		<listitem>

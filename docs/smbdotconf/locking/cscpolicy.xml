@@ -11,8 +11,7 @@
 	<para>These values correspond to those used on Windows servers.</para>
 
 	<para>For example, shares containing roaming profiles can have
-	offline caching disabled using <command 
-	moreinfo="none">csc policy = disable</command>.</para>
+		offline caching disabled using <smbconfoption name="csc policy">disable</smbconfoption>.</para>
 </description>
 <value type="default">manual</value>
 <value type="example">programs</value>

@@ -13,7 +13,7 @@
 	must <emphasis>not</emphasis> include the  unix directory 
 	separator '/'.</para>
 
-	<para>Note that the <parameter moreinfo="none">case sensitive</parameter> option 
+<para>Note that the <smbconfoption name="case sensitive"/> option 
 	is applicable in vetoing files.</para>
 		
 	<para>One feature of the veto files parameter that it
@@ -21,7 +21,7 @@
 	trying to delete a directory. If a directory that is
 	to be deleted contains nothing but veto files this
 	deletion will <emphasis>fail</emphasis> unless you also set
-	the <parameter moreinfo="none">delete veto files</parameter> parameter to
+	the <smbconfoption name="delete veto files"/> parameter to
 	<parameter moreinfo="none">yes</parameter>.</para>
 
 	<para>Setting this parameter will affect the performance 

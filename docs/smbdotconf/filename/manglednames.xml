@@ -7,7 +7,7 @@
 	should be mapped to DOS-compatible names (&quot;mangled&quot;) and made visible, 
 	or whether non-DOS names should simply be ignored.</para>
 
-	<para>See the section on <link linkend="NAMEMANGLINGSECT">NAME MANGLING</link> for 
+<para>See the section on <smbconfoption name="name mangling"/> for 
 	details on how to control the mangling process.</para>
 
 	<para>If mangling is used then the mangling algorithm is as follows:</para>
@@ -29,8 +29,8 @@
 			characters.</para>
 
 			<para>Note that the character to use may be specified using 
-			the <link linkend="MANGLINGCHAR"><parameter moreinfo="none">mangling char</parameter>
-			</link> option, if you don't like '~'.</para>
+				the <smbconfoption name="mangling char"/>
+			option, if you don't like '~'.</para>
 		</listitem>
 
 		<listitem>

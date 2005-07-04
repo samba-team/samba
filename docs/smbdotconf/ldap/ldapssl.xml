@@ -11,7 +11,7 @@
 	<command moreinfo="none">--with-ssl</command> option to the <filename moreinfo="none">configure</filename> 
 	script.</para>
 		
-	<para>The <parameter moreinfo="none">ldap ssl</parameter> can be set to one of three values:</para>	
+<para>The <smbconfoption name="ldap ssl"/> can be set to one of three values:</para>	
 	<itemizedlist>
 		<listitem>
 			<para><parameter moreinfo="none">Off</parameter> = Never 
@@ -30,8 +30,7 @@
 			moreinfo="none">ldap server</parameter>. Only available when the 
 			backwards-compatiblity <command 
 			moreinfo="none">--with-ldapsam</command> option is specified
-			to configure. See <link linkend="PASSDBBACKEND"><parameter 
-			moreinfo="none">passdb backend</parameter></link></para>
+		to configure. See <smbconfoption name="passdb backend"/></para>
 		</listitem>
 	</itemizedlist>		
 </description>

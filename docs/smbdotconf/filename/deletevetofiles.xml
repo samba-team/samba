@@ -5,7 +5,7 @@
 <description>
 	<para>This option is used when Samba is attempting to 
 	delete a directory that contains one or more vetoed directories 
-	(see the <link linkend="VETOFILES"><parameter moreinfo="none">veto files</parameter></link>
+	(see the <smbconfoption name="veto files"/>
 	option).  If this option is set to <constant>no</constant> (the default) then if a vetoed 
 	directory contains any non-vetoed files or directories then the 
 	directory delete will fail. This is usually what you want.</para>
@@ -17,7 +17,7 @@
 	directories you might normally veto DOS/Windows users from seeing 
 	(e.g. <filename moreinfo="none">.AppleDouble</filename>)</para>
 
-	<para>Setting <command moreinfo="none">delete veto files = yes</command> allows these 
+<para>Setting <smbconfoption name="delete veto files">yes</smbconfoption> allows these 
 	directories to be  transparently deleted when the parent directory 
 	is deleted (so long as the user has permissions to do so).</para>
 </description>
