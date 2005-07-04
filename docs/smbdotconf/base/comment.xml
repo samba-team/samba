@@ -10,8 +10,7 @@
 	are available.</para>
 
 	<para>If you want to set the string that is displayed next to the 
-	machine name then see the <link linkend="SERVERSTRING"><parameter moreinfo="none">
-	server string</parameter></link> parameter.</para>
+		machine name then see the <smbconfoption name="server string"/> parameter.</para>
 
 </description>
 <value type="default"><comment>No comment</comment></value>

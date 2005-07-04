@@ -14,7 +14,7 @@
 	<para>So to map <filename moreinfo="none">html</filename> to <filename moreinfo="none">htm</filename> 
 	you would use:</para>
 		
-	<para><command moreinfo="none">mangled map = (*.html *.htm)</command></para>
+<para><smbconfoption name="mangled map">(*.html *.htm)</smbconfoption>.</para>
 
 	<para>One very useful case is to remove the annoying <filename moreinfo="none">;1
 	</filename> off the ends of filenames on some CDROMs (only visible 

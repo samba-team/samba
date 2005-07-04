@@ -7,7 +7,7 @@ AC_ARG_WITH(samba-sources,
 LATEX_DOCUMENTCLASS_OPTIONS="letterpaper,11pt,openright,twoside"
 AC_ARG_ENABLE(prentice-hall,
 [ --enable-prentice-hall     Produce Prentice-Hall compatible output],
-[ test "$enableval" && LATEX_DOCUMENTCLASS_OPTIONS="letterpaper,10pt,openright,twoside,ph" ])
+[ test "$enableval" && LATEX_DOCUMENTCLASS_OPTIONS="letterpaper,10pt,openleft,twoside,ph" ])
 AC_SUBST(LATEX_DOCUMENTCLASS_OPTIONS)
 
 DOC_BUILD_DATE=`date '+%d-%m-%Y'`

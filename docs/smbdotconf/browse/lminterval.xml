@@ -5,11 +5,11 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>If Samba is set to produce Lanman announce 
-	broadcasts needed by OS/2 clients (see the <link linkend="LMANNOUNCE">
-	<parameter moreinfo="none">lm announce</parameter></link> parameter) then this 
+	broadcasts needed by OS/2 clients (see the 
+		<smbconfoption name="lm announce"/> parameter) then this 
 	parameter defines the frequency in seconds with which they will be 
 	made.  If this is set to zero then no Lanman announcements will be 
-	made despite the setting of the <parameter moreinfo="none">lm announce</parameter> 
+	made despite the setting of the <smbconfoption name="lm announce"/> 
 	parameter.</para>
 </description>
 <related>lm announce</related>

@@ -6,7 +6,7 @@
 <description>
         <para>Specifies the charset that samba will use 
 	to print messages to stdout and stderr and SWAT will use. 
-	Should generally be the same as the <command moreinfo="none">unix charset</command>.
+	Should generally be the same as the <smbconfoption name="unix charset"/>.
 </para>
 </description>
 

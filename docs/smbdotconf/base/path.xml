@@ -22,8 +22,8 @@
 	connecting from. These replacements are very useful for setting 
 	up pseudo home directories for users.</para>
 
-	<para>Note that this path will be based on <link linkend="ROOTDIR">
-	<parameter moreinfo="none">root dir</parameter></link> if one was specified.</para>
+<para>Note that this path will be based on <smbconfoption name="root dir"/>
+	 if one was specified.</para>
 	</description>
 
 	<value type="default"></value>
