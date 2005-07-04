@@ -177,7 +177,6 @@ typedef struct
 	BOOL bWinbindUseDefaultDomain;
 	BOOL bWinbindTrustedDomainsOnly;
 	BOOL bWinbindNestedGroups;
-	char *szWinbindBackend;
 	char **szIdmapBackend;
 	char *szAddShareCommand;
 	char *szChangeShareCommand;
