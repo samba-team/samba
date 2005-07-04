@@ -135,7 +135,6 @@
 #define ERRuseMPX 250 /* temporarily unable to use raw mode, use MPX mode */
 #define ERRuseSTD 251 /* temporarily unable to use raw mode, use standard mode */
 #define ERRcontMPX 252 /* resume MPX mode */
-#define ERRbadPW /* reserved */
 #define ERRnosupport 0xFFFF
 #define ERRunknownsmb 22 /* from NT 3.5 response */
 
