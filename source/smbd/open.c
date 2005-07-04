@@ -394,19 +394,26 @@ static BOOL share_conflict(connection_struct *conn,
 		return False;
 	}
 
-	DEBUG(10,("share_conflict: entry->access_mask = 0x%x, entry->share_access = 0x%x, entry->create_options = 0x%x\n",
-		(unsigned int)entry->access_mask, (unsigned int)entry->share_access, (unsigned int)entry->create_options));
+	DEBUG(10,("share_conflict: entry->access_mask = 0x%x, "
+		  "entry->share_access = 0x%x, entry->create_options = 0x%x\n",
+		  (unsigned int)entry->access_mask,
+		  (unsigned int)entry->share_access,
+		  (unsigned int)entry->create_options));
 
-	DEBUG(10,("share_conflict: access_mask = 0x%x, share_access = 0x%x, create_options = 0x%x\n",
-		(unsigned int)access_mask, (unsigned int)share_access, (unsigned int)create_options));
+	DEBUG(10,("share_conflict: access_mask = 0x%x, share_access = 0x%x, "
+		  "create_options = 0x%x\n",
+		  (unsigned int)access_mask,
+		  (unsigned int)share_access,
+		  (unsigned int)create_options));
 
 	if ((entry->access_mask & (FILE_WRITE_DATA|
 				   FILE_APPEND_DATA|
 				   FILE_READ_DATA|
 				   FILE_EXECUTE|
 				   DELETE_ACCESS)) == 0) {
-		DEBUG(10,("share_conflict: No conflict due to entry->access_mask = 0x%x\n",
-			(unsigned int)entry->access_mask ));
+		DEBUG(10,("share_conflict: No conflict due to "
+			  "entry->access_mask = 0x%x\n",
+			  (unsigned int)entry->access_mask ));
 		return False;
 	}
 
@@ -415,17 +422,20 @@ static BOOL share_conflict(connection_struct *conn,
 			    FILE_READ_DATA|
 			    FILE_EXECUTE|
 			    DELETE_ACCESS)) == 0) {
-		DEBUG(10,("share_conflict: No conflict due to access_mask = 0x%x\n",
-			(unsigned int)access_mask ));
+		DEBUG(10,("share_conflict: No conflict due to "
+			  "access_mask = 0x%x\n",
+			  (unsigned int)access_mask ));
 		return False;
 	}
 
 #if 1 /* JRA TEST - Superdebug. */
 #define CHECK_MASK(num, am, right, sa, share) \
 	DEBUG(10,("share_conflict: [%d] am (0x%x) & right (0x%x) = 0x%x\n", \
-		(unsigned int)(num), (unsigned int)(am), (unsigned int)(right), (unsigned int)(am)&(right) )); \
+		(unsigned int)(num), (unsigned int)(am), \
+		(unsigned int)(right), (unsigned int)(am)&(right) )); \
 	DEBUG(10,("share_conflict: [%d] sa (0x%x) & share (0x%x) = 0x%x\n", \
-		(unsigned int)(num), (unsigned int)(sa), (unsigned int)(share), (unsigned int)(sa)&(share) )); \
+		(unsigned int)(num), (unsigned int)(sa), \
+		(unsigned int)(share), (unsigned int)(sa)&(share) )); \
 	if (((am) & (right)) && !((sa) & (share))) { \
 		DEBUG(10,("share_conflict: check %d conflict am = 0x%x, right = 0x%x, \
 sa = 0x%x, share = 0x%x\n", (num), (unsigned int)(am), (unsigned int)(right), (unsigned int)(sa), \
@@ -462,10 +472,13 @@ sa = 0x%x, share = 0x%x\n", (num), (unsigned int)(am), (unsigned int)(right), (u
 	/* if a delete is pending then a second open is not allowed */
 	if ((entry->create_options & FILE_DELETE_ON_CLOSE) ||
 			(create_options & FILE_DELETE_ON_CLOSE)) {
-		DEBUG(10,("share_conflict: conflict due to delete on close (entry options = 0x%x \
-create options = 0x%x\n", (unsigned int)entry->create_options, (unsigned int)create_options ));
+		DEBUG(10,("share_conflict: conflict due to delete on close "
+			  "(entry options = 0x%x create options = 0x%x\n",
+			  (unsigned int)entry->create_options,
+			  (unsigned int)create_options ));
 		/* Is this the right error ? */
-		set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
+		set_saved_error_triple(ERRDOS, ERRbadshare,
+				       NT_STATUS_SHARING_VIOLATION);
 		return True;
 	}
 
@@ -544,11 +557,12 @@ static int open_mode_check(connection_struct *conn,
 	}
 	
 	if (access_mask &&
-			((access_mask & ~(SYNCHRONIZE_ACCESS| FILE_READ_ATTRIBUTES|
-				FILE_WRITE_ATTRIBUTES))==0) &&
-			((access_mask & (SYNCHRONIZE_ACCESS|FILE_READ_ATTRIBUTES|
-				FILE_WRITE_ATTRIBUTES)) != 0)) {
-		/* Stat open that doesn't trigger oplock breaks or share mode checks... ! JRA. */
+	    ((access_mask & ~(SYNCHRONIZE_ACCESS| FILE_READ_ATTRIBUTES|
+			      FILE_WRITE_ATTRIBUTES))==0) &&
+	    ((access_mask & (SYNCHRONIZE_ACCESS|FILE_READ_ATTRIBUTES|
+			     FILE_WRITE_ATTRIBUTES)) != 0)) {
+		/* Stat open that doesn't trigger oplock breaks or share mode
+		 * checks... ! JRA. */
 		SAFE_FREE(old_shares);
 		return num_share_modes;
 	}
@@ -573,32 +587,40 @@ static int open_mode_check(connection_struct *conn,
 #endif
 
 			/* 
-			 * By observation of NetBench, oplocks are broken *before* share
-			 * modes are checked. This allows a file to be closed by the client
-			 * if the share mode would deny access and the client has an oplock. 
-			 * Check if someone has an oplock on this file. If so we must break 
-			 * it before continuing. 
+			 * By observation of NetBench, oplocks are broken
+			 * *before* share modes are checked. This allows a
+			 * file to be closed by the client if the share mode
+			 * would deny access and the client has an oplock.
+			 * Check if someone has an oplock on this file. If so
+			 * we must break it before continuing.
 			 */
 			
 			/* Was this a delete this file request ? */
 			if (!*p_oplock_request && access_mask == DELETE_ACCESS &&
-					!BATCH_OPLOCK_TYPE(share_entry->op_type)) {
+			    !BATCH_OPLOCK_TYPE(share_entry->op_type)) {
 				/* Don't break the oplock in this case. */
 				cause_oplock_break = False;
-			} else if((*p_oplock_request && EXCLUSIVE_OPLOCK_TYPE(share_entry->op_type)) ||
-			   (!*p_oplock_request && (share_entry->op_type != NO_OPLOCK))) {
+			} else if((*p_oplock_request &&
+				   EXCLUSIVE_OPLOCK_TYPE(share_entry->op_type)) ||
+				  (!*p_oplock_request &&
+				   (share_entry->op_type != NO_OPLOCK))) {
 				cause_oplock_break = True;
 			}
 
 			if(cause_oplock_break) {
 				BOOL opb_ret;
 
-				DEBUG(5,("open_mode_check: oplock_request = %d, breaking oplock (%x) on file %s, \
-dev = %x, inode = %.0f\n", *p_oplock_request, share_entry->op_type, fname, (unsigned int)dev, (double)inode));
+				DEBUG(5,("open_mode_check: oplock_request = "
+					 "%d, breaking oplock (%x) on file "
+					 "%s, dev = %x, inode = %.0f\n",
+					 *p_oplock_request,
+					 share_entry->op_type, fname,
+					 (unsigned int)dev, (double)inode));
 				
-				/* Ensure the reply for the open uses the correct sequence number. */
-				/* This isn't a real deferred packet as it's response will also increment
-				 * the sequence.
+				/* Ensure the reply for the open uses the
+				 * correct sequence number. */
+				/* This isn't a real deferred packet as it's
+				 * response will also increment the sequence.
 				 */
 				srv_defer_sign_response(get_current_mid());
 
@@ -611,10 +633,14 @@ dev = %x, inode = %.0f\n", *p_oplock_request, share_entry->op_type, fname, (unsi
 				lock_share_entry(conn, dev, inode);
 				
 				if(opb_ret == False) {
-					DEBUG(0,("open_mode_check: FAILED when breaking oplock (%x) on file %s, \
-dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (double)inode));
+					DEBUG(0,("open_mode_check: FAILED when breaking "
+						 "oplock (%x) on file %s, dev = %x, "
+						 "inode = %.0f\n",
+						 old_shares[i].op_type, fname,
+						 (unsigned int)dev, (double)inode));
 					SAFE_FREE(old_shares);
-					set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
+					set_saved_error_triple(ERRDOS, ERRbadshare,
+							       NT_STATUS_SHARING_VIOLATION);
 					return -1;
 				}
 				
@@ -652,34 +678,42 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
                         }
 		}
 
-		for(broken_entry = broken_entry_list; broken_entry; broken_entry = broken_entry->next) {
+		for(broken_entry = broken_entry_list; broken_entry;
+		    broken_entry = broken_entry->next) {
 			oplock_contention_count++;
 			
 			/* Paranoia check that this is no longer an exlusive entry. */
 			for(i = 0; i < num_share_modes; i++) {
 				share_mode_entry *share_entry = &old_shares[i];
 				
-				if (share_modes_identical(&broken_entry->entry, share_entry) && 
-					    EXCLUSIVE_OPLOCK_TYPE(share_entry->op_type) ) {
+				if (share_modes_identical(&broken_entry->entry,
+							  share_entry) && 
+				    EXCLUSIVE_OPLOCK_TYPE(share_entry->op_type) ) {
 					
 					/*
 					 * This should not happen. The target left this oplock
 					 * as exlusive.... The process *must* be dead.... 
 					 */
 					
-					DEBUG(0,("open_mode_check: exlusive oplock left by process %d \
-after break ! For file %s, dev = %x, inode = %.0f. Deleting it to continue...\n",
-						(int)broken_entry->entry.pid, fname, (unsigned int)dev, (double)inode));
+					DEBUG(0,("open_mode_check: exlusive oplock left by "
+						 "process %d after break ! For file %s, "
+						 "dev = %x, inode = %.0f. Deleting it to "
+						 "continue...\n",
+						(int)broken_entry->entry.pid, fname,
+						 (unsigned int)dev, (double)inode));
 					
 					if (process_exists(broken_entry->entry.pid)) {
-						DEBUG(0,("open_mode_check: Existent process %lu left active oplock.\n",
+						DEBUG(0,("open_mode_check: Existent process "
+							 "%lu left active oplock.\n",
 							 (unsigned long)broken_entry->entry.pid ));
 					}
 					
-					if (del_share_entry(dev, inode, &broken_entry->entry, NULL) == -1) {
+					if (del_share_entry(dev, inode, &broken_entry->entry,
+							    NULL) == -1) {
 						free_broken_entry_list(broken_entry_list);
 						errno = EACCES;
-						set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
+						set_saved_error_triple(ERRDOS, ERRbadshare,
+								       NT_STATUS_SHARING_VIOLATION);
 						return -1;
 					}
 					
@@ -689,7 +723,8 @@ after break ! For file %s, dev = %x, inode = %.0f. Deleting it to continue...\n"
 					 */
 					
 					SAFE_FREE(old_shares);
-					num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
+					num_share_modes = get_share_modes(conn, dev, inode,
+									  &old_shares);
 					break;
 				}
 			} /* end for paranoia... */
