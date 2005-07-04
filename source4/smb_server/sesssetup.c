@@ -139,7 +139,7 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 		struct auth_context *auth_context;
 
 		if (sess->nt1.in.user && *sess->nt1.in.user) {
-			return NT_STATUS_ACCESS_DENIED;
+			return NT_STATUS_LOGON_FAILURE;
 		}
 
 		status = make_user_info_anonymous(mem_ctx, &user_info);
