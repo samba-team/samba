@@ -54,7 +54,7 @@ static BOOL ad_idmap_check_attr_mapping(ADS_STRUCT *ads)
 		return True;
 	}
 
-	if (lp_winbind_sfu_support()) {
+	if (use_nss_info("sfu")) {
 	
 		if (!ads_check_sfu_mapping(ads)) {
 			DEBUG(0,("ad_idmap_check_attr_mapping: failed to check for SFU schema\n"));

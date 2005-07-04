@@ -225,7 +225,7 @@ typedef struct
 	int oplock_break_wait_time;
 	int winbind_cache_time;
 	int winbind_max_idle_children;
-	BOOL bWinbindSFUSupport;
+	char **szWinbindNssInfo;
 	int iLockSpinCount;
 	int iLockSpinTime;
 	char *szLdapMachineSuffix;
@@ -1237,7 +1237,7 @@ static struct parm_struct parm_table[] = {
 	{"winbind trusted domains only", P_BOOL, P_GLOBAL, &Globals.bWinbindTrustedDomainsOnly, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind nested groups", P_BOOL, P_GLOBAL, &Globals.bWinbindNestedGroups, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind max idle children", P_INTEGER, P_GLOBAL, &Globals.winbind_max_idle_children, NULL, NULL, FLAG_ADVANCED}, 
-	{"winbind sfu support", P_BOOL, P_GLOBAL, &Globals.bWinbindSFUSupport, NULL, NULL, FLAG_ADVANCED}, 
+	{"winbind nss info", P_LIST, P_GLOBAL, &Globals.szWinbindNssInfo, NULL, NULL, FLAG_ADVANCED}, 
 
 	{NULL,  P_BOOL,  P_NONE,  NULL,  NULL,  NULL,  0}
 };
@@ -1583,7 +1583,7 @@ static void init_globals(void)
 	Globals.bWinbindTrustedDomainsOnly = False;
 	Globals.bWinbindNestedGroups = False;
 	Globals.winbind_max_idle_children = 3;
-	Globals.bWinbindSFUSupport = False;
+	Globals.szWinbindNssInfo = str_list_make("template", NULL);
 
 	Globals.bEnableRidAlgorithm = True;
 
@@ -2008,7 +2008,7 @@ FN_LOCAL_INTEGER(lp_aio_write_size, iAioWriteSize);
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 FN_GLOBAL_INTEGER(lp_winbind_max_idle_children, &Globals.winbind_max_idle_children)
-FN_GLOBAL_BOOL(lp_winbind_sfu_support, &Globals.bWinbindSFUSupport)
+FN_GLOBAL_LIST(lp_winbind_nss_info, &Globals.szWinbindNssInfo)
 FN_GLOBAL_INTEGER(lp_algorithmic_rid_base, &Globals.AlgorithmicRidBase)
 FN_GLOBAL_INTEGER(lp_name_cache_timeout, &Globals.name_cache_timeout)
 FN_GLOBAL_INTEGER(lp_client_signing, &Globals.client_signing)
