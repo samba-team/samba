@@ -344,21 +344,6 @@ typedef struct
 	uint32 bottom;
 } nt_forms_struct;
 
-/*
-typedef struct _form
-{
-       uint32 flags;
-       uint32 name_ptr;
-       uint32 size_x;
-       uint32 size_y;
-       uint32 left;
-       uint32 top;
-       uint32 right;
-       uint32 bottom;
-       UNISTR2 name;
-} FORM;
-*/
-
 #ifndef SAMBA_PRINTER_PORT_NAME
 #define SAMBA_PRINTER_PORT_NAME "Samba Printer Port"
 #endif
