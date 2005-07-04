@@ -688,17 +688,18 @@ Storing SID S-1-5-21-1385457007-882775198-1210191635 \
 		Note: Use the domain SID obtained from the step above. The following is
 		an example configuration session:
 <screen>
-merlin:/opt/IDEALX/sbin # ./configure.pl
--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+&rootprompt; ./configure.pl
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
        smbldap-tools script configuration
        -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 Before starting, check
  . if your samba controller is up and running.
- . if the domain SID is defined (you can get it with the 'net getlocalsid')
+ . if the domain SID is defined
+                           (you can get it with the 'net getlocalsid')
 
  . you can leave the configuration using the Crtl-c key combination
  . empty value can be set with the "." character
--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 Looking for configuration files...
 
 Samba Config File Location [/etc/samba/smb.conf] &gt;
@@ -716,15 +717,16 @@ Let's start configuring the smbldap-tools scripts ...
 . logon drive: local path to which the home directory
          will be connected (for NT Workstations). Ex: 'H:'
   logon drive [X:] &gt; H:
-. logon home: home directory location (for Win95/98 or NT Workstation).
+. logon home: home directory location (for Win95/98 or NT Workstation)
   (use %U as username) Ex:'\\MERLIN\home\%U'
   logon home (leave blank if you don't want homeDirectory)
-                                     [\\MERLIN\home\%U] &gt; \\%L\%U
+                                       [\\MERLIN\home\%U] &gt; \\%L\%U
 . logon path: directory where roaming profiles are stored.
                                      Ex:'\\MERLIN\profiles\%U'
   logon path (leave blank if you don't want roaming profile)
-                            [\\MERLIN\profiles\%U] &gt; \\%L\profiles\%U
-. home directory prefix (use %U as username) [/home/%U] > /home/users/%U
+                          [\\MERLIN\profiles\%U] &gt; \\%L\profiles\%U
+. home directory prefix (use %U as username) [/home/%U] >
+                                                        /home/users/%U
 . default user netlogon script (use %U as username) 
                                [%U.cmd] &gt; scripts\logon.cmd
   default password validation time (time in days) [45] > 180
@@ -736,9 +738,9 @@ Let's start configuring the smbldap-tools scripts ...
 . sambaUnixIdPooldn: object where you want to store the next uidNumber
   and gidNumber available for new users and groups
   sambaUnixIdPooldn object (relative to ${suffix}) 
-                      [cn=NextFreeUnixId] &gt; sambaDomainName=DAMNATION
+                                         [sambaDomainName=DAMNATION] >
 . ldap master server: 
-              IP address or DNS name of the master (writable) ldap server
+           IP address or DNS name of the master (writable) ldap server
   ldap master server [] &gt; 127.0.0.1
 . ldap master port [389] &gt;
 . ldap master bind dn [cn=Manager,dc=terpstra-world,dc=org] &gt;
@@ -751,15 +753,16 @@ Let's start configuring the smbldap-tools scripts ...
 . ldap slave bind password [] &gt;
 . ldap tls support (1/0) [0] &gt;
 . SID for domain DAMNATION: SID of the domain 
-                         (can be obtained with 'net getlocalsid MERLIN')
+                       (can be obtained with 'net getlocalsid MERLIN')
   SID for domain DAMNATION []
         &gt; S-1-5-21-1385457007-882775198-1210191635
 . unix password encryption: encryption used for unix passwords
-  unix password encryption (CRYPT, MD5, SMD5, SSHA, SHA) [SSHA] &gt; MD5
+unix password encryption (CRYPT, MD5, SMD5, SSHA, SHA) [SSHA] &gt; MD5
 . default user gidNumber [513] &gt;
 . default computer gidNumber [515] &gt;
 . default login shell [/bin/bash] &gt;
-. default domain name to append to mail address [] &gt; terpstra-world.org
+. default domain name to append to mail address [] &gt;
+                                                    terpstra-world.org
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 backup old configuration files:
   /etc/smbldap-tools/smbldap.conf-&gt;
@@ -771,11 +774,17 @@ writing new configuration file:
   /etc/smbldap-tools/smbldap_bind.conf done.
 </screen>
 		<indexterm><primary>sambaDomainName</primary></indexterm>
+		<indexterm><primary>NextFreeUnixId</primary></indexterm>
+		<indexterm><primary>updating smbldap-tools</primary></indexterm>
+		<indexterm><primary>smbldap-tools updating</primary></indexterm>
 		Note that the NT4 domain SID that was previously obtained was entered above. Also,
 		the sambaUnixIdPooldn object was specified as sambaDomainName=DAMNATION. This is
 		the location into which the Idealx smbldap-tools store the next available UID/GID
 		information. It is also where Samba stores domain specific information such as the
-		next RID, the SID, and so on.
+		next RID, the SID, and so on. In older version of the smbldap-tools this information
+		was stored in the sambaUnixIdPooldn DIT location cn=NextFreeUnixId. Where smbldap-tools
+		are being upgraded to version 0.9.1 it is appropriate to update this to the new location
+		only if the directory information is also relocated.
 		</para></step>
 
 		<step><para>
