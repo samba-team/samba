@@ -105,8 +105,9 @@ void change_owner_to_parent(connection_struct *conn,
 
 	ret = SMB_VFS_STAT(conn, parent_path, &parent_st);
 	if (ret == -1) {
-		DEBUG(0,("change_owner_to_parent: failed to stat parent directory %s. Error was %s\n",
-			parent_path, strerror(errno) ));
+		DEBUG(0,("change_owner_to_parent: failed to stat parent "
+			 "directory %s. Error was %s\n",
+			 parent_path, strerror(errno) ));
 		return;
 	}
 
@@ -115,47 +116,56 @@ void change_owner_to_parent(connection_struct *conn,
 		ret = SMB_VFS_FCHOWN(fsp, fsp->fh->fd, parent_st.st_uid, (gid_t)-1);
 		unbecome_root();
 		if (ret == -1) {
-			DEBUG(0,("change_owner_to_parent: failed to fchown file %s to parent directory uid %u. \
-Error was %s\n",
-				fname, (unsigned int)parent_st.st_uid, strerror(errno) ));
+			DEBUG(0,("change_owner_to_parent: failed to fchown "
+				 "file %s to parent directory uid %u. Error "
+				 "was %s\n", fname,
+				 (unsigned int)parent_st.st_uid,
+				 strerror(errno) ));
 		}
 
-		DEBUG(10,("change_owner_to_parent: changed new file %s to parent directory uid %u.\n",
-			fname, (unsigned int)parent_st.st_uid ));
+		DEBUG(10,("change_owner_to_parent: changed new file %s to "
+			  "parent directory uid %u.\n",	fname,
+			  (unsigned int)parent_st.st_uid ));
 
 	} else {
-		/* We've already done an lstat into psbuf, and we know it's a directory. If
-		   we can cd into the directory and the dev/ino are the same then we can safely
-		   chown without races as we're locking the directory in place by being in it.
-		   This should work on any UNIX (thanks tridge :-). JRA.
+		/* We've already done an lstat into psbuf, and we know it's a
+		   directory. If we can cd into the directory and the dev/ino
+		   are the same then we can safely chown without races as
+		   we're locking the directory in place by being in it.  This
+		   should work on any UNIX (thanks tridge :-). JRA.
 		*/
 
 		pstring saved_dir;
 		SMB_STRUCT_STAT sbuf;
 
 		if (!vfs_GetWd(conn,saved_dir)) {
-			DEBUG(0,("change_owner_to_parent: failed to get current working directory\n"));
+			DEBUG(0,("change_owner_to_parent: failed to get "
+				 "current working directory\n"));
 			return;
 		}
 
 		/* Chdir into the new path. */
 		if (vfs_ChDir(conn, fname) == -1) {
-			DEBUG(0,("change_owner_to_parent: failed to change current working directory to %s. \
-Error was %s\n", fname, strerror(errno) ));
+			DEBUG(0,("change_owner_to_parent: failed to change "
+				 "current working directory to %s. Error "
+				 "was %s\n", fname, strerror(errno) ));
 			goto out;
 		}
 
 		if (SMB_VFS_STAT(conn,".",&sbuf) == -1) {
-			DEBUG(0,("change_owner_to_parent: failed to stat directory '.' (%s) \
-Error was %s\n", fname, strerror(errno)));
+			DEBUG(0,("change_owner_to_parent: failed to stat "
+				 "directory '.' (%s) Error was %s\n",
+				 fname, strerror(errno)));
 			goto out;
 		}
 
 		/* Ensure we're pointing at the same place. */
-		if (sbuf.st_dev != psbuf->st_dev || sbuf.st_ino != psbuf->st_ino ||
-					sbuf.st_mode != psbuf->st_mode ) {
-			DEBUG(0,("change_owner_to_parent: device/inode/mode on directory %s \
-changed. Refusing to chown !\n", fname ));
+		if (sbuf.st_dev != psbuf->st_dev ||
+		    sbuf.st_ino != psbuf->st_ino ||
+		    sbuf.st_mode != psbuf->st_mode ) {
+			DEBUG(0,("change_owner_to_parent: "
+				 "device/inode/mode on directory %s changed. "
+				 "Refusing to chown !\n", fname ));
 			goto out;
 		}
 
@@ -163,13 +173,16 @@ changed. Refusing to chown !\n", fname ));
 		ret = SMB_VFS_CHOWN(conn, ".", parent_st.st_uid, (gid_t)-1);
 		unbecome_root();
 		if (ret == -1) {
-			DEBUG(10,("change_owner_to_parent: failed to chown directory %s to \
-parent directory uid %u. Error was %s\n", fname, (unsigned int)parent_st.st_uid, strerror(errno) ));
+			DEBUG(10,("change_owner_to_parent: failed to chown "
+				  "directory %s to parent directory uid %u. "
+				  "Error was %s\n", fname,
+				  (unsigned int)parent_st.st_uid, strerror(errno) ));
 			goto out;
 		}
 
-		DEBUG(10,("change_owner_to_parent: changed ownership of new directory %s to \
-parent directory uid %u.\n", fname, (unsigned int)parent_st.st_uid ));
+		DEBUG(10,("change_owner_to_parent: changed ownership of new "
+			  "directory %s to parent directory uid %u.\n",
+			  fname, (unsigned int)parent_st.st_uid ));
 
   out:
 
@@ -215,9 +228,9 @@ static BOOL open_file(files_struct *fsp,
 			check_for_pipe(fname);
 			return False;
 		} else if(flags & O_CREAT) {
-			/* We don't want to write - but we must make sure that O_CREAT
-			   doesn't create the file if we have write access into the
-			   directory.
+			/* We don't want to write - but we must make sure that
+			   O_CREAT doesn't create the file if we have write
+			   access into the directory.
 			*/
 			flags &= ~O_CREAT;
 			local_flags &= ~O_CREAT;
@@ -237,12 +250,14 @@ static BOOL open_file(files_struct *fsp,
 	 */
 
 	if ((accmode == O_RDONLY) && ((flags & O_TRUNC) == O_TRUNC)) {
-		DEBUG(10,("open_file: truncate requested on read-only open for file %s\n",fname ));
+		DEBUG(10,("open_file: truncate requested on read-only open "
+			  "for file %s\n",fname ));
 		local_flags = (flags & ~O_ACCMODE)|O_RDWR;
 	}
 
 	if ((access_mask & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_EXECUTE)) ||
-			(local_flags & O_CREAT) || ((local_flags & O_TRUNC) == O_TRUNC) ) {
+	    (local_flags & O_CREAT) ||
+	    ((local_flags & O_TRUNC) == O_TRUNC) ) {
 
 		/*
 		 * We can't actually truncate here as the file may be locked.
@@ -264,15 +279,19 @@ static BOOL open_file(files_struct *fsp,
 #endif
 
 		/* Don't create files with Microsoft wildcard characters. */
-		if ((local_flags & O_CREAT) && !VALID_STAT(*psbuf) && ms_has_wild(fname))  {
-			set_saved_error_triple(ERRDOS, ERRinvalidname, NT_STATUS_OBJECT_NAME_INVALID);
+		if ((local_flags & O_CREAT) &&
+		    !VALID_STAT(*psbuf) &&
+		    ms_has_wild(fname))  {
+			set_saved_error_triple(ERRDOS, ERRinvalidname,
+					       NT_STATUS_OBJECT_NAME_INVALID);
 			return False;
 		}
 
 		/* Actually do the open */
 		fsp->fh->fd = fd_open(conn, fname, local_flags, unx_mode);
 		if (fsp->fh->fd == -1)  {
-			DEBUG(3,("Error opening file %s (%s) (local_flags=%d) (flags=%d)\n",
+			DEBUG(3,("Error opening file %s (%s) (local_flags=%d) "
+				 "(flags=%d)\n",
 				 fname,strerror(errno),local_flags,flags));
 			check_for_pipe(fname);
 			return False;
@@ -296,7 +315,8 @@ static BOOL open_file(files_struct *fsp,
 			ret = SMB_VFS_FSTAT(fsp,fsp->fh->fd,psbuf);
 			/* If we have an fd, this stat should succeed. */
 			if (ret == -1) {
-				DEBUG(0,("Error doing fstat on open file %s (%s)\n", fname,strerror(errno) ));
+				DEBUG(0,("Error doing fstat on open file %s "
+					 "(%s)\n", fname,strerror(errno) ));
 			}
 		}
 
@@ -338,7 +358,7 @@ static BOOL open_file(files_struct *fsp,
 	fsp->is_directory = False;
 	fsp->is_stat = False;
 	if (conn->aio_write_behind_list &&
-			is_in_path(fname, conn->aio_write_behind_list, conn->case_sensitive)) {
+	    is_in_path(fname, conn->aio_write_behind_list, conn->case_sensitive)) {
 		fsp->aio_write_behind = True;
 	}
 
@@ -496,17 +516,23 @@ static void validate_my_share_entries(int num,
 		return;
 	}
 
-	fsp = file_find_dif(share_entry->dev, share_entry->inode, share_entry->share_file_id);
+	fsp = file_find_dif(share_entry->dev, share_entry->inode,
+			    share_entry->share_file_id);
 	if (!fsp) {
-		DEBUG(0,("validate_my_share_entries: PANIC : %s\n", share_mode_str(num, share_entry) ));
-		smb_panic("validate_my_share_entries: Cannot match a share entry with an open file\n");
+		DEBUG(0,("validate_my_share_entries: PANIC : %s\n",
+			 share_mode_str(num, share_entry) ));
+		smb_panic("validate_my_share_entries: Cannot match a "
+			  "share entry with an open file\n");
 	}
 
 	if (((uint16)fsp->oplock_type) != share_entry->op_type) {
 		pstring str;
-		DEBUG(0,("validate_my_share_entries: PANIC : %s\n", share_mode_str(num, share_entry) ));
-		slprintf(str, sizeof(str)-1, "validate_my_share_entries: file %s, oplock_type = 0x%x, op_type = 0x%x\n",
-				fsp->fsp_name, (unsigned int)fsp->oplock_type, (unsigned int)share_entry->op_type );
+		DEBUG(0,("validate_my_share_entries: PANIC : %s\n",
+			 share_mode_str(num, share_entry) ));
+		slprintf(str, sizeof(str)-1, "validate_my_share_entries: "
+			 "file %s, oplock_type = 0x%x, op_type = 0x%x\n",
+			 fsp->fsp_name, (unsigned int)fsp->oplock_type,
+			 (unsigned int)share_entry->op_type );
 		smb_panic(str);
 	}
 }
@@ -809,10 +835,12 @@ void defer_open_sharing_error(connection_struct *conn,
 			/*
 			 * Check if a 1 second timeout has expired.
 			 */
-			if (usec_time_diff(ptv, &entry->time) > SHARING_VIOLATION_USEC_WAIT) {
-				DEBUG(10,("defer_open_sharing_error: Deleting deferred open entry for mid %u, \
-file %s\n",
-					(unsigned int)mid, fname ));
+			if (usec_time_diff(ptv, &entry->time) >
+			    SHARING_VIOLATION_USEC_WAIT) {
+				DEBUG(10,("defer_open_sharing_error: Deleting "
+					  "deferred open entry for mid %u, "
+					  "file %s\n",
+					  (unsigned int)mid, fname ));
 
 				/* Expired, return a real error. */
 				/* Remove the deferred open entry from the array. */
@@ -822,24 +850,30 @@ file %s\n",
 				return;
 			}
 			/*
-			 * If the timeout hasn't expired yet and we still have a sharing violation,
-			 * just leave the entry in the deferred open array alone. We do need to
-			 * reschedule this open call though (with the original created time).
+			 * If the timeout hasn't expired yet and we still have
+			 * a sharing violation, just leave the entry in the
+			 * deferred open array alone. We do need to reschedule
+			 * this open call though (with the original created
+			 * time).
 			 */
-			DEBUG(10,("defer_open_sharing_error: time [%u.%06u] updating \
-deferred open entry for mid %u, file %s\n",
-				(unsigned int)entry->time.tv_sec,
-				(unsigned int)entry->time.tv_usec,
-				(unsigned int)mid, fname ));
+			DEBUG(10,("defer_open_sharing_error: time [%u.%06u] "
+				  "updating deferred open entry for mid %u, file %s\n",
+				  (unsigned int)entry->time.tv_sec,
+				  (unsigned int)entry->time.tv_usec,
+				  (unsigned int)mid, fname ));
 
-			push_sharing_violation_open_smb_message(&entry->time, (char *)&dib, sizeof(dib));
+			push_sharing_violation_open_smb_message(&entry->time,
+								(char *)&dib,
+								sizeof(dib));
 			SAFE_FREE(de_array);
 			return;
 		}
 	}
 
-	DEBUG(10,("defer_open_sharing_error: time [%u.%06u] adding deferred open entry for mid %u, file %s\n",
-		(unsigned int)ptv->tv_sec, (unsigned int)ptv->tv_usec, (unsigned int)mid, fname ));
+	DEBUG(10,("defer_open_sharing_error: time [%u.%06u] adding deferred "
+		  "open entry for mid %u, file %s\n",
+		  (unsigned int)ptv->tv_sec, (unsigned int)ptv->tv_usec,
+		  (unsigned int)mid, fname ));
 
 	if (!push_sharing_violation_open_smb_message(ptv, (char *)&dib, sizeof(dib))) {
 		SAFE_FREE(de_array);
@@ -908,22 +942,25 @@ static BOOL open_match_attributes(connection_struct *conn,
 		*returned_unx_mode = (mode_t)0;
 	}
 
-	DEBUG(10,("open_match_attributes: file %s old_dos_attr = 0x%x, existing_unx_mode = 0%o, \
-new_dos_attr = 0x%x returned_unx_mode = 0%o\n",
-		path,
-		(unsigned int)old_dos_attr,
-		(unsigned int)existing_unx_mode,
-		(unsigned int)new_dos_attr,
-		(unsigned int)*returned_unx_mode ));
+	DEBUG(10,("open_match_attributes: file %s old_dos_attr = 0x%x, "
+		  "existing_unx_mode = 0%o, new_dos_attr = 0x%x "
+		  "returned_unx_mode = 0%o\n",
+		  path,
+		  (unsigned int)old_dos_attr,
+		  (unsigned int)existing_unx_mode,
+		  (unsigned int)new_dos_attr,
+		  (unsigned int)*returned_unx_mode ));
 
 	/* If we're mapping SYSTEM and HIDDEN ensure they match. */
 	if (lp_map_system(SNUM(conn)) || lp_store_dos_attributes(SNUM(conn))) {
-		if ((old_dos_attr & FILE_ATTRIBUTE_SYSTEM) && !(new_dos_attr & FILE_ATTRIBUTE_SYSTEM)) {
+		if ((old_dos_attr & FILE_ATTRIBUTE_SYSTEM) &&
+		    !(new_dos_attr & FILE_ATTRIBUTE_SYSTEM)) {
 			return False;
 		}
 	}
 	if (lp_map_hidden(SNUM(conn)) || lp_store_dos_attributes(SNUM(conn))) {
-		if ((old_dos_attr & FILE_ATTRIBUTE_HIDDEN) && !(new_dos_attr & FILE_ATTRIBUTE_HIDDEN)) {
+		if ((old_dos_attr & FILE_ATTRIBUTE_HIDDEN) &&
+		    !(new_dos_attr & FILE_ATTRIBUTE_HIDDEN)) {
 			return False;
 		}
 	}
@@ -935,29 +972,37 @@ new_dos_attr = 0x%x returned_unx_mode = 0%o\n",
  Try and find a duplicated file handle.
 ****************************************************************************/
 
-static files_struct *fcb_or_dos_open(connection_struct *conn, const char *fname, SMB_DEV_T dev, SMB_INO_T inode,
-					uint32 access_mask,
-					uint32 share_access,
-					uint32 create_options)
+static files_struct *fcb_or_dos_open(connection_struct *conn,
+				     const char *fname, SMB_DEV_T dev,
+				     SMB_INO_T inode,
+				     uint32 access_mask,
+				     uint32 share_access,
+				     uint32 create_options)
 {
 	files_struct *fsp;
 	files_struct *dup_fsp;
 
-	DEBUG(5,("fcb_or_dos_open: attempting old open semantics for file %s.\n", fname ));
+	DEBUG(5,("fcb_or_dos_open: attempting old open semantics for "
+		 "file %s.\n", fname ));
 
-	for(fsp = file_find_di_first(dev, inode); fsp; fsp = file_find_di_next(fsp)) {
+	for(fsp = file_find_di_first(dev, inode); fsp;
+	    fsp = file_find_di_next(fsp)) {
 
-		DEBUG(10,("fcb_or_dos_open: checking file %s, fd = %d, vuid = %u, file_pid = %u, create_options = 0x%x \
-access_mask = 0x%x\n", fsp->fsp_name, fsp->fh->fd, (unsigned int)fsp->vuid, (unsigned int)fsp->file_pid,
-				(unsigned int)fsp->fh->create_options, (unsigned int)fsp->access_mask ));
+		DEBUG(10,("fcb_or_dos_open: checking file %s, fd = %d, "
+			  "vuid = %u, file_pid = %u, create_options = 0x%x "
+			  "access_mask = 0x%x\n", fsp->fsp_name,
+			  fsp->fh->fd, (unsigned int)fsp->vuid,
+			  (unsigned int)fsp->file_pid,
+			  (unsigned int)fsp->fh->create_options,
+			  (unsigned int)fsp->access_mask ));
 
 		if (fsp->fh->fd != -1 &&
-				fsp->vuid == current_user.vuid &&
-				fsp->file_pid == global_smbpid &&
-				(fsp->fh->create_options & (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS |
-				                      NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) &&
-				(fsp->access_mask & FILE_WRITE_DATA) &&
-				strequal(fsp->fsp_name, fname)) {
+		    fsp->vuid == current_user.vuid &&
+		    fsp->file_pid == global_smbpid &&
+		    (fsp->fh->create_options & (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS |
+						NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) &&
+		    (fsp->access_mask & FILE_WRITE_DATA) &&
+		    strequal(fsp->fsp_name, fname)) {
 			DEBUG(10,("fcb_or_dos_open: file match\n"));
 			break;
 		}
@@ -966,9 +1011,10 @@ access_mask = 0x%x\n", fsp->fsp_name, fsp->fh->fd, (unsigned int)fsp->vuid, (uns
 	if (!fsp) {
 		return NULL;
 	}
-                                                                                                                    
+
 	/* quite an insane set of semantics ... */
-	if (is_executable(fname) && (fsp->fh->create_options & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS)) {
+	if (is_executable(fname) &&
+	    (fsp->fh->create_options & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS)) {
 		DEBUG(10,("fcb_or_dos_open: file fail due to is_executable.\n"));
 		return NULL;
 	}
@@ -997,8 +1043,9 @@ BOOL map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func
 	uint32 create_disposition;
 	uint32 create_options = 0;
 
-	DEBUG(10,("map_open_params_to_ntcreate: fname = %s, deny_mode = 0x%x, open_func = 0x%x\n",
-		fname, (unsigned int)deny_mode, (unsigned int)open_func ));
+	DEBUG(10,("map_open_params_to_ntcreate: fname = %s, deny_mode = 0x%x, "
+		  "open_func = 0x%x\n",
+		  fname, (unsigned int)deny_mode, (unsigned int)open_func ));
 
 	/* Create the NT compatible access_mask. */
 	switch (GET_OPENX_MODE(deny_mode)) {
@@ -1015,7 +1062,7 @@ BOOL map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func
 			break;
 		default:
 			DEBUG(10,("map_open_params_to_ntcreate: bad open mode = 0x%x\n",
-				(unsigned int)GET_OPENX_MODE(deny_mode)));
+				  (unsigned int)GET_OPENX_MODE(deny_mode)));
 			return False;
 	}
 
@@ -1047,7 +1094,8 @@ BOOL map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func
 				create_disposition = FILE_CREATE;
 				break;
 			}
-			DEBUG(10,("map_open_params_to_ntcreate: bad open_func 0x%x\n", (unsigned int)open_func));
+			DEBUG(10,("map_open_params_to_ntcreate: bad "
+				  "open_func 0x%x\n", (unsigned int)open_func));
 			return False;
 	}
  
@@ -1093,13 +1141,14 @@ BOOL map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func
 			return False;
 	}
 
-	DEBUG(10,("map_open_params_to_ntcreate: file %s, access_mask = 0x%x, \
-share_mode = 0x%x, create_disposition = 0x%x, create_options = 0x%x\n",
-				fname,
-			        (unsigned int)access_mask,
-				(unsigned int)share_mode,
-				(unsigned int)create_disposition,
-				(unsigned int)create_options ));
+	DEBUG(10,("map_open_params_to_ntcreate: file %s, access_mask = 0x%x, "
+		  "share_mode = 0x%x, create_disposition = 0x%x, "
+		  "create_options = 0x%x\n",
+		  fname,
+		  (unsigned int)access_mask,
+		  (unsigned int)share_mode,
+		  (unsigned int)create_disposition,
+		  (unsigned int)create_options ));
 
 	if (paccess_mask) {
 		*paccess_mask = access_mask;
@@ -1178,13 +1227,17 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		return print_fsp_open(conn, fname);
 	}
 
-	/* We add aARCH to this as this mode is only used if the file is created new. */
+	/* We add aARCH to this as this mode is only used if the file is
+	 * created new. */
 	unx_mode = unix_mode(conn, new_dos_attributes | aARCH,fname, True);
 
-	DEBUG(10, ("open_file_ntcreate: fname=%s, dos_attrs=0x%x access_mask=0x%x \
-share_access=0x%x create_disposition = 0x%x create_options=0x%x unix mode=0%o oplock_request=%d\n",
+	DEBUG(10, ("open_file_ntcreate: fname=%s, dos_attrs=0x%x "
+		   "access_mask=0x%x share_access=0x%x "
+		   "create_disposition = 0x%x create_options=0x%x "
+		   "unix mode=0%o oplock_request=%d\n",
 		   fname, new_dos_attributes, access_mask, share_access,
-		   create_disposition, create_options, unx_mode, oplock_request));
+		   create_disposition, create_options, unx_mode,
+		   oplock_request));
 
 	if (oplock_request == INTERNAL_OPEN_ONLY) {
 		internal_only_open = True;
@@ -1197,25 +1250,29 @@ share_access=0x%x create_disposition = 0x%x create_options=0x%x unix mode=0%o op
 		memcpy(&dib, pml->private_data.data, sizeof(dib));
 
 		/* There could be a race condition where the dev/inode pair
-			has changed since we deferred the message. If so, just
-			remove the deferred open entry and return sharing violation. */
+		   has changed since we deferred the message. If so, just
+		   remove the deferred open entry and return sharing
+		   violation. */
 
-		/* If the timeout value is non-zero, we need to just
-			return sharing violation. Don't retry the open
-			as we were not notified of a close and we don't want to
-			trigger another spurious oplock break. */
+		/* If the timeout value is non-zero, we need to just return
+		   sharing violation. Don't retry the open as we were not
+		   notified of a close and we don't want to trigger another
+		   spurious oplock break. */
 
-		if (!file_existed || dib.dev != psbuf->st_dev || dib.inode != psbuf->st_ino ||
-				pml->msg_time.tv_sec || pml->msg_time.tv_usec) {
+		if (!file_existed || dib.dev != psbuf->st_dev ||
+		    dib.inode != psbuf->st_ino || pml->msg_time.tv_sec ||
+		    pml->msg_time.tv_usec) {
 			/* Ensure we don't reprocess this message. */
 			remove_sharing_violation_open_smb_message(mid);
 
 			/* Now remove the deferred open entry under lock. */
 			lock_share_entry(conn, dib.dev, dib.inode);
-			delete_defered_open_entry_record(conn, dib.dev, dib.inode);
+			delete_defered_open_entry_record(conn, dib.dev,
+							 dib.inode);
 			unlock_share_entry(conn, dib.dev, dib.inode);
 
-			set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
+			set_saved_error_triple(ERRDOS, ERRbadshare,
+					       NT_STATUS_SHARING_VIOLATION);
 			return NULL;
 		}
 		/* Ensure we don't reprocess this message. */
@@ -1238,33 +1295,40 @@ share_access=0x%x create_disposition = 0x%x create_options=0x%x unix mode=0%o op
 
 	/* this is for OS/2 long file names - say we don't support them */
 	if (!lp_posix_pathnames() && strstr(fname,".+,;=[].")) {
-		/* OS/2 Workplace shell fix may be main code stream in a later release. */ 
-		set_saved_error_triple(ERRDOS, ERRcannotopen, NT_STATUS_OBJECT_NAME_NOT_FOUND);
-		DEBUG(5,("open_file_ntcreate: OS/2 long filenames are not supported.\n"));
+		/* OS/2 Workplace shell fix may be main code stream in a later
+		 * release. */ 
+		set_saved_error_triple(ERRDOS, ERRcannotopen,
+				       NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		DEBUG(5,("open_file_ntcreate: OS/2 long filenames are not "
+			 "supported.\n"));
 		return NULL;
 	}
 
 	switch( create_disposition ) {
 		/*
-		 * Currently we're using FILE_SUPERSEDE as the same as FILE_OVERWRITE_IF
-		 * but they really are different. FILE_SUPERSEDE deletes an existing file
+		 * Currently we're using FILE_SUPERSEDE as the same as
+		 * FILE_OVERWRITE_IF but they really are
+		 * different. FILE_SUPERSEDE deletes an existing file
 		 * (requiring delete access) then recreates it.
 		 */
 		case FILE_SUPERSEDE:
-			/* If file exists replace/overwrite. If file doesn't exist create. */
+			/* If file exists replace/overwrite. If file doesn't
+			 * exist create. */
 			flags2 |= (O_CREAT | O_TRUNC);
 			break;
 
 		case FILE_OVERWRITE_IF:
-			/* If file exists replace/overwrite. If file doesn't exist create. */
+			/* If file exists replace/overwrite. If file doesn't
+			 * exist create. */
 			flags2 |= (O_CREAT | O_TRUNC);
 			break;
 
 		case FILE_OPEN:
 			/* If file exists open. If file doesn't exist error. */
 			if (!file_existed) {
-				DEBUG(5,("open_file_ntcreate: FILE_OPEN requested for file %s and file doesn't exist.\n",
-					fname ));
+				DEBUG(5,("open_file_ntcreate: FILE_OPEN "
+					 "requested for file %s and file "
+					 "doesn't exist.\n", fname ));
 				set_saved_error_triple(ERRDOS, ERRbadfile, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 				errno = ENOENT;
 				return NULL;
@@ -1272,10 +1336,12 @@ share_access=0x%x create_disposition = 0x%x create_options=0x%x unix mode=0%o op
 			break;
 
 		case FILE_OVERWRITE:
-			/* If file exists overwrite. If file doesn't exist error. */
+			/* If file exists overwrite. If file doesn't exist
+			 * error. */
 			if (!file_existed) {
-				DEBUG(5,("open_file_ntcreate: FILE_OVERWRITE requested for file %s and file doesn't exist.\n",
-					fname ));
+				DEBUG(5,("open_file_ntcreate: FILE_OVERWRITE "
+					 "requested for file %s and file "
+					 "doesn't exist.\n", fname ));
 				set_saved_error_triple(ERRDOS, ERRbadfile, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 				errno = ENOENT;
 				return NULL;
@@ -1284,10 +1350,12 @@ share_access=0x%x create_disposition = 0x%x create_options=0x%x unix mode=0%o op
 			break;
 
 		case FILE_CREATE:
-			/* If file exists error. If file doesn't exist create. */
+			/* If file exists error. If file doesn't exist
+			 * create. */
 			if (file_existed) {
-				DEBUG(5,("open_file_ntcreate: FILE_CREATE requested for file %s and file already exists.\n",
-					fname ));
+				DEBUG(5,("open_file_ntcreate: FILE_CREATE "
+					 "requested for file %s and file "
+					 "already exists.\n", fname ));
 				if (S_ISDIR(psbuf->st_mode)) {
 					errno = EISDIR;
 				} else {
@@ -1299,26 +1367,32 @@ share_access=0x%x create_disposition = 0x%x create_options=0x%x unix mode=0%o op
 			break;
 
 		case FILE_OPEN_IF:
-			/* If file exists open. If file doesn't exist create. */
+			/* If file exists open. If file doesn't exist
+			 * create. */
 			flags2 |= O_CREAT;
 			break;
 
 		default:
-			set_saved_error_triple(ERRDOS, ERRinvalidparam, NT_STATUS_INVALID_PARAMETER);
+			set_saved_error_triple(ERRDOS, ERRinvalidparam,
+					       NT_STATUS_INVALID_PARAMETER);
 			return NULL;
 	}
 
-	/* We only care about matching attributes on file exists and overwrite. */
+	/* We only care about matching attributes on file exists and
+	 * overwrite. */
 
 	if (file_existed && ((create_disposition == FILE_OVERWRITE) ||
-				(create_disposition == FILE_OVERWRITE_IF))) {
-		if (!open_match_attributes(conn, fname, existing_dos_attributes,
+			     (create_disposition == FILE_OVERWRITE_IF))) {
+		if (!open_match_attributes(conn, fname,
+					   existing_dos_attributes,
 					   new_dos_attributes, psbuf->st_mode,
 					   unx_mode, &new_unx_mode)) {
-			DEBUG(5,("open_file_ntcreate: attributes missmatch for "
-				 "file %s (%x %x) (0%o, 0%o)\n",
-				 fname, existing_dos_attributes, new_dos_attributes,
-				 (unsigned int)psbuf->st_mode, (unsigned int)unx_mode ));
+			DEBUG(5,("open_file_ntcreate: attributes missmatch "
+				 "for file %s (%x %x) (0%o, 0%o)\n",
+				 fname, existing_dos_attributes,
+				 new_dos_attributes,
+				 (unsigned int)psbuf->st_mode,
+				 (unsigned int)unx_mode ));
 			errno = EACCES;
 			return NULL;
 		}
@@ -1328,15 +1402,15 @@ share_access=0x%x create_disposition = 0x%x create_options=0x%x unix mode=0%o op
 	if (access_mask == MAXIMUM_ALLOWED_ACCESS) {
 		access_mask = FILE_GENERIC_ALL;
 	}
-                                                                                                               
+
 	/*
 	 * Convert GENERIC bits to specific bits.
 	 */
-                                                                                                               
+
 	se_map_generic(&access_mask, &file_generic_mapping);
 
-	DEBUG(10, ("open_file_ntcreate: fname=%s, after mapping access_mask=0x%x\n",
-		   fname, access_mask ));
+	DEBUG(10, ("open_file_ntcreate: fname=%s, after mapping "
+		   "access_mask=0x%x\n", fname, access_mask ));
 
 	/*
 	 * Note that we ignore the append flag as append does not
@@ -1361,8 +1435,8 @@ share_access=0x%x create_disposition = 0x%x create_options=0x%x unix mode=0%o op
   
 	if (!CAN_WRITE(conn)) {
 		/*
-		 * We should really return a permission denied error if
-		 * either O_CREAT or O_TRUNC are set, but for compatibility with 
+		 * We should really return a permission denied error if either
+		 * O_CREAT or O_TRUNC are set, but for compatibility with
 		 * older versions of Samba we just AND them out.
 		 */
 		flags2 &= ~(O_CREAT|O_TRUNC);
@@ -1373,10 +1447,12 @@ share_access=0x%x create_disposition = 0x%x create_options=0x%x unix mode=0%o op
 	 */
 
 	if (flags != O_RDONLY && file_existed &&
-				(!CAN_WRITE(conn) || IS_DOS_READONLY(existing_dos_attributes))) {
-		DEBUG(5,("open_file_ntcreate: write access requested for file %s on read only %s\n",
-				fname, !CAN_WRITE(conn) ? "share" : "file" ));
-		set_saved_error_triple(ERRDOS, ERRnoaccess, NT_STATUS_ACCESS_DENIED);
+	    (!CAN_WRITE(conn) || IS_DOS_READONLY(existing_dos_attributes))) {
+		DEBUG(5,("open_file_ntcreate: write access requested for "
+			 "file %s on read only %s\n",
+			 fname, !CAN_WRITE(conn) ? "share" : "file" ));
+		set_saved_error_triple(ERRDOS, ERRnoaccess,
+				       NT_STATUS_ACCESS_DENIED);
 		errno = EACCES;
 		return NULL;
 	}
@@ -1404,13 +1480,16 @@ share_access=0x%x create_disposition = 0x%x create_options=0x%x unix mode=0%o op
 				NTSTATUS status;
 				get_saved_error_triple(NULL, NULL, &status);
 				if (NT_STATUS_EQUAL(status,NT_STATUS_SHARING_VIOLATION)) {
-					/* Check if this can be done with the deny_dos and fcb calls. */
-					if (create_options & (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS|
-								NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
-						files_struct *fsp_dup = fcb_or_dos_open(conn, fname, dev, inode,
-											access_mask,
-											share_access,
-											create_options);
+					/* Check if this can be done with the
+					 * deny_dos and fcb calls. */
+					if (create_options &
+					    (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS|
+					     NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
+						files_struct *fsp_dup;
+						fsp_dup = fcb_or_dos_open(conn, fname, dev,
+									  inode, access_mask,
+									  share_access,
+									  create_options);
 
 						if (fsp_dup) {
 							unlock_share_entry(conn, dev, inode);
@@ -1426,25 +1505,29 @@ share_access=0x%x create_disposition = 0x%x create_options=0x%x unix mode=0%o op
 			}
 
 			/*
-			 * This next line is a subtlety we need for MS-Access. If a file open will
-			 * fail due to share permissions and also for security (access)
-			 * reasons, we need to return the access failed error, not the
-			 * share error. This means we must attempt to open the file anyway
-			 * in order to get the UNIX access error - even if we're going to
-			 * fail the open for share reasons. This is bad, as we're burning
-			 * another fd if there are existing locks but there's nothing else
-			 * we can do. We also ensure we're not going to create or tuncate
-			 * the file as we only want an access decision at this stage. JRA.
+			 * This next line is a subtlety we need for
+			 * MS-Access. If a file open will fail due to share
+			 * permissions and also for security (access) reasons,
+			 * we need to return the access failed error, not the
+			 * share error. This means we must attempt to open the
+			 * file anyway in order to get the UNIX access error -
+			 * even if we're going to fail the open for share
+			 * reasons. This is bad, as we're burning another fd
+			 * if there are existing locks but there's nothing
+			 * else we can do. We also ensure we're not going to
+			 * create or tuncate the file as we only want an
+			 * access decision at this stage. JRA.
 			 */
 			errno = 0;
 			fsp_open = open_file(fsp,conn,fname,psbuf,
 					     flags|(flags2&~(O_TRUNC|O_CREAT)),
 					     unx_mode,access_mask);
 
-			DEBUG(4,("open_file_ntcreate : share_mode deny - calling open_file \
-with flags=0x%X flags2=0x%X mode=0%o returned %d\n",
-				flags, (flags2&~(O_TRUNC|O_CREAT)),(unsigned int)unx_mode,
-				 (int)fsp_open ));
+			DEBUG(4,("open_file_ntcreate : share_mode deny - "
+				 "calling open_file with flags=0x%X "
+				 "flags2=0x%X mode=0%o returned %d\n",
+				 flags, (flags2&~(O_TRUNC|O_CREAT)),
+				 (unsigned int)unx_mode, (int)fsp_open ));
 
 			if (!fsp_open && errno) {
 				/* Default error. */
@@ -1453,8 +1536,8 @@ with flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 			}
 
 			/* 
-			 * If we're returning a share violation, ensure we cope with
-			 * the braindead 1 second delay.
+			 * If we're returning a share violation, ensure we
+			 * cope with the braindead 1 second delay.
 			 */
 
 			if (!internal_only_open) {
@@ -1507,7 +1590,8 @@ with flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 	fsp_open = open_file(fsp,conn,fname,psbuf,flags|flags2,unx_mode,access_mask);
 
 	if (!fsp_open && (flags == O_RDWR) && (errno != ENOENT)) {
-		if((fsp_open = open_file(fsp,conn,fname,psbuf, O_RDONLY,unx_mode,access_mask)) == True) {
+		if((fsp_open = open_file(fsp,conn,fname,psbuf,
+					 O_RDONLY,unx_mode,access_mask)) == True) {
 			flags = O_RDONLY;
 		}
 	}
@@ -1521,10 +1605,10 @@ with flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 	}
 
 	/*
-	 * Deal with the race condition where two smbd's detect the file doesn't
-	 * exist and do the create at the same time. One of them will win and
-	 * set a share mode, the other (ie. this one) should check if the
-	 * requested share mode for this create is allowed.
+	 * Deal with the race condition where two smbd's detect the file
+	 * doesn't exist and do the create at the same time. One of them will
+	 * win and set a share mode, the other (ie. this one) should check if
+	 * the requested share mode for this create is allowed.
 	 */
 
 	if (!file_existed) { 
@@ -1551,13 +1635,15 @@ with flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 			NTSTATUS status;
 			get_saved_error_triple(NULL, NULL, &status);
 			if (NT_STATUS_EQUAL(status,NT_STATUS_SHARING_VIOLATION)) {
-				/* Check if this can be done with the deny_dos and fcb calls. */
-				if (create_options & (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS|
-							NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
-					files_struct *fsp_dup = fcb_or_dos_open(conn, fname, dev, inode,
-										access_mask,
-										share_access,
-										create_options);
+				/* Check if this can be done with the deny_dos
+				 * and fcb calls. */
+				if (create_options &
+				    (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS|
+				     NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
+					files_struct *fsp_dup;
+					fsp_dup = fcb_or_dos_open(conn, fname, dev, inode,
+								  access_mask, share_access,
+								  create_options);
 					if (fsp_dup) {
 						unlock_share_entry(conn, dev, inode);
 						fd_close(conn, fsp);
@@ -1571,12 +1657,15 @@ with flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 				}
 
 				/* 
-				 * If we're returning a share violation, ensure we cope with
-				 * the braindead 1 second delay.
+				 * If we're returning a share violation,
+				 * ensure we cope with the braindead 1 second
+				 * delay.
 				 */
 
-				/* The fsp->open_time here represents the current time of day. */
-				defer_open_sharing_error(conn, &fsp->open_time, fname, dev, inode);
+				/* The fsp->open_time here represents the
+				 * current time of day. */
+				defer_open_sharing_error(conn, &fsp->open_time,
+							 fname, dev, inode);
 			}
 
 			unlock_share_entry_fsp(fsp);
@@ -1586,7 +1675,8 @@ with flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 			 * We have detected a sharing violation here, so
 			 * return the correct code.
 			 */
-			set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
+			set_saved_error_triple(ERRDOS, ERRbadshare,
+					       NT_STATUS_SHARING_VIOLATION);
 			return NULL;
 		}
 
@@ -1625,7 +1715,8 @@ with flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 
 	if (flags2&O_TRUNC) {
 		/*
-		 * We are modifing the file after open - update the stat struct..
+		 * We are modifing the file after open - update the stat
+		 * struct..
 		 */
 		if ((SMB_VFS_FTRUNCATE(fsp,fsp->fh->fd,0) == -1) ||
 		    (SMB_VFS_FSTAT(fsp,fsp->fh->fd,psbuf)==-1)) {
@@ -1651,7 +1742,8 @@ with flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 		info = FILE_WAS_CREATED;
 		/* Change the owner if required. */
 		if (lp_inherit_owner(SNUM(conn))) {
-			change_owner_to_parent(conn, fsp, fsp->fsp_name, psbuf);
+			change_owner_to_parent(conn, fsp, fsp->fsp_name,
+					       psbuf);
 		}
 	}
 
@@ -1665,7 +1757,8 @@ with flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 	 */
 
 	if(oplock_request && (num_share_modes == 0) && 
-			!IS_VETO_OPLOCK_PATH(conn,fname) && set_file_oplock(fsp, oplock_request) ) {
+	   !IS_VETO_OPLOCK_PATH(conn,fname) &&
+	   set_file_oplock(fsp, oplock_request) ) {
 		port = global_oplock_port;
 	} else if (oplock_request && all_current_opens_are_level_II) {
 		port = global_oplock_port;
@@ -1709,8 +1802,11 @@ with flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 	if (info == FILE_WAS_OVERWRITTEN || info == FILE_WAS_CREATED ||
 				info == FILE_WAS_SUPERSEDED) {
 		/* Files should be initially set as archive */
-		if (lp_map_archive(SNUM(conn)) || lp_store_dos_attributes(SNUM(conn))) {
-			file_set_dosmode(conn, fname, new_dos_attributes | aARCH, NULL, True);
+		if (lp_map_archive(SNUM(conn)) ||
+		    lp_store_dos_attributes(SNUM(conn))) {
+			file_set_dosmode(conn, fname,
+					 new_dos_attributes | aARCH, NULL,
+					 True);
 		}
 	}
 
@@ -1721,9 +1817,11 @@ with flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 
 	if (!file_existed && !def_acl) {
 
-		int saved_errno = errno; /* We might get ENOSYS in the next call.. */
+		int saved_errno = errno; /* We might get ENOSYS in the next
+					  * call.. */
 
-		if (SMB_VFS_FCHMOD_ACL(fsp, fsp->fh->fd, unx_mode) == -1 && errno == ENOSYS) {
+		if (SMB_VFS_FCHMOD_ACL(fsp, fsp->fh->fd, unx_mode) == -1
+		    && errno == ENOSYS) {
 			errno = saved_errno; /* Ignore ENOSYS */
 		}
 
@@ -1734,24 +1832,30 @@ with flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 		/* Attributes need changing. File already existed. */
 
 		{
-			int saved_errno = errno; /* We might get ENOSYS in the next call.. */
-			ret = SMB_VFS_FCHMOD_ACL(fsp, fsp->fh->fd, new_unx_mode);
+			int saved_errno = errno; /* We might get ENOSYS in the
+						  * next call.. */
+			ret = SMB_VFS_FCHMOD_ACL(fsp, fsp->fh->fd,
+						 new_unx_mode);
 
 			if (ret == -1 && errno == ENOSYS) {
 				errno = saved_errno; /* Ignore ENOSYS */
 			} else {
-				DEBUG(5, ("open_file_shared: failed to reset attributes of file %s to 0%o\n",
+				DEBUG(5, ("open_file_shared: failed to reset "
+					  "attributes of file %s to 0%o\n",
 					fname, (unsigned int)new_unx_mode));
 				ret = 0; /* Don't do the fchmod below. */
 			}
 		}
 
-		if ((ret == -1) && (SMB_VFS_FCHMOD(fsp, fsp->fh->fd, new_unx_mode) == -1))
-			DEBUG(5, ("open_file_shared: failed to reset attributes of file %s to 0%o\n",
+		if ((ret == -1) &&
+		    (SMB_VFS_FCHMOD(fsp, fsp->fh->fd, new_unx_mode) == -1))
+			DEBUG(5, ("open_file_shared: failed to reset "
+				  "attributes of file %s to 0%o\n",
 				fname, (unsigned int)new_unx_mode));
 	}
 
-	/* If this is a successful open, we must remove any deferred open records. */
+	/* If this is a successful open, we must remove any deferred open
+	 * records. */
 	delete_defered_open_entry_record(conn, fsp->dev, fsp->inode);
 	unlock_share_entry_fsp(fsp);
 
@@ -1764,7 +1868,8 @@ with flags=0x%X flags2=0x%X mode=0%o returned %d\n",
  Open a file for for write to ensure that we can fchmod it.
 ****************************************************************************/
 
-files_struct *open_file_fchmod(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf)
+files_struct *open_file_fchmod(connection_struct *conn, const char *fname,
+			       SMB_STRUCT_STAT *psbuf)
 {
 	files_struct *fsp = NULL;
 	BOOL fsp_open;
@@ -1825,46 +1930,55 @@ files_struct *open_directory(connection_struct *conn,
 	BOOL create_dir = False;
 	int info = 0;
 
-	DEBUG(5,("open_directory: opening directory %s, access_mask = 0x%x, share_access = 0x%x\
-create_options = 0x%x, create_disposition = 0x%x\n",
-			fname,
-			(unsigned int)access_mask,
-			(unsigned int)share_access,
-			(unsigned int)create_options,
-			(unsigned int)create_disposition));
+	DEBUG(5,("open_directory: opening directory %s, access_mask = 0x%x, "
+		 "share_access = 0x%x create_options = 0x%x, "
+		 "create_disposition = 0x%x\n",
+		 fname,
+		 (unsigned int)access_mask,
+		 (unsigned int)share_access,
+		 (unsigned int)create_options,
+		 (unsigned int)create_disposition));
 
 	if (is_ntfs_stream_name(fname)) {
 		DEBUG(0,("open_directory: %s is a stream name!\n", fname ));
 		/* NB. Is the DOS error ERRbadpath or ERRbaddirectory ? */
-		set_saved_error_triple(ERRDOS, ERRbadpath, NT_STATUS_NOT_A_DIRECTORY);
+		set_saved_error_triple(ERRDOS, ERRbadpath,
+				       NT_STATUS_NOT_A_DIRECTORY);
 		return NULL;
 	}
 
 	if (dir_existed && !S_ISDIR(psbuf->st_mode)) {
 		DEBUG(0,("open_directory: %s is not a directory !\n", fname ));
 		/* NB. Is the DOS error ERRbadpath or ERRbaddirectory ? */
-		set_saved_error_triple(ERRDOS, ERRbadpath, NT_STATUS_NOT_A_DIRECTORY);
+		set_saved_error_triple(ERRDOS, ERRbadpath,
+				       NT_STATUS_NOT_A_DIRECTORY);
 		return NULL;
 	}
 
 	switch( create_disposition ) {
 		case FILE_OPEN:
-			/* If directory exists open. If directory doesn't exist error. */
+			/* If directory exists open. If directory doesn't
+			 * exist error. */
 			if (!dir_existed) {
-				DEBUG(5,("open_directory: FILE_OPEN requested for directory %s and \
-it doesn't exist.\n", fname ));
-				set_saved_error_triple(ERRDOS, ERRbadfile, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+				DEBUG(5,("open_directory: FILE_OPEN requested "
+					 "for directory %s and it doesn't "
+					 "exist.\n", fname ));
+				set_saved_error_triple(ERRDOS, ERRbadfile,
+						       NT_STATUS_OBJECT_NAME_NOT_FOUND);
 				return NULL;
 			}
 			info = FILE_WAS_OPENED;
 			break;
 
 		case FILE_CREATE:
-			/* If directory exists error. If directory doesn't exist create. */
+			/* If directory exists error. If directory doesn't
+			 * exist create. */
 			if (dir_existed) {
-				DEBUG(5,("open_directory: FILE_CREATE requested for directory %s and it \
-already exists.\n", fname ));
-				set_saved_error_triple(ERRDOS, ERRfilexists, NT_STATUS_OBJECT_NAME_COLLISION);
+				DEBUG(5,("open_directory: FILE_CREATE "
+					 "requested for directory %s and it "
+					 "already exists.\n", fname ));
+				set_saved_error_triple(ERRDOS, ERRfilexists,
+						       NT_STATUS_OBJECT_NAME_COLLISION);
 				return NULL;
 			}
 			create_dir = True;
@@ -1872,7 +1986,8 @@ already exists.\n", fname ));
 			break;
 
 		case FILE_OPEN_IF:
-			/* If directory exists open. If directory doesn't exist create. */
+			/* If directory exists open. If directory doesn't
+			 * exist create. */
 			if (!dir_existed) {
 				create_dir = True;
 				info = FILE_WAS_CREATED;
@@ -1885,10 +2000,12 @@ already exists.\n", fname ));
 		case FILE_OVERWRITE:
 		case FILE_OVERWRITE_IF:
 		default:
-			DEBUG(5,("open_directory: invalid create_disposition 0x%x for directory %s\n",
-				(unsigned int)create_disposition, fname));
+			DEBUG(5,("open_directory: invalid create_disposition "
+				 "0x%x for directory %s\n",
+				 (unsigned int)create_disposition, fname));
 			file_free(fsp);
-			set_saved_error_triple(ERRDOS, ERRinvalidparam, NT_STATUS_INVALID_PARAMETER);
+			set_saved_error_triple(ERRDOS, ERRinvalidparam,
+					       NT_STATUS_INVALID_PARAMETER);
 			return NULL;
 	}
 
@@ -1902,9 +2019,10 @@ already exists.\n", fname ));
 		NTSTATUS status = mkdir_internal(conn, fname, False);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(2,("open_directory: unable to create %s. Error was %s\n",
-				 fname, strerror(errno) ));
-			/* Ensure we return the correct NT status to the client. */
+			DEBUG(2,("open_directory: unable to create %s. "
+				 "Error was %s\n", fname, strerror(errno) ));
+			/* Ensure we return the correct NT status to the
+			 * client. */
 			set_saved_error_triple(0, 0, status);
 			return NULL;
 		}
@@ -1917,7 +2035,8 @@ already exists.\n", fname ));
 		}
 
 		if(!S_ISDIR(psbuf->st_mode)) {
-			DEBUG(0,("open_directory: %s is not a directory !\n", fname ));
+			DEBUG(0,("open_directory: %s is not a directory !\n",
+				 fname ));
 			return NULL;
 		}
 	}
@@ -1978,7 +2097,8 @@ already exists.\n", fname ));
  Open a pseudo-file (no locking checks - a 'stat' open).
 ****************************************************************************/
 
-files_struct *open_file_stat(connection_struct *conn, char *fname, SMB_STRUCT_STAT *psbuf)
+files_struct *open_file_stat(connection_struct *conn, char *fname,
+			     SMB_STRUCT_STAT *psbuf)
 {
 	files_struct *fsp = NULL;
 
