@@ -628,16 +628,6 @@ productivity.</para>
 	inconsistent directory information can be exceedingly difficult.
 	</para>
 
-	<figure id="chap7net">
-		<title>Network Topology &smbmdash; 2000 User Complex Design A</title>
-		<imagefile scale="70">chap7-net-Ar</imagefile>
-	</figure>
-
-	<figure id="chap7net2">
-		<title>Network Topology &smbmdash; 2000 User Complex Design B</title>
-		<imagefile scale="70">chap7-net2-Br</imagefile>
-	</figure>
-
 	</sect3>
 
 	</sect2>
@@ -1307,6 +1297,16 @@ index default               sub
 		</itemizedlist>
 
 	</sect2>
+
+	<figure id="chap7net">
+		<title>Network Topology &smbmdash; 2000 User Complex Design A</title>
+		<imagefile scale="80">chap7-net-Ar</imagefile>
+	</figure>
+
+	<figure id="chap7net2">
+		<title>Network Topology &smbmdash; 2000 User Complex Design B</title>
+		<imagefile scale="80">chap7-net2-Br</imagefile>
+	</figure>
 
 </sect1>
 

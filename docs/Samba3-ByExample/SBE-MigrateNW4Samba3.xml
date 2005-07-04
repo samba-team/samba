@@ -484,7 +484,8 @@ ou=groups,dc=abmas,dc=biz"
 write
   by * read
 
-## This is used to quickly deactivate any LDAP object only Admins have access.
+## This is used to quickly deactivate any LDAP object only 
+##  Admins have access.
 access to dn.sub="ou=inactive,dc=abmas,dc=biz"
   by * none
 
@@ -1664,8 +1665,8 @@ ENDIF
 
 		<step><para>
 			In the next dialog, copy it directly to the profiles share on the
-			Samba server (\\PDCname\profiles\user\&lt;architecture&gt; in my
-			case). You will have had to make a connection to the share as that
+			Samba server (in my case \\PDCname\profiles\user\&lt;architecture&gt;.
+			You will have had to make a connection to the share as that
 			user (e.g., Windows Explorer type \\PDCname\profiles\username).
 		</para></step>
 
