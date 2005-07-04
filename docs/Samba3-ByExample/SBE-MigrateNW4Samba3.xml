@@ -989,21 +989,21 @@ undesirable actions from occurring unnoticed.
 #
 # located in /etc/smbldap-tools/smbldap.conf
 #
-##############################################################################
+######################################################################
 #
 # General Configuration
 #
-##############################################################################
+######################################################################
 
 # Put your own SID
 # to obtain this number do: net getlocalsid
 SID="S-1-5-21-725326080-1709766072-2910717368"
 
-##############################################################################
+######################################################################
 #
 # LDAP Configuration
 #
-##############################################################################
+######################################################################
 
 # Notes: to use to dual ldap servers backend for Samba, you must patch
 # Samba with the dual-head patch from IDEALX. If not using this patch
@@ -1063,12 +1063,13 @@ computersdn="ou=People,${suffix}"
 # Ex groupsdn="ou=Groups,dc=IDEALX,dc=ORG"
 groupsdn="ou=Groups,${suffix}"
 
-# Where are stored Idmap entries (used if samba is a domain member server)
+# Where are stored Idmap entries
+# (used if samba is a domain member server)
 # Ex groupsdn="ou=Idmap,dc=IDEALX,dc=ORG"
 idmapdn="ou=Idmap,${suffix}"
 
 # Where to store next uidNumber and gidNumber available
-sambaUnixIdPooldn="sambaDomainName=MEGANET2,dc=abmas,dc=biz"
+sambaUnixIdPooldn="sambaDomainName=MEGANET2,${suffix}"
 
 # Default scope Used
 scope="sub"
@@ -1086,11 +1087,11 @@ hash_encrypt="MD5"
 # passwords if you use "$1$%.8s". This parameter is optional!
 crypt_salt_format="%s"
 
-##############################################################################
+######################################################################
 #
 # Unix Accounts Configuration
 #
-##############################################################################
+######################################################################
 
 # Login defs
 # Default Login Shell
@@ -1113,9 +1114,10 @@ defaultComputerGid="515"
 # Skel dir
 skeletonDir="/etc/skel"
 
-# Default password validation time (time in days) Comment the next line if
-# you don't want password to be enable for defaultMaxPasswordAge days (be
-# careful to the sambaPwdMustChange attribute's value)
+# Default password validation time (time in days) Comment the next
+# line if you don't want password to be enable for
+# defaultMaxPasswordAge days (be careful to the sambaPwdMustChange
+# attribute's value)
 defaultMaxPasswordAge="45"
 </screen>
 </example>
@@ -1123,22 +1125,22 @@ defaultMaxPasswordAge="45"
 <example id="ch8ideal4">
 <title>Idealx smbldap-tools Control File &smbmdash; Part D</title>
 <screen>
-##############################################################################
+######################################################################
 #
 # SAMBA Configuration
 #
-##############################################################################
+######################################################################
 
 # The UNC path to home drives location (%U username substitution)
 # Ex: \\My-PDC-netbios-name\homes\%U
-# Just set it to a null string if you want to use the smb.conf 'logon home'
-# directive and/or disable roaming profiles
+# Just set it to a null string if you want to use the smb.conf
+# 'logon home' directive and/or disable roaming profiles
 userSmbHome=""
 
 # The UNC path to profiles locations (%U username substitution)
 # Ex: \\My-PDC-netbios-name\profiles\%U
-# Just set it to a null string if you want to use the smb.conf 'logon path'
-# directive and/or disable roaming profiles
+# Just set it to a null string if you want to use the smb.conf
+# 'logon path' directive and/or disable roaming profiles
 userProfile=""
 
 # The default Home Drive Letter mapping
@@ -1157,12 +1159,13 @@ userScript=""
 # when smbldap-useradd -M is used
 mailDomain="abmas.org"
 
-##############################################################################
+######################################################################
 #
 # SMBLDAP-TOOLS Configuration (default are ok for a RedHat)
 #
-##############################################################################
-# Allows not to use smbpasswd (if with_smbpasswd == 0 in smbldap_conf.pm) but
+######################################################################
+# Allows not to use smbpasswd
+# (if with_smbpasswd == 0 in smbldap_conf.pm) but
 # prefer Crypt::SmbHash library
 with_smbpasswd="0"
 smbpasswd="/usr/bin/smbpasswd"
