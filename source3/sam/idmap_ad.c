@@ -1,13 +1,6 @@
 /*
  *  idmap_ad: map between Active Directory and RFC 2307 or "Services for Unix" (SFU) Accounts
- *  Copyright (C) 2001-2004 PADL Software Pty Ltd. All rights reserved.
  *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- */
-/*
  * Unix SMB/CIFS implementation.
  *
  * Winbind ADS backend functions
@@ -15,6 +8,7 @@
  * Copyright (C) Andrew Tridgell 2001
  * Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003
  * Copyright (C) Gerald (Jerry) Carter 2004
+ * Copyright (C) Luke Howard 2001-2004
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
