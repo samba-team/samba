@@ -397,19 +397,24 @@ typedef struct
 
 #include "fake_file.h"
 
+struct fd_handle {
+	size_t ref_count;
+	int fd;
+	SMB_BIG_UINT position_information;
+	SMB_OFF_T pos;
+	uint32 create_options;		/* NTCreateX "special" options such as delete on close. */
+};
+
 typedef struct files_struct {
 	struct files_struct *next, *prev;
 	int fnum;
 	struct connection_struct *conn;
-	int fd;
+	struct fd_handle *fh;
 	unsigned int num_smb_operations;
 	uint16 rap_print_jobid;
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
-	BOOL delete_on_close;
-	SMB_OFF_T pos;
 	SMB_BIG_UINT initial_allocation_size; /* Faked up initial allocation on disk. */
-	SMB_BIG_UINT position_information;
 	mode_t mode;
 	uint16 file_pid;
 	uint16 vuid;
@@ -418,7 +423,6 @@ typedef struct files_struct {
 	struct timeval open_time;
 	uint32 access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
 	uint32 share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */
-	uint32 create_options;		/* NTCreateX "special" options such as delete on close. */
 	BOOL pending_modtime_owner;
 	time_t pending_modtime;
 	time_t last_write_time;
@@ -432,7 +436,6 @@ typedef struct files_struct {
 	BOOL modified;
 	BOOL is_directory;
 	BOOL is_stat;
-	BOOL directory_delete_on_close;
 	BOOL aio_write_behind;
 	char *fsp_name;
  	FAKE_FILE_HANDLE *fake_file_handle;

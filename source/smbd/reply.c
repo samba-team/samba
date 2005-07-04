@@ -1642,7 +1642,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	}
  
 	DEBUG( 2, ( "reply_mknew: file %s\n", fname ) );
-	DEBUG( 3, ( "reply_mknew %s fd=%d dmode=0x%x\n", fname, fsp->fd, (unsigned int)fattr ) );
+	DEBUG( 3, ( "reply_mknew %s fd=%d dmode=0x%x\n", fname, fsp->fh->fd, (unsigned int)fattr ) );
 
 	END_PROFILE(SMBcreate);
 	return(outsize);
@@ -1747,7 +1747,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	}
 
 	DEBUG( 2, ( "reply_ctemp: created temp file %s\n", fname ) );
-	DEBUG( 3, ( "reply_ctemp %s fd=%d umode=0%o\n", fname, fsp->fd,
+	DEBUG( 3, ( "reply_ctemp %s fd=%d umode=0%o\n", fname, fsp->fh->fd,
 			(unsigned int)sbuf.st_mode ) );
 
 	END_PROFILE(SMBctemp);
@@ -2133,7 +2133,7 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 		header.length = 4;
 		header.free = NULL;
 
-		if ( SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fd, &header, startpos, nread) == -1) {
+		if ( SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fh->fd, &header, startpos, nread) == -1) {
 			/* Returning ENOSYS means no data at all was sent. Do this as a normal read. */
 			if (errno == ENOSYS) {
 				goto normal_readbraw;
@@ -2280,7 +2280,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 		SMB_STRUCT_STAT st;
 		SMB_OFF_T size = 0;
   
-		if (SMB_VFS_FSTAT(fsp,fsp->fd,&st) == 0) {
+		if (SMB_VFS_FSTAT(fsp,fsp->fh->fd,&st) == 0) {
 			size = st.st_size;
 		}
 
@@ -2492,7 +2492,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 		SMB_STRUCT_STAT sbuf;
 		DATA_BLOB header;
 
-		if(SMB_VFS_FSTAT(fsp,fsp->fd, &sbuf) == -1)
+		if(SMB_VFS_FSTAT(fsp,fsp->fh->fd, &sbuf) == -1)
 			return(UNIXERROR(ERRDOS,ERRnoaccess));
 
 		if (startpos > sbuf.st_size)
@@ -2521,7 +2521,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 		header.length = data - outbuf;
 		header.free = NULL;
 
-		if ((nread = SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fd, &header, startpos, smb_maxcnt)) == -1) {
+		if ((nread = SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fh->fd, &header, startpos, smb_maxcnt)) == -1) {
 			/* Returning ENOSYS means no data at all was sent. Do this as a normal read. */
 			if (errno == ENOSYS) {
 				goto normal_read;
@@ -3100,7 +3100,7 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 			break;
 		case 1:
 			umode = SEEK_CUR;
-			res = fsp->pos + startpos;
+			res = fsp->fh->pos + startpos;
 			break;
 		case 2:
 			umode = SEEK_END;
@@ -3112,19 +3112,19 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	}
 
 	if (umode == SEEK_END) {
-		if((res = SMB_VFS_LSEEK(fsp,fsp->fd,startpos,umode)) == -1) {
+		if((res = SMB_VFS_LSEEK(fsp,fsp->fh->fd,startpos,umode)) == -1) {
 			if(errno == EINVAL) {
 				SMB_OFF_T current_pos = startpos;
 				SMB_STRUCT_STAT sbuf;
 
-				if(SMB_VFS_FSTAT(fsp,fsp->fd, &sbuf) == -1) {
+				if(SMB_VFS_FSTAT(fsp,fsp->fh->fd, &sbuf) == -1) {
 					END_PROFILE(SMBlseek);
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 				}
 
 				current_pos += sbuf.st_size;
 				if(current_pos < 0)
-					res = SMB_VFS_LSEEK(fsp,fsp->fd,0,SEEK_SET);
+					res = SMB_VFS_LSEEK(fsp,fsp->fh->fd,0,SEEK_SET);
 			}
 		}
 
@@ -3134,7 +3134,7 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		}
 	}
 
-	fsp->pos = res;
+	fsp->fh->pos = res;
   
 	outsize = set_message(outbuf,2,0,True);
 	SIVAL(outbuf,smb_vwv0,res);
@@ -3240,7 +3240,7 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		pstrcpy( file_name, fsp->fsp_name);
 
 		DEBUG(3,("close fd=%d fnum=%d (numopen=%d)\n",
-			 fsp->fd, fsp->fnum,
+			 fsp->fh->fd, fsp->fnum,
 			 conn->num_files_open));
  
 		/*
@@ -3368,7 +3368,7 @@ int reply_lock(connection_struct *conn,
 	offset = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv3);
 
 	DEBUG(3,("lock fd=%d fnum=%d offset=%.0f count=%.0f\n",
-		 fsp->fd, fsp->fnum, (double)offset, (double)count));
+		 fsp->fh->fd, fsp->fnum, (double)offset, (double)count));
 
 	status = do_lock_spin(fsp, conn, SVAL(inbuf,smb_pid), count, offset, WRITE_LOCK, &my_lock_ctx);
 	if (NT_STATUS_V(status)) {
@@ -3419,7 +3419,7 @@ int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	}
 
 	DEBUG( 3, ( "unlock fd=%d fnum=%d offset=%.0f count=%.0f\n",
-		    fsp->fd, fsp->fnum, (double)offset, (double)count ) );
+		    fsp->fh->fd, fsp->fnum, (double)offset, (double)count ) );
 	
 	END_PROFILE(SMBunlock);
 	return(outsize);
@@ -3529,7 +3529,7 @@ int reply_printopen(connection_struct *conn,
 	SSVAL(outbuf,smb_vwv0,fsp->fnum);
   
 	DEBUG(3,("openprint fd=%d fnum=%d\n",
-		 fsp->fd, fsp->fnum));
+		 fsp->fh->fd, fsp->fnum));
 
 	END_PROFILE(SMBsplopen);
 	return(outsize);
@@ -3555,7 +3555,7 @@ int reply_printclose(connection_struct *conn,
 	}
   
 	DEBUG(3,("printclose fd=%d fnum=%d\n",
-		 fsp->fd,fsp->fnum));
+		 fsp->fh->fd,fsp->fnum));
   
 	close_err = close_file(fsp,True);
 
@@ -4645,7 +4645,7 @@ BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 	}
 
 	if ((ofun&3) == 1) {
-		if(SMB_VFS_LSEEK(fsp2,fsp2->fd,0,SEEK_END) == -1) {
+		if(SMB_VFS_LSEEK(fsp2,fsp2->fh->fd,0,SEEK_END) == -1) {
 			DEBUG(0,("copy_file: error - vfs lseek returned error %s\n", strerror(errno) ));
 			/*
 			 * Stop the copy from occurring.

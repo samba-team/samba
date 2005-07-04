@@ -563,7 +563,7 @@ static void fill_share_mode(char *p, files_struct *fsp, uint16 port, uint16 op_t
 	memset(e, '\0', sizeof(share_mode_entry));
 	e->pid = sys_getpid();
 	e->share_access = fsp->share_access;
-	e->create_options = fsp->create_options;
+	e->create_options = fsp->fh->create_options;
 	e->access_mask = fsp->access_mask;
 	e->op_port = port;
 	e->op_type = op_type;

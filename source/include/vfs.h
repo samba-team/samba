@@ -58,7 +58,8 @@
 /* Changed to version 11 to include seekdir/telldir/rewinddir calls. JRA */
 /* Changed to version 12 to add mask and attributes to opendir(). JRA 
    Also include aio calls. JRA. */
-#define SMB_VFS_INTERFACE_VERSION 12
+/* Changed to version 13 as the internal structure of files_struct has changed. JRA */
+#define SMB_VFS_INTERFACE_VERSION 13
 
 
 /* to bug old modules which are trying to compile with the old functions */

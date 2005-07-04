@@ -101,16 +101,16 @@
 			extern struct current_user current_user;\
 			if (!FNUM_OK(fsp,conn)) \
 				return(ERROR_DOS(ERRDOS,ERRbadfid)); \
-			else if((fsp)->fd == -1) \
+			else if((fsp)->fh->fd == -1) \
 				return(ERROR_DOS(ERRDOS,ERRbadaccess));\
 			(fsp)->num_smb_operations++;\
 			} while(0)
 
-#define CHECK_READ(fsp,inbuf) (((fsp)->fd != -1) && ((fsp)->can_read || \
+#define CHECK_READ(fsp,inbuf) (((fsp)->fh->fd != -1) && ((fsp)->can_read || \
 			((SVAL((inbuf),smb_flg2) & FLAGS2_READ_PERMIT_EXECUTE) && \
 			 (fsp->access_mask & FILE_EXECUTE))))
 
-#define CHECK_WRITE(fsp) ((fsp)->can_write && ((fsp)->fd != -1))
+#define CHECK_WRITE(fsp) ((fsp)->can_write && ((fsp)->fh->fd != -1))
 
 #define ERROR_WAS_LOCK_DENIED(status) (NT_STATUS_EQUAL((status), NT_STATUS_LOCK_NOT_GRANTED) || \
 				NT_STATUS_EQUAL((status), NT_STATUS_FILE_LOCK_CONFLICT) )

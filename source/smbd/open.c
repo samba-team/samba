@@ -63,8 +63,11 @@ static int fd_open(struct connection_struct *conn,
 int fd_close(struct connection_struct *conn,
 		files_struct *fsp)
 {
-	if (fsp->fd == -1) {
-		return 0; /* what we used to call a stat open. */
+	if (fsp->fh->fd == -1) {
+		return 0; /* What we used to call a stat open. */
+	}
+	if (fsp->fh->ref_count > 1) {
+		return 0; /* Shared handle. Only close last reference. */
 	}
 	return fd_close_posix(conn, fsp);
 }
@@ -107,9 +110,9 @@ void change_owner_to_parent(connection_struct *conn,
 		return;
 	}
 
-	if (fsp && fsp->fd != -1) {
+	if (fsp && fsp->fh->fd != -1) {
 		become_root();
-		ret = SMB_VFS_FCHOWN(fsp, fsp->fd, parent_st.st_uid, (gid_t)-1);
+		ret = SMB_VFS_FCHOWN(fsp, fsp->fh->fd, parent_st.st_uid, (gid_t)-1);
 		unbecome_root();
 		if (ret == -1) {
 			DEBUG(0,("change_owner_to_parent: failed to fchown file %s to parent directory uid %u. \
@@ -189,7 +192,7 @@ static BOOL open_file(files_struct *fsp,
 	int accmode = (flags & O_ACCMODE);
 	int local_flags = flags;
 
-	fsp->fd = -1;
+	fsp->fh->fd = -1;
 	fsp->oplock_type = NO_OPLOCK;
 	errno = EPERM;
 
@@ -267,8 +270,8 @@ static BOOL open_file(files_struct *fsp,
 		}
 
 		/* Actually do the open */
-		fsp->fd = fd_open(conn, fname, local_flags, unx_mode);
-		if (fsp->fd == -1)  {
+		fsp->fh->fd = fd_open(conn, fname, local_flags, unx_mode);
+		if (fsp->fh->fd == -1)  {
 			DEBUG(3,("Error opening file %s (%s) (local_flags=%d) (flags=%d)\n",
 				 fname,strerror(errno),local_flags,flags));
 			check_for_pipe(fname);
@@ -281,16 +284,16 @@ static BOOL open_file(files_struct *fsp,
 		}
 
 	} else {
-		fsp->fd = -1; /* What we used to call a stat open. */
+		fsp->fh->fd = -1; /* What we used to call a stat open. */
 	}
 
 	if (!VALID_STAT(*psbuf)) {
 		int ret;
 
-		if (fsp->fd == -1) {
+		if (fsp->fh->fd == -1) {
 			ret = SMB_VFS_STAT(conn, fname, psbuf);
 		} else {
-			ret = SMB_VFS_FSTAT(fsp,fsp->fd,psbuf);
+			ret = SMB_VFS_FSTAT(fsp,fsp->fh->fd,psbuf);
 			/* If we have an fd, this stat should succeed. */
 			if (ret == -1) {
 				DEBUG(0,("Error doing fstat on open file %s (%s)\n", fname,strerror(errno) ));
@@ -334,7 +337,6 @@ static BOOL open_file(files_struct *fsp,
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = False;
 	fsp->is_stat = False;
-	fsp->directory_delete_on_close = False;
 	if (conn->aio_write_behind_list &&
 			is_in_path(fname, conn->aio_write_behind_list, conn->case_sensitive)) {
 		fsp->aio_write_behind = True;
@@ -841,7 +843,7 @@ static void kernel_flock(files_struct *fsp, uint32 share_mode)
 		kernel_mode = LOCK_MAND;
 	}
 	if (kernel_mode) {
-		flock(fsp->fd, kernel_mode);
+		flock(fsp->fh->fd, kernel_mode);
 	}
 #endif
 	;
@@ -911,13 +913,13 @@ static files_struct *fcb_or_dos_open(connection_struct *conn, const char *fname,
 	for(fsp = file_find_di_first(dev, inode); fsp; fsp = file_find_di_next(fsp)) {
 
 		DEBUG(10,("fcb_or_dos_open: checking file %s, fd = %d, vuid = %u, file_pid = %u, create_options = 0x%x \
-access_mask = 0x%x\n", fsp->fsp_name, fsp->fd, (unsigned int)fsp->vuid, (unsigned int)fsp->file_pid,
-				(unsigned int)fsp->create_options, (unsigned int)fsp->access_mask ));
+access_mask = 0x%x\n", fsp->fsp_name, fsp->fh->fd, (unsigned int)fsp->vuid, (unsigned int)fsp->file_pid,
+				(unsigned int)fsp->fh->create_options, (unsigned int)fsp->access_mask ));
 
-		if (fsp->fd != -1 &&
+		if (fsp->fh->fd != -1 &&
 				fsp->vuid == current_user.vuid &&
 				fsp->file_pid == global_smbpid &&
-				(fsp->create_options & (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS |
+				(fsp->fh->create_options & (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS |
 				                      NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) &&
 				(fsp->access_mask & FILE_WRITE_DATA) &&
 				strequal(fsp->fsp_name, fname)) {
@@ -931,7 +933,7 @@ access_mask = 0x%x\n", fsp->fsp_name, fsp->fd, (unsigned int)fsp->vuid, (unsigne
 	}
                                                                                                                     
 	/* quite an insane set of semantics ... */
-	if (is_executable(fname) && (fsp->create_options & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS)) {
+	if (is_executable(fname) && (fsp->fh->create_options & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS)) {
 		DEBUG(10,("fcb_or_dos_open: file fail due to is_executable.\n"));
 		return NULL;
 	}
@@ -1590,8 +1592,8 @@ with flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 		/*
 		 * We are modifing the file after open - update the stat struct..
 		 */
-		if ((SMB_VFS_FTRUNCATE(fsp,fsp->fd,0) == -1) ||
-		    (SMB_VFS_FSTAT(fsp,fsp->fd,psbuf)==-1)) {
+		if ((SMB_VFS_FTRUNCATE(fsp,fsp->fh->fd,0) == -1) ||
+		    (SMB_VFS_FSTAT(fsp,fsp->fh->fd,psbuf)==-1)) {
 			unlock_share_entry_fsp(fsp);
 			fd_close(conn,fsp);
 			file_free(fsp);
@@ -1601,7 +1603,7 @@ with flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 
 	/* Record the options we were opened with. */
 	fsp->share_access = share_access;
-	fsp->create_options = create_options;
+	fsp->fh->create_options = create_options;
 	fsp->access_mask = access_mask;
 
 	if (file_existed) {
@@ -1686,7 +1688,7 @@ with flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 
 		int saved_errno = errno; /* We might get ENOSYS in the next call.. */
 
-		if (SMB_VFS_FCHMOD_ACL(fsp, fsp->fd, unx_mode) == -1 && errno == ENOSYS) {
+		if (SMB_VFS_FCHMOD_ACL(fsp, fsp->fh->fd, unx_mode) == -1 && errno == ENOSYS) {
 			errno = saved_errno; /* Ignore ENOSYS */
 		}
 
@@ -1698,7 +1700,7 @@ with flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 
 		{
 			int saved_errno = errno; /* We might get ENOSYS in the next call.. */
-			ret = SMB_VFS_FCHMOD_ACL(fsp, fsp->fd, new_unx_mode);
+			ret = SMB_VFS_FCHMOD_ACL(fsp, fsp->fh->fd, new_unx_mode);
 
 			if (ret == -1 && errno == ENOSYS) {
 				errno = saved_errno; /* Ignore ENOSYS */
@@ -1709,7 +1711,7 @@ with flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 			}
 		}
 
-		if ((ret == -1) && (SMB_VFS_FCHMOD(fsp, fsp->fd, new_unx_mode) == -1))
+		if ((ret == -1) && (SMB_VFS_FCHMOD(fsp, fsp->fh->fd, new_unx_mode) == -1))
 			DEBUG(5, ("open_file_shared: failed to reset attributes of file %s to 0%o\n",
 				fname, (unsigned int)new_unx_mode));
 	}
@@ -1904,7 +1906,7 @@ already exists.\n", fname ));
 	fsp->can_write = False;
 
 	fsp->share_access = share_access;
-	fsp->create_options = create_options;
+	fsp->fh->create_options = create_options;
 	fsp->access_mask = access_mask;
 
 	fsp->print_file = False;
@@ -1913,7 +1915,6 @@ already exists.\n", fname ));
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = True;
 	fsp->is_stat = False;
-	fsp->directory_delete_on_close = False;
 	string_set(&fsp->fsp_name,fname);
 
 	if (create_options & FILE_DELETE_ON_CLOSE) {
@@ -1977,7 +1978,6 @@ files_struct *open_file_stat(connection_struct *conn, char *fname, SMB_STRUCT_ST
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = False;
 	fsp->is_stat = True;
-	fsp->directory_delete_on_close = False;
 	string_set(&fsp->fsp_name,fname);
 
 	conn->num_files_open++;

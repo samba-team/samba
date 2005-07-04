@@ -92,7 +92,7 @@ static int close_filestruct(files_struct *fsp)
 	connection_struct *conn = fsp->conn;
 	int ret = 0;
     
-	if (fsp->fd != -1) {
+	if (fsp->fh->fd != -1) {
 		if(flush_write_cache(fsp, CLOSE_FLUSH) == -1)
 			ret = -1;
 
@@ -194,7 +194,7 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 
 	lock_share_entry_fsp(fsp);
 
-	if (fsp->delete_on_close) {
+	if (fsp->fh->create_options & FILE_DELETE_ON_CLOSE) {
 
 		/*
 		 * Modify the share mode entry for all files open
@@ -203,10 +203,11 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 		 * if flag is set.
 		 */
 
-		NTSTATUS status =set_delete_on_close_over_all(fsp, fsp->delete_on_close);
-		if (NT_STATUS_V(status) !=  NT_STATUS_V(NT_STATUS_OK))
+		NTSTATUS status =set_delete_on_close_over_all(fsp, True);
+		if (NT_STATUS_V(status) !=  NT_STATUS_V(NT_STATUS_OK)) {
 			DEBUG(0,("close_normal_file: failed to change delete on close flag for file %s\n",
 				fsp->fsp_name ));
+		}
 	}
 
 	share_entry_count = del_share_mode(fsp, &share_entry);
@@ -312,7 +313,7 @@ static int close_directory(files_struct *fsp, BOOL normal_close)
 	 * reference to a directory also.
 	 */
 
-	if (normal_close && fsp->directory_delete_on_close) {
+	if (normal_close && (fsp->fh->create_options & FILE_DELETE_ON_CLOSE)) {
 		BOOL ok = rmdir_internals(fsp->conn, fsp->fsp_name);
 		DEBUG(5,("close_directory: %s. Delete on close was set - deleting directory %s.\n",
 			fsp->fsp_name, ok ? "succeeded" : "failed" ));
@@ -322,8 +323,9 @@ static int close_directory(files_struct *fsp, BOOL normal_close)
 		 * now fail as the directory has been deleted.
 		 */
 
-		if(ok)
+		if(ok) {
 			remove_pending_change_notify_requests_by_filename(fsp);
+		}
 		process_pending_change_notify_queue((time_t)0);
 	}
 
@@ -332,8 +334,9 @@ static int close_directory(files_struct *fsp, BOOL normal_close)
 	 */
 	close_filestruct(fsp);
 	
-	if (fsp->fsp_name)
+	if (fsp->fsp_name) {
 		string_free(&fsp->fsp_name);
+	}
 	
 	file_free(fsp);
 	return 0;

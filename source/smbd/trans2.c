@@ -119,8 +119,8 @@ static BOOL get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn, files_str
 		return False;
 	}
 
-	if (fsp && fsp->fd != -1) {
-		sizeret = SMB_VFS_FGETXATTR(fsp, fsp->fd, ea_name, val, attr_size);
+	if (fsp && fsp->fh->fd != -1) {
+		sizeret = SMB_VFS_FGETXATTR(fsp, fsp->fh->fd, ea_name, val, attr_size);
 	} else {
 		sizeret = SMB_VFS_GETXATTR(conn, fname, ea_name, val, attr_size);
 	}
@@ -171,8 +171,8 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 
 	for (i = 0, ea_namelist = TALLOC(mem_ctx, ea_namelist_size); i < 6;
 			ea_namelist = TALLOC_REALLOC_ARRAY(mem_ctx, ea_namelist, char, ea_namelist_size), i++) {
-		if (fsp && fsp->fd != -1) {
-			sizeret = SMB_VFS_FLISTXATTR(fsp, fsp->fd, ea_namelist, ea_namelist_size);
+		if (fsp && fsp->fh->fd != -1) {
+			sizeret = SMB_VFS_FLISTXATTR(fsp, fsp->fh->fd, ea_namelist, ea_namelist_size);
 		} else {
 			sizeret = SMB_VFS_LISTXATTR(conn, fname, ea_namelist, ea_namelist_size);
 		}
@@ -337,10 +337,10 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp, const char *fname, s
 
 		if (ea_list->ea.value.length == 0) {
 			/* Remove the attribute. */
-			if (fsp && (fsp->fd != -1)) {
+			if (fsp && (fsp->fh->fd != -1)) {
 				DEBUG(10,("set_ea: deleting ea name %s on file %s by file descriptor.\n",
 					unix_ea_name, fsp->fsp_name));
-				ret = SMB_VFS_FREMOVEXATTR(fsp, fsp->fd, unix_ea_name);
+				ret = SMB_VFS_FREMOVEXATTR(fsp, fsp->fh->fd, unix_ea_name);
 			} else {
 				DEBUG(10,("set_ea: deleting ea name %s on file %s.\n",
 					unix_ea_name, fname));
@@ -355,10 +355,10 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp, const char *fname, s
 			}
 #endif
 		} else {
-			if (fsp && (fsp->fd != -1)) {
+			if (fsp && (fsp->fh->fd != -1)) {
 				DEBUG(10,("set_ea: setting ea name %s on file %s by file descriptor.\n",
 					unix_ea_name, fsp->fsp_name));
-				ret = SMB_VFS_FSETXATTR(fsp, fsp->fd, unix_ea_name,
+				ret = SMB_VFS_FSETXATTR(fsp, fsp->fh->fd, unix_ea_name,
 							ea_list->ea.value.data, ea_list->ea.value.length, 0);
 			} else {
 				DEBUG(10,("set_ea: setting ea name %s on file %s.\n",
@@ -2764,7 +2764,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			pstrcpy(fname, fsp->fsp_name);
 			/* We know this name is ok, it's already passed the checks. */
 			
-		} else if(fsp && (fsp->is_directory || fsp->fd == -1)) {
+		} else if(fsp && (fsp->is_directory || fsp->fh->fd == -1)) {
 			/*
 			 * This is actually a QFILEINFO on a directory
 			 * handle (returned from an NT SMB). NT5.0 seems
@@ -2784,7 +2784,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
 			}
 
-			delete_pending = fsp->is_directory ? fsp->directory_delete_on_close : 0;
+			delete_pending = (fsp->fh->create_options & FILE_DELETE_ON_CLOSE) ? True : False;
 		} else {
 			/*
 			 * Original code - this is an open file.
@@ -2792,12 +2792,12 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			CHECK_FSP(fsp,conn);
 
 			pstrcpy(fname, fsp->fsp_name);
-			if (SMB_VFS_FSTAT(fsp,fsp->fd,&sbuf) != 0) {
+			if (SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf) != 0) {
 				DEBUG(3,("fstat of fnum %d failed (%s)\n", fsp->fnum, strerror(errno)));
 				return(UNIXERROR(ERRDOS,ERRbadfid));
 			}
-			pos = fsp->position_information;
-			delete_pending = fsp->delete_on_close;
+			pos = fsp->fh->position_information;
+			delete_pending = (fsp->fh->create_options & FILE_DELETE_ON_CLOSE) ? True : False;
 			access_mask = fsp->access_mask;
 		}
 	} else {
@@ -3356,8 +3356,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				uint16 num_file_acls = 0;
 				uint16 num_def_acls = 0;
 
-				if (fsp && !fsp->is_directory && (fsp->fd != -1)) {
-					file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, fsp->fd);
+				if (fsp && !fsp->is_directory && (fsp->fh->fd != -1)) {
+					file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, fsp->fh->fd);
 				} else {
 					file_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, fname, SMB_ACL_TYPE_ACCESS);
 				}
@@ -3476,14 +3476,16 @@ NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close, u
 				fsp->fsp_name ));
 			return NT_STATUS_ACCESS_DENIED;
 		}
+
+		fsp->fh->create_options |= FILE_DELETE_ON_CLOSE;
+	} else {
+		fsp->fh->create_options &= ~FILE_DELETE_ON_CLOSE;
 	}
 
 	if(fsp->is_directory) {
-		fsp->directory_delete_on_close = delete_on_close;
 		DEBUG(10, ("set_delete_on_close_internal: %s delete on close flag for fnum = %d, directory %s\n",
 			delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
 	} else {
-		fsp->delete_on_close = delete_on_close;
 		DEBUG(10, ("set_delete_on_close_internal: %s delete on close flag for fnum = %d, file %s\n",
 			delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
 	}
@@ -3645,7 +3647,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		fsp = file_fsp(params,0);
 		info_level = SVAL(params,2);    
 
-		if(fsp && (fsp->is_directory || fsp->fd == -1)) {
+		if(fsp && (fsp->is_directory || fsp->fh->fd == -1)) {
 			/*
 			 * This is actually a SETFILEINFO on a directory
 			 * handle (returned from an NT SMB). NT5.0 seems
@@ -3661,7 +3663,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			 * Doing a DELETE_ON_CLOSE should cancel a print job.
 			 */
 			if ((info_level == SMB_SET_FILE_DISPOSITION_INFO) && CVAL(pdata,0)) {
-				fsp->create_options |= FILE_DELETE_ON_CLOSE;
+				fsp->fh->create_options |= FILE_DELETE_ON_CLOSE;
 
 				DEBUG(3,("call_trans2setfilepathinfo: Cancelling print job (%s)\n", fsp->fsp_name ));
 	
@@ -3677,7 +3679,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			CHECK_FSP(fsp,conn);
 
 			pstrcpy(fname, fsp->fsp_name);
-			fd = fsp->fd;
+			fd = fsp->fh->fd;
 
 			if (SMB_VFS_FSTAT(fsp,fd,&sbuf) != 0) {
 				DEBUG(3,("call_trans2setfilepathinfo: fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
@@ -3918,7 +3920,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 						return(UNIXERROR(ERRDOS,ERRbadpath));
 					}
 					ret = vfs_allocate_file_space(new_fsp, allocation_size);
-					if (SMB_VFS_FSTAT(new_fsp,new_fsp->fd,&new_sbuf) != 0) {
+					if (SMB_VFS_FSTAT(new_fsp,new_fsp->fh->fd,&new_sbuf) != 0) {
 						DEBUG(3,("call_trans2setfilepathinfo: fstat of fnum %d failed (%s)\n",
 									new_fsp->fnum, strerror(errno)));
 						ret = -1;
@@ -4013,7 +4015,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			DEBUG(10,("call_trans2setfilepathinfo: Set file position information for file %s to %.0f\n",
 					fname, (double)position_information ));
 			if (fsp) {
-				fsp->position_information = position_information;
+				fsp->fh->position_information = position_information;
 			}
 
 			/* We're done. We only get position info in this call. */

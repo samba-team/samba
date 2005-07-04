@@ -64,10 +64,10 @@ files_struct *print_fsp_open(connection_struct *conn, const char *fname)
 	}
 
 	/* setup a full fsp */
-	fsp->fd = print_job_fd(lp_const_servicename(SNUM(conn)),jobid);
+	fsp->fh->fd = print_job_fd(lp_const_servicename(SNUM(conn)),jobid);
 	GetTimeOfDay(&fsp->open_time);
 	fsp->vuid = current_user.vuid;
-	fsp->pos = -1;
+	fsp->fh->pos = -1;
 	fsp->can_lock = True;
 	fsp->can_read = False;
 	fsp->access_mask = FILE_GENERIC_WRITE;
@@ -77,11 +77,10 @@ files_struct *print_fsp_open(connection_struct *conn, const char *fname)
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = False;
-	fsp->directory_delete_on_close = False;
 	string_set(&fsp->fsp_name,print_job_fname(lp_const_servicename(SNUM(conn)),jobid));
 	fsp->wbmpx_ptr = NULL;      
 	fsp->wcp = NULL; 
-	SMB_VFS_FSTAT(fsp,fsp->fd, &sbuf);
+	SMB_VFS_FSTAT(fsp,fsp->fh->fd, &sbuf);
 	fsp->mode = sbuf.st_mode;
 	fsp->inode = sbuf.st_ino;
 	fsp->dev = sbuf.st_dev;
@@ -100,12 +99,12 @@ void print_fsp_end(files_struct *fsp, BOOL normal_close)
 	uint32 jobid;
 	fstring sharename;
 
-	if (fsp->create_options & FILE_DELETE_ON_CLOSE) {
+	if (fsp->fh->create_options & FILE_DELETE_ON_CLOSE) {
 		/*
 		 * Truncate the job. print_job_end will take
 		 * care of deleting it for us. JRA.
 		 */
-		sys_ftruncate(fsp->fd, 0);
+		sys_ftruncate(fsp->fh->fd, 0);
 	}
 
 	if (fsp->fsp_name) {
