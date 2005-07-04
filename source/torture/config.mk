@@ -129,9 +129,10 @@ REQUIRED_SUBSYSTEMS = \
 # Start SUBSYSTEM TORTURE_AUTH
 [SUBSYSTEM::TORTURE_AUTH]
 ADD_OBJ_FILES = \
-		torture/auth/ntlmssp.o
+		torture/auth/ntlmssp.o \
+		torture/auth/pac.o
 REQUIRED_SUBSYSTEMS = \
-		LIBSMB
+		LIBSMB GENSEC AUTH
 # End SUBSYSTEM TORTURE_AUTH
 #################################
 
