@@ -191,6 +191,8 @@ enum ndr_compression_alg {
 
 #define NDR_ALIGN(ndr, n) ndr_align_size(ndr->offset, n)
 
+#define NDR_ROUND(size, n) (((size)+((n)-1)) & ~((n)-1))
+
 #define NDR_PULL_ALIGN(ndr, n) do { \
 	if (!(ndr->flags & LIBNDR_FLAG_NOALIGN)) { \
 		if (ndr->flags & LIBNDR_FLAG_PAD_CHECK) { \
