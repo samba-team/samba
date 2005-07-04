@@ -96,6 +96,50 @@ static NTSTATUS mprSetVar(struct MprVar *v, const char *name, struct MprVar val)
 
 
 /*
+  pull a uint8 from a mpr variable to a C element
+*/
+NTSTATUS ejs_pull_uint8(struct ejs_rpc *ejs, 
+			struct MprVar *v, const char *name, uint8_t *r)
+{
+	struct MprVar *var;
+	var = mprGetVar(v, name);
+	if (var == NULL) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+	*r = mprVarToInteger(var);
+	return NT_STATUS_OK;
+	
+}
+
+NTSTATUS ejs_push_uint8(struct ejs_rpc *ejs, 
+			struct MprVar *v, const char *name, uint8_t r)
+{
+	return mprSetVar(v, name, mprCreateIntegerVar(r));
+}
+
+/*
+  pull a uint16 from a mpr variable to a C element
+*/
+NTSTATUS ejs_pull_uint16(struct ejs_rpc *ejs, 
+			 struct MprVar *v, const char *name, uint16_t *r)
+{
+	struct MprVar *var;
+	var = mprGetVar(v, name);
+	if (var == NULL) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+	*r = mprVarToInteger(var);
+	return NT_STATUS_OK;
+	
+}
+
+NTSTATUS ejs_push_uint16(struct ejs_rpc *ejs, 
+			 struct MprVar *v, const char *name, uint16_t r)
+{
+	return mprSetVar(v, name, mprCreateIntegerVar(r));
+}
+
+/*
   pull a uint32 from a mpr variable to a C element
 */
 NTSTATUS ejs_pull_uint32(struct ejs_rpc *ejs, 
