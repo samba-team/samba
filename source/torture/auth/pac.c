@@ -23,12 +23,11 @@
 
 #include "includes.h"
 #include "system/kerberos.h"
-#include "system/time.h"
-#include "system/network.h"
 #include "auth/auth.h"
 #include "auth/kerberos/kerberos.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
-#include "auth/auth.h"
+
+#ifdef HAVE_KRB5
 
 static BOOL torture_pac_self_check(void) 
 {
@@ -251,3 +250,14 @@ BOOL torture_pac(void)
 	ret &= torture_pac_saved_check();
 	return ret;
 }
+
+#else 
+
+BOOL torture_pac(void) 
+{
+	printf("Cannot do PAC test without Krb5\n");
+	return False;
+}
+
+#endif
+
