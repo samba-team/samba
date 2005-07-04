@@ -476,15 +476,22 @@ static void smbcli_transport_finish_recv(struct smbcli_transport *transport)
 	req->flags2 = SVAL(req->in.hdr, HDR_FLG2);
 
 	if (!(req->flags2 & FLAGS2_32_BIT_ERROR_CODES)) {
-		transport->error.etype = ETYPE_DOS;
-		transport->error.e.dos.eclass = CVAL(req->in.hdr,HDR_RCLS);
-		transport->error.e.dos.ecode = SVAL(req->in.hdr,HDR_ERR);
-		req->status = dos_to_ntstatus(transport->error.e.dos.eclass, 
-					      transport->error.e.dos.ecode);
+		int class = CVAL(req->in.hdr,HDR_RCLS);
+		int code = SVAL(req->in.hdr,HDR_ERR);
+		if (class == 0 && code == 0) {
+			transport->error.e.nt_status = NT_STATUS_OK;
+		} else {
+			transport->error.e.nt_status = NT_STATUS_DOS(class, code);
+		}
 	} else {
-		transport->error.etype = ETYPE_NT;
 		transport->error.e.nt_status = NT_STATUS(IVAL(req->in.hdr, HDR_RCLS));
-		req->status = transport->error.e.nt_status;
+	}
+
+	req->status = transport->error.e.nt_status;
+	if (NT_STATUS_IS_OK(req->status)) {
+		transport->error.etype = ETYPE_NONE;
+	} else {
+		transport->error.etype = ETYPE_SMB;
 	}
 
 	if (!smbcli_request_check_sign_mac(req)) {
