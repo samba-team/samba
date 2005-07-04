@@ -712,47 +712,48 @@ static int open_mode_check(connection_struct *conn,
 			for(i = 0; i < num_share_modes; i++) {
 				share_mode_entry *share_entry = &old_shares[i];
 				
-				if (share_modes_identical(&broken_entry->entry,
-							  share_entry) && 
-				    EXCLUSIVE_OPLOCK_TYPE(share_entry->op_type) ) {
-					
-					/*
-					 * This should not happen. The target left this oplock
-					 * as exlusive.... The process *must* be dead.... 
-					 */
-					
-					DEBUG(0,("open_mode_check: exlusive oplock left by "
-						 "process %d after break ! For file %s, "
-						 "dev = %x, inode = %.0f. Deleting it to "
-						 "continue...\n",
-						(int)broken_entry->entry.pid, fname,
-						 (unsigned int)dev, (double)inode));
-					
-					if (process_exists(broken_entry->entry.pid)) {
-						DEBUG(0,("open_mode_check: Existent process "
-							 "%lu left active oplock.\n",
-							 (unsigned long)broken_entry->entry.pid ));
-					}
-					
-					if (del_share_entry(dev, inode, &broken_entry->entry,
-							    NULL) == -1) {
-						free_broken_entry_list(broken_entry_list);
-						errno = EACCES;
-						set_saved_error_triple(ERRDOS, ERRbadshare,
-								       NT_STATUS_SHARING_VIOLATION);
-						return -1;
-					}
-					
-					/*
-					 * We must reload the share modes after deleting the 
-					 * other process's entry.
-					 */
-					
-					SAFE_FREE(old_shares);
-					num_share_modes = get_share_modes(conn, dev, inode,
-									  &old_shares);
-					break;
+				if (!(share_modes_identical(&broken_entry->entry,
+							    share_entry) && 
+				      EXCLUSIVE_OPLOCK_TYPE(share_entry->op_type))) {
+					continue;
 				}
+					
+				/*
+				 * This should not happen. The target left this oplock
+				 * as exlusive.... The process *must* be dead.... 
+				 */
+					
+				DEBUG(0,("open_mode_check: exlusive oplock left by "
+					 "process %d after break ! For file %s, "
+					 "dev = %x, inode = %.0f. Deleting it to "
+					 "continue...\n",
+					 (int)broken_entry->entry.pid, fname,
+					 (unsigned int)dev, (double)inode));
+					
+				if (process_exists(broken_entry->entry.pid)) {
+					DEBUG(0,("open_mode_check: Existent process "
+						 "%lu left active oplock.\n",
+						 (unsigned long)broken_entry->entry.pid ));
+				}
+					
+				if (del_share_entry(dev, inode, &broken_entry->entry,
+						    NULL) == -1) {
+					free_broken_entry_list(broken_entry_list);
+					errno = EACCES;
+					set_saved_error_triple(ERRDOS, ERRbadshare,
+							       NT_STATUS_SHARING_VIOLATION);
+					return -1;
+				}
+					
+				/*
+				 * We must reload the share modes after deleting the 
+				 * other process's entry.
+				 */
+					
+				SAFE_FREE(old_shares);
+				num_share_modes = get_share_modes(conn, dev, inode,
+								  &old_shares);
+				break;
 			} /* end for paranoia... */
 		} /* end for broken_entry */
 		free_broken_entry_list(broken_entry_list);
