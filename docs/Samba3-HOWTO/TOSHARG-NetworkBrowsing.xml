@@ -491,7 +491,7 @@ and MS DNS.
 	<term>_ldap._tcp.<emphasis>Site</emphasis>.gc._msdcs.<emphasis>DomainTree</emphasis></term>
 	<listitem>
 	<para>
-	Used by MS Windows clients to locate site configuration-dependent global catalog server.
+	Used by Microsoft Windows clients to locate the site configuration-dependent global catalog server.
 	</para>
 	</listitem>
 </varlistentry>

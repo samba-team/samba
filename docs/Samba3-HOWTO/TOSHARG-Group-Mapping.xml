@@ -849,7 +849,7 @@ manually before putting it into active service.
 	</sect2>
 
 	<sect2>
-	<title>Adding <emphasis>Domain Users</emphasis> to the <literal>Power Users</literal> Group</title>
+	<title>Adding Domain Users to the Workstation Power Users Group</title>
 
 		<para><quote>
 		What must I do to add domain users to the Power Users group?

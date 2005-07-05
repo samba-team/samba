@@ -528,12 +528,11 @@ distributed trusted domains.
 <para>
 <emphasis>Browsing from a machine in a trusted Windows 200x domain to a Windows 200x member of
 a trusting Samba domain, I get the following error:</emphasis>
-</para>
-
 <screen>
-The system detected a possible attempt to compromise security. Please ensure that
-you can contact the server that authenticated you.
+The system detected a possible attempt to compromise security. Please
+ensure that you can contact the server that authenticated you.
 </screen>
+</para>
 
 <para>
 <emphasis>The event logs on the box I'm trying to connect to have entries regarding group

@@ -1576,10 +1576,10 @@ are examples recently taken from the mailing list.
 			<para>
 			Set the ownership to whatever public user and group you want
 <screen>
-&prompt;find `directory_name' -type d -exec chown user.group {}\;
+&prompt;find `directory_name' -type d -exec chown user:group {}\;
 &prompt;find `directory_name' -type d -exec chmod 1775 {}\;
 &prompt;find `directory_name' -type f -exec chmod 0775 {}\;
-&prompt;find `directory_name' -type f -exec chown user.group {}\;
+&prompt;find `directory_name' -type f -exec chown user:group {}\;
 </screen>
 			</para>
 
@@ -1593,7 +1593,7 @@ are examples recently taken from the mailing list.
 			<para>
 			Directory is <replaceable>/foodbar</replaceable>:
 <screen>
-&prompt;<userinput>chown jack.engr /foodbar</userinput>
+&prompt;<userinput>chown jack:engr /foodbar</userinput>
 </screen>
 			</para>
 

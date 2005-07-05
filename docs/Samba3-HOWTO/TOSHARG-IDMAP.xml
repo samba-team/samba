@@ -172,10 +172,10 @@ on Server Types and Security Modes</link>.
 				<para>
 				<indexterm><primary>SessionSetupAndX</primary></indexterm>
 				<indexterm><primary>/etc/passwd</primary></indexterm>
-				For example, if an incoming SessionSetupAndX request is owned by the user
-				<constant>BERYLIUM\WambatW</constant>, a system call will be made to look up
-				the user <constant>WambatW</constant> in the <filename>/etc/passwd</filename>
-				file.
+				For example, when the user <literal>BERYLIUM\WambatW</literal> tries to open a
+				connection to a Samba server the incoming SessionSetupAndX request will make a 
+				system call to look up the user <literal>WambatW</literal> in the
+				<filename>/etc/passwd</filename> file.
 				</para>
 
 				<para>
@@ -390,9 +390,9 @@ on Server Types and Security Modes</link>.
 	<para>
 	<indexterm><primary>RID base</primary></indexterm>
 	For example, if a user has a UID of 4321, and the algorithmic RID base has a value of 1000, the RID will
-	be <constant>1000 + (2 x 4321) = 9642</constant>. Thus, if the domain SID is
-	<constant>S-1-5-21-89238497-92787123-12341112</constant>, the resulting SID is
-	<constant>S-1-5-21-89238497-92787123-12341112-9642</constant>.
+	be <literal>1000 + (2 x 4321) = 9642</literal>. Thus, if the domain SID is
+	<literal>S-1-5-21-89238497-92787123-12341112</literal>, the resulting SID is
+	<literal>S-1-5-21-89238497-92787123-12341112-9642</literal>.
 	</para>
 
 	<para>
