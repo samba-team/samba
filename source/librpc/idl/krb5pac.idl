@@ -23,15 +23,18 @@ interface krb5pac
 		uint8 signature[16];
 	} PAC_SIGNATURE_DATA;
 
-	typedef struct {
+	typedef [gensize] struct {
 		netr_SamInfo3 info3;
 		dom_sid2 *res_group_dom_sid;
 		samr_RidWithAttributeArray res_groups;
     	} PAC_LOGON_INFO;
 
 	typedef struct {
-		uint32 unknown[4];
-		PAC_LOGON_INFO *i;
+		[value(0x00081001)] uint32 unknown1;
+		[value(0xCCCCCCCC)] uint32 unknown2;
+		[value(NDR_ROUND(ndr_size_PAC_LOGON_INFO(info, ndr->flags)+4,8))] uint32 _ndr_size;
+		[value(0x00000000)] uint32 unknown3;
+		PAC_LOGON_INFO *info;
     	} PAC_LOGON_INFO_CTR;
 
 	typedef [public,v1_enum] enum {
