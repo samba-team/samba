@@ -142,7 +142,7 @@ specified <filename>\\%L\%U</filename> for <smbconfoption name="logon home"/>.
 </sect3>
 
 <sect3>
-<title>Mixed Windows 9x/Me and Windows NT4/200x User Profiles</title>
+<title>Mixed Windows Windows 9x/Me and NT4/200x User Profiles</title>
 
 <para>
 You can support profiles for Windows 9x and Windows NT clients by setting both the

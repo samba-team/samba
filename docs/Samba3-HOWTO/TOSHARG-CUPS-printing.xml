@@ -4430,7 +4430,7 @@ directly to the <command>pstoraster</command> stage).
 </para>
 
 <para>
-From CUPS 1.1.16 onward, you can use the CUPS PostScript driver for Windows NT/200x/XP
+From CUPS 1.1.16 and later releases, you can use the CUPS PostScript driver for Windows NT/200x/XP
 clients (which is tagged in the download area of <filename>http://www.cups.org/</filename> as the
 <filename>cups-samba-1.1.16.tar.gz</filename> package). It does <emphasis>not</emphasis> work for Windows
 9x/Me clients, but it guarantees:
@@ -4871,7 +4871,7 @@ cupsomatic</link> show how CUPS handles print jobs.
 
 <figure id="cups2">
 	<title>Filtering Chain with cupsomatic</title>
-	<imagefile>cups2</imagefile>
+	<imagefile scale="70">cups2</imagefile>
 </figure>
 
 </sect1>
@@ -4923,14 +4923,12 @@ cupsomatic</link> show how CUPS handles print jobs.
 	message while PPD file is present.  What might the problem be?
 	</para>
 
-	<para>Have you enabled printer sharing on CUPS? This means,
-	do you have a <parameter>&lt;Location
-	/printers&gt;....&lt;/Location&gt;</parameter> section in CUPS
-	server's <filename>cupsd.conf</filename> that does not deny access to
-	the host you run <quote>cupsaddsmb</quote> from?  It <emphasis>could</emphasis> be
-	an issue if you use cupsaddsmb remotely, or if you use it with a
-	<option>-h</option> parameter: <userinput>cupsaddsmb -H
-	sambaserver -h cupsserver -v printername</userinput>.
+	<para>
+	Have you enabled printer sharing on CUPS? This means, do you have a <literal>&lt;Location
+	/printers&gt;....&lt;/Location&gt;</literal> section in CUPS server's <filename>cupsd.conf</filename> that
+	does not deny access to the host you run <quote>cupsaddsmb</quote> from?  It <emphasis>could</emphasis> be an
+	issue if you use cupsaddsmb remotely, or if you use it with a <option>-h</option> parameter:
+	<userinput>cupsaddsmb -H sambaserver -h cupsserver -v printername</userinput>.
 	</para>
 
 	<para>Is your <parameter>TempDir</parameter> directive in
@@ -5227,7 +5225,7 @@ Printing Overview diagram</link>.
 
 <figure id="a_small">
 	<title>CUPS Printing Overview.</title>
-	<imagefile>a_small</imagefile>
+	<imagefile scale="60">a_small</imagefile>
 </figure>
 </sect1>
 

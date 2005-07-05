@@ -250,7 +250,8 @@ This can be done using <command>vipw</command> or another <quote>adduser</quote>
 that is normally used to create new UNIX accounts. The following is an example for
 a Linux-based Samba server:
 <screen>
-&rootprompt;<userinput>/usr/sbin/useradd -g machines -d /var/lib/nobody -c <replaceable>"machine nickname"</replaceable> \
+&rootprompt;<userinput>/usr/sbin/useradd -g machines -d /var/lib/nobody \
+   -c <replaceable>"machine nickname"</replaceable> \
    -s /bin/false <replaceable>machine_name</replaceable>$ </userinput>
 
 &rootprompt;<userinput>passwd -l <replaceable>machine_name</replaceable>$</userinput>
@@ -382,16 +383,9 @@ this platform.
 </para>
 
 <para>
-Further information about these tools may be obtained from the following locations:
-</para>
-
-<para>
-<simplelist>
-<member><ulink noescape="1" url="http://support.microsoft.com/default.aspx?scid=kb;en-us;173673">Knowledge
-Base article 173673</ulink></member>
-<member><ulink noescape="1" url="http://support.microsoft.com/default.aspx?scid=kb;en-us;172540">Knowledge
-Base article 172540</ulink></member>
-</simplelist>
+Further information about these tools may be obtained from Knowledge Base articles
+<ulink url="http://support.microsoft.com/default.aspx?scid=kb;en-us;173673">173673</ulink>, and
+<ulink url="http://support.microsoft.com/default.aspx?scid=kb;en-us;172540">172540</ulink>
 </para>
 
 <para>
@@ -546,7 +540,7 @@ with the version of Windows.
 
 	<para>
 <indexterm><primary></primary></indexterm>
-	Joining a Samba client to a domain is documented in the next section<link linkend="domain-member-server"></link>.
+	Joining a Samba client to a domain is documented in <link linkend="domain-member-server">the next section</link>.
 	</para>
 </sect3>
 

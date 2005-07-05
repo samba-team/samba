@@ -230,6 +230,7 @@ Samba-3 introduces a number of new password backend capabilities.
 			<para>
 <indexterm><primary>MySQL-based SAM</primary></indexterm>
 <indexterm><primary>database backend</primary></indexterm>
+<indexterm><primary>mysqlsam</primary></indexterm>
 			It is expected that the MySQL-based SAM will be very popular in some corners.
 			This database backend will be of considerable interest to sites that want to
 			leverage existing MySQL technology.
@@ -242,7 +243,7 @@ Samba-3 introduces a number of new password backend capabilities.
 			<para>
 <indexterm><primary>PostgreSQL database</primary></indexterm>
 <indexterm><primary>mysqlsam</primary></indexterm>
-				Stores user information in a PostgreSQL database.  This backend is largely undocumented at 
+				Makes use of a PostgreSQL database to store account information.  This backend is largely undocumented at 
 				the moment, though its configuration is very similar to that of the mysqlsam backend.
 			</para>
 		</listitem>
