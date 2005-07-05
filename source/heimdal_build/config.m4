@@ -14,7 +14,7 @@ SMB_BINARY_ENABLE(compile_et, NO)
 # of the samba source tree
 if test -d heimdal; then
 	AC_DEFINE(HAVE_KRB5,1,[Whether kerberos is available])
-	CFLAGS="${CFLAGS} -Iheimdal_build -Iheimdal/lib/krb5 -Iheimdal/lib/gssapi -Iheimdal/lib/asn1 -Iheimdal/lib/com_err -Iheimdal/lib/hdb"
+	CFLAGS="${CFLAGS} -Iheimdal_build -Iheimdal/lib/krb5 -Iheimdal/lib/gssapi -Iheimdal/lib/asn1 -Iheimdal/lib/com_err -Iheimdal/lib/hdb -Iheimdal/kdc"
 	HAVE_KRB5=YES
 	SMB_MODULE_DEFAULT(KERBEROS_LIB, STATIC)
 	SMB_BINARY_ENABLE(asn1_compile, YES)

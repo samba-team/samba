@@ -250,7 +250,7 @@ static void kdc_task_init(struct task_server *task)
 	kdc->task = task;
 
 	/* Setup the KDC configuration */
-	kdc->config = talloc(kdc, struct krb5_kdc_configuration);
+	kdc->config = talloc(kdc, krb5_kdc_configuration);
 	if (!kdc->config) {
 		task_server_terminate(task, "kdc: out of memory");
 		return;
