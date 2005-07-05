@@ -461,9 +461,10 @@ A sample policy external program is included in
 If no password quality checking function is configured, it is only
 verified that it is at least six characters long.
 
-The program @command{test_pw_quality}, which is built in
-@file{lib/kadm5}, but not installed, can be used to check password
-policy settings.  It may be convenient to set the environment variable
+To check the password policy settings, the command
+@command{password-quality} in @command{kadmin} program. The password
+verification is only performed locally, even on the client. 
+It may be convenient to set the environment variable
 @samp{KRB5_CONFIG} to point to a test version of @file{krb5.conf}
 while you're testing the @samp{[password_quality]} stanza that way.
 
