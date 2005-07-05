@@ -159,7 +159,9 @@ What you probably want to use is this:
 @end example
 
 @c XXX check this
-Note that before Windows 2003, arcfour-hmac-md5 wasn't supported
+@c It is definitely not supported in base 2003.  I haven't been able to
+@c get SP1 installed here, but it is supposed to work in that.
+Note that before Windows 2003 SP1, arcfour-hmac-md5 wasn't supported
 beteen Windows realms and Non Windows realms.
 
 Once that is also done, you can add the required inter-realm keys:
