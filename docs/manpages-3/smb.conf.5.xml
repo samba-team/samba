@@ -1,4 +1,5 @@
-<refentry id="smb.conf.5" xmlns:xi="http://www.w3.org/2003/XInclude">
+<refentry id="smb.conf.5" xmlns:xi="http://www.w3.org/2003/XInclude"
+	                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 	
 <refmeta>
 	<refentrytitle>smb.conf</refentrytitle>
@@ -607,7 +608,9 @@ alias|alias|alias|alias...
 <refsect1>
 	<title>EXPLANATION OF EACH PARAMETER</title>
 	
-	<xi:include href="../smbdotconf/parameters.all.xml" parse="xml"/>
+	<samba:parameterlist>
+		<xi:include href="../smbdotconf/parameters.all.xml" parse="xml"/>
+	</samba:parameterlist>
 
 </refsect1>
 

@@ -170,12 +170,17 @@
 	<xsl:apply-templates/>
 </xsl:template>
 
+<xsl:template match="refentry">
+	<xsl:text>\section{</xsl:text><xsl:value-of select="refmeta/refentrytitle"/><xsl:text>}&#10;</xsl:text>
+	<xsl:apply-templates/>
+</xsl:template>
+
 <xsl:template match="//samba:parameter">
-	<xsl:text>\item[{</xsl:text><xsl:value-of select="@name"/><xsl:text>}]&#10;</xsl:text>
+	<xsl:text>\item[{</xsl:text><xsl:value-of select="@name"/><xsl:text>}]\null{}&#10;</xsl:text>
 	<xsl:text>\index{</xsl:text><xsl:value-of select="@name"/><xsl:text>|it}&#10;</xsl:text>
 
 	<xsl:for-each select="synonym">
-	<xsl:text>\item[{</xsl:text><xsl:value-of select="."/><xsl:text>}]&#10;</xsl:text>
+		<xsl:text>\item[{</xsl:text><xsl:value-of select="."/><xsl:text>}]\null{}&#10;</xsl:text>
 	<xsl:text>\index{</xsl:text><xsl:value-of select="."/><xsl:text>|it}&#10;</xsl:text>
 	<xsl:text>This parameter is a synonym for \smbconfoption{</xsl:text><xsl:value-of select="../@name"/><xsl:text>}.</xsl:text>
 	</xsl:for-each>
@@ -218,8 +223,5 @@
 	<!-- Description -->
 	<xsl:apply-templates select="description"/>
 </xsl:template>
-
-<xsl:template match="refsect1[title='VERSION']"/>
-<xsl:template match="refsect1[title='AUTHOR']"/>
 
 </xsl:stylesheet>
