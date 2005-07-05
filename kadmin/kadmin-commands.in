@@ -368,15 +368,6 @@ command = {
 }
 
 command = {
-	name = "check"
-	function = "check"
-	argument = ""
-	min_args = "0"
-	max_args = "0"
-	help = "Check database for strange configurations on default principals."
-}
-
-command = {
 	name = "help"
 	name = "?"
 	argument = "[command]"
