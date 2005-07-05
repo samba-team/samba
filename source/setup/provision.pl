@@ -10,6 +10,8 @@ my $opt_hostip;
 my $opt_realm;
 my $opt_domain;
 my $opt_adminpass;
+my $opt_krbtgtpass;
+my $opt_machinepass;
 my $opt_root;
 my $opt_nobody;
 my $opt_nogroup;
@@ -69,12 +71,17 @@ sub randpass()
 	return $pass;
 }
 
-my $joinpass = randpass();
-
 sub ldaptime()
 {
 	my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday) =  gmtime(time);
 	return sprintf "%04u%02u%02u%02u%02u%02u.0Z",
+	$year+1900, $mon+1, $mday, $hour, $min, $sec;
+}
+
+sub timestring()
+{
+	my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday) =  gmtime(time);
+	return sprintf "%04u%02u%02u%02u%02u%02u",
 	$year+1900, $mon+1, $mday, $hour, $min, $sec;
 }
 
@@ -124,6 +131,10 @@ sub substitute($)
 		return ldaptime();
 	}
 
+	if ($var eq "TIMESTRING") {
+		return timestring();
+	}
+
 	if ($var eq "NEWGUID") {
 		return randguid();
 	}
@@ -152,12 +163,12 @@ sub substitute($)
 		return $opt_adminpass;
 	}
 
-	if ($var eq "RANDPASS") {
-	    return randpass();
+	if ($var eq "KRBTGTPASS") {
+		return $opt_krbtgtpass;
 	}
 
-	if ($var eq "JOINPASS") {
-	    return $joinpass;
+	if ($var eq "MACHINEPASS") {
+	    return $opt_machinepass;
 	}
 
 	if ($var eq "NTTIME") {
@@ -283,6 +294,8 @@ provision.pl [options]
  --invocationid	GUID		set invocationid (otherwise random)
  --outputdir	OUTPUTDIR	set output directory
  --adminpass	PASSWORD	choose admin password (otherwise random)
+ --krbtgtpass	PASSWORD	choose krbtgt password (otherwise random)
+ --machinepass	PASSWORD	choose machine password (otherwise random)
  --root         USERNAME	choose 'root' unix username
  --nobody	USERNAME	choose 'nobody' user
  --nogroup	GROUPNAME	choose 'nogroup' group
@@ -309,6 +322,8 @@ GetOptions(
 	    'host-guid=s' => \$opt_hostguid,
 	    'invocationid=s' => \$opt_invocationid,
 	    'adminpass=s' => \$opt_adminpass,
+	    'krbtgtpass=s' => \$opt_krbtgtpass,
+	    'machinepass=s' => \$opt_machinepass,
 	    'root=s' => \$opt_root,
 	    'nobody=s' => \$opt_nobody,
 	    'nogroup=s' => \$opt_nogroup,
@@ -399,6 +414,16 @@ $data .= add_foreign("S-1-5-11", "Authenticated Users", "\${USERS}");
 if (!$opt_adminpass) {
 	$opt_adminpass = randpass();
 	print "chose random Administrator password '$opt_adminpass'\n";
+}
+
+if (!$opt_krbtgtpass) {
+	$opt_krbtgtpass = randpass();
+	print "chose random krbtgt password '$opt_krbtgtpass'\n";
+}
+
+if (!$opt_machinepass) {
+	$opt_machinepass = randpass();
+	print "chose random machine password '$opt_machinepass'\n";
 }
 
 # allow provisioning to be run from the source directory
