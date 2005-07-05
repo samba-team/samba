@@ -766,9 +766,10 @@
 				<ulink url="http://support.microsoft.com/default.aspx?kbid=321733">acknowledged</ulink>
 				and for which a fix was provided. In fact,
 				<ulink url="http://www.tangent-systems.com/support/delayedwrite.html">Tangent Systems</ulink> 
-				appears even today<footnote>January 2004</footnote> to be unsure whether the problem has been resolved,
-				it is evident that some delay in release of new functionality may have
-				fortuitous consequences.
+				have documented a significant problem with delays writes that can be connected with the
+				implementation of sign'n'seal. They provide a work-around that is not trivial for many
+				Windows networking sites. From notes such as this it is clear that there are benefits
+				from not rushing new technology out of the door too soon.
 				</para>
 
 	      <para><indexterm>
@@ -915,13 +916,10 @@
 	trusting the kerberos server, users and services can authenticate each other.
 	</para>
 
-	  <para><indexterm>
-	      <primary>restricted export</primary>
-	    </indexterm><indexterm>
-	      <primary>MIT Kerberos</primary>
-	    </indexterm><indexterm>
-	      <primary>Heimdal Kerberos</primary>
-	    </indexterm>
+	<para>
+	<indexterm><primary>restricted export</primary></indexterm>
+	<indexterm><primary>MIT Kerberos</primary></indexterm>
+	<indexterm><primary>Heimdal Kerberos</primary></indexterm>
 	Kerberos was, until recently, a technology that was restricted from being exported from the United States.
 	For many years that hindered global adoption of more secure networking technologies both within the United States
 	and abroad. A free and unencumbered implementation of MIT Kerberos has been produced in Europe
@@ -931,12 +929,13 @@
 	and in the general deployment and use of Kerberos across the spectrum of the information technology industry.
 	</para>
 
-	  <para><indexterm>
-	      <primary>Kerberos</primary>
-	      <secondary>interoperability</secondary>
-	    </indexterm>
+	<para>
+	<indexterm><primary>Kerberos</primary><secondary>interoperability</secondary></indexterm>
 	A storm has broken out concerning interoperability between MIT Kerberos and Microsofts' implementation
-	of it. For example, a 2002 report by <ulink url="http://www.idg.com.sg/idgwww.nsf/0/5DDA8D153A7505A748256BAB000D992A?OpenDocument">IDG</ulink>
+	of it. For example, a 2002
+	<ulink url="http://www.idg.com.sg/idgwww.nsf/0/5DDA8D153A7505A748256BAB000D992A?OpenDocument">IDG</ulink>
+	report<footnote>Note: This link is no longer active. The same article is still
+	available from <ulink url="http://199.105.191.226/Man/2699/020430msdoj/">ITWorld.com</ulink> (July 5, 2005)</footnote> by
 	states:
 	</para>
 
@@ -947,10 +946,8 @@
 	use of the Kerberos authentication specification, not everyone agrees.
 	</para>
 
-	    <para><indexterm>
-		<primary>Kerberos</primary>
-		<secondary>unspecified fields</secondary>
-	      </indexterm>
+	<para>
+	<indexterm><primary>Kerberos</primary><secondary>unspecified fields</secondary></indexterm>
 	Robert Short, vice president of Windows core technology at Microsoft, wrote in his direct testimony prepared 
 	before his appearance that non-Microsoft operating systems can disregard the portion of the Kerberos version 
 	5 specification that Windows clients use for proprietary purposes and still achieve interoperability with 
@@ -959,11 +956,9 @@
 	that software developers could add their own authorization information, he said.
 	</para></blockquote>
 
-	  <para><indexterm>
-	      <primary>DCE</primary>
-	    </indexterm><indexterm>
-	      <primary>RPC</primary>
-	    </indexterm>
+	<para>
+	<indexterm><primary>DCE</primary></indexterm>
+	<indexterm><primary>RPC</primary></indexterm>
 	It so happens that Microsoft Windows clients depend on and expect the contents of the <emphasis>unspecified
 	fields</emphasis> in the Kerberos 5 communications data stream for their Windows interoperability,
 	particularly when Samba is expected to emulate a Windows Server 200x domain controller. But the interoperability
@@ -974,7 +969,8 @@
 	</para>
 
 	<para>
-	Microsoft makes the following comment in a reference in a <ulink url="http://www.microsoft.com/technet/itsolutions/interop/mgmt/kerberos.asp">
+	Microsoft makes the following comment in a reference in a
+	<ulink url="http://www.microsoft.com/technet/itsolutions/interop/mgmt/kerberos.asp">
 	technet</ulink> article:
 	</para>
 
