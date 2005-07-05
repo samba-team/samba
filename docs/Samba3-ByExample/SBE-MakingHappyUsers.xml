@@ -480,7 +480,7 @@ clients is conservative and if followed will minimize problems &smbmdash; but it
 	<para>
 	Information to help you get started with OpenLDAP is available from the
 	<ulink url="http://www.openldap.org/pub/">OpenLDAP web site</ulink>. Many people have found the book
-	<ulink url="http://www.booksense.com/product/info.jsp?isbn=1565924916"><emphasis>LDAP System Administration</emphasis>,</ulink>
+	<ulink url="http://www.oreilly.com/catalog/ldapsa/index.html"><emphasis>LDAP System Administration</emphasis>,</ulink>
 	by Jerry Carter quite useful.
 	</para>
 
