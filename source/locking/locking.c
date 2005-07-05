@@ -719,10 +719,11 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 		pstrcat(fname, fsp->fsp_name);
 
 		size = sizeof(*data) + sizeof(share_mode_entry) + strlen(fname) + 1;
-		p = SMB_CALLOC_ARRAY(char, size);
+		p = (char *)SMB_MALLOC(size);
 		if (!p)
 			return False;
 		data = (struct locking_data *)p;
+		ZERO_STRUCT(data->u.dummy); /* Keep valgrind happy */
 		data->u.num_share_mode_entries = 1;
 	
 		DEBUG(10,("set_share_mode: creating entry for file %s. num_share_modes = 1\n",
@@ -1202,10 +1203,11 @@ BOOL add_deferred_open(uint16 mid, struct timeval *ptv, SMB_DEV_T dev, SMB_INO_T
 		/* we'll need to create a new record */
 
 		size = sizeof(*data) + sizeof(deferred_open_entry) + strlen(fname) + 1;
-		p = SMB_CALLOC_ARRAY(char, size);
+		p = (char *)SMB_MALLOC(size);
 		if (!p)
 			return False;
 		data = (struct deferred_open_data *)p;
+		ZERO_STRUCT(data->u.dummy); /* Keep valgrind happy */
 		data->u.num_deferred_open_entries = 1;
 	
 		DEBUG(10,("add_deferred_open: creating entry for file %s. num_deferred_open_entries = 1\n",
