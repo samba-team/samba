@@ -14,8 +14,8 @@ http://www.opengroup.org/onlinepubs/9629399/chap6.htm#tagcjh_11_02_03_01: bindin
  endpoint("ncacn_np:[\\pipe\\epmapper]", "ncacn_ip_tcp:[135]", 
 		  "ncalrpc:[EPMAPPER]"),
  helpstring("EndPoint Mapper"),
- pointer_default_top(unique),
- pointer_default(unique)
+ pointer_default_top(sptr),
+ pointer_default(sptr)
 ]
 interface epmapper
 {

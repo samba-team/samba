@@ -90,7 +90,7 @@ NTSTATUS ndr_pull_PAC_BUFFER(struct ndr_pull *ndr, int ndr_flags, struct PAC_BUF
 		{
 			uint32_t _flags_save_PAC_INFO = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN8);
-			NDR_CHECK(ndr_pull_unique_ptr(ndr, &_ptr_info));
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info));
 			if (_ptr_info) {
 				NDR_ALLOC(ndr, r->info);
 				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->info, _ptr_info));
