@@ -1,3 +1,15 @@
+2005-07-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/win2k.texi: arcfour-hmac-md5 support for windows cross was
+	added in w2k3-sp1 From David Love
+	
+	* doc/setup.texi: document kadmin command password-quality instead
+	of the not installed test_pw_quality
+	
+	* lib/krb5/krb5_get_init_creds.3: Spelling, from David Love
+	
+	* fix-export: build kdc-protos.h
+
 2005-07-01  Love Hörnquist Åstrand  <lha@it.su.se>
 	
 	* kdc: prefix pkinit symbols with _kdc
