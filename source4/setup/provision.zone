@@ -2,7 +2,7 @@
 $ORIGIN ${DNSDOMAIN}.
 $TTL 1W
 @               IN SOA  @   hostmaster (
-                                42              ; serial (d. adams)
+                                ${TIMESTRING}   ; serial
                                 2D              ; refresh
                                 4H              ; retry
                                 6W              ; expiry
