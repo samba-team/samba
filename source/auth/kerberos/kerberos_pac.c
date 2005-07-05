@@ -92,6 +92,8 @@ static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx,
 	DATA_BLOB modified_pac_blob = data_blob_talloc(mem_ctx, blob.data, blob.length);
 	int i;
 
+	/* file_save("tmp_pac_data.dat",blob.data,blob.length); */
+
 	status = ndr_pull_struct_blob(&blob, mem_ctx, &pac_data,
 					(ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -111,7 +113,7 @@ static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx,
 				if (!pac_data.buffers[i].info) {
 					break;
 				}
-				logon_info = pac_data.buffers[i].info->logon_info.i;
+				logon_info = pac_data.buffers[i].info->logon_info.info;
 				break;
 			case PAC_TYPE_SRV_CHECKSUM:
 				if (!pac_data.buffers[i].info) {
@@ -315,11 +317,7 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 		return EINVAL;
 	}
 
-	u_LOGON_INFO->logon_info.unknown[0]	= 0x00081001;
-	u_LOGON_INFO->logon_info.unknown[1]	= 0xCCCCCCCC;
-	u_LOGON_INFO->logon_info.unknown[2]	= 0x000001C8;
-	u_LOGON_INFO->logon_info.unknown[3]	= 0x00000000;
-	u_LOGON_INFO->logon_info.i		= LOGON_INFO;
+	u_LOGON_INFO->logon_info.info		= LOGON_INFO;
 	LOGON_INFO->info3.base = *sam;
 
 	LOGON_NAME->account_name	= server_info->account_name;

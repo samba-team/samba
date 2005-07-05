@@ -119,7 +119,7 @@ static BOOL torture_pac_self_check(void)
 		return False;
 	}
 
-	/* dump_data(0,tmp_blob.data,tmp_blob.length); */
+	dump_data(10,tmp_blob.data,tmp_blob.length);
 
 	/* Now check that we can read it back */
 	nt_status = kerberos_decode_pac(mem_ctx, &pac_info,
@@ -230,7 +230,7 @@ static BOOL torture_pac_saved_check(void)
 
 	/*tmp_blob.data = file_load(lp_parm_string(-1,"torture","pac_file"), &tmp_blob.length);*/
 
-	/*dump_data(0,tmp_blob.data,tmp_blob.length);*/
+	dump_data(10,tmp_blob.data,tmp_blob.length);
 
 	/* Decode and verify the signaure on the PAC */
 	nt_status = kerberos_decode_pac(mem_ctx, &pac_info,
@@ -263,7 +263,7 @@ static BOOL torture_pac_saved_check(void)
 		return False;
 	}
 
-	/* dump_data(0,validate_blob.data,validate_blob.length); */
+	dump_data(10,validate_blob.data,validate_blob.length);
 
 	/* all we can check is the length of the buffers,
 	 * to check that the alignment and padding is ok,
