@@ -218,6 +218,8 @@
 \vskip3pt\hrule\vskip3pt\hrule
 \vskip36pt\raggedright\Huge\sfbHuge\uppercase{#1}\par
 \nobreak\vskip70pt}}%\chaptersmark{#1}}
+\widowpenalty=1000
+\clubpenalty=1000
 
 %------------------------ section -----------------------------------
 \def\section{\@startsection{section}{1}{\z@}{-3.5ex plus-1ex
