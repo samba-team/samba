@@ -367,11 +367,13 @@ NTSTATUS make_server_info_netlogon_validation(TALLOC_CTX *mem_ctx,
 		size_t sidcount = server_info->n_domain_groups + validation->sam3->sidcount;
 		size_t n_dgrps = server_info->n_domain_groups;
 
-		dgrps = talloc_realloc(server_info, dgrps, struct dom_sid*, sidcount);
-		NT_STATUS_HAVE_NO_MEMORY(dgrps);
+		if (validation->sam3->sidcount > 0) {
+			dgrps = talloc_realloc(server_info, dgrps, struct dom_sid*, sidcount);
+			NT_STATUS_HAVE_NO_MEMORY(dgrps);
 
-		for (i = 0; i < validation->sam3->sidcount; i++) {
-			dgrps[n_dgrps + i] = talloc_reference(dgrps, validation->sam3->sids[i].sid);
+			for (i = 0; i < validation->sam3->sidcount; i++) {
+				dgrps[n_dgrps + i] = talloc_reference(dgrps, validation->sam3->sids[i].sid);
+			}
 		}
 
 		server_info->n_domain_groups = sidcount;
