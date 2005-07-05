@@ -51,6 +51,9 @@ clients is conservative and if followed will minimize problems &smbmdash; but it
 		</para>
 
 		<para>
+		<indexterm><primary>PDC</primary></indexterm>
+		<indexterm><primary>BDC</primary></indexterm>
+		<indexterm><primary>clients per DC</primary></indexterm>
 		If the domain controller provides only network logon services
 		and all file and print activity is handled by domain member servers, one domain	
 		controller per 150 clients on a single network segment may suffice. In any
@@ -58,8 +61,11 @@ clients is conservative and if followed will minimize problems &smbmdash; but it
 		per network segment. It is better to have at least one BDC on the network
 		segment that has a PDC. If the domain controller is also used as a file and
 		print server, the number of clients it can service reliably is reduced,
-		and a common rule is not to exceed 30 machines (Windows workstations plus
-		domain member servers) per domain controller.
+		and generally for low powered hardware should not exceed 30 machines (Windows 
+		workstations plus domain member servers) per domain controller. Many sites are
+		able to operate with more clients per domain controller, the number of clients
+		that can be supported is limited by the CPU speed, memory and the workload on
+		the Samba server as well as network bandwidth utilization.
 		</para></listitem>
 		</varlistentry>
 
