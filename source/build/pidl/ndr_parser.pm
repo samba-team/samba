@@ -627,6 +627,8 @@ sub ParsePtrPush($$$)
 		pidl "NDR_CHECK(ndr_push_relative_ptr1(ndr, $var_name));";
 	} elsif ($l->{POINTER_TYPE} eq "unique") {
 		pidl "NDR_CHECK(ndr_push_unique_ptr(ndr, $var_name));";
+	} elsif ($l->{POINTER_TYPE} eq "sptr") {
+		pidl "NDR_CHECK(ndr_push_sptr_ptr(ndr, $var_name));";
 	} else {
 		die("Unhandled pointer type $l->{POINTER_TYPE}");
 	}
@@ -947,10 +949,14 @@ sub ParsePtrPull($$$$)
 		}
 		
 		return;
-	} else {
-		pidl "NDR_CHECK(ndr_pull_unique_ptr($ndr, &_ptr_$e->{NAME}));";
+	} elsif (($l->{POINTER_TYPE} eq "unique") or 
+		 ($l->{POINTER_TYPE} eq "relative") or
+		 ($l->{POINTER_TYPE} eq "sptr")) {
+		pidl "NDR_CHECK(ndr_pull_generic_ptr($ndr, &_ptr_$e->{NAME}));";
 		pidl "if (_ptr_$e->{NAME}) {";
 		indent;
+	} else {
+		die("Unhandled pointer type $l->{POINTER_TYPE}");
 	}
 
 	# Don't do this for arrays, they're allocated at the actual level 

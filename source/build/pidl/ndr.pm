@@ -232,6 +232,7 @@ sub pointer_type($)
 	
 	return "ref" if (util::has_property($e, "ref"));
 	return "ptr" if (util::has_property($e, "ptr"));
+	return "sptr" if (util::has_property($e, "sptr"));
 	return "unique" if (util::has_property($e, "unique"));
 	return "relative" if (util::has_property($e, "relative"));
 	return "ignore" if (util::has_property($e, "ignore"));

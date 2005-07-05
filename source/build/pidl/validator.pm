@@ -83,8 +83,9 @@ my %property_list = (
 	# pointer
 	"ref"			=> ["ELEMENT"],
 	"ptr"			=> ["ELEMENT"],
+	"sptr"			=> ["ELEMENT"],
 	"unique"		=> ["ELEMENT"],
-	"ignore"        => ["ELEMENT"],
+	"ignore"		=> ["ELEMENT"],
 	"relative"		=> ["ELEMENT"],
 	"relative_base"		=> ["TYPEDEF"],
 
@@ -125,9 +126,9 @@ my %property_list = (
 	# array
 	"range"			=> ["ELEMENT"],
 	"size_is"		=> ["ELEMENT"],
-	"string"        => ["ELEMENT"],
-	"noheader"      => ["ELEMENT"],
-	"charset"       => ["ELEMENT"],
+	"string"		=> ["ELEMENT"],
+	"noheader"		=> ["ELEMENT"],
+	"charset"		=> ["ELEMENT"],
 	"length_is"		=> ["ELEMENT"],
 );
 
@@ -222,6 +223,7 @@ sub ValidElement($)
 
 	if (!$e->{POINTERS} && (
 		util::has_property($e, "ptr") or
+		util::has_property($e, "sptr") or
 		util::has_property($e, "unique") or
 		util::has_property($e, "relative") or
 		util::has_property($e, "ref"))) {

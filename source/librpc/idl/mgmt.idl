@@ -7,8 +7,8 @@
 [
   uuid("afa8bd80-7d8a-11c9-bef4-08002b102989"), 
   version(1.0),
-  pointer_default(unique),
-  pointer_default_top(unique),
+  pointer_default(sptr),
+  pointer_default_top(sptr),
   endpoint("ncalrpc:[EPMAPPER]", "ncacn_ip_tcp:[135]", "ncacn_np:[\\pipe\\epmapper]"),
   helpstring("DCE/RPC Remote Management")
 ] 
