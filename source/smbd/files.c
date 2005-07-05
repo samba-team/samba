@@ -536,6 +536,8 @@ files_struct *dup_file_fsp(files_struct *fsp,
 		return NULL;
 	}
 
+	SAFE_FREE(dup_fsp->fh);
+
 	dup_fsp->fh = fsp->fh;
 	dup_fsp->fh->ref_count++;
 
