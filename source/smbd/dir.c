@@ -900,7 +900,7 @@ static BOOL user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_
 		return False;
 	}
 
-	/* Pseudo-open the file (note - no fd's created). */
+	/* Pseudo-open the file */
 
 	if(S_ISDIR(pst->st_mode)) {
 		return True;
