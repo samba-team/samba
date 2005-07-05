@@ -1166,7 +1166,7 @@ option netbios-name-servers 172.16.0.1;
 option netbios-node-type 8;
 
 subnet 172.16.1.0 netmask 255.255.252.0 {
-        range dynamic-bootp 172.16.3.0 172.16.2.254;
+        range dynamic-bootp 172.16.3.0 172.16.3.255;
         option subnet-mask 255.255.252.0;
         option routers 172.16.0.1, 172.16.0.128;
         allow unknown-clients;
