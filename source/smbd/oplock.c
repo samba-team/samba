@@ -366,6 +366,7 @@ BOOL process_local_message(char *buffer, int buf_size)
 			} 
 			if (!koplocks->parse_message(msg_start, msg_len, &inode, &dev, &file_id)) {
 				DEBUG(0,("kernel oplock break parse failure!\n"));
+				return False;
 			}
 			break;
 
@@ -463,6 +464,7 @@ pid %d, port %d, dev = %x, inode = %.0f, file_id = %lu\n",
 		 */
 		DEBUG(3,("process_local_message: oplock break requested with no outstanding \
 oplocks. Returning success.\n"));
+		return True;
 	}
 
 	/* 
