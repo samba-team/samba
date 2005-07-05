@@ -230,7 +230,7 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	DATA_BLOB server_checksum_blob;
 	krb5_error_code ret;
 	struct PAC_DATA *pac_data = talloc(mem_ctx, struct PAC_DATA);
-	struct netr_SamBaseInfo *sam;
+	struct netr_SamInfo3 *sam3;
 	struct timeval tv = timeval_current();
 	union PAC_INFO *u_LOGON_INFO;
 	struct PAC_LOGON_INFO *LOGON_INFO;
@@ -244,8 +244,8 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	enum {
 		PAC_BUF_LOGON_INFO = 0,
 		PAC_BUF_LOGON_NAME = 1,
-		PAC_BUF_KDC_CHECKSUM = 2,
-		PAC_BUF_SRV_CHECKSUM = 3,
+		PAC_BUF_SRV_CHECKSUM = 2,
+		PAC_BUF_KDC_CHECKSUM = 3,
 		PAC_BUF_NUM_BUFFERS = 4
 	};
 
@@ -283,16 +283,6 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	pac_data->buffers[PAC_BUF_LOGON_NAME].info = u_LOGON_NAME;
 	LOGON_NAME = &u_LOGON_NAME->logon_name;
 
-	/* KDC_CHECKSUM */
-	u_KDC_CHECKSUM = talloc_zero(pac_data->buffers, union PAC_INFO);
-	if (!u_KDC_CHECKSUM) {
-		talloc_free(pac_data);
-		return ENOMEM;
-	}
-	pac_data->buffers[PAC_BUF_KDC_CHECKSUM].type = PAC_TYPE_KDC_CHECKSUM;
-	pac_data->buffers[PAC_BUF_KDC_CHECKSUM].info = u_KDC_CHECKSUM;
-	KDC_CHECKSUM = &u_KDC_CHECKSUM->kdc_cksum;
-
 	/* SRV_CHECKSUM */
 	u_SRV_CHECKSUM = talloc_zero(pac_data->buffers, union PAC_INFO);
 	if (!u_SRV_CHECKSUM) {
@@ -303,6 +293,16 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	pac_data->buffers[PAC_BUF_SRV_CHECKSUM].info = u_SRV_CHECKSUM;
 	SRV_CHECKSUM = &u_SRV_CHECKSUM->srv_cksum;
 
+	/* KDC_CHECKSUM */
+	u_KDC_CHECKSUM = talloc_zero(pac_data->buffers, union PAC_INFO);
+	if (!u_KDC_CHECKSUM) {
+		talloc_free(pac_data);
+		return ENOMEM;
+	}
+	pac_data->buffers[PAC_BUF_KDC_CHECKSUM].type = PAC_TYPE_KDC_CHECKSUM;
+	pac_data->buffers[PAC_BUF_KDC_CHECKSUM].info = u_KDC_CHECKSUM;
+	KDC_CHECKSUM = &u_KDC_CHECKSUM->kdc_cksum;
+
 	/* now the real work begins... */
 
 	LOGON_INFO = talloc_zero(u_LOGON_INFO, struct PAC_LOGON_INFO);
@@ -310,7 +310,7 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 		talloc_free(pac_data);
 		return ENOMEM;
 	}
-	nt_status = auth_convert_server_info_sambaseinfo(LOGON_INFO, server_info, &sam);
+	nt_status = auth_convert_server_info_saminfo3(LOGON_INFO, server_info, &sam3);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("Getting Samba info failed: %s\n", nt_errstr(nt_status)));
 		talloc_free(pac_data);
@@ -318,7 +318,8 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	}
 
 	u_LOGON_INFO->logon_info.info		= LOGON_INFO;
-	LOGON_INFO->info3.base = *sam;
+	LOGON_INFO->info3 = *sam3;
+	LOGON_INFO->info3.base.last_logon	= timeval_to_nttime(&tv);
 
 	LOGON_NAME->account_name	= server_info->account_name;
 	LOGON_NAME->logon_time		= timeval_to_nttime(&tv);
