@@ -452,9 +452,6 @@ sub ParseSubcontextPushEnd($$$$)
 
 	pidl "NDR_CHECK(ndr_push_subcontext_header(ndr, $l->{HEADER_SIZE}, $subcontext_size, $ndr));";
 	pidl "NDR_CHECK(ndr_push_bytes(ndr, $ndr->data, $ndr->offset));";
-	if (defined $l->{PAD8}) {
-	    pidl "NDR_CHECK(ndr_push_align(ndr, 8));";
-	}
 	deindent;
 	pidl "}";
 }
@@ -504,9 +501,6 @@ sub ParseSubcontextPullEnd($$$)
 		$advance = "$ndr->offset";
 	}
 	pidl "NDR_CHECK(ndr_pull_advance(ndr, $advance));";
-	if (defined $l->{PAD8}) {
-	    pidl "NDR_CHECK(ndr_pull_align(ndr, 8));";
-	}
 	deindent;
 	pidl "}";
 }
