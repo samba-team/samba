@@ -1861,7 +1861,7 @@ application/octet-stream   application/vnd.cups-raw   0   -
 	systemwide Ghostscript installation. Therefore, the print file bypasses the <parameter>pstoraster</parameter>
 	filter (and also bypasses the CUPS raster drivers <parameter>rastertosomething</parameter>). After Ghostscript
 	finished its rasterization, <parameter>cupsomatic</parameter> hands the rendered file directly to the CUPS
-	backend. Figure 21.10, <link linkend="cupsomatic-dia">cupsomatic/foomatic Processing Versus Native
+	backend. <link linkend="cupsomatic-dia">cupsomatic/foomatic Processing Versus Native
 	CUPS</link>, illustrates the difference between native CUPS rendering and the
 	<parameter>Foomatic/cupsomatic</parameter> method.
 	</para>
@@ -4869,9 +4869,10 @@ cupsomatic</link> show how CUPS handles print jobs.
 	<imagefile>cups1</imagefile>
 </figure>
 
+<!-- JJJ -->
 <figure id="cups2">
 	<title>Filtering Chain with cupsomatic</title>
-	<imagefile scale="70">cups2</imagefile>
+	<imagefile scale="45">cups2</imagefile>
 </figure>
 
 </sect1>
@@ -5225,7 +5226,7 @@ Printing Overview diagram</link>.
 
 <figure id="a_small">
 	<title>CUPS Printing Overview.</title>
-	<imagefile scale="60">a_small</imagefile>
+	<imagefile scale="45">a_small</imagefile>
 </figure>
 </sect1>
 
