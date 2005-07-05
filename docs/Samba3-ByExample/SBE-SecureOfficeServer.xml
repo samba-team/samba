@@ -2241,7 +2241,7 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 		Join the Windows Domain <constant>PROMISES</constant>. Use the Domain Administrator
 		username <constant>root</constant> and the SMB password you assigned to this account.
 		A detailed step-by-step procedure for joining a Windows 200x/XP Professional client to
-		a Windows Domain is given in Appendix A, <link linkend="domjoin"/>. 
+		a Windows Domain is given in <link linkend="appendix"/>, <link linkend="domjoin"/>. 
 		Reboot the machine as prompted and then log on using the Domain Administrator account
 		(<constant>root</constant>).
 		</para></step>
@@ -2300,7 +2300,7 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 
 		<step><para>
 		Log on to the machine as the local Administrator (the only option), and join the machine to
-		the Domain, following the procedure set out in Appendix A, <link linkend="domjoin"/>. The system is now 
+		the Domain, following the procedure set out in <link linkend="appendix"/>, <link linkend="domjoin"/>. The system is now 
 		ready for the user to log on, provided you have created a network logon account for that 
 		user, of course.
 		</para></step>

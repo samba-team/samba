@@ -3933,7 +3933,7 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 		<step><para>
 		Join your Windows XP Professional workstation (the staging machine) to the 
 		<constant>MEGANET2</constant> domain. If you are not sure of the procedure, 
-		follow the guidance given in Appendix A, <link linkend="domjoin"/>.
+		follow the guidance given in <link linkend="appendix"/>, <link linkend="domjoin"/>.
 		</para></step>
 
 		<step><para>

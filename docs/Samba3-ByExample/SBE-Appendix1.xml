@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE appendix PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
 
-<appendix id="appendix">
+<chapter id="appendix">
   <title>A Collection of Useful Tidbits</title>
 
 	<para>
@@ -1613,5 +1613,5 @@ REGEDIT4
 
 </sect1>
 
-</appendix>
+</chapter>
 
