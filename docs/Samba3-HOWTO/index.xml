@@ -43,6 +43,7 @@
 
 	<xi:include href="TOSHARG-preface.xml"/>
 
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-IntroSMB.xml"/>
 
 	<?latex \cleardoublepage ?>
@@ -66,7 +67,9 @@ PLEASE read this.
 	<?latex \cleardoublepage ?>
 
 	<xi:include href="TOSHARG-Install.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-FastStart.xml"/>
+	<?latex \cleardoublepage ?>
 
 </part>
 
@@ -83,12 +86,19 @@ section carefully.
 
 </partintro>
 
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-ServerType.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-PDC.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-BDC.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-DomainMember.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-StandAloneServer.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-WindowsClientConfig.xml"/>
+	<?latex \cleardoublepage ?>
 
 </part>
 
@@ -104,73 +114,119 @@ The chapters in this part each cover specific Samba features.
 
 </partintro>
 
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-NetworkBrowsing.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-Passdb.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-Group-Mapping.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-TheNetCommand.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-IDMAP.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-RightsAndPriviliges.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-AccessControls.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-locking.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-Securing.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-InterdomainTrusts.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-msdfs.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-Printing.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-CUPS-printing.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-VFS.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-Winbind.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-AdvancedNetworkAdmin.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-PolicyMgmt.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-ProfileMgmt.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-PAM.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-Integrating-with-Windows.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-Unicode.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-Backup.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-HighAvailability.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-LargeFile.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-ConfigSmarts.xml"/>
+	<?latex \cleardoublepage ?>
 
 </part>
 
 <part id="migration">
 <title>Migration and Updating</title>
 
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-upgrading-to-3.0.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-NT4Migration.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-SWAT.xml"/>
+	<?latex \cleardoublepage ?>
 
 </part>
 
 <part id="troubleshooting">
 <title>Troubleshooting</title>
 
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-Diagnosis.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-Problems.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-Bugs.xml"/>
+	<?latex \cleardoublepage ?>
 
 </part>
 
 <part id="Appendix">
 <title>Reference Section</title>
 
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-Compiling.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-Portability.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-Other-Clients.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-Speed.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-SecureLDAP.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-Support.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-DNS-DHCP-Configuration.xml"/>
+	<?latex \cleardoublepage ?>
 </part>
 
 <!-- Comment out the following line to include the manpages.
 	 *Please* do not commit with the line below enabled! -->
 	<!--	 <xi:include href="manpages.xml"/> -->
 
+	<?latex \cleardoublepage ?>
 <xi:include href="manpages.xml"/>
+	<?latex \cleardoublepage ?>
 <xi:include href="http://www.gnu.org/licenses/gpl.xml"/>
 
+	<?latex \cleardoublepage ?>
 <xi:include href="TOSHARG-glossary.xml"/>
 
+	<?latex \cleardoublepage ?>
 <?latex \chaptermark{Subject index} ?>
 
 <index/>
