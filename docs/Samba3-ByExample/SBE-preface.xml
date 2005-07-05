@@ -571,19 +571,19 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>Appendix A &smbmdash; A Collection of Useful Tid-bits.</term><listitem>
+		<term>Chapter 15 &smbmdash; A Collection of Useful Tid-bits.</term><listitem>
 		<para>
 		Sometimes it seems that there is not a good place for certain odds and ends that
 		impact Samba deployment. Some readers would argue that everyone can be expected
 		to know this information, or at least be able to find it easily. So to avoid
-		offending a reader's sensitivities, the tid-bits have been placed in this Appendix.
+		offending a reader's sensitivities, the tid-bits have been placed in this chapter.
 		Do check out the contents, you may find something of value among the loose ends.
 		</para>
 		</listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>Appendix B &smbmdash; Windows Networking Primer.</term><listitem>
+		<term>Chapter 16 &smbmdash; Windows Networking Primer.</term><listitem>
 		<para>
 		Here we cover practical exercises to help us to understand how MS Windows
 		network protocols function. A network protocol analyzer helps you to

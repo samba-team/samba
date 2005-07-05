@@ -417,8 +417,8 @@
 		allows all files to be owned by the same user and group. In addition, it would not hurt to
 		set SUID and set SGID shared directories. This means that all new files that are created, no matter
 		who creates it, are owned by the owner or group of the directory in which they are created.
-		For further information regarding the significance of the SUID/SGID settings, see Appendix A, 
-		<link linkend="ch12-SUIDSGID"/>.
+		For further information regarding the significance of the SUID/SGID settings, see <link
+		linkend="appendix"/>, <link linkend="ch12-SUIDSGID"/>.
 		</para>
 
 		<para>
