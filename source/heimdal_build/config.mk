@@ -285,6 +285,7 @@ ADD_OBJ_FILES = \
 	heimdal/lib/roken/strlwr.o \
 	heimdal/lib/roken/strsep_copy.o \
 	heimdal/lib/roken/strupr.o \
+	heimdal/lib/roken/strpool.o \
 	heimdal/lib/roken/getifaddrs.o
 NOPROTO = YES
 # End SUBSYSTEM HEIMDAL_ROKEN

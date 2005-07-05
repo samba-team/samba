@@ -20,6 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifdef HAVE_KRB5
 /* Whether the krb5_address struct has a addrtype property */
 /* #undef HAVE_ADDRTYPE_IN_KRB5_ADDRESS */
 /* Whether the krb5_address struct has a addr_type property */
@@ -123,7 +124,6 @@
 /* Whether krb5_princ_realm returns krb5_realm or krb5_data */
 #define KRB5_PRINC_REALM_RETURNS_REALM 1
 
-#ifdef HAVE_KRB5
 #include "heimdal/lib/krb5/krb5.h"
 #include "heimdal/lib/gssapi/gssapi.h"
 #include "heimdal/lib/com_err/com_err.h"

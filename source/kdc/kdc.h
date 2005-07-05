@@ -42,7 +42,7 @@ struct kdc_reply {
 */
 struct kdc_server {
 	struct task_server *task;
-	struct krb5_kdc_configuration *config;
+	krb5_kdc_configuration *config;
 	struct smb_krb5_context *smb_krb5_context;
 };
 
