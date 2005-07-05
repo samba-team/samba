@@ -515,11 +515,10 @@ data and keeps it out of the desktop profile. That keeps desktop profiles from b
 	<para>
 	There is a security check new to Windows XP (or maybe only Windows XP service pack 1).
 	It can be disabled via a group policy in the Active Directory. The policy is called:
-	</para>
-
-	<para>
-		<filename>Computer Configuration\Administrative Templates\System\User Profiles\Do not check for
-	user ownership of Roaming Profile Folders</filename>i
+<screen>
+Computer Configuration\Administrative Templates\System\User Profiles\
+          Do not check for user ownership of Roaming Profile Folders
+</screen>
 	</para>
 
 	<para>
