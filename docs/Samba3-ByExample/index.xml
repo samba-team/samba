@@ -17,25 +17,17 @@
 
 	<xi:include href="SBE-inside-cover.xml"/>
 	<xi:include href="SBE-acknowledgements.xml"/>
-
 	<?latex \cleardoublepage ?>
 
 	<toc/>
-
 	<?latex \cleardoublepage ?>
-
 	<?latex \listofexamples ?>
-
 	<?latex \cleardoublepage ?>
-
 	<lot/>
-
 	<?latex \cleardoublepage ?>
-
 	<xi:include href="SBE-foreword.xml"/>
 	<xi:include href="SBE-preface.xml"/>
-
-	<!-- Chapters -->
+<!-- Chapters -->
 
 <part id="ExNetworks">
 <title>Example Network Configurations</title>
@@ -76,13 +68,18 @@ the Samba web site.
 </partintro>
 
 	<?latex \cleardoublepage ?>
-
 	<xi:include href="SBE-SimpleOfficeServer.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="SBE-TheSmallOffice.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="SBE-SecureOfficeServer.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="SBE-500UserNetwork.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="SBE-MakingHappyUsers.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="SBE-2000UserNetwork.xml"/>
+	<?latex \cleardoublepage ?>
 
 </part>
 
@@ -105,10 +102,15 @@ to a Samba or a Windows networking domain may also benefit by referring to the b
 </para>
 
 </partintro>
+	<?latex \cleardoublepage ?>
 	<xi:include href="SBE-AddingUNIXClients.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="SBE-UpgradingSamba.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="SBE-MigrateNT4Samba3.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="SBE-MigrateNW4Samba3.xml"/>
+	<?latex \cleardoublepage ?>
 </part>
 
 <part id="RefSection">
@@ -124,14 +126,27 @@ play in a Windows networking world.
 </para>
 
 </partintro>
+
+	<?latex \cleardoublepage ?>
 	<xi:include href="SBE-KerberosFastStart.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="SBE-DomainAppsSupport.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="SBE-HighAvailability.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="SBE-Support.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="SBE-Appendix1.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="SBE-Appendix2.xml"/>
+	<?latex \cleardoublepage ?>
 	<xi:include href="http://www.gnu.org/licenses/gpl.xml"/>
+	<?latex \cleardoublepage ?>
+
 </part>
+
 	<xi:include href="SBE-glossary.xml"/>
+	<?latex \cleardoublepage ?>
 	<index/>
+
 </book>

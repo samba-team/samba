@@ -871,7 +871,7 @@ smb: \> q
 		Join the Windows Domain called <constant>BILLMORE</constant>. Use the Domain Administrator
 		username <constant>root</constant> and the SMB password you assigned to this account.
 		A detailed step-by-step procedure for joining a Windows 200x/XP Professional client to
-		a Windows Domain is given in Appendix A, <link linkend="domjoin"/>. 
+		a Windows Domain is given in <link linkend="appendix"/>, <link linkend="domjoin"/>. 
 		Reboot the machine as prompted and then log on using a Domain User account.
 		</para></step>
 
