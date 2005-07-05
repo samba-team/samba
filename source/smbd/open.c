@@ -821,11 +821,11 @@ static void delete_defered_open_entry_record(connection_struct *conn,
  Handle the 1 second delay in returning a SHARING_VIOLATION error.
 ****************************************************************************/
 
-void defer_open_sharing_error(connection_struct *conn,
-				struct timeval *ptv,
-				const char *fname,
-				SMB_DEV_T dev,
-				SMB_INO_T inode)
+static void defer_open_sharing_error(connection_struct *conn,
+				     struct timeval *ptv,
+				     const char *fname,
+				     SMB_DEV_T dev,
+				     SMB_INO_T inode)
 {
 	uint16 mid = get_current_mid();
 	pid_t mypid = sys_getpid();
@@ -1208,7 +1208,6 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	int flags2=0;
 	BOOL file_existed = VALID_STAT(*psbuf);
 	BOOL def_acl = False;
-	BOOL add_share_mode = True;
 	BOOL internal_only_open = False;
 	SMB_DEV_T dev = 0;
 	SMB_INO_T inode = 0;
@@ -1781,9 +1780,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		oplock_request = 0;
 	}
 
-	if (add_share_mode) {
-		set_share_mode(fsp, port, oplock_request);
-	}
+	set_share_mode(fsp, port, oplock_request);
 
 	if (create_options & FILE_DELETE_ON_CLOSE) {
 		uint32 dosattr= existing_dos_attributes;
@@ -1799,9 +1796,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			uint8 u_e_c;
 			uint32 u_e_code;
 			/* Remember to delete the mode we just added. */
-			if (add_share_mode) {
-				del_share_mode(fsp, NULL);
-			}
+			del_share_mode(fsp, NULL);
 			unlock_share_entry_fsp(fsp);
 			fd_close(conn,fsp);
 			file_free(fsp);
