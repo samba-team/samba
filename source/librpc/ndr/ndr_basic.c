@@ -563,8 +563,14 @@ NTSTATUS ndr_push_unique_ptr(struct ndr_push *ndr, const void *p)
 {
 	uint32_t ptr = 0;
 	if (p) {
+#if 0
+		ptr = ndr->ptr_count * 4;
+		ptr |= 0x00020000;
+		ndr->ptr_count++;
+#else
 		ndr->ptr_count++;
 		ptr = ndr->ptr_count;
+#endif
 	}
 	return ndr_push_uint32(ndr, NDR_SCALARS, ptr);
 }
