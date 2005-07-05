@@ -615,7 +615,7 @@ operatingSystemVersion: 4.0
 dNSHostName: ${DNSNAME}
 objectCategory: CN=Computer,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
-unicodePwd: ${JOINPASS}
+unicodePwd: ${MACHINEPASS}
 servicePrincipalName: HOST/${DNSNAME}
 servicePrincipalName: HOST/${NETBIOSNAME}
 msDS-KeyVersionNumber: 1
@@ -653,7 +653,7 @@ sAMAccountType: 805306368
 servicePrincipalName: kadmin/changepw
 objectCategory: CN=Person,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
-unicodePwd: ${RANDPASS}
+unicodePwd: ${KRBTGTPASS}
 
 dn: CN=Domain Computers,CN=Users,${BASEDN}
 objectClass: top
