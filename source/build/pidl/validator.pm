@@ -106,7 +106,6 @@ my %property_list = (
 	"default"		=> ["ELEMENT"],
 
 	# subcontext
-	"pad8"		        => ["ELEMENT"],
 	"subcontext"		=> ["ELEMENT"],
 	"subcontext_size"	=> ["ELEMENT"],
 	"compression"		=> ["ELEMENT"],

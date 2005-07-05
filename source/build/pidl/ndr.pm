@@ -166,8 +166,7 @@ sub GetElementLevelTable($)
 			SUBCONTEXT_SIZE => $subsize,
 			IS_DEFERRED => $is_deferred,
 			COMPRESSION => util::has_property($e, "compression"),
-			OBFUSCATION => util::has_property($e, "obfuscation"),
-			PAD8 => util::has_property($e, "pad8")
+			OBFUSCATION => util::has_property($e, "obfuscation")
 		});
 	}
 
