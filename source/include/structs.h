@@ -104,6 +104,7 @@ struct netr_Credential;
 struct netr_Authenticator;
 union netr_Validation;
 struct netr_SamBaseInfo;
+struct netr_SamInfo3;
 
 struct iface_struct;
 
