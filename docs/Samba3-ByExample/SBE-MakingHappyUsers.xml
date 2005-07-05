@@ -378,7 +378,7 @@ clients is conservative and if followed will minimize problems &smbmdash; but it
 
 		<listitem><para>
 		<indexterm><primary>Sun ONE Identity Server</primary></indexterm>
-		Sun <ulink url="http://www.sun.com/software/sunone/identity/index.html">ONE Identity 
+		Sun <ulink url="http://www.sun.com/software/software/products/identity_srvr/home_identity.xml">ONE Identity 
 		Server product suite</ulink> provides an LDAP server that can be used for Samba.
 		Example schema files are provided in the Samba source code tarball under the directory
 		<filename>~samba/example/LDAP.</filename>
