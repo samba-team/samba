@@ -416,7 +416,8 @@ See the documentation in the <ulink url="http://support.microsoft.com/default.as
 #!/bin/bash
 
 IFS="-"
-RESULT=$(smbstatus -S -u $1 2> /dev/null | awk 'NF > 6 {print $1}' | sort | uniq -d)
+RESULT=$(smbstatus -S -u $1 2> /dev/null | awk 'NF \
+        > 6 {print $1}' | sort | uniq -d)
 
 if [ "X${RESULT}" == X  ]; then
   exit 0
