@@ -525,8 +525,11 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 <indexterm><primary>mkdir</primary></indexterm>
 <indexterm><primary>permissions</primary></indexterm>
 <indexterm><primary>chmod</primary></indexterm>
-			Now we need to prepare the directory with something like <command>mkdir -p /data/shadow_share</command> or
-			whatever you want to name your shadow copy enabled Samba share.  Make sure you set the permissions such that
+			Now we need to prepare the directory with something like
+<screen>
+&rootprompt; mkdir -p /data/shadow_share
+</screen>
+			or whatever you want to name your shadow copy enabled Samba share.  Make sure you set the permissions such that
 			you can use it.  If in doubt, use <command>chmod 777 /data/shadow_share</command> and tighten the permissions
 			once you get things working.
 			</para></listitem>
@@ -589,7 +592,8 @@ xfs_freeze -f /data/shadow_share/
 lvcreate -L10M -s -n $SNAPNAME /dev/shadowvol/sh_test
 xfs_freeze -u /data/shadow_share/
 mkdir /data/shadow_share/@GMT-$SNAPNAME
-mount /dev/shadowvol/$SNAPNAME /data/shadow_share/@GMT-$SNAPNAME -onouuid,ro
+mount /dev/shadowvol/$SNAPNAME \
+       /data/shadow_share/@GMT-$SNAPNAME -onouuid,ro
 </screen>
 		Note that the script does not handle other things like remounting snapshots on reboot.
 	    </para></listitem>

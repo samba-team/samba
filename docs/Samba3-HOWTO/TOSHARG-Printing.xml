@@ -304,9 +304,8 @@ with settings shown in <link linkend="simpleprc">the example above</link>:
 </para>
 
 <para>
-You can easily verify which settings were implicitly added by Samba's
-default behavior. <emphasis>Remember: it may
-be important in your future dealings with Samba.</emphasis>
+You can easily verify which settings were implicitly added by Samba's default behavior. <emphasis>Remember: it
+may be important in your future dealings with Samba.</emphasis>
 </para>
 
 <note><para>
@@ -1253,13 +1252,17 @@ site). See <link linkend="prtdollar">[print\$] Example</link>.
 </para>
 
 <example id="prtdollar">
-<title>[print\$] Example</title>
+<title>[print$] Example</title>
 <smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfcomment>members of the ntadmin group should be able to add drivers and set</smbconfcomment>
 <smbconfcomment>printer properties. root is implicitly always a 'printer admin'.</smbconfcomment>
 <smbconfoption name="printer admin">@ntadmin</smbconfoption>
+<smbconfcomment>...</smbconfcomment>
+
 <smbconfsection name="[printers]"/>
+<smbconfcomment>...</smbconfcomment>
+
 <smbconfsection name="[print$]"/>
 <smbconfoption name="comment">Printer Driver Download Area</smbconfoption>
 <smbconfoption name="path">/etc/samba/drivers</smbconfoption>
@@ -1278,10 +1281,11 @@ Of course, you also need to ensure that the directory named by the
 </sect2>
 
 <sect2>
-<title>[print$] Section Parameters</title>
+<title>[print$] Stanza Parameters</title>
 
 <para>
 <indexterm><primary>special section</primary></indexterm>
+<indexterm><primary>special stanza</primary></indexterm>
 <indexterm><primary>potential printer</primary></indexterm>
 <indexterm><primary>driver download</primary></indexterm>
 <indexterm><primary>local print driver</primary></indexterm>
@@ -1308,8 +1312,11 @@ The following parameters are frequently needed in this share section:
 	<varlistentry><term><smbconfoption name="browseable">no </smbconfoption></term>
 		<listitem><para>
 		Makes the <smbconfsection name="[print$]"/> share invisible to clients from the
-		<guimenu>Network Neighborhood</guimenu>. However, you can still mount it from any client
-		using the <command>net use g:\\sambaserver\print$</command> command in a DOS box or the
+		<guimenu>Network Neighborhood</guimenu>. By excuting from a <command>cmd</command> shell:
+<screen>
+&dosprompt; <command>net use g:\\sambaserver\print$</command>
+</screen>
+		 you can still mount it from any client. This can also be done from the
 		<guimenu>Connect network drive menu></guimenu> from Windows Explorer.
 		</para></listitem>
 	</varlistentry>
@@ -3231,13 +3238,12 @@ form of a one-way hash in a file named <filename>/etc/shadow</filename>), with t
 authenticate against Samba. Samba does not know the UNIX password. Root access to Samba resources
 requires that a Samba account for root must first be created. This is done with the <command>smbpasswd</command>
 command as follows:
-</para>
-
-<para><screen>
+<screen>
 &rootprompt; smbpasswd -a root
 New SMB password: secret
 Retype new SMB password: secret
-</screen></para>
+</screen>
+</para>
 
 </sect2>
 
@@ -3246,7 +3252,18 @@ Retype new SMB password: secret
 
 <para>
 Do not use the existing UNIX print system spool directory for the Samba spool directory. It may seem
-convenient and a savings of space, but it only leads to problems. The two must be separate.
+convenient and a savings of space, but it only leads to problems. The two must be separate. The UNIX/Linux
+system print spool directory (e.g., <filename>/var/spool/cups</filename>) is typically owned by a
+non-privileged user such as <literal>cups</literal> or <literal>lp</literal>. Additionally. the permissions on
+the spool directory are typically restrictive to the owner and/or group. On the other hand, the Samba
+spool directory must be world writable, and should have the 't' bit set to ensure that only a temporary
+spool file owner can change or delete the file.
+</para>
+
+<para>
+Depending on the type of print spooling system in use on the UNIX/Linux host, files that the spool
+management application finds and that are not currently part of job queue that it is managing can be deleted.
+This may explain the observation that jobs are spooled (by Samba) into this directory and just disappear.
 </para>
 
 </sect2>
