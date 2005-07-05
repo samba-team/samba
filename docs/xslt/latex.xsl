@@ -176,20 +176,18 @@
 </xsl:template>
 
 <xsl:template match="//samba:parameter">
-	<xsl:text>\item[{</xsl:text><xsl:value-of select="@name"/><xsl:text>}]\null{}&#10;</xsl:text>
-	<xsl:text>\index{</xsl:text><xsl:value-of select="@name"/><xsl:text>|it}&#10;</xsl:text>
-
 	<xsl:for-each select="synonym">
 		<xsl:text>\item[{</xsl:text><xsl:value-of select="."/><xsl:text>}]\null{}&#10;</xsl:text>
 	<xsl:text>\index{</xsl:text><xsl:value-of select="."/><xsl:text>|it}&#10;</xsl:text>
 	<xsl:text>This parameter is a synonym for \smbconfoption{</xsl:text><xsl:value-of select="../@name"/><xsl:text>}.</xsl:text>
 	</xsl:for-each>
 
-	<xsl:variable name="context">
-		<xsl:text> (</xsl:text>
-		<xsl:value-of select="@context"/>
-		<xsl:text>)</xsl:text>
-	</xsl:variable>
+	<xsl:text>\item[{</xsl:text><xsl:value-of select="@name"/>
+	<xsl:text> (</xsl:text>
+	<xsl:value-of select="@context"/>
+	<xsl:text>)</xsl:text>
+	<xsl:text>}]\null{}&#10;&#10;</xsl:text>
+	<xsl:text>\index{</xsl:text><xsl:value-of select="@name"/><xsl:text>|it}&#10;</xsl:text>
 
 	<!-- Print default value-->
 	<xsl:text>&#10;</xsl:text>
