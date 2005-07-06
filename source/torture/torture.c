@@ -2004,7 +2004,7 @@ BOOL torture_chkpath_test(void)
 	}
 
 	if (NT_STATUS_IS_ERR(smbcli_chkpath(cli->tree, "\\chkpath.dir\\bar.txt"))) {
-		ret = check_error(__location__, cli, ERRDOS, ERRbadfile, 
+		ret = check_error(__location__, cli, ERRDOS, ERRbadpath, 
 				  NT_STATUS_OBJECT_NAME_NOT_FOUND);
 	} else {
 		printf("* chkpath on a non existent file should fail\n");
