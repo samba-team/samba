@@ -456,6 +456,41 @@ BOOL torture_test_delete(void)
 		goto fail;
 	}
 	
+	{
+		time_t c_time, a_time, m_time, w_time;
+		size_t size;
+		uint16_t mode;
+		ino_t ino;
+		status = smbcli_qpathinfo(cli1->tree, fname,
+					  &c_time, &a_time, &m_time,
+					  &size, &mode);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
+			printf("(%s) qpathinfo 1 did not give correct error "
+			       "code (%s) -- NT_STATUS_DELETE_PENDING "
+			       "expected\n", __location__,
+			       nt_errstr(status));
+			correct = False;
+		}
+		status = smbcli_qpathinfo(cli2->tree, fname,
+					  &c_time, &a_time, &m_time,
+					  &size, &mode);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
+			printf("(%s) qpathinfo 2 did not give correct error "
+			       "code (%s) -- NT_STATUS_DELETE_PENDING "
+			       "expected\n", __location__,
+			       nt_errstr(status));
+			correct = False;
+		}
+		status = smbcli_qfileinfo(cli2->tree, fnum2, &mode, &size,
+					  &c_time, &a_time, &m_time,
+					  &w_time, &ino);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("(%s) qfileinfo failed (%s)\n", 
+			       __location__, smbcli_errstr(cli1->tree));
+			correct = False;
+		}
+	}
+
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
 		printf("(%s) close - 1 failed (%s)\n", 
 		       __location__, smbcli_errstr(cli1->tree));
@@ -486,7 +521,17 @@ BOOL torture_test_delete(void)
 					  &c_time, &a_time, &m_time,
 					  &size, &mode);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
-			printf("(%s) qpathinfo did not give correct error "
+			printf("(%s) qpathinfo 1 did not give correct error "
+			       "code (%s) -- NT_STATUS_DELETE_PENDING "
+			       "expected\n", __location__,
+			       nt_errstr(status));
+			correct = False;
+		}
+		status = smbcli_qpathinfo(cli2->tree, fname,
+					  &c_time, &a_time, &m_time,
+					  &size, &mode);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
+			printf("(%s) qpathinfo 2 did not give correct error "
 			       "code (%s) -- NT_STATUS_DELETE_PENDING "
 			       "expected\n", __location__,
 			       nt_errstr(status));
