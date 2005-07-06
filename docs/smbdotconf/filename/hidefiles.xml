@@ -21,6 +21,12 @@
 	<para>Setting this parameter will affect the performance of Samba, 
 	as it will be forced to check all files and directories for a match 
 	as they are scanned.</para>
+
+	<para>
+	The example shown above is based on files that the Macintosh 
+	SMB client (DAVE) available from <ulink url="http://www.thursby.com"> 
+	Thursby</ulink> creates for internal use, and also still hides 
+	all files beginning with a dot.</para>
 </description>
 
 <related>hide dot files</related>
@@ -28,10 +34,7 @@
 <related>case sensitive</related>
 
 <value type="default"><comment>no file are hidden</comment></value>
-<value type="example">/.*/DesktopFolderDB/TrashFor%m/resource.frk/<comment>
-The above example is based on files that the Macintosh 
-SMB client (DAVE) available from <ulink url="http://www.thursby.com"> 
-Thursby</ulink> creates for internal use, and also still hides 
-all files beginning with a dot.</comment></value>
+
+<value type="example">/.*/DesktopFolderDB/TrashFor%m/resource.frk/</value>
 
 </samba:parameter>
