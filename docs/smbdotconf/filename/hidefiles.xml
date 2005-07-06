@@ -26,7 +26,15 @@
 	The example shown above is based on files that the Macintosh 
 	SMB client (DAVE) available from <ulink url="http://www.thursby.com"> 
 	Thursby</ulink> creates for internal use, and also still hides 
-	all files beginning with a dot.</para>
+	all files beginning with a dot.
+	</para>
+
+	<para>
+	An example of us of this parameter is:
+<screen>
+hide files = /.*/DesktopFolderDB/TrashFor%m/resource.frk/
+</screen>
+	</para>
 </description>
 
 <related>hide dot files</related>
@@ -34,7 +42,5 @@
 <related>case sensitive</related>
 
 <value type="default"><comment>no file are hidden</comment></value>
-
-<value type="example">/.*/DesktopFolderDB/TrashFor%m/resource.frk/</value>
 
 </samba:parameter>
