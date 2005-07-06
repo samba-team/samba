@@ -39,6 +39,7 @@ static BOOL check_delete_on_close(struct smbcli_state *cli, int fnum,
 
 	status = torture_single_search(cli, mem_ctx,
 				       fname, RAW_SEARCH_FULL_DIRECTORY_INFO,
+				       FILE_ATTRIBUTE_DIRECTORY,
 				       &data);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("(%s) single_search failed (%s)\n", 
@@ -138,8 +139,10 @@ BOOL torture_test_delete(void)
 	struct smbcli_state *cli1;
 	struct smbcli_state *cli2 = NULL;
 	const char *fname = "\\delete.file";
+	const char *dirname = "\\delete.dir";
 	int fnum1 = -1;
 	int fnum2 = -1;
+	int dnum1 = -1;
 	BOOL correct = True;
 	NTSTATUS status;
 	
@@ -148,6 +151,8 @@ BOOL torture_test_delete(void)
 	if (!torture_open_connection(&cli1)) {
 		return False;
 	}
+
+	smbcli_deltree(cli1->tree, dirname);
 
 	/* Test 1 - this should delete the file on close. */
 	
@@ -793,8 +798,140 @@ BOOL torture_test_delete(void)
 	}
 
 	smbcli_close(cli1->tree, fnum1);
+	smbcli_unlink(cli1->tree, fname);
 
 	printf("thirteenth delete on close test succeeded.\n");
+
+	/* Test 14 -- directory */
+
+	dnum1 = smbcli_nt_create_full(cli1->tree, dirname, 0,
+				      SEC_FILE_READ_DATA|
+				      SEC_FILE_WRITE_DATA|
+				      SEC_STD_DELETE,
+				      FILE_ATTRIBUTE_DIRECTORY, 
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_CREATE, 0, 0);
+	if (dnum1 == -1) {
+		printf("(%s) open of %s failed: %s!\n", 
+		       __location__, dirname, smbcli_errstr(cli1->tree));
+		correct = False;
+		goto fail;
+	}
+
+	check_delete_on_close(cli1, dnum1, dirname, False);
+	if (NT_STATUS_IS_ERR(smbcli_nt_delete_on_close(cli1->tree, dnum1, True))) {
+		printf("(%s) setting delete_on_close on file failed !\n",
+		       __location__);
+		correct = False;
+		goto fail;
+	}
+	check_delete_on_close(cli1, dnum1, dirname, True);
+	smbcli_close(cli1->tree, dnum1);
+
+	/* Now it should be gone... */
+
+	dnum1 = smbcli_nt_create_full(cli1->tree, dirname, 0,
+				      SEC_FILE_READ_DATA|
+				      SEC_FILE_WRITE_DATA|
+				      SEC_STD_DELETE,
+				      FILE_ATTRIBUTE_DIRECTORY, 
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN, 0, 0);
+	if (dnum1 != -1) {
+		printf("(%s) setting delete_on_close on file succeeded !\n",
+		       __location__);
+		correct = False;
+		goto fail;
+	}
+
+	printf("fourteenth delete on close test succeeded.\n");
+
+	/* Test 15 -- non-empty directory */
+
+	dnum1 = smbcli_nt_create_full(cli1->tree, dirname, 0,
+				      SEC_FILE_READ_DATA|
+				      SEC_FILE_WRITE_DATA|
+				      SEC_STD_DELETE,
+				      FILE_ATTRIBUTE_DIRECTORY, 
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_CREATE, 
+				      NTCREATEX_OPTIONS_DIRECTORY, 0);
+	if (dnum1 == -1) {
+		printf("(%s) open of %s failed: %s!\n", 
+		       __location__, dirname, smbcli_errstr(cli1->tree));
+		correct = False;
+		goto fail;
+	}
+
+	check_delete_on_close(cli1, dnum1, dirname, False);
+	status = smbcli_nt_delete_on_close(cli1->tree, dnum1, True);
+
+	{
+		char *fullname;
+		asprintf(&fullname, "\\%s%s", dirname, fname);
+		fnum1 = smbcli_open(cli1->tree, fullname, O_CREAT|O_RDWR,
+				    DENY_NONE);
+		if (fnum1 != -1) {
+			printf("(%s) smbcli_open succeeded, should have "
+			       "failed: %s\n",
+			       __location__, smbcli_errstr(cli1->tree));
+			correct = False;
+			goto fail;
+		}
+
+		if (!NT_STATUS_EQUAL(smbcli_nt_error(cli1->tree),
+				     NT_STATUS_DELETE_PENDING)) {
+			printf("(%s) smbcli_open returned %s, expected "
+			       "NT_STATUS_DELETE_PENDING\n",
+			       __location__, smbcli_errstr(cli1->tree));
+			correct = False;
+			goto fail;
+		}
+	}
+
+	status = smbcli_nt_delete_on_close(cli1->tree, dnum1, False);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("(%s) setting delete_on_close on file failed !\n",
+		       __location__);
+		correct = False;
+		goto fail;
+	}
+		
+	{
+		char *fullname;
+		asprintf(&fullname, "\\%s%s", dirname, fname);
+		fnum1 = smbcli_open(cli1->tree, fullname, O_CREAT|O_RDWR,
+				    DENY_NONE);
+		if (fnum1 == -1) {
+			printf("(%s) smbcli_open failed: %s\n",
+			       __location__, smbcli_errstr(cli1->tree));
+			correct = False;
+			goto fail;
+		}
+		smbcli_close(cli1->tree, fnum1);
+	}
+
+	status = smbcli_nt_delete_on_close(cli1->tree, dnum1, True);
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_DIRECTORY_NOT_EMPTY)) {
+		printf("(%s) setting delete_on_close returned %s, expected "
+		       "NT_STATUS_DIRECTORY_NOT_EMPTY\n", __location__,
+		       smbcli_errstr(cli1->tree));
+		correct = False;
+		goto fail;
+	}
+
+	smbcli_close(cli1->tree, dnum1);
+
+	/* Now it should be gone... */
+
+	printf("fifteenth delete on close test succeeded.\n");
 
 	printf("finished delete test\n");
 
