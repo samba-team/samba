@@ -324,7 +324,7 @@ Once we have explained the meaning of the tokens, we describe this method.
 <indexterm><primary>password</primary></indexterm>
 			<parameter>password:</parameter> This last module type is required for updating the authentication
 			token associated with the user. Typically, there is one module for each
-			<quote>challenge/response</quote>-based authentication <parameter>(auth)</parameter> module type.
+			<quote>challenge/response</quote> authentication <parameter>(auth)</parameter> module type.
 			</para></listitem>
 		</itemizedlist>
 		</listitem>
@@ -482,7 +482,7 @@ Once we have explained the meaning of the tokens, we describe this method.
 			</para></listitem>
 
 			<listitem><para>
-			<parameter>sufficient</parameter> is equivalent to <parameter>[success=done new_authtok_reqd=done default=ignore]</parameter>.
+			<parameter>sufficient</parameter> is equivalent to <parameter>[success=done  new_authtok_reqd=done  default=ignore]</parameter>.
 			</para></listitem>
 
 			<listitem><para>
