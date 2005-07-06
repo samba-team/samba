@@ -27,14 +27,11 @@
 	<para>Setting this parameter will affect the performance 
 	of Samba, as it will be forced to check all files and directories 
 	for a match as they are scanned.</para>
-</description>
-<related>hide files</related>
-<related>case sensitive</related>
 
-<value type="default"><comment>No files or directories are vetoed.</comment></value>
-
-<value type="example">
-; Veto any files containing the word Security, 
+	<para>
+	Examples of use include:
+<screen>
+; Veto any files containing the word Security,
 ; any ending in .tmp, and any directory containing the
 ; word root.
 veto files = /*Security*/*.tmp/*root*/
@@ -42,5 +39,12 @@ veto files = /*Security*/*.tmp/*root*/
 ; Veto the Apple specific files that a NetAtalk server
 ; creates.
 veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
-</value>
+</screen>
+	</para>
+
+</description>
+<related>hide files</related>
+<related>case sensitive</related>
+
+<value type="default">No files or directories are vetoed.</value>
 </samba:parameter>
