@@ -2420,7 +2420,7 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 				params = nttrans_realloc(ppparams, param_len);
 				if(params == NULL) {
 					return ERROR_DOS(ERRDOS,ERRnomem);
-				{
+				}
 
 				data_len = 0;
 				SIVAL(params,0,data_len);
