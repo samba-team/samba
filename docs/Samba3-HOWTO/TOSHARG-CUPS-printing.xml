@@ -2001,7 +2001,7 @@ application/octet-stream   application/vnd.cups-raw   0   -
 		<indexterm><primary>ESP</primary><secondary>Print Pro</secondary></indexterm>
 		<indexterm><primary>PrintPro</primary><see>ESP Print Pro</see></indexterm>
 		<listitem><para>
-		<ulink url="http://wwwl.easysw.com/printpro/">ESP PrintPro</ulink>
+		<ulink url="http://www.easysw.com/printpro/">ESP PrintPro</ulink>
 		(commercial, non-free) is packaged with more than 3,000 PPDs, ready for
 		successful use <quote>out of the box</quote> on Linux, Mac OS X, IBM-AIX,
 		HP-UX, Sun-Solaris, SGI-IRIX, Compaq Tru64, Digital UNIX, and
