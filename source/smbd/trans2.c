@@ -2828,6 +2828,35 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
 		}
 
+		{
+			int i, num_shares;
+			share_mode_entry *shares;
+			BOOL deleted = False;
+
+			/* We need to return NT_STATUS_DELETE_PENDING if any
+			 * process has that flag set. */
+
+			num_shares = get_share_modes(conn, sbuf.st_dev,
+						     sbuf.st_ino, &shares);
+
+			for (i=0; i<num_shares; i++) {
+				if ((shares[i].create_options &
+				     FILE_DELETE_ON_CLOSE) == 0) {
+					continue;
+				}
+				deleted = True;
+				break;
+			}
+
+			if (num_shares > 0) {
+				SAFE_FREE(shares);
+			}
+
+			if (deleted) {
+				return ERROR_NT(NT_STATUS_DELETE_PENDING);
+			}
+		}
+
 		if (INFO_LEVEL_IS_UNIX(info_level)) {
 			/* Always do lstat for UNIX calls. */
 			if (SMB_VFS_LSTAT(conn,fname,&sbuf)) {
