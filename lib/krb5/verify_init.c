@@ -80,14 +80,12 @@ krb5_verify_init_creds(krb5_context context,
     krb5_error_code ret;
     krb5_data req;
     krb5_ccache local_ccache = NULL;
-    krb5_keytab_entry entry;
     krb5_creds *new_creds = NULL;
     krb5_auth_context auth_context = NULL;
     krb5_principal server = NULL;
     krb5_keytab keytab = NULL;
 
     krb5_data_zero (&req);
-    memset (&entry, 0, sizeof(entry));
 
     if (ap_req_server == NULL) {
 	char local_hostname[MAXHOSTNAMELEN];
@@ -182,7 +180,6 @@ cleanup:
     if (auth_context)
 	krb5_auth_con_free (context, auth_context);
     krb5_data_free (&req);
-    krb5_kt_free_entry (context, &entry);
     if (new_creds != NULL)
 	krb5_free_creds (context, new_creds);
     if (ap_req_server == NULL && server)
