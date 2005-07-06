@@ -435,11 +435,10 @@ complete descriptions of new or modified parameters.
 <indexterm><primary>Windows domain</primary></indexterm>
 <indexterm><primary>getpwnam() call</primary></indexterm>
 <indexterm><primary>NT_STATUS_LOGON_FAILURE</primary></indexterm>
-		When operating as a member of a Windows domain, Samba-2.2 would
-		map any users authenticated by the remote DC to the <quote>guest account</quote>
-		if a UID could not be obtained via the getpwnam() call. Samba-3
-		rejects the connection as NT_STATUS_LOGON_FAILURE. There is no
-		current workaround to re-establish the Samba-2.2 behavior.
+		When operating as a member of a Windows domain, Samba-2.2 would map any users authenticated by the remote DC
+		to the <quote>guest account</quote> if a UID could not be obtained via the getpwnam() call. Samba-3 rejects
+		the connection with the error message <quote>NT_STATUS_LOGON_FAILURE.</quote> There is no current workaround
+		to re-establish the Samba-2.2 behavior.
 		</para></listitem>
 
 		<listitem><para>
