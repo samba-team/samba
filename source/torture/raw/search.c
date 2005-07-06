@@ -44,6 +44,7 @@ NTSTATUS torture_single_search(struct smbcli_state *cli,
 			       TALLOC_CTX *mem_ctx,
 			       const char *pattern,
 			       enum smb_search_level level,
+			       uint16_t attrib,
 			       union smb_search_data *data)
 {
 	union smb_search_first io;
@@ -55,10 +56,10 @@ NTSTATUS torture_single_search(struct smbcli_state *cli,
 	    level == RAW_SEARCH_FFIRST ||
 	    level == RAW_SEARCH_FUNIQUE) {
 		io.search_first.in.max_count = 1;
-		io.search_first.in.search_attrib = 0;
+		io.search_first.in.search_attrib = attrib;
 		io.search_first.in.pattern = pattern;
 	} else {
-		io.t2ffirst.in.search_attrib = 0;
+		io.t2ffirst.in.search_attrib = attrib;
 		io.t2ffirst.in.max_count = 1;
 		io.t2ffirst.in.flags = FLAG_TRANS2_FIND_CLOSE;
 		io.t2ffirst.in.storage_type = 0;
@@ -145,7 +146,7 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		printf("testing %s\n", levels[i].name);
 
 		levels[i].status = torture_single_search(cli, mem_ctx, fname, 
-							 levels[i].level,
+							 levels[i].level, 0,
 							 &levels[i].data);
 
 		/* see if this server claims to support this level */
@@ -164,7 +165,7 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		}
 
 		status = torture_single_search(cli, mem_ctx, fname2, 
-					       levels[i].level,
+					       levels[i].level, 0,
 					       &levels[i].data);
 		
 		expected_status = NT_STATUS_NO_SUCH_FILE;
