@@ -262,7 +262,12 @@ BOOL cli_unix_stat(struct cli_state *cli, const char *name, SMB_STRUCT_STAT *sbu
 
 	sbuf->st_size = IVAL2_TO_SMB_BIG_UINT(rdata,0);     /* total size, in bytes */
 	sbuf->st_blocks = IVAL2_TO_SMB_BIG_UINT(rdata,8);   /* number of blocks allocated */
+#if defined (HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
 	sbuf->st_blocks /= STAT_ST_BLOCKSIZE;
+#else
+	/* assume 512 byte blocks */
+	sbuf->st_blocks /= 512;
+#endif
 	sbuf->st_ctime = interpret_long_date(rdata + 16);    /* time of last change */
 	sbuf->st_atime = interpret_long_date(rdata + 24);    /* time of last access */
 	sbuf->st_mtime = interpret_long_date(rdata + 32);    /* time of last modification */
