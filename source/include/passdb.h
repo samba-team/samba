@@ -375,10 +375,10 @@ typedef struct pdb_context
 				    uint32 **attrs);
 
 	NTSTATUS (*pdb_get_account_policy)(struct pdb_context *context,
-					   int policy_index, int *value);
+					   int policy_index, uint32 *value);
 
 	NTSTATUS (*pdb_set_account_policy)(struct pdb_context *context,
-					   int policy_index, int value);
+					   int policy_index, uint32 value);
 
 	NTSTATUS (*pdb_get_seq_num)(struct pdb_context *context, time_t *seq_num);
 
@@ -497,10 +497,10 @@ typedef struct pdb_methods
 				uint32 **attrs);
 
 	NTSTATUS (*get_account_policy)(struct pdb_methods *methods,
-				       int policy_index, int *value);
+				       int policy_index, uint32 *value);
 
 	NTSTATUS (*set_account_policy)(struct pdb_methods *methods,
-				       int policy_index, int value);
+				       int policy_index, uint32 value);
 
 	NTSTATUS (*get_seq_num)(struct pdb_methods *methods, time_t *seq_num);
 

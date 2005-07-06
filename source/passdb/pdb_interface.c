@@ -666,7 +666,7 @@ static NTSTATUS context_lookup_rids(struct pdb_context *context,
 }
 
 static NTSTATUS context_get_account_policy(struct pdb_context *context,
-					   int policy_index, int *value)
+					   int policy_index, uint32 *value)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
@@ -680,7 +680,7 @@ static NTSTATUS context_get_account_policy(struct pdb_context *context,
 }
 
 static NTSTATUS context_set_account_policy(struct pdb_context *context,
-					   int policy_index, int value)
+					   int policy_index, uint32 value)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
@@ -1363,7 +1363,7 @@ NTSTATUS pdb_lookup_rids(TALLOC_CTX *mem_ctx,
 					    num_rids, rids, names, attrs);
 }
 
-BOOL pdb_get_account_policy(int policy_index, int *value)
+BOOL pdb_get_account_policy(int policy_index, uint32 *value)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
@@ -1375,7 +1375,7 @@ BOOL pdb_get_account_policy(int policy_index, int *value)
 			       pdb_get_account_policy(pdb_context, policy_index, value));
 }
 
-BOOL pdb_set_account_policy(int policy_index, int value)
+BOOL pdb_set_account_policy(int policy_index, uint32 value)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
 
@@ -1460,12 +1460,12 @@ static void pdb_default_endsampwent(struct pdb_methods *methods)
 	return; /* NT_STATUS_NOT_IMPLEMENTED; */
 }
 
-static NTSTATUS pdb_default_get_account_policy(struct pdb_methods *methods, int policy_index, int *value)
+static NTSTATUS pdb_default_get_account_policy(struct pdb_methods *methods, int policy_index, uint32 *value)
 {
 	return account_policy_get(policy_index, value) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
-static NTSTATUS pdb_default_set_account_policy(struct pdb_methods *methods, int policy_index, int value)
+static NTSTATUS pdb_default_set_account_policy(struct pdb_methods *methods, int policy_index, uint32 value)
 {
 	return account_policy_set(policy_index, value) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }

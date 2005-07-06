@@ -3273,7 +3273,7 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods, int policy_index, int *value)
+static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods, int policy_index, uint32 *value)
 {
 	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
 	LDAPMessage *result = NULL;
@@ -3283,7 +3283,7 @@ static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods, int poli
 	pstring filter;
 	char **vals;
 	const char *policy_string = NULL;
-	int tmp_val;
+	uint32 tmp_val;
 	BOOL found_tdb = False;
 
 	struct ldapsam_privates *ldap_state =
@@ -3387,7 +3387,7 @@ out:
 	return ntstatus;
 }
 
-static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods, int policy_index, int value)
+static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods, int policy_index, uint32 value)
 {
 	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
 	LDAPMessage *result = NULL;

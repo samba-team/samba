@@ -240,7 +240,8 @@ Migrate account policies to passdb
 
 static BOOL migrate_account_policy_names_to_passdb(void)
 {
-	int i, tmp_val;
+	int i;
+	uint32 tmp_val;
 	BOOL got_pol;
 
 	if (already_migrated_account_policies(False)) {

@@ -33,7 +33,8 @@ static NTSTATUS add_new_domain_account_policies(struct smbldap_state *ldap_state
 						const char *domain_name)
 {
 	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
-	int i, ldap_op, policy_default, rc;
+	int i, ldap_op, rc;
+	uint32 policy_default;
 	const char *policy_string = NULL;
 	const char *policy_comment = NULL;
 	pstring dn;
