@@ -55,7 +55,13 @@
 
 	<para>Note that this option is only useful if Samba is set up 
 	as a logon server.</para>
+
+	<para>
+	An example of use is:
+<screen>
+logon path = \\PROFILESERVER\PROFILE\%U
+</screen>
+	</para>
 </description>
 <value type="default">\\%N\%U\profile</value>
-<value type="example">>\\PROFILESERVER\PROFILE\%U</value>
 </samba:parameter>
