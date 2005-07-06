@@ -240,8 +240,8 @@ krb5_kt_get_name(krb5_context context,
 }
 
 /*
- * Finish using the keytab in `id'.  All resources will be released.
- * Return 0 or an error.
+ * Finish using the keytab in `id'.  All resources will be released,
+ * even on errors.  Return 0 or an error.
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -251,8 +251,8 @@ krb5_kt_close(krb5_context context,
     krb5_error_code ret;
 
     ret = (*id->close)(context, id);
-    if(ret == 0)
-	free(id);
+    memset(id, 0, sizeof(*id));
+    free(id);
     return ret;
 }
 
