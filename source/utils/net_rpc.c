@@ -5989,6 +5989,7 @@ int net_rpc_help(int argc, const char **argv)
 		{"trustdom", rpc_trustdom_usage},
 		/*{"abortshutdown", rpc_shutdown_abort_usage},*/
 		/*{"shutdown", rpc_shutdown_usage}, */
+		{"vampire", rpc_vampire_usage},
 		{NULL, NULL}
 	};
 

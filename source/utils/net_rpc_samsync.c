@@ -4,6 +4,7 @@
 
    Copyright (C) Andrew Tridgell 2002
    Copyright (C) Tim Potter 2001,2002
+   Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2005
    Modified by Volker Lendecke 2002
 
    This program is free software; you can redistribute it and/or modify
@@ -23,6 +24,12 @@
 
 #include "includes.h"
 #include "utils/net.h"
+
+/* uid's and gid's for writing deltas to ldif */
+static uint32 ldif_gid = 999;
+static uint32 ldif_uid = 999;
+/* Kkeep track of ldap initialization */
+static int init_ldap = 1;
 
 static void display_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *g)
 {
@@ -1148,6 +1155,985 @@ fetch_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds,
 	return result;
 }
 
+static NTSTATUS
+populate_ldap_for_ldif(fstring sid, const char *suffix, const char 
+		       *builtin_sid, FILE *add_fd)
+{
+	char *user_suffix, *group_suffix, *machine_suffix, *idmap_suffix;
+	char *user_attr=NULL, *group_attr=NULL;
+	char *suffix_attr;
+	int len;
+
+	/* Get the suffix attribute */
+	suffix_attr = sstring_sub(suffix, '=', ',');
+	if (suffix_attr == NULL) {
+		len = strlen(suffix);
+		suffix_attr = (char*)SMB_MALLOC(len+1);
+		memcpy(suffix_attr, suffix, len);
+		suffix_attr[len] = '\0';
+	}
+
+	/* Write the base */
+	fprintf(add_fd, "# %s\n", suffix);
+	fprintf(add_fd, "dn: %s\n", suffix);
+	fprintf(add_fd, "objectClass: dcObject\n");
+	fprintf(add_fd, "objectClass: organization\n");
+	fprintf(add_fd, "o: %s\n", suffix_attr);
+	fprintf(add_fd, "dc: %s\n", suffix_attr);
+	fprintf(add_fd, "\n");
+	fflush(add_fd);
+
+	user_suffix = lp_ldap_user_suffix();
+	/* If it exists and is distinct from other containers, 
+	   Write the Users entity */
+	if (user_suffix && *user_suffix &&
+	    strcmp(user_suffix, suffix)) {
+		user_attr = sstring_sub(lp_ldap_user_suffix(), '=', ',');
+		fprintf(add_fd, "# %s\n", user_suffix);
+		fprintf(add_fd, "dn: %s\n", user_suffix);
+		fprintf(add_fd, "objectClass: organizationalUnit\n");
+		fprintf(add_fd, "ou: %s\n", user_attr);
+		fprintf(add_fd, "\n");
+		fflush(add_fd);
+	}
+
+
+	group_suffix = lp_ldap_group_suffix();
+	/* If it exists and is distinct from other containers, 
+	   Write the Groups entity */
+	if (group_suffix && *group_suffix &&
+	    strcmp(group_suffix, suffix)) {
+		group_attr = sstring_sub(lp_ldap_group_suffix(), '=', ',');
+		fprintf(add_fd, "# %s\n", group_suffix);
+		fprintf(add_fd, "dn: %s\n", group_suffix);
+		fprintf(add_fd, "objectClass: organizationalUnit\n");
+		fprintf(add_fd, "ou: %s\n", group_attr);
+		fprintf(add_fd, "\n");
+		fflush(add_fd);
+	}
+
+	/* If it exists and is distinct from other containers, 
+	   Write the Computers entity */
+	machine_suffix = lp_ldap_machine_suffix();
+	if (machine_suffix && *machine_suffix && 
+	    strcmp(machine_suffix, user_suffix) &&
+	    strcmp(machine_suffix, suffix)) {
+		fprintf(add_fd, "# %s\n", lp_ldap_machine_suffix());
+		fprintf(add_fd, "dn: %s\n", lp_ldap_machine_suffix());
+		fprintf(add_fd, "objectClass: organizationalUnit\n");
+		fprintf(add_fd, "ou: %s\n", 
+			sstring_sub(lp_ldap_machine_suffix(), '=', ','));
+		fprintf(add_fd, "\n");
+		fflush(add_fd);
+	}
+
+	/* If it exists and is distinct from other containers, 
+	   Write the IdMap entity */
+	idmap_suffix = lp_ldap_idmap_suffix();
+	if (idmap_suffix && *idmap_suffix &&
+	    strcmp(idmap_suffix, user_suffix) &&
+	    strcmp(idmap_suffix, suffix)) {
+		fprintf(add_fd, "# %s\n", idmap_suffix);
+		fprintf(add_fd, "dn: %s\n", idmap_suffix);
+		fprintf(add_fd, "ObjectClass: organizationalUnit\n");
+		fprintf(add_fd, "ou: %s\n", 
+			sstring_sub(lp_ldap_idmap_suffix(), '=', ','));
+		fprintf(add_fd, "\n");
+		fflush(add_fd);
+	}
+
+	/* Write the root entity */
+	fprintf(add_fd, "# root, %s, %s\n", user_attr, suffix);
+	fprintf(add_fd, "dn: uid=root,ou=%s,%s\n", user_attr, suffix);
+	fprintf(add_fd, "cn: root\n");
+	fprintf(add_fd, "sn: root\n");
+	fprintf(add_fd, "objectClass: inetOrgPerson\n");
+	fprintf(add_fd, "objectClass: sambaSAMAccount\n");
+	fprintf(add_fd, "objectClass: posixAccount\n");
+	fprintf(add_fd, "objectClass: shadowAccount\n");
+	fprintf(add_fd, "gidNumber: 0\n");
+	fprintf(add_fd, "uid: root\n");
+	fprintf(add_fd, "uidNumber: 0\n");
+	fprintf(add_fd, "homeDirectory: /home/root\n");
+	fprintf(add_fd, "sambaPwdLastSet: 0\n");
+	fprintf(add_fd, "sambaLogonTime: 0\n");
+	fprintf(add_fd, "sambaLogoffTime: 2147483647\n");
+	fprintf(add_fd, "sambaKickoffTime: 2147483647\n");
+	fprintf(add_fd, "sambaPwdCanChange: 0\n");
+	fprintf(add_fd, "sambaPwdMustChange: 2147483647\n");
+	fprintf(add_fd, "sambaHomePath: \\\\PDC-SRV\root\n");
+	fprintf(add_fd, "sambaHomeDrive: H:\n");
+	fprintf(add_fd, "sambaProfilePath: \\\\PDC-SRV\\profiles\\root\n");
+	fprintf(add_fd, "sambaprimaryGroupSID: %s-512\n", sid);
+	fprintf(add_fd, "sambaLMPassword: XXX\n");
+	fprintf(add_fd, "sambaNTPassword: XXX\n");
+	fprintf(add_fd, "sambaAcctFlags: [U\n");
+	fprintf(add_fd, "sambaSID: %s-500\n", sid);
+	fprintf(add_fd, "loginShell: /bin/false\n");
+	fprintf(add_fd, "\n");
+	fflush(add_fd);
+
+	/* Write the domain entity */
+	fprintf(add_fd, "# %s, %s\n", lp_workgroup(), suffix);
+	fprintf(add_fd, "dn: sambaDomainName=%s,%s\n", lp_workgroup(),
+		suffix);
+	fprintf(add_fd, "objectClass: sambaDomain\n");
+	fprintf(add_fd, "objectClass: sambaUnixIdPool\n");
+	fprintf(add_fd, "sambaDomainName: %s\n", lp_workgroup());
+	fprintf(add_fd, "sambaSID: %s\n", sid);
+	fprintf(add_fd, "uidNumber: %d\n", ++ldif_uid);
+	fprintf(add_fd, "gidNumber: %d\n", ++ldif_gid);
+	fprintf(add_fd, "\n");
+	fflush(add_fd);
+
+	/* Write user nobody entity */
+	fprintf(add_fd, "# nobody, %s, %s\n", user_attr, suffix);
+	fprintf(add_fd, "dn: uid=nobody,ou=%s,%s\n", user_attr, suffix);
+	fprintf(add_fd, "cn: nobody\n");
+	fprintf(add_fd, "sn: nobody\n");
+	fprintf(add_fd, "objectClass: inetOrgPerson\n");
+	fprintf(add_fd, "objectClass: sambaSAMAccount\n");
+	fprintf(add_fd, "objectClass: posixAccount\n");
+	fprintf(add_fd, "objectClass: shadowAccount\n");
+	fprintf(add_fd, "gidNumber: 514\n");
+	fprintf(add_fd, "uid: nobody\n");
+	fprintf(add_fd, "uidNumber: 999\n");
+	fprintf(add_fd, "homeDirectory: /dev/null\n");
+	fprintf(add_fd, "sambaPwdLastSet: 0\n");
+	fprintf(add_fd, "sambaLogonTime: 0\n");
+	fprintf(add_fd, "sambaLogoffTime: 2147483647\n");
+	fprintf(add_fd, "sambaKickoffTime: 2147483647\n");
+	fprintf(add_fd, "sambaPwdCanChange: 0\n");
+	fprintf(add_fd, "sambaPwdMustChange: 2147483647\n");
+	fprintf(add_fd, "sambaHomePath: \\\\PDC-SMD3\\homes\\nobody\n");
+	fprintf(add_fd, "sambaHomeDrive: H:\n");
+	fprintf(add_fd, "sambaProfilePath: \\\\PDC-SMB3\\profiles\\nobody\n");
+	fprintf(add_fd, "sambaprimaryGroupSID: %s-514\n", sid);
+	fprintf(add_fd, "sambaLMPassword: NOPASSWORDXXXXXXXXXXXXXXXXXXXXX\n");
+	fprintf(add_fd, "sambaNTPassword: NOPASSWORDXXXXXXXXXXXXXXXXXXXXX\n");
+	fprintf(add_fd, "sambaAcctFlags: [NU\n");
+	fprintf(add_fd, "sambaSID: %s-2998\n", sid);
+	fprintf(add_fd, "loginShell: /bin/false\n");
+	fprintf(add_fd, "\n");
+	fflush(add_fd);
+
+	/* Write the Domain Admins entity */ 
+	fprintf(add_fd, "# Domain Admins, %s, %s\n", group_attr,
+		suffix);
+	fprintf(add_fd, "dn: cn=Domain Admins,ou=%s,%s\n", group_attr,
+		suffix);
+	fprintf(add_fd, "objectClass: posixGroup\n");
+	fprintf(add_fd, "objectClass: sambaGroupMapping\n");
+	fprintf(add_fd, "cn: Domain Admins\n");
+	fprintf(add_fd, "memberUid: Administrator\n");
+	fprintf(add_fd, "description: Netbios Domain Administrators\n");
+	fprintf(add_fd, "gidNumber: 512\n");
+	fprintf(add_fd, "sambaSID: %s-512\n", sid);
+	fprintf(add_fd, "sambaGroupType: 2\n");
+	fprintf(add_fd, "displayName: Domain Admins\n");
+	fprintf(add_fd, "\n");
+	fflush(add_fd);
+
+	/* Write the Domain Users entity */ 
+	fprintf(add_fd, "# Domain Users, %s, %s\n", group_attr,
+		suffix);
+	fprintf(add_fd, "dn: cn=Domain Users,ou=%s,%s\n", group_attr,
+		suffix);
+	fprintf(add_fd, "objectClass: posixGroup\n");
+	fprintf(add_fd, "objectClass: sambaGroupMapping\n");
+	fprintf(add_fd, "cn: Domain Users\n");
+	fprintf(add_fd, "description: Netbios Domain Users\n");
+	fprintf(add_fd, "gidNumber: 513\n");
+	fprintf(add_fd, "sambaSID: %s-513\n", sid);
+	fprintf(add_fd, "sambaGroupType: 2\n");
+	fprintf(add_fd, "displayName: Domain Users\n");
+	fprintf(add_fd, "\n");
+	fflush(add_fd);
+
+	/* Write the Domain Guests entity */ 
+	fprintf(add_fd, "# Domain Guests, %s, %s\n", group_attr,
+		suffix);
+	fprintf(add_fd, "dn: cn=Domain Guests,ou=%s,%s\n", group_attr,
+		suffix);
+	fprintf(add_fd, "objectClass: posixGroup\n");
+	fprintf(add_fd, "objectClass: sambaGroupMapping\n");
+	fprintf(add_fd, "cn: Domain Guests\n");
+	fprintf(add_fd, "description: Netbios Domain Guests\n");
+	fprintf(add_fd, "gidNumber: 514\n");
+	fprintf(add_fd, "sambaSID: %s-514\n", sid);
+	fprintf(add_fd, "sambaGroupType: 2\n");
+	fprintf(add_fd, "displayName: Domain Guests\n");
+	fprintf(add_fd, "\n");
+	fflush(add_fd);
+
+	/* Write the Domain Computers entity */
+	fprintf(add_fd, "# Domain Computers, %s, %s\n", group_attr,
+		suffix);
+	fprintf(add_fd, "dn: cn=Domain Computers,ou=%s,%s\n",
+		group_attr, suffix);
+	fprintf(add_fd, "objectClass: posixGroup\n");
+	fprintf(add_fd, "objectClass: sambaGroupMapping\n");
+	fprintf(add_fd, "gidNumber: 515\n");
+	fprintf(add_fd, "cn: Domain Computers\n");
+	fprintf(add_fd, "description: Netbios Domain Computers accounts\n");
+	fprintf(add_fd, "sambaSID: %s-515\n", sid);
+	fprintf(add_fd, "sambaGroupType: 2\n");
+	fprintf(add_fd, "displayName: Domain Computers\n");
+	fprintf(add_fd, "\n");
+	fflush(add_fd);
+
+	/* Write the Admininistrators Groups entity */
+	fprintf(add_fd, "# Administrators, %s, %s\n", group_attr,
+		suffix);
+	fprintf(add_fd, "dn: cn=Administrators,ou=%s,%s\n", group_attr,
+		suffix);
+	fprintf(add_fd, "objectClass: posixGroup\n");
+	fprintf(add_fd, "objectClass: sambaGroupMapping\n");
+	fprintf(add_fd, "gidNumber: 544\n");
+	fprintf(add_fd, "cn: Administrators\n");
+	fprintf(add_fd, "description: Netbios Domain Members can fully administer the computer/sambaDomainName\n");
+	fprintf(add_fd, "sambaSID: %s-544\n", builtin_sid);
+	fprintf(add_fd, "sambaGroupType: 5\n");
+	fprintf(add_fd, "displayName: Administrators\n");
+	fprintf(add_fd, "\n");
+
+	/* Write the Print Operator entity */
+	fprintf(add_fd, "# Print Operators, %s, %s\n", group_attr,
+		suffix);
+	fprintf(add_fd, "dn: cn=Print Operators,ou=%s,%s\n",
+		group_attr, suffix);
+	fprintf(add_fd, "objectClass: posixGroup\n");
+	fprintf(add_fd, "objectClass: sambaGroupMapping\n");
+	fprintf(add_fd, "gidNumber: 550\n");
+	fprintf(add_fd, "cn: Print Operators\n");
+	fprintf(add_fd, "description: Netbios Domain Print Operators\n");
+	fprintf(add_fd, "sambaSID: %s-550\n", builtin_sid);
+	fprintf(add_fd, "sambaGroupType: 5\n");
+	fprintf(add_fd, "displayName: Print Operators\n");
+	fprintf(add_fd, "\n");
+	fflush(add_fd);
+
+	/* Write the Backup Operators entity */
+	fprintf(add_fd, "# Backup Operators, %s, %s\n", group_attr,
+		suffix);
+	fprintf(add_fd, "dn: cn=Backup Operators,ou=%s,%s\n",
+		group_attr, suffix);
+	fprintf(add_fd, "objectClass: posixGroup\n");
+	fprintf(add_fd, "objectClass: sambaGroupMapping\n");
+	fprintf(add_fd, "gidNumber: 551\n");
+	fprintf(add_fd, "cn: Backup Operators\n");
+	fprintf(add_fd, "description: Netbios Domain Members can bypass file security to back up files\n");
+	fprintf(add_fd, "sambaSID: %s-551\n", builtin_sid);
+	fprintf(add_fd, "sambaGroupType: 5\n");
+	fprintf(add_fd, "displayName: Backup Operators\n");
+	fprintf(add_fd, "\n");
+	fflush(add_fd);
+
+	/* Write the Replicators entity */
+	fprintf(add_fd, "# Replicators, %s, %s\n", group_attr, suffix);
+	fprintf(add_fd, "dn: cn=Replicators,ou=%s,%s\n", group_attr,
+		suffix);
+	fprintf(add_fd, "objectClass: posixGroup\n");
+	fprintf(add_fd, "objectClass: sambaGroupMapping\n");
+	fprintf(add_fd, "gidNumber: 552\n");
+	fprintf(add_fd, "cn: Replicators\n");
+	fprintf(add_fd, "description: Netbios Domain Supports file replication in a sambaDomainName\n");
+	fprintf(add_fd, "sambaSID: %s-552\n", builtin_sid);
+	fprintf(add_fd, "sambaGroupType: 5\n");
+	fprintf(add_fd, "displayName: Replicators\n");
+	fprintf(add_fd, "\n");
+	fflush(add_fd);
+
+	/* Deallocate memory, and return */
+	if (suffix_attr != NULL) SAFE_FREE(suffix_attr);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS
+map_populate_groups(GROUPMAP *groupmap, ACCOUNTMAP *accountmap, fstring sid, 
+		    const char *suffix, const char *builtin_sid)
+{
+	char *group_attr = sstring_sub(lp_ldap_group_suffix(), '=', ',');
+
+	/* Map the groups created by populate_ldap_for_ldif */
+	groupmap[0].rid = 512;
+	groupmap[0].gidNumber = 512;
+	pstr_sprintf(groupmap[0].sambaSID, "%s-512", sid);
+	pstr_sprintf(groupmap[0].group_dn, "cn=Domain Admins,ou=%s,%s", 
+                     group_attr, suffix);
+	accountmap[0].rid = 512;
+	pstr_sprintf(accountmap[0].cn, "%s", "Domain Admins");
+
+	groupmap[1].rid = 513;
+	groupmap[1].gidNumber = 513;
+	pstr_sprintf(groupmap[1].sambaSID, "%s-513", sid);
+	pstr_sprintf(groupmap[1].group_dn, "cn=Domain Users,ou=%s,%s", 
+                     group_attr, suffix);
+	accountmap[1].rid = 513;
+	pstr_sprintf(accountmap[1].cn, "%s", "Domain Users");
+
+	groupmap[2].rid = 514;
+	groupmap[2].gidNumber = 514;
+	pstr_sprintf(groupmap[2].sambaSID, "%s-514", sid);
+	pstr_sprintf(groupmap[2].group_dn, "cn=Domain Guests,ou=%s,%s", 
+                     group_attr, suffix);
+	accountmap[2].rid = 514;
+	pstr_sprintf(accountmap[2].cn, "%s", "Domain Guests");
+
+	groupmap[3].rid = 515;
+	groupmap[3].gidNumber = 515;
+	pstr_sprintf(groupmap[3].sambaSID, "%s-515", sid);
+	pstr_sprintf(groupmap[3].group_dn, "cn=Domain Computers,ou=%s,%s",
+                     group_attr, suffix);
+	accountmap[3].rid = 515;
+	pstr_sprintf(accountmap[3].cn, "%s", "Domain Computers");
+
+	groupmap[4].rid = 544;
+	groupmap[4].gidNumber = 544;
+	pstr_sprintf(groupmap[4].sambaSID, "%s-544", builtin_sid);
+	pstr_sprintf(groupmap[4].group_dn, "cn=Administrators,ou=%s,%s",
+                     group_attr, suffix);
+	accountmap[4].rid = 515;
+	pstr_sprintf(accountmap[4].cn, "%s", "Administrators");
+
+	groupmap[5].rid = 550;
+	groupmap[5].gidNumber = 550;
+	pstr_sprintf(groupmap[5].sambaSID, "%s-550", builtin_sid);
+	pstr_sprintf(groupmap[5].group_dn, "cn=Print Operators,ou=%s,%s",
+                     group_attr, suffix);
+	accountmap[5].rid = 550;
+	pstr_sprintf(accountmap[5].cn, "%s", "Print Operators");
+
+	groupmap[6].rid = 551;
+	groupmap[6].gidNumber = 551;
+	pstr_sprintf(groupmap[6].sambaSID, "%s-551", builtin_sid);
+	pstr_sprintf(groupmap[6].group_dn, "cn=Backup Operators,ou=%s,%s",
+                     group_attr, suffix);
+	accountmap[6].rid = 551;
+	pstr_sprintf(accountmap[6].cn, "%s", "Backup Operators");
+
+	groupmap[7].rid = 552;
+	groupmap[7].gidNumber = 552;
+	pstr_sprintf(groupmap[7].sambaSID, "%s-552", builtin_sid);
+	pstr_sprintf(groupmap[7].group_dn, "cn=Replicators,ou=%s,%s",
+		     group_attr, suffix);
+	accountmap[7].rid = 551;
+	pstr_sprintf(accountmap[7].cn, "%s", "Replicators");
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS
+fetch_group_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupmap,
+			 FILE *add_fd, fstring sid, char *suffix)
+{
+	fstring groupname;
+	uint32 grouptype = 0, g_rid = 0;
+	char *group_attr = sstring_sub(lp_ldap_group_suffix(), '=', ',');
+
+	/* Get the group name */
+	unistr2_to_ascii(groupname, 
+	  		 &(delta->group_info.uni_grp_name),
+			 sizeof(groupname)-1);
+
+	/* Set up the group type (always 2 for group info) */
+	grouptype = 2;
+
+	/* These groups are entered by populate_ldap_for_ldif */
+	if (strcmp(groupname, "Domain Admins") == 0 ||
+            strcmp(groupname, "Domain Users") == 0 ||
+	    strcmp(groupname, "Domain Guests") == 0 ||
+	    strcmp(groupname, "Domain Computers") == 0 ||
+	    strcmp(groupname, "Administrators") == 0 ||
+	    strcmp(groupname, "Print Operators") == 0 ||
+	    strcmp(groupname, "Backup Operators") == 0 ||
+	    strcmp(groupname, "Replicators") == 0) {
+		return NT_STATUS_OK;
+	} else {
+		/* Increment the gid for the new group */
+	        ldif_gid++;
+	}
+
+	/* Map the group rid, gid, and dn */
+	g_rid = delta->group_info.gid.g_rid;
+	groupmap->rid = g_rid;
+	groupmap->gidNumber = ldif_gid;
+	pstr_sprintf(groupmap->sambaSID, "%s-%d", sid, g_rid);
+	pstr_sprintf(groupmap->group_dn, 
+		     "cn=%s,ou=%s,%s", groupname, group_attr, suffix);
+
+	/* Write the data to the temporary add ldif file */
+	fprintf(add_fd, "# %s, %s, %s\n", groupname, group_attr,
+		suffix);
+	fprintf(add_fd, "dn: cn=%s,ou=%s,%s\n", groupname, group_attr,
+		suffix);
+	fprintf(add_fd, "objectClass: posixGroup\n");
+	fprintf(add_fd, "objectClass: sambaGroupMapping\n");
+	fprintf(add_fd, "cn: %s\n", groupname);
+	fprintf(add_fd, "gidNumber: %d\n", ldif_gid);
+	fprintf(add_fd, "sambaSID: %s\n", groupmap->sambaSID);
+	fprintf(add_fd, "sambaGroupType: %d\n", grouptype);
+	fprintf(add_fd, "displayName: %s\n", groupname);
+	fprintf(add_fd, "\n");
+	fflush(add_fd);
+
+	/* Return */
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS
+fetch_account_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupmap,
+		   	   ACCOUNTMAP *accountmap, FILE *add_fd,
+			   fstring sid, char *suffix, int alloced)
+{
+	fstring username, homedir, logonscript, homedrive, homepath;
+	fstring hex_nt_passwd, hex_lm_passwd;
+	fstring description, fullname, sambaSID;
+	uchar lm_passwd[16], nt_passwd[16];
+	char *flags;
+	const char *blank = "", *shell = "/bin/bash";
+	const char* nopasswd = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+	static uchar zero_buf[16];
+	uint32 rid = 0, group_rid = 0, gidNumber = 0;
+	time_t unix_time;
+	int i;
+
+	/* Get the username */
+	unistr2_to_ascii(username, 
+			 &(delta->account_info.uni_acct_name),
+			 sizeof(username)-1);
+
+	/* Get the rid */
+	rid = delta->account_info.user_rid;
+
+	/* Map the rid and username for group member info later */
+	accountmap->rid = rid;
+	pstr_sprintf(accountmap->cn, "%s", username);
+
+	/* Get the home directory */
+	unistr2_to_ascii(homedir, &(delta->account_info.uni_home_dir),
+			 sizeof(homedir)-1);
+	if (strcmp(homedir, blank) == 0) {
+		pstr_sprintf(homedir, "/home/%s", username);
+	} else {
+		strncpy(homepath, homedir, sizeof(homepath));
+	}	
+
+        /* Get the logon script */
+        unistr2_to_ascii(logonscript, &(delta->account_info.uni_logon_script),
+                        sizeof(logonscript)-1);
+
+        /* Get the home drive */
+        unistr2_to_ascii(homedrive, &(delta->account_info.uni_dir_drive),
+                        sizeof(homedrive)-1);
+
+	/* Get the description */
+	unistr2_to_ascii(description, &(delta->account_info.uni_acct_desc),
+			 sizeof(description)-1);
+	if (strcmp(description, blank) == 0) {
+		pstr_sprintf(description, "System User");
+	}
+
+	/* Get the display name */
+	unistr2_to_ascii(fullname, &(delta->account_info.uni_full_name),
+			 sizeof(fullname)-1);
+
+	/* Get lm and nt password data */
+	if (memcmp(delta->account_info.pass.buf_lm_pwd, zero_buf, 16) != 0) {
+		sam_pwd_hash(delta->account_info.user_rid, 
+			     delta->account_info.pass.buf_lm_pwd, 
+			     lm_passwd, 0);
+		pdb_sethexpwd(hex_lm_passwd, lm_passwd, 
+			      delta->account_info.acb_info);
+	} else {
+		pdb_sethexpwd(hex_lm_passwd, NULL, 0);
+	}
+	if (memcmp(delta->account_info.pass.buf_nt_pwd, zero_buf, 16) != 0) {
+		sam_pwd_hash(delta->account_info.user_rid, 
+			     delta->account_info.pass.buf_nt_pwd, 
+                                     nt_passwd, 0);
+		pdb_sethexpwd(hex_nt_passwd, nt_passwd, 
+			      delta->account_info.acb_info);
+	} else {
+		pdb_sethexpwd(hex_nt_passwd, NULL, 0);
+	}
+	unix_time = nt_time_to_unix(&(delta->account_info.pwd_last_set_time));
+
+	/* The nobody user is entered by populate_ldap_for_ldif */
+	if (strcmp(username, "nobody") == 0) {
+		return NT_STATUS_OK;
+	} else {
+		/* Increment the uid for the new user */
+		ldif_uid++;
+	}
+
+	/* Set up group id and sambaSID for the user */
+	group_rid = delta->account_info.group_rid;
+	for (i=0; i<alloced; i++) {
+		if (groupmap[i].rid == group_rid) break;
+	}
+	if (i == alloced){
+		DEBUG(1, ("Could not find rid %d in groupmap array\n", 
+			  group_rid));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	gidNumber = groupmap[i].gidNumber;
+	pstr_sprintf(sambaSID, groupmap[i].sambaSID);
+
+	/* Set up sambaAcctFlags */
+	flags = pdb_encode_acct_ctrl(delta->account_info.acb_info,
+				     NEW_PW_FORMAT_SPACE_PADDED_LEN);
+
+	/* Add the user to the temporary add ldif file */
+	fprintf(add_fd, "# %s, %s, %s\n", username, 
+		sstring_sub(lp_ldap_user_suffix(), '=', ','), suffix);
+	fprintf(add_fd, "dn: uid=%s,ou=%s,%s\n", username, 
+		sstring_sub(lp_ldap_user_suffix(), '=', ','), suffix);
+	fprintf(add_fd, "ObjectClass: top\n");
+	fprintf(add_fd, "objectClass: inetOrgPerson\n");
+	fprintf(add_fd, "objectClass: posixAccount\n");
+	fprintf(add_fd, "objectClass: shadowAccount\n");
+	fprintf(add_fd, "objectClass: sambaSamAccount\n");
+	fprintf(add_fd, "cn: %s\n", username);
+	fprintf(add_fd, "sn: %s\n", username);
+	fprintf(add_fd, "uid: %s\n", username);
+	fprintf(add_fd, "uidNumber: %d\n", ldif_uid);
+	fprintf(add_fd, "gidNumber: %d\n", gidNumber);
+	fprintf(add_fd, "homeDirectory: %s\n", homedir);
+	if (strcmp(homepath, blank) != 0)
+		fprintf(add_fd, "SambaHomePath: %s\n", homepath);
+        if (strcmp(homedrive, blank) != 0)
+                fprintf(add_fd, "SambaHomeDrive: %s\n", homedrive);
+        if (strcmp(logonscript, blank) != 0)
+                fprintf(add_fd, "SambaLogonScript: %s\n", logonscript);
+	fprintf(add_fd, "loginShell: %s\n", shell);
+	fprintf(add_fd, "gecos: System User\n");
+	fprintf(add_fd, "description: %s\n", description);
+	fprintf(add_fd, "sambaSID: %s-%d\n", sid, rid);
+	fprintf(add_fd, "sambaPrimaryGroupSID: %s\n", sambaSID);
+	if(strcmp(fullname, blank) != 0)
+		fprintf(add_fd, "displayName: %s\n", fullname);
+	if (strcmp(nopasswd, hex_lm_passwd) != 0)
+		fprintf(add_fd, "sambaLMPassword: %s\n", hex_lm_passwd);
+	if (strcmp(nopasswd, hex_nt_passwd) != 0)
+		fprintf(add_fd, "sambaNTPassword: %s\n", hex_nt_passwd);
+	fprintf(add_fd, "sambaPwdLastSet: %d\n", unix_time);
+	fprintf(add_fd, "sambaAcctFlags: %s\n", flags);
+	fprintf(add_fd, "\n");
+	fflush(add_fd);
+
+	/* Return */
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS
+fetch_alias_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupmap,
+			 FILE *add_fd, fstring sid, char *suffix, 
+			 unsigned db_type)
+{
+	fstring aliasname, description;
+	uint32 grouptype = 0, g_rid = 0;
+	char *group_attr = sstring_sub(lp_ldap_group_suffix(), '=', ',');
+
+	/* Get the alias name */
+	unistr2_to_ascii(aliasname, &(delta->alias_info.uni_als_name),
+			 sizeof(aliasname)-1);
+
+	/* Get the alias description */
+	unistr2_to_ascii(description, &(delta->alias_info.uni_als_desc),
+			 sizeof(description)-1);
+
+	/* Set up the group type */
+	switch (db_type) {
+		case SAM_DATABASE_DOMAIN:
+			grouptype = 4;
+			break;
+		case SAM_DATABASE_BUILTIN:
+			grouptype = 5;
+			break;
+		default:
+			grouptype = 4;
+			break;
+	}
+
+	/*
+	These groups are entered by populate_ldap_for_ldif
+	Note that populate creates a group called Relicators, 
+	but NT returns a group called Replicator
+	*/
+	if (strcmp(aliasname, "Domain Admins") == 0 ||
+	    strcmp(aliasname, "Domain Users") == 0 ||
+	    strcmp(aliasname, "Domain Guests") == 0 ||
+	    strcmp(aliasname, "Domain Computers") == 0 ||
+	    strcmp(aliasname, "Administrators") == 0 ||
+	    strcmp(aliasname, "Print Operators") == 0 ||
+	    strcmp(aliasname, "Backup Operators") == 0 ||
+	    strcmp(aliasname, "Replicator") == 0) {
+		return NT_STATUS_OK;
+	} else {
+		/* Increment the gid for the new group */
+		ldif_gid++;
+	}
+
+	/* Map the group rid and gid */
+	g_rid = delta->group_info.gid.g_rid;
+	groupmap->gidNumber = ldif_gid;
+	pstr_sprintf(groupmap->sambaSID, "%s-%d", sid, g_rid);
+
+	/* Write the data to the temporary add ldif file */
+	fprintf(add_fd, "# %s, %s, %s\n", aliasname, group_attr,
+		suffix);
+	fprintf(add_fd, "dn: cn=%s,ou=%s,%s\n", aliasname, group_attr,
+		suffix);
+	fprintf(add_fd, "objectClass: posixGroup\n");
+	fprintf(add_fd, "objectClass: sambaGroupMapping\n");
+	fprintf(add_fd, "cn: %s\n", aliasname);
+	fprintf(add_fd, "gidNumber: %d\n", ldif_gid);
+	fprintf(add_fd, "sambaSID: %s\n", groupmap->sambaSID);
+	fprintf(add_fd, "sambaGroupType: %d\n", grouptype);
+	fprintf(add_fd, "displayName: %s\n", aliasname);
+	fprintf(add_fd, "description: %s\n", description);
+	fprintf(add_fd, "\n");
+	fflush(add_fd);
+
+	/* Return */
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS
+fetch_groupmem_info_to_ldif(SAM_DELTA_CTR *delta, SAM_DELTA_HDR *hdr_delta,
+			    GROUPMAP *groupmap, ACCOUNTMAP *accountmap, 
+			    FILE *mod_fd, int alloced)
+{
+	fstring group_dn;
+	uint32 group_rid = 0, rid = 0;
+	int i, j, k;
+
+	/* Get the dn for the group */
+	if (delta->grp_mem_info.num_members > 0) {
+		group_rid = hdr_delta->target_rid;
+		for (j=0; j<alloced; j++) {
+			if (groupmap[j].rid == group_rid) break;
+		}
+		if (j == alloced){
+			DEBUG(1, ("Could not find rid %d in groupmap array\n", 
+				  group_rid));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+		pstr_sprintf(group_dn, "%s", groupmap[j].group_dn);
+		fprintf(mod_fd, "dn: %s\n", group_dn);
+
+		/* Get the cn for each member */
+		for (i=0; i<delta->grp_mem_info.num_members; i++) {
+			rid = delta->grp_mem_info.rids[i];
+			for (k=0; k<alloced; k++) {
+				if (accountmap[k].rid == rid) break;
+			}
+			if (k == alloced){
+				DEBUG(1, ("Could not find rid %d in accountmap array\n", rid));
+				return NT_STATUS_UNSUCCESSFUL;
+			}
+			fprintf(mod_fd, "memberUid: %s\n", accountmap[k].cn);
+		}
+		fprintf(mod_fd, "\n");
+	}
+	fflush(mod_fd);
+
+	/* Return */
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS
+fetch_database_to_ldif(struct cli_state *cli, unsigned db_type, 
+                       DOM_CRED *ret_creds, DOM_SID dom_sid,
+		       const char *user_file)
+{
+	char *suffix;
+	const char *builtin_sid = "S-1-5-32";
+	char *ldif_file;
+	fstring sid, domainname;
+	unsigned sync_context = 0;
+	NTSTATUS result;
+	int k;
+	TALLOC_CTX *mem_ctx;
+	SAM_DELTA_HDR *hdr_deltas;
+	SAM_DELTA_CTR *deltas;
+	uint32 num_deltas;
+	const char *add_ldif = "/tmp/add.ldif", *mod_ldif = "/tmp/mod.ldif";
+	FILE *add_fd, *mod_fd, *ldif_fd;
+	char sys_cmd[1024];
+	int num_alloced = 0, g_index = 0, a_index = 0;
+
+	/* Set up array for mapping accounts to groups */
+	/* Array element is the group rid */
+	GROUPMAP *groupmap = NULL;
+
+	/* Set up array for mapping account rid's to cn's */
+	/* Array element is the account rid */
+	ACCOUNTMAP *accountmap = NULL; 
+
+	/* Ensure we have an output file */
+	if (user_file)
+		ldif_file = user_file;
+	else
+		ldif_file = "/tmp/tmp.ldif";
+
+	/* Open the add and mod ldif files */
+	add_fd = fopen(add_ldif, "a");
+	mod_fd = fopen(mod_ldif, "a");
+	if (add_fd == NULL || mod_fd == NULL) {
+		DEBUG(1, ("Could not open %s\n", add_ldif));
+		return NT_STATUS_UNSUCCESSFUL;
+	} 
+
+	/* Open the user's ldif file */
+	ldif_fd = fopen(ldif_file, "a");
+	if (ldif_fd == NULL) {
+		DEBUG(1, ("Could not open %s\n", ldif_file));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!(mem_ctx = talloc_init("fetch_database"))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Get the sid */
+	sid_to_string(sid, &dom_sid);
+
+	/* Get the ldap suffix */
+	suffix = lp_ldap_suffix();
+	if (suffix == NULL || strcmp(suffix, "") == 0) {
+		DEBUG(0,("ldap suffix missing from smb.conf--exiting\n"));
+		exit(1);
+	}
+
+	/* Get other smb.conf data */
+	if (!(lp_workgroup()) || !*(lp_workgroup())) {
+		DEBUG(0,("workgroup missing from smb.conf--exiting\n"));
+		exit(1);
+	}
+
+	/* Allocate initial memory for groupmap and accountmap arrays */
+	if (init_ldap == 1) {
+		groupmap = SMB_MALLOC_ARRAY(GROUPMAP, 8);
+		accountmap = SMB_MALLOC_ARRAY(ACCOUNTMAP, 8);
+		if (groupmap == NULL || accountmap == NULL) {
+			DEBUG(1,("GROUPMAP malloc failed\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		/* Initialize the arrays */
+		memset(groupmap, 0, sizeof(GROUPMAP)*8);
+		memset(accountmap, 0, sizeof(ACCOUNTMAP)*8);
+
+		/* Remember how many we malloced */
+		num_alloced = 8;
+
+		/* Initial database population */
+		populate_ldap_for_ldif(sid, suffix, builtin_sid, add_fd);
+		map_populate_groups(groupmap, accountmap, sid, suffix,
+			    builtin_sid);
+
+		/* Don't do this again */
+		init_ldap = 0;
+	}
+
+	/* Announce what we are doing */
+	switch( db_type ) {
+		case SAM_DATABASE_DOMAIN:
+			d_printf("Fetching DOMAIN database\n");
+			break;
+		case SAM_DATABASE_BUILTIN:
+			d_printf("Fetching BUILTIN database\n");
+			break;
+		case SAM_DATABASE_PRIVS:
+			d_printf("Fetching PRIVS databases\n");
+			break;
+		default:
+			d_printf("Fetching unknown database type %u\n", db_type );
+			break;
+	}
+
+	do {
+		result = cli_netlogon_sam_sync(cli, mem_ctx, ret_creds,
+					       db_type, sync_context,
+					       &num_deltas, &hdr_deltas, 
+					       &deltas);
+		if (!NT_STATUS_IS_OK(result) &&
+		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
+			return NT_STATUS_OK;
+		}
+
+		clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred),
+				     ret_creds);
+
+		/* Re-allocate memory for groupmap and accountmap arrays */
+		groupmap = SMB_REALLOC_ARRAY(groupmap, GROUPMAP,
+					num_deltas+num_alloced);
+		accountmap = SMB_REALLOC_ARRAY(accountmap, ACCOUNTMAP,
+					num_deltas+num_alloced);
+		if (groupmap == NULL || accountmap == NULL) {
+			DEBUG(1,("GROUPMAP malloc failed\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		/* Initialize the new records */
+		memset(&groupmap[num_alloced], 0, 
+		       sizeof(GROUPMAP)*num_deltas);
+		memset(&accountmap[num_alloced], 0,
+		       sizeof(ACCOUNTMAP)*num_deltas);
+
+		/* Remember how many we alloced this time */
+		num_alloced += num_deltas;
+
+		/* Loop through the deltas */
+		for (k=0; k<num_deltas; k++) {
+			switch(hdr_deltas[k].type) {
+				case SAM_DELTA_DOMAIN_INFO:
+					/* Is this case needed? */
+					unistr2_to_ascii(domainname, 
+				    	&deltas[k].domain_info.uni_dom_name,
+					    	sizeof(domainname)-1);
+					break;
+
+				case SAM_DELTA_GROUP_INFO:
+					fetch_group_info_to_ldif(
+						&deltas[k], &groupmap[g_index],
+						add_fd, sid, suffix);
+					g_index++;
+					break;
+
+				case SAM_DELTA_ACCOUNT_INFO:
+					fetch_account_info_to_ldif(
+						&deltas[k], groupmap, 
+						&accountmap[a_index], add_fd,
+						sid, suffix, num_alloced);
+					a_index++;
+					break;
+
+				case SAM_DELTA_ALIAS_INFO:
+					fetch_alias_info_to_ldif(
+						&deltas[k], &groupmap[g_index],
+						add_fd, sid, suffix, db_type);
+					g_index++;
+					break;
+
+				case SAM_DELTA_GROUP_MEM:
+					fetch_groupmem_info_to_ldif(
+						&deltas[k], &hdr_deltas[k], 
+						groupmap, accountmap, 
+						mod_fd, num_alloced);
+					break;
+
+				case SAM_DELTA_ALIAS_MEM:
+					break;
+				case SAM_DELTA_POLICY_INFO:
+					break;
+				case SAM_DELTA_PRIVS_INFO:
+					break;
+				case SAM_DELTA_TRUST_DOMS:
+					/* Implemented but broken */
+					break;
+				case SAM_DELTA_SECRET_INFO:
+					/* Implemented but broken */
+					break;
+				case SAM_DELTA_RENAME_GROUP:
+					/* Not yet implemented */
+					break;
+				case SAM_DELTA_RENAME_USER:
+					/* Not yet implemented */
+					break;
+				case SAM_DELTA_RENAME_ALIAS:
+					/* Not yet implemented */
+					break;
+				case SAM_DELTA_DELETE_GROUP:
+					/* Not yet implemented */
+					break;
+				case SAM_DELTA_DELETE_USER:
+					/* Not yet implemented */
+					break;
+				case SAM_DELTA_MODIFIED_COUNT:
+					break;
+				default:
+				break;
+			} /* end of switch */
+		} /* end of for loop */
+
+		/* Increment sync_context */
+		sync_context += 1;
+
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
+
+	/* Close the ldif files */
+	fclose(add_fd);
+	fclose(mod_fd);
+
+	/* Write ldif data to the user's file */
+	if (db_type == SAM_DATABASE_DOMAIN) {
+		fprintf(ldif_fd,
+			"# SAM_DATABASE_DOMAIN: ADD ENTITIES\n");
+		fprintf(ldif_fd,
+			"# =================================\n\n");
+		fflush(ldif_fd);
+	} else if (db_type == SAM_DATABASE_BUILTIN) {
+		fprintf(ldif_fd,
+			"# SAM_DATABASE_BUILTIN: ADD ENTITIES\n");
+		fprintf(ldif_fd,
+			"# ==================================\n\n");
+		fflush(ldif_fd);
+	}
+	pstr_sprintf(sys_cmd, "cat %s >> %s", add_ldif, ldif_file);
+	system(sys_cmd);
+	if (db_type == SAM_DATABASE_DOMAIN) {
+		fprintf(ldif_fd,
+			"# SAM_DATABASE_DOMAIN: MODIFY ENTITIES\n");
+		fprintf(ldif_fd,
+			"# ====================================\n\n");
+		fflush(ldif_fd);
+	} else if (db_type == SAM_DATABASE_BUILTIN) {
+		fprintf(ldif_fd,
+			"# SAM_DATABASE_BUILTIN: MODIFY ENTITIES\n");
+		fprintf(ldif_fd,
+			"# =====================================\n\n");
+		fflush(ldif_fd);
+	}
+	pstr_sprintf(sys_cmd, "cat %s >> %s", mod_ldif, ldif_file);
+	system(sys_cmd);
+
+	/* Delete the temporary ldif files */
+	pstr_sprintf(sys_cmd, "rm -f %s %s", add_ldif, mod_ldif);
+	system(sys_cmd);
+
+	/* Close the ldif file */
+	fclose(ldif_fd);
+
+	/* Deallocate memory for the mapping arrays */
+	SAFE_FREE(groupmap);
+	SAFE_FREE(accountmap);
+
+	/* Return */
+	talloc_destroy(mem_ctx);
+	return NT_STATUS_OK;
+}
+
+/** 
+ * Basic usage function for 'net rpc vampire'
+ * @param argc  Standard main() style argc
+ * @param argc  Standard main() style argv.  Initial components are already
+ *              stripped
+ **/
+
+int rpc_vampire_usage(int argc, const char **argv) 
+{	
+	d_printf("net rpc vampire [ldif [<ldif-filename>] [options]\n"\
+		 "\t to pull accounts from a remote PDC where we are a BDC\n"\
+		 "\t\t no args puts accounts in local passdb from smb.conf\n"\
+		 "\t\t ldif - put accounts in ldif format (file defaults to /tmp/tmp.ldif\n");
+
+	net_common_flags_usage(argc, argv);
+	return -1;
+}
+
+
 /* dump sam database via samsync rpc calls */
 NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid, 
 			       const char *domain_name, 
@@ -1193,7 +2179,13 @@ NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
 		goto fail;
 	}
 
-	result = fetch_database(cli, SAM_DATABASE_DOMAIN, &ret_creds, *domain_sid);
+        if (argc >= 1 && (strcmp(argv[0], "ldif") == 0)) {
+		result = fetch_database_to_ldif(cli, SAM_DATABASE_DOMAIN,
+					&ret_creds, *domain_sid, argv[1]);
+        } else {
+		result = fetch_database(cli, SAM_DATABASE_DOMAIN, &ret_creds,
+					*domain_sid);
+        }
 
 	if (!NT_STATUS_IS_OK(result)) {
 		d_printf("Failed to fetch domain database: %s\n",
@@ -1204,8 +2196,14 @@ NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
 		goto fail;
 	}
 
-	result = fetch_database(cli, SAM_DATABASE_BUILTIN, &ret_creds, 
-				global_sid_Builtin);
+        if (argc >= 1 && (strcmp(argv[0], "ldif") == 0)) {
+		result = fetch_database_to_ldif(cli, SAM_DATABASE_BUILTIN, 
+                                            &ret_creds, global_sid_Builtin,
+					    argv[1]);
+        } else {
+		result = fetch_database(cli, SAM_DATABASE_BUILTIN, &ret_creds, 
+	      				    global_sid_Builtin);
+        }
 
 	if (!NT_STATUS_IS_OK(result)) {
 		d_printf("Failed to fetch builtin database: %s\n",
@@ -1219,3 +2217,4 @@ NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
 fail:
 	return result;
 }
+

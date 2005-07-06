@@ -97,3 +97,16 @@ extern struct in_addr opt_dest_ip;
 
 extern const char *share_type[];
 
+/* Structure for mapping accounts to groups */
+/* Array element is the group rid */
+typedef struct _groupmap {
+	uint32 rid;
+	uint32 gidNumber;
+	fstring sambaSID;
+	fstring group_dn;
+} GROUPMAP;
+
+typedef struct _accountmap {
+	uint32 rid;
+	fstring cn;
+} ACCOUNTMAP;
