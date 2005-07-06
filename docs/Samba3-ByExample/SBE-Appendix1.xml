@@ -555,7 +555,7 @@ M.ROOT-SERVERS.NET.      3600000      A     202.12.27.33
 	<para>
 	The content of the root hints file as shown in <link linkend="roothint"/>  changes slowly over time. 
 	Periodically this file should be updated from the source shown. Because
-	  of its size, this file is located at the end of this appendix.
+	  of its size, this file is located at the end of this chapter.
 	</para>
 
 	</sect2>
