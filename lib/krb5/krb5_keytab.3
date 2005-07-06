@@ -265,7 +265,8 @@ is
 .Fn krb5_kt_close .
 .Pp
 .Fn krb5_kt_close
-frees all resources allocated to the keytab.
+frees all resources allocated to the keytab, even on failure.
+Returns 0 or an error.
 .Pp
 .Fn krb5_kt_default
 sets the argument
