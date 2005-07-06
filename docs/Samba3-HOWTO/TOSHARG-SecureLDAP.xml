@@ -276,7 +276,8 @@ Signed certificate is in newcert.pem
 &rootprompt; cp newcert.pem /etc/openldap/servercrt.pem
 &rootprompt; cp newreq.pem /etc/openldap/serverkey.pem
 &rootprompt; chown ldap.ldap /etc/openldap/*.pem
-&rootprompt; chmod 640 /etc/openldap/cacert.pem; chmod 600 /etc/openldap/serverkey.pem
+&rootprompt; chmod 640 /etc/openldap/cacert.pem;
+&rootprompt; chmod 600 /etc/openldap/serverkey.pem
 </computeroutput>
 </screen>
 	</para>
@@ -329,7 +330,8 @@ Starting slapd:                                            [  OK  ]
 	<option>-ZZ</option><footnote><para>See <command>man ldapsearch</command></para></footnote> option:
 <screen width="90">
 <computeroutput>
-&rootprompt; ldapsearch -x -b "dc=ldap,dc=abmas,dc=biz" -H 'ldap://ldap.abmas.biz:389' -ZZ
+&rootprompt; ldapsearch -x -b "dc=ldap,dc=abmas,dc=biz" \
+        -H 'ldap://ldap.abmas.biz:389' -ZZ
 </computeroutput>
 </screen>
 	Your results should be the same as before you restarted the server, for example:
