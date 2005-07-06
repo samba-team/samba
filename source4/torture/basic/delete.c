@@ -24,6 +24,48 @@
 #include "system/filesys.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
+static BOOL check_delete_on_close(struct smbcli_state *cli, const char *fname,
+				  BOOL expect_it)
+{
+	TALLOC_CTX *mem_ctx = talloc_init("single_search");
+	union smb_search_data data;
+	NTSTATUS status;
+
+	time_t c_time, a_time, m_time;
+	size_t size;
+	uint16_t mode;
+
+	status = torture_single_search(cli, mem_ctx,
+				       fname, RAW_SEARCH_FULL_DIRECTORY_INFO,
+				       &data);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("(%s) single_search failed (%s)\n", 
+		       __location__, nt_errstr(status));
+		return False;
+	}
+
+	status = smbcli_qpathinfo(cli->tree, fname,
+				  &c_time, &a_time, &m_time,
+				  &size, &mode);
+
+	if (expect_it) {
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
+			printf("(%s) qpathinfo did not give correct error "
+			       "code (%s) -- NT_STATUS_DELETE_PENDING "
+			       "expected\n", __location__,
+			       nt_errstr(status));
+			return False;
+		}
+	} else {
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("(%s) qpathinfo failed (%s)\n", __location__,
+			       nt_errstr(status));
+			return False;
+		}
+	}
+
+	return True;
+}
 
 /*
   Test delete on close semantics.
@@ -374,6 +416,8 @@ BOOL torture_test_delete(void)
 		correct = False;
 		goto fail;
 	}
+
+	correct &= check_delete_on_close(cli1, fname, True);
 	
 	if (NT_STATUS_IS_ERR(smbcli_nt_delete_on_close(cli1->tree, fnum1, False))) {
 		printf("(%s) unsetting delete_on_close on file failed !\n",
@@ -382,6 +426,8 @@ BOOL torture_test_delete(void)
 		goto fail;
 	}
 
+	correct &= check_delete_on_close(cli1, fname, False);
+	
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
 		printf("(%s) close - 2 failed (%s)\n", 
 		       __location__, smbcli_errstr(cli1->tree));
@@ -455,41 +501,9 @@ BOOL torture_test_delete(void)
 		correct = False;
 		goto fail;
 	}
-	
-	{
-		time_t c_time, a_time, m_time, w_time;
-		size_t size;
-		uint16_t mode;
-		ino_t ino;
-		status = smbcli_qpathinfo(cli1->tree, fname,
-					  &c_time, &a_time, &m_time,
-					  &size, &mode);
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
-			printf("(%s) qpathinfo 1 did not give correct error "
-			       "code (%s) -- NT_STATUS_DELETE_PENDING "
-			       "expected\n", __location__,
-			       nt_errstr(status));
-			correct = False;
-		}
-		status = smbcli_qpathinfo(cli2->tree, fname,
-					  &c_time, &a_time, &m_time,
-					  &size, &mode);
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
-			printf("(%s) qpathinfo 2 did not give correct error "
-			       "code (%s) -- NT_STATUS_DELETE_PENDING "
-			       "expected\n", __location__,
-			       nt_errstr(status));
-			correct = False;
-		}
-		status = smbcli_qfileinfo(cli2->tree, fnum2, &mode, &size,
-					  &c_time, &a_time, &m_time,
-					  &w_time, &ino);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("(%s) qfileinfo failed (%s)\n", 
-			       __location__, smbcli_errstr(cli1->tree));
-			correct = False;
-		}
-	}
+
+	correct &= check_delete_on_close(cli1, fname, True);
+	correct &= check_delete_on_close(cli2, fname, True);
 
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
 		printf("(%s) close - 1 failed (%s)\n", 
@@ -498,55 +512,9 @@ BOOL torture_test_delete(void)
 		goto fail;
 	}
 
-	{
-		TALLOC_CTX *mem_ctx = talloc_init("single_search");
-		union smb_search_data data;
-		status = torture_single_search(cli1, mem_ctx,
-					       fname, RAW_SEARCH_FULL_DIRECTORY_INFO,
-					       &data);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("(%s) single_search failed (%s)\n", 
-			       __location__, nt_errstr(status));
-			correct = False;
-		}
-		talloc_free(mem_ctx);
-	}
-
-	{
-		time_t c_time, a_time, m_time, w_time;
-		size_t size;
-		uint16_t mode;
-		ino_t ino;
-		status = smbcli_qpathinfo(cli1->tree, fname,
-					  &c_time, &a_time, &m_time,
-					  &size, &mode);
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
-			printf("(%s) qpathinfo 1 did not give correct error "
-			       "code (%s) -- NT_STATUS_DELETE_PENDING "
-			       "expected\n", __location__,
-			       nt_errstr(status));
-			correct = False;
-		}
-		status = smbcli_qpathinfo(cli2->tree, fname,
-					  &c_time, &a_time, &m_time,
-					  &size, &mode);
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
-			printf("(%s) qpathinfo 2 did not give correct error "
-			       "code (%s) -- NT_STATUS_DELETE_PENDING "
-			       "expected\n", __location__,
-			       nt_errstr(status));
-			correct = False;
-		}
-		status = smbcli_qfileinfo(cli2->tree, fnum2, &mode, &size,
-					  &c_time, &a_time, &m_time,
-					  &w_time, &ino);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("(%s) qfileinfo failed (%s)\n", 
-			       __location__, smbcli_errstr(cli1->tree));
-			correct = False;
-		}
-	}
-
+	correct &= check_delete_on_close(cli1, fname, True);
+	correct &= check_delete_on_close(cli2, fname, True);
+	
 	if (NT_STATUS_IS_ERR(smbcli_close(cli2->tree, fnum2))) {
 		printf("(%s) close - 2 failed (%s)\n", 
 		       __location__, smbcli_errstr(cli2->tree));
@@ -678,6 +646,92 @@ BOOL torture_test_delete(void)
 	}
 	
         printf("twelvth delete on close test succeeded.\n");
+
+	/* Test 13: Does resetting the delete on close flag affect a second
+	 * fd? */
+
+	smbcli_setatr(cli1->tree, fname, 0, 0);
+	smbcli_unlink(cli1->tree, fname);
+	
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      SEC_FILE_READ_DATA|
+				      SEC_FILE_WRITE_DATA|
+				      SEC_STD_DELETE,
+				      FILE_ATTRIBUTE_NORMAL, 
+				      NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OVERWRITE_IF,
+				      0, 0);
+	
+	if (fnum1 == -1) {
+		printf("(%s) open of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
+		correct = False;
+		goto fail;
+	}
+
+	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0, 
+				      SEC_FILE_READ_DATA|
+				      SEC_FILE_WRITE_DATA|
+				      SEC_STD_DELETE,
+				      FILE_ATTRIBUTE_NORMAL, 
+				      NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN, 0, 0);
+	
+	if (fnum2 == -1) {
+		printf("(%s) open of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli2->tree));
+		correct = False;
+		goto fail;
+	}
+
+	if (NT_STATUS_IS_ERR(smbcli_nt_delete_on_close(cli1->tree, fnum1,
+						       True))) {
+		printf("(%s) setting delete_on_close on file failed !\n",
+		       __location__);
+		correct = False;
+		goto fail;
+	}
+
+	correct &= check_delete_on_close(cli1, fname, True);
+	correct &= check_delete_on_close(cli2, fname, True);
+
+	if (NT_STATUS_IS_ERR(smbcli_nt_delete_on_close(cli2->tree, fnum2,
+						       False))) {
+		printf("(%s) setting delete_on_close on file failed !\n",
+		       __location__);
+		correct = False;
+		goto fail;
+	}
+
+	correct &= check_delete_on_close(cli1, fname, False);
+	correct &= check_delete_on_close(cli2, fname, False);
+	
+	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
+		printf("(%s) close - 1 failed (%s)\n", 
+		       __location__, smbcli_errstr(cli1->tree));
+		correct = False;
+		goto fail;
+	}
+
+	if (NT_STATUS_IS_ERR(smbcli_close(cli2->tree, fnum2))) {
+		printf("(%s) close - 2 failed (%s)\n", 
+		       __location__, smbcli_errstr(cli2->tree));
+		correct = False;
+		goto fail;
+	}
+
+	fnum1 = smbcli_open(cli1->tree, fname, O_RDONLY, DENY_NONE);
+
+	if (fnum1 == -1) {
+		printf("(%s) open of %s failed!\n", 
+		       __location__, fname);
+		correct = False;
+		goto fail;
+	}
+
+	smbcli_close(cli1->tree, fnum1);
+
+	printf("thirteenth delete on close test succeeded.\n");
 
 	printf("finished delete test\n");
 
