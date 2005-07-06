@@ -63,16 +63,27 @@
 		</para></listitem>
 
 	</itemizedlist>
+
     </para>
+	Examples of use are:
+<screen>
+passdb backend = tdbsam:/etc/samba/private/passdb.tdb \
+    smbpasswd:/etc/samba/smbpasswd
+
+or
+
+passdb backend = ldapsam:ldaps://ldap.example.com
+
+or
+
+passdb backend = ldapsam:"ldap://ldap-1.example.com \
+    ldap://ldap-2.example.com"
+
+or
+
+passdb backend = mysql:my_plugin_args tdbsam
+</screen>
 </description>
 
 <value type="default">smbpasswd</value>
-
-<value type="example">tdbsam:/etc/samba/private/passdb.tdb smbpasswd:/etc/samba/smbpasswd</value>
-
-<value type="example">ldapsam:ldaps://ldap.example.com</value>
-
-<value type="example">ldapsam:"ldap://ldap-1.example.com ldap://ldap-2.example.com"</value>
-
-<value type="example">mysql:my_plugin_args tdbsam</value>
 </samba:parameter>

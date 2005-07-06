@@ -18,10 +18,19 @@
     path in the <parameter moreinfo="none">lprm command</parameter> as the PATH may not be 
     available to the server.</para>
 
+	<para>
+	Examples of use are:
+<screen>
+lprm command = /usr/bin/lprm -P%p %j
+
+or
+
+lprm command = /usr/bin/cancel %p-%j
+</screen>
+	</para>
+
 </description>
 <related>printing</related>
 
-<value type="default">depends on the setting of <parameter moreinfo="none">printing</parameter></value>
-<value type="example">/usr/bin/lprm -P%p %j</value>
-<value type="example">/usr/bin/cancel %p-%j</value>
+<value type="default"> determined by printing parameter</value>
 </samba:parameter>
