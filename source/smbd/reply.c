@@ -1781,7 +1781,7 @@ static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype,
 
 	fsp = open_file_ntcreate(conn, fname, pst,
 				DELETE_ACCESS,
-				FILE_SHARE_NONE,
+				FILE_SHARE_READ|FILE_SHARE_WRITE,
 				FILE_OPEN,
 				0,
 				FILE_ATTRIBUTE_NORMAL,
