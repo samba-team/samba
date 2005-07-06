@@ -43,12 +43,9 @@ static void init_winreg_String(struct winreg_String *name, const char *s)
 #define openhive(u) static WERROR open_ ## u(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *hnd) \
 { \
 	struct winreg_Open ## u r; \
-	struct winreg_OpenUnknown unknown; \
 	NTSTATUS status; \
 	\
-	unknown.unknown0 = 0x84e0; \
-	unknown.unknown1 = 0x0000; \
-	r.in.unknown = &unknown; \
+	r.in.system_name = 0; \
 	r.in.access_required = SEC_FLAG_MAXIMUM_ALLOWED; \
 	r.out.handle = hnd;\
 	\

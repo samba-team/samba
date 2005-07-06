@@ -475,14 +475,11 @@ static BOOL test_OpenHKLM(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct winreg_OpenHKLM r;
-	struct winreg_OpenUnknown unknown;
 	BOOL ret = True;
 
 	printf("\ntesting OpenHKLM\n");
 
-	unknown.unknown0 = 0x84e0;
-	unknown.unknown1 = 0x0000;
-	r.in.unknown = &unknown;
+	r.in.system_name = 0;
 	r.in.access_required = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = handle;
 
@@ -506,14 +503,11 @@ static BOOL test_OpenHKU(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct winreg_OpenHKU r;
-	struct winreg_OpenUnknown unknown;
 	BOOL ret = True;
 
 	printf("\ntesting OpenHKU\n");
 
-	unknown.unknown0 = 0x84e0;
-	unknown.unknown1 = 0x0000;
-	r.in.unknown = &unknown;
+	r.in.system_name = 0;
 	r.in.access_required = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = handle;
 
@@ -537,14 +531,11 @@ static BOOL test_OpenHKCR(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct winreg_OpenHKCR r;
-	struct winreg_OpenUnknown unknown;
 	BOOL ret = True;
 
 	printf("\ntesting OpenHKCR\n");
 
-	unknown.unknown0 = 0x84e0;
-	unknown.unknown1 = 0x0000;
-	r.in.unknown = &unknown;
+	r.in.system_name = 0;
 	r.in.access_required = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = handle;
 
@@ -649,14 +640,11 @@ static BOOL test_OpenHKCU(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct winreg_OpenHKCU r;
-	struct winreg_OpenUnknown unknown;
 	BOOL ret = True;
 
 	printf("\ntesting OpenHKCU\n");
 
-	unknown.unknown0 = 0x84e0;
-	unknown.unknown1 = 0x0000;
-	r.in.unknown = &unknown;
+	r.in.system_name = 0;
 	r.in.access_required = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = handle;
 
