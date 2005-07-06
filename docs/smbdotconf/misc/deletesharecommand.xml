@@ -35,8 +35,7 @@
 		
 	<para>
 	This parameter is only used to remove file shares.  To delete printer shares, 
-	see the <link linkend="DELETEPRINTERCOMMAND"><parameter moreinfo="none">deleteprinter 
-	command</parameter></link>.
+	see the <smbconfoption name="deleteprinter command"/>.
 	</para>
 </description>
 

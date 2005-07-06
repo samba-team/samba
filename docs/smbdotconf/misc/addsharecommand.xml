@@ -47,8 +47,7 @@
 		
 	<para>
 	This parameter is only used for add file shares.  To add printer shares, 
-	see the <link linkend="ADDPRINTERCOMMAND"><parameter moreinfo="none">addprinter 
-	command</parameter></link>.
+	see the <smbconfoption name="addprinter command"/>.
 	</para>
 </description>
 

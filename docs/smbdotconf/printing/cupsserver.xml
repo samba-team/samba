@@ -4,9 +4,7 @@
 		 print="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-    <para>This parameter is only applicable if <link 
-    linkend="PRINTING"><parameter moreinfo="none">printing</parameter></link> is 
-    set to <constant>cups</constant>.
+    <para>This parameter is only applicable if <smbconfoption name="printing"/> is set to <constant>cups</constant>.
     </para>
 
    <para>If set, this option overrides the ServerName option in the CUPS

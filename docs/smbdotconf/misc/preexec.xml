@@ -12,13 +12,16 @@
 	message every time they log in. Maybe a message of the day? Here 
 	is an example:</para>
 
-	<para><command moreinfo="none">preexec = csh -c 'echo \&quot;Welcome to %S!\&quot; | /usr/local/samba/bin/smbclient -M %m -I %I' &amp; </command></para>
+	<para>
+	<command moreinfo="none">preexec = csh -c 'echo \&quot;Welcome to %S!\&quot; |
+	/usr/local/samba/bin/smbclient -M %m -I %I' &amp; </command>
+	</para>
 
 	<para>Of course, this could get annoying after a while :-)</para>
 
-	<para>See also <link linkend="PREEXECCLOSE"><parameter moreinfo="none">preexec close</parameter></link> and <link 
-	linkend="POSTEXEC"><parameter moreinfo="none">postexec
-	</parameter></link>.</para>
+	<para>
+	See also <smbconfoption name="preexec close"/> and <smbconfoption name="postexec"/>.
+	</para>
 </description>
 
 <value type="default"></value>

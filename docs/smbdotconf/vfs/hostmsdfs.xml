@@ -8,8 +8,7 @@
 	server, and allow Dfs-aware clients to browse Dfs trees hosted
 	on the server.</para>
 
-	<para>See also the <link linkend="MSDFSROOT"><parameter moreinfo="none">
-	msdfs root</parameter></link> share  level  parameter.  For
+	<para>See also the <smbconfoption name="msdfs root"/> share  level  parameter.  For
 	more  information  on  setting  up a Dfs tree on Samba,
 	refer to <link linkend="msdfs"/>.
 	</para>

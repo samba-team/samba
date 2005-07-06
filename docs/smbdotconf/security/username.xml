@@ -32,8 +32,7 @@
     so they cannot do anything that user cannot do.</para>
 
     <para>To restrict a service to a particular set of users you 
-    can use the <link linkend="VALIDUSERS"><parameter moreinfo="none">valid users
-    </parameter></link> parameter.</para>
+    can use the <smbconfoption name="valid users"/> parameter.</para>
 
     <para>If any of the usernames begin with a '@' then the name 
     will be looked up first in the NIS netgroups list (if Samba 
@@ -54,9 +53,9 @@
     quite some time, and some clients may time out during the 
     search.</para>
 
-    <para>See the section <link linkend="VALIDATIONSECT">NOTE ABOUT 
-    USERNAME/PASSWORD VALIDATION</link> for more information on how 
-this parameter determines access to the services.</para>
+    <para>See the section <link linkend="VALIDATIONSECT">NOTE ABOUT
+	USERNAME/PASSWORD VALIDATION</link> for more information on how 
+	this parameter determines access to the services.</para>
 </description>
 
 <value type="default"><comment>The guest account if a guest service, 

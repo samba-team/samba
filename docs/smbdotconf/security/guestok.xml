@@ -7,15 +7,13 @@
 <description>
     <para>If this parameter is <constant>yes</constant> for 
     a service, then no password is required to connect to the service. 
-    Privileges will be those of the <link linkend="GUESTACCOUNT"><parameter moreinfo="none">
-    guest account</parameter></link>.</para>
+    Privileges will be those of the <smbconfoption name="guest account"/>.</para>
 
     <para>This paramater nullifies the benifits of setting
-    <link linkend="RESTRICTANONYMOUS"><parameter moreinfo="none">restrict
-    anonymous</parameter></link> = 2</para>
+    <smbconfoption name="restrict anonymous">2</smbconfoption>
+	</para>
 
-    <para>See the section below on <link linkend="SECURITY"><parameter moreinfo="none">
-    security</parameter></link> for more information about this option.
+    <para>See the section below on <smbconfoption name="security"/> for more information about this option.
 	</para>
 </description>
 <value type="default">no</value>

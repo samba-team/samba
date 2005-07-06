@@ -7,8 +7,7 @@
 	<para>
 	If set to <constant>yes</constant>, the Samba server will
 	provide the netlogon service for Windows 9X network logons for the
-	<link linkend="WORKGROUP">
-	<parameter moreinfo="none">workgroup</parameter></link> it is in.
+	<smbconfoption name="workgroup"/> it is in.
 	This will also cause the Samba server to act as a domain
 	controller for NT4 style domain services. For more details on
 	setting up this feature see the Domain Control chapter of the

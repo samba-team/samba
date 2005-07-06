@@ -10,8 +10,7 @@
 
     <para>This command should be a program or script which takes 
     a printer name and job number to resume the print job. See 
-    also the <link linkend="LPPAUSECOMMAND"><parameter moreinfo="none">lppause command
-    </parameter></link> parameter.</para>
+    also the <smbconfoption name="lppause command"/> parameter.</para>
 
     <para>If a <parameter moreinfo="none">%p</parameter> is given then the printer name 
     is put in its place. A <parameter moreinfo="none">%j</parameter> is replaced with 
@@ -21,8 +20,7 @@
     in the <parameter moreinfo="none">lpresume command</parameter> as the PATH may not 
     be available to the server.</para>
 		
-    <para>See also the <link linkend="PRINTING"><parameter moreinfo="none">printing
-    </parameter></link> parameter.</para>
+    <para>See also the <smbconfoption name="printing"/> parameter.</para>
 
     <para>Default: Currently no default value is given 
     to this string, unless the value of the <parameter moreinfo="none">printing</parameter> 

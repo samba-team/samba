@@ -3,8 +3,7 @@
                  context="G"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-	<para>For UNIXes that support kernel based <link linkend="OPLOCKS">
-	<parameter moreinfo="none">oplocks</parameter></link>
+	<para>For UNIXes that support kernel based <smbconfoption name="oplocks"/>
 	(currently only IRIX and the Linux 2.4 kernel), this parameter 
 	allows the use of them to be turned on or off.</para>
 

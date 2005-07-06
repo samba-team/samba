@@ -9,8 +9,7 @@
     of zero mean an unlimited number of connections may be made.</para>
 
     <para>Record lock files are used to implement this feature. The lock files will be stored in 
-    the directory specified by the <link linkend="LOCKDIRECTORY">
-    <parameter moreinfo="none">lock directory</parameter></link> option.</para>
+    the directory specified by the <smbconfoption name="lock directory"/> option.</para>
 </description>
 
 <value type="default">0</value>

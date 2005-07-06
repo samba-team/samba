@@ -27,8 +27,7 @@
 	    <listitem>
 		<para><command moreinfo="none">tdbsam</command> - The TDB based password storage
                 backend.  Takes a path to the TDB as an optional argument (defaults to passdb.tdb 
-                in the <link linkend="PRIVATEDIR">
-                <parameter moreinfo="none">private dir</parameter></link> directory.</para>
+                in the <smbconfoption name="private dir"/> directory.</para>
 	    </listitem>
 			
 	    <listitem>
@@ -37,7 +36,7 @@
                 <command moreinfo="none">ldap://localhost</command>)</para>
 			
 		<para>LDAP connections should be secured where possible.  This may be done using either
-                Start-TLS (see <link linkend="LDAPSSL"><parameter moreinfo="none">ldap ssl</parameter></link>) or by
+                Start-TLS (see <smbconfoption name="ldap ssl"/>) or by
                 specifying <parameter moreinfo="none">ldaps://</parameter> in
                 the URL argument. </para>
 

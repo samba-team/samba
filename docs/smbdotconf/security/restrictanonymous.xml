@@ -29,8 +29,7 @@ HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\
 	<note>
 	<para>
     The security advantage of using restrict anonymous = 2 is removed
-    by setting <link linkend="GUESTOK"><parameter moreinfo="none">guest
-	ok</parameter> = yes</link> on any share.
+    by setting <smbconfoption name="guest ok">yes</smbconfoption> on any share.
 	</para>
 	</note>
 </description>

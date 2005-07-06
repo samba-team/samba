@@ -3,24 +3,20 @@
 				 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-    <para>The permissions on new files and directories 
-    are normally governed by <link linkend="CREATEMASK"><parameter moreinfo="none">
-    create mask</parameter></link>, <link linkend="DIRECTORYMASK">
-    <parameter moreinfo="none">directory mask</parameter></link>, <link linkend="FORCECREATEMODE">
-    <parameter moreinfo="none">force create mode</parameter>
-    </link> and <link linkend="FORCEDIRECTORYMODE"><parameter moreinfo="none">force 
-    directory mode</parameter></link> but the boolean inherit 
-    permissions parameter overrides this.</para>
+    <para>
+	The permissions on new files and directories are normally governed by <smbconfoption name="create mask"/>,
+	<smbconfoption name="directory mask"/>, <smbconfoption name="force create mode"/> and <smbconfoption
+	name="force directory mode"/> but the boolean inherit permissions parameter overrides this.
+	</para>
 		
     <para>New directories inherit the mode of the parent directory,
     including bits such as setgid.</para>
 
-    <para>New files inherit their read/write bits from the parent 
-    directory.  Their execute bits continue to be determined by
-    <link linkend="MAPARCHIVE"><parameter moreinfo="none">map archive</parameter>
-    </link>, <link linkend="MAPHIDDEN"><parameter moreinfo="none">map hidden</parameter>
-    </link> and <link linkend="MAPSYSTEM"><parameter moreinfo="none">map system</parameter>
-    </link> as usual.</para>
+    <para>
+	New files inherit their read/write bits from the parent directory.  Their execute bits continue to be
+	determined by <smbconfoption name="map archive"/>, <smbconfoption name="map hidden"/> and <smbconfoption
+	name="map system"/> as usual.
+	</para>
 
     <para>Note that the setuid bit is <emphasis>never</emphasis> set via 
     inheritance (the code explicitly prohibits this).</para>

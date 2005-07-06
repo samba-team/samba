@@ -10,22 +10,20 @@
     program to change the user's password. The string describes a 
     sequence of response-receive pairs that <citerefentry><refentrytitle>smbd</refentrytitle>
     <manvolnum>8</manvolnum></citerefentry> uses to determine what to send to the 
-    <link linkend="PASSWDPROGRAM"><parameter moreinfo="none">passwd program</parameter>
-    </link> and what to expect back. If the expected output is not 
+    <smbconfoption name="passwd program"/> and what to expect back. If the expected output is not 
     received then the password is not changed.</para>
 
     <para>This chat sequence is often quite site specific, depending 
     on what local methods are used for password control (such as NIS 
     etc).</para>
 
-    <para>Note that this parameter only is only used if the <link
-    linkend="UNIXPASSWORDSYNC"> <parameter moreinfo="none">unix password sync</parameter>
-    </link> parameter is set  to <constant>yes</constant>. This sequence is 
+    <para>Note that this parameter only is only used if the <smbconfoption
+    name="unix password sync"/> parameter is set  to <constant>yes</constant>. This sequence is 
     then called <emphasis>AS ROOT</emphasis> when the SMB password  in the 
     smbpasswd file is being changed, without access to the old password
     cleartext. This means that root must be able to reset the user's password without
     knowing the text of the previous password. In the presence of
-    NIS/YP,  this means that the <link linkend="PASSWDPROGRAM">passwd program</link> must
+    NIS/YP,  this means that the <smbconfoption name="passwd program"/> must
     be executed on the NIS master.
     </para>
 
@@ -41,10 +39,9 @@
     stop &quot;.&quot;,  then no string is sent. Similarly,  if the
     expect string is a full stop then no string is expected.</para>
 
-    <para>If the <link linkend="PAMPASSWORDCHANGE"><parameter moreinfo="none">pam
-    password change</parameter></link> parameter is set to <constant>yes</constant>, the chat pairs
-    may be matched in any order, and success is determined by the PAM result, 
-    not any particular output. The \n macro is ignored for PAM conversions.
+    <para>If the <smbconfoption name="pam password change"/> parameter is set to <constant>yes</constant>, the
+	chat pairs may be matched in any order, and success is determined by the PAM result, not any particular
+	output. The \n macro is ignored for PAM conversions.
     </para>
 
 </description>
