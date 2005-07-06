@@ -2828,34 +2828,34 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
 		}
 
+#if 1 /* JRA - What is the cost.. */
 		{
 			int i, num_shares;
 			share_mode_entry *shares;
-			BOOL deleted = False;
 
 			/* We need to return NT_STATUS_DELETE_PENDING if any
 			 * process has that flag set. */
+
+			lock_share_entry(conn, sbuf.st_dev, sbuf.st_ino);
 
 			num_shares = get_share_modes(conn, sbuf.st_dev,
 						     sbuf.st_ino, &shares);
 
 			for (i=0; i<num_shares; i++) {
-				if ((shares[i].create_options &
-				     FILE_DELETE_ON_CLOSE) == 0) {
-					continue;
+				if ((shares[i].create_options & FILE_DELETE_ON_CLOSE)) {
+					unlock_share_entry(conn, sbuf.st_dev, sbuf.st_ino);
+					SAFE_FREE(shares);
+					return ERROR_NT(NT_STATUS_DELETE_PENDING);
 				}
-				deleted = True;
-				break;
 			}
+
+			unlock_share_entry(conn, sbuf.st_dev, sbuf.st_ino);
 
 			if (num_shares > 0) {
 				SAFE_FREE(shares);
 			}
-
-			if (deleted) {
-				return ERROR_NT(NT_STATUS_DELETE_PENDING);
-			}
 		}
+#endif
 
 		if (INFO_LEVEL_IS_UNIX(info_level)) {
 			/* Always do lstat for UNIX calls. */
