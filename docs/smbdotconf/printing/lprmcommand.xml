@@ -21,7 +21,7 @@
 </description>
 <related>printing</related>
 
-<value type="default"><comment>depends on the setting of <parameter moreinfo="none">printing</parameter></comment></value>
+<value type="default">depends on the setting of <parameter moreinfo="none">printing</parameter></value>
 <value type="example">/usr/bin/lprm -P%p %j</value>
 <value type="example">/usr/bin/cancel %p-%j</value>
 </samba:parameter>
