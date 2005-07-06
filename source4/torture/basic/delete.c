@@ -24,8 +24,8 @@
 #include "system/filesys.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
-static BOOL check_delete_on_close(struct smbcli_state *cli, const char *fname,
-				  BOOL expect_it)
+static BOOL check_delete_on_close(struct smbcli_state *cli, int fnum,
+				  const char *fname, BOOL expect_it)
 {
 	TALLOC_CTX *mem_ctx = talloc_init("single_search");
 	union smb_search_data data;
@@ -35,13 +35,72 @@ static BOOL check_delete_on_close(struct smbcli_state *cli, const char *fname,
 	size_t size;
 	uint16_t mode;
 
+	BOOL res = True;
+
 	status = torture_single_search(cli, mem_ctx,
 				       fname, RAW_SEARCH_FULL_DIRECTORY_INFO,
 				       &data);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("(%s) single_search failed (%s)\n", 
 		       __location__, nt_errstr(status));
-		return False;
+		res = False;
+		goto done;
+	}
+
+	if (fnum != -1) {
+		union smb_fileinfo io;
+		int nlink = expect_it ? 0 : 1;
+
+		io.all_info.level = RAW_FILEINFO_ALL_INFO;
+		io.all_info.in.fnum = fnum;
+
+		status = smb_raw_fileinfo(cli->tree, mem_ctx, &io);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("(%s) qpathinfo failed (%s)\n", __location__,
+			       nt_errstr(status));
+			res = False;
+			goto done;
+		}
+
+		if (expect_it != io.all_info.out.delete_pending) {
+			printf("Expected del_on_close flag %d, qfileinfo gave %d\n",
+			       expect_it, io.all_info.out.delete_pending);
+			res = False;
+			goto done;
+		}
+
+		if (nlink != io.all_info.out.nlink) {
+			printf("Expected nlink %d, qfileinfo gave %d\n",
+			       nlink, io.all_info.out.nlink);
+			res = False;
+			goto done;
+		}
+
+		io.standard_info.level = RAW_FILEINFO_STANDARD_INFO;
+		io.standard_info.in.fnum = fnum;
+
+		status = smb_raw_fileinfo(cli->tree, mem_ctx, &io);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("(%s) qpathinfo failed (%s)\n", __location__,
+			       nt_errstr(status));
+			res = False;
+			goto done;
+		}
+
+		if (expect_it != io.standard_info.out.delete_pending) {
+			printf("Expected del_on_close flag %d, qfileinfo gave %d\n",
+			       expect_it, io.standard_info.out.delete_pending);
+			res = False;
+			goto done;
+		}
+
+		if (nlink != io.standard_info.out.nlink) {
+			printf("Expected nlink %d, qfileinfo gave %d\n",
+			       nlink, io.all_info.out.nlink);
+			res = False;
+			goto done;
+		}
+
 	}
 
 	status = smbcli_qpathinfo(cli->tree, fname,
@@ -54,17 +113,21 @@ static BOOL check_delete_on_close(struct smbcli_state *cli, const char *fname,
 			       "code (%s) -- NT_STATUS_DELETE_PENDING "
 			       "expected\n", __location__,
 			       nt_errstr(status));
-			return False;
+			res = False;
+			goto done;
 		}
 	} else {
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("(%s) qpathinfo failed (%s)\n", __location__,
 			       nt_errstr(status));
-			return False;
+			res = False;
+			goto done;
 		}
 	}
 
-	return True;
+ done:
+	talloc_free(mem_ctx);
+	return res;
 }
 
 /*
@@ -417,7 +480,7 @@ BOOL torture_test_delete(void)
 		goto fail;
 	}
 
-	correct &= check_delete_on_close(cli1, fname, True);
+	correct &= check_delete_on_close(cli1, fnum1, fname, True);
 	
 	if (NT_STATUS_IS_ERR(smbcli_nt_delete_on_close(cli1->tree, fnum1, False))) {
 		printf("(%s) unsetting delete_on_close on file failed !\n",
@@ -426,7 +489,7 @@ BOOL torture_test_delete(void)
 		goto fail;
 	}
 
-	correct &= check_delete_on_close(cli1, fname, False);
+	correct &= check_delete_on_close(cli1, fnum1, fname, False);
 	
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
 		printf("(%s) close - 2 failed (%s)\n", 
@@ -502,8 +565,8 @@ BOOL torture_test_delete(void)
 		goto fail;
 	}
 
-	correct &= check_delete_on_close(cli1, fname, True);
-	correct &= check_delete_on_close(cli2, fname, True);
+	correct &= check_delete_on_close(cli1, fnum1, fname, True);
+	correct &= check_delete_on_close(cli2, fnum2, fname, True);
 
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
 		printf("(%s) close - 1 failed (%s)\n", 
@@ -512,8 +575,8 @@ BOOL torture_test_delete(void)
 		goto fail;
 	}
 
-	correct &= check_delete_on_close(cli1, fname, True);
-	correct &= check_delete_on_close(cli2, fname, True);
+	correct &= check_delete_on_close(cli1, -1, fname, True);
+	correct &= check_delete_on_close(cli2, fnum2, fname, True);
 	
 	if (NT_STATUS_IS_ERR(smbcli_close(cli2->tree, fnum2))) {
 		printf("(%s) close - 2 failed (%s)\n", 
@@ -692,8 +755,8 @@ BOOL torture_test_delete(void)
 		goto fail;
 	}
 
-	correct &= check_delete_on_close(cli1, fname, True);
-	correct &= check_delete_on_close(cli2, fname, True);
+	correct &= check_delete_on_close(cli1, fnum1, fname, True);
+	correct &= check_delete_on_close(cli2, fnum2, fname, True);
 
 	if (NT_STATUS_IS_ERR(smbcli_nt_delete_on_close(cli2->tree, fnum2,
 						       False))) {
@@ -703,8 +766,8 @@ BOOL torture_test_delete(void)
 		goto fail;
 	}
 
-	correct &= check_delete_on_close(cli1, fname, False);
-	correct &= check_delete_on_close(cli2, fname, False);
+	correct &= check_delete_on_close(cli1, fnum1, fname, False);
+	correct &= check_delete_on_close(cli2, fnum2, fname, False);
 	
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
 		printf("(%s) close - 1 failed (%s)\n", 
