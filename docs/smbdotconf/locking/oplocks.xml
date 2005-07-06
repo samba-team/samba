@@ -14,8 +14,7 @@
 	directory.</para>
 
 	<para>Oplocks may be selectively turned off on certain files with a 
-	share. See the <link linkend="VETOOPLOCKFILES"><parameter moreinfo="none">
-	veto oplock files</parameter></link> parameter. On some systems 
+	share. See the <smbconfoption name="veto oplock files"/> parameter. On some systems 
 	oplocks are recognized by the underlying operating system. This 
 	allows data synchronization between all access to oplocked files, 
 	whether it be via Samba or NFS or a local UNIX process. See the 

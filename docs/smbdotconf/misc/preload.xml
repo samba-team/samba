@@ -10,9 +10,11 @@
 	for homes and printers services that would otherwise not be 
 	visible.</para>
 
-	<para>Note that if you just want all printers in your 
-	printcap file loaded then the <link linkend="LOADPRINTERS">
-	<parameter moreinfo="none">load printers</parameter></link> option is easier.</para>
+	<para>
+	Note that if you just want all printers in your 
+	printcap file loaded then the <smbconfoption name="load printers"/>
+	 option is easier.
+	</para>
 </description>
 
 <value type="default"></value>

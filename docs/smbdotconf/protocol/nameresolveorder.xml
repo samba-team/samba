@@ -18,8 +18,8 @@
 	<listitem>
 	    <para><constant>lmhosts</constant> : Lookup an IP 
 	    address in the Samba lmhosts file. If the line in lmhosts has 
-	    no name type attached to the NetBIOS name (see the <ulink 
-            noescape="1" url="lmhosts.5.html">lmhosts(5)</ulink> for details) then
+	    no name type attached to the NetBIOS name (see the <usmbconfoption 
+            noescape="1" url="lmhosts.5.html">lmhosts(5)</usmbconfoption> for details) then
 	    any name type matches for lookup.</para>
 	</listitem>
 
@@ -37,14 +37,14 @@
 
 	<listitem>
 	    <para><constant>wins</constant> : Query a name with 
-	    the IP address listed in the <link linkend="WINSSERVER"><parameter moreinfo="none">
-	    wins server</parameter></link> parameter.  If no WINS server has
+	    the IP address listed in the <smbconfoption name="WINSSERVER"><parameter moreinfo="none">
+	    wins server</parameter></smbconfoption> parameter.  If no WINS server has
 	    been specified this method will be ignored.</para>
 	</listitem>
 
 	<listitem>
 	    <para><constant>bcast</constant> : Do a broadcast on 
-	    each of the known local interfaces listed in the <link linkend="INTERFACES"><parameter moreinfo="none">interfaces</parameter></link> 
+	    each of the known local interfaces listed in the <smbconfoption name="interfaces"/> 
 	    parameter. This is the least reliable of the name resolution 
 	    methods as it depends on the target host being on a locally 
 	    connected subnet.</para>

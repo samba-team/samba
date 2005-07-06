@@ -7,8 +7,8 @@
 <description>
 	<para>This option specifies the directory where lock 
 	files will be placed.  The lock files are used to implement the 
-	<link linkend="MAXCONNECTIONS"><parameter moreinfo="none">max connections</parameter>
-</link> option.</para>
+	<smbconfoption name="max connections"/> option.
+	</para>
 </description>
 
 <value type="default">${prefix}/var/locks</value>

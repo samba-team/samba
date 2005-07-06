@@ -11,8 +11,7 @@
     is adds the process-id to the timestamp message headers in the
     logfile when turned on.</para>
 
-    <para>Note that the parameter <link linkend="DEBUGTIMESTAMP"><parameter moreinfo="none">
-    debug timestamp</parameter></link> must be on for this to have an 
+    <para>Note that the parameter <smbconfoption name="debug timestamp"/> must be on for this to have an 
 	effect.</para>
 </description>
 <value type="default">no</value>

@@ -38,11 +38,10 @@
 	already existed. In this way, UNIX users are dynamically created to
 	match existing Windows NT accounts.</para>
 
-	<para>See also <link linkend="SECURITY"><parameter moreinfo="none">
-	security</parameter></link>, <link linkend="PASSWORDSERVER">
-	<parameter moreinfo="none">password server</parameter></link>, 
-	<link linkend="DELETEUSERSCRIPT"><parameter moreinfo="none">delete user 
-	script</parameter></link>.</para>
+	<para>
+	See also <smbconfoption name="security"/>, <smbconfoption name="password server"/>,
+	<smbconfoption name="delete user script"/>.
+	</para>
 </description>
 
 <value type="default"/>

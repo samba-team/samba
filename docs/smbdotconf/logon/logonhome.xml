@@ -29,8 +29,7 @@
 	\\server\share when a user does <command moreinfo="none">net use /home</command>
 	but use the whole string when dealing with profiles.</para>
 
-	<para>Note that in prior versions of Samba, the <link linkend="LOGONPATH">
-	<parameter moreinfo="none">logon path</parameter></link> was returned rather than 
+	<para>Note that in prior versions of Samba, the <smbconfoption name="logon path"/> was returned rather than 
 	<parameter moreinfo="none">logon home</parameter>.  This broke <command 
 	moreinfo="none">net use /home</command> but allowed profiles outside the home directory.  
 	The current implementation is correct, and can be used for profiles if you use 

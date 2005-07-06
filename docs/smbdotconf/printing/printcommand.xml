@@ -47,8 +47,7 @@
 
     <para>Note that printing may fail on some UNIXes from the 
     <constant>nobody</constant> account. If this happens then create 
-    an alternative guest account that can print and set the <link linkend="GUESTACCOUNT">
-    <parameter moreinfo="none">guest account</parameter></link> 
+    an alternative guest account that can print and set the <smbconfoption name="guest account"/> 
     in the [global] section.</para>
 
     <para>You can form quite complex print commands by realizing 
@@ -61,8 +60,8 @@
 
     <para>You may have to vary this command considerably depending 
     on how you normally print files on your system. The default for 
-    the parameter varies depending on the setting of the <link linkend="PRINTING">
-    <parameter moreinfo="none">printing</parameter></link> parameter.</para>
+    the parameter varies depending on the setting of the <smbconfoption name="printing"/>
+	parameter.</para>
 
     <para>Default: For <command moreinfo="none">printing = BSD, AIX, QNX, LPRNG 
     or PLP :</command></para>
@@ -75,7 +74,7 @@
     <para><command moreinfo="none">print command = lp -d%p -s %s; rm %s</command></para>
 
     <para>For printing = CUPS :   If SAMBA is compiled against
-    libcups, then <link linkend="PRINTING">printcap = cups</link> 
+    libcups, then <smbconfoption name="printcap">cups</smbconfoption> 
     uses the CUPS API to
     submit jobs, etc.  Otherwise it maps to the System V
     commands with the -oraw option for printing, i.e. it

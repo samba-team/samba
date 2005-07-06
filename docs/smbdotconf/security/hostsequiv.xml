@@ -9,8 +9,7 @@
     and users who will be allowed access without specifying a password.
     </para>
 		
-    <para>This is not be confused with <link linkend="HOSTSALLOW">
-    <parameter moreinfo="none">hosts allow</parameter></link> which is about hosts 
+    <para>This is not be confused with <smbconfoption name="hosts allow"/> which is about hosts 
     access to services and is more useful for guest services. <parameter moreinfo="none">
     hosts equiv</parameter> may be useful for NT clients which will 
     not supply passwords to Samba.</para>

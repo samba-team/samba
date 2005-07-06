@@ -4,8 +4,7 @@
                  basic="1" advanced="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-    <para>An inverted synonym is <link linkend="WRITEABLE">
-    <parameter moreinfo="none">writeable</parameter></link>.</para>
+    <para>An inverted synonym is <smbconfoption name="writeable"/>.</para>
 
     <para>If this parameter is <constant>yes</constant>, then users 
     of a service may not create or modify files in the service's 

@@ -255,25 +255,30 @@ hosts:		files wins
 <refsect1>
 	<title>EXAMPLE SETUP</title>
 
-	<para>To setup winbindd for user and group lookups plus 
+	<para>
+	To setup winbindd for user and group lookups plus 
 	authentication from a domain controller use something like the 
-	following setup. This was tested on a RedHat 6.2 Linux box. </para>
+	following setup. This was tested on an early Red Hat Linux box.
+	</para>
 
 	<para>In <filename>/etc/nsswitch.conf</filename> put the 
 	following:
 <programlisting>
-passwd:     files winbind
-group:      files winbind
-</programlisting></para>  
+passwd: files winbind
+group:  files winbind
+</programlisting>
+	</para>  
 
 	<para>In <filename>/etc/pam.d/*</filename> replace the <parameter>
 	auth</parameter> lines with something like this:
 <programlisting>
-auth       required	/lib/security/pam_securetty.so
-auth       required	/lib/security/pam_nologin.so
-auth       sufficient	/lib/security/pam_winbind.so
-auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
-</programlisting></para>
+auth  required    /lib/security/pam_securetty.so
+auth  required	  /lib/security/pam_nologin.so
+auth  sufficient  /lib/security/pam_winbind.so
+auth  required    /lib/security/pam_pwdb.so \
+                  use_first_pass shadow nullok
+</programlisting>
+	</para>
   
 
 	<para>Note in particular the use of the <parameter>sufficient

@@ -21,14 +21,12 @@
     user who owns the directory to modify it.</para>
 		
     <para>Following this Samba will bit-wise 'OR' the UNIX mode 
-    created from this parameter with the value of the <link linkend="FORCEDIRECTORYMODE">
-    <parameter moreinfo="none">force directory mode</parameter></link> parameter. 
+    created from this parameter with the value of the <smbconfoption name="force directory mode"/> parameter. 
     This parameter is set to 000 by default (i.e. no extra mode bits are added).</para>
 
     <para>Note that this parameter does not apply to permissions
     set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
-    a mask on access control lists also, they need to set the <link linkend="DIRECTORYSECURITYMASK">
-		<parameter moreinfo="none">directory security mask</parameter></link>.</para>
+    a mask on access control lists also, they need to set the <smbconfoption name="directory security mask"/>.</para>
 </description>
 
 <related>force directory mode</related>

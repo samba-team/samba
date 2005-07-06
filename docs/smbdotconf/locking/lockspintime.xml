@@ -5,8 +5,7 @@
 <description>
 	<para>The time in microseconds that smbd should 
 	pause before attempting to gain a failed lock.  See
-	<link linkend="LOCKSPINCOUNT"><parameter moreinfo="none">lock spin 
-			count</parameter></link> for more details.</para>
+	<smbconfoption name="lock spin count"/> for more details.</para>
 </description>
 <value type="default">10</value>
 </samba:parameter>

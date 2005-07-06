@@ -5,8 +5,8 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This option tells <citerefentry><refentrytitle>smbd</refentrytitle>
-    <manvolnum>8</manvolnum></citerefentry> when acting as a WINS server (<link linkend="WINSSUPPORT">
-    <parameter moreinfo="none">wins support = yes</parameter></link>) what the maximum
+    <manvolnum>8</manvolnum></citerefentry> when acting as a WINS server
+	(<smbconfoption name="wins support">yes</smbconfoption>) what the maximum
     'time to live' of NetBIOS names that <command moreinfo="none">nmbd</command> 
     will grant will be (in seconds). You should never need to change this
 	parameter.  The default is 6 days (518400 seconds).</para>
