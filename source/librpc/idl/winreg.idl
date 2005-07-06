@@ -20,15 +20,10 @@
 		unistr *name;
 	} winreg_String;
 
-	typedef struct {
-		uint16 unknown0;
-		uint16 unknown1;
-	} winreg_OpenUnknown;
-
 	/******************/
 	/* Function: 0x00 */
 	WERROR winreg_OpenHKCR(
-		[in]      winreg_OpenUnknown *unknown,
+		[in]      uint16 *system_name,
 		[in]      uint32 access_required,
 		[out,ref] policy_handle *handle
 	);
@@ -36,7 +31,7 @@
 	/******************/
 	/* Function: 0x01 */
 	WERROR winreg_OpenHKCU(
-		[in]      winreg_OpenUnknown *unknown,
+	        [in]      uint16 *system_name,
 		[in]      uint32 access_required,
 		[out,ref] policy_handle *handle
 	);
@@ -44,7 +39,7 @@
 	/******************/
 	/* Function: 0x02 */
 	WERROR winreg_OpenHKLM(
-		[in]      winreg_OpenUnknown *unknown,
+		[in]      uint16 *system_name,
 		[in]      uint32 access_required,
 		[out,ref] policy_handle *handle
 	);
@@ -52,7 +47,7 @@
 	/******************/
 	/* Function: 0x03 */
 	WERROR winreg_OpenHKPD(
-		[in]      winreg_OpenUnknown *unknown,
+		[in]      uint16 *system_name,
 		[in]      uint32 access_required,
 		[out,ref] policy_handle *handle
 	);
@@ -60,7 +55,7 @@
 	/******************/
 	/* Function: 0x04 */
 	WERROR winreg_OpenHKU(
-		[in]      winreg_OpenUnknown *unknown,
+		[in]      uint16 *system_name,
 		[in]      uint32 access_required,
 		[out,ref] policy_handle *handle
 	);
@@ -293,7 +288,7 @@
 	/******************/
 	/* Function: 0x1b */
 	WERROR winreg_OpenHKCC(
-		[in]      winreg_OpenUnknown *unknown,
+		[in]      uint16 *system_name,
 		[in]      uint32 access_required,
 		[out,ref] policy_handle *handle
 	);
@@ -301,7 +296,7 @@
 	/******************/
 	/* Function: 0x1c */
 	WERROR winreg_OpenHKDD(
-		[in]      winreg_OpenUnknown *unknown,
+		[in]      uint16 *system_name,
 		[in]      uint32 access_required,
 		[out,ref] policy_handle *handle
 	);
@@ -342,7 +337,7 @@
 	/******************/
 	/* Function: 0x20 */
 	WERROR winreg_OpenHKPT(
-		[in]      winreg_OpenUnknown *unknown,
+		[in]      uint16 *system_name,
 		[in]      uint32 access_required,
 		[out,ref] policy_handle *handle
 	);
@@ -350,7 +345,7 @@
 	/******************/
 	/* Function: 0x21 */
 	WERROR winreg_OpenHKPN(
-		[in]      winreg_OpenUnknown *unknown,
+		[in]      uint16 *system_name,
 		[in]      uint32 access_required,
 		[out,ref] policy_handle *handle
 	);
