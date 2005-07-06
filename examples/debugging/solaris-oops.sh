@@ -1,8 +1,9 @@
 #!/bin/sh
 #
-# oops -- capture supporting information after a failure
+# solaris_panic_action -- capture supporting information after a failure
 #
 ProgName=`basename $0`
+LOGDIR=/usr/local/samba/var
 
 main() {
 	pid=$1
@@ -12,7 +13,9 @@ main() {
 		say "Usage: $0 pid"
 		exit 1
 	fi
-	cat <<!
+	cat >>$LOGDIR/log.solaris_panic_action <<!
+
+`date`
 State information and vountary core dump for process $pid
 
 Related processes were:
@@ -40,8 +43,8 @@ Directory in use was:
 `/usr/bin/pwdx $pid`
 
 
-A voluntary core dump was placed in /var/tmp/oops_gcore.$pid
-`gcore -o /var/tmp/oops_gcore $pid`..
+A voluntary core dump was placed in /var/tmp/samba_solaris_panic_action_gcore.$pid
+`gcore -o /var/tmp/samba_solaris_panic_action_gcore $pid`
 !
 }
 
