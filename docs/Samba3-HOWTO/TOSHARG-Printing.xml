@@ -774,6 +774,7 @@ share name. On client connection requests, Samba always tries to find file share
 finds one, it will connect to this and will not connect to a printer with the same name!
 </para>
 
+<?latex \newpage ?>
 <variablelist>
 	<varlistentry><term><smbconfoption name="comment">Printer with Restricted Access </smbconfoption></term>
 		<listitem><para>
