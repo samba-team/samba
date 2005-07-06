@@ -618,9 +618,13 @@ Parameters take the for "parameter=value".  Common options include:</para>
 <refsect3>
 <title>GROUPMAP ADD</title>
 
-<para>Add a new group mapping entry</para>
-
-<para>net groupmap add {rid=int|sid=string} unixgroup=string [type={domain|local}] [ntgroup=string] [comment=string]</para>
+<para>
+Add a new group mapping entry:
+<screen>
+net groupmap add {rid=int|sid=string} unixgroup=string \
+      [type={domain|local}] [ntgroup=string] [comment=string]
+</screen>
+</para>
 
 </refsect3>
 
@@ -638,7 +642,12 @@ Parameters take the for "parameter=value".  Common options include:</para>
 
 <para>Update en existing group entry</para>
 
-<para>net groupmap modify {ntgroup=string|sid=SID} [unixgroup=string] [comment=string] [type={domain|local}]</para>
+<para>
+<screen>
+net groupmap modify {ntgroup=string|sid=SID} [unixgroup=string] \
+       [comment=string] [type={domain|local}]
+</screen>
+</para>
 </refsect3>
 
 <refsect3>

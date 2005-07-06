@@ -11,7 +11,7 @@
     a client is still present and responding.</para>
 
     <para>Keepalives should, in general, not be needed if the socket 
-    being used has the SO_KEEPALIVE attribute set on it (see <link linkend="SOCKETOPTIONS">
+    has the SO_KEEPALIVE attribute set on it by default. (see <link linkend="SOCKETOPTIONS">
     <parameter moreinfo="none">socket options</parameter></link>). 
 Basically you should only use this option if you strike difficulties.</para>
 </description>
