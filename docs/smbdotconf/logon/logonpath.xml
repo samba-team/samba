@@ -8,8 +8,7 @@
 	where roaming profiles (NTuser.dat etc files for Windows NT) are 
 	stored.  Contrary to previous versions of these manual pages, it has 
 	nothing to do with Win 9X roaming profiles.  To find out how to 
-	handle roaming profiles for Win 9X system, see the <link linkend="LOGONHOME">
-	<parameter moreinfo="none">logon home</parameter></link> parameter.</para>
+	handle roaming profiles for Win 9X system, see the <smbconfoption name="logon home"/> parameter.</para>
 
 	<para>This option takes the standard substitutions, allowing you 
 	to have separate logon scripts for each user or machine.  It also 

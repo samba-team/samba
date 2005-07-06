@@ -25,8 +25,8 @@
     primary group assigned to sys when accessing this Samba share. All
     other users will retain their ordinary primary group.</para>
 
-    <para>If the <link linkend="FORCEUSER"><parameter moreinfo="none">force user</parameter>
-    </link> parameter is also set the group specified in 
+    <para>
+	If the <smbconfoption name="force user"/> parameter is also set the group specified in 
     <parameter moreinfo="none">force group</parameter> will override the primary group
     set in <parameter moreinfo="none">force user</parameter>.</para>
 

@@ -4,8 +4,8 @@
                  advanced="1" developer="1"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-    <para>This parameter is only useful in <link linkend="SECURITY">
-    security</link> modes other than <parameter moreinfo="none">security = share</parameter> 
+    <para>This parameter is only useful in <smbconfoption name="SECURITY">
+    security</smbconfoption> modes other than <parameter moreinfo="none">security = share</parameter> 
     - i.e. <constant>user</constant>, <constant>server</constant>, 
     and <constant>domain</constant>.</para>
 
@@ -27,14 +27,13 @@
 	    <para><constant>Bad User</constant> - Means user
 	    logins with an invalid password are rejected, unless the username 
 	    does not exist, in which case it is treated as a guest login and 
-	    mapped into the <link linkend="GUESTACCOUNT"><parameter moreinfo="none">
-	    guest account</parameter></link>.</para>
+	    mapped into the <smbconfoption name="guest account"/>.</para>
 	</listitem>
 
 	<listitem>
 	    <para><constant>Bad Password</constant> - Means user logins 
 	    with an invalid password are treated as a guest login and mapped 
-	    into the <link linkend="GUESTACCOUNT">guest account</link>. Note that 
+	    into the <smbconfoption name="guest account"/>. Note that 
 	    this can cause problems as it means that any user incorrectly typing 
 	    their password will be silently logged on as &quot;guest&quot; - and 
 	    will not know the reason they cannot access files they think

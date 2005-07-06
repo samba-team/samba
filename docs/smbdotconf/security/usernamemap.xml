@@ -75,8 +75,7 @@ guest = *
     will actually be connecting to \\server\mary and will need to
     supply a password suitable for <constant>mary</constant> not
     <constant>fred</constant>. The only exception to this is the
-    username passed to the <link linkend="PASSWORDSERVER"><parameter moreinfo="none">
-    password server</parameter></link> (if you have one). The password
+    username passed to the <smbconfoption name="password server"/> (if you have one). The password
     server will receive whatever username the client supplies without
     modification.</para>
 

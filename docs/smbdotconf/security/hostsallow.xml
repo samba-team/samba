@@ -24,8 +24,7 @@
     be given here also.</para>
 
     <para>Note that the localhost address 127.0.0.1 will always 
-    be allowed access unless specifically denied by a <link linkend="HOSTSDENY">
-    <parameter moreinfo="none">hosts deny</parameter></link> option.</para>
+    be allowed access unless specifically denied by a <smbconfoption name="hosts deny"/> option.</para>
 
     <para>You can also specify hosts by network/netmask pairs and 
     by netgroup names if your system supports netgroups. The 

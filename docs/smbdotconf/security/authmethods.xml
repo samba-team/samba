@@ -4,12 +4,12 @@
                  basic="1" advanced="1" wizard="1" developer="1"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-    <para>This option allows the administrator to chose what
-    authentication methods <command moreinfo="none">smbd</command> will use when authenticating
-    a user.  This option defaults to sensible values based on <link linkend="SECURITY">
-    <parameter moreinfo="none">security</parameter></link>.  This should be considered
-    a developer option and used only in rare circumstances.  In the majority (if not all)
-    of production servers, the default setting should be adequate.</para>
+    <para>
+	This option allows the administrator to chose what authentication methods <command
+	moreinfo="none">smbd</command> will use when authenticating a user.  This option defaults to sensible values
+	based on <smbconfoption name="security"/>.  This should be considered a developer option and used only in rare
+	circumstances.  In the majority (if not all) of production servers, the default setting should be adequate.
+	</para>
 
     <para>Each entry in the list attempts to authenticate the user in turn, until
     the user authenticates.  In practice only one method will ever actually 

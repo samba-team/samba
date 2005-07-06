@@ -21,8 +21,8 @@
 	long as a Samba daemon is running on the home directory server, 
 	it will be mounted on the Samba client directly from the directory 
 	server. When Samba is returning the home share to the client, it 
-	will consult the NIS map specified in <link linkend="HOMEDIRMAP">
-	<parameter moreinfo="none">homedir map</parameter></link> and return the server 
+	will consult the NIS map specified in
+	<smbconfoption name="homedir map"/> and return the server 
 	listed there.</para>
 
 	<para>Note that for this option to work there must be a working 
