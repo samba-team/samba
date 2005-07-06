@@ -40,11 +40,11 @@ static BOOL single_search_callback(void *private, union smb_search_data *file)
 /*
   do a single file (non-wildcard) search 
 */
-static NTSTATUS single_search(struct smbcli_state *cli, 
-			      TALLOC_CTX *mem_ctx,
-			      const char *pattern,
-			      enum smb_search_level level,
-			      union smb_search_data *data)
+NTSTATUS torture_single_search(struct smbcli_state *cli, 
+			       TALLOC_CTX *mem_ctx,
+			       const char *pattern,
+			       enum smb_search_level level,
+			       union smb_search_data *data)
 {
 	union smb_search_first io;
 	union smb_search_close c;
@@ -144,8 +144,9 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 		printf("testing %s\n", levels[i].name);
 
-		levels[i].status = single_search(cli, mem_ctx, fname, 
-						 levels[i].level, &levels[i].data);
+		levels[i].status = torture_single_search(cli, mem_ctx, fname, 
+							 levels[i].level,
+							 &levels[i].data);
 
 		/* see if this server claims to support this level */
 		if ((cap & levels[i].capability_mask) != levels[i].capability_mask) {
@@ -162,8 +163,9 @@ static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			continue;
 		}
 
-		status = single_search(cli, mem_ctx, fname2, 
-				       levels[i].level, &levels[i].data);
+		status = torture_single_search(cli, mem_ctx, fname2, 
+					       levels[i].level,
+					       &levels[i].data);
 		
 		expected_status = NT_STATUS_NO_SUCH_FILE;
 		if (levels[i].level == RAW_SEARCH_SEARCH ||

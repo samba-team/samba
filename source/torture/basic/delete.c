@@ -463,6 +463,45 @@ BOOL torture_test_delete(void)
 		goto fail;
 	}
 
+	{
+		TALLOC_CTX *mem_ctx = talloc_init("single_search");
+		union smb_search_data data;
+		status = torture_single_search(cli1, mem_ctx,
+					       fname, RAW_SEARCH_FULL_DIRECTORY_INFO,
+					       &data);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("(%s) single_search failed (%s)\n", 
+			       __location__, nt_errstr(status));
+			correct = False;
+		}
+		talloc_free(mem_ctx);
+	}
+
+	{
+		time_t c_time, a_time, m_time, w_time;
+		size_t size;
+		uint16_t mode;
+		ino_t ino;
+		status = smbcli_qpathinfo(cli1->tree, fname,
+					  &c_time, &a_time, &m_time,
+					  &size, &mode);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
+			printf("(%s) qpathinfo did not give correct error "
+			       "code (%s) -- NT_STATUS_DELETE_PENDING "
+			       "expected\n", __location__,
+			       nt_errstr(status));
+			correct = False;
+		}
+		status = smbcli_qfileinfo(cli2->tree, fnum2, &mode, &size,
+					  &c_time, &a_time, &m_time,
+					  &w_time, &ino);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("(%s) qfileinfo failed (%s)\n", 
+			       __location__, smbcli_errstr(cli1->tree));
+			correct = False;
+		}
+	}
+
 	if (NT_STATUS_IS_ERR(smbcli_close(cli2->tree, fnum2))) {
 		printf("(%s) close - 2 failed (%s)\n", 
 		       __location__, smbcli_errstr(cli2->tree));
