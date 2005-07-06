@@ -19,7 +19,13 @@
 	To cause Samba not to grant oplocks on these files you would use 
 	the line (either in the [global] section or in the section for 
 	the particular NetBench share :</para>
+
+	<para>
+	An example of use is:
+<screen>
+veto oplock files = /.*SEM/
+</screen>
+	</para>
 </description>
 <value type="default"><comment>No files are vetoed for oplock grants</comment></value>
-<value type="example">/.*SEM/</value>
 </samba:parameter>

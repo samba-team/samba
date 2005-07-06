@@ -110,8 +110,14 @@ guest = *
     to the fully qualified username (i.e. DOMAIN\user) only
     after the user has been successfully authenticated.
     </para>
+
+	<para>
+	An example of use is:
+<screen>
+username map = /usr/local/samba/lib/users.map
+</screen>
+	</para>
 </description>
 
 <value type="default"><comment>no username map</comment></value>
-<value type="example">/usr/local/samba/lib/users.map</value>
 </samba:parameter>
