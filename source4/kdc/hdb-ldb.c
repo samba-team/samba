@@ -460,7 +460,15 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 
 	struct ldb_message **msg;
 
-	ret = krb5_unparse_name(context, principal, &princ_str);
+	struct Principal princ = *principal;
+
+	/* Allow host/dns.name/realm@REALM, just convert into host/dns.name@REALM */
+	if (princ.name.name_string.len == 3
+	    && StrCaseCmp(princ.name.name_string.val[2], princ.realm) == 0) { 
+		princ.name.name_string.len = 2;
+	}
+
+	ret = krb5_unparse_name(context, &princ, &princ_str);
 
 	if (ret != 0) {
 		krb5_set_error_string(context, "LDB_lookup_principal: could not parse principal");
