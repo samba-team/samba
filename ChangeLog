@@ -1,3 +1,11 @@
+2005-07-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/keytab.c: krb5_kt_close frees all resources, even on
+	error.
+
+	* lib/krb5/verify_init.c (krb5_verify_init_creds): `entry' unused,
+	remove From: "Henry B. Hotz" <hotz@jpl.nasa.gov>
+
 2005-07-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* doc/win2k.texi: arcfour-hmac-md5 support for windows cross was
