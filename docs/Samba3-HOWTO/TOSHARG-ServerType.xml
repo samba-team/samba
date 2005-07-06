@@ -687,10 +687,12 @@ uppercasing usernames and passwords before transmitting them to the SMB server
 when using clear-text authentication:
 </para>
 
-<para><smbconfblock>
+
+<?latex \newpage ?>
+<smbconfblock>
 <smbconfoption name="password level"><replaceable>integer</replaceable></smbconfoption>
 <smbconfoption name="username level"><replaceable>integer</replaceable></smbconfoption>
-</smbconfblock></para>
+</smbconfblock>
 
 <para>
 By default Samba will convert to lowercase the username before attempting to lookup the user
@@ -759,7 +761,8 @@ security.
 <para>
 <indexterm><primary>server-mode</primary></indexterm>
 The &smb.conf; parameter <smbconfoption name="security">domain</smbconfoption> does not really make Samba behave
-as a domain controller. This setting means we want Samba to be a domain member. See <link linkend="samba-pdc">Samba as a PDC</link> for more information.
+as a domain controller. This setting means we want Samba to be a domain member. See <link
+linkend="samba-pdc">Samba as a PDC</link> for more information.
 </para>
 
 </sect2>

@@ -224,6 +224,10 @@ Replicator
 Domain Computers
 Engineers
 </screen>
+	</para>
+
+<?latex \newpage ?>
+	<para>
 	A Windows group account called <quote>SupportEngrs</quote> can be added by executing the following
 command:
 <indexterm><primary>net</primary><secondary>rpc</secondary><tertiary>group add</tertiary></indexterm>

@@ -1216,6 +1216,7 @@ mystic:/home/hannibal > rm filename
 
 	</sect2>
 
+<?latex \newpage ?>
 	<sect2>
 	<title>Interaction with the Standard Samba <quote>create mask</quote> Parameters</title>
 
