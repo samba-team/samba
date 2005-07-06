@@ -49,7 +49,7 @@
 	</para>
 
 	<note><para>
-	The successful completion of this appendix requires that you capture network traffic
+	The successful completion of this chapter requires that you capture network traffic
 	using <command>Ethereal</command>. It is recommended that you use a hub, not an
 	Ethernet switch. It is necessary for the device used to act as a repeater, not as a
 	filter. Ethernet switches may filter out traffic that is not directed at the machine
@@ -93,7 +93,7 @@
 	<title>Introduction</title>
 
 	<para>
-	The purpose of this appendix is to create familiarity with key aspects of Microsoft Windows
+	The purpose of this chapter is to create familiarity with key aspects of Microsoft Windows
 	network computing. If you want a solid technical grounding, do not gloss over these exercises. 
 	The points covered are recurrent issues on the Samba mailing lists. 
 	</para>
@@ -840,7 +840,7 @@
 
 		<step><para>
 		If desired, the Windows XP Professional client and the domain controller are no longer needed for exercises
-		in this appendix.
+		in this chapter.
 		</para></step>
 
 		 <step><para>
@@ -922,7 +922,7 @@
 	<title>Conclusions to Exercises</title>
 
 	<para>
-	In summary, the following points have been established in this appendix:
+	In summary, the following points have been established in this chapter:
 	</para>
 
 	<itemizedlist>
