@@ -302,8 +302,10 @@ krb5_kt_get_entry(krb5_context context,
 	return (*id->get)(context, id, principal, kvno, enctype, entry);
 
     ret = krb5_kt_start_seq_get (context, id, &cursor);
-    if (ret)
+    if (ret) {
+	krb5_clear_error_string(context);
 	return KRB5_KT_NOTFOUND; /* XXX i.e. file not found */
+    }
 
     entry->vno = 0;
     while (krb5_kt_next_entry(context, id, &tmp, &cursor) == 0) {
