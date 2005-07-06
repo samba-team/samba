@@ -198,6 +198,7 @@ as follows:
 </itemizedlist>
 </para>
 
+<?latex \newpage ?>
 <para>
 <indexterm><primary>Machine Trust Accounts</primary><secondary>creating</secondary></indexterm>
 There are three ways to create Machine Trust Accounts:
