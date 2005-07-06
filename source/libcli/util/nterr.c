@@ -575,6 +575,7 @@ static const nt_err_code_struct nt_errs[] =
 	DOS_CODE(ERRDOS, ERRinvalidname),
 	DOS_CODE(ERRDOS, ERRunknownlevel),
 	DOS_CODE(ERRDOS, ERRnotlocked),
+	DOS_CODE(ERRDOS, ERRinvalidpath),
 	DOS_CODE(ERRDOS, ERRcancelviolation),
 	DOS_CODE(ERRDOS, ERRnoatomiclocks),
 	DOS_CODE(ERRDOS, ERRrename),
