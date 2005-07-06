@@ -4,7 +4,6 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>writable</synonym>
 <description>
-    <para>Inverted synonym for <link linkend="READONLY">
-    <parameter moreinfo="none">read only</parameter></link>.</para>
+    <para>Inverted synonym for <smbconfoption name="read only"/>.</para>
 </description>
 </samba:parameter>

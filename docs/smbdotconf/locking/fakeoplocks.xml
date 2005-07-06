@@ -15,8 +15,7 @@
 	<refentrytitle>smbd</refentrytitle><manvolnum>8</manvolnum></citerefentry> will
 	always grant oplock requests no matter how many clients are using the file.</para>
 
-	<para>It is generally much better to use the real <link linkend="OPLOCKS">
-	<parameter moreinfo="none">oplocks</parameter></link> support rather 
+	<para>It is generally much better to use the real <smbconfoption name="oplocks"/> support rather 
 	than this parameter.</para>
 		
 	<para>If you enable this option on all read-only shares or 

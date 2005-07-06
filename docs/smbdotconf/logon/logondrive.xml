@@ -5,8 +5,7 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter specifies the local path to 
-	which the home directory will be connected (see <link linkend="LOGONHOME">
-	<parameter moreinfo="none">logon home</parameter></link>) 
+	which the home directory will be connected (see <smbconfoption name="logon home"/>) 
 	and is only used by NT Workstations. </para>
 
 	<para>Note that this option is only useful if Samba is set up as a

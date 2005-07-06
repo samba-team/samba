@@ -13,8 +13,8 @@
 	of privilege and the file permissions allow the deletion.</para>
 
 	<para>If the script generates output, output will be sent to 
-	the file specified by the <link linkend="MAGICOUTPUT"><parameter moreinfo="none">
-	magic output</parameter></link> parameter (see above).</para>
+	the file specified by the <smbconfoption name="magic output"/>
+	parameter (see above).</para>
 
 	<para>Note that some shells are unable to interpret scripts 
 	containing CR/LF instead of CR as 

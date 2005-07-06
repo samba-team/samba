@@ -16,5 +16,5 @@
 <related>host msdfs</related>
 <value type="default">no</value>
 		
-	<para>See also <link linkend="HOSTMSDFS"><parameter moreinfo="none">host msdfs</parameter></link></para>
+	<para>See also <smbconfoption name="host msdfs"/></para>
 </samba:parameter>

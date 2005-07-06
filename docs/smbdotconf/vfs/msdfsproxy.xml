@@ -10,8 +10,7 @@
 	the SMB-Dfs protocol.</para>
 
 	<para>Only Dfs roots can act as proxy shares. Take a look at the
-	<link linkend="MSDFSROOT"><parameter moreinfo="none">msdfs root</parameter></link>
-	and <link linkend="HOSTMSDFS"><parameter moreinfo="none">host msdfs</parameter></link>
+	<smbconfoption name="msdfs root"/> and <smbconfoption name="host msdfs"/>
 	options to find out how to set up a Dfs root share.</para>
 </description>
 

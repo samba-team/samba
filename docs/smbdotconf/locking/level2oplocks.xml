@@ -26,11 +26,11 @@
 
 	<para>For more discussions on level2 oplocks see the CIFS spec.</para>
 
-	<para>Currently, if <link linkend="KERNELOPLOCKS"><parameter moreinfo="none">kernel 
-	oplocks</parameter></link> are supported then level2 oplocks are 
-	not granted (even if this parameter is set to <constant>yes</constant>). 
-	Note also, the <link linkend="OPLOCKS"><parameter moreinfo="none">oplocks</parameter>
-	</link> parameter must be set to <constant>yes</constant> on this share in order for 
+	<para>
+	Currently, if <smbconfoption name="kernel oplocks"/> are supported then
+	level2 oplocks are not granted (even if this parameter is set to
+	<constant>yes</constant>).  Note also, the <smbconfoption name="oplocks"/>
+	parameter must be set to <constant>yes</constant> on this share in order for 
 	this parameter to have any effect.</para>
 </description>
 

@@ -3,10 +3,11 @@
 		 type="string"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-	<para>This parameter specifies the name of a file 
+	<para>
+	This parameter specifies the name of a file 
 	which will contain output created by a magic script (see the 
-	<link linkend="MAGICSCRIPT"><parameter moreinfo="none">magic script</parameter></link>
-	parameter below).</para>
+	<smbconfoption name="magic script"/> parameter below).
+	</para>
 
 <warning><para>If two clients use the same <parameter moreinfo="none">magic script
 	</parameter> in the same directory the output file content

@@ -7,8 +7,7 @@
     <para>This parameter specifies the command to be 
     executed on the server host in order to resume the printer queue. It 
     is the command to undo the behavior that is caused by the 
-    previous parameter (<link linkend="QUEUEPAUSECOMMAND"><parameter moreinfo="none">
-    queuepause command</parameter></link>).</para>
+    previous parameter (<smbconfoption name="queuepause command"/>).</para>
  
     <para>This command should be a program or script which takes 
     a printer name as its only parameter and resumes the printer queue, 

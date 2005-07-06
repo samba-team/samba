@@ -21,14 +21,13 @@
 	<para>the above line would cause <command moreinfo="none">nmbd</command> to announce itself 
 	to the two given IP addresses using the given workgroup names. 
 	If you leave out the workgroup name then the one given in 
-	the <link linkend="WORKGROUP"><parameter moreinfo="none">workgroup</parameter></link> 
-	parameter is used instead.</para>
+	the <smbconfoption name="workgroup"/> parameter is used instead.</para>
 
 	<para>The IP addresses you choose would normally be the broadcast 
 	addresses of the remote networks, but can also be the IP addresses 
 	of known browse masters if your network config is that stable.</para>
 
-<para>See <link linkend="NetworkBrowsing"/>.</para>
+<para>See <smbconfoption name="NetworkBrowsing"/>.</para>
 </description>
 
 <value type="default"></value>

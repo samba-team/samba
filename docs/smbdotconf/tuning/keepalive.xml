@@ -11,8 +11,7 @@
     a client is still present and responding.</para>
 
     <para>Keepalives should, in general, not be needed if the socket 
-    has the SO_KEEPALIVE attribute set on it by default. (see <link linkend="SOCKETOPTIONS">
-    <parameter moreinfo="none">socket options</parameter></link>). 
+    has the SO_KEEPALIVE attribute set on it by default. (see <smbconfoption name="socket options"/>). 
 Basically you should only use this option if you strike difficulties.</para>
 </description>
 
