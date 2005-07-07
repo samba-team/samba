@@ -1,5 +1,9 @@
 2005-07-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* roken.h.in: If we have <strings.h> include it, its needed for
+	strcasecmp() on those platforms that are SUS3/iso c99 strict (like
+	AIX)
+
 	* roken-common.h: remove duplicate ;
 	
 2005-07-06  Love Hörnquist Åstrand  <lha@it.su.se>
