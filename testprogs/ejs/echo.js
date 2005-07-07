@@ -16,7 +16,7 @@ function ramp_array(N)
 {
 	var a = new Array(N);
 	for (i=0;i<N;i++) {
-		a[i] = i+1;
+		a[i] = i;
 	}
 	return a;
 }
@@ -81,6 +81,45 @@ function test_EchoData(conn)
 	}
 }
 
+
+/*
+  test the echo_SinkData interface
+*/
+function test_SinkData(conn)
+{
+	var status;
+	var io = irpcObj();
+
+	print("Testing echo_SinkData\n");
+
+	for (i=0; i<30; i=i+5) {
+		io.input.len = i;
+		io.input.data = ramp_array(i);
+		status = dcerpc_echo_SinkData(conn, io);
+		check_status_ok(status);
+	}
+}
+
+
+/*
+  test the echo_SourceData interface
+*/
+function test_SourceData(conn)
+{
+	var status;
+	var io = irpcObj();
+
+	print("Testing echo_SourceData\n");
+
+	for (i=0; i<30; i=i+5) {
+		io.input.len = i;
+		status = dcerpc_echo_SourceData(conn, io);
+		check_status_ok(status);
+		correct = ramp_array(i);
+		check_array_equal(correct, io.output.data);
+	}
+}
+
 if (ARGV.length == 0) {
    print("Usage: echo.js <RPCBINDING>\n");
    exit(0);
@@ -98,5 +137,7 @@ if (status.is_ok != true) {
 
 test_AddOne(conn);
 test_EchoData(conn);
+test_SinkData(conn);
+test_SourceData(conn);
 
 print("All OK\n");
