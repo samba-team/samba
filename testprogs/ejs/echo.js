@@ -5,26 +5,79 @@
 function irpcObj()
 {
 	var o = new Object();
-	o.in = new Object();
+	o.input = new Object();
 	return o;
 }
 
-function test_AddOne(binding)
+/*
+  generate a ramp as an integer array
+ */
+function ramp_array(N)
+{
+	var a = new Array(N);
+	for (i=0;i<N;i++) {
+		a[i] = i+1;
+	}
+	return a;
+}
+
+
+/*
+  check that a status result is OK
+*/
+function check_status_ok(status)
+{
+	if (status.is_ok != true) {
+		printVars(status);
+	}
+	assert(status.is_ok == true);
+}
+
+/*
+  check that two arrays are equal
+*/
+function check_array_equal(a1, a2)
+{
+	assert(a1.length == a2.length);
+	for (i=0; i<a1.length; i++) {
+		assert(a1[i] == a2[i]);
+	}
+}
+
+/*
+  test the echo_AddOne interface
+*/
+function test_AddOne(conn)
 {
 	var status;
-	var conn = new Object();
 	var io = irpcObj();
 
-	status = rpc_connect(conn, binding, "rpcecho");
-	if (status.is_ok != true) {
-	   print("Failed to connect to " + binding + " - " + status.errstr + "\n");
-	   return;
-	}
+	print("Testing echo_AddOne\n");
 
 	for (i=0;i<10;i++) {
-		io.in.in_data = i;
+		io.input.in_data = i;
 		status = dcerpc_echo_AddOne(conn, io);
-		print("AddOne(" + i + ")=" + io.out.out_data + "\n");
+		check_status_ok(status);
+		assert(io.output.out_data == i + 1);
+	}
+}
+
+/*
+  test the echo_EchoData interface
+*/
+function test_EchoData(conn)
+{
+	var status;
+	var io = irpcObj();
+
+	print("Testing echo_EchoData\n");
+
+	for (i=0; i<30; i=i+5) {
+		io.input.len = i;
+		io.input.in_data = ramp_array(i);
+		status = dcerpc_echo_EchoData(conn, io);
+		check_status_ok(status);
+		check_array_equal(io.input.in_data, io.output.out_data);
 	}
 }
 
@@ -34,5 +87,16 @@ if (ARGV.length == 0) {
 }
 
 var binding = ARGV[0];
+var conn = new Object();
 
-test_AddOne(binding);
+print("Connecting to " + binding + "\n");
+status = rpc_connect(conn, binding, "rpcecho");
+if (status.is_ok != true) {
+   print("Failed to connect to " + binding + " - " + status.errstr + "\n");
+   return;
+}
+
+test_AddOne(conn);
+test_EchoData(conn);
+
+print("All OK\n");
