@@ -159,6 +159,18 @@ sub EjsStructPull($$)
 }
 
 ###########################
+# pull a union
+sub EjsUnionPull($$)
+{
+	my $name = shift;
+	my $d = shift;
+	my $env = GenerateStructEnv($d);
+	pidl "\nstatic NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, union $name *r)\n{\n";
+	pidl "return ejs_panic(ejs, \"union pull not handled\");\n";
+	pidl "}\n\n";
+}
+
+###########################
 # pull a enum
 sub EjsEnumPull($$)
 {
@@ -178,8 +190,15 @@ sub EjsEnumPull($$)
 sub EjsTypedefPull($)
 {
 	my $d = shift;
-	$d->{DATA}->{TYPE} eq 'STRUCT' && EjsStructPull($d->{NAME}, $d->{DATA});
-	$d->{DATA}->{TYPE} eq 'ENUM' && EjsEnumPull($d->{NAME}, $d->{DATA});
+	if ($d->{DATA}->{TYPE} eq 'STRUCT') {
+		EjsStructPull($d->{NAME}, $d->{DATA});
+	} elsif ($d->{DATA}->{TYPE} eq 'UNION') {
+		EjsUnionPull($d->{NAME}, $d->{DATA});
+	} elsif ($d->{DATA}->{TYPE} eq 'ENUM') {
+		EjsEnumPull($d->{NAME}, $d->{DATA});
+	} else {
+		die "Unhandled pull typedef $d->{NAME} of type $d->{TYPE}\n";
+	}
 }
 
 #####################
@@ -306,7 +325,7 @@ sub EjsUnionPush($$)
 	my $name = shift;
 	my $d = shift;
 	pidl "\nstatic NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const union $name *r)\n{\n";
-	pidl "\treturn NT_STATUS_OK;\n";
+	pidl "return ejs_panic(ejs, \"union push not handled\");\n";
 	pidl "}\n\n";
 }
 
@@ -329,9 +348,15 @@ sub EjsEnumPush($$)
 sub EjsTypedefPush($)
 {
 	my $d = shift;
-	$d->{DATA}->{TYPE} eq 'STRUCT' && EjsStructPush($d->{NAME}, $d->{DATA});
-	$d->{DATA}->{TYPE} eq 'UNION' && EjsUnionPush($d->{NAME}, $d->{DATA});
-	$d->{DATA}->{TYPE} eq 'ENUM' && EjsEnumPush($d->{NAME}, $d->{DATA});
+	if ($d->{DATA}->{TYPE} eq 'STRUCT') {
+		EjsStructPush($d->{NAME}, $d->{DATA});
+	} elsif ($d->{DATA}->{TYPE} eq 'UNION') {
+		EjsUnionPush($d->{NAME}, $d->{DATA});
+	} elsif ($d->{DATA}->{TYPE} eq 'ENUM') {
+		EjsEnumPush($d->{NAME}, $d->{DATA});
+	} else {
+		die "Unhandled push typedef $d->{NAME} of type $d->{TYPE}\n";
+	}
 }
 
 
