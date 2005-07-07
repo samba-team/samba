@@ -77,6 +77,7 @@ struct ndr_push {
 
 	struct ndr_token_list *switch_list;
 	struct ndr_token_list *relative_list;
+	struct ndr_token_list *nbt_string_list;
 
 	/* this is used to ensure we generate unique reference IDs */
 	uint32_t ptr_count;

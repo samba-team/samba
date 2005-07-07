@@ -136,53 +136,67 @@ NTSTATUS ndr_pull_nbt_string(struct ndr_pull *ndr, int ndr_flags, const char **s
 */
 NTSTATUS ndr_push_nbt_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 {
-	int i;
-	int fulllen;
-	char *fullname;
-
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
 	}
 
-	if (s == NULL || *s == 0) {
-		return ndr_push_bytes(ndr, "", 1);
-	}
+	while (s && *s) {
+		NTSTATUS status;
+		char *compname;
+		size_t complen;
+		uint32_t offset;
 
+		/* see if we have pushed the remaing string allready,
+		 * if so we use a label pointer to this string
+		 */
+		status = ndr_token_retrieve_cmp_fn(&ndr->nbt_string_list, s, &offset, (comparison_fn_t)strcmp, False);
+		if (NT_STATUS_IS_OK(status)) {
+			uint8_t b[2];
+			
+			if (offset > 0x3FFF) {
+				return ndr_push_error(ndr, NDR_ERR_STRING,
+						      "offset for nbt string label pointer %u[%08X] > 0x00003FFF",
+						      offset, offset);
+			}
 
-	fullname = talloc_strdup(ndr, "");
-	NT_STATUS_HAVE_NO_MEMORY(fullname);
+			b[0] = 0xC0 | (offset>>8);
+			b[1] = (offset & 0xFF);
 
-	while (*s) {
-		int len = strcspn(s, ".");
-		fullname = talloc_asprintf_append(fullname, "%c%*.*s",
-						  (unsigned char)len,
-						  (unsigned char)len,
-						  (unsigned char)len, s);
-		NT_STATUS_HAVE_NO_MEMORY(fullname);
-		s += len;
+			return ndr_push_bytes(ndr, b, 2);
+		}
+
+		complen = strcspn(s, ".");
+
+		/* we need to make sure the length fits into 6 bytes */
+		if (complen >= 0x3F) {
+			return ndr_push_error(ndr, NDR_ERR_STRING,
+					      "component length %u[%08X] > 0x00003F",
+					      complen, complen);
+		}
+
+		compname = talloc_asprintf(ndr, "%c%*.*s",
+						(unsigned char)complen,
+						(unsigned char)complen,
+						(unsigned char)complen, s);
+		NT_STATUS_HAVE_NO_MEMORY(compname);
+
+		/* remember the current componemt + the rest of the string
+		 * so it can be reused later
+		 */
+		NDR_CHECK(ndr_token_store(ndr, &ndr->nbt_string_list, s, ndr->offset));
+
+		/* push just this component into the blob */
+		NDR_CHECK(ndr_push_bytes(ndr, (const uint8_t *)compname, complen+1));
+		talloc_free(compname);
+
+		s += complen;
 		if (*s == '.') s++;
 	}
 
-	/* see if we can find the fullname in the existing packet - if
-	   so, we can use a NBT name pointer. This allows us to fit
-	   longer names into the packet */
-	fulllen = strlen(fullname)+1;
-	for (i=0;i + fulllen <= ndr->offset;i++) {
-		if (ndr->data[i] == fullname[0] &&
-		    memcmp(fullname, &ndr->data[i], fulllen) == 0) {
-			uint8_t b[2];
-			talloc_free(fullname);
-			b[0] = 0xC0 | (i>>8);
-			b[1] = (i&0xFF);
-			return ndr_push_bytes(ndr, b, 2);
-		}
-	}
-
-	NDR_CHECK(ndr_push_bytes(ndr, fullname, fulllen));
-
-	talloc_free(fullname);
-
-	return NT_STATUS_OK;
+	/* if we reach the end of the string and have pushed the last component
+	 * without using a label pointer, we need to terminate the string
+	 */
+	return ndr_push_bytes(ndr, (const uint8_t *)"", 1);
 }
 
 
