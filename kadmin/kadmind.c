@@ -91,9 +91,9 @@ main(int argc, char **argv)
 {
     krb5_error_code ret;
     char **files;
-    int optind = 0;
+    int optidx = 0;
     int e, i;
-    krb5_log_facility *logf;
+    krb5_log_facility *logfacility;
     krb5_keytab keytab;
 
     setprogname(argv[0]);
@@ -102,8 +102,8 @@ main(int argc, char **argv)
     if (ret)
 	errx (1, "krb5_init_context failed: %d", ret);
 
-    while((e = getarg(args, num_args, argc, argv, &optind)))
-	warnx("error at argument `%s'", argv[optind]);
+    while((e = getarg(args, num_args, argc, argv, &optidx)))
+	warnx("error at argument `%s'", argv[optidx]);
 
     if (help_flag)
 	usage (0);
@@ -113,8 +113,8 @@ main(int argc, char **argv)
 	exit(0);
     }
 
-    argc -= optind;
-    argv += optind;
+    argc -= optidx;
+    argv += optidx;
 
     if (config_file == NULL)
 	config_file = HDB_DB_DIR "/kdc.conf";
@@ -128,10 +128,10 @@ main(int argc, char **argv)
     if(ret) 
 	krb5_err(context, 1, ret, "reading configuration files");
     
-    ret = krb5_openlog(context, "kadmind", &logf);
+    ret = krb5_openlog(context, "kadmind", &logfacility);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_openlog");
-    ret = krb5_set_warn_dest(context, logf);
+    ret = krb5_set_warn_dest(context, logfacility);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_set_warn_dest");
 

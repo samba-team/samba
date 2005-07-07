@@ -63,13 +63,13 @@ do_ext_keytab(krb5_principal principal, void *data)
 	    return ENOMEM;
 	}
 	for (i = 0; i < princ.n_key_data; i++) {
-	    krb5_key_data *k = &princ.key_data[i];
+	    krb5_key_data *kd = &princ.key_data[i];
 
 	    keys[i].principal = princ.principal;
-	    keys[i].vno = k->key_data_kvno;
-	    keys[i].keyblock.keytype = k->key_data_type[0];
-	    keys[i].keyblock.keyvalue.length = k->key_data_length[0];
-	    keys[i].keyblock.keyvalue.data = k->key_data_contents[0];
+	    keys[i].vno = kd->key_data_kvno;
+	    keys[i].keyblock.keytype = kd->key_data_type[0];
+	    keys[i].keyblock.keyvalue.length = kd->key_data_length[0];
+	    keys[i].keyblock.keyvalue.data = kd->key_data_contents[0];
 	    keys[i].timestamp = time(NULL);
 	}
 

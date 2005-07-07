@@ -266,6 +266,10 @@ start_server(krb5_context context)
 			  sizeof(one)) < 0)
 		krb5_warn(context, errno, "setsockopt");
 #endif
+	    {
+		int on = 1;
+		setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on));
+	    }
 	    if (bind (s, ap->ai_addr, ap->ai_addrlen) < 0) {
 		krb5_warn(context, errno, "bind");
 		close(s);

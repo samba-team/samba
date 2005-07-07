@@ -170,7 +170,7 @@ main(int argc, char **argv)
     krb5_error_code ret;
     char **files;
     kadm5_config_params conf;
-    int optind = 0;
+    int optidx = 0;
     int exit_status = 0;
 
     setprogname(argv[0]);
@@ -179,7 +179,7 @@ main(int argc, char **argv)
     if (ret)
 	errx (1, "krb5_init_context failed: %d", ret);
     
-    if(getarg(args, num_args, argc, argv, &optind))
+    if(getarg(args, num_args, argc, argv, &optidx))
 	usage(1);
 
     if (help_flag)
@@ -190,8 +190,8 @@ main(int argc, char **argv)
 	exit(0);
     }
 
-    argc -= optind;
-    argv += optind;
+    argc -= optidx;
+    argv += optidx;
 
     if (config_file == NULL)
 	config_file = HDB_DB_DIR "/kdc.conf";

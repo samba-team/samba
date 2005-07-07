@@ -487,7 +487,7 @@ is_expression(const char *string)
 
 /* loop over all principals matching exp */
 int
-foreach_principal(const char *exp, 
+foreach_principal(const char *exp_str, 
 		  int (*func)(krb5_principal, void*), 
 		  const char *funcname,
 		  void *data)
@@ -501,9 +501,9 @@ foreach_principal(const char *exp,
 
     /* if this isn't an expression, there is no point in wading
        through the whole database looking for matches */
-    is_expr = is_expression(exp);
+    is_expr = is_expression(exp_str);
     if(is_expr)
-	ret = kadm5_get_principals(kadm_handle, exp, &princs, &num_princs);
+	ret = kadm5_get_principals(kadm_handle, exp_str, &princs, &num_princs);
     if(!is_expr || ret == KADM5_AUTH_LIST) {
 	/* we might be able to perform the requested opreration even
            if we're not allowed to list principals */
@@ -511,7 +511,7 @@ foreach_principal(const char *exp,
 	princs = malloc(sizeof(*princs));
 	if(princs == NULL)
 	    return ENOMEM;
-	princs[0] = strdup(exp);
+	princs[0] = strdup(exp_str);
 	if(princs[0] == NULL){ 
 	    free(princs);
 	    return ENOMEM;
@@ -604,14 +604,14 @@ hex2n (char c)
 
 int
 parse_des_key (const char *key_string, krb5_key_data *key_data,
-	       const char **err)
+	       const char **error)
 {
     const char *p = key_string;
     unsigned char bits[8];
     int i;
 
     if (strlen (key_string) != 16) {
-	*err = "bad length, should be 16 for DES key";
+	*error = "bad length, should be 16 for DES key";
 	return 1;
     }
     for (i = 0; i < 8; ++i) {
@@ -620,7 +620,7 @@ parse_des_key (const char *key_string, krb5_key_data *key_data,
 	d1 = hex2n(p[2 * i]);
 	d2 = hex2n(p[2 * i + 1]);
 	if (d1 < 0 || d2 < 0) {
-	    *err = "non-hex character";
+	    *error = "non-hex character";
 	    return 1;
 	}
 	bits[i] = (d1 << 4) | d2;

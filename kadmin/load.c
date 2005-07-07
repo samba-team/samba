@@ -316,7 +316,7 @@ parse_generation(char *str, GENERATION **gen)
  */
 
 static int
-doit(const char *filename, int merge)
+doit(const char *filename, int mergep)
 {
     krb5_error_code ret;
     FILE *f;
@@ -340,7 +340,7 @@ doit(const char *filename, int merge)
 	return 1;
     }
 
-    if(!merge)
+    if(!mergep)
 	flags |= O_CREAT | O_TRUNC;
     ret = db->hdb_open(context, db, flags, 0600);
     if(ret){
@@ -487,14 +487,14 @@ doit(const char *filename, int merge)
 extern int local_flag;
 
 static int
-loadit(int merge, const char *name, int argc, char **argv)
+loadit(int mergep, const char *name, int argc, char **argv)
 {
     if(!local_flag) {
 	krb5_warnx(context, "%s is only available in local (-l) mode", name);
 	return 0;
     }
 
-    doit(argv[0], merge);
+    doit(argv[0], mergep);
     return 0;
 }
  

@@ -156,12 +156,12 @@ usage (int ret)
 int
 main(int argc, char **argv)
 {
-    int optind = 0;
+    int optidx = 0;
     int n = NUSERS;
     const char *filename = WORDS_FILENAME;
 
     setprogname(argv[0]);
-    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optidx))
 	usage(1);
     if (help_flag)
 	usage (0);
@@ -170,8 +170,8 @@ main(int argc, char **argv)
 	return 0;
     }
     srand (0);
-    argc -= optind;
-    argv += optind;
+    argc -= optidx;
+    argv += optidx;
 
     if (argc > 0) {
 	if (argc > 1)

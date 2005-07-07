@@ -111,7 +111,7 @@ int  edit_attributes (const char *prompt, krb5_flags *attr, int *mask,
 		      int bit);
 
 void time_t2str(time_t t, char *str, size_t len, int include_time);
-int  str2time_t (const char *str, time_t *time);
+int  str2time_t (const char *str, time_t *);
 int  parse_timet (const char *resp, krb5_timestamp *value, int *mask, int bit);
 int  edit_timet (const char *prompt, krb5_timestamp *value, int *mask,
 		 int bit);
@@ -134,13 +134,13 @@ int set_entry(krb5_context context,
 	      const char *pw_expiration,
 	      const char *attributes);
 int
-foreach_principal(const char *exp, 
+foreach_principal(const char *exp_str, 
 		  int (*func)(krb5_principal, void*), 
 		  const char *funcname,
 		  void *data);
 
 int parse_des_key (const char *key_string,
-		   krb5_key_data *key_data, const char **err);
+		   krb5_key_data *key_data, const char **);
 
 /* server.c */
 
