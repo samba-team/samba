@@ -138,9 +138,9 @@ NTSTATUS ejs_pull_uint8(struct ejs_rpc *ejs,
 }
 
 NTSTATUS ejs_push_uint8(struct ejs_rpc *ejs, 
-			struct MprVar *v, const char *name, uint8_t r)
+			struct MprVar *v, const char *name, const uint8_t *r)
 {
-	return mprSetVar(v, name, mprCreateIntegerVar(r));
+	return mprSetVar(v, name, mprCreateIntegerVar(*r));
 }
 
 /*
@@ -160,9 +160,9 @@ NTSTATUS ejs_pull_uint16(struct ejs_rpc *ejs,
 }
 
 NTSTATUS ejs_push_uint16(struct ejs_rpc *ejs, 
-			 struct MprVar *v, const char *name, uint16_t r)
+			 struct MprVar *v, const char *name, const uint16_t *r)
 {
-	return mprSetVar(v, name, mprCreateIntegerVar(r));
+	return mprSetVar(v, name, mprCreateIntegerVar(*r));
 }
 
 /*
@@ -181,9 +181,9 @@ NTSTATUS ejs_pull_uint32(struct ejs_rpc *ejs,
 }
 
 NTSTATUS ejs_push_uint32(struct ejs_rpc *ejs, 
-			 struct MprVar *v, const char *name, uint32_t r)
+			 struct MprVar *v, const char *name, const uint32_t *r)
 {
-	return mprSetVar(v, name, mprCreateIntegerVar(r));
+	return mprSetVar(v, name, mprCreateIntegerVar(*r));
 }
 
 NTSTATUS ejs_pull_hyper(struct ejs_rpc *ejs, 
@@ -199,9 +199,9 @@ NTSTATUS ejs_pull_hyper(struct ejs_rpc *ejs,
 }
 
 NTSTATUS ejs_push_hyper(struct ejs_rpc *ejs, 
-			struct MprVar *v, const char *name, uint64_t r)
+			struct MprVar *v, const char *name, const uint64_t *r)
 {
-	return mprSetVar(v, name, mprCreateIntegerVar(r));
+	return mprSetVar(v, name, mprCreateIntegerVar(*r));
 }
 
 
@@ -223,9 +223,9 @@ NTSTATUS ejs_pull_enum(struct ejs_rpc *ejs,
 }
 
 NTSTATUS ejs_push_enum(struct ejs_rpc *ejs, 
-		       struct MprVar *v, const char *name, unsigned r)
+		       struct MprVar *v, const char *name, const unsigned *r)
 {
-	return mprSetVar(v, name, mprCreateIntegerVar(r));
+	return mprSetVar(v, name, mprCreateIntegerVar(*r));
 }
 
 
@@ -252,7 +252,7 @@ NTSTATUS ejs_pull_array(struct ejs_rpc *ejs,
 		NDR_CHECK(ejs_pull(ejs, v, id, (i*elsize)+data));
 		talloc_free(id);
 	}
-	return mprSetVar(v, "length", mprCreateIntegerVar(i));
+	return NT_STATUS_OK;
 }
 
 
@@ -276,6 +276,6 @@ NTSTATUS ejs_push_array(struct ejs_rpc *ejs,
 		NDR_CHECK(ejs_push(ejs, v, id, (i*elsize)+data));
 		talloc_free(id);
 	}
-	return NT_STATUS_OK;
+	return mprSetVar(v, "length", mprCreateIntegerVar(i));
 }
 			
