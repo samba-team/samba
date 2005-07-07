@@ -37,7 +37,7 @@
 RCSID("$Id$");
 
 static int
-do_list(struct list_options *opt, const char *keytab_string)
+do_list(struct list_options *opt, const char *keytab_str)
 {
     krb5_error_code ret;
     krb5_keytab keytab;
@@ -46,12 +46,12 @@ do_list(struct list_options *opt, const char *keytab_string)
     rtbl_t table;
 
     /* XXX specialcase the ANY type */
-    if(strncasecmp(keytab_string, "ANY:", 4) == 0) {
+    if(strncasecmp(keytab_str, "ANY:", 4) == 0) {
 	int flag = 0;
 	char buf[1024];
-	keytab_string += 4;
+	keytab_str += 4;
 	ret = 0;
-	while (strsep_copy((const char**)&keytab_string, ",", 
+	while (strsep_copy((const char**)&keytab_str, ",", 
 			   buf, sizeof(buf)) != -1) {
 	    if(flag)
 		printf("\n");
@@ -62,20 +62,20 @@ do_list(struct list_options *opt, const char *keytab_string)
 	return ret;
     }
 
-    ret = krb5_kt_resolve(context, keytab_string, &keytab);
+    ret = krb5_kt_resolve(context, keytab_str, &keytab);
     if (ret) {
-	krb5_warn(context, ret, "resolving keytab %s", keytab_string);
+	krb5_warn(context, ret, "resolving keytab %s", keytab_str);
 	return ret;
     }
 
     ret = krb5_kt_start_seq_get(context, keytab, &cursor);
     if(ret) {
-	krb5_warn(context, ret, "krb5_kt_start_seq_get %s", keytab_string);
+	krb5_warn(context, ret, "krb5_kt_start_seq_get %s", keytab_str);
 	krb5_kt_close(context, keytab);
 	return ret;
     }
 
-    printf ("%s:\n\n", keytab_string);
+    printf ("%s:\n\n", keytab_str);
 	
     table = rtbl_create();
     rtbl_add_column_by_id(table, 0, "Vno", RTBL_ALIGN_RIGHT);
