@@ -397,23 +397,10 @@ static BOOL is_executable(const char *fname)
  Returns True if conflict, False if not.
 ****************************************************************************/
 
-static BOOL share_conflict(connection_struct *conn,
-			   share_mode_entry *entry,
+static BOOL share_conflict(share_mode_entry *entry,
 			   uint32 access_mask,
-			   uint32 share_access,
-			   const char *fname,
-			   int *flags)
+			   uint32 share_access)
 {
-	/*
-	 * share modes = false means don't bother to check for
-	 * DENY mode conflict. This is a *really* bad idea :-). JRA.
-	 */
-
-	if(!lp_share_modes(SNUM(conn))) {
-		DEBUG(10,("share_conflict: No conflict due to share modes = no\n"));
-		return False;
-	}
-
 	DEBUG(10,("share_conflict: entry->access_mask = 0x%x, "
 		  "entry->share_access = 0x%x, "
 		  "entry->private_options = 0x%x\n",
@@ -696,18 +683,21 @@ static int open_mode_check(connection_struct *conn,
 							  &delete_on_close);
 		}
 
-		/* Now we check the share modes, after any oplock breaks. */
-		for(i = 0; i < num_share_modes; i++) {
-			share_mode_entry *share_entry = &old_shares[i];
+		if (lp_share_modes(SNUM(conn))) {
+			/* Now we check the share modes, after any oplock breaks. */
+			for(i = 0; i < num_share_modes; i++) {
+				share_mode_entry *share_entry = &old_shares[i];
 
-			/* someone else has a share lock on it, check to see if we can too */
-			if (share_conflict(conn, share_entry, access_mask,
-						share_access, fname, p_flags)) {
-				SAFE_FREE(old_shares);
-				free_broken_entry_list(broken_entry_list);
-				errno = EACCES;
-				return -1;
-                        }
+				/* someone else has a share lock on it, check to see
+				 * if we can too */
+				if (share_conflict(share_entry, access_mask,
+						   share_access)) {
+					SAFE_FREE(old_shares);
+					free_broken_entry_list(broken_entry_list);
+					errno = EACCES;
+					return -1;
+				}
+			}
 		}
 
 		for(broken_entry = broken_entry_list; broken_entry;
