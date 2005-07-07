@@ -47,7 +47,11 @@ open_kadmin_connection(char *principal,
     memset(&conf, 0, sizeof(conf));
 
     if(realm) {
-	conf.realm = (char*)realm;
+	conf.realm = strdup(realm);
+	if (conf.realm == NULL) {
+	    krb5_set_error_string(context, "malloc: out of memory");
+	    return NULL;
+	}
 	conf.mask |= KADM5_CONFIG_REALM;
     }
     
@@ -70,6 +74,7 @@ open_kadmin_connection(char *principal,
 				       KADM5_ADMIN_SERVICE,
 				       &conf, 0, 0, 
 				       &kadm_handle);
+    free(conf.realm);
     if(ret) {
 	krb5_warn(context, ret, "kadm5_init_with_password");
 	return NULL;
@@ -85,7 +90,7 @@ kt_get(struct get_options *opt, int argc, char **argv)
     void *kadm_handle = NULL;
     krb5_enctype *etypes = NULL;
     size_t netypes = 0;
-    int i = 0, j;
+    int i, j;
     unsigned int failed = 0;
     
     if((keytab = ktutil_open_keytab()) == NULL)
@@ -95,7 +100,6 @@ kt_get(struct get_options *opt, int argc, char **argv)
 	krb5_set_default_realm(context, opt->realm_string);
 
     if (opt->enctypes_strings.num_strings != 0) {
-	int i;
 
 	etypes = malloc (opt->enctypes_strings.num_strings * sizeof(*etypes));
 	if (etypes == NULL) {
@@ -201,11 +205,11 @@ kt_get(struct get_options *opt, int argc, char **argv)
 	    int do_add = TRUE;
 
 	    if (netypes) {
-		int i;
+		int k;
 
 		do_add = FALSE;
-		for (i = 0; i < netypes; ++i)
-		    if (keys[j].keytype == etypes[i]) {
+		for (k = 0; k < netypes; ++k)
+		    if (keys[j].keytype == etypes[k]) {
 			do_add = TRUE;
 			break;
 		    }
