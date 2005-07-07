@@ -39,7 +39,7 @@ RCSID("$Id$");
 #include "otp_locl.h"
 
 struct e {
-  char *s;
+  const char *s;
   unsigned n;
 };
 
@@ -48,10 +48,10 @@ extern const struct e inv_std_dict[2048];
 static int
 cmp(const void *a, const void *b)
 {
-  struct e *e1, *e2;
+  const struct e *e1, *e2;
   
-  e1 = (struct e *)a;
-  e2 = (struct e *)b;
+  e1 = (const struct e *)a;
+  e2 = (const struct e *)b;
   return strcasecmp (e1->s, e2->s);
 }
 
@@ -60,7 +60,7 @@ get_stdword (const char *s, void *v)
 {
   struct e e, *r;
 
-  e.s = (char *)s;
+  e.s = s;
   e.n = -1;
   r = (struct e *) bsearch (&e, inv_std_dict,
 			    sizeof(inv_std_dict)/sizeof(*inv_std_dict),
@@ -106,21 +106,28 @@ parse_words(unsigned wn[],
 	    int (*convert)(const char *, void *),
 	    void *arg)
 {
-  unsigned char *w, *wend, c;
+  const unsigned char *w, *wend;
+  unsigned char *wcopy;
   int i;
   int tmp;
 
-  w = (unsigned char *)str;
+  w = str;
   for (i = 0; i < 6; ++i) {
     while (isspace(*w))
       ++w;
     wend = w;
     while (isalpha (*wend))
       ++wend;
-    c = *wend;
-    *wend = '\0';
-    tmp = (*convert)((char *)w, arg);
-    *wend = c;
+
+    tmp = wend - w;
+    wcopy = malloc(tmp + 1);
+    if (wcopy == NULL)
+	return -1;
+    memcpy(wcopy, w, tmp);
+    wcopy[tmp] = '\0';
+
+    tmp = (*convert)(wcopy, arg);
+    free(wcopy);
     w = wend;
     if (tmp < 0)
       return -1;
