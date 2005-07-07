@@ -197,7 +197,7 @@ sub EjsTypedefPull($)
 	} elsif ($d->{DATA}->{TYPE} eq 'ENUM') {
 		EjsEnumPull($d->{NAME}, $d->{DATA});
 	} else {
-		die "Unhandled pull typedef $d->{NAME} of type $d->{TYPE}\n";
+		warn "Unhandled pull typedef $d->{NAME} of type $d->{TYPE}\n";
 	}
 }
 
@@ -355,7 +355,7 @@ sub EjsTypedefPush($)
 	} elsif ($d->{DATA}->{TYPE} eq 'ENUM') {
 		EjsEnumPush($d->{NAME}, $d->{DATA});
 	} else {
-		die "Unhandled push typedef $d->{NAME} of type $d->{TYPE}\n";
+		warn "Unhandled push typedef $d->{NAME} of type $d->{TYPE}\n";
 	}
 }
 
