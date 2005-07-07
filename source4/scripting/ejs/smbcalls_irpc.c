@@ -187,7 +187,7 @@ static NTSTATUS ejs_push_nbtd_info(struct ndr_ejs *ndr, union nbtd_info *r,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ndr_push_nbtd_information(struct ndr_push *ndr, 
+static NTSTATUS ndr_push_nbtd_information(struct ndr_ejs *ndr, 
 					  struct nbtd_information *r, struct MprVar *v)
 {
 	NDR_CHECK(ejs_push_set_switch_value(ndr, &r->out.info, r->in.level));
