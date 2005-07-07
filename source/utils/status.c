@@ -112,7 +112,8 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 
 	if (Ucrit_checkPid(e->pid)) {
 		d_printf("%-5d  ",(int)e->pid);
-		switch (map_share_mode_to_deny_mode(e->share_access, e->create_options)) {
+		switch (map_share_mode_to_deny_mode(e->share_access,
+						    e->private_options)) {
 			case DENY_NONE: d_printf("DENY_NONE  "); break;
 			case DENY_ALL:  d_printf("DENY_ALL   "); break;
 			case DENY_DOS:  d_printf("DENY_DOS   "); break;
@@ -120,8 +121,11 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 			case DENY_WRITE:printf("DENY_WRITE "); break;
 			case DENY_FCB:  d_printf("DENY_FCB "); break;
 			default: {
-				d_printf("unknown-please report ! e->share_access = 0x%x, e->create_options = 0x%x\n",
-					(unsigned int)e->share_access, (unsigned int)e->create_options );
+				d_printf("unknown-please report ! "
+					 "e->share_access = 0x%x, "
+					 "e->private_options = 0x%x\n",
+					 (unsigned int)e->share_access,
+					 (unsigned int)e->private_options );
 				break;
 			}
 		}

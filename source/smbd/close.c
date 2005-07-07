@@ -3,6 +3,7 @@
    file closing
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Jeremy Allison 1992-2004.
+   Copyright (C) Volker Lendecke 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -148,7 +149,7 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 {
 	share_mode_entry *share_entry = NULL;
 	size_t share_entry_count = 0;
-	BOOL delete_on_close = False;
+	BOOL delete_file = False;
 	connection_struct *conn = fsp->conn;
 	int saved_errno = 0;
 	int err = 0;
@@ -194,35 +195,15 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 
 	lock_share_entry_fsp(fsp);
 
-	if (fsp->fh->create_options & FILE_DELETE_ON_CLOSE) {
-
-		/*
-		 * Modify the share mode entry for all files open
-		 * on this device and inode to tell other smbds we have
-		 * changed the delete on close flag. The last closer will delete the file
-		 * if flag is set.
-		 */
-
-		NTSTATUS status =set_delete_on_close_over_all(fsp, True);
-		if (NT_STATUS_V(status) !=  NT_STATUS_V(NT_STATUS_OK)) {
-			DEBUG(0,("close_normal_file: failed to change delete on close flag for file %s\n",
-				fsp->fsp_name ));
-		}
-	}
-
-	share_entry_count = del_share_mode(fsp, &share_entry);
+	share_entry_count = del_share_mode(fsp, &share_entry,
+					   &delete_file);
 
 	DEBUG(10,("close_normal_file: share_entry_count = %lu for file %s\n",
 		(unsigned long)share_entry_count, fsp->fsp_name ));
 
-	/*
-	 * We delete on close if it's the last open, and the
-	 * delete on close flag was set in the entry we just deleted.
-	 */
-
-	if ((share_entry_count == 0) && share_entry &&
-			(share_entry->create_options & FILE_DELETE_ON_CLOSE)) {
-		delete_on_close = True;
+	if (share_entry_count != 0) {
+		/* We're not the last ones -- don't delete */
+		delete_file = False;
 	}
 
 	SAFE_FREE(share_entry);
@@ -235,7 +216,7 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	 * reference to a file.
 	 */
 
-	if (normal_close && delete_on_close) {
+	if (normal_close && delete_file) {
 		DEBUG(5,("close_file: file %s. Delete on close was set - deleting file.\n",
 			fsp->fsp_name));
 		if(SMB_VFS_UNLINK(conn,fsp->fsp_name) != 0) {
@@ -313,7 +294,8 @@ static int close_directory(files_struct *fsp, BOOL normal_close)
 	 * reference to a directory also.
 	 */
 
-	if (normal_close && (fsp->fh->create_options & FILE_DELETE_ON_CLOSE)) {
+	if (normal_close &&
+	    get_delete_on_close_flag(fsp->dev, fsp->inode)) {
 		BOOL ok = rmdir_internals(fsp->conn, fsp->fsp_name);
 		DEBUG(5,("close_directory: %s. Delete on close was set - deleting directory %s.\n",
 			fsp->fsp_name, ok ? "succeeded" : "failed" ));

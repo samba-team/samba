@@ -3,6 +3,7 @@
    SMB transaction2 handling
    Copyright (C) Jeremy Allison			1994-2003
    Copyright (C) Stefan (metze) Metzmacher	2003
+   Copyright (C) Volker Lendecke		2005
 
    Extensively modified by Andrew Tridgell, 1995
 
@@ -2722,6 +2723,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	char *pdata = *ppdata;
 	uint16 info_level;
 	int mode=0;
+	int nlink;
 	SMB_OFF_T file_size=0;
 	SMB_BIG_UINT allocation_size=0;
 	unsigned int data_size = 0;
@@ -2784,7 +2786,9 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
 			}
 
-			delete_pending = (fsp->fh->create_options & FILE_DELETE_ON_CLOSE) ? True : False;
+			delete_pending =
+				get_delete_on_close_flag(sbuf.st_dev,
+							 sbuf.st_ino);
 		} else {
 			/*
 			 * Original code - this is an open file.
@@ -2797,7 +2801,9 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 				return(UNIXERROR(ERRDOS,ERRbadfid));
 			}
 			pos = fsp->fh->position_information;
-			delete_pending = (fsp->fh->create_options & FILE_DELETE_ON_CLOSE) ? True : False;
+			delete_pending = 
+				get_delete_on_close_flag(sbuf.st_dev,
+							 sbuf.st_ino);
 			access_mask = fsp->access_mask;
 		}
 	} else {
@@ -2828,35 +2834,6 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
 		}
 
-#if 1 /* JRA - What is the cost.. */
-		{
-			int i, num_shares;
-			share_mode_entry *shares;
-
-			/* We need to return NT_STATUS_DELETE_PENDING if any
-			 * process has that flag set. */
-
-			lock_share_entry(conn, sbuf.st_dev, sbuf.st_ino);
-
-			num_shares = get_share_modes(conn, sbuf.st_dev,
-						     sbuf.st_ino, &shares);
-
-			for (i=0; i<num_shares; i++) {
-				if ((shares[i].create_options & FILE_DELETE_ON_CLOSE)) {
-					unlock_share_entry(conn, sbuf.st_dev, sbuf.st_ino);
-					SAFE_FREE(shares);
-					return ERROR_NT(NT_STATUS_DELETE_PENDING);
-				}
-			}
-
-			unlock_share_entry(conn, sbuf.st_dev, sbuf.st_ino);
-
-			if (num_shares > 0) {
-				SAFE_FREE(shares);
-			}
-		}
-#endif
-
 		if (INFO_LEVEL_IS_UNIX(info_level)) {
 			/* Always do lstat for UNIX calls. */
 			if (SMB_VFS_LSTAT(conn,fname,&sbuf)) {
@@ -2867,6 +2844,23 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_STAT of %s failed (%s)\n",fname,strerror(errno)));
 			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
 		}
+
+		delete_pending = get_delete_on_close_flag(sbuf.st_dev,
+							  sbuf.st_ino);
+		if (delete_pending) {
+			return ERROR_NT(NT_STATUS_DELETE_PENDING);
+		}
+	}
+
+	nlink = sbuf.st_nlink;
+
+	if ((nlink > 0) && S_ISDIR(sbuf.st_mode)) {
+		/* NTFS does not seem to count ".." */
+		nlink -= 1;
+	}
+
+	if ((nlink > 0) && delete_pending) {
+		nlink -= 1;
 	}
 
 	if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions())
@@ -3096,11 +3090,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			data_size = 24;
 			SOFF_T(pdata,0,allocation_size);
 			SOFF_T(pdata,8,file_size);
-			if (delete_pending & sbuf.st_nlink)
-				SIVAL(pdata,16,sbuf.st_nlink - 1);
-			else
-				SIVAL(pdata,16,sbuf.st_nlink);
-			SCVAL(pdata,20,0);
+			SIVAL(pdata,16,nlink);
+			SCVAL(pdata,20,delete_pending?1:0);
 			SCVAL(pdata,21,(mode&aDIR)?1:0);
 			SSVAL(pdata,22,0); /* Padding. */
 			break;
@@ -3171,10 +3162,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			pdata += 40;
 			SOFF_T(pdata,0,allocation_size);
 			SOFF_T(pdata,8,file_size);
-			if (delete_pending && sbuf.st_nlink)
-				SIVAL(pdata,16,sbuf.st_nlink - 1);
-			else
-				SIVAL(pdata,16,sbuf.st_nlink);
+			SIVAL(pdata,16,nlink);
 			SCVAL(pdata,20,delete_pending);
 			SCVAL(pdata,21,(mode&aDIR)?1:0);
 			SSVAL(pdata,22,0);
@@ -3471,52 +3459,46 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
  open_file_shared. JRA.
 ****************************************************************************/
 
-NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close, uint32 dosmode)
+NTSTATUS can_set_delete_on_close(files_struct *fsp, BOOL delete_on_close,
+				 uint32 dosmode)
 {
-	if (delete_on_close) {
-		/*
-		 * Only allow delete on close for writable files.
-		 */
-
-		if (!lp_delete_readonly(SNUM(fsp->conn))) {
-			if (dosmode & aRONLY) {
-				DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but file attribute is readonly.\n",
-					fsp->fsp_name ));
-				return NT_STATUS_CANNOT_DELETE;
-			}
-		}
-
-		/*
-		 * Only allow delete on close for writable shares.
-		 */
-
-		if (!CAN_WRITE(fsp->conn)) {
-			DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but write access denied on share.\n",
-				fsp->fsp_name ));
-			return NT_STATUS_ACCESS_DENIED;
-		}
-
-		/*
-		 * Only allow delete on close for files/directories opened with delete intent.
-		 */
-
-		if (!(fsp->access_mask & DELETE_ACCESS)) {
-			DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but delete access denied.\n",
-				fsp->fsp_name ));
-			return NT_STATUS_ACCESS_DENIED;
-		}
-
-		fsp->fh->create_options |= FILE_DELETE_ON_CLOSE;
-	} else {
-		fsp->fh->create_options &= ~FILE_DELETE_ON_CLOSE;
+	if (!delete_on_close) {
+		return NT_STATUS_OK;
 	}
 
-	if(fsp->is_directory) {
-		DEBUG(10, ("set_delete_on_close_internal: %s delete on close flag for fnum = %d, directory %s\n",
-			delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
-	} else {
-		DEBUG(10, ("set_delete_on_close_internal: %s delete on close flag for fnum = %d, file %s\n",
-			delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
+	/*
+	 * Only allow delete on close for writable files.
+	 */
+
+	if ((dosmode & aRONLY) &&
+	    !lp_delete_readonly(SNUM(fsp->conn))) {
+		DEBUG(10,("can_set_delete_on_close: file %s delete on close "
+			  "flag set but file attribute is readonly.\n",
+			  fsp->fsp_name ));
+		return NT_STATUS_CANNOT_DELETE;
+	}
+
+	/*
+	 * Only allow delete on close for writable shares.
+	 */
+
+	if (!CAN_WRITE(fsp->conn)) {
+		DEBUG(10,("can_set_delete_on_close: file %s delete on "
+			  "close flag set but write access denied on share.\n",
+			  fsp->fsp_name ));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/*
+	 * Only allow delete on close for files/directories opened with delete
+	 * intent.
+	 */
+
+	if (!(fsp->access_mask & DELETE_ACCESS)) {
+		DEBUG(10,("can_set_delete_on_close: file %s delete on "
+			  "close flag set but delete access denied.\n",
+			  fsp->fsp_name ));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	return NT_STATUS_OK;
@@ -3531,10 +3513,12 @@ NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close, u
  if flag is set.
 ****************************************************************************/
 
-NTSTATUS set_delete_on_close_over_all(files_struct *fsp, BOOL delete_on_close)
+NTSTATUS set_delete_on_close(files_struct *fsp, BOOL delete_on_close)
 {
-	DEBUG(10,("set_delete_on_close_over_all: %s delete on close flag for fnum = %d, file %s\n",
-		delete_on_close ? "Adding" : "Removing", fsp->fnum, fsp->fsp_name ));
+	DEBUG(10,("set_delete_on_close: %s delete on close flag for "
+		  "fnum = %d, file %s\n",
+		  delete_on_close ? "Adding" : "Removing", fsp->fnum,
+		  fsp->fsp_name ));
 
 	if (fsp->is_directory || fsp->is_stat)
 		return NT_STATUS_OK;
@@ -3543,8 +3527,9 @@ NTSTATUS set_delete_on_close_over_all(files_struct *fsp, BOOL delete_on_close)
 		return NT_STATUS_ACCESS_DENIED;
 
 	if (!modify_delete_flag(fsp->dev, fsp->inode, delete_on_close)) {
-		DEBUG(0,("set_delete_on_close_over_all: failed to change delete on close flag for file %s\n",
-			fsp->fsp_name ));
+		DEBUG(0,("set_delete_on_close: failed to change delete "
+			 "on close flag for file %s\n",
+			 fsp->fsp_name ));
 		unlock_share_entry_fsp(fsp);
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -3692,7 +3677,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			 * Doing a DELETE_ON_CLOSE should cancel a print job.
 			 */
 			if ((info_level == SMB_SET_FILE_DISPOSITION_INFO) && CVAL(pdata,0)) {
-				fsp->fh->create_options |= FILE_DELETE_ON_CLOSE;
+				fsp->fh->private_options |= FILE_DELETE_ON_CLOSE;
 
 				DEBUG(3,("call_trans2setfilepathinfo: Cancelling print job (%s)\n", fsp->fsp_name ));
 	
@@ -4009,14 +3994,15 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			if (fsp == NULL)
 				return(UNIXERROR(ERRDOS,ERRbadfid));
 
-			status = set_delete_on_close_internal(fsp, delete_on_close, dosmode);
+			status = can_set_delete_on_close(fsp, delete_on_close,
+							 dosmode);
  
 			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
 			}
 
 			/* The set is across all open files on this dev/inode pair. */
-			status =set_delete_on_close_over_all(fsp, delete_on_close);
+			status =set_delete_on_close(fsp, delete_on_close);
 			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
 			}

@@ -99,7 +99,7 @@ void print_fsp_end(files_struct *fsp, BOOL normal_close)
 	uint32 jobid;
 	fstring sharename;
 
-	if (fsp->fh->create_options & FILE_DELETE_ON_CLOSE) {
+	if (fsp->fh->private_options & FILE_DELETE_ON_CLOSE) {
 		/*
 		 * Truncate the job. print_job_end will take
 		 * care of deleting it for us. JRA.

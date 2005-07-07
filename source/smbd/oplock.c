@@ -1230,6 +1230,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 	pid_t pid = sys_getpid();
 	int num_share_modes = 0;
 	int i;
+	BOOL dummy;
 
 	/*
 	 * If this file is level II oplocked then we need
@@ -1246,7 +1247,8 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 		DEBUG(0,("release_level_2_oplocks_on_change: failed to lock share mode entry for file %s.\n", fsp->fsp_name ));
 	}
 
-	num_share_modes = get_share_modes(fsp->conn, fsp->dev, fsp->inode, &share_list);
+	num_share_modes = get_share_modes(fsp->dev, fsp->inode, &share_list,
+					  &dummy);
 
 	DEBUG(10,("release_level_2_oplocks_on_change: num_share_modes = %d\n", 
 			num_share_modes ));

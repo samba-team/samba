@@ -402,7 +402,13 @@ struct fd_handle {
 	int fd;
 	SMB_BIG_UINT position_information;
 	SMB_OFF_T pos;
-	uint32 create_options;		/* NTCreateX "special" options such as delete on close. */
+	uint32 private_options;	/* NT Create options, but we only look at
+				 * NTCREATEX_OPTIONS_PRIVATE_DENY_DOS and
+				 * NTCREATEX_OPTIONS_PRIVATE_DENY_FCB (Except
+				 * for print files *only*, where
+				 * DELETE_ON_CLOSE is not stored in the share
+				 * mode database.
+				 */
 };
 
 typedef struct files_struct {
@@ -635,7 +641,10 @@ typedef struct {
 	uint16 op_type;
 	uint32 access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
 	uint32 share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */
-	uint32 create_options;		/* NTCreateX "special" options such as delete on close. */
+	uint32 private_options;	/* NT Create options, but we only look at
+				 * NTCREATEX_OPTIONS_PRIVATE_DENY_DOS and
+				 * NTCREATEX_OPTIONS_PRIVATE_DENY_FCB for
+				 * smbstatus and swat */
 	struct timeval time;
 	SMB_DEV_T dev;
 	SMB_INO_T inode;

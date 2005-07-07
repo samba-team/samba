@@ -3,6 +3,7 @@
    file opening and share modes
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Jeremy Allison 2001-2004
+   Copyright (C) Volker Lendecke 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -400,7 +401,6 @@ static BOOL share_conflict(connection_struct *conn,
 			   share_mode_entry *entry,
 			   uint32 access_mask,
 			   uint32 share_access,
-			   uint32 create_options,
 			   const char *fname,
 			   int *flags)
 {
@@ -415,16 +415,14 @@ static BOOL share_conflict(connection_struct *conn,
 	}
 
 	DEBUG(10,("share_conflict: entry->access_mask = 0x%x, "
-		  "entry->share_access = 0x%x, entry->create_options = 0x%x\n",
+		  "entry->share_access = 0x%x, "
+		  "entry->private_options = 0x%x\n",
 		  (unsigned int)entry->access_mask,
 		  (unsigned int)entry->share_access,
-		  (unsigned int)entry->create_options));
+		  (unsigned int)entry->private_options));
 
-	DEBUG(10,("share_conflict: access_mask = 0x%x, share_access = 0x%x, "
-		  "create_options = 0x%x\n",
-		  (unsigned int)access_mask,
-		  (unsigned int)share_access,
-		  (unsigned int)create_options));
+	DEBUG(10,("share_conflict: access_mask = 0x%x, share_access = 0x%x\n",
+		  (unsigned int)access_mask, (unsigned int)share_access));
 
 	if ((entry->access_mask & (FILE_WRITE_DATA|
 				   FILE_APPEND_DATA|
@@ -488,19 +486,6 @@ sa = 0x%x, share = 0x%x\n", (num), (unsigned int)(am), (unsigned int)(right), (u
 		   share_access, FILE_SHARE_DELETE);
 	CHECK_MASK(6, access_mask, DELETE_ACCESS,
 		   entry->share_access, FILE_SHARE_DELETE);
-
-	/* if a delete is pending then a second open is not allowed */
-	if ((entry->create_options & FILE_DELETE_ON_CLOSE) ||
-			(create_options & FILE_DELETE_ON_CLOSE)) {
-		DEBUG(10,("share_conflict: conflict due to delete on close "
-			  "(entry options = 0x%x create options = 0x%x\n",
-			  (unsigned int)entry->create_options,
-			  (unsigned int)create_options ));
-		/* Is this the right error ? */
-		set_saved_error_triple(ERRDOS, ERRbadshare,
-				       NT_STATUS_SHARING_VIOLATION);
-		return True;
-	}
 
 	DEBUG(10,("share_conflict: No conflict.\n"));
 	return False;
@@ -593,8 +578,9 @@ static int open_mode_check(connection_struct *conn,
 	int oplock_contention_count = 0;
 	share_mode_entry *old_shares = NULL;
 	BOOL broke_oplock;
+	BOOL delete_on_close;
 
-	num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
+	num_share_modes = get_share_modes(dev, inode, &old_shares, &delete_on_close);
 	
 	if(num_share_modes == 0) {
 		SAFE_FREE(old_shares);
@@ -610,6 +596,14 @@ static int open_mode_check(connection_struct *conn,
 		 * checks... ! JRA. */
 		SAFE_FREE(old_shares);
 		return num_share_modes;
+	}
+
+	/* A delete on close prohibits everything */
+
+	if (delete_on_close) {
+		SAFE_FREE(old_shares);
+		errno = EACCES;
+		return -1;
 	}
 
 	/*
@@ -697,7 +691,9 @@ static int open_mode_check(connection_struct *conn,
 		if (broke_oplock) {
 			/* Update the current open table. */
 			SAFE_FREE(old_shares);
-			num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
+			num_share_modes = get_share_modes(dev, inode,
+							  &old_shares,
+							  &delete_on_close);
 		}
 
 		/* Now we check the share modes, after any oplock breaks. */
@@ -706,8 +702,7 @@ static int open_mode_check(connection_struct *conn,
 
 			/* someone else has a share lock on it, check to see if we can too */
 			if (share_conflict(conn, share_entry, access_mask,
-						share_access, create_options,
-						fname, p_flags)) {
+						share_access, fname, p_flags)) {
 				SAFE_FREE(old_shares);
 				free_broken_entry_list(broken_entry_list);
 				errno = EACCES;
@@ -748,7 +743,7 @@ static int open_mode_check(connection_struct *conn,
 				}
 					
 				if (del_share_entry(dev, inode, &broken_entry->entry,
-						    NULL) == -1) {
+						    NULL, &delete_on_close) == -1) {
 					free_broken_entry_list(broken_entry_list);
 					errno = EACCES;
 					set_saved_error_triple(ERRDOS, ERRbadshare,
@@ -762,8 +757,9 @@ static int open_mode_check(connection_struct *conn,
 				 */
 					
 				SAFE_FREE(old_shares);
-				num_share_modes = get_share_modes(conn, dev, inode,
-								  &old_shares);
+				num_share_modes = get_share_modes(dev, inode,
+								  &old_shares,
+								  &delete_on_close);
 				break;
 			} /* end for paranoia... */
 		} /* end for broken_entry */
@@ -1001,18 +997,18 @@ static files_struct *fcb_or_dos_open(connection_struct *conn,
 	    fsp = file_find_di_next(fsp)) {
 
 		DEBUG(10,("fcb_or_dos_open: checking file %s, fd = %d, "
-			  "vuid = %u, file_pid = %u, create_options = 0x%x "
+			  "vuid = %u, file_pid = %u, private_options = 0x%x "
 			  "access_mask = 0x%x\n", fsp->fsp_name,
 			  fsp->fh->fd, (unsigned int)fsp->vuid,
 			  (unsigned int)fsp->file_pid,
-			  (unsigned int)fsp->fh->create_options,
+			  (unsigned int)fsp->fh->private_options,
 			  (unsigned int)fsp->access_mask ));
 
 		if (fsp->fh->fd != -1 &&
 		    fsp->vuid == current_user.vuid &&
 		    fsp->file_pid == global_smbpid &&
-		    (fsp->fh->create_options & (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS |
-						NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) &&
+		    (fsp->fh->private_options & (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS |
+						 NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) &&
 		    (fsp->access_mask & FILE_WRITE_DATA) &&
 		    strequal(fsp->fsp_name, fname)) {
 			DEBUG(10,("fcb_or_dos_open: file match\n"));
@@ -1026,7 +1022,7 @@ static files_struct *fcb_or_dos_open(connection_struct *conn,
 
 	/* quite an insane set of semantics ... */
 	if (is_executable(fname) &&
-	    (fsp->fh->create_options & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS)) {
+	    (fsp->fh->private_options & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS)) {
 		DEBUG(10,("fcb_or_dos_open: file fail due to is_executable.\n"));
 		return NULL;
 	}
@@ -1740,7 +1736,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 	/* Record the options we were opened with. */
 	fsp->share_access = share_access;
-	fsp->fh->create_options = create_options;
+	fsp->fh->private_options = create_options;
 	fsp->access_mask = access_mask;
 
 	if (file_existed) {
@@ -1790,13 +1786,15 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 				info == FILE_WAS_SUPERSEDED) {
 			dosattr = new_dos_attributes;
 		}
-		result = set_delete_on_close_internal(fsp, True, dosattr);
 
-		if (NT_STATUS_V(result) !=  NT_STATUS_V(NT_STATUS_OK)) {
+		result = can_set_delete_on_close(fsp, True, dosattr);
+
+		if (!NT_STATUS_IS_OK(result)) {
 			uint8 u_e_c;
 			uint32 u_e_code;
+			BOOL dummy_del_on_close;
 			/* Remember to delete the mode we just added. */
-			del_share_mode(fsp, NULL);
+			del_share_mode(fsp, NULL, &dummy_del_on_close);
 			unlock_share_entry_fsp(fsp);
 			fd_close(conn,fsp);
 			file_free(fsp);
@@ -1804,6 +1802,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			set_saved_error_triple(u_e_c, u_e_code, result);
 			return NULL;
 		}
+		set_delete_on_close(fsp, True);
 	}
 	
 	if (info == FILE_WAS_OVERWRITTEN || info == FILE_WAS_CREATED ||
@@ -2067,7 +2066,7 @@ files_struct *open_directory(connection_struct *conn,
 	fsp->can_write = False;
 
 	fsp->share_access = share_access;
-	fsp->fh->create_options = create_options;
+	fsp->fh->private_options = create_options;
 	fsp->access_mask = access_mask;
 
 	fsp->print_file = False;
@@ -2079,7 +2078,7 @@ files_struct *open_directory(connection_struct *conn,
 	string_set(&fsp->fsp_name,fname);
 
 	if (create_options & FILE_DELETE_ON_CLOSE) {
-		NTSTATUS status = set_delete_on_close_internal(fsp, True, 0);
+		NTSTATUS status = can_set_delete_on_close(fsp, True, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			file_free(fsp);
 			return NULL;
