@@ -2346,7 +2346,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			
 			fsp.conn = conn;
 			fsp.fnum = -1;
-			fsp.fd = -1;
+			fsp.fh->fd = -1;
 			
 			/* access check */
 			if (current_user.uid != 0) {
