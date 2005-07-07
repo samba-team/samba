@@ -35,6 +35,8 @@
 
 RCSID("$Id$");
 
+#include <version.h>
+
 /* 
  * All decoding functions take a pointer `p' to first position in
  * which to read, from the left, `len' which means the maximum number
