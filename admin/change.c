@@ -36,7 +36,7 @@
 RCSID("$Id$");
 
 static krb5_error_code
-change_entry (krb5_context context, krb5_keytab keytab,
+change_entry (krb5_keytab keytab,
 	      krb5_principal principal, krb5_kvno kvno,
 	      const char *realm, const char *admin_server, int server_port)
 {
@@ -56,14 +56,24 @@ change_entry (krb5_context context, krb5_keytab keytab,
 
     memset (&conf, 0, sizeof(conf));
 
-    if(realm)
-	conf.realm = (char *)realm;
-    else
-	conf.realm = (char*)krb5_principal_get_realm(context, principal);
+    if(realm == NULL)
+	realm = krb5_principal_get_realm(context, principal);
+    conf.realm = strdup(realm);
+    if (conf.realm == NULL) {
+	free (client_name);
+	krb5_set_error_string(context, "malloc failed");
+	return ENOMEM;
+    }
     conf.mask |= KADM5_CONFIG_REALM;
     
     if (admin_server) {
-	conf.admin_server = (char *)admin_server;
+	conf.admin_server = strdup(admin_server);
+	if (conf.admin_server == NULL) {
+	    free(client_name);
+	    free(conf.realm);
+	    krb5_set_error_string(context, "malloc failed");
+	    return ENOMEM;
+	}	    
 	conf.mask |= KADM5_CONFIG_ADMIN_SERVER;
     }
 
@@ -78,6 +88,8 @@ change_entry (krb5_context context, krb5_keytab keytab,
 				    KADM5_ADMIN_SERVICE,
 				    &conf, 0, 0,
 				    &kadm_handle);
+    free(conf.admin_server);
+    free(conf.realm);
     if (ret) {
 	krb5_warn (context, ret,
 		   "kadm5_c_init_with_skey_ctx: %s:", client_name);
@@ -220,7 +232,7 @@ kt_change (struct change_options *opt, int argc, char **argv)
 		    free(client_name);
 		}
 	    }
-	    ret = change_entry (context, keytab, 
+	    ret = change_entry (keytab, 
 				changeset[i].principal, changeset[i].kvno,
 				opt->realm_string, 
 				opt->admin_server_string, 
