@@ -1,3 +1,8 @@
+2005-07-07  Assar Westerlund  <assar@kth.se>
+
+	* krb4.c: Do not assume that des_key_schedule is an
+	array.
+
 2005-04-30  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* kx.c (connect_host): make sure s is initialized

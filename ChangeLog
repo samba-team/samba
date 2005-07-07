@@ -1,3 +1,7 @@
+2005-07-07  Assar Westerlund  <assar@kth.se>
+
+	* configure.in: add AM_PROG_CC_C_O for automake 1.9
+
 2005-07-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/keytab.c (krb5_kt_get_entry): clear error string when

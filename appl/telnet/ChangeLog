@@ -1,3 +1,8 @@
+2005-07-07  Assar Westerlund  <assar@kth.se>
+
+	* libtelnet/kerberos.c: Do not assume that des_key_schedule is an
+	array.
+
 2005-05-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* libtelnet/kerberos5.c: case uid_t to unsigned long in printf
