@@ -1,5 +1,23 @@
+2005-07-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* check-symbols.sh: allow symbols to start with ., aix uses this
+
 2005-06-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* krb-bigendian.m4: use ansi c prototypes
+	
+	* krb-func-getcwd-broken.m4: use ansi c prototypes
+
+	* broken-snprintf.m4: use ansi c prototypes
+
+	* have-pragma-weak.m4: use ansi c declarations
+
+	* check-getpwnam_r-posix.m4: use ansi c declarations
+
+	* broken-realloc.m4: use ansi c declarations
+	
+	* check-compile-et.m4: use ansi c declarations
+	
 	* dlopen.m4: add headers and argument to dlopen
 	
 	* c-function.m4: use ansi c declarations
