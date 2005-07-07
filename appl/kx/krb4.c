@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -364,7 +364,7 @@ recv_v4_auth (kx_context *kc, int sock, u_char *buf)
 
     c->auth     = auth;
     memcpy (c->key, &auth.session, sizeof(des_cblock));
-    memcpy (c->schedule, schedule, sizeof(schedule));
+    memcpy (&c->schedule, &schedule, sizeof(schedule));
 
     return 0;
 }

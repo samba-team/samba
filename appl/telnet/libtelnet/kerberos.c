@@ -440,7 +440,7 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 		}
 	    }
 	    memset(data, 0, cnt);
-	    memset(ks, 0, sizeof(ks));
+	    memset(&ks, 0, sizeof(ks));
 	    memset(&cred, 0, sizeof(cred));
 	}
 	
@@ -712,7 +712,7 @@ kerberos4_forward(Authenticator *ap, void *v)
     len = pack_cred(&cred, netcred);
     des_pcbc_encrypt((void*)netcred, (void*)netcred, len,
 		     ks, key, DES_ENCRYPT);
-    memset(ks, 0, sizeof(ks));
+    memset(&ks, 0, sizeof(ks));
     Data(ap, KRB_FORWARD, netcred, len);
     memset(netcred, 0, sizeof(netcred));
     return 0;
