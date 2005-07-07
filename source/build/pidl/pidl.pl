@@ -204,7 +204,10 @@ sub process_file($)
 		$pidl = ODL::ODL2IDL($pidl);
 	}
 
-	if (defined($opt_header) or defined($opt_eth_parser) or defined($opt_eth_header) or defined($opt_client) or defined($opt_server) or defined($opt_parser) or defined($opt_ejs)) {
+	if (defined($opt_header) or defined($opt_eth_parser) or 
+	    defined($opt_eth_header) or defined($opt_client) or 
+	    defined($opt_server) or defined($opt_parser) or 
+	    defined($opt_ejs)) {
 		$ndr = Ndr::Parse($pidl);
 #		print util::MyDumper($ndr);
 	}
