@@ -1,3 +1,7 @@
+2005-07-08  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* lower amount of shadow and const warnings
+
 2005-06-07  David Love  <fx@gnu.org>
 
 	* dump-format.txt: Clarify, spelling and add examples.
