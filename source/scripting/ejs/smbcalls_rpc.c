@@ -157,6 +157,9 @@ done:
 	talloc_free(ptr);
 done:
 	ejsSetReturnValue(eid, mprNTSTATUS(status));
+	if (NT_STATUS_EQUAL(status, NT_STATUS_INTERNAL_ERROR)) {
+		return -1;
+	}
 	return 0;
 }
 
