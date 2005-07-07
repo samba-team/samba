@@ -1,3 +1,7 @@
+2005-07-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* com_err.h: Include <stdarg.h> for va_list to help AIX 5.2.
+	
 2005-06-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* parse.y: rename base to base_id since flex defines a function
