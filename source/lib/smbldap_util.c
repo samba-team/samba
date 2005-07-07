@@ -194,7 +194,7 @@ NTSTATUS smbldap_search_domain_info(struct smbldap_state *ldap_state,
 			goto failed;
 
 		status = add_new_domain_info(ldap_state, domain_name);
-		if (NT_STATUS_IS_OK(status)) {
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Adding domain info for %s failed with %s\n", 
 				domain_name, nt_errstr(status)));
 			goto failed;
