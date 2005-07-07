@@ -1,3 +1,8 @@
+2005-07-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* otp_parse.c (parse_words): avoid const warnings by making a
+	(shorter) copy of the string instead of truncating it
+
 2005-01-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* otp_parse.c: cast argument to tolower to unsigned char
