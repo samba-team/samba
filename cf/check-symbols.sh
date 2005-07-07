@@ -36,7 +36,7 @@ while test $# != 0 ;do
 done
 
 for a in "$@" $esym; do
-    symbols="\$3 !~ /^_?${a}/ ${symbols:+&&} ${symbols}"
+    symbols="\$3 !~ /^[_\.]?${a}/ ${symbols:+&&} ${symbols}"
 done
 
 # F filename, N debugsymbols, W weak symbols, U undefined
