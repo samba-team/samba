@@ -24,19 +24,36 @@
 #include "lib/ejs/ejs.h"
 #include "scripting/ejs/ejsrpc.h"
 
-NTSTATUS ejs_pull_rpc(struct MprVar *v, void *ptr, ejs_pull_function_t ejs_pull)
+NTSTATUS ejs_pull_rpc(int eid, const char *callname, 
+		      struct MprVar *v, void *ptr, ejs_pull_function_t ejs_pull)
 {
-	struct ejs_rpc *ejs = talloc(ptr, struct ejs_rpc);
+	struct ejs_rpc *ejs = talloc(ptr, struct ejs_rpc);	
+	NT_STATUS_HAVE_NO_MEMORY(ejs);
+	ejs->eid = eid;
+	ejs->callname = callname;
 	return ejs_pull(ejs, v, ptr);
 }
 
 
-NTSTATUS ejs_push_rpc(struct MprVar *v, const void *ptr, ejs_push_function_t ejs_push)
+NTSTATUS ejs_push_rpc(int eid, const char *callname, 
+		      struct MprVar *v, const void *ptr, ejs_push_function_t ejs_push)
 {
 	struct ejs_rpc *ejs = talloc(ptr, struct ejs_rpc);
+	NT_STATUS_HAVE_NO_MEMORY(ejs);
+	ejs->eid = eid;
+	ejs->callname = callname;
 	return ejs_push(ejs, v, ptr);
 }
 
+
+/*
+  panic in the ejs wrapper code
+ */
+NTSTATUS ejs_panic(struct ejs_rpc *ejs, const char *why)
+{
+	ejsSetErrorMsg(ejs->eid, "rpc_call '%s' failed - %s", ejs->callname, why);
+	return NT_STATUS_INTERNAL_ERROR;
+}
 
 /*
   find a mpr component, allowing for sub objects, using the '.' convention
@@ -279,3 +296,27 @@ NTSTATUS ejs_push_array(struct ejs_rpc *ejs,
 	return mprSetVar(v, "length", mprCreateIntegerVar(i));
 }
 			
+
+/*
+  pull a string
+*/
+NTSTATUS ejs_pull_string(struct ejs_rpc *ejs, 
+			 struct MprVar *v, const char *name, const char **s)
+{
+	struct MprVar *var;
+	var = mprGetVar(v, name);
+	if (var == NULL) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+	*s = mprToString(var);
+	return NT_STATUS_OK;
+}
+
+/*
+  push a string
+*/
+NTSTATUS ejs_push_string(struct ejs_rpc *ejs, 
+			 struct MprVar *v, const char *name, const char *s)
+{
+	return mprSetVar(v, name, mprCreateStringVar(s, True));
+}
