@@ -1303,5 +1303,18 @@ so they do not interoperate with domain profiles. </para>
 </smbconfblock>
 
 </sect2>
+
+<sect2>
+<title>Debugging Roaming Profiles and NT4-style Domain Policies</title>
+
+<para>
+Roaming profiles and domain policies are implemented via <command>USERENV.DLL</command>. 
+Microsoft Knowledge Base articles <ulink
+url="http://support.microsoft.com/default.aspx?scid=kb;en-us;221833">221833</ulink> and 
+<ulink url="http://support.microsoft.com/default.aspx?scid=kb;en-us;154120">154120</ulink>
+ describe how to instruct that DLL to debug the login process.
+</para>
+
+</sect2>
 </sect1>
 </chapter>
