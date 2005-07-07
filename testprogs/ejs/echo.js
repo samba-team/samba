@@ -2,6 +2,10 @@
 	demonstrate access to rpc calls from ejs
 */	
 
+
+/*
+  helper function to setup a rpc io object, ready for input
+*/
 function irpcObj()
 {
 	var o = new Object();
@@ -49,7 +53,6 @@ function check_array_equal(a1, a2)
 */
 function test_AddOne(conn)
 {
-	var status;
 	var io = irpcObj();
 
 	print("Testing echo_AddOne\n");
@@ -67,7 +70,6 @@ function test_AddOne(conn)
 */
 function test_EchoData(conn)
 {
-	var status;
 	var io = irpcObj();
 
 	print("Testing echo_EchoData\n");
@@ -87,7 +89,6 @@ function test_EchoData(conn)
 */
 function test_SinkData(conn)
 {
-	var status;
 	var io = irpcObj();
 
 	print("Testing echo_SinkData\n");
@@ -106,7 +107,6 @@ function test_SinkData(conn)
 */
 function test_SourceData(conn)
 {
-	var status;
 	var io = irpcObj();
 
 	print("Testing echo_SourceData\n");
@@ -119,6 +119,23 @@ function test_SourceData(conn)
 		check_array_equal(correct, io.output.data);
 	}
 }
+
+
+/*
+  test the echo_TestCall interface
+*/
+function test_TestCall(conn)
+{
+	var io = irpcObj();
+
+	print("Testing echo_TestCall\n");
+
+	io.input.s1 = "my test string";
+	status = dcerpc_echo_TestCall(conn, io);
+	check_status_ok(status);
+	assert("this is a test string" == io.output.s2);
+}
+
 
 if (ARGV.length == 0) {
    print("Usage: echo.js <RPCBINDING>\n");
@@ -139,5 +156,6 @@ test_AddOne(conn);
 test_EchoData(conn);
 test_SinkData(conn);
 test_SourceData(conn);
+test_TestCall(conn);
 
 print("All OK\n");
