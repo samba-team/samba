@@ -40,23 +40,23 @@ NTSTATUS ejs_push_struct_start(struct ejs_rpc *ejs, struct MprVar **v, const cha
 NTSTATUS ejs_pull_uint8(struct ejs_rpc *ejs, 
 			struct MprVar *v, const char *name, uint8_t *r);
 NTSTATUS ejs_push_uint8(struct ejs_rpc *ejs, 
-			struct MprVar *v, const char *name, uint8_t r);
+			struct MprVar *v, const char *name, const uint8_t *r);
 NTSTATUS ejs_pull_uint16(struct ejs_rpc *ejs, 
 			 struct MprVar *v, const char *name, uint16_t *r);
 NTSTATUS ejs_push_uint16(struct ejs_rpc *ejs, 
-			 struct MprVar *v, const char *name, uint16_t r);
+			 struct MprVar *v, const char *name, const uint16_t *r);
 NTSTATUS ejs_pull_uint32(struct ejs_rpc *ejs, 
 			 struct MprVar *v, const char *name, uint32_t *r);
 NTSTATUS ejs_push_uint32(struct ejs_rpc *ejs, 
-			 struct MprVar *v, const char *name, uint32_t r);
+			 struct MprVar *v, const char *name, const uint32_t *r);
 NTSTATUS ejs_pull_hyper(struct ejs_rpc *ejs, 
 			struct MprVar *v, const char *name, uint64_t *r);
 NTSTATUS ejs_push_hyper(struct ejs_rpc *ejs, 
-			struct MprVar *v, const char *name, uint64_t r);
+			struct MprVar *v, const char *name, const uint64_t *r);
 NTSTATUS ejs_pull_enum(struct ejs_rpc *ejs, 
 		       struct MprVar *v, const char *name, unsigned *r);
 NTSTATUS ejs_push_enum(struct ejs_rpc *ejs, 
-		       struct MprVar *v, const char *name, unsigned r);
+		       struct MprVar *v, const char *name, const unsigned *r);
 NTSTATUS ejs_pull_array(struct ejs_rpc *ejs, 
 			struct MprVar *v, const char *name, uint32_t length,
 			size_t elsize, void **r, ejs_pull_t ejs_pull);
