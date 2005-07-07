@@ -128,7 +128,7 @@ done:
 	}
 
 	/* convert the mpr object into a C structure */
-	status = ejs_pull_rpc(io, ptr, ejs_pull);
+	status = ejs_pull_rpc(eid, callname, io, ptr, ejs_pull);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -152,7 +152,7 @@ done:
 		ndr_print_function_debug(call->ndr_print, call->name, NDR_OUT, ptr);
 	}
 
-	status = ejs_push_rpc(io, ptr, ejs_push);
+	status = ejs_push_rpc(eid, callname, io, ptr, ejs_push);
 
 	talloc_free(ptr);
 done:

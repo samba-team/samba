@@ -21,7 +21,8 @@
 */
 
 struct ejs_rpc {
-
+	int eid;
+	const char *callname;
 };
 
 typedef NTSTATUS (*ejs_pull_t)(struct ejs_rpc *, struct MprVar *, const char *, void *);
@@ -29,11 +30,13 @@ typedef NTSTATUS (*ejs_push_t)(struct ejs_rpc *, struct MprVar *, const char *, 
 typedef NTSTATUS (*ejs_pull_function_t)(struct ejs_rpc *, struct MprVar *, void *);
 typedef NTSTATUS (*ejs_push_function_t)(struct ejs_rpc *, struct MprVar *, const void *);
 
+NTSTATUS ejs_panic(struct ejs_rpc *ejs, const char *why);
+
 int ejs_rpc_call(int eid, int argc, struct MprVar **argv, const char *callname,
 		 ejs_pull_function_t ejs_pull, ejs_push_function_t ejs_push);
 
-NTSTATUS ejs_pull_rpc(struct MprVar *v, void *ptr, ejs_pull_function_t ejs_pull);
-NTSTATUS ejs_push_rpc(struct MprVar *v, const void *ptr, ejs_push_function_t ejs_push);
+NTSTATUS ejs_pull_rpc(int eid, const char *callname, struct MprVar *v, void *ptr, ejs_pull_function_t ejs_pull);
+NTSTATUS ejs_push_rpc(int eid, const char *callname, struct MprVar *v, const void *ptr, ejs_push_function_t ejs_push);
 NTSTATUS ejs_pull_struct_start(struct ejs_rpc *ejs, struct MprVar **v, const char *name);
 NTSTATUS ejs_push_struct_start(struct ejs_rpc *ejs, struct MprVar **v, const char *name);
 
@@ -63,4 +66,7 @@ NTSTATUS ejs_pull_array(struct ejs_rpc *ejs,
 NTSTATUS ejs_push_array(struct ejs_rpc *ejs, 
 			struct MprVar *v, const char *name, uint32_t length,
 			size_t elsize, void *r, ejs_push_t ejs_push);
-
+NTSTATUS ejs_pull_string(struct ejs_rpc *ejs, 
+			 struct MprVar *v, const char *name, const char **s);
+NTSTATUS ejs_push_string(struct ejs_rpc *ejs, 
+			 struct MprVar *v, const char *name, const char *s);

@@ -97,6 +97,18 @@ sub EjsPullScalar($$)
 	pidl "\tNDR_CHECK(ejs_pull_$e->{TYPE}(ejs, v, \"$e->{NAME}\", $ptr));\n";
 }
 
+###########################
+# pull a string element
+sub EjsPullString($$$)
+{
+	my $e = shift;
+	my $l = shift;
+	my $env = shift;
+	my $var = util::ParseExpr($e->{NAME}, $env);
+	my $ptr = get_pointer_to($var);
+	pidl "\tNDR_CHECK(ejs_pull_string(ejs, v, \"$e->{NAME}\", $ptr));\n";
+}
+
 
 ###########################
 # pull an arrar element
@@ -109,7 +121,7 @@ sub EjsPullArray($$$)
 	my $length = util::ParseExpr($l->{LENGTH_IS}, $env);
 	my $var = util::ParseExpr($e->{NAME}, $env);
 	my $ptr = get_pointer_to($var);
-	pidl "\tNDR_CHECK(ejs_pull_array(ejs, v, \"$e->{NAME}\", $length, sizeof($ptr\[0]), (void **)$ptr, (ejs_pull_t)ejs_pull_$e->{TYPE}));\n";
+	pidl "\tNDR_CHECK(ejs_pull_array(ejs, v, \"$e->{NAME}\", $length, sizeof($var\[0]), (void **)$ptr, (ejs_pull_t)ejs_pull_$e->{TYPE}));\n";
 }
 
 ###########################
@@ -119,8 +131,15 @@ sub EjsPullElement($$)
 	my $e = shift;
 	my $env = shift;
 	my $l = $e->{LEVELS}[0];
-	($l->{TYPE} eq "ARRAY") && EjsPullArray($e, $l, $env);
-	($l->{TYPE} eq "DATA") && EjsPullScalar($e, $env);
+	if (util::has_property($e, "charset")) {
+		EjsPullString($e, $l, $env);
+	} elsif ($l->{TYPE} eq "ARRAY") {
+		EjsPullArray($e, $l, $env);
+	} elsif ($l->{TYPE} eq "DATA") {
+		EjsPullScalar($e, $env);
+	} else {
+		pidl "return ejs_panic(ejs, \"unhandled pull type $l->{TYPE}\");\n";
+	}
 }
 
 ###########################
@@ -169,11 +188,12 @@ sub EjsPullFunction($)
 {
 	my $d = shift;
 	my $env = GenerateFunctionInEnv($d);
+	my $name = $d->{NAME};
 
-	pidl "\nstatic NTSTATUS ejs_pull_$d->{NAME}(struct ejs_rpc *ejs, struct MprVar *v, struct $d->{NAME} *r)\n";
+	pidl "\nstatic NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, struct $name *r)\n";
 	pidl "{\n";
 
-	pidl "\tNDR_CHECK(ejs_pull_struct_start(ejs, &v, \"in\"));\n";
+	pidl "\tNDR_CHECK(ejs_pull_struct_start(ejs, &v, \"input\"));\n";
 
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		next unless (grep(/in/, @{$e->{DIRECTION}}));
@@ -194,12 +214,21 @@ sub EjsPushScalar($$$)
 	my $env = shift;
 	my $var = util::ParseExpr($e->{NAME}, $env);
 
-	if (not typelist::is_scalar($l->{DATA_TYPE}) or 
-	    typelist::scalar_is_reference($l->{DATA_TYPE})) {
-		$var = get_pointer_to($var);
-	}
+	$var = get_pointer_to($var);
 
 	pidl "\tNDR_CHECK(ejs_push_$e->{TYPE}(ejs, v, \"$e->{NAME}\", $var));\n";
+}
+
+###########################
+# pull a string element
+sub EjsPushString($$$)
+{
+	my $e = shift;
+	my $l = shift;
+	my $env = shift;
+	my $var = util::ParseExpr($e->{NAME}, $env);
+
+	pidl "\tNDR_CHECK(ejs_push_string(ejs, v, \"$e->{NAME}\", $var));\n";
 }
 
 ###########################
@@ -215,9 +244,7 @@ sub EjsPushPointer($$$)
 		$var = get_value_of($var);
 		$l = Ndr::GetNextLevel($e, $l);
 	}
-	if (not typelist::is_scalar($l->{DATA_TYPE})) {
-		$var = get_pointer_to($var);		
-	}
+	$var = get_pointer_to($var);		
 
 	pidl "\tNDR_CHECK(ejs_push_$e->{TYPE}(ejs, v, \"$e->{NAME}\", $var));\n";
 }
@@ -243,9 +270,17 @@ sub EjsPushElement($$)
 	my $e = shift;
 	my $env = shift;
 	my $l = $e->{LEVELS}[0];
-	($l->{TYPE} eq "ARRAY") && EjsPushArray($e, $l, $env);
-	($l->{TYPE} eq "DATA") && EjsPushScalar($e, $l, $env);
-	($l->{TYPE} eq "POINTER") && EjsPushPointer($e, $l, $env);
+	if (util::has_property($e, "charset")) {
+		EjsPushString($e, $l, $env);
+	} elsif ($l->{TYPE} eq "ARRAY") {
+		EjsPushArray($e, $l, $env);
+	} elsif ($l->{TYPE} eq "DATA") {
+		EjsPushScalar($e, $l, $env);
+	} elsif (($l->{TYPE} eq "POINTER")) {
+		EjsPushPointer($e, $l, $env);
+	} else {
+		pidl "return ejs_panic(ejs, \"unhandled push type $l->{TYPE}\");\n";
+	}
 }
 
 ###########################
@@ -255,7 +290,7 @@ sub EjsStructPush($$)
 	my $name = shift;
 	my $d = shift;
 	my $env = GenerateStructEnv($d);
-	pidl "\nstatic NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, struct $name *r)\n{\n";
+	pidl "\nstatic NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const struct $name *r)\n{\n";
 	pidl "\tNDR_CHECK(ejs_push_struct_start(ejs, &v, name));\n";
         foreach my $e (@{$d->{ELEMENTS}}) {
 		EjsPushElement($e, $env);
@@ -270,7 +305,7 @@ sub EjsUnionPush($$)
 {
 	my $name = shift;
 	my $d = shift;
-	pidl "\nstatic NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, union $name *r)\n{\n";
+	pidl "\nstatic NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const union $name *r)\n{\n";
 	pidl "\treturn NT_STATUS_OK;\n";
 	pidl "}\n\n";
 }
@@ -281,8 +316,9 @@ sub EjsEnumPush($$)
 {
 	my $name = shift;
 	my $d = shift;
-	pidl "\nstatic NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, enum $name r)\n{\n";
-	pidl "\tNDR_CHECK(ejs_push_enum(ejs, v, name, r));\n";
+	pidl "\nstatic NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const enum $name *r)\n{\n";
+	pidl "\tunsigned e = *r;\n";
+	pidl "\tNDR_CHECK(ejs_push_enum(ejs, v, name, &e));\n";
 	pidl "\treturn NT_STATUS_OK;\n";
 	pidl "}\n\n";
 }
@@ -309,7 +345,7 @@ sub EjsPushFunction($)
 	pidl "\nstatic NTSTATUS ejs_push_$d->{NAME}(struct ejs_rpc *ejs, struct MprVar *v, const struct $d->{NAME} *r)\n";
 	pidl "{\n";
 
-	pidl "\tNDR_CHECK(ejs_push_struct_start(ejs, &v, \"out\"));\n";
+	pidl "\tNDR_CHECK(ejs_push_struct_start(ejs, &v, \"output\"));\n";
 
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		next unless (grep(/out/, @{$e->{DIRECTION}}));
