@@ -409,10 +409,10 @@ NTSTATUS ndr_push_subcontext_header(struct ndr_push *ndr,
 /*
   store a token in the ndr context, for later retrieval
 */
-static NTSTATUS ndr_token_store(TALLOC_CTX *mem_ctx, 
-				struct ndr_token_list **list, 
-				const void *key, 
-				uint32_t value)
+NTSTATUS ndr_token_store(TALLOC_CTX *mem_ctx, 
+			 struct ndr_token_list **list, 
+			 const void *key, 
+			 uint32_t value)
 {
 	struct ndr_token_list *tok;
 	tok = talloc(mem_ctx, struct ndr_token_list);
@@ -426,32 +426,43 @@ static NTSTATUS ndr_token_store(TALLOC_CTX *mem_ctx,
 }
 
 /*
-  retrieve a token from a ndr context
+  retrieve a token from a ndr context, using cmp_fn to match the tokens
 */
-static NTSTATUS ndr_token_retrieve(struct ndr_token_list **list, const void *key, uint32_t *v)
+NTSTATUS ndr_token_retrieve_cmp_fn(struct ndr_token_list **list, const void *key, uint32_t *v,
+				   comparison_fn_t _cmp_fn, BOOL _remove_tok)
 {
 	struct ndr_token_list *tok;
 	for (tok=*list;tok;tok=tok->next) {
-		if (tok->key == key) {
-			DLIST_REMOVE((*list), tok);
-			*v = tok->value;
-			return NT_STATUS_OK;
-		}
+		if (_cmp_fn && _cmp_fn(tok->key,key)==0) goto found;
+		else if (!_cmp_fn && tok->key == key) goto found;
 	}
 	return ndr_map_error(NDR_ERR_TOKEN);
+found:
+	*v = tok->value;
+	if (_remove_tok) {
+		DLIST_REMOVE((*list), tok);
+		talloc_free(tok);
+	}
+	return NT_STATUS_OK;		
+}
+
+/*
+  retrieve a token from a ndr context
+*/
+NTSTATUS ndr_token_retrieve(struct ndr_token_list **list, const void *key, uint32_t *v)
+{
+	return ndr_token_retrieve_cmp_fn(list, key, v, NULL, True);
 }
 
 /*
   peek at but don't removed a token from a ndr context
 */
-static uint32_t ndr_token_peek(struct ndr_token_list **list, const void *key)
+uint32_t ndr_token_peek(struct ndr_token_list **list, const void *key)
 {
-	struct ndr_token_list *tok;
-	for (tok=*list;tok;tok=tok->next) {
-		if (tok->key == key) {
-			return tok->value;
-		}
-	}
+	NTSTATUS status;
+	uint32_t v;
+	status = ndr_token_retrieve_cmp_fn(list, key, &v, NULL, False);
+	if (NT_STATUS_IS_OK(status)) return v;
 	return 0;
 }
 
