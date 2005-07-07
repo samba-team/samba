@@ -155,7 +155,7 @@ NTSTATUS smbldap_search_domain_info(struct smbldap_state *ldap_state,
                                     LDAPMessage ** result, const char *domain_name,
                                     BOOL try_add)
 {
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	pstring filter;
 	int rc;
 	const char **attr_list;
@@ -168,7 +168,6 @@ NTSTATUS smbldap_search_domain_info(struct smbldap_state *ldap_state,
 
 	DEBUG(2, ("Searching for:[%s]\n", filter));
 
-
 	attr_list = get_attr_list( dominfo_attr_list );
 	rc = smbldap_search_suffix(ldap_state, filter, attr_list , result);
 	free_attr_list( attr_list );
@@ -176,28 +175,44 @@ NTSTATUS smbldap_search_domain_info(struct smbldap_state *ldap_state,
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(2,("Problem during LDAPsearch: %s\n", ldap_err2string (rc)));
 		DEBUG(2,("Query was: %s, %s\n", lp_ldap_suffix(), filter));
-	} else if (ldap_count_entries(ldap_state->ldap_struct, *result) < 1) {
+		goto failed;
+	}
+
+	count = ldap_count_entries(ldap_state->ldap_struct, *result);
+
+	if (count == 1)
+		return NT_STATUS_OK;
+
+	ldap_msgfree(*result);
+	*result = NULL;
+	
+	if (count < 1) {
+
 		DEBUG(3, ("Got no domain info entries for domain\n"));
-		ldap_msgfree(*result);
-		*result = NULL;
-		if ( try_add && NT_STATUS_IS_OK(ret = add_new_domain_info(ldap_state, domain_name)) ) {
-			return smbldap_search_domain_info(ldap_state, result, domain_name, False);
-		} 
-		else {
+
+		if (!try_add)
+			goto failed;
+
+		status = add_new_domain_info(ldap_state, domain_name);
+		if (NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Adding domain info for %s failed with %s\n", 
-				domain_name, nt_errstr(ret)));
-			return ret;
+				domain_name, nt_errstr(status)));
+			goto failed;
 		}
-	} else if ((count = ldap_count_entries(ldap_state->ldap_struct, *result)) > 1) {
+			
+		return smbldap_search_domain_info(ldap_state, result, domain_name, False);
+		
+	} 
+	
+	if (count > 1 ) {
+	
 		DEBUG(0, ("Got too many (%d) domain info entries for domain %s\n",
 			  count, domain_name));
-		ldap_msgfree(*result);
-		*result = NULL;
-		return ret;
-	} else {
-		return NT_STATUS_OK;
+		goto failed;
 	}
+
+failed:
+	return status;
 	
-	return ret;
 }
 
