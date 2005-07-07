@@ -217,10 +217,6 @@ static void
 TTYinfo(void)
 {
     static int		init;
-    const char		*term;
-    char		buff[2048];
-    char		*bp;
-    char		*tmp;
 #if	defined(TIOCGWINSZ)
     struct winsize	W;
 #endif	/* defined(TIOCGWINSZ) */
@@ -238,20 +234,28 @@ TTYinfo(void)
     }
     init++;
 
-    TTYwidth = TTYrows = 0;
-    bp = &buff[0];
-    if ((term = getenv("TERM")) == NULL)
-	term = "dumb";
-    if (tgetent(buff, term) < 0) {
-       TTYwidth = SCREEN_WIDTH;
-       TTYrows = SCREEN_ROWS;
-       return;
+#ifdef HAVE_TGETENT
+    {
+	char		buff[2048];
+	char		*tmp;
+	char		*bp;
+	const char	*term;
+
+	TTYwidth = TTYrows = 0;
+	bp = &buff[0];
+	if ((term = getenv("TERM")) == NULL)
+	    term = "dumb";
+	if (tgetent(buff, term) >= 0) {
+	    
+	    tmp = tgetstr("le", &bp);
+	    if (tmp != NULL)
+		backspace = strdup(tmp);
+	    TTYwidth = tgetnum("co");
+	    TTYrows = tgetnum("li");
+	    return;
+	}
     }
-    tmp = tgetstr("le", &bp);
-    if (tmp != NULL)
-	backspace = strdup(tmp);
-    TTYwidth = tgetnum("co");
-    TTYrows = tgetnum("li");
+#endif
 
 #if	defined(TIOCGWINSZ)
     if (ioctl(0, TIOCGWINSZ, &W) >= 0) {
