@@ -96,6 +96,32 @@ static NTSTATUS mprSetVar(struct MprVar *v, const char *name, struct MprVar val)
 
 
 /*
+  start the ejs pull process for a structure
+*/
+NTSTATUS ejs_pull_struct_start(struct ejs_rpc *ejs, struct MprVar **v, const char *name)
+{
+	*v = mprGetProperty(*v, name, NULL);
+	if (*v == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	return NT_STATUS_OK;
+}
+
+
+/*
+  start the ejs push process for a structure
+*/
+NTSTATUS ejs_push_struct_start(struct ejs_rpc *ejs, struct MprVar **v, const char *name)
+{
+	struct MprVar s = mprCreateObjVar(name, MPR_DEFAULT_HASH_SIZE);
+	*v = mprSetProperty(*v, name, &s);
+	if (*v == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	return NT_STATUS_OK;
+}
+
+/*
   pull a uint8 from a mpr variable to a C element
 */
 NTSTATUS ejs_pull_uint8(struct ejs_rpc *ejs, 
@@ -152,7 +178,6 @@ NTSTATUS ejs_pull_uint32(struct ejs_rpc *ejs,
 	}
 	*r = mprVarToInteger(var);
 	return NT_STATUS_OK;
-	
 }
 
 NTSTATUS ejs_push_uint32(struct ejs_rpc *ejs, 
@@ -160,3 +185,97 @@ NTSTATUS ejs_push_uint32(struct ejs_rpc *ejs,
 {
 	return mprSetVar(v, name, mprCreateIntegerVar(r));
 }
+
+NTSTATUS ejs_pull_hyper(struct ejs_rpc *ejs, 
+			struct MprVar *v, const char *name, uint64_t *r)
+{
+	struct MprVar *var;
+	var = mprGetVar(v, name);
+	if (var == NULL) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+	*r = mprVarToInteger(var);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ejs_push_hyper(struct ejs_rpc *ejs, 
+			struct MprVar *v, const char *name, uint64_t r)
+{
+	return mprSetVar(v, name, mprCreateIntegerVar(r));
+}
+
+
+/*
+  pull a enum from a mpr variable to a C element
+  a enum is just treating as an unsigned integer at this level
+*/
+NTSTATUS ejs_pull_enum(struct ejs_rpc *ejs, 
+		       struct MprVar *v, const char *name, unsigned *r)
+{
+	struct MprVar *var;
+	var = mprGetVar(v, name);
+	if (var == NULL) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+	*r = mprVarToInteger(var);
+	return NT_STATUS_OK;
+	
+}
+
+NTSTATUS ejs_push_enum(struct ejs_rpc *ejs, 
+		       struct MprVar *v, const char *name, unsigned r)
+{
+	return mprSetVar(v, name, mprCreateIntegerVar(r));
+}
+
+
+/*
+  pull an array of elements
+*/
+NTSTATUS ejs_pull_array(struct ejs_rpc *ejs, 
+			struct MprVar *v, const char *name, uint32_t length,
+			size_t elsize, void **r, ejs_pull_t ejs_pull)
+{
+	int i;
+	char *data;
+
+	NDR_CHECK(ejs_pull_struct_start(ejs, &v, name));
+
+	(*r) = talloc_array_size(ejs, elsize, length);
+	NT_STATUS_HAVE_NO_MEMORY(*r);
+
+	data = *r;
+
+	for (i=0;i<length;i++) {
+		char *id = talloc_asprintf(ejs, "%u", i);
+		NT_STATUS_HAVE_NO_MEMORY(id);
+		NDR_CHECK(ejs_pull(ejs, v, id, (i*elsize)+data));
+		talloc_free(id);
+	}
+	return mprSetVar(v, "length", mprCreateIntegerVar(i));
+}
+
+
+/*
+  push an array of elements
+*/
+NTSTATUS ejs_push_array(struct ejs_rpc *ejs, 
+			struct MprVar *v, const char *name, uint32_t length,
+			size_t elsize, void *r, ejs_push_t ejs_push)
+{
+	int i;
+	char *data;
+
+	NDR_CHECK(ejs_push_struct_start(ejs, &v, name));
+
+	data = r;
+
+	for (i=0;i<length;i++) {
+		char *id = talloc_asprintf(ejs, "%u", i);
+		NT_STATUS_HAVE_NO_MEMORY(id);
+		NDR_CHECK(ejs_push(ejs, v, id, (i*elsize)+data));
+		talloc_free(id);
+	}
+	return NT_STATUS_OK;
+}
+			

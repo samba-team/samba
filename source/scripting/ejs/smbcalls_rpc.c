@@ -81,29 +81,28 @@ done:
      example:
             status = rpc_call(conn, "echo_AddOne", io);
 */
-static int ejs_rpc_call(MprVarHandle eid, int argc, struct MprVar **argv)
+ int ejs_rpc_call(int eid, int argc, struct MprVar **argv,
+		  const char *callname,
+		  ejs_pull_function_t ejs_pull, ejs_push_function_t ejs_push)
 {
 	struct MprVar *conn, *io;
 	const struct dcerpc_interface_table *iface;
 	struct dcerpc_pipe *p;
-	const char *callname;
 	const struct dcerpc_interface_call *call;
 	NTSTATUS status;
 	void *ptr;
 	struct rpc_request *req;
 	int callnum;
 
-	if (argc != 3 ||
+	if (argc != 2 ||
 	    argv[0]->type != MPR_TYPE_OBJECT ||
-	    argv[1]->type != MPR_TYPE_STRING ||
-	    argv[2]->type != MPR_TYPE_OBJECT) {
+	    argv[1]->type != MPR_TYPE_OBJECT) {
 		ejsSetErrorMsg(eid, "rpc_call invalid arguments");
 		return -1;
 	}
 	    
 	conn     = argv[0];
-	callname = mprToString(argv[1]);
-	io       = argv[2];
+	io       = argv[1];
 
 	/* get the pipe info */
 	p = mprGetPtr(conn, "pipe");
@@ -129,7 +128,7 @@ static int ejs_rpc_call(MprVarHandle eid, int argc, struct MprVar **argv)
 	}
 
 	/* convert the mpr object into a C structure */
-	status = ejs_pull_rpc(io, ptr, (ejs_pull_function_t)ejs_pull_echo_AddOne);
+	status = ejs_pull_rpc(io, ptr, ejs_pull);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -153,7 +152,7 @@ static int ejs_rpc_call(MprVarHandle eid, int argc, struct MprVar **argv)
 		ndr_print_function_debug(call->ndr_print, call->name, NDR_OUT, ptr);
 	}
 
-	status = ejs_push_rpc(io, ptr, (ejs_push_function_t)ejs_push_echo_AddOne);
+	status = ejs_push_rpc(io, ptr, ejs_push);
 
 	talloc_free(ptr);
 done:
@@ -161,13 +160,13 @@ done:
 	return 0;
 }
 
+
 /*
   setup C functions that be called from ejs
 */
 void smb_setup_ejs_rpc(void)
 {
+	void setup_ejs_rpcecho(void);
 	ejsDefineCFunction(-1, "rpc_connect", ejs_rpc_connect, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineCFunction(-1, "rpc_call", ejs_rpc_call, NULL, MPR_VAR_SCRIPT_HANDLE);
+	setup_ejs_rpcecho();
 }
-
-
