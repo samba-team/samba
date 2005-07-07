@@ -93,14 +93,14 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 
 	pdc_name         = talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name());
 	domain_uuid      = samdb_result_guid(res[0], "objectGUID");
-	realm            = samdb_result_string(res[0], "realm", lp_realm());
+	realm            = samdb_result_string(res[0], "dnsDomain", lp_realm());
 	dns_domain       = samdb_result_string(res[0], "dnsDomain", lp_realm());
 	pdc_dns_name     = talloc_asprintf(mem_ctx, "%s.%s", 
 					   strlower_talloc(mem_ctx, lp_netbios_name()), 
 					   dns_domain);
 	flatname         = samdb_result_string(res[0], "name", lp_workgroup());
 	site_name        = "Default-First-Site-Name";
-	site_name2       = "";
+	site_name2       = "Default-First-Site-Name";
 	pdc_ip           = iface_best_ip(src_address);
 
 	ZERO_STRUCTP(netlogon);
@@ -140,7 +140,7 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 		netlogon->logon3.dns_domain   = dns_domain;
 		netlogon->logon3.pdc_dns_name = pdc_dns_name;
 		netlogon->logon3.domain       = flatname;
-		netlogon->logon3.pdc_name     = pdc_name;
+		netlogon->logon3.pdc_name     = lp_netbios_name();
 		netlogon->logon3.user_name    = user;
 		netlogon->logon3.site_name    = site_name;
 		netlogon->logon3.site_name2   = site_name2;
