@@ -437,7 +437,7 @@ char *share_mode_str(int num, share_mode_entry *e)
 	static pstring share_str;
 
 	slprintf(share_str, sizeof(share_str)-1, "share_mode_entry[%d]: "
-		 "pid = %lu, share_access = 0x%x, private_options = 0x%x"
+		 "pid = %lu, share_access = 0x%x, private_options = 0x%x, "
 		 "access_mask = 0x%x, port = 0x%x, type= 0x%x, file_id = %lu, "
 		 "dev = 0x%x, inode = %.0f",
 		 num, (unsigned long)e->pid,
