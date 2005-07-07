@@ -39,6 +39,7 @@
 #define __COM_ERR_H__
 
 #include <com_right.h>
+#include <stdarg.h>
 
 #if !defined(__GNUC__) && !defined(__attribute__)
 #define __attribute__(X)
