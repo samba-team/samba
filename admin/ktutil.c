@@ -149,13 +149,13 @@ usage(int status)
 int
 main(int argc, char **argv)
 {
-    int optind = 0;
+    int optidx = 0;
     krb5_error_code ret;
     setprogname(argv[0]);
     ret = krb5_init_context(&context);
     if (ret)
 	errx (1, "krb5_init_context failed: %d", ret);
-    if(getarg(args, num_args, argc, argv, &optind))
+    if(getarg(args, num_args, argc, argv, &optidx))
 	usage(1);
     if(help_flag)
 	usage(0);
@@ -163,8 +163,8 @@ main(int argc, char **argv)
 	print_version(NULL);
 	exit(0);
     }
-    argc -= optind;
-    argv += optind;
+    argc -= optidx;
+    argv += optidx;
     if(argc == 0)
 	usage(1);
     ret = sl_command(commands, argc, argv);
