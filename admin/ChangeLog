@@ -1,5 +1,13 @@
 2005-07-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ktutil.c: rename optind to optidx
+
+	* list.c: make a copy of realm and admin_server to avoid
+	un-consting avoid shadowing
+
+	* get.c: make a copy of realm and admin_server to avoid
+	un-consting avoid shadowing
+	
 	* change.c (change_entry): just use global context to avoid
 	shadowing; make a copy of realm and admin_server to avoid
 	un-consting.
