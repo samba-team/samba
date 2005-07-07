@@ -1,3 +1,8 @@
+2005-07-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/asn1/der_get.c: don't include <version.h>, it forces
+	unnecessary rebuilds
+
 2005-07-07  Assar Westerlund  <assar@kth.se>
 
 	* configure.in: add AM_PROG_CC_C_O for automake 1.9

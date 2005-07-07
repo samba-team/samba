@@ -1,3 +1,9 @@
+2005-07-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* change.c (change_entry): just use global context to avoid
+	shadowing; make a copy of realm and admin_server to avoid
+	un-consting.
+
 2005-05-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* change.c (kt_change): plug memory leak from
