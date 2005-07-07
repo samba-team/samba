@@ -23,7 +23,7 @@ function test_AddOne(binding)
 
 	for (i=0;i<10;i++) {
 		io.in.in_data = i;
-		status = rpc_call(conn, "echo_AddOne", io);
+		status = dcerpc_echo_AddOne(conn, io);
 		print("AddOne(" + i + ")=" + io.out.out_data + "\n");
 	}
 }
