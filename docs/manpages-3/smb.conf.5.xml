@@ -61,7 +61,7 @@
 	<para>
 	The values following the equals sign in parameters are all either a string (no quotes needed) or a boolean,
 	which may be given as yes/no, 0/1 or true/false. Case is not significant in boolean values, but is preserved
-	in string values. Some items such as create modes are numeric.
+	in string values. Some items such as create masks are numeric.
 	</para>
 
 </refsect1>
@@ -292,8 +292,8 @@ alias|alias|alias|alias...
 		
 		<note><para>
 		On SYSV systems which use lpstat to determine what printers are defined on the system you may be able to use
-		<literal>printcap name = lpstat</literal> to automatically obtain a list of printers. See the <literal>printcap name</literal> option 
-		for more details.
+		<literal>printcap name = lpstat</literal> to automatically obtain a list of printers. See the
+		<literal>printcap name</literal> option for more details.
 		</para></note>
 	</refsect2>
 </refsect1>
@@ -305,7 +305,7 @@ alias|alias|alias|alias...
 
 	<para>
 	Some parameters are specific to the [global] section (e.g., <emphasis>security</emphasis>).  Some parameters
-	are usable in all sections (e.g., <emphasis>create mode</emphasis>). All others are permissible only in normal
+	are usable in all sections (e.g., <emphasis>create mask</emphasis>). All others are permissible only in normal
 	sections. For the purposes of the following descriptions the [homes] and [printers] sections will be
 	considered normal.  The letter <emphasis>G</emphasis> in parentheses indicates that a parameter is specific to
 	the [global] section. The letter <emphasis>S</emphasis> indicates that a parameter can be specified in a

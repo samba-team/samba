@@ -496,18 +496,23 @@ domain member servers (DMSs) and domain member clients (DMCs).
 	<title>NT4-Style Domains (Includes Samba Domains)</title>
 
 	<para>
-	The following is a simple example of an NT4 DMS &smb.conf; file that shows only the global section.
-<screen>
-#Global parameters
-[global]
-        workgroup = MEGANET2
-        security = DOMAIN
-        idmap uid = 10000-20000
-        idmap gid = 10000-20000
-        template primary group = "Domain Users"
-        template shell = /bin/bash
-</screen>
+	<link linkend="idmapnt4dms">NT4 Domain Member Server smb.con</link> is a simple example of an NT4 DMS
+	&smb.conf; file that shows only the global section.
 	</para>
+
+<example id="idmapnt4dms">
+<title>NT4 Domain Member Server smb.conf</title>
+<smbconfblock>
+<smbconfcomment>Global parameters</smbconfcomment>
+<smbconfsection name="[global]"/>
+<smbconfoption name="workgroup">MEGANET2</smbconfoption>
+<smbconfoption name="security">DOMAIN</smbconfoption>
+<smbconfoption name="idmap uid">10000-20000</smbconfoption>
+<smbconfoption name="idmap gid">10000-20000</smbconfoption>
+<smbconfoption name="template primary group">"Domain Users"</smbconfoption>
+<smbconfoption name="template shell">/bin/bash</smbconfoption>
+</smbconfblock>
+</example>
 
 	<para>
 	<indexterm><primary>winbind</primary></indexterm>
@@ -573,22 +578,26 @@ Join to domain 'MEGANET2' is not valid
 	<indexterm><primary>domain join</primary></indexterm>
 	<indexterm><primary>ADS domain</primary></indexterm>
 	The procedure for joining an ADS domain is similar to the NT4 domain join, except the &smb.conf; file
-	will have the following contents:
-<screen>
-# Global parameters
-[global]
-        workgroup = BUTTERNET
-        netbios name = GARGOYLE
-        realm = BUTTERNET.BIZ
-        security = ADS
-        template shell = /bin/bash
-        idmap uid = 500-10000000
-        idmap gid = 500-10000000
-        winbind use default domain = Yes
-        winbind nested groups = Yes
-        printer admin = "BUTTERNET\Domain Admins"
-</screen>
+	will have the contents shown in <link linkend="idmapadsdms">ADS Domain Member Server smb.conf</link>
 	</para>
+
+<example id="idmapadsdms">
+<title>ADS Domain Member Server smb.conf</title>
+<smbconfblock>
+<smbconfcomment>Global parameters</smbconfcomment>
+<smbconfsection name="[global]"/>
+<smbconfoption name="workgroup">BUTTERNET</smbconfoption>
+<smbconfoption name="netbios name">GARGOYLE</smbconfoption>
+<smbconfoption name="realm">BUTTERNET.BIZ</smbconfoption>
+<smbconfoption name="security">ADS</smbconfoption>
+<smbconfoption name="template shell">/bin/bash</smbconfoption>
+<smbconfoption name="idmap uid">500-10000000</smbconfoption>
+<smbconfoption name="idmap gid">500-10000000</smbconfoption>
+<smbconfoption name="winbind use default domain">Yes</smbconfoption>
+<smbconfoption name="winbind nested groups">Yes</smbconfoption>
+<smbconfoption name="printer admin">"BUTTERNET\Domain Admins"</smbconfoption>
+</smbconfblock>
+</example>
 
 	<para>
 	<indexterm><primary>KRB</primary></indexterm>
@@ -696,27 +705,32 @@ Join to domain is not valid
 	</para>
 
 	<para>
-	An example &smb.conf; file for and ADS domain environment is shown here:
-<screen>
-# Global parameters
-[global]
-        workgroup = KPAK
-        netbios name = BIGJOE
-        realm = CORP.KPAK.COM
-        server string = Office Server
-        security = ADS
-        allow trusted domains = No
-        idmap backend = idmap_rid:KPAK=500-100000000
-        idmap uid = 500-100000000
-        idmap gid = 500-100000000
-        template shell = /bin/bash
-        winbind use default domain = Yes
-        winbind enum users = No
-        winbind enum groups = No
-        winbind nested groups = Yes
-        printer admin = "Domain Admins"
-</screen>
+	An example &smb.conf; file for and ADS domain environment is shown in <link linkend="idmapadsridDMS">ADS
+	Domain Member smb.conf using idmap_rid</link>.
 	</para>
+
+<example id="idmapadsridDMS">
+<title>ADS Domain Member smb.conf using idmap_rid</title>
+<smbconfblock>
+<smbconfcomment>Global parameters</smbconfcomment>
+<smbconfsection name="[global]"/>
+<smbconfoption name="workgroup">KPAK</smbconfoption>
+<smbconfoption name="netbios name">BIGJOE</smbconfoption>
+<smbconfoption name="realm">CORP.KPAK.COM</smbconfoption>
+<smbconfoption name="server string">Office Server</smbconfoption>
+<smbconfoption name="security">ADS</smbconfoption>
+<smbconfoption name="allow trusted domains">No</smbconfoption>
+<smbconfoption name="idmap backend">idmap_rid:KPAK=500-100000000</smbconfoption>
+<smbconfoption name="idmap uid">500-100000000</smbconfoption>
+<smbconfoption name="idmap gid">500-100000000</smbconfoption>
+<smbconfoption name="template shell">/bin/bash</smbconfoption>
+<smbconfoption name="winbind use default domain">Yes</smbconfoption>
+<smbconfoption name="winbind enum users">No</smbconfoption>
+<smbconfoption name="winbind enum groups">No</smbconfoption>
+<smbconfoption name="winbind nested groups">Yes</smbconfoption>
+<smbconfoption name="printer admin">"Domain Admins"</smbconfoption>
+</smbconfblock>
+</example>
 
 	<para>
 	<indexterm><primary>large domain</primary></indexterm>
@@ -815,29 +829,31 @@ administrator:x:1000:1013:Administrator:/home/BE/administrator:/bin/bash
 	</para>
 
 	<para>
-	The following example is for an ADS domain:
+	An example is for an ADS domain is shown in <link linkend="idmapldapDMS">ADS Domain Member Server using
+	LDAP</link>.
 	</para>
 
-	<para>
-<screen>
-# Global parameters
-[global]
-        workgroup = SNOWSHOW
-        netbios name = GOODELF
-        realm = SNOWSHOW.COM
-        server string = Samba Server
-        security = ADS
-        log level = 1 ads:10 auth:10 sam:10 rpc:10
-        ldap admin dn = cn=Manager,dc=SNOWSHOW,dc=COM
-        ldap idmap suffix = ou=Idmap
-        ldap suffix = dc=SNOWSHOW,dc=COM
-        idmap backend = ldap:ldap://ldap.snowshow.com
-        idmap uid = 150000-550000
-        idmap gid = 150000-550000
-        template shell = /bin/bash
-        winbind use default domain = Yes
-</screen>
-	</para>
+<example id="idmapldapDMS">
+<title>ADS Domain Member Server using LDAP</title>
+<smbconfblock>
+<smbconfcomment>Global parameters</smbconfcomment>
+<smbconfsection name="[global]"/>
+<smbconfoption name="workgroup">SNOWSHOW</smbconfoption>
+<smbconfoption name="netbios name">GOODELF</smbconfoption>
+<smbconfoption name="realm">SNOWSHOW.COM</smbconfoption>
+<smbconfoption name="server string">Samba Server</smbconfoption>
+<smbconfoption name="security">ADS</smbconfoption>
+<smbconfoption name="log level">1 ads:10 auth:10 sam:10 rpc:10</smbconfoption>
+<smbconfoption name="ldap admin dn">cn=Manager,dc=SNOWSHOW,dc=COM</smbconfoption>
+<smbconfoption name="ldap idmap suffix">ou=Idmap</smbconfoption>
+<smbconfoption name="ldap suffix">dc=SNOWSHOW,dc=COM</smbconfoption>
+<smbconfoption name="idmap backend">ldap:ldap://ldap.snowshow.com</smbconfoption>
+<smbconfoption name="idmap uid">150000-550000</smbconfoption>
+<smbconfoption name="idmap gid">150000-550000</smbconfoption>
+<smbconfoption name="template shell">/bin/bash</smbconfoption>
+<smbconfoption name="winbind use default domain">Yes</smbconfoption>
+</smbconfblock>
+</example>
 
 	<para>
 	<indexterm><primary>realm</primary></indexterm>
@@ -1018,22 +1034,27 @@ Joined 'GOODELF' to realm 'SNOWSHOW.COM'
 	</para>
 
 	<para>
-	The following is an example &smb.conf; file:
-<screen>
-# Global parameters
-[global]
-        workgroup = BOBBY
-        realm = BOBBY.COM
-        security = ADS
-        idmap uid = 150000-550000
-        idmap gid = 150000-550000
-        template shell = /bin/bash
-        winbind cache time = 5
-        winbind use default domain = Yes
-        winbind trusted domains only = Yes
-        winbind nested groups = Yes
-</screen>
+	An example &smb.conf; file is shown in <link linkend="idmaprfc2307">ADS Domain Member Server using
+RFC2307bis Schema Extension Date via NSS</link>.
 	</para>
+
+<example id="idmaprfc2307">
+<title>ADS Domain Member Server using RFC2307bis Schema Extension Date via NSS</title>
+<smbconfblock>
+<smbconfcomment>Global parameters</smbconfcomment>
+<smbconfsection name="[global]"/>
+<smbconfoption name="workgroup">BOBBY</smbconfoption>
+<smbconfoption name="realm">BOBBY.COM</smbconfoption>
+<smbconfoption name="security">ADS</smbconfoption>
+<smbconfoption name="idmap uid">150000-550000</smbconfoption>
+<smbconfoption name="idmap gid">150000-550000</smbconfoption>
+<smbconfoption name="template shell">/bin/bash</smbconfoption>
+<smbconfoption name="winbind cache time">5</smbconfoption>
+<smbconfoption name="winbind use default domain">Yes</smbconfoption>
+<smbconfoption name="winbind trusted domains only">Yes</smbconfoption>
+<smbconfoption name="winbind nested groups">Yes</smbconfoption>
+</smbconfblock>
+</example>
 
 	<para>
 	<indexterm><primary>nss_ldap</primary></indexterm>
