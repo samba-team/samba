@@ -93,7 +93,7 @@ function test_OpenDomain(conn, handle, sid)
 */
 function test_EnumDomainUsers(conn, dom_handle)
 {
-	var io = irpcObj();
+	var i, io = irpcObj();
 	print("Testing samr_EnumDomainUsers\n");
 	io.input.domain_handle = dom_handle;
 	io.input.resume_handle = 0;
@@ -105,7 +105,7 @@ function test_EnumDomainUsers(conn, dom_handle)
 	if (io.output.sam == NULL) {
 		return;
 	}
-	entries = io.output.sam.entries;
+	var entries = io.output.sam.entries;
 	for (i=0;i<io.output.num_entries;i++) {
 		print("\t" + entries[i].name.string + "\n");
 	}
@@ -116,7 +116,7 @@ function test_EnumDomainUsers(conn, dom_handle)
 */
 function test_EnumDomainGroups(conn, dom_handle)
 {
-	var io = irpcObj();
+	var i, io = irpcObj();
 	print("Testing samr_EnumDomainGroups\n");
 	io.input.domain_handle = dom_handle;
 	io.input.resume_handle = 0;
@@ -128,7 +128,7 @@ function test_EnumDomainGroups(conn, dom_handle)
 	if (io.output.sam == NULL) {
 		return;
 	}
-	entries = io.output.sam.entries;
+	var entries = io.output.sam.entries;
 	for (i=0;i<io.output.num_entries;i++) {
 		print("\t" + entries[i].name.string + "\n");
 	}
@@ -150,7 +150,7 @@ function test_domain_ops(conn, dom_handle)
 */
 function test_EnumDomains(conn, handle)
 {
-	var io = irpcObj();
+	var i, io = irpcObj();
 	print("Testing samr_EnumDomains\n");
 	io.input.connect_handle = handle;
 	io.input.resume_handle = 0;
@@ -161,7 +161,7 @@ function test_EnumDomains(conn, handle)
 	if (io.output.sam == NULL) {
 		return;
 	}
-	entries = io.output.sam.entries;
+	var entries = io.output.sam.entries;
 	for (i=0;i<io.output.num_entries;i++) {
 		print("\t" + entries[i].name.string + "\n");
 	}
