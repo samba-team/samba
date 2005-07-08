@@ -2502,15 +2502,15 @@ sambaNTPassword: 878D8014606CDA29677A44EFA1353FC7
 		<title>Using OpenLDAP Overlay for Password Syncronization</title>
 
 		<para>
-		Howard Chu has written a special overlay called <emphasis>smbk5pwd</emphasis>, which modifies
-		<constant>SambaNTPassword</constant>, <constant>SambaLMPassword</constant> and <constant>Heimdal</constant>
-		hashes in an OpenLDAP entry when LDAP_EXOP_X_MODIFY_PASSWD is performed.
+		Howard Chu has written a special overlay called <command>smbk5pwd</command>. This tool  modifies the
+		<literal>SambaNTPassword</literal>, <literal>SambaLMPassword</literal> and <literal>Heimdal</literal>
+		hashes in an OpenLDAP entry when an LDAP_EXOP_X_MODIFY_PASSWD operation is performed.
 		</para>
 
 		<para>
 		The overlay is shipped with OpenLDAP-2.3 and can be found in the
-		<filename>contrib/slapd-modules/smbk5pwd</filename> subdirectory. This module can be used with OpenLDAP-2.2
-		also.
+		<filename>contrib/slapd-modules/smbk5pwd</filename> subdirectory. This module can also be used with
+		OpenLDAP-2.2.
 		</para>
 
 		</sect3>
