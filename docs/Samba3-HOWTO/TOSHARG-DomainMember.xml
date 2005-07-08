@@ -1320,7 +1320,7 @@ exists on the network &smbmdash; I know it does not. Why is this failing?</quote
 <indexterm><primary>nbtstat</primary></indexterm>
 The original name is still in the NetBIOS name cache and must expire after machine account
 deletion before adding that same name as a domain member again. The best advice is to delete
-the old account and then add the machine with a new name. Alternately, the name cache can be flished and
+the old account and then add the machine with a new name. Alternately, the name cache can be flushed and
 reloaded with current data using the <command>nbtstat</command> command on the Windows client:
 <screen>
 &dosprompt; nbtstat -R
