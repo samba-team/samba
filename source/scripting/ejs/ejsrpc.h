@@ -23,6 +23,9 @@
 struct ejs_rpc {
 	int eid;
 	const char *callname;
+	/* as ejs does only one pass, we can use a single var for switch 
+	   handling */
+	uint32_t switch_var;
 };
 
 typedef NTSTATUS (*ejs_pull_t)(struct ejs_rpc *, struct MprVar *, const char *, void *);
@@ -31,6 +34,7 @@ typedef NTSTATUS (*ejs_pull_function_t)(struct ejs_rpc *, struct MprVar *, void 
 typedef NTSTATUS (*ejs_push_function_t)(struct ejs_rpc *, struct MprVar *, const void *);
 
 NTSTATUS ejs_panic(struct ejs_rpc *ejs, const char *why);
+void ejs_set_switch(struct ejs_rpc *ejs, uint32_t switch_var);
 
 int ejs_rpc_call(int eid, int argc, struct MprVar **argv, const char *callname,
 		 ejs_pull_function_t ejs_pull, ejs_push_function_t ejs_push);
@@ -63,10 +67,7 @@ NTSTATUS ejs_push_enum(struct ejs_rpc *ejs,
 NTSTATUS ejs_pull_array(struct ejs_rpc *ejs, 
 			struct MprVar *v, const char *name, uint32_t length,
 			size_t elsize, void **r, ejs_pull_t ejs_pull);
-NTSTATUS ejs_push_array(struct ejs_rpc *ejs, 
-			struct MprVar *v, const char *name, uint32_t length,
-			size_t elsize, void *r, ejs_push_t ejs_push);
 NTSTATUS ejs_pull_string(struct ejs_rpc *ejs, 
-			 struct MprVar *v, const char *name, const char **s);
+			 struct MprVar *v, const char *name, char **s);
 NTSTATUS ejs_push_string(struct ejs_rpc *ejs, 
 			 struct MprVar *v, const char *name, const char *s);
