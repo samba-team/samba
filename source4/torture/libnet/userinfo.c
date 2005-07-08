@@ -27,7 +27,7 @@
 #define TEST_USERNAME  "libnetuserinfotest"
 
 static BOOL test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			    struct policy_handle *handle, struct samr_String *domname,
+			    struct policy_handle *handle, struct lsa_String *domname,
 			    struct dom_sid2 *sid)
 {
 	NTSTATUS status;
@@ -86,7 +86,7 @@ static BOOL test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_LookupNames r1;
 	struct samr_OpenUser r2;
 	struct samr_DeleteUser r3;
-	struct samr_String names[2];
+	struct lsa_String names[2];
 	uint32_t rid;
 	struct policy_handle user_handle;
 
@@ -138,7 +138,7 @@ static BOOL test_create(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			struct policy_handle *handle, const char *name, uint32_t *rid)
 {
 	NTSTATUS status;
-	struct samr_String username;
+	struct lsa_String username;
 	struct samr_CreateUser r;
 	struct policy_handle user_handle;
 	
@@ -263,7 +263,7 @@ BOOL torture_userinfo(void)
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	struct policy_handle h;
-	struct samr_String name;
+	struct lsa_String name;
 	struct dom_sid2 sid;
 	uint32_t rid;
 

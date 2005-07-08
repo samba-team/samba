@@ -44,7 +44,7 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 	struct samr_OemChangePasswordUser2 oe2;
 	struct samr_ChangePasswordUser2 pw2;
 	struct samr_ChangePasswordUser3 pw3;
-	struct samr_String server, account;
+	struct lsa_String server, account;
 	struct samr_AsciiName a_server, a_account;
 	struct samr_CryptPassword nt_pass, lm_pass;
 	struct samr_Password nt_verifier, lm_verifier;
@@ -506,7 +506,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	struct samr_Connect sc;
 	struct policy_handle p_handle;
 	struct samr_LookupDomain ld;
-	struct samr_String d_name;
+	struct lsa_String d_name;
 	struct samr_OpenDomain od;
 	struct policy_handle d_handle;
 	struct samr_LookupNames ln;
@@ -578,7 +578,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	/* prepare samr_LookupNames */
 	ln.in.domain_handle = &d_handle;
 	ln.in.num_names = 1;
-	ln.in.names = talloc_array(mem_ctx, struct samr_String, 1);
+	ln.in.names = talloc_array(mem_ctx, struct lsa_String, 1);
 	if (!ln.in.names) {
 		r->samr.out.error_string = "Out of Memory";
 		return NT_STATUS_NO_MEMORY;

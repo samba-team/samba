@@ -38,7 +38,7 @@ static BOOL test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_OpenUser r2;
 	struct samr_DeleteUser r3;
 	struct samr_Close r4;
-	struct samr_String names[2];
+	struct lsa_String names[2];
 	uint32_t rid;
 	struct policy_handle user_handle;
 

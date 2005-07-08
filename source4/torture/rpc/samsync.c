@@ -136,7 +136,7 @@ static struct policy_handle *samsync_open_domain(TALLOC_CTX *mem_ctx,
 						 const char *domain, 
 						 struct dom_sid **sid)
 {
-	struct samr_String name;
+	struct lsa_String name;
 	struct samr_OpenDomain o;
 	struct samr_LookupDomain l;
 	struct policy_handle *domain_handle = talloc(mem_ctx, struct policy_handle);

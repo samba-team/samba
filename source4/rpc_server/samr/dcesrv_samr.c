@@ -1219,7 +1219,7 @@ static NTSTATUS samr_LookupRids(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	struct samr_domain_state *d_state;
 	int i, total;
 	NTSTATUS status = NT_STATUS_OK;
-	struct samr_String *names;
+	struct lsa_String *names;
 	uint32_t *ids;
 
 	ZERO_STRUCT(r->out.names);
@@ -1232,7 +1232,7 @@ static NTSTATUS samr_LookupRids(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	if (r->in.num_rids == 0)
 		return NT_STATUS_OK;
 
-	names = talloc_array(mem_ctx, struct samr_String, r->in.num_rids);
+	names = talloc_array(mem_ctx, struct lsa_String, r->in.num_rids);
 	ids = talloc_array(mem_ctx, uint32_t, r->in.num_rids);
 
 	if ((names == NULL) || (ids == NULL))

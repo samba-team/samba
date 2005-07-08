@@ -77,15 +77,9 @@
 
 	/******************/
 	/* Function: 0x05 */
-	typedef struct {
-		[value(2*strlen_m(string))] uint16 length;
-		[value(2*strlen_m(string))] uint16 size;
-		unistr_noterm *string;
-	} samr_String;	
-
 	NTSTATUS samr_LookupDomain (
 		[in,ref]  policy_handle *connect_handle,		
-		[in,ref]  samr_String *domain_name,
+		[in,ref]  lsa_String *domain_name,
 		[out]     dom_sid2 *sid
 		);
 
@@ -95,7 +89,7 @@
 
 	typedef struct {
 		uint32 idx;
-		samr_String name;
+		lsa_String name;
 	} samr_SamEntry;
 
 	typedef struct {
@@ -142,9 +136,9 @@
 
 	typedef struct {
 		NTTIME force_logoff_time;
-		samr_String comment;
-		samr_String domain_name;
-		samr_String primary; /* PDC name if this is a BDC */
+		lsa_String comment;
+		lsa_String domain_name;
+		lsa_String primary; /* PDC name if this is a BDC */
 		udlong sequence_num;
 		uint32 unknown2;
 		samr_Role role;
@@ -159,15 +153,15 @@
 	} samr_DomInfo3;
 
 	typedef struct {
-		samr_String comment;
+		lsa_String comment;
 	} samr_DomInfo4;
 
 	typedef struct {
-		samr_String domain_name;
+		lsa_String domain_name;
 	} samr_DomInfo5;
 
 	typedef struct {
-		samr_String primary;
+		lsa_String primary;
 	} samr_DomInfo6;
 
 	typedef struct {
@@ -241,7 +235,7 @@
 	/* Function    0x0a     */
 	NTSTATUS samr_CreateDomainGroup(
 		[in,ref]      policy_handle *domain_handle,
-		[in,ref]      samr_String *name,
+		[in,ref]      lsa_String *name,
 		[in]          uint32 access_mask,
 		[out,ref]     policy_handle *group_handle,
 		[out,ref]     uint32 *rid
@@ -262,7 +256,7 @@
 	/* Function    0x0c     */
 	NTSTATUS samr_CreateUser(
 		[in,ref]      policy_handle *domain_handle,
-		[in,ref]      samr_String *account_name,
+		[in,ref]      lsa_String *account_name,
 		[in]          uint32 access_mask,
 		[out,ref]     policy_handle *user_handle,
 		[out,ref]     uint32 *rid
@@ -290,7 +284,7 @@
 	/* Function    0x0e     */
 	NTSTATUS samr_CreateDomAlias(
 		[in,ref]      policy_handle *domain_handle,
-		[in,ref]      samr_String   *alias_name,
+		[in,ref]      lsa_String   *alias_name,
 		[in]          uint32         access_mask,
 		[out,ref]     policy_handle *alias_handle,
 		[out,ref]     uint32        *rid
@@ -326,7 +320,7 @@
 	NTSTATUS samr_LookupNames(
 		[in,ref]      policy_handle *domain_handle,
 		[in,range(0,1000)] uint32 num_names,
-		[in,size_is(1000),length_is(num_names)] samr_String names[],
+		[in,size_is(1000),length_is(num_names)] lsa_String names[],
 		[out]         samr_Ids rids,
 		[out]         samr_Ids types
 		);
@@ -334,17 +328,11 @@
 
 	/************************/
 	/* Function    0x12     */
-
-	typedef struct {
-		uint32 count;
-		[size_is(count)] samr_String *names;
-	} samr_Strings;
-
 	NTSTATUS samr_LookupRids(
 		[in,ref]      policy_handle *domain_handle,
 		[in,range(0,1000)] uint32 num_rids,
 		[in,size_is(1000),length_is(num_rids)] uint32 rids[],
-		[out]         samr_Strings names,
+		[out]         lsa_Strings names,
 		[out]         samr_Ids types
 		);
 
@@ -366,10 +354,10 @@
 	/* Function    0x14     */
 
 	typedef struct {
-		samr_String name;
+		lsa_String name;
 		uint32 attributes;
 		uint32 num_members;
-		samr_String description;
+		lsa_String description;
 	} samr_GroupInfoAll;
 
 	typedef struct {
@@ -377,7 +365,7 @@
 	} samr_GroupInfoX;
 
 	typedef struct {
-		samr_String description;
+		lsa_String description;
 	} samr_GroupInfoDesciption;
 
 	typedef enum {
@@ -390,9 +378,9 @@
 
 	typedef [switch_type(samr_GroupInfoEnum)] union {
 		[case(GROUPINFOALL)]         samr_GroupInfoAll    all;
-		[case(GROUPINFONAME)]        samr_String            name;
+		[case(GROUPINFONAME)]        lsa_String           name;
 		[case(GROUPINFOX)]           samr_GroupInfoX      unknown;
-		[case(GROUPINFODESCRIPTION)] samr_String            description;
+		[case(GROUPINFODESCRIPTION)] lsa_String           description;
 		[case(GROUPINFOALL2)]        samr_GroupInfoAll    all2;
 	} samr_GroupInfo;
 
@@ -476,9 +464,9 @@
 	/* Function    0x1c     */
 
 	typedef struct {
-		samr_String name;
+		lsa_String name;
 		uint32 num_members;
-		samr_String description;
+		lsa_String description;
 	} samr_AliasInfoAll;
 
 	typedef enum {
@@ -489,8 +477,8 @@
 
 	typedef [switch_type(samr_AliasInfoEnum)] union {
 		[case(ALIASINFOALL)] samr_AliasInfoAll all;
-		[case(ALIASINFONAME)] samr_String name;
-		[case(ALIASINFODESCRIPTION)] samr_String description;
+		[case(ALIASINFONAME)] lsa_String name;
+		[case(ALIASINFODESCRIPTION)] lsa_String description;
 	} samr_AliasInfo;
 
 	NTSTATUS samr_QueryAliasInfo(
@@ -552,16 +540,16 @@
 	/************************/
 	/* Function    0x24     */
 	typedef struct {
-		samr_String account_name;
-		samr_String full_name;
+		lsa_String account_name;
+		lsa_String full_name;
 		uint32 primary_gid;
-		samr_String description;
-		samr_String comment;
+		lsa_String description;
+		lsa_String comment;
 	} samr_UserInfo1;
 
 	typedef struct {
-		samr_String comment;
-		samr_String unknown; /* settable, but doesn't stick. probably obsolete */
+		lsa_String comment;
+		lsa_String unknown; /* settable, but doesn't stick. probably obsolete */
 		uint16 country_code;
 		uint16 code_page;
 	} samr_UserInfo2;
@@ -573,15 +561,15 @@
 	} samr_LogonHours;
 
 	typedef struct {
-		samr_String account_name;
-		samr_String full_name;
+		lsa_String account_name;
+		lsa_String full_name;
 		uint32 rid;
 		uint32 primary_gid;
-		samr_String home_directory;
-		samr_String home_drive;
-		samr_String logon_script;
-		samr_String profile_path;
-		samr_String workstations;
+		lsa_String home_directory;
+		lsa_String home_drive;
+		lsa_String logon_script;
+		lsa_String profile_path;
+		lsa_String workstations;
 		NTTIME last_logon;
 		NTTIME last_logoff;
 		NTTIME last_password_change;
@@ -598,16 +586,16 @@
 	} samr_UserInfo4;
 
 	typedef struct {
-		samr_String account_name;
-		samr_String full_name;
+		lsa_String account_name;
+		lsa_String full_name;
 		uint32 rid;
 		uint32 primary_gid;
-		samr_String home_directory;
-		samr_String home_drive;
-		samr_String logon_script;
-		samr_String profile_path;
-		samr_String description;
-		samr_String workstations;
+		lsa_String home_directory;
+		lsa_String home_drive;
+		lsa_String logon_script;
+		lsa_String profile_path;
+		lsa_String description;
+		lsa_String workstations;
 		NTTIME last_logon;
 		NTTIME last_logoff;
 		samr_LogonHours logon_hours;
@@ -619,16 +607,16 @@
 	} samr_UserInfo5;
 
 	typedef struct {
-		samr_String account_name;
-		samr_String full_name;
+		lsa_String account_name;
+		lsa_String full_name;
 	} samr_UserInfo6;
 
 	typedef struct {
-		samr_String account_name;
+		lsa_String account_name;
 	} samr_UserInfo7;
 
 	typedef struct {
-		samr_String full_name;
+		lsa_String full_name;
 	} samr_UserInfo8;
 
 	typedef struct {
@@ -636,24 +624,24 @@
 	} samr_UserInfo9;
 
 	typedef struct {
-		samr_String home_directory;
-		samr_String home_drive;
+		lsa_String home_directory;
+		lsa_String home_drive;
 	} samr_UserInfo10;
 
 	typedef struct {
-		samr_String logon_script;
+		lsa_String logon_script;
 	} samr_UserInfo11;
 
 	typedef struct {
-		samr_String profile_path;
+		lsa_String profile_path;
 	} samr_UserInfo12;
 
 	typedef struct {
-		samr_String description;
+		lsa_String description;
 	} samr_UserInfo13;
 
 	typedef struct {
-		samr_String workstations;
+		lsa_String workstations;
 	} samr_UserInfo14;
 
 	typedef struct {
@@ -665,7 +653,7 @@
 	} samr_UserInfo17;
 
 	typedef struct {
-		samr_String parameters;
+		lsa_String parameters;
 	} samr_UserInfo20;
 
 	/* this defines the bits used for fields_present in info21 */
@@ -693,19 +681,19 @@
 		NTTIME acct_expiry;
 		NTTIME allow_password_change;
 		NTTIME force_password_change;
-		samr_String account_name;
-		samr_String full_name;
-		samr_String home_directory;
-		samr_String home_drive;
-		samr_String logon_script;
-		samr_String profile_path;
-		samr_String description;
-		samr_String workstations;
-		samr_String comment;
-		samr_String parameters;
-		samr_String unknown1;
-		samr_String unknown2;
-		samr_String unknown3;
+		lsa_String account_name;
+		lsa_String full_name;
+		lsa_String home_directory;
+		lsa_String home_drive;
+		lsa_String logon_script;
+		lsa_String profile_path;
+		lsa_String description;
+		lsa_String workstations;
+		lsa_String comment;
+		lsa_String parameters;
+		lsa_String unknown1;
+		lsa_String unknown2;
+		lsa_String unknown3;
 		uint32 buf_count;
 		[size_is(buf_count)] uint8 *buffer;
 		uint32 rid;
@@ -840,9 +828,9 @@
 		uint32    idx;
 		uint32    rid;
 		samr_AcctFlags acct_flags;
-		samr_String account_name;
-		samr_String full_name;
-		samr_String description;
+		lsa_String account_name;
+		lsa_String full_name;
+		lsa_String description;
 	} samr_DispEntryGeneral;
 
 	typedef struct {
@@ -854,8 +842,8 @@
 		uint32    idx;
 		uint32    rid;
 		samr_AcctFlags acct_flags;
-		samr_String account_name;
-		samr_String description;
+		lsa_String account_name;
+		lsa_String description;
 	} samr_DispEntryFull;
 
 	typedef struct {
@@ -864,14 +852,8 @@
 	} samr_DispInfoFull;
 
 	typedef struct {
-		[value(strlen_m(string))] uint16 length;
-		[value(strlen_m(string))] uint16 size;
-		ascstr_noterm *string;
-	} samr_AsciiName;	
-
-	typedef struct {
 		uint32    idx;
-		samr_AsciiName account_name;
+		lsa_AsciiString account_name;
 	} samr_DispEntryAscii;
 
 	typedef struct {
@@ -914,7 +896,7 @@
 	NTSTATUS samr_GetDisplayEnumerationIndex(
 		[in,ref]    policy_handle *domain_handle,
 		[in]        uint16 level,
-		[in]        samr_String name,
+		[in]        lsa_String name,
 		[out]       uint32 idx
 		);
 
@@ -1019,7 +1001,7 @@
 	NTSTATUS samr_GetDisplayEnumerationIndex2(
 		[in,ref]    policy_handle *domain_handle,
 		[in]        uint16 level,
-		[in]        samr_String name,
+		[in]        lsa_String name,
 		[out]       uint32 idx
 		);
 
@@ -1028,7 +1010,7 @@
 	/* Function    0x32     */
 	NTSTATUS samr_CreateUser2(
 		[in,ref]      policy_handle *domain_handle,
-		[in,ref]      samr_String *account_name,
+		[in,ref]      lsa_String *account_name,
 		[in]          samr_AcctFlags acct_flags,
 		[in]          uint32 access_mask,
 		[out,ref]     policy_handle *user_handle,
@@ -1072,8 +1054,8 @@
 	/* Function    0x36     */
 
 	NTSTATUS samr_OemChangePasswordUser2(
-		[in]              samr_AsciiName *server,
-		[in,ref]          samr_AsciiName *account,
+		[in]              lsa_AsciiString *server,
+		[in,ref]          lsa_AsciiString *account,
 		[in]              samr_CryptPassword *password,
 		[in]              samr_Password *hash
 		);
@@ -1081,8 +1063,8 @@
 	/************************/
 	/* Function    0x37     */
 	NTSTATUS samr_ChangePasswordUser2(
-		[in]              samr_String *server,
-		[in,ref]          samr_String *account,
+		[in]              lsa_String *server,
+		[in,ref]          lsa_String *account,
 		[in]              samr_CryptPassword *nt_password,
 		[in]              samr_Password *nt_verifier,
 		[in]              bool8 lm_change,
@@ -1093,7 +1075,7 @@
 	/************************/
 	/* Function    0x38     */
 	NTSTATUS samr_GetDomPwInfo(
-		[in]        samr_String *domain_name,
+		[in]        lsa_String *domain_name,
 		[out]       samr_PwInfo info
 		);
 
@@ -1170,8 +1152,8 @@
 	} samr_ChangeReject;
 
 	NTSTATUS samr_ChangePasswordUser3(
-		[in]              samr_String *server,
-		[in,ref]          samr_String *account,
+		[in]              lsa_String *server,
+		[in,ref]          lsa_String *account,
 		[in]              samr_CryptPassword *nt_password,
 		[in]              samr_Password *nt_verifier,
 		[in]              bool8 lm_change,
@@ -1221,7 +1203,7 @@
 	*/
 
 	NTSTATUS samr_SetDsrmPassword(
-		[in]       samr_String *name,
+		[in]       lsa_String *name,
 		[in]       uint32 unknown,
 		[in]       samr_Password *hash
 		);
