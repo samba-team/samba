@@ -45,6 +45,13 @@ NTSTATUS ejs_push_rpc(int eid, const char *callname,
 	return ejs_push(ejs, v, ptr);
 }
 
+/*
+  set the switch var to be used by the next union switch
+*/
+void ejs_set_switch(struct ejs_rpc *ejs, uint32_t switch_var)
+{
+	ejs->switch_var = switch_var;
+}
 
 /*
   panic in the ejs wrapper code
@@ -274,34 +281,10 @@ NTSTATUS ejs_pull_array(struct ejs_rpc *ejs,
 
 
 /*
-  push an array of elements
-*/
-NTSTATUS ejs_push_array(struct ejs_rpc *ejs, 
-			struct MprVar *v, const char *name, uint32_t length,
-			size_t elsize, void *r, ejs_push_t ejs_push)
-{
-	int i;
-	char *data;
-
-	NDR_CHECK(ejs_push_struct_start(ejs, &v, name));
-
-	data = r;
-
-	for (i=0;i<length;i++) {
-		char *id = talloc_asprintf(ejs, "%u", i);
-		NT_STATUS_HAVE_NO_MEMORY(id);
-		NDR_CHECK(ejs_push(ejs, v, id, (i*elsize)+data));
-		talloc_free(id);
-	}
-	return mprSetVar(v, "length", mprCreateIntegerVar(i));
-}
-			
-
-/*
   pull a string
 */
 NTSTATUS ejs_pull_string(struct ejs_rpc *ejs, 
-			 struct MprVar *v, const char *name, const char **s)
+			 struct MprVar *v, const char *name, char **s)
 {
 	struct MprVar *var;
 	var = mprGetVar(v, name);
