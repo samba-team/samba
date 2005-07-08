@@ -30,7 +30,7 @@
 </description>
 
 <related>force directory mode</related>
-<related>create mode</related>
+<related>create mask</related>
 <related>directory security mask</related>
 <related>inherit permissions</related>
 <value type="default">0755</value>
