@@ -454,17 +454,17 @@
 	   quite identical to, the netlogon structures above */
 
 	typedef struct {
-		[value(19)] uint16   type;
+		[value(21)] uint16   type;
 		nstring              pdc_name;
 		nstring              user_name;
 		nstring              domain_name;
-		uint32               nt_version;
+		[value(1)] uint32    nt_version;
 		uint16               lmnt_token;
 		uint16               lm20_token;		
 	} nbt_cldap_netlogon_1;
 
 	typedef struct {
-		[value(19)] uint16   type;
+		[value(21)] uint16   type;
 		nstring              pdc_name;
 		nstring              user_name;
 		nstring              domain_name;
@@ -475,13 +475,13 @@
 		nbt_string           pdc_dns_name;
 		ipv4address          pdc_ip;
 		nbt_server_type      server_type;
-		uint32               nt_version;
+		[value(3)] uint32    nt_version;
 		uint16               lmnt_token;
 		uint16               lm20_token;		
-	} nbt_cldap_netlogon_2;
+	} nbt_cldap_netlogon_3;
 
 	typedef struct {
-		[value(23)] uint32   type;
+		[value(25)] uint32   type;
 		nbt_server_type      server_type;
 		GUID                 domain_uuid;
 		nbt_string           forest;
@@ -492,13 +492,13 @@
 		nbt_string           user_name;
 		nbt_string           site_name;
 		nbt_string           site_name2;
-		uint32               nt_version;
+		[value(5)] uint32    nt_version;
 		uint16               lmnt_token;
 		uint16               lm20_token;
-	} nbt_cldap_netlogon_3;
+	} nbt_cldap_netlogon_5;
 
 	typedef struct {
-		[value(23)] uint32   type;
+		[value(25)] uint32   type;
 		nbt_server_type      server_type;
 		GUID                 domain_uuid;
 		nbt_string           forest;
@@ -514,21 +514,21 @@
 		[flag(NDR_BIG_ENDIAN)] 
 	          ipv4address          pdc_ip;
 		uint32               unknown3[2];
-		uint32               nt_version;
+		[value(13)] uint32   nt_version;
 		uint16               lmnt_token;
 		uint16               lm20_token;
-	} nbt_cldap_netlogon_4;
+	} nbt_cldap_netlogon_13;
 
 	typedef [flag(NDR_NOALIGN),public,nodiscriminant] union {
 		[case(0)]  nbt_cldap_netlogon_1 logon1;
 		[case(1)]  nbt_cldap_netlogon_1 logon1;
-		[case(2)]  nbt_cldap_netlogon_2 logon2;
-		[case(3)]  nbt_cldap_netlogon_2 logon2;
-		[case(4)]  nbt_cldap_netlogon_3 logon3;
-		[case(5)]  nbt_cldap_netlogon_3 logon3;
-		[case(6)]  nbt_cldap_netlogon_3 logon3;
-		[case(7)]  nbt_cldap_netlogon_3 logon3;
-		[default]  nbt_cldap_netlogon_4 logon4;
+		[case(2)]  nbt_cldap_netlogon_3 logon3;
+		[case(3)]  nbt_cldap_netlogon_3 logon3;
+		[case(4)]  nbt_cldap_netlogon_5 logon5;
+		[case(5)]  nbt_cldap_netlogon_5 logon5;
+		[case(6)]  nbt_cldap_netlogon_5 logon5;
+		[case(7)]  nbt_cldap_netlogon_5 logon5;
+		[default]  nbt_cldap_netlogon_13 logon13;
 	} nbt_cldap_netlogon;
 
 	/*******************************************/
