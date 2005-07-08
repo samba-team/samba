@@ -178,9 +178,9 @@ from other sources, but it was Jeremy who inspired the structure that follows.
 		</para>
 
 		<para>
-<indexterm><primary>IPC4 connections</primary></indexterm>
+<indexterm><primary>IPC$ connections</primary></indexterm>
 <indexterm><primary>RPC calls</primary></indexterm>
-		One could split all IPC4 connections and RPC calls to one server to handle printing and user
+		One could split all IPC$ connections and RPC calls to one server to handle printing and user
 		lookup requirements. RPC printing handles are shared between different IPC4 sessions &smbmdash; it is
 		hard to split this across clustered servers!
 		</para>
