@@ -63,7 +63,7 @@ static BOOL test_cldap_netlogon(TALLOC_CTX *mem_ctx, const char *dest)
 	n1 = search.out.netlogon;
 
 	search.in.user         = "Administrator";
-	search.in.realm        = n1.logon4.dns_domain;
+	search.in.realm        = n1.logon5.dns_domain;
 	search.in.host         = "__cldap_torture__";
 
 	printf("Scanning for netlogon levels\n");
@@ -104,7 +104,7 @@ static BOOL test_cldap_netlogon(TALLOC_CTX *mem_ctx, const char *dest)
 
 	printf("Trying with a GUID\n");
 	search.in.realm       = NULL;
-	search.in.domain_guid = GUID_string(mem_ctx, &n1.logon4.domain_uuid);
+	search.in.domain_guid = GUID_string(mem_ctx, &n1.logon5.domain_uuid);
 	status = cldap_netlogon(cldap, mem_ctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -117,13 +117,13 @@ static BOOL test_cldap_netlogon(TALLOC_CTX *mem_ctx, const char *dest)
 
 	printf("Trying with a AAC\n");
 	search.in.acct_control = 0x180;
-	search.in.realm = n1.logon4.dns_domain;
+	search.in.realm = n1.logon5.dns_domain;
 	status = cldap_netlogon(cldap, mem_ctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("Trying with a bad AAC\n");
 	search.in.acct_control = 0xFF00FF00;
-	search.in.realm = n1.logon4.dns_domain;
+	search.in.realm = n1.logon5.dns_domain;
 	status = cldap_netlogon(cldap, mem_ctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -145,7 +145,7 @@ static BOOL test_cldap_netlogon(TALLOC_CTX *mem_ctx, const char *dest)
 	CHECK_STATUS(status, NT_STATUS_NOT_FOUND);
 
 	printf("Trying with a incorrect domain and correct guid\n");
-	search.in.domain_guid = GUID_string(mem_ctx, &n1.logon4.domain_uuid);
+	search.in.domain_guid = GUID_string(mem_ctx, &n1.logon5.domain_uuid);
 	status = cldap_netlogon(cldap, mem_ctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -156,7 +156,7 @@ static BOOL test_cldap_netlogon(TALLOC_CTX *mem_ctx, const char *dest)
 
 	printf("Trying with a incorrect GUID and correct domain\n");
 	search.in.domain_guid = GUID_string(mem_ctx, &guid);
-	search.in.realm = n1.logon4.dns_domain;
+	search.in.realm = n1.logon5.dns_domain;
 	status = cldap_netlogon(cldap, mem_ctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
