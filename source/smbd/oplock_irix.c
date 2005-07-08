@@ -164,7 +164,7 @@ dev = %x, inode = %.0f\n, file_id = %ul", (unsigned int)fsp->dev, (double)fsp->i
 
 static BOOL irix_set_kernel_oplock(files_struct *fsp, int oplock_type)
 {
-	if (sys_fcntl_long(fsp->fd, F_OPLKREG, oplock_pipe_write) == -1) {
+	if (sys_fcntl_long(fsp->fh->fd, F_OPLKREG, oplock_pipe_write) == -1) {
 		if(errno != EAGAIN) {
 			DEBUG(0,("irix_set_kernel_oplock: Unable to get kernel oplock on file %s, dev = %x, \
 inode = %.0f, file_id = %ul. Error was %s\n", 
@@ -173,7 +173,7 @@ inode = %.0f, file_id = %ul. Error was %s\n",
 		} else {
 			DEBUG(5,("irix_set_kernel_oplock: Refused oplock on file %s, fd = %d, dev = %x, \
 inode = %.0f, file_id = %ul. Another process had the file open.\n",
-				 fsp->fsp_name, fsp->fd, (unsigned int)fsp->dev, (double)fsp->inode, fsp->file_id ));
+				 fsp->fsp_name, fsp->fh->fd, (unsigned int)fsp->dev, (double)fsp->inode, fsp->file_id ));
 		}
 		return False;
 	}
@@ -195,7 +195,7 @@ static void irix_release_kernel_oplock(files_struct *fsp)
 		 * Check and print out the current kernel
 		 * oplock state of this file.
 		 */
-		int state = sys_fcntl_long(fsp->fd, F_OPLKACK, -1);
+		int state = sys_fcntl_long(fsp->fh->fd, F_OPLKACK, -1);
 		dbgtext("irix_release_kernel_oplock: file %s, dev = %x, inode = %.0f file_id = %ul, has kernel \
 oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
                         (double)fsp->inode, fsp->file_id, state );
@@ -204,7 +204,7 @@ oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
 	/*
 	 * Remove the kernel oplock on this file.
 	 */
-	if(sys_fcntl_long(fsp->fd, F_OPLKACK, OP_REVOKE) < 0) {
+	if(sys_fcntl_long(fsp->fh->fd, F_OPLKACK, OP_REVOKE) < 0) {
 		if( DEBUGLVL( 0 )) {
 			dbgtext("irix_release_kernel_oplock: Error when removing kernel oplock on file " );
 			dbgtext("%s, dev = %x, inode = %.0f, file_id = %ul. Error was %s\n",
