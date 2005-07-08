@@ -6,13 +6,13 @@ AC_INIT([Heimdal],[0.8pre],[heimdal-bugs@pdc.kth.se])
 AC_CONFIG_SRCDIR([kuser/kinit.c])
 AC_CONFIG_HEADERS(include/config.h)
 
+AM_INIT_AUTOMAKE([foreign no-dependencies 1.8])
+AM_MAINTAINER_MODE
+
 dnl Checks for programs.
 AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_CPP
-
-AM_INIT_AUTOMAKE([foreign no-dependencies 1.8])
-AM_MAINTAINER_MODE
 
 AC_PREFIX_DEFAULT(/usr/heimdal)
 
