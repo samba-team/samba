@@ -47,6 +47,7 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 	struct ldb_context *samdb;
 	struct ldb_message **res = NULL;
 	int i, j, y, count = 0;
+	int success_limit = 1;
 	enum ldb_scope scope = LDB_SCOPE_DEFAULT;
 	const char **attrs = NULL;
 	const char *errstr = NULL;
@@ -67,14 +68,17 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 		case LDAP_SEARCH_SCOPE_BASE:
 			DEBUG(10,("sldb_Search: scope: [BASE]\n"));
 			scope = LDB_SCOPE_BASE;
+			success_limit = 1;
 			break;
 		case LDAP_SEARCH_SCOPE_SINGLE:
 			DEBUG(10,("sldb_Search: scope: [ONE]\n"));
 			scope = LDB_SCOPE_ONELEVEL;
+			success_limit = 0;
 			break;
 		case LDAP_SEARCH_SCOPE_SUB:
 			DEBUG(10,("sldb_Search: scope: [SUB]\n"));
 			scope = LDB_SCOPE_SUBTREE;
+			success_limit = 0;
 			break;
 	}
 
@@ -135,7 +139,7 @@ reply:
 	NT_STATUS_HAVE_NO_MEMORY(done_r);
 
 	if (result == LDAP_SUCCESS) {
-		if (count > 0) {
+		if (count >= success_limit) {
 			DEBUG(10,("sldb_Search: results: [%d]\n",count));
 			result = LDAP_SUCCESS;
 			errstr = NULL;
