@@ -465,12 +465,13 @@ sub EjsEnumPush($$)
 	my $v = 0;
 	# put the enum elements in the constants array
 	foreach my $e (@{$d->{ELEMENTS}}) {
-		chomp $e;
-		if ($e =~ /^(.*)=\s*(.*)\s*$/) {
-			$e = $1;
+		my $el = $e;
+		chomp $el;
+		if ($el =~ /^(.*)=\s*(.*)\s*$/) {
+			$el = $1;
 			$v = $2;
 		}
-		$constants{$e} = $v;
+		$constants{$el} = $v;
 		$v++;
 	}
 	pidl fn_prefix($d);
@@ -489,6 +490,14 @@ sub EjsBitmapPush($$)
 	my $d = shift;
 	my $type_fn = $d->{BASE_TYPE};
 	my($type_decl) = typelist::mapType($d->{BASE_TYPE});
+	# put the bitmap elements in the constants array
+	foreach my $e (@{$d->{ELEMENTS}}) {
+		if ($e =~ /^(\w*)\s*(.*)\s*$/) {
+			my $bname = $1;
+			my $v = $2;
+			$constants{$bname} = $v;
+		}
+	}
 	pidl fn_prefix($d);
 	pidl "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const $type_decl *r)\n{\n";
 	pidl "return ejs_push_$type_fn(ejs, v, name, r);\n";
