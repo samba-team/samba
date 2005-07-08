@@ -1297,13 +1297,16 @@ mystic:/home/hannibal > rm filename
 	does not force any particular bits to be set <emphasis>on</emphasis>,
 	then set the following parameters in the &smb.conf; file in that
 	share-specific section:
+	</para>
+
+<?latex \newpage ?>
 	<smbconfblock>
 		<smbconfoption name="security mask">0777</smbconfoption>
 		<smbconfoption name="force security mode">0</smbconfoption>
 		<smbconfoption name="directory security mask">0777</smbconfoption>
 		<smbconfoption name="force directory security mode">0</smbconfoption>
 	</smbconfblock>
-	</para>
+
 </sect2>
 
 <sect2>
