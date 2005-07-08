@@ -117,54 +117,51 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 		break;
 	case 2:
 	case 3:
-		netlogon->logon2.pdc_name     = pdc_name;
-		netlogon->logon2.user_name    = user;
-		netlogon->logon2.domain_name  = flatname;
-		netlogon->logon2.domain_uuid  = domain_uuid;
-		netlogon->logon2.forest       = realm;
-		netlogon->logon2.dns_domain   = dns_domain;
-		netlogon->logon2.pdc_dns_name = pdc_dns_name;
-		netlogon->logon2.pdc_ip       = pdc_ip;
-		netlogon->logon2.server_type  = server_type;
-		netlogon->logon2.nt_version   = 3;
-		netlogon->logon2.lmnt_token   = 0xFFFF;
-		netlogon->logon2.lm20_token   = 0xFFFF;
+		netlogon->logon3.pdc_name     = pdc_name;
+		netlogon->logon3.user_name    = user;
+		netlogon->logon3.domain_name  = flatname;
+		netlogon->logon3.domain_uuid  = domain_uuid;
+		netlogon->logon3.forest       = realm;
+		netlogon->logon3.dns_domain   = dns_domain;
+		netlogon->logon3.pdc_dns_name = pdc_dns_name;
+		netlogon->logon3.pdc_ip       = pdc_ip;
+		netlogon->logon3.server_type  = server_type;
+		netlogon->logon3.lmnt_token   = 0xFFFF;
+		netlogon->logon3.lm20_token   = 0xFFFF;
 		break;
 	case 4:
 	case 5:
 	case 6:
 	case 7:
-		netlogon->logon3.server_type  = server_type;
-		netlogon->logon3.domain_uuid  = domain_uuid;
-		netlogon->logon3.forest       = realm;
-		netlogon->logon3.dns_domain   = dns_domain;
-		netlogon->logon3.pdc_dns_name = pdc_dns_name;
-		netlogon->logon3.domain       = flatname;
-		netlogon->logon3.pdc_name     = lp_netbios_name();
-		netlogon->logon3.user_name    = user;
-		netlogon->logon3.site_name    = site_name;
-		netlogon->logon3.site_name2   = site_name2;
-		netlogon->logon3.nt_version   = 3;
-		netlogon->logon3.lmnt_token   = 0xFFFF;
-		netlogon->logon3.lm20_token   = 0xFFFF;
+		netlogon->logon5.server_type  = server_type;
+		netlogon->logon5.domain_uuid  = domain_uuid;
+		netlogon->logon5.forest       = realm;
+		netlogon->logon5.dns_domain   = dns_domain;
+		netlogon->logon5.pdc_dns_name = pdc_dns_name;
+		netlogon->logon5.domain       = flatname;
+		netlogon->logon5.pdc_name     = lp_netbios_name();
+		netlogon->logon5.user_name    = user;
+		netlogon->logon5.site_name    = site_name;
+		netlogon->logon5.site_name2   = site_name2;
+		netlogon->logon5.lmnt_token   = 0xFFFF;
+		netlogon->logon5.lm20_token   = 0xFFFF;
 		break;
 	default:
-		netlogon->logon4.server_type  = server_type;
-		netlogon->logon4.domain_uuid  = domain_uuid;
-		netlogon->logon4.forest       = realm;
-		netlogon->logon4.dns_domain   = dns_domain;
-		netlogon->logon4.pdc_dns_name = pdc_dns_name;
-		netlogon->logon4.domain       = flatname;
-		netlogon->logon4.pdc_name     = lp_netbios_name();
-		netlogon->logon4.user_name    = user;
-		netlogon->logon4.site_name    = site_name;
-		netlogon->logon4.site_name2   = site_name2;
-		netlogon->logon4.unknown      = 10;
-		netlogon->logon4.unknown2     = 2;
-		netlogon->logon4.pdc_ip       = pdc_ip;
-		netlogon->logon4.nt_version   = 5;
-		netlogon->logon4.lmnt_token   = 0xFFFF;
-		netlogon->logon4.lm20_token   = 0xFFFF;
+		netlogon->logon13.server_type  = server_type;
+		netlogon->logon13.domain_uuid  = domain_uuid;
+		netlogon->logon13.forest       = realm;
+		netlogon->logon13.dns_domain   = dns_domain;
+		netlogon->logon13.pdc_dns_name = pdc_dns_name;
+		netlogon->logon13.domain       = flatname;
+		netlogon->logon13.pdc_name     = lp_netbios_name();
+		netlogon->logon13.user_name    = user;
+		netlogon->logon13.site_name    = site_name;
+		netlogon->logon13.site_name2   = site_name2;
+		netlogon->logon13.unknown      = 10;
+		netlogon->logon13.unknown2     = 2;
+		netlogon->logon13.pdc_ip       = pdc_ip;
+		netlogon->logon13.lmnt_token   = 0xFFFF;
+		netlogon->logon13.lm20_token   = 0xFFFF;
 		break;
 	}
 
