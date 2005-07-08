@@ -350,17 +350,22 @@ struct dom_sid *samdb_result_dom_sid(TALLOC_CTX *mem_ctx, struct ldb_message *ms
 */
 struct GUID samdb_result_guid(struct ldb_message *msg, const char *attr)
 {
+	const struct ldb_val *v;
 	NTSTATUS status;
 	struct GUID guid;
-	const char *guidstr = ldb_msg_find_string(msg, attr, NULL);
+	TALLOC_CTX *mem_ctx;
 
 	ZERO_STRUCT(guid);
 
-	if (!guidstr) return guid;
+	v = ldb_msg_find_ldb_val(msg, attr);
+	if (!v) return guid;
 
-	status = GUID_from_string(guidstr, &guid);
+	mem_ctx = talloc_named_const(NULL, 0, "samdb_result_guid");
+	if (!mem_ctx) return guid;
+	status = ndr_pull_struct_blob(v, mem_ctx, &guid, 
+				      (ndr_pull_flags_fn_t)ndr_pull_GUID);
+	talloc_free(mem_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
-		ZERO_STRUCT(guid);
 		return guid;
 	}
 
@@ -685,17 +690,17 @@ static NTSTATUS _samdb_allocate_next_id(struct ldb_context *sam_ldb, TALLOC_CTX 
 	els[1].flags = LDB_FLAG_MOD_ADD;
 	els[1].name = els[0].name;
 
-	vals[0].data = talloc_asprintf(mem_ctx, "%u", *id);
+	vals[0].data = (uint8_t *)talloc_asprintf(mem_ctx, "%u", *id);
 	if (!vals[0].data) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	vals[0].length = strlen(vals[0].data);
+	vals[0].length = strlen((const char *)vals[0].data);
 
-	vals[1].data = talloc_asprintf(mem_ctx, "%u", (*id)+1);
+	vals[1].data =  (uint8_t *)talloc_asprintf(mem_ctx, "%u", (*id)+1);
 	if (!vals[1].data) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	vals[1].length = strlen(vals[1].data);
+	vals[1].length = strlen((const char *)vals[1].data);
 
 	ret = ldb_modify(sam_ldb, &msg);
 	if (ret != 0) {
@@ -763,6 +768,7 @@ int samdb_msg_add_dom_sid(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, stru
 	}
 	return ldb_msg_add_value(sam_ldb, msg, attr_name, &v);
 }
+
 
 /*
   add a delete element operation to a message
@@ -971,18 +977,20 @@ int samdb_msg_set_ldaptime(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, str
 */
 int samdb_add(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
 {
-	struct GUID guid;
-	const char *guidstr;
-	time_t now = time(NULL);
-	/* a new GUID */
-	guid = GUID_random();
-	guidstr = GUID_string(mem_ctx, &guid);
-	if (!guidstr) {
+	int ret;
+	struct ldb_val v;
+	NTSTATUS status;
+	struct GUID guid = GUID_random();
+
+	status = ndr_push_struct_blob(&v, mem_ctx, &guid, 
+				      (ndr_push_flags_fn_t)ndr_push_GUID);
+	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
 
-	samdb_msg_add_string(sam_ldb, mem_ctx, msg, "objectGUID", guidstr);
-	samdb_msg_set_ldaptime(sam_ldb, mem_ctx, msg, "whenCreated", now);
+	ret = ldb_msg_add_value(sam_ldb, msg, "objectGUID", &v);
+	if (ret != 0) return ret;
+
 	return ldb_add(sam_ldb, msg);
 }
 
