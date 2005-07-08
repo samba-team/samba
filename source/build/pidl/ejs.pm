@@ -193,10 +193,26 @@ sub EjsUnionPull($$)
 {
 	my $name = shift;
 	my $d = shift;
+	my $have_default = 0;
 	my $env = GenerateStructEnv($d);
 	pidl "\nstatic NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, union $name *r)\n{\n";
-	pidl "return ejs_panic(ejs, \"union pull not handled\");\n";
-	pidl "}\n\n";
+	pidl "\tNDR_CHECK(ejs_pull_struct_start(ejs, &v, name));\n";
+	pidl "switch (ejs->switch_var) {\n";
+	foreach my $e (@{$d->{ELEMENTS}}) {
+		if ($e->{CASE} eq "default") {
+			$have_default = 1;
+		}
+		pidl "$e->{CASE}:";
+		if ($e->{TYPE} ne "EMPTY") {
+			EjsPullElementTop($e, $env);
+		}
+		pidl "break;\n";
+	}
+	if (! $have_default) {
+		pidl "default:";
+		pidl "\treturn ejs_panic(ejs, \"Bad switch value\");";
+	}
+	pidl "}\nreturn NT_STATUS_OK;\n}\n";
 }
 
 ###########################
@@ -368,6 +384,7 @@ sub EjsUnionPush($$)
 	my $have_default = 0;
 	my $env = GenerateStructEnv($d);
 	pidl "\nstatic NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const union $name *r)\n{\n";
+	pidl "\tNDR_CHECK(ejs_push_struct_start(ejs, &v, name));\n";
 	pidl "switch (ejs->switch_var) {\n";
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		if ($e->{CASE} eq "default") {
