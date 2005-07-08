@@ -32,6 +32,7 @@ use pidl::template;
 use pidl::swig;
 use pidl::compat;
 use pidl::ejs;
+use pidl::ejs_header;
 
 my($opt_help) = 0;
 my($opt_parse) = 0;
@@ -209,7 +210,6 @@ sub process_file($)
 	    defined($opt_server) or defined($opt_parser) or 
 	    defined($opt_ejs)) {
 		$ndr = Ndr::Parse($pidl);
-#		print util::MyDumper($ndr);
 	}
 
 	if (defined($opt_header)) {
@@ -242,6 +242,9 @@ sub process_file($)
 	if (defined($opt_ejs)) {
 		my $ejs = ($opt_ejs or util::ChangeExtension($output, "_ejs.c"));
 		util::FileSave($ejs, EjsClient::Parse($ndr, $h_filename));
+
+		$ejs = ($opt_ejs or util::ChangeExtension($output, "_ejs.h"));
+		util::FileSave($ejs, EjsHeader::Parse($ndr));
 	}
 
 	if (defined($opt_server)) {

@@ -60,16 +60,33 @@ NTSTATUS ejs_pull_hyper(struct ejs_rpc *ejs,
 			struct MprVar *v, const char *name, uint64_t *r);
 NTSTATUS ejs_push_hyper(struct ejs_rpc *ejs, 
 			struct MprVar *v, const char *name, const uint64_t *r);
+NTSTATUS ejs_pull_dlong(struct ejs_rpc *ejs, 
+			struct MprVar *v, const char *name, uint64_t *r);
+NTSTATUS ejs_push_dlong(struct ejs_rpc *ejs, 
+			struct MprVar *v, const char *name, const uint64_t *r);
+NTSTATUS ejs_pull_udlong(struct ejs_rpc *ejs, 
+			struct MprVar *v, const char *name, uint64_t *r);
+NTSTATUS ejs_push_udlong(struct ejs_rpc *ejs, 
+			struct MprVar *v, const char *name, const uint64_t *r);
+NTSTATUS ejs_pull_NTTIME(struct ejs_rpc *ejs, 
+			struct MprVar *v, const char *name, uint64_t *r);
+NTSTATUS ejs_push_NTTIME(struct ejs_rpc *ejs, 
+			struct MprVar *v, const char *name, const uint64_t *r);
 NTSTATUS ejs_pull_enum(struct ejs_rpc *ejs, 
 		       struct MprVar *v, const char *name, unsigned *r);
 NTSTATUS ejs_push_enum(struct ejs_rpc *ejs, 
 		       struct MprVar *v, const char *name, const unsigned *r);
 NTSTATUS ejs_pull_string(struct ejs_rpc *ejs, 
-			 struct MprVar *v, const char *name, char **s);
+			 struct MprVar *v, const char *name, const char **s);
 NTSTATUS ejs_push_string(struct ejs_rpc *ejs, 
 			 struct MprVar *v, const char *name, const char *s);
 void ejs_set_constant_int(int eid, const char *name, int value);
 void ejs_set_constant_string(int eid, const char *name, const char *value);
+
+NTSTATUS ejs_pull_dom_sid(struct ejs_rpc *ejs, 
+			  struct MprVar *v, const char *name, struct dom_sid *r);
+NTSTATUS ejs_push_dom_sid(struct ejs_rpc *ejs, 
+			  struct MprVar *v, const char *name, const struct dom_sid *r);
 
 #define EJS_ALLOC_SIZE(ejs, s, size) do { \
   (s) = talloc_size(ejs, size); \
@@ -84,3 +101,9 @@ void ejs_set_constant_string(int eid, const char *name, const char *value);
 } while (0)
 
 #define EJS_ALLOC_N(ejs, s, n) EJS_ALLOC_N_SIZE(ejs, s, n, sizeof(*(s)))
+
+/* some types are equivalent for ejs */
+#define ejs_pull_dom_sid2 ejs_pull_dom_sid
+#define ejs_push_dom_sid2 ejs_push_dom_sid
+#define ejs_pull_NTTIME_hyper ejs_pull_NTTIME
+#define ejs_push_NTTIME_hyper ejs_push_NTTIME
