@@ -172,10 +172,14 @@ void smb_setup_ejs_rpc(void)
 	void setup_ejs_rpcecho(void);
 	void setup_ejs_samr(void);
 	void setup_ejs_misc(void);
+	void setup_ejs_security(void);
+
 	ejsDefineCFunction(-1, "rpc_connect", ejs_rpc_connect, NULL, MPR_VAR_SCRIPT_HANDLE);
+
 	setup_ejs_rpcecho();
 	setup_ejs_samr();
 	setup_ejs_misc();
+	setup_ejs_security();
 }
 
 /*
@@ -188,9 +192,12 @@ void smb_setup_ejs_rpc_constants(int eid)
 	void setup_ejs_constants_rpcecho(int);
 	void setup_ejs_constants_samr(int);
 	void setup_ejs_constants_misc(int);
+	void setup_ejs_constants_security(int);
+
 	setup_ejs_constants_rpcecho(eid);
 	setup_ejs_constants_samr(eid);
 	setup_ejs_constants_misc(eid);
+	setup_ejs_constants_security(eid);
 	
 	v = mprCreatePtrVar(NULL, "NULL");
 	mprSetProperty(ejsGetGlobalObject(eid), "NULL", &v);
