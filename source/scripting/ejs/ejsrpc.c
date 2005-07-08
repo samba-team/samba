@@ -126,7 +126,7 @@ static NTSTATUS mprSetVar(struct MprVar *v, const char *name, struct MprVar val)
 */
 NTSTATUS ejs_pull_struct_start(struct ejs_rpc *ejs, struct MprVar **v, const char *name)
 {
-	*v = mprGetProperty(*v, name, NULL);
+	*v = mprGetVar(*v, name);
 	if (*v == NULL) {
 		DEBUG(1,("ejs_pull_struct_start: missing structure '%s'\n", name));
 		return NT_STATUS_INVALID_PARAMETER;
@@ -140,10 +140,10 @@ NTSTATUS ejs_pull_struct_start(struct ejs_rpc *ejs, struct MprVar **v, const cha
 */
 NTSTATUS ejs_push_struct_start(struct ejs_rpc *ejs, struct MprVar **v, const char *name)
 {
-	struct MprVar s = mprCreateObjVar(name, MPR_DEFAULT_HASH_SIZE);
-	*v = mprSetProperty(*v, name, &s);
+	NDR_CHECK(mprSetVar(*v, name, mprCreateObjVar(name, MPR_DEFAULT_HASH_SIZE)));
+	*v = mprGetVar(*v, name);
 	if (*v == NULL) {
-		DEBUG(1,("ejs_push_struct_start: unable to set structure '%s'\n", name));
+		DEBUG(1,("ejs_push_struct_start: missing structure '%s'\n", name));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	return NT_STATUS_OK;
