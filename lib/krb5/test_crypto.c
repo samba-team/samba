@@ -83,6 +83,7 @@ time_encryption(krb5_context context, size_t size,
 	   etype_name, (unsigned long)size, iterations,
 	   (long)tv2.tv_sec, (long)tv2.tv_usec);
 
+    free(buf);
     krb5_crypto_destroy(context, crypto);
     krb5_free_keyblock_contents(context, &key);
 }
