@@ -967,7 +967,7 @@ static BOOL test_OemChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 	BOOL ret = True;
 	struct samr_Password lm_verifier;
 	struct samr_CryptPassword lm_pass;
-	struct samr_AsciiName server, account;
+	struct lsa_AsciiString server, account;
 	char *oldpass = *password;
 	char *newpass;
 	uint8_t old_lm_hash[16], new_lm_hash[16];

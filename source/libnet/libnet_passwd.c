@@ -45,7 +45,7 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 	struct samr_ChangePasswordUser2 pw2;
 	struct samr_ChangePasswordUser3 pw3;
 	struct lsa_String server, account;
-	struct samr_AsciiName a_server, a_account;
+	struct lsa_AsciiString a_server, a_account;
 	struct samr_CryptPassword nt_pass, lm_pass;
 	struct samr_Password nt_verifier, lm_verifier;
 	uint8_t old_nt_hash[16], new_nt_hash[16];
