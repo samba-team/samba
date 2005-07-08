@@ -100,6 +100,7 @@ static NTSTATUS mprSetVar(struct MprVar *v, const char *name, struct MprVar val)
 	if (p == NULL) {
 		v2 = mprSetProperty(v, name, &val);
 		if (v2 == NULL) {
+			DEBUG(1,("mprSetVar unable to set '%s'\n", name));
 			return NT_STATUS_INVALID_PARAMETER_MIX;
 		}
 		return NT_STATUS_OK;
@@ -126,6 +127,7 @@ NTSTATUS ejs_pull_struct_start(struct ejs_rpc *ejs, struct MprVar **v, const cha
 {
 	*v = mprGetProperty(*v, name, NULL);
 	if (*v == NULL) {
+		DEBUG(1,("ejs_pull_struct_start: missing structure '%s'\n", name));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	return NT_STATUS_OK;
@@ -140,6 +142,7 @@ NTSTATUS ejs_push_struct_start(struct ejs_rpc *ejs, struct MprVar **v, const cha
 	struct MprVar s = mprCreateObjVar(name, MPR_DEFAULT_HASH_SIZE);
 	*v = mprSetProperty(*v, name, &s);
 	if (*v == NULL) {
+		DEBUG(1,("ejs_push_struct_start: unable to set structure '%s'\n", name));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	return NT_STATUS_OK;
@@ -154,6 +157,7 @@ NTSTATUS ejs_pull_uint8(struct ejs_rpc *ejs,
 	struct MprVar *var;
 	var = mprGetVar(v, name);
 	if (var == NULL) {
+		DEBUG(1,("ejs_pull_uint8: unable to find '%s'\n", name));
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 	*r = mprVarToInteger(var);
@@ -176,6 +180,7 @@ NTSTATUS ejs_pull_uint16(struct ejs_rpc *ejs,
 	struct MprVar *var;
 	var = mprGetVar(v, name);
 	if (var == NULL) {
+		DEBUG(1,("ejs_pull_uint16: unable to find '%s'\n", name));
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 	*r = mprVarToInteger(var);
@@ -198,6 +203,7 @@ NTSTATUS ejs_pull_uint32(struct ejs_rpc *ejs,
 	struct MprVar *var;
 	var = mprGetVar(v, name);
 	if (var == NULL) {
+		DEBUG(1,("ejs_push_uint32: unable to find '%s'\n", name));
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 	*r = mprVarToInteger(var);
@@ -216,6 +222,7 @@ NTSTATUS ejs_pull_hyper(struct ejs_rpc *ejs,
 	struct MprVar *var;
 	var = mprGetVar(v, name);
 	if (var == NULL) {
+		DEBUG(1,("ejs_pull_hyper: unable to find '%s'\n", name));
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 	*r = mprVarToInteger(var);
@@ -239,6 +246,7 @@ NTSTATUS ejs_pull_enum(struct ejs_rpc *ejs,
 	struct MprVar *var;
 	var = mprGetVar(v, name);
 	if (var == NULL) {
+		DEBUG(1,("ejs_pull_enum: unable to find '%s'\n", name));
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 	*r = mprVarToInteger(var);
@@ -262,6 +270,7 @@ NTSTATUS ejs_pull_string(struct ejs_rpc *ejs,
 	struct MprVar *var;
 	var = mprGetVar(v, name);
 	if (var == NULL) {
+		DEBUG(1,("ejs_pull_string: unable to find '%s'\n", name));
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 	*s = mprToString(var);
