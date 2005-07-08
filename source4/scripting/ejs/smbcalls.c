@@ -149,7 +149,7 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
  	tmp_ctx = talloc_new(mprMemCtx());	
 	auth = mprCreateObjVar("auth", MPR_DEFAULT_HASH_SIZE);
 
-	if (strcmp("System User", domain) == 0) {
+	if (domain && strcmp("System User", domain) == 0) {
 
 		ejs_systemAuth(tmp_ctx, &auth, username, password, domain, remote_host);
 	}  else {
