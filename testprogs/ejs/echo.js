@@ -136,6 +136,22 @@ function test_TestCall(conn)
 	assert("this is a test string" == io.output.s2);
 }
 
+/*
+  test the echo_TestCall2 interface
+*/
+function test_TestCall2(conn)
+{
+	var io = irpcObj();
+
+	print("Testing echo_TestCall2\n");
+
+	for (i=1;i<=7;i++) {
+		io.input.level = i;
+		status = dcerpc_echo_TestCall2(conn, io);
+		check_status_ok(status);
+	}
+}
+
 
 if (ARGV.length == 0) {
    print("Usage: echo.js <RPCBINDING>\n");
@@ -157,5 +173,6 @@ test_EchoData(conn);
 test_SinkData(conn);
 test_SourceData(conn);
 test_TestCall(conn);
+test_TestCall2(conn);
 
 print("All OK\n");
