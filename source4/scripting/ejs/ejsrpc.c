@@ -273,7 +273,8 @@ NTSTATUS ejs_pull_string(struct ejs_rpc *ejs,
 		DEBUG(1,("ejs_pull_string: unable to find '%s'\n", name));
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
-	*s = mprToString(var);
+	*s = talloc_strdup(ejs, mprToString(var));
+	NT_STATUS_HAVE_NO_MEMORY(*s);
 	return NT_STATUS_OK;
 }
 
@@ -284,4 +285,22 @@ NTSTATUS ejs_push_string(struct ejs_rpc *ejs,
 			 struct MprVar *v, const char *name, const char *s)
 {
 	return mprSetVar(v, name, mprCreateStringVar(s, True));
+}
+
+/*
+  setup a constant int
+*/
+void ejs_set_constant_int(int eid, const char *name, int value)
+{
+	struct MprVar *v = ejsGetGlobalObject(eid);
+	mprSetVar(v, name, mprCreateIntegerVar(value));
+}
+
+/*
+  setup a constant string
+*/
+void ejs_set_constant_string(int eid, const char *name, const char *value)
+{
+	struct MprVar *v = ejsGetGlobalObject(eid);
+	mprSetVar(v, name, mprCreateStringVar(value, False));
 }

@@ -185,18 +185,18 @@ function test_TestEnum(conn)
 
 	print("Testing echo_TestEnum\n");
 
-	io.input.foo1 = 1;
+	io.input.foo1 = ECHO_ENUM1;
 	io.input.foo2 = new Object();
-	io.input.foo2.e1 = 1;
-	io.input.foo2.e2 = 1;
+	io.input.foo2.e1 = ECHO_ENUM1;
+	io.input.foo2.e2 = ECHO_ENUM1_32;
 	io.input.foo3 = new Object();
-	io.input.foo3.e1 = 2;
+	io.input.foo3.e1 = ECHO_ENUM2;
 	status = dcerpc_echo_TestEnum(conn, io);
 	check_status_ok(status);
-	assert(io.output.foo1    == 1);
-	assert(io.output.foo2.e1 == 2);
-	assert(io.output.foo2.e2 == 1);
-	assert(io.output.foo3.e1 == 2);
+	assert(io.output.foo1    == ECHO_ENUM1);
+	assert(io.output.foo2.e1 == ECHO_ENUM2);
+	assert(io.output.foo2.e2 == ECHO_ENUM1_32);
+	assert(io.output.foo3.e1 == ECHO_ENUM2);
 }
 
 /*

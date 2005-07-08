@@ -173,3 +173,12 @@ void smb_setup_ejs_rpc(void)
 	ejsDefineCFunction(-1, "rpc_connect", ejs_rpc_connect, NULL, MPR_VAR_SCRIPT_HANDLE);
 	setup_ejs_rpcecho();
 }
+
+/*
+  setup constants for rpc calls
+*/
+void smb_setup_ejs_rpc_constants(int eid)
+{
+	void setup_ejs_constants_rpcecho(int);
+	setup_ejs_constants_rpcecho(eid);
+}
