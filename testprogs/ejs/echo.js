@@ -49,6 +49,16 @@ function check_array_equal(a1, a2)
 }
 
 /*
+  check that an array is all zeros
+*/
+function check_array_zero(a)
+{
+	for (i=0; i<a.length; i++) {
+		assert(a[i] == 0);
+	}
+}
+
+/*
   test the echo_AddOne interface
 */
 function test_AddOne(conn)
@@ -189,6 +199,39 @@ function test_TestEnum(conn)
 	assert(io.output.foo3.e1 == 2);
 }
 
+/*
+  test the echo_TestSurrounding interface
+*/
+function test_TestSurrounding(conn)
+{
+	var io = irpcObj();
+
+	print("Testing echo_TestSurrounding\n");
+	
+	io.input.data = new Object();
+	io.input.data.x = 10;
+	io.input.data.surrounding = ramp_array(10);
+	status = dcerpc_echo_TestSurrounding(conn, io);
+	check_status_ok(status);
+	assert(io.output.data.surrounding.length == 20);
+	check_array_zero(io.output.data.surrounding);
+}
+
+/*
+  test the echo_TestDoublePointer interface
+*/
+function test_TestDoublePointer(conn)
+{
+	var io = irpcObj();
+
+	print("Testing echo_TestDoublePointer\n");
+	
+	io.input.data = 7;
+	status = dcerpc_echo_TestDoublePointer(conn, io);
+	check_status_ok(status);
+	assert(io.input.data == io.input.data);
+}
+
 
 if (ARGV.length == 0) {
    print("Usage: echo.js <RPCBINDING>\n");
@@ -213,5 +256,7 @@ test_TestCall(conn);
 test_TestCall2(conn);
 test_TestSleep(conn);
 test_TestEnum(conn);
+test_TestSurrounding(conn);
+test_TestDoublePointer(conn);
 
 print("All OK\n");
