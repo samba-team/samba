@@ -152,6 +152,43 @@ function test_TestCall2(conn)
 	}
 }
 
+/*
+  test the echo_TestSleep interface
+*/
+function test_TestSleep(conn)
+{
+	var io = irpcObj();
+
+	print("Testing echo_TestSleep\n");
+
+	io.input.seconds = 1;
+	status = dcerpc_echo_TestSleep(conn, io);
+	check_status_ok(status);
+}
+
+/*
+  test the echo_TestEnum interface
+*/
+function test_TestEnum(conn)
+{
+	var io = irpcObj();
+
+	print("Testing echo_TestEnum\n");
+
+	io.input.foo1 = 1;
+	io.input.foo2 = new Object();
+	io.input.foo2.e1 = 1;
+	io.input.foo2.e2 = 1;
+	io.input.foo3 = new Object();
+	io.input.foo3.e1 = 2;
+	status = dcerpc_echo_TestEnum(conn, io);
+	check_status_ok(status);
+	assert(io.output.foo1    == 1);
+	assert(io.output.foo2.e1 == 2);
+	assert(io.output.foo2.e2 == 1);
+	assert(io.output.foo3.e1 == 2);
+}
+
 
 if (ARGV.length == 0) {
    print("Usage: echo.js <RPCBINDING>\n");
@@ -174,5 +211,7 @@ test_SinkData(conn);
 test_SourceData(conn);
 test_TestCall(conn);
 test_TestCall2(conn);
+test_TestSleep(conn);
+test_TestEnum(conn);
 
 print("All OK\n");
