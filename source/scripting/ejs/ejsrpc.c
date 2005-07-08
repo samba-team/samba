@@ -254,33 +254,6 @@ NTSTATUS ejs_push_enum(struct ejs_rpc *ejs,
 
 
 /*
-  pull an array of elements
-*/
-NTSTATUS ejs_pull_array(struct ejs_rpc *ejs, 
-			struct MprVar *v, const char *name, uint32_t length,
-			size_t elsize, void **r, ejs_pull_t ejs_pull)
-{
-	int i;
-	char *data;
-
-	NDR_CHECK(ejs_pull_struct_start(ejs, &v, name));
-
-	(*r) = talloc_array_size(ejs, elsize, length);
-	NT_STATUS_HAVE_NO_MEMORY(*r);
-
-	data = *r;
-
-	for (i=0;i<length;i++) {
-		char *id = talloc_asprintf(ejs, "%u", i);
-		NT_STATUS_HAVE_NO_MEMORY(id);
-		NDR_CHECK(ejs_pull(ejs, v, id, (i*elsize)+data));
-		talloc_free(id);
-	}
-	return NT_STATUS_OK;
-}
-
-
-/*
   pull a string
 */
 NTSTATUS ejs_pull_string(struct ejs_rpc *ejs, 

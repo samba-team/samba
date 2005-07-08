@@ -64,10 +64,21 @@ NTSTATUS ejs_pull_enum(struct ejs_rpc *ejs,
 		       struct MprVar *v, const char *name, unsigned *r);
 NTSTATUS ejs_push_enum(struct ejs_rpc *ejs, 
 		       struct MprVar *v, const char *name, const unsigned *r);
-NTSTATUS ejs_pull_array(struct ejs_rpc *ejs, 
-			struct MprVar *v, const char *name, uint32_t length,
-			size_t elsize, void **r, ejs_pull_t ejs_pull);
 NTSTATUS ejs_pull_string(struct ejs_rpc *ejs, 
 			 struct MprVar *v, const char *name, char **s);
 NTSTATUS ejs_push_string(struct ejs_rpc *ejs, 
 			 struct MprVar *v, const char *name, const char *s);
+
+#define EJS_ALLOC_SIZE(ejs, s, size) do { \
+  (s) = talloc_size(ejs, size); \
+  if (!(s)) return ejs_panic(ejs, "out of memory"); \
+} while (0)
+
+#define EJS_ALLOC(ejs, s) EJS_ALLOC_SIZE(ejs, s, sizeof(*(s)))
+
+#define EJS_ALLOC_N_SIZE(ejs, s, n, elsize) do { \
+	(s) = talloc_array_size(ejs, elsize, n); \
+	if (!(s)) return ejs_panic(ejs, "out of memory"); \
+} while (0)
+
+#define EJS_ALLOC_N(ejs, s, n) EJS_ALLOC_N_SIZE(ejs, s, n, sizeof(*(s)))

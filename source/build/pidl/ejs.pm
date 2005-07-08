@@ -90,58 +90,85 @@ sub get_value_of($)
 
 ###########################
 # pull a scalar element
-sub EjsPullScalar($$)
+sub EjsPullScalar($$$$$)
 {
-	my $e = shift;
-	my $env = shift;
-	my $var = util::ParseExpr($e->{NAME}, $env);
-	my $ptr = get_pointer_to($var);
-	pidl "\tNDR_CHECK(ejs_pull_$e->{TYPE}(ejs, v, \"$e->{NAME}\", $ptr));\n";
+	my ($e, $l, $var, $name, $env) = @_;
+	$var = get_pointer_to($var);
+	pidl "\tNDR_CHECK(ejs_pull_$e->{TYPE}(ejs, v, $name, $var));\n";
+}
+
+###########################
+# pull a pointer element
+sub EjsPullPointer($$$$$)
+{
+	my ($e, $l, $var, $name, $env) = @_;
+	pidl "EJS_ALLOC(ejs, $var);\n";
+	$var = get_value_of($var);		
+	EjsPullElement($e, Ndr::GetNextLevel($e, $l), $var, $name, $env);
 }
 
 ###########################
 # pull a string element
-sub EjsPullString($$$)
+sub EjsPullString($$$$$)
 {
-	my $e = shift;
-	my $l = shift;
-	my $env = shift;
-	my $var = util::ParseExpr($e->{NAME}, $env);
-	my $ptr = get_pointer_to($var);
-	pidl "\tNDR_CHECK(ejs_pull_string(ejs, v, \"$e->{NAME}\", $ptr));\n";
+	my ($e, $l, $var, $name, $env) = @_;
+	$var = get_pointer_to($var);
+	pidl "\tNDR_CHECK(ejs_pull_string(ejs, v, $name, $var));\n";
 }
 
 
 ###########################
 # pull an arrar element
-# only handles a very limited range of array types so far
-sub EjsPullArray($$$)
+sub EjsPullArray($$$$$)
 {
-	my $e = shift;
-	my $l = shift;
-	my $env = shift;
+	my ($e, $l, $var, $name, $env) = @_;
 	my $length = util::ParseExpr($l->{LENGTH_IS}, $env);
-	my $var = util::ParseExpr($e->{NAME}, $env);
-	my $ptr = get_pointer_to($var);
-	pidl "\tNDR_CHECK(ejs_pull_array(ejs, v, \"$e->{NAME}\", $length, sizeof($var\[0]), (void **)$ptr, (ejs_pull_t)ejs_pull_$e->{TYPE}));\n";
+	pidl "{ uint32_t i; EJS_ALLOC_N(ejs, $var, $length); for (i=0;i<$length;i++) {\n";
+	pidl "\tconst char *id = talloc_asprintf(ejs, \"%s.%u\", $name, i);\n";
+	EjsPullElement($e, Ndr::GetNextLevel($e, $l), $var . "[i]", "id", $env);
+	pidl "}\nejs_push_uint32(ejs, v, $name \".length\", &i); }\n";
+}
+
+###########################
+# pull a switch element
+sub EjsPullSwitch($$$$$)
+{
+	my ($e, $l, $var, $name, $env) = @_;
+	my $switch_var = util::ParseExpr($l->{SWITCH_IS}, $env);
+	pidl "ejs_set_switch(ejs, $switch_var);\n";
+	EjsPullElement($e, Ndr::GetNextLevel($e, $l), $var, $name, $env);
 }
 
 ###########################
 # pull a structure element
-sub EjsPullElement($$)
+sub EjsPullElement($$$$$)
+{
+	my ($e, $l, $var, $name, $env) = @_;
+	if (util::has_property($e, "charset")) {
+		EjsPullString($e, $l, $var, $name, $env);
+	} elsif ($l->{TYPE} eq "ARRAY") {
+		EjsPullArray($e, $l, $var, $name, $env);
+	} elsif ($l->{TYPE} eq "DATA") {
+		EjsPullScalar($e, $l, $var, $name, $env);
+	} elsif (($l->{TYPE} eq "POINTER")) {
+		EjsPullPointer($e, $l, $var, $name, $env);
+	} elsif (($l->{TYPE} eq "SWITCH")) {
+		EjsPullSwitch($e, $l, $var, $name, $env);
+	} else {
+		pidl "return ejs_panic(ejs, \"unhandled pull type $l->{TYPE}\");\n";
+	}
+}
+
+#############################################
+# pull a structure/union element at top level
+sub EjsPullElementTop($$)
 {
 	my $e = shift;
 	my $env = shift;
 	my $l = $e->{LEVELS}[0];
-	if (util::has_property($e, "charset")) {
-		EjsPullString($e, $l, $env);
-	} elsif ($l->{TYPE} eq "ARRAY") {
-		EjsPullArray($e, $l, $env);
-	} elsif ($l->{TYPE} eq "DATA") {
-		EjsPullScalar($e, $env);
-	} else {
-		pidl "return ejs_panic(ejs, \"unhandled pull type $l->{TYPE}\");\n";
-	}
+	my $var = util::ParseExpr($e->{NAME}, $env);
+	my $name = "\"$e->{NAME}\"";
+	EjsPullElement($e, $l, $var, $name, $env);
 }
 
 ###########################
@@ -154,7 +181,7 @@ sub EjsStructPull($$)
 	pidl "\nstatic NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, struct $name *r)\n{\n";
 	pidl "\tNDR_CHECK(ejs_pull_struct_start(ejs, &v, name));\n";
         foreach my $e (@{$d->{ELEMENTS}}) {
-		EjsPullElement($e, $env);
+		EjsPullElementTop($e, $env);
 	}
 	pidl "\treturn NT_STATUS_OK;\n";
 	pidl "}\n\n";
@@ -227,7 +254,7 @@ sub EjsPullFunction($)
 
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		next unless (grep(/in/, @{$e->{DIRECTION}}));
-		EjsPullElement($e, $env);
+		EjsPullElementTop($e, $env);
 	}
 
 	pidl "\treturn NT_STATUS_OK;\n";
@@ -274,7 +301,6 @@ sub EjsPushSwitch($$$$$)
 
 ###########################
 # push an arrar element
-# only handles a very limited range of array types so far
 sub EjsPushArray($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
