@@ -279,6 +279,7 @@ AC_CHECK_HEADERS([\
 	siad.h					\
 	signal.h				\
 	stropts.h				\
+	strings.h				\
 	sys/bitypes.h				\
 	sys/category.h				\
 	sys/file.h				\
