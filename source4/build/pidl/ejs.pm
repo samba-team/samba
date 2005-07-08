@@ -23,7 +23,9 @@ sub GenerateStructEnv($)
 	my %env;
 
 	foreach my $e (@{$x->{ELEMENTS}}) {
-		$env{$e->{NAME}} = "r->$e->{NAME}";
+		if ($e->{NAME}) {
+			$env{$e->{NAME}} = "r->$e->{NAME}";
+		}
 	}
 
 	$env{"this"} = "r";
@@ -184,6 +186,13 @@ sub EjsEnumPull($$)
 	pidl "}\n\n";
 }
 
+###########################
+# pull a bitmap
+sub EjsBitmapPull($$)
+{
+# ignored for now
+}
+
 
 ###########################
 # generate a structure pull
@@ -196,8 +205,10 @@ sub EjsTypedefPull($)
 		EjsUnionPull($d->{NAME}, $d->{DATA});
 	} elsif ($d->{DATA}->{TYPE} eq 'ENUM') {
 		EjsEnumPull($d->{NAME}, $d->{DATA});
+	} elsif ($d->{DATA}->{TYPE} eq 'BITMAP') {
+		EjsBitmapPull($d->{NAME}, $d->{DATA});
 	} else {
-		warn "Unhandled pull typedef $d->{NAME} of type $d->{TYPE}\n";
+		warn "Unhandled pull typedef $d->{NAME} of type $d->{DATA}->{TYPE}\n";
 	}
 }
 
@@ -225,81 +236,85 @@ sub EjsPullFunction($)
 
 
 ###########################
-# pull a scalar element
-sub EjsPushScalar($$$)
+# push a scalar element
+sub EjsPushScalar($$$$$)
 {
-	my $e = shift;
-	my $l = shift;
-	my $env = shift;
-	my $var = util::ParseExpr($e->{NAME}, $env);
-
+	my ($e, $l, $var, $name, $env) = @_;
 	$var = get_pointer_to($var);
-
-	pidl "\tNDR_CHECK(ejs_push_$e->{TYPE}(ejs, v, \"$e->{NAME}\", $var));\n";
+	pidl "\tNDR_CHECK(ejs_push_$e->{TYPE}(ejs, v, $name, $var));\n";
 }
 
 ###########################
-# pull a string element
-sub EjsPushString($$$)
+# push a string element
+sub EjsPushString($$$$$)
 {
-	my $e = shift;
-	my $l = shift;
-	my $env = shift;
-	my $var = util::ParseExpr($e->{NAME}, $env);
-
-	pidl "\tNDR_CHECK(ejs_push_string(ejs, v, \"$e->{NAME}\", $var));\n";
+	my ($e, $l, $var, $name, $env) = @_;
+	pidl "\tNDR_CHECK(ejs_push_string(ejs, v, $name, $var));\n";
 }
 
 ###########################
-# pull a pointer element
-sub EjsPushPointer($$$)
+# push a pointer element
+sub EjsPushPointer($$$$$)
 {
-	my $e = shift;
-	my $l = shift;
-	my $env = shift;
-	my $var = util::ParseExpr($e->{NAME}, $env);
+	my ($e, $l, $var, $name, $env) = @_;
+	$var = get_value_of($var);		
+	EjsPushElement($e, Ndr::GetNextLevel($e, $l), $var, $name, $env);
+}
 
-	while ($l->{TYPE} eq "POINTER") {
-		$var = get_value_of($var);
-		$l = Ndr::GetNextLevel($e, $l);
-	}
-	$var = get_pointer_to($var);		
-
-	pidl "\tNDR_CHECK(ejs_push_$e->{TYPE}(ejs, v, \"$e->{NAME}\", $var));\n";
+###########################
+# push a switch element
+sub EjsPushSwitch($$$$$)
+{
+	my ($e, $l, $var, $name, $env) = @_;
+	my $switch_var = util::ParseExpr($l->{SWITCH_IS}, $env);
+	pidl "ejs_set_switch(ejs, $switch_var);\n";
+	EjsPushElement($e, Ndr::GetNextLevel($e, $l), $var, $name, $env);
 }
 
 
 ###########################
 # push an arrar element
 # only handles a very limited range of array types so far
-sub EjsPushArray($$$)
+sub EjsPushArray($$$$$)
 {
-	my $e = shift;
-	my $l = shift;
-	my $env = shift;
+	my ($e, $l, $var, $name, $env) = @_;
 	my $length = util::ParseExpr($l->{LENGTH_IS}, $env);
-	my $var = util::ParseExpr($e->{NAME}, $env);
-	pidl "\tNDR_CHECK(ejs_push_array(ejs, v, \"$e->{NAME}\", $length, sizeof($var\[0]), (void *)$var, (ejs_push_t)ejs_push_$e->{TYPE}));\n";
+	pidl "{ uint32_t i; for (i=0;i<$length;i++) {\n";
+	pidl "\tconst char *id = talloc_asprintf(ejs, \"%s.%u\", $name, i);\n";
+	EjsPushElement($e, Ndr::GetNextLevel($e, $l), $var . "[i]", "id", $env);
+	pidl "}\nejs_push_uint32(ejs, v, $name \".length\", &i); }\n";
 }
 
-###########################
-# push a structure element
-sub EjsPushElement($$)
+################################
+# push a structure/union element
+sub EjsPushElement($$$$$)
+{
+	my ($e, $l, $var, $name, $env) = @_;
+	if (util::has_property($e, "charset")) {
+		EjsPushString($e, $l, $var, $name, $env);
+	} elsif ($l->{TYPE} eq "ARRAY") {
+		EjsPushArray($e, $l, $var, $name, $env);
+	} elsif ($l->{TYPE} eq "DATA") {
+		EjsPushScalar($e, $l, $var, $name, $env);
+	} elsif (($l->{TYPE} eq "POINTER")) {
+		EjsPushPointer($e, $l, $var, $name, $env);
+	} elsif (($l->{TYPE} eq "SWITCH")) {
+		EjsPushSwitch($e, $l, $var, $name, $env);
+	} else {
+		pidl "return ejs_panic(ejs, \"unhandled push type $l->{TYPE}\");\n";
+	}
+}
+
+#############################################
+# push a structure/union element at top level
+sub EjsPushElementTop($$)
 {
 	my $e = shift;
 	my $env = shift;
 	my $l = $e->{LEVELS}[0];
-	if (util::has_property($e, "charset")) {
-		EjsPushString($e, $l, $env);
-	} elsif ($l->{TYPE} eq "ARRAY") {
-		EjsPushArray($e, $l, $env);
-	} elsif ($l->{TYPE} eq "DATA") {
-		EjsPushScalar($e, $l, $env);
-	} elsif (($l->{TYPE} eq "POINTER")) {
-		EjsPushPointer($e, $l, $env);
-	} else {
-		pidl "return ejs_panic(ejs, \"unhandled push type $l->{TYPE}\");\n";
-	}
+	my $var = util::ParseExpr($e->{NAME}, $env);
+	my $name = "\"$e->{NAME}\"";
+	EjsPushElement($e, $l, $var, $name, $env);
 }
 
 ###########################
@@ -312,7 +327,7 @@ sub EjsStructPush($$)
 	pidl "\nstatic NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const struct $name *r)\n{\n";
 	pidl "\tNDR_CHECK(ejs_push_struct_start(ejs, &v, name));\n";
         foreach my $e (@{$d->{ELEMENTS}}) {
-		EjsPushElement($e, $env);
+		EjsPushElementTop($e, $env);
 	}
 	pidl "\treturn NT_STATUS_OK;\n";
 	pidl "}\n\n";
@@ -324,9 +339,25 @@ sub EjsUnionPush($$)
 {
 	my $name = shift;
 	my $d = shift;
+	my $have_default = 0;
+	my $env = GenerateStructEnv($d);
 	pidl "\nstatic NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const union $name *r)\n{\n";
-	pidl "return ejs_panic(ejs, \"union push not handled\");\n";
-	pidl "}\n\n";
+	pidl "switch (ejs->switch_var) {\n";
+	foreach my $e (@{$d->{ELEMENTS}}) {
+		if ($e->{CASE} eq "default") {
+			$have_default = 1;
+		}
+		pidl "$e->{CASE}:";
+		if ($e->{TYPE} ne "EMPTY") {
+			EjsPushElementTop($e, $env);
+		}
+		pidl "break;\n";
+	}
+	if (! $have_default) {
+		pidl "default:";
+		pidl "\treturn ejs_panic(ejs, \"Bad switch value\");";
+	}
+	pidl "}\nreturn NT_STATUS_OK;\n}\n";
 }
 
 ###########################
@@ -342,6 +373,13 @@ sub EjsEnumPush($$)
 	pidl "}\n\n";
 }
 
+###########################
+# push a bitmap
+sub EjsBitmapPush($$)
+{
+	# ignored for now
+}
+
 
 ###########################
 # generate a structure push
@@ -354,8 +392,10 @@ sub EjsTypedefPush($)
 		EjsUnionPush($d->{NAME}, $d->{DATA});
 	} elsif ($d->{DATA}->{TYPE} eq 'ENUM') {
 		EjsEnumPush($d->{NAME}, $d->{DATA});
+	} elsif ($d->{DATA}->{TYPE} eq 'BITMAP') {
+		EjsBitmapPush($d->{NAME}, $d->{DATA});
 	} else {
-		warn "Unhandled push typedef $d->{NAME} of type $d->{TYPE}\n";
+		warn "Unhandled push typedef $d->{NAME} of type $d->{DATA}->{TYPE}\n";
 	}
 }
 
@@ -374,7 +414,7 @@ sub EjsPushFunction($)
 
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		next unless (grep(/out/, @{$e->{DIRECTION}}));
-		EjsPushElement($e, $env);
+		EjsPushElementTop($e, $env);
 	}
 
 	pidl "\treturn NT_STATUS_OK;\n";
