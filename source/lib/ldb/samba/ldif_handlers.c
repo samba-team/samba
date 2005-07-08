@@ -66,12 +66,12 @@ static int ldif_write_objectSid(struct ldb_context *ldb, void *mem_ctx,
 		talloc_free(sid);
 		return -1;
 	}
-	out->data = dom_sid_string(mem_ctx, sid);
+	out->data = (uint8_t *)dom_sid_string(mem_ctx, sid);
 	talloc_free(sid);
 	if (out->data == NULL) {
 		return -1;
 	}
-	out->length = strlen(out->data);
+	out->length = strlen((const char *)out->data);
 	return 0;
 }
 
@@ -80,7 +80,7 @@ static BOOL ldb_comparision_objectSid_isString(const struct ldb_val *v)
 	/* see if the input if null-terninated */
 	if (v->data[v->length] != '\0') return False;
 	
-	if (strncmp("S-", v->data, 2) != 0) return False;
+	if (strncmp("S-", (const char *)v->data, 2) != 0) return False;
 	return True;
 }
 
@@ -92,7 +92,7 @@ static int ldb_comparison_objectSid(struct ldb_context *ldb, void *mem_ctx,
 {
 	if (ldb_comparision_objectSid_isString(v1)) {
 		if (ldb_comparision_objectSid_isString(v1)) {
-			return strcmp(v1->data, v2->data);
+			return strcmp((const char *)v1->data, (const char *)v2->data);
 		} else {
 			struct ldb_val v;
 			int ret;
@@ -128,7 +128,7 @@ static int ldif_read_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 	struct GUID guid;
 	NTSTATUS status;
 
-	status = GUID_from_string(in->data, &guid);
+	status = GUID_from_string((const char *)in->data, &guid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
@@ -154,11 +154,11 @@ static int ldif_write_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
-	out->data = GUID_string(mem_ctx, &guid);
+	out->data = (uint8_t *)GUID_string(mem_ctx, &guid);
 	if (out->data == NULL) {
 		return -1;
 	}
-	out->length = strlen(out->data);
+	out->length = strlen((const char *)out->data);
 	return 0;
 }
 
@@ -170,7 +170,7 @@ static BOOL ldb_comparision_objectGUID_isString(const struct ldb_val *v)
 	/* see if the input if null-terninated */
 	if (v->data[v->length] != '\0') return False;
 
-	status = GUID_from_string(v->data, &guid);
+	status = GUID_from_string((const char *)v->data, &guid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
@@ -186,7 +186,7 @@ static int ldb_comparison_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 {
 	if (ldb_comparision_objectGUID_isString(v1)) {
 		if (ldb_comparision_objectGUID_isString(v2)) {
-			return strcmp(v1->data, v2->data);
+			return strcmp((const char *)v1->data, (const char *)v2->data);
 		} else {
 			struct ldb_val v;
 			int ret;
