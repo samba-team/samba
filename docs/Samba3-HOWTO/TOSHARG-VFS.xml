@@ -49,15 +49,15 @@ modules example</link>:
 </para>
 
 <example id="vfsrecyc">
-	<title>smb.conf with VFS modules</title>
-	<smbconfblock>
-	<smbconfsection name="[audit]"/>
+<title>smb.conf with VFS modules</title>
+<smbconfblock>
+<smbconfsection name="[audit]"/>
 <smbconfoption name="comment">Audited /data directory</smbconfoption>
 <smbconfoption name="path">/data</smbconfoption>
 <smbconfoption name="vfs objects">audit recycle</smbconfoption>
 <smbconfoption name="writeable">yes</smbconfoption>
 <smbconfoption name="browseable">yes</smbconfoption>
-	</smbconfblock>
+</smbconfblock>
 </example>
 
 <para>
@@ -87,8 +87,8 @@ Some modules can be used twice for the same share.  This can be done using a con
 shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</link>.
 
 <example id="multimodule">
-	<title>smb.conf with multiple VFS modules</title>
-	<smbconfblock>
+<title>smb.conf with multiple VFS modules</title>
+<smbconfblock>
 <smbconfsection name="[test]"/>
 <smbconfoption name="comment">VFS TEST</smbconfoption>
 <smbconfoption name="path">/data</smbconfoption>

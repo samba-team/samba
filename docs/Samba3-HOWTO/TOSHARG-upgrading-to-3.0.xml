@@ -178,7 +178,7 @@ complete descriptions of new or modified parameters.
 <title>Removed Parameters</title>
 
 <indexterm><primary>deleted parameters</primary></indexterm>
-<para>In alphabetical order, these are the parameters eliminated for Samba 3.0.20.</para>
+<para>In alphabetical order, these are the parameters eliminated during the Samba 3.0.0 series prior to release of Samba 3.0.20.</para>
 
 <itemizedlist>
 	<listitem><para>admin log </para></listitem>
@@ -190,17 +190,22 @@ complete descriptions of new or modified parameters.
 	<listitem><para>domain admin group </para></listitem>
 	<listitem><para>domain guest group </para></listitem>
 	<listitem><para>force unknown acl user </para></listitem>
+	<listitem><para>ldap filter</para></listitem>
 	<listitem><para>nt smb support </para></listitem>
 	<listitem><para>post script </para></listitem>
 	<listitem><para>printer driver </para></listitem>
 	<listitem><para>printer driver file </para></listitem>
 	<listitem><para>printer driver location </para></listitem>
+	<listitem><para>read size</para></listitem>
+	<listitem><para>source environment</para></listitem>
 	<listitem><para>status </para></listitem>
 	<listitem><para>strip dot </para></listitem>
 	<listitem><para>total print jobs </para></listitem>
+	<listitem><para>unicode</para></listitem>
 	<listitem><para>use rhosts </para></listitem>
 	<listitem><para>valid chars </para></listitem>
 	<listitem><para>vfs options </para></listitem>
+	<listitem><para>winbind enable local accounts</para></listitem>
 </itemizedlist>
 
 </sect2>
@@ -208,114 +213,135 @@ complete descriptions of new or modified parameters.
 <sect2>
 <title>New Parameters</title>
 
-<para>New parameters in Samba 3.0.20 are grouped by function):</para>
+<para>New parameters in the Samba 3.0.0 series prior to release of Samba 3.0.20 are grouped by function):</para>
 
 <para>Remote Management</para>
 
 <indexterm><primary>new parameters</primary></indexterm>
 
 <itemizedlist>
-	<listitem><para>abort shutdown script </para></listitem>
-	<listitem><para>shutdown script </para></listitem>
+	<listitem><para>abort shutdown script</para></listitem>
+	<listitem><para>shutdown script</para></listitem>
 </itemizedlist>
 
 <para>User and Group Account Management</para>
 
 <itemizedlist>
-	<listitem><para>add group script </para></listitem>
-	<listitem><para>add machine script </para></listitem>
-	<listitem><para>add user to group script </para></listitem>
-	<listitem><para>algorithmic rid base </para></listitem>
-	<listitem><para>delete group script </para></listitem>
-	<listitem><para>delete user from group script </para></listitem>
-	<listitem><para>passdb backend </para></listitem>
-	<listitem><para>set primary group script </para></listitem>
+	<listitem><para>add group script</para></listitem>
+	<listitem><para>add machine script</para></listitem>
+	<listitem><para>add user to group script</para></listitem>
+	<listitem><para>algorithmic rid base</para></listitem>
+	<listitem><para>delete group script</para></listitem>
+	<listitem><para>delete user from group script</para></listitem>
+	<listitem><para>passdb backend</para></listitem>
+	<listitem><para>set primary group script</para></listitem>
 </itemizedlist>
 
 <para>Authentication</para>
 
 <itemizedlist>
-	<listitem><para>auth methods </para></listitem>
-	<listitem><para>realm </para></listitem>
+	<listitem><para>auth methods</para></listitem>
+	<listitem><para>ldap password sync</para></listitem>
+	<listitem><para>realm</para></listitem>
 </itemizedlist>
 
 <para>Protocol Options</para>
 
 <itemizedlist>
-	<listitem><para>client lanman auth </para></listitem>
-	<listitem><para>client NTLMv2 auth </para></listitem>
-	<listitem><para>client schannel </para></listitem>
-	<listitem><para>client signing </para></listitem>
-	<listitem><para>client use spnego </para></listitem>
-	<listitem><para>disable netbios </para></listitem>
-	<listitem><para>ntlm auth </para></listitem>
+	<listitem><para>afs token lifetime</para></listitem>
+	<listitem><para>client lanman auth</para></listitem>
+	<listitem><para>client NTLMv2 auth</para></listitem>
+	<listitem><para>client schannel</para></listitem>
+	<listitem><para>client signing</para></listitem>
+	<listitem><para>client use spnego</para></listitem>
+	<listitem><para>defer sharing violations</para></listitem>
+	<listitem><para>disable netbios</para></listitem>
+	<listitem><para>enable privileges</para></listitem>
+	<listitem><para>use kerberos keytab</para></listitem>
+	<listitem><para>log nt token command</para></listitem>
+	<listitem><para>ntlm auth</para></listitem>
 	<listitem><para>paranoid server security </para></listitem>
-	<listitem><para>server schannel </para></listitem>
-	<listitem><para>server signing </para></listitem>
-	<listitem><para>smb ports </para></listitem>
-	<listitem><para>use spnego </para></listitem>
+	<listitem><para>sendfile</para></listitem>
+	<listitem><para>server schannel</para></listitem>
+	<listitem><para>server signing</para></listitem>
+	<listitem><para>smb ports</para></listitem>
+	<listitem><para>use spnego</para></listitem>
 </itemizedlist>
 
 <para>File Service</para>
 
 <itemizedlist>
-	<listitem><para>get quota command </para></listitem>
-	<listitem><para>hide special files </para></listitem>
-	<listitem><para>hide unwriteable files </para></listitem>
-	<listitem><para>hostname lookups </para></listitem>
-	<listitem><para>kernel change notify </para></listitem>
-	<listitem><para>mangle prefix </para></listitem>
-	<listitem><para>map acl inherit </para></listitem>
-	<listitem><para>msdfs proxy </para></listitem>
-	<listitem><para>set quota command </para></listitem>
-	<listitem><para>use sendfile </para></listitem>
-	<listitem><para>vfs objects </para></listitem>
+	<listitem><para>allocation roundup size</para></listitem>
+	<listitem><para>acl check permissions</para></listitem>
+	<listitem><para>ea support</para></listitem>
+	<listitem><para>enable asu support</para></listitem>
+	<listitem><para>force unknown acl user</para></listitem>
+	<listitem><para>get quota command</para></listitem>
+	<listitem><para>hide special files</para></listitem>
+	<listitem><para>hide unwriteable files</para></listitem>
+	<listitem><para>inherit owner</para></listitem>
+	<listitem><para>hostname lookups</para></listitem>
+	<listitem><para>kernel change notify</para></listitem>
+	<listitem><para>mangle prefix</para></listitem>
+	<listitem><para>map acl inherit</para></listitem>
+	<listitem><para>max stat cache size</para></listitem>
+	<listitem><para>msdfs proxy</para></listitem>
+	<listitem><para>set quota command</para></listitem>
+	<listitem><para>store dos attributes</para></listitem>
+	<listitem><para>use sendfile</para></listitem>
+	<listitem><para>vfs objects</para></listitem>
 </itemizedlist>
 
 <para>Printing</para>
 
 <itemizedlist>
-	<listitem><para>max reported print jobs </para></listitem>
+	<listitem><para>cups options</para></listitem>
+	<listitem><para>cups server</para></listitem>
+	<listitem><para>force printername</para></listitem>
+	<listitem><para>max reported print jobs</para></listitem>
+	<listitem><para>printcap cache time</para></listitem>
 </itemizedlist> 
 
 
 <para>Unicode and Character Sets</para>
 
 <itemizedlist>
-	<listitem><para>display charset </para></listitem>
-	<listitem><para>dos charset </para></listitem>
-	<listitem><para>unicode </para></listitem>
-	<listitem><para>UNIX charset </para></listitem>
+	<listitem><para>display charset</para></listitem>
+	<listitem><para>dos charset</para></listitem>
+	<listitem><para>UNIX charset</para></listitem>
 </itemizedlist>
 
 <para>SID to UID/GID Mappings</para>
 
 <itemizedlist>
-	<listitem><para>idmap backend </para></listitem>
-	<listitem><para>idmap gid </para></listitem>
-	<listitem><para>idmap uid </para></listitem>
-	<listitem><para>winbind enable local accounts </para></listitem>
-	<listitem><para>winbind trusted domains only </para></listitem>
-	<listitem><para>template primary group </para></listitem>
-	<listitem><para>enable rid algorithm </para></listitem>
+	<listitem><para>idmap backend</para></listitem>
+	<listitem><para>idmap gid</para></listitem>
+	<listitem><para>idmap uid</para></listitem>
+	<listitem><para>winbind enable local accounts</para></listitem>
+	<listitem><para>winbind nested groups</para></listitem>
+	<listitem><para>winbind trusted domains only</para></listitem>
+	<listitem><para>template primary group</para></listitem>
+	<listitem><para>enable rid algorithm</para></listitem>
 </itemizedlist>
 
 <para>LDAP</para>
 
 <itemizedlist>
-	<listitem><para>ldap delete dn </para></listitem>
-	<listitem><para>ldap group suffix </para></listitem>
-	<listitem><para>ldap idmap suffix </para></listitem>
-	<listitem><para>ldap machine suffix </para></listitem>
-	<listitem><para>ldap passwd sync </para></listitem>
-	<listitem><para>ldap user suffix </para></listitem>
+	<listitem><para>ldap delete dn</para></listitem>
+	<listitem><para>ldap group suffix</para></listitem>
+	<listitem><para>ldap idmap suffix</para></listitem>
+	<listitem><para>ldap machine suffix</para></listitem>
+	<listitem><para>ldap passwd sync</para></listitem>
+	<listitem><para>ldap replication sleep</para></listitem>
+	<listitem><para>ldap timeout</para></listitem>
+	<listitem><para>ldap user suffix</para></listitem>
 </itemizedlist>
 
 <para>General Configuration</para>
 
 <itemizedlist>
-	<listitem><para>preload modules </para></listitem>
-	<listitem><para>privatedir </para></listitem>
+	<listitem><para>preload modules</para></listitem>
+	<listitem><para>privatedir</para></listitem>
 </itemizedlist>
 
 </sect2>
@@ -324,17 +350,23 @@ complete descriptions of new or modified parameters.
 <title>Modified Parameters (Changes in Behavior)</title>
 
 <itemizedlist>
+	<listitem><para>dos filetimes (enabled by default)</para></listitem>
 	<listitem><para>encrypt passwords (enabled by default) </para></listitem>
 	<listitem><para>mangling method (set to hash2 by default) </para></listitem>
+	<listitem><para>map to guest (new parameter added)</para></listitem>
+	<listitem><para>min password length (deprecated)</para></listitem>
+	<listitem><para>only user (deprecated)</para></listitem>
 	<listitem><para>passwd chat </para></listitem>
 	<listitem><para>passwd program </para></listitem>
 	<listitem><para>password server </para></listitem>
+	<listitem><para>printer admin (deprecated)</para></listitem>
 	<listitem><para>restrict anonymous (integer value) </para></listitem>
 	<listitem><para>security (new ads value) </para></listitem>
 	<listitem><para>strict locking (enabled by default) </para></listitem>
 	<listitem><para>winbind cache time (increased to 5 minutes) </para></listitem>
 	<listitem><para>winbind uid (deprecated in favor of idmap uid) </para></listitem>
 	<listitem><para>winbind gid (deprecated in favor of idmap gid) </para></listitem>
+	<listitem><para>write cache (deprecated)</para></listitem>
 </itemizedlist>
 
 </sect2>

@@ -8,11 +8,12 @@
     permission on a directory using the native NT security dialog 
     box.</para>
 
-    <para>This parameter is applied as a mask (AND'ed with) to 
-    the changed permission bits, thus preventing any bits not in 
-    this mask from being modified. Essentially, zero bits in this 
-    mask may be treated as a set of bits the user is not allowed 
-    to change.</para>
+    <para>
+	This parameter is applied as a mask (AND'ed with) to the changed permission bits, thus preventing any bits not
+	in this mask from being modified.  Make sure not to mix up this parameter with <smbconfoption name="force
+	directory security mode"/>, which works similar like this one but uses logical OR instead of AND.
+	Essentially, zero bits in this mask may be treated as a set of bits the user is not allowed to change.
+	</para>
 
     <para>If not set explicitly this parameter is set to 0777
     meaning a user is allowed to modify all the user/group/world
