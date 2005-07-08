@@ -63,6 +63,9 @@
 #define ERRinvalidname 123 /* Invalid name */
 #define ERRunknownlevel 124
 #define ERRnotlocked 158 /* This region is not locked by this locking context. */
+#define ERRinvalidpath 161
+#define ERRcancelviolation 173
+#define ERRnoatomiclocks 174
 #define ERRrename 183
 #define ERRbadpipe 230 /* Named pipe invalid */
 #define ERRpipebusy 231 /* All instances of pipe are busy */

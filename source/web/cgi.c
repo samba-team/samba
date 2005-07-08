@@ -457,6 +457,10 @@ static void cgi_download(char *file)
 			printf("Content-Type: image/gif\r\n");
 		} else if (strcmp(p,".jpg")==0) {
 			printf("Content-Type: image/jpeg\r\n");
+		} else if (strcmp(p,".png")==0) {
+			printf("Content-Type: image/png\r\n");
+		} else if (strcmp(p,".css")==0) {
+			printf("Content-Type: text/css\r\n");
 		} else if (strcmp(p,".txt")==0) {
 			printf("Content-Type: text/plain\r\n");
 		} else {

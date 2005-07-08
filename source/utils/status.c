@@ -111,37 +111,47 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 	count++;
 
 	if (Ucrit_checkPid(e->pid)) {
-          d_printf("%-5d  ",(int)e->pid);
-	  switch (GET_DENY_MODE(e->share_mode)) {
-	  case DENY_NONE: d_printf("DENY_NONE  "); break;
-	  case DENY_ALL:  d_printf("DENY_ALL   "); break;
-	  case DENY_DOS:  d_printf("DENY_DOS   "); break;
-	  case DENY_READ: d_printf("DENY_READ  "); break;
-	  case DENY_WRITE:printf("DENY_WRITE "); break;
-	  case DENY_FCB:  d_printf("DENY_FCB "); break;
-	  }
-	  d_printf("0x%-8x  ",(unsigned int)e->desired_access);
-	  switch (e->share_mode&0xF) {
-	  case 0: d_printf("RDONLY     "); break;
-	  case 1: d_printf("WRONLY     "); break;
-	  case 2: d_printf("RDWR       "); break;
-	  }
+		d_printf("%-5d  ",(int)e->pid);
+		switch (map_share_mode_to_deny_mode(e->share_access,
+						    e->private_options)) {
+			case DENY_NONE: d_printf("DENY_NONE  "); break;
+			case DENY_ALL:  d_printf("DENY_ALL   "); break;
+			case DENY_DOS:  d_printf("DENY_DOS   "); break;
+			case DENY_READ: d_printf("DENY_READ  "); break;
+			case DENY_WRITE:printf("DENY_WRITE "); break;
+			case DENY_FCB:  d_printf("DENY_FCB "); break;
+			default: {
+				d_printf("unknown-please report ! "
+					 "e->share_access = 0x%x, "
+					 "e->private_options = 0x%x\n",
+					 (unsigned int)e->share_access,
+					 (unsigned int)e->private_options );
+				break;
+			}
+		}
+		d_printf("0x%-8x  ",(unsigned int)e->access_mask);
+		if (e->access_mask & (FILE_READ_DATA|FILE_WRITE_DATA)) {
+			d_printf("RDWR       ");
+		} else if (e->access_mask & FILE_WRITE_DATA) {
+			d_printf("WRONLY     ");
+		} else {
+			d_printf("RDONLY     ");
+		}
 
-	  if((e->op_type & 
-	     (EXCLUSIVE_OPLOCK|BATCH_OPLOCK)) == 
-	      (EXCLUSIVE_OPLOCK|BATCH_OPLOCK))
-		d_printf("EXCLUSIVE+BATCH ");
-	  else if (e->op_type & EXCLUSIVE_OPLOCK)
-		d_printf("EXCLUSIVE       ");
-	  else if (e->op_type & BATCH_OPLOCK)
-		d_printf("BATCH           ");
-	  else if (e->op_type & LEVEL_II_OPLOCK)
-		d_printf("LEVEL_II        ");
-	  else
-		d_printf("NONE            ");
+		if((e->op_type & (EXCLUSIVE_OPLOCK|BATCH_OPLOCK)) == 
+					(EXCLUSIVE_OPLOCK|BATCH_OPLOCK)) {
+			d_printf("EXCLUSIVE+BATCH ");
+		} else if (e->op_type & EXCLUSIVE_OPLOCK) {
+			d_printf("EXCLUSIVE       ");
+		} else if (e->op_type & BATCH_OPLOCK) {
+			d_printf("BATCH           ");
+		} else if (e->op_type & LEVEL_II_OPLOCK) {
+			d_printf("LEVEL_II        ");
+		} else {
+			d_printf("NONE            ");
+		}
 
-	  d_printf(" %s   %s",fname,
-             asctime(LocalTime((time_t *)&e->time.tv_sec)));
+		d_printf(" %s   %s",fname, asctime(LocalTime((time_t *)&e->time.tv_sec)));
 	}
 }
 

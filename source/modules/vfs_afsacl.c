@@ -605,13 +605,13 @@ static size_t afs_to_nt_acl(struct afs_acl *afs_acl,
 
 	struct afs_ace *afs_ace;
 
-	if (fsp->is_directory || fsp->fd == -1) {
+	if (fsp->is_directory || fsp->fh->fd == -1) {
 		/* Get the stat struct for the owner info. */
 		if(SMB_VFS_STAT(fsp->conn,fsp->fsp_name, &sbuf) != 0) {
 			return 0;
 		}
 	} else {
-		if(SMB_VFS_FSTAT(fsp,fsp->fd,&sbuf) != 0) {
+		if(SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf) != 0) {
 			return 0;
 		}
 	}
