@@ -201,7 +201,7 @@ here is incomplete &smbmdash; you are warned.
 <indexterm><primary>Zero Administration Kit</primary></indexterm>
 	The Windows NT Policy Editor is also included with the Service Pack 3 (and
 	later) for Windows NT 4.0. Extract the files using <command>servicepackname /x</command>
-	&smbmdash; that's <command>Nt4sp6ai.exe /x</command> for service pack 6a. The Policy Editor,
+	&smbmdash; that's <command>Nt4sp6ai.exe /x</command> for Service Pack 6a. The Policy Editor,
 	<command>poledit.exe</command>, and the associated template files (*.adm) should
 	be extracted as well. It is also possible to download the policy template
 	files for Office97 and get a copy of the Policy Editor. Another possible
@@ -353,17 +353,17 @@ here is incomplete &smbmdash; you are warned.
 		<title>Custom System Policy Templates</title>
 
 		<para>
-		Over the past year there has been a bit of talk regarding the creation of customized
+		Over the past year, there has been a bit of talk regarding the creation of customized
 		templates for the Windows Sytem Policy Editor. A recent announcement on the Samba mailing
 		list is worthy of mention.
 		</para>
 
 		<para>
 		Mike Petersen has announced the availability of a template file he has created. This custom System Policy
-		Editor Template will allow you to successfully control Microsoft Windows Workstations from an SMB Server, such
+		Editor Template will allow you to successfully control Microsoft Windows workstations from an SMB server, such
 		as Samba. This template has been tested on a few networks, although if you find any problems with any of these
 		policies, or have any ideas for additional policies, let me know at mailto:mgpeter@pcc-services.com.  This
-		Template includes many policies for Windows XP to allow it to behave better in a professional enviornment.
+		Template includes many policies for Windows XP to allow it to behave better in a professional environment.
 		</para>
 
 		<para>

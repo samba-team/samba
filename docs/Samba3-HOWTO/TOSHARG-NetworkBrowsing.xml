@@ -308,8 +308,8 @@ configured to use DNS to resolve names on other subnets in order to resolve the 
 they can see on other subnets. This setup is not recommended but is mentioned as a practical consideration
 (i.e., an <quote>if all else fails</quote> scenario). NetBIOS over TCP/IP is an ugly and difficult to manage
 protocol. Its replacement, NetBIOSless SMB over TCP/IP is not without its own manageability concerns. NetBIOS
-based networking is a life of compromise and trade-offs. WINS stores information that can not be stored in
-DNS; consequently, DNS is a poor substitute for WINS given that when NetBIOS over TCP/IP is used Windows
+based networking is a life of compromise and trade-offs. WINS stores information that cannot be stored in
+DNS; consequently, DNS is a poor substitute for WINS given that when NetBIOS over TCP/IP is used, Windows
 clients are designed to use WINS.
 </para>
 
@@ -360,11 +360,11 @@ When an MS Windows 200x/XP system attempts to resolve a host name to an IP addre
 <indexterm><primary>name lookups</primary></indexterm>
 <indexterm><primary>DNS</primary></indexterm>
 Given the nature of how the NetBIOS over TCP/IP protocol is implemented, only WINS is capable of resolving
-with any reliability name lookups for service oriented names such as TEMPTATION&lt;1C&gt; &smbmdash; a NetBIOS
-name query that seeks to find network logon servers. DNS has not concept of service oriented names such as
-this. In fact, the Microsoft ADS implementation specifically manages a whole range of extended service
-oriented DNS entries. This type of facility is not implemented and is not supported for the NetBIOS over
-TCP/IP protocol name space.
+with any reliability name lookups for service-oriented names such as TEMPTATION&lt;1C&gt; &smbmdash; a NetBIOS
+name query that seeks to find network logon servers. DNS has no concept of service-oriented names such as
+this. In fact, the Microsoft ADS implementation specifically manages a whole range of extended
+service-oriented DNS entries. This type of facility is not implemented and is not supported for the NetBIOS
+over TCP/IP protocol namespace.
 </para>
 
 </sect2>
@@ -412,7 +412,7 @@ Use of raw SMB over TCP/IP (No NetBIOS layer) can be done only with Active Direc
 Active Directory domain controller: ergo, it is not possible to run Samba as a domain controller and at the same
 time <emphasis>not</emphasis> use NetBIOS. Where Samba is used as an Active Directory domain member server
 (DMS) it is possible to configure Samba to not use NetBIOS over TCP/IP. A Samba DMS can integrate fully into
-an Active Directory domain, however, if NetBIOS over TCP/IP is disabled it is necessary manually to create
+an Active Directory domain, however, if NetBIOS over TCP/IP is disabled, it is necessary to manually create
 appropriate DNS entries for the Samba DMS because they will not be automatically generated either by Samba, or
 by the ADS environment.
 </para>
@@ -442,7 +442,7 @@ Active Directory requires:
 <indexterm><primary>BIND9</primary></indexterm>
 The use of DDNS is highly recommended with Active Directory, in which case the use of BIND9 is preferred for
 its ability to adequately support the SRV (service) records that are needed for Active Directory. Of course,
-when running ADS it makes sense to use Microsoft's own DDNS server because of the natural affinity between ADS
+when running ADS, it makes sense to use Microsoft's own DDNS server because of the natural affinity between ADS
 and MS DNS.
 </para>
 
@@ -678,7 +678,7 @@ criteria, will win the election as DMB.
 <indexterm><primary>browse list maintainers</primary></indexterm>
 <indexterm><primary>LMB</primary></indexterm>
 Where a WINS server is used, the DMB registers its IP address with the WINS server using the name of the
-domain and the NetBIOS name type 1B. e.g., DOMAIN&lt;1B&gt;. All LMBs register their IP address with the WINS
+domain and the NetBIOS name type 1B (e.g., DOMAIN&lt;1B&gt;). All LMBs register their IP addresses with the WINS
 server, also with the name of the domain and the NetBIOS name type of 1D. The 1B name is unique to one
 server within the domain security context, and only one 1D name is registered for each network segment.
 Machines that have registered the 1D name will be authoritive browse list maintainers for the network segment
@@ -1036,9 +1036,9 @@ If, however, both Samba and your clients are using a WINS server, then:
 
 <listitem>
 	<para>
-	When a client receives a domain-wide browse list and a user attempts to access a host in that list, it will contact the WINS server to
-	resolve the NetBIOS name of that host. As long as that host has registered its NetBIOS name with the same WINS server, the user will
-	be able to see that host. 
+	When a client receives a domain-wide browse list and a user attempts to access a host in that list, it will
+	contact the WINS server to resolve the NetBIOS name of that host. As long as that host has registered its
+	NetBIOS name with the same WINS server, the user will be able to see that host..
 	</para>
 </listitem>
 </orderedlist>
@@ -1062,9 +1062,10 @@ does not seem to support a zeros broadcast, and you will probably find that brow
 <indexterm><primary>multiple network interfaces</primary></indexterm>
 Samba supports machines with multiple network interfaces. If you have multiple interfaces, you will
 need to use the <smbconfoption name="interfaces"/> option in &smb.conf; to configure them. For example, the
-machine you are working with has 4 network interfaces; <literal>eth0, eth1, eth2, eth3</literal> and only
-interfaces <literal>eth1</literal> and <literal>eth4</literal> should be used by Samba. In this case the
-following &smb.conf; file entries would permit that intent:
+machine you are working with has 4 network interfaces; <literal>eth0</literal>, <literal>eth1</literal>,
+<literal>eth2</literal>, <literal>eth3</literal> and only interfaces <literal>eth1</literal> and
+<literal>eth4</literal> should be used by Samba. In this case, the following &smb.conf; file entries would
+permit that intent:
 <smbconfblock>
 <smbconfoption name="interfaces">eth1, eth4</smbconfoption>
 <smbconfoption name="bind interfaces only">Yes</smbconfoption>
@@ -1079,7 +1080,7 @@ following &smb.conf; file entries would permit that intent:
 The <smbconfoption name="bind interfaces only">Yes</smbconfoption> is necessary to exclude TCP/IP session
 services (ports 135, 139, and 445) over the interfaces that are not specified. Please be aware that
 <command>nmbd</command> will listen for incoming UDP port 137 packets on the unlisted interfaces, but it will
-not answer them. It will however send its broadcast packets over the unlisted interfaces. Total isolation of
+not answer them. It will, however, send its broadcast packets over the unlisted interfaces. Total isolation of
 ethernet interface requires the use of a firewall to block ports 137 and 138 (UDP), and ports 135, 139, and
 445 (TCP) on all network interfaces that must not be able to access the Samba server.
 </para>
@@ -1285,9 +1286,9 @@ server on a network.
 To configure Windows NT/200x Server as a WINS server, install and configure the WINS service. See the Windows
 NT/200x documentation for details.  Windows NT/200x WINS servers can replicate to each other, allowing more
 than one to be set up in a complex subnet environment. Because Microsoft refuses to document the replication
-protocols, Samba cannot currently participate in these replications. It is possible in the future that a
-Samba-to-Samba WINS replication protocol may be defined, in which case more than one Samba machine could be
-set up as a WINS server.  Currently only one Samba server should have the <smbconfoption name="wins
+protocols, Samba cannot currently participate in these replications. It is possible that a Samba-to-Samba WINS
+replication protocol may be defined in the future, in which case more than one Samba machine could be set up
+as a WINS server.  Currently only one Samba server should have the <smbconfoption name="wins
 support">yes</smbconfoption> parameter set.
 </para>
 
@@ -1388,7 +1389,7 @@ To make a NetBIOS name static (permanent), simply set the TTL to 0, like this:
 <indexterm><primary>nameserv.h</primary></indexterm>
 The NetBIOS flags may be interpreted as additive hexadecimal values: 00 - Broadcast node registration, 20 -
 Peer node registration, 40 - Meta node registration, 60 - Hybrid node registration, 02 - Permanent name, 04 -
-Active name, 80 - Group name. The 'R' indications this is a registration record. Thus 66R means: Hyrbid node
+Active name, 80 - Group name. The 'R' indicates this is a registration record. Thus 66R means: Hybrid node
 active and permanent NetBIOS name. These values may be found in the <filename>nameserv.h</filename> header
 file from the Samba source code repository. These are the values for the NB flags.
 </para>
@@ -1509,9 +1510,9 @@ The default is:
 <smbconfoption name="name resolve order">host lmhost wins bcast</smbconfoption>,
 </smbconfblock>
 <indexterm><primary>gethostbyname() function call</primary></indexterm>
-where <quote>host</quote> refers to the native methods used by the UNIX system
-to implement the gethostbyname() function call. This is normally
-controlled by <filename>/etc/host.conf</filename>, <filename>/etc/nsswitch.conf</filename> and <filename>/etc/resolv.conf</filename>.
+where <quote>host</quote> refers to the native methods used by the UNIX system to implement the
+gethostbyname() function call. This is normally controlled by <filename>/etc/host.conf</filename>,
+<filename>/etc/nsswitch.conf</filename> and <filename>/etc/resolv.conf</filename>.
 </para>
 </sect2>
 </sect1>
@@ -1651,7 +1652,7 @@ The <literal>IPC$</literal> share is used by all SMB/CIFS clients to obtain the 
 that is available on the server. This is the source of the list of shares and printers when browsing
 an SMB/CIFS server (also Windows machines) using the Windows Explorer to browse resources through
 the Windows Network Neighborhood (also called My Network Places) through to a Windows server. At 
-this point the client has opened a connection to the <literal>\\server\IPC4</literal> resource. 
+this point, the client has opened a connection to the <literal>\\server\IPC4</literal> resource. 
 Clicking on a share will then open up a connection to the <literal>\\server\share</literal>.
 </para></note>
 
@@ -1700,7 +1701,7 @@ done via a directed UDP packet on port 137 to the WINS server machine. The WINS 
 default NetBIOS name-to-IP address translation, which is done using UDP broadcasts from the querying machine.
 This means that machines on one subnet will not be able to resolve the names of machines on another subnet
 without using a WINS server. The Samba hacks, <parameter>remote browse sync</parameter>, and <parameter>remote
-announce</parameter> are designed to get around the natural limitations that provent UDP broadcast
+announce</parameter> are designed to get around the natural limitations that prevent UDP broadcast
 propagation. The hacks are not a universal solution and they should not be used in place of WINS, they are
 considered last resort methods.
 </para>

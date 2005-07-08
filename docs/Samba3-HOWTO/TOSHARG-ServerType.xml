@@ -20,7 +20,7 @@ itself.
 </para>
 
 <para>
-The chapter provides an overview of the security modes of which Samba is capable and how they relate to MS
+This chapter provides an overview of the security modes of which Samba is capable and how they relate to MS
 Windows servers and clients.
 </para>
 
@@ -90,7 +90,7 @@ So, what are the benefits of the features mentioned in this chapter?
 	<indexterm><primary>encrypted</primary></indexterm>
 	Samba-3 permits use of multiple concurrent account database backends.
 	(Encrypted passwords that are stored in the account database are in
-	formats that is unique to Windows networking).
+	formats that are unique to Windows networking).
 	</para></listitem>
 
 	<listitem><para>
@@ -111,7 +111,7 @@ So, what are the benefits of the features mentioned in this chapter?
 
 <para>
 <indexterm><primary>Server Type</primary></indexterm>
-Administrators of Microsoft networks often refer to three different type of servers:
+Administrators of Microsoft networks often refer to three different types of servers:
 </para>
 
 <itemizedlist>
@@ -146,9 +146,9 @@ they lay the foundation for deployment of Samba domain security.
 
 <para>
 <indexterm><primary>standalone</primary></indexterm>
-A Standalone server has is autonomous in respect of the source of its account backend.
+A Standalone server is autonomous in respect of the source of its account backend.
 Refer to <link linkend="StandAloneServer">Standalone Servers</link> to gain a wider appreciation
-of what is mean by a server being configured as a <emphasis>standalone</emphasis> server.
+of what is meant by a server being configured as a <emphasis>standalone</emphasis> server.
 </para>
 
 </sect1>
@@ -160,7 +160,7 @@ of what is mean by a server being configured as a <emphasis>standalone</emphasis
 <para>
 <indexterm><primary>Security Mode</primary></indexterm>
 <indexterm><primary>security</primary></indexterm>
-In this section the function and purpose of Samba's security modes are described. An accurate understanding of
+In this section, the function and purpose of Samba's security modes are described. An accurate understanding of
 how Samba implements each security mode as well as how to configure MS Windows clients for each mode will
 significantly reduce user complaints and administrator heartache.
 </para>
@@ -245,7 +245,7 @@ authentication contexts in this way (WinDD is an example of an application that 
 Windows networking user account names are case-insensitive, meaning that upper-case and lower-case characters
 in the account name are considered equivalent. They are said to be case-preserving, but not case significant.
 Windows and LanManager systems previous to Windows NT version 3.10 have case-insensitive passwords that were
-not necessarilty case-preserving. All Windows NT family systems treat passwords are case-preserving and
+not necessarilty case-preserving. All Windows NT family systems treat passwords as case-preserving and
 case-sensitive.
 </para>
 
@@ -300,10 +300,10 @@ authenticated as that user.
 <indexterm><primary>name service switch</primary><see>NSS</see></indexterm>
 <indexterm><primary>/etc/passwd</primary></indexterm>
 <indexterm><primary>nsswitch.conf</primary></indexterm>
-Where the list of possible user names is not provided, Samba checks makes a UNIX system call to find the user
+Where the list of possible user names is not provided, Samba makes a UNIX system call to find the user
 account that has a password that matches the one provided from the standard account database. On a system that
-has no name service switch (NSS) facility such lookups will be from the <filename>/etc/passwd</filename>
-database. On NSS enabled systems the lookup will go to the libraries that have been specified in the
+has no name service switch (NSS) facility, such lookups will be from the <filename>/etc/passwd</filename>
+database. On NSS enabled systems, the lookup will go to the libraries that have been specified in the
 <filename>nsswitch.conf</filename> file. The entries in that file in which the libraries are specified are:
 <screen>
 passwd: files nis ldap
@@ -369,12 +369,12 @@ have a machine account in the security database.
 <indexterm><primary>machine</primary><secondary>account</secondary></indexterm>
 <indexterm><primary>NetBIOS</primary><secondary>name</secondary></indexterm>
 <indexterm><primary>NetBIOS</primary></indexterm>
-Within the domain security environment the underlying security architecture uses User-level security. Even
+Within the domain security environment, the underlying security architecture uses user-level security. Even
 machines that are domain members must authenticate on startup. The machine account consists of an account
 entry in the accounts database, the name of which is the NetBIOS name of the machine and of which the password
 is randomly generated and known to both the domain controllers and the member machine. If the machine account
-can not be validated during startup, users will not be able to log onto the domain using this machine because
-it can not be trusted. The machine account is referred to as a machine trust account.
+cannot be validated during startup, users will not be able to log on to the domain using this machine because
+it cannot be trusted. The machine account is referred to as a machine trust account.
 </para>
 
 <para>
@@ -489,7 +489,7 @@ domain members. This is contrary to popular belief.
 <para>
 If you are using Active Directory, starting with Samba-3 you can join as a native AD member. Why would you
 want to do that?  Your security policy might prohibit the use of NT-compatible authentication protocols. All
-your machines are running Windows 2000 and above and all use Kerberos. In this case Samba, as an NT4-style
+your machines are running Windows 2000 and above and all use Kerberos. In this case, Samba, as an NT4-style
 domain, would still require NT-compatible authentication data. Samba in AD-member mode can accept Kerberos
 tickets.
 </para>
@@ -749,7 +749,7 @@ to use another SMB server as its source for user authentication alone.
 
 <para>
 Samba is a server regardless of which security mode is chosen. When Samba is used outside of a domain security
-context, it is best to leave the security mode at the default setting. By default Samba-3 uses User-mode
+context, it is best to leave the security mode at the default setting. By default Samba-3 uses user-mode
 security.
 </para>
 

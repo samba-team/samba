@@ -215,7 +215,7 @@
 <screen>
 &rootprompt;<userinput>net groupmap add rid=1000 ntgroup="Accounting" unixgroup=acct</userinput>
 </screen>
-	The <literal>ntgroup</literal> value must be quotes if it contains space characters to prevent
+	The <literal>ntgroup</literal> value must be in quotes if it contains space characters to prevent
 	the space from being interpreted as a command delimiter.
 	</para>
 
@@ -462,8 +462,8 @@
 <indexterm><primary>manage share-level ACL</primary></indexterm>
 <indexterm><primary>share-level ACLs</primary></indexterm>
 	There is no safe way to provide access on a UNIX/Linux system without providing
-	<constant>root</constant>-level privilege. Provision of <constant>root</constant> privileges can be done
-	either by logging onto the Domain as the user <constant>root</constant> or by permitting particular users to
+	<constant>root</constant>-level privileges. Provision of <constant>root</constant> privileges can be done
+	either by logging on to the Domain as the user <constant>root</constant> or by permitting particular users to
 	use a UNIX account that has a UID=0 in the <filename>/etc/passwd</filename> database. Users of such accounts
 	can use tools like the NT4 Domain User Manager and the NT4 Domain Server Manager to manage user and group
 	accounts as well as domain member server and client accounts. This level of privilege is also needed to manage

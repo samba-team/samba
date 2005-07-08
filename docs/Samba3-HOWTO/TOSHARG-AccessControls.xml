@@ -234,7 +234,7 @@ at how Samba helps to bridge the differences.
 		<para>
 		So what should Samba do if all three are present? That which is lexically first will be
 		accessible to MS Windows users; the others are invisible and unaccessible &smbmdash; any
-		other solution would be suicidal. The Windows client will ask for a case insensitive file
+		other solution would be suicidal. The Windows client will ask for a case-insensitive file
 		lookup, and that is the reason for which Samba must offer a consistent selection in the
 		event that the UNIX directory contains multiple files that would match a case insensitive
 		file listing.
@@ -508,7 +508,7 @@ CAP_LINUX_IMMUTABLE capability can set or clear this attribute.
 	</para>
 
 	<procedure>
-	<title>Test for file Immutibility Support</title>
+	<title>Test for File Immutibility Support</title>
 
 	<step><para>
 	Create a file called <filename>filename</filename>.
@@ -763,7 +763,7 @@ mystic:/home/hannibal > rm filename
 
 	<para>
 	The parameter documented in <link linkend="mcoc">Other Controls</link> are often used by administrators 
-	in ways that creat inadvertent barriers to file access. Such are the consequences of not understanding the 
+	in ways that create inadvertent barriers to file access. Such are the consequences of not understanding the 
 	full implications of &smb.conf; file settings.
 	</para>
 
@@ -1558,7 +1558,7 @@ are examples recently taken from the mailing list.
 	and there's a public share on which everyone needs to have permission to create/modify files, but only
 	root can change the file, no one else can. We need to constantly go to the server to
 	<userinput>chgrp -R users *</userinput> and <userinput>chown -R nobody *</userinput> to allow
-	others users to change the file.
+	other users to change the file.
 	</quote>
 	</para>
 
