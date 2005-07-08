@@ -1,3 +1,7 @@
+2005-07-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* snprintf-test.c: Check a very simple format string
+	
 2005-07-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* roken.h.in: If we have <strings.h> include it, its needed for
