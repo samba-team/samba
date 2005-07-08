@@ -88,6 +88,15 @@ sub get_value_of($)
 	}
 }
 
+#####################################################################
+# work out is a parse function should be declared static or not
+sub fn_prefix($)
+{
+	my $fn = shift;
+
+	return "" if (util::has_property($fn, "public"));
+	return "static ";
+}
 
 ###########################
 # pull a scalar element
@@ -95,6 +104,10 @@ sub EjsPullScalar($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
 	$var = get_pointer_to($var);
+	# have to handle strings specially :(
+	if ($e->{TYPE} eq "string") {
+		$var = get_pointer_to($var);
+	}
 	pidl "\tNDR_CHECK(ejs_pull_$e->{TYPE}(ejs, v, $name, $var));\n";
 }
 
@@ -103,7 +116,7 @@ sub EjsPullScalar($$$$$)
 sub EjsPullPointer($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
-	pidl "EJS_ALLOC(ejs, $var);\n";
+	pidl "\tEJS_ALLOC(ejs, $var);\n";
 	$var = get_value_of($var);		
 	EjsPullElement($e, Ndr::GetNextLevel($e, $l), $var, $name, $env);
 }
@@ -124,10 +137,20 @@ sub EjsPullArray($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
 	my $length = util::ParseExpr($l->{LENGTH_IS}, $env);
-	pidl "{ uint32_t i; EJS_ALLOC_N(ejs, $var, $length); for (i=0;i<$length;i++) {\n";
-	pidl "\tconst char *id = talloc_asprintf(ejs, \"%s.%u\", $name, i);\n";
-	EjsPullElement($e, Ndr::GetNextLevel($e, $l), $var . "[i]", "id", $env);
-	pidl "}\nejs_push_uint32(ejs, v, $name \".length\", &i); }\n";
+	my $pl = Ndr::GetPrevLevel($e, $l);
+	if ($pl && $pl->{TYPE} eq "POINTER") {
+		$var = get_pointer_to($var);
+	}
+	my $avar = $var . "[i]";
+	pidl "\t{ uint32_t i;\n";
+	if (!$l->{IS_FIXED}) {
+		pidl "\tEJS_ALLOC_N(ejs, $var, $length);\n";
+	}
+	pidl "\tfor (i=0;i<$length;i++) {\n";
+	pidl "\tchar *id = talloc_asprintf(ejs, \"%s.%u\", $name, i);\n";
+	EjsPullElement($e, Ndr::GetNextLevel($e, $l), $avar, "id", $env);
+	pidl "\ttalloc_free(id);\n";
+	pidl "\t}\nejs_push_uint32(ejs, v, $name \".length\", &i); }\n";
 }
 
 ###########################
@@ -179,7 +202,8 @@ sub EjsStructPull($$)
 	my $name = shift;
 	my $d = shift;
 	my $env = GenerateStructEnv($d);
-	pidl "\nstatic NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, struct $name *r)\n{\n";
+	pidl fn_prefix($d);
+	pidl "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, struct $name *r)\n{\n";
 	pidl "\tNDR_CHECK(ejs_pull_struct_start(ejs, &v, name));\n";
         foreach my $e (@{$d->{ELEMENTS}}) {
 		EjsPullElementTop($e, $env);
@@ -196,7 +220,8 @@ sub EjsUnionPull($$)
 	my $d = shift;
 	my $have_default = 0;
 	my $env = GenerateStructEnv($d);
-	pidl "\nstatic NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, union $name *r)\n{\n";
+	pidl fn_prefix($d);
+	pidl "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, union $name *r)\n{\n";
 	pidl "\tNDR_CHECK(ejs_pull_struct_start(ejs, &v, name));\n";
 	pidl "switch (ejs->switch_var) {\n";
 	foreach my $e (@{$d->{ELEMENTS}}) {
@@ -222,7 +247,8 @@ sub EjsEnumPull($$)
 {
 	my $name = shift;
 	my $d = shift;
-	pidl "\nstatic NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, enum $name *r)\n{\n";
+	pidl fn_prefix($d);
+	pidl "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, enum $name *r)\n{\n";
 	pidl "\tunsigned e;\n";
 	pidl "\tNDR_CHECK(ejs_pull_enum(ejs, v, name, &e));\n";
 	pidl "\t*r = e;\n";
@@ -234,7 +260,14 @@ sub EjsEnumPull($$)
 # pull a bitmap
 sub EjsBitmapPull($$)
 {
-# ignored for now
+	my $name = shift;
+	my $d = shift;
+	my $type_fn = $d->{BASE_TYPE};
+	my($type_decl) = typelist::mapType($d->{BASE_TYPE});
+	pidl fn_prefix($d);
+	pidl "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, $type_decl *r)\n{\n";
+	pidl "return ejs_pull_$type_fn(ejs, v, name, r);\n";
+	pidl "}\n";
 }
 
 
@@ -243,6 +276,7 @@ sub EjsBitmapPull($$)
 sub EjsTypedefPull($)
 {
 	my $d = shift;
+	return if (util::has_property($d, "noejs"));
 	if ($d->{DATA}->{TYPE} eq 'STRUCT') {
 		EjsStructPull($d->{NAME}, $d->{DATA});
 	} elsif ($d->{DATA}->{TYPE} eq 'UNION') {
@@ -322,9 +356,14 @@ sub EjsPushArray($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
 	my $length = util::ParseExpr($l->{LENGTH_IS}, $env);
+	my $pl = Ndr::GetPrevLevel($e, $l);
+	if ($pl && $pl->{TYPE} eq "POINTER") {
+		$var = get_pointer_to($var);
+	}
+	my $avar = $var . "[i]";
 	pidl "{ uint32_t i; for (i=0;i<$length;i++) {\n";
 	pidl "\tconst char *id = talloc_asprintf(ejs, \"%s.%u\", $name, i);\n";
-	EjsPushElement($e, Ndr::GetNextLevel($e, $l), $var . "[i]", "id", $env);
+	EjsPushElement($e, Ndr::GetNextLevel($e, $l), $avar, "id", $env);
 	pidl "}\nejs_push_uint32(ejs, v, $name \".length\", &i); }\n";
 }
 
@@ -367,7 +406,8 @@ sub EjsStructPush($$)
 	my $name = shift;
 	my $d = shift;
 	my $env = GenerateStructEnv($d);
-	pidl "\nstatic NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const struct $name *r)\n{\n";
+	pidl fn_prefix($d);
+	pidl "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const struct $name *r)\n{\n";
 	pidl "\tNDR_CHECK(ejs_push_struct_start(ejs, &v, name));\n";
         foreach my $e (@{$d->{ELEMENTS}}) {
 		EjsPushElementTop($e, $env);
@@ -384,7 +424,8 @@ sub EjsUnionPush($$)
 	my $d = shift;
 	my $have_default = 0;
 	my $env = GenerateStructEnv($d);
-	pidl "\nstatic NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const union $name *r)\n{\n";
+	pidl fn_prefix($d);
+	pidl "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const union $name *r)\n{\n";
 	pidl "\tNDR_CHECK(ejs_push_struct_start(ejs, &v, name));\n";
 	pidl "switch (ejs->switch_var) {\n";
 	foreach my $e (@{$d->{ELEMENTS}}) {
@@ -421,7 +462,8 @@ sub EjsEnumPush($$)
 		$constants{$e} = $v;
 		$v++;
 	}
-	pidl "\nstatic NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const enum $name *r)\n{\n";
+	pidl fn_prefix($d);
+	pidl "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const enum $name *r)\n{\n";
 	pidl "\tunsigned e = *r;\n";
 	pidl "\tNDR_CHECK(ejs_push_enum(ejs, v, name, &e));\n";
 	pidl "\treturn NT_STATUS_OK;\n";
@@ -433,8 +475,13 @@ sub EjsEnumPush($$)
 sub EjsBitmapPush($$)
 {
 	my $name = shift;
-	my $e = shift;
-#	print util::MyDumper($e);
+	my $d = shift;
+	my $type_fn = $d->{BASE_TYPE};
+	my($type_decl) = typelist::mapType($d->{BASE_TYPE});
+	pidl fn_prefix($d);
+	pidl "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const $type_decl *r)\n{\n";
+	pidl "return ejs_push_$type_fn(ejs, v, name, r);\n";
+	pidl "}\n";
 }
 
 
@@ -443,6 +490,7 @@ sub EjsBitmapPush($$)
 sub EjsTypedefPush($)
 {
 	my $d = shift;
+	return if (util::has_property($d, "noejs"));
 	if ($d->{DATA}->{TYPE} eq 'STRUCT') {
 		EjsStructPush($d->{NAME}, $d->{DATA});
 	} elsif ($d->{DATA}->{TYPE} eq 'UNION') {
@@ -542,14 +590,18 @@ sub EjsInterface($)
 sub Parse($$)
 {
     my($ndr,$hdr) = @_;
-
+    
+    my $ejs_hdr = $hdr;
+    $ejs_hdr =~ s/.h$/_ejs.h/;
     $res = "";
     pidl "
 /* EJS wrapper functions auto-generated by pidl */
 #include \"includes.h\"
 #include \"lib/ejs/ejs.h\"
-#include \"$hdr\"
 #include \"scripting/ejs/ejsrpc.h\"
+#include \"librpc/gen_ndr/ndr_misc_ejs.h\"
+#include \"$hdr\"
+#include \"$ejs_hdr\"
 
 ";
     foreach my $x (@{$ndr}) {

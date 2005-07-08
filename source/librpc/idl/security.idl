@@ -184,7 +184,7 @@ interface security
 
 	/* a domain SID. Note that unlike Samba3 this contains a pointer,
 	   so you can't copy them using assignment */
-	typedef [public,noprint] struct {
+	typedef [public,noprint,noejs] struct {
 		uint8  sid_rev_num;             /**< SID revision number */
 		[range(0,15)] int8  num_auths;  /**< Number of sub-authorities */
 		uint8  id_auth[6];              /**< Identifier Authority */

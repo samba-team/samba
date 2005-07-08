@@ -98,6 +98,7 @@ my %property_list = (
 	"nopush"		=> ["FUNCTION", "TYPEDEF"],
 	"nopull"		=> ["FUNCTION", "TYPEDEF"],
 	"noprint"		=> ["FUNCTION", "TYPEDEF"],
+	"noejs"			=> ["FUNCTION", "TYPEDEF"],
 
 	# union
 	"switch_is"		=> ["ELEMENT"],
