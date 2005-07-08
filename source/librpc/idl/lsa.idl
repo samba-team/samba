@@ -13,6 +13,23 @@
   depends(security)
 ] interface lsarpc
 {
+	typedef [public] struct {
+		[value(2*strlen_m(string))] uint16 length;
+		[value(2*strlen_m(string))] uint16 size;
+		unistr_noterm *string;
+	} lsa_String;
+
+	typedef [public] struct {
+		uint32 count;
+		[size_is(count)] lsa_String *names;
+	} lsa_Strings;
+
+	typedef [public] struct {
+		[value(strlen_m(string))] uint16 length;
+		[value(strlen_m(string))] uint16 size;
+		ascstr_noterm *string;
+	} lsa_AsciiString;
+
 	/******************/
 	/* Function: 0x00 */
 	NTSTATUS lsa_Close (
@@ -29,13 +46,6 @@
 
 	/******************/
 	/* Function: 0x02 */
-
-	typedef struct {
-		[value(2*strlen_m(string))] uint16 length;
-		[value(2*strlen_m(string))] uint16 size;
-		unistr_noterm *string;
-	} lsa_String;
-
 	typedef struct {
 		uint32 low;
 		uint32 high;

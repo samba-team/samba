@@ -40,7 +40,7 @@ struct domain_open_state {
 	struct samr_Connect       connect;
 	struct samr_LookupDomain  lookup;
 	struct samr_OpenDomain    open;
-	struct samr_String        domain_name;
+	struct lsa_String         domain_name;
 	uint32_t                  access_mask;
 	struct policy_handle      connect_handle;
 	struct policy_handle      domain_handle;

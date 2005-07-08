@@ -44,7 +44,7 @@ static NTSTATUS DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct policy_handle user_handle;
 	uint32_t rid;
 	struct samr_LookupNames n;
-	struct samr_String sname;
+	struct lsa_String sname;
 	struct samr_OpenUser r;
 
 	sname.string = name;
@@ -105,9 +105,9 @@ struct test_join *torture_create_testuser(const char *username,
 	uint32_t access_granted;
 	uint32_t rid;
 	DATA_BLOB session_key;
-	struct samr_String name;
-	struct samr_String comment;
-	struct samr_String full_name;
+	struct lsa_String name;
+	struct lsa_String comment;
+	struct lsa_String full_name;
 	
 	int policy_min_pw_len = 0;
 	struct test_join *join;

@@ -28,7 +28,7 @@
 
 
 static BOOL test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			    struct policy_handle *handle, struct samr_String *domname)
+			    struct policy_handle *handle, struct lsa_String *domname)
 {
 	NTSTATUS status;
 	struct policy_handle h, domain_handle;
@@ -147,7 +147,7 @@ static BOOL test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_LookupNames r1;
 	struct samr_OpenUser r2;
 	struct samr_DeleteUser r3;
-	struct samr_String names[2];
+	struct lsa_String names[2];
 	uint32_t rid;
 	struct policy_handle user_handle;
 
@@ -200,7 +200,7 @@ static BOOL test_createuser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct policy_handle user_handle;
-	struct samr_String username;
+	struct lsa_String username;
 	struct samr_CreateUser r1;
 	struct samr_Close r2;
 	uint32_t user_rid;
@@ -277,7 +277,7 @@ BOOL torture_useradd(void)
 	const char *binding;
 	struct dcerpc_pipe *p;
 	struct policy_handle h;
-	struct samr_String domain_name;
+	struct lsa_String domain_name;
 	const char *name = TEST_USERNAME;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
@@ -338,7 +338,7 @@ BOOL torture_userdel(void)
 	const char *binding;
 	struct dcerpc_pipe *p;
 	struct policy_handle h;
-	struct samr_String domain_name;
+	struct lsa_String domain_name;
 	const char *name = TEST_USERNAME;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;

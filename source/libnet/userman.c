@@ -127,7 +127,7 @@ struct composite_context *libnet_rpc_useradd_send(struct dcerpc_pipe *p,
 
 	/* preparing parameters to send rpc request */
 	s->createuser.in.domain_handle         = &io->in.domain_handle;
-	s->createuser.in.account_name          = talloc_zero(c, struct samr_String);
+	s->createuser.in.account_name          = talloc_zero(c, struct lsa_String);
 	s->createuser.in.account_name->string  = talloc_strdup(c, io->in.username);
 	s->createuser.out.user_handle          = &s->user_handle;
 	s->createuser.out.rid                  = &s->user_rid;
@@ -349,7 +349,7 @@ struct composite_context *libnet_rpc_userdel_send(struct dcerpc_pipe *p,
 	/* preparing parameters to send rpc request */
 	s->lookupname.in.domain_handle = &io->in.domain_handle;
 	s->lookupname.in.num_names     = 1;
-	s->lookupname.in.names         = talloc_zero(s, struct samr_String);
+	s->lookupname.in.names         = talloc_zero(s, struct lsa_String);
 	s->lookupname.in.names->string = io->in.username;
 
 	/* send the request */

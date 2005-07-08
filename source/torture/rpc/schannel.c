@@ -35,7 +35,7 @@ static BOOL test_samr_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	struct samr_GetDomPwInfo r;
 	int i;
-	struct samr_String name;
+	struct lsa_String name;
 
 	name.string = lp_workgroup();
 	r.in.domain_name = &name;

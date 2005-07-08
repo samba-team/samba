@@ -25,7 +25,7 @@
 #include "libcli/composite/monitor.h"
 
 static BOOL test_domainopen(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			    struct samr_String *domname,
+			    struct lsa_String *domname,
 			    struct policy_handle *domain_handle)
 {
 	NTSTATUS status;
@@ -77,7 +77,7 @@ BOOL torture_domainopen(void)
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	struct policy_handle h;
-	struct samr_String name;
+	struct lsa_String name;
 
 	mem_ctx = talloc_init("test_domain_open");
 	binding = lp_parm_string(-1, "torture", "binding");
