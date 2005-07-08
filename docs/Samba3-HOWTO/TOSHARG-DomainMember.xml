@@ -234,7 +234,7 @@ There are three ways to create Machine Trust Accounts:
 <indexterm><primary>enforcing</primary></indexterm>
 <indexterm><primary>machine trust account</primary><secondary>creation</secondary></indexterm>
 Neither MS Windows NT4/200x/XP Professional, nor Samba, provide any method for enforcing the method of machine
-trust account creation. This is a matter for the administrator's choice.
+trust account creation. This is a matter of the administrator's choice.
 </para>
 
 <sect2>
@@ -642,7 +642,7 @@ of your &smb.conf; to read:
 <smbconfblock>
 <smbconfoption name="security">domain</smbconfoption>
 </smbconfblock>
-Note that if the parameter <parameter>security = user</parameter> is used this machine would function as a
+Note that if the parameter <parameter>security = user</parameter> is used, this machine would function as a
 standalone server and not as a domain member server. Domain security mode causes Samba to work within the
 domain security context.
 </para>
@@ -687,7 +687,7 @@ among Domain Controllers.
 <indexterm><primary>mechanism</primary></indexterm>
 <indexterm><primary>broadcast-based name resolution</primary></indexterm>
 <indexterm><primary>DNS name resolution</primary></indexterm>
-Alternately, if you want smbd to determine automatically the list of domain controllers to use for
+Alternatively, if you want smbd to determine automatically the list of domain controllers to use for
 authentication, you may set this line to be:
 <smbconfblock>
 <smbconfoption name="password server">*</smbconfoption>
@@ -737,7 +737,7 @@ Where the older NT4-style domain architecture is used:
 <indexterm><primary>net</primary><secondary>ads</secondary><tertiary>join</tertiary></indexterm>
 <indexterm><primary>ADS</primary></indexterm>
 <indexterm><primary>join the ADS domain</primary></indexterm>
-Where Active Directory is used the command used to join the ADS domain is:
+Where Active Directory is used, the command used to join the ADS domain is:
 <screen>
 &rootprompt; net ads join -U<replaceable>Administrator%password</replaceable>
 </screen>
@@ -801,7 +801,7 @@ but in most cases the following will suffice:
 <indexterm><primary>UNIX users</primary></indexterm>
 <indexterm><primary>authentication</primary></indexterm>
 Currently, domain security in Samba does not free you from having to create local UNIX users to represent the
-users attaching to your server. This means that if domain user <constant>DOM\fred </constant> attaches to your
+users attaching to your server. This means that if domain user <constant>DOM\fred</constant> attaches to your
 domain security Samba server, there needs to be a local UNIX user fred to represent that user in the UNIX file
 system. This is similar to the older Samba security mode <smbconfoption
 name="security">server</smbconfoption>, where Samba would pass through the authentication request to a Windows
@@ -901,7 +901,7 @@ In case samba cannot correctly identify the appropriate ADS server using the rea
 </smbconfblock>
 The most common reason for which Samba may not be able to locate the ADS domain controller is a consequence of
 sites maintaining some DNS servers on UNIX systems without regard for the DNS requirements of the ADS
-infrastructure. There is no harm in specifying a preferred ADS DC using the <parameter>password
+infrastructure. There is no harm in specifying a preferred ADS domain controller using the <parameter>password
 server</parameter>.
 </para>
 
@@ -949,7 +949,7 @@ active directory infrastructure.
 <indexterm><primary>Windows 2000</primary></indexterm>
 UNIX systems can use kinit and the DES-CBC-MD5 or DES-CBC-CRC encryption types to authenticate to the Windows
 2000 KDC. For further information regarding Windows 2000 ADS kerberos interoperability please refer to the
-Microsoft Windows 2000 kerberos <ulink
+Microsoft Windows 2000 Kerberos <ulink
 url="http://www.microsoft.com/windows2000/techinfo/planning/security/kerbsteps.asp">Interoperability</ulink>
 guide. Another very useful document that may be referred to for general information regarding Kerberos
 interoperability is <ulink url="http://www.ietf.org/rfc/rfc1510.txt?number=1510">RFC1510</ulink>. This RFC
@@ -1407,7 +1407,7 @@ account to which the Samba backend database account can be mapped.
 	Set <smbconfoption name="client use spnego">yes</smbconfoption> when communicating 
 	with a Windows 2003 server. This will not interfere with other Windows clients that do not
 	support the more advanced security features of Windows 2003 because the client will simply
-	negotiate a protocol tha both it and the server suppport. This is a well-know fall-back facility
+	negotiate a protocol tha both it and the server suppport. This is a well-known fall-back facility
 	that is built into the SMB/CIFS protocols.
 	</para>
 

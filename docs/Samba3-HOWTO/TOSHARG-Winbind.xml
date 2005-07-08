@@ -113,7 +113,7 @@
 <indexterm><primary>NSS</primary></indexterm>
 	If <command>winbindd</command> is not running, smbd (which calls <command>winbindd</command>) will fall back to
 	using purely local information from <filename>/etc/passwd</filename> and <filename>/etc/group</filename> and no dynamic
-	mapping will be used. On an operating system that has beeb enabled with the NSS,
+	mapping will be used. On an operating system that has been enabled with the NSS,
 	the resolution of user and group information will be accomplished via NSS.
 	</para></note>
 
@@ -272,7 +272,7 @@
 	<para>
 <indexterm><primary>PDC</primary></indexterm>
 	Response: <quote>Why? I've used Samba with workstations that are not part of my domains
-	lots of times without using winbind. I though winbind was for using Samba as a member server
+	lots of times without using winbind. I thought winbind was for using Samba as a member server
 	in a domain controlled by another Samba/Windows PDC.</quote>
 	</para>
 
@@ -634,7 +634,7 @@ instructions on downloading the source code.
 To allow domain users the ability to access Samba shares and files, as well as potentially other services
 provided by your Samba machine, PAM must be set up properly on your
 machine. In order to compile the Winbind modules, you should have at least the PAM development libraries installed
-on your system. Please refer the PAM Web site <ulink url="http://www.kernel.org/pub/linux/libs/pam/"/>.
+on your system. Please refer to the PAM Web site <ulink url="http://www.kernel.org/pub/linux/libs/pam/"/>.
 </para>
 </sect2>
 
@@ -756,7 +756,7 @@ Configuration file [version 4]: /var/ld/ld.config
 Command line:
   crle -c /var/ld/ld.config -l /lib:/usr/lib:/usr/local/lib
 </screen>
-From this it is apparent that the <filename>/usr/local/lib</filename> directory is be included
+From this it is apparent that the <filename>/usr/local/lib</filename> directory is included
 in the search dynamic link libraries in order to satisfy object module dependencies.
 </para>
 
