@@ -1108,7 +1108,7 @@ tdb(/usr/local/samba_2.2.7/var/locks/locking.tdb): rec_read bad magic
 
 <para>
 You may want to check for an updated documentation regarding file and record locking issues on the Microsoft
-<ulink url="http://support.microsoft.com/">Support</ulink> web site. Additionally, a search for the work
+<ulink url="http://support.microsoft.com/">Support</ulink> web site. Additionally, search for the word
 <literal>locking</literal> on the Samba <ulink url="http://www.samba.org/">web</ulink> site.
 </para>
 

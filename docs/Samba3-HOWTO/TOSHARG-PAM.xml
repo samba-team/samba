@@ -790,9 +790,9 @@ Options recognized by this module are shown in <link linkend="smbpassoptions">ne
 			<entry>Like try_first_pass, but *fail* if the new PAM_AUTHTOK has not been previously set (intended for stacking password modules only).</entry></row>
 		<row><entry>not_set_pass</entry><entry>Do not make passwords used by this module available to other modules.</entry></row>
 		<row><entry>nodelay</entry><entry>dDo not insert ~1-second delays on authentication failure.</entry></row>
-		<row><entry>nullok</entry><entry>nNull passwords are allowed.</entry></row>
+		<row><entry>nullok</entry><entry>Null passwords are allowed.</entry></row>
 		<row><entry>nonull</entry><entry>Null passwords are not allowed. Used to override the Samba configuration.</entry></row>
-		<row><entry>migrate</entry><entry>oOnly meaningful in an <quote>auth</quote> context; used to update smbpasswd file with a password used for successful authentication.</entry></row>
+		<row><entry>migrate</entry><entry>Only meaningful in an <quote>auth</quote> context; used to update smbpasswd file with a password used for successful authentication.</entry></row>
 		<row><entry>smbconf=<replaceable>file</replaceable></entry><entry>Specify an alternate path to the &smb.conf; file.</entry></row>
 	</tbody>
 </tgroup>

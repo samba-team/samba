@@ -222,8 +222,8 @@ A user wrote the following to the mailing list:
 <para>
 <indexterm><primary>Gentoo</primary></indexterm>
 <indexterm><primary>slow network</primary></indexterm>
-I am running Gentoo on my server and Samba 2.2.8a. Recently I changed kernel version from
-<filename>linux-2.4.19-gentoo-r10</filename> to <filename>linux-2.4.20-wolk4.0s</filename>. And now I have a
+I am running Gentoo on my server and Samba 2.2.8a. Recently I changed kernel versions from
+<filename>linux-2.4.19-gentoo-r10</filename> to <filename>linux-2.4.20-wolk4.0s</filename>. Now I have a
 performance issue with Samba.  Many of you will probably say,  <quote>Move to vanilla sources!</quote> Well, I
 tried that and it didn't work. I have a 100MB LAN and two computers (Linux and Windows 2000). The Linux server
 shares directories with DivX files, the client (Windows 2000) plays them via LAN. Before, when I was running

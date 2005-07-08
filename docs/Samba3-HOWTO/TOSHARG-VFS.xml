@@ -19,8 +19,8 @@
 <indexterm><primary>Virtual File System</primary><see>VFS</see></indexterm>
 <indexterm><primary>modules</primary></indexterm>
 <indexterm><primary>loaded modules</primary></indexterm>
-Stackable VFS (Virtual File System) modules support was new to Samba-3 and has proven quite popular.  Samba
-passes each request to access the UNIX file system through the loaded VFS modules.  This chapter covers the
+Stackable VFS (Virtual File System) modules support was new to Samba-3 and has proven quite popular. Samba
+passes each request to access the UNIX file system through the loaded VFS modules. This chapter covers the
 modules that come with the Samba source and provides references to some external modules.
 </para>
 
@@ -33,7 +33,7 @@ modules that come with the Samba source and provides references to some external
 <para>
 <indexterm><primary>IRIX</primary></indexterm>
 <indexterm><primary>GNU/Linux</primary></indexterm>
-If not supplied with your platform distribution binary Samba package you may have problems compiling these
+If not supplied with your platform distribution binary Samba package, you may have problems compiling these
 modules, as shared libraries are compiled and linked in different ways on different systems. They currently
 have been tested against GNU/Linux and IRIX.
 </para>
@@ -66,7 +66,7 @@ modules example</link>:
 <indexterm><primary>recycle bin</primary></indexterm>
 The modules are used in the order in which they are specified.  Let's say that you want to both have a virus
 scanner module and a recycle bin module. It is wise to put the virus scanner module as the first one so that
-it is the first that get run an may detect a virus immediately, before any action is performed on that file.
+it is the first to get run and may detect a virus immediately, before any action is performed on that file.
 <smbconfoption name="vfs objects">vscan-clamav recycle</smbconfoption>
 </para>
 
@@ -344,7 +344,7 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 
 	<para>
 	The shadow_copy module allows you to setup functionality that is similar to MS shadow copy services.  When
-	setup properly, this module allows Microsoft shadow copy clients to browse "shadow copies" on samba shares.
+	setup properly, this module allows Microsoft shadow copy clients to browse "shadow copies" on Samba shares.
 	You will need to install the shadow copy client.  You can get the MS shadow copy client <ulink noescape="1"
 	url="http://www.microsoft.com/windowsserver2003/downloads/shadowcopyclient.mspx">here.</ulink>.  Note the
 	additional requirements for pre-Windows XP clients.  I did not test this functionality with any pre-Windows XP
@@ -386,7 +386,7 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 	    <para>
 	      See <ulink url="http://www-106.ibm.com/developerworks/linux/library/l-lvm/">Learning
 	      Linux LVM, Part 1</ulink> and <ulink url="http://www-106.ibm.com/developerworks/library/l-lvm2.html">Learning
-	      Linux LWM, Part 2</ulink> for Daniel Robbins' well written a two part tutorial on Linux and LVM using LVM
+	      Linux LWM, Part 2</ulink> for Daniel Robbins' well-written, two part tutorial on Linux and LVM using LVM
 	      source code and reiserfs.</para>
 	  </listitem>
 	</itemizedlist>
@@ -398,7 +398,7 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 <indexterm><primary>Debian Sarge</primary></indexterm>
 	At the time of this writing, not much testing has been done.  I tested the shadow copy VFS module with a
 	specific scenario which was not deployed in a production environment, but more as a proof of concept.  The
-	scenario involved a Samba 3 file server on Debian Sarge with an XFS file system and LVM1.  I do NOT recommend
+	scenario involved a Samba-3 file server on Debian Sarge with an XFS file system and LVM1.  I do NOT recommend
 	you use this as a solution without doing your own due diligence with regard to all the components presented
 	here.  That said, following is an basic outline of how I got things going.
 	</para>
@@ -408,7 +408,7 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 	    <formalpara><title>Installed Operating System </title> 
 	    <para>
 		In my tests, I used <ulink url="http://www.debian.org/devel/debian-installer/">Debian
-		Sarge</ulink> (i.e. testing) on an XFS file system.  Setting up the OS is a bit beyond the scope of this
+		Sarge</ulink> (i.e., testing) on an XFS file system.  Setting up the OS is a bit beyond the scope of this
 		document.  It is assumed that you have a working OS capable of running Samba.
 		</para></formalpara>
 	  </listitem>
@@ -418,7 +418,7 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 		<para>
 		See the <link linkend="introduction">installation section</link> of this HOWTO for more detail on this.
 		It doesn't matter if it is a Domain Controller or Member File Server, but it is assumed that you have a
-		working Samba 3.0.3 or newer server running.
+		working Samba 3.0.3 or later server running.
 		</para></formalpara>
 	  </listitem>
 
@@ -457,7 +457,7 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 <indexterm><primary>cfdisk</primary></indexterm>
 <indexterm><primary>Linux LVM</primary></indexterm>
 			Now you need to create a volume.  You will need to create a partition (or partitions) to add to your volume.
-			Use your favorite partitioning tool (e.g. Linux fdisk, cfdisk, etc.).  The partition type should be set to
+			Use your favorite partitioning tool (e.g., Linux fdisk, cfdisk, etc.).  The partition type should be set to
 			0x8e for "Linux LVM."  In this example, we will use /dev/hdb1.
 			</para>
 
@@ -466,8 +466,8 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 <indexterm><primary>LVM volume</primary></indexterm>
 <indexterm><primary>modprobe</primary></indexterm>
 			Once you have the Linux LVM partition (type 0x8e), you can run a series of commands to create the LVM volume.
-			You can use several disks and or partitions, but we will use only one in this example.  You may also need to
-			load the kernel module with something like <command>modprobe lvm-mod </command> and set your system up to load
+			You can use several disks and/or partitions, but we will use only one in this example.  You may also need to
+			load the kernel module with something like <command>modprobe lvm-mod</command> and set your system up to load
 			it on reboot by adding it to (<filename>/etc/modules</filename>).
 			</para></listitem>
 
@@ -479,7 +479,7 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 			<listitem><para>
 <indexterm><primary>vgcreate</primary></indexterm>
 <indexterm><primary>volume group</primary></indexterm>
-			Create the volume group with and add /dev/hda1 to it with <command>vgcreate shadowvol /dev/hdb1</command>
+			Create the volume group and add /dev/hda1 to it with <command>vgcreate shadowvol /dev/hdb1</command>
 			</para>
 
 			<para>
@@ -494,7 +494,7 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 
 			<para>
 <indexterm><primary>/dev/shadowvol</primary></indexterm>
-			This creates the logical volume of 400MB's named "sh_test" in the volume group we created called shadowvol.
+			This creates the logical volume of 400 MBs named "sh_test" in the volume group we created called shadowvol.
 			If everything is working so far, you should see them in <filename>/dev/shadowvol</filename>.
 			</para></listitem>
 
@@ -511,7 +511,7 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 <indexterm><primary>resizing</primary></indexterm>
 <indexterm><primary>growing</primary></indexterm>
 			You can format the logical volume with any file system you choose, but make sure to use one that allows you to
-			take advantage of the additional features of LVM such as freezing, resizing and growing your file systems.
+			take advantage of the additional features of LVM such as freezing, resizing, and growing your file systems.
 			</para>
 
 			<para>
@@ -529,7 +529,7 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 <screen>
 &rootprompt; mkdir -p /data/shadow_share
 </screen>
-			or whatever you want to name your shadow copy enabled Samba share.  Make sure you set the permissions such that
+			or whatever you want to name your shadow copy-enabled Samba share.  Make sure you set the permissions so that
 			you can use it.  If in doubt, use <command>chmod 777 /data/shadow_share</command> and tighten the permissions
 			once you get things working.
 			</para></listitem>
@@ -578,7 +578,7 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 		Before you can browse the shadow copies, you must create them and mount them.  This will most likely be done
 		with a script that runs as a cron job.  With this particular solution, the shadow_copy VFS module is used to
 		browse LVM snapshots.  Those snapshots are not created by the module.  They are not made available by the
-		module either.  This module allows the shadow copy enabled client to browse the snapshots you take and make
+		module either.  This module allows the shadow copy-enabled client to browse the snapshots you take and make
 		available.
 		</para></formalpara>
 
@@ -605,7 +605,7 @@ mount /dev/shadowvol/$SNAPNAME \
 		url="http://www.microsoft.com/windowsserver2003/downloads/shadowcopyclient.mspx">Microsoft web site.</ulink> I
 		only tested this with an XP client so your results may vary with other pre-XP clients.  Once installed, with
 		your XP client you can right-click on specific files or in the empty space of the shadow_share and view the
-		"properties".  If anything has changed, then you will see it on the "Previous Versions" tab of the properties
+		"properties."  If anything has changed, then you will see it on the "Previous Versions" tab of the properties
 		window.
 		</para></formalpara>
 	  </listitem>
@@ -643,15 +643,15 @@ Taylors University DatabaeFS</ulink>
 
 <para>
 I have created a VFS module that implements a fairly complete read-only filesystem. It presents information
-from a database as a filesystem in a modular and generic way to allow different databases to be used
-(originally designed for organizing MP3s under directories such as <quote>Artists,</quote> <quote>Song
+from a database as a filesystem in a modular and generic way to allow different databases to be used.
+(Originally designed for organizing MP3s under directories such as <quote>Artists,</quote> <quote>Song
 Keywords,</quote> and so on. I have since easily applied it to a student roster database.) The directory
 structure is stored in the database itself and the module makes no assumptions about the database structure
 beyond the table it requires to run.
 </para>
 
 <para>
-Any feedback would be appreciated: comments, suggestions, patches, and so on. If nothing else, hopefully it
+Any feedback would be appreciated: comments, suggestions, patches, and so on. If nothing else, it
 might prove useful for someone else who wishes to create a virtual filesystem.
 </para>
 

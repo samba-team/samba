@@ -126,7 +126,7 @@ attempt a high level of creativity and to introduce too much complexity in serve
 <indexterm><primary>reference documents</primary></indexterm>
 <indexterm><primary>/export</primary></indexterm>
 <indexterm><primary>/etc/passwd</primary></indexterm>
-Configuration of a read-only data server that everyone can access is very simple. By default all shares are
+Configuration of a read-only data server that everyone can access is very simple. By default, all shares are
 read-only, unless set otherwise in the &smb.conf; file. <link linkend="simplynice">The example - Reference
 Documentation Server</link> is the &smb.conf; file that will do this. Assume that all the reference documents
 are stored in the directory <filename>/export</filename>, and the documents are owned by a user other than
@@ -171,7 +171,7 @@ of course make use of it.
 </para>
 
 <para>
-A USAF Colonel was renowned for saying: <quote>Better is the enemy of good enough!</quote> There are often
+A US Air Force Colonel was renowned for saying: <quote>Better is the enemy of good enough!</quote> There are often
 sound reasons for avoiding complexity as well as for avoiding a technically perfect solution. Unfortunately,
 many network administrators still need to learn the art of doing just enough to keep out of trouble.
 </para>
@@ -243,7 +243,7 @@ the anonymous (guest) user, two things will be required to enable anonymous prin
 <indexterm><primary>passwd</primary></indexterm>
 	It is a good idea either to set a password on this account, or else to lock it
 	from UNIX use. Assuming that the guest account is called <literal>pcguest</literal>,
-	it can be locked by excuting:
+	it can be locked by executing:
 <screen>
 &rootprompt; passwd -l pcguest
 </screen>

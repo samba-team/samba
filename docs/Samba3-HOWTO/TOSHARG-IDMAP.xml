@@ -749,7 +749,7 @@ hosts:  files wins
 	</para>
 
 	<para>
-	The following procedure can be uses the idmap_rid facility:
+	The following procedure can use the idmap_rid facility:
 	</para>
 
 	<procedure>

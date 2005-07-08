@@ -533,13 +533,13 @@ netbios-ns dgram udp wait root /usr/local/samba/bin/nmbd nmbd
 <screen>
 /bin/ls: /usr/sbin/winbind: No such file or directory
 </screen>
-	In this case it should be installed if you intend to use <command>winbindd</command>. Search
+	In this case, it should be installed if you intend to use <command>winbindd</command>. Search
 	the CDROM installation media for the samba-winbind RPM and install it following Red Hat
 	guidelines.
 	</para>
 
 	<para>
-	The process for starting Samba will now be outlined. Be sure to configure Sambas' &smb.conf;
+	The process for starting Samba will now be outlined. Be sure to configure Samba's &smb.conf;
 	file before starting Samba. When configured, start Samba by executing:
 <screen>
 &rootprompt; service smb start

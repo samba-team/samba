@@ -40,7 +40,7 @@
 		system. To many, it is still a mystical tool. Mostly, it just works.  People tend to regard
 		it as a <quote>black box</quote> that they do not want to look into as long as it works. But once
 		there is a little problem, they have trouble finding out where to start debugging it. Refer to
-		<link linkend="classicalprinting">Classical Printing</link>, which contains a much information
+		<link linkend="classicalprinting">Classical Printing</link>, which contains much information
 		that is also relevant to CUPS.
 		</para>
 
@@ -80,7 +80,7 @@
 <indexterm><primary>smart printers</primary></indexterm>
 	CUPS allows creation of <emphasis>raw</emphasis> printers (i.e., no print file format translation) as
 	well as <emphasis>smart</emphasis> printers (i.e., CUPS does file format conversion as required for the
-	printer). In many ways this gives CUPS capabilities similar to the MS Windows print monitoring system. Of
+	printer). In many ways, this gives CUPS capabilities similar to the MS Windows print monitoring system. Of
 	course, if you are a CUPS advocate, you would argue that CUPS is better! In any case, let us now explore how
 	to configure CUPS for interfacing with MS Windows print clients via Samba.
 	</para>
@@ -151,7 +151,7 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 
 	<tip><para> Should it be necessary, for any reason, to set your own print commands, you can do this by setting
 	<smbconfoption name="printing">sysv</smbconfoption>. However, you will lose all the benefits
-	of tight CUPS-Samba integration. When you do this you must manually configure the printing system commands
+	of tight CUPS-Samba integration. When you do this, you must manually configure the printing system commands
 	(most important: 
 	<smbconfoption name="print command"/>; other commands are
 	<smbconfoption name="lppause command"/>,
@@ -169,7 +169,7 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 
 	<para>
 	To summarize, <link linkend="cups-exam-simple">the Simplest Printing-Related 
-	&smb.conf; file</link> shows simplest printing-related setup for &smb.conf; to 
+	&smb.conf; file</link> shows the simplest printing-related setup for &smb.conf; to 
 	enable basic CUPS support:
 	</para>
 
@@ -205,7 +205,7 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 	to the spooler. They nearly exclusively print from GUI applications with a <quote>printer driver</quote>
 	hooked between the application's native format and the print data stream. If the backend printer is not a
 	PostScript device, the print data stream is <quote>binary,</quote> sensible only for the target printer. Read
-	on to learn which problem this may cause and how to avoid it.
+	on to learn what problem this may cause and how to avoid it.
 	</para>
 
 	</sect2>
@@ -458,9 +458,9 @@ application/octet-stream   application/vnd.cups-raw   0   -
 	send deliberate (possibly binary) data to printing devices. This could be easily abused to launch a
 	<quote>Denial of Service</quote> attack on your printer(s), causing at least the loss of a lot of paper and
 	ink. <quote>Unknown</quote> data are tagged by CUPS as <parameter>MIME type: application/octet-stream</parameter>
-	and not allowed to go to the printer. By default, you can only send other (known) MIME types <quote>raw</quote>.
+	and not allowed to go to the printer. By default, you can only send other (known) MIME types <quote>raw.</quote>
 	Sending data <quote>raw</quote> means that CUPS does not try to convert them and passes them to the printer
-	untouched (see <link linkend="CUPS-printing">the CUPS Printing Chapter</link> for more background explanations).
+	untouched.
 	</para>
 	</formalpara>
 
@@ -488,7 +488,7 @@ application/octet-stream   application/vnd.cups-raw   0   -
 	drivers onto the Samba server first (<smbconfsection name="[print$]"/>
 	share). For a discussion on how to deposit printer drivers on the
 	Samba host (so the Windows clients can download and use them via
-	<quote>Point'n'Print</quote>), please refer to the <link linkend="classicalprinting">Classic Printing
+	<quote>Point'n'Print</quote>), please refer to the <link linkend="classicalprinting">Classical Printing
 	chapter</link> of this book. There you will find a description or reference to
 	three methods of preparing the client drivers on the Samba server:
 	</para>
@@ -511,8 +511,8 @@ application/octet-stream   application/vnd.cups-raw   0   -
 
 	<para> 
 <indexterm><primary>cupsaddsmb</primary></indexterm>
-	These three methods apply to CUPS all the same. The <command>cupsaddsmb</command> utility is new and more
-	convenient way to load the Windows drivers into Samba is provided if you use CUPS.
+	These three methods apply to CUPS all the same. The <command>cupsaddsmb</command> utility is a new and more
+	convenient way to load the Windows drivers into Samba and is provided if you use CUPS.
 	</para>
 
 	<para>
@@ -698,9 +698,9 @@ application/octet-stream   application/vnd.cups-raw   0   -
 	<indexterm><primary>PostScript</primary><secondary>RIP</secondary></indexterm>
 <indexterm><primary>PostScript interpreter</primary></indexterm>
 <indexterm><primary>raster image processor</primary><see>RIP</see></indexterm>
-	So, UNIX is lacking a common ground for printing on paper and displaying on screen. Despite this unfavorable
+	So UNIX is lacking a common ground for printing on paper and displaying on screen. Despite this unfavorable
 	legacy for UNIX, basic printing is fairly easy if you have PostScript printers at your disposal. The reason is
-	these devices have a built-in PostScript language <quote>interpreter,</quote> also called a raster image
+	that these devices have a built-in PostScript language <quote>interpreter,</quote> also called a raster image
 	processor (RIP), (which makes them more expensive than other types of printers; throw PostScript toward them,
 	and they will spit out your printed pages. The RIP does all the hard work of converting the PostScript drawing
 	commands into a bitmap picture as you see it on paper, in a resolution as done by your printer. This is no
@@ -1263,7 +1263,7 @@ text/plain              application/postscript   33    texttops
 	and its specification is, of course, completely open. It is designed to make it quite easy and inexpensive for
 	manufacturers to develop Linux and UNIX raster drivers for their printer models should they choose to do so.
 	CUPS always takes care of the first stage of rasterization so these vendors do not need to care about
-	Ghostscript complications (in fact, there is currently more than one vendor financing the development of CUPS
+	Ghostscript complications (in fact, there are currently more than one vendor financing the development of CUPS
 	raster drivers). This is illustrated in <link linkend="cups-raster2">the CUPS-Raster Production Using
 	Ghostscript illustration</link>.
 	</para>
@@ -1280,12 +1280,12 @@ text/plain              application/postscript   33    texttops
 <indexterm><primary>standalone filter</primary></indexterm>
 	CUPS versions before version 1.1.15 shipped a binary (or source code) standalone filter, named
 	<parameter>pstoraster</parameter>. <parameter>pstoraster</parameter>, which was derived from GNU Ghostscript
-	5.50 and could be installed besides and in addition to any GNU or AFPL Ghostscript package without
+	5.50 and could be installed instead of and in addition to any GNU or AFPL Ghostscript package without
 	conflicting.
 	</para>
 
 	<para>
-	From version 1.1.15, this feature has changed. The functions for this filter have been integrated back
+	Since version 1.1.15, this feature has changed. The functions for this filter have been integrated back
 	into Ghostscript (now based on GNU Ghostscript version 7.05). The <parameter>pstoraster</parameter> filter is
 	now a simple shell script calling <command>gs</command> with the <command>-sDEVICE=cups</command> parameter.
 	If your Ghostscript fails when this command is executed: <command>gs -h |grep cups</command>, you might not 
@@ -1329,7 +1329,7 @@ text/plain              application/postscript   33    texttops
 <indexterm><primary>rastertoprinter</primary></indexterm>
 <indexterm><primary>rastertoprinter</primary></indexterm>
 <indexterm><primary>Gimp-Print</primary></indexterm>
-	CUPS ships with quite a variety of raster drivers for processing CUPS raster. On my system I find in
+	CUPS ships with quite a variety of raster drivers for processing CUPS raster. On my system, I find in
 	/usr/lib/cups/filter/ the following: <parameter>rastertoalps</parameter>, <parameter>rastertobj</parameter>,
 	<parameter>rastertoepson</parameter>, <parameter>rastertoescp</parameter>, <parameter>rastertopcl</parameter>,
 	<parameter>rastertoturboprint</parameter>, <parameter>rastertoapdk</parameter>,
@@ -1693,7 +1693,7 @@ application/octet-stream   application/vnd.cups-raw   0   -
 	of a lot of paper and ink.) <quote>Unknown</quote> data are regarded by CUPS
 	as <emphasis>MIME type</emphasis> <emphasis>application/octet-stream</emphasis>. While you
 	<emphasis>can</emphasis> send data <quote>raw</quote>, the MIME type for these must
-	be one that is known to CUPS and an allowed one. The file
+	be one that is known to CUPS and allowed by it. The file
 	<filename>/etc/cups/mime.types</filename> defines the <quote>rules</quote> of how CUPS
 	recognizes MIME types. The file <filename>/etc/cups/mime.convs</filename> decides which file
 	conversion filter(s) may be applied to which MIME types.
@@ -1924,7 +1924,7 @@ application/octet-stream   application/vnd.cups-raw   0   -
 <indexterm><primary>USB</primary></indexterm>
 <indexterm><primary>Epson Stylus</primary></indexterm>
 <indexterm><primary>stphoto2.ppd</primary></indexterm>
-	Assume you want to print the same filter to an USB-connected Epson Stylus Photo printer installed with the CUPS
+	Assume you want to print the same filter to an USB-connected Epson Stylus Photo Printer installed with the CUPS
 	<filename>stphoto2.ppd</filename>. The first few filtering stages are nearly the same:
 	</para>
 
@@ -1979,7 +1979,7 @@ application/octet-stream   application/vnd.cups-raw   0   -
 
 	<para>
 	The resulting filter chain therefore is as shown in <link linkend="pdftoepsonusb">the PDF to USB Chain
-	illutration</link>.
+	illustration</link>.
 	</para>
 
 	<figure id="pdftoepsonusb">
@@ -2118,11 +2118,11 @@ Print Driver Execution on the Client</link>, and
 <title>Driver Execution on the Client</title>
 
 <para>
-In the first case the print server must spool the file as raw, meaning it shouldn't touch the job file and try
+In the first case, the print server must spool the file as raw, meaning it shouldn't touch the job file and try
 to convert it in any way. This is what a traditional UNIX-based print server can do too, and at a better
 performance and more reliably than an NT print server. This is what most Samba administrators probably are
 familiar with. One advantage of this setup is that this <quote>spooling-only</quote> print server may be used
-even if no driver(s) for UNIX are available. It is sufficient to have the Windows client drivers available and
+even if no driver(s) for UNIX is available. It is sufficient to have the Windows client drivers available and
 installed on the clients. This is illustrated in <link linkend="small11">the Print Driver Execution on the
 Client diagram</link>.
 </para>
@@ -2346,16 +2346,16 @@ Problems</title>
 
 <para>
 Windows NT printer drivers, which run in <quote>kernel mode</quote>, introduce a high risk for the stability
-of the system if the driver is not really stable and well tested. And there are a lot of bad drivers out
+of the system if the driver is not really stable and well-tested. And there are a lot of bad drivers out
 there! Especially notorious is the example of the PCL printer driver that had an additional sound module
 running to notify users via soundcard of their finished jobs. Do I need to say that this one was also reliably
 causing <quote>blue screens of death</quote> on a regular basis?
 </para>
 
 <para>
-PostScript drivers are generally well tested. They are not known to cause any problems, even though they also
+PostScript drivers are generally well-tested. They are not known to cause any problems, even though they also
 run in kernel mode. This might be because until now there have been only two different PostScript drivers: the
-one from Adobe and the one from Microsoft. Both are well tested and are as stable as you can imagine on
+one from Adobe and the one from Microsoft. Both are well-tested and are as stable as you can imagine on
 Windows. The CUPS driver is derived from the Microsoft one.
 </para>
 </sect2>
@@ -2610,7 +2610,7 @@ different platforms.
 
 <note><para>
 <indexterm><primary>Adobe driver files</primary></indexterm>
-If both the Adobe driver files and the CUPS driver files for the support of Windows NT/200x/XP are present
+If both the Adobe driver files and the CUPS driver files for the support of Windows NT/200x/XP are presently
 installed on the server, the Adobe files will be ignored and the CUPS files will be used. If you prefer
 &smbmdash; for whatever reason &smbmdash; to use Adobe-only drivers, move away the three CUPS driver files.
 The Windows 9x/Me clients use the Adobe drivers in any case.
@@ -2636,7 +2636,7 @@ name="[print$]"/> share holds the Adobe files, which you can get with smbclient 
 <para>
 <indexterm><primary>ESP</primary><secondary>Print Pro</secondary></indexterm>
 Users of the ESP Print Pro software are able to install the ESP print drivers package as an alternative to the
-Adobe postscript drivers.  To do so, retrieve the driver files from the normal download area of the ESP Print
+Adobe PostScript drivers.  To do so, retrieve the driver files from the normal download area of the ESP Print
 Pro software at <ulink noescape="1" url="http://www.easysw.com/software.html">Easy Software</ulink> web site.
 You need to locate the link labeled <quote>SAMBA</quote> among the <guilabel>Download Printer Drivers for ESP
 Print Pro 4.x</guilabel> area and download the package. Once installed, you can prepare any driver by simply
@@ -2721,7 +2721,7 @@ subcommand.
 <title>Windows CUPS PostScript Driver Versus Adobe Driver</title>
 
 <para>
-Are you interested in a comparison between the CUPS and the Adobe PostScript drivers? For our purposes these
+Are you interested in a comparison between the CUPS and the Adobe PostScript drivers? For our purposes, these
 are the most important items that weigh in favor of CUPS:
 </para>
 
@@ -2773,7 +2773,7 @@ are the most important items that weigh in favor of CUPS:
 	<listitem><para>The CUPS PostScript driver supports the inclusion of
 	the new <parameter>*cupsJobTicket</parameter> comments at the
 	beginning of the PostScript file (which could be used in the future
-	for all sort of beneficial extensions on the CUPS side, but which will
+	for all sorts of beneficial extensions on the CUPS side, but which will
 	not disturb any other applications because they will regard it as a comment
 	and simply ignore it).</para></listitem>
 
@@ -2984,13 +2984,13 @@ SetPrinter call failed!
 result was WERR_ACCESS_DENIED
 </screen>
 it means that you might have set <smbconfoption name="use client driver">yes</smbconfoption> for this printer. 
-Setting it to <quote>no</quote> will solve the problem. Refer to the &smb.conf; man page for explanantion of 
+Setting it to <quote>no</quote> will solve the problem. Refer to the &smb.conf; man page for explanation of 
 the <parameter>use client driver</parameter>.
 </para>
 
 <note><para>
 It is impossible to see any diagnostic output if you do not run <command>cupsaddsmb</command> in verbose mode.
-Therefore, we strongly recommend to not use the default quiet mode. It will hide any problems from you that
+Therefore, we strongly recommend against use of the default quiet mode. It will hide any problems from you that
 might occur.
 </para></note>
 </sect2>

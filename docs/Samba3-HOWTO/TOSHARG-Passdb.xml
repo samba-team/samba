@@ -38,7 +38,7 @@ This chapter describes the new functionality and how to get the most out of it.
 <indexterm><primary>LDAP</primary></indexterm>
 <indexterm><primary>single repository</primary></indexterm>
 The three passdb backends that are fully maintained (actively supported) by the Samba Team are:
-<literal>smbpasswd</literal> (being obsoleted), <literal>tdbsam</literal> (a tdb based binary file format),
+<literal>smbpasswd</literal> (being obsoleted), <literal>tdbsam</literal> (a tdb-based binary file format),
 and <literal>ldapsam</literal> (LDAP directory).  Of these, only the <literal>ldapsam</literal> backend
 stores both POSIX (UNIX) and Samba user and group account information in a single repository. The
 <literal>smbpasswd</literal> and <literal>tdbsam</literal> backends store only Samba user accounts.
@@ -46,8 +46,8 @@ stores both POSIX (UNIX) and Samba user and group account information in a singl
 
 <para>
 In a strict sense, there are three supported account storage and access systems. One of these is considered
-obsolete (smbpasswd). It is recommended to use <literal>tdbsam</literal> method for all simple systems. Use
-the <literal>ldapsam</literal> for larger and more complex networks.
+obsolete (smbpasswd). It is recommended to use the <literal>tdbsam</literal> method for all simple systems. Use
+<literal>ldapsam</literal> for larger and more complex networks.
 </para>
 
 <para>
@@ -304,7 +304,7 @@ Samba-3 introduces a number of new password backend capabilities.
 	<para>
 <indexterm><primary>UNIX-style encrypted passwords</primary></indexterm>
 <indexterm><primary>converted</primary></indexterm>
-	Many people ask why Samba can not simply use the UNIX password database. Windows requires
+	Many people ask why Samba cannot simply use the UNIX password database. Windows requires
 	passwords that are encrypted in its own format.  The UNIX passwords can't be converted to 
 	UNIX-style encrypted passwords. Because of that, you can't use the standard UNIX user
 	database, and you have to store the LanMan and NT hashes somewhere else.
@@ -512,7 +512,7 @@ Samba-3 introduces a number of new password backend capabilities.
 <indexterm><primary>Telnet</primary></indexterm>
 <indexterm><primary>FTP</primary></indexterm>
 				Use of other services (such as Telnet and FTP) that send plaintext passwords over
-				the network makes sending them for SMB is not such a big deal.
+				the network makes sending them for SMB not such a big deal.
 				</para></listitem>
 			</itemizedlist>
 		</sect3>
@@ -664,7 +664,7 @@ Samba-3 introduces a number of new password backend capabilities.
 <indexterm><primary>SSO</primary></indexterm>
 	There is much excitement and interest in LDAP directories in the information technology world
 	today. The LDAP architecture was designed to be highly scalable. It was also designed for
-	use across a huge number of potential areas of application encompasing a wide range of operating
+	use across a huge number of potential areas of application encompassing a wide range of operating
 	systems and platforms. LDAP technologies are at the heart of the current generations of Federated
 	Identity Management (FIM) solutions that can underlie a corporate Single Sign-On (SSO) environment.
 	</para>
@@ -715,7 +715,7 @@ Samba-3 introduces a number of new password backend capabilities.
 	for Samba. Others are faced with the need to adapt an existing LDAP directory to new uses such
 	as for the Samba SAM backend. Whatever your particular need and attraction to Samba may be,
 	decisions made in respect of the design of the LDAP directory structure and its implementation
-	are of a durable nature for the site. These have far-reaching implications that affect long term
+	are of a durable nature for the site. These have far-reaching implications that affect long-term
 	information systems management costs.
 	</para>
 
@@ -726,7 +726,7 @@ Samba-3 introduces a number of new password backend capabilities.
 	Information Tree (DIT) may impact current and future site needs, as well as the ability to meet
 	them. The way that Samba SAM information should be stored within the DIT varies from site to site
 	and with each implementation new experience is gained. It is well understood by LDAP veterans that
-	first implementation create awakening, second implementations of LDAP create fear, and 
+	first implementations create awakening, second implementations of LDAP create fear, and 
 	third-generation deployments bring peace and tranquility.
 	</para>
 
@@ -753,7 +753,7 @@ Samba-3 introduces a number of new password backend capabilities.
 <indexterm><primary>LDAP</primary></indexterm>
 	The example deployment guidelines in this book, as well as other books and HOWTO documents
 	available from the internet may not fit with established directory designs and implementations.
-	The existing DIT may not be able to accomodate the simple information layout proposed in common
+	The existing DIT may not be able to accommodate the simple information layout proposed in common
 	sources. Additionally, you may find that the common scripts and tools that are used to provision
 	the LDAP directory for use with Samba may not suit your needs.
 	</para>
@@ -761,9 +761,9 @@ Samba-3 introduces a number of new password backend capabilities.
 	<para>
 <indexterm><primary>existing LDAP DIT</primary></indexterm>
 	It is not uncommon, for sites that have existing LDAP DITs to find necessity to generate a
-	set of site specific scripts and utilities to make it possible to deploy Samba within the
+	set of site-specific scripts and utilities to make it possible to deploy Samba within the
 	scope of site operations. The way that user and group accounts are distributed throughout
-	the DIT may make this a challenging matter. The solution will of course be rewarding, but
+	the DIT may make this a challenging matter. The solution will, of course, be rewarding, but
 	the journey to it may be challenging. Take time to understand site needs and do not rush
 	into deployment.
 	</para>
@@ -913,7 +913,7 @@ is being added to the <command>net</command> toolset (see <link linkend="NetComm
 <indexterm><primary>storage methods</primary></indexterm>
 		The <command>smbpasswd</command> utility is similar to the <command>passwd</command>
 		and <command>yppasswd</command> programs. It maintains the two 32 byte password
-		fields in the passdb backend. This utility operates independantly of the actual
+		fields in the passdb backend. This utility operates independently of the actual
 		account and password storage methods used (as specified by the <parameter>passdb
 		backend</parameter> in the &smb.conf; file.
 		</para>
@@ -1563,7 +1563,7 @@ backends of the same type. For example, to use two different <literal>tdbsam</li
 <smbconfoption name="passdb backend">tdbsam:/etc/samba/passdb.tdb tdbsam:/etc/samba/old-passdb.tdb</smbconfoption>
 </smbconfblock>
 
-What is possible, is not always sensible. Be careful to avoid complexity to the point that it
+What is possible is not always sensible. Be careful to avoid complexity to the point that it
 may be said that the solution is <quote>too clever by half!</quote>
 </para>
 
@@ -1610,7 +1610,7 @@ may be said that the solution is <quote>too clever by half!</quote>
 		there are approximately two lookups per domain logon (one during intial logon validation
 		and one for a session connection setup, such as when mapping a network drive or printer), this
 		is a performance bottleneck for large sites. What is needed is an indexed approach
-		such as used in databases.
+		such as that used in databases.
 		</para></listitem>
 
 		<listitem><para>
@@ -1799,7 +1799,7 @@ may be said that the solution is <quote>too clever by half!</quote>
 			</para>
 
 			<para>
-			Samba is capable of working with any standards compliant LDAP server.
+			Samba is capable of working with any standards-compliant LDAP server.
 			</para>
 
 		</sect3>
@@ -1809,7 +1809,7 @@ may be said that the solution is <quote>too clever by half!</quote>
 
 
 			<para>
-			Samba-3.0 includes the necessary schema file for OpenLDAP 2.x in
+			Samba-3.0 includes the necessary schema file for OpenLDAP 2.x in the
 			<filename>examples/LDAP/samba.schema</filename> directory of the source code distribution
 			tarball. The schema entry for the sambaSamAccount ObjectClass is shown here:
 <programlisting>
@@ -2313,7 +2313,7 @@ access to attrs=SambaLMPassword,SambaNTPassword
 				expire completely on an exact date.</entry></row>
 
 				<row><entry><constant>sambaPwdCanChange</constant></entry><entry>Specifies the time (UNIX time format)
-				after which the user is allowed to change his password. If attribute is not set, the user will be free
+				after which the user is allowed to change his password. If this attribute is not set, the user will be free
 				to change his password whenever he wants.</entry></row> 
 
 				<row><entry><constant>sambaPwdMustChange</constant></entry><entry>Specifies the time (UNIX time format) when the user is
@@ -2523,8 +2523,8 @@ sambaNTPassword: 878D8014606CDA29677A44EFA1353FC7
 	<para>
 	<indexterm><primary>SAM backend</primary><secondary>mysqlsam</secondary></indexterm>
 <indexterm><primary>SQL backend</primary></indexterm>
-	Every so often someone comes along with what seems to them like a great new idea. Storing user accounts
-	in a SQL backend is one of them. Those who want to do this are in the best position to know what the
+	Every so often someone comes along with what seems (to them) like a great new idea. Storing user accounts
+	in an SQL backend is one of them. Those who want to do this are in the best position to know what the
 	specific benefits are to them. This may sound like a cop-out, but in truth we cannot document
 	every little detail of why certain things of marginal utility to the bulk of Samba users might make sense
 	to the rest. In any case, the following instructions should help the determined SQL user to implement a
