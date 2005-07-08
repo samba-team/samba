@@ -226,7 +226,7 @@ ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, int fd, void
 	if (result == -1 && errno == ESPIPE) {
 		/* Maintain the fiction that pipes can be seeked (sought?) on. */
 		result = SMB_VFS_READ(fsp, fd, data, n);
-		fsp->pos = 0;
+		fsp->fh->pos = 0;
 	}
 
 #else /* HAVE_PREAD */
@@ -237,7 +237,7 @@ ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, int fd, void
 	if (curr == -1 && errno == ESPIPE) {
 		/* Maintain the fiction that pipes can be seeked (sought?) on. */
 		result = SMB_VFS_READ(fsp, fd, data, n);
-		fsp->pos = 0;
+		fsp->fh->pos = 0;
 		return result;
 	}
 
@@ -660,7 +660,7 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 		SMB_OFF_T retlen;
 		SMB_OFF_T current_len_to_write = MIN(sizeof(zero_space),space_to_write);
 
-		retlen = SMB_VFS_WRITE(fsp,fsp->fd,(char *)zero_space,current_len_to_write);
+		retlen = SMB_VFS_WRITE(fsp,fsp->fh->fd,(char *)zero_space,current_len_to_write);
 		if (retlen <= 0)
 			return -1;
 

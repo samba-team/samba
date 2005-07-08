@@ -430,7 +430,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname, uint32 dosmode,
 		if (!fsp)
 			return -1;
 		become_root();
-		ret = SMB_VFS_FCHMOD(fsp, fsp->fd, unixmode);
+		ret = SMB_VFS_FCHMOD(fsp, fsp->fh->fd, unixmode);
 		unbecome_root();
 		close_file_fchmod(fsp);
 	}

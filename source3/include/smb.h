@@ -107,44 +107,32 @@ typedef int BOOL;
 #define DOS_OPEN_FCB 0xF
 
 /* define shifts and masks for share and open modes. */
-#define OPEN_MODE_MASK 0xF
-#define SHARE_MODE_SHIFT 4
-#define SHARE_MODE_MASK 0x7
-#define GET_OPEN_MODE(x) ((x) & OPEN_MODE_MASK)
-#define SET_OPEN_MODE(x) ((x) & OPEN_MODE_MASK)
-#define GET_DENY_MODE(x) (((x)>>SHARE_MODE_SHIFT) & SHARE_MODE_MASK)
-#define SET_DENY_MODE(x) (((x) & SHARE_MODE_MASK) <<SHARE_MODE_SHIFT)
+#define OPENX_MODE_MASK 0xF
+#define DENY_MODE_SHIFT 4
+#define DENY_MODE_MASK 0x7
+#define GET_OPENX_MODE(x) ((x) & OPENX_MODE_MASK)
+#define SET_OPENX_MODE(x) ((x) & OPENX_MODE_MASK)
+#define GET_DENY_MODE(x) (((x)>>DENY_MODE_SHIFT) & DENY_MODE_MASK)
+#define SET_DENY_MODE(x) (((x) & DENY_MODE_MASK) <<DENY_MODE_SHIFT)
 
 /* Sync on open file (not sure if used anymore... ?) */
 #define FILE_SYNC_OPENMODE (1<<14)
 #define GET_FILE_SYNC_OPENMODE(x) (((x) & FILE_SYNC_OPENMODE) ? True : False)
 
-/* allow delete on open file mode (used by NT SMB's). */
-#define ALLOW_SHARE_DELETE (1<<15)
-#define GET_ALLOW_SHARE_DELETE(x) (((x) & ALLOW_SHARE_DELETE) ? True : False)
-#define SET_ALLOW_SHARE_DELETE(x) ((x) ? ALLOW_SHARE_DELETE : 0)
-
-/* delete on close flag (used by NT SMB's). */
-#define DELETE_ON_CLOSE_FLAG (1<<16)
-#define GET_DELETE_ON_CLOSE_FLAG(x) (((x) & DELETE_ON_CLOSE_FLAG) ? True : False)
-#define SET_DELETE_ON_CLOSE_FLAG(x) ((x) ? DELETE_ON_CLOSE_FLAG : 0)
-
 /* open disposition values */
-#define FILE_EXISTS_FAIL 0
-#define FILE_EXISTS_OPEN 1
-#define FILE_EXISTS_TRUNCATE 2
+#define OPENX_FILE_EXISTS_FAIL 0
+#define OPENX_FILE_EXISTS_OPEN 1
+#define OPENX_FILE_EXISTS_TRUNCATE 2
 
 /* mask for open disposition. */
-#define FILE_OPEN_MASK 0x3
+#define OPENX_FILE_OPEN_MASK 0x3
 
-#define GET_FILE_OPEN_DISPOSITION(x) ((x) & FILE_OPEN_MASK)
-#define SET_FILE_OPEN_DISPOSITION(x) ((x) & FILE_OPEN_MASK)
+#define GET_FILE_OPENX_DISPOSITION(x) ((x) & FILE_OPEN_MASK)
+#define SET_FILE_OPENX_DISPOSITION(x) ((x) & FILE_OPEN_MASK)
 
 /* The above can be OR'ed with... */
-#define FILE_CREATE_IF_NOT_EXIST 0x10
-#define FILE_FAIL_IF_NOT_EXIST 0
-
-#define GET_FILE_CREATE_DISPOSITION(x) ((x) & (FILE_CREATE_IF_NOT_EXIST|FILE_FAIL_IF_NOT_EXIST))
+#define OPENX_FILE_CREATE_IF_NOT_EXIST 0x10
+#define OPENX_FILE_FAIL_IF_NOT_EXIST 0
 
 /* share types */
 #define STYPE_DISKTREE  0	/* Disk drive */
@@ -407,27 +395,38 @@ typedef struct
 
 #include "fake_file.h"
 
+struct fd_handle {
+	size_t ref_count;
+	int fd;
+	SMB_BIG_UINT position_information;
+	SMB_OFF_T pos;
+	uint32 private_options;	/* NT Create options, but we only look at
+				 * NTCREATEX_OPTIONS_PRIVATE_DENY_DOS and
+				 * NTCREATEX_OPTIONS_PRIVATE_DENY_FCB (Except
+				 * for print files *only*, where
+				 * DELETE_ON_CLOSE is not stored in the share
+				 * mode database.
+				 */
+};
+
 typedef struct files_struct {
 	struct files_struct *next, *prev;
 	int fnum;
 	struct connection_struct *conn;
-	int fd;
+	struct fd_handle *fh;
 	unsigned int num_smb_operations;
 	uint16 rap_print_jobid;
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
-	BOOL delete_on_close;
-	SMB_OFF_T pos;
 	SMB_BIG_UINT initial_allocation_size; /* Faked up initial allocation on disk. */
-	SMB_BIG_UINT position_information;
 	mode_t mode;
 	uint16 file_pid;
 	uint16 vuid;
 	write_bmpx_struct *wbmpx_ptr;
 	write_cache *wcp;
 	struct timeval open_time;
-	int share_mode;
-	uint32 desired_access;
+	uint32 access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
+	uint32 share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */
 	BOOL pending_modtime_owner;
 	time_t pending_modtime;
 	time_t last_write_time;
@@ -441,7 +440,6 @@ typedef struct files_struct {
 	BOOL modified;
 	BOOL is_directory;
 	BOOL is_stat;
-	BOOL directory_delete_on_close;
 	BOOL aio_write_behind;
 	char *fsp_name;
  	FAKE_FILE_HANDLE *fake_file_handle;
@@ -639,8 +637,12 @@ typedef struct {
 	pid_t pid;
 	uint16 op_port;
 	uint16 op_type;
-	int share_mode;
-	uint32 desired_access;
+	uint32 access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
+	uint32 share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */
+	uint32 private_options;	/* NT Create options, but we only look at
+				 * NTCREATEX_OPTIONS_PRIVATE_DENY_DOS and
+				 * NTCREATEX_OPTIONS_PRIVATE_DENY_FCB for
+				 * smbstatus and swat */
 	struct timeval time;
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
@@ -1079,18 +1081,18 @@ struct bitmap {
 #define DESIRED_ACCESS_PIPE 0x2019f
  
 /* Generic access masks & rights. */
-#define DELETE_ACCESS        (1L<<16) /* 0x00010000 */
-#define READ_CONTROL_ACCESS  (1L<<17) /* 0x00020000 */
-#define WRITE_DAC_ACCESS     (1L<<18) /* 0x00040000 */
-#define WRITE_OWNER_ACCESS   (1L<<19) /* 0x00080000 */
-#define SYNCHRONIZE_ACCESS   (1L<<20) /* 0x00100000 */
+#define DELETE_ACCESS        0x00010000 /* (1L<<16) */
+#define READ_CONTROL_ACCESS  0x00020000 /* (1L<<17) */
+#define WRITE_DAC_ACCESS     0x00040000 /* (1L<<18) */
+#define WRITE_OWNER_ACCESS   0x00080000 /* (1L<<19) */
+#define SYNCHRONIZE_ACCESS   0x00100000 /* (1L<<20) */
 
-#define SYSTEM_SECURITY_ACCESS (1L<<24)           /* 0x01000000 */
-#define MAXIMUM_ALLOWED_ACCESS (1L<<25)           /* 0x02000000 */
-#define GENERIC_ALL_ACCESS     (1<<28)            /* 0x10000000 */
-#define GENERIC_EXECUTE_ACCESS (1<<29)            /* 0x20000000 */
-#define GENERIC_WRITE_ACCESS   (1<<30)            /* 0x40000000 */
-#define GENERIC_READ_ACCESS   (((unsigned)1)<<31) /* 0x80000000 */
+#define SYSTEM_SECURITY_ACCESS 0x01000000 /* (1L<<24) */
+#define MAXIMUM_ALLOWED_ACCESS 0x02000000 /* (1L<<25) */
+#define GENERIC_ALL_ACCESS     0x10000000 /* (1<<28) */
+#define GENERIC_EXECUTE_ACCESS 0x20000000 /* (1<<29) */
+#define GENERIC_WRITE_ACCESS   0x40000000 /* (1<<30) */
+#define GENERIC_READ_ACCESS    ((unsigned)0x80000000) /* (((unsigned)1)<<31) */
 
 /* Mapping of generic access rights for files to specific rights. */
 
@@ -1172,12 +1174,12 @@ struct bitmap {
 #define FILE_FLAG_POSIX_SEMANTICS  0x01000000L
 
 /* CreateDisposition field. */
-#define FILE_SUPERSEDE 0
-#define FILE_OPEN 1
-#define FILE_CREATE 2
-#define FILE_OPEN_IF 3
-#define FILE_OVERWRITE 4
-#define FILE_OVERWRITE_IF 5
+#define FILE_SUPERSEDE 0		/* File exists overwrite/supersede. File not exist create. */
+#define FILE_OPEN 1			/* File exists open. File not exist fail. */
+#define FILE_CREATE 2			/* File exists fail. File not exist create. */
+#define FILE_OPEN_IF 3			/* File exists open. File not exist create. */
+#define FILE_OVERWRITE 4		/* File exists overwrite. File not exist fail. */
+#define FILE_OVERWRITE_IF 5		/* File exists overwrite. File not exist create. */
 
 /* CreateOptions field. */
 #define FILE_DIRECTORY_FILE       0x0001
@@ -1189,6 +1191,10 @@ struct bitmap {
 #define FILE_RANDOM_ACCESS        0x0800
 #define FILE_DELETE_ON_CLOSE      0x1000
 #define FILE_OPEN_BY_FILE_ID	  0x2000
+
+/* Private create options used by the ntcreatex processing code. From Samba4. */
+#define NTCREATEX_OPTIONS_PRIVATE_DENY_DOS     0x01000000
+#define NTCREATEX_OPTIONS_PRIVATE_DENY_FCB     0x02000000
 
 /* Responses when opening a file. */
 #define FILE_WAS_SUPERSEDED 0
@@ -1335,7 +1341,7 @@ char *strdup(char *s);
 #define FLAGS2_IS_LONG_NAME            0x0040
 #define FLAGS2_EXTENDED_SECURITY       0x0800 
 #define FLAGS2_DFS_PATHNAMES           0x1000
-#define FLAGS2_READ_PERMIT_NO_EXECUTE  0x2000
+#define FLAGS2_READ_PERMIT_EXECUTE     0x2000
 #define FLAGS2_32_BIT_ERROR_CODES      0x4000 
 #define FLAGS2_UNICODE_STRINGS         0x8000
 
@@ -1442,35 +1448,35 @@ extern int chain_size;
 #define LOCKING_ANDX_CANCEL_LOCK 0x8
 #define LOCKING_ANDX_LARGE_FILES 0x10
 
-/* Oplock levels */
-#define OPLOCKLEVEL_NONE 0
-#define OPLOCKLEVEL_II 1
-
 /*
  * Bits we test with.
  */
-
+                                                                                                                              
 #define NO_OPLOCK 0
 #define EXCLUSIVE_OPLOCK 1
 #define BATCH_OPLOCK 2
 #define LEVEL_II_OPLOCK 4
 #define INTERNAL_OPEN_ONLY 8
 
-#define EXCLUSIVE_OPLOCK_TYPE(lck) ((lck) & (EXCLUSIVE_OPLOCK|BATCH_OPLOCK))
-#define BATCH_OPLOCK_TYPE(lck) ((lck) & BATCH_OPLOCK)
-#define LEVEL_II_OPLOCK_TYPE(lck) ((lck) & LEVEL_II_OPLOCK)
+#define EXCLUSIVE_OPLOCK_TYPE(lck) ((lck) & ((unsigned int)EXCLUSIVE_OPLOCK|(unsigned int)BATCH_OPLOCK))
+#define BATCH_OPLOCK_TYPE(lck) ((lck) & (unsigned int)BATCH_OPLOCK)
+#define LEVEL_II_OPLOCK_TYPE(lck) ((lck) & (unsigned int)LEVEL_II_OPLOCK)
+
+/*
+ * On the wire return values for oplock types.
+ */
 
 #define CORE_OPLOCK_GRANTED (1<<5)
 #define EXTENDED_OPLOCK_GRANTED (1<<15)
-
-/*
- * Return values for oplock types.
- */
 
 #define NO_OPLOCK_RETURN 0
 #define EXCLUSIVE_OPLOCK_RETURN 1
 #define BATCH_OPLOCK_RETURN 2
 #define LEVEL_II_OPLOCK_RETURN 3
+
+/* Oplock levels */
+#define OPLOCKLEVEL_NONE 0
+#define OPLOCKLEVEL_II 1
 
 /*
  * Loopback command offsets.

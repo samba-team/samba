@@ -3,6 +3,7 @@
    Locking functions
    Copyright (C) Andrew Tridgell 1992-2000
    Copyright (C) Jeremy Allison 1992-2000
+   Copyright (C) Volker Lendecke 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -46,7 +47,10 @@ static TDB_CONTEXT *deferred_open_tdb;
 
 struct locking_data {
         union {
-                int num_share_mode_entries;
+		struct {
+			int num_share_mode_entries;
+			BOOL delete_on_close;
+		} s;
                 share_mode_entry dummy; /* Needed for alignment. */
         } u;
         /* the following two entries are implicit
@@ -432,10 +436,14 @@ char *share_mode_str(int num, share_mode_entry *e)
 {
 	static pstring share_str;
 
-	slprintf(share_str, sizeof(share_str)-1, "share_mode_entry[%d]: \
-pid = %lu, share_mode = 0x%x, desired_access = 0x%x, port = 0x%x, type= 0x%x, file_id = %lu, dev = 0x%x, inode = %.0f",
-	num, (unsigned long)e->pid, e->share_mode, (unsigned int)e->desired_access, e->op_port, e->op_type, e->share_file_id,
-	(unsigned int)e->dev, (double)e->inode );
+	slprintf(share_str, sizeof(share_str)-1, "share_mode_entry[%d]: "
+		 "pid = %lu, share_access = 0x%x, private_options = 0x%x, "
+		 "access_mask = 0x%x, port = 0x%x, type= 0x%x, file_id = %lu, "
+		 "dev = 0x%x, inode = %.0f",
+		 num, (unsigned long)e->pid,
+		 e->share_access, e->private_options,
+		 e->access_mask, e->op_port, e->op_type, e->share_file_id,
+		 (unsigned int)e->dev, (double)e->inode );
 
 	return share_str;
 }
@@ -446,7 +454,7 @@ pid = %lu, share_mode = 0x%x, desired_access = 0x%x, port = 0x%x, type= 0x%x, fi
 
 static void print_share_mode_table(struct locking_data *data)
 {
-	int num_share_modes = data->u.num_share_mode_entries;
+	int num_share_modes = data->u.s.num_share_mode_entries;
 	share_mode_entry *shares = (share_mode_entry *)(data + 1);
 	int i;
 
@@ -460,9 +468,9 @@ static void print_share_mode_table(struct locking_data *data)
  Get all share mode entries for a dev/inode pair.
 ********************************************************************/
 
-int get_share_modes(connection_struct *conn, 
-		    SMB_DEV_T dev, SMB_INO_T inode, 
-		    share_mode_entry **pp_shares)
+int get_share_modes(SMB_DEV_T dev, SMB_INO_T inode, 
+		    share_mode_entry **pp_shares,
+		    BOOL *delete_on_close)
 {
 	TDB_DATA dbuf;
 	struct locking_data *data;
@@ -470,13 +478,18 @@ int get_share_modes(connection_struct *conn,
 	share_mode_entry *shares = NULL;
 	TDB_DATA key = locking_key(dev, inode);
 	*pp_shares = NULL;
+	*delete_on_close = False;
 
 	dbuf = tdb_fetch(tdb, key);
 	if (!dbuf.dptr)
 		return 0;
 
 	data = (struct locking_data *)dbuf.dptr;
-	num_share_modes = data->u.num_share_mode_entries;
+
+	*delete_on_close = data->u.s.delete_on_close;
+	DEBUG(10, ("get_share_modes: delete_on_close: %d\n",
+		   *delete_on_close));
+	num_share_modes = data->u.s.num_share_mode_entries;
 	if(num_share_modes) {
 		pstring fname;
 		int i;
@@ -515,7 +528,7 @@ int get_share_modes(connection_struct *conn,
 
 		/* Did we delete any ? If so, re-store in tdb. */
 		if (del_count) {
-			data->u.num_share_mode_entries = num_share_modes;
+			data->u.s.num_share_mode_entries = num_share_modes;
 			
 			if (num_share_modes) {
 				memcpy(dbuf.dptr + sizeof(*data), shares,
@@ -527,7 +540,7 @@ int get_share_modes(connection_struct *conn,
 			/* The record has shrunk a bit */
 			dbuf.dsize -= del_count * sizeof(share_mode_entry);
 
-			if (data->u.num_share_mode_entries == 0) {
+			if (data->u.s.num_share_mode_entries == 0) {
 				if (tdb_delete(tdb, key) == -1) {
 					SAFE_FREE(shares);
 					SAFE_FREE(dbuf.dptr);
@@ -548,6 +561,15 @@ int get_share_modes(connection_struct *conn,
 	return num_share_modes;
 }
 
+BOOL get_delete_on_close_flag(SMB_DEV_T dev, SMB_INO_T inode)
+{
+	share_mode_entry *shares;
+	BOOL result;
+	get_share_modes(dev, inode, &shares, &result);
+	SAFE_FREE(shares);
+	return result;
+}
+
 /*******************************************************************
  Fill a share mode entry.
 ********************************************************************/
@@ -559,8 +581,9 @@ static void fill_share_mode(char *p, files_struct *fsp, uint16 port, uint16 op_t
 
 	memset(e, '\0', sizeof(share_mode_entry));
 	e->pid = sys_getpid();
-	e->share_mode = fsp->share_mode;
-	e->desired_access = fsp->desired_access;
+	e->share_access = fsp->share_access;
+	e->private_options = fsp->fh->private_options;
+	e->access_mask = fsp->access_mask;
 	e->op_port = port;
 	e->op_type = op_type;
 	memcpy(x, &fsp->open_time, sizeof(struct timeval));
@@ -581,16 +604,17 @@ BOOL share_modes_identical( share_mode_entry *e1, share_mode_entry *e2)
 		e1->share_file_id == e2->share_file_id &&
 		e1->dev == e2->dev &&
 		e1->inode == e2->inode &&
-		(e1->share_mode & ~DELETE_ON_CLOSE_FLAG) != (e2->share_mode & ~DELETE_ON_CLOSE_FLAG)) {
-			DEBUG(0,("PANIC: share_modes_identical: share_mode missmatch (e1 = %u, e2 = %u). Logic error.\n",
-				(unsigned int)(e1->share_mode & ~DELETE_ON_CLOSE_FLAG),
-				(unsigned int)(e2->share_mode & ~DELETE_ON_CLOSE_FLAG) ));
+		(e1->share_access) != (e2->share_access)) {
+			DEBUG(0,("PANIC: share_modes_identical: share_mode "
+				 "mismatch (e1 = 0x%x, e2 = 0x%x). Logic error.\n",
+				 (unsigned int)e1->share_access,
+				 (unsigned int)e2->share_access ));
 		smb_panic("PANIC: share_modes_identical logic error.\n");
 	}
 #endif
 
 	return (e1->pid == e2->pid &&
-		(e1->share_mode & ~DELETE_ON_CLOSE_FLAG) == (e2->share_mode & ~DELETE_ON_CLOSE_FLAG) &&
+		(e1->share_access) == (e2->share_access) &&
 		e1->dev == e2->dev &&
 		e1->inode == e2->inode &&
 		e1->share_file_id == e2->share_file_id );
@@ -602,8 +626,9 @@ BOOL share_modes_identical( share_mode_entry *e1, share_mode_entry *e2)
  Ignore if no entry deleted.
 ********************************************************************/
 
-ssize_t del_share_entry( SMB_DEV_T dev, SMB_INO_T inode,
-			share_mode_entry *entry, share_mode_entry **ppse)
+ssize_t del_share_entry(SMB_DEV_T dev, SMB_INO_T inode,
+			share_mode_entry *entry, share_mode_entry **ppse,
+			BOOL *delete_on_close)
 {
 	TDB_DATA dbuf;
 	struct locking_data *data;
@@ -621,6 +646,7 @@ ssize_t del_share_entry( SMB_DEV_T dev, SMB_INO_T inode,
 		return -1;
 
 	data = (struct locking_data *)dbuf.dptr;
+	*delete_on_close = data->u.s.delete_on_close;
 	shares = (share_mode_entry *)(dbuf.dptr + sizeof(*data));
 
 	/*
@@ -629,15 +655,15 @@ ssize_t del_share_entry( SMB_DEV_T dev, SMB_INO_T inode,
 	 * from the record.
 	 */
 
-	DEBUG(10,("del_share_entry: num_share_modes = %d\n", data->u.num_share_mode_entries ));
+	DEBUG(10,("del_share_entry: num_share_modes = %d\n", data->u.s.num_share_mode_entries ));
 
-	for (i=0;i<data->u.num_share_mode_entries;) {
+	for (i=0;i<data->u.s.num_share_mode_entries;) {
 		if (share_modes_identical(&shares[i], entry)) {
 			DEBUG(10,("del_share_entry: deleted %s\n",
 				share_mode_str(i, &shares[i]) ));
 			if (ppse)
 				*ppse = memdup(&shares[i], sizeof(*shares));
-			data->u.num_share_mode_entries--;
+			data->u.s.num_share_mode_entries--;
 			if ((dbuf.dsize - (sizeof(*data) + (i+1)*sizeof(*shares))) > 0) {
 				memmove(&shares[i], &shares[i+1], 
 					dbuf.dsize - (sizeof(*data) + (i+1)*sizeof(*shares)));
@@ -655,10 +681,10 @@ ssize_t del_share_entry( SMB_DEV_T dev, SMB_INO_T inode,
 		/* the record may have shrunk a bit */
 		dbuf.dsize -= del_count * sizeof(*shares);
 
-		count = (ssize_t)data->u.num_share_mode_entries;
+		count = (ssize_t)data->u.s.num_share_mode_entries;
 
 		/* store it back in the database */
-		if (data->u.num_share_mode_entries == 0) {
+		if (data->u.s.num_share_mode_entries == 0) {
 			if (tdb_delete(tdb, key) == -1)
 				count = -1;
 		} else {
@@ -677,7 +703,8 @@ ssize_t del_share_entry( SMB_DEV_T dev, SMB_INO_T inode,
  of entries left, and a memdup'ed copy of the entry deleted.
 ********************************************************************/
 
-ssize_t del_share_mode(files_struct *fsp, share_mode_entry **ppse)
+ssize_t del_share_mode(files_struct *fsp, share_mode_entry **ppse,
+		       BOOL *delete_on_close)
 {
 	share_mode_entry entry;
 
@@ -686,7 +713,8 @@ ssize_t del_share_mode(files_struct *fsp, share_mode_entry **ppse)
 	 */
 
 	fill_share_mode((char *)&entry, fsp, 0, 0);
-	return del_share_entry(fsp->dev, fsp->inode, &entry, ppse);
+	return del_share_entry(fsp->dev, fsp->inode, &entry, ppse,
+			       delete_on_close);
 }
 
 /*******************************************************************
@@ -718,7 +746,8 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 		if (!p)
 			return False;
 		data = (struct locking_data *)p;
-		data->u.num_share_mode_entries = 1;
+		ZERO_STRUCT(data->u); /* Keep valgrind happy */
+		data->u.s.num_share_mode_entries = 1;
 	
 		DEBUG(10,("set_share_mode: creating entry for file %s. num_share_modes = 1\n",
 			fsp->fsp_name ));
@@ -740,10 +769,10 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 	/* we're adding to an existing entry - this is a bit fiddly */
 	data = (struct locking_data *)dbuf.dptr;
 
-	data->u.num_share_mode_entries++;
+	data->u.s.num_share_mode_entries++;
 	
 	DEBUG(10,("set_share_mode: adding entry for file %s. new num_share_modes = %d\n",
-		fsp->fsp_name, data->u.num_share_mode_entries ));
+		fsp->fsp_name, data->u.s.num_share_mode_entries ));
 
 	size = dbuf.dsize + sizeof(share_mode_entry);
 	p = SMB_MALLOC(size);
@@ -790,7 +819,7 @@ static BOOL mod_share_mode( SMB_DEV_T dev, SMB_INO_T inode, share_mode_entry *en
 	shares = (share_mode_entry *)(dbuf.dptr + sizeof(*data));
 
 	/* find any with our pid and call the supplied function */
-	for (i=0;i<data->u.num_share_mode_entries;i++) {
+	for (i=0;i<data->u.s.num_share_mode_entries;i++) {
 		if (share_modes_identical(entry, &shares[i])) {
 			mod_fn(&shares[i], dev, inode, param);
 			need_store=True;
@@ -799,7 +828,7 @@ static BOOL mod_share_mode( SMB_DEV_T dev, SMB_INO_T inode, share_mode_entry *en
 
 	/* if the mod fn was called then store it back */
 	if (need_store) {
-		if (data->u.num_share_mode_entries == 0) {
+		if (data->u.s.num_share_mode_entries == 0) {
 			if (tdb_delete(tdb, key) == -1)
 				ret = False;
 		} else {
@@ -877,8 +906,7 @@ BOOL modify_delete_flag( SMB_DEV_T dev, SMB_INO_T inode, BOOL delete_on_close)
 {
 	TDB_DATA dbuf;
 	struct locking_data *data;
-	int i;
-	share_mode_entry *shares;
+	BOOL res;
 	TDB_DATA key = locking_key(dev, inode);
 
 	/* read in the existing share modes */
@@ -887,25 +915,14 @@ BOOL modify_delete_flag( SMB_DEV_T dev, SMB_INO_T inode, BOOL delete_on_close)
 		return False;
 
 	data = (struct locking_data *)dbuf.dptr;
-	shares = (share_mode_entry *)(dbuf.dptr + sizeof(*data));
 
 	/* Set/Unset the delete on close element. */
-	for (i=0;i<data->u.num_share_mode_entries;i++,shares++) {
-		shares->share_mode = (delete_on_close ?
-                            (shares->share_mode | DELETE_ON_CLOSE_FLAG) :
-                            (shares->share_mode & ~DELETE_ON_CLOSE_FLAG) );
-	}
+	data->u.s.delete_on_close = delete_on_close;
 
-	/* store it back */
-	if (data->u.num_share_mode_entries) {
-		if (tdb_store(tdb, key, dbuf, TDB_REPLACE)==-1) {
-			SAFE_FREE(dbuf.dptr);
-			return False;
-		}
-	}
+	res = (tdb_store(tdb, key, dbuf, TDB_REPLACE)!=-1);
 
 	SAFE_FREE(dbuf.dptr);
-	return True;
+	return res;
 }
 
 /*******************************************************************
@@ -1200,6 +1217,7 @@ BOOL add_deferred_open(uint16 mid, struct timeval *ptv, SMB_DEV_T dev, SMB_INO_T
 		if (!p)
 			return False;
 		data = (struct deferred_open_data *)p;
+		ZERO_STRUCT(data->u.dummy); /* Keep valgrind happy */
 		data->u.num_deferred_open_entries = 1;
 	
 		DEBUG(10,("add_deferred_open: creating entry for file %s. num_deferred_open_entries = 1\n",
@@ -1268,9 +1286,9 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 
 	data = (struct locking_data *)dbuf.dptr;
 	shares = (share_mode_entry *)(dbuf.dptr + sizeof(*data));
-	name = dbuf.dptr + sizeof(*data) + data->u.num_share_mode_entries*sizeof(*shares);
+	name = dbuf.dptr + sizeof(*data) + data->u.s.num_share_mode_entries*sizeof(*shares);
 
-	for (i=0;i<data->u.num_share_mode_entries;i++) {
+	for (i=0;i<data->u.s.num_share_mode_entries;i++) {
 		traverse_callback(&shares[i], name);
 	}
 	return 0;

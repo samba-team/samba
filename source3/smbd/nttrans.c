@@ -46,20 +46,12 @@ static const char *known_nt_pipes[] = {
 	NULL
 };
 
-/* Map generic permissions to file object specific permissions */
- 
-struct generic_mapping file_generic_mapping = {
-	FILE_GENERIC_READ,
-	FILE_GENERIC_WRITE,
-	FILE_GENERIC_EXECUTE,
-	FILE_GENERIC_ALL
-};
-
 static char *nttrans_realloc(char **ptr, size_t size)
 {
 	char *tptr = NULL;
-	if (ptr==NULL)
+	if (ptr==NULL) {
 		smb_panic("nttrans_realloc() called with NULL ptr\n");
+	}
 		
 	tptr = SMB_REALLOC(*ptr, size);
 	if(tptr == NULL) {
@@ -99,8 +91,9 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, NTSTATUS nt_e
 
 	set_message(outbuf,18,0,True);
 
-	if (NT_STATUS_V(nt_error))
+	if (NT_STATUS_V(nt_error)) {
 		ERROR_NT(nt_error);
+	}
 
 	/* 
 	 * If there genuinely are no parameters or data to send just send
@@ -108,8 +101,10 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, NTSTATUS nt_e
 	 */
 
 	if(params_to_send == 0 && data_to_send == 0) {
-		if (!send_smb(smbd_server_fd(),outbuf))
+		show_msg(outbuf);
+		if (!send_smb(smbd_server_fd(),outbuf)) {
 			exit_server("send_nt_replies: send_smb failed.");
+		}
 		return 0;
 	}
 
@@ -119,8 +114,9 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, NTSTATUS nt_e
 	 * can cause NT redirector problems.
 	 */
 
-	if (((params_to_send % 4) != 0) && (data_to_send != 0))
+	if (((params_to_send % 4) != 0) && (data_to_send != 0)) {
 		data_alignment_offset = 4 - (params_to_send % 4);
+	}
 
 	/* 
 	 * Space is bufsize minus Netbios over TCP header minus SMB header.
@@ -221,16 +217,18 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, NTSTATUS nt_e
 		 * Copy the param bytes into the packet.
 		 */
 
-		if(params_sent_thistime)
+		if(params_sent_thistime) {
 			memcpy((smb_buf(outbuf)+alignment_offset),pp,params_sent_thistime);
+		}
 
 		/*
 		 * Copy in the data bytes
 		 */
 
-		if(data_sent_thistime)
+		if(data_sent_thistime) {
 			memcpy(smb_buf(outbuf)+alignment_offset+params_sent_thistime+
 				data_alignment_offset,pd,data_sent_thistime);
+		}
     
 		DEBUG(9,("nt_rep: params_sent_thistime = %d, data_sent_thistime = %d, useable_space = %d\n",
 			params_sent_thistime, data_sent_thistime, useable_space));
@@ -238,8 +236,10 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, NTSTATUS nt_e
 			params_to_send, data_to_send, paramsize, datasize));
     
 		/* Send the packet */
-		if (!send_smb(smbd_server_fd(),outbuf))
+		show_msg(outbuf);
+		if (!send_smb(smbd_server_fd(),outbuf)) {
 			exit_server("send_nt_replies: send_smb failed.");
+		}
     
 		pp += params_sent_thistime;
 		pd += data_sent_thistime;
@@ -287,8 +287,9 @@ static BOOL saved_short_case_preserve;
 
 static void set_posix_case_semantics(connection_struct *conn, uint32 file_attributes)
 {
-	if(!(file_attributes & FILE_FLAG_POSIX_SEMANTICS))
+	if(!(file_attributes & FILE_FLAG_POSIX_SEMANTICS)) {
 		return;
+	}
 
 	saved_case_sensitive = conn->case_sensitive;
 	saved_case_preserve = conn->case_preserve;
@@ -306,198 +307,13 @@ static void set_posix_case_semantics(connection_struct *conn, uint32 file_attrib
 
 static void restore_case_semantics(connection_struct *conn, uint32 file_attributes)
 {
-	if(!(file_attributes & FILE_FLAG_POSIX_SEMANTICS))
+	if(!(file_attributes & FILE_FLAG_POSIX_SEMANTICS)) {
 		return;
+	}
 
 	conn->case_sensitive = saved_case_sensitive;
 	conn->case_preserve = saved_case_preserve;
 	conn->short_case_preserve = saved_short_case_preserve;
-}
-
-/****************************************************************************
- Utility function to map create disposition.
-****************************************************************************/
-
-static int map_create_disposition( uint32 create_disposition)
-{
-	int ret;
-
-	switch( create_disposition ) {
-		case FILE_CREATE:
-			/* create if not exist, fail if exist */
-			ret = (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_FAIL);
-			break;
-		case FILE_SUPERSEDE:
-		case FILE_OVERWRITE_IF:
-			/* create if not exist, trunc if exist */
-			ret = (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_TRUNCATE);
-			break;
-		case FILE_OPEN:
-			/* fail if not exist, open if exists */
-			ret = (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN);
-			break;
-		case FILE_OPEN_IF:
-			/* create if not exist, open if exists */
-			ret = (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_OPEN);
-			break;
-		case FILE_OVERWRITE:
-			/* fail if not exist, truncate if exists */
-			ret = (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_TRUNCATE);
-			break;
-		default:
-			DEBUG(0,("map_create_disposition: Incorrect value for create_disposition = %d\n",
-				create_disposition ));
-			return -1;
-	}
-
-	DEBUG(10,("map_create_disposition: Mapped create_disposition 0x%lx to 0x%x\n",
-			(unsigned long)create_disposition, ret ));
-
-	return ret;
-}
-
-/****************************************************************************
- Utility function to map share modes.
-****************************************************************************/
-
-static int map_share_mode( char *fname, uint32 create_options,
-			uint32 *desired_access, uint32 share_access, uint32 file_attributes)
-{
-	int smb_open_mode = -1;
-	uint32 original_desired_access = *desired_access;
-
-	/* This is a nasty hack - must fix... JRA. */
-	if (*desired_access == MAXIMUM_ALLOWED_ACCESS) {
-		*desired_access = FILE_GENERIC_ALL;
-	}
-
-	/*
-	 * Convert GENERIC bits to specific bits.
-	 */
-
-	se_map_generic(desired_access, &file_generic_mapping);
-
-	switch( *desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA) ) {
-		case FILE_READ_DATA:
-			smb_open_mode = DOS_OPEN_RDONLY;
-			break;
-		case FILE_WRITE_DATA:
-		case FILE_APPEND_DATA:
-		case FILE_WRITE_DATA|FILE_APPEND_DATA:
-			smb_open_mode = DOS_OPEN_WRONLY;
-			break;
-		case FILE_READ_DATA|FILE_WRITE_DATA:
-		case FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA:
-		case FILE_READ_DATA|FILE_APPEND_DATA:
-			smb_open_mode = DOS_OPEN_RDWR;
-			break;
-	}
-
-	/*
-	 * NB. For DELETE_ACCESS we should really check the
-	 * directory permissions, as that is what controls
-	 * delete, and for WRITE_DAC_ACCESS we should really
-	 * check the ownership, as that is what controls the
-	 * chmod. Note that this is *NOT* a security hole (this
-	 * note is for you, Andrew) as we are not *allowing*
-	 * the access at this point, the actual unlink or
-	 * chown or chmod call would do this. We are just helping
-	 * clients out by telling them if they have a hope
-	 * of any of this succeeding. POSIX acls may still
-	 * deny the real call. JRA.
-	 */
-
-	if (smb_open_mode == -1) {
-
-		if(*desired_access & (DELETE_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|SYNCHRONIZE_ACCESS|
-					FILE_EXECUTE|FILE_READ_ATTRIBUTES|
-					FILE_READ_EA|FILE_WRITE_EA|SYSTEM_SECURITY_ACCESS|
-					FILE_WRITE_ATTRIBUTES|READ_CONTROL_ACCESS)) {
-			smb_open_mode = DOS_OPEN_RDONLY;
-		} else if(*desired_access == 0) {
-
-			/* 
-			 * JRA - NT seems to sometimes send desired_access as zero. play it safe
-			 * and map to a stat open.
-			 */
-
-			smb_open_mode = DOS_OPEN_RDONLY;
-
-		} else {
-			DEBUG(0,("map_share_mode: Incorrect value 0x%lx for desired_access to file %s\n",
-				(unsigned long)*desired_access, fname));
-			return -1;
-		}
-	}
-
-	/*
-	 * Set the special bit that means allow share delete.
-	 * This is held outside the normal share mode bits at 1<<15.
-	 * JRA.
-	 */
-
-	if(share_access & FILE_SHARE_DELETE) {
-		smb_open_mode |= ALLOW_SHARE_DELETE;
-		DEBUG(10,("map_share_mode: FILE_SHARE_DELETE requested. open_mode = 0x%x\n", smb_open_mode));
-	}
-
-	if(*desired_access & DELETE_ACCESS) {
-		DEBUG(10,("map_share_mode: DELETE_ACCESS requested. open_mode = 0x%x\n", smb_open_mode));
-	}
-
-	/*
-	 * We need to store the intent to open for Delete. This
-	 * is what determines if a delete on close flag can be set.
-	 * This is the wrong way (and place) to store this, but for 2.2 this
-	 * is the only practical way. JRA.
-	 */
-
-	if (create_options & FILE_DELETE_ON_CLOSE) {
-		/*
-		 * W2K3 bug compatibility mode... To set delete on close
-		 * the redirector must have *specifically* set DELETE_ACCESS
-		 * in the desired_access field. Just asking for GENERIC_ALL won't do. JRA.
-		 */
-
-		if (!(original_desired_access & DELETE_ACCESS)) {
-			DEBUG(5,("map_share_mode: FILE_DELETE_ON_CLOSE requested without \
-DELETE_ACCESS for file %s. (desired_access = 0x%lx)\n",
-				fname, (unsigned long)*desired_access));
-			return -1;
-		}
-		/* Implicit delete access is *NOT* requested... */
-		smb_open_mode |= DELETE_ON_CLOSE_FLAG;
-		DEBUG(10,("map_share_mode: FILE_DELETE_ON_CLOSE requested. open_mode = 0x%x\n", smb_open_mode));
-	}
-
-	/* Add in the requested share mode. */
-	switch( share_access & (FILE_SHARE_READ|FILE_SHARE_WRITE)) {
-		case FILE_SHARE_READ:
-			smb_open_mode |= SET_DENY_MODE(DENY_WRITE);
-			break;
-		case FILE_SHARE_WRITE:
-			smb_open_mode |= SET_DENY_MODE(DENY_READ);
-			break;
-		case (FILE_SHARE_READ|FILE_SHARE_WRITE):
-			smb_open_mode |= SET_DENY_MODE(DENY_NONE);
-			break;
-		case FILE_SHARE_NONE:
-			smb_open_mode |= SET_DENY_MODE(DENY_ALL);
-			break;
-	}
-
-	/*
-	 * Handle an O_SYNC request.
-	 */
-
-	if(file_attributes & FILE_FLAG_WRITE_THROUGH)
-		smb_open_mode |= FILE_SYNC_OPENMODE;
-
-	DEBUG(10,("map_share_mode: Mapped desired access 0x%lx, share access 0x%lx, file attributes 0x%lx \
-to open_mode 0x%x\n", (unsigned long)*desired_access, (unsigned long)share_access,
-		(unsigned long)file_attributes, smb_open_mode ));
- 
-	return smb_open_mode;
 }
 
 /****************************************************************************
@@ -508,7 +324,6 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 			char *inbuf, char *outbuf, int *ppnum)
 {
 	smb_np_struct *p = NULL;
-
 	uint16 vuid = SVAL(inbuf, smb_uid);
 	int i;
 
@@ -516,15 +331,19 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
     
 	/* See if it is one we want to handle. */
 
-	if (lp_disable_spoolss() && strequal(fname, "\\spoolss"))
+	if (lp_disable_spoolss() && strequal(fname, "\\spoolss")) {
 		return(ERROR_BOTH(NT_STATUS_OBJECT_NAME_NOT_FOUND,ERRDOS,ERRbadpipe));
+	}
 
-	for( i = 0; known_nt_pipes[i]; i++ )
-		if( strequal(fname,known_nt_pipes[i]))
+	for( i = 0; known_nt_pipes[i]; i++ ) {
+		if( strequal(fname,known_nt_pipes[i])) {
 			break;
+		}
+	}
     
-	if ( known_nt_pipes[i] == NULL )
+	if ( known_nt_pipes[i] == NULL ) {
 		return(ERROR_BOTH(NT_STATUS_OBJECT_NAME_NOT_FOUND,ERRDOS,ERRbadpipe));
+	}
     
 	/* Strip \\ off the name. */
 	fname++;
@@ -532,11 +351,11 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 	DEBUG(3,("nt_open_pipe: Known pipe %s opening.\n", fname));
 
 	p = open_rpc_pipe_p(fname, conn, vuid);
-	if (!p)
+	if (!p) {
 		return(ERROR_DOS(ERRSRV,ERRnofids));
+	}
 
 	*ppnum = p->pnum;
-
 	return 0;
 }
 
@@ -554,8 +373,9 @@ static int do_ntcreate_pipe_open(connection_struct *conn,
 
 	srvstr_pull_buf(inbuf, fname, smb_buf(inbuf), sizeof(fname), STR_TERMINATE);
 
-	if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0)
+	if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0) {
 		return ret;
+	}
 
 	/*
 	 * Deal with pipe return.
@@ -583,6 +403,66 @@ static int do_ntcreate_pipe_open(connection_struct *conn,
 }
 
 /****************************************************************************
+ Reply to an NT create and X call for a quota file.
+****************************************************************************/
+
+int reply_ntcreate_and_X_quota(connection_struct *conn,
+				char *inbuf,
+				char *outbuf,
+				int length,
+				int bufsize,
+				enum FAKE_FILE_TYPE fake_file_type,
+				const char *fname)
+{
+	int result;
+	char *p;
+	uint32 desired_access = IVAL(inbuf,smb_ntcreate_DesiredAccess);
+	files_struct *fsp = open_fake_file(conn, fake_file_type, fname, desired_access);
+
+	if (!fsp) {
+		return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+	}
+
+	set_message(outbuf,34,0,True);
+	
+	p = outbuf + smb_vwv2;
+	
+	/* SCVAL(p,0,NO_OPLOCK_RETURN); */
+	p++;
+	SSVAL(p,0,fsp->fnum);
+#if 0
+	p += 2;
+	SIVAL(p,0,smb_action);
+	p += 4;
+	
+	/* Create time. */  
+	put_long_date(p,c_time);
+	p += 8;
+	put_long_date(p,sbuf.st_atime); /* access time */
+	p += 8;
+	put_long_date(p,sbuf.st_mtime); /* write time */
+	p += 8;
+	put_long_date(p,sbuf.st_mtime); /* change time */
+	p += 8;
+	SIVAL(p,0,fattr); /* File Attributes. */
+	p += 4;
+	SOFF_T(p, 0, get_allocation_size(conn,fsp,&sbuf));
+	p += 8;
+	SOFF_T(p,0,file_len);
+	p += 8;
+	if (flags & EXTENDED_RESPONSE_REQUIRED)
+		SSVAL(p,2,0x7);
+	p += 4;
+	SCVAL(p,0,fsp->is_directory ? 1 : 0);
+#endif
+
+	DEBUG(5,("reply_ntcreate_and_X_quota: fnum = %d, open name = %s\n", fsp->fnum, fsp->fsp_name));
+
+	result = chain_reply(inbuf,outbuf,length,bufsize);
+	return result;
+}
+
+/****************************************************************************
  Reply to an NT create and X call.
 ****************************************************************************/
 
@@ -591,23 +471,20 @@ int reply_ntcreate_and_X(connection_struct *conn,
 {  
 	int result;
 	pstring fname;
-	enum FAKE_FILE_TYPE fake_file_type = FAKE_FILE_TYPE_NONE;
 	uint32 flags = IVAL(inbuf,smb_ntcreate_Flags);
-	uint32 desired_access = IVAL(inbuf,smb_ntcreate_DesiredAccess);
+	uint32 access_mask = IVAL(inbuf,smb_ntcreate_DesiredAccess);
 	uint32 file_attributes = IVAL(inbuf,smb_ntcreate_FileAttributes);
 	uint32 share_access = IVAL(inbuf,smb_ntcreate_ShareAccess);
 	uint32 create_disposition = IVAL(inbuf,smb_ntcreate_CreateDisposition);
 	uint32 create_options = IVAL(inbuf,smb_ntcreate_CreateOptions);
 	uint16 root_dir_fid = (uint16)IVAL(inbuf,smb_ntcreate_RootDirectoryFid);
-	int smb_ofun;
-	int smb_open_mode;
 	/* Breakout the oplock request bits so we can set the
 	   reply bits separately. */
 	int oplock_request = 0;
-	int fmode=0,rmode=0;
+	uint32 fattr=0;
 	SMB_OFF_T file_len = 0;
 	SMB_STRUCT_STAT sbuf;
-	int smb_action = 0;
+	int info = 0;
 	BOOL bad_path = False;
 	files_struct *fsp=NULL;
 	char *p = NULL;
@@ -617,11 +494,16 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 	START_PROFILE(SMBntcreateX);
 
-	DEBUG(10,("reply_ntcreateX: flags = 0x%x, desired_access = 0x%x \
+	DEBUG(10,("reply_ntcreateX: flags = 0x%x, access_mask = 0x%x \
 file_attributes = 0x%x, share_access = 0x%x, create_disposition = 0x%x \
-create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attributes,
-			share_access, create_disposition,
-			create_options, root_dir_fid ));
+create_options = 0x%x root_dir_fid = 0x%x\n",
+			(unsigned int)flags,
+			(unsigned int)access_mask,
+			(unsigned int)file_attributes,
+			(unsigned int)share_access,
+			(unsigned int)create_disposition,
+			(unsigned int)create_options,
+			(unsigned int)root_dir_fid ));
 
 	/* If it's an IPC, use the pipe handler. */
 
@@ -638,16 +520,6 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	if (create_options & FILE_OPEN_BY_FILE_ID) {
 		END_PROFILE(SMBntcreateX);
 		return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
-	}
-
-	/* 
-	 * We need to construct the open_and_X ofun value from the
-	 * NT values, as that's what our code is structured to accept.
-	 */    
-	
-	if((smb_ofun = map_create_disposition( create_disposition )) == -1) {
-		END_PROFILE(SMBntcreateX);
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
 	/*
@@ -729,25 +601,25 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 		 */
 
 		if( is_ntfs_stream_name(fname)) {
-			
-#ifdef HAVE_SYS_QUOTAS
-			if ((fake_file_type=is_fake_file(fname))!=FAKE_FILE_TYPE_NONE) {
+			enum FAKE_FILE_TYPE fake_file_type = is_fake_file(fname);
+			if (fake_file_type!=FAKE_FILE_TYPE_NONE) {
 				/*
-				 * here we go! support for changing the disk quotas --metze
+				 * Here we go! support for changing the disk quotas --metze
 				 *
-				 * we need to fake up to open this MAGIC QUOTA file 
-				 * and return a valid FID
+				 * We need to fake up to open this MAGIC QUOTA file 
+				 * and return a valid FID.
 				 *
 				 * w2k close this file directly after openening
 				 * xp also tries a QUERY_FILE_INFO on the file and then close it
 				 */
+				result = reply_ntcreate_and_X_quota(conn, inbuf, outbuf, length, bufsize,
+								fake_file_type, fname);
+				END_PROFILE(SMBntcreateX);
+				return result;
 			} else {
-#endif
 				END_PROFILE(SMBntcreateX);
 				return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
-#ifdef HAVE_SYS_QUOTAS
 			}
-#endif
 		}
 	}
 	
@@ -756,13 +628,6 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	 * desired access and the share access.
 	 */
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
-
-	if((smb_open_mode = map_share_mode(fname, create_options, &desired_access, 
-					   share_access, 
-					   file_attributes)) == -1) {
-		END_PROFILE(SMBntcreateX);
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-	}
 
 	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
 	if (oplock_request) {
@@ -781,20 +646,16 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 		
 	unix_convert(fname,conn,0,&bad_path,&sbuf);
 
-	/* FAKE_FILE is a special case */
-	if (fake_file_type == FAKE_FILE_TYPE_NONE) {
-		/* Normal file. */
-		if (bad_path) {
-			restore_case_semantics(conn, file_attributes);
-			END_PROFILE(SMBntcreateX);
-			return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
-		}
-		/* All file access must go through check_name() */
-		if (!check_name(fname,conn)) {
-			restore_case_semantics(conn, file_attributes);
-			END_PROFILE(SMBntcreateX);
-			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
-		}
+	if (bad_path) {
+		restore_case_semantics(conn, file_attributes);
+		END_PROFILE(SMBntcreateX);
+		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+	}
+	/* All file access must go through check_name() */
+	if (!check_name(fname,conn)) {
+		restore_case_semantics(conn, file_attributes);
+		END_PROFILE(SMBntcreateX);
+		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
 	}
 
 #if 0
@@ -805,7 +666,8 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	if (desired_access & DELETE_ACCESS) {
 #else
 	/* Setting FILE_SHARE_DELETE is the hint. */
-	if (lp_acl_check_permissions(SNUM(conn)) && (share_access & FILE_SHARE_DELETE) && (desired_access & DELETE_ACCESS)) {
+	if (lp_acl_check_permissions(SNUM(conn)) && (share_access & FILE_SHARE_DELETE)
+				&& (access_mask & DELETE_ACCESS)) {
 #endif
 		status = can_delete(conn, fname, file_attributes, bad_path, True);
 		/* We're only going to fail here if it's access denied, as that's the
@@ -814,7 +676,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 						 NT_STATUS_EQUAL(status,NT_STATUS_CANNOT_DELETE))) {
 			restore_case_semantics(conn, file_attributes);
 			END_PROFILE(SMBntcreateX);
-			return ERROR_NT(status);
+			return ERROR_NT(NT_STATUS_ACCESS_DENIED);
 		}
 	}
 
@@ -831,8 +693,13 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 
-		fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, &smb_action);
-			
+		fsp = open_directory(conn, fname, &sbuf,
+					access_mask,
+					share_access,
+					create_disposition,
+					create_options,
+					&info);
+
 		restore_case_semantics(conn, file_attributes);
 
 		if(!fsp) {
@@ -857,21 +724,14 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 		 * before issuing an oplock break request to
 		 * our client. JRA.  */
 
-		if (fake_file_type==FAKE_FILE_TYPE_NONE) {
-			fsp = open_file_shared1(conn,fname,&sbuf,
-					desired_access,
-					smb_open_mode,
-					smb_ofun,file_attributes,oplock_request,
-					&rmode,&smb_action);
-		} else {
-			/* to open a fake_file --metze */
-			fsp = open_fake_file_shared1(fake_file_type,conn,fname,&sbuf,
-					desired_access,
-					smb_open_mode,
-					smb_ofun,file_attributes, oplock_request,
-					&rmode,&smb_action);
-		}
-		
+		fsp = open_file_ntcreate(conn,fname,&sbuf,
+					access_mask,
+					share_access,
+					create_disposition,
+					create_options,
+					file_attributes,
+					oplock_request,
+					&info);
 		if (!fsp) { 
 			/* We cheat here. There are two cases we
 			 * care about. One is a directory rename,
@@ -905,8 +765,13 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 				}
 	
 				oplock_request = 0;
-				fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, &smb_action);
-				
+				fsp = open_directory(conn, fname, &sbuf,
+							access_mask,
+							share_access,
+							create_disposition,
+							create_options,
+							&info);
+
 				if(!fsp) {
 					restore_case_semantics(conn, file_attributes);
 					END_PROFILE(SMBntcreateX);
@@ -928,18 +793,18 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	restore_case_semantics(conn, file_attributes);
 		
 	file_len = sbuf.st_size;
-	fmode = dos_mode(conn,fname,&sbuf);
-	if(fmode == 0) {
-		fmode = FILE_ATTRIBUTE_NORMAL;
+	fattr = dos_mode(conn,fname,&sbuf);
+	if(fattr == 0) {
+		fattr = FILE_ATTRIBUTE_NORMAL;
 	}
-	if (!fsp->is_directory && (fmode & aDIR)) {
+	if (!fsp->is_directory && (fattr & aDIR)) {
 		close_file(fsp,False);
 		END_PROFILE(SMBntcreateX);
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	} 
 	
 	/* Save the requested allocation size. */
-	if ((smb_action == FILE_WAS_CREATED) || (smb_action == FILE_WAS_OVERWRITTEN)) {
+	if ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN)) {
 		SMB_BIG_UINT allocation_size = (SMB_BIG_UINT)IVAL(inbuf,smb_ntcreate_AllocationSize);
 #ifdef LARGE_SMB_OFF_T
 		allocation_size |= (((SMB_BIG_UINT)IVAL(inbuf,smb_ntcreate_AllocationSize + 4)) << 32);
@@ -1005,10 +870,11 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	p++;
 	SSVAL(p,0,fsp->fnum);
 	p += 2;
-	if ((create_disposition == FILE_SUPERSEDE) && (smb_action == FILE_WAS_OVERWRITTEN))
+	if ((create_disposition == FILE_SUPERSEDE) && (info == FILE_WAS_OVERWRITTEN)) {
 		SIVAL(p,0,FILE_WAS_SUPERSEDED);
-	else
-		SIVAL(p,0,smb_action);
+	} else {
+		SIVAL(p,0,info);
+	}
 	p += 4;
 	
 	/* Create time. */  
@@ -1029,14 +895,15 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	p += 8;
 	put_long_date(p,sbuf.st_mtime); /* change time */
 	p += 8;
-	SIVAL(p,0,fmode); /* File Attributes. */
+	SIVAL(p,0,fattr); /* File Attributes. */
 	p += 4;
 	SOFF_T(p, 0, get_allocation_size(conn,fsp,&sbuf));
 	p += 8;
 	SOFF_T(p,0,file_len);
 	p += 8;
-	if (flags & EXTENDED_RESPONSE_REQUIRED)
+	if (flags & EXTENDED_RESPONSE_REQUIRED) {
 		SSVAL(p,2,0x7);
+	}
 	p += 4;
 	SCVAL(p,0,fsp->is_directory ? 1 : 0);
 
@@ -1077,13 +944,15 @@ static int do_nt_transact_create_pipe( connection_struct *conn, char *inbuf, cha
 		return ERROR_NT(status);
 	}
 
-	if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0)
+	if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0) {
 		return ret;
+	}
 	
 	/* Realloc the size of parameters and data we will return */
 	params = nttrans_realloc(ppparams, 69);
-	if(params == NULL)
+	if(params == NULL) {
 		return ERROR_DOS(ERRDOS,ERRnomem);
+	}
 	
 	p = params;
 	SCVAL(p,0,NO_OPLOCK_RETURN);
@@ -1156,16 +1025,20 @@ static NTSTATUS set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 secu
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	if (psd->off_owner_sid==0)
+	if (psd->off_owner_sid==0) {
 		security_info_sent &= ~OWNER_SECURITY_INFORMATION;
-	if (psd->off_grp_sid==0)
+	}
+	if (psd->off_grp_sid==0) {
 		security_info_sent &= ~GROUP_SECURITY_INFORMATION;
-	if (psd->off_sacl==0)
+	}
+	if (psd->off_sacl==0) {
 		security_info_sent &= ~SACL_SECURITY_INFORMATION;
-	if (psd->off_dacl==0)
+	}
+	if (psd->off_dacl==0) {
 		security_info_sent &= ~DACL_SECURITY_INFORMATION;
+	}
 	
-	ret = SMB_VFS_FSET_NT_ACL( fsp, fsp->fd, security_info_sent, psd);
+	ret = SMB_VFS_FSET_NT_ACL( fsp, fsp->fh->fd, security_info_sent, psd);
 	
 	if (!ret) {
 		talloc_destroy(mem_ctx);
@@ -1219,16 +1092,16 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	char *data = *ppdata;
 	/* Breakout the oplock request bits so we can set the reply bits separately. */
 	int oplock_request = 0;
-	int fmode=0,rmode=0;
+	uint32 fattr=0;
 	SMB_OFF_T file_len = 0;
 	SMB_STRUCT_STAT sbuf;
-	int smb_action = 0;
+	int info = 0;
 	BOOL bad_path = False;
 	files_struct *fsp = NULL;
 	char *p = NULL;
 	BOOL extended_oplock_granted = False;
 	uint32 flags;
-	uint32 desired_access;
+	uint32 access_mask;
 	uint32 file_attributes;
 	uint32 share_access;
 	uint32 create_disposition;
@@ -1236,8 +1109,6 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	uint32 sd_len;
 	uint32 ea_len;
 	uint16 root_dir_fid;
-	int smb_ofun;
-	int smb_open_mode;
 	time_t c_time;
 	struct ea_list *ea_list = NULL;
 	TALLOC_CTX *ctx = NULL;
@@ -1251,14 +1122,15 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	 */
 
 	if (IS_IPC(conn)) {
-		if (lp_nt_pipe_support())
+		if (lp_nt_pipe_support()) {
 			return do_nt_transact_create_pipe(conn, inbuf, outbuf, length, 
 					bufsize,
 					ppsetup, setup_count,
 					ppparams, parameter_count,
 					ppdata, data_count);
-		else
+		} else {
 			return ERROR_DOS(ERRDOS,ERRnoaccess);
+		}
 	}
 
 	/*
@@ -1271,7 +1143,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	}
 
 	flags = IVAL(params,0);
-	desired_access = IVAL(params,8);
+	access_mask = IVAL(params,8);
 	file_attributes = IVAL(params,20);
 	share_access = IVAL(params,24);
 	create_disposition = IVAL(params,28);
@@ -1307,15 +1179,6 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
 	}
 
-	/* 
-	 * We need to construct the open_and_X ofun value from the
-	 * NT values, as that's what our code is structured to accept.
-	 */    
-
-	if((smb_ofun = map_create_disposition( create_disposition )) == -1) {
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-	}
-
 	/*
 	 * Get the file name.
 	 */
@@ -1327,8 +1190,9 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		files_struct *dir_fsp = file_fsp(params,4);
 		size_t dir_name_len;
 
-		if(!dir_fsp)
+		if(!dir_fsp) {
 			return ERROR_DOS(ERRDOS,ERRbadfid);
+		}
 
 		if(!dir_fsp->is_directory) {
 			srvstr_get_path(inbuf, fname, params+53, sizeof(fname), parameter_count-53, STR_TERMINATE, &status, False);
@@ -1386,15 +1250,6 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		}
 	}
 
-	/*
-	 * Now contruct the smb_open_mode value from the desired access
-	 * and the share access.
-	 */
-
-	if((smb_open_mode = map_share_mode( fname, create_options, &desired_access,
-						share_access, file_attributes)) == -1)
-		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-
 	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
 	oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
 
@@ -1425,7 +1280,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	if (desired_access & DELETE_ACCESS) {
 #else
 	/* Setting FILE_SHARE_DELETE is the hint. */
-	if (lp_acl_check_permissions(SNUM(conn)) && (share_access & FILE_SHARE_DELETE) && (desired_access & DELETE_ACCESS)) {
+	if (lp_acl_check_permissions(SNUM(conn)) && (share_access & FILE_SHARE_DELETE) && (access_mask & DELETE_ACCESS)) {
 #endif
 		status = can_delete(conn, fname, file_attributes, bad_path, True);
 		/* We're only going to fail here if it's access denied, as that's the
@@ -1478,8 +1333,12 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		 * CreateDirectory() call.
 		 */
 
-		fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, &smb_action);
-
+		fsp = open_directory(conn, fname, &sbuf,
+					access_mask,
+					share_access,
+					create_disposition,
+					create_options,
+					&info);
 		if(!fsp) {
 			talloc_destroy(ctx);
 			restore_case_semantics(conn, file_attributes);
@@ -1492,9 +1351,14 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		 * Ordinary file case.
 		 */
 
-		fsp = open_file_shared1(conn,fname,&sbuf,desired_access,
-						smb_open_mode,smb_ofun,file_attributes,
-						oplock_request,&rmode,&smb_action);
+		fsp = open_file_ntcreate(conn,fname,&sbuf,
+					access_mask,
+					share_access,
+					create_disposition,
+					create_options,
+					file_attributes,
+					oplock_request,
+					&info);
 
 		if (!fsp) { 
 			if(errno == EISDIR) {
@@ -1509,8 +1373,12 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 				}
 	
 				oplock_request = 0;
-				fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, &smb_action);
-				
+				fsp = open_directory(conn, fname, &sbuf,
+							access_mask,
+							share_access,
+							create_disposition,
+							create_options,
+							&info);
 				if(!fsp) {
 					talloc_destroy(ctx);
 					restore_case_semantics(conn, file_attributes);
@@ -1539,12 +1407,12 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	 * Patch for bug #2242 from Tom Lackemann <cessnatomny@yahoo.com>.
 	 */
 
-	if (lp_nt_acl_support(SNUM(conn)) && sd_len && smb_action == FILE_WAS_CREATED) {
-		uint32 saved_access = fsp->desired_access;
+	if (lp_nt_acl_support(SNUM(conn)) && sd_len && info == FILE_WAS_CREATED) {
+		uint32 saved_access_mask = fsp->access_mask;
 
 		/* We have already checked that sd_len <= data_count here. */
 
-		fsp->desired_access = FILE_GENERIC_ALL;
+		fsp->access_mask = FILE_GENERIC_ALL;
 
 		status = set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1553,10 +1421,10 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 			restore_case_semantics(conn, file_attributes);
 			return ERROR_NT(status);
 		}
-		fsp->desired_access = saved_access;
+		fsp->access_mask = saved_access_mask;
  	}
 	
-	if (ea_len && (smb_action == FILE_WAS_CREATED)) {
+	if (ea_len && (info == FILE_WAS_CREATED)) {
 		status = set_ea(conn, fsp, fname, ea_list);
 		talloc_destroy(ctx);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1569,17 +1437,17 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	restore_case_semantics(conn, file_attributes);
 
 	file_len = sbuf.st_size;
-	fmode = dos_mode(conn,fname,&sbuf);
-	if(fmode == 0) {
-		fmode = FILE_ATTRIBUTE_NORMAL;
+	fattr = dos_mode(conn,fname,&sbuf);
+	if(fattr == 0) {
+		fattr = FILE_ATTRIBUTE_NORMAL;
 	}
-	if (!fsp->is_directory && (fmode & aDIR)) {
+	if (!fsp->is_directory && (fattr & aDIR)) {
 		close_file(fsp,False);
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	} 
 	
 	/* Save the requested allocation size. */
-	if ((smb_action == FILE_WAS_CREATED) || (smb_action == FILE_WAS_OVERWRITTEN)) {
+	if ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN)) {
 		SMB_BIG_UINT allocation_size = (SMB_BIG_UINT)IVAL(params,12);
 #ifdef LARGE_SMB_OFF_T
 		allocation_size |= (((SMB_BIG_UINT)IVAL(params,16)) << 32);
@@ -1616,24 +1484,27 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 	/* Realloc the size of parameters and data we will return */
 	params = nttrans_realloc(ppparams, 69);
-	if(params == NULL)
+	if(params == NULL) {
 		return ERROR_DOS(ERRDOS,ERRnomem);
+	}
 
 	p = params;
-	if (extended_oplock_granted)
+	if (extended_oplock_granted) {
 		SCVAL(p,0, BATCH_OPLOCK_RETURN);
-	else if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
+	} else if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type)) {
 		SCVAL(p,0, LEVEL_II_OPLOCK_RETURN);
-	else
+	} else {
 		SCVAL(p,0,NO_OPLOCK_RETURN);
+	}
 	
 	p += 2;
 	SSVAL(p,0,fsp->fnum);
 	p += 2;
-	if ((create_disposition == FILE_SUPERSEDE) && (smb_action == FILE_WAS_OVERWRITTEN))
+	if ((create_disposition == FILE_SUPERSEDE) && (info == FILE_WAS_OVERWRITTEN)) {
 		SIVAL(p,0,FILE_WAS_SUPERSEDED);
-	else
-		SIVAL(p,0,smb_action);
+	} else {
+		SIVAL(p,0,info);
+	}
 	p += 8;
 
 	/* Create time. */
@@ -1654,14 +1525,15 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	p += 8;
 	put_long_date(p,sbuf.st_mtime); /* change time */
 	p += 8;
-	SIVAL(p,0,fmode); /* File Attributes. */
+	SIVAL(p,0,fattr); /* File Attributes. */
 	p += 4;
 	SOFF_T(p, 0, get_allocation_size(conn,fsp,&sbuf));
 	p += 8;
 	SOFF_T(p,0,file_len);
 	p += 8;
-	if (flags & EXTENDED_RESPONSE_REQUIRED)
+	if (flags & EXTENDED_RESPONSE_REQUIRED) {
 		SSVAL(p,2,0x7);
+	}
 	p += 4;
 	SCVAL(p,0,fsp->is_directory ? 1 : 0);
 
@@ -1700,7 +1572,7 @@ int reply_ntcancel(connection_struct *conn,
  Copy a file.
 ****************************************************************************/
 
-static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *newname, uint16 attrs)
+static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *newname, uint32 attrs)
 {
 	BOOL bad_path_oldname = False;
 	BOOL bad_path_newname = False;
@@ -1708,9 +1580,8 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 	pstring last_component_oldname;
 	pstring last_component_newname;
 	files_struct *fsp1,*fsp2;
-	uint16 fmode;
-	int access_mode;
-	int smb_action;
+	uint32 fattr;
+	int info;
 	SMB_OFF_T ret=-1;
 	int close_ret;
 	NTSTATUS status = NT_STATUS_OK;
@@ -1747,9 +1618,10 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 	}
 
 	/* Ensure attributes match. */
-	fmode = dos_mode(conn,oldname,&sbuf1);
-	if ((fmode & ~attrs) & (aHIDDEN | aSYSTEM))
+	fattr = dos_mode(conn,oldname,&sbuf1);
+	if ((fattr & ~attrs) & (aHIDDEN | aSYSTEM)) {
 		return NT_STATUS_NO_SUCH_FILE;
+	}
 
 	unix_convert(newname,conn,last_component_newname,&bad_path_newname,&sbuf2);
 	if (bad_path_newname) {
@@ -1784,9 +1656,14 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 
 	DEBUG(10,("copy_internals: doing file copy %s to %s\n", oldname, newname));
 
-        fsp1 = open_file_shared1(conn,oldname,&sbuf1,FILE_READ_DATA,SET_DENY_MODE(DENY_ALL)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
-			(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),FILE_ATTRIBUTE_NORMAL,0,
-			&access_mode,&smb_action);
+        fsp1 = open_file_ntcreate(conn,oldname,&sbuf1,
+			FILE_READ_DATA, /* Read-only. */
+			0, /* No sharing. */
+			FILE_OPEN,
+			0, /* No create options. */
+			FILE_ATTRIBUTE_NORMAL,
+			INTERNAL_OPEN_ONLY,
+			&info);
 
 	if (!fsp1) {
 		get_saved_error_triple(NULL, NULL, &status);
@@ -1797,9 +1674,14 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 		return status;
 	}
 
-	fsp2 = open_file_shared1(conn,newname,&sbuf2,FILE_WRITE_DATA,SET_DENY_MODE(DENY_ALL)|SET_OPEN_MODE(DOS_OPEN_WRONLY),
-			(FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_FAIL),fmode,INTERNAL_OPEN_ONLY,
-			&access_mode,&smb_action);
+        fsp2 = open_file_ntcreate(conn,newname,&sbuf2,
+			FILE_WRITE_DATA, /* Read-only. */
+			0, /* No sharing. */
+			FILE_CREATE,
+			0, /* No create options. */
+			fattr,
+			INTERNAL_OPEN_ONLY,
+			&info);
 
 	if (!fsp2) {
 		get_saved_error_triple(NULL, NULL, &status);
@@ -1811,8 +1693,9 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 		return status;
 	}
 
-	if (sbuf1.st_size)
+	if (sbuf1.st_size) {
 		ret = vfs_transfer_file(fsp1, fsp2, sbuf1.st_size);
+	}
 
 	/*
 	 * As we are opening fsp1 read-only we only expect
@@ -1829,7 +1712,7 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 
 	/* Grrr. We have to do this as open_file_shared1 adds aARCH when it
 	   creates the file. This isn't the correct thing to do in the copy case. JRA */
-	file_set_dosmode(conn, newname, fmode, &sbuf2, True);
+	file_set_dosmode(conn, newname, fattr, &sbuf2, True);
 
 	if (ret < (SMB_OFF_T)sbuf1.st_size) {
 		return NT_STATUS_DISK_FULL;
@@ -1855,7 +1738,7 @@ int reply_ntrename(connection_struct *conn,
 	pstring newname;
 	char *p;
 	NTSTATUS status;
-	uint16 attrs = SVAL(inbuf,smb_vwv0);
+	uint32 attrs = SVAL(inbuf,smb_vwv0);
 	uint16 rename_type = SVAL(inbuf,smb_vwv1);
 
 	START_PROFILE(SMBntrename);
@@ -1955,22 +1838,26 @@ static int call_nt_transact_notify_change(connection_struct *conn, char *inbuf, 
 	files_struct *fsp;
 	uint32 flags;
 
-        if(setup_count < 6)
+	if(setup_count < 6) {
 		return ERROR_DOS(ERRDOS,ERRbadfunc);
+	}
 
 	fsp = file_fsp(setup,4);
 	flags = IVAL(setup, 0);
 
 	DEBUG(3,("call_nt_transact_notify_change\n"));
 
-	if(!fsp)
+	if(!fsp) {
 		return ERROR_DOS(ERRDOS,ERRbadfid);
+	}
 
-	if((!fsp->is_directory) || (conn != fsp->conn))
+	if((!fsp->is_directory) || (conn != fsp->conn)) {
 		return ERROR_DOS(ERRDOS,ERRbadfid);
+	}
 
-	if (!change_notify_set(inbuf, fsp, conn, flags))
+	if (!change_notify_set(inbuf, fsp, conn, flags)) {
 		return(UNIXERROR(ERRDOS,ERRbadfid));
+	}
 
 	DEBUG(3,("call_nt_transact_notify_change: notify change called on directory \
 name = %s\n", fsp->fsp_name ));
@@ -1993,8 +1880,9 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 	BOOL replace_if_exists = False;
 	NTSTATUS status;
 
-        if(parameter_count < 4)
+        if(parameter_count < 4) {
 		return ERROR_DOS(ERRDOS,ERRbadfunc);
+	}
 
 	fsp = file_fsp(params, 0);
 	replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
@@ -2062,12 +1950,14 @@ static int call_nt_transact_query_security_desc(connection_struct *conn, char *i
 	TALLOC_CTX *mem_ctx;
 	files_struct *fsp = NULL;
 
-        if(parameter_count < 8)
+        if(parameter_count < 8) {
 		return ERROR_DOS(ERRDOS,ERRbadfunc);
+	}
 
 	fsp = file_fsp(params,0);
-	if(!fsp)
+	if(!fsp) {
 		return ERROR_DOS(ERRDOS,ERRbadfid);
+	}
 
 	security_info_wanted = IVAL(params,4);
 
@@ -2075,8 +1965,9 @@ static int call_nt_transact_query_security_desc(connection_struct *conn, char *i
 			(unsigned int)security_info_wanted ));
 
 	params = nttrans_realloc(ppparams, 4);
-	if(params == NULL)
+	if(params == NULL) {
 		return ERROR_DOS(ERRDOS,ERRnomem);
+	}
 
 	if ((mem_ctx = talloc_init("call_nt_transact_query_security_desc")) == NULL) {
 		DEBUG(0,("call_nt_transact_query_security_desc: talloc_init failed.\n"));
@@ -2087,10 +1978,11 @@ static int call_nt_transact_query_security_desc(connection_struct *conn, char *i
 	 * Get the permissions to return.
 	 */
 
-	if (!lp_nt_acl_support(SNUM(conn)))
+	if (!lp_nt_acl_support(SNUM(conn))) {
 		sd_size = get_null_nt_acl(mem_ctx, &psd);
-	else
-		sd_size = SMB_VFS_FGET_NT_ACL(fsp, fsp->fd, security_info_wanted, &psd);
+	} else {
+		sd_size = SMB_VFS_FGET_NT_ACL(fsp, fsp->fh->fd, security_info_wanted, &psd);
+	}
 
 	if (sd_size == 0) {
 		talloc_destroy(mem_ctx);
@@ -2171,25 +2063,30 @@ static int call_nt_transact_set_security_desc(connection_struct *conn, char *inb
 	uint32 security_info_sent = 0;
 	NTSTATUS nt_status;
 
-	if(parameter_count < 8)
+	if(parameter_count < 8) {
 		return ERROR_DOS(ERRDOS,ERRbadfunc);
+	}
 
-	if((fsp = file_fsp(params,0)) == NULL)
+	if((fsp = file_fsp(params,0)) == NULL) {
 		return ERROR_DOS(ERRDOS,ERRbadfid);
+	}
 
-	if(!lp_nt_acl_support(SNUM(conn)))
+	if(!lp_nt_acl_support(SNUM(conn))) {
 		goto done;
+	}
 
 	security_info_sent = IVAL(params,4);
 
 	DEBUG(3,("call_nt_transact_set_security_desc: file = %s, sent 0x%x\n", fsp->fsp_name,
 		(unsigned int)security_info_sent ));
 
-	if (data_count == 0)
+	if (data_count == 0) {
 		return ERROR_DOS(ERRDOS, ERRnoaccess);
+	}
 
-	if (!NT_STATUS_IS_OK(nt_status = set_sd( fsp, data, data_count, security_info_sent)))
+	if (!NT_STATUS_IS_OK(nt_status = set_sd( fsp, data, data_count, security_info_sent))) {
 		return ERROR_NT(nt_status);
+	}
 
   done:
 
@@ -2520,8 +2417,9 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 				/* Realloc the size of parameters and data we will return */
 				param_len = 4;
 				params = nttrans_realloc(ppparams, param_len);
-				if(params == NULL)
+				if(params == NULL) {
 					return ERROR_DOS(ERRDOS,ERRnomem);
+				}
 
 				data_len = 0;
 				SIVAL(params,0,data_len);
@@ -2544,18 +2442,19 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 			/* Realloc the size of parameters and data we will return */
 			param_len = 4;
 			params = nttrans_realloc(ppparams, param_len);
-			if(params == NULL)
+			if(params == NULL) {
 				return ERROR_DOS(ERRDOS,ERRnomem);
+			}
 
 			/* we should not trust the value in max_data_count*/
 			max_data_count = MIN(max_data_count,2048);
 			
 			pdata = nttrans_realloc(ppdata, max_data_count);/* should be max data count from client*/
-			if(pdata == NULL)
+			if(pdata == NULL) {
 				return ERROR_DOS(ERRDOS,ERRnomem);
+			}
 
 			entry = pdata;
-
 
 			/* set params Size of returned Quota Data 4 bytes*/
 			/* but set it later when we know it */
@@ -2641,7 +2540,6 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 
 			sid_parse(pdata+8,sid_len,&sid);
 		
-
 			if (vfs_get_ntquota(fsp, SMB_USER_QUOTA_TYPE, &sid, &qt)!=0) {
 				ZERO_STRUCT(qt);
 				/* 
@@ -2654,12 +2552,14 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 			/* Realloc the size of parameters and data we will return */
 			param_len = 4;
 			params = nttrans_realloc(ppparams, param_len);
-			if(params == NULL)
+			if(params == NULL) {
 				return ERROR_DOS(ERRDOS,ERRnomem);
+			}
 
 			pdata = nttrans_realloc(ppdata, data_len);
-			if(pdata == NULL)
+			if(pdata == NULL) {
 				return ERROR_DOS(ERRDOS,ERRnomem);
+			}
 
 			entry = pdata;
 
@@ -2884,12 +2784,15 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 
 	/* Allocate the space for the setup, the maximum needed parameters and data */
 
-	if(setup_count > 0)
+	if(setup_count > 0) {
 		setup = (char *)SMB_MALLOC(setup_count);
-	if (total_parameter_count > 0)
+	}
+	if (total_parameter_count > 0) {
 		params = (char *)SMB_MALLOC(total_parameter_count);
-	if (total_data_count > 0)
+	}
+	if (total_data_count > 0) {
 		data = (char *)SMB_MALLOC(total_data_count);
+	}
  
 	if ((total_parameter_count && !params)  || (total_data_count && !data) ||
 				(setup_count && !setup)) {
@@ -2911,10 +2814,12 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 	if(setup) {
 		DEBUG(10,("reply_nttrans: setup_count = %d\n", setup_count));
 		if ((smb_nt_SetupStart + setup_count < smb_nt_SetupStart) ||
-				(smb_nt_SetupStart + setup_count < setup_count))
+				(smb_nt_SetupStart + setup_count < setup_count)) {
 			goto bad_param;
-		if (smb_nt_SetupStart + setup_count > length)
+		}
+		if (smb_nt_SetupStart + setup_count > length) {
 			goto bad_param;
+		}
 
 		memcpy( setup, &inbuf[smb_nt_SetupStart], setup_count);
 		dump_data(10, setup, setup_count);
@@ -2922,22 +2827,26 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 	if(params) {
 		DEBUG(10,("reply_nttrans: parameter_count = %d\n", parameter_count));
 		if ((parameter_offset + parameter_count < parameter_offset) ||
-				(parameter_offset + parameter_count < parameter_count))
+				(parameter_offset + parameter_count < parameter_count)) {
 			goto bad_param;
+		}
 		if ((smb_base(inbuf) + parameter_offset + parameter_count > inbuf + length)||
-				(smb_base(inbuf) + parameter_offset + parameter_count < smb_base(inbuf)))
+				(smb_base(inbuf) + parameter_offset + parameter_count < smb_base(inbuf))) {
 			goto bad_param;
+		}
 
 		memcpy( params, smb_base(inbuf) + parameter_offset, parameter_count);
 		dump_data(10, params, parameter_count);
 	}
 	if(data) {
 		DEBUG(10,("reply_nttrans: data_count = %d\n",data_count));
-		if ((data_offset + data_count < data_offset) || (data_offset + data_count < data_count))
+		if ((data_offset + data_count < data_offset) || (data_offset + data_count < data_count)) {
 			goto bad_param;
+		}
 		if ((smb_base(inbuf) + data_offset + data_count > inbuf + length) ||
-		   		(smb_base(inbuf) + data_offset + data_count < smb_base(inbuf)))
+		   		(smb_base(inbuf) + data_offset + data_count < smb_base(inbuf))) {
 			goto bad_param;
+		}
 
 		memcpy( data, smb_base(inbuf) + data_offset, data_count);
 		dump_data(10, data, data_count);
@@ -2950,8 +2859,10 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 			of the parameter/data bytes */
 		outsize = set_message(outbuf,0,0,True);
 		srv_signing_trans_stop();
-		if (!send_smb(smbd_server_fd(),outbuf))
+		show_msg(outbuf);
+		if (!send_smb(smbd_server_fd(),outbuf)) {
 			exit_server("reply_nttrans: send_smb failed.");
+		}
 
 		while( num_data_sofar < total_data_count || num_params_sofar < total_parameter_count) {
 			BOOL ret;
@@ -2982,10 +2893,12 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 			}
       
 			/* Revise total_params and total_data in case they have changed downwards */
-			if (IVAL(inbuf, smb_nts_TotalParameterCount) < total_parameter_count)
+			if (IVAL(inbuf, smb_nts_TotalParameterCount) < total_parameter_count) {
 				total_parameter_count = IVAL(inbuf, smb_nts_TotalParameterCount);
-			if (IVAL(inbuf, smb_nts_TotalDataCount) < total_data_count)
+			}
+			if (IVAL(inbuf, smb_nts_TotalDataCount) < total_data_count) {
 				total_data_count = IVAL(inbuf, smb_nts_TotalDataCount);
+			}
 
 			parameter_count = IVAL(inbuf,smb_nts_ParameterCount);
 			parameter_offset = IVAL(inbuf, smb_nts_ParameterOffset);
@@ -3003,43 +2916,54 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 			}
 
 			if (parameter_count) {
-				if (parameter_displacement + parameter_count > total_parameter_count)
+				if (parameter_displacement + parameter_count > total_parameter_count) {
 					goto bad_param;
+				}
 				if ((parameter_displacement + parameter_count < parameter_displacement) ||
-						(parameter_displacement + parameter_count < parameter_count))
+						(parameter_displacement + parameter_count < parameter_count)) {
 					goto bad_param;
-				if (parameter_displacement > total_parameter_count)
+				}
+				if (parameter_displacement > total_parameter_count) {
 					goto bad_param;
+				}
 				if ((smb_base(inbuf) + parameter_offset + parameter_count > inbuf + length) ||
-						(smb_base(inbuf) + parameter_offset + parameter_count < smb_base(inbuf)))
+						(smb_base(inbuf) + parameter_offset + parameter_count < smb_base(inbuf))) {
 					goto bad_param;
-				if (parameter_displacement + params < params)
+				}
+				if (parameter_displacement + params < params) {
 					goto bad_param;
+				}
 
 				memcpy( &params[parameter_displacement], smb_base(inbuf) + parameter_offset, parameter_count);
 			}
 
 			if (data_count) {
-				if (data_displacement + data_count > total_data_count)
+				if (data_displacement + data_count > total_data_count) {
 					goto bad_param;
+				}
 				if ((data_displacement + data_count < data_displacement) ||
-						(data_displacement + data_count < data_count))
+						(data_displacement + data_count < data_count)) {
 					goto bad_param;
-				if (data_displacement > total_data_count)
+				}
+				if (data_displacement > total_data_count) {
 					goto bad_param;
+				}
 				if ((smb_base(inbuf) + data_offset + data_count > inbuf + length) ||
-						(smb_base(inbuf) + data_offset + data_count < smb_base(inbuf)))
+						(smb_base(inbuf) + data_offset + data_count < smb_base(inbuf))) {
 					goto bad_param;
-				if (data_displacement + data < data)
+				}
+				if (data_displacement + data < data) {
 					goto bad_param;
+				}
 
 				memcpy( &data[data_displacement], smb_base(inbuf)+ data_offset, data_count);
 			}
 		}
 	}
 
-	if (Protocol >= PROTOCOL_NT1)
+	if (Protocol >= PROTOCOL_NT1) {
 		SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_IS_LONG_NAME);
+	}
 
 	/* Now we must call the relevant NT_TRANS function */
 	switch(function_code) {

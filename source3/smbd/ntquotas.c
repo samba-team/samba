@@ -259,4 +259,3 @@ void destroy_quota_handle(void **pqt_handle)
 
 	return;
 }
-
