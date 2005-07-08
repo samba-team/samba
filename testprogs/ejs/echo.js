@@ -1,5 +1,5 @@
 /*
-	demonstrate access to rpc calls from ejs
+	test echo pipe calls from ejs
 */	
 
 
