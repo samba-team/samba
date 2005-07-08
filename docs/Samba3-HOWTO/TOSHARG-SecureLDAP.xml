@@ -9,7 +9,7 @@
 	<para>
 	<indexterm><primary>Transport Layer Seccurity, TLS</primary><secondary>Introduction</secondary></indexterm>
 <indexterm><primary>ACL</primary></indexterm>
-	Up until now, we have discussed the straight forward configuration of <trademark>OpenLDAP</trademark>,
+	Up until now, we have discussed the straightforward configuration of <trademark>OpenLDAP</trademark>,
 	with some advanced features such as ACLs. This does not however, deal with the fact that the network
 	transmissions are still in plain text. This is where <firstterm>Transport Layer Security (TLS)</firstterm>
 	comes in.
@@ -18,7 +18,7 @@
 	<para>
 <indexterm><primary>RFC 2830</primary></indexterm>
 	<trademark>OpenLDAP</trademark> clients and servers are capable of using the Transport Layer Security (TLS)
-	framework to provide integrity and confidentiality protections in accordance with - <ulink
+	framework to provide integrity and confidentiality protections in accordance with <ulink
 	url="http://rfc.net/rfc2830.html">RFC 2830</ulink>; <emphasis>Lightweight Directory Access Protocol (v3):
 	Extension for Transport Layer Security.</emphasis>
 	</para>
@@ -68,21 +68,21 @@
 	<para>
 <indexterm><primary>OpenSSL</primary></indexterm>
 	We will be using the <ulink url="http://www.openssl.org">OpenSSL</ulink> <footnote><para>The downside to
-	making our own CA, is that the certificate is not automatically recognised by clients, like the commercial
+	making our own CA, is that the certificate is not automatically recognized by clients, like the commercial
 	ones are.</para></footnote> software for this, which is included with every great <trademark
 	class="registered">Linux</trademark> distribution.
 	</para>
 
 	<para>
 	TLS is used for many types of servers, but the instructions<footnote><para>For information straight from the
-	horses mouth, please visit - <ulink
+	horse's mouth, please visit <ulink
 	url="http://www.openssl.org/docs/HOWTO/">http://www.openssl.org/docs/HOWTO/</ulink>; the main OpenSSL
 	site.</para></footnote> presented here, are tailored for &OL;.
 	</para>
 
 	<note><para>
-	The <emphasis>Common Name (CN)</emphasis>, if the following example, <emphasis>MUST</emphasis> be
-	the fully qualified domain name (fqdn) of your ldap server.
+	The <emphasis>Common Name (CN)</emphasis>, in the following example, <emphasis>MUST</emphasis> be
+	the fully qualified domain name (FQDN) of your ldap server.
 	</para></note>
 
 	<para>
@@ -99,7 +99,7 @@
 </computeroutput>
 </screen>
 	Now generate the CA:<footnote><para>Your <filename>CA.pl</filename> or <filename>CA.sh</filename> might not be
-	in the same location as mine is, you can find it by using the <command>locate</command> command, i.e.
+	in the same location as mine is, you can find it by using the <command>locate</command> command, i.e.,
 	<command>locate CA.pl</command>.  If the command complains about the database being too old, run
 	<command>updatedb</command> as <emphasis>root</emphasis> to update it.</para></footnote>
 <screen width="90">
@@ -134,7 +134,7 @@ Email Address []:support@abmas.biz
 	</para>
 
 	<para>
-	Now, there are some things to note here. 
+	There are some things to note here. 
 	</para>
 
 	<orderedlist>
@@ -148,7 +148,7 @@ Email Address []:support@abmas.biz
 		<listitem>
 			<para>
 			The <emphasis>Common Name (CN)</emphasis>, <emphasis>MUST</emphasis> be the
-			fully qualified domain name (fqdn) of your ldap server.
+			fully qualified domain name (FQDN) of your ldap server.
 			</para>
 		</listitem>
 	</orderedlist>
@@ -205,13 +205,13 @@ An optional company name []:
 		<listitem>
 			<para>
 			The <emphasis>Common Name (CN)</emphasis>, <emphasis>MUST</emphasis> be
-			the fully qualified domain name (fqdn) of your ldap server.
+			the fully qualified domain name (FQDN) of your ldap server.
 			</para>
 		</listitem>
 	</orderedlist>
 
 	<para>
-	Now, we sign the certificate with the new CA:
+	Now we sign the certificate with the new CA:
 <screen width="90">
 <computeroutput>
 &rootprompt; /usr/share/ssl/misc/CA.pl -sign
@@ -268,7 +268,7 @@ Signed certificate is in newcert.pem
 
 	<para>
 	Now we need to copy the certificates to the right configuration directories,
-	rename them at the same time for convenience, change the ownership and
+	rename them at the same time (for convenience), change the ownership and
 	finally the permissions:
 <screen width="90">
 <computeroutput>
@@ -316,7 +316,7 @@ TLS_CACERT /etc/openldap/cacert.pem
 <title>Testing</title>
 
 <para>
-<indexterm><primary>Transport Layer Seccurity, TLS</primary><secondary>Testing</secondary></indexterm>
+<indexterm><primary>Transport Layer Security, TLS</primary><secondary>Testing</secondary></indexterm>
 This is the easy part. Restart the server:
 <screen width="90">
 <computeroutput>
@@ -379,10 +379,10 @@ sambaNextGroupRid: 67109863
 <title>Troubleshooting</title>
 
 <para>
-<indexterm><primary>Transport Layer Seccurity, TLS</primary><secondary>Troubleshooting</secondary></indexterm>
+<indexterm><primary>Transport Layer Security, TLS</primary><secondary>Troubleshooting</secondary></indexterm>
 The most common error when configuring TLS, as I have already mentioned numerous times, is that the
 <emphasis>Common Name (CN)</emphasis> you entered in <xref linkend="s1-config-ldap-tls-server"></xref> is
-<emphasis>NOT</emphasis> the Full Qualified Domain Name (FQDN) of your ldap server.
+<emphasis>NOT</emphasis> the Fully Qualified Domain Name (FQDN) of your ldap server.
 </para>
 
 <para>

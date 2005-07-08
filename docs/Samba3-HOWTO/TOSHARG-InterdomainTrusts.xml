@@ -56,7 +56,7 @@ These are specified respectively using:
 The range of values specified must not overlap values used by the host operating system and must
 not overlap values used in the passdb backend for POSIX user accounts. The maximum value is
 limited by the upper-most value permitted by the host operating system. This is a UNIX kernel
-limited parameter. Linux kernel 2.6 based systems support a maximum value of 4294967295 
+limited parameter. Linux kernel 2.6-based systems support a maximum value of 4294967295 
 (32-bit unsigned variable).
 </para>
 
@@ -85,7 +85,7 @@ trust relationships. This imparts to Samba scalability similar to that with MS W
 <indexterm><primary>interdomain trusts</primary></indexterm>
 <indexterm><primary>ADS</primary></indexterm>
 Given that Samba-3 can function with a scalable backend authentication database such as LDAP, and given its
-ability to run in primary as well as backup domain control modes, the administrator would be well advised to
+ability to run in primary as well as backup domain control modes, the administrator would be well-advised to
 consider alternatives to the use of interdomain trusts simply because, by the very nature of how trusts
 function, this system is fragile.  That was, after all, a key reason for the development and adoption of
 Microsoft Active Directory.
@@ -410,7 +410,7 @@ Open <application>User Manager for Domains</application> and from the <guimenu>P
 click the <guimenu>Add...</guimenu> button. You will be prompted for the trusted domain name and the
 relationship password. Type in SAMBA, as this is the name of the remote domain and the password used at the
 time of account creation.  Click on <guibutton>OK</guibutton> and, if everything went without incident, you
-will see the <computeroutput> Trusted domain relationship successfully established </computeroutput> message.
+will see the <computeroutput>Trusted domain relationship successfully established</computeroutput> message.
 </para>
 
 </sect2>
@@ -508,7 +508,7 @@ our Samba domain and choose <guimenuitem>Properties</guimenuitem>, then click on
 <guilabel>Domains trusted by this domain:</guilabel> and an <guilabel>Add...</guilabel> button next to it.
 Press this button and, just as with NT4, you will be prompted for the trusted domain name and the relationship
 password. Press <emphasis>OK</emphasis> and after a moment, Active Directory will respond with
-<computeroutput> The trusted domain has been added and the trust has been verified.</computeroutput> Your
+<computeroutput>The trusted domain has been added and the trust has been verified.</computeroutput> Your
 Samba users can now be granted access to resources in the AD domain.
 </para>
 </sect1>

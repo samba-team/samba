@@ -186,7 +186,7 @@ the infliction of self-induced pain, agony, and desperation. Be warned: this is 
 	</para>
 
 	<para>
-	In order to make available to the Windows environment Samba has a facility by which UNIX groups can
+	In order to make available to the Windows environment, Samba has a facility by which UNIX groups can
 	be mapped to a logical entity, called a Windows (or domain) group. Samba supports two types of Windows
 	groups, local and global. Global groups can contain as members, global users. This membership is
 	affected in the normal UNIX manner, but adding UNIX users to UNIX groups. Windows user accounts consist
@@ -370,7 +370,7 @@ SupportEngrs (S-1-5-21-72630-4128915-11681869-3007) -> SupportEngrs
 <screen>
 &rootprompt; net groupmap add ntgroup=Pixies unixgroup=pixies type=l
 </screen>
-	Supported mapping types are 'd' (domain global) and 'l' (domain local), a domain local group is Samba is
+	Supported mapping types are 'd' (domain global) and 'l' (domain local), a domain local group in Samba is
 	treated as local to the individual Samba server. Local groups can be used with Samba to enable multiple
 	nested group support.
 	</para>
@@ -653,7 +653,7 @@ exit 0
 </procedure>
 
 	<para>
-	This script will be executed every time a user logs onto the network. Therefore every user will
+	This script will be executed every time a user logs on to the network. Therefore every user will
 	have local Windows workstation management rights. This could of course be assigned using a group,
 	in which case there is little justification for the use of this procedure. The key justification
 	for the use of this method is that it will guarantee that all users have appropriate rights on
@@ -971,7 +971,7 @@ SeDiskOperatorPrivilege
 
 	<para>
 	The net command looks in the &smb.conf; file to obtain its own configuration settings. Thus, the following
-	command 'know' which domain to join from the &smb.conf; file.
+	command 'knows' which domain to join from the &smb.conf; file.
 	</para>
 
 	<para>

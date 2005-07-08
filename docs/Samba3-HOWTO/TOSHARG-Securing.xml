@@ -21,12 +21,12 @@
 <indexterm><primary>barriers</primary></indexterm>
 <indexterm><primary>deterents</primary></indexterm>
 <indexterm><primary>secured networks</primary></indexterm>
-The information contained in this chapter applies in general to all Samba installations. Security us
+The information contained in this chapter applies in general to all Samba installations. Security is
 everyone's concern in the information technology world. A surprising number of Samba servers are being
-installed on machines that have direct internet access, thus security is made more critical than had the
+installed on machines that have direct internet access, thus security is made more critical than it would have been had the
 server been located behind a firewall and on a private network. Paranoia regarding server security is causing
-some  network administrators to insist on the installation of robust firewalls even on server that are located
-inside secured networks. This chapter provides brief information to assist the administrator who understands
+some  network administrators to insist on the installation of robust firewalls even on servers that are located
+inside secured networks. This chapter provides information to assist the administrator who understands
 how to create the needed barriers and deterents against <quote>the enemy</quote>, no matter where [s]he may
 come from.
 </para>
@@ -72,7 +72,7 @@ the latest protocols to permit more secure MS Windows file and print operations.
 Samba can be secured from connections that originate from outside the local network. This can be done using
 <emphasis>host-based protection</emphasis>, using Samba's implementation of a technology known as
 <quote>tcpwrappers,</quote> or it may be done be using <emphasis>interface-based exclusion</emphasis> so
-&smbd; will bind only to specifically permitted interfaces. It is also possible to set specific share or
+&smbd; will bind only to specifically permitted interfaces. It is also possible to set specific share- or
 resource-based exclusions, for example, on the <smbconfsection name="[IPC$]"/> autoshare. The <smbconfsection
 name="[IPC$]"/> share is used for browsing purposes as well as to establish TCP/IP connections.
 </para>
@@ -184,7 +184,7 @@ before someone will find yet another vulnerability.
 <indexterm><primary>Ethernet adapters</primary></indexterm>
 <indexterm><primary>listen for connections</primary></indexterm>
 	This tells Samba to listen for connections only on interfaces with a name starting with
-	<constant>eth</constant> such as <constant>eth0 or eth1</constant>, plus on the loopback interface called
+	<constant>eth</constant> such as <constant>eth0</constant> or <constant>eth1</constant>, plus on the loopback interface called
 	<constant>lo</constant>. The name you will need to use depends on what OS you are using. In the above, I used
 	the common name for Ethernet adapters on Linux.
 	</para>
@@ -195,7 +195,7 @@ before someone will find yet another vulnerability.
 <indexterm><primary>cracker</primary></indexterm>
 <indexterm><primary>confirm address</primary></indexterm>
 	If you use the above and someone tries to make an SMB connection to your host over a PPP interface called
-	<constant>ppp0,</constant> then [s]he will get a TCP connection refused reply. In that case, no Samba code
+	<constant>ppp0</constant>, then [s]he will get a TCP connection refused reply. In that case, no Samba code
 	is run at all, because the operating system has been told not to pass connections from that interface to any
 	Samba process. However, the refusal helps a would-be cracker by confirming that the IP address provides
 	valid active services.
@@ -207,7 +207,7 @@ before someone will find yet another vulnerability.
 <indexterm><primary>exploitation</primary></indexterm>
 <indexterm><primary>denial of service</primary></indexterm>
 <indexterm><primary>firewall</primary></indexterm>
-	A better response would be to ignore the connection (from, e.g., ppp0) altogether. The
+	A better response would be to ignore the connection (from, for example, ppp0) altogether. The
 	advantage of ignoring the connection attempt, as compared with refusing it, is that it foils those who
 	probe an interface with the sole intention of finding valid IP addresses for later use in exploitation
 	or denial of service attacks. This method of dealing with potential malicious activity demands the
@@ -379,13 +379,13 @@ problem request are totally convinced that the problem is with Samba.
 	<para>
 	The solution is either to remove the firewall (stop it) or modify the firewall script to
 	allow SMB networking traffic through. See <link linkend="firewallports">the Using a 
-	firewall</link> section.
+	Firewall</link> section.
 	</para>
 
 	</sect2>
 
 	<sect2>
-	<title>Why Can Users Access Other Users Home Directories?</title>
+	<title>Why Can Users Access Other Users' Home Directories?</title>
 
 	<para>
 	<quote>
@@ -393,7 +393,7 @@ problem request are totally convinced that the problem is with Samba.
 <indexterm><primary>own home directory</primary></indexterm>
 	We are unable to keep individual users from mapping to any other user's home directory once they have
 	supplied a valid password! They only need to enter their own password. I have not found any method to
-	configure Samba so that  users may map only their own home directory.
+	configure Samba so that users may map only their own home directory.
 	</quote>
 	</para>
 
@@ -405,7 +405,7 @@ problem request are totally convinced that the problem is with Samba.
 <indexterm><primary>security flaw</primary></indexterm>
 <indexterm><primary>defined shares</primary></indexterm>
 	This is not a security flaw, it is by design. Samba allows users to have exactly the same access to the UNIX
-	file system as when they were logged onto the UNIX box, except that it only allows such views onto the file
+	file system as when they were logged on to the UNIX box, except that it only allows such views onto the file
 	system as are allowed by the defined shares.
 	</para>
 

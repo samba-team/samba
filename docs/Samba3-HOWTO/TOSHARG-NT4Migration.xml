@@ -464,11 +464,11 @@ being contemplated.
 	<colspec align="justify" colwidth="1*"/>
 	<colspec align="justify" colwidth="1*"/>
 	<thead>
-	<row><entry>Simple Install</entry><entry>Upgrad Decisions</entry><entry>Redesign Decisions</entry></row>
+	<row><entry>Simple Install</entry><entry>Upgrade Decisions</entry><entry>Redesign Decisions</entry></row>
 	</thead>
 	<tbody>
 	<row>
-	<entry><para>Make use of minimal OS specific features</para></entry>
+	<entry><para>Make use of minimal OS-specific features</para></entry>
 	<entry><para>Translate NT4 features to new host OS features</para></entry>
 	<entry><para>Improve on NT4 functionality, enhance management capabilities</para></entry>
 	</row>
@@ -597,7 +597,7 @@ being contemplated.
 			</itemizedlist></listitem>
         </varlistentry>
 
-        <varlistentry><term>OS Specific Scripts/Programs May be Needed</term><listitem>
+        <varlistentry><term>OS-Specific Scripts/Programs May be Needed</term><listitem>
 		<para>
 		Every operating system has its peculiarities. These are the result of engineering decisions
 		that were based on the experience of the designer and may have side effects that were not

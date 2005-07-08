@@ -57,11 +57,11 @@ is designed to block man-in-the-middle attempts to violate network integrity.
 <indexterm><primary>secure authentication</primary></indexterm>
 Machine (computer) accounts are used in the Windows NT OS family to store security
 credentials for domain member servers and workstations. When the domain member
-starts up it goes through a validation process that includes an exchange of
+starts up, it goes through a validation process that includes an exchange of
 credentials with a domain controller. If the domain member fails to authenticate
-using the credentials known for it by domain controllers the machine will be refused
+using the credentials known for it by domain controllers, the machine will be refused
 all access by domain users. The computer account is essential to the way that MS 
-Windows does secure authentication.
+Windows secures authentication.
 </para></note>
 
 <para>
@@ -260,7 +260,7 @@ to an account.  This capability is inherent to the Domain Admins group and is no
 <indexterm><primary></primary></indexterm>
 By default, no privileges are initially assigned to any account because certain actions will be performed as
 root once smbd determines that a user has the necessary rights.  For example, when joining a client to a
-Windows domain, the <parameter>add machine script</parameter> must be executed with superuser rights in most 
+Windows domain, <parameter>add machine script</parameter> must be executed with superuser rights in most 
 cases.  For this reason, you should be very careful about handing out privileges to accounts.
 </para>
 
@@ -282,7 +282,7 @@ Access as the root user (UID=0) bypasses all privilege checks.
 <indexterm><primary>house-keeping</primary></indexterm>
 The privileges that have been implemented in Samba-3.0.11 are shown below.  It is possible, and likely, that
 additional privileges may be implemented in later releases of Samba. It is also likely that any privileges
-currently implemented but not used may be removed from future releases as a house-keeping matter, so it is
+currently implemented but not used may be removed from future releases as a housekeeping matter, so it is
 important that the successful as well as unsuccessful use of these facilities should be reported on the Samba
 mailing lists.
 </para>
@@ -482,8 +482,8 @@ SeIncreaseBasePriorityPrivilege  Increase scheduling priority
         SeCreateGlobalPrivilege  Create global objects
 </screen>
 <indexterm><primary>equivalence</primary></indexterm>
-    The Samba Team are implementing only those privileges that are logical and useful in the UNIX/Linux
-    envronment. Many of the Windows 200X/XP privileges have no direct equivalence in UNIX.
+    The Samba Team is implementing only those privileges that are logical and useful in the UNIX/Linux
+    environment. Many of the Windows 200X/XP privileges have no direct equivalence in UNIX.
     </para>
 
 </sect2>
@@ -499,7 +499,7 @@ SeIncreaseBasePriorityPrivilege  Increase scheduling priority
 <indexterm><primary>passdb backend</primary></indexterm>
 <indexterm><primary>SID</primary></indexterm>
 <indexterm><primary>net getlocalsid</primary></indexterm>
-Please note that every Windows NT4 and later server requires a domain Administrator account. Samba version
+Please note that every Windows NT4 and later server requires a domain Administrator account. Samba versions
 commencing with 3.0.11 permit Administrative duties to be performed via assigned rights and privileges
 (see <link linkend="rights">User Rights and Privileges</link>).  An account in the server's passdb backend can
 be set to the well-known RID of the default administrator account.  To obtain the domain SID on a Samba domain
@@ -533,7 +533,7 @@ or domain. Under UNIX/Linux the equivalent is UID=0 (the root account).
 <indexterm><primary>Windows group account</primary></indexterm>
 <indexterm><primary>3.0.11</primary></indexterm>
 Releases of Samba version 3.0.11 and later make it possible to operate without an Administrator account
-providing equivalent rights and privileges have been established for a Windows user or a Windows
+provided equivalent rights and privileges have been established for a Windows user or a Windows
 group account. 
 </para>
 

@@ -465,7 +465,7 @@ that are in common use today. These are:
 <indexterm><primary>root</primary></indexterm>
 		Enter the name <quote>root</quote> and the root password from your Samba-3 server. See <link linkend="wxpp008"></link>.
 		<figure id="wxpp008">
-			<title>Computer Name Changes &smbmdash; Username and PasswordPanel.</title><imagefile>wxpp008</imagefile>
+			<title>Computer Name Changes &smbmdash; Username and Password Panel.</title><imagefile>wxpp008</imagefile>
 		</figure>
         </para></step>
 

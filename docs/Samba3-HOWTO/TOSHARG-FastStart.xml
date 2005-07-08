@@ -197,7 +197,7 @@ of the packages that are provided by the operating system vendor or through othe
 <screen>
 &rootprompt;<userinput>testparm</userinput>
 </screen>
-			Alternately, where you are operating from a master configuration file called
+			Alternatively, where you are operating from a master configuration file called
 			<filename>smb.conf.master</filename>, the following sequence of commands might prove
 			more appropriate:
 <screen>
@@ -232,8 +232,8 @@ Press enter to see a dump of your service definitions
 
 			<step><para>
 			Start Samba using the method applicable to your operating system platform. The method that
-			should be used is platform dependant. Refer to <link linkend="startingSamba">Starting Samba</link>
-			for further information regarding starting of Samba.
+			should be used is platform dependent. Refer to <link linkend="startingSamba">Starting Samba</link>
+			for further information regarding the starting of Samba.
 			</para></step>
 
 			<step><para>
@@ -360,7 +360,7 @@ Added user jackb.
 		The above configuration is not ideal. It uses no smart features, and it deliberately
 		presents a less than elegant solution. But it is basic, and it does print. Samba makes
 		use of the direct printing application program interface that is provided by CUPS.
-		When Samba has been compiled and linked with the CUPS libraries the default printing
+		When Samba has been compiled and linked with the CUPS libraries, the default printing
 		system will be CUPS. By specifying that the printcap name is CUPS, Samba will use
 		the CUPS library API to communicate directly with CUPS for all printer functions.
 		It is possible to force the use of external printing commands by setting the value
@@ -689,7 +689,7 @@ smb: \> <userinput>q</userinput>
 			</para></step>
 
 <example id="fast-member-server">
-<title>Member server smb.conf (globals)</title>
+<title>Member Server smb.conf (Globals)</title>
 <smbconfblock>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection name="[global]"/>
@@ -707,7 +707,7 @@ smb: \> <userinput>q</userinput>
 </example>
 
 <example id="fast-memberserver-shares">
-<title>Member server smb.conf (shares and services)</title>
+<title>Member Server smb.conf (Shares and Services)</title>
 <smbconfblock>
 <smbconfsection name="[homes]"/>
 <smbconfoption name="comment">Home Directories</smbconfoption>
@@ -1091,7 +1091,7 @@ net groupmap add ntgroup="QA Team"   unixgroup=qateam    type=d
 				Set up the LDAP server. This example is suitable for OpenLDAP 2.1.x.
 				The <filename>/etc/openldap/slapd.conf</filename> file.
 				<indexterm><primary>/etc/openldap/slapd.conf</primary></indexterm>
-<title>Example slapd.conf file</title>
+<title>Example slapd.conf File</title>
 <screen>
 # Note commented out lines have been removed
 include         /etc/openldap/schema/core.schema

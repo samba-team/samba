@@ -1285,7 +1285,7 @@ a good idea to add a logon script to preset printer and drive connections. There
 for automatically synchronizing the workstation time clock with that of the logon server (another good
 thing to do). </para>
 
-<note><para> To invoke autodeletion of roaming profile from the local workstation cache (disk storage), use
+<note><para> To invoke autodeletion of roaming profiles from the local workstation cache (disk storage), use
 the <application>Group Policy Editor</application> to create a file called <filename>NTConfig.POL</filename>
 with the appropriate entries. This file needs to be located in the <smbconfsection name="netlogon"/>
 share root directory.</para></note>
