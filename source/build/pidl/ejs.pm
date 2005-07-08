@@ -12,9 +12,25 @@ use pidl::typelist;
 my($res);
 my %constants;
 
-sub pidl ($)
+my $tabs = "";
+sub pidl($)
 {
-	$res .= shift;
+	my $d = shift;
+	if ($d) {
+		$res .= $tabs;
+		$res .= $d;
+	}
+	$res .= "\n";
+}
+
+sub indent()
+{
+	$tabs .= "\t";
+}
+
+sub deindent()
+{
+	$tabs = substr($tabs, 0, -1);
 }
 
 # this should probably be in ndr.pm
@@ -111,7 +127,7 @@ sub EjsPullScalar($$$$$)
 	if ($e->{TYPE} eq "string") {
 		$var = get_pointer_to($var);
 	}
-	pidl "\tNDR_CHECK(ejs_pull_$e->{TYPE}(ejs, v, $name, $var));\n";
+	pidl "NDR_CHECK(ejs_pull_$e->{TYPE}(ejs, v, $name, $var));";
 }
 
 ###########################
@@ -119,13 +135,17 @@ sub EjsPullScalar($$$$$)
 sub EjsPullPointer($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
-	pidl "\tif (ejs_pull_null(ejs, v, $name)) {\n";
-	pidl "\t$var = NULL;\n";
-	pidl "\t} else {\n";
-	pidl "\tEJS_ALLOC(ejs, $var);\n";
+	pidl "if (ejs_pull_null(ejs, v, $name)) {";
+	indent;
+	pidl "$var = NULL;";
+	deindent;
+	pidl "} else {";
+	indent;
+	pidl "EJS_ALLOC(ejs, $var);";
 	$var = get_value_of($var);		
 	EjsPullElement($e, Ndr::GetNextLevel($e, $l), $var, $name, $env);
-	pidl "}\n";
+	deindent;
+	pidl "}";
 }
 
 ###########################
@@ -134,7 +154,7 @@ sub EjsPullString($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
 	$var = get_pointer_to($var);
-	pidl "\tNDR_CHECK(ejs_pull_string(ejs, v, $name, $var));\n";
+	pidl "NDR_CHECK(ejs_pull_string(ejs, v, $name, $var));";
 }
 
 
@@ -149,15 +169,22 @@ sub EjsPullArray($$$$$)
 		$var = get_pointer_to($var);
 	}
 	my $avar = $var . "[i]";
-	pidl "\t{ uint32_t i;\n";
+	pidl "{";
+	indent;
+	pidl "uint32_t i;";
 	if (!$l->{IS_FIXED}) {
-		pidl "\tEJS_ALLOC_N(ejs, $var, $length);\n";
+		pidl "EJS_ALLOC_N(ejs, $var, $length);";
 	}
-	pidl "\tfor (i=0;i<$length;i++) {\n";
-	pidl "\tchar *id = talloc_asprintf(ejs, \"%s.%u\", $name, i);\n";
+	pidl "for (i=0;i<$length;i++) {";
+	indent;
+	pidl "char *id = talloc_asprintf(ejs, \"%s.%u\", $name, i);";
 	EjsPullElement($e, Ndr::GetNextLevel($e, $l), $avar, "id", $env);
-	pidl "\ttalloc_free(id);\n";
-	pidl "\t}\nejs_push_uint32(ejs, v, $name \".length\", &i); }\n";
+	pidl "talloc_free(id);";
+	deindent;
+	pidl "}";
+	pidl "ejs_push_uint32(ejs, v, $name \".length\", &i);";
+	deindent;
+	pidl "}";
 }
 
 ###########################
@@ -166,7 +193,7 @@ sub EjsPullSwitch($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
 	my $switch_var = util::ParseExpr($l->{SWITCH_IS}, $env);
-	pidl "ejs_set_switch(ejs, $switch_var);\n";
+	pidl "ejs_set_switch(ejs, $switch_var);";
 	EjsPullElement($e, Ndr::GetNextLevel($e, $l), $var, $name, $env);
 }
 
@@ -186,7 +213,7 @@ sub EjsPullElement($$$$$)
 	} elsif (($l->{TYPE} eq "SWITCH")) {
 		EjsPullSwitch($e, $l, $var, $name, $env);
 	} else {
-		pidl "return ejs_panic(ejs, \"unhandled pull type $l->{TYPE}\");\n";
+		pidl "return ejs_panic(ejs, \"unhandled pull type $l->{TYPE}\");";
 	}
 }
 
@@ -210,13 +237,15 @@ sub EjsStructPull($$)
 	my $d = shift;
 	my $env = GenerateStructEnv($d);
 	pidl fn_prefix($d);
-	pidl "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, struct $name *r)\n{\n";
-	pidl "\tNDR_CHECK(ejs_pull_struct_start(ejs, &v, name));\n";
+	pidl "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, struct $name *r)\n{";
+	indent;
+	pidl "NDR_CHECK(ejs_pull_struct_start(ejs, &v, name));";
         foreach my $e (@{$d->{ELEMENTS}}) {
 		EjsPullElementTop($e, $env);
 	}
-	pidl "\treturn NT_STATUS_OK;\n";
-	pidl "}\n\n";
+	pidl "return NT_STATUS_OK;";
+	deindent;
+	pidl "}\n";
 }
 
 ###########################
@@ -228,24 +257,34 @@ sub EjsUnionPull($$)
 	my $have_default = 0;
 	my $env = GenerateStructEnv($d);
 	pidl fn_prefix($d);
-	pidl "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, union $name *r)\n{\n";
-	pidl "\tNDR_CHECK(ejs_pull_struct_start(ejs, &v, name));\n";
-	pidl "switch (ejs->switch_var) {\n";
+	pidl "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, union $name *r)\n{";
+	indent;
+	pidl "NDR_CHECK(ejs_pull_struct_start(ejs, &v, name));";
+	pidl "switch (ejs->switch_var) {";
+	indent;
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		if ($e->{CASE} eq "default") {
 			$have_default = 1;
 		}
 		pidl "$e->{CASE}:";
+		indent;
 		if ($e->{TYPE} ne "EMPTY") {
 			EjsPullElementTop($e, $env);
 		}
-		pidl "break;\n";
+		pidl "break;";
+		deindent;
 	}
 	if (! $have_default) {
 		pidl "default:";
-		pidl "\treturn ejs_panic(ejs, \"Bad switch value\");";
+		indent;
+		pidl "return ejs_panic(ejs, \"Bad switch value\");";
+		deindent;
 	}
-	pidl "}\nreturn NT_STATUS_OK;\n}\n";
+	deindent;
+	pidl "}";
+	pidl "return NT_STATUS_OK;";
+	deindent;
+	pidl "}";
 }
 
 ###########################
@@ -255,12 +294,14 @@ sub EjsEnumPull($$)
 	my $name = shift;
 	my $d = shift;
 	pidl fn_prefix($d);
-	pidl "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, enum $name *r)\n{\n";
-	pidl "\tunsigned e;\n";
-	pidl "\tNDR_CHECK(ejs_pull_enum(ejs, v, name, &e));\n";
-	pidl "\t*r = e;\n";
-	pidl "\treturn NT_STATUS_OK;\n";
-	pidl "}\n\n";
+	pidl "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, enum $name *r)\n{";
+	indent;
+	pidl "unsigned e;";
+	pidl "NDR_CHECK(ejs_pull_enum(ejs, v, name, &e));";
+	pidl "*r = e;";
+	pidl "return NT_STATUS_OK;";
+	deindent;
+	pidl "}\n";
 }
 
 ###########################
@@ -272,9 +313,11 @@ sub EjsBitmapPull($$)
 	my $type_fn = $d->{BASE_TYPE};
 	my($type_decl) = typelist::mapType($d->{BASE_TYPE});
 	pidl fn_prefix($d);
-	pidl "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, $type_decl *r)\n{\n";
-	pidl "return ejs_pull_$type_fn(ejs, v, name, r);\n";
-	pidl "}\n";
+	pidl "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, $type_decl *r)\n{";
+	indent;
+	pidl "return ejs_pull_$type_fn(ejs, v, name, r);";
+	deindent;
+	pidl "}";
 }
 
 
@@ -293,7 +336,7 @@ sub EjsTypedefPull($)
 	} elsif ($d->{DATA}->{TYPE} eq 'BITMAP') {
 		EjsBitmapPull($d->{NAME}, $d->{DATA});
 	} else {
-		warn "Unhandled pull typedef $d->{NAME} of type $d->{DATA}->{TYPE}\n";
+		warn "Unhandled pull typedef $d->{NAME} of type $d->{DATA}->{TYPE}";
 	}
 }
 
@@ -305,18 +348,19 @@ sub EjsPullFunction($)
 	my $env = GenerateFunctionInEnv($d);
 	my $name = $d->{NAME};
 
-	pidl "\nstatic NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, struct $name *r)\n";
-	pidl "{\n";
-
-	pidl "\tNDR_CHECK(ejs_pull_struct_start(ejs, &v, \"input\"));\n";
+	pidl "\nstatic NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, struct $name *r)";
+	pidl "{";
+	indent;
+	pidl "NDR_CHECK(ejs_pull_struct_start(ejs, &v, \"input\"));";
 
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		next unless (grep(/in/, @{$e->{DIRECTION}}));
 		EjsPullElementTop($e, $env);
 	}
 
-	pidl "\treturn NT_STATUS_OK;\n";
-	pidl "}\n\n";
+	pidl "return NT_STATUS_OK;";
+	deindent;
+	pidl "}\n";
 }
 
 
@@ -326,7 +370,7 @@ sub EjsPushScalar($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
 	$var = get_pointer_to($var);
-	pidl "\tNDR_CHECK(ejs_push_$e->{TYPE}(ejs, v, $name, $var));\n";
+	pidl "NDR_CHECK(ejs_push_$e->{TYPE}(ejs, v, $name, $var));";
 }
 
 ###########################
@@ -334,7 +378,7 @@ sub EjsPushScalar($$$$$)
 sub EjsPushString($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
-	pidl "\tNDR_CHECK(ejs_push_string(ejs, v, $name, $var));\n";
+	pidl "NDR_CHECK(ejs_push_string(ejs, v, $name, $var));";
 }
 
 ###########################
@@ -342,12 +386,16 @@ sub EjsPushString($$$$$)
 sub EjsPushPointer($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
-	pidl "\tif (NULL == $var) {\n";
-	pidl "\tNDR_CHECK(ejs_push_null(ejs, v, $name));\n";
-	pidl "\t} else {\n";
+	pidl "if (NULL == $var) {";
+	indent;
+	pidl "NDR_CHECK(ejs_push_null(ejs, v, $name));";
+	deindent;
+	pidl "} else {";
+	indent;
 	$var = get_value_of($var);		
 	EjsPushElement($e, Ndr::GetNextLevel($e, $l), $var, $name, $env);
-	pidl "}\n";
+	deindent;
+	pidl "}";
 }
 
 ###########################
@@ -356,7 +404,7 @@ sub EjsPushSwitch($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
 	my $switch_var = util::ParseExpr($l->{SWITCH_IS}, $env);
-	pidl "ejs_set_switch(ejs, $switch_var);\n";
+	pidl "ejs_set_switch(ejs, $switch_var);";
 	EjsPushElement($e, Ndr::GetNextLevel($e, $l), $var, $name, $env);
 }
 
@@ -372,10 +420,18 @@ sub EjsPushArray($$$$$)
 		$var = get_pointer_to($var);
 	}
 	my $avar = $var . "[i]";
-	pidl "{ uint32_t i; for (i=0;i<$length;i++) {\n";
-	pidl "\tconst char *id = talloc_asprintf(ejs, \"%s.%u\", $name, i);\n";
+	pidl "{";
+	indent;
+	pidl "uint32_t i;";
+	pidl "for (i=0;i<$length;i++) {";
+	indent;
+	pidl "const char *id = talloc_asprintf(ejs, \"%s.%u\", $name, i);";
 	EjsPushElement($e, Ndr::GetNextLevel($e, $l), $avar, "id", $env);
-	pidl "}\nejs_push_uint32(ejs, v, $name \".length\", &i); }\n";
+	deindent;
+	pidl "}";
+	pidl "ejs_push_uint32(ejs, v, $name \".length\", &i);";
+	deindent;
+	pidl "}";
 }
 
 ################################
@@ -394,7 +450,7 @@ sub EjsPushElement($$$$$)
 	} elsif (($l->{TYPE} eq "SWITCH")) {
 		EjsPushSwitch($e, $l, $var, $name, $env);
 	} else {
-		pidl "return ejs_panic(ejs, \"unhandled push type $l->{TYPE}\");\n";
+		pidl "return ejs_panic(ejs, \"unhandled push type $l->{TYPE}\");";
 	}
 }
 
@@ -418,13 +474,15 @@ sub EjsStructPush($$)
 	my $d = shift;
 	my $env = GenerateStructEnv($d);
 	pidl fn_prefix($d);
-	pidl "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const struct $name *r)\n{\n";
-	pidl "\tNDR_CHECK(ejs_push_struct_start(ejs, &v, name));\n";
+	pidl "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const struct $name *r)\n{";
+	indent;
+	pidl "NDR_CHECK(ejs_push_struct_start(ejs, &v, name));";
         foreach my $e (@{$d->{ELEMENTS}}) {
 		EjsPushElementTop($e, $env);
 	}
-	pidl "\treturn NT_STATUS_OK;\n";
-	pidl "}\n\n";
+	pidl "return NT_STATUS_OK;";
+	deindent;
+	pidl "}\n";
 }
 
 ###########################
@@ -436,24 +494,34 @@ sub EjsUnionPush($$)
 	my $have_default = 0;
 	my $env = GenerateStructEnv($d);
 	pidl fn_prefix($d);
-	pidl "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const union $name *r)\n{\n";
-	pidl "\tNDR_CHECK(ejs_push_struct_start(ejs, &v, name));\n";
-	pidl "switch (ejs->switch_var) {\n";
+	pidl "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const union $name *r)\n{";
+	indent;
+	pidl "NDR_CHECK(ejs_push_struct_start(ejs, &v, name));";
+	pidl "switch (ejs->switch_var) {";
+	indent;
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		if ($e->{CASE} eq "default") {
 			$have_default = 1;
 		}
 		pidl "$e->{CASE}:";
+		indent;
 		if ($e->{TYPE} ne "EMPTY") {
 			EjsPushElementTop($e, $env);
 		}
-		pidl "break;\n";
+		pidl "break;";
+		deindent;
 	}
 	if (! $have_default) {
 		pidl "default:";
-		pidl "\treturn ejs_panic(ejs, \"Bad switch value\");";
+		indent;
+		pidl "return ejs_panic(ejs, \"Bad switch value\");";
+		deindent;
 	}
-	pidl "}\nreturn NT_STATUS_OK;\n}\n";
+	deindent;
+	pidl "}";
+	pidl "return NT_STATUS_OK;";
+	deindent;
+	pidl "}";
 }
 
 ###########################
@@ -475,11 +543,13 @@ sub EjsEnumPush($$)
 		$v++;
 	}
 	pidl fn_prefix($d);
-	pidl "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const enum $name *r)\n{\n";
-	pidl "\tunsigned e = *r;\n";
-	pidl "\tNDR_CHECK(ejs_push_enum(ejs, v, name, &e));\n";
-	pidl "\treturn NT_STATUS_OK;\n";
-	pidl "}\n\n";
+	pidl "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const enum $name *r)\n{";
+	indent;
+	pidl "unsigned e = *r;";
+	pidl "NDR_CHECK(ejs_push_enum(ejs, v, name, &e));";
+	pidl "return NT_STATUS_OK;";
+	deindent;
+	pidl "}\n";
 }
 
 ###########################
@@ -499,9 +569,11 @@ sub EjsBitmapPush($$)
 		}
 	}
 	pidl fn_prefix($d);
-	pidl "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const $type_decl *r)\n{\n";
-	pidl "return ejs_push_$type_fn(ejs, v, name, r);\n";
-	pidl "}\n";
+	pidl "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const $type_decl *r)\n{";
+	indent;
+	pidl "return ejs_push_$type_fn(ejs, v, name, r);";
+	deindent;
+	pidl "}";
 }
 
 
@@ -520,7 +592,7 @@ sub EjsTypedefPush($)
 	} elsif ($d->{DATA}->{TYPE} eq 'BITMAP') {
 		EjsBitmapPush($d->{NAME}, $d->{DATA});
 	} else {
-		warn "Unhandled push typedef $d->{NAME} of type $d->{DATA}->{TYPE}\n";
+		warn "Unhandled push typedef $d->{NAME} of type $d->{DATA}->{TYPE}";
 	}
 }
 
@@ -532,18 +604,19 @@ sub EjsPushFunction($)
 	my $d = shift;
 	my $env = GenerateFunctionOutEnv($d);
 
-	pidl "\nstatic NTSTATUS ejs_push_$d->{NAME}(struct ejs_rpc *ejs, struct MprVar *v, const struct $d->{NAME} *r)\n";
-	pidl "{\n";
-
-	pidl "\tNDR_CHECK(ejs_push_struct_start(ejs, &v, \"output\"));\n";
+	pidl "\nstatic NTSTATUS ejs_push_$d->{NAME}(struct ejs_rpc *ejs, struct MprVar *v, const struct $d->{NAME} *r)";
+	pidl "{";
+	indent;
+	pidl "NDR_CHECK(ejs_push_struct_start(ejs, &v, \"output\"));";
 
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		next unless (grep(/out/, @{$e->{DIRECTION}}));
 		EjsPushElementTop($e, $env);
 	}
 
-	pidl "\treturn NT_STATUS_OK;\n";
-	pidl "}\n\n";
+	pidl "return NT_STATUS_OK;";
+	deindent;
+	pidl "}\n";
 }
 
 
@@ -554,10 +627,12 @@ sub EjsFunction($)
 	my $d = shift;
 	my $name = $d->{NAME};
 
-	pidl "static int ejs_$name(int eid, int argc, struct MprVar **argv)\n";
-	pidl "{\n";
-	pidl "\treturn ejs_rpc_call(eid, argc, argv, \"$name\", (ejs_pull_function_t)ejs_pull_$name, (ejs_push_function_t)ejs_push_$name);\n";
-	pidl "}\n\n";
+	pidl "static int ejs_$name(int eid, int argc, struct MprVar **argv)";
+	pidl "{";
+	indent;
+	pidl "return ejs_rpc_call(eid, argc, argv, \"$name\", (ejs_pull_function_t)ejs_pull_$name, (ejs_push_function_t)ejs_push_$name);";
+	deindent;
+	pidl "}\n";
 }
 
 ###################
@@ -597,24 +672,24 @@ sub EjsInterface($)
 		EjsConst($d);
 	}
 
-	pidl "void setup_ejs_$name(void)\n";
-	pidl "{\n";
+	pidl "void setup_ejs_$name(void)";
+	pidl "{";
 	foreach (@fns) {
-		pidl "\tejsDefineCFunction(-1, \"dcerpc_$_\", ejs_$_, NULL, MPR_VAR_SCRIPT_HANDLE);\n";
+		pidl "ejsDefineCFunction(-1, \"dcerpc_$_\", ejs_$_, NULL, MPR_VAR_SCRIPT_HANDLE);";
 	}
-	pidl "}\n\n";
+	pidl "}\n";
 
-	pidl "void setup_ejs_constants_$name(int eid)\n";
-	pidl "{\n";
+	pidl "void setup_ejs_constants_$name(int eid)";
+	pidl "{";
 	foreach my $v (keys %constants) {
 		my $value = $constants{$v};
 		if (substr($value, 0, 1) eq "\"") {
-			pidl "\tejs_set_constant_string(eid, \"$v\", $value);\n";
+			pidl "ejs_set_constant_string(eid, \"$v\", $value);";
 		} else {
-			pidl "\tejs_set_constant_int(eid, \"$v\", $value);\n";
+			pidl "ejs_set_constant_int(eid, \"$v\", $value);";
 		}
 	}
-	pidl "}\n";
+	pidl "}";
 }
 
 #####################################################################
