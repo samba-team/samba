@@ -233,6 +233,12 @@ test_length (void)
     return ch != 'a';
 }
 
+static int
+test_simple (void)
+{
+    return try("");
+}
+
 int
 main (int argc, char **argv)
 {
@@ -245,5 +251,7 @@ main (int argc, char **argv)
 #endif
     ret += test_null ();
     ret += test_length ();
+    ret += test_simple();
+
     return ret;
 }
