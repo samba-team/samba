@@ -102,7 +102,30 @@ function test_EnumDomainUsers(conn, dom_handle)
 	status = dcerpc_samr_EnumDomainUsers(conn, io);
 	check_status_ok(status);
 	print("Found " + io.output.num_entries + " users\n");
-	if (io.output.num_entries == 0) {
+	if (io.output.sam == NULL) {
+		return;
+	}
+	entries = io.output.sam.entries;
+	for (i=0;i<io.output.num_entries;i++) {
+		print("\t" + entries[i].name.string + "\n");
+	}
+}
+
+/*
+  test the samr_EnumDomainGroups interface
+*/
+function test_EnumDomainGroups(conn, dom_handle)
+{
+	var io = irpcObj();
+	print("Testing samr_EnumDomainGroups\n");
+	io.input.domain_handle = dom_handle;
+	io.input.resume_handle = 0;
+	io.input.acct_flags = 0;
+	io.input.max_size = -1;
+	status = dcerpc_samr_EnumDomainGroups(conn, io);
+	check_status_ok(status);
+	print("Found " + io.output.num_entries + " groups\n");
+	if (io.output.sam == NULL) {
 		return;
 	}
 	entries = io.output.sam.entries;
@@ -117,6 +140,7 @@ function test_EnumDomainUsers(conn, dom_handle)
 function test_domain_ops(conn, dom_handle)
 {
 	test_EnumDomainUsers(conn, dom_handle);
+	test_EnumDomainGroups(conn, dom_handle);
 }
 
 
@@ -134,6 +158,9 @@ function test_EnumDomains(conn, handle)
 	status = dcerpc_samr_EnumDomains(conn, io);
 	check_status_ok(status);
 	print("Found " + io.output.num_entries + " domains\n");
+	if (io.output.sam == NULL) {
+		return;
+	}
 	entries = io.output.sam.entries;
 	for (i=0;i<io.output.num_entries;i++) {
 		print("\t" + entries[i].name.string + "\n");
