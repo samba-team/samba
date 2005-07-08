@@ -343,6 +343,7 @@ BOOL process_local_message(char *buffer, int buf_size)
 	SMB_INO_T inode;
 	unsigned long file_id;
 	uint16 break_cmd_type;
+	struct sockaddr_in toaddr;
 
 	msg_len = IVAL(buffer,OPBRK_CMD_LEN_OFFSET);
 	from_port = SVAL(buffer,OPBRK_CMD_PORT_OFFSET);
@@ -366,6 +367,7 @@ BOOL process_local_message(char *buffer, int buf_size)
 			} 
 			if (!koplocks->parse_message(msg_start, msg_len, &inode, &dev, &file_id)) {
 				DEBUG(0,("kernel oplock break parse failure!\n"));
+				return False;
 			}
 			break;
 
@@ -449,48 +451,53 @@ pid %d, port %d, dev = %x, inode = %.0f, file_id = %lu\n",
 	 * Now actually process the break request.
 	 */
 
-	if((exclusive_oplocks_open + level_II_oplocks_open) != 0) {
-		if (oplock_break(dev, inode, file_id, False) == False) {
-			DEBUG(0,("process_local_message: oplock break failed.\n"));
-			return False;
-		}
-	} else {
+	if ((exclusive_oplocks_open == 0) &&
+	    (level_II_oplocks_open == 0)) {
 		/*
 		 * If we have no record of any currently open oplocks,
 		 * it's not an error, as a close command may have
 		 * just been issued on the file that was oplocked.
 		 * Just log a message and return success in this case.
 		 */
-		DEBUG(3,("process_local_message: oplock break requested with no outstanding \
-oplocks. Returning success.\n"));
+		DEBUG(3,("process_local_message: oplock break requested with "
+			 "no outstanding oplocks. Returning success.\n"));
+		return True;
+	}
+
+	if (!oplock_break(dev, inode, file_id, False)) {
+		DEBUG(0,("process_local_message: oplock break failed.\n"));
+		return False;
 	}
 
 	/* 
-	 * Do the appropriate reply - none in the kernel or async level II case.
+	 * Do the appropriate reply - none in the kernel or async level II
+	 * case.
 	 */
 
-	if(break_cmd_type == OPLOCK_BREAK_CMD || break_cmd_type == LEVEL_II_OPLOCK_BREAK_CMD) {
-		struct sockaddr_in toaddr;
-
-		/* Send the message back after OR'ing in the 'REPLY' bit. */
-		SSVAL(msg_start,OPBRK_MESSAGE_CMD_OFFSET,break_cmd_type | CMD_REPLY);
-
-		memset((char *)&toaddr,'\0',sizeof(toaddr));
-		toaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-		toaddr.sin_port = htons(from_port);
-		toaddr.sin_family = AF_INET;
-
-		if(sys_sendto( oplock_sock, msg_start, OPLOCK_BREAK_MSG_LEN, 0,
-				(struct sockaddr *)&toaddr, sizeof(toaddr)) < 0) {
-			DEBUG(0,("process_local_message: sendto process %d failed. Errno was %s\n",
-				(int)remotepid, strerror(errno)));
-			return False;
-		}
-
-		DEBUG(5,("process_local_message: oplock break reply sent to \
-pid %d, port %d, for file dev = %x, inode = %.0f, file_id = %lu\n",
-			(int)remotepid, from_port, (unsigned int)dev, (double)inode, file_id));
+	if (!((break_cmd_type == OPLOCK_BREAK_CMD) ||
+	      (break_cmd_type == LEVEL_II_OPLOCK_BREAK_CMD))) {
+		return True;
 	}
+
+	/* Send the message back after OR'ing in the 'REPLY' bit. */
+	SSVAL(msg_start,OPBRK_MESSAGE_CMD_OFFSET,break_cmd_type | CMD_REPLY);
+
+	memset((char *)&toaddr,'\0',sizeof(toaddr));
+	toaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	toaddr.sin_port = htons(from_port);
+	toaddr.sin_family = AF_INET;
+
+	if(sys_sendto( oplock_sock, msg_start, OPLOCK_BREAK_MSG_LEN, 0,
+		       (struct sockaddr *)&toaddr, sizeof(toaddr)) < 0) {
+		DEBUG(0,("process_local_message: sendto process %d failed. "
+			 "Errno was %s\n", (int)remotepid, strerror(errno)));
+		return False;
+	}
+
+	DEBUG(5,("process_local_message: oplock break reply sent to pid %d, "
+		 "port %d, for file dev = %x, inode = %.0f, file_id = %lu\n",
+		 (int)remotepid, from_port, (unsigned int)dev,
+		 (double)inode, file_id));
 
 	return True;
 }
@@ -1150,7 +1157,7 @@ BOOL attempt_close_oplocked_file(files_struct *fsp)
 {
 	DEBUG(5,("attempt_close_oplocked_file: checking file %s.\n", fsp->fsp_name));
 
-	if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && !fsp->sent_oplock_break && (fsp->fd != -1)) {
+	if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && !fsp->sent_oplock_break && (fsp->fh->fd != -1)) {
 		/* Try and break the oplock. */
 		if (oplock_break(fsp->dev, fsp->inode, fsp->file_id, True)) {
 			if(file_find_fsp(fsp) == NULL) /* Did the oplock break close the file ? */
@@ -1223,6 +1230,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 	pid_t pid = sys_getpid();
 	int num_share_modes = 0;
 	int i;
+	BOOL dummy;
 
 	/*
 	 * If this file is level II oplocked then we need
@@ -1239,7 +1247,8 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 		DEBUG(0,("release_level_2_oplocks_on_change: failed to lock share mode entry for file %s.\n", fsp->fsp_name ));
 	}
 
-	num_share_modes = get_share_modes(fsp->conn, fsp->dev, fsp->inode, &share_list);
+	num_share_modes = get_share_modes(fsp->dev, fsp->inode, &share_list,
+					  &dummy);
 
 	DEBUG(10,("release_level_2_oplocks_on_change: num_share_modes = %d\n", 
 			num_share_modes ));

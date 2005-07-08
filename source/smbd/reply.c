@@ -1275,20 +1275,24 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 {
 	pstring fname;
 	int outsize = 0;
-	int fmode=0;
-	int share_mode;
+	uint32 fattr=0;
 	SMB_OFF_T size = 0;
 	time_t mtime=0;
-	int rmode=0;
+	int info;
 	SMB_STRUCT_STAT sbuf;
 	BOOL bad_path = False;
 	files_struct *fsp;
 	int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
-	uint16 dos_attr = SVAL(inbuf,smb_vwv1);
+	int deny_mode;
+	uint32 dos_attr = SVAL(inbuf,smb_vwv1);
+	uint32 access_mask;
+	uint32 share_mode;
+	uint32 create_disposition;
+	uint32 create_options = 0;
 	NTSTATUS status;
 	START_PROFILE(SMBopen);
  
-	share_mode = SVAL(inbuf,smb_vwv0);
+	deny_mode = SVAL(inbuf,smb_vwv0);
 
 	srvstr_get_path(inbuf, fname, smb_buf(inbuf)+1, sizeof(fname), 0, STR_TERMINATE, &status, False);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1304,8 +1308,20 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
 	}
     
-	fsp = open_file_shared(conn,fname,&sbuf,share_mode,(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-			(uint32)dos_attr, oplock_request,&rmode,NULL);
+	if (!map_open_params_to_ntcreate(fname, deny_mode, OPENX_FILE_EXISTS_OPEN,
+			&access_mask, &share_mode, &create_disposition, &create_options)) {
+		END_PROFILE(SMBopen);
+		return ERROR_DOS(ERRDOS, ERRbadaccess);
+	}
+
+	fsp = open_file_ntcreate(conn,fname,&sbuf,
+			access_mask,
+			share_mode,
+			create_disposition,
+			create_options,
+			dos_attr,
+			oplock_request,
+			&info);
 
 	if (!fsp) {
 		END_PROFILE(SMBopen);
@@ -1317,10 +1333,10 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	}
 
 	size = sbuf.st_size;
-	fmode = dos_mode(conn,fname,&sbuf);
+	fattr = dos_mode(conn,fname,&sbuf);
 	mtime = sbuf.st_mtime;
 
-	if (fmode & aDIR) {
+	if (fattr & aDIR) {
 		DEBUG(3,("attempt to open a directory %s\n",fname));
 		close_file(fsp,False);
 		END_PROFILE(SMBopen);
@@ -1329,19 +1345,22 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   
 	outsize = set_message(outbuf,7,0,True);
 	SSVAL(outbuf,smb_vwv0,fsp->fnum);
-	SSVAL(outbuf,smb_vwv1,fmode);
-	if(lp_dos_filetime_resolution(SNUM(conn)) )
+	SSVAL(outbuf,smb_vwv1,fattr);
+	if(lp_dos_filetime_resolution(SNUM(conn)) ) {
 		put_dos_date3(outbuf,smb_vwv2,mtime & ~1);
-	else
+	} else {
 		put_dos_date3(outbuf,smb_vwv2,mtime);
+	}
 	SIVAL(outbuf,smb_vwv4,(uint32)size);
-	SSVAL(outbuf,smb_vwv6,rmode);
+	SSVAL(outbuf,smb_vwv6,FILE_WAS_OPENED);
 
-	if (oplock_request && lp_fake_oplocks(SNUM(conn)))
+	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
 		SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
+	}
     
-	if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
+	if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
+	}
 	END_PROFILE(SMBopen);
 	return(outsize);
 }
@@ -1353,21 +1372,22 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
 	pstring fname;
-	int smb_mode = SVAL(inbuf,smb_vwv3);
-	int smb_attr = SVAL(inbuf,smb_vwv5);
+	uint16 open_flags = SVAL(inbuf,smb_vwv2);
+	int deny_mode = SVAL(inbuf,smb_vwv3);
+	uint32 smb_attr = SVAL(inbuf,smb_vwv5);
 	/* Breakout the oplock request bits so we can set the
 		reply bits separately. */
 	BOOL ex_oplock_request = EXTENDED_OPLOCK_REQUEST(inbuf);
 	BOOL core_oplock_request = CORE_OPLOCK_REQUEST(inbuf);
 	BOOL oplock_request = ex_oplock_request | core_oplock_request;
 #if 0
-	int open_flags = SVAL(inbuf,smb_vwv2);
 	int smb_sattr = SVAL(inbuf,smb_vwv4); 
 	uint32 smb_time = make_unix_date3(inbuf+smb_vwv6);
 #endif
 	int smb_ofun = SVAL(inbuf,smb_vwv8);
 	SMB_OFF_T size=0;
-	int fmode=0,mtime=0,rmode=0;
+	uint32 fattr=0;
+	int mtime=0;
 	SMB_STRUCT_STAT sbuf;
 	int smb_action = 0;
 	BOOL bad_path = False;
@@ -1375,6 +1395,10 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	NTSTATUS status;
 	SMB_BIG_UINT allocation_size = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv9);
 	ssize_t retval = -1;
+	uint32 access_mask;
+	uint32 share_mode;
+	uint32 create_disposition;
+	uint32 create_options = 0;
 
 	START_PROFILE(SMBopenX);
 
@@ -1404,18 +1428,23 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
 	}
 
-	/* Strange open mode mapping. */
-	if (smb_ofun == 0) {
-		if (GET_OPEN_MODE(smb_mode) == DOS_OPEN_EXEC) {
-			smb_ofun = FILE_EXISTS_FAIL | FILE_CREATE_IF_NOT_EXIST;
-		} else {
-			END_PROFILE(SMBopenX);
-			return ERROR_FORCE_DOS(ERRDOS, ERRbadaccess);
-		}
+	if (!map_open_params_to_ntcreate(fname, deny_mode, smb_ofun,
+				&access_mask,
+				&share_mode,
+				&create_disposition,
+				&create_options)) {
+		END_PROFILE(SMBopenX);
+		return ERROR_DOS(ERRDOS, ERRbadaccess);
 	}
 
-	fsp = open_file_shared(conn,fname,&sbuf,smb_mode,smb_ofun,(uint32)smb_attr,
-			oplock_request, &rmode,&smb_action);
+	fsp = open_file_ntcreate(conn,fname,&sbuf,
+			access_mask,
+			share_mode,
+			create_disposition,
+			create_options,
+			smb_attr,
+			oplock_request,
+			&smb_action);
       
 	if (!fsp) {
 		END_PROFILE(SMBopenX);
@@ -1446,9 +1475,9 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		size = get_allocation_size(conn,fsp,&sbuf);
 	}
 
-	fmode = dos_mode(conn,fname,&sbuf);
+	fattr = dos_mode(conn,fname,&sbuf);
 	mtime = sbuf.st_mtime;
-	if (fmode & aDIR) {
+	if (fattr & aDIR) {
 		close_file(fsp,False);
 		END_PROFILE(SMBopenX);
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
@@ -1459,33 +1488,46 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		correct bit for extended oplock reply.
 	*/
 
-	if (ex_oplock_request && lp_fake_oplocks(SNUM(conn)))
+	if (ex_oplock_request && lp_fake_oplocks(SNUM(conn))) {
 		smb_action |= EXTENDED_OPLOCK_GRANTED;
+	}
 
-	if(ex_oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
+	if(ex_oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		smb_action |= EXTENDED_OPLOCK_GRANTED;
+	}
 
 	/* If the caller set the core oplock request bit
 		and we granted one (by whatever means) - set the
 		correct bit for core oplock reply.
 	*/
 
-	if (core_oplock_request && lp_fake_oplocks(SNUM(conn)))
+	if (core_oplock_request && lp_fake_oplocks(SNUM(conn))) {
 		SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
+	}
 
-	if(core_oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
+	if(core_oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
+	}
 
-	set_message(outbuf,15,0,True);
+	if (open_flags & EXTENDED_RESPONSE_REQUIRED) {
+		set_message(outbuf,19,0,True);
+	} else {
+		set_message(outbuf,15,0,True);
+	}
 	SSVAL(outbuf,smb_vwv2,fsp->fnum);
-	SSVAL(outbuf,smb_vwv3,fmode);
-	if(lp_dos_filetime_resolution(SNUM(conn)) )
+	SSVAL(outbuf,smb_vwv3,fattr);
+	if(lp_dos_filetime_resolution(SNUM(conn)) ) {
 		put_dos_date3(outbuf,smb_vwv4,mtime & ~1);
-	else
+	} else {
 		put_dos_date3(outbuf,smb_vwv4,mtime);
+	}
 	SIVAL(outbuf,smb_vwv6,(uint32)size);
-	SSVAL(outbuf,smb_vwv8,rmode);
+	SSVAL(outbuf,smb_vwv8,GET_OPENX_MODE(deny_mode));
 	SSVAL(outbuf,smb_vwv11,smb_action);
+
+	if (open_flags & EXTENDED_RESPONSE_REQUIRED) {
+		SIVAL(outbuf, smb_vwv15, STD_RIGHT_ALL_ACCESS);
+	}
 
 	END_PROFILE(SMBopenX);
 	return chain_reply(inbuf,outbuf,length,bufsize);
@@ -1528,18 +1570,21 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	pstring fname;
 	int com;
 	int outsize = 0;
-	int createmode;
-	int ofun = 0;
+	uint32 fattr = SVAL(inbuf,smb_vwv0);
 	BOOL bad_path = False;
 	files_struct *fsp;
 	int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
 	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status;
+	uint32 access_mask = FILE_GENERIC_READ | FILE_GENERIC_WRITE;
+	uint32 share_mode = FILE_SHARE_READ|FILE_SHARE_WRITE;
+	uint32 create_disposition;
+	uint32 create_options = 0;
+
 	START_PROFILE(SMBcreate);
  
 	com = SVAL(inbuf,smb_com);
 
-	createmode = SVAL(inbuf,smb_vwv0);
 	srvstr_get_path(inbuf, fname, smb_buf(inbuf) + 1, sizeof(fname), 0, STR_TERMINATE, &status, False);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBcreate);
@@ -1554,20 +1599,27 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
 	}
 
-	if (createmode & aVOLID)
+	if (fattr & aVOLID) {
 		DEBUG(0,("Attempt to create file (%s) with volid set - please report this\n",fname));
-  
-	if(com == SMBmknew) {
-		/* We should fail if file exists. */
-		ofun = FILE_CREATE_IF_NOT_EXIST;
-	} else {
-		/* SMBcreate - Create if file doesn't exist, truncate if it does. */
-		ofun = FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_TRUNCATE;
 	}
 
-	/* Open file in dos compatibility share mode. */
-	fsp = open_file_shared(conn,fname,&sbuf,SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
-			ofun, (uint32)createmode, oplock_request, NULL, NULL);
+	if(com == SMBmknew) {
+		/* We should fail if file exists. */
+		create_disposition = FILE_CREATE;
+	} else {
+		/* Create if file doesn't exist, truncate if it does. */
+		create_disposition = FILE_OPEN_IF;
+	}
+
+	/* Open file using ntcreate. */
+	fsp = open_file_ntcreate(conn,fname,&sbuf,
+				access_mask,
+				share_mode,
+				create_disposition,
+				create_options,
+				fattr,
+				oplock_request,
+				NULL);
   
 	if (!fsp) {
 		END_PROFILE(SMBcreate);
@@ -1581,14 +1633,16 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	outsize = set_message(outbuf,1,0,True);
 	SSVAL(outbuf,smb_vwv0,fsp->fnum);
 
-	if (oplock_request && lp_fake_oplocks(SNUM(conn)))
+	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
 		SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
+	}
  
-	if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
+	if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
+	}
  
-	DEBUG( 2, ( "new file %s\n", fname ) );
-	DEBUG( 3, ( "mknew %s fd=%d dmode=%d\n", fname, fsp->fd, createmode ) );
+	DEBUG( 2, ( "reply_mknew: file %s\n", fname ) );
+	DEBUG( 3, ( "reply_mknew %s fd=%d dmode=0x%x\n", fname, fsp->fh->fd, (unsigned int)fattr ) );
 
 	END_PROFILE(SMBcreate);
 	return(outsize);
@@ -1602,7 +1656,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 {
 	pstring fname;
 	int outsize = 0;
-	int createattr;
+	uint32 fattr = SVAL(inbuf,smb_vwv0);
 	BOOL bad_path = False;
 	files_struct *fsp;
 	int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
@@ -1614,7 +1668,6 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 	START_PROFILE(SMBctemp);
 
-	createattr = SVAL(inbuf,smb_vwv0);
 	srvstr_get_path(inbuf, fname, smb_buf(inbuf)+1, sizeof(fname), 0, STR_TERMINATE, &status, False);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBctemp);
@@ -1642,12 +1695,15 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 	SMB_VFS_STAT(conn,fname,&sbuf);
 
-	/* Open file in dos compatibility share mode. */
 	/* We should fail if file does not exist. */
-	fsp = open_file_shared(conn,fname,&sbuf,
-		SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB),
-		FILE_EXISTS_OPEN|FILE_FAIL_IF_NOT_EXIST,
-		(uint32)createattr, oplock_request, NULL, NULL);
+	fsp = open_file_ntcreate(conn,fname,&sbuf,
+				FILE_GENERIC_READ | FILE_GENERIC_WRITE,
+				FILE_SHARE_READ|FILE_SHARE_WRITE,
+				FILE_OPEN,
+				0,
+				fattr,
+				oplock_request,
+				NULL);
 
 	/* close fd from smb_mkstemp() */
 	close(tmpfd);
@@ -1666,10 +1722,11 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 	/* the returned filename is relative to the directory */
 	s = strrchr_m(fname, '/');
-	if (!s)
+	if (!s) {
 		s = fname;
-	else
+	} else {
 		s++;
+	}
 
 	p = smb_buf(outbuf);
 #if 0
@@ -1681,15 +1738,17 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	p += namelen;
 	outsize = set_message_end(outbuf, p);
 
-	if (oplock_request && lp_fake_oplocks(SNUM(conn)))
+	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
 		SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
+	}
   
-	if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
+	if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
+	}
 
-	DEBUG( 2, ( "created temp file %s\n", fname ) );
-	DEBUG( 3, ( "ctemp %s fd=%d umode=%o\n",
-			fname, fsp->fd, sbuf.st_mode ) );
+	DEBUG( 2, ( "reply_ctemp: created temp file %s\n", fname ) );
+	DEBUG( 3, ( "reply_ctemp %s fd=%d umode=0%o\n", fname, fsp->fh->fd,
+			(unsigned int)sbuf.st_mode ) );
 
 	END_PROFILE(SMBctemp);
 	return(outsize);
@@ -1701,26 +1760,33 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype, SMB_STRUCT_STAT *pst)
 {
-	int smb_action;
-	int access_mode;
 	files_struct *fsp;
-	uint16 fmode;
+	uint32 fmode;
 
-	if (!CAN_WRITE(conn))
+	if (!CAN_WRITE(conn)) {
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
+	}
 
 	fmode = dos_mode(conn,fname,pst);
-	if ((fmode & ~dirtype) & (aHIDDEN | aSYSTEM))
+	if ((fmode & ~dirtype) & (aHIDDEN | aSYSTEM)) {
 		return NT_STATUS_NO_SUCH_FILE;
+	}
 
-	if (S_ISDIR(pst->st_mode))
+	if (S_ISDIR(pst->st_mode)) {
 		return NT_STATUS_OK;
+	}
 
 	/* We need a better way to return NT status codes from open... */
 	set_saved_error_triple(0, 0, NT_STATUS_OK);
 
-	fsp = open_file_shared1(conn, fname, pst, DELETE_ACCESS, SET_DENY_MODE(DENY_ALL),
-		(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), FILE_ATTRIBUTE_NORMAL, 0, &access_mode, &smb_action);
+	fsp = open_file_ntcreate(conn, fname, pst,
+				DELETE_ACCESS,
+				FILE_SHARE_READ|FILE_SHARE_WRITE,
+				FILE_OPEN,
+				0,
+				FILE_ATTRIBUTE_NORMAL,
+				0,
+				NULL);
 
 	if (!fsp) {
 		NTSTATUS ret;
@@ -1742,43 +1808,46 @@ static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype,
 NTSTATUS can_delete(connection_struct *conn, char *fname, uint32 dirtype, BOOL bad_path, BOOL check_is_at_open)
 {
 	SMB_STRUCT_STAT sbuf;
-	uint32 fmode;
-	int smb_action;
-	int access_mode;
+	uint32 fattr;
 	files_struct *fsp;
 
-	DEBUG(10,("can_delete: %s, dirtype = %d\n",
-		fname, dirtype ));
+	DEBUG(10,("can_delete: %s, dirtype = %d\n", fname, dirtype ));
 
-	if (!CAN_WRITE(conn))
+	if (!CAN_WRITE(conn)) {
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
+	}
 
 	if (SMB_VFS_LSTAT(conn,fname,&sbuf) != 0) {
 	        if(errno == ENOENT) {
-			if (bad_path)
+			if (bad_path) {
 				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
-			else
+			} else {
 				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			}
 		}
 		return map_nt_error_from_unix(errno);
 	}
 
-	fmode = dos_mode(conn,fname,&sbuf);
+	fattr = dos_mode(conn,fname,&sbuf);
 
 	/* Can't delete a directory. */
-	if (fmode & aDIR)
+	if (fattr & aDIR) {
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
+	}
+
 #if 0 /* JRATEST */
 	else if (dirtype & aDIR) /* Asked for a directory and it isn't. */
 		return NT_STATUS_OBJECT_NAME_INVALID;
 #endif /* JRATEST */
 
 	if (!lp_delete_readonly(SNUM(conn))) {
-		if (fmode & aRONLY)
+		if (fattr & aRONLY) {
 			return NT_STATUS_CANNOT_DELETE;
+		}
 	}
-	if ((fmode & ~dirtype) & (aHIDDEN | aSYSTEM))
+	if ((fattr & ~dirtype) & (aHIDDEN | aSYSTEM)) {
 		return NT_STATUS_NO_SUCH_FILE;
+	}
 
 	if (check_is_at_open) {
 		if (!can_delete_file_in_directory(conn, fname)) {
@@ -1791,8 +1860,14 @@ NTSTATUS can_delete(connection_struct *conn, char *fname, uint32 dirtype, BOOL b
 		/* We need a better way to return NT status codes from open... */
 		set_saved_error_triple(0, 0, NT_STATUS_OK);
 
-		fsp = open_file_shared1(conn, fname, &sbuf, DELETE_ACCESS, SET_DENY_MODE(DENY_ALL),
-			(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), FILE_ATTRIBUTE_NORMAL, 0, &access_mode, &smb_action);
+		fsp = open_file_ntcreate(conn, fname, &sbuf,
+					DELETE_ACCESS,
+					FILE_SHARE_NONE,
+					FILE_OPEN,
+					0,
+					FILE_ATTRIBUTE_NORMAL,
+					0,
+					NULL);
 
 		if (!fsp) {
 			NTSTATUS ret;
@@ -2058,7 +2133,7 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 		header.length = 4;
 		header.free = NULL;
 
-		if ( SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fd, &header, startpos, nread) == -1) {
+		if ( SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fh->fd, &header, startpos, nread) == -1) {
 			/* Returning ENOSYS means no data at all was sent. Do this as a normal read. */
 			if (errno == ENOSYS) {
 				goto normal_readbraw;
@@ -2205,7 +2280,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 		SMB_STRUCT_STAT st;
 		SMB_OFF_T size = 0;
   
-		if (SMB_VFS_FSTAT(fsp,fsp->fd,&st) == 0) {
+		if (SMB_VFS_FSTAT(fsp,fsp->fh->fd,&st) == 0) {
 			size = st.st_size;
 		}
 
@@ -2251,7 +2326,9 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 	START_PROFILE(SMBlockread);
 
 	CHECK_FSP(fsp,conn);
-	CHECK_READ(fsp);
+	if (!CHECK_READ(fsp,inbuf)) {
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	}
 
 	release_level_2_oplocks_on_change(fsp);
 
@@ -2345,7 +2422,9 @@ int reply_read(connection_struct *conn, char *inbuf,char *outbuf, int size, int 
 	START_PROFILE(SMBread);
 
 	CHECK_FSP(fsp,conn);
-	CHECK_READ(fsp);
+	if (!CHECK_READ(fsp,inbuf)) {
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	}
 
 	numtoread = SVAL(inbuf,smb_vwv1);
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
@@ -2413,7 +2492,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 		SMB_STRUCT_STAT sbuf;
 		DATA_BLOB header;
 
-		if(SMB_VFS_FSTAT(fsp,fsp->fd, &sbuf) == -1)
+		if(SMB_VFS_FSTAT(fsp,fsp->fh->fd, &sbuf) == -1)
 			return(UNIXERROR(ERRDOS,ERRnoaccess));
 
 		if (startpos > sbuf.st_size)
@@ -2442,7 +2521,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 		header.length = data - outbuf;
 		header.free = NULL;
 
-		if ((nread = SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fd, &header, startpos, smb_maxcnt)) == -1) {
+		if ((nread = SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fh->fd, &header, startpos, smb_maxcnt)) == -1) {
 			/* Returning ENOSYS means no data at all was sent. Do this as a normal read. */
 			if (errno == ENOSYS) {
 				goto normal_read;
@@ -2530,7 +2609,9 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	}
 
 	CHECK_FSP(fsp,conn);
-	CHECK_READ(fsp);
+	if (!CHECK_READ(fsp,inbuf)) {
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	}
 
 	set_message(outbuf,12,0,True);
 
@@ -2610,7 +2691,9 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	}
 
 	CHECK_FSP(fsp,conn);
-	CHECK_WRITE(fsp);
+	if (!CHECK_WRITE(fsp)) {
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	}
   
 	tcount = IVAL(inbuf,smb_vwv1);
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv3);
@@ -2744,7 +2827,9 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf,
 	START_PROFILE(SMBwriteunlock);
 	
 	CHECK_FSP(fsp,conn);
-	CHECK_WRITE(fsp);
+	if (!CHECK_WRITE(fsp)) {
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	}
 
 	numtowrite = SVAL(inbuf,smb_vwv1);
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
@@ -2758,10 +2843,11 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf,
 	/* The special X/Open SMB protocol handling of
 	   zero length writes is *NOT* done for
 	   this call */
-	if(numtowrite == 0)
+	if(numtowrite == 0) {
 		nwritten = 0;
-	else
+	} else {
 		nwritten = write_file(fsp,data,startpos,numtowrite);
+	}
   
 	if (lp_syncalways(SNUM(conn)))
 		sync_file(conn,fsp);
@@ -2815,7 +2901,9 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
 	}
 
 	CHECK_FSP(fsp,conn);
-	CHECK_WRITE(fsp);
+	if (!CHECK_WRITE(fsp)) {
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	}
 
 	numtowrite = SVAL(inbuf,smb_vwv1);
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
@@ -2896,7 +2984,9 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 	}
 
 	CHECK_FSP(fsp,conn);
-	CHECK_WRITE(fsp);
+	if (!CHECK_WRITE(fsp)) {
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	}
 
 	set_message(outbuf,6,0,True);
   
@@ -3010,7 +3100,7 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 			break;
 		case 1:
 			umode = SEEK_CUR;
-			res = fsp->pos + startpos;
+			res = fsp->fh->pos + startpos;
 			break;
 		case 2:
 			umode = SEEK_END;
@@ -3022,19 +3112,19 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	}
 
 	if (umode == SEEK_END) {
-		if((res = SMB_VFS_LSEEK(fsp,fsp->fd,startpos,umode)) == -1) {
+		if((res = SMB_VFS_LSEEK(fsp,fsp->fh->fd,startpos,umode)) == -1) {
 			if(errno == EINVAL) {
 				SMB_OFF_T current_pos = startpos;
 				SMB_STRUCT_STAT sbuf;
 
-				if(SMB_VFS_FSTAT(fsp,fsp->fd, &sbuf) == -1) {
+				if(SMB_VFS_FSTAT(fsp,fsp->fh->fd, &sbuf) == -1) {
 					END_PROFILE(SMBlseek);
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 				}
 
 				current_pos += sbuf.st_size;
 				if(current_pos < 0)
-					res = SMB_VFS_LSEEK(fsp,fsp->fd,0,SEEK_SET);
+					res = SMB_VFS_LSEEK(fsp,fsp->fh->fd,0,SEEK_SET);
 			}
 		}
 
@@ -3044,7 +3134,7 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		}
 	}
 
-	fsp->pos = res;
+	fsp->fh->pos = res;
   
 	outsize = set_message(outbuf,2,0,True);
 	SIVAL(outbuf,smb_vwv0,res);
@@ -3150,7 +3240,7 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		pstrcpy( file_name, fsp->fsp_name);
 
 		DEBUG(3,("close fd=%d fnum=%d (numopen=%d)\n",
-			 fsp->fd, fsp->fnum,
+			 fsp->fh->fd, fsp->fnum,
 			 conn->num_files_open));
  
 		/*
@@ -3201,7 +3291,9 @@ int reply_writeclose(connection_struct *conn,
 	START_PROFILE(SMBwriteclose);
 
 	CHECK_FSP(fsp,conn);
-	CHECK_WRITE(fsp);
+	if (!CHECK_WRITE(fsp)) {
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	}
 
 	numtowrite = SVAL(inbuf,smb_vwv1);
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
@@ -3276,7 +3368,7 @@ int reply_lock(connection_struct *conn,
 	offset = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv3);
 
 	DEBUG(3,("lock fd=%d fnum=%d offset=%.0f count=%.0f\n",
-		 fsp->fd, fsp->fnum, (double)offset, (double)count));
+		 fsp->fh->fd, fsp->fnum, (double)offset, (double)count));
 
 	status = do_lock_spin(fsp, conn, SVAL(inbuf,smb_pid), count, offset, WRITE_LOCK, &my_lock_ctx);
 	if (NT_STATUS_V(status)) {
@@ -3327,7 +3419,7 @@ int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	}
 
 	DEBUG( 3, ( "unlock fd=%d fnum=%d offset=%.0f count=%.0f\n",
-		    fsp->fd, fsp->fnum, (double)offset, (double)count ) );
+		    fsp->fh->fd, fsp->fnum, (double)offset, (double)count ) );
 	
 	END_PROFILE(SMBunlock);
 	return(outsize);
@@ -3437,7 +3529,7 @@ int reply_printopen(connection_struct *conn,
 	SSVAL(outbuf,smb_vwv0,fsp->fnum);
   
 	DEBUG(3,("openprint fd=%d fnum=%d\n",
-		 fsp->fd, fsp->fnum));
+		 fsp->fh->fd, fsp->fnum));
 
 	END_PROFILE(SMBsplopen);
 	return(outsize);
@@ -3463,7 +3555,7 @@ int reply_printclose(connection_struct *conn,
 	}
   
 	DEBUG(3,("printclose fd=%d fnum=%d\n",
-		 fsp->fd,fsp->fnum));
+		 fsp->fh->fd,fsp->fnum));
   
 	close_err = close_file(fsp,True);
 
@@ -3567,7 +3659,9 @@ int reply_printwrite(connection_struct *conn, char *inbuf,char *outbuf, int dum_
 	}
 
 	CHECK_FSP(fsp,conn);
-	CHECK_WRITE(fsp);
+	if (!CHECK_WRITE(fsp)) {
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	}
 
 	numtowrite = SVAL(smb_buf(inbuf),1);
 	data = smb_buf(inbuf) + 3;
@@ -4484,45 +4578,66 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 		      int count,BOOL target_is_directory, int *err_ret)
 {
-	int Access,action;
 	SMB_STRUCT_STAT src_sbuf, sbuf2;
 	SMB_OFF_T ret=-1;
 	files_struct *fsp1,*fsp2;
 	pstring dest;
  	uint32 dosattrs;
+	uint32 new_create_disposition;
  
 	*err_ret = 0;
 
 	pstrcpy(dest,dest1);
 	if (target_is_directory) {
 		char *p = strrchr_m(src,'/');
-		if (p) 
+		if (p) {
 			p++;
-		else
+		} else {
 			p = src;
+		}
 		pstrcat(dest,"/");
 		pstrcat(dest,p);
 	}
 
-	if (!vfs_file_exist(conn,src,&src_sbuf))
+	if (!vfs_file_exist(conn,src,&src_sbuf)) {
 		return(False);
+	}
 
-	fsp1 = open_file_shared(conn,src,&src_sbuf,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
-					(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),FILE_ATTRIBUTE_NORMAL,INTERNAL_OPEN_ONLY,
-					&Access,&action);
+	if (!target_is_directory && count) {
+		new_create_disposition = FILE_OPEN;
+	} else {
+		if (!map_open_params_to_ntcreate(dest1,0,ofun,
+				NULL, NULL, &new_create_disposition, NULL)) {
+			return(False);
+		}
+	}
 
-	if (!fsp1)
+	fsp1 = open_file_ntcreate(conn,src,&src_sbuf,
+			FILE_GENERIC_READ,
+			FILE_SHARE_READ|FILE_SHARE_WRITE,
+			FILE_OPEN,
+			0,
+			FILE_ATTRIBUTE_NORMAL,
+			INTERNAL_OPEN_ONLY,
+			NULL);
+
+	if (!fsp1) {
 		return(False);
-
-	if (!target_is_directory && count)
-		ofun = FILE_EXISTS_OPEN;
+	}
 
 	dosattrs = dos_mode(conn, src, &src_sbuf);
-	if (SMB_VFS_STAT(conn,dest,&sbuf2) == -1)
+	if (SMB_VFS_STAT(conn,dest,&sbuf2) == -1) {
 		ZERO_STRUCTP(&sbuf2);
+	}
 
-	fsp2 = open_file_shared(conn,dest,&sbuf2,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_WRONLY),
-			ofun,dosattrs,INTERNAL_OPEN_ONLY,&Access,&action);
+	fsp2 = open_file_ntcreate(conn,dest,&sbuf2,
+			FILE_GENERIC_WRITE,
+			FILE_SHARE_READ|FILE_SHARE_WRITE,
+			new_create_disposition,
+			0,
+			dosattrs,
+			INTERNAL_OPEN_ONLY,
+			NULL);
 
 	if (!fsp2) {
 		close_file(fsp1,False);
@@ -4530,7 +4645,7 @@ BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 	}
 
 	if ((ofun&3) == 1) {
-		if(SMB_VFS_LSEEK(fsp2,fsp2->fd,0,SEEK_END) == -1) {
+		if(SMB_VFS_LSEEK(fsp2,fsp2->fh->fd,0,SEEK_END) == -1) {
 			DEBUG(0,("copy_file: error - vfs lseek returned error %s\n", strerror(errno) ));
 			/*
 			 * Stop the copy from occurring.
@@ -4540,8 +4655,9 @@ BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 		}
 	}
   
-	if (src_sbuf.st_size)
+	if (src_sbuf.st_size) {
 		ret = vfs_transfer_file(fsp1, fsp2, src_sbuf.st_size);
+	}
 
 	close_file(fsp1,False);
 
@@ -4955,7 +5071,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
 		/* we don't support these - and CANCEL_LOCK makes w2k
 		   and XP reboot so I don't really want to be
 		   compatible! (tridge) */
-		return ERROR_NT(NT_STATUS_UNSUCCESSFUL);
+		return ERROR_DOS(ERRDOS, ERRnoatomiclocks);
 	}
 	
 	if (locktype & LOCKING_ANDX_CANCEL_LOCK) {
@@ -5158,7 +5274,9 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
 	outsize = set_message(outbuf,8,0,True);
 
 	CHECK_FSP(fsp,conn);
-	CHECK_READ(fsp);
+	if (!CHECK_READ(fsp,inbuf)) {
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	}
 
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv1);
 	maxcount = SVAL(inbuf,smb_vwv3);
@@ -5286,7 +5404,9 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	START_PROFILE(SMBwriteBmpx);
 
 	CHECK_FSP(fsp,conn);
-	CHECK_WRITE(fsp);
+	if (!CHECK_WRITE(fsp)) {
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	}
 	if (HAS_CACHED_ERROR(fsp)) {
 		return(CACHED_ERROR(fsp));
 	}
@@ -5390,7 +5510,9 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
 	START_PROFILE(SMBwriteBs);
 
 	CHECK_FSP(fsp,conn);
-	CHECK_WRITE(fsp);
+	if (!CHECK_WRITE(fsp)) {
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+	}
 
 	tcount = SVAL(inbuf,smb_vwv1);
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);

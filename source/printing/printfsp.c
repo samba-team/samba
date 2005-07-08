@@ -28,7 +28,7 @@ open a print file and setup a fsp for it. This is a wrapper around
 print_job_start().
 ***************************************************************************/
 
-files_struct *print_fsp_open(connection_struct *conn, char *fname)
+files_struct *print_fsp_open(connection_struct *conn, const char *fname)
 {
 	int jobid;
 	SMB_STRUCT_STAT sbuf;
@@ -40,10 +40,11 @@ files_struct *print_fsp_open(connection_struct *conn, char *fname)
 
 	fstrcpy( name, "Remote Downlevel Document");
 	if (fname) {
-		char *p = strrchr(fname, '/');
+		const char *p = strrchr(fname, '/');
 		fstrcat(name, " ");
-		if (!p)
+		if (!p) {
 			p = fname;
+		}
 		fstrcat(name, p);
 	}
 
@@ -63,24 +64,23 @@ files_struct *print_fsp_open(connection_struct *conn, char *fname)
 	}
 
 	/* setup a full fsp */
-	fsp->fd = print_job_fd(lp_const_servicename(SNUM(conn)),jobid);
+	fsp->fh->fd = print_job_fd(lp_const_servicename(SNUM(conn)),jobid);
 	GetTimeOfDay(&fsp->open_time);
 	fsp->vuid = current_user.vuid;
-	fsp->pos = -1;
+	fsp->fh->pos = -1;
 	fsp->can_lock = True;
 	fsp->can_read = False;
+	fsp->access_mask = FILE_GENERIC_WRITE;
 	fsp->can_write = True;
-	fsp->share_mode = 0;
 	fsp->print_file = True;
 	fsp->modified = False;
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = False;
-	fsp->directory_delete_on_close = False;
 	string_set(&fsp->fsp_name,print_job_fname(lp_const_servicename(SNUM(conn)),jobid));
 	fsp->wbmpx_ptr = NULL;      
 	fsp->wcp = NULL; 
-	SMB_VFS_FSTAT(fsp,fsp->fd, &sbuf);
+	SMB_VFS_FSTAT(fsp,fsp->fh->fd, &sbuf);
 	fsp->mode = sbuf.st_mode;
 	fsp->inode = sbuf.st_ino;
 	fsp->dev = sbuf.st_dev;
@@ -91,19 +91,20 @@ files_struct *print_fsp_open(connection_struct *conn, char *fname)
 }
 
 /****************************************************************************
-print a file - called on closing the file
+ Print a file - called on closing the file.
 ****************************************************************************/
+
 void print_fsp_end(files_struct *fsp, BOOL normal_close)
 {
 	uint32 jobid;
 	fstring sharename;
 
-	if (fsp->share_mode == FILE_DELETE_ON_CLOSE) {
+	if (fsp->fh->private_options & FILE_DELETE_ON_CLOSE) {
 		/*
 		 * Truncate the job. print_job_end will take
 		 * care of deleting it for us. JRA.
 		 */
-		sys_ftruncate(fsp->fd, 0);
+		sys_ftruncate(fsp->fh->fd, 0);
 	}
 
 	if (fsp->fsp_name) {

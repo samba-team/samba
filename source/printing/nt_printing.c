@@ -922,7 +922,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 	}
 
 	/* Skip OEM header (if any) and the DOS stub to start of Windows header */
-	if (SMB_VFS_LSEEK(fsp, fsp->fd, SVAL(buf,DOS_HEADER_LFANEW_OFFSET), SEEK_SET) == (SMB_OFF_T)-1) {
+	if (SMB_VFS_LSEEK(fsp, fsp->fh->fd, SVAL(buf,DOS_HEADER_LFANEW_OFFSET), SEEK_SET) == (SMB_OFF_T)-1) {
 		DEBUG(3,("get_file_version: File [%s] too short, errno = %d\n",
 				fname, errno));
 		/* Assume this isn't an error... the file just looks sort of like a PE/NE file */
@@ -988,7 +988,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 				}
 
 				/* Seek to the start of the .rsrc section info */
-				if (SMB_VFS_LSEEK(fsp, fsp->fd, section_pos, SEEK_SET) == (SMB_OFF_T)-1) {
+				if (SMB_VFS_LSEEK(fsp, fsp->fh->fd, section_pos, SEEK_SET) == (SMB_OFF_T)-1) {
 					DEBUG(3,("get_file_version: PE file [%s] too short for section info, errno = %d\n",
 							fname, errno));
 					goto error_exit;
@@ -1084,7 +1084,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 				 * twice, as it is simpler to read the code. */
 				if (strcmp(&buf[i], VS_SIGNATURE) == 0) {
 					/* Compute skip alignment to next long address */
-					int skip = -(SMB_VFS_LSEEK(fsp, fsp->fd, 0, SEEK_CUR) - (byte_count - i) +
+					int skip = -(SMB_VFS_LSEEK(fsp, fsp->fh->fd, 0, SEEK_CUR) - (byte_count - i) +
 								 sizeof(VS_SIGNATURE)) & 3;
 					if (IVAL(buf,i+sizeof(VS_SIGNATURE)+skip) != 0xfeef04bd) continue;
 
@@ -1142,8 +1142,6 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	uint32 old_minor;
 	time_t old_create_time;
 
-	int access_mode;
-	int action;
 	files_struct    *fsp = NULL;
 	SMB_STRUCT_STAT st;
 	SMB_STRUCT_STAT stat_buf;
@@ -1159,10 +1157,15 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 
 	driver_unix_convert(filepath,conn,NULL,&bad_path,&stat_buf);
 
-	fsp = open_file_shared(conn, filepath, &stat_buf,
-						   SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
-						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-						   FILE_ATTRIBUTE_NORMAL, INTERNAL_OPEN_ONLY, &access_mode, &action);
+	fsp = open_file_ntcreate(conn, filepath, &stat_buf,
+				FILE_GENERIC_READ,
+				FILE_SHARE_READ|FILE_SHARE_WRITE,
+				FILE_OPEN,
+				0,
+				FILE_ATTRIBUTE_NORMAL,
+				INTERNAL_OPEN_ONLY,
+				NULL);
+
 	if (!fsp) {
 		/* Old file not found, so by definition new file is in fact newer */
 		DEBUG(10,("file_version_is_newer: Can't open old file [%s], errno = %d\n",
@@ -1171,13 +1174,15 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 
 	} else {
 		int ret = get_file_version(fsp, old_file, &old_major, &old_minor);
-		if (ret == -1) goto error_exit;
+		if (ret == -1) {
+			goto error_exit;
+		}
 
 		if (!ret) {
 			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
 					 old_file));
 			use_version = False;
-			if (SMB_VFS_FSTAT(fsp, fsp->fd, &st) == -1) goto error_exit;
+			if (SMB_VFS_FSTAT(fsp, fsp->fh->fd, &st) == -1) goto error_exit;
 			old_create_time = st.st_mtime;
 			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", old_create_time));
 		}
@@ -1188,10 +1193,15 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	pstrcpy(filepath, new_file);
 	driver_unix_convert(filepath,conn,NULL,&bad_path,&stat_buf);
 
-	fsp = open_file_shared(conn, filepath, &stat_buf,
-						   SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
-						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-						   FILE_ATTRIBUTE_NORMAL, INTERNAL_OPEN_ONLY, &access_mode, &action);
+	fsp = open_file_ntcreate(conn, filepath, &stat_buf,
+				FILE_GENERIC_READ,
+				FILE_SHARE_READ|FILE_SHARE_WRITE,
+				FILE_OPEN,
+				0,
+				FILE_ATTRIBUTE_NORMAL,
+				INTERNAL_OPEN_ONLY,
+				NULL);
+
 	if (!fsp) {
 		/* New file not found, this shouldn't occur if the caller did its job */
 		DEBUG(3,("file_version_is_newer: Can't open new file [%s], errno = %d\n",
@@ -1200,13 +1210,15 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 
 	} else {
 		int ret = get_file_version(fsp, new_file, &new_major, &new_minor);
-		if (ret == -1) goto error_exit;
+		if (ret == -1) {
+			goto error_exit;
+		}
 
 		if (!ret) {
 			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
 					 new_file));
 			use_version = False;
-			if (SMB_VFS_FSTAT(fsp, fsp->fd, &st) == -1) goto error_exit;
+			if (SMB_VFS_FSTAT(fsp, fsp->fh->fd, &st) == -1) goto error_exit;
 			new_create_time = st.st_mtime;
 			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", new_create_time));
 		}
@@ -1251,8 +1263,6 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 				   struct current_user *user, WERROR *perr)
 {
 	int               cversion;
-	int               access_mode;
-	int               action;
 	NTSTATUS          nt_status;
  	pstring           driverpath;
 	DATA_BLOB         null_pw;
@@ -1309,18 +1319,21 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 		goto error_exit;
 	}
 
-	fsp = open_file_shared(conn, driverpath, &st,
-		SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
-		(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-		FILE_ATTRIBUTE_NORMAL, INTERNAL_OPEN_ONLY, &access_mode, &action);
+	fsp = open_file_ntcreate(conn, driverpath, &st,
+				FILE_GENERIC_READ,
+				FILE_SHARE_READ|FILE_SHARE_WRITE,
+				FILE_OPEN,
+				0,
+				FILE_ATTRIBUTE_NORMAL,
+				INTERNAL_OPEN_ONLY,
+				NULL);
 
 	if (!fsp) {
 		DEBUG(3,("get_correct_cversion: Can't open file [%s], errno = %d\n",
 				driverpath, errno));
 		*perr = WERR_ACCESS_DENIED;
 		goto error_exit;
-	}
-	else {
+	} else {
 		uint32 major;
 		uint32 minor;
 		int    ret = get_file_version(fsp, driverpath, &major, &minor);
@@ -1660,7 +1673,8 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 		slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->driverpath);	
 		if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 			driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-			if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
+			if ( !copy_file(new_name, old_name, conn, OPENX_FILE_EXISTS_TRUNCATE|
+						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 				DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 						new_name, old_name));
 				*perr = WERR_ACCESS_DENIED;
@@ -1675,7 +1689,8 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 			slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->datafile);	
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 				driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-				if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
+				if ( !copy_file(new_name, old_name, conn, OPENX_FILE_EXISTS_TRUNCATE|
+						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
 					*perr = WERR_ACCESS_DENIED;
@@ -1692,7 +1707,8 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 			slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->configfile);	
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 				driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-				if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
+				if ( !copy_file(new_name, old_name, conn, OPENX_FILE_EXISTS_TRUNCATE|
+						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
 					*perr = WERR_ACCESS_DENIED;
@@ -1710,7 +1726,8 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 			slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->helpfile);	
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 				driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-				if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
+				if ( !copy_file(new_name, old_name, conn, OPENX_FILE_EXISTS_TRUNCATE|
+						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
 					*perr = WERR_ACCESS_DENIED;
@@ -1737,7 +1754,9 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 				slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->dependentfiles[i]);	
 				if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
 					driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-					if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
+					if ( !copy_file(new_name, old_name, conn,
+							OPENX_FILE_EXISTS_TRUNCATE|
+							OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 						DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 								new_name, old_name));
 						*perr = WERR_ACCESS_DENIED;

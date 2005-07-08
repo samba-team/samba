@@ -705,7 +705,7 @@ int cli_nt_create_full(struct cli_state *cli, const char *fname,
 int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess)
 {
 	return cli_nt_create_full(cli, fname, 0, DesiredAccess, 0,
-				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_EXISTS_OPEN, 0x0, 0x0);
+				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0);
 }
 
 /****************************************************************************

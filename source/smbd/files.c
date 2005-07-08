@@ -106,7 +106,19 @@ files_struct *file_new(connection_struct *conn)
 	}
 
 	ZERO_STRUCTP(fsp);
-	fsp->fd = -1;
+
+	fsp->fh = SMB_MALLOC_P(struct fd_handle);
+	if (!fsp->fh) {
+		SAFE_FREE(fsp);
+		set_saved_error_triple(ERRDOS, ERRnomem, NT_STATUS_NO_MEMORY);
+		return NULL;
+	}
+
+	ZERO_STRUCTP(fsp->fh);
+
+	fsp->fh->ref_count = 1;
+	fsp->fh->fd = -1;
+
 	fsp->conn = conn;
 	fsp->file_id = get_gen_count();
 	GetTimeOfDay(&fsp->open_time);
@@ -233,7 +245,7 @@ void file_dump_open_table(void)
 
 	for (fsp=Files;fsp;fsp=fsp->next,count++) {
 		DEBUG(10,("Files[%d], fnum = %d, name %s, fd = %d, fileid = %lu, dev = %x, inode = %.0f\n",
-			count, fsp->fnum, fsp->fsp_name, fsp->fd, (unsigned long)fsp->file_id,
+			count, fsp->fnum, fsp->fsp_name, fsp->fh->fd, (unsigned long)fsp->file_id,
 			(unsigned int)fsp->dev, (double)fsp->inode ));
 	}
 }
@@ -248,7 +260,7 @@ files_struct *file_find_fd(int fd)
 	files_struct *fsp;
 
 	for (fsp=Files;fsp;fsp=fsp->next,count++) {
-		if (fsp->fd == fd) {
+		if (fsp->fh->fd == fd) {
 			if (count > 10) {
 				DLIST_PROMOTE(Files, fsp);
 			}
@@ -269,7 +281,7 @@ files_struct *file_find_dif(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_i
 	files_struct *fsp;
 
 	for (fsp=Files;fsp;fsp=fsp->next,count++) {
-		/* We can have a fsp->fd == -1 here as it could be a stat open. */
+		/* We can have a fsp->fh->fd == -1 here as it could be a stat open. */
 		if (fsp->dev == dev && 
 		    fsp->inode == inode &&
 		    fsp->file_id == file_id ) {
@@ -277,7 +289,7 @@ files_struct *file_find_dif(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_i
 				DLIST_PROMOTE(Files, fsp);
 			}
 			/* Paranoia check. */
-			if (fsp->fd == -1 && fsp->oplock_type != NO_OPLOCK) {
+			if (fsp->fh->fd == -1 && fsp->oplock_type != NO_OPLOCK) {
 				DEBUG(0,("file_find_dif: file %s dev = %x, inode = %.0f, file_id = %u \
 oplock_type = %u is a stat open with oplock type !\n", fsp->fsp_name, (unsigned int)fsp->dev,
 						(double)fsp->inode, (unsigned int)fsp->file_id,
@@ -326,7 +338,7 @@ files_struct *file_find_di_first(SMB_DEV_T dev, SMB_INO_T inode)
 	fsp_fi_cache.inode = inode;
 
 	for (fsp=Files;fsp;fsp=fsp->next) {
-		if ( fsp->fd != -1 &&
+		if ( fsp->fh->fd != -1 &&
 				fsp->dev == dev &&
 				fsp->inode == inode ) {
 			/* Setup positive cache. */
@@ -349,7 +361,7 @@ files_struct *file_find_di_next(files_struct *start_fsp)
 	files_struct *fsp;
 
 	for (fsp = start_fsp->next;fsp;fsp=fsp->next) {
-		if ( fsp->fd != -1 &&
+		if ( fsp->fh->fd != -1 &&
 				fsp->dev == start_fsp->dev &&
 				fsp->inode == start_fsp->inode )
 			return fsp;
@@ -389,7 +401,7 @@ void fsp_set_pending_modtime(files_struct *tfsp, time_t pmod)
 	}
 
 	for (fsp = Files;fsp;fsp=fsp->next) {
-		if ( fsp->fd != -1 &&
+		if ( fsp->fh->fd != -1 &&
 				fsp->dev == tfsp->dev &&
 				fsp->inode == tfsp->inode ) {
 			fsp->pending_modtime = pmod;
@@ -410,7 +422,7 @@ void file_sync_all(connection_struct *conn)
 
 	for (fsp=Files;fsp;fsp=next) {
 		next=fsp->next;
-		if ((conn == fsp->conn) && (fsp->fd != -1)) {
+		if ((conn == fsp->conn) && (fsp->fh->fd != -1)) {
 			sync_file(conn,fsp);
 		}
 	}
@@ -428,6 +440,12 @@ void file_free(files_struct *fsp)
 
 	if (fsp->fake_file_handle) {
 		destroy_fake_file_handle(&fsp->fake_file_handle);
+	}
+
+	if (fsp->fh->ref_count == 1) {
+		SAFE_FREE(fsp->fh);
+	} else {
+		fsp->fh->ref_count--;
 	}
 
 	bitmap_clear(file_bmap, fsp->fnum - FILE_HANDLE_OFFSET);
@@ -505,4 +523,50 @@ Restore the chained fsp - done after an oplock break.
 void file_chain_restore(void)
 {
 	chain_fsp = oplock_save_chain_fsp;
+}
+
+files_struct *dup_file_fsp(files_struct *fsp,
+				uint32 access_mask,
+				uint32 share_access,
+				uint32 create_options)
+{
+	files_struct *dup_fsp = file_new(fsp->conn);
+
+	if (!dup_fsp) {
+		return NULL;
+	}
+
+	SAFE_FREE(dup_fsp->fh);
+
+	dup_fsp->fh = fsp->fh;
+	dup_fsp->fh->ref_count++;
+
+	dup_fsp->dev = fsp->dev;
+	dup_fsp->inode = fsp->inode;
+	dup_fsp->initial_allocation_size = fsp->initial_allocation_size;
+	dup_fsp->mode = fsp->mode;
+	dup_fsp->file_pid = fsp->file_pid;
+	dup_fsp->vuid = fsp->vuid;
+	dup_fsp->open_time = fsp->open_time;
+	dup_fsp->access_mask = access_mask;
+	dup_fsp->share_access = share_access;
+	dup_fsp->pending_modtime_owner = fsp->pending_modtime_owner;
+	dup_fsp->pending_modtime = fsp->pending_modtime;
+	dup_fsp->last_write_time = fsp->last_write_time;
+	dup_fsp->oplock_type = fsp->oplock_type;
+	dup_fsp->can_lock = fsp->can_lock;
+	dup_fsp->can_read = (access_mask & (FILE_READ_DATA)) ? True : False;
+	if (!CAN_WRITE(fsp->conn)) {
+		dup_fsp->can_write = False;
+	} else {
+		dup_fsp->can_write = (access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) ? True : False;
+	}
+	dup_fsp->print_file = fsp->print_file;
+	dup_fsp->modified = fsp->modified;
+	dup_fsp->is_directory = fsp->is_directory;
+	dup_fsp->is_stat = fsp->is_stat;
+	dup_fsp->aio_write_behind = fsp->aio_write_behind;
+        string_set(&dup_fsp->fsp_name,fsp->fsp_name);
+
+	return dup_fsp;
 }

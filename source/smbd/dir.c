@@ -822,7 +822,6 @@ static BOOL user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
 	files_struct *fsp;
-	int smb_action;
 	NTSTATUS status;
 	uint32 access_granted;
 
@@ -831,32 +830,41 @@ static BOOL user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 	 * we never hide files from them.
 	 */
 
-	if (conn->admin_user)
+	if (conn->admin_user) {
 		return True;
+	}
 
 	/* If we can't stat it does not show it */
-	if (!VALID_STAT(*pst) && (SMB_VFS_STAT(conn, name, pst) != 0))
+	if (!VALID_STAT(*pst) && (SMB_VFS_STAT(conn, name, pst) != 0)) {
 		return False;
+	}
 
 	/* Pseudo-open the file (note - no fd's created). */
 
-	if(S_ISDIR(pst->st_mode))	
-		 fsp = open_directory(conn, name, pst, 0, SET_DENY_MODE(DENY_NONE), (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-			&smb_action);
-	else
+	if(S_ISDIR(pst->st_mode)) {
+		 fsp = open_directory(conn, name, pst,
+			READ_CONTROL_ACCESS,
+			FILE_SHARE_READ|FILE_SHARE_WRITE,
+			FILE_OPEN,
+			0, /* no create options. */
+			NULL);
+	} else {
 		fsp = open_file_stat(conn, name, pst);
+	}
 
-	if (!fsp)
+	if (!fsp) {
 		return False;
+	}
 
 	/* Get NT ACL -allocated in main loop talloc context. No free needed here. */
-	sd_size = SMB_VFS_FGET_NT_ACL(fsp, fsp->fd,
+	sd_size = SMB_VFS_FGET_NT_ACL(fsp, fsp->fh->fd,
 			(OWNER_SECURITY_INFORMATION|GROUP_SECURITY_INFORMATION|DACL_SECURITY_INFORMATION), &psd);
 	close_file(fsp, True);
 
 	/* No access if SD get failed. */
-	if (!sd_size)
+	if (!sd_size) {
 		return False;
+	}
 
 	return se_access_check(psd, current_user.nt_user_token, FILE_READ_DATA,
                                  &access_granted, &status);
@@ -874,8 +882,7 @@ static BOOL user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
 	files_struct *fsp;
-	int smb_action;
-	int access_mode;
+	int info;
 	NTSTATUS status;
 	uint32 access_granted;
 
@@ -884,27 +891,36 @@ static BOOL user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_
 	 * we never hide files from them.
 	 */
 
-	if (conn->admin_user)
+	if (conn->admin_user) {
 		return True;
+	}
 
 	/* If we can't stat it does not show it */
-	if (!VALID_STAT(*pst) && (SMB_VFS_STAT(conn, name, pst) != 0))
+	if (!VALID_STAT(*pst) && (SMB_VFS_STAT(conn, name, pst) != 0)) {
 		return False;
+	}
 
-	/* Pseudo-open the file (note - no fd's created). */
+	/* Pseudo-open the file */
 
-	if(S_ISDIR(pst->st_mode))	
+	if(S_ISDIR(pst->st_mode)) {
 		return True;
-	else
-		fsp = open_file_shared1(conn, name, pst, FILE_WRITE_ATTRIBUTES, SET_DENY_MODE(DENY_NONE),
-			(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), FILE_ATTRIBUTE_NORMAL, INTERNAL_OPEN_ONLY,
-			&access_mode, &smb_action);
+	} else {
+		fsp = open_file_ntcreate(conn, name, pst,
+			FILE_WRITE_ATTRIBUTES,
+			FILE_SHARE_READ|FILE_SHARE_WRITE,
+			FILE_OPEN,
+			0,
+			FILE_ATTRIBUTE_NORMAL,
+			INTERNAL_OPEN_ONLY,
+			&info);
+	}
 
-	if (!fsp)
+	if (!fsp) {
 		return False;
+	}
 
 	/* Get NT ACL -allocated in main loop talloc context. No free needed here. */
-	sd_size = SMB_VFS_FGET_NT_ACL(fsp, fsp->fd,
+	sd_size = SMB_VFS_FGET_NT_ACL(fsp, fsp->fh->fd,
 			(OWNER_SECURITY_INFORMATION|GROUP_SECURITY_INFORMATION|DACL_SECURITY_INFORMATION), &psd);
 	close_file(fsp, False);
 

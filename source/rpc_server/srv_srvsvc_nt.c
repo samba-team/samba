@@ -1976,8 +1976,6 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	files_struct *fsp = NULL;
 	SMB_STRUCT_STAT st;
 	BOOL bad_path;
-	int access_mode;
-	int action;
 	NTSTATUS nt_status;
 	struct current_user user;
 	connection_struct *conn = NULL;
@@ -2025,15 +2023,16 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 		goto error_exit;
 	}
 
-	fsp = open_file_shared(conn, filename, &st, SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
-				(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), FILE_ATTRIBUTE_NORMAL, INTERNAL_OPEN_ONLY,
-				&access_mode, &action);
-
+	fsp = open_file_stat(conn, filename, &st);
 	if (!fsp) {
 		/* Perhaps it is a directory */
 		if (errno == EISDIR)
-			fsp = open_directory(conn, filename, &st,FILE_READ_ATTRIBUTES,0,
-					(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), &action);
+			fsp = open_directory(conn, filename, &st,
+					READ_CONTROL_ACCESS,
+					FILE_SHARE_READ|FILE_SHARE_WRITE,
+					FILE_OPEN,
+					0,
+					NULL);
 
 		if (!fsp) {
 			DEBUG(3,("_srv_net_file_query_secdesc: Unable to open file %s\n", filename));
@@ -2092,8 +2091,6 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	files_struct *fsp = NULL;
 	SMB_STRUCT_STAT st;
 	BOOL bad_path;
-	int access_mode;
-	int action;
 	NTSTATUS nt_status;
 	struct current_user user;
 	connection_struct *conn = NULL;
@@ -2142,15 +2139,17 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	}
 
 
-	fsp = open_file_shared(conn, filename, &st, SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDWR),
-			(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), FILE_ATTRIBUTE_NORMAL, INTERNAL_OPEN_ONLY,
-			&access_mode, &action);
+	fsp = open_file_stat(conn, filename, &st);
 
 	if (!fsp) {
 		/* Perhaps it is a directory */
 		if (errno == EISDIR)
-			fsp = open_directory(conn, filename, &st,FILE_READ_ATTRIBUTES,0,
-						(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), &action);
+			fsp = open_directory(conn, filename, &st,
+						FILE_READ_ATTRIBUTES,
+						FILE_SHARE_READ|FILE_SHARE_WRITE,
+						FILE_OPEN,
+						0,
+						NULL);
 
 		if (!fsp) {
 			DEBUG(3,("_srv_net_file_set_secdesc: Unable to open file %s\n", filename));
@@ -2178,11 +2177,13 @@ error_exit:
 		close_file(fsp, True);
 	}
 
-	if (became_user)
+	if (became_user) {
 		unbecome_user();
+	}
 
-	if (conn) 
+	if (conn) {
 		close_cnum(conn, user.vuid);
+	}
 
 	return r_u->status;
 }

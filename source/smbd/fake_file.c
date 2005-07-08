@@ -22,77 +22,6 @@
 
 extern struct current_user current_user;
 
-/****************************************************************************
- Open a file with a share mode.
-****************************************************************************/
-files_struct *open_fake_file_shared1(enum FAKE_FILE_TYPE fake_file_type, connection_struct *conn,char *fname,
-				SMB_STRUCT_STAT *psbuf, 
-				uint32 desired_access, 
-				int share_mode,int ofun, uint32 new_dos_attr, int oplock_request, 
-				int *Access,int *action)
-{
-	int flags=0;
-	files_struct *fsp = NULL;
-
-	if (fake_file_type == 0) {
-		return open_file_shared1(conn,fname,psbuf,desired_access,
-					share_mode,ofun,new_dos_attr,
-					oplock_request,Access,action);	
-	}
-
-	/* access check */
-	if (current_user.uid != 0) {
-		DEBUG(1,("access_denied to service[%s] file[%s] user[%s]\n",
-			lp_servicename(SNUM(conn)),fname,conn->user));
-		errno = EACCES;
-		return NULL;
-	}
-
-	fsp = file_new(conn);
-	if(!fsp)
-		return NULL;
-
-	DEBUG(5,("open_fake_file_shared1: fname = %s, FID = %d, share_mode = %x, ofun = %x, oplock request = %d\n",
-		fname, fsp->fnum, share_mode, ofun, oplock_request ));
-
-	if (!check_name(fname,conn)) {
-		file_free(fsp);
-		return NULL;
-	} 
-
-	fsp->fd = -1;
-	fsp->mode = psbuf->st_mode;
-	fsp->inode = psbuf->st_ino;
-	fsp->dev = psbuf->st_dev;
-	fsp->vuid = current_user.vuid;
-	fsp->pos = -1;
-	fsp->can_lock = True;
-	fsp->can_read = ((flags & O_WRONLY)==0);
-	fsp->can_write = ((flags & (O_WRONLY|O_RDWR))!=0);
-	fsp->share_mode = 0;
-	fsp->desired_access = desired_access;
-	fsp->print_file = False;
-	fsp->modified = False;
-	fsp->oplock_type = NO_OPLOCK;
-	fsp->sent_oplock_break = NO_BREAK_SENT;
-	fsp->is_directory = False;
-	fsp->is_stat = False;
-	fsp->directory_delete_on_close = False;
-	fsp->conn = conn;
-	string_set(&fsp->fsp_name,fname);
-	fsp->wcp = NULL; /* Write cache pointer. */
-	
-	fsp->fake_file_handle = init_fake_file_handle(fake_file_type);
-	
-	if (fsp->fake_file_handle==NULL) {
-		file_free(fsp);
-		return NULL;
-	}
-
-	conn->num_files_open++;
-	return fsp;
-}
-
 static FAKE_FILE fake_files[] = {
 #ifdef WITH_QUOTAS
 	{FAKE_FILE_NAME_QUOTA_UNIX,	FAKE_FILE_TYPE_QUOTA,	init_quota_handle,	destroy_quota_handle},
@@ -100,24 +29,11 @@ static FAKE_FILE fake_files[] = {
 	{NULL,				FAKE_FILE_TYPE_NONE,	NULL,			NULL }
 };
 
-int is_fake_file(char *fname)
-{
-	int i;
+/****************************************************************************
+ Create a fake file handle
+****************************************************************************/
 
-	if (!fname)
-		return 0;
-
-	for (i=0;fake_files[i].name!=NULL;i++) {
-		if (strncmp(fname,fake_files[i].name,strlen(fake_files[i].name))==0) {
-			DEBUG(5,("is_fake_file: [%s] is a fake file\n",fname));
-			return fake_files[i].type;
-		}
-	}
-
-	return FAKE_FILE_TYPE_NONE;
-}
-
-struct _FAKE_FILE_HANDLE *init_fake_file_handle(enum FAKE_FILE_TYPE type)
+static struct _FAKE_FILE_HANDLE *init_fake_file_handle(enum FAKE_FILE_TYPE type)
 {
 	TALLOC_CTX *mem_ctx = NULL;
 	FAKE_FILE_HANDLE *fh = NULL;
@@ -141,8 +57,9 @@ struct _FAKE_FILE_HANDLE *init_fake_file_handle(enum FAKE_FILE_TYPE type)
 			fh->type = type;
 			fh->mem_ctx = mem_ctx;
 
-			if (fake_files[i].init_pd)
+			if (fake_files[i].init_pd) {
 				fh->pd = fake_files[i].init_pd(fh->mem_ctx);
+			}
 
 			fh->free_pd = fake_files[i].free_pd;
 
@@ -153,13 +70,88 @@ struct _FAKE_FILE_HANDLE *init_fake_file_handle(enum FAKE_FILE_TYPE type)
 	return NULL;	
 }
 
+/****************************************************************************
+ Does this name match a fake filename ?
+****************************************************************************/
+
+enum FAKE_FILE_TYPE is_fake_file(const char *fname)
+{
+#ifdef HAVE_SYS_QUOTAS
+	int i;
+#endif
+
+	if (!fname) {
+		return FAKE_FILE_TYPE_NONE;
+	}
+
+#ifdef HAVE_SYS_QUOTAS
+	for (i=0;fake_files[i].name!=NULL;i++) {
+		if (strncmp(fname,fake_files[i].name,strlen(fake_files[i].name))==0) {
+			DEBUG(5,("is_fake_file: [%s] is a fake file\n",fname));
+			return fake_files[i].type;
+		}
+	}
+#endif
+
+	return FAKE_FILE_TYPE_NONE;
+}
+
+
+/****************************************************************************
+ Open a fake quota file with a share mode.
+****************************************************************************/
+
+files_struct *open_fake_file(connection_struct *conn,
+				enum FAKE_FILE_TYPE fake_file_type,
+				const char *fname,
+				uint32 access_mask)
+{
+	files_struct *fsp = NULL;
+
+	/* access check */
+	if (current_user.uid != 0) {
+		DEBUG(1,("open_fake_file_shared: access_denied to service[%s] file[%s] user[%s]\n",
+			lp_servicename(SNUM(conn)),fname,conn->user));
+		errno = EACCES;
+		return NULL;
+	}
+
+	fsp = file_new(conn);
+	if(!fsp) {
+		return NULL;
+	}
+
+	DEBUG(5,("open_fake_file_shared: fname = %s, FID = %d, access_mask = 0x%x\n",
+		fname, fsp->fnum, (unsigned int)access_mask));
+
+	fsp->conn = conn;
+	fsp->fh->fd = -1;
+	fsp->vuid = current_user.vuid;
+	fsp->fh->pos = -1;
+	fsp->can_lock = True; /* Should this be true ? */
+	fsp->access_mask = access_mask;
+	string_set(&fsp->fsp_name,fname);
+	
+	fsp->fake_file_handle = init_fake_file_handle(fake_file_type);
+	
+	if (fsp->fake_file_handle==NULL) {
+		file_free(fsp);
+		return NULL;
+	}
+
+	conn->num_files_open++;
+	return fsp;
+}
+
 void destroy_fake_file_handle(FAKE_FILE_HANDLE **fh)
 {
-	if (!fh||!(*fh))
+	if (!fh||!(*fh)) {
 		return;
+	}
 
-	if ((*fh)->free_pd)
+	if ((*fh)->free_pd) {
 		(*fh)->free_pd(&(*fh)->pd);		
+	}
 
 	talloc_destroy((*fh)->mem_ctx);
 	(*fh) = NULL;
