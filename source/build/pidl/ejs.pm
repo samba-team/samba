@@ -10,6 +10,7 @@ use strict;
 use pidl::typelist;
 
 my($res);
+my %constants;
 
 sub pidl ($)
 {
@@ -409,6 +410,17 @@ sub EjsEnumPush($$)
 {
 	my $name = shift;
 	my $d = shift;
+	my $v = 0;
+	# put the enum elements in the constants array
+	foreach my $e (@{$d->{ELEMENTS}}) {
+		chomp $e;
+		if ($e =~ /^(.*)=\s*(.*)\s*$/) {
+			$e = $1;
+			$v = $2;
+		}
+		$constants{$e} = $v;
+		$v++;
+	}
 	pidl "\nstatic NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const enum $name *r)\n{\n";
 	pidl "\tunsigned e = *r;\n";
 	pidl "\tNDR_CHECK(ejs_push_enum(ejs, v, name, &e));\n";
@@ -420,7 +432,9 @@ sub EjsEnumPush($$)
 # push a bitmap
 sub EjsBitmapPush($$)
 {
-	# ignored for now
+	my $name = shift;
+	my $e = shift;
+#	print util::MyDumper($e);
 }
 
 
@@ -486,6 +500,8 @@ sub EjsInterface($)
 	my @fns = ();
 	my $name = $interface->{NAME};
 
+	%constants = ();
+
 	foreach my $d (@{$interface->{TYPEDEFS}}) {
 		EjsTypedefPush($d);
 		EjsTypedefPull($d);
@@ -505,6 +521,18 @@ sub EjsInterface($)
 	pidl "{\n";
 	foreach (@fns) {
 		pidl "\tejsDefineCFunction(-1, \"dcerpc_$_\", ejs_$_, NULL, MPR_VAR_SCRIPT_HANDLE);\n";
+	}
+	pidl "}\n\n";
+
+	pidl "void setup_ejs_constants_$name(int eid)\n";
+	pidl "{\n";
+	foreach my $v (keys %constants) {
+		my $value = $constants{$v};
+		if (substr($value, 0, 1) eq "\"") {
+			pidl "\tejs_set_constant_string(eid, \"$v\", $value);\n";
+		} else {
+			pidl "\tejs_set_constant_int(eid, \"$v\", $value);\n";
+		}
 	}
 	pidl "}\n";
 }
