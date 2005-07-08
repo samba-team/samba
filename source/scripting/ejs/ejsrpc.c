@@ -406,3 +406,20 @@ NTSTATUS ejs_push_GUID(struct ejs_rpc *ejs,
 	NT_STATUS_HAVE_NO_MEMORY(guid);
 	return mprSetVar(v, name, mprCreateStringVar(guid, True));
 }
+
+NTSTATUS ejs_push_null(struct ejs_rpc *ejs, struct MprVar *v, const char *name)
+{
+	return mprSetVar(v, name, mprCreatePtrVar(NULL, name));
+}
+
+BOOL ejs_pull_null(struct ejs_rpc *ejs, struct MprVar *v, const char *name)
+{
+	v = mprGetVar(v, name);
+	if (v == NULL) {
+		return True;
+	}
+	if (v->type == MPR_TYPE_PTR && v->ptr == NULL) {
+		return True;
+	}
+	return False;
+}

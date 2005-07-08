@@ -103,6 +103,9 @@ sub fn_prefix($)
 sub EjsPullScalar($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
+
+	return if (util::has_property($e, "value"));
+
 	$var = get_pointer_to($var);
 	# have to handle strings specially :(
 	if ($e->{TYPE} eq "string") {
@@ -116,9 +119,13 @@ sub EjsPullScalar($$$$$)
 sub EjsPullPointer($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
+	pidl "\tif (ejs_pull_null(ejs, v, $name)) {\n";
+	pidl "\t$var = NULL;\n";
+	pidl "\t} else {\n";
 	pidl "\tEJS_ALLOC(ejs, $var);\n";
 	$var = get_value_of($var);		
 	EjsPullElement($e, Ndr::GetNextLevel($e, $l), $var, $name, $env);
+	pidl "}\n";
 }
 
 ###########################
@@ -335,8 +342,12 @@ sub EjsPushString($$$$$)
 sub EjsPushPointer($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
+	pidl "\tif (NULL == $var) {\n";
+	pidl "\tNDR_CHECK(ejs_push_null(ejs, v, $name));\n";
+	pidl "\t} else {\n";
 	$var = get_value_of($var);		
 	EjsPushElement($e, Ndr::GetNextLevel($e, $l), $var, $name, $env);
+	pidl "}\n";
 }
 
 ###########################
@@ -540,6 +551,14 @@ sub EjsFunction($)
 	pidl "}\n\n";
 }
 
+###################
+# handle a constant
+sub EjsConst($)
+{
+    my $const = shift;
+    $constants{$const->{NAME}} = $const->{VALUE};
+}
+
 #####################################################################
 # parse the interface definitions
 sub EjsInterface($)
@@ -563,6 +582,10 @@ sub EjsInterface($)
 		EjsFunction($d);
 
 		push (@fns, $d->{NAME});
+	}
+
+	foreach my $d (@{$interface->{CONSTS}}) {
+		EjsConst($d);
 	}
 
 	pidl "void setup_ejs_$name(void)\n";
