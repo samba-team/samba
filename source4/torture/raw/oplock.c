@@ -316,6 +316,125 @@ static BOOL test_oplock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VAL(break_info.count, 1);
 	CHECK_VAL(break_info.fnum, fnum);
 	CHECK_VAL(io.ntcreatex.out.oplock_level, LEVEL_II_OPLOCK_RETURN);
+	smbcli_close(cli->tree, fnum2);
+
+	printf("third oplocked open should grant level2 without break\n");
+	ZERO_STRUCT(break_info);
+	smbcli_oplock_handler(cli->transport, oplock_handler_ack, cli->tree);
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | 
+		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
+		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum2 = io.ntcreatex.out.fnum;
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(io.ntcreatex.out.oplock_level, LEVEL_II_OPLOCK_RETURN);
+
+	ZERO_STRUCT(break_info);
+
+	printf("write should trigger a break to none on both\n");
+	{
+		union smb_write wr;
+		wr.write.level = RAW_WRITE_WRITE;
+		wr.write.in.fnum = fnum2;
+		wr.write.in.count = 1;
+		wr.write.in.offset = 0;
+		wr.write.in.remaining = 0;
+		wr.write.in.data = "x";
+		status = smb_raw_write(cli->tree, &wr);
+		CHECK_STATUS(status, NT_STATUS_OK);
+	}
+
+	/* Now the oplock break request comes in. But right now we can't
+	 * answer it. Do another write */
+
+	msleep(100);
+	
+	{
+		union smb_write wr;
+		wr.write.level = RAW_WRITE_WRITE;
+		wr.write.in.fnum = fnum2;
+		wr.write.in.count = 1;
+		wr.write.in.offset = 0;
+		wr.write.in.remaining = 0;
+		wr.write.in.data = "x";
+		status = smb_raw_write(cli->tree, &wr);
+		CHECK_STATUS(status, NT_STATUS_OK);
+	}
+
+	CHECK_VAL(break_info.count, 2);
+	CHECK_VAL(break_info.level, 0);
+
+	smbcli_close(cli->tree, fnum);
+	smbcli_close(cli->tree, fnum2);
+
+	ZERO_STRUCT(break_info);
+	smbcli_oplock_handler(cli->transport, oplock_handler_ack, cli->tree);
+
+	printf("Open with oplock after a on-oplock open should grant level2\n");
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE|
+		NTCREATEX_SHARE_ACCESS_DELETE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.fnum;
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(break_info.fnum, 0);
+	CHECK_VAL(io.ntcreatex.out.oplock_level, 0);
+
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
+		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
+		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE|
+		NTCREATEX_SHARE_ACCESS_DELETE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum2 = io.ntcreatex.out.fnum;
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(break_info.fnum, 0);
+	CHECK_VAL(io.ntcreatex.out.oplock_level, LEVEL_II_OPLOCK_RETURN);
+
+	printf("write should trigger a break to none\n");
+	{
+		union smb_write wr;
+		wr.write.level = RAW_WRITE_WRITE;
+		wr.write.in.fnum = fnum;
+		wr.write.in.count = 1;
+		wr.write.in.offset = 0;
+		wr.write.in.remaining = 0;
+		wr.write.in.data = "x";
+		status = smb_raw_write(cli->tree, &wr);
+		CHECK_STATUS(status, NT_STATUS_OK);
+	}
+
+	/* Now the oplock break request comes in. But right now we can't
+	 * answer it. Do another write */
+
+	msleep(100);
+	
+	{
+		union smb_write wr;
+		wr.write.level = RAW_WRITE_WRITE;
+		wr.write.in.fnum = fnum;
+		wr.write.in.count = 1;
+		wr.write.in.offset = 0;
+		wr.write.in.remaining = 0;
+		wr.write.in.data = "x";
+		status = smb_raw_write(cli->tree, &wr);
+		CHECK_STATUS(status, NT_STATUS_OK);
+	}
+
+	CHECK_VAL(break_info.count, 1);
+	CHECK_VAL(break_info.fnum, fnum2);
+	CHECK_VAL(break_info.level, 0);
 
 done:
 	smbcli_close(cli->tree, fnum);
