@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "lib/ejs/ejs.h"
 #include "scripting/ejs/ejsrpc.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 NTSTATUS ejs_pull_rpc(int eid, const char *callname, 
 		      struct MprVar *v, void *ptr, ejs_pull_function_t ejs_pull)
@@ -235,6 +236,63 @@ NTSTATUS ejs_push_hyper(struct ejs_rpc *ejs,
 	return mprSetVar(v, name, mprCreateIntegerVar(*r));
 }
 
+NTSTATUS ejs_pull_dlong(struct ejs_rpc *ejs, 
+			struct MprVar *v, const char *name, uint64_t *r)
+{
+	struct MprVar *var;
+	var = mprGetVar(v, name);
+	if (var == NULL) {
+		DEBUG(1,("ejs_pull_dlong: unable to find '%s'\n", name));
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+	*r = mprVarToInteger(var);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ejs_push_dlong(struct ejs_rpc *ejs, 
+			struct MprVar *v, const char *name, const uint64_t *r)
+{
+	return mprSetVar(v, name, mprCreateIntegerVar(*r));
+}
+
+NTSTATUS ejs_pull_udlong(struct ejs_rpc *ejs, 
+			struct MprVar *v, const char *name, uint64_t *r)
+{
+	struct MprVar *var;
+	var = mprGetVar(v, name);
+	if (var == NULL) {
+		DEBUG(1,("ejs_pull_udlong: unable to find '%s'\n", name));
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+	*r = mprVarToInteger(var);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ejs_push_udlong(struct ejs_rpc *ejs, 
+			struct MprVar *v, const char *name, const uint64_t *r)
+{
+	return mprSetVar(v, name, mprCreateIntegerVar(*r));
+}
+
+NTSTATUS ejs_pull_NTTIME(struct ejs_rpc *ejs, 
+			struct MprVar *v, const char *name, uint64_t *r)
+{
+	struct MprVar *var;
+	var = mprGetVar(v, name);
+	if (var == NULL) {
+		DEBUG(1,("ejs_pull_NTTIME: unable to find '%s'\n", name));
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+	*r = mprVarToInteger(var);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ejs_push_NTTIME(struct ejs_rpc *ejs, 
+			struct MprVar *v, const char *name, const uint64_t *r)
+{
+	return mprSetVar(v, name, mprCreateIntegerVar(*r));
+}
+
 
 /*
   pull a enum from a mpr variable to a C element
@@ -265,7 +323,7 @@ NTSTATUS ejs_push_enum(struct ejs_rpc *ejs,
   pull a string
 */
 NTSTATUS ejs_pull_string(struct ejs_rpc *ejs, 
-			 struct MprVar *v, const char *name, char **s)
+			 struct MprVar *v, const char *name, const char **s)
 {
 	struct MprVar *var;
 	var = mprGetVar(v, name);
@@ -273,8 +331,7 @@ NTSTATUS ejs_pull_string(struct ejs_rpc *ejs,
 		DEBUG(1,("ejs_pull_string: unable to find '%s'\n", name));
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
-	*s = talloc_strdup(ejs, mprToString(var));
-	NT_STATUS_HAVE_NO_MEMORY(*s);
+	*s = mprToString(var);
 	return NT_STATUS_OK;
 }
 
@@ -303,4 +360,49 @@ void ejs_set_constant_string(int eid, const char *name, const char *value)
 {
 	struct MprVar *v = ejsGetGlobalObject(eid);
 	mprSetVar(v, name, mprCreateStringVar(value, False));
+}
+
+
+NTSTATUS ejs_pull_dom_sid(struct ejs_rpc *ejs, 
+			  struct MprVar *v, const char *name, struct dom_sid *r)
+{
+	struct MprVar *var;
+	struct dom_sid *sid;
+	var = mprGetVar(v, name);
+	if (var == NULL) {
+		DEBUG(1,("ejs_pull_dom_sid: unable to find '%s'\n", name));
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+	sid = dom_sid_parse_talloc(ejs, mprToString(var));
+	NT_STATUS_HAVE_NO_MEMORY(sid);
+	*r = *sid;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ejs_push_dom_sid(struct ejs_rpc *ejs, 
+			  struct MprVar *v, const char *name, const struct dom_sid *r)
+{
+	char *sidstr = dom_sid_string(ejs, r);
+	NT_STATUS_HAVE_NO_MEMORY(sidstr);
+	return mprSetVar(v, name, mprCreateStringVar(sidstr, True));
+}
+
+NTSTATUS ejs_pull_GUID(struct ejs_rpc *ejs, 
+		       struct MprVar *v, const char *name, struct GUID *r)
+{
+	struct MprVar *var;
+	var = mprGetVar(v, name);
+	if (var == NULL) {
+		DEBUG(1,("ejs_pull_GUID: unable to find '%s'\n", name));
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+	return GUID_from_string(mprToString(var), r);
+}
+
+NTSTATUS ejs_push_GUID(struct ejs_rpc *ejs, 
+		       struct MprVar *v, const char *name, const struct GUID *r)
+{
+	char *guid = GUID_string(ejs, r);
+	NT_STATUS_HAVE_NO_MEMORY(guid);
+	return mprSetVar(v, name, mprCreateStringVar(guid, True));
 }
