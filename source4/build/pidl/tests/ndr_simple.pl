@@ -4,16 +4,14 @@
 # Published under the GNU General Public License
 use strict;
 
-use FindBin qw($RealBin);
-use lib "$RealBin/../..";
-use pidl::test;
+use Parse::Pidl::Test;
 
-my %settings = Test::GetSettings(@ARGV);
+my %settings = Parse::Pidl::Test::GetSettings(@ARGV);
 $settings{'IDL-Arguments'} = ['--quiet', '--parse', '--parser=ndr_test.c', '--header=ndr_test.h'];
 $settings{'IncludeFiles'} = ['ndr_test.h'];
 $settings{'ExtraFiles'} = ['ndr_test.c'];
 
-Test::test_idl(
+Parse::Pidl::Test::test_idl(
 	# Name
 	'UInt8',
 	

@@ -3,17 +3,15 @@
 # (C) 2005 Jelmer Vernooij. Published under the GNU GPL
 use strict;
 
-use FindBin qw($RealBin);
-use lib "$RealBin/../..";
-use pidl::test;
+use Parse::Pidl::Test;
 
-my %settings = Test::GetSettings(@ARGV);
+my %settings = Parse::Pidl::Test::GetSettings(@ARGV);
 
 $settings{'IDL-Arguments'} = ['--quiet', '--parse', '--parser=ndr_test.c', '--header=ndr_test.h'];
 $settings{'IncludeFiles'} = ['ndr_test.h'];
 $settings{'ExtraFiles'} = ['ndr_test.c'];
 
-Test::test_idl('align-uint8-uint16', \%settings,
+Parse::Pidl::Test::test_idl('align-uint8-uint16', \%settings,
 '
 	typedef [public] struct { 
 		uint8 x;
@@ -38,7 +36,7 @@ Test::test_idl('align-uint8-uint16', \%settings,
 		return 2;
 ');
 
-Test::test_idl('align-uint8-uint32', \%settings,
+Parse::Pidl::Test::test_idl('align-uint8-uint32', \%settings,
 '
 	typedef [public] struct { 
 		uint8 x;
@@ -64,7 +62,7 @@ Test::test_idl('align-uint8-uint32', \%settings,
 ');
 
 
-Test::test_idl('align-uint8-hyper', \%settings,
+Parse::Pidl::Test::test_idl('align-uint8-hyper', \%settings,
 '
 	typedef [public] struct { 
 		uint8 x;
@@ -90,7 +88,7 @@ Test::test_idl('align-uint8-hyper', \%settings,
 		return 2;
 ');
 
-Test::test_idl('noalignflag-uint8-uint16', \%settings,
+Parse::Pidl::Test::test_idl('noalignflag-uint8-uint16', \%settings,
 '
 	typedef [public] struct { 
 		uint8 x;
@@ -117,7 +115,7 @@ Test::test_idl('noalignflag-uint8-uint16', \%settings,
 		return 2;
 ');
 
-Test::test_idl('align-blob-align2', \%settings,
+Parse::Pidl::Test::test_idl('align-blob-align2', \%settings,
 '
 	typedef [public] struct { 
 		uint8 x;

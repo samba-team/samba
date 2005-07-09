@@ -5,7 +5,7 @@
 package Parse::Pidl::Test;
 
 use strict;
-use pidl::util;
+use Parse::Pidl::Util;
 use Getopt::Long;
 
 my $cc = $ENV{CC};
@@ -146,7 +146,7 @@ sub GetSettings($)
 {
 	my $settings = { 
 		OutputDir => ".",
-		'IDL-Compiler' => "./build/pidl/pidl.pl"
+		'IDL-Compiler' => "./pidl"
 	};
 
 	my %opts = ();
