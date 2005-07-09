@@ -552,26 +552,31 @@ REQUIRED_SUBSYSTEMS = NDR_RAW RPC_RAW LIBSMB NDR_MISC NDR_DCERPC NDR_SCHANNEL ND
 ################################################
 
 [SUBSYSTEM::RPC_EJS_ECHO]
+INIT_FUNCTION = ejs_init_rpcecho
 OBJ_FILES = librpc/gen_ndr/ndr_echo_ejs.o
 REQUIRED_SUBSYSTEMS = RPC NDR_ECHO
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_EJS_MISC]
+INIT_FUNCTION = ejs_init_misc
 OBJ_FILES = librpc/gen_ndr/ndr_misc_ejs.o
 REQUIRED_SUBSYSTEMS = RPC NDR_MISC
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_EJS_SAMR]
+INIT_FUNCTION = ejs_init_samr
 OBJ_FILES = librpc/gen_ndr/ndr_samr_ejs.o
 REQUIRED_SUBSYSTEMS = RPC NDR_SAMR
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_EJS_SECURITY]
+INIT_FUNCTION = ejs_init_security
 OBJ_FILES = librpc/gen_ndr/ndr_security_ejs.o
 REQUIRED_SUBSYSTEMS = RPC LIB_SECURITY_NDR
 NOPROTO = YES
 
 [SUBSYSTEM::RPC_EJS_LSA]
+INIT_FUNCTION = ejs_init_lsarpc
 OBJ_FILES = librpc/gen_ndr/ndr_lsa_ejs.o
 REQUIRED_SUBSYSTEMS = RPC NDR_LSA
 NOPROTO = YES
