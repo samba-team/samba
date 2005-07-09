@@ -24,6 +24,7 @@ configure:
 		--with-syslog \
 		--with-readline \
 		--with-ldap 
+	cd $(SOURCEPATH)/build/pidl && perl Makefile.PL PREFIX=/usr
 	touch $@
 
 build: configure
@@ -31,12 +32,13 @@ build: configure
 	$(MAKE) -C $(SOURCEPATH) proto 
 	-$(MAKE) -C $(SOURCEPATH) pch
 	$(MAKE) -C $(SOURCEPATH) all
+	$(MAKE) -C $(SOURCEPATH)/build/pidl all
 	touch $@
 
 clean:
 	dh_testdir
 	dh_clean
-	rm -f build
+	rm -f build configure
 	-$(MAKE) -C $(SOURCEPATH) clean
 
 binary-indep: build install
@@ -44,7 +46,6 @@ binary-indep: build install
 	dh_testroot -i
 	dh_install -i --sourcedir=debian/tmp
 	dh_installdocs -i
-	dh_installman -i
 	dh_installchangelogs -i
 	dh_compress -i
 	dh_fixperms -i
@@ -64,9 +65,7 @@ install: build
 	$(MAKE) -C $(SOURCEPATH) manpages installman DESTDIR=$(CURDIR)/debian/tmp
 	mkdir -p $(CURDIR)/debian/tmp/etc/samba4
 	cp $(CURDIR)/debian/smb.conf $(CURDIR)/debian/tmp/etc/samba4
-	cp $(CURDIR)/../source/build/pidl/pidl.pl $(CURDIR)/debian/tmp/usr/bin/pidl
-	mkdir -p $(CURDIR)/debian/tmp/usr/share/perl5/Parse/Pidl
-	cp $(CURDIR)/../source/build/pidl/*.pm $(CURDIR)/debian/tmp/usr/share/perl5/Parse/Pidl
+	$(MAKE) -C $(SOURCEPATH)/build/pidl install DESTDIR=$(CURDIR)/debian/tmp
 
 binary-arch: build install
 	dh_testdir -a
@@ -74,7 +73,6 @@ binary-arch: build install
 	dh_install -a --sourcedir=debian/tmp
 	dh_installchangelogs -a
 	dh_installdocs -a
-	dh_installman -a
 	dh_strip -a
 	dh_python -a
 	dh_compress -a
@@ -86,6 +84,6 @@ binary-arch: build install
 	dh_md5sums -a
 	dh_builddeb -a
 
-binary: binary-indep binary-arch
+binary: binary-arch binary-indep 
 
 .PHONY: binary binary-arch binary-indep clean
