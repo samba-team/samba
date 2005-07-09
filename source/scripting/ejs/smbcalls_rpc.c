@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/ndr_echo.h"
 #include "lib/cmdline/popt_common.h"
 #include "scripting/ejs/ejsrpc.h"
+#include "dlinklist.h"
 
 /*
   connect to an rpc server
@@ -175,22 +176,46 @@ done:
 }
 
 
+/* a list of registered ejs rpc modules */
+static struct ejs_register {
+	struct ejs_register *next, *prev;
+	const char *name;
+	ejs_setup_t setup;
+	ejs_constants_t constants;
+} *ejs_registered;
+
+/*
+  register a generated ejs module
+*/
+ NTSTATUS smbcalls_register_ejs(const char *name, 
+				ejs_setup_t setup,
+				ejs_constants_t constants)
+{
+	struct ejs_register *r;
+	void *ctx = ejs_registered;
+	if (ctx == NULL) {
+		ctx = talloc_autofree_context();
+	}
+	r = talloc(ctx, struct ejs_register);
+	NT_STATUS_HAVE_NO_MEMORY(r);
+	r->name = name;
+	r->setup = setup;
+	r->constants = constants;
+	DLIST_ADD(ejs_registered, r);
+	return NT_STATUS_OK;
+}
+
 /*
   setup C functions that be called from ejs
 */
 void smb_setup_ejs_rpc(void)
 {
-	void setup_ejs_rpcecho(void);
-	void setup_ejs_samr(void);
-	void setup_ejs_misc(void);
-	void setup_ejs_security(void);
+	struct ejs_register *r;
 
 	ejsDefineCFunction(-1, "rpc_connect", ejs_rpc_connect, NULL, MPR_VAR_SCRIPT_HANDLE);
-
-	setup_ejs_rpcecho();
-	setup_ejs_samr();
-	setup_ejs_misc();
-	setup_ejs_security();
+	for (r=ejs_registered;r;r=r->next) {
+		r->setup();
+	}
 }
 
 /*
@@ -198,18 +223,15 @@ void smb_setup_ejs_rpc(void)
 */
 void smb_setup_ejs_rpc_constants(int eid)
 {
+	struct ejs_register *r;
 	struct MprVar v;
 
-	void setup_ejs_constants_rpcecho(int);
-	void setup_ejs_constants_samr(int);
-	void setup_ejs_constants_misc(int);
-	void setup_ejs_constants_security(int);
+	for (r=ejs_registered;r;r=r->next) {
+		r->constants(eid);
+	}
 
-	setup_ejs_constants_rpcecho(eid);
-	setup_ejs_constants_samr(eid);
-	setup_ejs_constants_misc(eid);
-	setup_ejs_constants_security(eid);
-	
 	v = mprCreatePtrVar(NULL, "NULL");
 	mprSetProperty(ejsGetGlobalObject(eid), "NULL", &v);
 }
+
+
