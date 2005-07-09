@@ -39,6 +39,8 @@ static int ejs_rpc_connect(MprVarHandle eid, int argc, struct MprVar **argv)
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
 	struct MprVar *conn;
+	struct cli_credentials *creds = cmdline_credentials;
+	struct event_context *ev;
 
 	/* validate arguments */
 	if (argc != 3 ||
@@ -59,9 +61,18 @@ static int ejs_rpc_connect(MprVarHandle eid, int argc, struct MprVar **argv)
 		goto done;
 	}
 
+	if (creds == NULL) {
+		creds = cli_credentials_init(mprMemCtx());
+		cli_credentials_guess(creds);
+		cli_credentials_set_username(creds, "", CRED_GUESSED);
+		cli_credentials_set_password(creds, "", CRED_GUESSED);
+	}
+
+	ev = talloc_find_parent_bytype(mprMemCtx(), struct event_context);
+
 	status = dcerpc_pipe_connect(mprMemCtx(), &p, binding, 
 				     iface->uuid, iface->if_version, 
-				     cmdline_credentials, NULL);
+				     creds, ev);
 	if (!NT_STATUS_IS_OK(status)) goto done;
 
 	/* callers don't allocate ref vars in the ejs interface */
