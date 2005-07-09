@@ -1,7 +1,18 @@
+2005-07-09  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* kxd.c (doit): only cleaup for active sockets, passive does it
+	own cleaning up
+
+	* fix unconst and shadow warnings
+	
 2005-07-07  Assar Westerlund  <assar@kth.se>
 
 	* krb4.c: Do not assume that des_key_schedule is an
 	array.
+
+2005-06-07  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* (recv_conn): init variables to using them uninitialized
 
 2005-04-30  Love Hörquist Åstrand  <lha@it.su.se>
 
