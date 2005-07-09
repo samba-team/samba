@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998-2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998-2002, 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -426,6 +426,8 @@ sec_fprintf(FILE *f, const char *fmt, ...)
 
 #ifdef FTP_SERVER
 
+int ccc_passed;
+
 void
 auth(char *auth_name)
 {
@@ -529,9 +531,10 @@ prot(char *pl)
 void ccc(void)
 {
     if(sec_complete){
-	if(mech->ccc && (*mech->ccc)(app_data) == 0)
+	if(mech->ccc && (*mech->ccc)(app_data) == 0) {
 	    command_prot = data_prot = prot_clear;
-	else
+	    ccc_passed = 1;
+	} else
 	    reply(534, "You must be joking.");
     }else
 	reply(503, "Incomplete security data exchange.");
