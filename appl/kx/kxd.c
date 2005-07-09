@@ -680,13 +680,14 @@ doit(int sock, int tcp_flag)
 
     flags = recv_conn (sock, &context, &dispnr, &nsockets, &sockets, tcp_flag);
 
-    if (flags & PASSIVE)
+    if (flags & PASSIVE) {
 	ret = doit_passive (&context, sock, flags, dispnr,
 			    nsockets, sockets, tcp_flag);
-    else
+    } else {
 	ret = doit_active (&context, sock, flags, tcp_flag);
+	cleanup(nsockets, sockets);
+    }
     context_destroy (&context);
-    cleanup(nsockets, sockets);
     return ret;
 }
 
