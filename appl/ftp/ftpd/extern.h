@@ -130,6 +130,7 @@ extern	int logging;
 extern	int type;
 extern off_t file_size;
 extern off_t byte_count;
+extern	int ccc_passed;
 
 extern	int form;
 extern	int debug;
