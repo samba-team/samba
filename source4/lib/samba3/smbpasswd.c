@@ -58,12 +58,12 @@
 
 /*! Convert 32 hex characters into a 16 byte array. */
 
-struct samr_Password *smbpasswd_gethexpwd(TALLOC_CTX *mem_ctx, char *p)
+struct samr_Password *smbpasswd_gethexpwd(TALLOC_CTX *mem_ctx, const char *p)
 {
 	int i;
 	unsigned char   lonybble, hinybble;
 	const char     *hexchars = "0123456789ABCDEF";
-	char           *p1, *p2;
+	const char     *p1, *p2;
         struct samr_Password *pwd = talloc(mem_ctx, struct samr_Password);
 
 	if (!p) return NULL;
