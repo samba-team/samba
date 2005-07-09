@@ -674,13 +674,16 @@ sub EjsInterface($)
 
 	pidl "void setup_ejs_$name(void)";
 	pidl "{";
+	indent;
 	foreach (@fns) {
 		pidl "ejsDefineCFunction(-1, \"dcerpc_$_\", ejs_$_, NULL, MPR_VAR_SCRIPT_HANDLE);";
 	}
+	deindent;
 	pidl "}\n";
 
 	pidl "void setup_ejs_constants_$name(int eid)";
 	pidl "{";
+	indent;
 	foreach my $v (keys %constants) {
 		my $value = $constants{$v};
 		if (substr($value, 0, 1) eq "\"") {
@@ -689,6 +692,14 @@ sub EjsInterface($)
 			pidl "ejs_set_constant_int(eid, \"$v\", $value);";
 		}
 	}
+	deindent;
+	pidl "}\n";
+
+	pidl "NTSTATUS ejs_init_$name(void)";
+	pidl "{";
+	indent;
+	pidl "return smbcalls_register_ejs(\"$name\", setup_ejs_$name, setup_ejs_constants_$name);";
+	deindent;
 	pidl "}";
 }
 
