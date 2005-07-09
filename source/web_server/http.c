@@ -822,6 +822,8 @@ void http_process_input(struct websrv_context *web)
 	esp->req = espCreateRequest(web, web->input.url, esp->variables);
 	if (esp->req == NULL) goto internal_error;
 
+	smb_setup_ejs_constants(esp->req->eid);
+
 	/* work out the mime type */
 	p = strrchr(web->input.url, '.');
 	if (p == NULL) {
