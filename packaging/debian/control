@@ -38,14 +38,12 @@ Description: SMB Server
 Package: samba4-gtk-frontends
 Architecture: any
 Depends: ${shlibs:Depends}
-Description: Graphical tool for viewing and editing registry files
- Supports:
+Description: Graphical Samba client utilities
+ Contains GTK+ programs for maintaining:
  .
- * NT4 Registry files
- * Win9x Registry files 
- * Remote Registries (thru RPC)
- * GConf
- * Using filesystem as a registry file
+ * Remote SAM databases
+ * Local and remote registries
+ * DCE/RPC endpoints
 
 Package: winregistry-tools
 Architecture: any
@@ -61,7 +59,7 @@ Description: IDL compiler written in Perl
  
 Package: samba4-dev
 Architecture: any
-Depends: pidl, libc6-dev, pkg-config (>= 0.14.0)
+Depends: libparse-pidl-perl, libc6-dev, pkg-config (>= 0.14.0)
 Description: Tools for extending Samba
  Contains Samba includes and tools
 
