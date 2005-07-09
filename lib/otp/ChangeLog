@@ -1,3 +1,7 @@
+2005-07-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* otp.h: remove parameter names to avoid shadow warnings
+
 2005-07-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* otp_parse.c (parse_words): avoid const warnings by making a
