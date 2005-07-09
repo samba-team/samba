@@ -1555,6 +1555,7 @@ static int evalExpr(Ejs *ep, MprVar *lhs, int rel, MprVar *rhs)
 		if (lhs->type == MPR_TYPE_STRING) {
 			if (isdigit((int) lhs->string[0])) {
 				num = mprVarToNumber(lhs);
+				lhs->allocatedVar = 0;
 				mprDestroyVar(lhs);
 				*lhs = mprCreateNumberVar(num);
 				/* Examine further below */
@@ -1564,6 +1565,7 @@ static int evalExpr(Ejs *ep, MprVar *lhs, int rel, MprVar *rhs)
 				 *	Convert the RHS to a string
 				 */
 				mprVarToString(&str, MPR_MAX_STRING, 0, rhs);
+				rhs->allocatedVar = 0;
 				mprDestroyVar(rhs);
 				*rhs = mprCreateStringVar(str, 1);
 				mprFree(str);
