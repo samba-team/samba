@@ -26,6 +26,7 @@ TESTS =						\
 	test_addr				\
 	test_cc					\
 	test_config				\
+	test_crypto_wrapping			\
 	test_keytab				\
 	test_time				\
 	test_mem
