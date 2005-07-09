@@ -67,26 +67,26 @@ NTSTATUS ejs_panic(struct ejs_rpc *ejs, const char *why)
 /*
   find a mpr component, allowing for sub objects, using the '.' convention
 */
-static struct MprVar *mprGetVar(struct MprVar *v, const char *name)
+static NTSTATUS mprGetVar(struct MprVar **v, const char *name)
 {
 	const char *p = strchr(name, '.');
 	char *objname;
-	struct MprVar *v2;
+	NTSTATUS status;
 	if (p == NULL) {
-		return mprGetProperty(v, name, NULL);
+		*v = mprGetProperty(*v, name, NULL);
+		if (*v == NULL) {
+			DEBUG(1,("mprGetVar unable to find '%s'\n", name));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		return NT_STATUS_OK;
 	}
 	objname = talloc_strndup(mprMemCtx(), name, p-name);
-	if (objname == NULL) {
-		return NULL;
-	}
-	v2 = mprGetProperty(v, objname, NULL);
-	if (v2 == NULL) {
-		talloc_free(objname);
-		return NULL;
-	}
-	v2 = mprGetVar(v2, p+1);
+	NT_STATUS_HAVE_NO_MEMORY(objname);
+	*v = mprGetProperty(*v, objname, NULL);
+	NT_STATUS_HAVE_NO_MEMORY(*v);
+	status = mprGetVar(v, p+1);
 	talloc_free(objname);
-	return v2;
+	return status;
 }
 
 
@@ -127,12 +127,7 @@ static NTSTATUS mprSetVar(struct MprVar *v, const char *name, struct MprVar val)
 */
 NTSTATUS ejs_pull_struct_start(struct ejs_rpc *ejs, struct MprVar **v, const char *name)
 {
-	*v = mprGetVar(*v, name);
-	if (*v == NULL) {
-		DEBUG(1,("ejs_pull_struct_start: missing structure '%s'\n", name));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	return NT_STATUS_OK;
+	return mprGetVar(v, name);
 }
 
 
@@ -142,12 +137,7 @@ NTSTATUS ejs_pull_struct_start(struct ejs_rpc *ejs, struct MprVar **v, const cha
 NTSTATUS ejs_push_struct_start(struct ejs_rpc *ejs, struct MprVar **v, const char *name)
 {
 	NDR_CHECK(mprSetVar(*v, name, mprCreateObjVar(name, MPR_DEFAULT_HASH_SIZE)));
-	*v = mprGetVar(*v, name);
-	if (*v == NULL) {
-		DEBUG(1,("ejs_push_struct_start: missing structure '%s'\n", name));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	return NT_STATUS_OK;
+	return mprGetVar(v, name);
 }
 
 /*
@@ -156,13 +146,8 @@ NTSTATUS ejs_push_struct_start(struct ejs_rpc *ejs, struct MprVar **v, const cha
 NTSTATUS ejs_pull_uint8(struct ejs_rpc *ejs, 
 			struct MprVar *v, const char *name, uint8_t *r)
 {
-	struct MprVar *var;
-	var = mprGetVar(v, name);
-	if (var == NULL) {
-		DEBUG(1,("ejs_pull_uint8: unable to find '%s'\n", name));
-		return NT_STATUS_INVALID_PARAMETER_MIX;
-	}
-	*r = mprVarToInteger(var);
+	NDR_CHECK(mprGetVar(&v, name));
+	*r = mprVarToInteger(v);
 	return NT_STATUS_OK;
 	
 }
@@ -179,13 +164,8 @@ NTSTATUS ejs_push_uint8(struct ejs_rpc *ejs,
 NTSTATUS ejs_pull_uint16(struct ejs_rpc *ejs, 
 			 struct MprVar *v, const char *name, uint16_t *r)
 {
-	struct MprVar *var;
-	var = mprGetVar(v, name);
-	if (var == NULL) {
-		DEBUG(1,("ejs_pull_uint16: unable to find '%s'\n", name));
-		return NT_STATUS_INVALID_PARAMETER_MIX;
-	}
-	*r = mprVarToInteger(var);
+	NDR_CHECK(mprGetVar(&v, name));
+	*r = mprVarToInteger(v);
 	return NT_STATUS_OK;
 	
 }
@@ -202,13 +182,8 @@ NTSTATUS ejs_push_uint16(struct ejs_rpc *ejs,
 NTSTATUS ejs_pull_uint32(struct ejs_rpc *ejs, 
 			 struct MprVar *v, const char *name, uint32_t *r)
 {
-	struct MprVar *var;
-	var = mprGetVar(v, name);
-	if (var == NULL) {
-		DEBUG(1,("ejs_push_uint32: unable to find '%s'\n", name));
-		return NT_STATUS_INVALID_PARAMETER_MIX;
-	}
-	*r = mprVarToInteger(var);
+	NDR_CHECK(mprGetVar(&v, name));
+	*r = mprVarToInteger(v);
 	return NT_STATUS_OK;
 }
 
@@ -218,16 +193,28 @@ NTSTATUS ejs_push_uint32(struct ejs_rpc *ejs,
 	return mprSetVar(v, name, mprCreateIntegerVar(*r));
 }
 
+/*
+  pull a int32 from a mpr variable to a C element
+*/
+NTSTATUS ejs_pull_int32(struct ejs_rpc *ejs, 
+			 struct MprVar *v, const char *name, int32_t *r)
+{
+	NDR_CHECK(mprGetVar(&v, name));
+	*r = mprVarToInteger(v);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ejs_push_int32(struct ejs_rpc *ejs, 
+			 struct MprVar *v, const char *name, const int32_t *r)
+{
+	return mprSetVar(v, name, mprCreateIntegerVar(*r));
+}
+
 NTSTATUS ejs_pull_hyper(struct ejs_rpc *ejs, 
 			struct MprVar *v, const char *name, uint64_t *r)
 {
-	struct MprVar *var;
-	var = mprGetVar(v, name);
-	if (var == NULL) {
-		DEBUG(1,("ejs_pull_hyper: unable to find '%s'\n", name));
-		return NT_STATUS_INVALID_PARAMETER_MIX;
-	}
-	*r = mprVarToInteger(var);
+	NDR_CHECK(mprGetVar(&v, name));
+	*r = mprVarToInteger(v);
 	return NT_STATUS_OK;
 }
 
@@ -240,13 +227,8 @@ NTSTATUS ejs_push_hyper(struct ejs_rpc *ejs,
 NTSTATUS ejs_pull_dlong(struct ejs_rpc *ejs, 
 			struct MprVar *v, const char *name, uint64_t *r)
 {
-	struct MprVar *var;
-	var = mprGetVar(v, name);
-	if (var == NULL) {
-		DEBUG(1,("ejs_pull_dlong: unable to find '%s'\n", name));
-		return NT_STATUS_INVALID_PARAMETER_MIX;
-	}
-	*r = mprVarToInteger(var);
+	NDR_CHECK(mprGetVar(&v, name));
+	*r = mprVarToInteger(v);
 	return NT_STATUS_OK;
 }
 
@@ -259,13 +241,8 @@ NTSTATUS ejs_push_dlong(struct ejs_rpc *ejs,
 NTSTATUS ejs_pull_udlong(struct ejs_rpc *ejs, 
 			struct MprVar *v, const char *name, uint64_t *r)
 {
-	struct MprVar *var;
-	var = mprGetVar(v, name);
-	if (var == NULL) {
-		DEBUG(1,("ejs_pull_udlong: unable to find '%s'\n", name));
-		return NT_STATUS_INVALID_PARAMETER_MIX;
-	}
-	*r = mprVarToInteger(var);
+	NDR_CHECK(mprGetVar(&v, name));
+	*r = mprVarToInteger(v);
 	return NT_STATUS_OK;
 }
 
@@ -278,13 +255,8 @@ NTSTATUS ejs_push_udlong(struct ejs_rpc *ejs,
 NTSTATUS ejs_pull_NTTIME(struct ejs_rpc *ejs, 
 			struct MprVar *v, const char *name, uint64_t *r)
 {
-	struct MprVar *var;
-	var = mprGetVar(v, name);
-	if (var == NULL) {
-		DEBUG(1,("ejs_pull_NTTIME: unable to find '%s'\n", name));
-		return NT_STATUS_INVALID_PARAMETER_MIX;
-	}
-	*r = mprVarToInteger(var);
+	NDR_CHECK(mprGetVar(&v, name));
+	*r = mprVarToInteger(v);
 	return NT_STATUS_OK;
 }
 
@@ -302,13 +274,8 @@ NTSTATUS ejs_push_NTTIME(struct ejs_rpc *ejs,
 NTSTATUS ejs_pull_enum(struct ejs_rpc *ejs, 
 		       struct MprVar *v, const char *name, unsigned *r)
 {
-	struct MprVar *var;
-	var = mprGetVar(v, name);
-	if (var == NULL) {
-		DEBUG(1,("ejs_pull_enum: unable to find '%s'\n", name));
-		return NT_STATUS_INVALID_PARAMETER_MIX;
-	}
-	*r = mprVarToInteger(var);
+	NDR_CHECK(mprGetVar(&v, name));
+	*r = mprVarToInteger(v);
 	return NT_STATUS_OK;
 	
 }
@@ -326,13 +293,8 @@ NTSTATUS ejs_push_enum(struct ejs_rpc *ejs,
 NTSTATUS ejs_pull_string(struct ejs_rpc *ejs, 
 			 struct MprVar *v, const char *name, const char **s)
 {
-	struct MprVar *var;
-	var = mprGetVar(v, name);
-	if (var == NULL) {
-		DEBUG(1,("ejs_pull_string: unable to find '%s'\n", name));
-		return NT_STATUS_INVALID_PARAMETER_MIX;
-	}
-	*s = mprToString(var);
+	NDR_CHECK(mprGetVar(&v, name));
+	*s = mprToString(v);
 	return NT_STATUS_OK;
 }
 
@@ -367,14 +329,9 @@ void ejs_set_constant_string(int eid, const char *name, const char *value)
 NTSTATUS ejs_pull_dom_sid(struct ejs_rpc *ejs, 
 			  struct MprVar *v, const char *name, struct dom_sid *r)
 {
-	struct MprVar *var;
 	struct dom_sid *sid;
-	var = mprGetVar(v, name);
-	if (var == NULL) {
-		DEBUG(1,("ejs_pull_dom_sid: unable to find '%s'\n", name));
-		return NT_STATUS_INVALID_PARAMETER_MIX;
-	}
-	sid = dom_sid_parse_talloc(ejs, mprToString(var));
+	NDR_CHECK(mprGetVar(&v, name));
+	sid = dom_sid_parse_talloc(ejs, mprToString(v));
 	NT_STATUS_HAVE_NO_MEMORY(sid);
 	*r = *sid;
 	return NT_STATUS_OK;
@@ -391,13 +348,8 @@ NTSTATUS ejs_push_dom_sid(struct ejs_rpc *ejs,
 NTSTATUS ejs_pull_GUID(struct ejs_rpc *ejs, 
 		       struct MprVar *v, const char *name, struct GUID *r)
 {
-	struct MprVar *var;
-	var = mprGetVar(v, name);
-	if (var == NULL) {
-		DEBUG(1,("ejs_pull_GUID: unable to find '%s'\n", name));
-		return NT_STATUS_INVALID_PARAMETER_MIX;
-	}
-	return GUID_from_string(mprToString(var), r);
+	NDR_CHECK(mprGetVar(&v, name));
+	return GUID_from_string(mprToString(v), r);
 }
 
 NTSTATUS ejs_push_GUID(struct ejs_rpc *ejs, 
@@ -415,9 +367,9 @@ NTSTATUS ejs_push_null(struct ejs_rpc *ejs, struct MprVar *v, const char *name)
 
 BOOL ejs_pull_null(struct ejs_rpc *ejs, struct MprVar *v, const char *name)
 {
-	v = mprGetVar(v, name);
-	if (v == NULL) {
-		return True;
+	NTSTATUS status = mprGetVar(&v, name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
 	}
 	if (v->type == MPR_TYPE_PTR && v->ptr == NULL) {
 		return True;
@@ -442,3 +394,4 @@ NTSTATUS ejs_push_lsa_String(struct ejs_rpc *ejs,
 {
 	return ejs_push_string(ejs, v, name, r->string);
 }
+

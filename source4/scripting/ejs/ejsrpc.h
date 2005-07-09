@@ -61,6 +61,10 @@ NTSTATUS ejs_push_uint16(struct ejs_rpc *ejs,
 			 struct MprVar *v, const char *name, const uint16_t *r);
 NTSTATUS ejs_pull_uint32(struct ejs_rpc *ejs, 
 			 struct MprVar *v, const char *name, uint32_t *r);
+NTSTATUS ejs_push_int32(struct ejs_rpc *ejs, 
+			 struct MprVar *v, const char *name, const int32_t *r);
+NTSTATUS ejs_pull_int32(struct ejs_rpc *ejs, 
+			 struct MprVar *v, const char *name, int32_t *r);
 NTSTATUS ejs_push_uint32(struct ejs_rpc *ejs, 
 			 struct MprVar *v, const char *name, const uint32_t *r);
 NTSTATUS ejs_pull_hyper(struct ejs_rpc *ejs, 

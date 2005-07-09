@@ -580,3 +580,59 @@ INIT_FUNCTION = ejs_init_lsarpc
 OBJ_FILES = librpc/gen_ndr/ndr_lsa_ejs.o
 REQUIRED_SUBSYSTEMS = RPC NDR_LSA
 NOPROTO = YES
+
+[SUBSYSTEM::RPC_EJS_DFS]
+INIT_FUNCTION = ejs_init_dfs
+OBJ_FILES = librpc/gen_ndr/ndr_dfs_ejs.o
+REQUIRED_SUBSYSTEMS = RPC NDR_DFS
+NOPROTO = YES
+
+[SUBSYSTEM::RPC_EJS_DRSUAPI]
+INIT_FUNCTION = ejs_init_drsuapi
+OBJ_FILES = librpc/gen_ndr/ndr_drsuapi_ejs.o
+REQUIRED_SUBSYSTEMS = RPC NDR_DRSUAPI
+NOPROTO = YES
+
+[SUBSYSTEM::RPC_EJS_SPOOLSS]
+INIT_FUNCTION = ejs_init_spoolss
+OBJ_FILES = librpc/gen_ndr/ndr_spoolss_ejs.o
+REQUIRED_SUBSYSTEMS = RPC NDR_SPOOLSS
+NOPROTO = YES
+
+[SUBSYSTEM::RPC_EJS_WKSSVC]
+INIT_FUNCTION = ejs_init_wkssvc
+OBJ_FILES = librpc/gen_ndr/ndr_wkssvc_ejs.o
+REQUIRED_SUBSYSTEMS = RPC NDR_WKSSVC
+NOPROTO = YES
+
+[SUBSYSTEM::RPC_EJS_SRVSVC]
+INIT_FUNCTION = ejs_init_srvsvc
+OBJ_FILES = librpc/gen_ndr/ndr_srvsvc_ejs.o
+REQUIRED_SUBSYSTEMS = RPC NDR_SRVSVC
+NOPROTO = YES
+
+[SUBSYSTEM::RPC_EJS_EVENTLOG]
+INIT_FUNCTION = ejs_init_eventlog
+OBJ_FILES = librpc/gen_ndr/ndr_eventlog_ejs.o
+REQUIRED_SUBSYSTEMS = RPC NDR_EVENTLOG
+NOPROTO = YES
+
+[SUBSYSTEM::RPC_EJS_WINREG]
+INIT_FUNCTION = ejs_init_winreg
+OBJ_FILES = librpc/gen_ndr/ndr_winreg_ejs.o
+REQUIRED_SUBSYSTEMS = RPC NDR_WINREG
+NOPROTO = YES
+
+[SUBSYSTEM::RPC_EJS_NETLOGON]
+INIT_FUNCTION = ejs_init_netlogon
+OBJ_FILES = librpc/gen_ndr/ndr_netlogon_ejs.o
+REQUIRED_SUBSYSTEMS = RPC NDR_NETLOGON
+NOPROTO = YES
+
+################################################
+# Start SUBSYSTEM RPC_EJS
+[SUBSYSTEM::RPC_EJS]
+REQUIRED_SUBSYSTEMS = RPC_EJS_ECHO RPC_EJS_MISC RPC_EJS_SAMR RPC_EJS_SECURITY \
+	RPC_EJS_LSA 
+# End SUBSYSTEM RPC_EJS
+################################################
