@@ -138,8 +138,13 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 	const char *hostname = gensec_get_target_hostname(gensec_security);
 	if (!hostname) {
 		DEBUG(1, ("Could not determine hostname for target computer, cannot use kerberos\n"));
-		return NT_STATUS_ACCESS_DENIED;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
+	if (is_ipaddress(hostname)) {
+		DEBUG(2, ("Cannot do GSSAPI to a IP address"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 			
 	nt_status = gensec_krb5_start(gensec_security);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -444,7 +449,8 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 
 	/* decode and verify the pac */
 	nt_status = kerberos_decode_pac(gensec_krb5_state, &logon_info, gensec_krb5_state->pac,
-					gensec_krb5_state->smb_krb5_context, (gensec_krb5_state->keyblock));
+					gensec_krb5_state->smb_krb5_context,
+					NULL, gensec_krb5_state->keyblock);
 
 	/* IF we have the PAC - otherwise we need to get this
 	 * data from elsewere - local ldb, or (TODO) lookup of some

@@ -53,7 +53,8 @@ static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx,
 			       0,
 			       &crypto);
 	if (ret) {
-		DEBUG(0,("krb5_crypto_init() failed\n"));
+		DEBUG(0,("krb5_crypto_init() failed: %s\n", 
+			  smb_get_krb5_error_message(context, ret, mem_ctx)));
 		return NT_STATUS_FOOBAR;
 	}
 	ret = krb5_verify_checksum(context,
@@ -77,10 +78,11 @@ static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx,
 }
 
  NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
-			     struct PAC_LOGON_INFO **logon_info_out,
-			     DATA_BLOB blob,
-			     struct smb_krb5_context *smb_krb5_context,
-			     krb5_keyblock *keyblock)
+			      struct PAC_LOGON_INFO **logon_info_out,
+			      DATA_BLOB blob,
+			      struct smb_krb5_context *smb_krb5_context,
+			      krb5_keyblock *krbtgt_keyblock,
+			      krb5_keyblock *service_keyblock)
 {
 	NTSTATUS status;
 	struct PAC_SIGNATURE_DATA srv_sig;
@@ -159,11 +161,26 @@ static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx,
 	/* verify by service_key */
 	status = check_pac_checksum(mem_ctx, 
 				    modified_pac_blob, &srv_sig, 
-				    smb_krb5_context->krb5_context, keyblock);
-	
+				    smb_krb5_context->krb5_context, 
+				    service_keyblock);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("PAC Decode: Failed to verify the service signature\n"));
 		return status;
 	}
+
+	if (krbtgt_keyblock) {
+		DATA_BLOB service_checksum_blob
+			= data_blob(srv_sig_ptr->signature, sizeof(srv_sig_ptr->signature));
+
+		status = check_pac_checksum(mem_ctx, 
+					    service_checksum_blob, &kdc_sig, 
+					    smb_krb5_context->krb5_context, krbtgt_keyblock);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("PAC Decode: Failed to verify the krbtgt signature\n"));
+			return status;
+		}
+	}
+
 	DEBUG(0,("account_name: %s [%s]\n",
 		 logon_info->info3.base.account_name.string, 
 		 logon_info->info3.base.full_name.string));
@@ -221,13 +238,13 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 				     struct auth_serversupplied_info *server_info,
 				     krb5_context context,
 				     krb5_keyblock *krbtgt_keyblock,
-				     krb5_keyblock *server_keyblock,
+				     krb5_keyblock *service_keyblock,
 				     DATA_BLOB *pac)
 {
 	NTSTATUS nt_status;
 	DATA_BLOB zero_blob = data_blob(NULL, 0);
 	DATA_BLOB tmp_blob = data_blob(NULL, 0);
-	DATA_BLOB server_checksum_blob;
+	DATA_BLOB service_checksum_blob;
 	krb5_error_code ret;
 	struct PAC_DATA *pac_data = talloc(mem_ctx, struct PAC_DATA);
 	struct netr_SamInfo3 *sam3;
@@ -335,9 +352,9 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
-	ret = make_pac_checksum(mem_ctx, zero_blob, SRV_CHECKSUM, context, server_keyblock);
+	ret = make_pac_checksum(mem_ctx, zero_blob, SRV_CHECKSUM, context, service_keyblock);
 	if (ret) {
-		DEBUG(2, ("making server PAC checksum failed: %s\n", 
+		DEBUG(2, ("making service PAC checksum failed: %s\n", 
 			  smb_get_krb5_error_message(context, ret, mem_ctx)));
 		talloc_free(pac_data);
 		return ret;
@@ -357,19 +374,13 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 
 	/* Then sign the result of the previous push, where the sig was zero'ed out */
 	ret = make_pac_checksum(mem_ctx, tmp_blob, SRV_CHECKSUM,
-				context, server_keyblock);
+				context, service_keyblock);
 
-	/* Push the Server checksum out */
-	nt_status = ndr_push_struct_blob(&server_checksum_blob, mem_ctx, SRV_CHECKSUM,
-					 (ndr_push_flags_fn_t)ndr_push_PAC_SIGNATURE_DATA);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(1, ("PAC_SIGNATURE push failed: %s\n", nt_errstr(nt_status)));
-		talloc_free(pac_data);
-		return EINVAL;
-	}
+	service_checksum_blob
+		= data_blob(SRV_CHECKSUM->signature, sizeof(SRV_CHECKSUM->signature));
 
 	/* Then sign Server checksum */
-	ret = make_pac_checksum(mem_ctx, server_checksum_blob, KDC_CHECKSUM, context, krbtgt_keyblock);
+	ret = make_pac_checksum(mem_ctx, service_checksum_blob, KDC_CHECKSUM, context, krbtgt_keyblock);
 	if (ret) {
 		DEBUG(2, ("making krbtgt PAC checksum failed: %s\n", 
 			  smb_get_krb5_error_message(context, ret, mem_ctx)));

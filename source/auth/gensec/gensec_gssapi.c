@@ -228,6 +228,16 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	NTSTATUS nt_status;
 	gss_buffer_desc name_token;
 	OM_uint32 maj_stat, min_stat;
+	const char *hostname = gensec_get_target_hostname(gensec_security);
+
+	if (!hostname) {
+		DEBUG(1, ("Could not determine hostname for target computer, cannot use kerberos\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	if (is_ipaddress(hostname)) {
+		DEBUG(2, ("Cannot do GSSAPI to a IP address"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	nt_status = gensec_gssapi_start(gensec_security);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -238,7 +248,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 
 	name_token.value = talloc_asprintf(gensec_gssapi_state, "%s@%s", 
 					   gensec_get_target_service(gensec_security), 
-					   gensec_get_target_hostname(gensec_security));
+					   hostname);
 	name_token.length = strlen(name_token.value);
 
 	maj_stat = gss_import_name (&min_stat,
@@ -786,7 +796,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		/* decode and verify the pac */
 		nt_status = kerberos_decode_pac(mem_ctx, &logon_info, pac_blob,
 						gensec_gssapi_state->smb_krb5_context,
-						keyblock);
+						NULL, keyblock);
 
 		if (NT_STATUS_IS_OK(nt_status)) {
 			union netr_Validation validation;

@@ -26,6 +26,7 @@
 #include "auth/auth.h"
 #include "auth/kerberos/kerberos.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
+#include "librpc/gen_ndr/ndr_samr.h"
 
 #ifdef HAVE_KRB5
 
@@ -105,14 +106,13 @@ static BOOL torture_pac_self_check(void)
 				  &server_keyblock,
 				  &tmp_blob);
 	
-	krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-				    &krbtgt_keyblock);
-
 	if (ret) {
 		DEBUG(1, ("PAC encoding failed: %s\n", 
 			  smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
 						     ret, mem_ctx)));
 
+		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+					    &krbtgt_keyblock);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
 		talloc_free(mem_ctx);
@@ -125,7 +125,11 @@ static BOOL torture_pac_self_check(void)
 	nt_status = kerberos_decode_pac(mem_ctx, &pac_info,
 					tmp_blob,
 					smb_krb5_context,
+					&krbtgt_keyblock,
 					&server_keyblock);
+
+	krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+				    &krbtgt_keyblock);
 	krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 				    &server_keyblock);
 	if (ret) {
@@ -196,7 +200,9 @@ static BOOL torture_pac_saved_check(void)
 	struct PAC_LOGON_INFO *pac_info;
 	struct PAC_DATA pac_data;
 	krb5_keyblock server_keyblock;
+	krb5_keyblock krbtgt_keyblock;
 	uint8_t server_bytes[16];
+	struct samr_Password *krbtgt_bytes;
 	
 	krb5_error_code ret;
 
@@ -205,6 +211,13 @@ static BOOL torture_pac_saved_check(void)
 	ret = smb_krb5_init_context(mem_ctx, &smb_krb5_context);
 
 	if (ret) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	krbtgt_bytes = smbpasswd_gethexpwd(mem_ctx, "B286757148AF7FD252C53603A150B7E7");
+	if (!krbtgt_bytes) {
+		DEBUG(0, ("Could not interpret krbtgt key"));
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -226,6 +239,21 @@ static BOOL torture_pac_saved_check(void)
 		return False;
 	}
 
+	ret = krb5_keyblock_init(smb_krb5_context->krb5_context,
+				 ENCTYPE_ARCFOUR_HMAC,
+				 krbtgt_bytes->hash, sizeof(krbtgt_bytes->hash),
+				 &krbtgt_keyblock);
+	if (ret) {
+		DEBUG(1, ("Server Keyblock encoding failed: %s\n", 
+			  smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
+						     ret, mem_ctx)));
+
+		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+					    &server_keyblock);
+		talloc_free(mem_ctx);
+		return False;
+	}
+
 	tmp_blob = data_blob_const(saved_pac, sizeof(saved_pac));
 
 	/*tmp_blob.data = file_load(lp_parm_string(-1,"torture","pac_file"), &tmp_blob.length);*/
@@ -236,10 +264,13 @@ static BOOL torture_pac_saved_check(void)
 	nt_status = kerberos_decode_pac(mem_ctx, &pac_info,
 					tmp_blob,
 					smb_krb5_context,
+					&krbtgt_keyblock,
 					&server_keyblock);
 	krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+				    &krbtgt_keyblock);
+	krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 				    &server_keyblock);
-	if (ret) {
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("PAC decoding failed: %s\n", 
 			  nt_errstr(nt_status)));
 

@@ -131,7 +131,8 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 			     struct PAC_LOGON_INFO **logon_info_out,
 			     DATA_BLOB blob,
 			     struct smb_krb5_context *smb_krb5_context,
-			     krb5_keyblock *keyblock);
+			     krb5_keyblock *service_keyblock,
+			     krb5_keyblock *krbtgt_keyblock);
 
 krb5_error_code kerberos_encode_pac(TALLOC_CTX *mem_ctx,
 				    struct auth_serversupplied_info *server_info,
