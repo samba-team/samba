@@ -18,9 +18,9 @@
 
 	<xsl:template match="related"><xsl:apply-templates/></xsl:template>
 
-	<xsl:template match="//samba:parameterlist">
+	<xsl:template match="samba:parameterlist">
 		<xsl:apply-templates>
-			<xsl:sort select="varlistentry/term/anchor"/>
+			<xsl:sort select="samba:parameter/@name"/>
 		</xsl:apply-templates>
 	</xsl:template>
 
@@ -29,10 +29,7 @@
 		<xsl:apply-templates/>
 	</xsl:template>
 
-	<xsl:template match="//samba:parameter">
-		<!-- reconstruct varlistentry - not all of them will go into separate files
-		and also we must repair the main varlistentry itself.
-		-->
+	<xsl:template match="samba:parameter">
 		<xsl:variable name="cname"><xsl:value-of select="translate(translate(string(@name),' ',''),
 				'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
 		</xsl:variable>
@@ -134,7 +131,6 @@
 						<xsl:value-of select="$name"/>
 					</xsl:element>
 				</xsl:element>
-
 				<xsl:element name="term">
 					<xsl:element name="anchor">
 						<xsl:attribute name="id">
@@ -143,7 +139,6 @@
 					</xsl:element>
 					<xsl:value-of select="."/>
 				</xsl:element>
-
 				<xsl:element name="listitem">
 					<xsl:element name="para"><xsl:text>This parameter is a synonym for </xsl:text><xsl:copy-of select="$name"/><xsl:text>.</xsl:text></xsl:element>
 				</xsl:element>
@@ -162,9 +157,9 @@
 			</xsl:element>
 			<xsl:copy-of select="$term"/>
 			<xsl:element name="listitem">
-				<xsl:copy-of select="$content"/> <xsl:text>&#10;</xsl:text>     
-				<xsl:copy-of select="$default"/> <xsl:text>&#10;</xsl:text>     
-				<xsl:copy-of select="$examples"/> <xsl:text>&#10;</xsl:text>     
+				<xsl:copy-of select="$content"/> <xsl:text>&#10;</xsl:text>
+				<xsl:copy-of select="$default"/> <xsl:text>&#10;</xsl:text>
+				<xsl:copy-of select="$examples"/> <xsl:text>&#10;</xsl:text>
 			</xsl:element>
 		</xsl:element>
 	</xsl:template>
