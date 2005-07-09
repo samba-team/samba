@@ -3246,7 +3246,7 @@ static krb5_error_code
 encrypt_internal_derived(krb5_context context,
 			 krb5_crypto crypto,
 			 unsigned usage,
-			 void *data,
+			 const void *data,
 			 size_t len,
 			 krb5_data *result,
 			 void *ivec)
@@ -3315,7 +3315,7 @@ encrypt_internal_derived(krb5_context context,
 static krb5_error_code
 encrypt_internal(krb5_context context,
 		 krb5_crypto crypto,
-		 void *data,
+		 const void *data,
 		 size_t len,
 		 krb5_data *result,
 		 void *ivec)
@@ -3395,7 +3395,7 @@ static krb5_error_code
 encrypt_internal_special(krb5_context context,
 			 krb5_crypto crypto,
 			 int usage,
-			 void *data,
+			 const void *data,
 			 size_t len,
 			 krb5_data *result,
 			 void *ivec)
@@ -3624,7 +3624,7 @@ krb5_error_code KRB5_LIB_FUNCTION
 krb5_encrypt_ivec(krb5_context context,
 		  krb5_crypto crypto,
 		  unsigned usage,
-		  void *data,
+		  const void *data,
 		  size_t len,
 		  krb5_data *result,
 		  void *ivec)
@@ -3643,7 +3643,7 @@ krb5_error_code KRB5_LIB_FUNCTION
 krb5_encrypt(krb5_context context,
 	     krb5_crypto crypto,
 	     unsigned usage,
-	     void *data,
+	     const void *data,
 	     size_t len,
 	     krb5_data *result)
 {
