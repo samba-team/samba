@@ -3,7 +3,7 @@
 # Copyright tridge@samba.org 2003
 # released under the GNU GPL
 
-package NdrClient;
+package Parse::Pidl::Samba::NDR::Client;
 
 use strict;
 

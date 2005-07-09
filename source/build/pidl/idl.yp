@@ -192,7 +192,7 @@ empty_element: property_list ';'
 base_or_empty: base_element ';' | empty_element;
 
 optional_base_element:
-	property_list base_or_empty { $_[2]->{PROPERTIES} = util::FlattenHash([$_[1],$_[2]->{PROPERTIES}]); $_[2] }
+	property_list base_or_empty { $_[2]->{PROPERTIES} = Parse::Pidl::Util::FlattenHash([$_[1],$_[2]->{PROPERTIES}]); $_[2] }
 ;
 
 union_elements: 
@@ -247,11 +247,11 @@ array_len:
 
 property_list: 
     #empty
-    | property_list '[' properties ']' { util::FlattenHash([$_[1],$_[3]]); }
+    | property_list '[' properties ']' { Parse::Pidl::Util::FlattenHash([$_[1],$_[3]]); }
 ;
 
 properties: property          { $_[1] }
-    | properties ',' property { util::FlattenHash([$_[1], $_[3]]); }
+    | properties ',' property { Parse::Pidl::Util::FlattenHash([$_[1], $_[3]]); }
 ;
 
 property: identifier                   {{ "$_[1]" => "1"     }}
@@ -304,7 +304,7 @@ optional_semicolon:
 # start code
 %%
 
-use pidl::util;
+use Parse::Pidl::Util;
 
 sub _Error {
     if (exists $_[0]->YYData->{ERRMSG}) {
@@ -393,5 +393,5 @@ sub parse_idl($$)
 
 	my $idl = $self->YYParse( yylex => \&_Lexer, yyerror => \&_Error );
 
-	return util::CleanData($idl);
+	return Parse::Pidl::Util::CleanData($idl);
 }

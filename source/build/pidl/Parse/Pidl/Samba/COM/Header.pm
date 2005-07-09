@@ -1,9 +1,9 @@
 # COM Header generation
 # (C) 2005 Jelmer Vernooij <jelmer@samba.org>
 
-package COMHeader;
+package Parse::Pidl::Samba::COM::Header;
 
-use pidl::typelist;
+use Parse::Pidl::Typelist;
 
 use strict;
 
@@ -14,21 +14,21 @@ sub GetArgumentProtoList($)
 
 	foreach my $a (@{$f->{ELEMENTS}}) {
 
-		$res .= ", " . typelist::mapType($a->{TYPE}) . " ";
+		$res .= ", " . Parse::Pidl::Typelist::mapType($a->{TYPE}) . " ";
 
 		my $l = $a->{POINTERS};
-		$l-- if (typelist::scalar_is_reference($a->{TYPE}));
+		$l-- if (Parse::Pidl::Typelist::scalar_is_reference($a->{TYPE}));
 		foreach my $i (1..$l) {
 			$res .= "*";
 		}
 
 		if (defined $a->{ARRAY_LEN}[0] && 
-		!util::is_constant($a->{ARRAY_LEN}[0]) &&
+		!Parse::Pidl::Util::is_constant($a->{ARRAY_LEN}[0]) &&
 		!$a->{POINTERS}) {
 			$res .= "*";
 		}
 		$res .= $a->{NAME};
-		if (defined $a->{ARRAY_LEN}[0] && util::is_constant($a->{ARRAY_LEN}[0])) {
+		if (defined $a->{ARRAY_LEN}[0] && Parse::Pidl::Util::is_constant($a->{ARRAY_LEN}[0])) {
 			$res .= "[$a->{ARRAY_LEN}[0]]";
 		}
 	}
@@ -61,7 +61,7 @@ sub HeaderVTable($)
 
 	my $data = $interface->{DATA};
 	foreach my $d (@{$data}) {
-		$res .= "\t" . typelist::mapType($d->{RETURN_TYPE}) . " (*$d->{NAME}) (struct $interface->{NAME} *d, TALLOC_CTX *mem_ctx" . GetArgumentProtoList($d) . ");\\\n" if ($d->{TYPE} eq "FUNCTION");
+		$res .= "\t" . Parse::Pidl::Typelist::mapType($d->{RETURN_TYPE}) . " (*$d->{NAME}) (struct $interface->{NAME} *d, TALLOC_CTX *mem_ctx" . GetArgumentProtoList($d) . ");\\\n" if ($d->{TYPE} eq "FUNCTION");
 	}
 	$res .= "\n";
 	$res .= "struct $interface->{NAME}_vtable {\n";
@@ -109,7 +109,7 @@ sub ParseCoClass($)
 	my $c = shift;
 	my $res = "";
 	$res .= "#define CLSID_" . uc($c->{NAME}) . " $c->{PROPERTIES}->{uuid}\n";
-	if (util::has_property($c, "progid")) {
+	if (Parse::Pidl::Util::has_property($c, "progid")) {
 		$res .= "#define PROGID_" . uc($c->{NAME}) . " $c->{PROPERTIES}->{progid}\n";
 	}
 	$res .= "\n";
@@ -123,7 +123,7 @@ sub Parse($)
 
 	foreach my $x (@{$idl})
 	{
-		if ($x->{TYPE} eq "INTERFACE" && util::has_property($x, "object")) {
+		if ($x->{TYPE} eq "INTERFACE" && Parse::Pidl::Util::has_property($x, "object")) {
 			$res.=ParseInterface($x);
 		} 
 

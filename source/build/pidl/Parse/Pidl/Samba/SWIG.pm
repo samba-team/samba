@@ -3,7 +3,7 @@
 # Copyright tpot@samba.org 2004,2005
 # released under the GNU GPL
 
-package IdlSwig;
+package Parse::Pidl::Samba::SWIG;
 
 use strict;
 

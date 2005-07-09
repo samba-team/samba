@@ -9,30 +9,28 @@
 
 use strict;
 
-use FindBin qw($RealBin);
-use lib "$RealBin/..";
 use Getopt::Long;
 use File::Basename;
-use pidl::idl;
-use pidl::dump;
-use pidl::ndr_client;
-use pidl::ndr_header;
-use pidl::ndr_parser;
-use pidl::server;
-use pidl::dcom_proxy;
-use pidl::dcom_stub;
-use pidl::com_header;
-use pidl::odl;
-use pidl::eth_parser;
-use pidl::eth_header;
-use pidl::validator;
-use pidl::typelist;
-use pidl::util;
-use pidl::template;
-use pidl::swig;
-use pidl::compat;
-use pidl::ejs;
-use pidl::ejs_header;
+use Parse::Pidl;
+use Parse::Pidl::Util;
+
+#####################################################################
+# save a data structure into a file
+sub SaveStructure($$)
+{
+	my($filename,$v) = @_;
+	Parse::Pidl::Util::FileSave($filename, Parse::Pidl::Util::MyDumper($v));
+}
+
+#####################################################################
+# load a data structure from a file (as saved with SaveStructure)
+sub LoadStructure($)
+{
+	my $f = shift;
+	my $contents = Parse::Pidl::Util::FileLoad($f);
+	defined $contents || return undef;
+	return eval "$contents";
+}
 
 my($opt_help) = 0;
 my($opt_parse) = 0;
@@ -56,8 +54,6 @@ my($opt_quiet) = 0;
 my($opt_output);
 my($opt_verbose) = 0;
 my($opt_warn_compat) = 0;
-
-my $idl_parser = new idl;
 
 #########################################
 # display help text
@@ -141,43 +137,50 @@ sub process_file($)
 		$output = $opt_output . $basename;
 	}
 
-	my($pidl_file) = ($opt_keep or util::ChangeExtension($output, ".pidl"));
+	my($pidl_file) = ($opt_keep or Parse::Pidl::Util::ChangeExtension($output, ".pidl"));
 
 	unless ($opt_quiet) { print "Compiling $idl_file\n"; }
 
 	if ($opt_parse) {
+		require Parse::Pidl::IDL;
+		my $idl_parser = new Parse::Pidl::IDL;
+
 		$pidl = $idl_parser->parse_idl($idl_file);
 		defined @$pidl || die "Failed to parse $idl_file";
-		typelist::LoadIdl($pidl);
-		IdlValidator::Validate($pidl);
-		if (defined($opt_keep) && !util::SaveStructure($pidl_file, $pidl)) {
+		require Parse::Pidl::Typelist;
+		Parse::Pidl::Typelist::LoadIdl($pidl);
+        require Parse::Pidl::Validator;
+		Parse::Pidl::Validator::Validate($pidl);
+		if (defined($opt_keep) && !SaveStructure($pidl_file, $pidl)) {
 			    die "Failed to save $pidl_file\n";
 		}
 	} else {
-		$pidl = util::LoadStructure($pidl_file);
+		$pidl = LoadStructure($pidl_file);
 		defined $pidl || die "Failed to load $pidl_file - maybe you need --parse\n";
 	}
 
 	if ($opt_uint_enums) {
-		util::setUseUintEnums(1);
+		Parse::Pidl::Util::setUseUintEnums(1);
 	}
 
 	if ($opt_dump) {
-		print IdlDump::Dump($pidl);
+		require Parse::Pidl::Dump;
+		print Parse::Pidl::Dump($pidl);
 	}
 
 	if ($opt_diff) {
-		my($tempfile) = util::ChangeExtension($output, ".tmp");
-		util::FileSave($tempfile, IdlDump::Dump($pidl));
+		my($tempfile) = Parse::Pidl::Util::ChangeExtension($output, ".tmp");
+		Parse::Pidl::Util::FileSave($tempfile, IdlDump::Dump($pidl));
 		system("diff -wu $idl_file $tempfile");
 		unlink($tempfile);
 	}
 
 	if (defined($opt_com_header)) {
-		my $res = COMHeader::Parse($pidl);
+		require Parse::Pidl::Samba::COM::Header;
+		my $res = Parse::Pidl::Samba::COM::Header::Parse($pidl);
 		if ($res) {
 			my $comh_filename = ($opt_com_header or (dirname($output) . "/com_$basename.h"));
-			util::FileSave($comh_filename, 
+			Parse::Pidl::Util::FileSave($comh_filename, 
 			"#include \"librpc/gen_ndr/ndr_orpc.h\"\n" . 
 			"#include \"librpc/gen_ndr/ndr_$basename.h\"\n" . 
 			$res);
@@ -186,10 +189,11 @@ sub process_file($)
 	}
 
 	if (defined($opt_dcom_proxy)) {
-		my $res = DCOMProxy::Parse($pidl);
+		require Parse::Pidl::Samba::COM::Proxy;
+		my $res = Parse::Pidl::Samba::COM::Proxy::Parse($pidl);
 		if ($res) {
-			my ($client) = ($opt_dcom_proxy or util::ChangeExtension($output, "_p.c"));
-			util::FileSave($client, 
+			my ($client) = ($opt_dcom_proxy or Parse::Pidl::Util::ChangeExtension($output, "_p.c"));
+			Parse::Pidl::Util::FileSave($client, 
 			"#include \"includes.h\"\n" .
 			"#include \"librpc/gen_ndr/com_$basename.h\"\n" . 
 			"#include \"lib/com/dcom/dcom.h\"\n" .$res);
@@ -198,67 +202,78 @@ sub process_file($)
 	}
 
 	if ($opt_warn_compat) {
-		IDLCompat::Check($pidl);
+		require Parse::Pidl::Compat;
+		Parse::Pidl::Compat::Check($pidl);
 	}
 
 	if ($opt_odl) {
-		$pidl = ODL::ODL2IDL($pidl);
+		require Parse::Pidl::ODL;
+		$pidl = Parse::Pidl::ODL::ODL2IDL($pidl);
 	}
 
 	if (defined($opt_header) or defined($opt_eth_parser) or 
 	    defined($opt_eth_header) or defined($opt_client) or 
 	    defined($opt_server) or defined($opt_parser) or 
 	    defined($opt_ejs)) {
-		$ndr = Ndr::Parse($pidl);
+		require Parse::Pidl::NDR;
+		$ndr = Parse::Pidl::NDR::Parse($pidl);
 	}
 
 	if (defined($opt_header)) {
 		my $header = $opt_header;
 		if ($header eq "") {
-			$header = util::ChangeExtension($output, ".h");
+			$header = Parse::Pidl::Util::ChangeExtension($output, ".h");
 		}
-		util::FileSave($header, NdrHeader::Parse($ndr));
+		require Parse::Pidl::Samba::NDR::Header;
+		Parse::Pidl::Util::FileSave($header, Parse::Pidl::Samba::NDR::Header::Parse($ndr));
 		if (defined($opt_swig)) {
+		  require Parse::Pidl::Samba::SWIG;
 		  my($filename) = $output;
 		  $filename =~ s/\/ndr_/\//;
-		  $filename = ($opt_swig or util::ChangeExtension($filename, ".i"));
-		  IdlSwig::RewriteHeader($pidl, $header, $filename);
+		  $filename = ($opt_swig or Parse::Pidl::Util::ChangeExtension($filename, ".i"));
+		  Parse::Pidl::Samba::SWIG::RewriteHeader($pidl, $header, $filename);
 		}
 	}
 
 	if (defined($opt_eth_header)) {
+	  require Parse::Pidl::Ethereal::NDR::Header;
 	  my($eparserhdr) = ($opt_eth_header or (dirname($output) . "/packet-dcerpc-$basename.h"));
 
-	  util::FileSave($eparserhdr, EthHeader::Parse($ndr));
+	  Parse::Pidl::Util::FileSave($eparserhdr, Parse::Pidl::Ethereal::NDR::Header::Parse($ndr));
 	}
 
-	my $h_filename = util::ChangeExtension($output, ".h");
+	my $h_filename = Parse::Pidl::Util::ChangeExtension($output, ".h");
 	if (defined($opt_client)) {
-		my ($client) = ($opt_client or util::ChangeExtension($output, "_c.c"));
+		require Parse::Pidl::Samba::NDR::Client;
+		my ($client) = ($opt_client or Parse::Pidl::Util::ChangeExtension($output, "_c.c"));
 
-		util::FileSave($client, NdrClient::Parse($ndr,$h_filename));
+		Parse::Pidl::Util::FileSave($client, Parse::Pidl::Samba::NDR::Client::Parse($ndr,$h_filename));
 	}
 
 	if (defined($opt_ejs)) {
-		my $ejs = ($opt_ejs or util::ChangeExtension($output, "_ejs.c"));
-		util::FileSave($ejs, EjsClient::Parse($ndr, $h_filename));
+		require Parse::Pidl::Samba::EJS;
+		require Parse::Pidl::Samba::EJSHeader;
+		my $ejs = ($opt_ejs or Parse::Pidl::Util::ChangeExtension($output, "_ejs.c"));
+		Parse::Pidl::Util::FileSave($ejs, Parse::Pidl::Samba::EJS::Parse($ndr, $h_filename));
 
-		$ejs = ($opt_ejs or util::ChangeExtension($output, "_ejs.h"));
-		util::FileSave($ejs, EjsHeader::Parse($ndr));
+		$ejs = ($opt_ejs or Parse::Pidl::Util::ChangeExtension($output, "_ejs.h"));
+		Parse::Pidl::Util::FileSave($ejs, Parse::Pidl::Samba::EJSHeader::Parse($ndr));
 	}
 
 	if (defined($opt_server)) {
+		require Parse::Pidl::Samba::NDR::Server;
 		my $dcom = "";
 
 		foreach my $x (@{$pidl}) {
 			next if ($x->{TYPE} ne "INTERFACE");
 
-			if (util::has_property($x, "object")) {
-				$dcom .= DCOMStub::ParseInterface($x);
+			if (Parse::Pidl::Util::has_property($x, "object")) {
+				require Parse::Pidl::Samba::COM::Stub;
+				$dcom .= Parse::Pidl::Samba::COM::Stub::ParseInterface($x);
 			}
 		}
 
-		util::FileSave(($opt_server or util::ChangeExtension($output, "_s.c")), NdrServer::Parse($ndr,$h_filename));
+		Parse::Pidl::Util::FileSave(($opt_server or Parse::Pidl::Util::ChangeExtension($output, "_s.c")), Parse::Pidl::Samba::NDR::Server::Parse($ndr,$h_filename));
 
 		if ($dcom ne "") {
 			$dcom = "
@@ -269,23 +284,25 @@ sub process_file($)
 
 $dcom
 ";
-			util::FileSave(util::ChangeExtension($output, "_d.c"), $dcom);
+	Parse::Pidl::Util::FileSave(Parse::Pidl::Util::ChangeExtension($output, "_d.c"), $dcom);
 		}
 	}
 
 	if (defined($opt_parser)) {
-		my $parser = ($opt_parser or util::ChangeExtension($output, ".c"));
-		
-		util::FileSave($parser, NdrParser::Parse($ndr, $parser));
+		my $parser = ($opt_parser or Parse::Pidl::Util::ChangeExtension($output, ".c"));
+		require Parse::Pidl::Samba::NDR::Parser;
+		Parse::Pidl::Util::FileSave($parser, Parse::Pidl::Samba::NDR::Parser::Parse($ndr, $parser));
 	}
 
 	if (defined($opt_eth_parser)) {
+	  require Parse::Pidl::Ethereal::NDR::Parser;
 	  my($eparser) = ($opt_eth_parser or dirname($output) . "/packet-dcerpc-$basename.c");
-	  util::FileSave($eparser, EthParser::Parse($ndr, $basename, $eparser));
+	  Parse::Pidl::Util::FileSave($eparser, Parse::Pidl::Ethereal::NDR::Parser::Parse($ndr, $basename, $eparser));
 	}
 
 	if ($opt_template) {
-		print IdlTemplate::Parse($pidl);
+		require Parse::Pidl::Samba::Template;
+		print Parse::Pidl::Samba::Template::Parse($pidl);
 	}
 }
 

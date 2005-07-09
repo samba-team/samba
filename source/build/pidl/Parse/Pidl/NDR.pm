@@ -5,10 +5,10 @@
 # Copyright jelmer@samba.org 2004-2005
 # released under the GNU GPL
 
-package Ndr;
+package Parse::Pidl::NDR;
 
 use strict;
-use pidl::typelist;
+use Parse::Pidl::Typelist;
 
 sub nonfatal($$)
 {
@@ -35,12 +35,12 @@ sub GetElementLevelTable($)
 	my @length_is = ();
 	my @size_is = ();
 
-	if (util::has_property($e, "size_is")) {
-		@size_is = split /,/, util::has_property($e, "size_is");
+	if (Parse::Pidl::Util::has_property($e, "size_is")) {
+		@size_is = split /,/, Parse::Pidl::Util::has_property($e, "size_is");
 	}
 
-	if (util::has_property($e, "length_is")) {
-		@length_is = split /,/, util::has_property($e, "length_is");
+	if (Parse::Pidl::Util::has_property($e, "length_is")) {
+		@length_is = split /,/, Parse::Pidl::Util::has_property($e, "length_is");
 	}
 
 	if (defined($e->{ARRAY_LEN})) {
@@ -59,7 +59,7 @@ sub GetElementLevelTable($)
 		if ($d eq "*") {
 			$is_conformant = 1;
 			if ($size = shift @size_is) {
-			} elsif ((scalar(@size_is) == 0) and util::has_property($e, "string")) {
+			} elsif ((scalar(@size_is) == 0) and Parse::Pidl::Util::has_property($e, "string")) {
 				$is_string = 1;
 				delete($e->{PROPERTIES}->{string});
 			} else {
@@ -88,8 +88,8 @@ sub GetElementLevelTable($)
 			IS_ZERO_TERMINATED => "$is_string",
 			IS_VARYING => "$is_varying",
 			IS_CONFORMANT => "$is_conformant",
-			IS_FIXED => (not $is_conformant and util::is_constant($size)),
-			IS_INLINE => (not $is_conformant and not util::is_constant($size))
+			IS_FIXED => (not $is_conformant and Parse::Pidl::Util::is_constant($size)),
+			IS_INLINE => (not $is_conformant and not Parse::Pidl::Util::is_constant($size))
 		});
 	}
 
@@ -129,9 +129,9 @@ sub GetElementLevelTable($)
 			}
 		} 
 		
-		if (scalar(@size_is) == 0 and util::has_property($e, "string")) {
+		if (scalar(@size_is) == 0 and Parse::Pidl::Util::has_property($e, "string")) {
 			$is_string = 1;
-			$is_varying = $is_conformant = util::has_property($e, "noheader")?0:1;
+			$is_varying = $is_conformant = Parse::Pidl::Util::has_property($e, "noheader")?0:1;
 			delete($e->{PROPERTIES}->{string});
 		}
 
@@ -153,9 +153,9 @@ sub GetElementLevelTable($)
 		} 
 	}
 
-	if (defined(util::has_property($e, "subcontext"))) {
-		my $hdr_size = util::has_property($e, "subcontext");
-		my $subsize = util::has_property($e, "subcontext_size");
+	if (defined(Parse::Pidl::Util::has_property($e, "subcontext"))) {
+		my $hdr_size = Parse::Pidl::Util::has_property($e, "subcontext");
+		my $subsize = Parse::Pidl::Util::has_property($e, "subcontext_size");
 		if (not defined($subsize)) { 
 			$subsize = -1; 
 		}
@@ -165,12 +165,12 @@ sub GetElementLevelTable($)
 			HEADER_SIZE => $hdr_size,
 			SUBCONTEXT_SIZE => $subsize,
 			IS_DEFERRED => $is_deferred,
-			COMPRESSION => util::has_property($e, "compression"),
-			OBFUSCATION => util::has_property($e, "obfuscation")
+			COMPRESSION => Parse::Pidl::Util::has_property($e, "compression"),
+			OBFUSCATION => Parse::Pidl::Util::has_property($e, "obfuscation")
 		});
 	}
 
-	if (my $switch = util::has_property($e, "switch_is")) {
+	if (my $switch = Parse::Pidl::Util::has_property($e, "switch_is")) {
 		push (@$order, {
 			TYPE => "SWITCH", 
 			SWITCH_IS => $switch,
@@ -186,7 +186,7 @@ sub GetElementLevelTable($)
 		nonfatal($e, "length_is() on non-array element");
 	}
 
-	if (util::has_property($e, "string")) {
+	if (Parse::Pidl::Util::has_property($e, "string")) {
 		nonfatal($e, "string() attribute on non-array element");
 	}
 
@@ -212,10 +212,10 @@ sub can_contain_deferred
 	my $e = shift;
 
 	return 1 if ($e->{POINTERS});
-	return 0 if (typelist::is_scalar($e->{TYPE}));
-	return 1 unless (typelist::hasType($e->{TYPE})); # assume the worst
+	return 0 if (Parse::Pidl::Typelist::is_scalar($e->{TYPE}));
+	return 1 unless (Parse::Pidl::Typelist::hasType($e->{TYPE})); # assume the worst
 
-	my $type = typelist::getType($e->{TYPE});
+	my $type = Parse::Pidl::Typelist::getType($e->{TYPE});
 
 	foreach my $x (@{$type->{DATA}->{ELEMENTS}}) {
 		return 1 if (can_contain_deferred ($x));
@@ -230,12 +230,12 @@ sub pointer_type($)
 
 	return undef unless $e->{POINTERS};
 	
-	return "ref" if (util::has_property($e, "ref"));
-	return "ptr" if (util::has_property($e, "ptr"));
-	return "sptr" if (util::has_property($e, "sptr"));
-	return "unique" if (util::has_property($e, "unique"));
-	return "relative" if (util::has_property($e, "relative"));
-	return "ignore" if (util::has_property($e, "ignore"));
+	return "ref" if (Parse::Pidl::Util::has_property($e, "ref"));
+	return "ptr" if (Parse::Pidl::Util::has_property($e, "ptr"));
+	return "sptr" if (Parse::Pidl::Util::has_property($e, "sptr"));
+	return "unique" if (Parse::Pidl::Util::has_property($e, "unique"));
+	return "relative" if (Parse::Pidl::Util::has_property($e, "relative"));
+	return "ignore" if (Parse::Pidl::Util::has_property($e, "ignore"));
 
 	return undef;
 }
@@ -268,22 +268,22 @@ sub align_type
 {
 	my $e = shift;
 
-	unless (typelist::hasType($e)) {
+	unless (Parse::Pidl::Typelist::hasType($e)) {
 	    # it must be an external type - all we can do is guess 
 		# print "Warning: assuming alignment of unknown type '$e' is 4\n";
 	    return 4;
 	}
 
-	my $dt = typelist::getType($e)->{DATA};
+	my $dt = Parse::Pidl::Typelist::getType($e)->{DATA};
 
 	if ($dt->{TYPE} eq "ENUM") {
-		return align_type(typelist::enum_type_fn($dt));
+		return align_type(Parse::Pidl::Typelist::enum_type_fn($dt));
 	} elsif ($dt->{TYPE} eq "BITMAP") {
-		return align_type(typelist::bitmap_type_fn($dt));
+		return align_type(Parse::Pidl::Typelist::bitmap_type_fn($dt));
 	} elsif (($dt->{TYPE} eq "STRUCT") or ($dt->{TYPE} eq "UNION")) {
 		return find_largest_alignment($dt);
 	} elsif ($dt->{TYPE} eq "SCALAR") {
-		return typelist::getScalarAlignment($dt->{NAME});
+		return Parse::Pidl::Typelist::getScalarAlignment($dt->{NAME});
 	}
 
 	die("Unknown data type type $dt->{TYPE}");
@@ -320,7 +320,7 @@ sub ParseStruct($)
 	}
 
 	if (defined $e->{TYPE} && $e->{TYPE} eq "string"
-	    &&  util::property_matches($e, "flag", ".*LIBNDR_FLAG_STR_CONFORMANT.*")) {
+	    &&  Parse::Pidl::Util::property_matches($e, "flag", ".*LIBNDR_FLAG_STR_CONFORMANT.*")) {
 		$surrounding = $struct->{ELEMENTS}[-1];
 	}
 		
@@ -336,10 +336,10 @@ sub ParseUnion($)
 {
 	my $e = shift;
 	my @elements = ();
-	my $switch_type = util::has_property($e, "switch_type");
+	my $switch_type = Parse::Pidl::Util::has_property($e, "switch_type");
 	unless (defined($switch_type)) { $switch_type = "uint32"; }
 
-	if (util::has_property($e, "nodiscriminant")) { $switch_type = undef; }
+	if (Parse::Pidl::Util::has_property($e, "nodiscriminant")) { $switch_type = undef; }
 	
 	foreach my $x (@{$e->{ELEMENTS}}) 
 	{
@@ -349,7 +349,7 @@ sub ParseUnion($)
 		} else {
 			$t = ParseElement($x);
 		}
-		if (util::has_property($x, "default")) {
+		if (Parse::Pidl::Util::has_property($x, "default")) {
 			$t->{CASE} = "default";
 		} elsif (defined($x->{PROPERTIES}->{case})) {
 			$t->{CASE} = "case $x->{PROPERTIES}->{case}";
@@ -373,7 +373,7 @@ sub ParseEnum($)
 
 	return {
 		TYPE => "ENUM",
-		BASE_TYPE => typelist::enum_type_fn($e),
+		BASE_TYPE => Parse::Pidl::Typelist::enum_type_fn($e),
 		ELEMENTS => $e->{ELEMENTS},
 		PROPERTIES => $e->{PROPERTIES}
 	};
@@ -385,7 +385,7 @@ sub ParseBitmap($)
 
 	return {
 		TYPE => "BITMAP",
-		BASE_TYPE => typelist::bitmap_type_fn($e),
+		BASE_TYPE => Parse::Pidl::Typelist::bitmap_type_fn($e),
 		ELEMENTS => $e->{ELEMENTS},
 		PROPERTIES => $e->{PROPERTIES}
 	};
@@ -444,8 +444,8 @@ sub ParseFunction($$$)
 
 	foreach my $x (@{$d->{ELEMENTS}}) {
 		my $e = ParseElement($x);
-		push (@{$e->{DIRECTION}}, "in") if (util::has_property($x, "in"));
-		push (@{$e->{DIRECTION}}, "out") if (util::has_property($x, "out"));
+		push (@{$e->{DIRECTION}}, "in") if (Parse::Pidl::Util::has_property($x, "in"));
+		push (@{$e->{DIRECTION}}, "out") if (Parse::Pidl::Util::has_property($x, "out"));
 		push (@elements, $e);
 	}
 
@@ -469,7 +469,7 @@ sub CheckPointerTypes($$)
 	my $default = shift;
 
 	foreach my $e (@{$s->{ELEMENTS}}) {
-		if ($e->{POINTERS} and not defined(Ndr::pointer_type($e))) {
+		if ($e->{POINTERS} and not defined(pointer_type($e))) {
 			$e->{PROPERTIES}->{$default} = 1;
 		}
 	}
@@ -486,13 +486,13 @@ sub ParseInterface($)
 	my $opnum = 0;
 	my $version;
 
-	if (not util::has_property($idl, "pointer_default")) {
+	if (not Parse::Pidl::Util::has_property($idl, "pointer_default")) {
 		# MIDL defaults to "ptr" in DCE compatible mode (/osf)
 		# and "unique" in Microsoft Extensions mode (default)
 		$idl->{PROPERTIES}->{pointer_default} = "unique";
 	}
 
-	if (not util::has_property($idl, "pointer_default_top")) {
+	if (not Parse::Pidl::Util::has_property($idl, "pointer_default_top")) {
 		$idl->{PROPERTIES}->{pointer_default_top} = "ref";
 	}
 
@@ -529,7 +529,7 @@ sub ParseInterface($)
 
 	return { 
 		NAME => $idl->{NAME},
-		UUID => util::has_property($idl, "uuid"),
+		UUID => Parse::Pidl::Util::has_property($idl, "uuid"),
 		VERSION => $version,
 		TYPE => "INTERFACE",
 		PROPERTIES => $idl->{PROPERTIES},
@@ -589,7 +589,7 @@ sub ContainsDeferred($$)
 	do {
 		return 1 if ($l->{IS_DEFERRED}); 
 		return 1 if ($l->{CONTAINS_DEFERRED});
-	} while ($l = Ndr::GetNextLevel($e,$l));
+	} while ($l = GetNextLevel($e,$l));
 	
 	return 0;
 }

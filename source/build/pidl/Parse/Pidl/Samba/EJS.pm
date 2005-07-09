@@ -4,10 +4,10 @@
 # Copyright Andrew Tridgell 2005
 # released under the GNU GPL
 
-package EjsClient;
+package Parse::Pidl::Samba::EJS;
 
 use strict;
-use pidl::typelist;
+use Parse::Pidl::Typelist;
 
 my($res);
 my %constants;
@@ -110,7 +110,7 @@ sub fn_prefix($)
 {
 	my $fn = shift;
 
-	return "" if (util::has_property($fn, "public"));
+	return "" if (Parse::Pidl::Util::has_property($fn, "public"));
 	return "static ";
 }
 
@@ -120,7 +120,7 @@ sub EjsPullScalar($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
 
-	return if (util::has_property($e, "value"));
+	return if (Parse::Pidl::Util::has_property($e, "value"));
 
 	$var = get_pointer_to($var);
 	# have to handle strings specially :(
@@ -143,7 +143,7 @@ sub EjsPullPointer($$$$$)
 	indent;
 	pidl "EJS_ALLOC(ejs, $var);";
 	$var = get_value_of($var);		
-	EjsPullElement($e, Ndr::GetNextLevel($e, $l), $var, $name, $env);
+	EjsPullElement($e, Parse::Pidl::NDR::GetNextLevel($e, $l), $var, $name, $env);
 	deindent;
 	pidl "}";
 }
@@ -163,8 +163,8 @@ sub EjsPullString($$$$$)
 sub EjsPullArray($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
-	my $length = util::ParseExpr($l->{LENGTH_IS}, $env);
-	my $pl = Ndr::GetPrevLevel($e, $l);
+	my $length = Parse::Pidl::Util::ParseExpr($l->{LENGTH_IS}, $env);
+	my $pl = Parse::Pidl::NDR::GetPrevLevel($e, $l);
 	if ($pl && $pl->{TYPE} eq "POINTER") {
 		$var = get_pointer_to($var);
 	}
@@ -178,7 +178,7 @@ sub EjsPullArray($$$$$)
 	pidl "for (i=0;i<$length;i++) {";
 	indent;
 	pidl "char *id = talloc_asprintf(ejs, \"%s.%u\", $name, i);";
-	EjsPullElement($e, Ndr::GetNextLevel($e, $l), $avar, "id", $env);
+	EjsPullElement($e, Parse::Pidl::NDR::GetNextLevel($e, $l), $avar, "id", $env);
 	pidl "talloc_free(id);";
 	deindent;
 	pidl "}";
@@ -192,9 +192,9 @@ sub EjsPullArray($$$$$)
 sub EjsPullSwitch($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
-	my $switch_var = util::ParseExpr($l->{SWITCH_IS}, $env);
+	my $switch_var = Parse::Pidl::Util::ParseExpr($l->{SWITCH_IS}, $env);
 	pidl "ejs_set_switch(ejs, $switch_var);";
-	EjsPullElement($e, Ndr::GetNextLevel($e, $l), $var, $name, $env);
+	EjsPullElement($e, Parse::Pidl::NDR::GetNextLevel($e, $l), $var, $name, $env);
 }
 
 ###########################
@@ -202,7 +202,7 @@ sub EjsPullSwitch($$$$$)
 sub EjsPullElement($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
-	if (util::has_property($e, "charset")) {
+	if (Parse::Pidl::Util::has_property($e, "charset")) {
 		EjsPullString($e, $l, $var, $name, $env);
 	} elsif ($l->{TYPE} eq "ARRAY") {
 		EjsPullArray($e, $l, $var, $name, $env);
@@ -224,7 +224,7 @@ sub EjsPullElementTop($$)
 	my $e = shift;
 	my $env = shift;
 	my $l = $e->{LEVELS}[0];
-	my $var = util::ParseExpr($e->{NAME}, $env);
+	my $var = Parse::Pidl::Util::ParseExpr($e->{NAME}, $env);
 	my $name = "\"$e->{NAME}\"";
 	EjsPullElement($e, $l, $var, $name, $env);
 }
@@ -311,7 +311,7 @@ sub EjsBitmapPull($$)
 	my $name = shift;
 	my $d = shift;
 	my $type_fn = $d->{BASE_TYPE};
-	my($type_decl) = typelist::mapType($d->{BASE_TYPE});
+	my($type_decl) = Parse::Pidl::Typelist::mapType($d->{BASE_TYPE});
 	pidl fn_prefix($d);
 	pidl "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, $type_decl *r)\n{";
 	indent;
@@ -326,7 +326,7 @@ sub EjsBitmapPull($$)
 sub EjsTypedefPull($)
 {
 	my $d = shift;
-	return if (util::has_property($d, "noejs"));
+	return if (Parse::Pidl::Util::has_property($d, "noejs"));
 	if ($d->{DATA}->{TYPE} eq 'STRUCT') {
 		EjsStructPull($d->{NAME}, $d->{DATA});
 	} elsif ($d->{DATA}->{TYPE} eq 'UNION') {
@@ -393,7 +393,7 @@ sub EjsPushPointer($$$$$)
 	pidl "} else {";
 	indent;
 	$var = get_value_of($var);		
-	EjsPushElement($e, Ndr::GetNextLevel($e, $l), $var, $name, $env);
+	EjsPushElement($e, Parse::Pidl::NDR::GetNextLevel($e, $l), $var, $name, $env);
 	deindent;
 	pidl "}";
 }
@@ -403,9 +403,9 @@ sub EjsPushPointer($$$$$)
 sub EjsPushSwitch($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
-	my $switch_var = util::ParseExpr($l->{SWITCH_IS}, $env);
+	my $switch_var = Parse::Pidl::Util::ParseExpr($l->{SWITCH_IS}, $env);
 	pidl "ejs_set_switch(ejs, $switch_var);";
-	EjsPushElement($e, Ndr::GetNextLevel($e, $l), $var, $name, $env);
+	EjsPushElement($e, Parse::Pidl::NDR::GetNextLevel($e, $l), $var, $name, $env);
 }
 
 
@@ -414,8 +414,8 @@ sub EjsPushSwitch($$$$$)
 sub EjsPushArray($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
-	my $length = util::ParseExpr($l->{LENGTH_IS}, $env);
-	my $pl = Ndr::GetPrevLevel($e, $l);
+	my $length = Parse::Pidl::Util::ParseExpr($l->{LENGTH_IS}, $env);
+	my $pl = Parse::Pidl::NDR::GetPrevLevel($e, $l);
 	if ($pl && $pl->{TYPE} eq "POINTER") {
 		$var = get_pointer_to($var);
 	}
@@ -426,7 +426,7 @@ sub EjsPushArray($$$$$)
 	pidl "for (i=0;i<$length;i++) {";
 	indent;
 	pidl "const char *id = talloc_asprintf(ejs, \"%s.%u\", $name, i);";
-	EjsPushElement($e, Ndr::GetNextLevel($e, $l), $avar, "id", $env);
+	EjsPushElement($e, Parse::Pidl::NDR::GetNextLevel($e, $l), $avar, "id", $env);
 	deindent;
 	pidl "}";
 	pidl "ejs_push_uint32(ejs, v, $name \".length\", &i);";
@@ -439,7 +439,7 @@ sub EjsPushArray($$$$$)
 sub EjsPushElement($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
-	if (util::has_property($e, "charset")) {
+	if (Parse::Pidl::Util::has_property($e, "charset")) {
 		EjsPushString($e, $l, $var, $name, $env);
 	} elsif ($l->{TYPE} eq "ARRAY") {
 		EjsPushArray($e, $l, $var, $name, $env);
@@ -461,7 +461,7 @@ sub EjsPushElementTop($$)
 	my $e = shift;
 	my $env = shift;
 	my $l = $e->{LEVELS}[0];
-	my $var = util::ParseExpr($e->{NAME}, $env);
+	my $var = Parse::Pidl::Util::ParseExpr($e->{NAME}, $env);
 	my $name = "\"$e->{NAME}\"";
 	EjsPushElement($e, $l, $var, $name, $env);
 }
@@ -559,7 +559,7 @@ sub EjsBitmapPush($$)
 	my $name = shift;
 	my $d = shift;
 	my $type_fn = $d->{BASE_TYPE};
-	my($type_decl) = typelist::mapType($d->{BASE_TYPE});
+	my($type_decl) = Parse::Pidl::Typelist::mapType($d->{BASE_TYPE});
 	# put the bitmap elements in the constants array
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		if ($e =~ /^(\w*)\s*(.*)\s*$/) {
@@ -582,7 +582,7 @@ sub EjsBitmapPush($$)
 sub EjsTypedefPush($)
 {
 	my $d = shift;
-	return if (util::has_property($d, "noejs"));
+	return if (Parse::Pidl::Util::has_property($d, "noejs"));
 	if ($d->{DATA}->{TYPE} eq 'STRUCT') {
 		EjsStructPush($d->{NAME}, $d->{DATA});
 	} elsif ($d->{DATA}->{TYPE} eq 'UNION') {

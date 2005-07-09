@@ -7,7 +7,7 @@
 #             ANY CHANGE MADE HERE WILL BE LOST !
 #
 ####################################################################
-package idl;
+package Parse::Pidl::IDL;
 use vars qw ( @ISA );
 use strict;
 
@@ -2138,7 +2138,7 @@ sub
 		 'optional_base_element', 2,
 sub
 #line 195 "build/pidl/idl.yp"
-{ $_[2]->{PROPERTIES} = util::FlattenHash([$_[1],$_[2]->{PROPERTIES}]); $_[2] }
+{ $_[2]->{PROPERTIES} = Parse::Pidl::Util::FlattenHash([$_[1],$_[2]->{PROPERTIES}]); $_[2] }
 	],
 	[#Rule 45
 		 'union_elements', 0, undef
@@ -2233,7 +2233,7 @@ sub
 		 'property_list', 4,
 sub
 #line 250 "build/pidl/idl.yp"
-{ util::FlattenHash([$_[1],$_[3]]); }
+{ Parse::Pidl::Util::FlattenHash([$_[1],$_[3]]); }
 	],
 	[#Rule 62
 		 'properties', 1,
@@ -2245,7 +2245,7 @@ sub
 		 'properties', 3,
 sub
 #line 254 "build/pidl/idl.yp"
-{ util::FlattenHash([$_[1], $_[3]]); }
+{ Parse::Pidl::Util::FlattenHash([$_[1], $_[3]]); }
 	],
 	[#Rule 64
 		 'property', 1,
@@ -2390,7 +2390,7 @@ sub
 #line 305 "build/pidl/idl.yp"
 
 
-use pidl::util;
+use Parse::Pidl::Util;
 
 sub _Error {
     if (exists $_[0]->YYData->{ERRMSG}) {
@@ -2479,7 +2479,7 @@ sub parse_idl($$)
 
 	my $idl = $self->YYParse( yylex => \&_Lexer, yyerror => \&_Error );
 
-	return util::CleanData($idl);
+	return Parse::Pidl::Util::CleanData($idl);
 }
 
 1;

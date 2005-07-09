@@ -2,17 +2,7 @@
 # utility functions to support pidl
 # Copyright tridge@samba.org 2000
 # released under the GNU GPL
-package util;
-
-#####################################################################
-# load a data structure from a file (as saved with SaveStructure)
-sub LoadStructure($)
-{
-	my $f = shift;
-	my $contents = FileLoad($f);
-	defined $contents || return undef;
-	return eval "$contents";
-}
+package Parse::Pidl::Util;
 
 use strict;
 
@@ -140,15 +130,6 @@ sub MyDumper($)
 	require Data::Dumper;
 	my $s = shift;
 	return Data::Dumper::Dumper($s);
-}
-
-#####################################################################
-# save a data structure into a file
-sub SaveStructure($$)
-{
-	my($filename) = shift;
-	my($v) = shift;
-	FileSave($filename, MyDumper($v));
 }
 
 #####################################################################

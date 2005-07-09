@@ -4,9 +4,9 @@
 # Copyright jelmer@samba.org 2003-2005
 # released under the GNU GPL
 
-package DCOMProxy;
+package Parse::Pidl::Samba::COM::Proxy;
 
-use pidl::com_header;
+use Parse::Pidl::Samba::COM::Header;
 
 use strict;
 
@@ -85,7 +85,7 @@ sub ParseFunction($$)
 	my $uname = uc $name;
 
 	$res.="
-static $fn->{RETURN_TYPE} dcom_proxy_$interface->{NAME}_$name(struct $interface->{NAME} *d, TALLOC_CTX *mem_ctx" . COMHeader::GetArgumentProtoList($fn) . ")
+static $fn->{RETURN_TYPE} dcom_proxy_$interface->{NAME}_$name(struct $interface->{NAME} *d, TALLOC_CTX *mem_ctx" . Parse::Pidl::Samba::COM::Header::GetArgumentProtoList($fn) . ")
 {
 	struct dcerpc_pipe *p;
 	NTSTATUS status = dcom_get_pipe(d, &p);
@@ -103,8 +103,8 @@ static $fn->{RETURN_TYPE} dcom_proxy_$interface->{NAME}_$name(struct $interface-
 	
 	# Put arguments into r
 	foreach my $a (@{$fn->{ELEMENTS}}) {
-		next unless (util::has_property($a, "in"));
-		if (typelist::typeIs($a->{TYPE}, "INTERFACE")) {
+		next unless (Parse::Pidl::Util::has_property($a, "in"));
+		if (Parse::Pidl::Typelist::typeIs($a->{TYPE}, "INTERFACE")) {
 			$res .="\tNDR_CHECK(dcom_OBJREF_from_IUnknown(&r.in.$a->{NAME}.obj, $a->{NAME}));\n";
 		} else {
 			$res .= "\tr.in.$a->{NAME} = $a->{NAME};\n";
@@ -126,9 +126,9 @@ static $fn->{RETURN_TYPE} dcom_proxy_$interface->{NAME}_$name(struct $interface-
 
 	# Put r info back into arguments
 	foreach my $a (@{$fn->{ELEMENTS}}) {
-		next unless (util::has_property($a, "out"));
+		next unless (Parse::Pidl::Util::has_property($a, "out"));
 
-		if (typelist::typeIs($a->{TYPE}, "INTERFACE")) {
+		if (Parse::Pidl::Typelist::typeIs($a->{TYPE}, "INTERFACE")) {
 			$res .="\tNDR_CHECK(dcom_IUnknown_from_OBJREF(d->ctx, &$a->{NAME}, r.out.$a->{NAME}.obj));\n";
 		} else {
 			$res .= "\t*$a->{NAME} = r.out.$a->{NAME};\n";
@@ -171,7 +171,7 @@ sub RegistrationFunction($$)
 	$res .="\tNTSTATUS status = NT_STATUS_OK;\n";
 	foreach my $interface (@{$idl}) {
 		next if $interface->{TYPE} ne "INTERFACE";
-		next if not util::has_property($interface, "object");
+		next if not Parse::Pidl::Util::has_property($interface, "object");
 
 		my $data = $interface->{DATA};
 		my $count = 0;
@@ -199,8 +199,8 @@ sub Parse($)
 
 	foreach my $x (@{$pidl}) {
 		next if ($x->{TYPE} ne "INTERFACE");
-		next if util::has_property($x, "local");
-		next unless util::has_property($x, "object");
+		next if Parse::Pidl::Util::has_property($x, "local");
+		next unless Parse::Pidl::Util::has_property($x, "object");
 
 		$res .= ParseInterface($x);
 	}

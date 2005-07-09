@@ -2,7 +2,7 @@
 # (C) 2005 Jelmer Vernooij <jelmer@samba.org>
 # Published under the GNU General Public License
 
-package Test;
+package Parse::Pidl::Test;
 
 use strict;
 use pidl::util;
