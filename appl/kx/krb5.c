@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -188,7 +188,7 @@ krb5_write(kx_context *kc,
 
     ret = krb5_encrypt (CONTEXT(kc), K5DATA(kc)->crypto, 
 			KRB5_KU_OTHER_ENCRYPTED,
-			__UNCONST(buf), len, &data);
+			buf, len, &data);
     if (ret){
 	krb5_warn (CONTEXT(kc), ret, "krb5_write");
 	return -1;
