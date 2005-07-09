@@ -69,14 +69,14 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx,
 	uint32_t rid, access_granted;
 	int policy_min_pw_len = 0;
 
-	/* prepare connect to the SAMR pipe of users domain PDC */
+	/* prepare connect to the SAMR pipe of PDC */
 	c.level                     = LIBNET_RPC_CONNECT_PDC;
 	c.in.domain_name            = r->samr.in.domain_name;
 	c.in.dcerpc_iface_name      = DCERPC_SAMR_NAME;
 	c.in.dcerpc_iface_uuid      = DCERPC_SAMR_UUID;
 	c.in.dcerpc_iface_version   = DCERPC_SAMR_VERSION;
 
-	/* 1. connect to the SAMR pipe of users domain PDC (maybe a standalone server or workstation) */
+	/* 1. connect to the SAMR pipe of the PDC */
 	status = libnet_RpcConnect(ctx, mem_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
@@ -237,7 +237,7 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx,
 		goto disconnect;
 	}
 
-	/* prepare samr_SetUserInfo level 23 */
+	/* prepare samr_QueryUserInfo (get flags) */
 	qui.in.user_handle = &u_handle;
 	qui.in.level = 16;
 	
@@ -257,7 +257,8 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx,
 					  r->samr.in.account_name, nt_errstr(status));
 		goto disconnect;
 	}
-	
+
+	/* Possibly change account type */
 	if ((qui.out.info->info16.acct_flags & (ACB_WSTRUST | ACB_SVRTRUST | ACB_DOMTRUST)) 
 	    != r->samr.in.acct_type) {
 		acct_flags = (qui.out.info->info16.acct_flags & ~(ACB_WSTRUST | ACB_SVRTRUST | ACB_DOMTRUST))
@@ -268,6 +269,7 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx,
 	
 	acct_flags = (acct_flags & ~ACB_DISABLED);
 
+	/* reset flags (if required) */
 	if (acct_flags != qui.out.info->info16.acct_flags) {
 		ZERO_STRUCT(u_info);
 		u_info.info16.acct_flags = acct_flags;
