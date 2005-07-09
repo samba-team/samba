@@ -4,10 +4,11 @@
 # Copyright jelmer@samba.org 2005
 # released under the GNU GPL
 
-package NdrHeader;
+package Parse::Pidl::Samba::NDR::Header;
 
 use strict;
-use pidl::typelist;
+use Parse::Pidl::Typelist;
+use Parse::Pidl::Samba::NDR::Parser;
 
 my($res);
 my($tab_depth);
@@ -59,12 +60,12 @@ sub HeaderElement($)
 	foreach my $l (@{$element->{LEVELS}}) 
 	{
 		if (($l->{TYPE} eq "POINTER")) {
-			my $nl = Ndr::GetNextLevel($element, $l);
-			$nl = Ndr::GetNextLevel($element, $nl) if ($nl->{TYPE} eq "SUBCONTEXT");
-			next if ($nl->{TYPE} eq "DATA" and typelist::scalar_is_reference($nl->{DATA_TYPE}));
+			my $nl = Parse::Pidl::NDR::GetNextLevel($element, $l);
+			$nl = Parse::Pidl::NDR::GetNextLevel($element, $nl) if ($nl->{TYPE} eq "SUBCONTEXT");
+			next if ($nl->{TYPE} eq "DATA" and Parse::Pidl::Typelist::scalar_is_reference($nl->{DATA_TYPE}));
 			$prefix .= "*";
 		} elsif ($l->{TYPE} eq "ARRAY") {
-			my $pl = Ndr::GetPrevLevel($element, $l);
+			my $pl = Parse::Pidl::NDR::GetPrevLevel($element, $l);
 			next if ($pl and $pl->{TYPE} eq "POINTER");
 
 			if ($l->{IS_FIXED}) { 
@@ -77,7 +78,7 @@ sub HeaderElement($)
 		}
 	}
 
-	if (defined $element->{ARRAY_LEN}[0] && util::is_constant($element->{ARRAY_LEN}[0])) {
+	if (defined $element->{ARRAY_LEN}[0] && Parse::Pidl::Util::is_constant($element->{ARRAY_LEN}[0])) {
 		pidl "[$element->{ARRAY_LEN}[0]]";
 	}
 	pidl ";";
@@ -119,7 +120,7 @@ sub HeaderEnum($$)
     my($enum,$name) = @_;
     my $first = 1;
 
-    if (not util::useUintEnums()) {
+    if (not Parse::Pidl::Util::useUintEnums()) {
     	pidl "\nenum $name {\n";
 	$tab_depth++;
 	foreach my $e (@{$enum->{ELEMENTS}}) {
@@ -213,10 +214,10 @@ sub HeaderType($$$)
 		return;
 	}
 
-	if (util::has_property($e, "charset")) {
+	if (Parse::Pidl::Util::has_property($e, "charset")) {
 		pidl "const char";
 	} else {
-		pidl typelist::mapType($e->{TYPE});
+		pidl Parse::Pidl::Typelist::mapType($e->{TYPE});
 	}
 }
 
@@ -235,25 +236,25 @@ sub HeaderTypedefProto($)
 {
     my($d) = shift;
 
-	my $tf = NdrParser::get_typefamily($d->{DATA}{TYPE});
+	my $tf = Parse::Pidl::Samba::NDR::Parser::get_typefamily($d->{DATA}{TYPE});
 
-    if (util::has_property($d, "gensize")) {
+    if (Parse::Pidl::Util::has_property($d, "gensize")) {
 		my $size_args = $tf->{SIZE_FN_ARGS}->($d);
 		pidl "size_t ndr_size_$d->{NAME}($size_args);\n";
     }
 
-    return unless util::has_property($d, "public");
+    return unless Parse::Pidl::Util::has_property($d, "public");
 
 	my $pull_args = $tf->{PULL_FN_ARGS}->($d);
 	my $push_args = $tf->{PUSH_FN_ARGS}->($d);
 	my $print_args = $tf->{PRINT_FN_ARGS}->($d);
-	unless (util::has_property($d, "nopush")) {
+	unless (Parse::Pidl::Util::has_property($d, "nopush")) {
 		pidl "NTSTATUS ndr_push_$d->{NAME}($push_args);\n";
 	}
-	unless (util::has_property($d, "nopull")) {
+	unless (Parse::Pidl::Util::has_property($d, "nopull")) {
 	    pidl "NTSTATUS ndr_pull_$d->{NAME}($pull_args);\n";
 	}
-    unless (util::has_property($d, "noprint")) {
+    unless (Parse::Pidl::Util::has_property($d, "noprint")) {
 	    pidl "void ndr_print_$d->{NAME}($print_args);\n";
     }
 }
@@ -277,7 +278,7 @@ sub HeaderFunctionInOut($$)
     my($fn,$prop) = @_;
 
     foreach my $e (@{$fn->{ELEMENTS}}) {
-	    if (util::has_property($e, $prop)) {
+	    if (Parse::Pidl::Util::has_property($e, $prop)) {
 		    HeaderElement($e);
 	    }
     }
@@ -294,7 +295,7 @@ sub HeaderFunctionInOut_needed($$)
     }
 
     foreach my $e (@{$fn->{ELEMENTS}}) {
-	    if (util::has_property($e, $prop)) {
+	    if (Parse::Pidl::Util::has_property($e, $prop)) {
 		    return 1;
 	    }
     }
@@ -336,7 +337,7 @@ sub HeaderFunction($)
 	    HeaderFunctionInOut($fn, "out");
 	    if ($fn->{RETURN_TYPE}) {
 		    tabs();
-		    pidl typelist::mapType($fn->{RETURN_TYPE}) . " result;\n";
+		    pidl Parse::Pidl::Typelist::mapType($fn->{RETURN_TYPE}) . " result;\n";
 	    }
 	    $tab_depth--;
 	    tabs();
@@ -368,7 +369,7 @@ sub HeaderFnProto($$)
    		pidl "struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r);\n";
 	}
 
-	return unless util::has_property($fn, "public");
+	return unless Parse::Pidl::Util::has_property($fn, "public");
 
 	pidl "NTSTATUS ndr_push_$name(struct ndr_push *ndr, int flags, const struct $name *r);\n";
 	pidl "NTSTATUS ndr_pull_$name(struct ndr_pull *ndr, int flags, struct $name *r);\n";
@@ -397,7 +398,7 @@ sub HeaderInterface($)
 	if (defined $interface->{PROPERTIES}->{uuid}) {
 		my $name = uc $interface->{NAME};
 		pidl "#define DCERPC_$name\_UUID " . 
-		util::make_str($interface->{PROPERTIES}->{uuid}) . "\n";
+		Parse::Pidl::Util::make_str($interface->{PROPERTIES}->{uuid}) . "\n";
 
 		if(!defined $interface->{PROPERTIES}->{version}) { $interface->{PROPERTIES}->{version} = "0.0"; }
 		pidl "#define DCERPC_$name\_VERSION $interface->{PROPERTIES}->{version}\n";

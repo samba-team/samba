@@ -3,7 +3,7 @@
 # Copyright tridge@samba.org 2003
 # released under the GNU GPL
 
-package IdlTemplate;
+package Parse::Pidl::Samba::Template;
 
 use strict;
 

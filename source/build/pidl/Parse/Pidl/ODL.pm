@@ -2,7 +2,7 @@
 # Converts ODL stuctures to IDL structures
 # (C) 2004-2005 Jelmer Vernooij <jelmer@samba.org>
 
-package ODL;
+package Parse::Pidl::ODL;
 
 use strict;
 
@@ -43,8 +43,8 @@ sub ReplaceInterfacePointers($)
 	my $e = shift;
 
 	foreach my $x (@{$e->{ELEMENTS}}) {
-		next unless (typelist::hasType($x->{TYPE}));
-		next unless typelist::getType($x->{TYPE})->{DATA}->{TYPE} eq "INTERFACE";
+		next unless (Parse::Pidl::Typelist::hasType($x->{TYPE}));
+		next unless Parse::Pidl::Typelist::getType($x->{TYPE})->{DATA}->{TYPE} eq "INTERFACE";
 		
 		$x->{TYPE} = "MInterfacePointer";
 	}
@@ -59,14 +59,14 @@ sub ODL2IDL($)
 		# Add [in] ORPCTHIS *this, [out] ORPCTHAT *that
 		# and replace interfacepointers with MInterfacePointer
 		# for 'object' interfaces
-		if (util::has_property($x, "object")) {
+		if (Parse::Pidl::Util::has_property($x, "object")) {
 			foreach my $e (@{$x->{DATA}}) {
 				($e->{TYPE} eq "FUNCTION") && FunctionAddObjArgs($e);
 				ReplaceInterfacePointers($e);
 			}
 			# Object interfaces use ORPC
 			my @depends = ();
-			if(util::has_property($x, "depends")) {
+			if(Parse::Pidl::Util::has_property($x, "depends")) {
 				@depends = split /,/, $x->{PROPERTIES}->{depends};
 			}
 			push @depends, "orpc";

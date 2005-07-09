@@ -4,7 +4,7 @@
 # Copyright jelmer@samba.org 2005
 # released under the GNU GPL
 
-package EthHeader;
+package Parse::Pidl::Ethereal::NDR::Header;
 
 use strict;
 

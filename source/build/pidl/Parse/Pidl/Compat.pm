@@ -3,7 +3,7 @@
 # Copyright jelmer@samba.org 2005
 # released under the GNU GPL
 
-package IDLCompat;
+package Parse::Pidl::Compat;
 
 use strict;
 

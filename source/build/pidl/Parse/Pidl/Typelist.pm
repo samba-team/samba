@@ -3,8 +3,9 @@
 # Copyright jelmer@samba.org 2005
 # released under the GNU GPL
 
-package typelist;
+package Parse::Pidl::Typelist;
 
+use Parse::Pidl::Util;
 use strict;
 
 my %typedefs = ();
@@ -252,9 +253,9 @@ sub RegisterAliases()
 sub enum_type_fn($)
 {
 	my $enum = shift;
-	if (util::has_property($enum->{PARENT}, "enum8bit")) {
+	if (Parse::Pidl::Util::has_property($enum->{PARENT}, "enum8bit")) {
 		return "uint8";
-	} elsif (util::has_property($enum->{PARENT}, "v1_enum")) {
+	} elsif (Parse::Pidl::Util::has_property($enum->{PARENT}, "v1_enum")) {
 		return "uint32";
 	}
 	return "uint16";
@@ -264,11 +265,11 @@ sub bitmap_type_fn($)
 {
 	my $bitmap = shift;
 
-	if (util::has_property($bitmap, "bitmap8bit")) {
+	if (Parse::Pidl::Util::has_property($bitmap, "bitmap8bit")) {
 		return "uint8";
-	} elsif (util::has_property($bitmap, "bitmap16bit")) {
+	} elsif (Parse::Pidl::Util::has_property($bitmap, "bitmap16bit")) {
 		return "uint16";
-	} elsif (util::has_property($bitmap, "bitmap64bit")) {
+	} elsif (Parse::Pidl::Util::has_property($bitmap, "bitmap64bit")) {
 		return "hyper";
 	}
 	return "uint32";
@@ -309,7 +310,7 @@ sub LoadIdl($)
 			NAME => $x->{NAME},
 			TYPE => "TYPEDEF",
 			DATA => $x
-			}) if (util::has_property($x, "object"));
+			}) if (Parse::Pidl::Util::has_property($x, "object"));
 
 		foreach my $y (@{$x->{DATA}}) {
 			addType($y) if (
