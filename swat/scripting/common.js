@@ -115,7 +115,7 @@ function simple_menu() {
 function table_element(i, o) {
 	write("<tr><td>" + i + "</td><td>");
 	if (typeof(o[i]) == "object") {
-		var first;
+		var j, first;
 		first = true;
 		for (j in o[i]) {
 			if (first == false) {
@@ -131,24 +131,14 @@ function table_element(i, o) {
 }
 
 /*
-  return the number of elements in an object
-*/
-function elcount(o) {
-	var count = 0;
-	for (i in o) {
-		count++;
-	}
-	return count;
-}
-
-/*
   display a ejs object as a table. The header is optional
 */
 function simple_table(v) {
-	if (elcount(v) == 0) {
+	if (v.length == 0) {
 		return;
 	}
 	write("<table class=\"data\">\n");
+	var r;
 	for (r in v) {
 		table_element(r, v);
 	}
@@ -160,12 +150,10 @@ function simple_table(v) {
   attribute
 */
 function multi_table(array, header) {
-	if (elcount(array) == 0) {
-		return;
-	}
+	var i, n;
 	write("<table class=\"data\">\n");
-	for (i in array) {
-		var v = array[i];
+	for (i=0;i<array.length;i++) {
+		var r, v = array[i];
 		write('<tr><th colspan="2">' + v[header] + "</th></tr>\n");
 		for (r in v) {
 			if (r != header) {
