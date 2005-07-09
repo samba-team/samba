@@ -19,6 +19,12 @@ interface netlogon
 {
 	declare bitmap samr_AcctFlags;
 
+	typedef struct {
+		[value(2*strlen_m(string))] uint16 length;
+		[value(2*(strlen_m(string)+1))] uint16 size;
+		[flag(STR_NOTERM|STR_SIZE4|STR_LEN4|STR_LARGE_SIZE)] string *string;
+	} netr_StringLarge;
+
 	/*****************/
 	/* Function 0x00 */
 
@@ -158,8 +164,8 @@ interface netlogon
 		samr_RidWithAttributeArray groups;
 		uint32 user_flags;
 		netr_UserSessionKey key;
-		lsa_String logon_server;
-		lsa_String domain;
+		netr_StringLarge logon_server;
+		netr_StringLarge domain;
 		dom_sid2 *domain_sid;
 		netr_LMSessionKey LMSessKey;
 		samr_AcctFlags acct_flags;

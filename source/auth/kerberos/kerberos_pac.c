@@ -170,7 +170,7 @@ static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx,
 
 	if (krbtgt_keyblock) {
 		DATA_BLOB service_checksum_blob
-			= data_blob(srv_sig_ptr->signature, sizeof(srv_sig_ptr->signature));
+			= data_blob_const(srv_sig_ptr->signature, sizeof(srv_sig_ptr->signature));
 
 		status = check_pac_checksum(mem_ctx, 
 					    service_checksum_blob, &kdc_sig, 
@@ -377,7 +377,7 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 				context, service_keyblock);
 
 	service_checksum_blob
-		= data_blob(SRV_CHECKSUM->signature, sizeof(SRV_CHECKSUM->signature));
+		= data_blob_const(SRV_CHECKSUM->signature, sizeof(SRV_CHECKSUM->signature));
 
 	/* Then sign Server checksum */
 	ret = make_pac_checksum(mem_ctx, service_checksum_blob, KDC_CHECKSUM, context, krbtgt_keyblock);
