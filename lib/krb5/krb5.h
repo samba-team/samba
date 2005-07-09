@@ -617,28 +617,28 @@ typedef struct _krb5_prompt {
     krb5_prompt_type type;
 } krb5_prompt;
 
-typedef int (*krb5_prompter_fct)(krb5_context context,
-				 void *data,
-				 const char *name,
-				 const char *banner,
-				 int num_prompts,
-				 krb5_prompt prompts[]);
-typedef krb5_error_code (*krb5_key_proc)(krb5_context context,
-					 krb5_enctype type,
-					 krb5_salt salt,
-					 krb5_const_pointer keyseed,
-					 krb5_keyblock **key);
-typedef krb5_error_code (*krb5_decrypt_proc)(krb5_context context,
-					     krb5_keyblock *key,
-					     krb5_key_usage usage,
-					     krb5_const_pointer decrypt_arg,
-					     krb5_kdc_rep *dec_rep);
-typedef krb5_error_code (*krb5_s2k_proc)(krb5_context context,
-					 krb5_enctype type,
-					 krb5_const_pointer keyseed,
-					 krb5_salt salt,
-					 krb5_data *s2kparms,
-					 krb5_keyblock **key);
+typedef int (*krb5_prompter_fct)(krb5_context /*context*/,
+				 void * /*data*/,
+				 const char * /*name*/,
+				 const char * /*banner*/,
+				 int /*num_prompts*/,
+				 krb5_prompt /*prompts*/[]);
+typedef krb5_error_code (*krb5_key_proc)(krb5_context /*context*/,
+					 krb5_enctype /*type*/,
+					 krb5_salt /*salt*/,
+					 krb5_const_pointer /*keyseed*/,
+					 krb5_keyblock ** /*key*/);
+typedef krb5_error_code (*krb5_decrypt_proc)(krb5_context /*context*/,
+					     krb5_keyblock * /*key*/,
+					     krb5_key_usage /*usage*/,
+					     krb5_const_pointer /*decrypt_arg*/,
+					     krb5_kdc_rep * /*dec_rep*/);
+typedef krb5_error_code (*krb5_s2k_proc)(krb5_context /*context*/,
+					 krb5_enctype /*type*/,
+					 krb5_const_pointer /*keyseed*/,
+					 krb5_salt /*salt*/,
+					 krb5_data * /*s2kparms*/,
+					 krb5_keyblock ** /*key*/);
 
 struct _krb5_get_init_creds_opt_private;
 
