@@ -5,6 +5,7 @@ WriteMakefile(
 	'EXE_FILES' => [ 'pidl' ],
 	'PMLIBDIRS' => [ 'Parse' ],
 	'C' => [],
+	'test' => { 'TESTS' => 'tests/*.pl' }
 );
 
 sub MY::postamble {

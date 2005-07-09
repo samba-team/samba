@@ -5,16 +5,14 @@
 # Published under the GNU General Public License.
 use strict;
 
-use FindBin qw($RealBin);
-use lib "$RealBin/../..";
-use pidl::test;
+use Parse::Pidl::Test;
 
-my %settings = Test::GetSettings(@ARGV);
+my %settings = Parse::Pidl::Test::GetSettings(@ARGV);
 $settings{'IDL-Arguments'} = ['--quiet', '--parse', '--parser=ndr_test.c', '--header=ndr_test.h'];
 $settings{'IncludeFiles'} = ['ndr_test.h'];
 $settings{'ExtraFiles'} = ['ndr_test.c'];
 
-Test::test_idl("noptr-push", \%settings, 
+Parse::Pidl::Test::test_idl("noptr-push", \%settings, 
 '	typedef struct {
 		uint16 x;
 	} xstruct;
@@ -43,7 +41,7 @@ Test::test_idl("noptr-push", \%settings,
 	}
 ');
 
-Test::test_idl("ptr-embedded-push", \%settings,
+Parse::Pidl::Test::test_idl("ptr-embedded-push", \%settings,
 '   typedef struct {
 		uint16 *x;
 	} xstruct;
@@ -70,7 +68,7 @@ Test::test_idl("ptr-embedded-push", \%settings,
 		return 4;
 ');
 
-Test::test_idl("ptr-embedded-push-null", \%settings,
+Parse::Pidl::Test::test_idl("ptr-embedded-push-null", \%settings,
 '   typedef struct {
 		uint16 *x;
 	} xstruct;
@@ -93,7 +91,7 @@ Test::test_idl("ptr-embedded-push-null", \%settings,
 		return 3;
 ');
 
-Test::test_idl("refptr-embedded-push", \%settings,
+Parse::Pidl::Test::test_idl("refptr-embedded-push", \%settings,
 '
 	typedef struct {
 		[ref] uint16 *x;
@@ -121,7 +119,7 @@ Test::test_idl("refptr-embedded-push", \%settings,
 		return 4;
 ');
 
-Test::test_idl("refptr-embedded-push-null", \%settings,
+Parse::Pidl::Test::test_idl("refptr-embedded-push-null", \%settings,
 '
 	typedef struct {
 		[ref] uint16 *x;
@@ -139,7 +137,7 @@ Test::test_idl("refptr-embedded-push-null", \%settings,
 	/* Windows gives [client runtime error 0x6f4] */
 ');
 
-Test::test_idl("ptr-top-push", \%settings,
+Parse::Pidl::Test::test_idl("ptr-top-push", \%settings,
 '
 	typedef struct {
 		uint16 x;
@@ -164,7 +162,7 @@ Test::test_idl("ptr-top-push", \%settings,
 		return 3;
 ');
 
-Test::test_idl("ptr-top-push-null", \%settings,
+Parse::Pidl::Test::test_idl("ptr-top-push-null", \%settings,
 '
 	typedef struct {
 		uint16 x;
@@ -184,7 +182,7 @@ Test::test_idl("ptr-top-push-null", \%settings,
 ');
 
 
-Test::test_idl("refptr-top-push", \%settings,
+Parse::Pidl::Test::test_idl("refptr-top-push", \%settings,
 '
 	typedef struct {
 		uint16 x;
@@ -209,7 +207,7 @@ Test::test_idl("refptr-top-push", \%settings,
 		return 3;
 ');
 
-Test::test_idl("refptr-top-push-null", \%settings,
+Parse::Pidl::Test::test_idl("refptr-top-push-null", \%settings,
 '
 	typedef struct {
 		uint16 x;
@@ -229,7 +227,7 @@ Test::test_idl("refptr-top-push-null", \%settings,
 ');
 
 
-Test::test_idl("uniqueptr-top-push", \%settings,
+Parse::Pidl::Test::test_idl("uniqueptr-top-push", \%settings,
 '	typedef struct {
 		uint16 x;
 	} xstruct;
@@ -257,7 +255,7 @@ Test::test_idl("uniqueptr-top-push", \%settings,
 		return 4;
 ');
 
-Test::test_idl("uniqueptr-top-push-null", \%settings,
+Parse::Pidl::Test::test_idl("uniqueptr-top-push-null", \%settings,
 '	typedef struct {
 		uint16 x;
 	} xstruct;
@@ -281,7 +279,7 @@ Test::test_idl("uniqueptr-top-push-null", \%settings,
 ');
 
 
-Test::test_idl("ptr-top-out-pull", \%settings,
+Parse::Pidl::Test::test_idl("ptr-top-out-pull", \%settings,
 '
 	typedef struct {
 		uint16 x;
@@ -308,7 +306,7 @@ Test::test_idl("ptr-top-out-pull", \%settings,
 		return 3;
 ');	
 
-Test::test_idl("ptr-top-out-pull-null", \%settings,
+Parse::Pidl::Test::test_idl("ptr-top-out-pull-null", \%settings,
 '
 	typedef struct {
 		uint16 x;
@@ -331,7 +329,7 @@ Test::test_idl("ptr-top-out-pull-null", \%settings,
 ');
 
 
-Test::test_idl("refptr-top-out-pull", \%settings,
+Parse::Pidl::Test::test_idl("refptr-top-out-pull", \%settings,
 '
 	typedef struct {
 		uint16 x;
@@ -358,7 +356,7 @@ Test::test_idl("refptr-top-out-pull", \%settings,
 		return 3;
 ');	
 
-Test::test_idl("refptr-top-out-pull-null", \%settings,
+Parse::Pidl::Test::test_idl("refptr-top-out-pull-null", \%settings,
 '
 	typedef struct {
 		uint16 x;
@@ -381,7 +379,7 @@ Test::test_idl("refptr-top-out-pull-null", \%settings,
 ');
 
 
-Test::test_idl("ptr-top-push-double", \%settings,
+Parse::Pidl::Test::test_idl("ptr-top-push-double", \%settings,
 '
 	[public] void echo_TestRef([in] uint16 **foo);
 ',
@@ -405,7 +403,7 @@ Test::test_idl("ptr-top-push-double", \%settings,
 		return 4;
 ');
 
-Test::test_idl("ptr-top-push-double-sndnull", \%settings,
+Parse::Pidl::Test::test_idl("ptr-top-push-double-sndnull", \%settings,
 '
 	[public] void echo_TestRef([in] uint16 **foo);
 ',
@@ -425,7 +423,7 @@ Test::test_idl("ptr-top-push-double-sndnull", \%settings,
 		return 3;
 ');
 
-Test::test_idl("ptr-top-push-double-fstnull", \%settings,
+Parse::Pidl::Test::test_idl("ptr-top-push-double-fstnull", \%settings,
 '
 	[public] void echo_TestRef([in] uint16 **foo);
 ',
@@ -441,7 +439,7 @@ Test::test_idl("ptr-top-push-double-fstnull", \%settings,
 ');
 
 
-Test::test_idl("refptr-top-push-double", \%settings,
+Parse::Pidl::Test::test_idl("refptr-top-push-double", \%settings,
 '
 	[public] void echo_TestRef([in,ref] uint16 **foo);
 ',
@@ -465,7 +463,7 @@ Test::test_idl("refptr-top-push-double", \%settings,
 		return 4;
 ');
 
-Test::test_idl("refptr-top-push-double-sndnull", \%settings,
+Parse::Pidl::Test::test_idl("refptr-top-push-double-sndnull", \%settings,
 '
 	[public] void echo_TestRef([in,ref] uint16 **foo);
 ',
@@ -485,7 +483,7 @@ Test::test_idl("refptr-top-push-double-sndnull", \%settings,
 		return 3;
 ');
 
-Test::test_idl("refptr-top-push-double-fstnull", \%settings,
+Parse::Pidl::Test::test_idl("refptr-top-push-double-fstnull", \%settings,
 '
 	[public] void echo_TestRef([in,ref] uint16 **foo);
 ',
@@ -500,7 +498,7 @@ Test::test_idl("refptr-top-push-double-fstnull", \%settings,
 
 ');
 
-Test::test_idl("ignore-ptr", \%settings,
+Parse::Pidl::Test::test_idl("ignore-ptr", \%settings,
 '
 	[public] void echo_TestRef([in,ignore] uint16 *foo, [in] uint16 *bar);
 ',

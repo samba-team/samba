@@ -3,18 +3,16 @@
 # (C) 2005 Jelmer Vernooij. Published under the GNU GPL
 use strict;
 
-use FindBin qw($RealBin);
-use lib "$RealBin/../..";
-use pidl::test;
+use Parse::Pidl::Test;
 
-my %settings = Test::GetSettings(@ARGV);
+my %settings = Parse::Pidl::Test::GetSettings(@ARGV);
 $settings{'IDL-Arguments'} = ['--quiet', '--parse', '--parser=ndr_test.c', '--header=ndr_test.h'];
 $settings{'IncludeFiles'} = ['ndr_test.h'];
 $settings{'ExtraFiles'} = ['ndr_test.c'];
 
 # Check that an outgoing scalar pointer is allocated correctly
 
-Test::test_idl("alloc-scalar", \%settings, 
+Parse::Pidl::Test::test_idl("alloc-scalar", \%settings, 
 '	
 	typedef struct {
 		uint8 *x;
@@ -39,7 +37,7 @@ Test::test_idl("alloc-scalar", \%settings,
 );
 
 # Check that an outgoing buffer pointer is allocated correctly
-Test::test_idl("alloc-buffer", \%settings, 
+Parse::Pidl::Test::test_idl("alloc-buffer", \%settings, 
 '	
 	typedef struct {
 		uint8 data;
@@ -68,7 +66,7 @@ Test::test_idl("alloc-buffer", \%settings,
 );
 
 # Check that ref pointers aren't allocated by default
-Test::test_idl("ref-noalloc-null", \%settings, 
+Parse::Pidl::Test::test_idl("ref-noalloc-null", \%settings, 
 '	
 	[public] void TestAlloc([in,ref] uint8 *t);
 ','
@@ -84,7 +82,7 @@ Test::test_idl("ref-noalloc-null", \%settings,
 );
 
 # Check that ref pointers aren't allocated by default
-Test::test_idl("ref-noalloc", \%settings, 
+Parse::Pidl::Test::test_idl("ref-noalloc", \%settings, 
 '	
 	[public] void TestAlloc([in,ref] uint8 *t);
 ','
@@ -104,7 +102,7 @@ Test::test_idl("ref-noalloc", \%settings,
 );
 
 # Check that an outgoing ref pointer is allocated correctly
-Test::test_idl("ref-alloc", \%settings, 
+Parse::Pidl::Test::test_idl("ref-alloc", \%settings, 
 '	
 	[public] void TestAlloc([in,ref] uint8 *t);
 ','
