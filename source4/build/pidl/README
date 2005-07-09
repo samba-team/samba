@@ -1,7 +1,7 @@
 This directory contains the source code of the pidl (Perl IDL) 
 compiler. 
 
-pidl.pl is the main file of pidl.
+pidl is the main file of pidl.
 
 Pidl works by building a parse tree from a .pidl file (a simple 
 dump of it's internal parse tree) or a .idl file 
@@ -27,6 +27,8 @@ ndr_header.pm - Generates a header file with structures
 ndr_parser.pm - Generates pull/push functions for parsing NDR
 server.pm - Generates server side implementation in C
 template.pm - Generates stubs in C for server implementation
+ejs.pm - Generates bindings for Embedded JavaScript (EJS)
+ejs_header.pm - Generates headers for the EJS bindings
 
 -- COM / DCOM --
 odl.pm - Generates IDL structures from ODL structures for use in 
