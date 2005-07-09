@@ -54,7 +54,7 @@ struct libnet_context *libnet_context_init(struct event_context *ev)
 	for (nr_i = 0; nr_i < nr_count; nr_i++) {
 		ctx->name_res_methods[nr_i] = talloc_strdup(ctx, nr_methods[nr_i]);
 	}
-	ctx->name_res_methods[nr_count+1] = NULL;
+	ctx->name_res_methods[nr_i] = NULL;
 	
 	return ctx;
 }
