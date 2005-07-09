@@ -125,7 +125,7 @@ NTSTATUS make_user_info(TALLOC_CTX *mem_ctx,
 	user_info->plaintext_password = blob;
 
 	user_info->encrypted = encrypted;
-	user_info->flags = 0;
+	user_info->flags = flags;
 
 	DEBUG(10,("made an %sencrypted user_info for %s (%s)\n", encrypted ? "":"un" , account_name, c_account_name));
 
