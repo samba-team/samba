@@ -1258,6 +1258,8 @@ NTSTATUS pvfs_change_create_options(struct pvfs_state *pvfs,
 		f->handle->create_options = create_options;
 	}
 
+	talloc_free(lck);
+
 	return status;
 }
 
