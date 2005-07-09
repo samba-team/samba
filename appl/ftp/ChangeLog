@@ -1,3 +1,17 @@
+2005-07-09  Love  <lha@kth.se>
+
+	* ftp/security.c: keep track of if CCC was passed
+
+	* ftpd/extern.h: variable to keep track of if CCC was passed
+
+	* ftpd/ftpcmd.y: sprinkel check_secure, check if CCC was passed in
+	check_secure
+
+2005-06-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ftpd/ftpd.c (filename_check): change signednes of p to avoid
+	warning, move typecasts
+
 2005-05-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftpd/ftpd.c: avoid 'unused variable' warnings
