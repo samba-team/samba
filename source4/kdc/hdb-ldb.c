@@ -460,6 +460,7 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 
 	struct ldb_message **msg;
 
+	/* Structure assignment, so we don't mess with the source parameter */
 	struct Principal princ = *principal;
 
 	/* Allow host/dns.name/realm@REALM, just convert into host/dns.name@REALM */
