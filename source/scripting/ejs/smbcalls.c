@@ -91,7 +91,7 @@ static int ejs_systemAuth(TALLOC_CTX *tmp_ctx, struct MprVar *auth, const char *
 		goto done;
 	}
 
-	pw_blob = data_blob(password, strlen(password)),
+	pw_blob = data_blob(password, strlen(password)+1),
 	make_user_info(tmp_ctx, username, username,
 				domain, domain,
 				remote_host, remote_host,
