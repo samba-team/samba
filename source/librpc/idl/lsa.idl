@@ -13,7 +13,7 @@
   depends(security)
 ] interface lsarpc
 {
-	typedef [public] struct {
+	typedef [public,noejs] struct {
 		[value(2*strlen_m(string))] uint16 length;
 		[value(2*strlen_m(string))] uint16 size;
 		unistr_noterm *string;

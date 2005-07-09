@@ -22,8 +22,9 @@
 
 #include "includes.h"
 #include "lib/ejs/ejs.h"
-#include "scripting/ejs/ejsrpc.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "librpc/gen_ndr/ndr_lsa.h"
+#include "scripting/ejs/ejsrpc.h"
 
 NTSTATUS ejs_pull_rpc(int eid, const char *callname, 
 		      struct MprVar *v, void *ptr, ejs_pull_function_t ejs_pull)
@@ -422,4 +423,22 @@ BOOL ejs_pull_null(struct ejs_rpc *ejs, struct MprVar *v, const char *name)
 		return True;
 	}
 	return False;
+}
+
+/*
+  pull a lsa_String
+*/
+NTSTATUS ejs_pull_lsa_String(struct ejs_rpc *ejs, 
+			     struct MprVar *v, const char *name, struct lsa_String *r)
+{
+	return ejs_pull_string(ejs, v, name, &r->string);
+}
+
+/*
+  push a lsa_String
+*/
+NTSTATUS ejs_push_lsa_String(struct ejs_rpc *ejs, 
+			     struct MprVar *v, const char *name, const struct lsa_String *r)
+{
+	return ejs_push_string(ejs, v, name, r->string);
 }
