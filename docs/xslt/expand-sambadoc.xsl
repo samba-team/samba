@@ -9,10 +9,10 @@
 	xmlns:samba="http://www.samba.org/samba/DTD/samba-doc"
 	version="1.1">
 
-	<xsl:import href="strip-references.xsl"/>
-	<xsl:import href="expand-smbconfdoc.xsl"/>
-
 	<xsl:output method="xml" encoding="UTF-8" doctype-public="-//OASIS//DTD DocBook XML V4.2//EN" indent="yes" doctype-system="http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd"/>
+
+	<xsl:include href="strip-references.xsl"/>
+	<xsl:include href="expand-smbconfdoc.xsl"/>
 
 	<!-- This is needed to copy content unchanged -->
 	<xsl:template match="@*|node()">
@@ -22,7 +22,6 @@
 	</xsl:template>
 
 	<xsl:template match="smbconfblock/smbconfoption">
-
 		<xsl:element name="member">
 			<xsl:element name="indexterm">
 				<xsl:element name="primary">
