@@ -3,10 +3,10 @@
 # Copyright tridge@samba.org 2005
 # released under the GNU GPL
 
-package EjsHeader;
+package Parse::Pidl::Samba::EJSHeader;
 
 use strict;
-use pidl::typelist;
+use Parse::Pidl::Typelist;
 
 my($res);
 
@@ -22,9 +22,9 @@ sub HeaderTypedefProto($)
 	my $d = shift;
 	my $name = $d->{NAME};
 	
-	return unless util::has_property($d, "public");
+	return unless Parse::Pidl::Util::has_property($d, "public");
 	
-	my $type_decl = typelist::mapType($name);
+	my $type_decl = Parse::Pidl::Typelist::mapType($name);
 
 	pidl "NTSTATUS ejs_push_$d->{NAME}(struct ejs_rpc *, struct MprVar *, const char *, const $type_decl *);\n";
 	pidl "NTSTATUS ejs_pull_$d->{NAME}(struct ejs_rpc *, struct MprVar *, const char *, $type_decl *);\n";

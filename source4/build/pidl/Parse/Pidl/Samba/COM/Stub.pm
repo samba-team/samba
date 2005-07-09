@@ -1,10 +1,11 @@
 ###################################################
-# server boilerplate generator
+# DCOM stub boilerplate generator
+# Copyright jelmer@samba.org 2004-2005
 # Copyright tridge@samba.org 2003
 # Copyright metze@samba.org 2004
 # released under the GNU GPL
 
-package NdrServer;
+package Parse::Pidl::Samba::COM::Stub;
 
 use strict;
 
@@ -15,30 +16,34 @@ sub pidl($)
 	$res .= shift;
 }
 
-
 #####################################################
 # generate the switch statement for function dispatch
 sub gen_dispatch_switch($)
 {
-	my $interface = shift;
+	my $data = shift;
 
-	foreach my $fn (@{$interface->{FUNCTIONS}}) {
-		next if not defined($fn->{OPNUM});
+	my $count = 0;
+	foreach my $d (@{$data}) {
+		next if ($d->{TYPE} ne "FUNCTION");
 
-		pidl "\tcase $fn->{OPNUM}: {\n";
-		pidl "\t\tstruct $fn->{NAME} *r2 = r;\n";
+		pidl "\tcase $count: {\n";
+		if ($d->{RETURN_TYPE} && $d->{RETURN_TYPE} ne "void") {
+			pidl "\t\tNTSTATUS result;\n";
+		}
+		pidl "\t\tstruct $d->{NAME} *r2 = r;\n";
 		pidl "\t\tif (DEBUGLEVEL > 10) {\n";
-		pidl "\t\t\tNDR_PRINT_FUNCTION_DEBUG($fn->{NAME}, NDR_IN, r2);\n";
+		pidl "\t\t\tNDR_PRINT_FUNCTION_DEBUG($d->{NAME}, NDR_IN, r2);\n";
 		pidl "\t\t}\n";
-		if ($fn->{RETURN_TYPE} && $fn->{RETURN_TYPE} ne "void") {
-			pidl "\t\tr2->out.result = $fn->{NAME}(dce_call, mem_ctx, r2);\n";
+		if ($d->{RETURN_TYPE} && $d->{RETURN_TYPE} ne "void") {
+			pidl "\t\tresult = vtable->$d->{NAME}(iface, mem_ctx, r2);\n";
 		} else {
-			pidl "\t\t$fn->{NAME}(dce_call, mem_ctx, r2);\n";
+			pidl "\t\tvtable->$d->{NAME}(iface, mem_ctx, r2);\n";
 		}
 		pidl "\t\tif (dce_call->state_flags & DCESRV_CALL_STATE_FLAG_ASYNC) {\n";
-		pidl "\t\t\tDEBUG(5,(\"function $fn->{NAME} will reply async\\n\"));\n";
+		pidl "\t\t\tDEBUG(5,(\"function $d->{NAME} will reply async\\n\"));\n";
 		pidl "\t\t}\n";
 		pidl "\t\tbreak;\n\t}\n";
+		$count++; 
 	}
 }
 
@@ -46,23 +51,25 @@ sub gen_dispatch_switch($)
 # generate the switch statement for function reply
 sub gen_reply_switch($)
 {
-	my $interface = shift;
+	my $data = shift;
 
-	foreach my $fn (@{$interface->{FUNCTIONS}}) {
-		next if not defined($fn->{OPNUM});
+	my $count = 0;
+	foreach my $d (@{$data}) {
+		next if ($d->{TYPE} ne "FUNCTION");
 
-		pidl "\tcase $fn->{OPNUM}: {\n";
-		pidl "\t\tstruct $fn->{NAME} *r2 = r;\n";
+		pidl "\tcase $count: {\n";
+		pidl "\t\tstruct $d->{NAME} *r2 = r;\n";
 		pidl "\t\tif (dce_call->state_flags & DCESRV_CALL_STATE_FLAG_ASYNC) {\n";
-		pidl "\t\t\tDEBUG(5,(\"function $fn->{NAME} replied async\\n\"));\n";
+		pidl "\t\t\tDEBUG(5,(\"function $d->{NAME} replied async\\n\"));\n";
 		pidl "\t\t}\n";
 		pidl "\t\tif (DEBUGLEVEL > 10 && dce_call->fault_code == 0) {\n";
-		pidl "\t\t\tNDR_PRINT_FUNCTION_DEBUG($fn->{NAME}, NDR_OUT | NDR_SET_VALUES, r2);\n";
+		pidl "\t\t\tNDR_PRINT_FUNCTION_DEBUG($d->{NAME}, NDR_OUT | NDR_SET_VALUES, r2);\n";
 		pidl "\t\t}\n";
 		pidl "\t\tif (dce_call->fault_code != 0) {\n";
-		pidl "\t\t\tDEBUG(2,(\"dcerpc_fault %s in $fn->{NAME}\\n\", dcerpc_errstr(mem_ctx, dce_call->fault_code)));\n";
+		pidl "\t\t\tDEBUG(2,(\"dcerpc_fault %s in $d->{NAME}\\n\", dcerpc_errstr(mem_ctx, dce_call->fault_code)));\n";
 		pidl "\t\t}\n";
 		pidl "\t\tbreak;\n\t}\n";
+		$count++; 
 	}
 }
 
@@ -71,9 +78,10 @@ sub gen_reply_switch($)
 sub Boilerplate_Iface($)
 {
 	my($interface) = shift;
-	my $name = $interface->{NAME}; 
+	my($data) = $interface->{DATA};
+	my $name = $interface->{NAME};
 	my $uname = uc $name;
-	my $uuid = util::make_str($interface->{PROPERTIES}->{uuid});
+	my $uuid = Parse::Pidl::Util::make_str($interface->{PROPERTIES}->{uuid});
 	my $if_version = $interface->{PROPERTIES}->{version};
 
 	pidl "
@@ -125,10 +133,13 @@ static NTSTATUS $name\__op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_C
 static NTSTATUS $name\__op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
 {
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
+	struct GUID ipid = dce_call->pkt.u.request.object.object;
+	struct dcom_interface_p *iface = dcom_get_local_iface_p(&ipid);
+	const struct dcom_$name\_vtable *vtable = iface->vtable;
 
 	switch (opnum) {
 ";
-	gen_dispatch_switch($interface);
+	gen_dispatch_switch($data);
 
 pidl "
 	default:
@@ -151,7 +162,7 @@ static NTSTATUS $name\__op_reply(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	switch (opnum) {
 ";
-	gen_reply_switch($interface);
+	gen_reply_switch($data);
 
 pidl "
 	default:
@@ -226,9 +237,9 @@ static NTSTATUS $name\__op_init_server(struct dcesrv_context *dce_ctx, const str
 
 static BOOL $name\__op_interface_by_uuid(struct dcesrv_interface *iface, const char *uuid, uint32_t if_version)
 {
-	if ($name\_interface.if_version == if_version &&
-		strcmp($name\_interface.uuid, uuid)==0) {
-		memcpy(iface,&$name\_interface, sizeof(*iface));
+	if (dcerpc_table_$name.if_version == if_version &&
+		strcmp(dcerpc_table_$name.uuid, uuid)==0) {
+		memcpy(iface,&dcerpc_table_$name, sizeof(*iface));
 		return True;
 	}
 
@@ -237,8 +248,8 @@ static BOOL $name\__op_interface_by_uuid(struct dcesrv_interface *iface, const c
 
 static BOOL $name\__op_interface_by_name(struct dcesrv_interface *iface, const char *name)
 {
-	if (strcmp($name\_interface.name, name)==0) {
-		memcpy(iface,&$name\_interface, sizeof(*iface));
+	if (strcmp(dcerpc_table_$name.name, name)==0) {
+		memcpy(iface,&dcerpc_table_$name, sizeof(*iface));
 		return True;
 	}
 
@@ -274,11 +285,17 @@ NTSTATUS dcerpc_server_$name\_init(void)
 }
 
 #####################################################################
-# dcerpc server boilerplate from a parsed IDL structure 
+# dcom interface stub from a parsed IDL structure 
 sub ParseInterface($)
 {
 	my($interface) = shift;
+	
+	return "" if Parse::Pidl::Util::has_property($interface, "local");
+	
+	my($data) = $interface->{DATA};
 	my $count = 0;
+
+	$res = "";
 
 	if (!defined $interface->{PROPERTIES}->{uuid}) {
 		return $res;
@@ -288,33 +305,17 @@ sub ParseInterface($)
 		$interface->{PROPERTIES}->{version} = "0.0";
 	}
 
-	foreach my $fn (@{$interface->{FUNCTIONS}}) {
-		if (defined($fn->{OPNUM})) { $count++; }
+	foreach my $d (@{$data}) {
+		if ($d->{TYPE} eq "FUNCTION") { $count++; }
 	}
 
 	if ($count == 0) {
 		return $res;
 	}
 
-	$res .= "/* $interface->{NAME} - dcerpc server boilerplate generated by pidl */\n\n";
+	$res = "/* dcom interface stub generated by pidl */\n\n";
 	Boilerplate_Iface($interface);
 	Boilerplate_Ep_Server($interface);
-
-	return $res;
-}
-
-sub Parse($$)
-{
-	my($ndr) = shift;
-	my($filename) = shift;
-
-	$res =  "";
-	$res .= "/* server functions auto-generated by pidl */\n";
-	$res .= "\n";
-
-	foreach my $x (@{$ndr}) {
-		ParseInterface($x) if ($x->{TYPE} eq "INTERFACE" and not defined($x->{PROPERTIES}{object}));
-	}
 
 	return $res;
 }

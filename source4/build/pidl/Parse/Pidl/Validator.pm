@@ -3,7 +3,7 @@
 # Copyright tridge@samba.org 2003
 # released under the GNU GPL
 
-package IdlValidator;
+package Parse::Pidl::Validator;
 
 use strict;
 
@@ -153,14 +153,14 @@ sub ValidProperties($$)
 sub mapToScalar($)
 {
 	my $t = shift;
-	my $ti = typelist::getType($t);
+	my $ti = Parse::Pidl::Typelist::getType($t);
 
 	if (not defined ($ti)) {
 		return undef;
 	} elsif ($ti->{DATA}->{TYPE} eq "ENUM") {
-		return typelist::enum_type_fn($ti->{DATA});
+		return Parse::Pidl::Typelist::enum_type_fn($ti->{DATA});
 	} elsif ($ti->{DATA}->{TYPE} eq "BITMAP") {
-		return typelist::enum_type_fn($ti->{DATA});
+		return Parse::Pidl::Typelist::enum_type_fn($ti->{DATA});
 	} elsif ($ti->{DATA}->{TYPE} eq "SCALAR") {
 		return $t;
 	}
@@ -176,21 +176,21 @@ sub ValidElement($)
 
 	ValidProperties($e,"ELEMENT");
 
-	if (util::has_property($e, "ptr")) {
+	if (Parse::Pidl::Util::has_property($e, "ptr")) {
 		fatal($e, el_name($e) . " : pidl does not support full NDR pointers yet\n");
 	}
 
 	# Check whether switches are used correctly.
-	if (my $switch = util::has_property($e, "switch_is")) {
+	if (my $switch = Parse::Pidl::Util::has_property($e, "switch_is")) {
 		my $e2 = find_sibling($e, $switch);
-		my $type = typelist::getType($e->{TYPE});
+		my $type = Parse::Pidl::Typelist::getType($e->{TYPE});
 
 		if (defined($type) and $type->{DATA}->{TYPE} ne "UNION") {
 			fatal($e, el_name($e) . ": switch_is() used on non-union type $e->{TYPE} which is a $type->{DATA}->{TYPE}");
 		}
 
-		if (!util::has_property($type, "nodiscriminant") and defined($e2)) {
-			my $discriminator_type = util::has_property($type, "switch_type");
+		if (!Parse::Pidl::Util::has_property($type, "nodiscriminant") and defined($e2)) {
+			my $discriminator_type = Parse::Pidl::Util::has_property($type, "switch_type");
 			$discriminator_type = "uint32" unless defined ($discriminator_type);
 
 			my $t1 = mapToScalar($discriminator_type);
@@ -210,24 +210,24 @@ sub ValidElement($)
 		}
 	}
 
-	if (defined (util::has_property($e, "subcontext_size")) and not defined(util::has_property($e, "subcontext"))) {
+	if (defined (Parse::Pidl::Util::has_property($e, "subcontext_size")) and not defined(Parse::Pidl::Util::has_property($e, "subcontext"))) {
 		fatal($e, el_name($e) . " : subcontext_size() on non-subcontext element");
 	}
 
-	if (defined (util::has_property($e, "compression")) and not defined(util::has_property($e, "subcontext"))) {
+	if (defined (Parse::Pidl::Util::has_property($e, "compression")) and not defined(Parse::Pidl::Util::has_property($e, "subcontext"))) {
 		fatal($e, el_name($e) . " : compression() on non-subcontext element");
 	}
 
-	if (defined (util::has_property($e, "obfuscation")) and not defined(util::has_property($e, "subcontext"))) {
+	if (defined (Parse::Pidl::Util::has_property($e, "obfuscation")) and not defined(Parse::Pidl::Util::has_property($e, "subcontext"))) {
 		fatal($e, el_name($e) . " : obfuscation() on non-subcontext element");
 	}
 
 	if (!$e->{POINTERS} && (
-		util::has_property($e, "ptr") or
-		util::has_property($e, "sptr") or
-		util::has_property($e, "unique") or
-		util::has_property($e, "relative") or
-		util::has_property($e, "ref"))) {
+		Parse::Pidl::Util::has_property($e, "ptr") or
+		Parse::Pidl::Util::has_property($e, "sptr") or
+		Parse::Pidl::Util::has_property($e, "unique") or
+		Parse::Pidl::Util::has_property($e, "relative") or
+		Parse::Pidl::Util::has_property($e, "ref"))) {
 		fatal($e, el_name($e) . " : pointer properties on non-pointer element\n");	
 	}
 }
@@ -254,7 +254,7 @@ sub ValidUnion($)
 
 	ValidProperties($union,"UNION");
 
-	if (util::has_property($union->{PARENT}, "nodiscriminant") and util::has_property($union->{PARENT}, "switch_type")) {
+	if (Parse::Pidl::Util::has_property($union->{PARENT}, "nodiscriminant") and Parse::Pidl::Util::has_property($union->{PARENT}, "switch_type")) {
 		fatal($union->{PARENT}, $union->{PARENT}->{NAME} . ": switch_type() on union without discriminant");
 	}
 	
@@ -271,7 +271,7 @@ sub ValidUnion($)
 			fatal $e, "Union member $e->{NAME} must have default or case property\n";
 		}
 
-		if (util::has_property($e, "ref")) {
+		if (Parse::Pidl::Util::has_property($e, "ref")) {
 			fatal($e, el_name($e) . " : embedded ref pointers are not supported yet\n");
 		}
 
@@ -312,7 +312,7 @@ sub ValidFunction($)
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		$e->{PARENT} = $fn;
-		if (util::has_property($e, "ref") && !$e->{POINTERS}) {
+		if (Parse::Pidl::Util::has_property($e, "ref") && !$e->{POINTERS}) {
 			fatal $e, "[ref] variables must be pointers ($fn->{NAME}/$e->{NAME})\n";
 		}
 		ValidElement($e);
@@ -328,13 +328,13 @@ sub ValidInterface($)
 
 	ValidProperties($interface,"INTERFACE");
 
-	if (util::has_property($interface, "pointer_default") && 
+	if (Parse::Pidl::Util::has_property($interface, "pointer_default") && 
 		$interface->{PROPERTIES}->{pointer_default} eq "ptr") {
 		fatal $interface, "Full pointers are not supported yet\n";
 	}
 
-	if (util::has_property($interface, "object")) {
-     		if (util::has_property($interface, "version") && 
+	if (Parse::Pidl::Util::has_property($interface, "object")) {
+     		if (Parse::Pidl::Util::has_property($interface, "version") && 
 			$interface->{PROPERTIES}->{version} != 0) {
 			fatal $interface, "Object interfaces must have version 0.0 ($interface->{NAME})\n";
 		}

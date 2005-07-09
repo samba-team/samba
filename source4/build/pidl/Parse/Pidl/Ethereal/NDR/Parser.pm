@@ -5,11 +5,11 @@
 # Copyright jelmer@samba.org 2004-2005
 # released under the GNU GPL
 
-package EthParser;
+package Parse::Pidl::Ethereal::NDR::Parser;
 
 use strict;
-use pidl::typelist;
-use pidl::ndr;
+use Parse::Pidl::Typelist;
+use Parse::Pidl::NDR;
 
 # the list of needed functions
 

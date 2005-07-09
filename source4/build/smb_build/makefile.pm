@@ -129,14 +129,14 @@ sub _prepare_IDL($)
 	my $ctx = shift;
 
 	return << '__EOD__';
-idl_full: build/pidl/idl.pm
+idl_full: build/pidl/Parse/Pidl/IDL.pm
 	CPP="@CPP@" PERL="$(PERL)" script/build_idl.sh FULL @PIDL_ARGS@
 
-idl: build/pidl/idl.pm
+idl: build/pidl/Parse/Pidl/IDL.pm
 	@CPP="@CPP@" PERL="$(PERL)" script/build_idl.sh PARTIAL @PIDL_ARGS@
 
-build/pidl/idl.pm: build/pidl/idl.yp
-	-yapp -s build/pidl/idl.yp
+build/pidl/Parse/Pidl/IDL.pm: build/pidl/idl.yp
+	-yapp -s -m 'Parse::Pidl::IDL' -o build/pidl/Parse/Pidl/IDL.pm build/pidl/idl.yp 
 
 pch: proto include/includes.h.gch
 
