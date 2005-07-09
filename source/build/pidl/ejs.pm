@@ -159,7 +159,7 @@ sub EjsPullString($$$$$)
 
 
 ###########################
-# pull an arrar element
+# pull an array element
 sub EjsPullArray($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
@@ -410,7 +410,7 @@ sub EjsPushSwitch($$$$$)
 
 
 ###########################
-# push an arrar element
+# push an array element
 sub EjsPushArray($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
