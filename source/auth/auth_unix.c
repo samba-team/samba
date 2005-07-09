@@ -784,7 +784,7 @@ static NTSTATUS authunix_check_password(struct auth_method_context *ctx,
 		return nt_status;
 	}
 
-	nt_status = authunix_make_server_info(check_ctx, user_info, server_info);
+	nt_status = authunix_make_server_info(mem_ctx, user_info, server_info);
 	if ( ! NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(check_ctx);
 		return nt_status;
