@@ -129,7 +129,6 @@ main(int argc, char **argv)
 	ETYPE_DES_CBC_MD5,
 	ETYPE_DES3_CBC_SHA1,
 	ETYPE_ARCFOUR_HMAC_MD5,
-	ETYPE_ARCFOUR_HMAC_MD5_56,
 	ETYPE_AES128_CTS_HMAC_SHA1_96,
 	ETYPE_AES256_CTS_HMAC_SHA1_96
     };
@@ -149,7 +148,6 @@ main(int argc, char **argv)
 
     argc -= optidx;
     argv += optidx;
-
 
     ret = krb5_init_context(&context);
     if (ret)
