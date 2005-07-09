@@ -343,8 +343,12 @@ NTSTATUS ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, const struct nbt
 	}
 	
 	status = ndr_push_nbt_string(ndr, ndr_flags, fullname);
+#if 0
+	/* this free conflicts with the use of pointers into strings
+	   in the ndr_token_store() calls above. Metze, can you look
+	   at this? */
 	talloc_free(fullname);
-
+#endif
 	return status;
 }
 
