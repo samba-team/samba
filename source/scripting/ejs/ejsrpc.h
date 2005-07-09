@@ -90,6 +90,7 @@ NTSTATUS ejs_push_dom_sid(struct ejs_rpc *ejs,
 NTSTATUS ejs_push_null(struct ejs_rpc *ejs, struct MprVar *v, const char *name);
 BOOL ejs_pull_null(struct ejs_rpc *ejs, struct MprVar *v, const char *name);
 
+
 #define EJS_ALLOC_SIZE(ejs, s, size) do { \
   (s) = talloc_size(ejs, size); \
   if (!(s)) return ejs_panic(ejs, "out of memory"); \
