@@ -602,7 +602,8 @@ MprVar *mprGetProperty(MprVar *obj, const char *property, MprVar *value)
 
 	for (prop = getObjChain(obj->properties, property); prop; 
 			prop = prop->forw) {
-		if (prop->name[0] == property[0] && strcmp(prop->name, property) == 0) {
+		if (prop->name && 
+			prop->name[0] == property[0] && strcmp(prop->name, property) == 0) {
 			break;
 		}
 	}
