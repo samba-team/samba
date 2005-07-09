@@ -25,16 +25,6 @@ function check_status_ok(status)
 }
 
 /*
-  form a lsa_String
-*/
-function lsaString(s)
-{
-	var o = new Object();
-	o.string = s;
-	return o;
-}
-
-/*
   test the samr_Connect interface
 */
 function test_Connect(conn)
@@ -67,7 +57,7 @@ function test_LookupDomain(conn, handle, domain)
 	var io = irpcObj();
 	print("Testing samr_LookupDomain\n");
 	io.input.connect_handle = handle;
-	io.input.domain_name = lsaString(domain);
+	io.input.domain_name = domain;
 	status = dcerpc_samr_LookupDomain(conn, io);
 	check_status_ok(status);
 	return io.output.sid;
@@ -107,7 +97,7 @@ function test_EnumDomainUsers(conn, dom_handle)
 	}
 	var entries = io.output.sam.entries;
 	for (i=0;i<io.output.num_entries;i++) {
-		print("\t" + entries[i].name.string + "\n");
+		print("\t" + entries[i].name + "\n");
 	}
 }
 
@@ -130,7 +120,7 @@ function test_EnumDomainGroups(conn, dom_handle)
 	}
 	var entries = io.output.sam.entries;
 	for (i=0;i<io.output.num_entries;i++) {
-		print("\t" + entries[i].name.string + "\n");
+		print("\t" + entries[i].name + "\n");
 	}
 }
 
@@ -163,10 +153,10 @@ function test_EnumDomains(conn, handle)
 	}
 	var entries = io.output.sam.entries;
 	for (i=0;i<io.output.num_entries;i++) {
-		print("\t" + entries[i].name.string + "\n");
+		print("\t" + entries[i].name + "\n");
 	}
 	for (i=0;i<io.output.num_entries;i++) {
-		domain = entries[i].name.string;
+		domain = entries[i].name;
 		print("Testing domain " + domain + "\n");
 		sid = test_LookupDomain(conn, handle, domain);
 		dom_handle = test_OpenDomain(conn, handle, sid);
