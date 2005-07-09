@@ -190,15 +190,19 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
     PRINT_FLAG(anonymous);
     printf("\n");
     printf("Addresses: ");
-    for(j = 0; j < cred->addresses.len; j++){
-	char buf[128];
-	size_t len;
-	if(j) printf(", ");
-	ret = krb5_print_address(&cred->addresses.val[j], 
-				 buf, sizeof(buf), &len);
-
-	if(ret == 0)
-	    printf("%s", buf);
+    if (cred->addresses.len != 0) {
+	for(j = 0; j < cred->addresses.len; j++){
+	    char buf[128];
+	    size_t len;
+	    if(j) printf(", ");
+	    ret = krb5_print_address(&cred->addresses.val[j], 
+				     buf, sizeof(buf), &len);
+	    
+	    if(ret == 0)
+		printf("%s", buf);
+	}
+    } else {
+	printf("addressless");
     }
     printf("\n\n");
 }
