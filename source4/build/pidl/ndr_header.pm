@@ -214,7 +214,7 @@ sub HeaderType($$$)
 	}
 
 	if (util::has_property($e, "charset")) {
-		pidl "char";
+		pidl "const char";
 	} else {
 		pidl typelist::mapType($e->{TYPE});
 	}

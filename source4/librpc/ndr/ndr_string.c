@@ -590,11 +590,11 @@ void ndr_print_string_array(struct ndr_print *ndr, const char *name, const char 
 }
 
 /* Return number of elements in a string including the last (zeroed) element */
-uint32_t ndr_string_length(void *_var, uint32_t element_size)
+uint32_t ndr_string_length(const void *_var, uint32_t element_size)
 {
 	uint32_t i;
 	uint8_t zero[4] = {0,0,0,0};
-	char *var = _var;
+	const char *var = _var;
 
 	for (i = 0; memcmp(var+i*element_size,zero,element_size) != 0; i++);
 
@@ -618,14 +618,14 @@ NTSTATUS ndr_check_string_terminator(struct ndr_pull *ndr, const void *_var, uin
 
 }
 
-NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, char **var, uint32_t length, uint8_t byte_mul, int chset)
+NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var, uint32_t length, uint8_t byte_mul, int chset)
 {
 	int ret;
 	NDR_PULL_NEED_BYTES(ndr, length*byte_mul);
 	ret = convert_string_talloc(ndr, chset, CH_UNIX, 
 				    ndr->data+ndr->offset, 
 				    length*byte_mul,
-				    (void **)var);
+				    discard_const_p(void *, var));
 	if (ret == -1) {
 		return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
 				      "Bad character conversion");
