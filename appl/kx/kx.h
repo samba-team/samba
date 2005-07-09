@@ -159,9 +159,9 @@ int get_xsockets (int *number, struct x_socket **sockets, int tcpp);
 int chown_xsockets (int n, struct x_socket *sockets, uid_t uid, gid_t gid);
 
 int connect_local_xsocket (unsigned dnr);
-int create_and_write_cookie (char *xauthfile,
-			     size_t size,
-			     u_char *cookie,
+int create_and_write_cookie (char *file,
+			     size_t file_size,
+			     u_char *cookie_buf,
 			     size_t sz);
 int verify_and_remove_cookies (int fd, int sock, int cookiesp);
 int replace_cookie(int xserver, int fd, char *filename, int cookiesp);

@@ -188,7 +188,7 @@ krb5_write(kx_context *kc,
 
     ret = krb5_encrypt (CONTEXT(kc), K5DATA(kc)->crypto, 
 			KRB5_KU_OTHER_ENCRYPTED,
-			(void *)buf, len, &data);
+			__UNCONST(buf), len, &data);
     if (ret){
 	krb5_warn (CONTEXT(kc), ret, "krb5_write");
 	return -1;

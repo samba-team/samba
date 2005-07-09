@@ -538,11 +538,11 @@ doit_passive (kx_context *kc,
 		    if (sockets[i].flags == TCP) {
 			struct sockaddr_storage __ss_peer;
 			struct sockaddr *peer = (struct sockaddr*)&__ss_peer;
-			socklen_t len = sizeof(__ss_peer);
+			socklen_t slen = sizeof(__ss_peer);
 
 			fd = accept (sockets[i].fd,
 				     peer,
-				     &len);
+				     &slen);
 			if (fd < 0 && errno != EINTR)
 			    syslog (LOG_ERR, "accept: %m");
 
@@ -724,13 +724,13 @@ int
 main (int argc, char **argv)
 {
     int port;
-    int optind = 0;
+    int optidx = 0;
 
     setprogname (argv[0]);
     roken_openlog ("kxd", LOG_ODELAY | LOG_PID, LOG_DAEMON);
 
     if (getarg (args, sizeof(args) / sizeof(args[0]), argc, argv,
-		&optind))
+		&optidx))
 	usage (1);
 
     if (help_flag)

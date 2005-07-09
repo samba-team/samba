@@ -349,7 +349,7 @@ doit_active (kx_context *kc)
     u_char msg[1024], *p;
     int len = strlen(kc->user);
     int tmp, tmp2;
-    char *s;
+    char *str;
     int i;
     size_t rem;
     u_int32_t other_port;
@@ -383,29 +383,29 @@ doit_active (kx_context *kc)
     *p++ = (kc->keepalive_flag ? KEEP_ALIVE : 0);
     --rem;
 
-    s = getenv("DISPLAY");
-    if (s == NULL || (s = strchr(s, ':')) == NULL) 
-	s = ":0";
-    len = strlen (s);
+    str = getenv("DISPLAY");
+    if (str == NULL || (str = strchr(str, ':')) == NULL) 
+	str = ":0";
+    len = strlen (str);
     tmp = KRB_PUT_INT (len, p, rem, 4);
     if (tmp < 0)
 	return 1;
     rem -= tmp;
     p += tmp;
-    memcpy (p, s, len);
+    memcpy (p, str, len);
     p += len;
     rem -= len;
 
-    s = getenv("XAUTHORITY");
-    if (s == NULL)
-	s = "";
-    len = strlen (s);
+    str = getenv("XAUTHORITY");
+    if (str == NULL)
+	str = "";
+    len = strlen (str);
     tmp = KRB_PUT_INT (len, p, rem, 4);
     if (tmp < 0)
 	return 1;
     p += len;
     rem -= len;
-    memcpy (p, s, len);
+    memcpy (p, str, len);
     p += len;
     rem -= len;
 
@@ -686,14 +686,14 @@ int
 main(int argc, char **argv)
 {
     int port	= 0;
-    int optind	= 0;
+    int optidx	= 0;
     int ret	= 1;
     char *host	= NULL;
 
     setprogname (argv[0]);
 
     if (getarg (args, sizeof(args) / sizeof(args[0]), argc, argv,
-		&optind))
+		&optidx))
 	usage (1);
 
     if (help_flag)
@@ -704,10 +704,10 @@ main(int argc, char **argv)
 	return 0;
     }
 
-    if (optind != argc - 1)
+    if (optidx != argc - 1)
 	usage (1);
 
-    host = argv[optind];
+    host = argv[optidx];
 
     if (port_str) {
 	struct servent *s = roken_getservbyname (port_str, "tcp");

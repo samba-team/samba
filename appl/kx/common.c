@@ -395,9 +395,9 @@ connect_local_xsocket (unsigned dnr)
  */
 
 int
-create_and_write_cookie (char *xauthfile,
-			 size_t xauthfile_size,
-			 u_char *cookie,
+create_and_write_cookie (char *file,
+			 size_t file_size,
+			 u_char *cookie_buf,
 			 size_t cookie_sz)
 {
      Xauth auth;
@@ -418,15 +418,15 @@ create_and_write_cookie (char *xauthfile,
      auth.name = COOKIE_TYPE;
      auth.name_length = strlen(auth.name);
      auth.data_length = cookie_sz;
-     auth.data = (char*)cookie;
+     auth.data = (char*)cookie_buf;
 #ifdef KRB5
-     krb5_generate_random_block (cookie, cookie_sz);
+     krb5_generate_random_block (cookie_buf, cookie_sz);
 #else
-     krb_generate_random_block (cookie, cookie_sz);
+     krb_generate_random_block (cookie_buf, cookie_sz);
 #endif
 
-     strlcpy(xauthfile, "/tmp/AXXXXXX", xauthfile_size);
-     fd = mkstemp(xauthfile);
+     strlcpy(file, "/tmp/AXXXXXX", file_size);
+     fd = mkstemp(file);
      if(fd < 0) {
 	 saved_errno = errno;
 	 syslog(LOG_ERR, "create_and_write_cookie: mkstemp: %m");
@@ -615,7 +615,7 @@ find_auth_cookie (FILE *f)
 {
     Xauth *ret = NULL;
     char local_hostname[MaxHostNameLen];
-    char *display = getenv("DISPLAY");
+    char *display_str = getenv("DISPLAY");
     char d[MaxHostNameLen + 4];
     char *colon;
     struct addrinfo *ai;
@@ -623,34 +623,34 @@ find_auth_cookie (FILE *f)
     int disp;
     int error;
 
-    if(display == NULL)
-	display = ":0";
-    strlcpy(d, display, sizeof(d));
-    display = d;
-    colon = strchr (display, ':');
+    if(display_str == NULL)
+	display_str = ":0";
+    strlcpy(d, display_str, sizeof(d));
+    display_str = d;
+    colon = strchr (display_str, ':');
     if (colon == NULL)
 	disp = 0;
     else {
 	*colon = '\0';
 	disp = atoi (colon + 1);
     }
-    if (strcmp (display, "") == 0
-	|| strncmp (display, "unix", 4) == 0
-	|| strncmp (display, "localhost", 9) == 0) {
+    if (strcmp (display_str, "") == 0
+	|| strncmp (display_str, "unix", 4) == 0
+	|| strncmp (display_str, "localhost", 9) == 0) {
 	gethostname (local_hostname, sizeof(local_hostname));
-	display = local_hostname;
+	display_str = local_hostname;
     }
     memset (&hints, 0, sizeof(hints));
     hints.ai_flags    = AI_CANONNAME;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
 
-    error = getaddrinfo (display, NULL, &hints, &ai);
+    error = getaddrinfo (display_str, NULL, &hints, &ai);
     if (error)
 	ai = NULL;
 
     for (; (ret = XauReadAuth (f)) != NULL; XauDisposeAuth(ret)) {
-	if (match_local_auth (ret, ai, display, disp) == 0) {
+	if (match_local_auth (ret, ai, display_str, disp) == 0) {
 	    if (ai != NULL)
 		freeaddrinfo (ai);
 	    return ret;
