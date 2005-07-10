@@ -26,6 +26,7 @@
 #include "dlinklist.h"
 #include "smbd/service_stream.h"
 #include "smb_server/smb_server.h"
+#include "lib/messaging/irpc.h"
 
 
 /*
@@ -771,6 +772,8 @@ static void smbsrv_accept(struct stream_connection *conn)
 	smb_conn->processing = False;
 
 	conn->private = smb_conn;
+
+	irpc_add_name(conn->msg_ctx, "smb_server");
 }
 
 

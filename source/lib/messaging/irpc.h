@@ -86,6 +86,7 @@ void messaging_deregister(struct messaging_context *msg, uint32_t msg_type, void
 NTSTATUS irpc_register(struct messaging_context *msg_ctx, 
 		       const struct dcerpc_interface_table *table, 
 		       int call, irpc_function_t fn, void *private);
+NTSTATUS irpc_add_name(struct messaging_context *msg_ctx, const char *name);
 struct irpc_request *irpc_call_send(struct messaging_context *msg_ctx, 
 				    uint32_t server_id, 
 				    const struct dcerpc_interface_table *table, 

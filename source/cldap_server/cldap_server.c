@@ -24,6 +24,7 @@
 #include "libcli/ldap/ldap.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
+#include "lib/messaging/irpc.h"
 #include "smbd/service_task.h"
 #include "cldap_server/cldap_server.h"
 
@@ -139,6 +140,8 @@ static void cldapd_task_init(struct task_server *task)
 		task_server_terminate(task, "cldapd failed to setup interfaces");
 		return;
 	}
+
+	irpc_add_name(task->msg_ctx, "cldap_server");
 }
 
 
