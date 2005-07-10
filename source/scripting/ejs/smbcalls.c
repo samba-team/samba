@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "lib/ejs/ejs.h"
 #include "auth/auth.h"
+#include "scripting/ejs/smbcalls.h"
 
 /*
   return the type of a variable
@@ -60,16 +61,16 @@ static int ejs_typeof(MprVarHandle eid, int argc, struct MprVar **argv)
 	}
 	if (type == NULL) return -1;
 
-	ejsSetReturnString(eid, type);
+	mpr_ReturnString(eid, type);
 	return 0;
 }
 
 /*
   setup a return of a string list
 */
- void ejs_returnlist(MprVarHandle eid, const char *name, const char **list)
+void ejs_returnlist(int eid, const char *name, const char **list)
 {
-	ejsSetReturnValue(eid, mprList(name, list));
+	mpr_Return(eid, mprList(name, list));
 }
 
 static int ejs_systemAuth(TALLOC_CTX *tmp_ctx, struct MprVar *auth, const char *username, const char *password, const char *domain, const char *remote_host)
@@ -158,7 +159,7 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 		mprSetPropertyValue(&auth, "report", mprCreateStringVar("Unknown Domain", 1));
 	}
 
-	ejsSetReturnValue(eid, auth);
+	mpr_Return(eid, auth);
 	talloc_free(tmp_ctx);
 	return 0;
 }
@@ -166,7 +167,6 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 static int ejs_domain_list(MprVarHandle eid, int argc, char **argv)
 {
 	struct MprVar list;
-	struct MprVar dom;
 
 	if (argc != 0) {
 		ejsSetErrorMsg(eid, "domList invalid arguments");
@@ -174,10 +174,9 @@ static int ejs_domain_list(MprVarHandle eid, int argc, char **argv)
 	}
 
 	list = mprCreateObjVar("list", MPR_DEFAULT_HASH_SIZE);
-	dom = mprCreateStringVar("System User", 1);
-	mprCreateProperty(&list, "0", &dom);
+	mprSetVar(&list, "0", mprCreateStringVar("System User", 1));
 
-	ejsSetReturnValue(eid, list);
+	mpr_Return(eid, list);
 
 	return 0;
 }

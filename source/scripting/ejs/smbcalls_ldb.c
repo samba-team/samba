@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "scripting/ejs/smbcalls.h"
 #include "lib/ejs/ejs.h"
 #include "lib/ldb/include/ldb.h"
 
@@ -74,7 +75,7 @@ static int ejs_ldbSearch(MprVarHandle eid, int argc, struct MprVar **argv)
 		goto failed;
 	}
 
-	ejsSetReturnValue(eid, mprLdbArray(res, ret, "ldb_message"));
+	mpr_Return(eid, mprLdbArray(res, ret, "ldb_message"));
 
 	talloc_free(tmp_ctx);
 	return 0;

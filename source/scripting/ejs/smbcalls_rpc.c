@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "scripting/ejs/smbcalls.h"
 #include "lib/ejs/ejs.h"
 #include "librpc/gen_ndr/ndr_echo.h"
 #include "lib/cmdline/popt_common.h"
@@ -83,7 +84,7 @@ static int ejs_rpc_connect(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetPtr(conn, "iface", iface);
 
 done:
-	ejsSetReturnValue(eid, mprNTSTATUS(status));
+	mpr_Return(eid, mprNTSTATUS(status));
 	return 0;
 }
 
@@ -177,7 +178,7 @@ done:
 
 done:
 	talloc_free(ejs);
-	ejsSetReturnValue(eid, mprNTSTATUS(status));
+	mpr_Return(eid, mprNTSTATUS(status));
 	if (NT_STATUS_EQUAL(status, NT_STATUS_INTERNAL_ERROR)) {
 		return -1;
 	}

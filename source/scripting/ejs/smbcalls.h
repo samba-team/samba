@@ -22,4 +22,8 @@
 
 #include "lib/ejs/ejs.h"
 
-void ejs_returnlist(MprVarHandle eid, const char *name, const char **list);
+void mpr_Return(int eid, struct MprVar);
+NTSTATUS mprSetVar(struct MprVar *v, const char *name, struct MprVar val);
+NTSTATUS mprGetVar(struct MprVar **v, const char *name);
+
+

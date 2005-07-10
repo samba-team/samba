@@ -25,6 +25,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "dynconfig.h"
 #include "lib/ejs/ejs.h"
+#include "scripting/ejs/smbcalls.h"
 
 void ejs_exception(const char *reason)
 {
@@ -97,7 +98,7 @@ void ejs_exception(const char *reason)
 	talloc_steal(mem_ctx, argv_list);
 	v = mprList("ARGV", argv_list);
 	mprSetPropertyValue(&v, "length", mprCreateIntegerVar(i-1));
-	mprCreateProperty(ejsGetGlobalObject(eid), "ARGV", &v);
+	mprSetVar(ejsGetGlobalObject(eid), "ARGV", v);
 
 	/* load the script and advance past interpreter line*/
 	script = file_load(fname, &script_size, mem_ctx);
