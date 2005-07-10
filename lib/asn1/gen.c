@@ -70,6 +70,20 @@ get_filename (void)
     return orig_filename;
 }
 
+static int unique_number;
+
+void
+unique_reset(void)
+{
+    unique_number = 0;
+}
+
+int
+unique_get_next(void)
+{
+    return unique_number++;
+}
+
 void
 init_generate (const char *filename, const char *base)
 {

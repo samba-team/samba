@@ -138,6 +138,7 @@ encode_type (const char *name, const Type *t)
     case TSequence: {
 	Member *m;
 	int tag = -1;
+	int oldret_counter = unique_get_next();
 
 	if (t->members == NULL)
 	    break;
@@ -152,8 +153,9 @@ encode_type (const char *name, const Type *t)
 			 s);
 #if 1
 	    fprintf (codefile, "{\n"
-		     "int oldret = ret;\n"
-		     "ret = 0;\n");
+		     "int oldret%d = ret;\n"
+		     "ret = 0;\n",
+		     oldret_counter);
 #endif
 	    encode_type (s, m->type);
 	    fprintf (codefile,
@@ -163,8 +165,9 @@ encode_type (const char *name, const Type *t)
 		     m->val);
 #if 1
 	    fprintf (codefile,
-		     "ret += oldret;\n"
-		     "}\n");
+		     "ret += oldret%d;\n"
+		     "}\n",
+		     oldret_counter);
 #endif
 	    if (tag == -1)
 		tag = m->val;
@@ -176,26 +179,31 @@ encode_type (const char *name, const Type *t)
 	break;
     }
     case TSequenceOf: {
+	int oldret_counter = unique_get_next();
 	char *n;
 
 	fprintf (codefile,
 		 "for(i = (%s)->len - 1; i >= 0; --i) {\n"
 #if 1
-		 "int oldret = ret;\n"
+		 "int oldret%d = ret;\n"
 		 "ret = 0;\n",
 #else
 		 ,
 #endif
-		 name);
+		 name, oldret_counter);
 	asprintf (&n, "&(%s)->val[i]", name);
 	encode_type (n, t->subtype);
 	fprintf (codefile,
 #if 1
-		 "ret += oldret;\n"
+		 "ret += oldret%d;\n"
 #endif
 		 "}\n"
 		 "e = der_put_length_and_tag (p, len, ret, ASN1_C_UNIV, CONS, UT_Sequence, &l);\n"
-		 "BACK;\n");
+		 "BACK;\n"
+#if 1
+		 , oldret_counter
+#endif
+	    );
 	free (n);
 	break;
     }

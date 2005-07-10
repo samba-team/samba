@@ -117,6 +117,8 @@ decode_type (const char *name, const Type *t)
     case TSequence: {
 	Member *m;
 	int tag = -1;
+	int fd_counter = unique_get_next();
+	int fd_counter_inner = unique_get_next();
 
 	if (t->members == NULL)
 	    break;
@@ -126,9 +128,10 @@ decode_type (const char *name, const Type *t)
 		 "&reallen, &l);\n"
 		 "FORW;\n"
 		 "{\n"
-		 "int dce_fix;\n"
-		 "if((dce_fix = fix_dce(reallen, &len)) < 0)\n"
-		 "return ASN1_BAD_FORMAT;\n");
+		 "int dce_fix%d;\n"
+		 "if((dce_fix%d = fix_dce(reallen, &len)) < 0)\n"
+		 "return ASN1_BAD_FORMAT;\n",
+		 fd_counter, fd_counter);
 
 	for (m = t->members; m && tag != m->val; m = m->next) {
 	    char *s;
@@ -180,24 +183,27 @@ decode_type (const char *name, const Type *t)
 			 "FORW;\n"
 			 "{\n"
 	       
-			 "int dce_fix;\n"
+			 "int dce_fix%d;\n"
 			 "oldlen = len;\n"
-			 "if((dce_fix = fix_dce(newlen, &len)) < 0)"
-			 "return ASN1_BAD_FORMAT;\n");
+			 "if((dce_fix%d = fix_dce(newlen, &len)) < 0)"
+			 "return ASN1_BAD_FORMAT;\n",
+			 fd_counter_inner,
+			 fd_counter_inner);
 		if (m->optional)
 		    fprintf (codefile,
 			     "%s = malloc(sizeof(*%s));\n"
 			     "if(%s == NULL) return ENOMEM;\n", s, s, s);
 		decode_type (s, m->type);
 		fprintf (codefile,
-			 "if(dce_fix){\n"
+			 "if(dce_fix%d){\n"
 			 "e = der_match_tag_and_length (p, len, "
 			 "(Der_class)0, (Der_type)0, 0, &reallen, &l);\n"
 			 "FORW;\n"
 			 "}else \n"
 			 "len = oldlen - newlen;\n"
 			 "}\n"
-			 "}\n");
+			 "}\n",
+			 fd_counter_inner);
 		fprintf (codefile,
 			 "}\n");
 	    }
@@ -206,17 +212,19 @@ decode_type (const char *name, const Type *t)
 	    free (s);
 	}
 	fprintf(codefile,
-		"if(dce_fix){\n"
+		"if(dce_fix%d){\n"
 		"e = der_match_tag_and_length (p, len, "
 		"(Der_class)0, (Der_type)0, 0, &reallen, &l);\n"
 		"FORW;\n"
 		"}\n"
-		"}\n");
+		"}\n",
+		fd_counter);
 
 	break;
     }
     case TSequenceOf: {
 	char *n;
+	int oldret_counter = unique_get_next();
 
 	fprintf (codefile,
 		 "e = der_match_tag_and_length (p, len, ASN1_C_UNIV, CONS, UT_Sequence,"
@@ -229,21 +237,22 @@ decode_type (const char *name, const Type *t)
 	fprintf (codefile,
 		 "{\n"
 		 "size_t origlen = len;\n"
-		 "int oldret = ret;\n"
+		 "int oldret%d = ret;\n"
 		 "ret = 0;\n"
 		 "(%s)->len = 0;\n"
 		 "(%s)->val = NULL;\n"
 		 "while(ret < origlen) {\n"
 		 "(%s)->len++;\n"
 		 "(%s)->val = realloc((%s)->val, sizeof(*((%s)->val)) * (%s)->len);\n",
-		 name, name, name, name, name, name, name);
+		 oldret_counter, name, name, name, name, name, name, name);
 	asprintf (&n, "&(%s)->val[(%s)->len-1]", name, name);
 	decode_type (n, t->subtype);
 	fprintf (codefile, 
 		 "len = origlen - ret;\n"
 		 "}\n"
-		 "ret += oldret;\n"
-		 "}\n");
+		 "ret += oldret%d;\n"
+		 "}\n",
+		 oldret_counter);
 	free (n);
 	break;
     }
@@ -292,6 +301,7 @@ decode_type (const char *name, const Type *t)
 void
 generate_type_decode (const Symbol *s)
 {
+  unique_reset();
   fprintf (headerfile,
 	   "int    "
 	   "decode_%s(const unsigned char *, size_t, %s *, size_t *);\n",

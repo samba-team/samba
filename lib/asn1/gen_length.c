@@ -89,6 +89,7 @@ length_type (const char *name, const Type *t, const char *variable)
     case TSequence: {
 	Member *m;
 	int tag = -1;
+	int oldret_counter = unique_get_next();
 
 	if (t->members == NULL)
 	    break;
@@ -101,11 +102,11 @@ length_type (const char *name, const Type *t, const char *variable)
 	    if (m->optional)
 		fprintf (codefile, "if(%s)", s);
 	    fprintf (codefile, "{\n"
-		     "int oldret = %s;\n"
-		     "%s = 0;\n", variable, variable);
+		     "int oldret%d = %s;\n"
+		     "%s = 0;\n", oldret_counter, variable, variable);
 	    length_type (s, m->type, "ret");
-	    fprintf (codefile, "%s += 1 + length_len(%s) + oldret;\n",
-		     variable, variable);
+	    fprintf (codefile, "%s += 1 + length_len(%s) + oldret%d;\n",
+		     variable, variable, oldret_counter);
 	    fprintf (codefile, "}\n");
 	    if (tag == -1)
 		tag = m->val;
@@ -117,26 +118,28 @@ length_type (const char *name, const Type *t, const char *variable)
     }
     case TSequenceOf: {
 	char *n;
+	int oldret_counter = unique_get_next();
+	int oldret_counter_inner = unique_get_next();
 
 	fprintf (codefile,
 		 "{\n"
-		 "int oldret = %s;\n"
+		 "int oldret%d = %s;\n"
 		 "int i;\n"
 		 "%s = 0;\n",
-		 variable, variable);
+		 oldret_counter, variable, variable);
 
 	fprintf (codefile, "for(i = (%s)->len - 1; i >= 0; --i){\n", name);
-	fprintf (codefile, "int oldret = %s;\n"
-		 "%s = 0;\n", variable, variable);
+	fprintf (codefile, "int oldret%d = %s;\n"
+		 "%s = 0;\n", oldret_counter_inner, variable, variable);
 	asprintf (&n, "&(%s)->val[i]", name);
 	length_type(n, t->subtype, variable);
-	fprintf (codefile, "%s += oldret;\n",
-		 variable);
+	fprintf (codefile, "%s += oldret%d;\n",
+		 variable, oldret_counter_inner);
 	fprintf (codefile, "}\n");
 
 	fprintf (codefile,
-		 "%s += 1 + length_len(%s) + oldret;\n"
-		 "}\n", variable, variable);
+		 "%s += 1 + length_len(%s) + oldret%d;\n"
+		 "}\n", variable, variable, oldret_counter);
 	free(n);
 	break;
     }
@@ -167,6 +170,7 @@ length_type (const char *name, const Type *t, const char *variable)
 void
 generate_type_length (const Symbol *s)
 {
+  unique_reset();
   fprintf (headerfile,
 	   "size_t length_%s(const %s *);\n",
 	   s->gen_name, s->gen_name);

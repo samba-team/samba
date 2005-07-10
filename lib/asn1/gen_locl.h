@@ -63,6 +63,9 @@ void generate_type_copy (const Symbol *s);
 void generate_type_maybe (const Symbol *s);
 void generate_glue (const Symbol *s);
 
+void unique_reset(void);
+int unique_get_next(void);
+
 void init_generate (const char *filename, const char *basename);
 const char *get_filename (void);
 void close_generate(void);
