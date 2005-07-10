@@ -387,6 +387,8 @@ if (!$opt_users) {
 		$opt_users = "users";
 	} elsif (defined getgrnam("guest")) {
 		$opt_users = "guest";
+	} elsif (defined getgrnam("other")) {
+		$opt_users = "other";
 	}
 }
 
