@@ -32,6 +32,7 @@
 #include "smbd/service_stream.h"
 #include "lib/socket/socket.h"
 #include "lib/tls/tls.h"
+#include "lib/messaging/irpc.h"
 
 /*
   close the socket and shutdown a server_context
@@ -357,6 +358,8 @@ static void ldapsrv_accept(struct stream_connection *c)
 	conn->tls = tls_init_server(ldapsrv_service->tls_params, c->socket, 
 				    c->event.fde, NULL, port != 389);
 	if (conn->tls == NULL) goto failed;
+
+	irpc_add_name(c->msg_ctx, "ldap_server");
 
 	return;
 
