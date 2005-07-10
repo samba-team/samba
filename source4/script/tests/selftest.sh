@@ -107,6 +107,7 @@ START=`date`
  bin/nmblookup -U localhost localhost 
 
  failed=0
+ $SRCDIR/script/tests/test_ejs.sh localhost $USERNAME $PASSWORD || failed=`expr $failed + $?`
  $SRCDIR/script/tests/test_ldap.sh localhost $USERNAME $PASSWORD || failed=`expr $failed + $?`
  $SRCDIR/script/tests/test_quick.sh //localhost/cifs $USERNAME $PASSWORD "" || failed=`expr $failed + $?`
  $SRCDIR/script/tests/test_rpc.sh localhost $USERNAME $PASSWORD $DOMAIN || failed=`expr $failed + $?`
