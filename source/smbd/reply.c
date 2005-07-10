@@ -2751,7 +2751,6 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	/* Set up outbuf to return the correct return */
 	outsize = set_message(outbuf,1,0,True);
 	SCVAL(outbuf,smb_com,SMBwritec);
-	SSVAL(outbuf,smb_vwv0,total_written);
 
 	if (numtowrite != 0) {
 
@@ -2783,6 +2782,8 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 			total_written += nwritten;
  	}
  
+	SSVAL(outbuf,smb_vwv0,total_written);
+
 	if ((lp_syncalways(SNUM(conn)) || write_through) && lp_strict_sync(SNUM(conn)))
 		sync_file(conn,fsp);
 
