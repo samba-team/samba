@@ -38,7 +38,7 @@ static int ejs_lpServices(MprVarHandle eid, int argc, char **argv)
 		list = str_list_add(list, lp_servicename(i));
 	}
 	talloc_steal(mprMemCtx(), list);
-	ejs_returnlist(eid, "services", list);
+	mpr_Return(eid, mprList("services", list));
 	return 0;
 }
 
@@ -131,7 +131,7 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 		}
 		return -1;	
 	case P_LIST: 
-		ejs_returnlist(eid, parm->label, *(const char ***)parm_ptr);
+		mpr_Return(eid, mprList(parm->label, *(const char ***)parm_ptr));
 		break;
 	case P_SEP:
 		return -1;
