@@ -7,8 +7,11 @@
 
 package Parse::Pidl::NDR;
 
+use Exporter 'import';
+@EXPORT_OK = qw(GetPrevLevel GetNextLevel);
+
 use strict;
-use Parse::Pidl::Typelist;
+use Parse::Pidl::Typelist qw(hasType getType);
 use Parse::Pidl::Util qw(has_property property_matches);
 
 sub nonfatal($$)
@@ -214,9 +217,9 @@ sub can_contain_deferred
 
 	return 1 if ($e->{POINTERS});
 	return 0 if (Parse::Pidl::Typelist::is_scalar($e->{TYPE}));
-	return 1 unless (Parse::Pidl::Typelist::hasType($e->{TYPE})); # assume the worst
+	return 1 unless (hasType($e->{TYPE})); # assume the worst
 
-	my $type = Parse::Pidl::Typelist::getType($e->{TYPE});
+	my $type = getType($e->{TYPE});
 
 	foreach my $x (@{$type->{DATA}->{ELEMENTS}}) {
 		return 1 if (can_contain_deferred ($x));
@@ -269,13 +272,13 @@ sub align_type
 {
 	my $e = shift;
 
-	unless (Parse::Pidl::Typelist::hasType($e)) {
+	unless (hasType($e)) {
 	    # it must be an external type - all we can do is guess 
 		# print "Warning: assuming alignment of unknown type '$e' is 4\n";
 	    return 4;
 	}
 
-	my $dt = Parse::Pidl::Typelist::getType($e)->{DATA};
+	my $dt = getType($e)->{DATA};
 
 	if ($dt->{TYPE} eq "ENUM") {
 		return align_type(Parse::Pidl::Typelist::enum_type_fn($dt));

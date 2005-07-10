@@ -9,7 +9,7 @@ package Parse::Pidl::Samba::NDR::Parser;
 
 use strict;
 use Parse::Pidl::Typelist;
-use Parse::Pidl::Util qw(has_property);
+use Parse::Pidl::Util qw(has_property ParseExpr);
 use Parse::Pidl::NDR;
 
 # list of known types
@@ -222,8 +222,8 @@ sub ParseArrayPushHeader($$$$$)
 	if ($l->{IS_ZERO_TERMINATED}) {
 		$size = $length = "ndr_string_length($var_name, sizeof(*$var_name))";
 	} else {
-		$size = Parse::Pidl::Util::ParseExpr($l->{SIZE_IS}, $env);
-		$length = Parse::Pidl::Util::ParseExpr($l->{LENGTH_IS}, $env);
+		$size = ParseExpr($l->{SIZE_IS}, $env);
+		$length = ParseExpr($l->{LENGTH_IS}, $env);
 	}
 
 	if ((!$l->{IS_SURROUNDING}) and $l->{IS_CONFORMANT}) {
@@ -256,7 +256,7 @@ sub ParseArrayPullHeader($$$$$)
 	} elsif ($l->{IS_ZERO_TERMINATED}) { # Noheader arrays
 		$length = $size = "ndr_get_string_size($ndr, sizeof(*$var_name))";
 	} else {
-		$length = $size = Parse::Pidl::Util::ParseExpr($l->{SIZE_IS}, $env);
+		$length = $size = ParseExpr($l->{SIZE_IS}, $env);
 	}
 
 	if ((!$l->{IS_SURROUNDING}) and $l->{IS_CONFORMANT}) {
@@ -280,13 +280,13 @@ sub ParseArrayPullHeader($$$$$)
 	}
 
 	if ($l->{IS_CONFORMANT} and not $l->{IS_ZERO_TERMINATED}) {
-		my $size = Parse::Pidl::Util::ParseExpr($l->{SIZE_IS}, $env);
+		my $size = ParseExpr($l->{SIZE_IS}, $env);
 		check_null_pointer($size);
 		pidl "NDR_CHECK(ndr_check_array_size(ndr, (void*)" . get_pointer_to($var_name) . ", $size));";
 	}
 
 	if ($l->{IS_VARYING} and not $l->{IS_ZERO_TERMINATED}) {
-		my $length = Parse::Pidl::Util::ParseExpr($l->{LENGTH_IS}, $env);
+		my $length = ParseExpr($l->{LENGTH_IS}, $env);
 		check_null_pointer($length);
 		pidl "NDR_CHECK(ndr_check_array_length(ndr, (void*)" . get_pointer_to($var_name) . ", $length));";
 	}
@@ -313,7 +313,7 @@ sub compression_clen($$$)
 	my $compression = $l->{COMPRESSION};
 	my ($alg, $clen, $dlen) = split(/ /, $compression);
 
-	return Parse::Pidl::Util::ParseExpr($clen, $env);
+	return ParseExpr($clen, $env);
 }
 
 sub compression_dlen($$$)
@@ -322,7 +322,7 @@ sub compression_dlen($$$)
 	my $compression = $l->{COMPRESSION};
 	my ($alg, $clen, $dlen) = split(/ /, $compression);
 
-	return Parse::Pidl::Util::ParseExpr($dlen, $env);
+	return ParseExpr($dlen, $env);
 }
 
 sub ParseCompressionPushStart($$$)
@@ -441,7 +441,7 @@ sub ParseSubcontextPushEnd($$$$)
 {
 	my ($e,$l,$ndr_flags,$env) = @_;
 	my $ndr = "_ndr_$e->{NAME}";
-	my $subcontext_size = Parse::Pidl::Util::ParseExpr($l->{SUBCONTEXT_SIZE},$env);
+	my $subcontext_size = ParseExpr($l->{SUBCONTEXT_SIZE},$env);
 
 	if (defined $l->{COMPRESSION}) {
 		ParseCompressionPushEnd($e, $l, $ndr);
@@ -461,7 +461,7 @@ sub ParseSubcontextPullStart($$$$$$)
 {
 	my ($e,$l,$ndr,$var_name,$ndr_flags,$env) = @_;
 	my $retndr = "_ndr_$e->{NAME}";
-	my $subcontext_size = Parse::Pidl::Util::ParseExpr($l->{SUBCONTEXT_SIZE},$env);
+	my $subcontext_size = ParseExpr($l->{SUBCONTEXT_SIZE},$env);
 
 	pidl "{";
 	indent;
@@ -495,7 +495,7 @@ sub ParseSubcontextPullEnd($$$)
 
 	my $advance;
 	if (defined($l->{SUBCONTEXT_SIZE}) and ($l->{SUBCONTEXT_SIZE} ne "-1")) {
-		$advance = Parse::Pidl::Util::ParseExpr($l->{SUBCONTEXT_SIZE},$env);
+		$advance = ParseExpr($l->{SUBCONTEXT_SIZE},$env);
 	} elsif ($l->{HEADER_SIZE}) {
 		$advance = "$ndr->data_size";
 	} else {
@@ -559,7 +559,7 @@ sub ParseElementPushLevel
 			pidl "}";
 		}
 	} elsif ($l->{TYPE} eq "ARRAY" and not is_scalar_array($e,$l)) {
-		my $length = Parse::Pidl::Util::ParseExpr($l->{LENGTH_IS}, $env);
+		my $length = ParseExpr($l->{LENGTH_IS}, $env);
 		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
 
 		$var_name = $var_name . "[$counter]";
@@ -604,7 +604,7 @@ sub ParseElementPush($$$$$$)
 	start_flags($e);
 
 	if (my $value = has_property($e, "value")) {
-		$var_name = Parse::Pidl::Util::ParseExpr($value, $env);
+		$var_name = ParseExpr($value, $env);
 	}
 
 	ParseElementPushLevel($e, $e->{LEVELS}[0], $ndr, $var_name, $env, $primitives, $deferred);
@@ -645,7 +645,7 @@ sub ParseElementPrint($$$)
 	return if (has_property($e, "noprint"));
 
 	if (my $value = has_property($e, "value")) {
-		$var_name = "(ndr->flags & LIBNDR_PRINT_SET_VALUES)?" . Parse::Pidl::Util::ParseExpr($value,$env) . ":$var_name";
+		$var_name = "(ndr->flags & LIBNDR_PRINT_SET_VALUES)?" . ParseExpr($value,$env) . ":$var_name";
 	}
 
 	foreach my $l (@{$e->{LEVELS}}) {
@@ -667,7 +667,7 @@ sub ParseElementPrint($$$)
 			if ($l->{IS_ZERO_TERMINATED}) {
 				$length = "ndr_string_length($var_name, sizeof(*$var_name))";
 			} else {
-				$length = Parse::Pidl::Util::ParseExpr($l->{LENGTH_IS}, $env);
+				$length = ParseExpr($l->{LENGTH_IS}, $env);
 			}
 
 			if (is_scalar_array($e, $l)) {
@@ -701,7 +701,7 @@ sub ParseElementPrint($$$)
 			}
 			pidl "ndr_print_$l->{DATA_TYPE}(ndr, \"$e->{NAME}\", $var_name);";
 		} elsif ($l->{TYPE} eq "SWITCH") {
-			my $switch_var = Parse::Pidl::Util::ParseExpr($l->{SWITCH_IS}, $env);
+			my $switch_var = ParseExpr($l->{SWITCH_IS}, $env);
 			check_null_pointer_void($switch_var);
 			pidl "ndr_print_set_switch_value(ndr, " . get_pointer_to($var_name) . ", $switch_var);";
 		} 
@@ -730,7 +730,7 @@ sub ParseElementPrint($$$)
 sub ParseSwitchPull($$$$$$)
 {
 	my($e,$l,$ndr,$var_name,$ndr_flags,$env) = @_;
-	my $switch_var = Parse::Pidl::Util::ParseExpr($l->{SWITCH_IS}, $env);
+	my $switch_var = ParseExpr($l->{SWITCH_IS}, $env);
 
 	check_null_pointer($switch_var);
 
@@ -743,7 +743,7 @@ sub ParseSwitchPull($$$$$$)
 sub ParseSwitchPush($$$$$$)
 {
 	my($e,$l,$ndr,$var_name,$ndr_flags,$env) = @_;
-	my $switch_var = Parse::Pidl::Util::ParseExpr($l->{SWITCH_IS}, $env);
+	my $switch_var = ParseExpr($l->{SWITCH_IS}, $env);
 
 	check_null_pointer($switch_var);
 	$var_name = get_pointer_to($var_name);
@@ -875,7 +875,7 @@ sub ParseElementPullLevel
 			pidl "}";
 		}
 	} elsif ($l->{TYPE} eq "ARRAY" and not is_scalar_array($e,$l)) {
-		my $length = Parse::Pidl::Util::ParseExpr($l->{LENGTH_IS}, $env);
+		my $length = ParseExpr($l->{LENGTH_IS}, $env);
 		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
 
 		$var_name = $var_name . "[$counter]";
@@ -1008,7 +1008,7 @@ sub ParseStructPush($$)
 
 		if (defined($e->{LEVELS}[0]) and 
 			$e->{LEVELS}[0]->{TYPE} eq "ARRAY") {
-			my $size = Parse::Pidl::Util::ParseExpr($e->{LEVELS}[0]->{SIZE_IS}, $env);
+			my $size = ParseExpr($e->{LEVELS}[0]->{SIZE_IS}, $env);
 
 			pidl "NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, $size));";
 		} else {
@@ -1864,7 +1864,7 @@ sub AllocateArrayLevel($$$$$)
 
 	return if (has_property($e, "charset"));
 
-	my $var = Parse::Pidl::Util::ParseExpr($e->{NAME}, $env);
+	my $var = ParseExpr($e->{NAME}, $env);
 
 	check_null_pointer($size);
 	my $pl = Parse::Pidl::NDR::GetPrevLevel($e, $l);
@@ -1938,7 +1938,7 @@ sub ParseFunctionPull($)
 			and   $e->{LEVELS}[1]->{IS_ZERO_TERMINATED});
 
 		if ($e->{LEVELS}[1]->{TYPE} eq "ARRAY") {
-			my $size = Parse::Pidl::Util::ParseExpr($e->{LEVELS}[1]->{SIZE_IS}, $env);
+			my $size = ParseExpr($e->{LEVELS}[1]->{SIZE_IS}, $env);
 			check_null_pointer($size);
 			
 			pidl "NDR_ALLOC_N(ndr, r->out.$e->{NAME}, $size);";

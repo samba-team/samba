@@ -5,7 +5,7 @@
 package Parse::Pidl::Util;
 
 use Exporter 'import';
-@EXPORT_OK = qw(has_property property_matches);
+@EXPORT_OK = qw(has_property property_matches ParseExpr);
 
 use strict;
 
@@ -49,33 +49,6 @@ sub FlattenHash($)
 	}
     }
     return \%b;
-}
-
-#####################################################################
-# traverse a perl data structure removing any empty arrays or
-# hashes and any hash elements that map to undef
-sub CleanData($)
-{
-    sub CleanData($);
-    my($v) = shift;
-    if (ref($v) eq "ARRAY") {
-	foreach my $i (0 .. $#{$v}) {
-	    CleanData($v->[$i]);
-	    if (ref($v->[$i]) eq "ARRAY" && $#{$v->[$i]}==-1) { 
-		    $v->[$i] = undef; 
-		    next; 
-	    }
-	}
-	# this removes any undefined elements from the array
-	@{$v} = grep { defined $_ } @{$v};
-    } elsif (ref($v) eq "HASH") {
-	foreach my $x (keys %{$v}) {
-	    CleanData($v->{$x});
-	    if (!defined $v->{$x}) { delete($v->{$x}); next; }
-	    if (ref($v->{$x}) eq "ARRAY" && $#{$v->{$x}}==-1) { delete($v->{$x}); next; }
-	}
-    }
-	return $v;
 }
 
 #####################################################################
