@@ -629,10 +629,22 @@ OBJ_FILES = librpc/gen_ndr/ndr_netlogon_ejs.o
 REQUIRED_SUBSYSTEMS = RPC NDR_NETLOGON
 NOPROTO = YES
 
+[SUBSYSTEM::RPC_EJS_SVCCTL]
+INIT_FUNCTION = ejs_init_svcctl
+OBJ_FILES = librpc/gen_ndr/ndr_svcctl_ejs.o
+REQUIRED_SUBSYSTEMS = RPC NDR_SVCCTL
+NOPROTO = YES
+
+[SUBSYSTEM::RPC_EJS_IRPC]
+INIT_FUNCTION = ejs_init_irpc
+OBJ_FILES = librpc/gen_ndr/ndr_irpc_ejs.o
+REQUIRED_SUBSYSTEMS = RPC NDR_IRPC
+NOPROTO = YES
+
 ################################################
 # Start SUBSYSTEM RPC_EJS
 [SUBSYSTEM::RPC_EJS]
 REQUIRED_SUBSYSTEMS = RPC_EJS_ECHO RPC_EJS_MISC RPC_EJS_SAMR RPC_EJS_SECURITY \
-	RPC_EJS_LSA 
+	RPC_EJS_LSA RPC_EJS_SRVSVC RPC_EJS_SVCCTL RPC_EJS_IRPC
 # End SUBSYSTEM RPC_EJS
 ################################################

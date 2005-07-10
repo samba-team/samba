@@ -13,7 +13,7 @@
 		IRPC_FLAG_REPLY    = 0x0001
 	} irpc_flags;
 
-	typedef [public] struct {
+	typedef [public,noejs] struct {
 		GUID uuid;
 		uint32 if_version;
 		uint32 callnum;
