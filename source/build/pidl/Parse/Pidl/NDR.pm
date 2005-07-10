@@ -9,6 +9,7 @@ package Parse::Pidl::NDR;
 
 use strict;
 use Parse::Pidl::Typelist;
+use Parse::Pidl::Util qw(has_property property_matches);
 
 sub nonfatal($$)
 {
@@ -35,12 +36,12 @@ sub GetElementLevelTable($)
 	my @length_is = ();
 	my @size_is = ();
 
-	if (Parse::Pidl::Util::has_property($e, "size_is")) {
-		@size_is = split /,/, Parse::Pidl::Util::has_property($e, "size_is");
+	if (has_property($e, "size_is")) {
+		@size_is = split /,/, has_property($e, "size_is");
 	}
 
-	if (Parse::Pidl::Util::has_property($e, "length_is")) {
-		@length_is = split /,/, Parse::Pidl::Util::has_property($e, "length_is");
+	if (has_property($e, "length_is")) {
+		@length_is = split /,/, has_property($e, "length_is");
 	}
 
 	if (defined($e->{ARRAY_LEN})) {
@@ -59,7 +60,7 @@ sub GetElementLevelTable($)
 		if ($d eq "*") {
 			$is_conformant = 1;
 			if ($size = shift @size_is) {
-			} elsif ((scalar(@size_is) == 0) and Parse::Pidl::Util::has_property($e, "string")) {
+			} elsif ((scalar(@size_is) == 0) and has_property($e, "string")) {
 				$is_string = 1;
 				delete($e->{PROPERTIES}->{string});
 			} else {
@@ -129,9 +130,9 @@ sub GetElementLevelTable($)
 			}
 		} 
 		
-		if (scalar(@size_is) == 0 and Parse::Pidl::Util::has_property($e, "string")) {
+		if (scalar(@size_is) == 0 and has_property($e, "string")) {
 			$is_string = 1;
-			$is_varying = $is_conformant = Parse::Pidl::Util::has_property($e, "noheader")?0:1;
+			$is_varying = $is_conformant = has_property($e, "noheader")?0:1;
 			delete($e->{PROPERTIES}->{string});
 		}
 
@@ -153,9 +154,9 @@ sub GetElementLevelTable($)
 		} 
 	}
 
-	if (defined(Parse::Pidl::Util::has_property($e, "subcontext"))) {
-		my $hdr_size = Parse::Pidl::Util::has_property($e, "subcontext");
-		my $subsize = Parse::Pidl::Util::has_property($e, "subcontext_size");
+	if (defined(has_property($e, "subcontext"))) {
+		my $hdr_size = has_property($e, "subcontext");
+		my $subsize = has_property($e, "subcontext_size");
 		if (not defined($subsize)) { 
 			$subsize = -1; 
 		}
@@ -165,12 +166,12 @@ sub GetElementLevelTable($)
 			HEADER_SIZE => $hdr_size,
 			SUBCONTEXT_SIZE => $subsize,
 			IS_DEFERRED => $is_deferred,
-			COMPRESSION => Parse::Pidl::Util::has_property($e, "compression"),
-			OBFUSCATION => Parse::Pidl::Util::has_property($e, "obfuscation")
+			COMPRESSION => has_property($e, "compression"),
+			OBFUSCATION => has_property($e, "obfuscation")
 		});
 	}
 
-	if (my $switch = Parse::Pidl::Util::has_property($e, "switch_is")) {
+	if (my $switch = has_property($e, "switch_is")) {
 		push (@$order, {
 			TYPE => "SWITCH", 
 			SWITCH_IS => $switch,
@@ -186,7 +187,7 @@ sub GetElementLevelTable($)
 		nonfatal($e, "length_is() on non-array element");
 	}
 
-	if (Parse::Pidl::Util::has_property($e, "string")) {
+	if (has_property($e, "string")) {
 		nonfatal($e, "string() attribute on non-array element");
 	}
 
@@ -230,12 +231,12 @@ sub pointer_type($)
 
 	return undef unless $e->{POINTERS};
 	
-	return "ref" if (Parse::Pidl::Util::has_property($e, "ref"));
-	return "ptr" if (Parse::Pidl::Util::has_property($e, "ptr"));
-	return "sptr" if (Parse::Pidl::Util::has_property($e, "sptr"));
-	return "unique" if (Parse::Pidl::Util::has_property($e, "unique"));
-	return "relative" if (Parse::Pidl::Util::has_property($e, "relative"));
-	return "ignore" if (Parse::Pidl::Util::has_property($e, "ignore"));
+	return "ref" if (has_property($e, "ref"));
+	return "ptr" if (has_property($e, "ptr"));
+	return "sptr" if (has_property($e, "sptr"));
+	return "unique" if (has_property($e, "unique"));
+	return "relative" if (has_property($e, "relative"));
+	return "ignore" if (has_property($e, "ignore"));
 
 	return undef;
 }
@@ -320,7 +321,7 @@ sub ParseStruct($)
 	}
 
 	if (defined $e->{TYPE} && $e->{TYPE} eq "string"
-	    &&  Parse::Pidl::Util::property_matches($e, "flag", ".*LIBNDR_FLAG_STR_CONFORMANT.*")) {
+	    &&  property_matches($e, "flag", ".*LIBNDR_FLAG_STR_CONFORMANT.*")) {
 		$surrounding = $struct->{ELEMENTS}[-1];
 	}
 		
@@ -336,10 +337,10 @@ sub ParseUnion($)
 {
 	my $e = shift;
 	my @elements = ();
-	my $switch_type = Parse::Pidl::Util::has_property($e, "switch_type");
+	my $switch_type = has_property($e, "switch_type");
 	unless (defined($switch_type)) { $switch_type = "uint32"; }
 
-	if (Parse::Pidl::Util::has_property($e, "nodiscriminant")) { $switch_type = undef; }
+	if (has_property($e, "nodiscriminant")) { $switch_type = undef; }
 	
 	foreach my $x (@{$e->{ELEMENTS}}) 
 	{
@@ -349,7 +350,7 @@ sub ParseUnion($)
 		} else {
 			$t = ParseElement($x);
 		}
-		if (Parse::Pidl::Util::has_property($x, "default")) {
+		if (has_property($x, "default")) {
 			$t->{CASE} = "default";
 		} elsif (defined($x->{PROPERTIES}->{case})) {
 			$t->{CASE} = "case $x->{PROPERTIES}->{case}";
@@ -444,8 +445,8 @@ sub ParseFunction($$$)
 
 	foreach my $x (@{$d->{ELEMENTS}}) {
 		my $e = ParseElement($x);
-		push (@{$e->{DIRECTION}}, "in") if (Parse::Pidl::Util::has_property($x, "in"));
-		push (@{$e->{DIRECTION}}, "out") if (Parse::Pidl::Util::has_property($x, "out"));
+		push (@{$e->{DIRECTION}}, "in") if (has_property($x, "in"));
+		push (@{$e->{DIRECTION}}, "out") if (has_property($x, "out"));
 		push (@elements, $e);
 	}
 
@@ -486,13 +487,13 @@ sub ParseInterface($)
 	my $opnum = 0;
 	my $version;
 
-	if (not Parse::Pidl::Util::has_property($idl, "pointer_default")) {
+	if (not has_property($idl, "pointer_default")) {
 		# MIDL defaults to "ptr" in DCE compatible mode (/osf)
 		# and "unique" in Microsoft Extensions mode (default)
 		$idl->{PROPERTIES}->{pointer_default} = "unique";
 	}
 
-	if (not Parse::Pidl::Util::has_property($idl, "pointer_default_top")) {
+	if (not has_property($idl, "pointer_default_top")) {
 		$idl->{PROPERTIES}->{pointer_default_top} = "ref";
 	}
 
@@ -529,7 +530,7 @@ sub ParseInterface($)
 
 	return { 
 		NAME => $idl->{NAME},
-		UUID => Parse::Pidl::Util::has_property($idl, "uuid"),
+		UUID => has_property($idl, "uuid"),
 		VERSION => $version,
 		TYPE => "INTERFACE",
 		PROPERTIES => $idl->{PROPERTIES},

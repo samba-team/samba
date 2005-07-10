@@ -5,7 +5,7 @@
 
 package Parse::Pidl::Typelist;
 
-use Parse::Pidl::Util;
+use Parse::Pidl::Util qw(has_property);
 use strict;
 
 my %typedefs = ();
@@ -253,9 +253,9 @@ sub RegisterAliases()
 sub enum_type_fn($)
 {
 	my $enum = shift;
-	if (Parse::Pidl::Util::has_property($enum->{PARENT}, "enum8bit")) {
+	if (has_property($enum->{PARENT}, "enum8bit")) {
 		return "uint8";
-	} elsif (Parse::Pidl::Util::has_property($enum->{PARENT}, "v1_enum")) {
+	} elsif (has_property($enum->{PARENT}, "v1_enum")) {
 		return "uint32";
 	}
 	return "uint16";
@@ -265,11 +265,11 @@ sub bitmap_type_fn($)
 {
 	my $bitmap = shift;
 
-	if (Parse::Pidl::Util::has_property($bitmap, "bitmap8bit")) {
+	if (has_property($bitmap, "bitmap8bit")) {
 		return "uint8";
-	} elsif (Parse::Pidl::Util::has_property($bitmap, "bitmap16bit")) {
+	} elsif (has_property($bitmap, "bitmap16bit")) {
 		return "uint16";
-	} elsif (Parse::Pidl::Util::has_property($bitmap, "bitmap64bit")) {
+	} elsif (has_property($bitmap, "bitmap64bit")) {
 		return "hyper";
 	}
 	return "uint32";
@@ -310,7 +310,7 @@ sub LoadIdl($)
 			NAME => $x->{NAME},
 			TYPE => "TYPEDEF",
 			DATA => $x
-			}) if (Parse::Pidl::Util::has_property($x, "object"));
+			}) if (has_property($x, "object"));
 
 		foreach my $y (@{$x->{DATA}}) {
 			addType($y) if (

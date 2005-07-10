@@ -9,6 +9,7 @@ package Parse::Pidl::Samba::NDR::Parser;
 
 use strict;
 use Parse::Pidl::Typelist;
+use Parse::Pidl::Util qw(has_property);
 use Parse::Pidl::NDR;
 
 # list of known types
@@ -130,7 +131,7 @@ sub fn_prefix($)
 {
 	my $fn = shift;
 
-	return "" if (Parse::Pidl::Util::has_property($fn, "public"));
+	return "" if (has_property($fn, "public"));
 	return "static ";
 }
 
@@ -139,7 +140,7 @@ sub fn_prefix($)
 sub start_flags($)
 {
 	my $e = shift;
-	my $flags = Parse::Pidl::Util::has_property($e, "flag");
+	my $flags = has_property($e, "flag");
 	if (defined $flags) {
 		pidl "{";
 		indent;
@@ -153,7 +154,7 @@ sub start_flags($)
 sub end_flags($)
 {
 	my $e = shift;
-	my $flags = Parse::Pidl::Util::has_property($e, "flag");
+	my $flags = has_property($e, "flag");
 	if (defined $flags) {
 		pidl "ndr->flags = _flags_save_$e->{TYPE};";
 		deindent;
@@ -389,7 +390,7 @@ sub ParseObfuscationPushStart($$)
 sub ParseObfuscationPushEnd($$)
 {
 	my ($e,$ndr) = @_;
-	my $obfuscation = Parse::Pidl::Util::has_property($e, "obfuscation");
+	my $obfuscation = has_property($e, "obfuscation");
 
 	pidl "NDR_CHECK(ndr_push_obfuscation($ndr, $obfuscation));";
 }
@@ -397,7 +398,7 @@ sub ParseObfuscationPushEnd($$)
 sub ParseObfuscationPullStart($$)
 {
 	my ($e,$ndr) = @_;
-	my $obfuscation = Parse::Pidl::Util::has_property($e, "obfuscation");
+	my $obfuscation = has_property($e, "obfuscation");
 
 	pidl "NDR_CHECK(ndr_pull_obfuscation($ndr, $obfuscation));";
 
@@ -528,7 +529,7 @@ sub ParseElementPushLevel
 
 				my $nl = Parse::Pidl::NDR::GetNextLevel($e, $l);
 
-				if (Parse::Pidl::Util::has_property($e, "charset")) {
+				if (has_property($e, "charset")) {
 					pidl "NDR_CHECK(ndr_push_charset($ndr, $ndr_flags, $var_name, $length, sizeof(" . Parse::Pidl::Typelist::mapType($nl->{DATA_TYPE}) . "), CH_$e->{PROPERTIES}->{charset}));";
 				} else {
 					pidl "NDR_CHECK(ndr_push_array_$nl->{DATA_TYPE}($ndr, $ndr_flags, $var_name, $length));";
@@ -602,7 +603,7 @@ sub ParseElementPush($$$$$$)
 
 	start_flags($e);
 
-	if (my $value = Parse::Pidl::Util::has_property($e, "value")) {
+	if (my $value = has_property($e, "value")) {
 		$var_name = Parse::Pidl::Util::ParseExpr($value, $env);
 	}
 
@@ -641,9 +642,9 @@ sub ParseElementPrint($$$)
 	my($e,$var_name,$env) = @_;
 
 	$var_name = append_prefix($e, $var_name);
-	return if (Parse::Pidl::Util::has_property($e, "noprint"));
+	return if (has_property($e, "noprint"));
 
-	if (my $value = Parse::Pidl::Util::has_property($e, "value")) {
+	if (my $value = has_property($e, "value")) {
 		$var_name = "(ndr->flags & LIBNDR_PRINT_SET_VALUES)?" . Parse::Pidl::Util::ParseExpr($value,$env) . ":$var_name";
 	}
 
@@ -670,7 +671,7 @@ sub ParseElementPrint($$$)
 			}
 
 			if (is_scalar_array($e, $l)) {
-				if (Parse::Pidl::Util::has_property($e, "charset")) {
+				if (has_property($e, "charset")) {
 					pidl "ndr_print_string(ndr, \"$e->{NAME}\", $var_name);";
 				} else {
 					my $nl = Parse::Pidl::NDR::GetNextLevel($e, $l);
@@ -761,7 +762,7 @@ sub ParseDataPull($$$$$)
 
 	pidl "NDR_CHECK(ndr_pull_$l->{DATA_TYPE}($ndr, $ndr_flags, $var_name));";
 
-	if (my $range = Parse::Pidl::Util::has_property($e, "range")) {
+	if (my $range = has_property($e, "range")) {
 		$var_name = get_value_of($var_name);
 		my ($low, $high) = split(/ /, $range, 2);
 		pidl "if ($var_name < $low || $var_name > $high) {";
@@ -830,7 +831,7 @@ sub ParseElementPullLevel
 				}
 				my $nl = Parse::Pidl::NDR::GetNextLevel($e, $l);
 
-				if (Parse::Pidl::Util::has_property($e, "charset")) {
+				if (has_property($e, "charset")) {
 					pidl "NDR_CHECK(ndr_pull_charset($ndr, $ndr_flags, ".get_pointer_to($var_name).", $length, sizeof(" . Parse::Pidl::Typelist::mapType($nl->{DATA_TYPE}) . "), CH_$e->{PROPERTIES}->{charset}));";
 				} else {
 					pidl "NDR_CHECK(ndr_pull_array_$nl->{DATA_TYPE}($ndr, $ndr_flags, $var_name, $length));";
@@ -1356,7 +1357,7 @@ sub ParseStructNdrSize($)
 	my $t = shift;
 	my $sizevar;
 
-	if (my $flags = Parse::Pidl::Util::has_property($t, "flag")) {
+	if (my $flags = has_property($t, "flag")) {
 		pidl "flags |= $flags;";
 	}
 	pidl "return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_$t->{NAME});";
@@ -1404,7 +1405,7 @@ sub ParseUnionNdrSize($)
 	my $t = shift;
 	my $sizevar;
 
-	if (my $flags = Parse::Pidl::Util::has_property($t, "flag")) {
+	if (my $flags = has_property($t, "flag")) {
 		pidl "flags |= $flags;";
 	}
 
@@ -1748,7 +1749,7 @@ sub ParseFunctionPrint($)
 {
 	my($fn) = shift;
 
-	return if Parse::Pidl::Util::has_property($fn, "noprint");
+	return if has_property($fn, "noprint");
 
 	pidl "void ndr_print_$fn->{NAME}(struct ndr_print *ndr, const char *name, int flags, const struct $fn->{NAME} *r)";
 	pidl "{";
@@ -1811,7 +1812,7 @@ sub ParseFunctionPush($)
 { 
 	my($fn) = shift;
 
-	return if Parse::Pidl::Util::has_property($fn, "nopush");
+	return if has_property($fn, "nopush");
 
 	pidl fn_prefix($fn) . "NTSTATUS ndr_push_$fn->{NAME}(struct ndr_push *ndr, int flags, const struct $fn->{NAME} *r)";
 	pidl "{";
@@ -1861,7 +1862,7 @@ sub AllocateArrayLevel($$$$$)
 {
 	my ($e,$l,$ndr,$env,$size) = @_;
 
-	return if (Parse::Pidl::Util::has_property($e, "charset"));
+	return if (has_property($e, "charset"));
 
 	my $var = Parse::Pidl::Util::ParseExpr($e->{NAME}, $env);
 
@@ -1890,7 +1891,7 @@ sub ParseFunctionPull($)
 { 
 	my($fn) = shift;
 
-	return if Parse::Pidl::Util::has_property($fn, "nopull");
+	return if has_property($fn, "nopull");
 
 	# pull function args
 	pidl fn_prefix($fn) . "NTSTATUS ndr_pull_$fn->{NAME}(struct ndr_pull *ndr, int flags, struct $fn->{NAME} *r)";
@@ -2185,14 +2186,14 @@ sub NeededFunction($$)
 sub NeededTypedef($$)
 {
 	my ($t,$needed) = @_;
-	if (Parse::Pidl::Util::has_property($t, "public")) {
-		$needed->{"pull_$t->{NAME}"} = not Parse::Pidl::Util::has_property($t, "nopull");
-		$needed->{"push_$t->{NAME}"} = not Parse::Pidl::Util::has_property($t, "nopush");
-		$needed->{"print_$t->{NAME}"} = not Parse::Pidl::Util::has_property($t, "noprint");
+	if (has_property($t, "public")) {
+		$needed->{"pull_$t->{NAME}"} = not has_property($t, "nopull");
+		$needed->{"push_$t->{NAME}"} = not has_property($t, "nopush");
+		$needed->{"print_$t->{NAME}"} = not has_property($t, "noprint");
 	}
 
 	if ($t->{DATA}->{TYPE} eq "STRUCT" or $t->{DATA}->{TYPE} eq "UNION") {
-		if (Parse::Pidl::Util::has_property($t, "gensize")) {
+		if (has_property($t, "gensize")) {
 			$needed->{"ndr_size_$t->{NAME}"} = 1;
 		}
 
