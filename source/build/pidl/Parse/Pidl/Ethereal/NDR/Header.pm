@@ -8,6 +8,8 @@ package Parse::Pidl::Ethereal::NDR::Header;
 
 use strict;
 
+use Parse::Pidl::Util qw(has_property);
+
 my($res);
 my($tab_depth);
 
@@ -29,11 +31,11 @@ sub HeaderTypedefProto($)
 {
     my($d) = shift;
 
-    my $tf = EthParser::get_typefamily($d->{DATA}{TYPE});
+    my $tf = Parse::Pidl::Ethereal::NDR::Parser::get_typefamily($d->{DATA}{TYPE});
 
-    return unless util::has_property($d, "public");
+    return unless has_property($d, "public");
 
-    unless (util::has_property($d, "nopull")) {
+    unless (has_property($d, "nopull")) {
 		pidl "dcerpc_dissect_fnct_t $d->{NAME};\n";
     }
 }

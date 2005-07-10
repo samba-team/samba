@@ -9,6 +9,7 @@ package Parse::Pidl::Ethereal::NDR::Parser;
 
 use strict;
 use Parse::Pidl::Typelist;
+use Parse::Pidl::Util qw(has_property ParseExpr);
 use Parse::Pidl::NDR;
 
 # the list of needed functions
@@ -60,9 +61,9 @@ sub NeededTypedef($$)
 	my $t = shift;
 	my $needed = shift;
 
-	if (util::has_property($t, "public")) {
-		$needed->{"pull_$t->{NAME}"} = not util::has_property($t, "nopull");
-		$needed->{"decl_$t->{NAME}"} = not util::has_property($t, "nopull");
+	if (has_property($t, "public")) {
+		$needed->{"pull_$t->{NAME}"} = not has_property($t, "nopull");
+		$needed->{"decl_$t->{NAME}"} = not has_property($t, "nopull");
 	}
 
 	if ($t->{DATA}->{TYPE} eq "STRUCT" or $t->{DATA}->{TYPE} eq "UNION") {
@@ -156,7 +157,7 @@ sub elementbase($)
 {
     my($e) = shift;
 
-    if (my $base = util::has_property($e, "display")) {
+    if (my $base = has_property($e, "display")) {
 	return "BASE_" . uc($base);
     }
  
@@ -186,8 +187,8 @@ sub bitmapbase($)
 {
     my $e = shift;
 
-    return "16", if util::has_property($e->{DATA}, "bitmap16bit");
-    return "8", if util::has_property($e->{DATA}, "bitmap8bit");
+    return "16", if has_property($e->{DATA}, "bitmap16bit");
+    return "8", if has_property($e->{DATA}, "bitmap8bit");
 
     return "32";
 }
@@ -307,7 +308,7 @@ sub fn_prefix($)
 {
 	my $fn = shift;
 
-	return "" if (util::has_property($fn, "public"));
+	return "" if (has_property($fn, "public"));
 	return "static ";
 }
 
@@ -316,7 +317,7 @@ sub fn_prefix($)
 sub start_flags($)
 {
 	my $e = shift;
-	my $flags = util::has_property($e, "flag");
+	my $flags = has_property($e, "flag");
 	if (defined $flags) {
 		pidl "{ uint32_t _flags_save_$e->{TYPE} = ndr->flags;";
 		pidl "ndr_set_flags(&ndr->flags, $flags);";
@@ -329,7 +330,7 @@ sub start_flags($)
 sub end_flags($)
 {
 	my $e = shift;
-	my $flags = util::has_property($e, "flag");
+	my $flags = has_property($e, "flag");
 	if (defined $flags) {
 		pidl "ndr->flags = _flags_save_$e->{TYPE};\n\t}";
 		deindent;
@@ -398,7 +399,7 @@ sub compression_clen($$$)
 	my $compression = $l->{COMPRESSION};
 	my ($alg, $clen, $dlen) = split(/ /, $compression);
 
-	return util::ParseExpr($clen, $env);
+	return ParseExpr($clen, $env);
 }
 
 sub compression_dlen($$$)
@@ -409,7 +410,7 @@ sub compression_dlen($$$)
 	my $compression = $l->{COMPRESSION};
 	my ($alg, $clen, $dlen) = split(/ /, $compression);
 
-	return util::ParseExpr($dlen, $env);
+	return ParseExpr($dlen, $env);
 }
 
 sub ParseCompressionStart($$$$)
@@ -446,7 +447,7 @@ sub ParseObfuscationStart($$)
 {
 	my $e = shift;
 	my $ndr = shift;
-	my $obfuscation = util::has_property($e, "obfuscation");
+	my $obfuscation = has_property($e, "obfuscation");
 
 	pidl "ndr_pull_obfuscation($ndr, $obfuscation);";
 
@@ -526,7 +527,7 @@ sub ParseSwitch($$$$$$)
 	my($var_name) = shift;
 	my($ndr_flags) = shift;
 	my $env = shift;
-	my $switch_var = util::ParseExpr($l->{SWITCH_IS}, $env);
+	my $switch_var = ParseExpr($l->{SWITCH_IS}, $env);
 
 	check_null_pointer($switch_var);
 
@@ -556,7 +557,7 @@ sub ParseData($$$$$)
 
 	pidl "offset += dissect_$l->{DATA_TYPE}(tvb, offset, pinfo, tree, drep, hf_FIXME, NULL);";
 
-	if (my $range = util::has_property($e, "range")) {
+	if (my $range = has_property($e, "range")) {
 		$var_name = get_value_of($var_name);
 		my ($low, $high) = split(/ /, $range, 2);
 		if (($l->{DATA_TYPE} =~ /^uint/) and ($low eq "0")) {
@@ -650,7 +651,7 @@ sub ParseElementLevel
 			pidl "}";
 		}
 	} elsif ($l->{TYPE} eq "ARRAY") {
-		my $length = util::ParseExpr($l->{LENGTH_IS}, $env);
+		my $length = ParseExpr($l->{LENGTH_IS}, $env);
 		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
 
 		$var_name = $var_name . "[$counter]";
@@ -935,7 +936,7 @@ sub ParseArrayHeader($$$$$)
 
 	# $var_name contains the name of the first argument here
 
-	my $length = util::ParseExpr($l->{SIZE_IS}, $env);
+	my $length = ParseExpr($l->{SIZE_IS}, $env);
 	my $size = $length;
 
 	if ($l->{IS_CONFORMANT}) {
@@ -965,13 +966,13 @@ sub ParseArrayHeader($$$$$)
 	}
 
 	if ($l->{IS_CONFORMANT}) {
-		my $size = util::ParseExpr($l->{SIZE_IS}, $env);
+		my $size = ParseExpr($l->{SIZE_IS}, $env);
 		check_null_pointer($size);
 		pidl "NDR_CHECK(ndr_check_array_size(ndr, (void*)" . get_pointer_to($var_name) . ", $size));";
 	}
 
 	if ($l->{IS_VARYING}) {
-		my $length = util::ParseExpr($l->{LENGTH_IS}, $env);
+		my $length = ParseExpr($l->{LENGTH_IS}, $env);
 		check_null_pointer($length);
 		pidl "NDR_CHECK(ndr_check_array_length(ndr, (void*)" . get_pointer_to($var_name) . ", $length));";
 	}
@@ -1203,7 +1204,7 @@ sub RegisterInterface($$)
 	    # in epan/dissctors are deleted.
     
 	    my $name = "\"" . uc($x->{NAME}) . " (pidl)\"";
-		if (util::has_property($x, "helpstring")) {
+		if (has_property($x, "helpstring")) {
 			$name = $x->{PROPERTIES}->{helpstring};
 		}
 	    my $short_name = "pidl_$x->{NAME}";
