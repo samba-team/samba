@@ -37,14 +37,19 @@ static BOOL load_msg(const char *msg_file)
 	int num_lines, i;
 	char *msgid, *msgstr;
 	TDB_DATA key, data;
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 
-	lines = file_lines_load(msg_file, &num_lines);
+	lines = file_lines_load(msg_file, &num_lines, tmp_ctx);
 
 	if (!lines) {
+		talloc_free(tmp_ctx);
 		return False;
 	}
 
-	if (tdb_lockall(tdb) != 0) return False;
+	if (tdb_lockall(tdb) != 0) {
+		talloc_free(tmp_ctx);
+		return False;
+	}
 
 	/* wipe the db */
 	tdb_traverse(tdb, tdb_traverse_delete_fn, NULL);
@@ -71,7 +76,7 @@ static BOOL load_msg(const char *msg_file)
 		}
 	}
 
-	file_lines_free(lines);
+	talloc_free(tmp_ctx);
 	tdb_unlockall(tdb);
 
 	return True;

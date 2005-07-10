@@ -190,18 +190,18 @@ char *fgets_slash(char *s2,int maxlen,XFILE *f)
 load a file into memory from a fd.
 ****************************************************************************/ 
 
-char *fd_load(int fd, size_t *size)
+char *fd_load(int fd, size_t *size, TALLOC_CTX *mem_ctx)
 {
 	struct stat sbuf;
 	char *p;
 
 	if (fstat(fd, &sbuf) != 0) return NULL;
 
-	p = (char *)malloc(sbuf.st_size+1);
+	p = (char *)talloc_size(mem_ctx, sbuf.st_size+1);
 	if (!p) return NULL;
 
 	if (read(fd, p, sbuf.st_size) != sbuf.st_size) {
-		SAFE_FREE(p);
+		talloc_free(p);
 		return NULL;
 	}
 	p[sbuf.st_size] = 0;
@@ -214,7 +214,7 @@ char *fd_load(int fd, size_t *size)
 /****************************************************************************
 load a file into memory
 ****************************************************************************/
-char *file_load(const char *fname, size_t *size)
+char *file_load(const char *fname, size_t *size, TALLOC_CTX *mem_ctx)
 {
 	int fd;
 	char *p;
@@ -224,7 +224,7 @@ char *file_load(const char *fname, size_t *size)
 	fd = open(fname,O_RDONLY);
 	if (fd == -1) return NULL;
 
-	p = fd_load(fd, size);
+	p = fd_load(fd, size, mem_ctx);
 
 	close(fd);
 
@@ -254,12 +254,12 @@ void *map_file(char *fname, size_t size)
 	}
 #endif
 	if (!p) {
-		p = file_load(fname, &s2);
+		p = file_load(fname, &s2, talloc_autofree_context());
 		if (!p) return NULL;
 		if (s2 != size) {
 			DEBUG(1,("incorrect size for %s - got %d expected %d\n",
 				 fname, s2, size));
-			if (p) free(p);
+			talloc_free(p);
 			return NULL;
 		}
 	}
@@ -308,12 +308,12 @@ static char **file_lines_parse(char *p, size_t size, int *numlines)
 load a file into memory and return an array of pointers to lines in the file
 must be freed with file_lines_free(). 
 ****************************************************************************/
-char **file_lines_load(const char *fname, int *numlines)
+char **file_lines_load(const char *fname, int *numlines, TALLOC_CTX *mem_ctx)
 {
 	char *p;
 	size_t size;
 
-	p = file_load(fname, &size);
+	p = file_load(fname, &size, mem_ctx);
 	if (!p) return NULL;
 
 	return file_lines_parse(p, size, numlines);
@@ -324,26 +324,15 @@ load a fd into memory and return an array of pointers to lines in the file
 must be freed with file_lines_free(). If convert is true calls unix_to_dos on
 the list.
 ****************************************************************************/
-char **fd_lines_load(int fd, int *numlines)
+char **fd_lines_load(int fd, int *numlines, TALLOC_CTX *mem_ctx)
 {
 	char *p;
 	size_t size;
 
-	p = fd_load(fd, &size);
+	p = fd_load(fd, &size, mem_ctx);
 	if (!p) return NULL;
 
 	return file_lines_parse(p, size, numlines);
-}
-
-
-/****************************************************************************
-free lines loaded with file_lines_load
-****************************************************************************/
-void file_lines_free(char **lines)
-{
-	if (!lines) return;
-	SAFE_FREE(lines[0]);
-	SAFE_FREE(lines);
 }
 
 

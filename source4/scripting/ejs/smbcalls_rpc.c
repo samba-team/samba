@@ -105,6 +105,7 @@ done:
 	void *ptr;
 	struct rpc_request *req;
 	int callnum;
+	struct ejs_rpc *ejs;
 
 	if (argc != 2 ||
 	    argv[0]->type != MPR_TYPE_OBJECT ||
@@ -132,15 +133,24 @@ done:
 	}
 	callnum = call - iface->calls;
 
+	ejs = talloc(mprMemCtx(), struct ejs_rpc);
+	if (ejs == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	ejs->eid = eid;
+	ejs->callname = callname;
+
 	/* allocate the C structure */
-	ptr = talloc_zero_size(mprMemCtx(), call->struct_size);
+	ptr = talloc_zero_size(ejs, call->struct_size);
 	if (ptr == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
 	/* convert the mpr object into a C structure */
-	status = ejs_pull_rpc(eid, callname, io, ptr, ejs_pull);
+	status = ejs_pull(ejs, io, ptr);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -154,7 +164,6 @@ done:
 	req = dcerpc_ndr_request_send(p, NULL, iface, callnum, ptr, ptr);
 	if (req == NULL) {
 		status = NT_STATUS_NO_MEMORY;
-		talloc_free(ptr);
 		goto done;
 	}
 	status = dcerpc_ndr_request_recv(req);
@@ -164,10 +173,10 @@ done:
 		ndr_print_function_debug(call->ndr_print, call->name, NDR_OUT, ptr);
 	}
 
-	status = ejs_push_rpc(eid, callname, io, ptr, ejs_push);
+	status = ejs_push(ejs, io, ptr);
 
-	talloc_free(ptr);
 done:
+	talloc_free(ejs);
 	ejsSetReturnValue(eid, mprNTSTATUS(status));
 	if (NT_STATUS_EQUAL(status, NT_STATUS_INTERNAL_ERROR)) {
 		return -1;

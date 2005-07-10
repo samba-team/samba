@@ -26,27 +26,6 @@
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "scripting/ejs/ejsrpc.h"
 
-NTSTATUS ejs_pull_rpc(int eid, const char *callname, 
-		      struct MprVar *v, void *ptr, ejs_pull_function_t ejs_pull)
-{
-	struct ejs_rpc *ejs = talloc(ptr, struct ejs_rpc);	
-	NT_STATUS_HAVE_NO_MEMORY(ejs);
-	ejs->eid = eid;
-	ejs->callname = callname;
-	return ejs_pull(ejs, v, ptr);
-}
-
-
-NTSTATUS ejs_push_rpc(int eid, const char *callname, 
-		      struct MprVar *v, const void *ptr, ejs_push_function_t ejs_push)
-{
-	struct ejs_rpc *ejs = talloc(ptr, struct ejs_rpc);
-	NT_STATUS_HAVE_NO_MEMORY(ejs);
-	ejs->eid = eid;
-	ejs->callname = callname;
-	return ejs_push(ejs, v, ptr);
-}
-
 /*
   set the switch var to be used by the next union switch
 */
