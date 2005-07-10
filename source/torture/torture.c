@@ -2068,7 +2068,7 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 
 	p = lp_parm_string(-1, "torture", "unclist");
 	if (p) {
-		unc_list = file_lines_load(p, &num_unc_names);
+		unc_list = file_lines_load(p, &num_unc_names, NULL);
 		if (!unc_list || num_unc_names <= 0) {
 			printf("Failed to load unc names list from '%s'\n", p);
 			exit(1);

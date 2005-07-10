@@ -94,12 +94,13 @@ void ejs_exception(const char *reason)
 	for (i=1;argv[i];i++) {
 		argv_list = str_list_add(argv_list, argv[i]);
 	}
+	talloc_steal(mem_ctx, argv_list);
 	v = mprList("ARGV", argv_list);
 	mprSetPropertyValue(&v, "length", mprCreateIntegerVar(i-1));
 	mprCreateProperty(ejsGetGlobalObject(eid), "ARGV", &v);
 
 	/* load the script and advance past interpreter line*/
-	script = file_load(fname, &script_size);
+	script = file_load(fname, &script_size, mem_ctx);
 
 	if ((script_size > 2) && script[0] == '#' && script[1] == '!') {
 		script += 2;
