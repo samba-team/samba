@@ -25,8 +25,80 @@
 #include "lib/ejs/ejs.h"
 #include "librpc/gen_ndr/ndr_echo.h"
 #include "lib/cmdline/popt_common.h"
+#include "lib/messaging/irpc.h"
 #include "scripting/ejs/ejsrpc.h"
 #include "dlinklist.h"
+
+/*
+  state of a irpc 'connection'
+*/
+struct ejs_irpc_connection {
+	const char *server_name;
+	uint32_t *dest_ids;
+	struct messaging_context *msg_ctx;
+};
+
+/*
+  messaging clients need server IDs as well ...
+ */
+#define EJS_ID_BASE 0x30000000
+
+/*
+  setup a context for talking to a irpc server
+     example: 
+        var conn = new Object();
+        status = irpc_connect(conn, "smb_server");
+*/
+static int ejs_irpc_connect(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	NTSTATUS status;
+	int i;
+	struct MprVar *conn;
+	struct event_context *ev;
+	struct ejs_irpc_connection *p;
+
+	/* validate arguments */
+	if (argc != 2 ||
+	    argv[0]->type != MPR_TYPE_OBJECT ||
+	    argv[1]->type != MPR_TYPE_STRING) {
+		ejsSetErrorMsg(eid, "rpc_connect invalid arguments");
+		return -1;
+	}
+
+	p = talloc(conn, struct ejs_irpc_connection);
+	if (p == NULL) {
+		return -1;
+	}
+
+	conn           = argv[0];
+	p->server_name = mprToString(argv[2]);
+
+	ev = talloc_find_parent_bytype(mprMemCtx(), struct event_context);
+
+	/* create a messaging context, looping as we have no way to
+	   allocate temporary server ids automatically */
+	for (i=0;i<10000;i++) {
+		p->msg_ctx = messaging_init(p, EJS_ID_BASE + i, ev);
+		if (p->msg_ctx) break;
+	}
+	if (p->msg_ctx == NULL) {
+		ejsSetErrorMsg(eid, "irpc_connect unable to create a messaging context");
+		talloc_free(p);
+		return -1;
+	}
+
+	p->dest_ids = irpc_servers_byname(p->msg_ctx, p->server_name);
+	if (p->dest_ids == NULL || p->dest_ids[0] == 0) {
+		talloc_free(p);
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	} else {
+		mprSetPtrChild(conn, "pipe", p);
+	}
+
+	mpr_Return(eid, mprNTSTATUS(status));
+	return 0;
+}
+
 
 /*
   connect to an rpc server
@@ -72,7 +144,7 @@ static int ejs_rpc_connect(MprVarHandle eid, int argc, struct MprVar **argv)
 
 	ev = talloc_find_parent_bytype(mprMemCtx(), struct event_context);
 
-	status = dcerpc_pipe_connect(mprMemCtx(), &p, binding, 
+	status = dcerpc_pipe_connect(conn, &p, binding, 
 				     iface->uuid, iface->if_version, 
 				     creds, ev);
 	if (!NT_STATUS_IS_OK(status)) goto done;
@@ -80,7 +152,9 @@ static int ejs_rpc_connect(MprVarHandle eid, int argc, struct MprVar **argv)
 	/* callers don't allocate ref vars in the ejs interface */
 	p->conn->flags |= DCERPC_NDR_REF_ALLOC;
 
-	mprSetPtr(conn, "pipe", p);
+	/* by making the pipe a child of the connection variable, it will
+	   auto close when it goes out of scope in the script */
+	mprSetPtrChild(conn, "pipe", p);
 	mprSetPtr(conn, "iface", iface);
 
 done:
@@ -223,6 +297,7 @@ void smb_setup_ejs_rpc(void)
 	struct ejs_register *r;
 
 	ejsDefineCFunction(-1, "rpc_connect", ejs_rpc_connect, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "irpc_connect", ejs_irpc_connect, NULL, MPR_VAR_SCRIPT_HANDLE);
 	for (r=ejs_registered;r;r=r->next) {
 		r->setup();
 	}

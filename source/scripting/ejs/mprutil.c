@@ -271,6 +271,15 @@ void mprSetPtr(struct MprVar *v, const char *propname, const void *p)
 }
 
 /*
+  set a pointer in a existing MprVar, making it a child of the property
+*/
+void mprSetPtrChild(struct MprVar *v, const char *propname, const void *p)
+{
+	mprSetVar(v, propname, mprCreatePtrVar(discard_const(p), NULL));
+	talloc_steal(mprGetProperty(v, propname, NULL), p);
+}
+
+/*
   get a pointer from a MprVar
 */
 void *mprGetPtr(struct MprVar *v, const char *propname)
