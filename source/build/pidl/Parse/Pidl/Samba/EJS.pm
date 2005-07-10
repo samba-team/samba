@@ -122,11 +122,12 @@ sub EjsPullScalar($$$$$)
 
 	return if (Parse::Pidl::Util::has_property($e, "value"));
 
-	$var = get_pointer_to($var);
-	# have to handle strings specially :(
-	if ($e->{TYPE} eq "string") {
-		$var = get_pointer_to($var);
-	}
+        my $pl = Parse::Pidl::NDR::GetPrevLevel($e, $l);
+        $var = get_pointer_to($var);
+        # have to handle strings specially :(
+        if ($e->{TYPE} eq "string" && $pl && $pl->{TYPE} eq "POINTER") {
+                $var = get_pointer_to($var);
+        }
 	pidl "NDR_CHECK(ejs_pull_$e->{TYPE}(ejs, v, $name, $var));";
 }
 
@@ -369,7 +370,11 @@ sub EjsPullFunction($)
 sub EjsPushScalar($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
-	$var = get_pointer_to($var);
+        # have to handle strings specially :(
+        my $pl = Parse::Pidl::NDR::GetPrevLevel($e, $l);
+        if ($e->{TYPE} ne "string" || ($pl && $pl->{TYPE} eq "POINTER")) {
+                $var = get_pointer_to($var);
+        }
 	pidl "NDR_CHECK(ejs_push_$e->{TYPE}(ejs, v, $name, $var));";
 }
 
@@ -645,17 +650,17 @@ sub EjsConst($)
 
 #####################################################################
 # parse the interface definitions
-sub EjsInterface($)
+sub EjsInterface($$)
 {
-	my($interface) = shift;
+	my($interface,$needed) = @_;
 	my @fns = ();
 	my $name = $interface->{NAME};
 
 	%constants = ();
 
 	foreach my $d (@{$interface->{TYPEDEFS}}) {
-		EjsTypedefPush($d);
-		EjsTypedefPull($d);
+		($needed->{"push_$d->{NAME}"}) && EjsTypedefPush($d);
+		($needed->{"pull_$d->{NAME}"}) && EjsTypedefPull($d);
 	}
 
 	foreach my $d (@{$interface->{FUNCTIONS}}) {
@@ -722,13 +727,68 @@ sub Parse($$)
 #include \"$ejs_hdr\"
 
 ";
+
+    my %needed = ();
+
     foreach my $x (@{$ndr}) {
-	    if ($x->{TYPE} eq "INTERFACE") {
-		    ($x->{TYPE} eq "INTERFACE") && EjsInterface($x);
-	    }
+	    ($x->{TYPE} eq "INTERFACE") && NeededInterface($x, \%needed);
+    }
+
+    foreach my $x (@{$ndr}) {
+	    ($x->{TYPE} eq "INTERFACE") && EjsInterface($x, \%needed);
     }
 
     return $res;
+}
+
+
+sub NeededFunction($$)
+{
+	my ($fn,$needed) = @_;
+	$needed->{"pull_$fn->{NAME}"} = 1;
+	$needed->{"push_$fn->{NAME}"} = 1;
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		if (grep (/in/, @{$e->{DIRECTION}})) {
+			$needed->{"pull_$e->{TYPE}"} = 1;
+		}
+		if (grep (/out/, @{$e->{DIRECTION}})) {
+			$needed->{"push_$e->{TYPE}"} = 1;
+		}
+	}
+}
+
+sub NeededTypedef($$)
+{
+	my ($t,$needed) = @_;
+	if (Parse::Pidl::Util::has_property($t, "public")) {
+		$needed->{"pull_$t->{NAME}"} = not Parse::Pidl::Util::has_property($t, "noejs");
+		$needed->{"push_$t->{NAME}"} = not Parse::Pidl::Util::has_property($t, "noejs");
+	}
+	if ($t->{DATA}->{TYPE} ne "STRUCT" && 
+	    $t->{DATA}->{TYPE} ne "UNION") {
+		return;
+	}
+	for my $e (@{$t->{DATA}->{ELEMENTS}}) {
+		if ($needed->{"pull_$t->{NAME}"}) {
+			$needed->{"pull_$e->{TYPE}"} = 1;
+		}
+		if ($needed->{"push_$t->{NAME}"}) {
+			$needed->{"push_$e->{TYPE}"} = 1;
+		}
+	}
+}
+
+#####################################################################
+# work out what parse functions are needed
+sub NeededInterface($$)
+{
+	my ($interface,$needed) = @_;
+	foreach my $d (@{$interface->{FUNCTIONS}}) {
+	    NeededFunction($d, $needed);
+	}
+	foreach my $d (reverse @{$interface->{TYPEDEFS}}) {
+	    NeededTypedef($d, $needed);
+	}
 }
 
 1;
