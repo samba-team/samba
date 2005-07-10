@@ -25,13 +25,74 @@
 #include "lib/ldb/include/ldb.h"
 
 /*
+  find a mpr component, allowing for sub objects, using the '.' convention
+*/
+ NTSTATUS mprGetVar(struct MprVar **v, const char *name)
+{
+	const char *p = strchr(name, '.');
+	char *objname;
+	NTSTATUS status;
+	if (p == NULL) {
+		*v = mprGetProperty(*v, name, NULL);
+		if (*v == NULL) {
+			DEBUG(1,("mprGetVar unable to find '%s'\n", name));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		return NT_STATUS_OK;
+	}
+	objname = talloc_strndup(mprMemCtx(), name, p-name);
+	NT_STATUS_HAVE_NO_MEMORY(objname);
+	*v = mprGetProperty(*v, objname, NULL);
+	NT_STATUS_HAVE_NO_MEMORY(*v);
+	status = mprGetVar(v, p+1);
+	talloc_free(objname);
+	return status;
+}
+
+
+/*
+  set a mpr component, allowing for sub objects, using the '.' convention
+  destroys 'val' after setting
+*/
+ NTSTATUS mprSetVar(struct MprVar *v, const char *name, struct MprVar val)
+{
+	const char *p = strchr(name, '.');
+	char *objname;
+	struct MprVar *v2;
+	NTSTATUS status;
+	if (p == NULL) {
+		v2 = mprSetProperty(v, name, &val);
+		if (v2 == NULL) {
+			DEBUG(1,("mprSetVar unable to set '%s'\n", name));
+			return NT_STATUS_INVALID_PARAMETER_MIX;
+		}
+		mprDestroyVar(&val);
+		return NT_STATUS_OK;
+	}
+	objname = talloc_strndup(mprMemCtx(), name, p-name);
+	if (objname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	v2 = mprGetProperty(v, objname, NULL);
+	if (v2 == NULL) {
+		mprSetVar(v, objname, mprCreateObjVar(objname, MPR_DEFAULT_HASH_SIZE));
+		v2 = mprGetProperty(v, objname, NULL);
+	}
+	status = mprSetVar(v2, p+1, val);
+	talloc_free(objname);
+	return status;
+}
+
+
+
+/*
   add an indexed array element to a property
 */
 static void mprAddArray(struct MprVar *var, int i, struct MprVar v)
 {
 	char idx[16];
 	mprItoa(i, idx, sizeof(idx));
-	mprCreateProperty(var, idx, &v);
+	mprSetVar(var, idx, v);
 }
 
 /*
@@ -76,12 +137,12 @@ struct MprVar mprLdbMessage(struct ldb_message *msg)
 	   need a special case for the single value case */
 	const char *multivalued[] = { "objectClass", "memberOf", "privilege", 
 					    "member", NULL };
-	struct MprVar val;
 
 	var = mprCreateObjVar(msg->dn, MPR_DEFAULT_HASH_SIZE);
 
 	for (i=0;i<msg->num_elements;i++) {
 		struct ldb_message_element *el = &msg->elements[i];
+		struct MprVar val;
 		if (el->num_values == 1 &&
 		    !str_list_check_ci(multivalued, el->name)) {
 			val = mprData(el->values[0].data, el->values[0].length);
@@ -94,13 +155,12 @@ struct MprVar mprLdbMessage(struct ldb_message *msg)
 						    el->values[j].length));
 			}
 		}
-		mprCreateProperty(&var, el->name, &val);
+		mprSetVar(&var, el->name, val);
 	}
 
 	/* add the dn if it is not already specified */
 	if (mprGetProperty(&var, "dn", 0) == 0) {
-		val = mprCreateStringVar(msg->dn, 1);
-		mprCreateProperty(&var, "dn", &val);
+		mprSetVar(&var, "dn", mprCreateStringVar(msg->dn, 1));
 	}
 	
 	return var;		
@@ -172,21 +232,14 @@ const char **mprToList(TALLOC_CTX *mem_ctx, struct MprVar *v)
 */
 struct MprVar mprNTSTATUS(NTSTATUS status)
 {
-	struct MprVar res, val;
+	struct MprVar res;
 
 	res = mprCreateObjVar("ntstatus", MPR_DEFAULT_HASH_SIZE);
 
-	val = mprCreateStringVar(nt_errstr(status), 1);
-	mprCreateProperty(&res, "errstr", &val);
-
-	val = mprCreateIntegerVar(NT_STATUS_V(status));
-	mprCreateProperty(&res, "v", &val);
-
-	val = mprCreateBoolVar(NT_STATUS_IS_OK(status));
-	mprCreateProperty(&res, "is_ok", &val);
-
-	val = mprCreateBoolVar(NT_STATUS_IS_ERR(status));
-	mprCreateProperty(&res, "is_err", &val);
+	mprSetVar(&res, "errstr", mprCreateStringVar(nt_errstr(status), 1));
+	mprSetVar(&res, "v", mprCreateIntegerVar(NT_STATUS_V(status)));
+	mprSetVar(&res, "is_ok", mprCreateBoolVar(NT_STATUS_IS_OK(status)));
+	mprSetVar(&res, "is_err", mprCreateBoolVar(NT_STATUS_IS_ERR(status)));
 
 	return res;
 }
@@ -196,21 +249,14 @@ struct MprVar mprNTSTATUS(NTSTATUS status)
 */
 struct MprVar mprWERROR(WERROR status)
 {
-	struct MprVar res, val;
+	struct MprVar res;
 
 	res = mprCreateObjVar("werror", MPR_DEFAULT_HASH_SIZE);
 
-	val = mprCreateStringVar(win_errstr(status), 1);
-	mprCreateProperty(&res, "errstr", &val);
-
-	val = mprCreateIntegerVar(W_ERROR_V(status));
-	mprCreateProperty(&res, "v", &val);
-
-	val = mprCreateBoolVar(W_ERROR_IS_OK(status));
-	mprCreateProperty(&res, "is_ok", &val);
-
-	val = mprCreateBoolVar(True);
-	mprCreateProperty(&res, "is_err", &val);
+	mprSetVar(&res, "errstr", mprCreateStringVar(win_errstr(status), 1));
+	mprSetVar(&res, "v", mprCreateIntegerVar(W_ERROR_V(status)));
+	mprSetVar(&res, "is_ok", mprCreateBoolVar(W_ERROR_IS_OK(status)));
+	mprSetVar(&res, "is_err", mprCreateBoolVar(!W_ERROR_IS_OK(status)));
 
 	return res;
 }
@@ -221,8 +267,7 @@ struct MprVar mprWERROR(WERROR status)
 */
 void mprSetPtr(struct MprVar *v, const char *propname, const void *p)
 {
-	struct MprVar val = mprCreatePtrVar(discard_const(p), NULL);
-	mprCreateProperty(v, propname, &val);
+	mprSetVar(v, propname, mprCreatePtrVar(discard_const(p), NULL));
 }
 
 /*
@@ -240,3 +285,22 @@ void *mprGetPtr(struct MprVar *v, const char *propname)
 	}
 	return val->ptr;
 }
+
+/*
+  set the return value then free the variable
+*/
+ void mpr_Return(int eid, struct MprVar v)
+{ 
+	ejsSetReturnValue(eid, v);
+	mprDestroyVar(&v);
+}
+
+/*
+  set the return value then free the variable
+*/
+void mpr_ReturnString(int eid, const char *s)
+{ 
+	mpr_Return(eid, mprCreateStringVar(s, False));
+}
+
+

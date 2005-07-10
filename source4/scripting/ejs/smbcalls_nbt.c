@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "scripting/ejs/smbcalls.h"
 #include "lib/ejs/ejs.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 
@@ -75,7 +76,7 @@ static int ejs_resolve_name(MprVarHandle eid, int argc, struct MprVar **argv)
 				    mprCreateStringVar(reply_addr, 1));
 	}
 
-	ejsSetReturnValue(eid, mprNTSTATUS(nt_status));
+	mpr_Return(eid, mprNTSTATUS(nt_status));
 
  done:
 	talloc_free(tmp_ctx);

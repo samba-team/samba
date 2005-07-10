@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "scripting/ejs/smbcalls.h"
 #include "lib/ejs/ejs.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
@@ -79,13 +80,13 @@ static int ejs_cli_connect(MprVarHandle eid, int argc, char **argv)
 	result = smb_raw_negotiate(transport, lp_maxprotocol());
 
 	if (!NT_STATUS_IS_OK(result)) {
-		ejsSetReturnValue(eid, mprNTSTATUS(result));
+		mpr_Return(eid, mprNTSTATUS(result));
 		return 0;
 	}
 
 	/* Return a socket object */
 
-	ejsSetReturnValue(eid, mprCreatePtrVar(transport, 
+	mpr_Return(eid, mprCreatePtrVar(transport, 
 					       talloc_get_name(transport)));
 
 	return 0;
@@ -213,7 +214,7 @@ static int ejs_cli_ssetup(MprVarHandle eid, int argc, MprVar **argv)
 
 	/* Return a session object */
 
-	ejsSetReturnValue(eid, mprCreatePtrVar(session, 
+	mpr_Return(eid, mprCreatePtrVar(session, 
 					       talloc_get_name(session)));
 
 	result = 0;
@@ -296,7 +297,7 @@ static int ejs_cli_tree_connect(MprVarHandle eid, int argc, MprVar **argv)
 
 	talloc_free(mem_ctx);	
 
-	ejsSetReturnValue(eid, mprCreatePtrVar(tree, 
+	mpr_Return(eid, mprCreatePtrVar(tree, 
 					       talloc_get_name(tree)));
 
 	return 0;
@@ -441,11 +442,11 @@ static int ejs_tree_connect(MprVarHandle eid, int argc, char **argv)
 	talloc_free(mem_ctx);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		ejsSetReturnValue(eid, mprNTSTATUS(result));
+		mpr_Return(eid, mprNTSTATUS(result));
 		return 0;
 	}
 
-	ejsSetReturnValue(eid, mprCreatePtrVar(tree, talloc_get_name(tree)));
+	mpr_Return(eid, mprCreatePtrVar(tree, talloc_get_name(tree)));
 
 	return 0;
 }
@@ -478,7 +479,7 @@ static int ejs_tree_disconnect(MprVarHandle eid, int argc, MprVar **argv)
 
 	result = smb_tree_disconnect(tree);
 
-	ejsSetReturnValue(eid, mprNTSTATUS(result));
+	mpr_Return(eid, mprNTSTATUS(result));
 
 	return 0;
 }
@@ -512,7 +513,7 @@ static int ejs_mkdir(MprVarHandle eid, int argc, MprVar **argv)
 
 	result = smbcli_mkdir(tree, argv[1]->string);
 
-	ejsSetReturnValue(eid, mprNTSTATUS(result));
+	mpr_Return(eid, mprNTSTATUS(result));
 
 	return 0;
 }
@@ -546,7 +547,7 @@ static int ejs_rmdir(MprVarHandle eid, int argc, MprVar **argv)
 	
 	result = smbcli_rmdir(tree, argv[1]->string);
 
-	ejsSetReturnValue(eid, mprNTSTATUS(result));
+	mpr_Return(eid, mprNTSTATUS(result));
 
 	return 0;
 }
@@ -585,7 +586,7 @@ static int ejs_rename(MprVarHandle eid, int argc, MprVar **argv)
 	
 	result = smbcli_rename(tree, argv[1]->string, argv[2]->string);
 
-	ejsSetReturnValue(eid, mprNTSTATUS(result));
+	mpr_Return(eid, mprNTSTATUS(result));
 
 	return 0;
 }
@@ -619,7 +620,7 @@ static int ejs_unlink(MprVarHandle eid, int argc, MprVar **argv)
 	
 	result = smbcli_unlink(tree, argv[1]->string);
 
-	ejsSetReturnValue(eid, mprNTSTATUS(result));
+	mpr_Return(eid, mprNTSTATUS(result));
 
 	return 0;
 }
@@ -633,12 +634,11 @@ static void ejs_list_helper(struct clilist_file_info *info, const char *mask,
 			    void *state)
 
 {
-	MprVar *result = (MprVar *)state, value;
+	MprVar *result = (MprVar *)state;
 	char idx[16];
 
 	mprItoa(result->properties->numDataItems, idx, sizeof(idx));
-	value = mprCreateStringVar(info->name, 1);
-	mprCreateProperty(result, idx, &value);
+	mprSetVar(result, idx, mprCreateStringVar(info->name, 1));
 }
 
 static int ejs_list(MprVarHandle eid, int argc, MprVar **argv)
@@ -678,7 +678,7 @@ static int ejs_list(MprVarHandle eid, int argc, MprVar **argv)
 
 	smbcli_list(tree, mask, attribute, ejs_list_helper, &result);
 
-	ejsSetReturnValue(eid, result);
+	mpr_Return(eid, result);
 
 	return 0;
 }
