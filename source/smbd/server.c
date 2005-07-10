@@ -33,6 +33,47 @@
 
 
 /*
+  recursively delete a directory tree
+*/
+static void recursive_delete(const char *path)
+{
+	DIR *dir;
+	struct dirent *de;
+
+	dir = opendir(path);
+	if (!dir) {
+		return;
+	}
+
+	for (de=readdir(dir);de;de=readdir(dir)) {
+		char *fname;
+		struct stat st;
+
+		if (strcmp(de->d_name, ".") == 0 ||
+		    strcmp(de->d_name, "..") == 0) {
+			continue;
+		}
+
+		fname = talloc_asprintf(path, "%s/%s", path, de->d_name);
+		if (stat(fname, &st) != 0) {
+			continue;
+		}
+		if (S_ISDIR(st.st_mode)) {
+			recursive_delete(fname);
+			talloc_free(fname);
+			continue;
+		}
+		if (unlink(fname) != 0) {
+			DEBUG(0,("Unabled to delete '%s' - %s\n", 
+				 fname, strerror(errno)));
+			smb_panic("unable to cleanup tmp files");
+		}
+		talloc_free(fname);
+	}
+	closedir(dir);
+}
+
+/*
   cleanup temporary files. This is the new alternative to
   TDB_CLEAR_IF_FIRST. Unfortunately TDB_CLEAR_IF_FIRST is not
   efficient on unix systems due to the lack of scaling of the byte
@@ -42,57 +83,11 @@
 static void cleanup_tmp_files(void)
 {
 	char *path;
-	DIR *dir;
-	struct dirent *de;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
 	path = smbd_tmp_path(mem_ctx, NULL);
 
-	dir = opendir(path);
-	if (!dir) {
-		talloc_free(mem_ctx);
-		return;
-	}
-
-	for (de=readdir(dir);de;de=readdir(dir)) {
-		/*
-		 * Don't try to delete . and ..
-		 */
-		if (strcmp(de->d_name, ".") != 0 &&
-		    strcmp(de->d_name, "..") != 0) {
-		    char *fname = talloc_asprintf(mem_ctx, "%s/%s", path, de->d_name);
-		    int ret = unlink(fname);
-		    if (ret == -1 &&
-		        errno != ENOENT &&
-			errno != EPERM &&
-		        errno != EISDIR) {
-			    DEBUG(0,("Unabled to delete '%s' - %s\n", 
-				      fname, strerror(errno)));
-			    smb_panic("unable to cleanup tmp files");
-		    }
-		    if (ret == -1 &&
-			errno == EPERM) {
-			/*
-			 * If it is a dir, don't complain
-			 * NOTE! The test will only happen if we have
-			 * sys/stat.h, otherwise we will always error out
-			 */
-#ifdef HAVE_SYS_STAT_H
-			struct stat sb;
-			if (stat(fname, &sb) != -1 &&
-			    !S_ISDIR(sb.st_mode))
-#endif
-			{
-			     DEBUG(0,("Unable to delete '%s' - %s\n",
-				      fname, strerror(errno)));
-			     smb_panic("unable to cleanup tmp files");
-			}
-		    }
-		    talloc_free(fname);
-		}
-	}
-	closedir(dir);
-
+	recursive_delete(path);
 	talloc_free(mem_ctx);
 }
 
