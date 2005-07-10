@@ -5,8 +5,9 @@
 
 package Parse::Pidl::Typelist;
 
-use Exporter 'import';
-@EXPORT_OK = qw(hasType getType);
+require Exporter;
+@ISA = qw(Exporter);
+@EXPORT = qw(hasType getType);
 
 use Parse::Pidl::Util qw(has_property);
 use strict;
