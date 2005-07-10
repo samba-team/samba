@@ -9,6 +9,7 @@ package Parse::Pidl::Samba::NDR::Header;
 use strict;
 use Parse::Pidl::Typelist;
 use Parse::Pidl::Util qw(has_property);
+use Parse::Pidl::NDR qw(GetNextLevel GetPrevLevel);
 use Parse::Pidl::Samba::NDR::Parser;
 
 my($res);
@@ -61,12 +62,12 @@ sub HeaderElement($)
 	foreach my $l (@{$element->{LEVELS}}) 
 	{
 		if (($l->{TYPE} eq "POINTER")) {
-			my $nl = Parse::Pidl::NDR::GetNextLevel($element, $l);
-			$nl = Parse::Pidl::NDR::GetNextLevel($element, $nl) if ($nl->{TYPE} eq "SUBCONTEXT");
+			my $nl = GetNextLevel($element, $l);
+			$nl = GetNextLevel($element, $nl) if ($nl->{TYPE} eq "SUBCONTEXT");
 			next if ($nl->{TYPE} eq "DATA" and Parse::Pidl::Typelist::scalar_is_reference($nl->{DATA_TYPE}));
 			$prefix .= "*";
 		} elsif ($l->{TYPE} eq "ARRAY") {
-			my $pl = Parse::Pidl::NDR::GetPrevLevel($element, $l);
+			my $pl = GetPrevLevel($element, $l);
 			next if ($pl and $pl->{TYPE} eq "POINTER");
 
 			if ($l->{IS_FIXED}) { 

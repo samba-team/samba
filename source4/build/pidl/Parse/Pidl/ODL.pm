@@ -5,6 +5,7 @@
 package Parse::Pidl::ODL;
 
 use Parse::Pidl::Util qw(has_property);
+use Parse::Pidl::Typelist qw(hasType getType);
 use strict;
 
 #####################################################################
@@ -44,8 +45,8 @@ sub ReplaceInterfacePointers($)
 	my $e = shift;
 
 	foreach my $x (@{$e->{ELEMENTS}}) {
-		next unless (Parse::Pidl::Typelist::hasType($x->{TYPE}));
-		next unless Parse::Pidl::Typelist::getType($x->{TYPE})->{DATA}->{TYPE} eq "INTERFACE";
+		next unless (hasType($x->{TYPE}));
+		next unless getType($x->{TYPE})->{DATA}->{TYPE} eq "INTERFACE";
 		
 		$x->{TYPE} = "MInterfacePointer";
 	}

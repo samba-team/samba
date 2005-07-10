@@ -6,6 +6,7 @@
 package Parse::Pidl::Validator;
 
 use Parse::Pidl::Util qw(has_property);
+use Parse::Pidl::Typelist qw(hasType getType);
 
 use strict;
 
@@ -155,7 +156,7 @@ sub ValidProperties($$)
 sub mapToScalar($)
 {
 	my $t = shift;
-	my $ti = Parse::Pidl::Typelist::getType($t);
+	my $ti = getType($t);
 
 	if (not defined ($ti)) {
 		return undef;
@@ -185,7 +186,7 @@ sub ValidElement($)
 	# Check whether switches are used correctly.
 	if (my $switch = has_property($e, "switch_is")) {
 		my $e2 = find_sibling($e, $switch);
-		my $type = Parse::Pidl::Typelist::getType($e->{TYPE});
+		my $type = getType($e->{TYPE});
 
 		if (defined($type) and $type->{DATA}->{TYPE} ne "UNION") {
 			fatal($e, el_name($e) . ": switch_is() used on non-union type $e->{TYPE} which is a $type->{DATA}->{TYPE}");
