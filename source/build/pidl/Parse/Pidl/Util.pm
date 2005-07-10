@@ -4,8 +4,9 @@
 # released under the GNU GPL
 package Parse::Pidl::Util;
 
-use Exporter 'import';
-@EXPORT_OK = qw(has_property property_matches ParseExpr);
+require Exporter;
+@ISA = qw(Exporter);
+@EXPORT = qw(has_property property_matches ParseExpr);
 
 use strict;
 

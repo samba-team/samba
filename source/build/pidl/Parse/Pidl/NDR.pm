@@ -7,8 +7,9 @@
 
 package Parse::Pidl::NDR;
 
-use Exporter 'import';
-@EXPORT_OK = qw(GetPrevLevel GetNextLevel);
+require Exporter;
+@ISA = qw(Exporter);
+@EXPORT = qw(GetPrevLevel GetNextLevel);
 
 use strict;
 use Parse::Pidl::Typelist qw(hasType getType);
