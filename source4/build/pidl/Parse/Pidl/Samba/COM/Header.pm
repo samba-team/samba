@@ -4,6 +4,7 @@
 package Parse::Pidl::Samba::COM::Header;
 
 use Parse::Pidl::Typelist;
+use Parse::Pidl::Util qw(has_property);
 
 use strict;
 
@@ -109,7 +110,7 @@ sub ParseCoClass($)
 	my $c = shift;
 	my $res = "";
 	$res .= "#define CLSID_" . uc($c->{NAME}) . " $c->{PROPERTIES}->{uuid}\n";
-	if (Parse::Pidl::Util::has_property($c, "progid")) {
+	if (has_property($c, "progid")) {
 		$res .= "#define PROGID_" . uc($c->{NAME}) . " $c->{PROPERTIES}->{progid}\n";
 	}
 	$res .= "\n";
@@ -123,7 +124,7 @@ sub Parse($)
 
 	foreach my $x (@{$idl})
 	{
-		if ($x->{TYPE} eq "INTERFACE" && Parse::Pidl::Util::has_property($x, "object")) {
+		if ($x->{TYPE} eq "INTERFACE" && has_property($x, "object")) {
 			$res.=ParseInterface($x);
 		} 
 

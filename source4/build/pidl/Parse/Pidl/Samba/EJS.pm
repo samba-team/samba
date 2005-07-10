@@ -8,6 +8,7 @@ package Parse::Pidl::Samba::EJS;
 
 use strict;
 use Parse::Pidl::Typelist;
+use Parse::Pidl::Util qw(has_property);
 
 my($res);
 my %constants;
@@ -110,7 +111,7 @@ sub fn_prefix($)
 {
 	my $fn = shift;
 
-	return "" if (Parse::Pidl::Util::has_property($fn, "public"));
+	return "" if (has_property($fn, "public"));
 	return "static ";
 }
 
@@ -120,7 +121,7 @@ sub EjsPullScalar($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
 
-	return if (Parse::Pidl::Util::has_property($e, "value"));
+	return if (has_property($e, "value"));
 
         my $pl = Parse::Pidl::NDR::GetPrevLevel($e, $l);
         $var = get_pointer_to($var);
@@ -203,7 +204,7 @@ sub EjsPullSwitch($$$$$)
 sub EjsPullElement($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
-	if (Parse::Pidl::Util::has_property($e, "charset")) {
+	if (has_property($e, "charset")) {
 		EjsPullString($e, $l, $var, $name, $env);
 	} elsif ($l->{TYPE} eq "ARRAY") {
 		EjsPullArray($e, $l, $var, $name, $env);
@@ -327,7 +328,7 @@ sub EjsBitmapPull($$)
 sub EjsTypedefPull($)
 {
 	my $d = shift;
-	return if (Parse::Pidl::Util::has_property($d, "noejs"));
+	return if (has_property($d, "noejs"));
 	if ($d->{DATA}->{TYPE} eq 'STRUCT') {
 		EjsStructPull($d->{NAME}, $d->{DATA});
 	} elsif ($d->{DATA}->{TYPE} eq 'UNION') {
@@ -444,7 +445,7 @@ sub EjsPushArray($$$$$)
 sub EjsPushElement($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
-	if (Parse::Pidl::Util::has_property($e, "charset")) {
+	if (has_property($e, "charset")) {
 		EjsPushString($e, $l, $var, $name, $env);
 	} elsif ($l->{TYPE} eq "ARRAY") {
 		EjsPushArray($e, $l, $var, $name, $env);
@@ -587,7 +588,7 @@ sub EjsBitmapPush($$)
 sub EjsTypedefPush($)
 {
 	my $d = shift;
-	return if (Parse::Pidl::Util::has_property($d, "noejs"));
+	return if (has_property($d, "noejs"));
 	if ($d->{DATA}->{TYPE} eq 'STRUCT') {
 		EjsStructPush($d->{NAME}, $d->{DATA});
 	} elsif ($d->{DATA}->{TYPE} eq 'UNION') {

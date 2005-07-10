@@ -7,6 +7,7 @@
 
 package Parse::Pidl::Samba::COM::Stub;
 
+use Parse::Pidl::Util qw(has_property);
 use strict;
 
 my($res);
@@ -290,7 +291,7 @@ sub ParseInterface($)
 {
 	my($interface) = shift;
 	
-	return "" if Parse::Pidl::Util::has_property($interface, "local");
+	return "" if has_property($interface, "local");
 	
 	my($data) = $interface->{DATA};
 	my $count = 0;

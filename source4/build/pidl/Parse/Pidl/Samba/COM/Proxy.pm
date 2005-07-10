@@ -7,6 +7,7 @@
 package Parse::Pidl::Samba::COM::Proxy;
 
 use Parse::Pidl::Samba::COM::Header;
+use Parse::Pidl::Util qw(has_property);
 
 use strict;
 
@@ -103,7 +104,7 @@ static $fn->{RETURN_TYPE} dcom_proxy_$interface->{NAME}_$name(struct $interface-
 	
 	# Put arguments into r
 	foreach my $a (@{$fn->{ELEMENTS}}) {
-		next unless (Parse::Pidl::Util::has_property($a, "in"));
+		next unless (has_property($a, "in"));
 		if (Parse::Pidl::Typelist::typeIs($a->{TYPE}, "INTERFACE")) {
 			$res .="\tNDR_CHECK(dcom_OBJREF_from_IUnknown(&r.in.$a->{NAME}.obj, $a->{NAME}));\n";
 		} else {
@@ -126,7 +127,7 @@ static $fn->{RETURN_TYPE} dcom_proxy_$interface->{NAME}_$name(struct $interface-
 
 	# Put r info back into arguments
 	foreach my $a (@{$fn->{ELEMENTS}}) {
-		next unless (Parse::Pidl::Util::has_property($a, "out"));
+		next unless (has_property($a, "out"));
 
 		if (Parse::Pidl::Typelist::typeIs($a->{TYPE}, "INTERFACE")) {
 			$res .="\tNDR_CHECK(dcom_IUnknown_from_OBJREF(d->ctx, &$a->{NAME}, r.out.$a->{NAME}.obj));\n";
@@ -171,7 +172,7 @@ sub RegistrationFunction($$)
 	$res .="\tNTSTATUS status = NT_STATUS_OK;\n";
 	foreach my $interface (@{$idl}) {
 		next if $interface->{TYPE} ne "INTERFACE";
-		next if not Parse::Pidl::Util::has_property($interface, "object");
+		next if not has_property($interface, "object");
 
 		my $data = $interface->{DATA};
 		my $count = 0;
@@ -199,8 +200,8 @@ sub Parse($)
 
 	foreach my $x (@{$pidl}) {
 		next if ($x->{TYPE} ne "INTERFACE");
-		next if Parse::Pidl::Util::has_property($x, "local");
-		next unless Parse::Pidl::Util::has_property($x, "object");
+		next if has_property($x, "local");
+		next unless has_property($x, "object");
 
 		$res .= ParseInterface($x);
 	}
