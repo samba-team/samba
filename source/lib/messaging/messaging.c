@@ -728,11 +728,16 @@ NTSTATUS irpc_add_name(struct messaging_context *msg_ctx, const char *name)
 	t = irpc_namedb_open(msg_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(t);
 
+	if (tdb_lock_bystring(t->tdb, name) != 0) {
+		talloc_free(t);
+		return NT_STATUS_LOCK_NOT_GRANTED;
+	}
 	rec = tdb_fetch_bystring(t->tdb, name);
 	count = rec.dsize / sizeof(uint32_t);
 	rec.dptr = (char *)realloc_p(rec.dptr, uint32_t, count+1);
 	rec.dsize += sizeof(uint32_t);
 	if (rec.dptr == NULL) {
+		tdb_unlock_bystring(t->tdb, name);
 		talloc_free(t);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -741,6 +746,7 @@ NTSTATUS irpc_add_name(struct messaging_context *msg_ctx, const char *name)
 		status = NT_STATUS_INTERNAL_ERROR;
 	}
 	free(rec.dptr);
+	tdb_unlock_bystring(t->tdb, name);
 	talloc_free(t);
 
 	msg_ctx->names = str_list_add(msg_ctx->names, name);
@@ -764,21 +770,29 @@ uint32_t *irpc_servers_byname(struct messaging_context *msg_ctx, const char *nam
 		return NULL;
 	}
 
+	if (tdb_lock_bystring(t->tdb, name) != 0) {
+		talloc_free(t);
+		return NULL;
+	}
 	rec = tdb_fetch_bystring(t->tdb, name);
 	if (rec.dptr == NULL) {
+		tdb_unlock_bystring(t->tdb, name);
 		talloc_free(t);
 		return NULL;
 	}
 	count = rec.dsize / sizeof(uint32_t);
-	ret = talloc_array(msg_ctx, uint32_t, count);
+	ret = talloc_array(msg_ctx, uint32_t, count+1);
 	if (ret == NULL) {
+		tdb_unlock_bystring(t->tdb, name);
 		talloc_free(t);
 		return NULL;
 	}
 	for (i=0;i<count;i++) {
 		ret[i] = ((uint32_t *)rec.dptr)[i];
 	}
+	ret[i] = 0;
 	free(rec.dptr);
+	tdb_unlock_bystring(t->tdb, name);
 	talloc_free(t);
 
 	return ret;
@@ -801,9 +815,14 @@ void irpc_remove_name(struct messaging_context *msg_ctx, const char *name)
 		return;
 	}
 
+	if (tdb_lock_bystring(t->tdb, name) != 0) {
+		talloc_free(t);
+		return;
+	}
 	rec = tdb_fetch_bystring(t->tdb, name);
 	count = rec.dsize / sizeof(uint32_t);
 	if (count == 0) {
+		tdb_unlock_bystring(t->tdb, name);
 		talloc_free(t);
 		return;
 	}
@@ -819,5 +838,6 @@ void irpc_remove_name(struct messaging_context *msg_ctx, const char *name)
 	}
 	tdb_store_bystring(t->tdb, name, rec, 0);
 	free(rec.dptr);
+	tdb_unlock_bystring(t->tdb, name);
 	talloc_free(t);
 }
