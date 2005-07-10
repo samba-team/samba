@@ -44,8 +44,6 @@
 	DEBUG(0,("PANIC: assert failed at %s(%d)\n", __FILE__, __LINE__)); \
 	smb_panic("assert failed"); }} while (0)
 
-#define SMB_ASSERT_ARRAY(a,n) SMB_ASSERT((sizeof(a)/sizeof((a)[0])) >= (n))
-
 /* REWRITE TODO: remove these smb_xxx macros */
 #define smb_buf(buf) (((char *)(buf)) + MIN_SMB_SIZE + CVAL(buf,HDR_WCT+4)*2)
 
@@ -74,6 +72,5 @@
  **/
 #define SAFE_FREE(x) do { if ((x) != NULL) {free(discard_const_p(void *, (x))); (x)=NULL;} } while(0)
 #endif
-
 
 #endif /* _SMB_MACROS_H */
