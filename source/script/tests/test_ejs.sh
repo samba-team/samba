@@ -1,0 +1,23 @@
+#!/bin/sh
+# test some simple EJS operations
+
+if [ $# -lt 3 ]; then
+cat <<EOF
+Usage: test_ejs.sh SERVER USERNAME PASSWORD
+EOF
+exit 1;
+fi
+
+SERVER="$1"
+USERNAME="$2"
+PASSWORD="$3"
+
+incdir=`dirname $0`
+. $incdir/test_functions.sh
+
+SCRIPTDIR=../testprogs/ejs
+
+for f in samr.js echo.js; do
+    testit "$f" bin/smbscript $SCRIPTDIR/$f ncacn_np:$SERVER -U$USERNAME%$PASSWORD || failed=`expr $failed + 1`
+done
+

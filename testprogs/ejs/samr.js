@@ -179,7 +179,7 @@ print("Connecting to " + binding + "\n");
 status = rpc_connect(conn, binding, "samr");
 if (status.is_ok != true) {
    print("Failed to connect to " + binding + " - " + status.errstr + "\n");
-   return;
+   return -1;
 }
 
 handle = test_Connect(conn);
@@ -187,3 +187,4 @@ test_EnumDomains(conn, handle);
 test_Close(conn, handle);
 
 print("All OK\n");
+return 0;

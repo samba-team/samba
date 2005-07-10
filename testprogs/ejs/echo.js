@@ -260,3 +260,4 @@ test_TestSurrounding(conn);
 test_TestDoublePointer(conn);
 
 print("All OK\n");
+return 0;
