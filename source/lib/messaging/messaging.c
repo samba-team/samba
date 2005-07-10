@@ -30,6 +30,9 @@
 #include "lib/socket/socket.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "lib/messaging/irpc.h"
+#include "db_wrap.h"
+#include "lib/tdb/include/tdb.h"
+#include "lib/tdb/include/tdbutil.h"
 
 /* change the message version with any incompatible changes in the protocol */
 #define MESSAGING_VERSION 1
@@ -43,6 +46,7 @@ struct messaging_context {
 	struct messaging_rec *pending;
 	struct irpc_list *irpc;
 	struct idr_context *idr;
+	const char **names;
 
 	struct {
 		struct event_context *ev;
@@ -350,6 +354,9 @@ static int messaging_destructor(void *ptr)
 {
 	struct messaging_context *msg = ptr;
 	unlink(msg->path);
+	while (msg->names && msg->names[0]) {
+		irpc_remove_name(msg, msg->names[0]);
+	}
 	return 0;
 }
 
@@ -380,6 +387,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, uint32_t server_id
 	msg->pending   = NULL;
 	msg->idr       = idr_init(msg);
 	msg->irpc      = NULL;
+	msg->names     = NULL;
 
 	status = socket_create("unix", SOCKET_TYPE_DGRAM, &msg->sock, 0);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -692,11 +700,124 @@ NTSTATUS irpc_call(struct messaging_context *msg_ctx,
 }
 
 /*
+  open the naming database
+*/
+static struct tdb_wrap *irpc_namedb_open(struct messaging_context *msg_ctx)
+{
+	struct tdb_wrap *t;
+	char *path = talloc_asprintf(msg_ctx, "%s/names.tdb", msg_ctx->base_path);
+	if (path == NULL) {
+		return NULL;
+	}
+	t = tdb_wrap_open(msg_ctx, path, 0, 0, O_RDWR|O_CREAT, 0660);
+	talloc_free(path);
+	return t;
+}
+	
+
+/*
   add a string name that this irpc server can be called on
 */
 NTSTATUS irpc_add_name(struct messaging_context *msg_ctx, const char *name)
 {
-	return NT_STATUS_OK;
+	struct tdb_wrap *t;
+	TDB_DATA rec;
+	int count;
+	NTSTATUS status = NT_STATUS_OK;
+
+	t = irpc_namedb_open(msg_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(t);
+
+	rec = tdb_fetch_bystring(t->tdb, name);
+	count = rec.dsize / sizeof(uint32_t);
+	rec.dptr = (char *)realloc_p(rec.dptr, uint32_t, count+1);
+	rec.dsize += sizeof(uint32_t);
+	if (rec.dptr == NULL) {
+		talloc_free(t);
+		return NT_STATUS_NO_MEMORY;
+	}
+	((uint32_t *)rec.dptr)[count] = msg_ctx->server_id;
+	if (tdb_store_bystring(t->tdb, name, rec, 0) != 0) {
+		status = NT_STATUS_INTERNAL_ERROR;
+	}
+	free(rec.dptr);
+	talloc_free(t);
+
+	msg_ctx->names = str_list_add(msg_ctx->names, name);
+	talloc_steal(msg_ctx, msg_ctx->names);
+
+	return status;
 }
 
+/*
+  return a list of server ids for a server name
+*/
+uint32_t *irpc_servers_byname(struct messaging_context *msg_ctx, const char *name)
+{
+	struct tdb_wrap *t;
+	TDB_DATA rec;
+	int count, i;
+	uint32_t *ret;
 
+	t = irpc_namedb_open(msg_ctx);
+	if (t == NULL) {
+		return NULL;
+	}
+
+	rec = tdb_fetch_bystring(t->tdb, name);
+	if (rec.dptr == NULL) {
+		talloc_free(t);
+		return NULL;
+	}
+	count = rec.dsize / sizeof(uint32_t);
+	ret = talloc_array(msg_ctx, uint32_t, count);
+	if (ret == NULL) {
+		talloc_free(t);
+		return NULL;
+	}
+	for (i=0;i<count;i++) {
+		ret[i] = ((uint32_t *)rec.dptr)[i];
+	}
+	free(rec.dptr);
+	talloc_free(t);
+
+	return ret;
+}
+
+/*
+  remove a name from a messaging context
+*/
+void irpc_remove_name(struct messaging_context *msg_ctx, const char *name)
+{
+	struct tdb_wrap *t;
+	TDB_DATA rec;
+	int count, i;
+	uint32_t *ids;
+
+	str_list_remove(msg_ctx->names, name);
+
+	t = irpc_namedb_open(msg_ctx);
+	if (t == NULL) {
+		return;
+	}
+
+	rec = tdb_fetch_bystring(t->tdb, name);
+	count = rec.dsize / sizeof(uint32_t);
+	if (count == 0) {
+		talloc_free(t);
+		return;
+	}
+	ids = (uint32_t *)rec.dptr;
+	for (i=0;i<count;i++) {
+		if (ids[i] == msg_ctx->server_id) {
+			if (i < count-1) {
+				memmove(ids+i, ids+i+1, count-(i+1));
+			}
+			rec.dsize -= sizeof(uint32_t);
+			break;
+		}
+	}
+	tdb_store_bystring(t->tdb, name, rec, 0);
+	free(rec.dptr);
+	talloc_free(t);
+}
