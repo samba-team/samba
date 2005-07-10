@@ -40,7 +40,6 @@ static /**/const char *const rcsid[] = { (const char *)rcsid, "\100(#)" msg }
 
 /* these should be done with configure tests */
 #define KRB5
-#define HAVE_H_ERRNO
 #define HAVE_INET_ATON
 #define HAVE_LONG_LONG
 #define HAVE_GETHOSTNAME
