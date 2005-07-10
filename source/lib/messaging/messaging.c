@@ -690,3 +690,13 @@ NTSTATUS irpc_call(struct messaging_context *msg_ctx,
 						   table, callnum, r);
 	return irpc_call_recv(irpc);
 }
+
+/*
+  add a string name that this irpc server can be called on
+*/
+NTSTATUS irpc_add_name(struct messaging_context *msg_ctx, const char *name)
+{
+	return NT_STATUS_OK;
+}
+
+

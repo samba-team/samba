@@ -93,6 +93,8 @@ static void nbtd_task_init(struct task_server *task)
 
 	/* start the process of registering our names on all interfaces */
 	nbtd_register_names(nbtsrv);
+
+	irpc_add_name(task->msg_ctx, "nbt_server");
 }
 
 
