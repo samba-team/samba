@@ -164,23 +164,31 @@ done:
 
 
 /*
-  make an rpc call
-     example:
-            status = rpc_call(conn, "echo_AddOne", io);
+  make an irpc call - called via the same interface as rpc
+*/
+static int ejs_irpc_call(int eid, struct MprVar *conn, struct MprVar *io, 
+			 const struct dcerpc_interface_table *iface, int callnum,
+			 ejs_pull_function_t ejs_pull, ejs_push_function_t ejs_push)
+{
+	return 0;
+}
+
+
+/*
+  backend code for making an rpc call - this is called from the pidl generated ejs
+  code
 */
  int ejs_rpc_call(int eid, int argc, struct MprVar **argv,
-		  const char *callname,
+		  const struct dcerpc_interface_table *iface, int callnum,
 		  ejs_pull_function_t ejs_pull, ejs_push_function_t ejs_push)
 {
 	struct MprVar *conn, *io;
-	const struct dcerpc_interface_table *iface;
 	struct dcerpc_pipe *p;
-	const struct dcerpc_interface_call *call;
 	NTSTATUS status;
 	void *ptr;
 	struct rpc_request *req;
-	int callnum;
 	struct ejs_rpc *ejs;
+	const struct dcerpc_interface_call *call;
 
 	if (argc != 2 ||
 	    argv[0]->type != MPR_TYPE_OBJECT ||
@@ -192,21 +200,17 @@ done:
 	conn     = argv[0];
 	io       = argv[1];
 
+	if (mprGetPtr(conn, "irpc")) {
+		/* its an irpc call */
+		return ejs_irpc_call(eid, conn, io, iface, callnum, ejs_pull, ejs_push);
+	}
+
 	/* get the pipe info */
 	p = mprGetPtr(conn, "pipe");
-	iface = mprGetPtr(conn, "iface");
-	if (p == NULL || iface == NULL) {
+	if (p == NULL) {
 		ejsSetErrorMsg(eid, "rpc_call invalid pipe");
 		return -1;
 	}
-
-	/* find the call by name */
-	call = dcerpc_iface_find_call(iface, callname);
-	if (call == NULL) {
-		status = NT_STATUS_OBJECT_NAME_INVALID;
-		goto done;
-	}
-	callnum = call - iface->calls;
 
 	ejs = talloc(mprMemCtx(), struct ejs_rpc);
 	if (ejs == NULL) {
@@ -214,8 +218,10 @@ done:
 		goto done;
 	}
 
+	call = &iface->calls[callnum];
+
 	ejs->eid = eid;
-	ejs->callname = callname;
+	ejs->callname = call->name;
 
 	/* allocate the C structure */
 	ptr = talloc_zero_size(ejs, call->struct_size);

@@ -628,15 +628,18 @@ sub EjsPushFunction($)
 
 #################################
 # generate a ejs mapping function
-sub EjsFunction($)
+sub EjsFunction($$)
 {
 	my $d = shift;
+	my $iface = shift;
 	my $name = $d->{NAME};
+	my $callnum = uc("DCERPC_$name");
+	my $table = "&dcerpc_table_$iface";
 
 	pidl "static int ejs_$name(int eid, int argc, struct MprVar **argv)";
 	pidl "{";
 	indent;
-	pidl "return ejs_rpc_call(eid, argc, argv, \"$name\", (ejs_pull_function_t)ejs_pull_$name, (ejs_push_function_t)ejs_push_$name);";
+	pidl "return ejs_rpc_call(eid, argc, argv, $table, $callnum, (ejs_pull_function_t)ejs_pull_$name, (ejs_push_function_t)ejs_push_$name);";
 	deindent;
 	pidl "}\n";
 }
@@ -669,7 +672,7 @@ sub EjsInterface($$)
 		
 		EjsPullFunction($d);
 		EjsPushFunction($d);
-		EjsFunction($d);
+		EjsFunction($d, $name);
 
 		push (@fns, $d->{NAME});
 	}
