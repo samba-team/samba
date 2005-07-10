@@ -1,0 +1,9 @@
+- Each of the various password database backends(tdb,ldap,smbpaswd) available in Samba3 need to be accessible and converted to the SAM database in Samba4.
+- Printer database needs to be read from the Samba3 TDB and added to the apprioprate LDAP subtree.
+- The WINS database needs to be converted from both plain text file and TDB file to LDAP/LDB.
+- The account policy database needs to be read in from a TDB and applied to the data in LDAP/LDB.
+- The privilege database needs to be read from a TDB and added to the SAM database in LDB.
+- Group mappings need to be read from the TDB and added to the SAM database.
+- The share info database and the configuration file from Samba3 need to be read and converted to either xattrs or a TDB in Samba4
+- Secrets.tdb, containing the domain formation, needs to be merged into the SAM database.
+- Last, but not least, a Samba3 configuration file should be parsable in Samba4. This file can be used for producing a Samba4 smb.conf file as well as for updating the various databases mentioned above.
