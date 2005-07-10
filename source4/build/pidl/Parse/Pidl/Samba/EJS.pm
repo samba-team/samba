@@ -289,12 +289,31 @@ sub EjsUnionPull($$)
 	pidl "}";
 }
 
+##############################################
+# put the enum elements in the constants array
+sub EjsEnumConstant($)
+{
+	my $d = shift;
+	my $v = 0;
+	foreach my $e (@{$d->{ELEMENTS}}) {
+		my $el = $e;
+		chomp $el;
+		if ($el =~ /^(.*)=\s*(.*)\s*$/) {
+			$el = $1;
+			$v = $2;
+		}
+		$constants{$el} = $v;
+		$v++;
+	}
+}
+
 ###########################
 # pull a enum
 sub EjsEnumPull($$)
 {
 	my $name = shift;
 	my $d = shift;
+	EjsEnumConstant($d);
 	pidl fn_prefix($d);
 	pidl "NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, enum $name *r)\n{";
 	indent;
@@ -536,18 +555,7 @@ sub EjsEnumPush($$)
 {
 	my $name = shift;
 	my $d = shift;
-	my $v = 0;
-	# put the enum elements in the constants array
-	foreach my $e (@{$d->{ELEMENTS}}) {
-		my $el = $e;
-		chomp $el;
-		if ($el =~ /^(.*)=\s*(.*)\s*$/) {
-			$el = $1;
-			$v = $2;
-		}
-		$constants{$el} = $v;
-		$v++;
-	}
+	EjsEnumConstant($d);
 	pidl fn_prefix($d);
 	pidl "NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const enum $name *r)\n{";
 	indent;
