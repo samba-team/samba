@@ -2037,7 +2037,7 @@ static BOOL start_gentest(void)
 	/* generate the seeds - after this everything is deterministic */
 	if (options.use_preset_seeds) {
 		int numops;
-		char **preset = file_lines_load(options.seeds_file, &numops);
+		char **preset = file_lines_load(options.seeds_file, &numops, NULL);
 		if (!preset) {
 			printf("Failed to load %s - %s\n", options.seeds_file, strerror(errno));
 			exit(1);
@@ -2186,7 +2186,7 @@ static void usage(void)
 			options.analyze_continuous = True;
 			break;
 		case 'i':
-			options.ignore_patterns = file_lines_load(optarg, NULL);
+			options.ignore_patterns = file_lines_load(optarg, NULL, NULL);
 			break;
 		case 'h':
 			usage();

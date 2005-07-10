@@ -46,8 +46,6 @@ NTSTATUS smbcalls_register_ejs(const char *name,
 int ejs_rpc_call(int eid, int argc, struct MprVar **argv, const char *callname,
 		 ejs_pull_function_t ejs_pull, ejs_push_function_t ejs_push);
 
-NTSTATUS ejs_pull_rpc(int eid, const char *callname, struct MprVar *v, void *ptr, ejs_pull_function_t ejs_pull);
-NTSTATUS ejs_push_rpc(int eid, const char *callname, struct MprVar *v, const void *ptr, ejs_push_function_t ejs_push);
 NTSTATUS ejs_pull_struct_start(struct ejs_rpc *ejs, struct MprVar **v, const char *name);
 NTSTATUS ejs_push_struct_start(struct ejs_rpc *ejs, struct MprVar **v, const char *name);
 

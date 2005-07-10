@@ -188,7 +188,7 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 			exit(1);
 		}
 			
-		data = (uint8_t *)file_load(ctx_filename, &size);
+		data = (uint8_t *)file_load(ctx_filename, &size, mem_ctx);
 		if (!data) {
 			perror(ctx_filename);
 			exit(1);
@@ -213,7 +213,7 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 	} 
 
 	if (filename)
-		data = (uint8_t *)file_load(filename, &size);
+		data = (uint8_t *)file_load(filename, &size, mem_ctx);
 	else
 		data = (uint8_t *)stdin_load(mem_ctx, &size);
 
