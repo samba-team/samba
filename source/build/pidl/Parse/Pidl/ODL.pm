@@ -4,6 +4,7 @@
 
 package Parse::Pidl::ODL;
 
+use Parse::Pidl::Util qw(has_property);
 use strict;
 
 #####################################################################
@@ -59,14 +60,14 @@ sub ODL2IDL($)
 		# Add [in] ORPCTHIS *this, [out] ORPCTHAT *that
 		# and replace interfacepointers with MInterfacePointer
 		# for 'object' interfaces
-		if (Parse::Pidl::Util::has_property($x, "object")) {
+		if (has_property($x, "object")) {
 			foreach my $e (@{$x->{DATA}}) {
 				($e->{TYPE} eq "FUNCTION") && FunctionAddObjArgs($e);
 				ReplaceInterfacePointers($e);
 			}
 			# Object interfaces use ORPC
 			my @depends = ();
-			if(Parse::Pidl::Util::has_property($x, "depends")) {
+			if(has_property($x, "depends")) {
 				@depends = split /,/, $x->{PROPERTIES}->{depends};
 			}
 			push @depends, "orpc";

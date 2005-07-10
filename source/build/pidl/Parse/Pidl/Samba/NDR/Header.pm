@@ -8,6 +8,7 @@ package Parse::Pidl::Samba::NDR::Header;
 
 use strict;
 use Parse::Pidl::Typelist;
+use Parse::Pidl::Util qw(has_property);
 use Parse::Pidl::Samba::NDR::Parser;
 
 my($res);
@@ -214,7 +215,7 @@ sub HeaderType($$$)
 		return;
 	}
 
-	if (Parse::Pidl::Util::has_property($e, "charset")) {
+	if (has_property($e, "charset")) {
 		pidl "const char";
 	} else {
 		pidl Parse::Pidl::Typelist::mapType($e->{TYPE});
@@ -238,23 +239,23 @@ sub HeaderTypedefProto($)
 
 	my $tf = Parse::Pidl::Samba::NDR::Parser::get_typefamily($d->{DATA}{TYPE});
 
-    if (Parse::Pidl::Util::has_property($d, "gensize")) {
+    if (has_property($d, "gensize")) {
 		my $size_args = $tf->{SIZE_FN_ARGS}->($d);
 		pidl "size_t ndr_size_$d->{NAME}($size_args);\n";
     }
 
-    return unless Parse::Pidl::Util::has_property($d, "public");
+    return unless has_property($d, "public");
 
 	my $pull_args = $tf->{PULL_FN_ARGS}->($d);
 	my $push_args = $tf->{PUSH_FN_ARGS}->($d);
 	my $print_args = $tf->{PRINT_FN_ARGS}->($d);
-	unless (Parse::Pidl::Util::has_property($d, "nopush")) {
+	unless (has_property($d, "nopush")) {
 		pidl "NTSTATUS ndr_push_$d->{NAME}($push_args);\n";
 	}
-	unless (Parse::Pidl::Util::has_property($d, "nopull")) {
+	unless (has_property($d, "nopull")) {
 	    pidl "NTSTATUS ndr_pull_$d->{NAME}($pull_args);\n";
 	}
-    unless (Parse::Pidl::Util::has_property($d, "noprint")) {
+    unless (has_property($d, "noprint")) {
 	    pidl "void ndr_print_$d->{NAME}($print_args);\n";
     }
 }
@@ -278,7 +279,7 @@ sub HeaderFunctionInOut($$)
     my($fn,$prop) = @_;
 
     foreach my $e (@{$fn->{ELEMENTS}}) {
-	    if (Parse::Pidl::Util::has_property($e, $prop)) {
+	    if (has_property($e, $prop)) {
 		    HeaderElement($e);
 	    }
     }
@@ -295,7 +296,7 @@ sub HeaderFunctionInOut_needed($$)
     }
 
     foreach my $e (@{$fn->{ELEMENTS}}) {
-	    if (Parse::Pidl::Util::has_property($e, $prop)) {
+	    if (has_property($e, $prop)) {
 		    return 1;
 	    }
     }
@@ -369,7 +370,7 @@ sub HeaderFnProto($$)
    		pidl "struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r);\n";
 	}
 
-	return unless Parse::Pidl::Util::has_property($fn, "public");
+	return unless has_property($fn, "public");
 
 	pidl "NTSTATUS ndr_push_$name(struct ndr_push *ndr, int flags, const struct $name *r);\n";
 	pidl "NTSTATUS ndr_pull_$name(struct ndr_pull *ndr, int flags, struct $name *r);\n";

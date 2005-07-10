@@ -7,6 +7,7 @@ package Parse::Pidl::Samba::EJSHeader;
 
 use strict;
 use Parse::Pidl::Typelist;
+use Parse::Pidl::Util qw(has_property);
 
 my($res);
 
@@ -22,7 +23,7 @@ sub HeaderTypedefProto($)
 	my $d = shift;
 	my $name = $d->{NAME};
 	
-	return unless Parse::Pidl::Util::has_property($d, "public");
+	return unless has_property($d, "public");
 	
 	my $type_decl = Parse::Pidl::Typelist::mapType($name);
 
