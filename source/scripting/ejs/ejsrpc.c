@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "lib/ejs/ejs.h"
+#include "scripting/ejs/smbcalls.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "scripting/ejs/ejsrpc.h"
@@ -42,64 +43,6 @@ NTSTATUS ejs_panic(struct ejs_rpc *ejs, const char *why)
 	ejsSetErrorMsg(ejs->eid, "rpc_call '%s' failed - %s", ejs->callname, why);
 	return NT_STATUS_INTERNAL_ERROR;
 }
-
-/*
-  find a mpr component, allowing for sub objects, using the '.' convention
-*/
-static NTSTATUS mprGetVar(struct MprVar **v, const char *name)
-{
-	const char *p = strchr(name, '.');
-	char *objname;
-	NTSTATUS status;
-	if (p == NULL) {
-		*v = mprGetProperty(*v, name, NULL);
-		if (*v == NULL) {
-			DEBUG(1,("mprGetVar unable to find '%s'\n", name));
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-		return NT_STATUS_OK;
-	}
-	objname = talloc_strndup(mprMemCtx(), name, p-name);
-	NT_STATUS_HAVE_NO_MEMORY(objname);
-	*v = mprGetProperty(*v, objname, NULL);
-	NT_STATUS_HAVE_NO_MEMORY(*v);
-	status = mprGetVar(v, p+1);
-	talloc_free(objname);
-	return status;
-}
-
-
-/*
-  set a mpr component, allowing for sub objects, using the '.' convention
-*/
-static NTSTATUS mprSetVar(struct MprVar *v, const char *name, struct MprVar val)
-{
-	const char *p = strchr(name, '.');
-	char *objname;
-	struct MprVar *v2;
-	NTSTATUS status;
-	if (p == NULL) {
-		v2 = mprSetProperty(v, name, &val);
-		if (v2 == NULL) {
-			DEBUG(1,("mprSetVar unable to set '%s'\n", name));
-			return NT_STATUS_INVALID_PARAMETER_MIX;
-		}
-		return NT_STATUS_OK;
-	}
-	objname = talloc_strndup(mprMemCtx(), name, p-name);
-	if (objname == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	v2 = mprGetProperty(v, objname, NULL);
-	if (v2 == NULL) {
-		struct MprVar val2 = mprCreateObjVar(objname, MPR_DEFAULT_HASH_SIZE);
-		v2 = mprCreateProperty(v, objname, &val2);
-	}
-	status = mprSetVar(v2, p+1, val);
-	talloc_free(objname);
-	return status;
-}
-
 
 /*
   start the ejs pull process for a structure

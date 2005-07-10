@@ -79,7 +79,7 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 			if (type == NULL || option == NULL) return -1;
 			value = lp_get_parametric(snum, type, option);
 			if (value == NULL) return -1;
-			ejsSetReturnString(eid, value);
+			mpr_ReturnString(eid, value);
 			return 0;
 		}
 
@@ -97,7 +97,7 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 		if (type == NULL || option == NULL) return -1;
 		value = lp_get_parametric(-1, type, option);
 		if (value == NULL) return -1;
-		ejsSetReturnString(eid, value);
+		mpr_ReturnString(eid, value);
 		return 0;
 	} else {
 		/* its a global parameter */
@@ -114,18 +114,18 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 	switch (parm->type) {
 	case P_STRING:
 	case P_USTRING:
-		ejsSetReturnString(eid, *(char **)parm_ptr);
+		mpr_ReturnString(eid, *(char **)parm_ptr);
 		break;
 	case P_BOOL:
-		ejsSetReturnValue(eid, mprCreateBoolVar(*(BOOL *)parm_ptr));
+		mpr_Return(eid, mprCreateBoolVar(*(BOOL *)parm_ptr));
 		break;
 	case P_INTEGER:
-		ejsSetReturnValue(eid, mprCreateIntegerVar(*(int *)parm_ptr));
+		mpr_Return(eid, mprCreateIntegerVar(*(int *)parm_ptr));
 		break;
 	case P_ENUM:
 		for (i=0; parm->enum_list[i].name; i++) {
 			if (*(int *)parm_ptr == parm->enum_list[i].value) {
-				ejsSetReturnString(eid, parm->enum_list[i].name);
+				mpr_ReturnString(eid, parm->enum_list[i].name);
 				return 0;
 			}
 		}
