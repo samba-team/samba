@@ -238,6 +238,10 @@ void file_close_user(int vuid)
 	}
 }
 
+/****************************************************************************
+ Debug to enumerate all open files in the smbd.
+****************************************************************************/
+
 void file_dump_open_table(void)
 {
 	int count=0;
@@ -508,7 +512,7 @@ void file_chain_reset(void)
 }
 
 /****************************************************************************
-Save the chained fsp - done when about to do an oplock break.
+ Save the chained fsp - done when about to do an oplock break.
 ****************************************************************************/
 
 void file_chain_save(void)
@@ -517,13 +521,17 @@ void file_chain_save(void)
 }
 
 /****************************************************************************
-Restore the chained fsp - done after an oplock break.
+ Restore the chained fsp - done after an oplock break.
 ****************************************************************************/
 
 void file_chain_restore(void)
 {
 	chain_fsp = oplock_save_chain_fsp;
 }
+
+/****************************************************************************
+ Duplicate the file handle part for a DOS or FCB open.
+****************************************************************************/
 
 files_struct *dup_file_fsp(files_struct *fsp,
 				uint32 access_mask,
