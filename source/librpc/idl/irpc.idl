@@ -36,7 +36,6 @@
 		hyper query_count;
 		hyper register_count;
 		hyper release_count;
-		hyper refresh_count;
 	} nbtd_statistics;
 
 	typedef union {
