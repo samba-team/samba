@@ -88,11 +88,12 @@
 /*
   add an indexed array element to a property
 */
-static void mprAddArray(struct MprVar *var, int i, struct MprVar v)
+ void mprAddArray(struct MprVar *var, int i, struct MprVar v)
 {
 	char idx[16];
 	mprItoa(i, idx, sizeof(idx));
 	mprSetVar(var, idx, v);
+	mprSetVar(var, "length", mprCreateIntegerVar(i+1));
 }
 
 /*
@@ -179,8 +180,7 @@ struct MprVar mprLdbArray(struct ldb_message **msg, int count, const char *name)
 	for (i=0;i<count;i++) {
 		mprAddArray(&res, i, mprLdbMessage(msg[i]));
 	}
-	mprSetPropertyValue(&res, "length", mprCreateIntegerVar(i));
-	return res;	
+	return res;
 }
 
 

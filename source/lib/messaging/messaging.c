@@ -375,6 +375,10 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, uint32_t server_id
 		return NULL;
 	}
 
+	if (ev == NULL) {
+		ev = event_context_init(msg);
+	}
+
 	/* create the messaging directory if needed */
 	path = smbd_tmp_path(msg, "messaging");
 	mkdir(path, 0700);
@@ -483,6 +487,7 @@ static void irpc_handler_reply(struct messaging_context *msg_ctx,
 		irpc->status = header->status;
 	}
 	irpc->done = True;
+	talloc_steal(irpc, ndr);
 	if (irpc->async.fn) {
 		irpc->async.fn(irpc);
 	}
@@ -572,7 +577,9 @@ static void irpc_handler(struct messaging_context *msg_ctx, void *private,
 		irpc_handler_reply(msg_ctx, ndr, &header);
 	} else {
 		irpc_handler_request(msg_ctx, ndr, &header, src);
+		talloc_free(ndr);
 	}
+	return;
 
 failed:
 	talloc_free(ndr);
@@ -674,16 +681,13 @@ failed:
 */
 NTSTATUS irpc_call_recv(struct irpc_request *irpc)
 {
-	NTSTATUS status;
 	NT_STATUS_HAVE_NO_MEMORY(irpc);
 	while (!irpc->done) {
 		if (event_loop_once(irpc->msg_ctx->event.ev) != 0) {
 			return NT_STATUS_CONNECTION_DISCONNECTED;
 		}		
 	}
-	status = irpc->status;
-	talloc_free(irpc);
-	return status;
+	return irpc->status;
 }
 
 /*

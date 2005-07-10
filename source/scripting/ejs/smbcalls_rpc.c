@@ -65,13 +65,14 @@ static int ejs_irpc_connect(MprVarHandle eid, int argc, struct MprVar **argv)
 		return -1;
 	}
 
+	conn           = argv[0];
+
 	p = talloc(conn, struct ejs_irpc_connection);
 	if (p == NULL) {
 		return -1;
 	}
 
-	conn           = argv[0];
-	p->server_name = mprToString(argv[2]);
+	p->server_name = mprToString(argv[1]);
 
 	ev = talloc_find_parent_bytype(mprMemCtx(), struct event_context);
 
@@ -92,7 +93,8 @@ static int ejs_irpc_connect(MprVarHandle eid, int argc, struct MprVar **argv)
 		talloc_free(p);
 		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	} else {
-		mprSetPtrChild(conn, "pipe", p);
+		mprSetPtrChild(conn, "irpc", p);
+		status = NT_STATUS_OK;
 	}
 
 	mpr_Return(eid, mprNTSTATUS(status));
@@ -170,6 +172,95 @@ static int ejs_irpc_call(int eid, struct MprVar *conn, struct MprVar *io,
 			 const struct dcerpc_interface_table *iface, int callnum,
 			 ejs_pull_function_t ejs_pull, ejs_push_function_t ejs_push)
 {
+	NTSTATUS status;
+	void *ptr;
+	struct ejs_rpc *ejs;
+	const struct dcerpc_interface_call *call;
+	struct ejs_irpc_connection *p;
+	struct irpc_request **reqs;
+	int i, count;
+	struct MprVar *results;
+
+	p = mprGetPtr(conn, "irpc");
+
+	ejs = talloc(mprMemCtx(), struct ejs_rpc);
+	if (ejs == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	call = &iface->calls[callnum];
+
+	ejs->eid = eid;
+	ejs->callname = call->name;
+
+	/* allocate the C structure */
+	ptr = talloc_zero_size(ejs, call->struct_size);
+	if (ptr == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	/* convert the mpr object into a C structure */
+	status = ejs_pull(ejs, io, ptr);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	for (count=0;p->dest_ids[count];count++) /* noop */ ;
+
+	/* we need to make a call per server */
+	reqs = talloc_array(ejs, struct irpc_request *, count);
+	if (reqs == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	/* make the actual calls */
+	for (i=0;i<count;i++) {
+		reqs[i] = irpc_call_send(p->msg_ctx, p->dest_ids[i], 
+					 iface, callnum, ptr);
+		if (reqs[i] == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+		talloc_steal(reqs, reqs[i]);
+	}
+	
+	mprSetVar(io, "results", mprCreateObjVar("results", MPR_DEFAULT_HASH_SIZE));
+	results = mprGetProperty(io, "results", NULL);
+
+	/* and receive the results, placing them in io.results[i] */
+	for (i=0;i<count;i++) {
+		struct MprVar *output;
+
+		status = irpc_call_recv(reqs[i]);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+		status = ejs_push(ejs, io, ptr);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+		talloc_free(reqs[i]);
+
+		/* add to the results array */
+		output = mprGetProperty(io, "output", NULL);
+		if (output) {
+			char idx[16];
+			mprItoa(i, idx, sizeof(idx));
+			mprSetProperty(results, idx, output);
+			mprDeleteProperty(io, "output");
+		}
+	}
+	mprSetVar(results, "length", mprCreateIntegerVar(i));
+
+done:
+	talloc_free(ejs);
+	mpr_Return(eid, mprNTSTATUS(status));
+	if (NT_STATUS_EQUAL(status, NT_STATUS_INTERNAL_ERROR)) {
+		return -1;
+	}
 	return 0;
 }
 
