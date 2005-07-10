@@ -1,7 +1,38 @@
-2005-07-07  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-07-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
-	* lib/asn1/der_get.c: don't include <version.h>, it forces
-	unnecessary rebuilds
+	* lib/asn1: make scope variables unique to avoid shadow warnings
+
+2005-07-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5.h: comment out paramenter name in typedef
+	functions to avoid shadow warnings
+
+	* lib/krb5/crypto.c: make input data to krb5_encrypt{,_ivec} const
+
+	* kuser/klist.c: If there are no addresses, print addressless
+	instead of nothing.
+
+	* lib/krb5/Makefile.am (TESTS): add test_crypto_wrapping
+
+	* lib/krb5/crypto.c (wrapped_length): the underived encrypted
+	types checksum are all unkeyed (matches the code in
+	encrypt_internal() and encrypt_internal_special())
+
+	* lib/krb5/test_crypto_wrapping.c: ETYPE_ARCFOUR_HMAC_MD5_56 isn't
+	not supported
+
+	* lib/krb5/test_crypto_wrapping.c: test encryption wrapping
+
+	* lib/krb5/test_crypto.c (time_encryption): free cleartext buffer
+
+2005-07-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* configure.in: run AM_INIT_AUTOMAKE before AM_PROG_CC_C_O
+	otherwise am_aux_dir will be expanded using ac_aux_dir before the
+	later is set.
+
+	* configure.in: check for strings.h explicitly instead of
+	depending on AC_HEADER_STDC to check it for us
 
 2005-07-07  Assar Westerlund  <assar@kth.se>
 
