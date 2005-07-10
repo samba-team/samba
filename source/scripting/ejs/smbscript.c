@@ -97,7 +97,6 @@ void ejs_exception(const char *reason)
 	}
 	talloc_steal(mem_ctx, argv_list);
 	v = mprList("ARGV", argv_list);
-	mprSetPropertyValue(&v, "length", mprCreateIntegerVar(i-1));
 	mprSetVar(ejsGetGlobalObject(eid), "ARGV", v);
 
 	/* load the script and advance past interpreter line*/
