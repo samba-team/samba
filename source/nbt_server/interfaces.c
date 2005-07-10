@@ -34,6 +34,12 @@ static void nbtd_request_handler(struct nbt_name_socket *nbtsock,
 				 struct nbt_name_packet *packet, 
 				 const char *src_address, int src_port)
 {
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+						       struct nbtd_interface);
+	struct nbtd_server *nbtsrv = iface->nbtsrv;
+
+	nbtsrv->stats.total_received++;
+
 	/* see if its from one of our own interfaces - if so, then ignore it */
 	if (nbtd_self_packet(nbtsock, packet, src_address, src_port)) {
 		DEBUG(10,("Ignoring self packet from %s:%d\n", src_address, src_port));
@@ -42,17 +48,20 @@ static void nbtd_request_handler(struct nbt_name_socket *nbtsock,
 
 	switch (packet->operation & NBT_OPCODE) {
 	case NBT_OPCODE_QUERY:
+		nbtsrv->stats.query_count++;
 		nbtd_request_query(nbtsock, packet, src_address, src_port);
 		break;
 
 	case NBT_OPCODE_REGISTER:
 	case NBT_OPCODE_REFRESH:
 	case NBT_OPCODE_REFRESH2:
+		nbtsrv->stats.register_count++;
 		nbtd_request_defense(nbtsock, packet, src_address, src_port);
 		break;
 
 	case NBT_OPCODE_RELEASE:
 	case NBT_OPCODE_MULTI_HOME_REG:
+		nbtsrv->stats.release_count++;
 		nbtd_winsserver_request(nbtsock, packet, src_address, src_port);
 		break;
 

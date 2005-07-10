@@ -37,6 +37,7 @@ static void nbtd_node_status_reply(struct nbt_name_socket *nbtsock,
 	struct nbt_name_packet *packet;
 	uint32_t name_count;
 	struct nbtd_iface_name *iname;
+	struct nbtd_server *nbtsrv = iface->nbtsrv;
 	
 	/* work out how many names to send */
 	name_count = 0;
@@ -85,6 +86,7 @@ static void nbtd_node_status_reply(struct nbt_name_socket *nbtsock,
 	DEBUG(7,("Sending node status reply for %s to %s:%d\n", 
 		 nbt_name_string(packet, name), src_address, src_port));
 	
+	nbtsrv->stats.total_sent++;
 	nbt_name_reply_send(nbtsock, src_address, src_port, packet);
 
 failed:

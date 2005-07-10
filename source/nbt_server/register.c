@@ -83,6 +83,7 @@ static void name_refresh_handler(struct event_context *ev, struct timed_event *t
 	struct nbtd_interface *iface = iname->iface;
 	struct nbt_name_register io;
 	struct nbt_name_request *req;
+	struct nbtd_server *nbtsrv = iface->nbtsrv;
 
 	/* setup a single name register request. Notice that we don't
 	   use a name refresh request, as Windows and Samba3 do not
@@ -100,6 +101,7 @@ static void name_refresh_handler(struct event_context *ev, struct timed_event *t
 	io.in.timeout         = 3;
 	io.in.retries         = 0;
 
+	nbtsrv->stats.total_sent++;
 	req = nbt_name_register_send(iface->nbtsock, &io);
 	if (req == NULL) return;
 
@@ -169,6 +171,7 @@ static void nbtd_register_name_iface(struct nbtd_interface *iface,
 	const char *scope = lp_netbios_scope();
 	struct nbt_name_register_bcast io;
 	struct composite_context *req;
+	struct nbtd_server *nbtsrv = iface->nbtsrv;
 
 	iname = talloc(iface, struct nbtd_iface_name);
 	if (!iname) return;
@@ -209,6 +212,7 @@ static void nbtd_register_name_iface(struct nbtd_interface *iface,
 	io.in.nb_flags        = nb_flags;
 	io.in.ttl             = iname->ttl;
 
+	nbtsrv->stats.total_sent++;
 	req = nbt_name_register_bcast_send(iface->nbtsock, &io);
 	if (req == NULL) return;
 

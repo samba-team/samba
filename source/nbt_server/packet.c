@@ -89,6 +89,9 @@ void nbtd_name_query_reply(struct nbt_name_socket *nbtsock,
 {
 	struct nbt_name_packet *packet;
 	size_t num_addresses = str_list_length(addresses);
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+						       struct nbtd_interface);
+	struct nbtd_server *nbtsrv = iface->nbtsrv;
 	int i;
 
 	if (num_addresses == 0) {
@@ -131,6 +134,7 @@ void nbtd_name_query_reply(struct nbt_name_socket *nbtsock,
 	DEBUG(7,("Sending name query reply for %s at %s to %s:%d\n", 
 		 nbt_name_string(packet, name), addresses[0], src_address, src_port));
 	
+	nbtsrv->stats.total_sent++;
 	nbt_name_reply_send(nbtsock, src_address, src_port, packet);
 
 failed:
@@ -147,6 +151,9 @@ void nbtd_negative_name_query_reply(struct nbt_name_socket *nbtsock,
 {
 	struct nbt_name_packet *packet;
 	struct nbt_name *name = &request_packet->questions[0].name;
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+						       struct nbtd_interface);
+	struct nbtd_server *nbtsrv = iface->nbtsrv;
 
 	packet = talloc_zero(nbtsock, struct nbt_name_packet);
 	if (packet == NULL) return;
@@ -171,6 +178,7 @@ void nbtd_negative_name_query_reply(struct nbt_name_socket *nbtsock,
 	DEBUG(7,("Sending negative name query reply for %s to %s:%d\n", 
 		 nbt_name_string(packet, name), src_address, src_port));
 	
+	nbtsrv->stats.total_sent++;
 	nbt_name_reply_send(nbtsock, src_address, src_port, packet);
 
 failed:
@@ -187,6 +195,9 @@ void nbtd_name_registration_reply(struct nbt_name_socket *nbtsock,
 {
 	struct nbt_name_packet *packet;
 	struct nbt_name *name = &request_packet->questions[0].name;
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+						       struct nbtd_interface);
+	struct nbtd_server *nbtsrv = iface->nbtsrv;
 
 	packet = talloc_zero(nbtsock, struct nbt_name_packet);
 	if (packet == NULL) return;
@@ -214,6 +225,7 @@ void nbtd_name_registration_reply(struct nbt_name_socket *nbtsock,
 		 rcode==0?"positive":"negative",
 		 nbt_name_string(packet, name), src_address, src_port));
 	
+	nbtsrv->stats.total_sent++;
 	nbt_name_reply_send(nbtsock, src_address, src_port, packet);
 
 failed:
@@ -231,6 +243,9 @@ void nbtd_name_release_reply(struct nbt_name_socket *nbtsock,
 {
 	struct nbt_name_packet *packet;
 	struct nbt_name *name = &request_packet->questions[0].name;
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+						       struct nbtd_interface);
+	struct nbtd_server *nbtsrv = iface->nbtsrv;
 
 	packet = talloc_zero(nbtsock, struct nbt_name_packet);
 	if (packet == NULL) return;
@@ -256,6 +271,7 @@ void nbtd_name_release_reply(struct nbt_name_socket *nbtsock,
 		 rcode==0?"positive":"negative",
 		 nbt_name_string(packet, name), src_address, src_port));
 	
+	nbtsrv->stats.total_sent++;
 	nbt_name_reply_send(nbtsock, src_address, src_port, packet);
 
 failed:
@@ -273,6 +289,9 @@ void nbtd_wack_reply(struct nbt_name_socket *nbtsock,
 {
 	struct nbt_name_packet *packet;
 	struct nbt_name *name = &request_packet->questions[0].name;
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+						       struct nbtd_interface);
+	struct nbtd_server *nbtsrv = iface->nbtsrv;
 
 	packet = talloc_zero(nbtsock, struct nbt_name_packet);
 	if (packet == NULL) return;
@@ -299,6 +318,7 @@ void nbtd_wack_reply(struct nbt_name_socket *nbtsock,
 	DEBUG(7,("Sending WACK reply for %s to %s:%d\n", 
 		 nbt_name_string(packet, name), src_address, src_port));
 	
+	nbtsrv->stats.total_sent++;
 	nbt_name_reply_send(nbtsock, src_address, src_port, packet);
 
 failed:
