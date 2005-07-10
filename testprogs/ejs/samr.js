@@ -1,3 +1,4 @@
+#!/usr/bin/env smbscript
 /*
   test samr calls from ejs
 */	

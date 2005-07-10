@@ -1,3 +1,4 @@
+#!/usr/bin/env smbscript
 /*
 	test echo pipe calls from ejs
 */	
