@@ -1,0 +1,150 @@
+#!/usr/bin/env smbscript
+/*
+	provision a Samba4 server
+	Copyright Andrew Tridgell 2005
+	Released under the GNU GPL v2 or later
+*/
+
+var options = new Object();
+ok = GetOptions(ARGV, options, 
+		"POPT_AUTOHELP",
+		"POPT_COMMON_SAMBA",
+		"POPT_COMMON_VERSION",
+		'realm=s',
+		'domain=s',
+		'domain-guid=s',
+		'domain-sid=s',
+		'host-name=s',
+		'host-ip=s',
+		'host-guid=s',
+		'invocationid=s',
+		'adminpass=s',
+		'krbtgtpass=s',
+		'machinepass=s',
+		'root=s',
+		'nobody=s',
+		'nogroup=s',
+		'wheel=s',
+		'users=s',
+		'outputdir=s',
+		'quiet');
+if (ok == false) {
+   println("Failed to parse options: " + options.ERROR);
+   return -1;
+}
+
+libinclude("base.js");
+
+/*
+  print a message if quiet is not set
+*/
+function message(s) 
+{
+	if (options["quiet"] == undefined) {
+		println(s);
+	}
+}
+
+/*
+ show some help
+*/
+function ShowHelp()
+{
+	print("
+Samba4 provisioning
+
+provision.pl [options]
+ --realm	REALM		set realm
+ --domain	DOMAIN		set domain
+ --domain-guid	GUID		set domainguid (otherwise random)
+ --domain-sid	SID		set domainsid (otherwise random)
+ --host-name	HOSTNAME	set hostname
+ --host-ip	IPADDRESS	set ipaddress
+ --host-guid	GUID		set hostguid (otherwise random)
+ --invocationid	GUID		set invocationid (otherwise random)
+ --outputdir	OUTPUTDIR	set output directory
+ --adminpass	PASSWORD	choose admin password (otherwise random)
+ --krbtgtpass	PASSWORD	choose krbtgt password (otherwise random)
+ --machinepass	PASSWORD	choose machine password (otherwise random)
+ --root         USERNAME	choose 'root' unix username
+ --nobody	USERNAME	choose 'nobody' user
+ --nogroup	GROUPNAME	choose 'nogroup' group
+ --wheel	GROUPNAME	choose 'wheel' privileged group
+ --users	GROUPNAME	choose 'users' group
+ --quiet			Be quiet
+
+You must provide at least a realm and domain
+
+");
+	exit(1);
+}
+
+/*
+   main program
+*/
+if (options["realm"] == undefined ||
+    options["domain"] == undefined ||
+    options["host-name"] == undefined) {
+	ShowHelp();
+}
+
+printVars(options);
+
+options.realm        = strlower(options.realm);
+options['host-name'] = strlower(options['host-name']);
+options.domain       = strupper(options.domain);
+options.netbiosname  = strupper(options.hostname);
+
+if (options.hostip == undefined) {
+	var list = IfaceList();
+	options.hostip = list[0];
+}
+
+message("Provisioning for " + options.domain + " in realm " + options.realm);
+
+if (options["root"] == undefined) {
+	options.root = "root";
+}
+
+if (options["nobody"] == undefined) {
+	if (getpwnam("nobody") != undefined) {
+		options.nobody = "nobody";
+	}
+}
+
+printVars(options);
+return 0;
+
+/*
+
+if (!$opt_nogroup) {
+	if (defined getgrnam("nogroup")) {
+		$opt_nogroup = "nogroup";
+	} elsif (defined getgrnam("nobody")) {
+		$opt_nogroup = "nobody";
+	}
+}
+
+if (!$opt_wheel) {
+	if (defined getgrnam("wheel")) {
+		$opt_wheel = "wheel";
+	} elsif (defined getgrnam("root")) {
+		$opt_wheel = "root";
+	}
+}
+
+if (!$opt_users) {
+	if (defined getgrnam("users")) {
+		$opt_users = "users";
+	} elsif (defined getgrnam("guest")) {
+		$opt_users = "guest";
+	} elsif (defined getgrnam("other")) {
+		$opt_users = "other";
+	}
+}
+
+$opt_nobody || die "Unable to determine a user for 'nobody'\n";
+$opt_nogroup || die "Unable to determine a group for 'nogroup'\n";
+$opt_users || die "Unable to determine a group for 'users'\n";
+$opt_wheel || die "Unable to determine a group for 'wheel'\n";
+*/
