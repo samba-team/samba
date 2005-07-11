@@ -33,7 +33,7 @@ krb5_error_code krb5_get_all_client_addrs(krb5_context context, krb5_addresses *
 	res->len = iface_count();
 	res->val = malloc_array_p(HostAddress, res->len);
 	if (res->val == NULL) {
-		return KRB5_CC_NOMEM;
+		return ENOMEM;
 	}
 	for (i=0;i<res->len;i++) {
 		const char *ip = iface_n_ip(i);
@@ -41,7 +41,7 @@ krb5_error_code krb5_get_all_client_addrs(krb5_context context, krb5_addresses *
 		res->val[i].address.length = 4;
 		res->val[i].address.data = malloc(4);
 		if (res->val[i].address.data == NULL) {
-			return KRB5_CC_NOMEM;
+			return ENOMEM;
 		}
 		((struct in_addr *)res->val[i].address.data)->s_addr = sys_inet_addr(ip);
 	}
