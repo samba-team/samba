@@ -1,27 +1,13 @@
 /*
 	samr rpc utility functions 
+	Copyright Andrew Tridgell 2005
+	released under the GNU GPL v2 or later
 */	
 
-/*
-  helper function to setup a rpc io object, ready for input
-*/
-function irpcObj()
-{
-	var o = new Object();
-	o.input = new Object();
-	return o;
+if (global["HAVE_SAMR_JS"] != undefined) {
+   return;
 }
-
-/*
-  check that a status result is OK
-*/
-function check_status_ok(status)
-{
-	if (status.is_ok != true) {
-		printVars(status);
-	}
-	assert(status.is_ok == true);
-}
+HAVE_SAMR_JS=1
 
 /*
   return a list of names and indexes from a samArray
@@ -122,6 +108,21 @@ function samrEnumDomainUsers(conn, dom_handle)
 }
 
 /*
+  return a list of all groups
+*/
+function samrEnumDomainGroups(conn, dom_handle)
+{
+	var io = irpcObj();
+	io.input.domain_handle = dom_handle;
+	io.input.resume_handle = 0;
+	io.input.acct_flags = 0;
+	io.input.max_size = -1;
+	status = dcerpc_samr_EnumDomainGroups(conn, io);
+	check_status_ok(status);
+	return samArray(io.output);
+}
+
+/*
   return a list of domains
 */
 function samrEnumDomains(conn, handle)
@@ -165,3 +166,5 @@ function samrFillUserInfo(conn, dom_handle, users, level)
 		samrClose(conn, user_handle);
 	}
 }
+
+
