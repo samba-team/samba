@@ -39,7 +39,7 @@
 #ifndef _h_EJS_INTERNAL
 #define _h_EJS_INTERNAL 1
 
-#include		"lib/ejs/ejs.h"
+#include		"ejs.h"
 
 /********************************** Defines ***********************************/
 
@@ -253,7 +253,8 @@ extern void		ejsLexPutbackToken(Ejs* ep, int tid, char *string);
 /*
  *	Parsing
  */
-extern MprVar	*ejsFindObj(Ejs *ep, int state, const char *property, int flags);
+extern MprVar	*ejsFindObj(Ejs *ep, int state, const char *property, 
+					int flags);
 extern MprVar	*ejsFindProperty(Ejs *ep, int state, MprVar *obj,
 					char *property, int flags);
 extern int 		ejsGetVarCore(Ejs *ep, const char *var, MprVar **obj, 
