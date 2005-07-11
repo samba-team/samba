@@ -3,6 +3,7 @@
 # build generated asn1, et and flex files in heimdal/ tree
 # tridge@samba.org, June 2005
 
+CC=shift
 TOP=`pwd`
 ASN1_COMPILE=$TOP/bin/asn1_compile
 ET_COMPILE=$TOP/bin/compile_et
@@ -10,7 +11,6 @@ ET_COMPILE=$TOP/bin/compile_et
 # we need to substitute these correctly based on configure output
 FLEX=flex
 BISON=bison
-CC=gcc
 
 build_asn1() {
     f=$1
