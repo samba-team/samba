@@ -55,7 +55,6 @@ struct reg_dyn_tree {
  *********************************************************************
  *********************************************************************/
 
-
 /**********************************************************************
  move to next non-delimter character
 *********************************************************************/
@@ -275,6 +274,7 @@ done:
 }
 
 /**********************************************************************
+ Take a printer name and call add_printer_hook() if necessary
  *********************************************************************/
 
 static BOOL add_printers_by_registry( REGSUBKEY_CTR *subkeys )
@@ -500,20 +500,186 @@ done:
 /**********************************************************************
  *********************************************************************/
 
+#define REG_IDX_ATTRIBUTES		1
+#define REG_IDX_PRIORITY		2
+#define REG_IDX_DEFAULT_PRIORITY	3
+#define REG_IDX_CHANGEID		4
+#define REG_IDX_STATUS			5
+#define REG_IDX_STARTTIME		6
+#define REG_IDX_NAME			7
+#define REG_IDX_LOCATION		8
+#define REG_IDX_DESCRIPTION		9
+#define REG_IDX_PARAMETERS		10
+#define REG_IDX_PORT			12
+#define REG_IDX_SHARENAME		13
+#define REG_IDX_DRIVER			14
+#define REG_IDX_SEP_FILE		15
+#define REG_IDX_PRINTPROC		16
+#define REG_IDX_DATATYPE		17
+#define REG_IDX_DEVMODE			18
+#define REG_IDX_SECDESC			19
+#define REG_IDX_UNTILTIME		20
+
+struct {
+	const char *name;
+	int index;	
+} printer_values_map[] = {
+	{ "Attributes", 	REG_IDX_ATTRIBUTES },
+	{ "Priority", 		REG_IDX_PRIORITY },
+	{ "Default Priority", 	REG_IDX_DEFAULT_PRIORITY },
+	{ "ChangeID", 		REG_IDX_CHANGEID },
+	{ "Status", 		REG_IDX_STATUS },
+	{ "StartTime", 		REG_IDX_STARTTIME },
+	{ "UntilTime",	 	REG_IDX_UNTILTIME },
+	{ "Name", 		REG_IDX_NAME },
+	{ "Location", 		REG_IDX_LOCATION },
+	{ "Descrioption", 	REG_IDX_DESCRIPTION },
+	{ "Parameters", 	REG_IDX_PARAMETERS },
+	{ "Port", 		REG_IDX_PORT },
+	{ "Share Name", 	REG_IDX_SHARENAME },
+	{ "Printer Driver", 	REG_IDX_DRIVER },
+	{ "Separator File", 	REG_IDX_SEP_FILE },
+	{ "Print Processor", 	REG_IDX_PRINTPROC },
+	{ "Datatype", 		REG_IDX_DATATYPE },
+	{ "Default Devmode", 	REG_IDX_DEVMODE },
+	{ "Security", 		REG_IDX_SECDESC },
+	{ NULL, -1 }
+};
+
+
+static int find_valuename_index( const char *valuename )
+{
+	int i;
+	
+	for ( i=0; printer_values_map[i].name; i++ ) {
+		if ( strequal( valuename, printer_values_map[i].name ) )
+			return printer_values_map[i].index;
+	}
+	
+	return -1;
+}
+
+/**********************************************************************
+ *********************************************************************/
+
+static void convert_values_to_printer_info_2( NT_PRINTER_INFO_LEVEL_2 *printer2, REGVAL_CTR *values )
+{
+	int num_values = regval_ctr_numvals( values );
+	uint32 value_index;
+	REGISTRY_VALUE *reg_value;
+	int i;
+	
+	for ( i=0; i<num_values; i++ ) {
+		reg_value = regval_ctr_specific_value( values, i );
+		value_index = find_valuename_index( regval_name( reg_value ) );
+		
+		switch( value_index ) {
+			case REG_IDX_ATTRIBUTES:
+				break;
+			case REG_IDX_PRIORITY:
+				break;
+			case REG_IDX_DEFAULT_PRIORITY:
+				break;
+			case REG_IDX_CHANGEID:
+				break;
+			case REG_IDX_STATUS:
+				break;
+			case REG_IDX_STARTTIME:
+				break;
+			case REG_IDX_UNTILTIME:
+				break;
+			case REG_IDX_NAME:
+				break;
+			case REG_IDX_LOCATION:
+				break;
+			case REG_IDX_DESCRIPTION:
+				break;
+			case REG_IDX_PARAMETERS:
+				break;
+			case REG_IDX_PORT:
+				break;
+			case REG_IDX_SHARENAME:
+				break;
+			case REG_IDX_DRIVER:
+				break;
+			case REG_IDX_SEP_FILE:
+				break;
+			case REG_IDX_PRINTPROC:
+				break;
+			case REG_IDX_DATATYPE:
+				break;
+			case REG_IDX_DEVMODE:
+				break;
+			case REG_IDX_SECDESC:
+				break;		
+			default:
+				/* unsupported value...what to do here ? */
+				DEBUG(0,("convert_values_to_printer_info_2: Unsupported registry value [%s]\n", 
+					regval_name( reg_value ) ));
+		}
+	}
+	
+	return;
+}	
+
+/**********************************************************************
+ *********************************************************************/
+
 static BOOL key_printers_store_values( const char *key, REGVAL_CTR *values )
 {
 	char *printers_key;
+	char *printername, *keyname;
+	NT_PRINTER_INFO_LEVEL   *printer = NULL;
+	WERROR result;
 	
 	printers_key = strip_printers_prefix( key );
 	
 	/* values in the top level key get stored in the registry */
 
 	if ( !printers_key ) {
-		/* normalize on thw 'HKLM\SOFTWARE\....\Print\Printers' ket */
+		/* normalize on the 'HKLM\SOFTWARE\....\Print\Printers' key */
 		return regdb_store_values( KEY_WINNT_PRINTERS, values );
 	}
 	
-	return False;
+	reg_split_path( printers_key, &printername, &keyname );
+
+	if ( !W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, printername) ) )
+		return False;
+
+	/* deal with setting values directly under the printername */
+
+	if ( !keyname ) {
+		convert_values_to_printer_info_2( printer->info_2, values );
+	}
+	else {
+		int num_values = regval_ctr_numvals( values );
+		int i;
+		REGISTRY_VALUE *val;
+		
+		delete_printer_key( &printer->info_2->data, keyname );
+		
+		/* deal with any subkeys */
+		for ( i=0; i<num_values; i++ ) {
+			val = regval_ctr_specific_value( values, i );
+			result = set_printer_dataex( printer, keyname, 
+				regval_name( val ),
+				regval_type( val ),
+				regval_data_p( val ),
+				regval_size( val ) );
+			if ( !W_ERROR_IS_OK(result) ) {
+				DEBUG(0,("key_printers_store_values: failed to set printer data [%s]!\n",
+					keyname));
+				free_a_printer( &printer, 2 );
+				return False;
+			}
+		}
+	}
+
+	result = mod_a_printer( printer, 2 );
+
+	free_a_printer( &printer, 2 );
+
+	return W_ERROR_IS_OK(result);
 }
 
 /*********************************************************************
