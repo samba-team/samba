@@ -256,8 +256,6 @@ static int key_printers_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 	
 	reg_split_path( printers_key, &printername, &printerdatakey );
 
-	alpha_strcpy( sharename, printername, "", sizeof(sharename)-1);
-
 	if ( find_service(sharename) == -1
 		|| !W_ERROR_IS_OK( get_a_printer(NULL, &printer, 2, sharename) ) ) 
 	{
@@ -305,7 +303,7 @@ static BOOL add_printers_by_registry( REGSUBKEY_CTR *subkeys )
 		/* just verify a valied snum for now */
 		if ( snum == -1 ) {
 			fstrcpy( info2.printername, printername );
-			alpha_strcpy( info2.sharename, printername, "", sizeof(info2.sharename)-1);
+			fstrcpy( info2.sharename, printername );
 			if ( !add_printer_hook( NULL, &printer ) ) {
 				DEBUG(0,("add_printers_by_registry: Failed to add printer [%s]\n",
 					printername));
