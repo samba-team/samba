@@ -68,7 +68,7 @@ cat >$CONFFILE<<EOF
 	pid directory = $PIDDIR
 	ncalrpc dir = $NCALRPCDIR
 	lock dir = $LOCKDIR
-	js include = $LIBDIR/js
+        js include = $SRCDIR/scripting/libjs
 	name resolve order = bcast
 	interfaces = lo*
 

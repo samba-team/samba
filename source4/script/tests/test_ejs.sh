@@ -21,6 +21,6 @@ PATH=bin:$PATH
 export PATH
 
 for f in samr.js echo.js; do
-    testit "$f" $SCRIPTDIR/$f ncacn_np:$SERVER -U$USERNAME%$PASSWORD || failed=`expr $failed + 1`
+    testit "$f" $SCRIPTDIR/$f $CONFIGURATION ncacn_np:$SERVER -U$USERNAME%$PASSWORD || failed=`expr $failed + 1`
 done
 
