@@ -122,6 +122,7 @@ void smb_setup_ejs_functions(void)
 	smb_setup_ejs_cli();
 	smb_setup_ejs_rpc();
 	smb_setup_ejs_auth();
+	smb_setup_ejs_options();
 
 	ejsDefineCFunction(-1, "typeof", ejs_typeof, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineStringCFunction(-1, "libinclude", ejs_libinclude, NULL, MPR_VAR_SCRIPT_HANDLE);

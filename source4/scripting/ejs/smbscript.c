@@ -22,7 +22,6 @@
 */
 
 #include "includes.h"
-#include "lib/cmdline/popt_common.h"
 #include "dynconfig.h"
 #include "lib/ejs/ejs.h"
 #include "scripting/ejs/smbcalls.h"
@@ -43,37 +42,18 @@ void ejs_exception(const char *reason)
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	const char **argv_list = NULL;
 	const char *fname;
-	struct MprVar v, *return_var;
+	struct MprVar *return_var;
 	int exit_status, i;
-	poptContext pc;
-	int opt;
-	struct poptOption long_options[] = {
-		POPT_AUTOHELP
-		POPT_COMMON_SAMBA
-		POPT_COMMON_CREDENTIALS
-		POPT_COMMON_VERSION
-		POPT_TABLEEND
-	};
-
-	popt_common_dont_ask();
-
-	pc = poptGetContext("smbscript", argc, argv, long_options, 0);
-
-	poptSetOtherOptionHelp(pc, "<script> <args> ...");
-
-	while((opt = poptGetNextOpt(pc)) != -1) /* noop */ ;
 
 	smbscript_init_subsystems;
-
 	mprSetCtx(mem_ctx);
 
-	argv = poptGetArgs(pc);
-	if (argv == NULL ||
-	    argv[0] == NULL) {
-		poptPrintUsage(pc, stdout, 0);
+	if (argc < 2) {
+		fprintf(stderr, "You must supply a script name\n");
 		exit(1);
 	}
-	fname = argv[0];
+
+	fname = argv[1];
 
 	if (ejsOpen(NULL, NULL, NULL) != 0) {
 		fprintf(stderr, "smbscript: ejsOpen(): unable to initialise "
@@ -96,8 +76,7 @@ void ejs_exception(const char *reason)
 		argv_list = str_list_add(argv_list, argv[i]);
 	}
 	talloc_steal(mem_ctx, argv_list);
-	v = mprList("ARGV", argv_list);
-	mprSetVar(ejsGetGlobalObject(eid), "ARGV", v);
+	mprSetVar(ejsGetGlobalObject(eid), "ARGV", mprList("ARGV", argv_list));
 
 	/* load the script and advance past interpreter line*/
 	script = file_load(fname, &script_size, mem_ctx);

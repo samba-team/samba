@@ -108,6 +108,9 @@ struct MprVar mprList(const char *name, const char **list)
 	for (i=0;list && list[i];i++) {
 		mprAddArray(&var, i, mprCreateStringVar(list[i], 1));
 	}
+	if (i==0) {
+		mprSetVar(&var, "length", mprCreateIntegerVar(i));
+	}
 	return var;
 }
 
