@@ -56,7 +56,7 @@
 
 /********************************* Includes ***********************************/
 
-#include	"lib/ejs/miniMpr.h"
+#include	"miniMpr.h"
 
 /********************************** Defines ***********************************/
 
@@ -92,7 +92,7 @@ typedef int MprType;
 #define MPR_TYPE_FUNCTION 			8	/* JavaScript function */
 #define MPR_TYPE_STRING 			9	/* String (immutable) */
 #define MPR_TYPE_STRING_CFUNCTION 	10	/* C/C++ function with string args */
-#define MPR_TYPE_PTR            	11	/* C pointer */
+#define MPR_TYPE_PTR	 			11	/* Opaque pointer */
 
 /*
  *	Create a type for the default number type
@@ -140,7 +140,7 @@ typedef BLD_FEATURE_NUM_TYPE MprNum;
 #define mprVarIsFloating(type) \
 	(type == MPR_TYPE_FLOAT)
 #define mprVarIsPtr(type) \
-    (type == MPR_TYPE_PTR)
+	(type == MPR_TYPE_PTR)
 #define mprVarIsUndefined(var) \
 	((var)->type == MPR_TYPE_UNDEFINED)
 #define mprVarIsNull(var) \
@@ -252,9 +252,12 @@ typedef struct MprProperties {					/* Collection of properties */
 #endif
 	struct MprVar		**buckets;				/* Hash chains */
 	int					numItems;				/* Total count of items */
+	/* FUTURE - Better way of doing this */
 	int					numDataItems;			/* Enumerable data items */
 	uint				hashSize		: 8;	/* Size of the hash table */
+	/* FUTURE -- increase size of refCount */
 	uint				refCount		: 8; 	/* References to this property*/
+	/* FUTURE - make these flags */
 	uint				deleteProtect	: 8;	/* Don't recursively delete */
 	uint				visited			: 8;	/* Node has been processed */
 } MprProperties;
@@ -263,8 +266,11 @@ typedef struct MprProperties {					/* Collection of properties */
  *	Universal Variable Type
  */
 typedef struct MprVar {
+	/* FUTURE - remove name to outside reference */
 	MprStr				name;					/* Property name */
+	/* FUTURE - remove */
 	MprStr				fullName;				/* Full object name */
+	/* FUTURE - make part of the union */
 	MprProperties		*properties;			/* Pointer to properties */
 
 	/*
@@ -318,7 +324,7 @@ typedef struct MprVar {
 			void		*thisPtr;
 		} cFunctionWithStrings;
 		MprStr			string;					/* Allocated string */
-		void *ptr;                              /* C pointer */
+		void			*ptr;					/* Opaque pointer */
 #if !BLD_DEBUG && !LINUX && !VXWORKS
 	};
 #endif
@@ -355,7 +361,6 @@ extern MprVar	mprCreateObjVar(const char *name, int hashSize);
 extern MprVar 	mprCreateBoolVar(bool value);
 extern MprVar 	mprCreateCFunctionVar(MprCFunction fn, void *thisPtr, 
 					int flags);
-extern MprVar   mprCreatePtrVar(void *ptr, const char *name);
 #if BLD_FEATURE_FLOATING_POINT
 extern MprVar 	mprCreateFloatVar(double value);
 #endif
@@ -370,6 +375,7 @@ extern MprVar 	mprCreateStringCFunctionVar(MprStringCFunction fn,
 					void *thisPtr, int flags);
 extern MprVar	mprCreateStringVar(const char *value, bool allocate);
 extern MprVar	mprCreateUndefinedVar(void);
+extern MprVar   mprCreatePtrVar(void *ptr);
 extern bool 	mprDestroyVar(MprVar *vp);
 extern bool 	mprDestroyAllVars(MprVar* vp);
 extern MprType	mprGetVarType(MprVar *vp);
@@ -404,9 +410,12 @@ extern int		mprDeleteProperty(MprVar *obj, const char *property);
 /*
  *	Get/Set properties. Set will update/create.
  */
-extern MprVar	*mprGetProperty(MprVar *obj, const char *property, MprVar *value);
-extern MprVar	*mprSetProperty(MprVar *obj, const char *property, MprVar *value);
-extern MprVar	*mprSetPropertyValue(MprVar *obj, const char *property, MprVar value);
+extern MprVar	*mprGetProperty(MprVar *obj, const char *property, 
+					MprVar *value);
+extern MprVar	*mprSetProperty(MprVar *obj, const char *property, 
+					MprVar *value);
+extern MprVar	*mprSetPropertyValue(MprVar *obj, const char *property, 
+					MprVar value);
 
 /*
  *	Directly read/write property values (the property must already exist)

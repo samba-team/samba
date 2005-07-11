@@ -35,7 +35,7 @@
  */
 /********************************** Includes **********************************/
 
-#include "lib/ejs/ejsInternal.h"
+#include	"ejsInternal.h"
 
 #if BLD_FEATURE_EJS
 
@@ -275,11 +275,11 @@ int ejsEvalFile(EjsId eid, char *path, MprVar *result, char **emsg)
 	
 	if ((script = (char*) mprMalloc(sbuf.st_size + 1)) == NULL) {
 		close(fd);
-		ejsError(ep, "Cant malloc %d", (int)sbuf.st_size);
+		ejsError(ep, "Cant malloc %d", (int) sbuf.st_size);
 		goto error;
 	}
 	
-	if (read(fd, script, sbuf.st_size) != (int)sbuf.st_size) {
+	if (read(fd, script, sbuf.st_size) != (int) sbuf.st_size) {
 		close(fd);
 		mprFree(script);
 		ejsError(ep, "Error reading %s", path);
@@ -468,7 +468,8 @@ int ejsEvalScript(EjsId eid, char *script, MprVar *vp, char **emsg)
  *	Core error handling
  */
 
-static void ejsErrorCore(Ejs* ep, const char *fmt, va_list args) PRINTF_ATTRIBUTE(2, 0);
+static void ejsErrorCore(Ejs* ep, const char *fmt, va_list args) 
+	PRINTF_ATTRIBUTE(2, 0);
 
 static void ejsErrorCore(Ejs* ep, const char *fmt, va_list args)
 {
@@ -795,7 +796,8 @@ void ejsDefineStringCFunction(EjsId eid, const char *functionName,
  *	Body should not contain braces.
  */
 
-void ejsDefineFunction(EjsId eid, const char *functionName, char *args, char *body)
+void ejsDefineFunction(EjsId eid, const char *functionName, char *args, 
+	char *body)
 {
 	MprVar		v;
 
@@ -831,8 +833,8 @@ void *ejsGetThisPtr(EjsId eid)
  *	indicies. Returns -1 on errors or if the variable is not found.
  */
 
-int ejsGetVarCore(Ejs *ep, const char *varName_c, MprVar **obj, MprVar **varValue, 
-	int flags)
+int ejsGetVarCore(Ejs *ep, const char *vname, MprVar **obj, 
+	MprVar **varValue, int flags)
 {
 	MprVar		*currentObj;
 	MprVar		*currentVar;
@@ -845,12 +847,11 @@ int ejsGetVarCore(Ejs *ep, const char *varName_c, MprVar **obj, MprVar **varValu
 	if (varValue) {
 		*varValue = 0;
 	}
-	currentObj = ejsFindObj(ep, 0, varName_c, flags);
+	currentObj = ejsFindObj(ep, 0, vname, flags);
 	currentVar = 0;
 	propertyName = 0;
 
-	varName = mprStrdup(varName_c);
-	next = varName;
+	next = varName = mprStrdup(vname);
 
 	token = getNextVarToken(&next, tokBuf, sizeof(tokBuf));
 

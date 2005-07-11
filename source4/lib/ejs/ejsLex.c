@@ -36,7 +36,7 @@
  */
 /********************************** Includes **********************************/
 
-#include	"lib/ejs/ejsInternal.h"
+#include	"ejsInternal.h"
 
 #if BLD_FEATURE_EJS
 
@@ -439,6 +439,9 @@ static int getLexicalToken(Ejs *ep, int state)
 			 */
 			while (1) {
 				if ((c = inputGetc(ep)) < 0) {
+					if (style == '/') {
+						return EJS_TOK_EOF;
+					}
 					ejsError(ep, "Syntax Error");
 					return EJS_TOK_ERR;
 				}

@@ -35,7 +35,7 @@
 
 /********************************** Includes **********************************/
 
-#include	"lib/ejs/ejsInternal.h"
+#include	"ejsInternal.h"
 
 #if BLD_FEATURE_EJS
 
@@ -1128,9 +1128,11 @@ static int parseFunctionDec(Ejs *ep, int state, int flags)
 		mprDestroyVar(&v);
 		return EJS_STATE_ERR;
 	}
-
-	/* register the function name early to allow for recursive
-	   function calls (see note in ECMA standard, page 71) */
+	
+	/* 
+	 *	Register the function name early to allow for recursive
+	 *	function calls (see note in ECMA standard, page 71) 
+	 */
 	if (!(flags & EJS_FLAGS_ASSIGNMENT)) {
 		currentObj = ejsFindObj(ep, 0, procName, flags);
 		vp = mprSetProperty(currentObj, procName, &v);
@@ -2127,7 +2129,8 @@ static int evalFunction(Ejs *ep, MprVar *obj, int flags)
  *	Run a function
  */
 
-int ejsRunFunction(int eid, MprVar *obj, const char *functionName, MprArray *args)
+int ejsRunFunction(int eid, MprVar *obj, const char *functionName, 
+	MprArray *args)
 {
 	EjsProc		proc, *saveProc;
 	Ejs			*ep;
@@ -2284,7 +2287,8 @@ static void appendValue(MprVar *dest, MprVar *src)
 		oldLen = strlen(oldBuf);
 		buf = mprRealloc(oldBuf, (len + oldLen + 1) * sizeof(char));
 		dest->string = buf;
-		strncpy(&buf[oldLen], value, len+1);
+		strcpy(&buf[oldLen], value);
+
 	} else {
 		*dest = mprCreateStringVar(value, 1);
 	}

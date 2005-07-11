@@ -2,7 +2,7 @@
 # Start SUBSYSTEM EJS
 [SUBSYSTEM::EJS]
 ADD_OBJ_FILES = \
-		lib/ejs/ejs.o  \
+		lib/ejs/ejsLib.o  \
 		lib/ejs/ejsLex.o \
 		lib/ejs/ejsParser.o \
 		lib/ejs/ejsProcs.o \

@@ -128,7 +128,7 @@ struct MprVar mprList(const char *name, const char **list)
 struct MprVar mprString(const char *s)
 {
 	if (s == NULL) {
-		return mprCreatePtrVar(NULL, "NULL");
+		return mprCreatePtrVar(NULL);
 	}
 	return mprCreateStringVar(s, 1);
 }
@@ -289,7 +289,7 @@ struct MprVar mprWERROR(WERROR status)
 */
 void mprSetPtr(struct MprVar *v, const char *propname, const void *p)
 {
-	mprSetVar(v, propname, mprCreatePtrVar(discard_const(p), NULL));
+	mprSetVar(v, propname, mprCreatePtrVar(discard_const(p)));
 }
 
 /*
@@ -297,7 +297,7 @@ void mprSetPtr(struct MprVar *v, const char *propname, const void *p)
 */
 void mprSetPtrChild(struct MprVar *v, const char *propname, const void *p)
 {
-	mprSetVar(v, propname, mprCreatePtrVar(discard_const(p), NULL));
+	mprSetVar(v, propname, mprCreatePtrVar(discard_const(p)));
 	talloc_steal(mprGetProperty(v, propname, NULL), p);
 }
 
