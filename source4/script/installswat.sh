@@ -27,12 +27,6 @@ installdir scripting/*.ejs scripting/*.esp scripting/*.js
 installdir style/*.css
 installdir docs/*.js
 
-
-echo "Installing js libs"
-cd ../source/scripting || exit 1
-mkdir -p $LIBDIR/js
-cp libjs/*.js $LIBDIR/js
-
 cat << EOF
 ======================================================================
 The swat files have been installed. 
