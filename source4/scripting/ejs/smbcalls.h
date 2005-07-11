@@ -26,6 +26,3 @@ void mpr_Return(int eid, struct MprVar);
 NTSTATUS mprSetVar(struct MprVar *v, const char *name, struct MprVar val);
 NTSTATUS mprGetVar(struct MprVar **v, const char *name);
 void mprAddArray(struct MprVar *var, int i, struct MprVar v);
-
-
-
