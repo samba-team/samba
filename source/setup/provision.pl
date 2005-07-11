@@ -85,6 +85,13 @@ sub timestring()
 	$year+1900, $mon+1, $mday, $hour, $min, $sec;
 }
 
+sub datestring()
+{
+	my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday) =  gmtime(time);
+	return sprintf "%04u%02u%02u%02u",
+	$year+1900, $mon+1, $mday, $hour;
+}
+
 #######################
 # substitute a single variable
 sub substitute($)
@@ -133,6 +140,10 @@ sub substitute($)
 
 	if ($var eq "TIMESTRING") {
 		return timestring();
+	}
+
+	if ($var eq "DATESTRING") {
+		return datestring();
 	}
 
 	if ($var eq "NEWGUID") {
