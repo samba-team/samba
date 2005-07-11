@@ -143,7 +143,7 @@ pch: proto include/includes.h.gch
 pch_clean:
 	-rm -f include/includes.h.gch
 
-basics: idl proto_exists bin/.SUBSYSTEM_HEIMDAL_EXTERNAL
+basics: idl proto_exists HEIMDAL_EXTERNAL
 
 test: @DEFAULT_TEST_TARGET@
 
@@ -512,7 +512,13 @@ __EOD__
 sub _prepare_custom_rule($)
 {
 	my $ctx = shift;
-	return "$ctx->{NAME}:\n\t$ctx->{CMD}\n";
+	return "
+$ctx->{NAME}: bin/.TARGET_$ctx->{NAME}
+
+bin/.TARGET_$ctx->{NAME}:
+	$ctx->{CMD}
+	touch bin/.TARGET_$ctx->{NAME}
+";
 }
 
 sub _prepare_proto_rules()
