@@ -225,6 +225,7 @@ static int key_printers_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 	char *printername, *printerdatakey;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	fstring *subkey_names = NULL;
+	fstring sharename;
 	
 	DEBUG(10,("key_printers_fetch_keys: key=>[%s]\n", key ? key : "NULL" ));
 	
@@ -255,8 +256,13 @@ static int key_printers_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 	
 	reg_split_path( printers_key, &printername, &printerdatakey );
 
-	if ( !W_ERROR_IS_OK( get_a_printer(NULL, &printer, 2, printername) ) )
-		goto done;
+	alpha_strcpy( sharename, printername, "", sizeof(sharename)-1);
+
+	if ( find_service(sharename) == -1
+		|| !W_ERROR_IS_OK( get_a_printer(NULL, &printer, 2, sharename) ) ) 
+	{
+		return -1;
+	}
 
 	num_subkeys = get_printer_subkeys( &printer->info_2->data, printerdatakey?printerdatakey:"", &subkey_names );
 	
@@ -274,12 +280,41 @@ done:
 }
 
 /**********************************************************************
- Take a printer name and call add_printer_hook() if necessary
+ Take a list of names and call add_printer_hook() if necessary
+ Note that we do this a little differently from Windows since the 
+ keyname is the sharename and not the printer name.
  *********************************************************************/
 
 static BOOL add_printers_by_registry( REGSUBKEY_CTR *subkeys )
 {
-	return False;
+	int i, num_keys, snum;
+	char *printername;
+	NT_PRINTER_INFO_LEVEL_2 info2;
+	NT_PRINTER_INFO_LEVEL printer;
+	
+	ZERO_STRUCT( info2 );
+	printer.info_2 = &info2;
+	
+	num_keys = regsubkey_ctr_numkeys( subkeys );
+	
+	become_root();
+	for ( i=0; i<num_keys; i++ ) {
+		printername = regsubkey_ctr_specific_key( subkeys, i );
+		snum = find_service( printername );
+		
+		/* just verify a valied snum for now */
+		if ( snum == -1 ) {
+			fstrcpy( info2.printername, printername );
+			alpha_strcpy( info2.sharename, printername, "", sizeof(info2.sharename)-1);
+			if ( !add_printer_hook( NULL, &printer ) ) {
+				DEBUG(0,("add_printers_by_registry: Failed to add printer [%s]\n",
+					printername));
+			}	
+		}
+	}
+	unbecome_root();
+
+	return True;
 }
 
 /**********************************************************************
@@ -533,7 +568,7 @@ struct {
 	{ "UntilTime",	 	REG_IDX_UNTILTIME },
 	{ "Name", 		REG_IDX_NAME },
 	{ "Location", 		REG_IDX_LOCATION },
-	{ "Description", 	REG_IDX_DESCRIPTION },
+	{ "Descrioption", 	REG_IDX_DESCRIPTION },
 	{ "Parameters", 	REG_IDX_PARAMETERS },
 	{ "Port", 		REG_IDX_PORT },
 	{ "Share Name", 	REG_IDX_SHARENAME },

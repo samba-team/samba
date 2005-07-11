@@ -6033,7 +6033,7 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 /****************************************************************************
 ****************************************************************************/
 
-static BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer)
+BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer)
 {
 	char *cmd = lp_addprinter_cmd();
 	char **qlines;
@@ -6043,7 +6043,7 @@ static BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printe
 	int fd;
 	fstring remote_machine = "%m";
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
-	BOOL is_print_op;
+	BOOL is_print_op = False;
 
 	standard_sub_basic(current_user_info.smb_name, remote_machine,sizeof(remote_machine));
 	
@@ -6052,7 +6052,8 @@ static BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printe
 			printer->info_2->portname, printer->info_2->drivername,
 			printer->info_2->location, printer->info_2->comment, remote_machine);
 
-	is_print_op = user_has_privileges( token, &se_printop );
+	if ( token )
+		is_print_op = user_has_privileges( token, &se_printop );
 
 	DEBUG(10,("Running [%s]\n", command));
 
