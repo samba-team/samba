@@ -115,6 +115,18 @@ struct MprVar mprList(const char *name, const char **list)
 }
 
 /*
+  construct a MprVar from a string, using NULL if needed
+*/
+struct MprVar mprString(const char *s)
+{
+	struct MprVar var;
+	if (s == NULL) {
+		return mprCreatePtrVar(NULL, "NULL");
+	}
+	return mprCreateStringVar(s, 1);
+}
+
+/*
   construct a string MprVar from a lump of data
 */
 struct MprVar mprData(const uint8_t *p, size_t length)
