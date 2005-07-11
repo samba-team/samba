@@ -28,16 +28,6 @@
 
 #include "local.h"
 
-#if (__GNUC__ >= 3)
-/** Use gcc attribute to check printf fns.  a1 is the 1-based index of
- * the parameter containing the format, and a2 the index of the first
- * argument. Note that some gcc 2.x versions don't handle this
- * properly **/
-#define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
-#else
-#define PRINTF_ATTRIBUTE(a1, a2)
-#endif
-
 #ifdef __GNUC__
 /** gcc attribute used on function parameters so that it does not emit
  * warnings about them being unused. **/
@@ -113,6 +103,8 @@ extern char *sys_errlist[];
 extern int errno;
 #endif
 
+#include "lib/replace/replace.h"
+
 /* Lists, trees, caching, database... */
 #include "xfile.h"
 #include "lib/talloc/talloc.h"
@@ -140,7 +132,6 @@ extern int errno;
 #include "lib/com/com.h"
 #include "credentials.h"
 
-#include "lib/replace/replace.h"
 
 
 #define malloc_p(type) (type *)malloc(sizeof(type))
