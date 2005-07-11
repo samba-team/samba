@@ -29,14 +29,6 @@ static TDB_CONTEXT *tdb_reg;
 
 #define VALUE_PREFIX	"SAMBA_REGVAL"
 
-static BOOL regdb_store_reg_keys( const char *keyname, REGSUBKEY_CTR *subkeys );
-static BOOL regdb_store_reg_values( const char *keyname, REGVAL_CTR *values);
-static int regdb_fetch_reg_keys( const char* key, REGSUBKEY_CTR *subkeys );
-static int regdb_fetch_reg_values( const char* key, REGVAL_CTR *values );
-
-
-
-
 /* List the deepest path into the registry.  All part components will be created.*/
 
 /* If you want to have a part of the path controlled by the tdb abd part by
@@ -48,12 +40,13 @@ static int regdb_fetch_reg_values( const char* key, REGVAL_CTR *values );
    KEY_PRINTING_2K in include/rpc_reg.h)   --jerry */
 
 static const char *builtin_registry_paths[] = {
-	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print",
-	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Ports",
-	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print",
+	KEY_PRINTING_2K,
+	KEY_PRINTING_PORTS,
+	KEY_PRINTING,
+	KEY_SHARES,
+	KEY_EVENTLOG,
+	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print\\Monitors",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\ProductOptions",
-	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Shares",
-	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\EventLog",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\TcpIp\\Parameters",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Netlogon\\Parameters",
 	"HKU",
@@ -71,7 +64,12 @@ struct builtin_regkey_value {
 };
 
 static struct builtin_regkey_value builtin_registry_values[] = {
-	{ "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", 	"SystemRoot", 	REG_SZ, 	{ "c:\\Windows" } },
+	{ "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",         
+		"SystemRoot", REG_SZ, { "c:\\Windows" } },
+	{ "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Ports",  
+		SAMBA_PRINTER_PORT_NAME, REG_SZ, { "" } },
+	{ "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Printers",  
+		"DefaultSpoolDirectory", REG_SZ, { "C:\\Windows\\System32\\Spool\\Printers" } },
 	{ NULL, NULL, 0, { NULL } }
 };
 
@@ -129,10 +127,10 @@ static BOOL init_registry_data( void )
 			
 			regsubkey_ctr_init( &subkeys );
 						   
-			regdb_fetch_reg_keys( base, &subkeys );
+			regdb_fetch_keys( base, &subkeys );
 			if ( *subkeyname ) 
 				regsubkey_ctr_addkey( &subkeys, subkeyname );
-			if ( !regdb_store_reg_keys( base, &subkeys ))
+			if ( !regdb_store_keys( base, &subkeys ))
 				return False;
 			
 			regsubkey_ctr_destroy( &subkeys );
@@ -144,7 +142,7 @@ static BOOL init_registry_data( void )
 	for ( i=0; builtin_registry_values[i].path != NULL; i++ ) {
 		regval_ctr_init( &values );
 		
-		regdb_fetch_reg_values( builtin_registry_values[i].path, &values );
+		regdb_fetch_values( builtin_registry_values[i].path, &values );
 		switch( builtin_registry_values[i].type ) {
 			case REG_DWORD:
 				regval_ctr_addvalue( &values, 
@@ -167,7 +165,7 @@ static BOOL init_registry_data( void )
 				DEBUG(0,("init_registry_data: invalid value type in builtin_registry_values [%d]\n",
 					builtin_registry_values[i].type));
 		}
-		regdb_store_reg_values( builtin_registry_values[i].path, &values );
+		regdb_store_values( builtin_registry_values[i].path, &values );
 		
 		regval_ctr_destroy( &values );
 	}
@@ -223,7 +221,7 @@ BOOL init_registry_db( void )
  fstrings
  ***********************************************************************/
  
-static BOOL regdb_store_reg_keys_internal( const char *key, REGSUBKEY_CTR *ctr )
+static BOOL regdb_store_keys_internal( const char *key, REGSUBKEY_CTR *ctr )
 {
 	TDB_DATA kbuf, dbuf;
 	char *buffer, *tmpbuf;
@@ -256,7 +254,7 @@ static BOOL regdb_store_reg_keys_internal( const char *key, REGSUBKEY_CTR *ctr )
 		if ( len > buflen ) {
 			/* allocate some extra space */
 			if ((tmpbuf = SMB_REALLOC( buffer, len*2 )) == NULL) {
-				DEBUG(0,("regdb_store_reg_keys: Failed to realloc memory of size [%d]\n", len*2));
+				DEBUG(0,("regdb_store_keys: Failed to realloc memory of size [%d]\n", len*2));
 				ret = False;
 				goto done;
 			}
@@ -289,7 +287,7 @@ done:
  do not currently exist
  ***********************************************************************/
 
-static BOOL regdb_store_reg_keys( const char *key, REGSUBKEY_CTR *ctr )
+BOOL regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
 {
 	int num_subkeys, i;
 	pstring path;
@@ -299,12 +297,12 @@ static BOOL regdb_store_reg_keys( const char *key, REGSUBKEY_CTR *ctr )
 	/* fetch a list of the old subkeys so we can determine if any were deleted */
 	
 	regsubkey_ctr_init( &old_subkeys );
-	regdb_fetch_reg_keys( key, &old_subkeys );
+	regdb_fetch_keys( key, &old_subkeys );
 	
 	/* store the subkey list for the parent */
 	
-	if ( !regdb_store_reg_keys_internal( key, ctr ) ) {
-		DEBUG(0,("regdb_store_reg_keys: Failed to store new subkey list for parent [%s}\n", key ));
+	if ( !regdb_store_keys_internal( key, ctr ) ) {
+		DEBUG(0,("regdb_store_keys: Failed to store new subkey list for parent [%s}\n", key ));
 		return False;
 	}
 	
@@ -328,10 +326,10 @@ static BOOL regdb_store_reg_keys( const char *key, REGSUBKEY_CTR *ctr )
 	for ( i=0; i<num_subkeys; i++ ) {
 		pstr_sprintf( path, "%s%c%s", key, '/', regsubkey_ctr_specific_key( ctr, i ) );
 		regsubkey_ctr_init( &subkeys );
-		if ( regdb_fetch_reg_keys( path, &subkeys ) == -1 ) {
+		if ( regdb_fetch_keys( path, &subkeys ) == -1 ) {
 			/* create a record with 0 subkeys */
-			if ( !regdb_store_reg_keys_internal( path, &subkeys ) ) {
-				DEBUG(0,("regdb_store_reg_keys: Failed to store new record for key [%s}\n", path ));
+			if ( !regdb_store_keys_internal( path, &subkeys ) ) {
+				DEBUG(0,("regdb_store_keys: Failed to store new record for key [%s}\n", path ));
 				regsubkey_ctr_destroy( &subkeys );
 				return False;
 			}
@@ -348,7 +346,7 @@ static BOOL regdb_store_reg_keys( const char *key, REGSUBKEY_CTR *ctr )
  released by the caller.  
  ***********************************************************************/
 
-static int regdb_fetch_reg_keys( const char* key, REGSUBKEY_CTR *ctr )
+int regdb_fetch_keys( const char* key, REGSUBKEY_CTR *ctr )
 {
 	pstring path;
 	uint32 num_items;
@@ -358,7 +356,7 @@ static int regdb_fetch_reg_keys( const char* key, REGSUBKEY_CTR *ctr )
 	int i;
 	fstring subkeyname;
 
-	DEBUG(10,("regdb_fetch_reg_keys: Enter key => [%s]\n", key ? key : "NULL"));
+	DEBUG(10,("regdb_fetch_keys: Enter key => [%s]\n", key ? key : "NULL"));
 	
 	pstrcpy( path, key );
 	
@@ -372,7 +370,7 @@ static int regdb_fetch_reg_keys( const char* key, REGSUBKEY_CTR *ctr )
 	buflen = dbuf.dsize;
 	
 	if ( !buf ) {
-		DEBUG(5,("regdb_fetch_reg_keys: tdb lookup failed to locate key [%s]\n", key));
+		DEBUG(5,("regdb_fetch_keys: tdb lookup failed to locate key [%s]\n", key));
 		return -1;
 	}
 	
@@ -385,7 +383,7 @@ static int regdb_fetch_reg_keys( const char* key, REGSUBKEY_CTR *ctr )
 
 	SAFE_FREE( dbuf.dptr );
 	
-	DEBUG(10,("regdb_fetch_reg_keys: Exit [%d] items\n", num_items));
+	DEBUG(10,("regdb_fetch_keys: Exit [%d] items\n", num_items));
 	
 	return num_items;
 }
@@ -472,13 +470,13 @@ static int regdb_pack_values(REGVAL_CTR *values, char *buf, int buflen)
  released by the caller.
  ***********************************************************************/
 
-static int regdb_fetch_reg_values( const char* key, REGVAL_CTR *values )
+int regdb_fetch_values( const char* key, REGVAL_CTR *values )
 {
 	TDB_DATA data;
 	pstring keystr;
 	int len;
 
-	DEBUG(10,("regdb_fetch_reg_values: Looking for value of key [%s] \n", key));
+	DEBUG(10,("regdb_fetch_values: Looking for value of key [%s] \n", key));
 	
 	pstr_sprintf( keystr, "%s/%s", VALUE_PREFIX, key );
 	normalize_reg_path( keystr );
@@ -502,19 +500,19 @@ static int regdb_fetch_reg_values( const char* key, REGVAL_CTR *values )
  values in the registry.tdb
  ***********************************************************************/
 
-static BOOL regdb_store_reg_values( const char *key, REGVAL_CTR *values )
+BOOL regdb_store_values( const char *key, REGVAL_CTR *values )
 {
 	TDB_DATA data;
 	pstring keystr;
 	int len, ret;
 	
-	DEBUG(10,("regdb_store_reg_values: Looking for value of key [%s] \n", key));
+	DEBUG(10,("regdb_store_values: Looking for value of key [%s] \n", key));
 	
 	ZERO_STRUCT( data );
 	
 	len = regdb_pack_values( values, data.dptr, data.dsize );
 	if ( len <= 0 ) {
-		DEBUG(0,("regdb_store_reg_values: unable to pack values. len <= 0\n"));
+		DEBUG(0,("regdb_store_values: unable to pack values. len <= 0\n"));
 		return False;
 	}
 	
@@ -541,10 +539,10 @@ static BOOL regdb_store_reg_values( const char *key, REGVAL_CTR *values )
  */
  
 REGISTRY_OPS regdb_ops = {
-	regdb_fetch_reg_keys,
-	regdb_fetch_reg_values,
-	regdb_store_reg_keys,
-	regdb_store_reg_values,
+	regdb_fetch_keys,
+	regdb_fetch_values,
+	regdb_store_keys,
+	regdb_store_values,
 	NULL
 };
 

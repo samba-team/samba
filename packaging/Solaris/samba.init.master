@@ -24,10 +24,14 @@ case "$1" in
 'start')
 #
 # Edit these lines to suit your installation (paths, workgroup, host)
+# Add the following parameters to nmbd, smbd, winbindd if needed
+#  (this may be needed for custom file locations)
+#  -D -s$BASE/lib/smb.conf
 #
-   BASE=__BASEDIR__/samba
-   $BASE/bin/smbd -D -s$BASE/lib/smb.conf
-   $BASE/bin/nmbd -D -s$BASE/lib/smb.conf
+   BASE=__BASEDIR__
+   $BASE/sbin/nmbd 
+   $BASE/sbin/smbd 
+   $BASE/sbin/winbindd
    ;;
 'stop')
    killproc nmbd
@@ -37,12 +41,13 @@ case "$1" in
 'restart')
    killproc nmbd
    killproc smbd
-   BASE=__BASEDIR__/samba
-   $BASE/bin/smbd -D -s$BASE/lib/smb.conf
-   $BASE/bin/nmbd -D -l$BASE/var/log -s$BASE/lib/smb.conf
+   BASE=__BASEDIR__
+   $BASE/sbin/nmbd
+   $BASE/sbin/smbd
+   $BASE/sbin/winbindd
    ;;
 
 *)
-   echo "Usage: /etc/init.d/samba.server { start | stop | restart }"
+   echo "Usage: /etc/init.d/samba { start | stop | restart }"
    ;;
 esac

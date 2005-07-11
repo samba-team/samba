@@ -2144,8 +2144,17 @@ static int pack_values(NT_PRINTER_DATA *data, char *buf, int buflen)
 	for ( i=0; i<data->num_keys; i++ ) {	
 		val_ctr = &data->keys[i].values;
 		num_values = regval_ctr_numvals( val_ctr );
+
+		/* pack the keyname followed by a empty value */
+
+		len += tdb_pack(buf+len, buflen-len, "pPdB", 
+				&data->keys[i].name,
+				data->keys[i].name, 
+				REG_NONE,
+				0,
+				NULL);
 		
-		/* loop over all values */
+		/* now loop over all values */
 		
 		for ( j=0; j<num_values; j++ ) {
 			/* pathname should be stored as <key>\<value> */
@@ -2212,6 +2221,7 @@ uint32 del_a_printer(const char *sharename)
 static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 {
 	pstring key;
+	fstring norm_sharename;
 	char *buf;
 	int buflen, len;
 	WERROR ret;
@@ -2292,6 +2302,11 @@ static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 		goto again;
 	}
 	
+
+	/* normalize the key */
+
+	fstrcpy( norm_sharename, info->sharename );
+	strlower_m( norm_sharename );
 
 	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, info->sharename);
 
@@ -2533,7 +2548,7 @@ int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
  Allocate and initialize a new slot.
 ***************************************************************************/
  
-static int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
+int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
 {
 	NT_PRINTER_KEY	*d;
 	int		key_index;
@@ -2543,9 +2558,12 @@ static int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
 	
 	/* allocate another slot in the NT_PRINTER_KEY array */
 	
-	d = SMB_REALLOC_ARRAY( data->keys, NT_PRINTER_KEY, data->num_keys+1);
-	if ( d )
-		data->keys = d;
+	if ( !(d = SMB_REALLOC_ARRAY( data->keys, NT_PRINTER_KEY, data->num_keys+1)) ) {
+		DEBUG(0,("add_new_printer_key: Realloc() failed!\n"));
+		return -1;
+	}
+
+	data->keys = d;
 	
 	key_index = data->num_keys;
 	
@@ -2559,6 +2577,38 @@ static int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
 	DEBUG(10,("add_new_printer_key: Inserted new data key [%s]\n", name ));
 	
 	return key_index;
+}
+
+/****************************************************************************
+ search for a registry key name in the existing printer data
+ ***************************************************************************/
+
+int delete_printer_key( NT_PRINTER_DATA *data, const char *name )
+{
+	int i;
+	NT_PRINTER_KEY *printer_key;
+	
+	for ( i=0; i<data->num_keys; i++ ) {
+		if ( strequal( data->keys[i].name, name ) ) {
+		
+			/* cleanup memory */
+			
+			printer_key = &data->keys[i];
+			SAFE_FREE( printer_key->name );
+			regval_ctr_destroy( &printer_key->values );
+			
+			/* if not the end of the array, move remaining elements down one slot */
+			
+			data->num_keys--;
+			if ( data->num_keys && (i < data->num_keys) )
+				memmove( &data->keys[i], &data->keys[i+1], sizeof(NT_PRINTER_KEY)*(data->num_keys-i) );
+				
+			break;
+		}
+	}
+	
+
+	return data->num_keys;
 }
 
 /****************************************************************************
@@ -2592,7 +2642,7 @@ int lookup_printerkey( NT_PRINTER_DATA *data, const char *name )
 /****************************************************************************
  ***************************************************************************/
 
-uint32 get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **subkeys )
+int get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **subkeys )
 {
 	int	i, j;
 	int	key_len;
@@ -2603,14 +2653,42 @@ uint32 get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **su
 	
 	if ( !data )
 		return 0;
+
+	if ( !key )
+		return -1;
+
+	/* special case of asking for the top level printer data registry key names */
+
+	if ( strlen(key) == 0 ) {
+		for ( i=0; i<data->num_keys; i++ ) {
 		
+			/* found a match, so allocate space and copy the name */
+			
+			if ( !(ptr = SMB_REALLOC_ARRAY( subkeys_ptr, fstring, num_subkeys+2)) ) {
+				DEBUG(0,("get_printer_subkeys: Realloc failed for [%d] entries!\n", 
+					num_subkeys+1));
+				SAFE_FREE( subkeys );
+				return -1;
+			}
+			
+			subkeys_ptr = ptr;
+			fstrcpy( subkeys_ptr[num_subkeys], data->keys[i].name );
+			num_subkeys++;
+		}
+
+		goto done;
+	}
+		
+	/* asking for the subkeys of some key */
+	/* subkey paths are stored in the key name using '\' as the delimiter */
+
 	for ( i=0; i<data->num_keys; i++ ) {
 		if ( StrnCaseCmp(data->keys[i].name, key, strlen(key)) == 0 ) {
-			/* match sure it is a subkey and not the key itself */
 			
+			/* if we found the exact key, then break */
 			key_len = strlen( key );
 			if ( strlen(data->keys[i].name) == key_len )
-				continue;
+				break;
 			
 			/* get subkey path */
 
@@ -2647,7 +2725,13 @@ uint32 get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **su
 		
 	}
 	
-	/* tag of the end */
+	/* return error if the key was not found */
+	
+	if ( i == data->num_keys )
+		return -1;
+	
+done:
+	/* tag off the end */
 	
 	if (num_subkeys)
 		fstrcpy(subkeys_ptr[num_subkeys], "" );
@@ -3288,6 +3372,15 @@ static int unpack_values(NT_PRINTER_DATA *printer_data, char *buf, int buflen)
 				  &type,
 				  &size,
 				  &data_p);
+
+		/* lookup for subkey names which have a type of REG_NONE */
+		/* there's no data with this entry */
+
+		if ( type == REG_NONE ) {
+			if ( (key_index=lookup_printerkey( printer_data, string)) == -1 )
+				add_new_printer_key( printer_data, string );
+			continue;
+		}
 	
 		/*
 		 * break of the keyname from the value name.  
@@ -3509,17 +3602,22 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *se
 	TDB_DATA kbuf, dbuf;
 	fstring printername;
 	char adevice[MAXDEVICENAME];
+	fstring norm_sharename;
 		
 	ZERO_STRUCT(info);
 
-	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, sharename);
+	/* normalize case */
+	fstrcpy( norm_sharename, sharename );
+	strlower_m( norm_sharename );
+
+	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, norm_sharename);
 
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
 
 	dbuf = tdb_fetch(tdb_printers, kbuf);
 	if (!dbuf.dptr)
-		return get_a_printer_2_default(info_ptr, servername, sharename);
+		return get_a_printer_2_default(info_ptr, servername, norm_sharename);
 
 	len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "dddddddddddfffffPfffff",
 			&info.attributes,
@@ -3553,7 +3651,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *se
 	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", servername);
 
 	if ( lp_force_printername(snum) )
-		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, sharename );
+		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, norm_sharename );
 	else 
 		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, info.printername);
 
@@ -4886,7 +4984,7 @@ WERROR delete_printer_driver( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct cur
  Store a security desc for a printer.
 ****************************************************************************/
 
-WERROR nt_printing_setsec(const char *printername, SEC_DESC_BUF *secdesc_ctr)
+WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 {
 	SEC_DESC_BUF *new_secdesc_ctr = NULL;
 	SEC_DESC_BUF *old_secdesc_ctr = NULL;
@@ -4894,6 +4992,10 @@ WERROR nt_printing_setsec(const char *printername, SEC_DESC_BUF *secdesc_ctr)
 	TALLOC_CTX *mem_ctx = NULL;
 	fstring key;
 	WERROR status;
+	fstring norm_sharename;
+
+	fstrcpy( norm_sharename, sharename );
+	strlower_m( norm_sharename );
 
 	mem_ctx = talloc_init("nt_printing_setsec");
 	if (mem_ctx == NULL)
@@ -4910,7 +5012,7 @@ WERROR nt_printing_setsec(const char *printername, SEC_DESC_BUF *secdesc_ctr)
 		SEC_DESC *psd = NULL;
 		size_t size;
 
-		nt_printing_getsec(mem_ctx, printername, &old_secdesc_ctr);
+		nt_printing_getsec(mem_ctx, norm_sharename, &old_secdesc_ctr);
 
 		/* Pick out correct owner and group sids */
 
@@ -4956,12 +5058,12 @@ WERROR nt_printing_setsec(const char *printername, SEC_DESC_BUF *secdesc_ctr)
 		goto out;
 	}
 
-	slprintf(key, sizeof(key)-1, "SECDESC/%s", printername);
+	slprintf(key, sizeof(key)-1, "SECDESC/%s", norm_sharename);
 
 	if (tdb_prs_store(tdb_printers, key, &ps)==0) {
 		status = WERR_OK;
 	} else {
-		DEBUG(1,("Failed to store secdesc for %s\n", printername));
+		DEBUG(1,("Failed to store secdesc for %s\n", norm_sharename));
 		status = WERR_BADFUNC;
 	}
 
@@ -5063,24 +5165,28 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
  Get a security desc for a printer.
 ****************************************************************************/
 
-BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *printername, SEC_DESC_BUF **secdesc_ctr)
+BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **secdesc_ctr)
 {
 	prs_struct ps;
 	fstring key;
 	char *temp;
+	fstring norm_sharename;
 
-	if (strlen(printername) > 2 && (temp = strchr(printername + 2, '\\'))) {
-		printername = temp + 1;
+	if (strlen(sharename) > 2 && (temp = strchr(sharename + 2, '\\'))) {
+		sharename = temp + 1;
 	}
 
 	/* Fetch security descriptor from tdb */
 
-	slprintf(key, sizeof(key)-1, "SECDESC/%s", printername);
+	fstrcpy( norm_sharename, sharename );
+	strlower_m( norm_sharename );
+
+	slprintf(key, sizeof(key)-1, "SECDESC/%s", norm_sharename);
 
 	if (tdb_prs_fetch(tdb_printers, key, &ps, ctx)!=0 ||
 	    !sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
 
-		DEBUG(4,("using default secdesc for %s\n", printername));
+		DEBUG(4,("using default secdesc for %s\n", norm_sharename));
 
 		if (!(*secdesc_ctr = construct_default_printer_sdb(ctx))) {
 			return False;
@@ -5132,7 +5238,7 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *printername, SEC_DESC_BUF *
 
 			/* Set it */
 
-			nt_printing_setsec(printername, *secdesc_ctr);
+			nt_printing_setsec(norm_sharename, *secdesc_ctr);
 		}
 	}
 
@@ -5141,7 +5247,7 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *printername, SEC_DESC_BUF *
 		int i;
 
 		DEBUG(10, ("secdesc_ctr for %s has %d aces:\n", 
-			   printername, the_acl->num_aces));
+			   norm_sharename, the_acl->num_aces));
 
 		for (i = 0; i < the_acl->num_aces; i++) {
 			fstring sid_str;

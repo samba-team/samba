@@ -348,6 +348,58 @@ static BOOL close_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 /****************************************************************************
  Delete a printer given a handle.
 ****************************************************************************/
+WERROR delete_printer_hook( NT_USER_TOKEN *token, const char *sharename )
+{
+	char *cmd = lp_deleteprinter_cmd();
+	pstring command;
+	int ret;
+	SE_PRIV se_printop = SE_PRINT_OPERATOR;
+	BOOL is_print_op = False;
+		
+	/* can't fail if we don't try */
+	
+	if ( !*cmd )
+		return WERR_OK;
+		
+	pstr_sprintf(command, "%s \"%s\"", cmd, sharename);
+
+	if ( token )
+		is_print_op = user_has_privileges( token, &se_printop );
+	
+	DEBUG(10,("Running [%s]\n", command));
+
+	/********** BEGIN SePrintOperatorPrivlege BLOCK **********/
+	
+	if ( is_print_op )
+		become_root();
+		
+	if ( (ret = smbrun(command, NULL)) == 0 ) {
+		/* Tell everyone we updated smb.conf. */
+		message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
+	}
+		
+	if ( is_print_op )
+		unbecome_root();
+
+	/********** END SePrintOperatorPrivlege BLOCK **********/
+	
+	DEBUGADD(10,("returned [%d]\n", ret));
+
+	if (ret != 0) 
+		return WERR_BADFID; /* What to return here? */
+
+	/* go ahead and re-read the services immediately */
+	reload_services( False );
+	
+	if ( lp_servicenumber( sharename )  < 0 )
+		return WERR_ACCESS_DENIED;
+		
+	return WERR_OK;
+}
+
+/****************************************************************************
+ Delete a printer given a handle.
+****************************************************************************/
 
 static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 {
@@ -369,18 +421,6 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 		DEBUG(3, ("delete_printer_handle: denied by handle\n"));
 		return WERR_ACCESS_DENIED;
 	}
-
-#if 0
-	/* Check calling user has permission to delete printer.  Note that
-	   since we set the snum parameter to -1 only administrators can
-	   delete the printer.  This stops people with the Full Control
-	   permission from deleting the printer. */
-
-	if (!print_access_check(NULL, -1, PRINTER_ACCESS_ADMINISTER)) {
-		DEBUG(3, ("printer delete denied by security descriptor\n"));
-		return WERR_ACCESS_DENIED;
-	}
-#endif
 	
 	/* this does not need a become root since the access check has been 
 	   done on the handle already */
@@ -390,50 +430,7 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 		return WERR_BADFID;
 	}
 
-	/* the delete printer script shoudl be run as root if the user has perms */
-	
-	if (*lp_deleteprinter_cmd()) {
-
-		char *cmd = lp_deleteprinter_cmd();
-		pstring command;
-		int ret;
-		SE_PRIV se_printop = SE_PRINT_OPERATOR;
-		BOOL is_print_op;
-		
-		pstr_sprintf(command, "%s \"%s\"", cmd, Printer->sharename);
-
-		is_print_op = user_has_privileges( p->pipe_user.nt_user_token, &se_printop );
-	
-		DEBUG(10,("Running [%s]\n", command));
-
-		/********** BEGIN SePrintOperatorPrivlege BLOCK **********/
-	
-		if ( is_print_op )
-			become_root();
-		
-		if ( (ret = smbrun(command, NULL)) == 0 ) {
-			/* Tell everyone we updated smb.conf. */
-			message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False, NULL);
-		}
-		
-		if ( is_print_op )
-			unbecome_root();
-
-		/********** END SePrintOperatorPrivlege BLOCK **********/
-
-		DEBUGADD(10,("returned [%d]\n", ret));
-
-		if (ret != 0) 
-			return WERR_BADFID; /* What to return here? */
-
-		/* go ahead and re-read the services immediately */
-		reload_services( False );
-
-		if ( lp_servicenumber( Printer->sharename )  < 0 )
-			return WERR_ACCESS_DENIED;
-	}
-
-	return WERR_OK;
+	return delete_printer_hook( p->pipe_user.nt_user_token, Printer->sharename );
 }
 
 /****************************************************************************
@@ -583,7 +580,7 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 		
 		DEBUGADD(10, ("printername: %s\n", printername));
 		
-			free_a_printer( &printer, 2);
+		free_a_printer( &printer, 2);
 	}
 
 	if ( !found ) {
@@ -2261,7 +2258,7 @@ static WERROR delete_printer_dataex( NT_PRINTER_INFO_LEVEL *printer, const char 
  Internal routine for storing printerdata
  ***************************************************************************/
 
-static WERROR set_printer_dataex( NT_PRINTER_INFO_LEVEL *printer, const char *key, const char *value, 
+WERROR set_printer_dataex( NT_PRINTER_INFO_LEVEL *printer, const char *key, const char *value, 
                                   uint32 type, uint8 *data, int real_len  )
 {
 	delete_printer_data( printer->info_2, key, value );
@@ -6033,7 +6030,7 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 /****************************************************************************
 ****************************************************************************/
 
-static BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer)
+BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer)
 {
 	char *cmd = lp_addprinter_cmd();
 	char **qlines;
@@ -6043,7 +6040,7 @@ static BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printe
 	int fd;
 	fstring remote_machine = "%m";
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
-	BOOL is_print_op;
+	BOOL is_print_op = False;
 
 	standard_sub_basic(current_user_info.smb_name, remote_machine,sizeof(remote_machine));
 	
@@ -6052,7 +6049,8 @@ static BOOL add_printer_hook(NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printe
 			printer->info_2->portname, printer->info_2->drivername,
 			printer->info_2->location, printer->info_2->comment, remote_machine);
 
-	is_print_op = user_has_privileges( token, &se_printop );
+	if ( token )
+		is_print_op = user_has_privileges( token, &se_printop );
 
 	DEBUG(10,("Running [%s]\n", command));
 
