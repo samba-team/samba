@@ -14,7 +14,7 @@
 	<pubdate><?latex \today ?></pubdate>
 </bookinfo>
 
-	<?latex \setcounter{page}{7} ?>
+	<?latex \setcounter{page}{5} ?>
 
 	<xi:include href="TOSHARG-inside-cover.xml"/>
 
