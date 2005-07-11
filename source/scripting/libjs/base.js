@@ -50,4 +50,3 @@ function check_array_zero(a)
 		assert(a[i] == 0);
 	}
 }
-

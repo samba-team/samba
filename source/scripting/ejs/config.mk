@@ -20,6 +20,8 @@ OBJ_FILES = \
 		scripting/ejs/smbcalls_rpc.o \
 		scripting/ejs/smbcalls_auth.o \
 		scripting/ejs/smbcalls_options.o \
+		scripting/ejs/smbcalls_nss.o \
+		scripting/ejs/smbcalls_string.o \
 		scripting/ejs/mprutil.o
 REQUIRED_SUBSYSTEMS = AUTH EJS LIBBASIC EJSRPC MESSAGING
 # End SUBSYSTEM SMBCALLS
