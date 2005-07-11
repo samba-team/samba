@@ -70,7 +70,7 @@ static int ejs_typeof(MprVarHandle eid, int argc, struct MprVar **argv)
 static int ejs_IfaceList(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	int i, count = iface_count();
-	struct MprVar ret = mprCreateObjVar("interfaces", MPR_DEFAULT_HASH_SIZE);
+	struct MprVar ret = mprObject("interfaces");
 	for (i=0;i<count;i++) {
 		mprAddArray(&ret, i, mprString(iface_n_ip(i)));
 	}
