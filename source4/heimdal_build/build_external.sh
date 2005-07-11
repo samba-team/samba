@@ -42,8 +42,10 @@ build_lex() {
     file=`basename $f`
     base=`basename $f .l`
     echo Building $f
-    cd $dir && $FLEX $file
-    sed '/^#/ s|$base.yy\.c|$base.c|' $base.yy.c > $base.c
+    if cd $dir && $FLEX $file; then
+	sed '/^#/ s|$base.yy\.c|$base.c|' $base.yy.c > $base.c
+	rm -f $base.yy.c
+    fi
     cd $TOP || exit 1
 }
 
@@ -53,9 +55,11 @@ build_bison() {
     file=`basename $f`
     base=`basename $f .y`
     echo Building $f
-    cd $dir && $BISON -y -d $file
-    sed -e "/^#/!b" -e "s|y\.tab\.h|$base.h|" y.tab.h > $base.h
-    sed '/^#/ s|y\.tab\.c|$base.c|' y.tab.c > $base.c
+    if cd $dir && $BISON -y -d $file; then
+	sed -e "/^#/!b" -e "s|y\.tab\.h|$base.h|" y.tab.h > $base.h
+	sed '/^#/ s|y\.tab\.c|$base.c|' y.tab.c > $base.c
+	rm -f y.tab.c y.tab.h
+    fi
     cd $TOP || exit 1
 }
 
