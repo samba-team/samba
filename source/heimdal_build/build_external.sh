@@ -10,7 +10,6 @@ ET_COMPILE=$TOP/bin/compile_et
 # we need to substitute these correctly based on configure output
 FLEX=flex
 BISON=bison
-AWK=gawk
 CC=gcc
 
 build_asn1() {
