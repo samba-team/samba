@@ -225,7 +225,6 @@ static int key_printers_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 	char *printername, *printerdatakey;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	fstring *subkey_names = NULL;
-	fstring sharename;
 	
 	DEBUG(10,("key_printers_fetch_keys: key=>[%s]\n", key ? key : "NULL" ));
 	
@@ -256,8 +255,8 @@ static int key_printers_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 	
 	reg_split_path( printers_key, &printername, &printerdatakey );
 
-	if ( find_service(sharename) == -1
-		|| !W_ERROR_IS_OK( get_a_printer(NULL, &printer, 2, sharename) ) ) 
+	if ( find_service(printername) == -1
+		|| !W_ERROR_IS_OK( get_a_printer(NULL, &printer, 2, printername) ) ) 
 	{
 		return -1;
 	}
