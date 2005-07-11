@@ -197,6 +197,10 @@ extern int DEBUGLEVEL;
 #endif
 #define discard_const_p(type, ptr) ((type *)discard_const(ptr))
 
+#ifndef HAVE_SSIZE_T
+#define ssize_t int
+#endif
+
 /*
   type safe varient of smb_xmalloc()
 */
