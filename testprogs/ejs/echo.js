@@ -3,16 +3,7 @@
 	test echo pipe calls from ejs
 */	
 
-
-/*
-  helper function to setup a rpc io object, ready for input
-*/
-function irpcObj()
-{
-	var o = new Object();
-	o.input = new Object();
-	return o;
-}
+libinclude("base.js");
 
 /*
   generate a ramp as an integer array
@@ -26,38 +17,6 @@ function ramp_array(N)
 	return a;
 }
 
-
-/*
-  check that a status result is OK
-*/
-function check_status_ok(status)
-{
-	if (status.is_ok != true) {
-		printVars(status);
-	}
-	assert(status.is_ok == true);
-}
-
-/*
-  check that two arrays are equal
-*/
-function check_array_equal(a1, a2)
-{
-	assert(a1.length == a2.length);
-	for (i=0; i<a1.length; i++) {
-		assert(a1[i] == a2[i]);
-	}
-}
-
-/*
-  check that an array is all zeros
-*/
-function check_array_zero(a)
-{
-	for (i=0; i<a.length; i++) {
-		assert(a[i] == 0);
-	}
-}
 
 /*
   test the echo_AddOne interface

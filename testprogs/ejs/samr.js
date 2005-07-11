@@ -3,65 +3,28 @@
   test samr calls from ejs
 */	
 
+libinclude("base.js");
+libinclude("samr.js");
+libinclude("samr.js");
 
-/*
-  helper function to setup a rpc io object, ready for input
-*/
-function irpcObj()
-{
-	var o = new Object();
-	o.input = new Object();
-	return o;
-}
-
-/*
-  check that a status result is OK
-*/
-function check_status_ok(status)
-{
-	if (status.is_ok != true) {
-		printVars(status);
-	}
-	assert(status.is_ok == true);
-}
 
 /*
   test the samr_Connect interface
 */
 function test_Connect(conn)
 {
-	var io = irpcObj();
 	print("Testing samr_Connect\n");
-	io.input.system_name = NULL;
-	io.input.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	status = dcerpc_samr_Connect(conn, io);
-	check_status_ok(status);
-	return io.output.connect_handle;
+	return samrConnect(conn);
 }
 
-/*
-  test the samr_Close interface
-*/
-function test_Close(conn, handle)
-{
-	var io = irpcObj();
-	io.input.handle = handle;
-	status = dcerpc_samr_Close(conn, io);
-	check_status_ok(status);
-}
 
 /*
   test the samr_LookupDomain interface
 */
 function test_LookupDomain(conn, handle, domain)
 {
-	var io = irpcObj();
 	print("Testing samr_LookupDomain\n");
-	io.input.connect_handle = handle;
-	io.input.domain_name = domain;
-	status = dcerpc_samr_LookupDomain(conn, io);
-	check_status_ok(status);
-	return io.output.sid;
+	return samrLookupDomain(conn, handle, domain);
 }
 
 /*
@@ -69,14 +32,8 @@ function test_LookupDomain(conn, handle, domain)
 */
 function test_OpenDomain(conn, handle, sid)
 {
-	var io = irpcObj();
 	print("Testing samr_OpenDomain\n");
-	io.input.connect_handle = handle;
-	io.input.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	io.input.sid = sid;
-	status = dcerpc_samr_OpenDomain(conn, io);
-	check_status_ok(status);
-	return io.output.domain_handle;
+	return samrOpenDomain(conn, handle, sid);
 }
 
 /*
@@ -84,21 +41,12 @@ function test_OpenDomain(conn, handle, sid)
 */
 function test_EnumDomainUsers(conn, dom_handle)
 {
-	var i, io = irpcObj();
+	var i, users;
 	print("Testing samr_EnumDomainUsers\n");
-	io.input.domain_handle = dom_handle;
-	io.input.resume_handle = 0;
-	io.input.acct_flags = 0;
-	io.input.max_size = -1;
-	status = dcerpc_samr_EnumDomainUsers(conn, io);
-	check_status_ok(status);
-	print("Found " + io.output.num_entries + " users\n");
-	if (io.output.sam == NULL) {
-		return;
-	}
-	var entries = io.output.sam.entries;
-	for (i=0;i<io.output.num_entries;i++) {
-		print("\t" + entries[i].name + "\n");
+	users = samrEnumDomainUsers(conn, dom_handle);
+	print("Found " + users.length + " users\n");
+	for (i=0;i<users.length;i++) {
+		println("\t" + users[i].name + "\t(" + users[i].idx + ")");
 	}
 }
 
@@ -107,21 +55,11 @@ function test_EnumDomainUsers(conn, dom_handle)
 */
 function test_EnumDomainGroups(conn, dom_handle)
 {
-	var i, io = irpcObj();
 	print("Testing samr_EnumDomainGroups\n");
-	io.input.domain_handle = dom_handle;
-	io.input.resume_handle = 0;
-	io.input.acct_flags = 0;
-	io.input.max_size = -1;
-	status = dcerpc_samr_EnumDomainGroups(conn, io);
-	check_status_ok(status);
-	print("Found " + io.output.num_entries + " groups\n");
-	if (io.output.sam == NULL) {
-		return;
-	}
-	var entries = io.output.sam.entries;
-	for (i=0;i<io.output.num_entries;i++) {
-		print("\t" + entries[i].name + "\n");
+	var i, groups = samrEnumDomainGroups(conn, dom_handle);
+	print("Found " + groups.length + " groups\n");
+	for (i=0;i<groups.length;i++) {
+		println("\t" + groups[i].name + "\t(" + groups[i].idx + ")");
 	}
 }
 
@@ -141,28 +79,20 @@ function test_domain_ops(conn, dom_handle)
 */
 function test_EnumDomains(conn, handle)
 {
-	var i, io = irpcObj();
+	var i, domains;
 	print("Testing samr_EnumDomains\n");
-	io.input.connect_handle = handle;
-	io.input.resume_handle = 0;
-	io.input.buf_size = -1;
-	status = dcerpc_samr_EnumDomains(conn, io);
-	check_status_ok(status);
-	print("Found " + io.output.num_entries + " domains\n");
-	if (io.output.sam == NULL) {
-		return;
+
+	domains = samrEnumDomains(conn, handle);
+	print("Found " + domains.length + " domains\n");
+	for (i=0;i<domains.length;i++) {
+		print("\t" + domains[i].name + "\n");
 	}
-	var entries = io.output.sam.entries;
-	for (i=0;i<io.output.num_entries;i++) {
-		print("\t" + entries[i].name + "\n");
-	}
-	for (i=0;i<io.output.num_entries;i++) {
-		domain = entries[i].name;
-		print("Testing domain " + domain + "\n");
-		sid = test_LookupDomain(conn, handle, domain);
+	for (i=0;i<domains.length;i++) {
+		print("Testing domain " + domains[i].name + "\n");
+		sid = samrLookupDomain(conn, handle, domains[i].name);
 		dom_handle = test_OpenDomain(conn, handle, sid);
 		test_domain_ops(conn, dom_handle);
-		test_Close(conn, dom_handle);
+		samrClose(conn, dom_handle);
 	}
 }
 
@@ -185,7 +115,7 @@ if (status.is_ok != true) {
 
 handle = test_Connect(conn);
 test_EnumDomains(conn, handle);
-test_Close(conn, handle);
+samrClose(conn, handle);
 
 print("All OK\n");
 return 0;

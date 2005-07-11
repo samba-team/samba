@@ -2,6 +2,7 @@
 
 SWATDIR=$1
 SRCDIR=$2
+LIBDIR=$3
 
 echo Installing swat files in $SWATDIR
 
@@ -25,6 +26,12 @@ installdir images/*.png images/*.ico
 installdir scripting/*.ejs scripting/*.esp scripting/*.js
 installdir style/*.css
 installdir docs/*.js
+
+
+echo "Installing js libs"
+cd ../source/scripting || exit 1
+mkdir -p $LIBDIR/js
+cp libjs/*.js $LIBDIR/js
 
 cat << EOF
 ======================================================================
