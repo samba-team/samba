@@ -66,6 +66,52 @@ static int ejs_typeof(MprVarHandle eid, int argc, struct MprVar **argv)
 
 
 /*
+  libinclude() allows you to include js files using a search path specified
+  in "js include =" in smb.conf. 
+*/
+static int ejs_libinclude(int eid, int argc, char **argv)
+{
+	int i, j;
+	const char **js_include = lp_js_include();
+
+	if (js_include == NULL || js_include[0] == NULL) {
+		return -1;
+	}
+
+	for (i = 0; i < argc; i++) {
+		const char *script = argv[i];
+
+		for (j=0;js_include[j];j++) {
+			char *path;
+			path = talloc_asprintf(mprMemCtx(), "%s/%s", js_include[j], script);
+			if (path == NULL) {
+				return -1;
+			}
+			if (file_exist(path)) {
+				int ret;
+				struct MprVar result;
+				char *emsg;
+
+				ret = ejsEvalFile(eid, path, &result, &emsg);
+				talloc_free(path);
+				if (ret < 0) {
+					ejsSetErrorMsg(eid, "%s: %s", script, emsg);
+					return -1;
+				}
+				break;
+			}
+			talloc_free(path);
+		}
+		if (js_include[j] == NULL) {
+			ejsSetErrorMsg(eid, "unable to include '%s'", script);
+			return -1;
+		}
+	}
+	return 0;
+}
+
+
+/*
   setup C functions that be called from ejs
 */
 void smb_setup_ejs_functions(void)
@@ -78,6 +124,7 @@ void smb_setup_ejs_functions(void)
 	smb_setup_ejs_auth();
 
 	ejsDefineCFunction(-1, "typeof", ejs_typeof, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineStringCFunction(-1, "libinclude", ejs_libinclude, NULL, MPR_VAR_SCRIPT_HANDLE);
 }
 
 /*

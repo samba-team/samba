@@ -138,6 +138,7 @@ typedef struct
 	char *szSPOOLSS_URL;
 	char *szWINS_URL;
 	char *szPrivateDir;
+	char **jsInclude;
 	char **szPreloadModules;
 	char **szPasswordServers;
 	char *szSocketOptions;
@@ -734,6 +735,7 @@ static struct parm_struct parm_table[] = {
 	{"lock dir", P_STRING, P_GLOBAL, &Globals.szLockDir, NULL, NULL, FLAG_HIDE}, 
 	{"lock directory", P_STRING, P_GLOBAL, &Globals.szLockDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"pid directory", P_STRING, P_GLOBAL, &Globals.szPidDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER}, 
+	{"js include", P_LIST, P_GLOBAL, &Globals.jsInclude, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	
 	{"default service", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"default", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL,  FLAG_DEVELOPER},
@@ -1062,6 +1064,7 @@ static void init_globals(void)
 	do_parameter("tls keyfile", "tls/key.pem");
 	do_parameter("tls certfile", "tls/cert.pem");
 	do_parameter("tls cafile", "tls/ca.pem");
+	do_parameter_var("js include", "%s/js", dyn_LIBDIR);
 }
 
 static TALLOC_CTX *lp_talloc;
@@ -1284,6 +1287,9 @@ FN_GLOBAL_INTEGER(lp_lm_interval, &Globals.lm_interval)
 FN_GLOBAL_INTEGER(lp_machine_password_timeout, &Globals.machine_password_timeout)
 FN_GLOBAL_INTEGER(lp_lock_spin_count, &Globals.iLockSpinCount)
 FN_GLOBAL_INTEGER(lp_lock_sleep_time, &Globals.iLockSpinTime)
+FN_GLOBAL_LIST(lp_js_include, &Globals.jsInclude)
+
+
 FN_LOCAL_STRING(lp_servicename, szService)
 FN_LOCAL_CONST_STRING(lp_const_servicename, szService)
 FN_LOCAL_STRING(lp_pathname, szPath)
