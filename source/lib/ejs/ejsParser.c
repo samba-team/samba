@@ -1280,10 +1280,6 @@ static int parseId(Ejs *ep, int state, int flags, char **id, char **fullName,
 
 	tid = ejsLexGetToken(ep, state);
 	if (tid == EJS_TOK_LPAREN) {
-		if (ep->currentProperty == 0) {
-			ejsError(ep, "Function name not defined \"%s\"\n", *id);
-			return -1;
-		}
 		ejsLexPutbackToken(ep, EJS_TOK_FUNCTION_NAME, ep->token);
 		return state;
 	}
@@ -1978,6 +1974,11 @@ static int evalFunction(Ejs *ep, MprVar *obj, int flags)
 	prototype = proc->fn;
 	actualArgs = proc->args;
 	argValues = (MprVar**) actualArgs->handles;
+
+	if (prototype == NULL) {
+		ejsError(ep, "Function name not defined '%s'\n", proc->procName);
+		return -1;
+	}
 
 	/*
 	 *	Create a new variable stack frame. ie. new local variables.
