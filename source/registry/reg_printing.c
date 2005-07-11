@@ -533,7 +533,7 @@ struct {
 	{ "UntilTime",	 	REG_IDX_UNTILTIME },
 	{ "Name", 		REG_IDX_NAME },
 	{ "Location", 		REG_IDX_LOCATION },
-	{ "Descrioption", 	REG_IDX_DESCRIPTION },
+	{ "Description", 	REG_IDX_DESCRIPTION },
 	{ "Parameters", 	REG_IDX_PARAMETERS },
 	{ "Port", 		REG_IDX_PORT },
 	{ "Share Name", 	REG_IDX_SHARENAME },
@@ -566,56 +566,70 @@ static void convert_values_to_printer_info_2( NT_PRINTER_INFO_LEVEL_2 *printer2,
 {
 	int num_values = regval_ctr_numvals( values );
 	uint32 value_index;
-	REGISTRY_VALUE *reg_value;
+	REGISTRY_VALUE *val;
 	int i;
 	
 	for ( i=0; i<num_values; i++ ) {
-		reg_value = regval_ctr_specific_value( values, i );
-		value_index = find_valuename_index( regval_name( reg_value ) );
+		val = regval_ctr_specific_value( values, i );
+		value_index = find_valuename_index( regval_name( val ) );
 		
 		switch( value_index ) {
 			case REG_IDX_ATTRIBUTES:
+				printer2->attributes = (uint32)(*regval_data_p(val));
 				break;
 			case REG_IDX_PRIORITY:
+				printer2->priority = (uint32)(*regval_data_p(val));
 				break;
 			case REG_IDX_DEFAULT_PRIORITY:
+				printer2->default_priority = (uint32)(*regval_data_p(val));
 				break;
 			case REG_IDX_CHANGEID:
-				break;
-			case REG_IDX_STATUS:
+				printer2->changeid = (uint32)(*regval_data_p(val));
 				break;
 			case REG_IDX_STARTTIME:
+				printer2->starttime = (uint32)(*regval_data_p(val));
 				break;
 			case REG_IDX_UNTILTIME:
+				printer2->untiltime = (uint32)(*regval_data_p(val));
 				break;
 			case REG_IDX_NAME:
+				rpcstr_pull( printer2->printername, regval_data_p(val), sizeof(fstring), regval_size(val), 0 );
 				break;
 			case REG_IDX_LOCATION:
+				rpcstr_pull( printer2->location, regval_data_p(val), sizeof(fstring), regval_size(val), 0 );
 				break;
 			case REG_IDX_DESCRIPTION:
+				rpcstr_pull( printer2->comment, regval_data_p(val), sizeof(fstring), regval_size(val), 0 );
 				break;
 			case REG_IDX_PARAMETERS:
+				rpcstr_pull( printer2->parameters, regval_data_p(val), sizeof(fstring), regval_size(val), 0 );
 				break;
 			case REG_IDX_PORT:
+				rpcstr_pull( printer2->portname, regval_data_p(val), sizeof(fstring), regval_size(val), 0 );
 				break;
 			case REG_IDX_SHARENAME:
+				rpcstr_pull( printer2->sharename, regval_data_p(val), sizeof(fstring), regval_size(val), 0 );
 				break;
 			case REG_IDX_DRIVER:
+				rpcstr_pull( printer2->drivername, regval_data_p(val), sizeof(fstring), regval_size(val), 0 );
 				break;
 			case REG_IDX_SEP_FILE:
+				rpcstr_pull( printer2->sepfile, regval_data_p(val), sizeof(fstring), regval_size(val), 0 );
 				break;
 			case REG_IDX_PRINTPROC:
+				rpcstr_pull( printer2->printprocessor, regval_data_p(val), sizeof(fstring), regval_size(val), 0 );
 				break;
 			case REG_IDX_DATATYPE:
+				rpcstr_pull( printer2->datatype, regval_data_p(val), sizeof(fstring), regval_size(val), 0 );
 				break;
 			case REG_IDX_DEVMODE:
 				break;
 			case REG_IDX_SECDESC:
 				break;		
 			default:
-				/* unsupported value...what to do here ? */
-				DEBUG(0,("convert_values_to_printer_info_2: Unsupported registry value [%s]\n", 
-					regval_name( reg_value ) ));
+				/* unsupported value...throw away */
+				DEBUG(8,("convert_values_to_printer_info_2: Unsupported registry value [%s]\n", 
+					regval_name( val ) ));
 		}
 	}
 	
