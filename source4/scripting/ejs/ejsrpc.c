@@ -58,7 +58,7 @@ NTSTATUS ejs_pull_struct_start(struct ejs_rpc *ejs, struct MprVar **v, const cha
 */
 NTSTATUS ejs_push_struct_start(struct ejs_rpc *ejs, struct MprVar **v, const char *name)
 {
-	NDR_CHECK(mprSetVar(*v, name, mprCreateObjVar(name, MPR_DEFAULT_HASH_SIZE)));
+	NDR_CHECK(mprSetVar(*v, name, mprObject(name)));
 	return mprGetVar(v, name);
 }
 
