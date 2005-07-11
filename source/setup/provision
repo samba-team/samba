@@ -5,7 +5,7 @@
 	Released under the GNU GPL v2 or later
 */
 
-var options = new Object();
+options = new Object();
 ok = GetOptions(ARGV, options, 
 		"POPT_AUTOHELP",
 		"POPT_COMMON_SAMBA",
@@ -43,6 +43,142 @@ function message(s)
 	if (options["quiet"] == undefined) {
 		println(s);
 	}
+}
+
+/*
+  find a username from a list of possibilities
+*/
+function finduser()
+{
+	var i, name = arguments[0];
+	if (options[name] != undefined) {
+		return options[name];
+	}
+	for (i=1;i<arguments.length;i++) {
+		if (getpwnam(arguments[i]) != undefined) {
+			return arguments[i];
+		}
+	}
+	println("Unable to find user for " + name);
+	exit(1);
+}
+
+/*
+  find a group from a list of possibilities
+*/
+function findgroup()
+{
+	var i, name = arguments[0];
+	if (options[name] != undefined) {
+		return options[name];
+	}
+	for (i=1;i<arguments.length;i++) {
+		if (getgrnam(arguments[i]) != undefined) {
+			return arguments[i];
+		}
+	}
+	println("Unable to find group for " + name);
+	exit(1);
+}
+
+/*
+  return a variable substitution
+*/
+function sub_callback(key)
+{
+	var lkey = strlower(key);
+	if (options[lkey] != undefined) {
+		return options[lkey];
+	}
+	println(key);
+	return "NOTFOUND{" + key + "}";
+}
+
+
+/*
+   add a foreign security principle
+ */
+function add_foreign(str, sid, desc, unixname)
+{
+	return str + "
+dn: CN=$sid,CN=ForeignSecurityPrincipals,${BASEDN}
+objectClass: top
+objectClass: foreignSecurityPrincipal
+cn: $sid
+description: $desc
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+showInAdvancedViewOnly: TRUE
+name: $sid
+objectGUID: ${NEWGUID}
+objectSid: $sid
+objectCategory: CN=Foreign-Security-Principal,CN=Schema,CN=Configuration,${BASEDN}
+unixName: $unixname
+
+";
+}
+
+/*
+  generate a random guid
+*/
+function randguid()
+{
+	return "009876-7656";
+}
+
+/*
+  generate a random sid
+*/
+function randsid()
+{
+	return "1-2-3";
+}
+
+/*
+  generate a random password
+*/
+function randpass()
+{
+	return "penguin";
+}
+
+/*
+  return current time as a nt time string
+*/
+function nttime()
+{
+	return "1st Feb";
+}
+
+/*
+  substitute strings of the form ${NAME} in str, replacing
+  with substitutions from subobj
+*/
+function substitute_var(str)
+{
+	var list = split("${", str);
+	var i;
+	for (i=1;i<list.length;i++) {
+		var list2 = split("}", list[i]);
+		if (list2.length < 2) {
+			return undefined;
+		}
+		var key = list2[0];
+		if (typeof(subobj[key]) == "string") {
+			list2[0] = subobj[key];
+		} else {
+			println("KEY=" + key);
+			var fn = subobj[key];
+			list2[0] = fn();
+			println("list2fn=" + list2[0]);
+		}
+		list[i] = join("", list2);
+		println("XXX[" + key + "]=" + list[i]);
+	}
+	return join("", list);
 }
 
 /*
@@ -88,8 +224,6 @@ if (options["realm"] == undefined ||
 	ShowHelp();
 }
 
-printVars(options);
-
 options.realm        = strlower(options.realm);
 options['host-name'] = strlower(options['host-name']);
 options.domain       = strupper(options.domain);
@@ -102,49 +236,49 @@ if (options.hostip == undefined) {
 
 message("Provisioning for " + options.domain + " in realm " + options.realm);
 
-if (options["root"] == undefined) {
-	options.root = "root";
-}
+options.root    = finduser("root", "root");
+options.nobody  = finduser("nobody", "nobody");
+options.nogroup = findgroup("nogroup", "nogroup", "nobody");
+options.wheel   = findgroup("wheel", "wheel", "root");
+options.users   = findgroup("users", "users", "guest", "other");
 
-if (options["nobody"] == undefined) {
-	if (getpwnam("nobody") != undefined) {
-		options.nobody = "nobody";
-	}
-}
 
-printVars(options);
-return 0;
+options.dnsdomain = strlower(options.realm);
+options.dnsname   = strlower(options['host-name']) + "." + options.dnsdomain;
+options.basedn    = "DC=" + join(",DC=", split(".", options.realm));
+
+var data = FileLoad("setup/provision.ldif");
+if (data == undefined) {
+	println("Unable to load provision.ldif");
+	exit(1);
+}
 
 /*
-
-if (!$opt_nogroup) {
-	if (defined getgrnam("nogroup")) {
-		$opt_nogroup = "nogroup";
-	} elsif (defined getgrnam("nobody")) {
-		$opt_nogroup = "nobody";
-	}
-}
-
-if (!$opt_wheel) {
-	if (defined getgrnam("wheel")) {
-		$opt_wheel = "wheel";
-	} elsif (defined getgrnam("root")) {
-		$opt_wheel = "root";
-	}
-}
-
-if (!$opt_users) {
-	if (defined getgrnam("users")) {
-		$opt_users = "users";
-	} elsif (defined getgrnam("guest")) {
-		$opt_users = "guest";
-	} elsif (defined getgrnam("other")) {
-		$opt_users = "other";
-	}
-}
-
-$opt_nobody || die "Unable to determine a user for 'nobody'\n";
-$opt_nogroup || die "Unable to determine a group for 'nogroup'\n";
-$opt_users || die "Unable to determine a group for 'users'\n";
-$opt_wheel || die "Unable to determine a group for 'wheel'\n";
+  setup the substitution object
 */
+subobj = new Object();
+subobj.DOMAINGUID   = randguid();
+subobj.DOMAINSID    = randsid();
+subobj.HOSTGUID     = randguid();
+subobj.INVOCATIONID = randguid();
+subobj.KRBTGTPASS   = randpass();
+subobj.MACHINEPASS  = randpass();
+subobj.ADMINPASS    = randpass();
+subobj.DEFAULTSITE  = "Default-First-Site-Name";
+subobj.NEWGUID      = randguid;
+subobj.NTTIME       = nttime;
+for (r in options) {
+	subobj[strupper(join("", split("-", r)))] = options[r];
+}
+printVars(subobj);
+
+data = add_foreign(data, "S-1-5-7",  "Anonymous",           "${NOBODY}");
+data = add_foreign(data, "S-1-1-0",  "World",               "${NOGROUP}");
+data = add_foreign(data, "S-1-5-2",  "Network",             "${NOGROUP}");
+data = add_foreign(data, "S-1-5-18", "System",              "${ROOT}");
+data = add_foreign(data, "S-1-5-11", "Authenticated Users", "${USERS}");
+
+newdata = substitute_var(data);
+
+print(newdata);
+return 0;
