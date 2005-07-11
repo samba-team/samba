@@ -4,9 +4,15 @@
 #ifndef __krb5_types_h__
 #define __krb5_types_h__
 
+#if HAVE_INTTYPES_H
 #include <inttypes.h>
+#endif
+#if HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+#if HAVE_SYS_BITYPES_H
 #include <sys/bitypes.h>
+#endif
 #include <sys/socket.h>
 
 
