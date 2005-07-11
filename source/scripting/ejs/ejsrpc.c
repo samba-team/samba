@@ -284,7 +284,7 @@ NTSTATUS ejs_push_GUID(struct ejs_rpc *ejs,
 
 NTSTATUS ejs_push_null(struct ejs_rpc *ejs, struct MprVar *v, const char *name)
 {
-	return mprSetVar(v, name, mprCreatePtrVar(NULL, name));
+	return mprSetVar(v, name, mprCreatePtrVar(NULL));
 }
 
 BOOL ejs_pull_null(struct ejs_rpc *ejs, struct MprVar *v, const char *name)

@@ -86,8 +86,7 @@ static int ejs_cli_connect(MprVarHandle eid, int argc, char **argv)
 
 	/* Return a socket object */
 
-	mpr_Return(eid, mprCreatePtrVar(transport, 
-					       talloc_get_name(transport)));
+	mpr_Return(eid, mprCreatePtrVar(transport));
 
 	return 0;
 }
@@ -214,8 +213,7 @@ static int ejs_cli_ssetup(MprVarHandle eid, int argc, MprVar **argv)
 
 	/* Return a session object */
 
-	mpr_Return(eid, mprCreatePtrVar(session, 
-					       talloc_get_name(session)));
+	mpr_Return(eid, mprCreatePtrVar(session));
 
 	result = 0;
 
@@ -297,8 +295,7 @@ static int ejs_cli_tree_connect(MprVarHandle eid, int argc, MprVar **argv)
 
 	talloc_free(mem_ctx);	
 
-	mpr_Return(eid, mprCreatePtrVar(tree, 
-					       talloc_get_name(tree)));
+	mpr_Return(eid, mprCreatePtrVar(tree));
 
 	return 0;
 }
@@ -446,7 +443,7 @@ static int ejs_tree_connect(MprVarHandle eid, int argc, char **argv)
 		return 0;
 	}
 
-	mpr_Return(eid, mprCreatePtrVar(tree, talloc_get_name(tree)));
+	mpr_Return(eid, mprCreatePtrVar(tree));
 
 	return 0;
 }

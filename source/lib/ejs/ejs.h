@@ -44,8 +44,8 @@
 #ifndef _h_EJS
 #define _h_EJS 1
 
-#include	"lib/ejs/miniMpr.h"
-#include	"lib/ejs/var.h"
+#include	"miniMpr.h"
+#include	"var.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -75,7 +75,7 @@ extern void		ejsCloseEngine(EjsId eid);
  *	Evaluation functions
  */
 extern int		ejsEvalFile(EjsId eid, char *path, MprVar *result, char **emsg);
-extern int		ejsEvalScript(EjsId eid, char *script, MprVar *result, 
+extern int		ejsEvalScript(EjsId eid, char *script, MprVar *result,
 					char **emsg);
 extern int 		ejsRunFunction(int eid, MprVar *obj, const char *functionName, 
 					MprArray *args);
@@ -87,7 +87,8 @@ extern int 		ejsRunFunction(int eid, MprVar *obj, const char *functionName,
 extern MprVar	ejsCreateObj(const char *name, int hashSize);
 extern MprVar	ejsCreateArray(const char *name, int hashSize);
 extern bool		ejsDestroyVar(MprVar *obj);
-extern int 		ejsCopyVar(EjsId eid, const char *var, MprVar *value, bool copyRef);
+extern int 		ejsCopyVar(EjsId eid, const char *var, MprVar *value, 
+					bool copyRef);
 extern int 		ejsReadVar(EjsId eid, const char *var, MprVar *value);
 extern int	 	ejsWriteVar(EjsId eid, const char *var, MprVar *value);
 extern int	 	ejsWriteVarValue(EjsId eid, const char *var, MprVar value);
@@ -99,8 +100,8 @@ extern MprVar	*ejsGetGlobalObject(EjsId eid);
 /*
  *	Function routines
  */
-extern void 	ejsDefineFunction(EjsId eid, const char *functionName, char *args, 
-					char *body);
+extern void 	ejsDefineFunction(EjsId eid, const char *functionName, 
+					char *args, char *body);
 extern void 	ejsDefineCFunction(EjsId eid, const char *functionName, 
 					MprCFunction fn, void *thisPtr, int flags);
 extern void		ejsDefineStringCFunction(EjsId eid, const char *functionName, 
@@ -109,7 +110,8 @@ extern void 	*ejsGetThisPtr(EjsId eid);
 extern MprVar	*ejsGetReturnValue(EjsId eid);
 extern int		ejsGetLineNumber(EjsId eid);
 extern int 		ejsParseArgs(int argc, char **argv, char *fmt, ...);
-extern void 	ejsSetErrorMsg(EjsId eid, const char* fmt, ...) PRINTF_ATTRIBUTE(2,3);
+extern void 	ejsSetErrorMsg(EjsId eid, const char* fmt, ...) 
+					PRINTF_ATTRIBUTE(2,3);
 extern void		ejsSetReturnValue(EjsId eid, MprVar value);
 extern void		ejsSetReturnString(EjsId eid, const char *str);
 

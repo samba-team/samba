@@ -412,7 +412,7 @@ void smb_setup_ejs_rpc_constants(int eid)
 		r->constants(eid);
 	}
 
-	v = mprCreatePtrVar(NULL, "NULL");
+	v = mprCreatePtrVar(NULL);
 	mprSetProperty(ejsGetGlobalObject(eid), "NULL", &v);
 }
 

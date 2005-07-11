@@ -44,7 +44,7 @@
 
 /********************************** Includes **********************************/
 
-#include	"lib/ejs/var.h"
+#include	"var.h"
 
 /*********************************** Locals ***********************************/
 #if VAR_DEBUG
@@ -344,7 +344,8 @@ MprType mprGetVarType(MprVar *vp)
  *	already exists in the object, then just write its value.
  */
 
-MprVar *mprCreateProperty(MprVar *obj, const char *propertyName, MprVar *newValue)
+MprVar *mprCreateProperty(MprVar *obj, const char *propertyName, 
+	MprVar *newValue)
 {
 	MprVar	*prop, *last;
 	int		bucketIndex;
@@ -376,7 +377,7 @@ MprVar *mprCreateProperty(MprVar *obj, const char *propertyName, MprVar *newValu
 	}
 
 	if (prop) {
-		/* 	FUTURE -- remove. Just for debug. */
+		/*	FUTURE -- remove. Just for debug. */
 		mprAssert(prop == 0);
 		mprLog(0, "Attempting to create property %s in object %s\n",
 			propertyName, obj->name);
@@ -428,7 +429,8 @@ MprVar *mprCreateProperty(MprVar *obj, const char *propertyName, MprVar *newValu
  *	by pointer.
  */
 
-MprVar *mprCreatePropertyValue(MprVar *obj, const char *propertyName, MprVar newValue)
+MprVar *mprCreatePropertyValue(MprVar *obj, const char *propertyName, 
+	MprVar newValue)
 {
 	return mprCreateProperty(obj, propertyName, &newValue);
 }
@@ -513,7 +515,8 @@ MprVar *mprSetProperty(MprVar *obj, const char *propertyName, MprVar *newValue)
  *	new value is passed by value rather than by pointer.
  */
 
-MprVar *mprSetPropertyValue(MprVar *obj, const char *propertyName, MprVar newValue)
+MprVar *mprSetPropertyValue(MprVar *obj, const char *propertyName, 
+	MprVar newValue)
 {
 	return mprSetProperty(obj, propertyName, &newValue);
 }
@@ -602,7 +605,7 @@ MprVar *mprGetProperty(MprVar *obj, const char *property, MprVar *value)
 
 	for (prop = getObjChain(obj->properties, property); prop; 
 			prop = prop->forw) {
-		if (prop->name && 
+		if (prop->name &&
 			prop->name[0] == property[0] && strcmp(prop->name, property) == 0) {
 			break;
 		}
@@ -1170,7 +1173,8 @@ MprVar mprCreateCFunctionVar(MprCFunction fn, void *thisPtr, int flags)
  *	Initialize a C function.
  */
 
-MprVar mprCreateStringCFunctionVar(MprStringCFunction fn, void *thisPtr, int flags)
+MprVar mprCreateStringCFunctionVar(MprStringCFunction fn, void *thisPtr, 
+	int flags)
 {
 	MprVar	v;
 
@@ -1183,13 +1187,14 @@ MprVar mprCreateStringCFunctionVar(MprStringCFunction fn, void *thisPtr, int fla
 	return v;
 }
 
+/******************************************************************************/
 /*
- * Initialize an opaque pointer.
+ *	Initialize an opaque pointer.
  */
 
-MprVar mprCreatePtrVar(void *ptr, const char *name)
+MprVar mprCreatePtrVar(void *ptr)
 {
-	MprVar v;
+	MprVar	v;
 
 	memset(&v, 0x0, sizeof(v));
 	v.type = MPR_TYPE_PTR;
@@ -1356,7 +1361,7 @@ MprVar mprCreateStringVar(const char *value, bool allocate)
 		v.string = mprStrdup(value);
 		v.allocatedData = 1;
 	} else {
-		v.string = value;
+		v.string = (char*) value;
 	}
 	return v;
 }
@@ -1410,12 +1415,12 @@ static void copyVarCore(MprVar *dest, MprVar *src, int copyDepth)
 		dest->boolean = src->boolean;
 		break;
 
-	case MPR_TYPE_STRING_CFUNCTION:
-		dest->cFunctionWithStrings = src->cFunctionWithStrings;
-		break;
-
 	case MPR_TYPE_PTR:
 		dest->ptr = src->ptr;
+		break;
+
+	case MPR_TYPE_STRING_CFUNCTION:
+		dest->cFunctionWithStrings = src->cFunctionWithStrings;
 		break;
 
 	case MPR_TYPE_CFUNCTION:
@@ -1617,6 +1622,10 @@ void mprVarToString(char** out, int size, char *fmt, MprVar *obj)
 		*out = mprStrdup("null");
 		break;
 
+	case MPR_TYPE_PTR:
+		mprAllocSprintf(out, size, "[Opaque Pointer %p]", obj->ptr);
+		break;
+
 	case MPR_TYPE_BOOL:
 		if (obj->boolean) {
 			*out = mprStrdup("true");
@@ -1665,16 +1674,12 @@ void mprVarToString(char** out, int size, char *fmt, MprVar *obj)
 		mprAllocSprintf(out, size, "[C StringFunction]");
 		break;
 
-	case MPR_TYPE_PTR:
-		mprAllocSprintf(out, size, "[C Pointer: %p]", obj->ptr);
-		break;
-
 	case MPR_TYPE_FUNCTION:
 		mprAllocSprintf(out, size, "[JavaScript Function]");
 		break;
 
 	case MPR_TYPE_OBJECT:
-		/*	FUTURE -- really want: [object class: name] */
+		/*	FUTURE -- really want: [object class: name]  */
 		mprAllocSprintf(out, size, "[object %s]", obj->name);
 		break;
 
@@ -1753,6 +1758,7 @@ MprVar mprParseVar(char *buf, MprType preferredType)
 	case MPR_TYPE_OBJECT:
 	case MPR_TYPE_UNDEFINED:
 	case MPR_TYPE_NULL:
+	case MPR_TYPE_PTR:
 	default:
 		break;
 
@@ -2157,7 +2163,7 @@ bool mprIsNan(double f)
 #if WIN
 	return _isnan(f);
 #elif VXWORKS
-	/*	FUTURE */
+	/* FUTURE */
 	return (0);
 #else
 	return (f == FP_NAN);
@@ -2170,7 +2176,7 @@ bool mprIsInfinite(double f)
 #if WIN
 	return !_finite(f);
 #elif VXWORKS
-	/*	FUTURE */
+	/* FUTURE */
 	return (0);
 #else
 	return (f == FP_INFINITE);
