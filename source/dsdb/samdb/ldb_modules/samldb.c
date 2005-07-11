@@ -145,7 +145,7 @@ static char *samldb_search_domain(struct ldb_module *module, TALLOC_CTX *mem_ctx
 {
 	const char *sdn;
 	struct ldb_message **res = NULL;
-	int ret;
+	int ret = 0;
 
 	sdn = dn;
 	while ((sdn = strchr(sdn, ',')) != NULL) {

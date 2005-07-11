@@ -391,7 +391,7 @@ static NTSTATUS gensec_krb5_session_key(struct gensec_security *gensec_security,
 	krb5_context context = gensec_krb5_state->smb_krb5_context->krb5_context;
 	krb5_auth_context auth_context = gensec_krb5_state->auth_context;
 	krb5_keyblock *skey;
-	krb5_error_code err;
+	krb5_error_code err = -1;
 
 	if (gensec_krb5_state->session_key.data) {
 		*session_key = gensec_krb5_state->session_key;
