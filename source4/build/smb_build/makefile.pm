@@ -143,7 +143,7 @@ pch: proto include/includes.h.gch
 pch_clean:
 	-rm -f include/includes.h.gch
 
-basics: idl proto_exists
+basics: idl proto_exists bin/.SUBSYSTEM_HEIMDAL_EXTERNAL
 
 test: @DEFAULT_TEST_TARGET@
 
