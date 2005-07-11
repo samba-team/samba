@@ -1,6 +1,7 @@
 <% page_header("columns", "ESP samr test"); 
 
-  include("/scripting/samr.js");
+  libinclude("base.js");
+  libinclude("samr.js");
 %>
 
 <h1>Samba4 samr rpc test</h1>
@@ -26,7 +27,7 @@ for (i=0;i<domains.length;i++) {
     } else {
 	    multi_table(users, "name");
     }
-    samrClose(dom_handle);
+    samrClose(conn, dom_handle);
 }
 
 %>
