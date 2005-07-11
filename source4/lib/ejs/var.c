@@ -1706,7 +1706,7 @@ void mprVarToString(char** out, int size, char *fmt, MprVar *obj)
 
 MprVar mprParseVar(char *buf, MprType preferredType)
 {
-	MprType		type;
+	MprType		type = MPR_TYPE_UNDEFINED;
 	char		*cp;
 
 	mprAssert(buf);
