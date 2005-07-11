@@ -3,6 +3,16 @@
 	demonstrate access to irpc calls from ejs
 */	
 
+var options = new Object();
+
+ok = GetOptions(ARGV, options,
+		"POPT_AUTOHELP",
+		"POPT_COMMON_SAMBA");
+if (ok == false) {
+   println("Failed to parse options: " + options.ERROR);
+   return -1;
+}
+
 var conn = new Object();
 
 status = irpc_connect(conn, "nbt_server");

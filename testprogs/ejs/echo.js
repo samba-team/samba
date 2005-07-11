@@ -3,6 +3,17 @@
 	test echo pipe calls from ejs
 */	
 
+var options = new Object();
+
+ok = GetOptions(ARGV, options,
+		"POPT_AUTOHELP",
+		"POPT_COMMON_SAMBA",
+		"POPT_COMMON_CREDENTIALS");
+if (ok == false) {
+   println("Failed to parse options: " + options.ERROR);
+   return -1;
+}
+
 libinclude("base.js");
 
 /*
@@ -198,7 +209,11 @@ if (ARGV.length == 0) {
    exit(0);
 }
 
-var binding = ARGV[0];
+if (options.ARGV.length != 1) {
+   println("Usage: samr.js <BINDING>");
+   return -1;
+}
+var binding = options.ARGV[0];
 var conn = new Object();
 
 print("Connecting to " + binding + "\n");
