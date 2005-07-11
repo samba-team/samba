@@ -101,7 +101,7 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 	remote_host = mprToString(mprGetProperty(argv[0], "rhost", NULL));
 
  	tmp_ctx = talloc_new(mprMemCtx());	
-	auth = mprCreateObjVar("auth", MPR_DEFAULT_HASH_SIZE);
+	auth = mprObject("auth");
 
 	if (domain && strcmp("System User", domain) == 0) {
 
@@ -126,7 +126,7 @@ static int ejs_domain_list(MprVarHandle eid, int argc, char **argv)
 		return -1;
 	}
 
-	list = mprCreateObjVar("list", MPR_DEFAULT_HASH_SIZE);
+	list = mprObject("list");
 	mprSetVar(&list, "0", mprCreateStringVar("System User", 1));
 
 	mpr_Return(eid, list);

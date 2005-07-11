@@ -25,6 +25,14 @@
 #include "lib/ldb/include/ldb.h"
 
 /*
+  return a default mpr object
+*/
+struct MprVar mprObject(const char *name)
+{
+	return ejsCreateObj(name?name:"(NULL)", MPR_DEFAULT_HASH_SIZE);
+}
+
+/*
   find a mpr component, allowing for sub objects, using the '.' convention
 */
  NTSTATUS mprGetVar(struct MprVar **v, const char *name)
@@ -75,7 +83,7 @@
 	}
 	v2 = mprGetProperty(v, objname, NULL);
 	if (v2 == NULL) {
-		mprSetVar(v, objname, mprCreateObjVar(objname, MPR_DEFAULT_HASH_SIZE));
+		mprSetVar(v, objname, mprObject(objname));
 		v2 = mprGetProperty(v, objname, NULL);
 	}
 	status = mprSetVar(v2, p+1, val);
@@ -104,7 +112,7 @@ struct MprVar mprList(const char *name, const char **list)
 	struct MprVar var;
 	int i;
 
-	var = mprCreateObjVar(name, MPR_DEFAULT_HASH_SIZE);
+	var = mprObject(name);
 	for (i=0;list && list[i];i++) {
 		mprAddArray(&var, i, mprCreateStringVar(list[i], 1));
 	}
@@ -119,7 +127,6 @@ struct MprVar mprList(const char *name, const char **list)
 */
 struct MprVar mprString(const char *s)
 {
-	struct MprVar var;
 	if (s == NULL) {
 		return mprCreatePtrVar(NULL, "NULL");
 	}
@@ -154,7 +161,7 @@ struct MprVar mprLdbMessage(struct ldb_message *msg)
 	const char *multivalued[] = { "objectClass", "memberOf", "privilege", 
 					    "member", NULL };
 
-	var = mprCreateObjVar(msg->dn, MPR_DEFAULT_HASH_SIZE);
+	var = mprObject(msg->dn);
 
 	for (i=0;i<msg->num_elements;i++) {
 		struct ldb_message_element *el = &msg->elements[i];
@@ -164,7 +171,7 @@ struct MprVar mprLdbMessage(struct ldb_message *msg)
 			val = mprData(el->values[0].data, el->values[0].length);
 		} else {
 			int j;
-			val = mprCreateObjVar(el->name, MPR_DEFAULT_HASH_SIZE);
+			val = mprObject(el->name);
 			for (j=0;j<el->num_values;j++) {
 				mprAddArray(&val, j, 
 					    mprData(el->values[j].data, 
@@ -191,7 +198,7 @@ struct MprVar mprLdbArray(struct ldb_message **msg, int count, const char *name)
 	struct MprVar res;
 	int i;
 
-	res = mprCreateObjVar(name?name:"(NULL)", MPR_DEFAULT_HASH_SIZE);
+	res = mprObject(name);
 	for (i=0;i<count;i++) {
 		mprAddArray(&res, i, mprLdbMessage(msg[i]));
 	}
@@ -249,7 +256,7 @@ struct MprVar mprNTSTATUS(NTSTATUS status)
 {
 	struct MprVar res;
 
-	res = mprCreateObjVar("ntstatus", MPR_DEFAULT_HASH_SIZE);
+	res = mprObject("ntstatus");
 
 	mprSetVar(&res, "errstr", mprCreateStringVar(nt_errstr(status), 1));
 	mprSetVar(&res, "v", mprCreateIntegerVar(NT_STATUS_V(status)));
@@ -266,7 +273,7 @@ struct MprVar mprWERROR(WERROR status)
 {
 	struct MprVar res;
 
-	res = mprCreateObjVar("werror", MPR_DEFAULT_HASH_SIZE);
+	res = mprObject("werror");
 
 	mprSetVar(&res, "errstr", mprCreateStringVar(win_errstr(status), 1));
 	mprSetVar(&res, "v", mprCreateIntegerVar(W_ERROR_V(status)));

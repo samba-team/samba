@@ -674,7 +674,7 @@ static int ejs_list(MprVarHandle eid, int argc, MprVar **argv)
 
 	attribute = mprVarToInteger(argv[2]);
 
-	result = mprCreateObjVar("list", MPR_DEFAULT_HASH_SIZE);
+	result = mprObject("list");
 
 	smbcli_list(tree, mask, attribute, ejs_list_helper, &result);
 

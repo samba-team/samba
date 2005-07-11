@@ -227,7 +227,7 @@ static int ejs_irpc_call(int eid, struct MprVar *conn, struct MprVar *io,
 		talloc_steal(reqs, reqs[i]);
 	}
 	
-	mprSetVar(io, "results", mprCreateObjVar("results", MPR_DEFAULT_HASH_SIZE));
+	mprSetVar(io, "results", mprObject("results"));
 	results = mprGetProperty(io, "results", NULL);
 
 	/* and receive the results, placing them in io.results[i] */

@@ -35,7 +35,7 @@ static struct MprVar mpr_passwd(struct passwd *pwd)
 	if (pwd == NULL) {
 		return mprCreateUndefinedVar();
 	}
-	ret = mprCreateObjVar("passwd", MPR_DEFAULT_HASH_SIZE);
+	ret = mprObject("passwd");
 
 	mprSetVar(&ret, "pw_name",   mprString(pwd->pw_name));
 	mprSetVar(&ret, "pw_passwd", mprString(pwd->pw_passwd));
@@ -56,7 +56,7 @@ static struct MprVar mpr_group(struct group *grp)
 	if (grp == NULL) {
 		return mprCreateUndefinedVar();
 	}
-	ret = mprCreateObjVar("group", MPR_DEFAULT_HASH_SIZE);
+	ret = mprObject("group");
 
 	mprSetVar(&ret, "gr_name",   mprString(grp->gr_name));
 	mprSetVar(&ret, "gr_passwd", mprString(grp->gr_passwd));
