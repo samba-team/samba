@@ -3,7 +3,8 @@ AC_CHECK_HEADERS(sys/stropts.h sys/timeb.h sys/times.h sys/uio.h sys/un.h)
 AC_CHECK_HEADERS(sys/utsname.h termcap.h term.h timezone.h time.h ttyname.h netdb.h)
 
 AC_CHECK_FUNCS(setitimer uname umask unsetenv socket sendmsg putenv atexit strsep)
-AC_CHECK_FUNCS(strlwr strncasecmp strptime strsep_copy strtok_r strupr swab)
+AC_CHECK_FUNCS(strlwr strncasecmp strptime strsep_copy strtok_r strupr swab writev readv)
+AC_CHECK_FUNCS(inet_ntop)
 
 AC_CHECK_DECL(h_errno, 
               [AC_DEFINE(HAVE_DECL_H_ERRNO,1,whether h_errno is declared)], [], [
