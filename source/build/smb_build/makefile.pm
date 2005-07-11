@@ -669,7 +669,7 @@ GTK_PROGS = bin/gregedit \
 		bin/gwsam \
 		bin/gepdump
 
-install: showlayout installbin installtorture installldb installreg installdat installswat installgtk
+install: showlayout installbin installtorture installldb installreg installdat installswat installmisc installgtk
 
 # DESTDIR is used here to prevent packagers wasting their time
 # duplicating the Makefile. Remove it and you will have the privilege
@@ -703,6 +703,9 @@ installdat: installdirs
 
 installswat: installdirs
 	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir) $(DESTDIR)$(LIBDIR)
+
+installmisc: installdirs
+	@$(SHELL) $(srcdir)/script/installmisc.sh $(srcdir) $(DESTDIR)$(LIBDIR)
 
 installman: installdirs
 	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(MANPAGES)
