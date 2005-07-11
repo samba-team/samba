@@ -114,7 +114,6 @@ ADD_OBJ_FILES = \
 	heimdal/lib/krb5/free_host_realm.o \
 	heimdal/lib/krb5/generate_seq_number.o \
 	heimdal/lib/krb5/generate_subkey.o \
-	heimdal/lib/krb5/get_addrs.o \
 	heimdal/lib/krb5/get_cred.o \
 	heimdal/lib/krb5/get_default_principal.o \
 	heimdal/lib/krb5/get_default_realm.o \
@@ -285,10 +284,16 @@ ADD_OBJ_FILES = \
 	heimdal/lib/roken/strlwr.o \
 	heimdal/lib/roken/strsep_copy.o \
 	heimdal/lib/roken/strupr.o \
-	heimdal/lib/roken/strpool.o \
-	heimdal/lib/roken/getifaddrs.o
+	heimdal/lib/roken/strpool.o
 NOPROTO = YES
 # End SUBSYSTEM HEIMDAL_ROKEN
+#######################
+
+#######################
+# Start SUBSYSTEM HEIMDAL_GLUE
+[SUBSYSTEM::HEIMDAL_GLUE]
+ADD_OBJ_FILES = heimdal_build/glue.o
+# End SUBSYSTEM HEIMDAL_GLUE
 #######################
 
 #######################
@@ -377,7 +382,7 @@ NOPROTO = YES
 TARGET_CFLAGS = -Iheimdal_build -Iheimdal/kdc -Iheimdal/lib/des -Iheimdal/lib/roken -Iheimdal/include 
 REQUIRED_SUBSYSTEMS = \
 		HEIMDAL_GSSAPI HEIMDAL_KRB5 \
-		HEIMDAL_ASN1 HEIMDAL_DES HEIMDAL_ROKEN HEIMDAL_COM_ERR
+		HEIMDAL_ASN1 HEIMDAL_DES HEIMDAL_ROKEN HEIMDAL_COM_ERR HEIMDAL_GLUE
 # End SUBSYSTEM HEIMDAL
 #######################
 
