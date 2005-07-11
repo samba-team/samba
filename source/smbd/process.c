@@ -28,8 +28,7 @@ extern int smb_echo_count;
 struct timeval smb_last_time;
 
 static char *InBuffer = NULL;
-char *OutBuffer = NULL;
-char *last_inbuf = NULL;
+static char *OutBuffer = NULL;
 
 /* 
  * Size of data we can send to client. Set
@@ -87,7 +86,7 @@ static void free_queued_message(struct pending_message_list *msg)
  for processing.
 ****************************************************************************/
 
-static BOOL push_queued_message(enum q_type qt, char *buf, int msg_len, struct timeval *ptv, char *private, size_t private_len)
+static BOOL push_queued_message(enum q_type qt, char *buf, int msg_len, struct timeval *ptv, char *private_data, size_t private_len)
 {
 	struct pending_message_list *tmp_msg;
 	struct pending_message_list *msg = SMB_MALLOC_P(struct pending_message_list);
@@ -110,8 +109,8 @@ static BOOL push_queued_message(enum q_type qt, char *buf, int msg_len, struct t
 		msg->msg_time = *ptv;
 	}
 
-	if (private) {
-		msg->private_data = data_blob(private, private_len);
+	if (private_data) {
+		msg->private_data = data_blob(private_data, private_len);
 		if (msg->private_data.data == NULL) {
 			DEBUG(0,("push_message: malloc fail (3)\n"));
 			data_blob_free(&msg->buf);
@@ -249,7 +248,7 @@ struct pending_message_list *get_open_deferred_message(uint16 mid)
  for processing.
 ****************************************************************************/
 
-BOOL push_sharing_violation_open_smb_message(struct timeval *ptv, char *private, size_t priv_len)
+BOOL push_sharing_violation_open_smb_message(struct timeval *ptv, char *private_data, size_t priv_len)
 {
 	uint16 mid = SVAL(InBuffer,smb_mid);
 	struct timeval tv;
@@ -275,7 +274,7 @@ BOOL push_sharing_violation_open_smb_message(struct timeval *ptv, char *private,
 		(unsigned int)tv.tv_sec, (unsigned int)tv.tv_usec));
 
 	return push_queued_message(SHARE_VIOLATION_QUEUE, InBuffer,
-			smb_len(InBuffer)+4, &tv, private, priv_len);
+			smb_len(InBuffer)+4, &tv, private_data, priv_len);
 }
 
 /****************************************************************************
@@ -287,10 +286,16 @@ static void async_processing(char *buffer, int buffer_len)
 {
 	DEBUG(10,("async_processing: Doing async processing.\n"));
 
+	process_aio_queue();
+
 	/* check for oplock messages (both UDP and kernel) */
 	if (receive_local_message(buffer, buffer_len, 1)) {
 		process_local_message(buffer, buffer_len);
 	}
+
+	/* Do the aio check again after receive_local_message as it does a select
+	   and may have eaten our signal. */
+	process_aio_queue();
 
 	if (got_sig_term) {
 		exit_server("Caught TERM signal");
@@ -981,8 +986,6 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 				!check_access(smbd_server_fd(), lp_hostsallow(-1), lp_hostsdeny(-1))))
 			return(ERROR_DOS(ERRSRV,ERRaccess));
 
-		last_inbuf = inbuf;
-
 		outsize = smb_messages[type].fn(conn, inbuf,outbuf,size,bufsize);
 	}
 
@@ -1299,6 +1302,7 @@ static int setup_select_timeout(void)
 
 void check_reload(int t)
 {
+	static pid_t mypid = 0;
 	static time_t last_smb_conf_reload_time = 0;
 	static time_t last_printer_reload_time = 0;
 	time_t printcap_cache_time = (time_t)lp_printcap_cache_time();
@@ -1312,6 +1316,15 @@ void check_reload(int t)
 			last_printer_reload_time = t - printcap_cache_time + 60;
 		else
 			last_printer_reload_time = t;
+	}
+
+	if (mypid != getpid()) { /* First time or fork happened meanwhile */
+		/* randomize over 60 second the printcap reload to avoid all
+		 * process hitting cupsd at the same time */
+		int time_range = 60;
+
+		last_printer_reload_time += random() % time_range;
+		mypid = getpid();
 	}
 
 	if (reload_after_sighup || (t >= last_smb_conf_reload_time+SMBD_RELOAD_CHECK)) {
@@ -1501,24 +1514,106 @@ machine %s in domain %s.\n", global_myname(), lp_workgroup()));
 }
 
 /****************************************************************************
-  process commands from the client
+ Accessor functions for InBuffer, OutBuffer.
+****************************************************************************/
+
+char *get_InBuffer(void)
+{
+	return InBuffer;
+}
+
+void set_InBuffer(char *new_inbuf)
+{
+	InBuffer = new_inbuf;
+}
+
+char *get_OutBuffer(void)
+{
+	return OutBuffer;
+}
+
+void set_OutBuffer(char *new_outbuf)
+{
+	OutBuffer = new_outbuf;
+}
+
+/****************************************************************************
+ Free an InBuffer. Checks if not in use by aio system.
+ Must have been allocated by NewInBuffer.
+****************************************************************************/
+
+void free_InBuffer(char *inbuf)
+{
+	if (!aio_inbuffer_in_use(inbuf)) {
+		SAFE_FREE(inbuf);
+	}
+}
+
+/****************************************************************************
+ Free an OutBuffer. No outbuffers currently stolen by aio system.
+ Must have been allocated by NewInBuffer.
+****************************************************************************/
+
+void free_OutBuffer(char *outbuf)
+{
+	SAFE_FREE(outbuf);
+}
+
+const int total_buffer_size = (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN);
+
+/****************************************************************************
+ Allocate a new InBuffer. Returns the new and old ones.
+****************************************************************************/
+
+char *NewInBuffer(char **old_inbuf)
+{
+	char *new_inbuf = (char *)SMB_MALLOC(total_buffer_size);
+	if (!new_inbuf) {
+		return NULL;
+	}
+	if (old_inbuf) {
+		*old_inbuf = InBuffer;
+	}
+	InBuffer = new_inbuf;
+#if defined(DEVELOPER)
+	clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, InBuffer, total_buffer_size);
+#endif
+	return InBuffer;
+}
+
+/****************************************************************************
+ Allocate a new OutBuffer. Returns the new and old ones.
+****************************************************************************/
+
+char *NewOutBuffer(char **old_outbuf)
+{
+	char *new_outbuf = (char *)SMB_MALLOC(total_buffer_size);
+	if (!new_outbuf) {
+		return NULL;
+	}
+	if (old_outbuf) {
+		*old_outbuf = OutBuffer;
+	}
+	OutBuffer = new_outbuf;
+#if defined(DEVELOPER)
+	clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, OutBuffer, total_buffer_size);
+#endif
+	return OutBuffer;
+}
+
+/****************************************************************************
+ Process commands from the client
 ****************************************************************************/
 
 void smbd_process(void)
 {
 	time_t last_timeout_processing_time = time(NULL);
 	unsigned int num_smbs = 0;
-	const size_t total_buffer_size = BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN;
 
-	InBuffer = (char *)SMB_MALLOC(total_buffer_size);
-	OutBuffer = (char *)SMB_MALLOC(total_buffer_size);
-	if ((InBuffer == NULL) || (OutBuffer == NULL)) 
+	/* Allocate the primary Inbut/Output buffers. */
+
+	if ((NewInBuffer(NULL) == NULL) || (NewOutBuffer(NULL) == NULL)) 
 		return;
-
-#if defined(DEVELOPER)
-	clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, InBuffer, total_buffer_size);
-	clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, OutBuffer, total_buffer_size);
-#endif
 
 	max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 

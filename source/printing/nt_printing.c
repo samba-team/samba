@@ -922,7 +922,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 	}
 
 	/* Skip OEM header (if any) and the DOS stub to start of Windows header */
-	if (SMB_VFS_LSEEK(fsp, fsp->fd, SVAL(buf,DOS_HEADER_LFANEW_OFFSET), SEEK_SET) == (SMB_OFF_T)-1) {
+	if (SMB_VFS_LSEEK(fsp, fsp->fh->fd, SVAL(buf,DOS_HEADER_LFANEW_OFFSET), SEEK_SET) == (SMB_OFF_T)-1) {
 		DEBUG(3,("get_file_version: File [%s] too short, errno = %d\n",
 				fname, errno));
 		/* Assume this isn't an error... the file just looks sort of like a PE/NE file */
@@ -988,7 +988,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 				}
 
 				/* Seek to the start of the .rsrc section info */
-				if (SMB_VFS_LSEEK(fsp, fsp->fd, section_pos, SEEK_SET) == (SMB_OFF_T)-1) {
+				if (SMB_VFS_LSEEK(fsp, fsp->fh->fd, section_pos, SEEK_SET) == (SMB_OFF_T)-1) {
 					DEBUG(3,("get_file_version: PE file [%s] too short for section info, errno = %d\n",
 							fname, errno));
 					goto error_exit;
@@ -1084,7 +1084,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 				 * twice, as it is simpler to read the code. */
 				if (strcmp(&buf[i], VS_SIGNATURE) == 0) {
 					/* Compute skip alignment to next long address */
-					int skip = -(SMB_VFS_LSEEK(fsp, fsp->fd, 0, SEEK_CUR) - (byte_count - i) +
+					int skip = -(SMB_VFS_LSEEK(fsp, fsp->fh->fd, 0, SEEK_CUR) - (byte_count - i) +
 								 sizeof(VS_SIGNATURE)) & 3;
 					if (IVAL(buf,i+sizeof(VS_SIGNATURE)+skip) != 0xfeef04bd) continue;
 
@@ -1142,8 +1142,6 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	uint32 old_minor;
 	time_t old_create_time;
 
-	int access_mode;
-	int action;
 	files_struct    *fsp = NULL;
 	SMB_STRUCT_STAT st;
 	SMB_STRUCT_STAT stat_buf;
@@ -1159,10 +1157,15 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 
 	driver_unix_convert(filepath,conn,NULL,&bad_path,&stat_buf);
 
-	fsp = open_file_shared(conn, filepath, &stat_buf,
-						   SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
-						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-						   FILE_ATTRIBUTE_NORMAL, INTERNAL_OPEN_ONLY, &access_mode, &action);
+	fsp = open_file_ntcreate(conn, filepath, &stat_buf,
+				FILE_GENERIC_READ,
+				FILE_SHARE_READ|FILE_SHARE_WRITE,
+				FILE_OPEN,
+				0,
+				FILE_ATTRIBUTE_NORMAL,
+				INTERNAL_OPEN_ONLY,
+				NULL);
+
 	if (!fsp) {
 		/* Old file not found, so by definition new file is in fact newer */
 		DEBUG(10,("file_version_is_newer: Can't open old file [%s], errno = %d\n",
@@ -1171,13 +1174,15 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 
 	} else {
 		int ret = get_file_version(fsp, old_file, &old_major, &old_minor);
-		if (ret == -1) goto error_exit;
+		if (ret == -1) {
+			goto error_exit;
+		}
 
 		if (!ret) {
 			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
 					 old_file));
 			use_version = False;
-			if (SMB_VFS_FSTAT(fsp, fsp->fd, &st) == -1) goto error_exit;
+			if (SMB_VFS_FSTAT(fsp, fsp->fh->fd, &st) == -1) goto error_exit;
 			old_create_time = st.st_mtime;
 			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", old_create_time));
 		}
@@ -1188,10 +1193,15 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	pstrcpy(filepath, new_file);
 	driver_unix_convert(filepath,conn,NULL,&bad_path,&stat_buf);
 
-	fsp = open_file_shared(conn, filepath, &stat_buf,
-						   SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
-						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-						   FILE_ATTRIBUTE_NORMAL, INTERNAL_OPEN_ONLY, &access_mode, &action);
+	fsp = open_file_ntcreate(conn, filepath, &stat_buf,
+				FILE_GENERIC_READ,
+				FILE_SHARE_READ|FILE_SHARE_WRITE,
+				FILE_OPEN,
+				0,
+				FILE_ATTRIBUTE_NORMAL,
+				INTERNAL_OPEN_ONLY,
+				NULL);
+
 	if (!fsp) {
 		/* New file not found, this shouldn't occur if the caller did its job */
 		DEBUG(3,("file_version_is_newer: Can't open new file [%s], errno = %d\n",
@@ -1200,13 +1210,15 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 
 	} else {
 		int ret = get_file_version(fsp, new_file, &new_major, &new_minor);
-		if (ret == -1) goto error_exit;
+		if (ret == -1) {
+			goto error_exit;
+		}
 
 		if (!ret) {
 			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
 					 new_file));
 			use_version = False;
-			if (SMB_VFS_FSTAT(fsp, fsp->fd, &st) == -1) goto error_exit;
+			if (SMB_VFS_FSTAT(fsp, fsp->fh->fd, &st) == -1) goto error_exit;
 			new_create_time = st.st_mtime;
 			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", new_create_time));
 		}
@@ -1251,8 +1263,6 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 				   struct current_user *user, WERROR *perr)
 {
 	int               cversion;
-	int               access_mode;
-	int               action;
 	NTSTATUS          nt_status;
  	pstring           driverpath;
 	DATA_BLOB         null_pw;
@@ -1309,18 +1319,21 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 		goto error_exit;
 	}
 
-	fsp = open_file_shared(conn, driverpath, &st,
-		SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
-		(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-		FILE_ATTRIBUTE_NORMAL, INTERNAL_OPEN_ONLY, &access_mode, &action);
+	fsp = open_file_ntcreate(conn, driverpath, &st,
+				FILE_GENERIC_READ,
+				FILE_SHARE_READ|FILE_SHARE_WRITE,
+				FILE_OPEN,
+				0,
+				FILE_ATTRIBUTE_NORMAL,
+				INTERNAL_OPEN_ONLY,
+				NULL);
 
 	if (!fsp) {
 		DEBUG(3,("get_correct_cversion: Can't open file [%s], errno = %d\n",
 				driverpath, errno));
 		*perr = WERR_ACCESS_DENIED;
 		goto error_exit;
-	}
-	else {
+	} else {
 		uint32 major;
 		uint32 minor;
 		int    ret = get_file_version(fsp, driverpath, &major, &minor);
@@ -1659,12 +1672,12 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 		slprintf(new_name, sizeof(new_name)-1, "%s/%s", architecture, driver->driverpath);	
 		slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->driverpath);	
 		if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-			NTSTATUS status;
 			driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-			if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
+			if ( !copy_file(new_name, old_name, conn, OPENX_FILE_EXISTS_TRUNCATE|
+						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 				DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 						new_name, old_name));
-				*perr = ntstatus_to_werror(status);
+				*perr = WERR_ACCESS_DENIED;
 				ver = -1;
 			}
 		} 
@@ -1675,12 +1688,12 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 			slprintf(new_name, sizeof(new_name)-1, "%s/%s", architecture, driver->datafile);	
 			slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->datafile);	
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-				NTSTATUS status;
 				driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-				if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
+				if ( !copy_file(new_name, old_name, conn, OPENX_FILE_EXISTS_TRUNCATE|
+						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
-					*perr = ntstatus_to_werror(status);
+					*perr = WERR_ACCESS_DENIED;
 					ver = -1;
 				}
 			}
@@ -1693,12 +1706,12 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 			slprintf(new_name, sizeof(new_name)-1, "%s/%s", architecture, driver->configfile);	
 			slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->configfile);	
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-				NTSTATUS status;
 				driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-				if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
+				if ( !copy_file(new_name, old_name, conn, OPENX_FILE_EXISTS_TRUNCATE|
+						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
-					*perr = ntstatus_to_werror(status);
+					*perr = WERR_ACCESS_DENIED;
 					ver = -1;
 				}
 			}
@@ -1712,12 +1725,12 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 			slprintf(new_name, sizeof(new_name)-1, "%s/%s", architecture, driver->helpfile);	
 			slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->helpfile);	
 			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-				NTSTATUS status;
 				driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-				if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
+				if ( !copy_file(new_name, old_name, conn, OPENX_FILE_EXISTS_TRUNCATE|
+						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 							new_name, old_name));
-					*perr = ntstatus_to_werror(status);
+					*perr = WERR_ACCESS_DENIED;
 					ver = -1;
 				}
 			}
@@ -1740,12 +1753,13 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 				slprintf(new_name, sizeof(new_name)-1, "%s/%s", architecture, driver->dependentfiles[i]);	
 				slprintf(old_name, sizeof(old_name)-1, "%s/%s", new_dir, driver->dependentfiles[i]);	
 				if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-					NTSTATUS status;
 					driver_unix_convert(new_name, conn, NULL, &bad_path, &st);
-					if ( !copy_file(new_name, old_name, conn, FILE_EXISTS_TRUNCATE|FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
+					if ( !copy_file(new_name, old_name, conn,
+							OPENX_FILE_EXISTS_TRUNCATE|
+							OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False, &err) ) {
 						DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
 								new_name, old_name));
-						*perr = ntstatus_to_werror(status);
+						*perr = WERR_ACCESS_DENIED;
 						ver = -1;
 					}
 				}
@@ -2095,13 +2109,13 @@ int pack_devicemode(NT_DEVICEMODE *nt_devmode, char *buf, int buflen)
 			nt_devmode->reserved2,
 			nt_devmode->panningwidth,
 			nt_devmode->panningheight,
-			nt_devmode->private);
+			nt_devmode->nt_dev_private);
 
 	
-	if (nt_devmode->private) {
+	if (nt_devmode->nt_dev_private) {
 		len += tdb_pack(buf+len, buflen-len, "B",
 				nt_devmode->driverextra,
-				nt_devmode->private);
+				nt_devmode->nt_dev_private);
 	}
 
 	DEBUG(8,("Packed devicemode [%s]\n", nt_devmode->formname));
@@ -2130,8 +2144,17 @@ static int pack_values(NT_PRINTER_DATA *data, char *buf, int buflen)
 	for ( i=0; i<data->num_keys; i++ ) {	
 		val_ctr = &data->keys[i].values;
 		num_values = regval_ctr_numvals( val_ctr );
+
+		/* pack the keyname followed by a empty value */
+
+		len += tdb_pack(buf+len, buflen-len, "pPdB", 
+				&data->keys[i].name,
+				data->keys[i].name, 
+				REG_NONE,
+				0,
+				NULL);
 		
-		/* loop over all values */
+		/* now loop over all values */
 		
 		for ( j=0; j<num_values; j++ ) {
 			/* pathname should be stored as <key>\<value> */
@@ -2198,6 +2221,7 @@ uint32 del_a_printer(const char *sharename)
 static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 {
 	pstring key;
+	fstring norm_sharename;
 	char *buf;
 	int buflen, len;
 	WERROR ret;
@@ -2278,6 +2302,11 @@ static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 		goto again;
 	}
 	
+
+	/* normalize the key */
+
+	fstrcpy( norm_sharename, info->sharename );
+	strlower_m( norm_sharename );
 
 	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, info->sharename);
 
@@ -2360,7 +2389,7 @@ NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 	nt_devmode->panningwidth     = 0;
 	nt_devmode->panningheight    = 0;
 	
-	nt_devmode->private = NULL;
+	nt_devmode->nt_dev_private = NULL;
 	return nt_devmode;
 }
 
@@ -2380,9 +2409,9 @@ NT_DEVICEMODE *dup_nt_devicemode(NT_DEVICEMODE *nt_devicemode)
 		return NULL;
 	}
 
-	new_nt_devicemode->private = NULL;
-	if (nt_devicemode->private != NULL) {
-		if ((new_nt_devicemode->private = memdup(nt_devicemode->private, nt_devicemode->driverextra)) == NULL) {
+	new_nt_devicemode->nt_dev_private = NULL;
+	if (nt_devicemode->nt_dev_private != NULL) {
+		if ((new_nt_devicemode->nt_dev_private = memdup(nt_devicemode->nt_dev_private, nt_devicemode->driverextra)) == NULL) {
 			SAFE_FREE(new_nt_devicemode);
 			DEBUG(0,("dup_nt_devicemode: malloc fail.\n"));
 			return NULL;
@@ -2405,7 +2434,7 @@ void free_nt_devicemode(NT_DEVICEMODE **devmode_ptr)
 
 	DEBUG(106,("free_nt_devicemode: deleting DEVMODE\n"));
 
-	SAFE_FREE(nt_devmode->private);
+	SAFE_FREE(nt_devmode->nt_dev_private);
 	SAFE_FREE(*devmode_ptr);
 }
 
@@ -2491,25 +2520,25 @@ int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 			  &devmode.reserved2,
 			  &devmode.panningwidth,
 			  &devmode.panningheight,
-			  &devmode.private);
+			  &devmode.nt_dev_private);
 	
-	if (devmode.private) {
+	if (devmode.nt_dev_private) {
 		/* the len in tdb_unpack is an int value and
 		 * devmode.driverextra is only a short
 		 */
-		len += tdb_unpack(buf+len, buflen-len, "B", &extra_len, &devmode.private);
+		len += tdb_unpack(buf+len, buflen-len, "B", &extra_len, &devmode.nt_dev_private);
 		devmode.driverextra=(uint16)extra_len;
 		
 		/* check to catch an invalid TDB entry so we don't segfault */
 		if (devmode.driverextra == 0) {
-			devmode.private = NULL;
+			devmode.nt_dev_private = NULL;
 		}
 	}
 
 	*nt_devmode = (NT_DEVICEMODE *)memdup(&devmode, sizeof(devmode));
 
 	DEBUG(8,("Unpacked devicemode [%s](%s)\n", devmode.devicename, devmode.formname));
-	if (devmode.private)
+	if (devmode.nt_dev_private)
 		DEBUG(8,("with a private section of %d bytes\n", devmode.driverextra));
 
 	return len;
@@ -2519,7 +2548,7 @@ int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
  Allocate and initialize a new slot.
 ***************************************************************************/
  
-static int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
+int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
 {
 	NT_PRINTER_KEY	*d;
 	int		key_index;
@@ -2529,9 +2558,12 @@ static int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
 	
 	/* allocate another slot in the NT_PRINTER_KEY array */
 	
-	d = SMB_REALLOC_ARRAY( data->keys, NT_PRINTER_KEY, data->num_keys+1);
-	if ( d )
-		data->keys = d;
+	if ( !(d = SMB_REALLOC_ARRAY( data->keys, NT_PRINTER_KEY, data->num_keys+1)) ) {
+		DEBUG(0,("add_new_printer_key: Realloc() failed!\n"));
+		return -1;
+	}
+
+	data->keys = d;
 	
 	key_index = data->num_keys;
 	
@@ -2545,6 +2577,38 @@ static int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
 	DEBUG(10,("add_new_printer_key: Inserted new data key [%s]\n", name ));
 	
 	return key_index;
+}
+
+/****************************************************************************
+ search for a registry key name in the existing printer data
+ ***************************************************************************/
+
+int delete_printer_key( NT_PRINTER_DATA *data, const char *name )
+{
+	int i;
+	NT_PRINTER_KEY *printer_key;
+	
+	for ( i=0; i<data->num_keys; i++ ) {
+		if ( strequal( data->keys[i].name, name ) ) {
+		
+			/* cleanup memory */
+			
+			printer_key = &data->keys[i];
+			SAFE_FREE( printer_key->name );
+			regval_ctr_destroy( &printer_key->values );
+			
+			/* if not the end of the array, move remaining elements down one slot */
+			
+			data->num_keys--;
+			if ( data->num_keys && (i < data->num_keys) )
+				memmove( &data->keys[i], &data->keys[i+1], sizeof(NT_PRINTER_KEY)*(data->num_keys-i) );
+				
+			break;
+		}
+	}
+	
+
+	return data->num_keys;
 }
 
 /****************************************************************************
@@ -2578,7 +2642,7 @@ int lookup_printerkey( NT_PRINTER_DATA *data, const char *name )
 /****************************************************************************
  ***************************************************************************/
 
-uint32 get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **subkeys )
+int get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **subkeys )
 {
 	int	i, j;
 	int	key_len;
@@ -2589,14 +2653,42 @@ uint32 get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **su
 	
 	if ( !data )
 		return 0;
+
+	if ( !key )
+		return -1;
+
+	/* special case of asking for the top level printer data registry key names */
+
+	if ( strlen(key) == 0 ) {
+		for ( i=0; i<data->num_keys; i++ ) {
 		
+			/* found a match, so allocate space and copy the name */
+			
+			if ( !(ptr = SMB_REALLOC_ARRAY( subkeys_ptr, fstring, num_subkeys+2)) ) {
+				DEBUG(0,("get_printer_subkeys: Realloc failed for [%d] entries!\n", 
+					num_subkeys+1));
+				SAFE_FREE( subkeys );
+				return -1;
+			}
+			
+			subkeys_ptr = ptr;
+			fstrcpy( subkeys_ptr[num_subkeys], data->keys[i].name );
+			num_subkeys++;
+		}
+
+		goto done;
+	}
+		
+	/* asking for the subkeys of some key */
+	/* subkey paths are stored in the key name using '\' as the delimiter */
+
 	for ( i=0; i<data->num_keys; i++ ) {
 		if ( StrnCaseCmp(data->keys[i].name, key, strlen(key)) == 0 ) {
-			/* match sure it is a subkey and not the key itself */
 			
+			/* if we found the exact key, then break */
 			key_len = strlen( key );
 			if ( strlen(data->keys[i].name) == key_len )
-				continue;
+				break;
 			
 			/* get subkey path */
 
@@ -2633,7 +2725,13 @@ uint32 get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **su
 		
 	}
 	
-	/* tag of the end */
+	/* return error if the key was not found */
+	
+	if ( i == data->num_keys )
+		return -1;
+	
+done:
+	/* tag off the end */
 	
 	if (num_subkeys)
 		fstrcpy(subkeys_ptr[num_subkeys], "" );
@@ -3274,6 +3372,15 @@ static int unpack_values(NT_PRINTER_DATA *printer_data, char *buf, int buflen)
 				  &type,
 				  &size,
 				  &data_p);
+
+		/* lookup for subkey names which have a type of REG_NONE */
+		/* there's no data with this entry */
+
+		if ( type == REG_NONE ) {
+			if ( (key_index=lookup_printerkey( printer_data, string)) == -1 )
+				add_new_printer_key( printer_data, string );
+			continue;
+		}
 	
 		/*
 		 * break of the keyname from the value name.  
@@ -3495,17 +3602,22 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *se
 	TDB_DATA kbuf, dbuf;
 	fstring printername;
 	char adevice[MAXDEVICENAME];
+	fstring norm_sharename;
 		
 	ZERO_STRUCT(info);
 
-	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, sharename);
+	/* normalize case */
+	fstrcpy( norm_sharename, sharename );
+	strlower_m( norm_sharename );
+
+	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, norm_sharename);
 
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
 
 	dbuf = tdb_fetch(tdb_printers, kbuf);
 	if (!dbuf.dptr)
-		return get_a_printer_2_default(info_ptr, servername, sharename);
+		return get_a_printer_2_default(info_ptr, servername, norm_sharename);
 
 	len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "dddddddddddfffffPfffff",
 			&info.attributes,
@@ -3539,7 +3651,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *se
 	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", servername);
 
 	if ( lp_force_printername(snum) )
-		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, sharename );
+		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, norm_sharename );
 	else 
 		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, info.printername);
 
@@ -4872,7 +4984,7 @@ WERROR delete_printer_driver( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct cur
  Store a security desc for a printer.
 ****************************************************************************/
 
-WERROR nt_printing_setsec(const char *printername, SEC_DESC_BUF *secdesc_ctr)
+WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 {
 	SEC_DESC_BUF *new_secdesc_ctr = NULL;
 	SEC_DESC_BUF *old_secdesc_ctr = NULL;
@@ -4880,6 +4992,10 @@ WERROR nt_printing_setsec(const char *printername, SEC_DESC_BUF *secdesc_ctr)
 	TALLOC_CTX *mem_ctx = NULL;
 	fstring key;
 	WERROR status;
+	fstring norm_sharename;
+
+	fstrcpy( norm_sharename, sharename );
+	strlower_m( norm_sharename );
 
 	mem_ctx = talloc_init("nt_printing_setsec");
 	if (mem_ctx == NULL)
@@ -4896,7 +5012,7 @@ WERROR nt_printing_setsec(const char *printername, SEC_DESC_BUF *secdesc_ctr)
 		SEC_DESC *psd = NULL;
 		size_t size;
 
-		nt_printing_getsec(mem_ctx, printername, &old_secdesc_ctr);
+		nt_printing_getsec(mem_ctx, norm_sharename, &old_secdesc_ctr);
 
 		/* Pick out correct owner and group sids */
 
@@ -4942,12 +5058,12 @@ WERROR nt_printing_setsec(const char *printername, SEC_DESC_BUF *secdesc_ctr)
 		goto out;
 	}
 
-	slprintf(key, sizeof(key)-1, "SECDESC/%s", printername);
+	slprintf(key, sizeof(key)-1, "SECDESC/%s", norm_sharename);
 
 	if (tdb_prs_store(tdb_printers, key, &ps)==0) {
 		status = WERR_OK;
 	} else {
-		DEBUG(1,("Failed to store secdesc for %s\n", printername));
+		DEBUG(1,("Failed to store secdesc for %s\n", norm_sharename));
 		status = WERR_BADFUNC;
 	}
 
@@ -5049,24 +5165,28 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
  Get a security desc for a printer.
 ****************************************************************************/
 
-BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *printername, SEC_DESC_BUF **secdesc_ctr)
+BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **secdesc_ctr)
 {
 	prs_struct ps;
 	fstring key;
 	char *temp;
+	fstring norm_sharename;
 
-	if (strlen(printername) > 2 && (temp = strchr(printername + 2, '\\'))) {
-		printername = temp + 1;
+	if (strlen(sharename) > 2 && (temp = strchr(sharename + 2, '\\'))) {
+		sharename = temp + 1;
 	}
 
 	/* Fetch security descriptor from tdb */
 
-	slprintf(key, sizeof(key)-1, "SECDESC/%s", printername);
+	fstrcpy( norm_sharename, sharename );
+	strlower_m( norm_sharename );
+
+	slprintf(key, sizeof(key)-1, "SECDESC/%s", norm_sharename);
 
 	if (tdb_prs_fetch(tdb_printers, key, &ps, ctx)!=0 ||
 	    !sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
 
-		DEBUG(4,("using default secdesc for %s\n", printername));
+		DEBUG(4,("using default secdesc for %s\n", norm_sharename));
 
 		if (!(*secdesc_ctr = construct_default_printer_sdb(ctx))) {
 			return False;
@@ -5118,7 +5238,7 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *printername, SEC_DESC_BUF *
 
 			/* Set it */
 
-			nt_printing_setsec(printername, *secdesc_ctr);
+			nt_printing_setsec(norm_sharename, *secdesc_ctr);
 		}
 	}
 
@@ -5127,7 +5247,7 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *printername, SEC_DESC_BUF *
 		int i;
 
 		DEBUG(10, ("secdesc_ctr for %s has %d aces:\n", 
-			   printername, the_acl->num_aces));
+			   norm_sharename, the_acl->num_aces));
 
 		for (i = 0; i < the_acl->num_aces; i++) {
 			fstring sid_str;

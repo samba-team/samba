@@ -2217,14 +2217,14 @@ int set_maxfiles(int requested_max)
  Possibly replace mkstemp if it is broken.
 *****************************************************************/  
 
-int smb_mkstemp(char *template)
+int smb_mkstemp(char *name_template)
 {
 #if HAVE_SECURE_MKSTEMP
-	return mkstemp(template);
+	return mkstemp(name_template);
 #else
 	/* have a reasonable go at emulating it. Hope that
 	   the system mktemp() isn't completly hopeless */
-	char *p = mktemp(template);
+	char *p = mktemp(name_template);
 	if (!p)
 		return -1;
 	return open(p, O_CREAT|O_EXCL|O_RDWR, 0600);
@@ -2451,6 +2451,12 @@ char *parent_dirname(const char *path)
 BOOL ms_has_wild(const char *s)
 {
 	char c;
+
+	if (lp_posix_pathnames()) {
+		/* With posix pathnames no characters are wild. */
+		return False;
+	}
+
 	while ((c = *s++)) {
 		switch (c) {
 		case '*':
@@ -2729,3 +2735,25 @@ int _Insure_trap_error(int a1, int a2, int a3, int a4, int a5, int a6)
 	return ret;
 }
 #endif
+
+uint32 map_share_mode_to_deny_mode(uint32 share_access, uint32 private_options)
+{
+	switch (share_access) {
+		case FILE_SHARE_NONE:
+			return DENY_ALL;
+		case FILE_SHARE_READ:
+			return DENY_WRITE;
+		case FILE_SHARE_WRITE:
+			return DENY_READ;
+		case FILE_SHARE_READ|FILE_SHARE_WRITE:
+		case FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE:
+			return DENY_NONE;
+	}
+	if (private_options & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS) {
+		return DENY_DOS;
+	} else if (private_options & NTCREATEX_OPTIONS_PRIVATE_DENY_FCB) {
+		return DENY_FCB;
+	}
+
+	return (uint32)-1;
+}

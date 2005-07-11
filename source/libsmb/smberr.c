@@ -142,7 +142,7 @@ err_code_struct hard_msgs[] = {
 const struct
 {
   int code;
-  const char *class;
+  const char *e_class;
   err_code_struct *err_msgs;
 } err_classes[] = { 
   {0,"SUCCESS",NULL},
@@ -160,13 +160,13 @@ const struct
 /****************************************************************************
 return a SMB error name from a class and code
 ****************************************************************************/
-const char *smb_dos_err_name(uint8 class, uint16 num)
+const char *smb_dos_err_name(uint8 e_class, uint16 num)
 {
 	static pstring ret;
 	int i,j;
 	
-	for (i=0;err_classes[i].class;i++)
-		if (err_classes[i].code == class) {
+	for (i=0;err_classes[i].e_class;i++)
+		if (err_classes[i].code == e_class) {
 			if (err_classes[i].err_msgs) {
 				err_code_struct *err = err_classes[i].err_msgs;
 				for (j=0;err[j].name;j++)
@@ -178,7 +178,7 @@ const char *smb_dos_err_name(uint8 class, uint16 num)
 			return ret;
 		}
 	
-	slprintf(ret, sizeof(ret) - 1, "Error: Unknown error class (%d,%d)",class,num);
+	slprintf(ret, sizeof(ret) - 1, "Error: Unknown error class (%d,%d)",e_class,num);
 	return(ret);
 }
 
@@ -196,18 +196,18 @@ const char *get_dos_error_msg(WERROR result)
 /****************************************************************************
 return a SMB error class name as a string.
 ****************************************************************************/
-const char *smb_dos_err_class(uint8 class)
+const char *smb_dos_err_class(uint8 e_class)
 {
 	static pstring ret;
 	int i;
 	
-	for (i=0;err_classes[i].class;i++) {
-		if (err_classes[i].code == class) {
-			return err_classes[i].class;
+	for (i=0;err_classes[i].e_class;i++) {
+		if (err_classes[i].code == e_class) {
+			return err_classes[i].e_class;
 		}
 	}
 		
-	slprintf(ret, sizeof(ret) - 1, "Error: Unknown class (%d)",class);
+	slprintf(ret, sizeof(ret) - 1, "Error: Unknown class (%d)",e_class);
 	return(ret);
 }
 
@@ -217,32 +217,32 @@ return a SMB string from an SMB buffer
 char *smb_dos_errstr(char *inbuf)
 {
 	static pstring ret;
-	int class = CVAL(inbuf,smb_rcls);
+	int e_class = CVAL(inbuf,smb_rcls);
 	int num = SVAL(inbuf,smb_err);
 	int i,j;
 	
-	for (i=0;err_classes[i].class;i++)
-		if (err_classes[i].code == class) {
+	for (i=0;err_classes[i].e_class;i++)
+		if (err_classes[i].code == e_class) {
 			if (err_classes[i].err_msgs) {
 				err_code_struct *err = err_classes[i].err_msgs;
 				for (j=0;err[j].name;j++)
 					if (num == err[j].code) {
 						if (DEBUGLEVEL > 0)
 							slprintf(ret, sizeof(ret) - 1, "%s - %s (%s)",
-								 err_classes[i].class,
+								 err_classes[i].e_class,
 								 err[j].name,err[j].message);
 						else
 							slprintf(ret, sizeof(ret) - 1, "%s - %s",
-								 err_classes[i].class,err[j].name);
+								 err_classes[i].e_class,err[j].name);
 						return ret;
 					}
 			}
 			
-			slprintf(ret, sizeof(ret) - 1, "%s - %d",err_classes[i].class,num);
+			slprintf(ret, sizeof(ret) - 1, "%s - %d",err_classes[i].e_class,num);
 			return ret;
 		}
 	
-	slprintf(ret, sizeof(ret) - 1, "Error: Unknown error (%d,%d)",class,num);
+	slprintf(ret, sizeof(ret) - 1, "Error: Unknown error (%d,%d)",e_class,num);
 	return(ret);
 }
 

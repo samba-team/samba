@@ -316,14 +316,14 @@ int winbind_open_pipe_sock(void)
 
 	/* version-check the socket */
 
-	if ((winbindd_request(WINBINDD_INTERFACE_VERSION, &request, &response) != NSS_STATUS_SUCCESS) || (response.data.interface_version != WINBIND_INTERFACE_VERSION)) {
+	if ((winbindd_request_response(WINBINDD_INTERFACE_VERSION, &request, &response) != NSS_STATUS_SUCCESS) || (response.data.interface_version != WINBIND_INTERFACE_VERSION)) {
 		close_sock();
 		return -1;
 	}
 
 	/* try and get priv pipe */
 
-	if (winbindd_request(WINBINDD_PRIV_PIPE_DIR, &request, &response) == NSS_STATUS_SUCCESS) {
+	if (winbindd_request_response(WINBINDD_PRIV_PIPE_DIR, &request, &response) == NSS_STATUS_SUCCESS) {
 		int fd;
 		if ((fd = winbind_named_pipe_sock(response.extra_data)) != -1) {
 			close(winbindd_fd);
@@ -584,7 +584,7 @@ NSS_STATUS winbindd_get_response(struct winbindd_response *response)
 
 /* Handle simple types of requests */
 
-NSS_STATUS winbindd_request(int req_type, 
+NSS_STATUS winbindd_request_response(int req_type, 
 			    struct winbindd_request *request,
 			    struct winbindd_response *response)
 {

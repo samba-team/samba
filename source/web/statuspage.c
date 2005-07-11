@@ -108,23 +108,28 @@ static char *tstring(time_t t)
 static void print_share_mode(share_mode_entry *e, char *fname)
 {
 	char           *utf8_fname;
+	int deny_mode = map_share_mode_to_deny_mode(e->share_access,
+						    e->private_options);
 
 	printf("<tr><td>%s</td>",_(mapPid2Machine(e->pid)));
 	printf("<td>");
-	switch ((e->share_mode>>4)&0xF) {
+	switch ((deny_mode>>4)&0xF) {
 	case DENY_NONE: printf("DENY_NONE"); break;
 	case DENY_ALL:  printf("DENY_ALL   "); break;
 	case DENY_DOS:  printf("DENY_DOS   "); break;
+	case DENY_FCB:  printf("DENY_FCB   "); break;
 	case DENY_READ: printf("DENY_READ  "); break;
 	case DENY_WRITE:printf("DENY_WRITE "); break;
 	}
 	printf("</td>");
 
 	printf("<td>");
-	switch (e->share_mode&0xF) {
-	case 0: printf("%s", _("RDONLY     ")); break;
-	case 1: printf("%s", _("WRONLY     ")); break;
-	case 2: printf("%s", _("RDWR       ")); break;
+	if (e->access_mask & (FILE_READ_DATA|FILE_WRITE_DATA)) {
+		printf("%s", _("RDWR       "));
+	} else if (e->access_mask & FILE_WRITE_DATA) {
+		printf("%s", _("WRONLY     "));
+	} else {
+		printf("%s", _("RDONLY     "));
 	}
 	printf("</td>");
 

@@ -392,7 +392,7 @@ static void rw_callback(struct fd_event *event, int flags)
 
 		if (done <= 0) {
 			event->flags = 0;
-			event->finished(event->private, False);
+			event->finished(event->private_data, False);
 			return;
 		}
 	}
@@ -404,7 +404,7 @@ static void rw_callback(struct fd_event *event, int flags)
 
 		if (done <= 0) {
 			event->flags = 0;
-			event->finished(event->private, False);
+			event->finished(event->private_data, False);
 			return;
 		}
 	}
@@ -413,7 +413,7 @@ static void rw_callback(struct fd_event *event, int flags)
 
 	if (event->done == event->length) {
 		event->flags = 0;
-		event->finished(event->private, True);
+		event->finished(event->private_data, True);
 	}
 }
 
@@ -423,8 +423,8 @@ static void rw_callback(struct fd_event *event, int flags)
  */
 
 void setup_async_read(struct fd_event *event, void *data, size_t length,
-		      void (*finished)(void *private, BOOL success),
-		      void *private)
+		      void (*finished)(void *private_data, BOOL success),
+		      void *private_data)
 {
 	SMB_ASSERT(event->flags == 0);
 	event->data = data;
@@ -432,13 +432,13 @@ void setup_async_read(struct fd_event *event, void *data, size_t length,
 	event->done = 0;
 	event->handler = rw_callback;
 	event->finished = finished;
-	event->private = private;
+	event->private_data = private_data;
 	event->flags = EVENT_FD_READ;
 }
 
 void setup_async_write(struct fd_event *event, void *data, size_t length,
-		       void (*finished)(void *private, BOOL success),
-		       void *private)
+		       void (*finished)(void *private_data, BOOL success),
+		       void *private_data)
 {
 	SMB_ASSERT(event->flags == 0);
 	event->data = data;
@@ -446,7 +446,7 @@ void setup_async_write(struct fd_event *event, void *data, size_t length,
 	event->done = 0;
 	event->handler = rw_callback;
 	event->finished = finished;
-	event->private = private;
+	event->private_data = private_data;
 	event->flags = EVENT_FD_WRITE;
 }
 
@@ -460,17 +460,17 @@ void setup_async_write(struct fd_event *event, void *data, size_t length,
  * to call request_finished which schedules sending the response.
  */
 
-static void request_len_recv(void *private, BOOL success);
-static void request_recv(void *private, BOOL success);
+static void request_len_recv(void *private_data, BOOL success);
+static void request_recv(void *private_data, BOOL success);
 static void request_finished(struct winbindd_cli_state *state);
-void request_finished_cont(void *private, BOOL success);
-static void response_main_sent(void *private, BOOL success);
-static void response_extra_sent(void *private, BOOL success);
+void request_finished_cont(void *private_data, BOOL success);
+static void response_main_sent(void *private_data, BOOL success);
+static void response_extra_sent(void *private_data, BOOL success);
 
-static void response_extra_sent(void *private, BOOL success)
+static void response_extra_sent(void *private_data, BOOL success)
 {
 	struct winbindd_cli_state *state =
-		talloc_get_type_abort(private, struct winbindd_cli_state);
+		talloc_get_type_abort(private_data, struct winbindd_cli_state);
 
 	if (state->mem_ctx != NULL) {
 		talloc_destroy(state->mem_ctx);
@@ -488,10 +488,10 @@ static void response_extra_sent(void *private, BOOL success)
 			 request_len_recv, state);
 }
 
-static void response_main_sent(void *private, BOOL success)
+static void response_main_sent(void *private_data, BOOL success)
 {
 	struct winbindd_cli_state *state =
-		talloc_get_type_abort(private, struct winbindd_cli_state);
+		talloc_get_type_abort(private_data, struct winbindd_cli_state);
 
 	if (!success) {
 		state->finished = True;
@@ -534,10 +534,10 @@ void request_ok(struct winbindd_cli_state *state)
 	request_finished(state);
 }
 
-void request_finished_cont(void *private, BOOL success)
+void request_finished_cont(void *private_data, BOOL success)
 {
 	struct winbindd_cli_state *state =
-		talloc_get_type_abort(private, struct winbindd_cli_state);
+		talloc_get_type_abort(private_data, struct winbindd_cli_state);
 
 	if (success)
 		request_ok(state);
@@ -545,10 +545,10 @@ void request_finished_cont(void *private, BOOL success)
 		request_error(state);
 }
 
-static void request_recv(void *private, BOOL success)
+static void request_recv(void *private_data, BOOL success)
 {
 	struct winbindd_cli_state *state =
-		talloc_get_type_abort(private, struct winbindd_cli_state);
+		talloc_get_type_abort(private_data, struct winbindd_cli_state);
 
 	if (!success) {
 		state->finished = True;
@@ -558,10 +558,10 @@ static void request_recv(void *private, BOOL success)
 	process_request(state);
 }
 
-static void request_len_recv(void *private, BOOL success)
+static void request_len_recv(void *private_data, BOOL success)
 {
 	struct winbindd_cli_state *state =
-		talloc_get_type_abort(private, struct winbindd_cli_state);
+		talloc_get_type_abort(private_data, struct winbindd_cli_state);
 
 	if (!success) {
 		state->finished = True;

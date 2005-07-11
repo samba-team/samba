@@ -109,7 +109,6 @@ BOOL svcctl_io_service_description( const char *desc, UNISTR2 *svcdesc, prs_stru
 	prs_debug(ps, depth, desc, "svcctl_io_service_description");
 	depth++;
 
-	//DEBUG(10, ("_svcctl_io_service_description: descrption is [%s]\n",svcdesc));
 	if (!prs_io_unistr2("", ps, depth, svcdesc))
 		return False;
 

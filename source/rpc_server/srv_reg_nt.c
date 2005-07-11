@@ -30,18 +30,11 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-#define REGSTR_PRODUCTTYPE		"ProductType"
-#define REG_PT_WINNT			"WinNT"
-#define REG_PT_LANMANNT			"LanmanNT"
-#define REG_PT_SERVERNT			"ServerNT"
-
 #define OUR_HANDLE(hnd) (((hnd)==NULL)?"NULL":(IVAL((hnd)->data5,4)==(uint32)sys_getpid()?"OURS":"OTHER")), \
 ((unsigned int)IVAL((hnd)->data5,4)),((unsigned int)sys_getpid())
 
 
-/* no idea if this is correct, just use the file access bits for now */
-
-struct generic_mapping reg_map = { REG_KEY_READ, REG_KEY_WRITE, REG_KEY_EXECUTE, REG_KEY_ALL };
+static struct generic_mapping reg_generic_map = { REG_KEY_READ, REG_KEY_WRITE, REG_KEY_EXECUTE, REG_KEY_ALL };
 
 /********************************************************************
 ********************************************************************/
@@ -51,6 +44,7 @@ NTSTATUS registry_access_check( SEC_DESC *sec_desc, NT_USER_TOKEN *token,
 {
 	NTSTATUS result;
 		
+	se_map_generic( &access_desired, &reg_generic_map );
 	se_access_check( sec_desc, token, access_desired, access_granted, &result );
 	
 	return result;
@@ -185,12 +179,12 @@ static WERROR open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY *
 		result = WERR_BADFILE;
 		goto done;
 	}
-
+		
 	if ( !create_policy_hnd( p, hnd, free_regkey_info, regkey ) ) {
-		result = WERR_BADFILE; 
+			result = WERR_BADFILE; 
 		goto done;
 	}
-
+	
 	/* save the access mask */
 
 	regkey->access_granted = access_granted;
@@ -265,9 +259,7 @@ static BOOL get_subkey_information( REGISTRY_KEY *key, uint32 *maxnum, uint32 *m
 }
 
 /********************************************************************
- retrieve information about the values.  We don't store values 
- here.  The registry tdb is intended to be a frontend to oether 
- Samba tdb's (such as ntdrivers.tdb).
+ retrieve information about the values.  
  *******************************************************************/
  
 static BOOL get_value_information( REGISTRY_KEY *key, uint32 *maxnum, 
@@ -293,7 +285,7 @@ static BOOL get_value_information( REGISTRY_KEY *key, uint32 *maxnum,
 	
 	for ( i=0; i<num_values && val; i++ ) 
 	{
-		lenmax  = MAX(lenmax,  strlen(val->valuename)+1 );
+		lenmax  = MAX(lenmax,  val->valuename ? strlen(val->valuename)+1 : 0 );
 		sizemax = MAX(sizemax, val->size );
 		
 		val = regval_ctr_specific_value( &values, i );
@@ -317,7 +309,7 @@ WERROR _reg_close(pipes_struct *p, REG_Q_CLOSE *q_u, REG_R_CLOSE *r_u)
 {
 	/* close the policy handle */
 
-	if ( !close_registry_key(p, &q_u->pol) )
+	if (!close_registry_key(p, &q_u->pol))
 		return WERR_BADFID; 
 
 	return WERR_OK;
@@ -405,14 +397,14 @@ WERROR _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY 
 
 	if ( !parent )
 		return WERR_BADFID;
-		
+
 	rpcstr_pull( name, q_u->name.string->buffer, sizeof(name), q_u->name.string->uni_str_len*2, 0 );
 	
 	/* check granted access first; what is the correct mask here? */
 
 	if ( !(parent->access_granted & (SEC_RIGHTS_ENUM_SUBKEYS|SEC_RIGHTS_CREATE_SUBKEY)) )
 		return WERR_ACCESS_DENIED;
-
+	
 	/* open the key first to get the appropriate REGISTRY_HOOK 
 	   and then check the premissions */
 
@@ -439,13 +431,10 @@ WERROR _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY 
  reg_reply_info
  ********************************************************************/
 
-WERROR _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
+WERROR _reg_query_value(pipes_struct *p, REG_Q_QUERY_VALUE *q_u, REG_R_QUERY_VALUE *r_u)
 {
 	WERROR			status = WERR_BADFILE;
 	fstring 		name;
-	const char              *value_ascii = "";
-	fstring                 value;
-	int                     value_length;
 	REGISTRY_KEY 		*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
 	REGISTRY_VALUE		*val = NULL;
 	REGVAL_CTR		regvals;
@@ -463,66 +452,11 @@ WERROR _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 	DEBUG(5,("reg_info: looking up value: [%s]\n", name));
 
 	regval_ctr_init( &regvals );
-
-	/* couple of hard coded registry values */
-	
-	if ( strequal(name, "RefusePasswordChange") ) {
-		uint32 dwValue;
-
-		if ( (val = SMB_MALLOC_P(REGISTRY_VALUE)) == NULL ) {
-			DEBUG(0,("_reg_info: malloc() failed!\n"));
-			return WERR_NOMEM;
-		}
-
-		if (!account_policy_get(AP_REFUSE_MACHINE_PW_CHANGE, &dwValue))
-			dwValue = 0;
-		regval_ctr_addvalue(&regvals, "RefusePasswordChange", 
-				    REG_DWORD,
-				    (const char*)&dwValue, sizeof(dwValue));
-		val = dup_registry_value(
-			regval_ctr_specific_value( &regvals, 0 ) );
- 	
-		status = WERR_OK;
-	
-		goto out;
-	}
-
-	if ( strequal(name, REGSTR_PRODUCTTYPE) ) {
-		/* This makes the server look like a member server to clients */
-		/* which tells clients that we have our own local user and    */
-		/* group databases and helps with ACL support.                */
-		
-		switch (lp_server_role()) {
-			case ROLE_DOMAIN_PDC:
-			case ROLE_DOMAIN_BDC:
-				value_ascii = REG_PT_LANMANNT;
-				break;
-			case ROLE_STANDALONE:
-				value_ascii = REG_PT_SERVERNT;
-				break;
-			case ROLE_DOMAIN_MEMBER:
-				value_ascii = REG_PT_WINNT;
-				break;
-		}
-		value_length = push_ucs2(value, value, value_ascii,
-					 sizeof(value),
-					 STR_TERMINATE|STR_NOALIGN);
-		regval_ctr_addvalue(&regvals, REGSTR_PRODUCTTYPE, REG_SZ,
-				    value, value_length);
-		
-		val = dup_registry_value( regval_ctr_specific_value( &regvals, 0 ) );
-		
-		status = WERR_OK;
-		
-		goto out;
-	}
-
-	/* else fall back to actually looking up the value */
 	
 	for ( i=0; fetch_reg_values_specific(regkey, &val, i); i++ ) 
 	{
 		DEBUG(10,("_reg_info: Testing value [%s]\n", val->valuename));
-		if ( StrCaseCmp( val->valuename, name ) == 0 ) {
+		if ( strequal( val->valuename, name ) ) {
 			DEBUG(10,("_reg_info: Found match for value [%s]\n", name));
 			status = WERR_OK;
 			break;
@@ -531,9 +465,7 @@ WERROR _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 		free_registry_value( val );
 	}
 
-  
-out:
-	init_reg_r_info(q_u->ptr_buf, r_u, val, status);
+	init_reg_r_query_value(q_u->ptr_buf, r_u, val, status);
 	
 	regval_ctr_destroy( &regvals );
 	free_registry_value( val );
@@ -558,11 +490,15 @@ WERROR _reg_query_key(pipes_struct *p, REG_Q_QUERY_KEY *q_u, REG_R_QUERY_KEY *r_
 	if ( !regkey )
 		return WERR_BADFID; 
 	
-	if ( !get_subkey_information( regkey, &r_u->num_subkeys, &r_u->max_subkeylen ) )
+	if ( !get_subkey_information( regkey, &r_u->num_subkeys, &r_u->max_subkeylen ) ) {
+		DEBUG(0,("_reg_query_key: get_subkey_information() failed!\n"));
 		return WERR_ACCESS_DENIED;
+	}
 		
-	if ( !get_value_information( regkey, &r_u->num_values, &r_u->max_valnamelen, &r_u->max_valbufsize ) )
+	if ( !get_value_information( regkey, &r_u->num_values, &r_u->max_valnamelen, &r_u->max_valbufsize ) ) {
+		DEBUG(0,("_reg_query_key: get_value_information() failed!\n"));
 		return WERR_ACCESS_DENIED;	
+	}
 
 		
 	r_u->sec_desc = 0x00000078;	/* size for key's sec_desc */
@@ -852,7 +788,7 @@ static int validate_reg_filename( pstring fname )
 }
 
 /*******************************************************************
- Note: topkeypaty is the *full* path that this *key will be 
+ Note: topkeypat is the *full* path that this *key will be 
  loaded into (including the name of the key)
  ********************************************************************/
 
@@ -1080,12 +1016,12 @@ static WERROR make_default_reg_sd( TALLOC_CTX *ctx, SEC_DESC **psd )
 
 	/* basic access for Everyone */
 
-	init_sec_access(&mask, reg_map.generic_execute | reg_map.generic_read );
+	init_sec_access(&mask, reg_generic_map.generic_execute | reg_generic_map.generic_read );
 	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 
 	/* add Full Access 'BUILTIN\Administrators' */
 
-	init_sec_access(&mask, reg_map.generic_all);
+	init_sec_access(&mask, reg_generic_map.generic_all);
 	sid_copy(&adm_sid, &global_sid_Builtin);
 	sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
 	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
@@ -1165,7 +1101,7 @@ WERROR _reg_save_key(pipes_struct *p, REG_Q_SAVE_KEY  *q_u, REG_R_SAVE_KEY *r_u)
 /*******************************************************************
  ********************************************************************/
 
-WERROR _reg_create_key(pipes_struct *p, REG_Q_CREATE_KEY  *q_u, REG_R_CREATE_KEY *r_u)
+WERROR _reg_create_key_ex(pipes_struct *p, REG_Q_CREATE_KEY_EX *q_u, REG_R_CREATE_KEY_EX *r_u)
 {
 	REGISTRY_KEY *parent = find_regkey_index_by_hnd(p, &q_u->handle);
 	REGISTRY_KEY *newparent;
@@ -1270,6 +1206,7 @@ WERROR _reg_set_value(pipes_struct *p, REG_Q_SET_VALUE  *q_u, REG_R_SET_VALUE *r
 	REGISTRY_KEY *key = find_regkey_index_by_hnd(p, &q_u->handle);
 	REGVAL_CTR values;
 	BOOL write_result;
+	fstring valuename;
 
 	if ( !key )
 		return WERR_BADFID;
@@ -1279,12 +1216,22 @@ WERROR _reg_set_value(pipes_struct *p, REG_Q_SET_VALUE  *q_u, REG_R_SET_VALUE *r
 	if ( !(key->access_granted & SEC_RIGHTS_SET_VALUE) )
 		return WERR_ACCESS_DENIED;
 		
+	rpcstr_pull( valuename, q_u->name.string->buffer, sizeof(valuename), q_u->name.string->uni_str_len*2, 0 );
+
+	/* verify the name */
+
+	if ( !*valuename )
+		return WERR_INVALID_PARAM;
+
+	DEBUG(8,("_reg_set_value: Setting value for [%s:%s]\n", key->name, valuename));
+		
 	regval_ctr_init( &values );
 	
 	/* lookup the current values and add the new one */
 	
 	fetch_reg_values( key, &values );
-	/* FIXME!!!! regval_ctr_addvalue( &values, .... ); */
+	
+	regval_ctr_addvalue( &values, valuename, q_u->type, q_u->value.buffer, q_u->value.buf_len );
 	
 	/* now write to the registry backend */
 	
@@ -1378,6 +1325,8 @@ WERROR _reg_delete_key(pipes_struct *p, REG_Q_DELETE_KEY  *q_u, REG_R_DELETE_KEY
 	write_result = store_reg_keys( newparent, &subkeys );
 	
 	regsubkey_ctr_destroy( &subkeys );
+
+	result = write_result ? WERR_OK : WERR_REG_IO_FAILURE;
 	
 done:
 	/* close any intermediate key handles */
@@ -1385,9 +1334,7 @@ done:
 	if ( newparent != parent )
 		close_registry_key( p, &newparent_handle );
 
-	/* rpc_reg.h says there is a POLICY_HDN in the reply...no idea if that is correct */
-	
-	return write_result ? WERR_OK : WERR_REG_IO_FAILURE;
+	return result;
 }
 
 
@@ -1399,7 +1346,8 @@ WERROR _reg_delete_value(pipes_struct *p, REG_Q_DELETE_VALUE  *q_u, REG_R_DELETE
 	REGISTRY_KEY *key = find_regkey_index_by_hnd(p, &q_u->handle);
 	REGVAL_CTR values;
 	BOOL write_result;
-
+	fstring valuename;
+	
 	if ( !key )
 		return WERR_BADFID;
 		
@@ -1407,13 +1355,21 @@ WERROR _reg_delete_value(pipes_struct *p, REG_Q_DELETE_VALUE  *q_u, REG_R_DELETE
 	
 	if ( !(key->access_granted & SEC_RIGHTS_SET_VALUE) )
 		return WERR_ACCESS_DENIED;
-		
+
+	rpcstr_pull( valuename, q_u->name.string->buffer, sizeof(valuename), q_u->name.string->uni_str_len*2, 0 );
+
+	if ( !*valuename )
+		return WERR_INVALID_PARAM;
+
+	DEBUG(8,("_reg_delete_value: Setting value for [%s:%s]\n", key->name, valuename));
+
 	regval_ctr_init( &values );
 	
 	/* lookup the current values and add the new one */
 	
 	fetch_reg_values( key, &values );
-	/* FIXME!!!! regval_ctr_delval( &values, .... ); */
+	
+	regval_ctr_delvalue( &values, valuename );
 	
 	/* now write to the registry backend */
 	
@@ -1426,4 +1382,41 @@ WERROR _reg_delete_value(pipes_struct *p, REG_Q_DELETE_VALUE  *q_u, REG_R_DELETE
 		
 	return WERR_OK;
 }
+
+/*******************************************************************
+ ********************************************************************/
+
+WERROR _reg_get_key_sec(pipes_struct *p, REG_Q_GET_KEY_SEC  *q_u, REG_R_GET_KEY_SEC *r_u)
+{
+	REGISTRY_KEY *key = find_regkey_index_by_hnd(p, &q_u->handle);
+
+	if ( !key )
+		return WERR_BADFID;
+		
+	/* access checks first */
+	
+	if ( !(key->access_granted & STD_RIGHT_READ_CONTROL_ACCESS) )
+		return WERR_ACCESS_DENIED;
+		
+	return WERR_ACCESS_DENIED;
+}
+
+/*******************************************************************
+ ********************************************************************/
+
+WERROR _reg_set_key_sec(pipes_struct *p, REG_Q_SET_KEY_SEC  *q_u, REG_R_SET_KEY_SEC *r_u)
+{
+	REGISTRY_KEY *key = find_regkey_index_by_hnd(p, &q_u->handle);
+
+	if ( !key )
+		return WERR_BADFID;
+		
+	/* access checks first */
+	
+	if ( !(key->access_granted & STD_RIGHT_WRITE_DAC_ACCESS) )
+		return WERR_ACCESS_DENIED;
+		
+	return WERR_ACCESS_DENIED;
+}
+
 

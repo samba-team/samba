@@ -34,7 +34,7 @@
 #define REG_OPEN_HKPD		0x03
 #define REG_OPEN_HKU		0x04
 #define REG_CLOSE		0x05
-#define REG_CREATE_KEY		0x06
+#define REG_CREATE_KEY_EX	0x06
 #define REG_DELETE_KEY		0x07
 #define REG_DELETE_VALUE	0x08
 #define REG_ENUM_KEY		0x09
@@ -43,7 +43,7 @@
 #define REG_GET_KEY_SEC		0x0c
 #define REG_OPEN_ENTRY		0x0f
 #define REG_QUERY_KEY		0x10
-#define REG_INFO		0x11
+#define REG_QUERY_VALUE		0x11
 #define REG_RESTORE_KEY		0x13
 #define REG_SAVE_KEY		0x14
 #define REG_SET_KEY_SEC		0x15
@@ -64,7 +64,7 @@
 #define KEY_HKU			"HKU"
 #define KEY_HKCR		"HKCR"
 #define KEY_PRINTING 		"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print"
-#define KEY_PRINTING_2K		"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print"
+#define KEY_PRINTING_2K		"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Printers"
 #define KEY_PRINTING_PORTS	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Ports"
 #define KEY_EVENTLOG 		"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Eventlog"
 #define KEY_SHARES		"HKLM\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Shares"
@@ -92,10 +92,10 @@
  
 typedef struct {
 	/* functions for enumerating subkeys and values */	
-	int 	(*fetch_subkeys)( char *key, REGSUBKEY_CTR *subkeys);
-	int 	(*fetch_values) ( char *key, REGVAL_CTR *val );
-	BOOL 	(*store_subkeys)( char *key, REGSUBKEY_CTR *subkeys );
-	BOOL 	(*store_values)( char *key, REGVAL_CTR *val );
+	int 	(*fetch_subkeys)( const char *key, REGSUBKEY_CTR *subkeys);
+	int 	(*fetch_values) ( const char *key, REGVAL_CTR *val );
+	BOOL 	(*store_subkeys)( const char *key, REGSUBKEY_CTR *subkeys );
+	BOOL 	(*store_values)( const char *key, REGVAL_CTR *val );
 	BOOL	(*reg_access_check)( const char *keyname, uint32 requested, uint32 *granted, NT_USER_TOKEN *token );
 } REGISTRY_OPS;
 
@@ -146,7 +146,7 @@ typedef struct {
 /***********************************************/
 
 typedef struct {
-	POLICY_HND pol;
+	POLICY_HND handle;
 	uint32 sec_info;
 	uint32 ptr; 
 	BUFHDR hdr_sec;
@@ -161,7 +161,7 @@ typedef struct {
 /***********************************************/
 
 typedef struct {
-	POLICY_HND pol;
+	POLICY_HND handle;
 	uint32 sec_info;
 	uint32 ptr; 
 	BUFHDR hdr_sec; 
@@ -216,7 +216,7 @@ typedef struct {
 typedef struct {
 	POLICY_HND handle;
 	UNISTR4 name;
-	UNISTR4 class;
+	UNISTR4 key_class;
 	uint32 reserved;
 	uint32 access;
 	uint32 *sec_info;
@@ -225,13 +225,13 @@ typedef struct {
 	uint32 ptr3;
 	SEC_DESC_BUF *data;
 	uint32 unknown_2; /* 0x0000 0000 */
-} REG_Q_CREATE_KEY;
+} REG_Q_CREATE_KEY_EX;
 
 typedef struct {
 	POLICY_HND handle;
-	uint32 unknown;
+	uint32 disposition;
 	WERROR status; 
-} REG_R_CREATE_KEY;
+} REG_R_CREATE_KEY_EX;
 
 /***********************************************/
 
@@ -241,7 +241,6 @@ typedef struct {
 } REG_Q_DELETE_KEY;
 
 typedef struct {
-	POLICY_HND key_pol;
 	WERROR status; 
 } REG_R_DELETE_KEY;
 
@@ -253,7 +252,6 @@ typedef struct {
 } REG_Q_DELETE_VALUE;
 
 typedef struct {
-	POLICY_HND key_pol;
 	WERROR status;
 } REG_R_DELETE_VALUE;
 
@@ -261,11 +259,11 @@ typedef struct {
 
 typedef struct {
 	POLICY_HND pol;
-	UNISTR4 class;
+	UNISTR4 key_class;
 } REG_Q_QUERY_KEY;
 
 typedef struct {
-	UNISTR4 class;
+	UNISTR4 key_class;
 	uint32 num_subkeys;
 	uint32 max_subkeylen;
 	uint32 reserved; 	/* 0x0000 0000 - according to MSDN (max_subkeysize?) */
@@ -389,7 +387,7 @@ typedef struct {
 	uint32 ptr_buflen2;
 	uint32 buflen2;
 
-} REG_Q_INFO;
+} REG_Q_QUERY_VALUE;
 
 typedef struct { 
 	uint32 *type;
@@ -397,7 +395,7 @@ typedef struct {
 	uint32 *buf_max_len;
 	uint32 *buf_len;
 	WERROR status;	/* return status */
-} REG_R_INFO;
+} REG_R_QUERY_VALUE;
 
 
 /***********************************************/

@@ -69,7 +69,7 @@
  * Functions...
  */
 
-static dbg_Token modechange( dbg_Token new, dbg_Token mode )
+static dbg_Token modechange( dbg_Token newmode, dbg_Token mode )
   /* ------------------------------------------------------------------------ **
    * Handle a switch between header and message printing.
    *
@@ -89,7 +89,7 @@ static dbg_Token modechange( dbg_Token new, dbg_Token mode )
    * ------------------------------------------------------------------------ **
    */
   {
-  switch( new )
+  switch( newmode )
     {
     case dbg_null:
     case dbg_ignore:
@@ -114,7 +114,7 @@ static dbg_Token modechange( dbg_Token new, dbg_Token mode )
   return( mode );
   } /* modechange */
 
-static void newblock( dbg_Token old, dbg_Token new )
+static void newblock( dbg_Token old, dbg_Token newtok )
   /* ------------------------------------------------------------------------ **
    * Handle the transition between tokens.
    *
@@ -147,7 +147,7 @@ static void newblock( dbg_Token old, dbg_Token new )
       break;
     }
 
-  switch( new )
+  switch( newtok )
     {
     case dbg_timestamp:
       (void)printf( "<B>[" );
@@ -223,7 +223,7 @@ int main( int argc, char *argv[] )
   int       len;
   char      bufr[DBG_BSIZE];
   dbg_Token old   = dbg_null,
-            new   = dbg_null,
+            newtok = dbg_null,
             state = dbg_null,
             mode  = dbg_null;
 
@@ -236,14 +236,14 @@ int main( int argc, char *argv[] )
     {
     for( i = 0; i < len; i++ )
       {
-      old = new;
-      new = dbg_char2token( &state, bufr[i] );
-      if( new != old )
+      old = newtok;
+      newtok = dbg_char2token( &state, bufr[i] );
+      if( newtok != old )
         {
-        mode = modechange( new, mode );
-        newblock( old, new );
+        mode = modechange( newtok, mode );
+        newblock( old, newtok );
         }
-      charprint( new, bufr[i] );
+      charprint( newtok, bufr[i] );
       }
     }
   (void)modechange( dbg_eof, mode );

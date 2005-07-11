@@ -652,6 +652,8 @@ static void wcache_save_user(struct winbindd_domain *domain, NTSTATUS status, WI
 		return;
 	centry_put_string(centry, info->acct_name);
 	centry_put_string(centry, info->full_name);
+	centry_put_string(centry, info->homedir);
+	centry_put_string(centry, info->shell);
 	centry_put_sid(centry, &info->user_sid);
 	centry_put_sid(centry, &info->group_sid);
 	centry_end(centry, "U/%s", sid_to_string(sid_string, &info->user_sid));
@@ -689,6 +691,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	for (i=0; i<(*num_entries); i++) {
 		(*info)[i].acct_name = centry_string(centry, mem_ctx);
 		(*info)[i].full_name = centry_string(centry, mem_ctx);
+		(*info)[i].homedir = centry_string(centry, mem_ctx);
+		(*info)[i].shell = centry_string(centry, mem_ctx);
 		centry_sid(centry, &(*info)[i].user_sid);
 		centry_sid(centry, &(*info)[i].group_sid);
 	}
@@ -747,6 +751,8 @@ do_query:
 	for (i=0; i<(*num_entries); i++) {
 		centry_put_string(centry, (*info)[i].acct_name);
 		centry_put_string(centry, (*info)[i].full_name);
+		centry_put_string(centry, (*info)[i].homedir);
+		centry_put_string(centry, (*info)[i].shell);
 		centry_put_sid(centry, &(*info)[i].user_sid);
 		centry_put_sid(centry, &(*info)[i].group_sid);
 		if (domain->backend->consistent) {
@@ -1082,6 +1088,8 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	info->acct_name = centry_string(centry, mem_ctx);
 	info->full_name = centry_string(centry, mem_ctx);
+	info->homedir = centry_string(centry, mem_ctx);
+	info->shell = centry_string(centry, mem_ctx);
 	centry_sid(centry, &info->user_sid);
 	centry_sid(centry, &info->group_sid);
 	status = centry->status;

@@ -34,9 +34,9 @@
  the memory allocated here.
  **********************************************************************/
 
-static char* trim_reg_path( char *path )
+static char* trim_reg_path( const char *path )
 {
-	char *p;
+	const char *p;
 	uint16 key_len = strlen(KEY_SHARES);
 	
 	/* 
@@ -67,7 +67,7 @@ static char* trim_reg_path( char *path )
  Caller is responsible for freeing memory to **subkeys
  *********************************************************************/
  
-static int shares_subkey_info( char *key, REGSUBKEY_CTR *subkey_ctr )
+static int shares_subkey_info( const char *key, REGSUBKEY_CTR *subkey_ctr )
 {
 	char 		*path;
 	BOOL		top_level = False;
@@ -101,7 +101,7 @@ static int shares_subkey_info( char *key, REGSUBKEY_CTR *subkey_ctr )
  Caller is responsible for freeing memory 
  *********************************************************************/
 
-static int shares_value_info( char *key, REGVAL_CTR *val )
+static int shares_value_info( const char *key, REGVAL_CTR *val )
 {
 	char 		*path;
 	BOOL		top_level = False;
@@ -134,7 +134,7 @@ static int shares_value_info( char *key, REGVAL_CTR *val )
  (for now at least)
  *********************************************************************/
 
-static BOOL shares_store_subkey( char *key, REGSUBKEY_CTR *subkeys )
+static BOOL shares_store_subkey( const char *key, REGSUBKEY_CTR *subkeys )
 {
 	return False;
 }
@@ -145,7 +145,7 @@ static BOOL shares_store_subkey( char *key, REGSUBKEY_CTR *subkeys )
  (for now at least)
  *********************************************************************/
 
-static BOOL shares_store_value( char *key, REGVAL_CTR *val )
+static BOOL shares_store_value( const char *key, REGVAL_CTR *val )
 {
 	return False;
 }

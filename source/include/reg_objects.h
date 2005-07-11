@@ -26,6 +26,7 @@
 typedef struct {
 	fstring		valuename;
 	uint16		type;
+	/* this should be encapsulated in an RPC_DATA_BLOB */
 	uint32		size;	/* in bytes */
 	uint8           *data_p;
 } REGISTRY_VALUE;
@@ -45,19 +46,6 @@ typedef struct {
 	uint32          num_subkeys;
 	char            **subkeys;
 } REGSUBKEY_CTR;
-
-/* represent a registry key with all its subkeys and values */
-
-struct _regobj_key;
-
-typedef struct _regobj_key {
-	TALLOC_CTX *ctx;
-
-	char *name;
-
-	REGVAL_CTR values;
-	REGSUBKEY_CTR subkeys;
-} REGOBJ_KEY;
 
 #endif /* _REG_OBJECTS_H */
 

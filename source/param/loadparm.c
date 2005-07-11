@@ -177,7 +177,6 @@ typedef struct
 	BOOL bWinbindUseDefaultDomain;
 	BOOL bWinbindTrustedDomainsOnly;
 	BOOL bWinbindNestedGroups;
-	char *szWinbindBackend;
 	char **szIdmapBackend;
 	char *szAddShareCommand;
 	char *szChangeShareCommand;
@@ -226,6 +225,7 @@ typedef struct
 	int oplock_break_wait_time;
 	int winbind_cache_time;
 	int winbind_max_idle_children;
+	char **szWinbindNssInfo;
 	int iLockSpinCount;
 	int iLockSpinTime;
 	char *szLdapMachineSuffix;
@@ -360,6 +360,7 @@ typedef struct
 	char *fstype;
 	char **szVfsObjects;
 	char *szMSDfsProxy;
+	char *szAioWriteBehind;
 	int iMinPrintSpace;
 	int iMaxPrintJobs;
 	int iMaxReportedPrintJobs;
@@ -436,7 +437,10 @@ typedef struct
 	BOOL bAfs_Share;
 	BOOL bEASupport;
 	BOOL bAclCheckPermissions;
+	BOOL bAclMapFullControl;
 	int iallocation_roundup_size;
+	int iAioReadSize;
+	int iAioWriteSize;
 	param_opt_struct *param_opt;
 
 	char dummy[3];		/* for alignment */
@@ -488,6 +492,7 @@ static service sDefault = {
 	NULL,			/* fstype */
 	NULL,			/* vfs objects */
 	NULL,                   /* szMSDfsProxy */
+	NULL,			/* szAioWriteBehind */
 	0,			/* iMinPrintSpace */
 	1000,			/* iMaxPrintJobs */
 	0,			/* iMaxReportedPrintJobs */
@@ -564,7 +569,10 @@ static service sDefault = {
 	False,			/* bAfs_Share */
 	False,			/* bEASupport */
 	True,			/* bAclCheckPermissions */
+	True,			/* bAclMapFullControl */
 	SMB_ROUNDUP_ALLOCATION_SIZE,		/* iallocation_roundup_size */
+	0,			/* iAioReadSize */
+	0,			/* iAioWriteSize */
 	
 	NULL,			/* Parametric options */
 
@@ -868,6 +876,7 @@ static struct parm_struct parm_table[] = {
 	{"writable", P_BOOLREV, P_LOCAL, &sDefault.bRead_only, NULL, NULL, FLAG_HIDE}, 
 
 	{"acl check permissions", P_BOOL, P_LOCAL, &sDefault.bAclCheckPermissions, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE},
+	{"acl map full control", P_BOOL, P_LOCAL, &sDefault.bAclMapFullControl, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE},
 	{"create mask", P_OCTAL, P_LOCAL, &sDefault.iCreate_mask, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
 	{"create mode", P_OCTAL, P_LOCAL, &sDefault.iCreate_mask, NULL, NULL, FLAG_HIDE}, 
 	{"force create mode", P_OCTAL, P_LOCAL, &sDefault.iCreate_force_mode, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
@@ -914,6 +923,9 @@ static struct parm_struct parm_table[] = {
 	{N_("Protocol Options"), P_SEP, P_SEPARATOR}, 
 
 	{"allocation roundup size", P_INTEGER, P_LOCAL, &sDefault.iallocation_roundup_size, NULL, NULL, FLAG_ADVANCED}, 
+	{"aio read size", P_INTEGER, P_LOCAL, &sDefault.iAioReadSize, NULL, NULL, FLAG_ADVANCED}, 
+	{"aio write size", P_INTEGER, P_LOCAL, &sDefault.iAioWriteSize, NULL, NULL, FLAG_ADVANCED}, 
+	{"aio write behind", P_STRING, P_LOCAL, &sDefault.szAioWriteBehind, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL }, 
 	{"smb ports", P_STRING, P_GLOBAL, &Globals.smb_ports, NULL, NULL, FLAG_ADVANCED}, 
 	{"large readwrite", P_BOOL, P_GLOBAL, &Globals.bLargeReadwrite, NULL, NULL, FLAG_ADVANCED}, 
 	{"max protocol", P_ENUM, P_GLOBAL, &Globals.maxprotocol, NULL, enum_protocol, FLAG_ADVANCED}, 
@@ -1225,6 +1237,7 @@ static struct parm_struct parm_table[] = {
 	{"winbind trusted domains only", P_BOOL, P_GLOBAL, &Globals.bWinbindTrustedDomainsOnly, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind nested groups", P_BOOL, P_GLOBAL, &Globals.bWinbindNestedGroups, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind max idle children", P_INTEGER, P_GLOBAL, &Globals.winbind_max_idle_children, NULL, NULL, FLAG_ADVANCED}, 
+	{"winbind nss info", P_LIST, P_GLOBAL, &Globals.szWinbindNssInfo, NULL, NULL, FLAG_ADVANCED}, 
 
 	{NULL,  P_BOOL,  P_NONE,  NULL,  NULL,  NULL,  0}
 };
@@ -1338,7 +1351,7 @@ static void init_globals(void)
 			if ((parm_table[i].type == P_STRING ||
 			     parm_table[i].type == P_USTRING) &&
 			    parm_table[i].ptr)
-				string_set(parm_table[i].ptr, "");
+				string_set((char **)parm_table[i].ptr, "");
 
 		string_set(&sDefault.fstype, FSTYPE_STRING);
 
@@ -1570,6 +1583,7 @@ static void init_globals(void)
 	Globals.bWinbindTrustedDomainsOnly = False;
 	Globals.bWinbindNestedGroups = False;
 	Globals.winbind_max_idle_children = 3;
+	Globals.szWinbindNssInfo = str_list_make("template", NULL);
 
 	Globals.bEnableRidAlgorithm = True;
 
@@ -1914,6 +1928,7 @@ FN_LOCAL_STRING(lp_veto_files, szVetoFiles)
 FN_LOCAL_STRING(lp_hide_files, szHideFiles)
 FN_LOCAL_STRING(lp_veto_oplocks, szVetoOplockFiles)
 FN_LOCAL_BOOL(lp_msdfs_root, bMSDfsRoot)
+FN_LOCAL_STRING(lp_aio_write_behind, szAioWriteBehind)
 FN_LOCAL_BOOL(lp_autoloaded, autoloaded)
 FN_LOCAL_BOOL(lp_preexec_close, bPreexecClose)
 FN_LOCAL_BOOL(lp_rootpreexec_close, bRootpreexecClose)
@@ -1969,6 +1984,7 @@ FN_LOCAL_BOOL(lp_profile_acls, bProfileAcls)
 FN_LOCAL_BOOL(lp_map_acl_inherit, bMap_acl_inherit)
 FN_LOCAL_BOOL(lp_afs_share, bAfs_Share)
 FN_LOCAL_BOOL(lp_acl_check_permissions, bAclCheckPermissions)
+FN_LOCAL_BOOL(lp_acl_map_full_control, bAclMapFullControl)
 FN_LOCAL_INTEGER(lp_create_mask, iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode, iCreate_force_mode)
 FN_LOCAL_INTEGER(lp_security_mask, iSecurity_mask)
@@ -1987,9 +2003,12 @@ FN_LOCAL_INTEGER(lp_csc_policy, iCSCPolicy)
 FN_LOCAL_INTEGER(lp_write_cache_size, iWriteCacheSize)
 FN_LOCAL_INTEGER(lp_block_size, iBlock_size)
 FN_LOCAL_INTEGER(lp_allocation_roundup_size, iallocation_roundup_size);
+FN_LOCAL_INTEGER(lp_aio_read_size, iAioReadSize);
+FN_LOCAL_INTEGER(lp_aio_write_size, iAioWriteSize);
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 FN_GLOBAL_INTEGER(lp_winbind_max_idle_children, &Globals.winbind_max_idle_children)
+FN_GLOBAL_LIST(lp_winbind_nss_info, &Globals.szWinbindNssInfo)
 FN_GLOBAL_INTEGER(lp_algorithmic_rid_base, &Globals.AlgorithmicRidBase)
 FN_GLOBAL_INTEGER(lp_name_cache_timeout, &Globals.name_cache_timeout)
 FN_GLOBAL_INTEGER(lp_client_signing, &Globals.client_signing)
@@ -2272,12 +2291,12 @@ static void free_service(service *pservice)
 	for (i = 0; parm_table[i].label; i++) {
 		if ((parm_table[i].type == P_STRING ||
 		     parm_table[i].type == P_USTRING) &&
-		    parm_table[i].class == P_LOCAL)
+		    parm_table[i].p_class == P_LOCAL)
 			string_free((char **)
 				    (((char *)pservice) +
 				     PTR_DIFF(parm_table[i].ptr, &sDefault)));
 		else if (parm_table[i].type == P_LIST &&
-			 parm_table[i].class == P_LOCAL)
+			 parm_table[i].p_class == P_LOCAL)
 			     str_list_free((char ***)
 			     		    (((char *)pservice) +
 					     PTR_DIFF(parm_table[i].ptr, &sDefault)));
@@ -2541,7 +2560,7 @@ void show_parameter_list(void)
 	for ( classIndex=0; section_names[classIndex]; classIndex++) {
 		printf("[%s]\n", section_names[classIndex]);
 		for (parmIndex = 0; parm_table[parmIndex].label; parmIndex++) {
-			if (parm_table[parmIndex].class == classIndex) {
+			if (parm_table[parmIndex].p_class == classIndex) {
 				printf("%s=%s", 
 					parm_table[parmIndex].label,
 					type[parm_table[parmIndex].type]);
@@ -2632,7 +2651,7 @@ static void copy_service(service * pserviceDest, service * pserviceSource, BOOL 
 	BOOL not_added;
 
 	for (i = 0; parm_table[i].label; i++)
-		if (parm_table[i].ptr && parm_table[i].class == P_LOCAL &&
+		if (parm_table[i].ptr && parm_table[i].p_class == P_LOCAL &&
 		    (bcopyall || pcopymapDest[i])) {
 			void *def_ptr = parm_table[i].ptr;
 			void *src_ptr =
@@ -2659,12 +2678,12 @@ static void copy_service(service * pserviceDest, service * pserviceSource, BOOL 
 					break;
 
 				case P_STRING:
-					string_set(dest_ptr,
+					string_set((char **)dest_ptr,
 						   *(char **)src_ptr);
 					break;
 
 				case P_USTRING:
-					string_set(dest_ptr,
+					string_set((char **)dest_ptr,
 						   *(char **)src_ptr);
 					strupper_m(*(char **)dest_ptr);
 					break;
@@ -3268,7 +3287,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	if (snum < 0) {
 		parm_ptr = def_ptr;
 	} else {
-		if (parm_table[parmnum].class == P_GLOBAL) {
+		if (parm_table[parmnum].p_class == P_GLOBAL) {
 			DEBUG(0,
 			      ("Global parameter %s found in service section!\n",
 			       pszParmName));
@@ -3300,11 +3319,11 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 	switch (parm_table[parmnum].type)
 	{
 		case P_BOOL:
-			set_boolean(parm_ptr, pszParmValue);
+			set_boolean((BOOL *)parm_ptr, pszParmValue);
 			break;
 
 		case P_BOOLREV:
-			set_boolean(parm_ptr, pszParmValue);
+			set_boolean((BOOL *)parm_ptr, pszParmValue);
 			*(BOOL *)parm_ptr = !*(BOOL *)parm_ptr;
 			break;
 
@@ -3321,16 +3340,16 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			break;
 
 		case P_LIST:
-			str_list_free(parm_ptr);
+			str_list_free((char ***)parm_ptr);
 			*(char ***)parm_ptr = str_list_make(pszParmValue, NULL);
 			break;
 
 		case P_STRING:
-			string_set(parm_ptr, pszParmValue);
+			string_set((char **)parm_ptr, pszParmValue);
 			break;
 
 		case P_USTRING:
-			string_set(parm_ptr, pszParmValue);
+			string_set((char **)parm_ptr, pszParmValue);
 			strupper_m(*(char **)parm_ptr);
 			break;
 
@@ -3598,7 +3617,7 @@ static void dump_globals(FILE *f)
 	fprintf(f, "[global]\n");
 
 	for (i = 0; parm_table[i].label; i++)
-		if (parm_table[i].class == P_GLOBAL &&
+		if (parm_table[i].p_class == P_GLOBAL &&
 		    parm_table[i].ptr &&
 		    (i == 0 || (parm_table[i].ptr != parm_table[i - 1].ptr))) {
 			if (defaults_saved && is_default(i))
@@ -3644,7 +3663,7 @@ static void dump_a_service(service * pService, FILE * f)
 
 	for (i = 0; parm_table[i].label; i++) {
 
-		if (parm_table[i].class == P_LOCAL &&
+		if (parm_table[i].p_class == P_LOCAL &&
 		    parm_table[i].ptr &&
 		    (*parm_table[i].label != '-') &&
 		    (i == 0 || (parm_table[i].ptr != parm_table[i - 1].ptr))) 
@@ -3688,18 +3707,18 @@ BOOL dump_a_parameter(int snum, char *parm_name, FILE * f, BOOL isGlobal)
 {
 	service * pService = ServicePtrs[snum];
 	int i, result = False;
-	parm_class class;
+	parm_class p_class;
 	unsigned flag = 0;
 
 	if (isGlobal) {
-		class = P_GLOBAL;
+		p_class = P_GLOBAL;
 		flag = FLAG_GLOBAL;
 	} else
-		class = P_LOCAL;
+		p_class = P_LOCAL;
 	
 	for (i = 0; parm_table[i].label; i++) {
 		if (strwicmp(parm_table[i].label, parm_name) == 0 &&
-		    (parm_table[i].class == class || parm_table[i].flags & flag) &&
+		    (parm_table[i].p_class == p_class || parm_table[i].flags & flag) &&
 		    parm_table[i].ptr &&
 		    (*parm_table[i].label != '-') &&
 		    (i == 0 || (parm_table[i].ptr != parm_table[i - 1].ptr))) 
@@ -3733,7 +3752,7 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 	if (snum < 0) {
 		/* do the globals */
 		for (; parm_table[*i].label; (*i)++) {
-			if (parm_table[*i].class == P_SEPARATOR)
+			if (parm_table[*i].p_class == P_SEPARATOR)
 				return &parm_table[(*i)++];
 
 			if (!parm_table[*i].ptr
@@ -3751,10 +3770,10 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 		service *pService = ServicePtrs[snum];
 
 		for (; parm_table[*i].label; (*i)++) {
-			if (parm_table[*i].class == P_SEPARATOR)
+			if (parm_table[*i].p_class == P_SEPARATOR)
 				return &parm_table[(*i)++];
 
-			if (parm_table[*i].class == P_LOCAL &&
+			if (parm_table[*i].p_class == P_LOCAL &&
 			    parm_table[*i].ptr &&
 			    (*parm_table[*i].label != '-') &&
 			    ((*i) == 0 ||
@@ -3795,7 +3814,7 @@ static void dump_copy_map(BOOL *pcopymap)
 	printf("\n\tNon-Copied parameters:\n");
 
 	for (i = 0; parm_table[i].label; i++)
-		if (parm_table[i].class == P_LOCAL &&
+		if (parm_table[i].p_class == P_LOCAL &&
 		    parm_table[i].ptr && !pcopymap[i] &&
 		    (i == 0 || (parm_table[i].ptr != parm_table[i - 1].ptr)))
 		{
@@ -4522,4 +4541,30 @@ void set_store_dos_attributes(int snum, BOOL val)
 	if (!LP_SNUM_OK(snum))
 		return;
 	ServicePtrs[(snum)]->bStoreDosAttributes = val;
+}
+
+void lp_set_mangling_method(const char *new_method)
+{
+	string_set(&Globals.szManglingMethod, new_method);
+}
+
+/*******************************************************************
+ Global state for POSIX pathname processing.
+********************************************************************/
+
+static BOOL posix_pathnames;
+
+BOOL lp_posix_pathnames(void)
+{
+	return posix_pathnames;
+}
+
+/*******************************************************************
+ Change everything needed to ensure POSIX pathname processing (currently
+ not much).
+********************************************************************/
+
+void lp_set_posix_pathnames(void)
+{
+	posix_pathnames = True;
 }

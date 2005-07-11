@@ -214,7 +214,7 @@ WERROR cli_reg_query_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if ( W_ERROR_EQUAL( out.status, WERR_MORE_DATA ) ) {
 		ZERO_STRUCT (in);
 
-		*class_len = out.class.string->uni_max_len;
+		*class_len = out.key_class.string->uni_max_len;
 		if ( *class_len > saved_class_len )
 			return out.status;
 			
@@ -238,8 +238,8 @@ WERROR cli_reg_query_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if ( !W_ERROR_IS_OK( out.status ) )
 		return out.status;
 
-	*class_len      = out.class.string->uni_max_len;
-	unistr2_to_ascii(key_class, out.class.string, saved_class_len-1);
+	*class_len      = out.key_class.string->uni_max_len;
+	unistr2_to_ascii(key_class, out.key_class.string, saved_class_len-1);
 	*num_subkeys    = out.num_subkeys   ;
 	*max_subkeylen  = out.max_subkeylen ;
 	*num_values     = out.num_values    ;
@@ -286,24 +286,24 @@ WERROR cli_reg_getversion(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /****************************************************************************
 do a REG Query Info
 ****************************************************************************/
-WERROR cli_reg_query_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR cli_reg_query_value(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                            POLICY_HND *hnd, const char *val_name,
                            uint32 *type, REGVAL_BUFFER *buffer)
 {
-	REG_Q_INFO in;
-	REG_R_INFO out;
+	REG_Q_QUERY_VALUE in;
+	REG_R_QUERY_VALUE out;
 	prs_struct qbuf, rbuf;
 
 	ZERO_STRUCT (in);
 	ZERO_STRUCT (out);
 	
-	init_reg_q_info(&in, hnd, val_name, buffer);
+	init_reg_q_query_value(&in, hnd, val_name, buffer);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_QUERY_KEY, 
+	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_QUERY_VALUE, 
 	            in, out, 
 	            qbuf, rbuf,
-	            reg_io_q_info,
-	            reg_io_r_info, 
+	            reg_io_q_query_value,
+	            reg_io_r_query_value, 
 	            WERR_GENERAL_FAILURE );
 		    
 
@@ -438,12 +438,12 @@ WERROR cli_reg_delete_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /****************************************************************************
 do a REG Create Key
 ****************************************************************************/
-WERROR cli_reg_create_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR cli_reg_create_key_ex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                             POLICY_HND *hnd, char *key_name, char *key_class,
                             uint32 access_desired, POLICY_HND *key)
 {
-	REG_Q_CREATE_KEY in;
-	REG_R_CREATE_KEY out;
+	REG_Q_CREATE_KEY_EX in;
+	REG_R_CREATE_KEY_EX out;
 	prs_struct qbuf, rbuf;
 	SEC_DESC *sec;
 	SEC_DESC_BUF *sec_buf;
@@ -461,13 +461,13 @@ WERROR cli_reg_create_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if ( !(sec_buf = make_sec_desc_buf(mem_ctx, sec_len, sec)) )
 		return WERR_GENERAL_FAILURE;
 
-	init_reg_q_create_key(&in, hnd, key_name, key_class, access_desired, sec_buf);
+	init_reg_q_create_key_ex(&in, hnd, key_name, key_class, access_desired, sec_buf);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_CREATE_KEY, 
+	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_CREATE_KEY_EX, 
 	            in, out, 
 	            qbuf, rbuf,
-	            reg_io_q_create_key,
-	            reg_io_r_create_key, 
+	            reg_io_q_create_key_ex,
+	            reg_io_r_create_key_ex, 
 	            WERR_GENERAL_FAILURE );
 		    
 

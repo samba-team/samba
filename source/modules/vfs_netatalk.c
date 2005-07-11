@@ -172,11 +172,11 @@ static void atalk_rrmdir(TALLOC_CTX *ctx, char *path)
 
 /* Directory operations */
 
-DIR *atalk_opendir(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *fname)
+DIR *atalk_opendir(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *fname, const char *mask, uint32 attr)
 {
 	DIR *ret = 0;
 
-	ret = SMB_VFS_NEXT_OPENDIR(handle, conn, fname);
+	ret = SMB_VFS_NEXT_OPENDIR(handle, conn, fname, mask, attr);
 
 	/*
 	 * when we try to perform delete operation upon file which has fork
@@ -223,7 +223,7 @@ exit_rmdir:
 
 /* File operations */
 
-static int atalk_rename(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *old, const char *new)
+static int atalk_rename(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *oldname, const char *newname)
 {
 	int ret = 0;
 	char *adbl_path = 0;
@@ -232,14 +232,14 @@ static int atalk_rename(struct vfs_handle_struct *handle, struct connection_stru
 	SMB_STRUCT_STAT orig_info;
 	TALLOC_CTX *ctx;
 
-	ret = SMB_VFS_NEXT_RENAME(handle, conn, old, new);
+	ret = SMB_VFS_NEXT_RENAME(handle, conn, oldname, newname);
 
-	if (!conn || !old) return ret;
+	if (!conn || !oldname) return ret;
 
 	if (!(ctx = talloc_init("rename_file")))
 		return ret;
 
-	if (atalk_build_paths(ctx, conn->origpath, old, &adbl_path, &orig_path, 
+	if (atalk_build_paths(ctx, conn->origpath, oldname, &adbl_path, &orig_path, 
 	  &adbl_info, &orig_info) != 0)
 		return ret;
 
@@ -379,7 +379,7 @@ static vfs_op_tuple atalk_ops[] = {
     
 	/* Directory operations */
 
-	{SMB_VFS_OP(atalk_opendir), 	SMB_VFS_OP_OPENDIR, 	SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(atalk_opendir),	 	SMB_VFS_OP_OPENDIR, 	SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(atalk_rmdir), 		SMB_VFS_OP_RMDIR, 	SMB_VFS_LAYER_TRANSPARENT},
 
 	/* File operations */

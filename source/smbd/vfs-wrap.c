@@ -88,7 +88,7 @@ int vfswrap_get_shadow_copy_data(struct vfs_handle_struct *handle, struct files_
     
 /* Directory operations */
 
-DIR *vfswrap_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname)
+DIR *vfswrap_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname, const char *mask, uint32 attr)
 {
 	DIR *result;
 
@@ -226,7 +226,7 @@ ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, int fd, void
 	if (result == -1 && errno == ESPIPE) {
 		/* Maintain the fiction that pipes can be seeked (sought?) on. */
 		result = SMB_VFS_READ(fsp, fd, data, n);
-		fsp->pos = 0;
+		fsp->fh->pos = 0;
 	}
 
 #else /* HAVE_PREAD */
@@ -237,7 +237,7 @@ ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, int fd, void
 	if (curr == -1 && errno == ESPIPE) {
 		/* Maintain the fiction that pipes can be seeked (sought?) on. */
 		result = SMB_VFS_READ(fsp, fd, data, n);
-		fsp->pos = 0;
+		fsp->fh->pos = 0;
 		return result;
 	}
 
@@ -432,15 +432,15 @@ static int copy_reg(const char *source, const char *dest)
 	return -1;
 }
 
-int vfswrap_rename(vfs_handle_struct *handle, connection_struct *conn, const char *old, const char *new)
+int vfswrap_rename(vfs_handle_struct *handle, connection_struct *conn, const char *oldname, const char *newname)
 {
 	int result;
 
 	START_PROFILE(syscall_rename);
-	result = rename(old, new);
+	result = rename(oldname, newname);
 	if (errno == EXDEV) {
 		/* Rename across filesystems needed. */
-		result = copy_reg(old, new);
+		result = copy_reg(oldname, newname);
 	}
 
 	END_PROFILE(syscall_rename);
@@ -660,7 +660,7 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 		SMB_OFF_T retlen;
 		SMB_OFF_T current_len_to_write = MIN(sizeof(zero_space),space_to_write);
 
-		retlen = SMB_VFS_WRITE(fsp,fsp->fd,(char *)zero_space,current_len_to_write);
+		retlen = SMB_VFS_WRITE(fsp,fsp->fh->fd,(char *)zero_space,current_len_to_write);
 		if (retlen <= 0)
 			return -1;
 
@@ -1051,4 +1051,39 @@ int vfswrap_lsetxattr(struct vfs_handle_struct *handle, struct connection_struct
 int vfswrap_fsetxattr(struct vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name, const void *value, size_t size, int flags)
 {
 	return sys_fsetxattr(fd, name, value, size, flags);
+}
+
+int vfswrap_aio_read(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
+{
+	return sys_aio_read(aiocb);
+}
+
+int vfswrap_aio_write(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
+{
+	return sys_aio_write(aiocb);
+}
+
+int vfswrap_aio_return(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
+{
+	return sys_aio_return(aiocb);
+}
+
+int vfswrap_aio_cancel(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_STRUCT_AIOCB *aiocb)
+{
+	return sys_aio_cancel(fd, aiocb);
+}
+
+int vfswrap_aio_error(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
+{
+	return sys_aio_error(aiocb);
+}
+
+int vfswrap_aio_fsync(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_STRUCT_AIOCB *aiocb)
+{
+	return sys_aio_fsync(op, aiocb);
+}
+
+int vfswrap_aio_suspend(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_AIOCB * const aiocb[], int n, const struct timespec *timeout)
+{
+	return sys_aio_suspend(aiocb, n, timeout);
 }

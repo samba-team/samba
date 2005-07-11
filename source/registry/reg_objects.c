@@ -94,7 +94,7 @@ int regsubkey_ctr_delkey( REGSUBKEY_CTR *ctr, const char *keyname )
 
 	/* update if we have any keys left */
 	ctr->num_subkeys--;
-	if ( ctr->num_subkeys )
+	if ( i < ctr->num_subkeys )
 		memmove( &ctr->subkeys[i], &ctr->subkeys[i+1], sizeof(char*) * (ctr->num_subkeys-i) );
 	
 	return ctr->num_subkeys;
@@ -114,7 +114,6 @@ BOOL regsubkey_ctr_key_exists( REGSUBKEY_CTR *ctr, const char *keyname )
 	}
 	
 	return False;
-
 }
 
 /***********************************************************************
@@ -233,7 +232,7 @@ uint8* regval_data_p( REGISTRY_VALUE *val )
 /**********************************************************************
  *********************************************************************/
 
-int regval_size( REGISTRY_VALUE *val )
+uint32 regval_size( REGISTRY_VALUE *val )
 {
 	return val->size;
 }
@@ -276,9 +275,23 @@ TALLOC_CTX* regval_ctr_getctx( REGVAL_CTR *val )
 	if ( !val )
 		return NULL;
 
-	return val->ctx;
-}
+	return val->ctx; }
 
+/***********************************************************************
+ Check for the existance of a value
+ **********************************************************************/
+
+BOOL regval_ctr_key_exists( REGVAL_CTR *ctr, const char *value )
+{
+	int 	i;
+	
+	for ( i=0; i<ctr->num_values; i++ ) {
+		if ( strequal( ctr->values[i]->valuename, value) )
+			return True;
+	}
+	
+	return False;
+}
 /***********************************************************************
  Add a new registry value to the array
  **********************************************************************/
@@ -290,6 +303,10 @@ int regval_ctr_addvalue( REGVAL_CTR *ctr, const char *name, uint16 type,
 	
 	if ( !name )
 		return ctr->num_values;
+
+	/* Delete the current value (if it exists) and add the new one */
+
+	regval_ctr_delvalue( ctr, name );
 
 	/* allocate a slot in the array of pointers */
 		
@@ -361,12 +378,8 @@ int regval_ctr_delvalue( REGVAL_CTR *ctr, const char *name )
 {
 	int 	i;
 	
-	/* search for the value */
-	if (!(ctr->num_values))
-		return 0;
-	
 	for ( i=0; i<ctr->num_values; i++ ) {
-		if ( strcmp( ctr->values[i]->valuename, name ) == 0)
+		if ( strequal( ctr->values[i]->valuename, name ) )
 			break;
 	}
 	
@@ -375,16 +388,10 @@ int regval_ctr_delvalue( REGVAL_CTR *ctr, const char *name )
 	if ( i == ctr->num_values )
 		return ctr->num_values;
 	
-	/* just shift everything down one */
-	
-	for ( /* use previous i */; i<(ctr->num_values-1); i++ )
-		memcpy( ctr->values[i], ctr->values[i+1], sizeof(REGISTRY_VALUE) );
-		
-	/* paranoia */
-	
-	ZERO_STRUCTP( ctr->values[i] );
-	
+	/* If 'i' was not the last element, just shift everything down one */
 	ctr->num_values--;
+	if ( i < ctr->num_values )
+		memmove( &ctr->values[i], &ctr->values[i+1], sizeof(REGISTRY_VALUE*)*(ctr->num_values-i) );
 	
 	return ctr->num_values;
 }

@@ -262,7 +262,12 @@ BOOL cli_unix_stat(struct cli_state *cli, const char *name, SMB_STRUCT_STAT *sbu
 
 	sbuf->st_size = IVAL2_TO_SMB_BIG_UINT(rdata,0);     /* total size, in bytes */
 	sbuf->st_blocks = IVAL2_TO_SMB_BIG_UINT(rdata,8);   /* number of blocks allocated */
+#if defined (HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
 	sbuf->st_blocks /= STAT_ST_BLOCKSIZE;
+#else
+	/* assume 512 byte blocks */
+	sbuf->st_blocks /= 512;
+#endif
 	sbuf->st_ctime = interpret_long_date(rdata + 16);    /* time of last change */
 	sbuf->st_atime = interpret_long_date(rdata + 24);    /* time of last access */
 	sbuf->st_mtime = interpret_long_date(rdata + 32);    /* time of last modification */
@@ -700,7 +705,7 @@ int cli_nt_create_full(struct cli_state *cli, const char *fname,
 int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess)
 {
 	return cli_nt_create_full(cli, fname, 0, DesiredAccess, 0,
-				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_EXISTS_OPEN, 0x0, 0x0);
+				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0);
 }
 
 /****************************************************************************

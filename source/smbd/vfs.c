@@ -145,7 +145,16 @@ static struct vfs_ops default_vfs = {
 		vfswrap_fremovexattr,
 		vfswrap_setxattr,
 		vfswrap_lsetxattr,
-		vfswrap_fsetxattr
+		vfswrap_fsetxattr,
+
+		/* AIO operations. */
+		vfswrap_aio_read,
+		vfswrap_aio_write,
+		vfswrap_aio_return,
+		vfswrap_aio_cancel,
+		vfswrap_aio_error,
+		vfswrap_aio_fsync,
+		vfswrap_aio_suspend
 	}
 };
 
@@ -277,20 +286,20 @@ BOOL vfs_init_custom(connection_struct *conn, const char *vfs_object)
 	DLIST_ADD(conn->vfs_handles, handle);
 
  	for(i=0; ops[i].op != NULL; i++) {
- 	  DEBUG(5, ("Checking operation #%d (type %d, layer %d)\n", i, ops[i].type, ops[i].layer));
- 	  if(ops[i].layer == SMB_VFS_LAYER_OPAQUE) {
- 	    /* Check whether this operation was already made opaque by different module */
- 	    if(((void**)&conn->vfs_opaque.ops)[ops[i].type] == ((void**)&default_vfs.ops)[ops[i].type]) {
- 	      /* No, it isn't overloaded yet. Overload. */
- 	      DEBUGADD(5, ("Making operation type %d opaque [module %s]\n", ops[i].type, vfs_object));
- 	      ((void**)&conn->vfs_opaque.ops)[ops[i].type] = ops[i].op;
- 	      ((vfs_handle_struct **)&conn->vfs_opaque.handles)[ops[i].type] = handle;
- 	    }
- 	  }
- 	  /* Change current VFS disposition*/
- 	  DEBUGADD(5, ("Accepting operation type %d from module %s\n", ops[i].type, vfs_object));
- 	  ((void**)&conn->vfs.ops)[ops[i].type] = ops[i].op;
- 	  ((vfs_handle_struct **)&conn->vfs.handles)[ops[i].type] = handle;
+		DEBUG(5, ("Checking operation #%d (type %d, layer %d)\n", i, ops[i].type, ops[i].layer));
+		if(ops[i].layer == SMB_VFS_LAYER_OPAQUE) {
+			/* Check whether this operation was already made opaque by different module */
+			if(((void**)&conn->vfs_opaque.ops)[ops[i].type] == ((void**)&default_vfs.ops)[ops[i].type]) {
+				/* No, it isn't overloaded yet. Overload. */
+				DEBUGADD(5, ("Making operation type %d opaque [module %s]\n", ops[i].type, vfs_object));
+				((void**)&conn->vfs_opaque.ops)[ops[i].type] = ops[i].op;
+				((vfs_handle_struct **)&conn->vfs_opaque.handles)[ops[i].type] = handle;
+			}
+		}
+		/* Change current VFS disposition*/
+		DEBUGADD(5, ("Accepting operation type %d from module %s\n", ops[i].type, vfs_object));
+		((void**)&conn->vfs.ops)[ops[i].type] = ops[i].op;
+		((vfs_handle_struct **)&conn->vfs.handles)[ops[i].type] = handle;
 	}
 
 	SAFE_FREE(module_name);
@@ -421,7 +430,7 @@ ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count)
 
 	while (total < byte_count)
 	{
-		ssize_t ret = SMB_VFS_READ(fsp, fsp->fd, buf + total,
+		ssize_t ret = SMB_VFS_READ(fsp, fsp->fh->fd, buf + total,
 					byte_count - total);
 
 		if (ret == 0) return total;
@@ -443,7 +452,7 @@ ssize_t vfs_pread_data(files_struct *fsp, char *buf,
 
 	while (total < byte_count)
 	{
-		ssize_t ret = SMB_VFS_PREAD(fsp, fsp->fd, buf + total,
+		ssize_t ret = SMB_VFS_PREAD(fsp, fsp->fh->fd, buf + total,
 					byte_count - total, offset + total);
 
 		if (ret == 0) return total;
@@ -468,7 +477,7 @@ ssize_t vfs_write_data(files_struct *fsp,const char *buffer,size_t N)
 	ssize_t ret;
 
 	while (total < N) {
-		ret = SMB_VFS_WRITE(fsp,fsp->fd,buffer + total,N - total);
+		ret = SMB_VFS_WRITE(fsp,fsp->fh->fd,buffer + total,N - total);
 
 		if (ret == -1)
 			return -1;
@@ -487,7 +496,7 @@ ssize_t vfs_pwrite_data(files_struct *fsp,const char *buffer,
 	ssize_t ret;
 
 	while (total < N) {
-		ret = SMB_VFS_PWRITE(fsp, fsp->fd, buffer + total,
+		ret = SMB_VFS_PWRITE(fsp, fsp->fh->fd, buffer + total,
                                 N - total, offset + total);
 
 		if (ret == -1)
@@ -526,7 +535,7 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len)
 		return -1;
 	}
 
-	ret = SMB_VFS_FSTAT(fsp,fsp->fd,&st);
+	ret = SMB_VFS_FSTAT(fsp,fsp->fh->fd,&st);
 	if (ret == -1)
 		return ret;
 
@@ -540,7 +549,7 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len)
 				fsp->fsp_name, (double)st.st_size ));
 
 		flush_write_cache(fsp, SIZECHANGE_FLUSH);
-		if ((ret = SMB_VFS_FTRUNCATE(fsp, fsp->fd, (SMB_OFF_T)len)) != -1) {
+		if ((ret = SMB_VFS_FTRUNCATE(fsp, fsp->fh->fd, (SMB_OFF_T)len)) != -1) {
 			set_filelen_write_cache(fsp, len);
 		}
 		return ret;
@@ -582,7 +591,7 @@ int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len)
 	release_level_2_oplocks_on_change(fsp);
 	DEBUG(10,("vfs_set_filelen: ftruncate %s to len %.0f\n", fsp->fsp_name, (double)len));
 	flush_write_cache(fsp, SIZECHANGE_FLUSH);
-	if ((ret = SMB_VFS_FTRUNCATE(fsp, fsp->fd, len)) != -1)
+	if ((ret = SMB_VFS_FTRUNCATE(fsp, fsp->fh->fd, len)) != -1)
 		set_filelen_write_cache(fsp, len);
 
 	return ret;
@@ -608,7 +617,7 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 	ssize_t pwrite_ret;
 
 	release_level_2_oplocks_on_change(fsp);
-	ret = SMB_VFS_FSTAT(fsp,fsp->fd,&st);
+	ret = SMB_VFS_FSTAT(fsp,fsp->fh->fd,&st);
 	if (ret == -1) {
 		return ret;
 	}
@@ -637,7 +646,7 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 	while (total < num_to_write) {
 		size_t curr_write_size = MIN(SPARSE_BUF_WRITE_SIZE, (num_to_write - total));
 
-		pwrite_ret = SMB_VFS_PWRITE(fsp, fsp->fd, sparse_buf, curr_write_size, offset + total);
+		pwrite_ret = SMB_VFS_PWRITE(fsp, fsp->fh->fd, sparse_buf, curr_write_size, offset + total);
 		if (pwrite_ret == -1) {
 			DEBUG(10,("vfs_fill_sparse: SMB_VFS_PWRITE for file %s failed with error %s\n",
 				fsp->fsp_name, strerror(errno) ));
@@ -676,7 +685,7 @@ SMB_OFF_T vfs_transfer_file(files_struct *in, files_struct *out, SMB_OFF_T n)
 	in_fsp = in;
 	out_fsp = out;
 
-	return transfer_file_internal(in_fsp->fd, out_fsp->fd, n, read_fn, write_fn);
+	return transfer_file_internal(in_fsp->fh->fd, out_fsp->fh->fd, n, read_fn, write_fn);
 }
 
 /*******************************************************************

@@ -3305,7 +3305,7 @@ static BOOL parse_ace(struct cli_state *ipc_cli,
 /* add an ACE to a list of ACEs in a SEC_ACL */
 static BOOL add_ace(SEC_ACL **the_acl, SEC_ACE *ace, TALLOC_CTX *ctx)
 {
-	SEC_ACL *new;
+	SEC_ACL *newacl;
 	SEC_ACE *aces;
 	if (! *the_acl) {
 		(*the_acl) = make_sec_acl(ctx, 3, 1, ace);
@@ -3315,9 +3315,9 @@ static BOOL add_ace(SEC_ACL **the_acl, SEC_ACE *ace, TALLOC_CTX *ctx)
 	aces = SMB_CALLOC_ARRAY(SEC_ACE, 1+(*the_acl)->num_aces);
 	memcpy(aces, (*the_acl)->ace, (*the_acl)->num_aces * sizeof(SEC_ACE));
 	memcpy(aces+(*the_acl)->num_aces, ace, sizeof(SEC_ACE));
-	new = make_sec_acl(ctx,(*the_acl)->revision,1+(*the_acl)->num_aces, aces);
+	newacl = make_sec_acl(ctx,(*the_acl)->revision,1+(*the_acl)->num_aces, aces);
 	SAFE_FREE(aces);
-	(*the_acl) = new;
+	(*the_acl) = newacl;
 	return True;
 }
 
@@ -4953,7 +4953,7 @@ static int smbc_print_file_ctx(SMBCCTX *c_file, const char *fname, SMBCCTX *c_pr
         if ((int)(fid2 = c_print->open_print_job(c_print, printq)) < 0) {
 
                 saverr = errno;  /* Save errno */
-                c_file->close(c_file, fid1);
+                c_file->close_fn(c_file, fid1);
                 errno = saverr;
                 return -1;
 
@@ -4966,8 +4966,8 @@ static int smbc_print_file_ctx(SMBCCTX *c_file, const char *fname, SMBCCTX *c_pr
                 if ((c_print->write(c_print, fid2, buf, bytes)) < 0) {
 
                         saverr = errno;
-                        c_file->close(c_file, fid1);
-                        c_print->close(c_print, fid2);
+                        c_file->close_fn(c_file, fid1);
+                        c_print->close_fn(c_print, fid2);
                         errno = saverr;
 
                 }
@@ -4976,8 +4976,8 @@ static int smbc_print_file_ctx(SMBCCTX *c_file, const char *fname, SMBCCTX *c_pr
 
         saverr = errno;
 
-        c_file->close(c_file, fid1);  /* We have to close these anyway */
-        c_print->close(c_print, fid2);
+        c_file->close_fn(c_file, fid1);  /* We have to close these anyway */
+        c_print->close_fn(c_print, fid2);
 
         if (bytes < 0) {
 
@@ -5152,7 +5152,7 @@ SMBCCTX * smbc_new_context(void)
         context->creat                             = smbc_creat_ctx;
         context->read                              = smbc_read_ctx;
         context->write                             = smbc_write_ctx;
-        context->close                             = smbc_close_ctx;
+        context->close_fn                          = smbc_close_ctx;
         context->unlink                            = smbc_unlink_ctx;
         context->rename                            = smbc_rename_ctx;
         context->lseek                             = smbc_lseek_ctx;
@@ -5206,7 +5206,7 @@ int smbc_free_context(SMBCCTX * context, int shutdown_ctx)
                 
                 f = context->internal->_files;
                 while (f) {
-                        context->close(context, f);
+                        context->close_fn(context, f);
                         f = f->next;
                 }
                 context->internal->_files = NULL;

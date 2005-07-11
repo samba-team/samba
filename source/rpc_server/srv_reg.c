@@ -164,13 +164,13 @@ static BOOL api_reg_open_entry(pipes_struct *p)
 }
 
 /*******************************************************************
- api_reg_info
+ api_reg_query_value
  ********************************************************************/
 
-static BOOL api_reg_info(pipes_struct *p)
+static BOOL api_reg_query_value(pipes_struct *p)
 {
-	REG_Q_INFO q_u;
-	REG_R_INFO r_u;
+	REG_Q_QUERY_VALUE q_u;
+	REG_R_QUERY_VALUE r_u;
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
@@ -178,12 +178,12 @@ static BOOL api_reg_info(pipes_struct *p)
 	ZERO_STRUCT(r_u);
 
 	/* grab the reg unknown 0x11*/
-	if(!reg_io_q_info("", &q_u, data, 0))
+	if(!reg_io_q_query_value("", &q_u, data, 0))
 		return False;
 
-	r_u.status = _reg_info(p, &q_u, &r_u);
+	r_u.status = _reg_query_value(p, &q_u, &r_u);
 
-	if(!reg_io_r_info("", &r_u, rdata, 0))
+	if(!reg_io_r_query_value("", &r_u, rdata, 0))
 		return False;
 
 	return True;
@@ -419,22 +419,22 @@ static BOOL api_reg_save_key(pipes_struct *p)
 /*******************************************************************
  ******************************************************************/
 
-static BOOL api_reg_create_key(pipes_struct *p)
+static BOOL api_reg_create_key_ex(pipes_struct *p)
 {
-	REG_Q_CREATE_KEY q_u;
-	REG_R_CREATE_KEY r_u;
+	REG_Q_CREATE_KEY_EX q_u;
+	REG_R_CREATE_KEY_EX r_u;
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	if(!reg_io_q_create_key("", &q_u, data, 0))
+	if(!reg_io_q_create_key_ex("", &q_u, data, 0))
 		return False;
 		
-	r_u.status = _reg_create_key(p, &q_u, &r_u);
+	r_u.status = _reg_create_key_ex(p, &q_u, &r_u);
 
-	if(!reg_io_r_create_key("", &r_u, rdata, 0))
+	if(!reg_io_r_create_key_ex("", &r_u, rdata, 0))
 		return False;
 
 	return True;
@@ -512,6 +512,57 @@ static BOOL api_reg_delete_value(pipes_struct *p)
 	return True;
 }
 
+
+/*******************************************************************
+ ******************************************************************/
+
+static BOOL api_reg_get_key_sec(pipes_struct *p)
+{
+	REG_Q_GET_KEY_SEC q_u;
+	REG_R_GET_KEY_SEC r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!reg_io_q_get_key_sec("", &q_u, data, 0))
+		return False;
+		
+	r_u.status = _reg_get_key_sec(p, &q_u, &r_u);
+
+	if(!reg_io_r_get_key_sec("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
+ ******************************************************************/
+
+static BOOL api_reg_set_key_sec(pipes_struct *p)
+{
+	REG_Q_SET_KEY_SEC q_u;
+	REG_R_SET_KEY_SEC r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!reg_io_q_set_key_sec("", &q_u, data, 0))
+		return False;
+		
+	r_u.status = _reg_set_key_sec(p, &q_u, &r_u);
+
+	if(!reg_io_r_set_key_sec("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+
 /*******************************************************************
  array of \PIPE\reg operations
  ********************************************************************/
@@ -526,17 +577,19 @@ static struct api_struct api_reg_cmds[] =
       { "REG_ENUM_KEY"           , REG_ENUM_KEY           , api_reg_enum_key         },
       { "REG_ENUM_VALUE"         , REG_ENUM_VALUE         , api_reg_enum_value       },
       { "REG_QUERY_KEY"          , REG_QUERY_KEY          , api_reg_query_key        },
-      { "REG_INFO"               , REG_INFO               , api_reg_info             },
+      { "REG_QUERY_VALUE"        , REG_QUERY_VALUE        , api_reg_query_value      },
       { "REG_SHUTDOWN"           , REG_SHUTDOWN           , api_reg_shutdown         },
       { "REG_SHUTDOWN_EX"        , REG_SHUTDOWN_EX        , api_reg_shutdown_ex      },
       { "REG_ABORT_SHUTDOWN"     , REG_ABORT_SHUTDOWN     , api_reg_abort_shutdown   },
       { "REG_GETVERSION"         , REG_GETVERSION         , api_reg_getversion       },
       { "REG_SAVE_KEY"           , REG_SAVE_KEY           , api_reg_save_key         },
       { "REG_RESTORE_KEY"        , REG_RESTORE_KEY        , api_reg_restore_key      },
-      { "REG_CREATE_KEY"         , REG_CREATE_KEY         , api_reg_create_key       },
+      { "REG_CREATE_KEY_EX"      , REG_CREATE_KEY_EX      , api_reg_create_key_ex    },
       { "REG_SET_VALUE"          , REG_SET_VALUE          , api_reg_set_value        },
       { "REG_DELETE_KEY"         , REG_DELETE_KEY         , api_reg_delete_key       },
-      { "REG_DELETE_VALUE"       , REG_DELETE_VALUE       , api_reg_delete_value     }
+      { "REG_DELETE_VALUE"       , REG_DELETE_VALUE       , api_reg_delete_value     },
+      { "REG_GET_KEY_SEC"        , REG_GET_KEY_SEC        , api_reg_get_key_sec      },
+      { "REG_SET_KEY_SEC"        , REG_SET_KEY_SEC        , api_reg_set_key_sec      }
 };
 
 void reg_get_pipe_fns( struct api_struct **fns, int *n_fns )

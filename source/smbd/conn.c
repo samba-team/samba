@@ -257,6 +257,7 @@ void conn_free(connection_struct *conn)
 	free_namearray(conn->veto_list);
 	free_namearray(conn->hide_list);
 	free_namearray(conn->veto_oplock_list);
+	free_namearray(conn->aio_write_behind_list);
 	
 	string_free(&conn->user);
 	string_free(&conn->dirpath);
@@ -283,7 +284,7 @@ void msg_force_tdis(int msg_type, pid_t pid, void *buf, size_t len)
 	connection_struct *conn, *next;
 	fstring sharename;
 
-	fstrcpy(sharename, buf);
+	fstrcpy(sharename, (const char *)buf);
 
 	if (strcmp(sharename, "*") == 0) {
 		DEBUG(1,("Forcing close of all shares\n"));

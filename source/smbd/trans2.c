@@ -3,6 +3,7 @@
    SMB transaction2 handling
    Copyright (C) Jeremy Allison			1994-2003
    Copyright (C) Stefan (metze) Metzmacher	2003
+   Copyright (C) Volker Lendecke		2005
 
    Extensively modified by Andrew Tridgell, 1995
 
@@ -119,8 +120,8 @@ static BOOL get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn, files_str
 		return False;
 	}
 
-	if (fsp && fsp->fd != -1) {
-		sizeret = SMB_VFS_FGETXATTR(fsp, fsp->fd, ea_name, val, attr_size);
+	if (fsp && fsp->fh->fd != -1) {
+		sizeret = SMB_VFS_FGETXATTR(fsp, fsp->fh->fd, ea_name, val, attr_size);
 	} else {
 		sizeret = SMB_VFS_GETXATTR(conn, fname, ea_name, val, attr_size);
 	}
@@ -171,8 +172,8 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 
 	for (i = 0, ea_namelist = TALLOC(mem_ctx, ea_namelist_size); i < 6;
 			ea_namelist = TALLOC_REALLOC_ARRAY(mem_ctx, ea_namelist, char, ea_namelist_size), i++) {
-		if (fsp && fsp->fd != -1) {
-			sizeret = SMB_VFS_FLISTXATTR(fsp, fsp->fd, ea_namelist, ea_namelist_size);
+		if (fsp && fsp->fh->fd != -1) {
+			sizeret = SMB_VFS_FLISTXATTR(fsp, fsp->fh->fd, ea_namelist, ea_namelist_size);
 		} else {
 			sizeret = SMB_VFS_LISTXATTR(conn, fname, ea_namelist, ea_namelist_size);
 		}
@@ -337,10 +338,10 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp, const char *fname, s
 
 		if (ea_list->ea.value.length == 0) {
 			/* Remove the attribute. */
-			if (fsp && (fsp->fd != -1)) {
+			if (fsp && (fsp->fh->fd != -1)) {
 				DEBUG(10,("set_ea: deleting ea name %s on file %s by file descriptor.\n",
 					unix_ea_name, fsp->fsp_name));
-				ret = SMB_VFS_FREMOVEXATTR(fsp, fsp->fd, unix_ea_name);
+				ret = SMB_VFS_FREMOVEXATTR(fsp, fsp->fh->fd, unix_ea_name);
 			} else {
 				DEBUG(10,("set_ea: deleting ea name %s on file %s.\n",
 					unix_ea_name, fname));
@@ -355,10 +356,10 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp, const char *fname, s
 			}
 #endif
 		} else {
-			if (fsp && (fsp->fd != -1)) {
+			if (fsp && (fsp->fh->fd != -1)) {
 				DEBUG(10,("set_ea: setting ea name %s on file %s by file descriptor.\n",
 					unix_ea_name, fsp->fsp_name));
-				ret = SMB_VFS_FSETXATTR(fsp, fsp->fd, unix_ea_name,
+				ret = SMB_VFS_FSETXATTR(fsp, fsp->fh->fd, unix_ea_name,
 							ea_list->ea.value.data, ea_list->ea.value.length, 0);
 			} else {
 				DEBUG(10,("set_ea: setting ea name %s on file %s.\n",
@@ -591,6 +592,7 @@ static int send_trans2_replies(char *outbuf,
 	/* If there genuinely are no parameters or data to send just send the empty packet */
 
 	if(params_to_send == 0 && data_to_send == 0) {
+		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
 			exit_server("send_trans2_replies: send_smb failed.");
 		return 0;
@@ -685,6 +687,7 @@ static int send_trans2_replies(char *outbuf,
 			params_to_send, data_to_send, paramsize, datasize));
 
 		/* Send the packet */
+		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
 			exit_server("send_trans2_replies: send_smb failed.");
 
@@ -715,20 +718,20 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 {
 	char *params = *pparams;
 	char *pdata = *ppdata;
-	int16 open_mode;
-	int16 open_attr;
+	int deny_mode;
+	int32 open_attr;
 	BOOL oplock_request;
 #if 0
 	BOOL return_additional_info;
 	int16 open_sattr;
 	time_t open_time;
 #endif
-	int16 open_ofun;
+	int open_ofun;
 	int32 open_size;
 	char *pname;
 	pstring fname;
 	SMB_OFF_T size=0;
-	int fmode=0,mtime=0,rmode;
+	int fattr=0,mtime=0;
 	SMB_INO_T inode = 0;
 	SMB_STRUCT_STAT sbuf;
 	int smb_action = 0;
@@ -738,6 +741,10 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	struct ea_list *ea_list = NULL;
 	uint16 flags = 0;
 	NTSTATUS status;
+	uint32 access_mask;
+	uint32 share_mode;
+	uint32 create_disposition;
+	uint32 create_options = 0;
 
 	/*
 	 * Ensure we have enough parameters to perform the operation.
@@ -748,7 +755,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	}
 
 	flags = SVAL(params, 0);
-	open_mode = SVAL(params, 2);
+	deny_mode = SVAL(params, 2);
 	open_attr = SVAL(params,6);
         oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
         if (oplock_request) {
@@ -764,16 +771,18 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	open_size = IVAL(params,14);
 	pname = &params[28];
 
-	if (IS_IPC(conn))
+	if (IS_IPC(conn)) {
 		return(ERROR_DOS(ERRSRV,ERRaccess));
+	}
 
 	srvstr_get_path(inbuf, fname, pname, sizeof(fname), -1, STR_TERMINATE, &status, False);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ERROR_NT(status);
 	}
 
-	DEBUG(3,("call_trans2open %s mode=%d attr=%d ofun=%d size=%d\n",
-		fname,open_mode, open_attr, open_ofun, open_size));
+	DEBUG(3,("call_trans2open %s deny_mode=0x%x attr=%d ofun=0x%x size=%d\n",
+		fname, (unsigned int)deny_mode, (unsigned int)open_attr,
+		(unsigned int)open_ofun, open_size));
 
 	/* XXXX we need to handle passed times, sattr and flags */
 
@@ -786,11 +795,12 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 	}
 
-	/* Strange open mode mapping. */
-	if (open_ofun == 0) {
-		if (GET_OPEN_MODE(open_mode) == DOS_OPEN_EXEC) {
-			open_ofun = FILE_EXISTS_FAIL | FILE_CREATE_IF_NOT_EXIST;
-		}
+	if (!map_open_params_to_ntcreate(fname, deny_mode, open_ofun,
+				&access_mask,
+				&share_mode,
+				&create_disposition,
+				&create_options)) {
+		return ERROR_DOS(ERRDOS, ERRbadaccess);
 	}
 
 	/* Any data in this call is an EA list. */
@@ -820,8 +830,14 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 		}
 	}
 
-	fsp = open_file_shared(conn,fname,&sbuf,open_mode,open_ofun,(uint32)open_attr,
-		oplock_request, &rmode,&smb_action);
+	fsp = open_file_ntcreate(conn,fname,&sbuf,
+		access_mask,
+		share_mode,
+		create_disposition,
+		create_options,
+		open_attr,
+		oplock_request,
+		&smb_action);
       
 	if (!fsp) {
 		talloc_destroy(ctx);
@@ -833,10 +849,10 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	}
 
 	size = get_file_size(sbuf);
-	fmode = dos_mode(conn,fname,&sbuf);
+	fattr = dos_mode(conn,fname,&sbuf);
 	mtime = sbuf.st_mtime;
 	inode = sbuf.st_ino;
-	if (fmode & aDIR) {
+	if (fattr & aDIR) {
 		talloc_destroy(ctx);
 		close_file(fsp,False);
 		return(ERROR_DOS(ERRDOS,ERRnoaccess));
@@ -859,10 +875,10 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	*pparams = params;
 
 	SSVAL(params,0,fsp->fnum);
-	SSVAL(params,2,fmode);
+	SSVAL(params,2,open_attr);
 	put_dos_date2(params,4, mtime);
 	SIVAL(params,8, (uint32)size);
-	SSVAL(params,12,rmode);
+	SSVAL(params,12,open_ofun);
 	SSVAL(params,16,0); /* Padding. */
 
 	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
@@ -996,7 +1012,7 @@ static mode_t unix_perms_from_wire( connection_struct *conn, SMB_STRUCT_STAT *ps
 
 static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				  void *inbuf, void *outbuf,
-				 char *path_mask,int dirtype,int info_level,
+				 char *path_mask,uint32 dirtype,int info_level,
 				 int requires_resume_key,
 				 BOOL dont_descend,char **ppdata, 
 				 char *base_data, int space_remaining, 
@@ -1012,7 +1028,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	char *p, *q, *pdata = *ppdata;
 	uint32 reskey=0;
 	long prev_dirpos=0;
-	int mode=0;
+	uint32 mode=0;
 	SMB_OFF_T file_size = 0;
 	SMB_BIG_UINT allocation_size = 0;
 	uint32 len;
@@ -1020,7 +1036,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	char *nameptr;
 	char *last_entry_ptr;
 	BOOL was_8_3;
-	int nt_extmode; /* Used for NT connections instead of mode */
+	uint32 nt_extmode; /* Used for NT connections instead of mode */
 	BOOL needslash = ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
 	BOOL check_mangled_names = lp_manglednames(SNUM(conn));
 
@@ -1576,7 +1592,7 @@ static int call_trans2findfirst(connection_struct *conn, char *inbuf, char *outb
 		requested. */
 	char *params = *pparams;
 	char *pdata = *ppdata;
-	int dirtype = SVAL(params,0);
+	uint32 dirtype = SVAL(params,0);
 	int maxentries = SVAL(params,2);
 	uint16 findfirst_flags = SVAL(params,4);
 	BOOL close_after_first = (findfirst_flags & FLAG_TRANS2_FIND_CLOSE);
@@ -1606,9 +1622,9 @@ static int call_trans2findfirst(connection_struct *conn, char *inbuf, char *outb
 
 	*directory = *mask = 0;
 
-	DEBUG(3,("call_trans2findfirst: dirtype = %d, maxentries = %d, close_after_first=%d, \
+	DEBUG(3,("call_trans2findfirst: dirtype = %x, maxentries = %d, close_after_first=%d, \
 close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
-		dirtype, maxentries, close_after_first, close_if_end, requires_resume_key,
+		(unsigned int)dirtype, maxentries, close_after_first, close_if_end, requires_resume_key,
 		info_level, max_data_bytes));
 
 	if (!maxentries) {
@@ -1711,19 +1727,13 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	}
 	*pparams = params;
 
-	dptr_num = dptr_create(conn,directory, False, True ,SVAL(inbuf,smb_pid));
-	if (dptr_num < 0) {
-		talloc_destroy(ea_ctx);
-		return(UNIXERROR(ERRDOS,ERRbadfile));
-	}
-
 	/* Save the wildcard match and attribs we are using on this directory - 
 		needed as lanman2 assumes these are being saved between calls */
 
-	if (!dptr_set_wcard_and_attributes(dptr_num, mask, dirtype)) {
-		dptr_close(&dptr_num);
+	dptr_num = dptr_create(conn,directory, False, True ,SVAL(inbuf,smb_pid), mask, dirtype);
+	if (dptr_num < 0) {
 		talloc_destroy(ea_ctx);
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
+		return(UNIXERROR(ERRDOS,ERRbadfile));
 	}
 
 	DEBUG(4,("dptr_num is %d, wcard = %s, attr = %d\n",dptr_num, mask, dirtype));
@@ -2336,7 +2346,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			
 			fsp.conn = conn;
 			fsp.fnum = -1;
-			fsp.fd = -1;
+			fsp.fh->fd = -1;
 			
 			/* access check */
 			if (current_user.uid != 0) {
@@ -2390,7 +2400,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			data_len = 12;
 			SSVAL(pdata,0,CIFS_UNIX_MAJOR_VERSION);
 			SSVAL(pdata,2,CIFS_UNIX_MINOR_VERSION);
-			SBIG_UINT(pdata,4,((SMB_BIG_UINT)CIFS_UNIX_POSIX_ACLS_CAP)); /* We have POSIX ACLs. */
+			SBIG_UINT(pdata,4,((SMB_BIG_UINT)(CIFS_UNIX_POSIX_ACLS_CAP|
+					CIFS_UNIX_POSIX_PATHNAMES_CAP))); /* We have POSIX ACLs and pathname capability. */
 			break;
 
 		case SMB_MAC_QUERY_FS_INFO:
@@ -2426,21 +2437,10 @@ static int call_trans2setfsinfo(connection_struct *conn, char *inbuf, char *outb
 {
 	char *pdata = *ppdata;
 	char *params = *pparams;
-	files_struct *fsp = NULL;
 	uint16 info_level;
 	int outsize;
-	SMB_NTQUOTA_STRUCT quotas;
-	
-	ZERO_STRUCT(quotas);
 
-	DEBUG(10,("call_trans2setfsinfo: SET_FS_QUOTA: for service [%s]\n",lp_servicename(SNUM(conn))));
-
-	/* access check */
-	if ((current_user.uid != 0)||!CAN_WRITE(conn)) {
-		DEBUG(0,("set_user_quota: access_denied service [%s] user [%s]\n",
-			lp_servicename(SNUM(conn)),conn->user));
-		return ERROR_DOS(ERRSRV,ERRaccess);
-	}
+	DEBUG(10,("call_trans2setfsinfo: for service [%s]\n",lp_servicename(SNUM(conn))));
 
 	/*  */
 	if (total_params < 4) {
@@ -2449,67 +2449,112 @@ static int call_trans2setfsinfo(connection_struct *conn, char *inbuf, char *outb
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
-	fsp = file_fsp(params,0);
-
-	if (!CHECK_NTQUOTA_HANDLE_OK(fsp,conn)) {
-		DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
-		return ERROR_NT(NT_STATUS_INVALID_HANDLE);
-	}
-
 	info_level = SVAL(params,2);
 
 	switch(info_level) {
+		case SMB_SET_CIFS_UNIX_INFO:
+			{
+				uint16 client_unix_major;
+				uint16 client_unix_minor;
+				uint32 client_unix_cap_low;
+				uint32 client_unix_cap_high;
+
+				if (!lp_unix_extensions()) {
+					return ERROR_DOS(ERRDOS,ERRunknownlevel);
+				}
+
+				/* There should be 12 bytes of capabilities set. */
+				if (total_data < 8) {
+					return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+				}
+				client_unix_major = SVAL(pdata,0);
+				client_unix_minor = SVAL(pdata,2);
+				client_unix_cap_low = IVAL(pdata,4);
+				client_unix_cap_high = IVAL(pdata,8);
+				/* Just print these values for now. */
+				DEBUG(10,("call_trans2setfsinfo: set unix info. major = %u, minor = %u \
+cap_low = 0x%x, cap_high = 0x%x\n",
+					(unsigned int)client_unix_major,
+					(unsigned int)client_unix_minor,
+					(unsigned int)client_unix_cap_low,
+					(unsigned int)client_unix_cap_high ));
+
+				/* Here is where we must switch to posix pathname processing... */
+				lp_set_posix_pathnames();
+				mangle_change_to_posix();
+				break;
+			}
 		case SMB_FS_QUOTA_INFORMATION:
-			/* note: normaly there're 48 bytes,
-			 * but we didn't use the last 6 bytes for now 
-			 * --metze 
-			 */
-			if (total_data < 42) {
-				DEBUG(0,("call_trans2setfsinfo: SET_FS_QUOTA: requires total_data(%d) >= 42 bytes!\n",
-					total_data));
-				return ERROR_DOS(ERRDOS,ERRunknownlevel);
-			}
+			{
+				files_struct *fsp = NULL;
+				SMB_NTQUOTA_STRUCT quotas;
+	
+				ZERO_STRUCT(quotas);
+
+				/* access check */
+				if ((current_user.uid != 0)||!CAN_WRITE(conn)) {
+					DEBUG(0,("set_user_quota: access_denied service [%s] user [%s]\n",
+						lp_servicename(SNUM(conn)),conn->user));
+					return ERROR_DOS(ERRSRV,ERRaccess);
+				}
+
+				/* note: normaly there're 48 bytes,
+				 * but we didn't use the last 6 bytes for now 
+				 * --metze 
+				 */
+				fsp = file_fsp(params,0);
+				if (!CHECK_NTQUOTA_HANDLE_OK(fsp,conn)) {
+					DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
+					return ERROR_NT(NT_STATUS_INVALID_HANDLE);
+				}
+
+				if (total_data < 42) {
+					DEBUG(0,("call_trans2setfsinfo: SET_FS_QUOTA: requires total_data(%d) >= 42 bytes!\n",
+						total_data));
+					return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+				}
 			
-			/* unknown_1 24 NULL bytes in pdata*/
+				/* unknown_1 24 NULL bytes in pdata*/
 		
-			/* the soft quotas 8 bytes (SMB_BIG_UINT)*/
-			quotas.softlim = (SMB_BIG_UINT)IVAL(pdata,24);
+				/* the soft quotas 8 bytes (SMB_BIG_UINT)*/
+				quotas.softlim = (SMB_BIG_UINT)IVAL(pdata,24);
 #ifdef LARGE_SMB_OFF_T
-			quotas.softlim |= (((SMB_BIG_UINT)IVAL(pdata,28)) << 32);
+				quotas.softlim |= (((SMB_BIG_UINT)IVAL(pdata,28)) << 32);
 #else /* LARGE_SMB_OFF_T */
-			if ((IVAL(pdata,28) != 0)&&
-				((quotas.softlim != 0xFFFFFFFF)||
-				(IVAL(pdata,28)!=0xFFFFFFFF))) {
-				/* more than 32 bits? */
-				return ERROR_DOS(ERRDOS,ERRunknownlevel);
-			}
+				if ((IVAL(pdata,28) != 0)&&
+					((quotas.softlim != 0xFFFFFFFF)||
+					(IVAL(pdata,28)!=0xFFFFFFFF))) {
+					/* more than 32 bits? */
+					return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+				}
 #endif /* LARGE_SMB_OFF_T */
 		
-			/* the hard quotas 8 bytes (SMB_BIG_UINT)*/
-			quotas.hardlim = (SMB_BIG_UINT)IVAL(pdata,32);
+				/* the hard quotas 8 bytes (SMB_BIG_UINT)*/
+				quotas.hardlim = (SMB_BIG_UINT)IVAL(pdata,32);
 #ifdef LARGE_SMB_OFF_T
-			quotas.hardlim |= (((SMB_BIG_UINT)IVAL(pdata,36)) << 32);
+				quotas.hardlim |= (((SMB_BIG_UINT)IVAL(pdata,36)) << 32);
 #else /* LARGE_SMB_OFF_T */
-			if ((IVAL(pdata,36) != 0)&&
-				((quotas.hardlim != 0xFFFFFFFF)||
-				(IVAL(pdata,36)!=0xFFFFFFFF))) {
-				/* more than 32 bits? */
-				return ERROR_DOS(ERRDOS,ERRunknownlevel);
-			}
+				if ((IVAL(pdata,36) != 0)&&
+					((quotas.hardlim != 0xFFFFFFFF)||
+					(IVAL(pdata,36)!=0xFFFFFFFF))) {
+					/* more than 32 bits? */
+					return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+				}
 #endif /* LARGE_SMB_OFF_T */
 		
-			/* quota_flags 2 bytes **/
-			quotas.qflags = SVAL(pdata,40);
+				/* quota_flags 2 bytes **/
+				quotas.qflags = SVAL(pdata,40);
 		
-			/* unknown_2 6 NULL bytes follow*/
+				/* unknown_2 6 NULL bytes follow*/
 		
-			/* now set the quotas */
-			if (vfs_set_ntquota(fsp, SMB_USER_FS_QUOTA_TYPE, NULL, &quotas)!=0) {
-				DEBUG(0,("vfs_set_ntquota() failed for service [%s]\n",lp_servicename(SNUM(conn))));
-				return ERROR_DOS(ERRSRV,ERRerror);
-			}
+				/* now set the quotas */
+				if (vfs_set_ntquota(fsp, SMB_USER_FS_QUOTA_TYPE, NULL, &quotas)!=0) {
+					DEBUG(0,("vfs_set_ntquota() failed for service [%s]\n",lp_servicename(SNUM(conn))));
+					return ERROR_DOS(ERRSRV,ERRerror);
+				}
 			
-			break;
+				break;
+			}
 		default:
 			DEBUG(3,("call_trans2setfsinfo: unknown level (0x%X) not implemented yet.\n",
 				info_level));
@@ -2678,6 +2723,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	char *pdata = *ppdata;
 	uint16 info_level;
 	int mode=0;
+	int nlink;
 	SMB_OFF_T file_size=0;
 	SMB_BIG_UINT allocation_size=0;
 	unsigned int data_size = 0;
@@ -2695,7 +2741,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	files_struct *fsp = NULL;
 	TALLOC_CTX *ea_ctx = NULL;
 	struct ea_list *ea_list = NULL;
-	uint32 desired_access = 0x12019F; /* Default - GENERIC_EXECUTE mapping from Windows */
+	uint32 access_mask = 0x12019F; /* Default - GENERIC_EXECUTE mapping from Windows */
 
 	if (!params)
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
@@ -2720,7 +2766,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			pstrcpy(fname, fsp->fsp_name);
 			/* We know this name is ok, it's already passed the checks. */
 			
-		} else if(fsp && (fsp->is_directory || fsp->fd == -1)) {
+		} else if(fsp && (fsp->is_directory || fsp->fh->fd == -1)) {
 			/*
 			 * This is actually a QFILEINFO on a directory
 			 * handle (returned from an NT SMB). NT5.0 seems
@@ -2740,7 +2786,9 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
 			}
 
-			delete_pending = fsp->is_directory ? fsp->directory_delete_on_close : 0;
+			delete_pending =
+				get_delete_on_close_flag(sbuf.st_dev,
+							 sbuf.st_ino);
 		} else {
 			/*
 			 * Original code - this is an open file.
@@ -2748,13 +2796,15 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			CHECK_FSP(fsp,conn);
 
 			pstrcpy(fname, fsp->fsp_name);
-			if (SMB_VFS_FSTAT(fsp,fsp->fd,&sbuf) != 0) {
+			if (SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf) != 0) {
 				DEBUG(3,("fstat of fnum %d failed (%s)\n", fsp->fnum, strerror(errno)));
 				return(UNIXERROR(ERRDOS,ERRbadfid));
 			}
-			pos = fsp->position_information;
-			delete_pending = fsp->delete_on_close;
-			desired_access = fsp->desired_access;
+			pos = fsp->fh->position_information;
+			delete_pending = 
+				get_delete_on_close_flag(sbuf.st_dev,
+							 sbuf.st_ino);
+			access_mask = fsp->access_mask;
 		}
 	} else {
 		NTSTATUS status = NT_STATUS_OK;
@@ -2794,6 +2844,23 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_STAT of %s failed (%s)\n",fname,strerror(errno)));
 			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
 		}
+
+		delete_pending = get_delete_on_close_flag(sbuf.st_dev,
+							  sbuf.st_ino);
+		if (delete_pending) {
+			return ERROR_NT(NT_STATUS_DELETE_PENDING);
+		}
+	}
+
+	nlink = sbuf.st_nlink;
+
+	if ((nlink > 0) && S_ISDIR(sbuf.st_mode)) {
+		/* NTFS does not seem to count ".." */
+		nlink -= 1;
+	}
+
+	if ((nlink > 0) && delete_pending) {
+		nlink -= 1;
 	}
 
 	if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions())
@@ -3023,11 +3090,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			data_size = 24;
 			SOFF_T(pdata,0,allocation_size);
 			SOFF_T(pdata,8,file_size);
-			if (delete_pending & sbuf.st_nlink)
-				SIVAL(pdata,16,sbuf.st_nlink - 1);
-			else
-				SIVAL(pdata,16,sbuf.st_nlink);
-			SCVAL(pdata,20,0);
+			SIVAL(pdata,16,nlink);
+			SCVAL(pdata,20,delete_pending?1:0);
 			SCVAL(pdata,21,(mode&aDIR)?1:0);
 			SSVAL(pdata,22,0); /* Padding. */
 			break;
@@ -3098,10 +3162,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			pdata += 40;
 			SOFF_T(pdata,0,allocation_size);
 			SOFF_T(pdata,8,file_size);
-			if (delete_pending && sbuf.st_nlink)
-				SIVAL(pdata,16,sbuf.st_nlink - 1);
-			else
-				SIVAL(pdata,16,sbuf.st_nlink);
+			SIVAL(pdata,16,nlink);
 			SCVAL(pdata,20,delete_pending);
 			SCVAL(pdata,21,(mode&aDIR)?1:0);
 			SSVAL(pdata,22,0);
@@ -3129,7 +3190,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 		case SMB_FILE_ACCESS_INFORMATION:
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_ACCESS_INFORMATION\n"));
-			SIVAL(pdata,0,desired_access);
+			SIVAL(pdata,0,access_mask);
 			data_size = 4;
 			break;
 
@@ -3312,8 +3373,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				uint16 num_file_acls = 0;
 				uint16 num_def_acls = 0;
 
-				if (fsp && !fsp->is_directory && (fsp->fd != -1)) {
-					file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, fsp->fd);
+				if (fsp && !fsp->is_directory && (fsp->fh->fd != -1)) {
+					file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, fsp->fh->fd);
 				} else {
 					file_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, fname, SMB_ACL_TYPE_ACCESS);
 				}
@@ -3398,50 +3459,46 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
  open_file_shared. JRA.
 ****************************************************************************/
 
-NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close, uint32 dosmode)
+NTSTATUS can_set_delete_on_close(files_struct *fsp, BOOL delete_on_close,
+				 uint32 dosmode)
 {
-	if (delete_on_close) {
-		/*
-		 * Only allow delete on close for writable files.
-		 */
-
-		if (!lp_delete_readonly(SNUM(fsp->conn))) {
-			if (dosmode & aRONLY) {
-				DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but file attribute is readonly.\n",
-					fsp->fsp_name ));
-				return NT_STATUS_CANNOT_DELETE;
-			}
-		}
-
-		/*
-		 * Only allow delete on close for writable shares.
-		 */
-
-		if (!CAN_WRITE(fsp->conn)) {
-			DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but write access denied on share.\n",
-				fsp->fsp_name ));
-			return NT_STATUS_ACCESS_DENIED;
-		}
-
-		/*
-		 * Only allow delete on close for files/directories opened with delete intent.
-		 */
-
-		if (!(fsp->desired_access & DELETE_ACCESS)) {
-			DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but delete access denied.\n",
-				fsp->fsp_name ));
-			return NT_STATUS_ACCESS_DENIED;
-		}
+	if (!delete_on_close) {
+		return NT_STATUS_OK;
 	}
 
-	if(fsp->is_directory) {
-		fsp->directory_delete_on_close = delete_on_close;
-		DEBUG(10, ("set_delete_on_close_internal: %s delete on close flag for fnum = %d, directory %s\n",
-			delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
-	} else {
-		fsp->delete_on_close = delete_on_close;
-		DEBUG(10, ("set_delete_on_close_internal: %s delete on close flag for fnum = %d, file %s\n",
-			delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
+	/*
+	 * Only allow delete on close for writable files.
+	 */
+
+	if ((dosmode & aRONLY) &&
+	    !lp_delete_readonly(SNUM(fsp->conn))) {
+		DEBUG(10,("can_set_delete_on_close: file %s delete on close "
+			  "flag set but file attribute is readonly.\n",
+			  fsp->fsp_name ));
+		return NT_STATUS_CANNOT_DELETE;
+	}
+
+	/*
+	 * Only allow delete on close for writable shares.
+	 */
+
+	if (!CAN_WRITE(fsp->conn)) {
+		DEBUG(10,("can_set_delete_on_close: file %s delete on "
+			  "close flag set but write access denied on share.\n",
+			  fsp->fsp_name ));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/*
+	 * Only allow delete on close for files/directories opened with delete
+	 * intent.
+	 */
+
+	if (!(fsp->access_mask & DELETE_ACCESS)) {
+		DEBUG(10,("can_set_delete_on_close: file %s delete on "
+			  "close flag set but delete access denied.\n",
+			  fsp->fsp_name ));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	return NT_STATUS_OK;
@@ -3456,10 +3513,12 @@ NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close, u
  if flag is set.
 ****************************************************************************/
 
-NTSTATUS set_delete_on_close_over_all(files_struct *fsp, BOOL delete_on_close)
+NTSTATUS set_delete_on_close(files_struct *fsp, BOOL delete_on_close)
 {
-	DEBUG(10,("set_delete_on_close_over_all: %s delete on close flag for fnum = %d, file %s\n",
-		delete_on_close ? "Adding" : "Removing", fsp->fnum, fsp->fsp_name ));
+	DEBUG(10,("set_delete_on_close: %s delete on close flag for "
+		  "fnum = %d, file %s\n",
+		  delete_on_close ? "Adding" : "Removing", fsp->fnum,
+		  fsp->fsp_name ));
 
 	if (fsp->is_directory || fsp->is_stat)
 		return NT_STATUS_OK;
@@ -3468,8 +3527,9 @@ NTSTATUS set_delete_on_close_over_all(files_struct *fsp, BOOL delete_on_close)
 		return NT_STATUS_ACCESS_DENIED;
 
 	if (!modify_delete_flag(fsp->dev, fsp->inode, delete_on_close)) {
-		DEBUG(0,("set_delete_on_close_over_all: failed to change delete on close flag for file %s\n",
-			fsp->fsp_name ));
+		DEBUG(0,("set_delete_on_close: failed to change delete "
+			 "on close flag for file %s\n",
+			 fsp->fsp_name ));
 		unlock_share_entry_fsp(fsp);
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -3601,7 +3661,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		fsp = file_fsp(params,0);
 		info_level = SVAL(params,2);    
 
-		if(fsp && (fsp->is_directory || fsp->fd == -1)) {
+		if(fsp && (fsp->is_directory || fsp->fh->fd == -1)) {
 			/*
 			 * This is actually a SETFILEINFO on a directory
 			 * handle (returned from an NT SMB). NT5.0 seems
@@ -3617,7 +3677,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			 * Doing a DELETE_ON_CLOSE should cancel a print job.
 			 */
 			if ((info_level == SMB_SET_FILE_DISPOSITION_INFO) && CVAL(pdata,0)) {
-				fsp->share_mode = FILE_DELETE_ON_CLOSE;
+				fsp->fh->private_options |= FILE_DELETE_ON_CLOSE;
 
 				DEBUG(3,("call_trans2setfilepathinfo: Cancelling print job (%s)\n", fsp->fsp_name ));
 	
@@ -3633,7 +3693,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			CHECK_FSP(fsp,conn);
 
 			pstrcpy(fname, fsp->fsp_name);
-			fd = fsp->fd;
+			fd = fsp->fh->fd;
 
 			if (SMB_VFS_FSTAT(fsp,fd,&sbuf) != 0) {
 				DEBUG(3,("call_trans2setfilepathinfo: fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
@@ -3850,8 +3910,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
  
 				if (fd == -1) {
 					files_struct *new_fsp = NULL;
-					int access_mode = 0;
-					int action = 0;
  
 					if(global_oplock_break) {
 						/* Queue this file modify as we are the process of an oplock break.  */
@@ -3863,16 +3921,20 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 						return -1;
 					}
  
-					new_fsp = open_file_shared1(conn, fname, &sbuf,FILE_WRITE_DATA,
-									SET_OPEN_MODE(DOS_OPEN_RDWR),
-									(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
+					new_fsp = open_file_ntcreate(conn, fname, &sbuf,
+									FILE_WRITE_DATA,
+									FILE_SHARE_READ|FILE_SHARE_WRITE,
+									FILE_OPEN,
+									0,
 									FILE_ATTRIBUTE_NORMAL,
-									INTERNAL_OPEN_ONLY, &access_mode, &action);
+									INTERNAL_OPEN_ONLY,
+									NULL);
  
-					if (new_fsp == NULL)
+					if (new_fsp == NULL) {
 						return(UNIXERROR(ERRDOS,ERRbadpath));
+					}
 					ret = vfs_allocate_file_space(new_fsp, allocation_size);
-					if (SMB_VFS_FSTAT(new_fsp,new_fsp->fd,&new_sbuf) != 0) {
+					if (SMB_VFS_FSTAT(new_fsp,new_fsp->fh->fd,&new_sbuf) != 0) {
 						DEBUG(3,("call_trans2setfilepathinfo: fstat of fnum %d failed (%s)\n",
 									new_fsp->fnum, strerror(errno)));
 						ret = -1;
@@ -3932,14 +3994,15 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			if (fsp == NULL)
 				return(UNIXERROR(ERRDOS,ERRbadfid));
 
-			status = set_delete_on_close_internal(fsp, delete_on_close, dosmode);
+			status = can_set_delete_on_close(fsp, delete_on_close,
+							 dosmode);
  
 			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
 			}
 
 			/* The set is across all open files on this dev/inode pair. */
-			status =set_delete_on_close_over_all(fsp, delete_on_close);
+			status =set_delete_on_close(fsp, delete_on_close);
 			if (!NT_STATUS_IS_OK(status)) {
 				return ERROR_NT(status);
 			}
@@ -3967,7 +4030,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			DEBUG(10,("call_trans2setfilepathinfo: Set file position information for file %s to %.0f\n",
 					fname, (double)position_information ));
 			if (fsp) {
-				fsp->position_information = position_information;
+				fsp->fh->position_information = position_information;
 			}
 
 			/* We're done. We only get position info in this call. */
@@ -4391,8 +4454,6 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 		if (fd == -1) {
 			files_struct *new_fsp = NULL;
-			int access_mode = 0;
-			int action = 0;
 
 			if(global_oplock_break) {
 				/* Queue this file modify as we are the process of an oplock break.  */
@@ -4404,22 +4465,27 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				return -1;
 			}
 
-			new_fsp = open_file_shared(conn, fname, &sbuf,
-						SET_OPEN_MODE(DOS_OPEN_RDWR),
-						(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
+			new_fsp = open_file_ntcreate(conn, fname, &sbuf,
+						FILE_WRITE_DATA,
+						FILE_SHARE_READ|FILE_SHARE_WRITE,
+						FILE_OPEN,
+						0,
 						FILE_ATTRIBUTE_NORMAL,
-						INTERNAL_OPEN_ONLY, &access_mode, &action);
+						INTERNAL_OPEN_ONLY,
+						NULL);
 	
-			if (new_fsp == NULL)
+			if (new_fsp == NULL) {
 				return(UNIXERROR(ERRDOS,ERRbadpath));
+			}
 			ret = vfs_set_filelen(new_fsp, size);
 			close_file(new_fsp,True);
 		} else {
 			ret = vfs_set_filelen(fsp, size);
 		}
 
-		if (ret == -1)
+		if (ret == -1) {
 			return (UNIXERROR(ERRHRD,ERRdiskfull));
+		}
 	}
 
 	/*
@@ -4883,6 +4949,7 @@ int reply_trans2(connection_struct *conn,
 		   of the parameter/data bytes */
 		outsize = set_message(outbuf,0,0,True);
 		srv_signing_trans_stop();
+		show_msg(outbuf);
 		if (!send_smb(smbd_server_fd(),outbuf))
 			exit_server("reply_trans2: send_smb failed.");
 

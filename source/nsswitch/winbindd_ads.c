@@ -39,8 +39,8 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
 
-	if (domain->private) {
-		ads = (ADS_STRUCT *)domain->private;
+	if (domain->private_data) {
+		ads = (ADS_STRUCT *)domain->private_data;
 
 		/* check for a valid structure */
 
@@ -54,7 +54,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 			ads->is_mine = True;
 			ads_destroy( &ads );
 			ads_kdestroy("MEMORY:winbind_ccache");
-			domain->private = NULL;
+			domain->private_data = NULL;
 		}	
 	}
 
@@ -95,13 +95,18 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 		return NULL;
 	}
 
+	if (use_nss_info("sfu") && (!ads_check_sfu_mapping(ads))) {
+		DEBUG(0,("ads_cached_connection: failed to check sfu attributes\n"));
+		return NULL;
+	}
+	
 	/* set the flag that says we don't own the memory even 
 	   though we do so that ads_destroy() won't destroy the 
 	   structure we pass back by reference */
 
 	ads->is_mine = False;
 
-	domain->private = (void *)ads;
+	domain->private_data = (void *)ads;
 	return ads;
 }
 
@@ -116,7 +121,10 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	const char *attrs[] = {"userPrincipalName",
 			       "sAMAccountName",
 			       "name", "objectSid", "primaryGroupID", 
-			       "sAMAccountType", NULL};
+			       "sAMAccountType", 
+			       ADS_ATTR_SFU_HOMEDIR_OID, 
+			       ADS_ATTR_SFU_SHELL_OID, 
+			       NULL};
 	int i, count;
 	ADS_STATUS rc;
 	void *res = NULL;
@@ -156,6 +164,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 
 	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
 		char *name, *gecos;
+		char *homedir = NULL;
+		char *shell = NULL;
 		uint32 group;
 		uint32 atype;
 
@@ -167,6 +177,11 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 
 		name = ads_pull_username(ads, mem_ctx, msg);
 		gecos = ads_pull_string(ads, mem_ctx, msg, "name");
+		if (use_nss_info("sfu")) {
+			homedir = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_homedir_attr);
+			shell = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_shell_attr);
+		}
+	
 		if (!ads_pull_sid(ads, msg, "objectSid",
 				  &(*info)[i].user_sid)) {
 			DEBUG(1,("No sid for %s !?\n", name));
@@ -179,6 +194,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 
 		(*info)[i].acct_name = name;
 		(*info)[i].full_name = gecos;
+		(*info)[i].homedir = homedir;
+		(*info)[i].shell = shell;
 		sid_compose(&(*info)[i].group_sid, &domain->sid, group);
 		i++;
 	}
@@ -364,7 +381,10 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	const char *attrs[] = {"userPrincipalName", 
 			       "sAMAccountName",
 			       "name", 
-			       "primaryGroupID", NULL};
+			       "primaryGroupID", 
+			       ADS_ATTR_SFU_HOMEDIR_OID, 
+			       ADS_ATTR_SFU_SHELL_OID, 
+			       NULL};
 	ADS_STATUS rc;
 	int count;
 	void *msg = NULL;
@@ -402,6 +422,11 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	info->acct_name = ads_pull_username(ads, mem_ctx, msg);
 	info->full_name = ads_pull_string(ads, mem_ctx, msg, "name");
+
+	if (use_nss_info("sfu")) {
+		info->homedir = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_homedir_attr);
+		info->shell = ads_pull_string(ads, mem_ctx, msg, ads->schema.sfu_shell_attr);
+	}
 
 	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &group_rid)) {
 		DEBUG(1,("No primary group for %s !?\n",
@@ -767,7 +792,7 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 		   through since ads_USN() has already done 
 		   that indirectly */
 		   
-		domain->private = NULL;
+		domain->private_data = NULL;
 	}
 	return ads_ntstatus(rc);
 }

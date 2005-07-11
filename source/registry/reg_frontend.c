@@ -31,13 +31,16 @@ extern REGISTRY_OPS shares_reg_ops;
 extern REGISTRY_OPS regdb_ops;		/* these are the default */
 
 /* array of REGISTRY_HOOK's which are read into a tree for easy access */
+/* #define REG_TDB_ONLY		1 */
 
 REGISTRY_HOOK reg_hooks[] = {
+#ifndef REG_TDB_ONLY 
   { KEY_PRINTING,    		&printing_ops },
   { KEY_PRINTING_2K, 		&printing_ops },
   { KEY_PRINTING_PORTS, 	&printing_ops },
   { KEY_EVENTLOG,        	&eventlog_ops }, 
   { KEY_SHARES,      		&shares_reg_ops },
+#endif
   { NULL, NULL }
 };
 
@@ -70,9 +73,6 @@ BOOL init_registry( void )
 	return True;
 }
 
-
-
-
 /***********************************************************************
  High level wrapper function for storing registry subkeys
  ***********************************************************************/
@@ -81,8 +81,8 @@ BOOL store_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys )
 {
 	if ( key->hook && key->hook->ops && key->hook->ops->store_subkeys )
 		return key->hook->ops->store_subkeys( key->name, subkeys );
-	else
-		return False;
+		
+	return False;
 
 }
 
@@ -92,10 +92,13 @@ BOOL store_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys )
  
 BOOL store_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 {
+	if ( check_dynamic_reg_values( key ) )
+		return False;
+
 	if ( key->hook && key->hook->ops && key->hook->ops->store_values )
 		return key->hook->ops->store_values( key->name, val );
-	else
-		return False;
+
+	return False;
 }
 
 
@@ -165,10 +168,8 @@ BOOL fetch_reg_keys_specific( REGISTRY_KEY *key, char** subkey, uint32 key_index
 	return True;
 }
 
-
 /***********************************************************************
  High level wrapper function for enumerating registry values
- Initialize the TALLOC_CTX if necessary
  ***********************************************************************/
 
 int fetch_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
@@ -177,7 +178,15 @@ int fetch_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 	
 	if ( key->hook && key->hook->ops && key->hook->ops->fetch_values )
 		result = key->hook->ops->fetch_values( key->name, val );
+	
+	/* if the backend lookup returned no data, try the dynamic overlay */
+	
+	if ( result == 0 ) {
+		result = fetch_dynamic_reg_values( key, val );
 
+		return ( result != -1 ) ? result : 0;
+	}
+	
 	return result;
 }
 
@@ -211,7 +220,7 @@ BOOL fetch_reg_values_specific( REGISTRY_KEY *key, REGISTRY_VALUE **val, uint32 
 		ctr_init = True;
 	}
 	/* clear the cache when val_index == 0 or the path has changed */
-	else if ( !val_index || StrCaseCmp(save_path, key->name) ) {
+	else if ( !val_index || !strequal(save_path, key->name) ) {
 
 		DEBUG(8,("fetch_reg_values_specific: Updating cache of values for [%s]\n", key->name));		
 		

@@ -25,6 +25,18 @@
 #include "config.h"
 #endif
 
+#ifndef __cplusplus
+#define class #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#define private #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#define public #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#define protected #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#define template #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#define this #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#define new #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#define delete #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#define friend #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#endif
+
 #include "local.h"
 
 #ifdef AIX
@@ -55,7 +67,7 @@
 #define PRINTF_ATTRIBUTE(a1, a2)
 #endif
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__cplusplus)
 /** gcc attribute used on function parameters so that it does not emit
  * warnings about them being unused. **/
 #  define UNUSED(param) param __attribute__ ((unused))
@@ -491,6 +503,10 @@
 #include <langinfo.h>
 #endif
 
+#ifdef HAVE_AIO_H
+#include <aio.h>
+#endif
+
 /* Special macros that are no-ops except when run under Valgrind on
  * x86.  They've moved a little bit from valgrind 1.0.4 to 1.9.4 */
 #if HAVE_VALGRIND_MEMCHECK_H
@@ -758,6 +774,29 @@ typedef int socklen_t;
 #  else
 #    define SMB_F_GETLK F_GETLK
 #  endif
+#endif
+
+/*
+ * Type for aiocb structure.
+ */
+
+#ifndef SMB_STRUCT_AIOCB
+#  if defined(WITH_AIO)
+#    if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64)
+#      define SMB_STRUCT_AIOCB struct aiocb64
+#    else
+#      define SMB_STRUCT_AIOCB struct aiocb
+#    endif
+#  else
+#    define SMB_STRUCT_AIOCB int /* AIO not being used but we still need the define.... */
+#  endif
+#endif
+
+#ifndef HAVE_STRUCT_TIMESPEC
+struct timespec {
+	time_t tv_sec;            /* Seconds.  */
+	long tv_nsec;           /* Nanoseconds.  */
+};
 #endif
 
 #ifndef MIN

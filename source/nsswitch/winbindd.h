@@ -43,8 +43,8 @@ struct fd_event {
 	void (*handler)(struct fd_event *fde, int flags);
 	void *data;
 	size_t length, done;
-	void (*finished)(void *private, BOOL success);
-	void *private;
+	void (*finished)(void *private_data, BOOL success);
+	void *private_data;
 };
 
 struct winbindd_cli_state {
@@ -84,6 +84,8 @@ struct getent_state {
 struct getpwent_user {
 	fstring name;                        /* Account name */
 	fstring gecos;                       /* User information */
+	fstring homedir;                     /* User Home Directory */
+	fstring shell;                       /* User Login Shell */
 	DOM_SID user_sid;                    /* NT user and primary group SIDs */
 	DOM_SID group_sid;
 };
@@ -103,6 +105,8 @@ extern struct winbindd_state server_state;  /* Server information */
 typedef struct {
 	char *acct_name;
 	char *full_name;
+	char *homedir;
+	char *shell;
 	DOM_SID user_sid;                    /* NT user and primary group SIDs */
 	DOM_SID group_sid;
 } WINBIND_USERINFO;
@@ -163,7 +167,7 @@ struct winbindd_domain {
 
         /* Private data for the backends (used for connection cache) */
 
-	void *private; 
+	void *private_data; 
 
 	/* A working DC */
 	fstring dcname;

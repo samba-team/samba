@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    VFS structures and parameters
-   Copyright (C) Jeremy Allison                         1999-2004
+   Copyright (C) Jeremy Allison                         1999-2005
    Copyright (C) Tim Potter				1999
    Copyright (C) Alexander Bokovoy			2002
    Copyright (C) Stefan (metze) Metzmacher		2003
@@ -56,10 +56,13 @@
 /* Changed to version 9 to include the get_shadow_data call. --metze */
 /* Changed to version 10 to include pread/pwrite calls. */
 /* Changed to version 11 to include seekdir/telldir/rewinddir calls. JRA */
-#define SMB_VFS_INTERFACE_VERSION 11
+/* Changed to version 12 to add mask and attributes to opendir(). JRA 
+   Also include aio calls. JRA. */
+/* Changed to version 13 as the internal structure of files_struct has changed. JRA */
+#define SMB_VFS_INTERFACE_VERSION 13
 
 
-/* to bug old modules witch are trying to compile with the old functions */
+/* to bug old modules which are trying to compile with the old functions */
 #define vfs_init __ERROR_please_port_this_module_to_SMB_VFS_INTERFACE_VERSION_8_donot_use_vfs_init_anymore(void) { __ERROR_please_port_this_module_to_SMB_VFS_INTERFACE_VERSION_8_donot_use_vfs_init_anymore };
 #define lp_parm_string __ERROR_please_port_lp_parm_string_to_lp_parm_const_string_or_lp_parm_talloc_string { \
   __ERROR_please_port_lp_parm_string_to_lp_parm_const_string_or_lp_parm_talloc_string };
@@ -190,6 +193,15 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_LSETXATTR,
 	SMB_VFS_OP_FSETXATTR,
 
+	/* aio operations */
+	SMB_VFS_OP_AIO_READ,
+	SMB_VFS_OP_AIO_WRITE,
+	SMB_VFS_OP_AIO_RETURN,
+	SMB_VFS_OP_AIO_CANCEL,
+	SMB_VFS_OP_AIO_ERROR,
+	SMB_VFS_OP_AIO_FSYNC,
+	SMB_VFS_OP_AIO_SUSPEND,
+
 	/* This should always be last enum value */
 	
 	SMB_VFS_OP_LAST
@@ -202,7 +214,7 @@ struct vfs_ops {
 	struct vfs_fn_pointers {
 		/* Disk operations */
 		
-		int (*connect)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *service, const char *user);
+		int (*connect_fn)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *service, const char *user);
 		void (*disconnect)(struct vfs_handle_struct *handle, struct connection_struct *conn);
 		SMB_BIG_UINT (*disk_free)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
 			SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
@@ -212,7 +224,7 @@ struct vfs_ops {
 		
 		/* Directory operations */
 		
-		DIR *(*opendir)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *fname);
+		DIR *(*opendir)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *fname, const char *mask, uint32 attributes);
 		SMB_STRUCT_DIRENT *(*readdir)(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *dirp);
 		void (*seekdir)(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *dirp, long offset);
 		long (*telldir)(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *dirp);
@@ -224,14 +236,14 @@ struct vfs_ops {
 		/* File operations */
 		
 		int (*open)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *fname, int flags, mode_t mode);
-		int (*close)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd);
+		int (*close_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd);
 		ssize_t (*read)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, void *data, size_t n);
 		ssize_t (*pread)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, void *data, size_t n, SMB_OFF_T offset);
 		ssize_t (*write)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, const void *data, size_t n);
 		ssize_t (*pwrite)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, const void *data, size_t n, SMB_OFF_T offset);
 		SMB_OFF_T (*lseek)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_OFF_T offset, int whence);
 		ssize_t (*sendfile)(struct vfs_handle_struct *handle, int tofd, files_struct *fsp, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
-		int (*rename)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *old, const char *new);
+		int (*rename)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *oldname, const char *newname);
 		int (*fsync)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd);
 		int (*stat)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *fname, SMB_STRUCT_STAT *sbuf);
 		int (*fstat)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_STRUCT_STAT *sbuf);
@@ -301,12 +313,21 @@ struct vfs_ops {
 		int (*lsetxattr)(struct vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name, const void *value, size_t size, int flags);
 		int (*fsetxattr)(struct vfs_handle_struct *handle, struct files_struct *fsp,int filedes, const char *name, const void *value, size_t size, int flags);
 
+		/* aio operations */
+		int (*aio_read)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
+		int (*aio_write)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
+		ssize_t (*aio_return)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
+		int (*aio_cancel)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_STRUCT_AIOCB *aiocb);
+		int (*aio_error)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
+		int (*aio_fsync)(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_STRUCT_AIOCB *aiocb);
+		int (*aio_suspend)(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_AIOCB * const aiocb[], int n, const struct timespec *timeout);
+
 	} ops;
 
 	struct vfs_handles_pointers {
 		/* Disk operations */
 
-		struct vfs_handle_struct *connect;
+		struct vfs_handle_struct *connect_hnd;
 		struct vfs_handle_struct *disconnect;
 		struct vfs_handle_struct *disk_free;
 		struct vfs_handle_struct *get_quota;
@@ -327,7 +348,7 @@ struct vfs_ops {
 		/* File operations */
 
 		struct vfs_handle_struct *open;
-		struct vfs_handle_struct *close;
+		struct vfs_handle_struct *close_hnd;
 		struct vfs_handle_struct *read;
 		struct vfs_handle_struct *pread;
 		struct vfs_handle_struct *write;
@@ -404,6 +425,14 @@ struct vfs_ops {
 		struct vfs_handle_struct *lsetxattr;
 		struct vfs_handle_struct *fsetxattr;
 
+		/* aio operations */
+		struct vfs_handle_struct *aio_read;
+		struct vfs_handle_struct *aio_write;
+		struct vfs_handle_struct *aio_return;
+		struct vfs_handle_struct *aio_cancel;
+		struct vfs_handle_struct *aio_error;
+		struct vfs_handle_struct *aio_fsync;
+		struct vfs_handle_struct *aio_suspend;
 	} handles;
 };
 

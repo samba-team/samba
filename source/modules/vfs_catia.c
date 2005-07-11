@@ -72,13 +72,13 @@ static void to_unix(char *s)
 }
 
 static DIR *catia_opendir(vfs_handle_struct *handle, connection_struct 
-			  *conn, const char *fname)
+			  *conn, const char *fname, const char *mask, uint32 attr)
 {
         pstring name;
         pstrcpy(name, fname);
         to_unix(name);
 
-        return SMB_VFS_NEXT_OPENDIR(handle, conn, name);
+        return SMB_VFS_NEXT_OPENDIR(handle, conn, name, mask, attr);
 }
 
 static SMB_STRUCT_DIRENT *catia_readdir(vfs_handle_struct *handle, 
@@ -105,13 +105,13 @@ static int catia_open(vfs_handle_struct *handle, connection_struct *conn,
 }
 
 static int catia_rename(vfs_handle_struct *handle, connection_struct *conn,
-			const char *old, const char *new)
+			const char *oldname, const char *newname)
 {
         pstring oname, nname;
 
-        pstrcpy(oname, old);
+        pstrcpy(oname, oldname);
         to_unix(oname);
-        pstrcpy(nname, new);
+        pstrcpy(nname, newname);
         to_unix(nname);
 
         DEBUG(10, ("converted old name: %s\n", oname));

@@ -22,6 +22,8 @@
 #include "includes.h"
 #include "utils/net.h"
 
+static int net_mode_share;
+
 /**
  * @file net_rpc.c
  *
@@ -2848,18 +2850,15 @@ rpc_share_migrate_shares_internals(const DOM_SID *domain_sid, const char *domain
 
 		/* finally add the share on the dst server */ 
 
-		printf("migrating: [%s], path: %s, comment: %s, %s share-ACLs\n", 
-			netname, path, remark, opt_acls ? "including" : "without" );
-
-		if (opt_verbose && opt_acls)
-			display_sec_desc(ctr_src.share.info502[i].info_502_str.sd);
+		printf("migrating: [%s], path: %s, comment: %s, without share-ACLs\n", 
+			netname, path, remark);
 
 		result = cli_srvsvc_net_share_add(cli_dst, mem_ctx, netname, type, remark,
 						  ctr_src.share.info502[i].info_502.perms,
 						  ctr_src.share.info502[i].info_502.max_uses,
 						  ctr_src.share.info502[i].info_502.num_uses,
 						  path, password, level, 
-						  opt_acls? ctr_src.share.info502[i].info_502_str.sd : NULL);
+						  NULL);
 	
                 if (W_ERROR_V(result) == W_ERROR_V(WERR_ALREADY_EXISTS)) {
 			printf("           [%s] does already exist\n", netname);
@@ -2940,7 +2939,7 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
 		fstrcat(dir, "\\");
 		fstrcat(dir, f->name);
 
-		switch (local_state->mode)
+		switch (net_mode_share)
 		{
 		case NET_MODE_SHARE_MIGRATE:
 			/* create that directory */
@@ -2954,7 +2953,7 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
 						  False);
 			break;
 		default:
-			d_printf("Unsupported mode %d\n", local_state->mode);
+			d_printf("Unsupported mode %d\n", net_mode_share);
 			return;
 		}
 
@@ -2983,7 +2982,7 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
 
 	DEBUG(3,("got file: %s\n", filename));
 
-	switch (local_state->mode)
+	switch (net_mode_share)
 	{
 	case NET_MODE_SHARE_MIGRATE:
 		nt_status = net_copy_file(local_state->mem_ctx, 
@@ -2996,7 +2995,7 @@ static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state
 					  True);
 		break;
 	default:
-		d_printf("Unsupported file mode %d\n", local_state->mode);
+		d_printf("Unsupported file mode %d\n", net_mode_share);
 		return;
 	}
 
@@ -3040,7 +3039,7 @@ BOOL copy_top_level_perms(struct copy_clistate *cp_clistate,
 {
 	NTSTATUS nt_status;
 
-	switch (cp_clistate->mode) {
+	switch (net_mode_share) {
 	case NET_MODE_SHARE_MIGRATE:
 		DEBUG(3,("calling net_copy_fileattr for '.' directory in share %s\n", sharename));
 		nt_status = net_copy_fileattr(cp_clistate->mem_ctx,
@@ -3053,7 +3052,7 @@ BOOL copy_top_level_perms(struct copy_clistate *cp_clistate,
 						False);
 		break;
 	default:
-		d_printf("Unsupported mode %d\n", cp_clistate->mode);
+		d_printf("Unsupported mode %d\n", net_mode_share);
 		break;
 	}
 
@@ -3098,9 +3097,6 @@ rpc_share_migrate_files_internals(const DOM_SID *domain_sid, const char *domain_
 	pstring mask = "\\*";
 	char *dst = NULL;
 
-	/* decrese argc and safe mode */
-	cp_clistate.mode = argv[--argc][0];
-
 	dst = SMB_STRDUP(opt_destination?opt_destination:"127.0.0.1");
 
 	result = get_share_info(cli, mem_ctx, level, argc, argv, &ctr_src);
@@ -3124,13 +3120,13 @@ rpc_share_migrate_files_internals(const DOM_SID *domain_sid, const char *domain_
 			continue;
 		}
 
-		switch (cp_clistate.mode)
+		switch (net_mode_share)
 		{
 		case NET_MODE_SHARE_MIGRATE:
 			printf("syncing");
 			break;
 		default:
-			d_printf("Unsupported mode %d\n", cp_clistate.mode);
+			d_printf("Unsupported mode %d\n", net_mode_share);
 			break;
 		}
 		printf("    [%s] files and directories %s ACLs, %s DOS Attributes %s\n", 
@@ -3154,7 +3150,7 @@ rpc_share_migrate_files_internals(const DOM_SID *domain_sid, const char *domain_
 
 		got_src_share = True;
 
-		if (cp_clistate.mode == NET_MODE_SHARE_MIGRATE) {
+		if (net_mode_share == NET_MODE_SHARE_MIGRATE) {
 			/* open share destination */
 			nt_status = connect_to_service(&cp_clistate.cli_share_dst,
 						       NULL, dst, netname, "A:");
@@ -3372,8 +3368,7 @@ static int rpc_share_migrate(int argc, const char **argv)
 		{NULL, NULL}
 	};
 
-	char mode = NET_MODE_SHARE_MIGRATE;
-	argv[argc++] = &mode;
+	net_mode_share = NET_MODE_SHARE_MIGRATE;
 
 	return net_run_function(argc, argv, func, rpc_share_usage);
 }
@@ -3689,7 +3684,7 @@ static BOOL get_user_sids(const char *domain, const char *user,
 	fstrcpy(request.data.name.dom_name, domain);
 	fstrcpy(request.data.name.name, user);
 
-	result = winbindd_request(WINBINDD_LOOKUPNAME, &request, &response);
+	result = winbindd_request_response(WINBINDD_LOOKUPNAME, &request, &response);
 
 	if (result != NSS_STATUS_SUCCESS) {
 		DEBUG(1, ("winbind could not find %s\n", full_name));
@@ -3711,7 +3706,7 @@ static BOOL get_user_sids(const char *domain, const char *user,
 
 	fstrcpy(request.data.username, full_name);
 
-	result = winbindd_request(WINBINDD_GETGROUPS, &request, &response);
+	result = winbindd_request_response(WINBINDD_GETGROUPS, &request, &response);
 
 	if (result != NSS_STATUS_SUCCESS) {
 		DEBUG(1, ("winbind could not get groups of %s\n", full_name));
@@ -3730,7 +3725,7 @@ static BOOL get_user_sids(const char *domain, const char *user,
 
 		sidrequest.data.gid = gid;
 
-		result = winbindd_request(WINBINDD_GID_TO_SID,
+		result = winbindd_request_response(WINBINDD_GID_TO_SID,
 					  &sidrequest, &sidresponse);
 
 		if (result != NSS_STATUS_SUCCESS) {
@@ -3774,7 +3769,7 @@ static BOOL get_user_tokens(int *num_tokens, struct user_token **user_tokens)
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 	
-	if (winbindd_request(WINBINDD_LIST_USERS, &request, &response) !=
+	if (winbindd_request_response(WINBINDD_LIST_USERS, &request, &response) !=
 	    NSS_STATUS_SUCCESS)
 		return False;
 
@@ -5994,6 +5989,7 @@ int net_rpc_help(int argc, const char **argv)
 		{"trustdom", rpc_trustdom_usage},
 		/*{"abortshutdown", rpc_shutdown_abort_usage},*/
 		/*{"shutdown", rpc_shutdown_usage}, */
+		{"vampire", rpc_vampire_usage},
 		{NULL, NULL}
 	};
 

@@ -45,9 +45,9 @@ static int generate_trn_id(void)
  Parse a node status response into an array of structures.
 ****************************************************************************/
 
-static struct node_status *parse_node_status(char *p, int *num_names, struct node_status_extra *extra)
+static NODE_STATUS_STRUCT *parse_node_status(char *p, int *num_names, struct node_status_extra *extra)
 {
-	struct node_status *ret;
+	NODE_STATUS_STRUCT *ret;
 	int i;
 
 	*num_names = CVAL(p,0);
@@ -55,7 +55,7 @@ static struct node_status *parse_node_status(char *p, int *num_names, struct nod
 	if (*num_names == 0)
 		return NULL;
 
-	ret = SMB_MALLOC_ARRAY(struct node_status,*num_names);
+	ret = SMB_MALLOC_ARRAY(NODE_STATUS_STRUCT,*num_names);
 	if (!ret)
 		return NULL;
 
@@ -84,7 +84,7 @@ static struct node_status *parse_node_status(char *p, int *num_names, struct nod
  structures holding the returned names or NULL if the query failed.
 **************************************************************************/
 
-struct node_status *node_status_query(int fd,struct nmb_name *name,
+NODE_STATUS_STRUCT *node_status_query(int fd,struct nmb_name *name,
 				      struct in_addr to_ip, int *num_names,
 				      struct node_status_extra *extra)
 {
@@ -95,7 +95,7 @@ struct node_status *node_status_query(int fd,struct nmb_name *name,
 	struct packet_struct p;
 	struct packet_struct *p2;
 	struct nmb_packet *nmb = &p.packet.nmb;
-	struct node_status *ret;
+	NODE_STATUS_STRUCT *ret;
 
 	ZERO_STRUCT(p);
 
@@ -173,7 +173,7 @@ struct node_status *node_status_query(int fd,struct nmb_name *name,
 
 BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr to_ip, fstring name)
 {
-	struct node_status *status = NULL;
+	NODE_STATUS_STRUCT *status = NULL;
 	struct nmb_name nname;
 	int count, i;
 	int sock;

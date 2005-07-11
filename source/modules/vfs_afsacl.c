@@ -31,11 +31,11 @@
 
 #define MAXSIZE 2048
 
-extern DOM_SID global_sid_World;
-extern DOM_SID global_sid_Builtin_Administrators;
-extern DOM_SID global_sid_Builtin_Backup_Operators;
-extern DOM_SID global_sid_Authenticated_Users;
-extern DOM_SID global_sid_NULL;
+extern const DOM_SID global_sid_World;
+extern const DOM_SID global_sid_Builtin_Administrators;
+extern const DOM_SID global_sid_Builtin_Backup_Operators;
+extern const DOM_SID global_sid_Authenticated_Users;
+extern const DOM_SID global_sid_NULL;
 
 static char space_replacement = '%';
 
@@ -605,13 +605,13 @@ static size_t afs_to_nt_acl(struct afs_acl *afs_acl,
 
 	struct afs_ace *afs_ace;
 
-	if (fsp->is_directory || fsp->fd == -1) {
+	if (fsp->is_directory || fsp->fh->fd == -1) {
 		/* Get the stat struct for the owner info. */
 		if(SMB_VFS_STAT(fsp->conn,fsp->fsp_name, &sbuf) != 0) {
 			return 0;
 		}
 	} else {
-		if(SMB_VFS_FSTAT(fsp,fsp->fd,&sbuf) != 0) {
+		if(SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf) != 0) {
 			return 0;
 		}
 	}
@@ -619,7 +619,7 @@ static size_t afs_to_nt_acl(struct afs_acl *afs_acl,
 	uid_to_sid(&owner_sid, sbuf.st_uid);
 	gid_to_sid(&group_sid, sbuf.st_gid);
 
-	nt_ace_list = SMB_MALLOC_ARRAY(SEC_ACE, afs_acl->num_aces);
+	nt_ace_list = TALLOC_ARRAY(mem_ctx, SEC_ACE, afs_acl->num_aces);
 
 	if (nt_ace_list == NULL)
 		return 0;
