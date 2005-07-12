@@ -145,16 +145,12 @@ char *GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 
 char *GUID_string2(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 {
-	return talloc_asprintf(mem_ctx, 
-			       "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
-			       guid->time_low, guid->time_mid,
-			       guid->time_hi_and_version,
-			       guid->clock_seq[0],
-			       guid->clock_seq[1],
-			       guid->node[0], guid->node[1],
-			       guid->node[2], guid->node[3],
-			       guid->node[4], guid->node[5]);
+	char *ret, *s = GUID_string(mem_ctx, guid);
+	ret = talloc_asprintf(mem_ctx, "{%s}", s);
+	talloc_free(s);
+	return ret;
 }
+
 
 void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *guid)
 {
