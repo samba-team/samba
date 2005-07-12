@@ -1,0 +1,4 @@
+dn: cn=test_multi_test_multi_test_multi,o=University of Michigan,c=TEST
+objectclass: person
+cn: test_multi_test_multi_test_multi
+description: test multi wildcards matching
