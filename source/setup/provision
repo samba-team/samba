@@ -5,7 +5,7 @@
 	Released under the GNU GPL v2 or later
 */
 
-var options = new Object();
+options = new Object();
 ok = GetOptions(ARGV, options, 
 		"POPT_AUTOHELP",
 		"POPT_COMMON_SAMBA",
@@ -150,7 +150,6 @@ function setup_ldb(ldif, dbname, subobj)
 	if (arguments.length == 4) {
 		extra = arguments[3];
 	}
-	printVars(lpGet("setup directory"));
 
 	var db = lpGet("private dir") + "/" + dbname;
 	var src = lpGet("setup directory") + "/" + ldif;
