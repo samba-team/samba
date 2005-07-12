@@ -446,14 +446,14 @@ extern int		mprGetPropertyCount(MprVar *obj, int includeFlags);
  *	Conversion routines
  */
 extern MprVar 	mprParseVar(char *str, MprType prefType);
-extern MprNum 	mprVarToNumber(MprVar *vp);
-extern int	 	mprVarToInteger(MprVar *vp);
+extern MprNum 	mprVarToNumber(const MprVar *vp);
+extern int	 	mprVarToInteger(const MprVar *vp);
 #if BLD_FEATURE_INT64
-extern int64 	mprVarToInteger64(MprVar *vp);
+extern int64 	mprVarToInteger64(const MprVar *vp);
 #endif
-extern bool 	mprVarToBool(MprVar *vp);
+extern bool 	mprVarToBool(const MprVar *vp);
 #if BLD_FEATURE_FLOATING_POINT
-extern double 	mprVarToFloat(MprVar *vp);
+extern double 	mprVarToFloat(const MprVar *vp);
 #endif
 extern void 	mprVarToString(char** buf, int size, char *fmt, MprVar *vp);
 
