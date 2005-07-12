@@ -93,7 +93,7 @@ static int ejs_getpwnam(MprVarHandle eid, int argc, struct MprVar **argv)
 static int ejs_getpwuid(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	/* validate arguments */
-	if (argc != 1 || argv[0]->type != MPR_TYPE_INT) {
+	if (argc != 1 || !mprVarIsNumber(argv[0]->type)) {
 		ejsSetErrorMsg(eid, "getpwuid invalid arguments");
 		return -1;
 	}
