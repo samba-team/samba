@@ -2283,7 +2283,7 @@ static BOOL lp_do_parameter_parametric(int snum, const char *pszParmName, const 
 	struct param_opt *paramo, *data;
 	char *name;
 
-	while (isspace(*pszParmName)) {
+	while (isspace((unsigned char)*pszParmName)) {
 		pszParmName++;
 	}
 
@@ -2485,7 +2485,7 @@ BOOL lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
 	int parmnum = map_parameter(pszParmName);
 	int i;
 
-	while (isspace(*pszParmValue)) pszParmValue++;
+	while (isspace((unsigned char)*pszParmValue)) pszParmValue++;
 
 
 	if (parmnum < 0 && strchr(pszParmName, ':')) {

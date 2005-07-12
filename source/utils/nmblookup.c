@@ -49,7 +49,7 @@ static const char *clean_name(TALLOC_CTX *mem_ctx, const char *name)
 	char *ret = talloc_strdup(mem_ctx, name);
 	int i;
 	for (i=0;ret[i];i++) {
-		if (!isprint(ret[i])) ret[i] = '.';
+		if (!isprint((unsigned char)ret[i])) ret[i] = '.';
 	}
 	return ret;
 }

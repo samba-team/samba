@@ -159,7 +159,8 @@ int strwicmp(const char *psz1, const char *psz2)
 			psz1++;
 		while (isspace((int)*psz2))
 			psz2++;
-		if (toupper(*psz1) != toupper(*psz2) || *psz1 == '\0'
+		if (toupper((unsigned char)*psz1) != toupper((unsigned char)*psz2) 
+		    || *psz1 == '\0'
 		    || *psz2 == '\0')
 			break;
 		psz1++;
@@ -412,12 +413,12 @@ size_t strhex_to_str(char *p, size_t len, const char *strhex)
 			continue;
 		}
 
-		if (!(p1 = strchr_m(hexchars, toupper(strhex[i]))))
+		if (!(p1 = strchr_m(hexchars, toupper((unsigned char)strhex[i]))))
 			break;
 
 		i++; /* next hex digit */
 
-		if (!(p2 = strchr_m(hexchars, toupper(strhex[i]))))
+		if (!(p2 = strchr_m(hexchars, toupper((unsigned char)strhex[i]))))
 			break;
 
 		/* get the two nybbles */

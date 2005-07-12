@@ -290,7 +290,7 @@ static char *ipv6_tcp_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem
 		return NULL;
 	}
 
-	he = gethostbyaddr(&peer_addr.sin6_addr, sizeof(peer_addr.sin6_addr), AF_INET6);
+	he = gethostbyaddr((char *)&peer_addr.sin6_addr, sizeof(peer_addr.sin6_addr), AF_INET6);
 
 	if (!he || !he->h_name) {
 		return NULL;

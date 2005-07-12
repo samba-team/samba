@@ -47,7 +47,7 @@ static int ldb_dn_is_valid_attribute_name(const char *name)
 		if (! isascii(*name)) {
 			return 0;
 		}
-		if (! (isalnum(*name) || *name == '-')) {
+		if (! (isalnum((unsigned char)*name) || *name == '-')) {
 			return 0;
 		}
 		name++;

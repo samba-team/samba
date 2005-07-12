@@ -50,7 +50,7 @@ char *ldb_casefold(void *mem_ctx, const char *s)
 		return NULL;
 	}
 	for (i=0;ret[i];i++) {
-		ret[i] = toupper(ret[i]);
+		ret[i] = toupper((unsigned char)ret[i]);
 	}
 	return ret;
 }
@@ -63,7 +63,8 @@ int ldb_caseless_cmp(const char *s1, const char *s2)
 {
 	int i;
 	for (i=0;s1[i] != 0;i++) {
-		int c1 = toupper(s1[i]), c2 = toupper(s2[i]);
+		int c1 = toupper((unsigned char)s1[i]),
+		    c2 = toupper((unsigned char)s2[i]);
 		if (c1 != c2) {
 			return c1 - c2;
 		}

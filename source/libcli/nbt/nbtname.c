@@ -429,7 +429,7 @@ static const char *nbt_hex_encode(TALLOC_CTX *mem_ctx, const char *s)
 	int i, len;
 	char *ret;
 	const char *valid_chars = "_-.$@ ";
-#define NBT_CHAR_ALLOW(c) (isalnum(c) || strchr(valid_chars, c))
+#define NBT_CHAR_ALLOW(c) (isalnum((unsigned char)c) || strchr(valid_chars, c))
 
 	for (len=i=0;s[i];i++,len++) {
 		if (!NBT_CHAR_ALLOW(s[i])) {
