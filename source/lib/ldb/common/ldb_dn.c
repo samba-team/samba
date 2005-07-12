@@ -315,6 +315,19 @@ struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn)
 	edn->comp_num = 0;
 	edn->components = NULL;
 
+	/* Special DNs case */
+	if (dn[0] == '@') {
+		edn->comp_num = 1;
+		edn->components = talloc(edn, struct ldb_dn_component);
+		if (edn->components == NULL) goto failed;
+		edn->components[0].name = talloc_strdup(edn->components, "@SPECIAL");
+		if (edn->components[0].name == NULL) goto failed;
+		edn->components[0].value.data = talloc_strdup(edn->components, dn);
+		if (edn->components[0].value.data== NULL) goto failed;
+		edn->components[0].value.length = strlen(dn);
+		return edn;
+	}
+
 	pdn = p = talloc_strdup(edn, dn);
 	LDB_DN_NULL_FAILED(pdn);
 
@@ -363,6 +376,12 @@ char *ldb_dn_linearize(void *mem_ctx, const struct ldb_dn *edn)
 	char *dn, *value;
 	int i;
 
+	/* Special DNs */
+	if ((edn->comp_num == 1) && strcmp("@SPECIAL", edn->components[0].name) == 0) {
+		dn = talloc_strdup(mem_ctx, edn->components[0].value.data);
+		return dn;
+	}
+
 	dn = talloc_strdup(mem_ctx, "");
 	LDB_DN_NULL_FAILED(dn);
 
@@ -388,34 +407,47 @@ failed:
 }
 
 /* compare DNs using casefolding compare functions */
-int ldb_dn_compare(struct ldb_context *ldb, const struct ldb_dn *edn0, const struct ldb_dn *edn1)
+
+int ldb_dn_compare_base(struct ldb_context *ldb,
+		   const struct ldb_dn *base,
+		   const struct ldb_dn *dn)
 {
 	int i, ret;
+	int n0, n1;
 
 	/* if the number of components doesn't match they differ */
-	if (edn0->comp_num != edn1->comp_num)
-		return (edn1->comp_num - edn0->comp_num);
-
-	for (i = 0; i < edn0->comp_num; i++) {
+	n0 = base->comp_num - 1;
+	n1 = dn->comp_num - 1;
+	for (i = 0; i < base->comp_num; i++, n0--, n1--) {
 		const struct ldb_attrib_handler *h;
 
 		/* compare names (attribute names are guaranteed to be ASCII only) */
-		ret = ldb_caseless_cmp(edn0->components[i].name,
-				       edn1->components[i].name);
+		ret = ldb_caseless_cmp(base->components[n0].name,
+				       dn->components[n1].name);
 		if (ret) {
 			return ret;
 		}
 
 		/* names match, compare values */
-		h = ldb_attrib_handler(ldb, edn0->components[i].name);
-		ret = h->comparison_fn(ldb, ldb, &(edn0->components[i].value),
-						  &(edn1->components[i].value));
+		h = ldb_attrib_handler(ldb, base->components[n0].name);
+		ret = h->comparison_fn(ldb, ldb, &(base->components[n0].value),
+						  &(dn->components[n1].value));
 		if (ret) {
 			return ret;
 		}
 	}
 
 	return 0;
+}
+
+int ldb_dn_compare(struct ldb_context *ldb,
+		   const struct ldb_dn *edn0,
+		   const struct ldb_dn *edn1)
+{
+	if (edn0->comp_num != edn1->comp_num)
+		return (edn1->comp_num - edn0->comp_num);
+
+	return ldb_dn_compare_base(ldb, edn0, edn1);
 }
 
 /*
@@ -456,3 +488,15 @@ failed:
 	return NULL;
 }
 
+struct ldb_dn *ldb_dn_explode_casefold(struct ldb_context *ldb, const char *dn)
+{
+	struct ldb_dn *edn, *cdn;
+
+	edn = ldb_dn_explode(ldb, dn);
+	if (edn == NULL) return NULL;
+
+	cdn = ldb_dn_casefold(ldb, edn);
+	
+	talloc_free(edn);
+	return cdn;
+}

@@ -4,7 +4,6 @@ dn: @INDEXLIST
 
 dn: @ATTRIBUTES
 uid: CASE_INSENSITIVE
-uid: WILDCARD
 
 dn: @SUBCLASSES
 top: person

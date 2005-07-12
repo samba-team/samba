@@ -40,72 +40,111 @@
 /*
   check if the scope matches in a search result
 */
-static int ldb_match_scope(const char *dn, const char *base, enum ldb_scope scope)
+static int ldb_match_scope(struct ldb_context *ldb,
+			   const char *base_str,
+			   const char *dn_str,
+			   enum ldb_scope scope)
 {
-	size_t dn_len, base_len;
+	struct ldb_dn *base;
+	struct ldb_dn *dn;
+	int ret = 0;
 
-	if (base == NULL) {
+	if (base_str == NULL) {
 		return 1;
 	}
 
-	base_len = strlen(base);
-	dn_len = strlen(dn);
+	base = ldb_dn_explode_casefold(ldb, base_str);
+	if (base == NULL) return 0;
 
-	if (scope != LDB_SCOPE_ONELEVEL && ldb_dn_cmp(dn, base) == 0) {
-		return 1;
-	}
-
-	if (base_len+1 >= dn_len) {
+	dn = ldb_dn_explode_casefold(ldb, dn_str);
+	if (dn == NULL) {
+		talloc_free(base);
 		return 0;
 	}
 
 	switch (scope) {
 	case LDB_SCOPE_BASE:
+		if (ldb_dn_compare(ldb, base, dn) == 0) {
+			ret = 1;
+		}
 		break;
 
 	case LDB_SCOPE_ONELEVEL:
-		if (ldb_dn_cmp(dn + (dn_len - base_len), base) == 0 &&
-		    dn[dn_len - base_len - 1] == ',' &&
-		    strchr(dn, ',') == &dn[dn_len - base_len - 1]) {
-			return 1;
+		if (dn->comp_num != base->comp_num) {
+			if (ldb_dn_compare_base(ldb, base, dn) == 0) {
+				ret = 1;
+			}
 		}
 		break;
 		
 	case LDB_SCOPE_SUBTREE:
 	default:
-		if (ldb_dn_cmp(dn + (dn_len - base_len), base) == 0 &&
-		    dn[dn_len - base_len - 1] == ',') {
-			return 1;
+		if (ldb_dn_compare_base(ldb, base, dn) == 0) {
+			ret = 1;
 		}
 		break;
+	}
+
+	talloc_free(base);
+	talloc_free(dn);
+	return ret;
+}
+
+
+/*
+  match if node is present
+*/
+static int ldb_match_present(struct ldb_context *ldb, 
+			    struct ldb_message *msg,
+			    struct ldb_parse_tree *tree,
+			    const char *base,
+			    enum ldb_scope scope)
+{
+
+	if (ldb_attr_cmp(tree->u.simple.attr, "dn") == 0) {
+		return 1;
+	}
+
+	if (ldb_msg_find_element(msg, tree->u.simple.attr)) {
+		return 1;
 	}
 
 	return 0;
 }
 
-
 /*
-  match a leaf node
+  match a simple leaf node
 */
-static int ldb_match_leaf(struct ldb_context *ldb, 
-			  struct ldb_message *msg,
-			  struct ldb_parse_tree *tree,
-			  const char *base,
-			  enum ldb_scope scope)
+static int ldb_match_simple(struct ldb_context *ldb, 
+			    struct ldb_message *msg,
+			    struct ldb_parse_tree *tree,
+			    const char *base,
+			    enum ldb_scope scope)
 {
 	unsigned int i;
 	struct ldb_message_element *el;
 	const struct ldb_attrib_handler *h;
-
-	if (!ldb_match_scope(msg->dn, base, scope)) {
-		return 0;
-	}
+	struct ldb_dn *msgdn, *valuedn;
+	int ret;
 
 	if (ldb_attr_cmp(tree->u.simple.attr, "dn") == 0) {
-		if (strcmp(tree->u.simple.value.data, "*") == 0) {
-			return 1;
+
+		msgdn = ldb_dn_explode_casefold(ldb, msg->dn);
+		if (msgdn == NULL) return 0;
+
+		valuedn = ldb_dn_explode_casefold(ldb, tree->u.simple.value.data);
+		if (valuedn == NULL) {
+			talloc_free(msgdn);
+			return 0;
 		}
-		return ldb_dn_cmp(msg->dn, tree->u.simple.value.data) == 0;
+
+		ret = ldb_dn_compare(ldb, msgdn, valuedn);
+
+		talloc_free(msgdn);
+		talloc_free(valuedn);
+
+		if (ret == 0) return 1;
+		return 0;
 	}
 
 	el = ldb_msg_find_element(msg, tree->u.simple.attr);
@@ -113,15 +152,102 @@ static int ldb_match_leaf(struct ldb_context *ldb,
 		return 0;
 	}
 
-	if (strcmp(tree->u.simple.value.data, "*") == 0) {
-		return 1;
-	}
-
 	h = ldb_attrib_handler(ldb, el->name);
 
 	for (i=0;i<el->num_values;i++) {
 		if (h->comparison_fn(ldb, ldb, &tree->u.simple.value, 
 				     &el->values[i]) == 0) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+static int ldb_wildcard_compare(struct ldb_context *ldb,
+				struct ldb_parse_tree *tree,
+				const struct ldb_val value)
+{
+	const struct ldb_attrib_handler *h;
+	struct ldb_val val;
+	struct ldb_val cnk;
+	struct ldb_val *chunk;
+	char *p, *g;
+	char *save_p = NULL;
+	int c = 0;
+
+	h = ldb_attrib_handler(ldb, tree->u.substring.attr);
+
+	if(h->canonicalise_fn(ldb, ldb, &value, &val) != 0)
+		return -1;
+
+	save_p = val.data;
+	cnk.data = NULL;
+
+	if ( ! tree->u.substring.start_with_wildcard ) {
+
+		chunk = tree->u.substring.chunks[c];
+		if(h->canonicalise_fn(ldb, ldb, chunk, &cnk) != 0) goto failed;
+
+		/* FIXME: case of embedded nulls */
+		if (strncmp(val.data, cnk.data, cnk.length) != 0) goto failed;
+		val.length -= cnk.length;
+		val.data += cnk.length;
+		c++;
+		talloc_free(cnk.data);
+		cnk.data = NULL;
+	}
+
+	while (tree->u.substring.chunks[c]) {
+
+		chunk = tree->u.substring.chunks[c];
+		if(h->canonicalise_fn(ldb, ldb, chunk, &cnk) != 0) goto failed;
+
+		/* FIXME: case of embedded nulls */
+		p = strstr(val.data, cnk.data);
+		if (p == NULL) goto failed;
+		if ( (! tree->u.substring.chunks[c + 1]) && (! tree->u.substring.end_with_wildcard) ) {
+			do { /* greedy */
+				g = strstr(p + cnk.length, cnk.data);
+				if (g) p = g;
+			} while(g);
+		}
+		val.length = val.length - (p - (char *)(val.data)) - cnk.length;
+		val.data = p + cnk.length;
+		c++;
+		talloc_free(cnk.data);
+		cnk.data = NULL;
+	}
+
+	if ( (! tree->u.substring.end_with_wildcard) && (*(val.data) != 0) ) goto failed; /* last chunk have not reached end of string */
+	talloc_free(save_p);
+	return 1;
+
+failed:
+	talloc_free(save_p);
+	talloc_free(cnk.data);
+	return 0;
+}
+
+/*
+  match a simple leaf node
+*/
+static int ldb_match_substring(struct ldb_context *ldb, 
+			       struct ldb_message *msg,
+			       struct ldb_parse_tree *tree,
+			       const char *base,
+			       enum ldb_scope scope)
+{
+	unsigned int i;
+	struct ldb_message_element *el;
+
+	el = ldb_msg_find_element(msg, tree->u.simple.attr);
+	if (el == NULL) {
+		return 0;
+	}
+
+	for (i = 0; i < el->num_values; i++) {
+		if (ldb_wildcard_compare(ldb, tree, el->values[i]) == 1) {
 			return 1;
 		}
 	}
@@ -220,18 +346,24 @@ static int ldb_match_extended(struct ldb_context *ldb,
 
   this is a recursive function, and does short-circuit evaluation
  */
-int ldb_match_message(struct ldb_context *ldb, 
-		      struct ldb_message *msg,
-		      struct ldb_parse_tree *tree,
-		      const char *base,
-		      enum ldb_scope scope)
+static int ldb_match_message(struct ldb_context *ldb, 
+			     struct ldb_message *msg,
+			     struct ldb_parse_tree *tree,
+			     const char *base,
+			     enum ldb_scope scope)
 {
 	unsigned int i;
 	int v;
 
 	switch (tree->operation) {
 	case LDB_OP_SIMPLE:
-		break;
+		return ldb_match_simple(ldb, msg, tree, base, scope);
+
+	case LDB_OP_PRESENT:
+		return ldb_match_present(ldb, msg, tree, base, scope);
+
+	case LDB_OP_SUBSTRING:
+		return ldb_match_substring(ldb, msg, tree, base, scope);
 
 	case LDB_OP_EXTENDED:
 		return ldb_match_extended(ldb, msg, tree, base, scope);
@@ -256,5 +388,18 @@ int ldb_match_message(struct ldb_context *ldb,
 		return 0;
 	}
 
-	return ldb_match_leaf(ldb, msg, tree, base, scope);
+	return 0;
+}
+
+int ldb_match_msg(struct ldb_context *ldb,
+		  struct ldb_message *msg,
+		  struct ldb_parse_tree *tree,
+		  const char *base,
+		  enum ldb_scope scope)
+{
+	if ( ! ldb_match_scope(ldb, base, msg->dn, scope) ) {
+		return 0;
+	}
+
+	return ldb_match_message(ldb, msg, tree, base, scope);
 }

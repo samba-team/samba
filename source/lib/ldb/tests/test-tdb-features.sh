@@ -16,7 +16,7 @@ checkcount() {
     echo "OK: $count $expression"
 }
 
-echo "Testing case sensitve search"
+echo "Testing case sensitive search"
 cat <<EOF | $VALGRIND bin/ldbadd || exit 1
 dn: cn=t1,cn=TEST
 objectClass: testclass
@@ -24,7 +24,7 @@ test: foo
 EOF
 checkcount 1 '(test=foo)'
 checkcount 0 '(test=FOO)'
-checkcount 0 '(test=fo*)'
+checkcount 0 '(test=FO*)'
 
 echo "Making case insensitive"
 cat <<EOF | $VALGRIND bin/ldbmodify || exit 1
@@ -35,17 +35,6 @@ test: CASE_INSENSITIVE
 EOF
 
 echo $ldif | $VALGRIND bin/ldbmodify || exit 1
-checkcount 1 '(test=foo)'
-checkcount 1 '(test=FOO)'
-checkcount 0 '(test=fo*)'
-
-echo "adding wildcard"
-cat <<EOF | $VALGRIND bin/ldbmodify || exit 1
-dn: @ATTRIBUTES
-changetype: modify
-add: test
-test: WILDCARD
-EOF
 checkcount 1 '(test=foo)'
 checkcount 1 '(test=FOO)'
 checkcount 1 '(test=fo*)'
@@ -115,7 +104,7 @@ checkcount 1 '(i=256)'
 checkcount 0 '(i=-256)'
 checkcount 1 '(test=foo)'
 checkcount 1 '(test=FOO)'
-checkcount 1 '(test=fo*)'
+checkcount 1 '(test=*f*o)'
 
 echo "making test case sensitive"
 cat <<EOF | $VALGRIND bin/ldbmodify || exit 1
@@ -126,5 +115,5 @@ test: NONE
 EOF
 checkcount 1 '(test=foo)'
 checkcount 0 '(test=FOO)'
-checkcount 0 '(test=fo*)'
+checkcount 1 '(test=f*o*)'
 

@@ -188,34 +188,6 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
 }
 
 
-
-/*
-  see if a ldb_val is a wildcard
-  return 1 if yes, 0 if no
-*/
-int ltdb_has_wildcard(struct ldb_module *module, const char *attr_name, 
-		      const struct ldb_val *val)
-{
-	const struct ldb_attrib_handler *h;
-
-	/* all attribute types recognise the "*" wildcard */
-	if (val->length == 1 && strncmp((char *)val->data, "*", 1) == 0) {
-		return 1;
-	}
-
-	if (strpbrk(val->data, "*?") == NULL) {
-		return 0;
-	}
-
-	h = ldb_attrib_handler(module->ldb, attr_name);
-	if (h->flags & LDB_ATTR_FLAG_WILDCARD) {
-		return 1;
-	}
-
-	return 0;
-}
-
-
 /*
   search the database for a single simple dn, returning all attributes
   in a single message
@@ -416,7 +388,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	}
 
 	/* see if it matches the given expression */
-	if (!ldb_match_message(sinfo->module->ldb, msg, sinfo->tree, 
+	if (!ldb_match_msg(sinfo->module->ldb, msg, sinfo->tree, 
 			       sinfo->base, sinfo->scope)) {
 		talloc_free(msg);
 		return 0;

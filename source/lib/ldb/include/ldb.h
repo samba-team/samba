@@ -154,7 +154,8 @@ struct ldb_debug_ops {
 
 
 /* structues for ldb_parse_tree handling code */
-enum ldb_parse_op {LDB_OP_SIMPLE=1, LDB_OP_EXTENDED=2, 
+enum ldb_parse_op {LDB_OP_SIMPLE=1, LDB_OP_EXTENDED=2,
+		   LDB_OP_SUBSTRING=3, LDB_OP_PRESENT=4,
 		   LDB_OP_AND='&', LDB_OP_OR='|', LDB_OP_NOT='!'};
 
 struct ldb_parse_tree {
@@ -164,6 +165,15 @@ struct ldb_parse_tree {
 			char *attr;
 			struct ldb_val value;
 		} simple;
+		struct {
+			char *attr;
+		} present;
+		struct {
+			char *attr;
+			int start_with_wildcard;
+			int end_with_wildcard;
+			struct ldb_val **chunks;
+		} substring;
 		struct {
 			char *attr;
 			int dnAttributes;
@@ -211,14 +221,12 @@ struct ldb_attrib_handler {
 };
 
 #define LDB_ATTR_FLAG_HIDDEN     (1<<0)
-#define LDB_ATTR_FLAG_WILDCARD   (1<<1)
 
 /* well-known ldap attribute syntaxes - see rfc2252 section 4.3.2 */
 #define LDB_SYNTAX_DN                   "1.3.6.1.4.1.1466.115.121.1.12"
 #define LDB_SYNTAX_DIRECTORY_STRING     "1.3.6.1.4.1.1466.115.121.1.15"
 #define LDB_SYNTAX_INTEGER              "1.3.6.1.4.1.1466.115.121.1.27"
 #define LDB_SYNTAX_OCTET_STRING         "1.3.6.1.4.1.1466.115.121.1.40"
-#define LDB_SYNTAX_WILDCARD             "LDB_SYNTAX_WILDCARD"
 #define LDB_SYNTAX_OBJECTCLASS          "LDB_SYNTAX_OBJECTCLASS"
 
 /*
