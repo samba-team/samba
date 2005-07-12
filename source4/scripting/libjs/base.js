@@ -10,6 +10,14 @@ if (global["HAVE_BASE_JS"] != undefined) {
 HAVE_BASE_JS=1
 
 /*
+  an essential function!
+*/
+function printf()
+{
+	print(vsprintf(arguments));
+}
+
+/*
   helper function to setup a rpc io object, ready for input
 */
 function irpcObj()

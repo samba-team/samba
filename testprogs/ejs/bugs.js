@@ -8,6 +8,7 @@
 /****************************************
 demo a bug in constructing arrays
 fix at http://build.samba.org/build.pl?function=diff;tree=samba4;revision=7124
+status: FIXED
 *****************************************/
 function arraybug() {
 	 var a;
@@ -38,6 +39,7 @@ function arraybug() {
 /****************************************
 demo a bug in variable arguments
 fix at http://build.samba.org/build.pl?function=diff;tree=samba4;revision=7085
+status: FIXED
 *****************************************/
 function argsbug() {
 	 println("we should have been called with 3 arguments");
@@ -51,6 +53,7 @@ function argsbug() {
 /****************************************
 demo a bug in constructing objects
 no fix available yet
+status: SUBMITTED
 *****************************************/
 function MyObj() {
 	 var o = new Object();
@@ -68,10 +71,23 @@ function objbug() {
 	 assert(o2.test == 42);
 }
 
+/*
+ demo a expression handling bug
+ status: SUBMITTED
+*/
+function exprbug() {
+	var a = new Array(10);
+	var i;
+	for (i=0;i<4;i++) {
+		a[1+(i*2)] = i;
+		a[2+(i*2)] = i*2;
+	}
+}
 
 /****************************************
 demo lack of recursion
 fix in http://build.samba.org/build.pl?function=diff;tree=samba4;revision=7127
+status: FIXED
 *****************************************/
 function fibonacci(n) {
 	if (n < 3) {
@@ -87,9 +103,25 @@ function recursebug() {
 	 }
 }
 
+/****************************************
+demo lack of function variables inside functions
+status: FIXED IN SAMBA
+*****************************************/
+function callback()
+{
+	return "testing";
+}
+
+function fnbug(c)
+{
+	s = c();
+	assert(s == "testing");
+}
 
 /* run the tests */
 arraybug();
 argsbug("one", "two", "three");
 recursebug();
-objbug()
+exprbug();
+fnbug(callback);
+objbug();

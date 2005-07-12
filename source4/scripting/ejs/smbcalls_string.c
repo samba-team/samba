@@ -272,6 +272,41 @@ failed:
 }
 
 /*
+  used to build your own print function
+     str = vsprintf(args);
+*/
+static int ejs_vsprintf(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	struct MprVar **args, *len, *v;
+	int i, ret, length;
+	if (argc != 1 || argv[0]->type != MPR_TYPE_OBJECT) {
+		ejsSetErrorMsg(eid, "vsprintf invalid arguments");
+		return -1;
+	}
+	v = argv[0];
+	len = mprGetProperty(v, "length", NULL);
+	if (len == NULL) {
+		ejsSetErrorMsg(eid, "vsprintf takes an array");
+		return -1;
+	}
+	length = mprToInt(len);
+	args = talloc_array(mprMemCtx(), struct MprVar *, length);
+	if (args == NULL) {
+		return -1;
+	}
+
+	for (i=0;i<length;i++) {
+		char idx[16];
+		mprItoa(i, idx, sizeof(idx));
+		args[i] = mprGetProperty(v, idx, NULL);
+	}
+	
+	ret = ejs_sprintf(eid, length, args);
+	talloc_free(args);
+	return ret;
+}
+
+/*
   setup C functions that be called from ejs
 */
 void smb_setup_ejs_string(void)
@@ -281,4 +316,5 @@ void smb_setup_ejs_string(void)
 	ejsDefineStringCFunction(-1, "split", ejs_split, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineCFunction(-1, "join", ejs_join, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineCFunction(-1, "sprintf", ejs_sprintf, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "vsprintf", ejs_vsprintf, NULL, MPR_VAR_SCRIPT_HANDLE);
 }
