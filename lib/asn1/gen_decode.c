@@ -493,6 +493,9 @@ decode_type (const char *name, const Type *t, int optional,
 	    if (s == NULL)
 		errx(1, "malloc");
 	    decode_type (s, m->type, m->optional, forwstr);
+	    fprintf(codefile,
+		    "(%s)->element = %s;\n",
+		    name, m->label);
 	    free(s);
 	    fprintf(codefile,
 		    "}\n");
