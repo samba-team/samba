@@ -125,6 +125,7 @@ typedef struct
 	char *szLockDir;
 	char *szPidDir;
 	char *szRootdir;
+	char *szSetupDir;
 	char *szDefaultService;
 	char *szHostsEquiv;
 	char *szServerString;
@@ -736,6 +737,7 @@ static struct parm_struct parm_table[] = {
 	{"lock directory", P_STRING, P_GLOBAL, &Globals.szLockDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"pid directory", P_STRING, P_GLOBAL, &Globals.szPidDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER}, 
 	{"js include", P_LIST, P_GLOBAL, &Globals.jsInclude, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"setup directory", P_STRING, P_GLOBAL, &Globals.szSetupDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	
 	{"default service", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"default", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL,  FLAG_DEVELOPER},
@@ -1065,6 +1067,7 @@ static void init_globals(void)
 	do_parameter("tls certfile", "tls/cert.pem");
 	do_parameter("tls cafile", "tls/ca.pem");
 	do_parameter_var("js include", "%s/js", dyn_LIBDIR);
+	do_parameter_var("setup directory", "%s/setup", dyn_LIBDIR);
 }
 
 static TALLOC_CTX *lp_talloc;
@@ -1184,6 +1187,7 @@ FN_GLOBAL_STRING(lp_private_dir, &Globals.szPrivateDir)
 FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
 FN_GLOBAL_STRING(lp_printcapname, &Globals.szPrintcapname)
 FN_GLOBAL_STRING(lp_lockdir, &Globals.szLockDir)
+FN_GLOBAL_STRING(lp_setupdir, &Globals.szSetupDir)
 FN_GLOBAL_STRING(lp_ncalrpc_dir, &Globals.ncalrpc_dir)
 FN_GLOBAL_STRING(lp_piddir, &Globals.szPidDir)
 FN_GLOBAL_LIST(lp_dcerpc_endpoint_servers, &Globals.dcerpc_ep_servers)
