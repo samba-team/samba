@@ -159,7 +159,7 @@ AC_ARG_ENABLE(developer, [  --enable-developer      Turn on developer warnings a
 debug=no
 AC_ARG_ENABLE(debug, 
 [  --enable-debug          Turn on compiler debugging information (default=no)],
-    [if test x$enable_debug = xyes -a test x$enable_developer != xyes; then
+    [if test x$enable_debug = xyes -a x$enable_developer != xyes; then
         debug=yes
 	CFLAGS="${CFLAGS} -g"
     fi])
