@@ -891,12 +891,14 @@ static BOOL afs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	pstr_sprintf(name, fsp->fsp_name);
 
 	if (!fsp->is_directory) {
+		/* We need to get the name of the directory containing the
+		 * file, this is where the AFS acls live */
 		char *p = strrchr(name, '/');
-		if (p == NULL) {
-			DEBUG(3, ("No / in file string\n"));
-			return False;
+		if (p != NULL) {
+			*p = '\0';
+		} else {
+			pstrcpy(name, ".");
 		}
-		*p = '\0';
 	}
 
 	if (!afs_get_afs_acl(name, &old_afs_acl)) {
