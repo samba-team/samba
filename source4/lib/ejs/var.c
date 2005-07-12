@@ -1843,7 +1843,7 @@ bool mprVarToBool(const MprVar *vp)
  *	Convert the variable to a floating point number. Only for primitive types.
  */
 
-double mprVarToFloat(MprVar *vp)
+double mprVarToFloat(const MprVar *vp)
 {
 	mprAssert(vp);
 

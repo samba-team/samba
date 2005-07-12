@@ -74,6 +74,7 @@
 #if QNX4
 	#include	<dirent.h>
 #endif
+	#include	<math.h>
 
 /********************************** Defines ***********************************/
 
