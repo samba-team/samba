@@ -1,0 +1,55 @@
+<% page_header("columns", "Server provisioning"); 
+
+  libinclude("base.js");
+  libinclude("provision.js");
+%>
+
+<h1>Samba4 provisioning</h1>
+
+<%
+var f = FormObj("Provisioning", 9, 2);
+var i, subobj = provision_guess();
+
+f.element[0].label = "Realm";
+f.element[0].name  = "REALM";
+f.element[1].label = "Domain Name";
+f.element[1].name  = "DOMAIN";
+f.element[2].label = "Host Name";
+f.element[2].name  = "HOSTNAME";
+f.element[3].label = "Administrator Password";
+f.element[3].name  = "ADMINPASS";
+f.element[4].label = "Domain SID";
+f.element[4].name  = "DOMAINSID";
+f.element[5].label = "Host GUID";
+f.element[5].name  = "HOSTGUID";
+f.element[6].label = "Base DN";
+f.element[6].name  = "BASEDN";
+f.element[7].label = "Host IP";
+f.element[7].name  = "HOSTIP";
+f.element[8].label = "Default Site";
+f.element[8].name  = "DEFAULTSITE";
+f.submit[0] = "Provision";
+f.submit[1] = "Cancel";
+
+if (form['submit'] == "Cancel") {
+	redirect("/");
+}
+
+if (form['submit'] == "Provision") {
+	for (r in form) {
+		subobj[r] = form[r];
+	}
+}
+
+for (i=0;i<f.element.length;i++) {
+	f.element[i].value = subobj[f.element[i].name];
+}
+if (form['submit'] == "Provision") {
+	provision(subobj, writefln);
+} else {
+	display_form(f);
+}
+%>
+
+
+<% page_footer(); %>

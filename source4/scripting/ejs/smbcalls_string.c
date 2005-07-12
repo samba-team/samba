@@ -27,6 +27,20 @@
 
 /*
   usage:
+      var len = strlen(str);
+*/
+static int ejs_strlen(MprVarHandle eid, int argc, char **argv)
+{
+	if (argc != 1) {
+		ejsSetErrorMsg(eid, "strlen invalid arguments");
+		return -1;
+	}
+	mpr_Return(eid, mprCreateIntegerVar(strlen_m(argv[0])));
+	return 0;
+}
+
+/*
+  usage:
       var s = strlower("UPPER");
 */
 static int ejs_strlower(MprVarHandle eid, int argc, char **argv)
@@ -311,6 +325,7 @@ static int ejs_vsprintf(MprVarHandle eid, int argc, struct MprVar **argv)
 */
 void smb_setup_ejs_string(void)
 {
+	ejsDefineStringCFunction(-1, "strlen", ejs_strlen, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineStringCFunction(-1, "strlower", ejs_strlower, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineStringCFunction(-1, "strupper", ejs_strupper, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineStringCFunction(-1, "split", ejs_split, NULL, MPR_VAR_SCRIPT_HANDLE);
