@@ -1,7 +1,6 @@
 #!/bin/sh
-#ident  "@(#)samba.server 1.0   96/06/19 TK"    /* SVr4.0 1.1.13.1*/
 #
-# Please send info on modifications to knuutila@cs.utu.fi
+# Copyright (c) Timo Knuutila <knuutila@cs.utu.fi>     1996.
 #
 # This file should have uid root, gid sys and chmod 744
 #
