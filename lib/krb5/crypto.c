@@ -4306,7 +4306,6 @@ _krb5_pk_octetstring2key(krb5_context context,
 			 krb5_enctype type,
 			 const void *dhdata,
 			 size_t dhsize,
-			 const void *c_n_data,
 			 const heim_octet_string *c_n,
 			 const heim_octet_string *k_n,
 			 krb5_keyblock *key)
