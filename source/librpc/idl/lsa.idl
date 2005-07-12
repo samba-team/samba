@@ -20,6 +20,12 @@
 	} lsa_String;
 
 	typedef [public] struct {
+		[value(2*strlen_m(string))] uint16 length;
+		[value(2*(strlen_m(string)+1))] uint16 size;
+		[flag(STR_SIZE4|STR_LEN4|STR_NOTERM|STR_LARGE_SIZE)] string *string;
+	} lsa_StringLarge;
+
+	typedef [public] struct {
 		uint32 count;
 		[size_is(count)] lsa_String *names;
 	} lsa_Strings;
@@ -180,9 +186,15 @@
 	} lsa_AuditFullQueryInfo;
 
 	typedef struct {
-		lsa_String name;
-		lsa_String dns_domain;
-		lsa_String dns_forest;
+		/* it's important that we use the lsa_StringLarge here,
+		 * because otherwise windows clients result with such dns hostnames
+		 * e.g. w2k3-client.samba4.samba.orgsamba4.samba.org
+		 * where it should be
+		 *      w2k3-client.samba4.samba.org
+		 */
+		lsa_StringLarge name;
+		lsa_StringLarge dns_domain;
+		lsa_StringLarge dns_forest;
 		GUID domain_guid;
 		dom_sid2 *sid;
 	} lsa_DnsDomainInfo;
