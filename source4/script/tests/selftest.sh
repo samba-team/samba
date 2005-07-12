@@ -15,8 +15,11 @@ then
 	exit
 fi
 
+
 PREFIX=$1
+PREFIX=`echo $PREFIX | sed s+//+/+`
 export PREFIX
+
 mkdir -p $PREFIX || exit $?
 OLD_PWD=`pwd`
 cd $PREFIX || exit $?
