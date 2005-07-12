@@ -212,12 +212,11 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 			return WERR_OK;
 		}
 		case DRSUAPI_DS_NAME_FORMAT_GUID: {
-			const char *result;
+			struct GUID guid;
 
-			result = samdb_result_string(result_res[0], "objectGUID", NULL);
-			WERR_TALLOC_CHECK(result);
-			
-			info1->result_name	= talloc_asprintf(mem_ctx, "{%s}", result);
+			guid = samdb_result_guid(result_res[0], "objectGUID");
+
+			info1->result_name	= GUID_string2(mem_ctx, &guid);
 			WERR_TALLOC_CHECK(info1->result_name);
 
 			info1->status		= DRSUAPI_DS_NAME_STATUS_OK;
