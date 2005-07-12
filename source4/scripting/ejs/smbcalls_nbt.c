@@ -60,7 +60,7 @@ static int ejs_resolve_name(MprVarHandle eid, int argc, struct MprVar **argv)
 	if (argc == 2) {
 		make_nbt_name_client(&name, mprToString(argv[1]));
 	} else {
-		if (argv[1]->type != MPR_TYPE_INT) {
+		if (!mprVarIsNumber(argv[1]->type)) {
 			ejsSetErrorMsg(eid, "resolveName invalid arguments");
 			goto done;
 		}
