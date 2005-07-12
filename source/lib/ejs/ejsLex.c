@@ -663,11 +663,11 @@ static int getLexicalToken(Ejs *ep, int state)
 					break;
 				}
 #if BLD_FEATURE_FLOATING_POINT
-				if (c == '.' || tolower(c) == 'e' || c == '+' || c == '-') {
+				if (c == '.' || tolower(c) == 'e' || tolower(c) == 'f') {
 					type = MPR_TYPE_FLOAT;
 				}
-			} while (isdigit(c) || c == '.' || tolower(c) == 'e' ||
-				c == '+' || c == '-');
+			} while (isdigit(c) || c == '.' || tolower(c) == 'e' || tolower(c) == 'f' ||
+				((type == MPR_TYPE_FLOAT) && (c == '+' || c == '-')));
 #else
 			} while (isdigit(c));
 #endif
