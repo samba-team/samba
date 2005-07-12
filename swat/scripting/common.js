@@ -23,6 +23,22 @@ function session_uri(uri) {
 	return uri + global.SESSIONURI;
 }
 
+/*
+  like printf, but to the web page
+*/
+function writef()
+{
+	write(vsprintf(arguments));
+}
+
+/*
+  like writef with a <br>
+*/
+function writefln()
+{
+	write(vsprintf(arguments));
+	write("<br/>\n");
+}
 
 
 /* if the browser was too dumb to set the HOST header, then
@@ -196,6 +212,7 @@ function FormObj(name, num_elements, num_submits)
     f.element[i].value = current value (optional, defaults to "")
  */
 function display_form(f) {
+	var i, size = 20;
 	write('<form name="' + f.name +
 	      '" method="post" action="' + f.action + 
 	      '" class="' + f.class + '">\n');
@@ -210,6 +227,12 @@ function display_form(f) {
 		if (e.value == undefined) {
 			e.value = "";
 		}
+		if (strlen(e.value) > size) {
+			size = strlen(e.value) + 4;
+		}
+	}
+	for (i in f.element) {
+		var e = f.element[i];
 		write("<tr>");
 		write("<td>" + e.label + "</td>");
 		if (e.type == "select") {
@@ -223,8 +246,12 @@ function display_form(f) {
 			}
 			write('</select></td>\n');
 		} else {
-			write('<td><input name="' + e.name + '" type="' + 
-			      e.type + '" value="' + e.value + '" /></td>\n');
+			var sizestr = "";
+			if (e.type == "text" || e.type == "password") {
+				sizestr = sprintf('size="%d"', size);
+			}
+			writef('<td><input name="%s" type="%s" value="%s" %s /></td>\n',
+			       e.name, e.type, e.value, sizestr);
 		}
 		write("</tr>");
 	}

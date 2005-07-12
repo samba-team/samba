@@ -1,6 +1,7 @@
 /* show a menu for the esp test pages */
 simple_menu(
 	"ESP Tests",
+	"Provisioning",       session_uri("/esptest/provision.esp"),
 	"ldb database",       session_uri("/esptest/ldb.esp"),
 	"samr calls",         session_uri("/esptest/samr.esp"),
 	"html forms",         session_uri("/esptest/formtest.esp"),
