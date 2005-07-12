@@ -198,7 +198,7 @@ static int ejs_sprintf(MprVarHandle eid, int argc, struct MprVar **argv)
 		len_count = count_chars(fmt2, '*');
 		/* find the type string */
 		tstr = &fmt2[len];
-		while (tstr > fmt2 && isalpha(tstr[-1])) {
+		while (tstr > fmt2 && isalpha((unsigned char)tstr[-1])) {
 			tstr--;
 		}
 		if (strcmp(tstr, "%") == 0) {

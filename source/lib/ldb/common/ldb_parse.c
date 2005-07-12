@@ -68,7 +68,7 @@ static char *ldb_parse_lex(void *ctx, const char **s, const char *sep)
 	const char *p = *s;
 	char *ret;
 
-	while (isspace(*p)) {
+	while (isspace((unsigned char)*p)) {
 		p++;
 	}
 	*s = p;
@@ -86,7 +86,7 @@ static char *ldb_parse_lex(void *ctx, const char **s, const char *sep)
 		return ret;
 	}
 
-	while (*p && (isalnum(*p) || !strchr(sep, *p))) {
+	while (*p && (isalnum((unsigned char)*p) || !strchr(sep, *p))) {
 		p++;
 	}
 
@@ -423,7 +423,7 @@ static struct ldb_parse_tree *ldb_parse_filterlist(void *mem_ctx,
 		return NULL;
 	}
 
-	while (isspace(*s)) s++;
+	while (isspace((unsigned char)*s)) s++;
 
 	while (*s && (next = ldb_parse_filter(ret->u.list.elements, &s))) {
 		struct ldb_parse_tree **e;
@@ -438,7 +438,7 @@ static struct ldb_parse_tree *ldb_parse_filterlist(void *mem_ctx,
 		ret->u.list.elements = e;
 		ret->u.list.elements[ret->u.list.num_elements] = next;
 		ret->u.list.num_elements++;
-		while (isspace(*s)) s++;
+		while (isspace((unsigned char)*s)) s++;
 	}
 
 	return ret;
@@ -474,7 +474,7 @@ static struct ldb_parse_tree *ldb_parse_not(void *mem_ctx, const char *s)
 */
 static struct ldb_parse_tree *ldb_parse_filtercomp(void *mem_ctx, const char *s)
 {
-	while (isspace(*s)) s++;
+	while (isspace((unsigned char)*s)) s++;
 
 	switch (*s) {
 	case '&':
@@ -543,7 +543,7 @@ static struct ldb_parse_tree *ldb_parse_filter(void *mem_ctx, const char **s)
 */
 struct ldb_parse_tree *ldb_parse_tree(void *mem_ctx, const char *s)
 {
-	while (isspace(*s)) s++;
+	while (isspace((unsigned char)*s)) s++;
 
 	if (*s == '(') {
 		return ldb_parse_filter(mem_ctx, &s);

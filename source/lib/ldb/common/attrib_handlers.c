@@ -128,7 +128,8 @@ static int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 	while (*s2 == ' ') s2++;
 	/* TODO: make utf8 safe, possibly with helper function from application */
 	while (*s1 && *s2) {
-		if (toupper(*s1) != toupper(*s2)) break;
+		if (toupper((unsigned char)*s1) != toupper((unsigned char)*s2))
+			break;
 		if (*s1 == ' ') {
 			while (s1[0] == s1[1]) s1++;
 			while (s2[0] == s2[1]) s2++;
