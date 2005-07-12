@@ -226,7 +226,7 @@ NTSTATUS ejs_pull_string(struct ejs_rpc *ejs,
 NTSTATUS ejs_push_string(struct ejs_rpc *ejs, 
 			 struct MprVar *v, const char *name, const char *s)
 {
-	return mprSetVar(v, name, mprCreateStringVar(s, True));
+	return mprSetVar(v, name, mprString(s));
 }
 
 /*
@@ -264,7 +264,7 @@ NTSTATUS ejs_push_dom_sid(struct ejs_rpc *ejs,
 {
 	char *sidstr = dom_sid_string(ejs, r);
 	NT_STATUS_HAVE_NO_MEMORY(sidstr);
-	return mprSetVar(v, name, mprCreateStringVar(sidstr, True));
+	return mprSetVar(v, name, mprString(sidstr));
 }
 
 NTSTATUS ejs_pull_GUID(struct ejs_rpc *ejs, 
@@ -279,7 +279,7 @@ NTSTATUS ejs_push_GUID(struct ejs_rpc *ejs,
 {
 	char *guid = GUID_string(ejs, r);
 	NT_STATUS_HAVE_NO_MEMORY(guid);
-	return mprSetVar(v, name, mprCreateStringVar(guid, True));
+	return mprSetVar(v, name, mprString(guid));
 }
 
 NTSTATUS ejs_push_null(struct ejs_rpc *ejs, struct MprVar *v, const char *name)

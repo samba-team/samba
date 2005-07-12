@@ -114,7 +114,7 @@ struct MprVar mprList(const char *name, const char **list)
 
 	var = mprObject(name);
 	for (i=0;list && list[i];i++) {
-		mprAddArray(&var, i, mprCreateStringVar(list[i], 1));
+		mprAddArray(&var, i, mprString(list[i]));
 	}
 	if (i==0) {
 		mprSetVar(&var, "length", mprCreateIntegerVar(i));
@@ -130,7 +130,7 @@ struct MprVar mprString(const char *s)
 	if (s == NULL) {
 		return mprCreatePtrVar(NULL);
 	}
-	return mprCreateStringVar(s, 1);
+	return mprCreateStringVar(s, True);
 }
 
 /*
@@ -143,7 +143,7 @@ struct MprVar mprData(const uint8_t *p, size_t length)
 	if (s == NULL) {
 		return mprCreateUndefinedVar();
 	}
-	var = mprCreateStringVar(s, 1);
+	var = mprString(s);
 	talloc_free(s);
 	return var;
 }
@@ -183,7 +183,7 @@ struct MprVar mprLdbMessage(struct ldb_message *msg)
 
 	/* add the dn if it is not already specified */
 	if (mprGetProperty(&var, "dn", 0) == 0) {
-		mprSetVar(&var, "dn", mprCreateStringVar(msg->dn, 1));
+		mprSetVar(&var, "dn", mprString(msg->dn));
 	}
 	
 	return var;		
@@ -290,7 +290,7 @@ struct MprVar mprNTSTATUS(NTSTATUS status)
 
 	res = mprObject("ntstatus");
 
-	mprSetVar(&res, "errstr", mprCreateStringVar(nt_errstr(status), 1));
+	mprSetVar(&res, "errstr", mprString(nt_errstr(status)));
 	mprSetVar(&res, "v", mprCreateIntegerVar(NT_STATUS_V(status)));
 	mprSetVar(&res, "is_ok", mprCreateBoolVar(NT_STATUS_IS_OK(status)));
 	mprSetVar(&res, "is_err", mprCreateBoolVar(NT_STATUS_IS_ERR(status)));
@@ -307,7 +307,7 @@ struct MprVar mprWERROR(WERROR status)
 
 	res = mprObject("werror");
 
-	mprSetVar(&res, "errstr", mprCreateStringVar(win_errstr(status), 1));
+	mprSetVar(&res, "errstr", mprString(win_errstr(status)));
 	mprSetVar(&res, "v", mprCreateIntegerVar(W_ERROR_V(status)));
 	mprSetVar(&res, "is_ok", mprCreateBoolVar(W_ERROR_IS_OK(status)));
 	mprSetVar(&res, "is_err", mprCreateBoolVar(!W_ERROR_IS_OK(status)));
@@ -363,7 +363,7 @@ void *mprGetPtr(struct MprVar *v, const char *propname)
 */
 void mpr_ReturnString(int eid, const char *s)
 { 
-	mpr_Return(eid, mprCreateStringVar(s, False));
+	mpr_Return(eid, mprString(s));
 }
 
 
