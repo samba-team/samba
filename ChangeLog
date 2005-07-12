@@ -1,6 +1,10 @@
 2005-07-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
-	* lib/asn1: New asn1 compiler
+	* lib/asn1: Much improved ASN.1 compiler from joda-choice-branch.
+
+	Highlighs for the compiler is support for CHOICE and in general better
+	support for tags. This compiler support most of what is needed for
+	PK-INIT, LDAP, X.509, PKCS-12 and many other protocols.
 
 2005-07-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
