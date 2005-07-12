@@ -1,23 +1,27 @@
                    ==================================
-                   Release Notes for Samba 3.0.20pre1
-                               June 21, 2005
+                   Release Notes for Samba 3.0.20pre2
+                              Jul 12, 2005
                    ==================================
 
 This is a preview release of the Samba 3.0.20 code base and
 is provided for testing only.  This release is *not* intended
 for production servers.  There has been a substantial amount 
 of development since the 3.0.14a stable release (and since the
-3.015pre2 release as well).  We would like to ask the Samba 
+3.0.20pre1 release as well).  We would like to ask the Samba 
 community for help in testing these changes as we work towards
-the next official, production Samba 3.0 release.
+the next official, production Samba 3.0 release.  This is 
+the last anticipated preX release before moving onto the 
+Release Candidate state of testing.
 
-Additional features introduced in Samba 3.0.20pre1 include:
+Additional features introduced in Samba 3.0.20pre2 include:
 
-  o New asynchronous winbindd.
-  o Support for Microsoft Print Migrator.
-  o New Windows NT registry file I/O library.
-  o New user right (SeTakeOwnershipPrivilege) added.
-  o New "net share migrate" options.
+  o Experimental, asynchronous IO file serving support.
+  o Completed Support for Microsoft Print Migrator.
+  o New Winbind IDmap plugin (ad) for retrieving uid and gid
+    from AD servers which maintain the SFU user and group 
+    attributes.
+  o Rewritten support for POSIX pathnames when utilizing 
+    the Linux CIFS fs client.
 
 
 What happened to 3.0.15 - 3.0.19?
@@ -36,6 +40,177 @@ be found in the samba mailing list archives:
 http://marc.theaimsgroup.com/?l=samba&m=111721010206997&w=2
 
 
+Support for Microsoft Print Migrator
+====================================
+
+Samba 3.0.20pre2 includes full support for migrating printers from 
+Windows servers or other Samba servers via the Microsoft Print 
+Migrator tool.  Restoring printers requires a working "add printer 
+command" defined in smb.conf.  Current; support also allows
+administrators to create a master list of printer drivers which
+can be restored in bulk on new (or existing) Samba installations.
+
+
+Asynchronous IO Support
+=======================
+
+Experimental support for async IO has been added to smbd for 
+certain platforms.  To enable this new feature, Samba must be 
+compiled to include the --with-aio-support configure option.
+In addition, the "aio read size" and "aio write size" to non-zero
+values.  See the smb,conf(5) man page for more details on these 
+settings.
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.20pre1
+------------------------
+
+    Parameter Name                      Action
+    --------------                      ------
+    acl map full control		New
+    aio read size			New
+    aio write size			New
+    winbindd nss info			New
+
+
+commits
+-------
+
+o   Jeremy Allison <jra@samba.org>
+    * Add support for client setting capabilities to select posix 
+      pathnames on the wire.
+    * Stop using C++ reserved words so that Samba can be compiled 
+      using g++.  Also allows VFS modules in C++.
+    * More fixes to allow better large directory scaling.
+    * BUG 2827: Ensure we call the vfs connection hook before 
+      doing a vfs stat.  Allows database vfs backends to initialize 
+      with a working connection.
+    * BUG 2826: Ensure the correct return value for symlink and 
+      readlink in the VFS.
+    * Merge handling of ASN.1 objects bigger than 64k from Samba 4.
+    * Added AIO support to smbd.
+    * Add "acl map full control", true by default, to allow people 
+      to change mapping of rwx to full control or not.
+    * Transition smbd to use NTcreate&X for internal file opens.
+
+
+o   David.Collier-Brown  <David.Collier-Brown@sun.com>
+    * Added panic action script for Solaris.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Cleanup of winreg API functions.
+    * Add server stubs for RegSetKeySec() and RegGetKeySec().
+    * Map generic bits to specific bits in reg_open_entry() 
+      requests.
+    * Add write support to registry tdb and printing backends.
+    * Use tdb lookups rather than hard-coding certain registry 
+      value names and data.
+    * BUG 2808: don't try to install man pages if they are not 
+      present.
+    * Fix initialized variables reported by valgrind.
+    * Normalize key lookups in ntprinters.tdb.
+    * Mark "enumports command" as deprecated.
+    * Add missing class file for python share command example.
+    * Fix smbclient build issue on Solaris.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Add 'recycle:touch_mtime = true' vfs option for the recycle bin.
+    * More "net rpc share migrate" fixes.
+    * Merge PADL's idmap_ad plugin (taken from the latest 
+      xad_oss_plugins-tarball).
+    * Add support for "idmap backend = ad" when "security = ads".
+    * Add home directory and shell support from AD via "winbindd nss 
+      support = sfu" and "security = ads".
+    * Provide better feedback when we fail share-manipulation 
+      due to missing scripts.
+    * Correctly substitute "\" as default winbind separator in 
+      generate_parm_table.py example share command script.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * Added ioctl constants reported by msbackup.exe and filemon.exe.
+
+
+o   Kevin Jamieson <bugzilla@kevinjamieson.com> 
+    * BUG 2819: Fix typo when checking for ".." in smbd's statcache.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Fix the bug where users show up as trusting domains.
+    * Fix an assertion failure in winbindd.
+    * Fix a memleak in vfs_afsacl.
+    * Various compiler warning fixes.
+    * Fix compile when --enable-socket-wrapper is defined.
+    * Fixes for top level acls in vfs_acl.c.
+
+
+o   Jim McDonough <jmcd@us.ibm.com>
+    * Added subcommands to "net rpc vampire" (mostly done by Don 
+      Watson <dwatson@us.ibm.com>) to allow data to be put into an 
+      ldif file instead of actually writing to the passdb.  
+
+
+o   Lars Mueller <lmuelle@suse.de>
+    * Fix argv parsing in "net rpc".
+    * Add support to create position independent executable (PIE) 
+      code if the compiler supports it.
+
+
+o   Marcel Müller <mueller@maazl.de>
+    * Fix for bug in SMBwriteBraw that incorrectly returned the 
+      number of bytes written. 
+
+
+o   Ricky Nance <ricky.nance@gmail.com>
+    * Implemented mklogon script generator for domain logon scripts.
+
+
+o   James Peach <jpeach@sgi.com>
+    * MS-DFS tidyup patches.
+    * Build fixes on IRIX.
+
+
+o   Marcin Porwit <mporwit@centeris.com>
+    * Fix a memleak in the eventlog code.
+
+
+o   Smitty <smitty@plainjoe.org>
+    * Include LUID values to match Windows privileges since 
+      apparently this matters to printmig.exe
+
+
+o   Simo Sorce <idra@samba.org>
+    * Randomize reloading as to not overload cupsd.
+
+
+o   Brett Trotter <blt@iastate.edu>
+    * Fix definition of global_sid_* in vfs_acl.c.
+
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
+                   ==================================
+                   Release Notes for Samba 3.0.20pre1
+                               June 21, 2005
+                   ==================================
+
+Additional features introduced in Samba 3.0.20pre1 include:
+
+  o New asynchronous winbindd.
+  o Support for Microsoft Print Migrator.
+  o New Windows NT registry file I/O library.
+  o New user right (SeTakeOwnershipPrivilege) added.
+  o New "net share migrate" options.
+
+
 Asynchronous Winbind Implementation
 ===================================
 
@@ -48,21 +223,6 @@ changed in their calling conventions or syntax.  However, due to
 internal structure changes, it is required (more so than normal) 
 that you install the nss_winbind.so library included in this release.
 
-
-Support for Microsoft Print Migrator
-====================================
-
-Samba 3.0.20pre1 supports backing up print drivers and queues
-using the Microsoft Print Migrator (printmig.exe) tool.  Currently
-only support for restoring drivers onto a Samba server has been 
-implemented.  The final 3.0.20 release will include for 
-restoring the print queues and printer settings as well.  This
-will allow organizations to easily migrate or consolidate from a 
-Windows print server environment to a Samba print server without
-having to individually reinstall drivers and printers.  The current 
-restore support also allows administrators to create a master list 
-of drivers which can be installed on a new Samba host in a single 
-action.
 
 
 ######################################################################
@@ -397,9 +557,6 @@ o   Jelmer Vernooij <jelmer@samba.org>
 o   Qiao Yang <qyang@stbernard.com>
     * Use our own DC when getting the SID for a domain.
 
-
-
-Release Notes for older release follow:
 
       --------------------------------------------------
                    ==================================
