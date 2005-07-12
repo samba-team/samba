@@ -728,11 +728,14 @@ static int fgetc_string(void *private_data)
 	return EOF;
 }
 
-struct ldb_ldif *ldb_ldif_read_string(struct ldb_context *ldb, const char *s)
+struct ldb_ldif *ldb_ldif_read_string(struct ldb_context *ldb, const char **s)
 {
 	struct ldif_read_string_state state;
-	state.s = s;
-	return ldb_ldif_read(ldb, fgetc_string, &state);
+	struct ldb_ldif *ldif;
+	state.s = *s;
+	ldif = ldb_ldif_read(ldb, fgetc_string, &state);
+	*s = state.s;
+	return ldif;
 }
 
 

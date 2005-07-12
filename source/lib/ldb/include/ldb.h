@@ -316,7 +316,7 @@ void ldb_ldif_read_free(struct ldb_context *ldb, struct ldb_ldif *);
 struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb, 
 			       int (*fgetc_fn)(void *), void *private_data);
 struct ldb_ldif *ldb_ldif_read_file(struct ldb_context *ldb, FILE *f);
-struct ldb_ldif *ldb_ldif_read_string(struct ldb_context *ldb, const char *s);
+struct ldb_ldif *ldb_ldif_read_string(struct ldb_context *ldb, const char **s);
 int ldb_ldif_write_file(struct ldb_context *ldb, FILE *f, const struct ldb_ldif *msg);
 char *ldb_base64_encode(void *mem_ctx, const char *buf, int len);
 int ldb_base64_decode(char *s);
