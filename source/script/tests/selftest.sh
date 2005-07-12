@@ -59,8 +59,6 @@ export PATH
 
 rm -rf $PREFIX/*
 mkdir -p $PRIVATEDIR $LIBDIR $PIDDIR $NCALRPCDIR $LOCKDIR $TMPDIR $TLSDIR
-./setup/provision $CONFIGURATION --quiet --domain $DOMAIN --realm $REALM \
-    --adminpass $PASSWORD --root=$ROOT
 
 cat >$CONFFILE<<EOF
 [global]
@@ -91,6 +89,9 @@ cat >$CONFFILE<<EOF
         cifs:domain = $DOMAIN
 	cifs:share = tmp
 EOF
+
+./setup/provision $CONFIGURATION --quiet --domain $DOMAIN --realm $REALM \
+    --adminpass $PASSWORD --root=$ROOT
 
 if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
 	CONFIGURATION="$CONFIGURATION --option=\"torture:progress=no\""
