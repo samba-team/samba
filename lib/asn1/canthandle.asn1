@@ -1,0 +1,30 @@
+-- $Id$ --
+
+CANTHANDLE DEFINITIONS ::= BEGIN
+
+-- Don't code the tag [0] as a constructed tag for foo.kaka1,
+--   it should be PRIM (and no type field)
+-- Workaround is to use heim_any and decode type
+
+Kaka  ::= SEQUENCE { 
+        kaka3 [0] INTEGER
+}
+
+Foo ::= SEQUENCE {
+        kaka1 [0] IMPLICIT INTEGER OPTIONAL,
+        kaka2 [1] IMPLICIT Kaka OPTIONAL
+}
+
+-- Don't code kaka if its 1
+-- Workaround is to use OPTIONAL and check for in the encoder stubs
+
+Bar ::= SEQUENCE {
+        kaka [0] INTEGER DEFAULT 1
+}
+
+--  Can't handle primitives in SET OF
+--  Workaround is to define a type that is only an integer and use that
+
+Baz ::= SET OF INTEGER
+
+END

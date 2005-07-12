@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002, 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -52,6 +52,10 @@
 #include <asn1-common.h>
 #include <asn1_err.h>
 #include <der.h>
+
+#ifndef HAVE_TIMEGM
+time_t timegm (struct tm *);
+#endif
 
 size_t _heim_len_unsigned (unsigned);
 size_t _heim_len_int (int);

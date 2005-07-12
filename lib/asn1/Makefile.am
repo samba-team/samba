@@ -2,98 +2,329 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-YFLAGS = -d
+YFLAGS = -dt
 
 lib_LTLIBRARIES = libasn1.la
-libasn1_la_LDFLAGS = -version-info 7:0:1
+libasn1_la_LDFLAGS = -version-info 6:1:1
 
-libasn1_la_LIBADD = $(LIB_com_err)
+libasn1_la_LIBADD = @LIB_com_err@
 
-BUILT_SOURCES =			\
-	$(gen_files:.x=.c)	\
-	asn1_err.h		\
+BUILT_SOURCES =				\
+	$(gen_files_rfc2459:.x=.c)	\
+	$(gen_files_cms:.x=.c)		\
+	$(gen_files_k5:.x=.c)		\
+	$(gen_files_pkinit:.x=.c)	\
+	$(gen_files_pkcs8:.x=.c)	\
+	$(gen_files_pkcs9:.x=.c)	\
+	$(gen_files_pkcs12:.x=.c)	\
+	asn1_err.h			\
 	asn1_err.c
 
-gen_files =					\
-	asn1_AD_AND_OR.x			\
-	asn1_AD_IF_RELEVANT.x			\
-	asn1_AD_KDCIssued.x			\
-	asn1_AD_MANDATORY_FOR_KDC.x		\
-	asn1_APOptions.x			\
-	asn1_AP_REP.x				\
-	asn1_AP_REQ.x				\
-	asn1_AS_REP.x				\
-	asn1_AS_REQ.x				\
-	asn1_Authenticator.x			\
-	asn1_AuthorizationData.x		\
-	asn1_AUTHDATA_TYPE.x			\
-	asn1_CBCParameter.x			\
-	asn1_CKSUMTYPE.x			\
-	asn1_ChangePasswdDataMS.x		\
-	asn1_Checksum.x				\
-	asn1_ENCTYPE.x				\
-	asn1_ETYPE_INFO.x			\
-	asn1_ETYPE_INFO2.x			\
-	asn1_ETYPE_INFO2_ENTRY.x		\
-	asn1_ETYPE_INFO_ENTRY.x			\
-	asn1_EncAPRepPart.x			\
-	asn1_EncASRepPart.x			\
-	asn1_EncKDCRepPart.x			\
-	asn1_EncKrbCredPart.x			\
-	asn1_EncKrbPrivPart.x			\
-	asn1_EncTGSRepPart.x			\
-	asn1_EncTicketPart.x			\
-	asn1_EncryptedData.x			\
-	asn1_EncryptionKey.x			\
-	asn1_EtypeList.x			\
-	asn1_HostAddress.x			\
-	asn1_HostAddresses.x			\
-	asn1_KDCOptions.x			\
-	asn1_KDC_REP.x				\
-	asn1_KDC_REQ.x				\
-	asn1_KDC_REQ_BODY.x			\
-	asn1_KRB_CRED.x				\
-	asn1_KRB_ERROR.x			\
-	asn1_KRB_PRIV.x				\
-	asn1_KRB_SAFE.x				\
-	asn1_KRB_SAFE_BODY.x			\
-	asn1_KerberosString.x			\
-	asn1_KerberosTime.x			\
-	asn1_KrbCredInfo.x			\
-	asn1_LR_TYPE.x				\
-	asn1_LastReq.x				\
-	asn1_MESSAGE_TYPE.x			\
-	asn1_METHOD_DATA.x			\
-	asn1_NAME_TYPE.x			\
-	asn1_PADATA_TYPE.x			\
-	asn1_PA_DATA.x				\
-	asn1_PA_ENC_SAM_RESPONSE_ENC.x		\
-	asn1_PA_ENC_TS_ENC.x			\
-	asn1_PA_PAC_REQUEST.x			\
-	asn1_PA_SAM_CHALLENGE_2.x		\
-	asn1_PA_SAM_CHALLENGE_2_BODY.x		\
-	asn1_PA_SAM_REDIRECT.x			\
-	asn1_PA_SAM_RESPONSE_2.x		\
-	asn1_PA_SAM_TYPE.x			\
-	asn1_Principal.x			\
-	asn1_PrincipalName.x			\
-	asn1_RC2CBCParameter.x			\
-	asn1_Realm.x				\
-	asn1_SAMFlags.x				\
-	asn1_TGS_REP.x				\
-	asn1_TGS_REQ.x				\
-	asn1_Ticket.x				\
-	asn1_TicketFlags.x			\
-	asn1_TransitedEncoding.x		\
-	asn1_UNSIGNED.x
+gen_files_k5 =						\
+	asn1_AD_AND_OR.x				\
+	asn1_AD_IF_RELEVANT.x				\
+	asn1_AD_KDCIssued.x				\
+	asn1_AD_MANDATORY_FOR_KDC.x			\
+	asn1_APOptions.x				\
+	asn1_AP_REP.x					\
+	asn1_AP_REQ.x					\
+	asn1_AS_REP.x					\
+	asn1_AS_REQ.x					\
+	asn1_AUTHDATA_TYPE.x				\
+	asn1_Authenticator.x				\
+	asn1_AuthorizationData.x			\
+	asn1_CKSUMTYPE.x				\
+	asn1_ChangePasswdDataMS.x			\
+	asn1_Checksum.x					\
+	asn1_ENCTYPE.x					\
+	asn1_ETYPE_INFO.x				\
+	asn1_ETYPE_INFO2.x				\
+	asn1_ETYPE_INFO2_ENTRY.x			\
+	asn1_ETYPE_INFO_ENTRY.x				\
+	asn1_EncAPRepPart.x				\
+	asn1_EncASRepPart.x				\
+	asn1_EncKDCRepPart.x				\
+	asn1_EncKrbCredPart.x				\
+	asn1_EncKrbPrivPart.x				\
+	asn1_EncTGSRepPart.x				\
+	asn1_EncTicketPart.x				\
+	asn1_EncryptedData.x				\
+	asn1_EncryptionKey.x				\
+	asn1_EtypeList.x				\
+	asn1_HostAddress.x				\
+	asn1_HostAddresses.x				\
+	asn1_KDCOptions.x				\
+	asn1_KDC_REP.x					\
+	asn1_KDC_REQ.x					\
+	asn1_KDC_REQ_BODY.x				\
+	asn1_KRB_CRED.x					\
+	asn1_KRB_ERROR.x				\
+	asn1_KRB_PRIV.x					\
+	asn1_KRB_SAFE.x					\
+	asn1_KRB_SAFE_BODY.x				\
+	asn1_krb5int32.x				\
+	asn1_krb5uint32.x				\
+	asn1_KerberosString.x				\
+	asn1_KerberosTime.x				\
+	asn1_KrbCredInfo.x				\
+	asn1_LR_TYPE.x					\
+	asn1_LastReq.x					\
+	asn1_MESSAGE_TYPE.x				\
+	asn1_METHOD_DATA.x				\
+	asn1_NAME_TYPE.x				\
+	asn1_PADATA_TYPE.x				\
+	asn1_PA_DATA.x					\
+	asn1_PA_ENC_SAM_RESPONSE_ENC.x         		\
+	asn1_PA_ENC_TS_ENC.x				\
+	asn1_PA_SAM_CHALLENGE_2.x               	\
+	asn1_PA_SAM_CHALLENGE_2_BODY.x 			\
+	asn1_PA_SAM_REDIRECT.x				\
+	asn1_PA_SAM_RESPONSE_2.x			\
+	asn1_PA_SAM_TYPE.x				\
+	asn1_PA_PAC_REQUEST.x				\
+	asn1_PROV_SRV_LOCATION.x			\
+	asn1_Principal.x				\
+	asn1_PrincipalName.x				\
+	asn1_Realm.x					\
+	asn1_SAMFlags.x					\
+	asn1_TGS_REP.x					\
+	asn1_TGS_REQ.x					\
+	asn1_TYPED_DATA.x				\
+	asn1_Ticket.x					\
+	asn1_TicketFlags.x				\
+	asn1_TransitedEncoding.x			\
+	asn1_TypedData.x				\
+	asn1_RC2CBCParameter.x				\
+	asn1_CBCParameter.x
 
-noinst_PROGRAMS = asn1_compile asn1_print
+gen_files_cms =						\
+	asn1_id_pkcs7.x					\
+	asn1_id_pkcs7_data.x				\
+	asn1_id_pkcs7_signedData.x			\
+	asn1_id_pkcs7_signedAndEnvelopedData.x		\
+	asn1_id_pkcs7_envelopedData.x			\
+	asn1_id_pkcs7_digestedData.x			\
+	asn1_id_pkcs7_encryptedData.x			\
+	asn1_CMSCBCParameter.x				\
+	asn1_CMSEncryptedData.x				\
+	asn1_CMSRC2CBCParameter.x			\
+	asn1_CMSVersion.x				\
+	asn1_CMSIdentifier.x				\
+	asn1_CertificateList.x				\
+	asn1_CertificateRevocationLists.x		\
+	asn1_CertificateSet.x				\
+	asn1_CertificateSetReal.x			\
+	asn1_ContentEncryptionAlgorithmIdentifier.x	\
+	asn1_ContentInfo.x				\
+	asn1_ContentType.x				\
+	asn1_DigestAlgorithmIdentifier.x		\
+	asn1_DigestAlgorithmIdentifiers.x		\
+	asn1_EncapsulatedContentInfo.x			\
+	asn1_EncryptedContent.x				\
+	asn1_EncryptedContentInfo.x			\
+	asn1_EncryptedKey.x				\
+	asn1_EnvelopedData.x				\
+	asn1_IssuerAndSerialNumber.x			\
+	asn1_KeyEncryptionAlgorithmIdentifier.x		\
+	asn1_KeyTransRecipientInfo.x			\
+	asn1_OriginatorInfo.x				\
+	asn1_RecipientIdentifier.x			\
+	asn1_RecipientInfo.x				\
+	asn1_RecipientInfos.x				\
+	asn1_SignatureAlgorithmIdentifier.x		\
+	asn1_SignatureValue.x				\
+	asn1_SignedAttributes.x				\
+	asn1_SignedData.x				\
+	asn1_SignerIdentifier.x				\
+	asn1_SignerInfo.x				\
+	asn1_SignerInfos.x				\
+	asn1_UnprotectedAttributes.x			\
+	asn1_UnsignedAttributes.x
+
+gen_files_rfc2459 =					\
+	asn1_Version.x					\
+	asn1_id_pkcs_1.x				\
+	asn1_id_pkcs1_rsaEncryption.x			\
+	asn1_id_pkcs1_md2WithRSAEncryption.x		\
+	asn1_id_pkcs1_md5WithRSAEncryption.x		\
+	asn1_id_pkcs1_sha1WithRSAEncryption.x		\
+	asn1_id_pkcs_2.x				\
+	asn1_id_pkcs2_md2.x				\
+	asn1_id_pkcs2_md4.x				\
+	asn1_id_pkcs2_md5.x				\
+	asn1_id_pkcs_3.x				\
+	asn1_id_pkcs3_rc2_cbc.x				\
+	asn1_id_pkcs3_rc4.x				\
+	asn1_id_pkcs3_des_ede3_cbc.x			\
+	asn1_id_rsadsi_encalg.x				\
+	asn1_id_rsadsi_des_ede3_cbc.x			\
+	asn1_id_secsig_sha_1.x				\
+	asn1_id_nit_aes_algs.x				\
+	asn1_id_aes_128_cbc.x				\
+	asn1_id_aes_192_cbc.x				\
+	asn1_id_aes_256_cbc.x				\
+	asn1_id_dhpublicnumber.x			\
+	asn1_id_x509_ce.x				\
+	asn1_AlgorithmIdentifier.x			\
+	asn1_AttributeType.x				\
+	asn1_AttributeValue.x				\
+	asn1_TeletexStringx.x				\
+	asn1_DirectoryString.x				\
+	asn1_Attribute.x				\
+	asn1_AttributeTypeAndValue.x			\
+	asn1_RelativeDistinguishedName.x		\
+	asn1_RDNSequence.x				\
+	asn1_Name.x					\
+	asn1_CertificateSerialNumber.x			\
+	asn1_Time.x					\
+	asn1_Validity.x					\
+	asn1_UniqueIdentifier.x				\
+	asn1_SubjectPublicKeyInfo.x			\
+	asn1_Extension.x				\
+	asn1_Extensions.x				\
+	asn1_TBSCertificate.x				\
+	asn1_Certificate.x				\
+	asn1_Certificates.x				\
+	asn1_ValidationParms.x				\
+	asn1_DomainParameters.x				\
+	asn1_OtherName.x				\
+	asn1_GeneralName.x				\
+	asn1_GeneralNames.x				\
+	asn1_id_x509_ce_keyUsage.x			\
+	asn1_KeyUsage.x					\
+	asn1_id_x509_ce_authorityKeyIdentifier.x	\
+	asn1_KeyIdentifier.x				\
+	asn1_AuthorityKeyIdentifier.x			\
+	asn1_id_x509_ce_subjectKeyIdentifier.x		\
+	asn1_SubjectKeyIdentifier.x			\
+	asn1_id_x509_ce_basicConstraints.x		\
+	asn1_BasicConstraints.x				\
+	asn1_id_x509_ce_nameConstraints.x		\
+	asn1_BaseDistance.x				\
+	asn1_GeneralSubtree.x				\
+	asn1_GeneralSubtrees.x				\
+	asn1_NameConstraints.x				\
+	asn1_id_x509_ce_privateKeyUsagePeriod.x		\
+	asn1_id_x509_ce_certificatePolicies.x		\
+	asn1_id_x509_ce_policyMappings.x		\
+	asn1_id_x509_ce_subjectAltName.x		\
+	asn1_id_x509_ce_issuerAltName.x			\
+	asn1_id_x509_ce_subjectDirectoryAttributes.x	\
+	asn1_id_x509_ce_policyConstraints.x		\
+	asn1_id_x509_ce_extKeyUsage.x			\
+	asn1_id_x509_ce_cRLDistributionPoints.x		\
+	asn1_id_x509_ce_cRLNumber.x			\
+	asn1_id_x509_ce_deltaCRLIndicator.x		\
+	asn1_id_x509_ce_issuingDistributionPoint.x	\
+	asn1_id_x509_ce_cRLReasons.x			\
+	asn1_id_x509_ce_holdInstructionCode.x		\
+	asn1_id_x509_ce_invalidityDate.x		\
+	asn1_id_x509_ce_certificateIssuer.x		\
+	asn1_id_x509_ce_inhibitAnyPolicy.x		\
+	asn1_id_x509_ce_freshestCRL.x			\
+	asn1_DSASigValue.x				\
+	asn1_DSAPublicKey.x				\
+	asn1_DSAParams.x				\
+	asn1_RSAPublicKey.x				\
+	asn1_DigestInfo.x
+
+
+gen_files_pkinit =				\
+	asn1_id_pkinit.x			\
+	asn1_id_pkauthdata.x			\
+	asn1_id_pkdhkeydata.x			\
+	asn1_id_pkrkeydata.x			\
+	asn1_id_pkekuoid.x			\
+	asn1_id_pkkdcekuoid.x			\
+	asn1_DHNonce.x				\
+	asn1_TrustedCA.x			\
+	asn1_PA_PK_AS_REQ.x			\
+	asn1_PKAuthenticator.x			\
+	asn1_AuthPack.x				\
+	asn1_TD_TRUSTED_CERTIFIERS.x		\
+	asn1_TD_INVALID_CERTIFICATES.x		\
+	asn1_KRB5PrincipalName.x		\
+	asn1_AD_INITIAL_VERIFIED_CAS.x		\
+	asn1_DHRepInfo.x			\
+	asn1_PA_PK_AS_REP.x			\
+	asn1_KDCDHKeyInfo.x			\
+	asn1_ReplyKeyPack.x			\
+	asn1_TD_DH_PARAMETERS.x			\
+	asn1_PKAuthenticator_Win2k.x		\
+	asn1_AuthPack_Win2k.x			\
+	asn1_PA_PK_AS_REP_Win2k.x		\
+	asn1_KDCDHKeyInfo_Win2k.x		\
+	asn1_TrustedCA_19.x			\
+	asn1_PA_PK_AS_REQ_19.x			\
+	asn1_PA_PK_AS_REQ_Win2k.x		\
+	asn1_PKAuthenticator_19.x		\
+	asn1_AuthPack_19.x			\
+	asn1_PA_PK_AS_REP_19.x			\
+	asn1_ReplyKeyPack_19.x
+
+
+gen_files_pkcs12 =					\
+	asn1_id_pkcs_12.x				\
+	asn1_id_pkcs_12PbeIds.x				\
+	asn1_id_pbeWithSHAAnd128BitRC4.x		\
+	asn1_id_pbeWithSHAAnd40BitRC4.x			\
+	asn1_id_pbeWithSHAAnd3_KeyTripleDES_CBC.x	\
+	asn1_id_pbeWithSHAAnd2_KeyTripleDES_CBC.x	\
+	asn1_id_pbeWithSHAAnd128BitRC2_CBC.x		\
+	asn1_id_pbewithSHAAnd40BitRC2_CBC.x		\
+	asn1_id_pkcs12_bagtypes.x			\
+	asn1_id_pkcs12_keyBag.x				\
+	asn1_id_pkcs12_pkcs8ShroudedKeyBag.x		\
+	asn1_id_pkcs12_certBag.x			\
+	asn1_id_pkcs12_crlBag.x				\
+	asn1_id_pkcs12_secretBag.x			\
+	asn1_id_pkcs12_safeContentsBag.x		\
+	asn1_PKCS12_MacData.x				\
+	asn1_PKCS12_PFX.x				\
+	asn1_PKCS12_AuthenticatedSafe.x			\
+	asn1_PKCS12_CertBag.x				\
+	asn1_PKCS12_Attribute.x				\
+	asn1_PKCS12_Attributes.x				\
+	asn1_PKCS12_SafeBag.x				\
+	asn1_PKCS12_SafeContents.x			\
+	asn1_PKCS12_PBEParams.x
+
+gen_files_pkcs8 =					\
+	asn1_PKCS8PrivateKeyAlgorithmIdentifier.x	\
+	asn1_PKCS8PrivateKey.x				\
+	asn1_PKCS8PrivateKeyInfo.x			\
+	asn1_PKCS8Attributes.x				\
+	asn1_PKCS8EncryptedPrivateKeyInfo.x		\
+	asn1_PKCS8EncryptedData.x
+
+gen_files_pkcs9 =					\
+	asn1_id_pkcs_9.x				\
+	asn1_id_pkcs_9_at_friendlyName.x		\
+	asn1_id_pkcs_9_at_localKeyId.x			\
+	asn1_id_pkcs_9_at_certTypes.x			\
+	asn1_id_pkcs_9_at_certTypes_x509.x		\
+	asn1_PKCS9_BMPString.x				\
+	asn1_PKCS9_friendlyName.x
+
+gen_files_test =					\
+	asn1_TESTChoice1.x				\
+	asn1_TESTChoice2.x				\
+	asn1_TESTSeq.x					\
+	asn1_TESTLargeTag.x
+
+noinst_PROGRAMS = asn1_compile asn1_print asn1_gen
+
 check_PROGRAMS = check-der check-gen
 TESTS = check-der check-gen
 
-check_der_SOURCES = check-der.c check-common.c
-check_gen_SOURCES = check-gen.c check-common.c
+asn1_gen_SOURCES = asn1_gen.c
+asn1_print_SOURCES = asn1_print.c
 
+check_der_SOURCES = check-der.c check-common.c
+check_gen_SOURCES = \
+	check-gen.c \
+	check-common.c \
+	$(gen_files_test:.x=.c)
 
 asn1_compile_SOURCES = 				\
 	gen.c					\
@@ -110,12 +341,14 @@ asn1_compile_SOURCES = 				\
 	symbol.c
 
 libasn1_la_SOURCES =				\
+	der.c					\
 	der_get.c				\
 	der_put.c				\
 	der_free.c				\
 	der_length.c				\
 	der_copy.c				\
 	der_cmp.c				\
+	extra.c					\
 	timegm.c				\
 	$(BUILT_SOURCES)
 
@@ -128,22 +361,78 @@ check_der_LDADD = \
 
 check_gen_LDADD = $(check_der_LDADD)
 asn1_print_LDADD = $(check_der_LDADD)
+asn1_gen_LDADD = $(check_der_LDADD)
 
-CLEANFILES = lex.c parse.c parse.h krb5_asn1.h \
+CLEANFILES = lex.c parse.c parse.h \
 	$(BUILT_SOURCES) \
-	$(gen_files) asn1_files asn1_files2
+	$(gen_files_rfc2459) \
+	$(gen_files_cms) \
+	$(gen_files_k5) \
+	$(gen_files_pkinit) \
+	$(gen_files_pkcs8) \
+	$(gen_files_pkcs9) \
+	$(gen_files_pkcs12) \
+	$(gen_files_test) \
+	rfc2459_asn1_files rfc2459_asn1.h \
+	cms_asn1_files cms_asn1.h \
+	krb5_asn1_files krb5_asn1.h \
+	pkinit_asn1_files pkinit_asn1.h \
+	pkcs8_asn1_files pkcs8_asn1.h \
+	pkcs9_asn1_files pkcs9_asn1.h \
+	pkcs12_asn1_files pkcs12_asn1.h \
+	test_asn1_files test_asn1.h
 
-include_HEADERS = krb5_asn1.h asn1_err.h der.h
+
+include_HEADERS = asn1_err.h der.h heim_asn1.h
+include_HEADERS += krb5_asn1.h
+include_HEADERS += pkinit_asn1.h
+include_HEADERS += cms_asn1.h
+include_HEADERS += rfc2459_asn1.h
+include_HEADERS += pkcs8_asn1.h
+include_HEADERS += pkcs9_asn1.h
+include_HEADERS += pkcs12_asn1.h
 
 $(asn1_compile_OBJECTS): parse.h parse.c
 
-$(gen_files) krb5_asn1.h: asn1_files
+$(gen_files_k5) krb5_asn1.h: krb5_asn1_files
+$(gen_files_pkinit) pkinit_asn1.h: pkinit_asn1_files
+$(gen_files_pkcs8) pkcs8_asn1.h: pkcs8_asn1_files
+$(gen_files_pkcs9) pkcs9_asn1.h: pkcs9_asn1_files
+$(gen_files_pkcs12) pkcs12_asn1.h: pkcs12_asn1_files
+$(gen_files_rfc2459) rfc2459_asn1.h: rfc2459_asn1_files
+$(gen_files_cms) cms_asn1.h: cms_asn1_files
+$(gen_files_test) test_asn1.h: test_asn1_files
 
-asn1_files: asn1_compile$(EXEEXT) $(srcdir)/k5.asn1
-	./asn1_compile$(EXEEXT) $(srcdir)/k5.asn1 krb5_asn1
+rfc2459_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/rfc2459.asn1
+	./asn1_compile$(EXEEXT) --preserve-binary=TBSCertificate --preserve-binary=Name $(srcdir)/rfc2459.asn1 rfc2459_asn1 || (rm -f rfc2459_asn1_files ; exit 1)
+
+cms_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/CMS.asn1
+	./asn1_compile$(EXEEXT) $(srcdir)/CMS.asn1 cms_asn1 || (rm -f cms_asn1_files ; exit 1)
+
+krb5_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/k5.asn1
+	./asn1_compile$(EXEEXT) --encode-rfc1510-bit-string $(srcdir)/k5.asn1 krb5_asn1 || (rm -f krb5_asn1_files ; exit 1)
+
+pkinit_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/pkinit.asn1
+	./asn1_compile$(EXEEXT) $(srcdir)/pkinit.asn1 pkinit_asn1 || (rm -f pkinit_asn1_files ; exit 1)
+
+pkcs8_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/pkcs8.asn1
+	./asn1_compile$(EXEEXT) $(srcdir)/pkcs8.asn1 pkcs8_asn1 || (rm -f pkcs8_asn1_files ; exit 1)
+
+pkcs9_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/pkcs9.asn1
+	./asn1_compile$(EXEEXT) $(srcdir)/pkcs9.asn1 pkcs9_asn1 || (rm -f pkcs9_asn1_files ; exit 1)
+
+pkcs12_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/pkcs12.asn1
+	./asn1_compile$(EXEEXT) $(srcdir)/pkcs12.asn1 pkcs12_asn1 || (rm -f pkcs12_asn1_files ; exit 1)
+
+test_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/test.asn1
+	./asn1_compile$(EXEEXT) $(srcdir)/test.asn1 test_asn1 || (rm -f test_asn1_files ; exit 1)
 
 $(libasn1_la_OBJECTS): krb5_asn1.h asn1_err.h
 
+$(check_gen_OBJECTS): test_asn1.h
+
 $(asn1_print_OBJECTS): krb5_asn1.h
+
+parse.h: parse.c
 
 EXTRA_DIST = asn1_err.et

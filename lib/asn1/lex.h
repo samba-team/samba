@@ -37,5 +37,6 @@
 
 void error_message (const char *, ...)
 __attribute__ ((format (printf, 1, 2)));
+extern int error_flag;
 
 int yylex(void);

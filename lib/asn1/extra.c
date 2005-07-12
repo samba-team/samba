@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -103,7 +103,7 @@ int
 copy_heim_any(const heim_any *from, heim_any *to)
 {
     to->data = malloc(from->length);
-    if (to->data == NULL)
+    if (to->data == NULL && from->length != 0)
 	return ENOMEM;
     memcpy(to->data, from->data, from->length);
     to->length = from->length;
@@ -124,7 +124,7 @@ decode_heim_any_set(const unsigned char *p, size_t len,
 {
     memset(data, 0, sizeof(*data));
     data->data = malloc(len);
-    if (data->data == NULL)
+    if (data->data == NULL && len != 0)
 	return ENOMEM;
     data->length = len;
     memcpy(data->data, p, len);
@@ -148,4 +148,12 @@ int
 copy_heim_any_set(const heim_any_set *from, heim_any_set *to)
 {
     return copy_heim_any(from, to);
+}
+
+int
+heim_any_cmp(const heim_any_set *p, const heim_any_set *q)
+{
+    if (p->length != q->length)
+	return p->length - q->length;
+    return memcmp(p->data, q->data, p->length);
 }

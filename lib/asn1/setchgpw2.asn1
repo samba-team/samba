@@ -168,25 +168,25 @@ Request ::= [ APPLICATION 0 ] SEQUENCE {
 	languages[2]	SEQUENCE OF Language-Tag OPTIONAL,
 	targ-name[3]	PrincipalName OPTIONAL,
 	targ-realm[4]	Realm OPTIONAL,
---	operation[5]	Op-Req,
+	operation[5]	Op-Req,
 	...
 }
 
-Responce ::= [ APPLICATION 1 ] SEQUENCE {
+Response ::= [ APPLICATION 1 ] SEQUENCE {
 	pvno-major[0]	INTEGER DEFAULT 2,
 	pvno-minor[1]	INTEGER DEFAULT 0,
 	language[2]	Language-Tag DEFAULT "i-default",
---	result[3]	Op-rep OPTIONAL,
+	result[3]	Op-rep OPTIONAL,
 	...
 }
 
-Error-Responce ::= [ APPLICATION 2 ] SEQUENCE {
+Error-Response ::= [ APPLICATION 2 ] SEQUENCE {
 	pvno-major[0]	INTEGER DEFAULT 2,
 	pvno-minor[1]	INTEGER DEFAULT 0,
 	language[2]	Language-Tag DEFAULT "i-default",
 	error-code[3]	ProtocolErrorCode,
 	help-text[4]	UTF8String OPTIONAL,
---	op-error[5]	Op-error OP-ERROR,
+	op-error[5]	Op-error OP-ERROR,
 	...
 }
 

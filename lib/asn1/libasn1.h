@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,6 +33,19 @@
 
 /* $Id$ */
 
-#include <stdio.h>
-#include "symbol.h"
+#ifndef __LIBASN1_H__
+#define __LIBASN1_H__
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include "krb5_asn1.h"
+#include "der.h"
+#include "asn1_err.h"
+#include <parse_units.h>
+
+#endif /* __LIBASN1_H__ */

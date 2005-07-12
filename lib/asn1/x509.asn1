@@ -1,23 +1,79 @@
+-- $Id$ --
+
 X509 DEFINITIONS ::= BEGIN
 
-CertificateSerialNumber ::= INTEGER -- X.509 '97
+IMPORTS heim_any FROM heim;
 
-AttributeType ::= OBJECT-IDENTIFIER
+Version ::=  INTEGER --  {  v1(0), v2(1), v3(2)  } --
 
-AttributeValue ::= OCTET STRING --ANY DEFINED BY AttributeType
+AlgorithmIdentifier ::= OBJECT IDENTIFIER
 
-AttributeTypeAndValue ::= SEQUENCE {
-	type AttributeType,
-	value AttributeValue
+AttributeType ::=   OBJECT IDENTIFIER
+
+AttributeValue ::=   heim_any
+
+Attribute ::= SEQUENCE {
+        type    AttributeType,
+        value   AttributeValue
 }
 
-RelativeDistinguishedName ::= --SET
-SEQUENCE OF AttributeTypeAndValue
+RelativeDistinguishedName ::= SET OF Attribute
 
-RDNSequence ::= SEQUENCE OF RelativeDistinguishedName
+RDNSequence ::=   SEQUENCE OF RelativeDistinguishedName
 
-Name ::= CHOICE { -- RFC2459
-	x RDNSequence
+DistinguishedName ::=   RDNSequence
+
+Name ::=   CHOICE { -- only one possibility for now --
+	rdnSequence  RDNSequence
+}
+
+CertificateSerialNumber ::= INTEGER
+
+Time ::= CHOICE {
+     utcTime        UTCTime,
+     generalTime    GeneralizedTime
+}
+
+Validity ::= SEQUENCE {
+     notBefore      Time,
+     notAfter       Time
+}
+
+UniqueIdentifier  ::=  BIT STRING
+
+SubjectPublicKeyInfo  ::=  SEQUENCE  {
+     algorithm            AlgorithmIdentifier,
+     subjectPublicKey     BIT STRING
+}
+
+Extension  ::=  SEQUENCE  {
+     extnID      OBJECT IDENTIFIER,
+     critical    BOOLEAN DEFAULT FALSE,
+     extnValue   OCTET STRING
+}
+
+Extensions  ::=  SEQUENCE OF Extension --  SIZE (1..MAX) 
+
+TBSCertificate  ::=  SEQUENCE  {
+     version         [0]  EXPLICIT Version DEFAULT 1,
+     serialNumber         CertificateSerialNumber,
+     signature            AlgorithmIdentifier,
+     issuer               Name,
+     validity             Validity,
+     subject              Name,
+     subjectPublicKeyInfo SubjectPublicKeyInfo,
+     issuerUniqueID  [1]  IMPLICIT UniqueIdentifier OPTIONAL,
+                          -- If present, version shall be v2 or v3
+     subjectUniqueID [2]  IMPLICIT UniqueIdentifier OPTIONAL,
+                          -- If present, version shall be v2 or v3
+     extensions      [3]  EXPLICIT Extensions OPTIONAL
+                          -- If present, version shall be v3
+}
+
+Certificate  ::=  SEQUENCE  {
+     tbsCertificate       TBSCertificate,
+     signatureAlgorithm   AlgorithmIdentifier,
+     signatureValue       BIT STRING
 }
 
 END

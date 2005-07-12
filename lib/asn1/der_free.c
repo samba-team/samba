@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -43,10 +43,55 @@ free_general_string (heim_general_string *str)
 }
 
 void
+free_utf8string (heim_utf8_string *str)
+{
+    free(*str);
+    *str = NULL;
+}
+
+void
+free_printable_string (heim_printable_string *str)
+{
+    free(*str);
+    *str = NULL;
+}
+
+void
+free_ia5_string (heim_ia5_string *str)
+{
+    free_general_string(str);
+}
+
+void
+free_bmp_string (heim_bmp_string *k)
+{
+    free(k->data);
+    k->data = NULL;
+    k->length = 0;
+}
+
+void
+free_universal_string (heim_universal_string *k)
+{
+    free(k->data);
+    k->data = NULL;
+    k->length = 0;
+}
+
+void
 free_octet_string (heim_octet_string *k)
 {
     free(k->data);
     k->data = NULL;
+    k->length = 0;
+}
+
+void
+free_heim_integer (heim_integer *k)
+{
+    free(k->data);
+    k->data = NULL;
+    k->length = 0;
 }
 
 void
@@ -54,4 +99,13 @@ free_oid (heim_oid *k)
 {
     free(k->components);
     k->components = NULL;
+    k->length = 0;
+}
+
+void
+free_bit_string (heim_bit_string *k)
+{
+    free(k->data);
+    k->data = NULL;
+    k->length = 0;
 }

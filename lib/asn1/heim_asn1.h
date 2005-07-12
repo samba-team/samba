@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003-2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -34,12 +34,8 @@
 #ifndef __HEIM_ANY_H__
 #define __HEIM_ANY_H__ 1
 
-typedef struct heim_any {
-    size_t length;
-    void *data;
-} heim_any;
-
-typedef struct heim_any heim_any_set;
+typedef struct heim_octet_string heim_any;
+typedef struct heim_octet_string heim_any_set;
 
 int	encode_heim_any(unsigned char *, size_t, const heim_any *, size_t *);
 int	decode_heim_any(const unsigned char *, size_t, heim_any *, size_t *);
@@ -54,5 +50,6 @@ int	decode_heim_any_set(const unsigned char *, size_t,
 void	free_heim_any_set(heim_any_set *);
 size_t	length_heim_any_set(const heim_any_set *);
 int	copy_heim_any_set(const heim_any_set *, heim_any_set *);
+int	heim_any_cmp(const heim_any_set *, const heim_any_set *);
 
 #endif /* __HEIM_ANY_H__ */
