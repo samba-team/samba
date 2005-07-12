@@ -1,5 +1,14 @@
 2005-07-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/pkinit.c: clean up pk-init DH support, not finished
+	yet; improve error reporting
+
+	* lib/krb5/crypto.c (_krb5_pk_octetstring2key): string2key
+	function used in pk-init-25
+
+	* configure.in: Use a configure switch to turn on PK-INIT, not by
+	detecting existence of the new ASN.1 library.
+
 	* lib/asn1: Much improved ASN.1 compiler from joda-choice-branch.
 
 	Highlighs for the compiler is support for CHOICE and in general better
