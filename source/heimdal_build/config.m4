@@ -1,10 +1,95 @@
-AC_CHECK_HEADERS(sys/file.h signal.h errno.h crypt.h curses.h sys/bitypes.h)
-AC_CHECK_HEADERS(sys/stropts.h sys/timeb.h sys/times.h sys/uio.h sys/un.h inttypes.h)
-AC_CHECK_HEADERS(sys/utsname.h termcap.h term.h timezone.h time.h ttyname.h netdb.h)
 
-AC_CHECK_FUNCS(setitimer uname umask unsetenv socket sendmsg putenv atexit strsep)
-AC_CHECK_FUNCS(strlwr strncasecmp strptime strsep_copy strtok_r strupr swab writev readv)
-AC_CHECK_FUNCS(inet_ntop rcmd iruserok cgetent)
+m4_define([upcase],`echo $1 | tr abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ`)dnl
+
+dnl love_FIND_FUNC(func, includes, arguments)
+dnl kind of like AC_CHECK_FUNC, but with headerfiles
+AC_DEFUN([love_FIND_FUNC], [
+
+AC_MSG_CHECKING([for $1])
+AC_CACHE_VAL(ac_cv_love_func_$1,
+[
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[$2]],[[$1($3)]])],
+[eval "ac_cv_love_func_$1=yes"],[eval "ac_cv_love_func_$1=no"])])
+
+eval "ac_res=\$ac_cv_love_func_$1"
+
+if false; then
+	AC_CHECK_FUNCS($1)
+fi
+# $1
+eval "ac_tr_func=HAVE_[]upcase($1)"
+
+case "$ac_res" in
+	yes)
+	AC_DEFINE_UNQUOTED($ac_tr_func)
+	AC_MSG_RESULT([yes])
+	;;
+	no)
+	AC_MSG_RESULT([no])
+	;;
+esac
+
+
+])
+
+
+
+AC_CHECK_HEADERS([				\
+	crypt.h					\
+	curses.h				\
+	errno.h					\
+	inttypes.h				\
+	netdb.h					\
+	signal.h				\
+	sys/bitypes.h				\
+	sys/bswap.h				\
+	sys/file.h				\
+	sys/stropts.h				\
+	sys/timeb.h				\
+	sys/times.h				\
+	sys/uio.h				\
+	sys/un.h				\
+	sys/utsname.h				\
+	term.h					\
+	termcap.h				\
+	time.h					\
+	timezone.h				\
+	ttyname.h
+])
+
+AC_CHECK_FUNCS([				\
+	atexit					\
+	cgetent					\
+	inet_ntop				\
+	iruserok				\
+	putenv					\
+	rcmd					\
+	readv					\
+	sendmsg					\
+	setitimer				\
+	socket					\
+	strlwr					\
+	strncasecmp				\
+	strptime				\
+	strsep					\
+	strsep_copy				\
+	strtok_r				\
+	strupr					\
+	swab					\
+	umask					\
+	uname					\
+	unsetenv				\
+	writev
+])
+
+love_FIND_FUNC(bswap16, [#ifdef HAVE_SYS_BSWAP_H
+#include <sys/bswap.h>
+#endif], 0)
+
+love_FIND_FUNC(bswap32, [#ifdef HAVE_SYS_BSWAP_H
+#include <sys/bswap.h>
+#endif], 0)
+
 
 AC_CHECK_DECL(h_errno, 
               [AC_DEFINE(HAVE_DECL_H_ERRNO,1,whether h_errno is declared)], [], [
