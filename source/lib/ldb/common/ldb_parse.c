@@ -194,6 +194,66 @@ char *ldb_binary_encode(void *mem_ctx, struct ldb_val val)
 	return ret;	
 }
 
+/* find the first matching wildcard */
+static char *ldb_parse_find_wildcard(char *value)
+{
+	while (*value) {
+		value = strpbrk(value, "\\*");
+		if (value == NULL) return NULL;
+
+		if (value[0] == '\\') {
+			if (value[1] == '\0') return NULL;
+			value += 2;
+			continue;
+		}
+
+		if (value[0] == '*') return value;
+	}
+
+	return NULL;
+}
+
+/* return a NULL terminated list of binary strings representing the value
+   chunks separated by wildcards that makes the value portion of the filter
+*/
+static struct ldb_val **ldb_wildcard_decode(void *mem_ctx, const char *string)
+{
+	struct ldb_val **ret = NULL;
+	int val = 0;
+	char *wc, *str;
+
+	wc = talloc_strdup(mem_ctx, string);
+	if (wc == NULL) return NULL;
+
+	while (wc && *wc) {
+		str = wc;
+		wc = ldb_parse_find_wildcard(str);
+		if (wc && *wc) {
+			if (wc == str) {
+				wc++;
+				continue;
+			}
+			*wc = 0;
+			wc++;
+		}
+
+		ret = talloc_realloc(mem_ctx, ret, struct ldb_val *, val + 2);
+		if (ret == NULL) return NULL;
+
+		ret[val] = talloc(mem_ctx, struct ldb_val);
+		if (ret[val] == NULL) return NULL;
+
+		*(ret[val]) = ldb_binary_decode(mem_ctx, str);
+		if ((ret[val])->data == NULL) return NULL;
+
+		val++;
+	}
+
+	ret[val] = NULL;
+
+	return ret;
+}
+
 static struct ldb_parse_tree *ldb_parse_filter(void *mem_ctx, const char **s);
 
 
@@ -214,8 +274,11 @@ static struct ldb_parse_tree *ldb_parse_extended(struct ldb_parse_tree *ret,
 						 char *attr, char *value)
 {
 	char *p1, *p2, *p3;
+
 	ret->operation = LDB_OP_EXTENDED;
 	ret->u.extended.value = ldb_binary_decode(ret, value);
+	if (ret->u.extended.value.data == NULL) goto failed;
+
 	p1 = strchr(attr, ':');
 	if (p1 == NULL) goto failed;
 	p2 = strchr(p1+1, ':');
@@ -241,7 +304,6 @@ static struct ldb_parse_tree *ldb_parse_extended(struct ldb_parse_tree *ret,
 		ret->u.extended.rule_id = talloc_strdup(ret, p1+1);
 		if (ret->u.extended.rule_id == NULL) goto failed;
 	}
-	ret->u.extended.value = ldb_binary_decode(ret, value);
 
 	return ret;
 
@@ -293,10 +355,37 @@ static struct ldb_parse_tree *ldb_parse_simple(void *mem_ctx, const char *s)
 		/* its an extended match */
 		return ldb_parse_extended(ret, l, val);
 	}
-	
+
+	if (val && strcmp(val, "*") == 0) {
+		ret->operation = LDB_OP_PRESENT;
+		ret->u.present.attr = l;
+
+		return ret;
+	}
+
+	if (val && ldb_parse_find_wildcard(val) != NULL) {
+		ret->operation = LDB_OP_SUBSTRING;
+		ret->u.substring.attr = l;
+		ret->u.substring.start_with_wildcard = 0;
+		ret->u.substring.end_with_wildcard = 0;
+		ret->u.substring.chunks = ldb_wildcard_decode(ret, val);
+		if (ret->u.substring.chunks == NULL){
+			talloc_free(ret);
+			return NULL;
+		}
+		if (val[0] == '*') ret->u.substring.start_with_wildcard = 1;
+		if (val[strlen(val) - 1] == '*') ret->u.substring.end_with_wildcard = 1;
+
+		return ret;
+	}
+
 	ret->operation = LDB_OP_SIMPLE;
 	ret->u.simple.attr = l;
 	ret->u.simple.value = ldb_binary_decode(ret, val);
+	if (ret->u.simple.value.data == NULL) {
+		talloc_free(ret);
+		return NULL;
+	}
 
 	return ret;
 }
@@ -490,6 +579,30 @@ char *ldb_filter_from_tree(void *mem_ctx, struct ldb_parse_tree *tree)
 				      tree->u.extended.rule_id?tree->u.extended.rule_id:"", 
 				      s);
 		talloc_free(s);
+		return ret;
+	case LDB_OP_SUBSTRING:
+		ret = talloc_strdup(mem_ctx, (tree->u.substring.start_with_wildcard)?"*":"");
+		if (ret == NULL) return NULL;
+		for (i = 0; tree->u.substring.chunks[i]; i++) {
+			s2 = ldb_binary_encode(mem_ctx, *(tree->u.substring.chunks[i]));
+			if (s2 == NULL) {
+				talloc_free(ret);
+				return NULL;
+			}
+			s = talloc_asprintf_append(ret, "%s*", s2);
+			if (s == NULL) {
+				talloc_free(ret);
+				return NULL;
+			}
+			ret = s;
+		}
+		if ( ! tree->u.substring.end_with_wildcard ) {
+			ret[strlen(ret) - 1] = '\0'; /* remove last wildcard */
+		}
+		return ret;
+	case LDB_OP_PRESENT:
+		ret = talloc_strdup(mem_ctx, "*");
+		if (ret == NULL) return NULL;
 		return ret;
 	case LDB_OP_AND:
 	case LDB_OP_OR:

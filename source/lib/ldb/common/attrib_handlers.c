@@ -75,19 +75,6 @@ static int ldb_handler_fold(struct ldb_context *ldb, void *mem_ctx,
 
 
 /*
-  a case folding copy handler, removing leading and trailing spaces and
-  multiple internal spaces, and checking for wildcard characters
-*/
-static int ldb_handler_fold_wildcard(struct ldb_context *ldb, void *mem_ctx,
-				     const struct ldb_val *in, struct ldb_val *out)
-{
-	if (strchr(in->data, '*')) {
-		return -1;
-	}
-	return ldb_handler_fold(ldb, mem_ctx, in, out);
-}
-
-/*
   canonicalise a ldap Integer
   rfc2252 specifies it should be in decimal form
 */
@@ -154,59 +141,23 @@ static int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 }
 
 /*
-  compare two case insensitive strings, ignoring multiple whitespace
-  and leading and trailing whitespace
-  see rfc2252 section 8.1
-  handles wildcards
-*/
-static int ldb_comparison_fold_wildcard(struct ldb_context *ldb,
-					void *mem_ctx,
-					const struct ldb_val *v1, 
-					const struct ldb_val *v2)
-{
-	const char *s1=v1->data, *s2=v2->data;
-	while (*s1 == ' ') s1++;
-	while (*s2 == ' ') s2++;
-	/* TODO: make utf8 safe, possibly with helper function from application */
-	while (*s1 && *s2) {
-		if (s1[0] == '*' && s1[1] == 0) {
-			return 0;
-		}
-		if (toupper(*s1) != toupper(*s2)) break;
-		if (*s1 == ' ') {
-			while (s1[0] == s1[1]) s1++;
-			while (s2[0] == s2[1]) s2++;
-		}
-		s1++; s2++;
-	}
-	while (*s1 == ' ') s1++;
-	while (*s2 == ' ') s2++;
-	return (int)(*s1) - (int)(*s2);
-}
-
-
-/*
   canonicalise a attribute in DN format
 */
 static int ldb_canonicalise_dn(struct ldb_context *ldb, void *mem_ctx,
 			       const struct ldb_val *in, struct ldb_val *out)
 {
-	struct ldb_dn *dn1, *dn2;
+	struct ldb_dn *dn;
 	int ret = -1;
 
 	out->length = 0;
 	out->data = NULL;
 
-	dn1 = ldb_dn_explode(mem_ctx, in->data);
-	if (dn1 == NULL) {
+	dn = ldb_dn_explode_casefold(ldb, in->data);
+	if (dn == NULL) {
 		return -1;
 	}
-	dn2 = ldb_dn_casefold(ldb, dn1);
-	if (dn2 == NULL) {
-		goto done;
-	}
 
-	out->data = ldb_dn_linearize(mem_ctx, dn2);
+	out->data = ldb_dn_linearize(mem_ctx, dn);
 	if (out->data == NULL) {
 		goto done;
 	}
@@ -215,8 +166,7 @@ static int ldb_canonicalise_dn(struct ldb_context *ldb, void *mem_ctx,
 	ret = 0;
 
 done:
-	talloc_free(dn1);
-	talloc_free(dn2);
+	talloc_free(dn);
 
 	return ret;
 }
@@ -227,20 +177,23 @@ done:
 static int ldb_comparison_dn(struct ldb_context *ldb, void *mem_ctx,
 			     const struct ldb_val *v1, const struct ldb_val *v2)
 {
-	struct ldb_val cv1, cv2;
+	struct ldb_dn *dn1 = NULL, *dn2 = NULL;
 	int ret;
-	if (ldb_canonicalise_dn(ldb, mem_ctx, v1, &cv1) != 0 ||
-	    ldb_canonicalise_dn(ldb, mem_ctx, v2, &cv2) != 0) {
-		goto failed;
-	}
-	ret = strcmp(cv1.data, cv2.data);
-	talloc_free(cv1.data);
-	talloc_free(cv2.data);
+
+	dn1 = ldb_dn_explode_casefold(mem_ctx, v1->data);
+	if (dn1 == NULL) return -1;
+
+	dn2 = ldb_dn_explode_casefold(mem_ctx, v2->data);
+	if (dn2 == NULL) {
+		talloc_free(dn1);
+		return -1;
+	} 
+
+	ret = ldb_dn_compare(ldb, dn1, dn2);
+
+	talloc_free(dn1);
+	talloc_free(dn2);
 	return ret;
-failed:
-	talloc_free(cv1.data);
-	talloc_free(cv2.data);
-	return -1;
 }
 
 /*
@@ -297,14 +250,6 @@ static const struct ldb_attrib_handler ldb_standard_attribs[] = {
 		.ldif_write_fn   = ldb_handler_copy,
 		.canonicalise_fn = ldb_handler_fold,
 		.comparison_fn   = ldb_comparison_fold
-	},
-	{ 
-		.attr            = LDB_SYNTAX_WILDCARD,
-		.flags           = LDB_ATTR_FLAG_WILDCARD,
-		.ldif_read_fn    = ldb_handler_copy,
-		.ldif_write_fn   = ldb_handler_copy,
-		.canonicalise_fn = ldb_handler_fold_wildcard,
-		.comparison_fn   = ldb_comparison_fold_wildcard
 	},
 	{ 
 		.attr            = LDB_SYNTAX_DN,

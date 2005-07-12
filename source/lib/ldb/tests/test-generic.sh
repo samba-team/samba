@@ -45,6 +45,15 @@ $VALGRIND ldbsearch '((' uid || exit 1
 $VALGRIND ldbsearch '(objectclass=)' uid || exit 1
 $VALGRIND ldbsearch -b 'cn=Hampster Ursula,ou=Alumni Association,ou=People,o=University of Michigan,c=TEST' -s base "" sn || exit 1
 
+echo "Test wildcard match"
+$VALGRIND ldbadd $LDBDIR/tests/test-wildcard.ldif  || exit 1
+$VALGRIND ldbsearch '(cn=test*multi)'  || exit 1
+$VALGRIND ldbsearch '(cn=*test*multi*)'  || exit 1
+$VALGRIND ldbsearch '(cn=*test_multi)'  || exit 1
+$VALGRIND ldbsearch '(cn=test_multi*)'  || exit 1
+$VALGRIND ldbsearch '(cn=test*multi*test*multi)'  || exit 1
+$VALGRIND ldbsearch '(cn=test*multi*test*multi*multi_*)' || exit 1
+
 echo "Starting ldbtest indexed"
 time $VALGRIND ldbtest --num-records 100 --num-searches 500  || exit 1
 
