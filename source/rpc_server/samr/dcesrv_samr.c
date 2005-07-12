@@ -660,7 +660,9 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	const char *account_name;
 	struct dcesrv_handle *u_handle;
 	int ret;
-	const char *container, *class=NULL;
+	const char *container, *obj_class=NULL;
+	char *cn_name;
+	int cn_name_len;
 
 	ZERO_STRUCTP(r->out.user_handle);
 	*r->out.access_granted = 0;
@@ -689,34 +691,46 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	cn_name   = talloc_strdup(mem_ctx, account_name);
+	NT_STATUS_HAVE_NO_MEMORY(cn_name);
+	cn_name_len = strlen(cn_name);
+
 	/* This must be one of these values *only* */
 	if (r->in.acct_flags == ACB_NORMAL) {
 		container = "Users";
-		class = "user";
+		obj_class = "user";
 
 	} else if (r->in.acct_flags == ACB_WSTRUST) {
+		if (cn_name[cn_name_len - 1] != '$') {
+			return NT_STATUS_FOOBAR;
+		}
+		cn_name[cn_name_len - 1] = '\0';
 		container = "Computers";
-		class = "computer";
+		obj_class = "computer";
 
 	} else if (r->in.acct_flags == ACB_SVRTRUST) {
+		if (cn_name[cn_name_len - 1] != '$') {
+			return NT_STATUS_FOOBAR;		
+		}
+		cn_name[cn_name_len - 1] = '\0';
 		container = "Domain Controllers";
-		class = "computer";
+		obj_class = "computer";
 
 	} else if (r->in.acct_flags == ACB_DOMTRUST) {
 		container = "Users";
-		class = "computer";
+		obj_class = "user";
 
 	} else {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* add core elements to the ldb_message for the user */
-	msg->dn = talloc_asprintf(mem_ctx, "CN=%s,CN=%s,%s", account_name, container, d_state->domain_dn);
+	msg->dn = talloc_asprintf(mem_ctx, "CN=%s,CN=%s,%s", cn_name, container, d_state->domain_dn);
 	if (!msg->dn) {
 		return NT_STATUS_NO_MEMORY;		
 	}
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "sAMAccountName", account_name);
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectClass", class);
+	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectClass", obj_class);
 	/* create the user */
 	ret = samdb_add(d_state->sam_ctx, mem_ctx, msg);
 	if (ret != 0) {
