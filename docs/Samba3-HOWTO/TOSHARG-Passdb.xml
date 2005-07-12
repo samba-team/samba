@@ -1027,7 +1027,7 @@ is being added to the <command>net</command> toolset (see <link linkend="NetComm
 
 		<para>
 		<indexterm><primary>Sarbanes-Oxley</primary></indexterm>
-		Under the terms of the Sarbanes-Oxley Act of 2002, American businessies and organizations are mandated to
+		Under the terms of the Sarbanes-Oxley Act of 2002, American businesses and organizations are mandated to
 		implement a series of <literal>internal controls</literal> and procedures to communicate, store,
 		and protect financial data. The Sarbanes-Oxley Act has far reaching implications in respect of:
 		</para>
