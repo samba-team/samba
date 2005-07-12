@@ -4301,6 +4301,66 @@ krb5_random_to_key(krb5_context context,
     return 0;
 }
 
+krb5_error_code
+_krb5_pk_octetstring2key(krb5_context context,
+			 krb5_enctype type,
+			 const void *dhdata,
+			 size_t dhsize,
+			 const void *c_n_data,
+			 const heim_octet_string *c_n,
+			 const heim_octet_string *k_n,
+			 krb5_keyblock *key)
+{
+    struct encryption_type *et = _find_enctype(type);
+    krb5_error_code ret;
+    size_t keylen, offset;
+    void *keydata;
+    unsigned char counter;
+    char shaoutput[20];
+
+    if(et == NULL) {
+	krb5_set_error_string(context, "encryption type %d not supported",
+			      type);
+	return KRB5_PROG_ETYPE_NOSUPP;
+    }
+    keylen = (et->keytype->bits + 7) / 8;
+
+    keydata = malloc(keylen);
+    if (keydata == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	return ENOMEM;
+    }
+
+    counter = 0;
+    offset = 0;
+    do {
+	SHA_CTX m;
+	
+	SHA1_Init(&m);
+	SHA1_Update(&m, &counter, 1);
+	SHA1_Update(&m, dhdata, dhsize);
+	if (c_n)
+	    SHA1_Update(&m, c_n->data, c_n->length);
+	if (k_n)
+	    SHA1_Update(&m, k_n->data, k_n->length);
+	SHA1_Final(shaoutput, &m);
+
+	memcpy((unsigned char *)keydata + offset,
+	       shaoutput,
+	       min(keylen - offset, sizeof(shaoutput)));
+
+	offset += sizeof(shaoutput);
+	counter++;
+    } while(offset < keylen);
+    memset(shaoutput, 0, sizeof(shaoutput));
+
+    ret = krb5_random_to_key(context, type, keydata, keylen, key);
+    memset(keydata, 0, sizeof(keylen));
+    free(keydata);
+    return ret;
+}
+
+
 #ifdef CRYPTO_DEBUG
 
 static krb5_error_code
