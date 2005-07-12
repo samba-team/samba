@@ -41,7 +41,7 @@ static int ejs_systemAuth(TALLOC_CTX *tmp_ctx, struct MprVar *auth, const char *
 	nt_status = auth_context_create(tmp_ctx, auth_unix, &auth_context, NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
-		mprSetPropertyValue(auth, "report", mprCreateStringVar("Auth System Failure", 1));
+		mprSetPropertyValue(auth, "report", mprString("Auth System Failure"));
 		goto done;
 	}
 
@@ -58,13 +58,13 @@ static int ejs_systemAuth(TALLOC_CTX *tmp_ctx, struct MprVar *auth, const char *
 	nt_status = auth_check_password(auth_context, tmp_ctx, user_info, &server_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
-		mprSetPropertyValue(auth, "report", mprCreateStringVar("Login Failed", 1));
+		mprSetPropertyValue(auth, "report", mprString("Login Failed"));
 		goto done;
 	}
 
 	mprSetPropertyValue(auth, "result", mprCreateBoolVar(server_info->authenticated));
-	mprSetPropertyValue(auth, "username", mprCreateStringVar(server_info->account_name, 1));
-	mprSetPropertyValue(auth, "domain", mprCreateStringVar(server_info->domain_name, 1));
+	mprSetPropertyValue(auth, "username", mprString(server_info->account_name));
+	mprSetPropertyValue(auth, "domain", mprString(server_info->domain_name));
 
 done:
 	return 0;
@@ -109,7 +109,7 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 	}  else {
 
 		mprSetPropertyValue(&auth, "result", mprCreateBoolVar(False));
-		mprSetPropertyValue(&auth, "report", mprCreateStringVar("Unknown Domain", 1));
+		mprSetPropertyValue(&auth, "report", mprString("Unknown Domain"));
 	}
 
 	mpr_Return(eid, auth);
@@ -127,7 +127,7 @@ static int ejs_domain_list(MprVarHandle eid, int argc, char **argv)
 	}
 
 	list = mprObject("list");
-	mprSetVar(&list, "0", mprCreateStringVar("System User", 1));
+	mprSetVar(&list, "0", mprString("System User"));
 
 	mpr_Return(eid, list);
 

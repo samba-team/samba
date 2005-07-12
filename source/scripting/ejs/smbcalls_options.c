@@ -155,7 +155,7 @@ static int ejs_GetOptions(MprVarHandle eid, int argc, struct MprVar **argv)
 			err = talloc_asprintf(tmp_ctx, "%s: %s",
 					      poptBadOption(pc, POPT_BADOPTION_NOALIAS),
 					      poptStrerror(opt));
-			mprSetVar(options, "ERROR", mprCreateStringVar(err, 1));
+			mprSetVar(options, "ERROR", mprString(err));
 			talloc_free(tmp_ctx);
 			mpr_Return(eid, mprCreateBoolVar(0));
 			return 0;
@@ -168,7 +168,7 @@ static int ejs_GetOptions(MprVarHandle eid, int argc, struct MprVar **argv)
 			int v = strtol(arg, NULL, 0);
 			mprSetVar(options, opt_names[opt], mprCreateIntegerVar(v));
 		} else {
-			mprSetVar(options, opt_names[opt], mprCreateStringVar(arg, 1));
+			mprSetVar(options, opt_names[opt], mprString(arg));
 		}
 	}
 

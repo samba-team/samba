@@ -111,12 +111,10 @@ static int ejs_ldbAddModify(MprVarHandle eid, int argc, char **argv,
 		goto failed;
 	}
 
-	ldif = ldb_ldif_read_string(ldb, ldifstring);
-	if (ldif == NULL) {
-		ejsSetErrorMsg(eid, "ldbAddModify invalid ldif");
-		goto failed;
+	while ((ldif = ldb_ldif_read_string(ldb, &ldifstring))) {
+		ret = fn(ldb, ldif->msg);
+		talloc_free(ldif);
 	}
-	ret = fn(ldb, ldif->msg);
 
 	mpr_Return(eid, mprCreateBoolVar(ret == 0));
 	talloc_free(ldb);
