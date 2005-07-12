@@ -436,7 +436,7 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 		pdb_sethexhours(oldstr, pdb_get_hours(account));
 		pdb_sethexhours(newstr, delta->buf_logon_hrs.buffer);
 		if (!strequal(oldstr, newstr))
-			pdb_set_hours(account, (const char *)delta->buf_logon_hrs.buffer, PDB_CHANGED);
+			pdb_set_hours(account, (const uint8 *)delta->buf_logon_hrs.buffer, PDB_CHANGED);
 	}
 
 	if (pdb_get_bad_password_count(account) != delta->bad_pwd_count)
@@ -1716,7 +1716,7 @@ fetch_account_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupmap,
 		fprintf(add_fd, "sambaLMPassword: %s\n", hex_lm_passwd);
 	if (strcmp(nopasswd, hex_nt_passwd) != 0)
 		fprintf(add_fd, "sambaNTPassword: %s\n", hex_nt_passwd);
-	fprintf(add_fd, "sambaPwdLastSet: %d\n", unix_time);
+	fprintf(add_fd, "sambaPwdLastSet: %d\n", (int)unix_time);
 	fprintf(add_fd, "sambaAcctFlags: %s\n", flags);
 	fprintf(add_fd, "\n");
 	fflush(add_fd);
@@ -1871,11 +1871,18 @@ fetch_database_to_ldif(struct cli_state *cli, unsigned db_type,
 	/* Array element is the account rid */
 	ACCOUNTMAP *accountmap = NULL; 
 
+	if (!(mem_ctx = talloc_init("fetch_database"))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/* Ensure we have an output file */
 	if (user_file)
-		ldif_file = user_file;
+		ldif_file = talloc_strdup(mem_ctx, user_file);
 	else
-		ldif_file = "/tmp/tmp.ldif";
+		ldif_file = talloc_strdup(mem_ctx, "/tmp/tmp.ldif");
+	
+	if (ldif_file == NULL)
+		return NT_STATUS_NO_MEMORY;
 
 	/* Open the add and mod ldif files */
 	add_fd = fopen(add_ldif, "a");
@@ -1890,10 +1897,6 @@ fetch_database_to_ldif(struct cli_state *cli, unsigned db_type,
 	if (ldif_fd == NULL) {
 		DEBUG(1, ("Could not open %s\n", ldif_file));
 		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	if (!(mem_ctx = talloc_init("fetch_database"))) {
-		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* Get the sid */
