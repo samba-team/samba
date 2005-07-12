@@ -54,9 +54,12 @@ export failed
 incdir=`dirname $0`
 . $incdir/test_functions.sh
 
+PATH=bin:$PATH
+export PATH
+
 rm -rf $PREFIX/*
 mkdir -p $PRIVATEDIR $LIBDIR $PIDDIR $NCALRPCDIR $LOCKDIR $TMPDIR $TLSDIR
-./setup/provision.pl --quiet --outputdir $PRIVATEDIR --domain $DOMAIN --realm $REALM \
+./setup/provision $CONFIGURATION --quiet --domain $DOMAIN --realm $REALM \
     --adminpass $PASSWORD --root=$ROOT
 
 cat >$CONFFILE<<EOF
