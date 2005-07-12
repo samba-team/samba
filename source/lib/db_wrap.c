@@ -103,8 +103,7 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 	if (ev) {
 		ldb_set_opaque(ldb, "EventContext", ev);
 	} else {
-		DEBUG(0,("WARNING: event_context not found\n"));
-		talloc_show_parents(mem_ctx, stdout);
+		DEBUG(5,("WARNING: event_context not found\n"));
 	}
 
 	ret = ldb_register_samba_handlers(ldb);
