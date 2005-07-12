@@ -13,7 +13,7 @@ if [ $# -ge 4 ] ; then
   GROFF=$4                    # sh cmd line, including options 
 fi
 
-if test ! -d docs/manpages; then
+if test ! -d ../docs/manpages; then
 	echo "No manpages present.  SVN development version maybe?"
 	exit 0
 fi
