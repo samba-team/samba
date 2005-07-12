@@ -100,10 +100,11 @@ function display_menu(m) {
 }
 
 function simple_menu() {
-	var m = MenuObj(arguments[0], (arguments.length-1)/2);
+	var i, m = MenuObj(arguments[0], (arguments.length-1)/2);
 	for (i=0;i<m.element.length;i++) {
-		m.element[i].label = arguments[1+(i*2)];
-		m.element[i].link = arguments[2+(i*2)];
+		var ndx = i*2;
+		m.element[i].label = arguments[ndx+1];
+		m.element[i].link = arguments[ndx+2];
 	}
 	display_menu(m);
 }
