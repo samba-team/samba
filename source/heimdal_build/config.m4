@@ -4,7 +4,7 @@ AC_CHECK_HEADERS(sys/utsname.h termcap.h term.h timezone.h time.h ttyname.h netd
 
 AC_CHECK_FUNCS(setitimer uname umask unsetenv socket sendmsg putenv atexit strsep)
 AC_CHECK_FUNCS(strlwr strncasecmp strptime strsep_copy strtok_r strupr swab writev readv)
-AC_CHECK_FUNCS(inet_ntop rcmd iruserok)
+AC_CHECK_FUNCS(inet_ntop rcmd iruserok cgetent)
 
 AC_CHECK_DECL(h_errno, 
               [AC_DEFINE(HAVE_DECL_H_ERRNO,1,whether h_errno is declared)], [], [
