@@ -65,21 +65,6 @@ static int ejs_typeof(MprVarHandle eid, int argc, struct MprVar **argv)
 }
 
 /*
-  return the list of configured network interfaces
-*/
-static int ejs_IfaceList(MprVarHandle eid, int argc, struct MprVar **argv)
-{
-	int i, count = iface_count();
-	struct MprVar ret = mprObject("interfaces");
-	for (i=0;i<count;i++) {
-		mprAddArray(&ret, i, mprString(iface_n_ip(i)));
-	}
-	mpr_Return(eid, ret);
-	return 0;	
-}
-
-
-/*
   libinclude() allows you to include js files using a search path specified
   in "js include =" in smb.conf. 
 */
@@ -139,9 +124,10 @@ void smb_setup_ejs_functions(void)
 	smb_setup_ejs_options();
 	smb_setup_ejs_nss();
 	smb_setup_ejs_string();
+	smb_setup_ejs_random();
+	smb_setup_ejs_system();
 
 	ejsDefineCFunction(-1, "typeof", ejs_typeof, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineCFunction(-1, "IfaceList", ejs_IfaceList, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineStringCFunction(-1, "libinclude", ejs_libinclude, NULL, MPR_VAR_SCRIPT_HANDLE);
 }
 

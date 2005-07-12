@@ -211,7 +211,7 @@ struct MprVar mprLdbArray(struct ldb_message **msg, int count, const char *name)
  */
 const char *mprToString(const struct MprVar *v)
 {
-	if (v->type != MPR_TYPE_STRING) return NULL;
+	if (!mprVarIsString(v->type)) return NULL;
 	return v->string;
 }
 
@@ -220,8 +220,8 @@ const char *mprToString(const struct MprVar *v)
  */
 int mprToInt(const struct MprVar *v)
 {
-	if (v->type != MPR_TYPE_INT) return 0;
-	return v->integer;
+	if (!mprVarIsNumber(v->type)) return 0;
+	return mprVarToNumber(v);
 }
 
 /*
@@ -244,6 +244,38 @@ const char **mprToList(TALLOC_CTX *mem_ctx, struct MprVar *v)
 		if (s) {
 			list = str_list_add(list, s);
 		}
+	}
+	talloc_steal(mem_ctx, list);
+	return list;
+}
+
+
+/*
+  turn a MprVar object variable into a string list
+  this assumes the object variable is an array of strings
+*/
+const char **mprToArray(TALLOC_CTX *mem_ctx, struct MprVar *v)
+{
+	const char **list = NULL;
+	struct MprVar *len;
+	int length, i;
+
+	len = mprGetProperty(v, "length", NULL);
+	if (len == NULL) {
+		return NULL;
+	}
+	length = mprToInt(len);
+
+	for (i=0;i<length;i++) {
+		char idx[16];
+		struct MprVar *vs;
+		mprItoa(i, idx, sizeof(idx));		
+		vs = mprGetProperty(v, idx, NULL);
+		if (vs == NULL || vs->type != MPR_TYPE_STRING) {
+			talloc_free(list);
+			return NULL;
+		}
+		list = str_list_add(list, mprToString(vs));
 	}
 	talloc_steal(mem_ctx, list);
 	return list;

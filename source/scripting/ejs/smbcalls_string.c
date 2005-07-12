@@ -115,7 +115,7 @@ static int ejs_join(MprVarHandle eid, int argc, struct MprVar **argv)
 	}
 
 	separator = mprToString(argv[0]);
-	list      = mprToList(tmp_ctx, argv[1]);
+	list      = mprToArray(tmp_ctx, argv[1]);
 
 	if (list == NULL || list[0] == NULL) {
 		talloc_free(tmp_ctx);

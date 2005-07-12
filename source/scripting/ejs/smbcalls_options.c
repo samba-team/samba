@@ -73,7 +73,7 @@ static int ejs_GetOptions(MprVarHandle eid, int argc, struct MprVar **argv)
 		return -1;
 	}
 
-	opt_argv = mprToList(tmp_ctx, argv[0]);
+	opt_argv = mprToArray(tmp_ctx, argv[0]);
 	options  = argv[1];
 	opt_argc = str_list_length(opt_argv);
 
