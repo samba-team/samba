@@ -43,7 +43,8 @@ fi
 AC_MSG_RESULT(${krb_cv_compile_et})
 if test "${krb_cv_compile_et}" = "yes" -a "${krb_cv_compile_et_cross}" = no; then
   AC_MSG_CHECKING([for if com_err generates a initialize_conf_error_table_r])
-  AC_EGREP_CPP(initialize_conf_error_table_r,[#include "conftest_et.h"],
+  AC_EGREP_CPP([initialize_conf_error_table_r.*struct et_list],
+     [#include "conftest_et.h"],
      [krb_cv_com_err_need_r="ok"])
   if test X"$krb_cv_com_err_need_r" = X ; then
     AC_MSG_RESULT(no)
