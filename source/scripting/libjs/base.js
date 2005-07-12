@@ -50,3 +50,32 @@ function check_array_zero(a)
 		assert(a[i] == 0);
 	}
 }
+
+/*
+  substitute strings of the form ${NAME} in str, replacing
+  with substitutions from subobj
+*/
+function substitute_var(str, subobj)
+{
+	var list = split("${", str);
+	var i;
+	for (i=1;i<list.length;i++) {
+		var list2 = split("}", list[i]);
+		if (list2.length < 2) {
+			return undefined;
+		}
+		var key = list2[0];
+		var val;
+		if (typeof(subobj[key]) == "undefined") {
+			val = "${" + key + "}";
+		} else if (typeof(subobj[key]) == "string") {
+			val = subobj[key];
+		} else {
+			var fn = subobj[key];
+			val = fn(key);
+		}
+		list2[0] = "" + val;
+		list[i] = join("", list2);
+	}
+	return join("", list);
+}
