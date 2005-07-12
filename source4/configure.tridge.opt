@@ -1,3 +1,2 @@
 #!/bin/sh
-export CFLAGS="-O2 -Wall"
-`dirname $0`/configure $* --prefix=/home/tridge/samba/samba4/prefix 
+./configure $* -C --prefix=/home/tridge/samba/samba4/prefix --enable-developer --enable-debug --enable-socket-wrapper 
