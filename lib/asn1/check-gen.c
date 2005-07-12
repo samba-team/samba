@@ -287,7 +287,11 @@ test_krb_error (void)
 static int
 cmp_Name (void *a, void *b)
 {
-    /* XXX */
+    Name *aa = a;
+    Name *ab = b;
+
+    COMPARE_INTEGER(aa,ab,element);
+
     return 0;
 }
 
