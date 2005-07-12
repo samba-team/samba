@@ -261,11 +261,11 @@ BOOL check_password_quality(const char *s)
 {
 	int has_digit=0, has_capital=0, has_lower=0;
 	while (*s) {
-		if (isdigit(*s)) {
+		if (isdigit((unsigned char)*s)) {
 			has_digit++;
-		} else if (isupper(*s)) {
+		} else if (isupper((unsigned char)*s)) {
 			has_capital++;
-		} else if (islower(*s)) {
+		} else if (islower((unsigned char)*s)) {
 			has_lower++;
 		}
 		s++;

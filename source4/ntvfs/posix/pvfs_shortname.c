@@ -469,7 +469,7 @@ static char *name_map(struct pvfs_mangle_context *ctx,
 		if (! FLAG_CHECK(lead_chars[i], FLAG_ASCII)) {
 			lead_chars[i] = '_';
 		}
-		lead_chars[i] = toupper(lead_chars[i]);
+		lead_chars[i] = toupper((unsigned char)lead_chars[i]);
 	}
 	for (;i<ctx->mangle_prefix;i++) {
 		lead_chars[i] = '_';
@@ -487,7 +487,7 @@ static char *name_map(struct pvfs_mangle_context *ctx,
 	extension_length = 0;
 	if (dot_p) {
 		for (i=1; extension_length < 3 && dot_p[i]; i++) {
-			char c = dot_p[i];
+			unsigned char c = dot_p[i];
 			if (FLAG_CHECK(c, FLAG_ASCII)) {
 				extension[extension_length++] = toupper(c);
 			}
