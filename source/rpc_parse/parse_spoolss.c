@@ -945,7 +945,8 @@ BOOL make_spoolss_q_addprinterex( TALLOC_CTX *mem_ctx, SPOOL_Q_ADDPRINTEREX *q_u
 
 	q_u->user_switch=1;
 
-	q_u->user_ctr.level                = 1;
+	q_u->user_ctr.level		    = 1;
+	q_u->user_ctr.user.user1            = TALLOC_P( get_talloc_ctx(), SPOOL_USER_1 );
 	q_u->user_ctr.user.user1->build     = 1381;
 	q_u->user_ctr.user.user1->major     = 2; 
 	q_u->user_ctr.user.user1->minor     = 0;
