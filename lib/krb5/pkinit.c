@@ -1688,6 +1688,7 @@ pk_rd_pa_reply_dh(krb5_context context,
 	    ret = KRB5KRB_ERR_GENERIC;
 	    goto out;
 	}
+	c_n = NULL;
     }
 
 
