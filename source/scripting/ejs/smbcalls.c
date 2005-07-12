@@ -74,6 +74,7 @@ static int ejs_libinclude(int eid, int argc, char **argv)
 	const char **js_include = lp_js_include();
 
 	if (js_include == NULL || js_include[0] == NULL) {
+		ejsSetErrorMsg(eid, "js include path not set");
 		return -1;
 	}
 
