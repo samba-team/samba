@@ -1796,7 +1796,7 @@ MprVar mprParseVar(char *buf, MprType preferredType)
  *	Convert the variable to a boolean. Only for primitive types.
  */
 
-bool mprVarToBool(MprVar *vp)
+bool mprVarToBool(const MprVar *vp)
 {
 	mprAssert(vp);
 
@@ -1886,7 +1886,7 @@ double mprVarToFloat(MprVar *vp)
  *	Convert the variable to a number type. Only works for primitive types.
  */
 
-MprNum mprVarToNumber(MprVar *vp)
+MprNum mprVarToNumber(const MprVar *vp)
 {
 #if BLD_FEATURE_NUM_TYPE_ID == MPR_TYPE_INT64
 	return mprVarToInteger64(vp);
@@ -1919,7 +1919,7 @@ MprNum mprParseNumber(char *s)
  *	Convert the variable to an Integer64 type. Only works for primitive types.
  */
 
-int64 mprVarToInteger64(MprVar *vp)
+int64 mprVarToInteger64(const MprVar *vp)
 {
 	mprAssert(vp);
 
@@ -2034,7 +2034,7 @@ int64 mprParseInteger64(char *str)
  *	Convert the variable to an Integer type. Only works for primitive types.
  */
 
-int mprVarToInteger(MprVar *vp)
+int mprVarToInteger(const MprVar *vp)
 {
 	mprAssert(vp);
 
