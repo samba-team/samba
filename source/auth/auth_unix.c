@@ -166,7 +166,6 @@ static int smb_pam_conv(int num_msg, const struct pam_message **msg,
 
 static NTSTATUS smb_pam_start(pam_handle_t **pamh, const char *account_name, const char *remote_host, struct pam_conv *pconv)
 {
-	NTSTATUS nt_status;
 	int pam_error;
 
 	if (account_name == NULL || remote_host == NULL) {
@@ -186,6 +185,8 @@ static NTSTATUS smb_pam_start(pam_handle_t **pamh, const char *account_name, con
 	DEBUG(4,("smb_pam_start: PAM: setting rhost to: %s\n", remote_host));
 	pam_error = pam_set_item(*pamh, PAM_RHOST, remote_host);
 	if (pam_error != PAM_SUCCESS) {
+		NTSTATUS nt_status;
+
 		DEBUG(4,("smb_pam_start: setting rhost failed with error: %s\n",
 			 pam_strerror(*pamh, pam_error)));
 		nt_status = pam_to_nt_status(pam_error);
@@ -204,6 +205,8 @@ static NTSTATUS smb_pam_start(pam_handle_t **pamh, const char *account_name, con
 	DEBUG(4,("smb_pam_start: PAM: setting tty\n"));
 	pam_error = pam_set_item(*pamh, PAM_TTY, "samba");
 	if (pam_error != PAM_SUCCESS) {
+		NTSTATUS nt_status;
+
 		DEBUG(4,("smb_pam_start: setting tty failed with error: %s\n",
 			 pam_strerror(*pamh, pam_error)));
 		nt_status = pam_to_nt_status(pam_error);
