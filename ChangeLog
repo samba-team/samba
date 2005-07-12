@@ -1,3 +1,10 @@
+2005-07-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/pkinit.c (pk_rd_pa_reply_dh): client do not contribute
+	to the DH when the server doesn't support the cached DH request.
+
+	* lib/krb5/crypto.c (_krb5_pk_octetstring2key): fix arguments
+
 2005-07-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/pkinit.c: clean up pk-init DH support, not finished
