@@ -454,7 +454,7 @@
 	   quite identical to, the netlogon structures above */
 
 	typedef struct {
-		[value(21)] uint16   type;
+		uint16               type;
 		nstring              pdc_name;
 		nstring              user_name;
 		nstring              domain_name;
@@ -464,7 +464,7 @@
 	} nbt_cldap_netlogon_1;
 
 	typedef struct {
-		[value(21)] uint16   type;
+		uint16               type;
 		nstring              pdc_name;
 		nstring              user_name;
 		nstring              domain_name;
@@ -481,7 +481,7 @@
 	} nbt_cldap_netlogon_3;
 
 	typedef struct {
-		[value(25)] uint32   type;
+		uint32               type;
 		nbt_server_type      server_type;
 		GUID                 domain_uuid;
 		nbt_string           forest;
@@ -498,7 +498,7 @@
 	} nbt_cldap_netlogon_5;
 
 	typedef struct {
-		[value(25)] uint32   type;
+		uint32               type;
 		nbt_server_type      server_type;
 		GUID                 domain_uuid;
 		nbt_string           forest;

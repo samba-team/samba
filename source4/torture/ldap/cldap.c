@@ -32,8 +32,13 @@
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
 		ret = False; \
 		goto done; \
-	}} while (0)
-
+	} \
+	if (DEBUGLVL(10)) { \
+		NDR_PRINT_UNION_DEBUG(nbt_cldap_netlogon, \
+				      search.in.version & 0xF, \
+				      &search.out.netlogon); \
+	} \
+} while (0)
 
 /*
   test netlogon operations
@@ -72,11 +77,6 @@ static BOOL test_cldap_netlogon(TALLOC_CTX *mem_ctx, const char *dest)
 		printf("Trying netlogon level %d\n", i);
 		status = cldap_netlogon(cldap, mem_ctx, &search);
 		CHECK_STATUS(status, NT_STATUS_OK);
-		if (DEBUGLVL(10)) {
-			NDR_PRINT_UNION_DEBUG(nbt_cldap_netlogon, 
-					      search.in.version & 0xF, 
-					      &search.out.netlogon);
-		}
 	}
 
 	printf("Scanning for netlogon level bits\n");
@@ -85,11 +85,6 @@ static BOOL test_cldap_netlogon(TALLOC_CTX *mem_ctx, const char *dest)
 		printf("Trying netlogon level 0x%x\n", i);
 		status = cldap_netlogon(cldap, mem_ctx, &search);
 		CHECK_STATUS(status, NT_STATUS_OK);
-		if (DEBUGLVL(10)) {
-			NDR_PRINT_UNION_DEBUG(nbt_cldap_netlogon, 
-					      search.in.version & 0xF, 
-					      &search.out.netlogon);
-		}
 	}
 
 	search.in.version = 6;
