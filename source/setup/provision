@@ -33,153 +33,16 @@ if (ok == false) {
 }
 
 libinclude("base.js");
-
-/* used to generate sequence numbers for records */
-next_usn = 1;
+libinclude("provision.js");
 
 /*
   print a message if quiet is not set
 */
-function message(s) 
+function message() 
 {
 	if (options["quiet"] == undefined) {
-		println(s);
+		print(vsprintf(arguments));
 	}
-}
-
-/*
-  find a user or group from a list of possibilities
-*/
-function findnss()
-{
-	var i;
-	assert(arguments.length >= 2);
-	var nssfn = arguments[0];
-	var name = arguments[1];
-	if (options[name] != undefined) {
-		return options[name];
-	}
-	for (i=2;i<arguments.length;i++) {
-		if (nssfn(arguments[i]) != undefined) {
-			return arguments[i];
-		}
-	}
-	println("Unable to find user/group for " + name);
-	exit(1);
-}
-
-/*
-   add a foreign security principle
- */
-function add_foreign(str, sid, desc, unixname)
-{
-	var add = "
-dn: CN=${SID},CN=ForeignSecurityPrincipals,${BASEDN}
-objectClass: top
-objectClass: foreignSecurityPrincipal
-cn: ${SID}
-description: ${DESC}
-instanceType: 4
-whenCreated: ${LDAPTIME}
-whenChanged: ${LDAPTIME}
-uSNCreated: 1
-uSNChanged: 1
-showInAdvancedViewOnly: TRUE
-name: ${SID}
-objectGUID: ${NEWGUID}
-objectSid: ${SID}
-objectCategory: CN=Foreign-Security-Principal,CN=Schema,CN=Configuration,${BASEDN}
-unixName: ${UNIXNAME}
-";
-	var sub = new Object();
-	sub.SID = sid;
-	sub.DESC = desc;
-	sub.UNIXNAME = unixname;
-	return str + substitute_var(add, sub);
-}
-
-/*
-  return current time as a nt time string
-*/
-function nttime()
-{
-	return "" + sys_nttime();
-}
-
-/*
-  return current time as a ldap time string
-*/
-function ldaptime()
-{
-	return sys_ldaptime(sys_nttime());
-}
-
-function datestring()
-{
-	var t = sys_gmtime(sys_nttime());
-	return sprintf("%04u%02u%02u%02u",
-		       t.tm_year+1900, t.tm_mon+1, t.tm_mday, t.tm_hour);
-}
-
-/*
-  return current time as a ldap time string
-*/
-function nextusn()
-{
-	next_usn = next_usn+1;
-	return next_usn;
-}
-
-/*
-  return first part of hostname
-*/
-function hostname()
-{
-	var s = split(".", sys_hostname());
-	return s[0];
-}
-
-
-/*
-  setup a ldb in the private dir
- */
-function setup_ldb(ldif, dbname, subobj)
-{
-	var extra = "";
-	if (arguments.length == 4) {
-		extra = arguments[3];
-	}
-
-	var db = lpGet("private dir") + "/" + dbname;
-	var src = lpGet("setup directory") + "/" + ldif;
-
-	sys_unlink(db);
-
-	var data = sys_file_load(src);
-	data = data + extra;
-	data = substitute_var(data, subobj);
-
-	message("Creating " + db + "\n from " + src);
-	ok = ldbAdd(db, data);
-	assert(ok);
-}
-
-/*
-  setup a file in the private dir
- */
-function setup_file(template, fname, subobj)
-{
-	var f = lpGet("private dir") + "/" + fname;
-	var src = lpGet("setup directory") + "/" + template;
-
-	sys_unlink(f);
-
-	var data = sys_file_load(src);
-	data = substitute_var(data, subobj);
-
-	message("Creating " + f + "\n from " + src);
-	ok = sys_file_save(f, data);
-	assert(ok);
 }
 
 /*
@@ -228,66 +91,14 @@ if (options["realm"] == undefined ||
 	ShowHelp();
 }
 
-options.realm        = strlower(options.realm);
-options['host-name'] = strlower(options['host-name']);
-options.domain       = strupper(options.domain);
-options.netbiosname  = strupper(options['host-name']);
-
-if (options.hostip == undefined) {
-	var list = sys_interfaces();
-	options.hostip = list[0];
-}
-
-message("Provisioning for " + options.domain + " in realm " + options.realm);
-
-options.root    = findnss(getpwnam, "root", "root");
-options.nobody  = findnss(getpwnam, "nobody", "nobody");
-options.nogroup = findnss(getgrnam, "nogroup", "nogroup", "nobody");
-options.wheel   = findnss(getgrnam, "wheel", "wheel", "root");
-options.users   = findnss(getgrnam, "users", "users", "guest", "other");
-
-
-options.dnsdomain = strlower(options.realm);
-options.dnsname   = strlower(options['host-name']) + "." + options.dnsdomain;
-options.basedn    = "DC=" + join(",DC=", split(".", options.realm));
-
-/*
-  setup the substitution object
-*/
-var subobj = new Object();
-subobj.DOMAINGUID   = randguid();
-subobj.DOMAINSID    = randsid();
-subobj.HOSTGUID     = randguid();
-subobj.INVOCATIONID = randguid();
-subobj.KRBTGTPASS   = randpass(12);
-subobj.MACHINEPASS  = randpass(12);
-subobj.ADMINPASS    = randpass(12);
-subobj.DEFAULTSITE  = "Default-First-Site-Name";
-subobj.NEWGUID      = randguid;
-subobj.NTTIME       = nttime;
-subobj.LDAPTIME     = ldaptime;
-subobj.DATESTRING   = datestring;
-subobj.USN          = nextusn;
+var subobj = provision_guess();
 for (r in options) {
 	var key = strupper(join("", split("-", r)));
 	subobj[key] = options[r];
 }
 
-
-var extradata = "";
-extradata = add_foreign(extradata, "S-1-5-7",  "Anonymous",           "${NOBODY}");
-extradata = add_foreign(extradata, "S-1-1-0",  "World",               "${NOGROUP}");
-extradata = add_foreign(extradata, "S-1-5-2",  "Network",             "${NOGROUP}");
-extradata = add_foreign(extradata, "S-1-5-18", "System",              "${ROOT}");
-extradata = add_foreign(extradata, "S-1-5-11", "Authenticated Users", "${USERS}");
-
-message("Using administrator password: " + subobj.ADMINPASS);
-
-setup_ldb("hklm.ldif", "hklm.ldb", subobj);
-setup_ldb("provision.ldif", "sam.ldb", subobj, extradata);
-setup_ldb("rootdse.ldif", "rootdse.ldb", subobj);
-setup_ldb("secrets.ldif", "secrets.ldb", subobj);
-setup_file("provision.zone", subobj.DNSDOMAIN + ".zone", subobj);
-
-message("All OK");
+message("Provisioning for %s in realm %s\n", subobj.DOMAIN, subobj.REALM);
+message("Using administrator password: %s\n", subobj.ADMINPASS);
+provision(subobj, message);
+message("All OK\n");
 return 0;
