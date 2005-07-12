@@ -36,7 +36,7 @@ static NTSTATUS add_new_domain_account_policies(struct smbldap_state *ldap_state
 	int i, ldap_op, rc;
 	uint32 policy_default;
 	const char *policy_string = NULL;
-	const char *policy_comment = NULL;
+	const char *policy_description = NULL;
 	pstring dn;
 	fstring policy_default_str;
 
@@ -52,8 +52,8 @@ static NTSTATUS add_new_domain_account_policies(struct smbldap_state *ldap_state
 			return ntstatus;
 		}
 
-		policy_comment = account_policy_get_comment(i);
-		if (!policy_comment) {
+		policy_description = account_policy_get_desc(i);
+		if (!policy_description) {
 			DEBUG(0,("add_new_domain_account_policies: no description for policy found\n"));
 			return ntstatus;
 		}
@@ -80,7 +80,7 @@ static NTSTATUS add_new_domain_account_policies(struct smbldap_state *ldap_state
 			get_attr_key2string(acctpol_attr_list, LDAP_ATTR_ACCOUNT_POLICY_VAL), 
 			policy_default_str);
 
-		smbldap_set_mod( &mods, ldap_op, "description", policy_comment);
+		smbldap_set_mod( &mods, ldap_op, "description", policy_description);
 
 		rc = smbldap_add(ldap_state, dn, mods);
 

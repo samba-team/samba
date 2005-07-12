@@ -3420,7 +3420,7 @@ static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods, int poli
 		return ntstatus;
 	}
 
-	policy_description = account_policy_get_comment(policy_index);
+	policy_description = account_policy_get_desc(policy_index);
 	if (!policy_description) {
 		DEBUG(0,("ldapsam_set_account_policy: no description for policy found\n"));
 		return ntstatus;

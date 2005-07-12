@@ -37,7 +37,7 @@ struct ap_table {
 	int field;
 	const char *string;
 	uint32 default_val;
-	const char *comment;
+	const char *description;
 };
 
 static const struct ap_table account_policy_names[] = {
@@ -104,15 +104,15 @@ const char *decode_account_policy_name(int field)
 }
 
 /****************************************************************************
-Get the account policy comment as a string from its #define'ed number
+Get the account policy description as a string from its #define'ed number
 ****************************************************************************/
 
-const char *account_policy_get_comment(int field)
+const char *account_policy_get_desc(int field)
 {
 	int i;
 	for (i=0; account_policy_names[i].string; i++) {
 		if (field == account_policy_names[i].field)
-			return account_policy_names[i].comment;
+			return account_policy_names[i].description;
 	}
 	return NULL;
 
@@ -137,13 +137,17 @@ int account_policy_name_to_fieldnum(const char *name)
 Update LAST-Set counter inside the cache
 *****************************************************************************/
 
-static BOOL account_policy_cache_timestamp(uint32 *value, BOOL update)
+static BOOL account_policy_cache_timestamp(uint32 *value, BOOL update, 
+					   const char *ap_name)
 {
 	pstring key;
 	uint32 val = 0;
 	time_t now;
 
-	slprintf(key, sizeof(key)-1, "%s", AP_LASTSET);
+	if (ap_name == NULL)
+		return False;
+		
+	slprintf(key, sizeof(key)-1, "%s/%s", ap_name, AP_LASTSET);
 
 	if (!init_account_policy())
 		return False;
@@ -366,7 +370,7 @@ BOOL account_policy_get(int field, uint32 *value)
 	if (value)
 		*value = regval;
 
-	DEBUG(10,("account_policy_get: %s:%d\n", name, regval));
+	DEBUG(10,("account_policy_get: name: %s, val: %d\n", name, regval));
 	return True;
 }
 
@@ -393,7 +397,7 @@ BOOL account_policy_set(int field, uint32 value)
 		return False;
 	}
 
-	DEBUG(10,("account_policy_set: %s:%d\n", name, value));
+	DEBUG(10,("account_policy_set: name: %s, value: %d\n", name, value));
 	
 	return True;
 }
@@ -416,7 +420,9 @@ BOOL cache_account_policy_set(int field, uint32 value)
 				return False;
 			}
 
-			if (!account_policy_cache_timestamp(&lastset, True)) {
+			if (!account_policy_cache_timestamp(&lastset, True, 
+							    decode_account_policy_name(field))) 
+			{
 				DEBUG(10,("cache_account_policy_set: failed to get lastest cache update timestamp\n"));
 				return False;
 			}
@@ -436,7 +442,9 @@ BOOL cache_account_policy_get(int field, uint32 *value)
 {
 	uint32 lastset, i;
 
-	if (!account_policy_cache_timestamp(&lastset, False)) {
+	if (!account_policy_cache_timestamp(&lastset, False, 
+					    decode_account_policy_name(field))) 
+	{
 		DEBUG(10,("cache_account_policy_get: failed to get latest cache update timestamp\n"));
 		return False;
 	}

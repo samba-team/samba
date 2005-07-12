@@ -820,7 +820,7 @@ int main (int argc, char **argv)
 			if (!account_policy_value_set)
 				exit(1);
 		}
-		printf("account policy \"%s\" description: %s\n", account_policy, account_policy_get_comment(field));
+		printf("account policy \"%s\" description: %s\n", account_policy, account_policy_get_desc(field));
 		if (account_policy_value_set) {
 			printf("account policy \"%s\" value was: %u\n", account_policy, value);
 			if (!pdb_set_account_policy(field, account_policy_value)) {
