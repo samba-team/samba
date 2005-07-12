@@ -321,8 +321,8 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 		const char *user_principal_name = ldb_msg_find_string(msg, "userPrincipalName", NULL);
 		struct ldb_message_element *objectclasses;
 		struct ldb_val computer_val;
-		computer_val.data = "computer";
-		computer_val.length = strlen(computer_val.data);
+		computer_val.data = discard_const_p(uint8_t,"computer");
+		computer_val.length = strlen((const char *)computer_val.data);
 		
 		objectclasses = ldb_msg_find_element(msg, "objectClass");
 
@@ -646,7 +646,7 @@ static krb5_error_code LDB_lookup_spn_alias(krb5_context context, struct ldb_con
 	for (i = 0; i < spnmappings->num_values; i++) {
 		char *mapping, *p, *str;
 		mapping = talloc_strdup(mem_ctx, 
-					spnmappings->values[i].data);
+					(const char *)spnmappings->values[i].data);
 		if (!mapping) {
 			krb5_warnx(context, "LDB_lookup_spn_alias: ldb_search: dn: %s did not have an sPNMapping", service_dn);
 			krb5_set_error_string(context, "LDB_lookup_spn_alias: ldb_search: dn: %s did not have an sPNMapping", service_dn);
@@ -719,6 +719,7 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 {
 	struct ldb_message **msg = NULL;
 	struct ldb_message **realm_msg = NULL;
+	struct ldb_message **realm_fixed_msg = NULL;
 	enum hdb_ldb_ent_type ldb_ent_type;
 	krb5_error_code ret;
 
@@ -732,7 +733,7 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 	}
 
 	realm = krb5_principal_get_realm(context, principal);
-		
+
 	ret = LDB_lookup_realm(context, (struct ldb_context *)db->hdb_db, 
 			       mem_ctx, realm, &realm_msg);
 	if (ret != 0) {
@@ -752,7 +753,23 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 		if (principal->name.name_string.len == 2
 		    && (strcmp(principal->name.name_string.val[0], KRB5_TGS_NAME) == 0)
 		    && (LDB_lookup_realm(context, (struct ldb_context *)db->hdb_db,
-					 mem_ctx, principal->name.name_string.val[1], NULL) == 0)) {
+					 mem_ctx, principal->name.name_string.val[1], &realm_fixed_msg) == 0)) {
+			const char *dnsdomain = ldb_msg_find_string(realm_fixed_msg[0], "dnsDomain", NULL);
+			char *realm_fixed = strupper_talloc(mem_ctx, dnsdomain);
+			if (!realm_fixed) {
+				krb5_set_error_string(context, "strupper_talloc: out of memory");
+				talloc_free(mem_ctx);
+				return ENOMEM;
+			}
+
+			free(principal->name.name_string.val[1]);
+			principal->name.name_string.val[1] = strdup(realm_fixed);
+			talloc_free(realm_fixed);
+			if (!principal->name.name_string.val[1]) {
+				krb5_set_error_string(context, "LDB_fetch: strdup() failed!");
+				talloc_free(mem_ctx);
+				return ENOMEM;
+			}
 			ldb_ent_type = HDB_LDB_ENT_TYPE_KRBTGT;
 		} else {
 			ldb_ent_type = HDB_LDB_ENT_TYPE_SERVER;
@@ -944,7 +961,7 @@ static krb5_error_code LDB_firstkey(krb5_context context, HDB *db, unsigned flag
 
 	if (ret != 0) {
 		talloc_free(priv);
-		krb5_warnx(context, "LDB_fetch: could not find realm\n");
+		krb5_warnx(context, "LDB_firstkey: could not find realm\n");
 		return HDB_ERR_NOENTRY;
 	}
 
@@ -952,7 +969,7 @@ static krb5_error_code LDB_firstkey(krb5_context context, HDB *db, unsigned flag
 
 	priv->realm_msgs = talloc_steal(priv, realm_msgs);
 
-	krb5_warnx(context, "LDB_lookup_principal: realm ok\n");
+	krb5_warnx(context, "LDB_firstkey: realm ok\n");
 
 	priv->count = ldb_search(ldb_ctx, realm_dn,
 				 LDB_SCOPE_SUBTREE, "(objectClass=user)",
