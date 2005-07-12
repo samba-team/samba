@@ -52,7 +52,7 @@ static void websrv_timeout(struct event_context *event_context,
 			   struct timeval t, void *private)
 {
 	struct websrv_context *web = talloc_get_type(private, struct websrv_context);
-	stream_terminate_connection(web->conn, "websrv_context: timeout");
+	stream_terminate_connection(web->conn, "websrv_timeout: timed out");
 }
 
 /*
@@ -110,7 +110,7 @@ static void websrv_recv(struct stream_connection *conn, uint16_t flags)
 	return;
 
 failed:
-	stream_terminate_connection(conn, "websrv_recv: failed\n");
+	stream_terminate_connection(conn, "websrv_recv: failed");
 }
 
 
@@ -164,7 +164,7 @@ static void websrv_send(struct stream_connection *conn, uint16_t flags)
 	    web->output.fd == -1) {
 		talloc_free(web->tls);
 		web->tls = NULL;
-		stream_terminate_connection(web->conn, NULL);
+		stream_terminate_connection(web->conn, "websrv_send: finished sending");
 	}
 }
 
@@ -248,7 +248,7 @@ static void websrv_task_init(struct task_server *task)
 	return;
 
 failed:
-	task_server_terminate(task, "Failed to startup web server task");
+	task_server_terminate(task, "websrv_task_init: failed to startup web server task");
 }
 
 
