@@ -1604,6 +1604,8 @@ pk_rd_pa_reply_dh(krb5_context context,
                   ContentInfo *rep,
 		  krb5_pk_init_ctx ctx,
 		  krb5_enctype etype,
+		  const DHNonce *c_n,
+		  const DHNonce *k_n,
                   unsigned nonce,
                   PA_DATA *pa,
                   krb5_keyblock **key)
@@ -1666,6 +1668,29 @@ pk_rd_pa_reply_dh(krb5_context context,
 	goto out;
     }
 
+    if (kdc_dh_info.dhKeyExpiration) {
+	if (k_n == NULL) {
+	    krb5_set_error_string(context, "pkinit; got key expiration "
+				  "without server nonce");
+	    ret = KRB5KRB_ERR_GENERIC;
+	    goto out;
+	}
+	if (c_n == NULL) {
+	    krb5_set_error_string(context, "pkinit; got DH reuse but no "
+				  "client nonce");
+	    ret = KRB5KRB_ERR_GENERIC;
+	    goto out;
+	}
+    } else {
+	if (k_n) {
+	    krb5_set_error_string(context, "pkinit; got server nonce "
+				  "without key expiration");
+	    ret = KRB5KRB_ERR_GENERIC;
+	    goto out;
+	}
+    }
+
+
     p = kdc_dh_info.subjectPublicKey.data;
     size = (kdc_dh_info.subjectPublicKey.length + 7) / 8;
     dh_pub_key = d2i_ASN1_INTEGER(NULL, &p, size);
@@ -1684,14 +1709,21 @@ pk_rd_pa_reply_dh(krb5_context context,
 	goto out;
     }
 
-    dh_gen_key = malloc(DH_size(ctx->dh));
+    dh_gen_keylen = DH_size(ctx->dh);
+    size = BN_num_bytes(ctx->dh->p);
+    if (size < dh_gen_keylen)
+	size = dh_gen_keylen;
+
+    dh_gen_key = malloc(size);
     if (dh_gen_key == NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
 	ret = ENOMEM;
 	goto out;
     }
+    memset(dh_gen_key, 0, size - dh_gen_keylen);
 
-    dh_gen_keylen = DH_compute_key(dh_gen_key, kdc_dh_pubkey, ctx->dh);
+    dh_gen_keylen = DH_compute_key(dh_gen_key + (size - dh_gen_keylen),
+				   kdc_dh_pubkey, ctx->dh);
     if (dh_gen_keylen == -1) {
 	krb5_set_error_string(context, 
 			      "PKINIT: Can't compute Diffie-Hellman key (%s)",
@@ -1707,7 +1739,11 @@ pk_rd_pa_reply_dh(krb5_context context,
 	goto out;
     }
 
-    ret = krb5_random_to_key(context, etype, dh_gen_key, dh_gen_keylen, *key);
+    ret = _krb5_pk_octetstring2key(context,
+				   etype,
+				   dh_gen_key, dh_gen_keylen,
+				   c_n, k_n,
+				   *key);
     if (ret) {
 	krb5_set_error_string(context,
 			      "PKINIT: can't create key from DH key");
@@ -1761,6 +1797,25 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 	    return ret;
 
 	switch (rep.element) {
+	case choice_PA_PK_AS_REP_dhInfo:
+	    ret = decode_ContentInfo(rep.u.dhInfo.dhSignedData.data,
+				     rep.u.dhInfo.dhSignedData.length,
+				     &ci,
+				     &size);
+	    if (ret) {
+		krb5_set_error_string(context,
+				      "PKINIT: -25 decoding failed DH "
+				      "ContentInfo: %d", ret);
+
+		free_PA_PK_AS_REP(&rep);
+		break;
+	    }
+	    ret = pk_rd_pa_reply_dh(context, &ci, ctx,
+				    etype, NULL, NULL, nonce, pa, key);
+	    free_ContentInfo(&ci);
+	    free_PA_PK_AS_REP(&rep);
+
+	    break;
 	case choice_PA_PK_AS_REP_encKeyPack:
 	    ret = decode_ContentInfo(rep.u.encKeyPack.data,
 				     rep.u.encKeyPack.length,
@@ -1799,7 +1854,8 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 	    switch(rep19.element) {
 	    case choice_PA_PK_AS_REP_19_dhSignedData:
 		ret = pk_rd_pa_reply_dh(context, &rep19.u.dhSignedData, ctx,
-					etype, nonce, pa, key);
+					etype, NULL, NULL, 
+					nonce, pa, key);
 		break;
 	    case choice_PA_PK_AS_REP_19_encKeyPack:
 		ret = pk_rd_pa_reply_enckey(context, 0,
@@ -2553,24 +2609,29 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 
 	dh = DH_new();
 	if (dh == NULL) {
+	    krb5_set_error_string(context, "malloc: out of memory");
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
 	    return ENOMEM;
 	}
 	opt->private->pk_init_ctx->dh = dh;
 	if (!BN_hex2bn(&dh->p, P)) {
+	    krb5_set_error_string(context, "malloc: out of memory");
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
 	    return ENOMEM;
 	}
 	if (!BN_hex2bn(&dh->g, G)) {
+	    krb5_set_error_string(context, "malloc: out of memory");
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
 	    return ENOMEM;
 	}
 	if (!BN_hex2bn(&dh->q, Q)) {
+	    krb5_set_error_string(context, "malloc: out of memory");
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
 	    return ENOMEM;
 	}
 	/* XXX generate a new key for each request ? */
 	if (DH_generate_key(dh) != 1) {
+	    krb5_set_error_string(context, "malloc: out of memory");
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
 	    return ENOMEM;
 	}
