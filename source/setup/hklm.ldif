@@ -1,32 +1,32 @@
 dn: @INDEXLIST
 @IDXATTR: key
 
-dn: key=control,key=currentcontrolset,key=system,hive=
+dn: key=control,key=currentcontrolset,key=system,hive=NONE
 key: control
 
-dn: key=services,key=control,key=currentcontrolset,key=system,hive=
+dn: key=services,key=control,key=currentcontrolset,key=system,hive=NONE
 key: services
 
-dn: value=ProductType,key=productoptions,key=control,key=currentcontrolset,key=system,hive=
+dn: value=ProductType,key=productoptions,key=control,key=currentcontrolset,key=system,hive=NONE
 value: ProductType
 data: LanmanNT
 type: 1
 
-dn: key=productoptions,key=control,key=currentcontrolset,key=system,hive=
+dn: key=productoptions,key=control,key=currentcontrolset,key=system,hive=NONE
 key: productoptions
 
-dn: key=system,hive=
+dn: key=system,hive=NONE
 key: system
 
-dn: key=netlogon,key=services,key=currentcontrolset,key=system,hive=
+dn: key=netlogon,key=services,key=currentcontrolset,key=system,hive=NONE
 key: netlogon
 
-dn: key=services,key=currentcontrolset,key=system,hive=
+dn: key=services,key=currentcontrolset,key=system,hive=NONE
 key: services
 
-dn: key=print,key=control,key=currentcontrolset,key=system,hive=
+dn: key=print,key=control,key=currentcontrolset,key=system,hive=NONE
 key: print
 
-dn: key=currentcontrolset,key=system,hive=
+dn: key=currentcontrolset,key=system,hive=NONE
 key: currentcontrolset
 
