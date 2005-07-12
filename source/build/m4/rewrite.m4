@@ -59,7 +59,7 @@ AC_CHECK_HEADERS(utime.h grp.h sys/id.h limits.h memory.h net/if.h)
 AC_CHECK_HEADERS(compat.h)
 AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h sys/mode.h)
 AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h sys/socket.h)
-AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
+AC_CHECK_HEADERS(sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
 AC_CHECK_HEADERS(fnmatch.h pwd.h sys/termio.h sys/time.h sys/statfs.h sys/statvfs.h stdarg.h sys/sockio.h)
 AC_CHECK_HEADERS(security/pam_modules.h security/_pam_macros.h dlfcn.h)
 AC_CHECK_HEADERS(sys/syslog.h syslog.h)
@@ -68,6 +68,12 @@ AC_CHECK_HEADERS(shadow.h netdb.h netinet/in.h netinet/ip.h netinet/tcp.h netine
 AC_CHECK_HEADERS(nss.h nss_common.h ns_api.h sys/security.h security/pam_appl.h)
 AC_CHECK_HEADERS(sys/capability.h syscall.h sys/syscall.h)
 AC_CHECK_HEADERS(sys/acl.h)
+
+AC_CHECK_HEADERS(sys/mount.h, , , [AC_INCLUDES_DEFAULT
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif])
+
 
 AC_TYPE_SIGNAL
 AC_TYPE_UID_T
