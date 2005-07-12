@@ -26,7 +26,6 @@ ok = GetOptions(ARGV, options,
 		'nogroup=s',
 		'wheel=s',
 		'users=s',
-		'outputdir=s',
 		'quiet');
 if (ok == false) {
    println("Failed to parse options: " + options.ERROR);
@@ -200,7 +199,6 @@ provision.pl [options]
  --host-ip	IPADDRESS	set ipaddress
  --host-guid	GUID		set hostguid (otherwise random)
  --invocationid	GUID		set invocationid (otherwise random)
- --outputdir	OUTPUTDIR	set output directory
  --adminpass	PASSWORD	choose admin password (otherwise random)
  --krbtgtpass	PASSWORD	choose krbtgt password (otherwise random)
  --machinepass	PASSWORD	choose machine password (otherwise random)
