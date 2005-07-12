@@ -115,6 +115,13 @@ function ldaptime()
 	return sys_ldaptime(sys_nttime());
 }
 
+function datestring()
+{
+	var t = sys_gmtime(sys_nttime());
+	return sprintf("%04u%02u%02u%02u",
+		       t.tm_year+1900, t.tm_mon+1, t.tm_mday, t.tm_hour);
+}
+
 /*
   return current time as a ldap time string
 */
@@ -131,6 +138,50 @@ function hostname()
 {
 	var s = split(".", sys_hostname());
 	return s[0];
+}
+
+
+/*
+  setup a ldb in the private dir
+ */
+function setup_ldb(ldif, dbname, subobj)
+{
+	var extra = "";
+	if (arguments.length == 4) {
+		extra = arguments[3];
+	}
+	printVars(lpGet("setup directory"));
+
+	var db = lpGet("private dir") + "/" + dbname;
+	var src = lpGet("setup directory") + "/" + ldif;
+
+	sys_unlink(db);
+
+	var data = sys_file_load(src);
+	data = data + extra;
+	data = substitute_var(data, subobj);
+
+	message("Creating " + db + "\n from " + src);
+	ok = ldbAdd(db, data);
+	assert(ok);
+}
+
+/*
+  setup a file in the private dir
+ */
+function setup_file(template, fname, subobj)
+{
+	var f = lpGet("private dir") + "/" + fname;
+	var src = lpGet("setup directory") + "/" + template;
+
+	sys_unlink(f);
+
+	var data = sys_file_load(src);
+	data = substitute_var(data, subobj);
+
+	message("Creating " + f + "\n from " + src);
+	ok = sys_file_save(f, data);
+	assert(ok);
 }
 
 /*
@@ -203,12 +254,6 @@ options.dnsdomain = strlower(options.realm);
 options.dnsname   = strlower(options['host-name']) + "." + options.dnsdomain;
 options.basedn    = "DC=" + join(",DC=", split(".", options.realm));
 
-var data = FileLoad("setup/provision.ldif");
-if (data == undefined) {
-	println("Unable to load provision.ldif");
-	exit(1);
-}
-
 /*
   setup the substitution object
 */
@@ -224,6 +269,7 @@ subobj.DEFAULTSITE  = "Default-First-Site-Name";
 subobj.NEWGUID      = randguid;
 subobj.NTTIME       = nttime;
 subobj.LDAPTIME     = ldaptime;
+subobj.DATESTRING   = datestring;
 subobj.USN          = nextusn;
 for (r in options) {
 	var key = strupper(join("", split("-", r)));
@@ -231,13 +277,20 @@ for (r in options) {
 }
 
 
-data = add_foreign(data, "S-1-5-7",  "Anonymous",           "${NOBODY}");
-data = add_foreign(data, "S-1-1-0",  "World",               "${NOGROUP}");
-data = add_foreign(data, "S-1-5-2",  "Network",             "${NOGROUP}");
-data = add_foreign(data, "S-1-5-18", "System",              "${ROOT}");
-data = add_foreign(data, "S-1-5-11", "Authenticated Users", "${USERS}");
+var extradata = "";
+extradata = add_foreign(extradata, "S-1-5-7",  "Anonymous",           "${NOBODY}");
+extradata = add_foreign(extradata, "S-1-1-0",  "World",               "${NOGROUP}");
+extradata = add_foreign(extradata, "S-1-5-2",  "Network",             "${NOGROUP}");
+extradata = add_foreign(extradata, "S-1-5-18", "System",              "${ROOT}");
+extradata = add_foreign(extradata, "S-1-5-11", "Authenticated Users", "${USERS}");
 
-newdata = substitute_var(data, subobj);
+message("Using administrator password: " + subobj.ADMINPASS);
 
-println(newdata);
+setup_ldb("hklm.ldif", "hklm.ldb", subobj);
+setup_ldb("provision.ldif", "sam.ldb", subobj, extradata);
+setup_ldb("rootdse.ldif", "rootdse.ldb", subobj);
+setup_ldb("secrets.ldif", "secrets.ldb", subobj);
+setup_file("provision.zone", subobj.DNSDOMAIN + ".zone", subobj);
+
+message("All OK");
 return 0;
