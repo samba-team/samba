@@ -635,7 +635,7 @@ static void ejs_list_helper(struct clilist_file_info *info, const char *mask,
 	char idx[16];
 
 	mprItoa(result->properties->numDataItems, idx, sizeof(idx));
-	mprSetVar(result, idx, mprCreateStringVar(info->name, 1));
+	mprSetVar(result, idx, mprString(info->name));
 }
 
 static int ejs_list(MprVarHandle eid, int argc, MprVar **argv)

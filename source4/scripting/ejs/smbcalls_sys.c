@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "scripting/ejs/smbcalls.h"
 #include "lib/ejs/ejs.h"
+#include "system/time.h"
 
 /*
   return the list of configured network interfaces
@@ -65,6 +66,40 @@ static int ejs_sys_nttime(MprVarHandle eid, int argc, struct MprVar **argv)
 }
 
 /*
+  return the given time as a gmtime structure
+*/
+static int ejs_sys_gmtime(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	time_t t;
+	struct MprVar ret;
+	struct tm *tm;
+	if (argc != 1 || !mprVarIsNumber(argv[0]->type)) {
+		ejsSetErrorMsg(eid, "sys_gmtime invalid arguments");
+		return -1;
+	}
+	t = nt_time_to_unix(mprVarToNumber(argv[0]));
+	tm = gmtime(&t);
+	if (tm == NULL) {
+		mpr_Return(eid, mprCreateUndefinedVar());
+		return 0;
+	}
+	ret = mprObject("gmtime");
+#define TM_EL(n) mprSetVar(&ret, #n, mprCreateIntegerVar(tm->n))
+	TM_EL(tm_sec);
+	TM_EL(tm_min);
+	TM_EL(tm_hour);
+	TM_EL(tm_mday);
+	TM_EL(tm_mon);
+	TM_EL(tm_year);
+	TM_EL(tm_wday);
+	TM_EL(tm_yday);
+	TM_EL(tm_isdst);
+
+	mpr_Return(eid, ret);
+	return 0;
+}
+
+/*
   return a ldap time string from a nttime
 */
 static int ejs_sys_ldaptime(MprVarHandle eid, int argc, struct MprVar **argv)
@@ -82,6 +117,58 @@ static int ejs_sys_ldaptime(MprVarHandle eid, int argc, struct MprVar **argv)
 	return 0;
 }
 
+/*
+  unlink a file
+   ok = unlink(fname);
+*/
+static int ejs_sys_unlink(MprVarHandle eid, int argc, char **argv)
+{
+	int ret;
+	if (argc != 1) {
+		ejsSetErrorMsg(eid, "sys_unlink invalid arguments");
+		return -1;
+	}
+	ret = unlink(argv[0]);
+	mpr_Return(eid, mprCreateBoolVar(ret == 0));
+	return 0;
+}
+
+/*
+  load a file as a string
+  usage:
+     string = sys_file_load(filename);
+*/
+static int ejs_sys_file_load(MprVarHandle eid, int argc, char **argv)
+{
+	char *s;
+	if (argc != 1) {
+		ejsSetErrorMsg(eid, "sys_file_load invalid arguments");
+		return -1;
+	}
+
+	s = file_load(argv[0], NULL, mprMemCtx());
+	mpr_Return(eid, mprString(s));
+	talloc_free(s);
+	return 0;
+}
+
+/*
+  save a file from a string
+  usage:
+     ok = sys_file_save(filename, str);
+*/
+static int ejs_sys_file_save(MprVarHandle eid, int argc, char **argv)
+{
+	BOOL ret;
+	if (argc != 2) {
+		ejsSetErrorMsg(eid, "sys_file_save invalid arguments");
+		return -1;
+	}
+	ret = file_save(argv[0], argv[1], strlen(argv[1]));
+	mpr_Return(eid, mprCreateBoolVar(ret));
+	return 0;
+}
+
 
 /*
   setup C functions that be called from ejs
@@ -91,5 +178,9 @@ void smb_setup_ejs_system(void)
 	ejsDefineCFunction(-1, "sys_interfaces", ejs_sys_interfaces, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineCFunction(-1, "sys_hostname", ejs_sys_hostname, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineCFunction(-1, "sys_nttime", ejs_sys_nttime, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "sys_gmtime", ejs_sys_gmtime, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineCFunction(-1, "sys_ldaptime", ejs_sys_ldaptime, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineStringCFunction(-1, "sys_unlink", ejs_sys_unlink, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineStringCFunction(-1, "sys_file_load", ejs_sys_file_load, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineStringCFunction(-1, "sys_file_save", ejs_sys_file_save, NULL, MPR_VAR_SCRIPT_HANDLE);
 }
