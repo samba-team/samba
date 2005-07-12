@@ -49,7 +49,7 @@ filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src='/images/logo.png'
 </div>
 
 <div id="logo">
-  <div class="logo_hack"><a href="/@@global.SESSIONURI"><img src="/images/linkpad.gif" alt="SWAT" /></a></div>
+  <div class="logo_hack"><a href="/@@global.SESSIONURI"><img src="/images/linkpad.png" alt="SWAT" /></a></div>
 </div>
 
 <div class="slogan">

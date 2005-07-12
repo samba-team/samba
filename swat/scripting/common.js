@@ -55,9 +55,8 @@ function page_footer() {
 */
 function always_allowed(uri) {
 	var allowed = new Array("/images/favicon.ico", 
-				"/images/linkpad.gif",
+				"/images/linkpad.png",
 				"/images/logo.png",
-				"/images/logo.gif",
 				"/style/main.css",
 				"/style/common.css");
 	for (i in allowed) {
