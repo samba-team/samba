@@ -188,13 +188,6 @@ static int ltdb_index_dn_simple(struct ldb_module *module,
 	list->count = 0;
 	list->dn = NULL;
 
-	/*
-	  if the value is a wildcard then we can't do a match via indexing
-	*/
-	if (ltdb_has_wildcard(module, tree->u.simple.attr, &tree->u.simple.value)) {
-		return -1;
-	}
-
 	/* if the attribute isn't in the list of indexed attributes then
 	   this node needs a full search */
 	if (ldb_msg_find_idx(index_list, tree->u.simple.attr, NULL, LTDB_IDXATTR) == -1) {
@@ -581,6 +574,8 @@ static int ltdb_index_dn(struct ldb_module *module,
 		ret = ltdb_index_dn_leaf(module, tree, index_list, list);
 		break;
 
+	case LDB_OP_PRESENT:
+	case LDB_OP_SUBSTRING:
 	case LDB_OP_EXTENDED:
 		/* we can't index with fancy bitops yet */
 		ret = -1;
@@ -638,7 +633,7 @@ static int ldb_index_filter(struct ldb_module *module, struct ldb_parse_tree *tr
 		}
 
 		ret = 0;
-		if (ldb_match_message(module->ldb, msg, tree, base, scope) == 1) {
+		if (ldb_match_msg(module->ldb, msg, tree, base, scope) == 1) {
 			ret = ltdb_add_attr_results(module, msg, attrs, &count, res);
 		}
 		talloc_free(msg);

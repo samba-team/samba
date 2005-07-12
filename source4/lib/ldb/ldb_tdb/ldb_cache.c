@@ -39,9 +39,8 @@
 
 #define LTDB_FLAG_CASE_INSENSITIVE (1<<0)
 #define LTDB_FLAG_INTEGER          (1<<1)
-#define LTDB_FLAG_WILDCARD         (1<<2)
-#define LTDB_FLAG_HIDDEN           (1<<3)
-#define LTDB_FLAG_OBJECTCLASS      (1<<4)
+#define LTDB_FLAG_HIDDEN           (1<<2)
+#define LTDB_FLAG_OBJECTCLASS      (1<<3)
 
 /* valid attribute flags */
 static const struct {
@@ -50,7 +49,6 @@ static const struct {
 } ltdb_valid_attr_flags[] = {
 	{ "CASE_INSENSITIVE", LTDB_FLAG_CASE_INSENSITIVE },
 	{ "INTEGER", LTDB_FLAG_INTEGER },
-	{ "WILDCARD", LTDB_FLAG_WILDCARD },
 	{ "HIDDEN", LTDB_FLAG_HIDDEN },
 	{ "NONE", 0 },
 	{ NULL, 0 }
@@ -137,10 +135,6 @@ static int ltdb_attributes_load(struct ldb_module *module)
 		switch (flags & ~LTDB_FLAG_HIDDEN) {
 		case 0:
 			syntax = LDB_SYNTAX_OCTET_STRING;
-			break;
-		case LTDB_FLAG_WILDCARD:
-		case LTDB_FLAG_WILDCARD | LTDB_FLAG_CASE_INSENSITIVE:
-			syntax = LDB_SYNTAX_WILDCARD;
 			break;
 		case LTDB_FLAG_CASE_INSENSITIVE:
 			syntax = LDB_SYNTAX_DIRECTORY_STRING;
