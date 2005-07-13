@@ -98,6 +98,9 @@ NTSTATUS socket_connect(struct socket_context *sock,
 			const char *server_address, int server_port,
 			uint32_t flags)
 {
+	if (sock == NULL) {
+		return NT_STATUS_CONNECTION_DISCONNECTED;
+	}
 	if (sock->state != SOCKET_STATE_UNDEFINED) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -119,6 +122,9 @@ NTSTATUS socket_connect_complete(struct socket_context *sock, uint32_t flags)
 
 NTSTATUS socket_listen(struct socket_context *sock, const char *my_address, int port, int queue_size, uint32_t flags)
 {
+	if (sock == NULL) {
+		return NT_STATUS_CONNECTION_DISCONNECTED;
+	}
 	if (sock->state != SOCKET_STATE_UNDEFINED) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -134,6 +140,9 @@ NTSTATUS socket_accept(struct socket_context *sock, struct socket_context **new_
 {
 	NTSTATUS status;
 
+	if (sock == NULL) {
+		return NT_STATUS_CONNECTION_DISCONNECTED;
+	}
 	if (sock->type != SOCKET_TYPE_STREAM) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -158,6 +167,9 @@ NTSTATUS socket_accept(struct socket_context *sock, struct socket_context **new_
 NTSTATUS socket_recv(struct socket_context *sock, void *buf, 
 		     size_t wantlen, size_t *nread, uint32_t flags)
 {
+	if (sock == NULL) {
+		return NT_STATUS_CONNECTION_DISCONNECTED;
+	}
 	if (sock->state != SOCKET_STATE_CLIENT_CONNECTED &&
 	    sock->state != SOCKET_STATE_SERVER_CONNECTED &&
 	    sock->type  != SOCKET_TYPE_DGRAM) {
@@ -183,6 +195,9 @@ NTSTATUS socket_recvfrom(struct socket_context *sock, void *buf,
 			 size_t wantlen, size_t *nread, uint32_t flags,
 			 const char **src_addr, int *src_port)
 {
+	if (sock == NULL) {
+		return NT_STATUS_CONNECTION_DISCONNECTED;
+	}
 	if (sock->type != SOCKET_TYPE_DGRAM) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -198,6 +213,9 @@ NTSTATUS socket_recvfrom(struct socket_context *sock, void *buf,
 NTSTATUS socket_send(struct socket_context *sock, 
 		     const DATA_BLOB *blob, size_t *sendlen, uint32_t flags)
 {
+	if (sock == NULL) {
+		return NT_STATUS_CONNECTION_DISCONNECTED;
+	}
 	if (sock->state != SOCKET_STATE_CLIENT_CONNECTED &&
 	    sock->state != SOCKET_STATE_SERVER_CONNECTED) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -225,6 +243,9 @@ NTSTATUS socket_sendto(struct socket_context *sock,
 		       const DATA_BLOB *blob, size_t *sendlen, uint32_t flags,
 		       const char *dest_addr, int dest_port)
 {
+	if (sock == NULL) {
+		return NT_STATUS_CONNECTION_DISCONNECTED;
+	}
 	if (sock->type != SOCKET_TYPE_DGRAM) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -247,6 +268,9 @@ NTSTATUS socket_sendto(struct socket_context *sock,
 */
 NTSTATUS socket_pending(struct socket_context *sock, size_t *npending)
 {
+	if (sock == NULL) {
+		return NT_STATUS_CONNECTION_DISCONNECTED;
+	}
 	if (!sock->ops->fn_pending) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
@@ -256,6 +280,9 @@ NTSTATUS socket_pending(struct socket_context *sock, size_t *npending)
 
 NTSTATUS socket_set_option(struct socket_context *sock, const char *option, const char *val)
 {
+	if (sock == NULL) {
+		return NT_STATUS_CONNECTION_DISCONNECTED;
+	}
 	if (!sock->ops->fn_set_option) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
