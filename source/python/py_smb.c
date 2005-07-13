@@ -154,7 +154,7 @@ static PyObject *py_smb_nt_create_andx(PyObject *self, PyObject *args,
 	char *filename;
 	uint32 desired_access, file_attributes = 0, 
 		share_access = FILE_SHARE_READ | FILE_SHARE_WRITE,
-		create_disposition = FILE_EXISTS_OPEN, create_options = 0;
+		create_disposition = OPENX_FILE_EXISTS_OPEN, create_options = 0;
 	int result;
 
 	/* Parse parameters */
