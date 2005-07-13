@@ -764,8 +764,13 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		
-		pstrcpy(my_name, global_myname());
-
+		
+		if(server_info->login_server) {
+		        pstrcpy(my_name, server_info->login_server);
+		} else {
+		        pstrcpy(my_name, global_myname());
+		}
+		
 		if (!NT_STATUS_IS_OK(status 
 				     = nt_token_to_group_list(p->mem_ctx, 
 							      &domain_sid, 
