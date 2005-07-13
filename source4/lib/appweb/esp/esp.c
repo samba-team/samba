@@ -1,7 +1,7 @@
 /*
  *	@file 	esp.c
  *	@brief 	Embedded Server Pages (ESP) core processing.
- *	@overview The ESP handler provides an efficient way to generate 
+ *	@overview Embedded Server Pages provides an efficient way to generate 
  *		dynamic pages using server-side Javascript. This code provides 
  *		core processing, and should be called by an associated web 
  *		server URL handler.
@@ -301,7 +301,7 @@ int espGetVar(EspRequest *ep, EspEnvType oType, char *var, MprVar *value)
  */
 
 int espProcessRequest(EspRequest *ep, const char *docPath, char *docBuf, 
-					  char **errMsg)
+	char **errMsg)
 {
 	char	*jsBuf;
 
@@ -774,7 +774,7 @@ static int buildScript(EspRequest *ep, char **jsBuf, char *input, char **errMsg)
 				mprStrcpy(incPath, sizeof(incPath), parse.token);
 			} else {
 				mprGetDirName(dir, sizeof(dir), ep->uri);
-				mprSprintf(incPath, sizeof(incPath), "%s/%s",
+				mprSprintf(incPath, sizeof(incPath), "%s/%s", 
 					dir, parse.token);
 			}
 			if (esp->mapToStorage(ep->requestHandle, path, sizeof(path),
@@ -812,7 +812,7 @@ static int buildScript(EspRequest *ep, char **jsBuf, char *input, char **errMsg)
 	}
 	mprFree(parse.token);
 	if (len < 0) {
-		mprAllocSprintf(errMsg, MPR_MAX_STRING,
+		mprAllocSprintf(errMsg, MPR_MAX_STRING, 
 			"Script token is too big in %s.\nConfigured maximum is %d.", 
 			path, maxScriptSize);
 		return MPR_ERR_WONT_FIT;

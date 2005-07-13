@@ -156,10 +156,6 @@ typedef BLD_FEATURE_NUM_TYPE MprNum;
 #define MPR_MAX_VAR				512
 #endif
 
-#ifndef __NO_PACK
-#pragma pack(2)
-#endif /* _NO_PACK */
-
 /*
  *	Function signatures
  */
@@ -347,11 +343,6 @@ typedef struct MprVar {
 #endif
 
 typedef BLD_FEATURE_NUM_TYPE MprNumber;
-
-
-#ifndef __NO_PACK
-#pragma pack()
-#endif /* __NO_PACK */
 
 /********************************* Prototypes *********************************/
 /*
