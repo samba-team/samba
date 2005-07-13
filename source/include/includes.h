@@ -192,6 +192,10 @@ extern int DEBUGLEVEL;
 #define ssize_t int
 #endif
 
+#ifndef UINT16_MAX
+#define UINT16_MAX 65535
+#endif
+
 /*
   type safe varient of smb_xmalloc()
 */
