@@ -1,3 +1,9 @@
+2005-07-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* getifaddrs.c (nl_getlist): poll to get messages from kernel, and
+	retry if the message was lost
+	(free_nlmsglist): free all linked elements, not just the first one
+
 2005-07-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* snprintf-test.c: Check a very simple format string
