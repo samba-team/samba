@@ -131,7 +131,7 @@ gss_encode(void *app_data, void *from, int length, int level, void **to)
 }
 
 static void
-sockaddr_to_gss_address (const struct sockaddr *sa,
+sockaddr_to_gss_address (struct sockaddr *sa,
 			 OM_uint32 *addr_type,
 			 gss_buffer_desc *gss_addr)
 {
@@ -147,10 +147,10 @@ sockaddr_to_gss_address (const struct sockaddr *sa,
     }
 #endif
     case AF_INET : {
-	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+	struct sockaddr_in *sin4 = (struct sockaddr_in *)sa;
 
 	gss_addr->length = 4;
-	gss_addr->value  = &sin->sin_addr;
+	gss_addr->value  = &sin4->sin_addr;
 	*addr_type       = GSS_C_AF_INET;
 	break;
     }
@@ -326,6 +326,7 @@ import_name(const char *kname, const char *host, gss_name_t *target_name)
 	printf("Error importing name %s: %s\n", 
 	       (char *)name.value,
 	       (char *)status_string.value);
+	free(name.value);
 	gss_release_buffer(&new_stat, &status_string);
 	return AUTH_ERROR;
     }
@@ -395,7 +396,12 @@ gss_auth(void *app_data, char *host)
 	    OM_uint32 msg_ctx = 0;
 	    gss_buffer_desc status_string;
 
+	    d->context_hdl = GSS_C_NO_CONTEXT;
+
+	    gss_release_name(&min_stat, &target_name);
+
 	    if(min_stat == KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN && *kname != NULL) {
+
 		if(import_name(*kname++, host, &target_name)) {
 		    if (bindings != GSS_C_NO_CHANNEL_BINDINGS)
 			free(bindings);
@@ -460,6 +466,8 @@ gss_auth(void *app_data, char *host)
 	    context_established = 1;
 	}
     }
+
+    gss_release_name(&min_stat, &target_name);
 
     if (bindings != GSS_C_NO_CHANNEL_BINDINGS)
 	free(bindings);
