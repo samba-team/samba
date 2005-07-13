@@ -905,9 +905,7 @@ spnego_initial
     ni.mechListMIC = NULL;
 
 
-#if 0
     {
-	int ret;
 	NegotiationToken nt;
 
 	nt.element = choice_NegotiationToken_negTokenInit;
@@ -915,47 +913,10 @@ spnego_initial
 
 	ASN1_MALLOC_ENCODE(NegotiationToken, buf, buf_size,
 			   &nt, &buf_len, ret);
-	if (buf_size != buf_len)
+	if (ret == 0 && buf_size != buf_len)
 	    abort();
     }
-#else
-    ni_len = length_NegTokenInit(&ni);
-    buf_size = 1 + length_len(ni_len) + ni_len;
 
-    buf = malloc(buf_size);
-    if (buf == NULL) {
-	free_NegTokenInit(&ni);
-	*minor_status = ENOMEM;
-	return GSS_S_FAILURE;
-    }
-
-    ret = encode_NegTokenInit(buf + buf_size - 1,
-			      ni_len,
-			      &ni, &buf_len);
-    if (ret == 0 && ni_len != buf_len)
-	abort();
-
-    if (ret == 0) {
-	size_t tmp;
-
-	ret = der_put_length_and_tag(buf + buf_size - buf_len - 1,
-				     buf_size - buf_len,
-				     buf_len,
-				     ASN1_C_CONTEXT,
-				     CONS,
-				     0,
-				     &tmp);
-	if (ret == 0 && tmp + buf_len != buf_size)
-	    abort();
-    }
-    if (ret) {
-	*minor_status = ret;
-	free(buf);
-	free_NegTokenInit(&ni);
-	return GSS_S_FAILURE;
-    }
-
-#endif
     data.data   = buf;
     data.length = buf_size;
 
