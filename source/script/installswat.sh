@@ -22,7 +22,7 @@ installdir() {
 
 installdir *.esp
 installdir esptest/*.esp esptest/*.js
-installdir images/*.png images/*.ico
+installdir images/*.png images/*.ico images/*.gif
 installdir scripting/*.ejs scripting/*.esp scripting/*.js
 installdir style/*.css
 installdir docs/*.js
