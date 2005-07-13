@@ -1,1 +1,1 @@
-heimdal -Iheimdal_build -Iheimdal/kdc -Iheimdal/lib/des -Iheimdal/lib/roken -Iheimdal/include
+heimdal -Iheimdal_build -Iheimdal/kdc -Iheimdal/lib/des -Iheimdal/lib/roken -Iheimdal/include -DNO_PRINTF_ATTRIBUTE
