@@ -1,5 +1,11 @@
 2005-07-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gen_encode.c (TChoice): add () to make sure variable expression
+	is evaluated correctly
+
+	* gen_length.c (TChoice): add () to make sure variable expression
+	is evaluated correctly
+
 	* k5.asn1: reapply 1.43 that got lost in the merge: rename pvno to
 	krb5-pvno
 
