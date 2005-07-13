@@ -114,6 +114,7 @@ static int ejs_ldbAddModify(MprVarHandle eid, int argc, char **argv,
 	while ((ldif = ldb_ldif_read_string(ldb, &ldifstring))) {
 		ret = fn(ldb, ldif->msg);
 		talloc_free(ldif);
+		if (ret != 0) break;
 	}
 
 	mpr_Return(eid, mprCreateBoolVar(ret == 0));
