@@ -79,6 +79,7 @@ AC_CHECK_FUNCS([				\
 	umask					\
 	uname					\
 	unsetenv				\
+	closefrom				\
 	writev
 ])
 
