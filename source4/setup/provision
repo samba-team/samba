@@ -53,7 +53,7 @@ function ShowHelp()
 	print("
 Samba4 provisioning
 
-provision.pl [options]
+provision [options]
  --realm	REALM		set realm
  --domain	DOMAIN		set domain
  --domain-guid	GUID		set domainguid (otherwise random)
