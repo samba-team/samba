@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "system/network.h"
 #include "system/kerberos.h"
+#include "err.h"
 
 /*
   get the list of IP addresses for configured interfaces
@@ -47,4 +48,13 @@ krb5_error_code krb5_get_all_client_addrs(krb5_context context, krb5_addresses *
 	}
 
 	return 0;
+}
+
+
+void errx(int eval, const char *fmt, ...)
+{
+  va_list ap;
+  va_start(ap, fmt);
+  verrx(eval, fmt, ap);
+  va_end(ap);
 }
