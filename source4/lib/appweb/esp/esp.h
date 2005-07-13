@@ -38,8 +38,8 @@
 
 #include	"lib/appweb/ejs/ejs.h"
 #include	"lib/appweb/esp/espEnv.h"
-#include	"lib/appweb/ejs/var.h"
-#include	"lib/appweb/ejs/miniMpr.h"
+#include	"lib/appweb/mpr/var.h"
+#include	"lib/appweb/mpr/miniMpr.h"
 
 /*********************************** Defines **********************************/
 
