@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 2000 - 2002, 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -108,6 +108,7 @@ struct mbuf;
 #include <linux/rtnetlink.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/poll.h>
 #include <netpacket/packet.h>
 #include <net/ethernet.h>     /* the L2 protocols */
 #include <sys/uio.h>
@@ -378,13 +379,30 @@ nl_getlist(int sd, int seq,
   struct nlmsghdr *nlh = NULL;
   int status;
   int done = 0;
+  int tries = 3;
 
+ try_again:
   status = nl_sendreq(sd, request, NLM_F_ROOT|NLM_F_MATCH, &seq);
   if (status < 0)
     return status;
   if (seq == 0)
     seq = (int)time(NULL);
   while(!done){
+    struct pollfd pfd;
+
+    pfd.fd = sd;
+    pfd.events = POLLIN | POLLPRI;
+    pfd.revents = 0;
+    status = poll(&pfd, 1, 1000);
+    if (status < 0)
+	return status;
+    else if (status == 0) {
+	seq++;
+	if (tries-- > 0)
+	    goto try_again;
+	return -1;
+    }
+
     status = nl_getmsg(sd, request, seq, &nlh, &done);
     if (status < 0)
       return status;
@@ -417,16 +435,17 @@ nl_getlist(int sd, int seq,
 static void 
 free_nlmsglist(struct nlmsg_list *nlm0)
 {
-  struct nlmsg_list *nlm;
+  struct nlmsg_list *nlm, *nlm_next;
   int saved_errno;
   if (!nlm0)
     return;
   saved_errno = errno;
-  for (nlm=nlm0; nlm; nlm=nlm->nlm_next){
+  for (nlm=nlm0; nlm; nlm=nlm_next){
     if (nlm->nlh)
       free(nlm->nlh);
+    nlm_next=nlm->nlm_next;
+    free(nlm);
   }
-  free(nlm0);
   __set_errno(saved_errno);
 }
 
