@@ -214,6 +214,7 @@ gss_adat(void *app_data, void *buf, size_t len)
 	    reply(535, "Out of memory base64-encoding.");
 	    return -1;
 	}
+	gss_release_buffer(&min_stat, &output_token);
     }
     if(maj_stat == GSS_S_COMPLETE){
 	char *name;
@@ -269,6 +270,8 @@ gss_adat(void *app_data, void *buf, size_t len)
 	reply(431, "Security resource unavailable");
     }
   out:
+    if (client_name)
+	gss_release_name(&min_stat, &client_name);
     free(p);
     return 0;
 }
@@ -400,7 +403,7 @@ gss_auth(void *app_data, char *host)
 
 	    gss_release_name(&min_stat, &target_name);
 
-	    if(min_stat == KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN && *kname != NULL) {
+	    if(*kname != NULL) {
 
 		if(import_name(*kname++, host, &target_name)) {
 		    if (bindings != GSS_C_NO_CHANNEL_BINDINGS)
