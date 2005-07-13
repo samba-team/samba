@@ -94,9 +94,8 @@ extern int DEBUGLEVEL;
 #define DBGC_IDMAP		13
 #define DBGC_QUOTA		14
 #define DBGC_ACLS		15
-#define DBGC_PRINTERDB		16
-#define DBGC_LOCKING		17
-#define DBGC_MSDFS		18
+#define DBGC_LOCKING		16
+#define DBGC_MSDFS		17
 
 /* So you can define DBGC_CLASS before including debug.h */
 #ifndef DBGC_CLASS
