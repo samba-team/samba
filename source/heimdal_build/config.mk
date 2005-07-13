@@ -323,8 +323,10 @@ ADD_OBJ_FILES = \
 	heimdal/lib/roken/getarg.o \
 	heimdal/lib/roken/print_version.o \
 	heimdal/lib/roken/setprogname.o \
+	heimdal/lib/roken/strupr.o \
+	heimdal/lib/roken/getprogname.o \
+	heimdal/lib/roken/get_window_size.o \
 	heimdal/lib/asn1/symbol.o
-REQUIRED_SUBSYSTEMS = HEIMDAL_ROKEN
 NOPROTO = YES
 # End SUBSYSTEM ASN1_COMPILER
 #######################
