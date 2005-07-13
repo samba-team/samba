@@ -837,10 +837,6 @@ krb5_get_credentials_with_flags(krb5_context context,
     if (in_creds->session.keytype)
 	options |= KRB5_TC_MATCH_KEYTYPE;
 
-    ret = krb5_cc_retrieve_cred(context,
-				ccache,
-				options,
-				in_creds, res_creds);
     /* 
      * If we got a credential, check if credential is expired before
      * returning it.
