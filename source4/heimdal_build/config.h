@@ -51,5 +51,6 @@ static /**/const char *const rcsid[] = { (const char *)rcsid, "\100(#)" msg }
 #define HAVE_GAI_STRERROR
 
 #include <sys/types.h>
+#include <stdarg.h>
 #include "lib/replace/replace.h"
 #endif
