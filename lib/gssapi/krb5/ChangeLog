@@ -1,5 +1,8 @@
 2005-07-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* init_sec_context.c (spnego_initial): use NegotiationToken
+	encoder now that we have one with the new asn1. compiler.
+	
 	* Makefile.am: the new asn.1 compiler includes the modules name in
 	the depend file
 
