@@ -80,6 +80,7 @@ AC_CHECK_FUNCS([				\
 	uname					\
 	unsetenv				\
 	closefrom				\
+	hstrerror				\
 	writev
 ])
 
