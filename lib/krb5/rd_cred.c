@@ -68,6 +68,8 @@ krb5_rd_cred(krb5_context context,
     krb5_crypto crypto;
     int i;
 
+    memset(&enc_krb_cred_part, 0, sizeof(enc_krb_cred_part));
+
     if ((auth_context->flags & 
 	 (KRB5_AUTH_CONTEXT_RET_TIME | KRB5_AUTH_CONTEXT_RET_SEQUENCE)) &&
 	outdata == NULL)
@@ -262,9 +264,14 @@ krb5_rd_cred(krb5_context context,
 	
     }
     (*ret_creds)[i] = NULL;
+
+    free_KRB_CRED (&cred);
+    free_EncKrbCredPart(&enc_krb_cred_part);
+
     return 0;
 
   out:
+    free_EncKrbCredPart(&enc_krb_cred_part);
     free_KRB_CRED (&cred);
     if(*ret_creds) {
 	for(i = 0; (*ret_creds)[i]; i++)
