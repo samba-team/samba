@@ -518,7 +518,7 @@ EtypeList ::= SEQUENCE OF krb5int32
 	-- the client's proposed enctype list in
 	-- decreasing preference order, favorite choice first
 
-pvno krb5int32 ::= 5 -- current Kerberos protocol version number
+krb5-pvno krb5int32 ::= 5 -- current Kerberos protocol version number
 
 -- transited encodings
 
