@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "lib/ejs/ejs.h"
+#include "lib/appweb/ejs/ejs.h"
 #include "lib/ldb/include/ldb.h"
 
 /*

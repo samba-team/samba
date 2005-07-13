@@ -23,7 +23,7 @@
 
 #include "includes.h"
 #include "dynconfig.h"
-#include "lib/ejs/ejs.h"
+#include "lib/appweb/ejs/ejs.h"
 #include "scripting/ejs/smbcalls.h"
 
 void ejs_exception(const char *reason)
