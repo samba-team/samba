@@ -346,17 +346,19 @@ static void smbcli_transport_process_send(struct smbcli_transport *transport)
 {
 	while (transport->pending_send) {
 		struct smbcli_request *req = transport->pending_send;
-		ssize_t ret;
-		ret = smbcli_sock_write(transport->socket, req->out.buffer, req->out.size);
-		if (ret == -1) {
-			if (errno == EAGAIN || errno == EINTR) {
-				return;
-			}
+		NTSTATUS status;
+		size_t nwritten;
+
+		status = smbcli_sock_write(transport->socket, req->out.buffer, 
+					   req->out.size, &nwritten);
+		if (NT_STATUS_IS_ERR(status)) {
 			smbcli_transport_dead(transport);
+		}
+		if (!NT_STATUS_IS_OK(status)) {
 			return;
 		}
-		req->out.buffer += ret;
-		req->out.size -= ret;
+		req->out.buffer += nwritten;
+		req->out.size -= nwritten;
 		if (req->out.size == 0) {
 			DLIST_REMOVE(transport->pending_send, req);
 			if (req->one_way_request) {
@@ -529,17 +531,21 @@ static void smbcli_transport_process_recv(struct smbcli_transport *transport)
 	   4 byte header, which tells us how much more is coming. Then
 	   we read the rest */
 	if (transport->recv_buffer.received < NBT_HDR_SIZE) {
-		ssize_t ret;
-		ret = smbcli_sock_read(transport->socket, 
-				    transport->recv_buffer.header + 
-				    transport->recv_buffer.received,
-				    NBT_HDR_SIZE - transport->recv_buffer.received);
-		if (ret == -1) {
+		NTSTATUS status;
+		size_t nread;
+		status = smbcli_sock_read(transport->socket, 
+					  transport->recv_buffer.header + 
+					  transport->recv_buffer.received,
+					  NBT_HDR_SIZE - transport->recv_buffer.received,
+					  &nread);
+		if (NT_STATUS_IS_ERR(status)) {
 			smbcli_transport_dead(transport);
+		}
+		if (!NT_STATUS_IS_OK(status)) {
 			return;
 		}
 
-		transport->recv_buffer.received += ret;
+		transport->recv_buffer.received += nread;
 
 		if (transport->recv_buffer.received == NBT_HDR_SIZE) {
 			/* we've got a full header */
@@ -555,17 +561,21 @@ static void smbcli_transport_process_recv(struct smbcli_transport *transport)
 	}
 
 	if (transport->recv_buffer.received < transport->recv_buffer.req_size) {
-		ssize_t ret;
-		ret = smbcli_sock_read(transport->socket, 
-				    transport->recv_buffer.buffer + 
-				    transport->recv_buffer.received,
-				    transport->recv_buffer.req_size - 
-				    transport->recv_buffer.received);
-		if (ret == -1) {
+		NTSTATUS status;
+		size_t nread;
+		status = smbcli_sock_read(transport->socket, 
+					  transport->recv_buffer.buffer + 
+					  transport->recv_buffer.received,
+					  transport->recv_buffer.req_size - 
+					  transport->recv_buffer.received,
+					  &nread);
+		if (NT_STATUS_IS_ERR(status)) {
 			smbcli_transport_dead(transport);
+		}
+		if (!NT_STATUS_IS_OK(status)) {
 			return;
 		}
-		transport->recv_buffer.received += ret;
+		transport->recv_buffer.received += nread;
 	}
 
 	if (transport->recv_buffer.received != 0 &&
