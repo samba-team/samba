@@ -332,6 +332,12 @@ fkt_start_seq_get_int(krb5_context context,
 	return ret;
     }
     c->sp = krb5_storage_from_fd(c->fd);
+    if (c->sp == NULL) {
+	_krb5_xunlock(context, c->fd);
+	close(c->fd);
+	krb5_set_error_string (context, "malloc: out of memory");
+	return ENOMEM;
+    }
     krb5_storage_set_eof_code(c->sp, KRB5_KT_END);
     ret = krb5_ret_int8(c->sp, &pvno);
     if(ret) {
