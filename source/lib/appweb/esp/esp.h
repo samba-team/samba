@@ -36,10 +36,10 @@
 #ifndef _h_ESP_h
 #define _h_ESP_h 1
 
-#include	"lib/ejs/ejs.h"
-#include	"web_server/esp/espEnv.h"
-#include	"lib/ejs/var.h"
-#include	"lib/ejs/miniMpr.h"
+#include	"lib/appweb/ejs/ejs.h"
+#include	"lib/appweb/esp/espEnv.h"
+#include	"lib/appweb/ejs/var.h"
+#include	"lib/appweb/ejs/miniMpr.h"
 
 /*********************************** Defines **********************************/
 

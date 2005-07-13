@@ -22,7 +22,7 @@
 */
 
 #include "includes.h"
-#include "lib/ejs/ejs.h"
+#include "lib/appweb/ejs/ejs.h"
 #include "auth/auth.h"
 #include "scripting/ejs/smbcalls.h"
 

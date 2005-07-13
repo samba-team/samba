@@ -20,7 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "lib/ejs/ejs.h"
+#include "lib/appweb/ejs/ejs.h"
 
 void mpr_Return(int eid, struct MprVar);
 NTSTATUS mprSetVar(struct MprVar *v, const char *name, struct MprVar val);
