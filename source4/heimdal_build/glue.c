@@ -23,12 +23,11 @@
 #include "includes.h"
 #include "system/network.h"
 #include "system/kerberos.h"
-#include "err.h"
 
 /*
   get the list of IP addresses for configured interfaces
 */
-krb5_error_code krb5_get_all_client_addrs(krb5_context context, krb5_addresses *res)
+krb5_error_code KRB5_LIB_FUNCTION krb5_get_all_client_addrs(krb5_context context, krb5_addresses *res)
 {
 	int i;
 	res->len = iface_count();
