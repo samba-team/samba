@@ -154,7 +154,7 @@ BOOL py_from_DEVICEMODE(PyObject **dict, DEVICEMODE *devmode)
 
 	PyDict_SetItemString(*dict, "private",
 			     PyString_FromStringAndSize(
-				     devmode->private, devmode->driverextra));
+				     devmode->dev_private, devmode->driverextra));
 
 	return True;
 }
@@ -170,7 +170,7 @@ BOOL py_to_DEVICEMODE(DEVICEMODE *devmode, PyObject *dict)
 	if (!PyString_Check(obj))
 		goto done;
 
-	devmode->private = PyString_AsString(obj);
+	devmode->dev_private = PyString_AsString(obj);
 	devmode->driverextra = PyString_Size(obj);
 
 	PyDict_DelItemString(dict_copy, "private");
