@@ -1373,7 +1373,7 @@ static NTSTATUS lsa_EnumPrivsAccount(struct dcesrv_call_state *dce_call,
 	}
 
 	for (i=0;i<el->num_values;i++) {
-		int id = sec_privilege_id(el->values[i].data);
+		int id = sec_privilege_id((const char *)el->values[i].data);
 		if (id == -1) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
@@ -1430,7 +1430,7 @@ static NTSTATUS lsa_EnumAccountRights(struct dcesrv_call_state *dce_call,
 	}
 
 	for (i=0;i<el->num_values;i++) {
-		r->out.rights->names[i].string = el->values[i].data;
+		r->out.rights->names[i].string = (const char *)el->values[i].data;
 	}
 
 	return NT_STATUS_OK;
@@ -1516,7 +1516,7 @@ static NTSTATUS lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_call,
 
 
 		el.values[el.num_values].length = strlen(rights->names[i].string);
-		el.values[el.num_values].data = talloc_strdup(mem_ctx, rights->names[i].string);
+		el.values[el.num_values].data = (uint8_t *)talloc_strdup(mem_ctx, rights->names[i].string);
 		if (el.values[el.num_values].data == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
