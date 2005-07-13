@@ -335,6 +335,10 @@ static void std_event_loop_timer(struct event_context *ev)
 	struct timeval t = timeval_current();
 	struct timed_event *te = std_ev->timed_events;
 
+	if (te == NULL) {
+		return;
+	}
+
 	te->next_event = timeval_zero();
 
 	te->handler(ev, te, t, te->private_data);
@@ -479,31 +483,32 @@ static int std_event_loop_once(struct event_context *ev)
 {
 	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
 		 					   struct std_event_context);
-	struct timeval tval, *tvalp;
-
-	tvalp = NULL;
+	struct timeval tval;
 
 	/* work out the right timeout for all timed events */
 	if (std_ev->timed_events) {
 		struct timeval t = timeval_current();
-
 		tval = timeval_diff(&std_ev->timed_events->next_event, &t);
-		tvalp = &tval;
-		if (timeval_is_zero(tvalp)) {
+		if (timeval_is_zero(&tval)) {
 			std_event_loop_timer(ev);
 			return 0;
 		}
+	} else {
+		/* have a default tick time of 30 seconds. This guarantees
+		   that code that uses its own timeout checking will be
+		   able to proceeed eventually */
+		tval = timeval_set(30, 0);
 	}
 
 #if WITH_EPOLL
 	if (std_ev->epoll_fd != -1) {
-		if (std_event_loop_epoll(ev, tvalp) == 0) {
+		if (std_event_loop_epoll(ev, &tval) == 0) {
 			return 0;
 		}
 	}
 #endif
 
-	return std_event_loop_select(ev, tvalp);
+	return std_event_loop_select(ev, &tval);
 }
 
 /*
