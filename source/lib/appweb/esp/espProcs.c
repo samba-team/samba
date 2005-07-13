@@ -93,8 +93,11 @@ static int includeProc(EspRequest *ep, int argc, char **argv)
 		buf[size] = '\0';
 
 		extension = strrchr(argv[i], '.');
-		/* this makes handling include files in esp scripts much more convenient */
-		if (extension && strcasecmp(extension, ".esp") == 0) {
+
+		/*
+		 *	Allow nested inclusion of ESP requests
+		 */
+		if (extension && mprStrCmpAnyCase(extension, ".esp") == 0) {
 			if (espProcessRequest(ep, path, buf, &emsg) != 0) {
 				espError(ep, "Cant evaluate script - %s", emsg?emsg:"");
 				mprFree(buf);
