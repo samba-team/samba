@@ -273,48 +273,33 @@ void smbcli_sock_set_options(struct smbcli_socket *sock, const char *options)
 /****************************************************************************
  Write to socket. Return amount written.
 ****************************************************************************/
-ssize_t smbcli_sock_write(struct smbcli_socket *sock, const uint8_t *data, size_t len)
+NTSTATUS smbcli_sock_write(struct smbcli_socket *sock, const uint8_t *data, 
+			   size_t len, size_t *nsent)
 {
-	NTSTATUS status;
 	DATA_BLOB blob;
-	size_t nsent;
 
 	if (sock->sock == NULL) {
-		errno = EIO;
-		return -1;
+		return NT_STATUS_CONNECTION_DISCONNECTED;
 	}
 
 	blob.data = discard_const(data);
 	blob.length = len;
 
-	status = socket_send(sock->sock, &blob, &nsent, 0);
-	if (NT_STATUS_IS_ERR(status)) {
-		return -1;
-	}
-
-	return nsent;
+	return socket_send(sock->sock, &blob, nsent, 0);
 }
 
 
 /****************************************************************************
  Read from socket. return amount read
 ****************************************************************************/
-ssize_t smbcli_sock_read(struct smbcli_socket *sock, uint8_t *data, size_t len)
+NTSTATUS smbcli_sock_read(struct smbcli_socket *sock, uint8_t *data, 
+			  size_t len, size_t *nread)
 {
-	NTSTATUS status;
-	size_t nread;
-
 	if (sock->sock == NULL) {
-		errno = EIO;
-		return -1;
+		return NT_STATUS_CONNECTION_DISCONNECTED;
 	}
 
-	status = socket_recv(sock->sock, data, len, &nread, 0);
-	if (NT_STATUS_IS_ERR(status)) {
-		return -1;
-	}
-
-	return nread;
+	return socket_recv(sock->sock, data, len, nread, 0);
 }
 
 
