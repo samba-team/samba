@@ -369,7 +369,7 @@ static int ldb_match_message(struct ldb_context *ldb,
 		return ldb_match_extended(ldb, msg, tree, base, scope);
 
 	case LDB_OP_NOT:
-		return ! ldb_match_message(ldb, msg, tree->u.not.child, base, scope);
+		return ! ldb_match_message(ldb, msg, tree->u.isnot.child, base, scope);
 
 	case LDB_OP_AND:
 		for (i=0;i<tree->u.list.num_elements;i++) {

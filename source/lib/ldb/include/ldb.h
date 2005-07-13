@@ -186,7 +186,7 @@ struct ldb_parse_tree {
 		} list;
 		struct {
 			struct ldb_parse_tree *child;
-		} not;
+		} isnot;
 	} u;
 };
 
