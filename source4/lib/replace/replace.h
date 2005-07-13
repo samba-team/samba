@@ -109,10 +109,6 @@ int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #define VA_COPY(dest, src) (dest) = (src)
 #endif
 
-#ifndef UINT16_MAX
-#define UINT16_MAX 65535
-#endif
-
 #if defined(HAVE_VOLATILE)
 #define VOLATILE volatile
 #else

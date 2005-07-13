@@ -85,6 +85,7 @@ build_cp() {
 }
 
 build_cp heimdal/lib/roken/vis.hin
+build_cp heimdal/lib/roken/err.hin
 build_lex heimdal/lib/asn1/lex.l
 build_lex heimdal/lib/com_err/lex.l
 build_bison heimdal/lib/com_err/parse.y

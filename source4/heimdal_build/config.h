@@ -17,10 +17,6 @@ static /**/const char *const rcsid[] = { (const char *)rcsid, "\100(#)" msg }
 #define SIGRETURN(x) return (RETSIGTYPE)(x)
 #endif
 
-#ifndef MAXPATHLEN
-#define MAXPATHLEN (1024+4)
-#endif
-
 /* path to sysconf - should we force this to samba LIBDIR ? */
 #define SYSCONFDIR "/etc"
 
