@@ -1,4 +1,13 @@
-2005-07-12  Love  <lha@kth.se>
+2005-07-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* k5.asn1: reapply 1.43 that got lost in the merge: rename pvno to
+	krb5-pvno
+
+2005-07-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gen_decode.c (decode_type): TChoice: set the label
+
+	* check-gen.c (cmp_Name): do at least some checking
 
 	* gen_locl.h: rename function filename() to get_filename() to
 	avoid shadowing
@@ -45,7 +54,7 @@
 	Make sure that malloc(0) returning NULL is not treated as an
 	error.
 	
-2005-07-10  Love  <lha@kth.se>
+2005-07-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* check-gen.c: test cases for CHOICE, its too liberal right now,
 	it don't fail hard on failure on after it successfully decoded the
@@ -72,7 +81,7 @@
 	* der.h: Add class/type/tag string<->num converter.
 	Prototypes/structures for new time bits.
 	
-2005-07-09  Love  <lha@kth.se>
+2005-07-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* der_get.c (der_get_unsigned) check for length overflow
 	(der_get_integer) ditto
@@ -93,13 +102,13 @@
 	* check-common.c (map_alloc): make input buffer const
 	(generic_decode_fail): verify decoding failures
 
-2005-07-05  Love  <lha@kth.se>
+2005-07-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen_encode.c: split up the printf for SET OF, also use the
 	generate name for the symbol in the SET OF, if not, the name might
 	contain non valid variable name characters (like -)
 
-2005-07-04  Love  <lha@kth.se>
+2005-07-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: move pkcs12 defines into their own namespace
 
@@ -118,7 +127,7 @@
 	* gen_decode.c: use less context so lower indentention level, add
 	missing {} where needed
 	
-2005-07-02  Love  <lha@kth.se>
+2005-07-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen_copy.c: Use a global variable to keep track of if the 'goto
 	fail' was used, and use that to only generate the label if needed.
@@ -131,7 +140,7 @@
 	(missing EndOfContent tag) add (negative) indent flag to speed up
 	testing
 
-2005-07-01  Love  <lha@kth.se>
+2005-07-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* canthandle.asn1: Can't handle primitives in CHOICE
 
@@ -142,12 +151,12 @@
 	* gen_decode.c: Check if malloc failes, rename "reallen" to
 	tagdatalen since that is what it is.
 
-2005-05-29  Love  <lha@kth.se>
+2005-05-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* prefix Der_class with ASN1_C_ to avoid problems with system
 	headerfiles that pollute the name space
 
-2005-05-20  Love  <lha@kth.se>
+2005-05-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* pkcs12.asn1: add PKCS12CertBag
 
@@ -161,16 +170,16 @@
 
 	* Makefile.am: add PKCS12Attributes
 
-2005-05-10  Love  <lha@kth.se>
+2005-05-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* canthandle.asn1: fix tags in example
 
-2005-05-02  Love  <lha@kth.se>
+2005-05-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* pkinit.asn1: Let the Windows nonce be an int32 (signed), if not
 	it will fail when using Windows PK-INIT.
 
-2005-05-01  Love  <lha@kth.se>
+2005-05-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: add pkcs12-PBEParams
 	
@@ -178,14 +187,14 @@
 	
 	* parse.y: objid_element: exit when the condition fails
 
-2005-04-26  Love  <lha@kth.se>
+2005-04-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen_glue.c: 1.8: switch the units variable to a
 	function. gcc-4.1 needs the size of the structure if its defined
 	as extern struct units foo_units[] an we don't want to include
 	<parse_units.h> in the generate headerfile
 
-2005-03-20  Love  <lha@kth.se>
+2005-03-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: add the des-ede3-cbc oid that ansi x9.52 uses
 
@@ -195,23 +204,23 @@
 
 	* rfc2459.asn1: add oids now when the compiler can handle them
 
-2005-03-19  Love  <lha@kth.se>
+2005-03-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: add pkcs9 files
 
 	* pkcs9.asn1: add small number of oids from pkcs9
 
-2005-03-14  Love  <lha@kth.se>
+2005-03-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: add a bunch of pkcs1/pkcs2/pkcs3/aes oids
 
 	* rfc2459.asn1: add a bunch of pkcs1/pkcs2/pkcs3/aes oids
 
-2005-03-10  Love  <lha@kth.se>
+2005-03-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* k5.asn1: merge pa-numbers
 
-2005-03-09  Love  <lha@kth.se>
+2005-03-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: add oid's
 
@@ -223,7 +232,7 @@
 
 	* CMS.asn1: add pkcs7 oids
 
-2005-03-08  Love  <lha@kth.se>
+2005-03-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen.c (generate_header_of_codefile): break out the header
 	section generation
@@ -234,12 +243,12 @@
 
 	* parse.y: handle OBJECT IDENTIFIER as value construct
 
-2005-02-24  Love  <lha@stacken.kth.se>
+2005-02-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Preserve content of CHOICE element that is unknown if ellipsis
 	was used when defining the structure
 
-2005-02-13  Love  <lha@stacken.kth.se>
+2005-02-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* parse.y: use ANS1_TAILQ macros
 
@@ -248,43 +257,43 @@
 	* asn1_queue.h: inline bsd sys/queue.h and rename TAILQ to
 	ASN1_TAILQ to avoid problems with name polluting headerfiles
 	
-2005-01-19  Love  <lha@stacken.kth.se>
+2005-01-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen.c: pull in <krb5-types.h>
 
-2005-01-10  Love  <lha@stacken.kth.se>
+2005-01-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Add BMPString and UniversalString
 
 	* k5.asn1 (EtypeList): make INTEGER constrained (use krb5int32)
 
-2005-01-07  Love  <lha@stacken.kth.se>
+2005-01-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rfc2459.asn1: add GeneralNames
 
-2004-11-21  Love  <lha@stacken.kth.se>
+2004-11-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen.c: use unsigned integer for len of SequenceOf/SetOf and
 	bitstring names
 
-2004-11-10  Love  <lha@stacken.kth.se>
+2004-11-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: switch to krb5int32 and krb5uint32
 	
 	* Unify that three integer types TInteger TUInteger and TBigInteger.
 	Start to use constrained integers where appropriate.
 
-2004-10-13  Love  <lha@stacken.kth.se>
+2004-10-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* CMS.asn1: remove no longer used commented out elements
 	
 	* gen_glue.c: make units structures const
 	
-2004-10-12  Love  <lha@stacken.kth.se>
+2004-10-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lex.l: handle hex number with [a-fA-F] in them
 	
-2004-10-07  Love  <lha@stacken.kth.se>
+2004-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen_free.c: free _save for CHOICE too
 	
@@ -301,7 +310,7 @@
 	name is CMSIdentifier and add glue for that so we can share code
 	use Name and not heim_any
 	
-2004-10-03  Love  <lha@stacken.kth.se>
+2004-10-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: drop AlgorithmIdentifierNonOpt add
 	{RC2CBC,}CBCParameter here where they belong
@@ -313,7 +322,7 @@
 	* rfc2459.asn1: stop using AlgorithmIdentifierNonOpt hint that we
 	really want to use Name and some MS stuff
 	
-2004-09-05  Love  <lha@stacken.kth.se>
+2004-09-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* asn1_print.c: handle end of content, this is part BER support,
 	however, OCTET STRING need some tweeking too.
@@ -358,7 +367,7 @@
 	
 	* CMS.asn1: add EncryptedData
 	
-2004-08-26  Love  <lha@stacken.kth.se>
+2004-08-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen_decode.c (decode_type): if the entry is already optional
 	when parsing a tag and we allocate the structure, not pass down
@@ -366,12 +375,12 @@
 	allocate an entry. and we'll leak an entry. Bug from Luke Howard
 	<lukeh@padl.com>. While here, use calloc.
 
-2004-04-29  Love  <lha@stacken.kth.se>
+2004-04-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* k5.asn1: shift the last added etypes one step so rc2 doesn't
 	stomp on cram-md5
 
-2004-04-26  Love  <lha@stacken.kth.se>
+2004-04-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* k5.asn1: add ETYPE_AESNNN_CBC_NONE
 	
@@ -380,17 +389,17 @@
 	* k5.asn1: add CMS symmetrical parameters here, more nametypes
 	enctype rc2-cbc
 
-2004-04-25  Love  <lha@stacken.kth.se>
+2004-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen_decode.c: free data on decode failure
 	
-2004-04-24  Love  <lha@stacken.kth.se>
+2004-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: add CBCParameter and RC2CBCParameter
 	
 	* CMS.asn1: add CBCParameter and RC2CBCParameter
 	
-2004-04-20  Love  <lha@stacken.kth.se>
+2004-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* check-der.c: add simple test for oid's, used to trigger malloc
 	bugs in you have picky malloc (like valgrind/purify/third)
@@ -399,7 +408,7 @@
 	then 127 and allocate one extra element since first byte is split
 	to to elements.
 
-2004-04-16  Love  <lha@stacken.kth.se>
+2004-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* canthandle.asn1: one thing handled
 	
@@ -409,7 +418,7 @@
 	an unsigned, do the length counting here. ("unsigned" is zero
 	padded when most significate bit is set, length is not)
 	
-2004-04-12  Love  <lha@stacken.kth.se>
+2004-04-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* canthandle.asn1: document by example what the encoder can't
 	handle right now
@@ -458,7 +467,7 @@
 	
 	* der.h: hide away more symbols, add more _cmp functions
 	
-2004-03-06  Love  <lha@stacken.kth.se>
+2004-03-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: add more pkix types make k5 use rfc150 bitstrings,
 	everything else use der bitstrings
@@ -479,7 +488,7 @@
 	
 	* rfc2459.asn1: add Certificates and KeyUsage
 	
-2004-02-22  Love  <lha@stacken.kth.se>
+2004-02-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* pkinit.asn1: use Name from PKIX
 	
@@ -512,7 +521,7 @@
 	* gen_length.c: 1.14: (length_type): TSequenceOf: add up the size
 	of all the elements, don't use just the size of the last element.
 	
-2004-02-20  Love  <lha@stacken.kth.se>
+2004-02-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rfc2459.asn1: include defintion of Name
 	
@@ -524,7 +533,7 @@
 	
 	* Makefile.am: align with pk-init-18, move contentinfo to cms
 	
-2004-02-17  Love  <lha@stacken.kth.se>
+2004-02-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* der_get.c: rewrite previous commit
 	
@@ -575,17 +584,17 @@
 	* asn1-common.h: add signedness flag to heim_integer, add
 	ia5string and printablestring
 
-2004-02-13  Love  <lha@stacken.kth.se>
+2004-02-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rfc2459.asn1: use BIGINTEGER where appropriate
 	
 	* setchgpw2.asn1: spelling and add op-req again
 	
-2004-02-12  Love  <lha@stacken.kth.se>
+2004-02-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: clean up better
 	
-2004-02-11  Love  <lha@stacken.kth.se>
+2004-02-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen_decode.c (decode_type): TTag, don't overshare the reallen
 	variable
@@ -594,7 +603,7 @@
 	
 	* gen.c: genereate log file name based on base name
 	
-2003-11-26  Love  <lha@stacken.kth.se>
+2003-11-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: += asn1_AlgorithmIdentifierNonOpt.x
 	
@@ -605,7 +614,7 @@
 
 	* pkinit.asn1: don't import AlgorithmIdentifier
 	
-2003-11-25  Love  <lha@stacken.kth.se>
+2003-11-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* der_put.c (der_put_bit_string): make it work somewhat better
 	(should really prune off all trailing zeros)
@@ -615,7 +624,7 @@
 	* der_length.c (length_bit_string): calculate right length for
 	bitstrings
 
-2003-11-24  Love  <lha@stacken.kth.se>
+2003-11-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* der_cmp.c (oid_cmp): compare the whole array, not just
 	length/sizeof(component)
@@ -638,11 +647,11 @@
 	
 	* asn1_print.c: check end of tag_names loop into APPL class tags
 	
-2003-11-23  Love  <lha@stacken.kth.se>
+2003-11-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* der_put.c (der_put_generalized_time): check size, not *size
 	
-2003-11-11  Love  <lha@stacken.kth.se>
+2003-11-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen_decode.c (decode_type/TBitString): skip over
 	skipped-bits-in-last-octet octet
@@ -650,7 +659,7 @@
 	* gen_glue.c (generate_units): generate units in reverse order to
 	keep unparse_units happy
 
-2003-11-08  Love  <lha@stacken.kth.se>
+2003-11-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: generate all silly pkinit files
 	

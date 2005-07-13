@@ -1,5 +1,10 @@
 2005-07-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/keytab_file.c (fkt_start_seq_get_int): check return
+	value from krb5_storage_from_fd
+
+2005-07-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
 	* lib/krb5/pkinit.c (pk_rd_pa_reply_dh): client do not contribute
 	to the DH when the server doesn't support the cached DH request.
 
