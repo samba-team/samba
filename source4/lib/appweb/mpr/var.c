@@ -1711,10 +1711,12 @@ void mprVarToString(char** out, int size, char *fmt, MprVar *obj)
 
 MprVar mprParseVar(char *buf, MprType preferredType)
 {
-	MprType		type = MPR_TYPE_UNDEFINED;
+	MprType		type;
 	char		*cp;
 
 	mprAssert(buf);
+
+	type = preferredType;
 
 	if (preferredType == MPR_TYPE_UNDEFINED) {
 		if (*buf == '-') {
@@ -1730,18 +1732,18 @@ MprVar mprParseVar(char *buf, MprType preferredType)
 		} else if (isdigit((int) *buf)) {
 			type = MPR_NUM_VAR;
 			cp = buf;
-			if (*cp && tolower((unsigned char)cp[1]) == 'x') {
+			if (*cp && tolower(cp[1]) == 'x') {
 				cp = &cp[2];
 			}
 			for (cp = buf; *cp; cp++) {
-				if (! isdigit((unsigned char) *cp)) {
+				if (! isdigit((int) *cp)) {
 					break;
 				}
 			}
 
 			if (*cp != '\0') {
 #if BLD_FEATURE_FLOATING_POINT
-				if (*cp == '.' || tolower((unsigned char)*cp) == 'e') {
+				if (*cp == '.' || tolower(*cp) == 'e') {
 					type = MPR_TYPE_FLOAT;
 				} else
 #endif
@@ -1750,8 +1752,6 @@ MprVar mprParseVar(char *buf, MprType preferredType)
 				}
 			}
 		}
-	} else {
-		type = preferredType;
 	}
 
 	switch (type) {
@@ -1993,11 +1993,11 @@ int64 mprParseInteger64(char *str)
 		}
 	} else {
 		cp++;
-		if (tolower((unsigned char)*cp) == 'x') {
+		if (tolower(*cp) == 'x') {
 			cp++;
 			radix = 16;
 			while (*cp) {
-				c = tolower((unsigned char)*cp);
+				c = tolower(*cp);
 				if (isdigit(c)) {
 					num64 = (c - '0') + (num64 * radix);
 				} else if (c >= 'a' && c <= 'f') {
@@ -2011,7 +2011,7 @@ int64 mprParseInteger64(char *str)
 		} else{
 			radix = 8;
 			while (*cp) {
-				c = tolower((unsigned char)*cp);
+				c = tolower(*cp);
 				if (isdigit(c) && c < '8') {
 					num64 = (c - '0') + (num64 * radix);
 				} else {
@@ -2110,11 +2110,11 @@ int mprParseInteger(char *str)
 		}
 	} else {
 		cp++;
-		if (tolower((unsigned char)*cp) == 'x') {
+		if (tolower(*cp) == 'x') {
 			cp++;
 			radix = 16;
 			while (*cp) {
-				c = tolower((unsigned char)*cp);
+				c = tolower(*cp);
 				if (isdigit(c)) {
 					num = (c - '0') + (num * radix);
 				} else if (c >= 'a' && c <= 'f') {
@@ -2128,7 +2128,7 @@ int mprParseInteger(char *str)
 		} else{
 			radix = 8;
 			while (*cp) {
-				c = tolower((unsigned char)*cp);
+				c = tolower(*cp);
 				if (isdigit(c) && c < '8') {
 					num = (c - '0') + (num * radix);
 				} else {
