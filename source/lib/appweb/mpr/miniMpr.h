@@ -41,7 +41,7 @@
 
 /* allow this library to use strcpy() */
 #undef strcpy
-	#include 	"config.h"
+	#include 	"lib/appweb/ejs/config.h"
 
 #if BLD_APPWEB
 	/*
