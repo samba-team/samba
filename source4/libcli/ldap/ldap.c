@@ -97,7 +97,7 @@ static BOOL ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree
 
 	case LDB_OP_NOT:
 		asn1_push_tag(data, ASN1_CONTEXT(2));
-		if (!ldap_push_filter(data, tree->u.not.child)) {
+		if (!ldap_push_filter(data, tree->u.isnot.child)) {
 			return False;
 		}
 		asn1_pop_tag(data);
@@ -500,8 +500,8 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 		}
 
 		ret->operation = LDB_OP_NOT;
-		ret->u.not.child = ldap_decode_filter_tree(ret, data);
-		if (ret->u.not.child == NULL) {
+		ret->u.isnot.child = ldap_decode_filter_tree(ret, data);
+		if (ret->u.isnot.child == NULL) {
 			goto failed;
 		}
 		if (!asn1_end_tag(data)) {
