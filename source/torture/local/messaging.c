@@ -101,13 +101,15 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 
 		if (!NT_STATUS_IS_OK(status1)) {
 			printf("msg1 failed - %s\n", nt_errstr(status1));
+		} else {
+			ping_count++;
 		}
 
 		if (!NT_STATUS_IS_OK(status2)) {
 			printf("msg2 failed - %s\n", nt_errstr(status2));
+		} else {
+			ping_count++;
 		}
-
-		ping_count += 2;
 
 		while (ping_count > pong_count + 20) {
 			event_loop_once(ev);
