@@ -13,7 +13,9 @@
 #if HAVE_SYS_BITYPES_H
 #include <sys/bitypes.h>
 #endif
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
 
 
 typedef socklen_t krb5_socklen_t;
