@@ -1,3 +1,12 @@
+2005-07-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ftp/gssapi.c (gss_adat): avoid leaking memory
+	(gss_auth): always try next kname if there is one, independant of
+	min_stat
+
+	* ftp/gssapi.c: avoid const warning, use sin4 instead of sin to
+	avoid shadow warning, free target_name
+
 2005-07-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ftp/security.c: keep track of if CCC was passed
