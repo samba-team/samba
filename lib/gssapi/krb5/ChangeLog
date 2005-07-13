@@ -1,3 +1,8 @@
+2005-07-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: the new asn.1 compiler includes the modules name in
+	the depend file
+
 2005-06-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* decapsulate.c: use rk_UNCONST
