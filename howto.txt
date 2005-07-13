@@ -29,30 +29,6 @@ version at some future date using:
   $ cd samba4
   $ svn up
 
-Step 1a: Use Lorikeet/Heimdal
------------------------------
-
-If you want to use Kerberos in Samba4, you must use
-'Lorikeet/heimdal', and place a checkout into samba4/source/heimdal
-
-There are 2 methods of doing this:
-
-  method 1:  
-    $ cd samba4/source
-    $ rsync -avz samba.org::ftp/unpacked/lorikeet-heimdal heimdal
-
-  method 2:  
-
-    $ cd samba4/source
-    $ svn co svn://svnanon.samba.org/lorikeet/trunk/heimdal heimdal
-
-both methods will create a directory called "heimdal" in the samba4/source
-directory. 
-
-(Long-term, we will either import Heimdal from 'lorikeet', or setup a
-reference between the repositories, so this and svn update works
-automaticly. In the short term, you must manually update this directory). 
-
 Step 2: compile Samba4
 ----------------------
 
@@ -60,13 +36,13 @@ Run this:
 
   $ cd samba4/source
   $ ./autogen.sh
-  $ ./configure.developer -C
+  $ ./configure.developer
 
 If you did not include heimdal, run this:
   $ make proto all
 
 If you did include Heimdal, a different step is required:
-  $ make proto HEIMDAL_EXTERNAL all
+  $ make proto all
 
 If you have gcc 3.4 or newer, then substitue "pch" for "proto" to
 greatly speed up the compile process (about 5x faster).
@@ -88,7 +64,7 @@ Step 4: provision Samba4
 The "provision" step sets up a basic user database. 
 
   $ cd source
-  $ ./setup/provision.pl --realm=YOUR.REALM --domain=YOURDOM --adminpass=SOMEPASSWORD
+  $ ./setup/provision --realm=YOUR.REALM --domain=YOURDOM --adminpass=SOMEPASSWORD
 
 This will create a number of new 'ldb' database files in a directory
 newdb.XXX. You need to move these to the "private" subdirectory of
