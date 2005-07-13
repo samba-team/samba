@@ -242,7 +242,7 @@ BOOL schedule_aio_read_and_X(connection_struct *conn,
 
 	/* Now set up the aio record for the read call. */
 	
-	a->aio_fildes = fsp->fd;
+	a->aio_fildes = fsp->fh->fd;
 	a->aio_buf = smb_buf(aio_ex->outbuf);
 	a->aio_nbytes = smb_maxcnt;
 	a->aio_offset = startpos;
@@ -321,7 +321,7 @@ BOOL schedule_aio_write_and_X(connection_struct *conn,
 
 	/* Now set up the aio record for the write call. */
 	
-	a->aio_fildes = fsp->fd;
+	a->aio_fildes = fsp->fh->fd;
 	a->aio_buf = data; /* As we've stolen inbuf this points within inbuf. */
 	a->aio_nbytes = numtowrite;
 	a->aio_offset = startpos;
@@ -677,7 +677,7 @@ void cancel_aio_by_fsp(files_struct *fsp)
 		if (aio_ex->fsp == fsp) {
 			/* Don't delete the aio_extra record as we may have completed
 			   and don't yet know it. Just do the aio_cancel call and return. */
-			SMB_VFS_AIO_CANCEL(fsp,fsp->fd, &aio_ex->acb);
+			SMB_VFS_AIO_CANCEL(fsp,fsp->fh->fd, &aio_ex->acb);
 			aio_ex->fsp = NULL; /* fsp will be closed when we return. */
 		}
 	}
