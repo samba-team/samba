@@ -234,7 +234,7 @@ sub _prepare_std_CC_rule($$$$$)
 # $comment
 .$src.$dst:
 	\@echo $message \$\*.$src
-	\@\$(CC) \$(TARGET_CFLAGS) \$(CFLAGS) $flags -c \$< -o \$\@
+	\@\$(CC) `script/cflags.sh \$\@` \$(CFLAGS) $flags -c \$< -o \$\@
 \@BROKEN_CC\@	-mv `echo \$\@ | sed 's%^.*/%%g'` \$\@
 
 __EOD__
@@ -401,10 +401,6 @@ sub _prepare_objlist_rule($)
 	$output = "$ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST = $tmpdepend\n";
 
 	$output .= "$ctx->{TARGET}: ";
-
-	if (defined ($ctx->{TARGET_CFLAGS})) {
-		$output .= "\n\t@\$(MAKE) TARGET_CFLAGS=\"" . join(' ', @{$ctx->{TARGET_CFLAGS}}) . "\" ";
-	} 
 
 	$output .= "\$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJS)\n";
 	$output .= "\t\@touch $ctx->{TARGET}\n";
