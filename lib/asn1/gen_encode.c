@@ -411,11 +411,11 @@ encode_type (const char *name, const Type *t)
 	if (have_ellipsis) {
 	    fprintf(codefile,
 		    "case %s: {\n"
-		    "if (len < %s->u.%s.length)\n"
+		    "if (len < (%s)->u.%s.length)\n"
 		    "return ASN1_OVERFLOW;\n"
-		    "p -= %s->u.%s.length;\n"
-		    "ret += %s->u.%s.length;\n"
-		    "memcpy(p + 1, %s->u.%s.data, %s->u.%s.length);\n"
+		    "p -= (%s)->u.%s.length;\n"
+		    "ret += (%s)->u.%s.length;\n"
+		    "memcpy(p + 1, (%s)->u.%s.data, (%s)->u.%s.length);\n"
 		    "break;\n"
 		    "}\n",
 		    have_ellipsis->label,

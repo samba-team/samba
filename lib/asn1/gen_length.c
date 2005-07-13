@@ -171,7 +171,7 @@ length_type (const char *name, const Type *t, const char *variable)
 	    if (have_ellipsis)
 		fprintf(codefile,
 			"case %s:\n"
-			"ret += %s->u.%s.length;\n"
+			"ret += (%s)->u.%s.length;\n"
 			"break;\n",
 			have_ellipsis->label,
 			name,
