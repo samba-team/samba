@@ -10,7 +10,7 @@ AC_CONFIG_HEADER(include/config.h)
 
 sinclude(build/m4/env.m4)
 sinclude(build/m4/rewrite.m4)
-sinclude(lib/replace/win32.m4)
+sinclude(lib/replace/win32/config.m4)
 sinclude(heimdal_build/config.m4)
 sinclude(lib/popt/config.m4)
 sinclude(lib/iconv.m4)
