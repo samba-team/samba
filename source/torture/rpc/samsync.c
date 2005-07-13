@@ -543,6 +543,15 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 		}
 	}
 
+	if (nt_hash_p) {
+		DATA_BLOB nt_hash_blob = data_blob_const(nt_hash_p, 16);
+		DEBUG(100,("ACCOUNT [%s\\%-25s] NTHASH %s\n", samsync_state->domain_name[0], username, data_blob_hex_string(mem_ctx, &nt_hash_blob)));
+	}
+	if (lm_hash_p) {
+		DATA_BLOB lm_hash_blob = data_blob_const(lm_hash_p, 16);
+		DEBUG(100,("ACCOUNT [%s\\%-25s] LMHASH %s\n", samsync_state->domain_name[0], username, data_blob_hex_string(mem_ctx, &lm_hash_blob)));
+	}
+
 	nt_status = test_SamLogon(samsync_state->p_netlogon_wksta, mem_ctx, samsync_state->creds_netlogon_wksta, 
 				  domain,
 				  username, 
