@@ -19,7 +19,7 @@ lib/events/config.mk
 lib/popt/config.mk
 lib/cmdline/config.mk
 lib/socket_wrapper/config.mk
-lib/ejs/config.mk
+lib/appweb/config.mk
 param/config.mk
 smb_server/config.mk
 rpc_server/config.mk

@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "lib/ejs/ejs.h"
+#include "lib/appweb/ejs/ejs.h"
 #include "scripting/ejs/smbcalls.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
