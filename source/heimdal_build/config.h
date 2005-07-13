@@ -36,15 +36,7 @@ static /**/const char *const rcsid[] = { (const char *)rcsid, "\100(#)" msg }
 
 /* these should be done with configure tests */
 #define KRB5
-#define HAVE_INET_ATON
 #define HAVE_LONG_LONG
-#define HAVE_GETHOSTNAME
-#define HAVE_SOCKLEN_T
-#define HAVE_GETNAMEINFO
-#define HAVE_STRUCT_WINSIZE
-#define HAVE_STRUCT_SOCKADDR_STORAGE
-#define HAVE_STRUCT_ADDRINFO
-#define HAVE_GAI_STRERROR
 
 #include <sys/types.h>
 #include <stdarg.h>
