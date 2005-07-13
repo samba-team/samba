@@ -73,7 +73,7 @@ function objbug() {
 
 /*
  demo a expression handling bug
- status: SUBMITTED
+ status: FIXED
 */
 function exprbug() {
 	var a = new Array(10);
@@ -118,10 +118,21 @@ function fnbug(c)
 	assert(s == "testing");
 }
 
+/****************************************
+demo incorrect handling of reserved words in strings
+status: SUBMITTED
+*****************************************/
+function reservedbug()
+{
+	assert("funct" + "ion" == 'function');
+}
+
+
 /* run the tests */
 arraybug();
 argsbug("one", "two", "three");
 recursebug();
 exprbug();
 fnbug(callback);
+reservedbug();
 objbug();
