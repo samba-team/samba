@@ -1,0 +1,6 @@
+The lib/appweb directory is a partial import of the appweb ejs and esp
+code from http://www.appwebserver.org/
+
+Many thanks to the mbedthis people, and especially Michael O'Brien for
+his assistance in getting this code integrated into Samba4.
+
