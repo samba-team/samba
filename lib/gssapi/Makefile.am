@@ -81,11 +81,11 @@ libgssapi_la_SOURCES =		\
         wrap.c                  \
         address_to_krb5addr.c
 
-CLEANFILES = $(BUILT_SOURCES) $(spnego_files) spnego_asn1.h asn1_files
+CLEANFILES = $(BUILT_SOURCES) $(spnego_files) spnego_asn1.h spnego_asn1_files
 
-$(spnego_files) spnego_asn1.h: asn1_files
+$(spnego_files) spnego_asn1.h: spnego_asn1_files
 
-asn1_files: ../asn1/asn1_compile$(EXEEXT) $(srcdir)/spnego.asn1
+spnego_asn1_files: ../asn1/asn1_compile$(EXEEXT) $(srcdir)/spnego.asn1
 	../asn1/asn1_compile$(EXEEXT) $(srcdir)/spnego.asn1 spnego_asn1
 
 $(libgssapi_la_OBJECTS): spnego_asn1.h

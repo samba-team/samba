@@ -17,7 +17,7 @@ foo = \
 	asn1_Salt.x \
 	asn1_hdb_entry.x
 
-CLEANFILES = $(BUILT_SOURCES) $(foo) hdb_asn1.h asn1_files
+CLEANFILES = $(BUILT_SOURCES) $(foo) hdb_asn1.h hdb_asn1_files
 
 noinst_PROGRAMS = convert_db
 LDADD = libhdb.la \
@@ -84,9 +84,9 @@ $(srcdir)/hdb-protos.h:
 $(srcdir)/hdb-private.h:
 	cd $(srcdir); perl ../../cf/make-proto.pl -q -P comment -p hdb-private.h $(hdb_source) || rm -f hdb-private.h
 
-$(foo) hdb_asn1.h: asn1_files
+$(foo) hdb_asn1.h: hdb_asn1_files
 
-asn1_files: ../asn1/asn1_compile$(EXEEXT) $(srcdir)/hdb.asn1
+hdb_asn1_files: ../asn1/asn1_compile$(EXEEXT) $(srcdir)/hdb.asn1
 	../asn1/asn1_compile$(EXEEXT) $(srcdir)/hdb.asn1 hdb_asn1
 
 $(libhdb_la_OBJECTS): hdb_asn1.h hdb_err.h
