@@ -459,8 +459,8 @@ static struct ldb_parse_tree *ldb_parse_not(void *mem_ctx, const char *s)
 	}
 
 	ret->operation = LDB_OP_NOT;
-	ret->u.not.child = ldb_parse_filter(ret, &s);
-	if (!ret->u.not.child) {
+	ret->u.isnot.child = ldb_parse_filter(ret, &s);
+	if (!ret->u.isnot.child) {
 		talloc_free(ret);
 		return NULL;
 	}
@@ -629,7 +629,7 @@ char *ldb_filter_from_tree(void *mem_ctx, struct ldb_parse_tree *tree)
 		}
 		return s;
 	case LDB_OP_NOT:
-		s = ldb_filter_from_tree(mem_ctx, tree->u.not.child);
+		s = ldb_filter_from_tree(mem_ctx, tree->u.isnot.child);
 		if (s == NULL) return NULL;
 
 		ret = talloc_asprintf(mem_ctx, "(!%s)", s);
