@@ -71,7 +71,7 @@ function page_footer() {
 */
 function always_allowed(uri) {
 	var allowed = new Array("/images/favicon.ico", 
-				"/images/linkpad.png",
+				"/images/linkpad.gif",
 				"/images/logo.png",
 				"/style/main.css",
 				"/style/common.css");
