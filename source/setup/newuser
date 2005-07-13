@@ -1,0 +1,141 @@
+#!/usr/bin/env smbscript
+/*
+	add a new user to a Samba4 server
+	Copyright Andrew Tridgell 2005
+	Released under the GNU GPL v2 or later
+*/
+
+options = new Object();
+ok = GetOptions(ARGV, options, 
+		"POPT_AUTOHELP",
+		"POPT_COMMON_SAMBA",
+		"POPT_COMMON_VERSION",
+		'username=s',
+		'unixname=s',
+		'password=s',
+		'quiet');
+if (ok == false) {
+   println("Failed to parse options: " + options.ERROR);
+   return -1;
+}
+
+libinclude("base.js");
+
+var samdb = lpGet("sam database");
+
+/*
+  print a message if quiet is not set
+*/
+function message() 
+{
+	if (options["quiet"] == undefined) {
+		print(vsprintf(arguments));
+	}
+}
+
+/*
+  search for one attribute as a string
+ */
+function search(db, expression, attribute)
+{
+	var attrs = new Array(attribute);
+	res = ldbSearch(db, expression, attrs);
+	if (res.length != 1 ||
+	    res[0][attribute] == undefined) {
+		return undefined;
+	}
+	return res[0][attribute];
+}
+
+/*
+ show some help
+*/
+function ShowHelp()
+{
+	print("
+Samba4 newuser
+
+newuser [options]
+  --username  USERNAME     choose new username
+  --unixname  USERNAME     choose unix name of new user
+  --password  PASSWORD     set password
+
+You must provide at least a username
+");
+	exit(1);
+}
+
+if (options['username'] == undefined) {
+	ShowHelp();
+}
+if (options['password'] == undefined) {
+	options.password = randpass(12);
+	printf("chose random password %s\n", options.password);
+}
+if (options['unixname'] == undefined) {
+	options.unixname = options.username;
+}
+
+if (getpwnam(options.unixname) == undefined) {
+	printf("ERROR: Unix user '%s' does not exist\n", options.unixname);
+	exit(1);
+}
+
+if (search(samdb, "name=" + options.username, "dn") != undefined) {
+	printf("ERROR: User '%s' already exists\n", options.username);
+	exit(1);
+}
+
+var domain_dn = search(samdb, "objectClass=domainDNS", "dn");
+assert(domain_dn != undefined);
+var dom_users = search(samdb, "name=Domain Users", "dn");
+assert(dom_users != undefined);
+
+var user_dn = sprintf("CN=%s,CN=Users,%s", options.username, domain_dn);
+
+/*
+  the new user record. note the reliance on the samdb module to fill
+  in a sid, guid etc
+ */
+var ldif = sprintf("
+dn: %s
+sAMAccountName: %s
+name: %s
+memberOf: %s
+unixName: %s
+objectGUID: %s
+unicodePwd: %s
+objectClass: user
+",
+		   user_dn, options.username, options.username, dom_users,
+		   options.unixname, randguid(), options.password);
+
+/*
+  add the user to the users group as well
+*/
+var modgroup = sprintf("
+dn: %s
+changetype: modify
+add: member
+member: %s
+", dom_users, user_dn);
+
+/*
+  now the real work
+ */
+message("Adding user %s\n", user_dn);
+ok = ldbAdd(samdb, ldif);
+if (ok != true) {
+	message("Failed to add %s\n", user_dn);
+	exit(1);
+}
+
+message("Modifying group %s\n", dom_users);
+ok = ldbModify(samdb, modgroup);
+if (ok != true) {
+	message("Failed to modify %s\n", dom_users);
+	exit(1);
+}
+
+message("All OK\n");
+return 0;
