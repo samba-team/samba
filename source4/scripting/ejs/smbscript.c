@@ -101,7 +101,7 @@ void ejs_exception(const char *reason)
 	}
 
 	return_var = ejsGetReturnValue(eid);
-	exit_status = return_var->integer;
+	exit_status = mprVarToNumber(return_var);
 
 	ejsClose();
 
