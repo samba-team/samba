@@ -1,0 +1,32 @@
+/*
+	swat.css
+	
+	Styles added to the samba.org stylesheets 
+	specifically for SWAT.
+*/
+
+
+/* Forms
+***********************************************************/
+.logout {
+	text-align:right;
+}
+.logout form {
+	display:inline;
+}
+
+
+/* Tables
+***********************************************************/
+table.data {
+	   border: 2px;
+}
+table.data th {
+	margin-top:20px;
+	text-align:left;
+        background-color: #F5C915;
+}
+table.data tr {
+        background-color: #E5C995;
+	text-align:left;
+}

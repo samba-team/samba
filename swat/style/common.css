@@ -1,15 +1,45 @@
-/* common.css */
+/* 
+	common.css
+	Copyright (C) 2004-2005 Deryck Hodge <deryck@samba.org>
 
-	/********* Basic elements across the site **********/
-	/***************************************************/
+	Basic styles common to all of samba.org, including VirtualHosts
+	bugzilla.samba.org, build.samba.org, and news.samba.org.
 
+	You may freely use and modify the styles here, but if you 
+	intend to recreate the samba.org look exactly, please ask
+	permission first.
+*/
+
+
+/* Base elements
+***********************************************************/
 body {
+	background:url(/images/stripes.png) repeat-x 0 0;
 	margin:0;
+	padding:0;
 	background-color:#E5E9F5;
 	font-family:Lucidasans, Helvetica, Verdana, sans-serif;
 	font-size:medium;
 	color:#000;
 }
+body#news  {
+	background:none;
+	background-color:#FFF;
+}
+blockquote {				
+	margin:35px;			
+	padding:15px; 			
+	border-left:2px groove #CCC;
+	border-top:2px groove #CCC;
+}
+img {
+	border:0;
+}
+
+
+
+/* Headings
+***********************************************************/
 h1 {
 	font-size:x-large;
 }
@@ -42,6 +72,17 @@ h6 {
 h6 a {
 	margin-right:3px;
 }
+
+
+/* Lists
+***********************************************************/
+ol li {
+	margin-bottom:12px;
+}
+
+
+/* Tables
+***********************************************************/
 table.real thead { 
         background-color: #E5E9F5;
 }
@@ -58,50 +99,30 @@ a:link:hover {
 	color:#CC0033;
 	background-color:#FFFF64;
 }
-ol li {
-	margin-bottom:12px;
-}
-blockquote {				
-	margin:35px;			
-	padding:15px; 			
-	border-left:2px groove #CCC;
-	border-top:2px groove #CCC;
-}
-img {
-	border:0;
-}
-.punch {  			/*creates a bold typeface */
-	font-weight:bold;
-}
 
-	/********************* header styles *******************************/
-	/******************************************************************/
+
+/* Header (yellow and blue stripes)
+***********************************************************/
 #banner {
 	position:absolute;
 	top:0;
 	left:0;
-	height:90px;
+	height:95px;
 	width:100%;
 	padding-top:4px;
-	background-color:#FFFF64;
+	z-index:1;
 }
-.logout {
+.srch {
 	text-align:right;
-
+  margin:0 5px 0 0;
 }
-.logout form {
+.srch form {
 	display:inline;
 }
-.stripe {
-	position:absolute;
-	top:40px;
-	left:0;
-	height:55px;
-	width:100%;
-	background-color:#3878CD;
-	border-top:2px solid #575756;
-	border-bottom:2px solid #575756;
-}
+
+
+/* Slogan ("Opening windows to a wider world")
+***********************************************************/
 .slogan {
 	position:absolute;
 	left:187px;
@@ -117,8 +138,9 @@ html>body .slogan { 	/**** Opera needs its own rule *********/
 	top:100px;
 }
 
-		/******** PNG logo with transparency across browsers  */
-		/******************************************************/
+
+/* Logo (with hacks for PNG transparency across browsers)
+***********************************************************/
 #logo>.logo_hack {
 	background-image:url(/images/logo.png);
 	background-position:center;
@@ -132,14 +154,16 @@ html>body .slogan { 	/**** Opera needs its own rule *********/
 	height:119px;
 	padding:0;
 	margin:0;
+	z-index:1;
 }
 .logo_hack a:hover {
 	background:transparent;
 }
 
-		/******** Main nav menu styles ****************/
-		/**********************************************/
-.nav {
+
+/* Nav menu
+***********************************************************/
+#nav {
 	position:absolute;
 	top:152px;
 	left:20px;
@@ -151,34 +175,44 @@ html>body .slogan { 	/**** Opera needs its own rule *********/
 	margin:0;
 	z-index:1;
 }
-.nav ul {
+#nav ul {
 	list-style-type:none;
 	text-align:center;
 	padding:0;
 	margin:0;
 }
-.nav a,
-.nav a:link,
-.nav a:visited {
+#nav a,
+#nav a:link,
+#nav a:visited {
 	display:block;
 	height:20px;
 	font-size:small;
 	color:#2B5C9F;
 }
-.nav a:hover {
+#nav a:hover {
 	color:#FFF;
 	background-color:#3878CD;
 }
-.nav a:active {
+#nav a:active {
 	color:#FFFF64;
 	background-color:#3878CD;
 	font-size:14px;
 }
-.nav img {
+#nav img {
 	padding:0;
 	margin:0;
 	width:180px;
 	height:30px;
+}
+
+
+/* Text and alignment formats
+***********************************************************/
+.punch {
+	font-weight:bold;
+}
+.tilt {
+	font-style:italic;
 }
 .colophon {
 	margin-left:20px;

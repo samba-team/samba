@@ -73,7 +73,9 @@ function always_allowed(uri) {
 	var allowed = new Array("/images/favicon.ico", 
 				"/images/linkpad.gif",
 				"/images/logo.png",
-				"/style/main.css",
+				"/images/stripes.png",
+				"/style/columns.css",
+				"/style/swat.css",
 				"/style/common.css");
 	for (i in allowed) {
 		if (allowed[i] == uri) {
