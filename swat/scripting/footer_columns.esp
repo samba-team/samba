@@ -4,4 +4,4 @@
 </div>
 </div>
 </body>
-<% include("/scripting/footer.esp"); %>
+</html>
