@@ -83,15 +83,15 @@ void ejs_exception(const char *reason)
 	/* load the script and advance past interpreter line*/
 	script = file_load(fname, &script_size, mem_ctx);
 
-	if ((script_size > 2) && script[0] == '#' && script[1] == '!') {
-		script += 2;
-		script_size -= 2;
-		while (script_size) {
-			if (*script == '\r' || *script == '\n')
-				break;
-			script++;
-			script_size--;
-		}
+	/* allow scriptable js */
+	if (strncmp(script, "#!", 2) == 0) {
+		script += strcspn(script, "\r\n");
+		script += strspn(script, "\r\n");
+	}
+	/* and this copes with the ugly exec hack */
+	if (strncmp(script, "exec ", 5) == 0) {
+		script += strcspn(script, "\r\n");
+		script += strspn(script, "\r\n");
 	}
 
 	/* run the script */
