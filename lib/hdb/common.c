@@ -48,6 +48,8 @@ hdb_principal2key(krb5_context context, krb5_principal p, krb5_data *key)
     new.name.name_type = 0;
 
     ASN1_MALLOC_ENCODE(Principal, key->data, key->length, &new, &len, ret);
+    if (ret == 0 && key->length != len)
+	krb5_abortx(context, "internal asn.1 encoder error");
     free_Principal(&new);
     return ret;
 }
@@ -65,6 +67,8 @@ hdb_entry2value(krb5_context context, hdb_entry *ent, krb5_data *value)
     int ret;
     
     ASN1_MALLOC_ENCODE(hdb_entry, value->data, value->length, ent, &len, ret);
+    if (ret == 0 && value->length != len)
+	krb5_abortx(context, "internal asn.1 encoder error");
     return ret;
 }
 
