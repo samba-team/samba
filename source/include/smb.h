@@ -1644,6 +1644,8 @@ typedef struct user_struct
 
 	struct auth_serversupplied_info *server_info;
 
+	struct auth_ntlmssp_state *auth_ntlmssp_state;
+
 } user_struct;
 
 
