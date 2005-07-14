@@ -182,11 +182,11 @@ static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf,
 }
 
 #ifndef NPROC
-#define NPROC 6
+#define NPROC 2
 #endif
 
 #ifndef NLOOPS
-#define NLOOPS 200000
+#define NLOOPS 5000
 #endif
 
  int main(int argc, const char *argv[])
@@ -196,6 +196,8 @@ static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf,
 	pid_t pids[NPROC];
 
 	pids[0] = getpid();
+
+	unlink("torture.tdb");
 
 	for (i=0;i<NPROC-1;i++) {
 		if ((pids[i+1]=fork()) == 0) break;
