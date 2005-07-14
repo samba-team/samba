@@ -266,7 +266,12 @@ NOPROTO = YES
 ADD_OBJ_FILES = \
 	heimdal/lib/roken/gai_strerror.o \
 	heimdal/lib/roken/getaddrinfo.o \
-	heimdal/lib/roken/freeaddrinfo.o
+	heimdal/lib/roken/freeaddrinfo.o \
+	heimdal/lib/roken/getipnodebyaddr.o \
+	heimdal/lib/roken/getipnodebyname.o \
+	heimdal/lib/roken/freehostent.o \
+	heimdal/lib/roken/copyhostent.o \
+	heimdal/lib/roken/hostent_find_fqdn.o
 NOPROTO = YES
 
 #######################
