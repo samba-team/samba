@@ -10,10 +10,11 @@
 
 #include "system.h"
 
-#if HAVE_FLOAT_H
+#if HAVE_MATH_H
+#include <math.h>
+#elif HAVE_FLOAT_H
 #include <float.h>
 #endif
-#include <math.h>
 
 #include "findme.h"
 #include "poptint.h"
