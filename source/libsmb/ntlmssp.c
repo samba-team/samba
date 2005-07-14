@@ -182,7 +182,7 @@ NTSTATUS ntlmssp_set_domain(NTLMSSP_STATE *ntlmssp_state, const char *domain)
 NTSTATUS ntlmssp_set_workstation(NTLMSSP_STATE *ntlmssp_state, const char *workstation) 
 {
 	ntlmssp_state->workstation = talloc_strdup(ntlmssp_state->mem_ctx, workstation);
-	if (!ntlmssp_state->domain) {
+	if (!ntlmssp_state->workstation) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	return NT_STATUS_OK;
