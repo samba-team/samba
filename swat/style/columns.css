@@ -1,15 +1,30 @@
-/* main.css */
+/*
+	columns.css
+	Copyright (C) 2004-2005 Deryck Hodge <deryck@samba.org>
 
-		/******* Links for right-hand side of the page ******/
-		/****************************************************/
+	Creates a puesdo-three-column view.
+
+	You may freely use and modify the styles here, but if you 
+	intend to recreate the samba.org look exactly, please ask
+	permission first.
+*/
+
+
+/* Right-side column 
+***********************************************************/
 #links {
-	float:right;
-	margin:115px 1em 0 0;  
+	float:left;
+	margin:115px 0 0 81%;  
 	padding:0;
-    width:173px;
+    width:18%;
 }
-* html #links { 	/* Applies to IE5/6 only */
-	margin:115px .5% 0 0;
+* html #links {
+	position:absolute;
+	top:115px;
+	left:82%;
+	float:none;
+	width:17%;
+	margin:0;
 }
 #links h4 {
 	margin-top:10px;
@@ -47,32 +62,37 @@
 .contacts li{
 	list-style-type:disc;
 }
-		/****** Formats the page layout ********************/
-		/**************************************************/ 
-#content>.center {
-	min-height:800px;
-	z-index:0;
-}
-.center {
-	margin:0 22% 0 175px;
-	padding-top:130px;
+
+
+/* Middle content column
+***********************************************************/
+#content {
+	position:absolute;
+	top:100px;
+	margin:0 20% 0 175px;
+	padding-top:30px;
 	padding-left:35px;
 	padding-bottom:50px;
 	padding-right:15px;
 	background-color:#FFF;
 	border-left:1px solid #FFFF64;
 	border-right:1px solid #FFFF64;
-	z-index:-1;
 }
-.center ul {
+* html #content {
+	width:51%;
+	margin-right:0;
+}
+#content ul {
 	list-style-type:none;
 }
+
+
+/* Misc
+************************************************************/
 .headline {
         margin-left:20px;
         font-style:italic;
 }
-		/*********T-shirts and mirror footnotes *************/
-		/****************************************************/
 .plugs {
 	font-style:italic;
 	text-align:center;
@@ -104,20 +124,4 @@
     width:auto;
     text-align:center;
     margin:10px 0 25px 0;
-}
-
-/*
-	styles for data tables
-*/
-table.data {
-	   border: 2px;
-}
-table.data th {
-	margin-top:20px;
-	text-align:left;
-        background-color: #F5C915;
-}
-table.data tr {
-        background-color: #E5C995;
-	text-align:left;
 }
