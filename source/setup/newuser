@@ -1,4 +1,5 @@
-#!/usr/bin/env smbscript
+#!/bin/sh
+exec smbscript "$0" ${1+"$@"}
 /*
 	add a new user to a Samba4 server
 	Copyright Andrew Tridgell 2005
