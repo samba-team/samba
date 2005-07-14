@@ -171,6 +171,9 @@ SMB_MODULE_DEFAULT(KERBEROS_LIB, NOT)
 SMB_BINARY_ENABLE(asn1_compile, NO)
 SMB_BINARY_ENABLE(compile_et, NO)
 
+AC_PROG_LEX
+AC_PROG_YACC
+
 # to enable kerberos, unpack a heimdal source tree in the heimdal directory
 # of the samba source tree
 if test -d heimdal; then
