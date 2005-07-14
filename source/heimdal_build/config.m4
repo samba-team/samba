@@ -87,6 +87,8 @@ AC_CHECK_FUNCS([				\
 	hstrerror				\
 	err					\
 	errx					\
+	warnx					\
+	flock					\
 	writev
 ])
 
@@ -173,6 +175,10 @@ SMB_BINARY_ENABLE(compile_et, NO)
 
 AC_PROG_LEX
 AC_PROG_YACC
+
+AC_CHECK_TYPES(u_int32_t)
+AC_CHECK_TYPES(u_int16_t)
+AC_CHECK_TYPES(u_int8_t)
 
 # to enable kerberos, unpack a heimdal source tree in the heimdal directory
 # of the samba source tree

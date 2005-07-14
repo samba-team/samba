@@ -3,6 +3,9 @@
   Samba source tree
 */
 
+#ifndef HAVE_HEIMDAL_CONFIG_H
+#define HAVE_HEIMDAL_CONFIG_H 1
+
 /* bring in the samba4 config.h */
 #include "include/config.h"
 
@@ -41,4 +44,6 @@ static /**/const char *const rcsid[] = { (const char *)rcsid, "\100(#)" msg }
 #include <sys/types.h>
 #include <stdarg.h>
 #include "lib/replace/replace.h"
+#endif
+
 #endif
