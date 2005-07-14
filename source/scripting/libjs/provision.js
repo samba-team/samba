@@ -208,7 +208,7 @@ function provision_guess()
 	subobj.USN          = nextusn;
 	subobj.ROOT         = findnss(getpwnam, "root");
 	subobj.NOBODY       = findnss(getpwnam, "nobody");
-	subobj.NOGROUP      = findnss(getgrnam, "nogroup");
+	subobj.NOGROUP      = findnss(getgrnam, "nogroup", "nobody");
 	subobj.WHEEL        = findnss(getgrnam, "wheel", "root");
 	subobj.USERS        = findnss(getgrnam, "users", "guest", "other");
 	subobj.DNSDOMAIN    = strlower(subobj.REALM);
