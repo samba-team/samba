@@ -119,4 +119,16 @@ int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 typedef int (*comparison_fn_t)(const void *, const void *);
 #endif
 
+#ifndef HAVE_U_INT32_T
+typedef unsigned u_int32_t;
+#endif
+
+#ifndef HAVE_U_INT16_T
+typedef unsigned short u_int16_t;
+#endif
+
+#ifndef HAVE_U_INT8_T
+typedef unsigned char u_int8_t;
+#endif
+
 #endif

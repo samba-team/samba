@@ -179,7 +179,6 @@ ADD_OBJ_FILES = \
 	heimdal/lib/asn1/der_length.o \
 	heimdal/lib/asn1/der_copy.o \
 	heimdal/lib/asn1/der_cmp.o \
-	heimdal/lib/asn1/timegm.o \
 	heimdal/lib/asn1/asn1_AD_IF_RELEVANT.o \
 	heimdal/lib/asn1/asn1_APOptions.o \
 	heimdal/lib/asn1/asn1_AP_REP.o \
@@ -282,7 +281,8 @@ ADD_OBJ_FILES = \
 	heimdal/lib/roken/strlwr.o \
 	heimdal/lib/roken/strsep_copy.o \
 	heimdal/lib/roken/strupr.o \
-	heimdal/lib/roken/strpool.o
+	heimdal/lib/roken/strpool.o \
+	heimdal_build/replace.o
 NOPROTO = YES
 # End SUBSYSTEM HEIMDAL_ROKEN
 #######################
