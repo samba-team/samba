@@ -452,7 +452,9 @@ AC_TRY_RUN([
 void foo(const char *format, ...) { 
        va_list ap;
        int len;
-       char buf[5];
+       char buf[20];
+       long long l = 1234567890;
+       l *= 100;
 
        va_start(ap, format);
        len = vsnprintf(buf, 0, format, ap);
@@ -465,6 +467,8 @@ void foo(const char *format, ...) {
        if (len != 5) exit(1);
 
        if (snprintf(buf, 3, "hello") != 5 || strcmp(buf, "he") != 0) exit(1);
+
+       if (snprintf(buf, 20, "%lld", l) != 12 || strcmp(buf, "123456789000") != 0) exit(1);
 
        exit(0);
 }
