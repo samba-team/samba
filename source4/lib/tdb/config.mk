@@ -26,16 +26,6 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 
 ################################################
-# Start BINARY tdbtest
-[BINARY::tdbtest]
-OBJ_FILES= \
-		lib/tdb/tools/tdbtest.o
-REQUIRED_SUBSYSTEMS = \
-		LIBTDB EXT_LIB_GDBM
-# End BINARY tdbtest
-################################################
-
-################################################
 # Start BINARY tdbtool
 [BINARY::tdbtool]
 ENABLE = NO
