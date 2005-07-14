@@ -95,7 +95,7 @@ cat >$CONFFILE<<EOF
 EOF
 
 ./setup/provision $CONFIGURATION --quiet --domain $DOMAIN --realm $REALM \
-    --adminpass $PASSWORD --root=$ROOT
+    --adminpass $PASSWORD --root=$ROOT || exit 1
 
 if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
 	CONFIGURATION="$CONFIGURATION --option=\"torture:progress=no\""
