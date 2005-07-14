@@ -105,7 +105,7 @@ GetOptions (
 	    'client:s' => \$opt_client,
 	    'eth-parser:s' => \$opt_eth_parser,
 	    'eth-header:s' => \$opt_eth_header,
-	    'ejs:s' => \$opt_ejs,
+	    'ejs' => \$opt_ejs,
 	    'diff' => \$opt_diff,
 	    'odl' => \$opt_odl,
 	    'keep:s' => \$opt_keep,
@@ -253,10 +253,10 @@ sub process_file($)
 	if (defined($opt_ejs)) {
 		require Parse::Pidl::Samba::EJS;
 		require Parse::Pidl::Samba::EJSHeader;
-		my $ejs = ($opt_ejs or Parse::Pidl::Util::ChangeExtension($output, "_ejs.c"));
+		my $ejs = Parse::Pidl::Util::ChangeExtension($output, "_ejs.c");
 		Parse::Pidl::Util::FileSave($ejs, Parse::Pidl::Samba::EJS::Parse($ndr, $h_filename));
 
-		$ejs = ($opt_ejs or Parse::Pidl::Util::ChangeExtension($output, "_ejs.h"));
+		$ejs = Parse::Pidl::Util::ChangeExtension($output, "_ejs.h");
 		Parse::Pidl::Util::FileSave($ejs, Parse::Pidl::Samba::EJSHeader::Parse($ndr));
 	}
 
