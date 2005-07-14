@@ -6,7 +6,8 @@
   <title>@@global.page.title</title>
 
 <link rel="stylesheet" href="/style/common.css" type="text/css" media="all" />
-<link rel="stylesheet" href="/style/main.css" type="text/css" media="all" />
+<link rel="stylesheet" href="/style/columns.css" type="text/css" media="all" />
+<link rel="stylesheet" href="/style/swat.css" type="text/css" media="all" />
 <link rel="shortcut icon" href="/images/favicon.ico" />
 
 <!--[if gte IE 5.5]>
@@ -59,7 +60,7 @@ filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src='/images/logo.png'
   <h4>Samba Web Administration Tool</h4>
 </div>
 
-<div class="nav">
+<div id="nav">
      <% 
      include("/docs/menu.js"); 
      include("/esptest/menu.js");
