@@ -88,6 +88,7 @@ AC_CHECK_TYPE(loff_t,off_t)
 AC_CHECK_TYPE(offset_t,loff_t)
 AC_CHECK_TYPES(ssize_t)
 AC_CHECK_TYPES(intptr_t)
+AC_CHECK_TYPES(long long)
 
 
 ############################################
