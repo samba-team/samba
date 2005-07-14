@@ -261,6 +261,15 @@ NOPROTO = YES
 #######################
 
 #######################
+# Start SUBSYSTEM HEIMDAL_ROKEN_ADDRINFO
+[SUBSYSTEM::HEIMDAL_ROKEN_ADDRINFO]
+ADD_OBJ_FILES = \
+	heimdal/lib/roken/gai_strerror.o \
+	heimdal/lib/roken/getaddrinfo.o \
+	heimdal/lib/roken/freeaddrinfo.o
+NOPROTO = YES
+
+#######################
 # Start SUBSYSTEM HEIMDAL_ROKEN
 [SUBSYSTEM::HEIMDAL_ROKEN]
 ADD_OBJ_FILES = \
@@ -283,6 +292,7 @@ ADD_OBJ_FILES = \
 	heimdal/lib/roken/strupr.o \
 	heimdal/lib/roken/strpool.o \
 	heimdal_build/replace.o
+REQUIRED_SUBSYSTEMS = HEIMDAL_ROKEN_ADDRINFO
 NOPROTO = YES
 # End SUBSYSTEM HEIMDAL_ROKEN
 #######################
