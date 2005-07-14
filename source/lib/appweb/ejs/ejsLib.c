@@ -477,7 +477,6 @@ static void ejsErrorCore(Ejs* ep, const char *fmt, va_list args)
 	char		*errbuf, *msgbuf;
 
 	mprAssert(ep);
-	mprAssert(args);
 
 	msgbuf = NULL;
 	mprAllocVsprintf(&msgbuf, MPR_MAX_STRING, fmt, args);
