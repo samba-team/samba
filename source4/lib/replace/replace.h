@@ -131,4 +131,8 @@ typedef unsigned short u_int16_t;
 typedef unsigned char u_int8_t;
 #endif
 
+#ifndef HAVE_SOCKLEN_T
+#define socklen_t int
+#endif
+
 #endif

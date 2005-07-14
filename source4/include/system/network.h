@@ -89,10 +89,6 @@
 #define MAXHOSTNAMELEN 254
 #endif
 
-#ifndef HAVE_SOCKLEN_T_TYPE
-typedef int socklen_t;
-#endif
-
 #ifndef INADDR_LOOPBACK
 #define INADDR_LOOPBACK 0x7f000001
 #endif
