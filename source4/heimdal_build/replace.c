@@ -24,6 +24,7 @@
 #include "config.h"
 #include <stdio.h>
 #include "err.h"
+#include "roken.h"
 
 #ifndef HAVE_ERR
  void err(int eval, const char *format, ...)
@@ -45,5 +46,33 @@
 	vfprintf(stderr, format, ap);
 	va_end(ap);
 	exit(eval);
+}
+#endif
+
+#ifndef HAVE_WARNX
+ void warnx(const char *format, ...)
+{
+	va_list ap;
+	va_start(ap, format);
+	vfprintf(stderr, format, ap);
+	va_end(ap);
+}
+#endif
+
+#ifndef HAVE_FLOCK
+ int flock(int fd, int op)
+{
+	switch (op & (LOCK_UN|LOCK_SH|LOCK_EX)) {
+	case LOCK_UN:
+		return fcntl_lock(fd, F_SETLK, 0, 0, F_UNLCK);
+	case LOCK_SH:
+		return fcntl_lock(fd, (op&LOCK_NB)?F_SETLK:F_SETLKW, 
+				  0, 0, F_RDLCK);
+	case LOCK_EX:
+		return fcntl_lock(fd, (op&LOCK_NB)?F_SETLK:F_SETLKW, 
+				  0, 0, F_WRLCK);
+	}
+	errno = EINVAL;
+	return -1;
 }
 #endif
