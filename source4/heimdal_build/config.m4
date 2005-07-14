@@ -89,6 +89,9 @@ AC_CHECK_FUNCS([				\
 	errx					\
 	warnx					\
 	flock					\
+	getaddrinfo				\
+	freeaddrinfo				\
+	gai_strerror				\
 	writev
 ])
 
@@ -189,4 +192,10 @@ if test -d heimdal; then
 	SMB_MODULE_DEFAULT(KERBEROS_LIB, STATIC)
 	SMB_BINARY_ENABLE(asn1_compile, YES)
 	SMB_BINARY_ENABLE(compile_et, YES)
+fi
+
+# only add getaddrinfo and related functions if needed
+SMB_SUBSYSTEM_ENABLE(HEIMDAL_ROKEN_ADDRINFO, NO)
+if test t$ac_cv_func_getaddrinfo != tyes; then
+	SMB_SUBSYSTEM_ENABLE(HEIMDAL_ROKEN_ADDRINFO, YES)
 fi
