@@ -10,7 +10,7 @@ bindir = @bindir@
 includedir = @includedir@
 libdir = @libdir@
 
-PROGS = bin/tdbtest bin/tdbtool bin/tdbtorture
+PROGS = bin/tdbtool bin/tdbtorture
 TDB_OBJ = common/tdb.o common/spinlock.o
 
 all: $(PROGS)
