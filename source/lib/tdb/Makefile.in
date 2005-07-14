@@ -16,6 +16,9 @@ TDB_OBJ = common/tdb.o common/spinlock.o
 all: $(PROGS)
 
 install: all
+	mkdir -p $(bindir)
+	mkdir -p $(includedir)
+	mkdir -p $(libdir)
 	cp $(PROGS) $(bindir)
 	cp include/tdb.h $(includedir)
 	cp tdb.pc $(libdir)/pkgconfig
