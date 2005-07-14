@@ -548,13 +548,17 @@ proto_test:
 
 clean: delheaders
 	@echo Removing objects
-	@-rm -f $(_ALL_OBJS_OBJS)
+	@-find . -name '*.o' -exec rm -f '{}' \;
 	@echo Removing binaries
 	@-rm -f bin/*
 	@echo Removing dummy targets
 	@-rm -f bin/.*_*
 	@echo Removing generated files
 	@-rm -rf librpc/gen_*
+	@echo Removing generated ASN1 files
+	@-find heimdal/lib/asn1 -name 'asn1_*.[xc]' -exec rm -f '{}' \;
+	@-find heimdal/lib/gssapi -name 'asn1_*.[xc]' -exec rm -f '{}' \;
+	@-find heimdal/lib/hdb -name 'asn1_*.[xc]' -exec rm -f '{}' \;
 
 distclean: clean
 	-rm -f bin/.dummy
