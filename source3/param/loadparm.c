@@ -221,7 +221,6 @@ typedef struct
 	int machine_password_timeout;
 	int change_notify_timeout;
 	int map_to_guest;
-	int min_passwd_length;
 	int oplock_break_wait_time;
 	int winbind_cache_time;
 	int winbind_max_idle_children;
@@ -823,8 +822,6 @@ static struct parm_struct parm_table[] = {
 	{"server schannel", P_ENUM, P_GLOBAL, &Globals.serverSchannel, NULL, enum_bool_auto, FLAG_BASIC | FLAG_ADVANCED}, 
 	{"allow trusted domains", P_BOOL, P_GLOBAL, &Globals.bAllowTrustedDomains, NULL, NULL, FLAG_ADVANCED}, 
 	{"hosts equiv", P_STRING, P_GLOBAL, &Globals.szHostsEquiv, NULL, NULL, FLAG_ADVANCED}, 
-	{"min password length", P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL, NULL, FLAG_DEPRECATED}, 
-	{"min passwd length", P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL, NULL, FLAG_DEPRECATED}, 
 	{"map to guest", P_ENUM, P_GLOBAL, &Globals.map_to_guest, NULL, enum_map_to_guest, FLAG_ADVANCED}, 
 	{"null passwords", P_BOOL, P_GLOBAL, &Globals.bNullPasswords, NULL, NULL, FLAG_ADVANCED}, 
 	{"obey pam restrictions", P_BOOL, P_GLOBAL, &Globals.bObeyPamRestrictions, NULL, NULL, FLAG_ADVANCED}, 
@@ -1491,7 +1488,6 @@ static void init_globals(void)
 	/* Note, that we will use NTLM2 session security (which is different), if it is available */
 
 	Globals.map_to_guest = 0;	/* By Default, "Never" */
-	Globals.min_passwd_length = MINPASSWDLENGTH;	/* By Default, 5. */
 	Globals.oplock_break_wait_time = 0;	/* By Default, 0 msecs. */
 	Globals.enhanced_browsing = True; 
 	Globals.iLockSpinCount = 3; /* Try 3 times. */
@@ -1882,7 +1878,6 @@ FN_GLOBAL_INTEGER(lp_lm_interval, &Globals.lm_interval)
 FN_GLOBAL_INTEGER(lp_machine_password_timeout, &Globals.machine_password_timeout)
 FN_GLOBAL_INTEGER(lp_change_notify_timeout, &Globals.change_notify_timeout)
 FN_GLOBAL_INTEGER(lp_map_to_guest, &Globals.map_to_guest)
-FN_GLOBAL_INTEGER(lp_min_passwd_length, &Globals.min_passwd_length)
 FN_GLOBAL_INTEGER(lp_oplock_break_wait_time, &Globals.oplock_break_wait_time)
 FN_GLOBAL_INTEGER(lp_lock_spin_count, &Globals.iLockSpinCount)
 FN_GLOBAL_INTEGER(lp_lock_sleep_time, &Globals.iLockSpinTime)
