@@ -12,7 +12,8 @@
 
 #if HAVE_MATH_H
 #include <math.h>
-#elif HAVE_FLOAT_H
+#endif
+#if HAVE_FLOAT_H
 #include <float.h>
 #endif
 
