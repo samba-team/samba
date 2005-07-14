@@ -87,8 +87,6 @@
 #define HAVE_KRB5_KT_COMPARE 1
 /* Define to 1 if you have the `krb5_kt_free_entry' function. */
 #define HAVE_KRB5_KT_FREE_ENTRY 1
-/* Define to 1 if you have the `krb5_locate_kdc' function. */
-/* #undef HAVE_KRB5_LOCATE_KDC */
 /* Whether the type krb5_log_facility exists */
 #define HAVE_KRB5_LOG_FACILITY 1
 /* Define to 1 if you have the `krb5_mk_req_extended' function. */

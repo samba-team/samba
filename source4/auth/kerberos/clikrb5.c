@@ -204,67 +204,6 @@
 #endif
 }
 
-#if !defined(HAVE_KRB5_LOCATE_KDC)
- krb5_error_code krb5_locate_kdc(krb5_context ctx, const krb5_data *realm, struct sockaddr **addr_pp, int *naddrs, int get_masters)
-{
-	krb5_krbhst_handle hnd;
-	krb5_krbhst_info *hinfo;
-	krb5_error_code rc;
-	int num_kdcs, i;
-	struct sockaddr *sa;
-	struct addrinfo *ai;
-
-	*addr_pp = NULL;
-	*naddrs = 0;
-
-	rc = krb5_krbhst_init(ctx, realm->data, KRB5_KRBHST_KDC, &hnd);
-	if (rc) {
-		DEBUG(0, ("krb5_locate_kdc: krb5_krbhst_init failed (%s)\n", error_message(rc)));
-		return rc;
-	}
-
-	for ( num_kdcs = 0; (rc = krb5_krbhst_next(ctx, hnd, &hinfo) == 0); num_kdcs++)
-		;
-
-	krb5_krbhst_reset(ctx, hnd);
-
-	if (!num_kdcs) {
-		DEBUG(0, ("krb5_locate_kdc: zero kdcs found !\n"));
-		krb5_krbhst_free(ctx, hnd);
-		return -1;
-	}
-
-	sa = malloc_array_p(struct sockaddr, num_kdcs);
-	if (!sa) {
-		DEBUG(0, ("krb5_locate_kdc: malloc failed\n"));
-		krb5_krbhst_free(ctx, hnd);
-		naddrs = 0;
-		return -1;
-	}
-
-	memset(sa, '\0', sizeof(struct sockaddr) * num_kdcs );
-
-	for (i = 0; i < num_kdcs && (rc = krb5_krbhst_next(ctx, hnd, &hinfo) == 0); i++) {
-
-#if defined(HAVE_KRB5_KRBHST_GET_ADDRINFO)
-		rc = krb5_krbhst_get_addrinfo(ctx, hinfo, &ai);
-		if (rc) {
-			DEBUG(0,("krb5_krbhst_get_addrinfo failed: %s\n", error_message(rc)));
-			continue;
-		}
-#endif
-		if (hinfo->ai && hinfo->ai->ai_family == AF_INET) 
-			memcpy(&sa[i], hinfo->ai->ai_addr, sizeof(struct sockaddr));
-	}
-
-	krb5_krbhst_free(ctx, hnd);
-
-	*naddrs = num_kdcs;
-	*addr_pp = sa;
-	return 0;
-}
-#endif
-
 #if !defined(HAVE_KRB5_FREE_UNPARSED_NAME)
  void krb5_free_unparsed_name(krb5_context context, char *val)
 {
