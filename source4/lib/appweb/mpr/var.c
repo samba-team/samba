@@ -2165,8 +2165,10 @@ bool mprIsNan(double f)
 #elif VXWORKS
 	/* FUTURE */
 	return (0);
-#else
+#elif defined(FP_NAN)
 	return (f == FP_NAN);
+#else
+	return 0;
 #endif
 }
 /******************************************************************************/
@@ -2178,8 +2180,10 @@ bool mprIsInfinite(double f)
 #elif VXWORKS
 	/* FUTURE */
 	return (0);
-#else
+#elif defined(FP_INFINITE)
 	return (f == FP_INFINITE);
+#else
+	return 0;
 #endif
 }
 
