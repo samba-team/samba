@@ -25,8 +25,6 @@
 
 uint32 global_client_caps = 0;
 
-static struct auth_ntlmssp_state *global_ntlmssp_state;
-
 /*
   on a logon error possibly map the error to success if "map to guest"
   is set approriately
@@ -353,6 +351,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 ***************************************************************************/
 
 static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *outbuf,
+				 uint16 vuid,
 				 AUTH_NTLMSSP_STATE **auth_ntlmssp_state,
 				 DATA_BLOB *ntlmssp_blob, NTSTATUS nt_status) 
 {
@@ -416,6 +415,8 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *out
 
 	if (!ret || !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		auth_ntlmssp_end(auth_ntlmssp_state);
+		/* Kill the intermediate vuid */
+		invalidate_vuid(vuid);
 	}
 
 	return ret;
@@ -428,8 +429,10 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *out
 static int reply_spnego_negotiate(connection_struct *conn, 
 				  char *inbuf,
 				  char *outbuf,
+				  uint16 vuid,
 				  int length, int bufsize,
-				  DATA_BLOB blob1)
+				  DATA_BLOB blob1,
+				  AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
 {
 	char *OIDs[ASN1_MAX_OIDS];
 	DATA_BLOB secblob;
@@ -442,6 +445,9 @@ static int reply_spnego_negotiate(connection_struct *conn,
 
 	/* parse out the OIDs and the first sec blob */
 	if (!parse_negTokenTarg(blob1, OIDs, &secblob)) {
+		/* Kill the intermediate vuid */
+		invalidate_vuid(vuid);
+
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
@@ -473,25 +479,31 @@ static int reply_spnego_negotiate(connection_struct *conn,
 		int ret = reply_spnego_kerberos(conn, inbuf, outbuf, 
 						length, bufsize, &secblob);
 		data_blob_free(&secblob);
+		/* Kill the intermediate vuid */
+		invalidate_vuid(vuid);
+
 		return ret;
 	}
 #endif
 
-	if (global_ntlmssp_state) {
-		auth_ntlmssp_end(&global_ntlmssp_state);
+	if (*auth_ntlmssp_state) {
+		auth_ntlmssp_end(auth_ntlmssp_state);
 	}
 
-	nt_status = auth_ntlmssp_start(&global_ntlmssp_state);
+	nt_status = auth_ntlmssp_start(auth_ntlmssp_state);
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		/* Kill the intermediate vuid */
+		invalidate_vuid(vuid);
+
 		return ERROR_NT(nt_status);
 	}
 
-	nt_status = auth_ntlmssp_update(global_ntlmssp_state, 
+	nt_status = auth_ntlmssp_update(*auth_ntlmssp_state, 
 					secblob, &chal);
 
 	data_blob_free(&secblob);
 
-	reply_spnego_ntlmssp(conn, inbuf, outbuf, &global_ntlmssp_state,
+	reply_spnego_ntlmssp(conn, inbuf, outbuf, vuid, auth_ntlmssp_state,
 			     &chal, nt_status);
 		
 	data_blob_free(&chal);
@@ -505,8 +517,10 @@ static int reply_spnego_negotiate(connection_struct *conn,
 ****************************************************************************/
 
 static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
+			     uint16 vuid,
 			     int length, int bufsize,
-			     DATA_BLOB blob1)
+			     DATA_BLOB blob1,
+			     AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
 {
 	DATA_BLOB auth, auth_reply;
 	NTSTATUS nt_status = NT_STATUS_INVALID_PARAMETER;
@@ -515,20 +529,27 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 #if 0
 		file_save("auth.dat", blob1.data, blob1.length);
 #endif
+		/* Kill the intermediate vuid */
+		invalidate_vuid(vuid);
+
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 	
-	if (!global_ntlmssp_state) {
+	if (!*auth_ntlmssp_state) {
+		/* Kill the intermediate vuid */
+		invalidate_vuid(vuid);
+
 		/* auth before negotiatiate? */
 		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 	
-	nt_status = auth_ntlmssp_update(global_ntlmssp_state, 
-						auth, &auth_reply);
+	nt_status = auth_ntlmssp_update(*auth_ntlmssp_state, 
+					auth, &auth_reply);
 
 	data_blob_free(&auth);
 
-	reply_spnego_ntlmssp(conn, inbuf, outbuf, &global_ntlmssp_state,
+	reply_spnego_ntlmssp(conn, inbuf, outbuf, vuid, 
+			     auth_ntlmssp_state,
 			     &auth_reply, nt_status);
 		
 	data_blob_free(&auth_reply);
@@ -553,6 +574,8 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 	char *p2;
 	uint16 data_blob_len = SVAL(inbuf, smb_vwv7);
 	enum remote_arch_types ra_type = get_remote_arch();
+	int vuid = SVAL(inbuf,smb_uid);
+	user_struct *vuser = NULL;
 
 	DEBUG(3,("Doing spnego session setup\n"));
 
@@ -597,16 +620,34 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 			ra_lanman_string( native_lanman );
 	}
 		
+	vuser = get_partial_auth_user_struct(vuid);
+	if (!vuser) {
+		vuid = register_vuid(NULL, data_blob(NULL, 0), data_blob(NULL, 0), NULL);
+		if (vuid == -1) {
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+	
+		vuser = get_partial_auth_user_struct(vuid);
+	}
+
+	if (!vuser) {
+		return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+	
+	SSVAL(outbuf,smb_uid,vuid);
+	
 	if (blob1.data[0] == ASN1_APPLICATION(0)) {
 		/* its a negTokenTarg packet */
-		ret = reply_spnego_negotiate(conn, inbuf, outbuf, length, bufsize, blob1);
+		ret = reply_spnego_negotiate(conn, inbuf, outbuf, vuid, length, bufsize, blob1,
+					     &vuser->auth_ntlmssp_state);
 		data_blob_free(&blob1);
 		return ret;
 	}
 
 	if (blob1.data[0] == ASN1_CONTEXT(1)) {
 		/* its a auth packet */
-		ret = reply_spnego_auth(conn, inbuf, outbuf, length, bufsize, blob1);
+		ret = reply_spnego_auth(conn, inbuf, outbuf, vuid, length, bufsize, blob1,
+					&vuser->auth_ntlmssp_state);
 		data_blob_free(&blob1);
 		return ret;
 	}
@@ -682,7 +723,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	    (SVAL(inbuf, smb_flg2) & FLAGS2_EXTENDED_SECURITY)) {
 		if (!global_spnego_negotiated) {
 			DEBUG(0,("reply_sesssetup_and_X:  Rejecting attempt at SPNEGO session setup when it was not negoitiated.\n"));
-			return ERROR_NT(NT_STATUS_UNSUCCESSFUL);
+			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 		}
 
 		if (SVAL(inbuf,smb_vwv4) == 0) {
@@ -843,7 +884,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			/* This has to be here, because this is a perfectly valid behaviour for guest logons :-( */
 			
 			DEBUG(0,("reply_sesssetup_and_X:  Rejecting attempt at 'normal' session setup after negotiating spnego.\n"));
-			return ERROR_NT(NT_STATUS_UNSUCCESSFUL);
+			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 		}
 		fstrcpy(sub_user, user);
 
