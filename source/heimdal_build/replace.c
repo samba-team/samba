@@ -23,6 +23,8 @@
 
 #include "config.h"
 #include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include "err.h"
 #include "roken.h"
 
@@ -62,15 +64,22 @@
 #ifndef HAVE_FLOCK
  int flock(int fd, int op)
 {
+	struct flock lock;
+	lock.l_whence = 0;
+	lock.l_start = 0;
+	lock.l_len = 0;
+	lock.l_pid = 0;
+
 	switch (op & (LOCK_UN|LOCK_SH|LOCK_EX)) {
 	case LOCK_UN:
-		return fcntl_lock(fd, F_SETLK, 0, 0, F_UNLCK);
+		lock.l_type = F_UNLCK;
+		return fcntl(fd, F_SETLK, &lock);
 	case LOCK_SH:
-		return fcntl_lock(fd, (op&LOCK_NB)?F_SETLK:F_SETLKW, 
-				  0, 0, F_RDLCK);
+		lock.l_type = F_RDLCK;
+		return fcntl(fd, (op&LOCK_NB)?F_SETLK:F_SETLKW, &lock);
 	case LOCK_EX:
-		return fcntl_lock(fd, (op&LOCK_NB)?F_SETLK:F_SETLKW, 
-				  0, 0, F_WRLCK);
+		lock.l_type = F_WRLCK;
+		return fcntl(fd, (op&LOCK_NB)?F_SETLK:F_SETLKW, &lock);
 	}
 	errno = EINVAL;
 	return -1;
