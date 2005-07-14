@@ -5308,7 +5308,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
 		if (nread < (ssize_t)N)
 			tcount = total_read + nread;
 
-		set_message(outbuf,8,nread,False);
+		set_message(outbuf,8,nread+pad,False);
 		SIVAL(outbuf,smb_vwv0,startpos);
 		SSVAL(outbuf,smb_vwv2,tcount);
 		SSVAL(outbuf,smb_vwv6,nread);
