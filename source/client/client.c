@@ -73,8 +73,6 @@ extern BOOL tar_reset;
 
 static BOOL prompt = True;
 
-static int printmode = 1;
-
 static BOOL recurse = False;
 BOOL lowercase = False;
 
@@ -2419,43 +2417,6 @@ static int cmd_translate(void)
 }
 
 /****************************************************************************
- Do a printmode command.
-****************************************************************************/
-
-static int cmd_printmode(void)
-{
-	fstring buf;
-	fstring mode;
-
-	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
-		if (strequal(buf,"text")) {
-			printmode = 0;      
-		} else {
-			if (strequal(buf,"graphics"))
-				printmode = 1;
-			else
-				printmode = atoi(buf);
-		}
-	}
-
-	switch(printmode) {
-		case 0: 
-			fstrcpy(mode,"text");
-			break;
-		case 1: 
-			fstrcpy(mode,"graphics");
-			break;
-		default: 
-			slprintf(mode,sizeof(mode)-1,"%d",printmode);
-			break;
-	}
-	
-	DEBUG(2,("the printmode is now %s\n",mode));
-
-	return 0;
-}
-
-/****************************************************************************
  Do the lcd command.
  ****************************************************************************/
 
@@ -2763,7 +2724,6 @@ static struct
   {"newer",cmd_newer,"<file> only mget files newer than the specified local file",{COMPL_LOCAL,COMPL_NONE}},
   {"open",cmd_open,"<mask> open a file",{COMPL_REMOTE,COMPL_NONE}},
   {"print",cmd_print,"<file name> print a file",{COMPL_NONE,COMPL_NONE}},
-  {"printmode",cmd_printmode,"<graphics or text> set the print mode",{COMPL_NONE,COMPL_NONE}},
   {"prompt",cmd_prompt,"toggle prompting for filenames for mget and mput",{COMPL_NONE,COMPL_NONE}},  
   {"put",cmd_put,"<local name> [remote name] put a file",{COMPL_LOCAL,COMPL_REMOTE}},
   {"pwd",cmd_pwd,"show current remote directory (same as 'cd' with no args)",{COMPL_NONE,COMPL_NONE}},
