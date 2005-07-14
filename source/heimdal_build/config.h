@@ -39,7 +39,6 @@ static /**/const char *const rcsid[] = { (const char *)rcsid, "\100(#)" msg }
 
 /* these should be done with configure tests */
 #define KRB5
-#define HAVE_LONG_LONG
 
 #include <sys/types.h>
 #include <stdarg.h>

@@ -1658,7 +1658,7 @@ void mprVarToString(char** out, int size, char *fmt, MprVar *obj)
 #if BLD_GOAHEAD_WEBSERVER
 			mprAllocSprintf(out, size, "%d", (int) obj->integer64);
 #else
-			mprAllocSprintf(out, size, "%Ld", obj->integer64);
+			mprAllocSprintf(out, size, "%lld", obj->integer64);
 #endif
 		} else {
 			mprAllocSprintf(out, size, fmt, obj->integer64);
