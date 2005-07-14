@@ -3,14 +3,13 @@
 # build generated asn1, et and flex files in heimdal/ tree
 # tridge@samba.org, June 2005
 
-CC=shift
+CC="$1"
+LEX="$2"
+YACC="$3"
+
 TOP=`pwd`
 ASN1_COMPILE=$TOP/bin/asn1_compile
 ET_COMPILE=$TOP/bin/compile_et
-
-# we need to substitute these correctly based on configure output
-FLEX=flex
-BISON=bison
 
 build_asn1() {
     f=$1
@@ -41,31 +40,39 @@ build_lex() {
     dir=`dirname $f`
     file=`basename $f`
     base=`basename $f .l`
+    if [ -z "$LEX" ]; then
+	echo "lex not found"
+	return;
+    fi
     if [ -r $dir/$base.c ]; then
 	if [ x`find $f -newer $dir/$base.c -print` != x$f ]; then
 	    return;
-	fi
+        fi
     fi
     echo Building $f
-    if cd $dir && $FLEX $file; then
+    if cd $dir && $LEX $file; then
        sed '/^#/ s|$base.yy\.c|$base.c|' $base.yy.c > $base.c
        rm -f $base.yy.c
     fi
     cd $TOP || exit 1
 }
 
-build_bison() {
+build_yacc() {
     f=$1
     dir=`dirname $f`
     file=`basename $f`
     base=`basename $f .y`
+    if [ -z "$YACC" ]; then
+	echo "yacc not found"
+	return;
+    fi
     if [ -r $dir/$base.c ]; then
 	if [ x`find $f -newer $dir/$base.c -print` != x$f ]; then
 	    return;
-	fi
+        fi
     fi
     echo Building $f
-    if cd $dir && $BISON -y -d $file; then
+    if cd $dir && $YACC -d $file; then
 	sed -e "/^#/!b" -e "s|y\.tab\.h|$base.h|" y.tab.h > $base.h
 	sed '/^#/ s|y\.tab\.c|$base.c|' y.tab.c > $base.c
 	rm -f y.tab.c y.tab.h
@@ -88,8 +95,8 @@ build_cp heimdal/lib/roken/vis.hin
 build_cp heimdal/lib/roken/err.hin
 build_lex heimdal/lib/asn1/lex.l
 build_lex heimdal/lib/com_err/lex.l
-build_bison heimdal/lib/com_err/parse.y
-build_bison heimdal/lib/asn1/parse.y
+build_yacc heimdal/lib/com_err/parse.y
+build_yacc heimdal/lib/asn1/parse.y
 
 make bin/asn1_compile || exit 1
 build_asn1 heimdal/lib/hdb/hdb.asn1 hdb_asn1
