@@ -56,7 +56,7 @@ AC_HEADER_TIME
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(arpa/inet.h sys/select.h fcntl.h sys/fcntl.h sys/time.h)
 AC_CHECK_HEADERS(utime.h grp.h sys/id.h limits.h memory.h net/if.h)
-AC_CHECK_HEADERS(compat.h)
+AC_CHECK_HEADERS(compat.h math.h)
 AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h sys/mode.h)
 AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h sys/socket.h)
 AC_CHECK_HEADERS(sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)

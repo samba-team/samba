@@ -74,8 +74,9 @@
 #if QNX4
 	#include	<dirent.h>
 #endif
+#ifdef HAVE_MATH_H
 	#include	<math.h>
-
+#endif
 /********************************** Defines ***********************************/
 
 #ifdef __cplusplus
