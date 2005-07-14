@@ -919,6 +919,14 @@ interface drsuapi
 		drsuapi_DsReplicaObject object;
 	} drsuapi_DsReplicaObjectListItem;
 
+	/*
+	 * please note the the current idl
+	 * for DsAddEntry does only parse 
+	 * what I saw between 2 w2k3 boxes
+	 * in my dssync experiments I got some other replies
+	 * so all I want to say is that this is very incomplete yet...
+	 * --metze
+	 */
 	typedef struct {
 		drsuapi_DsReplicaObjectListItem first_object;
 	} drsuapi_DsAddEntryRequest2;
