@@ -47,7 +47,31 @@ user_struct *get_valid_user_struct(uint16 vuid)
 		return NULL;
 
 	for (usp=validated_users;usp;usp=usp->next,count++) {
-		if (vuid == usp->vuid) {
+		if (vuid == usp->vuid && usp->server_info) {
+			if (count > 10) {
+				DLIST_PROMOTE(validated_users, usp);
+			}
+			return usp;
+		}
+	}
+
+	return NULL;
+}
+
+/****************************************************************************
+ Get the user struct of a partial NTLMSSP login
+****************************************************************************/
+
+user_struct *get_partial_auth_user_struct(uint16 vuid)
+{
+	user_struct *usp;
+	int count=0;
+
+	if (vuid == UID_FIELD_INVALID)
+		return NULL;
+
+	for (usp=validated_users;usp;usp=usp->next,count++) {
+		if (vuid == usp->vuid && !usp->server_info) {
 			if (count > 10) {
 				DLIST_PROMOTE(validated_users, usp);
 			}
@@ -158,6 +182,17 @@ int register_vuid(auth_serversupplied_info *server_info, DATA_BLOB session_key, 
 	DEBUG(10,("register_vuid: allocated vuid = %u\n", (unsigned int)next_vuid ));
 
 	vuser->vuid = next_vuid;
+
+	if (!server_info) {
+		next_vuid++;
+		num_validated_vuids++;
+		
+		vuser->server_info = NULL;
+		
+		DLIST_ADD(validated_users, vuser);
+		
+		return vuser->vuid;
+	}
 
 	/* the next functions should be done by a SID mapping system (SMS) as
 	 * the new real sam db won't have reference to unix uids or gids
