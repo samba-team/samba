@@ -50,10 +50,3 @@ krb5_error_code KRB5_LIB_FUNCTION krb5_get_all_client_addrs(krb5_context context
 }
 
 
-void errx(int eval, const char *fmt, ...)
-{
-  va_list ap;
-  va_start(ap, fmt);
-  verrx(eval, fmt, ap);
-  va_end(ap);
-}
