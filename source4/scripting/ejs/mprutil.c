@@ -202,6 +202,9 @@ struct MprVar mprLdbArray(struct ldb_message **msg, int count, const char *name)
 	for (i=0;i<count;i++) {
 		mprAddArray(&res, i, mprLdbMessage(msg[i]));
 	}
+	if (i==0) {
+		mprSetVar(&res, "length", mprCreateIntegerVar(0));
+	}
 	return res;
 }
 
@@ -372,7 +375,7 @@ void mpr_ReturnString(int eid, const char *s)
 */
  void mprSetCFunction(struct MprVar *obj, const char *name, MprCFunction fn)
 {
-	mprSetVar(obj, name, mprCreateCFunctionVar(fn, NULL, MPR_VAR_SCRIPT_HANDLE));
+	mprSetVar(obj, name, mprCreateCFunctionVar(fn, obj, MPR_VAR_SCRIPT_HANDLE));
 }
 
 /*
@@ -380,5 +383,5 @@ void mpr_ReturnString(int eid, const char *s)
 */
  void mprSetStringCFunction(struct MprVar *obj, const char *name, MprStringCFunction fn)
 {
-	mprSetVar(obj, name, mprCreateStringCFunctionVar(fn, NULL, MPR_VAR_SCRIPT_HANDLE));
+	mprSetVar(obj, name, mprCreateStringCFunctionVar(fn, obj, MPR_VAR_SCRIPT_HANDLE));
 }
