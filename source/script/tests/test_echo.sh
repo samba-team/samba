@@ -23,7 +23,7 @@ fi
 
 failed=0
 for transport in $transports; do
- for bindoptions in connect sign seal sign,seal validate padcheck bigendian bigendian,seal; do
+ for bindoptions in connect spnego spnego,sign spnego,seal sign seal sign,seal validate padcheck bigendian bigendian,seal; do
   for ntlmoptions in \
         "--option=socket:testnonblock=True --option=torture:echo_TestSleep=no"; do
    name="RPC-ECHO on $transport with $bindoptions and $ntlmoptions"
