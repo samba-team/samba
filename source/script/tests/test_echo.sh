@@ -25,7 +25,16 @@ failed=0
 for transport in $transports; do
  for bindoptions in connect sign seal sign,seal validate padcheck bigendian bigendian,seal; do
   for ntlmoptions in \
-        "--option=socket:testnonblock=True --option=torture:echo_TestSleep=no" \
+        "--option=socket:testnonblock=True --option=torture:echo_TestSleep=no"; do
+   name="RPC-ECHO on $transport with $bindoptions and $ntlmoptions"
+   testit "$name" bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" $ntlmoptions -U"$username"%"$password" -W $domain RPC-ECHO "$*" || failed=`expr $failed + 1`
+  done
+ done
+done
+
+for transport in $transports; do
+ for bindoptions in sign seal; do
+  for ntlmoptions in \
         "--option=ntlmssp_client:ntlm2=yes --option=torture:echo_TestSleep=no" \
         "--option=ntlmssp_client:ntlm2=no  --option=torture:echo_TestSleep=no" \
         "--option=ntlmssp_client:ntlm2=yes --option=ntlmssp_client:128bit=no --option=torture:echo_TestSleep=no" \
@@ -41,9 +50,5 @@ for transport in $transports; do
   done
  done
 done
-
-# separately test the print option - its v slow
-name="RPC-ECHO with print option"
-testit "$name" bin/smbtorture $TORTURE_OPTIONS ncacn_np:"$server[print]" -U"$username"%"$password" -W $domain RPC-ECHO "$*" || failed=`expr $failed + 1`
 
 testok $0 $failed
