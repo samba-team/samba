@@ -26,56 +26,65 @@
 #include "lib/ldb/include/ldb.h"
 
 /*
+  get the connected db
+ */
+static struct ldb_context *ejs_ldb_db(int eid, struct MprVar *v)
+{
+	struct ldb_context *ldb = mprGetPtr(v, "ldb");
+	if (ldb == NULL) {
+		ejsSetErrorMsg(eid, "invalid ldb connection");
+	}
+	return ldb;
+}
+
+/*
   perform an ldb search, returning an array of results
 
   syntax:
-     ldbSearch("dbfile", "expression");
+     res = ldb.search(db, "expression");
      var attrs = new Array("attr1", "attr2", "attr3");
-     ldbSearch("dbfile", "expression", attrs);
+     ldb.search(db, "expression", attrs);
 */
 static int ejs_ldbSearch(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	const char **attrs = NULL;
-	const char *expression, *dbfile;
+	const char *expression;
 	TALLOC_CTX *tmp_ctx = talloc_new(mprMemCtx());
 	struct ldb_context *ldb;
 	int ret;
 	struct ldb_message **res;
 
 	/* validate arguments */
-	if (argc < 2 || argc > 3 ||
-	    argv[0]->type != MPR_TYPE_STRING) {
-		ejsSetErrorMsg(eid, "ldbSearch invalid arguments");
+	if (argc < 2 || argc > 3) {
+		ejsSetErrorMsg(eid, "ldb.search invalid arguments");
 		goto failed;
 	}
 	if (argc == 3 && argv[2]->type != MPR_TYPE_OBJECT) {
-		ejsSetErrorMsg(eid, "ldbSearch attributes must be an object");
+		ejsSetErrorMsg(eid, "ldb.search attributes must be an object");
 		goto failed;
 	}
 
-	dbfile     = mprToString(argv[0]);
+	ldb = ejs_ldb_db(eid, argv[0]);
+	if (ldb == NULL) {
+		return -1;
+	}
+	
 	expression = mprToString(argv[1]);
+	if (expression == NULL) {
+		ejsSetErrorMsg(eid, "ldb.search invalid arguments");
+		goto failed;
+	}
 	if (argc > 2) {
 		attrs = mprToList(tmp_ctx, argv[2]);
-	}
-	if (dbfile == NULL || expression == NULL) {
-		ejsSetErrorMsg(eid, "ldbSearch invalid arguments");
-		goto failed;
-	}
-
-	ldb = ldb_wrap_connect(tmp_ctx, dbfile, 0, NULL);
-	if (ldb == NULL) {
-		ejsSetErrorMsg(eid, "ldbSearch failed to open %s", dbfile);
-		goto failed;
 	}
 
 	ret = ldb_search(ldb, NULL, LDB_SCOPE_DEFAULT, expression, attrs, &res);
 	if (ret == -1) {
-		ejsSetErrorMsg(eid, "ldbSearch failed - %s", ldb_errstring(ldb));
-		goto failed;
+		ejsSetErrorMsg(eid, "ldb.search failed - %s", ldb_errstring(ldb));
+		mpr_Return(eid, mprCreateUndefinedVar());
+	} else {
+		mpr_Return(eid, mprLdbArray(res, ret, "ldb_message"));
 	}
-
-	mpr_Return(eid, mprLdbArray(res, ret, "ldb_message"));
 
 	talloc_free(tmp_ctx);
 	return 0;
@@ -89,26 +98,28 @@ failed:
 /*
   perform an ldb add or modify
 */
-static int ejs_ldbAddModify(MprVarHandle eid, int argc, char **argv,
+static int ejs_ldbAddModify(MprVarHandle eid, int argc, struct MprVar **argv,
 			    int fn(struct ldb_context *, const struct ldb_message *))
 {
-	const char *ldifstring, *dbfile;
+	const char *ldifstring;
 	struct ldb_context *ldb;
 	struct ldb_ldif *ldif;
 	int ret;
 
 	if (argc != 2) {
-		ejsSetErrorMsg(eid, "ldbAddModify invalid arguments");
+		ejsSetErrorMsg(eid, "ldb.add/modify invalid arguments");
 		return -1;
 	}
 
-	dbfile     = argv[0];
-	ldifstring = argv[1];
+	ldifstring = mprToString(argv[1]);
+	if (ldifstring == NULL) {
+		ejsSetErrorMsg(eid, "ldb.add/modify invalid arguments");
+		return -1;
+	}
 
-	ldb = ldb_wrap_connect(mprMemCtx(), dbfile, 0, NULL);
+	ldb = ejs_ldb_db(eid, argv[0]);
 	if (ldb == NULL) {
-		ejsSetErrorMsg(eid, "ldbAddModify failed to open %s", dbfile);
-		goto failed;
+		return -1;
 	}
 
 	while ((ldif = ldb_ldif_read_string(ldb, &ldifstring))) {
@@ -118,95 +129,79 @@ static int ejs_ldbAddModify(MprVarHandle eid, int argc, char **argv,
 	}
 
 	mpr_Return(eid, mprCreateBoolVar(ret == 0));
-	talloc_free(ldb);
 	return 0;
-
-failed:
-	talloc_free(ldb);
-	return -1;
 }
 
 
 /*
   perform an ldb delete
   usage:
-   ok = ldbDelete(dbfile, dn);
+   ok = ldb.delete(db, dn);
 */
-static int ejs_ldbDelete(MprVarHandle eid, int argc, char **argv)
+static int ejs_ldbDelete(MprVarHandle eid, int argc, struct MprVar **argv)
 {
-	const char *dn, *dbfile;
+	const char *dn;
 	struct ldb_context *ldb;
 	int ret;
 
 	if (argc != 2) {
-		ejsSetErrorMsg(eid, "ldbDelete invalid arguments");
+		ejsSetErrorMsg(eid, "ldb.delete invalid arguments");
 		return -1;
 	}
 
-	dbfile  = argv[0];
-	dn      = argv[1];
+	dn      = mprToString(argv[1]);
 
-	ldb = ldb_wrap_connect(mprMemCtx(), dbfile, 0, NULL);
+	ldb = ejs_ldb_db(eid, argv[0]);
 	if (ldb == NULL) {
-		ejsSetErrorMsg(eid, "ldbDelete failed to open %s", dbfile);
-		goto failed;
+		return -1;
 	}
-
 	ret = ldb_delete(ldb, dn);
 
 	mpr_Return(eid, mprCreateBoolVar(ret == 0));
-	talloc_free(ldb);
 	return 0;
-
-failed:
-	talloc_free(ldb);
-	return -1;
 }
 
 /*
   perform an ldb rename
   usage:
-   ok = ldbRename(dbfile, dn1, dn2);
+   ok = ldb.rename(db, dn1, dn2);
 */
-static int ejs_ldbRename(MprVarHandle eid, int argc, char **argv)
+static int ejs_ldbRename(MprVarHandle eid, int argc, struct MprVar **argv)
 {
-	const char *dn1, *dn2, *dbfile;
+	const char *dn1, *dn2;
 	struct ldb_context *ldb;
 	int ret;
 
 	if (argc != 3) {
-		ejsSetErrorMsg(eid, "ldbRename invalid arguments");
+		ejsSetErrorMsg(eid, "ldb.rename invalid arguments");
 		return -1;
 	}
 
-	dbfile = argv[0];
-	dn1    = argv[1];
-	dn2    = argv[2];
+	dn1    = mprToString(argv[1]);
+	dn2    = mprToString(argv[2]);
+	if (dn1 == NULL || dn2 == NULL) {
+		ejsSetErrorMsg(eid, "ldb.rename invalid arguments");
+		return -1;
+	}
 
-	ldb = ldb_wrap_connect(mprMemCtx(), dbfile, 0, NULL);
+	ldb = ejs_ldb_db(eid, argv[0]);
 	if (ldb == NULL) {
-		ejsSetErrorMsg(eid, "ldbRename failed to open %s", dbfile);
-		goto failed;
+		return -1;
 	}
 
 	ret = ldb_rename(ldb, dn1, dn2);
 
 	mpr_Return(eid, mprCreateBoolVar(ret == 0));
-	talloc_free(ldb);
 	return 0;
-
-failed:
-	talloc_free(ldb);
-	return -1;
 }
 
 /*
   perform an ldb modify
 
   syntax:
-    ok = ldbModify("dbfile", ldifstring);
+    ok = ldb.modify(db, ldifstring);
 */
-static int ejs_ldbAdd(MprVarHandle eid, int argc, char **argv)
+static int ejs_ldbAdd(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	return ejs_ldbAddModify(eid, argc, argv, ldb_add);
 }
@@ -215,12 +210,44 @@ static int ejs_ldbAdd(MprVarHandle eid, int argc, char **argv)
   perform an ldb add
 
   syntax:
-    ok = ldbAdd("dbfile", ldifstring);
+    ok = ldb.add(db, ldifstring);
 */
-static int ejs_ldbModify(MprVarHandle eid, int argc, char **argv)
+static int ejs_ldbModify(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	return ejs_ldbAddModify(eid, argc, argv, ldb_modify);
 }
+
+/*
+  connect to a database
+  usage:
+   db = ldb.connect(dbfile);
+*/
+static int ejs_ldbConnect(MprVarHandle eid, int argc, char **argv)
+{
+	struct ldb_context *ldb;
+	const char *dbfile;
+	struct MprVar v;
+
+	if (argc != 1) {
+		ejsSetErrorMsg(eid, "ldb.connect invalid arguments");
+		return -1;
+	}
+
+	dbfile = argv[0];
+
+	ldb = ldb_wrap_connect(mprMemCtx(), dbfile, 0, NULL);
+	if (ldb == NULL) {
+		ejsSetErrorMsg(eid, "ldb.connect failed to open %s", dbfile);
+		mpr_Return(eid, mprCreateUndefinedVar());
+	}
+
+	v = mprObject("db");
+	mprSetPtrChild(&v, "ldb", ldb);
+
+	mpr_Return(eid, v);
+	return 0;
+}
+
 
 /*
   initialise ldb ejs subsystem
@@ -229,11 +256,12 @@ static int ejs_ldb_init(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	struct MprVar ldb = mprObject("ldb");
 
+	mprSetStringCFunction(&ldb, "connect", ejs_ldbConnect);
 	mprSetCFunction(&ldb, "search", ejs_ldbSearch);
-	mprSetStringCFunction(&ldb, "add", ejs_ldbAdd);
-	mprSetStringCFunction(&ldb, "modify", ejs_ldbModify);
-	mprSetStringCFunction(&ldb, "delete", ejs_ldbDelete);
-	mprSetStringCFunction(&ldb, "rename", ejs_ldbRename);
+	mprSetCFunction(&ldb, "add", ejs_ldbAdd);
+	mprSetCFunction(&ldb, "modify", ejs_ldbModify);
+	mprSetCFunction(&ldb, "delete", ejs_ldbDelete);
+	mprSetCFunction(&ldb, "rename", ejs_ldbRename);
 
 	mpr_Return(eid, ldb);
 	return 0;
