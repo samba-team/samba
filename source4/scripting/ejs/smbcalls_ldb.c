@@ -28,7 +28,7 @@
 /*
   get the connected db
  */
-static struct ldb_context *ejs_ldb_db(int eid)
+static struct ldb_context *ejs_get_ldb_context(int eid)
 {
 	struct ldb_context *ldb = mprGetThisPtr(eid, "db");
 	if (ldb == NULL) {
@@ -64,7 +64,7 @@ static int ejs_ldbSearch(MprVarHandle eid, int argc, struct MprVar **argv)
 		goto failed;
 	}
 
-	ldb = ejs_ldb_db(eid);
+	ldb = ejs_get_ldb_context(eid);
 	if (ldb == NULL) {
 		return -1;
 	}
@@ -117,7 +117,7 @@ static int ejs_ldbAddModify(MprVarHandle eid, int argc, struct MprVar **argv,
 		return -1;
 	}
 
-	ldb = ejs_ldb_db(eid);
+	ldb = ejs_get_ldb_context(eid);
 	if (ldb == NULL) {
 		return -1;
 	}
@@ -151,7 +151,7 @@ static int ejs_ldbDelete(MprVarHandle eid, int argc, struct MprVar **argv)
 
 	dn = mprToString(argv[0]);
 
-	ldb = ejs_ldb_db(eid);
+	ldb = ejs_get_ldb_context(eid);
 	if (ldb == NULL) {
 		return -1;
 	}
@@ -184,7 +184,7 @@ static int ejs_ldbRename(MprVarHandle eid, int argc, struct MprVar **argv)
 		return -1;
 	}
 
-	ldb = ejs_ldb_db(eid);
+	ldb = ejs_get_ldb_context(eid);
 	if (ldb == NULL) {
 		return -1;
 	}
