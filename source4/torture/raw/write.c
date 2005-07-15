@@ -355,7 +355,7 @@ static BOOL test_writex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		io.writex.in.offset = ((uint64_t)1) << i;
 		io.writex.in.data = buf;
 		status = smb_raw_write(cli->tree, &io);
-		if (i>40 &&
+		if (i>33 &&
 		    NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
 			break;
 		}
