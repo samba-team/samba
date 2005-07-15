@@ -385,3 +385,21 @@ void mpr_ReturnString(int eid, const char *s)
 {
 	mprSetVar(obj, name, mprCreateStringCFunctionVar(fn, obj, MPR_VAR_SCRIPT_HANDLE));
 }
+
+/*
+  get a poiner in the current object
+*/
+void *mprGetThisPtr(int eid, const char *name)
+{
+	struct MprVar *this = mprGetProperty(ejsGetLocalObject(eid), "this", 0);
+	return mprGetPtr(this, name);
+}
+
+/*
+  set a pointer as a child of the local object
+*/
+void mprSetThisPtr(int eid, const char *name, void *ptr)
+{
+	struct MprVar *this = mprGetProperty(ejsGetLocalObject(eid), "this", 0);
+	mprSetPtrChild(this, name, ptr);
+}
