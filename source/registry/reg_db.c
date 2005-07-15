@@ -356,7 +356,7 @@ int regdb_fetch_keys( const char* key, REGSUBKEY_CTR *ctr )
 	int i;
 	fstring subkeyname;
 
-	DEBUG(10,("regdb_fetch_keys: Enter key => [%s]\n", key ? key : "NULL"));
+	DEBUG(11,("regdb_fetch_keys: Enter key => [%s]\n", key ? key : "NULL"));
 	
 	pstrcpy( path, key );
 	
@@ -383,7 +383,7 @@ int regdb_fetch_keys( const char* key, REGSUBKEY_CTR *ctr )
 
 	SAFE_FREE( dbuf.dptr );
 	
-	DEBUG(10,("regdb_fetch_keys: Exit [%d] items\n", num_items));
+	DEBUG(11,("regdb_fetch_keys: Exit [%d] items\n", num_items));
 	
 	return num_items;
 }

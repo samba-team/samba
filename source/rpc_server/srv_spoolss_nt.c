@@ -274,6 +274,7 @@ static Printer_entry *find_printer_index_by_hnd(pipes_struct *p, POLICY_HND *hnd
 	return find_printer;
 }
 
+#ifdef ENABLE_PRINT_HND_OBJECT_CACHE
 /****************************************************************************
  look for a printer object cached on an open printer handle
 ****************************************************************************/
@@ -327,6 +328,8 @@ void invalidate_printer_hnd_cache( char *printername )
 
 	return;
 }
+#endif
+
 /****************************************************************************
  Close printer index by handle.
 ****************************************************************************/
@@ -1213,6 +1216,7 @@ static void receive_notify2_message_list(int msg_type, pid_t src, void *msg, siz
 	return;
 }
 
+#ifdef ENABLE_PRINT_HND_OBJECT_CACHE
 /********************************************************************
  callback to MSG_PRINTER_CHANGED.  When a printer is changed by 
  one smbd, all of processes must clear their printer cache immediately.
@@ -1228,6 +1232,7 @@ void receive_printer_mod_msg(int msg_type, pid_t src, void *buf, size_t len)
 	
 	invalidate_printer_hnd_cache( printername );
 }
+#endif
 
 /********************************************************************
  Send a message to ourself about new driver being installed
