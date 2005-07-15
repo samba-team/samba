@@ -5086,6 +5086,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
 	if ((locktype & LOCKING_ANDX_OPLOCK_RELEASE)) {
 		/* Client can insist on breaking to none. */
 		BOOL break_to_none = (oplocklevel == 0);
+		BOOL result;
 		
 		DEBUG(5,("reply_lockingX: oplock break reply (%u) from client for fnum = %d\n",
 			 (unsigned int)oplocklevel, fsp->fnum ));
@@ -5108,11 +5109,20 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 			}
 		}
 
-		if (remove_oplock(fsp, break_to_none) == False) {
-			DEBUG(0,("reply_lockingX: error in removing oplock on file %s\n",
-				 fsp->fsp_name ));
+		if ((fsp->sent_oplock_break == BREAK_TO_NONE_SENT) ||
+		    (break_to_none)) {
+			result = remove_oplock(fsp);
+		} else {
+			result = downgrade_oplock(fsp);
 		}
 		
+		if (!result) {
+			DEBUG(0, ("reply_lockingX: error in removing "
+				  "oplock on file %s\n", fsp->fsp_name));
+			/* Hmmm. Is this panic justified? */
+			smb_panic("internal tdb error");
+		}
+
 		/* if this is a pure oplock break request then don't send a reply */
 		if (num_locks == 0 && num_ulocks == 0) {
 			/* Sanity check - ensure a pure oplock break is not a

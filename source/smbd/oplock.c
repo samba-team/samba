@@ -263,44 +263,53 @@ static void downgrade_file_oplock(files_struct *fsp)
  to none even if a "break-to-level II" was sent.
 ****************************************************************************/
 
-BOOL remove_oplock(files_struct *fsp, BOOL break_to_none)
+BOOL remove_oplock(files_struct *fsp)
 {
 	SMB_DEV_T dev = fsp->dev;
 	SMB_INO_T inode = fsp->inode;
-	BOOL ret = True;
+	BOOL ret;
 
 	/* Remove the oplock flag from the sharemode. */
-	if (lock_share_entry_fsp(fsp) == False) {
-		DEBUG(0,("remove_oplock: failed to lock share entry for file %s\n",
-			 fsp->fsp_name ));
+	if (!lock_share_entry_fsp(fsp)) {
+		DEBUG(0,("remove_oplock: failed to lock share entry for "
+			 "file %s\n", fsp->fsp_name ));
 		return False;
 	}
-
-	if (fsp->sent_oplock_break == BREAK_TO_NONE_SENT || break_to_none) {
-		/*
-		 * Deal with a reply when a break-to-none was sent.
-		 */
-
-		if(remove_share_oplock(fsp)==False) {
-			DEBUG(0,("remove_oplock: failed to remove share oplock for file %s fnum %d, \
-dev = %x, inode = %.0f\n", fsp->fsp_name, fsp->fnum, (unsigned int)dev, (double)inode));
-			ret = False;
-		}
-
-		release_file_oplock(fsp);
-	} else {
-		/*
-		 * Deal with a reply when a break-to-level II was sent.
-		 */
-		if(downgrade_share_oplock(fsp)==False) {
-			DEBUG(0,("remove_oplock: failed to downgrade share oplock for file %s fnum %d, \
-dev = %x, inode = %.0f\n", fsp->fsp_name, fsp->fnum, (unsigned int)dev, (double)inode));
-			ret = False;
-		}
-		
-		downgrade_file_oplock(fsp);
+	ret = remove_share_oplock(fsp);
+	if (!ret) {
+		DEBUG(0,("remove_oplock: failed to remove share oplock for "
+			 "file %s fnum %d, dev = %x, inode = %.0f\n",
+			 fsp->fsp_name, fsp->fnum, (unsigned int)dev,
+			 (double)inode));
 	}
+	release_file_oplock(fsp);
+	unlock_share_entry_fsp(fsp);
+	return ret;
+}
 
+/*
+ * Deal with a reply when a break-to-level II was sent.
+ */
+BOOL downgrade_oplock(files_struct *fsp)
+{
+	SMB_DEV_T dev = fsp->dev;
+	SMB_INO_T inode = fsp->inode;
+	BOOL ret;
+
+	if (!lock_share_entry_fsp(fsp)) {
+		DEBUG(0,("downgrade_oplock: failed to lock share entry for "
+			 "file %s\n", fsp->fsp_name ));
+		return False;
+	}
+	ret = downgrade_share_oplock(fsp);
+	if (!ret) {
+		DEBUG(0,("downgrade_oplock: failed to downgrade share oplock "
+			 "for file %s fnum %d, dev = %x, inode = %.0f\n",
+			 fsp->fsp_name, fsp->fnum, (unsigned int)dev,
+			 (double)inode));
+	}
+		
+	downgrade_file_oplock(fsp);
 	unlock_share_entry_fsp(fsp);
 	return ret;
 }
@@ -937,7 +946,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 	if(oplock_timeout && (fsp = initial_break_processing(dev, inode, file_id)) &&
 			OPEN_FSP(fsp) && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		DEBUG(0,("oplock_break: client failure in oplock break in file %s\n", fsp->fsp_name));
-		remove_oplock(fsp,True);
+		remove_oplock(fsp);
 #if FASCIST_OPLOCK_BACKOFF
 		global_client_failed_oplock_break = True; /* Never grant this client an oplock again. */
 #endif
