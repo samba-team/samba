@@ -36,12 +36,8 @@ typedef NTSTATUS (*ejs_push_function_t)(struct ejs_rpc *, struct MprVar *, const
 NTSTATUS ejs_panic(struct ejs_rpc *ejs, const char *why);
 void ejs_set_switch(struct ejs_rpc *ejs, uint32_t switch_var);
 
-typedef void (*ejs_setup_t)(void);
-typedef void (*ejs_constants_t)(int);
+NTSTATUS smbcalls_register_ejs(const char *name, MprCFunction fn);
 
-NTSTATUS smbcalls_register_ejs(const char *name, 
-			       ejs_setup_t setup,
-			       ejs_constants_t constants);
 
 int ejs_rpc_call(int eid, int argc, struct MprVar **argv,
 		 const struct dcerpc_interface_table *iface, int callnum,
@@ -120,3 +116,4 @@ BOOL ejs_pull_null(struct ejs_rpc *ejs, struct MprVar *v, const char *name);
 #define ejs_push_dom_sid2 ejs_push_dom_sid
 #define ejs_pull_NTTIME_hyper ejs_pull_NTTIME
 #define ejs_push_NTTIME_hyper ejs_push_NTTIME
+

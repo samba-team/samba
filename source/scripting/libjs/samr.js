@@ -18,7 +18,7 @@ function samArray(output)
 	if (output.sam == NULL) {
 		return list;
 	}
-	var entries = output.sam.entries;
+	var i, entries = output.sam.entries;
 	for (i=0;i<output.num_entries;i++) {
 		list[i] = new Object();
                 list[i].name = entries[i].name;
@@ -32,10 +32,12 @@ function samArray(output)
 */
 function samrConnect(conn)
 {
+	conn.samr = samr_init();
+	conn.sec = security_init();
 	var io = irpcObj();
 	io.input.system_name = NULL;
-	io.input.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	status = dcerpc_samr_Connect(conn, io);
+	io.input.access_mask = conn.sec.SEC_FLAG_MAXIMUM_ALLOWED;
+	var status = conn.samr.samr_Connect2(conn, io);
 	check_status_ok(status);
 	return io.output.connect_handle;
 }
@@ -47,7 +49,7 @@ function samrClose(conn, handle)
 {
 	var io = irpcObj();
 	io.input.handle = handle;
-	status = dcerpc_samr_Close(conn, io);
+	var status = conn.samr.samr_Close(conn, io);
 	check_status_ok(status);
 }
 
@@ -59,7 +61,7 @@ function samrLookupDomain(conn, handle, domain)
 	var io = irpcObj();
 	io.input.connect_handle = handle;
 	io.input.domain_name = domain;
-	status = dcerpc_samr_LookupDomain(conn, io);
+	var status = conn.samr.samr_LookupDomain(conn, io);
 	check_status_ok(status);
 	return io.output.sid;
 }
@@ -71,9 +73,9 @@ function samrOpenDomain(conn, handle, sid)
 {
 	var io = irpcObj();
 	io.input.connect_handle = handle;
-	io.input.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.input.access_mask = conn.sec.SEC_FLAG_MAXIMUM_ALLOWED;
 	io.input.sid = sid;
-	status = dcerpc_samr_OpenDomain(conn, io);
+	var status = conn.samr.samr_OpenDomain(conn, io);
 	check_status_ok(status);
 	return io.output.domain_handle;
 }
@@ -85,9 +87,9 @@ function samrOpenUser(conn, handle, rid)
 {
 	var io = irpcObj();
 	io.input.domain_handle = handle;
-	io.input.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.input.access_mask = conn.sec.SEC_FLAG_MAXIMUM_ALLOWED;
 	io.input.rid = rid;
-	status = dcerpc_samr_OpenUser(conn, io);
+	var status = conn.samr.samr_OpenUser(conn, io);
 	check_status_ok(status);
 	return io.output.user_handle;
 }
@@ -102,7 +104,7 @@ function samrEnumDomainUsers(conn, dom_handle)
 	io.input.resume_handle = 0;
 	io.input.acct_flags = 0;
 	io.input.max_size = -1;
-	status = dcerpc_samr_EnumDomainUsers(conn, io);
+	var status = conn.samr.samr_EnumDomainUsers(conn, io);
 	check_status_ok(status);
 	return samArray(io.output);
 }
@@ -117,7 +119,7 @@ function samrEnumDomainGroups(conn, dom_handle)
 	io.input.resume_handle = 0;
 	io.input.acct_flags = 0;
 	io.input.max_size = -1;
-	status = dcerpc_samr_EnumDomainGroups(conn, io);
+	var status = conn.samr.samr_EnumDomainGroups(conn, io);
 	check_status_ok(status);
 	return samArray(io.output);
 }
@@ -131,7 +133,7 @@ function samrEnumDomains(conn, handle)
 	io.input.connect_handle = handle;
 	io.input.resume_handle = 0;
 	io.input.buf_size = -1;
-	status = dcerpc_samr_EnumDomains(conn, io);
+	var status = conn.samr.samr_EnumDomains(conn, io);
 	check_status_ok(status);
 	return samArray(io.output);
 }
@@ -144,7 +146,7 @@ function samrQueryUserInfo(conn, user_handle, level)
 	var r, io = irpcObj();
 	io.input.user_handle = user_handle;
 	io.input.level = level;
-	status = dcerpc_samr_QueryUserInfo(conn, io);
+	var status = conn.samr.samr_QueryUserInfo(conn, io);
 	check_status_ok(status);
 	return io.output.info.info3;
 }
@@ -166,5 +168,4 @@ function samrFillUserInfo(conn, dom_handle, users, level)
 		samrClose(conn, user_handle);
 	}
 }
-
 
