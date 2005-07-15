@@ -15,11 +15,12 @@ printVars(res);
 println("and now an unconstrained search");
 
 var dbfile = lpGet("sam database");
-res = ldb.search(dbfile, "(objectClass=user)");
+var db = ldb.connect(dbfile);
+res = ldb.search(db, "(objectClass=user)");
 printVars(res);
 
 println("and a bad search");
 
-res = ldb.search("foo");
+res = ldb.search(db, "foo");
 
 println("all done");
