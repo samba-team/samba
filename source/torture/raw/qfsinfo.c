@@ -75,6 +75,14 @@ static union smb_fsinfo *find(const char *name)
         ret = False; \
 }} while(0)
 
+#define VAL_APPROX_EQUAL(n1, v1, n2, v2) do {if (ABS(s1->n1.out.v1 - s2->n2.out.v2) > 0.1*s1->n1.out.v1) { \
+        printf("%s/%s [%u] != %s/%s [%u] at %s(%d)\n", \
+               #n1, #v1, (uint_t)s1->n1.out.v1, \
+               #n2, #v2, (uint_t)s2->n2.out.v2, \
+	       __FILE__, __LINE__); \
+        ret = False; \
+}} while(0)
+
 #define STR_EQUAL(n1, v1, n2, v2) do {if (!s1->n1.out.v1 && !s2->n2.out.v2) return True; \
        if (!s1->n1.out.v1 || !s2->n2.out.v2) return False; \
        if (strcmp(s1->n1.out.v1, s2->n2.out.v2)) { \
@@ -162,7 +170,7 @@ BOOL torture_raw_qfsinfo(void)
 	s2 = find("SIZE_INFORMATION");
 	if (s1 && s2) {
 		VAL_EQUAL(size_info, total_alloc_units, size_info, total_alloc_units);
-		VAL_EQUAL(size_info, avail_alloc_units, size_info, avail_alloc_units);
+		VAL_APPROX_EQUAL(size_info, avail_alloc_units, size_info, avail_alloc_units);
 		VAL_EQUAL(size_info, sectors_per_unit,  size_info, sectors_per_unit);
 		VAL_EQUAL(size_info, bytes_per_sector,  size_info, bytes_per_sector);
 	}	
@@ -252,7 +260,7 @@ BOOL torture_raw_qfsinfo(void)
 	s2 = find("FULL_SIZE_INFORMATION");
 	if (s1 && s2) {
 		VAL_EQUAL(size_info, total_alloc_units, full_size_information, total_alloc_units);
-		VAL_EQUAL(size_info, avail_alloc_units, full_size_information, call_avail_alloc_units);
+		VAL_APPROX_EQUAL(size_info, avail_alloc_units, full_size_information, call_avail_alloc_units);
 		VAL_EQUAL(size_info, sectors_per_unit,  full_size_information, sectors_per_unit);
 		VAL_EQUAL(size_info, bytes_per_sector,  full_size_information, bytes_per_sector);
 	}	
