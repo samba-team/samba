@@ -187,7 +187,7 @@ enum ndr_compression_alg {
 
 #define NDR_PULL_NEED_BYTES(ndr, n) do { \
 	if ((n) > ndr->data_size || ndr->offset + (n) > ndr->data_size) { \
-		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, "Pull bytes %u", n); \
+		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, "Pull bytes %u", (unsigned)n); \
 	} \
 } while(0)
 
@@ -203,7 +203,7 @@ enum ndr_compression_alg {
 		ndr->offset = (ndr->offset + (n-1)) & ~(n-1); \
 	} \
 	if (ndr->offset > ndr->data_size) { \
-		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, "Pull align %u", n); \
+		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, "Pull align %u", (unsigned)n); \
 	} \
 } while(0)
 
@@ -229,7 +229,7 @@ enum ndr_compression_alg {
 	                       (s) = talloc_size(ndr, size); \
                                if ((size) && !(s)) return ndr_pull_error(ndr, NDR_ERR_ALLOC, \
 							       "Alloc %u failed\n", \
-							       size); \
+							       (unsigned)size); \
                            } while (0)
 
 #define NDR_ALLOC(ndr, s) NDR_ALLOC_SIZE(ndr, s, sizeof(*(s)))
@@ -237,7 +237,7 @@ enum ndr_compression_alg {
 
 #define NDR_ALLOC_N_SIZE(ndr, s, n, elsize) do { \
 	(s) = talloc_array_size(ndr, elsize, n); \
-	if (!(s)) return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Alloc %u * %u failed\n", n, elsize); \
+	if (!(s)) return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Alloc %u * %u failed\n", (unsigned)n, (unsigned)elsize); \
 } while (0)
 
 #define NDR_ALLOC_N(ndr, s, n) NDR_ALLOC_N_SIZE(ndr, s, n, sizeof(*(s)))
@@ -245,7 +245,7 @@ enum ndr_compression_alg {
 
 #define NDR_PUSH_ALLOC_SIZE(ndr, s, size) do { \
        (s) = talloc_size(ndr, size); \
-       if (!(s)) return ndr_push_error(ndr, NDR_ERR_ALLOC, "push alloc %u failed\n", size); \
+       if (!(s)) return ndr_push_error(ndr, NDR_ERR_ALLOC, "push alloc %u failed\n", (unsigned)size); \
 } while (0)
 
 #define NDR_PUSH_ALLOC(ndr, s) NDR_PUSH_ALLOC_SIZE(ndr, s, sizeof(*(s)))
