@@ -689,33 +689,30 @@ sub EjsInterface($$)
 		EjsConst($d);
 	}
 
-	pidl "void setup_ejs_$name(void)";
+	pidl "static int ejs_$name\_init(int eid, int argc, struct MprVar **argv)";
 	pidl "{";
 	indent;
+	pidl "struct MprVar obj = mprObject(\"$name\");";
 	foreach (@fns) {
-		pidl "ejsDefineCFunction(-1, \"dcerpc_$_\", ejs_$_, NULL, MPR_VAR_SCRIPT_HANDLE);";
+		pidl "mprSetCFunction(&obj, \"$_\", ejs_$_);";
 	}
-	deindent;
-	pidl "}\n";
-
-	pidl "void setup_ejs_constants_$name(int eid)";
-	pidl "{";
-	indent;
 	foreach my $v (keys %constants) {
 		my $value = $constants{$v};
 		if (substr($value, 0, 1) eq "\"") {
-			pidl "ejs_set_constant_string(eid, \"$v\", $value);";
+			pidl "mprSetVar(&obj, \"$v\", mprString($value));";
 		} else {
-			pidl "ejs_set_constant_int(eid, \"$v\", $value);";
+			pidl "mprSetVar(&obj, \"$v\", mprCreateNumberVar($value));";
 		}
 	}
+	pidl "mpr_Return(eid, obj);";
+	pidl "return 0;";
 	deindent;
 	pidl "}\n";
 
 	pidl "NTSTATUS ejs_init_$name(void)";
 	pidl "{";
 	indent;
-	pidl "return smbcalls_register_ejs(\"$name\", setup_ejs_$name, setup_ejs_constants_$name);";
+	pidl "return smbcalls_register_ejs(\"$name\_init\", ejs_$name\_init);";
 	deindent;
 	pidl "}";
 }
@@ -734,6 +731,7 @@ sub Parse($$)
 #include \"includes.h\"
 #include \"lib/appweb/ejs/ejs.h\"
 #include \"scripting/ejs/ejsrpc.h\"
+#include \"scripting/ejs/smbcalls.h\"
 #include \"librpc/gen_ndr/ndr_misc_ejs.h\"
 #include \"$hdr\"
 #include \"$ejs_hdr\"

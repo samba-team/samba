@@ -361,16 +361,13 @@ done:
 static struct ejs_register {
 	struct ejs_register *next, *prev;
 	const char *name;
-	ejs_setup_t setup;
-	ejs_constants_t constants;
+	MprCFunction fn;
 } *ejs_registered;
 
 /*
   register a generated ejs module
 */
- NTSTATUS smbcalls_register_ejs(const char *name, 
-				ejs_setup_t setup,
-				ejs_constants_t constants)
+ NTSTATUS smbcalls_register_ejs(const char *name, MprCFunction fn)
 {
 	struct ejs_register *r;
 	void *ctx = ejs_registered;
@@ -380,8 +377,7 @@ static struct ejs_register {
 	r = talloc(ctx, struct ejs_register);
 	NT_STATUS_HAVE_NO_MEMORY(r);
 	r->name = name;
-	r->setup = setup;
-	r->constants = constants;
+	r->fn = fn;
 	DLIST_ADD(ejs_registered, r);
 	return NT_STATUS_OK;
 }
@@ -396,24 +392,6 @@ void smb_setup_ejs_rpc(void)
 	ejsDefineCFunction(-1, "rpc_connect", ejs_rpc_connect, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineCFunction(-1, "irpc_connect", ejs_irpc_connect, NULL, MPR_VAR_SCRIPT_HANDLE);
 	for (r=ejs_registered;r;r=r->next) {
-		r->setup();
+		ejsDefineCFunction(-1, r->name, r->fn, NULL, MPR_VAR_SCRIPT_HANDLE);
 	}
 }
-
-/*
-  setup constants for rpc calls
-*/
-void smb_setup_ejs_rpc_constants(int eid)
-{
-	struct ejs_register *r;
-	struct MprVar v;
-
-	for (r=ejs_registered;r;r=r->next) {
-		r->constants(eid);
-	}
-
-	v = mprCreatePtrVar(NULL);
-	mprSetProperty(ejsGetGlobalObject(eid), "NULL", &v);
-}
-
-

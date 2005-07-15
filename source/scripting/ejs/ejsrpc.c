@@ -229,25 +229,6 @@ NTSTATUS ejs_push_string(struct ejs_rpc *ejs,
 	return mprSetVar(v, name, mprString(s));
 }
 
-/*
-  setup a constant int
-*/
-void ejs_set_constant_int(int eid, const char *name, int value)
-{
-	struct MprVar *v = ejsGetGlobalObject(eid);
-	mprSetVar(v, name, mprCreateIntegerVar(value));
-}
-
-/*
-  setup a constant string
-*/
-void ejs_set_constant_string(int eid, const char *name, const char *value)
-{
-	struct MprVar *v = ejsGetGlobalObject(eid);
-	mprSetVar(v, name, mprCreateStringVar(value, False));
-}
-
-
 NTSTATUS ejs_pull_dom_sid(struct ejs_rpc *ejs, 
 			  struct MprVar *v, const char *name, struct dom_sid *r)
 {

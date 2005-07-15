@@ -132,10 +132,3 @@ void smb_setup_ejs_functions(void)
 	ejsDefineStringCFunction(-1, "libinclude", ejs_libinclude, NULL, MPR_VAR_SCRIPT_HANDLE);
 }
 
-/*
-  setup constants that can be used from ejs
-*/
-void smb_setup_ejs_constants(int eid)
-{
-	smb_setup_ejs_rpc_constants(eid);
-}

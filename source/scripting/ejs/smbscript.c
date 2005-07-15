@@ -71,8 +71,6 @@ void ejs_exception(const char *reason)
 		exit(127);
 	}
 
-	smb_setup_ejs_constants(eid);
-
 	/* setup ARGV[] in the ejs environment */
 	for (i=1;argv[i];i++) {
 		argv_list = str_list_add(argv_list, argv[i]);

@@ -629,6 +629,7 @@ int ejsDefineStandardProperties(MprVar *obj)
 	mprCreatePropertyValue(obj, "undefined", mprCreateUndefinedVar());
 	mprCreatePropertyValue(obj, "true", mprCreateBoolVar(1));
 	mprCreatePropertyValue(obj, "false", mprCreateBoolVar(0));
+	mprCreatePropertyValue(obj, "NULL", mprCreatePtrVar(NULL));
 
 #if BLD_FEATURE_LEGACY_API
 	/*

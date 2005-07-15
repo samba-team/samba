@@ -16,6 +16,8 @@ if (ok == false) {
 
 libinclude("base.js");
 
+echo = rpcecho_init();
+
 /*
   generate a ramp as an integer array
  */
@@ -40,7 +42,7 @@ function test_AddOne(conn)
 
 	for (i=0;i<10;i++) {
 		io.input.in_data = i;
-		status = dcerpc_echo_AddOne(conn, io);
+		status = echo.echo_AddOne(conn, io);
 		check_status_ok(status);
 		assert(io.output.out_data == i + 1);
 	}
@@ -58,7 +60,7 @@ function test_EchoData(conn)
 	for (i=0; i<30; i=i+5) {
 		io.input.len = i;
 		io.input.in_data = ramp_array(i);
-		status = dcerpc_echo_EchoData(conn, io);
+		status = echo.echo_EchoData(conn, io);
 		check_status_ok(status);
 		check_array_equal(io.input.in_data, io.output.out_data);
 	}
@@ -77,7 +79,7 @@ function test_SinkData(conn)
 	for (i=0; i<30; i=i+5) {
 		io.input.len = i;
 		io.input.data = ramp_array(i);
-		status = dcerpc_echo_SinkData(conn, io);
+		status = echo.echo_SinkData(conn, io);
 		check_status_ok(status);
 	}
 }
@@ -94,7 +96,7 @@ function test_SourceData(conn)
 
 	for (i=0; i<30; i=i+5) {
 		io.input.len = i;
-		status = dcerpc_echo_SourceData(conn, io);
+		status = echo.echo_SourceData(conn, io);
 		check_status_ok(status);
 		correct = ramp_array(i);
 		check_array_equal(correct, io.output.data);
@@ -112,7 +114,7 @@ function test_TestCall(conn)
 	print("Testing echo_TestCall\n");
 
 	io.input.s1 = "my test string";
-	status = dcerpc_echo_TestCall(conn, io);
+	status = echo.echo_TestCall(conn, io);
 	check_status_ok(status);
 	assert("this is a test string" == io.output.s2);
 }
@@ -128,7 +130,7 @@ function test_TestCall2(conn)
 
 	for (i=1;i<=7;i++) {
 		io.input.level = i;
-		status = dcerpc_echo_TestCall2(conn, io);
+		status = echo.echo_TestCall2(conn, io);
 		check_status_ok(status);
 	}
 }
@@ -143,7 +145,7 @@ function test_TestSleep(conn)
 	print("Testing echo_TestSleep\n");
 
 	io.input.seconds = 1;
-	status = dcerpc_echo_TestSleep(conn, io);
+	status = echo.echo_TestSleep(conn, io);
 	check_status_ok(status);
 }
 
@@ -156,18 +158,18 @@ function test_TestEnum(conn)
 
 	print("Testing echo_TestEnum\n");
 
-	io.input.foo1 = ECHO_ENUM1;
+	io.input.foo1 = echo.ECHO_ENUM1;
 	io.input.foo2 = new Object();
-	io.input.foo2.e1 = ECHO_ENUM1;
-	io.input.foo2.e2 = ECHO_ENUM1_32;
+	io.input.foo2.e1 = echo.ECHO_ENUM1;
+	io.input.foo2.e2 = echo.ECHO_ENUM1_32;
 	io.input.foo3 = new Object();
-	io.input.foo3.e1 = ECHO_ENUM2;
-	status = dcerpc_echo_TestEnum(conn, io);
+	io.input.foo3.e1 = echo.ECHO_ENUM2;
+	status = echo.echo_TestEnum(conn, io);
 	check_status_ok(status);
-	assert(io.output.foo1    == ECHO_ENUM1);
-	assert(io.output.foo2.e1 == ECHO_ENUM2);
-	assert(io.output.foo2.e2 == ECHO_ENUM1_32);
-	assert(io.output.foo3.e1 == ECHO_ENUM2);
+	assert(io.output.foo1    == echo.ECHO_ENUM1);
+	assert(io.output.foo2.e1 == echo.ECHO_ENUM2);
+	assert(io.output.foo2.e2 == echo.ECHO_ENUM1_32);
+	assert(io.output.foo3.e1 == echo.ECHO_ENUM2);
 }
 
 /*
@@ -182,7 +184,7 @@ function test_TestSurrounding(conn)
 	io.input.data = new Object();
 	io.input.data.x = 10;
 	io.input.data.surrounding = ramp_array(10);
-	status = dcerpc_echo_TestSurrounding(conn, io);
+	status = echo.echo_TestSurrounding(conn, io);
 	check_status_ok(status);
 	assert(io.output.data.surrounding.length == 20);
 	check_array_zero(io.output.data.surrounding);
@@ -198,7 +200,7 @@ function test_TestDoublePointer(conn)
 	print("Testing echo_TestDoublePointer\n");
 	
 	io.input.data = 7;
-	status = dcerpc_echo_TestDoublePointer(conn, io);
+	status = echo.echo_TestDoublePointer(conn, io);
 	check_status_ok(status);
 	assert(io.input.data == io.input.data);
 }
