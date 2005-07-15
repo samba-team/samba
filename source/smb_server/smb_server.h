@@ -28,7 +28,7 @@
   sockets, tree connects, requests etc
 
   the idea is that we will eventually get rid of all our global
-  variables and instead store our stang from structures hanging off
+  variables and instead store our state from structures hanging off
   these basic elements
 */
 
