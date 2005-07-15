@@ -7,6 +7,8 @@
 /* used to generate sequence numbers for records */
 provision_next_usn = 1;
 
+sys = sys_init();
+
 /*
   find a user or group from a list of possibilities
 */
@@ -59,7 +61,7 @@ unixName: ${UNIXNAME}
 */
 function nttime()
 {
-	return "" + sys_nttime();
+	return "" + sys.nttime();
 }
 
 /*
@@ -67,7 +69,7 @@ function nttime()
 */
 function ldaptime()
 {
-	return sys_ldaptime(sys_nttime());
+	return sys.ldaptime(sys.nttime());
 }
 
 /*
@@ -75,7 +77,7 @@ function ldaptime()
 */
 function datestring()
 {
-	var t = sys_gmtime(sys_nttime());
+	var t = sys.gmtime(sys.nttime());
 	return sprintf("%04u%02u%02u%02u",
 		       t.tm_year+1900, t.tm_mon+1, t.tm_mday, t.tm_hour);
 }
@@ -85,7 +87,7 @@ function datestring()
 */
 function hostip()
 {
-	var list = sys_interfaces();
+	var list = sys.interfaces();
 	return list[0];
 }
 
@@ -103,7 +105,7 @@ function nextusn()
 */
 function hostname()
 {
-	var s = split(".", sys_hostname());
+	var s = split(".", sys.hostname());
 	return s[0];
 }
 
@@ -123,9 +125,9 @@ function setup_ldb(ldif, dbname, subobj)
 	var db = lpGet("private dir") + "/" + dbname;
 	var src = lpGet("setup directory") + "/" + ldif;
 
-	sys_unlink(db);
+	sys.unlink(db);
 
-	var data = sys_file_load(src);
+	var data = sys.file_load(src);
 	data = data + extra;
 	data = substitute_var(data, subobj);
 
@@ -141,12 +143,12 @@ function setup_file(template, fname, subobj)
 	var f = lpGet("private dir") + "/" + fname;
 	var src = lpGet("setup directory") + "/" + template;
 
-	sys_unlink(f);
+	sys.unlink(f);
 
-	var data = sys_file_load(src);
+	var data = sys.file_load(src);
 	data = substitute_var(data, subobj);
 
-	ok = sys_file_save(f, data);
+	ok = sys.file_save(f, data);
 	assert(ok);
 }
 

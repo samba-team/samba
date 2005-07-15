@@ -171,16 +171,30 @@ static int ejs_sys_file_save(MprVarHandle eid, int argc, char **argv)
 
 
 /*
+  initialise sys ejs subsystem
+*/
+static int ejs_sys_init(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	struct MprVar obj = mprObject("sys");
+
+	mprSetCFunction(&obj, "interfaces", ejs_sys_interfaces);
+	mprSetCFunction(&obj, "hostname", ejs_sys_hostname);
+	mprSetCFunction(&obj, "nttime", ejs_sys_nttime);
+	mprSetCFunction(&obj, "gmtime", ejs_sys_gmtime);
+	mprSetCFunction(&obj, "ldaptime", ejs_sys_ldaptime);
+	mprSetStringCFunction(&obj, "unlink", ejs_sys_unlink);
+	mprSetStringCFunction(&obj, "file_load", ejs_sys_file_load);
+	mprSetStringCFunction(&obj, "file_save", ejs_sys_file_save);
+
+	mpr_Return(eid, obj);
+	return 0;
+}
+
+
+/*
   setup C functions that be called from ejs
 */
 void smb_setup_ejs_system(void)
 {
-	ejsDefineCFunction(-1, "sys_interfaces", ejs_sys_interfaces, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineCFunction(-1, "sys_hostname", ejs_sys_hostname, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineCFunction(-1, "sys_nttime", ejs_sys_nttime, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineCFunction(-1, "sys_gmtime", ejs_sys_gmtime, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineCFunction(-1, "sys_ldaptime", ejs_sys_ldaptime, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineStringCFunction(-1, "sys_unlink", ejs_sys_unlink, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineStringCFunction(-1, "sys_file_load", ejs_sys_file_load, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineStringCFunction(-1, "sys_file_save", ejs_sys_file_save, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "sys_init", ejs_sys_init, NULL, MPR_VAR_SCRIPT_HANDLE);
 }
