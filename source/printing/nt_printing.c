@@ -3,7 +3,7 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Jean François Micouleau      1998-2000.
- *  Copyright (C) Gerald Carter                2002-2003.
+ *  Copyright (C) Gerald Carter                2002-2005.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -39,8 +39,7 @@ static TDB_CONTEXT *tdb_printers; /* used for printers files */
 #define NTDRIVERS_DATABASE_VERSION_2 2
 #define NTDRIVERS_DATABASE_VERSION_3 3 /* little endian version of v2 */
 #define NTDRIVERS_DATABASE_VERSION_4 4 /* fix generic bits in security descriptors */
- 
-#define NTDRIVERS_DATABASE_VERSION NTDRIVERS_DATABASE_VERSION_4
+#define NTDRIVERS_DATABASE_VERSION_5 5 /* normalize keys in ntprinters.tdb */
 
 /* Map generic permissions to printer object specific permissions */
 
@@ -225,6 +224,48 @@ static const struct table_node archi_table[]= {
 	{NULL,                   "",		-1 }
 };
 
+
+/****************************************************************************
+ generate a new TDB_DATA key for storing a printer
+****************************************************************************/
+
+static TDB_DATA make_printer_tdbkey( const char *sharename )
+{
+	fstring share;
+	static pstring keystr;
+	TDB_DATA key;
+	
+	fstrcpy( share, sharename );
+	strlower_m( share );
+	
+	pstr_sprintf( keystr, "%s%s", PRINTERS_PREFIX, share );
+	
+	key.dptr = keystr;
+	key.dsize = strlen(keystr)+1;
+
+	return key;
+}
+
+/****************************************************************************
+ generate a new TDB_DATA key for storing a printer security descriptor
+****************************************************************************/
+
+static char* make_printers_secdesc_tdbkey( const char* sharename  )
+{
+	fstring share;
+	static pstring keystr;
+	
+	fstrcpy( share, sharename );
+	strlower_m( share );
+	
+	pstr_sprintf( keystr, "%s%s", SECDESC_PREFIX, share );
+
+	return keystr;
+}
+
+/****************************************************************************
+****************************************************************************/
+
 static BOOL upgrade_to_version_3(void)
 {
 	TDB_DATA kbuf, newkey, dbuf;
@@ -406,6 +447,73 @@ static BOOL upgrade_to_version_4(void)
 	return ( result != -1 );
 }
 
+/*******************************************************************
+ Fix an issue with security descriptors.  Printer sec_desc must 
+ use more than the generic bits that were previously used 
+ in <= 3.0.14a.  They must also have a owner and group SID assigned.
+ Otherwise, any printers than have been migrated to a Windows 
+ host using printmig.exe will not be accessible.
+*******************************************************************/
+
+static int normalize_printers_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
+                                  TDB_DATA data, void *state )
+{
+	TDB_DATA new_key;
+	
+	if (!data.dptr || data.dsize == 0)
+		return 0;
+
+	/* upgrade printer records and security descriptors */
+	
+	if ( strncmp( key.dptr, PRINTERS_PREFIX, strlen(PRINTERS_PREFIX) ) == 0 ) {
+		new_key = make_printer_tdbkey( key.dptr+strlen(PRINTERS_PREFIX) );
+	}
+	else if ( strncmp( key.dptr, SECDESC_PREFIX, strlen(SECDESC_PREFIX) ) == 0 ) {
+		new_key.dptr = make_printers_secdesc_tdbkey( key.dptr+strlen(SECDESC_PREFIX) );
+		new_key.dsize = strlen( new_key.dptr ) + 1;
+	}
+	else {
+		/* ignore this record */
+		return 0;
+	}
+		
+	/* delete the original record and store under the normalized key */
+	
+	if ( tdb_delete( the_tdb, key ) != 0 ) {
+		DEBUG(0,("normalize_printers_fn: tdb_delete for [%s] failed!\n", 
+			key.dptr));
+		return 1;
+	}
+	
+	if ( tdb_store( the_tdb, new_key, data, TDB_REPLACE) != 0 ) {
+		DEBUG(0,("normalize_printers_fn: failed to store new record for [%s]!\n",
+			key.dptr));
+		return 1;
+	}
+	
+	return 0;
+}
+
+/*******************************************************************
+*******************************************************************/
+
+static BOOL upgrade_to_version_5(void)
+{
+	TALLOC_CTX *ctx;
+	int result;
+
+	DEBUG(0,("upgrade_to_version_5: normalizing printer keys\n"));
+
+	if ( !(ctx = talloc_init( "upgrade_to_version_5" )) ) 
+		return False;
+
+	result = tdb_traverse( tdb_printers, normalize_printers_fn, NULL );
+
+	talloc_destroy( ctx );
+
+	return ( result != -1 );
+}
+
 /****************************************************************************
  Open the NT printing tdbs. Done once before fork().
 ****************************************************************************/
@@ -447,15 +555,18 @@ BOOL nt_printing_init(void)
 	}
  
 	/* handle a Samba upgrade */
-	tdb_lock_bystring(tdb_drivers, vstring, 0);
-
-	/* ---------------- Start Lock Region ---------------- */
-
-	/* Cope with byte-reversed older versions of the db. */
+	
 	vers_id = tdb_fetch_int32(tdb_drivers, vstring);
 
-	if ( vers_id != NTDRIVERS_DATABASE_VERSION ) {
+	if ( vers_id != NTDRIVERS_DATABASE_VERSION_5 ) {
 
+		if ((vers_id == NTDRIVERS_DATABASE_VERSION_1) || (IREV(vers_id) == NTDRIVERS_DATABASE_VERSION_1)) { 
+			if (!upgrade_to_version_3())
+				return False;
+			tdb_store_int32(tdb_drivers, vstring, NTDRIVERS_DATABASE_VERSION_3);
+			vers_id = NTDRIVERS_DATABASE_VERSION_3;
+		} 
+		
 		if ((vers_id == NTDRIVERS_DATABASE_VERSION_2) || (IREV(vers_id) == NTDRIVERS_DATABASE_VERSION_2)) {
 			/* Written on a bigendian machine with old fetch_int code. Save as le. */
 			/* The only upgrade between V2 and V3 is to save the version in little-endian. */
@@ -463,28 +574,27 @@ BOOL nt_printing_init(void)
 			vers_id = NTDRIVERS_DATABASE_VERSION_3;
 		}
 
-		if (vers_id != NTDRIVERS_DATABASE_VERSION_3 ) {
-	
-			if ((vers_id == NTDRIVERS_DATABASE_VERSION_1) || (IREV(vers_id) == NTDRIVERS_DATABASE_VERSION_1)) { 
-				if (!upgrade_to_version_3())
-					return False;
-			} else
-				tdb_traverse(tdb_drivers, tdb_traverse_delete_fn, NULL);
-			 
-			tdb_store_int32(tdb_drivers, vstring, NTDRIVERS_DATABASE_VERSION_3);
+		if (vers_id == NTDRIVERS_DATABASE_VERSION_3 ) {
+			if ( !upgrade_to_version_4() )
+				return False;
+			tdb_store_int32(tdb_drivers, vstring, NTDRIVERS_DATABASE_VERSION_4);
+			vers_id = NTDRIVERS_DATABASE_VERSION_4;
 		}
 
-		/* at this point we know that the database is at version 3 so upgrade to v4 */
+		if (vers_id == NTDRIVERS_DATABASE_VERSION_4 ) {
+			if ( !upgrade_to_version_5() )
+				return False;
+			tdb_store_int32(tdb_drivers, vstring, NTDRIVERS_DATABASE_VERSION_5);
+			vers_id = NTDRIVERS_DATABASE_VERSION_5;
+		}
 
-		if ( !upgrade_to_version_4() )
+
+		if ( vers_id != NTDRIVERS_DATABASE_VERSION_5 ) {
+			DEBUG(0,("nt_printing_init: Unknown printer database version [%d]\n", vers_id));
 			return False;
-		tdb_store_int32(tdb_drivers, vstring, NTDRIVERS_DATABASE_VERSION);
+		}
 	}
-
-	/* ---------------- End Lock Region ------------------ */
-
-	tdb_unlock_bystring(tdb_drivers, vstring);
-
+	
 	update_c_setprinter(True);
 
 	/*
@@ -501,12 +611,14 @@ BOOL nt_printing_init(void)
 
 	message_register( MSG_PRINTERDATA_INIT_RESET, reset_all_printerdata );
 
+#ifdef ENABLE_PRINT_HND_OBJECT_CACHE
 	/*
 	 * register callback to handle invalidating the printer cache 
 	 * between smbd processes.
 	 */
 
 	message_register( MSG_PRINTER_MOD, receive_printer_mod_msg);
+#endif
 
 	/* of course, none of the message callbacks matter if you don't
 	   tell messages.c that you interested in receiving PRINT_GENERAL 
@@ -2220,8 +2332,6 @@ uint32 del_a_printer(const char *sharename)
 ****************************************************************************/
 static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 {
-	pstring key;
-	fstring norm_sharename;
 	char *buf;
 	int buflen, len;
 	WERROR ret;
@@ -2303,15 +2413,8 @@ static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	}
 	
 
-	/* normalize the key */
+	kbuf = make_printer_tdbkey( info->sharename );
 
-	fstrcpy( norm_sharename, info->sharename );
-	strlower_m( norm_sharename );
-
-	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, info->sharename);
-
-	kbuf.dptr = key;
-	kbuf.dsize = strlen(key)+1;
 	dbuf.dptr = buf;
 	dbuf.dsize = len;
 
@@ -3595,29 +3698,20 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const 
 ****************************************************************************/
 static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *servername, const char *sharename)
 {
-	pstring key;
 	NT_PRINTER_INFO_LEVEL_2 info;
 	int len = 0;
 	int snum = lp_servicenumber(sharename);
 	TDB_DATA kbuf, dbuf;
 	fstring printername;
 	char adevice[MAXDEVICENAME];
-	fstring norm_sharename;
 		
 	ZERO_STRUCT(info);
 
-	/* normalize case */
-	fstrcpy( norm_sharename, sharename );
-	strlower_m( norm_sharename );
-
-	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, norm_sharename);
-
-	kbuf.dptr = key;
-	kbuf.dsize = strlen(key)+1;
+	kbuf = make_printer_tdbkey( sharename );
 
 	dbuf = tdb_fetch(tdb_printers, kbuf);
 	if (!dbuf.dptr)
-		return get_a_printer_2_default(info_ptr, servername, norm_sharename);
+		return get_a_printer_2_default(info_ptr, servername, sharename);
 
 	len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "dddddddddddfffffPfffff",
 			&info.attributes,
@@ -3651,7 +3745,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *se
 	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", servername);
 
 	if ( lp_force_printername(snum) )
-		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, norm_sharename );
+		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, sharename );
 	else 
 		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, info.printername);
 
@@ -3781,6 +3875,7 @@ static uint32 rev_changeid(void)
 #endif
 }
 
+#ifdef ENABLE_PRINT_HND_OBJECT_CACHE
 /********************************************************************
  Send a message to all smbds about the printer that just changed
  ********************************************************************/
@@ -3801,6 +3896,8 @@ static BOOL send_printer_mod_msg( char* printername )
 
 	return True;
 }
+#endif
+
 
 /*
  * The function below are the high level ones.
@@ -3818,6 +3915,7 @@ WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
 	
 	dump_a_printer(printer, level);	
 	
+#ifdef ENABLE_PRINT_HND_OBJECT_CACHE
 	/* 
 	 * invalidate cache for all open handles to this printer.
 	 * cache for a given handle will be updated on the next 
@@ -3825,7 +3923,12 @@ WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
 	 */
 	 
 	invalidate_printer_hnd_cache( printer->info_2->sharename );
+	
+	/* messages between smbds can only be sent as root */
+	become_root();
 	send_printer_mod_msg( printer->info_2->sharename );
+	unbecome_root();
+#endif
 	
 	switch (level) {
 		case 2:
@@ -4228,6 +4331,7 @@ WERROR save_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level, uint8 *dat
 	return status;
 }
 
+#ifdef ENABLE_PRINT_HND_OBJECT_CACHE
 /****************************************************************************
  Deep copy a NT_PRINTER_DATA
 ****************************************************************************/
@@ -4293,6 +4397,7 @@ NT_PRINTER_INFO_LEVEL_2* dup_printer_2( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL_2
 		
 	return copy;
 }
+#endif
 
 /****************************************************************************
  Get a NT_PRINTER_INFO_LEVEL struct. It returns malloced memory.
@@ -4333,6 +4438,8 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 				fstrcpy( servername, "%L" );
 				standard_sub_basic( "", servername, sizeof(servername)-1 );
 			}
+
+#ifdef ENABLE_PRINT_HND_OBJECT_CACHE
 			
 			/* 
 			 * check for cache first.  A Printer handle cannot changed
@@ -4373,12 +4480,17 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 
 			if ( !print_hnd || !W_ERROR_IS_OK(result) )
 				result = get_a_printer_2(&printer->info_2, servername, sharename );
+#else
+			result = get_a_printer_2(&printer->info_2, servername, sharename );
+#endif
+	
 			
 			/* we have a new printer now.  Save it with this handle */
 			
 			if ( W_ERROR_IS_OK(result) ) {
 				dump_a_printer(printer, level);
-					
+
+#ifdef ENABLE_PRINT_HND_OBJECT_CACHE
 				/* save a copy in cache */
 				if ( print_hnd && (print_hnd->printer_type==PRINTER_HANDLE_IS_PRINTER)) {
 					if ( !print_hnd->printer_info )
@@ -4395,6 +4507,7 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 							DEBUG(0,("get_a_printer: unable to copy new printer info!\n"));
 					}
 				}
+#endif
 				*pp_printer = printer;	
 			}
 			else
@@ -4990,12 +5103,8 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 	SEC_DESC_BUF *old_secdesc_ctr = NULL;
 	prs_struct ps;
 	TALLOC_CTX *mem_ctx = NULL;
-	fstring key;
+	char *key;
 	WERROR status;
-	fstring norm_sharename;
-
-	fstrcpy( norm_sharename, sharename );
-	strlower_m( norm_sharename );
 
 	mem_ctx = talloc_init("nt_printing_setsec");
 	if (mem_ctx == NULL)
@@ -5012,7 +5121,7 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 		SEC_DESC *psd = NULL;
 		size_t size;
 
-		nt_printing_getsec(mem_ctx, norm_sharename, &old_secdesc_ctr);
+		nt_printing_getsec(mem_ctx, sharename, &old_secdesc_ctr);
 
 		/* Pick out correct owner and group sids */
 
@@ -5058,12 +5167,12 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 		goto out;
 	}
 
-	slprintf(key, sizeof(key)-1, "SECDESC/%s", norm_sharename);
+	key = make_printers_secdesc_tdbkey( sharename );
 
 	if (tdb_prs_store(tdb_printers, key, &ps)==0) {
 		status = WERR_OK;
 	} else {
-		DEBUG(1,("Failed to store secdesc for %s\n", norm_sharename));
+		DEBUG(1,("Failed to store secdesc for %s\n", sharename));
 		status = WERR_BADFUNC;
 	}
 
@@ -5168,9 +5277,8 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **secdesc_ctr)
 {
 	prs_struct ps;
-	fstring key;
+	char *key;
 	char *temp;
-	fstring norm_sharename;
 
 	if (strlen(sharename) > 2 && (temp = strchr(sharename + 2, '\\'))) {
 		sharename = temp + 1;
@@ -5178,15 +5286,12 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **s
 
 	/* Fetch security descriptor from tdb */
 
-	fstrcpy( norm_sharename, sharename );
-	strlower_m( norm_sharename );
-
-	slprintf(key, sizeof(key)-1, "SECDESC/%s", norm_sharename);
+	key = make_printers_secdesc_tdbkey( sharename  );
 
 	if (tdb_prs_fetch(tdb_printers, key, &ps, ctx)!=0 ||
 	    !sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
 
-		DEBUG(4,("using default secdesc for %s\n", norm_sharename));
+		DEBUG(4,("using default secdesc for %s\n", sharename));
 
 		if (!(*secdesc_ctr = construct_default_printer_sdb(ctx))) {
 			return False;
@@ -5238,7 +5343,7 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **s
 
 			/* Set it */
 
-			nt_printing_setsec(norm_sharename, *secdesc_ctr);
+			nt_printing_setsec(sharename, *secdesc_ctr);
 		}
 	}
 
@@ -5247,7 +5352,7 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **s
 		int i;
 
 		DEBUG(10, ("secdesc_ctr for %s has %d aces:\n", 
-			   norm_sharename, the_acl->num_aces));
+			   sharename, the_acl->num_aces));
 
 		for (i = 0; i < the_acl->num_aces; i++) {
 			fstring sid_str;
@@ -5453,7 +5558,10 @@ BOOL print_time_access_check(int snum)
 /****************************************************************************
  Fill in the servername sent in the _spoolss_open_printer_ex() call
 ****************************************************************************/
+
 char* get_server_name( Printer_entry *printer )
 {
 	return printer->servername;
 }
+
+
