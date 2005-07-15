@@ -1,7 +1,8 @@
 #!/bin/sh
 
 
-export LDB_URL="tdbtest.ldb"
+LDB_URL="tdbtest.ldb"
+export LDB_URL
 
 PATH=bin:$PATH
 export PATH

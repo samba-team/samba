@@ -1,6 +1,7 @@
 #!/bin/sh
 
-export LDB_URL="tdb://schema.ldb"
+LDB_URL="tdb://schema.ldb"
+export LDB_URL
 
 rm -f schema.ldb
 
