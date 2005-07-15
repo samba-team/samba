@@ -958,10 +958,10 @@ static BOOL test_many_dirs(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 				goto done;
 			}
 			free(fname);
+			smbcli_close(cli->tree, fnum);
 		}
 
 		free(dname);
-		smbcli_close(cli->tree, fnum);
 	}
 
 	file  = talloc_zero_array(mem_ctx, union smb_search_data, num_dirs);
