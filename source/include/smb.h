@@ -557,7 +557,7 @@ struct current_user
 
 /* Defines for the sent_oplock_break field above. */
 #define NO_BREAK_SENT 0
-#define EXCLUSIVE_BREAK_SENT 1
+#define BREAK_TO_NONE_SENT 1
 #define LEVEL_II_BREAK_SENT 2
 
 typedef struct {
