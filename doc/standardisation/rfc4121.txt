@@ -1,0 +1,1123 @@
+
+
+
+
+
+
+Network Working Group                                             L. Zhu
+Request for Comments: 4121                                 K. Jaganathan
+Updates: 1964                                                  Microsoft
+Category: Standards Track                                     S. Hartman
+                                                                     MIT
+                                                               July 2005
+
+
+                        The Kerberos Version 5
+   Generic Security Service Application Program Interface (GSS-API)
+                         Mechanism: Version 2
+
+Status of This Memo
+
+   This document specifies an Internet standards track protocol for the
+   Internet community, and requests discussion and suggestions for
+   improvements.  Please refer to the current edition of the "Internet
+   Official Protocol Standards" (STD 1) for the standardization state
+   and status of this protocol.  Distribution of this memo is unlimited.
+
+Copyright Notice
+
+   Copyright (C) The Internet Society (2005).
+
+Abstract
+
+   This document defines protocols, procedures, and conventions to be
+   employed by peers implementing the Generic Security Service
+   Application Program Interface (GSS-API) when using the Kerberos
+   Version 5 mechanism.
+
+   RFC 1964 is updated and incremental changes are proposed in response
+   to recent developments such as the introduction of Kerberos
+   cryptosystem framework.  These changes support the inclusion of new
+   cryptosystems, by defining new per-message tokens along with their
+   encryption and checksum algorithms based on the cryptosystem
+   profiles.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.                 Standards Track                     [Page 1]
+
+RFC 4121               Kerberos Version 5 GSS-API              July 2005
+
+
+Table of Contents
+
+   1. Introduction ....................................................2
+   2. Key Derivation for Per-Message Tokens ...........................4
+   3. Quality of Protection ...........................................4
+   4. Definitions and Token Formats ...................................5
+      4.1. Context Establishment Tokens ...............................5
+           4.1.1. Authenticator Checksum ..............................6
+      4.2. Per-Message Tokens .........................................9
+           4.2.1. Sequence Number .....................................9
+           4.2.2. Flags Field .........................................9
+           4.2.3. EC Field ...........................................10
+           4.2.4. Encryption and Checksum Operations .................10
+           4.2.5. RRC Field ..........................................11
+           4.2.6. Message Layouts ....................................12
+      4.3. Context Deletion Tokens ...................................13
+      4.4. Token Identifier Assignment Considerations ................13
+   5. Parameter Definitions ..........................................14
+      5.1. Minor Status Codes ........................................14
+           5.1.1. Non-Kerberos-specific Codes ........................14
+           5.1.2. Kerberos-specific Codes ............................15
+      5.2. Buffer Sizes ..............................................15
+   6. Backwards Compatibility Considerations .........................15
+   7. Security Considerations ........................................16
+   8. Acknowledgements................................................17
+   9. References .....................................................18
+      9.1. Normative References ......................................18
+      9.2. Informative References ....................................18
+
+1.  Introduction
+
+   [RFC3961] defines a generic framework for describing encryption and
+   checksum types to be used with the Kerberos protocol and associated
+   protocols.
+
+   [RFC1964] describes the GSS-API mechanism for Kerberos Version 5.  It
+   defines the format of context establishment, per-message and context
+   deletion tokens, and uses algorithm identifiers for each cryptosystem
+   in per-message and context deletion tokens.
+
+   The approach taken in this document obviates the need for algorithm
+   identifiers.  This is accomplished by using the same encryption
+   algorithm, specified by the crypto profile [RFC3961] for the session
+   key or subkey that is created during context negotiation, and its
+   required checksum algorithm.  Message layouts of the per-message
+   tokens are therefore revised to remove algorithm indicators and to
+   add extra information to support the generic crypto framework
+   [RFC3961].
+
+
+
+Zhu, et al.                 Standards Track                     [Page 2]
+
+RFC 4121               Kerberos Version 5 GSS-API              July 2005
+
+
+   Tokens transferred between GSS-API peers for security context
+   establishment are also described in this document.  The data elements
+   exchanged between a GSS-API endpoint implementation and the Kerberos
+   Key Distribution Center (KDC) [RFC4120] are not specific to GSS-API
+   usage and are therefore defined within [RFC4120] rather than this
+   specification.
+
+   The new token formats specified in this document MUST be used with
+   all "newer" encryption types [RFC4120] and MAY be used with
+   encryption types that are not "newer", provided that the initiator
+   and acceptor know from the context establishment that they can both
+   process these new token formats.
+
+   "Newer" encryption types are those which have been specified along
+   with or since the new Kerberos cryptosystem specification [RFC3961],
+   as defined in section 3.1.3 of [RFC4120].  The list of not-newer
+   encryption types is as follows [RFC3961]:
+
+           Encryption Type             Assigned Number
+         ----------------------------------------------
+          des-cbc-crc                        1
+          des-cbc-md4                        2
+          des-cbc-md5                        3
+          des3-cbc-md5                       5
+          des3-cbc-sha1                      7
+          dsaWithSHA1-CmsOID                 9
+          md5WithRSAEncryption-CmsOID       10
+          sha1WithRSAEncryption-CmsOID      11
+          rc2CBC-EnvOID                     12
+          rsaEncryption-EnvOID              13
+          rsaES-OAEP-ENV-OID                14
+          des-ede3-cbc-Env-OID              15
+          des3-cbc-sha1-kd                  16
+          rc4-hmac                          23
+
+   Conventions used in this document
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in [RFC2119].
+
+   The term "little-endian order" is used for brevity to refer to the
+   least-significant-octet-first encoding, while the term "big-endian
+   order" is for the most-significant-octet-first encoding.
+
+
+
+
+
+
+
+Zhu, et al.                 Standards Track                     [Page 3]
+
+RFC 4121               Kerberos Version 5 GSS-API              July 2005
+
+
+2.  Key Derivation for Per-Message Tokens
+
+   To limit the exposure of a given key, [RFC3961] adopted "one-way"
+   "entropy-preserving" derived keys, from a base key or protocol key,
+   for different purposes or key usages.
+
+   This document defines four key usage values below that are used to
+   derive a specific key for signing and sealing messages from the
+   session key or subkey [RFC4120] created during the context
+   establishment.
+
+           Name                         Value
+         -------------------------------------
+          KG-USAGE-ACCEPTOR-SEAL         22
+          KG-USAGE-ACCEPTOR-SIGN         23
+          KG-USAGE-INITIATOR-SEAL        24
+          KG-USAGE-INITIATOR-SIGN        25
+
+   When the sender is the context acceptor, KG-USAGE-ACCEPTOR-SIGN is
+   used as the usage number in the key derivation function for deriving
+   keys to be used in MIC tokens (as defined in section 4.2.6.1).
+   KG-USAGE-ACCEPTOR-SEAL is used for Wrap tokens (as defined in section
+   4.2.6.2).  Similarly, when the sender is the context initiator,
+   KG-USAGE-INITIATOR-SIGN is used as the usage number in the key
+   derivation function for MIC tokens, while KG-USAGE-INITIATOR-SEAL is
+   used for Wrap tokens.  Even if the Wrap token does not provide for
+   confidentiality, the same usage values specified above are used.
+
+   During the context initiation and acceptance sequence, the acceptor
+   MAY assert a subkey in the AP-REP message.  If the acceptor asserts a
+   subkey, the base key is the acceptor-asserted subkey and subsequent
+   per-message tokens MUST be flagged with "AcceptorSubkey", as
+   described in section 4.2.2.  Otherwise, if the initiator asserts a
+   subkey in the AP-REQ message, the base key is this subkey;  if the
+   initiator does not assert a subkey, the base key is the session key
+   in the service ticket.
+
+3.  Quality of Protection
+
+   The GSS-API specification [RFC2743] provides Quality of Protection
+   (QOP) values that can be used by applications to request a certain
+   type of encryption or signing.  A zero QOP value is used to indicate
+   the "default" protection; applications that do not use the default
+   QOP are not guaranteed to be portable across implementations, or even
+   to inter-operate with different deployment configurations of the same
+   implementation.  Using a different algorithm than the one for which
+   the key is defined may not be appropriate.  Therefore, when the new
+   method in this document is used, the QOP value is ignored.
+
+
+
+Zhu, et al.                 Standards Track                     [Page 4]
+
+RFC 4121               Kerberos Version 5 GSS-API              July 2005
+
+
+   The encryption and checksum algorithms in per-message tokens are now
+   implicitly defined by the algorithms associated with the session key
+   or subkey.  Therefore, algorithm identifiers as described in
+   [RFC1964] are no longer needed and are removed from the new token
+   headers.
+
+4.  Definitions and Token Formats
+
+   This section provides terms and definitions, as well as descriptions
+   for tokens specific to the Kerberos Version 5 GSS-API mechanism.
+
+4.1.  Context Establishment Tokens
+
+   All context establishment tokens emitted by the Kerberos Version 5
+   GSS-API mechanism SHALL have the framing described in section 3.1 of
+   [RFC2743], as illustrated by the following pseudo-ASN.1 structures:
+
+         GSS-API DEFINITIONS ::=
+
+         BEGIN
+
+         MechType ::= OBJECT IDENTIFIER
+         -- representing Kerberos V5 mechanism
+
+         GSSAPI-Token ::=
+         -- option indication (delegation, etc.) indicated within
+         -- mechanism-specific token
+         [APPLICATION 0] IMPLICIT SEQUENCE {
+                 thisMech MechType,
+                 innerToken ANY DEFINED BY thisMech
+                    -- contents mechanism-specific
+                    -- ASN.1 structure not required
+                 }
+
+         END
+
+   The innerToken field starts with a two-octet token-identifier
+   (TOK_ID) expressed in big-endian order, followed by a Kerberos
+   message.
+
+   Following are the TOK_ID values used in the context establishment
+   tokens:
+
+          Token               TOK_ID Value in Hex
+         -----------------------------------------
+          KRB_AP_REQ            01 00
+          KRB_AP_REP            02 00
+          KRB_ERROR             03 00
+
+
+
+Zhu, et al.                 Standards Track                     [Page 5]
+
+RFC 4121               Kerberos Version 5 GSS-API              July 2005
+
+
+   Where Kerberos message KRB_AP_REQUEST, KRB_AP_REPLY, and KRB_ERROR
+   are defined in [RFC4120].
+
+   If an unknown token identifier (TOK_ID) is received in the initial
+   context establishment token, the receiver MUST return
+   GSS_S_CONTINUE_NEEDED major status, and the returned output token
+   MUST contain a KRB_ERROR message with the error code
+   KRB_AP_ERR_MSG_TYPE [RFC4120].
+
+4.1.1.  Authenticator Checksum
+
+   The authenticator in the KRB_AP_REQ message MUST include the optional
+   sequence number and the checksum field.  The checksum field is used
+   to convey service flags, channel bindings, and optional delegation
+   information.
+
+   The checksum type MUST be 0x8003.  When delegation is used, a
+   ticket-granting ticket will be transferred in a KRB_CRED message.
+   This ticket SHOULD have its forwardable flag set.  The EncryptedData
+   field of the KRB_CRED message [RFC4120] MUST be encrypted in the
+   session key of the ticket used to authenticate the context.
+
+   The authenticator checksum field SHALL have the following format:
+
+       Octet        Name      Description
+      -----------------------------------------------------------------
+       0..3         Lgth    Number of octets in Bnd field;  Represented
+                            in little-endian order;  Currently contains
+                            hex value 10 00 00 00 (16).
+       4..19        Bnd     Channel binding information, as described in
+                            section 4.1.1.2.
+       20..23       Flags   Four-octet context-establishment flags in
+                            little-endian order as described in section
+                            4.1.1.1.
+       24..25       DlgOpt  The delegation option identifier (=1) in
+                            little-endian order [optional].  This field
+                            and the next two fields are present if and
+                            only if GSS_C_DELEG_FLAG is set as described
+                            in section 4.1.1.1.
+       26..27       Dlgth   The length of the Deleg field in
+                            little-endian order [optional].
+       28..(n-1)    Deleg   A KRB_CRED message (n = Dlgth + 28)
+                            [optional].
+       n..last      Exts    Extensions [optional].
+
+   The length of the checksum field MUST be at least 24 octets when
+   GSS_C_DELEG_FLAG is not set (as described in section 4.1.1.1), and at
+   least 28 octets plus Dlgth octets when GSS_C_DELEG_FLAG is set.  When
+
+
+
+Zhu, et al.                 Standards Track                     [Page 6]
+
+RFC 4121               Kerberos Version 5 GSS-API              July 2005
+
+
+   GSS_C_DELEG_FLAG is set, the DlgOpt, Dlgth, and Deleg fields of the
+   checksum data MUST immediately follow the Flags field.  The optional
+   trailing octets (namely the "Exts" field) facilitate future
+   extensions to this mechanism.  When delegation is not used, but the
+   Exts field is present, the Exts field starts at octet 24 (DlgOpt,
+   Dlgth and Deleg are absent).
+
+   Initiators that do not support the extensions MUST NOT include more
+   than 24 octets in the checksum field (when GSS_C_DELEG_FLAG is not
+   set) or more than 28 octets plus the KRB_CRED in the Deleg field
+   (when GSS_C_DELEG_FLAG is set).  Acceptors that do not understand the
+
+   Extensions MUST ignore any octets past the Deleg field of the
+   checksum data (when GSS_C_DELEG_FLAG is set) or past the Flags field
+   of the checksum data (when GSS_C_DELEG_FLAG is not set).
+
+4.1.1.1.  Checksum Flags Field
+
+   The checksum "Flags" field is used to convey service options or
+   extension negotiation information.
+
+   The following context establishment flags are defined in [RFC2744].
+
+           Flag Name              Value
+         ---------------------------------
+          GSS_C_DELEG_FLAG           1
+          GSS_C_MUTUAL_FLAG          2
+          GSS_C_REPLAY_FLAG          4
+          GSS_C_SEQUENCE_FLAG        8
+          GSS_C_CONF_FLAG           16
+          GSS_C_INTEG_FLAG          32
+
+   Context establishment flags are exposed to the calling application.
+   If the calling application desires a particular service option, then
+   it requests that option via GSS_Init_sec_context() [RFC2743].  If the
+   corresponding return state values [RFC2743] indicate that any of the
+   above optional context level services will be active on the context,
+   the corresponding flag values in the table above MUST be set in the
+   checksum Flags field.
+
+   Flag values 4096..524288 (2^12, 2^13, ..., 2^19) are reserved for use
+   with legacy vendor-specific extensions to this mechanism.
+
+
+
+
+
+
+
+
+
+Zhu, et al.                 Standards Track                     [Page 7]
+
+RFC 4121               Kerberos Version 5 GSS-API              July 2005
+
+
+   All other flag values not specified herein are reserved for future
+   use.  Future revisions of this mechanism may use these reserved flags
+   and may rely on implementations of this version to not use such flags
+   in order to properly negotiate mechanism versions.  Undefined flag
+   values MUST be cleared by the sender, and unknown flags MUST be
+   ignored by the receiver.
+
+4.1.1.2.  Channel Binding Information
+
+   These tags are intended to be used to identify the particular
+   communications channel for which the GSS-API security context
+   establishment tokens are intended, thus limiting the scope within
+   which an intercepted context establishment token can be reused by an
+   attacker (see [RFC2743], section 1.1.6).
+
+   When using C language bindings, channel bindings are communicated to
+   the GSS-API using the following structure [RFC2744]:
+
+         typedef struct gss_channel_bindings_struct {
+            OM_uint32       initiator_addrtype;
+            gss_buffer_desc initiator_address;
+            OM_uint32       acceptor_addrtype;
+            gss_buffer_desc acceptor_address;
+            gss_buffer_desc application_data;
+         } *gss_channel_bindings_t;
+
+   The member fields and constants used for different address types are
+   defined in [RFC2744].
+
+   The "Bnd" field contains the MD5 hash of channel bindings, taken over
+   all non-null components of bindings, in order of declaration.
+   Integer fields within channel bindings are represented in little-
+   endian order for the purposes of the MD5 calculation.
+
+   In computing the contents of the Bnd field, the following detailed
+   points apply:
+
+   (1) For purposes of MD5 hash computation, each integer field and
+       input length field SHALL be formatted into four octets, using
+       little-endian octet ordering.
+
+   (2) All input length fields within gss_buffer_desc elements of a
+       gss_channel_bindings_struct even those which are zero-valued,
+       SHALL be included in the hash calculation.  The value elements of
+       gss_buffer_desc elements SHALL be dereferenced, and the resulting
+       data SHALL be included within the hash computation, only for the
+       case of gss_buffer_desc elements having non-zero length
+       specifiers.
+
+
+
+Zhu, et al.                 Standards Track                     [Page 8]
+
+RFC 4121               Kerberos Version 5 GSS-API              July 2005
+
+
+   (3) If the caller passes the value GSS_C_NO_BINDINGS instead of a
+       valid channel binding structure, the Bnd field SHALL be set to 16
+       zero-valued octets.
+
+   If the caller to GSS_Accept_sec_context [RFC2743] passes in
+   GSS_C_NO_CHANNEL_BINDINGS [RFC2744] as the channel bindings, then the
+   acceptor MAY ignore any channel bindings supplied by the initiator,
+   returning success even if the initiator did pass in channel bindings.
+
+   If the application supplies, in the channel bindings, a buffer with a
+   length field larger than 4294967295 (2^32 - 1), the implementation of
+   this mechanism MAY choose to reject the channel bindings altogether,
+   using major status GSS_S_BAD_BINDINGS [RFC2743].  In any case, the
+   size of channel-binding data buffers that can be used (interoperable,
+   without extensions) with this specification is limited to 4294967295
+   octets.
+
+4.2.  Per-Message Tokens
+
+   Two classes of tokens are defined in this section: (1) "MIC" tokens,
+   emitted by calls to GSS_GetMIC() and consumed by calls to
+   GSS_VerifyMIC(), and (2) "Wrap" tokens, emitted by calls to
+   GSS_Wrap() and consumed by calls to GSS_Unwrap().
+
+   These new per-message tokens do not include the generic GSS-API token
+   framing used by the context establishment tokens.  These new tokens
+   are designed to be used with newer crypto systems that can have
+   variable-size checksums.
+
+4.2.1.  Sequence Number
+
+   To distinguish intentionally-repeated messages from maliciously-
+   replayed ones, per-message tokens contain a sequence number field,
+   which is a 64 bit integer expressed in big-endian order.  After
+   sending a GSS_GetMIC() or GSS_Wrap() token, the sender's sequence
+   numbers SHALL be incremented by one.
+
+4.2.2.  Flags Field
+
+   The "Flags" field is a one-octet integer used to indicate a set of
+   attributes for the protected message.  For example, one flag is
+   allocated as the direction-indicator, thus preventing the acceptance
+   of the same message sent back in the reverse direction by an
+   adversary.
+
+
+
+
+
+
+
+Zhu, et al.                 Standards Track                     [Page 9]
+
+RFC 4121               Kerberos Version 5 GSS-API              July 2005
+
+
+   The meanings of bits in this field (the least significant bit is bit
+   0) are as follows:
+
+          Bit    Name             Description
+         --------------------------------------------------------------
+          0   SentByAcceptor   When set, this flag indicates the sender
+                               is the context acceptor.  When not set,
+                               it indicates the sender is the context
+                               initiator.
+          1   Sealed           When set in Wrap tokens, this flag
+                               indicates confidentiality is provided
+                               for.  It SHALL NOT be set in MIC tokens.
+          2   AcceptorSubkey   A subkey asserted by the context acceptor
+                               is used to protect the message.
+
+   The rest of available bits are reserved for future use and MUST be
+   cleared.  The receiver MUST ignore unknown flags.
+
+4.2.3.  EC Field
+
+   The "EC" (Extra Count) field is a two-octet integer field expressed
+   in big-endian order.
+
+   In Wrap tokens with confidentiality, the EC field SHALL be used to
+   encode the number of octets in the filler, as described in section
+   4.2.4.
+
+   In Wrap tokens without confidentiality, the EC field SHALL be used to
+   encode the number of octets in the trailing checksum, as described in
+   section 4.2.4.
+
+4.2.4.  Encryption and Checksum Operations
+
+   The encryption algorithms defined by the crypto profiles provide for
+   integrity protection [RFC3961].  Therefore, no separate checksum is
+   needed.
+
+   The result of decryption can be longer than the original plaintext
+   [RFC3961] and the extra trailing octets are called "crypto-system
+   residue" in this document.  However, given the size of any plaintext
+   data, one can always find a (possibly larger) size, such that when
+   padding the to-be-encrypted text to that size, there will be no
+   crypto-system residue added [RFC3961].
+
+   In Wrap tokens that provide for confidentiality, the first 16 octets
+   of the Wrap token (the "header", as defined in section 4.2.6), SHALL
+   be appended to the plaintext data before encryption.  Filler octets
+   MAY be inserted between the plaintext data and the "header."  The
+
+
+
+Zhu, et al.                 Standards Track                    [Page 10]
+
+RFC 4121               Kerberos Version 5 GSS-API              July 2005
+
+
+   values and size of the filler octets are chosen by implementations,
+   such that there SHALL be no crypto-system residue present after the
+   decryption.  The resulting Wrap token is {"header" |
+   encrypt(plaintext-data | filler | "header")}, where encrypt() is the
+   encryption operation (which provides for integrity protection)
+   defined in the crypto profile [RFC3961], and the RRC field (as
+   defined in section 4.2.5) in the to-be-encrypted header contains the
+   hex value 00 00.
+
+   In Wrap tokens that do not provide for confidentiality, the checksum
+   SHALL be calculated first over the to-be-signed plaintext data, and
+   then over the first 16 octets of the Wrap token (the "header", as
+   defined in section 4.2.6).  Both the EC field and the RRC field in
+   the token header SHALL be filled with zeroes for the purpose of
+   calculating the checksum.  The resulting Wrap token is {"header" |
+   plaintext-data | get_mic(plaintext-data | "header")}, where get_mic()
+   is the checksum operation for the required checksum mechanism of the
+   chosen encryption mechanism defined in the crypto profile [RFC3961].
+
+   The parameters for the key and the cipher-state in the encrypt() and
+   get_mic() operations have been omitted for brevity.
+
+   For MIC tokens, the checksum SHALL be calculated as follows: the
+   checksum operation is calculated first over the to-be-signed
+   plaintext data, and then over the first 16 octets of the MIC token,
+   where the checksum mechanism is the required checksum mechanism of
+   the chosen encryption mechanism defined in the crypto profile
+   [RFC3961].
+
+   The resulting Wrap and MIC tokens bind the data to the token header,
+   including the sequence number and the direction indicator.
+
+4.2.5.  RRC Field
+
+   The "RRC" (Right Rotation Count) field in Wrap tokens is added to
+   allow the data to be encrypted in-place by existing SSPI (Security
+   Service Provider Interface) [SSPI] applications that do not provide
+   an additional buffer for the trailer (the cipher text after the in-
+   place-encrypted data) in addition to the buffer for the header (the
+   cipher text before the in-place-encrypted data).  Excluding the first
+   16 octets of the token header, the resulting Wrap token in the
+   previous section is rotated to the right by "RRC" octets.  The net
+   result is that "RRC" octets of trailing octets are moved toward the
+   header.
+
+   Consider the following as an example of this rotation operation:
+   Assume that the RRC value is 3 and the token before the rotation is
+   {"header" | aa | bb | cc | dd | ee | ff | gg | hh}.  The token after
+
+
+
+Zhu, et al.                 Standards Track                    [Page 11]
+
+RFC 4121               Kerberos Version 5 GSS-API              July 2005
+
+
+   rotation would be {"header" | ff | gg | hh | aa | bb | cc | dd | ee
+   }, where {aa | bb | cc |...| hh} would be used to indicate the octet
+   sequence.
+
+   The RRC field is expressed as a two-octet integer in big-endian
+   order.
+
+   The rotation count value is chosen by the sender based on
+   implementation details.  The receiver MUST be able to interpret all
+   possible rotation count values, including rotation counts greater
+   than the length of the token.
+
+4.2.6.  Message Layouts
+
+   Per-message tokens start with a two-octet token identifier (TOK_ID)
+   field, expressed in big-endian order.  These tokens are defined
+   separately in the following sub-sections.
+
+4.2.6.1.  MIC Tokens
+
+   Use of the GSS_GetMIC() call yields a token (referred as the MIC
+   token in this document), separate from the user data being protected,
+   which can be used to verify the integrity of that data as received.
+   The token has the following format:
+
+         Octet no   Name        Description
+         --------------------------------------------------------------
+         0..1     TOK_ID     Identification field.  Tokens emitted by
+                             GSS_GetMIC() contain the hex value 04 04
+                             expressed in big-endian order in this
+                             field.
+         2        Flags      Attributes field, as described in section
+                             4.2.2.
+         3..7     Filler     Contains five octets of hex value FF.
+         8..15    SND_SEQ    Sequence number field in clear text,
+                             expressed in big-endian order.
+         16..last SGN_CKSUM  Checksum of the "to-be-signed" data and
+                             octet 0..15, as described in section 4.2.4.
+
+   The Filler field is included in the checksum calculation for
+   simplicity.
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.                 Standards Track                    [Page 12]
+
+RFC 4121               Kerberos Version 5 GSS-API              July 2005
+
+
+4.2.6.2.  Wrap Tokens
+
+   Use of the GSS_Wrap() call yields a token (referred as the Wrap token
+   in this document), which consists of a descriptive header, followed
+   by a body portion that contains either the input user data in
+   plaintext concatenated with the checksum, or the input user data
+   encrypted.  The GSS_Wrap() token SHALL have the following format:
+
+         Octet no   Name        Description
+         --------------------------------------------------------------
+          0..1     TOK_ID    Identification field.  Tokens emitted by
+                             GSS_Wrap() contain the hex value 05 04
+                             expressed in big-endian order in this
+                             field.
+          2        Flags     Attributes field, as described in section
+                             4.2.2.
+          3        Filler    Contains the hex value FF.
+          4..5     EC        Contains the "extra count" field, in big-
+                             endian order as described in section 4.2.3.
+          6..7     RRC       Contains the "right rotation count" in big-
+                             endian order, as described in section
+                             4.2.5.
+          8..15    SND_SEQ   Sequence number field in clear text,
+                             expressed in big-endian order.
+          16..last Data      Encrypted data for Wrap tokens with
+                             confidentiality, or plaintext data followed
+                             by the checksum for Wrap tokens without
+                             confidentiality, as described in section
+                             4.2.4.
+
+4.3.  Context Deletion Tokens
+
+   Context deletion tokens are empty in this mechanism.  Both peers to a
+   security context invoke GSS_Delete_sec_context() [RFC2743]
+   independently, passing a null output_context_token buffer to indicate
+   that no context_token is required.  Implementations of
+   GSS_Delete_sec_context() should delete relevant locally-stored
+   context information.
+
+4.4.  Token Identifier Assignment Considerations
+
+   Token identifiers (TOK_ID) from 0x60 0x00 through 0x60 0xFF inclusive
+   are reserved and SHALL NOT be assigned.  Thus, by examining the first
+   two octets of a token, one can tell unambiguously if it is wrapped
+   with the generic GSS-API token framing.
+
+
+
+
+
+
+Zhu, et al.                 Standards Track                    [Page 13]
+
+RFC 4121               Kerberos Version 5 GSS-API              July 2005
+
+
+5.  Parameter Definitions
+
+   This section defines parameter values used by the Kerberos V5 GSS-API
+   mechanism.  It defines interface elements that support portability,
+   and assumes use of C language bindings per [RFC2744].
+
+5.1.  Minor Status Codes
+
+   This section recommends common symbolic names for minor_status values
+   to be returned by the Kerberos V5 GSS-API mechanism.  Use of these
+   definitions will enable independent implementers to enhance
+   application portability across different implementations of the
+   mechanism defined in this specification.  (In all cases,
+   implementations of GSS_Display_status() will enable callers to
+   convert minor_status indicators to text representations.)  Each
+   implementation should make available, through include files or other
+   means, a facility to translate these symbolic names into the concrete
+   values that a particular GSS-API implementation uses to represent the
+   minor_status values specified in this section.
+
+   This list may grow over time and the need for additional minor_status
+   codes, specific to particular implementations, may arise.  However,
+   it is recommended that implementations should return a minor_status
+   value as defined on a mechanism-wide basis within this section when
+   that code accurately represents reportable status rather than using a
+   separate, implementation-defined code.
+
+5.1.1.  Non-Kerberos-specific Codes
+
+         GSS_KRB5_S_G_BAD_SERVICE_NAME
+                 /* "No @ in SERVICE-NAME name string" */
+         GSS_KRB5_S_G_BAD_STRING_UID
+                 /* "STRING-UID-NAME contains nondigits" */
+         GSS_KRB5_S_G_NOUSER
+                 /* "UID does not resolve to username" */
+         GSS_KRB5_S_G_VALIDATE_FAILED
+                 /* "Validation error" */
+         GSS_KRB5_S_G_BUFFER_ALLOC
+                 /* "Couldn't allocate gss_buffer_t data" */
+         GSS_KRB5_S_G_BAD_MSG_CTX
+                 /* "Message context invalid" */
+         GSS_KRB5_S_G_WRONG_SIZE
+                 /* "Buffer is the wrong size" */
+         GSS_KRB5_S_G_BAD_USAGE
+                 /* "Credential usage type is unknown" */
+         GSS_KRB5_S_G_UNKNOWN_QOP
+                 /* "Unknown quality of protection specified" */
+
+
+
+
+Zhu, et al.                 Standards Track                    [Page 14]
+
+RFC 4121               Kerberos Version 5 GSS-API              July 2005
+
+
+5.1.2.  Kerberos-specific Codes
+
+         GSS_KRB5_S_KG_CCACHE_NOMATCH
+                 /* "Client principal in credentials does not match
+                    specified name" */
+         GSS_KRB5_S_KG_KEYTAB_NOMATCH
+                 /* "No key available for specified service
+                    principal" */
+         GSS_KRB5_S_KG_TGT_MISSING
+                 /* "No Kerberos ticket-granting ticket available" */
+         GSS_KRB5_S_KG_NO_SUBKEY
+                 /* "Authenticator has no subkey" */
+         GSS_KRB5_S_KG_CONTEXT_ESTABLISHED
+                 /* "Context is already fully established" */
+         GSS_KRB5_S_KG_BAD_SIGN_TYPE
+                 /* "Unknown signature type in token" */
+         GSS_KRB5_S_KG_BAD_LENGTH
+                 /* "Invalid field length in token" */
+         GSS_KRB5_S_KG_CTX_INCOMPLETE
+                 /* "Attempt to use incomplete security context" */
+
+5.2.  Buffer Sizes
+
+   All implementations of this specification MUST be capable of
+   accepting buffers of at least 16K octets as input to GSS_GetMIC(),
+   GSS_VerifyMIC(), and GSS_Wrap().  They MUST also be capable of
+   accepting the output_token generated by GSS_Wrap() for a 16K octet
+   input buffer as input to GSS_Unwrap().  Implementations SHOULD
+   support 64K octet input buffers, and MAY support even larger input
+   buffer sizes.
+
+6.  Backwards Compatibility Considerations
+
+   The new token formats defined in this document will only be
+   recognized by new implementations.  To address this, implementations
+   can always use the explicit sign or seal algorithm in [RFC1964] when
+   the key type corresponds to not "newer" enctypes.  As an alternative,
+   one might retry sending the message with the sign or seal algorithm
+   explicitly defined as in [RFC1964].  However, this would require
+   either the use of a mechanism such as [RFC2478] to securely negotiate
+   the method, or the use of an out-of-band mechanism to choose the
+   appropriate mechanism.  For this reason, it is RECOMMENDED that the
+   new token formats defined in this document SHOULD be used only if
+   both peers are known to support the new mechanism during context
+   negotiation because of, for example, the use of "new" enctypes.
+
+
+
+
+
+
+Zhu, et al.                 Standards Track                    [Page 15]
+
+RFC 4121               Kerberos Version 5 GSS-API              July 2005
+
+
+   GSS_Unwrap() or GSS_VerifyMIC() can process a message token as
+   follows: it can look at the first octet of the token header, and if
+   it is 0x60, then the token must carry the generic GSS-API pseudo
+   ASN.1 framing.  Otherwise, the first two octets of the token contain
+   the TOK_ID that uniquely identify the token message format.
+
+7.  Security Considerations
+
+   Channel bindings are validated by the acceptor.  The acceptor can
+   ignore the channel bindings restriction supplied by the initiator and
+   carried in the authenticator checksum, if (1) channel bindings are
+   not used by GSS_Accept_sec_context [RFC2743], and (2) the acceptor
+   does not prove to the initiator that it has the same channel bindings
+   as the initiator (even if the client requested mutual
+   authentication).  This limitation should be considered by designers
+   of applications that would use channel bindings, whether to limit the
+   use of GSS-API contexts to nodes with specific network addresses, to
+   authenticate other established, secure channels using Kerberos
+   Version 5, or for any other purpose.
+
+   Session key types are selected by the KDC.  Under the current
+   mechanism, no negotiation of algorithm types occurs, so server-side
+   (acceptor) implementations cannot request that clients not use
+   algorithm types not understood by the server.  However,
+   administrators can control what enctypes can be used for session keys
+   for this mechanism by controlling the set of the ticket session key
+   enctypes which the KDC is willing to use in tickets for a given
+   acceptor principal.  Therefore, the KDC could be given the task of
+   limiting session keys for a given service to types actually supported
+   by the Kerberos and GSSAPI software on the server.  This has a
+   drawback for cases in which a service principal name is used for both
+   GSSAPI-based and non-GSSAPI-based communication (most notably the
+   "host" service key), if the GSSAPI implementation does not understand
+   (for example) AES [RFC3962], but the Kerberos implementation does.
+   This means that AES session keys cannot be issued for that service
+   principal, which keeps the protection of non-GSSAPI services weaker
+   than necessary.  KDC administrators desiring to limit the session key
+   types to support interoperability with such GSSAPI implementations
+   should carefully weigh the reduction in protection offered by such
+   mechanisms against the benefits of interoperability.
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.                 Standards Track                    [Page 16]
+
+RFC 4121               Kerberos Version 5 GSS-API              July 2005
+
+
+8.  Acknowledgements
+
+   Ken Raeburn and Nicolas Williams corrected many of our errors in the
+   use of generic profiles and were instrumental in the creation of this
+   document.
+
+   The text for security considerations was contributed by Nicolas
+   Williams and Ken Raeburn.
+
+   Sam Hartman and Ken Raeburn suggested the "floating trailer" idea,
+   namely the encoding of the RRC field.
+
+   Sam Hartman and Nicolas Williams recommended the replacing our
+   earlier key derivation function for directional keys with different
+   key usage numbers for each direction as well as retaining the
+   directional bit for maximum compatibility.
+
+   Paul Leach provided numerous suggestions and comments.
+
+   Scott Field, Richard Ward, Dan Simon, Kevin Damour, and Simon
+   Josefsson also provided valuable inputs on this document.
+
+   Jeffrey Hutzelman provided comments and clarifications for the text
+   related to the channel bindings.
+
+   Jeffrey Hutzelman and Russ Housley suggested many editorial changes.
+
+   Luke Howard provided implementations of this document for the Heimdal
+   code base, and helped inter-operability testing with the Microsoft
+   code base, together with Love Hornquist Astrand.  These experiments
+   formed the basis of this document.
+
+   Martin Rex provided suggestions of TOK_ID assignment recommendations,
+   thus the token tagging in this document is unambiguous if the token
+   is wrapped with the pseudo ASN.1 header.
+
+   John Linn wrote the original Kerberos Version 5 mechanism
+   specification [RFC1964], of which some text has been retained.
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.                 Standards Track                    [Page 17]
+
+RFC 4121               Kerberos Version 5 GSS-API              July 2005
+
+
+9.  References
+
+9.1.  Normative References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997.
+
+   [RFC2743]  Linn, J., "Generic Security Service Application Program
+              Interface Version 2, Update 1", RFC 2743, January 2000.
+
+   [RFC2744]  Wray, J., "Generic Security Service API Version 2:
+              C-bindings", RFC 2744, January 2000.
+
+   [RFC1964]  Linn, J., "The Kerberos Version 5 GSS-API Mechanism", RFC
+              1964, June 1996.
+
+   [RFC3961]  Raeburn, K., "Encryption and Checksum Specifications for
+              Kerberos 5", RFC 3961, February 2005.
+
+   [RFC4120]  Neuman, C., Yu, T., Hartman, S., and K. Raeburn, "The
+              Kerberos Network Authentication Service (V5)", RFC 4120,
+              July 2005.
+
+9.2.  Informative References
+
+   [SSPI]     Leach, P., "Security Service Provider Interface",
+              Microsoft Developer Network (MSDN), April 2003.
+
+   [RFC3962]  Raeburn, K., "Advanced Encryption Standard (AES)
+              Encryption for Kerberos 5", RFC 3962, February 2005.
+
+   [RFC2478]  Baize, E. and D. Pinkas, "The Simple and Protected GSS-API
+              Negotiation Mechanism", RFC 2478, December 1998.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.                 Standards Track                    [Page 18]
+
+RFC 4121               Kerberos Version 5 GSS-API              July 2005
+
+
+Authors' Addresses
+
+   Larry Zhu
+   One Microsoft Way
+   Redmond, WA 98052 - USA
+
+   EMail: LZhu@microsoft.com
+
+
+   Karthik Jaganathan
+   One Microsoft Way
+   Redmond, WA 98052 - USA
+
+   EMail: karthikj@microsoft.com
+
+
+   Sam Hartman
+   Massachusetts Institute of Technology
+   77 Massachusetts Avenue
+   Cambridge, MA 02139 - USA
+
+   EMail: hartmans-ietf@mit.edu
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.                 Standards Track                    [Page 19]
+
+RFC 4121               Kerberos Version 5 GSS-API              July 2005
+
+
+Full Copyright Statement
+
+   Copyright (C) The Internet Society (2005).
+
+   This document is subject to the rights, licenses and restrictions
+   contained in BCP 78, and except as set forth therein, the authors
+   retain all their rights.
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY AND THE INTERNET
+   ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE
+   INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+Intellectual Property
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at ietf-
+   ipr@ietf.org.
+
+Acknowledgement
+
+   Funding for the RFC Editor function is currently provided by the
+   Internet Society.
+
+
+
+
+
+
+
+Zhu, et al.                 Standards Track                    [Page 20]
+
