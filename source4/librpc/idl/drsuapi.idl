@@ -380,7 +380,6 @@ interface drsuapi
 		DRSUAPI_ATTRIBUTE_ntPwdHistory		= 0x0009005e,
 		DRSUAPI_ATTRIBUTE_lmPwdHistory		= 0x000900a0,
 		DRSUAPI_ATTRIBUTE_objectCategory	= 0x0009030e
-		/* DRSUAPI_ATTRIBUTE_ */
 	} drsuapi_DsAttributeId;
 
 	/* Generic DATA_BLOB values */
