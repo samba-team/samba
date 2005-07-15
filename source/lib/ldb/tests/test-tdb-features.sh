@@ -7,7 +7,7 @@ mv $LDB_URL $LDB_URL.2
 checkcount() {
     count=$1
     expression="$2"
-    n=`bin/ldbsearch "$expression" | grep ^dn | wc -l`
+    n=`bin/ldbsearch "$expression" | grep '^dn' | wc -l`
     if [ $n != $count ]; then
 	echo "Got $n but expected $count for $expression"
 	$VALGRIND bin/ldbsearch "$expression"
