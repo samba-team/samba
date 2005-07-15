@@ -94,7 +94,9 @@ void tls_cert_generate(TALLOC_CTX *mem_ctx,
 #endif
 	TLSCHECK(gnutls_x509_crt_set_version(cacrt, 3));
 	TLSCHECK(gnutls_x509_crt_get_key_id(cacrt, 0, keyid, &keyidsize));
+#if HAVE_GNUTLS_X509_CRT_SET_SUBJECT_KEY_ID
 	TLSCHECK(gnutls_x509_crt_set_subject_key_id(cacrt, keyid, keyidsize));
+#endif
 	TLSCHECK(gnutls_x509_crt_sign(cacrt, cacrt, cakey));
 
 	DEBUG(3,("Generating TLS certificate\n"));
@@ -118,7 +120,9 @@ void tls_cert_generate(TALLOC_CTX *mem_ctx,
 #endif
 	TLSCHECK(gnutls_x509_crt_set_version(crt, 3));
 	TLSCHECK(gnutls_x509_crt_get_key_id(crt, 0, keyid, &keyidsize));
+#if HAVE_GNUTLS_X509_CRT_SET_SUBJECT_KEY_ID
 	TLSCHECK(gnutls_x509_crt_set_subject_key_id(crt, keyid, keyidsize));
+#endif
 	TLSCHECK(gnutls_x509_crt_sign(crt, crt, key));
 
 	DEBUG(3,("Exporting TLS keys\n"));
