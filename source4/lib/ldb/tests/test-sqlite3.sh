@@ -1,7 +1,8 @@
 #!/bin/sh
 
 
-export LDB_URL="sqlite:///var/tmp/test.ldb"
+LDB_URL="sqlite://test.ldb"
+export LDB_URL
 
 rm -f sqltest.ldb
 
