@@ -58,7 +58,7 @@ echo "Starting ldbtest indexed"
 time $VALGRIND ldbtest --num-records 100 --num-searches 500  || exit 1
 
 echo "Testing one level search"
-count=`$VALGRIND ldbsearch -b 'ou=Groups,o=University of Michigan,c=TEST' -s one 'objectclass=*' none |grep ^dn | wc -l`
+count=`$VALGRIND ldbsearch -b 'ou=Groups,o=University of Michigan,c=TEST' -s one 'objectclass=*' none |grep '^dn' | wc -l`
 if [ $count != 3 ]; then
     echo returned $count records - expected 3
     exit 1

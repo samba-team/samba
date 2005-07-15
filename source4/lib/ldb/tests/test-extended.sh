@@ -38,7 +38,7 @@ EOF
 checkcount() {
     count=$1
     expression="$2"
-    n=`bin/ldbsearch "$expression" | grep ^dn | wc -l`
+    n=`bin/ldbsearch "$expression" | grep '^dn' | wc -l`
     if [ $n != $count ]; then
 	echo "Got $n but expected $count for $expression"
 	bin/ldbsearch "$expression"
