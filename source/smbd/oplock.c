@@ -276,7 +276,7 @@ BOOL remove_oplock(files_struct *fsp, BOOL break_to_none)
 		return False;
 	}
 
-	if (fsp->sent_oplock_break == EXCLUSIVE_BREAK_SENT || break_to_none) {
+	if (fsp->sent_oplock_break == BREAK_TO_NONE_SENT || break_to_none) {
 		/*
 		 * Deal with a reply when a break-to-none was sent.
 		 */
@@ -784,7 +784,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 
 	prepare_break_message( outbuf, fsp, using_levelII);
 	/* Remember if we just sent a break to level II on this file. */
-	fsp->sent_oplock_break = using_levelII? LEVEL_II_BREAK_SENT:EXCLUSIVE_BREAK_SENT;
+	fsp->sent_oplock_break = using_levelII? LEVEL_II_BREAK_SENT:BREAK_TO_NONE_SENT;
 
 	/* Save the server smb signing state. */
 	sign_state = srv_oplock_set_signing(False);
