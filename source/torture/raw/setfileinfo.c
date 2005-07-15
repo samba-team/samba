@@ -444,6 +444,8 @@ BOOL torture_raw_sfileinfo(void)
 	fnum = fnum_saved;
 
 	printf("Trying rename with dest file open and delete_on_close\n");
+	sfinfo.rename_information.in.new_name  = fnum_fname+strlen(BASEDIR)+1;
+	sfinfo.rename_information.in.overwrite = 1;
 	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_ACCESS_DENIED);
 
 	smbcli_close(cli->tree, fnum2);
