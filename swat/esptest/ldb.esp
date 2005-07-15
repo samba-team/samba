@@ -7,8 +7,9 @@
 <%
 var dbfile = lpGet("sam database");
 var attrs = new Array("name", "dnsDomain", "objectSid", "dn");
+var ldb = ldb_init();
 
-res = ldbSearch(dbfile, "(objectClass=domain)", attrs);
+res = ldb.search(dbfile, "(objectClass=domain)", attrs);
 multi_table(res, "dn");
 %>
 
@@ -17,14 +18,14 @@ multi_table(res, "dn");
 <%
 var dbfile = lpGet("sam database");
 
-res = ldbSearch(dbfile, "(objectClass=user)");
+res = ldb.search(dbfile, "(objectClass=user)");
 multi_table(res, "dn");
 %>
 
 <h3>A search with bad arguments</h3>
 
 <%
-res = ldbSearch("foo");
+res = ldb.search("foo");
 %>
 
 all done

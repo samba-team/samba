@@ -114,6 +114,8 @@ function hostname()
 function setup_ldb(ldif, dbname, subobj)
 {
 	var extra = "";
+	var ldb = ldb_init();
+
 	if (arguments.length == 4) {
 		extra = arguments[3];
 	}
@@ -127,7 +129,7 @@ function setup_ldb(ldif, dbname, subobj)
 	data = data + extra;
 	data = substitute_var(data, subobj);
 
-	ok = ldbAdd(db, data);
+	ok = ldb.add(db, data);
 	assert(ok);
 }
 

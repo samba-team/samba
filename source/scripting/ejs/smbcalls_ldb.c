@@ -222,6 +222,22 @@ static int ejs_ldbModify(MprVarHandle eid, int argc, char **argv)
 	return ejs_ldbAddModify(eid, argc, argv, ldb_modify);
 }
 
+/*
+  initialise ldb ejs subsystem
+*/
+static int ejs_ldb_init(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	struct MprVar ldb = mprObject("ldb");
+
+	mprSetCFunction(&ldb, "search", ejs_ldbSearch);
+	mprSetStringCFunction(&ldb, "add", ejs_ldbAdd);
+	mprSetStringCFunction(&ldb, "modify", ejs_ldbModify);
+	mprSetStringCFunction(&ldb, "delete", ejs_ldbDelete);
+	mprSetStringCFunction(&ldb, "rename", ejs_ldbRename);
+
+	mpr_Return(eid, ldb);
+	return 0;
+}
 
 
 /*
@@ -229,9 +245,5 @@ static int ejs_ldbModify(MprVarHandle eid, int argc, char **argv)
 */
 void smb_setup_ejs_ldb(void)
 {
-	ejsDefineCFunction(-1, "ldbSearch", ejs_ldbSearch, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineStringCFunction(-1, "ldbAdd", ejs_ldbAdd, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineStringCFunction(-1, "ldbModify", ejs_ldbModify, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineStringCFunction(-1, "ldbDelete", ejs_ldbDelete, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineStringCFunction(-1, "ldbRename", ejs_ldbRename, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "ldb_init", ejs_ldb_init, NULL, MPR_VAR_SCRIPT_HANDLE);
 }

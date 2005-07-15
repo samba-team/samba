@@ -367,3 +367,18 @@ void mpr_ReturnString(int eid, const char *s)
 }
 
 
+/*
+  set a C function in a variable
+*/
+ void mprSetCFunction(struct MprVar *obj, const char *name, MprCFunction fn)
+{
+	mprSetVar(obj, name, mprCreateCFunctionVar(fn, NULL, MPR_VAR_SCRIPT_HANDLE));
+}
+
+/*
+  set a string C function in a variable
+*/
+ void mprSetStringCFunction(struct MprVar *obj, const char *name, MprStringCFunction fn)
+{
+	mprSetVar(obj, name, mprCreateStringCFunctionVar(fn, NULL, MPR_VAR_SCRIPT_HANDLE));
+}
