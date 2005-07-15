@@ -122,14 +122,17 @@ function setup_ldb(ldif, dbname, subobj)
 		extra = arguments[3];
 	}
 
-	var db = lpGet("private dir") + "/" + dbname;
+	var dbfile = lpGet("private dir") + "/" + dbname;
 	var src = lpGet("setup directory") + "/" + ldif;
 
-	sys.unlink(db);
+	sys.unlink(dbfile);
 
 	var data = sys.file_load(src);
 	data = data + extra;
 	data = substitute_var(data, subobj);
+
+	var db = ldb.connect(dbfile);
+	assert(db != undefined);
 
 	ok = ldb.add(db, data);
 	assert(ok);
