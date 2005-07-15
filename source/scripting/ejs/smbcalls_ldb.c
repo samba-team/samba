@@ -30,8 +30,7 @@
  */
 static struct ldb_context *ejs_ldb_db(int eid)
 {
-	struct MprVar *this = mprGetProperty(ejsGetLocalObject(eid), "this", 0);
-	struct ldb_context *ldb = mprGetPtr(this, "db");
+	struct ldb_context *ldb = mprGetThisPtr(eid, "db");
 	if (ldb == NULL) {
 		ejsSetErrorMsg(eid, "invalid ldb connection");
 	}
@@ -227,7 +226,6 @@ static int ejs_ldbConnect(MprVarHandle eid, int argc, char **argv)
 {
 	struct ldb_context *ldb;
 	const char *dbfile;
-	struct MprVar *this = mprGetProperty(ejsGetLocalObject(eid), "this", 0);
 
 	if (argc != 1) {
 		ejsSetErrorMsg(eid, "ldb.connect invalid arguments");
@@ -241,7 +239,7 @@ static int ejs_ldbConnect(MprVarHandle eid, int argc, char **argv)
 		ejsSetErrorMsg(eid, "ldb.connect failed to open %s", dbfile);
 	}
 
-	mprSetPtrChild(this, "db", ldb);
+	mprSetThisPtr(eid, "db", ldb);
 	mpr_Return(eid, mprCreateBoolVar(ldb != NULL));
 	return 0;
 }
