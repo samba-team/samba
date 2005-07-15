@@ -6,19 +6,20 @@ println("Trying a attribute constrained search on samdb");
 
 var dbfile = lpGet("sam database");
 var attrs = new Array("name", "dnsDomain", "objectSid", "dn");
+var ldb = ldb_init();
 
-res = ldbSearch(dbfile, "(objectClass=domain)", attrs);
+res = ldb.search(dbfile, "(objectClass=domain)", attrs);
 
 printVars(res);
 
 println("and now an unconstrained search");
 
 var dbfile = lpGet("sam database");
-res = ldbSearch(dbfile, "(objectClass=user)");
+res = ldb.search(dbfile, "(objectClass=user)");
 printVars(res);
 
 println("and a bad search");
 
-res = ldbSearch("foo");
+res = ldb.search("foo");
 
 println("all done");
