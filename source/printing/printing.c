@@ -43,13 +43,6 @@ static BOOL remove_from_jobs_changed(const char* sharename, uint32 jobid);
    jobids are assigned when a job starts spooling. 
 */
 
-struct print_queue_update_context {
-	char* sharename;
-	int printing_type;
-	char* lpqcommand;
-};
-
-
 static TDB_CONTEXT *rap_tdb;
 static uint16 next_rap_jobid;
 struct rap_jobid_key {
@@ -1290,14 +1283,14 @@ this is the receive function of the background lpq updater
 ****************************************************************************/
 static void print_queue_receive(int msg_type, pid_t src, void *buf, size_t msglen)
 {
-	struct print_queue_update_context ctx;
 	fstring sharename;
 	pstring lpqcommand;
+	int printing_type;
 	size_t len;
 
 	len = tdb_unpack( buf, msglen, "fdP",
 		sharename,
-		&ctx.printing_type,
+		&printing_type,
 		lpqcommand );
 
 	if ( len == -1 ) {
@@ -1305,12 +1298,9 @@ static void print_queue_receive(int msg_type, pid_t src, void *buf, size_t msgle
 		return;
 	}
 
-	ctx.sharename = sharename;
-	ctx.lpqcommand = lpqcommand;
-
-	print_queue_update_with_lock(ctx.sharename, 
-		get_printer_fns_from_type(ctx.printing_type),
-		ctx.lpqcommand );
+	print_queue_update_with_lock(sharename, 
+		get_printer_fns_from_type(printing_type),
+		lpqcommand );
 
 	return;
 }
@@ -1390,8 +1380,10 @@ static void print_queue_update(int snum, BOOL force)
 
 	fstrcpy( sharename, lp_const_servicename(snum));
 
+	/* don't strip out characters like '$' from the printername */
+	
 	pstrcpy( lpqcommand, lp_lpqcommand(snum));
-	pstring_sub( lpqcommand, "%p", PRINTERNAME(snum) );
+	string_sub2( lpqcommand, "%p", PRINTERNAME(snum), sizeof(lpqcommand), False );
 	standard_sub_snum( snum, lpqcommand, sizeof(lpqcommand) );
 	
 	/* 

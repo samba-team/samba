@@ -916,7 +916,7 @@ BOOL string_set(char **dest,const char *src)
  use of len==0 which was for no length checks to be done.
 **/
 
-void string_sub(char *s,const char *pattern, const char *insert, size_t len)
+void string_sub2(char *s,const char *pattern, const char *insert, size_t len, BOOL remove_unsafe_characters)
 {
 	char *p;
 	ssize_t ls,lp,li, i;
@@ -951,8 +951,12 @@ void string_sub(char *s,const char *pattern, const char *insert, size_t len)
 			case '%':
 			case '\r':
 			case '\n':
-				p[i] = '_';
-				break;
+				if ( remove_unsafe_characters ) {
+					p[i] = '_';
+					/* yes this break should be here since we want to 
+					   fall throw if not replacing unsafe chars */
+					break;
+				}
 			default:
 				p[i] = insert[i];
 			}
@@ -960,6 +964,11 @@ void string_sub(char *s,const char *pattern, const char *insert, size_t len)
 		s = p + li;
 		ls += (li-lp);
 	}
+}
+
+void string_sub(char *s,const char *pattern, const char *insert, size_t len)
+{
+	string_sub2( s, pattern, insert, len, True );
 }
 
 void fstring_sub(char *s,const char *pattern,const char *insert)
