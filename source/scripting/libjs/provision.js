@@ -131,10 +131,10 @@ function setup_ldb(ldif, dbname, subobj)
 	data = data + extra;
 	data = substitute_var(data, subobj);
 
-	var db = ldb.connect(dbfile);
-	assert(db != undefined);
+	var ok = ldb.connect(dbfile);
+	assert(ok);
 
-	ok = ldb.add(db, data);
+	ok = ldb.add(data);
 	assert(ok);
 }
 

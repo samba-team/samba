@@ -1,26 +1,70 @@
+#!/bin/sh
+exec smbscript "$0" ${1+"$@"}
 /*
 	demonstrate access to ldb databases from ejs
 */
 
-println("Trying a attribute constrained search on samdb");
 
-var dbfile = lpGet("sam database");
-var attrs = new Array("name", "dnsDomain", "objectSid", "dn");
 var ldb = ldb_init();
 
-res = ldb.search(dbfile, "(objectClass=domain)", attrs);
+function basic_tests(ldb)
+{
+	println("Running basic tests");
+	ok = ldb.add("
+dn: cn=x,cn=test
+objectClass: foo
+x: 3
+");
+	assert(ok);
 
-printVars(res);
+	println("Testing ldb.search");
+	var res = ldb.search("(objectClass=*)");
+	assert(res[0].objectClass[0] == "foo");
+	assert(res[0].dn == "cn=x,cn=test");
+	assert(res[0].x == 3);
 
-println("and now an unconstrained search");
+	ok = ldb.add("
+dn: cn=x2,cn=test
+objectClass: foo
+x: 4
+");
+	assert(ok);
+	var attrs = new Array("x");
+	res = ldb.search("x=4", attrs);
+	assert(res[0].x == 4);
+	assert(res[0].objectClass == undefined);
+	assert(res[0].dn == "cn=x2,cn=test");
 
-var dbfile = lpGet("sam database");
-var db = ldb.connect(dbfile);
-res = ldb.search(db, "(objectClass=user)");
-printVars(res);
+	ok = ldb.delete("cn=x,cn=test");
+	assert(ok);
 
-println("and a bad search");
+	ok = ldb.rename("cn=x2,cn=test", "cn=x3,cn=test");
+	assert(ok);
+	res = ldb.search("x=4", attrs);
+	assert(res[0].dn == "cn=x3,cn=test");
 
-res = ldb.search(db, "foo");
+	ok = ldb.modify("
+dn: cn=x3,cn=test
+changetype: modify
+add: x
+x: 7
+");
 
-println("all done");
+	res = ldb.search("x=7");
+	assert(res.length == 1);
+	assert(res[0].x.length == 2);
+	
+}
+
+var sys = sys_init();
+var dbfile = "test.ldb";
+sys.unlink(dbfile);
+var ok = ldb.connect("tdb://" + dbfile);
+assert(ok);
+
+basic_tests(ldb);
+
+sys.unlink(dbfile);
+
+
+

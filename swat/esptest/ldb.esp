@@ -8,23 +8,24 @@
 var dbfile = lpGet("sam database");
 var attrs = new Array("name", "dnsDomain", "objectSid", "dn");
 var ldb = ldb_init();
-var db = ldb.connect(dbfile);
+var ok = ldb.connect(dbfile);
+assert(ok);
 
-res = ldb.search(db, "(objectClass=domain)", attrs);
+res = ldb.search("(objectClass=domain)", attrs);
 multi_table(res, "dn");
 %>
 
 <h3>An unconstrained search</h3>
 
 <%
-res = ldb.search(db, "(objectClass=user)");
+res = ldb.search("(objectClass=user)");
 multi_table(res, "dn");
 %>
 
 <h3>A search with bad arguments</h3>
 
 <%
-res = ldb.search("blah", "foo");
+res = ldb.search("=blah", "foo");
 %>
 
 all done
