@@ -450,6 +450,29 @@ int ldb_dn_compare(struct ldb_context *ldb,
 	return ldb_dn_compare_base(ldb, edn0, edn1);
 }
 
+int ldb_dn_cmp(struct ldb_context *ldb, const char *dn0, const char *dn1)
+{
+	struct ldb_dn *edn0;
+	struct ldb_dn *edn1;
+	int ret;
+
+	edn0 = ldb_dn_explode_casefold(ldb, dn0);
+	if (edn0 == NULL) return 0;
+
+	edn1 = ldb_dn_explode_casefold(ldb, dn1);
+	if (edn1 == NULL) {
+		talloc_free(edn0);
+		return 0;
+	}
+
+	ret = ldb_dn_compare(ldb, edn0, edn1);
+
+	talloc_free(edn0);
+	talloc_free(edn1);
+
+	return ret;
+}
+
 /*
   casefold a dn. We need to casefold the attribute names, and canonicalize 
   attribute values of case insensitive attributes.
