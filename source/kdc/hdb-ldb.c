@@ -725,7 +725,7 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 
 	const char *realm;
 	const char *realm_dn;
-	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "LDB_fetch context\n");
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "LDB_fetch context");
 
 	if (!mem_ctx) {
 		krb5_set_error_string(context, "LDB_fetch: talloc_named() failed!");
@@ -737,7 +737,7 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 	ret = LDB_lookup_realm(context, (struct ldb_context *)db->hdb_db, 
 			       mem_ctx, realm, &realm_msg);
 	if (ret != 0) {
-		krb5_warnx(context, "LDB_fetch: could not find realm\n");
+		krb5_warnx(context, "LDB_fetch: could not find realm");
 		talloc_free(mem_ctx);
 		return HDB_ERR_NOENTRY;
 	}
@@ -781,6 +781,10 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 	case HDB_ENT_TYPE_ANY:
 		ldb_ent_type = HDB_LDB_ENT_TYPE_ANY;
 		break;
+	default:
+		krb5_warnx(context, "LDB_fetch: invalid ent_type specified!");
+		talloc_free(mem_ctx);
+		return HDB_ERR_NOENTRY;
 	}
 
 	ret = LDB_lookup_principal(context, (struct ldb_context *)db->hdb_db, 
