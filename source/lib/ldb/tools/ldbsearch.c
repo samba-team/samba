@@ -55,10 +55,12 @@ static void usage(void)
 	exit(1);
 }
 
+struct ldb_context *ldbsearch_ldb;
+
 static int do_compare_msg(struct ldb_message **el1,
-		struct ldb_message **el2)
+			  struct ldb_message **el2)
 {
-	return ldb_dn_cmp((*el1)->dn, (*el2)->dn);
+	return ldb_dn_cmp(ldbsearch_ldb, (*el1)->dn, (*el2)->dn);
 }
 
 static int do_search(struct ldb_context *ldb,
@@ -79,6 +81,7 @@ static int do_search(struct ldb_context *ldb,
 
 	printf("# returned %d records\n", ret);
 
+	ldbsearch_ldb = ldb;
 	if (sort_attribs) {
 		qsort(msgs, ret, sizeof(struct ldb_message *),
 				(comparison_fn_t)do_compare_msg);

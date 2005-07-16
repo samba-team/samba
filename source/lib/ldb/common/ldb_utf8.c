@@ -73,15 +73,6 @@ int ldb_caseless_cmp(const char *s1, const char *s2)
 }
 
 /*
-  compare two basedn fields
-  return 0 for match
-*/
-int ldb_dn_cmp(const char *dn1, const char *dn2)
-{
-	return ldb_caseless_cmp(dn1, dn2);
-}
-
-/*
   compare two attributes
   return 0 for match
 */
