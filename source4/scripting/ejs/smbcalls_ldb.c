@@ -44,22 +44,26 @@ static struct ldb_context *ejs_get_ldb_context(int eid)
      res = ldb.search("expression");
      var attrs = new Array("attr1", "attr2", "attr3");
      ldb.search("expression", attrs);
+     var basedn = "cn=this,dc=is,dc=a,dc=test";
+     ldb.search("expression", attrs, ldb.SCOPE_SUBTREE, basedn);
 */
 static int ejs_ldbSearch(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	const char **attrs = NULL;
 	const char *expression;
+	const char *basedn = NULL;
+	int scope = LDB_SCOPE_DEFAULT;
 	TALLOC_CTX *tmp_ctx = talloc_new(mprMemCtx());
 	struct ldb_context *ldb;
 	int ret;
 	struct ldb_message **res;
 
 	/* validate arguments */
-	if (argc < 1 || argc > 2) {
-		ejsSetErrorMsg(eid, "ldb.search invalid arguments");
+	if (argc < 1 || argc > 4) {
+		ejsSetErrorMsg(eid, "ldb.search invalid number of arguments");
 		goto failed;
 	}
-	if (argc == 2 && argv[1]->type != MPR_TYPE_OBJECT) {
+	if (argc > 3 && argv[3]->type != MPR_TYPE_OBJECT) {
 		ejsSetErrorMsg(eid, "ldb.search attributes must be an object");
 		goto failed;
 	}
@@ -71,14 +75,30 @@ static int ejs_ldbSearch(MprVarHandle eid, int argc, struct MprVar **argv)
 	
 	expression = mprToString(argv[0]);
 	if (expression == NULL) {
-		ejsSetErrorMsg(eid, "ldb.search invalid arguments");
+		ejsSetErrorMsg(eid, "ldb.search invalid expression");
 		goto failed;
 	}
-	if (argc == 2) {
-		attrs = mprToList(tmp_ctx, argv[1]);
+	if (argc > 1) {
+		basedn = mprToString(argv[1]);
+		/* a null basedn is valid */
 	}
-
-	ret = ldb_search(ldb, NULL, LDB_SCOPE_DEFAULT, expression, attrs, &res);
+	if (argc > 2) {
+		scope = mprToInt(argv[2]);
+		switch (scope) {
+			case LDB_SCOPE_DEFAULT:
+			case LDB_SCOPE_BASE:
+			case LDB_SCOPE_ONELEVEL:
+			case LDB_SCOPE_SUBTREE:
+				break; /* ok */
+			default:
+				ejsSetErrorMsg(eid, "ldb.search invalid scope");
+				goto failed;
+		}
+	}
+	if (argc > 3) {
+		attrs = mprToList(tmp_ctx, argv[3]);
+	}
+	ret = ldb_search(ldb, basedn, scope, expression, attrs, &res);
 	if (ret == -1) {
 		ejsSetErrorMsg(eid, "ldb.search failed - %s", ldb_errstring(ldb));
 		mpr_Return(eid, mprCreateUndefinedVar());
@@ -261,6 +281,9 @@ static int ejs_ldb_init(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetCFunction(ldb, "modify", ejs_ldbModify);
 	mprSetCFunction(ldb, "delete", ejs_ldbDelete);
 	mprSetCFunction(ldb, "rename", ejs_ldbRename);
+	mprSetVar(ldb, "SCOPE_BASE", mprCreateNumberVar(LDB_SCOPE_BASE));
+	mprSetVar(ldb, "SCOPE_ONE", mprCreateNumberVar(LDB_SCOPE_ONELEVEL));
+	mprSetVar(ldb, "SCOPE_SUBTREE", mprCreateNumberVar(LDB_SCOPE_SUBTREE));
 
 	return 0;
 }
