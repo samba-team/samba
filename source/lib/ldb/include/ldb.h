@@ -335,7 +335,7 @@ int ldb_attrib_add_handlers(struct ldb_context *ldb,
 
 /* useful functions for ldb_message structure manipulation */
 
-int ldb_dn_cmp(const char *dn1, const char *dn2);
+int ldb_dn_cmp(struct ldb_context *ldb, const char *dn1, const char *dn2);
 int ldb_attr_cmp(const char *dn1, const char *dn2);
 
 /* case-fold a DN */

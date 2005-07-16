@@ -93,12 +93,14 @@ static int modify_record(struct ldb_context *ldb,
 /*
   find dn in msgs[]
 */
-static struct ldb_message *msg_find(struct ldb_message **msgs, int count,
+static struct ldb_message *msg_find(struct ldb_context *ldb,
+				    struct ldb_message **msgs,
+				    int count,
 				    const char *dn)
 {
 	int i;
 	for (i=0;i<count;i++) {
-		if (ldb_dn_cmp(dn, msgs[i]->dn) == 0) {
+		if (ldb_dn_cmp(ldb, dn, msgs[i]->dn) == 0) {
 			return msgs[i];
 		}
 	}
@@ -119,7 +121,7 @@ static int merge_edits(struct ldb_context *ldb,
 
 	/* do the adds and modifies */
 	for (i=0;i<count2;i++) {
-		msg = msg_find(msgs1, count1, msgs2[i]->dn);
+		msg = msg_find(ldb, msgs1, count1, msgs2[i]->dn);
 		if (!msg) {
 			if (options->verbose > 0) {
 				ldif_write_msg(ldb, stdout, LDB_CHANGETYPE_ADD, msgs2[i]);
@@ -139,7 +141,7 @@ static int merge_edits(struct ldb_context *ldb,
 
 	/* do the deletes */
 	for (i=0;i<count1;i++) {
-		msg = msg_find(msgs2, count2, msgs1[i]->dn);
+		msg = msg_find(ldb, msgs2, count2, msgs1[i]->dn);
 		if (!msg) {
 			if (options->verbose > 0) {
 				ldif_write_msg(ldb, stdout, LDB_CHANGETYPE_DELETE, msgs1[i]);
