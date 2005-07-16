@@ -381,7 +381,6 @@ BOOL process_local_message(char *buffer, int buf_size)
 			break;
 
 		case OPLOCK_BREAK_CMD:
-		case LEVEL_II_OPLOCK_BREAK_CMD:
 		case ASYNC_LEVEL_II_OPLOCK_BREAK_CMD:
 
 			/* Ensure that the msg length is correct. */
@@ -483,8 +482,7 @@ pid %d, port %d, dev = %x, inode = %.0f, file_id = %lu\n",
 	 * case.
 	 */
 
-	if (!((break_cmd_type == OPLOCK_BREAK_CMD) ||
-	      (break_cmd_type == LEVEL_II_OPLOCK_BREAK_CMD))) {
+	if (break_cmd_type != OPLOCK_BREAK_CMD) {
 		return True;
 	}
 
@@ -997,7 +995,6 @@ BOOL request_oplock_break(share_mode_entry *share_entry)
 	SMB_DEV_T dev = share_entry->dev;
 	SMB_INO_T inode = share_entry->inode;
 	unsigned long file_id = share_entry->share_file_id;
-	uint16 break_cmd_type;
 
 	if(pid == share_entry->pid) {
 		/* We are breaking our own oplock, make sure it's us. */
@@ -1027,13 +1024,7 @@ dev = %x, inode = %.0f, file_id = %lu and no fsp found !\n",
 
 	/* We need to send a OPLOCK_BREAK_CMD message to the port in the share mode entry. */
 
-	if (LEVEL_II_OPLOCK_TYPE(share_entry->op_type)) {
-		break_cmd_type = LEVEL_II_OPLOCK_BREAK_CMD;
-	} else {
-		break_cmd_type = OPLOCK_BREAK_CMD;
-	}
-
-	SSVAL(op_break_msg,OPBRK_MESSAGE_CMD_OFFSET,break_cmd_type);
+	SSVAL(op_break_msg,OPBRK_MESSAGE_CMD_OFFSET,OPLOCK_BREAK_CMD);
 	memcpy(op_break_msg+OPLOCK_BREAK_PID_OFFSET,(char *)&pid,sizeof(pid));
 	memcpy(op_break_msg+OPLOCK_BREAK_DEV_OFFSET,(char *)&dev,sizeof(dev));
 	memcpy(op_break_msg+OPLOCK_BREAK_INODE_OFFSET,(char *)&inode,sizeof(inode));
@@ -1119,7 +1110,7 @@ dev = %x, inode = %.0f, file_id = %lu and no fsp found !\n",
 		 * Test to see if this is the reply we are awaiting (ie. the one we sent with the CMD_REPLY flag OR'ed in).
 		 */
 		if((SVAL(reply_msg_start,OPBRK_MESSAGE_CMD_OFFSET) & CMD_REPLY) &&
-			((SVAL(reply_msg_start,OPBRK_MESSAGE_CMD_OFFSET) & ~CMD_REPLY) == break_cmd_type) &&
+			((SVAL(reply_msg_start,OPBRK_MESSAGE_CMD_OFFSET) & ~CMD_REPLY) == OPLOCK_BREAK_CMD) &&
 			(reply_from_port == share_entry->op_port) && 
 			(memcmp(&reply_msg_start[OPLOCK_BREAK_PID_OFFSET], &op_break_msg[OPLOCK_BREAK_PID_OFFSET],
 				OPLOCK_BREAK_MSG_LEN - OPLOCK_BREAK_PID_OFFSET) == 0)) {

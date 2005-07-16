@@ -1511,7 +1511,6 @@ extern int chain_size;
 /* Message types */
 #define OPLOCK_BREAK_CMD 0x1
 #define KERNEL_OPLOCK_BREAK_CMD 0x2
-#define LEVEL_II_OPLOCK_BREAK_CMD 0x3
 #define ASYNC_LEVEL_II_OPLOCK_BREAK_CMD 0x4
 
 /* Add the "deferred open" message. */
