@@ -134,6 +134,7 @@ static void notify_deferred_opens(files_struct *fsp)
 			send_deferred_open_retry_message(entry);
 		}
 	}
+	SAFE_FREE(de_array);
 }
 
 /****************************************************************************
