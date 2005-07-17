@@ -360,12 +360,14 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 		}
 
 		if (ret == 0) {
+			size_t num_keys = ent->keys.len;
 			/*
 			 * create keys from unicodePwd
 			 */
 			ret = hdb_generate_key_set_password(context, salt_principal, 
-						    unicodePwd, 
-							    &ent->keys.val, &ent->keys.len);
+							    unicodePwd, 
+							    &ent->keys.val, &num_keys);
+			ent->keys.len = num_keys;
 			krb5_free_principal(context, salt_principal);
 		}
 
@@ -387,7 +389,8 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 		} else if (val->length < 16) {
 			ent->keys.val = NULL;
 			ent->keys.len = 0;
-			krb5_warnx(context, "ntPwdHash has invalid length: %d\n",val->length);
+			krb5_warnx(context, "ntPwdHash has invalid length: %d\n",
+				   (int)val->length);
 		} else {
 			ret = krb5_data_alloc (&keyvalue, 16);
 			if (ret) {

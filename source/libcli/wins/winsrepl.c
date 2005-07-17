@@ -162,13 +162,13 @@ static void wrepl_handler_recv(struct wrepl_socket *wrepl_socket)
 	if (!NT_STATUS_IS_OK(req->status)) {
 		DEBUG(2,("Failed to parse incoming WINS packet - %s\n",
 			 nt_errstr(req->status)));
-		DEBUG(10,("packet length %d\n", req->buffer.length));
+		DEBUG(10,("packet length %d\n", (int)req->buffer.length));
 		NDR_PRINT_DEBUG(wrepl_packet, req->packet);
 		goto failed;
 	}
 
 	if (DEBUGLVL(10)) {
-		DEBUG(10,("Received WINS packet of length %d\n", req->buffer.length));
+		DEBUG(10,("Received WINS packet of length %d\n", (int)req->buffer.length));
 		NDR_PRINT_DEBUG(wrepl_packet, req->packet);
 	}
 
@@ -390,7 +390,7 @@ struct wrepl_request *wrepl_request_send(struct wrepl_socket *wrepl_socket,
 	if (!NT_STATUS_IS_OK(req->status)) goto failed;
 
 	if (DEBUGLVL(10)) {
-		DEBUG(10,("Sending WINS packet of length %d\n", req->buffer.length));
+		DEBUG(10,("Sending WINS packet of length %d\n", (int)req->buffer.length));
 		NDR_PRINT_DEBUG(wrepl_packet, &wrap.packet);
 	}
 

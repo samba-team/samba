@@ -515,7 +515,7 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 
 	/* retrieve the sid for the group just created */
 	sid = samdb_search_dom_sid(d_state->sam_ctx, a_state,
-				   msg->dn, "objectSid", NULL);
+				   msg->dn, "objectSid", "dn=%s", msg->dn);
 	if (sid == NULL) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -749,7 +749,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	/* retrieve the sid for the group just created */
 	sid = samdb_search_dom_sid(d_state->sam_ctx, a_state,
-				   msg->dn, "objectSid", NULL);
+				   msg->dn, "objectSid", "dn=%s", msg->dn);
 	if (sid == NULL) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -949,7 +949,7 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 
 	/* retrieve the sid for the alias just created */
 	sid = samdb_search_dom_sid(d_state->sam_ctx, a_state,
-				   msg->dn, "objectSid", NULL);
+				   msg->dn, "objectSid", "dn=%s", msg->dn);
 
 	a_state->account_name = talloc_strdup(a_state, alias_name);
 	if (!a_state->account_name) {
@@ -3072,9 +3072,13 @@ static NTSTATUS samr_GetUserPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 	a_state = h->data;
 
 	r->out.info.min_password_length = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0,
-							    a_state->domain_state->domain_dn, "minPwdLength", NULL);
+							    a_state->domain_state->domain_dn, "minPwdLength", 
+							    "dn=%s", 
+							    a_state->domain_state->domain_dn);
 	r->out.info.password_properties = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0,
-							    a_state->account_dn, "pwdProperties", NULL);
+							    a_state->account_dn, 
+							    "pwdProperties", 
+							    "dn=%s", a_state->account_dn);
 	return NT_STATUS_OK;
 }
 

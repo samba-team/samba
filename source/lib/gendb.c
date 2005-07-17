@@ -89,7 +89,7 @@ int gendb_search_dn(struct ldb_context *ldb,
 		 struct ldb_message ***res,
 		 const char * const *attrs)
 {
-	return gendb_search(ldb, mem_ctx, dn, res, attrs, NULL);
+	return gendb_search(ldb, mem_ctx, dn, res, attrs, "dn=%s", dn);
 }
 
 /*

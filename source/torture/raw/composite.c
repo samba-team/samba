@@ -96,7 +96,7 @@ static BOOL test_loadfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 		if (io2.out.size != len) {
 			printf("wrong length in returned data - %d should be %d\n",
-			       io2.out.size, len);
+			       io2.out.size, (int)len);
 			return False;
 		}
 		
@@ -187,7 +187,7 @@ static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		if (io2.out.size != len) {
 			printf("wrong length in returned data - %d "
 			       "should be %d\n",
-			       io2.out.size, len);
+			       io2.out.size, (int)len);
 			ret = False;
 			continue;
 		}

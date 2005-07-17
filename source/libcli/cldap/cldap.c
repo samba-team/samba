@@ -93,7 +93,7 @@ static void cldap_socket_recv(struct cldap_socket *cldap)
 	blob.length = nread;
 
 	DEBUG(2,("Received cldap packet of length %d from %s:%d\n", 
-		 blob.length, src_addr, src_port));
+		 (int)blob.length, src_addr, src_port));
 
 	if (!asn1_load(&asn1, blob)) {
 		DEBUG(2,("Failed to setup for asn.1 decode\n"));
@@ -188,7 +188,7 @@ static void cldap_socket_send(struct cldap_socket *cldap)
 				       req->dest_addr, req->dest_port);
 		if (NT_STATUS_IS_ERR(status)) {
 			DEBUG(3,("Failed to send cldap request of length %u to %s:%d\n",
-				 req->encoded.length, req->dest_addr, req->dest_port));
+				 (unsigned)req->encoded.length, req->dest_addr, req->dest_port));
 			DLIST_REMOVE(cldap->send_queue, req);
 			talloc_free(req);
 			continue;

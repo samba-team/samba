@@ -422,7 +422,7 @@ static int ejs_tree_connect(MprVarHandle eid, int argc, char **argv)
 
 	/* Set up host, share destination */
 
-	mem_ctx = talloc_init(NULL);
+	mem_ctx = talloc_new(mprMemCtx());
 	smbcli_parse_unc(argv[0], mem_ctx, &hostname, &sharename);
 
 	/* Set up credentials */

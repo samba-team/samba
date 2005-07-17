@@ -106,7 +106,7 @@ NTSTATUS dgram_mailslot_ntlogon_parse(struct dgram_mailslot_handler *dgmslot,
 				      (ndr_pull_flags_fn_t)ndr_pull_nbt_ntlogon_packet);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to parse ntlogon packet of length %d\n", 
-			 data.length));
+			 (int)data.length));
 		if (DEBUGLVL(10)) {
 			file_save("ntlogon.dat", data.data, data.length);
 		}

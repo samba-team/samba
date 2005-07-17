@@ -64,7 +64,7 @@ BOOL torture_local_idtree(void)
 			if (p != NULL) {
 				printf("non-present at %d gave %p (would be %d)\n", 
 				       ii, p, 
-				       (((char *)p) - (char *)(&ids[0])) / sizeof(int));
+				       (int)(((char *)p) - (char *)(&ids[0])) / sizeof(int));
 				ret = False;
 			}
 			if (random() % 5) {

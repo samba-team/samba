@@ -64,7 +64,7 @@ static void dgm_socket_recv(struct nbt_dgram_socket *dgmsock)
 	blob.length = nread;
 
 	DEBUG(2,("Received dgram packet of length %d from %s:%d\n", 
-		 blob.length, src_addr, src_port));
+		 (int)blob.length, src_addr, src_port));
 
 	packet = talloc(tmp_ctx, struct nbt_dgram_packet);
 	if (packet == NULL) {
@@ -119,7 +119,7 @@ static void dgm_socket_send(struct nbt_dgram_socket *dgmsock)
 				       req->dest_addr, req->dest_port);
 		if (NT_STATUS_IS_ERR(status)) {
 			DEBUG(3,("Failed to send datagram of length %u to %s:%d\n",
-				 req->encoded.length, req->dest_addr, req->dest_port));
+				 (unsigned)req->encoded.length, req->dest_addr, req->dest_port));
 			DLIST_REMOVE(dgmsock->send_queue, req);
 			talloc_free(req);
 			continue;

@@ -274,7 +274,7 @@ char *safe_strcpy(char *dest,const char *src, size_t maxlength)
 
 	if (len > maxlength) {
 		DEBUG(0,("ERROR: string overflow by %u (%u - %u) in safe_strcpy [%.50s]\n",
-			 (uint_t)(len-maxlength), len, maxlength, src));
+			 (uint_t)(len-maxlength), (unsigned)len, (unsigned)maxlength, src));
 		len = maxlength;
 	}
       
@@ -760,7 +760,7 @@ void strlower_m(char *s)
 		c_size2 = push_codepoint(d, tolower_w(c));
 		if (c_size2 > c_size) {
 			DEBUG(0,("FATAL: codepoint 0x%x (0x%x) expanded from %d to %d bytes in strlower_m\n",
-				 c, tolower_w(c), c_size, c_size2));
+				 c, tolower_w(c), (int)c_size, (int)c_size2));
 			smb_panic("codepoint expansion in strlower_m\n");
 		}
 		s += c_size;
@@ -796,7 +796,7 @@ void strupper_m(char *s)
 		c_size2 = push_codepoint(d, toupper_w(c));
 		if (c_size2 > c_size) {
 			DEBUG(0,("FATAL: codepoint 0x%x (0x%x) expanded from %d to %d bytes in strupper_m\n",
-				 c, toupper_w(c), c_size, c_size2));
+				 c, toupper_w(c), (int)c_size, (int)c_size2));
 			smb_panic("codepoint expansion in strupper_m\n");
 		}
 		s += c_size;

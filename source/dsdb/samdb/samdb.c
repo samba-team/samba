@@ -421,7 +421,7 @@ NTTIME samdb_result_allow_password_change(struct ldb_context *sam_ldb,
 	}
 
 	minPwdAge = samdb_search_int64(sam_ldb, mem_ctx, 0,
-				       domain_dn, "minPwdAge", NULL);
+				       domain_dn, "minPwdAge", "dn=%s", domain_dn);
 
 	/* yes, this is a -= not a += as minPwdAge is stored as the negative
 	   of the number of 100-nano-seconds */
@@ -447,7 +447,8 @@ NTTIME samdb_result_force_password_change(struct ldb_context *sam_ldb,
 		return 0;
 	}
 
-	maxPwdAge = samdb_search_int64(sam_ldb, mem_ctx, 0, domain_dn, "maxPwdAge", NULL);
+	maxPwdAge = samdb_search_int64(sam_ldb, mem_ctx, 0, domain_dn, 
+				       "maxPwdAge", "dn=%s", domain_dn);
 	if (maxPwdAge == 0) {
 		return 0;
 	} else {
@@ -655,7 +656,7 @@ static NTSTATUS _samdb_allocate_next_id(struct ldb_context *sam_ldb, TALLOC_CTX 
 	struct ldb_val vals[2];
 	struct ldb_message_element els[2];
 
-	str = samdb_search_string(sam_ldb, mem_ctx, dn, attr, NULL);
+	str = samdb_search_string(sam_ldb, mem_ctx, dn, attr, "dn=%s", dn);
 	if (!str) {
 		DEBUG(1,("id not found at %s %s\n", dn, attr));
 		return NT_STATUS_OBJECT_NAME_INVALID;

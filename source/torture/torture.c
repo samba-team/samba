@@ -368,14 +368,14 @@ static BOOL rw_torture2(struct smbcli_state *c1, struct smbcli_state *c2)
 
 		if ((bytes_written = smbcli_write(c1->tree, fnum1, 0, buf, 0, buf_size)) != buf_size) {
 			printf("write failed (%s)\n", smbcli_errstr(c1->tree));
-			printf("wrote %d, expected %d\n", bytes_written, buf_size); 
+			printf("wrote %d, expected %d\n", (int)bytes_written, (int)buf_size); 
 			correct = False;
 			break;
 		}
 
 		if ((bytes_read = smbcli_read(c2->tree, fnum2, buf_rd, 0, buf_size)) != buf_size) {
 			printf("read failed (%s)\n", smbcli_errstr(c2->tree));
-			printf("read %d, expected %d\n", bytes_read, buf_size); 
+			printf("read %d, expected %d\n", (int)bytes_read, (int)buf_size); 
 			correct = False;
 			break;
 		}
@@ -1933,7 +1933,7 @@ BOOL torture_ioctl_test(void)
 
 			if (NT_STATUS_IS_OK(status)) {
 				printf("ioctl device=0x%x function=0x%x OK : %d bytes\n", 
-					device, function, parms.ioctl.out.blob.length);
+					device, function, (int)parms.ioctl.out.blob.length);
 			}
 		}
 	}

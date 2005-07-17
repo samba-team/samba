@@ -486,7 +486,7 @@ void ejs_exception(const char *reason)
 static void esp_request(struct esp_state *esp, const char *url)
 {
 	struct websrv_context *web = esp->web;
-	ssize_t size;
+	int size;
 	int res;
 	char *emsg = NULL, *buf;
 

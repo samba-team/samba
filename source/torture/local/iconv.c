@@ -174,7 +174,7 @@ static int test_buffer(uint8_t *inbuf, size_t size, const char *charset)
 	}
 
 	if (ret1 != ret2) {
-		printf("ret1=%d ret2=%d\n", ret1, ret2);
+		printf("ret1=%d ret2=%d\n", (int)ret1, (int)ret2);
 		ok = 0;
 	}
 
@@ -187,20 +187,20 @@ static int test_buffer(uint8_t *inbuf, size_t size, const char *charset)
 	
 	if (outsize1 != outsize2) {
 		printf("\noutsize mismatch outsize1=%d outsize2=%d\n",
-		       outsize1, outsize2);
+		       (int)outsize1, (int)outsize2);
 		ok = 0;
 	}
 	
 	if (size_in1 != size_in2) {
 		printf("\nsize_in mismatch size_in1=%d size_in2=%d\n",
-		       size_in1, size_in2);
+		       (int)size_in1, (int)size_in2);
 		ok = 0;
 	}
 
 	if (!ok ||
 	    len1 != len2 ||
 	    memcmp(buf1, buf2, len1) != 0) {
-		printf("\nsize=%d ret1=%d ret2=%d\n", size, ret1, ret2);
+		printf("\nsize=%d ret1=%d ret2=%d\n", (int)size, (int)ret1, (int)ret2);
 		show_buf(" IN1:", inbuf, size-size_in1);
 		show_buf(" IN2:", inbuf, size-size_in2);
 		show_buf("OUT1:", buf1, len1);
@@ -248,7 +248,7 @@ static int test_buffer(uint8_t *inbuf, size_t size, const char *charset)
 
 	if (outsize3 != sizeof(buf3) - size) {
 		printf("wrong outsize3 - %d should be %d\n", 
-		       outsize3, sizeof(buf3) - size);
+		       (int)outsize3, (int)(sizeof(buf3) - size));
 		ok = 0;
 	}
 	
@@ -302,7 +302,7 @@ static int test_codepoint(unsigned int codepoint)
 
 	if (size2 != size) {
 		printf("next_codepoint(%u) gave wrong size %d (should be %d)\n", 
-		       codepoint, size2, size);
+		       codepoint, (int)size2, (int)size);
 		return 0;
 	}
 

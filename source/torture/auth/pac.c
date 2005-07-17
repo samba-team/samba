@@ -303,14 +303,14 @@ static BOOL torture_pac_saved_check(void)
 	 */
 	if (tmp_blob.length != validate_blob.length) {
 		DEBUG(0, ("PAC push failed: orignial buffer length[%u] != created buffer length[%u]\n",
-				tmp_blob.length, validate_blob.length));
+				(unsigned)tmp_blob.length, (unsigned)validate_blob.length));
 		talloc_free(mem_ctx);
 		return False;
 	}
 
 	if (memcmp(tmp_blob.data, validate_blob.data, tmp_blob.length) != 0) {
 		DEBUG(0, ("PAC push failed: length[%u] matches, but data does not\n",
-			  tmp_blob.length));
+			  (unsigned)tmp_blob.length));
 		talloc_free(mem_ctx);
 		return False;
 	}

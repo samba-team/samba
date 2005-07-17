@@ -455,7 +455,8 @@ static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 	VALID_DN_SYNTAX(dn,1);
 
 	DEBUG(10, ("sldb_Compare: dn: [%s]\n", dn->dn));
-	filter = talloc_asprintf(local_ctx, "(%s=%*s)", r->attribute, r->value.length, r->value.data);
+	filter = talloc_asprintf(local_ctx, "(%s=%*s)", r->attribute, 
+				 (int)r->value.length, r->value.data);
 	NT_STATUS_HAVE_NO_MEMORY(filter);
 
 	DEBUGADD(10, ("sldb_Compare: attribute: [%s]\n", filter));

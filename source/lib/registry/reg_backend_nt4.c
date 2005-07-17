@@ -1051,7 +1051,7 @@ static WERROR nk_to_key(TALLOC_CTX *mem_ctx, struct registry_hive *h, NK_HDR *nk
 	if (-size < (sizeof(NK_HDR) - 1 + namlen)) {
 		DEBUG(0, ("Incorrect NK_HDR size: %d, %0X\n", -size, (int)nk_hdr));
 		DEBUG(0, ("Sizeof NK_HDR: %d, name_len %d, clsname_len %d\n",
-				  sizeof(NK_HDR), namlen, clsname_len));
+			  (int)sizeof(NK_HDR), namlen, clsname_len));
 		return WERR_GENERAL_FAILURE;
 	}
 

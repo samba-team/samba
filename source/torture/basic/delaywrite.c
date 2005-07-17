@@ -72,7 +72,8 @@ static BOOL test_delayed_write_update(struct smbcli_state *cli, TALLOC_CTX *mem_
 	written =  smbcli_write(cli->tree, fnum1, 0, "x", 0, 1);
 
 	if (written != 1) {
-		printf("write failed - wrote %d bytes (%s)\n", written, __location__);
+		printf("write failed - wrote %d bytes (%s)\n", 
+		       (int)written, __location__);
 		return False;
 	}
 
@@ -239,7 +240,8 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	written =  smbcli_write(cli->tree, fnum1, 0, "0123456789", 1, 10);
 
 	if (written != 10) {
-		printf("write failed - wrote %d bytes (%s)\n", written, __location__);
+		printf("write failed - wrote %d bytes (%s)\n", 
+		       (int)written, __location__);
 		return False;
 	}
 
@@ -294,7 +296,8 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	written =  smbcli_write(cli->tree, fnum2, 0, "0123456789", 11, 10);
 
 	if (written != 10) {
-		printf("write failed - wrote %d bytes (%s)\n", written, __location__);
+		printf("write failed - wrote %d bytes (%s)\n", 
+		       (int)written, __location__);
 		return False;
 	}
 
@@ -319,7 +322,8 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	written =  smbcli_write(cli->tree, fnum2, 0, "0123456789", 21, 10);
 
 	if (written != 10) {
-		printf("write failed - wrote %d bytes (%s)\n", written, __location__);
+		printf("write failed - wrote %d bytes (%s)\n", 
+		       (int)written, __location__);
 		return False;
 	}
 
@@ -397,7 +401,8 @@ static BOOL test_delayed_write_update2(struct smbcli_state *cli, TALLOC_CTX *mem
 	written =  smbcli_write(cli->tree, fnum1, 0, "0123456789", 31, 10);
 
 	if (written != 10) {
-		printf("write failed - wrote %d bytes (%s)\n", written, __location__);
+		printf("write failed - wrote %d bytes (%s)\n", 
+		       (int)written, __location__);
 		return False;
 	}
 
@@ -511,7 +516,7 @@ static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx
 
 	if (written != 1) {
 		printf("(%s) written gave %d - should have been 1\n", 
-		       __location__, written);
+		       __location__, (int)written);
 		ret = False;
 		goto done;
 	}
@@ -532,7 +537,7 @@ static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx
 	
 	if (written != 1) {
 		printf("(%s) written gave %d - should have been 1\n", 
-		       __location__, written);
+		       __location__, (int)written);
 		ret = False;
 		goto done;
 	}

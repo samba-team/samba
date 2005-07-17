@@ -46,7 +46,7 @@ void ndr_check_padding(struct ndr_pull *ndr, size_t n)
 		}
 	}
 	if (i<ofs2) {
-		DEBUG(0,("WARNING: Non-zero padding to %d: ", n));
+		DEBUG(0,("WARNING: Non-zero padding to %d: ", (int)n));
 		for (i=ndr->offset;i<ofs2;i++) {
 			DEBUG(0,("%02x ", ndr->data[i]));
 		}

@@ -73,7 +73,8 @@ BOOL torture_ntlmssp_self_check(void)
 	dump_data_pw("NTLMSSP expected sig: ", expected_sig.data, expected_sig.length);
 
 	if (sig.length != expected_sig.length) {
-		printf("Wrong sig length: %d != %d\n", sig.length, expected_sig.length);
+		printf("Wrong sig length: %d != %d\n", 
+		       (int)sig.length, (int)expected_sig.length);
 		return False;
 	}
 
@@ -125,7 +126,8 @@ BOOL torture_ntlmssp_self_check(void)
 	dump_data_pw("NTLMSSP expected sig: ", expected_sig.data, expected_sig.length);
 
 	if (sig.length != expected_sig.length) {
-		printf("Wrong sig length: %d != %d\n", sig.length, expected_sig.length);
+		printf("Wrong sig length: %d != %d\n", 
+		       (int)sig.length, (int)expected_sig.length);
 		return False;
 	}
 

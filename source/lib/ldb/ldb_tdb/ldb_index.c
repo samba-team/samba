@@ -131,7 +131,7 @@ static char *ldb_dn_key(struct ldb_context *ldb,
 	}
 
 	ret = talloc_asprintf(ldb, "%s:%s:%.*s", 
-			      LTDB_INDEX, attr_folded, v.length, (char *)v.data);
+			      LTDB_INDEX, attr_folded, (int)v.length, (char *)v.data);
 
 	if (v.data != value->data) {
 		talloc_free(v.data);

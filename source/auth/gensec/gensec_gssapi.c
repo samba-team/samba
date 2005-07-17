@@ -714,7 +714,8 @@ static NTSTATUS gensec_gssapi_session_key(struct gensec_security *gensec_securit
 							&skey);
 		
 		if (maj_stat == 0) {
-			DEBUG(10, ("Got KRB5 session key of length %d\n",  skey.length));
+			DEBUG(10, ("Got KRB5 session key of length %d\n",  
+				   (int)skey.length));
 			gensec_gssapi_state->session_key = data_blob_talloc(gensec_gssapi_state, 
 									    skey.value, skey.length);
 			*session_key = gensec_gssapi_state->session_key;

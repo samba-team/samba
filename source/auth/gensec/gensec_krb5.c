@@ -407,7 +407,8 @@ static NTSTATUS gensec_krb5_session_key(struct gensec_security *gensec_security,
 		break;
 	}
 	if (err == 0 && skey != NULL) {
-		DEBUG(10, ("Got KRB5 session key of length %d\n",  KRB5_KEY_LENGTH(skey)));
+		DEBUG(10, ("Got KRB5 session key of length %d\n",  
+			   (int)KRB5_KEY_LENGTH(skey)));
 		gensec_krb5_state->session_key = data_blob_talloc(gensec_krb5_state, 
 						KRB5_KEY_DATA(skey), KRB5_KEY_LENGTH(skey));
 		*session_key = gensec_krb5_state->session_key;

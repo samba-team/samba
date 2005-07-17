@@ -175,7 +175,7 @@ BOOL torture_casetable(void)
 
 			if (size/sizeof(int) >= MAX_EQUIVALENCE) {
 				printf("too many chars match?? size=%d c=0x%04x\n",
-				       size, c);
+				       (int)size, c);
 				smbcli_close(cli->tree, fnum);
 				return False;
 			}

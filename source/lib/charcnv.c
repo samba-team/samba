@@ -175,11 +175,12 @@ ssize_t convert_string(charset_t from, charset_t to,
 				if (from == CH_UNIX) {
 					DEBUG(0,("E2BIG: convert_string(%s,%s): srclen=%d destlen=%d - '%s'\n",
 						 charset_name(from), charset_name(to),
-						 srclen, destlen, (const char *)src));
+						 (int)srclen, (int)destlen, 
+						 (const char *)src));
 				} else {
 					DEBUG(0,("E2BIG: convert_string(%s,%s): srclen=%d destlen=%d\n",
 						 charset_name(from), charset_name(to),
-						 srclen, destlen));
+						 (int)srclen, (int)destlen));
 				}
 		               break;
 			case EILSEQ:

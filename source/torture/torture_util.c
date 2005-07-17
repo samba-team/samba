@@ -391,8 +391,8 @@ NTSTATUS torture_check_ea(struct smbcli_state *cli,
 
 	printf("Expected value '%s' not '%*.*s' for ea %s\n",
 	       value, 
-	       info.ea_list.out.eas[0].value.length,
-	       info.ea_list.out.eas[0].value.length,
+	       (int)info.ea_list.out.eas[0].value.length,
+	       (int)info.ea_list.out.eas[0].value.length,
 	       info.ea_list.out.eas[0].value.data,
 	       eaname);
 
