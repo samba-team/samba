@@ -106,6 +106,11 @@ static void ldap_match_message(struct ldap_connection *conn, struct ldap_message
 	for (req=conn->pending; req; req=req->next) {
 		if (req->messageid == msg->messageid) break;
 	}
+	/* match a zero message id to the last request sent.
+	   It seems that servers send 0 if unable to parse */
+	if (req == NULL && msg->messageid == 0) {
+		req = conn->pending;
+	}
 	if (req == NULL) {
 		DEBUG(0,("ldap: no matching message id for %u\n",
 			 msg->messageid));
@@ -480,6 +485,9 @@ struct ldap_request *ldap_request_send(struct ldap_connection *conn,
 	req->state       = LDAP_REQUEST_SEND;
 	req->conn        = conn;
 	req->messageid   = conn->next_messageid++;
+	if (conn->next_messageid == 0) {
+		conn->next_messageid = 1;
+	}
 	req->type        = msg->type;
 	if (req->messageid == -1) {
 		goto failed;
