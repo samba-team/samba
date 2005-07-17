@@ -127,7 +127,7 @@
 		if (r->in.offered != _ndr_info->data_size) {\
 			return ndr_pull_error(ndr, NDR_ERR_BUFSIZE,\
 				"SPOOLSS Buffer: offered[%u] doesn't match length of buffer[%u]",\
-				r->in.offered, _ndr_info->data_size);\
+				r->in.offered, (unsigned)_ndr_info->data_size);\
 		}\
 		if (r->out.needed <= _ndr_info->data_size) {\
 			struct __##fn __r;\
