@@ -2,6 +2,7 @@
    ldb database library
 
    Copyright (C) Andrew Tridgell  2004-2005
+   Copyright (C) Simo Sorce            2005
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -101,11 +102,11 @@ static int ldb_match_present(struct ldb_context *ldb,
 			    enum ldb_scope scope)
 {
 
-	if (ldb_attr_cmp(tree->u.simple.attr, "dn") == 0) {
+	if (ldb_attr_cmp(tree->u.present.attr, "dn") == 0) {
 		return 1;
 	}
 
-	if (ldb_msg_find_element(msg, tree->u.simple.attr)) {
+	if (ldb_msg_find_element(msg, tree->u.present.attr)) {
 		return 1;
 	}
 
