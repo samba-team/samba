@@ -156,6 +156,9 @@ DATA_BLOB ndr_push_blob(struct ndr_push *ndr)
 	DATA_BLOB blob;
 	blob.data = ndr->data;
 	blob.length = ndr->offset;
+	if (ndr->alloc_size > ndr->offset) {
+		ndr->data[ndr->offset] = 0;
+	}
 	return blob;
 }
 
@@ -166,7 +169,6 @@ DATA_BLOB ndr_push_blob(struct ndr_push *ndr)
 NTSTATUS ndr_push_expand(struct ndr_push *ndr, uint32_t size)
 {
 	if (ndr->alloc_size > size) {
-		ndr->data[size] = 0;
 		return NT_STATUS_OK;
 	}
 
