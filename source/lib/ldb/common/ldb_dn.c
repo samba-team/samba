@@ -412,13 +412,13 @@ int ldb_dn_compare_base(struct ldb_context *ldb,
 		   const struct ldb_dn *base,
 		   const struct ldb_dn *dn)
 {
-	int i, ret;
+	int ret;
 	int n0, n1;
 
 	/* if the number of components doesn't match they differ */
 	n0 = base->comp_num - 1;
 	n1 = dn->comp_num - 1;
-	for (i = 0; i < base->comp_num; i++, n0--, n1--) {
+	while (n0 >= 0 && n1 >= 0) {
 		const struct ldb_attrib_handler *h;
 
 		/* compare names (attribute names are guaranteed to be ASCII only) */
@@ -435,6 +435,8 @@ int ldb_dn_compare_base(struct ldb_context *ldb,
 		if (ret) {
 			return ret;
 		}
+		n1--;
+		n0--;
 	}
 
 	return 0;
