@@ -34,17 +34,26 @@ static BOOL ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree
 	int i;
 
 	switch (tree->operation) {
-	case LDB_OP_SIMPLE:
-		if ((tree->u.simple.value.length == 1) &&
-		    (((char *)(tree->u.simple.value.data))[0] == '*')) {
-			/* Just a presence test */
-			asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(7));
-			asn1_write(data, tree->u.simple.attr,
-				   strlen(tree->u.simple.attr));
-			asn1_pop_tag(data);
-			return !data->has_error;
+	case LDB_OP_AND:
+	case LDB_OP_OR:
+		asn1_push_tag(data, ASN1_CONTEXT(tree->operation==LDB_OP_AND?0:1));
+		for (i=0; i<tree->u.list.num_elements; i++) {
+			if (!ldap_push_filter(data, tree->u.list.elements[i])) {
+				return False;
+			}
 		}
+		asn1_pop_tag(data);
+		break;
 
+	case LDB_OP_NOT:
+		asn1_push_tag(data, ASN1_CONTEXT(2));
+		if (!ldap_push_filter(data, tree->u.isnot.child)) {
+			return False;
+		}
+		asn1_pop_tag(data);
+		break;
+
+	case LDB_OP_SIMPLE:
 		/* equality test */
 		asn1_push_tag(data, ASN1_CONTEXT(3));
 		asn1_write_OctetString(data, tree->u.simple.attr,
@@ -53,6 +62,51 @@ static BOOL ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree
 				      tree->u.simple.value.length);
 		asn1_pop_tag(data);
 		break;
+
+	case LDB_OP_SUBSTRING:
+		/*
+		  SubstringFilter ::= SEQUENCE {
+			  type            AttributeDescription,
+			  -- at least one must be present
+			  substrings      SEQUENCE OF CHOICE {
+				  initial [0] LDAPString,
+				  any     [1] LDAPString,
+				  final   [2] LDAPString } }
+		*/
+		asn1_push_tag(data, ASN1_CONTEXT(4));
+		asn1_write_OctetString(data, tree->u.substring.attr, strlen(tree->u.substring.attr));
+		asn1_push_tag(data, ASN1_SEQUENCE(0));
+		i = 0;
+		if ( ! tree->u.substring.start_with_wildcard) {
+			asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(0));
+			asn1_write_LDAPString(data, tree->u.substring.chunks[i]->data);
+			asn1_pop_tag(data);
+			i++;
+		}
+		while (tree->u.substring.chunks[i]) {
+			int ctx;
+
+			if (( ! tree->u.substring.chunks[i + 1]) &&
+			    (tree->u.substring.end_with_wildcard == 0)) {
+				ctx = 2;
+			} else {
+				ctx = 1;
+			}
+			asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(ctx));
+			asn1_write_LDAPString(data, tree->u.substring.chunks[i]->data);
+			asn1_pop_tag(data);
+			i++;
+		}
+		asn1_pop_tag(data);
+		asn1_pop_tag(data);
+		break;
+
+	case LDB_OP_PRESENT:
+		/* present test */
+		asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(7));
+		asn1_write_LDAPString(data, tree->u.present.attr);
+		asn1_pop_tag(data);
+		return !data->has_error;
 
 	case LDB_OP_EXTENDED:
 		/*
@@ -80,26 +134,6 @@ static BOOL ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree
 		asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(4));
 		asn1_write_uint8(data, tree->u.extended.dnAttributes);
 		asn1_pop_tag(data);
-		asn1_pop_tag(data);
-		break;
-		
-
-	case LDB_OP_AND:
-	case LDB_OP_OR:
-		asn1_push_tag(data, ASN1_CONTEXT(tree->operation==LDB_OP_AND?0:1));
-		for (i=0; i<tree->u.list.num_elements; i++) {
-			if (!ldap_push_filter(data, tree->u.list.elements[i])) {
-				return False;
-			}
-		}
-		asn1_pop_tag(data);
-		break;
-
-	case LDB_OP_NOT:
-		asn1_push_tag(data, ASN1_CONTEXT(2));
-		if (!ldap_push_filter(data, tree->u.isnot.child)) {
-			return False;
-		}
 		asn1_pop_tag(data);
 		break;
 
@@ -440,6 +474,30 @@ static void ldap_decode_response(TALLOC_CTX *mem_ctx,
 	}
 }
 
+static struct ldb_val **ldap_decode_substring(TALLOC_CTX *mem_ctx, struct ldb_val **chunks, int chunk_num, char *value)
+{
+
+	chunks = talloc_realloc(mem_ctx, chunks, struct ldb_val *, chunk_num + 2);
+	if (chunks == NULL) {
+		return NULL;
+	}
+
+	chunks[chunk_num] = talloc(mem_ctx, struct ldb_val);
+	if (chunks[chunk_num] == NULL) {
+		return NULL;
+	}
+
+	chunks[chunk_num]->data = talloc_strdup(mem_ctx, value);
+	if (chunks[chunk_num]->data == NULL) {
+		return NULL;
+	}
+	chunks[chunk_num]->length = strlen(value) + 1;
+
+	chunks[chunk_num + 1] = NULL;
+
+	return chunks;
+}
+
 
 /*
   parse the ASN.1 formatted search string into a ldb_parse_tree
@@ -528,6 +586,100 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 		ret->u.simple.value.length = value.length;
 		break;
 	}
+	case 4: {
+		/* substrings */
+		DATA_BLOB attr;
+		uint8_t subs_tag;
+		char *value;
+		int chunk_num = 0;
+
+		if (!asn1_start_tag(data, ASN1_CONTEXT(filter_tag))) {
+			goto failed;
+		}
+		if (!asn1_read_OctetString(data, &attr)) {
+			goto failed;
+		}
+
+		ret->operation = LDB_OP_SUBSTRING;
+		ret->u.substring.attr = talloc_memdup(ret, attr.data, attr.length + 1);
+		ret->u.substring.attr[attr.length] = '\0';
+		ret->u.substring.chunks = NULL;
+		ret->u.substring.start_with_wildcard = 1;
+		ret->u.substring.end_with_wildcard = 1;
+
+		if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) {
+			goto failed;
+		}
+
+		while (asn1_tag_remaining(data)) {
+			asn1_peek_uint8(data, &subs_tag);
+			subs_tag &= 0x1f;	/* strip off the asn1 stuff */
+			if (subs_tag > 2) goto failed;
+
+			asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(subs_tag));
+			asn1_read_LDAPString(data, &value);
+			asn1_end_tag(data);
+
+			switch (subs_tag) {
+			case 0:
+				if (ret->u.substring.chunks != NULL) {
+					/* initial value found in the middle */
+					goto failed;
+				}
+
+				ret->u.substring.chunks = ldap_decode_substring(ret, NULL, 0, value);
+				if (ret->u.substring.chunks == NULL) {
+					goto failed;
+				}
+
+				ret->u.substring.start_with_wildcard = 0;
+				chunk_num = 1;
+				break;
+
+			case 1:
+				if (ret->u.substring.end_with_wildcard == 0) {
+					/* "any" value found after a "final" value */
+					goto failed;
+				}
+
+				ret->u.substring.chunks = ldap_decode_substring(ret,
+										ret->u.substring.chunks,
+										chunk_num,
+										value);
+				if (ret->u.substring.chunks == NULL) {
+					goto failed;
+				}
+
+				chunk_num++;
+				break;
+
+			case 2:
+				ret->u.substring.chunks = ldap_decode_substring(ret,
+										ret->u.substring.chunks,
+										chunk_num,
+										value);
+				if (ret->u.substring.chunks == NULL) {
+					goto failed;
+				}
+
+				ret->u.substring.end_with_wildcard = 0;
+				break;
+
+			default:
+				goto failed;
+			}
+
+		}
+
+		if (!asn1_end_tag(data)) { /* SEQUENCE */
+			goto failed;
+		}
+
+		if (!asn1_end_tag(data)) {
+			goto failed;
+		}
+		break;
+	}
 	case 7: {
 		/* Normal presence, "attribute=*" */
 		char *attr;
@@ -539,13 +691,9 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 			goto failed;
 		}
 
-		ret->operation = LDB_OP_SIMPLE;
-		ret->u.simple.attr = talloc_steal(ret, attr);
-		ret->u.simple.value.data = talloc_strdup(ret, "*");
-		if (ret->u.simple.value.data == NULL) {
-			goto failed;
-		}
-		ret->u.simple.value.length = 1;
+		ret->operation = LDB_OP_PRESENT;
+		ret->u.present.attr = talloc_steal(ret, attr);
+
 		if (!asn1_end_tag(data)) {
 			goto failed;
 		}
