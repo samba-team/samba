@@ -74,7 +74,7 @@ NTSTATUS auth_get_challenge(struct auth_context *auth_ctx, const uint8_t **_chal
 
 		if (challenge.length != 8) {
 			DEBUG(0, ("auth_get_challenge: invalid challenge (length %u) by mothod [%s]\n",
-				challenge.length, method->ops->name));
+				(unsigned)challenge.length, method->ops->name));
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 
@@ -148,7 +148,7 @@ NTSTATUS auth_check_password(struct auth_context *auth_ctx,
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("auth_check_password:  Invalid challenge (length %u) stored for this auth context set_by %s - cannot continue: %s\n",
-			auth_ctx->challenge.data.length, auth_ctx->challenge.set_by, nt_errstr(nt_status)));
+			(unsigned)auth_ctx->challenge.data.length, auth_ctx->challenge.set_by, nt_errstr(nt_status)));
 		return nt_status;
 	}
 

@@ -531,11 +531,11 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 		    || gensec_ntlmssp_state->encrypted_session_key.length != 16) {
 			data_blob_free(&gensec_ntlmssp_state->encrypted_session_key);
 			DEBUG(1, ("Client-supplied KEY_EXCH session key was of invalid length (%u)!\n", 
-				  gensec_ntlmssp_state->encrypted_session_key.length));
+				  (unsigned)gensec_ntlmssp_state->encrypted_session_key.length));
 			return NT_STATUS_INVALID_PARAMETER;
 		} else if (!session_key.data || session_key.length != 16) {
 			DEBUG(5, ("server session key is invalid (len == %u), cannot do KEY_EXCH!\n", 
-				  session_key.length));
+				  (unsigned)session_key.length));
 			gensec_ntlmssp_state->session_key = session_key;
 		} else {
 			dump_data_pw("KEY_EXCH session key (enc):\n", 
@@ -705,13 +705,15 @@ static NTSTATUS auth_ntlmssp_check_password(struct gensec_ntlmssp_state *gensec_
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	if (gensec_ntlmssp_state->server_info->user_session_key.length) {
-		DEBUG(10, ("Got NT session key of length %u\n", gensec_ntlmssp_state->server_info->user_session_key.length));
+		DEBUG(10, ("Got NT session key of length %u\n", 
+			   (unsigned)gensec_ntlmssp_state->server_info->user_session_key.length));
 		*user_session_key = data_blob_talloc(gensec_ntlmssp_state, 
 						   gensec_ntlmssp_state->server_info->user_session_key.data,
 						   gensec_ntlmssp_state->server_info->user_session_key.length);
 	}
 	if (gensec_ntlmssp_state->server_info->lm_session_key.length) {
-		DEBUG(10, ("Got LM session key of length %u\n", gensec_ntlmssp_state->server_info->lm_session_key.length));
+		DEBUG(10, ("Got LM session key of length %u\n", 
+			   (unsigned)gensec_ntlmssp_state->server_info->lm_session_key.length));
 		*lm_session_key = data_blob_talloc(gensec_ntlmssp_state, 
 						   gensec_ntlmssp_state->server_info->lm_session_key.data,
 						   gensec_ntlmssp_state->server_info->lm_session_key.length);

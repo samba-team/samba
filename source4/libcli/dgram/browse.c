@@ -89,7 +89,7 @@ NTSTATUS dgram_mailslot_browse_parse(struct dgram_mailslot_handler *dgmslot,
 				      (ndr_pull_flags_fn_t)ndr_pull_nbt_browse_packet);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to parse browse packet of length %d\n", 
-			 data.length));
+			 (int)data.length));
 		if (DEBUGLVL(10)) {
 			file_save("browse.dat", data.data, data.length);
 		}

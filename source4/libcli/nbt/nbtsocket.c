@@ -199,7 +199,7 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 
 	if (DEBUGLVL(10)) {
 		DEBUG(10,("Received nbt packet of length %d from %s:%d\n", 
-			  blob.length, src_addr, src_port));
+			  (int)blob.length, src_addr, src_port));
 		NDR_PRINT_DEBUG(nbt_name_packet, packet);
 	}
 

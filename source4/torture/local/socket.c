@@ -86,7 +86,7 @@ static BOOL test_udp(TALLOC_CTX *mem_ctx)
 		ret = False;
 	}
 	if (nread != size) {
-		printf("Unexpected recvfrom size %d should be %d\n", nread, size);
+		printf("Unexpected recvfrom size %d should be %d\n", (int)nread, (int)size);
 		ret = False;
 	}
 
@@ -107,7 +107,7 @@ static BOOL test_udp(TALLOC_CTX *mem_ctx)
 		ret = False;
 	}
 	if (nread != size) {
-		printf("Unexpected recvfrom size %d should be %d\n", nread, size);
+		printf("Unexpected recvfrom size %d should be %d\n", (int)nread, (int)size);
 		ret = False;
 	}
 	if (from_port != srv_port) {
@@ -191,7 +191,7 @@ static BOOL test_tcp(TALLOC_CTX *mem_ctx)
 		ret = False;
 	}
 	if (nread != size) {
-		printf("Unexpected recvfrom size %d should be %d\n", nread, size);
+		printf("Unexpected recvfrom size %d should be %d\n", (int)nread, (int)size);
 		ret = False;
 	}
 
@@ -215,7 +215,7 @@ static BOOL test_tcp(TALLOC_CTX *mem_ctx)
 		ret = False;
 	}
 	if (nread != size) {
-		printf("Unexpected recvfrom size %d should be %d\n", nread, size);
+		printf("Unexpected recvfrom size %d should be %d\n", (int)nread, (int)size);
 		ret = False;
 	}
 	if (from_port != srv_port) {

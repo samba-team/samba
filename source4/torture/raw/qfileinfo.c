@@ -584,8 +584,8 @@ BOOL torture_raw_qfileinfo(void)
 			printf("  flags=%d %s=%*.*s\n", 
 			       s1->all_eas.out.eas[i].flags,
 			       s1->all_eas.out.eas[i].name.s,
-			       s1->all_eas.out.eas[i].value.length,
-			       s1->all_eas.out.eas[i].value.length,
+			       (int)s1->all_eas.out.eas[i].value.length,
+			       (int)s1->all_eas.out.eas[i].value.length,
 			       s1->all_eas.out.eas[i].value.data);
 		}
 	}

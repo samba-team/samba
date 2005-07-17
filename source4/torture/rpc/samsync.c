@@ -865,7 +865,7 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 
 		if (old->secret.length != lsa_blob_out.length) {
 			printf("Returned secret %s doesn't match: %d != %d\n",
-			       old->name, old->secret.length, lsa_blob_out.length);
+			       old->name, (int)old->secret.length, (int)lsa_blob_out.length);
 			ret = False;
 		} else if (memcmp(lsa_blob_out.data, 
 			   old->secret.data, old->secret.length) != 0) {
@@ -905,7 +905,7 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 
 		if (new->secret.length != lsa_blob_out.length) {
 			printf("Returned secret %s doesn't match: %d != %d\n",
-			       new->name, new->secret.length, lsa_blob_out.length);
+			       new->name, (int)new->secret.length, (int)lsa_blob_out.length);
 			ret = False;
 		} else if (memcmp(lsa_blob_out.data, 
 			   new->secret.data, new->secret.length) != 0) {

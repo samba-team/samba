@@ -216,7 +216,7 @@ static void test_scan_call(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_ta
 
 		if (NT_STATUS_IS_OK(status)) {
 			printf("opnum %d   min_input %d - output %d\n", 
-			       opnum, stub_in.length, stub_out.length);
+			       opnum, (int)stub_in.length, (int)stub_out.length);
 			dump_data(0, stub_out.data, stub_out.length);
 			talloc_free(p);
 			test_ptr_scan(mem_ctx, iface, opnum, &stub_in, 0, stub_in.length, 0);
@@ -229,7 +229,7 @@ static void test_scan_call(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_ta
 
 		if (NT_STATUS_IS_OK(status)) {
 			printf("opnum %d   min_input %d - output %d (with handle)\n", 
-			       opnum, stub_in.length, stub_out.length);
+			       opnum, (int)stub_in.length, (int)stub_out.length);
 			dump_data(0, stub_out.data, stub_out.length);
 			talloc_free(p);
 			test_ptr_scan(mem_ctx, iface, opnum, &stub_in, 0, stub_in.length, 0);

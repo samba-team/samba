@@ -178,7 +178,7 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 
 	st = talloc_zero_size(mem_ctx, f->struct_size);
 	if (!st) {
-		printf("Unable to allocate %d bytes\n", f->struct_size);
+		printf("Unable to allocate %d bytes\n", (int)f->struct_size);
 		exit(1);
 	}
 

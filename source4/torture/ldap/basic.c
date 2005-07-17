@@ -125,13 +125,13 @@ static BOOL test_search_rootDSE(struct ldap_connection *conn, char **basedn)
 		int j;
 		for (j=0; j<r->attributes[i].num_values; j++) {
 			DEBUG(1,("\t%s: %d %.*s\n", r->attributes[i].name,
-				 r->attributes[i].values[j].length,
-				 r->attributes[i].values[j].length,
+				 (int)r->attributes[i].values[j].length,
+				 (int)r->attributes[i].values[j].length,
 				 (char *)r->attributes[i].values[j].data));
 			if (!(*basedn) && 
 			    strcasecmp("defaultNamingContext",r->attributes[i].name)==0) {
 				*basedn = talloc_asprintf(conn, "%.*s",
-							  r->attributes[i].values[j].length,
+							  (int)r->attributes[i].values[j].length,
 							  (char *)r->attributes[i].values[j].data);
 			}
 		}
