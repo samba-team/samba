@@ -165,13 +165,14 @@ DATA_BLOB ndr_push_blob(struct ndr_push *ndr)
 */
 NTSTATUS ndr_push_expand(struct ndr_push *ndr, uint32_t size)
 {
-	if (ndr->alloc_size >= size) {
+	if (ndr->alloc_size > size) {
+		ndr->data[size] = 0;
 		return NT_STATUS_OK;
 	}
 
 	ndr->alloc_size += NDR_BASE_MARSHALL_SIZE;
-	if (size > ndr->alloc_size) {
-		ndr->alloc_size = size;
+	if (size+1 > ndr->alloc_size) {
+		ndr->alloc_size = size+1;
 	}
 	ndr->data = talloc_realloc(ndr, ndr->data, uint8_t, ndr->alloc_size);
 	if (!ndr->data) {
@@ -346,7 +347,7 @@ NTSTATUS ndr_pull_subcontext_header(struct ndr_pull *ndr,
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &content_size));
 		if (size_is >= 0 && size_is != content_size) {
 			return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PULL) size_is(%d) mismatch content_size %d", 
-						size_is, content_size);
+						(int)size_is, (int)content_size);
 		}
 		NDR_CHECK(ndr_pull_subcontext(ndr, ndr2, content_size));
 		break;
@@ -357,14 +358,14 @@ NTSTATUS ndr_pull_subcontext_header(struct ndr_pull *ndr,
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &content_size));
 		if (size_is >= 0 && size_is != content_size) {
 			return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PULL) size_is(%d) mismatch content_size %d", 
-						size_is, content_size);
+						(int)size_is, (int)content_size);
 		}
 		NDR_CHECK(ndr_pull_subcontext(ndr, ndr2, content_size));
 		break;
 	}
 	default:
 		return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PULL) header_size %d", 
-				      header_size);
+				      (int)header_size);
 	}
 	return NT_STATUS_OK;
 }
@@ -383,7 +384,7 @@ NTSTATUS ndr_push_subcontext_header(struct ndr_push *ndr,
 			NDR_CHECK(ndr_push_zero(ndr2, padding_len));
 		} else if (padding_len < 0) {
 			return ndr_push_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PUSH) content_size %d is larger than size_is(%d)",
-					      ndr2->offset, size_is);
+					      (int)ndr2->offset, (int)size_is);
 		}
 	}
 
@@ -401,7 +402,7 @@ NTSTATUS ndr_push_subcontext_header(struct ndr_push *ndr,
 
 	default:
 		return ndr_push_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext header size %d", 
-				      header_size);
+				      (int)header_size);
 	}
 	return NT_STATUS_OK;
 }
