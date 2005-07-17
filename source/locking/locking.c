@@ -426,6 +426,43 @@ void unlock_share_entry_fsp(files_struct *fsp)
 	tdb_chainunlock(tdb, locking_key(fsp->dev, fsp->inode));
 }
 
+struct share_mode_lock {
+	SMB_DEV_T dev;
+	SMB_INO_T ino;
+};
+
+static int share_mode_lock_destructor(void *p)
+{
+	struct share_mode_lock *lck =
+		talloc_get_type_abort(p, struct share_mode_lock);
+	unlock_share_entry(lck->dev, lck->ino);
+	return 0;
+}
+
+struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
+					    SMB_DEV_T dev, SMB_INO_T ino)
+{
+	struct share_mode_lock *lck;
+
+	lck = TALLOC_P(mem_ctx, struct share_mode_lock);
+	if (lck == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return NULL;
+	}
+
+	lck->dev = dev;
+	lck->ino = ino;
+
+	if (!lock_share_entry(dev, ino)) {
+		DEBUG(3, ("Could not lock share entry\n"));
+		talloc_free(lck);
+		return NULL;
+	}
+
+	talloc_set_destructor(lck, share_mode_lock_destructor);
+	return lck;
+}
+
 /*******************************************************************
  Print out a share mode.
 ********************************************************************/
@@ -900,12 +937,12 @@ BOOL downgrade_share_oplock(files_struct *fsp)
  Return False on fail, True on success.
 ********************************************************************/
 
-BOOL modify_delete_flag( SMB_DEV_T dev, SMB_INO_T inode, BOOL delete_on_close)
+BOOL modify_delete_flag(struct share_mode_lock *lck, BOOL delete_on_close)
 {
 	TDB_DATA dbuf;
 	struct locking_data *data;
 	BOOL res;
-	TDB_DATA key = locking_key(dev, inode);
+	TDB_DATA key = locking_key(lck->dev, lck->ino);
 
 	/* read in the existing share modes */
 	dbuf = tdb_fetch(tdb, key);

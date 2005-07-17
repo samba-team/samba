@@ -634,6 +634,9 @@ struct pending_message_list {
 	DATA_BLOB private_data;
 };
 
+/* incomplete structure declaration for a share mode lock */
+struct share_mode_lock;
+
 /* struct returned by get_share_modes */
 typedef struct {
 	pid_t pid;

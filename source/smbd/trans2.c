@@ -3515,6 +3515,9 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, BOOL delete_on_close,
 
 NTSTATUS set_delete_on_close(files_struct *fsp, BOOL delete_on_close)
 {
+	struct share_mode_lock *lck;
+	NTSTATUS result = NT_STATUS_OK;
+
 	DEBUG(10,("set_delete_on_close: %s delete on close flag for "
 		  "fnum = %d, file %s\n",
 		  delete_on_close ? "Adding" : "Removing", fsp->fnum,
@@ -3523,19 +3526,20 @@ NTSTATUS set_delete_on_close(files_struct *fsp, BOOL delete_on_close)
 	if (fsp->is_directory || fsp->is_stat)
 		return NT_STATUS_OK;
 
-	if (lock_share_entry_fsp(fsp) == False)
-		return NT_STATUS_ACCESS_DENIED;
-
-	if (!modify_delete_flag(fsp->dev, fsp->inode, delete_on_close)) {
-		DEBUG(0,("set_delete_on_close: failed to change delete "
-			 "on close flag for file %s\n",
-			 fsp->fsp_name ));
-		unlock_share_entry_fsp(fsp);
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode);
+	if (lck == NULL) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	unlock_share_entry_fsp(fsp);
-	return NT_STATUS_OK;
+	if (!modify_delete_flag(lck, delete_on_close)) {
+		DEBUG(0,("set_delete_on_close: failed to change delete "
+			 "on close flag for file %s\n",
+			 fsp->fsp_name ));
+		result = NT_STATUS_ACCESS_DENIED;
+	}
+
+	talloc_free(lck);
+	return result;
 }
 
 /****************************************************************************
