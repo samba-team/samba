@@ -1285,7 +1285,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 		/* Paranoia .... */
 		if (EXCLUSIVE_OPLOCK_TYPE(share_entry->op_type)) {
 			DEBUG(0,("release_level_2_oplocks_on_change: PANIC. share mode entry %d is an exlusive oplock !\n", i ));
-			unlock_share_entry(fsp->conn, fsp->dev, fsp->inode);
+			unlock_share_entry(fsp->dev, fsp->inode);
 			abort();
 		}
 
@@ -1301,7 +1301,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 			/* Paranoia check... */
 			if(new_fsp == NULL) {
 				DEBUG(0,("release_level_2_oplocks_on_change: PANIC. share mode entry %d is not a local file !\n", i ));
-				unlock_share_entry(fsp->conn, fsp->dev, fsp->inode);
+				unlock_share_entry(fsp->dev, fsp->inode);
 				abort();
 			}
 

@@ -645,12 +645,12 @@ static int open_mode_check(connection_struct *conn,
 			srv_defer_sign_response(get_current_mid());
 
 			/* Oplock break - unlock to request it. */
-			unlock_share_entry(conn, dev, inode);
+			unlock_share_entry(dev, inode);
 				
 			opb_ret = request_oplock_break(share_entry);
 				
 			/* Now relock. */
-			lock_share_entry(conn, dev, inode);
+			lock_share_entry(dev, inode);
 				
 			if (!opb_ret) {
 				DEBUG(0,("open_mode_check: FAILED when breaking "
@@ -1262,10 +1262,10 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			remove_sharing_violation_open_smb_message(mid);
 
 			/* Now remove the deferred open entry under lock. */
-			lock_share_entry(conn, dib.dev, dib.inode);
+			lock_share_entry(dib.dev, dib.inode);
 			delete_defered_open_entry_record(conn, dib.dev,
 							 dib.inode);
-			unlock_share_entry(conn, dib.dev, dib.inode);
+			unlock_share_entry(dib.dev, dib.inode);
 
 			set_saved_error_triple(ERRDOS, ERRbadshare,
 					       NT_STATUS_SHARING_VIOLATION);
@@ -1463,7 +1463,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		dev = psbuf->st_dev;
 		inode = psbuf->st_ino;
 
-		lock_share_entry(conn, dev, inode);
+		lock_share_entry(dev, inode);
 
 		num_share_modes = open_mode_check(conn, fname, dev, inode,
 						  access_mask, share_access,
@@ -1488,7 +1488,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 									  create_options);
 
 						if (fsp_dup) {
-							unlock_share_entry(conn, dev, inode);
+							unlock_share_entry(dev, inode);
 							file_free(fsp);
 							if (pinfo) {
 								*pinfo = FILE_WAS_OPENED;
@@ -1548,7 +1548,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 				}
 			}
 
-			unlock_share_entry(conn, dev, inode);
+			unlock_share_entry(dev, inode);
 			if (fsp_open) {
 				fd_close(conn, fsp);
 				/*
@@ -1594,7 +1594,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 	if (!fsp_open) {
 		if(file_existed) {
-			unlock_share_entry(conn, dev, inode);
+			unlock_share_entry(dev, inode);
 		}
 		file_free(fsp);
 		return NULL;
@@ -1641,7 +1641,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 								  access_mask, share_access,
 								  create_options);
 					if (fsp_dup) {
-						unlock_share_entry(conn, dev, inode);
+						unlock_share_entry(dev, inode);
 						fd_close(conn, fsp);
 						file_free(fsp);
 						if (pinfo) {

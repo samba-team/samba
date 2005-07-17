@@ -394,8 +394,7 @@ static TDB_DATA locking_key_fsp(files_struct *fsp)
  Lock a hash bucket entry.
 ******************************************************************/
 
-BOOL lock_share_entry(connection_struct *conn,
-		      SMB_DEV_T dev, SMB_INO_T inode)
+BOOL lock_share_entry(SMB_DEV_T dev, SMB_INO_T inode)
 {
 	return tdb_chainlock(tdb, locking_key(dev, inode)) == 0;
 }
@@ -404,8 +403,7 @@ BOOL lock_share_entry(connection_struct *conn,
  Unlock a hash bucket entry.
 ******************************************************************/
 
-void unlock_share_entry(connection_struct *conn,
-			SMB_DEV_T dev, SMB_INO_T inode)
+void unlock_share_entry(SMB_DEV_T dev, SMB_INO_T inode)
 {
 	tdb_chainunlock(tdb, locking_key(dev, inode));
 }
