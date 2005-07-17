@@ -20,6 +20,15 @@ PREFIX=$1
 PREFIX=`echo $PREFIX | sed s+//+/+`
 export PREFIX
 
+# allow selection of the test lists
+TESTS=$2
+
+if [ $TESTS = "all" ]; then
+    TLS_ENABLED="yes"
+else
+    TLS_ENABLED="no"
+fi
+
 mkdir -p $PREFIX || exit $?
 OLD_PWD=`pwd`
 cd $PREFIX || exit $?
@@ -37,13 +46,14 @@ LOCKDIR=$PREFIX_ABS/lockdir
 TLSDIR=$PRIVATEDIR/tls
 CONFIGURATION="--configfile=$CONFFILE"
 export CONFIGURATION
+export CONFFILE
 
 SMBD_TEST_FIFO="$PREFIX/smbd_test.fifo"
 export SMBD_TEST_FIFO
 SMBD_TEST_LOG="$PREFIX/smbd_test.log"
 export SMBD_TEST_LOG
 
-DO_SOCKET_WRAPPER=$2
+DO_SOCKET_WRAPPER=$3
 if [ x"$DO_SOCKET_WRAPPER" = x"SOCKET_WRAPPER" ];then
 	SOCKET_WRAPPER_DIR="$PREFIX/socket_wrapper_dir"
 	export SOCKET_WRAPPER_DIR
@@ -76,6 +86,7 @@ cat >$CONFFILE<<EOF
         js include = $SRCDIR/scripting/libjs
 	name resolve order = bcast
 	interfaces = lo*
+	tls enabled = $TLS_ENABLED
 
 [tmp]
 	path = $TMPDIR
@@ -116,15 +127,8 @@ START=`date`
  bin/nmblookup -U localhost localhost 
 
  failed=0
- $SRCDIR/script/tests/test_ejs.sh localhost $USERNAME $PASSWORD || failed=`expr $failed + $?`
- $SRCDIR/script/tests/test_ldap.sh localhost $USERNAME $PASSWORD || failed=`expr $failed + $?`
- $SRCDIR/script/tests/test_quick.sh //localhost/cifs $USERNAME $PASSWORD "" || failed=`expr $failed + $?`
- $SRCDIR/script/tests/test_rpc.sh localhost $USERNAME $PASSWORD $DOMAIN || failed=`expr $failed + $?`
- $SRCDIR/script/tests/test_session_key.sh localhost $USERNAME $PASSWORD $DOMAIN || failed=`expr $failed + $?`
- $SRCDIR/script/tests/test_binding_string.sh localhost $USERNAME $PASSWORD $DOMAIN || failed=`expr $failed + $?`
- $SRCDIR/script/tests/test_echo.sh localhost $USERNAME $PASSWORD $DOMAIN || failed=`expr $failed + $?`
- $SRCDIR/script/tests/test_posix.sh //localhost/tmp $USERNAME $PASSWORD "" || failed=`expr $failed + $?`
- $SRCDIR/script/tests/test_local.sh || failed=`expr $failed + $?`
+
+ . script/tests/tests_$TESTS.sh
  exit $failed
 ) 9>$SMBD_TEST_FIFO
 failed=$?

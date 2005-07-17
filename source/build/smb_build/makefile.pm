@@ -148,10 +148,17 @@ basics: idl proto_exists HEIMDAL_EXTERNAL
 test: @DEFAULT_TEST_TARGET@
 
 test-swrap: all
-	./script/tests/selftest.sh @selftest_prefix@/prefix-test SOCKET_WRAPPER
+	./script/tests/selftest.sh @selftest_prefix@/prefix-test all SOCKET_WRAPPER
 
 test-noswrap: all
-	./script/tests/selftest.sh @selftest_prefix@/prefix-test
+	./script/tests/selftest.sh @selftest_prefix@/prefix-test all
+
+quicktest: all
+	./script/tests/selftest.sh @selftest_prefix@/prefix-test quick SOCKET_WRAPPER
+
+valgrindtest: all
+	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
+	./script/tests/selftest.sh @selftest_prefix@/prefix-test quick SOCKET_WRAPPER
 
 __EOD__
 }
