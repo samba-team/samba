@@ -1916,7 +1916,7 @@ static int cmd_allinfo(const char **cmd_ptr)
 		for (i=0;i<finfo.all_eas.out.num_eas;i++) {
 			d_printf("\tEA[%d] flags=%d len=%d '%s'\n", i,
 				 finfo.all_eas.out.eas[i].flags,
-				 finfo.all_eas.out.eas[i].value.length,
+				 (int)finfo.all_eas.out.eas[i].value.length,
 				 finfo.all_eas.out.eas[i].name.s);
 		}
 	}
@@ -1992,7 +1992,7 @@ static int cmd_eainfo(const char **cmd_ptr)
 	for (i=0;i<finfo.all_eas.out.num_eas;i++) {
 		d_printf("\tEA[%d] flags=%d len=%d '%s'\n", i,
 			 finfo.all_eas.out.eas[i].flags,
-			 finfo.all_eas.out.eas[i].value.length,
+			 (int)finfo.all_eas.out.eas[i].value.length,
 			 finfo.all_eas.out.eas[i].name.s);
 		fflush(stdout);
 		dump_data(0, 

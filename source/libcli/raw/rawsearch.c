@@ -643,7 +643,7 @@ NTSTATUS smb_raw_search_first(struct smbcli_tree *tree,
 	
 	if (p_blob.length < 10) {
 		DEBUG(1,("smb_raw_search_first: parms wrong size %d != expected_param_size\n",
-			p_blob.length));
+			(int)p_blob.length));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -688,7 +688,7 @@ NTSTATUS smb_raw_search_next(struct smbcli_tree *tree,
 	
 	if (p_blob.length != 8) {
 		DEBUG(1,("smb_raw_search_next: parms wrong size %d != expected_param_size\n",
-			p_blob.length));
+			(int)p_blob.length));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 

@@ -38,7 +38,7 @@
 #define CHECK_VALUE(v, correct) do { \
 	if ((v) != (correct)) { \
 		printf("(%s) Incorrect value %s=%d - should be %d\n", \
-		       __location__, #v, v, correct); \
+		       __location__, #v, (int)v, (int)correct); \
 		ret = False; \
 	}} while (0)
 
@@ -77,7 +77,7 @@ static BOOL check_stream(struct smbcli_state *cli, TALLOC_CTX *mem_ctx,
 	ret = smbcli_read(cli->tree, fnum, buf, 0, strlen(value)+11);
 	if (ret != strlen(value)) {
 		printf("Failed to read %d bytes from stream '%s' - got %d\n",
-		       strlen(value), full_name, ret);
+		       strlen(value), full_name, (int)ret);
 		return False;
 	}
 

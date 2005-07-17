@@ -217,7 +217,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
 	printf("create %d secondary security contexts on the same transport\n", 
-	       ARRAY_SIZE(sessions));
+	       (int)ARRAY_SIZE(sessions));
 	for (i=0; i <ARRAY_SIZE(sessions); i++) {
 		setups[i].in.sesskey = cli->transport->negotiate.sesskey;
 		setups[i].in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
@@ -237,7 +237,7 @@ static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	printf("finishing %d secondary security contexts on the same transport\n", 
-	       ARRAY_SIZE(sessions));
+	       (int)ARRAY_SIZE(sessions));
 	for (i=0; i< ARRAY_SIZE(sessions); i++) {
 		status = smb_composite_sesssetup_recv(composite_contexts[i]);
 		CHECK_STATUS(status, NT_STATUS_OK);

@@ -115,13 +115,13 @@ static NTSTATUS smb_raw_qfsinfo_blob_recv(struct smbcli_request *req,
 /* local macros to make the code more readable */
 #define QFS_CHECK_MIN_SIZE(size) if (blob.length < (size)) { \
       DEBUG(1,("Unexpected QFS reply size %d for level %u - expected min of %d\n", \
-	       blob.length, fsinfo->generic.level, (size))); \
+	       (int)blob.length, fsinfo->generic.level, (size))); \
       status = NT_STATUS_INFO_LENGTH_MISMATCH; \
       goto failed; \
 }
 #define QFS_CHECK_SIZE(size) if (blob.length != (size)) { \
       DEBUG(1,("Unexpected QFS reply size %d for level %u - expected %d\n", \
-	       blob.length, fsinfo->generic.level, (size))); \
+	       (int)blob.length, fsinfo->generic.level, (size))); \
       status = NT_STATUS_INFO_LENGTH_MISMATCH; \
       goto failed; \
 }

@@ -93,7 +93,8 @@ static void ping_message(struct messaging_context *msg, void *private,
 			 uint32_t msg_type, uint32_t src, DATA_BLOB *data)
 {
 	DEBUG(1,("INFO: Received PING message from server %u [%.*s]\n",
-		 (uint_t)src, data->length, data->data?(const char *)data->data:""));
+		 (uint_t)src, (int)data->length, 
+		 data->data?(const char *)data->data:""));
 	messaging_send(msg, src, MSG_PONG, data);
 }
 
@@ -198,7 +199,7 @@ static void messaging_recv_handler(struct messaging_context *msg)
 	}
 
 	if (msize < sizeof(*rec->header)) {
-		DEBUG(0,("messaging: bad message of size %d\n", msize));
+		DEBUG(0,("messaging: bad message of size %d\n", (int)msize));
 		data_blob_free(&packet);
 		return;
 	}
@@ -216,7 +217,7 @@ static void messaging_recv_handler(struct messaging_context *msg)
 
 	if (msize != sizeof(*rec->header) + rec->header->length) {
 		DEBUG(0,("messaging: bad message header size %d should be %d\n", 
-			 rec->header->length, msize - sizeof(*rec->header)));
+			 rec->header->length, (int)(msize - sizeof(*rec->header))));
 		talloc_free(rec);
 		return;
 	}

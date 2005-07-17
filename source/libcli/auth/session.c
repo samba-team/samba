@@ -179,7 +179,7 @@ NTSTATUS sess_decrypt_blob(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const DAT
 
 	if (blob->length < 8) {
 		DEBUG(0, ("Unexpected length %d in session crypted secret (BLOB)\n",
-			  blob->length));
+			  (int)blob->length));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	

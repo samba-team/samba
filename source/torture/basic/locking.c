@@ -959,7 +959,8 @@ BOOL torture_locktest7(void)
 	}
 
 	if (size != 0) {
-		printf("Unable to truncate locked file. Size was %u (%s)\n", size, __location__);
+		printf("Unable to truncate locked file. Size was %u (%s)\n", 
+		       (unsigned)size, __location__);
 		correct = False;
 		goto fail;
 	}

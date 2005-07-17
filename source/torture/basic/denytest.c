@@ -1433,7 +1433,7 @@ BOOL torture_denytest1(void)
 		smbcli_close(cli1->tree, fnum1);
 	}
 
-	printf("testing %d entries\n", ARRAY_SIZE(denytable1));
+	printf("testing %d entries\n", (int)ARRAY_SIZE(denytable1));
 
 	GetTimeOfDay(&tv_start);
 

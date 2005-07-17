@@ -97,7 +97,7 @@ static void kdc_recv_handler(struct kdc_socket *kdc_socket)
 	blob.length = nread;
 	
 	DEBUG(2,("Received krb5 packet of length %d from %s:%d\n", 
-		 blob.length, src_addr, src_port));
+		 (int)blob.length, src_addr, src_port));
 	
 	/* TODO:  This really should be in a utility function somewhere */
 	ZERO_STRUCT(src_sock_addr);

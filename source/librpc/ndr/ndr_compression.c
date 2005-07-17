@@ -98,7 +98,7 @@ static NTSTATUS ndr_pull_compression_mszip(struct ndr_pull *subndr,
 
 	if (uncompressed.length != decompressed_len) {
 		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION, "Bad uncompressed_len [%u] != [%d] (PULL)",
-				      uncompressed.length, decompressed_len);
+				      (int)uncompressed.length, (int)decompressed_len);
 	}
 
 	*comndr = *subndr;

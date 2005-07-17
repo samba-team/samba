@@ -79,7 +79,7 @@ static void smb_read_callback(struct smbcli_request *req)
 
 	if (state->received < 16) {
 		DEBUG(0,("dcerpc_smb: short packet (length %d) in read callback!\n",
-			 state->received));
+			 (int)state->received));
 		pipe_dead(state->c, NT_STATUS_INFO_LENGTH_MISMATCH);
 		talloc_free(state);
 		return;

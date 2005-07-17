@@ -25,12 +25,12 @@
 /* local macros to make the code more readable */
 #define FINFO_CHECK_MIN_SIZE(size) if (blob->length < (size)) { \
       DEBUG(1,("Unexpected FILEINFO reply size %d for level %u - expected min of %d\n", \
-	       blob->length, parms->generic.level, (size))); \
+	       (int)blob->length, parms->generic.level, (size))); \
       return NT_STATUS_INFO_LENGTH_MISMATCH; \
 }
 #define FINFO_CHECK_SIZE(size) if (blob->length != (size)) { \
       DEBUG(1,("Unexpected FILEINFO reply size %d for level %u - expected %d\n", \
-	       blob->length, parms->generic.level, (size))); \
+	       (int)blob->length, parms->generic.level, (size))); \
       return NT_STATUS_INFO_LENGTH_MISMATCH; \
 }
 

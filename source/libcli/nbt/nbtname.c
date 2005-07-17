@@ -171,7 +171,7 @@ NTSTATUS ndr_push_nbt_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 		if (complen >= 0x3F) {
 			return ndr_push_error(ndr, NDR_ERR_STRING,
 					      "component length %u[%08X] > 0x00003F",
-					      complen, complen);
+					      (unsigned)complen, (unsigned)complen);
 		}
 
 		compname = talloc_asprintf(ndr, "%c%*.*s",

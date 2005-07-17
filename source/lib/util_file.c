@@ -258,7 +258,7 @@ void *map_file(char *fname, size_t size)
 		if (!p) return NULL;
 		if (s2 != size) {
 			DEBUG(1,("incorrect size for %s - got %d expected %d\n",
-				 fname, s2, size));
+				 fname, (int)s2, (int)size));
 			talloc_free(p);
 			return NULL;
 		}
