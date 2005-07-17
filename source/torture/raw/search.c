@@ -548,7 +548,7 @@ static NTSTATUS multiple_search(struct smbcli_state *cli,
 #define CHECK_VALUE(v, correct) do { \
 	if ((v) != (correct)) { \
 		printf("(%s) Incorrect value %s=%d - should be %d\n", \
-		       __location__, #v, v, correct); \
+		       __location__, #v, v, (int)correct); \
 		ret = False; \
 	}} while (0)
 

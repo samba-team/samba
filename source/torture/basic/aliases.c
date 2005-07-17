@@ -55,7 +55,7 @@ static void gen_aliases(struct smbcli_state *cli, struct smb_trans2 *t2, int lev
 		DLIST_ADD(alias_blobs, t2b);
 		d_printf("\tFound level %4u (0x%03x) of size %3d (0x%02x)\n", 
 			 level, level,
-			 (int)t2b->data.length, t2b->data.length);
+			 (int)t2b->data.length, (int)t2b->data.length);
 		count++;
 	}
 
@@ -285,7 +285,7 @@ static void gen_set_aliases(struct smbcli_state *cli, struct smb_trans2 *t2, int
 		DLIST_ADD(alias_blobs, t2b);
 		d_printf("\tFound level %4u (0x%03x) of size %3d (0x%02x)\n", 
 			 level, level,
-			 (int)t2->in.data.length, t2->in.data.length);
+			 (int)t2->in.data.length, (int)t2->in.data.length);
 		count++;
 	}
 
