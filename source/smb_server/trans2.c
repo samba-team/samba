@@ -431,17 +431,18 @@ static NTSTATUS trans2_open(struct smbsrv_request *req, struct smb_trans2 *trans
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	io->t2open.level         = RAW_OPEN_T2OPEN;
-	io->t2open.in.flags      = SVAL(trans->in.params.data, VWV(0));
-	io->t2open.in.open_mode  = SVAL(trans->in.params.data, VWV(1));
-	io->t2open.in.file_attrs = SVAL(trans->in.params.data, VWV(3));
-	io->t2open.in.write_time = srv_pull_dos_date(req->smb_conn, 
+	io->t2open.level           = RAW_OPEN_T2OPEN;
+	io->t2open.in.flags        = SVAL(trans->in.params.data, VWV(0));
+	io->t2open.in.open_mode    = SVAL(trans->in.params.data, VWV(1));
+	io->t2open.in.search_attrs = SVAL(trans->in.params.data, VWV(2));
+	io->t2open.in.file_attrs   = SVAL(trans->in.params.data, VWV(3));
+	io->t2open.in.write_time   = srv_pull_dos_date(req->smb_conn, 
 						    trans->in.params.data + VWV(4));;
-	io->t2open.in.open_func  = SVAL(trans->in.params.data, VWV(6));
-	io->t2open.in.size       = IVAL(trans->in.params.data, VWV(7));
-	io->t2open.in.timeout    = IVAL(trans->in.params.data, VWV(9));
-	io->t2open.in.num_eas    = 0;
-	io->t2open.in.eas        = NULL;
+	io->t2open.in.open_func    = SVAL(trans->in.params.data, VWV(6));
+	io->t2open.in.size         = IVAL(trans->in.params.data, VWV(7));
+	io->t2open.in.timeout      = IVAL(trans->in.params.data, VWV(9));
+	io->t2open.in.num_eas      = 0;
+	io->t2open.in.eas          = NULL;
 
 	trans2_pull_blob_string(req, &trans->in.params, 28, &io->t2open.in.fname, 0);
 
