@@ -35,15 +35,15 @@
 #include <sys/types.h>
 #include <netdb.h>
 #include <sys/ioctl.h>
-#include <sys/time.h>
-#include <sys/socket.h>
 #include <net/if.h>
 #include <netdb.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #ifndef AUTOCONF_TEST
-#include "lib/netif/netif.h"
 #include "config.h"
 #endif
 
@@ -76,6 +76,8 @@
 #ifndef QSORT_CAST
 #define QSORT_CAST (int (*)(const void *, const void *))
 #endif
+
+#include "netif.h"
 
 #if HAVE_IFACE_IFCONF
 
