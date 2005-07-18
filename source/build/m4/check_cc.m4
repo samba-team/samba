@@ -105,5 +105,5 @@ if test -n "$DEVELOPER_CFLAGS"; then
 fi
 
 # allow for --with-hostcc=gcc
-AC_ARG_WITH(hostcc,[Choose host compiler],[HOSTCC=$withval],[HOSTCC=$CC])
+AC_ARG_WITH(hostcc,[  --with-hostcc=compiler    choose host compiler],[HOSTCC=$withval],[HOSTCC=$CC])
 AC_SUBST(HOSTCC)
