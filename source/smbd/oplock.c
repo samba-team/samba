@@ -461,12 +461,12 @@ pid %d, port %d, dev = %x, inode = %.0f, file_id = %lu\n",
 		 */
 		DEBUG(3,("process_local_message: oplock break requested with "
 			 "no outstanding oplocks. Returning success.\n"));
-		return True;
-	}
 
-	if (!oplock_break(dev, inode, file_id, False)) {
-		DEBUG(0,("process_local_message: oplock break failed.\n"));
-		return False;
+	} else {
+		if (!oplock_break(dev, inode, file_id, False)) {
+			DEBUG(0,("process_local_message: oplock break failed.\n"));
+			return False;
+		}
 	}
 
 	/* 
