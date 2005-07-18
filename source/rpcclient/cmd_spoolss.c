@@ -326,7 +326,7 @@ static WERROR cmd_spoolss_enum_printers(struct cli_state *cli,
 	WERROR                  result;
 	uint32			info_level = 1;
 	PRINTER_INFO_CTR	ctr;
-	uint32			i = 0, num_printers, needed;
+	uint32			i = 0, num_printers, needed, offered;
 	fstring name;
 
 	if (argc > 3) 
@@ -345,19 +345,19 @@ static WERROR cmd_spoolss_enum_printers(struct cli_state *cli,
 		strupper_m(name);
 	}
 
-	/* Enumerate printers  -- Should we enumerate types other 
-	   than PRINTER_ENUM_LOCAL?  Maybe accept as a parameter?  --jerry */
-
 	ZERO_STRUCT(ctr);
 
+	offered = needed = 0;
 	result = cli_spoolss_enum_printers(
-		cli, mem_ctx, 0, &needed, name, PRINTER_ENUM_LOCAL, 
+		cli, mem_ctx, offered, &needed, name, PRINTER_ENUM_LOCAL, 
 		info_level, &num_printers, &ctr);
 
-	if (W_ERROR_V(result) == ERRinsufficientbuffer)
+	if (W_ERROR_V(result) == ERRinsufficientbuffer) {
+		offered = needed;
 		result = cli_spoolss_enum_printers(
-			cli, mem_ctx, needed, NULL, name, PRINTER_ENUM_LOCAL, 
+			cli, mem_ctx, offered, &needed, name, PRINTER_ENUM_LOCAL, 
 			info_level, &num_printers, &ctr);
+	}
 
 	if (W_ERROR_IS_OK(result)) {
 
@@ -453,7 +453,7 @@ static WERROR cmd_spoolss_enum_ports(struct cli_state *cli,
 				       const char **argv)
 {
 	WERROR         		result;
-	uint32                  needed, info_level = 1;
+	uint32                  offered, needed, info_level = 1;
 	PORT_INFO_CTR 		ctr;
 	uint32 			returned;
 	
@@ -469,12 +469,15 @@ static WERROR cmd_spoolss_enum_ports(struct cli_state *cli,
 
 	ZERO_STRUCT(ctr);
 
-	result = cli_spoolss_enum_ports(cli, mem_ctx, 0, &needed, info_level, 
+	offered = needed = 0;
+	result = cli_spoolss_enum_ports(cli, mem_ctx, offered, &needed, info_level, 
 					&returned, &ctr);
 
-	if (W_ERROR_V(result) == ERRinsufficientbuffer)
-		result = cli_spoolss_enum_ports(cli, mem_ctx, needed, NULL,
-						info_level, &returned, &ctr);
+	if (W_ERROR_V(result) == ERRinsufficientbuffer) {
+		offered = needed;
+		result = cli_spoolss_enum_ports(cli, mem_ctx, offered, &needed, 
+			info_level, &returned, &ctr);
+	}
 
 	if (W_ERROR_IS_OK(result)) {
 		int i;
@@ -506,7 +509,7 @@ static WERROR cmd_spoolss_setprinter(struct cli_state *cli,
 {
 	POLICY_HND 	pol;
 	WERROR		result;
-	uint32 		needed;
+	uint32 		needed, offered;
 	uint32 		info_level = 2;
 	BOOL 		opened_hnd = False;
 	PRINTER_INFO_CTR ctr;
@@ -542,10 +545,13 @@ static WERROR cmd_spoolss_setprinter(struct cli_state *cli,
 	opened_hnd = True;
 
 	/* Get printer info */
-        result = cli_spoolss_getprinter(cli, mem_ctx, 0, &needed, &pol, info_level, &ctr);
+	offered = needed = 0;
+        result = cli_spoolss_getprinter(cli, mem_ctx, offered, &needed, &pol, info_level, &ctr);
 
-        if (W_ERROR_V(result) == ERRinsufficientbuffer)
-                result = cli_spoolss_getprinter(cli, mem_ctx, needed, NULL, &pol, info_level, &ctr);
+        if (W_ERROR_V(result) == ERRinsufficientbuffer) {
+		offered = needed;
+                result = cli_spoolss_getprinter(cli, mem_ctx, offered, &needed, &pol, info_level, &ctr);
+	}
 
         if (!W_ERROR_IS_OK(result))
                 goto done;
@@ -576,7 +582,7 @@ static WERROR cmd_spoolss_setprintername(struct cli_state *cli,
 {
 	POLICY_HND 	pol;
 	WERROR		result;
-	uint32 		needed;
+	uint32 		needed, offered;
 	uint32 		info_level = 2;
 	BOOL 		opened_hnd = False;
 	PRINTER_INFO_CTR ctr;
@@ -612,10 +618,13 @@ static WERROR cmd_spoolss_setprintername(struct cli_state *cli,
 	opened_hnd = True;
 
 	/* Get printer info */
-        result = cli_spoolss_getprinter(cli, mem_ctx, 0, &needed, &pol, info_level, &ctr);
+	offered = needed = 0;
+        result = cli_spoolss_getprinter(cli, mem_ctx, offered, &needed, &pol, info_level, &ctr);
 
-        if (W_ERROR_V(result) == ERRinsufficientbuffer)
-                result = cli_spoolss_getprinter(cli, mem_ctx, needed, NULL, &pol, info_level, &ctr);
+        if (W_ERROR_V(result) == ERRinsufficientbuffer) {
+		offered = needed;
+                result = cli_spoolss_getprinter(cli, mem_ctx, offered, &needed, &pol, info_level, &ctr);
+	}
 
         if (!W_ERROR_IS_OK(result))
                 goto done;
@@ -652,7 +661,7 @@ static WERROR cmd_spoolss_getprinter(struct cli_state *cli,
 	fstring 	printername,
 			servername,
 			user;
-	uint32 needed;
+	uint32 needed, offered;
 
 	if (argc == 1 || argc > 3) {
 		printf("Usage: %s <printername> [level]\n", argv[0]);
@@ -682,12 +691,15 @@ static WERROR cmd_spoolss_getprinter(struct cli_state *cli,
 
 	/* Get printer info */
 
-	result = cli_spoolss_getprinter(cli, mem_ctx, 0, &needed,
+	offered = needed = 0;
+	result = cli_spoolss_getprinter(cli, mem_ctx, offered, &needed,
 					&pol, info_level, &ctr);
 
-	if (W_ERROR_V(result) == ERRinsufficientbuffer)
+	if (W_ERROR_V(result) == ERRinsufficientbuffer) {
+		offered = needed;
 		result = cli_spoolss_getprinter(
-			cli, mem_ctx, needed, NULL, &pol, info_level, &ctr);
+			cli, mem_ctx, offered, &needed, &pol, info_level, &ctr);
+	}
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
@@ -772,7 +784,7 @@ static WERROR cmd_spoolss_getprinterdata(struct cli_state *cli,
 	fstring 	printername,
 			servername,
 			user;
-	uint32 needed;
+	uint32 needed, offered;
 	const char *valuename;
 	REGISTRY_VALUE value;
 
@@ -807,12 +819,15 @@ static WERROR cmd_spoolss_getprinterdata(struct cli_state *cli,
 
 	/* Get printer info */
 
-	result = cli_spoolss_getprinterdata(cli, mem_ctx, 0, &needed,
+	offered = needed = 0;
+	result = cli_spoolss_getprinterdata(cli, mem_ctx, offered, &needed,
 					    &pol, valuename, &value);
 
-	if (W_ERROR_V(result) == ERRmoredata)
+	if (W_ERROR_V(result) == ERRmoredata) {
+		offered = needed;
 		result = cli_spoolss_getprinterdata(
-			cli, mem_ctx, needed, NULL, &pol, valuename, &value);
+			cli, mem_ctx, offered, &needed, &pol, valuename, &value);
+	}
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
@@ -843,7 +858,7 @@ static WERROR cmd_spoolss_getprinterdataex(struct cli_state *cli,
 	fstring 	printername,
 			servername,
 			user;
-	uint32 needed;
+	uint32 needed, offered;
 	const char *valuename, *keyname;
 	REGISTRY_VALUE value;
 
@@ -880,14 +895,17 @@ static WERROR cmd_spoolss_getprinterdataex(struct cli_state *cli,
 
 	/* Get printer info */
 
-	result = cli_spoolss_getprinterdataex(cli, mem_ctx, 0, &needed,
+	offered = needed = 0;
+	result = cli_spoolss_getprinterdataex(cli, mem_ctx, offered, &needed,
 					      &pol, keyname, valuename, 
 					      &value);
 
-	if (W_ERROR_V(result) == ERRmoredata)
-		result = cli_spoolss_getprinterdataex(cli, mem_ctx, needed, 
-						      NULL, &pol, keyname,
+	if (W_ERROR_V(result) == ERRmoredata) {
+		offered = needed;
+		result = cli_spoolss_getprinterdataex(cli, mem_ctx, offered, &needed, 
+						      &pol, keyname,
 						      valuename, &value);
+	}
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
@@ -1063,16 +1081,18 @@ static WERROR cmd_spoolss_getdriver(struct cli_state *cli,
 	/* loop through and print driver info level for each architecture */
 
 	for (i=0; archi_table[i].long_archi!=NULL; i++) {
-		uint32 needed;
+		uint32 needed, offered;
 
+		offered = needed = 0;
 		werror = cli_spoolss_getprinterdriver(
-			cli, mem_ctx, 0, &needed, &pol, info_level, 
+			cli, mem_ctx, offered, &needed, &pol, info_level, 
 			archi_table[i].long_archi, archi_table[i].version,
 			&ctr);
 
 		if (W_ERROR_V(werror) == ERRinsufficientbuffer) {
+			offered = needed;
 			werror = cli_spoolss_getprinterdriver(
-				cli, mem_ctx, needed, NULL, &pol, info_level, 
+				cli, mem_ctx, offered, &needed, &pol, info_level, 
 				archi_table[i].long_archi, archi_table[i].version, 
 				&ctr);
 		}
@@ -1139,21 +1159,24 @@ static WERROR cmd_spoolss_enum_drivers(struct cli_state *cli,
 	/* loop through and print driver info level for each architecture */
 	for (i=0; archi_table[i].long_archi!=NULL; i++) 
 	{
-		uint32 needed;
+		uint32 needed, offered;
 
 		/* check to see if we already asked for this architecture string */
 
 		if ( i>0 && strequal(archi_table[i].long_archi, archi_table[i-1].long_archi) )
 			continue;
 
+		offered = needed = 0;
 		werror = cli_spoolss_enumprinterdrivers(
-			cli, mem_ctx, 0, &needed, info_level, 
+			cli, mem_ctx, offered, &needed, info_level, 
 			archi_table[i].long_archi, &returned, &ctr);
 
-		if (W_ERROR_V(werror) == ERRinsufficientbuffer)
+		if (W_ERROR_V(werror) == ERRinsufficientbuffer) {
+			offered = needed;
 			werror = cli_spoolss_enumprinterdrivers(
-				cli, mem_ctx, needed, NULL, info_level, 
+				cli, mem_ctx, offered, &needed, info_level, 
 				archi_table[i].long_archi, &returned, &ctr);
+		}
 
 		if (W_ERROR_V(werror) == W_ERROR_V(WERR_INVALID_ENVIRONMENT)) {
 			printf ("Server does not support environment [%s]\n", 
@@ -1223,7 +1246,7 @@ static WERROR cmd_spoolss_getdriverdir(struct cli_state *cli,
 	WERROR result;
 	fstring			env;
 	DRIVER_DIRECTORY_CTR	ctr;
-	uint32 needed;
+	uint32 needed, offered;
 
 	if (argc > 2) {
 		printf("Usage: %s [environment]\n", argv[0]);
@@ -1239,12 +1262,15 @@ static WERROR cmd_spoolss_getdriverdir(struct cli_state *cli,
 
 	/* Get the directory.  Only use Info level 1 */
 
+	offered = needed = 0;
 	result = cli_spoolss_getprinterdriverdir(
-		cli, mem_ctx, 0, &needed, 1, env, &ctr);
+		cli, mem_ctx, offered, &needed, 1, env, &ctr);
 
-	if (W_ERROR_V(result) == ERRinsufficientbuffer)
+	if (W_ERROR_V(result) == ERRinsufficientbuffer) {
+		offered = needed;
 		result = cli_spoolss_getprinterdriverdir(
-			cli, mem_ctx, needed, NULL, 1, env, &ctr);
+			cli, mem_ctx, offered, &needed, 1, env, &ctr);
+	}
 
 	if (W_ERROR_IS_OK(result))
 		display_printdriverdir_1(ctr.info1);
@@ -1491,7 +1517,7 @@ static WERROR cmd_spoolss_setdriver(struct cli_state *cli,
 	fstring			servername,
 				printername,
 				user;
-	uint32 needed;
+	uint32 needed, offered;
 	
 	/* parse the command arguements */
 	if (argc != 3)
@@ -1521,12 +1547,15 @@ static WERROR cmd_spoolss_setdriver(struct cli_state *cli,
 	ZERO_STRUCT (info2);
 	ctr.printers_2 = &info2;
 
-	result = cli_spoolss_getprinter(cli, mem_ctx, 0, &needed,
+	offered = needed = 0;
+	result = cli_spoolss_getprinter(cli, mem_ctx, offered, &needed,
 					&pol, level, &ctr);
 
-	if (W_ERROR_V(result) == ERRinsufficientbuffer)
+	if (W_ERROR_V(result) == ERRinsufficientbuffer) {
+		offered = needed;
 		result = cli_spoolss_getprinter(
-			cli, mem_ctx, needed, NULL, &pol, level, &ctr);
+			cli, mem_ctx, offered, &needed, &pol, level, &ctr);
+	}
 
 	if (!W_ERROR_IS_OK(result)) {
 		printf ("Unable to retrieve printer information!\n");
@@ -1660,7 +1689,7 @@ static WERROR cmd_spoolss_getprintprocdir(struct cli_state *cli,
 	WERROR result;
 	char *servername = NULL, *environment = NULL;
 	fstring procdir;
-	uint32 needed;
+	uint32 needed, offered;
 	
 	/* parse the command arguements */
 	if (argc > 2) {
@@ -1678,13 +1707,16 @@ static WERROR cmd_spoolss_getprintprocdir(struct cli_state *cli,
 		return WERR_NOMEM;
 	}
 
+	offered = needed = 0;
 	result = cli_spoolss_getprintprocessordirectory(
-		cli, mem_ctx, 0, &needed, servername, environment, procdir);
+		cli, mem_ctx, offered, &needed, servername, environment, procdir);
 
-	if (W_ERROR_V(result) == ERRinsufficientbuffer)
+	if (W_ERROR_V(result) == ERRinsufficientbuffer) {
+		offered = needed;
 		result = cli_spoolss_getprintprocessordirectory(
-			cli, mem_ctx, needed, NULL, servername, environment, 
+			cli, mem_ctx, offered, &needed, servername, environment, 
 			procdir);
+	}
 
 	if (W_ERROR_IS_OK(result))
 		printf("%s\n", procdir);
@@ -1854,7 +1886,7 @@ static WERROR cmd_spoolss_getform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	char *servername = NULL, *printername = NULL;
 	FORM_1 form;
 	BOOL got_handle = False;
-	uint32 needed;
+	uint32 needed, offered;
 	
 	/* Parse the command arguements */
 
@@ -1880,12 +1912,15 @@ static WERROR cmd_spoolss_getform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Get the form */
 
-	werror = cli_spoolss_getform(cli, mem_ctx, 0, &needed,
+	offered = needed;
+	werror = cli_spoolss_getform(cli, mem_ctx, offered, &needed,
 				     &handle, argv[2], 1, &form);
 
-	if (W_ERROR_V(werror) == ERRinsufficientbuffer)
-		werror = cli_spoolss_getform(cli, mem_ctx, needed, NULL,
+	if (W_ERROR_V(werror) == ERRinsufficientbuffer) {
+		offered = needed;
+		werror = cli_spoolss_getform(cli, mem_ctx, offered, &needed,
 					     &handle, argv[2], 1, &form);
+	}
 
 	if (!W_ERROR_IS_OK(werror))
 		goto done;
@@ -1959,7 +1994,7 @@ static WERROR cmd_spoolss_enum_forms(struct cli_state *cli,
 	WERROR werror;
 	char *servername = NULL, *printername = NULL;
 	BOOL got_handle = False;
-	uint32 needed, num_forms, level = 1, i;
+	uint32 needed, offered, num_forms, level = 1, i;
 	FORM_1 *forms;
 	
 	/* Parse the command arguements */
@@ -1986,13 +2021,16 @@ static WERROR cmd_spoolss_enum_forms(struct cli_state *cli,
 
 	/* Enumerate forms */
 
+	offered = needed = 0;
 	werror = cli_spoolss_enumforms(
-		cli, mem_ctx, 0, &needed, &handle, level, &num_forms, &forms);
+		cli, mem_ctx, offered, &needed, &handle, level, &num_forms, &forms);
 
-	if (W_ERROR_V(werror) == ERRinsufficientbuffer)
+	if (W_ERROR_V(werror) == ERRinsufficientbuffer) {
+		offered = needed;
 		werror = cli_spoolss_enumforms(
-			cli, mem_ctx, needed, NULL, &handle, level, 
+			cli, mem_ctx, offered, &needed, &handle, level, 
 			&num_forms, &forms);
+	}
 
 	if (!W_ERROR_IS_OK(werror))
 		goto done;
@@ -2020,7 +2058,7 @@ static WERROR cmd_spoolss_setprinterdata(struct cli_state *cli,
 					    int argc, const char **argv)
 {
 	WERROR result;
-	uint32 needed;
+	uint32 needed, offered;
 	fstring servername, printername, user;
 	POLICY_HND pol;
 	BOOL opened_hnd = False;
@@ -2033,7 +2071,7 @@ static WERROR cmd_spoolss_setprinterdata(struct cli_state *cli,
 	if (argc != 4) {
 		printf ("Usage: %s <printer> <value> <data>\n", argv[0]);
 		return WERR_OK;
-        }
+	}
 
 	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
 	strupper_m(servername);
@@ -2051,11 +2089,14 @@ static WERROR cmd_spoolss_setprinterdata(struct cli_state *cli,
 
 	ctr.printers_0 = &info;
 
-        result = cli_spoolss_getprinter(cli, mem_ctx, 0, &needed,
+	offered = needed = 0;
+        result = cli_spoolss_getprinter(cli, mem_ctx, offered, &needed,
                                         &pol, 0, &ctr);
 
-        if (W_ERROR_V(result) == ERRinsufficientbuffer)
-                result = cli_spoolss_getprinter(cli, mem_ctx, needed, NULL, &pol, 0, &ctr);
+        if (W_ERROR_V(result) == ERRinsufficientbuffer) {
+		offered = needed;
+                result = cli_spoolss_getprinter(cli, mem_ctx, offered, &needed, &pol, 0, &ctr);
+	}
 
         if (!W_ERROR_IS_OK(result))
                 goto done;
@@ -2078,11 +2119,14 @@ static WERROR cmd_spoolss_setprinterdata(struct cli_state *cli,
 		goto done;
 	}
 	printf("\tSetPrinterData succeeded [%s: %s]\n", argv[2], argv[3]);
+	
+	offered = needed = 0;
+        result = cli_spoolss_getprinter(cli, mem_ctx, offered, &needed, &pol, 0, &ctr);
 
-        result = cli_spoolss_getprinter(cli, mem_ctx, 0, &needed, &pol, 0, &ctr);
-
-        if (W_ERROR_V(result) == ERRinsufficientbuffer)
-                result = cli_spoolss_getprinter(cli, mem_ctx, needed, NULL, &pol, 0, &ctr);
+        if (W_ERROR_V(result) == ERRinsufficientbuffer) {
+		offered = needed;
+                result = cli_spoolss_getprinter(cli, mem_ctx, offered, &needed, &pol, 0, &ctr);
+	}
 
         if (!W_ERROR_IS_OK(result))
                 goto done;
@@ -2141,7 +2185,7 @@ static WERROR cmd_spoolss_enum_jobs(struct cli_state *cli,
 				      const char **argv)
 {
 	WERROR result;
-	uint32 needed, level = 1, num_jobs, i;
+	uint32 needed, offered, level = 1, num_jobs, i;
 	BOOL got_hnd = False;
 	pstring printername;
 	fstring servername, user;
@@ -2176,14 +2220,17 @@ static WERROR cmd_spoolss_enum_jobs(struct cli_state *cli,
 
 	/* Enumerate ports */
 
+	offered = needed = 0;
 	result = cli_spoolss_enumjobs(
-		cli, mem_ctx, 0, &needed, &hnd, level, 0, 1000,
+		cli, mem_ctx, offered, &needed, &hnd, level, 0, 1000,
 		&num_jobs, &ctr);
 
-	if (W_ERROR_V(result) == ERRinsufficientbuffer)
+	if (W_ERROR_V(result) == ERRinsufficientbuffer) {
+		offered = needed;
 		result = cli_spoolss_enumjobs(
-			cli, mem_ctx, needed, NULL, &hnd, level, 0,
+			cli, mem_ctx, offered, &needed, &hnd, level, 0,
 			1000, &num_jobs, &ctr);
+	}
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
@@ -2275,7 +2322,7 @@ static WERROR cmd_spoolss_enum_data_ex( struct cli_state *cli,
 					  const char **argv)
 {
 	WERROR result;
-	uint32 needed, i;
+	uint32 needed, offered, i;
 	BOOL got_hnd = False;
 	pstring printername;
 	fstring servername, user;
@@ -2310,12 +2357,15 @@ static WERROR cmd_spoolss_enum_data_ex( struct cli_state *cli,
 
 	/* Enumerate subkeys */
 
+	offered = needed = 0;
 	result = cli_spoolss_enumprinterdataex(
-		cli, mem_ctx, 0, &needed, &hnd, keyname, NULL);
+		cli, mem_ctx, offered, &needed, &hnd, keyname, NULL);
 
-	if (W_ERROR_V(result) == ERRmoredata)
+	if (W_ERROR_V(result) == ERRmoredata) {
+		offered = needed;
 		result = cli_spoolss_enumprinterdataex(
-			cli, mem_ctx, needed, NULL, &hnd, keyname, &ctr);
+			cli, mem_ctx, offered, &needed, &hnd, keyname, &ctr);
+	}
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
@@ -2340,7 +2390,7 @@ static WERROR cmd_spoolss_enum_printerkey( struct cli_state *cli,
 					     const char **argv)
 {
 	WERROR result;
-	uint32 needed, returned;
+	uint32 needed, offered, returned;
 	BOOL got_hnd = False;
 	pstring printername;
 	fstring servername, user;
@@ -2378,13 +2428,16 @@ static WERROR cmd_spoolss_enum_printerkey( struct cli_state *cli,
 
 	/* Enumerate subkeys */
 
+	offered = needed = 0;
 	result = cli_spoolss_enumprinterkey(
-		cli, mem_ctx, 0, &needed, &hnd, keyname, NULL, NULL);
+		cli, mem_ctx, offered, &needed, &hnd, keyname, NULL, NULL);
 
-	if (W_ERROR_V(result) == ERRmoredata)
+	if (W_ERROR_V(result) == ERRmoredata) {
+		offered = needed;
 		result = cli_spoolss_enumprinterkey(
-			cli, mem_ctx, needed, NULL, &hnd, keyname, &keylist,
+			cli, mem_ctx, offered, &needed, &hnd, keyname, &keylist,
 			&returned);
+	}
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
