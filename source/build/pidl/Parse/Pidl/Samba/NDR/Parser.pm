@@ -231,7 +231,7 @@ sub ParseArrayPushHeader($$$$$)
 	}
 	
 	if ($l->{IS_VARYING}) {
-		pidl "NDR_CHECK(ndr_push_uint32($ndr, NDR_SCALARS, 0));";
+		pidl "NDR_CHECK(ndr_push_uint32($ndr, NDR_SCALARS, 0));";  # array offset
 		pidl "NDR_CHECK(ndr_push_uint32($ndr, NDR_SCALARS, $length));";
 	} 
 
@@ -552,7 +552,7 @@ sub ParseElementPushLevel
 			}
 		}
 		$var_name = get_value_of($var_name);
-		ParseElementPushLevel($e, Parse::Pidl::NDR::GetNextLevel($e, $l), $ndr, $var_name, $env, $primitives, $deferred);
+		ParseElementPushLevel($e, Parse::Pidl::NDR::GetNextLevel($e, $l), $ndr, $var_name, $env, 1, 1);
 
 		if ($l->{POINTER_TYPE} ne "ref") {
 			deindent;
@@ -865,7 +865,7 @@ sub ParseElementPullLevel
 		}
 
 		$var_name = get_value_of($var_name);
-		ParseElementPullLevel($e,Parse::Pidl::NDR::GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
+		ParseElementPullLevel($e,Parse::Pidl::NDR::GetNextLevel($e,$l), $ndr, $var_name, $env, 1, 1);
 
 		if ($l->{POINTER_TYPE} ne "ref") {
     			if ($l->{POINTER_TYPE} eq "relative") {
