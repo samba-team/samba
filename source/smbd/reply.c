@@ -1352,7 +1352,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 		put_dos_date3(outbuf,smb_vwv2,mtime);
 	}
 	SIVAL(outbuf,smb_vwv4,(uint32)size);
-	SSVAL(outbuf,smb_vwv6,FILE_WAS_OPENED);
+	SSVAL(outbuf,smb_vwv6,GET_OPENX_MODE(deny_mode));
 
 	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
 		SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
