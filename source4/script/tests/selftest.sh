@@ -1,4 +1,6 @@
 #!/bin/sh
+# Bootstrap Samba and run a number of tests against it.
+
 DOMAIN=SAMBADOMAIN
 USERNAME=administrator
 REALM=$DOMAIN

@@ -24,24 +24,25 @@
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/com_dcom.h"
 
+#define CLSID_IMAGEDOC "02B01C80-E03D-101A-B294-00DD010F2BF9"
+
 static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	struct RemoteActivation r;
 	NTSTATUS status;
-	struct GUID iids[2];
+	struct GUID iids[1];
 	uint16_t protseq[3] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_NCALRPC, EPM_PROTOCOL_UUID };
 
 	ZERO_STRUCT(r.in);
 	r.in.this.version.MajorVersion = 5;
 	r.in.this.version.MinorVersion = 1;
 	r.in.this.cid = GUID_random();
-	GUID_from_string(CLSID_SIMPLE, &r.in.Clsid);
+	GUID_from_string(CLSID_IMAGEDOC, &r.in.Clsid);
 	r.in.ClientImpLevel = RPC_C_IMP_LEVEL_IDENTIFY;
 	r.in.num_protseqs = 3;
 	r.in.protseq = protseq;
-	r.in.Interfaces = 2;
+	r.in.Interfaces = 1;
 	GUID_from_string(DCERPC_IUNKNOWN_UUID, &iids[0]);
-	GUID_from_string(DCERPC_ISTREAM_UUID, &iids[1]);
 	r.in.pIIDs = iids;
 
 	status = dcerpc_RemoteActivation(p, mem_ctx, &r);
