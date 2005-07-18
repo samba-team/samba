@@ -103,3 +103,7 @@ if test -n "$DEVELOPER_CFLAGS"; then
 		AC_MSG_WARN([cannot run when cross-compiling]))
 	CFLAGS="${OLD_CFLAGS}"
 fi
+
+# allow for --with-hostcc=gcc
+AC_ARG_WITH(hostcc,[Choose host compiler],[HOSTCC=$withval],[HOSTCC=$CC])
+AC_SUBST(HOSTCC)
