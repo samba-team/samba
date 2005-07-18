@@ -37,6 +37,8 @@ samba_cflags = os.environ.get("PYTHON_CFLAGS", "")
 
 samba_srcdir = os.environ.get("SRCDIR", "")
 
+compiler = os.environ.get("CC", "")
+
 # These variables are filled in by configure
 
 samba_libs = os.environ.get("LIBS", "")
