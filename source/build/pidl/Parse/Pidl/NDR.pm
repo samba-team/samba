@@ -257,7 +257,9 @@ sub find_largest_alignment($)
 
 		if ($e->{POINTERS}) {
 			$a = 4; 
-		} else { 
+		} elsif (has_property($e, "subcontext")){ 
+			$a = 1;
+		} else {
 			$a = align_type($e->{TYPE}); 
 		}
 

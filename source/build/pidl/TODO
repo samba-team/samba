@@ -4,3 +4,6 @@
 - compatibility mode for generating MIDL-readable data:
  - strip out pidl-specific properties
  - convert subcontext() to an array of uint8.
+
+- don't be so strict on array boundaries.. arrays can and will be empty when 
+  a (regular) remote error occurs
