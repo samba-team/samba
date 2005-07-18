@@ -472,7 +472,7 @@ struct ea_list *read_ea_list_entry(TALLOC_CTX *ctx, const char *pdata, size_t da
 	}
 
 	DEBUG(10,("read_ea_list_entry: read ea name %s\n", eal->ea.name));
-	dump_data(10, eal->ea.value.data, eal->ea.value.length);
+	dump_data(10, (const char *)eal->ea.value.data, eal->ea.value.length);
 
 	return eal;
 }
