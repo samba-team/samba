@@ -24,6 +24,8 @@
 #include "vfs_posix.h"
 #include "system/time.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "smbd/service_stream.h"
+#include "lib/events/events.h"
 
 
 /* the state of a search started with pvfs_search_first() */
@@ -37,6 +39,7 @@ struct pvfs_search_state {
 	time_t last_used;
 	uint_t num_ea_names;
 	struct ea_name *ea_names;
+	struct timed_event *te;
 };
 
 
@@ -52,6 +55,28 @@ static int pvfs_search_destructor(void *ptr)
 	struct pvfs_search_state *search = ptr;
 	idr_remove(search->pvfs->idtree_search, search->handle);
 	return 0;
+}
+
+/*
+  called when a search timer goes off
+*/
+static void pvfs_search_timer(struct event_context *ev, struct timed_event *te, 
+				      struct timeval t, void *ptr)
+{
+	struct pvfs_search_state *search = talloc_get_type(ptr, struct pvfs_search_state);
+	talloc_free(search);
+}
+
+/*
+  setup a timer to destroy a open search after a inactivity period
+*/
+static void pvfs_search_setup_timer(struct pvfs_search_state *search)
+{
+	struct event_context *ev = search->pvfs->tcon->smb_conn->connection->event.ctx;
+	talloc_free(search->te);
+	search->te = event_add_timed(ev, search, 
+				     timeval_current_ofs(search->pvfs->search_inactivity_time, 0), 
+				     pvfs_search_timer, search);
 }
 
 /*
@@ -266,7 +291,7 @@ static NTSTATUS pvfs_search_fill(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 		talloc_free(file);
 	}
 
-	pvfs_list_hibernate(dir);
+	pvfs_search_setup_timer(search);
 
 	return NT_STATUS_OK;
 }
@@ -362,6 +387,7 @@ static NTSTATUS pvfs_search_first_old(struct ntvfs_module_context *ntvfs,
 	search->search_attrib = search_attrib & 0xFF;
 	search->must_attrib = (search_attrib>>8) & 0xFF;
 	search->last_used = time(NULL);
+	search->te = NULL;
 
 	talloc_set_destructor(search, pvfs_search_destructor);
 
@@ -408,11 +434,6 @@ static NTSTATUS pvfs_search_next_old(struct ntvfs_module_context *ntvfs,
 	search->current_index = io->search_next.in.id.server_cookie;
 	search->last_used = time(NULL);
 	dir = search->dir;
-
-	status = pvfs_list_wakeup(dir, &search->current_index);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
 
 	status = pvfs_search_fill(pvfs, req, max_count, search, io->generic.level,
 				  &reply_count, search_private, callback);
@@ -499,6 +520,7 @@ NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
 	search->last_used = 0;
 	search->num_ea_names = io->t2ffirst.in.num_names;
 	search->ea_names = io->t2ffirst.in.ea_names;
+	search->te = NULL;
 
 	talloc_set_destructor(search, pvfs_search_destructor);
 
@@ -571,11 +593,6 @@ NTSTATUS pvfs_search_next(struct ntvfs_module_context *ntvfs,
 		/* plain continue - nothing to do */
 	} else {
 		search->current_index = io->t2fnext.in.resume_key;
-	}
-
-	status = pvfs_list_wakeup(dir, &search->current_index);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
 	}
 
 	search->num_ea_names = io->t2fnext.in.num_names;

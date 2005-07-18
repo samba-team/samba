@@ -55,6 +55,9 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 	pvfs->alloc_size_rounding = lp_parm_int(snum, 
 						"posix", "allocationrounding", 512);
 
+	pvfs->search_inactivity_time = lp_parm_int(snum, 
+						   "posix", "searchinactivity", 300);
+
 #if HAVE_XATTR_SUPPORT
 	if (lp_parm_bool(snum, "posix", "xattr", True)) pvfs->flags |= PVFS_FLAG_XATTR_ENABLE;
 #endif
