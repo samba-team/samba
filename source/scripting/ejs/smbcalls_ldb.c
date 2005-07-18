@@ -216,6 +216,24 @@ static int ejs_ldbRename(MprVarHandle eid, int argc, struct MprVar **argv)
 }
 
 /*
+  get last error message
+  usage:
+   ok = ldb.errstring();
+*/
+static int ejs_ldbErrstring(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	struct ldb_context *ldb;
+
+	ldb = ejs_get_ldb_context(eid);
+	if (ldb == NULL) {
+		return -1;
+	}
+
+	mpr_Return(eid, mprString(ldb_errstring(ldb)));
+	return 0;
+}
+
+/*
   perform an ldb modify
 
   syntax:
@@ -281,6 +299,7 @@ static int ejs_ldb_init(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetCFunction(ldb, "modify", ejs_ldbModify);
 	mprSetCFunction(ldb, "delete", ejs_ldbDelete);
 	mprSetCFunction(ldb, "rename", ejs_ldbRename);
+	mprSetCFunction(ldb, "errstring", ejs_ldbErrstring);
 	mprSetVar(ldb, "SCOPE_BASE", mprCreateNumberVar(LDB_SCOPE_BASE));
 	mprSetVar(ldb, "SCOPE_ONE", mprCreateNumberVar(LDB_SCOPE_ONELEVEL));
 	mprSetVar(ldb, "SCOPE_SUBTREE", mprCreateNumberVar(LDB_SCOPE_SUBTREE));
