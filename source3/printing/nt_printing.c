@@ -522,7 +522,7 @@ BOOL nt_printing_init(void)
 {
 	const char *vstring = "INFO/version";
 	WERROR win_rc;
-	uint32 vers_id;
+	int32 vers_id;
 
 	if ( tdb_drivers && tdb_printers && tdb_forms )
 		return True;
@@ -557,6 +557,11 @@ BOOL nt_printing_init(void)
 	/* handle a Samba upgrade */
 	
 	vers_id = tdb_fetch_int32(tdb_drivers, vstring);
+	if (vers_id == -1) {
+		DEBUG(10, ("Fresh database\n"));
+		tdb_store_int32( tdb_drivers, vstring, NTDRIVERS_DATABASE_VERSION_5 );
+		vers_id = NTDRIVERS_DATABASE_VERSION_5;
+	}
 
 	if ( vers_id != NTDRIVERS_DATABASE_VERSION_5 ) {
 
