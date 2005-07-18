@@ -440,7 +440,7 @@ static NTSTATUS multiple_search(struct smbcli_state *cli,
 	union smb_search_first io;
 	union smb_search_next io2;
 	NTSTATUS status;
-	const int per_search = 300;
+	const int per_search = 100;
 	struct multiple_result *result = data;
 
 	io.generic.level = level;
@@ -925,7 +925,7 @@ done:
 */
 static BOOL test_many_dirs(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
-	const int num_dirs = 300;
+	const int num_dirs = 100;
 	int i, fnum, n;
 	char *fname, *dname;
 	BOOL ret = True;
