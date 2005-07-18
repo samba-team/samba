@@ -133,6 +133,8 @@ START=`date`
 ) 9>$SMBD_TEST_FIFO
 failed=$?
 
+kill `cat $PIDDIR/smbd.pid`
+
 END=`date`
 echo "START: $START ($0)";
 echo "END:   $END ($0)";
