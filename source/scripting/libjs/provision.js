@@ -226,4 +226,88 @@ function provision_guess()
 	return subobj;
 }
 
+/*
+  search for one attribute as a string
+ */
+function searchone(ldb, expression, attribute)
+{
+	var attrs = new Array(attribute);
+	res = ldb.search(expression, attrs);
+	if (res.length != 1 ||
+	    res[0][attribute] == undefined) {
+		return undefined;
+	}
+	return res[0][attribute];
+}
+
+/*
+  add a new user record
+*/
+function newuser(username, unixname, password, message)
+{
+	var samdb = lpGet("sam database");
+	var ldb = ldb_init();
+
+	/* connect to the sam */
+	var ok = ldb.connect(samdb);
+	assert(ok);
+
+	/* find the DNs for the domain and the domain users group */
+	var domain_dn = searchone(ldb, "objectClass=domainDNS", "dn");
+	assert(domain_dn != undefined);
+	var dom_users = searchone(ldb, "name=Domain Users", "dn");
+	assert(dom_users != undefined);
+
+	var user_dn = sprintf("CN=%s,CN=Users,%s", username, domain_dn);
+
+
+	/*
+	  the new user record. note the reliance on the samdb module to fill
+	  in a sid, guid etc
+	*/
+	var ldif = sprintf("
+dn: %s
+sAMAccountName: %s
+name: %s
+memberOf: %s
+unixName: %s
+objectGUID: %s
+unicodePwd: %s
+objectClass: user
+",
+			   user_dn, username, username, dom_users,
+			   unixname, randguid(), password);
+	/*
+	  add the user to the users group as well
+	*/
+	var modgroup = sprintf("
+dn: %s
+changetype: modify
+add: member
+member: %s
+", 
+			       dom_users, user_dn);
+
+
+	/*
+	  now the real work
+	*/
+	message("Adding user %s\n", user_dn);
+	ok = ldb.add(ldif);
+	if (ok != true) {
+		message("Failed to add %s - %s\n", user_dn, ldb.errstring());
+		return false;
+	}
+
+	message("Modifying group %s\n", dom_users);
+	ok = ldb.modify(modgroup);
+	if (ok != true) {
+		message("Failed to modify %s - %s\n", dom_users, ldb.errstring());
+		return false;
+	}
+
+	return true;
+}
+
+
 return 0;

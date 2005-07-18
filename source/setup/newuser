@@ -21,8 +21,8 @@ if (ok == false) {
 }
 
 libinclude("base.js");
+libinclude("provision.js");
 
-var samdb = lpGet("sam database");
 
 /*
   print a message if quiet is not set
@@ -32,20 +32,6 @@ function message()
 	if (options["quiet"] == undefined) {
 		print(vsprintf(arguments));
 	}
-}
-
-/*
-  search for one attribute as a string
- */
-function search(db, expression, attribute)
-{
-	var attrs = new Array(attribute);
-	res = ldbSearch(db, expression, attrs);
-	if (res.length != 1 ||
-	    res[0][attribute] == undefined) {
-		return undefined;
-	}
-	return res[0][attribute];
 }
 
 /*
@@ -82,61 +68,6 @@ if (getpwnam(options.unixname) == undefined) {
 	exit(1);
 }
 
-if (search(samdb, "name=" + options.username, "dn") != undefined) {
-	printf("ERROR: User '%s' already exists\n", options.username);
-	exit(1);
-}
+newuser(options.username, options.unixname, options.password, message);
 
-var domain_dn = search(samdb, "objectClass=domainDNS", "dn");
-assert(domain_dn != undefined);
-var dom_users = search(samdb, "name=Domain Users", "dn");
-assert(dom_users != undefined);
-
-var user_dn = sprintf("CN=%s,CN=Users,%s", options.username, domain_dn);
-
-/*
-  the new user record. note the reliance on the samdb module to fill
-  in a sid, guid etc
- */
-var ldif = sprintf("
-dn: %s
-sAMAccountName: %s
-name: %s
-memberOf: %s
-unixName: %s
-objectGUID: %s
-unicodePwd: %s
-objectClass: user
-",
-		   user_dn, options.username, options.username, dom_users,
-		   options.unixname, randguid(), options.password);
-
-/*
-  add the user to the users group as well
-*/
-var modgroup = sprintf("
-dn: %s
-changetype: modify
-add: member
-member: %s
-", dom_users, user_dn);
-
-/*
-  now the real work
- */
-message("Adding user %s\n", user_dn);
-ok = ldbAdd(samdb, ldif);
-if (ok != true) {
-	message("Failed to add %s\n", user_dn);
-	exit(1);
-}
-
-message("Modifying group %s\n", dom_users);
-ok = ldbModify(samdb, modgroup);
-if (ok != true) {
-	message("Failed to modify %s\n", dom_users);
-	exit(1);
-}
-
-message("All OK\n");
 return 0;
