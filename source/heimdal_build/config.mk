@@ -384,7 +384,7 @@ REQUIRED_SUBSYSTEMS = COMPILE_ET LIBREPLACE
 #######################
 # Start TARGET HEIMDAL_EXTERNAL
 [TARGET::HEIMDAL_EXTERNAL]
-CMD = heimdal_build/build_external.sh "@CC@" "@LEX@" "@YACC@"
+CMD = heimdal_build/build_external.sh "@HOSTCC@" "@LEX@" "@YACC@"
 REQUIRED_SUBSYSTEMS = ASN1_COMPILER
 # END TARGET HEIMDAL_EXTERNAL
 #######################
