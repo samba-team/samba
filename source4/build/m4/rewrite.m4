@@ -651,7 +651,6 @@ AC_TRY_RUN([
 #define HAVE_IFACE_AIX 1
 #define AUTOCONF_TEST 1
 #include "confdefs.h"
-#include "${srcdir-.}/lib/netif/netif.h"
 #include "${srcdir-.}/lib/netif/netif.c"],
            samba_cv_HAVE_IFACE_AIX=yes,samba_cv_HAVE_IFACE_AIX=no,samba_cv_HAVE_IFACE_AIX=cross)])
 if test x"$samba_cv_HAVE_IFACE_AIX" = x"yes"; then
@@ -664,7 +663,6 @@ AC_TRY_RUN([
 #define HAVE_IFACE_IFCONF 1
 #define AUTOCONF_TEST 1
 #include "confdefs.h"
-#include "${srcdir-.}/lib/netif/netif.h"
 #include "${srcdir-.}/lib/netif/netif.c"],
            samba_cv_HAVE_IFACE_IFCONF=yes,samba_cv_HAVE_IFACE_IFCONF=no,samba_cv_HAVE_IFACE_IFCONF=cross)])
 if test x"$samba_cv_HAVE_IFACE_IFCONF" = x"yes"; then
@@ -678,7 +676,6 @@ AC_TRY_RUN([
 #define HAVE_IFACE_IFREQ 1
 #define AUTOCONF_TEST 1
 #include "confdefs.h"
-#include "${srcdir-.}/lib/netif/netif.h"
 #include "${srcdir-.}/lib/netif/netif.c"],
            samba_cv_HAVE_IFACE_IFREQ=yes,samba_cv_HAVE_IFACE_IFREQ=no,samba_cv_HAVE_IFACE_IFREQ=cross)])
 if test x"$samba_cv_HAVE_IFACE_IFREQ" = x"yes"; then
