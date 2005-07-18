@@ -1060,7 +1060,6 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 	BOOL got_grp = False;
 	BOOL got_other = False;
 	canon_ace *pace_other = NULL;
-	canon_ace *pace_group = NULL;
 
 	for (pace = *pp_ace; pace; pace = pace->next) {
 		if (pace->type == SMB_ACL_USER_OBJ) {
@@ -1078,7 +1077,6 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 			if (setting_acl)
 				apply_default_perms(fsp, pace, S_IRGRP);
 			got_grp = True;
-			pace_group = pace;
 
 		} else if (pace->type == SMB_ACL_OTHER) {
 
