@@ -29,7 +29,7 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 	PyObject *result = NULL, *creds = NULL;
 	PRINTER_DRIVER_CTR ctr;
 	int level = 1, i;
-	uint32 needed, num_drivers;
+	uint32 num_drivers;
 	char *arch = "Windows NT x86", *server, *errstr;
 	static char *kwlist[] = {"server", "level", "creds", "arch", NULL};
 	struct cli_state *cli = NULL;
@@ -70,13 +70,8 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 	}	
 
 	werror = cli_spoolss_enumprinterdrivers(
-		cli, mem_ctx, 0, &needed, level, arch,
+		cli, mem_ctx, level, arch,
 		&num_drivers, &ctr);
-
-	if (W_ERROR_V(werror) == ERRinsufficientbuffer)
-		werror = cli_spoolss_enumprinterdrivers(
-			cli, mem_ctx, needed, NULL, level, arch, 
-			&num_drivers, &ctr);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
@@ -175,7 +170,6 @@ PyObject *spoolss_hnd_getprinterdriver(PyObject *self, PyObject *args,
 	PyObject *result = Py_None;
 	PRINTER_DRIVER_CTR ctr;
 	int level = 1;
-	uint32 needed;
 	char *arch = "Windows NT x86";
 	int version = 2;
 	static char *kwlist[] = {"level", "arch", NULL};
@@ -188,14 +182,8 @@ PyObject *spoolss_hnd_getprinterdriver(PyObject *self, PyObject *args,
 
 	/* Call rpc function */
 
-	werror = cli_spoolss_getprinterdriver(
-		hnd->cli, hnd->mem_ctx, 0, &needed, &hnd->pol, level,
+	werror = cli_spoolss_getprinterdriver(hnd->cli, hnd->mem_ctx, &hnd->pol, level,
 		arch, version, &ctr);
-
-	if (W_ERROR_V(werror) == ERRinsufficientbuffer)
-		werror = cli_spoolss_getprinterdriver(
-			hnd->cli, hnd->mem_ctx, needed, NULL, &hnd->pol,
-			level, arch, version, &ctr);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
@@ -234,7 +222,7 @@ PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args,
 	WERROR werror;
 	PyObject *result = NULL, *creds = NULL;
 	DRIVER_DIRECTORY_CTR ctr;
-	uint32 needed, level = 1;
+	uint32 level = 1;
 	char *arch = "Windows NT x86", *server, *errstr;
 	static char *kwlist[] = {"server", "level", "arch", "creds", NULL};
 	struct cli_state *cli = NULL;
@@ -274,12 +262,7 @@ PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args,
 		goto done;
 	}	
 
-	werror = cli_spoolss_getprinterdriverdir(
-		cli, mem_ctx, 0, &needed, level, arch, &ctr);
-
-	if (W_ERROR_V(werror) == ERRinsufficientbuffer)
-		werror = cli_spoolss_getprinterdriverdir(
-			cli, mem_ctx, needed, NULL, level, arch, &ctr);
+	werror = cli_spoolss_getprinterdriverdir(cli, mem_ctx, level, arch, &ctr);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
