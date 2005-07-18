@@ -127,15 +127,6 @@ testok() {
 	name=`basename $1`
 	failed=$2
 
-	JOBS=`jobs -p`
-	for J in $JOBS;do
-		kill $J >/dev/null 2>&1;
-	done
-	JOBS=`jobs -p`
-	for J in $JOBS;do
-		kill -s 9 $J >/dev/null 2>&1;
-	done
-
 	if [ x"$failed" = x"0" ];then
 		:
 	else
@@ -147,15 +138,6 @@ testok() {
 teststatus() {
 	name=`basename $1`
 	failed=$2
-
-	JOBS=`jobs -p`
-	for J in $JOBS;do
-		kill $J >/dev/null 2>&1;
-	done
-	JOBS=`jobs -p`
-	for J in $JOBS;do
-		kill -s 9 $J >/dev/null 2>&1;
-	done
 
 	if [ x"$failed" = x"0" ];then
 		echo "TEST STATUS: $failed";
