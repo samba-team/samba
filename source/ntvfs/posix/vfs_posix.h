@@ -74,6 +74,9 @@ struct pvfs_state {
 
 	/* the allocation size rounding */
 	uint32_t alloc_size_rounding;
+
+	/* how long to keep inactive searches around for */
+	uint_t search_inactivity_time;
 	
 	/* used to accelerate acl mapping */
 	struct {
