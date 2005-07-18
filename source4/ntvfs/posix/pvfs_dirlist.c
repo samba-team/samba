@@ -194,57 +194,15 @@ const char *pvfs_list_next(struct pvfs_dir *dir, uint_t *ofs)
 
 		if (e->name) talloc_free(e->name);
 
-		e->name = talloc_strdup(dir, de->d_name);
+		e->name = talloc_strdup(dir->name_cache, de->d_name);
 		e->offset = dir->offset;
 
 		return e->name;
 	}
 
 	dir->end_of_search = True;
-	pvfs_list_hibernate(dir);
 	return NULL;
 }
-
-/* 
-   put the directory to sleep. Used between search calls to give the
-   right directory change semantics
-*/
-void pvfs_list_hibernate(struct pvfs_dir *dir)
-{
-	if (dir->dir) {
-		closedir(dir->dir);
-		dir->dir = NULL;
-	}
-}
-
-
-/* 
-   wake up the directory search
-*/
-NTSTATUS pvfs_list_wakeup(struct pvfs_dir *dir, uint_t *ofs)
-{
-	if (dir->no_wildcard ||
-	    dir->dir != NULL) {
-		return NT_STATUS_OK;
-	}
-
-	dir->dir = opendir(dir->unix_path);
-	if (dir->dir == NULL) {
-		dir->end_of_search = True;
-		return pvfs_map_errno(dir->pvfs, errno);
-	}
-
-	seekdir(dir->dir, *ofs);
-	dir->offset = telldir(dir->dir);
-	if (dir->offset != *ofs) {
-		DEBUG(0,("pvfs_list_wakeup: search offset changed %u -> %u\n", 
-			 *ofs, (unsigned)dir->offset));
-	}
-
-	return NT_STATUS_OK;
-}
-
-
 
 /*
   return unix directory of an open search
@@ -268,13 +226,7 @@ BOOL pvfs_list_eos(struct pvfs_dir *dir, uint_t ofs)
 NTSTATUS pvfs_list_seek(struct pvfs_dir *dir, const char *name, uint_t *ofs)
 {
 	struct dirent *de;
-	NTSTATUS status;
 	int i;
-
-	status = pvfs_list_wakeup(dir, ofs);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
 
 	for (i=dir->name_cache_index;i>=0;i--) {
 		struct name_cache_entry *e = &dir->name_cache[i];
@@ -302,8 +254,6 @@ NTSTATUS pvfs_list_seek(struct pvfs_dir *dir, const char *name, uint_t *ofs)
 	}
 
 	dir->end_of_search = True;
-
-	pvfs_list_hibernate(dir);
 
 	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 }
