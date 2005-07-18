@@ -1194,7 +1194,7 @@ BOOL init_unistr4_array( UNISTR4_ARRAY *array, uint32 count, const char **string
 		return False;
 
 	for ( i=0; i<count; i++ ) 
-		init_unistr4( &array->strings[i], strings[i], STR_TERMINATE );
+		init_unistr4( &array->strings[i], strings[i], UNI_STR_TERMINATE );
 
 	return True;
 }
