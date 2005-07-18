@@ -35,7 +35,6 @@
 #include <sys/types.h>
 #include <netdb.h>
 #include <sys/ioctl.h>
-#include <net/if.h>
 #include <netdb.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
@@ -77,6 +76,7 @@
 #define QSORT_CAST (int (*)(const void *, const void *))
 #endif
 
+#include <net/if.h>
 #include "netif.h"
 
 #if HAVE_IFACE_IFCONF
