@@ -6,6 +6,9 @@ PASSWORD=penguin
 SRCDIR=`pwd`
 ROOT=$USER
 if test -z "$ROOT"; then
+    ROOT=$LOGNAME
+fi
+if test -z "$ROOT"; then
     ROOT=`whoami`
 fi
 
