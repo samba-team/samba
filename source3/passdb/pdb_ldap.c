@@ -3609,7 +3609,7 @@ static BOOL ldapuser2displayentry(struct ldap_search_state *state,
 	ldap_value_free(vals);
 
 	if (!sid_peek_check_rid(get_global_sam_sid(), &sid, &result->rid)) {
-		DEBUG(0, ("%s is not our domain\n", vals[0]));
+		DEBUG(0, ("sid %s does not belong to our domain\n", sid_string_static(&sid)));
 		return False;
 	}
 
@@ -3635,7 +3635,7 @@ static BOOL ldapsam_search_users(struct pdb_methods *methods,
 	if ((acct_flags != 0) && ((acct_flags & ACB_NORMAL) != 0))
 		state->base = lp_ldap_user_suffix();
 	else if ((acct_flags != 0) &&
-		 ((acct_flags & (ACB_WSTRUST|ACB_SVRTRUST)) != 0))
+		 ((acct_flags & (ACB_WSTRUST|ACB_SVRTRUST|ACB_DOMTRUST)) != 0))
 		state->base = lp_ldap_machine_suffix();
 	else
 		state->base = lp_ldap_suffix();
