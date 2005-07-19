@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    Password and authentication handling
-   Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Andrew Tridgell 1992-2005
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
    
    This program is free software; you can redistribute it and/or modify
@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "smb_server/smb_server.h"
+#include "dlinklist.h"
 
 
 /****************************************************************************
@@ -61,7 +62,7 @@ invalidate a session
 ****************************************************************************/
 static int smbsrv_session_destructor(void *p) 
 {
-	struct smbsrv_session *sess = p;
+	struct smbsrv_session *sess = talloc_get_type(p, struct smbsrv_session);
 	struct smbsrv_connection *smb_conn = sess->smb_conn;
 
 	/* clear the vuid from the 'cache' on each connection, and
@@ -71,6 +72,8 @@ static int smbsrv_session_destructor(void *p)
 	smb_conn->sessions.num_validated_vuids--;
 
 	idr_remove(smb_conn->sessions.idtree_vuid, sess->vuid);
+
+	DLIST_REMOVE(smb_conn->sessions.list, sess);
 	return 0;
 }
 
@@ -129,8 +132,10 @@ struct smbsrv_session *smbsrv_register_session(struct smbsrv_connection *smb_con
 	sess->session_info = talloc_reference(sess, session_info);
 	
 	sess->gensec_ctx = talloc_reference(sess, gensec_ctx);
-
 	sess->smb_conn = smb_conn;
+	sess->connect_time = timeval_current();
+
+	DLIST_ADD(smb_conn->sessions.list, sess);
 
 	talloc_set_destructor(sess, smbsrv_session_destructor);
 

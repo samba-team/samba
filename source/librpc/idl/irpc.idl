@@ -47,4 +47,34 @@
 		[out,switch_is(level)] nbtd_info info
 		);
 
+
+	/******************************************************
+         management calls for the smb server
+	******************************************************/
+	typedef [v1_enum] enum {
+		SMBSRV_INFO_SESSIONS
+	} smbsrv_info_level;
+
+	typedef struct {
+		uint16 vuid;
+		astring account_name;
+		astring domain_name;
+		astring client_ip;
+		NTTIME  connect_time;
+	} smbsrv_session_info;
+
+	typedef struct {
+		uint32 num_sessions;
+		[size_is(num_sessions)] smbsrv_session_info *sessions;
+	} smbsrv_sessions;
+
+	typedef union {
+		[case(SMBSRV_INFO_SESSIONS)] smbsrv_sessions sessions;
+	} smbsrv_info;
+
+	void smbsrv_information(
+		[in]  smbsrv_info_level level,
+		[out,switch_is(level)] smbsrv_info info
+		);
+
 }

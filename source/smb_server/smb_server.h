@@ -51,6 +51,8 @@ struct smbsrv_session {
 	/* Distinguish between a VUID allocated for the multi-pass
 	 * extended secrity session setup and one that is finished */
 	BOOL finished_sesssetup;
+
+	struct timeval connect_time;
 };
 
 /* we need a forward declaration of the ntvfs_ops strucutre to prevent
@@ -224,6 +226,10 @@ struct smbsrv_connection {
 		/* this holds info on session vuids that are already
 		 * validated for this VC */
 		struct idr_context *idtree_vuid;
+
+		/* also kept as a link list so it can be enumerated by
+		   the management code */
+		struct smbsrv_session *list;
 	} sessions;
 
 	/* the server_context holds a linked list of pending requests,

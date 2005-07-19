@@ -17,7 +17,8 @@ ADD_OBJ_FILES = \
 		smb_server/sesssetup.o \
 		smb_server/srvtime.o \
 		smb_server/trans2.o \
-		smb_server/signing.o
+		smb_server/signing.o \
+		smb_server/management.o
 REQUIRED_SUBSYSTEMS = \
 		NTVFS
 # End SUBSYSTEM SMB
