@@ -189,16 +189,16 @@ sec_get_data(int fd, struct buffer *buf, int level)
 }
 
 static size_t
-buffer_read(struct buffer *buf, void *data, size_t len)
+buffer_read(struct buffer *buf, void *dataptr, size_t len)
 {
     len = min(len, buf->size - buf->index);
-    memcpy(data, (char*)buf->data + buf->index, len);
+    memcpy(dataptr, (char*)buf->data + buf->index, len);
     buf->index += len;
     return len;
 }
 
 static size_t
-buffer_write(struct buffer *buf, void *data, size_t len)
+buffer_write(struct buffer *buf, void *dataptr, size_t len)
 {
     if(buf->index + len > buf->size) {
 	void *tmp;
@@ -211,29 +211,29 @@ buffer_write(struct buffer *buf, void *data, size_t len)
 	buf->data = tmp;
 	buf->size = buf->index + len;
     }
-    memcpy((char*)buf->data + buf->index, data, len);
+    memcpy((char*)buf->data + buf->index, dataptr, len);
     buf->index += len;
     return len;
 }
 
 int
-sec_read(int fd, void *data, int length)
+sec_read(int fd, void *dataptr, int length)
 {
     size_t len;
     int rx = 0;
 
     if(sec_complete == 0 || data_prot == 0)
-	return read(fd, data, length);
+	return read(fd, dataptr, length);
 
     if(in_buffer.eof_flag){
 	in_buffer.eof_flag = 0;
 	return 0;
     }
     
-    len = buffer_read(&in_buffer, data, length);
+    len = buffer_read(&in_buffer, dataptr, length);
     length -= len;
     rx += len;
-    data = (char*)data + len;
+    dataptr = (char*)dataptr + len;
     
     while(length){
 	int ret;
@@ -246,10 +246,10 @@ sec_read(int fd, void *data, int length)
 		in_buffer.eof_flag = 1;
 	    return rx;
 	}
-	len = buffer_read(&in_buffer, data, length);
+	len = buffer_read(&in_buffer, dataptr, length);
 	length -= len;
 	rx += len;
-	data = (char*)data + len;
+	dataptr = (char*)dataptr + len;
     }
     return rx;
 }
@@ -282,21 +282,21 @@ sec_fflush(FILE *F)
 }
 
 int
-sec_write(int fd, char *data, int length)
+sec_write(int fd, char *dataptr, int length)
 {
     int len = buffer_size;
     int tx = 0;
       
     if(data_prot == prot_clear)
-	return write(fd, data, length);
+	return write(fd, dataptr, length);
 
     len -= (*mech->overhead)(app_data, data_prot, len);
     while(length){
 	if(length < len)
 	    len = length;
-	sec_send(fd, data, len);
+	sec_send(fd, dataptr, len);
 	length -= len;
-	data += len;
+	dataptr += len;
 	tx += len;
     }
     return tx;
@@ -348,7 +348,7 @@ sec_read_msg(char *s, int level)
 {
     int len;
     char *buf;
-    int code;
+    int return_code;
     
     buf = malloc(strlen(s));
     len = base64_decode(s + 4, buf); /* XXX */
@@ -360,14 +360,14 @@ sec_read_msg(char *s, int level)
     buf[len] = '\0';
 
     if(buf[3] == '-')
-	code = 0;
+	return_code = 0;
     else
-	sscanf(buf, "%d", &code);
+	sscanf(buf, "%d", &return_code);
     if(buf[len-1] == '\n')
 	buf[len-1] = '\0';
     strcpy(s, buf);
     free(buf);
-    return code;
+    return return_code;
 }
 
 int

@@ -166,7 +166,7 @@ login (char *host)
 {
     char tmp[80];
     char defaultpass[128];
-    char *user, *pass, *acct;
+    char *userstr, *pass, *acctstr;
     int n, aflag = 0;
 
     char *myname = NULL;
@@ -175,7 +175,7 @@ login (char *host)
     if (pw != NULL)
 	myname = pw->pw_name;
 
-    user = pass = acct = 0;
+    userstr = pass = acctstr = 0;
 
     if(sec_login(host))
 	printf("\n*** Using plaintext user and password ***\n\n");
@@ -183,11 +183,11 @@ login (char *host)
 	printf("Authentication successful.\n\n");
     }
 
-    if (ruserpass (host, &user, &pass, &acct) < 0) {
+    if (ruserpass (host, &userstr, &pass, &acctstr) < 0) {
 	code = -1;
 	return (0);
     }
-    while (user == NULL) {
+    while (userstr == NULL) {
 	if (myname)
 	    printf ("Name (%s:%s): ", host, myname);
 	else
@@ -196,19 +196,19 @@ login (char *host)
 	if (fgets (tmp, sizeof (tmp) - 1, stdin) != NULL)
 	    tmp[strlen (tmp) - 1] = '\0';
 	if (*tmp == '\0')
-	    user = myname;
+	    userstr = myname;
 	else
-	    user = tmp;
+	    userstr = tmp;
     }
-    strlcpy(username, user, sizeof(username));
-    n = command("USER %s", user);
+    strlcpy(username, userstr, sizeof(username));
+    n = command("USER %s", userstr);
     if (n == COMPLETE) 
        n = command("PASS dummy"); /* DK: Compatibility with gssftp daemon */
     else if(n == CONTINUE) {
 	if (pass == NULL) {
 	    char prompt[128];
 	    if(myname && 
-	       (!strcmp(user, "ftp") || !strcmp(user, "anonymous"))) {
+	       (!strcmp(userstr, "ftp") || !strcmp(userstr, "anonymous"))) {
 		snprintf(defaultpass, sizeof(defaultpass), 
 			 "%s@%s", myname, mydomain);
 		snprintf(prompt, sizeof(prompt), 
@@ -230,16 +230,16 @@ login (char *host)
     }
     if (n == CONTINUE) {
 	aflag++;
-	acct = tmp;
-	UI_UTIL_read_pw_string (acct, 128, "Account:", 0);
-	n = command ("ACCT %s", acct);
+	acctstr = tmp;
+	UI_UTIL_read_pw_string (acctstr, 128, "Account:", 0);
+	n = command ("ACCT %s", acctstr);
     }
     if (n != COMPLETE) {
 	warnx ("Login failed.");
 	return (0);
     }
-    if (!aflag && acct != NULL)
-	command ("ACCT %s", acct);
+    if (!aflag && acctstr != NULL)
+	command ("ACCT %s", acctstr);
     if (proxy)
 	return (1);
     for (n = 0; n < macnum; ++n) {
@@ -392,15 +392,15 @@ getreply (int expecteof)
 			osa.sa_handler (SIGINT);
 #endif
 		    if (code == 227 || code == 229) {
-			char *p;
+			char *q;
 
-			p = strchr (reply_string, '(');
-			if (p) {
-			    p++;
-			    strlcpy(pasv, p, sizeof(pasv));
-			    p = strrchr(pasv, ')');
-			    if (p)
-				*p = '\0';
+			q = strchr (reply_string, '(');
+			if (q) {
+			    q++;
+			    strlcpy(pasv, q, sizeof(pasv));
+			    q = strrchr(pasv, ')');
+			    if (q)
+				*q = '\0';
 			}
 		    }
 		    return code / 100;
@@ -1170,7 +1170,7 @@ parse_epsv (const char *str)
 }
 
 static int
-parse_pasv (struct sockaddr_in *sin, const char *str)
+parse_pasv (struct sockaddr_in *sin4, const char *str)
 {
     int a0, a1, a2, a3, p0, p1;
 
@@ -1196,11 +1196,11 @@ parse_pasv (struct sockaddr_in *sin, const char *str)
 	printf ("Can't parse passive mode string.\n");
 	return -1;
     }
-    memset (sin, 0, sizeof(*sin));
-    sin->sin_family      = AF_INET;
-    sin->sin_addr.s_addr = htonl ((a0 << 24) | (a1 << 16) |
+    memset (sin4, 0, sizeof(*sin4));
+    sin4->sin_family      = AF_INET;
+    sin4->sin_addr.s_addr = htonl ((a0 << 24) | (a1 << 16) |
 				  (a2 << 8) | a3);
-    sin->sin_port = htons ((p0 << 8) | p1);
+    sin4->sin_port = htons ((p0 << 8) | p1);
     return 0;
 }
 
@@ -1322,10 +1322,10 @@ noport:
 	verbose = overbose;
 
 	if (result == ERROR) {
-	    struct sockaddr_in *sin = (struct sockaddr_in *)data_addr;
+	    struct sockaddr_in *sin4 = (struct sockaddr_in *)data_addr;
 
-	    unsigned int a = ntohl(sin->sin_addr.s_addr);
-	    unsigned int p = ntohs(sin->sin_port);
+	    unsigned int a = ntohl(sin4->sin_addr.s_addr);
+	    unsigned int p = ntohs(sin4->sin_port);
 
 	    if (data_addr->sa_family != AF_INET) {
 		warnx ("remote server doesn't support EPRT");

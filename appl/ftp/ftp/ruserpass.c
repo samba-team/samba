@@ -69,39 +69,39 @@ static struct toktab {
  */
 
 static char *
-guess_domain (char *hostname, size_t sz)
+guess_domain (char *hostname_str, size_t sz)
 {
     struct addrinfo *ai, *a;
     struct addrinfo hints;
     int error;
     char *dot;
 
-    if (gethostname (hostname, sz) < 0) {
-	strlcpy (hostname, "", sz);
+    if (gethostname (hostname_str, sz) < 0) {
+	strlcpy (hostname_str, "", sz);
 	return "";
     }
-    dot = strchr (hostname, '.');
+    dot = strchr (hostname_str, '.');
     if (dot != NULL)
 	return dot + 1;
 
     memset (&hints, 0, sizeof(hints));
     hints.ai_flags = AI_CANONNAME;
 
-    error = getaddrinfo (hostname, NULL, &hints, &ai);
+    error = getaddrinfo (hostname_str, NULL, &hints, &ai);
     if (error)
-	return hostname;
+	return hostname_str;
 
     for (a = ai; a != NULL; a = a->ai_next)
 	if (a->ai_canonname != NULL) {
-	    strlcpy (hostname, ai->ai_canonname, sz);
+	    strlcpy (hostname_str, ai->ai_canonname, sz);
 	    break;
 	}
     freeaddrinfo (ai);
-    dot = strchr (hostname, '.');
+    dot = strchr (hostname_str, '.');
     if (dot != NULL)
 	return dot + 1;
     else
-	return hostname;
+	return hostname_str;
 }
 
 int
