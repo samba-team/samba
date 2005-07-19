@@ -88,17 +88,17 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
 	}
 #endif
 	else {
-		ldb_debug(ldb, LDB_DEBUG_FATAL, "Unable to find backend for '%s'", url);
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "Unable to find backend for '%s'\n", url);
 		return -1;
 	}
 
 	if (ret != 0) {
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to connect to '%s'", url);
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to connect to '%s'\n", url);
 		return ret;
 	}
 
 	if (ldb_load_modules(ldb, options) != 0) {
-		ldb_debug(ldb, LDB_DEBUG_FATAL, "Unable to load modules for '%s'", url);
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "Unable to load modules for '%s'\n", url);
 		return -1;
 	}
 
