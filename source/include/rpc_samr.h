@@ -351,8 +351,8 @@ typedef struct sam_user_info_20
 
 } SAM_USER_INFO_20;
 
-/* SAM_USER_INFO_12 */
-typedef struct sam_user_info_12
+/* SAM_USER_INFO_18 */
+typedef struct sam_user_info_18
 {
 	uint8 lm_pwd[16];    /* lm user passwords */
 	uint8 nt_pwd[16];    /* nt user passwords */
@@ -360,10 +360,10 @@ typedef struct sam_user_info_12
 	uint8 lm_pwd_active; 
 	uint8 nt_pwd_active; 
 
-} SAM_USER_INFO_12;
+} SAM_USER_INFO_18;
 
-/* SAM_USER_INFO_11 */
-typedef struct sam_user_info_11
+/* SAM_USER_INFO_17 */
+typedef struct sam_user_info_17
 {
 	uint8  padding_0[16];  /* 0 - padding 16 bytes */
 	NTTIME expiry;         /* expiry time or something? */
@@ -398,15 +398,15 @@ typedef struct sam_user_info_11
 
 	uint8  padding_9[48];  /* 0 - padding 48 bytes */
 
-} SAM_USER_INFO_11;
+} SAM_USER_INFO_17;
 
 
-/* SAM_USER_INFO_10 */
-typedef struct sam_user_info_10
+/* SAM_USER_INFO_16 */
+typedef struct sam_user_info_16
 {
 	uint32 acb_info;
 
-} SAM_USER_INFO_10;
+} SAM_USER_INFO_16;
 
 /* SAM_USER_INFO_7 */
 typedef struct sam_user_info_7
@@ -1254,15 +1254,15 @@ typedef struct sam_userinfo_ctr_info
 
 	union
 	{
-		SAM_USER_INFO_7  *id7;  /* auth-level 0x07 */
-		SAM_USER_INFO_10 *id10; /* auth-level 0x10 */
-		SAM_USER_INFO_11 *id11; /* auth-level 0x11 */
-		SAM_USER_INFO_12 *id12; /* auth-level 0x12 */
-		SAM_USER_INFO_20 *id20; /* auth-level 20 */
-		SAM_USER_INFO_21 *id21; /* auth-level 21 */
-		SAM_USER_INFO_23 *id23; /* auth-level 0x17 */
-		SAM_USER_INFO_24 *id24; /* auth-level 0x18 */
-		SAM_USER_INFO_25 *id25; /* auth-level 0x19 */
+		SAM_USER_INFO_7  *id7;
+		SAM_USER_INFO_16 *id16;
+		SAM_USER_INFO_17 *id17;
+		SAM_USER_INFO_18 *id18;
+		SAM_USER_INFO_20 *id20;
+		SAM_USER_INFO_21 *id21;
+		SAM_USER_INFO_23 *id23;
+		SAM_USER_INFO_24 *id24;
+		SAM_USER_INFO_25 *id25;
 		void* id; /* to make typecasting easy */
 
 	} info;
