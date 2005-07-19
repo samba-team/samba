@@ -1,5 +1,19 @@
 2005-07-19  Love Hörnquist Åstrand  <lha@it.su.se>
-	
+
+	* asn1_print.c: print size_t by casting to unsigned long and use
+	right printf format tags are unsigned integers
+
+	* gen.c (generate_constant): oid elements are unsigned
+
+	* gen_decode.c (decode_type): tagdatalen should be an size_t.
+
+	* extra.c (decode_heim_any): tag is unsigned int.
+
+	* der_get.c (der_match_tag): tag is unsigned int.
+
+	* gen_length.c (length_type): cast size_t argument to unsigned
+	long and use appropriate printf format
+
 	* check-der.c (check_fail_bitstring): check for length overflow
 
 	* der_get.c: rewrite integer overflow tests w/o SIZE_T_MAX
@@ -41,7 +55,7 @@
 
 	* gen.c: rename function filename() to get_filename() to avoid
 	shadowing
-	
+
 	* check-der.c: add failure checks for large oid elements
 
 	* check-gen.c: add failure checks for tag (and large tags)
@@ -77,13 +91,13 @@
 	Check return value from asprintf.
 	Make sure that malloc(0) returning NULL is not treated as an
 	error.
-	
+
 2005-07-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* check-gen.c: test cases for CHOICE, its too liberal right now,
 	it don't fail hard on failure on after it successfully decoded the
 	first tag in a choice branch
-	
+
 	* asn1_gen.c: calculate the basename for the output file,
 	pretty-print tag number
 
@@ -93,7 +107,7 @@
 
 	* Makefile.am: build asn1_gen, TESTSeq and new, and class/type/tag
 	string<->num converter.
-	
+
 	* test.asn1: TESTSeq, for testing SEQUENCE
 
 	* asn1_gen.c: generator for asn1 data
@@ -104,7 +118,7 @@
 
 	* der.h: Add class/type/tag string<->num converter.
 	Prototypes/structures for new time bits.
-	
+
 2005-07-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* der_get.c (der_get_unsigned) check for length overflow
@@ -150,12 +164,12 @@
 
 	* gen_decode.c: use less context so lower indentention level, add
 	missing {} where needed
-	
+
 2005-07-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen_copy.c: Use a global variable to keep track of if the 'goto
 	fail' was used, and use that to only generate the label if needed.
-	
+
 	* asn1_print.c: do indefinite form loop detection and stop after
 	10000 recursive indefinite forms, stops crashing due to running
 	out of stack
@@ -171,7 +185,7 @@
 	* gen_decode.c: Check if malloc failes
 
 	* gen_copy.c: Make sure to free memory on failure
-	
+
 	* gen_decode.c: Check if malloc failes, rename "reallen" to
 	tagdatalen since that is what it is.
 
@@ -206,9 +220,9 @@
 2005-05-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: add pkcs12-PBEParams
-	
+
 	* pkcs12.asn1: add pkcs12-PBEParams
-	
+
 	* parse.y: objid_element: exit when the condition fails
 
 2005-04-26  Love Hörnquist Åstrand  <lha@it.su.se>
@@ -280,7 +294,7 @@
 
 	* asn1_queue.h: inline bsd sys/queue.h and rename TAILQ to
 	ASN1_TAILQ to avoid problems with name polluting headerfiles
-	
+
 2005-01-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen.c: pull in <krb5-types.h>
@@ -303,94 +317,94 @@
 2004-11-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: switch to krb5int32 and krb5uint32
-	
+
 	* Unify that three integer types TInteger TUInteger and TBigInteger.
 	Start to use constrained integers where appropriate.
 
 2004-10-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* CMS.asn1: remove no longer used commented out elements
-	
+
 	* gen_glue.c: make units structures const
-	
+
 2004-10-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lex.l: handle hex number with [a-fA-F] in them
-	
+
 2004-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen_free.c: free _save for CHOICE too
-	
+
 	* rfc2459.asn1: use Name and not heim_any
-	
+
 	* gen_decode.c: if malloc for _save failes, goto fail so we free
 	the structure
-	
+
 	* gen_copy.c: copy _save for CHOICE too
-	
+
 	* gen.c: add _save for CHOICE too
-	
+
 	* CMS.asn1: RecipientIdentifier and SignerIdentifier is the same
 	name is CMSIdentifier and add glue for that so we can share code
 	use Name and not heim_any
-	
+
 2004-10-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: drop AlgorithmIdentifierNonOpt add
 	{RC2CBC,}CBCParameter here where they belong
-	
+
 	* CMS.asn1: add {RC2CBC,}CBCParameter here where they belong
-	
+
 	* rfc2459.asn1: drop AlgorithmIdentifierNonOpt
-	
+
 	* rfc2459.asn1: stop using AlgorithmIdentifierNonOpt hint that we
 	really want to use Name and some MS stuff
-	
+
 2004-09-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* asn1_print.c: handle end of content, this is part BER support,
 	however, OCTET STRING need some tweeking too.
-	
+
 	* der.h: add UT_EndOfContent
-	
+
 	* test.asn1: test asn1 spec file
-	
+
 	* check-gen.c: check larget tags
-	
+
 	* Makefile.am: add test asn1 spec file that we can use for testing
 	constructs that doesn't exists in already existing spec (like
 	large tags)
 
 	* der_put.c (der_put_tag): make sure there are space for the head
 	tag when we are dealing with large tags (>30)
-	
+
 	* check-gen.c: add test for tag length
-	
+
 	* check-common.c: export the map_ functions for OVERRUN/UNDERRUN
 	detection restore the SIGSEGV handler when test is done
-	
+
 	* check-common.h: export the map_ functions for OVERRUN/UNDERRUN
 	detection
 
 	* gen_decode.c: check that the tag-length is not longer the length
 	use forwstr on some more places
-	
+
 	* parse.y: revert part of 1.14.2.21, multiple IMPORT isn't allowed
-	
+
 	* pkinit.asn1: correct usage of IMPORT
-	
+
 	* CMS.asn1: correct usage of IMPORT
-	
+
 	* pkcs8.asn1: pkcs8, encrypting private key
-	
+
 	* pkcs12.asn1: pkcs12, key/crl/certificate file transport PDU
-	
+
 	* Makefile.am: add pkcs8 and pkcs12
-	
+
 	* der_free.c: reset length when freing primitives
-	
+
 	* CMS.asn1: add EncryptedData
-	
+
 2004-08-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen_decode.c (decode_type): if the entry is already optional
@@ -407,27 +421,27 @@
 2004-04-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* k5.asn1: add ETYPE_AESNNN_CBC_NONE
-	
+
 	* CMS.asn1: add CMS symmetrical parameters moved to k5.asn1
-	
+
 	* k5.asn1: add CMS symmetrical parameters here, more nametypes
 	enctype rc2-cbc
 
 2004-04-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen_decode.c: free data on decode failure
-	
+
 2004-04-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: add CBCParameter and RC2CBCParameter
-	
+
 	* CMS.asn1: add CBCParameter and RC2CBCParameter
-	
+
 2004-04-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* check-der.c: add simple test for oid's, used to trigger malloc
 	bugs in you have picky malloc (like valgrind/purify/third)
-	
+
 	* der_get.c (der_get_oid): handle all oid components being smaller
 	then 127 and allocate one extra element since first byte is split
 	to to elements.
@@ -435,13 +449,13 @@
 2004-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* canthandle.asn1: one thing handled
-	
+
 	* gen_decode.c: handle OPTIONAL CONS-tag-less elements
-	
+
 	* der_length.c (length_len): since length is no longer the same as
 	an unsigned, do the length counting here. ("unsigned" is zero
 	padded when most significate bit is set, length is not)
-	
+
 2004-04-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* canthandle.asn1: document by example what the encoder can't
@@ -449,57 +463,57 @@
 
 	* Makefile.am: add more stuff needed whem implementing x509
 	preserve TBSCertificate
-	
+
 	* rfc2459.asn1: add more stuff needed whem implementing x509
-	
+
 	* CMS.asn1: move some type to rfc2459.asn1 where they belong (and
 	import them)
 
 	* gen.c: preserve the raw data when asked too
-	
+
 	* gen_decode.c: preserve the raw data when asked too
-	
+
 	* gen_copy.c: preserve the raw data when asked too
-	
+
 	* gen_free.c: preserve the raw data when asked too
 
 	* gen_locl.h: add preserve_type
-	
+
 	* heim_asn1.h: add heim_any_cmp
-	
+
 	* main.c: add flag --preserve-binary=Symbol1,Symbol2,... that make
 	the compiler generate stubs to save the raw data, its not used
 	right now when generating the stat
-	
+
 	* k5.asn1: Windows uses PADATA 15 for the request too
-	
+
 	* extra.c: add heim_any_cmp
-	
+
 	* der_put.c: implement UTCtime correctly
-	
+
 	* der_locl.h: remove #ifdef HAVE_TIMEGM\ntimegm\n#endif here from
 	der.h so one day der.h can get installed
-	
+
 	* der_length.c: implement UTCtime correctly
-	
+
 	* der_get.c: implement UTCtime correctly, prefix dce_fix with
 	_heim_fix
 
 	* der_copy.c: make copy_bit_string work again
-	
+
 	* der_cmp.c: add octet_string, integer, bit_string cmp functions
-	
+
 	* der.h: hide away more symbols, add more _cmp functions
-	
+
 2004-03-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: add more pkix types make k5 use rfc150 bitstrings,
 	everything else use der bitstrings
-	
+
 	* main.c: as a compile time option, handle no rfc1510 bitstrings
-	
+
 	* gen_locl.h: rfc1510 bitstrings flag
-	
+
 	* gen_length.c: as a compile time option, handle no rfc1510
 	bitstrings
 
@@ -507,60 +521,60 @@
 	bitstrings
 
 	* gen_decode.c: handle no rfc1510 bitstrings
-	
+
 	* check-gen.c: test for bitstrings
-	
+
 	* rfc2459.asn1: add Certificates and KeyUsage
-	
+
 2004-02-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* pkinit.asn1: use Name from PKIX
-	
+
 	* rfc2459.asn1: add more silly string types to DirectoryString
-	
+
 	* gen_encode.c: add checks for data overflow when encoding
 	TBitString with members encode SET OF correctly by bytewise
 	sorting the members
-	
+
 	* gen_decode.c: add checks for data overrun when encoding
 	TBitString with members
 
 	* der_put.c: add _heim_der_set_sort
-	
+
 	* der_cmp.c: rename oid_cmp to heim_oid_cmp
-	
+
 	* der.h: rename oid_cmp to heim_oid_cmp, add _heim_der_set_sort
-	
+
 	* check-gen.c: add check for Name and (commented out) heim_integer
-	
+
 	* check-der.c: test for "der_length.c: Fix len_unsigned for
 	certain negative integers, it got the length wrong" , from
 	Panasas, Inc.
 
 	* der_length.c: Fix len_unsigned for certain negative integers, it
 	got the length wrong, fix from Panasas, Inc.
-	
+
 	rename len_int and len_unsigned to _heim_\&
-	
+
 	* gen_length.c: 1.14: (length_type): TSequenceOf: add up the size
 	of all the elements, don't use just the size of the last element.
-	
+
 2004-02-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rfc2459.asn1: include defintion of Name
-	
+
 	* pkinit.asn1: no need for ContentType, its cms internal
-	
+
 	* CMS.asn1: move ContentInfo to CMS
-	
+
 	* pkinit.asn1: update to pk-init-18, move ContentInfo to CMS
-	
+
 	* Makefile.am: align with pk-init-18, move contentinfo to cms
-	
+
 2004-02-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* der_get.c: rewrite previous commit
-	
+
 	* der_get.c (der_get_heim_integer): handle positive integer
 	starting with 0
 
@@ -574,77 +588,77 @@
 	return ASN1_OVERRUN for now
 
 	* parse.y: add ia5string, and printablestring
-	
+
 	* gen_length.c: add ia5string, and printablestring
-	
+
 	* gen_free.c: add ia5string, and printablestring
-	
+
 	* gen_decode.c: add ia5string, and printablestring
-	
+
 	* gen_copy.c: add ia5string, and printablestring
-	
+
 	* gen.c: add ia5string, printablestring, and utf8string change
 	implemetation of heim_integer and store the data as bigendian byte
 	array with a external flag for signedness
-	
+
 	* der_put.c: add ia5string, printablestring, and utf8string change
 	implemetation of heim_integer and store the data as bigendian byte
 	array with a external flag for signedness
-	
+
 	* der_length.c: add ia5string, printablestring, and utf8string
 	change implemetation of heim_integer and store the data as
 	bigendian byte array with a external flag for signedness
-	
+
 	* der_get.c: add ia5string, printablestring, and utf8string change
 	implemetation of heim_integer and store the data as bigendian byte
 	array with a external flag for signedness
-	
+
 	* der_free.c: add ia5string, printablestring, and utf8string
-	
+
 	* der_copy.c: add ia5string, printablestring, and utf8string
-	
+
 	* der.h: add ia5string, printablestring, and utf8string
-	
+
 	* asn1-common.h: add signedness flag to heim_integer, add
 	ia5string and printablestring
 
 2004-02-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rfc2459.asn1: use BIGINTEGER where appropriate
-	
+
 	* setchgpw2.asn1: spelling and add op-req again
-	
+
 2004-02-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: clean up better
-	
+
 2004-02-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen_decode.c (decode_type): TTag, don't overshare the reallen
 	variable
 
 	* Makefile.am: adapt to log file name change
-	
+
 	* gen.c: genereate log file name based on base name
-	
+
 2003-11-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: += asn1_AlgorithmIdentifierNonOpt.x
-	
+
 	* rfc2459.asn1: add AlgorithmIdentifierNonOpt and use it where
 	it's needed, make DomainParameters.validationParms heim_any as a
 	hack. Both are workarounds for the problem with heimdal's asn1
 	compiler have with decoing context tagless OPTIONALs.
 
 	* pkinit.asn1: don't import AlgorithmIdentifier
-	
+
 2003-11-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* der_put.c (der_put_bit_string): make it work somewhat better
 	(should really prune off all trailing zeros)
-	
+
 	* gen_encode.c (encode_type): bit string is not a constructed type
-	
+
 	* der_length.c (length_bit_string): calculate right length for
 	bitstrings
 
@@ -658,23 +672,23 @@
 	bugs
 
 	* Makefile.am: add DomainParameters, ValidationParms
-	
+
 	* rfc2459.asn1: add DomainParameters, ValidationParms
-	
+
 	* check-der.c: add free function
-	
+
 	* check-common.h: add free function
-	
+
 	* check-common.c: add free function
-	
+
 	* check-gen.c: check KRB-ERROR
-	
+
 	* asn1_print.c: check end of tag_names loop into APPL class tags
-	
+
 2003-11-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* der_put.c (der_put_generalized_time): check size, not *size
-	
+
 2003-11-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen_decode.c (decode_type/TBitString): skip over
@@ -686,30 +700,30 @@
 2003-11-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: generate all silly pkinit files
-	
+
 	* pkinit.asn1: make it work again, add strange ms structures
-	
+
 	* k5.asn1: PROV-SRV-LOCATION, PacketCable provisioning server
 	location, PKT-SP-SEC-I09-030728
-	
+
 	* asn1-common.h: add bit string
-	
+
 	* der_put.c: add bit string and utctime
-	
+
 	* gen.c: add bit string and utctime
-	
+
 	* gen_copy.c: add bit string and utctime
-	
+
 	* der_copy.c: add bit string
-	
+
 	* gen_decode.c: add utctime and bitstring
-	
+
 	* gen_encode.c: add utctime and bitstring
-	
+
 	* gen_free.c: add utctime and bitstring
-	
+
 	* gen_glue.c: don't generate glue for member-less bit strings
-	
+
 	* der_cmp.c: compare function for oids
 
 	* gen_length.c: add utc time, make bit string work for bits
@@ -718,18 +732,18 @@
 	* der_cmp.c: compare function for oids
 
 	* der.h: update boolean prototypes add utctime and bit_string
-	
+
 	* der_free.c: add free_bit_string
-	
+
 	* der_get.c: add bit string and utctime
-	
+
 	* der_length.c: add bit string and utctime, fix memory leak in
 	length_generalized_time
-	
+
 	* CMS.asn1: make EncryptedContentInfo.encryptedContent a OCTET
 	STRING to make the generator do the right thing with IMPLICIT
 	mumble OPTIONAL, make CertificateSet a heim_any_set
-	
+
 	* extra.c, heim_asn1.h: add any_set, instead of just consuming one
 	der object, its consumes the rest of the data avaible
 
@@ -738,23 +752,23 @@
 	data
 
 	* pkinit.asn1: add KdcDHKeyInfo-Win2k
-	
+
 2003-11-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* der_copy.c (copy_oid): copy all components
-	
+
 	* parse.y: parse UTCTime, allow multiple IMPORT
-	
+
 	* symbol.h: add TUTCTime
-	
+
 	* rfc2459.asn1: update
-	
+
 	* x509.asn1: update
-	
+
 	* pkinit.asn1: update
-	
+
 	* CMS.asn1: new file
-	
+
 	* asn1_print.c: print some more lengths, check length before
 	steping out in the void, parse SET, only go down CONTEXT of type
 	CONS (not PRIM)
@@ -767,25 +781,25 @@
 2003-09-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen.c: store NULL's as int's for now
-	
+
 	* parse.y: remove dup of type def of UsefulType
-	
+
 2003-09-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen_decode.c (decode_type): if malloc failes, return ENOMEM
-	
+
 2003-09-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* parse.y: kw_UTF8String is a token put tag around the OID
-	
+
 	* asn1_print.c (UT_Integer): when the integer is larger then int
 	can handle, just print BIG INT and its size
-	
+
 2003-09-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen_decode.c (decode_type): TTag, try to generate prettier code
 	in the non optional case, also remember to update length
-	
+
 2003-01-22  Johan Danielsson  <joda@pdc.kth.se>
 
 	* gen_decode.c: add flag to decode broken DCE BER encoding
