@@ -87,3 +87,14 @@ function substitute_var(str, subobj)
 	}
 	return join("", list);
 }
+
+/*
+  return "s" if a number should be shown as plural
+*/
+function plural(n)
+{
+	if (n == 1) {
+		return "";
+	}
+	return "s";
+}
