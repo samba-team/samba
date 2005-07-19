@@ -420,8 +420,7 @@ decode_type (const char *name, const Type *t, int optional,
     case TTag:{
 	fprintf(codefile, 
 		"{\n"
-		"int tagdatalen;\n"
-		"size_t oldlen;\n");
+		"size_t tagdatalen, oldlen;\n");
 	if(dce_fix)
 	    fprintf(codefile, 
 		    "int dce_fix;\n");
