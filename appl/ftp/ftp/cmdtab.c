@@ -107,7 +107,11 @@ char	verbosehelp[] =	"toggle verbose mode";
 char	prothelp[] = 	"set protection level";
 #ifdef KRB4
 char	kauthhelp[] = 	"get remote tokens";
+#endif
+#if defined(KRB4) || defined(KRB5)
 char	klisthelp[] =	"show remote tickets";
+#endif
+#ifdef KRB4
 char	kdestroyhelp[] = "destroy remote tickets";
 char	krbtkfilehelp[] = "set filename of remote tickets";
 #endif
@@ -192,7 +196,11 @@ struct cmd cmdtab[] = {
 	{ "prot", 	prothelp, 	0, 	1, 	0,	sec_prot },
 #ifdef KRB4
 	{ "kauth", 	kauthhelp, 	0, 	1, 	0,	kauth },
+#endif
+#if defined(KRB4) || defined(KRB5)
 	{ "klist", 	klisthelp, 	0, 	1, 	0,	klist },
+#endif
+#ifdef KRB4
 	{ "kdestroy",	kdestroyhelp,	0,	1,	0,	kdestroy },
 	{ "krbtkfile",	krbtkfilehelp,	0,	1,	0,	krbtkfile },
 #endif

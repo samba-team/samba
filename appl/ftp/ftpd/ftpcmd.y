@@ -524,12 +524,8 @@ cmd
 		}
 	| SITE SP KLIST CRLF check_login
 		{
-#ifdef KRB4
 		    if($5)
 			klist();
-#else
-		    reply(500, "Command not implemented.");
-#endif
 		}
 	| SITE SP KDESTROY CRLF check_login
 		{
@@ -559,7 +555,7 @@ cmd
 		    if(guest)
 			reply(500, "Can't be done as guest.");
 		    else if($5)
-			afslog(NULL);
+			afslog(NULL, 0);
 #else
 		    reply(500, "Command not implemented.");
 #endif
@@ -570,7 +566,7 @@ cmd
 		    if(guest)
 			reply(500, "Can't be done as guest.");
 		    else if($7)
-			afslog($5);
+			afslog($5, 0);
 		    if($5)
 			free($5);
 #else
@@ -1391,13 +1387,13 @@ help(struct tab *ctab, char *s)
 {
 	struct tab *c;
 	int width, NCMDS;
-	char *type;
+	char *t;
 	char buf[1024];
 
 	if (ctab == sitetab)
-		type = "SITE ";
+		t = "SITE ";
 	else
-		type = "";
+		t = "";
 	width = 0, NCMDS = 0;
 	for (c = ctab; c->name != NULL; c++) {
 		int len = strlen(c->name);
@@ -1412,7 +1408,7 @@ help(struct tab *ctab, char *s)
 		int columns, lines;
 
 		lreply(214, "The following %scommands are recognized %s.",
-		    type, "(* =>'s unimplemented)");
+		    t, "(* =>'s unimplemented)");
 		columns = 76 / width;
 		if (columns == 0)
 			columns = 1;
@@ -1448,9 +1444,9 @@ help(struct tab *ctab, char *s)
 		return;
 	}
 	if (c->implemented)
-		reply(214, "Syntax: %s%s %s", type, c->name, c->help);
+		reply(214, "Syntax: %s%s %s", t, c->name, c->help);
 	else
-		reply(214, "%s%-*s\t%s; unimplemented.", type, width,
+		reply(214, "%s%-*s\t%s; unimplemented.", t, width,
 		    c->name, c->help);
 }
 

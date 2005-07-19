@@ -144,20 +144,6 @@ kauth(int argc, char **argv)
 }
 
 void
-klist(int argc, char **argv)
-{
-    int ret;
-    if(argc != 1){
-	printf("usage: %s\n", argv[0]);
-	code = -1;
-	return;
-    }
-    
-    ret = command("SITE KLIST");
-    code = (ret == COMPLETE);
-}
-
-void
 kdestroy(int argc, char **argv)
 {
     int ret;

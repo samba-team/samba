@@ -26,6 +26,7 @@ ftpd_SOURCES =		\
 	popen.c		\
 	security.c	\
 	kauth.c		\
+	klist.c		\
 	$(krb4_sources) \
 	$(krb5_sources)
 

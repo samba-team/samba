@@ -107,8 +107,11 @@ void	klist(void);
 void	cond_kdestroy(void);
 void	kdestroy(void);
 void	krbtkfile(const char *tkfile);
-void	afslog(const char *cell);
+void	afslog(const char *, int);
 void	afsunlog(void);
+
+extern int do_destroy_tickets;
+extern char *k5ccname;
 
 int	find(char *);
 

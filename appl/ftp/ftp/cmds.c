@@ -2126,3 +2126,17 @@ newer(int argc, char **argv)
 		printf("Local file \"%s\" is newer than remote file \"%s\"\n",
 			argv[2], argv[1]);
 }
+
+void
+klist(int argc, char **argv)
+{
+    int ret;
+    if(argc != 1){
+	printf("usage: %s\n", argv[0]);
+	code = -1;
+	return;
+    }
+    
+    ret = command("SITE KLIST");
+    code = (ret == COMPLETE);
+}

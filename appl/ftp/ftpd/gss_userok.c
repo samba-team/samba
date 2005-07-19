@@ -76,23 +76,15 @@ gss_userok(void *app_data, char *username)
 	/* gss_add_cred() ? */
         if (data->delegated_cred_handle != GSS_C_NO_CREDENTIAL) {
            krb5_ccache ccache = NULL; 
-           char* ticketfile;
-           struct passwd *pw;
+           const char* ticketfile;
+           struct passwd *kpw;
            
-           pw = getpwnam(username);
-           
-	   if (pw == NULL) {
-	       ret = 1;
-	       goto fail;
-	   }
-
-           asprintf (&ticketfile, "%s%u", KRB5_DEFAULT_CCROOT,
-		     (unsigned)pw->pw_uid);
-        
-           ret = krb5_cc_resolve(gssapi_krb5_context, ticketfile, &ccache);
+	   ret = krb5_cc_gen_new(gssapi_krb5_context, &krb5_fcc_ops, &ccache);
            if (ret)
-              goto fail;
-           
+	       goto fail;
+	   
+	   ticketfile = krb5_cc_get_name(gssapi_krb5_context, ccache);
+        
            ret = gss_krb5_copy_ccache(&minor_status,
 				      data->delegated_cred_handle,
 				      ccache);
@@ -101,17 +93,26 @@ gss_userok(void *app_data, char *username)
               goto fail;
 	   }
            
-           chown (ticketfile+5, pw->pw_uid, pw->pw_gid);
+	   do_destroy_tickets = 1;
+
+           kpw = getpwnam(username);
            
-           if (k_hasafs()) {
-	       krb5_afslog(gssapi_krb5_context, ccache, 0, 0);
-           }
-           esetenv ("KRB5CCNAME", ticketfile, 1);
+	   if (kpw == NULL) {
+	       unlink(ticketfile);
+	       ret = 1;
+	       goto fail;
+	   }
+
+           chown (ticketfile, kpw->pw_uid, kpw->pw_gid);
            
+	   asprintf(&k5ccname, "FILE:%s", ticketfile);
+	   if (k5ccname) {
+	       esetenv ("KRB5CCNAME", k5ccname, 1);
+	   }
+	   afslog(NULL, 1);
 fail:
            if (ccache)
               krb5_cc_close(gssapi_krb5_context, ccache); 
-           free(ticketfile);
         }
            
 	gss_release_cred(&minor_status, &data->delegated_cred_handle);

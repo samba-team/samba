@@ -1891,7 +1891,7 @@ dologout(int status)
     if (logged_in) {
 	seteuid((uid_t)0);
 	ftpd_logwtmp(ttyline, "", "");
-#ifdef KRB4
+#if KRB4 || KRB5
 	cond_kdestroy();
 #endif
     }

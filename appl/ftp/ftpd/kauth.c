@@ -35,6 +35,13 @@
 
 RCSID("$Id$");
 
+#if defined(KRB4) || defined(KRB5)
+
+int do_destroy_tickets = 1;
+char *k5ccname;
+
+#endif
+
 #ifdef KRB4
 
 static KTEXT_ST cip;
@@ -42,8 +49,6 @@ static unsigned int lifetime;
 static time_t local_time;
 
 static krb_principal pr;
-
-static int do_destroy_tickets = 1;
 
 static int
 save_tkt(const char *user,
@@ -239,108 +244,6 @@ short_date(int32_t dp)
 }
 
 void
-klist(void)
-{
-    int err;
-
-    char *file = tkt_string();
-
-    krb_principal pr;
-    
-    char buf1[128], buf2[128];
-    int header = 1;
-    CREDENTIALS c;
-
-    
-
-    err = tf_init(file, R_TKT_FIL);
-    if(err != KSUCCESS){
-	reply(500, "%s", krb_get_err_text(err));
-	return;
-    }
-    tf_close();
-
-    /* 
-     * We must find the realm of the ticket file here before calling
-     * tf_init because since the realm of the ticket file is not
-     * really stored in the principal section of the file, the
-     * routine we use must itself call tf_init and tf_close.
-     */
-    err = krb_get_tf_realm(file, pr.realm);
-    if(err != KSUCCESS){
-	reply(500, "%s", krb_get_err_text(err));
-	return;
-    }
-
-    err = tf_init(file, R_TKT_FIL);
-    if(err != KSUCCESS){
-	reply(500, "%s", krb_get_err_text(err));
-	return;
-    }
-
-    err = tf_get_pname(pr.name);
-    if(err != KSUCCESS){
-	reply(500, "%s", krb_get_err_text(err));
-	return;
-    }
-    err = tf_get_pinst(pr.instance);
-    if(err != KSUCCESS){
-	reply(500, "%s", krb_get_err_text(err));
-	return;
-    }
-
-    /* 
-     * You may think that this is the obvious place to get the
-     * realm of the ticket file, but it can't be done here as the
-     * routine to do this must open the ticket file.  This is why 
-     * it was done before tf_init.
-     */
-       
-    lreply(200, "Ticket file: %s", tkt_string());
-
-    lreply(200, "Principal: %s", krb_unparse_name(&pr));
-    while ((err = tf_get_cred(&c)) == KSUCCESS) {
-	if (header) {
-	    lreply(200, "%-15s  %-15s  %s",
-		   "  Issued", "  Expires", "  Principal (kvno)");
-	    header = 0;
-	}
-	strlcpy(buf1, short_date(c.issue_date), sizeof(buf1));
-	c.issue_date = krb_life_to_time(c.issue_date, c.lifetime);
-	if (time(0) < (unsigned long) c.issue_date)
-	    strlcpy(buf2, short_date(c.issue_date), sizeof(buf2));
-	else
-	    strlcpy(buf2, ">>> Expired <<< ", sizeof(buf2));
-	lreply(200, "%s  %s  %s (%d)", buf1, buf2,
-	       krb_unparse_name_long(c.service, c.instance, c.realm), c.kvno); 
-    }
-    if (header && err == EOF) {
-	lreply(200, "No tickets in file.");
-    }
-    reply(200, " ");
-}
-
-/*
- * Only destroy if we created the tickets
- */
-
-void
-cond_kdestroy(void)
-{
-    if (do_destroy_tickets)
-	dest_tkt();
-    afsunlog();
-}
-
-void
-kdestroy(void)
-{
-    dest_tkt();
-    afsunlog();
-    reply(200, "Tickets destroyed");
-}
-
-void
 krbtkfile(const char *tkfile)
 {
     do_destroy_tickets = 0;
@@ -350,10 +253,68 @@ krbtkfile(const char *tkfile)
 
 #endif /* KRB4 */
 
+#ifdef KRB5
+
+static void
+dest_cc(void)
+{
+    krb5_context context;
+    krb5_error_code ret;
+    krb5_ccache id;
+    
+    ret = krb5_init_context(&context);
+    if (ret == 0) {
+	if (k5ccname)
+	    ret = krb5_cc_resolve(context, k5ccname, &id);
+	else
+	    ret = krb5_cc_default (context, &id);
+	if (ret)
+	    krb5_free_context(context);
+    }
+    if (ret == 0) {
+	krb5_cc_destroy(context, id);
+	krb5_free_context (context);
+    }
+}
+#endif
+
 #if defined(KRB4) || defined(KRB5)
 
+/*
+ * Only destroy if we created the tickets
+ */
+
 void
-afslog(const char *cell)
+cond_kdestroy(void)
+{
+    if (do_destroy_tickets) {
+#if KRB4
+	dest_tkt();
+#endif
+#if KRB5
+	dest_cc();
+#endif
+	do_destroy_tickets = 0;
+    }
+    afsunlog();
+}
+
+void
+kdestroy(void)
+{
+#if KRB4
+    dest_tkt();
+#endif
+#if KRB5
+    dest_cc();
+#endif
+    afsunlog();
+    reply(200, "Tickets destroyed");
+}
+
+
+void
+afslog(const char *cell, int quiet)
 {
     if(k_hasafs()) {
 #ifdef KRB5
@@ -363,7 +324,10 @@ afslog(const char *cell)
 
 	ret = krb5_init_context(&context);
 	if (ret == 0) {
-	    ret = krb5_cc_default(context, &id);
+	    if (k5ccname)
+		ret = krb5_cc_resolve(context, k5ccname, &id);
+	    else
+		ret = krb5_cc_default(context, &id);
 	    if (ret)
 		krb5_free_context(context);
 	}
@@ -376,9 +340,11 @@ afslog(const char *cell)
 #ifdef KRB4
 	krb_afslog(cell, 0);
 #endif
-	reply(200, "afslog done");
+	if (!quiet)
+	    reply(200, "afslog done");
     } else {
-	reply(200, "no AFS present");
+	if (!quiet)
+	    reply(200, "no AFS present");
     }
 }
 
