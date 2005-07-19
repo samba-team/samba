@@ -136,56 +136,50 @@ NTSTATUS ejs_pull_hyper(struct ejs_rpc *ejs,
 			struct MprVar *v, const char *name, uint64_t *r)
 {
 	NDR_CHECK(mprGetVar(&v, name));
-	*r = mprVarToInteger(v);
+	*r = mprVarToNumber(v);
 	return NT_STATUS_OK;
 }
 
 NTSTATUS ejs_push_hyper(struct ejs_rpc *ejs, 
 			struct MprVar *v, const char *name, const uint64_t *r)
 {
-	return mprSetVar(v, name, mprCreateIntegerVar(*r));
+	return mprSetVar(v, name, mprCreateNumberVar(*r));
 }
 
 NTSTATUS ejs_pull_dlong(struct ejs_rpc *ejs, 
 			struct MprVar *v, const char *name, uint64_t *r)
 {
-	NDR_CHECK(mprGetVar(&v, name));
-	*r = mprVarToInteger(v);
-	return NT_STATUS_OK;
+	return ejs_pull_hyper(ejs, v, name, r);
 }
 
 NTSTATUS ejs_push_dlong(struct ejs_rpc *ejs, 
 			struct MprVar *v, const char *name, const uint64_t *r)
 {
-	return mprSetVar(v, name, mprCreateIntegerVar(*r));
+	return ejs_push_hyper(ejs, v, name, r);
 }
 
 NTSTATUS ejs_pull_udlong(struct ejs_rpc *ejs, 
 			struct MprVar *v, const char *name, uint64_t *r)
 {
-	NDR_CHECK(mprGetVar(&v, name));
-	*r = mprVarToInteger(v);
-	return NT_STATUS_OK;
+	return ejs_pull_hyper(ejs, v, name, r);
 }
 
 NTSTATUS ejs_push_udlong(struct ejs_rpc *ejs, 
 			struct MprVar *v, const char *name, const uint64_t *r)
 {
-	return mprSetVar(v, name, mprCreateIntegerVar(*r));
+	return ejs_push_hyper(ejs, v, name, r);
 }
 
 NTSTATUS ejs_pull_NTTIME(struct ejs_rpc *ejs, 
 			struct MprVar *v, const char *name, uint64_t *r)
 {
-	NDR_CHECK(mprGetVar(&v, name));
-	*r = mprVarToInteger(v);
-	return NT_STATUS_OK;
+	return ejs_pull_hyper(ejs, v, name, r);
 }
 
 NTSTATUS ejs_push_NTTIME(struct ejs_rpc *ejs, 
 			struct MprVar *v, const char *name, const uint64_t *r)
 {
-	return mprSetVar(v, name, mprCreateIntegerVar(*r));
+	return ejs_push_hyper(ejs, v, name, r);
 }
 
 
