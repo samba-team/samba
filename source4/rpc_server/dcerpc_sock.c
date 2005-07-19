@@ -29,6 +29,7 @@
 #include "lib/events/events.h"
 #include "rpc_server/dcerpc_server.h"
 #include "smbd/service_stream.h"
+#include "lib/messaging/irpc.h"
 
 struct dcesrv_socket_context {
 	const struct dcesrv_endpoint *endpoint;
@@ -76,6 +77,8 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 	}
 
 	srv_conn->private = dcesrv_conn;
+
+	irpc_add_name(srv_conn->msg_ctx, "rpc_server");
 
 	return;	
 }
