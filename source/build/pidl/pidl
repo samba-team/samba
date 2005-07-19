@@ -225,7 +225,7 @@ sub process_file($)
 			$header = Parse::Pidl::Util::ChangeExtension($output, ".h");
 		}
 		require Parse::Pidl::Samba::NDR::Header;
-		Parse::Pidl::Util::FileSave($header, Parse::Pidl::Samba::NDR::Header::Parse($ndr));
+		Parse::Pidl::Util::FileSave($header, Parse::Pidl::Samba::NDR::Header::Parse($pidl));
 		if (defined($opt_swig)) {
 		  require Parse::Pidl::Samba::SWIG;
 		  my($filename) = $output;

@@ -7,7 +7,7 @@ package Parse::Pidl::Typelist;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(hasType getType);
+@EXPORT = qw(hasType getType mapType);
 
 use Parse::Pidl::Util qw(has_property);
 use strict;

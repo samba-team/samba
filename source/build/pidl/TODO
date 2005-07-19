@@ -7,3 +7,5 @@
 
 - don't be so strict on array boundaries.. arrays can and will be empty when 
   a (regular) remote error occurs
+ 
+- support nested elements

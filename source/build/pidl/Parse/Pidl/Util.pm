@@ -6,7 +6,7 @@ package Parse::Pidl::Util;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(has_property property_matches ParseExpr);
+@EXPORT = qw(has_property property_matches ParseExpr is_constant);
 
 use strict;
 
