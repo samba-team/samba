@@ -387,6 +387,7 @@ sub HeaderInterface($)
 	foreach my $d (@{$interface->{DATA}}) {
 		next if $d->{TYPE} ne "FUNCTION";
 		next if has_property($d, "noopnum");
+		next if grep(/$d->{NAME}/,@{$interface->{INHERITED_FUNCTIONS}});
 		my $u_name = uc $d->{NAME};
 		pidl "#define DCERPC_$u_name (";
 	
