@@ -79,6 +79,8 @@ struct smbsrv_tcon {
 
 	/* the reported device type */
 	char *dev_type;
+
+	struct timeval connect_time;
 };
 
 /* a set of flags to control handling of request structures */
