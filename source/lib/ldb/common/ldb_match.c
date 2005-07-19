@@ -113,14 +113,53 @@ static int ldb_match_present(struct ldb_context *ldb,
 	return 0;
 }
 
+static int ldb_match_comparison(struct ldb_context *ldb, 
+				struct ldb_message *msg,
+				struct ldb_parse_tree *tree,
+				const char *base,
+				enum ldb_scope scope,
+				enum ldb_parse_op comp_op)
+{
+	unsigned int i;
+	struct ldb_message_element *el;
+	const struct ldb_attrib_handler *h;
+	int ret;
+
+	/* FIXME: APPROX comparison not handled yet */
+	if (comp_op == LDB_OP_APPROX) return 0;
+
+	el = ldb_msg_find_element(msg, tree->u.comparison.attr);
+	if (el == NULL) {
+		return 0;
+	}
+
+	h = ldb_attrib_handler(ldb, el->name);
+
+	for (i = 0; i < el->num_values; i++) {
+		ret = h->comparison_fn(ldb, ldb, &el->values[i], &tree->u.comparison.value);
+
+		if (ret == 0) {
+			return 1;
+		}
+		if (ret > 0 && comp_op == LDB_OP_GREATER) {
+			return 1;
+		}
+		if (ret < 0 && comp_op == LDB_OP_LESS) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
 /*
   match a simple leaf node
 */
-static int ldb_match_simple(struct ldb_context *ldb, 
-			    struct ldb_message *msg,
-			    struct ldb_parse_tree *tree,
-			    const char *base,
-			    enum ldb_scope scope)
+static int ldb_match_equality(struct ldb_context *ldb, 
+			      struct ldb_message *msg,
+			      struct ldb_parse_tree *tree,
+			      const char *base,
+			      enum ldb_scope scope)
 {
 	unsigned int i;
 	struct ldb_message_element *el;
@@ -128,12 +167,12 @@ static int ldb_match_simple(struct ldb_context *ldb,
 	struct ldb_dn *msgdn, *valuedn;
 	int ret;
 
-	if (ldb_attr_cmp(tree->u.simple.attr, "dn") == 0) {
+	if (ldb_attr_cmp(tree->u.equality.attr, "dn") == 0) {
 
 		msgdn = ldb_dn_explode_casefold(ldb, msg->dn);
 		if (msgdn == NULL) return 0;
 
-		valuedn = ldb_dn_explode_casefold(ldb, tree->u.simple.value.data);
+		valuedn = ldb_dn_explode_casefold(ldb, tree->u.equality.value.data);
 		if (valuedn == NULL) {
 			talloc_free(msgdn);
 			return 0;
@@ -148,7 +187,7 @@ static int ldb_match_simple(struct ldb_context *ldb,
 		return 0;
 	}
 
-	el = ldb_msg_find_element(msg, tree->u.simple.attr);
+	el = ldb_msg_find_element(msg, tree->u.equality.attr);
 	if (el == NULL) {
 		return 0;
 	}
@@ -156,7 +195,7 @@ static int ldb_match_simple(struct ldb_context *ldb,
 	h = ldb_attrib_handler(ldb, el->name);
 
 	for (i=0;i<el->num_values;i++) {
-		if (h->comparison_fn(ldb, ldb, &tree->u.simple.value, 
+		if (h->comparison_fn(ldb, ldb, &tree->u.equality.value, 
 				     &el->values[i]) == 0) {
 			return 1;
 		}
@@ -242,7 +281,7 @@ static int ldb_match_substring(struct ldb_context *ldb,
 	unsigned int i;
 	struct ldb_message_element *el;
 
-	el = ldb_msg_find_element(msg, tree->u.simple.attr);
+	el = ldb_msg_find_element(msg, tree->u.substring.attr);
 	if (el == NULL) {
 		return 0;
 	}
@@ -357,21 +396,6 @@ static int ldb_match_message(struct ldb_context *ldb,
 	int v;
 
 	switch (tree->operation) {
-	case LDB_OP_SIMPLE:
-		return ldb_match_simple(ldb, msg, tree, base, scope);
-
-	case LDB_OP_PRESENT:
-		return ldb_match_present(ldb, msg, tree, base, scope);
-
-	case LDB_OP_SUBSTRING:
-		return ldb_match_substring(ldb, msg, tree, base, scope);
-
-	case LDB_OP_EXTENDED:
-		return ldb_match_extended(ldb, msg, tree, base, scope);
-
-	case LDB_OP_NOT:
-		return ! ldb_match_message(ldb, msg, tree->u.isnot.child, base, scope);
-
 	case LDB_OP_AND:
 		for (i=0;i<tree->u.list.num_elements;i++) {
 			v = ldb_match_message(ldb, msg, tree->u.list.elements[i],
@@ -387,6 +411,31 @@ static int ldb_match_message(struct ldb_context *ldb,
 			if (v) return 1;
 		}
 		return 0;
+
+	case LDB_OP_NOT:
+		return ! ldb_match_message(ldb, msg, tree->u.isnot.child, base, scope);
+
+	case LDB_OP_EQUALITY:
+		return ldb_match_equality(ldb, msg, tree, base, scope);
+
+	case LDB_OP_SUBSTRING:
+		return ldb_match_substring(ldb, msg, tree, base, scope);
+
+	case LDB_OP_GREATER:
+		return ldb_match_comparison(ldb, msg, tree, base, scope, LDB_OP_GREATER);
+
+	case LDB_OP_LESS:
+		return ldb_match_comparison(ldb, msg, tree, base, scope, LDB_OP_LESS);
+
+	case LDB_OP_PRESENT:
+		return ldb_match_present(ldb, msg, tree, base, scope);
+
+	case LDB_OP_APPROX:
+		return ldb_match_comparison(ldb, msg, tree, base, scope, LDB_OP_APPROX);
+
+	case LDB_OP_EXTENDED:
+		return ldb_match_extended(ldb, msg, tree, base, scope);
+
 	}
 
 	return 0;

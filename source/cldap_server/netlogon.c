@@ -200,43 +200,43 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 	/* extract the query elements */
 	for (i=0;i<tree->u.list.num_elements;i++) {
 		struct ldb_parse_tree *t = tree->u.list.elements[i];
-		if (t->operation != LDB_OP_SIMPLE) goto failed;
-		if (strcasecmp(t->u.simple.attr, "DnsDomain") == 0) {
+		if (t->operation != LDB_OP_EQUALITY) goto failed;
+		if (strcasecmp(t->u.equality.attr, "DnsDomain") == 0) {
 			domain = talloc_strndup(tmp_ctx, 
-						t->u.simple.value.data,
-						t->u.simple.value.length);
+						t->u.equality.value.data,
+						t->u.equality.value.length);
 		}
-		if (strcasecmp(t->u.simple.attr, "Host") == 0) {
+		if (strcasecmp(t->u.equality.attr, "Host") == 0) {
 			host = talloc_strndup(tmp_ctx, 
-					      t->u.simple.value.data,
-					      t->u.simple.value.length);
+					      t->u.equality.value.data,
+					      t->u.equality.value.length);
 		}
-		if (strcasecmp(t->u.simple.attr, "DomainGuid") == 0) {
+		if (strcasecmp(t->u.equality.attr, "DomainGuid") == 0) {
 			NTSTATUS enc_status;
 			struct GUID guid;
 			enc_status = ldap_decode_ndr_GUID(tmp_ctx, 
-							  t->u.simple.value, &guid);
+							  t->u.equality.value, &guid);
 			if (NT_STATUS_IS_OK(enc_status)) {
 				domain_guid = GUID_string(tmp_ctx, &guid);
 			}
 		}
-		if (strcasecmp(t->u.simple.attr, "DomainSid") == 0) {
+		if (strcasecmp(t->u.equality.attr, "DomainSid") == 0) {
 			domain_sid = talloc_strndup(tmp_ctx, 
-						    t->u.simple.value.data,
-						    t->u.simple.value.length);
+						    t->u.equality.value.data,
+						    t->u.equality.value.length);
 		}
-		if (strcasecmp(t->u.simple.attr, "User") == 0) {
+		if (strcasecmp(t->u.equality.attr, "User") == 0) {
 			user = talloc_strndup(tmp_ctx, 
-					      t->u.simple.value.data,
-					      t->u.simple.value.length);
+					      t->u.equality.value.data,
+					      t->u.equality.value.length);
 		}
-		if (strcasecmp(t->u.simple.attr, "NtVer") == 0 &&
-		    t->u.simple.value.length == 4) {
-			version = IVAL(t->u.simple.value.data, 0);
+		if (strcasecmp(t->u.equality.attr, "NtVer") == 0 &&
+		    t->u.equality.value.length == 4) {
+			version = IVAL(t->u.equality.value.data, 0);
 		}
-		if (strcasecmp(t->u.simple.attr, "AAC") == 0 &&
-		    t->u.simple.value.length == 4) {
-			acct_control = IVAL(t->u.simple.value.data, 0);
+		if (strcasecmp(t->u.equality.attr, "AAC") == 0 &&
+		    t->u.equality.value.length == 4) {
+			acct_control = IVAL(t->u.equality.value.data, 0);
 		}
 	}
 
