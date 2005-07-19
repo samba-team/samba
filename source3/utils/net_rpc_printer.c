@@ -1353,7 +1353,7 @@ static NTSTATUS rpc_printer_publish_internals_args(struct cli_state *cli, TALLOC
 		ctr_pub.printers_7->action = action;
 
 		result = cli_spoolss_setprinter(cli, mem_ctx, &hnd, level, &ctr_pub, 0);
-		if (!W_ERROR_IS_OK(result) && (W_ERROR_V(result) =! W_ERROR_V(WERR_IO_PENDING))) {
+		if (!W_ERROR_IS_OK(result) && (W_ERROR_V(result) != W_ERROR_V(WERR_IO_PENDING))) {
 			printf("cannot set printer-info: %s\n", dos_errstr(result));
 			goto done;
 		}
