@@ -7,8 +7,8 @@
 package Parse::Pidl::Samba::NDR::Header;
 
 use strict;
-use Parse::Pidl::Typelist;
-use Parse::Pidl::Util qw(has_property);
+use Parse::Pidl::Typelist qw(mapType);
+use Parse::Pidl::Util qw(has_property is_constant);
 use Parse::Pidl::NDR qw(GetNextLevel GetPrevLevel);
 use Parse::Pidl::Samba::NDR::Parser;
 
@@ -22,9 +22,9 @@ sub pidl ($)
 
 sub tabs()
 {
-	for (my($i)=0; $i < $tab_depth; $i++) {
-		pidl "\t";
-	}
+	my $res = "";
+	$res .="\t" foreach (1..$tab_depth);
+	return $res;
 }
 
 #####################################################################
@@ -57,32 +57,20 @@ sub HeaderElement($)
 	pidl tabs();
 	HeaderType($element, $element->{TYPE}, "");
 	pidl " ";
-	my $prefix = "";
-	my $postfix = "";
-	foreach my $l (@{$element->{LEVELS}}) 
+	my $numstar = $element->{POINTERS};
+	foreach (@{$element->{ARRAY_LEN}})
 	{
-		if (($l->{TYPE} eq "POINTER")) {
-			my $nl = GetNextLevel($element, $l);
-			$nl = GetNextLevel($element, $nl) if ($nl->{TYPE} eq "SUBCONTEXT");
-			next if ($nl->{TYPE} eq "DATA" and Parse::Pidl::Typelist::scalar_is_reference($nl->{DATA_TYPE}));
-			$prefix .= "*";
-		} elsif ($l->{TYPE} eq "ARRAY") {
-			my $pl = GetPrevLevel($element, $l);
-			next if ($pl and $pl->{TYPE} eq "POINTER");
-
-			if ($l->{IS_FIXED}) { 
-				$postfix .= "[$l->{SIZE_IS}]"; 
-			} else {
-				$prefix .= "*";
-			}
-		} elsif ($l->{TYPE} eq "DATA") {
-    			pidl "$prefix$element->{NAME}$postfix";
-		}
+		next if is_constant($_);
+		$numstar++;
+	}
+	$numstar-- if ($element->{TYPE} eq "string");
+	pidl "*" foreach (1..$numstar);
+	pidl $element->{NAME};
+	foreach (@{$element->{ARRAY_LEN}}) {
+		next unless is_constant($_);
+		pidl "[$_]";
 	}
 
-	if (defined $element->{ARRAY_LEN}[0] && Parse::Pidl::Util::is_constant($element->{ARRAY_LEN}[0])) {
-		pidl "[$element->{ARRAY_LEN}[0]]";
-	}
 	pidl ";";
 	if (defined $element->{PROPERTIES}) {
 		HeaderProperties($element->{PROPERTIES}, ["in", "out"]);
@@ -95,7 +83,7 @@ sub HeaderElement($)
 sub HeaderStruct($$)
 {
     my($struct,$name) = @_;
-    pidl "\nstruct $name {\n";
+	pidl "struct $name {\n";
     $tab_depth++;
     my $el_count=0;
     if (defined $struct->{ELEMENTS}) {
@@ -106,10 +94,10 @@ sub HeaderStruct($$)
     }
     if ($el_count == 0) {
 	    # some compilers can't handle empty structures
-	    pidl "\tchar _empty_;\n";
+	    pidl tabs()."char _empty_;\n";
     }
     $tab_depth--;
-    pidl "}";
+    pidl tabs()."}";
 	if (defined $struct->{PROPERTIES}) {
 		HeaderProperties($struct->{PROPERTIES}, []);
 	}
@@ -123,12 +111,12 @@ sub HeaderEnum($$)
     my $first = 1;
 
     if (not Parse::Pidl::Util::useUintEnums()) {
-    	pidl "\nenum $name {\n";
+    	pidl "enum $name {\n";
 	$tab_depth++;
 	foreach my $e (@{$enum->{ELEMENTS}}) {
  	    unless ($first) { pidl ",\n"; }
 	    $first = 0;
-	    tabs();
+	    pidl tabs();
 	    pidl $e;
 	}
 	pidl "\n";
@@ -136,7 +124,7 @@ sub HeaderEnum($$)
 	pidl "}";
     } else {
         my $count = 0;
-	pidl "\nenum $name { __donnot_use_enum_$name=0x7FFFFFFF};\n";
+	pidl "enum $name { __donnot_use_enum_$name=0x7FFFFFFF};\n";
 	my $with_val = 0;
 	my $without_val = 0;
 	foreach my $e (@{$enum->{ELEMENTS}}) {
@@ -168,13 +156,8 @@ sub HeaderBitmap($$)
 {
     my($bitmap,$name) = @_;
 
-    pidl "\n/* bitmap $name */\n";
-
-    foreach my $e (@{$bitmap->{ELEMENTS}})
-    {
-	    pidl "#define $e\n";
-    }
-
+    pidl "/* bitmap $name */\n";
+    pidl "#define $_\n" foreach (@{$bitmap->{ELEMENTS}});
     pidl "\n";
 }
 
@@ -185,7 +168,7 @@ sub HeaderUnion($$)
 	my($union,$name) = @_;
 	my %done = ();
 
-	pidl "\nunion $name {\n";
+	pidl "union $name {\n";
 	$tab_depth++;
 	foreach my $e (@{$union->{ELEMENTS}}) {
 		if ($e->{TYPE} ne "EMPTY") {
@@ -219,7 +202,7 @@ sub HeaderType($$$)
 	if (has_property($e, "charset")) {
 		pidl "const char";
 	} else {
-		pidl Parse::Pidl::Typelist::mapType($e->{TYPE});
+		pidl mapType($e->{TYPE});
 	}
 }
 
@@ -229,7 +212,7 @@ sub HeaderTypedef($)
 {
     my($typedef) = shift;
     HeaderType($typedef, $typedef->{DATA}, $typedef->{NAME});
-    pidl ";\n" unless ($typedef->{DATA}->{TYPE} eq "BITMAP");
+    pidl ";\n\n" unless ($typedef->{DATA}->{TYPE} eq "BITMAP");
 }
 
 #####################################################################
@@ -247,17 +230,14 @@ sub HeaderTypedefProto($)
 
     return unless has_property($d, "public");
 
-	my $pull_args = $tf->{PULL_FN_ARGS}->($d);
-	my $push_args = $tf->{PUSH_FN_ARGS}->($d);
-	my $print_args = $tf->{PRINT_FN_ARGS}->($d);
 	unless (has_property($d, "nopush")) {
-		pidl "NTSTATUS ndr_push_$d->{NAME}($push_args);\n";
+		pidl "NTSTATUS ndr_push_$d->{NAME}(struct ndr_push *ndr, int ndr_flags, " . $tf->{DECL}->($d, "push") . ");\n";
 	}
 	unless (has_property($d, "nopull")) {
-	    pidl "NTSTATUS ndr_pull_$d->{NAME}($pull_args);\n";
+	    pidl "NTSTATUS ndr_pull_$d->{NAME}(struct ndr_pull *ndr, int ndr_flags, " . $tf->{DECL}->($d, "pull") . ");\n";
 	}
     unless (has_property($d, "noprint")) {
-	    pidl "void ndr_print_$d->{NAME}($print_args);\n";
+	    pidl "void ndr_print_$d->{NAME}(struct ndr_print *ndr, const char *name, " . $tf->{DECL}->($d, "print") . ");\n";
     }
 }
 
@@ -292,14 +272,10 @@ sub HeaderFunctionInOut_needed($$)
 {
     my($fn,$prop) = @_;
 
-    if ($prop eq "out" && $fn->{RETURN_TYPE}) {
-	    return 1;
-    }
+    return 1 if ($prop eq "out" && $fn->{RETURN_TYPE} ne "void");
 
-    foreach my $e (@{$fn->{ELEMENTS}}) {
-	    if (has_property($e, $prop)) {
-		    return 1;
-	    }
+    foreach (@{$fn->{ELEMENTS}}) {
+	    return 1 if (has_property($_, $prop));
     }
 
     return undef;
@@ -322,35 +298,29 @@ sub HeaderFunction($)
     my $needed = 0;
 
     if (HeaderFunctionInOut_needed($fn, "in")) {
-	    tabs();
-	    pidl "struct {\n";
+	    pidl tabs()."struct {\n";
 	    $tab_depth++;
 	    HeaderFunctionInOut($fn, "in");
 	    $tab_depth--;
-	    tabs();
-	    pidl "} in;\n\n";
+	    pidl tabs()."} in;\n\n";
 	    $needed++;
     }
 
     if (HeaderFunctionInOut_needed($fn, "out")) {
-	    tabs();
-	    pidl "struct {\n";
+	    pidl tabs()."struct {\n";
 	    $tab_depth++;
 	    HeaderFunctionInOut($fn, "out");
-	    if ($fn->{RETURN_TYPE}) {
-		    tabs();
-		    pidl Parse::Pidl::Typelist::mapType($fn->{RETURN_TYPE}) . " result;\n";
+	    if ($fn->{RETURN_TYPE} ne "void") {
+		    pidl tabs().mapType($fn->{RETURN_TYPE}) . " result;\n";
 	    }
 	    $tab_depth--;
-	    tabs();
-	    pidl "} out;\n\n";
+	    pidl tabs()."} out;\n\n";
 	    $needed++;
     }
 
     if (! $needed) {
 	    # sigh - some compilers don't like empty structures
-	    tabs();
-	    pidl "int _dummy_element;\n";
+	    pidl tabs()."int _dummy_element;\n";
     }
 
     $tab_depth--;
@@ -366,7 +336,7 @@ sub HeaderFnProto($$)
 
 	pidl "void ndr_print_$name(struct ndr_print *ndr, const char *name, int flags, const struct $name *r);\n";
 
-	if (defined($fn->{OPNUM})) {
+	unless (has_property($fn, "noopnum")) {
 		pidl "NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r);\n";
    		pidl "struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r);\n";
 	}
@@ -414,17 +384,14 @@ sub HeaderInterface($)
 		pidl "NTSTATUS dcerpc_server_$interface->{NAME}_init(void);\n\n";
 	}
 
-	foreach my $d (@{$interface->{FUNCTIONS}}) {
-		next if not defined($d->{OPNUM});
+	foreach my $d (@{$interface->{DATA}}) {
+		next if $d->{TYPE} ne "FUNCTION";
+		next if has_property($d, "noopnum");
 		my $u_name = uc $d->{NAME};
 		pidl "#define DCERPC_$u_name (";
 	
 		if (defined($interface->{BASE})) {
 			pidl "DCERPC_" . uc $interface->{BASE} . "_CALL_COUNT + ";
-		}
-
-		if ($d->{OPNUM} != $count) {
-			die ("Function ".$d->{NAME}." has: wrong opnum [".$d->{OPNUM}."] should be [".$count."]");
 		}
 
 		pidl sprintf("0x%02x", $count) . ")\n";
@@ -439,16 +406,19 @@ sub HeaderInterface($)
 	
 	pidl "$count)\n\n";
 
-	foreach my $d (@{$interface->{CONSTS}}) {
+	foreach my $d (@{$interface->{DATA}}) {
+		next if ($d->{TYPE} ne "CONST");
 		HeaderConst($d);
 	}
 
-	foreach my $d (@{$interface->{TYPEDEFS}}) {
+	foreach my $d (@{$interface->{DATA}}) {
+		next if ($d->{TYPE} ne "TYPEDEF");
 		HeaderTypedef($d);
 		HeaderTypedefProto($d);
 	}
 
-	foreach my $d (@{$interface->{FUNCTIONS}}) {
+	foreach my $d (@{$interface->{DATA}}) {
+		next if ($d->{TYPE} ne "FUNCTION");
 		HeaderFunction($d);
 		HeaderFnProto($interface, $d);
 	}
