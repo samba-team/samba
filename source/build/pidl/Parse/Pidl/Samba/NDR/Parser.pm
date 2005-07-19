@@ -10,7 +10,7 @@ package Parse::Pidl::Samba::NDR::Parser;
 use strict;
 use Parse::Pidl::Typelist qw(hasType getType);
 use Parse::Pidl::Util qw(has_property ParseExpr);
-use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel);
+use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
 
 # list of known types
 my %typefamily;
@@ -55,7 +55,10 @@ sub has_fast_array($$)
 	return 0 unless ($nl->{TYPE} eq "DATA");
 	return 0 unless (hasType($nl->{DATA_TYPE}));
 
-	return Parse::Pidl::Typelist::is_scalar($nl->{DATA_TYPE});
+	my $t = getType($nl->{DATA_TYPE});
+
+	# Only uint8 and string have fast array functions at the moment
+	return ($t->{NAME} eq "uint8") or ($t->{NAME} eq "string");
 }
 
 sub get_pointer_to($)
@@ -567,7 +570,7 @@ sub ParseElementPushLevel
 			pidl "}";
 		}
 
-		if ($deferred and Parse::Pidl::NDR::ContainsDeferred($e, $l)) {
+		if ($deferred and ContainsDeferred($e, $l)) {
 			pidl "for ($counter = 0; $counter < $length; $counter++) {";
 			indent;
 			ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, 0, 1);
@@ -590,7 +593,7 @@ sub ParseElementPush($$$$$$)
 
 	$var_name = append_prefix($e, $var_name);
 
-	return unless $primitives or ($deferred and Parse::Pidl::NDR::ContainsDeferred($e, $e->{LEVELS}[0]));
+	return unless $primitives or ($deferred and ContainsDeferred($e, $e->{LEVELS}[0]));
 
 	start_flags($e);
 
@@ -881,7 +884,7 @@ sub ParseElementPullLevel
 			}
 		}
 
-		if ($deferred and Parse::Pidl::NDR::ContainsDeferred($e, $l)) {
+		if ($deferred and ContainsDeferred($e, $l)) {
 			pidl "for ($counter = 0; $counter < $length; $counter++) {";
 			indent;
 			ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, 0, 1);
@@ -903,7 +906,7 @@ sub ParseElementPull($$$$$$)
 
 	$var_name = append_prefix($e, $var_name);
 
-	return unless $primitives or ($deferred and Parse::Pidl::NDR::ContainsDeferred($e, $e->{LEVELS}[0]));
+	return unless $primitives or ($deferred and ContainsDeferred($e, $e->{LEVELS}[0]));
 
 	start_flags($e);
 
