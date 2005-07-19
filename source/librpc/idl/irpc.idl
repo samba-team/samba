@@ -52,7 +52,8 @@
          management calls for the smb server
 	******************************************************/
 	typedef [v1_enum] enum {
-		SMBSRV_INFO_SESSIONS
+		SMBSRV_INFO_SESSIONS,
+		SMBSRV_INFO_TREES
 	} smbsrv_info_level;
 
 	typedef struct {
@@ -68,8 +69,21 @@
 		[size_is(num_sessions)] smbsrv_session_info *sessions;
 	} smbsrv_sessions;
 
+	typedef struct {
+		uint16 tid;
+		astring share_name;
+		astring client_ip;
+		NTTIME  connect_time;
+	} smbsrv_tree_info;
+
+	typedef struct {
+		uint32 num_trees;
+		[size_is(num_trees)] smbsrv_tree_info *trees;
+	} smbsrv_trees;
+
 	typedef union {
 		[case(SMBSRV_INFO_SESSIONS)] smbsrv_sessions sessions;
+		[case(SMBSRV_INFO_TREES)]    smbsrv_trees    trees;
 	} smbsrv_info;
 
 	void smbsrv_information(
