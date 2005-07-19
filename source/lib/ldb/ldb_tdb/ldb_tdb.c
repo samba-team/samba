@@ -861,7 +861,7 @@ int ltdb_connect(struct ldb_context *ldb, const char *url,
 	/* note that we use quite a large default hash size */
 	tdb = tdb_open(path, 10000, tdb_flags, open_flags, 0666);
 	if (!tdb) {
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "Unable to open tdb '%s'", path);
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "Unable to open tdb '%s'\n", path);
 		return -1;
 	}
 
