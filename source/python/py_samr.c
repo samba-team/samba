@@ -146,7 +146,7 @@ static PyObject *samr_set_user_info2(PyObject *self, PyObject *args,
 	NTSTATUS ntstatus;
 	int level;
 	union {
-		SAM_USER_INFO_10 id10;
+		SAM_USER_INFO_16 id16;
 		SAM_USER_INFO_21 id21;
 	} pinfo;
 
@@ -164,10 +164,10 @@ static PyObject *samr_set_user_info2(PyObject *self, PyObject *args,
 	ctr.switch_value = level;
 
 	switch(level) {
-	case 0x10:
-		ctr.info.id10 = &pinfo.id10;
+	case 16:
+		ctr.info.id16 = &pinfo.id16;
 		
-		if (!py_to_SAM_USER_INFO_10(ctr.info.id10, info)) {
+		if (!py_to_SAM_USER_INFO_16(ctr.info.id16, info)) {
 			PyErr_SetString(
 				samr_error, "error converting user info");
 			goto done;

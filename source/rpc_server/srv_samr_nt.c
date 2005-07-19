@@ -1411,10 +1411,10 @@ static NTSTATUS get_user_info_7(TALLOC_CTX *mem_ctx, SAM_USER_INFO_7 *id7, DOM_S
 	return NT_STATUS_OK;
 }
 /*************************************************************************
- get_user_info_10. Safe. Only gives out acb bits.
+ get_user_info_16. Safe. Only gives out acb bits.
  *************************************************************************/
 
-static NTSTATUS get_user_info_10(TALLOC_CTX *mem_ctx, SAM_USER_INFO_10 *id10, DOM_SID *user_sid)
+static NTSTATUS get_user_info_16(TALLOC_CTX *mem_ctx, SAM_USER_INFO_16 *id16, DOM_SID *user_sid)
 {
 	SAM_ACCOUNT *smbpass=NULL;
 	BOOL ret;
@@ -1437,8 +1437,8 @@ static NTSTATUS get_user_info_10(TALLOC_CTX *mem_ctx, SAM_USER_INFO_10 *id10, DO
 
 	DEBUG(3,("User:[%s]\n", pdb_get_username(smbpass) ));
 
-	ZERO_STRUCTP(id10);
-	init_sam_user_info10(id10, pdb_get_acct_ctrl(smbpass) );
+	ZERO_STRUCTP(id16);
+	init_sam_user_info16(id16, pdb_get_acct_ctrl(smbpass) );
 
 	pdb_free_sam(&smbpass);
 
@@ -1446,12 +1446,12 @@ static NTSTATUS get_user_info_10(TALLOC_CTX *mem_ctx, SAM_USER_INFO_10 *id10, DO
 }
 
 /*************************************************************************
- get_user_info_12. OK - this is the killer as it gives out password info.
+ get_user_info_18. OK - this is the killer as it gives out password info.
  Ensure that this is only allowed on an encrypted connection with a root
  user. JRA. 
  *************************************************************************/
 
-static NTSTATUS get_user_info_12(pipes_struct *p, TALLOC_CTX *mem_ctx, SAM_USER_INFO_12 * id12, DOM_SID *user_sid)
+static NTSTATUS get_user_info_18(pipes_struct *p, TALLOC_CTX *mem_ctx, SAM_USER_INFO_18 * id18, DOM_SID *user_sid)
 {
 	SAM_ACCOUNT *smbpass=NULL;
 	BOOL ret;
@@ -1488,8 +1488,8 @@ static NTSTATUS get_user_info_12(pipes_struct *p, TALLOC_CTX *mem_ctx, SAM_USER_
 		return NT_STATUS_ACCOUNT_DISABLED;
 	}
 
-	ZERO_STRUCTP(id12);
-	init_sam_user_info12(id12, pdb_get_lanman_passwd(smbpass), pdb_get_nt_passwd(smbpass));
+	ZERO_STRUCTP(id18);
+	init_sam_user_info18(id18, pdb_get_lanman_passwd(smbpass), pdb_get_nt_passwd(smbpass));
 	
 	pdb_free_sam(&smbpass);
 
@@ -1601,7 +1601,7 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 	ctr->switch_value = q_u->switch_value;
 
 	switch (q_u->switch_value) {
-	case 0x07:
+	case 7:
 		ctr->info.id7 = TALLOC_ZERO_P(p->mem_ctx, SAM_USER_INFO_7);
 		if (ctr->info.id7 == NULL)
 			return NT_STATUS_NO_MEMORY;
@@ -1609,18 +1609,18 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 		if (!NT_STATUS_IS_OK(r_u->status = get_user_info_7(p->mem_ctx, ctr->info.id7, &info->sid)))
 			return r_u->status;
 		break;
-	case 0x10:
-		ctr->info.id10 = TALLOC_ZERO_P(p->mem_ctx, SAM_USER_INFO_10);
-		if (ctr->info.id10 == NULL)
+	case 16:
+		ctr->info.id16 = TALLOC_ZERO_P(p->mem_ctx, SAM_USER_INFO_16);
+		if (ctr->info.id16 == NULL)
 			return NT_STATUS_NO_MEMORY;
 
-		if (!NT_STATUS_IS_OK(r_u->status = get_user_info_10(p->mem_ctx, ctr->info.id10, &info->sid)))
+		if (!NT_STATUS_IS_OK(r_u->status = get_user_info_16(p->mem_ctx, ctr->info.id16, &info->sid)))
 			return r_u->status;
 		break;
 
 #if 0
 /* whoops - got this wrong.  i think.  or don't understand what's happening. */
-        case 0x11:
+        case 17:
         {
             NTTIME expire;
             info = (void *)&id11;
@@ -1628,9 +1628,9 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
             expire.low = 0xffffffff;
             expire.high = 0x7fffffff;
 
-            ctr->info.id = TALLOC_ZERO_P(p->mem_ctx, SAM_USER_INFO_11));
-	    ZERO_STRUCTP(ctr->info.id11);
-            init_sam_user_info11(ctr->info.id11, &expire,
+            ctr->info.id = TALLOC_ZERO_P(p->mem_ctx, SAM_USER_INFO_17));
+	    ZERO_STRUCTP(ctr->info.id17);
+            init_sam_user_info17(ctr->info.id17, &expire,
                          "BROOKFIELDS$",    /* name */
                          0x03ef,    /* user rid */
                          0x201, /* group rid */
@@ -1640,12 +1640,12 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
         }
 #endif
 
-	case 0x12:
-		ctr->info.id12 = TALLOC_ZERO_P(p->mem_ctx, SAM_USER_INFO_12);
-		if (ctr->info.id12 == NULL)
+	case 18:
+		ctr->info.id18 = TALLOC_ZERO_P(p->mem_ctx, SAM_USER_INFO_18);
+		if (ctr->info.id18 == NULL)
 			return NT_STATUS_NO_MEMORY;
 
-		if (!NT_STATUS_IS_OK(r_u->status = get_user_info_12(p, p->mem_ctx, ctr->info.id12, &info->sid)))
+		if (!NT_STATUS_IS_OK(r_u->status = get_user_info_18(p, p->mem_ctx, ctr->info.id18, &info->sid)))
 			return r_u->status;
 		break;
 		
@@ -2418,19 +2418,19 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
 }
 
 /*******************************************************************
- set_user_info_10
+ set_user_info_16
  ********************************************************************/
 
-static BOOL set_user_info_10(const SAM_USER_INFO_10 *id10, SAM_ACCOUNT *pwd)
+static BOOL set_user_info_16(const SAM_USER_INFO_16 *id16, SAM_ACCOUNT *pwd)
 {
-	if (id10 == NULL) {
-		DEBUG(5, ("set_user_info_10: NULL id10\n"));
+	if (id16 == NULL) {
+		DEBUG(5, ("set_user_info_16: NULL id16\n"));
 		pdb_free_sam(&pwd);
 		return False;
 	}
 	
 	/* FIX ME: check if the value is really changed --metze */
-	if (!pdb_set_acct_ctrl(pwd, id10->acb_info, PDB_CHANGED)) {
+	if (!pdb_set_acct_ctrl(pwd, id16->acb_info, PDB_CHANGED)) {
 		pdb_free_sam(&pwd);
 		return False;
 	}
@@ -2446,23 +2446,23 @@ static BOOL set_user_info_10(const SAM_USER_INFO_10 *id10, SAM_ACCOUNT *pwd)
 }
 
 /*******************************************************************
- set_user_info_12
+ set_user_info_18
  ********************************************************************/
 
-static BOOL set_user_info_12(SAM_USER_INFO_12 *id12, SAM_ACCOUNT *pwd)
+static BOOL set_user_info_18(SAM_USER_INFO_18 *id18, SAM_ACCOUNT *pwd)
 {
 
-	if (id12 == NULL) {
-		DEBUG(2, ("set_user_info_12: id12 is NULL\n"));
+	if (id18 == NULL) {
+		DEBUG(2, ("set_user_info_18: id18 is NULL\n"));
 		pdb_free_sam(&pwd);
 		return False;
 	}
  
-	if (!pdb_set_lanman_passwd (pwd, id12->lm_pwd, PDB_CHANGED)) {
+	if (!pdb_set_lanman_passwd (pwd, id18->lm_pwd, PDB_CHANGED)) {
 		pdb_free_sam(&pwd);
 		return False;
 	}
-	if (!pdb_set_nt_passwd     (pwd, id12->nt_pwd, PDB_CHANGED)) {
+	if (!pdb_set_nt_passwd     (pwd, id18->nt_pwd, PDB_CHANGED)) {
 		pdb_free_sam(&pwd);
 		return False;
 	}
@@ -2779,7 +2779,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 
 	switch (switch_value) {
 		case 18:
-			if (!set_user_info_12(ctr->info.id12, pwd))
+			if (!set_user_info_18(ctr->info.id18, pwd))
 				r_u->status = NT_STATUS_ACCESS_DENIED;
 			break;
 
@@ -2919,12 +2919,12 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	
 	switch (switch_value) {
 		case 16:
-			if (!set_user_info_10(ctr->info.id10, pwd))
+			if (!set_user_info_16(ctr->info.id16, pwd))
 				r_u->status = NT_STATUS_ACCESS_DENIED;
 			break;
 		case 18:
 			/* Used by AS/U JRA. */
-			if (!set_user_info_12(ctr->info.id12, pwd))
+			if (!set_user_info_18(ctr->info.id18, pwd))
 				r_u->status = NT_STATUS_ACCESS_DENIED;
 			break;
 		case 20:

@@ -22,22 +22,22 @@
 #include "python/py_conv.h"
 
 /*
- * Convert between SAM_USER_INFO_10 and Python
+ * Convert between SAM_USER_INFO_16 and Python
  */
 
-struct pyconv py_SAM_USER_INFO_10[] = {
-	{ "acb_info", PY_UINT32, offsetof(SAM_USER_INFO_10, acb_info) },
+struct pyconv py_SAM_USER_INFO_16[] = {
+	{ "acb_info", PY_UINT32, offsetof(SAM_USER_INFO_16, acb_info) },
 	{ NULL }
 };
 
-BOOL py_from_SAM_USER_INFO_10(PyObject **dict, SAM_USER_INFO_10 *info)
+BOOL py_from_SAM_USER_INFO_16(PyObject **dict, SAM_USER_INFO_16 *info)
 {
-	*dict = from_struct(info, py_SAM_USER_INFO_10);
-	PyDict_SetItemString(*dict, "level", PyInt_FromLong(0x10));
+	*dict = from_struct(info, py_SAM_USER_INFO_16);
+	PyDict_SetItemString(*dict, "level", PyInt_FromLong(16));
 	return True;
 }
 
-BOOL py_to_SAM_USER_INFO_10(SAM_USER_INFO_10 *info, PyObject *dict)
+BOOL py_to_SAM_USER_INFO_16(SAM_USER_INFO_16 *info, PyObject *dict)
 {
 	PyObject *obj, *dict_copy = PyDict_Copy(dict);
 	BOOL result = False;
@@ -48,7 +48,7 @@ BOOL py_to_SAM_USER_INFO_10(SAM_USER_INFO_10 *info, PyObject *dict)
 
 	PyDict_DelItemString(dict_copy, "level");
 
-	if (!to_struct(info, dict_copy, py_SAM_USER_INFO_10))
+	if (!to_struct(info, dict_copy, py_SAM_USER_INFO_16))
 		goto done;
 
 	result = True;
