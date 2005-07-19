@@ -9,7 +9,7 @@ package Parse::Pidl::NDR;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(GetPrevLevel GetNextLevel);
+@EXPORT = qw(GetPrevLevel GetNextLevel ContainsDeferred);
 
 use strict;
 use Parse::Pidl::Typelist qw(hasType getType);
@@ -195,7 +195,6 @@ sub GetElementLevelTable($)
 		nonfatal($e, "string() attribute on non-array element");
 	}
 
-
 	push (@$order, {
 		TYPE => "DATA",
 		DATA_TYPE => $e->{TYPE},
@@ -216,13 +215,13 @@ sub can_contain_deferred
 {
 	my $e = shift;
 
-	return 1 if ($e->{POINTERS});
 	return 0 if (Parse::Pidl::Typelist::is_scalar($e->{TYPE}));
 	return 1 unless (hasType($e->{TYPE})); # assume the worst
 
 	my $type = getType($e->{TYPE});
 
 	foreach my $x (@{$type->{DATA}->{ELEMENTS}}) {
+		return 1 if ($x->{POINTERS});
 		return 1 if (can_contain_deferred ($x));
 	}
 	
