@@ -81,6 +81,7 @@ sub ODL2IDL($)
 			foreach my $fn (reverse @{$base->{DATA}}) {
 				next unless ($fn->{TYPE} eq "FUNCTION");
 				unshift (@{$x->{DATA}}, $fn);
+				push (@{$x->{INHERITED_FUNCTIONS}}, $fn->{NAME});
 			}
 		}
 	}
