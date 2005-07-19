@@ -137,6 +137,11 @@ my $scalars = {
 				IS_REFERENCE	=> 0,
 				NDR_ALIGN	=> 4
 			},
+	"COMRESULT" => { 
+				"C_TYPE"	=> "COMRESULT",
+				IS_REFERENCE => 0,
+				NDR_ALIGN => 4
+			},
 
 	# special types
 	"nbt_string"	=> {
@@ -244,7 +249,8 @@ my $aliases = {
 	"char" => "uint8",
 	"long" => "int32",
 	"short" => "int16",
-	"HYPER_T" => "hyper"
+	"HYPER_T" => "hyper",
+	"HRESULT" => "COMRESULT",
 };
 
 sub RegisterAliases()
