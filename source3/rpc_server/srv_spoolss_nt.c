@@ -7492,7 +7492,7 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 	/* check to see if the printer already exists */
 
 	if ((snum = print_queue_snum(printer->info_2->sharename)) != -1) {
-		DEBUG(5, ("_spoolss_addprinterex: Attempted to add a printer named [%s] when one already existed!\n", 
+		DEBUG(5, ("spoolss_addprinterex_level_2: Attempted to add a printer named [%s] when one already existed!\n", 
 			printer->info_2->sharename));
 		free_a_printer(&printer, 2);
 		return WERR_PRINTER_ALREADY_EXISTS;
@@ -7505,7 +7505,12 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 		if ( !add_printer_hook(p->pipe_user.nt_user_token, printer) ) {
 			free_a_printer(&printer,2);
 			return WERR_ACCESS_DENIED;
-	}
+		}
+	} else {
+		DEBUG(0,("spoolss_addprinterex_level_2: add printer for printer %s called and no"
+			"smb.conf parameter \"addprinter command\" is defined. This"
+			"parameter must exist for this call to succeed\n",
+			printer->info_2->sharename ));
 	}
 
 	/* use our primary netbios name since get_a_printer() will convert 
