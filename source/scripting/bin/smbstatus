@@ -15,23 +15,55 @@ ok = GetOptions(ARGV, options,
 		"POPT_AUTOHELP",
 		"POPT_COMMON_SAMBA");
 if (ok == false) {
-   println("Failed to parse options: " + options.ERROR);
-   return -1;
+	println("Failed to parse options: " + options.ERROR);
+	return -1;
+}
+
+/*
+  show open sessions
+*/
+function show_sessions()
+{
+	var sessions = smbsrv_sessions();
+	var i;
+	var sys = sys_init();
+	if (sessions == undefined) {
+		println("No sessions open");
+		return;
+	}
+	printf("User                                  Client      Connected at\n");
+	printf("-------------------------------------------------------------------------------\n");
+	for (i=0;i<sessions.length;i++) {
+		var info = sessions[i];
+		var fulluser = sprintf("%s/%s", info.account_name, info.domain_name);
+		printf("%-30s %16s   %s\n", 
+		       fulluser, info.client_ip, sys.httptime(info.connect_time));
+	}
+	printf("\n");
+}
+
+/*
+  show open tree connects
+*/
+function show_trees()
+{
+	var trees = smbsrv_trees();
+	var sys = sys_init();
+	if (trees == undefined) {
+		println("No tree connects");
+		return;
+	}
+	printf("Share                                 Client      Connected at\n");
+	printf("-------------------------------------------------------------------------------\n");
+	for (i=0;i<trees.length;i++) {
+		var info = trees[i];
+		printf("%-30s %16s   %s\n", 
+		       info.share_name, info.client_ip, sys.httptime(info.connect_time));
+	}
 }
 
 
-var sessions = smbsrv_sessions();
-if (sessions == undefined) {
-	println("No sessions");
-	exit(0);
-}
-printVars(sessions);
-
-var trees = smbsrv_trees();
-if (trees == undefined) {
-	println("No trees");
-	exit(0);
-}
-printVars(trees);
+show_sessions();
+show_trees();
 
 return 0;
