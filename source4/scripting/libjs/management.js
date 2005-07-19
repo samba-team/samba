@@ -70,3 +70,24 @@ function smbsrv_trees()
 	ret.length = count;
 	return ret;
 }
+
+/*
+  return nbtd statistics
+*/
+function nbtd_statistics()
+{
+	var conn = new Object();
+	var irpc = irpc_init();
+	status = irpc_connect(conn, "nbt_server");
+	if (status.is_ok != true) {
+		return undefined;
+	}
+
+	var io = irpcObj();
+	io.input.level = irpc.NBTD_INFO_STATISTICS;
+	status = irpc.nbtd_information(conn, io);
+	if (status.is_ok != true) {
+		return undefined;
+	}
+	return io.results[0].info.stats;
+}
