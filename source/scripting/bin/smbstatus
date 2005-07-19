@@ -13,7 +13,8 @@ var options = new Object();
 
 ok = GetOptions(ARGV, options,
 		"POPT_AUTOHELP",
-		"POPT_COMMON_SAMBA");
+		"POPT_COMMON_SAMBA",
+		"nbt");
 if (ok == false) {
 	println("Failed to parse options: " + options.ERROR);
 	return -1;
@@ -62,8 +63,30 @@ function show_trees()
 	}
 }
 
+/*
+  show nbtd information
+*/
+function show_nbt()
+{
+	var stats = nbtd_statistics();
+	if (stats == undefined) {
+		println("nbt server not running");
+		return;
+	}
+	var r;
+	println("NBT server statistics:");
+	for (r in stats) {
+		print("\t" + r + ":\t" + stats[r] + "\n");
+	}
+	println("");
+}
 
-show_sessions();
-show_trees();
+
+if (options['nbt'] != undefined) {
+	show_nbt();
+} else {
+	show_sessions();
+	show_trees();
+}
 
 return 0;
