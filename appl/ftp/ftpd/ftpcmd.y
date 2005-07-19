@@ -750,11 +750,11 @@ host_port
 	: NUMBER COMMA NUMBER COMMA NUMBER COMMA NUMBER COMMA
 		NUMBER COMMA NUMBER
 		{
-			struct sockaddr_in *sin = (struct sockaddr_in *)data_dest;
+			struct sockaddr_in *sin4 = (struct sockaddr_in *)data_dest;
 
-			sin->sin_family = AF_INET;
-			sin->sin_port = htons($9 * 256 + $11);
-			sin->sin_addr.s_addr = 
+			sin4->sin_family = AF_INET;
+			sin4->sin_port = htons($9 * 256 + $11);
+			sin4->sin_addr.s_addr = 
 			    htonl(($1 << 24) | ($3 << 16) | ($5 << 8) | $7);
 		}
 	;

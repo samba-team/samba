@@ -570,10 +570,10 @@ void mec(char *msg, enum protection_level level)
 /* ------------------------------------------------------------ */
 
 int
-sec_userok(char *user)
+sec_userok(char *userstr)
 {
     if(sec_complete)
-	return (*mech->userok)(app_data, user);
+	return (*mech->userok)(app_data, userstr);
     return 0;
 }
 
