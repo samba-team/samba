@@ -137,7 +137,7 @@ der_get_general_string (const unsigned char *p, size_t len,
 {
     char *s;
 
-    if (len > SIZE_T_MAX - 1)
+    if (len > len + 1)
 	return ASN1_BAD_LENGTH;
 
     s = malloc (len + 1);
@@ -339,7 +339,7 @@ der_get_oid (const unsigned char *p, size_t len,
     if (len < 1)
 	return ASN1_OVERRUN;
 
-    if (len > SIZE_T_MAX - 1)
+    if (len > len + 1)
 	return ASN1_BAD_LENGTH;
 
     data->components = malloc((len + 1) * sizeof(*data->components));
@@ -485,7 +485,9 @@ der_get_bit_string (const unsigned char *p, size_t len,
 	return ASN1_BAD_FORMAT;
     if (len - 1 == 0 && p[0] != 0)
 	return ASN1_BAD_FORMAT;
-    if (len - 1 > SIZE_T_MAX / 8)
+    /* check if any of the three upper bits are set
+     * any of them will cause a interger overrun */
+    if ((len - 1) >> (sizeof(len) * 8 - 3))
 	return ASN1_OVERRUN;
     data->length = (len - 1) * 8;
     data->data = malloc(len - 1);
