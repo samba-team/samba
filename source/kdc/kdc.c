@@ -28,6 +28,7 @@
 #include "kdc/kdc.h"
 #include "system/network.h"
 #include "dlinklist.h"
+#include "lib/messaging/irpc.h"
 
 
 
@@ -293,6 +294,8 @@ static void kdc_task_init(struct task_server *task)
 		task_server_terminate(task, "kdc failed to setup interfaces");
 		return;
 	}
+
+	irpc_add_name(task->msg_ctx, "kdc_server");
 }
 
 
