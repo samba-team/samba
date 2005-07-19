@@ -35,6 +35,6 @@ table.data tr {
    This is not cross-browser and won't be the final way I handle
    this, but I can't stand looking at small boxes while I work. :-) */
 #content {
-	min-width:60%;
+	min-width:55%;
 	min-height:800px;
 } 
