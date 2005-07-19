@@ -135,7 +135,7 @@ decode_heim_any_set(const unsigned char *p, size_t len,
 void
 free_heim_any_set(heim_any_set *data)
 {
-    return free_heim_any(data);
+    free_heim_any(data);
 }
 
 size_t
