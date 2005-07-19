@@ -191,16 +191,12 @@ Corrections by richard.kettlewell@kewill.com
 /****************************************************************************
  some systems don't have an initgroups call 
 ****************************************************************************/
- int initgroups(char *name,gid_t id)
+ int initgroups(char *name, gid_t id)
 {
 #ifndef HAVE_SETGROUPS
-	static int done;
-	if (!done) {
-		DEBUG(1,("WARNING: running without setgroups\n"));
-		done=1;
-	}
 	/* yikes! no SETGROUPS or INITGROUPS? how can this work? */
-	return(0);
+	errno = ENOSYS;
+	return -1;
 #else /* HAVE_SETGROUPS */
 	gid_t *grouplst = NULL;
 	int max_gr = groups_max();
@@ -209,8 +205,8 @@ Corrections by richard.kettlewell@kewill.com
 	struct group *g;
 	char   *gr;
 	
-	if((grouplst = malloc_array_p(gid_t, max_gr)) == NULL) {
-		DEBUG(0,("initgroups: malloc fail !\n"));
+	if((grouplst = malloc(sizeof(gid_t) * max_gr)) == NULL) {
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -232,8 +228,8 @@ Corrections by richard.kettlewell@kewill.com
 		}
 	}
 	endgrent();
-	ret = sys_setgroups(i,grouplst);
-	SAFE_FREE(grouplst);
+	ret = setgroups(i, grouplst);
+	free(grouplst);
 	return ret;
 #endif /* HAVE_SETGROUPS */
 }
@@ -429,7 +425,7 @@ duplicate a string
 	if (!msg)
 		return;
 	syslog(facility_priority, "%s", msg);
-	SAFE_FREE(msg);
+	free(msg);
 }
 #endif /* HAVE_SYSLOG */
 #endif /* HAVE_VSYSLOG */
