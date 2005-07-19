@@ -118,6 +118,24 @@ static int ejs_sys_ldaptime(MprVarHandle eid, int argc, struct MprVar **argv)
 }
 
 /*
+  return a http time string from a nttime
+*/
+static int ejs_sys_httptime(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	char *s;
+	time_t t;
+	if (argc != 1 || !mprVarIsNumber(argv[0]->type)) {
+		ejsSetErrorMsg(eid, "sys_httptime invalid arguments");
+		return -1;
+	}
+	t = nt_time_to_unix(mprVarToNumber(argv[0]));
+	s = http_timestring(mprMemCtx(), t);
+	mpr_Return(eid, mprString(s));
+	talloc_free(s);
+	return 0;
+}
+
+/*
   unlink a file
    ok = unlink(fname);
 */
@@ -182,6 +200,7 @@ static int ejs_sys_init(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetCFunction(&obj, "nttime", ejs_sys_nttime);
 	mprSetCFunction(&obj, "gmtime", ejs_sys_gmtime);
 	mprSetCFunction(&obj, "ldaptime", ejs_sys_ldaptime);
+	mprSetCFunction(&obj, "httptime", ejs_sys_httptime);
 	mprSetStringCFunction(&obj, "unlink", ejs_sys_unlink);
 	mprSetStringCFunction(&obj, "file_load", ejs_sys_file_load);
 	mprSetStringCFunction(&obj, "file_save", ejs_sys_file_save);
