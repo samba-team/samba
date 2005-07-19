@@ -592,10 +592,13 @@ sub ContainsDeferred($$)
 {
 	my ($e,$l) = @_;
 
-	do {
+	return 1 if ($l->{CONTAINS_DEFERRED});
+
+	while ($l = GetNextLevel($e,$l))
+	{
 		return 1 if ($l->{IS_DEFERRED}); 
 		return 1 if ($l->{CONTAINS_DEFERRED});
-	} while ($l = GetNextLevel($e,$l));
+	} 
 	
 	return 0;
 }
