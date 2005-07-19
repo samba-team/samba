@@ -14,6 +14,7 @@ var options = new Object();
 ok = GetOptions(ARGV, options,
 		"POPT_AUTOHELP",
 		"POPT_COMMON_SAMBA",
+		"POPT_COMMON_VERSION",
 		"nbt");
 if (ok == false) {
 	println("Failed to parse options: " + options.ERROR);
@@ -81,6 +82,7 @@ function show_nbt()
 	println("");
 }
 
+printf("%s\n\n", lpGet("server string"));
 
 if (options['nbt'] != undefined) {
 	show_nbt();
