@@ -414,7 +414,7 @@ der_match_tag (const unsigned char *p, size_t len,
     size_t l;
     Der_class thisclass;
     Der_type thistype;
-    int thistag;
+    unsigned int thistag;
     int e;
 
     e = der_get_tag (p, len, &thisclass, &thistype, &thistag, &l);
