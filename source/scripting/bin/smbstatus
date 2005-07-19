@@ -1,0 +1,26 @@
+#!/bin/sh
+exec smbscript "$0" ${1+"$@"}
+/*
+  provide information on connected users and open files
+  Copyright Andrew Tridgell 2005
+  Released under the GNU GPL v2 or later
+*/	
+
+libinclude("base.js");
+libinclude("management.js");
+
+var options = new Object();
+
+ok = GetOptions(ARGV, options,
+		"POPT_AUTOHELP",
+		"POPT_COMMON_SAMBA");
+if (ok == false) {
+   println("Failed to parse options: " + options.ERROR);
+   return -1;
+}
+
+
+var sessions = smbsrv_sessions();
+printVars(sessions);
+
+return 0;
