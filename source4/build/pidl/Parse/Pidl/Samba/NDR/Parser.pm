@@ -8,9 +8,9 @@
 package Parse::Pidl::Samba::NDR::Parser;
 
 use strict;
-use Parse::Pidl::Typelist;
+use Parse::Pidl::Typelist qw(hasType getType);
 use Parse::Pidl::Util qw(has_property ParseExpr);
-use Parse::Pidl::NDR;
+use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel);
 
 # list of known types
 my %typefamily;
@@ -45,15 +45,17 @@ sub append_prefix($$)
 	return $var_name;
 }
 
-sub is_scalar_array($$)
+sub has_fast_array($$)
 {
 	my ($e,$l) = @_;
 
 	return 0 if ($l->{TYPE} ne "ARRAY");
 
-	my $nl = Parse::Pidl::NDR::GetNextLevel($e,$l);
-	return (($nl->{TYPE} eq "DATA") and 
-	        (Parse::Pidl::Typelist::is_scalar($nl->{DATA_TYPE})));
+	my $nl = GetNextLevel($e,$l);
+	return 0 unless ($nl->{TYPE} eq "DATA");
+	return 0 unless (hasType($nl->{DATA_TYPE}));
+
+	return Parse::Pidl::Typelist::is_scalar($nl->{DATA_TYPE});
 }
 
 sub get_pointer_to($)
@@ -212,10 +214,6 @@ sub ParseArrayPushHeader($$$$$)
 {
 	my ($e,$l,$ndr,$var_name,$env) = @_;
 
-	if ($l->{IS_CONFORMANT} or $l->{IS_VARYING}) {
-		$var_name = get_pointer_to($var_name);
-	}
-
 	my $size;
 	my $length;
 
@@ -243,10 +241,6 @@ sub ParseArrayPushHeader($$$$$)
 sub ParseArrayPullHeader($$$$$)
 {
 	my ($e,$l,$ndr,$var_name,$env) = @_;
-
-	if ($l->{IS_CONFORMANT} or $l->{IS_VARYING}) {
-		$var_name = get_pointer_to($var_name);
-	}
 
 	my $length;
 	my $size;
@@ -512,28 +506,28 @@ sub ParseElementPushLevel
 
 	my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
 
+	if ($l->{TYPE} eq "ARRAY" and ($l->{IS_CONFORMANT} or $l->{IS_VARYING})) {
+		$var_name = get_pointer_to($var_name);
+	}
+
 	if (defined($ndr_flags)) {
 		if ($l->{TYPE} eq "SUBCONTEXT") {
 			$ndr = ParseSubcontextPushStart($e, $l, $ndr, $var_name, $ndr_flags);
-			ParseElementPushLevel($e, Parse::Pidl::NDR::GetNextLevel($e, $l), $ndr, $var_name, $env, 1, 1);
+			ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, 1, 1);
 			ParseSubcontextPushEnd($e, $l, $ndr_flags, $env);
 		} elsif ($l->{TYPE} eq "POINTER") {
 			ParsePtrPush($e, $l, $var_name);
 		} elsif ($l->{TYPE} eq "ARRAY") {
 			my $length = ParseArrayPushHeader($e, $l, $ndr, $var_name, $env); 
+
+			my $nl = GetNextLevel($e, $l);
+
 			# Allow speedups for arrays of scalar types
-			if (is_scalar_array($e,$l)) {
-				if ($l->{IS_CONFORMANT} or $l->{IS_VARYING}) {
-					$var_name = get_pointer_to($var_name);
-				}
-
-				my $nl = Parse::Pidl::NDR::GetNextLevel($e, $l);
-
-				if (has_property($e, "charset")) {
-					pidl "NDR_CHECK(ndr_push_charset($ndr, $ndr_flags, $var_name, $length, sizeof(" . Parse::Pidl::Typelist::mapType($nl->{DATA_TYPE}) . "), CH_$e->{PROPERTIES}->{charset}));";
-				} else {
-					pidl "NDR_CHECK(ndr_push_array_$nl->{DATA_TYPE}($ndr, $ndr_flags, $var_name, $length));";
-				} 
+			if (has_property($e, "charset")) {
+				pidl "NDR_CHECK(ndr_push_charset($ndr, $ndr_flags, $var_name, $length, sizeof(" . Parse::Pidl::Typelist::mapType($nl->{DATA_TYPE}) . "), CH_$e->{PROPERTIES}->{charset}));";
+				return;
+			} elsif (has_fast_array($e,$l)) {
+				pidl "NDR_CHECK(ndr_push_array_$nl->{DATA_TYPE}($ndr, $ndr_flags, $var_name, $length));";
 				return;
 			} 
 		} elsif ($l->{TYPE} eq "SWITCH") {
@@ -552,26 +546,23 @@ sub ParseElementPushLevel
 			}
 		}
 		$var_name = get_value_of($var_name);
-		ParseElementPushLevel($e, Parse::Pidl::NDR::GetNextLevel($e, $l), $ndr, $var_name, $env, 1, 1);
+		ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, 1, 1);
 
 		if ($l->{POINTER_TYPE} ne "ref") {
 			deindent;
 			pidl "}";
 		}
-	} elsif ($l->{TYPE} eq "ARRAY" and not is_scalar_array($e,$l)) {
+	} elsif ($l->{TYPE} eq "ARRAY" and not has_fast_array($e,$l) and
+		not has_property($e, "charset")) {
 		my $length = ParseExpr($l->{LENGTH_IS}, $env);
 		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
 
 		$var_name = $var_name . "[$counter]";
 
-		if ($l->{IS_VARYING} or $l->{IS_CONFORMANT}) {
-			$var_name = get_pointer_to($var_name);
-		}
-
 		if (($primitives and not $l->{IS_DEFERRED}) or ($deferred and $l->{IS_DEFERRED})) {
 			pidl "for ($counter = 0; $counter < $length; $counter++) {";
 			indent;
-			ParseElementPushLevel($e, Parse::Pidl::NDR::GetNextLevel($e, $l), $ndr, $var_name, $env, 1, 0);
+			ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, 1, 0);
 			deindent;
 			pidl "}";
 		}
@@ -579,12 +570,12 @@ sub ParseElementPushLevel
 		if ($deferred and Parse::Pidl::NDR::ContainsDeferred($e, $l)) {
 			pidl "for ($counter = 0; $counter < $length; $counter++) {";
 			indent;
-			ParseElementPushLevel($e, Parse::Pidl::NDR::GetNextLevel($e, $l), $ndr, $var_name, $env, 0, 1);
+			ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, 0, 1);
 			deindent;
 			pidl "}";
 		}	
 	} elsif ($l->{TYPE} eq "SWITCH") {
-		ParseElementPushLevel($e, Parse::Pidl::NDR::GetNextLevel($e, $l), $ndr, $var_name, $env, $primitives, $deferred);
+		ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, $primitives, $deferred);
 	}
 }
 
@@ -660,7 +651,7 @@ sub ParseElementPrint($$$)
 		} elsif ($l->{TYPE} eq "ARRAY") {
 			my $length;
 
-			if (is_scalar_array($e, $l) and ($l->{IS_CONFORMANT} or $l->{IS_VARYING})){ 
+			if ($l->{IS_CONFORMANT} or $l->{IS_VARYING}) { 
 				$var_name = get_pointer_to($var_name); 
 			}
 			
@@ -670,31 +661,27 @@ sub ParseElementPrint($$$)
 				$length = ParseExpr($l->{LENGTH_IS}, $env);
 			}
 
-			if (is_scalar_array($e, $l)) {
-				if (has_property($e, "charset")) {
-					pidl "ndr_print_string(ndr, \"$e->{NAME}\", $var_name);";
-				} else {
-					my $nl = Parse::Pidl::NDR::GetNextLevel($e, $l);
-					pidl "ndr_print_array_$nl->{DATA_TYPE}(ndr, \"$e->{NAME}\", $var_name, $length);";
-				} 
+			if (has_property($e, "charset")) {
+				pidl "ndr_print_string(ndr, \"$e->{NAME}\", $var_name);";
 				last;
+			} elsif (has_fast_array($e, $l)) {
+				my $nl = GetNextLevel($e, $l);
+				pidl "ndr_print_array_$nl->{DATA_TYPE}(ndr, \"$e->{NAME}\", $var_name, $length);";
+				last;
+			} else {
+				my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
+
+				pidl "ndr->print(ndr, \"\%s: ARRAY(\%d)\", \"$e->{NAME}\", $length);";
+				pidl 'ndr->depth++;';
+				pidl "for ($counter=0;$counter<$length;$counter++) {";
+				indent;
+				pidl "char *idx_$l->{LEVEL_INDEX}=NULL;";
+				pidl "asprintf(&idx_$l->{LEVEL_INDEX}, \"[\%d]\", $counter);";
+				pidl "if (idx_$l->{LEVEL_INDEX}) {";
+				indent;
+
+				$var_name = $var_name . "[$counter]";
 			}
-
-			my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
-
-			pidl "ndr->print(ndr, \"\%s: ARRAY(\%d)\", \"$e->{NAME}\", $length);";
-			pidl 'ndr->depth++;';
-			pidl "for ($counter=0;$counter<$length;$counter++) {";
-			indent;
-			pidl "char *idx_$l->{LEVEL_INDEX}=NULL;";
-			pidl "asprintf(&idx_$l->{LEVEL_INDEX}, \"[\%d]\", $counter);";
-			pidl "if (idx_$l->{LEVEL_INDEX}) {";
-			indent;
-
-			$var_name = $var_name . "[$counter]";
-
-			if ($l->{IS_VARYING} or $l->{IS_CONFORMANT}){ $var_name = get_pointer_to($var_name); }
-
 		} elsif ($l->{TYPE} eq "DATA") {
 			if (not Parse::Pidl::Typelist::is_scalar($l->{DATA_TYPE}) or Parse::Pidl::Typelist::scalar_is_reference($l->{DATA_TYPE})) {
 				$var_name = get_pointer_to($var_name);
@@ -714,7 +701,9 @@ sub ParseElementPrint($$$)
 				pidl "}";
 			}
 			pidl "ndr->depth--;";
-		} elsif ($l->{TYPE} eq "ARRAY" and not is_scalar_array($e, $l)) {
+		} elsif (($l->{TYPE} eq "ARRAY")
+			and not has_property($e, "charset")
+			and not has_fast_array($e,$l)) {
 			pidl "free(idx_$l->{LEVEL_INDEX});";
 			deindent;
 			pidl "}";
@@ -814,31 +803,29 @@ sub ParseElementPullLevel
 
 	my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
 
+	if ($l->{TYPE} eq "ARRAY" and ($l->{IS_VARYING} or $l->{IS_CONFORMANT})) {
+		$var_name = get_pointer_to($var_name);
+	}
+
 	# Only pull something if there's actually something to be pulled
 	if (defined($ndr_flags)) {
 		if ($l->{TYPE} eq "SUBCONTEXT") {
 			($ndr,$var_name) = ParseSubcontextPullStart($e, $l, $ndr, $var_name, $ndr_flags, $env);
-			ParseElementPullLevel($e,Parse::Pidl::NDR::GetNextLevel($e,$l), $ndr, $var_name, $env, 1, 1);
+			ParseElementPullLevel($e, GetNextLevel($e,$l), $ndr, $var_name, $env, 1, 1);
 			ParseSubcontextPullEnd($e, $l, $env);
 		} elsif ($l->{TYPE} eq "ARRAY") {
 			my $length = ParseArrayPullHeader($e, $l, $ndr, $var_name, $env); 
 
-			# Speed things up a little - special array pull functions
-			# for scalars
-			if (is_scalar_array($e, $l)) {
-				if ($l->{IS_VARYING} or $l->{IS_CONFORMANT}) {
-					$var_name = get_pointer_to($var_name);
-				}
-				my $nl = Parse::Pidl::NDR::GetNextLevel($e, $l);
+			my $nl = GetNextLevel($e, $l);
 
-				if (has_property($e, "charset")) {
-					pidl "NDR_CHECK(ndr_pull_charset($ndr, $ndr_flags, ".get_pointer_to($var_name).", $length, sizeof(" . Parse::Pidl::Typelist::mapType($nl->{DATA_TYPE}) . "), CH_$e->{PROPERTIES}->{charset}));";
-				} else {
-					pidl "NDR_CHECK(ndr_pull_array_$nl->{DATA_TYPE}($ndr, $ndr_flags, $var_name, $length));";
-					if ($l->{IS_ZERO_TERMINATED}) {
-						# Make sure last element is zero!
-						pidl "NDR_CHECK(ndr_check_string_terminator($ndr, $var_name, $length, sizeof(*$var_name)));";
-					}
+			if (has_property($e, "charset")) {
+				pidl "NDR_CHECK(ndr_pull_charset($ndr, $ndr_flags, ".get_pointer_to($var_name).", $length, sizeof(" . Parse::Pidl::Typelist::mapType($nl->{DATA_TYPE}) . "), CH_$e->{PROPERTIES}->{charset}));";
+				return;
+			} elsif (has_fast_array($e, $l)) {
+				pidl "NDR_CHECK(ndr_pull_array_$nl->{DATA_TYPE}($ndr, $ndr_flags, $var_name, $length));";
+				if ($l->{IS_ZERO_TERMINATED}) {
+					# Make sure last element is zero!
+					pidl "NDR_CHECK(ndr_check_string_terminator($ndr, $var_name, $length, sizeof(*$var_name)));";
 				}
 				return;
 			}
@@ -865,7 +852,7 @@ sub ParseElementPullLevel
 		}
 
 		$var_name = get_value_of($var_name);
-		ParseElementPullLevel($e,Parse::Pidl::NDR::GetNextLevel($e,$l), $ndr, $var_name, $env, 1, 1);
+		ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, 1, 1);
 
 		if ($l->{POINTER_TYPE} ne "ref") {
     			if ($l->{POINTER_TYPE} eq "relative") {
@@ -874,19 +861,17 @@ sub ParseElementPullLevel
 			deindent;
 			pidl "}";
 		}
-	} elsif ($l->{TYPE} eq "ARRAY" and not is_scalar_array($e,$l)) {
+	} elsif ($l->{TYPE} eq "ARRAY" and 
+			not has_fast_array($e,$l) and not has_property($e, "charset")) {
 		my $length = ParseExpr($l->{LENGTH_IS}, $env);
 		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
 
 		$var_name = $var_name . "[$counter]";
-		if ($l->{IS_VARYING} or $l->{IS_CONFORMANT}) {
-			$var_name = get_pointer_to($var_name);
-		}
 
 		if (($primitives and not $l->{IS_DEFERRED}) or ($deferred and $l->{IS_DEFERRED})) {
 			pidl "for ($counter = 0; $counter < $length; $counter++) {";
 			indent;
-			ParseElementPullLevel($e,Parse::Pidl::NDR::GetNextLevel($e,$l), $ndr, $var_name, $env, 1, 0);
+			ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, 1, 0);
 			deindent;
 			pidl "}";
 
@@ -899,12 +884,12 @@ sub ParseElementPullLevel
 		if ($deferred and Parse::Pidl::NDR::ContainsDeferred($e, $l)) {
 			pidl "for ($counter = 0; $counter < $length; $counter++) {";
 			indent;
-			ParseElementPullLevel($e,Parse::Pidl::NDR::GetNextLevel($e,$l), $ndr, $var_name, $env, 0, 1);
+			ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, 0, 1);
 			deindent;
 			pidl "}";
 		}
 	} elsif ($l->{TYPE} eq "SWITCH") {
-		ParseElementPullLevel($e,Parse::Pidl::NDR::GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
+		ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
 	}
 }
 
@@ -933,7 +918,7 @@ sub ParsePtrPull($$$$)
 {
 	my($e,$l,$ndr,$var_name) = @_;
 
-	my $nl = Parse::Pidl::NDR::GetNextLevel($e, $l);
+	my $nl = GetNextLevel($e, $l);
 	my $next_is_array = ($nl->{TYPE} eq "ARRAY");
 	my $next_is_string = (($nl->{TYPE} eq "DATA") and 
 						 ($nl->{DATA_TYPE} eq "string"));
@@ -1282,7 +1267,8 @@ sub DeclareArrayVariables($)
 	my $e = shift;
 
 	foreach my $l (@{$e->{LEVELS}}) {
-		next if (is_scalar_array($e,$l));
+		next if has_fast_array($e,$l);
+		next if has_property($e, "charset");
 		if ($l->{TYPE} eq "ARRAY") {
 			pidl "uint32_t cntr_$e->{NAME}_$l->{LEVEL_INDEX};";
 		}
@@ -1552,7 +1538,7 @@ sub ParseUnionPull($$)
 	pidl "int level;";
 	if (defined($switch_type)) {
 		if (Parse::Pidl::Typelist::typeIs($switch_type, "ENUM")) {
-			$switch_type = Parse::Pidl::Typelist::enum_type_fn(Parse::Pidl::Typelist::getType($switch_type));
+			$switch_type = Parse::Pidl::Typelist::enum_type_fn(getType($switch_type));
 		}
 		pidl Parse::Pidl::Typelist::mapType($switch_type) . " _level;";
 	}
@@ -1867,7 +1853,7 @@ sub AllocateArrayLevel($$$$$)
 	my $var = ParseExpr($e->{NAME}, $env);
 
 	check_null_pointer($size);
-	my $pl = Parse::Pidl::NDR::GetPrevLevel($e, $l);
+	my $pl = GetPrevLevel($e, $l);
 	if (defined($pl) and 
 	    $pl->{TYPE} eq "POINTER" and 
 	    $pl->{POINTER_TYPE} eq "ref"
