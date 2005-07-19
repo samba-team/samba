@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    RPC pipe client
 
-   Copyright (C) Gerald Carter                     2001
+   Copyright (C) Gerald Carter                2001-2005
    Copyright (C) Tim Potter                        2000
    Copyright (C) Andrew Tridgell              1992-1999
    Copyright (C) Luke Kenneth Casson Leighton 1996-1999
@@ -61,9 +61,10 @@ static const struct table_node archi_table[]= {
  **/
 
 /****************************************************************************
-function to do the mapping between the long architecture name and
-the short one.
+ function to do the mapping between the long architecture name and
+ the short one.
 ****************************************************************************/
+
 static const char *cmd_spoolss_get_short_archi(const char *long_archi)
 {
         int i=-1;
@@ -89,22 +90,9 @@ static const char *cmd_spoolss_get_short_archi(const char *long_archi)
 	return archi_table[i].short_archi;
 }
 
-#if 0
-/**********************************************************************
- * dummy function  -- placeholder
-  */
-static WERROR cmd_spoolss_not_implemented(struct cli_state *cli, 
-                                            TALLOC_CTX *mem_ctx,
-                                            int argc, const char **argv)
-{
-	printf ("(*) This command is not currently implemented.\n");
-	return WERR_OK;
-}
-#endif
+/****************************************************************************
+****************************************************************************/
 
-/***********************************************************************
- * Get printer information
- */
 static WERROR cmd_spoolss_open_printer_ex(struct cli_state *cli, 
                                             TALLOC_CTX *mem_ctx,
                                             int argc, const char **argv)
@@ -148,8 +136,8 @@ static WERROR cmd_spoolss_open_printer_ex(struct cli_state *cli,
 
 
 /****************************************************************************
-printer info level 0 display function
 ****************************************************************************/
+
 static void display_print_info_0(PRINTER_INFO_0 *i0)
 {
 	fstring name = "";
@@ -206,8 +194,8 @@ static void display_print_info_0(PRINTER_INFO_0 *i0)
 }
 
 /****************************************************************************
-printer info level 1 display function
 ****************************************************************************/
+
 static void display_print_info_1(PRINTER_INFO_1 *i1)
 {
 	fstring desc = "";
@@ -229,8 +217,8 @@ static void display_print_info_1(PRINTER_INFO_1 *i1)
 }
 
 /****************************************************************************
-printer info level 2 display function
 ****************************************************************************/
+
 static void display_print_info_2(PRINTER_INFO_2 *i2)
 {
 	fstring servername = "";
@@ -246,25 +234,15 @@ static void display_print_info_2(PRINTER_INFO_2 *i2)
 	fstring parameters = "";
 	
 	rpcstr_pull(servername, i2->servername.buffer,sizeof(servername), -1, STR_TERMINATE);
-
 	rpcstr_pull(printername, i2->printername.buffer,sizeof(printername), -1, STR_TERMINATE);
-
 	rpcstr_pull(sharename, i2->sharename.buffer,sizeof(sharename), -1, STR_TERMINATE);
-
 	rpcstr_pull(portname, i2->portname.buffer,sizeof(portname), -1, STR_TERMINATE);
-
 	rpcstr_pull(drivername, i2->drivername.buffer,sizeof(drivername), -1, STR_TERMINATE);
-
 	rpcstr_pull(comment, i2->comment.buffer,sizeof(comment), -1, STR_TERMINATE);
-
 	rpcstr_pull(location, i2->location.buffer,sizeof(location), -1, STR_TERMINATE);
-
 	rpcstr_pull(sepfile, i2->sepfile.buffer,sizeof(sepfile), -1, STR_TERMINATE);
-
 	rpcstr_pull(printprocessor, i2->printprocessor.buffer,sizeof(printprocessor), -1, STR_TERMINATE);
-
 	rpcstr_pull(datatype, i2->datatype.buffer,sizeof(datatype), -1, STR_TERMINATE);
-
 	rpcstr_pull(parameters, i2->parameters.buffer,sizeof(parameters), -1, STR_TERMINATE);
 
 	printf("\tservername:[%s]\n", servername);
@@ -294,8 +272,8 @@ static void display_print_info_2(PRINTER_INFO_2 *i2)
 }
 
 /****************************************************************************
-printer info level 3 display function
 ****************************************************************************/
+
 static void display_print_info_3(PRINTER_INFO_3 *i3)
 {
 	printf("\tflags:[0x%x]\n", i3->flags);
@@ -306,8 +284,8 @@ static void display_print_info_3(PRINTER_INFO_3 *i3)
 }
 
 /****************************************************************************
-printer info level 7 display function
 ****************************************************************************/
+
 static void display_print_info_7(PRINTER_INFO_7 *i7)
 {
 	fstring guid = "";
@@ -317,7 +295,8 @@ static void display_print_info_7(PRINTER_INFO_7 *i7)
 }
 
 
-/* Enumerate printers */
+/****************************************************************************
+****************************************************************************/
 
 static WERROR cmd_spoolss_enum_printers(struct cli_state *cli, 
                                           TALLOC_CTX *mem_ctx,
@@ -383,8 +362,8 @@ static WERROR cmd_spoolss_enum_printers(struct cli_state *cli,
 }
 
 /****************************************************************************
-port info level 1 display function
 ****************************************************************************/
+
 static void display_port_info_1(PORT_INFO_1 *i1)
 {
 	fstring buffer;
@@ -394,8 +373,8 @@ static void display_port_info_1(PORT_INFO_1 *i1)
 }
 
 /****************************************************************************
-port info level 2 display function
 ****************************************************************************/
+
 static void display_port_info_2(PORT_INFO_2 *i2)
 {
 	fstring buffer;
@@ -437,7 +416,8 @@ static void display_port_info_2(PORT_INFO_2 *i2)
 	printf("\n");
 }
 
-/* Enumerate ports */
+/****************************************************************************
+****************************************************************************/
 
 static WERROR cmd_spoolss_enum_ports(struct cli_state *cli, 
 				       TALLOC_CTX *mem_ctx, int argc, 
@@ -483,9 +463,9 @@ static WERROR cmd_spoolss_enum_ports(struct cli_state *cli,
 	return result;
 }
 
-/***********************************************************************
- * Set printer comment - use a level2 set.
- */
+/****************************************************************************
+****************************************************************************/
+
 static WERROR cmd_spoolss_setprinter(struct cli_state *cli,
                                        TALLOC_CTX *mem_ctx,
                                        int argc, const char **argv)
@@ -549,9 +529,9 @@ static WERROR cmd_spoolss_setprinter(struct cli_state *cli,
 	return result;
 }
 
-/***********************************************************************
- * Set printer name - use a level2 set.
- */
+/****************************************************************************
+****************************************************************************/
+
 static WERROR cmd_spoolss_setprintername(struct cli_state *cli,
                                        TALLOC_CTX *mem_ctx,
                                        int argc, const char **argv)
@@ -614,9 +594,9 @@ static WERROR cmd_spoolss_setprintername(struct cli_state *cli,
 	return result;
 }
 
-/***********************************************************************
- * Get printer information
- */
+/****************************************************************************
+****************************************************************************/
+
 static WERROR cmd_spoolss_getprinter(struct cli_state *cli,
                                        TALLOC_CTX *mem_ctx,
                                        int argc, const char **argv)
@@ -693,6 +673,9 @@ static WERROR cmd_spoolss_getprinter(struct cli_state *cli,
 	return result;
 }
 
+/****************************************************************************
+****************************************************************************/
+
 static void display_reg_value(REGISTRY_VALUE value)
 {
 	pstring text;
@@ -730,9 +713,9 @@ static void display_reg_value(REGISTRY_VALUE value)
 	
 }
 
-/***********************************************************************
- * Get printer data
- */
+/****************************************************************************
+****************************************************************************/
+
 static WERROR cmd_spoolss_getprinterdata(struct cli_state *cli,
 					   TALLOC_CTX *mem_ctx,
 					   int argc, const char **argv)
@@ -795,9 +778,9 @@ static WERROR cmd_spoolss_getprinterdata(struct cli_state *cli,
 	return result;
 }
 
-/***********************************************************************
- * Get printer data
- */
+/****************************************************************************
+****************************************************************************/
+
 static WERROR cmd_spoolss_getprinterdataex(struct cli_state *cli,
 					     TALLOC_CTX *mem_ctx,
 					     int argc, const char **argv)
@@ -864,8 +847,8 @@ static WERROR cmd_spoolss_getprinterdataex(struct cli_state *cli,
 }
 
 /****************************************************************************
-printer info level 0 display function
 ****************************************************************************/
+
 static void display_print_driver_1(DRIVER_INFO_1 *i1)
 {
 	fstring name;
@@ -881,8 +864,8 @@ static void display_print_driver_1(DRIVER_INFO_1 *i1)
 }
 
 /****************************************************************************
-printer info level 1 display function
 ****************************************************************************/
+
 static void display_print_driver_2(DRIVER_INFO_2 *i1)
 {
 	fstring name;
@@ -911,8 +894,8 @@ static void display_print_driver_2(DRIVER_INFO_2 *i1)
 }
 
 /****************************************************************************
-printer info level 2 display function
 ****************************************************************************/
+
 static void display_print_driver_3(DRIVER_INFO_3 *i1)
 {
 	fstring name = "";
@@ -973,9 +956,9 @@ static void display_print_driver_3(DRIVER_INFO_3 *i1)
 	return;	
 }
 
-/***********************************************************************
- * Get printer information
- */
+/****************************************************************************
+****************************************************************************/
+
 static WERROR cmd_spoolss_getdriver(struct cli_state *cli, 
                                       TALLOC_CTX *mem_ctx,
                                       int argc, const char **argv)
@@ -1062,9 +1045,9 @@ static WERROR cmd_spoolss_getdriver(struct cli_state *cli,
 	return werror;
 }
 
-/***********************************************************************
- * Get printer information
- */
+/****************************************************************************
+****************************************************************************/
+
 static WERROR cmd_spoolss_enum_drivers(struct cli_state *cli, 
                                          TALLOC_CTX *mem_ctx,
                                          int argc, const char **argv)
@@ -1142,8 +1125,8 @@ static WERROR cmd_spoolss_enum_drivers(struct cli_state *cli,
 }
 
 /****************************************************************************
-printer info level 1 display function
 ****************************************************************************/
+
 static void display_printdriverdir_1(DRIVER_DIRECTORY_1 *i1)
 {
         fstring name;
@@ -1155,9 +1138,9 @@ static void display_printdriverdir_1(DRIVER_DIRECTORY_1 *i1)
 	printf ("\tDirectory Name:[%s]\n", name);
 }
 
-/***********************************************************************
- * Get printer driver directory information
- */
+/****************************************************************************
+****************************************************************************/
+
 static WERROR cmd_spoolss_getdriverdir(struct cli_state *cli, 
                                          TALLOC_CTX *mem_ctx,
                                          int argc, const char **argv)
@@ -1188,9 +1171,9 @@ static WERROR cmd_spoolss_getdriverdir(struct cli_state *cli,
 	return result;
 }
 
-/*******************************************************************************
- set the version and environment fields of a DRIVER_INFO_3 struct
- ******************************************************************************/
+/****************************************************************************
+****************************************************************************/
+
 void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch)
 {
 
@@ -1219,6 +1202,7 @@ void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch)
  wrapper for strtok to get the next parameter from a delimited list.
  Needed to handle the empty parameter string denoted by "NULL"
  *************************************************************************/
+ 
 static char* get_driver_3_param (char* str, const char* delim, UNISTR* dest)
 {
 	char	*ptr;
@@ -1293,6 +1277,9 @@ static BOOL init_drv_info_3_members ( TALLOC_CTX *mem_ctx, DRIVER_INFO_3 *info,
 }
 
 
+/****************************************************************************
+****************************************************************************/
+
 static WERROR cmd_spoolss_addprinterdriver(struct cli_state *cli, 
                                              TALLOC_CTX *mem_ctx,
                                              int argc, const char **argv)
@@ -1357,6 +1344,9 @@ static WERROR cmd_spoolss_addprinterdriver(struct cli_state *cli,
 }
 
 
+/****************************************************************************
+****************************************************************************/
+
 static WERROR cmd_spoolss_addprinterex(struct cli_state *cli, 
                                          TALLOC_CTX *mem_ctx,
                                          int argc, const char **argv)
@@ -1379,9 +1369,7 @@ static WERROR cmd_spoolss_addprinterex(struct cli_state *cli,
 
 	/* Fill in the DRIVER_INFO_2 struct */
 	ZERO_STRUCT(info2);
-#if 0	/* JERRY */
-	init_unistr( &info2.servername, 	servername);
-#endif
+	
 	init_unistr( &info2.printername,	argv[1]);
 	init_unistr( &info2.sharename, 		argv[2]);
 	init_unistr( &info2.drivername,		argv[3]);
@@ -1413,6 +1401,9 @@ static WERROR cmd_spoolss_addprinterex(struct cli_state *cli,
 
 	return result;
 }
+
+/****************************************************************************
+****************************************************************************/
 
 static WERROR cmd_spoolss_setdriver(struct cli_state *cli, 
                                       TALLOC_CTX *mem_ctx,
@@ -1486,6 +1477,9 @@ done:
 }
 
 
+/****************************************************************************
+****************************************************************************/
+
 static WERROR cmd_spoolss_deletedriverex(struct cli_state *cli, 
                                          TALLOC_CTX *mem_ctx,
                                          int argc, const char **argv)
@@ -1541,6 +1535,9 @@ static WERROR cmd_spoolss_deletedriverex(struct cli_state *cli,
 }
 
 
+/****************************************************************************
+****************************************************************************/
+
 static WERROR cmd_spoolss_deletedriver(struct cli_state *cli, 
                                          TALLOC_CTX *mem_ctx,
                                          int argc, const char **argv)
@@ -1583,6 +1580,9 @@ static WERROR cmd_spoolss_deletedriver(struct cli_state *cli,
 	return result;
 }
 
+/****************************************************************************
+****************************************************************************/
+
 static WERROR cmd_spoolss_getprintprocdir(struct cli_state *cli, 
 					    TALLOC_CTX *mem_ctx,
 					    int argc, const char **argv)
@@ -1619,7 +1619,8 @@ static WERROR cmd_spoolss_getprintprocdir(struct cli_state *cli,
 	return result;
 }
 
-/* Add a form */
+/****************************************************************************
+****************************************************************************/
 
 static WERROR cmd_spoolss_addform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				    int argc, const char **argv)
@@ -1678,7 +1679,8 @@ static WERROR cmd_spoolss_addform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return werror;
 }
 
-/* Set a form */
+/****************************************************************************
+****************************************************************************/
 
 static WERROR cmd_spoolss_setform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				    int argc, const char **argv)
@@ -1736,6 +1738,9 @@ static WERROR cmd_spoolss_setform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return werror;
 }
 
+/****************************************************************************
+****************************************************************************/
+
 static const char *get_form_flag(int form_flag)
 {
 	switch (form_flag) {
@@ -1749,6 +1754,9 @@ static const char *get_form_flag(int form_flag)
 		return "unknown";
 	}
 }
+
+/****************************************************************************
+****************************************************************************/
 
 static void display_form(FORM_1 *form)
 {
@@ -1768,7 +1776,8 @@ static void display_form(FORM_1 *form)
 		form->top, form->bottom);
 }
 
-/* Get a form */
+/****************************************************************************
+****************************************************************************/
 
 static WERROR cmd_spoolss_getform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				    int argc, const char **argv)
@@ -1820,7 +1829,8 @@ static WERROR cmd_spoolss_getform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return werror;
 }
 
-/* Delete a form */
+/****************************************************************************
+****************************************************************************/
 
 static WERROR cmd_spoolss_deleteform(struct cli_state *cli, 
 				       TALLOC_CTX *mem_ctx, int argc, 
@@ -1867,7 +1877,8 @@ static WERROR cmd_spoolss_deleteform(struct cli_state *cli,
 	return werror;
 }
 
-/* Enumerate forms */
+/****************************************************************************
+****************************************************************************/
 
 static WERROR cmd_spoolss_enum_forms(struct cli_state *cli, 
 				       TALLOC_CTX *mem_ctx, int argc, 
@@ -1927,6 +1938,9 @@ static WERROR cmd_spoolss_enum_forms(struct cli_state *cli,
 
 	return werror;
 }
+
+/****************************************************************************
+****************************************************************************/
 
 static WERROR cmd_spoolss_setprinterdata(struct cli_state *cli,
 					    TALLOC_CTX *mem_ctx,
@@ -2003,6 +2017,9 @@ done:
 	return result;
 }
 
+/****************************************************************************
+****************************************************************************/
+
 static void display_job_info_1(JOB_INFO_1 *job)
 {
 	fstring username = "", document = "", text_status = "";
@@ -2020,6 +2037,9 @@ static void display_job_info_1(JOB_INFO_1 *job)
 	       username, document, text_status, job->pagesprinted,
 	       job->totalpages);
 }
+
+/****************************************************************************
+****************************************************************************/
 
 static void display_job_info_2(JOB_INFO_2 *job)
 {
@@ -2039,7 +2059,8 @@ static void display_job_info_2(JOB_INFO_2 *job)
 	       job->totalpages, job->size);
 }
 
-/* Enumerate jobs */
+/****************************************************************************
+****************************************************************************/
 
 static WERROR cmd_spoolss_enum_jobs(struct cli_state *cli, 
 				      TALLOC_CTX *mem_ctx, int argc, 
@@ -2109,7 +2130,8 @@ done:
 	return result;
 }
 
-/* enumerate data */
+/****************************************************************************
+****************************************************************************/
 
 static WERROR cmd_spoolss_enum_data( struct cli_state *cli, 
 				       TALLOC_CTX *mem_ctx, int argc, 
@@ -2168,7 +2190,8 @@ done:
 	return result;
 }
 
-/* enumerate data for a given key */
+/****************************************************************************
+****************************************************************************/
 
 static WERROR cmd_spoolss_enum_data_ex( struct cli_state *cli, 
 					  TALLOC_CTX *mem_ctx, int argc, 
@@ -2229,7 +2252,8 @@ done:
 	return result;
 }
 
-/* enumerate subkeys */
+/****************************************************************************
+****************************************************************************/
 
 static WERROR cmd_spoolss_enum_printerkey( struct cli_state *cli, 
 					     TALLOC_CTX *mem_ctx, int argc, 
@@ -2295,6 +2319,9 @@ done:
 
 	return result;
 }
+
+/****************************************************************************
+****************************************************************************/
 
 static WERROR cmd_spoolss_rffpcnex(struct cli_state *cli, 
 				     TALLOC_CTX *mem_ctx, int argc, 
@@ -2374,6 +2401,120 @@ done:
 	return result;
 }
 
+/****************************************************************************
+****************************************************************************/
+
+static WERROR cmd_spoolss_printercmp(struct cli_state *cli, 
+				     TALLOC_CTX *mem_ctx, int argc, 
+				     const char **argv)
+{
+	fstring printername, servername1, servername2;
+	pstring printername_path;
+	struct cli_state *cli_server1 = cli;
+	struct cli_state *cli_server2 = NULL;
+	POLICY_HND hPrinter1, hPrinter2;
+	NTSTATUS nt_status;
+	WERROR werror;
+	PRINTER_INFO_CTR printer1_ctr, printer2_ctr;
+	
+	if ( argc != 3 )  {
+		printf("Usage: %s <printer> <server>\n", argv[0]);
+		return WERR_OK;
+	}
+	
+	fstrcpy( printername, argv[1] );
+	
+	fstr_sprintf( servername1, cli->desthost );
+	fstrcpy( servername2, argv[2] );
+	strupper_m( servername1 );
+	strupper_m( servername2 );
+	
+	
+	/* first get the connection to the remote server */
+	
+	nt_status = cli_full_connection(&cli_server2, global_myname(), servername2, 
+					NULL, 0,
+					"IPC$", "IPC",  
+					cmdline_auth_info.username, 
+					lp_workgroup(),
+					cmdline_auth_info.password, 
+					cmdline_auth_info.use_kerberos ? CLI_FULL_CONNECTION_USE_KERBEROS : 0,
+					cmdline_auth_info.signing_state, NULL);
+					
+	if ( !NT_STATUS_IS_OK(nt_status) )
+		return WERR_GENERAL_FAILURE;
+
+	if ( !cli_nt_session_open(cli_server2, PI_SPOOLSS) )
+		return WERR_GENERAL_FAILURE;
+					
+	/* now open up both printers */
+
+	pstr_sprintf( printername_path, "\\\\%s\\%s", servername1, printername );
+	printf("Opening %s...", printername_path);
+	werror = cli_spoolss_open_printer_ex( cli_server1, mem_ctx, printername_path, 
+		"", PRINTER_ALL_ACCESS, servername1, cli_server1->user_name, &hPrinter1);
+	if ( !W_ERROR_IS_OK(werror) )
+		goto done;
+	printf("ok\n");
+	
+	pstr_sprintf( printername_path, "\\\\%s\\%s", servername2, printername );
+	printf("Opening %s...", printername_path);
+	werror = cli_spoolss_open_printer_ex( cli_server2, mem_ctx, printername_path,  
+		"", PRINTER_ALL_ACCESS, servername2, cli_server2->user_name, &hPrinter2 );
+	if ( !W_ERROR_IS_OK(werror) )
+		goto done;
+	printf("ok\n");
+		
+	
+	/* getprinter properties */
+	
+	printf("Retreiving printer properties for %s...", servername1);
+	werror = cli_spoolss_getprinter( cli_server1, mem_ctx, &hPrinter1,
+		2, &printer1_ctr);
+	if ( !W_ERROR_IS_OK(werror) )
+		goto done;
+	printf("ok\n");
+
+	printf("Retrieving printer properties for %s...", servername2);
+	werror = cli_spoolss_getprinter( cli_server2, mem_ctx, &hPrinter2,
+		2, &printer2_ctr);
+	if ( !W_ERROR_IS_OK(werror) )
+		goto done;
+	printf("ok\n");
+	
+	/* getprinter security */
+	
+	printf("Retreiving printer security for %s...", servername1);
+	werror = cli_spoolss_getprinter( cli_server1, mem_ctx, &hPrinter1,
+		3, &printer1_ctr);
+	if ( !W_ERROR_IS_OK(werror) )
+		goto done;
+	printf("ok\n");
+
+	printf("Retrieving printer security for %s...", servername2);
+	werror = cli_spoolss_getprinter( cli_server2, mem_ctx, &hPrinter2,
+		3, &printer2_ctr);
+	if ( !W_ERROR_IS_OK(werror) )
+		goto done;
+	printf("ok\n");
+		
+	/* get all printer data */
+	
+done:
+	/* cleanup */
+
+	printf("Closing printers...");	
+	cli_spoolss_close_printer( cli_server1, mem_ctx, &hPrinter1 );
+	cli_spoolss_close_printer( cli_server2, mem_ctx, &hPrinter2 );
+	printf("ok\n");
+	
+	/* close the second remote connection */
+	
+	cli_shutdown( cli_server2 );
+	
+	return WERR_OK;
+}
+
 /* List of commands exported by this module */
 struct cmd_set spoolss_commands[] = {
 
@@ -2407,6 +2548,7 @@ struct cmd_set spoolss_commands[] = {
 	{ "setprintername",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_setprintername,	PI_SPOOLSS, "Set printername",                 "" },
 	{ "setprinterdata",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_setprinterdata,     PI_SPOOLSS, "Set REG_SZ printer data",             "" },
 	{ "rffpcnex",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_rffpcnex,           PI_SPOOLSS, "Rffpcnex test", "" },
+	{ "printercmp",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_printercmp,         PI_SPOOLSS, "Printer comparison test", "" },
 
 	{ NULL }
 };
