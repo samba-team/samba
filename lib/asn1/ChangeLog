@@ -1,3 +1,9 @@
+2005-07-18  Dave Love  <fx@gnu.org>
+
+	* extra.c (free_heim_any_set): Fix return.
+
+	* gen_decode.c (find_tag): Fix return in TType case.
+
 2005-07-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen_encode.c (TChoice): add () to make sure variable expression
