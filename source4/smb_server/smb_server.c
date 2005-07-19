@@ -774,6 +774,8 @@ static void smbsrv_accept(struct stream_connection *conn)
 	conn->private = smb_conn;
 
 	irpc_add_name(conn->msg_ctx, "smb_server");
+
+	smbsrv_management_init(smb_conn);
 }
 
 
