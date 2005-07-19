@@ -1355,7 +1355,7 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 {
 	struct sessionid *session_list;
 	struct current_user user;
-	int num_sessions, snum, ret;
+	int num_sessions, snum;
 	fstring username;
 	fstring machine;
 	BOOL not_root = False;
@@ -1394,7 +1394,7 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 				become_root();
 			}
 
-			if ((ret = message_send_pid(session_list[snum].pid, MSG_SHUTDOWN, NULL, 0, False))) 
+			if (message_send_pid(session_list[snum].pid, MSG_SHUTDOWN, NULL, 0, False))
 				r_u->status = WERR_OK;
 
 			if (not_root) 
