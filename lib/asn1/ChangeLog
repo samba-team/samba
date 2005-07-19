@@ -1,4 +1,9 @@
 2005-07-19  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* der_get.c: rewrite integer overflow tests w/o SIZE_T_MAX
+
+	* check-common.c (generic_decode_fail): only copy in if checklen
+	its less then 0xffffff and larger than 0.
 
 	* gen_decode.c (find_tag): find external references, we can't
 	handle those, so tell user that instead of crashing
