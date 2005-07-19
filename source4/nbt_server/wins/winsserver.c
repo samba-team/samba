@@ -24,6 +24,7 @@
 #include "nbt_server/nbt_server.h"
 #include "nbt_server/wins/winsdb.h"
 #include "system/time.h"
+#include "smbd/service_task.h"
 
 /*
   work out the ttl we will use given a client requested ttl
@@ -280,6 +281,8 @@ NTSTATUS nbtd_winsserver_init(struct nbtd_server *nbtsrv)
 	nbtsrv->winssrv->min_ttl     = lp_min_wins_ttl();
 	nbtsrv->winssrv->min_version = 0;
 	nbtsrv->winssrv->max_version = 0;
+
+	irpc_add_name(nbtsrv->task->msg_ctx, "wins_server");
 
 	return winsdb_init(nbtsrv->winssrv);
 }
