@@ -20,8 +20,6 @@
    
 */
 
-#define NO_SYSLOG
-
 #include "includes.h"
 
 extern BOOL AllowDebugChange;
