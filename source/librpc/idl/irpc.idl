@@ -22,6 +22,10 @@
 		NTSTATUS status;
 	} irpc_header;
 
+	/******************************************************
+         uptime call - supported by all messaging servers
+	*******************************************************/
+	void irpc_uptime([out,ref] NTTIME *start_time);
 
 	/******************************************************
          management calls for the nbt server
