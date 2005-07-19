@@ -336,7 +336,7 @@ static int samldb_copy_template(struct ldb_module *module, struct ldb_message *m
 	/* pull the template record */
 	ret = ldb_search(module->ldb, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &res);
 	if (ret != 1) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb: ERROR: template '%s' matched %d records\n", filter, ret);
+		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb: ERROR: template '%s' matched %d records\n", filter, ret);
 		return -1;
 	}
 	t = res[0];
@@ -395,7 +395,7 @@ static struct ldb_message *samldb_fill_group_object(struct ldb_module *module, c
 	}
 
 	if (samldb_copy_template(module, msg2, "(&(name=TemplateGroup)(objectclass=groupTemplate))") != 0) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_group_object: Error copying template!\n");
+		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb_fill_group_object: Error copying template!\n");
 		return NULL;
 	}
 
@@ -475,7 +475,7 @@ static struct ldb_message *samldb_fill_user_or_computer_object(struct ldb_module
 	}
 
 	if (samldb_copy_template(module, msg2, "(&(name=TemplateUser)(objectclass=userTemplate))") != 0) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_user_or_computer_object: Error copying template!\n");
+		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb_fill_user_or_computer_object: Error copying template!\n");
 		return NULL;
 	}
 
