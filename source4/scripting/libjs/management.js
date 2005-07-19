@@ -91,3 +91,72 @@ function nbtd_statistics()
 	}
 	return io.results[0].info.stats;
 }
+
+/*
+  see if a service is enabled
+*/
+function service_enabled(name)
+{
+	var services = lpGet("server services");
+	var i;
+	for (i=0;i<services.length;i++) {
+		if (services[i] == name) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/*
+  show status of a server
+*/
+function server_status(name)
+{
+	var conn = new Object();
+	var i;
+	var io;
+	var irpc = irpc_init();
+
+	if (!service_enabled(name)) {
+		return "DISABLED";
+	}
+	
+	status = irpc_connect(conn, name + "_server");
+	if (status.is_ok != true) {
+		return "DOWN";
+	}
+
+	var io = irpcObj();
+	status = irpc.irpc_uptime(conn, io);
+	if (status.is_ok != true) {
+		return "NOT RESPONDING";
+	}
+
+	return "RUNNING";
+}
+
+/*
+  show status of a stream server
+*/
+function stream_server_status(name)
+{
+	var conn = new Object();
+	var irpc = irpc_init();
+
+	if (!service_enabled(name)) {
+		return "DISABLED";
+	}
+	status = irpc_connect(conn, name + "_server");
+	if (status.is_ok != true) {
+		return "0 connections";
+	}
+
+	var io = irpcObj();
+	status = irpc.irpc_uptime(conn, io);
+	if (status.is_ok != true) {
+		return "NOT RESPONDING";
+	}
+
+	var n = io.results.length;
+	return sprintf("%u connection%s", n, plural(n));
+}
