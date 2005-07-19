@@ -1,5 +1,7 @@
 2005-07-19  Love Hörnquist Åstrand  <lha@it.su.se>
 	
+	* check-der.c (check_fail_bitstring): check for length overflow
+
 	* der_get.c: rewrite integer overflow tests w/o SIZE_T_MAX
 
 	* check-common.c (generic_decode_fail): only copy in if checklen
