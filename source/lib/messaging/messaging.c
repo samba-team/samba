@@ -47,6 +47,7 @@ struct messaging_context {
 	struct irpc_list *irpc;
 	struct idr_context *idr;
 	const char **names;
+	struct timeval start_time;
 
 	struct {
 		struct event_context *ev;
@@ -96,6 +97,17 @@ static void ping_message(struct messaging_context *msg, void *private,
 		 (uint_t)src, (int)data->length, 
 		 data->data?(const char *)data->data:""));
 	messaging_send(msg, src, MSG_PONG, data);
+}
+
+/*
+  return uptime of messaging server via irpc
+*/
+static NTSTATUS irpc_uptime(struct irpc_message *msg, 
+			    struct irpc_uptime *r)
+{
+	struct messaging_context *ctx = talloc_get_type(msg->private, struct messaging_context);
+	*r->out.start_time = timeval_to_nttime(&ctx->start_time);
+	return NT_STATUS_OK;
 }
 
 /* 
@@ -385,14 +397,15 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, uint32_t server_id
 	mkdir(path, 0700);
 	talloc_free(path);
 
-	msg->base_path = smbd_tmp_path(msg, "messaging");
-	msg->path      = messaging_path(msg, server_id);
-	msg->server_id = server_id;
-	msg->dispatch  = NULL;
-	msg->pending   = NULL;
-	msg->idr       = idr_init(msg);
-	msg->irpc      = NULL;
-	msg->names     = NULL;
+	msg->base_path  = smbd_tmp_path(msg, "messaging");
+	msg->path       = messaging_path(msg, server_id);
+	msg->server_id  = server_id;
+	msg->dispatch   = NULL;
+	msg->pending    = NULL;
+	msg->idr        = idr_init(msg);
+	msg->irpc       = NULL;
+	msg->names      = NULL;
+	msg->start_time = timeval_current();
 
 	status = socket_create("unix", SOCKET_TYPE_DGRAM, &msg->sock, 0);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -422,6 +435,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, uint32_t server_id
 	
 	messaging_register(msg, NULL, MSG_PING, ping_message);
 	messaging_register(msg, NULL, MSG_IRPC, irpc_handler);
+	IRPC_REGISTER(msg, irpc, IRPC_UPTIME, irpc_uptime, msg);
 
 	return msg;
 }
@@ -570,6 +584,8 @@ static void irpc_handler(struct messaging_context *msg_ctx, void *private,
 
 	ndr = ndr_pull_init_blob(packet, msg_ctx);
 	if (ndr == NULL) goto failed;
+
+	ndr->flags |= LIBNDR_FLAG_REF_ALLOC;
 
 	status = ndr_pull_irpc_header(ndr, NDR_BUFFERS|NDR_SCALARS, &header);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
