@@ -21,8 +21,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#define NO_SYSLOG
-
 #include "includes.h"
 #include "client/client_proto.h"
 #ifndef REGISTER
