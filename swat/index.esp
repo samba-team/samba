@@ -1,7 +1,24 @@
-<% page_header("columns", "Welcome to SWAT"); %>
+<% page_header("columns", "Server Status", "");
+  libinclude("base.js");
+  libinclude("management.js");
+%>
 
-<h1>Welcome to SWAT!</h1>
+<h1>Server Status</h1>
 
-Please select a menu item from the selection on the left
+<%
+var servers = new Array("nbt_server", "smb_server", "ldap_server", "cldap_server", "kdc_server");
+var i;
+var info = new Object();
+
+info["NBT Server"]   = server_status("nbt");
+info["WINS Server"]  = server_status("wins");
+info["CLDAP Server"] = server_status("cldap");
+info["KDC"]          = server_status("kdc");
+info["SMB Server"]   = stream_server_status("smb");
+info["LDAP Server"]  = stream_server_status("ldap");
+info["RPC Server"]   = stream_server_status("rpc");
+
+simple_table(info);
+%>
 
 <% page_footer(); %>

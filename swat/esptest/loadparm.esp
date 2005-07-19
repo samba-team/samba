@@ -1,4 +1,4 @@
-<% page_header("columns", "ESP loadparm test"); %>
+<% page_header("columns", "ESP loadparm test", "/esptest/menu.js" ); %>
 
 <h1>Samba4 loadparm test</h1>
 

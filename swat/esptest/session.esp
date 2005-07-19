@@ -1,4 +1,4 @@
-<% page_header("columns", "ESP session test"); %>
+<% page_header("columns", "ESP session test", "/esptest/menu.js"); %>
 
 <h1>Samba4 session test</h1>
 

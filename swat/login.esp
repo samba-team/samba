@@ -1,4 +1,4 @@
-<% page_header("plain", "SWAT Login"); %>
+<% page_header("plain", "SWAT Login", ""); %>
 
 <%
 
