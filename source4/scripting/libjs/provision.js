@@ -196,6 +196,8 @@ function provision(subobj, message)
 function provision_guess()
 {
 	var subobj = new Object();
+	var nss = nss_init();
+
 	subobj.REALM        = lpGet("realm");
 	subobj.DOMAIN       = lpGet("workgroup");
 	subobj.HOSTNAME     = hostname();
@@ -213,11 +215,11 @@ function provision_guess()
 	subobj.LDAPTIME     = ldaptime;
 	subobj.DATESTRING   = datestring;
 	subobj.USN          = nextusn;
-	subobj.ROOT         = findnss(getpwnam, "root");
-	subobj.NOBODY       = findnss(getpwnam, "nobody");
-	subobj.NOGROUP      = findnss(getgrnam, "nogroup", "nobody");
-	subobj.WHEEL        = findnss(getgrnam, "wheel", "root");
-	subobj.USERS        = findnss(getgrnam, "users", "guest", "other");
+	subobj.ROOT         = findnss(nss.getpwnam, "root");
+	subobj.NOBODY       = findnss(nss.getpwnam, "nobody");
+	subobj.NOGROUP      = findnss(nss.getgrnam, "nogroup", "nobody");
+	subobj.WHEEL        = findnss(nss.getgrnam, "wheel", "root");
+	subobj.USERS        = findnss(nss.getgrnam, "users", "guest", "other");
 	subobj.DNSDOMAIN    = strlower(subobj.REALM);
 	subobj.DNSNAME      = sprintf("%s.%s", 
 				      strlower(subobj.HOSTNAME), 

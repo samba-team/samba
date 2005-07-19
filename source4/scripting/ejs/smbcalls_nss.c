@@ -68,7 +68,7 @@ static struct MprVar mpr_group(struct group *grp)
 
 /*
   usage:
-      var pw = getpwnam("root");
+      var pw = nss.getpwnam("root");
 
   returns an object containing struct passwd entries
 */
@@ -86,7 +86,7 @@ static int ejs_getpwnam(MprVarHandle eid, int argc, struct MprVar **argv)
 
 /*
   usage:
-      var pw = getpwuid(0);
+      var pw = nss.getpwuid(0);
 
   returns an object containing struct passwd entries
 */
@@ -103,7 +103,7 @@ static int ejs_getpwuid(MprVarHandle eid, int argc, struct MprVar **argv)
 
 /*
   usage:
-      var pw = getgrnam("users");
+      var pw = nss.getgrnam("users");
 
   returns an object containing struct group entries
 */
@@ -120,7 +120,7 @@ static int ejs_getgrnam(MprVarHandle eid, int argc, struct MprVar **argv)
 
 /*
   usage:
-      var pw = getgrgid(0);
+      var pw = nss.getgrgid(0);
 
   returns an object containing struct group entries
 */
@@ -137,12 +137,27 @@ static int ejs_getgrgid(MprVarHandle eid, int argc, struct MprVar **argv)
 
 
 /*
+  initialise nss ejs subsystem
+*/
+static int ejs_nss_init(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	struct MprVar *nss;
+	mpr_Return(eid, mprObject("nss"));
+
+	nss  = ejsGetReturnValue(eid);
+
+	mprSetCFunction(nss, "getpwnam", ejs_getpwnam);
+	mprSetCFunction(nss, "getpwuid", ejs_getpwuid);
+	mprSetCFunction(nss, "getgrnam", ejs_getgrnam);
+	mprSetCFunction(nss, "getgrgid", ejs_getgrgid);
+
+	return 0;
+}
+
+/*
   setup C functions that be called from ejs
 */
 void smb_setup_ejs_nss(void)
 {
-	ejsDefineCFunction(-1, "getpwnam", ejs_getpwnam, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineCFunction(-1, "getpwuid", ejs_getpwuid, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineCFunction(-1, "getgrnam", ejs_getgrnam, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineCFunction(-1, "getgrgid", ejs_getgrgid, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "nss_init", ejs_nss_init, NULL, MPR_VAR_SCRIPT_HANDLE);
 }
