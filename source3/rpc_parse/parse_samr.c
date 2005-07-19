@@ -5103,13 +5103,13 @@ static BOOL sam_io_logon_hrs(const char *desc, LOGON_HRS * hrs,
 }
 
 /*******************************************************************
-inits a SAM_USER_INFO_12 structure.
+inits a SAM_USER_INFO_18 structure.
 ********************************************************************/
 
-void init_sam_user_info12(SAM_USER_INFO_12 * usr,
+void init_sam_user_info18(SAM_USER_INFO_18 * usr,
 			  const uint8 lm_pwd[16], const uint8 nt_pwd[16])
 {
-	DEBUG(5, ("init_sam_user_info12\n"));
+	DEBUG(5, ("init_sam_user_info18\n"));
 
 	usr->lm_pwd_active =
 		memcpy(usr->lm_pwd, lm_pwd, sizeof(usr->lm_pwd)) ? 1 : 0;
@@ -5121,13 +5121,13 @@ void init_sam_user_info12(SAM_USER_INFO_12 * usr,
 reads or writes a structure.
 ********************************************************************/
 
-static BOOL sam_io_user_info12(const char *desc, SAM_USER_INFO_12 * u,
+static BOOL sam_io_user_info18(const char *desc, SAM_USER_INFO_18 * u,
 			prs_struct *ps, int depth)
 {
 	if (u == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "samr_io_r_user_info12");
+	prs_debug(ps, depth, desc, "samr_io_r_user_info18");
 	depth++;
 
 	if(!prs_align(ps))
@@ -5185,12 +5185,12 @@ static BOOL sam_io_user_info7(const char *desc, SAM_USER_INFO_7 * usr,
 }
 
 /*******************************************************************
-inits a SAM_USER_INFO_10 structure.
+inits a SAM_USER_INFO_16 structure.
 ********************************************************************/
 
-void init_sam_user_info10(SAM_USER_INFO_10 * usr, uint32 acb_info)
+void init_sam_user_info16(SAM_USER_INFO_16 * usr, uint32 acb_info)
 {
-	DEBUG(5, ("init_sam_user_info10\n"));
+	DEBUG(5, ("init_sam_user_info16\n"));
 
 	usr->acb_info = acb_info;
 }
@@ -5199,13 +5199,13 @@ void init_sam_user_info10(SAM_USER_INFO_10 * usr, uint32 acb_info)
 reads or writes a structure.
 ********************************************************************/
 
-static BOOL sam_io_user_info10(const char *desc, SAM_USER_INFO_10 * usr,
+static BOOL sam_io_user_info16(const char *desc, SAM_USER_INFO_16 * usr,
 			prs_struct *ps, int depth)
 {
 	if (usr == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "samr_io_r_user_info10");
+	prs_debug(ps, depth, desc, "samr_io_r_user_info16");
 	depth++;
 
 	if(!prs_align(ps))
@@ -5218,15 +5218,15 @@ static BOOL sam_io_user_info10(const char *desc, SAM_USER_INFO_10 * usr,
 }
 
 /*******************************************************************
-inits a SAM_USER_INFO_11 structure.
+inits a SAM_USER_INFO_17 structure.
 ********************************************************************/
 
-void init_sam_user_info11(SAM_USER_INFO_11 * usr,
+void init_sam_user_info17(SAM_USER_INFO_17 * usr,
 			  NTTIME * expiry,
 			  char *mach_acct,
 			  uint32 rid_user, uint32 rid_group, uint16 acct_ctrl)
 {
-	DEBUG(5, ("init_sam_user_info11\n"));
+	DEBUG(5, ("init_sam_user_info17\n"));
 
 	memcpy(&usr->expiry, expiry, sizeof(usr->expiry));	/* expiry time or something? */
 	ZERO_STRUCT(usr->padding_1);	/* 0 - padding 24 bytes */
@@ -5263,13 +5263,13 @@ void init_sam_user_info11(SAM_USER_INFO_11 * usr,
 reads or writes a structure.
 ********************************************************************/
 
-static BOOL sam_io_user_info11(const char *desc, SAM_USER_INFO_11 * usr,
+static BOOL sam_io_user_info17(const char *desc, SAM_USER_INFO_17 * usr,
 			prs_struct *ps, int depth)
 {
 	if (usr == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "samr_io_r_unknown_11");
+	prs_debug(ps, depth, desc, "samr_io_r_unknown_17");
 	depth++;
 
 	if(!prs_align(ps))
@@ -6231,16 +6231,16 @@ NTSTATUS make_samr_userinfo_ctr_usr21(TALLOC_CTX *ctx, SAM_USERINFO_CTR * ctr,
 	ctr->info.id = NULL;
 
 	switch (switch_value) {
-	case 0x10:
-		ctr->info.id10 = TALLOC_ZERO_P(ctx,SAM_USER_INFO_10);
-		if (ctr->info.id10 == NULL)
+	case 16:
+		ctr->info.id16 = TALLOC_ZERO_P(ctx,SAM_USER_INFO_16);
+		if (ctr->info.id16 == NULL)
 			return NT_STATUS_NO_MEMORY;
 
-		init_sam_user_info10(ctr->info.id10, usr->acb_info);
+		init_sam_user_info16(ctr->info.id16, usr->acb_info);
 		break;
 #if 0
 /* whoops - got this wrong.  i think.  or don't understand what's happening. */
-	case 0x11:
+	case 17:
 		{
 			NTTIME expire;
 			info = (void *)&id11;
@@ -6248,8 +6248,8 @@ NTSTATUS make_samr_userinfo_ctr_usr21(TALLOC_CTX *ctx, SAM_USERINFO_CTR * ctr,
 			expire.low = 0xffffffff;
 			expire.high = 0x7fffffff;
 
-			ctr->info.id = TALLOC_ZERO_P(ctx,SAM_USER_INFO_11);
-			init_sam_user_info11(ctr->info.id11, &expire,
+			ctr->info.id = TALLOC_ZERO_P(ctx,SAM_USER_INFO_17);
+			init_sam_user_info11(ctr->info.id17, &expire,
 					     "BROOKFIELDS$",	/* name */
 					     0x03ef,	/* user rid */
 					     0x201,	/* group rid */
@@ -6258,12 +6258,12 @@ NTSTATUS make_samr_userinfo_ctr_usr21(TALLOC_CTX *ctx, SAM_USERINFO_CTR * ctr,
 			break;
 		}
 #endif
-	case 0x12:
-		ctr->info.id12 = TALLOC_ZERO_P(ctx,SAM_USER_INFO_12);
-		if (ctr->info.id12 == NULL)
+	case 18:
+		ctr->info.id18 = TALLOC_ZERO_P(ctx,SAM_USER_INFO_18);
+		if (ctr->info.id18 == NULL)
 			return NT_STATUS_NO_MEMORY;
 
-		init_sam_user_info12(ctr->info.id12, usr->lm_pwd, usr->nt_pwd);
+		init_sam_user_info18(ctr->info.id18, usr->lm_pwd, usr->nt_pwd);
 		break;
 	case 21:
 		{
@@ -6347,7 +6347,7 @@ static BOOL samr_io_userinfo_ctr(const char *desc, SAM_USERINFO_CTR **ppctr,
 	ret = False;
 
 	switch (ctr->switch_value) {
-	case 0x07:
+	case 7:
 		if (UNMARSHALLING(ps))
 			ctr->info.id7 = PRS_ALLOC_MEM(ps,SAM_USER_INFO_7,1);
 		if (ctr->info.id7 == NULL) {
@@ -6356,34 +6356,34 @@ static BOOL samr_io_userinfo_ctr(const char *desc, SAM_USERINFO_CTR **ppctr,
 		}
 		ret = sam_io_user_info7("", ctr->info.id7, ps, depth);
 		break;
-	case 0x10:
+	case 16:
 		if (UNMARSHALLING(ps))
-			ctr->info.id10 = PRS_ALLOC_MEM(ps,SAM_USER_INFO_10,1);
-		if (ctr->info.id10 == NULL) {
+			ctr->info.id16 = PRS_ALLOC_MEM(ps,SAM_USER_INFO_16,1);
+		if (ctr->info.id16 == NULL) {
 			DEBUG(2,("samr_io_userinfo_ctr: info pointer not initialised\n"));
 			return False;
 		}
-		ret = sam_io_user_info10("", ctr->info.id10, ps, depth);
+		ret = sam_io_user_info16("", ctr->info.id16, ps, depth);
 		break;
-	case 0x11:
+	case 17:
 		if (UNMARSHALLING(ps))
-			ctr->info.id11 = PRS_ALLOC_MEM(ps,SAM_USER_INFO_11,1);
+			ctr->info.id17 = PRS_ALLOC_MEM(ps,SAM_USER_INFO_17,1);
 
-		if (ctr->info.id11 == NULL) {
+		if (ctr->info.id17 == NULL) {
 			DEBUG(2,("samr_io_userinfo_ctr: info pointer not initialised\n"));
 			return False;
 		}
-		ret = sam_io_user_info11("", ctr->info.id11, ps, depth);
+		ret = sam_io_user_info17("", ctr->info.id17, ps, depth);
 		break;
-	case 0x12:
+	case 18:
 		if (UNMARSHALLING(ps))
-			ctr->info.id12 = PRS_ALLOC_MEM(ps,SAM_USER_INFO_12,1);
+			ctr->info.id18 = PRS_ALLOC_MEM(ps,SAM_USER_INFO_18,1);
 
-		if (ctr->info.id12 == NULL) {
+		if (ctr->info.id18 == NULL) {
 			DEBUG(2,("samr_io_userinfo_ctr: info pointer not initialised\n"));
 			return False;
 		}
-		ret = sam_io_user_info12("", ctr->info.id12, ps, depth);
+		ret = sam_io_user_info18("", ctr->info.id18, ps, depth);
 		break;
 	case 20:
 		if (UNMARSHALLING(ps))
@@ -6588,12 +6588,12 @@ void init_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 * q_u,
 		q_u->ctr->switch_value = switch_value;
 
 	switch (switch_value) {
-	case 0x12:
-		SamOEMhashBlob(ctr->info.id12->lm_pwd, 16, sess_key);
-		SamOEMhashBlob(ctr->info.id12->nt_pwd, 16, sess_key);
+	case 18:
+		SamOEMhashBlob(ctr->info.id18->lm_pwd, 16, sess_key);
+		SamOEMhashBlob(ctr->info.id18->nt_pwd, 16, sess_key);
 		dump_data(100, (char *)sess_key->data, sess_key->length);
-		dump_data(100, (char *)ctr->info.id12->lm_pwd, 16);
-		dump_data(100, (char *)ctr->info.id12->nt_pwd, 16);
+		dump_data(100, (char *)ctr->info.id18->lm_pwd, 16);
+		dump_data(100, (char *)ctr->info.id18->nt_pwd, 16);
 		break;
 	}
 }

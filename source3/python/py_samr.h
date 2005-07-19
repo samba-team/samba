@@ -78,8 +78,8 @@ extern PyObject *samr_error;
 /* The following definitions are from py_samr_conv.c */
 
 BOOL py_from_acct_info(PyObject **array, struct acct_info *info, int num_accts);
-BOOL py_from_SAM_USER_INFO_10(PyObject **dict, SAM_USER_INFO_10 *info);
-BOOL py_to_SAM_USER_INFO_10(SAM_USER_INFO_10 *info, PyObject *dict);
+BOOL py_from_SAM_USER_INFO_16(PyObject **dict, SAM_USER_INFO_16 *info);
+BOOL py_to_SAM_USER_INFO_16(SAM_USER_INFO_16 *info, PyObject *dict);
 BOOL py_from_SAM_USER_INFO_21(PyObject **dict, SAM_USER_INFO_21 *info);
 BOOL py_to_SAM_USER_INFO_21(SAM_USER_INFO_21 *info, PyObject *dict);
 
