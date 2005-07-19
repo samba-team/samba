@@ -259,20 +259,21 @@ static int ejs_ldbModify(MprVarHandle eid, int argc, struct MprVar **argv)
   connect to a database
   usage:
    ok = ldb.connect(dbfile);
+   ok = ldb.connect(dbfile, "modules:modlist");
 */
 static int ejs_ldbConnect(MprVarHandle eid, int argc, char **argv)
 {
 	struct ldb_context *ldb;
 	const char *dbfile;
 
-	if (argc != 1) {
+	if (argc < 1) {
 		ejsSetErrorMsg(eid, "ldb.connect invalid arguments");
 		return -1;
 	}
 
 	dbfile = argv[0];
 
-	ldb = ldb_wrap_connect(mprMemCtx(), dbfile, 0, NULL);
+	ldb = ldb_wrap_connect(mprMemCtx(), dbfile, 0, argv+1);
 	if (ldb == NULL) {
 		ejsSetErrorMsg(eid, "ldb.connect failed to open %s", dbfile);
 	}
