@@ -8,7 +8,7 @@
 package Parse::Pidl::Samba::NDR::Parser;
 
 use strict;
-use Parse::Pidl::Typelist qw(hasType getType);
+use Parse::Pidl::Typelist qw(hasType getType mapType);
 use Parse::Pidl::Util qw(has_property ParseExpr);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
 
@@ -1100,31 +1100,18 @@ sub ParseEnumPrint($$)
 	end_flags($enum);
 }
 
-sub ArgsEnumPush($)
+sub DeclEnum($)
 {
-	my $e = shift;
-	return "struct ndr_push *ndr, int ndr_flags, enum $e->{NAME} r";
-}
-
-sub ArgsEnumPrint($)
-{
-	my $e = shift;
-	return "struct ndr_print *ndr, const char *name, enum $e->{NAME} r";
-}
-
-sub ArgsEnumPull($)
-{
-	my $e = shift;
-	return "struct ndr_pull *ndr, int ndr_flags, enum $e->{NAME} *r";
+	my ($e,$t) = @_;
+	return "enum $e->{NAME} " . 
+		($t eq "pull"?"*":"") . "r";
 }
 
 $typefamily{ENUM} = {
+	DECL => \&DeclEnum,
 	PUSH_FN_BODY => \&ParseEnumPush,
-	PUSH_FN_ARGS => \&ArgsEnumPush,
 	PULL_FN_BODY => \&ParseEnumPull,
-	PULL_FN_ARGS => \&ArgsEnumPull,
 	PRINT_FN_BODY => \&ParseEnumPrint,
-	PRINT_FN_ARGS => \&ArgsEnumPrint,
 };
 
 #####################################################################
@@ -1196,34 +1183,18 @@ sub ParseBitmapPrint($$)
 	end_flags($bitmap);
 }
 
-sub ArgsBitmapPush($)
+sub DeclBitmap($$)
 {
-	my $e = shift;
-	my $type_decl = Parse::Pidl::Typelist::mapType($e->{DATA}->{BASE_TYPE});
-	return "struct ndr_push *ndr, int ndr_flags, $type_decl r";
-}
-
-sub ArgsBitmapPrint($)
-{
-	my $e = shift;
-	my $type_decl = Parse::Pidl::Typelist::mapType($e->{DATA}->{BASE_TYPE});
-	return "struct ndr_print *ndr, const char *name, $type_decl r";
-}
-
-sub ArgsBitmapPull($)
-{
-	my $e = shift;
-	my $type_decl = Parse::Pidl::Typelist::mapType($e->{DATA}->{BASE_TYPE});
-	return "struct ndr_pull *ndr, int ndr_flags, $type_decl *r";
+	my ($e,$t) = @_;
+	return mapType(Parse::Pidl::Typelist::bitmap_type_fn($e->{DATA})) . 
+		($t eq "pull"?" *":" ") . "r";
 }
 
 $typefamily{BITMAP} = {
+	DECL => \&DeclBitmap,
 	PUSH_FN_BODY => \&ParseBitmapPush,
-	PUSH_FN_ARGS => \&ArgsBitmapPush,
 	PULL_FN_BODY => \&ParseBitmapPull,
-	PULL_FN_ARGS => \&ArgsBitmapPull,
 	PRINT_FN_BODY => \&ParseBitmapPrint,
-	PRINT_FN_ARGS => \&ArgsBitmapPrint,
 };
 
 #####################################################################
@@ -1352,22 +1323,10 @@ sub ParseStructNdrSize($)
 	pidl "return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_$t->{NAME});";
 }
 
-sub ArgsStructPush($)
+sub DeclStruct($)
 {
-	my $e = shift;
-	return "struct ndr_push *ndr, int ndr_flags, const struct $e->{NAME} *r";
-}
-
-sub ArgsStructPrint($)
-{
-	my $e = shift;
-	return "struct ndr_print *ndr, const char *name, const struct $e->{NAME} *r";
-}
-
-sub ArgsStructPull($)
-{
-	my $e = shift;
-	return "struct ndr_pull *ndr, int ndr_flags, struct $e->{NAME} *r";
+	my ($e,$t) = @_;
+	return ($t ne "pull"?"const ":"") . "struct $e->{NAME} *r";
 }
 
 sub ArgsStructNdrSize($)
@@ -1378,11 +1337,9 @@ sub ArgsStructNdrSize($)
 
 $typefamily{STRUCT} = {
 	PUSH_FN_BODY => \&ParseStructPush,
-	PUSH_FN_ARGS => \&ArgsStructPush,
+	DECL => \&DeclStruct,
 	PULL_FN_BODY => \&ParseStructPull,
-	PULL_FN_ARGS => \&ArgsStructPull,
 	PRINT_FN_BODY => \&ParseStructPrint,
-	PRINT_FN_ARGS => \&ArgsStructPrint,
 	SIZE_FN_BODY => \&ParseStructNdrSize,
 	SIZE_FN_ARGS => \&ArgsStructNdrSize,
 };
@@ -1625,22 +1582,10 @@ sub ParseUnionPull($$)
 	pidl "ndr_pull_restore_relative_base_offset(ndr, _save_relative_base_offset);" if defined($e->{PROPERTIES}{relative_base});
 }
 
-sub ArgsUnionPush($)
+sub DeclUnion($$)
 {
-	my $e = shift;
-	return "struct ndr_push *ndr, int ndr_flags, const union $e->{NAME} *r";
-}
-
-sub ArgsUnionPrint($)
-{
-	my $e = shift;
-	return "struct ndr_print *ndr, const char *name, const union $e->{NAME} *r";
-}
-
-sub ArgsUnionPull($)
-{
-	my $e = shift;
-	return "struct ndr_pull *ndr, int ndr_flags, union $e->{NAME} *r";
+	my ($e,$t) = @_;
+	return ($t ne "pull"?"const ":"") . "union $e->{NAME} *r";
 }
 
 sub ArgsUnionNdrSize($)
@@ -1651,11 +1596,9 @@ sub ArgsUnionNdrSize($)
 
 $typefamily{UNION} = {
 	PUSH_FN_BODY => \&ParseUnionPush,
-	PUSH_FN_ARGS => \&ArgsUnionPush,
+	DECL => \&DeclUnion,
 	PULL_FN_BODY => \&ParseUnionPull,
-	PULL_FN_ARGS => \&ArgsUnionPull,
 	PRINT_FN_BODY => \&ParseUnionPrint,
-	PRINT_FN_ARGS => \&ArgsUnionPrint,
 	SIZE_FN_ARGS => \&ArgsUnionNdrSize,
 	SIZE_FN_BODY => \&ParseUnionNdrSize,
 };
@@ -1666,8 +1609,8 @@ sub ParseTypedefPush($)
 {
 	my($e) = shift;
 
-	my $args = $typefamily{$e->{DATA}->{TYPE}}->{PUSH_FN_ARGS}->($e);
-	pidl fn_prefix($e) . "NTSTATUS ndr_push_$e->{NAME}($args)";
+	my $args = $typefamily{$e->{DATA}->{TYPE}}->{DECL}->($e,"push");
+	pidl fn_prefix($e) . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, $args)";
 
 	pidl "{";
 	indent;
@@ -1684,9 +1627,9 @@ sub ParseTypedefPull($)
 {
 	my($e) = shift;
 
-	my $args = $typefamily{$e->{DATA}->{TYPE}}->{PULL_FN_ARGS}->($e);
+	my $args = $typefamily{$e->{DATA}->{TYPE}}->{DECL}->($e,"pull");
 
-	pidl fn_prefix($e) . "NTSTATUS ndr_pull_$e->{NAME}($args)";
+	pidl fn_prefix($e) . "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, $args)";
 
 	pidl "{";
 	indent;
@@ -1703,9 +1646,9 @@ sub ParseTypedefPrint($)
 {
 	my($e) = shift;
 
-	my $args = $typefamily{$e->{DATA}->{TYPE}}->{PRINT_FN_ARGS}->($e);
+	my $args = $typefamily{$e->{DATA}->{TYPE}}->{DECL}->($e,"print");
 
-	pidl "void ndr_print_$e->{NAME}($args)";
+	pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, $args)";
 	pidl "{";
 	indent;
 	$typefamily{$e->{DATA}->{TYPE}}->{PRINT_FN_BODY}->($e->{DATA}, $e->{NAME});
