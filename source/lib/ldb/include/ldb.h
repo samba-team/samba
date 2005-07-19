@@ -154,26 +154,34 @@ struct ldb_debug_ops {
 
 
 /* structues for ldb_parse_tree handling code */
-enum ldb_parse_op {LDB_OP_SIMPLE=1, LDB_OP_EXTENDED=2,
-		   LDB_OP_SUBSTRING=3, LDB_OP_PRESENT=4,
-		   LDB_OP_AND='&', LDB_OP_OR='|', LDB_OP_NOT='!'};
+enum ldb_parse_op { LDB_OP_AND=1, LDB_OP_OR=2, LDB_OP_NOT=3,
+		    LDB_OP_EQUALITY=4, LDB_OP_SUBSTRING=5,
+		    LDB_OP_GREATER=6, LDB_OP_LESS=7, LDB_OP_PRESENT=8,
+		    LDB_OP_APPROX=9, LDB_OP_EXTENDED=10 };
 
 struct ldb_parse_tree {
 	enum ldb_parse_op operation;
 	union {
 		struct {
-			char *attr;
-			struct ldb_val value;
-		} simple;
+			struct ldb_parse_tree *child;
+		} isnot;
 		struct {
 			char *attr;
-		} present;
+			struct ldb_val value;
+		} equality;
 		struct {
 			char *attr;
 			int start_with_wildcard;
 			int end_with_wildcard;
 			struct ldb_val **chunks;
 		} substring;
+		struct {
+			char *attr;
+		} present;
+		struct {
+			char *attr;
+			struct ldb_val value;
+		} comparison;
 		struct {
 			char *attr;
 			int dnAttributes;
@@ -184,9 +192,6 @@ struct ldb_parse_tree {
 			unsigned int num_elements;
 			struct ldb_parse_tree **elements;
 		} list;
-		struct {
-			struct ldb_parse_tree *child;
-		} isnot;
 	} u;
 };
 

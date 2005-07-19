@@ -53,13 +53,13 @@ static BOOL ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree
 		asn1_pop_tag(data);
 		break;
 
-	case LDB_OP_SIMPLE:
+	case LDB_OP_EQUALITY:
 		/* equality test */
 		asn1_push_tag(data, ASN1_CONTEXT(3));
-		asn1_write_OctetString(data, tree->u.simple.attr,
-				      strlen(tree->u.simple.attr));
-		asn1_write_OctetString(data, tree->u.simple.value.data,
-				      tree->u.simple.value.length);
+		asn1_write_OctetString(data, tree->u.equality.attr,
+				      strlen(tree->u.equality.attr));
+		asn1_write_OctetString(data, tree->u.equality.value.data,
+				      tree->u.equality.value.length);
 		asn1_pop_tag(data);
 		break;
 
@@ -101,12 +101,42 @@ static BOOL ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree
 		asn1_pop_tag(data);
 		break;
 
+	case LDB_OP_GREATER:
+		/* greaterOrEqual test */
+		asn1_push_tag(data, ASN1_CONTEXT(5));
+		asn1_write_OctetString(data, tree->u.comparison.attr,
+				      strlen(tree->u.comparison.attr));
+		asn1_write_OctetString(data, tree->u.comparison.value.data,
+				      tree->u.comparison.value.length);
+		asn1_pop_tag(data);
+		break;
+
+	case LDB_OP_LESS:
+		/* lessOrEqual test */
+		asn1_push_tag(data, ASN1_CONTEXT(6));
+		asn1_write_OctetString(data, tree->u.comparison.attr,
+				      strlen(tree->u.comparison.attr));
+		asn1_write_OctetString(data, tree->u.comparison.value.data,
+				      tree->u.comparison.value.length);
+		asn1_pop_tag(data);
+		break;
+
 	case LDB_OP_PRESENT:
 		/* present test */
 		asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(7));
 		asn1_write_LDAPString(data, tree->u.present.attr);
 		asn1_pop_tag(data);
 		return !data->has_error;
+
+	case LDB_OP_APPROX:
+		/* approx test */
+		asn1_push_tag(data, ASN1_CONTEXT(8));
+		asn1_write_OctetString(data, tree->u.comparison.attr,
+				      strlen(tree->u.comparison.attr));
+		asn1_write_OctetString(data, tree->u.comparison.value.data,
+				      tree->u.comparison.value.length);
+		asn1_pop_tag(data);
+		break;
 
 	case LDB_OP_EXTENDED:
 		/*
@@ -580,10 +610,10 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 			goto failed;
 		}
 
-		ret->operation = LDB_OP_SIMPLE;
-		ret->u.simple.attr = talloc_steal(ret, attrib);
-		ret->u.simple.value.data = talloc_steal(ret, value.data);
-		ret->u.simple.value.length = value.length;
+		ret->operation = LDB_OP_EQUALITY;
+		ret->u.equality.attr = talloc_steal(ret, attrib);
+		ret->u.equality.value.data = talloc_steal(ret, value.data);
+		ret->u.equality.value.length = value.length;
 		break;
 	}
 	case 4: {
@@ -680,6 +710,44 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 		}
 		break;
 	}
+	case 5: {
+		/* greaterOrEqual */
+		const char *attrib;
+		DATA_BLOB value;
+
+		asn1_start_tag(data, ASN1_CONTEXT(filter_tag));
+		asn1_read_OctetString_talloc(mem_ctx, data, &attrib);
+		asn1_read_OctetString(data, &value);
+		asn1_end_tag(data);
+		if ((data->has_error) || (attrib == NULL) || (value.data == NULL)) {
+			goto failed;
+		}
+
+		ret->operation = LDB_OP_GREATER;
+		ret->u.comparison.attr = talloc_steal(ret, attrib);
+		ret->u.comparison.value.data = talloc_steal(ret, value.data);
+		ret->u.comparison.value.length = value.length;
+		break;
+	}
+	case 6: {
+		/* lessOrEqual */
+		const char *attrib;
+		DATA_BLOB value;
+
+		asn1_start_tag(data, ASN1_CONTEXT(filter_tag));
+		asn1_read_OctetString_talloc(mem_ctx, data, &attrib);
+		asn1_read_OctetString(data, &value);
+		asn1_end_tag(data);
+		if ((data->has_error) || (attrib == NULL) || (value.data == NULL)) {
+			goto failed;
+		}
+
+		ret->operation = LDB_OP_LESS;
+		ret->u.comparison.attr = talloc_steal(ret, attrib);
+		ret->u.comparison.value.data = talloc_steal(ret, value.data);
+		ret->u.comparison.value.length = value.length;
+		break;
+	}
 	case 7: {
 		/* Normal presence, "attribute=*" */
 		char *attr;
@@ -697,6 +765,25 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 		if (!asn1_end_tag(data)) {
 			goto failed;
 		}
+		break;
+	}
+	case 8: {
+		/* approx */
+		const char *attrib;
+		DATA_BLOB value;
+
+		asn1_start_tag(data, ASN1_CONTEXT(filter_tag));
+		asn1_read_OctetString_talloc(mem_ctx, data, &attrib);
+		asn1_read_OctetString(data, &value);
+		asn1_end_tag(data);
+		if ((data->has_error) || (attrib == NULL) || (value.data == NULL)) {
+			goto failed;
+		}
+
+		ret->operation = LDB_OP_APPROX;
+		ret->u.comparison.attr = talloc_steal(ret, attrib);
+		ret->u.comparison.value.data = talloc_steal(ret, value.data);
+		ret->u.comparison.value.length = value.length;
 		break;
 	}
 	case 9: {

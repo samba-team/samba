@@ -190,13 +190,13 @@ static int ltdb_index_dn_simple(struct ldb_module *module,
 
 	/* if the attribute isn't in the list of indexed attributes then
 	   this node needs a full search */
-	if (ldb_msg_find_idx(index_list, tree->u.simple.attr, NULL, LTDB_IDXATTR) == -1) {
+	if (ldb_msg_find_idx(index_list, tree->u.equality.attr, NULL, LTDB_IDXATTR) == -1) {
 		return -1;
 	}
 
 	/* the attribute is indexed. Pull the list of DNs that match the 
 	   search criterion */
-	dn = ldb_dn_key(ldb, tree->u.simple.attr, &tree->u.simple.value);
+	dn = ldb_dn_key(ldb, tree->u.equality.attr, &tree->u.equality.value);
 	if (!dn) return -1;
 
 	msg = talloc(list, struct ldb_message);
@@ -256,7 +256,7 @@ static int ltdb_index_dn_objectclass(struct ldb_module *module,
 	struct ldb_context *ldb = module->ldb;
 	unsigned int i;
 	int ret;
-	const char *target = tree->u.simple.value.data;
+	const char *target = tree->u.equality.value.data;
 	const char **subclasses;
 
 	list->count = 0;
@@ -273,16 +273,16 @@ static int ltdb_index_dn_objectclass(struct ldb_module *module,
 	for (i=0;subclasses[i];i++) {
 		struct ldb_parse_tree tree2;
 		struct dn_list *list2;
-		tree2.operation = LDB_OP_SIMPLE;
-		tree2.u.simple.attr = talloc_strdup(list, LTDB_OBJECTCLASS);
-		if (!tree2.u.simple.attr) {
+		tree2.operation = LDB_OP_EQUALITY;
+		tree2.u.equality.attr = talloc_strdup(list, LTDB_OBJECTCLASS);
+		if (!tree2.u.equality.attr) {
 			return -1;
 		}
-		tree2.u.simple.value.data = talloc_strdup(tree2.u.simple.attr, subclasses[i]);
-		if (tree2.u.simple.value.data == NULL) {
+		tree2.u.equality.value.data = talloc_strdup(tree2.u.equality.attr, subclasses[i]);
+		if (tree2.u.equality.value.data == NULL) {
 			return -1;			
 		}
-		tree2.u.simple.value.length = strlen(subclasses[i]);
+		tree2.u.equality.value.length = strlen(subclasses[i]);
 		list2 = talloc(list, struct dn_list);
 		if (list2 == NULL) {
 			return -1;
@@ -297,7 +297,7 @@ static int ltdb_index_dn_objectclass(struct ldb_module *module,
 				talloc_free(list2);
 			}
 		}
-		talloc_free(tree2.u.simple.attr);
+		talloc_free(tree2.u.equality.attr);
 	}
 
 	return ret;
@@ -311,7 +311,7 @@ static int ltdb_index_dn_leaf(struct ldb_module *module,
 			      const struct ldb_message *index_list,
 			      struct dn_list *list)
 {
-	if (ldb_attr_cmp(tree->u.simple.attr, LTDB_OBJECTCLASS) == 0) {
+	if (ldb_attr_cmp(tree->u.equality.attr, LTDB_OBJECTCLASS) == 0) {
 		return ltdb_index_dn_objectclass(module, tree, index_list, list);
 	}
 	return ltdb_index_dn_simple(module, tree, index_list, list);
@@ -570,17 +570,6 @@ static int ltdb_index_dn(struct ldb_module *module,
 	int ret = -1;
 
 	switch (tree->operation) {
-	case LDB_OP_SIMPLE:
-		ret = ltdb_index_dn_leaf(module, tree, index_list, list);
-		break;
-
-	case LDB_OP_PRESENT:
-	case LDB_OP_SUBSTRING:
-	case LDB_OP_EXTENDED:
-		/* we can't index with fancy bitops yet */
-		ret = -1;
-		break;
-
 	case LDB_OP_AND:
 		ret = ltdb_index_dn_and(module, tree, index_list, list);
 		break;
@@ -591,6 +580,20 @@ static int ltdb_index_dn(struct ldb_module *module,
 
 	case LDB_OP_NOT:
 		ret = ltdb_index_dn_not(module, tree, index_list, list);
+		break;
+
+	case LDB_OP_EQUALITY:
+		ret = ltdb_index_dn_leaf(module, tree, index_list, list);
+		break;
+
+	case LDB_OP_SUBSTRING:
+	case LDB_OP_GREATER:
+	case LDB_OP_LESS:
+	case LDB_OP_PRESENT:
+	case LDB_OP_APPROX:
+	case LDB_OP_EXTENDED:
+		/* we can't index with fancy bitops yet */
+		ret = -1;
 		break;
 	}
 
