@@ -146,7 +146,7 @@ function setup_ldb(ldif, dbname, subobj)
 		extra = arguments[3];
 	}
 
-	var dbfile = lpGet("private dir") + "/" + dbname;
+	var dbfile = dbname;
 	var src = lpGet("setup directory") + "/" + ldif;
 
 	var data = sys.file_load(src);
