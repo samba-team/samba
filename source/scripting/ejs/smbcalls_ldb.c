@@ -297,7 +297,7 @@ static int ejs_ldb_init(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetCFunction(ldb, "search", ejs_ldbSearch);
 	mprSetCFunction(ldb, "add", ejs_ldbAdd);
 	mprSetCFunction(ldb, "modify", ejs_ldbModify);
-	mprSetCFunction(ldb, "delete", ejs_ldbDelete);
+	mprSetCFunction(ldb, "del", ejs_ldbDelete);
 	mprSetCFunction(ldb, "rename", ejs_ldbRename);
 	mprSetCFunction(ldb, "errstring", ejs_ldbErrstring);
 	mprSetVar(ldb, "SCOPE_BASE", mprCreateNumberVar(LDB_SCOPE_BASE));
