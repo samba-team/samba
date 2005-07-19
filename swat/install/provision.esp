@@ -1,4 +1,4 @@
-<% page_header("columns", "Server provisioning", "/esptest/menu.js"); 
+<% page_header("columns", "Provisioning", "/install/menu.js"); 
 
   libinclude("base.js");
   libinclude("provision.js");
