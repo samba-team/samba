@@ -8,4 +8,5 @@ simple_menu(
 	"NBT Server",         session_uri("/nbt_server/"),
 	"WINS Server",        session_uri("/wins_server/"),
 	"Kerberos Server",    session_uri("/kdc_server/"),
+	"Installation",       session_uri("/install/"),
 	"ESP Tests",          session_uri("/esptest/"));
