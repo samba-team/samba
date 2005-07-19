@@ -81,6 +81,7 @@ struct smbsrv_tcon *smbsrv_tcon_new(struct smbsrv_connection *smb_conn)
 
 	tcon->tid = i;
 	tcon->smb_conn = smb_conn;
+	tcon->connect_time = timeval_current();
 
 	talloc_set_destructor(tcon, smbsrv_tcon_destructor);
 

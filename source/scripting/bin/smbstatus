@@ -21,6 +21,17 @@ if (ok == false) {
 
 
 var sessions = smbsrv_sessions();
+if (sessions == undefined) {
+	println("No sessions");
+	exit(0);
+}
 printVars(sessions);
+
+var trees = smbsrv_trees();
+if (trees == undefined) {
+	println("No trees");
+	exit(0);
+}
+printVars(trees);
 
 return 0;
