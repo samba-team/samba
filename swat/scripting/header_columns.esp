@@ -62,9 +62,16 @@ filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src='/images/logo.png'
 
 <div id="nav">
      <% 
-     include("/docs/menu.js"); 
      include("/esptest/menu.js");
      %>
+</div>
+
+<div id="links">
+  <div class="related">
+     <% 
+     include("/docs/menu.js"); 
+     %>
+  </div>
 </div>
 
  
