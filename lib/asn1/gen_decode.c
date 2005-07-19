@@ -160,7 +160,8 @@ find_tag (const Type *t,
 	*tag = t->tag.tagvalue;
 	break;
     case TType: 
-	return find_tag(t->symbol->type, cl, ty, tag);
+	find_tag(t->symbol->type, cl, ty, tag);
+	return;
     case TUTCTime: 
 	*cl  = ASN1_C_UNIV;
 	*ty  = PRIM;
