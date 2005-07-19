@@ -200,4 +200,18 @@ interface ObjectRpcBaseTypes
 		uint32 size;
 		[subcontext(4)] OBJREF obj;
 	} MInterfacePointer;
+
+	typedef [v1_enum,public] enum 
+	{
+		COM_OK 				= 0x00000000,
+		COM_OUTOFMEMORY 	= 0x80000002,
+		COM_INVALIDARG		= 0x80000003,
+		COM_NOINTERFACE		= 0x80000004,
+		COM_ACCESSDENIED	= 0x80000005,
+		COM_INVALID_OXID	= 0x80070776,
+		COM_INVALID_OID		= 0x80070777,
+		COM_INVALID_SET		= 0x80070778,
+		COM_UNEXPECTED		= 0x8000FFFF,
+		COM_CLSNOTFOUND		= 0x80040154
+	} COMRESULT;
 }

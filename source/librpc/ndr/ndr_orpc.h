@@ -23,6 +23,8 @@
 #ifndef __NDR_ORPC_H__
 #define __NDR_ORPC_H__
 
+typedef enum COMRESULT COMRESULT;
+
 struct STRINGARRAY
 {
 	struct STRINGBINDING **stringbindings;
