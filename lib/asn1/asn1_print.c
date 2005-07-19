@@ -55,7 +55,7 @@ loop (unsigned char *buf, size_t len, int indent)
 	int ret;
 	Der_class class;
 	Der_type type;
-	int tag;
+	unsigned int tag;
 	size_t sz;
 	size_t length;
 	size_t loop_length = 0;
@@ -112,7 +112,7 @@ loop (unsigned char *buf, size_t len, int indent)
 		  (unsigned)length, (unsigned)len);
 	}
 	if (class == ASN1_C_CONTEXT || class == ASN1_C_APPL) {
-	    printf ("%d bytes [%d]\n", length, tag);
+	    printf ("%lu bytes [%u]\n", (unsigned long)length, tag);
 	    if (type == CONS)
 		loop_length = loop (buf, length, indent + 2);
 	} else if (class == ASN1_C_UNIV) {
@@ -142,7 +142,8 @@ loop (unsigned char *buf, size_t len, int indent)
 			errx (1, "der_get_integer: %s", error_message (ret));
 		    printf ("integer %d\n", val);
 		} else {
-		    printf ("BIG NUM integer: length %d\n", length);
+		    printf ("BIG NUM integer: length %lu\n", 
+			    (unsigned long)length);
 		}
 		break;
 	    }
