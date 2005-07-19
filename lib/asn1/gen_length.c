@@ -237,7 +237,8 @@ length_type (const char *name, const Type *t, const char *variable)
 	break;
     case TTag:
 	length_type (name, t->subtype, variable);
-	fprintf (codefile, "ret += %d + length_len (ret);\n", length_tag(t->tag.tagvalue));
+	fprintf (codefile, "ret += %lu + length_len (ret);\n", 
+		 (unsigned long)length_tag(t->tag.tagvalue));
 	break;
     case TOID:
 	length_primitive ("oid", name, variable);
