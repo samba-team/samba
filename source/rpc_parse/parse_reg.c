@@ -1311,7 +1311,7 @@ void init_reg_r_enum_key(REG_R_ENUM_KEY *r_u, char *subkey )
 	if ( !r_u )
 		return;
 		
-	init_unistr4( &r_u->keyname, subkey, STR_TERMINATE );
+	init_unistr4( &r_u->keyname, subkey, UNI_STR_TERMINATE );
 	r_u->classname = TALLOC_ZERO_P( get_talloc_ctx(), UNISTR4 );
 	r_u->time       = TALLOC_ZERO_P( get_talloc_ctx(), NTTIME );
 }
