@@ -1,4 +1,4 @@
-<% page_header("columns", "ESP Exception test"); %>
+<% page_header("columns", "ESP Exception test", "/esptest/menu.js"); %>
 
 <h1>Samba4 exception test</h1>
 

@@ -50,9 +50,10 @@ if (headers['HOST'] == undefined) {
 /*
   show the page header. page types include "plain" and "column" 
 */
-function page_header(pagetype, title) {
+function page_header(pagetype, title, menu) {
 	global.page.pagetype = pagetype;
 	global.page.title = title;
+	global.page.menu = menu;
 	include("/scripting/header_" + pagetype + ".esp");
 }
 

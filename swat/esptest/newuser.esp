@@ -1,4 +1,4 @@
-<% page_header("columns", "Add a user"); 
+<% page_header("columns", "Add a user", "/esptest/menu.js"); 
 
   libinclude("base.js");
   libinclude("provision.js");
