@@ -76,8 +76,6 @@
 /*                                                   */
 /*****************************************************/ 
 
-#define NO_SYSLOG
-
 #include "includes.h" 
 
 #define WORDSIZE 2
