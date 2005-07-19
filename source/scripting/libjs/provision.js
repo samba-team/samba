@@ -111,6 +111,30 @@ function hostname()
 
 
 /*
+  erase an ldb, removing all records
+*/
+function ldb_erase(ldb)
+{
+	var attrs = new Array("dn");
+
+	/* delete the specials */
+	ldb.del("@INDEXLIST");
+	ldb.del("@ATTRIBUTES");
+	ldb.del("@SUBCLASSES");
+	ldb.del("@MODULES");
+
+	/* and the rest */
+	var res = ldb.search("(|(objectclass=*)(dn=*))", attrs);
+	var i;
+	for (i=0;i<res.length;i++) {
+		ldb.del(res[i].dn);
+	}
+	res = ldb.search("(objectclass=*)", attrs);
+	assert(res.length == 0);
+}
+
+
+/*
   setup a ldb in the private dir
  */
 function setup_ldb(ldif, dbname, subobj)
@@ -125,14 +149,14 @@ function setup_ldb(ldif, dbname, subobj)
 	var dbfile = lpGet("private dir") + "/" + dbname;
 	var src = lpGet("setup directory") + "/" + ldif;
 
-	sys.unlink(dbfile);
-
 	var data = sys.file_load(src);
 	data = data + extra;
 	data = substitute_var(data, subobj);
 
 	var ok = ldb.connect(dbfile);
 	assert(ok);
+
+	ldb_erase(ldb);
 
 	ok = ldb.add(data);
 	assert(ok);
