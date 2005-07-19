@@ -1,3 +1,7 @@
+2005-07-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* roken.h.in: Remove parameter names to avoid shadow warnings.
+
 2005-07-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* getifaddrs.c (nl_getlist): poll to get messages from kernel, and
