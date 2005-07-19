@@ -59,7 +59,7 @@ definitions:
 ;    
 
 
-definition: function | const | typedef | declare
+definition: function | const | typedef | declare | typedecl
 ;
 
 const: 'const' identifier identifier '=' anytext ';' 
@@ -134,15 +134,19 @@ typedef: 'typedef' property_list type identifier array_len ';'
         }}
 ;
 
-type:   struct | union | enum | bitmap | identifier 
+usertype: struct | union | enum | bitmap;
+
+typedecl: usertype ';' { $_[1] };
+
+type: usertype | identifier 
 	| void { "void" }
 ;
 
-
-enum: 'enum' '{' enum_elements '}' 
+enum: 'enum' optional_identifier '{' enum_elements '}' 
         {{
              "TYPE" => "ENUM", 
-		     "ELEMENTS" => $_[3]
+			 "NAME" => $_[2],
+		     "ELEMENTS" => $_[4]
         }}
 ;
 
@@ -155,10 +159,11 @@ enum_element: identifier
 	      | identifier '=' anytext { "$_[1]$_[2]$_[3]" }
 ;
 
-bitmap: 'bitmap' '{' bitmap_elements '}' 
+bitmap: 'bitmap' optional_identifier '{' bitmap_elements '}' 
         {{
-                     "TYPE" => "BITMAP", 
-		     "ELEMENTS" => $_[3]
+             "TYPE" => "BITMAP", 
+			 "NAME" => $_[2],
+		     "ELEMENTS" => $_[4]
         }}
 ;
 
@@ -170,10 +175,11 @@ bitmap_elements:
 bitmap_element: identifier '=' anytext { "$_[1] ( $_[3] )" }
 ;
 
-struct: 'struct' '{' element_list1 '}' 
+struct: 'struct' optional_identifier '{' element_list1 '}' 
         {{
-                     "TYPE" => "STRUCT", 
-		     "ELEMENTS" => $_[3]
+             "TYPE" => "STRUCT", 
+			 "NAME" => $_[2],
+		     "ELEMENTS" => $_[4]
         }}
 ;
 
@@ -200,10 +206,11 @@ union_elements:
     | union_elements optional_base_element { push(@{$_[1]}, $_[2]); $_[1] }
 ;
 
-union: 'union' '{' union_elements '}' 
+union: 'union' optional_identifier '{' union_elements '}' 
         {{
-                     "TYPE" => "UNION", 
-		     "ELEMENTS" => $_[3]
+             "TYPE" => "UNION", 
+		     "NAME" => $_[2],
+		     "ELEMENTS" => $_[4]
         }}
 ;
 
@@ -286,6 +293,11 @@ anytext:  #empty
 ;
 
 identifier: IDENTIFIER
+;
+
+optional_identifier: 
+	IDENTIFIER
+   | #empty { undef }
 ;
 
 constant: CONSTANT
