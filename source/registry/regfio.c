@@ -478,6 +478,7 @@ static REGF_HBIN* read_hbin_block( REGF_FILE *file, off_t offset )
 		return False;
 
 	record_size = 0;
+	header = 0;
 	curr_off = prs_offset( &hbin->ps );
 	while ( header != 0xffffffff ) {
 		/* not done yet so reset the current offset to the 
