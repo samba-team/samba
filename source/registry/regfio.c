@@ -89,7 +89,7 @@ static int read_block( REGF_FILE *file, prs_struct *ps, uint32 file_offset, uint
 	   to read some of the header to get the block_size from there */
 	   
 	if ( block_size == 0 ) {
-		uint8 hdr[0x20];
+		char hdr[0x20];
 
 		if ( lseek( file->fd, file_offset, SEEK_SET ) == -1 ) {
 			DEBUG(0,("read_block: lseek() failed! (%s)\n", strerror(errno) ));
