@@ -533,6 +533,7 @@ check_fail_bitstring(void)
 	{NULL, 0, "", "empty input data"},
 	{NULL, 1, "\x08", "larger then 8 bits trailer"},
 	{NULL, 1, "\x01", "to few bytes for bits"},
+	{NULL, 0x3fffffff, "\x00", "length overrun"},
 	{NULL, -1, "", "length to short"}
     };
     int ntests = sizeof(tests) / sizeof(*tests);
