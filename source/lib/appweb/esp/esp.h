@@ -43,8 +43,6 @@
 
 /*********************************** Defines **********************************/
 
-#define ESP_STRING_ARGS 		MPR_TYPE_STRING_ARGS
-
 #if BLD_FEATURE_SQUEEZE
 #define ESP_TOK_INCR 			1024
 #define ESP_MAX_HEADER 			1024
