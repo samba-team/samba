@@ -1,0 +1,41 @@
+<% page_header("columns", "Add a user"); 
+
+  libinclude("base.js");
+  libinclude("provision.js");
+%>
+
+<h1>Add a user</h1>
+
+<%
+var f = FormObj("newuser", 3, 2);
+var i;
+
+f.element[0].label = "User Name";
+f.element[0].name  = "USERNAME";
+f.element[1].label = "Unix Name";
+f.element[1].name  = "UNIXNAME";
+f.element[2].label = "Password";
+f.element[2].name  = "PASSWORD";
+f.submit[0] = "Add";
+f.submit[1] = "Cancel";
+
+if (form['submit'] == "Cancel") {
+	redirect("/");
+}
+
+if (form['submit'] == "Add" && 
+    form.USERNAME != undefined) {
+	if (form.UNIXNAME == undefined) {
+		form.UNIXNAME = form.USERNAME;
+	}
+	if (form.PASSWORD == undefined) {
+		form.PASSWORD = randpass();
+	}
+	newuser(form.USERNAME, form.UNIXNAME, form.PASSWORD, writefln);
+} else {
+	display_form(f);
+}
+%>
+
+
+<% page_footer(); %>
