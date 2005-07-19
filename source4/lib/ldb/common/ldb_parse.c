@@ -58,73 +58,6 @@ a filter is defined by:
                <filtertype> ::= '=' | '~=' | '<=' | '>='
 */
 
-#define LDB_ALL_SEP "()&|=!"
-
-/*
-  return next token element. Caller frees
-*/
-static char *ldb_parse_lex(void *ctx, const char **s, const char *sep)
-{
-	const char *p = *s;
-	char *ret;
-
-	while (isspace((unsigned char)*p)) {
-		p++;
-	}
-	*s = p;
-
-	if (*p == 0) {
-		return NULL;
-	}
-
-	if (strchr(sep, *p)) {
-		(*s) = p+1;
-		ret = talloc_strndup(ctx, p, 1);
-		if (!ret) {
-			errno = ENOMEM;
-		}
-		return ret;
-	}
-
-	while (*p && (isalnum((unsigned char)*p) || !strchr(sep, *p))) {
-		p++;
-	}
-
-	if (p == *s) {
-		return NULL;
-	}
-
-	ret = talloc_strndup(ctx, *s, p - *s);
-	if (!ret) {
-		errno = ENOMEM;
-	}
-
-	*s = p;
-
-	return ret;
-}
-
-/*
-  find a matching close brace in a string
-*/
-static const char *match_brace(const char *s)
-{
-	unsigned int count = 0;
-	while (*s && (count != 0 || *s != ')')) {
-		if (*s == '(') {
-			count++;
-		}
-		if (*s == ')') {
-			count--;
-		}
-		s++;
-	}
-	if (! *s) {
-		return NULL;
-	}
-	return s;
-}
-
 /*
    decode a RFC2254 binary string representation of a buffer.
    Used in LDAP filters.
@@ -273,7 +206,7 @@ static struct ldb_parse_tree *ldb_parse_filter(void *mem_ctx, const char **s);
 static struct ldb_parse_tree *ldb_parse_extended(struct ldb_parse_tree *ret, 
 						 char *attr, char *value)
 {
-	char *p1, *p2, *p3;
+	char *p1, *p2;
 
 	ret->operation = LDB_OP_EXTENDED;
 	ret->u.extended.value = ldb_binary_decode(ret, value);
@@ -282,18 +215,14 @@ static struct ldb_parse_tree *ldb_parse_extended(struct ldb_parse_tree *ret,
 	p1 = strchr(attr, ':');
 	if (p1 == NULL) goto failed;
 	p2 = strchr(p1+1, ':');
-	if (p2 == NULL) goto failed;
-	p3 = strchr(p2+1, ':');
 
 	*p1 = 0;
-	*p2 = 0;
-	if (p3) *p3 = 0;
+	if (p2) *p2 = 0;
 
-	ret->u.extended.attr = talloc_strdup(ret, attr);
-	if (ret->u.extended.attr == NULL) goto failed;
+	ret->u.extended.attr = attr;
 	if (strcmp(p1+1, "dn") == 0) {
 		ret->u.extended.dnAttributes = 1;
-		if (p3) {
+		if (p2) {
 			ret->u.extended.rule_id = talloc_strdup(ret, p2+1);
 			if (ret->u.extended.rule_id == NULL) goto failed;
 		} else {
@@ -312,14 +241,104 @@ failed:
 	return NULL;
 }
 
+static enum ldb_parse_op ldb_parse_filtertype(void *mem_ctx, char **type, char **value, const char **s)
+{
+	enum ldb_parse_op filter = 0;
+	char *name, *val, *k;
+	const char *p = *s;
+	const char *t, *t1;
+
+	/* retrieve attributetype name */
+	t = p;
+
+	while ((isascii(*p) && isalnum((unsigned char)*p)) || (*p == '-')) { /* attribute names can only be alphanums */
+		p++;
+	}
+
+	if (*p == ':') { /* but extended searches have : and . chars too */
+		p = strstr(p, ":=");
+		if (p == NULL) { /* malformed attribute name */
+			return 0;
+		}
+	}
+
+	t1 = p;
+
+	while (isspace((unsigned char)*p)) p++;
+
+	if (!strchr("=<>~:", *p)) {
+		return 0;
+	}
+
+	/* save name */
+	name = talloc_memdup(mem_ctx, t, t1 - t + 1);
+	if (name == NULL) return 0;
+	name[t1 - t] = '\0';
+
+	/* retrieve filtertype */
+
+	if (*p == '=') {
+		filter = LDB_OP_EQUALITY;
+	} else if (*(p + 1) == '=') {
+		switch (*p) {
+		case '<':
+			filter = LDB_OP_LESS;
+			p++;
+			break;
+		case '>':
+			filter = LDB_OP_GREATER;
+			p++;
+			break;
+		case '~':
+			filter = LDB_OP_APPROX;
+			p++;
+			break;
+		case ':':
+			filter = LDB_OP_EXTENDED;
+			p++;
+			break;
+		}
+	}
+	if (!filter) {
+		talloc_free(name);
+		return filter;
+	}
+	p++;
+
+	while (isspace((unsigned char)*p)) p++;
+
+	/* retieve value */
+	t = p;
+
+	while (*p && ((*p != ')') || ((*p == ')') && (*(p - 1) == '\\')))) p++;
+
+	val = talloc_memdup(mem_ctx, t, p - t + 1);
+	if (val == NULL) {
+		talloc_free(name);
+		return 0;
+	}
+	val[p - t] = '\0';
+
+	k = &(val[p - t]);
+
+	/* remove trailing spaces from value */
+	while ((k > val) && (isspace((unsigned char)*(k - 1)))) k--;
+	*k = '\0';
+
+	*type = name;
+	*value = val;
+	*s = p;
+	return filter;
+}
 
 /*
   <simple> ::= <attributetype> <filtertype> <attributevalue>
 */
-static struct ldb_parse_tree *ldb_parse_simple(void *mem_ctx, const char *s)
+static struct ldb_parse_tree *ldb_parse_simple(void *mem_ctx, const char **s)
 {
-	char *eq, *val, *l;
+	char *attr, *value;
 	struct ldb_parse_tree *ret;
+	enum ldb_parse_op filtertype;
 
 	ret = talloc(mem_ctx, struct ldb_parse_tree);
 	if (!ret) {
@@ -327,64 +346,92 @@ static struct ldb_parse_tree *ldb_parse_simple(void *mem_ctx, const char *s)
 		return NULL;
 	}
 
-	l = ldb_parse_lex(ret, &s, LDB_ALL_SEP);
-	if (!l) {
+	filtertype = ldb_parse_filtertype(ret, &attr, &value, s);
+	if (!filtertype) {
 		talloc_free(ret);
 		return NULL;
 	}
 
-	if (strchr("()&|=", *l)) {
-		talloc_free(ret);
-		return NULL;
-	}
+	switch (filtertype) {
 
-	eq = ldb_parse_lex(ret, &s, LDB_ALL_SEP);
-	if (!eq || strcmp(eq, "=") != 0) {
-		talloc_free(ret);
-		return NULL;
-	}
-	talloc_free(eq);
+		case LDB_OP_EQUALITY:
 
-	val = ldb_parse_lex(ret, &s, ")");
-	if (val && strchr("()&|", *val)) {
-		talloc_free(ret);
-		return NULL;
-	}
+			if (strcmp(value, "*") == 0) {
+				ret->operation = LDB_OP_PRESENT;
+				ret->u.present.attr = attr;
+				break;
+			}
 
-	if (l[strlen(l)-1] == ':') {
-		/* its an extended match */
-		return ldb_parse_extended(ret, l, val);
-	}
+			if (ldb_parse_find_wildcard(value) != NULL) {
+				ret->operation = LDB_OP_SUBSTRING;
+				ret->u.substring.attr = attr;
+				ret->u.substring.start_with_wildcard = 0;
+				ret->u.substring.end_with_wildcard = 0;
+				ret->u.substring.chunks = ldb_wildcard_decode(ret, value);
+				if (ret->u.substring.chunks == NULL){
+					talloc_free(ret);
+					return NULL;
+				}
+				if (value[0] == '*')
+					ret->u.substring.start_with_wildcard = 1;
+				if (value[strlen(value) - 1] == '*')
+					ret->u.substring.end_with_wildcard = 1;
+				talloc_free(value);
 
-	if (val && strcmp(val, "*") == 0) {
-		ret->operation = LDB_OP_PRESENT;
-		ret->u.present.attr = l;
+				break;
+			}
 
-		return ret;
-	}
+			ret->operation = LDB_OP_EQUALITY;
+			ret->u.equality.attr = attr;
+			ret->u.equality.value = ldb_binary_decode(ret, value);
+			if (ret->u.equality.value.data == NULL) {
+				talloc_free(ret);
+				return NULL;
+			}
+			talloc_free(value);
+			break;
 
-	if (val && ldb_parse_find_wildcard(val) != NULL) {
-		ret->operation = LDB_OP_SUBSTRING;
-		ret->u.substring.attr = l;
-		ret->u.substring.start_with_wildcard = 0;
-		ret->u.substring.end_with_wildcard = 0;
-		ret->u.substring.chunks = ldb_wildcard_decode(ret, val);
-		if (ret->u.substring.chunks == NULL){
+		case LDB_OP_GREATER:
+			ret->operation = LDB_OP_GREATER;
+			ret->u.comparison.attr = attr;
+			ret->u.comparison.value = ldb_binary_decode(ret, value);
+			if (ret->u.comparison.value.data == NULL) {
+				talloc_free(ret);
+				return NULL;
+			}
+			talloc_free(value);
+			break;
+
+		case LDB_OP_LESS:
+			ret->operation = LDB_OP_LESS;
+			ret->u.comparison.attr = attr;
+			ret->u.comparison.value = ldb_binary_decode(ret, value);
+			if (ret->u.comparison.value.data == NULL) {
+				talloc_free(ret);
+				return NULL;
+			}
+			talloc_free(value);
+			break;
+
+		case LDB_OP_APPROX:
+			ret->operation = LDB_OP_APPROX;
+			ret->u.comparison.attr = attr;
+			ret->u.comparison.value = ldb_binary_decode(ret, value);
+			if (ret->u.comparison.value.data == NULL) {
+				talloc_free(ret);
+				return NULL;
+			}
+			talloc_free(value);
+			break;
+
+		case LDB_OP_EXTENDED:
+
+			ret = ldb_parse_extended(ret, attr, value);
+			break;
+
+		default:
 			talloc_free(ret);
 			return NULL;
-		}
-		if (val[0] == '*') ret->u.substring.start_with_wildcard = 1;
-		if (val[strlen(val) - 1] == '*') ret->u.substring.end_with_wildcard = 1;
-
-		return ret;
-	}
-
-	ret->operation = LDB_OP_SIMPLE;
-	ret->u.simple.attr = l;
-	ret->u.simple.value = ldb_binary_decode(ret, val);
-	if (ret->u.simple.value.data == NULL) {
-		talloc_free(ret);
-		return NULL;
 	}
 
 	return ret;
@@ -397,10 +444,25 @@ static struct ldb_parse_tree *ldb_parse_simple(void *mem_ctx, const char *s)
   <or> ::= '|' <filterlist>
   <filterlist> ::= <filter> | <filter> <filterlist>
 */
-static struct ldb_parse_tree *ldb_parse_filterlist(void *mem_ctx,
-						   enum ldb_parse_op op, const char *s)
+static struct ldb_parse_tree *ldb_parse_filterlist(void *mem_ctx, const char **s)
 {
 	struct ldb_parse_tree *ret, *next;
+	enum ldb_parse_op op;
+	const char *p = *s;
+
+	switch (*p) {
+		case '&':
+			op = LDB_OP_AND;
+			break;
+		case '|':
+			op = LDB_OP_OR;
+			break;
+		default:
+			return NULL;
+	}
+	p++;
+
+	while (isspace((unsigned char)*p)) p++;
 
 	ret = talloc(mem_ctx, struct ldb_parse_tree);
 	if (!ret) {
@@ -417,19 +479,19 @@ static struct ldb_parse_tree *ldb_parse_filterlist(void *mem_ctx,
 		return NULL;
 	}
 
-	ret->u.list.elements[0] = ldb_parse_filter(ret->u.list.elements, &s);
+	ret->u.list.elements[0] = ldb_parse_filter(ret->u.list.elements, &p);
 	if (!ret->u.list.elements[0]) {
 		talloc_free(ret);
 		return NULL;
 	}
 
-	while (isspace((unsigned char)*s)) s++;
+	while (isspace((unsigned char)*p)) p++;
 
-	while (*s && (next = ldb_parse_filter(ret->u.list.elements, &s))) {
+	while (*p && (next = ldb_parse_filter(ret->u.list.elements, &p))) {
 		struct ldb_parse_tree **e;
 		e = talloc_realloc(ret, ret->u.list.elements, 
 				     struct ldb_parse_tree *, 
-				     ret->u.list.num_elements+1);
+				     ret->u.list.num_elements + 1);
 		if (!e) {
 			errno = ENOMEM;
 			talloc_free(ret);
@@ -438,8 +500,10 @@ static struct ldb_parse_tree *ldb_parse_filterlist(void *mem_ctx,
 		ret->u.list.elements = e;
 		ret->u.list.elements[ret->u.list.num_elements] = next;
 		ret->u.list.num_elements++;
-		while (isspace((unsigned char)*s)) s++;
+		while (isspace((unsigned char)*p)) p++;
 	}
+
+	*s = p;
 
 	return ret;
 }
@@ -448,9 +512,15 @@ static struct ldb_parse_tree *ldb_parse_filterlist(void *mem_ctx,
 /*
   <not> ::= '!' <filter>
 */
-static struct ldb_parse_tree *ldb_parse_not(void *mem_ctx, const char *s)
+static struct ldb_parse_tree *ldb_parse_not(void *mem_ctx, const char **s)
 {
 	struct ldb_parse_tree *ret;
+	const char *p = *s;
+
+	if (*p != '!') {
+		return NULL;
+	}
+	p++;
 
 	ret = talloc(mem_ctx, struct ldb_parse_tree);
 	if (!ret) {
@@ -459,11 +529,13 @@ static struct ldb_parse_tree *ldb_parse_not(void *mem_ctx, const char *s)
 	}
 
 	ret->operation = LDB_OP_NOT;
-	ret->u.isnot.child = ldb_parse_filter(ret, &s);
+	ret->u.isnot.child = ldb_parse_filter(ret, &p);
 	if (!ret->u.isnot.child) {
 		talloc_free(ret);
 		return NULL;
 	}
+
+	*s = p;
 
 	return ret;
 }
@@ -472,26 +544,37 @@ static struct ldb_parse_tree *ldb_parse_not(void *mem_ctx, const char *s)
   parse a filtercomp
   <filtercomp> ::= <and> | <or> | <not> | <simple>
 */
-static struct ldb_parse_tree *ldb_parse_filtercomp(void *mem_ctx, const char *s)
+static struct ldb_parse_tree *ldb_parse_filtercomp(void *mem_ctx, const char **s)
 {
-	while (isspace((unsigned char)*s)) s++;
+	struct ldb_parse_tree *ret;
+	const char *p = *s;
 
-	switch (*s) {
+	while (isspace((unsigned char)*p)) p++;
+
+	switch (*p) {
 	case '&':
-		return ldb_parse_filterlist(mem_ctx, LDB_OP_AND, s+1);
+		ret = ldb_parse_filterlist(mem_ctx, &p);
+		break;
 
 	case '|':
-		return ldb_parse_filterlist(mem_ctx, LDB_OP_OR, s+1);
+		ret = ldb_parse_filterlist(mem_ctx, &p);
+		break;
 
 	case '!':
-		return ldb_parse_not(mem_ctx, s+1);
+		ret = ldb_parse_not(mem_ctx, &p);
+		break;
 
 	case '(':
 	case ')':
 		return NULL;
+
+	default:
+		ret = ldb_parse_simple(mem_ctx, &p);
+
 	}
 
-	return ldb_parse_simple(mem_ctx, s);
+	*s = p;
+	return ret;
 }
 
 
@@ -500,37 +583,26 @@ static struct ldb_parse_tree *ldb_parse_filtercomp(void *mem_ctx, const char *s)
 */
 static struct ldb_parse_tree *ldb_parse_filter(void *mem_ctx, const char **s)
 {
-	char *l, *s2;
-	const char *p, *p2;
 	struct ldb_parse_tree *ret;
+	const char *p = *s;
 
-	l = ldb_parse_lex(mem_ctx, s, LDB_ALL_SEP);
-	if (!l) {
+	if (*p != '(') {
 		return NULL;
 	}
+	p++;
 
-	if (strcmp(l, "(") != 0) {
-		talloc_free(l);
+	ret = ldb_parse_filtercomp(mem_ctx, &p);
+
+	if (*p != ')') {
 		return NULL;
 	}
-	talloc_free(l);
+	p++;
 
-	p = match_brace(*s);
-	if (!p) {
-		return NULL;
-	}
-	p2 = p + 1;
-
-	s2 = talloc_strndup(mem_ctx, *s, p - *s);
-	if (!s2) {
-		errno = ENOMEM;
-		return NULL;
+	while (isspace((unsigned char)*p)) {
+		p++;
 	}
 
-	ret = ldb_parse_filtercomp(mem_ctx, s2);
-	talloc_free(s2);
-
-	*s = p2;
+	*s = p;
 
 	return ret;
 }
@@ -549,7 +621,7 @@ struct ldb_parse_tree *ldb_parse_tree(void *mem_ctx, const char *s)
 		return ldb_parse_filter(mem_ctx, &s);
 	}
 
-	return ldb_parse_simple(mem_ctx, s);
+	return ldb_parse_simple(mem_ctx, &s);
 }
 
 
@@ -562,48 +634,6 @@ char *ldb_filter_from_tree(void *mem_ctx, struct ldb_parse_tree *tree)
 	int i;
 
 	switch (tree->operation) {
-	case LDB_OP_SIMPLE:
-		s = ldb_binary_encode(mem_ctx, tree->u.simple.value);
-		if (s == NULL) return NULL;
-		ret = talloc_asprintf(mem_ctx, "(%s=%s)", 
-				      tree->u.simple.attr, s);
-		talloc_free(s);
-		return ret;
-	case LDB_OP_EXTENDED:
-		s = ldb_binary_encode(mem_ctx, tree->u.extended.value);
-		if (s == NULL) return NULL;
-		ret = talloc_asprintf(mem_ctx, "(%s%s%s%s:=%s)", 
-				      tree->u.extended.attr?tree->u.extended.attr:"", 
-				      tree->u.extended.dnAttributes?":dn":"",
-				      tree->u.extended.rule_id?":":"", 
-				      tree->u.extended.rule_id?tree->u.extended.rule_id:"", 
-				      s);
-		talloc_free(s);
-		return ret;
-	case LDB_OP_SUBSTRING:
-		ret = talloc_strdup(mem_ctx, (tree->u.substring.start_with_wildcard)?"*":"");
-		if (ret == NULL) return NULL;
-		for (i = 0; tree->u.substring.chunks[i]; i++) {
-			s2 = ldb_binary_encode(mem_ctx, *(tree->u.substring.chunks[i]));
-			if (s2 == NULL) {
-				talloc_free(ret);
-				return NULL;
-			}
-			s = talloc_asprintf_append(ret, "%s*", s2);
-			if (s == NULL) {
-				talloc_free(ret);
-				return NULL;
-			}
-			ret = s;
-		}
-		if ( ! tree->u.substring.end_with_wildcard ) {
-			ret[strlen(ret) - 1] = '\0'; /* remove last wildcard */
-		}
-		return ret;
-	case LDB_OP_PRESENT:
-		ret = talloc_strdup(mem_ctx, "*");
-		if (ret == NULL) return NULL;
-		return ret;
 	case LDB_OP_AND:
 	case LDB_OP_OR:
 		ret = talloc_asprintf(mem_ctx, "(%c", (char)tree->operation);
@@ -633,6 +663,69 @@ char *ldb_filter_from_tree(void *mem_ctx, struct ldb_parse_tree *tree)
 		if (s == NULL) return NULL;
 
 		ret = talloc_asprintf(mem_ctx, "(!%s)", s);
+		talloc_free(s);
+		return ret;
+	case LDB_OP_EQUALITY:
+		s = ldb_binary_encode(mem_ctx, tree->u.equality.value);
+		if (s == NULL) return NULL;
+		ret = talloc_asprintf(mem_ctx, "(%s=%s)", 
+				      tree->u.equality.attr, s);
+		talloc_free(s);
+		return ret;
+	case LDB_OP_SUBSTRING:
+		ret = talloc_strdup(mem_ctx, (tree->u.substring.start_with_wildcard)?"*":"");
+		if (ret == NULL) return NULL;
+		for (i = 0; tree->u.substring.chunks[i]; i++) {
+			s2 = ldb_binary_encode(mem_ctx, *(tree->u.substring.chunks[i]));
+			if (s2 == NULL) {
+				talloc_free(ret);
+				return NULL;
+			}
+			s = talloc_asprintf_append(ret, "%s*", s2);
+			if (s == NULL) {
+				talloc_free(ret);
+				return NULL;
+			}
+			ret = s;
+		}
+		if ( ! tree->u.substring.end_with_wildcard ) {
+			ret[strlen(ret) - 1] = '\0'; /* remove last wildcard */
+		}
+		return ret;
+	case LDB_OP_GREATER:
+		s = ldb_binary_encode(mem_ctx, tree->u.equality.value);
+		if (s == NULL) return NULL;
+		ret = talloc_asprintf(mem_ctx, "(%s>=%s)", 
+				      tree->u.equality.attr, s);
+		talloc_free(s);
+		return ret;
+	case LDB_OP_LESS:
+		s = ldb_binary_encode(mem_ctx, tree->u.equality.value);
+		if (s == NULL) return NULL;
+		ret = talloc_asprintf(mem_ctx, "(%s<=%s)", 
+				      tree->u.equality.attr, s);
+		talloc_free(s);
+		return ret;
+	case LDB_OP_PRESENT:
+		ret = talloc_strdup(mem_ctx, "*");
+		if (ret == NULL) return NULL;
+		return ret;
+	case LDB_OP_APPROX:
+		s = ldb_binary_encode(mem_ctx, tree->u.equality.value);
+		if (s == NULL) return NULL;
+		ret = talloc_asprintf(mem_ctx, "(%s~=%s)", 
+				      tree->u.equality.attr, s);
+		talloc_free(s);
+		return ret;
+	case LDB_OP_EXTENDED:
+		s = ldb_binary_encode(mem_ctx, tree->u.extended.value);
+		if (s == NULL) return NULL;
+		ret = talloc_asprintf(mem_ctx, "(%s%s%s%s:=%s)", 
+				      tree->u.extended.attr?tree->u.extended.attr:"", 
+				      tree->u.extended.dnAttributes?":dn":"",
+				      tree->u.extended.rule_id?":":"", 
+				      tree->u.extended.rule_id?tree->u.extended.rule_id:"", 
+				      s);
 		talloc_free(s);
 		return ret;
 	}

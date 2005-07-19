@@ -64,5 +64,18 @@ if [ $count != 3 ]; then
     exit 1
 fi
 
+echo "Testing compare"
+count=`$VALGRIND ldbsearch '(cn>=U)' cn | grep '^dn' | wc -l`
+if [ $count != 2 ]; then
+    echo returned $count records - expected 2
+    exit 1
+fi
+
+count=`$VALGRIND ldbsearch '(cn<=U)' cn | grep '^dn' | wc -l`
+if [ $count != 13 ]; then
+    echo returned $count records - expected 13
+    exit 1
+fi
+
 echo "Testing binary file attribute value"
 $VALGRIND ldbmodify $LDBDIR/tests/photo.ldif || exit 1
