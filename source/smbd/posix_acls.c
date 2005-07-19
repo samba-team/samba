@@ -2237,10 +2237,42 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 }
 
 /****************************************************************************
+ Check if the current user group list contains a given group.
+****************************************************************************/
+
+static BOOL current_user_in_group(gid_t gid)
+{
+	int i;
+
+	for (i = 0; i < current_user.ngroups; i++) {
+		if (current_user.groups[i] == gid) {
+			return True;
+		}
+	}
+
+	return False;
+}
+
+/****************************************************************************
+ Should we override a deny ?
+****************************************************************************/
+
+static BOOL acl_group_override(connection_struct *conn, gid_t prim_gid)
+{
+	if ((errno == EACCES || errno == EPERM) &&
+			lp_acl_group_control(SNUM(conn)) &&
+			current_user_in_group(prim_gid)) {
+		return True;
+	} else {
+		return False;
+	}
+}
+
+/****************************************************************************
  Attempt to apply an ACL to a file or directory.
 ****************************************************************************/
 
-static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL default_ace, BOOL *pacl_set_support)
+static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL default_ace, gid_t prim_gid, BOOL *pacl_set_support)
 {
 	connection_struct *conn = fsp->conn;
 	BOOL ret = False;
@@ -2305,7 +2337,7 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 		if (SMB_VFS_SYS_ACL_CREATE_ENTRY(conn, &the_acl, &the_entry) == -1) {
 			DEBUG(0,("set_canon_ace_list: Failed to create entry %d. (%s)\n",
 				i, strerror(errno) ));
-			goto done;
+			goto fail;
 		}
 
 		if (p_ace->type == SMB_ACL_MASK) {
@@ -2331,7 +2363,7 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 		if (SMB_VFS_SYS_ACL_SET_TAG_TYPE(conn, the_entry, p_ace->type) == -1) {
 			DEBUG(0,("set_canon_ace_list: Failed to set tag type on entry %d. (%s)\n",
 				i, strerror(errno) ));
-			goto done;
+			goto fail;
 		}
 
 		/*
@@ -2343,7 +2375,7 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 			if (SMB_VFS_SYS_ACL_SET_QUALIFIER(conn, the_entry,(void *)&p_ace->unix_ug.uid) == -1) {
 				DEBUG(0,("set_canon_ace_list: Failed to set qualifier on entry %d. (%s)\n",
 					i, strerror(errno) ));
-				goto done;
+				goto fail;
 			}
 		}
 
@@ -2354,13 +2386,13 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 		if (SMB_VFS_SYS_ACL_GET_PERMSET(conn, the_entry, &the_permset) == -1) {
 			DEBUG(0,("set_canon_ace_list: Failed to get permset on entry %d. (%s)\n",
 				i, strerror(errno) ));
-			goto done;
+			goto fail;
 		}
 
 		if (map_acl_perms_to_permset(conn, p_ace->perms, &the_permset) == -1) {
 			DEBUG(0,("set_canon_ace_list: Failed to create permset for mode (%u) on entry %d. (%s)\n",
 				(unsigned int)p_ace->perms, i, strerror(errno) ));
-			goto done;
+			goto fail;
 		}
 
 		/*
@@ -2370,7 +2402,7 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 		if (SMB_VFS_SYS_ACL_SET_PERMSET(conn, the_entry, the_permset) == -1) {
 			DEBUG(0,("set_canon_ace_list: Failed to add permset on entry %d. (%s)\n",
 				i, strerror(errno) ));
-			goto done;
+			goto fail;
 		}
 
 		if( DEBUGLVL( 10 ))
@@ -2381,27 +2413,27 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 	if (needs_mask && !got_mask_entry) {
 		if (SMB_VFS_SYS_ACL_CREATE_ENTRY(conn, &the_acl, &mask_entry) == -1) {
 			DEBUG(0,("set_canon_ace_list: Failed to create mask entry. (%s)\n", strerror(errno) ));
-			goto done;
+			goto fail;
 		}
 
 		if (SMB_VFS_SYS_ACL_SET_TAG_TYPE(conn, mask_entry, SMB_ACL_MASK) == -1) {
 			DEBUG(0,("set_canon_ace_list: Failed to set tag type on mask entry. (%s)\n",strerror(errno) ));
-			goto done;
+			goto fail;
 		}
 
 		if (SMB_VFS_SYS_ACL_GET_PERMSET(conn, mask_entry, &mask_permset) == -1) {
 			DEBUG(0,("set_canon_ace_list: Failed to get mask permset. (%s)\n", strerror(errno) ));
-			goto done;
+			goto fail;
 		}
 
 		if (map_acl_perms_to_permset(conn, S_IRUSR|S_IWUSR|S_IXUSR, &mask_permset) == -1) {
 			DEBUG(0,("set_canon_ace_list: Failed to create mask permset. (%s)\n", strerror(errno) ));
-			goto done;
+			goto fail;
 		}
 
 		if (SMB_VFS_SYS_ACL_SET_PERMSET(conn, mask_entry, mask_permset) == -1) {
 			DEBUG(0,("set_canon_ace_list: Failed to add mask permset. (%s)\n", strerror(errno) ));
-			goto done;
+			goto fail;
 		}
 	}
 
@@ -2413,7 +2445,7 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 		DEBUG(0,("set_canon_ace_list: ACL type (%s) is invalid for set (%s).\n",
 				the_acl_type == SMB_ACL_TYPE_DEFAULT ? "directory default" : "file",
 				strerror(errno) ));
-		goto done;
+		goto fail;
 	}
 
 	/*
@@ -2430,10 +2462,26 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 				*pacl_set_support = False;
 			}
 
-			DEBUG(2,("set_canon_ace_list: sys_acl_set_file type %s failed for file %s (%s).\n",
-					the_acl_type == SMB_ACL_TYPE_DEFAULT ? "directory default" : "file",
-					fsp->fsp_name, strerror(errno) ));
-			goto done;
+			if (acl_group_override(conn, prim_gid)) {
+				int sret;
+
+				DEBUG(5,("set_canon_ace_list: acl group control on and current user in file %s primary group.\n",
+					fsp->fsp_name ));
+
+				become_root();
+				sret = SMB_VFS_SYS_ACL_SET_FILE(conn, fsp->fsp_name, the_acl_type, the_acl);
+				unbecome_root();
+				if (sret == 0) {
+					ret = True;	
+				}
+			}
+
+			if (ret == False) {
+				DEBUG(2,("set_canon_ace_list: sys_acl_set_file type %s failed for file %s (%s).\n",
+						the_acl_type == SMB_ACL_TYPE_DEFAULT ? "directory default" : "file",
+						fsp->fsp_name, strerror(errno) ));
+				goto fail;
+			}
 		}
 	} else {
 		if (SMB_VFS_SYS_ACL_SET_FD(fsp, fsp->fh->fd, the_acl) == -1) {
@@ -2445,18 +2493,35 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 				*pacl_set_support = False;
 			}
 
-			DEBUG(2,("set_canon_ace_list: sys_acl_set_file failed for file %s (%s).\n",
-					fsp->fsp_name, strerror(errno) ));
-			goto done;
+			if (acl_group_override(conn, prim_gid)) {
+				int sret;
+
+				DEBUG(5,("set_canon_ace_list: acl group control on and current user in file %s primary group.\n",
+					fsp->fsp_name ));
+
+				become_root();
+				sret = SMB_VFS_SYS_ACL_SET_FD(fsp, fsp->fh->fd, the_acl);
+				unbecome_root();
+				if (sret == 0) {
+					ret = True;
+				}
+			}
+
+			if (ret == False) {
+				DEBUG(2,("set_canon_ace_list: sys_acl_set_file failed for file %s (%s).\n",
+						fsp->fsp_name, strerror(errno) ));
+				goto fail;
+			}
 		}
 	}
 
 	ret = True;
 
-  done:
+  fail:
 
-	if (the_acl != NULL)
-	    SMB_VFS_SYS_ACL_FREE_ACL(conn, the_acl);
+	if (the_acl != NULL) {
+		SMB_VFS_SYS_ACL_FREE_ACL(conn, the_acl);
+	}
 
 	return ret;
 }
@@ -3127,7 +3192,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 			 */
 
 			if (acl_perms && file_ace_list) {
-				ret = set_canon_ace_list(fsp, file_ace_list, False, &acl_set_support);
+				ret = set_canon_ace_list(fsp, file_ace_list, False, sbuf.st_gid, &acl_set_support);
 				if (acl_set_support && ret == False) {
 					DEBUG(3,("set_nt_acl: failed to set file acl on file %s (%s).\n", fsp->fsp_name, strerror(errno) ));
 					free_canon_ace_list(file_ace_list);
@@ -3138,7 +3203,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 
 			if (acl_perms && acl_set_support && fsp->is_directory) {
 				if (dir_ace_list) {
-					if (!set_canon_ace_list(fsp, dir_ace_list, True, &acl_set_support)) {
+					if (!set_canon_ace_list(fsp, dir_ace_list, True, sbuf.st_gid, &acl_set_support)) {
 						DEBUG(3,("set_nt_acl: failed to set default acl on directory %s (%s).\n", fsp->fsp_name, strerror(errno) ));
 						free_canon_ace_list(file_ace_list);
 						free_canon_ace_list(dir_ace_list); 
@@ -3151,17 +3216,32 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 					 */
 
 					if (SMB_VFS_SYS_ACL_DELETE_DEF_FILE(conn, fsp->fsp_name) == -1) {
-						DEBUG(3,("set_nt_acl: sys_acl_delete_def_file failed (%s)\n", strerror(errno)));
-						free_canon_ace_list(file_ace_list);
-						free_canon_ace_list(dir_ace_list);
-						return False;
+						int sret = -1;
+
+						if (acl_group_override(conn, sbuf.st_gid)) {
+							DEBUG(5,("set_nt_acl: acl group control on and "
+								"current user in file %s primary group. Override delete_def_acl\n",
+								fsp->fsp_name ));
+
+							become_root();
+							sret = SMB_VFS_SYS_ACL_DELETE_DEF_FILE(conn, fsp->fsp_name);
+							unbecome_root();
+						}
+
+						if (sret == -1) {
+							DEBUG(3,("set_nt_acl: sys_acl_delete_def_file failed (%s)\n", strerror(errno)));
+							free_canon_ace_list(file_ace_list);
+							free_canon_ace_list(dir_ace_list);
+							return False;
+						}
 					}
 				}
 			}
 
-			if (acl_set_support)
+			if (acl_set_support) {
 				store_inheritance_attributes(fsp, file_ace_list, dir_ace_list,
 						(psd->type & SE_DESC_DACL_PROTECTED) ? True : False);
+			}
 
 			/*
 			 * If we cannot set using POSIX ACLs we fall back to checking if we need to chmod.
@@ -3184,11 +3264,24 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 						fsp->fsp_name, (unsigned int)posix_perms ));
 
 					if(SMB_VFS_CHMOD(conn,fsp->fsp_name, posix_perms) == -1) {
-						DEBUG(3,("set_nt_acl: chmod %s, 0%o failed. Error = %s.\n",
+						int sret = -1;
+						if (acl_group_override(conn, sbuf.st_gid)) {
+							DEBUG(5,("set_nt_acl: acl group control on and "
+								"current user in file %s primary group. Override chmod\n",
+								fsp->fsp_name ));
+
+							become_root();
+							sret = SMB_VFS_CHMOD(conn,fsp->fsp_name, posix_perms);
+							unbecome_root();
+						}
+
+						if (sret == -1) {
+							DEBUG(3,("set_nt_acl: chmod %s, 0%o failed. Error = %s.\n",
 								fsp->fsp_name, (unsigned int)posix_perms, strerror(errno) ));
-						free_canon_ace_list(file_ace_list);
-						free_canon_ace_list(dir_ace_list);
-						return False;
+							free_canon_ace_list(file_ace_list);
+							free_canon_ace_list(dir_ace_list);
+							return False;
+						}
 					}
 				}
 			}
