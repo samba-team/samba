@@ -1,4 +1,4 @@
-<% page_header("columns", "ESP Form Test"); %>
+<% page_header("columns", "ESP Form Test", "/esptest/menu.js"); %>
 
 <%
 var f = FormObj("FormTest", 3, 2);
