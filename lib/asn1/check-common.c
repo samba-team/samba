@@ -335,7 +335,7 @@ generic_decode_fail (const struct test_case *tests,
 
 	data = map_alloc(OVERRUN, NULL, data_size, &data_map);
 
-	if (tests[i].byte_len != -1) {
+	if (tests[i].byte_len < 0xffffff && tests[i].byte_len >= 0) {
 	    sz = tests[i].byte_len;
 	    bytes = tests[i].bytes;
 	} else {
