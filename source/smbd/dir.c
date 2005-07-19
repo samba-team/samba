@@ -641,6 +641,8 @@ BOOL dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, S
  Fill the 5 byte server reserved dptr field.
 ****************************************************************************/
 
+#define DPTR_MASK ((uint32)(((uint32)1)<<31))
+
 BOOL dptr_fill(char *buf1,unsigned int key)
 {
 	unsigned char *buf = (unsigned char *)buf1;
@@ -653,8 +655,12 @@ BOOL dptr_fill(char *buf1,unsigned int key)
 	offset = (uint32)TellDir(dptr->dir_hnd);
 	DEBUG(6,("fill on key %u dirptr 0x%lx now at %d\n",key,
 		(long)dptr->dir_hnd,(int)offset));
+	if (offset != (uint32)-1 && (offset & DPTR_MASK)) {
+		DEBUG(0,("dptr_fill: Error - offset has bit 32 set. Can't use in server state.\n"));
+		return False;
+	}
 	buf[0] = key;
-	SIVAL(buf,1,offset);
+	SIVAL(buf,1,offset | DPTR_MASK);
 	return(True);
 }
 
@@ -678,7 +684,7 @@ struct dptr_struct *dptr_fetch(char *buf,int *num)
 	if (offset == (uint32)-1) {
 		seekoff = -1;
 	} else {
-		seekoff = (long)offset;
+		seekoff = (long)(offset & ~DPTR_MASK);
 	}
 	SeekDir(dptr->dir_hnd,seekoff);
 	DEBUG(3,("fetching dirptr %d for path %s at offset %d\n",
