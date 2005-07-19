@@ -1,3 +1,8 @@
+2005-07-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gen_decode.c (find_tag): find external references, we can't
+	handle those, so tell user that instead of crashing
+
 2005-07-18  Dave Love  <fx@gnu.org>
 
 	* extra.c (free_heim_any_set): Fix return.
