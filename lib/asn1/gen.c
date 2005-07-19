@@ -316,7 +316,7 @@ generate_constant (const Symbol *s)
 	fprintf (headerfile, "const heim_oid *oid_%s(void);\n\n",
 		 s->gen_name);
 
-	fprintf (codefile, "static int oid_%s_variable_num[%d] =  {",
+	fprintf (codefile, "static unsigned oid_%s_variable_num[%d] =  {",
 		 s->gen_name, len);
 	for (i = len - 1 ; i >= 0; i--) {
 	    fprintf(codefile, "%d%s ", list[i]->value, i > 0 ? "," : "");
