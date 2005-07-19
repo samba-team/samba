@@ -2003,10 +2003,11 @@ static int evalFunction(Ejs *ep, MprVar *obj, int flags)
 
 	case MPR_TYPE_STRING_CFUNCTION:
 		if (actualArgs->used > 0) {
-			argBuf = mprMalloc(actualArgs->used * sizeof(char*));
+			argBuf = mprMalloc((1+actualArgs->used) * sizeof(char*));
 			for (i = 0; i < actualArgs->used; i++) {
 				mprVarToString(&argBuf[i], MPR_MAX_STRING, 0, argValues[i]);
 			}
+			argBuf[i] = NULL;
 		} else {
 			argBuf = 0;
 		}
