@@ -1156,7 +1156,9 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 						memcpy(p,status,21);
 						make_dir_struct(p,mask,fname,size, mode,date,
 								!allow_long_path_components);
-						dptr_fill(p+12,dptr_num);
+						if (!dptr_fill(p+12,dptr_num)) {
+							break;
+						}
 						numentries++;
 						p += DIR_STRUCT_SIZE;
 					}
