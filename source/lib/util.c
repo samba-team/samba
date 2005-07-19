@@ -339,6 +339,11 @@ uint32_t interpret_addr(const char *str)
 	if (strcmp(str,"255.255.255.255") == 0) {
 		return 0xFFFFFFFF;
 	}
+	/* recognise 'localhost' as a special name. This fixes problems with
+	   some hosts that don't have localhost in /etc/hosts */
+	if (strcmp(str,"localhost") == 0) {
+		str = "127.0.0.1";
+	}
 
 	/* if it's in the form of an IP address then get the lib to interpret it */
 	if (is_ipaddress(str)) {
