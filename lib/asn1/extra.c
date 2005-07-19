@@ -56,7 +56,7 @@ decode_heim_any(const unsigned char *p, size_t len,
     size_t len_len, length, l;
     Der_class thisclass;
     Der_type thistype;
-    int thistag;
+    unsigned int thistag;
     int e;
 
     if (data == NULL && len == 0) { /* XXX tag less OPTIONAL */
