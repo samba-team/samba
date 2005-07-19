@@ -437,6 +437,7 @@ typedef struct
 	BOOL bEASupport;
 	BOOL bAclCheckPermissions;
 	BOOL bAclMapFullControl;
+	BOOL bAclGroupControl;
 	int iallocation_roundup_size;
 	int iAioReadSize;
 	int iAioWriteSize;
@@ -569,6 +570,7 @@ static service sDefault = {
 	False,			/* bEASupport */
 	True,			/* bAclCheckPermissions */
 	True,			/* bAclMapFullControl */
+	False,			/* bAclGroupControl */
 	SMB_ROUNDUP_ALLOCATION_SIZE,		/* iallocation_roundup_size */
 	0,			/* iAioReadSize */
 	0,			/* iAioWriteSize */
@@ -873,6 +875,7 @@ static struct parm_struct parm_table[] = {
 	{"writable", P_BOOLREV, P_LOCAL, &sDefault.bRead_only, NULL, NULL, FLAG_HIDE}, 
 
 	{"acl check permissions", P_BOOL, P_LOCAL, &sDefault.bAclCheckPermissions, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE},
+	{"acl group control", P_BOOL, P_LOCAL, &sDefault.bAclGroupControl, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE},
 	{"acl map full control", P_BOOL, P_LOCAL, &sDefault.bAclMapFullControl, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE},
 	{"create mask", P_OCTAL, P_LOCAL, &sDefault.iCreate_mask, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
 	{"create mode", P_OCTAL, P_LOCAL, &sDefault.iCreate_mask, NULL, NULL, FLAG_HIDE}, 
@@ -1979,6 +1982,7 @@ FN_LOCAL_BOOL(lp_profile_acls, bProfileAcls)
 FN_LOCAL_BOOL(lp_map_acl_inherit, bMap_acl_inherit)
 FN_LOCAL_BOOL(lp_afs_share, bAfs_Share)
 FN_LOCAL_BOOL(lp_acl_check_permissions, bAclCheckPermissions)
+FN_LOCAL_BOOL(lp_acl_group_control, bAclGroupControl)
 FN_LOCAL_BOOL(lp_acl_map_full_control, bAclMapFullControl)
 FN_LOCAL_INTEGER(lp_create_mask, iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode, iCreate_force_mode)
