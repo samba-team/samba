@@ -164,7 +164,7 @@ WERROR dcom_create_object(struct com_context *ctx, struct GUID *clsid, const cha
 	r.in.protseq = protseq;
 	r.in.Interfaces = num_ifaces;
 	r.in.pIIDs = iid;
-	r.out.ifaces = talloc_array(ctx, struct pMInterfacePointer, num_ifaces);
+	r.out.ifaces = talloc_array(ctx, struct MInterfacePointer *, num_ifaces);
 	r.out.pdsaOxidBindings = &dualstring;
 	
 	status = dcerpc_RemoteActivation(p, ctx, &r);
@@ -186,7 +186,7 @@ WERROR dcom_create_object(struct com_context *ctx, struct GUID *clsid, const cha
 		results[i] = r.out.results[i];
 		(*ip)[i] = NULL;
 		if (W_ERROR_IS_OK(results[i])) {
-			status = dcom_IUnknown_from_OBJREF(ctx, &(*ip)[i], &r.out.ifaces[i].ip->obj);
+			status = dcom_IUnknown_from_OBJREF(ctx, &(*ip)[i], &r.out.ifaces[i]->obj);
 			if (!NT_STATUS_IS_OK(status)) {
 				results[i] = ntstatus_to_werror(status);
 			}
@@ -208,7 +208,7 @@ WERROR dcom_get_class_object(struct com_context *ctx, struct GUID *clsid, const 
 	struct DUALSTRINGARRAY dualstring;
 	NTSTATUS status;
 	struct MInterfacePointer pm;
-	struct pMInterfacePointer ifaces[1];
+	struct MInterfacePointer *ifaces[1];
 	uint16_t protseq[] = DCOM_NEGOTIATED_PROTOCOLS;
 
 	if (!server) {
@@ -233,7 +233,7 @@ WERROR dcom_get_class_object(struct com_context *ctx, struct GUID *clsid, const 
 	r.in.pIIDs = iid;
 	r.in.Mode = MODE_GET_CLASS_OBJECT;
 	r.out.ifaces = ifaces;
-	ifaces[0].ip = &pm;
+	ifaces[0] = &pm;
 	r.out.pdsaOxidBindings = &dualstring;
 
 	status = dcerpc_RemoteActivation(p, ctx, &r);
