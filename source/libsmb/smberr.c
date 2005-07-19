@@ -17,8 +17,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#define NO_SYSLOG
-
 #include "includes.h"
 
 /* error code stuff - put together by Merik Karman

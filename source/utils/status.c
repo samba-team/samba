@@ -31,8 +31,6 @@
  * This program reports current SMB connections
  */
 
-#define NO_SYSLOG
-
 #include "includes.h"
 
 #define SMB_MAXPIDS		2048

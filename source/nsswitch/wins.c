@@ -19,8 +19,6 @@
    
 */
 
-#define NO_SYSLOG
-
 #include "includes.h"
 #ifdef HAVE_NS_API_H
 #undef VOLATILE
