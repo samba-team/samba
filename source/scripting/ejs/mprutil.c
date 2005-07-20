@@ -403,3 +403,17 @@ void mprSetThisPtr(int eid, const char *name, void *ptr)
 	struct MprVar *this = mprGetProperty(ejsGetLocalObject(eid), "this", 0);
 	mprSetPtrChild(this, name, ptr);
 }
+
+/*
+  used by object xxx_init() routines to allow for the caller
+  to supply a pre-existing object to add properties to,
+  or create a new object. This makes inheritance easy
+*/
+struct MprVar *mprInitObject(int eid, const char *name, int argc, struct MprVar **argv)
+{
+	if (argc > 0 && mprVarIsObject(argv[0]->type)) {
+		return argv[0];
+	}
+	mpr_Return(eid, mprObject(name));
+	return ejsGetReturnValue(eid);
+}

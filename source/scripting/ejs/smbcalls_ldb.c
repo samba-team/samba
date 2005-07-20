@@ -273,7 +273,7 @@ static int ejs_ldbConnect(MprVarHandle eid, int argc, char **argv)
 
 	dbfile = argv[0];
 
-	ldb = ldb_wrap_connect(mprMemCtx(), dbfile, 0, argv+1);
+	ldb = ldb_wrap_connect(mprMemCtx(), dbfile, 0, (const char **)(argv+1));
 	if (ldb == NULL) {
 		ejsSetErrorMsg(eid, "ldb.connect failed to open %s", dbfile);
 	}
@@ -289,10 +289,7 @@ static int ejs_ldbConnect(MprVarHandle eid, int argc, char **argv)
 */
 static int ejs_ldb_init(MprVarHandle eid, int argc, struct MprVar **argv)
 {
-	struct MprVar *ldb;
-	mpr_Return(eid, mprObject("ldb"));
-
-	ldb  = ejsGetReturnValue(eid);
+	struct MprVar *ldb = mprInitObject(eid, "ldb", argc, argv);
 
 	mprSetStringCFunction(ldb, "connect", ejs_ldbConnect);
 	mprSetCFunction(ldb, "search", ejs_ldbSearch);

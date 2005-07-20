@@ -193,19 +193,18 @@ static int ejs_sys_file_save(MprVarHandle eid, int argc, char **argv)
 */
 static int ejs_sys_init(MprVarHandle eid, int argc, struct MprVar **argv)
 {
-	struct MprVar obj = mprObject("sys");
+	struct MprVar *obj = mprInitObject(eid, "sys", argc, argv);
 
-	mprSetCFunction(&obj, "interfaces", ejs_sys_interfaces);
-	mprSetCFunction(&obj, "hostname", ejs_sys_hostname);
-	mprSetCFunction(&obj, "nttime", ejs_sys_nttime);
-	mprSetCFunction(&obj, "gmtime", ejs_sys_gmtime);
-	mprSetCFunction(&obj, "ldaptime", ejs_sys_ldaptime);
-	mprSetCFunction(&obj, "httptime", ejs_sys_httptime);
-	mprSetStringCFunction(&obj, "unlink", ejs_sys_unlink);
-	mprSetStringCFunction(&obj, "file_load", ejs_sys_file_load);
-	mprSetStringCFunction(&obj, "file_save", ejs_sys_file_save);
+	mprSetCFunction(obj, "interfaces", ejs_sys_interfaces);
+	mprSetCFunction(obj, "hostname", ejs_sys_hostname);
+	mprSetCFunction(obj, "nttime", ejs_sys_nttime);
+	mprSetCFunction(obj, "gmtime", ejs_sys_gmtime);
+	mprSetCFunction(obj, "ldaptime", ejs_sys_ldaptime);
+	mprSetCFunction(obj, "httptime", ejs_sys_httptime);
+	mprSetStringCFunction(obj, "unlink", ejs_sys_unlink);
+	mprSetStringCFunction(obj, "file_load", ejs_sys_file_load);
+	mprSetStringCFunction(obj, "file_save", ejs_sys_file_save);
 
-	mpr_Return(eid, obj);
 	return 0;
 }
 
