@@ -103,7 +103,7 @@ typedef struct Esp {
 				int lifetime, const char *path, bool secure);
 	void	(*setHeader)(EspHandle handle, const char *value, bool allowMultiple);
 	void	(*setResponseCode)(EspHandle handle, int code);
-	int		(*writeBlock)(EspHandle handle, char *buf, int size);
+	int		(*writeBlock)(EspHandle handle, const char *buf, int size);
 	int		(*writeFmt)(EspHandle handle, char *fmt, ...);
 #if BLD_FEATURE_MULTITHREAD
 	void 	(*lock)(void *lockData);
