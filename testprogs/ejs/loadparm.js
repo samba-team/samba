@@ -2,9 +2,11 @@
 	demonstrate access to loadparm functions from ejs
 */	
 
+loadparm_init(local);
+
 function showParameter(name) {
 	 print(name + ": ");
-	 printVars(lpGet(name));
+	 printVars(get(name));
 }
 
 for (v in ARGV) {
@@ -12,7 +14,7 @@ for (v in ARGV) {
 }
 
 print("defined services: ");
-printVars(lpServices());
+printVars(services());
 
 showParameter("server services");
 showParameter("netbios name");
@@ -21,4 +23,3 @@ showParameter("workgroup");
 showParameter("log level");
 showParameter("server signing");
 showParameter("interfaces");
-

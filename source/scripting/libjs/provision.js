@@ -141,13 +141,14 @@ function setup_ldb(ldif, dbname, subobj)
 {
 	var extra = "";
 	var ldb = ldb_init();
+	var lp = loadparm_init();
 
 	if (arguments.length == 4) {
 		extra = arguments[3];
 	}
 
 	var dbfile = dbname;
-	var src = lpGet("setup directory") + "/" + ldif;
+	var src = lp.get("setup directory") + "/" + ldif;
 
 	var data = sys.file_load(src);
 	data = data + extra;
@@ -167,8 +168,9 @@ function setup_ldb(ldif, dbname, subobj)
  */
 function setup_file(template, fname, subobj)
 {
-	var f = lpGet("private dir") + "/" + fname;
-	var src = lpGet("setup directory") + "/" + template;
+	var lp = loadparm_init();
+	var f = lp.get("private dir") + "/" + fname;
+	var src = lp.get("setup directory") + "/" + template;
 
 	sys.unlink(f);
 
@@ -221,9 +223,10 @@ function provision_guess()
 {
 	var subobj = new Object();
 	var nss = nss_init();
+	var lp = loadparm_init();
 
-	subobj.REALM        = lpGet("realm");
-	subobj.DOMAIN       = lpGet("workgroup");
+	subobj.REALM        = lp.get("realm");
+	subobj.DOMAIN       = lp.get("workgroup");
 	subobj.HOSTNAME     = hostname();
 	subobj.HOSTIP       = hostip();
 	subobj.DOMAINGUID   = randguid();
@@ -271,7 +274,8 @@ function searchone(ldb, expression, attribute)
 */
 function newuser(username, unixname, password, message)
 {
-	var samdb = lpGet("sam database");
+	var lp = loadparm_init();
+	var samdb = lp.get("sam database");
 	var ldb = ldb_init();
 
 	/* connect to the sam */
