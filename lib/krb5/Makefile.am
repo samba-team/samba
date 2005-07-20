@@ -28,8 +28,9 @@ TESTS =						\
 	test_config				\
 	test_crypto_wrapping			\
 	test_keytab				\
-	test_time				\
-	test_mem
+	test_mem				\
+	test_pkinit_dh2key			\
+	test_time
 
 check_PROGRAMS = $(TESTS)
 
