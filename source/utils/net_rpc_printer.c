@@ -817,18 +817,10 @@ net_spoolss_enum_printers(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 {
 
 	WERROR result;
-	uint32 needed;
 
 	/* enum printers */
-	result = cli_spoolss_enum_printers(
-		cli, mem_ctx, 0, &needed, name, flags,
+	result = cli_spoolss_enum_printers(cli, mem_ctx, name, flags,
 		level, num_printers, ctr);
-
-	if (W_ERROR_V(result) == W_ERROR_V(WERR_INSUFFICIENT_BUFFER)) 
-		result = cli_spoolss_enum_printers(
-			cli, mem_ctx, needed, NULL, name, flags,
-			level, num_printers, ctr);
-	
 
 	if (!W_ERROR_IS_OK(result)) {
 		printf("cannot enum printers: %s\n", dos_errstr(result));
@@ -887,16 +879,10 @@ net_spoolss_getprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		       PRINTER_INFO_CTR *ctr)
 {
 	WERROR result;
-	uint32 needed;
 
 	/* getprinter call */
-	result = cli_spoolss_getprinter(cli, 
-		mem_ctx, 0, &needed, hnd, level, ctr);
+	result = cli_spoolss_getprinter(cli, mem_ctx, hnd, level, ctr);
 
-	if (W_ERROR_V(result) == W_ERROR_V(WERR_INSUFFICIENT_BUFFER)) 
-		result = cli_spoolss_getprinter(cli, 
-			mem_ctx, needed, NULL, hnd, level, ctr);
-			
 	if (!W_ERROR_IS_OK(result)) {
 		printf("cannot get printer-info: %s\n", dos_errstr(result));
 		return False;
@@ -949,17 +935,10 @@ net_spoolss_enumprinterkey(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			   uint16 **keylist)
 {
 	WERROR result;
-	uint32 needed, len;
 
 	/* enumprinterkey call */
-	result = cli_spoolss_enumprinterkey(
-		cli, mem_ctx, 0, &needed, hnd, keyname, NULL, NULL);
+	result = cli_spoolss_enumprinterkey(cli, mem_ctx, hnd, keyname, NULL, NULL);
 		
-	if (W_ERROR_V(result) == W_ERROR_V(WERR_MORE_DATA)) 
-		result = cli_spoolss_enumprinterkey(
-			cli, mem_ctx, needed, NULL, hnd, keyname, keylist,
-			&len);
-
 	if (!W_ERROR_IS_OK(result)) {
 		printf("enumprinterkey failed: %s\n", dos_errstr(result));
 		return False;
@@ -976,16 +955,10 @@ net_spoolss_enumprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			      REGVAL_CTR *ctr) 
 {
 	WERROR result;
-	uint32 needed;
 
 	/* enumprinterdataex call */
-	result = cli_spoolss_enumprinterdataex(
-		cli, mem_ctx, 0, &needed, hnd, keyname, ctr);
+	result = cli_spoolss_enumprinterdataex(cli, mem_ctx, hnd, keyname, ctr);
 			
-	if (W_ERROR_V(result) == W_ERROR_V(WERR_MORE_DATA)) 
-		result = cli_spoolss_enumprinterdataex(
-			cli, mem_ctx, needed, NULL, hnd, keyname, ctr);
-					
 	if (!W_ERROR_IS_OK(result)) {
 		printf("enumprinterdataex failed: %s\n", dos_errstr(result));
 		return False;
@@ -1022,16 +995,9 @@ net_spoolss_enumforms(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 										       
 {
 	WERROR result;
-	uint32 needed;
 
 	/* enumforms call */
-	result = cli_spoolss_enumforms(
-			cli, mem_ctx, 0, &needed, hnd, level, num_forms, forms);
-
-	if (W_ERROR_V(result) == W_ERROR_V(WERR_INSUFFICIENT_BUFFER)) 
-		result = cli_spoolss_enumforms(
-				cli, mem_ctx, needed, NULL, hnd, level,
-				num_forms, forms);
+	result = cli_spoolss_enumforms(cli, mem_ctx, hnd, level, num_forms, forms);
 
 	if (!W_ERROR_IS_OK(result)) {
 		printf("could not enum forms: %s\n", dos_errstr(result));
@@ -1049,18 +1015,12 @@ net_spoolss_enumprinterdrivers (struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				PRINTER_DRIVER_CTR *ctr)
 {
 	WERROR result;
-	uint32 needed;
 
 	/* enumprinterdrivers call */
 	result = cli_spoolss_enumprinterdrivers(
-			cli, mem_ctx, 0, &needed, level,
+			cli, mem_ctx, level,
 			env, num_drivers, ctr);
 
-	if (W_ERROR_V(result) == W_ERROR_V(WERR_INSUFFICIENT_BUFFER))
-		result = cli_spoolss_enumprinterdrivers(
-				cli, mem_ctx, needed, NULL, level,
-				env, num_drivers, ctr);
-	
 	if (!W_ERROR_IS_OK(result)) {
 		printf("cannot enum drivers: %s\n", dos_errstr(result));
 		return False;
@@ -1078,17 +1038,11 @@ net_spoolss_getprinterdriver(struct cli_state *cli,
 			     PRINTER_DRIVER_CTR *ctr)
 {
 	WERROR result;
-	uint32 needed;
 	
 	/* getprinterdriver call */
 	result = cli_spoolss_getprinterdriver(
-			cli, mem_ctx, 0, &needed, hnd, level,
+			cli, mem_ctx, hnd, level,
 			env, version, ctr);
-
-	if (W_ERROR_V(result) == W_ERROR_V(WERR_INSUFFICIENT_BUFFER))
-		result = cli_spoolss_getprinterdriver(
-				cli, mem_ctx, needed, NULL, hnd, level,
-				env, version, ctr);
 
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(1,("cannot get driver (for architecture: %s): %s\n", 
