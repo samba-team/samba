@@ -12,7 +12,7 @@ var ldb = ldb_init();
 var ok = ldb.connect(dbfile);
 assert(ok);
 
-res = ldb.search("(objectClass=domain)", attrs);
+res = ldb.search("(objectClass=domain)", NULL, ldb.SCOPE_DEFAULT, attrs);
 multi_table(res, "dn");
 %>
 
