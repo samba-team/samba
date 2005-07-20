@@ -24,6 +24,7 @@
 #include "scripting/ejs/smbcalls.h"
 #include "lib/appweb/ejs/ejs.h"
 #include "param/loadparm.h"
+#include "dynconfig.h"
 
 /*
   return a list of defined services
@@ -48,10 +49,10 @@ static int ejs_lpServices(MprVarHandle eid, int argc, char **argv)
   
   can be called in 4 ways:
 
-    v = lpGet("type:parm");             gets a parametric variable
-    v = lpGet("share", "type:parm");    gets a parametric variable on a share
-    v = lpGet("parm");                  gets a global variable
-    v = lpGet("share", "parm");         gets a share variable
+    v = lp.get("type:parm");             gets a parametric variable
+    v = lp.get("share", "type:parm");    gets a parametric variable on a share
+    v = lp.get("parm");                  gets a global variable
+    v = lp.get("share", "parm");         gets a share variable
 
   the returned variable is a ejs object. It is an array object for lists.  
 */
@@ -139,6 +140,40 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 	return 0;
 }
 
+
+/*
+  set a smb.conf parameter. Only sets in memory, not permanent
+  
+  can be called in 4 ways:
+
+    ok = lp.set("parm", "value");
+*/
+static int ejs_lpSet(MprVarHandle eid, int argc, char **argv)
+{
+	if (argc != 2) {
+		ejsSetErrorMsg(eid, "lp.set invalid arguments");
+		return -1;
+	}
+
+	mpr_Return(eid, mprCreateBoolVar(lp_set_cmdline(argv[0], argv[1])));
+	return 0;
+}
+
+/*
+  reload smb.conf
+  
+    ok = lp.reload();
+*/
+static int ejs_lpReload(MprVarHandle eid, int argc, char **argv)
+{
+	BOOL ret = lp_load();
+	if (ret) {
+		load_interfaces();
+	}
+	mpr_Return(eid, mprCreateBoolVar(ret));
+	return 0;
+}
+
 /*
   initialise loadparm ejs subsystem
 */
@@ -147,6 +182,8 @@ static int ejs_loadparm_init(MprVarHandle eid, int argc, struct MprVar **argv)
 	struct MprVar *obj = mprInitObject(eid, "loadparm", argc, argv);
 
 	mprSetStringCFunction(obj, "get", ejs_lpGet);
+	mprSetStringCFunction(obj, "set", ejs_lpSet);
+	mprSetStringCFunction(obj, "reload", ejs_lpReload);
 	mprSetStringCFunction(obj, "services", ejs_lpServices);
 	return 0;
 }

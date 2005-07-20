@@ -495,7 +495,7 @@ static GtkWidget*create_new_job_dialog (void)
  int main(int argc, char **argv)
 {
 	gwcrontab_init_subsystems;
-	lp_load(dyn_CONFIGFILE);
+	lp_load();
 	load_interfaces();
 	setup_logging(argv[0], DEBUG_STDERR);
 

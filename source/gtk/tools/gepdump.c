@@ -463,7 +463,7 @@ static GtkWidget* create_mainwindow (void)
  int main(int argc, char **argv)
 {
 	gepdump_init_subsystems;
-	lp_load(dyn_CONFIGFILE);
+	lp_load();
 	load_interfaces();
 	setup_logging(argv[0], DEBUG_STDERR);
 

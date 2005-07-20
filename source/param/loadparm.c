@@ -910,6 +910,8 @@ static void init_globals(void)
 		}
 	}
 
+	do_parameter("config file", dyn_CONFIGFILE);
+
 	/* options that can be set on the command line must be initialised via
 	   the slower do_parameter() to ensure that FLAG_CMDLINE is obeyed */
 #ifdef TCP_NODELAY
@@ -2985,21 +2987,14 @@ static void set_server_role(void)
  False on failure.
 ***************************************************************************/
 
-BOOL lp_load(const char *pszFname)
+BOOL lp_load(void)
 {
 	pstring n2;
 	BOOL bRetval;
 	struct param_opt *data;
 
-	pstrcpy(n2, pszFname);
-	standard_sub_basic(n2,sizeof(n2));
-
-	add_to_file_list(pszFname, n2);
-
 	bRetval = False;
 
-	DEBUG(2, ("lp_load: refreshing parameters from %s\n", pszFname));
-	
 	bInGlobalSection = True;
 
 	if (Globals.param_opt != NULL) {
@@ -3015,6 +3010,12 @@ BOOL lp_load(const char *pszFname)
 	}
 	
 	init_globals();
+
+	pstrcpy(n2, lp_configfile());
+	standard_sub_basic(n2,sizeof(n2));
+	DEBUG(2, ("lp_load: refreshing parameters from %s\n", n2));
+	
+	add_to_file_list(lp_configfile(), n2);
 
 	/* We get sections first, so have to start 'behind' to make up */
 	iServiceIndex = -1;

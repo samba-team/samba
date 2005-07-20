@@ -169,7 +169,7 @@ function setup_ldb(ldif, dbname, subobj)
 function setup_file(template, fname, subobj)
 {
 	var lp = loadparm_init();
-	var f = lp.get("private dir") + "/" + fname;
+	var f = fname;
 	var src = lp.get("setup directory") + "/" + template;
 
 	sys.unlink(f);
@@ -187,6 +187,9 @@ function setup_file(template, fname, subobj)
 function provision(subobj, message)
 {
 	var data = "";
+	var lp = loadparm_init();
+	var sys = sys_init();
+	var smbconf = lp.get("config file");
 
 	/*
 	  some options need to be upper/lower case
@@ -204,6 +207,13 @@ function provision(subobj, message)
 
 	provision_next_usn = 1;
 
+	/* only install a new smb.conf if there isn't one there already */
+	var st = sys.stat(smbconf);
+	if (st == undefined) {
+		message("Setting up smb.conf\n");
+		setup_file("provision.smb.conf", smbconf, subobj);
+		lp.reload();
+	}
 	message("Setting up hklm.ldb\n");
 	setup_ldb("hklm.ldif", "hklm.ldb", subobj);
 	message("Setting up sam.ldb\n");
@@ -213,7 +223,9 @@ function provision(subobj, message)
 	message("Setting up secrets.ldb\n");
 	setup_ldb("secrets.ldif", "secrets.ldb", subobj);
 	message("Setting up DNS zone file\n");
-	setup_file("provision.zone", subobj.DNSDOMAIN + ".zone", subobj);
+	setup_file("provision.zone", 
+		   lp.get("private dir") + "/" + subobj.DNSDOMAIN + ".zone", 
+		   subobj);
 }
 
 /*
@@ -229,6 +241,11 @@ function provision_guess()
 	subobj.REALM        = lp.get("realm");
 	subobj.DOMAIN       = lp.get("workgroup");
 	subobj.HOSTNAME     = hostname();
+
+	assert(subobj.REALM);
+	assert(subobj.DOMAIN);
+	assert(subobj.HOSTNAME);
+
 	subobj.HOSTIP       = hostip();
 	subobj.DOMAINGUID   = randguid();
 	subobj.DOMAINSID    = randsid();
