@@ -3393,7 +3393,7 @@ structuralObjectClass: organizationalUnit
 &rootprompt; chown -R root:root /apps
 &rootprompt; chown -R bobj:Accounts /data/accounts
 &rootprompt; chown -R bobj:Finances /data/finsvcs
-&rootprompt; chown -R bobj:PIOps /data/pidata
+&rootprompt; chown -R bobj:PIOps /data/piops
 &rootprompt; chmod -R ug+rwxs,o-rwx /data
 &rootprompt; chmod -R ug+rwx,o+rx-w /apps
 </screen>
