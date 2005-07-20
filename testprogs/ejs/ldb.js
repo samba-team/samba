@@ -30,17 +30,17 @@ x: 4
 ");
 	assert(ok);
 	var attrs = new Array("x");
-	res = ldb.search("x=4", attrs);
+	res = ldb.search("x=4", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res[0].x == 4);
 	assert(res[0].objectClass == undefined);
 	assert(res[0].dn == "cn=x2,cn=test");
 
-	ok = ldb.delete("cn=x,cn=test");
+	ok = ldb.del("cn=x,cn=test");
 	assert(ok);
 
 	ok = ldb.rename("cn=x2,cn=test", "cn=x3,cn=test");
 	assert(ok);
-	res = ldb.search("x=4", attrs);
+	res = ldb.search("x=4", NULL, ldb.SCOPE_DEFAULT, attrs);
 	assert(res[0].dn == "cn=x3,cn=test");
 
 	ok = ldb.modify("
@@ -56,15 +56,13 @@ x: 7
 	
 }
 
-var sys = sys_init();
+sys_init(ldb);
 var dbfile = "test.ldb";
-sys.unlink(dbfile);
+ldb.unlink(dbfile);
 var ok = ldb.connect("tdb://" + dbfile);
 assert(ok);
 
 basic_tests(ldb);
 
-sys.unlink(dbfile);
-
-
-
+ldb.unlink(dbfile);
+return 0;
