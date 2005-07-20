@@ -8,6 +8,8 @@ global.page = new Object();
 /* fill in some defaults */
 global.page.title = "Samba Web Administration Tool";
 
+libinclude("base.js");
+
 /* to cope with browsers that don't support cookies we append the sessionid
    to the URI */
 global.SESSIONURI = "";

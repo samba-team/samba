@@ -321,15 +321,27 @@ static int ejs_vsprintf(MprVarHandle eid, int argc, struct MprVar **argv)
 }
 
 /*
+  initialise string ejs subsystem
+*/
+static int ejs_string_init(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	struct MprVar *obj = mprInitObject(eid, "string", argc, argv);
+
+	mprSetStringCFunction(obj, "strlen", ejs_strlen);
+	mprSetStringCFunction(obj, "strlower", ejs_strlower);
+	mprSetStringCFunction(obj, "strupper", ejs_strupper);
+	mprSetStringCFunction(obj, "split", ejs_split);
+	mprSetCFunction(obj, "join", ejs_join);
+	mprSetCFunction(obj, "sprintf", ejs_sprintf);
+	mprSetCFunction(obj, "vsprintf", ejs_vsprintf);
+
+	return 0;
+}
+
+/*
   setup C functions that be called from ejs
 */
 void smb_setup_ejs_string(void)
 {
-	ejsDefineStringCFunction(-1, "strlen", ejs_strlen, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineStringCFunction(-1, "strlower", ejs_strlower, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineStringCFunction(-1, "strupper", ejs_strupper, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineStringCFunction(-1, "split", ejs_split, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineCFunction(-1, "join", ejs_join, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineCFunction(-1, "sprintf", ejs_sprintf, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineCFunction(-1, "vsprintf", ejs_vsprintf, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "string_init", ejs_string_init, NULL, MPR_VAR_SCRIPT_HANDLE);
 }

@@ -9,6 +9,9 @@ if (global["HAVE_BASE_JS"] != undefined) {
 }
 HAVE_BASE_JS=1
 
+/* bring the string functions into the global frame */
+string_init(global);
+
 /*
   an essential function!
 */

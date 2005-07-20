@@ -3,6 +3,8 @@
 	test sprintf function
 */
 
+string_init(local);
+
 function check_result(s, v)
 {
 	if (s != v) {
