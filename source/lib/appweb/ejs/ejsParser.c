@@ -1641,6 +1641,9 @@ static int evalExpr(Ejs *ep, MprVar *lhs, int rel, MprVar *rhs)
 		case EJS_EXPR_NOTEQ:
 			lval = lhs->type != rhs->type;
 			break;
+		case EJS_EXPR_BOOL_COMP:
+			lval =  ! mprVarToBool(rhs);
+			break;
 		default:
 			lval = 0;
 		}
