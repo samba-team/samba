@@ -224,6 +224,7 @@ function provision_guess()
 	var subobj = new Object();
 	var nss = nss_init();
 	var lp = loadparm_init();
+	random_init(local);
 
 	subobj.REALM        = lp.get("realm");
 	subobj.DOMAIN       = lp.get("workgroup");
@@ -277,6 +278,7 @@ function newuser(username, unixname, password, message)
 	var lp = loadparm_init();
 	var samdb = lp.get("sam database");
 	var ldb = ldb_init();
+	random_init(local);
 
 	/* connect to the sam */
 	var ok = ldb.connect(samdb);
