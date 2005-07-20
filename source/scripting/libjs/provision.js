@@ -10,6 +10,27 @@ provision_next_usn = 1;
 sys = sys_init();
 
 /*
+  return true if the current install seems to be OK
+*/
+function install_ok()
+{
+	var lp = loadparm_init();
+	var ldb = ldb_init();
+	if (lp.get("realm") == "") {
+		return false;
+	}
+	var ok = ldb.connect(lp.get("sam database"));
+	if (!ok) {
+		return false;
+	}
+	var res = ldb.search("(name=Administrator)");
+	if (res.length != 1) {
+		return false;
+	}
+	return true;
+}
+
+/*
   find a user or group from a list of possibilities
 */
 function findnss()

@@ -1,6 +1,12 @@
 <% page_header("columns", "Server Status", "");
   libinclude("base.js");
   libinclude("management.js");
+  libinclude("provision.js");
+
+  if (install_ok() == false) {
+	  redirect("/install/provision.esp");
+  }
+
 %>
 
 <h1>Server Status</h1>
