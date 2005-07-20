@@ -55,7 +55,7 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 	const char *pdc_ip;
 
 	if (cldapd->samctx == NULL) {
-		cldapd->samctx = samdb_connect(mem_ctx);
+		cldapd->samctx = samdb_connect(cldapd);
 		if (cldapd->samctx == NULL) {
 			DEBUG(2,("Unable to open sam in cldap netlogon reply\n"));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;

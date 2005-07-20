@@ -105,3 +105,7 @@ int ltdb_unlock_read(struct ldb_module *module);
 int ltdb_index_del_value(struct ldb_module *module, const char *dn, 
 			 struct ldb_message_element *el, int v_idx);
 
+struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
+				   const char *path, int hash_size, int tdb_flags,
+				   int open_flags, mode_t mode);
+
