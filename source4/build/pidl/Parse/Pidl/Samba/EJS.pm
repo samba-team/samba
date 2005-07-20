@@ -692,19 +692,18 @@ sub EjsInterface($$)
 	pidl "static int ejs_$name\_init(int eid, int argc, struct MprVar **argv)";
 	pidl "{";
 	indent;
-	pidl "struct MprVar obj = mprObject(\"$name\");";
+	pidl "struct MprVar *obj = mprInitObject(eid, \"$name\", argc, argv);";
 	foreach (@fns) {
-		pidl "mprSetCFunction(&obj, \"$_\", ejs_$_);";
+		pidl "mprSetCFunction(obj, \"$_\", ejs_$_);";
 	}
 	foreach my $v (keys %constants) {
 		my $value = $constants{$v};
 		if (substr($value, 0, 1) eq "\"") {
-			pidl "mprSetVar(&obj, \"$v\", mprString($value));";
+			pidl "mprSetVar(obj, \"$v\", mprString($value));";
 		} else {
-			pidl "mprSetVar(&obj, \"$v\", mprCreateNumberVar($value));";
+			pidl "mprSetVar(obj, \"$v\", mprCreateNumberVar($value));";
 		}
 	}
-	pidl "mpr_Return(eid, obj);";
 	pidl "return 0;";
 	deindent;
 	pidl "}\n";

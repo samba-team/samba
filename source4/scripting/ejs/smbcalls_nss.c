@@ -141,10 +141,7 @@ static int ejs_getgrgid(MprVarHandle eid, int argc, struct MprVar **argv)
 */
 static int ejs_nss_init(MprVarHandle eid, int argc, struct MprVar **argv)
 {
-	struct MprVar *nss;
-	mpr_Return(eid, mprObject("nss"));
-
-	nss  = ejsGetReturnValue(eid);
+	struct MprVar *nss = mprInitObject(eid, "nss", argc, argv);
 
 	mprSetCFunction(nss, "getpwnam", ejs_getpwnam);
 	mprSetCFunction(nss, "getpwuid", ejs_getpwuid);
