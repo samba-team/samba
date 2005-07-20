@@ -4315,7 +4315,7 @@ _krb5_pk_octetstring2key(krb5_context context,
     size_t keylen, offset;
     void *keydata;
     unsigned char counter;
-    char shaoutput[20];
+    unsigned char shaoutput[20];
 
     if(et == NULL) {
 	krb5_set_error_string(context, "encryption type %d not supported",
