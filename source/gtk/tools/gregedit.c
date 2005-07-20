@@ -977,7 +977,7 @@ int main(int argc, char *argv[])
 	int ret;
 
 	gregedit_init_subsystems;
-	lp_load(dyn_CONFIGFILE);
+	lp_load();
 	load_interfaces();
 	setup_logging(argv[0], DEBUG_STDERR);
 

@@ -52,7 +52,7 @@ static void popt_common_callback(poptContext con,
 	if (reason == POPT_CALLBACK_REASON_POST) {
 		/* Hook any 'every Samba program must do this, after
 		 * the smb.conf is setup' functions here */
-		lp_load(dyn_CONFIGFILE);
+		lp_load();
 		load_interfaces();
 		return;
 	}
@@ -92,7 +92,7 @@ static void popt_common_callback(poptContext con,
 
 	case 's':
 		if (arg) {
-			pstrcpy(dyn_CONFIGFILE, arg);
+			lp_set_cmdline("config file", arg);
 		}
 		break;
 
