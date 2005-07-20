@@ -50,7 +50,8 @@ ADD_OBJ_FILES = \
 		lib/ldb/ldb_tdb/ldb_search.o \
 		lib/ldb/ldb_tdb/ldb_pack.o \
 		lib/ldb/ldb_tdb/ldb_index.o \
-		lib/ldb/ldb_tdb/ldb_cache.o
+		lib/ldb/ldb_tdb/ldb_cache.o \
+		lib/ldb/ldb_tdb/ldb_tdb_wrap.o
 REQUIRED_SUBSYSTEMS = \
 		LIBTDB
 NOPROTO = YES

@@ -819,16 +819,6 @@ static const struct ldb_module_ops ltdb_ops = {
 
 
 /*
-  destroy the ltdb context
-*/
-static int ltdb_destructor(void *p)
-{
-	struct ltdb_private *ltdb = p;
-	tdb_close(ltdb->tdb);
-	return 0;
-}
-
-/*
   connect to the database
 */
 int ltdb_connect(struct ldb_context *ldb, const char *url, 
@@ -837,7 +827,6 @@ int ltdb_connect(struct ldb_context *ldb, const char *url,
 	const char *path;
 	int tdb_flags, open_flags;
 	struct ltdb_private *ltdb;
-	TDB_CONTEXT *tdb;
 
 	/* parse the url */
 	if (strchr(url, ':')) {
@@ -858,24 +847,21 @@ int ltdb_connect(struct ldb_context *ldb, const char *url,
 		open_flags = O_CREAT | O_RDWR;
 	}
 
-	/* note that we use quite a large default hash size */
-	tdb = tdb_open(path, 10000, tdb_flags, open_flags, 0666);
-	if (!tdb) {
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "Unable to open tdb '%s'\n", path);
-		return -1;
-	}
-
 	ltdb = talloc_zero(ldb, struct ltdb_private);
 	if (!ltdb) {
-		tdb_close(tdb);
 		ldb_oom(ldb);
 		return -1;
 	}
 
-	ltdb->tdb = tdb;
-	ltdb->sequence_number = 0;
+	/* note that we use quite a large default hash size */
+	ltdb->tdb = ltdb_wrap_open(ltdb, path, 10000, tdb_flags, open_flags, 0666);
+	if (!ltdb->tdb) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "Unable to open tdb '%s'\n", path);
+		talloc_free(ltdb);
+		return -1;
+	}
 
-	talloc_set_destructor(ltdb, ltdb_destructor);
+	ltdb->sequence_number = 0;
 
 	ldb->modules = talloc(ldb, struct ldb_module);
 	if (!ldb->modules) {
