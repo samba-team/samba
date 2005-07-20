@@ -491,7 +491,7 @@ de_http(char *buf)
     for(p = q = (unsigned char *)buf; *p; p++, q++) {
 	if(*p == '%' && isxdigit(p[1]) && isxdigit(p[2])) {
 	    unsigned int x;
-	    if(sscanf(p + 1, "%2x", &x) != 1)
+	    if(sscanf((char *)p + 1, "%2x", &x) != 1)
 		return -1;
 	    *q = x;
 	    p += 2;
