@@ -653,6 +653,7 @@ SBIN_PROGS = bin/smbd
 BIN_PROGS = bin/smbclient \
 		bin/net \
 		bin/nmblookup \
+		bin/smbscript \
 		bin/ntlm_auth
 
 TORTURE_PROGS = bin/smbtorture \
