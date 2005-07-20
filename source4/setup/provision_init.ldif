@@ -1,0 +1,51 @@
+dn: @INDEXLIST
+@IDXATTR: name
+@IDXATTR: sAMAccountName
+@IDXATTR: objectSid
+@IDXATTR: objectClass
+@IDXATTR: member
+@IDXATTR: unixID
+@IDXATTR: unixName
+@IDXATTR: privilege
+
+dn: @ATTRIBUTES
+userPrincipalName: CASE_INSENSITIVE
+servicePrincipalName: CASE_INSENSITIVE
+dnsDomain: CASE_INSENSITIVE
+dnsRoot: CASE_INSENSITIVE
+nETBIOSName: CASE_INSENSITIVE
+cn: CASE_INSENSITIVE
+dc: CASE_INSENSITIVE
+name: CASE_INSENSITIVE
+dn: CASE_INSENSITIVE
+sAMAccountName: CASE_INSENSITIVE
+objectClass: CASE_INSENSITIVE
+unicodePwd: HIDDEN
+ntPwdHash: HIDDEN
+ntPwdHistory: HIDDEN
+lmPwdHash: HIDDEN
+lmPwdHistory: HIDDEN
+createTimestamp: HIDDEN
+modifyTimestamp: HIDDEN
+groupType: INTEGER
+sAMAccountType: INTEGER
+systemFlags: INTEGER
+userAccountControl: INTEGER
+
+dn: @SUBCLASSES
+top: domain
+top: person
+top: group
+domain: domainDNS
+domain: builtinDomain
+person: organizationalPerson
+organizationalPerson: user
+user: computer
+template: userTemplate
+template: groupTemplate
+
+#Add modules to the list to activate them by default
+#beware often order is important
+dn: @MODULES
+@LIST: samldb,timestamps,objectguid
+
