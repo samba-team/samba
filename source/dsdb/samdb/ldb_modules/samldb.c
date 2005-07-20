@@ -346,7 +346,8 @@ static int samldb_copy_template(struct ldb_module *module, struct ldb_message *m
 		/* some elements should not be copied from the template */
 		if (strcasecmp(el->name, "cn") == 0 ||
 		    strcasecmp(el->name, "name") == 0 ||
-		    strcasecmp(el->name, "sAMAccountName") == 0) {
+		    strcasecmp(el->name, "sAMAccountName") == 0 ||
+		    strcasecmp(el->name, "objectGUID")) {
 			continue;
 		}
 		for (j = 0; j < el->num_values; j++) {
@@ -447,8 +448,6 @@ static struct ldb_message *samldb_fill_group_object(struct ldb_module *module, c
 		return NULL;
 	}
 
-	/* TODO: objectGUID */
-
 	talloc_steal(msg, msg2);
 
 	return msg2;
@@ -533,9 +532,7 @@ static struct ldb_message *samldb_fill_user_or_computer_object(struct ldb_module
 		return NULL;
 	}
 
-	/* TODO: objectGUID, objectCategory, userAccountControl, badPwdCount, codePage, countryCode, badPasswordTime, lastLogoff, lastLogon, pwdLastSet, primaryGroupID, accountExpires, logonCount */
-
-	talloc_steal(msg, msg2);
+	/* TODO: objectCategory, userAccountControl, badPwdCount, codePage, countryCode, badPasswordTime, lastLogoff, lastLogon, pwdLastSet, primaryGroupID, accountExpires, logonCount */
 
 	return msg2;
 }

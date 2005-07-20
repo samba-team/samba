@@ -113,7 +113,7 @@ function hostip()
 }
 
 /*
-  return current time as a ldap time string
+  return next USN in the sequence
 */
 function nextusn()
 {
@@ -160,13 +160,18 @@ function ldb_erase(ldb)
  */
 function setup_ldb(ldif, dbname, subobj)
 {
+	var erase = true;
 	var extra = "";
 	var ldb = ldb_init();
 	var lp = loadparm_init();
 
-	if (arguments.length == 4) {
+	if (arguments.length >= 4) {
 		extra = arguments[3];
 	}
+
+	if (arguments.length == 5) {
+	        erase = arguments[4];
+        }
 
 	var dbfile = dbname;
 	var src = lp.get("setup directory") + "/" + ldif;
@@ -178,7 +183,9 @@ function setup_ldb(ldif, dbname, subobj)
 	var ok = ldb.connect(dbfile);
 	assert(ok);
 
-	ldb_erase(ldb);
+	if (erase) {
+		ldb_erase(ldb);	
+	}
 
 	ok = ldb.add(data);
 	assert(ok);
@@ -237,8 +244,10 @@ function provision(subobj, message)
 	}
 	message("Setting up hklm.ldb\n");
 	setup_ldb("hklm.ldif", "hklm.ldb", subobj);
-	message("Setting up sam.ldb\n");
-	setup_ldb("provision.ldif", "sam.ldb", subobj, data);
+	message("Setting up sam.ldb attributes\n");
+	setup_ldb("provision_init.ldif", "sam.ldb", subobj);
+	message("Setting up sam.ldb data\n");
+	setup_ldb("provision.ldif", "sam.ldb", subobj, data, false);
 	message("Setting up rootdse.ldb\n");
 	setup_ldb("rootdse.ldif", "rootdse.ldb", subobj);
 	message("Setting up secrets.ldb\n");
