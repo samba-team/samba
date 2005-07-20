@@ -5,7 +5,8 @@
 <h3>An attribute constrained search</h3>
 
 <%
-var dbfile = lpGet("sam database");
+var lp = loadparm_init();
+var dbfile = lp.get("sam database");
 var attrs = new Array("name", "dnsDomain", "objectSid", "dn");
 var ldb = ldb_init();
 var ok = ldb.connect(dbfile);

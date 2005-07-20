@@ -140,10 +140,21 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 }
 
 /*
+  initialise loadparm ejs subsystem
+*/
+static int ejs_loadparm_init(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	struct MprVar *obj = mprInitObject(eid, "loadparm", argc, argv);
+
+	mprSetStringCFunction(obj, "get", ejs_lpGet);
+	mprSetStringCFunction(obj, "services", ejs_lpServices);
+	return 0;
+}
+
+/*
   setup C functions that be called from ejs
 */
 void smb_setup_ejs_config(void)
 {
-	ejsDefineStringCFunction(-1, "lpGet", ejs_lpGet, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineStringCFunction(-1, "lpServices", ejs_lpServices, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "loadparm_init", ejs_loadparm_init, NULL, MPR_VAR_SCRIPT_HANDLE);
 }

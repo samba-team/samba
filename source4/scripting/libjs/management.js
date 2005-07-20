@@ -97,7 +97,8 @@ function nbtd_statistics()
 */
 function service_enabled(name)
 {
-	var services = lpGet("server services");
+	var lp = loadparm_init();
+	var services = lp.get("server services");
 	var i;
 	for (i=0;i<services.length;i++) {
 		if (services[i] == name) {
