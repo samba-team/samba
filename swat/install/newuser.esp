@@ -9,6 +9,7 @@
 <%
 var f = FormObj("newuser", 3, 2);
 var i;
+var rand = random_init();
 
 f.element[0].label = "User Name";
 f.element[0].name  = "USERNAME";
@@ -29,7 +30,7 @@ if (form['submit'] == "Add" &&
 		form.UNIXNAME = form.USERNAME;
 	}
 	if (form.PASSWORD == undefined) {
-		form.PASSWORD = randpass();
+		form.PASSWORD = rand.randpass();
 	}
 	newuser(form.USERNAME, form.UNIXNAME, form.PASSWORD, writefln);
 } else {

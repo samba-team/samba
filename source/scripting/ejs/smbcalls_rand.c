@@ -81,12 +81,23 @@ static int ejs_randsid(MprVarHandle eid, int argc, struct MprVar **argv)
 }
 
 /*
+  initialise random ejs subsystem
+*/
+static int ejs_random_init(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	struct MprVar *obj = mprInitObject(eid, "random", argc, argv);
+
+	mprSetCFunction(obj, "random", ejs_random);
+	mprSetCFunction(obj, "randpass", ejs_randpass);
+	mprSetCFunction(obj, "randguid", ejs_randguid);
+	mprSetCFunction(obj, "randsid", ejs_randsid);
+	return 0;
+}
+
+/*
   setup C functions that be called from ejs
 */
 void smb_setup_ejs_random(void)
 {
-	ejsDefineCFunction(-1, "random", ejs_random, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineCFunction(-1, "randpass", ejs_randpass, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineCFunction(-1, "randguid", ejs_randguid, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineCFunction(-1, "randsid", ejs_randsid, NULL, MPR_VAR_SCRIPT_HANDLE);
+	ejsDefineCFunction(-1, "random_init", ejs_random_init, NULL, MPR_VAR_SCRIPT_HANDLE);
 }
