@@ -240,8 +240,9 @@ static RETSIGTYPE
  * It's not neccessary to be root to run it.
  */
 void
-DES_rand_data(unsigned char *data, int size)
+DES_rand_data(void *outdata, int size)
 {
+    unsigned char *data = outdata;
     struct itimerval tv, otv;
     RETSIGTYPE (*osa)(int);
     int i, j;
@@ -388,7 +389,7 @@ memcpy((char *)sequence_index, (ll), sizeof(sequence_index));
  * Set the sequnce number to this value (a long long).
  */
 void
-DES_set_sequence_number(unsigned char *ll)
+DES_set_sequence_number(void *ll)
 {
     set_sequence_number(ll);
 }

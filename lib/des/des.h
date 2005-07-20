@@ -59,10 +59,10 @@ int	DES_read_password(DES_cblock *, char *, int);
 
 int	UI_UTIL_read_pw_string(char *, int, const char *, int); /* XXX */
 
-void	DES_rand_data(unsigned char *, int);
+void	DES_rand_data(void *, int);
 void	DES_set_random_generator_seed(DES_cblock *);
 void	DES_generate_random_block(DES_cblock *);
-void	DES_set_sequence_number(unsigned char *);
+void	DES_set_sequence_number(void *);
 void 	DES_init_random_number_generator(DES_cblock *);
 void	DES_random_key(DES_cblock *);
 
@@ -71,18 +71,18 @@ void	DES_encrypt(uint32_t [2], DES_key_schedule *, int);
 void	DES_ecb_encrypt(DES_cblock *, DES_cblock *, DES_key_schedule *, int);
 void	DES_ecb3_encrypt(DES_cblock *,DES_cblock *, DES_key_schedule *,
 			 DES_key_schedule *, DES_key_schedule *, int);
-void	DES_pcbc_encrypt(unsigned char *, unsigned char *, long,
+void	DES_pcbc_encrypt(const void *, void *, long,
 			 DES_key_schedule *, DES_cblock *, int);
-void	DES_cbc_encrypt(unsigned char *, unsigned char *, long,
+void	DES_cbc_encrypt(const void *, void *, long,
 			DES_key_schedule *, DES_cblock *, int);
-void	DES_ede3_cbc_encrypt(const unsigned char *, unsigned char *, long, 
+void	DES_ede3_cbc_encrypt(const void *, void *, long, 
 			     DES_key_schedule *, DES_key_schedule *, 
 			     DES_key_schedule *, DES_cblock *, int);
-void DES_cfb64_encrypt(unsigned char *, unsigned char *, long,
+void DES_cfb64_encrypt(const void *, void *, long,
 		       DES_key_schedule *, DES_cblock *, int *, int);
 
 
-uint32_t DES_cbc_cksum(const unsigned char *, DES_cblock *,
+uint32_t DES_cbc_cksum(const void *, DES_cblock *,
 		      long, DES_key_schedule *, DES_cblock *);
 
 
