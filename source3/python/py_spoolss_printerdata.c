@@ -112,7 +112,6 @@ PyObject *spoolss_hnd_getprinterdata(PyObject *self, PyObject *args, PyObject *k
 	static char *kwlist[] = { "value", NULL };
 	char *valuename;
 	WERROR werror;
-	uint32 needed;
 	PyObject *result;
 	REGISTRY_VALUE value;
 
@@ -124,13 +123,8 @@ PyObject *spoolss_hnd_getprinterdata(PyObject *self, PyObject *args, PyObject *k
 	/* Call rpc function */
 
 	werror = cli_spoolss_getprinterdata(
-		hnd->cli, hnd->mem_ctx, 0, &needed, &hnd->pol, valuename,
+		hnd->cli, hnd->mem_ctx, &hnd->pol, valuename,
 		&value);
-
-	if (W_ERROR_V(werror) == ERRmoredata) 
-		werror = cli_spoolss_getprinterdata(
-			hnd->cli, hnd->mem_ctx, needed, NULL, &hnd->pol, 
-			valuename, &value);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
@@ -255,7 +249,6 @@ PyObject *spoolss_hnd_getprinterdataex(PyObject *self, PyObject *args, PyObject 
 	static char *kwlist[] = { "key", "value", NULL };
 	char *key, *valuename;
 	WERROR werror;
-	uint32 needed;
 	PyObject *result;
 	REGISTRY_VALUE value;
 
@@ -267,13 +260,8 @@ PyObject *spoolss_hnd_getprinterdataex(PyObject *self, PyObject *args, PyObject 
 	/* Call rpc function */
 
 	werror = cli_spoolss_getprinterdataex(
-		hnd->cli, hnd->mem_ctx, 0, &needed, &hnd->pol, key,
+		hnd->cli, hnd->mem_ctx, &hnd->pol, key,
 		valuename, &value);
-
-	if (W_ERROR_V(werror) == ERRmoredata) 
-		werror = cli_spoolss_getprinterdataex(
-			hnd->cli, hnd->mem_ctx, needed, NULL, &hnd->pol, key,
-			valuename, &value);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
@@ -323,7 +311,7 @@ PyObject *spoolss_hnd_enumprinterdataex(PyObject *self, PyObject *args, PyObject
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	static char *kwlist[] = { "key", NULL };
-	uint32 needed, i;
+	uint32 i;
 	char *key;
 	WERROR werror;
 	PyObject *result;
@@ -334,13 +322,7 @@ PyObject *spoolss_hnd_enumprinterdataex(PyObject *self, PyObject *args, PyObject
 
 	/* Get max buffer sizes for value and data */
 
-	werror = cli_spoolss_enumprinterdataex(
-		hnd->cli, hnd->mem_ctx, 0, &needed, &hnd->pol, key, &ctr);
-
-	if (W_ERROR_V(werror) == ERRmoredata) 
-		werror = cli_spoolss_enumprinterdataex(
-			hnd->cli, hnd->mem_ctx, needed, NULL, &hnd->pol, key, 
-			&ctr);
+	werror = cli_spoolss_enumprinterdataex(hnd->cli, hnd->mem_ctx, &hnd->pol, key, &ctr);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
@@ -400,7 +382,7 @@ PyObject *spoolss_hnd_enumprinterkey(PyObject *self, PyObject *args,
 	static char *kwlist[] = { "key", NULL };
 	char *keyname;
 	WERROR werror;
-	uint32 needed, keylist_len;
+	uint32 keylist_len;
 	uint16 *keylist;
 	PyObject *result;
 
@@ -412,13 +394,8 @@ PyObject *spoolss_hnd_enumprinterkey(PyObject *self, PyObject *args,
 	/* Call rpc function */
 
 	werror = cli_spoolss_enumprinterkey(
-		hnd->cli, hnd->mem_ctx, 0, &needed, &hnd->pol,
+		hnd->cli, hnd->mem_ctx, &hnd->pol,
 		keyname, &keylist, &keylist_len);
-
-	if (W_ERROR_V(werror) == ERRmoredata) 
-		werror = cli_spoolss_enumprinterkey(
-			hnd->cli, hnd->mem_ctx, needed, NULL, &hnd->pol,
-			keyname, &keylist, &keylist_len);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
