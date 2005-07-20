@@ -192,6 +192,8 @@ typedef struct ejEval {
 	char		*tokEndp;					/* Pointer past end of token */
 	char		*tokServp;					/* Pointer to next token char */
 	int			tokSize;					/* Size of token buffer */
+	struct ejEval *next;                    /* used for backtraces */
+	const char  *procName;                  /* gives name in backtrace */
 } EjsInput;
 
 /*

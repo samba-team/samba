@@ -60,11 +60,13 @@ int ejsLexOpenScript(Ejs *ep, char *script)
 	mprAssert(ep);
 	mprAssert(script);
 
-	if ((ep->input = mprMalloc(sizeof(EjsInput))) == NULL) {
+	if ((ip = mprMalloc(sizeof(EjsInput))) == NULL) {
 		return -1;
 	}
-	ip = ep->input;
 	memset(ip, 0, sizeof(*ip));
+	ip->next = ep->input;
+	ep->input = ip;
+	ip->procName = ep->proc?ep->proc->procName:NULL;
 
 /*
  *	Create the parse token buffer and script buffer
@@ -102,6 +104,7 @@ void ejsLexCloseScript(Ejs *ep)
 
 	ip = ep->input;
 	mprAssert(ip);
+	ep->input = ip->next;
 
 	for (i = 0; i < EJS_TOKEN_STACK; i++) {
 		mprFree(ip->putBack[i].token);

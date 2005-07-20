@@ -385,7 +385,6 @@ int ejsEvalBlock(EjsId eid, char *script, MprVar *vp, char **emsg)
 int ejsEvalScript(EjsId eid, char *script, MprVar *vp, char **emsg)
 {
 	Ejs			*ep;
-	EjsInput	*oldBlock;
 	int			state;
 	void		*endlessLoopTest;
 	int			loopCounter;
@@ -408,7 +407,6 @@ int ejsEvalScript(EjsId eid, char *script, MprVar *vp, char **emsg)
 	/*
 	 *	Allocate a new evaluation block, and save the old one
 	 */
-	oldBlock = ep->input;
 	ejsLexOpenScript(ep, script);
 
 	/*
@@ -447,11 +445,6 @@ int ejsEvalScript(EjsId eid, char *script, MprVar *vp, char **emsg)
 		*emsg = mprStrdup(ep->error);
 	}
 
-	/*
-	 *	Restore the old evaluation block
-	 */
-	ep->input = oldBlock;
-
 	if (state == EJS_STATE_ERR) {
 		return -1;
 	}
@@ -475,24 +468,31 @@ static void ejsErrorCore(Ejs* ep, const char *fmt, va_list args)
 {
 	EjsInput	*ip;
 	char		*errbuf, *msgbuf;
+	int frame = 0;
 
 	mprAssert(ep);
 
 	msgbuf = NULL;
 	mprAllocVsprintf(&msgbuf, MPR_MAX_STRING, fmt, args);
 
-	if (ep) {
-		ip = ep->input;
-		if (ip) {
-			mprAllocSprintf(&errbuf, MPR_MAX_STRING,
-				"%s\nError on line %d. Offending line: %s\n\n",
-				msgbuf, ip->lineNumber, ip->line);
-		} else {
-			mprAllocSprintf(&errbuf, MPR_MAX_STRING, "%s\n", msgbuf);
-		}
-		mprFree(ep->error);
-		ep->error = errbuf;
+	ip = ep->input;
+	mprAllocSprintf(&errbuf, MPR_MAX_STRING, "%s\nBacktrace:\n", msgbuf);
+
+	/* form a backtrace */
+	while (ip) {
+		char *msg2, *ebuf2;
+		mprAllocSprintf(&msg2, MPR_MAX_STRING,
+						"\t[%2d] %20s:%-4d -> %s\n",
+						frame++, ip->procName?ip->procName:"", ip->lineNumber, ip->line);
+		ebuf2 = mprRealloc(errbuf, strlen(errbuf) + strlen(msg2) + 1);
+		if (ebuf2 == NULL) break;
+		errbuf = ebuf2;
+		memcpy(errbuf+strlen(errbuf), msg2, strlen(msg2)+1);
+		mprFree(msg2);
+		ip = ip->next;
 	}
+	mprFree(ep->error);
+	ep->error = errbuf;
 	mprFree(msgbuf);
 }
 
