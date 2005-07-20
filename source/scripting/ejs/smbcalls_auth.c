@@ -102,6 +102,11 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 	domain = mprToString(mprGetProperty(argv[0], "domain", NULL));
 	remote_host = mprToString(mprGetProperty(argv[0], "rhost", NULL));
 
+	if (username == NULL || password == NULL || domain == NULL) {
+		mpr_Return(eid, mprCreateUndefinedVar());
+		return 0;
+	}
+
  	tmp_ctx = talloc_new(mprMemCtx());	
 	auth = mprObject("auth");
 
