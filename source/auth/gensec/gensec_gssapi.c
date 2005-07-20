@@ -259,7 +259,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 		DEBUG(1, ("GSS Import name of %s failed: %s\n",
 			  (char *)name_token.value,
 			  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	name_token.value = cli_credentials_get_principal(creds, 
