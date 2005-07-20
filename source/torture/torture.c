@@ -713,7 +713,7 @@ static BOOL run_netbench(int client)
 
 	nb_setup(cli);
 
-	slprintf(cname,sizeof(fname), "client%d", client);
+	slprintf(cname,sizeof(cname)-1, "client%d", client);
 
 	f = fopen(client_txt, "r");
 
