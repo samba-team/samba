@@ -22,7 +22,7 @@ transport="ncacn_np"
         "--option=usespnego=yes --option=ntlmssp_client:ntlm2=yes" \
         "--option=usespnego=yes --option=ntlmssp_client:ntlm2=no" \
         "--option=usespnego=yes --option=ntlmssp_client:ntlm2=yes --option=ntlmssp_client:128bit=no" \
-        "--option=usespnego=yes--option=ntlmssp_client:ntlm2=no  --option=ntlmssp_client:128bit=no" \
+        "--option=usespnego=yes --option=ntlmssp_client:ntlm2=no  --option=ntlmssp_client:128bit=no" \
         "--option=usespnego=yes --option=ntlmssp_client:ntlm2=yes --option=ntlmssp_client:keyexchange=no" \
         "--option=usespnego=yes --option=ntlmssp_client:ntlm2=no  --option=ntlmssp_client:keyexchange=no" \
         "--option=usespnego=yes --option=clientntlmv2auth=yes  --option=ntlmssp_client:keyexchange=no" \
