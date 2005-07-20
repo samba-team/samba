@@ -20,7 +20,7 @@ SCRIPTDIR=../testprogs/ejs
 PATH=bin:$PATH
 export PATH
 
-for f in samr.js echo.js; do
+for f in samr.js echo.js ldb.js; do
     testit "$f" $SCRIPTDIR/$f $CONFIGURATION ncalrpc: -U$USERNAME%$PASSWORD || failed=`expr $failed + 1`
 done
 
