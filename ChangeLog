@@ -1,5 +1,11 @@
 2005-07-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kpasswd/kpasswdd.c (doit): krb5_addr2sockaddr takes a
+	krb5_socklen_t
+
+	* kdc/connect.c (de_http): sscanf takes a char *, not unsigned
+	ditto, cast approriately
+
 	* lib/krb5/crypto.c (_krb5_pk_octetstring2key): make sha1 output
 	unsigned char to match openssl
 
