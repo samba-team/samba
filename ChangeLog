@@ -1,9 +1,26 @@
+2005-07-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/crypto.c (_krb5_pk_octetstring2key): make sha1 output
+	unsigned char to match openssl
+
+2005-07-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/common.c: Check encoder lengths from ASN1_MALLOC_ENCODE.
+
 2005-07-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/rd_cred.c (krb5_rd_cred): don't leak memory
+
+	* lib/krb5/get_cred.c (krb5_get_credentials_with_flags): only call
+	krb5_cc_retrieve_cred once, and plug memory leak.
+
+2005-07-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/Makefile.am: the new asn.1 compiler includes the modules
+	name in the depend file
 
 	* lib/krb5/keytab_file.c (fkt_start_seq_get_int): check return
 	value from krb5_storage_from_fd
-
-2005-07-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/pkinit.c (pk_rd_pa_reply_dh): client do not contribute
 	to the DH when the server doesn't support the cached DH request.
