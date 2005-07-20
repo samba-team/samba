@@ -37,11 +37,6 @@ Run this:
   $ cd samba4/source
   $ ./autogen.sh
   $ ./configure.developer
-
-If you did not include heimdal, run this:
-  $ make proto all
-
-If you did include Heimdal, a different step is required:
   $ make proto all
 
 If you have gcc 3.4 or newer, then substitue "pch" for "proto" to
