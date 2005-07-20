@@ -82,7 +82,9 @@ function show_nbt()
 	println("");
 }
 
-printf("%s\n\n", lpGet("server string"));
+var lp = loadparm_init();
+
+printf("%s\n\n", lp.get("server string"));
 
 if (options['nbt'] != undefined) {
 	show_nbt();

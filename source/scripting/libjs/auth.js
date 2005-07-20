@@ -11,7 +11,8 @@
 function getDomainList()
 {
 	var ret = new Array(2);
+	var lp = loadparm_init();
 	ret[0] = "System User";
-	ret[1] = lpGet("workgroup");
+	ret[1] = lp.get("workgroup");
 	return ret;
 }
