@@ -26,19 +26,21 @@
 #include "auth/auth.h"
 #include "scripting/ejs/smbcalls.h"
 
-static int ejs_systemAuth(TALLOC_CTX *tmp_ctx, struct MprVar *auth, const char *username, const char *password, const char *domain, const char *remote_host)
+static int ejs_doauth(TALLOC_CTX *tmp_ctx, struct MprVar *auth, const char *username, 
+		      const char *password, const char *domain, const char *remote_host,
+		      const char *authtype)
 {
 	struct auth_usersupplied_info *user_info = NULL;
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_context *auth_context;
-	const char *auth_unix[] = { "unix", NULL };
+	const char *auth_types[] = { authtype, NULL };
 	NTSTATUS nt_status;
 	DATA_BLOB pw_blob;
 
 	/*
 	  darn, we need some way to get the right event_context here
 	*/
-	nt_status = auth_context_create(tmp_ctx, auth_unix, &auth_context, NULL);
+	nt_status = auth_context_create(tmp_ctx, auth_types, &auth_context, NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
 		mprSetPropertyValue(auth, "report", mprString("Auth System Failure"));
@@ -104,33 +106,13 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 	auth = mprObject("auth");
 
 	if (domain && strcmp("System User", domain) == 0) {
-
-		ejs_systemAuth(tmp_ctx, &auth, username, password, domain, remote_host);
-	}  else {
-
-		mprSetPropertyValue(&auth, "result", mprCreateBoolVar(False));
-		mprSetPropertyValue(&auth, "report", mprString("Unknown Domain"));
+		ejs_doauth(tmp_ctx, &auth, username, password, domain, remote_host, "unix");
+	} else {
+		ejs_doauth(tmp_ctx, &auth, username, password, domain, remote_host, "sam");
 	}
 
 	mpr_Return(eid, auth);
 	talloc_free(tmp_ctx);
-	return 0;
-}
-
-static int ejs_domain_list(MprVarHandle eid, int argc, char **argv)
-{
-	struct MprVar list;
-
-	if (argc != 0) {
-		ejsSetErrorMsg(eid, "domList invalid arguments");
-		return -1;
-	}
-
-	list = mprObject("list");
-	mprSetVar(&list, "0", mprString("System User"));
-
-	mpr_Return(eid, list);
-
 	return 0;
 }
 
@@ -139,6 +121,5 @@ static int ejs_domain_list(MprVarHandle eid, int argc, char **argv)
 */
 void smb_setup_ejs_auth(void)
 {
-	ejsDefineStringCFunction(-1, "getDomainList", ejs_domain_list, NULL, MPR_VAR_SCRIPT_HANDLE);
 	ejsDefineCFunction(-1, "userAuth", ejs_userAuth, NULL, MPR_VAR_SCRIPT_HANDLE);
 }
