@@ -48,7 +48,7 @@ void ejs_exception(const char *reason)
 	smbscript_init_subsystems;
 	mprSetCtx(mem_ctx);
 
-	lp_load(dyn_CONFIGFILE);
+	lp_load();
 
 	if (argc < 2) {
 		fprintf(stderr, "You must supply a script name\n");

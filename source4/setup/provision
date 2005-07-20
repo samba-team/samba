@@ -92,6 +92,12 @@ if (options["realm"] == undefined ||
 	ShowHelp();
 }
 
+/* cope with an initially blank smb.conf */
+var lp = loadparm_init();
+lp.set("realm", options.realm);
+lp.set("workgroup", options.domain);
+lp.reload();
+
 var subobj = provision_guess();
 for (r in options) {
 	var key = strupper(join("", split("-", r)));

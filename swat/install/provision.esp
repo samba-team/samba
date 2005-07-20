@@ -8,7 +8,15 @@
 
 <%
 var f = FormObj("Provisioning", 9, 2);
-var i, subobj = provision_guess();
+var i;
+var lp = loadparm_init();
+
+if (lp.get("realm") == "") {
+	lp.set("realm", lp.get("workgroup") + ".example.com");
+}
+
+
+var subobj = provision_guess();
 
 f.element[0].label = "Realm";
 f.element[0].name  = "REALM";
@@ -44,6 +52,9 @@ if (form['submit'] == "Provision") {
 for (i=0;i<f.element.length;i++) {
 	f.element[i].value = subobj[f.element[i].name];
 }
+
+lp.set("realm", subobj.REALM);
+
 if (form['submit'] == "Provision") {
 	provision(subobj, writefln);
 } else {
