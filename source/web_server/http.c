@@ -185,7 +185,7 @@ static int http_mapToStorage(EspHandle handle, char *path, int len, const char *
 /*
   called when esp wants to output something
 */
-static int http_writeBlock(EspHandle handle, char *buf, int size)
+static int http_writeBlock(EspHandle handle, const char *buf, int size)
 {
 	struct websrv_context *web = talloc_get_type(handle, struct websrv_context);
 	NTSTATUS status;
@@ -503,7 +503,9 @@ static void esp_request(struct esp_state *esp, const char *url)
 #endif
 	res = espProcessRequest(esp->req, url, buf, &emsg);
 	if (res != 0 && emsg) {
+		http_writeBlock(web, "<pre>", 5);
 		http_writeBlock(web, emsg, strlen(emsg));
+		http_writeBlock(web, "</pre>", 6);
 	}
 	talloc_free(buf);
 }
