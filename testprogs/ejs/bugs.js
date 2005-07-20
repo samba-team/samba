@@ -128,6 +128,22 @@ function reservedbug()
 }
 
 
+/****************************************
+demo incorrect handling of boolean functions
+status: SUBMITTED
+*****************************************/
+function no()
+{
+	return false;
+}
+
+function boolbug()
+{
+	assert(false == no());
+	assert(!no());
+}
+
+
 /* run the tests */
 arraybug();
 argsbug("one", "two", "three");
@@ -135,4 +151,5 @@ recursebug();
 exprbug();
 fnbug(callback);
 reservedbug();
+boolbug();
 objbug();
