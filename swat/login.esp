@@ -1,6 +1,5 @@
-<% page_header("plain", "SWAT Login", ""); %>
-
-<%
+<% page_header("plain", "SWAT Login", "");
+   libinclude("auth.js");
 
 if (request['SESSION_EXPIRED'] == "True") {
    write("<b>Your session has expired - please authenticate again<br /></b>\n");
