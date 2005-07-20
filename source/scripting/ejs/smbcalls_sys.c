@@ -189,6 +189,75 @@ static int ejs_sys_file_save(MprVarHandle eid, int argc, char **argv)
 
 
 /*
+  return fields of a stat() call
+*/
+static struct MprVar mpr_stat(struct stat *st)
+{
+	struct MprVar ret;
+	ret = mprObject("stat");
+
+#define ST_EL(n) mprSetVar(&ret, #n, mprCreateNumberVar(st->n))
+	ST_EL(st_dev);
+	ST_EL(st_ino);
+	ST_EL(st_mode);
+	ST_EL(st_nlink);
+	ST_EL(st_uid);
+	ST_EL(st_gid);
+	ST_EL(st_rdev);
+	ST_EL(st_size);
+	ST_EL(st_blksize);
+	ST_EL(st_blocks);
+	ST_EL(st_atime);
+	ST_EL(st_mtime);
+	ST_EL(st_ctime);
+
+	return ret;
+}
+
+/*
+  usage:
+      var st = sys.stat(filename);
+  returns an object containing struct stat elements
+*/
+static int ejs_sys_stat(MprVarHandle eid, int argc, char **argv)
+{
+	struct stat st;
+	/* validate arguments */
+	if (argc != 1) {
+		ejsSetErrorMsg(eid, "sys.stat invalid arguments");
+		return -1;
+	}
+	if (stat(argv[0], &st) != 0) {
+		mpr_Return(eid, mprCreateUndefinedVar());
+	} else {
+		mpr_Return(eid, mpr_stat(&st));
+	}
+	return 0;
+}
+
+/*
+  usage:
+      var st = sys.lstat(filename);
+  returns an object containing struct stat elements
+*/
+static int ejs_sys_lstat(MprVarHandle eid, int argc, char **argv)
+{
+	struct stat st;
+	/* validate arguments */
+	if (argc != 1) {
+		ejsSetErrorMsg(eid, "sys.stat invalid arguments");
+		return -1;
+	}
+	if (lstat(argv[0], &st) != 0) {
+		mpr_Return(eid, mprCreateUndefinedVar());
+	} else {
+		mpr_Return(eid, mpr_stat(&st));
+	}
+	return 0;
+}
+
+
+/*
   initialise sys ejs subsystem
 */
 static int ejs_sys_init(MprVarHandle eid, int argc, struct MprVar **argv)
@@ -204,6 +273,8 @@ static int ejs_sys_init(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetStringCFunction(obj, "unlink", ejs_sys_unlink);
 	mprSetStringCFunction(obj, "file_load", ejs_sys_file_load);
 	mprSetStringCFunction(obj, "file_save", ejs_sys_file_save);
+	mprSetStringCFunction(obj, "stat", ejs_sys_stat);
+	mprSetStringCFunction(obj, "lstat", ejs_sys_lstat);
 
 	return 0;
 }
