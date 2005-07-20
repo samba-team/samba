@@ -66,27 +66,16 @@ The "provision" step sets up a basic user database.
   $ cd source
   $ ./setup/provision --realm=YOUR.REALM --domain=YOURDOM --adminpass=SOMEPASSWORD
 
-This will create a number of new 'ldb' database files in a directory
-newdb.XXX. You need to move these to the "private" subdirectory of
-your install. For example:
-
-  # mv newdb.123/*.ldb /usr/local/samba/private/
-
-
 Step 5: Create a simple smb.conf
 --------------------------------
 
-You need to create a smb.conf file in the lib/ directory of your
-install. The default is /usr/local/samba/lib/smb.conf. A minimal
-smb.conf would be:
-
-  workgroup = YOURDOM
+The provisioning will create a very simple smb.conf with no shares by
+default. You will need to update it to add at least one share. For
+example:
 
   [test]
 	path = /data/test
 	read only = no
-
-The workgroup must exactly match the --domain argument you gave to provision.pl
 
 
 Step 6: starting Samba4
@@ -95,11 +84,11 @@ Step 6: starting Samba4
 The simplest is to just run "smbd", but as a developer you may find
 the following more useful:
 
-   # smbd -i -M single -d3
+   # smbd -i -M single
 
 that means "start smbd without messages in stdout, and running a
-single process, with level 3 debugging". That mode of operation makes
-debugging smbd with gdb particularly easy.
+single process. That mode of operation makes debugging smbd with gdb
+particularly easy.
 
 Note that now it is no longer necessary to have an instance of nmbd
 from Samba 3 running.  If you are running any smbd or nmbd processes
