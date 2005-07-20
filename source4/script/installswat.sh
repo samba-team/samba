@@ -20,12 +20,8 @@ installdir() {
     done
 }
 
-installdir *.esp
-installdir esptest/*.esp esptest/*.js
-installdir images/*.png images/*.ico images/*.gif
-installdir scripting/*.ejs scripting/*.esp scripting/*.js
-installdir style/*.css
-installdir docs/*.js
+installdir *.esp *.js */*.js */*.ejs */*.esp
+installdir */*.png */*.ico */*.gif */*.css
 
 cat << EOF
 ======================================================================
