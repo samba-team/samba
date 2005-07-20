@@ -247,7 +247,7 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 {
 	NTSTATUS status = NT_STATUS_ACCESS_DENIED;
 	struct smbsrv_session *smb_sess;
-	struct gensec_security *gensec_ctx ;
+	struct gensec_security *gensec_ctx;
 	struct auth_session_info *session_info = NULL;
 	uint16_t vuid;
 
@@ -270,7 +270,7 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 		gensec_ctx = smb_sess->gensec_ctx;
 		status = gensec_update(gensec_ctx, req, sess->spnego.in.secblob, &sess->spnego.out.secblob);
 	} else {
-		status = gensec_server_start(req->smb_conn, &gensec_ctx,
+		status = gensec_server_start(req, &gensec_ctx,
 					     req->smb_conn->connection->event.ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
@@ -327,6 +327,7 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 			return NT_STATUS_ACCESS_DENIED;
 		}
 		req->session = smb_sess;
+		talloc_steal(smb_sess, gensec_ctx);
 	} else {
 		smb_sess->session_info = talloc_reference(smb_sess, session_info);
 	}
