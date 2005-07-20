@@ -267,7 +267,7 @@ WERROR get_remote_printer_publishing_data(struct cli_state *cli,
 	char *printername, *servername;
 	REGVAL_CTR dsdriver_ctr, dsspooler_ctr;
 	BOOL got_dsdriver = False, got_dsspooler = False;
-	uint32 needed, i;
+	uint32 i;
 	POLICY_HND pol;
 
 	asprintf(&servername, "\\\\%s", cli->desthost);
@@ -286,14 +286,7 @@ WERROR get_remote_printer_publishing_data(struct cli_state *cli,
 		return result;
 	}
 	
-	result = cli_spoolss_enumprinterdataex(cli, mem_ctx, 0, &needed, 
-					       &pol, SPOOL_DSDRIVER_KEY, NULL);
-
-	if (W_ERROR_V(result) == ERRmoredata)
-		result = cli_spoolss_enumprinterdataex(cli, mem_ctx, needed, 
-						       NULL, &pol, 
-						       SPOOL_DSDRIVER_KEY,
-						       &dsdriver_ctr);
+	result = cli_spoolss_enumprinterdataex(cli, mem_ctx, &pol, SPOOL_DSDRIVER_KEY, NULL);
 
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(3, ("Unable to do enumdataex on %s, error is %s.\n",
@@ -307,15 +300,7 @@ WERROR get_remote_printer_publishing_data(struct cli_state *cli,
 					  dsdriver_ctr.values[i]);
 	}
 	
-	result = cli_spoolss_enumprinterdataex(cli, mem_ctx, 0, &needed, 
-					       &pol, SPOOL_DSSPOOLER_KEY, 
-					       NULL);
-
-	if (W_ERROR_V(result) == ERRmoredata)
-		result = cli_spoolss_enumprinterdataex(cli, mem_ctx, needed, 
-						       NULL, &pol, 
-						       SPOOL_DSSPOOLER_KEY,
-						       &dsspooler_ctr);
+	result = cli_spoolss_enumprinterdataex(cli, mem_ctx, &pol, SPOOL_DSSPOOLER_KEY, NULL);
 
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(3, ("Unable to do enumdataex on %s, error is %s.\n",

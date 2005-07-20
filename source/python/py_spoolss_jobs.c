@@ -28,7 +28,7 @@ PyObject *spoolss_hnd_enumjobs(PyObject *self, PyObject *args, PyObject *kw)
 	WERROR werror;
 	PyObject *result;
 	int level = 1;
-	uint32 i, needed, num_jobs;
+	uint32 i, num_jobs;
 	static char *kwlist[] = {"level", NULL};
 	JOB_INFO_CTR ctr;
 
@@ -40,13 +40,8 @@ PyObject *spoolss_hnd_enumjobs(PyObject *self, PyObject *args, PyObject *kw)
 	/* Call rpc function */
 	
 	werror = cli_spoolss_enumjobs(
-		hnd->cli, hnd->mem_ctx, 0, &needed, &hnd->pol, level, 0,
+		hnd->cli, hnd->mem_ctx, &hnd->pol, level, 0,
 		1000, &num_jobs, &ctr);
-
-	if (W_ERROR_V(werror) == ERRinsufficientbuffer)
-		werror = cli_spoolss_enumjobs(
-			hnd->cli, hnd->mem_ctx, needed, NULL, &hnd->pol,
-			level, 0, 1000, &num_jobs, &ctr);
 
 	/* Return value */
 	
@@ -123,7 +118,7 @@ PyObject *spoolss_hnd_getjob(PyObject *self, PyObject *args, PyObject *kw)
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
 	PyObject *result;
-	uint32 level = 1, jobid, needed;
+	uint32 level = 1, jobid;
 	static char *kwlist[] = {"jobid", "level", NULL};
 	JOB_INFO_CTR ctr;
 
@@ -135,13 +130,8 @@ PyObject *spoolss_hnd_getjob(PyObject *self, PyObject *args, PyObject *kw)
 	
 	/* Call rpc function */
 	
-	werror = cli_spoolss_getjob(hnd->cli, hnd->mem_ctx, 0, &needed,
+	werror = cli_spoolss_getjob(hnd->cli, hnd->mem_ctx, 
 				    &hnd->pol, jobid, level, &ctr);
-
-	if (W_ERROR_V(werror) == ERRinsufficientbuffer)
-		werror = cli_spoolss_getjob(
-			hnd->cli, hnd->mem_ctx, needed, NULL, &hnd->pol,
-			jobid, level, &ctr);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
