@@ -2059,12 +2059,11 @@ static int evalFunction(Ejs *ep, MprVar *obj, int flags)
 		formalArgs = prototype->function.args;
 		argNames = (char**) formalArgs->handles;
 
-#if FUTURE
-		if (formalArgs->used != actualArgs->used) {
-			ejsError(ep, "Bad number of args. Should be %d", formalArgs->used);
+		if (formalArgs->used > actualArgs->used) {
+			ejsError(ep, "Bad number of args. Should be %d", 
+					 formalArgs->used);
 			return -1;
 		}
-#endif
 
 		/*
 		 *	Create the arguments and callee variables
