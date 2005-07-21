@@ -105,8 +105,8 @@ static void useradd_handler(struct rpc_request *req)
  */
 
 struct composite_context *libnet_rpc_useradd_send(struct dcerpc_pipe *p,
-						     struct libnet_rpc_useradd *io,
-						     void (*monitor)(struct monitor_msg*))
+						  struct libnet_rpc_useradd *io,
+						  void (*monitor)(struct monitor_msg*))
 {
 	struct composite_context *c;
 	struct useradd_state *s;
@@ -328,7 +328,7 @@ static void userdel_handler(struct rpc_request *req)
  */
 
 struct composite_context *libnet_rpc_userdel_send(struct dcerpc_pipe *p,
-						     struct libnet_rpc_userdel *io)
+						  struct libnet_rpc_userdel *io)
 {
 	struct composite_context *c;
 	struct userdel_state *s;
@@ -378,7 +378,7 @@ failure:
  */
 
 NTSTATUS libnet_rpc_userdel_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
-				    struct libnet_rpc_userdel *io)
+				 struct libnet_rpc_userdel *io)
 {
 	NTSTATUS status;
 	struct userdel_state *s;
@@ -405,9 +405,182 @@ NTSTATUS libnet_rpc_userdel_recv(struct composite_context *c, TALLOC_CTX *mem_ct
  */
 
 NTSTATUS libnet_rpc_userdel(struct dcerpc_pipe *pipe,
-			       TALLOC_CTX *mem_ctx,
-			       struct libnet_rpc_userdel *io)
+			    TALLOC_CTX *mem_ctx,
+			    struct libnet_rpc_userdel *io)
 {
 	struct composite_context *c = libnet_rpc_userdel_send(pipe, io);
 	return libnet_rpc_userdel_recv(c, mem_ctx, io);
+}
+
+
+static void usermod_handler(struct rpc_request*);
+
+enum usermod_stage { USERMOD_LOOKUP, USERMOD_OPEN, USERMOD_MODIFY };
+
+struct usermod_state {
+	enum usermod_stage        stage;
+	struct dcerpc_pipe        *pipe;
+	struct rpc_request        *req;
+	struct policy_handle      domain_handle;
+	struct policy_handle      user_handle;
+	union  samr_UserInfo      info;
+	struct samr_LookupNames   lookupname;
+	struct samr_OpenUser      openuser;
+	struct samr_SetUserInfo   setuser;
+};
+
+
+static NTSTATUS usermod_lookup(struct composite_context *c,
+			       struct usermod_state *s)
+{
+	NTSTATUS status;
+
+	c->status = dcerpc_ndr_request_recv(s->req);
+	NT_STATUS_NOT_OK_RETURN(c->status);
+
+	if (!s->lookupname.out.rids.count) {
+		/* TODO: no such user */
+		status = NT_STATUS_NO_SUCH_USER;
+
+	} else if (!s->lookupname.out.rids.count > 1) {
+		/* TODO: ambiguous username */
+		status = NT_STATUS_INVALID_ACCOUNT_NAME;
+	}
+
+	s->openuser.in.domain_handle = &s->domain_handle;
+	s->openuser.in.rid           = s->lookupname.out.rids.ids[0];
+	s->openuser.in.access_mask   = SEC_FLAG_MAXIMUM_ALLOWED;
+	s->openuser.out.user_handle  = &s->user_handle;
+
+	s->req = dcerpc_samr_OpenUser_send(s->pipe, c, &s->openuser);
+
+	s->req->async.callback = usermod_handler;
+	s->req->async.private  = c;
+	s->stage = USERMOD_OPEN;
+	
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS usermod_open(struct composite_context *c,
+			     struct usermod_state *s)
+{
+	union samr_UserInfo *i = &s->info;
+
+	c->status = dcerpc_ndr_request_recv(s->req);
+	NT_STATUS_NOT_OK_RETURN(c->status);
+
+	s->setuser.in.user_handle  = &s->user_handle;
+
+	/* TODO: decide about the level of UserInfo */
+	s->setuser.in.level        = 1;
+	s->setuser.in.info         = i;
+
+	s->req = dcerpc_samr_SetUserInfo_send(s->pipe, c, &s->setuser);
+
+	s->req->async.callback = usermod_handler;
+	s->req->async.private  = c;
+	s->stage = USERMOD_MODIFY;
+
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS usermod_modify(struct composite_context *c,
+			       struct usermod_state *s)
+{
+	c->status = dcerpc_ndr_request_recv(s->req);
+	NT_STATUS_NOT_OK_RETURN(c->status);
+
+	c->state = SMBCLI_REQUEST_DONE;
+
+	return NT_STATUS_OK;
+}
+
+
+static void usermod_handler(struct rpc_request *req)
+{
+	struct composite_context *c = req->async.private;
+	struct usermod_state *s = talloc_get_type(c->private, struct usermod_state);
+
+	switch (s->stage) {
+	case USERMOD_LOOKUP:
+		c->status = usermod_lookup(c, s);
+		break;
+	case USERMOD_OPEN:
+		c->status = usermod_open(c, s);
+		break;
+	case USERMOD_MODIFY:
+		c->status = usermod_modify(c, s);
+		break;
+	}
+
+	if (!NT_STATUS_IS_OK(c->status)) {
+		c->state = SMBCLI_REQUEST_ERROR;
+	}
+
+	if (c->state >= SMBCLI_REQUEST_DONE &&
+	    c->async.fn) {
+		c->async.fn(c);
+	}
+}
+
+
+struct composite_context *libnet_rpc_usermod_send(struct dcerpc_pipe *p,
+						  struct libnet_rpc_usermod *io)
+{
+	struct composite_context *c;
+	struct usermod_state *s;
+	
+	c = talloc_zero(p, struct composite_context);
+	if (c == NULL) goto failure;
+
+	s = talloc_zero(c, struct usermod_state);
+	if (s == NULL) goto failure;
+
+	c->state      = SMBCLI_REQUEST_SEND;
+	c->private    = s;
+	c->event_ctx  = dcerpc_event_context(p);
+
+	s->pipe          = p;
+	s->domain_handle = io->in.domain_handle;
+	
+	s->lookupname.in.domain_handle = &io->in.domain_handle;
+	s->lookupname.in.num_names     = 1;
+	s->lookupname.in.names         = talloc_zero(s, struct lsa_String);
+	s->lookupname.in.names->string = io->in.username;
+	
+	s->req = dcerpc_samr_LookupNames_send(p, c, &s->lookupname);
+	
+	s->req->async.callback = usermod_handler;
+	s->req->async.private  = c;
+	s->stage = USERMOD_LOOKUP;
+
+	return c;
+
+failure:
+	talloc_free(c);
+	return NULL;
+}
+
+
+NTSTATUS libnet_rpc_usermod_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
+				 struct libnet_rpc_usermod *io)
+{
+	NTSTATUS status;
+	struct usermod_state *s;
+	
+	status = composite_wait(c);
+
+	talloc_free(c);
+	return status;
+}
+
+
+NTSTATUS libnet_rpc_usermod(struct dcerpc_pipe *pipe,
+			    TALLOC_CTX *mem_ctx,
+			    struct libnet_rpc_usermod *io)
+{
+	struct composite_context *c = libnet_rpc_usermod_send(pipe, io);
+	return libnet_rpc_usermod_recv(c, mem_ctx, io);
 }

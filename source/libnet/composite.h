@@ -59,6 +59,21 @@ struct libnet_rpc_userdel {
 };
 
 
+struct libnet_rpc_usermod {
+	struct {
+		struct policy_handle domain_handle;
+		const char *username;
+
+		struct usermod {
+			uint32_t fields;    /* bitmask field */
+
+			const char *account_name;
+			const char *full_name;
+		} change;
+	} in;
+};
+
+
 struct libnet_rpc_domain_open {
 	struct {
 		const char *domain_name;

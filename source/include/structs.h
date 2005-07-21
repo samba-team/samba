@@ -220,6 +220,7 @@ struct smb_composite_fsinfo;
 struct libnet_rpc_userinfo;
 struct libnet_rpc_useradd;
 struct libnet_rpc_userdel;
+struct libnet_rpc_usermod;
 struct libnet_rpc_domain_open;
 
 struct nbt_name;
