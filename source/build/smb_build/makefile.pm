@@ -252,16 +252,12 @@ __EOD__
 sub array2oneperline($)
 {
 	my $array = shift;
-	my $i;
 	my $output = "";
 
-	foreach my $str (@{$array}) {
-		if (!defined($str)) {
-			next;
-		}
+	foreach (@$array) {
+		next unless defined($_);
 
-		$output .= " \\\n\t\t";
-		$output .= $str;
+		$output .= " \\\n\t\t$_";
 	}
 
 	return $output;
@@ -273,13 +269,10 @@ sub array2oneline($)
 	my $i;
 	my $output = "";
 
-	foreach my $str (@{$array}) {
-		if (!defined($str)) {
-			next;
-		}
+	foreach (@{$array}) {
+		next unless defined($_);
 
-		$output .= $str;
-		$output .= " ";
+		$output .= "$_ ";
 	}
 
 	return $output;
@@ -298,8 +291,7 @@ sub array2oneline($)
 # $output -		the resulting output buffer
 sub _prepare_obj_list($$)
 {
-	my $var = shift;
-	my $ctx = shift;
+	my ($var,$ctx) = @_;
 
 	my $tmplist = array2oneperline($ctx->{OBJ_LIST});
 
@@ -312,8 +304,7 @@ __EOD__
 
 sub _prepare_cflags($$)
 {
-	my $var = shift;
-	my $ctx = shift;
+	my ($var,$ctx) = @_;
 
 	my $tmplist = array2oneperline($ctx->{CFLAGS});
 
@@ -354,7 +345,6 @@ sub _prepare_shared_library_rule($)
 	my $output;
 
 	$tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
-
 	$tmpshlink = array2oneperline($ctx->{LINK_LIST});
 	$tmpshflag = array2oneperline($ctx->{LINK_FLAGS});
 
@@ -401,14 +391,10 @@ sub _prepare_objlist_rule($)
 	my $tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
 	my $output;
 
-	if (! $ctx->{TARGET}) {
-		return "";
-	}
+	return "" unless $ctx->{TARGET};
 
 	$output = "$ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST = $tmpdepend\n";
-
 	$output .= "$ctx->{TARGET}: ";
-
 	$output .= "\$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJS)\n";
 	$output .= "\t\@touch $ctx->{TARGET}\n";
 
@@ -444,7 +430,6 @@ sub _prepare_static_library_rule($)
 	my $output;
 
 	$tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
-
 	$tmpstlink = array2oneperline($ctx->{LINK_LIST});
 	$tmpstflag = array2oneperline($ctx->{LINK_FLAGS});
 
@@ -524,8 +509,9 @@ bin/.TARGET_$ctx->{NAME}:
 ";
 }
 
-sub _prepare_proto_rules()
+sub _prepare_proto_rules($)
 {
+	my $settings = shift;
 	my $output = "";
 
 	$output .= << '__EOD__';
@@ -775,13 +761,14 @@ __EOD__
 	return $output;
 }
 
-sub _prepare_rule_lists($)
+sub _prepare_rule_lists($$)
 {
 	my $depend = shift;
+	my $settings = shift;
 	my $output = "";
 
 	foreach my $key (values %{$depend}) {
-		next if not defined $key->{OUTPUT_TYPE};
+		next unless defined $key->{OUTPUT_TYPE};
 
 		($output .= _prepare_objlist_rule($key)) if $key->{OUTPUT_TYPE} eq "OBJLIST";
 		($output .= _prepare_static_library_rule($key)) if $key->{OUTPUT_TYPE} eq "STATIC_LIBRARY";
@@ -792,9 +779,7 @@ sub _prepare_rule_lists($)
 
 	my $idl_ctx;
 	$output .= _prepare_IDL($idl_ctx);
-
-	$output .= _prepare_proto_rules();
-
+	$output .= _prepare_proto_rules($settings);
 	$output .= _prepare_install_rules($depend);
 
 	return $output;
@@ -810,8 +795,7 @@ sub _prepare_rule_lists($)
 # $output -		the resulting output buffer
 sub _prepare_makefile_in($$)
 {
-	my $CTX = shift;
-	my $settings = shift;
+	my ($CTX, $settings) = @_;
 	my $output;
 
 	$output  = "########################################\n";
@@ -835,7 +819,6 @@ sub _prepare_makefile_in($$)
 	$output .= _prepare_SUFFIXES($suffix_ctx);
 
 	$output .= _prepare_dummy_MAKEDIR();
-
 	$output .= _prepare_std_CC_rule("c","o",'@PICFLAG@',"Compiling","Rule for std objectfiles");
 	$output .= _prepare_std_CC_rule("h","h.gch",'@PICFLAG@',"Precompiling","Rule for precompiled headerfiles");
 
@@ -843,12 +826,9 @@ sub _prepare_makefile_in($$)
 	$output .= _prepare_man_rule("3");
 	$output .= _prepare_man_rule("5");
 	$output .= _prepare_man_rule("7");
-
 	$output .= _prepare_manpages($CTX);
-
 	$output .= _prepare_target_settings($CTX);
-
-	$output .= _prepare_rule_lists($CTX);
+	$output .= _prepare_rule_lists($CTX, $settings);
 
 	my @all = ();
 	
@@ -872,9 +852,7 @@ sub _prepare_makefile_in($$)
 # $output -		the resulting output buffer
 sub create_makefile_in($$$)
 {
-	my $CTX = shift;
-	my $settings = shift;
-	my $file = shift;
+	my ($CTX, $settings,$file) = @_;
 
 	open(MAKEFILE_IN,">$file") || die ("Can't open $file\n");
 	print MAKEFILE_IN _prepare_makefile_in($CTX, $settings);

@@ -15,40 +15,26 @@ my $srcdir = ".";
 
 sub strtrim($)
 {
-	my $str = shift;
-	my @ar = ();
-
-	$str =~ s/^[\t\n ]*//g;
-
-	$str =~ s/[\t\n ]*$//g;
-
-	return $str;
+	$_ = shift;
+	s/^[\t\n ]*//g;
+	s/[\t\n ]*$//g;
+	return $_;
 }
 
 sub str2array($)
 {
-	my $str = shift;
-	my @ar = ();
+	$_ = shift;
+	s/^[\t\n ]*//g;
+	s/[\t\n ]*$//g;
+	s/([\t\n ]+)/ /g;
 
-	$str =~ s/^[\t\n ]*//g;
-
-	$str =~ s/[\t\n ]*$//g;
-
-	$str =~ s/([\t\n ]+)/ /g;
-
-	if (length($str)==0) {
-		return ();
-	}
-
-	@ar = split(/[ \t\n]/,$str);
-
-	return @ar;
+	return () if (length($_)==0);
+	return split /[ \t\n]/;
 }
 
 sub check_subsystem($$)
 {
-	my $INPUT = shift;
-	my $subsys = shift;
+	my ($INPUT, $subsys) = @_;
 	if ($subsys->{ENABLE} ne "YES") {
 		printf("Subsystem: %s disabled!\n",$subsys->{NAME});
 		return;
@@ -61,8 +47,7 @@ sub check_subsystem($$)
 
 sub check_module($$)
 {
-	my $INPUT = shift;
-	my $mod = shift;
+	my ($INPUT, $mod) = @_;
 
 	die("Module $mod->{NAME} does not have a SUBSYSTEM set") if not defined($mod->{SUBSYSTEM});
 
@@ -105,8 +90,7 @@ sub check_module($$)
 
 sub check_library($$)
 {
-	my $INPUT = shift;
-	my $lib = shift;
+	my ($INPUT, $lib) = @_;
 
 	if ($lib->{ENABLE} ne "YES") {
 		printf("Library: %s...disabled\n",$lib->{NAME});
@@ -118,8 +102,7 @@ sub check_library($$)
 
 sub check_target($$)
 {
-	my $INPUT = shift;
-	my $bin = shift;
+	my ($INPUT, $bin) = @_;
 
 	if (!defined($bin->{CMD})) {
 		print "CMD not defined for target!\n";
@@ -130,8 +113,7 @@ sub check_target($$)
 
 sub check_binary($$)
 {
-	my $INPUT = shift;
-	my $bin = shift;
+	my ($INPUT, $bin) = @_;
 
 	if ($bin->{ENABLE} ne "YES") {
 		printf("Binary: %s...disabled\n",$bin->{NAME});
@@ -143,10 +125,10 @@ sub check_binary($$)
 	$bin->{OUTPUT_TYPE} = "BINARY";
 }
 
-sub calc_unique_deps
+sub calc_unique_deps($$)
 {
-	my $deps = shift;
-	my $udeps = shift;
+	sub calc_unique_deps($$);
+	my ($deps, $udeps) = @_;
 
 	foreach my $dep (@{$deps}) {
 		if (not defined($udeps->{$$dep->{NAME}})) {
@@ -156,8 +138,6 @@ sub calc_unique_deps
 		}
 	}
 }
-
-
 
 ###########################################################
 # This function checks the input from the configure script 
