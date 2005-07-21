@@ -604,8 +604,6 @@ test_choice (void)
     return ret;
 }
 
-#ifdef IMPLICIT_TAGGING_WORKS
-
 static int
 cmp_TESTImplicit (void *a, void *b)
 {
@@ -614,7 +612,7 @@ cmp_TESTImplicit (void *a, void *b)
 
     COMPARE_INTEGER(aa,ab,ti1);
     COMPARE_INTEGER(aa,ab,ti2.foo);
-
+    COMPARE_INTEGER(aa,ab,ti3);
     return 0;
 }
 
@@ -641,19 +639,29 @@ test_implicit (void)
     TESTImplicit c0;
 
     memset(&c0, 0, sizeof(c0));
-    c0.ti1 = 1;
+    c0.ti1 = 0;
     c0.ti2.foo = 2;
     c0.ti3 = 3;
     tests[0].val = &c0;
 
-    return generic_test (tests, ntests, sizeof(TESTImplicit),
+    ret += generic_test (tests, ntests, sizeof(TESTImplicit),
 			 (generic_encode)encode_TESTImplicit,
 			 (generic_length)length_TESTImplicit,
 			 (generic_decode)decode_TESTImplicit,
 			 (generic_free)free_TESTImplicit,
 			 cmp_TESTImplicit);
-}
+
+#ifdef IMPLICIT_TAGGING_WORKS
+    ret += generic_test (tests, ntests, sizeof(TESTImplicit2),
+			 (generic_encode)encode_TESTImplicit2,
+			 (generic_length)length_TESTImplicit2,
+			 (generic_decode)decode_TESTImplicit2,
+			 (generic_free)free_TESTImplicit2,
+			 cmp_TESTImplicit);
+
 #endif /* IMPLICIT_TAGGING_WORKS */
+    return ret;
+}
 
 static int
 check_fail_largetag(void)
