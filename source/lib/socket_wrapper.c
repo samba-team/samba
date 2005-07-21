@@ -56,6 +56,13 @@
 #undef malloc
 #undef calloc
 #undef strdup
+/* we need to use a very terse format here as IRIX 6.4 silently
+   truncates names to 16 chars, so if we use a longer name then we
+   can't tell which port a packet came from with recvfrom() 
+   
+   with this format we have 8 chars left for the directory name
+*/
+#define SOCKET_FORMAT "%u_%u"
 
 static struct sockaddr *sockaddr_dup(const void *data, socklen_t len)
 {
@@ -102,7 +109,7 @@ static int convert_un_in(const struct sockaddr_un *un, struct sockaddr_in *in, s
 	p = strrchr(un->sun_path, '/');
 	if (p) p++; else p = un->sun_path;
 
-	if (sscanf(p, "sock_ip_%d_%u", &type, &prt) == 2) {
+	if (sscanf(p, SOCKET_FORMAT, &type, &prt) == 2) {
 		in->sin_port = htons(prt);
 	}
 	in->sin_addr.s_addr = htonl(INADDR_LOOPBACK);
@@ -119,12 +126,12 @@ static int convert_in_un(struct socket_info *si, const struct sockaddr_in *in, s
 		/* handle auto-allocation of ephemeral ports */
 		prt = 5000;
 		do {
-			snprintf(un->sun_path, sizeof(un->sun_path), "%s/sock_ip_%d_%u", 
+			snprintf(un->sun_path, sizeof(un->sun_path), "%s/"SOCKET_FORMAT, 
 				 getenv("SOCKET_WRAPPER_DIR"), type, ++prt);
 		} while (stat(un->sun_path, &st) == 0 && prt < 10000);
 		((struct sockaddr_in *)si->myname)->sin_port = htons(prt);
 	} 
-	snprintf(un->sun_path, sizeof(un->sun_path), "%s/sock_ip_%d_%u", 
+	snprintf(un->sun_path, sizeof(un->sun_path), "%s/"SOCKET_FORMAT, 
 		 getenv("SOCKET_WRAPPER_DIR"), type, prt);
 	return 0;
 }
@@ -230,6 +237,8 @@ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 		return real_accept(s, addr, addrlen);
 	}
 
+	memset(&un_addr, 0, sizeof(un_addr));
+
 	ret = real_accept(s, (struct sockaddr *)&un_addr, &un_addrlen);
 	if (ret == -1) return ret;
 
@@ -270,7 +279,7 @@ static int swrap_auto_bind(struct socket_info *si)
 	
 	for (i=0;i<1000;i++) {
 		snprintf(un_addr.sun_path, sizeof(un_addr.sun_path), 
-			 "%s/sock_ip_%u_%u", getenv("SOCKET_WRAPPER_DIR"), 
+			 "%s/"SOCKET_FORMAT, getenv("SOCKET_WRAPPER_DIR"), 
 			 SOCK_DGRAM, i + 10000);
 		if (bind(si->fd, (struct sockaddr *)&un_addr, 
 			 sizeof(un_addr)) == 0) {
@@ -458,6 +467,8 @@ ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr 
 		return real_recvfrom(s, buf, len, flags, from, fromlen);
 	}
 
+	/* irix 6.4 forgets to null terminate the sun_path string :-( */
+	memset(&un_addr, 0, sizeof(un_addr));
 	ret = real_recvfrom(s, buf, len, flags, (struct sockaddr *)&un_addr, &un_addrlen);
 	if (ret == -1) 
 		return ret;
