@@ -870,20 +870,22 @@ void http_process_input(struct websrv_context *web)
 	mprSetCtx(edata->application_data);
 	mprCopyVar(edata->application_data, &esp->variables[ESP_APPLICATION_OBJ], 
 		   MPR_DEEP_COPY);
+	mprSetCtx(esp);
 
 	/* copy any session data */
 	if (web->session) {
 		talloc_free(web->session->data);
 		web->session->data = talloc_zero(web->session, struct MprVar);
-		mprSetCtx(web->session->data);
 		if (esp->variables[ESP_SESSION_OBJ].properties == NULL ||
 		    esp->variables[ESP_SESSION_OBJ].properties[0].numItems == 0) {
 			talloc_free(web->session);
 			web->session = NULL;
 		} else {
+			mprSetCtx(web->session->data);
 			mprCopyVar(web->session->data, &esp->variables[ESP_SESSION_OBJ], 
 				   MPR_DEEP_COPY);
 			/* setup the timeout for the session data */
+			mprSetCtx(esp);
 			talloc_free(web->session->te);
 			web->session->te = event_add_timed(web->conn->event.ctx, web->session, 
 							   timeval_current_ofs(web->session->lifetime, 0), 
@@ -895,6 +897,7 @@ void http_process_input(struct websrv_context *web)
 	return;
 	
 internal_error:
+	mprSetCtx(esp);
 	talloc_free(esp);
 	http_error(web, 500, "Internal server error");
 }
