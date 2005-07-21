@@ -243,29 +243,29 @@ static char *samldb_generate_samAccountName(const void *mem_ctx) {
 	return name;
 }
 
-static BOOL samldb_get_rdn_and_basedn(const void *mem_ctx, const char *dn, char **rdn, char **basedn)
+static BOOL samldb_get_rdn_and_basedn(void *mem_ctx, const char *dn, struct ldb_dn_component **rdn, char **base_dn)
 {
-	char *p;
+	struct ldb_dn *dn_exploded = ldb_dn_explode(mem_ctx, dn);
+	struct ldb_dn base_dn_exploded;
 
-	p = strchr(dn, ',');
-	if ( ! p ) {
+	if (!dn_exploded) {
 		return False;
 	}
-
-	*rdn = talloc_strndup(mem_ctx, dn, p - dn);
-
-	if ( ! *rdn) {
+	
+	if (dn_exploded->comp_num < 1) {
 		return False;
 	}
-
-	*basedn = talloc_strdup(mem_ctx, p + 1);
-
-	if ( ! *basedn) {
-		talloc_free(*rdn);
-		*rdn = NULL;
-		return False;
+	
+	if (dn_exploded->comp_num < 2) {
+		*base_dn = NULL;
+	} else {
+		base_dn_exploded.comp_num = dn_exploded->comp_num - 1;
+		base_dn_exploded.components = &dn_exploded->components[1];
+		
+		*base_dn = ldb_dn_linearize(mem_ctx, &base_dn_exploded);
 	}
 
+	*rdn = &dn_exploded->components[0];
 	return True;
 }
 
@@ -380,7 +380,8 @@ static struct ldb_message *samldb_fill_group_object(struct ldb_module *module, c
 {
 	struct ldb_message *msg2;
 	struct ldb_message_element *attribute;
-	char *rdn, *basedn;
+	struct ldb_dn_component *rdn;
+	char *basedn;
 
 	if (samldb_find_attribute(msg, "objectclass", "group") == NULL) {
 		return NULL;
@@ -404,28 +405,29 @@ static struct ldb_message *samldb_fill_group_object(struct ldb_module *module, c
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_group_object: Bad DN (%s)!\n", msg2->dn);
 		return NULL;
 	}
-	if (strncasecmp(rdn, "cn", 2) != 0) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_group_object: Bad RDN (%s) for group!\n", rdn);
+	if (strcasecmp(rdn->name, "cn") != 0) {
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_group_object: Bad RDN (%s) for group!\n", rdn->name);
 		return NULL;
 	}
 
 	if ((attribute = samldb_find_attribute(msg2, "cn", NULL)) != NULL) {
-		if (strcasecmp(&rdn[3], attribute->values[0].data) != 0) {
+		if (strcasecmp(rdn->value.data, attribute->values[0].data) != 0) {
 			ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_group_object: Bad Attribute Syntax for CN\n");
 			return NULL;
 		}
 	} else { /* FIXME: remove this if ldb supports natively aliasing between the rdn and the "cn" attribute */
-		if ( ! samldb_msg_add_string(module, msg2, "cn", &rdn[3])) {
+		if ( ! ldb_msg_add_value(module->ldb, msg2, "cn", &rdn->value)) {
 			return NULL;
 		}
 	}
 
 	if ((attribute = samldb_find_attribute(msg2, "name", NULL)) != NULL) {
-		if (strcasecmp(&rdn[3], attribute->values[0].data) != 0) {
+		if (strcasecmp(rdn->value.data, attribute->values[0].data) != 0) {
+
 			return NULL;
 		}
 	} else { /* FIXME: remove this if ldb supports natively aliasing between the rdn and the "name" attribute */
-		if ( ! samldb_msg_add_string(module, msg2, "name", &rdn[3])) {
+		if ( !ldb_msg_add_value(module->ldb, msg2, "name", &rdn->value)) {
 			return NULL;
 		}
 	}
@@ -457,7 +459,8 @@ static struct ldb_message *samldb_fill_user_or_computer_object(struct ldb_module
 {
 	struct ldb_message *msg2;
 	struct ldb_message_element *attribute;
-	char *rdn, *basedn;
+	struct ldb_dn_component *rdn;
+	char *basedn;
 
 	if ((samldb_find_attribute(msg, "objectclass", "user") == NULL) && 
 	    (samldb_find_attribute(msg, "objectclass", "computer") == NULL)) {
@@ -473,7 +476,7 @@ static struct ldb_message *samldb_fill_user_or_computer_object(struct ldb_module
 		return NULL;
 	}
 
-	if (samldb_find_attribute(msg, "objectclass", "computer") == NULL) {
+	if (samldb_find_attribute(msg, "objectclass", "computer") != NULL) {
 		if (samldb_copy_template(module, msg2, "(&(CN=TemplateMemberServer)(objectclass=userTemplate))") != 0) {
 			ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb_fill_user_or_computer_object: Error copying computer template!\n");
 			return NULL;
@@ -488,8 +491,8 @@ static struct ldb_message *samldb_fill_user_or_computer_object(struct ldb_module
 	if ( ! samldb_get_rdn_and_basedn(msg2, msg2->dn, &rdn, &basedn)) {
 		return NULL;
 	}
-	if (strncasecmp(rdn, "cn", 2) != 0) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_user_or_computer_object: Bad RDN (%s) for group!\n", rdn);
+	if (strcasecmp(rdn->name, "cn") != 0) {
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_user_or_computer_object: Bad RDN (%s) for group!\n", rdn->name);
 		return NULL;
 	}
 
@@ -499,23 +502,23 @@ static struct ldb_message *samldb_fill_user_or_computer_object(struct ldb_module
 	}
 
 	if ((attribute = samldb_find_attribute(msg2, "cn", NULL)) != NULL) {
-		if (strcasecmp(&rdn[3], attribute->values[0].data) != 0) {
-			ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_user_or_computer_object: Bad Attribute Syntax for CN\n");
+		if (strcasecmp(rdn->value.data, attribute->values[0].data) != 0) {
+			ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_group_object: Bad Attribute Syntax for CN\n");
 			return NULL;
 		}
 	} else { /* FIXME: remove this if ldb supports natively aliasing between the rdn and the "cn" attribute */
-		if ( ! samldb_msg_add_string(module, msg2, "cn", &rdn[3])) {
+		if ( !ldb_msg_add_value(module->ldb, msg2, "cn", &rdn->value)) {
 			return NULL;
 		}
 	}
 
 	if ((attribute = samldb_find_attribute(msg2, "name", NULL)) != NULL) {
-		if (strcasecmp(&rdn[3], attribute->values[0].data) != 0) {
+		if (strcasecmp(rdn->value.data, attribute->values[0].data) != 0) {
 			ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_user_or_computer_object: Bad Attribute Syntax for name\n");
 			return NULL;
 		}
 	} else { /* FIXME: remove this if ldb supports natively aliasing between the rdn and the "name" attribute */
-		if ( ! samldb_msg_add_string(module, msg2, "name", &rdn[3])) {
+		if ( !ldb_msg_add_value(module->ldb, msg2, "name", &rdn->value)) {
 			return NULL;
 		}
 	}
