@@ -330,7 +330,9 @@ static int mprCoreStrcat(int alloc, char **destp, int destMax, int existingLen,
 	dest = *destp;
 	sepLen = (delim) ? strlen(delim) : 0;
 
-#ifdef __va_copy
+#ifdef HAVE_VA_COPY
+	va_copy(ap, args);
+#elif HAVE___VA_COPY
 	__va_copy(ap, args);
 #else
 	ap = args;
@@ -368,7 +370,9 @@ static int mprCoreStrcat(int alloc, char **destp, int destMax, int existingLen,
 	}
 
 	if (addBytes > 0) {
-#ifdef __va_copy
+#ifdef HAVE_VA_COPY
+		va_copy(ap, args);
+#elif HAVE___VA_COPY
 		__va_copy(ap, args);
 #else
 		ap = args;
