@@ -161,15 +161,15 @@ OtherName ::= SEQUENCE {
 }
 
 GeneralName ::= CHOICE {
-	otherName			[0]     OtherName,
-	rfc822Name			[1]     IA5String,
-	dNSName				[2]     IA5String,
---	x400Address			[3]     ORAddress,--
-	directoryName			[4]     Name,
---	ediPartyName			[5]     EDIPartyName, --
-	uniformResourceIdentifier	[6]     IA5String,
-	iPAddress			[7]     OCTET STRING,
-	registeredID			[8]     OBJECT IDENTIFIER
+	otherName			[0]     IMPLICIT OtherName,
+	rfc822Name			[1]     IMPLICIT IA5String,
+	dNSName				[2]     IMPLICIT IA5String,
+--	x400Address			[3]     IMPLICIT ORAddress,--
+	directoryName			[4]     IMPLICIT Name,
+--	ediPartyName			[5]     IMPLICIT EDIPartyName, --
+	uniformResourceIdentifier	[6]     IMPLICIT IA5String,
+	iPAddress			[7]     IMPLICIT OCTET STRING,
+	registeredID			[8]     IMPLICIT OBJECT IDENTIFIER
 }
 
 GeneralNames ::= SEQUENCE -- SIZE (1..MAX) -- OF GeneralName
@@ -215,15 +215,15 @@ BaseDistance ::= INTEGER -- (0..MAX) --
 
 GeneralSubtree ::= SEQUENCE {
 	base			GeneralName,
-	minimum		[0]	BaseDistance OPTIONAL -- DEFAULT 0 --,
-	maximum		[1]	BaseDistance OPTIONAL
+	minimum		[0]	IMPLICIT BaseDistance OPTIONAL -- DEFAULT 0 --,
+	maximum		[1]	IMPLICIT BaseDistance OPTIONAL
 }
 
 GeneralSubtrees ::= SEQUENCE -- SIZE (1..MAX) -- OF GeneralSubtree
 
 NameConstraints ::= SEQUENCE {
-	permittedSubtrees       [0]     GeneralSubtrees OPTIONAL,
-	excludedSubtrees        [1]     GeneralSubtrees OPTIONAL
+	permittedSubtrees       [0]     IMPLICIT GeneralSubtrees OPTIONAL,
+	excludedSubtrees        [1]     IMPLICIT GeneralSubtrees OPTIONAL
 }
 
 id-x509-ce-privateKeyUsagePeriod OBJECT IDENTIFIER ::=  { id-x509-ce 16 }
