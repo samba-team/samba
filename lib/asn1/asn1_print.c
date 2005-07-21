@@ -112,9 +112,13 @@ loop (unsigned char *buf, size_t len, int indent)
 		  (unsigned)length, (unsigned)len);
 	}
 	if (class == ASN1_C_CONTEXT || class == ASN1_C_APPL) {
-	    printf ("%lu bytes [%u]\n", (unsigned long)length, tag);
-	    if (type == CONS)
+	    printf ("%lu bytes [%u]", (unsigned long)length, tag);
+	    if (type == CONS) {
+		printf("\n");
 		loop_length = loop (buf, length, indent + 2);
+	    } else {
+		printf(" IMPLICIT content\n");
+	    }
 	} else if (class == ASN1_C_UNIV) {
 	    switch (tag) {
 	    case UT_EndOfContent:
