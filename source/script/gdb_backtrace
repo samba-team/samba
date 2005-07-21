@@ -13,5 +13,16 @@ bt full
 quit
 EOF
 
+if [ ! -f $PROG ]; then
+    PROG=`which $PROG`
+fi
+if [ ! -f $PROG ]; then
+    PROG=/proc/$PID/exe
+fi
+if [ ! -f $PROG ]; then
+    echo "Unable to find binary"
+    exit 1
+fi
+
 gdb -batch -x $TMPFILE $PROG $PID < /dev/null 
 /bin/rm -f $TMPFILE
