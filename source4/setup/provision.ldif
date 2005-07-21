@@ -5,9 +5,8 @@ dn: ${BASEDN}
 objectClass: top
 objectClass: domain
 objectClass: domainDNS
-flatname: ${DOMAIN}
 dnsDomain: ${DNSDOMAIN}
-dc: ${DOMAIN}
+dc: ${RDN_DC}
 objectGUID: ${DOMAINGUID}
 creationTime: ${NTTIME}
 forceLogoff: 0x8000000000000000
