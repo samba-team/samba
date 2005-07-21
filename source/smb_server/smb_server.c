@@ -500,7 +500,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 		   chaining) */
 
 		/* In share mode security we must ignore the vuid. */
-		if (lp_security() == SEC_SHARE) {
+		if (smb_conn->config.security == SEC_SHARE) {
 			session_tag = UID_FIELD_INVALID;
 		} else {
 			session_tag = SVAL(req->in.hdr,HDR_UID);
@@ -770,6 +770,8 @@ static void smbsrv_accept(struct stream_connection *conn)
 
 	smb_conn->connection = conn;
 	smb_conn->processing = False;
+	smb_conn->config.security = lp_security();
+	smb_conn->config.nt_status_support = lp_nt_status_support();
 
 	conn->private = smb_conn;
 

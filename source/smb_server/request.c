@@ -340,7 +340,7 @@ void req_reply_dos_error(struct smbsrv_request *req, uint8_t eclass, uint16_t ec
 */
 void req_setup_error(struct smbsrv_request *req, NTSTATUS status)
 {
-	if (!lp_nt_status_support() || !(req->smb_conn->negotiate.client_caps & CAP_STATUS32)) {
+	if (!req->smb_conn->config.nt_status_support || !(req->smb_conn->negotiate.client_caps & CAP_STATUS32)) {
 		/* convert to DOS error codes */
 		uint8_t eclass;
 		uint32_t ecode;
