@@ -2338,6 +2338,7 @@ static struct {
 	{"NET-USERINFO", torture_userinfo, 0},
 	{"NET-USERADD", torture_useradd, 0},
 	{"NET-USERDEL", torture_userdel, 0},
+	{"NET-USERMOD", torture_usermod, 0},
 	{"NET-DOMOPEN", torture_domainopen, 0},
 	{"NET-API-LOOKUP", torture_lookup, 0},
 	{"NET-API-LOOKUPHOST", torture_lookup_host, 0},

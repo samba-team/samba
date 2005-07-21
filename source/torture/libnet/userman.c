@@ -271,6 +271,25 @@ static BOOL test_userdel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
+static BOOL test_usermod(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			 struct policy_handle *handle, const char *username)
+{
+	NTSTATUS status;
+	struct libnet_rpc_usermod user;
+	
+	user.in.domain_handle = *handle;
+	user.in.username = username;
+
+	status = libnet_rpc_usermod(p, mem_ctx, &user);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to call sync libnet_rpc_usermod - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
+
 BOOL torture_useradd(void)
 {
 	NTSTATUS status;
@@ -372,6 +391,58 @@ BOOL torture_userdel(void)
 		goto done;
 	}
 	
+done:
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+
+BOOL torture_usermod(void)
+{
+	NTSTATUS status;
+	const char *binding;
+	struct dcerpc_pipe *p;
+	struct policy_handle h;
+	struct lsa_String domain_name;
+	const char *name = TEST_USERNAME;
+	TALLOC_CTX *mem_ctx;
+	BOOL ret = True;
+
+	mem_ctx = talloc_init("test_userdel");
+	binding = lp_parm_string(-1, "torture", "binding");
+
+	status = torture_rpc_connection(mem_ctx, 
+					&p,
+					DCERPC_SAMR_NAME,
+					DCERPC_SAMR_UUID,
+					DCERPC_SAMR_VERSION);
+	
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
+	domain_name.string = lp_workgroup();
+
+	if (!test_opendomain(p, mem_ctx, &h, &domain_name)) {
+		ret = False;
+		goto done;
+	}
+
+	if (!test_createuser(p, mem_ctx, &h, name)) {
+		ret = False;
+		goto done;
+	}
+
+	if (!test_usermod(p, mem_ctx, &h, name)) {
+		ret = False;
+		goto done;
+	}
+
+	if (!test_cleanup(p, mem_ctx, &h, name)) {
+		ret = False;
+		goto done;
+	}
+
 done:
 	talloc_free(mem_ctx);
 	return ret;
