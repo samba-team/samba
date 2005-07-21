@@ -1,5 +1,18 @@
 2005-07-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* check-gen.c: Added #ifdef out test for IMPLICIT tagging.
+
+	* Makefile.am: test several IMPLICIT tag level deep
+	
+	* test.asn1: test several IMPLICIT tag level deep
+
+	* test.asn1: tests for IMPLICIT
+
+	* Makefile.am: tests for IMPLICIT
+
+	* canthandle.asn1: Expand on what is wrong with the IMPLICIT
+	tagging
+
 	* rfc2459.asn1: some of the structure are in the IMPLICIT TAGS
 	module
 
