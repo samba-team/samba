@@ -1001,6 +1001,11 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 	/* check if the DN key has changed, perhaps due to the 
 	   case insensitivity of an element changing */
 	key2 = ltdb_key(module, msg->dn);
+	if (key2.dptr == NULL) {
+		/* probably a corrupt record ... darn */
+		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Invalid DN in re_index: %s\n", msg->dn);
+		return 0;
+	}
 	if (strcmp(key2.dptr, key.dptr) != 0) {
 		tdb_delete(tdb, key);
 		tdb_store(tdb, key2, data, 0);
