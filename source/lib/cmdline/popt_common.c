@@ -49,9 +49,6 @@ static void popt_common_callback(poptContext con,
 {
 	const char *pname;
 
-	/* setup for panics */
-	fault_setup(poptGetInvocationName(con));
-	
 	if (reason == POPT_CALLBACK_REASON_POST) {
 		/* Hook any 'every Samba program must do this, after
 		 * the smb.conf is setup' functions here */
@@ -69,6 +66,10 @@ static void popt_common_callback(poptContext con,
 		pname++;
 
 	if (reason == POPT_CALLBACK_REASON_PRE) {
+		/* setup for panics */
+		fault_setup(poptGetInvocationName(con));
+
+		/* and logging */
 		setup_logging(pname, DEBUG_STDOUT);
 		return;
 	}
