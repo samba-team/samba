@@ -23,14 +23,13 @@
 #include "system/wait.h"
 #include "system/filesys.h"
 
-static void (*cont_fn)(void *);
-
 /* the registered fault handler */
 static struct {
 	const char *name;
 	void (*fault_handler)(int sig);
 } fault_handlers;
 
+static const char *progname;
 
 #ifdef HAVE_BACKTRACE
 #include <execinfo.h>
@@ -111,8 +110,16 @@ void smb_panic(const char *why)
 	int result;
 
 	if (cmd && *cmd) {
-		DEBUG(0, ("smb_panic(): calling panic action [%s]\n", cmd));
-		result = system(cmd);
+		char pidstr[20];
+		char cmdstring[200];
+		safe_strcpy(cmdstring, cmd, sizeof(cmdstring));
+		snprintf(pidstr, sizeof(pidstr), "%u", getpid());
+		all_string_sub(cmdstring, "%PID%", pidstr, sizeof(cmdstring));
+		if (progname) {
+			all_string_sub(cmdstring, "%PROG%", progname, sizeof(cmdstring));
+		}
+		DEBUG(0, ("smb_panic(): calling panic action [%s]\n", cmdstring));
+		result = system(cmdstring);
 
 		if (result == -1)
 			DEBUG(0, ("smb_panic(): fork failed in panic action: %s\n",
@@ -147,19 +154,6 @@ static void fault_report(int sig)
 
 	smb_panic("internal error");
 
-	if (cont_fn) {
-		cont_fn(NULL);
-#ifdef SIGSEGV
-		CatchSignal(SIGSEGV,SIGNAL_CAST SIG_DFL);
-#endif
-#ifdef SIGBUS
-		CatchSignal(SIGBUS,SIGNAL_CAST SIG_DFL);
-#endif
-#ifdef SIGABRT
-		CatchSignal(SIGABRT,SIGNAL_CAST SIG_DFL);
-#endif
-		return; /* this should cause a core dump */
-	}
 	exit(1);
 }
 
@@ -179,10 +173,11 @@ static void sig_fault(int sig)
 /*******************************************************************
 setup our fault handlers
 ********************************************************************/
-void fault_setup(void (*fn)(void *))
+void fault_setup(const char *pname)
 {
-	cont_fn = fn;
-
+	if (progname == NULL) {
+		progname = pname;
+	}
 #ifdef SIGSEGV
 	CatchSignal(SIGSEGV,SIGNAL_CAST sig_fault);
 #endif
