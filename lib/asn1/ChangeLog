@@ -1,8 +1,10 @@
 2005-07-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
-	* check-gen.c: fix workaround for IMPLICIT CONS case
+	* check-gen.c: Two implicit tests, one with all structures inlined
 	
 	* test.asn1: fix workaround for IMPLICIT CONS case
+	
+	* canthandle.asn1: fix workaround for IMPLICIT CONS case
 	
 	* asn1_print.c: hint that there are IMPLICIT content when we find
 	it
