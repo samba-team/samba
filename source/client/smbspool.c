@@ -175,7 +175,7 @@ static int		smb_print(struct smbcli_state *, char *, FILE *);
   * Setup the SAMBA server state...
   */
 
-  setup_logging("smbspool", DEBUG_STDOUT);
+  setup_logging(argv[0], DEBUG_STDOUT);
 
   if (!lp_load()) {
 	  fprintf(stderr, "ERROR: Can't load %s - run testparm to debug it\n", lp_config_file());

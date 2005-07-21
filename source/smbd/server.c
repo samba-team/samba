@@ -96,8 +96,6 @@ static void cleanup_tmp_files(void)
 */
 static void setup_signals(void)
 {
-	fault_setup(NULL);
-	
 	/* we are never interested in SIGPIPE */
 	BlockSignals(True,SIGPIPE);
 
@@ -175,7 +173,7 @@ static int binary_smbd_main(int argc, const char *argv[])
 
 	poptFreeContext(pc);
 
-	setup_logging(NULL, interactive?DEBUG_STDOUT:DEBUG_FILE);
+	setup_logging(argv[0], interactive?DEBUG_STDOUT:DEBUG_FILE);
 	setup_signals();
 
 	/* we want total control over the permissions on created files,

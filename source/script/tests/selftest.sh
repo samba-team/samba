@@ -92,6 +92,7 @@ cat >$CONFFILE<<EOF
 	name resolve order = bcast
 	interfaces = lo*
 	tls enabled = $TLS_ENABLED
+	panic action = $SRCDIR/script/gdb_backtrace %PID% %PROG%
 
 [tmp]
 	path = $TMPDIR
