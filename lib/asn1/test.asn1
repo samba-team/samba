@@ -28,9 +28,13 @@ TESTChoice2 ::= CHOICE {
 
 TESTInteger ::= INTEGER (-2147483648..2147483647)
 
+TESTInteger2 ::= [4] IMPLICIT TESTInteger
+TESTInteger3 ::= [5] IMPLICIT TESTInteger2
+
 TESTImplicit ::= SEQUENCE {
 	ti1[0] IMPLICIT TESTInteger,
-	ti2[1] IMPLICIT TESTLargeTag
+	ti2[1] IMPLICIT TESTLargeTag,
+	ti3[2] IMPLICIT TESTInteger3
 }
 
 END
