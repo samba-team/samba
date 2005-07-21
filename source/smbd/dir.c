@@ -26,6 +26,11 @@
 
 extern struct current_user current_user;
 
+/* "Special" directory offsets. */
+#define END_OF_DIRECTORY_OFFSET ((long)-1)
+#define START_OF_DIRECTORY_OFFSET ((long)0)
+#define DOT_DOT_DIRECTORY_OFFSET ((long)0x80000000)
+
 /* Make directory handle internals available. */
 
 #define NAME_CACHE_SIZE 100
@@ -560,7 +565,7 @@ const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT
 
 	/* If poffset is -1 then we know we returned this name before and we have
 	   no wildcards. We're at the end of the directory. */
-	if (*poffset == -1) {
+	if (*poffset == END_OF_DIRECTORY_OFFSET) {
 		return NULL;
 	}
 
@@ -577,7 +582,7 @@ const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT
 	if (VALID_STAT(*pst)) {
 		/* We need to set the underlying dir_hdn offset to -1 also as
 		   this function is usually called with the output from TellDir. */
-		dptr->dir_hnd->offset = *poffset = -1;
+		dptr->dir_hnd->offset = *poffset = END_OF_DIRECTORY_OFFSET;
 		return dptr->wcard;
 	}
 
@@ -588,7 +593,7 @@ const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT
 	if (SMB_VFS_STAT(dptr->conn,pathreal,pst) == 0) {
 		/* We need to set the underlying dir_hdn offset to -1 also as
 		   this function is usually called with the output from TellDir. */
-		dptr->dir_hnd->offset = *poffset = -1;
+		dptr->dir_hnd->offset = *poffset = END_OF_DIRECTORY_OFFSET;
 		return dptr->wcard;
 	} else {
 		/* If we get any other error than ENOENT or ENOTDIR
@@ -596,7 +601,7 @@ const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT
 		if (errno != ENOENT && errno != ENOTDIR) {
 			/* We need to set the underlying dir_hdn offset to -1 also as
 			   this function is usually called with the output from TellDir. */
-			dptr->dir_hnd->offset = *poffset = -1;
+			dptr->dir_hnd->offset = *poffset = END_OF_DIRECTORY_OFFSET;
 			return dptr->wcard;
 		}
 	}
@@ -607,7 +612,7 @@ const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT
 	if (dptr->conn->case_sensitive) {
 		/* We need to set the underlying dir_hdn offset to -1 also as
 		   this function is usually called with the output from TellDir. */
-		dptr->dir_hnd->offset = *poffset = -1;
+		dptr->dir_hnd->offset = *poffset = END_OF_DIRECTORY_OFFSET;
 		return NULL;
 	} else {
 		dptr->has_wild = True;
@@ -623,9 +628,9 @@ BOOL dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, S
 {
 	SET_STAT_INVALID(*pst);
 
-	if (!dptr->has_wild && (dptr->dir_hnd->offset == -1)) {
+	if (!dptr->has_wild && (dptr->dir_hnd->offset == END_OF_DIRECTORY_OFFSET)) {
 		/* This is a singleton directory and we're already at the end. */
-		*poffset = -1;
+		*poffset = END_OF_DIRECTORY_OFFSET;
 		return False;
 	}
 
@@ -676,7 +681,7 @@ struct dptr_struct *dptr_fetch(char *buf,int *num)
 	*num = key;
 	offset = IVAL(buf,1);
 	if (offset == (uint32)-1) {
-		seekoff = -1;
+		seekoff = END_OF_DIRECTORY_OFFSET;
 	} else {
 		seekoff = (long)offset;
 	}
@@ -1083,10 +1088,12 @@ const char *ReadDirName(struct smb_Dir *dirp, long *poffset)
 	connection_struct *conn = dirp->conn;
 
 	/* Cheat to allow . and .. to be the first entries returned. */
-	if ((*poffset == 0) && (dirp->file_number < 2)) {
+	if (((*poffset == START_OF_DIRECTORY_OFFSET) || (*poffset == DOT_DOT_DIRECTORY_OFFSET)) && (dirp->file_number < 2)) {
 		if (dirp->file_number == 0) {
 			n = ".";
+			*poffset = dirp->offset = START_OF_DIRECTORY_OFFSET;
 		} else {
+			*poffset = dirp->offset = DOT_DOT_DIRECTORY_OFFSET;
 			n = "..";
 		}
 		dirp->file_number++;
@@ -1113,7 +1120,7 @@ const char *ReadDirName(struct smb_Dir *dirp, long *poffset)
 		dirp->file_number++;
 		return e->name;
 	}
-	dirp->offset = -1;
+	dirp->offset = END_OF_DIRECTORY_OFFSET;
 	return NULL;
 }
 
@@ -1125,8 +1132,8 @@ void RewindDir(struct smb_Dir *dirp, long *poffset)
 {
 	SMB_VFS_REWINDDIR(dirp->conn, dirp->dir);
 	dirp->file_number = 0;
-	dirp->offset = 0;
-	*poffset = 0;
+	dirp->offset = START_OF_DIRECTORY_OFFSET;
+	*poffset = START_OF_DIRECTORY_OFFSET;
 }
 
 /*******************************************************************
@@ -1136,7 +1143,7 @@ void RewindDir(struct smb_Dir *dirp, long *poffset)
 void SeekDir(struct smb_Dir *dirp, long offset)
 {
 	if (offset != dirp->offset) {
-		if (offset == 0) {
+		if (offset == START_OF_DIRECTORY_OFFSET || offset == DOT_DOT_DIRECTORY_OFFSET) {
 			RewindDir(dirp, &offset);
 		} else {
 			SMB_VFS_SEEKDIR(dirp->conn, dirp->dir, offset);
@@ -1186,7 +1193,7 @@ BOOL SearchDir(struct smb_Dir *dirp, const char *name, long *poffset)
 	/* Not found in the name cache. Rewind directory and start from scratch. */
 	SMB_VFS_REWINDDIR(conn, dirp->dir);
 	dirp->file_number = 0;
-	*poffset = 0;
+	*poffset = START_OF_DIRECTORY_OFFSET;
 	while ((entry = ReadDirName(dirp, poffset))) {
 		if (conn->case_sensitive ? (strcmp(entry, name) == 0) : strequal(entry, name)) {
 			return True;
