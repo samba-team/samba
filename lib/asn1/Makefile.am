@@ -309,8 +309,10 @@ gen_files_pkcs9 =					\
 gen_files_test =					\
 	asn1_TESTChoice1.x				\
 	asn1_TESTChoice2.x				\
-	asn1_TESTSeq.x					\
-	asn1_TESTLargeTag.x
+	asn1_TESTImplicit.x				\
+	asn1_TESTInteger.x				\
+	asn1_TESTLargeTag.x				\
+	asn1_TESTSeq.x
 
 noinst_PROGRAMS = asn1_compile asn1_print asn1_gen
 
