@@ -246,6 +246,8 @@ function provision(subobj, message)
 	setup_ldb("hklm.ldif", "hklm.ldb", subobj);
 	message("Setting up sam.ldb attributes\n");
 	setup_ldb("provision_init.ldif", "sam.ldb", subobj);
+	message("Setting up sam.ldb templates\n");
+	setup_ldb("provision_templates.ldif", "sam.ldb", subobj, NULL, false);
 	message("Setting up sam.ldb data\n");
 	setup_ldb("provision.ldif", "sam.ldb", subobj, data, false);
 	message("Setting up rootdse.ldb\n");
