@@ -264,4 +264,10 @@ struct smbsrv_connection {
 	} *trans_partial;
 
 	BOOL processing;
+
+	/* configuration parameters */
+	struct {
+		enum security_types security;
+		BOOL nt_status_support;
+	} config;
 };
