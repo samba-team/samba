@@ -156,7 +156,7 @@ o   Jim McDonough <jmcd@us.ibm.com>
       ldif file instead of actually writing to the passdb.  
 
 
-o   Lars Mueller <lmuelle@suse.de>
+o   Lars Mueller <lmuelle@samba.org>
     * Fix argv parsing in "net rpc".
     * Add support to create position independent executable (PIE) 
       code if the compiler supports it.
@@ -493,7 +493,7 @@ o   Jim McDonough <jmcd@us.ibm.com>
       with detecting idle clients.
 
 
-o   Lars Mueller <lmuelle@suse.de>
+o   Lars Mueller <lmuelle@samba.org>
     * BUG 2767: Add new options to testparm (--show-all-parameters,
       --parameter-name, and --section-name).
     * Fix net share migrate files to also migrate the ACLs of 
@@ -1730,7 +1730,7 @@ o   Buchan Milne <bgmilne@mandrake.org>
     * Mandrake packaging fixes.
 
 
-o   Lars Mueller <lmuelle@suse.de>
+o   Lars Mueller <lmuelle@samba.org>
     * Fix build of libsmbclient on x86_64.
     * BUG 2013: Fix testsuite build issues when libsmbclient.so 
       is installed in a non-default location.
@@ -1897,7 +1897,7 @@ o   Buchan Milne <bgmilne@mandrake.org>
     * BUG 2023: Mandrake packaging fixes for building 3.0.9.
 
 
-o   Lars Müller <lmuelle@suse.de>
+o   Lars Mueller <lmuelle@samba.org>
     * BUG 2013: Fix unresolved symbols in libsmbclient.so.
 
 
@@ -2287,7 +2287,7 @@ o   Stefan Metzmacher <metze@samba.org>
     * Fix opening of system quota file.
 
 
-o   Lars Mueller <lmuelle@suse.de>
+o   Lars Mueller <lmuelle@samba.org>
     * Small fixes for autogen.sh to deal with version detection 
       of autoconf and autoheader; fixes for examples using 
       libtool to adhere to stricter syntax of newer version.
@@ -2928,7 +2928,7 @@ o   Buchan Milne <bgmilne@mandrake.org>
     * Mandrake packaging fixes.
     
     
-o   Lars Mueller <lmuelle@suse.de>
+o   Lars Mueller <lmuelle@samba.org>
     * BUG 1279: Added 'printcap cache time' parameter.
     * Fix afs related build issues on SuSE.
     * Fix compiler warnings in the kerberos client code.
