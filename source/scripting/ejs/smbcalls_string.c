@@ -75,6 +75,22 @@ static int ejs_strupper(MprVarHandle eid, int argc, char **argv)
 
 /*
   usage:
+      var s = strstr(string, substring);
+*/
+static int ejs_strstr(MprVarHandle eid, int argc, char **argv)
+{
+	char *s;
+	if (argc != 2) {
+		ejsSetErrorMsg(eid, "strstr invalid arguments");
+		return -1;
+	}
+	s = strstr(argv[0], argv[1]);
+	mpr_Return(eid, mprString(s));
+	return 0;
+}
+
+/*
+  usage:
      list = split(".", "a.foo.bar");
 
   NOTE: does not take a regular expression, unlink perl split()
@@ -330,6 +346,7 @@ static int ejs_string_init(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetStringCFunction(obj, "strlen", ejs_strlen);
 	mprSetStringCFunction(obj, "strlower", ejs_strlower);
 	mprSetStringCFunction(obj, "strupper", ejs_strupper);
+	mprSetStringCFunction(obj, "strstr", ejs_strstr);
 	mprSetStringCFunction(obj, "split", ejs_split);
 	mprSetCFunction(obj, "join", ejs_join);
 	mprSetCFunction(obj, "sprintf", ejs_sprintf);
