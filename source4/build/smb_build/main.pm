@@ -18,15 +18,17 @@ my $config_list = "config.list";
 
 sub smb_build_main($$)
 {
-	my $INPUT = shift;
-	my $settings = shift;
+	my ($INPUT, $settings) = @_;
 
-	my @mkfiles = split('\n', `grep -v ^# $config_list`);
+	open(IN, $config_list) or die("Can't open $config_list: $!");
+	my @mkfiles = grep{!/^#/} <IN>;
+	close(IN);
 
 	$| = 1;
 
-	for my $mkfile (@mkfiles) {
-		config_mk::import_file($INPUT, $mkfile);
+	foreach (@mkfiles) {
+		s/\n//g;
+		config_mk::import_file($INPUT, $_);
 	}
 
 	my $DEPEND = input::check($INPUT);

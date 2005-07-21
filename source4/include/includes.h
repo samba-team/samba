@@ -148,7 +148,7 @@ extern int errno;
 
 /***** automatically generated prototypes *****/
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
-#include "proto.h"
+#include "include/proto.h"
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2)
 

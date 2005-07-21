@@ -2535,8 +2535,7 @@ sub _Lexer($)
 {
 	my($parser)=shift;
 
-        $parser->YYData->{INPUT}
-        or  return('',undef);
+    $parser->YYData->{INPUT} or return('',undef);
 
 again:
 	$parser->YYData->{INPUT} =~ s/^[ \t]*//;
@@ -2587,8 +2586,7 @@ again:
 
 sub parse_idl($$)
 {
-	my $self = shift;
-	my $filename = shift;
+	my ($self,$filename) = @_;
 
 	my $saved_delim = $/;
 	undef $/;

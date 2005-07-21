@@ -154,8 +154,7 @@ sub _parse_config_mk($)
 
 sub import_file($$)
 {
-	my $input = shift;
-	my $filename = shift;
+	my ($input, $filename) = @_;
 
 	my $result = _parse_config_mk($filename);
 
