@@ -211,7 +211,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 			       NULL,
 	};
 
-	const char *domain_attrs[] =  {"nETBIOSName", "nCName"};
+	const char *domain_attrs[] =  {"nETBIOSName", "nCName", NULL};
 
 	if (domain_name) {
 		/* find the domain's DN */
