@@ -1,6 +1,17 @@
 # Directory Service subsystem
 
 ################################################
+# Start MODULE libldb_objectguid
+[MODULE::libldb_objectguid]
+SUBSYSTEM = LIBLDB
+INIT_OBJ_FILES = \
+		dsdb/samdb/ldb_modules/objectguid.o
+REQUIRED_SUBSYSTEMS = \
+		NDR_RAW NDR_MISC
+# End MODULE libldb_objectguid
+################################################
+
+################################################
 # Start MODULE libldb_samldb
 [MODULE::libldb_samldb]
 SUBSYSTEM = LIBLDB

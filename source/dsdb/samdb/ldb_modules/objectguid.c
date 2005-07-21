@@ -73,10 +73,11 @@ static struct ldb_message_element *objectguid_find_attribute(const struct ldb_me
 /* add_record: add crateTimestamp/modifyTimestamp attributes */
 static int objectguid_add_record(struct ldb_module *module, const struct ldb_message *msg)
 {
+	struct ldb_val v;
 	struct ldb_message *msg2;
 	struct ldb_message_element *attribute;
 	struct GUID guid;
-	char *guidstr;
+	NTSTATUS nt_status;
 	int ret, i;
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectguid_add_record\n");
@@ -104,13 +105,16 @@ static int objectguid_add_record(struct ldb_module *module, const struct ldb_mes
 
 	/* a new GUID */
 	guid = GUID_random();
-	guidstr = GUID_string(msg2, &guid);
-	if (!guidstr) {
+
+	nt_status = ndr_push_struct_blob(&v, msg2, &guid, 
+					 (ndr_push_flags_fn_t)ndr_push_GUID);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return -1;
 	}
 
-	if (ldb_msg_add_string(module->ldb, msg2, "objectGUID", guidstr) != 0) {
-		return -1;
+	ret = ldb_msg_add_value(module->ldb, msg2, "objectGUID", &v);
+	if (ret) {
+		return ret;
 	}
 
 	ret = ldb_next_add_record(module, msg2);

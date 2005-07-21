@@ -8,15 +8,6 @@ INIT_OBJ_FILES = \
 ################################################
 
 ################################################
-# Start MODULE libldb_objectguid
-[MODULE::libldb_objectguid]
-SUBSYSTEM = LIBLDB
-INIT_OBJ_FILES = \
-		lib/ldb/modules/objectguid.o
-# End MODULE libldb_objectguid
-################################################
-
-################################################
 # Start MODULE libldb_rdn_name
 [MODULE::libldb_rdn_name]
 SUBSYSTEM = LIBLDB

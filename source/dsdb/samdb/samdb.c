@@ -978,20 +978,6 @@ int samdb_msg_set_ldaptime(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, str
 */
 int samdb_add(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
 {
-	int ret;
-	struct ldb_val v;
-	NTSTATUS status;
-	struct GUID guid = GUID_random();
-
-	status = ndr_push_struct_blob(&v, mem_ctx, &guid, 
-				      (ndr_push_flags_fn_t)ndr_push_GUID);
-	if (!NT_STATUS_IS_OK(status)) {
-		return -1;
-	}
-
-	ret = ldb_msg_add_value(sam_ldb, msg, "objectGUID", &v);
-	if (ret != 0) return ret;
-
 	return ldb_add(sam_ldb, msg);
 }
 
