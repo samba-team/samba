@@ -604,6 +604,57 @@ test_choice (void)
     return ret;
 }
 
+#ifdef IMPLICIT_TAGGING_WORKS
+
+static int
+cmp_TESTImplicit (void *a, void *b)
+{
+    TESTImplicit *aa = a;
+    TESTImplicit *ab = b;
+
+    COMPARE_INTEGER(aa,ab,ti1);
+    COMPARE_INTEGER(aa,ab,ti2.foo);
+
+    return 0;
+}
+
+/*
+UNIV CONS Sequence 14
+  CONTEXT PRIM 0 1 00
+  CONTEXT CONS 1 6
+   CONTEXT CONS 127 3
+     UNIV PRIM Integer 1 02
+  CONTEXT PRIM 2 1 03
+*/
+
+static int
+test_implicit (void)
+{
+    struct test_case tests[] = {
+	{ NULL,  16,  
+	  "\x30\x0e\x80\x01\x00\xa1\x06\xbf"
+	  "\x7f\x03\x02\x01\x02\x82\x01\x03", 
+	  "implicit 1" }
+    };
+
+    int ret = 0, ntests = sizeof(tests) / sizeof(*tests);
+    TESTImplicit c0;
+
+    memset(&c0, 0, sizeof(c0));
+    c0.ti1 = 1;
+    c0.ti2.foo = 2;
+    c0.ti3 = 3;
+    tests[0].val = &c0;
+
+    return generic_test (tests, ntests, sizeof(TESTImplicit),
+			 (generic_encode)encode_TESTImplicit,
+			 (generic_length)length_TESTImplicit,
+			 (generic_decode)decode_TESTImplicit,
+			 (generic_free)free_TESTImplicit,
+			 cmp_TESTImplicit);
+}
+#endif /* IMPLICIT_TAGGING_WORKS */
+
 static int
 check_fail_largetag(void)
 {
@@ -702,6 +753,10 @@ main(int argc, char **argv)
     ret += check_tag_length();
     ret += test_large_tag();
     ret += test_choice();
+
+#ifdef IMPLICIT_TAGGING_WORKS
+    ret += test_implicit();
+#endif
 
     ret += check_fail_largetag();
     ret += check_fail_sequence();
