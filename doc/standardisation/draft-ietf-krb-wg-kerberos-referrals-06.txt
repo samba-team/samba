@@ -1,0 +1,15 @@
+
+This Internet-Draft, draft-ietf-krb-wg-kerberos-referrals-05.txt, has expired, and has been deleted 
+from the Internet-Drafts directory.  An Internet-Draft expires 185 days from 
+the date that it is posted unless it is replaced by an updated version or is 
+under official review by the IESG for publication as an RFC.  This Internet-Draft 
+was not published as an RFC.
+
+Internet-Drafts are not archival documents, and copies of Internet-Drafts that have 
+been deleted from the directory are not available.  The Secretariat does not have 
+any information regarding the future plans of the author(s) or working group, if 
+applicable, with respect to this deleted Internet-Draft.  For more information, or 
+to request a copy of the document, please contact the author(s) directly.
+
+Draft Author(s):
+Larry Zhu <LZhu@microsoft.com>
