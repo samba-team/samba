@@ -311,6 +311,8 @@ gen_files_test =					\
 	asn1_TESTChoice2.x				\
 	asn1_TESTImplicit.x				\
 	asn1_TESTInteger.x				\
+	asn1_TESTInteger2.x				\
+	asn1_TESTInteger3.x				\
 	asn1_TESTLargeTag.x				\
 	asn1_TESTSeq.x
 
