@@ -7,7 +7,6 @@ instanceType: 4
 uSNCreated: 1
 uSNChanged: 1
 showInAdvancedViewOnly: TRUE
-name: Templates
 systemFlags: 0x8c000000
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
@@ -24,7 +23,6 @@ objectClass: organizationalPerson
 objectClass: Template
 objectClass: userTemplate
 cn: TemplateUser
-name: TemplateUser
 instanceType: 4
 userAccountControl: 0x202
 badPwdCount: 0
@@ -45,7 +43,6 @@ objectClass: top
 objectClass: Template
 objectClass: userTemplate
 cn: TemplateMemberServer
-name: TemplateMemberServer
 instanceType: 4
 userAccountControl: 0x1002
 badPwdCount: 0
@@ -66,7 +63,6 @@ objectClass: top
 objectClass: Template
 objectClass: userTemplate
 cn: TemplateDomainController
-name: TemplateDomainController
 instanceType: 4
 userAccountControl: 0x2002
 badPwdCount: 0
@@ -87,7 +83,6 @@ objectClass: top
 objectClass: Template
 objectClass: userTemplate
 cn: TemplateTrustingDomain
-name: TemplateTrustingDomain
 instanceType: 4
 userAccountControl: 0x820
 badPwdCount: 0
@@ -107,7 +102,6 @@ objectClass: top
 objectClass: Template
 objectClass: groupTemplate
 cn: TemplateGroup
-name: TemplateGroup
 instanceType: 4
 groupType: 0x80000002
 sAMAccountType: 0x10000000
@@ -118,7 +112,6 @@ objectClass: top
 objectClass: Template
 objectClass: aliasTemplate
 cn: TemplateAlias
-name: TemplateAlias
 instanceType: 4
 groupType: 0x80000004
 sAMAccountType: 0x10000000
@@ -128,7 +121,6 @@ objectClass: top
 objectClass: Template
 objectClass: foreignSecurityPrincipalTemplate
 cn: TemplateForeignSecurityPrincipal
-name: TemplateForeignSecurityPrincipal
 
 dn: CN=TemplateSecret,CN=Templates,${BASEDN}
 objectClass: top
@@ -136,7 +128,6 @@ objectClass: leaf
 objectClass: Template
 objectClass: secretTemplate
 cn: TemplateSecret
-name: TemplateSecret
 instanceType: 4
 
 dn: CN=TemplateTrustedDomain,CN=Templates,${BASEDN}
@@ -145,6 +136,5 @@ objectClass: leaf
 objectClass: Template
 objectClass: trustedDomainTemplate
 cn: TemplateTrustedDomain
-name: TemplateTrustedDomain
 instanceType: 4
 
