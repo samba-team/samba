@@ -2025,8 +2025,7 @@ static NTSTATUS samr_AddAliasMember(struct dcesrv_call_state *dce_call, TALLOC_C
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
 		struct ldb_message *msg;
-		struct GUID guid;
-		const char *guidstr, *basedn, *sidstr;
+		const char *basedn, *sidstr;
 
 		sidstr = dom_sid_string(mem_ctx, r->in.sid);
 		NT_STATUS_HAVE_NO_MEMORY(sidstr);
@@ -2050,13 +2049,6 @@ static NTSTATUS samr_AddAliasMember(struct dcesrv_call_state *dce_call, TALLOC_C
 				 "TemplateForeignSecurityPrincipal "
 				 "from samdb\n"));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-
-		/* a new GUID */
-		guid = GUID_random();
-		guidstr = GUID_string(mem_ctx, &guid);
-		if (!guidstr) {
-			return NT_STATUS_NO_MEMORY;
 		}
 
 		/* TODO: Hmmm. This feels wrong. How do I find the base dn to
@@ -2090,8 +2082,6 @@ static NTSTATUS samr_AddAliasMember(struct dcesrv_call_state *dce_call, TALLOC_C
 				     "foreignSecurityPrincipal");
 		samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg,
 				     "objectSid", sidstr);
-		samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg,
-				     "objectGUID", guidstr);
 		
 		/* create the alias */
 		ret = samdb_add(d_state->sam_ctx, mem_ctx, msg);
