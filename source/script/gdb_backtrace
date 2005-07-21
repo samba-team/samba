@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# we want everything on stderr, so the program is not disturbed
+exec 1>&2
+
+PID=$1
+PROG=$2
+
+TMPFILE=/tmp/gdb.$$
+cat << EOF  > $TMPFILE
+set height 1000
+bt full
+quit
+EOF
+
+gdb -batch -x $TMPFILE $PROG $PID < /dev/null 
+/bin/rm -f $TMPFILE

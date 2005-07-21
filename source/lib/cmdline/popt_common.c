@@ -48,6 +48,9 @@ static void popt_common_callback(poptContext con,
 			   const char *arg, const void *data)
 {
 	const char *pname;
+
+	/* setup for panics */
+	fault_setup(poptGetInvocationName(con));
 	
 	if (reason == POPT_CALLBACK_REASON_POST) {
 		/* Hook any 'every Samba program must do this, after

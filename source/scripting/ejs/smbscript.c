@@ -45,6 +45,7 @@ void ejs_exception(const char *reason)
 	struct MprVar *return_var;
 	int exit_status, i;
 
+	fault_setup(argv[0]);
 	smbscript_init_subsystems;
 	mprSetCtx(mem_ctx);
 
