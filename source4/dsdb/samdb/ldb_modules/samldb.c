@@ -421,17 +421,6 @@ static struct ldb_message *samldb_fill_group_object(struct ldb_module *module, c
 		}
 	}
 
-	if ((attribute = samldb_find_attribute(msg2, "name", NULL)) != NULL) {
-		if (strcasecmp(rdn->value.data, attribute->values[0].data) != 0) {
-
-			return NULL;
-		}
-	} else { /* FIXME: remove this if ldb supports natively aliasing between the rdn and the "name" attribute */
-		if ( ldb_msg_add_value(module->ldb, msg2, "name", &rdn->value)) {
-			return NULL;
-		}
-	}
-
 	if ((attribute = samldb_find_attribute(msg2, "objectSid", NULL)) == NULL ) {
 		struct dom_sid *sid = samldb_get_new_sid(module, msg2, msg2->dn);
 		if (sid == NULL) {
@@ -508,17 +497,6 @@ static struct ldb_message *samldb_fill_user_or_computer_object(struct ldb_module
 		}
 	} else { /* FIXME: remove this if ldb supports natively aliasing between the rdn and the "cn" attribute */
 		if ( ldb_msg_add_value(module->ldb, msg2, "cn", &rdn->value)) {
-			return NULL;
-		}
-	}
-
-	if ((attribute = samldb_find_attribute(msg2, "name", NULL)) != NULL) {
-		if (strcasecmp(rdn->value.data, attribute->values[0].data) != 0) {
-			ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_user_or_computer_object: Bad Attribute Syntax for name\n");
-			return NULL;
-		}
-	} else { /* FIXME: remove this if ldb supports natively aliasing between the rdn and the "name" attribute */
-		if ( ldb_msg_add_value(module->ldb, msg2, "name", &rdn->value)) {
 			return NULL;
 		}
 	}
