@@ -55,7 +55,7 @@ ADS_STATUS ads_find_printer_on_server(ADS_STRUCT *ads, void **res,
 
 ADS_STATUS ads_find_printers(ADS_STRUCT *ads, void **res)
 {
-	char *ldap_expr;
+	const char *ldap_expr;
 	const char *attrs[] = { "objectClass", "printerName", "location", "driverName",
 				"serverName", "description", NULL };
 
