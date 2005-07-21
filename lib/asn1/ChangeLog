@@ -1,5 +1,8 @@
 2005-07-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rfc2459.asn1: Include enough workarounds that this even might
+	work.
+
 	* check-gen.c: Two implicit tests, one with all structures inlined
 	
 	* test.asn1: fix workaround for IMPLICIT CONS case
