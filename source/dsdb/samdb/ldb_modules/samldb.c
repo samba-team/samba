@@ -347,7 +347,7 @@ static int samldb_copy_template(struct ldb_module *module, struct ldb_message *m
 		if (strcasecmp(el->name, "cn") == 0 ||
 		    strcasecmp(el->name, "name") == 0 ||
 		    strcasecmp(el->name, "sAMAccountName") == 0 ||
-		    strcasecmp(el->name, "objectGUID")) {
+		    strcasecmp(el->name, "objectGUID") == 0) {
 			continue;
 		}
 		for (j = 0; j < el->num_values; j++) {
@@ -395,7 +395,7 @@ static struct ldb_message *samldb_fill_group_object(struct ldb_module *module, c
 		return NULL;
 	}
 
-	if (samldb_copy_template(module, msg2, "(&(name=TemplateGroup)(objectclass=groupTemplate))") != 0) {
+	if (samldb_copy_template(module, msg2, "(&(CN=TemplateGroup)(objectclass=groupTemplate))") != 0) {
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb_fill_group_object: Error copying template!\n");
 		return NULL;
 	}
@@ -473,9 +473,16 @@ static struct ldb_message *samldb_fill_user_or_computer_object(struct ldb_module
 		return NULL;
 	}
 
-	if (samldb_copy_template(module, msg2, "(&(name=TemplateUser)(objectclass=userTemplate))") != 0) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb_fill_user_or_computer_object: Error copying template!\n");
-		return NULL;
+	if (samldb_find_attribute(msg, "objectclass", "computer") == NULL) {
+		if (samldb_copy_template(module, msg2, "(&(CN=TemplateMemberServer)(objectclass=userTemplate))") != 0) {
+			ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb_fill_user_or_computer_object: Error copying computer template!\n");
+			return NULL;
+		}
+	} else {
+		if (samldb_copy_template(module, msg2, "(&(CN=TemplateUser)(objectclass=userTemplate))") != 0) {
+			ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb_fill_user_or_computer_object: Error copying user template!\n");
+			return NULL;
+		}
 	}
 
 	if ( ! samldb_get_rdn_and_basedn(msg2, msg2->dn, &rdn, &basedn)) {
