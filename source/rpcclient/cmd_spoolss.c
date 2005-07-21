@@ -2404,6 +2404,103 @@ done:
 /****************************************************************************
 ****************************************************************************/
 
+static BOOL compare_printer( struct cli_state *cli1, POLICY_HND *hnd1,
+                             struct cli_state *cli2, POLICY_HND *hnd2 )
+{
+	PRINTER_INFO_CTR ctr1, ctr2;
+	WERROR werror;
+	TALLOC_CTX *mem_ctx = talloc_init("compare_printer");
+
+	printf("Retrieving printer propertiesfor %s...", cli1->desthost);
+	werror = cli_spoolss_getprinter( cli1, mem_ctx, hnd1, 2, &ctr1);
+	if ( !W_ERROR_IS_OK(werror) ) {
+		printf("failed (%s)\n", dos_errstr(werror));
+		talloc_destroy(mem_ctx);
+		return False;
+	}
+	printf("ok\n");
+
+	printf("Retrieving printer properties for %s...", cli2->desthost);
+	werror = cli_spoolss_getprinter( cli2, mem_ctx, hnd2, 2, &ctr2);
+	if ( !W_ERROR_IS_OK(werror) ) {
+		printf("failed (%s)\n", dos_errstr(werror));
+		talloc_destroy(mem_ctx);
+		return False;
+	}
+	printf("ok\n");
+
+
+	talloc_destroy(mem_ctx);
+
+	return True;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static BOOL compare_printer_secdesc( struct cli_state *cli1, POLICY_HND *hnd1,
+                                     struct cli_state *cli2, POLICY_HND *hnd2 )
+{
+	PRINTER_INFO_CTR ctr1, ctr2;
+	WERROR werror;
+	TALLOC_CTX *mem_ctx = talloc_init("compare_printer_secdesc");
+	SEC_DESC *sd1, *sd2;
+	BOOL result = True;
+
+
+	printf("Retreiving printer security for %s...", cli1->desthost);
+	werror = cli_spoolss_getprinter( cli1, mem_ctx, hnd1, 3, &ctr1);
+	if ( !W_ERROR_IS_OK(werror) ) {
+		printf("failed (%s)\n", dos_errstr(werror));
+		result = False;
+		goto done;
+	}
+	printf("ok\n");
+
+	printf("Retrieving printer security for %s...", cli2->desthost);
+	werror = cli_spoolss_getprinter( cli2, mem_ctx, hnd2, 3, &ctr2);
+	if ( !W_ERROR_IS_OK(werror) ) {
+		printf("failed (%s)\n", dos_errstr(werror));
+		result = False;
+		goto done;
+	}
+	printf("ok\n");
+	
+
+	printf("++ ");
+
+	if ( (ctr1.printers_3 != ctr2.printers_3) && (!ctr1.printers_3 || !ctr2.printers_3) ) {
+		printf("NULL PRINTER_INFO_3!\n");
+		result = False;
+		goto done;
+	}
+	
+	sd1 = ctr1.printers_3->secdesc;
+	sd2 = ctr2.printers_3->secdesc;
+	
+	if ( (sd1 != sd2) && ( !sd1 || !sd2 ) ) {
+		printf("NULL secdesc!\n");
+		result = False;
+		goto done;
+	}
+	
+	if ( (ctr1.printers_3->flags != ctr1.printers_3->flags ) || !sec_desc_equal( sd1, sd2 ) ) {
+		printf("Security Descriptors *not* equal!\n");
+		result = False;
+		goto done;
+	}
+	
+	printf("Security descriptors match\n");
+	
+done:
+	talloc_destroy(mem_ctx);
+	return result;
+}
+
+
+/****************************************************************************
+****************************************************************************/
+
 static WERROR cmd_spoolss_printercmp(struct cli_state *cli, 
 				     TALLOC_CTX *mem_ctx, int argc, 
 				     const char **argv)
@@ -2415,7 +2512,6 @@ static WERROR cmd_spoolss_printercmp(struct cli_state *cli,
 	POLICY_HND hPrinter1, hPrinter2;
 	NTSTATUS nt_status;
 	WERROR werror;
-	PRINTER_INFO_CTR printer1_ctr, printer2_ctr;
 	
 	if ( argc != 3 )  {
 		printf("Usage: %s <printer> <server>\n", argv[0]);
@@ -2453,53 +2549,30 @@ static WERROR cmd_spoolss_printercmp(struct cli_state *cli,
 	printf("Opening %s...", printername_path);
 	werror = cli_spoolss_open_printer_ex( cli_server1, mem_ctx, printername_path, 
 		"", PRINTER_ALL_ACCESS, servername1, cli_server1->user_name, &hPrinter1);
-	if ( !W_ERROR_IS_OK(werror) )
+	if ( !W_ERROR_IS_OK(werror) ) {
+		printf("failed (%s)\n", dos_errstr(werror));
 		goto done;
+	}
 	printf("ok\n");
 	
 	pstr_sprintf( printername_path, "\\\\%s\\%s", servername2, printername );
 	printf("Opening %s...", printername_path);
 	werror = cli_spoolss_open_printer_ex( cli_server2, mem_ctx, printername_path,  
 		"", PRINTER_ALL_ACCESS, servername2, cli_server2->user_name, &hPrinter2 );
-	if ( !W_ERROR_IS_OK(werror) )
+	if ( !W_ERROR_IS_OK(werror) ) {
+		 printf("failed (%s)\n", dos_errstr(werror));
 		goto done;
+	}
 	printf("ok\n");
-		
 	
-	/* getprinter properties */
 	
-	printf("Retreiving printer properties for %s...", servername1);
-	werror = cli_spoolss_getprinter( cli_server1, mem_ctx, &hPrinter1,
-		2, &printer1_ctr);
-	if ( !W_ERROR_IS_OK(werror) )
-		goto done;
-	printf("ok\n");
+	compare_printer( cli_server1, &hPrinter1, cli_server2, &hPrinter2 );
+	compare_printer_secdesc( cli_server1, &hPrinter1, cli_server2, &hPrinter2 );
+#if 0
+	compare_printerdata( cli_server1, &hPrinter1, cli_server2, &hPrinter2 );
+#endif
 
-	printf("Retrieving printer properties for %s...", servername2);
-	werror = cli_spoolss_getprinter( cli_server2, mem_ctx, &hPrinter2,
-		2, &printer2_ctr);
-	if ( !W_ERROR_IS_OK(werror) )
-		goto done;
-	printf("ok\n");
-	
-	/* getprinter security */
-	
-	printf("Retreiving printer security for %s...", servername1);
-	werror = cli_spoolss_getprinter( cli_server1, mem_ctx, &hPrinter1,
-		3, &printer1_ctr);
-	if ( !W_ERROR_IS_OK(werror) )
-		goto done;
-	printf("ok\n");
 
-	printf("Retrieving printer security for %s...", servername2);
-	werror = cli_spoolss_getprinter( cli_server2, mem_ctx, &hPrinter2,
-		3, &printer2_ctr);
-	if ( !W_ERROR_IS_OK(werror) )
-		goto done;
-	printf("ok\n");
-		
-	/* get all printer data */
-	
 done:
 	/* cleanup */
 
