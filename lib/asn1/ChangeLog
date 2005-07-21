@@ -1,5 +1,8 @@
 2005-07-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* asn1_print.c: hint that there are IMPLICIT content when we find
+	it
+
 	* check-gen.c: Added #ifdef out test for IMPLICIT tagging.
 
 	* Makefile.am: test several IMPLICIT tag level deep
