@@ -60,8 +60,8 @@ static int timestamps_search_bytree(struct ldb_module *module, const char *base,
 static int add_time_element(struct ldb_module *module, struct ldb_message *msg, 
 			    const char *attr_name, const char *time_string, unsigned int flags)
 {
-	struct ldb_val *values;
-	char *name, *timestr;
+	struct ldb_message_element *attribute = NULL;
+
 	int i;
 
 	for (i = 0; i < msg->num_elements; i++) {
@@ -70,23 +70,22 @@ static int add_time_element(struct ldb_module *module, struct ldb_message *msg,
 		}
 	}
 
-	msg->elements = talloc_realloc(msg, msg->elements, 
-					 struct ldb_message_element, msg->num_elements + 1);
-	name = talloc_strdup(msg->elements, attr_name);
-	timestr = talloc_strdup(msg->elements, time_string);
-	values = talloc(msg->elements, struct ldb_val);
-	if (!msg->elements || !name || !timestr || !values) {
+	if (ldb_msg_add_string(module->ldb, msg, attr_name, time_string) != 0) {
 		return -1;
 	}
 
-	msg->elements[msg->num_elements].name = name;
-	msg->elements[msg->num_elements].flags = flags;
-	msg->elements[msg->num_elements].num_values = 1;
-	msg->elements[msg->num_elements].values = values;
-	msg->elements[msg->num_elements].values[0].data = timestr;
-	msg->elements[msg->num_elements].values[0].length = strlen(timestr);
+	for (i = 0; i < msg->num_elements; i++) {
+		if (ldb_attr_cmp(attr_name, msg->elements[i].name) == 0) {
+			attribute = &msg->elements[i];
+			break;
+		}
+	}
 
-	msg->num_elements += 1;
+	if (!attribute) {
+		return -1;
+	}
+
+	attribute->flags = flags;
 
 	return 0;
 }
@@ -196,12 +195,8 @@ static int timestamps_modify_record(struct ldb_module *module, const struct ldb_
 	add_time_element(module, msg2, "modifyTimestamp", timestr, LDB_FLAG_MOD_REPLACE);
 	add_time_element(module, msg2, "whenChanged", timestr, LDB_FLAG_MOD_REPLACE);
 
-	if (msg2) {
-		ret = ldb_next_modify_record(module, msg2);
-		talloc_free(msg2);
-	} else {
-		ret = ldb_next_modify_record(module, msg);
-	}
+	ret = ldb_next_modify_record(module, msg2);
+	talloc_free(msg2);
 
 	return ret;
 }

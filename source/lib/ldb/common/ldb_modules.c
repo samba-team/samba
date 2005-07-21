@@ -199,6 +199,16 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 			continue;
 		}
 
+		if (strcmp(modules[i], "rdn_name") == 0) {
+			current = rdn_name_module_init(ldb, options);
+			if (!current) {
+				ldb_debug(ldb, LDB_DEBUG_FATAL, "function 'init_module' in %s fails\n", modules[i]);
+				return -1;
+			}
+			DLIST_ADD(ldb->modules, current);
+			continue;
+		}
+
 #ifdef _SAMBA_BUILD_
 		if (strcmp(modules[i], "samldb") == 0) {
 			current = samldb_module_init(ldb, options);

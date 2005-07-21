@@ -5,7 +5,6 @@ dn: ${BASEDN}
 objectClass: top
 objectClass: domain
 objectClass: domainDNS
-name: ${DOMAIN}
 flatname: ${DOMAIN}
 dnsDomain: ${DNSDOMAIN}
 dc: ${DOMAIN}
@@ -46,7 +45,6 @@ instanceType: 4
 uSNCreated: 1
 uSNChanged: 1
 showInAdvancedViewOnly: FALSE
-name: Users
 systemFlags: 0x8c000000
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
@@ -60,7 +58,6 @@ instanceType: 4
 uSNCreated: 1
 uSNChanged: 1
 showInAdvancedViewOnly: FALSE
-name: Computers
 systemFlags: 0x8c000000
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
@@ -74,7 +71,6 @@ instanceType: 4
 uSNCreated: 1
 uSNChanged: 1
 showInAdvancedViewOnly: FALSE
-name: Domain Controllers
 systemFlags: 0x8c000000
 objectCategory: CN=Organizational-Unit,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
@@ -88,7 +84,6 @@ instanceType: 4
 uSNCreated: 1
 uSNChanged: 1
 showInAdvancedViewOnly: FALSE
-name: ForeignSecurityPrincipals
 systemFlags: 0x8c000000
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
@@ -102,7 +97,6 @@ instanceType: 4
 uSNCreated: 1
 uSNChanged: 1
 showInAdvancedViewOnly: TRUE
-name: System
 systemFlags: 0x8c000000
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
@@ -115,7 +109,6 @@ instanceType: 4
 uSNCreated: 1
 uSNChanged: 1
 showInAdvancedViewOnly: TRUE
-name: RID Manager$
 systemFlags: 0x8c000000
 objectCategory: CN=RID-Manager,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
@@ -130,7 +123,6 @@ instanceType: 4
 uSNCreated: 1
 uSNChanged: 1
 showInAdvancedViewOnly: TRUE
-name: DomainUpdates
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 
 dn: CN=Windows2003Update,CN=DomainUpdates,CN=System,${BASEDN}
@@ -141,7 +133,6 @@ instanceType: 4
 uSNCreated: 1
 uSNChanged: 1
 showInAdvancedViewOnly: TRUE
-name: Windows2003Update
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 revision: 8
 
@@ -153,7 +144,6 @@ instanceType: 4
 uSNCreated: 1
 uSNChanged: 1
 showInAdvancedViewOnly: TRUE
-name: Infrastructure
 systemFlags: 0x8c000000
 objectCategory: CN=Infrastructure-Update,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
@@ -165,7 +155,6 @@ objectClass: builtinDomain
 cn: Builtin
 instanceType: 4
 showInAdvancedViewOnly: FALSE
-name: Builtin
 forceLogoff: 0x8000000000000000
 lockoutDuration: -18000000000
 lockOutObservationWindow: -18000000000
@@ -198,7 +187,6 @@ memberOf: CN=Enterprise Admins,CN=Users,${BASEDN}
 memberOf: CN=Schema Admins,CN=Users,${BASEDN}
 memberOf: CN=Administrators,CN=Builtin,${BASEDN}
 uSNChanged: 1
-name: Administrator
 userAccountControl: 0x10200
 objectSid: ${DOMAINSID}-500
 adminCount: 1
@@ -218,7 +206,6 @@ description: Built-in account for guest access to the computer/domain
 uSNCreated: 1
 memberOf: CN=Guests,CN=Builtin,${BASEDN}
 uSNChanged: 1
-name: Guest
 userAccountControl: 0x10222
 primaryGroupID: 514
 objectSid: ${DOMAINSID}-501
@@ -235,7 +222,6 @@ member: CN=Enterprise Admins,CN=Users,${BASEDN}
 member: CN=Administrator,CN=Users,${BASEDN}
 uSNCreated: 1
 uSNChanged: 1
-name: Administrators
 objectSid: S-1-5-32-544
 adminCount: 1
 sAMAccountName: Administrators
@@ -279,7 +265,6 @@ description: Users are prevented from making accidental or intentional system-wi
 member: CN=Domain Users,CN=Users,${BASEDN}
 uSNCreated: 1
 uSNChanged: 1
-name: Users
 objectSid: S-1-5-32-545
 sAMAccountName: Users
 sAMAccountType: 0x20000000
@@ -297,7 +282,6 @@ member: CN=Domain Guests,CN=Users,${BASEDN}
 member: CN=Guest,CN=Users,${BASEDN}
 uSNCreated: 1
 uSNChanged: 1
-name: Guests
 objectSid: S-1-5-32-546
 sAMAccountName: Guests
 sAMAccountType: 0x20000000
@@ -314,7 +298,6 @@ cn: Print Operators
 description: Members can administer domain printers
 uSNCreated: 1
 uSNChanged: 1
-name: Print Operators
 objectSid: S-1-5-32-550
 adminCount: 1
 sAMAccountName: Print Operators
@@ -334,7 +317,6 @@ cn: Backup Operators
 description: Backup Operators can override security restrictions for the sole purpose of backing up or restoring files
 uSNCreated: 1
 uSNChanged: 1
-name: Backup Operators
 objectSid: S-1-5-32-551
 adminCount: 1
 sAMAccountName: Backup Operators
@@ -355,7 +337,6 @@ cn: Replicator
 description: Supports file replication in a domain
 uSNCreated: 1
 uSNChanged: 1
-name: Replicator
 objectSid: S-1-5-32-552
 adminCount: 1
 sAMAccountName: Replicator
@@ -372,7 +353,6 @@ cn: Remote Desktop Users
 description: Members in this group are granted the right to logon remotely
 uSNCreated: 1
 uSNChanged: 1
-name: Remote Desktop Users
 objectSid: S-1-5-32-555
 sAMAccountName: Remote Desktop Users
 sAMAccountType: 0x20000000
@@ -388,7 +368,6 @@ cn: Network Configuration Operators
 description: Members in this group can have some administrative privileges to manage configuration of networking features
 uSNCreated: 1
 uSNChanged: 1
-name: Network Configuration Operators
 objectSid: S-1-5-32-556
 sAMAccountName: Network Configuration Operators
 sAMAccountType: 0x20000000
@@ -404,7 +383,6 @@ cn: Performance Monitor Users
 description: Members of this group have remote access to monitor this computer
 uSNCreated: 1
 uSNChanged: 1
-name: Performance Monitor Users
 objectSid: S-1-5-32-558
 sAMAccountName: Performance Monitor Users
 sAMAccountType: 0x20000000
@@ -420,7 +398,6 @@ cn: Performance Log Users
 description: Members of this group have remote access to schedule logging of performance counters on this computer
 uSNCreated: 1
 uSNChanged: 1
-name: Performance Log Users
 objectSid: S-1-5-32-559
 sAMAccountName: Performance Log Users
 sAMAccountType: 0x20000000
@@ -437,7 +414,6 @@ objectClass: computer
 cn: ${NETBIOSNAME}
 uSNCreated: 1
 uSNChanged: 1
-name: ${NETBIOSNAME}
 objectGUID: ${HOSTGUID}
 userAccountControl: 532480
 lastLogon: 127273269057298624
@@ -467,7 +443,6 @@ description: Key Distribution Center Service Account
 uSNCreated: 1
 uSNChanged: 1
 showInAdvancedViewOnly: TRUE
-name: krbtgt
 userAccountControl: 514
 pwdLastSet: 127258826179466560
 objectSid: ${DOMAINSID}-502
@@ -486,7 +461,6 @@ cn: Domain Computers
 description: All workstations and servers joined to the domain
 uSNCreated: 1
 uSNChanged: 1
-name: Domain Computers
 objectSid: ${DOMAINSID}-515
 sAMAccountName: Domain Computers
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
@@ -499,7 +473,6 @@ cn: Domain Controllers
 description: All domain controllers in the domain
 uSNCreated: 1
 uSNChanged: 1
-name: Domain Controllers
 objectSid: ${DOMAINSID}-516
 adminCount: 1
 sAMAccountName: Domain Controllers
@@ -513,7 +486,6 @@ description: Designated administrators of the schema
 member: CN=Administrator,CN=Users,${BASEDN}
 uSNCreated: 1
 uSNChanged: 1
-name: Schema Admins
 objectSid: ${DOMAINSID}-518
 adminCount: 1
 sAMAccountName: Schema Admins
@@ -529,7 +501,6 @@ member: CN=Administrator,CN=Users,${BASEDN}
 uSNCreated: 1
 memberOf: CN=Administrators,CN=Builtin,${BASEDN}
 uSNChanged: 1
-name: Enterprise Admins
 objectSid: ${DOMAINSID}-519
 adminCount: 1
 sAMAccountName: Enterprise Admins
@@ -543,7 +514,6 @@ cn: Cert Publishers
 description: Members of this group are permitted to publish certificates to the Active Directory
 uSNCreated: 1
 uSNChanged: 1
-name: Cert Publishers
 groupType: 0x80000004
 sAMAccountType: 0x20000000
 objectSid: ${DOMAINSID}-517
@@ -560,7 +530,6 @@ member: CN=Administrator,CN=Users,${BASEDN}
 uSNCreated: 1
 memberOf: CN=Administrators,CN=Builtin,${BASEDN}
 uSNChanged: 1
-name: Domain Admins
 objectSid: ${DOMAINSID}-512
 adminCount: 1
 sAMAccountName: Domain Admins
@@ -575,7 +544,6 @@ description: All domain users
 uSNCreated: 1
 memberOf: CN=Users,CN=Builtin,${BASEDN}
 uSNChanged: 1
-name: Domain Users
 objectSid: ${DOMAINSID}-513
 sAMAccountName: Domain Users
 isCriticalSystemObject: TRUE
@@ -589,7 +557,6 @@ description: All domain guests
 uSNCreated: 1
 memberOf: CN=Guests,CN=Builtin,${BASEDN}
 uSNChanged: 1
-name: Domain Guests
 objectSid: ${DOMAINSID}-514
 sAMAccountName: Domain Guests
 isCriticalSystemObject: TRUE
@@ -602,7 +569,6 @@ description: Members in this group can modify group policy for the domain
 member: CN=Administrator,CN=Users,${BASEDN}
 uSNCreated: 1
 uSNChanged: 1
-name: Group Policy Creator Owners
 objectSid: ${DOMAINSID}-520
 sAMAccountName: Group Policy Creator Owners
 objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
@@ -617,7 +583,6 @@ description: Servers in this group can access remote access properties of users
 instanceType: 4
 uSNCreated: 1
 uSNChanged: 1
-name: RAS and IAS Servers
 objectSid: ${DOMAINSID}-553
 sAMAccountName: RAS and IAS Servers
 sAMAccountType: 0x20000000
@@ -633,7 +598,6 @@ description: Members can administer domain servers
 instanceType: 4
 uSNCreated: 1
 uSNChanged: 1
-name: Server Operators
 objectSid: S-1-5-32-549
 adminCount: 1
 sAMAccountName: Server Operators
@@ -657,7 +621,6 @@ description: Members can administer domain user and group accounts
 instanceType: 4
 uSNCreated: 1
 uSNChanged: 1
-name: Account Operators
 objectSid: S-1-5-32-548
 adminCount: 1
 sAMAccountName: Account Operators
@@ -679,7 +642,6 @@ instanceType: 13
 uSNCreated: ${USN}
 uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
-name: Configuration
 objectCategory: CN=Configuration,CN=Schema,CN=Configuration,${BASEDN}
 subRefs: CN=Schema,CN=Configuration,${BASEDN}
 masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
@@ -693,7 +655,6 @@ instanceType: 4
 uSNCreated: ${USN}
 uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
-name: Partitions
 systemFlags: 0x80000000
 objectCategory: CN=Cross-Ref-Container,CN=Schema,CN=Configuration,${BASEDN}
 msDS-Behavior-Version: 0
@@ -707,7 +668,6 @@ instanceType: 4
 uSNCreated: ${USN}
 uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
-name: Enterprise Configuration
 systemFlags: 0x00000001
 objectCategory: CN=Cross-Ref,CN=Schema,CN=Configuration,${BASEDN}
 nCName: CN=Configuration,${BASEDN}
@@ -721,7 +681,6 @@ instanceType: 4
 uSNCreated: ${USN}
 uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
-name: Enterprise Schema
 systemFlags: 0x00000001
 objectCategory: CN=Cross-Ref,CN=Schema,CN=Configuration,${BASEDN}
 nCName: CN=Schema,CN=Configuration,${BASEDN}
@@ -735,7 +694,6 @@ instanceType: 4
 uSNCreated: ${USN}
 uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
-name: ${DOMAIN}
 systemFlags: 0x00000003
 objectCategory: CN=Cross-Ref,CN=Schema,CN=Configuration,${BASEDN}
 nCName: ${BASEDN}
@@ -750,7 +708,6 @@ instanceType: 4
 uSNCreated: ${USN}
 uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
-name: Sites
 systemFlags: 0x82000000
 objectCategory: CN=Sites-Container,CN=Schema,CN=Configuration,${BASEDN}
 
@@ -762,7 +719,6 @@ instanceType: 4
 uSNCreated: ${USN}
 uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
-name: Sites
 systemFlags: 0x82000000
 objectCategory: CN=Site,CN=Schema,CN=Configuration,${BASEDN}
 
@@ -774,7 +730,6 @@ instanceType: 4
 uSNCreated: ${USN}
 uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
-name: Servers
 systemFlags: 0x82000000
 objectCategory: CN=Servers-Container,CN=Schema,CN=Configuration,${BASEDN}
 
@@ -786,7 +741,6 @@ instanceType: 4
 uSNCreated: ${USN}
 uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
-name: ${NETBIOSNAME}
 systemFlags: 0x52000000
 objectCategory: CN=Server,CN=Schema,CN=Configuration,${BASEDN}
 dNSHostName: ${DNSNAME}
@@ -801,7 +755,6 @@ instanceType: 4
 uSNCreated: ${USN}
 uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
-name: NTDS Settings
 systemFlags: 0x02000000
 objectCategory: CN=NTDS-DSA,CN=Schema,CN=Configuration,${BASEDN}
 dMDLocation: CN=Schema,CN=Configuration,${BASEDN}
@@ -817,7 +770,6 @@ instanceType: 4
 uSNCreated: ${USN}
 uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
-name: Services
 systemFlags: 0x80000000
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 
@@ -829,7 +781,6 @@ instanceType: 4
 uSNCreated: ${USN}
 uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
-name: Windows NT
 objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
 
 dn: CN=Directory Service,CN=Windows NT,CN=Services,CN=Configuration,${BASEDN}
@@ -840,7 +791,6 @@ instanceType: 4
 uSNCreated: ${USN}
 uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
-name: Directory Service
 objectCategory: CN=NTDS-Service,CN=Schema,CN=Configuration,${BASEDN}
 sPNMappings: host=ldap,dns,cifs
 
@@ -856,7 +806,6 @@ instanceType: 13
 uSNCreated: ${USN}
 uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
-name: Schema
 objectCategory: CN=DMD,CN=Schema,CN=Configuration,${BASEDN}
 masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
 msDs-masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
