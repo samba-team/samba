@@ -1,3 +1,8 @@
+2005-07-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rfc2459.asn1: some of the structure are in the IMPLICIT TAGS
+	module
+
 2005-07-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* asn1_print.c: print size_t by casting to unsigned long and use
