@@ -17,6 +17,15 @@ INIT_OBJ_FILES = \
 ################################################
 
 ################################################
+# Start MODULE libldb_rdn_name
+[MODULE::libldb_rdn_name]
+SUBSYSTEM = LIBLDB
+INIT_OBJ_FILES = \
+		lib/ldb/modules/rdn_name.o
+# End MODULE libldb_rdn_name
+################################################
+
+################################################
 # Start MODULE libldb_schema
 [MODULE::libldb_schema]
 SUBSYSTEM = LIBLDB
