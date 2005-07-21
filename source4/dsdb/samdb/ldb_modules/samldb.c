@@ -507,7 +507,7 @@ static struct ldb_message *samldb_fill_user_or_computer_object(struct ldb_module
 			return NULL;
 		}
 	} else { /* FIXME: remove this if ldb supports natively aliasing between the rdn and the "cn" attribute */
-		if ( !ldb_msg_add_value(module->ldb, msg2, "cn", &rdn->value)) {
+		if ( ldb_msg_add_value(module->ldb, msg2, "cn", &rdn->value)) {
 			return NULL;
 		}
 	}
@@ -518,7 +518,7 @@ static struct ldb_message *samldb_fill_user_or_computer_object(struct ldb_module
 			return NULL;
 		}
 	} else { /* FIXME: remove this if ldb supports natively aliasing between the rdn and the "name" attribute */
-		if ( !ldb_msg_add_value(module->ldb, msg2, "name", &rdn->value)) {
+		if ( ldb_msg_add_value(module->ldb, msg2, "name", &rdn->value)) {
 			return NULL;
 		}
 	}
