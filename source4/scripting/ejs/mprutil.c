@@ -151,7 +151,7 @@ struct MprVar mprData(const uint8_t *p, size_t length)
 /*
   turn a ldb_message into a ejs object variable
 */
-struct MprVar mprLdbMessage(struct ldb_message *msg)
+static struct MprVar mprLdbMessage(struct ldb_context *ldb, struct ldb_message *msg)
 {
 	struct MprVar var;
 	int i;
@@ -166,16 +166,29 @@ struct MprVar mprLdbMessage(struct ldb_message *msg)
 	for (i=0;i<msg->num_elements;i++) {
 		struct ldb_message_element *el = &msg->elements[i];
 		struct MprVar val;
+		const struct ldb_attrib_handler *attr;
+		struct ldb_val v;
+
+		attr = ldb_attrib_handler(ldb, el->name);
+		if (attr == NULL) {
+			goto failed;
+		}
+
 		if (el->num_values == 1 &&
 		    !str_list_check_ci(multivalued, el->name)) {
-			val = mprData(el->values[0].data, el->values[0].length);
+			if (attr->ldif_write_fn(ldb, msg, &el->values[0], &v) != 0) {
+				goto failed;
+			}
+			val = mprData(v.data, v.length);
 		} else {
 			int j;
 			val = mprObject(el->name);
 			for (j=0;j<el->num_values;j++) {
-				mprAddArray(&val, j, 
-					    mprData(el->values[j].data, 
-						    el->values[j].length));
+				if (attr->ldif_write_fn(ldb, msg, 
+							&el->values[j], &v) != 0) {
+					goto failed;
+				}
+				mprAddArray(&val, j, mprData(v.data, v.length));
 			}
 		}
 		mprSetVar(&var, el->name, val);
@@ -187,20 +200,23 @@ struct MprVar mprLdbMessage(struct ldb_message *msg)
 	}
 	
 	return var;		
+failed:
+	return mprCreateUndefinedVar();
 }
 
 
 /*
   turn an array of ldb_messages into a ejs object variable
 */
-struct MprVar mprLdbArray(struct ldb_message **msg, int count, const char *name)
+struct MprVar mprLdbArray(struct ldb_context *ldb, 
+			  struct ldb_message **msg, int count, const char *name)
 {
 	struct MprVar res;
 	int i;
 
 	res = mprObject(name);
 	for (i=0;i<count;i++) {
-		mprAddArray(&res, i, mprLdbMessage(msg[i]));
+		mprAddArray(&res, i, mprLdbMessage(ldb, msg[i]));
 	}
 	if (i==0) {
 		mprSetVar(&res, "length", mprCreateIntegerVar(0));
