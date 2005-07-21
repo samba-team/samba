@@ -268,6 +268,7 @@ function provision_guess()
 	var subobj = new Object();
 	var nss = nss_init();
 	var lp = loadparm_init();
+	var rdn_list;
 	random_init(local);
 
 	subobj.REALM        = lp.get("realm");
@@ -302,6 +303,8 @@ function provision_guess()
 				      strlower(subobj.HOSTNAME), 
 				      subobj.DNSDOMAIN);
 	subobj.BASEDN       = "DC=" + join(",DC=", split(".", subobj.REALM));
+	rdn_list = split(".", subobj.REALM);
+	subobj.RDN_DC       = rdn_list[0];
 	return subobj;
 }
 
