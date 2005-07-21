@@ -126,9 +126,9 @@ TBSCertificate  ::=  SEQUENCE  {
      validity             Validity,
      subject              Name,
      subjectPublicKeyInfo SubjectPublicKeyInfo,
-     issuerUniqueID  [1]  IMPLICIT UniqueIdentifier OPTIONAL,
+     issuerUniqueID  [1]  IMPLICIT BIT STRING -- UniqueIdentifier -- OPTIONAL,
                           -- If present, version shall be v2 or v3
-     subjectUniqueID [2]  IMPLICIT UniqueIdentifier OPTIONAL,
+     subjectUniqueID [2]  IMPLICIT BIT STRING -- UniqueIdentifier -- OPTIONAL,
                           -- If present, version shall be v2 or v3
      extensions      [3]  EXPLICIT Extensions OPTIONAL
                           -- If present, version shall be v3
@@ -161,11 +161,16 @@ OtherName ::= SEQUENCE {
 }
 
 GeneralName ::= CHOICE {
-	otherName			[0]     IMPLICIT OtherName,
+	otherName			[0]     IMPLICIT -- OtherName -- SEQUENCE {
+		type-id    OBJECT IDENTIFIER,
+		value      [0] EXPLICIT heim_any
+	},
 	rfc822Name			[1]     IMPLICIT IA5String,
 	dNSName				[2]     IMPLICIT IA5String,
 --	x400Address			[3]     IMPLICIT ORAddress,--
-	directoryName			[4]     IMPLICIT Name,
+	directoryName			[4]     IMPLICIT -- Name -- CHOICE {
+		rdnSequence  RDNSequence
+	},
 --	ediPartyName			[5]     IMPLICIT EDIPartyName, --
 	uniformResourceIdentifier	[6]     IMPLICIT IA5String,
 	iPAddress			[7]     IMPLICIT OCTET STRING,
@@ -194,7 +199,8 @@ KeyIdentifier ::= OCTET STRING
 
 AuthorityKeyIdentifier ::= SEQUENCE {
 	keyIdentifier             [0] IMPLICIT OCTET STRING OPTIONAL,
-	authorityCertIssuer       [1] IMPLICIT heim_any OPTIONAL, 
+	authorityCertIssuer       [1] IMPLICIT -- GeneralName -- 
+		SEQUENCE -- SIZE (1..MAX) -- OF GeneralName OPTIONAL, 
 	authorityCertSerialNumber [2] IMPLICIT INTEGER OPTIONAL
 }
 
@@ -215,15 +221,15 @@ BaseDistance ::= INTEGER -- (0..MAX) --
 
 GeneralSubtree ::= SEQUENCE {
 	base			GeneralName,
-	minimum		[0]	IMPLICIT BaseDistance OPTIONAL -- DEFAULT 0 --,
-	maximum		[1]	IMPLICIT BaseDistance OPTIONAL
+	minimum		[0]	IMPLICIT -- BaseDistance -- INTEGER OPTIONAL -- DEFAULT 0 --,
+	maximum		[1]	IMPLICIT -- BaseDistance -- INTEGER OPTIONAL
 }
 
 GeneralSubtrees ::= SEQUENCE -- SIZE (1..MAX) -- OF GeneralSubtree
 
 NameConstraints ::= SEQUENCE {
-	permittedSubtrees       [0]     IMPLICIT GeneralSubtrees OPTIONAL,
-	excludedSubtrees        [1]     IMPLICIT GeneralSubtrees OPTIONAL
+	permittedSubtrees       [0]     IMPLICIT -- GeneralSubtrees -- SEQUENCE OF GeneralSubtree OPTIONAL,
+	excludedSubtrees        [1]     IMPLICIT -- GeneralSubtrees -- SEQUENCE OF GeneralSubtree OPTIONAL
 }
 
 id-x509-ce-privateKeyUsagePeriod OBJECT IDENTIFIER ::=  { id-x509-ce 16 }
