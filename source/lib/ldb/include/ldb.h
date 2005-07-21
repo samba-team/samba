@@ -440,4 +440,7 @@ int ldb_set_debug_stderr(struct ldb_context *ldb);
 int ldb_set_opaque(struct ldb_context *ldb, const char *name, void *value);
 void *ldb_get_opaque(struct ldb_context *ldb, const char *name);
 
+const struct ldb_attrib_handler *ldb_attrib_handler(struct ldb_context *ldb,
+						    const char *attrib);
+
 #endif
