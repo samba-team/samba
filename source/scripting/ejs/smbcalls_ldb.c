@@ -103,7 +103,7 @@ static int ejs_ldbSearch(MprVarHandle eid, int argc, struct MprVar **argv)
 		ejsSetErrorMsg(eid, "ldb.search failed - %s", ldb_errstring(ldb));
 		mpr_Return(eid, mprCreateUndefinedVar());
 	} else {
-		mpr_Return(eid, mprLdbArray(res, ret, "ldb_message"));
+		mpr_Return(eid, mprLdbArray(ldb, res, ret, "ldb_message"));
 	}
 
 	talloc_free(tmp_ctx);

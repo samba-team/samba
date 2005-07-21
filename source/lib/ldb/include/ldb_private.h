@@ -172,9 +172,6 @@ int lsqlite3_connect(struct ldb_context *ldb,
 struct ldb_module *timestamps_module_init(struct ldb_context *ldb, const char *options[]);
 struct ldb_module *schema_module_init(struct ldb_context *ldb, const char *options[]);
 
-const struct ldb_attrib_handler *ldb_attrib_handler(struct ldb_context *ldb,
-						    const char *attrib);
-
 int ldb_match_msg(struct ldb_context *ldb, 
 		  struct ldb_message *msg,
 		  struct ldb_parse_tree *tree,
