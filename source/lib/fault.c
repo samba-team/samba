@@ -187,6 +187,9 @@ void fault_setup(const char *pname)
 #ifdef SIGABRT
 	CatchSignal(SIGABRT,SIGNAL_CAST sig_fault);
 #endif
+#ifdef SIGFPE
+	CatchSignal(SIGFPE,SIGNAL_CAST sig_fault);
+#endif
 }
 
 /*
