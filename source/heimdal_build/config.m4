@@ -161,6 +161,11 @@ AC_EGREP_HEADER(ws_ypixel, termios.h,
 
 AC_KRB_STRUCT_WINSIZE
 
+AC_TYPE_SIGNAL
+if test "$ac_cv_type_signal" = "void" ; then
+	AC_DEFINE(VOID_RETSIGTYPE, 1, [Define if signal handlers return void.])
+fi
+AC_SUBST(VOID_RETSIGTYPE)
 
 AC_CHECK_DECL(h_errno, 
               [AC_DEFINE(HAVE_DECL_H_ERRNO,1,whether h_errno is declared)], [], [
