@@ -1938,7 +1938,7 @@ int sys_aio_fsync(int op, SMB_STRUCT_AIOCB *aiocb)
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64) && defined(HAVE_AIO_FSYNC64)
         return aio_fsync64(op, aiocb);
 #elif defined(HAVE_AIO_FSYNC)
-        return aio_fsync64(op, aiocb);
+        return aio_fsync(op, aiocb);
 #else
 	errno = ENOSYS;
 	return -1;
