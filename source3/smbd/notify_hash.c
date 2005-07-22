@@ -23,13 +23,27 @@
 
 struct change_data {
 	time_t last_check_time; /* time we last checked this entry */
+#ifdef HAVE_STAT_HIRES_TIMESTAMPS
+	struct timespec modify_time;
+	struct timespec status_time;
+#else
 	time_t modify_time; /* Info from the directory we're monitoring. */ 
 	time_t status_time; /* Info from the directory we're monitoring. */
+#endif
 	time_t total_time; /* Total time of all directory entries - don't care if it wraps. */
 	unsigned int num_entries; /* Zero or the number of files in the directory. */
 	unsigned int mode_sum;
 	unsigned char name_hash[16];
 };
+
+
+#ifdef HAVE_STAT_HIRES_TIMESTAMPS
+/* Compare struct timespec. */
+#define TIMESTAMP_NEQ(x, y) (((x).tv_sec != (y).tv_sec) || ((x).tv_nsec != (y).tv_nsec))
+#else
+/* Compare time_t . */
+#define TIMESTAMP_NEQ(x, y) ((x) != (y))
+#endif
 
 /****************************************************************************
  Create the hash we will use to determine if the contents changed.
@@ -52,20 +66,36 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 	if(SMB_VFS_STAT(conn,path, &st) == -1)
 		return False;
 
+#ifdef HAVE_STAT_HIRES_TIMESTAMPS
+	data->modify_time = st.st_mtim;
+	data->status_time = st.st_ctim;
+#else
 	data->modify_time = st.st_mtime;
 	data->status_time = st.st_ctime;
+#endif
 
 	if (old_data) {
 		/*
 		 * Shortcut to avoid directory scan if the time
 		 * has changed - we always must return true then.
 		 */
-		if (old_data->modify_time != data->modify_time ||
-			old_data->status_time != data->status_time ) {
+		if (TIMESTAMP_NEQ(old_data->modify_time, data->modify_time) ||
+		    TIMESTAMP_NEQ(old_data->status_time, data->status_time) ) {
 				return True;
 		}
 	}
  
+        if (S_ISDIR(st.st_mode) && 
+            (flags & ~(FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME)) == 0)
+        {
+		/* This is the case of a client wanting to know only when
+		 * the contents of a directory changes. Since any file
+		 * creation, rename or deletion will update the directory
+		 * timestamps, we don't need to create a hash.
+		 */
+                return True;
+        }
+
 	/*
 	 * If we are to watch for changes that are only stored
 	 * in inodes of files, not in the directory inode, we must
@@ -176,8 +206,8 @@ static BOOL hash_check_notify(connection_struct *conn, uint16 vuid, char *path, 
 	}
 
 	if (!notify_hash(conn, path, flags, &data2, data) ||
-	    data2.modify_time != data->modify_time ||
-	    data2.status_time != data->status_time ||
+	    TIMESTAMP_NEQ(data2.modify_time, data->modify_time) ||
+	    TIMESTAMP_NEQ(data2.status_time, data->status_time) ||
 	    data2.total_time != data->total_time ||
 	    data2.num_entries != data->num_entries ||
 		data2.mode_sum != data->mode_sum ||
