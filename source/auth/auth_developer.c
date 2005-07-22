@@ -48,7 +48,7 @@ static NTSTATUS name_to_ntstatus_check_password(struct auth_method_context *ctx,
 	struct auth_serversupplied_info *server_info;
 	fstring user;
 	uint32_t error_num;
-	fstrcpy(user, user_info->account_name);
+	fstrcpy(user, user_info->client.account_name);
 
 	if (strncasecmp("NT_STATUS", user, strlen("NT_STATUS")) == 0) {
 		nt_status = nt_status_string_to_code(user);
