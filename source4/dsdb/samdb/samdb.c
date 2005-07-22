@@ -88,8 +88,10 @@ const char *samdb_search_string_v(struct ldb_context *sam_ldb,
 				  const char *format, va_list ap) _PRINTF_ATTRIBUTE(5,0)
 {
 	int count;
-	const char * const attrs[2] = { attr_name, NULL };
+	const char *attrs[2] = { NULL, NULL };
 	struct ldb_message **res = NULL;
+
+	attrs[0] = attr_name;
 
 	count = gendb_search_v(sam_ldb, mem_ctx, basedn, &res, attrs, format, ap);
 	if (count > 1) {		
@@ -136,8 +138,10 @@ struct dom_sid *samdb_search_dom_sid(struct ldb_context *sam_ldb,
 	va_list ap;
 	int count;
 	struct ldb_message **res;
-	const char * const attrs[2] = { attr_name, NULL };
+	const char *attrs[2] = { NULL, NULL };
 	struct dom_sid *sid;
+
+	attrs[0] = attr_name;
 
 	va_start(ap, format);
 	count = gendb_search_v(sam_ldb, mem_ctx, basedn, &res, attrs, format, ap);
@@ -189,7 +193,9 @@ uint_t samdb_search_uint(struct ldb_context *sam_ldb,
 	va_list ap;
 	int count;
 	struct ldb_message **res;
-	const char * const attrs[2] = { attr_name, NULL };
+	const char *attrs[2] = { NULL, NULL };
+
+	attrs[0] = attr_name;
 
 	va_start(ap, format);
 	count = gendb_search_v(sam_ldb, mem_ctx, basedn, &res, attrs, format, ap);
@@ -215,7 +221,9 @@ int64_t samdb_search_int64(struct ldb_context *sam_ldb,
 	va_list ap;
 	int count;
 	struct ldb_message **res;
-	const char * const attrs[2] = { attr_name, NULL };
+	const char *attrs[2] = { NULL, NULL };
+
+	attrs[0] = attr_name;
 
 	va_start(ap, format);
 	count = gendb_search_v(sam_ldb, mem_ctx, basedn, &res, attrs, format, ap);
@@ -241,8 +249,10 @@ int samdb_search_string_multiple(struct ldb_context *sam_ldb,
 {
 	va_list ap;
 	int count, i;
-	const char * const attrs[2] = { attr_name, NULL };
+	const char *attrs[2] = { NULL, NULL };
 	struct ldb_message **res = NULL;
+
+	attrs[0] = attr_name;
 
 	va_start(ap, format);
 	count = gendb_search_v(sam_ldb, mem_ctx, basedn, &res, attrs, format, ap);
@@ -852,7 +862,7 @@ int samdb_msg_add_uint(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct 
 int samdb_msg_add_int64(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			const char *attr_name, int64_t v)
 {
-	const char *s = talloc_asprintf(mem_ctx, "%"PRIi64, v);
+	const char *s = talloc_asprintf(mem_ctx, "%lld", v);
 	return samdb_msg_add_string(sam_ldb, mem_ctx, msg, attr_name, s);
 }
 
@@ -862,7 +872,7 @@ int samdb_msg_add_int64(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct
 int samdb_msg_add_uint64(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			const char *attr_name, uint64_t v)
 {
-	const char *s = talloc_asprintf(mem_ctx, "%"PRIu64, v);
+	const char *s = talloc_asprintf(mem_ctx, "%llu", v);
 	return samdb_msg_add_string(sam_ldb, mem_ctx, msg, attr_name, s);
 }
 
