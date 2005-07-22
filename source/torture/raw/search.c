@@ -625,14 +625,14 @@ static BOOL test_many_files(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("Creating %d files\n", num_files);
 
 	for (i=0;i<num_files;i++) {
-		asprintf(&fname, BASEDIR "\\t%03d-%d.txt", i, i);
+		fname = talloc_asprintf(cli, BASEDIR "\\t%03d-%d.txt", i, i);
 		fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
 		if (fnum == -1) {
 			printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
 			ret = False;
 			goto done;
 		}
-		free(fname);
+		talloc_free(fname);
 		smbcli_close(cli->tree, fnum);
 	}
 
@@ -685,13 +685,13 @@ static BOOL test_many_files(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			} else {
 				s = result.list[i].search.name;
 			}
-			asprintf(&fname, "t%03d-%d.txt", i, i);
+			fname = talloc_asprintf(cli, "t%03d-%d.txt", i, i);
 			if (strcmp(fname, s)) {
 				printf("Incorrect name %s at entry %d\n", s, i);
 				ret = False;
 				break;
 			}
-			free(fname);
+			talloc_free(fname);
 		}
 		talloc_free(result.mem_ctx);
 	}
@@ -758,14 +758,14 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("Creating %d files\n", num_files);
 
 	for (i=num_files-1;i>=0;i--) {
-		asprintf(&fname, BASEDIR "\\t%03d-%d.txt", i, i);
+		fname = talloc_asprintf(cli, BASEDIR "\\t%03d-%d.txt", i, i);
 		fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
 		if (fnum == -1) {
 			printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
 			ret = False;
 			goto done;
 		}
-		free(fname);
+		talloc_free(fname);
 		smbcli_close(cli->tree, fnum);
 	}
 
@@ -876,14 +876,14 @@ static BOOL test_sorted(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("Creating %d files\n", num_files);
 
 	for (i=0;i<num_files;i++) {
-		asprintf(&fname, BASEDIR "\\%s.txt", generate_random_str_list(mem_ctx, 10, "abcdefgh"));
+		fname = talloc_asprintf(cli, BASEDIR "\\%s.txt", generate_random_str_list(mem_ctx, 10, "abcdefgh"));
 		fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
 		if (fnum == -1) {
 			printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
 			ret = False;
 			goto done;
 		}
-		free(fname);
+		talloc_free(fname);
 		smbcli_close(cli->tree, fnum);
 	}
 
@@ -939,7 +939,7 @@ static BOOL test_many_dirs(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("Creating %d dirs\n", num_dirs);
 
 	for (i=0;i<num_dirs;i++) {
-		asprintf(&dname, BASEDIR "\\d%d", i);
+		dname = talloc_asprintf(cli, BASEDIR "\\d%d", i);
 		status = smbcli_mkdir(cli->tree, dname);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("(%s) Failed to create %s - %s\n", 
@@ -949,7 +949,7 @@ static BOOL test_many_dirs(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		}
 
 		for (n=0;n<3;n++) {
-			asprintf(&fname, BASEDIR "\\d%d\\f%d-%d.txt", i, i, n);
+			fname = talloc_asprintf(cli, BASEDIR "\\d%d\\f%d-%d.txt", i, i, n);
 			fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
 			if (fnum == -1) {
 				printf("(%s) Failed to create %s - %s\n", 
@@ -957,11 +957,11 @@ static BOOL test_many_dirs(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 				ret = False;
 				goto done;
 			}
-			free(fname);
+			talloc_free(fname);
 			smbcli_close(cli->tree, fnum);
 		}
 
-		free(dname);
+		talloc_free(dname);
 	}
 
 	file  = talloc_zero_array(mem_ctx, union smb_search_data, num_dirs);
@@ -1103,14 +1103,14 @@ static BOOL test_os2_delete(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("Testing OS/2 style delete on %d files\n", num_files);
 
 	for (i=0;i<num_files;i++) {
-		asprintf(&fname, BASEDIR "\\file%u.txt", i);
+		fname = talloc_asprintf(cli, BASEDIR "\\file%u.txt", i);
 		fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
 		if (fnum == -1) {
 			printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
 			ret = False;
 			goto done;
 		}
-		free(fname);
+		talloc_free(fname);
 		smbcli_close(cli->tree, fnum);
 	}
 
@@ -1130,10 +1130,11 @@ static BOOL test_os2_delete(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	for (i=0;i<MIN(result.count, delete_count);i++) {
-		asprintf(&fname, BASEDIR "\\%s", result.list[i].ea_size.name.s);
+		fname = talloc_asprintf(cli, BASEDIR "\\%s", result.list[i].ea_size.name.s);
 		status = smbcli_unlink(cli->tree, fname);
 		CHECK_STATUS(status, NT_STATUS_OK);
 		total_deleted++;
+		talloc_free(fname);
 	}
 
 	io2.t2fnext.level = RAW_SEARCH_EA_SIZE;
@@ -1154,10 +1155,11 @@ static BOOL test_os2_delete(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		}
 
 		for (i=0;i<MIN(result.count, delete_count);i++) {
-			asprintf(&fname, BASEDIR "\\%s", result.list[i].ea_size.name.s);
+			fname = talloc_asprintf(cli, BASEDIR "\\%s", result.list[i].ea_size.name.s);
 			status = smbcli_unlink(cli->tree, fname);
 			CHECK_STATUS(status, NT_STATUS_OK);
 			total_deleted++;
+			talloc_free(fname);
 		}
 
 		if (i>0) {
