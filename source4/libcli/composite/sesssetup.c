@@ -169,12 +169,10 @@ static struct smbcli_request *session_setup_nt1(struct composite_context *c,
 	} else if (session->transport->negotiate.sec_mode & 
 		   NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) {
 		DATA_BLOB session_key;
-		/* TODO: NTLMv2 in the client session setup */
 		if (lp_client_ntlmv2_auth()) {
 			DATA_BLOB names_blob = NTLMv2_generate_names_blob(state, lp_netbios_name(), lp_workgroup());
 			DATA_BLOB lmv2_response, ntlmv2_response, lmv2_session_key;
 			
-			/* TODO - test with various domain cases, and without domain */
 			if (!SMBNTLMv2encrypt_hash(state, 
 						   state->setup.nt1.in.user, state->setup.nt1.in.domain, 
 						   nt_hash->hash, &session->transport->negotiate.secblob,
