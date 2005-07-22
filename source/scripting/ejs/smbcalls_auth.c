@@ -47,16 +47,31 @@ static int ejs_doauth(TALLOC_CTX *tmp_ctx, struct MprVar *auth, const char *user
 		goto done;
 	}
 
-	pw_blob = data_blob(password, strlen(password)+1),
-	make_user_info(tmp_ctx, username, username,
-				domain, domain,
-				remote_host, remote_host,
-				NULL, NULL,
-				NULL, NULL,
-				&pw_blob, False,
-				USER_INFO_CASE_INSENSITIVE_USERNAME |
-				USER_INFO_DONT_CHECK_UNIX_ACCOUNT,
-				&user_info);
+	pw_blob = data_blob(password, strlen(password)+1);
+	
+	user_info = talloc(tmp_ctx, struct auth_usersupplied_info);
+	if (!user_info) {
+		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));
+		mprSetPropertyValue(auth, "report", mprString("talloc failed"));
+		goto done;
+	}
+
+	user_info->mapped_state = True;
+	user_info->client.account_name = username;
+	user_info->mapped.account_name = username;
+	user_info->client.domain_name = domain;
+	user_info->mapped.domain_name = domain;
+
+	user_info->workstation_name = remote_host;
+
+	user_info->remote_host = remote_host;
+
+	user_info->password_state = AUTH_PASSWORD_PLAIN;
+	user_info->password.plaintext = talloc_strdup(user_info, password);
+
+	user_info->flags = USER_INFO_CASE_INSENSITIVE_USERNAME |
+		USER_INFO_DONT_CHECK_UNIX_ACCOUNT;
+
 	nt_status = auth_check_password(auth_context, tmp_ctx, user_info, &server_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		mprSetPropertyValue(auth, "result", mprCreateBoolVar(False));

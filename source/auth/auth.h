@@ -40,27 +40,38 @@
 #define USER_INFO_CASE_INSENSITIVE_PASSWORD 0x02 /* password may be in any case */
 #define USER_INFO_DONT_CHECK_UNIX_ACCOUNT   0x04 /* dont check unix account status */
 
+enum auth_password_state {
+	AUTH_PASSWORD_RESPONSE,
+	AUTH_PASSWORD_HASH,
+	AUTH_PASSWORD_PLAIN
+};
+
 struct auth_usersupplied_info
 {
-	const char *account_name;
-	const char *domain_name;
 	const char *workstation_name;
 	const char *remote_host;
 
+	BOOL mapped_state;
 	/* the values the client gives us */
 	struct {
 		const char *account_name;
 		const char *domain_name;
-	} client;
+	} client, mapped;
 
-	BOOL encrypted;
+	enum auth_password_state password_state;
 
- 	DATA_BLOB lm_resp;
-	DATA_BLOB nt_resp;
-	DATA_BLOB lm_interactive_password;
-	DATA_BLOB nt_interactive_password;
- 	DATA_BLOB plaintext_password;
-
+	union {
+		struct {
+			DATA_BLOB lanman;
+			DATA_BLOB nt;
+		} response;
+		struct {
+			struct samr_Password *lanman;
+			struct samr_Password *nt;
+		} hash;
+		
+		char *plaintext;
+	} password;
 	uint32_t flags;
 };
 
@@ -157,7 +168,12 @@ struct auth_critical_sizes {
 	int sizeof_auth_context;
 	int sizeof_auth_usersupplied_info;
 	int sizeof_auth_serversupplied_info;
-	int sizeof_auth_str;
 };
+
+ NTSTATUS encrypt_user_info(TALLOC_CTX *mem_ctx, struct auth_context *auth_context, 
+			   enum auth_password_state to_state,
+			   const struct auth_usersupplied_info *user_info_in,
+			   const struct auth_usersupplied_info **user_info_encrypted);
+
 
 #endif /* _SMBAUTH_H_ */

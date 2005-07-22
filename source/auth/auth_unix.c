@@ -38,7 +38,7 @@ static NTSTATUS authunix_make_server_info(TALLOC_CTX *mem_ctx,
 
 	server_info->authenticated = True;
 
-	server_info->account_name = talloc_strdup(server_info, talloc_strdup(mem_ctx, user_info->account_name));
+	server_info->account_name = talloc_strdup(server_info, talloc_strdup(mem_ctx, user_info->mapped.account_name));
 	NT_STATUS_HAVE_NO_MEMORY(server_info->account_name);
 
 	server_info->domain_name = talloc_strdup(server_info, talloc_strdup(mem_ctx, "unix"));
@@ -379,8 +379,8 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersuppl
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	info->account_name = user_info->account_name;
-	info->plaintext_password = (char *)(user_info->plaintext_password.data);
+	info->account_name = user_info->mapped.account_name;
+	info->plaintext_password = user_info->password.plaintext;
 
 	pamconv = talloc(ctx, struct pam_conv);
 	if (pamconv == NULL) {
@@ -395,13 +395,13 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersuppl
 	 * if true set up a crack name routine.
 	 */
 
-	nt_status = smb_pam_start(&pamh, user_info->account_name, user_info->remote_host, pamconv);
+	nt_status = smb_pam_start(&pamh, user_info->mapped.account_name, user_info->remote_host, pamconv);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		smb_pam_end(pamh);
 		return nt_status;
 	}
 
-	nt_status = smb_pam_auth(pamh, user_info->account_name);
+	nt_status = smb_pam_auth(pamh, user_info->mapped.account_name);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		smb_pam_end(pamh);
 		return nt_status;
@@ -409,13 +409,13 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersuppl
 
 	if ( ! (user_info->flags & USER_INFO_DONT_CHECK_UNIX_ACCOUNT)) {
 
-		nt_status = smb_pam_account(pamh, user_info->account_name);
+		nt_status = smb_pam_account(pamh, user_info->mapped.account_name);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			smb_pam_end(pamh);
 			return nt_status;
 		}
 
-		nt_status = smb_pam_setcred(pamh, user_info->account_name);
+		nt_status = smb_pam_setcred(pamh, user_info->mapped.account_name);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			smb_pam_end(pamh);
 			return nt_status;
@@ -598,8 +598,8 @@ static NTSTATUS check_unix_password(TALLOC_CTX *ctx, const struct auth_usersuppl
 	NTSTATUS nt_status;
 	int level = lp_passwordlevel();
 
-	username = talloc_strdup(ctx, user_info->account_name);
-	password = talloc_strdup(ctx, user_info->plaintext_password.data);
+	username = talloc_strdup(ctx, user_info->mapped.account_name);
+	password = talloc_strdup(ctx, user_info->password.plaintext);
 
 	nt_status = talloc_getpwnam(ctx, username, &pws);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -772,7 +772,12 @@ static NTSTATUS authunix_check_password(struct auth_method_context *ctx,
 	TALLOC_CTX *check_ctx;
 	NTSTATUS nt_status;
 
-	if (! user_info->account_name && ! *user_info->account_name) {
+	if (! user_info->mapped.account_name || ! *user_info->mapped.account_name) {
+		/* 'not for me' */
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	if (user_info->password_state != AUTH_PASSWORD_PLAIN) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 

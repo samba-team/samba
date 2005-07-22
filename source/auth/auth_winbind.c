@@ -59,27 +59,35 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 	struct netr_SamInfo3 info3;		
 
 	/* Send off request */
+	const struct auth_usersupplied_info *user_info_temp;	
+	nt_status = encrypt_user_info(mem_ctx, ctx->auth_ctx, 
+				      AUTH_PASSWORD_RESPONSE, 
+				      user_info, &user_info_temp);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+	user_info = user_info_temp;
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 	request.flags = WBFLAG_PAM_INFO3_NDR;
 	fstrcpy(request.data.auth_crap.user, 
-		user_info->account_name);
+		user_info->client.account_name);
 	fstrcpy(request.data.auth_crap.domain, 
-		user_info->domain_name);
+		user_info->client.domain_name);
 	fstrcpy(request.data.auth_crap.workstation, 
 		user_info->workstation_name);
 
 	memcpy(request.data.auth_crap.chal, ctx->auth_ctx->challenge.data.data, sizeof(request.data.auth_crap.chal));
 
-	request.data.auth_crap.lm_resp_len = MIN(user_info->lm_resp.length, 
+	request.data.auth_crap.lm_resp_len = MIN(user_info->password.response.lanman.length,
 						 sizeof(request.data.auth_crap.lm_resp));
-	request.data.auth_crap.nt_resp_len = MIN(user_info->nt_resp.length, 
+	request.data.auth_crap.nt_resp_len = MIN(user_info->password.response.nt.length, 
 						 sizeof(request.data.auth_crap.nt_resp));
 
-	memcpy(request.data.auth_crap.lm_resp, user_info->lm_resp.data, 
+	memcpy(request.data.auth_crap.lm_resp, user_info->password.response.lanman.data,
 	       request.data.auth_crap.lm_resp_len);
-	memcpy(request.data.auth_crap.nt_resp, user_info->nt_resp.data, 
+	memcpy(request.data.auth_crap.nt_resp, user_info->password.response.nt.data,
 	       request.data.auth_crap.nt_resp_len);
 
 	result = winbindd_request(WINBINDD_PAM_AUTH_CRAP, &request, &response);
@@ -96,19 +104,19 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 
 		validation.sam3 = &info3;
 		nt_status = make_server_info_netlogon_validation(mem_ctx, 
-								 user_info->account_name, 
+								 user_info->client.account_name, 
 								 3, &validation,
 								 server_info);
 		return nt_status;
 	} else if (result == NSS_STATUS_SUCCESS && !response.extra_data) {
 		DEBUG(0, ("Winbindd authenticated the user [%s]\\[%s], "
 			  "but did not include the required info3 reply!\n", 
-			  user_info->domain_name, user_info->account_name));
+			  user_info->client.domain_name, user_info->client.account_name));
 		return NT_STATUS_INSUFFICIENT_LOGON_INFO;
 	} else if (NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("Winbindd authentication for [%s]\\[%s] failed, "
 			  "but no error code is available!\n", 
-			  user_info->domain_name, user_info->account_name));
+			  user_info->client.domain_name, user_info->client.account_name));
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}
 

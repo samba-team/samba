@@ -113,7 +113,6 @@ NTSTATUS auth_get_challenge(struct auth_context *auth_ctx, const uint8_t **_chal
  * of that structure is undefined.
  *
  * @param user_info Contains the user supplied components, including the passwords.
- *                  Must be created with make_user_info() or one of its wrappers.
  *
  * @param auth_context Supplies the challenges and some other data. 
  *                  Must be created with make_auth_context(), and the challenges should be 
@@ -133,16 +132,25 @@ NTSTATUS auth_check_password(struct auth_context *auth_ctx,
 			     struct auth_serversupplied_info **server_info)
 {
 	/* if all the modules say 'not for me' this is reasonable */
-	NTSTATUS nt_status = NT_STATUS_NO_SUCH_USER;
+	NTSTATUS nt_status;
 	struct auth_method_context *method;
 	const char *method_name = "NO METHOD";
 	const uint8_t *challenge;
+	struct auth_usersupplied_info *user_info_tmp; 
 
 	DEBUG(3,   ("auth_check_password:  Checking password for unmapped user [%s]\\[%s]@[%s]\n", 
 		    user_info->client.domain_name, user_info->client.account_name, user_info->workstation_name));
 
+	if (!user_info->mapped_state) {
+		nt_status = map_user_info(mem_ctx, user_info, &user_info_tmp);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+		user_info = user_info_tmp;
+	}
+
 	DEBUGADD(3,("auth_check_password:  mapped user is: [%s]\\[%s]@[%s]\n", 
-		    user_info->domain_name, user_info->account_name, user_info->workstation_name));
+		    user_info->mapped.domain_name, user_info->mapped.account_name, user_info->workstation_name));
 
 	nt_status = auth_get_challenge(auth_ctx, &challenge);
 
@@ -160,15 +168,7 @@ NTSTATUS auth_check_password(struct auth_context *auth_ctx,
 	DEBUG(10, ("challenge is: \n"));
 	dump_data(5, auth_ctx->challenge.data.data, auth_ctx->challenge.data.length);
 
-#ifdef DEBUG_PASSWORD
-	DEBUG(100, ("user_info has passwords of length %d and %d\n", 
-		    user_info->lm_resp.length, user_info->nt_resp.length));
-	DEBUG(100, ("lm:\n"));
-	dump_data(100, user_info->lm_resp.data, user_info->lm_resp.length);
-	DEBUG(100, ("nt:\n"));
-	dump_data(100, user_info->nt_resp.data, user_info->nt_resp.length);
-#endif
-
+	nt_status = NT_STATUS_NO_SUCH_USER; /* If all the modules say 'not for me', then this is reasonable */
 	for (method = auth_ctx->methods; method; method = method->next) {
 		NTSTATUS result;
 
@@ -186,7 +186,7 @@ NTSTATUS auth_check_password(struct auth_context *auth_ctx,
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(2,("auth_check_password: %s authentication for user [%s\\%s] FAILED with error %s\n", 
-			 method_name, user_info->domain_name, user_info->account_name, 
+			 method_name, user_info->mapped.domain_name, user_info->mapped.account_name, 
 			 nt_errstr(nt_status)));
 		return nt_status;
 	}

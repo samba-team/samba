@@ -686,18 +686,23 @@ static NTSTATUS auth_ntlmssp_set_challenge(struct gensec_ntlmssp_state *gensec_n
 
 static NTSTATUS auth_ntlmssp_check_password(struct gensec_ntlmssp_state *gensec_ntlmssp_state, DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key) 
 {
-	struct auth_usersupplied_info *user_info = NULL;
 	NTSTATUS nt_status;
+	struct auth_usersupplied_info *user_info = talloc(gensec_ntlmssp_state, struct auth_usersupplied_info);
+	if (!user_info) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	nt_status = make_user_info_map(gensec_ntlmssp_state, 
-				       gensec_ntlmssp_state->user, 
-				       gensec_ntlmssp_state->domain, 
-				       gensec_ntlmssp_state->workstation, 
-	                               gensec_ntlmssp_state->lm_resp.data ? &gensec_ntlmssp_state->lm_resp : NULL, 
-	                               gensec_ntlmssp_state->nt_resp.data ? &gensec_ntlmssp_state->nt_resp : NULL, 
-				       NULL, NULL, NULL, True,
-				       &user_info);
-	NT_STATUS_NOT_OK_RETURN(nt_status);
+	user_info->flags = 0;
+	user_info->mapped_state = False;
+	user_info->client.account_name = gensec_ntlmssp_state->user;
+	user_info->client.domain_name = gensec_ntlmssp_state->domain;
+	user_info->workstation_name = gensec_ntlmssp_state->workstation;
+	
+	user_info->password_state = AUTH_PASSWORD_RESPONSE;
+	user_info->password.response.lanman = gensec_ntlmssp_state->lm_resp;
+	user_info->password.response.lanman.data = talloc_steal(user_info, gensec_ntlmssp_state->lm_resp.data);
+	user_info->password.response.nt = gensec_ntlmssp_state->nt_resp;
+	user_info->password.response.nt.data = talloc_steal(user_info, gensec_ntlmssp_state->nt_resp.data);
 
 	nt_status = auth_check_password(gensec_ntlmssp_state->auth_context, gensec_ntlmssp_state,
 					user_info, &gensec_ntlmssp_state->server_info);

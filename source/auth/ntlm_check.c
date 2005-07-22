@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "lib/crypto/crypto.h"
+#include "librpc/gen_ndr/ndr_samr.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -205,39 +206,32 @@ static BOOL smb_sess_key_ntlmv2(TALLOC_CTX *mem_ctx,
 }
 
 /**
- * Check a challenge-response password against the value of the NT or
- * LM password hash.
+ * Compare password hashes against those from the SAM
  *
  * @param mem_ctx talloc context
- * @param challenge 8-byte challenge.  If all zero, forces plaintext comparison
- * @param nt_response 'unicode' NT response to the challenge, or unicode password
- * @param lm_response ASCII or LANMAN response to the challenge, or password in DOS code page
+ * @param client_lanman LANMAN password hash, as supplied by the client
+ * @param client_nt NT (MD4) password hash, as supplied by the client
  * @param username internal Samba username, for log messages
  * @param client_username username the client used
  * @param client_domain domain name the client used (may be mapped)
- * @param nt_pw MD4 unicode password from our passdb or similar
- * @param lm_pw LANMAN ASCII password from our passdb or similar
+ * @param stored_lanman LANMAN password hash, as stored on the SAM
+ * @param stored_nt NT (MD4) password hash, as stored on the SAM
  * @param user_sess_key User session key
  * @param lm_sess_key LM session key (first 8 bytes of the LM hash)
  */
 
-NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
-			     const DATA_BLOB *challenge,
-			     const DATA_BLOB *lm_response,
-			     const DATA_BLOB *nt_response,
-			     const DATA_BLOB *lm_interactive_password,
-			     const DATA_BLOB *nt_interactive_password,
+NTSTATUS hash_password_check(TALLOC_CTX *mem_ctx,
+			     const struct samr_Password *client_lanman,
+			     const struct samr_Password *client_nt,
 			     const char *username, 
 			     const char *client_username, 
 			     const char *client_domain,
-			     const uint8_t *lm_pw, const uint8_t *nt_pw, 
+			     const struct samr_Password *stored_lanman, 
+			     const struct samr_Password *stored_nt, 
 			     DATA_BLOB *user_sess_key, 
 			     DATA_BLOB *lm_sess_key)
 {
-	static const uint8_t zeros[8];
-	DATA_BLOB tmp_sess_key;
-
-	if (nt_pw == NULL) {
+	if (stored_nt == NULL) {
 		DEBUG(3,("ntlm_password_check: NO NT password stored for user %s.\n", 
 			 username));
 	}
@@ -249,17 +243,11 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 		*user_sess_key = data_blob(NULL, 0);
 	}
 
-	if (nt_interactive_password && nt_interactive_password->length && nt_pw) { 
-		if (nt_interactive_password->length != 16) {
-			DEBUG(3,("ntlm_password_check: Interactive logon: Invalid NT password length (%d) supplied for user %s\n", (int)nt_interactive_password->length,
-				 username));
-			return NT_STATUS_WRONG_PASSWORD;
-		}
-
-		if (memcmp(nt_interactive_password->data, nt_pw, 16) == 0) {
+	if (client_nt && stored_nt) {
+		if (memcmp(client_nt->hash, stored_nt->hash, sizeof(stored_nt->hash)) == 0) {
 			if (user_sess_key) {
 				*user_sess_key = data_blob_talloc(mem_ctx, NULL, 16);
-				SMBsesskeygen_ntv1(nt_pw, user_sess_key->data);
+				SMBsesskeygen_ntv1(stored_nt->hash, user_sess_key->data);
 			}
 			return NT_STATUS_OK;
 		} else {
@@ -268,26 +256,66 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_WRONG_PASSWORD;
 		}
 
-	} else if (lm_interactive_password && lm_interactive_password->length && lm_pw) { 
-		if (lm_interactive_password->length != 16) {
-			DEBUG(3,("ntlm_password_check: Interactive logon: Invalid LANMAN password length (%d) supplied for user %s\n", (int)lm_interactive_password->length,
-				 username));
-			return NT_STATUS_WRONG_PASSWORD;
-		}
-
+	} else if (client_lanman && stored_lanman) {
 		if (!lp_lanman_auth()) {
 			DEBUG(3,("ntlm_password_check: Interactive logon: only LANMAN password supplied for user %s, and LM passwords are disabled!\n",
 				 username));
 			return NT_STATUS_WRONG_PASSWORD;
 		}
 
-		if (memcmp(lm_interactive_password->data, lm_pw, 16) == 0) {
+		if (memcmp(client_lanman->hash, stored_lanman->hash, sizeof(stored_lanman->hash)) == 0) {
 			return NT_STATUS_OK;
 		} else {
 			DEBUG(3,("ntlm_password_check: Interactive logon: LANMAN password check failed for user %s\n",
 				 username));
 			return NT_STATUS_WRONG_PASSWORD;
 		}
+	}
+	return NT_STATUS_WRONG_PASSWORD;
+}
+
+/**
+ * Check a challenge-response password against the value of the NT or
+ * LM password hash.
+ *
+ * @param mem_ctx talloc context
+ * @param challenge 8-byte challenge.  If all zero, forces plaintext comparison
+ * @param nt_response 'unicode' NT response to the challenge, or unicode password
+ * @param lm_response ASCII or LANMAN response to the challenge, or password in DOS code page
+ * @param username internal Samba username, for log messages
+ * @param client_username username the client used
+ * @param client_domain domain name the client used (may be mapped)
+ * @param stored_lanman LANMAN ASCII password from our passdb or similar
+ * @param stored_nt MD4 unicode password from our passdb or similar
+ * @param user_sess_key User session key
+ * @param lm_sess_key LM session key (first 8 bytes of the LM hash)
+ */
+
+NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
+			     const DATA_BLOB *challenge,
+			     const DATA_BLOB *lm_response,
+			     const DATA_BLOB *nt_response,
+			     const char *username, 
+			     const char *client_username, 
+			     const char *client_domain,
+			     const struct samr_Password *stored_lanman, 
+			     const struct samr_Password *stored_nt, 
+			     DATA_BLOB *user_sess_key, 
+			     DATA_BLOB *lm_sess_key)
+{
+	static const uint8_t zeros[8];
+	DATA_BLOB tmp_sess_key;
+
+	if (stored_nt == NULL) {
+		DEBUG(3,("ntlm_password_check: NO NT password stored for user %s.\n", 
+			 username));
+	}
+
+	if (lm_sess_key) {
+		*lm_sess_key = data_blob(NULL, 0);
+	}
+	if (user_sess_key) {
+		*user_sess_key = data_blob(NULL, 0);
 	}
 
 	/* Check for cleartext netlogon. Used by Exchange 5.5. */
@@ -296,10 +324,10 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 
 		DEBUG(4,("ntlm_password_check: checking plaintext passwords for user %s\n",
 			 username));
-		if (nt_pw && nt_response->length) {
+		if (stored_nt && nt_response->length) {
 			uint8_t pwhash[16];
 			mdfour(pwhash, nt_response->data, nt_response->length);
-			if (memcmp(pwhash, nt_pw, sizeof(pwhash)) == 0) {
+			if (memcmp(pwhash, stored_nt->hash, sizeof(pwhash)) == 0) {
 				return NT_STATUS_OK;
 			} else {
 				DEBUG(3,("ntlm_password_check: NT (Unicode) plaintext password check failed for user %s\n",
@@ -311,7 +339,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			DEBUG(3,("ntlm_password_check: (plaintext password check) LANMAN passwords NOT PERMITTED for user %s\n",
 				 username));
 
-		} else if (lm_pw && lm_response->length) {
+		} else if (stored_lanman && lm_response->length) {
 			uint8_t dospwd[14]; 
 			uint8_t p16[16]; 
 			ZERO_STRUCT(dospwd);
@@ -322,7 +350,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			/* we *might* need to upper-case the string here */
 			E_P16((const uint8_t *)dospwd, p16);
 
-			if (memcmp(p16, lm_pw, sizeof(p16)) == 0) {
+			if (memcmp(p16, stored_lanman->hash, sizeof(p16)) == 0) {
 				return NT_STATUS_OK;
 			} else {
 				DEBUG(3,("ntlm_password_check: LANMAN (ASCII) plaintext password check failed for user %s\n",
@@ -340,14 +368,14 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			 (unsigned long)nt_response->length, username));		
 	}
 	
-	if (nt_response->length > 24 && nt_pw) {
+	if (nt_response->length > 24 && stored_nt) {
 		/* We have the NT MD4 hash challenge available - see if we can
 		   use it 
 		*/
 		DEBUG(4,("ntlm_password_check: Checking NTLMv2 password with domain [%s]\n", client_domain));
 		if (smb_pwd_check_ntlmv2(mem_ctx,
 					 nt_response, 
-					 nt_pw, challenge, 
+					 stored_nt->hash, challenge, 
 					 client_username, 
 					 client_domain,
 					 False,
@@ -364,7 +392,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 		DEBUG(4,("ntlm_password_check: Checking NTLMv2 password with uppercased version of domain [%s]\n", client_domain));
 		if (smb_pwd_check_ntlmv2(mem_ctx,
 					 nt_response, 
-					 nt_pw, challenge, 
+					 stored_nt->hash, challenge, 
 					 client_username, 
 					 client_domain,
 					 True,
@@ -381,7 +409,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 		DEBUG(4,("ntlm_password_check: Checking NTLMv2 password without a domain\n"));
 		if (smb_pwd_check_ntlmv2(mem_ctx,
 					 nt_response, 
-					 nt_pw, challenge, 
+					 stored_nt->hash, challenge, 
 					 client_username, 
 					 "",
 					 False,
@@ -396,7 +424,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 		} else {
 			DEBUG(3,("ntlm_password_check: NTLMv2 password check failed\n"));
 		}
-	} else if (nt_response->length == 24 && nt_pw) {
+	} else if (nt_response->length == 24 && stored_nt) {
 		if (lp_ntlm_auth()) {		
 			/* We have the NT MD4 hash challenge available - see if we can
 			   use it (ie. does it exist in the smbpasswd file).
@@ -404,13 +432,13 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			DEBUG(4,("ntlm_password_check: Checking NT MD4 password\n"));
 			if (smb_pwd_check_ntlmv1(mem_ctx, 
 						 nt_response, 
-						 nt_pw, challenge,
+						 stored_nt->hash, challenge,
 						 user_sess_key)) {
 				/* The LM session key for this response is not very secure, 
 				   so use it only if we otherwise allow LM authentication */
 				
-				if (lp_lanman_auth() && lm_pw) {
-					*lm_sess_key = data_blob_talloc(mem_ctx, lm_pw, 8);
+				if (lp_lanman_auth() && stored_lanman) {
+					*lm_sess_key = data_blob_talloc(mem_ctx, stored_lanman->hash, 8);
 				}
 				return NT_STATUS_OK;
 			} else {
@@ -440,31 +468,31 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 	if (!lp_lanman_auth()) {
 		DEBUG(3,("ntlm_password_check: Lanman passwords NOT PERMITTED for user %s\n",
 			 username));
-	} else if (!lm_pw) {
+	} else if (!stored_lanman) {
 		DEBUG(3,("ntlm_password_check: NO LanMan password set for user %s (and no NT password supplied)\n",
 			 username));
 	} else {
 		DEBUG(4,("ntlm_password_check: Checking LM password\n"));
 		if (smb_pwd_check_ntlmv1(mem_ctx,
 					 lm_response, 
-					 lm_pw, challenge,
+					 stored_lanman->hash, challenge,
 					 NULL)) {
 			/* The session key for this response is still very odd.  
 			   It not very secure, so use it only if we otherwise 
 			   allow LM authentication */
 
-			if (lp_lanman_auth() && lm_pw) {
+			if (lp_lanman_auth() && stored_lanman) {
 				uint8_t first_8_lm_hash[16];
-				memcpy(first_8_lm_hash, lm_pw, 8);
+				memcpy(first_8_lm_hash, stored_lanman->hash, 8);
 				memset(first_8_lm_hash + 8, '\0', 8);
 				*user_sess_key = data_blob_talloc(mem_ctx, first_8_lm_hash, 16);
-				*lm_sess_key = data_blob_talloc(mem_ctx, lm_pw, 8);
+				*lm_sess_key = data_blob_talloc(mem_ctx, stored_lanman->hash, 8);
 			}
 			return NT_STATUS_OK;
 		}
 	}
 	
-	if (!nt_pw) {
+	if (!stored_nt) {
 		DEBUG(4,("ntlm_password_check: LM password check failed for user, no NT password %s\n",username));
 		return NT_STATUS_WRONG_PASSWORD;
 	}
@@ -475,7 +503,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 	DEBUG(4,("ntlm_password_check: Checking LMv2 password with domain %s\n", client_domain));
 	if (smb_pwd_check_ntlmv2(mem_ctx,
 				 lm_response, 
-				 nt_pw, challenge, 
+				 stored_nt->hash, challenge, 
 				 client_username,
 				 client_domain,
 				 False,
@@ -487,7 +515,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			 * torture test */
 			smb_sess_key_ntlmv2(mem_ctx,
 					    nt_response, 
-					    nt_pw, challenge, 
+					    stored_nt->hash, challenge, 
 					    client_username,
 					    client_domain,
 					    False,
@@ -508,7 +536,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 	DEBUG(4,("ntlm_password_check: Checking LMv2 password with upper-cased version of domain %s\n", client_domain));
 	if (smb_pwd_check_ntlmv2(mem_ctx,
 				 lm_response, 
-				 nt_pw, challenge, 
+				 stored_nt->hash, challenge, 
 				 client_username,
 				 client_domain,
 				 True,
@@ -520,7 +548,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			 * torture test */
 			smb_sess_key_ntlmv2(mem_ctx,
 					    nt_response, 
-					    nt_pw, challenge, 
+					    stored_nt->hash, challenge, 
 					    client_username,
 					    client_domain,
 					    True,
@@ -541,7 +569,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 	DEBUG(4,("ntlm_password_check: Checking LMv2 password without a domain\n"));
 	if (smb_pwd_check_ntlmv2(mem_ctx,
 				 lm_response, 
-				 nt_pw, challenge, 
+				 stored_nt->hash, challenge, 
 				 client_username,
 				 "",
 				 False,
@@ -553,7 +581,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			 * torture test */
 			smb_sess_key_ntlmv2(mem_ctx,
 					    nt_response, 
-					    nt_pw, challenge, 
+					    stored_nt->hash, challenge, 
 					    client_username,
 					    "",
 					    False,
@@ -578,18 +606,18 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 	if (lp_ntlm_auth()) {
 		if (smb_pwd_check_ntlmv1(mem_ctx, 
 					 lm_response, 
-					 nt_pw, challenge,
+					 stored_nt->hash, challenge,
 					 NULL)) {
 			/* The session key for this response is still very odd.  
 			   It not very secure, so use it only if we otherwise 
 			   allow LM authentication */
 
-			if (lp_lanman_auth() && lm_pw) {
+			if (lp_lanman_auth() && stored_lanman) {
 				uint8_t first_8_lm_hash[16];
-				memcpy(first_8_lm_hash, lm_pw, 8);
+				memcpy(first_8_lm_hash, stored_lanman->hash, 8);
 				memset(first_8_lm_hash + 8, '\0', 8);
 				*user_sess_key = data_blob_talloc(mem_ctx, first_8_lm_hash, 16);
-				*lm_sess_key = data_blob_talloc(mem_ctx, lm_pw, 8);
+				*lm_sess_key = data_blob_talloc(mem_ctx, stored_lanman->hash, 8);
 			}
 			return NT_STATUS_OK;
 		}
