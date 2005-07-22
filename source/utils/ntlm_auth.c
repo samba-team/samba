@@ -153,27 +153,26 @@ static NTSTATUS local_pw_check_specified(const char *username,
 					 char **unix_name) 
 {
 	NTSTATUS nt_status;
-	uint8_t lm_pw[16], nt_pw[16];
-	uint8_t *lm_pwd, *nt_pwd;
+	struct samr_Password lm_pw, nt_pw;
+	struct samr_Password *lm_pwd, *nt_pwd;
 	TALLOC_CTX *mem_ctx = talloc_init("local_pw_check_specified");
 	if (!mem_ctx) {
 		nt_status = NT_STATUS_NO_MEMORY;
 	} else {
 		
-		E_md4hash(opt_password, nt_pw);
-		if (E_deshash(opt_password, lm_pw)) {
-			lm_pwd = lm_pw;
+		E_md4hash(opt_password, nt_pw.hash);
+		if (E_deshash(opt_password, lm_pw.hash)) {
+			lm_pwd = &lm_pw;
 		} else {
 			lm_pwd = NULL;
 		}
-		nt_pwd = nt_pw;
+		nt_pwd = &nt_pw;
 		
 		
 		nt_status = ntlm_password_check(mem_ctx, 
 						challenge,
 						lm_response,
 						nt_response,
-						NULL, NULL,
 						username,
 						username,
 						domain,
