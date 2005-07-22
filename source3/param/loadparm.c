@@ -159,6 +159,7 @@ typedef struct
 	char *szAddMachineScript;
 	char *szShutdownScript;
 	char *szAbortShutdownScript;
+	char *szUsernameMapScript;
 	char *szCheckPasswordScript;
 	char *szWINSHook;
 	char *szWINSPartners;
@@ -1071,6 +1072,7 @@ static struct parm_struct parm_table[] = {
 	{"add machine script", P_STRING, P_GLOBAL, &Globals.szAddMachineScript, NULL, NULL, FLAG_ADVANCED}, 
 	{"shutdown script", P_STRING, P_GLOBAL, &Globals.szShutdownScript, NULL, NULL, FLAG_ADVANCED}, 
 	{"abort shutdown script", P_STRING, P_GLOBAL, &Globals.szAbortShutdownScript, NULL, NULL, FLAG_ADVANCED}, 
+	{"username map script", P_STRING, P_GLOBAL, &Globals.szUsernameMapScript, NULL, NULL, FLAG_ADVANCED}, 
 
 	{"logon script", P_STRING, P_GLOBAL, &Globals.szLogonScript, NULL, NULL, FLAG_ADVANCED}, 
 	{"logon path", P_STRING, P_GLOBAL, &Globals.szLogonPath, NULL, NULL, FLAG_ADVANCED}, 
@@ -1755,6 +1757,7 @@ FN_GLOBAL_STRING(lp_addmachine_script, &Globals.szAddMachineScript)
 
 FN_GLOBAL_STRING(lp_shutdown_script, &Globals.szShutdownScript)
 FN_GLOBAL_STRING(lp_abort_shutdown_script, &Globals.szAbortShutdownScript)
+FN_GLOBAL_STRING(lp_username_map_script, &Globals.szUsernameMapScript)
 
 FN_GLOBAL_STRING(lp_check_password_script, &Globals.szCheckPasswordScript)
 
