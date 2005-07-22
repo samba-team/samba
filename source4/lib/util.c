@@ -332,7 +332,7 @@ uint32_t interpret_addr(const char *str)
 	struct hostent *hp;
 	uint32_t res;
 
-	if (str == NULL || 
+	if (str == NULL || *str == 0 ||
 	    strcmp(str,"0.0.0.0") == 0) {
 		return 0;
 	}
