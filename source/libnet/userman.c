@@ -296,6 +296,7 @@ static void userdel_handler(struct rpc_request *req)
 {
 	struct composite_context *c = req->async.private;
 	struct userdel_state *s = talloc_get_type(c->private, struct userdel_state);
+	struct monitor_msg msg;
 	
 	switch (s->stage) {
 	case USERDEL_LOOKUP:
@@ -311,6 +312,10 @@ static void userdel_handler(struct rpc_request *req)
 
 	if (!NT_STATUS_IS_OK(c->status)) {
 		c->state = SMBCLI_REQUEST_ERROR;
+	}
+
+	if (c->monitor_fn) {
+		c->monitor_fn(&msg);
 	}
 
 	if (c->state >= SMBCLI_REQUEST_DONE &&
@@ -502,6 +507,7 @@ static void usermod_handler(struct rpc_request *req)
 {
 	struct composite_context *c = req->async.private;
 	struct usermod_state *s = talloc_get_type(c->private, struct usermod_state);
+	struct monitor_msg msg;
 
 	switch (s->stage) {
 	case USERMOD_LOOKUP:
@@ -517,6 +523,10 @@ static void usermod_handler(struct rpc_request *req)
 
 	if (!NT_STATUS_IS_OK(c->status)) {
 		c->state = SMBCLI_REQUEST_ERROR;
+	}
+
+	if (c->monitor_fn) {
+		c->monitor_fn(&msg);
 	}
 
 	if (c->state >= SMBCLI_REQUEST_DONE &&
