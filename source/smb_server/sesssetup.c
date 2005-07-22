@@ -134,6 +134,7 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 	NTSTATUS status;
 	const char *remote_machine = NULL;
 
+	struct auth_context *auth_context;
 	struct smbsrv_session *smb_sess;
 	struct auth_usersupplied_info *user_info = NULL;
 	struct auth_serversupplied_info *server_info = NULL;
@@ -158,6 +159,17 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 			 * don't have a challenge */
 			return NT_STATUS_LOGON_FAILURE;
 		}
+
+		/* TODO: should we use just "anonymous" here? */
+		status = auth_context_create(mem_ctx, lp_auth_methods(), 
+					     &auth_context, 
+					     req->smb_conn->connection->event.ctx);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(mem_ctx);
+			return status;
+		}
+	} else {
+		auth_context = req->smb_conn->negotiate.auth_context;
 	}
 
 	if (req->smb_conn->negotiate.called_name) {
@@ -187,9 +199,8 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 	user_info->password.response.nt = sess->nt1.in.password2;
 	user_info->password.response.nt.data = talloc_steal(user_info, sess->nt1.in.password2.data);
 
-	status = auth_check_password(req->smb_conn->negotiate.auth_context, 
-				     req, user_info, &server_info);
-	
+	status = auth_check_password(auth_context, 
+				     mem_ctx, user_info, &server_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return auth_nt_status_squash(status);
