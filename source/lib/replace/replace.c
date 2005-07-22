@@ -514,7 +514,8 @@ int get_time_zone(time_t t)
 #else
 	unsigned long long int v;
 	if (sscanf(str, "%lli", &v) != 1) {
-		smb_panic("system does not support %lli in sscanf");
+		errno = EINVAL;
+		return 0;
 	}
 	if (endptr) {
 		/* try to get endptr right - uggh */
