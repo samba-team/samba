@@ -343,6 +343,7 @@ static int mprCoreStrcat(int alloc, char **destp, int destMax, int existingLen,
 		addBytes += strlen(str) + sepLen;
 		str = va_arg(ap, const char*);
 	}
+	va_end(ap);
 
 	if (existingLen > 0) {
 		addBytes += sepLen;
@@ -387,6 +388,7 @@ static int mprCoreStrcat(int alloc, char **destp, int destMax, int existingLen,
 				dp += sepLen;
 			}
 		}
+		va_end(ap);
 	} else if (dest == 0) {
 		dest = (char*) mprMalloc(1);
 	} 

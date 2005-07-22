@@ -230,7 +230,7 @@ static int parseStmt(Ejs *ep, int state, int flags)
 
 #if BLD_DEBUG
 			fullNameLen = mprReallocStrcat(&fullName, MPR_MAX_VAR, fullNameLen,
-				0, ".", 0);
+				0, ".", NULL);
 #endif
 
 			ep->currentProperty = vp;
@@ -266,7 +266,7 @@ static int parseStmt(Ejs *ep, int state, int flags)
 				 *	If not executing yet, id may not be known
 				 */
 				fullNameLen = mprReallocStrcat(&fullName, MPR_MAX_VAR, 
-					fullNameLen, 0, "[", id, "]", 0);
+					fullNameLen, 0, "[", id, "]", NULL);
 			}
 #endif
 
@@ -1258,7 +1258,7 @@ static int parseId(Ejs *ep, int state, int flags, char **id, char **fullName,
 	*id = mprStrdup(ep->token);
 #if BLD_DEBUG
 	*fullNameLen = mprReallocStrcat(fullName, MPR_MAX_VAR, *fullNameLen,
-		0, *id, 0);
+		0, *id, NULL);
 #endif
 	if (ep->currentObj == 0) {
 		ep->currentObj = ejsFindObj(ep, state, *id, flags);
