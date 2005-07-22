@@ -1182,6 +1182,11 @@ done:
 }
 
 
+static int ealist_cmp(union smb_search_data *r1, union smb_search_data *r2)
+{
+	return strcmp(r1->ea_list.name.s, r2->ea_list.name.s);
+}
+
 /* 
    testing of the rather strange ea_list level
 */
@@ -1252,7 +1257,7 @@ static BOOL test_ea_list(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	nxt.t2fnext.in.max_count = 2;
 	nxt.t2fnext.in.resume_key = result.list[1].ea_list.resume_key;
 	nxt.t2fnext.in.flags = FLAG_TRANS2_FIND_REQUIRE_RESUME | FLAG_TRANS2_FIND_CONTINUE;
-	nxt.t2fnext.in.last_name = "file2.txt";
+	nxt.t2fnext.in.last_name = result.list[1].ea_list.name.s;
 	nxt.t2fnext.in.num_names = 2;
 	nxt.t2fnext.in.ea_names = talloc_array(mem_ctx, struct ea_name, 2);
 	nxt.t2fnext.in.ea_names[0].name.s = "SECOND EA";
@@ -1262,6 +1267,10 @@ static BOOL test_ea_list(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 				     &nxt, &result, multiple_search_callback);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
+	/* we have to sort the result as different servers can return directories
+	   in different orders */
+	qsort(result.list, result.count, sizeof(result.list[0]), 
+	      (comparison_fn_t)ealist_cmp);
 
 	CHECK_VALUE(result.count, 3);
 	CHECK_VALUE(result.list[0].ea_list.eas.num_eas, 2);
