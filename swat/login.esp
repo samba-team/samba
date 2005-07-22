@@ -29,7 +29,9 @@ display_form(f);
 		authinfo.rhost = request['REMOTE_HOST'];
 
 		auth = userAuth(authinfo);
-		if (auth.result) {
+		if (auth == undefined) {
+			write("<b>Invalid login - please try again<br /></b>\n");
+		} else if (auth.result) {
 
 			/* for now just authenticate everyone */
 			session.AUTHENTICATED = true;
