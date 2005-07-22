@@ -512,7 +512,15 @@ int get_time_zone(time_t t)
 #ifdef HAVE_STRTOUQ
 	return strtouq(str, endptr, base);
 #else
-#error "system must support 64 bit integer read from strings"
+	unsigned long long int v;
+	if (sscanf(str, "%lli", &v) != 1) {
+		smb_panic("system does not support %lli in sscanf");
+	}
+	if (endptr) {
+		/* try to get endptr right - uggh */
+		strtoul(str, endptr, base);
+	}
+	return v;
 #endif
 }
 #endif
