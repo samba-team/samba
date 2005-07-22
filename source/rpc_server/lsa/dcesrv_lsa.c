@@ -619,7 +619,7 @@ static NTSTATUS lsa_CreateTrustedDomain(struct dcesrv_call_state *dce_call, TALL
 		samdb_msg_add_string(trusted_domain_state->policy->sam_ldb, mem_ctx, msg, "securityIdentifier", sid_string);
 	}
 
-	/* pull in all the template attributes.  Note this is always from the global samdb */
+	/* pull in all the template attributes. */
 	ret = samdb_copy_template(trusted_domain_state->policy->sam_ldb, mem_ctx, msg, 
 				  "(&(name=TemplateTrustedDomain)(objectclass=trustedDomainTemplate))");
 	if (ret != 0) {

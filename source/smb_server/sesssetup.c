@@ -50,7 +50,7 @@ static NTSTATUS sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *s
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info;
 	struct smbsrv_session *smb_sess;
-	char *remote_machine;
+	const char *remote_machine = NULL;
 	TALLOC_CTX *mem_ctx;
 
 	sess->old.out.vuid = UID_FIELD_INVALID;
@@ -63,17 +63,31 @@ static NTSTATUS sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *s
 		req->smb_conn->negotiate.max_send = sess->old.in.bufsize;
 	}
 	
-	remote_machine = socket_get_peer_addr(req->smb_conn->connection->socket, mem_ctx);
-	status = make_user_info_for_reply_enc(req->smb_conn, 
-					      sess->old.in.user, sess->old.in.domain,
-					      remote_machine,
-					      sess->old.in.password,
-					      data_blob(NULL, 0),
-					      &user_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return NT_STATUS_ACCESS_DENIED;
+	if (req->smb_conn->negotiate.called_name) {
+		remote_machine = req->smb_conn->negotiate.called_name->name;
 	}
+	
+	if (!remote_machine) {
+		remote_machine = socket_get_peer_addr(req->smb_conn->connection->socket, mem_ctx);
+	}
+
+	user_info = talloc(req->smb_conn, struct auth_usersupplied_info);
+	if (!user_info) {
+		talloc_free(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	user_info->mapped_state = False;
+	user_info->flags = 0;
+	user_info->client.account_name = sess->old.in.user;
+	user_info->client.domain_name = sess->old.in.domain;
+	user_info->workstation_name = remote_machine;
+	user_info->remote_host = socket_get_peer_addr(req->smb_conn->connection->socket, mem_ctx);
+	
+	user_info->password_state = AUTH_PASSWORD_RESPONSE;
+	user_info->password.response.lanman = sess->old.in.password;
+	user_info->password.response.lanman.data = talloc_steal(user_info, sess->old.in.password.data);
+	user_info->password.response.nt = data_blob(NULL, 0);
 
 	status = auth_check_password(req->smb_conn->negotiate.auth_context,
 				     mem_ctx, user_info, &server_info);
@@ -118,6 +132,8 @@ static NTSTATUS sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *s
 static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 {
 	NTSTATUS status;
+	const char *remote_machine = NULL;
+
 	struct smbsrv_session *smb_sess;
 	struct auth_usersupplied_info *user_info = NULL;
 	struct auth_serversupplied_info *server_info = NULL;
@@ -136,55 +152,44 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 	}
 
 	if (req->smb_conn->negotiate.spnego_negotiated) {
-		struct auth_context *auth_context;
-
 		if (sess->nt1.in.user && *sess->nt1.in.user) {
+			talloc_free(mem_ctx);
+			/* We can't accept a normal login, because we
+			 * don't have a challenge */
 			return NT_STATUS_LOGON_FAILURE;
 		}
-
-		status = make_user_info_anonymous(mem_ctx, &user_info);
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(mem_ctx);
-			return status;
-		}
-
-		/* TODO: should we use just "anonymous" here? */
-		status = auth_context_create(mem_ctx, lp_auth_methods(), 
-					     &auth_context, 
-					     req->smb_conn->connection->event.ctx);
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(mem_ctx);
-			return status;
-		}
-
-		status = auth_check_password(auth_context, mem_ctx,
-					     user_info, &server_info);
-	} else {
-		const char *remote_machine = NULL;
-
-		if (req->smb_conn->negotiate.called_name) {
-			remote_machine = req->smb_conn->negotiate.called_name->name;
-		}
-
-		if (!remote_machine) {
-			remote_machine = socket_get_peer_addr(req->smb_conn->connection->socket, mem_ctx);
-		}
-
-		status = make_user_info_for_reply_enc(req->smb_conn, 
-						      sess->nt1.in.user, sess->nt1.in.domain,
-						      remote_machine,
-						      sess->nt1.in.password1,
-						      sess->nt1.in.password2,
-						      &user_info);
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(mem_ctx);
-			return NT_STATUS_ACCESS_DENIED;
-		}
-		
-		status = auth_check_password(req->smb_conn->negotiate.auth_context, 
-					     req, user_info, &server_info);
 	}
 
+	if (req->smb_conn->negotiate.called_name) {
+		remote_machine = req->smb_conn->negotiate.called_name->name;
+	}
+	
+	if (!remote_machine) {
+		remote_machine = socket_get_peer_addr(req->smb_conn->connection->socket, mem_ctx);
+	}
+	
+	user_info = talloc(req->smb_conn, struct auth_usersupplied_info);
+	if (!user_info) {
+		talloc_free(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	user_info->mapped_state = False;
+	user_info->flags = 0;
+	user_info->client.account_name = sess->nt1.in.user;
+	user_info->client.domain_name = sess->nt1.in.domain;
+	user_info->workstation_name = remote_machine;
+	user_info->remote_host = socket_get_peer_addr(req->smb_conn->connection->socket, mem_ctx);
+	
+	user_info->password_state = AUTH_PASSWORD_RESPONSE;
+	user_info->password.response.lanman = sess->nt1.in.password1;
+	user_info->password.response.lanman.data = talloc_steal(user_info, sess->nt1.in.password1.data);
+	user_info->password.response.nt = sess->nt1.in.password2;
+	user_info->password.response.nt.data = talloc_steal(user_info, sess->nt1.in.password2.data);
+
+	status = auth_check_password(req->smb_conn->negotiate.auth_context, 
+				     req, user_info, &server_info);
+	
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return auth_nt_status_squash(status);

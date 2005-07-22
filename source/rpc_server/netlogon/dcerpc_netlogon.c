@@ -436,13 +436,21 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 	struct auth_usersupplied_info *user_info;
 	struct auth_serversupplied_info *server_info;
 	NTSTATUS nt_status;
-	const uint8_t *chal;
 	static const char zeros[16];
 	struct netr_SamBaseInfo *sam;
 	struct netr_SamInfo2 *sam2;
 	struct netr_SamInfo3 *sam3;
 	struct netr_SamInfo6 *sam6;
 	
+	user_info = talloc(mem_ctx, struct auth_usersupplied_info);
+	if (!user_info) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	user_info->flags = 0;
+	user_info->mapped_state = False;
+	user_info->remote_host = NULL;
+
 	switch (r->in.logon_level) {
 	case 1:
 	case 3:
@@ -464,21 +472,26 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 						dce_call->event_ctx);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 
-		nt_status = auth_get_challenge(auth_context, &chal);
-		NT_STATUS_NOT_OK_RETURN(nt_status);
+		user_info->client.account_name = r->in.logon.network->identity_info.account_name.string;
+		user_info->client.domain_name = r->in.logon.network->identity_info.domain_name.string;
+		user_info->workstation_name = r->in.logon.network->identity_info.workstation.string;
+		
+		user_info->password_state = AUTH_PASSWORD_HASH;
+		user_info->password.hash.lanman = talloc(user_info, struct samr_Password);
+		if (!user_info->password.hash.lanman) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		*user_info->password.hash.lanman = r->in.logon.password->lmpassword;
 
-		nt_status = make_user_info_netlogon_interactive(mem_ctx,
-								r->in.logon.password->identity_info.account_name.string,
-								r->in.logon.password->identity_info.domain_name.string,
-								r->in.logon.password->identity_info.workstation.string,
-								chal,
-								&r->in.logon.password->lmpassword,
-								&r->in.logon.password->ntpassword,
-								&user_info);
-		NT_STATUS_NOT_OK_RETURN(nt_status);
+		user_info->password.hash.nt = talloc(user_info, struct samr_Password);
+		if (!user_info->password.hash.nt) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		*user_info->password.hash.nt = r->in.logon.password->ntpassword;
 		break;		
 	case 2:
 	case 6:
+
 		/* TODO: we need to deny anonymous access here */
 		nt_status = auth_context_create(mem_ctx, lp_auth_methods(), &auth_context,
 						dce_call->event_ctx);
@@ -487,14 +500,14 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 		nt_status = auth_context_set_challenge(auth_context, r->in.logon.network->challenge, "netr_LogonSamLogonWithFlags");
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 
-		nt_status = make_user_info_netlogon_network(auth_context,
-							    r->in.logon.network->identity_info.account_name.string,
-							    r->in.logon.network->identity_info.domain_name.string,
-							    r->in.logon.network->identity_info.workstation.string,
-							    r->in.logon.network->lm.data, r->in.logon.network->lm.length,
-							    r->in.logon.network->nt.data, r->in.logon.network->nt.length,
-							    &user_info);
-		NT_STATUS_NOT_OK_RETURN(nt_status);
+		user_info->client.account_name = r->in.logon.network->identity_info.account_name.string;
+		user_info->client.domain_name = r->in.logon.network->identity_info.domain_name.string;
+		user_info->workstation_name = r->in.logon.network->identity_info.workstation.string;
+		
+		user_info->password_state = AUTH_PASSWORD_RESPONSE;
+		user_info->password.response.lanman = data_blob(r->in.logon.network->lm.data, r->in.logon.network->lm.length);
+		user_info->password.response.nt = data_blob(r->in.logon.network->nt.data, r->in.logon.network->nt.length);
+	
 		break;
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
