@@ -251,8 +251,7 @@ BOOL is_msdfs_link(connection_struct* conn, char * path,
   
 	if (S_ISLNK(sbufp->st_mode)) {
 		/* open the link and read it */
-		referral_len = SMB_VFS_READLINK(conn, path, referral, 
-						      sizeof(pstring));
+		referral_len = SMB_VFS_READLINK(conn, path, referral, sizeof(pstring)-1);
 		if (referral_len == -1) {
 			DEBUG(0,("is_msdfs_link: Error reading msdfs link %s: %s\n", path, strerror(errno)));
 			return False;
