@@ -93,7 +93,7 @@ char *get_user_home_dir(const char *user)
  Returns True if username was changed, false otherwise.
 ********************************************************************/
 
-BOOL map_username(char *user)
+BOOL map_username(fstring user)
 {
 	static BOOL initialised=False;
 	static fstring last_from,last_to;
@@ -102,18 +102,11 @@ BOOL map_username(char *user)
 	char *s;
 	pstring buf;
 	BOOL mapped_user = False;
-
+	char *cmd = lp_username_map_script();
+	
 	if (!*user)
 		return False;
-
-	if (!*mapfile)
-		return False;
-
-	if (!initialised) {
-		*last_from = *last_to = 0;
-		initialised = True;
-	}
-
+		
 	if (strequal(user,last_to))
 		return False;
 
@@ -121,6 +114,52 @@ BOOL map_username(char *user)
 		DEBUG(3,("Mapped user %s to %s\n",user,last_to));
 		fstrcpy(user,last_to);
 		return True;
+	}
+	
+	/* first try the username map script */
+	
+	if ( *cmd ) {
+		char **qlines;
+		pstring command;
+		int numlines, ret, fd;
+
+		pstr_sprintf( command, "%s \"%s\"", cmd, user );
+
+		DEBUG(10,("Running [%s]\n", command));
+		ret = smbrun(command, &fd);
+		DEBUGADD(10,("returned [%d]\n", ret));
+
+		if ( ret != 0 ) {
+			if (fd != -1)
+				close(fd);
+			return False;
+		}
+
+		numlines = 0;
+		qlines = fd_lines_load(fd, &numlines);
+		DEBUGADD(10,("Lines returned = [%d]\n", numlines));
+		close(fd);
+
+		/* should be either no lines or a single line with the mapped username */
+
+		if (numlines) {
+			DEBUG(3,("Mapped user %s to %s\n", user, qlines[0] ));
+			fstrcpy( user, qlines[0] );
+		}
+
+		file_lines_free(qlines);
+		
+		return numlines != 0;
+	}
+
+	/* ok.  let's try the mapfile */
+	
+	if (!*mapfile)
+		return False;
+
+	if (!initialised) {
+		*last_from = *last_to = 0;
+		initialised = True;
 	}
   
 	f = x_fopen(mapfile,O_RDONLY, 0);
@@ -172,10 +211,10 @@ BOOL map_username(char *user)
 		if (strchr_m(dosname,'*') || user_in_list(user, (const char **)dosuserlist, NULL, 0)) {
 			DEBUG(3,("Mapped user %s to %s\n",user,unixname));
 			mapped_user = True;
-			fstrcpy(last_from,user);
-			sscanf(unixname,"%s",user);
-			fstrcpy(last_to,user);
-			if(return_if_mapped) {
+			fstrcpy( last_from,user );
+			fstrcpy( user, unixname );
+			fstrcpy( last_to,user );
+			if ( return_if_mapped ) {
 				str_list_free (&dosuserlist);
 				x_fclose(f);
 				return True;
