@@ -37,7 +37,7 @@ static NTSTATUS anonymous_check_password(struct auth_method_context *ctx,
 					 const struct auth_usersupplied_info *user_info, 
 					 struct auth_serversupplied_info **_server_info)
 {
-	if (user_info->account_name && *user_info->account_name) {
+	if (user_info->client.account_name && *user_info->client.account_name) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 

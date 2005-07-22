@@ -53,9 +53,6 @@ static NTSTATUS domain_check_password(struct auth_method_context *ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!user_info->account_name) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
 	if (!user_info->workstation_name) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -97,18 +94,18 @@ static NTSTATUS domain_check_password(struct auth_method_context *ctx,
 		return status;
 	}
 
-	ninfo.identity_info.domain_name.string = user_info->domain_name;
+	ninfo.identity_info.domain_name.string = user_info->client.domain_name;
 	ninfo.identity_info.parameter_control = 0;
 	ninfo.identity_info.logon_id_low = 0;
 	ninfo.identity_info.logon_id_high = 0;
-	ninfo.identity_info.account_name.string = user_info->account_name;
+	ninfo.identity_info.account_name.string = user_info->client.account_name;
 	ninfo.identity_info.workstation.string = user_info->workstation_name;
 	memcpy(ninfo.challenge, ctx->auth_ctx->challenge.data.data, sizeof(ninfo.challenge));
 
-	ninfo.nt.length = user_info->nt_resp.length;
-	ninfo.nt.data =  user_info->nt_resp.data;
-	ninfo.lm.length = user_info->lm_resp.length;
-	ninfo.lm.data = user_info->lm_resp.data;
+	ninfo.nt.length = user_info->password.response.nt.length;
+	ninfo.nt.data = user_info->password.response.nt.data;
+	ninfo.lm.length = user_info->password.response.lanman.length;
+	ninfo.lm.data = user_info->password.response.lanman.data;
 
 	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.workstation = cli_credentials_get_workstation(credentials);
@@ -135,7 +132,7 @@ static NTSTATUS domain_check_password(struct auth_method_context *ctx,
 	}
 	
 	status = make_server_info_netlogon_validation(mem_ctx, 
-						      user_info->account_name, 
+						      user_info->client.account_name, 
 						      r.in.validation_level, &r.out.validation,
 						      server_info);
 	return status;

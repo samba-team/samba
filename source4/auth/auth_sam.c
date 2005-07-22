@@ -31,7 +31,7 @@
  Do a specific test for an smb password being correct, given a smb_password and
  the lanman and NT responses.
 ****************************************************************************/
-static NTSTATUS authsam_password_ok(const struct auth_context *auth_context,
+static NTSTATUS authsam_password_ok(struct auth_context *auth_context,
 				    TALLOC_CTX *mem_ctx,
 				    uint16_t acct_flags,
 				    const struct samr_Password *lm_pwd, 
@@ -45,25 +45,54 @@ static NTSTATUS authsam_password_ok(const struct auth_context *auth_context,
 	if (acct_flags & ACB_PWNOTREQ) {
 		if (lp_null_passwords()) {
 			DEBUG(3,("Account for user '%s' has no password and null passwords are allowed.\n", 
-				 user_info->account_name));
+				 user_info->mapped.account_name));
 			return NT_STATUS_OK;
 		} else {
 			DEBUG(3,("Account for user '%s' has no password and null passwords are NOT allowed.\n", 
-				 user_info->account_name));
+				 user_info->mapped.account_name));
 			return NT_STATUS_LOGON_FAILURE;
 		}		
 	}
 
-	status = ntlm_password_check(mem_ctx, &auth_context->challenge.data, 
-				     &user_info->lm_resp, &user_info->nt_resp, 
-				     &user_info->lm_interactive_password, 
-				     &user_info->nt_interactive_password,
-				     user_info->account_name,
-				     user_info->client.account_name, 
-				     user_info->client.domain_name, 
-				     lm_pwd->hash, nt_pwd->hash,
-				     user_sess_key, lm_sess_key);
-	NT_STATUS_NOT_OK_RETURN(status);
+	switch (user_info->password_state) {
+	case AUTH_PASSWORD_PLAIN: 
+	{
+		const struct auth_usersupplied_info *user_info_temp;	
+		status = encrypt_user_info(mem_ctx, auth_context, 
+					   AUTH_PASSWORD_HASH, 
+					   user_info, &user_info_temp);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Failed to convert plaintext password to password HASH: %s\n", nt_errstr(status)));
+			return status;
+		}
+		user_info = user_info_temp;
+
+		/* NO break */
+	}
+	case AUTH_PASSWORD_HASH:
+		status = hash_password_check(mem_ctx, 
+					     user_info->password.hash.lanman,
+					     user_info->password.hash.nt,
+					     user_info->mapped.account_name,
+					     user_info->client.account_name, 
+					     user_info->client.domain_name, 
+					     lm_pwd, nt_pwd,
+					     user_sess_key, lm_sess_key);
+		NT_STATUS_NOT_OK_RETURN(status);
+		break;
+		
+	case AUTH_PASSWORD_RESPONSE:
+		status = ntlm_password_check(mem_ctx, &auth_context->challenge.data, 
+					     &user_info->password.response.lanman, 
+					     &user_info->password.response.nt,
+					     user_info->mapped.account_name,
+					     user_info->client.account_name, 
+					     user_info->client.domain_name, 
+					     lm_pwd, nt_pwd,
+					     user_sess_key, lm_sess_key);
+		NT_STATUS_NOT_OK_RETURN(status);
+		break;
+	}
 
 	if (user_sess_key && user_sess_key->data) {
 		talloc_steal(auth_context, user_sess_key->data);
@@ -88,23 +117,23 @@ static NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 				   const char *workstation_list,
 				   const struct auth_usersupplied_info *user_info)
 {
-	DEBUG(4,("authsam_account_ok: Checking SMB password for user %s\n", user_info->account_name));
+	DEBUG(4,("authsam_account_ok: Checking SMB password for user %s\n", user_info->mapped.account_name));
 
 	/* Quit if the account was disabled. */
 	if (acct_flags & ACB_DISABLED) {
-		DEBUG(1,("authsam_account_ok: Account for user '%s' was disabled.\n", user_info->account_name));
+		DEBUG(1,("authsam_account_ok: Account for user '%s' was disabled.\n", user_info->mapped.account_name));
 		return NT_STATUS_ACCOUNT_DISABLED;
 	}
 
 	/* Quit if the account was locked out. */
 	if (acct_flags & ACB_AUTOLOCK) {
-		DEBUG(1,("authsam_account_ok: Account for user %s was locked out.\n", user_info->account_name));
+		DEBUG(1,("authsam_account_ok: Account for user %s was locked out.\n", user_info->mapped.account_name));
 		return NT_STATUS_ACCOUNT_LOCKED_OUT;
 	}
 
 	/* Test account expire time */
 	if ((acct_expiry) != -1 && time(NULL) > nt_time_to_unix(acct_expiry)) {
-		DEBUG(1,("authsam_account_ok: Account for user '%s' has expired.\n", user_info->account_name));
+		DEBUG(1,("authsam_account_ok: Account for user '%s' has expired.\n", user_info->mapped.account_name));
 		DEBUG(3,("authsam_account_ok: Account expired at '%s'.\n", 
 			 nt_time_string(mem_ctx, acct_expiry)));
 		return NT_STATUS_ACCOUNT_EXPIRED;
@@ -114,14 +143,14 @@ static NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 		/* check for immediate expiry "must change at next logon" */
 		if (must_change_time == 0 && last_set_time != 0) {
 			DEBUG(1,("sam_account_ok: Account for user '%s' password must change!.\n", 
-				 user_info->account_name));
+				 user_info->mapped.account_name));
 			return NT_STATUS_PASSWORD_MUST_CHANGE;
 		}
 
 		/* check for expired password */
 		if ((must_change_time) != 0 && nt_time_to_unix(must_change_time) < time(NULL)) {
 			DEBUG(1,("sam_account_ok: Account for user '%s' password expired!.\n", 
-				 user_info->account_name));
+				 user_info->mapped.account_name));
 			DEBUG(1,("sam_account_ok: Password expired at '%s' unix time.\n", 
 				 nt_time_string(mem_ctx, must_change_time)));
 			return NT_STATUS_PASSWORD_EXPIRED;
@@ -152,17 +181,17 @@ static NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 	}
 
 	if (acct_flags & ACB_DOMTRUST) {
-		DEBUG(2,("sam_account_ok: Domain trust account %s denied by server\n", user_info->account_name));
+		DEBUG(2,("sam_account_ok: Domain trust account %s denied by server\n", user_info->mapped.account_name));
 		return NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT;
 	}
 
 	if (acct_flags & ACB_SVRTRUST) {
-		DEBUG(2,("sam_account_ok: Server trust account %s denied by server\n", user_info->account_name));
+		DEBUG(2,("sam_account_ok: Server trust account %s denied by server\n", user_info->mapped.account_name));
 		return NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT;
 	}
 
 	if (acct_flags & ACB_WSTRUST) {
-		DEBUG(4,("sam_account_ok: Wksta trust account %s denied by server\n", user_info->account_name));
+		DEBUG(4,("sam_account_ok: Wksta trust account %s denied by server\n", user_info->mapped.account_name));
 		return NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
 	}
 
@@ -311,7 +340,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS authsam_authenticate(const struct auth_context *auth_context, 
+static NTSTATUS authsam_authenticate(struct auth_context *auth_context, 
 				     TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx, 
 				     struct ldb_message **msgs,
 				     struct ldb_message **msgs_domain,
@@ -332,7 +361,7 @@ static NTSTATUS authsam_authenticate(const struct auth_context *auth_context,
 	/* Quit if the account was locked out. */
 	if (acct_flags & ACB_AUTOLOCK) {
 		DEBUG(3,("check_sam_security: Account for user %s was locked out.\n", 
-			 user_info->account_name));
+			 user_info->mapped.account_name));
 		return NT_STATUS_ACCOUNT_LOCKED_OUT;
 	}
 
@@ -517,7 +546,7 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 						 struct auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status;
-	const char *account_name = user_info->account_name;
+	const char *account_name = user_info->mapped.account_name;
 	struct ldb_message **msgs;
 	struct ldb_message **domain_msgs;
 	struct ldb_context *sam_ctx;
@@ -570,8 +599,8 @@ static NTSTATUS authsam_check_password(struct auth_method_context *ctx,
 	const char *domain;
 	BOOL is_local_name, is_my_domain;
 
-	is_local_name = is_myname(user_info->domain_name);
-	is_my_domain  = strequal(user_info->domain_name, lp_workgroup());
+	is_local_name = is_myname(user_info->mapped.domain_name);
+	is_my_domain  = strequal(user_info->mapped.domain_name, lp_workgroup());
 
 	/* check whether or not we service this domain/workgroup name */
 	switch (lp_server_role()) {
@@ -581,7 +610,7 @@ static NTSTATUS authsam_check_password(struct auth_method_context *ctx,
 		case ROLE_DOMAIN_MEMBER:
 			if (!is_local_name) {
 				DEBUG(6,("authsam_check_password: %s is not one of my local names (%s)\n",
-					user_info->domain_name, (lp_server_role() == ROLE_DOMAIN_MEMBER 
+					user_info->mapped.domain_name, (lp_server_role() == ROLE_DOMAIN_MEMBER 
 					? "ROLE_DOMAIN_MEMBER" : "ROLE_STANDALONE") ));
 				return NT_STATUS_NOT_IMPLEMENTED;
 			}
@@ -591,7 +620,7 @@ static NTSTATUS authsam_check_password(struct auth_method_context *ctx,
 		case ROLE_DOMAIN_BDC:
 			if (!is_local_name && !is_my_domain) {
 				DEBUG(6,("authsam_check_password: %s is not one of my local names or domain name (DC)\n",
-					user_info->domain_name));
+					user_info->mapped.domain_name));
 				return NT_STATUS_NOT_IMPLEMENTED;
 			}
 			domain = lp_workgroup();
