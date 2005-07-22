@@ -1196,6 +1196,57 @@ if test x$ac_cv_func_fstat64 = xno ; then
   fi
 fi
 
+#################################################
+# Check whether struct stat has timestamps with sub-second resolution.
+# At least IRIX and Solaris have these.
+#
+# We check that 
+#	all of st_mtim, st_atim and st_ctim exist
+#	all of the members are in fact of type struct timespec
+#
+# There is some conflicting standards weirdness about whether we should use
+# "struct timespec" or "timespec_t". Linux doesn't have timespec_t, so we
+# prefer struct timespec.
+
+AC_CACHE_CHECK([whether struct stat has sub-second timestamps], samba_stat_hires,
+    [
+	AC_TRY_COMPILE(
+	    [
+#if TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  include <time.h>
+# endif
+#endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+	    ],
+	    [
+		struct timespec t;
+		struct stat s = {0};
+		t.tv_sec = s.st_mtim.tv_sec;
+		t.tv_nsec = s.st_mtim.tv_nsec;
+		t.tv_sec = s.st_ctim.tv_sec;
+		t.tv_nsec = s.st_ctim.tv_nsec;
+		t.tv_sec = s.st_atim.tv_sec;
+		t.tv_nsec = s.st_atim.tv_nsec;
+	    ],
+	    samba_stat_hires=yes, samba_stat_hires=no)
+    ])
+
+if test x"$samba_stat_hires" = x"yes" ; then
+    AC_DEFINE(HAVE_STAT_ST_MTIM, 1, [whether struct stat contains st_mtim])
+    AC_DEFINE(HAVE_STAT_ST_ATIM, 1, [whether struct stat contains st_atim])
+    AC_DEFINE(HAVE_STAT_ST_CTIM, 1, [whether struct stat contains st_ctim])
+    AC_DEFINE(HAVE_STAT_HIRES_TIMESTAMPS, 1,
+	    [whether struct stat has sub-second timestamps])
+fi
+
 #####################################
 # we might need the resolv library on some systems
 AC_CHECK_LIB(resolv, dn_expand)
