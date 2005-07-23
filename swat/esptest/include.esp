@@ -1,4 +1,4 @@
-<% page_header("columns", "ESP Include Test", "/esptest/menu.js"); %>
+<% page_header("columns", "ESP Include Test", "esptest"); %>
 
 including /scripting/test.ejs<p/>
 <% include("/scripting/test.ejs"); %>

@@ -1,4 +1,4 @@
-<% page_header("columns", "Server Installation", "/install/menu.js"); 
+<% page_header("columns", "Server Installation", "install"); 
 %>
 
 <h1>Installation</h1>

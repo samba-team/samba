@@ -1,4 +1,4 @@
-<% page_header("columns", "ESP ldb test", "/esptest/menu.js"); %>
+<% page_header("columns", "ESP ldb test", "esptest"); %>
 
 <h1>Samba4 ldb test</h1>
 

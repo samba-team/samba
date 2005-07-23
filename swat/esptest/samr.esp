@@ -1,4 +1,4 @@
-<% page_header("columns", "ESP samr test", "/esptest/menu.js"); 
+<% page_header("columns", "ESP samr test", "esptest"); 
 
   libinclude("base.js");
   libinclude("samr.js");
