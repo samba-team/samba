@@ -75,7 +75,7 @@ DirectoryString ::= CHOICE {
 
 Attribute ::= SEQUENCE {
         type    AttributeType,
-        value   AttributeValue
+        value   SET OF -- AttributeValue -- heim_any
 }
 
 AttributeTypeAndValue ::= SEQUENCE {
