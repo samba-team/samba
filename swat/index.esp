@@ -4,7 +4,7 @@
   libinclude("provision.js");
 
   if (install_ok() == false) {
-	  redirect("/install/provision.esp");
+	  redirect("/install/");
   }
 
 %>
