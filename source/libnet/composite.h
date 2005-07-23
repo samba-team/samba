@@ -59,12 +59,15 @@ struct libnet_rpc_userdel {
 };
 
 
+#define USERMOD_FIELD_ACCOUNT_NAME    ( 0x00000001 )
+#define USERMOD_FIELD_FULL_NAME       ( 0x00000002 )
+
 struct libnet_rpc_usermod {
 	struct {
 		struct policy_handle domain_handle;
 		const char *username;
 
-		struct usermod {
+		struct usermod_change {
 			uint32_t fields;    /* bitmask field */
 
 			const char *account_name;

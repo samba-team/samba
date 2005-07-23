@@ -428,6 +428,7 @@ struct usermod_state {
 	struct rpc_request        *req;
 	struct policy_handle      domain_handle;
 	struct policy_handle      user_handle;
+	struct usermod_change     change;
 	union  samr_UserInfo      info;
 	struct samr_LookupNames   lookupname;
 	struct samr_OpenUser      openuser;
@@ -471,21 +472,47 @@ static NTSTATUS usermod_open(struct composite_context *c,
 			     struct usermod_state *s)
 {
 	union samr_UserInfo *i = &s->info;
+	uint16_t level;
 
 	c->status = dcerpc_ndr_request_recv(s->req);
 	NT_STATUS_NOT_OK_RETURN(c->status);
 
 	s->setuser.in.user_handle  = &s->user_handle;
 
-	/* TODO: decide about the level of UserInfo */
-	s->setuser.in.level        = 1;
+	/* Prepare UserInfo level and data based on bitmask field */
+	if (s->change.fields) {
+		if (s->change.fields & USERMOD_FIELD_ACCOUNT_NAME) {
+			level = 7;
+			i->info7.account_name.length = 2*strlen_m(s->change.account_name);
+			i->info7.account_name.size   = 2*strlen_m(s->change.account_name);
+			i->info7.account_name.string = s->change.account_name;
+
+			s->change.fields ^= USERMOD_FIELD_ACCOUNT_NAME;
+
+		} else if (s->change.fields & USERMOD_FIELD_FULL_NAME) {
+			level = 8;
+			i->info8.full_name.length = 2*strlen_m(s->change.full_name);
+			i->info8.full_name.size   = 2*strlen_m(s->change.full_name);
+			i->info8.full_name.string = s->change.full_name;
+			
+			s->change.fields ^= USERMOD_FIELD_FULL_NAME;
+		}
+	}
+
+	s->setuser.in.level        = level;
 	s->setuser.in.info         = i;
 
 	s->req = dcerpc_samr_SetUserInfo_send(s->pipe, c, &s->setuser);
 
 	s->req->async.callback = usermod_handler;
 	s->req->async.private  = c;
-	s->stage = USERMOD_MODIFY;
+
+	/* Get back here again unless all fields have been set */
+	if (s->change.fields) {
+		s->stage = USERMOD_OPEN;
+	} else {
+		s->stage = USERMOD_MODIFY;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -554,6 +581,7 @@ struct composite_context *libnet_rpc_usermod_send(struct dcerpc_pipe *p,
 
 	s->pipe          = p;
 	s->domain_handle = io->in.domain_handle;
+	s->change        = io->in.change;
 	
 	s->lookupname.in.domain_handle = &io->in.domain_handle;
 	s->lookupname.in.num_names     = 1;

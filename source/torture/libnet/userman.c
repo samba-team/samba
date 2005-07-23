@@ -272,13 +272,17 @@ static BOOL test_userdel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 
 static BOOL test_usermod(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			 struct policy_handle *handle, const char *username)
+			 struct policy_handle *handle, const char *username,
+			 struct usermod_change *change)
 {
 	NTSTATUS status;
 	struct libnet_rpc_usermod user;
 	
 	user.in.domain_handle = *handle;
 	user.in.username = username;
+	user.in.change = *change;
+
+	printf("modifying user\n");
 
 	status = libnet_rpc_usermod(p, mem_ctx, &user);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -404,10 +408,16 @@ BOOL torture_usermod(void)
 	struct dcerpc_pipe *p;
 	struct policy_handle h;
 	struct lsa_String domain_name;
-	const char *name = TEST_USERNAME;
+	char *name = TEST_USERNAME;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
+	int i;
 
+	struct usermod_change changes[] = {
+		{ USERMOD_FIELD_ACCOUNT_NAME, "changed", NULL },
+		{ USERMOD_FIELD_FULL_NAME,    NULL, "Testing full account name" }
+	};
+	
 	mem_ctx = talloc_init("test_userdel");
 	binding = lp_parm_string(-1, "torture", "binding");
 
@@ -433,9 +443,15 @@ BOOL torture_usermod(void)
 		goto done;
 	}
 
-	if (!test_usermod(p, mem_ctx, &h, name)) {
-		ret = False;
-		goto done;
+	for (i = 0; i < (sizeof(changes)/sizeof(struct usermod_change)); i++) {
+		if (!test_usermod(p, mem_ctx, &h, name, &changes[i])) {
+			ret = False;
+			goto done;
+		}
+
+		if (changes[i].fields & USERMOD_FIELD_ACCOUNT_NAME) {
+			name = talloc_strdup(mem_ctx, changes[i].account_name);
+		}
 	}
 
 	if (!test_cleanup(p, mem_ctx, &h, name)) {
