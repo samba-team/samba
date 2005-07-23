@@ -1480,6 +1480,12 @@ struct inform_level2_message {
 	unsigned long source_file_id;
 };
 
+struct kernel_oplock_message {
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
+	unsigned long file_id;
+};
+
 /*
  * On the wire return values for oplock types.
  */

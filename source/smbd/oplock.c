@@ -380,6 +380,15 @@ BOOL process_local_message(char *buffer, int buf_size)
 				DEBUG(0,("kernel oplock break parse failure!\n"));
 				return False;
 			}
+			{
+				struct kernel_oplock_message msg;
+				msg.dev = dev;
+				msg.inode = inode;
+				msg.file_id = file_id;
+				return message_send_pid(sys_getpid(),
+							MSG_SMB_KERNEL_BREAK,
+							&msg, sizeof(msg), True);
+			}
 			break;
 
 		case OPLOCK_BREAK_CMD:
@@ -1099,6 +1108,67 @@ static void process_oplock_break_message(int msg_type, pid_t src,
 	}
 }
 
+static void process_kernel_oplock_break(int msg_type, pid_t src,
+					void *buf, size_t len)
+{
+	struct kernel_oplock_message *msg = buf;
+	files_struct *fsp;
+	char *break_msg;
+	BOOL sign_state;
+
+	if (buf == NULL) {
+		DEBUG(0, ("Got NULL buffer\n"));
+		return;
+	}
+
+	if (len != sizeof(*msg)) {
+		DEBUG(0, ("Got invalid msg len %d\n", len));
+		return;
+	}
+
+	DEBUG(10, ("Got kernel oplock break message from pid %d: %d/%d/%d\n",
+		   (int)src, (int)msg->dev, (int)msg->inode,
+		   (int)msg->file_id));
+
+	fsp = initial_break_processing(msg->dev, msg->inode, msg->file_id);
+
+	if (fsp == NULL) {
+		/* TODO: We might have a possible race here. Break messages
+		 * are sent, and before we get to process this message, we
+		 * have closed the file. We probably have to reply with 'ok,
+		 * oplock broken' */
+		DEBUG(3, ("Did not find fsp\n"));
+		return;
+	}
+
+	if (fsp->sent_oplock_break != NO_BREAK_SENT) {
+		/* This is ok, kernel oplocks come in completely async */
+		DEBUG(3, ("Got a kernel oplock request while waiting for a "
+			  "break reply\n"));
+		return;
+	}
+
+	break_msg = new_break_smb_message(NULL, fsp, OPLOCKLEVEL_NONE);
+	if (break_msg == NULL) {
+		exit_server("Could not talloc break_msg\n");
+	}
+
+	/* Save the server smb signing state. */
+	sign_state = srv_oplock_set_signing(False);
+
+	show_msg(break_msg);
+	if (!send_smb(smbd_server_fd(), break_msg)) {
+		exit_server("oplock_break: send_smb failed.");
+	}
+
+	/* Restore the sign state to what it was. */
+	srv_oplock_set_signing(sign_state);
+
+	talloc_free(break_msg);
+
+	fsp->sent_oplock_break = BREAK_TO_NONE_SENT;
+}
+
 void reply_to_oplock_break_requests(files_struct *fsp)
 {
 	int i, num_share_modes;
@@ -1743,12 +1813,23 @@ BOOL init_oplocks(void)
 			 process_oplock_break_message);
 	message_register(MSG_SMB_BREAK_RESPONSE,
 			 process_oplock_break_response);
+	message_register(MSG_SMB_KERNEL_BREAK,
+			 process_kernel_oplock_break);
 	message_register(MSG_SMB_INFORM_LEVEL2,
 			 process_inform_level2_message);
 	message_register(MSG_SMB_INFORM_LEVEL2_REPLY,
 			 process_inform_level2_reply);
 	message_register(MSG_SMB_OPEN_RETRY,
 			 process_open_retry_message);
+
+	if (lp_kernel_oplocks()) {
+#if HAVE_KERNEL_OPLOCKS_IRIX
+		koplocks = irix_init_kernel_oplocks();
+#elif HAVE_KERNEL_OPLOCKS_LINUX
+		koplocks = linux_init_kernel_oplocks();
+#endif
+	}
+
 	return True;
 
 	/* Open a lookback UDP socket on a random port. */
@@ -1770,14 +1851,6 @@ address %lx. Error was %s\n", (long)htonl(INADDR_LOOPBACK), strerror(errno)));
 		return False;
 	}
 	global_oplock_port = ntohs(sock_name.sin_port);
-
-	if (lp_kernel_oplocks()) {
-#if HAVE_KERNEL_OPLOCKS_IRIX
-		koplocks = irix_init_kernel_oplocks();
-#elif HAVE_KERNEL_OPLOCKS_LINUX
-		koplocks = linux_init_kernel_oplocks();
-#endif
-	}
 
 	DEBUG(3,("open_oplock ipc: pid = %d, global_oplock_port = %u\n", 
 		 (int)sys_getpid(), global_oplock_port));
