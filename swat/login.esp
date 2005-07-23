@@ -1,5 +1,6 @@
 <% page_header("plain", "SWAT Login", "");
    libinclude("auth.js");
+   include("/scripting/forms.js");
 
 if (request['SESSION_EXPIRED'] == "True") {
    write("<b>Your session has expired - please authenticate again<br /></b>\n");
@@ -16,7 +17,7 @@ f.element[2].type  = "select";
 f.element[2].list  = getDomainList();
 f.submit[0] = "Login";
 
-display_form(f);
+f.display();
 %>
 
 <%

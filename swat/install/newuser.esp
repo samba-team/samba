@@ -1,5 +1,6 @@
 <% page_header("columns", "Add a user", "/install/menu.js"); 
 
+  include("/scripting/forms.js");
   libinclude("base.js");
   libinclude("provision.js");
 %>
@@ -34,7 +35,7 @@ if (form['submit'] == "Add" &&
 	}
 	newuser(form.USERNAME, form.UNIXNAME, form.PASSWORD, writefln);
 } else {
-	display_form(f);
+	f.display();
 }
 %>
 

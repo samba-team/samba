@@ -1,4 +1,6 @@
-<% page_header("columns", "ESP Form Test", "/esptest/menu.js"); %>
+<% page_header("columns", "ESP Form Test", "/esptest/menu.js"); 
+   include("/scripting/forms.js");
+%>
 
 <%
 var f = FormObj("FormTest", 3, 2);
@@ -15,7 +17,7 @@ f.element[2].value = form['Color'];
 f.submit[0] = "OK";
 f.submit[1] = "Cancel";
 
-display_form(f);
+f.display();
 
 <%
   /* if its a post then the user has filled in the form, so
