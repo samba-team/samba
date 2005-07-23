@@ -1,5 +1,6 @@
 <% page_header("columns", "Provisioning", "/install/menu.js"); 
 
+  include("/scripting/forms.js");
   libinclude("base.js");
   libinclude("provision.js");
 %>
@@ -58,7 +59,7 @@ lp.set("realm", subobj.REALM);
 if (form['submit'] == "Provision") {
 	provision(subobj, writefln);
 } else {
-	display_form(f);
+	f.display();
 }
 %>
 

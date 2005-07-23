@@ -1,4 +1,6 @@
-<% page_header("columns", "ESP session test", "/esptest/menu.js"); %>
+<% page_header("columns", "ESP session test", "/esptest/menu.js"); 
+   include("/scripting/forms.js");
+%>
 
 <h1>Samba4 session test</h1>
 
@@ -12,7 +14,7 @@ f.submit[1] = "Reset";
 f.submit[2] = "Destroy";
 f.submit[3] = "Cancel";
 
-display_form(f);
+f.display();
 
   /* if its a post then the user has filled in the form, so
      report the values 
