@@ -62,9 +62,11 @@ filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src='/images/logo.png'
 
 <div id="nav">
      <% 
-     include("/menu.js");
      if (global.page.menu) {
           include(global.page.menu);
+	  write('<a href="/">Main Menu</a>');
+     } else {
+	  include("/menu.js");
      }
      %>
 </div>
