@@ -73,6 +73,8 @@ PKCS12-PBEParams ::= SEQUENCE {
 	iterations	INTEGER (0..4294967295) OPTIONAL
 }
 
+PKCS12-OctetString ::= OCTET STRING
+
 -- KeyBag ::= PrivateKeyInfo
 -- PKCS8ShroudedKeyBag ::= EncryptedPrivateKeyInfo
 

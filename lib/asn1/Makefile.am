@@ -284,9 +284,10 @@ gen_files_pkcs12 =					\
 	asn1_PKCS12_AuthenticatedSafe.x			\
 	asn1_PKCS12_CertBag.x				\
 	asn1_PKCS12_Attribute.x				\
-	asn1_PKCS12_Attributes.x				\
+	asn1_PKCS12_Attributes.x			\
 	asn1_PKCS12_SafeBag.x				\
 	asn1_PKCS12_SafeContents.x			\
+	asn1_PKCS12_OctetString.x			\
 	asn1_PKCS12_PBEParams.x
 
 gen_files_pkcs8 =					\
