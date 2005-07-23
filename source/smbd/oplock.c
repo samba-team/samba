@@ -58,6 +58,8 @@ BOOL oplock_message_waiting(fd_set *fds)
 	if (koplocks && koplocks->msg_waiting(fds))
 		return True;
 
+	return False;
+
 	if (FD_ISSET(oplock_sock, fds))
 		return True;
 
@@ -422,7 +424,7 @@ pid %d, port %d, dev = %x, inode = %.0f, file_id = %lu\n",
 pid %d, port %d, dev = %x, inode = %.0f, mid = %u\n",
 					(int)remotepid, from_port, (unsigned int)dev, (double)inode, (unsigned int)mid));
 
-				schedule_sharing_violation_open_smb_message(mid);
+				schedule_deferred_open_smb_message(mid);
 			}
 			return True;
 
@@ -529,6 +531,30 @@ static void prepare_break_message(char *outbuf, files_struct *fsp, BOOL level2)
 	SSVAL(outbuf,smb_vwv2,fsp->fnum);
 	SCVAL(outbuf,smb_vwv3,LOCKING_ANDX_OPLOCK_RELEASE);
 	SCVAL(outbuf,smb_vwv3+1,level2 ? OPLOCKLEVEL_II : OPLOCKLEVEL_NONE);
+}
+
+static char *new_break_smb_message(TALLOC_CTX *mem_ctx,
+				   files_struct *fsp, uint8_t cmd)
+{
+	char *result = TALLOC_ARRAY(mem_ctx, char, smb_size + 8*2 + 0);
+
+	if (result == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return NULL;
+	}
+
+	memset(result,'\0',smb_size);
+	set_message(result,8,0,True);
+	SCVAL(result,smb_com,SMBlockingX);
+	SSVAL(result,smb_tid,fsp->conn->cnum);
+	SSVAL(result,smb_pid,0xFFFF);
+	SSVAL(result,smb_uid,0);
+	SSVAL(result,smb_mid,0xFFFF);
+	SCVAL(result,smb_vwv0,0xFF);
+	SSVAL(result,smb_vwv2,fsp->fnum);
+	SCVAL(result,smb_vwv3,LOCKING_ANDX_OPLOCK_RELEASE);
+	SCVAL(result,smb_vwv3+1,cmd);
+	return result;
 }
 
 /****************************************************************************
@@ -983,6 +1009,331 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 	return True;
 }
 
+static void process_oplock_break_message(int msg_type, pid_t src,
+					 void *buf, size_t len)
+{
+	share_mode_entry *msg = buf;
+	files_struct *fsp;
+	char *break_msg;
+	BOOL break_to_level2 = False;
+	BOOL sign_state;
+
+	if (buf == NULL) {
+		DEBUG(0, ("Got NULL buffer\n"));
+		return;
+	}
+
+	if (len != sizeof(*msg)) {
+		DEBUG(0, ("Got invalid msg len %d\n", len));
+		return;
+	}
+
+	DEBUG(10, ("Got oplock break message from pid %d: %d/%d/%d\n",
+		   (int)src, (int)msg->dev, (int)msg->inode,
+		   (int)msg->share_file_id));
+
+	fsp = initial_break_processing(msg->dev, msg->inode,
+				       msg->share_file_id);
+
+	if (fsp == NULL) {
+		/* TODO: We might have a possible race here. Break messages
+		 * are sent, and before we get to process this message, we
+		 * have closed the file. We probably have to reply with 'ok,
+		 * oplock broken' */
+		DEBUG(3, ("Did not find fsp\n"));
+		return;
+	}
+
+	if (fsp->sent_oplock_break != NO_BREAK_SENT) {
+		DEBUG(3, ("Logic problem: Got a second break msg for the same "
+			  "file -- TODO.\n"));
+		return;
+	}
+
+	/* Paranoia checks */
+
+	if (msg->op_type != fsp->oplock_type) {
+		DEBUG(0, ("Logic problem -- got oplock type %d, have %d\n",
+			  msg->op_type, fsp->oplock_type));
+		return;
+	}
+
+	if ((msg_type == MSG_SMB_BREAK_REQUEST) &&
+	    (global_client_caps & CAP_LEVEL_II_OPLOCKS) && 
+	    !koplocks && /* NOTE: we force levelII off for kernel oplocks -
+			  * this will change when it is supported */
+	    lp_level2_oplocks(SNUM(fsp->conn))) {
+		break_to_level2 = True;
+	}
+
+	break_msg = new_break_smb_message(NULL, fsp, break_to_level2 ?
+					  OPLOCKLEVEL_II : OPLOCKLEVEL_NONE);
+	if (break_msg == NULL) {
+		exit_server("Could not talloc break_msg\n");
+	}
+
+	/* Need to wait before sending a break message to a file of our own */
+	if (src == sys_getpid()) {
+		wait_before_sending_break();
+	}
+
+	/* Save the server smb signing state. */
+	sign_state = srv_oplock_set_signing(False);
+
+	show_msg(break_msg);
+	if (!send_smb(smbd_server_fd(), break_msg)) {
+		exit_server("oplock_break: send_smb failed.");
+	}
+
+	/* Restore the sign state to what it was. */
+	srv_oplock_set_signing(sign_state);
+
+	talloc_free(break_msg);
+
+	if (msg_type == MSG_SMB_BREAK_REQUEST) {
+		fsp->sent_oplock_break = break_to_level2 ?
+			LEVEL_II_BREAK_SENT:BREAK_TO_NONE_SENT;
+	} else {
+		/* Async level2 request, don't send a reply */
+		fsp->sent_oplock_break = ASYNC_LEVEL_II_BREAK_SENT;
+	}
+}
+
+void reply_to_oplock_break_requests(files_struct *fsp)
+{
+	int i, num_share_modes;
+	share_mode_entry *share_modes;
+	BOOL delete_on_close;
+	struct share_mode_lock *lck =
+		get_share_mode_lock(NULL, fsp->dev, fsp->inode);
+
+	if (lck == NULL) {
+		DEBUG(3, ("Could not lock share entry\n"));
+		return;
+	}
+
+	num_share_modes = get_share_modes(fsp->dev, fsp->inode, &share_modes,
+					  &delete_on_close);
+	for (i=0; i<num_share_modes; i++) {
+		if (share_modes[i].op_type != WAITING_FOR_BREAK) {
+			continue;
+		}
+		message_send_pid(share_modes[i].pid, MSG_SMB_BREAK_RESPONSE,
+				 &share_modes[i], sizeof(share_modes[i]),
+				 True);
+	}
+
+	if (!inform_clients_about_reply(lck)) {
+		smb_panic("could not inform clients\n");
+	}
+
+	talloc_free(lck);
+	SAFE_FREE(share_modes);
+	return;
+}
+
+static void process_oplock_break_response(int msg_type, pid_t src,
+					  void *buf, size_t len)
+{
+	share_mode_entry *msg = buf;
+	files_struct *fsp;
+
+	if (buf == NULL) {
+		DEBUG(0, ("Got NULL buffer\n"));
+		return;
+	}
+
+	if (len != sizeof(*msg)) {
+		DEBUG(0, ("Got invalid msg len %d\n", len));
+		return;
+	}
+
+	DEBUG(10, ("Got oplock break response from pid %d: %d/%d/%d mid %d\n",
+		   (int)src, (int)msg->dev, (int)msg->inode,
+		   (int)msg->share_file_id, (int)msg->op_port));
+
+	fsp = file_find_dif(msg->dev, msg->inode, msg->share_file_id);
+
+	if (fsp == NULL) {
+		DEBUG(0, ("Got oplock break response without file waiting\n"));
+		return;
+	}
+
+	/* Paranoia check: There can't be an exclusive oplock around at this
+	 * point */
+
+	{
+		struct share_mode_lock *lck;
+		int i, num_share_modes;
+		BOOL delete_on_close;
+		share_mode_entry *share_modes;
+
+		lck = get_share_mode_lock(NULL, msg->dev, msg->inode);
+		if (lck == NULL) {
+			smb_panic("Could not lock share mode entry\n");
+		}
+		num_share_modes = get_share_modes(msg->dev, msg->inode,
+						  &share_modes,
+						  &delete_on_close);
+		for (i=0; i<num_share_modes; i++) {
+			if (EXCLUSIVE_OPLOCK_TYPE(share_modes[i].op_type)) {
+				smb_panic("exclusive oplock left in share "
+					  "mode database\n");
+			}
+		}
+		SAFE_FREE(share_modes);
+		talloc_free(lck);
+	}
+
+	/* Here's the hack from open.c, store the mid in the 'port' field */
+	schedule_deferred_open_smb_message(msg->op_port);
+
+	{
+		struct share_mode_lock *lck =
+			get_share_mode_lock(NULL, msg->dev, msg->inode);
+		BOOL dummy;
+		if (lck == NULL) {
+			DEBUG(0, ("Could not lock share mode\n"));
+			return;
+		}
+
+		del_share_mode(fsp, NULL, &dummy);
+		talloc_free(lck);
+	}
+
+	fsp->is_stat = True;
+	close_file(fsp, False);
+}
+
+static void process_open_retry_message(int msg_type, pid_t src,
+				       void *buf, size_t len)
+{
+	deferred_open_entry *msg = buf;
+	
+	if (buf == NULL) {
+		DEBUG(0, ("Got NULL buffer\n"));
+		return;
+	}
+
+	if (len != sizeof(*msg)) {
+		DEBUG(0, ("Got invalid msg len %d\n", len));
+		return;
+	}
+
+	DEBUG(10, ("Got open retry msg from pid %d: %d/%d mid %d\n",
+		   (int)src, (int)msg->dev, (int)msg->inode,
+		   (int)msg->mid));
+
+	schedule_deferred_open_smb_message(msg->mid);
+}
+
+static void process_inform_level2_message(int msg_type, pid_t src,
+					  void *buf, size_t len)
+{
+	struct inform_level2_message *msg = buf;
+	files_struct *fsp;
+
+	if (buf == NULL) {
+		DEBUG(0, ("Got NULL buffer\n"));
+		return;
+	}
+
+	if (len != sizeof(*msg)) {
+		DEBUG(0, ("Got invalid msg len %d\n", len));
+		return;
+	}
+
+	DEBUG(10, ("Got inform level2 message pid %d: %d/%d/%d mid %d\n",
+		   (int)src, (int)msg->dev, (int)msg->inode,
+		   (int)msg->target_file_id, (int)msg->mid));
+
+	fsp = file_find_dif(msg->dev, msg->inode, msg->target_file_id);
+
+	if (fsp == NULL) {
+		DEBUG(0, ("Got inform level2 message without file around\n"));
+		return;
+	}
+
+	if (fsp->oplock_type != NO_OPLOCK) {
+		DEBUG(0, ("Got inform level2 from pid %d for a file "
+			  "(%d/%d/%d) without an oplock\n", (int)src,
+			  (int)msg->dev, (int)msg->inode,
+			  (int)msg->target_file_id));
+	}
+
+	if (fsp->level2_around) {
+		DEBUG(0, ("Got inform level2 from pid %d for a file "
+			  "(%d/%d/%d), I already know\n", (int)src,
+			  (int)msg->dev, (int)msg->inode,
+			  (int)msg->target_file_id));
+	}
+
+	fsp->level2_around = True;
+
+	message_send_pid(src, MSG_SMB_INFORM_LEVEL2_REPLY,
+			 msg, len, True);
+}
+
+static void process_inform_level2_reply(int msg_type, pid_t src,
+					void *buf, size_t len)
+{
+	struct inform_level2_message *msg = buf;
+	files_struct *fsp;
+
+	if (buf == NULL) {
+		DEBUG(0, ("Got NULL buffer\n"));
+		return;
+	}
+
+	if (len != sizeof(*msg)) {
+		DEBUG(0, ("Got invalid msg len %d\n", len));
+		return;
+	}
+
+	DEBUG(10, ("Got inform level2 reply pid %d: %d/%d/%d mid %d\n",
+		   (int)src, (int)msg->dev, (int)msg->inode,
+		   (int)msg->source_file_id, (int)msg->mid));
+
+	fsp = file_find_dif(msg->dev, msg->inode, msg->source_file_id);
+
+	if (fsp == NULL) {
+		DEBUG(0, ("Got inform level2 reply without file around\n"));
+		return;
+	}
+
+	if (fsp->oplock_type != WAITING_FOR_BREAK) {
+		DEBUG(0, ("Got inform level2 reply from pid %d for a file "
+			  "(%d/%d/%d), fsp->oplock_type=%d\n", (int)src,
+			  (int)msg->dev, (int)msg->inode,
+			  (int)msg->source_file_id, fsp->oplock_type));
+	}
+
+	if (fsp->num_waiting_for_level2_inform <= 0) {
+		DEBUG(0, ("Not waiting for level2 informs\n"));
+		return;
+	}
+
+	fsp->num_waiting_for_level2_inform -= 1;
+
+	if (fsp->num_waiting_for_level2_inform == 0) {
+		struct share_mode_lock *lck =
+			get_share_mode_lock(NULL, msg->dev, msg->inode);
+		BOOL dummy;
+
+		if (lck == NULL) {
+			DEBUG(0, ("Could not lock share mode\n"));
+			return;
+		}
+
+		del_share_mode(fsp, NULL, &dummy);
+		talloc_free(lck);
+
+		fsp->is_stat = True;
+		close_file(fsp, False);
+		schedule_deferred_open_smb_message(msg->mid);
+	}
+}
+
 /****************************************************************************
  Send an oplock break message to another smbd process. If the oplock is held 
  by the local smbd then call the oplock break function directly.
@@ -1251,7 +1602,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 	 * the shared memory area whilst doing this.
 	 */
 
-	if (!LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
+	if (!fsp->level2_around)
 		return;
 
 	if (lock_share_entry_fsp(fsp) == False) {
@@ -1289,6 +1640,10 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 			abort();
 		}
 
+		message_send_pid(share_entry->pid, MSG_SMB_AYNC_LEVEL2_BREAK,
+				 share_entry, sizeof(*share_entry), True);
+		continue;
+
 		/*
 		 * Check if this is a file we have open (including the
 		 * file we've been called to do write_file on. If so
@@ -1317,18 +1672,14 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 			 */
 
 			DEBUG(10,("release_level_2_oplocks_on_change: breaking remote oplock (async).\n"));
-			request_remote_level2_async_oplock_break(share_entry);
+			request_remote_level2_async_oplock_break(share_entry);					 
 		}
 	}
 
+	fsp->level2_around = False;
+
 	SAFE_FREE(share_list);
 	unlock_share_entry_fsp(fsp);
-
-	/* Paranoia check... */
-	if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type)) {
-		DEBUG(0,("release_level_2_oplocks_on_change: PANIC. File %s still has a level II oplock.\n", fsp->fsp_name));
-		smb_panic("release_level_2_oplocks_on_change");
-	}
 }
 
 /****************************************************************************
@@ -1385,6 +1736,20 @@ BOOL init_oplocks(void)
 	socklen_t len = sizeof(sock_name);
 
 	DEBUG(3,("open_oplock_ipc: opening loopback UDP socket.\n"));
+
+	message_register(MSG_SMB_BREAK_REQUEST,
+			 process_oplock_break_message);
+	message_register(MSG_SMB_AYNC_LEVEL2_BREAK,
+			 process_oplock_break_message);
+	message_register(MSG_SMB_BREAK_RESPONSE,
+			 process_oplock_break_response);
+	message_register(MSG_SMB_INFORM_LEVEL2,
+			 process_inform_level2_message);
+	message_register(MSG_SMB_INFORM_LEVEL2_REPLY,
+			 process_inform_level2_reply);
+	message_register(MSG_SMB_OPEN_RETRY,
+			 process_open_retry_message);
+	return True;
 
 	/* Open a lookback UDP socket on a random port. */
 	oplock_sock = open_socket_in(SOCK_DGRAM, 0, 0, htonl(INADDR_LOOPBACK),False);

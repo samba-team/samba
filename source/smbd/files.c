@@ -293,7 +293,9 @@ files_struct *file_find_dif(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_i
 				DLIST_PROMOTE(Files, fsp);
 			}
 			/* Paranoia check. */
-			if (fsp->fh->fd == -1 && fsp->oplock_type != NO_OPLOCK) {
+			if (fsp->fh->fd == -1 &&
+			    ((fsp->oplock_type != NO_OPLOCK) &&
+			     (fsp->oplock_type != WAITING_FOR_BREAK))) {
 				DEBUG(0,("file_find_dif: file %s dev = %x, inode = %.0f, file_id = %u \
 oplock_type = %u is a stat open with oplock type !\n", fsp->fsp_name, (unsigned int)fsp->dev,
 						(double)fsp->inode, (unsigned int)fsp->file_id,

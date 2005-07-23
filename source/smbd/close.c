@@ -116,11 +116,7 @@ static void notify_deferred_opens(files_struct *fsp)
 	int num_de_entries, i;
 	pid_t mypid = sys_getpid();
 
-	if (!lp_defer_sharing_violations()) {
-		return;
-	}
-
-	num_de_entries = get_deferred_opens(fsp->conn, fsp->dev, fsp->inode, &de_array);
+	num_de_entries = get_deferred_opens(fsp->dev, fsp->inode, &de_array);
 	for (i = 0; i < num_de_entries; i++) {
 		deferred_open_entry *entry = &de_array[i];
 		if (entry->pid == mypid) {
@@ -129,9 +125,10 @@ static void notify_deferred_opens(files_struct *fsp)
 			 * Do this by finding the queued SMB record, moving it
 			 * to the head of the queue and changing the wait time to zero.
 			 */
-			schedule_sharing_violation_open_smb_message(entry->mid);
+			schedule_deferred_open_smb_message(entry->mid);
 		} else {
-			send_deferred_open_retry_message(entry);
+			message_send_pid(entry->pid, MSG_SMB_OPEN_RETRY,
+					 entry, sizeof(*entry), True);
 		}
 	}
 	SAFE_FREE(de_array);
@@ -211,6 +208,7 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 
 	/* Notify any deferred opens waiting on this close. */
 	notify_deferred_opens(fsp);
+	reply_to_oplock_break_requests(fsp);
 
 	/*
 	 * NT can set delete_on_close of the last open

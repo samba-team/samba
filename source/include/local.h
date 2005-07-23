@@ -233,6 +233,9 @@
 /* Number of microseconds to wait before a sharing violation. */
 #define SHARING_VIOLATION_USEC_WAIT 950000
 
+/* Number of microseconds to wait before an oplock break */
+#define OPLOCK_BREAK_USEC_WAIT 30000000
+
 #define MAX_LDAP_REPLICATION_SLEEP_TIME 5000 /* In milliseconds. */
 
 #endif

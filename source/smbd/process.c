@@ -155,10 +155,6 @@ void remove_sharing_violation_open_smb_message(uint16 mid)
 {
 	struct pending_message_list *pml;
 
-	if (!lp_defer_sharing_violations()) {
-		return;
-	}
-
 	for (pml = smb_sharing_violation_queue; pml; pml = pml->next) {
 		if (mid == SVAL(pml->buf.data,smb_mid)) {
 			DEBUG(10,("remove_sharing_violation_open_smb_message: deleting mid %u len %u\n",
@@ -175,21 +171,17 @@ void remove_sharing_violation_open_smb_message(uint16 mid)
  schedule it for immediate processing.
 ****************************************************************************/
 
-void schedule_sharing_violation_open_smb_message(uint16 mid)
+void schedule_deferred_open_smb_message(uint16 mid)
 {
 	struct pending_message_list *pml;
 	int i = 0;
 
-	if (!lp_defer_sharing_violations()) {
-		return;
-	}
-
 	for (pml = smb_sharing_violation_queue; pml; pml = pml->next) {
 		uint16 msg_mid = SVAL(pml->buf.data,smb_mid);
-		DEBUG(10,("schedule_sharing_violation_open_smb_message: [%d] msg_mid = %u\n", i++,
+		DEBUG(10,("schedule_deferred_open_smb_message: [%d] msg_mid = %u\n", i++,
 			(unsigned int)msg_mid ));
 		if (mid == msg_mid) {
-			DEBUG(10,("schedule_sharing_violation_open_smb_message: scheduling mid %u\n",
+			DEBUG(10,("schedule_deferred_open_smb_message: scheduling mid %u\n",
 				mid ));
 			pml->msg_time.tv_sec = 0;
 			pml->msg_time.tv_usec = 0;
@@ -198,7 +190,7 @@ void schedule_sharing_violation_open_smb_message(uint16 mid)
 		}
 	}
 
-	DEBUG(10,("schedule_sharing_violation_open_smb_message: failed to find message mid %u\n",
+	DEBUG(10,("schedule_deferred_open_smb_message: failed to find message mid %u\n",
 		mid ));
 }
 
@@ -209,10 +201,6 @@ void schedule_sharing_violation_open_smb_message(uint16 mid)
 BOOL open_was_deferred(uint16 mid)
 {
 	struct pending_message_list *pml;
-
-	if (!lp_defer_sharing_violations()) {
-		return False;
-	}
 
 	for (pml = smb_sharing_violation_queue; pml; pml = pml->next) {
 		if (SVAL(pml->buf.data,smb_mid) == mid) {
@@ -231,10 +219,6 @@ struct pending_message_list *get_open_deferred_message(uint16 mid)
 {
 	struct pending_message_list *pml;
 
-	if (!lp_defer_sharing_violations()) {
-		return NULL;
-	}
-
 	for (pml = smb_sharing_violation_queue; pml; pml = pml->next) {
 		if (SVAL(pml->buf.data,smb_mid) == mid) {
 			return pml;
@@ -244,19 +228,17 @@ struct pending_message_list *get_open_deferred_message(uint16 mid)
 }
 
 /****************************************************************************
- Function to push a sharing violation open smb message onto a linked list of local smb messages ready
- for processing.
+ Function to push a deferred open smb message onto a linked list of local smb
+ messages ready for processing.
 ****************************************************************************/
 
-BOOL push_sharing_violation_open_smb_message(struct timeval *ptv, char *private_data, size_t priv_len)
+BOOL push_deferred_open_smb_message(struct timeval *ptv,
+				    SMB_BIG_INT usec_timeout,
+				    char *private_data, size_t priv_len)
 {
 	uint16 mid = SVAL(InBuffer,smb_mid);
 	struct timeval tv;
 	SMB_BIG_INT tdif;
-
-	if (!lp_defer_sharing_violations()) {
-		return True;
-	}
 
 	tv = *ptv;
 	tdif = tv.tv_sec;
@@ -264,12 +246,12 @@ BOOL push_sharing_violation_open_smb_message(struct timeval *ptv, char *private_
 	tdif += tv.tv_usec;
 
 	/* Add on the timeout. */
-	tdif += SHARING_VIOLATION_USEC_WAIT;
+	tdif += usec_timeout;
 	
 	tv.tv_sec = tdif / 1000000;
 	tv.tv_usec = tdif % 1000000;
 	
-	DEBUG(10,("push_sharing_violation_open_smb_message: pushing message len %u mid %u\
+	DEBUG(10,("push_deferred_open_smb_message: pushing message len %u mid %u\
  timeout time [%u.%06u]\n", (unsigned int) smb_len(InBuffer)+4, (unsigned int)mid,
 		(unsigned int)tv.tv_sec, (unsigned int)tv.tv_usec));
 

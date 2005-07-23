@@ -5097,9 +5097,9 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
 		 * Make sure we have granted an exclusive or batch oplock on this file.
 		 */
 		
-		if(!EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
-			DEBUG(0,("reply_lockingX: Error : oplock break from client for fnum = %d and \
-no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
+		if (fsp->oplock_type == 0) {
+			DEBUG(0,("reply_lockingX: Error : oplock break from client for fnum = %d (oplock=%d) and \
+no oplock granted on this file (%s).\n", fsp->fnum, fsp->oplock_type, fsp->fsp_name));
 
 			/* if this is a pure oplock break request then don't send a reply */
 			if (num_locks == 0 && num_ulocks == 0) {
@@ -5124,6 +5124,8 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 			/* Hmmm. Is this panic justified? */
 			smb_panic("internal tdb error");
 		}
+
+		reply_to_oplock_break_requests(fsp);
 
 		/* if this is a pure oplock break request then don't send a reply */
 		if (num_locks == 0 && num_ulocks == 0) {

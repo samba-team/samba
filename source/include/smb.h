@@ -434,6 +434,8 @@ typedef struct files_struct {
 	time_t last_write_time;
 	int oplock_type;
 	int sent_oplock_break;
+	BOOL level2_around;
+	int num_waiting_for_level2_inform;
 	unsigned long file_id;
 	BOOL can_lock;
 	BOOL can_read;
@@ -561,6 +563,7 @@ struct current_user
 #define NO_BREAK_SENT 0
 #define BREAK_TO_NONE_SENT 1
 #define LEVEL_II_BREAK_SENT 2
+#define ASYNC_LEVEL_II_BREAK_SENT 3
 
 typedef struct {
 	fstring smb_name; /* user name from the client */
@@ -1462,10 +1465,20 @@ extern int chain_size;
 #define BATCH_OPLOCK 2
 #define LEVEL_II_OPLOCK 4
 #define INTERNAL_OPEN_ONLY 8
+#define WAITING_FOR_BREAK 16
+#define BREAK_REPLY_SENT 32
 
 #define EXCLUSIVE_OPLOCK_TYPE(lck) ((lck) & ((unsigned int)EXCLUSIVE_OPLOCK|(unsigned int)BATCH_OPLOCK))
 #define BATCH_OPLOCK_TYPE(lck) ((lck) & (unsigned int)BATCH_OPLOCK)
 #define LEVEL_II_OPLOCK_TYPE(lck) ((lck) & (unsigned int)LEVEL_II_OPLOCK)
+
+struct inform_level2_message {
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
+	uint16 mid;
+	unsigned long target_file_id;
+	unsigned long source_file_id;
+};
 
 /*
  * On the wire return values for oplock types.
