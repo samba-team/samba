@@ -1,4 +1,4 @@
-<% page_header("columns", "Add a user", "/install/menu.js"); 
+<% page_header("columns", "Add a user", "install"); 
 
   include("/scripting/forms.js");
   libinclude("base.js");

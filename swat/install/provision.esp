@@ -1,4 +1,4 @@
-<% page_header("columns", "Provisioning", "/install/menu.js"); 
+<% page_header("columns", "Provisioning", "install"); 
 
   include("/scripting/forms.js");
   libinclude("base.js");

@@ -1,4 +1,4 @@
-<% page_header("columns", "NBT Server", "/nbt_server/menu.js"); 
+<% page_header("columns", "NBT Server", "nbt_server"); 
 
   libinclude("base.js");
   libinclude("management.js");

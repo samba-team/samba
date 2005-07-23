@@ -1,4 +1,4 @@
-<% page_header("columns", "RPC Server", ""); 
+<% page_header("columns", "RPC Server", "servers"); 
 
   libinclude("base.js");
   libinclude("management.js");

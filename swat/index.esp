@@ -1,4 +1,4 @@
-<% page_header("columns", "Server Status", "");
+<% page_header("columns", "Server Status", "main");
   libinclude("base.js");
   libinclude("management.js");
   libinclude("provision.js");
