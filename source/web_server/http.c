@@ -708,7 +708,7 @@ static void http_setup_session(struct esp_state *esp)
 		s->data = NULL;
 		s->te = NULL;
 		s->edata = edata;
-		s->lifetime = lp_parm_int(-1, "web", "sessiontimeout", 300);
+		s->lifetime = lp_parm_int(-1, "web", "sessiontimeout", 900);
 		DLIST_ADD(edata->sessions, s);
 		talloc_set_destructor(s, session_destructor);
 		if (!generated_key) {
