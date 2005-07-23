@@ -105,15 +105,16 @@ gen_files_cms =						\
 	asn1_id_pkcs7_envelopedData.x			\
 	asn1_id_pkcs7_digestedData.x			\
 	asn1_id_pkcs7_encryptedData.x			\
+	asn1_CMSAttributes.x				\
 	asn1_CMSCBCParameter.x				\
 	asn1_CMSEncryptedData.x				\
 	asn1_CMSRC2CBCParameter.x			\
 	asn1_CMSVersion.x				\
+	asn1_CMSAttributes.x				\
 	asn1_CMSIdentifier.x				\
 	asn1_CertificateList.x				\
 	asn1_CertificateRevocationLists.x		\
 	asn1_CertificateSet.x				\
-	asn1_CertificateSetReal.x			\
 	asn1_ContentEncryptionAlgorithmIdentifier.x	\
 	asn1_ContentInfo.x				\
 	asn1_ContentType.x				\
@@ -127,19 +128,18 @@ gen_files_cms =						\
 	asn1_IssuerAndSerialNumber.x			\
 	asn1_KeyEncryptionAlgorithmIdentifier.x		\
 	asn1_KeyTransRecipientInfo.x			\
+	asn1_MessageDigest.x				\
 	asn1_OriginatorInfo.x				\
 	asn1_RecipientIdentifier.x			\
 	asn1_RecipientInfo.x				\
 	asn1_RecipientInfos.x				\
 	asn1_SignatureAlgorithmIdentifier.x		\
 	asn1_SignatureValue.x				\
-	asn1_SignedAttributes.x				\
 	asn1_SignedData.x				\
 	asn1_SignerIdentifier.x				\
 	asn1_SignerInfo.x				\
 	asn1_SignerInfos.x				\
-	asn1_UnprotectedAttributes.x			\
-	asn1_UnsignedAttributes.x
+	asn1_UnprotectedAttributes.x
 
 gen_files_rfc2459 =					\
 	asn1_Version.x					\
@@ -299,6 +299,10 @@ gen_files_pkcs8 =					\
 
 gen_files_pkcs9 =					\
 	asn1_id_pkcs_9.x				\
+	asn1_id_pkcs9_contentType.x			\
+	asn1_id_pkcs9_messageDigest.x			\
+	asn1_id_pkcs9_signingTime.x			\
+	asn1_id_pkcs9_countersignature.x		\
 	asn1_id_pkcs_9_at_friendlyName.x		\
 	asn1_id_pkcs_9_at_localKeyId.x			\
 	asn1_id_pkcs_9_at_certTypes.x			\
