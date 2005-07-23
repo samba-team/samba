@@ -21,7 +21,7 @@ swat_menus.servers = simple_menu(
 	"WINS Server",        session_uri("/wins_server/"),
 	"Kerberos Server",    session_uri("/kdc_server/"));
 
-swat_menus.esptests = simple_menu(
+swat_menus.esptest = simple_menu(
 	"ESP Tests",
 	"ldb database",          session_uri("/esptest/ldb.esp"),
 	"samr calls",            session_uri("/esptest/samr.esp"),
