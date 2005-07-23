@@ -1,4 +1,6 @@
-<% page_header("columns", "ESP Exception test", "/esptest/menu.js"); %>
+<% page_header("columns", "ESP Exception test", "/esptest/menu.js"); 
+   include("/scripting/forms.js");
+%>
 
 <h1>Samba4 exception test</h1>
 
@@ -8,7 +10,7 @@ var f = FormObj("ExceptionTest", 0, 2);
 f.submit[0] = "Generate Exception";
 f.submit[1] = "No Exception";
 
-display_form(f);
+f.display();
 
 if (request['REQUEST_METHOD'] == "POST") {
 	function TestFunction(arg1, arg2) {
