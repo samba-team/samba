@@ -24,6 +24,7 @@ DigestAlgorithmIdentifiers ::= SET OF DigestAlgorithmIdentifier
 SignatureAlgorithmIdentifier ::= AlgorithmIdentifier
 
 ContentType ::= OBJECT IDENTIFIER
+MessageDigest ::= OCTET STRING
 
 ContentInfo ::= SEQUENCE {
 	contentType ContentType,
@@ -35,8 +36,7 @@ EncapsulatedContentInfo ::= SEQUENCE {
 	eContent [0] EXPLICIT OCTET STRING OPTIONAL
 }
 
-CertificateSet ::= heim_any_set -- SET OF
-CertificateSetReal ::= SET OF heim_any
+CertificateSet ::= SET OF heim_any
 
 CertificateList ::= Certificate
 
@@ -58,8 +58,10 @@ CMSIdentifier ::= CHOICE {
 SignerIdentifier ::= CMSIdentifier
 RecipientIdentifier ::= CMSIdentifier
 
-SignedAttributes ::= SET OF Attribute		-- SIZE (1..MAX) 
-UnsignedAttributes ::= SET OF Attribute		-- SIZE (1..MAX) 
+--- CMSAttributes are the combined UnsignedAttributes and SignedAttributes
+--- to store space and share code
+
+CMSAttributes ::= SET OF Attribute		-- SIZE (1..MAX) 
 
 SignatureValue ::= OCTET STRING
 
@@ -67,10 +69,12 @@ SignerInfo ::= SEQUENCE {
 	version CMSVersion,
 	sid SignerIdentifier,
 	digestAlgorithm DigestAlgorithmIdentifier,
-	signedAttrs [0] IMPLICIT SignedAttributes OPTIONAL,
+	signedAttrs [0] IMPLICIT -- CMSAttributes --
+		SET OF Attribute OPTIONAL,
 	signatureAlgorithm SignatureAlgorithmIdentifier,
 	signature SignatureValue,
-	unsignedAttrs [1] IMPLICIT UnsignedAttributes OPTIONAL
+	unsignedAttrs [1] IMPLICIT -- CMSAttributes -- 
+		SET OF Attribute OPTIONAL
 }
 
 SignerInfos ::= SET OF SignerInfo
@@ -79,14 +83,18 @@ SignedData ::= SEQUENCE {
 	version CMSVersion,
 	digestAlgorithms DigestAlgorithmIdentifiers,
 	encapContentInfo EncapsulatedContentInfo,
-	certificates [0] IMPLICIT CertificateSet OPTIONAL,
-	crls [1] IMPLICIT CertificateRevocationLists OPTIONAL,
+	certificates [0] IMPLICIT -- CertificateSet --
+		SET OF heim_any OPTIONAL,
+	crls [1] IMPLICIT -- CertificateRevocationLists --
+		heim_any OPTIONAL,
 	signerInfos SignerInfos
 }
 
 OriginatorInfo ::= SEQUENCE {
-	certs [0] IMPLICIT CertificateSet OPTIONAL,
-	crls [1] IMPLICIT CertificateRevocationLists OPTIONAL
+	certs [0] IMPLICIT -- CertificateSet --
+		SET OF heim_any OPTIONAL,
+	crls [1] IMPLICIT --CertificateRevocationLists --
+		heim_any OPTIONAL
 }
 
 KeyEncryptionAlgorithmIdentifier ::= AlgorithmIdentifier
@@ -118,15 +126,17 @@ UnprotectedAttributes ::= SET OF Attribute	-- SIZE (1..MAX)
 CMSEncryptedData ::= SEQUENCE {
 	version CMSVersion,
 	encryptedContentInfo EncryptedContentInfo,
-        unprotectedAttrs [1] IMPLICIT UnprotectedAttributes OPTIONAL
+        unprotectedAttrs [1] IMPLICIT -- UnprotectedAttributes --
+		heim_any OPTIONAL
 }
 
 EnvelopedData ::= SEQUENCE {
 	version CMSVersion,
-	originatorInfo [0] IMPLICIT OriginatorInfo OPTIONAL,
+	originatorInfo [0] IMPLICIT -- OriginatorInfo -- heim_any OPTIONAL,
 	recipientInfos RecipientInfos,
 	encryptedContentInfo EncryptedContentInfo,
-	unprotectedAttrs [1] IMPLICIT UnprotectedAttributes OPTIONAL
+	unprotectedAttrs [1] IMPLICIT -- UnprotectedAttributes --
+		heim_any OPTIONAL
 }
 
 -- Data ::= OCTET STRING
