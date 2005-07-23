@@ -1,4 +1,4 @@
-<% page_header("columns", "LDAP Server", ""); 
+<% page_header("columns", "LDAP Server", "servers"); 
 
   libinclude("base.js");
   libinclude("management.js");

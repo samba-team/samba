@@ -1,4 +1,4 @@
-<% page_header("columns", "ESP loadparm test", "/esptest/menu.js" ); 
+<% page_header("columns", "ESP loadparm test", "esptest" ); 
    include("/scripting/forms.js");
 %>
 

@@ -1,4 +1,4 @@
-<% page_header("columns", "ESP Tests", "/esptest/menu.js"); %>
+<% page_header("columns", "ESP Tests", "esptest"); %>
 
 <h1>ESP Test functions</h1>
 

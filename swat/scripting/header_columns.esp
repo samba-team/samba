@@ -62,20 +62,20 @@ filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src='/images/logo.png'
 
 <div id="nav">
      <% 
-     if (global.page.menu) {
-          include(global.page.menu);
-	  write('<a href="/">Main Menu</a>');
-     } else {
-	  include("/menu.js");
-     }
+	include("/menu.js");
+        if (form['menu']) {
+		global.page.menu = form['menu'];
+	}
+        swat_menus[global.page.menu].display();
+        if (global.page.menu != "main") {
+		write('<a href="/">Main Menu</a>');
+	}
      %>
 </div>
 
 <div id="links">
   <div class="related">
-     <% 
-     include("/docs/menu.js"); 
-     %>
+     <% swat_menus.docs.display(); %>
   </div>
 </div>
 
