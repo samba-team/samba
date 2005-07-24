@@ -93,6 +93,7 @@ cat >$CONFFILE<<EOF
 	interfaces = lo*
 	tls enabled = $TLS_ENABLED
 	panic action = $SRCDIR/script/gdb_backtrace %PID% %PROG%
+	wins support = yes
 
 [tmp]
 	path = $TMPDIR
