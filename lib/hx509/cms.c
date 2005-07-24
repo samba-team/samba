@@ -103,6 +103,8 @@ find_CMSIdentifier(CMSIdentifier *client,
 	q.match = HX509_QUERY_MATCH_SERIALNUMBER|HX509_QUERY_MATCH_ISSUER_NAME;
 	break;
     case choice_CMSIdentifier_subjectKeyIdentifier:
+	q.subject_id = &client->u.subjectKeyIdentifier;
+	q.match = HX509_QUERY_MATCH_SUBJECT_KEY_ID;
     default:
 	return HX509_CMS_NO_RECIPIENT_CERTIFICATE;
     }

@@ -1196,8 +1196,19 @@ _hx509_query_match_cert(const hx509_query *q, hx509_cert cert)
 	&& _hx509_name_cmp(&c->tbsCertificate.subject, q->subject_name) != 0)
 	return 0;
 
-    if ((q->match & HX509_QUERY_MATCH_SUBJECT_ID))
-	return 0;
+    if ((q->match & HX509_QUERY_MATCH_SUBJECT_KEY_ID)) {
+	SubjectKeyIdentifier si;
+	int ret;
+
+	ret = find_extension_subject_key_id(c, &si);
+	if (ret == 0) {
+	    if (heim_octet_string_cmp(&si, q->subject_id) != 0)
+		ret = 1;
+	    free_SubjectKeyIdentifier(&si);
+	}
+	if (ret)
+	    return 0;
+    }
     if ((q->match & HX509_QUERY_MATCH_ISSUER_ID))
 	return 0;
     if ((q->match & HX509_QUERY_PRIVATE_KEY)
