@@ -83,6 +83,31 @@ static void winsdb_remove_version(struct wins_server *winssrv, uint64_t version)
 	}
 }
 
+
+/*
+  return a DN for a nbt_name
+*/
+static char *winsdb_dn(TALLOC_CTX *mem_ctx, struct nbt_name *name)
+{
+	char *ret = talloc_asprintf(mem_ctx, "type=%02x", name->type);
+	if (ret == NULL) {
+		return ret;
+	}
+	if (name->name && *name->name) {
+		ret = talloc_asprintf_append(ret, ",name=%s", name->name);
+	}
+	if (ret == NULL) {
+		return ret;
+	}
+	if (name->scope && *name->scope) {
+		ret = talloc_asprintf_append(ret, ",scope=%s", name->scope);
+	}
+	if (ret == NULL) {
+		return ret;
+	}
+	return ret;
+}
+
 /*
   load a WINS entry from the database
 */
@@ -97,7 +122,7 @@ struct winsdb_record *winsdb_load(struct wins_server *winssrv,
 	const char *expr;
 	int i;
 
-	expr = talloc_asprintf(tmp_ctx, "dn=NAME=%s", nbt_name_string(tmp_ctx, name));
+	expr = talloc_asprintf(tmp_ctx, "dn=%s", winsdb_dn(tmp_ctx, name));
 	if (expr == NULL) goto failed;
 
 	/* find the record in the WINS database */
@@ -159,8 +184,9 @@ static struct ldb_message *winsdb_message(struct wins_server *winssrv,
 	struct ldb_message *msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) goto failed;
 
-	msg->dn = talloc_asprintf(msg, "NAME=%s", nbt_name_string(msg, rec->name));
+	msg->dn = winsdb_dn(msg, rec->name);
 	if (msg->dn == NULL) goto failed;
+	ret |= ldb_msg_add_fmt(ldb, msg, "objectClass", "wins");
 	ret |= ldb_msg_add_fmt(ldb, msg, "active", "%u", rec->state);
 	ret |= ldb_msg_add_fmt(ldb, msg, "nbFlags", "0x%04x", rec->nb_flags);
 	ret |= ldb_msg_add_string(ldb, msg, "registeredBy", rec->registered_by);
@@ -250,7 +276,7 @@ uint8_t winsdb_delete(struct wins_server *winssrv, struct winsdb_record *rec)
 
 	winsdb_remove_version(winssrv, rec->version);
 
-	dn = talloc_asprintf(tmp_ctx, "NAME=%s", nbt_name_string(tmp_ctx, rec->name));
+	dn = winsdb_dn(tmp_ctx, rec->name);
 	if (dn == NULL) goto failed;
 
 	ret = ldb_delete(ldb, dn);
