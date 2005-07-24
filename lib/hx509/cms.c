@@ -105,6 +105,7 @@ find_CMSIdentifier(CMSIdentifier *client,
     case choice_CMSIdentifier_subjectKeyIdentifier:
 	q.subject_id = &client->u.subjectKeyIdentifier;
 	q.match = HX509_QUERY_MATCH_SUBJECT_KEY_ID;
+	break;
     default:
 	return HX509_CMS_NO_RECIPIENT_CERTIFICATE;
     }
