@@ -461,6 +461,13 @@ int ltdb_search_bytree(struct ldb_module *module, const char *base,
 	struct ltdb_private *ltdb = module->private_data;
 	int ret;
 
+	/* it is important that we handle dn queries this way, and not
+	   via a full db search, otherwise ldb is horribly slow */
+	if (tree->operation == LDB_OP_EQUALITY &&
+	    ldb_attr_cmp(tree->u.equality.attr, "dn") == 0) {
+		return ltdb_search_dn(module, tree->u.equality.value.data, attrs, res);
+	}
+
 	if (ltdb_lock_read(module) != 0) {
 		return -1;
 	}
