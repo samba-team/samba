@@ -1,5 +1,6 @@
  $SRCDIR/script/tests/test_ejs.sh localhost $USERNAME $PASSWORD || failed=`expr $failed + $?`
  $SRCDIR/script/tests/test_ldap.sh localhost $USERNAME $PASSWORD || failed=`expr $failed + $?`
+ $SRCDIR/script/tests/test_nbt.sh localhost || failed=`expr $failed + $?`
  $SRCDIR/script/tests/test_quick.sh //localhost/cifs $USERNAME $PASSWORD "" || failed=`expr $failed + $?`
  $SRCDIR/script/tests/test_rpc.sh localhost $USERNAME $PASSWORD $DOMAIN || failed=`expr $failed + $?`
  $SRCDIR/script/tests/test_session_key.sh localhost $USERNAME $PASSWORD $DOMAIN || failed=`expr $failed + $?`
