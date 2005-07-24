@@ -1,0 +1,9 @@
+2005-07-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Fix id-tags
+
+	* Import mostly complete X.509 and CMS library. Handles, PEM, DER,
+	PKCS12 encoded certicates.  Verificate RSA chains and handled
+	CMS's SignedData, and EnvelopedData.
+
+
