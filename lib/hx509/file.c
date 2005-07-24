@@ -96,8 +96,11 @@ _hx509_write_file(const char *fn, const void *data, size_t length)
 
     do {
 	sz = write(fd, p, length);
-	if (sz < 0)
-	    err(1, "write");
+	if (sz < 0) {
+	    int saved_errno = errno;
+	    close(fd);
+	    return saved_errno;
+	}
 	if (sz == 0)
 	    break;
 	length -= sz;
