@@ -550,6 +550,7 @@ static NTSTATUS multiple_search(struct smbcli_state *cli,
 		printf("(%s) Incorrect value %s=%d - should be %d\n", \
 		       __location__, #v, v, (int)correct); \
 		ret = False; \
+		goto done; \
 	}} while (0)
 
 #define CHECK_STRING(v, correct) do { \
@@ -791,11 +792,7 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io2.t2fnext.in.max_count = 1;
 	io2.t2fnext.in.resume_key = 0;
 	io2.t2fnext.in.flags = 0;
-	if (result.count == 0) {
-		io2.t2fnext.in.last_name = "";
-	} else {
-		io2.t2fnext.in.last_name = result.list[result.count-1].both_directory_info.name.s;
-	}
+	io2.t2fnext.in.last_name = result.list[result.count-1].both_directory_info.name.s;
 
 	status = smb_raw_search_next(cli->tree, mem_ctx,
 				     &io2, &result, multiple_search_callback);
@@ -819,15 +816,15 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	io2.generic.level = RAW_SEARCH_BOTH_DIRECTORY_INFO;
 	io2.t2fnext.in.handle = io.t2ffirst.out.handle;
-	io2.t2fnext.in.max_count = num_files - 1;
+	io2.t2fnext.in.max_count = num_files + 3;
 	io2.t2fnext.in.resume_key = 0;
 	io2.t2fnext.in.flags = 0;
-	io2.t2fnext.in.last_name = result.list[result.count-2].both_directory_info.name.s;
+	io2.t2fnext.in.last_name = ".";
 
 	status = smb_raw_search_next(cli->tree, mem_ctx,
 				     &io2, &result, multiple_search_callback);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(result.count, 21);
+	CHECK_VALUE(result.count, 22);
 
 	ret &= check_result(&result, "t009-9.txt", True, FILE_ATTRIBUTE_ARCHIVE);
 	ret &= check_result(&result, "t014-14.txt", False, 0);
