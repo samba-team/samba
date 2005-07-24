@@ -82,3 +82,29 @@ _hx509_unmap_file(void *data, size_t len)
 {
     free(data);
 }
+
+int
+_hx509_write_file(const char *fn, const void *data, size_t length)
+{
+    ssize_t sz;
+    const unsigned char *p = data;
+    int fd;
+
+    fd = open(fn, O_WRONLY|O_TRUNC|O_CREAT, 0644);
+    if (fd < 0)
+	return errno;
+
+    do {
+	sz = write(fd, p, length);
+	if (sz < 0)
+	    err(1, "write");
+	if (sz == 0)
+	    break;
+	length -= sz;
+    } while (length > 0);
+		
+    if (close(fd) == -1)
+	return errno;
+
+    return 0;
+}
