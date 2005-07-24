@@ -1045,17 +1045,22 @@ static void process_oplock_break_message(int msg_type, pid_t src,
 				       msg->share_file_id);
 
 	if (fsp == NULL) {
-		/* TODO: We might have a possible race here. Break messages
-		 * are sent, and before we get to process this message, we
-		 * have closed the file. We probably have to reply with 'ok,
-		 * oplock broken' */
+		/* We hit race here. Break messages are sent, and before we
+		 * get to process this message, we have closed the file. Reply
+		 * with 'ok, oplock broken' */
 		DEBUG(3, ("Did not find fsp\n"));
+		message_send_pid(src, MSG_SMB_BREAK_RESPONSE,
+				 msg, sizeof(*msg), True);
 		return;
 	}
 
 	if (fsp->sent_oplock_break != NO_BREAK_SENT) {
-		DEBUG(3, ("Logic problem: Got a second break msg for the same "
-			  "file -- TODO.\n"));
+		/* Remember we have to inform the requesting PID when the
+		 * client replies */
+		msg->pid = src;
+		ADD_TO_ARRAY(NULL, struct share_mode_entry, *msg,
+			     &fsp->pending_break_messages,
+			     &fsp->num_pending_break_messages);
 		return;
 	}
 
@@ -1106,6 +1111,10 @@ static void process_oplock_break_message(int msg_type, pid_t src,
 		/* Async level2 request, don't send a reply */
 		fsp->sent_oplock_break = ASYNC_LEVEL_II_BREAK_SENT;
 	}
+	msg->pid = src;
+	ADD_TO_ARRAY(NULL, struct share_mode_entry, *msg,
+		     &fsp->pending_break_messages,
+		     &fsp->num_pending_break_messages);
 }
 
 static void process_kernel_oplock_break(int msg_type, pid_t src,
@@ -1133,11 +1142,8 @@ static void process_kernel_oplock_break(int msg_type, pid_t src,
 	fsp = initial_break_processing(msg->dev, msg->inode, msg->file_id);
 
 	if (fsp == NULL) {
-		/* TODO: We might have a possible race here. Break messages
-		 * are sent, and before we get to process this message, we
-		 * have closed the file. We probably have to reply with 'ok,
-		 * oplock broken' */
-		DEBUG(3, ("Did not find fsp\n"));
+		DEBUG(3, ("Got a kernel oplock break message for a file "
+			  "I don't know about\n"));
 		return;
 	}
 
@@ -1171,34 +1177,16 @@ static void process_kernel_oplock_break(int msg_type, pid_t src,
 
 void reply_to_oplock_break_requests(files_struct *fsp)
 {
-	int i, num_share_modes;
-	share_mode_entry *share_modes;
-	BOOL delete_on_close;
-	struct share_mode_lock *lck =
-		get_share_mode_lock(NULL, fsp->dev, fsp->inode);
+	int i;
 
-	if (lck == NULL) {
-		DEBUG(3, ("Could not lock share entry\n"));
-		return;
+	for (i=0; i<fsp->num_pending_break_messages; i++) {
+		share_mode_entry *msg = &fsp->pending_break_messages[i];
+		message_send_pid(msg->pid, MSG_SMB_BREAK_RESPONSE,
+				 msg, sizeof(*msg), True);
 	}
 
-	num_share_modes = get_share_modes(fsp->dev, fsp->inode, &share_modes,
-					  &delete_on_close);
-	for (i=0; i<num_share_modes; i++) {
-		if (share_modes[i].op_type != WAITING_FOR_BREAK) {
-			continue;
-		}
-		message_send_pid(share_modes[i].pid, MSG_SMB_BREAK_RESPONSE,
-				 &share_modes[i], sizeof(share_modes[i]),
-				 True);
-	}
-
-	if (!inform_clients_about_reply(lck)) {
-		smb_panic("could not inform clients\n");
-	}
-
-	talloc_free(lck);
-	SAFE_FREE(share_modes);
+	SAFE_FREE(fsp->pending_break_messages);
+	fsp->num_pending_break_messages = 0;
 	return;
 }
 
@@ -1206,7 +1194,6 @@ static void process_oplock_break_response(int msg_type, pid_t src,
 					  void *buf, size_t len)
 {
 	share_mode_entry *msg = buf;
-	files_struct *fsp;
 
 	if (buf == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
@@ -1222,26 +1209,14 @@ static void process_oplock_break_response(int msg_type, pid_t src,
 		   (int)src, (int)msg->dev, (int)msg->inode,
 		   (int)msg->share_file_id, (int)msg->op_port));
 
-	fsp = file_find_dif(msg->dev, msg->inode, msg->share_file_id);
-
-	if (fsp == NULL) {
-		DEBUG(0, ("Got oplock break response without file waiting\n"));
-		return;
-	}
-
 	/* Paranoia check: There can't be an exclusive oplock around at this
 	 * point */
 
 	{
-		struct share_mode_lock *lck;
 		int i, num_share_modes;
 		BOOL delete_on_close;
 		share_mode_entry *share_modes;
 
-		lck = get_share_mode_lock(NULL, msg->dev, msg->inode);
-		if (lck == NULL) {
-			smb_panic("Could not lock share mode entry\n");
-		}
 		num_share_modes = get_share_modes(msg->dev, msg->inode,
 						  &share_modes,
 						  &delete_on_close);
@@ -1252,27 +1227,10 @@ static void process_oplock_break_response(int msg_type, pid_t src,
 			}
 		}
 		SAFE_FREE(share_modes);
-		talloc_free(lck);
 	}
 
 	/* Here's the hack from open.c, store the mid in the 'port' field */
 	schedule_deferred_open_smb_message(msg->op_port);
-
-	{
-		struct share_mode_lock *lck =
-			get_share_mode_lock(NULL, msg->dev, msg->inode);
-		BOOL dummy;
-		if (lck == NULL) {
-			DEBUG(0, ("Could not lock share mode\n"));
-			return;
-		}
-
-		del_share_mode(fsp, NULL, &dummy);
-		talloc_free(lck);
-	}
-
-	fsp->is_stat = True;
-	close_file(fsp, False);
 }
 
 static void process_open_retry_message(int msg_type, pid_t src,

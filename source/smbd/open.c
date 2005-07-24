@@ -798,19 +798,11 @@ static BOOL delay_for_oplocks(files_struct *fsp, BOOL second_try)
 	int i, num_share_modes, num_level2;
 	share_mode_entry *share_modes;
 	BOOL delete_on_close, broke_oplock;
-	struct share_mode_lock *lck;
 	BOOL delay_it = False;
 	struct inform_level2_message level2_message;
 
 	if (is_stat_open(fsp->access_mask)) {
 		fsp->oplock_type = NO_OPLOCK;
-		return False;
-	}
-
-	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode);
-
-	if (lck == NULL) {
-		DEBUG(3, ("Could not lock share entry\n"));
 		return False;
 	}
 
@@ -830,7 +822,7 @@ static BOOL delay_for_oplocks(files_struct *fsp, BOOL second_try)
 	for (i=0; i<num_share_modes; i++) {
 		uint16 op_type = share_modes[i].op_type;
 
-		if (op_type == WAITING_FOR_BREAK) {
+		if ((!second_try) && (op_type == WAITING_FOR_BREAK)) {
 			/* Someone already sent a request, also wait for it. */
 			fsp->oplock_type = WAITING_FOR_BREAK;
 			delay_it = True;
@@ -846,6 +838,8 @@ static BOOL delay_for_oplocks(files_struct *fsp, BOOL second_try)
 			if (delay_it) {
 				DEBUG(10, ("Sending break request to PID %d\n",
 					   (int)share_modes[i].pid));
+				SMB_ASSERT(!second_try);
+				share_modes[i].op_port = get_current_mid();
 				if (!message_send_pid(share_modes[i].pid,
 						      MSG_SMB_BREAK_REQUEST,
 						      &share_modes[i],
@@ -854,7 +848,7 @@ static BOOL delay_for_oplocks(files_struct *fsp, BOOL second_try)
 					DEBUG(3, ("Could not send oplock "
 						  "break message\n"));
 				}
-				fsp->oplock_type = WAITING_FOR_BREAK;
+				file_free(fsp);
 			}
 			goto done;
 		}
@@ -910,7 +904,6 @@ static BOOL delay_for_oplocks(files_struct *fsp, BOOL second_try)
 
  done:
 	SAFE_FREE(share_modes);
-	talloc_free(lck);
 	return delay_it;
 }
 
@@ -1395,16 +1388,6 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		delete_defered_open_entry_record(dib.dev, dib.inode);
 		unlock_share_entry(dib.dev, dib.inode);
 
-		if (!file_existed || dib.dev != psbuf->st_dev ||
-		    dib.inode != psbuf->st_ino || pml->msg_time.tv_sec ||
-		    pml->msg_time.tv_usec) {
-			/* Ensure we don't reprocess this message. */
-			remove_sharing_violation_open_smb_message(mid);
-
-			set_saved_error_triple(ERRDOS, ERRbadshare,
-					       NT_STATUS_SHARING_VIOLATION);
-			return NULL;
-		}
 		/* Ensure we don't reprocess this message. */
 		remove_sharing_violation_open_smb_message(mid);
 	}
@@ -1602,23 +1585,20 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 	if (file_existed) {
 
+		struct timeval open_time;
+
 		dev = psbuf->st_dev;
 		inode = psbuf->st_ino;
 
-		lock_share_entry(dev, inode);
-
+		/* delay_for_oplocks might delete the fsp */
+		open_time = fsp->open_time;
 		if (delay_for_oplocks(fsp, second_try)) {
-			/* Reusing the port number for the mid could be called
-			 * a hack... */
-			if (!set_share_mode(fsp, get_current_mid(),
-					    fsp->oplock_type)) {
-				exit_server("set_share_mode failed\n");
-			}
-			defer_open(&fsp->open_time, OPLOCK_BREAK_USEC_WAIT,
+			defer_open(&open_time, OPLOCK_BREAK_USEC_WAIT,
 				   fname, dev, inode);
-			unlock_share_entry(dev, inode);
 			return NULL;
 		}
+
+		lock_share_entry(dev, inode);
 
 		num_share_modes = open_mode_check(conn, fname, dev, inode,
 						  access_mask, share_access,
@@ -1690,7 +1670,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			 * cope with the braindead 1 second delay.
 			 */
 
-			if (!internal_only_open) {
+			if ((!second_try) && (!internal_only_open)) {
 				NTSTATUS status;
 				get_saved_error_triple(NULL, NULL, &status);
 				if (NT_STATUS_EQUAL(status,NT_STATUS_SHARING_VIOLATION) &&

@@ -933,48 +933,6 @@ BOOL downgrade_share_oplock(files_struct *fsp)
 }
 
 /*******************************************************************
- Inform all waiting clients that a reply has been sent
-********************************************************************/
-
-BOOL inform_clients_about_reply(struct share_mode_lock *lck)
-{
-	TDB_DATA dbuf;
-	struct locking_data *data;
-	int i;
-	share_mode_entry *shares;
-	BOOL need_store=False;
-	BOOL ret = True;
-	TDB_DATA key = locking_key(lck->dev, lck->ino);
-
-	/* read in the existing share modes */
-	dbuf = tdb_fetch(tdb, key);
-	if (!dbuf.dptr) {
-		/* No clients around, we're fine */
-		return True;
-	}
-
-	data = (struct locking_data *)dbuf.dptr;
-	shares = (share_mode_entry *)(dbuf.dptr + sizeof(*data));
-
-	/* find any with our pid and call the supplied function */
-	for (i=0;i<data->u.s.num_share_mode_entries;i++) {
-		if (shares[i].op_type == WAITING_FOR_BREAK) {
-			shares[i].op_type = BREAK_REPLY_SENT;
-			need_store=True;
-		}
-	}
-
-	/* if the mod fn was called then store it back */
-	if (need_store) {
-		if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1)
-			ret = False;
-	}
-
-	SAFE_FREE(dbuf.dptr);
-	return ret;
-}
-
-/*******************************************************************
  Get/Set the delete on close flag in a set of share modes.
  Return False on fail, True on success.
 ********************************************************************/

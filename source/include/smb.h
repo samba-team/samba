@@ -411,6 +411,8 @@ struct fd_handle {
 				 */
 };
 
+struct share_mode_entry;
+
 typedef struct files_struct {
 	struct files_struct *next, *prev;
 	int fnum;
@@ -436,6 +438,10 @@ typedef struct files_struct {
 	int sent_oplock_break;
 	BOOL level2_around;
 	int num_waiting_for_level2_inform;
+
+	struct share_mode_entry *pending_break_messages;
+	int num_pending_break_messages;
+
 	unsigned long file_id;
 	BOOL can_lock;
 	BOOL can_read;
@@ -641,7 +647,7 @@ struct pending_message_list {
 struct share_mode_lock;
 
 /* struct returned by get_share_modes */
-typedef struct {
+typedef struct share_mode_entry {
 	pid_t pid;
 	uint16 op_port;
 	uint16 op_type;
@@ -1466,7 +1472,6 @@ extern int chain_size;
 #define LEVEL_II_OPLOCK 4
 #define INTERNAL_OPEN_ONLY 8
 #define WAITING_FOR_BREAK 16
-#define BREAK_REPLY_SENT 32
 
 #define EXCLUSIVE_OPLOCK_TYPE(lck) ((lck) & ((unsigned int)EXCLUSIVE_OPLOCK|(unsigned int)BATCH_OPLOCK))
 #define BATCH_OPLOCK_TYPE(lck) ((lck) & (unsigned int)BATCH_OPLOCK)
