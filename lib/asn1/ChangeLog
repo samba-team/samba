@@ -1,3 +1,16 @@
+2005-07-23   Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: add PKCS12-OctetString
+
+	* pkcs12.asn1: add PKCS12-OctetString
+
+	* Makefile.am: add new files
+
+	* rfc2459.asn1: include SET OF in Attribute to make the type more
+	useful
+
+	* CMS.asn1: handle IMPLICIT and share some common structures
+
 2005-07-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rfc2459.asn1: Include enough workarounds that this even might
