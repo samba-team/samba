@@ -62,9 +62,8 @@ cms_verify_sd(int argc, char **argv)
     hx509_certs signers = NULL;
     hx509_certs anchors = NULL;
 
-    ssize_t sz;
+    size_t sz;
     void *p;
-    int fd;
 
     argc--;
     argv++;
@@ -74,20 +73,10 @@ cms_verify_sd(int argc, char **argv)
 
     printf("cms verify signed data\n");
 
-    fd = open(argv[0], O_RDONLY, 0);
-    if (fd < 0)
-	err(1, "open %s", argv[0]);
+    ret = _hx509_map_file(argv[0], &p, &sz);
+    if (ret)
+	err(1, "map_file: %s: %d", argv[0], ret);
 
-    p = malloc(10000);
-    if (p == NULL)
-	;
-
-    sz = read(fd, p, 10000);
-    if (sz < 0)
-	err(1, "read");
-    close(fd);
-
-    
     ret = hx509_verify_init_ctx(&ctx);
 
     argc--;
@@ -117,6 +106,8 @@ cms_verify_sd(int argc, char **argv)
     hx509_certs_free(&anchors);
     hx509_certs_free(&signers);
 
+    _hx509_unmap_file(p, sz);
+
     return 0;
 }
 
@@ -129,9 +120,8 @@ cms_create_sd(int argc, char **argv)
     hx509_lock lock;
     hx509_certs s;
     hx509_cert cert;
-    ssize_t sz;
+    size_t sz;
     void *p;
-    int fd;
     int ret;
 
     contentType = oid_id_pkcs7_data();
@@ -147,19 +137,10 @@ cms_create_sd(int argc, char **argv)
     hx509_lock_init(&lock);
     hx509_lock_add_password(lock, "foobar");
 
-    fd = open(argv[0], O_RDONLY, 0);
-    if (fd < 0)
-	err(1, "open %s", argv[0]);
+    ret = _hx509_map_file(argv[1], &p, &sz);
+    if (ret)
+	err(1, "map_file: %s: %d", argv[0], ret);
 
-    p = malloc(10000);
-    if (p == NULL)
-	;
-
-    sz = read(fd, p, 10000);
-    if (sz < 0)
-	err(1, "read");
-    close(fd);
-    
     ret = hx509_certs_init(argv[2], 0, lock, &s);
     if (ret)
 	errx(1, "hx509_certs_init: %d", ret);
@@ -180,14 +161,12 @@ cms_create_sd(int argc, char **argv)
     if (ret)
 	errx(1, "hx509_cms_create_signed: %d", ret);
 
-    fd = open(argv[1], O_WRONLY|O_TRUNC|O_CREAT, 0644);
-    if (fd < 0)
-	err(1, "open %s", argv[1]);
-
-    write(fd, o.data, o.length);
-    close(fd);
-
+    _hx509_unmap_file(p, sz);
     hx509_lock_free(lock);
+
+    ret = _hx509_write_file(argv[1], o.data, o.length);
+    if (ret)
+	errx(1, "hx509_write_file: %d", ret);
 
     return 0;
 }
@@ -198,9 +177,8 @@ cms_unenvelope(int argc, char **argv)
     heim_oid contentType = { 0, NULL };
     heim_octet_string o;
     hx509_certs certs;
-    ssize_t sz;
+    size_t sz;
     void *p;
-    int fd;
     int ret;
     hx509_lock lock;
 
@@ -215,19 +193,10 @@ cms_unenvelope(int argc, char **argv)
     hx509_lock_init(&lock);
     hx509_lock_add_password(lock, "foobar");
 
-    fd = open(argv[1], O_RDONLY, 0);
-    if (fd < 0)
-	err(1, "open %s", argv[1]);
+    ret = _hx509_map_file(argv[1], &p, &sz);
+    if (ret)
+	err(1, "map_file: %s: %d", argv[0], ret);
 
-    p = malloc(10000);
-    if (p == NULL)
-	;
-
-    sz = read(fd, p, 10000);
-    if (sz < 0)
-	err(1, "read");
-    close(fd);
-    
     ret = hx509_certs_init("MEMORY:cert-store", 0, NULL, &certs);
 
     ret = hx509_certs_init(argv[0], 0, lock, &certs);
@@ -238,14 +207,14 @@ cms_unenvelope(int argc, char **argv)
     if (ret)
 	errx(1, "hx509_cms_unenvelope: %d", ret);
 
-    fd = open(argv[2], O_WRONLY|O_TRUNC|O_CREAT, 0644);
-    if (fd < 0)
-	err(1, "open %s", argv[2]);
-
-    write(fd, o.data, o.length);
-    close(fd);
-
+    _hx509_unmap_file(p, sz);
     hx509_lock_free(lock);
+
+    ret = _hx509_write_file(argv[2], o.data, o.length);
+    if (ret)
+	errx(1, "hx509_write_file: %d", ret);
+
+    free_octet_string(&o);
 
     return 0;
 }
@@ -259,9 +228,8 @@ cms_create_enveloped(int argc, char **argv)
     hx509_certs certs;
     hx509_cert cert;
     int ret;
-    ssize_t sz;
+    size_t sz;
     void *p;
-    int fd;
 
     argc--;
     argv++;
@@ -271,19 +239,10 @@ cms_create_enveloped(int argc, char **argv)
 
     printf("cms create enveloped\n");
 
-    fd = open(argv[0], O_RDONLY, 0);
-    if (fd < 0)
-	err(1, "open %s", argv[0]);
+    ret = _hx509_map_file(argv[0], &p, &sz);
+    if (ret)
+	err(1, "map_file: %s: %d", argv[0], ret);
 
-    p = malloc(10000);
-    if (p == NULL)
-	;
-
-    sz = read(fd, p, 10000);
-    if (sz < 0)
-	err(1, "read");
-    close(fd);
-    
     ret = hx509_certs_init(argv[2], 0, NULL, &certs);
     if (ret)
 	errx(1, "hx509_certs_init: %d", ret);
@@ -297,12 +256,13 @@ cms_create_enveloped(int argc, char **argv)
     if (ret)
 	errx(1, "hx509_cms_unenvelope: %d", ret);
 
-    fd = open(argv[1], O_WRONLY|O_TRUNC|O_CREAT, 0644);
-    if (fd < 0)
-	err(1, "open %s", argv[1]);
+    _hx509_unmap_file(p, sz);
 
-    write(fd, o.data, o.length);
-    close(fd);
+    ret = _hx509_write_file(argv[1], o.data, o.length);
+    if (ret)
+	errx(1, "hx509_write_file: %d", ret);
+
+    free_octet_string(&o);
 
     return 0;
 }
