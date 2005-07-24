@@ -6,7 +6,7 @@ exec smbscript "$0" ${1+"$@"}
 
 
 var ldb = ldb_init();
-
+var sys;
 function basic_tests(ldb)
 {
 	println("Running basic tests");
@@ -53,16 +53,72 @@ x: 7
 	res = ldb.search("x=7");
 	assert(res.length == 1);
 	assert(res[0].x.length == 2);
+
+	/* Check a few things before we add modules */
+	assert(res[0].objectGUID == undefined);
+	assert(res[0].createTimestamp == undefined);
+	assert(res[0].whenCreated == undefined);
+
+}
 	
+function setup_modules(ldb)
+{
+	ok = ldb.add("
+dn: @MODULES
+@LIST: timestamps,objectguid,rdn_name
+");
 }
 
-sys_init(ldb);
+/* Test the basic operation of the timestamps,objectguid and name_rdn
+   modules */
+
+function modules_test(ldb) 
+{
+        println("Running modules tests");
+	ok = ldb.add("
+dn: cn=x8,cn=test
+objectClass: foo
+x: 8
+");
+	assert(ok);
+
+	ok = ldb.add("
+dn: cn=x9,cn=test
+objectClass: foo
+x: 9
+");
+	assert(ok);
+
+	var res = ldb.search("x=8", NULL, ldb.SCOPE_DEFAULT);
+	assert(res[0].objectGUID != undefined);
+	assert(res[0].createTimestamp != undefined);
+	assert(res[0].whenCreated != undefined);
+	assert(res[0].name == "x8");
+
+	var res2 = ldb.search("x=9", NULL, ldb.SCOPE_DEFAULT);
+	assert(res2[0].objectGUID != undefined);
+	assert(res2[0].createTimestamp != undefined);
+	assert(res2[0].whenCreated != undefined);
+	assert(res2[0].name == "x9");
+
+	assert(res[0].objectGUID != res2[0].objectGUID);
+
+}
+
+sys = sys_init();
 var dbfile = "test.ldb";
-ldb.unlink(dbfile);
+sys.unlink(dbfile);
 var ok = ldb.connect("tdb://" + dbfile);
 assert(ok);
 
 basic_tests(ldb);
 
-ldb.unlink(dbfile);
+setup_modules(ldb);
+ldb = ldb_init();
+var ok = ldb.connect("tdb://" + dbfile);
+assert(ok);
+
+modules_test(ldb);
+
+sys.unlink(dbfile);
 return 0;
