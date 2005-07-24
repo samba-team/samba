@@ -5047,7 +5047,8 @@ SMB_BIG_UINT get_lock_offset( char *data, int data_offset, BOOL large_file_forma
  Reply to a lockingX request.
 ****************************************************************************/
 
-int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
+int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
+		   int length, int bufsize)
 {
 	files_struct *fsp = file_fsp(inbuf,smb_vwv2);
 	unsigned char locktype = CVAL(inbuf,smb_vwv3);
@@ -5059,7 +5060,8 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
 	int32 lock_timeout = IVAL(inbuf,smb_vwv4);
 	int i;
 	char *data;
-	BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES)?True:False;
+	BOOL large_file_format =
+		(locktype & LOCKING_ANDX_LARGE_FILES)?True:False;
 	BOOL err;
 	BOOL my_lock_ctx = False;
 	NTSTATUS status;
@@ -5089,19 +5091,24 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
 		/* Client can insist on breaking to none. */
 		BOOL break_to_none = (oplocklevel == 0);
 		BOOL result;
-		
-		DEBUG(5,("reply_lockingX: oplock break reply (%u) from client for fnum = %d\n",
-			 (unsigned int)oplocklevel, fsp->fnum ));
+
+		DEBUG(5,("reply_lockingX: oplock break reply (%u) from client "
+			 "for fnum = %d\n", (unsigned int)oplocklevel,
+			 fsp->fnum ));
 
 		/*
-		 * Make sure we have granted an exclusive or batch oplock on this file.
+		 * Make sure we have granted an exclusive or batch oplock on
+		 * this file.
 		 */
 		
 		if (fsp->oplock_type == 0) {
-			DEBUG(0,("reply_lockingX: Error : oplock break from client for fnum = %d (oplock=%d) and \
-no oplock granted on this file (%s).\n", fsp->fnum, fsp->oplock_type, fsp->fsp_name));
+			DEBUG(0,("reply_lockingX: Error : oplock break from "
+				 "client for fnum = %d (oplock=%d) and no "
+				 "oplock granted on this file (%s).\n",
+				 fsp->fnum, fsp->oplock_type, fsp->fsp_name));
 
-			/* if this is a pure oplock break request then don't send a reply */
+			/* if this is a pure oplock break request then don't
+			 * send a reply */
 			if (num_locks == 0 && num_ulocks == 0) {
 				END_PROFILE(SMBlockingX);
 				return -1;
@@ -5127,12 +5134,14 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->oplock_type, fsp->fsp_n
 
 		reply_to_oplock_break_requests(fsp);
 
-		/* if this is a pure oplock break request then don't send a reply */
+		/* if this is a pure oplock break request then don't send a
+		 * reply */
 		if (num_locks == 0 && num_ulocks == 0) {
 			/* Sanity check - ensure a pure oplock break is not a
 			   chained request. */
 			if(CVAL(inbuf,smb_vwv0) != 0xff)
-				DEBUG(0,("reply_lockingX: Error : pure oplock break is a chained %d request !\n",
+				DEBUG(0,("reply_lockingX: Error : pure oplock "
+					 "break is a chained %d request !\n",
 					 (unsigned int)CVAL(inbuf,smb_vwv0) ));
 			END_PROFILE(SMBlockingX);
 			return -1;
@@ -5161,8 +5170,9 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->oplock_type, fsp->fsp_n
 			return ERROR_DOS(ERRDOS,ERRnoaccess);
 		}
 
-		DEBUG(10,("reply_lockingX: unlock start=%.0f, len=%.0f for pid %u, file %s\n",
-			  (double)offset, (double)count, (unsigned int)lock_pid, fsp->fsp_name ));
+		DEBUG(10,("reply_lockingX: unlock start=%.0f, len=%.0f for "
+			  "pid %u, file %s\n", (double)offset, (double)count,
+			  (unsigned int)lock_pid, fsp->fsp_name ));
 		
 		status = do_unlock(fsp,conn,lock_pid,count,offset);
 		if (NT_STATUS_V(status)) {
@@ -5194,27 +5204,34 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->oplock_type, fsp->fsp_n
 			return ERROR_DOS(ERRDOS,ERRnoaccess);
 		}
 		
-		DEBUG(10,("reply_lockingX: lock start=%.0f, len=%.0f for pid %u, file %s timeout = %d\n",
-			(double)offset, (double)count, (unsigned int)lock_pid,
-			fsp->fsp_name, (int)lock_timeout ));
+		DEBUG(10,("reply_lockingX: lock start=%.0f, len=%.0f for pid "
+			  "%u, file %s timeout = %d\n", (double)offset,
+			  (double)count, (unsigned int)lock_pid,
+			  fsp->fsp_name, (int)lock_timeout ));
 		
 		status = do_lock_spin(fsp,conn,lock_pid, count,offset, 
-				 ((locktype & 1) ? READ_LOCK : WRITE_LOCK), &my_lock_ctx);
+				      ((locktype & 1) ? READ_LOCK:WRITE_LOCK),
+				      &my_lock_ctx);
 		if (NT_STATUS_V(status)) {
 			/*
-			 * Interesting fact found by IFSTEST /t LockOverlappedTest...
-			 * Even if it's our own lock context, we need to wait here as
-			 * there may be an unlock on the way.
-			 * So I removed a "&& !my_lock_ctx" from the following
-			 * if statement. JRA.
+			 * Interesting fact found by IFSTEST /t
+			 * LockOverlappedTest...  Even if it's our own lock
+			 * context, we need to wait here as there may be an
+			 * unlock on the way.  So I removed a "&&
+			 * !my_lock_ctx" from the following if statement. JRA.
 			 */
-			if ((lock_timeout != 0) && lp_blocking_locks(SNUM(conn)) && ERROR_WAS_LOCK_DENIED(status)) {
+			if ((lock_timeout != 0) &&
+			    lp_blocking_locks(SNUM(conn)) &&
+			    ERROR_WAS_LOCK_DENIED(status)) {
 				/*
 				 * A blocking lock was requested. Package up
 				 * this smb into a queued request and push it
 				 * onto the blocking lock queue.
 				 */
-				if(push_blocking_lock_request(inbuf, length, lock_timeout, i, lock_pid, offset, count)) {
+				if(push_blocking_lock_request(inbuf, length,
+							      lock_timeout, i,
+							      lock_pid, offset,
+							      count)) {
 					END_PROFILE(SMBlockingX);
 					return -1;
 				}
@@ -5234,10 +5251,12 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->oplock_type, fsp->fsp_n
 		for(i--; i >= 0; i--) {
 			lock_pid = get_lock_pid( data, i, large_file_format);
 			count = get_lock_count( data, i, large_file_format);
-			offset = get_lock_offset( data, i, large_file_format, &err);
+			offset = get_lock_offset( data, i, large_file_format,
+						  &err);
 			
 			/*
-			 * There is no error code marked "stupid client bug".... :-).
+			 * There is no error code marked "stupid client
+			 * bug".... :-).
 			 */
 			if(err) {
 				END_PROFILE(SMBlockingX);
@@ -5252,8 +5271,8 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->oplock_type, fsp->fsp_n
 
 	set_message(outbuf,2,0,True);
 	
-	DEBUG( 3, ( "lockingX fnum=%d type=%d num_locks=%d num_ulocks=%d\n",
-		    fsp->fnum, (unsigned int)locktype, num_locks, num_ulocks ) );
+	DEBUG(3, ("lockingX fnum=%d type=%d num_locks=%d num_ulocks=%d\n",
+		  fsp->fnum, (unsigned int)locktype, num_locks, num_ulocks));
 	
 	END_PROFILE(SMBlockingX);
 	return chain_reply(inbuf,outbuf,length,bufsize);
