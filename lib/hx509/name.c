@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$ID$");
+RCSID("$Id$");
 
 /* 
  * name parsing from rfc2253

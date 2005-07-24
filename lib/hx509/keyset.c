@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$ID$");
+RCSID("$Id$");
 
 static struct hx509_keyset_ops **ks_ops;
 static int ks_num_ops;

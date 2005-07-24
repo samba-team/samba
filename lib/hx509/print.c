@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$ID$");
+RCSID("$Id$");
 
 
 struct hx509_validate_ctx_data {

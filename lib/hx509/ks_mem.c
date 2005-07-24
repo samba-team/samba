@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$ID$");
+RCSID("Id$");
 
 struct mem_data {
     char *name;

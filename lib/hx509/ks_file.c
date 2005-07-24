@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$ID$");
+RCSID("$Id$");
 
 static int
 parse_certificate(const char *fn, int use_pem, Certificate *t)

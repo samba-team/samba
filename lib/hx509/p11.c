@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$ID$");
+RCSID("$Id$");
 
 /* http://developer.netscape.com/support/faqs/pkcs_11.html */
 

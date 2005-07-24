@@ -32,7 +32,7 @@
  */
 
 #include "hx_locl.h"
-RCSID("$ID$");
+RCSID("$Id$");
 
 #include <openssl/rsa.h>
 #include <openssl/dsa.h>
