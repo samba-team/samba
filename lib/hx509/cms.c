@@ -166,7 +166,8 @@ hx509_cms_unenvelope(hx509_certs certs,
 	 */
 
 	ret = find_CMSIdentifier(&ri->rid, certs, &cert, 
-				 HX509_QUERY_PRIVATE_KEY);
+				 HX509_QUERY_PRIVATE_KEY|
+				 HX509_QUERY_KU_ENCIPHERMENT);
 	if (ret) {
 	    ret = HX509_CMS_NO_RECIPIENT_CERTIFICATE;
 	    continue;
@@ -245,11 +246,12 @@ hx509_cms_envelope_1(hx509_cert cert,
 		     heim_octet_string *content)
 {
     KeyTransRecipientInfo *ri;
-    EnvelopedData ed;
     heim_octet_string ivec;
     heim_octet_string key;
-    int ret;
+    hx509_crypto crypto;
+    EnvelopedData ed;
     size_t size;
+    int ret;
 
     memset(&ivec, 0, sizeof(ivec));
     memset(&key, 0, sizeof(key));
@@ -259,7 +261,9 @@ hx509_cms_envelope_1(hx509_cert cert,
     if (encryption_type == NULL)
 	encryption_type = oid_id_aes_256_cbc();
 
-    hx509_crypto crypto;
+    ret = _hx509_check_key_usage(cert, 1 << 2, TRUE);
+    if (ret)
+	goto out;
 
     ret = hx509_crypto_init(NULL, encryption_type, &crypto);
     if (ret)
@@ -454,7 +458,8 @@ hx509_cms_verify_signed(hx509_verify_ctx ctx,
 	    continue;
 	}
 
-	ret = find_CMSIdentifier(&signer_info->sid, certs, &cert, 0);
+	ret = find_CMSIdentifier(&signer_info->sid, certs, &cert,
+				 HX509_QUERY_KU_DIGITALSIGNATURE);
 	if (ret)
 	    continue;
 
@@ -519,7 +524,7 @@ hx509_cms_verify_signed(hx509_verify_ctx ctx,
 		match_oid = &decode_oid;
 	    }
 
-	    signed_data = calloc(1, sizeof(*signed_data));
+	    ALLOC(signed_data, 1);
 	    if (signed_data == NULL) {
 		if (match_oid == &decode_oid)
 		    free_oid(&decode_oid);
