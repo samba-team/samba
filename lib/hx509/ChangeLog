@@ -1,5 +1,20 @@
+2005-07-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hxtool.c (cms_create_sd): add KU digitalSigature as a
+	requirement to the query
+
+	* hx_locl.h: add KeyUsage query bits
+
+	* hx509_err.et: add KeyUsage error
+
+	* cms.c: add checks for KeyUsage
+
+	* cert.c: more checks on KeyUsage, allow to query on them too
+
 2005-07-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* cms.c: Add missing break.
+	
 	* hx_locl.h,cms.c,cert.c: allow matching on SubjectKeyId
 
 	* hxtool.c: Use _hx509_map_file, _hx509_unmap_file and
