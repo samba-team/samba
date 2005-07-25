@@ -147,6 +147,7 @@ cms_create_sd(int argc, char **argv)
 
     _hx509_query_clear(&q);
     q.match |= HX509_QUERY_PRIVATE_KEY;
+    q.match |= HX509_QUERY_KU_DIGITALSIGNATURE;
 
     ret = _hx509_certs_find(s, &q, &cert);
     if (ret)
