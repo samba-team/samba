@@ -197,8 +197,10 @@ static int
 file_iter(hx509_certs certs, void *data, void *iter, hx509_cert *cert)
 {
     int *i = iter;
-    if (*i != 0)
+    if (*i != 0) {
+	*cert = NULL;
 	return 0;
+    }
     *cert = hx509_cert_ref((hx509_cert)data);
     (*i)++;
     return 0;
