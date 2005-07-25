@@ -90,20 +90,16 @@ parse_certificate(const char *fn, int use_pem, Certificate *t)
     fclose(f);
 
     if (data == NULL)
-	return 1;
+	return ENOENT;
 
     if (data && in_cert) {
 	free(data);
-	return 1;
+	return EINVAL;
     }
 
     ret = decode_Certificate(data, len, t, &size);
     free(data);
-    if (ret != 0) {
-	return 1;
-    }
-
-    return 0;
+    return ret;
 }
 
 
