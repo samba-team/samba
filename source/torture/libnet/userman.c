@@ -414,8 +414,11 @@ BOOL torture_usermod(void)
 	int i;
 
 	struct usermod_change changes[] = {
-		{ USERMOD_FIELD_ACCOUNT_NAME, "changed", NULL },
-		{ USERMOD_FIELD_FULL_NAME,    NULL, "Testing full account name" }
+		{ USERMOD_FIELD_ACCOUNT_NAME, "changed", NULL, NULL, NULL, NULL },
+		{ USERMOD_FIELD_FULL_NAME,    NULL, "Testing full account name", NULL, NULL, NULL },
+		{ USERMOD_FIELD_DESCRIPTION,  NULL, NULL, "Description of tested account", NULL, NULL },
+		{ USERMOD_FIELD_LOGON_SCRIPT, NULL, NULL, NULL, "test_logon.cmd", NULL },
+		{ USERMOD_FIELD_PROFILE_PATH, NULL, NULL, NULL, NULL, "\\\\TESTSRV\\profiles\\test" }
 	};
 	
 	mem_ctx = talloc_init("test_userdel");
