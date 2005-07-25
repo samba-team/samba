@@ -2,6 +2,8 @@
 
 	* check-der.c: make it work for non c99 compilers too
 	
+	* check-der.c: start testing BIT STRING
+
 	* der_cmp.c (heim_bit_string_cmp): try handle corner cases better
 	
 	* gen_free.c (free_type): free bignum integers
