@@ -17,13 +17,12 @@ if (ok == false) {
    return -1;
 }
 
-if (options.ARGV.length != 2) {
-   println("Usage: ldap.js <BASEDN> <HOST>");
+if (options.ARGV.length != 1) {
+   println("Usage: ldap.js <HOST>");
    return -1;
 }
 
-var base_dn = options.ARGV[0];
-var host = options.ARGV[1];
+var host = options.ARGV[0];
 
 function basic_tests(ldb, base_dn)
 {
@@ -50,7 +49,17 @@ cn: LDAPtestUSER
 
 }
 
+function find_basedn(ldb)
+{
+    var attrs = new Array("defaultNamingContext");
+    var res = ldb.search("", "", ldb.SCOPE_BASE, attrs);
+    assert(res.length == 1);
+    return res[0].defaultNamingContext;
+}
+
 var ok = ldb.connect("ldap://" + host);
+var base_dn = find_basedn(ldb);
+
 basic_tests(ldb, base_dn)
 
 return 0;
