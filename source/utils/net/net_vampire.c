@@ -29,7 +29,7 @@ int net_samdump(struct net_context *ctx, int argc, const char **argv)
 {
 	NTSTATUS status;
 	struct libnet_context *libnetctx;
-	union libnet_SamDump r;
+	struct libnet_SamDump r;
 
 	libnetctx = libnet_context_init(NULL);
 	if (!libnetctx) {
@@ -37,16 +37,14 @@ int net_samdump(struct net_context *ctx, int argc, const char **argv)
 	}
 	libnetctx->cred = ctx->credentials;
 
-	/* prepare password change */
-	r.generic.level	       = LIBNET_SAMDUMP_GENERIC;
-	r.generic.error_string = NULL;
+	r.level	       = LIBNET_SAMDUMP_GENERIC;
+	r.error_string = NULL;
 
-	/* do the domain join */
 	status = libnet_SamDump(libnetctx, ctx->mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("libnet_SamDump returned %s: %s\n",
 			 nt_errstr(status),
-			 r.generic.error_string));
+			 r.error_string));
 		return -1;
 	}
 
