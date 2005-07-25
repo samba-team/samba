@@ -401,10 +401,10 @@ static int
 test_bit_string (void)
 {
     struct test_case tests[] = {
-	{NULL, 1, "\x00"},
+	{NULL, 1, "\x00"}
     };
     heim_bit_string values[] = {
-	{ 0, "" },
+	{ 0, "" }
     };
     int i;
     int ntests = sizeof(tests) / sizeof(*tests);
