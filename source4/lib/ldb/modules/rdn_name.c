@@ -88,10 +88,12 @@ static struct ldb_dn_component *get_rdn(void *mem_ctx, const char *dn)
 /* add_record: add crateTimestamp/modifyTimestamp attributes */
 static int rdn_name_add_record(struct ldb_module *module, const struct ldb_message *msg)
 {
+	struct private_data *data = (struct private_data *)module->private_data;
+
 	struct ldb_message *msg2;
 	struct ldb_message_element *attribute;
 	struct ldb_dn_component *rdn;
-	int ret, i;
+	int i, ret;
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_name_add_record\n");
 
@@ -124,6 +126,29 @@ static int rdn_name_add_record(struct ldb_module *module, const struct ldb_messa
 	
 	if (ldb_msg_add_value(module->ldb, msg2, "name", &rdn->value) != 0) {
 		return -1;
+	}
+
+	attribute = rdn_name_find_attribute(msg2, rdn->name);
+
+	if (!attribute) {
+		if (ldb_msg_add_value(module->ldb, msg2, rdn->name, &rdn->value) != 0) {
+			return -1;
+		}
+	} else {
+		const struct ldb_attrib_handler *handler
+			= ldb_attrib_handler(module->ldb, rdn->name);
+		for (i=0; i < attribute->num_values; i++) {
+			if (handler->comparison_fn(module->ldb, msg2, &rdn->value, &attribute->values[i]) == 0) {
+				/* overwrite so it matches in case */
+				attribute->values[i] = rdn->value;
+				break;
+			}
+		}
+		if (i == attribute->num_values) {
+			data->error_string = talloc_asprintf(data, "RDN mismatch on %s: %s", msg2->dn, rdn->name);
+			ldb_debug(module->ldb, LDB_DEBUG_FATAL, "%s\n", data->error_string);
+			return -1;
+		}
 	}
 
 	ret = ldb_next_add_record(module, msg2);

@@ -410,17 +410,6 @@ static struct ldb_message *samldb_fill_group_object(struct ldb_module *module, c
 		return NULL;
 	}
 
-	if ((attribute = samldb_find_attribute(msg2, "cn", NULL)) != NULL) {
-		if (strcasecmp(rdn->value.data, attribute->values[0].data) != 0) {
-			ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_group_object: Bad Attribute Syntax for CN\n");
-			return NULL;
-		}
-	} else { /* FIXME: remove this if ldb supports natively aliasing between the rdn and the "cn" attribute */
-		if ( ldb_msg_add_value(module->ldb, msg2, "cn", &rdn->value)) {
-			return NULL;
-		}
-	}
-
 	if ((attribute = samldb_find_attribute(msg2, "objectSid", NULL)) == NULL ) {
 		struct dom_sid *sid = samldb_get_new_sid(module, msg2, msg2->dn);
 		if (sid == NULL) {
@@ -481,24 +470,13 @@ static struct ldb_message *samldb_fill_user_or_computer_object(struct ldb_module
 		return NULL;
 	}
 	if (strcasecmp(rdn->name, "cn") != 0) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_user_or_computer_object: Bad RDN (%s) for group!\n", rdn->name);
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_user_or_computer_object: Bad RDN (%s) for user/computer!\n", rdn->name);
 		return NULL;
 	}
 
 	/* if the only attribute was: "objectclass: computer", then make sure we also add "user" objectclass */
 	if ( ! samldb_find_or_add_attribute(module, msg2, "objectclass", "user", "user")) {
 		return NULL;
-	}
-
-	if ((attribute = samldb_find_attribute(msg2, "cn", NULL)) != NULL) {
-		if (strcasecmp(rdn->value.data, attribute->values[0].data) != 0) {
-			ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_group_object: Bad Attribute Syntax for CN\n");
-			return NULL;
-		}
-	} else { /* FIXME: remove this if ldb supports natively aliasing between the rdn and the "cn" attribute */
-		if ( ldb_msg_add_value(module->ldb, msg2, "cn", &rdn->value)) {
-			return NULL;
-		}
 	}
 
 	if ((attribute = samldb_find_attribute(msg2, "objectSid", NULL)) == NULL ) {

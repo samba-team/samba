@@ -713,7 +713,7 @@ objectCategory: CN=Sites-Container,CN=Schema,CN=Configuration,${BASEDN}
 dn: CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: site
-cn: Sites
+cn: ${DEFAULTSITE}
 instanceType: 4
 uSNCreated: ${USN}
 uSNChanged: ${USN}

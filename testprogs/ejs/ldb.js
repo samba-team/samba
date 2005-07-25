@@ -86,6 +86,7 @@ x: 8
 dn: cn=x9,cn=test
 objectClass: foo
 x: 9
+cn: X9
 ");
 	assert(ok);
 
@@ -94,12 +95,14 @@ x: 9
 	assert(res[0].createTimestamp != undefined);
 	assert(res[0].whenCreated != undefined);
 	assert(res[0].name == "x8");
+	assert(res[0].cn == "x8");
 
 	var res2 = ldb.search("x=9", NULL, ldb.SCOPE_DEFAULT);
 	assert(res2[0].objectGUID != undefined);
 	assert(res2[0].createTimestamp != undefined);
 	assert(res2[0].whenCreated != undefined);
 	assert(res2[0].name == "x9");
+	assert(res2[0].cn == "x9");
 
 	assert(res[0].objectGUID != res2[0].objectGUID);
 
