@@ -1,5 +1,11 @@
 2005-07-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Add regression tests.
+
+	* data: test certificate and keys
+
+	* test_chain.in: test chain
+
 	* hxtool.c (cms_create_sd): add KU digitalSigature as a
 	requirement to the query
 
