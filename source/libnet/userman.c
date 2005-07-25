@@ -28,6 +28,7 @@
 #include "libcli/composite/monitor.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "libnet/composite.h"
+#include "libnet/userman.h"
 
 /*
  * Composite user add function
@@ -73,12 +74,17 @@ static void useradd_handler(struct rpc_request *req)
 	struct composite_context *c = req->async.private;
 	struct useradd_state *s = talloc_get_type(c->private, struct useradd_state);
 	struct monitor_msg msg;
+	struct msg_rpc_create_user *rpc_create;
 	
 	switch (s->stage) {
 	case USERADD_CREATE:
 		c->status = useradd_create(c, s);
+
 		msg.type = rpc_create_user;
-		msg.data.rpc_create_user.rid = *s->createuser.out.rid;
+		rpc_create = talloc(s, struct msg_rpc_create_user);
+		rpc_create->rid = *s->createuser.out.rid;
+		msg.data = (void*)rpc_create;
+		msg.data_size = sizeof(*rpc_create);
 		break;
 	}
 

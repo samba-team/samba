@@ -28,6 +28,7 @@
 #include "libcli/composite/monitor.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "libnet/composite.h"
+#include "libnet/userinfo.h"
 
 static void userinfo_handler(struct rpc_request *req);
 
@@ -129,26 +130,41 @@ static void userinfo_handler(struct rpc_request *req)
 	struct composite_context *c = req->async.private;
 	struct userinfo_state *s = talloc_get_type(c->private, struct userinfo_state);
 	struct monitor_msg msg;
+	struct msg_rpc_open_user *msg_open;
+	struct msg_rpc_query_user *msg_query;
+	struct msg_rpc_close_user *msg_close;
 	
 	/* Stages of the call */
 	switch (s->stage) {
 	case USERINFO_OPENUSER:
 		c->status = userinfo_openuser(c, s);
+
 		msg.type = rpc_open_user;
-		msg.data.rpc_open_user.rid = s->openuser.in.rid;
-		msg.data.rpc_open_user.access_mask = s->openuser.in.access_mask;
+		msg_open = talloc(s, struct msg_rpc_open_user);
+		msg_open->rid = s->openuser.in.rid;
+		msg_open->access_mask = s->openuser.in.access_mask;
+		msg.data = (void*)msg_open;
+		msg.data_size = sizeof(*msg_open);
 		break;
 
 	case USERINFO_GETUSER:
 		c->status = userinfo_getuser(c, s);
+
 		msg.type = rpc_query_user;
-		msg.data.rpc_query_user.level = s->queryuserinfo.in.level;
+		msg_query = talloc(s, struct msg_rpc_query_user);
+		msg_query->level = s->queryuserinfo.in.level;
+		msg.data = (void*)msg_query;
+		msg.data_size = sizeof(*msg_query);
 		break;
 		
 	case USERINFO_CLOSEUSER:
 		c->status = userinfo_closeuser(c, s);
+
 		msg.type = rpc_close_user;
-		msg.data.rpc_close_user.rid = s->openuser.in.rid;
+		msg_close = talloc(s, struct msg_rpc_close_user);
+		msg_close->rid = s->openuser.in.rid;
+		msg.data = (void*)msg_close;
+		msg.data_size = sizeof(*msg_close);
 		break;
 	}
 
