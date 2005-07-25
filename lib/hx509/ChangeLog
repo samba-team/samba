@@ -1,5 +1,9 @@
 2005-07-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* cert.c (hx509_verify_destroy_ctx): add
+	
+	* hxtool.c: free hx509_verify_ctx
+	
 	* name.c (_hx509_name_ds_cmp): make sure all strings are not equal
 
 2005-07-25  Love Hörnquist Åstrand  <lha@it.su.se>
