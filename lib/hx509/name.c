@@ -235,9 +235,10 @@ _hx509_name_ds_cmp(const DirectoryString *ds1, const DirectoryString *ds2)
 				  &ds2->u.bmpString);
 	break;
     default:
-	return 1;
+	c = 1;
+	break;
     }
-    return 0;
+    return c;
 }
 
 int
