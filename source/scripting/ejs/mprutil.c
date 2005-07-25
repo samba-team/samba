@@ -29,7 +29,7 @@
 */
 struct MprVar mprObject(const char *name)
 {
-	return ejsCreateObj(name?name:"(NULL)", MPR_DEFAULT_HASH_SIZE);
+	return ejsCreateObj(name && *name?name:"(NULL)", MPR_DEFAULT_HASH_SIZE);
 }
 
 /*
