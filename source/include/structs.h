@@ -178,6 +178,8 @@ struct libnet_ListShares;
 struct libnet_AddShare;
 struct libnet_DelShare;
 struct libnet_Lookup;
+struct libnet_SamDump;
+struct libnet_SamSync;
 struct net_functable;
 struct net_context;
 
@@ -263,7 +265,6 @@ struct wrepl_pull_names;
 
 struct arcfour_state;
 
-union libnet_SamDump;
 struct websrv_context;
 struct EspRequest;
 struct PAC_LOGON_INFO;

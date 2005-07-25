@@ -9,6 +9,7 @@ ADD_OBJ_FILES = \
 		libnet/libnet_rpc.o \
 		libnet/libnet_join.o \
 		libnet/libnet_vampire.o \
+		libnet/libnet_samdump.o \
 		libnet/libnet_user.o \
 		libnet/libnet_share.o \
 		libnet/libnet_lookup.o \
