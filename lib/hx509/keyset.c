@@ -177,8 +177,10 @@ hx509_certs_iter(hx509_certs certs, int (*fn)(void *, hx509_cert), void *ctx)
 	ret = hx509_certs_next_cert(certs, cursor, &c);
 	if (ret)
 	    break;
-	if (c == NULL)
+	if (c == NULL) {
+	    ret = 0;
 	    break;
+	}
 	ret = (*fn)(ctx, c);
 	hx509_cert_free(c);
 	if (ret)
@@ -187,7 +189,7 @@ hx509_certs_iter(hx509_certs certs, int (*fn)(void *, hx509_cert), void *ctx)
 
     hx509_certs_end_seq(certs, cursor);
 
-    return 0;
+    return ret;
 }
 
 int
@@ -221,7 +223,7 @@ _hx509_certs_find(hx509_certs certs, const hx509_query *q, hx509_cert *r)
 {
     hx509_cursor cursor;
     hx509_cert c;
-    int ret, found = 0;
+    int ret;
 
     *r = NULL;
 
@@ -232,14 +234,14 @@ _hx509_certs_find(hx509_certs certs, const hx509_query *q, hx509_cert *r)
     if (ret)
 	return ret;
 
+    c = NULL;
     while (1) {
 	ret = hx509_certs_next_cert(certs, cursor, &c);
 	if (ret)
 	    break;
 	if (c == NULL)
 	    break;
-	found = _hx509_query_match_cert(q, c);
-	if (found) {
+	if (_hx509_query_match_cert(q, c)) {
 	    *r = c;
 	    break;
 	}
@@ -247,8 +249,9 @@ _hx509_certs_find(hx509_certs certs, const hx509_query *q, hx509_cert *r)
     }
 
     hx509_certs_end_seq(certs, cursor);
-
-    if (!found)
+    if (ret)
+	return ret;
+    if (c == NULL)
 	return ENOENT;
 
     return 0;
