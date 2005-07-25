@@ -20,29 +20,17 @@
 
 #include "librpc/gen_ndr/ndr_netlogon.h"
 
-/* struct and enum for doing a remote domain join */
-enum libnet_SamSync_level {
-	LIBNET_SAMSYNC_GENERIC,
-	LIBNET_SAMSYNC_NETLOGON,
-};
-
-union libnet_SamSync {
-	struct {
-		enum libnet_SamSync_level level;
-		char *error_string;
-	} generic;
-
-	struct {
-		enum libnet_SamSync_level level;
-		NTSTATUS (*delta_fn)(TALLOC_CTX *mem_ctx, 		
-				     void *private, 			
-				     struct creds_CredentialState *creds,
-				     enum netr_SamDatabaseID database,
-				     struct netr_DELTA_ENUM *delta,
-				     char **error_string);
-		void *fn_ctx;
-		char *error_string;
-	} netlogon;
+/* struct and enum for doing a remote domain vampire dump */
+struct libnet_SamSync {
+	NTSTATUS (*delta_fn)(TALLOC_CTX *mem_ctx, 		
+			     void *private, 			
+			     struct creds_CredentialState *creds,
+			     enum netr_SamDatabaseID database,
+			     struct netr_DELTA_ENUM *delta,
+			     char **error_string);
+	void *fn_ctx;
+	char *error_string;
+	struct cli_credentials *machine_account;
 };
 
 enum libnet_SamDump_level {
@@ -50,15 +38,8 @@ enum libnet_SamDump_level {
 	LIBNET_SAMDUMP_NETLOGON,
 };
 
-union libnet_SamDump {
-	struct {
-		enum libnet_SamDump_level level;
-		char *error_string;
-	} generic;
-
-	struct {
-		enum libnet_SamDump_level level;
-		char *error_string;
-	} netlogon;
+struct libnet_SamDump {
+	enum libnet_SamDump_level level;
+	char *error_string;
 };
 

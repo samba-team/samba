@@ -25,25 +25,6 @@
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_samr.h"
-#include "dlinklist.h"
-
-struct samsync_secret {
-	struct samsync_secret *prev, *next;
-	DATA_BLOB secret;
-	char *name;
-	NTTIME mtime;
-};
-
-struct samsync_trusted_domain {
-	struct samsync_trusted_domain *prev, *next;
-        struct dom_sid *sid;
-	char *name;
-};
-
-struct samdump_state {
-	struct samsync_secret *secrets;
-	struct samsync_trusted_domain *trusted_domains;
-};
 
 
 /**
@@ -164,10 +145,10 @@ static NTSTATUS fix_delta(TALLOC_CTX *mem_ctx,
 	return nt_status;
 }
 
-static NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_SamSync *r)
+NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_SamSync *r)
 {
 	NTSTATUS nt_status, dbsync_nt_status;
-	TALLOC_CTX *loop_ctx, *delta_ctx;
+	TALLOC_CTX *samsync_ctx, *loop_ctx, *delta_ctx;
 	struct creds_CredentialState *creds;
 	struct netr_DatabaseSync dbsync;
 	struct cli_credentials *machine_account;
@@ -184,34 +165,42 @@ static NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *
 		binding = bindings[0];
 	}
 
-	machine_account = cli_credentials_init(mem_ctx);
-	if (!machine_account) {
-		return NT_STATUS_NO_MEMORY;
+	samsync_ctx = talloc_named(mem_ctx, 0, "SamSync top context");
+
+	if (!r->machine_account) { 
+		machine_account = cli_credentials_init(samsync_ctx);
+		if (!machine_account) {
+			talloc_free(samsync_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+		cli_credentials_set_conf(machine_account);
+		nt_status = cli_credentials_set_machine_account(machine_account);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			r->error_string = talloc_strdup(mem_ctx, "Could not obtain machine account password - are we joined to the domain?");
+			talloc_free(samsync_ctx);
+			return nt_status;
+		}
+	} else {
+		machine_account = r->machine_account;
 	}
 
-	cli_credentials_set_conf(machine_account);
-	nt_status = cli_credentials_set_machine_account(machine_account);
-	
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		r->netlogon.error_string = talloc_strdup(mem_ctx, "Could not obtain machine account password - are we joined to the domain?");
-		return nt_status;
-	}
-	
 	if (cli_credentials_get_secure_channel_type(machine_account) != SEC_CHAN_BDC) {
-		r->netlogon.error_string
+		r->error_string
 			= talloc_asprintf(mem_ctx, 
 					  "Our join to domain %s is not as a BDC (%d), please rejoin as a BDC",
 					  
 					  cli_credentials_get_domain(machine_account),
 					  cli_credentials_get_secure_channel_type(machine_account));
+		talloc_free(samsync_ctx);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
 	/* Connect to DC (take a binding string for now) */
 
-	nt_status = dcerpc_parse_binding(mem_ctx, binding, &b);
+	nt_status = dcerpc_parse_binding(samsync_ctx, binding, &b);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		r->netlogon.error_string = talloc_asprintf(mem_ctx, "Bad binding string %s\n", binding);
+		r->error_string = talloc_asprintf(mem_ctx, "Bad binding string %s\n", binding);
+		talloc_free(samsync_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -220,24 +209,26 @@ static NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *
 	b->flags |= DCERPC_SCHANNEL | DCERPC_SEAL /* | DCERPC_SCHANNEL_128 */;
 
 	/* Setup schannel */
-	nt_status = dcerpc_pipe_connect_b(mem_ctx, &p, b, 
+	nt_status = dcerpc_pipe_connect_b(samsync_ctx, &p, b, 
 					  DCERPC_NETLOGON_UUID,
 					  DCERPC_NETLOGON_VERSION,
 					  machine_account, ctx->event_ctx);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(samsync_ctx);
 		return nt_status;
 	}
 
 	/* get NETLOGON credentails */
 
-	nt_status = dcerpc_schannel_creds(p->conn->security_state.generic_state, mem_ctx, &creds);
+	nt_status = dcerpc_schannel_creds(p->conn->security_state.generic_state, samsync_ctx, &creds);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		r->netlogon.error_string = talloc_strdup(mem_ctx, "Could not obtain NETLOGON credentials from DCERPC/GENSEC layer");
+		r->error_string = talloc_strdup(mem_ctx, "Could not obtain NETLOGON credentials from DCERPC/GENSEC layer");
+		talloc_free(samsync_ctx);
 		return nt_status;
 	}
 
-	dbsync.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	dbsync.in.logon_server = talloc_asprintf(samsync_ctx, "\\\\%s", dcerpc_server_name(p));
 	dbsync.in.computername = cli_credentials_get_workstation(machine_account);
 	dbsync.in.preferredmaximumlength = (uint32_t)-1;
 	ZERO_STRUCT(dbsync.in.return_authenticator);
@@ -248,18 +239,20 @@ static NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *
 		
 		do {
 			int d;
-			loop_ctx = talloc_named(mem_ctx, 0, "DatabaseSync loop context");
+			loop_ctx = talloc_named(samsync_ctx, 0, "DatabaseSync loop context");
 			creds_client_authenticator(creds, &dbsync.in.credential);
 			
 			dbsync_nt_status = dcerpc_netr_DatabaseSync(p, loop_ctx, &dbsync);
 			if (!NT_STATUS_IS_OK(dbsync_nt_status) &&
 			    !NT_STATUS_EQUAL(dbsync_nt_status, STATUS_MORE_ENTRIES)) {
-				r->netlogon.error_string = talloc_asprintf(mem_ctx, "DatabaseSync failed - %s", nt_errstr(nt_status));
+				r->error_string = talloc_asprintf(samsync_ctx, "DatabaseSync failed - %s", nt_errstr(nt_status));
+				talloc_free(samsync_ctx);
 				return nt_status;
 			}
 			
 			if (!creds_client_check(creds, &dbsync.out.return_authenticator.cred)) {
-				r->netlogon.error_string = talloc_strdup(mem_ctx, "Credential chaining failed");
+				r->error_string = talloc_strdup(samsync_ctx, "Credential chaining failed");
+				talloc_free(samsync_ctx);
 				return NT_STATUS_ACCESS_DENIED;
 			}
 			
@@ -274,19 +267,19 @@ static NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *
 						      &dbsync.out.delta_enum_array->delta_enum[d], 
 						      &error_string);
 				if (!NT_STATUS_IS_OK(nt_status)) {
-					r->netlogon.error_string = talloc_steal(mem_ctx, error_string);
-					talloc_free(delta_ctx);
+					r->error_string = talloc_steal(samsync_ctx, error_string);
+					talloc_free(samsync_ctx);
 					return nt_status;
 				}
-				nt_status = r->netlogon.delta_fn(delta_ctx, 
-								 r->netlogon.fn_ctx,
+				nt_status = r->delta_fn(delta_ctx, 
+								 r->fn_ctx,
 								 creds,
 								 dbsync.in.database_id,
 								 &dbsync.out.delta_enum_array->delta_enum[d], 
 								 &error_string);
 				if (!NT_STATUS_IS_OK(nt_status)) {
-					r->netlogon.error_string = talloc_steal(mem_ctx, error_string);
-					talloc_free(delta_ctx);
+					r->error_string = talloc_steal(samsync_ctx, error_string);
+					talloc_free(samsync_ctx);
 					return nt_status;
 				}
 				talloc_free(delta_ctx);
@@ -295,188 +288,7 @@ static NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *
 		} while (NT_STATUS_EQUAL(dbsync_nt_status, STATUS_MORE_ENTRIES));
 		nt_status = dbsync_nt_status;
 	}
+	talloc_free(samsync_ctx);
 	return nt_status;
 }
 
-static NTSTATUS vampire_samdump_handle_user(TALLOC_CTX *mem_ctx,
-					    struct creds_CredentialState *creds,
-					    struct netr_DELTA_ENUM *delta) 
-{
-	uint32_t rid = delta->delta_id_union.rid;
-	struct netr_DELTA_USER *user = delta->delta_union.user;
-	const char *username = user->account_name.string;
-	char *hex_lm_password;
-	char *hex_nt_password;
-
-	hex_lm_password = smbpasswd_sethexpwd(mem_ctx, 
-					      user->lm_password_present ? &user->lmpassword : NULL, 
-					      user->acct_flags);
-	hex_nt_password = smbpasswd_sethexpwd(mem_ctx, 
-					      user->nt_password_present ? &user->ntpassword : NULL, 
-					      user->acct_flags);
-
-	printf("%s:%d:%s:%s:%s:LCT-%08X\n", username,
-	       rid, hex_lm_password, hex_nt_password,
-	       smbpasswd_encode_acb_info(mem_ctx, user->acct_flags),
-	       (unsigned int)nt_time_to_unix(user->last_password_change));
-
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS vampire_samdump_handle_secret(TALLOC_CTX *mem_ctx,
-					      struct samdump_state *samdump_state,
-					      struct creds_CredentialState *creds,
-					      struct netr_DELTA_ENUM *delta) 
-{
-	struct netr_DELTA_SECRET *secret = delta->delta_union.secret;
-	const char *name = delta->delta_id_union.name;
-	struct samsync_secret *new = talloc(samdump_state, struct samsync_secret);
-
-	new->name = talloc_reference(new, name);
-	new->secret = data_blob_talloc(new, secret->current_cipher.cipher_data, secret->current_cipher.maxlen);
-	new->mtime = secret->current_cipher_set_time;
-
-	DLIST_ADD(samdump_state->secrets, new);
-
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS vampire_samdump_handle_trusted_domain(TALLOC_CTX *mem_ctx,
-					      struct samdump_state *samdump_state,
-					      struct creds_CredentialState *creds,
-					      struct netr_DELTA_ENUM *delta) 
-{
-	struct netr_DELTA_TRUSTED_DOMAIN *trusted_domain = delta->delta_union.trusted_domain;
-	struct dom_sid *dom_sid = delta->delta_id_union.sid;
-
-	struct samsync_trusted_domain *new = talloc(samdump_state, struct samsync_trusted_domain);
-
-	new->name = talloc_reference(new, trusted_domain->domain_name.string);
-	new->sid = talloc_reference(new, dom_sid);
-
-	DLIST_ADD(samdump_state->trusted_domains, new);
-
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS libnet_samdump_fn(TALLOC_CTX *mem_ctx, 		
-				  void *private, 			
-				  struct creds_CredentialState *creds,
-				  enum netr_SamDatabaseID database,
-				  struct netr_DELTA_ENUM *delta,
-				  char **error_string)
-{
-	NTSTATUS nt_status = NT_STATUS_OK;
-	struct samdump_state *samdump_state = private;
-
-	*error_string = NULL;
-	switch (delta->delta_type) {
-	case NETR_DELTA_USER:
-	{
-		/* not interested in builtin users */
-		if (database == SAM_DATABASE_DOMAIN) {
-			nt_status = vampire_samdump_handle_user(mem_ctx, 
-								creds,
-								delta);
-			break;
-		}
-	}
-	case NETR_DELTA_SECRET:
-	{
-		nt_status = vampire_samdump_handle_secret(mem_ctx,
-							  samdump_state,
-							  creds,
-							  delta);
-		break;
-	}
-	case NETR_DELTA_TRUSTED_DOMAIN:
-	{
-		nt_status = vampire_samdump_handle_trusted_domain(mem_ctx,
-								  samdump_state,
-								  creds,
-								  delta);
-		break;
-	}
-	default:
-		/* Can't dump them all right now */
-		break;
-	}
-	return nt_status;
-}
-
-NTSTATUS libnet_SamDump_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_SamDump *r)
-{
-	NTSTATUS nt_status;
-	union libnet_SamSync r2;
-	struct samdump_state *samdump_state = talloc(mem_ctx, struct samdump_state);
-
-	struct samsync_trusted_domain *t;
-	struct samsync_secret *s;
-
-	if (!samdump_state) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	samdump_state->secrets = NULL;
-	samdump_state->trusted_domains = NULL;
-
-	r2.netlogon.level = LIBNET_SAMDUMP_NETLOGON;
-	r2.netlogon.error_string = NULL;
-	r2.netlogon.delta_fn = libnet_samdump_fn;
-	r2.netlogon.fn_ctx = samdump_state;
-	nt_status = libnet_SamSync_netlogon(ctx, mem_ctx, &r2);
-	r->generic.error_string = r2.netlogon.error_string;
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
-
-	printf("Trusted domains, sids and secrets:\n");
-	for (t=samdump_state->trusted_domains; t; t=t->next) {
-		char *secret_name = talloc_asprintf(mem_ctx, "G$$%s", t->name);
-		for (s=samdump_state->secrets; s; s=s->next) {
-			if (StrCaseCmp(s->name, secret_name) == 0) {
-				char *secret_string;
-				if (convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, 
-							  s->secret.data, s->secret.length, 
-							  (void **)&secret_string) == -1) {
-					r->generic.error_string = talloc_asprintf(mem_ctx, 
-										  "Could not convert secret for domain %s to a string\n",
-										  t->name);
-					return NT_STATUS_INVALID_PARAMETER;
-				}
-				printf("%s\t%s\t%s\n", 
-				       t->name, dom_sid_string(mem_ctx, t->sid), 
-				       secret_string);
-			}
-		}
-	}
-	return nt_status;
-}
-
-
-
-NTSTATUS libnet_SamDump_generic(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_SamDump *r)
-{
-	NTSTATUS nt_status;
-	union libnet_SamDump r2;
-	r2.generic.level = LIBNET_SAMDUMP_NETLOGON;
-	r2.generic.error_string = NULL;
-	nt_status = libnet_SamDump(ctx, mem_ctx, &r2);
-	r->generic.error_string = r2.netlogon.error_string;
-
-	
-	return nt_status;
-}
-
-NTSTATUS libnet_SamDump(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_SamDump *r)
-{
-	switch (r->generic.level) {
-	case LIBNET_SAMDUMP_GENERIC:
-		return libnet_SamDump_generic(ctx, mem_ctx, r);
-	case LIBNET_SAMDUMP_NETLOGON:
-		return libnet_SamDump_netlogon(ctx, mem_ctx, r);
-	}
-
-	return NT_STATUS_INVALID_LEVEL;
-}
