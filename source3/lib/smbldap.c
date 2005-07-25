@@ -431,6 +431,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 		/* Believe it or not, but LDAP will deny a delete and
 		   an add at the same time if the values are the
 		   same... */
+		DEBUG(10,("smbldap_make_mod: attribute |%s| not changed.\n", attribute));
 		return;
 	}
 
@@ -446,6 +447,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 		 * in Novell NDS. In NDS you have to first remove attribute and then
 		 * you could add new value */
 		
+		DEBUG(10,("smbldap_make_mod: deleting attribute |%s| values |%s|\n", attribute, oldval));
 		smbldap_set_mod(mods, LDAP_MOD_DELETE, attribute, oldval);
 	}
 
@@ -454,6 +456,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 	   the old value, should it exist. */
 
 	if ((newval != NULL) && (strlen(newval) > 0)) {
+		DEBUG(10,("smbldap_make_mod: adding attribute |%s| value |%s|\n", attribute));
 		smbldap_set_mod(mods, LDAP_MOD_ADD, attribute, newval);
 	}
 }
