@@ -1,5 +1,8 @@
 2005-07-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ks_file.c (parse_certificate): return errno's not 1 in case of
+	error
+	
 	* ks_file.c (file_iter): make sure endpointer is NULL
 
 	* ks_mem.c (mem_iter): follow conversion and return NULL when we

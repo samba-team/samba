@@ -1,3 +1,7 @@
+2005-07-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gen_free.c (free_type): free bignum integers
+
 2005-07-23   Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: add PKCS12-OctetString
