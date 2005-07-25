@@ -1,9 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   Definitions of composite function monitoring messages.
-
-   Copyright (C) Rafal Szczesniak  2005
+   Copyright (C) Rafal Szczesniak 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,21 +18,19 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+
 /*
- * Monitor structure and message types definitions. Composite function monitoring
- * allows client application to be notified on function progress. This enables
- * eg. gui client to display progress bars, status messages, etc.
+ * Monitor messages sent from userinfo.c functions
  */
 
+struct msg_rpc_open_user {
+	uint32_t rid, access_mask;
+};
 
-#define  rpc_create_user        (0x00000001)        /* userman.h */
-#define  rpc_open_user          (0x00000002)        /* userinfo.h */
-#define  rpc_query_user         (0x00000003)        /* userinfo.h */
-#define  rpc_close_user         (0x00000004)        /* userinfo.h */
+struct msg_rpc_query_user {
+	uint16_t level;
+};
 
-
-struct monitor_msg {
-	uint32_t   type;
-	void       *data;
-	size_t     data_size;
+struct msg_rpc_close_user {
+	uint32_t rid;
 };
