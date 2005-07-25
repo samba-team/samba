@@ -1,5 +1,16 @@
 2005-07-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ks_file.c (file_iter): make sure endpointer is NULL
+
+	* ks_mem.c (mem_iter): follow conversion and return NULL when we
+	get to the end, not ENOENT.
+	
+	* Makefile.am: test_chain depends on hxtool
+	
+	* data: est certs that lasts 10 years
+	
+	* data/gen-req.sh: script to generate test certs
+	
 	* Makefile.am: Add regression tests.
 
 	* data: test certificate and keys
