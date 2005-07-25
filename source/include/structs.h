@@ -180,6 +180,7 @@ struct libnet_DelShare;
 struct libnet_Lookup;
 struct libnet_SamDump;
 struct libnet_SamSync;
+struct libnet_samsync_ldb;
 struct net_functable;
 struct net_context;
 

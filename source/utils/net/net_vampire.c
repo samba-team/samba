@@ -64,3 +64,43 @@ int net_samdump_help(struct net_context *ctx, int argc, const char **argv)
 	d_printf("Dumps the sam of the domain we are joined to.\n");
 	return 0;	
 }
+
+int net_samsync_ldb(struct net_context *ctx, int argc, const char **argv) 
+{
+	NTSTATUS status;
+	struct libnet_context *libnetctx;
+	struct libnet_samsync_ldb r;
+
+	libnetctx = libnet_context_init(NULL);
+	if (!libnetctx) {
+		return -1;	
+	}
+	libnetctx->cred = ctx->credentials;
+
+	r.level	       = LIBNET_SAMSYNC_LDB_GENERIC;
+	r.error_string = NULL;
+
+	status = libnet_samsync_ldb(libnetctx, ctx->mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("libnet_samsync_ldb returned %s: %s\n",
+			 nt_errstr(status),
+			 r.error_string));
+		return -1;
+	}
+
+	talloc_free(libnetctx);
+
+	return 0;
+}
+
+int net_samsync_ldb_usage(struct net_context *ctx, int argc, const char **argv)
+{
+	d_printf("net samsync_ldb\n");
+	return 0;	
+}
+
+int net_samsync_ldb_help(struct net_context *ctx, int argc, const char **argv)
+{
+	d_printf("Syncrosnise into the local ldb the SAM of a domain.\n");
+	return 0;	
+}
