@@ -294,7 +294,7 @@ find_extension_subject_alt_name(const Certificate *cert, int *i,
 
 
 static int
-check_key_usage(const Certificate *cert, unsigned flags)
+check_key_usage(const Certificate *cert, unsigned flags, int req_present)
 {
     const Extension *e;
     KeyUsage ku;
@@ -306,17 +306,27 @@ check_key_usage(const Certificate *cert, unsigned flags)
 	return 0;
 
     e = find_extension(cert, oid_id_x509_ce_keyUsage(), &i);
-    if (e == NULL)
-	return HX509_EXTENSION_NOT_FOUND;
+    if (e == NULL) {
+	if (req_present)
+	    return HX509_KU_CERT_MISSING;
+	return 0;
+    }
     
     ret = decode_KeyUsage(e->extnValue.data, e->extnValue.length, &ku, &size);
     if (ret)
 	return ret;
     ku_flags = KeyUsage2int(ku);
     if ((ku_flags & flags) != flags)
-	return 1;
+	return HX509_KU_CERT_MISSING;
     return 0;
 }
+
+int
+_hx509_check_key_usage(hx509_cert cert, unsigned flags, int req_present)
+{
+    return check_key_usage(_hx509_get_cert(cert), flags, req_present);
+}
+
 
 static int
 check_basic_constraints(const Certificate *cert, int ca, int depth)
@@ -438,7 +448,10 @@ find_parent(hx509_verify_ctx ctx,
 
     _hx509_query_clear(&q);
 
-    q.match = HX509_QUERY_FIND_ISSUER_CERT | HX509_QUERY_NO_MATCH_PATH;
+    q.match = 
+	HX509_QUERY_FIND_ISSUER_CERT | 
+	HX509_QUERY_NO_MATCH_PATH |
+	HX509_QUERY_KU_KEYCERTSIGN;
     q.subject = _hx509_get_cert(current);
     q.path = path;
 
@@ -986,7 +999,7 @@ hx509_verify_path(hx509_verify_ctx ctx, hx509_cert cert, hx509_certs chain)
 	 * keyUsage.keyCertSign and basicConstraints.cA bit.
 	 */
 	if (i != 0) {
-	    if (check_key_usage(c, 1 << 5)) { /* XXX make constants */
+	    if (check_key_usage(c, 1 << 5, TRUE)) { /* XXX make constants */
 		ret = ENOENT;
 		goto out;
 	    }
@@ -1196,7 +1209,7 @@ _hx509_query_match_cert(const hx509_query *q, hx509_cert cert)
 	&& _hx509_name_cmp(&c->tbsCertificate.subject, q->subject_name) != 0)
 	return 0;
 
-    if ((q->match & HX509_QUERY_MATCH_SUBJECT_KEY_ID)) {
+    if (q->match & HX509_QUERY_MATCH_SUBJECT_KEY_ID) {
 	SubjectKeyIdentifier si;
 	int ret;
 
@@ -1211,10 +1224,29 @@ _hx509_query_match_cert(const hx509_query *q, hx509_cert cert)
     }
     if ((q->match & HX509_QUERY_MATCH_ISSUER_ID))
 	return 0;
-    if ((q->match & HX509_QUERY_PRIVATE_KEY)
-	&& _hx509_cert_private_key(cert) == NULL)
+    if ((q->match & HX509_QUERY_PRIVATE_KEY) && 
+	_hx509_cert_private_key(cert) == NULL)
 	return 0;
 
+    {
+	unsigned ku = 0;
+	if (q->match & HX509_QUERY_KU_DIGITALSIGNATURE)
+	    ku |= (1 << 0);
+	if (q->match & HX509_QUERY_KU_NONREPUDIATION)
+	    ku |= (1 << 1);
+	if (q->match & HX509_QUERY_KU_ENCIPHERMENT)
+	    ku |= (1 << 2);
+	if (q->match & HX509_QUERY_KU_DATAENCIPHERMENT)
+	    ku |= (1 << 3);
+	if (q->match & HX509_QUERY_KU_KEYAGREEMENT)
+	    ku |= (1 << 4);
+	if (q->match & HX509_QUERY_KU_KEYCERTSIGN)
+	    ku |= (1 << 5);
+	if (q->match & HX509_QUERY_KU_CRLSIGN)
+	    ku |= (1 << 6);
+	if (ku && check_key_usage(c, ku, TRUE))
+	    return 0;
+    }
     if ((q->match & HX509_QUERY_ANCHOR))
 	return 0;
 
