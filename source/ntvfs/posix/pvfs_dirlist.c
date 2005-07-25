@@ -45,6 +45,11 @@ struct pvfs_dir {
 	uint32_t name_cache_index;
 };
 
+#define DIR_OFFSET_DOT    0
+#define DIR_OFFSET_DOTDOT 1
+#define DIR_OFFSET_BASE   2
+
+
 /*
   a special directory listing case where the pattern has no wildcard. We can just do a single stat()
   thus avoiding the more expensive directory scan
@@ -150,12 +155,29 @@ NTSTATUS pvfs_list_start(struct pvfs_state *pvfs, struct pvfs_filename *name,
 	return NT_STATUS_OK;
 }
 
+/*
+  add an entry to the local cache
+*/
+static void dcache_add(struct pvfs_dir *dir, const char *name)
+{
+	struct name_cache_entry *e;
+
+	dir->name_cache_index = (dir->name_cache_index+1) % NAME_CACHE_SIZE;
+	e = &dir->name_cache[dir->name_cache_index];
+
+	if (e->name) talloc_free(e->name);
+
+	e->name = talloc_strdup(dir->name_cache, name);
+	e->offset = dir->offset;
+}
+
 /* 
    return the next entry
 */
 const char *pvfs_list_next(struct pvfs_dir *dir, uint_t *ofs)
 {
 	struct dirent *de;
+	enum protocol_types protocol = dir->pvfs->tcon->smb_conn->negotiate.protocol;
 
 	/* non-wildcard searches are easy */
 	if (dir->no_wildcard) {
@@ -165,39 +187,58 @@ const char *pvfs_list_next(struct pvfs_dir *dir, uint_t *ofs)
 		return dir->single_name;
 	}
 
-	if (*ofs != dir->offset) {
-		seekdir(dir->dir, *ofs);
+	/* . and .. are handled separately as some unix systems will
+	   not return them first in a directory, but windows client
+	   may assume that these entries always appear first */
+	if (*ofs == DIR_OFFSET_DOT) {
+		(*ofs)++;
 		dir->offset = *ofs;
+		if (ms_fnmatch(dir->pattern, ".", protocol) == 0) {
+			dcache_add(dir, ".");
+			return ".";
+		}
 	}
+
+	if (*ofs == DIR_OFFSET_DOTDOT) {
+		(*ofs)++;
+		dir->offset = *ofs;
+		if (ms_fnmatch(dir->pattern, "..", protocol) == 0) {
+			dcache_add(dir, "..");
+			return "..";
+		}
+	}
+
+	if (*ofs == DIR_OFFSET_BASE) {
+		rewinddir(dir->dir);
+	} else if (*ofs != dir->offset) {
+		seekdir(dir->dir, (*ofs) - DIR_OFFSET_BASE);
+	}
+	dir->offset = *ofs;
 	
 	while ((de = readdir(dir->dir))) {
 		const char *dname = de->d_name;
-		struct name_cache_entry *e;
 
-		if (ms_fnmatch(dir->pattern, dname, 
-			       dir->pvfs->tcon->smb_conn->negotiate.protocol) != 0) {
+		if (strcmp(dname, ".") == 0 ||
+		    strcmp(dname, "..") == 0) {
+			continue;
+		}
+
+		if (ms_fnmatch(dir->pattern, dname, protocol) != 0) {
 			char *short_name = pvfs_short_name_component(dir->pvfs, dname);
 			if (short_name == NULL ||
-			    ms_fnmatch(dir->pattern, short_name, 
-				       dir->pvfs->tcon->smb_conn->negotiate.protocol) != 0) {
+			    ms_fnmatch(dir->pattern, short_name, protocol) != 0) {
 				talloc_free(short_name);
 				continue;
 			}
 			talloc_free(short_name);
 		}
 
-		dir->offset = telldir(dir->dir);
+		dir->offset = telldir(dir->dir) + DIR_OFFSET_BASE;
 		(*ofs) = dir->offset;
 
-		dir->name_cache_index = (dir->name_cache_index+1) % NAME_CACHE_SIZE;
-		e = &dir->name_cache[dir->name_cache_index];
+		dcache_add(dir, dname);
 
-		if (e->name) talloc_free(e->name);
-
-		e->name = talloc_strdup(dir->name_cache, de->d_name);
-		e->offset = dir->offset;
-
-		return e->name;
+		return dname;
 	}
 
 	dir->end_of_search = True;
@@ -228,6 +269,18 @@ NTSTATUS pvfs_list_seek(struct pvfs_dir *dir, const char *name, uint_t *ofs)
 	struct dirent *de;
 	int i;
 
+	if (strcmp(name, ".") == 0) {
+		dir->offset = DIR_OFFSET_DOTDOT;
+		*ofs = dir->offset;
+		return NT_STATUS_OK;
+	}
+
+	if (strcmp(name, "..") == 0) {
+		dir->offset = DIR_OFFSET_BASE;
+		*ofs = dir->offset;
+		return NT_STATUS_OK;
+	}
+
 	for (i=dir->name_cache_index;i>=0;i--) {
 		struct name_cache_entry *e = &dir->name_cache[i];
 		if (e->name && StrCaseCmp(name, e->name) == 0) {
@@ -247,7 +300,7 @@ NTSTATUS pvfs_list_seek(struct pvfs_dir *dir, const char *name, uint_t *ofs)
 
 	while ((de = readdir(dir->dir))) {
 		if (StrCaseCmp(name, de->d_name) == 0) {
-			dir->offset = telldir(dir->dir);
+			dir->offset = telldir(dir->dir) + DIR_OFFSET_BASE;
 			*ofs = dir->offset;
 			return NT_STATUS_OK;
 		}
