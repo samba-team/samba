@@ -125,6 +125,11 @@ void seekdir(DIR *dir, long ofs)
 	}
 }
 
+void rewinddir(DIR *dir)
+{
+	seekdir(dir, 0);
+}
+
 int closedir(DIR *dir)
 {
 	struct dir_buf *d = (struct dir_buf *)dir;
@@ -136,3 +141,8 @@ int closedir(DIR *dir)
 	return 0;
 }
 
+int dirfd(DIR *dir)
+{
+	struct dir_buf *d = (struct dir_buf *)dir;
+	return d->fd;
+}
