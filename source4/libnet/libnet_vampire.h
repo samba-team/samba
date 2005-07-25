@@ -43,3 +43,13 @@ struct libnet_SamDump {
 	char *error_string;
 };
 
+enum libnet_samsync_ldb_level {
+	LIBNET_SAMSYNC_LDB_GENERIC,
+	LIBNET_SAMSYNC_LDB_NETLOGON,
+};
+
+struct libnet_samsync_ldb {
+	enum libnet_samsync_ldb_level level;
+	char *error_string;
+};
+
