@@ -59,7 +59,7 @@ TESTS = test_chain
 
 do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g'
 
-test_chain: test_chain.in Makefile
+test_chain: test_chain.in Makefile hxtool
 	$(do_subst) < $(srcdir)/test_chain.in > test_chain.tmp
 	chmod +x test_chain.tmp
 	mv test_chain.tmp test_chain
