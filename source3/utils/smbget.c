@@ -101,8 +101,8 @@ void get_auth_data(const char *srv, const char *shr, char *wg, int wglen, char *
 
 	if(workgroup)strncpy(wg, workgroup, wglen-1);
 
-	wgtmp = strndup(wg, wglen); 
-	usertmp = strndup(un, unlen);
+	wgtmp = SMB_STRNDUP(wg, wglen); 
+	usertmp = SMB_STRNDUP(un, unlen);
 	if(!quiet)printf("Using workgroup %s, %s%s\n", wgtmp, *usertmp?"user ":"guest user", usertmp);
 	free(wgtmp); free(usertmp);
 }
@@ -230,7 +230,7 @@ void print_progress(const char *name, time_t start, time_t now, off_t start_pos,
 	if(columns) {
 		int required = strlen(name), available = columns - len - strlen("[] ");
 		if(required > available) asprintf(&filename, "...%s", name + required - available + 3);
-		else filename = strndup(name, available);
+		else filename = SMB_STRNDUP(name, available);
 	} else filename = SMB_STRDUP(name);
 
 	fprintf(stderr, "\r[%s] %s", filename, status);
