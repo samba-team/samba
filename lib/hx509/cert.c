@@ -188,6 +188,13 @@ hx509_verify_init_ctx(hx509_verify_ctx *ctx)
     return 0;
 }
 
+void
+hx509_verify_destroy_ctx(hx509_verify_ctx ctx)
+{
+    memset(ctx, 0, sizeof(*ctx));
+    free(ctx);
+}
+
 int
 hx509_verify_attach_anchors(hx509_verify_ctx ctx, hx509_certs set)
 {
