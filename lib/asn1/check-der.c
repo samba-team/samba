@@ -392,6 +392,40 @@ test_oid (void)
 }
 
 static int
+test_cmp_bit_string (void *a, void *b)
+{
+    return heim_bit_string_cmp((heim_bit_string *)a, (heim_bit_string *)b);
+}
+
+static int
+test_bit_string (void)
+{
+    struct test_case tests[] = {
+	{NULL, 1, "\x00"},
+    };
+    heim_bit_string values[] = {
+	{ 0, "" },
+    };
+    int i;
+    int ntests = sizeof(tests) / sizeof(*tests);
+
+    for (i = 0; i < ntests; ++i) {
+	tests[i].val = &values[i];
+	asprintf (&tests[i].name, "bit_string %d", i);
+	if (tests[i].name == NULL)
+	    errx(1, "malloc");
+    }
+
+    return generic_test (tests, ntests, sizeof(heim_bit_string),
+			 (generic_encode)der_put_bit_string,
+			 (generic_length)length_bit_string,
+			 (generic_decode)der_get_bit_string,
+			 (generic_free)free_bit_string,
+			 test_cmp_bit_string);
+}
+
+
+static int
 check_fail_unsigned(void)
 {
     struct test_case tests[] = {
@@ -555,6 +589,7 @@ main(int argc, char **argv)
     ret += test_general_string ();
     ret += test_generalized_time ();
     ret += test_oid ();
+    ret += test_bit_string();
     ret += check_fail_unsigned();
     ret += check_fail_integer();
     ret += check_fail_length();
