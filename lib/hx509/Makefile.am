@@ -49,4 +49,17 @@ hxtool_LDFLAGS = -pthread
 
 EXTRA_DIST = hx509_err.et
 
-CLEANFILES = hx509_err.c hx509_err.h
+CLEANFILES = hx509_err.c hx509_err.h $(TESTS)
+
+#
+# regression tests
+#
+
+TESTS = test_chain
+
+do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g'
+
+test_chain: test_chain.in Makefile
+	$(do_subst) < $(srcdir)/test_chain.in > test_chain.tmp
+	chmod +x test_chain.tmp
+	mv test_chain.tmp test_chain
