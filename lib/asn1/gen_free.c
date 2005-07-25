@@ -52,6 +52,10 @@ free_type (const char *name, const Type *t, int preserve)
 	fprintf (codefile, "free_%s(%s);\n", t->symbol->gen_name, name);
 	break;
     case TInteger:
+	if (t->range == NULL && t->members == NULL) {
+	    free_primitive ("heim_integer", name);
+	    break;
+	}
     case TBoolean:
     case TEnumerated :
     case TNull:
