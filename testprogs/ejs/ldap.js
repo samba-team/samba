@@ -30,7 +30,7 @@ function basic_tests(ldb, base_dn)
 
 	ldb.del("cn=ldaptestuser,cn=users," + base_dn);
 
-	ok = ldb.add("
+	var ok = ldb.add("
 dn: cn=ldaptestuser,cn=users," + base_dn + "
 objectClass: user
 objectClass: person
@@ -47,6 +47,8 @@ cn: LDAPtestUSER
 	assert(res[0].objectGUID != undefined);
 	assert(res[0].whenCreated != undefined);
 
+	ok = ldb.del(res[0].dn);
+	assert(ok);
 }
 
 function find_basedn(ldb)
