@@ -141,8 +141,11 @@ int closedir(DIR *dir)
 	return 0;
 }
 
+#ifndef dirfd
+/* darn, this is a macro on some systems. */
 int dirfd(DIR *dir)
 {
 	struct dir_buf *d = (struct dir_buf *)dir;
 	return d->fd;
 }
+#endif
