@@ -114,8 +114,10 @@ mem_iter(hx509_certs certs,
     unsigned long *iter = cursor;
     struct mem_data *mem = data;
 
-    if (*iter >= mem->len)
-	return ENOENT;
+    if (*iter >= mem->len) {
+	*cert = NULL;
+	return 0;
+    }
 
     *cert = hx509_cert_ref(mem->val[*iter]);
     (*iter)++;
