@@ -103,8 +103,11 @@ cms_verify_sd(int argc, char **argv)
     printf("signers:\n");
     hx509_certs_iter(signers, hx509_ci_print_names, stdout);
 
+    hx509_verify_destroy_ctx(ctx);
+
     hx509_certs_free(&anchors);
     hx509_certs_free(&signers);
+
 
     _hx509_unmap_file(p, sz);
 
@@ -398,9 +401,12 @@ pcert_verify(int argc, char **argv)
 
     ret = hx509_certs_iter(certs, verify_f, &v);
 
+    hx509_verify_destroy_ctx(ctx);
+
     hx509_certs_free(&anchors);
     hx509_certs_free(&certs);
     hx509_certs_free(&chain);
+
 
     return ret;
 }
