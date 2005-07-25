@@ -1,5 +1,9 @@
 2005-07-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* check-der.c: make it work for non c99 compilers too
+	
+	* der_cmp.c (heim_bit_string_cmp): try handle corner cases better
+	
 	* gen_free.c (free_type): free bignum integers
 
 2005-07-23   Love Hörnquist Åstrand  <lha@it.su.se>
