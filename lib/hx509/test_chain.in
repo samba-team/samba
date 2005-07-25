@@ -54,7 +54,6 @@ echo "cert -> root"
 	cert:FILE:$srcdir/data/test.crt \
 	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
-
 echo "sub-cert -> root"
 ./hxtool verify \
 	cert:FILE:$srcdir/data/sub-cert.crt \
@@ -66,21 +65,21 @@ echo "sub-cert -> sub-ca -> root"
 	cert:FILE:$srcdir/data/sub-cert.crt \
 	chain:FILE:$srcdir/data/sub-ca.crt \
 	chain:FILE:$srcdir/data/ca.crt \
-	anchor:FILE:$srcdir/data/ca.crt  || exit 1
-
-echo "sub-cert -> sub-ca -> root"
-./hxtool verify \
-	cert:FILE:$srcdir/data/sub-cert.crt \
-	chain:FILE:$srcdir/data/ca.crt \
-	chain:FILE:$srcdir/data/sub-ca.crt \
-	anchor:FILE:$srcdir/data/ca.crt  || exit 1
+	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
 echo "sub-cert -> sub-ca -> root"
 ./hxtool verify \
 	cert:FILE:$srcdir/data/sub-cert.crt \
 	chain:FILE:$srcdir/data/sub-ca.crt \
 	chain:FILE:$srcdir/data/ca.crt \
-	anchor:FILE:$srcdir/data/ca.crt  || exit 1
+	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
+
+echo "sub-cert -> sub-ca -> root"
+./hxtool verify \
+	cert:FILE:$srcdir/data/sub-cert.crt \
+	chain:FILE:$srcdir/data/ca.crt \
+	chain:FILE:$srcdir/data/sub-ca.crt \
+	anchor:FILE:$srcdir/data/ca.crt > /dev/null || exit 1
 
 echo "sub-cert -> sub-ca -> root"
 ./hxtool verify \
