@@ -340,7 +340,7 @@ verify_f(void *ctx, hx509_cert c)
     else
 	printf("path ok\n");
 
-    return 0;
+    return ret;
 }
 
 static int
@@ -396,13 +396,13 @@ pcert_verify(int argc, char **argv)
     v.ctx = ctx;
     v.chain = chain;
 
-    hx509_certs_iter(certs, verify_f, &v);
+    ret = hx509_certs_iter(certs, verify_f, &v);
 
     hx509_certs_free(&anchors);
     hx509_certs_free(&certs);
     hx509_certs_free(&chain);
 
-    return 0;
+    return ret;
 }
 
 static int
@@ -506,5 +506,5 @@ main(int argc, char **argv)
     if(ret == -1)
 	warnx ("unrecognized command: %s", argv[0]);
 
-    return 0;
+    return ret;
 }
