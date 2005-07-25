@@ -1,5 +1,13 @@
+2005-07-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* name.c (_hx509_name_ds_cmp): make sure all strings are not equal
+
 2005-07-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hxtool.c: return error
+	
+	* keyset.c: return errors from iterations
+	
 	* test_chain.in: clean up checks
 	
 	* ks_file.c (parse_certificate): return errno's not 1 in case of
@@ -12,7 +20,7 @@
 	
 	* Makefile.am: test_chain depends on hxtool
 	
-	* data: est certs that lasts 10 years
+	* data: test certs that lasts 10 years
 	
 	* data/gen-req.sh: script to generate test certs
 	
