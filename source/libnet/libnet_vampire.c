@@ -158,6 +158,8 @@ static NTSTATUS fix_delta(TALLOC_CTX *mem_ctx,
 				       error_string);
 		break;
 	}
+	default:
+		break;
 	}
 	return nt_status;
 }
@@ -395,6 +397,9 @@ static NTSTATUS libnet_samdump_fn(TALLOC_CTX *mem_ctx,
 								  delta);
 		break;
 	}
+	default:
+		/* Can't dump them all right now */
+		break;
 	}
 	return nt_status;
 }
