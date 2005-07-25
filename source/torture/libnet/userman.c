@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "libnet/composite.h"
+#include "libnet/userman.h"
 #include "libcli/composite/monitor.h"
 
 #define TEST_USERNAME  "libnetusermantest"
@@ -103,9 +104,12 @@ static BOOL test_useradd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 static void msg_handler(struct monitor_msg *m)
 {
+	struct msg_rpc_create_user *msg_create;
+
 	switch (m->type) {
 	case rpc_create_user:
-		printf("monitor_msg: user created (rid=%d)\n", m->data.rpc_create_user.rid);
+		msg_create = (struct msg_rpc_create_user*)m->data;
+		printf("monitor_msg: user created (rid=%d)\n", msg_create->rid);
 		break;
 	}
 }
