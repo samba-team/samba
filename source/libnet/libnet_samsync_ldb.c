@@ -254,6 +254,8 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 
         ADD_OR_DEL(string, "profilePath", profile_path.string);
 
+#undef ADD_OR_DEL
+
 	acb = user->acct_flags;
 	if (acb & (ACB_WSTRUST)) {
 		cn_name[cn_name_len - 1] = '\0';
@@ -296,6 +298,39 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS samsync_ldb_delete_user(TALLOC_CTX *mem_ctx,
+					struct samsync_ldb_state *state,
+					struct creds_CredentialState *creds,
+					enum netr_SamDatabaseID database,
+					struct netr_DELTA_ENUM *delta) 
+{
+	uint32_t rid = delta->delta_id_union.rid;
+	struct ldb_message **msgs;
+	int ret;
+	const char *attrs[] = { NULL };
+
+	/* search for the user, by rid */
+	ret = gendb_search(state->sam_ldb, mem_ctx, state->base_dn[database], &msgs, attrs,
+			   "(&(objectClass=user)(objectSid=%s))", 
+			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))); 
+
+	if (ret == -1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	} else if (ret == 0) {
+		return NT_STATUS_NO_SUCH_USER;
+	} else if (ret > 1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	ret = samdb_delete(state->sam_ldb, mem_ctx, msgs[0]->dn);
+	if (ret != 0) {
+		DEBUG(0,("Failed to delete user record %s: %s\n", msgs[0]->dn, ldb_errstring(state->sam_ldb)));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS samsync_ldb_handle_group(TALLOC_CTX *mem_ctx,
 					 struct samsync_ldb_state *state,
 					 struct creds_CredentialState *creds,
@@ -304,7 +339,238 @@ static NTSTATUS samsync_ldb_handle_group(TALLOC_CTX *mem_ctx,
 {
 	uint32_t rid = delta->delta_id_union.rid;
 	struct netr_DELTA_GROUP *group = delta->delta_union.group;
-	const char *groupname = group->group_name.string;
+	const char *container, *obj_class;
+	const char *cn_name;
+
+	struct ldb_message *msg;
+	struct ldb_message **msgs;
+	int ret;
+	BOOL add = False;
+	const char *attrs[] = { NULL };
+
+	msg = ldb_msg_new(mem_ctx);
+	if (msg == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* search for the group, by rid */
+	ret = gendb_search(state->sam_ldb, mem_ctx, state->base_dn[database], &msgs, attrs,
+			   "(&(objectClass=group)(objectSid=%s))", 
+			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))); 
+
+	if (ret == -1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	} else if (ret == 0) {
+		add = True;
+	} else if (ret > 1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	} else {
+		msg->dn = talloc_steal(mem_ctx, msgs[0]->dn);
+	}
+
+	cn_name   = group->group_name.string;
+
+#define ADD_OR_DEL(type, attrib, field) do {\
+	if (group->field) { \
+		samdb_msg_add_ ## type(state->sam_ldb, mem_ctx, msg, \
+				     attrib, group->field); \
+	} else if (!add) { \
+		samdb_msg_add_delete(state->sam_ldb, mem_ctx, msg,  \
+				     attrib); \
+	} \
+        } while (0);
+
+        ADD_OR_DEL(string, "samAccountName", group_name.string);
+
+	if (samdb_msg_add_dom_sid(state->sam_ldb, mem_ctx, msg, 
+				  "objectSid", dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))) {
+		return NT_STATUS_NO_MEMORY; 
+	}
+
+	ADD_OR_DEL(string, "description", description.string);
+
+#undef ADD_OR_DEL
+
+	container = "Users";
+	obj_class = "group";
+
+	if (add) {
+		samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, 
+				     "objectClass", obj_class);
+		msg->dn = talloc_asprintf(mem_ctx, "CN=%s,CN=%s,%s",
+					  cn_name, container, state->base_dn[database]);
+		if (!msg->dn) {
+			return NT_STATUS_NO_MEMORY;		
+		}
+
+		ret = samdb_add(state->sam_ldb, mem_ctx, msg);
+		if (ret != 0) {
+			DEBUG(0,("Failed to create group record %s: %s\n", msg->dn, ldb_errstring(state->sam_ldb)));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+	} else {
+		ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
+		if (ret != 0) {
+			DEBUG(0,("Failed to modify group record %s: %s\n", msg->dn, ldb_errstring(state->sam_ldb)));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS samsync_ldb_delete_group(TALLOC_CTX *mem_ctx,
+					struct samsync_ldb_state *state,
+					struct creds_CredentialState *creds,
+					enum netr_SamDatabaseID database,
+					struct netr_DELTA_ENUM *delta) 
+{
+	uint32_t rid = delta->delta_id_union.rid;
+	struct ldb_message **msgs;
+	int ret;
+	const char *attrs[] = { NULL };
+
+	/* search for the group, by rid */
+	ret = gendb_search(state->sam_ldb, mem_ctx, state->base_dn[database], &msgs, attrs,
+			   "(&(objectClass=group)(objectSid=%s))", 
+			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))); 
+
+	if (ret == -1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	} else if (ret == 0) {
+		return NT_STATUS_NO_SUCH_GROUP;
+	} else if (ret > 1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	ret = samdb_delete(state->sam_ldb, mem_ctx, msgs[0]->dn);
+	if (ret != 0) {
+		DEBUG(0,("Failed to delete group record %s: %s\n", msgs[0]->dn, ldb_errstring(state->sam_ldb)));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS samsync_ldb_handle_alias(TALLOC_CTX *mem_ctx,
+					 struct samsync_ldb_state *state,
+					 struct creds_CredentialState *creds,
+					 enum netr_SamDatabaseID database,
+					 struct netr_DELTA_ENUM *delta) 
+{
+	uint32_t rid = delta->delta_id_union.rid;
+	struct netr_DELTA_ALIAS *alias = delta->delta_union.alias;
+	const char *container, *obj_class;
+	const char *cn_name;
+
+	struct ldb_message *msg;
+	struct ldb_message **msgs;
+	int ret;
+	BOOL add = False;
+	const char *attrs[] = { NULL };
+
+	msg = ldb_msg_new(mem_ctx);
+	if (msg == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* search for the alias, by rid */
+	ret = gendb_search(state->sam_ldb, mem_ctx, state->base_dn[database], &msgs, attrs,
+			   "(&(objectClass=group)(objectSid=%s))", 
+			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))); 
+
+	if (ret == -1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	} else if (ret == 0) {
+		add = True;
+	} else if (ret > 1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	} else {
+		msg->dn = talloc_steal(mem_ctx, msgs[0]->dn);
+	}
+
+	cn_name   = alias->alias_name.string;
+
+#define ADD_OR_DEL(type, attrib, field) do {\
+	if (alias->field) { \
+		samdb_msg_add_ ## type(state->sam_ldb, mem_ctx, msg, \
+				     attrib, alias->field); \
+	} else if (!add) { \
+		samdb_msg_add_delete(state->sam_ldb, mem_ctx, msg,  \
+				     attrib); \
+	} \
+        } while (0);
+
+        ADD_OR_DEL(string, "samAccountName", alias_name.string);
+
+	if (samdb_msg_add_dom_sid(state->sam_ldb, mem_ctx, msg, 
+				  "objectSid", dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))) {
+		return NT_STATUS_NO_MEMORY; 
+	}
+
+	ADD_OR_DEL(string, "description", description.string);
+
+#undef ADD_OR_DEL
+
+	samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, "groupType", "0x80000004");
+
+	container = "Users";
+	obj_class = "group";
+
+	if (add) {
+		samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, 
+				     "objectClass", obj_class);
+		msg->dn = talloc_asprintf(mem_ctx, "CN=%s,CN=%s,%s",
+					  cn_name, container, state->base_dn[database]);
+		if (!msg->dn) {
+			return NT_STATUS_NO_MEMORY;		
+		}
+
+		ret = samdb_add(state->sam_ldb, mem_ctx, msg);
+		if (ret != 0) {
+			DEBUG(0,("Failed to create alias record %s: %s\n", msg->dn, ldb_errstring(state->sam_ldb)));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+	} else {
+		ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
+		if (ret != 0) {
+			DEBUG(0,("Failed to modify alias record %s: %s\n", msg->dn, ldb_errstring(state->sam_ldb)));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS samsync_ldb_delete_alias(TALLOC_CTX *mem_ctx,
+					struct samsync_ldb_state *state,
+					struct creds_CredentialState *creds,
+					enum netr_SamDatabaseID database,
+					struct netr_DELTA_ENUM *delta) 
+{
+	uint32_t rid = delta->delta_id_union.rid;
+	struct ldb_message **msgs;
+	int ret;
+	const char *attrs[] = { NULL };
+
+	/* search for the alias, by rid */
+	ret = gendb_search(state->sam_ldb, mem_ctx, state->base_dn[database], &msgs, attrs,
+			   "(&(objectClass=group)(objectSid=%s))", 
+			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))); 
+
+	if (ret == -1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	} else if (ret == 0) {
+		return NT_STATUS_NO_SUCH_ALIAS;
+	} else if (ret > 1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	ret = samdb_delete(state->sam_ldb, mem_ctx, msgs[0]->dn);
+	if (ret != 0) {
+		DEBUG(0,("Failed to delete alias record %s: %s\n", msgs[0]->dn, ldb_errstring(state->sam_ldb)));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -339,6 +605,15 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 						    delta);
 		break;
 	}
+	case NETR_DELTA_DELETE_USER:
+	{
+		nt_status = samsync_ldb_delete_user(mem_ctx, 
+						    state,
+						    creds,
+						    database,
+						    delta);
+		break;
+	}
 	case NETR_DELTA_GROUP:
 	{
 		nt_status = samsync_ldb_handle_group(mem_ctx, 
@@ -346,6 +621,33 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 						     creds,
 						     database,
 						     delta);
+		break;
+	}
+	case NETR_DELTA_DELETE_GROUP:
+	{
+		nt_status = samsync_ldb_delete_group(mem_ctx, 
+						    state,
+						    creds,
+						    database,
+						    delta);
+		break;
+	}
+	case NETR_DELTA_ALIAS:
+	{
+		nt_status = samsync_ldb_handle_alias(mem_ctx, 
+						     state,
+						     creds,
+						     database,
+						     delta);
+		break;
+	}
+	case NETR_DELTA_DELETE_ALIAS:
+	{
+		nt_status = samsync_ldb_delete_alias(mem_ctx, 
+						    state,
+						    creds,
+						    database,
+						    delta);
 		break;
 	}
 	default:
