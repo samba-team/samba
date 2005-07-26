@@ -799,6 +799,8 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(result.count, 2);
 
+	result.count = 0;
+
 	printf("Changing attributes and deleting\n");
 	smbcli_open(cli->tree, BASEDIR "\\T003-03.txt.2", O_CREAT|O_RDWR, DENY_NONE);
 	smbcli_open(cli->tree, BASEDIR "\\T013-13.txt.2", O_CREAT|O_RDWR, DENY_NONE);
@@ -824,7 +826,7 @@ static BOOL test_modify_search(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_search_next(cli->tree, mem_ctx,
 				     &io2, &result, multiple_search_callback);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(result.count, 22);
+	CHECK_VALUE(result.count, 20);
 
 	ret &= check_result(&result, "t009-9.txt", True, FILE_ATTRIBUTE_ARCHIVE);
 	ret &= check_result(&result, "t014-14.txt", False, 0);
