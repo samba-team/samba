@@ -180,7 +180,7 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 	} else if (ret > 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else {
-		msg->dn = talloc_steal(mem_ctx, msgs[0]->dn);
+		msg->dn = talloc_steal(msg, msgs[0]->dn);
 	}
 
 
@@ -216,7 +216,9 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 	ADD_OR_DEL(uint64, "lastLogon", last_logon);
 	ADD_OR_DEL(uint64, "lastLogoff", last_logoff);
 
-	/* TODO: Logon hours */
+	if (samdb_msg_add_logon_hours(state->sam_ldb, mem_ctx, msg, "logonHours", &user->logon_hours) != 0) { 
+		return NT_STATUS_NO_MEMORY; 
+	}
 
 	ADD_OR_DEL(uint, "badPwdCount", bad_password_count);
 	ADD_OR_DEL(uint, "logonCount", logon_count);
@@ -365,7 +367,7 @@ static NTSTATUS samsync_ldb_handle_group(TALLOC_CTX *mem_ctx,
 	} else if (ret > 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else {
-		msg->dn = talloc_steal(mem_ctx, msgs[0]->dn);
+		msg->dn = talloc_steal(msg, msgs[0]->dn);
 	}
 
 	cn_name   = group->group_name.string;
@@ -442,10 +444,74 @@ static NTSTATUS samsync_ldb_delete_group(TALLOC_CTX *mem_ctx,
 	} else if (ret > 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-
+	
 	ret = samdb_delete(state->sam_ldb, mem_ctx, msgs[0]->dn);
 	if (ret != 0) {
 		DEBUG(0,("Failed to delete group record %s: %s\n", msgs[0]->dn, ldb_errstring(state->sam_ldb)));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS samsync_ldb_handle_group_member(TALLOC_CTX *mem_ctx,
+						struct samsync_ldb_state *state,
+						struct creds_CredentialState *creds,
+						enum netr_SamDatabaseID database,
+						struct netr_DELTA_ENUM *delta) 
+{
+	uint32_t rid = delta->delta_id_union.rid;
+	struct netr_DELTA_GROUP_MEMBER *group_member = delta->delta_union.group_member;
+	struct ldb_message *msg;
+	struct ldb_message **msgs;
+	int ret;
+	const char *attrs[] = { NULL };
+	int i;
+
+	msg = ldb_msg_new(mem_ctx);
+	if (msg == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* search for the group, by rid */
+	ret = gendb_search(state->sam_ldb, mem_ctx, state->base_dn[database], &msgs, attrs,
+			   "(&(objectClass=group)(objectSid=%s))", 
+			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))); 
+
+	if (ret == -1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	} else if (ret == 0) {
+		return NT_STATUS_NO_SUCH_GROUP;
+	} else if (ret > 1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	} else {
+		msg->dn = talloc_steal(msg, msgs[0]->dn);
+	}
+	
+	talloc_free(msgs);
+
+	for (i=0; i<group_member->num_rids; i++) {
+		/* search for the group, by rid */
+		ret = gendb_search(state->sam_ldb, mem_ctx, state->base_dn[database], &msgs, attrs,
+				   "(&(objectClass=user)(objectSid=%s))", 
+				   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], group_member->rids[i]))); 
+
+		if (ret == -1) {
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		} else if (ret == 0) {
+			return NT_STATUS_NO_SUCH_USER;
+		} else if (ret > 1) {
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		} else {
+			samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, "member", msgs[0]->dn);
+		}
+	
+		talloc_free(msgs);
+	}
+
+	ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
+	if (ret != 0) {
+		DEBUG(0,("Failed to modify group record %s: %s\n", msg->dn, ldb_errstring(state->sam_ldb)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -512,7 +578,7 @@ static NTSTATUS samsync_ldb_handle_alias(TALLOC_CTX *mem_ctx,
 
 #undef ADD_OR_DEL
 
-	samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, "groupType", "0x80000004");
+	samdb_msg_add_uint(state->sam_ldb, mem_ctx, msg, "groupType", 0x80000004);
 
 	container = "Users";
 	obj_class = "group";
@@ -569,6 +635,163 @@ static NTSTATUS samsync_ldb_delete_alias(TALLOC_CTX *mem_ctx,
 	ret = samdb_delete(state->sam_ldb, mem_ctx, msgs[0]->dn);
 	if (ret != 0) {
 		DEBUG(0,("Failed to delete alias record %s: %s\n", msgs[0]->dn, ldb_errstring(state->sam_ldb)));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS samsync_ldb_handle_alias_member(TALLOC_CTX *mem_ctx,
+						struct samsync_ldb_state *state,
+						struct creds_CredentialState *creds,
+						enum netr_SamDatabaseID database,
+						struct netr_DELTA_ENUM *delta) 
+{
+	uint32_t rid = delta->delta_id_union.rid;
+	struct netr_DELTA_ALIAS_MEMBER *alias_member = delta->delta_union.alias_member;
+	struct ldb_message *msg;
+	struct ldb_message **msgs;
+	int ret;
+	const char *attrs[] = { NULL };
+	int i;
+
+	msg = ldb_msg_new(mem_ctx);
+	if (msg == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* search for the alias, by rid */
+	ret = gendb_search(state->sam_ldb, mem_ctx, state->base_dn[database], &msgs, attrs,
+			   "(&(objectClass=group)(objectSid=%s))", 
+			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))); 
+
+	if (ret == -1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	} else if (ret == 0) {
+		return NT_STATUS_NO_SUCH_GROUP;
+	} else if (ret > 1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	} else {
+		msg->dn = talloc_steal(msg, msgs[0]->dn);
+	}
+	
+	talloc_free(msgs);
+
+	for (i=0; i<alias_member->sids.num_sids; i++) {
+		/* search for the group, by rid */
+		ret = gendb_search(state->sam_ldb, mem_ctx, state->base_dn[database], &msgs, attrs,
+				   "(objectSid=%s)", 
+				   ldap_encode_ndr_dom_sid(mem_ctx, alias_member->sids.sids[i].sid)); 
+
+		if (ret == -1) {
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		} else if (ret == 0) {
+			return NT_STATUS_NO_SUCH_USER;
+		} else if (ret > 1) {
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		} else {
+			samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, "member", msgs[0]->dn);
+		}
+	
+		talloc_free(msgs);
+	}
+
+	ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
+	if (ret != 0) {
+		DEBUG(0,("Failed to modify group record %s: %s\n", msg->dn, ldb_errstring(state->sam_ldb)));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS samsync_ldb_handle_account(TALLOC_CTX *mem_ctx,
+					struct samsync_ldb_state *state,
+					struct creds_CredentialState *creds,
+					enum netr_SamDatabaseID database,
+					struct netr_DELTA_ENUM *delta) 
+{
+	struct dom_sid *sid = delta->delta_id_union.sid;
+	struct netr_DELTA_ACCOUNT *account = delta->delta_union.account;
+
+	struct ldb_message *msg;
+	struct ldb_message **msgs;
+	int ret;
+	const char *attrs[] = { NULL };
+	int i;
+
+	msg = ldb_msg_new(mem_ctx);
+	if (msg == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* search for the account, by sid */
+	ret = gendb_search(state->sam_ldb, mem_ctx, state->base_dn[database], &msgs, attrs,
+			   "(objectSid=%s)", ldap_encode_ndr_dom_sid(mem_ctx, sid)); 
+
+	if (ret == -1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	} else if (ret == 0) {
+		return NT_STATUS_NO_SUCH_USER;
+	} else if (ret > 1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	} else {
+		msg->dn = talloc_steal(msg, msgs[0]->dn);
+	}
+
+	for (i=0; i< account->privilege_entries; i++) {
+		samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, "privilage",
+				     account->privilege_name[i].string);
+	}
+
+	ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
+	if (ret != 0) {
+		DEBUG(0,("Failed to modify privilage record %s\n", msg->dn));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS samsync_ldb_delete_account(TALLOC_CTX *mem_ctx,
+					struct samsync_ldb_state *state,
+					struct creds_CredentialState *creds,
+					enum netr_SamDatabaseID database,
+					struct netr_DELTA_ENUM *delta) 
+{
+	struct dom_sid *sid = delta->delta_id_union.sid;
+
+	struct ldb_message *msg;
+	struct ldb_message **msgs;
+	int ret;
+	const char *attrs[] = { NULL };
+
+	msg = ldb_msg_new(mem_ctx);
+	if (msg == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* search for the account, by sid */
+	ret = gendb_search(state->sam_ldb, mem_ctx, state->base_dn[database], &msgs, attrs,
+			   "(objectSid=%s)", 
+			   ldap_encode_ndr_dom_sid(mem_ctx, sid)); 
+
+	if (ret == -1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	} else if (ret == 0) {
+		return NT_STATUS_NO_SUCH_USER;
+	} else if (ret > 1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	} else {
+		msg->dn = talloc_steal(msg, msgs[0]->dn);
+	}
+
+	samdb_msg_add_delete(state->sam_ldb, mem_ctx, msg,  
+			     "privilage"); 
+
+	ret = samdb_replace(state->sam_ldb, mem_ctx, msg);
+	if (ret != 0) {
+		DEBUG(0,("Failed to modify privilage record %s\n", msg->dn));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -632,6 +855,15 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 						    delta);
 		break;
 	}
+	case NETR_DELTA_GROUP_MEMBER:
+	{
+		nt_status = samsync_ldb_handle_group_member(mem_ctx, 
+							    state,
+							    creds,
+							    database,
+							    delta);
+		break;
+	}
 	case NETR_DELTA_ALIAS:
 	{
 		nt_status = samsync_ldb_handle_alias(mem_ctx, 
@@ -644,6 +876,33 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 	case NETR_DELTA_DELETE_ALIAS:
 	{
 		nt_status = samsync_ldb_delete_alias(mem_ctx, 
+						    state,
+						    creds,
+						    database,
+						    delta);
+		break;
+	}
+	case NETR_DELTA_ALIAS_MEMBER:
+	{
+		nt_status = samsync_ldb_handle_alias_member(mem_ctx, 
+							    state,
+							    creds,
+							    database,
+							    delta);
+		break;
+	}
+	case NETR_DELTA_ACCOUNT:
+	{
+		nt_status = samsync_ldb_handle_account(mem_ctx, 
+						     state,
+						     creds,
+						     database,
+						     delta);
+		break;
+	}
+	case NETR_DELTA_DELETE_ACCOUNT:
+	{
+		nt_status = samsync_ldb_delete_account(mem_ctx, 
 						    state,
 						    creds,
 						    database,
