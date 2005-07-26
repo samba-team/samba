@@ -3,7 +3,7 @@ Section: net
 Priority: optional
 Maintainer: Jelmer Vernooij <jelmer@samba.org>
 Standards-Version: 3.6.1.0
-Build-Depends: build-essential, libgtk2.0-dev, libgconf2-dev, libldap-dev, debhelper (>> 4.0.0), libparse-yapp-perl
+Build-Depends: build-essential, libgtk2.0-dev, libgconf2-dev, libldap-dev, debhelper (>> 4.0.0), libparse-yapp-perl, perl
 
 Package: samba4
 Architecture: all
