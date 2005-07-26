@@ -24,7 +24,7 @@ configure:
 		--with-syslog \
 		--with-readline \
 		--with-ldap 
-	cd $(SOURCEPATH)/build/pidl && perl Makefile.PL PREFIX=/usr
+	cd $(SOURCEPATH)/build/pidl && perl Makefile.PL verbose INSTALLDIRS=vendor PREFIX=/usr
 	touch $@
 
 build: configure
