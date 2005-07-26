@@ -36,7 +36,7 @@ static BOOL try_failed_login(struct smbcli_state *cli)
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
 	setup.in.workgroup = lp_workgroup();
 
-	setup.in.credentials = cli_credentials_init(NULL);
+	setup.in.credentials = cli_credentials_init(session);
 	cli_credentials_set_conf(setup.in.credentials);
 	cli_credentials_set_domain(setup.in.credentials, "INVALID-DOMAIN", CRED_SPECIFIED);
 	cli_credentials_set_username(setup.in.credentials, "INVALID-USERNAME", CRED_SPECIFIED);
@@ -56,15 +56,17 @@ BOOL torture_sec_leak(void)
 {
 	struct smbcli_state *cli;
 	time_t t1 = time(NULL);
+	int timelimit = lp_parm_int(-1, "torture", "timelimit", 20);
 
 	if (!torture_open_connection(&cli)) {
 		return False;
 	}
 
-	while (time(NULL) < t1+20) {
+	while (time(NULL) < t1+timelimit) {
 		if (!try_failed_login(cli)) {
 			return False;
 		}
+		talloc_report(NULL, stdout);
 	}
 
 	return True;
