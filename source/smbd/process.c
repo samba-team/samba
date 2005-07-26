@@ -29,6 +29,7 @@ struct timeval smb_last_time;
 
 static char *InBuffer = NULL;
 static char *OutBuffer = NULL;
+static char *current_inbuf = NULL;
 
 /* 
  * Size of data we can send to client. Set
@@ -245,12 +246,12 @@ struct pending_message_list *get_open_deferred_message(uint16 mid)
 
 /****************************************************************************
  Function to push a sharing violation open smb message onto a linked list of local smb messages ready
- for processing.
+ for processing. We must use current_inbuf here not Inbuf in case we're in a chained message set.
 ****************************************************************************/
 
 BOOL push_sharing_violation_open_smb_message(struct timeval *ptv, char *private_data, size_t priv_len)
 {
-	uint16 mid = SVAL(InBuffer,smb_mid);
+	uint16 mid = SVAL(current_inbuf,smb_mid);
 	struct timeval tv;
 	SMB_BIG_INT tdif;
 
@@ -270,11 +271,11 @@ BOOL push_sharing_violation_open_smb_message(struct timeval *ptv, char *private_
 	tv.tv_usec = tdif % 1000000;
 	
 	DEBUG(10,("push_sharing_violation_open_smb_message: pushing message len %u mid %u\
- timeout time [%u.%06u]\n", (unsigned int) smb_len(InBuffer)+4, (unsigned int)mid,
+ timeout time [%u.%06u]\n", (unsigned int) smb_len(current_inbuf)+4, (unsigned int)mid,
 		(unsigned int)tv.tv_sec, (unsigned int)tv.tv_usec));
 
-	return push_queued_message(SHARE_VIOLATION_QUEUE, InBuffer,
-			smb_len(InBuffer)+4, &tv, private_data, priv_len);
+	return push_queued_message(SHARE_VIOLATION_QUEUE, current_inbuf,
+			smb_len(current_inbuf)+4, &tv, private_data, priv_len);
 }
 
 /****************************************************************************
@@ -986,6 +987,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 				!check_access(smbd_server_fd(), lp_hostsallow(-1), lp_hostsdeny(-1))))
 			return(ERROR_DOS(ERRSRV,ERRaccess));
 
+		current_inbuf = inbuf; /* In case we need to defer this message in open... */
 		outsize = smb_messages[type].fn(conn, inbuf,outbuf,size,bufsize);
 	}
 
