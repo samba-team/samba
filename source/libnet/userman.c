@@ -29,6 +29,7 @@
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "libnet/composite.h"
 #include "libnet/userman.h"
+#include "libnet/userinfo.h"
 
 /*
  * Composite user add function
@@ -303,16 +304,38 @@ static void userdel_handler(struct rpc_request *req)
 	struct composite_context *c = req->async.private;
 	struct userdel_state *s = talloc_get_type(c->private, struct userdel_state);
 	struct monitor_msg msg;
+	struct msg_rpc_lookup_name *msg_lookup;
+	struct msg_rpc_open_user *msg_open;
 	
 	switch (s->stage) {
 	case USERDEL_LOOKUP:
 		c->status = userdel_lookup(c, s);
+
+		msg.type = rpc_lookup_name;
+		msg_lookup = talloc(s, struct msg_rpc_lookup_name);
+		msg_lookup->rid = s->lookupname.out.rids.ids;
+		msg_lookup->count = s->lookupname.out.rids.count;
+		msg.data = (void*)msg_lookup;
+		msg.data_size = sizeof(*msg_lookup);
 		break;
+
 	case USERDEL_OPEN:
 		c->status = userdel_open(c, s);
+
+		msg.type = rpc_open_user;
+		msg_open = talloc(s, struct msg_rpc_open_user);
+		msg_open->rid = s->openuser.in.rid;
+		msg_open->access_mask = s->openuser.in.rid;
+		msg.data = (void*)msg_open;
+		msg.data_size = sizeof(*msg_open);
 		break;
+
 	case USERDEL_DELETE:
 		c->status = userdel_delete(c, s);
+		
+		msg.type = rpc_delete_user;
+		msg.data = NULL;
+		msg.data_size = 0;
 		break;
 	}
 
