@@ -131,6 +131,7 @@ BOOL torture_disconnect(void)
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 	int i;
+	extern int torture_numops;
 
 	mem_ctx = talloc_init("torture_raw_mux");
 
@@ -142,7 +143,7 @@ BOOL torture_disconnect(void)
 		return False;
 	}
 
-	for (i=0;i<100;i++) {
+	for (i=0;i<torture_numops;i++) {
 		ret &= test_disconnect_lock(cli, mem_ctx);
 		if (!torture_open_connection(&cli)) {
 			return False;
