@@ -256,7 +256,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 				    GSS_C_NT_HOSTBASED_SERVICE,
 				    &gensec_gssapi_state->server_name);
 	if (maj_stat) {
-		DEBUG(1, ("GSS Import name of %s failed: %s\n",
+		DEBUG(2, ("GSS Import name of %s failed: %s\n",
 			  (char *)name_token.value,
 			  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
 		return NT_STATUS_INVALID_PARAMETER;
@@ -271,7 +271,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 				    GSS_C_NT_USER_NAME,
 				    &gensec_gssapi_state->client_name);
 	if (maj_stat) {
-		DEBUG(1, ("GSS Import name of %s failed: %s\n",
+		DEBUG(2, ("GSS Import name of %s failed: %s\n",
 			  (char *)name_token.value,
 			  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
 		return NT_STATUS_UNSUCCESSFUL;
