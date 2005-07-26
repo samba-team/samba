@@ -17,6 +17,10 @@ id-pkrkeydata  OBJECT IDENTIFIER  ::= { id-pkinit 3 }
 id-pkekuoid    OBJECT IDENTIFIER  ::= { id-pkinit 4 }
 id-pkkdcekuoid OBJECT IDENTIFIER  ::= { id-pkinit 5 }
 
+id-pksan	OBJECT IDENTIFIER ::=
+  { iso(1) org(3) dod(6) internet(1) security(5) kerberosv5(2)
+    x509-sanan(2) }
+
 pa-pk-as-req INTEGER ::=                  16
 pa-pk-as-rep INTEGER ::=                  17
 
@@ -35,9 +39,17 @@ TrustedCA ::= SEQUENCE {
 	...
 }
 
+ExternalPrincipalIdentifier ::= SEQUENCE {
+	subjectName		[0] IMPLICIT OCTET STRING OPTIONAL,
+	issuerAndSerialNumber	[1] IMPLICIT OCTET STRING OPTIONAL,
+	subjectKeyIdentifier	[2] IMPLICIT OCTET STRING OPTIONAL,
+	...
+}
+
 PA-PK-AS-REQ ::= SEQUENCE {
-	signedAuthPack          [0] IMPLICIT OCTET STRING,
-	trustedCertifiers       [1] SEQUENCE OF TrustedCA OPTIONAL,
+        signedAuthPack          [0] IMPLICIT OCTET STRING,
+        trustedCertifiers       [1] SEQUENCE OF 
+			ExternalPrincipalIdentifier OPTIONAL,
 	kdcPkId                 [2] IMPLICIT OCTET STRING OPTIONAL,
 	...
 }
@@ -58,15 +70,15 @@ AuthPack ::= SEQUENCE {
 	...
 }
 
-TD-TRUSTED-CERTIFIERS ::= SEQUENCE OF TrustedCA
-TD-INVALID-CERTIFICATES ::= SEQUENCE OF OCTET STRING
+TD-TRUSTED-CERTIFIERS ::= SEQUENCE OF ExternalPrincipalIdentifier
+TD-INVALID-CERTIFICATES ::= SEQUENCE OF ExternalPrincipalIdentifier
 
 KRB5PrincipalName ::= SEQUENCE {
 	realm                   [0] Realm,
 	principalName           [1] PrincipalName
 }
 
-AD-INITIAL-VERIFIED-CAS ::= SEQUENCE OF TrustedCA
+AD-INITIAL-VERIFIED-CAS ::= SEQUENCE OF ExternalPrincipalIdentifier
 
 
 DHRepInfo ::= SEQUENCE {
@@ -89,7 +101,7 @@ KDCDHKeyInfo ::= SEQUENCE {
 
 ReplyKeyPack ::= SEQUENCE {
 	replyKey                [0] EncryptionKey,
-	nonce                   [1] INTEGER (0..4294967295),
+	asChecksum		[1] Checksum,
 	...
 }
 

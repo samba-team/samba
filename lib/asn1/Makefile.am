@@ -228,40 +228,39 @@ gen_files_rfc2459 =					\
 	asn1_RSAPublicKey.x				\
 	asn1_DigestInfo.x
 
-
-gen_files_pkinit =				\
-	asn1_id_pkinit.x			\
-	asn1_id_pkauthdata.x			\
-	asn1_id_pkdhkeydata.x			\
-	asn1_id_pkrkeydata.x			\
-	asn1_id_pkekuoid.x			\
-	asn1_id_pkkdcekuoid.x			\
-	asn1_DHNonce.x				\
-	asn1_TrustedCA.x			\
-	asn1_PA_PK_AS_REQ.x			\
-	asn1_PKAuthenticator.x			\
-	asn1_AuthPack.x				\
-	asn1_TD_TRUSTED_CERTIFIERS.x		\
-	asn1_TD_INVALID_CERTIFICATES.x		\
-	asn1_KRB5PrincipalName.x		\
-	asn1_AD_INITIAL_VERIFIED_CAS.x		\
-	asn1_DHRepInfo.x			\
-	asn1_PA_PK_AS_REP.x			\
-	asn1_KDCDHKeyInfo.x			\
-	asn1_ReplyKeyPack.x			\
-	asn1_TD_DH_PARAMETERS.x			\
-	asn1_PKAuthenticator_Win2k.x		\
-	asn1_AuthPack_Win2k.x			\
-	asn1_PA_PK_AS_REP_Win2k.x		\
-	asn1_KDCDHKeyInfo_Win2k.x		\
-	asn1_TrustedCA_19.x			\
-	asn1_PA_PK_AS_REQ_19.x			\
-	asn1_PA_PK_AS_REQ_Win2k.x		\
-	asn1_PKAuthenticator_19.x		\
-	asn1_AuthPack_19.x			\
-	asn1_PA_PK_AS_REP_19.x			\
+gen_files_pkinit =					\
+	asn1_id_pkinit.x				\
+	asn1_id_pkauthdata.x				\
+	asn1_id_pkdhkeydata.x				\
+	asn1_id_pkrkeydata.x				\
+	asn1_id_pkekuoid.x				\
+	asn1_id_pkkdcekuoid.x				\
+	asn1_DHNonce.x					\
+	asn1_TrustedCA.x				\
+	asn1_ExternalPrincipalIdentifier.x		\
+	asn1_PA_PK_AS_REQ.x				\
+	asn1_PKAuthenticator.x				\
+	asn1_AuthPack.x					\
+	asn1_TD_TRUSTED_CERTIFIERS.x			\
+	asn1_TD_INVALID_CERTIFICATES.x			\
+	asn1_KRB5PrincipalName.x			\
+	asn1_AD_INITIAL_VERIFIED_CAS.x			\
+	asn1_DHRepInfo.x				\
+	asn1_PA_PK_AS_REP.x				\
+	asn1_KDCDHKeyInfo.x				\
+	asn1_ReplyKeyPack.x				\
+	asn1_TD_DH_PARAMETERS.x				\
+	asn1_PKAuthenticator_Win2k.x			\
+	asn1_AuthPack_Win2k.x				\
+	asn1_PA_PK_AS_REP_Win2k.x			\
+	asn1_KDCDHKeyInfo_Win2k.x			\
+	asn1_TrustedCA_19.x				\
+	asn1_PA_PK_AS_REQ_19.x				\
+	asn1_PA_PK_AS_REQ_Win2k.x			\
+	asn1_PKAuthenticator_19.x			\
+	asn1_AuthPack_19.x				\
+	asn1_PA_PK_AS_REP_19.x				\
 	asn1_ReplyKeyPack_19.x
-
 
 gen_files_pkcs12 =					\
 	asn1_id_pkcs_12.x				\
