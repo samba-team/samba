@@ -3370,6 +3370,7 @@ struct ldap_search_state {
 	struct smbldap_state *connection;
 
 	uint16 acct_flags;
+	uint16 group_type;
 
 	const char *base;
 	int scope;
@@ -3671,10 +3672,25 @@ static BOOL ldapgroup2displayentry(struct ldap_search_state *state,
 {
 	char **vals;
 	DOM_SID sid;
+	uint16 group_type;
 
 	result->account_name = "";
 	result->fullname = "";
 	result->description = "";
+
+
+	vals = ldap_get_values(ld, entry, "sambaGroupType");
+	if ((vals == NULL) || (vals[0] == NULL)) {
+		DEBUG(5, ("\"sambaGroupType\" not found\n"));
+		return False;
+	}
+
+	group_type = atoi(vals[0]);
+
+	if ((state->group_type != 0) &&
+	    ((state->group_type != group_type))) {
+		return False;
+	}
 
 	vals = ldap_get_values(ld, entry, "cn");
 	if ((vals == NULL) || (vals[0] == NULL)) {
@@ -3722,12 +3738,31 @@ static BOOL ldapgroup2displayentry(struct ldap_search_state *state,
 		return False;
 	}
 
-	if (!sid_peek_check_rid(get_global_sam_sid(), &sid, &result->rid)) {
-		DEBUG(0, ("%s is not our domain\n", vals[0]));
-		return False;
-	}
 	ldap_value_free(vals);
 
+	switch (group_type) {
+		case SID_NAME_DOM_GRP:
+		case SID_NAME_ALIAS:
+
+			if (!sid_peek_check_rid(get_global_sam_sid(), &sid, &result->rid)) {
+				DEBUG(0, ("%s is not in our domain\n", sid_string_static(&sid)));
+				return False;
+			}
+			break;
+	
+		case SID_NAME_WKN_GRP:
+
+			if (!sid_check_is_in_builtin(&sid)) {
+				DEBUG(0, ("%s is not in builtin sid\n", sid_string_static(&sid)));
+				return False;
+			}
+			break;
+
+		default:
+			DEBUG(0,("unkown group type: %d\n", group_type));
+			return False;
+	}
+	
 	return True;
 }
 
@@ -3753,10 +3788,11 @@ static BOOL ldapsam_search_grouptype(struct pdb_methods *methods,
 					"(&(objectclass=sambaGroupMapping)"
 					"(sambaGroupType=%d))", type);
 	state->attrs = talloc_attrs(search->mem_ctx, "cn", "sambaSid",
-				    "displayName", "description", NULL);
+				    "displayName", "description", "sambaGroupType", NULL);
 	state->attrsonly = 0;
 	state->pagedresults_cookie = NULL;
 	state->entries = NULL;
+	state->group_type = type;
 	state->ldap2displayentry = ldapgroup2displayentry;
 
 	if ((state->filter == NULL) || (state->attrs == NULL)) {
