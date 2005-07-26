@@ -26,3 +26,9 @@
 struct msg_rpc_create_user {
 	uint32_t rid;
 };
+
+
+struct msg_rpc_lookup_name {
+	uint32_t *rid;
+	uint32_t count;
+};
