@@ -31,6 +31,8 @@
 #define  rpc_open_user          (0x00000002)        /* userinfo.h */
 #define  rpc_query_user         (0x00000003)        /* userinfo.h */
 #define  rpc_close_user         (0x00000004)        /* userinfo.h */
+#define  rpc_lookup_name        (0x00000005)        /* userman.h */
+#define  rpc_delete_user        (0x00000006)        /* userman.h */
 
 
 struct monitor_msg {
