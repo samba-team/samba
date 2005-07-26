@@ -1,3 +1,9 @@
+2005-07-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Update to pkinit-27
+
+	* pkinit.asn1: Update to pkinit-27
+	
 2005-07-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* check-der.c: make it work for non c99 compilers too
