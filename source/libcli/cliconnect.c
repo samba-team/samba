@@ -154,6 +154,8 @@ NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
 	(*ret_cli)->tree = tree;
 	(*ret_cli)->session = tree->session;
 	(*ret_cli)->transport = tree->session->transport;
+
+	talloc_steal(*ret_cli, tree);
 	
 done:
 	return status;
@@ -173,14 +175,7 @@ NTSTATUS smbcli_tdis(struct smbcli_state *cli)
 ****************************************************************************/
 struct smbcli_state *smbcli_state_init(TALLOC_CTX *mem_ctx)
 {
-	struct smbcli_state *cli;
-
-	cli = talloc_zero(mem_ctx, struct smbcli_state);
-	if (cli) {
-		ZERO_STRUCTP(cli);
-	}
-
-	return cli;
+	return talloc_zero(mem_ctx, struct smbcli_state);
 }
 
 /*
