@@ -37,11 +37,11 @@ my($opt_parse) = 0;
 my($opt_dump) = 0;
 my($opt_uint_enums) = 0;
 my($opt_diff) = 0;
-my($opt_header);
+my($opt_ndr_header);
 my($opt_template) = 0;
 my($opt_client);
 my($opt_server);
-my($opt_parser);
+my($opt_ndr_parser);
 my($opt_eth_parser);
 my($opt_eth_header);
 my($opt_keep);
@@ -70,8 +70,8 @@ Options:
  --parse               parse a idl file to a .pidl file
  --dump                dump a pidl file back to idl
  --uint-enums          don't use C enums, instead use uint* types
- --header[=OUTFILE]    create a C NDR header file
- --parser[=OUTFILE]    create a C NDR parser
+ --ndr-header[=OUTFILE]create a C NDR header file
+ --ndr-parser[=OUTFILE]create a C NDR parser
  --ejs[=OUTFILE]       create ejs wrapper file
  --client[=OUTFILE]    create a C NDR client
  --server[=OUTFILE]    create server boilerplate
@@ -98,10 +98,10 @@ GetOptions (
 	    'parse' => \$opt_parse,
 	    'dump' => \$opt_dump,
 	    'uint-enums' => \$opt_uint_enums,
-	    'header:s' => \$opt_header,
+	    'ndr-header:s' => \$opt_ndr_header,
 	    'server:s' => \$opt_server,
 	    'template' => \$opt_template,
-	    'parser:s' => \$opt_parser,
+	    'ndr-parser:s' => \$opt_ndr_parser,
 	    'client:s' => \$opt_client,
 	    'eth-parser:s' => \$opt_eth_parser,
 	    'eth-header:s' => \$opt_eth_header,
@@ -205,16 +205,16 @@ sub process_file($)
 		$pidl = Parse::Pidl::ODL::ODL2IDL($pidl);
 	}
 
-	if (defined($opt_header) or defined($opt_eth_parser) or 
+	if (defined($opt_ndr_header) or defined($opt_eth_parser) or 
 	    defined($opt_eth_header) or defined($opt_client) or 
-	    defined($opt_server) or defined($opt_parser) or 
+	    defined($opt_server) or defined($opt_ndr_parser) or 
 	    defined($opt_ejs)) {
 		require Parse::Pidl::NDR;
 		$ndr = Parse::Pidl::NDR::Parse($pidl);
 	}
 
-	if (defined($opt_header)) {
-		my $header = ($opt_header or "$outputdir/ndr_$basename.h");
+	if (defined($opt_ndr_header)) {
+		my $header = ($opt_ndr_header or "$outputdir/ndr_$basename.h");
 		require Parse::Pidl::Samba::NDR::Header;
 		Parse::Pidl::Util::FileSave($header, Parse::Pidl::Samba::NDR::Header::Parse($pidl));
 		if (defined($opt_swig)) {
@@ -275,8 +275,8 @@ $dcom
 		}
 	}
 
-	if (defined($opt_parser)) {
-		my $parser = ($opt_parser or "$outputdir/ndr_$basename.c");
+	if (defined($opt_ndr_parser)) {
+		my $parser = ($opt_ndr_parser or "$outputdir/ndr_$basename.c");
 		require Parse::Pidl::Samba::NDR::Parser;
 		Parse::Pidl::Util::FileSave($parser, Parse::Pidl::Samba::NDR::Parser::Parse($ndr, $parser));
 	}
