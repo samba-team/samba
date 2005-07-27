@@ -64,8 +64,17 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-/* Global list of connections.	Initially a DLIST but can become a hash
-   table or whatever later. */
+
+/****************************************************************** 
+   Disabling schannl on the LSA pipe for now since 
+   both Win2K-SP4 SR1 & Win2K3-SP1 fail the open_policy() 
+   call (return codes 0xc0020042 and 0xc0020041 respectively).
+   We really need to fix this soon.  Had to disable on the 
+   SAMR pipe as well for now.   --jerry
+******************************************************************/
+
+#define DISABLE_SCHANNEL_WIN2K3_SP1	1
+
 
 /* Choose between anonymous or authenticated connections.  We need to use
    an authenticated connection if DCs have the RestrictAnonymous registry
@@ -984,6 +993,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	conn = &domain->conn;
 
 	if (conn->samr_pipe == NULL) {
+#ifdef DISABLE_SCHANNEL_WIN2K3_SP1
 		unsigned char *session_key;
 
 		if (cm_get_schannel_key(domain, mem_ctx, &session_key))
@@ -992,6 +1002,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 								session_key,
 								domain->name);
 		else
+#endif	/* DISABLE_SCHANNEL_WIN2K3_SP1 */
 			conn->samr_pipe = cli_rpc_open_noauth(conn->cli,
 							      PI_SAMR);
 
@@ -1038,12 +1049,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	conn = &domain->conn;
 
 	if (conn->lsa_pipe == NULL) {
-#if 0
-		/* disabling schannl on the LSA pipe for now since 
-		   both Win2K-SP4 SR1 & Win2K3-SP1 fail the open_policy() 
-		   call (return codes 0xc0020042 and 0xc0020041 respectively).
-		   We really need to fix this soon.  --jerry  */
-
+#ifdef DISABLE_SCHANNEL_WIN2K3_SP1
 		unsigned char *session_key;
 
 		if (cm_get_schannel_key(domain, mem_ctx, &session_key))
@@ -1052,7 +1058,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 							       session_key,
 							       domain->name);
 		else
-#endif
+#endif	/* DISABLE_SCHANNEL_WIN2K3_SP1 */
 			conn->lsa_pipe = cli_rpc_open_noauth(conn->cli,
 							     PI_LSARPC);
 
