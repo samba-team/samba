@@ -59,7 +59,8 @@ hxtool_LDFLAGS = -pthread
 EXTRA_DIST = hx509_err.et
 
 CLEANFILES = hx509_err.c hx509_err.h $(TESTS) \
-	hxtool-commands.c hxtool-commands.h *.tmp
+	hxtool-commands.c hxtool-commands.h *.tmp \
+	sd.data sd.data.out
 
 
 #
