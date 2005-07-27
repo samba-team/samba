@@ -211,6 +211,29 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     _hx509_unmap_file(p, sz);
     hx509_lock_free(lock);
 
+    if (opt->content_info_flag) {
+	ContentInfo ci;
+	size_t size;
+
+	ret = hx509_cms_wrap_ContentInfo(oid_id_pkcs7_signedData(),
+					 &o,
+					 &ci);
+	if (ret)
+	    errx(1, "hx509_cms_wrap_ContentInfo: %d", ret);
+
+	free_octet_string(&o);
+
+	ASN1_MALLOC_ENCODE(ContentInfo, o.data, o.length, &ci, 
+			   &size, ret);
+	if (ret)
+	    errx(1, "encode ContentInfo");
+	if (o.length != size)
+	    abort();
+
+	free_ContentInfo(&ci);
+
+    }
+
     ret = _hx509_write_file(argv[1], o.data, o.length);
     if (ret)
 	errx(1, "hx509_write_file: %d", ret);
