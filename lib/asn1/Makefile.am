@@ -156,6 +156,7 @@ gen_files_rfc2459 =					\
 	asn1_id_pkcs3_rc4.x				\
 	asn1_id_pkcs3_des_ede3_cbc.x			\
 	asn1_id_rsadsi_encalg.x				\
+	asn1_id_rsadsi_rc2_cbc.x			\
 	asn1_id_rsadsi_des_ede3_cbc.x			\
 	asn1_id_secsig_sha_1.x				\
 	asn1_id_nit_aes_algs.x				\
