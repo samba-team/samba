@@ -465,6 +465,9 @@ struct usermod_state {
 };
 
 
+/**
+ * Step 1: Lookup user name
+ */
 static NTSTATUS usermod_lookup(struct composite_context *c,
 			       struct usermod_state *s)
 {
@@ -497,6 +500,9 @@ static NTSTATUS usermod_lookup(struct composite_context *c,
 }
 
 
+/**
+ * Stage 2: Open user account
+ */
 static NTSTATUS usermod_open(struct composite_context *c,
 			     struct usermod_state *s)
 {
@@ -577,6 +583,9 @@ static NTSTATUS usermod_open(struct composite_context *c,
 }
 
 
+/**
+ * Stage 3: Set new user account data
+ */
 static NTSTATUS usermod_modify(struct composite_context *c,
 			       struct usermod_state *s)
 {
@@ -588,6 +597,13 @@ static NTSTATUS usermod_modify(struct composite_context *c,
 	return NT_STATUS_OK;
 }
 
+
+/**
+ * Event handler for asynchronous request. Handles transition through
+ * intermediate stages of the call.
+ *
+ * @param req rpc call context
+ */
 
 static void usermod_handler(struct rpc_request *req)
 {
@@ -621,6 +637,13 @@ static void usermod_handler(struct rpc_request *req)
 	}
 }
 
+
+/**
+ * Sends asynchronous usermod request
+ *
+ * @param p dce/rpc call pipe
+ * @param io arguments and results of the call
+ */
 
 struct composite_context *libnet_rpc_usermod_send(struct dcerpc_pipe *p,
 						  struct libnet_rpc_usermod *io)
@@ -661,6 +684,15 @@ failure:
 }
 
 
+/**
+ * Waits for and receives results of asynchronous usermod call
+ *
+ * @param c composite context returned by asynchronous usermod call
+ * @param mem_ctx memory context of the call
+ * @param io pointer to results (and arguments) of the call
+ * @return nt status code of execution
+ */
+
 NTSTATUS libnet_rpc_usermod_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 				 struct libnet_rpc_usermod *io)
 {
@@ -673,6 +705,15 @@ NTSTATUS libnet_rpc_usermod_recv(struct composite_context *c, TALLOC_CTX *mem_ct
 	return status;
 }
 
+
+/**
+ * Synchronous version of usermod call
+ *
+ * @param pipe dce/rpc call pipe
+ * @param mem_ctx memory context for the call
+ * @param io arguments and results of the call
+ * @return nt status code of execution
+ */
 
 NTSTATUS libnet_rpc_usermod(struct dcerpc_pipe *pipe,
 			    TALLOC_CTX *mem_ctx,
