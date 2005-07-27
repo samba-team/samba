@@ -67,6 +67,11 @@ command = {
 		argument = "certificate-store"
 		help = "certificate store to pull certificates from"
 	}
+	option = {
+		long = "content-info"
+		type = "flag"
+		help = "in data is wrapped in a ContentInfo"
+	}
 	min_args="2"
 	argument="in-file out-file"
 	help = "Verify a file within a SignedData object"
