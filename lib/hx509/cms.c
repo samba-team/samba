@@ -400,6 +400,7 @@ int
 hx509_cms_verify_signed(hx509_verify_ctx ctx,
 			const char *data,
 			size_t length,
+			hx509_certs store,
 			heim_oid *contentType,
 			heim_octet_string *content,
 			hx509_certs *signer_certs)
@@ -444,6 +445,12 @@ hx509_cms_verify_signed(hx509_verify_ctx ctx,
 	goto out;
     }
 
+    if (store) {
+	ret = hx509_certs_merge(certs, store);
+	if (ret)
+	    goto out;
+    }
+
     ret = HX509_CMS_SIGNER_NOT_FOUND;
     for (found_valid_sig = 0, i = 0; i < sd.signerInfos.len; i++) {
 	heim_octet_string *signed_data;
@@ -464,17 +471,10 @@ hx509_cms_verify_signed(hx509_verify_ctx ctx,
 	    continue;
 
 	if (signer_info->signedAttrs) {
-	    const AlgorithmIdentifier *salg;
 	    const Attribute *attr;
 	    
 	    CMSAttributes sa;
 	    heim_octet_string os;
-
-	    salg = _hx509_digest_signature(&signer_info->signatureAlgorithm);
-	    if (salg == NULL) {
-		ret = HX509_ALG_NOT_SUPP;
-		continue;
-	    }
 
 	    sa.val = signer_info->signedAttrs->val;
 	    sa.len = signer_info->signedAttrs->len;
@@ -498,7 +498,7 @@ hx509_cms_verify_signed(hx509_verify_ctx ctx,
 		continue;
 
 	    ret = _hx509_verify_signature(NULL,
-					  salg,
+					  &signer_info->digestAlgorithm,
 					  sd.encapContentInfo.eContent,
 					  &os);
 	    free_octet_string(&os);
