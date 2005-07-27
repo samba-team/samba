@@ -273,7 +273,7 @@
 <screen>
 &rootprompt; testparm -s smb.conf.master > smb.conf
 </screen>
-	This administrative method makes it possible to maitain detailed configuration change records while at
+	This administrative method makes it possible to maintain detailed configuration change records while at
 	the same time keeping the working &smb.conf; file size to the minimum necessary.
 	</para>
 
