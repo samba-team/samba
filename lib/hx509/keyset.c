@@ -270,12 +270,12 @@ hx509_certs_merge(hx509_certs to, hx509_certs from)
 }
 
 int
-hx509_certs_append(hx509_certs to, const char *name)
+hx509_certs_append(hx509_certs to, hx509_lock lock, const char *name)
 {
     hx509_certs s;
     int ret;
 
-    ret = hx509_certs_init(name, 0, NULL, &s);
+    ret = hx509_certs_init(name, 0, lock, &s);
     if (ret)
 	return ret;
     ret = hx509_certs_merge(to, s);
