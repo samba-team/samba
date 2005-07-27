@@ -112,7 +112,7 @@ struct signature_alg {
     char *name;
     heim_oid *sig_oid;
     heim_oid *key_oid;
-    const AlgorithmIdentifier *(*digest_alg)(void);
+    heim_oid *digest_oid;
     int flags;
 #define PROVIDE_CONF 1
     int (*verify_signature)(const struct signature_alg *,
@@ -208,13 +208,12 @@ rsa_verify_signature(const struct signature_alg *sig_alg,
 	goto out;
     }
 
-    if (sig_alg->digest_alg) {
-	const AlgorithmIdentifier *a = (*sig_alg->digest_alg)();
-
-	if (heim_oid_cmp(&di.digestAlgorithm.algorithm, &a->algorithm) != 0) {
+    if (sig_alg->digest_oid &&
+	heim_oid_cmp(&di.digestAlgorithm.algorithm,
+		     sig_alg->digest_oid) != 0) 
+    {
 	    ret = HX509_CRYPTO_OID_MISMATCH;
 	    goto out;
-	}
     }
 
     ret = _hx509_verify_signature(NULL,
@@ -487,7 +486,7 @@ static struct signature_alg rsa_with_sha1_alg = {
     "rsa-with-sha1",
     &sha1WithRSAEncryption_oid,
     &rsaEncryption_oid,
-    hx509_signature_sha1,
+    &id_sha1_oid,
     PROVIDE_CONF,
     rsa_verify_signature,
     rsa_create_signature,
@@ -498,7 +497,7 @@ static struct signature_alg rsa_with_md5_alg = {
     "rsa-with-md5",
     &md5WithRSAEncryption_oid,
     &rsaEncryption_oid,
-    hx509_signature_md5,
+    &id_md5_oid,
     PROVIDE_CONF,
     rsa_verify_signature,
     rsa_create_signature,
@@ -509,7 +508,7 @@ static struct signature_alg rsa_with_md2_alg = {
     "rsa-with-md2",
     &md2WithRSAEncryption_oid,
     &rsaEncryption_oid,
-    hx509_signature_md2,
+    &id_md2_oid,
     PROVIDE_CONF,
     rsa_verify_signature,
     rsa_create_signature,
@@ -520,7 +519,7 @@ static struct signature_alg dsa_sha1_alg = {
     "dsa-with-sha1",
     &id_dsa_with_sha1_oid,
     &id_dsa_oid, 
-    hx509_signature_sha1,
+    &id_sha1_oid,
     PROVIDE_CONF,
     dsa_verify_signature
 };
@@ -608,16 +607,6 @@ _hx509_verify_signature(const Certificate *signer,
 	    return HX509_SIG_ALG_DONT_MATCH_KEY_ALG;
     }
     return (*md->verify_signature)(md, signer, alg, data, sig);
-}
-
-const AlgorithmIdentifier *
-_hx509_digest_signature(const AlgorithmIdentifier *alg)
-{
-    const struct signature_alg *md;
-    md = find_sig_alg(&alg->algorithm);
-    if (md && md->digest_alg)
-	return (*md->digest_alg)();
-    return NULL;
 }
 
 int
