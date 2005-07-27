@@ -549,6 +549,12 @@ static NTSTATUS usermod_open(struct composite_context *c,
 			i->info12.profile_path.string = s->change.profile_path;
 
 			s->change.fields ^= USERMOD_FIELD_PROFILE_PATH;
+
+		} else if (s->change.fields & USERMOD_FIELD_ACCT_EXPIRY) {
+			level = 17;
+			i->info17.acct_expiry = timeval_to_nttime(s->change.acct_expiry);
+
+			s->change.fields ^= USERMOD_FIELD_ACCT_EXPIRY;
 		}
 	}
 
