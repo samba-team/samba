@@ -1,3 +1,7 @@
+2005-07-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: add another oid for rc2
+
 2005-07-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* check-der.c: Make variable initiation constant by moving them to
