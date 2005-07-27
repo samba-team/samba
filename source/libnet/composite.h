@@ -64,6 +64,7 @@ struct libnet_rpc_userdel {
 #define USERMOD_FIELD_DESCRIPTION     ( 0x00000010 )
 #define USERMOD_FIELD_LOGON_SCRIPT    ( 0x00000100 )
 #define USERMOD_FIELD_PROFILE_PATH    ( 0x00000200 )
+#define USERMOD_FIELD_ACCT_EXPIRY     ( 0x00004000 )
 
 struct libnet_rpc_usermod {
 	struct {
@@ -78,6 +79,7 @@ struct libnet_rpc_usermod {
 			const char *description;
 			const char *logon_script;
 			const char *profile_path;
+			struct timeval *acct_expiry;
 		} change;
 	} in;
 };
