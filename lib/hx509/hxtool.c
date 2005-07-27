@@ -58,7 +58,8 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 {
     hx509_verify_ctx ctx = NULL;
     heim_oid type;
-    heim_octet_string c;
+    heim_octet_string c, co;
+    hx509_certs store;
     hx509_certs signers = NULL;
     hx509_certs anchors = NULL;
     hx509_lock lock;
@@ -87,9 +88,45 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 	    errx(1, "hx509_certs_append: chain: %d", ret);
     }
 
+    ret = hx509_certs_init("MEMORY:cert-store", 0, NULL, &store);
+
+    for (i = 0; i < opt->certificate_strings.num_strings; i++) {
+	ret = hx509_certs_append(store, lock, 
+				 opt->certificate_strings.strings[i]);
+	if (ret)
+	    errx(1, "hx509_certs_append: chain: %d", ret);
+    }
+
+    if (opt->content_info_flag) {
+	ContentInfo ci;
+	size_t size;
+
+	ret = decode_ContentInfo(p, sz, &ci, &size);
+	if (ret)
+	    errx(1, "decode_ContentInfo: %d", ret);
+
+	if (heim_oid_cmp(&ci.contentType, oid_id_pkcs7_signedData()) != 0)
+	    errx(1, "Content is not SignedData");
+
+	if (ci.content == NULL)
+	    errx(1, "ContentInfo missing content");
+	ret = copy_octet_string(ci.content, &co);
+	if (ret)
+	    errx(1, "copy_octet_string: %d", ret);
+
+	free_ContentInfo(&ci);
+
+    } else {
+	co.data = p;
+	co.length = sz;
+    }
+
     hx509_verify_attach_anchors(ctx, anchors);
 
-    ret = hx509_cms_verify_signed(ctx, p, sz, &type, &c, &signers);
+    ret = hx509_cms_verify_signed(ctx, co.data, co.length,
+				  store, &type, &c, &signers);
+    if (co.data != p)
+	free_octet_string(&co);
     if (ret)
 	errx(1, "hx509_cms_verify_signed: %d", ret);
 
