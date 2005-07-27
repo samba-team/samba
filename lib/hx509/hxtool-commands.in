@@ -48,8 +48,14 @@ command = {
 		argument = "signer-friendly-name"
 		help = "certificate to sign with"
 	}
+	option = {
+		long = "content-info"
+		type = "flag"
+		help = "wrapped out-data in a ContentInfo"
+	}
 	min_args="2"
-	argument="in-file out-file cert ..."
+	max_args="2"
+	argument="in-file out-file"
 	help = "Wrap a file within a SignedData object"
 }
 command = {
@@ -70,9 +76,10 @@ command = {
 	option = {
 		long = "content-info"
 		type = "flag"
-		help = "in data is wrapped in a ContentInfo"
+		help = "unwrap in-data that's in a ContentInfo"
 	}
 	min_args="2"
+	max_args="2"
 	argument="in-file out-file"
 	help = "Verify a file within a SignedData object"
 }
