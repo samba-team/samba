@@ -96,3 +96,12 @@ openssl smime \
     -outform DER \
     -out test-signed-data-noattr-nocerts
 
+openssl smime \
+    -encrypt \
+    -nodetach \
+    -binary \
+    -in ../test_chain.in \
+    -outform DER \
+    -out test-enveloped-aes-128 \
+    -aes128 \
+    test.crt
