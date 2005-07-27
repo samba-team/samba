@@ -36,9 +36,28 @@
 
 srcdir="@srcdir@"
 
-echo "check signed data"
+echo "create signed data"
 ./hxtool cms-create-sd \
 	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
+	"$srcdir/test_cms.in" \
+	sd.data || exit 1
+
+echo "verify signed data"
+./hxtool cms-verify-sd \
+	--anchors=FILE:$srcdir/data/ca.crt \
+	sd.data sd.data.out || exit 1
+
+cmp "$srcdir/test_cms.in" sd.data.out || exit 1
+
+echo "verify signed data"
+./hxtool cms-verify-sd \
+	--anchors=FILE:$srcdir/data/test.crt \
+	sd.data sd.data.out && exit 1
+
+echo "create signed data"
+./hxtool cms-create-sd \
+	--certificate=PKCS12:$srcdir/data/test.p12 \
+	--signer=friendlyname-test \
 	"$srcdir/test_cms.in" \
 	sd.data || exit 1
 
