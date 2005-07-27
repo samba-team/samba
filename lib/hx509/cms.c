@@ -685,7 +685,7 @@ add_one_attribute(Attribute **attr,
 int
 hx509_cms_create_signed_1(const heim_oid *eContentType,
 			  const void *data, size_t length,
-			  const heim_oid *signature_type,
+			  const AlgorithmIdentifier *digest_alg,
 			  hx509_cert cert,
 			  heim_octet_string *signed_data)
 {
@@ -703,9 +703,8 @@ hx509_cms_create_signed_1(const heim_oid *eContentType,
 	return HX509_PRIVATE_KEY_MISSING;
 
     /* XXX */
-    if (signature_type == NULL)
-	signature_type = oid_id_secsig_sha_1();
-
+    if (digest_alg == NULL)
+	digest_alg = hx509_signature_sha1();
 
     sd.version = 3;
 
@@ -738,12 +737,6 @@ hx509_cms_create_signed_1(const heim_oid *eContentType,
     if (ret)
 	goto out;
 			    
-    ret = _hx509_set_digest_alg(&signer_info->digestAlgorithm,
-				signature_type, "\x05\x00", 2);
-    if (ret) {
-	goto out;
-    }
-
     signer_info->signedAttrs = NULL;
     signer_info->unsignedAttrs = NULL;
 
@@ -756,8 +749,13 @@ hx509_cms_create_signed_1(const heim_oid *eContentType,
     {
 	heim_octet_string digest;
 
+	ret = copy_AlgorithmIdentifier(digest_alg,
+				       &signer_info->digestAlgorithm);
+	if (ret)
+	    goto out;
+
 	ret = _hx509_create_signature(NULL,
-				      hx509_signature_sha1(),
+				      digest_alg,
 				      sd.encapContentInfo.eContent,
 				      NULL,
 				      &digest);
@@ -844,8 +842,8 @@ hx509_cms_create_signed_1(const heim_oid *eContentType,
 	goto out;
     }
 
-    ret = _hx509_set_digest_alg(&sd.digestAlgorithms.val[0],
-				signature_type, "\x05\x00", 2);
+    ret = copy_AlgorithmIdentifier(digest_alg,
+				   &sd.digestAlgorithms.val[0]);
     if (ret) {
 	goto out;
     }
