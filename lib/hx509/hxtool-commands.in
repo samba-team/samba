@@ -37,9 +37,9 @@ command = {
 	option = {
 		long = "certificate"
 		short = "c"
-		type = "string"
+		type = "strings"
 		argument = "certificate-store"
-		help = "certificate store to pull certificates from"
+		help = "certificate stores to pull certificates from"
 	}
 	option = {
 		long = "signer"
@@ -48,7 +48,7 @@ command = {
 		argument = "certificate-name"
 		help = "certificate to sign with"
 	}
-	min_args="3"
+	min_args="2"
 	argument="in-file out-file cert ..."
 	help = "Wrap a file within a SignedData object."
 }
