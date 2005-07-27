@@ -352,7 +352,7 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
 	ContentInfo ci;
 	size_t size;
 
-	ret = hx509_cms_wrap_ContentInfo(oid_id_pkcs7_signedData(),
+	ret = hx509_cms_wrap_ContentInfo(oid_id_pkcs7_envelopedData(),
 					 &o,
 					 &ci);
 	if (ret)
