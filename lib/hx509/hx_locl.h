@@ -102,7 +102,8 @@ struct hx509_query_data {
 #define HX509_QUERY_MATCH_CERTIFICATE		0x08000
 #define HX509_QUERY_MATCH_LOCAL_KEY_ID		0x10000
 #define HX509_QUERY_NO_MATCH_PATH		0x20000
-#define HX509_QUERY_MASK			0x3ffff
+#define HX509_QUERY_MATCH_FRIENDLY_NAME		0x40000
+#define HX509_QUERY_MASK			0x7ffff
     Certificate *subject;
     Certificate *certificate;
     heim_integer *serial;
@@ -111,6 +112,7 @@ struct hx509_query_data {
     Name *issuer_name;
     Name *subject_name;
     hx509_path *path;
+    char *friendlyname;
 };
 
 struct hx509_keyset_ops {
