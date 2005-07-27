@@ -98,20 +98,12 @@ gen_files_k5 =						\
 	asn1_CBCParameter.x
 
 gen_files_cms =						\
-	asn1_id_pkcs7.x					\
-	asn1_id_pkcs7_data.x				\
-	asn1_id_pkcs7_signedData.x			\
-	asn1_id_pkcs7_signedAndEnvelopedData.x		\
-	asn1_id_pkcs7_envelopedData.x			\
-	asn1_id_pkcs7_digestedData.x			\
-	asn1_id_pkcs7_encryptedData.x			\
 	asn1_CMSAttributes.x				\
 	asn1_CMSCBCParameter.x				\
 	asn1_CMSEncryptedData.x				\
+	asn1_CMSIdentifier.x				\
 	asn1_CMSRC2CBCParameter.x			\
 	asn1_CMSVersion.x				\
-	asn1_CMSAttributes.x				\
-	asn1_CMSIdentifier.x				\
 	asn1_CertificateList.x				\
 	asn1_CertificateRevocationLists.x		\
 	asn1_CertificateSet.x				\
@@ -139,6 +131,13 @@ gen_files_cms =						\
 	asn1_SignerIdentifier.x				\
 	asn1_SignerInfo.x				\
 	asn1_SignerInfos.x				\
+	asn1_id_pkcs7.x					\
+	asn1_id_pkcs7_data.x				\
+	asn1_id_pkcs7_digestedData.x			\
+	asn1_id_pkcs7_encryptedData.x			\
+	asn1_id_pkcs7_envelopedData.x			\
+	asn1_id_pkcs7_signedAndEnvelopedData.x		\
+	asn1_id_pkcs7_signedData.x			\
 	asn1_UnprotectedAttributes.x
 
 gen_files_rfc2459 =					\
