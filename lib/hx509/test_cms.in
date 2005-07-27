@@ -103,5 +103,25 @@ echo "verify signed data (no attr, no certs)"
 	"$srcdir/data/test-signed-data-noattr-nocerts" sd.data.out || exit 1
 cmp "$srcdir/test_chain.in" sd.data.out || exit 1
 
+echo "envelope data"
+./hxtool cms-envelope \
+    --content-info \
+    "$srcdir/test_chain.in" \
+    ev.data \
+    FILE:$srcdir/data/test.crt || exit 1
+
+echo "unenvelope data"
+./hxtool cms-unenvelope \
+    --content-info \
+    ev.data ev.data.out \
+    FILE:$srcdir/data/test.crt,$srcdir/data/test.key || exit 1
+cmp "$srcdir/test_chain.in" ev.data.out || exit 1
+
+echo "unenvelope data (aes-128)"
+./hxtool cms-unenvelope \
+	--content-info \
+	"$srcdir/data/test-enveloped-aes-128" ev.data.out FILE:$srcdir/data/test.crt,$srcdir/data/test.key || exit 1
+cmp "$srcdir/test_chain.in" ev.data.out || exit 1
+
 
 exit 0
