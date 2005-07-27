@@ -1633,10 +1633,6 @@ void smbd_process(void)
 		lp_talloc_free();
 		main_loop_talloc_free();
 
-		/* run all registered idle events */
-		smb_run_idle_events(time(NULL));
-
-
 		/* Did someone ask for immediate checks on things like blocking locks ? */
 		if (select_timeout == 0) {
 			if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
