@@ -215,6 +215,9 @@ static BOOL torture_pac_saved_check(void)
 		return False;
 	}
 
+	/* The krbtgt key in use when the above PAC was generated.
+	 * This is an arcfour-hmac-md5 key, extracted with our 'net
+	 * samdump' tool. */
 	krbtgt_bytes = smbpasswd_gethexpwd(mem_ctx, "B286757148AF7FD252C53603A150B7E7");
 	if (!krbtgt_bytes) {
 		DEBUG(0, ("Could not interpret krbtgt key"));
@@ -296,10 +299,9 @@ static BOOL torture_pac_saved_check(void)
 
 	dump_data(10,validate_blob.data,validate_blob.length);
 
-	/* all we can check is the length of the buffers,
-	 * to check that the alignment and padding is ok,
-	 * we can't compare the bytes, because we use a different algorithm
-	 * to create the pointer values
+	/* compare both the length and the data bytes after a
+	 * pull/push cycle.  This ensures we use the exact same
+	 * pointer, padding etc algorithms as win2k3.
 	 */
 	if (tmp_blob.length != validate_blob.length) {
 		DEBUG(0, ("PAC push failed: orignial buffer length[%u] != created buffer length[%u]\n",
