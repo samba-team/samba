@@ -48,8 +48,9 @@ hxtool-commands.c hxtool-commands.h: hxtool-commands.in $(SLC)
 
 hxtool_SOURCES = \
 	hxtool.c \
-	hxtool-commands.c \
-	hxtool-commands.h
+	hxtool-commands.c
+
+$(hxtool_SOURCES): hxtool-commands.h
 
 hxtool_CPPFLAGS = $(INCLUDE_des)
 hxtool_LDADD = libhx509.la $(LIB_roken) ../sl/libsl.la $(LIB_des)
@@ -61,12 +62,11 @@ CLEANFILES = hx509_err.c hx509_err.h $(TESTS) \
 	hxtool-commands.c hxtool-commands.h *.tmp
 
 
-
 #
 # regression tests
 #
 
-TESTS = test_chain test_cms
+TESTS = test_chain test_cms test_query
 
 do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g'
 
@@ -79,3 +79,8 @@ test_cms: test_cms.in Makefile
 	$(do_subst) < $(srcdir)/test_cms.in > test_cms.tmp
 	chmod +x test_cms.tmp
 	mv test_cms.tmp test_cms
+
+test_query: test_query.in Makefile
+	$(do_subst) < $(srcdir)/test_query.in > test_query.tmp
+	chmod +x test_query.tmp
+	mv test_query.tmp test_query
