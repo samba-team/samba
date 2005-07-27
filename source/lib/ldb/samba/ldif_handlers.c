@@ -26,6 +26,7 @@
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 
 /*
   convert a ldif formatted objectSid to a NDR formatted blob
