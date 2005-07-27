@@ -417,12 +417,15 @@ BOOL torture_usermod(void)
 	BOOL ret = True;
 	int i;
 
+	struct timeval expiry = { 12345, 67890 };
+
 	struct usermod_change changes[] = {
-		{ USERMOD_FIELD_ACCOUNT_NAME, "changed", NULL, NULL, NULL, NULL },
-		{ USERMOD_FIELD_FULL_NAME,    NULL, "Testing full account name", NULL, NULL, NULL },
-		{ USERMOD_FIELD_DESCRIPTION,  NULL, NULL, "Description of tested account", NULL, NULL },
-		{ USERMOD_FIELD_LOGON_SCRIPT, NULL, NULL, NULL, "test_logon.cmd", NULL },
-		{ USERMOD_FIELD_PROFILE_PATH, NULL, NULL, NULL, NULL, "\\\\TESTSRV\\profiles\\test" }
+		{ USERMOD_FIELD_ACCOUNT_NAME, "changed", NULL, NULL, NULL, NULL, NULL },
+		{ USERMOD_FIELD_FULL_NAME,    NULL, "Testing full account name", NULL, NULL, NULL, NULL },
+		{ USERMOD_FIELD_DESCRIPTION,  NULL, NULL, "Description of tested account", NULL, NULL, NULL },
+		{ USERMOD_FIELD_LOGON_SCRIPT, NULL, NULL, NULL, "test_logon.cmd", NULL, NULL },
+		{ USERMOD_FIELD_PROFILE_PATH, NULL, NULL, NULL, NULL, "\\\\TESTSRV\\profiles\\test", NULL },
+		{ USERMOD_FIELD_ACCT_EXPIRY,  NULL, NULL, NULL, NULL, NULL, &expiry }
 	};
 	
 	mem_ctx = talloc_init("test_userdel");
