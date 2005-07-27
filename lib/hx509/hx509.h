@@ -42,10 +42,7 @@ typedef struct hx509_name_data *hx509_name;
 typedef void * hx509_cursor;
 typedef struct hx509_lock_data *hx509_lock;
 typedef struct hx509_private_key *hx509_private_key;
-
-/* current unused */
 typedef struct hx509_crypto_data *hx509_crypto;
-typedef struct hx509_digest_data *hx509_digest;
 
 typedef void (*hx509_vprint_func)(void *, const char *, va_list);
 
@@ -73,5 +70,10 @@ typedef struct hx509_prompt {
 } hx509_prompt;
 
 typedef int (*hx509_prompter_fct)(void *, const hx509_prompt *);
+
+typedef struct hx509_octet_string_list {
+    size_t len;
+    heim_octet_string *val;
+} hx509_octet_string_list;
 
 #include <hx509-protos.h>
