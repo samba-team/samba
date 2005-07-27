@@ -1,0 +1,121 @@
+/*
+ * Copyright (c) 2005 Kungliga Tekniska Högskolan
+ * (Royal Institute of Technology, Stockholm, Sweden). 
+ * All rights reserved. 
+ *
+ * Redistribution and use in source and binary forms, with or without 
+ * modification, are permitted provided that the following conditions 
+ * are met: 
+ *
+ * 1. Redistributions of source code must retain the above copyright 
+ *    notice, this list of conditions and the following disclaimer. 
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright 
+ *    notice, this list of conditions and the following disclaimer in the 
+ *    documentation and/or other materials provided with the distribution. 
+ *
+ * 3. Neither the name of the Institute nor the names of its contributors 
+ *    may be used to endorse or promote products derived from this software 
+ *    without specific prior written permission. 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+ * SUCH DAMAGE. 
+ */
+/* $Id$ */
+
+command = {
+	name = "cms-create-sd"
+	option = {
+		long = "certificate"
+		short = "c"
+		type = "string"
+		argument = "certificate-store"
+		help = "certificate store to pull certificates from"
+	}
+	option = {
+		long = "signer"
+		short = "s"
+		type = "string"
+		argument = "certificate-name"
+		help = "certificate to sign with"
+	}
+	min_args="3"
+	argument="in-file out-file cert ..."
+	help = "Wrap a file within a SignedData object."
+}
+command = {
+	name = "cms-verify-sd"
+	option = {
+		long = "certificate"
+		short = "c"
+		type = "string"
+		argument = "certificate-store"
+		help = "certificate store to pull certificates from"
+	}
+	min_args="2"
+	argument="in-file out-file cert ..."
+	help = "Verify a file within a SignedData object"
+}
+command = {
+	name = "cms-unenvelope"
+	min_args="2"
+	argument="in-file out-file"
+	help = "Unenvelope a file containing a EnvelopedData object"
+}
+command = {
+	name = "cms-envelope"
+	function = "cms_create_enveloped"
+	min_args="3"
+	argument="certificate in-file out-file"
+	help = "Envelope a file containing a EnvelopedData object"
+}
+command = {
+	name = "verify"
+	function = "pcert_verify"
+	option = {
+		long = "verbose"
+		short = "v"
+		type = "flag"
+		help = "verbose logging"
+	}
+	argument = "cert:foo chain:cert1 chain:cert2 anchor:anchor1 anchor:anchor2"
+	help = "Verify certificate chain"
+}
+command = {
+	name = "print"
+	function = "pcert_print"
+	min_args="1"
+	argument="certificate ..."
+	help = "Print certificates"
+}
+command = {
+	name = "validate"
+	function = "pcert_validate"
+	min_args="1"
+	argument="certificate ..."
+	help = "Validate content of certificates"
+}
+command = {
+	name = "pkcs11"
+	function = "pcert_pkcs11"
+	min_args="1"
+	argument="certificate ..."
+	help = "Validate content of certificates"
+}
+command = {
+	name = "help"
+	name = "?"
+	argument = "[command]"
+	min_args = "0"
+	max_args = "1"
+	help = "Help! I need somebody."
+}

@@ -34,6 +34,7 @@
 #include "hx_locl.h"
 RCSID("$Id$");
 
+#include <hxtool-commands.h>
 #include <sl.h>
 
 static int version_flag;
@@ -52,8 +53,8 @@ usage(int code)
     exit(code);
 }
 
-static int
-cms_verify_sd(int argc, char **argv)
+int
+cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 {
     int ret;
     hx509_verify_ctx ctx = NULL;
@@ -64,12 +65,6 @@ cms_verify_sd(int argc, char **argv)
 
     size_t sz;
     void *p;
-
-    argc--;
-    argv++;
-
-    if (argc < 2)
-	errx(1, "argc < 2");
 
     printf("cms verify signed data\n");
 
@@ -114,8 +109,8 @@ cms_verify_sd(int argc, char **argv)
     return 0;
 }
 
-static int
-cms_create_sd(int argc, char **argv)
+int
+cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 {
     const heim_oid *contentType;
     heim_octet_string o;
@@ -128,9 +123,6 @@ cms_create_sd(int argc, char **argv)
     int ret;
 
     contentType = oid_id_pkcs7_data();
-
-    argc--;
-    argv++;
 
     if (argc < 3)
 	errx(1, "argc < 3");
@@ -175,8 +167,8 @@ cms_create_sd(int argc, char **argv)
     return 0;
 }
 
-static int
-cms_unenvelope(int argc, char **argv)
+int
+cms_unenvelope(void *opt, int argc, char **argv)
 {
     heim_oid contentType = { 0, NULL };
     heim_octet_string o;
@@ -185,9 +177,6 @@ cms_unenvelope(int argc, char **argv)
     void *p;
     int ret;
     hx509_lock lock;
-
-    argc--;
-    argv++;
 
     if (argc != 3)
 	errx(1, "argc != 3");
@@ -223,8 +212,8 @@ cms_unenvelope(int argc, char **argv)
     return 0;
 }
 
-static int
-cms_create_enveloped(int argc, char **argv)
+int
+cms_create_enveloped(void *opt, int argc, char **argv)
 {
     heim_octet_string o;
     heim_oid contentType = { 0, NULL };
@@ -234,9 +223,6 @@ cms_create_enveloped(int argc, char **argv)
     int ret;
     size_t sz;
     void *p;
-
-    argc--;
-    argv++;
 
     if (argc != 3)
 	errx(1, "argc ! = 3");
@@ -285,9 +271,6 @@ validate_print(int argc, char **argv, int flags)
     hx509_certs certs;
     hx509_lock lock;
 
-    argc--;
-    argv++;
-
     if (argc < 1)
 	errx(1, "argc");
 
@@ -314,14 +297,14 @@ validate_print(int argc, char **argv, int flags)
     return 0;
 }
 
-static int
-pcert_print(int argc, char **argv)
+int
+pcert_print(void *opt, int argc, char **argv)
 {
     return validate_print(argc, argv, HX509_VALIDATE_F_VERBOSE);
 }
 
-static int
-pcert_validate(int argc, char **argv)
+int
+pcert_validate(void *opt, int argc, char **argv)
 {
     return validate_print(argc, argv, HX509_VALIDATE_F_VALIDATE);
 }
@@ -346,16 +329,13 @@ verify_f(void *ctx, hx509_cert c)
     return ret;
 }
 
-static int
-pcert_verify(int argc, char **argv)
+int
+pcert_verify(struct verify_options *opt, int argc, char **argv)
 {
     hx509_certs anchors, chain, certs;
     hx509_verify_ctx ctx;
     struct verify v;
     int ret;
-
-    argc--;
-    argv++;
 
     ret = hx509_verify_init_ctx(&ctx);
     ret = hx509_certs_init("MEMORY:anchors", 0, NULL, &anchors);
@@ -411,13 +391,10 @@ pcert_verify(int argc, char **argv)
     return ret;
 }
 
-static int
-pcert_pkcs11(int argc, char **argv)
+int
+pcert_pkcs11(void *opt, int argc, char **argv)
 {
     int ret;
-
-    argc--;
-    argv++;
 
     if (argc < 1)
 	errx(1, "argc");
@@ -431,59 +408,37 @@ pcert_pkcs11(int argc, char **argv)
     return 0;
 }
 
-static int help(int, char **);
-
-static SL_cmd cmds[] = {
-    { "cms-create-sd",
-      cms_create_sd,
-      "in-file out-file cert ...",
-      "create signed data"
-    },
-    { "cms-verify-sd",
-      cms_verify_sd,
-      "file cert ...",
-      "verify signed data"
-    },
-    { "cms-unenvelope",
-      cms_unenvelope,
-      "cert key in-file out-file",
-      "unenvelope data"
-    },
-    { "cms-create-envelope",
-      cms_create_enveloped,
-      "cert in-file out-file",
-      "envelope data"
-    },
-
-    { "print",
-      pcert_print,
-      "cert ...",
-      "print certificates"
-    },
-    { "validate",
-      pcert_validate,
-      "cert ...",
-      "validate certificates"
-    },
-    { "verify",
-      pcert_verify,
-      "cert:foo chain:cert1 chain:cert2 anchor:anchor1 anchor:anchor2",
-      "verify certificates"
-    },
-    { "pkcs11",
-      pcert_pkcs11,
-      "...",
-      "deal with pkcs11 devices"
-    },
-    { "help", help, "help" },
-    { "?" },
-    { NULL }
-};
-
 int
-help(int argc, char **argv)
+help(void *opt, int argc, char **argv)
 {
-    sl_help(cmds, argc, argv);
+    if(argc == 0) {
+	sl_help(commands, 1, argv - 1 /* XXX */);
+    } else {
+	SL_cmd *c = sl_match (commands, argv[0], 0);
+ 	if(c == NULL) {
+	    fprintf (stderr, "No such command: %s. "
+		     "Try \"help\" for a list of commands\n",
+		     argv[0]);
+	} else {
+	    if(c->func) {
+		char *fake[] = { NULL, "--help", NULL };
+		fake[0] = argv[0];
+		(*c->func)(2, fake);
+		fprintf(stderr, "\n");
+	    }
+	    if(c->help && *c->help)
+		fprintf (stderr, "%s\n", c->help);
+	    if((++c)->name && c->func == NULL) {
+		int f = 0;
+		fprintf (stderr, "Synonyms:");
+		while (c->name && c->func == NULL) {
+		    fprintf (stderr, "%s%s", f ? ", " : " ", (c++)->name);
+		    f = 1;
+		}
+		fprintf (stderr, "\n");
+	    }
+	}
+    }
     return 0;
 }
 
@@ -508,7 +463,7 @@ main(int argc, char **argv)
     if (argc == 0)
 	usage(1);
 
-    ret = sl_command(cmds, argc, argv);
+    ret = sl_command(commands, argc, argv);
     if(ret == -1)
 	warnx ("unrecognized command: %s", argv[0]);
 

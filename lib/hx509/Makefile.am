@@ -39,9 +39,17 @@ $(srcdir)/hx509-private.h:
 
 include_HEADERS = hx509.h hx509-protos.h hx509_err.h
 
+SLC = $(top_builddir)/lib/sl/slc
+
 noinst_PROGRAMS = hxtool
 
-hxtool_SOURCES = hxtool.c
+hxtool-commands.c hxtool-commands.h: hxtool-commands.in $(SLC)
+	$(SLC) $(srcdir)/hxtool-commands.in
+
+hxtool_SOURCES = \
+	hxtool.c \
+	hxtool-commands.c \
+	hxtool-commands.h
 
 hxtool_CPPFLAGS = $(INCLUDE_des)
 hxtool_LDADD = libhx509.la $(LIB_roken) ../sl/libsl.la $(LIB_des)
@@ -49,7 +57,9 @@ hxtool_LDFLAGS = -pthread
 
 EXTRA_DIST = hx509_err.et
 
-CLEANFILES = hx509_err.c hx509_err.h $(TESTS)
+CLEANFILES = hx509_err.c hx509_err.h $(TESTS) \
+	hxtool-commands.c hxtool-commands.h
+
 
 #
 # regression tests
