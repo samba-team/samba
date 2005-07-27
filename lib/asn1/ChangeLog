@@ -1,5 +1,12 @@
 2005-07-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* check-der.c: Make variable initiation constant by moving them to
+	global context
+
+	* check-gen.c: change to c89 comment
+
+2005-07-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
 	* Makefile.am: remove duplicate asn1_CMSAttributes.x
 
 2005-07-26  Love Hörnquist Åstrand  <lha@it.su.se>
