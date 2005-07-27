@@ -1,5 +1,57 @@
 2005-07-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* hx_locl.h, cert.c: Add HX509_QUERY_MATCH_FUNCTION that allows
+	caller to match by function, note that this doesn't not work
+	directly for backends that implements ->query, they must do their
+	own processing. (I'm running out of flags, only 12 left now)
+
+	* test_cms.in: verify ContentInfo wrapping code in hxtool
+	
+	* hxtool-commands.in (cms_create_sd): support wrapping in content
+	info spelling
+
+	* hxtool.c (cms_create_sd): support wrapping in content info
+
+	* test_cms.in: test more cms signeddata messages
+	
+	* data/gen-req.sh: generate SignedData
+	
+	* hxtool.c (cms_create_sd): support certificate store, add support
+	to unwrap a ContentInfo the SignedData inside.
+
+	* crypto.c: sprinkel rk_UNCONST
+
+	* crypto.c: add DER NULL to the digest oid's
+
+	* hxtool-commands.in: add --content-info to cms-verify-sd
+
+	* cms.c (hx509_cms_create_signed_1): pass in a full
+	AlgorithmIdentifier instead of heim_oid for digest_alg
+
+	* crypto.c: make digest_alg a digest_oid, it's not needed right
+	now
+
+	* hx509_err.et: add CERT_NOT_FOUND
+	
+	* keyset.c (_hx509_certs_find): add error code for cert not
+	found
+
+	* cms.c (hx509_cms_verify_signed): add external store of
+	certificates, use the right digest algorithm identifier.
+
+	* cert.c: fix const warning
+
+	* ks_p12.c: slightly less verbose
+	
+	* cert.c: add hx509_cert_find_subjectAltName_otherName, add
+	HX509_QUERY_MATCH_FRIENDLY_NAME
+	
+	* hx509.h: add hx509_octet_string_list, remove bad comment
+	
+	* hx_locl.h: add HX509_QUERY_MATCH_FRIENDLY_NAME
+
+	* keyset.c (hx509_certs_append): needs a hx509_lock, add one
+
 	* Makefile.am: add test cases tempfiles to CLEANFILES
 	
 	* Makefile.am: add test_query to TESTS, fix dependency on hxtool
@@ -17,8 +69,6 @@
 	
 	* data: fix filenames for ds/ke files, add pkcs12 files, regen
 	
-2005-07-27  Love Hörnquist Åstrand  <lha@it.su.se>
-
 	* hxtool.c,Makefile.am,hxtool-commands.in: switch to slc
 
 2005-07-26  Love Hörnquist Åstrand  <lha@it.su.se>
