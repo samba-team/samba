@@ -146,8 +146,6 @@ sub process_file($)
 		defined @$pidl || die "Failed to parse $idl_file";
 		require Parse::Pidl::Typelist;
 		Parse::Pidl::Typelist::LoadIdl($pidl);
-        require Parse::Pidl::Validator;
-		Parse::Pidl::Validator::Validate($pidl);
 		if (defined($opt_keep) && !SaveStructure($pidl_file, $pidl)) {
 			    die "Failed to save $pidl_file\n";
 		}
@@ -213,6 +211,7 @@ sub process_file($)
 	    defined($opt_server) or defined($opt_ndr_parser) or 
 	    defined($opt_ejs)) {
 		require Parse::Pidl::NDR;
+		Parse::Pidl::NDR::Validate($pidl);
 		$ndr = Parse::Pidl::NDR::Parse($pidl);
 	}
 
