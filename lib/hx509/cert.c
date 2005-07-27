@@ -1339,7 +1339,7 @@ _hx509_query_match_cert(const hx509_query *q, hx509_cert cert)
 		return 0;
     }
     if (q->match & HX509_QUERY_MATCH_FRIENDLY_NAME) {
-	char *name = hx509_cert_get_friendly_name(cert);
+	const char *name = hx509_cert_get_friendly_name(cert);
 	if (name == NULL)
 	    return 0;
 	if (strcasecmp(q->friendlyname, name) != 0)
