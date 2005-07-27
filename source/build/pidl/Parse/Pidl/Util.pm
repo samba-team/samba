@@ -88,18 +88,6 @@ sub FileSave($$)
 }
 
 #####################################################################
-# return a filename with a changed extension
-sub ChangeExtension($$)
-{
-    my($fname) = shift;
-    my($ext) = shift;
-    if ($fname =~ /^(.*)\.(.*?)$/) {
-	return "$1$ext";
-    }
-    return "$fname$ext";
-}
-
-#####################################################################
 # a dumper wrapper to prevent dependence on the Data::Dumper module
 # unless we actually need it
 sub MyDumper($)

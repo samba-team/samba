@@ -51,7 +51,7 @@ my($opt_com_header);
 my($opt_ejs);
 my($opt_odl) = 0;
 my($opt_quiet) = 0;
-my($opt_output);
+my($opt_outputdir) = '.';
 my($opt_verbose) = 0;
 my($opt_warn_compat) = 0;
 
@@ -66,7 +66,7 @@ Usage: pidl [options] <idlfile>
 
 Options:
  --help                this help page
- --output=OUTNAME      put output in OUTNAME.*
+ --outputdir=OUTDIR    put output in OUTDIR/ [.]
  --parse               parse a idl file to a .pidl file
  --dump                dump a pidl file back to idl
  --uint-enums          don't use C enums, instead use uint* types
@@ -94,7 +94,7 @@ Options:
 # main program
 GetOptions (
 	    'help|h|?' => \$opt_help, 
-	    'output=s' => \$opt_output,
+	    'outputdir=s' => \$opt_outputdir,
 	    'parse' => \$opt_parse,
 	    'dump' => \$opt_dump,
 	    'uint-enums' => \$opt_uint_enums,
@@ -125,19 +125,13 @@ if ($opt_help) {
 sub process_file($)
 {
 	my $idl_file = shift;
-	my $output;
+	my $outputdir = $opt_outputdir;
 	my $pidl;
 	my $ndr;
 
 	my $basename = basename($idl_file, ".idl");
 
-	if (!defined($opt_output)) {
-		$output = $idl_file;
-	} else {
-		$output = $opt_output . $basename;
-	}
-
-	my($pidl_file) = ($opt_keep or Parse::Pidl::Util::ChangeExtension($output, ".pidl"));
+	my($pidl_file) = ($opt_keep or "$outputdir/$basename.pidl");
 
 	unless ($opt_quiet) { print "Compiling $idl_file\n"; }
 
@@ -169,7 +163,7 @@ sub process_file($)
 	}
 
 	if ($opt_diff) {
-		my($tempfile) = Parse::Pidl::Util::ChangeExtension($output, ".tmp");
+		my($tempfile) = "$outputdir/$basename.tmp";
 		Parse::Pidl::Util::FileSave($tempfile, IdlDump::Dump($pidl));
 		system("diff -wu $idl_file $tempfile");
 		unlink($tempfile);
@@ -179,10 +173,10 @@ sub process_file($)
 		require Parse::Pidl::Samba::COM::Header;
 		my $res = Parse::Pidl::Samba::COM::Header::Parse($pidl);
 		if ($res) {
-			my $comh_filename = ($opt_com_header or (dirname($output) . "/com_$basename.h"));
+			my $comh_filename = ($opt_com_header or "$outputdir/com_$basename.h");
 			Parse::Pidl::Util::FileSave($comh_filename, 
 			"#include \"librpc/gen_ndr/ndr_orpc.h\"\n" . 
-			"#include \"librpc/gen_ndr/ndr_$basename.h\"\n" . 
+			"#include \"$outputdir/ndr_$basename.h\"\n" . 
 			$res);
 		}
 		$opt_odl = 1;
@@ -192,10 +186,10 @@ sub process_file($)
 		require Parse::Pidl::Samba::COM::Proxy;
 		my $res = Parse::Pidl::Samba::COM::Proxy::Parse($pidl);
 		if ($res) {
-			my ($client) = ($opt_dcom_proxy or Parse::Pidl::Util::ChangeExtension($output, "_p.c"));
+			my ($client) = ($opt_dcom_proxy or "$outputdir/$basename\_p.c");
 			Parse::Pidl::Util::FileSave($client, 
 			"#include \"includes.h\"\n" .
-			"#include \"librpc/gen_ndr/com_$basename.h\"\n" . 
+			"#include \"$outputdir/com_$basename.h\"\n" . 
 			"#include \"lib/com/dcom/dcom.h\"\n" .$res);
 		}
 		$opt_odl = 1;
@@ -220,32 +214,27 @@ sub process_file($)
 	}
 
 	if (defined($opt_header)) {
-		my $header = $opt_header;
-		if ($header eq "") {
-			$header = Parse::Pidl::Util::ChangeExtension($output, ".h");
-		}
+		my $header = ($opt_header or "$outputdir/ndr_$basename.h");
 		require Parse::Pidl::Samba::NDR::Header;
 		Parse::Pidl::Util::FileSave($header, Parse::Pidl::Samba::NDR::Header::Parse($pidl));
 		if (defined($opt_swig)) {
 		  require Parse::Pidl::Samba::SWIG;
-		  my($filename) = $output;
-		  $filename =~ s/\/ndr_/\//;
-		  $filename = ($opt_swig or Parse::Pidl::Util::ChangeExtension($filename, ".i"));
+		  my($filename) = ($opt_swig or "$outputdir/$basename.i");
 		  Parse::Pidl::Samba::SWIG::RewriteHeader($pidl, $header, $filename);
 		}
 	}
 
 	if (defined($opt_eth_header)) {
 	  require Parse::Pidl::Ethereal::NDR::Header;
-	  my($eparserhdr) = ($opt_eth_header or (dirname($output) . "/packet-dcerpc-$basename.h"));
+	  my($eparserhdr) = ($opt_eth_header or "$outputdir/packet-dcerpc-$basename.h");
 
 	  Parse::Pidl::Util::FileSave($eparserhdr, Parse::Pidl::Ethereal::NDR::Header::Parse($ndr));
 	}
 
-	my $h_filename = Parse::Pidl::Util::ChangeExtension($output, ".h");
+	my $h_filename = "$outputdir/ndr_$basename.h";
 	if (defined($opt_client)) {
 		require Parse::Pidl::Samba::NDR::Client;
-		my ($client) = ($opt_client or Parse::Pidl::Util::ChangeExtension($output, "_c.c"));
+		my ($client) = ($opt_client or "$outputdir/ndr_$basename\_c.c");
 
 		Parse::Pidl::Util::FileSave($client, Parse::Pidl::Samba::NDR::Client::Parse($ndr,$h_filename));
 	}
@@ -253,11 +242,9 @@ sub process_file($)
 	if (defined($opt_ejs)) {
 		require Parse::Pidl::Samba::EJS;
 		require Parse::Pidl::Samba::EJSHeader;
-		my $ejs = Parse::Pidl::Util::ChangeExtension($output, "_ejs.c");
-		Parse::Pidl::Util::FileSave($ejs, Parse::Pidl::Samba::EJS::Parse($ndr, $h_filename));
+		Parse::Pidl::Util::FileSave("$outputdir/ndr_$basename\_ejs.c", Parse::Pidl::Samba::EJS::Parse($ndr, $h_filename));
 
-		$ejs = Parse::Pidl::Util::ChangeExtension($output, "_ejs.h");
-		Parse::Pidl::Util::FileSave($ejs, Parse::Pidl::Samba::EJSHeader::Parse($ndr));
+		Parse::Pidl::Util::FileSave("$outputdir/ndr_$basename\_ejs.h", Parse::Pidl::Samba::EJSHeader::Parse($ndr));
 	}
 
 	if (defined($opt_server)) {
@@ -273,7 +260,7 @@ sub process_file($)
 			}
 		}
 
-		Parse::Pidl::Util::FileSave(($opt_server or Parse::Pidl::Util::ChangeExtension($output, "_s.c")), Parse::Pidl::Samba::NDR::Server::Parse($ndr,$h_filename));
+		Parse::Pidl::Util::FileSave(($opt_server or "$outputdir/ndr_$basename\_s.c"), Parse::Pidl::Samba::NDR::Server::Parse($ndr,$h_filename));
 
 		if ($dcom ne "") {
 			$dcom = "
@@ -284,19 +271,19 @@ sub process_file($)
 
 $dcom
 ";
-	Parse::Pidl::Util::FileSave(Parse::Pidl::Util::ChangeExtension($output, "_d.c"), $dcom);
+	Parse::Pidl::Util::FileSave("$outputdir/$basename\_d.c", $dcom);
 		}
 	}
 
 	if (defined($opt_parser)) {
-		my $parser = ($opt_parser or Parse::Pidl::Util::ChangeExtension($output, ".c"));
+		my $parser = ($opt_parser or "$outputdir/ndr_$basename.c");
 		require Parse::Pidl::Samba::NDR::Parser;
 		Parse::Pidl::Util::FileSave($parser, Parse::Pidl::Samba::NDR::Parser::Parse($ndr, $parser));
 	}
 
 	if (defined($opt_eth_parser)) {
 	  require Parse::Pidl::Ethereal::NDR::Parser;
-	  my($eparser) = ($opt_eth_parser or dirname($output) . "/packet-dcerpc-$basename.c");
+	  my($eparser) = ($opt_eth_parser or "$outputdir/packet-dcerpc-$basename.c");
 	  Parse::Pidl::Util::FileSave($eparser, Parse::Pidl::Ethereal::NDR::Parser::Parse($ndr, $basename, $eparser));
 	}
 
