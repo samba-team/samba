@@ -231,7 +231,7 @@ cmp_KRB_ERROR (void *a, void *b)
 	COMPARE_OPT_STRING(aa,ab,e_text);
     }
     IF_OPT_COMPARE(aa,ab,e_data) {
-	// COMPARE_OPT_OCTECT_STRING(aa,ab,e_data);
+	/* COMPARE_OPT_OCTECT_STRING(aa,ab,e_data); */
     }
 
     return 0;
