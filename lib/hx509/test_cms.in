@@ -46,13 +46,27 @@ echo "verify signed data"
 ./hxtool cms-verify-sd \
 	--anchors=FILE:$srcdir/data/ca.crt \
 	sd.data sd.data.out || exit 1
-
 cmp "$srcdir/test_chain.in" sd.data.out || exit 1
 
 echo "verify signed data"
 ./hxtool cms-verify-sd \
 	--anchors=FILE:$srcdir/data/test.crt \
 	sd.data sd.data.out && exit 1
+
+echo "create signed data  (content info)"
+./hxtool cms-create-sd \
+	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
+	--content-info \
+	"$srcdir/test_chain.in" \
+	sd.data || exit 1
+
+echo "verify signed data (content info)"
+./hxtool cms-verify-sd \
+	--anchors=FILE:$srcdir/data/ca.crt \
+	--content-info \
+	sd.data sd.data.out || exit 1
+cmp "$srcdir/test_chain.in" sd.data.out || exit 1
+
 
 echo "create signed data"
 ./hxtool cms-create-sd \
