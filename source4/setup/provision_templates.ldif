@@ -121,6 +121,9 @@ objectClass: top
 objectClass: Template
 objectClass: foreignSecurityPrincipalTemplate
 cn: TemplateForeignSecurityPrincipal
+instanceType: 4
+showInAdvancedViewOnly: TRUE
+objectCategory: CN=Foreign-Security-Principal,CN=Schema,CN=Configuration,${BASEDN}
 
 dn: CN=TemplateSecret,CN=Templates,${BASEDN}
 objectClass: top

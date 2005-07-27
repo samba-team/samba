@@ -56,19 +56,10 @@ function add_foreign(str, sid, desc, unixname)
 dn: CN=${SID},CN=ForeignSecurityPrincipals,${BASEDN}
 objectClass: top
 objectClass: foreignSecurityPrincipal
-cn: ${SID}
 description: ${DESC}
-instanceType: 4
-whenCreated: ${LDAPTIME}
-whenChanged: ${LDAPTIME}
+unixName: ${UNIXNAME}
 uSNCreated: 1
 uSNChanged: 1
-showInAdvancedViewOnly: TRUE
-name: ${SID}
-objectGUID: ${NEWGUID}
-objectSid: ${SID}
-objectCategory: CN=Foreign-Security-Principal,CN=Schema,CN=Configuration,${BASEDN}
-unixName: ${UNIXNAME}
 ";
 	var sub = new Object();
 	sub.SID = sid;
@@ -212,7 +203,7 @@ function setup_file(template, fname, subobj)
 /*
   provision samba4 - caution, this wipes all existing data!
 */
-function provision(subobj, message)
+function provision(subobj, message, blank)
 {
 	var data = "";
 	var lp = loadparm_init();
@@ -249,7 +240,11 @@ function provision(subobj, message)
 	message("Setting up sam.ldb templates\n");
 	setup_ldb("provision_templates.ldif", "sam.ldb", subobj, NULL, false);
 	message("Setting up sam.ldb data\n");
-	setup_ldb("provision.ldif", "sam.ldb", subobj, data, false);
+	setup_ldb("provision.ldif", "sam.ldb", subobj, NULL, false);
+	if (blank == false) {
+		message("Setting up sam.ldb users and groups\n");
+		setup_ldb("provision_users.ldif", "sam.ldb", subobj, data, false);
+	}
 	message("Setting up rootdse.ldb\n");
 	setup_ldb("rootdse.ldif", "rootdse.ldb", subobj);
 	message("Setting up secrets.ldb\n");
