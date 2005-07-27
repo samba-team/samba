@@ -1038,6 +1038,12 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	conn = &domain->conn;
 
 	if (conn->lsa_pipe == NULL) {
+#if 0
+		/* disabling schannl on the LSA pipe for now since 
+		   both Win2K-SP4 SR1 & Win2K3-SP1 fail the open_policy() 
+		   call (return codes 0xc0020042 and 0xc0020041 respectively).
+		   We really need to fix this soon.  --jerry  */
+
 		unsigned char *session_key;
 
 		if (cm_get_schannel_key(domain, mem_ctx, &session_key))
@@ -1046,6 +1052,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 							       session_key,
 							       domain->name);
 		else
+#endif
 			conn->lsa_pipe = cli_rpc_open_noauth(conn->cli,
 							     PI_LSARPC);
 
