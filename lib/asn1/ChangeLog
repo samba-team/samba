@@ -1,5 +1,7 @@
 2005-07-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* rfc2459.asn1: add id-rsadsi-rc2-cbc
+
 	* Makefile.am: add another oid for rc2
 
 2005-07-27  Love Hörnquist Åstrand  <lha@it.su.se>
