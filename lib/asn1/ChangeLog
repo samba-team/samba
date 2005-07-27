@@ -1,3 +1,7 @@
+2005-07-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: remove duplicate asn1_CMSAttributes.x
+
 2005-07-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* asn1_print.c: rename optind to optidx
