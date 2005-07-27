@@ -1,3 +1,9 @@
+2005-07-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* slc-gram.y (gen_wrapper): use the generated version of name for
+	function, if no function is is used, also use the generated name
+	for the structure name.
+	
 2005-06-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* slc-gram.y: fix a merge error
