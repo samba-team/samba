@@ -875,6 +875,8 @@ find_cipher(const heim_oid *oid)
 {
     if (heim_oid_cmp(oid, oid_id_pkcs3_rc2_cbc()) == 0) {
 	return EVP_rc2_cbc();
+    } else if (heim_oid_cmp(oid, oid_id_rsadsi_rc2_cbc()) == 0) {
+	return EVP_rc2_cbc();
     } else if (heim_oid_cmp(oid, &private_rc2_40_oid) == 0) {
 	return EVP_rc2_40_cbc();
     } else if (heim_oid_cmp(oid, oid_id_pkcs3_des_ede3_cbc()) == 0) {
