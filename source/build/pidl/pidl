@@ -37,6 +37,7 @@ my($opt_parse) = 0;
 my($opt_dump) = 0;
 my($opt_uint_enums) = 0;
 my($opt_diff) = 0;
+my($opt_header);
 my($opt_ndr_header);
 my($opt_template) = 0;
 my($opt_client);
@@ -70,7 +71,8 @@ Options:
  --parse               parse a idl file to a .pidl file
  --dump                dump a pidl file back to idl
  --uint-enums          don't use C enums, instead use uint* types
- --ndr-header[=OUTFILE]create a C NDR header file
+ --header[=OUTFILE]    create generic header file
+ --ndr-header[=OUTFILE]create a C NDR-specific header file
  --ndr-parser[=OUTFILE]create a C NDR parser
  --ejs[=OUTFILE]       create ejs wrapper file
  --client[=OUTFILE]    create a C NDR client
@@ -99,6 +101,7 @@ GetOptions (
 	    'dump' => \$opt_dump,
 	    'uint-enums' => \$opt_uint_enums,
 	    'ndr-header:s' => \$opt_ndr_header,
+		'header:s' => \$opt_header,
 	    'server:s' => \$opt_server,
 	    'template' => \$opt_template,
 	    'ndr-parser:s' => \$opt_ndr_parser,
@@ -213,10 +216,16 @@ sub process_file($)
 		$ndr = Parse::Pidl::NDR::Parse($pidl);
 	}
 
+	if (defined($opt_header)) {
+		my $header = ($opt_header or "$outputdir/$basename.h");
+		require Parse::Pidl::Samba::Header;
+		Parse::Pidl::Util::FileSave($header, Parse::Pidl::Samba::Header::Parse($pidl));
+	}
+
 	if (defined($opt_ndr_header)) {
 		my $header = ($opt_ndr_header or "$outputdir/ndr_$basename.h");
 		require Parse::Pidl::Samba::NDR::Header;
-		Parse::Pidl::Util::FileSave($header, Parse::Pidl::Samba::NDR::Header::Parse($pidl));
+		Parse::Pidl::Util::FileSave($header, Parse::Pidl::Samba::NDR::Header::Parse($pidl, $basename));
 		if (defined($opt_swig)) {
 		  require Parse::Pidl::Samba::SWIG;
 		  my($filename) = ($opt_swig or "$outputdir/$basename.i");
