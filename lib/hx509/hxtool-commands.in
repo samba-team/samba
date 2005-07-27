@@ -50,19 +50,25 @@ command = {
 	}
 	min_args="2"
 	argument="in-file out-file cert ..."
-	help = "Wrap a file within a SignedData object."
+	help = "Wrap a file within a SignedData object"
 }
 command = {
 	name = "cms-verify-sd"
 	option = {
+		long = "anchors"
+		type = "strings"
+		argument = "certificate-store"
+		help = "trust anchors"
+	}
+	option = {
 		long = "certificate"
 		short = "c"
-		type = "string"
+		type = "strings"
 		argument = "certificate-store"
 		help = "certificate store to pull certificates from"
 	}
 	min_args="2"
-	argument="in-file out-file cert ..."
+	argument="in-file out-file"
 	help = "Verify a file within a SignedData object"
 }
 command = {
@@ -112,10 +118,32 @@ command = {
 	help = "Validate content of certificates"
 }
 command = {
+	name = "query"
+	option = {
+		long = "exact"
+		type = "flag"
+		help = "exact match"
+	}
+	option = {
+		long = "private-key"
+		type = "flag"
+		help = "search for private key"
+	}
+	option = {
+		long = "friendlyname"
+		type = "string"
+		argument = "name"
+		help = "match on friendly name"
+	}
+	min_args="1"
+	argument="certificates ..."
+	help = "Query the certificates for a match"
+}
+command = {
 	name = "help"
 	name = "?"
 	argument = "[command]"
 	min_args = "0"
 	max_args = "1"
-	help = "Help! I need somebody."
+	help = "Help! I need somebody"
 }
