@@ -650,72 +650,19 @@ BOOL smb_io_rpc_hdr_fault(const char *desc, RPC_HDR_FAULT *rpc, prs_struct *ps, 
 }
 
 /*******************************************************************
- Init an RPC_HDR_AUTHA structure.
-********************************************************************/
-
-void init_rpc_hdr_autha(RPC_HDR_AUTHA *rai,
-				uint16 max_tsize, uint16 max_rsize,
-				uint8 auth_type, uint8 auth_level,
-				uint8 stub_type_len)
-{
-	rai->max_tsize = max_tsize; /* maximum transmission fragment size (0x1630) */
-	rai->max_rsize = max_rsize; /* max receive fragment size (0x1630) */   
-
-	rai->auth_type     = auth_type; /* nt lm ssp 0x0a */
-	rai->auth_level    = auth_level; /* 0x06 */
-	rai->stub_type_len = stub_type_len; /* 0x00 */
-	rai->padding       = 0; /* padding 0x00 */
-
-	rai->unknown       = 0x0014a0c0; /* non-zero pointer to something */
-}
-
-/*******************************************************************
- Reads or writes an RPC_HDR_AUTHA structure.
-********************************************************************/
-
-BOOL smb_io_rpc_hdr_autha(const char *desc, RPC_HDR_AUTHA *rai, prs_struct *ps, int depth)
-{
-	if (rai == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "smb_io_rpc_hdr_autha");
-	depth++;
-
-	if(!prs_uint16("max_tsize    ", ps, depth, &rai->max_tsize))
-		return False;
-	if(!prs_uint16("max_rsize    ", ps, depth, &rai->max_rsize))
-		return False;
-
-	if(!prs_uint8 ("auth_type    ", ps, depth, &rai->auth_type)) /* 0x0a nt lm ssp */
-		return False;
-	if(!prs_uint8 ("auth_level   ", ps, depth, &rai->auth_level)) /* 0x06 */
-		return False;
-	if(!prs_uint8 ("stub_type_len", ps, depth, &rai->stub_type_len))
-		return False;
-	if(!prs_uint8 ("padding      ", ps, depth, &rai->padding))
-		return False;
-
-	if(!prs_uint32("unknown      ", ps, depth, &rai->unknown)) /* 0x0014a0c0 */
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
  Inits an RPC_HDR_AUTH structure.
 ********************************************************************/
 
 void init_rpc_hdr_auth(RPC_HDR_AUTH *rai,
 				uint8 auth_type, uint8 auth_level,
-				uint8 padding,
-				uint32 ptr)
+				uint8 auth_pad_len,
+				uint32 auth_context_id)
 {
 	rai->auth_type     = auth_type; /* nt lm ssp 0x0a */
 	rai->auth_level    = auth_level; /* 0x06 */
-	rai->padding       = padding;
-	rai->reserved      = 0;
-
-	rai->auth_context  = ptr; /* non-zero pointer to something */
+	rai->auth_pad_len  = auth_pad_len;
+	rai->auth_reserved = 0;
+	rai->auth_context_id = auth_context_id;
 }
 
 /*******************************************************************
@@ -737,11 +684,48 @@ BOOL smb_io_rpc_hdr_auth(const char *desc, RPC_HDR_AUTH *rai, prs_struct *ps, in
 		return False;
 	if(!prs_uint8 ("auth_level   ", ps, depth, &rai->auth_level)) /* 0x06 */
 		return False;
-	if(!prs_uint8 ("padding      ", ps, depth, &rai->padding))
+	if(!prs_uint8 ("auth_pad_len ", ps, depth, &rai->auth_pad_len))
 		return False;
-	if(!prs_uint8 ("reserved     ", ps, depth, &rai->reserved))
+	if(!prs_uint8 ("auth_reserved", ps, depth, &rai->auth_reserved))
 		return False;
-	if(!prs_uint32("auth_context ", ps, depth, &rai->auth_context))
+	if(!prs_uint32("auth_context_id", ps, depth, &rai->auth_context_id))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
+ Init an RPC_HDR_AUTHA structure.
+********************************************************************/
+
+void init_rpc_hdr_autha(RPC_HDR_AUTHA *rai,
+				uint16 max_tsize, uint16 max_rsize,
+				RPC_HDR_AUTH *auth)
+{
+	rai->max_tsize = max_tsize; /* maximum transmission fragment size (0x1630) */
+	rai->max_rsize = max_rsize; /* max receive fragment size (0x1630) */   
+	rai->auth = *auth;
+}
+
+/*******************************************************************
+ Reads or writes an RPC_HDR_AUTHA structure.
+********************************************************************/
+
+BOOL smb_io_rpc_hdr_autha(const char *desc, RPC_HDR_AUTHA *rai, prs_struct *ps, int depth)
+{
+	if (rai == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "smb_io_rpc_hdr_autha");
+	depth++;
+
+	if(!prs_uint16("max_tsize    ", ps, depth, &rai->max_tsize))
+		return False;
+	if(!prs_uint16("max_rsize    ", ps, depth, &rai->max_rsize))
+		return False;
+
+	if(!smb_io_rpc_hdr_auth("auth", &rai->auth, ps, depth))
 		return False;
 
 	return True;
