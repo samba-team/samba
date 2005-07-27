@@ -56,17 +56,21 @@ usage(int code)
 int
 cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 {
-    int ret;
     hx509_verify_ctx ctx = NULL;
     heim_oid type;
     heim_octet_string c;
     hx509_certs signers = NULL;
     hx509_certs anchors = NULL;
+    hx509_lock lock;
+    int ret, i;
 
     size_t sz;
     void *p;
 
     printf("cms verify signed data\n");
+
+    hx509_lock_init(&lock);
+    hx509_lock_add_password(lock, "foobar");
 
     ret = _hx509_map_file(argv[0], &p, &sz);
     if (ret)
@@ -74,19 +78,13 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 
     ret = hx509_verify_init_ctx(&ctx);
 
-    argc--;
-    argv++;
-
     ret = hx509_certs_init("MEMORY:cms-anchors", 0, NULL, &anchors);
 
-    while (argc > 0) {
-
-	ret = hx509_certs_append(anchors, NULL, argv[0]);
+    for (i = 0; i < opt->anchors_strings.num_strings; i++) {
+	ret = hx509_certs_append(anchors, lock, 
+				 opt->anchors_strings.strings[i]);
 	if (ret)
-	    errx(1, "hx509_certs_append: %d", ret);
-
-	argc--;
-	argv++;
+	    errx(1, "hx509_certs_append: chain: %d", ret);
     }
 
     hx509_verify_attach_anchors(ctx, anchors);
@@ -103,7 +101,13 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
     hx509_certs_free(&anchors);
     hx509_certs_free(&signers);
 
+    hx509_lock_free(lock);
 
+    ret = _hx509_write_file(argv[1], c.data, c.length);
+    if (ret)
+	errx(1, "hx509_write_file: %d", ret);
+
+    free_octet_string(&c);
     _hx509_unmap_file(p, sz);
 
     return 0;
@@ -141,17 +145,22 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 	    errx(1, "hx509_certs_append: chain: %d", ret);
     }
 
-    ret = _hx509_map_file(argv[0], &p, &sz);
-    if (ret)
-	err(1, "map_file: %s: %d", argv[0], ret);
-
     _hx509_query_clear(&q);
     q.match |= HX509_QUERY_PRIVATE_KEY;
     q.match |= HX509_QUERY_KU_DIGITALSIGNATURE;
 
+    if (opt->signer_string) {
+	q.match |= HX509_QUERY_MATCH_FRIENDLY_NAME;
+	q.friendlyname = opt->signer_string;
+    }
+
     ret = _hx509_certs_find(store, &q, &cert);
     if (ret)
 	errx(1, "hx509_certs_find: %d", ret);
+
+    ret = _hx509_map_file(argv[0], &p, &sz);
+    if (ret)
+	err(1, "map_file: %s: %d", argv[0], ret);
 
     ret = hx509_cms_create_signed_1(contentType,
 				    p,
@@ -276,9 +285,6 @@ validate_print(int argc, char **argv, int flags)
     hx509_certs certs;
     hx509_lock lock;
 
-    if (argc < 1)
-	errx(1, "argc");
-
     hx509_lock_init(&lock);
     hx509_lock_add_password(lock, "foobar");
 
@@ -347,9 +353,6 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
     ret = hx509_certs_init("MEMORY:chain", 0, NULL, &chain);
     ret = hx509_certs_init("MEMORY:certs", 0, NULL, &certs);
 
-    if (argc < 1)
-	errx(1, "argc");
-
     while(argc--) {
 	char *s = *argv++;
 
@@ -401,9 +404,6 @@ pcert_pkcs11(void *opt, int argc, char **argv)
 {
     int ret;
 
-    if (argc < 1)
-	errx(1, "argc");
-
     ret = hx509_keyset_init(argv[0], NULL);
     if (ret) {
 	printf("hx509_keyset_init: %d\n", ret);
@@ -411,6 +411,52 @@ pcert_pkcs11(void *opt, int argc, char **argv)
     }
 
     return 0;
+}
+
+int
+query(struct query_options *opt, int argc, char **argv)
+{
+    hx509_lock lock;
+    hx509_query q;
+    hx509_certs certs;
+    hx509_cert c;
+    int ret;
+
+    _hx509_query_clear(&q);
+
+    hx509_lock_init(&lock);
+    hx509_lock_add_password(lock, "foobar");
+
+    ret = hx509_certs_init("MEMORY:cert-store", 0, NULL, &certs);
+
+    while (argc > 0) {
+
+	ret = hx509_certs_append(certs, lock, argv[0]);
+	if (ret)
+	    errx(1, "hx509_certs_append: %d", ret);
+
+	argc--;
+	argv++;
+    }
+
+    if (opt->friendlyname_string) {
+	q.match |= HX509_QUERY_MATCH_FRIENDLY_NAME;
+	q.friendlyname = opt->friendlyname_string;
+    }
+
+    if (opt->private_key_flag)
+	q.match |= HX509_QUERY_PRIVATE_KEY;
+
+
+    ret = _hx509_certs_find(certs, &q, &c);
+    if (ret)
+	warnx("_hx509_certs_find: %d", ret);
+    else
+	printf("match found\n");
+
+    hx509_lock_free(lock);
+
+    return ret;
 }
 
 int
