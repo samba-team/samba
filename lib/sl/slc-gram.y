@@ -408,33 +408,34 @@ gen_wrapper(struct assignment *as)
     struct assignment *opt1;
     struct assignment *function;
     struct assignment *tmp;
-    char *f;
+    char *n, *f;
     int nargs = 0;
     int seen_strings = 0;
 
     name = find(as, "name");
+    n = strdup(name->u.value);
+    gen_name(n);
     arg = find(as, "argument");
     opt1 = find(as, "option");
     function = find(as, "function");
-    if(function == NULL)
-	function = name;
-    f = strdup(name->u.value);
-    gen_name(f);
+    if(function)
+	f = function->u.value;
+    else
+	f = n;
+    
        
     if(opt1 != NULL) {
-	gen_options(opt1, name->u.value);
-	hprint(0, "int %s(struct %s_options*, int, char **);\n", 
-	       function->u.value, name->u.value);
+	gen_options(opt1, n);
+	hprint(0, "int %s(struct %s_options*, int, char **);\n", f, n);
     } else {
-	hprint(0, "int %s(void*, int, char **);\n", 
-	       function->u.value);
+	hprint(0, "int %s(void*, int, char **);\n", f);
     }
 
     fprintf(cfile, "static int\n");
-    fprintf(cfile, "%s_wrap(int argc, char **argv)\n", f);
+    fprintf(cfile, "%s_wrap(int argc, char **argv)\n", n);
     fprintf(cfile, "{\n");
     if(opt1 != NULL)
-	cprint(1, "struct %s_options opt;\n", name->u.value);
+	cprint(1, "struct %s_options opt;\n", n);
     cprint(1, "int ret;\n");
     cprint(1, "int optidx = 0;\n");
     cprint(1, "struct getargs args[] = {\n");
@@ -590,8 +591,7 @@ gen_wrapper(struct assignment *as)
     cprint(2, "goto usage;\n");
 
     cprint(1, "ret = %s(%s, argc - optidx, argv + optidx);\n", 
-	   function->u.value, 
-	   opt1 ? "&opt": "NULL");
+	   f, opt1 ? "&opt": "NULL");
     if(seen_strings) {
 	if(seen_strings) {
 	    for(tmp = find(as, "option"); 
