@@ -3752,7 +3752,8 @@ static BOOL ldapgroup2displayentry(struct ldap_search_state *state,
 	
 		case SID_NAME_WKN_GRP:
 
-			if (!sid_check_is_in_builtin(&sid)) {
+			if (!sid_peek_check_rid(&global_sid_Builtin, &sid, &result->rid)) {
+
 				DEBUG(0, ("%s is not in builtin sid\n", sid_string_static(&sid)));
 				return False;
 			}
