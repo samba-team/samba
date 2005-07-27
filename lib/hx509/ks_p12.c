@@ -223,7 +223,8 @@ certBag_parser(struct collector *c, const void *data, size_t length,
     }
     {
 	const char *s = hx509_cert_get_friendly_name(cert);
-	printf("cert name: %s\n", s ? s : "no name set");
+	if (s)
+	    printf("cert name: %s\n", s);
     }
 
     return 0;
