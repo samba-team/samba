@@ -5,6 +5,7 @@
 
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
    Copyright (C) Andrew Tridgell 2004
+   Copyright (C) Volker Lendecke 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -49,6 +50,56 @@ struct samsync_ldb_state {
 	struct samsync_ldb_secret *secrets;
 	struct samsync_ldb_trusted_domain *trusted_domains;
 };
+
+static NTSTATUS samsync_ldb_add_foreignSecurityPrincipal(TALLOC_CTX *mem_ctx,
+							 struct samsync_ldb_state *state,
+							 struct dom_sid *sid,
+							 char **fsp_dn)
+{
+	const char *sidstr = dom_sid_string(mem_ctx, sid);
+	/* We assume that ForeignSecurityPrincipals are under the BASEDN of the main domain */
+	const char *basedn = samdb_search_string(state->sam_ldb, mem_ctx, state->base_dn[SAM_DATABASE_DOMAIN],
+						 "dn",
+						 "(&(objectClass=container)"
+						 "(cn=ForeignSecurityPrincipals))");
+	struct ldb_message *msg;
+	int ret;
+
+	if (!sidstr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (basedn == NULL) {
+		DEBUG(0, ("Failed to find DN for "
+			  "ForeignSecurityPrincipal container\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	
+	msg = ldb_msg_new(mem_ctx);
+	if (msg == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* add core elements to the ldb_message for the alias */
+	msg->dn = talloc_asprintf(mem_ctx, "CN=%s,%s", sidstr, basedn);
+	if (msg->dn == NULL)
+		return NT_STATUS_NO_MEMORY;
+	
+	samdb_msg_add_string(state->sam_ldb, mem_ctx, msg,
+			     "objectClass",
+			     "foreignSecurityPrincipal");
+
+	*fsp_dn = msg->dn;
+
+	/* create the alias */
+	ret = samdb_add(state->sam_ldb, mem_ctx, msg);
+	if (ret != 0) {
+		DEBUG(0,("Failed to create foreignSecurityPrincipal "
+			 "record %s: %s\n", msg->dn, ldb_errstring(state->sam_ldb)));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	return NT_STATUS_OK;
+}
 
 static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 					  struct samsync_ldb_state *state,
@@ -178,6 +229,11 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 	} else if (ret == 0) {
 		add = True;
 	} else if (ret > 1) {
+		DEBUG(0, ("More than one user with SID: %s\n", 
+			  dom_sid_string(mem_ctx, 
+					 dom_sid_add_rid(mem_ctx, 
+							 state->dom_sid[database], 
+							 rid))));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else {
 		msg->dn = talloc_steal(msg, msgs[0]->dn);
@@ -317,10 +373,16 @@ static NTSTATUS samsync_ldb_delete_user(TALLOC_CTX *mem_ctx,
 			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))); 
 
 	if (ret == -1) {
+		DEBUG(0, ("gendb_search failed: %s\n", ldb_errstring(state->sam_ldb)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
 		return NT_STATUS_NO_SUCH_USER;
 	} else if (ret > 1) {
+		DEBUG(0, ("More than one user with SID: %s\n", 
+			  dom_sid_string(mem_ctx, 
+					 dom_sid_add_rid(mem_ctx, 
+							 state->dom_sid[database], 
+							 rid))));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -361,10 +423,16 @@ static NTSTATUS samsync_ldb_handle_group(TALLOC_CTX *mem_ctx,
 			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))); 
 
 	if (ret == -1) {
+		DEBUG(0, ("gendb_search failed: %s\n", ldb_errstring(state->sam_ldb)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
 		add = True;
 	} else if (ret > 1) {
+		DEBUG(0, ("More than one group/alias with SID: %s\n", 
+			  dom_sid_string(mem_ctx, 
+					 dom_sid_add_rid(mem_ctx, 
+							 state->dom_sid[database], 
+							 rid))));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else {
 		msg->dn = talloc_steal(msg, msgs[0]->dn);
@@ -438,10 +506,16 @@ static NTSTATUS samsync_ldb_delete_group(TALLOC_CTX *mem_ctx,
 			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))); 
 
 	if (ret == -1) {
+		DEBUG(0, ("gendb_search failed: %s\n", ldb_errstring(state->sam_ldb)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
 		return NT_STATUS_NO_SUCH_GROUP;
 	} else if (ret > 1) {
+		DEBUG(0, ("More than one group/alias with SID: %s\n", 
+			  dom_sid_string(mem_ctx, 
+					 dom_sid_add_rid(mem_ctx, 
+							 state->dom_sid[database], 
+							 rid))));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	
@@ -479,10 +553,16 @@ static NTSTATUS samsync_ldb_handle_group_member(TALLOC_CTX *mem_ctx,
 			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))); 
 
 	if (ret == -1) {
+		DEBUG(0, ("gendb_search failed: %s\n", ldb_errstring(state->sam_ldb)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
 		return NT_STATUS_NO_SUCH_GROUP;
 	} else if (ret > 1) {
+		DEBUG(0, ("More than one group/alias with SID: %s\n", 
+			  dom_sid_string(mem_ctx, 
+					 dom_sid_add_rid(mem_ctx, 
+							 state->dom_sid[database], 
+							 rid))));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else {
 		msg->dn = talloc_steal(msg, msgs[0]->dn);
@@ -497,6 +577,7 @@ static NTSTATUS samsync_ldb_handle_group_member(TALLOC_CTX *mem_ctx,
 				   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], group_member->rids[i]))); 
 
 		if (ret == -1) {
+			DEBUG(0, ("gendb_search failed: %s\n", ldb_errstring(state->sam_ldb)));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		} else if (ret == 0) {
 			return NT_STATUS_NO_SUCH_USER;
@@ -546,10 +627,16 @@ static NTSTATUS samsync_ldb_handle_alias(TALLOC_CTX *mem_ctx,
 			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))); 
 
 	if (ret == -1) {
+		DEBUG(0, ("gendb_search failed: %s\n", ldb_errstring(state->sam_ldb)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
 		add = True;
 	} else if (ret > 1) {
+		DEBUG(0, ("More than one group/alias with SID: %s\n", 
+			  dom_sid_string(mem_ctx, 
+					 dom_sid_add_rid(mem_ctx, 
+							 state->dom_sid[database], 
+							 rid))));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else {
 		msg->dn = talloc_steal(mem_ctx, msgs[0]->dn);
@@ -625,6 +712,7 @@ static NTSTATUS samsync_ldb_delete_alias(TALLOC_CTX *mem_ctx,
 			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))); 
 
 	if (ret == -1) {
+		DEBUG(0, ("gendb_search failed: %s\n", ldb_errstring(state->sam_ldb)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
 		return NT_STATUS_NO_SUCH_ALIAS;
@@ -666,10 +754,16 @@ static NTSTATUS samsync_ldb_handle_alias_member(TALLOC_CTX *mem_ctx,
 			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], rid))); 
 
 	if (ret == -1) {
+		DEBUG(0, ("gendb_search failed: %s\n", ldb_errstring(state->sam_ldb)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
 		return NT_STATUS_NO_SUCH_GROUP;
 	} else if (ret > 1) {
+		DEBUG(0, ("More than one group/alias with SID: %s\n", 
+			  dom_sid_string(mem_ctx, 
+					 dom_sid_add_rid(mem_ctx, 
+							 state->dom_sid[database], 
+							 rid))));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else {
 		msg->dn = talloc_steal(msg, msgs[0]->dn);
@@ -678,20 +772,29 @@ static NTSTATUS samsync_ldb_handle_alias_member(TALLOC_CTX *mem_ctx,
 	talloc_free(msgs);
 
 	for (i=0; i<alias_member->sids.num_sids; i++) {
-		/* search for the group, by rid */
-		ret = gendb_search(state->sam_ldb, mem_ctx, state->base_dn[database], &msgs, attrs,
+		char *alias_member_dn;
+		/* search for members, in the top basedn (normal users are builtin aliases) */
+		ret = gendb_search(state->sam_ldb, mem_ctx, state->base_dn[SAM_DATABASE_DOMAIN], &msgs, attrs,
 				   "(objectSid=%s)", 
 				   ldap_encode_ndr_dom_sid(mem_ctx, alias_member->sids.sids[i].sid)); 
 
 		if (ret == -1) {
+			DEBUG(0, ("gendb_search failed: %s\n", ldb_errstring(state->sam_ldb)));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		} else if (ret == 0) {
-			return NT_STATUS_NO_SUCH_USER;
-		} else if (ret > 1) {
+			NTSTATUS nt_status;
+			nt_status = samsync_ldb_add_foreignSecurityPrincipal(mem_ctx, state,
+									     alias_member->sids.sids[i].sid, 
+									     &alias_member_dn);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				return nt_status;
+			}
+ 		} else if (ret > 1) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		} else {
-			samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, "member", msgs[0]->dn);
+			alias_member_dn = msgs[0]->dn;
 		}
+		samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, "member", alias_member_dn);
 	
 		talloc_free(msgs);
 	}
@@ -716,6 +819,7 @@ static NTSTATUS samsync_ldb_handle_account(TALLOC_CTX *mem_ctx,
 
 	struct ldb_message *msg;
 	struct ldb_message **msgs;
+	char *privilage_dn;
 	int ret;
 	const char *attrs[] = { NULL };
 	int i;
@@ -725,19 +829,31 @@ static NTSTATUS samsync_ldb_handle_account(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* search for the account, by sid */
-	ret = gendb_search(state->sam_ldb, mem_ctx, state->base_dn[database], &msgs, attrs,
+	/* search for the account, by sid, in the top basedn */
+	ret = gendb_search(state->sam_ldb, mem_ctx, state->base_dn[SAM_DATABASE_DOMAIN], &msgs, attrs,
 			   "(objectSid=%s)", ldap_encode_ndr_dom_sid(mem_ctx, sid)); 
 
 	if (ret == -1) {
+		DEBUG(0, ("gendb_search failed: %s\n", ldb_errstring(state->sam_ldb)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
-		return NT_STATUS_NO_SUCH_USER;
+		NTSTATUS nt_status;
+		nt_status = samsync_ldb_add_foreignSecurityPrincipal(mem_ctx, state,
+								     sid,
+								     &privilage_dn);
+		privilage_dn = talloc_steal(msg, privilage_dn);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
 	} else if (ret > 1) {
+		DEBUG(0, ("More than one account with SID: %s\n", 
+			  dom_sid_string(mem_ctx, sid)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else {
-		msg->dn = talloc_steal(msg, msgs[0]->dn);
+		privilage_dn = talloc_steal(msg, msgs[0]->dn);
 	}
+
+	msg->dn = privilage_dn;
 
 	for (i=0; i< account->privilege_entries; i++) {
 		samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, "privilage",
@@ -771,16 +887,19 @@ static NTSTATUS samsync_ldb_delete_account(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* search for the account, by sid */
-	ret = gendb_search(state->sam_ldb, mem_ctx, state->base_dn[database], &msgs, attrs,
+	/* search for the account, by sid, in the top basedn */
+	ret = gendb_search(state->sam_ldb, mem_ctx, state->base_dn[SAM_DATABASE_DOMAIN], &msgs, attrs,
 			   "(objectSid=%s)", 
 			   ldap_encode_ndr_dom_sid(mem_ctx, sid)); 
 
 	if (ret == -1) {
+		DEBUG(0, ("gendb_search failed: %s\n", ldb_errstring(state->sam_ldb)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else if (ret == 0) {
 		return NT_STATUS_NO_SUCH_USER;
 	} else if (ret > 1) {
+		DEBUG(0, ("More than one account with SID: %s\n", 
+			  dom_sid_string(mem_ctx, sid)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else {
 		msg->dn = talloc_steal(msg, msgs[0]->dn);

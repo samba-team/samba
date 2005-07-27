@@ -220,6 +220,9 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 				     struct lsa_policy_state **_state)
 {
 	struct lsa_policy_state *state;
+	const char *domain_attrs[] =  {"nETBIOSName", "nCName", NULL};
+	int ret_domain;
+	struct ldb_message **msgs_domain;
 
 	state = talloc(mem_ctx, struct lsa_policy_state);
 	if (!state) {
@@ -237,36 +240,47 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
+	ret_domain = gendb_search(state->sam_ldb, mem_ctx, NULL, &msgs_domain, domain_attrs,
+				  "(&(&(nETBIOSName=%s)(objectclass=crossRef))(ncName=*))", 
+				  lp_workgroup());
+	
+	if (ret_domain == -1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+		
+	if (ret_domain != 1) {
+		return NT_STATUS_NO_SUCH_DOMAIN;		
+	}
+
 	/* work out the domain_dn - useful for so many calls its worth
 	   fetching here */
-	state->domain_dn = talloc_reference(state, 
-					    samdb_search_string(state->sam_ldb, mem_ctx, NULL,
-								"dn", "(&(objectClass=domain)(!(objectclass=builtinDomain)))"));
+	state->domain_dn = talloc_steal(state, samdb_result_string(msgs_domain[0], "nCName", NULL));
 	if (!state->domain_dn) {
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
 
 	/* work out the builtin_dn - useful for so many calls its worth
 	   fetching here */
-	state->builtin_dn = talloc_reference(state, 
-					     samdb_search_string(state->sam_ldb, mem_ctx, NULL,
-						"dn", "objectClass=builtinDomain"));
+	state->builtin_dn = talloc_steal(state, 
+					 samdb_search_string(state->sam_ldb, mem_ctx, NULL,
+							     "dn", "objectClass=builtinDomain"));
 	if (!state->builtin_dn) {
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
 
 	/* work out the system_dn - useful for so many calls its worth
 	   fetching here */
-	state->system_dn = talloc_reference(state, 
-					     samdb_search_string(state->sam_ldb, mem_ctx, state->domain_dn,
-					       "dn", "(&(objectClass=container)(cn=System))"));
+	state->system_dn = talloc_steal(state, 
+					samdb_search_string(state->sam_ldb, mem_ctx, state->domain_dn,
+							    "dn", "(&(objectClass=container)(cn=System))"));
 	if (!state->system_dn) {
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
 
-	state->domain_sid = samdb_search_dom_sid(state->sam_ldb, state,
-						 state->domain_dn, "objectSid", 
-						 "dn=%s", state->domain_dn);
+	state->domain_sid = talloc_steal(state, 
+					 samdb_search_dom_sid(state->sam_ldb, state,
+							      state->domain_dn, "objectSid", 
+							      "dn=%s", state->domain_dn));
 	if (!state->domain_sid) {
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
@@ -276,13 +290,9 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
 
-	state->domain_name = talloc_reference(state, 
-					      samdb_search_string(state->sam_ldb, mem_ctx,
-								  state->domain_dn, "name", 
-								  "dn=%s", state->domain_dn));
-	if (!state->domain_name) {
-		return NT_STATUS_NO_SUCH_DOMAIN;		
-	}
+	state->domain_name = talloc_strdup(state, 
+					   samdb_result_string(msgs_domain[0], "nETBIOSName", 
+							       lp_workgroup()));
 
 	*_state = state;
 
@@ -617,14 +627,6 @@ static NTSTATUS lsa_CreateTrustedDomain(struct dcesrv_call_state *dce_call, TALL
 		}
 			
 		samdb_msg_add_string(trusted_domain_state->policy->sam_ldb, mem_ctx, msg, "securityIdentifier", sid_string);
-	}
-
-	/* pull in all the template attributes. */
-	ret = samdb_copy_template(trusted_domain_state->policy->sam_ldb, mem_ctx, msg, 
-				  "(&(name=TemplateTrustedDomain)(objectclass=trustedDomainTemplate))");
-	if (ret != 0) {
-		DEBUG(0,("Failed to load TemplateTrustedDomain from samdb\n"));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	samdb_msg_add_string(trusted_domain_state->policy->sam_ldb, mem_ctx, msg, "objectClass", "trustedDomain");
