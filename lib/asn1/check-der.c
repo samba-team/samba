@@ -250,13 +250,14 @@ cmp_bmp_string (void *a, void *b)
     return heim_bmp_string_cmp(oa, ob);
 }
 
+static uint16_t bmp_d1[] = { 32 };
+static uint16_t bmp_d2[] = { 32, 32 };
+
 static int
 test_bmp_string (void)
 {
-    uint16_t d1[] = { 32 };
-    heim_bmp_string s1 = { 1, d1 };
-    uint16_t d2[] = { 32, 32 };
-    heim_bmp_string s2 = { 2, d2 };
+    heim_bmp_string s1 = { 1, bmp_d1 };
+    heim_bmp_string s2 = { 2, bmp_d2 };
 
     struct test_case tests[] = {
 	{NULL, 2, "\x00\x20"},
@@ -354,6 +355,11 @@ test_cmp_oid (void *a, void *b)
     return heim_oid_cmp((heim_oid *)a, (heim_oid *)b);
 }
 
+static unsigned oid_comp1[] = { 1, 1, 1 };
+static unsigned oid_comp2[] = { 1, 1 };
+static unsigned oid_comp3[] = { 6, 15, 1 };
+static unsigned oid_comp4[] = { 6, 15 };
+
 static int
 test_oid (void)
 {
@@ -363,10 +369,6 @@ test_oid (void)
 	{NULL, 2, "\xff\x01"},
 	{NULL, 1, "\xff"}
     };
-    unsigned oid_comp1[] = { 1, 1, 1 };
-    unsigned oid_comp2[] = { 1, 1 };
-    unsigned oid_comp3[] = { 6, 15, 1 };
-    unsigned oid_comp4[] = { 6, 15 };
     heim_oid values[] = {
 	{ 3, oid_comp1 },
 	{ 2, oid_comp2 },
