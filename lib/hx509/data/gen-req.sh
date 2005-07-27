@@ -63,3 +63,36 @@ openssl pkcs12 \
     -caname sub-ca \
     -caname ca
 
+openssl smime \
+    -sign \
+    -nodetach \
+    -binary \
+    -in ../test_chain.in \
+    -signer test.crt \
+    -inkey test.key \
+    -outform DER \
+    -out test-signed-data
+
+openssl smime \
+    -sign \
+    -nodetach \
+    -binary \
+    -in ../test_chain.in \
+    -signer test.crt \
+    -inkey test.key \
+    -noattr \
+    -outform DER \
+    -out test-signed-data-noattr
+
+openssl smime \
+    -sign \
+    -nodetach \
+    -binary \
+    -in ../test_chain.in \
+    -signer test.crt \
+    -inkey test.key \
+    -noattr \
+    -nocerts \
+    -outform DER \
+    -out test-signed-data-noattr-nocerts
+
