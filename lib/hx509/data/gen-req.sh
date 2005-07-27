@@ -35,8 +35,31 @@ gen_cert()
 
 gen_cert "hx509 Test Root CA" "root" "ca" "v3_ca"
 gen_cert "Test cert" "ca" "test" "usr_cert"
-gen_cert "Test cert KeyEncipherment" "ca" "test" "usr_cert_ke"
-gen_cert "Test cert DigitalSignature" "ca" "test" "usr_cert_ds"
+gen_cert "Test cert KeyEncipherment" "ca" "test-ke-only" "usr_cert_ke"
+gen_cert "Test cert DigitalSignature" "ca" "test-ds-only" "usr_cert_ds"
 gen_cert "Sub CA" "ca" "sub-ca" "v3_ca"
 gen_cert "Test sub cert" "sub-ca" "sub-cert" "usr_cert"
+
+cat sub-ca.crt ca.crt > sub-ca-combined.crt
+
+openssl pkcs12 \
+    -export \
+    -in test.crt \
+    -inkey test.key \
+    -passout pass:foobar \
+    -out test.p12 \
+    -name "friendlyname-test" \
+    -certfile ca.crt \
+    -caname ca
+
+openssl pkcs12 \
+    -export \
+    -in sub-cert.crt \
+    -inkey sub-cert.key \
+    -passout pass:foobar \
+    -out sub-cert.p12 \
+    -name "friendlyname-sub-cert" \
+    -certfile sub-ca-combined.crt \
+    -caname sub-ca \
+    -caname ca
 
