@@ -769,17 +769,17 @@ static const heim_octet_string null_entry_oid = { 2, "\x05\x00" };
 
 static const unsigned sha1_oid_tree[] = { 1, 3, 14, 3, 2, 26 };
 const AlgorithmIdentifier _hx509_signature_sha1_data = { 
-    { 6, rk_UNCONST(sha1_oid_tree) }, &null_entry_oid
+    { 6, rk_UNCONST(sha1_oid_tree) }, rk_UNCONST(&null_entry_oid)
 };
 
 static const unsigned md5_oid_tree[] = { 1, 2, 840, 113549, 2, 5 };
 const AlgorithmIdentifier _hx509_signature_md5_data = { 
-    { 6, rk_UNCONST(md5_oid_tree) }, &null_entry_oid
+    { 6, rk_UNCONST(md5_oid_tree) }, rk_UNCONST(&null_entry_oid)
 };
 
 static const unsigned md2_oid_tree[] = { 1, 2, 840, 113549, 2, 2 };
 const AlgorithmIdentifier _hx509_signature_md2_data = { 
-    { 6, rk_UNCONST(md2_oid_tree) }, &null_entry_oid
+    { 6, rk_UNCONST(md2_oid_tree) }, rk_UNCONST(&null_entry_oid)
 };
 
 static const unsigned rsa_with_sha1_oid[] ={ 1, 2, 840, 113549, 1, 1, 5 };
