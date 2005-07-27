@@ -1,3 +1,7 @@
+2005-07-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hxtool.c,Makefile.am,hxtool-commands.in: switch to slc
+
 2005-07-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* cert.c (hx509_verify_destroy_ctx): add
