@@ -747,7 +747,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	a_state->domain_state = talloc_reference(a_state, d_state);
 	a_state->account_dn = talloc_steal(a_state, msg->dn);
 
-	/* retrieve the sid for the group just created */
+	/* retrieve the sid for the user just created */
 	sid = samdb_search_dom_sid(d_state->sam_ctx, a_state,
 				   msg->dn, "objectSid", "dn=%s", msg->dn);
 	if (sid == NULL) {
@@ -907,7 +907,7 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 	/* Check if alias already exists */
 	name = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL,
 				   "sAMAccountName",
-				   "(&pAMAccountName=%s)(objectclass=group))",
+				   "(sAMAccountName=%s)(objectclass=group))",
 				   alias_name);
 
 	if (name != NULL) {
@@ -2040,17 +2040,6 @@ static NTSTATUS samr_AddAliasMember(struct dcesrv_call_state *dce_call, TALLOC_C
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		/* pull in all the template attributes */
-		ret = samdb_copy_template(d_state->sam_ctx, mem_ctx, msg, 
-					  "(&(name=TemplateForeignSecurityPrincipal)"
-					  "(objectclass=foreignSecurityPrincipalTemplate))");
-		if (ret != 0) {
-			DEBUG(0,("Failed to load "
-				 "TemplateForeignSecurityPrincipal "
-				 "from samdb\n"));
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-
 		/* TODO: Hmmm. This feels wrong. How do I find the base dn to
 		 * put the ForeignSecurityPrincipals? d_state->domain_dn does
 		 * not work, this is wrong for the Builtin domain, there's no
@@ -2076,13 +2065,9 @@ static NTSTATUS samr_AddAliasMember(struct dcesrv_call_state *dce_call, TALLOC_C
 		memberdn = msg->dn;
 
 		samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg,
-				     "name", sidstr);
-		samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg,
 				     "objectClass",
 				     "foreignSecurityPrincipal");
-		samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg,
-				     "objectSid", sidstr);
-		
+
 		/* create the alias */
 		ret = samdb_add(d_state->sam_ctx, mem_ctx, msg);
 		if (ret != 0) {
@@ -3256,7 +3241,7 @@ static NTSTATUS samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	struct ldb_message **msgs;
 	int ret;
 	const char * const attrs[] = {"minPwdLength", "pwdProperties", NULL };
-	void *sam_ctx;
+	struct ldb_context *sam_ctx;
 
 	ZERO_STRUCT(r->out.info);
 
@@ -3267,8 +3252,7 @@ static NTSTATUS samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
 	ret = gendb_search(sam_ctx, 
 			   mem_ctx, NULL, &msgs, attrs, 
-			   "(&(name=%s)(objectclass=domain))",
-			   lp_workgroup());
+			   "(&(!(objectClass=builtinDomain))(objectclass=domain))");
 	if (ret <= 0) {
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}

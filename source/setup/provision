@@ -27,7 +27,8 @@ ok = GetOptions(ARGV, options,
 		'nogroup=s',
 		'wheel=s',
 		'users=s',
-		'quiet');
+		'quiet',
+                'blank');
 if (ok == false) {
    println("Failed to parse options: " + options.ERROR);
    return -1;
@@ -72,6 +73,7 @@ provision [options]
  --wheel	GROUPNAME	choose 'wheel' privileged group
  --users	GROUPNAME	choose 'users' group
  --quiet			Be quiet
+ --blank			do not add users or groups, just the structure
 
 You must provide at least a realm and domain
 
@@ -106,6 +108,6 @@ for (r in options) {
 
 message("Provisioning for %s in realm %s\n", subobj.DOMAIN, subobj.REALM);
 message("Using administrator password: %s\n", subobj.ADMINPASS);
-provision(subobj, message);
+provision(subobj, message, options["blank"] != undefined);
 message("All OK\n");
 return 0;
