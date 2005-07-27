@@ -1,5 +1,24 @@
 2005-07-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: add test cases tempfiles to CLEANFILES
+	
+	* Makefile.am: add test_query to TESTS, fix dependency on hxtool
+	sources on hxtool-commands.h
+
+	* hxtool-commands.in: explain what signer is for create-sd
+
+	* hxtool.c: add query, add more options to verify-sd and create-sd
+
+	* test_cms.in: add more cms tests
+	
+	* hxtool-commands.in: add query, add more options to verify-sd
+
+	* test_query.in: test query interface
+	
+	* data: fix filenames for ds/ke files, add pkcs12 files, regen
+	
+2005-07-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
 	* hxtool.c,Makefile.am,hxtool-commands.in: switch to slc
 
 2005-07-26  Love Hörnquist Åstrand  <lha@it.su.se>
