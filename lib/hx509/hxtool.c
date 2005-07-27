@@ -81,7 +81,7 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 
     while (argc > 0) {
 
-	ret = hx509_certs_append(anchors, argv[0]);
+	ret = hx509_certs_append(anchors, NULL, argv[0]);
 	if (ret)
 	    errx(1, "hx509_certs_append: %d", ret);
 
@@ -116,35 +116,40 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     heim_octet_string o;
     hx509_query q;
     hx509_lock lock;
-    hx509_certs s;
+    hx509_certs store;
     hx509_cert cert;
     size_t sz;
     void *p;
-    int ret;
+    int ret, i;
+
+    ret = hx509_certs_init("MEMORY:cert-store", 0, NULL, &store);
 
     contentType = oid_id_pkcs7_data();
 
-    if (argc < 3)
-	errx(1, "argc < 3");
+    if (argc < 2)
+	errx(1, "argc < 2");
 
     printf("cms create signed data\n");
 
     hx509_lock_init(&lock);
     hx509_lock_add_password(lock, "foobar");
 
-    ret = _hx509_map_file(argv[1], &p, &sz);
+    for (i = 0; i < opt->certificate_strings.num_strings; i++) {
+	ret = hx509_certs_append(store, lock, 
+				 opt->certificate_strings.strings[i]);
+	if (ret)
+	    errx(1, "hx509_certs_append: chain: %d", ret);
+    }
+
+    ret = _hx509_map_file(argv[0], &p, &sz);
     if (ret)
 	err(1, "map_file: %s: %d", argv[0], ret);
-
-    ret = hx509_certs_init(argv[2], 0, lock, &s);
-    if (ret)
-	errx(1, "hx509_certs_init: %d", ret);
 
     _hx509_query_clear(&q);
     q.match |= HX509_QUERY_PRIVATE_KEY;
     q.match |= HX509_QUERY_KU_DIGITALSIGNATURE;
 
-    ret = _hx509_certs_find(s, &q, &cert);
+    ret = _hx509_certs_find(store, &q, &cert);
     if (ret)
 	errx(1, "hx509_certs_find: %d", ret);
 
@@ -351,21 +356,21 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
 	if (strncmp(s, "chain:", 6) == 0) {
 	    s += 6;
 
-	    ret = hx509_certs_append(chain, s);
+	    ret = hx509_certs_append(chain, NULL, s);
 	    if (ret)
 		errx(1, "hx509_certs_append: chain: %d", ret);
 
 	} else if (strncmp(s, "anchor:", 7) == 0) {
 	    s += 7;
 
-	    ret = hx509_certs_append(anchors, s);
+	    ret = hx509_certs_append(anchors, NULL, s);
 	    if (ret)
 		errx(1, "hx509_certs_append: anchor: %d", ret);
 
 	} else if (strncmp(s, "cert:", 5) == 0) {
 	    s += 5;
 
-	    ret = hx509_certs_append(certs, s);
+	    ret = hx509_certs_append(certs, NULL, s);
 	    if (ret)
 		errx(1, "hx509_certs_append: certs: %d", ret);
 
