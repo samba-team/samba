@@ -45,7 +45,7 @@ command = {
 		long = "signer"
 		short = "s"
 		type = "string"
-		argument = "certificate-name"
+		argument = "signer-friendly-name"
 		help = "certificate to sign with"
 	}
 	min_args="2"
