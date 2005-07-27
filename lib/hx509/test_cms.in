@@ -39,7 +39,7 @@ srcdir="@srcdir@"
 echo "create signed data"
 ./hxtool cms-create-sd \
 	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
-	"$srcdir/test_cms.in" \
+	"$srcdir/test_chain.in" \
 	sd.data || exit 1
 
 echo "verify signed data"
@@ -47,7 +47,7 @@ echo "verify signed data"
 	--anchors=FILE:$srcdir/data/ca.crt \
 	sd.data sd.data.out || exit 1
 
-cmp "$srcdir/test_cms.in" sd.data.out || exit 1
+cmp "$srcdir/test_chain.in" sd.data.out || exit 1
 
 echo "verify signed data"
 ./hxtool cms-verify-sd \
@@ -58,7 +58,36 @@ echo "create signed data"
 ./hxtool cms-create-sd \
 	--certificate=PKCS12:$srcdir/data/test.p12 \
 	--signer=friendlyname-test \
-	"$srcdir/test_cms.in" \
+	"$srcdir/test_chain.in" \
 	sd.data || exit 1
+
+echo "verify signed data"
+./hxtool cms-verify-sd \
+	--anchors=FILE:$srcdir/data/ca.crt \
+	--content-info \
+	"$srcdir/data/test-signed-data" sd.data.out || exit 1
+cmp "$srcdir/test_chain.in" sd.data.out || exit 1
+
+echo "verify signed data (no attr)"
+./hxtool cms-verify-sd \
+	--anchors=FILE:$srcdir/data/ca.crt \
+	--content-info \
+	"$srcdir/data/test-signed-data-noattr" sd.data.out || exit 1
+cmp "$srcdir/test_chain.in" sd.data.out || exit 1
+
+echo "verify failure signed data (no attr, no certs)"
+./hxtool cms-verify-sd \
+	--anchors=FILE:$srcdir/data/ca.crt \
+	--content-info \
+	"$srcdir/data/test-signed-data-noattr-nocerts" sd.data.out && exit 1
+
+echo "verify signed data (no attr, no certs)"
+./hxtool cms-verify-sd \
+	--anchors=FILE:$srcdir/data/ca.crt \
+	--certificate=FILE:$srcdir/data/test.crt \
+	--content-info \
+	"$srcdir/data/test-signed-data-noattr-nocerts" sd.data.out || exit 1
+cmp "$srcdir/test_chain.in" sd.data.out || exit 1
+
 
 exit 0
