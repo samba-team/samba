@@ -243,10 +243,9 @@ static char *samldb_generate_samAccountName(const void *mem_ctx) {
 	return name;
 }
 
-static BOOL samldb_get_rdn_and_basedn(void *mem_ctx, const char *dn, struct ldb_dn_component **rdn, char **base_dn)
+static BOOL samldb_get_rdn(void *mem_ctx, const char *dn, struct ldb_dn_component **rdn)
 {
 	struct ldb_dn *dn_exploded = ldb_dn_explode(mem_ctx, dn);
-	struct ldb_dn base_dn_exploded;
 
 	if (!dn_exploded) {
 		return False;
@@ -256,15 +255,6 @@ static BOOL samldb_get_rdn_and_basedn(void *mem_ctx, const char *dn, struct ldb_
 		return False;
 	}
 	
-	if (dn_exploded->comp_num < 2) {
-		*base_dn = NULL;
-	} else {
-		base_dn_exploded.comp_num = dn_exploded->comp_num - 1;
-		base_dn_exploded.components = &dn_exploded->components[1];
-		
-		*base_dn = ldb_dn_linearize(mem_ctx, &base_dn_exploded);
-	}
-
 	*rdn = &dn_exploded->components[0];
 	return True;
 }
@@ -355,7 +345,7 @@ static int samldb_copy_template(struct ldb_module *module, struct ldb_message *m
 			    (strcasecmp((char *)el->values[j].data, "Template") == 0 ||
 			     strcasecmp((char *)el->values[j].data, "userTemplate") == 0 ||
 			     strcasecmp((char *)el->values[j].data, "groupTemplate") == 0 ||
-			     strcasecmp((char *)el->values[j].data, "foreignSecurityTemplate") == 0 ||
+			     strcasecmp((char *)el->values[j].data, "foreignSecurityPrincipalTemplate") == 0 ||
 			     strcasecmp((char *)el->values[j].data, "aliasTemplate") == 0 || 
 			     strcasecmp((char *)el->values[j].data, "trustedDomainTemplate") == 0 || 
 			     strcasecmp((char *)el->values[j].data, "secretTemplate") == 0)) {
@@ -381,7 +371,6 @@ static struct ldb_message *samldb_fill_group_object(struct ldb_module *module, c
 	struct ldb_message *msg2;
 	struct ldb_message_element *attribute;
 	struct ldb_dn_component *rdn;
-	char *basedn;
 
 	if (samldb_find_attribute(msg, "objectclass", "group") == NULL) {
 		return NULL;
@@ -401,7 +390,7 @@ static struct ldb_message *samldb_fill_group_object(struct ldb_module *module, c
 		return NULL;
 	}
 
-	if ( ! samldb_get_rdn_and_basedn(msg2, msg2->dn, &rdn, &basedn)) {
+	if ( ! samldb_get_rdn(msg2, msg2->dn, &rdn)) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_group_object: Bad DN (%s)!\n", msg2->dn);
 		return NULL;
 	}
@@ -438,7 +427,6 @@ static struct ldb_message *samldb_fill_user_or_computer_object(struct ldb_module
 	struct ldb_message *msg2;
 	struct ldb_message_element *attribute;
 	struct ldb_dn_component *rdn;
-	char *basedn;
 
 	if ((samldb_find_attribute(msg, "objectclass", "user") == NULL) && 
 	    (samldb_find_attribute(msg, "objectclass", "computer") == NULL)) {
@@ -466,7 +454,7 @@ static struct ldb_message *samldb_fill_user_or_computer_object(struct ldb_module
 		}
 	}
 
-	if ( ! samldb_get_rdn_and_basedn(msg2, msg2->dn, &rdn, &basedn)) {
+	if ( ! samldb_get_rdn(msg2, msg2->dn, &rdn)) {
 		return NULL;
 	}
 	if (strcasecmp(rdn->name, "cn") != 0) {
@@ -503,6 +491,58 @@ static struct ldb_message *samldb_fill_user_or_computer_object(struct ldb_module
 	return msg2;
 }
 
+static struct ldb_message *samldb_fill_foreignSecurityPrincipal_object(struct ldb_module *module, const struct ldb_message *msg)
+{
+	struct ldb_message *msg2;
+	struct ldb_message_element *attribute;
+	struct ldb_dn_component *rdn;
+
+	if (samldb_find_attribute(msg, "objectclass", "foreignSecurityPrincipal") == NULL) {
+		return NULL;
+	}
+
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_fill_foreignSecurityPrincipal_object\n");
+
+	/* build the new msg */
+	msg2 = ldb_msg_copy(module->ldb, msg);
+	if (!msg2) {
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_foreignSecurityPrincpal_object: ldb_msg_copy failed!\n");
+		return NULL;
+	}
+
+	if (samldb_copy_template(module, msg2, "(&(CN=TemplateForeignSecurityPrincipal)(objectclass=foreignSecurityPrincipalTemplate))") != 0) {
+		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb_fill_foreignSecurityPrincipal_object: Error copying template!\n");
+		return NULL;
+	}
+
+	if ( ! samldb_get_rdn(msg2, msg2->dn, &rdn)) {
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_foreignSecurityPrincipal_object: Bad DN (%s)!\n", msg2->dn);
+		return NULL;
+	}
+	if (strcasecmp(rdn->name, "cn") != 0) {
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_foreignSecurityPrincipal_object: Bad RDN (%s) for foreignSecurityPrincpal!\n", rdn->name);
+		return NULL;
+	}
+
+	if ((attribute = samldb_find_attribute(msg2, "objectSid", NULL)) == NULL ) {
+		struct dom_sid *sid = dom_sid_parse_talloc(msg2, rdn->value.data);
+		if (sid == NULL) {
+			ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_foreignSecurityPrincipal_object: internal error! Can't parse sid in CN\n");
+			return NULL;
+		}
+
+		if (!samldb_msg_add_sid(module, msg2, "objectSid", sid)) {
+			talloc_free(sid);
+			return NULL;
+		}
+		talloc_free(sid);
+	}
+
+	talloc_steal(msg, msg2);
+
+	return msg2;
+}
+
 /* add_record */
 static int samldb_add_record(struct ldb_module *module, const struct ldb_message *msg)
 {
@@ -521,6 +561,11 @@ static int samldb_add_record(struct ldb_module *module, const struct ldb_message
 	/* is group? add all relevant missing objects */
 	if ( ! msg2 ) {
 		msg2 = samldb_fill_group_object(module, msg);
+	}
+
+	/* perhaps a foreignSecurityPrincipal? */
+	if ( ! msg2 ) {
+		msg2 = samldb_fill_foreignSecurityPrincipal_object(module, msg);
 	}
 
 	if (msg2) {
