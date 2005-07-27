@@ -242,7 +242,7 @@ static BOOL rpc_auth_pipe(struct rpc_pipe_client *cli, prs_struct *rdata,
 		}
 
 		/* Let the caller know how much padding at the end of the data */
-		*pauth_padding_len = rhdr_auth.padding;
+		*pauth_padding_len = rhdr_auth.auth_pad_len;
 		
 		/* Check it's the type of reply we were expecting to decode */
 
@@ -796,6 +796,7 @@ static NTSTATUS create_rpc_bind_resp(struct rpc_pipe_client *cli,
 {
 	NTSTATUS nt_status;
 	RPC_HDR hdr;
+	RPC_HDR_AUTH hdr_auth;
 	RPC_HDR_AUTHA hdr_autha;
 	DATA_BLOB ntlmssp_null_response = data_blob(NULL, 0);
 	DATA_BLOB ntlmssp_reply;
@@ -826,8 +827,8 @@ static NTSTATUS create_rpc_bind_resp(struct rpc_pipe_client *cli,
 	get_auth_type_level(cli->pipe_auth_flags, &auth_type, &auth_level);
 	
 	/* Create the request RPC_HDR_AUTHA */
-	init_rpc_hdr_autha(&hdr_autha, MAX_PDU_FRAG_LEN, MAX_PDU_FRAG_LEN,
-			   auth_type, auth_level, 0x00);
+	init_rpc_hdr_auth(&hdr_auth, auth_type, auth_level, 0, 0x0014a0c0);
+	init_rpc_hdr_autha(&hdr_autha, MAX_PDU_FRAG_LEN, MAX_PDU_FRAG_LEN, &hdr_auth);
 
 	if(!smb_io_rpc_hdr_autha("hdr_autha", &hdr_autha, rpc_out, 0)) {
 		DEBUG(0,("create_rpc_bind_resp: failed to marshall RPC_HDR_AUTHA.\n"));
