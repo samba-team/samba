@@ -34,6 +34,7 @@ id-pkcs3-des-ede3-cbc OBJECT IDENTIFIER ::=	{ id-pkcs-3 7 }
 id-rsadsi-encalg OBJECT IDENTIFIER ::= { iso(1) member-body(2) us(840)
 	rsadsi(113549) 3 }
 
+id-rsadsi-rc2-cbc OBJECT IDENTIFIER ::=		{ id-rsadsi-encalg 2 }
 id-rsadsi-des-ede3-cbc OBJECT IDENTIFIER ::=	{ id-rsadsi-encalg 7 }
 
 id-secsig-sha-1 OBJECT IDENTIFIER ::= { iso(1) identified-organization(3)
