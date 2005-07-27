@@ -993,7 +993,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	conn = &domain->conn;
 
 	if (conn->samr_pipe == NULL) {
-#ifdef DISABLE_SCHANNEL_WIN2K3_SP1
+#ifndef DISABLE_SCHANNEL_WIN2K3_SP1
 		unsigned char *session_key;
 
 		if (cm_get_schannel_key(domain, mem_ctx, &session_key))
@@ -1049,7 +1049,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	conn = &domain->conn;
 
 	if (conn->lsa_pipe == NULL) {
-#ifdef DISABLE_SCHANNEL_WIN2K3_SP1
+#ifndef DISABLE_SCHANNEL_WIN2K3_SP1
 		unsigned char *session_key;
 
 		if (cm_get_schannel_key(domain, mem_ctx, &session_key))
