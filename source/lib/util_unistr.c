@@ -697,7 +697,7 @@ smb_ucs2_t *strncpy_w(smb_ucs2_t *dest, const smb_ucs2_t *src, const size_t max)
 		cp = *COPY_UCS2_CHAR(dest+len,src+len);
 	}
 	cp = 0;
-	while (len < max) {
+	for ( /*nothing*/ ; len < max; len++ ) {
 		cp = *COPY_UCS2_CHAR(dest+len,&cp);
 	}
 	
