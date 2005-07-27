@@ -252,7 +252,7 @@ _hx509_certs_find(hx509_certs certs, const hx509_query *q, hx509_cert *r)
     if (ret)
 	return ret;
     if (c == NULL)
-	return ENOENT;
+	return HX509_CERT_NOT_FOUND;
 
     return 0;
 }
