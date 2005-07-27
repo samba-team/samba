@@ -38,7 +38,8 @@ RCSID("$Id$");
 struct hx509_verify_ctx_data {
     hx509_certs trust_anchors;
     int flags;
-#define HX509_VERIFY_CTX_F_TIME_SET	1
+#define HX509_VERIFY_CTX_F_TIME_SET			1
+#define HX509_VERIFY_CTX_F_ALLOW_PROXY_CERTIFICATE	2
     time_t time_now;
     int max_depth;
 #define HX509_VERIFY_MAX_DEPTH 30
@@ -297,6 +298,69 @@ find_extension_subject_alt_name(const Certificate *cert, int *i,
     return decode_GeneralNames(e->extnValue.data, 
 			       e->extnValue.length,
 			       sa, &size);
+}
+
+static int
+add_to_list(hx509_octet_string_list *list, heim_octet_string *entry)
+{
+    void *p;
+    int ret;
+
+    p = realloc(list->val, (list->len + 1) * sizeof(list->val[0]));
+    if (p == NULL)
+	return ENOMEM;
+    list->val = p;
+    ret = copy_octet_string(&list->val[list->len], entry);
+    if (ret)
+	return ret;
+    list->len++;
+    return 0;
+}
+
+void
+hx509_free_octet_string_list(hx509_octet_string_list *list)
+{
+    int i;
+    for (i = 0; i < list->len; i++)
+	free_octet_string(&list->val[i]);
+    free(list->val);
+    list->val = NULL;
+    list->len = 0;
+}
+
+int
+hx509_cert_find_subjectAltName_otherName(hx509_cert cert,
+					 const heim_oid *oid,
+					 hx509_octet_string_list *list)
+{
+    GeneralNames sa;
+    int ret, i, j;
+
+    list->val = NULL;
+    list->len = 0;
+
+    i = 0;
+    while (1) {
+	ret = find_extension_subject_alt_name(_hx509_get_cert(cert), &i, &sa);
+	i++;
+	if (ret == HX509_EXTENSION_NOT_FOUND)
+	    break;
+
+
+	for (j = 0; j < sa.len; j++) {
+	    if (sa.val[j].element == choice_GeneralName_otherName &&
+		heim_oid_cmp(&sa.val[j].u.otherName.type_id, oid) == 0) 
+	    {
+		ret = add_to_list(list, &sa.val[j].u.otherName.value);
+		if (ret)
+		    return ret;
+	    }
+	}
+	free_GeneralNames(&sa);
+    }
+    if (ret == HX509_EXTENSION_NOT_FOUND)
+	ret = 0;
+    return ret;
 }
 
 
@@ -1273,6 +1337,13 @@ _hx509_query_match_cert(const hx509_query *q, hx509_cert cert)
 	for (i = 0; i < q->path->len; i++)
 	    if (hx509_cert_cmp(q->path->val[i], cert) == 0)
 		return 0;
+    }
+    if (q->match & HX509_QUERY_MATCH_FRIENDLY_NAME) {
+	char *name = hx509_cert_get_friendly_name(cert);
+	if (name == NULL)
+	    return 0;
+	if (strcasecmp(q->friendlyname, name) != 0)
+	    return 0;
     }
 
     if (q->match & ~HX509_QUERY_MASK)
