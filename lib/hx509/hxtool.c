@@ -242,10 +242,10 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 }
 
 int
-cms_unenvelope(void *opt, int argc, char **argv)
+cms_unenvelope(struct cms_unenvelope_options *opt, int argc, char **argv)
 {
     heim_oid contentType = { 0, NULL };
-    heim_octet_string o;
+    heim_octet_string o, co;
     hx509_certs certs;
     size_t sz;
     void *p;
@@ -260,24 +260,50 @@ cms_unenvelope(void *opt, int argc, char **argv)
     hx509_lock_init(&lock);
     hx509_lock_add_password(lock, "foobar");
 
-    ret = _hx509_map_file(argv[1], &p, &sz);
+    ret = _hx509_map_file(argv[0], &p, &sz);
     if (ret)
 	err(1, "map_file: %s: %d", argv[0], ret);
 
+    if (opt->content_info_flag) {
+	ContentInfo ci;
+	size_t size;
+
+	ret = decode_ContentInfo(p, sz, &ci, &size);
+	if (ret)
+	    errx(1, "decode_ContentInfo: %d", ret);
+
+	if (heim_oid_cmp(&ci.contentType, oid_id_pkcs7_envelopedData()) != 0)
+	    errx(1, "Content is not SignedData");
+
+	if (ci.content == NULL)
+	    errx(1, "ContentInfo missing content");
+	ret = copy_octet_string(ci.content, &co);
+	if (ret)
+	    errx(1, "copy_octet_string: %d", ret);
+
+	free_ContentInfo(&ci);
+
+    } else {
+	co.data = p;
+	co.length = sz;
+    }
+
     ret = hx509_certs_init("MEMORY:cert-store", 0, NULL, &certs);
 
-    ret = hx509_certs_init(argv[0], 0, lock, &certs);
+    ret = hx509_certs_init(argv[2], 0, lock, &certs);
     if (ret)
 	errx(1, "hx509_certs_init: %d", ret);
 
-    ret = hx509_cms_unenvelope(certs, p, sz, &contentType, &o);
+    ret = hx509_cms_unenvelope(certs, co.data, co.length, &contentType, &o);
+    if (co.data != p)
+	free_octet_string(&co);
     if (ret)
 	errx(1, "hx509_cms_unenvelope: %d", ret);
 
     _hx509_unmap_file(p, sz);
     hx509_lock_free(lock);
 
-    ret = _hx509_write_file(argv[2], o.data, o.length);
+    ret = _hx509_write_file(argv[1], o.data, o.length);
     if (ret)
 	errx(1, "hx509_write_file: %d", ret);
 
@@ -287,7 +313,7 @@ cms_unenvelope(void *opt, int argc, char **argv)
 }
 
 int
-cms_create_enveloped(void *opt, int argc, char **argv)
+cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
 {
     heim_octet_string o;
     heim_oid contentType = { 0, NULL };
@@ -321,6 +347,29 @@ cms_create_enveloped(void *opt, int argc, char **argv)
 	errx(1, "hx509_cms_unenvelope: %d", ret);
 
     _hx509_unmap_file(p, sz);
+
+    if (opt->content_info_flag) {
+	ContentInfo ci;
+	size_t size;
+
+	ret = hx509_cms_wrap_ContentInfo(oid_id_pkcs7_signedData(),
+					 &o,
+					 &ci);
+	if (ret)
+	    errx(1, "hx509_cms_wrap_ContentInfo: %d", ret);
+
+	free_octet_string(&o);
+
+	ASN1_MALLOC_ENCODE(ContentInfo, o.data, o.length, &ci, 
+			   &size, ret);
+	if (ret)
+	    errx(1, "encode ContentInfo");
+	if (o.length != size)
+	    abort();
+
+	free_ContentInfo(&ci);
+
+    }
 
     ret = _hx509_write_file(argv[1], o.data, o.length);
     if (ret)

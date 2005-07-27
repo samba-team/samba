@@ -85,6 +85,11 @@ command = {
 }
 command = {
 	name = "cms-unenvelope"
+	option = {
+		long = "content-info"
+		type = "flag"
+		help = "wrapped out-data in a ContentInfo"
+	}
 	min_args="2"
 	argument="in-file out-file"
 	help = "Unenvelope a file containing a EnvelopedData object"
@@ -92,6 +97,11 @@ command = {
 command = {
 	name = "cms-envelope"
 	function = "cms_create_enveloped"
+	option = {
+		long = "content-info"
+		type = "flag"
+		help = "wrapped out-data in a ContentInfo"
+	}
 	min_args="3"
 	argument="certificate in-file out-file"
 	help = "Envelope a file containing a EnvelopedData object"
