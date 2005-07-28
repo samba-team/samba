@@ -217,14 +217,9 @@ sub _prepare_depend_CC_rule()
 {
 	return << '__EOD__';
 
-%.d: %.c
+.c.d:
 	@echo "Generating dependencies for $<"
 	@$(CC) -MM -MG -MT $(<:.c=.o) -MF $@ $(CFLAGS) $<
-
-# Ugly fallback used for generating a dependency file when
-# make doesn't know how to build the related C file
-%.d: 
-	@touch $@
 
 __EOD__
 }
@@ -865,7 +860,7 @@ sub _prepare_makefile_in($)
 
 	if ($config{developer} eq "yes") {
 		$output .= <<__EOD__
--include \$(_ALL_OBJS_OBJS:.o=.d)
+#-include \$(_ALL_OBJS_OBJS:.o=.d)
 IDL_FILES = \$(wildcard librpc/idl/*.idl)
 \$(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%.c,\$(IDL_FILES)) \\
 \$(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_\%_c.c,\$(IDL_FILES)) \\
