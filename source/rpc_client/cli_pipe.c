@@ -41,8 +41,8 @@ void get_auth_type_level(int pipe_auth_flags, int *auth_type, int *auth_level)
 		*auth_level = RPC_PIPE_AUTH_SIGN_LEVEL;
 	}
 	
-	if (pipe_auth_flags & AUTH_PIPE_NETSEC) {
-		*auth_type = NETSEC_AUTH_TYPE;
+	if (pipe_auth_flags & AUTH_PIPE_SCHANNEL) {
+		*auth_type = SCHANNEL_AUTH_TYPE;
 	} else if (pipe_auth_flags & AUTH_PIPE_NTLMSSP) {
 		*auth_type = NTLMSSP_AUTH_TYPE;
 	}
@@ -209,7 +209,7 @@ static BOOL rpc_auth_pipe(struct rpc_pipe_client *cli, prs_struct *rdata,
 	DEBUG(5,("rpc_auth_pipe: pkt_type: %d len: %d auth_len: %d NTLMSSP %s schannel %s sign %s seal %s \n",
 		 pkt_type, len, auth_len, 
 		 BOOLSTR(cli->pipe_auth_flags & AUTH_PIPE_NTLMSSP), 
-		 BOOLSTR(cli->pipe_auth_flags & AUTH_PIPE_NETSEC), 
+		 BOOLSTR(cli->pipe_auth_flags & AUTH_PIPE_SCHANNEL), 
 		 BOOLSTR(cli->pipe_auth_flags & AUTH_PIPE_SIGN), 
 		 BOOLSTR(cli->pipe_auth_flags & AUTH_PIPE_SEAL)));
 
@@ -277,7 +277,7 @@ static BOOL rpc_auth_pipe(struct rpc_pipe_client *cli, prs_struct *rdata,
 			data_blob_free(&ntlmssp_verf);
 			return store_ok;
 		} 
-		else if (cli->pipe_auth_flags & AUTH_PIPE_NETSEC) {
+		else if (cli->pipe_auth_flags & AUTH_PIPE_SCHANNEL) {
 			/* nothing to do here - we don't seem to be able to 
 			   validate the bindack based on VL's comments */
 			return True;
@@ -331,11 +331,11 @@ static BOOL rpc_auth_pipe(struct rpc_pipe_client *cli, prs_struct *rdata,
 		}
 	}
 
-	if (cli->pipe_auth_flags & AUTH_PIPE_NETSEC) {
-		RPC_AUTH_NETSEC_CHK chk;
+	if (cli->pipe_auth_flags & AUTH_PIPE_SCHANNEL) {
+		RPC_AUTH_SCHANNEL_CHK chk;
 
-		if ( (auth_len != RPC_AUTH_NETSEC_SIGN_OR_SEAL_CHK_LEN) 
-			&& (auth_len != RPC_AUTH_NETSEC_SIGN_ONLY_CHK_LEN)  ) 
+		if ( (auth_len != RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN) 
+			&& (auth_len != RPC_AUTH_SCHANNEL_SIGN_ONLY_CHK_LEN)  ) 
 		{
 			DEBUG(0,("rpc_auth_pipe: wrong schannel auth len %d\n", auth_len));
 			return False;
@@ -343,21 +343,21 @@ static BOOL rpc_auth_pipe(struct rpc_pipe_client *cli, prs_struct *rdata,
 
 		/* can't seal with no nonce */
 		if ( (cli->pipe_auth_flags & AUTH_PIPE_SEAL)
-			&& (auth_len != RPC_AUTH_NETSEC_SIGN_OR_SEAL_CHK_LEN)  )
+			&& (auth_len != RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN)  )
 		{
 			DEBUG(0,("rpc_auth_pipe: sealing not supported with schannel auth len %d\n", auth_len));
 			return False;
 		}
 		
 
-		if (!smb_io_rpc_auth_netsec_chk("schannel_auth_sign", auth_len, &chk, &auth_verf, 0)) 
+		if (!smb_io_rpc_auth_schannel_chk("schannel_auth_sign", auth_len, &chk, &auth_verf, 0)) 
 		{
 			DEBUG(0, ("rpc_auth_pipe: schannel unmarshalling "
-				  "RPC_AUTH_NETSECK_CHK failed\n"));
+				  "RPC_AUTH_SCHANNEL_CHK failed\n"));
 			return False;
 		}
 
-		if (!netsec_decode(&cli->auth_info,
+		if (!schannel_decode(&cli->auth_info,
 				   cli->pipe_auth_flags,
 				   SENDER_IS_ACCEPTOR,
 				   &chk, reply_data, data_len)) {
@@ -715,8 +715,8 @@ static NTSTATUS create_rpc_bind_req(struct rpc_pipe_client *cli,
 
 		data_blob_free(&request);
 
-	} else if (cli->pipe_auth_flags & AUTH_PIPE_NETSEC) {
-		RPC_AUTH_NETSEC_NEG netsec_neg;
+	} else if (cli->pipe_auth_flags & AUTH_PIPE_SCHANNEL) {
+		RPC_AUTH_SCHANNEL_NEG schannel_neg;
 
 		/* Use lp_workgroup() if domain not specified */
 
@@ -725,15 +725,15 @@ static NTSTATUS create_rpc_bind_req(struct rpc_pipe_client *cli,
 			domain = lp_workgroup();
 		}
 
-		init_rpc_auth_netsec_neg(&netsec_neg, domain, my_name);
+		init_rpc_auth_schannel_neg(&schannel_neg, domain, my_name);
 
 		/*
 		 * Now marshall the data into the temporary parse_struct.
 		 */
 
-		if(!smb_io_rpc_auth_netsec_neg("netsec_neg",
-					       &netsec_neg, &auth_info, 0)) {
-			DEBUG(0,("Failed to marshall RPC_AUTH_NETSEC_NEG.\n"));
+		if(!smb_io_rpc_auth_schannel_neg("schannel_neg",
+					       &schannel_neg, &auth_info, 0)) {
+			DEBUG(0,("Failed to marshall RPC_AUTH_SCHANNEL_NEG.\n"));
 			prs_mem_free(&auth_info);
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -941,8 +941,8 @@ BOOL rpc_api_pipe_req_int(struct rpc_pipe_client *cli, uint8 op_num,
 		if (cli->pipe_auth_flags & AUTH_PIPE_NTLMSSP) {	
 			auth_len = RPC_AUTH_NTLMSSP_CHK_LEN;
 		}
-		if (cli->pipe_auth_flags & AUTH_PIPE_NETSEC) {	
-			auth_len = RPC_AUTH_NETSEC_SIGN_OR_SEAL_CHK_LEN;
+		if (cli->pipe_auth_flags & AUTH_PIPE_SCHANNEL) {	
+			auth_len = RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN;
 		}
 		auth_hdr_len = RPC_HDR_AUTH_LEN;
 	}
@@ -975,7 +975,7 @@ BOOL rpc_api_pipe_req_int(struct rpc_pipe_client *cli, uint8 op_num,
 
 		if(!prs_append_some_prs_data(&sec_blob, data, 
 					     data_sent, send_size)) {
-			DEBUG(0,("Failed to append data to netsec blob\n"));
+			DEBUG(0,("Failed to append data to schannel blob\n"));
 			prs_mem_free(&sec_blob);
 			return False;
 		}
@@ -1041,12 +1041,12 @@ BOOL rpc_api_pipe_req_int(struct rpc_pipe_client *cli, uint8 op_num,
 				data_blob_free(&sign_blob);
 
 			}
-			else if (cli->pipe_auth_flags & AUTH_PIPE_NETSEC) {	
+			else if (cli->pipe_auth_flags & AUTH_PIPE_SCHANNEL) {	
 				size_t parse_offset_marker;
-				RPC_AUTH_NETSEC_CHK verf;
+				RPC_AUTH_SCHANNEL_CHK verf;
 				DEBUG(10,("SCHANNEL seq_num=%d\n", cli->auth_info.seq_num));
 				
-				netsec_encode(&cli->auth_info, 
+				schannel_encode(&cli->auth_info, 
 					      cli->pipe_auth_flags,
 					      SENDER_IS_INITIATOR,
 					      &verf,
@@ -1058,7 +1058,7 @@ BOOL rpc_api_pipe_req_int(struct rpc_pipe_client *cli, uint8 op_num,
 				/* write auth footer onto the packet */
 				
 				parse_offset_marker = prs_offset(&sec_blob);
-				if (!smb_io_rpc_auth_netsec_chk("", RPC_AUTH_NETSEC_SIGN_OR_SEAL_CHK_LEN, 
+				if (!smb_io_rpc_auth_schannel_chk("", RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN, 
 					&verf, &sec_blob, 0)) 
 				{
 					prs_mem_free(&sec_blob);
@@ -1400,7 +1400,7 @@ static BOOL rpc_pipe_bind(struct rpc_pipe_client *cli)
 		if (cli->pipe_auth_flags & AUTH_PIPE_SEAL) {
 			cli->ntlmssp_pipe_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 		}
-	} else if (cli->pipe_auth_flags & AUTH_PIPE_NETSEC) {
+	} else if (cli->pipe_auth_flags & AUTH_PIPE_SCHANNEL) {
 		cli->auth_info.seq_num = 0;
 	}
 
@@ -1548,7 +1548,7 @@ NTSTATUS cli_nt_establish_netlogon(struct cli_state *cli, int sec_chan,
 	NTSTATUS result;	
 	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
 
-	cli_nt_netlogon_netsec_session_close(cli);
+	cli_nt_netlogon_schannel_session_close(cli);
 
 	if (lp_client_schannel() != False)
 		neg_flags |= NETLOGON_NEG_SCHANNEL;
@@ -1585,7 +1585,7 @@ NTSTATUS cli_nt_establish_netlogon(struct cli_state *cli, int sec_chan,
 	memcpy(cli->pipes[PI_NETLOGON].auth_info.sess_key, cli->sess_key,
 	       sizeof(cli->pipes[PI_NETLOGON].auth_info.sess_key));
 
-	cli->pipe_auth_flags = AUTH_PIPE_NETSEC;
+	cli->pipe_auth_flags = AUTH_PIPE_SCHANNEL;
 	cli->pipe_auth_flags |= AUTH_PIPE_SIGN;
 	cli->pipe_auth_flags |= AUTH_PIPE_SEAL;
 
@@ -1594,7 +1594,7 @@ NTSTATUS cli_nt_establish_netlogon(struct cli_state *cli, int sec_chan,
 }
 
 
-NTSTATUS cli_nt_setup_netsec(struct cli_state *cli, int sec_chan, int auth_flags,
+NTSTATUS cli_nt_setup_schannel(struct cli_state *cli, int sec_chan, int auth_flags,
 			     const uchar trust_password[16])
 {
 	NTSTATUS result;	
@@ -1744,7 +1744,7 @@ struct rpc_pipe_client *cli_rpc_open_schannel(struct cli_state *cli,
 	
 	result->max_xmit_frag = 0;
 	result->pipe_auth_flags =
-		AUTH_PIPE_NETSEC | AUTH_PIPE_SIGN | AUTH_PIPE_SEAL;
+		AUTH_PIPE_SCHANNEL | AUTH_PIPE_SIGN | AUTH_PIPE_SEAL;
 	result->domain = domain;
 	memcpy(result->auth_info.sess_key, session_key, 16);
 

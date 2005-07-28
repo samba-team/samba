@@ -56,7 +56,7 @@ BOOL server_auth2_negotiated = False;
 
 static void NTLMSSPcalc_p( pipes_struct *p, unsigned char *data, int len)
 {
-	unsigned char *hash = p->ntlmssp_hash;
+	unsigned char *hash = p->auth.a_u.ntlmssp_auth->ntlmssp_hash;
 	unsigned char index_i = hash[256];
 	unsigned char index_j = hash[257];
 	int ind;
@@ -84,13 +84,15 @@ static void NTLMSSPcalc_p( pipes_struct *p, unsigned char *data, int len)
  Generate the next PDU to be returned from the data in p->rdata. 
  We cheat here as this function doesn't handle the special auth
  footers of the authenticated bind response reply.
+ This function is a mess. It needs splitting into one for each
+ bind type. JRA.
  ********************************************************************/
 
 BOOL create_next_pdu(pipes_struct *p)
 {
 	RPC_HDR_RESP hdr_resp;
-	BOOL auth_verify = ((p->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SIGN) != 0);
-	BOOL auth_seal   = ((p->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SEAL) != 0);
+	BOOL auth_verify = False;
+	BOOL auth_seal = False;
 	uint32 ss_padding_len = 0;
 	uint32 data_len;
 	uint32 data_space_available;
@@ -125,10 +127,27 @@ BOOL create_next_pdu(pipes_struct *p)
 	 */
 
 	data_space_available = sizeof(p->out_data.current_pdu) - RPC_HEADER_LEN - RPC_HDR_RESP_LEN;
-	if(p->ntlmssp_auth_validated) {
-		data_space_available -= (RPC_HDR_AUTH_LEN + RPC_AUTH_NTLMSSP_CHK_LEN);
-	} else if(p->netsec_auth_validated) {
-		data_space_available -= (RPC_HDR_AUTH_LEN + RPC_AUTH_NETSEC_SIGN_OR_SEAL_CHK_LEN);
+
+	switch(p->auth.auth_type) {
+		case PIPE_AUTH_TYPE_NONE:
+			break;
+
+		case PIPE_AUTH_TYPE_NTLMSSP:
+			auth_verify = ((p->auth.a_u.ntlmssp_auth->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SIGN) != 0);
+			auth_seal   = ((p->auth.a_u.ntlmssp_auth->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SEAL) != 0);
+			data_space_available -= (RPC_HDR_AUTH_LEN + RPC_AUTH_NTLMSSP_CHK_LEN);
+			break;
+
+		case PIPE_AUTH_TYPE_SCHANNEL:
+			data_space_available -= (RPC_HDR_AUTH_LEN + RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN);
+			break;
+
+		default:
+			DEBUG(0,("create_next_pdu: logic error - unknown bind type %u\n",
+				(unsigned int)p->auth.auth_type ));
+			p->fault_state = True;
+			setup_fault_pdu(p, NT_STATUS(0x1c010002));
+			return True;
 	}
 
 	/*
@@ -162,7 +181,7 @@ BOOL create_next_pdu(pipes_struct *p)
 
 	if(p->out_data.data_sent_length + data_len >= prs_offset(&p->out_data.rdata)) {
 		p->hdr.flags |= RPC_FLG_LAST;
-		if ((auth_seal || auth_verify || p->netsec_auth_validated) && (data_len_left % 8)) {
+		if ((auth_seal || auth_verify || (p->auth.auth_type == PIPE_AUTH_TYPE_SCHANNEL)) && (data_len_left % 8)) {
 			ss_padding_len = 8 - (data_len_left % 8);
 			DEBUG(10,("create_next_pdu: adding sign/seal padding of %u\n",
 				ss_padding_len ));
@@ -173,19 +192,24 @@ BOOL create_next_pdu(pipes_struct *p)
 	 * Set up the header lengths.
 	 */
 
-	if (p->ntlmssp_auth_validated) {
-		p->hdr.frag_len = RPC_HEADER_LEN + RPC_HDR_RESP_LEN +
-			data_len + ss_padding_len +
-			RPC_HDR_AUTH_LEN + RPC_AUTH_NTLMSSP_CHK_LEN;
-		p->hdr.auth_len = RPC_AUTH_NTLMSSP_CHK_LEN;
-	} else if (p->netsec_auth_validated) {
-		p->hdr.frag_len = RPC_HEADER_LEN + RPC_HDR_RESP_LEN +
-			data_len + ss_padding_len +
-			RPC_HDR_AUTH_LEN + RPC_AUTH_NETSEC_SIGN_OR_SEAL_CHK_LEN;
-		p->hdr.auth_len = RPC_AUTH_NETSEC_SIGN_OR_SEAL_CHK_LEN;
-	} else {
-		p->hdr.frag_len = RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len;
-		p->hdr.auth_len = 0;
+	switch(p->auth.auth_type) {
+		case PIPE_AUTH_TYPE_NONE:
+		default:
+			p->hdr.frag_len = RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len;
+			p->hdr.auth_len = 0;
+			break;
+		case PIPE_AUTH_TYPE_NTLMSSP:
+			p->hdr.frag_len = RPC_HEADER_LEN + RPC_HDR_RESP_LEN +
+				data_len + ss_padding_len +
+				RPC_HDR_AUTH_LEN + RPC_AUTH_NTLMSSP_CHK_LEN;
+			p->hdr.auth_len = RPC_AUTH_NTLMSSP_CHK_LEN;
+			break;
+		case PIPE_AUTH_TYPE_SCHANNEL:
+			p->hdr.frag_len = RPC_HEADER_LEN + RPC_HDR_RESP_LEN +
+				data_len + ss_padding_len +
+				RPC_HDR_AUTH_LEN + RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN;
+			p->hdr.auth_len = RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN;
+			break;
 	}
 
 	/*
@@ -231,92 +255,102 @@ BOOL create_next_pdu(pipes_struct *p)
 		}
 	}
 
-	if (p->ntlmssp_auth_validated) {
-		/*
-		 * NTLMSSP processing. Mutually exclusive with Schannel.
-		 */
-		uint32 crc32 = 0;
-		char *data;
+	switch(p->auth.auth_type) {
+		case PIPE_AUTH_TYPE_NONE:
+		default:
+			break;
+		case PIPE_AUTH_TYPE_NTLMSSP:
+		{	
+			/*
+			 * NTLMSSP processing. Mutually exclusive with Schannel.
+			 */
+			uint32 crc32 = 0;
+			char *data;
 
-		DEBUG(5,("create_next_pdu: sign: %s seal: %s data %d auth %d\n",
-			 BOOLSTR(auth_verify), BOOLSTR(auth_seal), data_len + ss_padding_len, p->hdr.auth_len));
+			DEBUG(5,("create_next_pdu: sign: %s seal: %s data %d auth %d\n",
+				 BOOLSTR(auth_verify), BOOLSTR(auth_seal), data_len + ss_padding_len, p->hdr.auth_len));
 
-		/*
-		 * Set data to point to where we copied the data into.
-		 */
+			/*
+			 * Set data to point to where we copied the data into.
+			 */
 
-		data = prs_data_p(&outgoing_pdu) + data_pos;
+			data = prs_data_p(&outgoing_pdu) + data_pos;
 
-		if (auth_seal) {
-			crc32 = crc32_calc_buffer(data, data_len + ss_padding_len);
-			NTLMSSPcalc_p(p, (uchar*)data, data_len + ss_padding_len);
+			if (auth_seal) {
+				crc32 = crc32_calc_buffer(data, data_len + ss_padding_len);
+				NTLMSSPcalc_p(p, (uchar*)data, data_len + ss_padding_len);
+			}
+
+			if (auth_seal || auth_verify) {
+				RPC_HDR_AUTH auth_info;
+
+				init_rpc_hdr_auth(&auth_info, NTLMSSP_AUTH_TYPE,
+						auth_seal ? RPC_PIPE_AUTH_SEAL_LEVEL : RPC_PIPE_AUTH_SIGN_LEVEL,
+						(auth_verify ? ss_padding_len : 0), (auth_verify ? 1 : 0));
+				if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, &outgoing_pdu, 0)) {
+					DEBUG(0,("create_next_pdu: failed to marshall RPC_HDR_AUTH.\n"));
+					prs_mem_free(&outgoing_pdu);
+					return False;
+				}
+			}
+
+			if (auth_verify) {
+				RPC_AUTH_NTLMSSP_CHK ntlmssp_chk;
+				char *auth_data = prs_data_p(&outgoing_pdu);
+
+				p->auth.a_u.ntlmssp_auth->ntlmssp_seq_num++;
+				init_rpc_auth_ntlmssp_chk(&ntlmssp_chk, NTLMSSP_SIGN_VERSION,
+						crc32, p->auth.a_u.ntlmssp_auth->ntlmssp_seq_num++);
+				auth_data = prs_data_p(&outgoing_pdu) + prs_offset(&outgoing_pdu) + 4;
+				if(!smb_io_rpc_auth_ntlmssp_chk("auth_sign", &ntlmssp_chk, &outgoing_pdu, 0)) {
+					DEBUG(0,("create_next_pdu: failed to marshall RPC_AUTH_NTLMSSP_CHK.\n"));
+					prs_mem_free(&outgoing_pdu);
+					return False;
+				}
+				NTLMSSPcalc_p(p, (uchar*)auth_data, RPC_AUTH_NTLMSSP_CHK_LEN - 4);
+			}
+			break;
 		}
-
-		if (auth_seal || auth_verify) {
+		case PIPE_AUTH_TYPE_SCHANNEL:
+		{
+			/*
+			 * Schannel processing. Mutually exclusive with NTLMSSP.
+			 */
+			int auth_type, auth_level;
+			char *data;
 			RPC_HDR_AUTH auth_info;
 
-			init_rpc_hdr_auth(&auth_info, NTLMSSP_AUTH_TYPE,
-					auth_seal ? RPC_PIPE_AUTH_SEAL_LEVEL : RPC_PIPE_AUTH_SIGN_LEVEL,
-					(auth_verify ? ss_padding_len : 0), (auth_verify ? 1 : 0));
+			RPC_AUTH_SCHANNEL_CHK verf;
+			prs_struct rverf;
+			prs_struct rauth;
+
+			data = prs_data_p(&outgoing_pdu) + data_pos;
+			/* Check it's the type of reply we were expecting to decode */
+
+			get_auth_type_level(p->auth.a_u.schannel_auth->auth_flags, &auth_type, &auth_level);
+			init_rpc_hdr_auth(&auth_info, auth_type, auth_level, 
+					  ss_padding_len, 1);
+
 			if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, &outgoing_pdu, 0)) {
 				DEBUG(0,("create_next_pdu: failed to marshall RPC_HDR_AUTH.\n"));
 				prs_mem_free(&outgoing_pdu);
 				return False;
 			}
+
+			prs_init(&rverf, 0, p->mem_ctx, MARSHALL);
+			prs_init(&rauth, 0, p->mem_ctx, MARSHALL);
+
+			schannel_encode(p->auth.a_u.schannel_auth, 
+				      p->auth.a_u.schannel_auth->auth_flags,
+				      SENDER_IS_ACCEPTOR,
+				      &verf, data, data_len + ss_padding_len);
+
+			smb_io_rpc_auth_schannel_chk("", RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN, 
+				&verf, &outgoing_pdu, 0);
+
+			p->auth.a_u.schannel_auth->seq_num++;
+			break;
 		}
-
-		if (auth_verify) {
-			RPC_AUTH_NTLMSSP_CHK ntlmssp_chk;
-			char *auth_data = prs_data_p(&outgoing_pdu);
-
-			p->ntlmssp_seq_num++;
-			init_rpc_auth_ntlmssp_chk(&ntlmssp_chk, NTLMSSP_SIGN_VERSION,
-					crc32, p->ntlmssp_seq_num++);
-			auth_data = prs_data_p(&outgoing_pdu) + prs_offset(&outgoing_pdu) + 4;
-			if(!smb_io_rpc_auth_ntlmssp_chk("auth_sign", &ntlmssp_chk, &outgoing_pdu, 0)) {
-				DEBUG(0,("create_next_pdu: failed to marshall RPC_AUTH_NTLMSSP_CHK.\n"));
-				prs_mem_free(&outgoing_pdu);
-				return False;
-			}
-			NTLMSSPcalc_p(p, (uchar*)auth_data, RPC_AUTH_NTLMSSP_CHK_LEN - 4);
-		}
-	} else if (p->netsec_auth_validated) {
-		/*
-		 * Schannel processing. Mutually exclusive with NTLMSSP.
-		 */
-		int auth_type, auth_level;
-		char *data;
-		RPC_HDR_AUTH auth_info;
-
-		RPC_AUTH_NETSEC_CHK verf;
-		prs_struct rverf;
-		prs_struct rauth;
-
-		data = prs_data_p(&outgoing_pdu) + data_pos;
-		/* Check it's the type of reply we were expecting to decode */
-
-		get_auth_type_level(p->netsec_auth.auth_flags, &auth_type, &auth_level);
-		init_rpc_hdr_auth(&auth_info, auth_type, auth_level, 
-				  ss_padding_len, 1);
-
-		if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, &outgoing_pdu, 0)) {
-			DEBUG(0,("create_next_pdu: failed to marshall RPC_HDR_AUTH.\n"));
-			prs_mem_free(&outgoing_pdu);
-			return False;
-		}
-
-		prs_init(&rverf, 0, p->mem_ctx, MARSHALL);
-		prs_init(&rauth, 0, p->mem_ctx, MARSHALL);
-
-		netsec_encode(&p->netsec_auth, 
-			      p->netsec_auth.auth_flags,
-			      SENDER_IS_ACCEPTOR,
-			      &verf, data, data_len + ss_padding_len);
-
-		smb_io_rpc_auth_netsec_chk("", RPC_AUTH_NETSEC_SIGN_OR_SEAL_CHK_LEN, 
-			&verf, &outgoing_pdu, 0);
-
-		p->netsec_auth.seq_num++;
 	}
 
 	/*
@@ -354,6 +388,7 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	struct auth_context *auth_context = NULL;
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
+	struct ntlmssp_auth_struct *pa = p->auth.a_u.ntlmssp_auth;
 
 	DEBUG(5,("api_pipe_ntlmssp_verify: checking user details\n"));
 
@@ -375,7 +410,7 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	 * We always negotiate UNICODE.
 	 */
 
-	if (p->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_UNICODE) {
+	if (pa->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_UNICODE) {
 		rpcstr_pull(user_name, ntlmssp_resp->user, sizeof(fstring), ntlmssp_resp->hdr_usr.str_str_len*2, 0 );
 		rpcstr_pull(domain, ntlmssp_resp->domain, sizeof(fstring), ntlmssp_resp->hdr_domain.str_str_len*2, 0);
 		rpcstr_pull(wks, ntlmssp_resp->wks, sizeof(fstring), ntlmssp_resp->hdr_wks.str_str_len*2, 0);
@@ -397,7 +432,7 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	DEBUG(100,("lm, nt owfs, chal\n"));
 	dump_data(100, (char *)lm_owf, sizeof(lm_owf));
 	dump_data(100, (char *)nt_owf, nt_pw_len);
-	dump_data(100, (char *)p->challenge, 8);
+	dump_data(100, (char *)pa->challenge, 8);
 #endif
 
 	/*
@@ -423,7 +458,7 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 
 	}
 	
-	make_auth_context_fixed(&auth_context, (uchar*)p->challenge);
+	make_auth_context_fixed(&auth_context, (uchar*)pa->challenge);
 
 	if (!make_user_info_netlogon_network(&user_info, 
 					     user_name, domain, wks,
@@ -438,9 +473,9 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	(auth_context->free)(&auth_context);
 	free_user_info(&user_info);
 	
-	p->ntlmssp_auth_validated = NT_STATUS_IS_OK(nt_status);
+	pa->ntlmssp_auth_validated = NT_STATUS_IS_OK(nt_status);
 	
-	if (!p->ntlmssp_auth_validated) {
+	if (!pa->ntlmssp_auth_validated) {
 		DEBUG(1,("api_pipe_ntlmssp_verify: User [%s]\\[%s] from machine %s \
 failed authentication on named pipe %s.\n", domain, user_name, wks, p->name ));
 		free_server_info(&server_info);
@@ -472,27 +507,27 @@ succeeded authentication on named pipe %s, but session key was of incorrect leng
 			k2[7] = 0xb0;
 
 			for (ind = 0; ind < 256; ind++)
-				p->ntlmssp_hash[ind] = (unsigned char)ind;
+				pa->ntlmssp_hash[ind] = (unsigned char)ind;
 
 			for( ind = 0; ind < 256; ind++) {
 				unsigned char tc;
 
-				j += (p->ntlmssp_hash[ind] + k2[ind%8]);
+				j += (pa->ntlmssp_hash[ind] + k2[ind%8]);
 
-				tc = p->ntlmssp_hash[ind];
-				p->ntlmssp_hash[ind] = p->ntlmssp_hash[j];
-				p->ntlmssp_hash[j] = tc;
+				tc = pa->ntlmssp_hash[ind];
+				pa->ntlmssp_hash[ind] = pa->ntlmssp_hash[j];
+				pa->ntlmssp_hash[j] = tc;
 			}
 
-			p->ntlmssp_hash[256] = 0;
-			p->ntlmssp_hash[257] = 0;
+			pa->ntlmssp_hash[256] = 0;
+			pa->ntlmssp_hash[257] = 0;
 		}
 
-		dump_data_pw("NTLMSSP hash (v1)\n", p->ntlmssp_hash, 
-			     sizeof(p->ntlmssp_hash));
+		dump_data_pw("NTLMSSP hash (v1)\n", pa->ntlmssp_hash, 
+			     sizeof(pa->ntlmssp_hash));
 
 /*		NTLMSSPhash(p->ntlmssp_hash, p24); */
-		p->ntlmssp_seq_num = 0;
+		pa->ntlmssp_seq_num = 0;
 
 	}
 
@@ -530,8 +565,6 @@ succeeded authentication on named pipe %s, but session key was of incorrect leng
 		free_server_info(&server_info);
 		return False;
 	}
-
-	p->ntlmssp_auth_validated = True;
 
 	free_server_info(&server_info);
 	return True;
@@ -943,47 +976,50 @@ static BOOL pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
  Handle an schannel bind auth.
 *******************************************************************/
 
-static BOOL pipe_netsec_auth_bind(pipes_struct *p, prs_struct *rpc_in_p, RPC_HDR_AUTH *pauth_info, prs_struct *pout_auth)
+static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p, RPC_HDR_AUTH *pauth_info, prs_struct *pout_auth)
 {
 	RPC_HDR_AUTH auth_info;
-	RPC_AUTH_NETSEC_NEG neg;
-	struct netsec_auth_struct *a = &p->netsec_auth;
+	RPC_AUTH_SCHANNEL_NEG neg;
 	RPC_AUTH_VERIFIER auth_verifier;
 	uint32 flags;
 
 	if (!server_auth2_negotiated) {
-		DEBUG(0, ("pipe_netsec_auth_bind: Attempt to bind using schannel without successful serverauth2\n"));
+		DEBUG(0, ("pipe_schannel_auth_bind: Attempt to bind using schannel without successful serverauth2\n"));
 		return False;
 	}
 
-	if (!smb_io_rpc_auth_netsec_neg("", &neg, rpc_in_p, 0)) {
-		DEBUG(0,("pipe_netsec_auth_bind: Could not unmarshal SCHANNEL auth neg\n"));
+	if (!smb_io_rpc_auth_schannel_neg("", &neg, rpc_in_p, 0)) {
+		DEBUG(0,("pipe_schannel_auth_bind: Could not unmarshal SCHANNEL auth neg\n"));
 		return False;
 	}
 
-	p->netsec_auth_validated = True;
+	p->auth.a_u.schannel_auth = TALLOC_P(p->pipe_state_mem_ctx, struct schannel_auth_struct);
+	if (!p->auth.a_u.schannel_auth) {
+		return False;
+	}
+	p->auth.auth_type = PIPE_AUTH_TYPE_SCHANNEL;
 
-	memset(a->sess_key, 0, sizeof(a->sess_key));
-	memcpy(a->sess_key, last_dcinfo.sess_key, sizeof(last_dcinfo.sess_key));
+	memset(p->auth.a_u.schannel_auth->sess_key, 0, sizeof(p->auth.a_u.schannel_auth->sess_key));
+	memcpy(p->auth.a_u.schannel_auth->sess_key, last_dcinfo.sess_key, sizeof(last_dcinfo.sess_key));
 
-	a->seq_num = 0;
+	p->auth.a_u.schannel_auth->seq_num = 0;
 
 	/* The client opens a second RPC NETLOGON pipe without
 		doing a auth2. The credentials for the schannel are
 		re-used from the auth2 the client did before. */
 	p->dc = last_dcinfo;
 
-	init_rpc_hdr_auth(&auth_info, NETSEC_AUTH_TYPE, pauth_info->auth_level, RPC_HDR_AUTH_LEN, 1);
+	init_rpc_hdr_auth(&auth_info, SCHANNEL_AUTH_TYPE, pauth_info->auth_level, RPC_HDR_AUTH_LEN, 1);
 	if(!smb_io_rpc_hdr_auth("", &auth_info, pout_auth, 0)) {
-		DEBUG(0,("pipe_netsec_auth_bind: marshalling of RPC_HDR_AUTH failed.\n"));
+		DEBUG(0,("pipe_schannel_auth_bind: marshalling of RPC_HDR_AUTH failed.\n"));
 		return False;
 	}
 
-	/*** NETSEC verifier ***/
+	/*** SCHANNEL verifier ***/
 
 	init_rpc_auth_verifier(&auth_verifier, "\001", 0x0);
-	if(!smb_io_rpc_netsec_verifier("", &auth_verifier, pout_auth, 0)) {
-		DEBUG(0,("pipe_netsec_auth_bind: marshalling of RPC_AUTH_VERIFIER failed.\n"));
+	if(!smb_io_rpc_schannel_verifier("", &auth_verifier, pout_auth, 0)) {
+		DEBUG(0,("pipe_schannel_auth_bind: marshalling of RPC_AUTH_VERIFIER failed.\n"));
 		return False;
 	}
 
@@ -994,7 +1030,7 @@ static BOOL pipe_netsec_auth_bind(pipes_struct *p, prs_struct *rpc_in_p, RPC_HDR
 		return False;
 	}
 
-	DEBUG(10,("pipe_netsec_auth_bind: schannel auth: domain [%s] myname [%s]\n",
+	DEBUG(10,("pipe_schannel_auth_bind: schannel auth: domain [%s] myname [%s]\n",
 		neg.domain, neg.myname));
 
 	/* We're finished with this bind - no more packets. */
@@ -1035,13 +1071,19 @@ static BOOL pipe_ntlmssp_auth_bind(pipes_struct *p, prs_struct *rpc_in_p, RPC_HD
 		return False;
 	}
 
-	p->ntlmssp_chal_flags = SMBD_NTLMSSP_NEG_FLAGS;
-	p->ntlmssp_auth_requested = True;
+	p->auth.a_u.ntlmssp_auth = TALLOC_P(p->pipe_state_mem_ctx, struct ntlmssp_auth_struct);
+	if (!p->auth.a_u.ntlmssp_auth) {
+		return False;
+	}
+
+	p->auth.auth_type = PIPE_AUTH_TYPE_NTLMSSP;
+	p->auth.a_u.ntlmssp_auth->ntlmssp_chal_flags = SMBD_NTLMSSP_NEG_FLAGS;
+	p->auth.a_u.ntlmssp_auth->ntlmssp_auth_requested = True;
 
 	ZERO_STRUCT(auth_verifier);
 	ZERO_STRUCT(ntlmssp_chal);
 
-	generate_random_buffer(p->challenge, 8);
+	generate_random_buffer(p->auth.a_u.ntlmssp_auth->challenge, 8);
 
 	/*** Authentication info ***/
 
@@ -1061,7 +1103,10 @@ static BOOL pipe_ntlmssp_auth_bind(pipes_struct *p, prs_struct *rpc_in_p, RPC_HD
 
 	/* NTLMSSP challenge ***/
 
-	init_rpc_auth_ntlmssp_chal(&ntlmssp_chal, p->ntlmssp_chal_flags, p->challenge);
+	init_rpc_auth_ntlmssp_chal(&ntlmssp_chal,
+			p->auth.a_u.ntlmssp_auth->ntlmssp_chal_flags,
+			p->auth.a_u.ntlmssp_auth->challenge);
+
 	if(!smb_io_rpc_auth_ntlmssp_chal("", &ntlmssp_chal, pout_auth, 0)) {
 		DEBUG(0,("pipe_ntlmssp_auth_bind: marshalling of RPC_AUTH_NTLMSSP_CHAL failed.\n"));
 		return False;
@@ -1070,6 +1115,7 @@ static BOOL pipe_ntlmssp_auth_bind(pipes_struct *p, prs_struct *rpc_in_p, RPC_HD
 	DEBUG(10,("pipe_ntlmssp_auth_bind: NTLMSSP auth: domain [%s] myname [%s]\n",
 		ntlmssp_neg.domain, ntlmssp_neg.myname));
 
+	/* We can't set pipe_bound True yet - we need a response packet... */
 	return True;
 }
 
@@ -1081,6 +1127,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 {
 	RPC_HDR_BA hdr_ba;
 	RPC_HDR_RB hdr_rb;
+	RPC_HDR_AUTH auth_info;
 	uint16 assoc_gid;
 	fstring ack_pipe_name;
 	prs_struct out_hdr_ba;
@@ -1088,10 +1135,8 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	prs_struct outgoing_rpc;
 	int i = 0;
 	int auth_len = 0;
+	unsigned int auth_type = ANONYMOUS_AUTH_TYPE;
 	enum RPC_PKT_TYPE reply_pkt_type;
-
-	p->ntlmssp_auth_requested = False;
-	p->netsec_auth_validated = False;
 
 	prs_init( &outgoing_rpc, 0, p->mem_ctx, MARSHALL);
 
@@ -1173,52 +1218,6 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		goto err_exit;
 	}
 
-	/*
-	 * Check if this is an authenticated bind request.
-	 */
-
-	if (p->hdr.auth_len != 0) {
-		RPC_HDR_AUTH auth_info;
-
-		/* 
-		 * Decode the authentication verifier.
-		 */
-
-		if(!smb_io_rpc_hdr_auth("", &auth_info, rpc_in_p, 0)) {
-			DEBUG(0,("api_pipe_bind_req: unable to unmarshall RPC_HDR_AUTH struct.\n"));
-			goto err_exit;
-		}
-
-		switch(auth_info.auth_type) {
-			case NTLMSSP_AUTH_TYPE:
-				if (!pipe_ntlmssp_auth_bind(p, rpc_in_p, &auth_info, &out_auth)) {
-					goto err_exit;
-				}
-				break;
-
-			case NETSEC_AUTH_TYPE:
-				if (!pipe_netsec_auth_bind(p, rpc_in_p, &auth_info, &out_auth)) {
-					goto err_exit;
-				}
-				break;
-
-			case SPNEGO_AUTH_TYPE:
-				if (!pipe_spnego_auth_bind_negotiate(p, rpc_in_p, &auth_info, &out_auth)) {
-					goto err_exit;
-				}
-				break;
-
-			default:
-				DEBUG(0,("api_pipe_bind_req: unknown auth type %x requested.\n",
-					 auth_info.auth_type ));
-				goto err_exit;
-		}
-	} else {
-		/* Unauthenticated bind request. */
-		/* We're finished - no more packets. */
-		p->pipe_bound = True;
-	}
-
 	switch(p->hdr.pkt_type) {
 		case RPC_BIND:
 			/* name has to be \PIPE\xxxxx */
@@ -1241,10 +1240,56 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
 	DEBUG(5,("api_pipe_bind_req: make response. %d\n", __LINE__));
 
-	if (p->ntlmssp_auth_requested) {
-		assoc_gid = 0x7a77;
+	/*
+	 * Check if this is an authenticated bind request.
+	 */
+
+	if (p->hdr.auth_len != 0) {
+		/* 
+		 * Decode the authentication verifier.
+		 */
+
+		if(!smb_io_rpc_hdr_auth("", &auth_info, rpc_in_p, 0)) {
+			DEBUG(0,("api_pipe_bind_req: unable to unmarshall RPC_HDR_AUTH struct.\n"));
+			goto err_exit;
+		}
+		auth_type = auth_info.auth_type;
 	} else {
-		assoc_gid = hdr_rb.bba.assoc_gid ? hdr_rb.bba.assoc_gid : 0x53f0;
+		ZERO_STRUCT(auth_info);
+	}
+
+	assoc_gid = hdr_rb.bba.assoc_gid ? hdr_rb.bba.assoc_gid : 0x53f0;
+
+	switch(auth_type) {
+		case NTLMSSP_AUTH_TYPE:
+			if (!pipe_ntlmssp_auth_bind(p, rpc_in_p, &auth_info, &out_auth)) {
+				goto err_exit;
+			}
+			assoc_gid = 0x7a77;
+			break;
+
+		case SCHANNEL_AUTH_TYPE:
+			if (!pipe_schannel_auth_bind(p, rpc_in_p, &auth_info, &out_auth)) {
+				goto err_exit;
+			}
+			break;
+
+		case SPNEGO_AUTH_TYPE:
+			if (!pipe_spnego_auth_bind_negotiate(p, rpc_in_p, &auth_info, &out_auth)) {
+				goto err_exit;
+			}
+			break;
+
+		case ANONYMOUS_AUTH_TYPE:
+			/* Unauthenticated bind request. */
+			/* We're finished - no more packets. */
+			p->auth.auth_type = PIPE_AUTH_TYPE_NONE;
+			p->pipe_bound = True;
+			break;
+
+		default:
+			DEBUG(0,("api_pipe_bind_req: unknown auth type %x requested.\n", auth_type ));
+			goto err_exit;
 	}
 
 	/*
@@ -1274,6 +1319,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 					MAX_PDU_FRAG_LEN, assoc_gid,
 					ack_pipe_name, 0x1, 0x2, 0x1,
 					&null_interface);
+		p->pipe_bound = False;
 	}
 
 	/*
@@ -1347,13 +1393,13 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
  Deal with sign & seal processing on an RPC request.
 ****************************************************************************/
 
-BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *rpc_in)
+BOOL api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in)
 {
 	/*
 	 * We always negotiate the following two bits....
 	 */
-	BOOL auth_verify = ((p->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SIGN) != 0);
-	BOOL auth_seal   = ((p->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SEAL) != 0);
+	BOOL auth_verify = ((p->auth.a_u.ntlmssp_auth->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SIGN) != 0);
+	BOOL auth_seal   = ((p->auth.a_u.ntlmssp_auth->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SEAL) != 0);
 	int data_len;
 	int auth_len;
 	uint32 old_offset;
@@ -1362,7 +1408,7 @@ BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *rpc_in)
 	auth_len = p->hdr.auth_len;
 
 	if ((auth_len != RPC_AUTH_NTLMSSP_CHK_LEN) && auth_verify) {
-		DEBUG(0,("api_pipe_auth_process: Incorrect auth_len %d.\n", auth_len ));
+		DEBUG(0,("api_pipe_ntlmssp_auth_process: Incorrect auth_len %d.\n", auth_len ));
 		return False;
 	}
 
@@ -1375,7 +1421,7 @@ BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *rpc_in)
 	data_len = p->hdr.frag_len - RPC_HEADER_LEN - RPC_HDR_REQ_LEN - 
 			(auth_verify ? RPC_HDR_AUTH_LEN : 0) - auth_len;
 	
-	DEBUG(5,("api_pipe_auth_process: sign: %s seal: %s data %d auth %d\n",
+	DEBUG(5,("api_pipe_ntlmssp_auth_process: sign: %s seal: %s data %d auth %d\n",
 	         BOOLSTR(auth_verify), BOOLSTR(auth_seal), data_len, auth_len));
 
 	if (auth_seal) {
@@ -1384,8 +1430,8 @@ BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *rpc_in)
 		 * has already been consumed.
 		 */
 		char *data = prs_data_p(rpc_in) + RPC_HDR_REQ_LEN;
-		dump_data_pw("NTLMSSP hash (v1)\n", p->ntlmssp_hash, 
-			     sizeof(p->ntlmssp_hash));
+		dump_data_pw("NTLMSSP hash (v1)\n", p->auth.a_u.ntlmssp_auth->ntlmssp_hash, 
+			     sizeof(p->auth.a_u.ntlmssp_auth->ntlmssp_hash));
 
 		dump_data_pw("Incoming RPC PDU (NTLMSSP sealed)\n", 
 			     (const unsigned char *)data, data_len);
@@ -1401,13 +1447,13 @@ BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *rpc_in)
 		RPC_HDR_AUTH auth_info;
 
 		if(!prs_set_offset(rpc_in, old_offset + data_len)) {
-			DEBUG(0,("api_pipe_auth_process: cannot move offset to %u.\n",
+			DEBUG(0,("api_pipe_ntlmssp_auth_process: cannot move offset to %u.\n",
 				(unsigned int)old_offset + data_len ));
 			return False;
 		}
 
 		if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, rpc_in, 0)) {
-			DEBUG(0,("api_pipe_auth_process: failed to unmarshall RPC_HDR_AUTH.\n"));
+			DEBUG(0,("api_pipe_ntlmssp_auth_process: failed to unmarshall RPC_HDR_AUTH.\n"));
 			return False;
 		}
 	}
@@ -1434,7 +1480,7 @@ BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *rpc_in)
 			return False;
 		}
 
-		if (!rpc_auth_ntlmssp_chk(&ntlmssp_chk, crc32, p->ntlmssp_seq_num)) {
+		if (!rpc_auth_ntlmssp_chk(&ntlmssp_chk, crc32, p->auth.a_u.ntlmssp_auth->ntlmssp_seq_num)) {
 			DEBUG(0,("api_pipe_auth_process: NTLMSSP check failed.\n"));
 			return False;
 		}
@@ -1457,7 +1503,7 @@ BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *rpc_in)
  Deal with schannel processing on an RPC request.
 ****************************************************************************/
 
-BOOL api_pipe_netsec_process(pipes_struct *p, prs_struct *rpc_in)
+BOOL api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in)
 {
 	/*
 	 * We always negotiate the following two bits....
@@ -1466,12 +1512,12 @@ BOOL api_pipe_netsec_process(pipes_struct *p, prs_struct *rpc_in)
 	int auth_len;
 	uint32 old_offset;
 	RPC_HDR_AUTH auth_info;
-	RPC_AUTH_NETSEC_CHK netsec_chk;
+	RPC_AUTH_SCHANNEL_CHK schannel_chk;
 
 
 	auth_len = p->hdr.auth_len;
 
-	if (auth_len != RPC_AUTH_NETSEC_SIGN_OR_SEAL_CHK_LEN) {
+	if (auth_len != RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN) {
 		DEBUG(0,("Incorrect auth_len %d.\n", auth_len ));
 		return False;
 	}
@@ -1500,33 +1546,33 @@ BOOL api_pipe_netsec_process(pipes_struct *p, prs_struct *rpc_in)
 		return False;
 	}
 
-	if (auth_info.auth_type != NETSEC_AUTH_TYPE) {
+	if (auth_info.auth_type != SCHANNEL_AUTH_TYPE) {
 		DEBUG(0,("Invalid auth info %d on schannel\n",
 			 auth_info.auth_type));
 		return False;
 	}
 
 	if (auth_info.auth_level == RPC_PIPE_AUTH_SEAL_LEVEL) {
-		p->netsec_auth.auth_flags = AUTH_PIPE_NETSEC|AUTH_PIPE_SIGN|AUTH_PIPE_SEAL;
+		p->auth.a_u.schannel_auth->auth_flags = AUTH_PIPE_SCHANNEL|AUTH_PIPE_SIGN|AUTH_PIPE_SEAL;
 	} else if (auth_info.auth_level == RPC_PIPE_AUTH_SIGN_LEVEL) {
-		p->netsec_auth.auth_flags = AUTH_PIPE_NETSEC|AUTH_PIPE_SIGN;
+		p->auth.a_u.schannel_auth->auth_flags = AUTH_PIPE_SCHANNEL|AUTH_PIPE_SIGN;
 	} else {
 		DEBUG(0,("Invalid auth level %d on schannel\n",
 			 auth_info.auth_level));
 		return False;
 	}
 
-	if(!smb_io_rpc_auth_netsec_chk("", RPC_AUTH_NETSEC_SIGN_OR_SEAL_CHK_LEN, 
-		&netsec_chk, rpc_in, 0)) 
+	if(!smb_io_rpc_auth_schannel_chk("", RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN, 
+		&schannel_chk, rpc_in, 0)) 
 	{
-		DEBUG(0,("failed to unmarshal RPC_AUTH_NETSEC_CHK.\n"));
+		DEBUG(0,("failed to unmarshal RPC_AUTH_SCHANNEL_CHK.\n"));
 		return False;
 	}
 
-	if (!netsec_decode(&p->netsec_auth,
-			   p->netsec_auth.auth_flags,
+	if (!schannel_decode(p->auth.a_u.schannel_auth,
+			   p->auth.a_u.schannel_auth->auth_flags,
 			   SENDER_IS_INITIATOR,
-			   &netsec_chk,
+			   &schannel_chk,
 			   prs_data_p(rpc_in)+old_offset, data_len)) {
 		DEBUG(3,("failed to decode PDU\n"));
 		return False;
@@ -1543,7 +1589,7 @@ BOOL api_pipe_netsec_process(pipes_struct *p, prs_struct *rpc_in)
 	}
 
 	/* The sequence number gets incremented on both send and receive. */
-	p->netsec_auth.seq_num++;
+	p->auth.a_u.schannel_auth->seq_num++;
 
 	return True;
 }
@@ -1554,7 +1600,7 @@ BOOL api_pipe_netsec_process(pipes_struct *p, prs_struct *rpc_in)
 
 struct current_user *get_current_user(struct current_user *user, pipes_struct *p)
 {
-	if (p->ntlmssp_auth_validated) {
+	if (p->pipe_bound && p->auth.auth_type == PIPE_AUTH_TYPE_NTLMSSP) {
 		memcpy(user, &p->pipe_user, sizeof(struct current_user));
 	} else {
 		memcpy(user, &current_user, sizeof(struct current_user));
@@ -1616,8 +1662,7 @@ BOOL api_pipe_request(pipes_struct *p)
 	BOOL ret = False;
 	PIPE_RPC_FNS *pipe_fns;
 	
-	if (p->ntlmssp_auth_validated) {
-
+	if (p->pipe_bound && p->auth.auth_type == PIPE_AUTH_TYPE_NTLMSSP) {
 		if(!become_authenticated_pipe_user(p)) {
 			prs_mem_free(&p->out_data.rdata);
 			return False;
@@ -1640,8 +1685,9 @@ BOOL api_pipe_request(pipes_struct *p)
 			p->hdr_req.context_id, p->name));
 	}
 
-	if(p->ntlmssp_auth_validated)
+	if (p->pipe_bound && p->auth.auth_type == PIPE_AUTH_TYPE_NTLMSSP) {
 		unbecome_authenticated_pipe_user();
+	}
 
 	return ret;
 }

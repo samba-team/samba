@@ -21,9 +21,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "ntdomain.h"
-#include "rpc_dce.h"
-
 #ifndef _RPC_MISC_H /* _RPC_MISC_H */
 #define _RPC_MISC_H 
 
@@ -401,9 +398,5 @@ typedef struct uint64_s
 	uint32 low;
 	uint32 high;
 } UINT64_S;
-
-
-
-
 
 #endif /* _RPC_MISC_H */

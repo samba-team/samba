@@ -378,10 +378,10 @@ void cli_nt_session_close(struct cli_state *cli)
 }
 
 /****************************************************************************
-close the NETLOGON session holding the session key for NETSEC
+close the NETLOGON session holding the session key for SCHANNEL
 ****************************************************************************/
 
-void cli_nt_netlogon_netsec_session_close(struct cli_state *cli)
+void cli_nt_netlogon_schannel_session_close(struct cli_state *cli)
 {
 	if (cli->netlogon_pipe.fnum != 0) {
 		cli_close(cli, cli->netlogon_pipe.fnum);
@@ -396,7 +396,7 @@ void cli_nt_netlogon_netsec_session_close(struct cli_state *cli)
 void cli_close_connection(struct cli_state *cli)
 {
 	cli_nt_session_close(cli);
-	cli_nt_netlogon_netsec_session_close(cli);
+	cli_nt_netlogon_schannel_session_close(cli);
 
 	/*
 	 * tell our peer to free his resources.  Wihtout this, when an

@@ -72,7 +72,7 @@ struct rpc_pipe_client {
 	const char *domain;
 	struct pwd_info pwd;
 
-	struct netsec_auth_struct auth_info;
+	struct schannel_auth_struct auth_info;
 
 	uint16 max_xmit_frag;
 	uint16 max_recv_frag;

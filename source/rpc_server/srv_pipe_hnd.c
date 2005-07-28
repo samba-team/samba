@@ -297,9 +297,17 @@ static void *make_internal_rpc_pipe_p(char *pipe_name,
 		return NULL;
 	}
 
+	if ((p->pipe_state_mem_ctx = talloc_init("pipe_state %s %p", pipe_name, p)) == NULL) {
+		DEBUG(0,("open_rpc_pipe_p: talloc_init failed.\n"));
+		talloc_destroy(p->mem_ctx);
+		SAFE_FREE(p);
+		return NULL;
+	}
+
 	if (!init_pipe_handle_list(p, pipe_name)) {
 		DEBUG(0,("open_rpc_pipe_p: init_pipe_handles failed.\n"));
 		talloc_destroy(p->mem_ctx);
+		talloc_destroy(p->pipe_state_mem_ctx);
 		SAFE_FREE(p);
 		return NULL;
 	}
@@ -313,6 +321,8 @@ static void *make_internal_rpc_pipe_p(char *pipe_name,
 
 	if(!prs_init(&p->in_data.data, MAX_PDU_FRAG_LEN, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("open_rpc_pipe_p: malloc fail for in_data struct.\n"));
+		talloc_destroy(p->mem_ctx);
+		talloc_destroy(p->pipe_state_mem_ctx);
 		return NULL;
 	}
 
@@ -325,12 +335,6 @@ static void *make_internal_rpc_pipe_p(char *pipe_name,
 
 	p->vuid  = vuid;
 
-	p->ntlmssp_chal_flags = 0;
-	p->ntlmssp_auth_validated = False;
-	p->ntlmssp_auth_requested = False;
-
-	p->pipe_bound = False;
-	p->fault_state = False;
 	p->endian = RPC_LITTLE_ENDIAN;
 
 	ZERO_STRUCT(p->pipe_user);
@@ -343,21 +347,6 @@ static void *make_internal_rpc_pipe_p(char *pipe_name,
 		p->session_key = data_blob(vuser->session_key.data, vuser->session_key.length);
 		p->pipe_user.nt_user_token = dup_nt_token(vuser->nt_user_token);
 	}
-
-	/*
-	 * Initialize the incoming RPC struct.
-	 */
-
-	p->in_data.pdu_needed_len = 0;
-	p->in_data.pdu_received_len = 0;
-
-	/*
-	 * Initialize the outgoing RPC struct.
-	 */
-
-	p->out_data.current_pdu_len = 0;
-	p->out_data.current_pdu_sent = 0;
-	p->out_data.data_sent_length = 0;
 
 	/*
 	 * Initialize the outgoing RPC data buffer with no memory.
@@ -544,8 +533,9 @@ static void free_pipe_context(pipes_struct *p)
 		talloc_free_children(p->mem_ctx);
 	} else {
 		p->mem_ctx = talloc_init("pipe %s %p", p->name, p);
-		if (p->mem_ctx == NULL)
+		if (p->mem_ctx == NULL) {
 			p->fault_state = True;
+		}
 	}
 }
 
@@ -556,9 +546,8 @@ static void free_pipe_context(pipes_struct *p)
 
 static BOOL process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 {
-	BOOL auth_verify = ((p->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SIGN) != 0);
 	size_t data_len = p->hdr.frag_len - RPC_HEADER_LEN - RPC_HDR_REQ_LEN -
-				(auth_verify ? RPC_HDR_AUTH_LEN : 0) - p->hdr.auth_len;
+				(p->hdr.auth_len ? RPC_HDR_AUTH_LEN : 0) - p->hdr.auth_len;
 
 	if(!p->pipe_bound) {
 		DEBUG(0,("process_request_pdu: rpc request with no bind.\n"));
@@ -581,29 +570,31 @@ static BOOL process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 		return False;
 	}
 
-	if(p->ntlmssp_auth_validated && !api_pipe_auth_process(p, rpc_in_p)) {
-		DEBUG(0,("process_request_pdu: failed to do auth processing.\n"));
-		set_incoming_fault(p);
-		return False;
-	}
+	switch(p->auth.auth_type) {
+		case PIPE_AUTH_TYPE_NONE:
+			break;
 
-	if (p->ntlmssp_auth_requested && !p->ntlmssp_auth_validated) {
+		case PIPE_AUTH_TYPE_NTLMSSP:
+			if(!api_pipe_ntlmssp_auth_process(p, rpc_in_p)) {
+				DEBUG(0,("process_request_pdu: failed to do auth processing.\n"));
+				set_incoming_fault(p);
+				return False;
+			}
 
-		/*
-		 * Authentication _was_ requested and it already failed.
-		 */
+			break;
 
-		DEBUG(0,("process_request_pdu: RPC request received on pipe %s "
-			 "where authentication failed. Denying the request.\n",
-			 p->name));
-		set_incoming_fault(p);
-		return False;
-	}
+		case PIPE_AUTH_TYPE_SCHANNEL:
+			if (!api_pipe_schannel_process(p, rpc_in_p)) {
+				DEBUG(3,("process_request_pdu: failed to do schannel processing.\n"));
+				set_incoming_fault(p);
+				return False;
+			}
+			break;
 
-	if (p->netsec_auth_validated && !api_pipe_netsec_process(p, rpc_in_p)) {
-		DEBUG(3,("process_request_pdu: failed to do schannel processing.\n"));
-		set_incoming_fault(p);
-		return False;
+		default:
+			DEBUG(0,("process_request_pdu: unknown auth type %u set.\n", (unsigned int)p->auth.auth_type ));
+			set_incoming_fault(p);
+			return False;
 	}
 
 	/*
@@ -1121,9 +1112,14 @@ static BOOL close_internal_rpc_pipe_hnd(void *np_conn)
 	prs_mem_free(&p->out_data.rdata);
 	prs_mem_free(&p->in_data.data);
 
-	if (p->mem_ctx)
+	if (p->mem_ctx) {
 		talloc_destroy(p->mem_ctx);
-		
+	}
+
+	if (p->pipe_state_mem_ctx) {
+		talloc_destroy(p->pipe_state_mem_ctx);
+	}
+
 	free_pipe_rpc_context( p->contexts );
 
 	/* Free the handles database. */

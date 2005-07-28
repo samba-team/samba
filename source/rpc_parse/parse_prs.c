@@ -1411,9 +1411,9 @@ BOOL prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16], int len)
  MD5 it with the session key.
  ********************************************************************/
 
-static void netsec_digest(struct netsec_auth_struct *a,
+static void schannel_digest(struct schannel_auth_struct *a,
 			  int auth_flags,
-			  RPC_AUTH_NETSEC_CHK * verf,
+			  RPC_AUTH_SCHANNEL_CHK * verf,
 			  char *data, size_t data_len,
 			  uchar digest_final[16]) 
 {
@@ -1443,8 +1443,8 @@ static void netsec_digest(struct netsec_auth_struct *a,
  Calculate the key with which to encode the data payload 
  ********************************************************************/
 
-static void netsec_get_sealing_key(struct netsec_auth_struct *a,
-				   RPC_AUTH_NETSEC_CHK *verf,
+static void schannel_get_sealing_key(struct schannel_auth_struct *a,
+				   RPC_AUTH_SCHANNEL_CHK *verf,
 				   uchar sealing_key[16]) 
 {
 	static uchar zeros[4];
@@ -1471,8 +1471,8 @@ static void netsec_get_sealing_key(struct netsec_auth_struct *a,
  Encode or Decode the sequence number (which is symmetric)
  ********************************************************************/
 
-static void netsec_deal_with_seq_num(struct netsec_auth_struct *a,
-				     RPC_AUTH_NETSEC_CHK *verf)
+static void schannel_deal_with_seq_num(struct schannel_auth_struct *a,
+				     RPC_AUTH_SCHANNEL_CHK *verf)
 {
 	static uchar zeros[4];
 	uchar sequence_key[16];
@@ -1491,10 +1491,10 @@ static void netsec_deal_with_seq_num(struct netsec_auth_struct *a,
 }
 
 /*******************************************************************
-creates an RPC_AUTH_NETSEC_CHK structure.
+creates an RPC_AUTH_SCHANNEL_CHK structure.
 ********************************************************************/
 
-static BOOL init_rpc_auth_netsec_chk(RPC_AUTH_NETSEC_CHK * chk,
+static BOOL init_rpc_auth_schannel_chk(RPC_AUTH_SCHANNEL_CHK * chk,
 			      const uchar sig[8],
 			      const uchar packet_digest[8],
 			      const uchar seq_num[8], const uchar confounder[8])
@@ -1511,15 +1511,15 @@ static BOOL init_rpc_auth_netsec_chk(RPC_AUTH_NETSEC_CHK * chk,
 }
 
 /*******************************************************************
- Encode a blob of data using the netsec (schannel) alogrithm, also produceing
+ Encode a blob of data using the schannel alogrithm, also produceing
  a checksum over the original data.  We currently only support
  signing and sealing togeather - the signing-only code is close, but not
  quite compatible with what MS does.
  ********************************************************************/
 
-void netsec_encode(struct netsec_auth_struct *a, int auth_flags, 
-		   enum netsec_direction direction,
-		   RPC_AUTH_NETSEC_CHK * verf,
+void schannel_encode(struct schannel_auth_struct *a, int auth_flags, 
+		   enum schannel_direction direction,
+		   RPC_AUTH_SCHANNEL_CHK * verf,
 		   char *data, size_t data_len)
 {
 	uchar digest_final[16];
@@ -1527,16 +1527,16 @@ void netsec_encode(struct netsec_auth_struct *a, int auth_flags,
 	uchar seq_num[8];
 	static const uchar nullbytes[8];
 
-	static const uchar netsec_seal_sig[8] = NETSEC_SEAL_SIGNATURE;
-	static const uchar netsec_sign_sig[8] = NETSEC_SIGN_SIGNATURE;
-	const uchar *netsec_sig = NULL;
+	static const uchar schannel_seal_sig[8] = SCHANNEL_SEAL_SIGNATURE;
+	static const uchar schannel_sign_sig[8] = SCHANNEL_SIGN_SIGNATURE;
+	const uchar *schannel_sig = NULL;
 
-	DEBUG(10,("SCHANNEL: netsec_encode seq_num=%d data_len=%lu\n", a->seq_num, (unsigned long)data_len));
+	DEBUG(10,("SCHANNEL: schannel_encode seq_num=%d data_len=%lu\n", a->seq_num, (unsigned long)data_len));
 	
 	if (auth_flags & AUTH_PIPE_SEAL) {
-		netsec_sig = netsec_seal_sig;
+		schannel_sig = schannel_seal_sig;
 	} else if (auth_flags & AUTH_PIPE_SIGN) {
-		netsec_sig = netsec_sign_sig;
+		schannel_sig = schannel_sign_sig;
 	}
 
 	/* fill the 'confounder' with random data */
@@ -1557,18 +1557,18 @@ void netsec_encode(struct netsec_auth_struct *a, int auth_flags,
 
 	dump_data_pw("verf->seq_num:\n", seq_num, sizeof(verf->seq_num));
 
-	init_rpc_auth_netsec_chk(verf, netsec_sig, nullbytes,
+	init_rpc_auth_schannel_chk(verf, schannel_sig, nullbytes,
 				 seq_num, confounder);
 				
 	/* produce a digest of the packet to prove it's legit (before we seal it) */
-	netsec_digest(a, auth_flags, verf, data, data_len, digest_final);
+	schannel_digest(a, auth_flags, verf, data, data_len, digest_final);
 	memcpy(verf->packet_digest, digest_final, sizeof(verf->packet_digest));
 
 	if (auth_flags & AUTH_PIPE_SEAL) {
 		uchar sealing_key[16];
 
 		/* get the key to encode the data with */
-		netsec_get_sealing_key(a, verf, sealing_key);
+		schannel_get_sealing_key(a, verf, sealing_key);
 
 		/* encode the verification data */
 		dump_data_pw("verf->confounder:\n", verf->confounder, sizeof(verf->confounder));
@@ -1585,35 +1585,35 @@ void netsec_encode(struct netsec_auth_struct *a, int auth_flags,
 	/* encode the sequence number (key based on packet digest) */
 	/* needs to be done after the sealing, as the original version 
 	   is used in the sealing stuff... */
-	netsec_deal_with_seq_num(a, verf);
+	schannel_deal_with_seq_num(a, verf);
 
 	return;
 }
 
 /*******************************************************************
- Decode a blob of data using the netsec (schannel) alogrithm, also verifiying
+ Decode a blob of data using the schannel alogrithm, also verifiying
  a checksum over the original data.  We currently can verify signed messages,
  as well as decode sealed messages
  ********************************************************************/
 
-BOOL netsec_decode(struct netsec_auth_struct *a, int auth_flags,
-		   enum netsec_direction direction, 
-		   RPC_AUTH_NETSEC_CHK * verf, char *data, size_t data_len)
+BOOL schannel_decode(struct schannel_auth_struct *a, int auth_flags,
+		   enum schannel_direction direction, 
+		   RPC_AUTH_SCHANNEL_CHK * verf, char *data, size_t data_len)
 {
 	uchar digest_final[16];
 
-	static const uchar netsec_seal_sig[8] = NETSEC_SEAL_SIGNATURE;
-	static const uchar netsec_sign_sig[8] = NETSEC_SIGN_SIGNATURE;
-	const uchar *netsec_sig = NULL;
+	static const uchar schannel_seal_sig[8] = SCHANNEL_SEAL_SIGNATURE;
+	static const uchar schannel_sign_sig[8] = SCHANNEL_SIGN_SIGNATURE;
+	const uchar *schannel_sig = NULL;
 
 	uchar seq_num[8];
 
-	DEBUG(10,("SCHANNEL: netsec_encode seq_num=%d data_len=%lu\n", a->seq_num, (unsigned long)data_len));
+	DEBUG(10,("SCHANNEL: schannel_decode seq_num=%d data_len=%lu\n", a->seq_num, (unsigned long)data_len));
 	
 	if (auth_flags & AUTH_PIPE_SEAL) {
-		netsec_sig = netsec_seal_sig;
+		schannel_sig = schannel_seal_sig;
 	} else if (auth_flags & AUTH_PIPE_SIGN) {
-		netsec_sig = netsec_sign_sig;
+		schannel_sig = schannel_sign_sig;
 	}
 
 	/* Create the expected sequence number for comparison */
@@ -1628,7 +1628,7 @@ BOOL netsec_decode(struct netsec_auth_struct *a, int auth_flags,
 		break;
 	}
 
-	DEBUG(10,("SCHANNEL: netsec_decode seq_num=%d data_len=%lu\n", a->seq_num, (unsigned long)data_len));
+	DEBUG(10,("SCHANNEL: schannel_decode seq_num=%d data_len=%lu\n", a->seq_num, (unsigned long)data_len));
 	dump_data_pw("a->sess_key:\n", a->sess_key, sizeof(a->sess_key));
 
 	dump_data_pw("seq_num:\n", seq_num, sizeof(seq_num));
@@ -1636,7 +1636,7 @@ BOOL netsec_decode(struct netsec_auth_struct *a, int auth_flags,
 	/* extract the sequence number (key based on supplied packet digest) */
 	/* needs to be done before the sealing, as the original version 
 	   is used in the sealing stuff... */
-	netsec_deal_with_seq_num(a, verf);
+	schannel_deal_with_seq_num(a, verf);
 
 	if (memcmp(verf->seq_num, seq_num, sizeof(seq_num))) {
 		/* don't even bother with the below if the sequence number is out */
@@ -1644,7 +1644,7 @@ BOOL netsec_decode(struct netsec_auth_struct *a, int auth_flags,
 		   digest, as supplied by the client.  We check that it's a valid 
 		   checksum after the decode, below
 		*/
-		DEBUG(2, ("netsec_decode: FAILED: packet sequence number:\n"));
+		DEBUG(2, ("schannel_decode: FAILED: packet sequence number:\n"));
 		dump_data(2, (const char*)verf->seq_num, sizeof(verf->seq_num));
 		DEBUG(2, ("should be:\n"));
 		dump_data(2, (const char*)seq_num, sizeof(seq_num));
@@ -1652,12 +1652,12 @@ BOOL netsec_decode(struct netsec_auth_struct *a, int auth_flags,
 		return False;
 	}
 
-	if (memcmp(verf->sig, netsec_sig, sizeof(verf->sig))) {
+	if (memcmp(verf->sig, schannel_sig, sizeof(verf->sig))) {
 		/* Validate that the other end sent the expected header */
-		DEBUG(2, ("netsec_decode: FAILED: packet header:\n"));
+		DEBUG(2, ("schannel_decode: FAILED: packet header:\n"));
 		dump_data(2, (const char*)verf->sig, sizeof(verf->sig));
 		DEBUG(2, ("should be:\n"));
-		dump_data(2, (const char*)netsec_sig, sizeof(netsec_sig));
+		dump_data(2, (const char*)schannel_sig, sizeof(schannel_sig));
 		return False;
 	}
 
@@ -1665,7 +1665,7 @@ BOOL netsec_decode(struct netsec_auth_struct *a, int auth_flags,
 		uchar sealing_key[16];
 		
 		/* get the key to extract the data with */
-		netsec_get_sealing_key(a, verf, sealing_key);
+		schannel_get_sealing_key(a, verf, sealing_key);
 
 		/* extract the verification data */
 		dump_data_pw("verf->confounder:\n", verf->confounder, 
@@ -1682,7 +1682,7 @@ BOOL netsec_decode(struct netsec_auth_struct *a, int auth_flags,
 	}
 
 	/* digest includes 'data' after unsealing */
-	netsec_digest(a, auth_flags, verf, data, data_len, digest_final);
+	schannel_digest(a, auth_flags, verf, data, data_len, digest_final);
 
 	dump_data_pw("Calculated digest:\n", digest_final, 
 		     sizeof(digest_final));

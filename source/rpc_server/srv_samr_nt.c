@@ -1456,10 +1456,12 @@ static NTSTATUS get_user_info_18(pipes_struct *p, TALLOC_CTX *mem_ctx, SAM_USER_
 	BOOL ret;
 	NTSTATUS nt_status;
 
-	if (!p->ntlmssp_auth_validated)
+	if (p->auth.auth_type != PIPE_AUTH_TYPE_NTLMSSP) {
 		return NT_STATUS_ACCESS_DENIED;
+	}
 
-	if (!(p->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SIGN) || !(p->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SEAL))
+	if (!(p->auth.a_u.ntlmssp_auth->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SIGN) ||
+			!(p->auth.a_u.ntlmssp_auth->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SEAL))
 		return NT_STATUS_ACCESS_DENIED;
 
 	/*

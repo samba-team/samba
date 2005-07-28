@@ -22,7 +22,6 @@
 #ifndef _RPC_SVCCTL_H /* _RPC_SVCCTL_H */
 #define _RPC_SVCCTL_H 
 
-
 /* svcctl pipe */
 
 #define SVCCTL_CLOSE_SERVICE			0x00

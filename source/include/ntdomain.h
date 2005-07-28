@@ -24,30 +24,6 @@
 #ifndef _NT_DOMAIN_H /* _NT_DOMAIN_H */
 #define _NT_DOMAIN_H 
 
-struct uuid {
-	uint32 time_low;
-	uint16 time_mid;
-	uint16 time_hi_and_version;
-	uint8  clock_seq[2];
-	uint8  node[6];
-};
-#define UUID_SIZE 16
-
-#define UUID_FLAT_SIZE 16
-typedef struct uuid_flat {
-	uint8 info[UUID_FLAT_SIZE];
-} UUID_FLAT;
-
-/* dce/rpc support */
-#include "rpc_dce.h"
-
-/* miscellaneous structures / defines */
-#include "rpc_misc.h"
-
-#include "rpc_creds.h"
-
-#include "talloc.h"
-
 /*
  * A bunch of stuff that was put into smb.h
  * in the NTDOM branch - it didn't belong there.
@@ -188,6 +164,40 @@ typedef struct pipe_rpc_fns {
 	
 } PIPE_RPC_FNS;
 
+/* Different auth types we support. */
+enum pipe_auth_type { PIPE_AUTH_TYPE_NONE = 0, PIPE_AUTH_TYPE_NTLMSSP, PIPE_AUTH_TYPE_SCHANNEL,
+			PIPE_AUTH_TYPE_SPNEGO_NTLMSSP, PIPE_AUTH_TYPE_SPNEGO_KRB5 };
+
+/* auth state for schannel. */
+struct schannel_auth_struct {
+	uchar sess_key[16];
+	uint32 seq_num;
+	int auth_flags;
+};
+
+/* auth state for ntlmssp. */
+struct ntlmssp_auth_struct {
+	uint32 ntlmssp_chal_flags; /* Client challenge flags. */
+	BOOL ntlmssp_auth_requested; /* If the client wanted authenticated rpc. */
+	BOOL ntlmssp_auth_validated; /* If the client *got* authenticated rpc. */
+	unsigned char challenge[8];
+	unsigned char ntlmssp_hash[258];
+	uint32 ntlmssp_seq_num;
+};
+
+/* auth state for all bind types. */
+struct pipe_auth_data {
+	enum pipe_auth_type auth_type;
+	union {
+#if 0
+		AUTH_NTLMSSP_STATE *auth_ntlmssp_state;
+#else
+		struct ntlmssp_auth_struct *ntlmssp_auth;
+#endif
+		struct schannel_auth_struct *schannel_auth;
+	} a_u;
+};
+	
 /*
  * DCE/RPC-specific samba-internal-specific handling of data on
  * NamedPipes.
@@ -210,20 +220,25 @@ typedef struct pipes_struct {
 	RPC_HDR hdr; /* Incoming RPC header. */
 	RPC_HDR_REQ hdr_req; /* Incoming request header. */
 
+	/* This context is used for pipe state storage and is freed when the pipe is closed. */
+	TALLOC_CTX *pipe_state_mem_ctx;
+
+	struct pipe_auth_data auth;
+
+#if 0
 	uint32 ntlmssp_chal_flags; /* Client challenge flags. */
 	BOOL ntlmssp_auth_requested; /* If the client wanted authenticated rpc. */
 	BOOL ntlmssp_auth_validated; /* If the client *got* authenticated rpc. */
 	unsigned char challenge[8];
 	unsigned char ntlmssp_hash[258];
 	uint32 ntlmssp_seq_num;
-	struct dcinfo dc; /* Keeps the creds data. */
 
-	 /* Hmm. In my understanding the authentication happens
-	    implicitly later, so there are no two stages for
-	    schannel. */
-
+	/* schannel auth state. */
 	BOOL netsec_auth_validated;
 	struct netsec_auth_struct netsec_auth;
+#endif
+
+	struct dcinfo dc; /* Keeps the creds data. */
 
 	/*
 	 * Windows user info.
@@ -277,7 +292,8 @@ typedef struct pipes_struct {
 
 	output_data out_data;
 
-	/* talloc context to use when allocating memory on this pipe. */
+	/* This context is used for PUD data and is freed between each pdu.
+		Don't use for pipe state storage. */
 	TALLOC_CTX *mem_ctx;
 
 	/* handle database to use on this pipe. */
@@ -383,28 +399,11 @@ typedef struct {
 
 /* end higher order functions */
 
-
-/* security descriptor structures */
-#include "rpc_secdes.h"
-
-/* pac */
-#include "authdata.h"
-
-/* different dce/rpc pipes */
-#include "rpc_buffer.h"
-#include "rpc_lsa.h"
-#include "rpc_netlogon.h"
-#include "rpc_reg.h"
-#include "rpc_samr.h"
-#include "rpc_srvsvc.h"
-#include "rpc_wkssvc.h"
-#include "rpc_svcctl.h"
-#include "rpc_spoolss.h"
-#include "rpc_eventlog.h"
-#include "rpc_dfs.h"
-#include "rpc_ds.h"
-#include "rpc_echo.h"
-#include "rpc_shutdown.h"
-#include "rpc_unixinfo.h"
+typedef struct {
+	uint32 size;
+	prs_struct prs;
+	uint32 struct_start;
+	uint32 string_at_end;
+} RPC_BUFFER;
 
 #endif /* _NT_DOMAIN_H */

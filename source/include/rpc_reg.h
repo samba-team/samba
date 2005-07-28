@@ -25,8 +25,6 @@
 #ifndef _RPC_REG_H /* _RPC_REG_H */
 #define _RPC_REG_H 
 
-#include "reg_objects.h"
-
 /* RPC opnum */
 
 #define REG_OPEN_HKCR		0x00

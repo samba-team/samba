@@ -887,17 +887,17 @@ extern int errno;
 
 #include "rpc_creds.h"
 
+#include "rpc_misc.h"
+
+#include "rpc_dce.h"
+
 #include "mapping.h"
 
 #include "passdb.h"
 
-#include "ntdomain.h"
-
-#include "rpc_misc.h"
-
 #include "rpc_secdes.h"
 
-#include "nt_printing.h"
+#include "authdata.h"
 
 #include "msdfs.h"
 
@@ -911,6 +911,26 @@ extern int errno;
 #include "ntlmssp.h"
 
 #include "auth.h"
+
+#include "ntdomain.h"
+
+#include "rpc_svcctl.h"
+#include "rpc_lsa.h"
+#include "rpc_netlogon.h"
+#include "reg_objects.h"
+#include "rpc_reg.h"
+#include "rpc_samr.h"
+#include "rpc_srvsvc.h"
+#include "rpc_wkssvc.h"
+#include "rpc_spoolss.h"
+#include "rpc_eventlog.h"
+#include "rpc_dfs.h"
+#include "rpc_ds.h"
+#include "rpc_echo.h"
+#include "rpc_shutdown.h"
+#include "rpc_unixinfo.h"
+
+#include "nt_printing.h"
 
 #include "idmap.h"
 

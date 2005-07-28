@@ -381,7 +381,7 @@ static NTSTATUS setup_schannel(struct cli_state *cli, int pipe_auth_flags,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	ret = cli_nt_setup_netsec(cli, sec_channel_type, pipe_auth_flags, trust_password);
+	ret = cli_nt_setup_schannel(cli, sec_channel_type, pipe_auth_flags, trust_password);
 	if (NT_STATUS_IS_OK(ret)) {
 		char *hex_session_key;
 		hex_encode(cli->pipes[cli->pipe_idx].auth_info.sess_key,
@@ -398,7 +398,7 @@ static NTSTATUS cmd_schannel(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			     int argc, const char **argv)
 {
 	d_printf("Setting schannel - sign and seal\n");
-	return setup_schannel(cli, AUTH_PIPE_NETSEC | AUTH_PIPE_SIGN | AUTH_PIPE_SEAL, 
+	return setup_schannel(cli, AUTH_PIPE_SCHANNEL | AUTH_PIPE_SIGN | AUTH_PIPE_SEAL, 
 			      argc, argv);
 }
 
@@ -406,7 +406,7 @@ static NTSTATUS cmd_schannel_sign(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			     int argc, const char **argv)
 {
 	d_printf("Setting schannel - sign only\n");
-	return setup_schannel(cli, AUTH_PIPE_NETSEC | AUTH_PIPE_SIGN, 
+	return setup_schannel(cli, AUTH_PIPE_SCHANNEL | AUTH_PIPE_SIGN, 
 			      argc, argv);
 }
 
@@ -425,8 +425,8 @@ static struct cmd_set rpcclient_commands[] = {
 	{ "quit", RPC_RTYPE_NTSTATUS, cmd_quit, NULL,	  -1,	"Exit program", "" },
 	{ "sign", RPC_RTYPE_NTSTATUS, cmd_sign, NULL,	  -1,	"Force RPC pipe connections to be signed", "" },
 	{ "seal", RPC_RTYPE_NTSTATUS, cmd_seal, NULL,	  -1,	"Force RPC pipe connections to be sealed", "" },
-	{ "schannel", RPC_RTYPE_NTSTATUS, cmd_schannel, NULL,	  -1,	"Force RPC pipe connections to be sealed with 'schannel' (NETSEC).  Assumes valid machine account to this domain controller.", "" },
-	{ "schannelsign", RPC_RTYPE_NTSTATUS, cmd_schannel_sign, NULL,	  -1,	"Force RPC pipe connections to be signed (not sealed) with 'schannel' (NETSEC).  Assumes valid machine account to this domain controller.", "" },
+	{ "schannel", RPC_RTYPE_NTSTATUS, cmd_schannel, NULL,	  -1,	"Force RPC pipe connections to be sealed with 'schannel'.  Assumes valid machine account to this domain controller.", "" },
+	{ "schannelsign", RPC_RTYPE_NTSTATUS, cmd_schannel_sign, NULL,	  -1,	"Force RPC pipe connections to be signed (not sealed) with 'schannel'.  Assumes valid machine account to this domain controller.", "" },
 	{ "none", RPC_RTYPE_NTSTATUS, cmd_none, NULL,	  -1,	"Force RPC pipe connections to have no special properties", "" },
 
 	{ NULL }
@@ -524,7 +524,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
 	/* some of the DsXXX commands use the netlogon pipe */
 
-	if (lp_client_schannel() && (cmd_entry->pipe_idx == PI_NETLOGON) && !(cli->pipe_auth_flags & AUTH_PIPE_NETSEC)) {
+	if (lp_client_schannel() && (cmd_entry->pipe_idx == PI_NETLOGON) && !(cli->pipe_auth_flags & AUTH_PIPE_SCHANNEL)) {
 		uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
 		uint32 sec_channel_type;
 	
