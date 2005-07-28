@@ -105,13 +105,14 @@ cmp "$srcdir/test_chain.in" sd.data.out || exit 1
 
 echo "envelope data"
 ./hxtool cms-envelope \
+    --certificate=FILE:$srcdir/data/test.crt \
     --content-info \
     "$srcdir/test_chain.in" \
-    ev.data \
-    FILE:$srcdir/data/test.crt || exit 1
+    ev.data  || exit 1
 
 echo "unenvelope data"
 ./hxtool cms-unenvelope \
+    --certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
     --content-info \
     ev.data ev.data.out \
     FILE:$srcdir/data/test.crt,$srcdir/data/test.key || exit 1
@@ -119,8 +120,9 @@ cmp "$srcdir/test_chain.in" ev.data.out || exit 1
 
 echo "unenvelope data (aes-128)"
 ./hxtool cms-unenvelope \
+	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
 	--content-info \
-	"$srcdir/data/test-enveloped-aes-128" ev.data.out FILE:$srcdir/data/test.crt,$srcdir/data/test.key || exit 1
+	"$srcdir/data/test-enveloped-aes-128" ev.data.out || exit 1
 cmp "$srcdir/test_chain.in" ev.data.out || exit 1
 
 
