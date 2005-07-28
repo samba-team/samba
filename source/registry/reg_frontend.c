@@ -57,6 +57,10 @@ BOOL init_registry( void )
 		DEBUG(0,("init_registry: failed to initialize the registry tdb!\n"));
 		return False;
 	}
+        /* initialize eventlog related "registry entries" */
+        init_eventlog_parameters();
+	/* inform the external eventlog machinery of the change */
+	eventlog_refresh_external_parameters();
 		
 	/* build the cache tree of registry hooks */
 	

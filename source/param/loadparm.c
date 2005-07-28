@@ -123,6 +123,7 @@ typedef struct
 	char *szConfigFile;
 	char *szSMBPasswdFile;
 	char *szPrivateDir;
+        char *szCountersDir;
 	char **szPassdbBackend;
 	char **szPreloadModules;
 	char *szPasswordServer;
@@ -190,6 +191,7 @@ typedef struct
         char *szEventLogNumRecordsCommand;
         char *szEventLogOldestRecordCommand;
 	char *szEventLogCloseCommand;
+        char *szEventLogControlCommand;
         char **szEventLogs;
 	char *szGuestaccount;
 	char *szManglingMethod;
@@ -835,6 +837,7 @@ static struct parm_struct parm_table[] = {
 	{"password server", P_STRING, P_GLOBAL, &Globals.szPasswordServer, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD}, 
 	{"smb passwd file", P_STRING, P_GLOBAL, &Globals.szSMBPasswdFile, NULL, NULL, FLAG_ADVANCED}, 
 	{"private dir", P_STRING, P_GLOBAL, &Globals.szPrivateDir, NULL, NULL, FLAG_ADVANCED}, 
+	{"counters dir", P_STRING, P_GLOBAL, &Globals.szCountersDir, NULL, NULL, FLAG_ADVANCED},
 	{"passdb backend", P_LIST, P_GLOBAL, &Globals.szPassdbBackend, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD}, 
 	{"algorithmic rid base", P_INTEGER, P_GLOBAL, &Globals.AlgorithmicRidBase, NULL, NULL, FLAG_ADVANCED}, 
 	{"root directory", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, FLAG_ADVANCED}, 
@@ -1157,6 +1160,7 @@ static struct parm_struct parm_table[] = {
 	{"eventlog clear command", P_STRING, P_GLOBAL, &Globals.szEventLogClearCommand, handle_eventlog, NULL, FLAG_ADVANCED},
 	{"eventlog num records command", P_STRING, P_GLOBAL, &Globals.szEventLogNumRecordsCommand, handle_eventlog, NULL, FLAG_ADVANCED},
 	{"eventlog oldest record command", P_STRING, P_GLOBAL, &Globals.szEventLogOldestRecordCommand, handle_eventlog, NULL, FLAG_ADVANCED},
+	{"eventlog close command", P_STRING, P_GLOBAL, &Globals.szEventLogCloseCommand, handle_eventlog, NULL, FLAG_ADVANCED},
 	{"eventlog list",  P_LIST, P_GLOBAL, &Globals.szEventLogs, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
 	
 	{"config file", P_STRING, P_GLOBAL, &Globals.szConfigFile, NULL, NULL, FLAG_HIDE}, 
@@ -1583,6 +1587,8 @@ static void init_globals(void)
 	string_set(&Globals.szEventLogClearCommand, "");
 	string_set(&Globals.szEventLogNumRecordsCommand, "");
 	string_set(&Globals.szEventLogOldestRecordCommand, "");
+	string_set(&Globals.szEventLogCloseCommand, "");
+	string_set(&Globals.szEventLogControlCommand, "");
 
 	Globals.winbind_cache_time = 300;	/* 5 minutes */
 	Globals.bWinbindEnumUsers = True;
@@ -1706,6 +1712,7 @@ FN_GLOBAL_STRING(lp_logfile, &Globals.szLogFile)
 FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
 FN_GLOBAL_STRING(lp_smb_passwd_file, &Globals.szSMBPasswdFile)
 FN_GLOBAL_STRING(lp_private_dir, &Globals.szPrivateDir)
+FN_GLOBAL_STRING(lp_counters_dir, &Globals.szCountersDir)
 FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
 FN_GLOBAL_INTEGER(lp_printcap_cache_time, &Globals.PrintcapCacheTime)
 FN_GLOBAL_STRING(lp_enumports_cmd, &Globals.szEnumPortsCommand)
@@ -1807,6 +1814,8 @@ FN_GLOBAL_STRING(lp_eventlog_clear_cmd, &Globals.szEventLogClearCommand)
 FN_GLOBAL_STRING(lp_eventlog_num_records_cmd, &Globals.szEventLogNumRecordsCommand)
 FN_GLOBAL_STRING(lp_eventlog_oldest_record_cmd, &Globals.szEventLogOldestRecordCommand)
 FN_GLOBAL_STRING(lp_eventlog_close_cmd, &Globals.szEventLogCloseCommand)
+FN_GLOBAL_STRING(lp_eventlog_control_cmd, &Globals.szEventLogControlCommand)
+
 FN_GLOBAL_LIST(lp_eventlog_list, &Globals.szEventLogs)
 
 FN_GLOBAL_BOOL(lp_disable_netbios, &Globals.bDisableNetbios)

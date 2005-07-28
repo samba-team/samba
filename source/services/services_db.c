@@ -348,73 +348,35 @@ static BOOL get_internal_service_data(const Internal_service_description *isd, S
 BOOL get_service_info(TDB_CONTEXT *stdb,char *service_name, Service_info *si) 
 {
 
-	pstring keystring;
-	TDB_DATA  key_data;
+  pstring keystring,sn;
+  TDB_DATA kbuf, dbuf;
+  if ((stdb == NULL) || (si == NULL) || (service_name==NULL) || (*service_name == 0)) return False;
 
-	if ((stdb == NULL) || (si == NULL) || (service_name==NULL) || (*service_name == 0)) 
-		return False;
-
-	/* TODO  - error handling -- what if the service isn't in the DB? */
-    
-	pstr_sprintf(keystring,"SERVICE/%s/TYPE", service_name);
-	key_data = tdb_fetch_bystring(stdb,keystring);
-	strncpy(si->servicetype,key_data.dptr,key_data.dsize);
-	si->servicetype[key_data.dsize] = 0;
-
-	/* crude check to see if the service exists... */
-  	DEBUG(3,("Size of the TYPE field is %d\n",key_data.dsize));
-	if (key_data.dsize == 0) 
-		return False;
-
-	pstr_sprintf(keystring,"SERVICE/%s/FILENAME", service_name);
-	key_data = tdb_fetch_bystring(stdb,keystring);
-	strncpy(si->filename,key_data.dptr,key_data.dsize);
-	si->filename[key_data.dsize] = 0;
-
-	pstr_sprintf(keystring,"SERVICE/%s/PROVIDES", service_name);
-	key_data = tdb_fetch_bystring(stdb,keystring);
-	strncpy(si->provides,key_data.dptr,key_data.dsize);
-	si->provides[key_data.dsize] = 0;
-	strncpy(si->servicename,key_data.dptr,key_data.dsize);
-	si->servicename[key_data.dsize] = 0;
-
-	    
-	pstr_sprintf(keystring,"SERVICE/%s/DEPENDENCIES", service_name);
-	key_data = tdb_fetch_bystring(stdb,keystring);
-	strncpy(si->dependencies,key_data.dptr,key_data.dsize);
-	si->dependencies[key_data.dsize] = 0;
-
-	pstr_sprintf(keystring,"SERVICE/%s/SHOULDSTART", service_name);
-	key_data = tdb_fetch_bystring(stdb,keystring);
-	strncpy(si->shouldstart,key_data.dptr,key_data.dsize);
-	si->shouldstart[key_data.dsize] = 0;
-
-	pstr_sprintf(keystring,"SERVICE/%s/SHOULD_STOP", service_name);
-	key_data = tdb_fetch_bystring(stdb,keystring);
-	strncpy(si->shouldstop,key_data.dptr,key_data.dsize);
-	si->shouldstop[key_data.dsize] = 0;
-
-	pstr_sprintf(keystring,"SERVICE/%s/REQUIREDSTART", service_name);
-	key_data = tdb_fetch_bystring(stdb,keystring);
-	strncpy(si->requiredstart,key_data.dptr,key_data.dsize);
-	si->requiredstart[key_data.dsize] = 0;
-
-	pstr_sprintf(keystring,"SERVICE/%s/REQUIREDSTOP", service_name);
-	key_data = tdb_fetch_bystring(stdb,keystring);
-	strncpy(si->requiredstop,key_data.dptr,key_data.dsize);
-	si->requiredstop[key_data.dsize] = 0;
-
-	pstr_sprintf(keystring,"SERVICE/%s/DESCRIPTION", service_name);
-	key_data = tdb_fetch_bystring(stdb,keystring);
-	strncpy(si->description,key_data.dptr,key_data.dsize);
-	si->description[key_data.dsize] = 0;
-
-	pstr_sprintf(keystring,"SERVICE/%s/SHORTDESC", service_name);
-	key_data = tdb_fetch_bystring(stdb,keystring);
-	strncpy(si->shortdescription,key_data.dptr,key_data.dsize);
-	si->shortdescription[key_data.dsize] = 0;
-
-	return True;
+  /* TODO  - error handling -- what if the service isn't in the DB?  */
+  slprintf(keystring, sizeof(keystring)-1, "SVCCTL/SERVICE_INFO/%s", service_name);
+  /* tdb_lock_bystring(stdb, keystring, 0); */
+  DEBUGADD(10, ("_svcctl_read_service_tdb_to_si: Key is  [%s]\n", keystring));
+  kbuf.dptr = keystring;
+  kbuf.dsize = strlen(keystring)+1;
+  dbuf = tdb_fetch(stdb, kbuf);
+  if (!dbuf.dptr) {
+        DEBUGADD(10, ("_svcctl_read_service_tdb_to_si: Could not find record associated with [%s]\n", keystring));
+	return False;
+  }
+  tdb_unpack(dbuf.dptr, dbuf.dsize, "PPPPPPPPPPP",
+			  sn,
+			  si->servicetype,
+			  si->filename,
+			  si->provides,
+			  si->dependencies,
+			  si->shouldstart,
+			  si->shouldstop,
+			  si->requiredstart,
+			  si->requiredstop,
+			  si->description,
+			  si->shortdescription);
+  SAFE_FREE(dbuf.dptr);
+  return True;
 }
 
 /*********************************************************************
@@ -423,59 +385,32 @@ BOOL get_service_info(TDB_CONTEXT *stdb,char *service_name, Service_info *si)
 BOOL store_service_info(TDB_CONTEXT *stdb,char *service_name, Service_info *si) 
 {
 	pstring keystring;
+	pstring pbuf;
+	int len;
+	TDB_DATA kbuf,dbuf;
+	/* Note -- when we write to the tdb, we "index" on the filename field, not the nice name.
+	   when a service is "opened", it is opened by the nice (SERVICENAME) name, not the file name. So there needs to be a mapping from
+	   nice name back to the file name. */
 
-	/* Note -- when we write to the tdb, we "index" on the filename 
-	   field, not the nice name. when a service is "opened", it is 
-	   opened by the nice (SERVICENAME) name, not the file name. 
-	   So there needs to be a mapping from nice name back to the file name. */
-
-	if ((stdb == NULL) || (si == NULL) || (service_name==NULL) || (*service_name == 0)) 
+	if ((stdb == NULL) || (si == NULL) || (service_name==NULL) || (*service_name == 0)) return False;
+	/* todo - mayke the service type an ENUM, add any security descriptor structures into it */
+	len= tdb_pack(pbuf,sizeof(pbuf),"PPPPPPPPPPP",
+		      service_name,si->servicetype,si->filename,si->provides,si->dependencies,
+		      si->shouldstart,si->shouldstop,si->requiredstart,si->requiredstop,si->description,
+		      (si->shortdescription && (0 != strlen(si->shortdescription))?si->shortdescription:si->description));
+	if (len > sizeof(pbuf)) {
+		/* todo error here */
 		return False;
-
-
-	/* Store the nicename */
-
-	pstr_sprintf(keystring,"SERVICE_NICENAME/%s", si->servicename);
-	tdb_store_bystring(stdb,keystring,string_tdb_data(service_name),TDB_REPLACE);
-
-	pstr_sprintf(keystring,"SERVICE/%s/TYPE", service_name);
-	tdb_store_bystring(stdb,keystring,string_tdb_data(si->servicetype),TDB_REPLACE);
-
-	pstr_sprintf(keystring,"SERVICE/%s/FILENAME", service_name);
-	tdb_store_bystring(stdb,keystring,string_tdb_data(si->filename),TDB_REPLACE);
-
-	pstr_sprintf(keystring,"SERVICE/%s/PROVIDES", service_name);
-	tdb_store_bystring(stdb,keystring,string_tdb_data(si->provides),TDB_REPLACE);
-
-	pstr_sprintf(keystring,"SERVICE/%s/SERVICENAME", service_name);
-	tdb_store_bystring(stdb,keystring,string_tdb_data(si->servicename),TDB_REPLACE);
-
-	pstr_sprintf(keystring,"SERVICE/%s/DEPENDENCIES", service_name);
-	tdb_store_bystring(stdb,keystring,string_tdb_data(si->dependencies),TDB_REPLACE);
-
-	pstr_sprintf(keystring,"SERVICE/%s/SHOULDSTART", service_name);
-	tdb_store_bystring(stdb,keystring,string_tdb_data(si->shouldstart),TDB_REPLACE);
-
-	pstr_sprintf(keystring,"SERVICE/%s/SHOULDSTOP", service_name);
-	tdb_store_bystring(stdb,keystring,string_tdb_data(si->shouldstop),TDB_REPLACE);
-
-	pstr_sprintf(keystring,"SERVICE/%s/REQUIREDSTART", service_name);
-	tdb_store_bystring(stdb,keystring,string_tdb_data(si->requiredstart),TDB_REPLACE);
-
-	pstr_sprintf(keystring,"SERVICE/%s/REQUIREDSTOP", service_name);
-	tdb_store_bystring(stdb,keystring,string_tdb_data(si->requiredstop),TDB_REPLACE);
-
-	pstr_sprintf(keystring,"SERVICE/%s/DESCRIPTION", service_name);
-	tdb_store_bystring(stdb,keystring,string_tdb_data(si->description),TDB_REPLACE);
-
-	pstr_sprintf(keystring,"SERVICE/%s/SHORTDESC", service_name);
-	if (si->shortdescription && *si->shortdescription) 
-		tdb_store_bystring(stdb,keystring,string_tdb_data(si->shortdescription),TDB_REPLACE);
-	else
-	      	tdb_store_bystring(stdb,keystring,string_tdb_data(si->description),TDB_REPLACE);
-
-	return True;
+	}
+	slprintf(keystring, sizeof(keystring)-1, "SVCCTL/SERVICE_INFO/%s", service_name);
+	DEBUGADD(10, ("_svcctl_write_si_to_service_tdb: Key is  [%s]\n", keystring));
+	kbuf.dsize = strlen(keystring)+1;
+	kbuf.dptr = keystring;
+	dbuf.dsize = len;
+	dbuf.dptr = pbuf;
+	return (tdb_store(stdb, kbuf, dbuf, TDB_REPLACE) == 0);
 }
+
 
 /****************************************************************************
  Create/Open the service control manager tdb. This code a clone of init_group_mapping.
