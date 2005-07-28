@@ -1188,7 +1188,9 @@ static BOOL test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	pinfo.identity_info.account_name.string = account_name;
 	pinfo.identity_info.workstation.string = TEST_MACHINE_NAME;
 
-	E_deshash(plain_pass, pinfo.lmpassword.hash);
+	if (!E_deshash(plain_pass, pinfo.lmpassword.hash)) {
+		ZERO_STRUCT(pinfo.lmpassword.hash);
+	}
 	E_md4hash(plain_pass, pinfo.ntpassword.hash);
 
 	if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
@@ -1202,7 +1204,8 @@ static BOOL test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing netr_LogonSamLogonWithFlags (Interactive Logon)\n");
 
 	status = dcerpc_netr_LogonSamLogonWithFlags(p, fn_ctx, &r);
-	if (!r.out.return_authenticator || !creds_client_check(creds, &r.out.return_authenticator->cred)) {
+	if (!r.out.return_authenticator 
+	    || !creds_client_check(creds, &r.out.return_authenticator->cred)) {
 		printf("Credential chaining failed\n");
 		talloc_free(fn_ctx);
 		return False;
@@ -1211,7 +1214,8 @@ static BOOL test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	talloc_free(fn_ctx);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("[%s]\\[%s] netr_LogonSamLogonWithFlags - %s\n", account_name, account_domain, nt_errstr(status));
+		printf("[%s]\\[%s] netr_LogonSamLogonWithFlags - %s\n", 
+		       account_name, account_domain, nt_errstr(status));
 		return False;
 	}
 
