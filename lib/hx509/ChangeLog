@@ -1,3 +1,19 @@
+2005-07-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_cms.in: add EnvelopeData tests
+	
+	* hxtool.c: use id-envelopedData for ContentInfo
+	
+	* hxtool-commands.in: add contentinfo wrapping for create/unwrap
+	enveloped data
+
+	* hxtool.c: add contentinfo wrapping for create/unwrap enveloped
+	data
+
+	* data/gen-req.sh: add enveloped data (aes128)
+	
+	* crypto.c: add "new" RC2 oid
+	
 2005-07-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* hx_locl.h, cert.c: Add HX509_QUERY_MATCH_FUNCTION that allows
