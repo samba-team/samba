@@ -31,7 +31,7 @@
 	<para>
 	Windows clients can sometimes maintain a connection to the [homes] share, even though there is no user logged
 	in.  Therefore, it is vital that the logon path does not include a reference to the homes share (i.e. setting
-	this parameter to \%N\homes\profile_path will cause problems).
+	this parameter to \\%N\homes\profile_path will cause problems).
 	</para>
 
 	<para>
