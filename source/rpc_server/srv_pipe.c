@@ -522,9 +522,9 @@ succeeded authentication on named pipe %s, but session key was of incorrect leng
 		}
 	}
 
-	if (server_info->ptok)
+	if (server_info->ptok) {
 		p->pipe_user.nt_user_token = dup_nt_token(server_info->ptok);
-	else {
+	} else {
 		DEBUG(1,("Error: Authmodule failed to provide nt_user_token\n"));
 		p->pipe_user.nt_user_token = NULL;
 		free_server_info(&server_info);
@@ -539,17 +539,15 @@ succeeded authentication on named pipe %s, but session key was of incorrect leng
 
 /*******************************************************************
  The switch table for the pipe names and the functions to handle them.
- *******************************************************************/
+*******************************************************************/
 
-struct rpc_table
-{
-  struct
-  {
-    const char *clnt;
-    const char *srv;
-  } pipe;
-  struct api_struct *cmds;
-  int n_cmds;
+struct rpc_table {
+	struct {
+		const char *clnt;
+		const char *srv;
+	} pipe;
+	struct api_struct *cmds;
+	int n_cmds;
 };
 
 static struct rpc_table *rpc_lookup;
@@ -615,8 +613,7 @@ BOOL api_pipe_bind_auth_resp(pipes_struct *p, prs_struct *rpc_in_p)
 	if (!api_pipe_ntlmssp_verify(p, &ntlmssp_resp))
 		return False;
 
-	p->pipe_bound = True
-;
+	p->pipe_bound = True;
 	return True;
 }
 
@@ -857,6 +854,226 @@ NTSTATUS rpc_pipe_register_commands(int version, const char *clnt, const char *s
 }
 
 /*******************************************************************
+ Handle a SPNEGO krb5 bind auth.
+*******************************************************************/
+
+static BOOL pipe_spnego_auth_bind_kerberos(pipes_struct *p, prs_struct *rpc_in_p, RPC_HDR_AUTH *pauth_info,
+		DATA_BLOB *psecblob, prs_struct *pout_auth)
+{
+	return False;
+}
+
+/*******************************************************************
+ Handle a SPNEGO bind auth.
+*******************************************************************/
+
+static BOOL pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_p, RPC_HDR_AUTH *pauth_info, prs_struct *pout_auth)
+{
+        DATA_BLOB secblob;
+	DATA_BLOB blob;
+	char *OIDs[ASN1_MAX_OIDS];
+        int i;
+        BOOL got_kerberos_mechanism = False;
+
+	ZERO_STRUCT(secblob);
+
+	/* Grab the SPNEGO blob. */
+	blob = data_blob(NULL,p->hdr.auth_len);
+
+	if (!prs_copy_data_out((char *)&blob.data, rpc_in_p, p->hdr.auth_len)) {
+		DEBUG(0,("pipe_spnego_auth_bind_negotiate: Failed to pull %u bytes - the SPNEGO auth header.\n",
+			(unsigned int)p->hdr.auth_len ));
+		data_blob_free(&blob);
+		return False;
+	}
+
+	if (blob.data[0] != ASN1_APPLICATION(0)) {
+		data_blob_free(&blob);
+		return False;
+	}
+
+	/* parse out the OIDs and the first sec blob */
+	if (!parse_negTokenTarg(blob, OIDs, &secblob)) {
+		DEBUG(0,("pipe_spnego_auth_bind_negotiate: Failed to parse the security blob.\n"));
+		data_blob_free(&blob);
+		return False;
+        }
+
+	if (strcmp(OID_KERBEROS5, OIDs[0]) == 0 || strcmp(OID_KERBEROS5_OLD, OIDs[0]) == 0) {
+		got_kerberos_mechanism = True;
+	}
+
+	for (i=0;OIDs[i];i++) {
+		DEBUG(3,("pipe_spnego_auth_bind_negotiate: Got OID %s\n", OIDs[i]));
+		SAFE_FREE(OIDs[i]);
+	}
+	DEBUG(3,("pipe_spnego_auth_bind_negotiate: Got secblob of size %lu\n", (unsigned long)secblob.length));
+
+	if ( got_kerberos_mechanism && ((lp_security()==SEC_ADS) || lp_use_kerberos_keytab()) ) {
+		BOOL ret = pipe_spnego_auth_bind_kerberos(p, rpc_in_p, pauth_info, &secblob, pout_auth);
+		data_blob_free(&secblob);
+		data_blob_free(&blob);
+		return ret;
+	}
+#if 1
+	data_blob_free(&secblob);
+	return False;
+#else
+
+	if (*auth_ntlmssp_state) {
+		auth_ntlmssp_end(auth_ntlmssp_state);
+	}
+
+	nt_status = auth_ntlmssp_start(auth_ntlmssp_state);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return ERROR_NT(nt_status);
+	}
+
+        nt_status = auth_ntlmssp_update(*auth_ntlmssp_state, secblob, &chal);
+
+        data_blob_free(&secblob);
+
+        reply_spnego_ntlmssp(conn, inbuf, outbuf, vuid, auth_ntlmssp_state, &chal, nt_status);
+        data_blob_free(&chal);
+	return True;
+#endif
+}
+
+/*******************************************************************
+ Handle an schannel bind auth.
+*******************************************************************/
+
+static BOOL pipe_netsec_auth_bind(pipes_struct *p, prs_struct *rpc_in_p, RPC_HDR_AUTH *pauth_info, prs_struct *pout_auth)
+{
+	RPC_HDR_AUTH auth_info;
+	RPC_AUTH_NETSEC_NEG neg;
+	struct netsec_auth_struct *a = &p->netsec_auth;
+	RPC_AUTH_VERIFIER auth_verifier;
+	uint32 flags;
+
+	if (!server_auth2_negotiated) {
+		DEBUG(0, ("pipe_netsec_auth_bind: Attempt to bind using schannel without successful serverauth2\n"));
+		return False;
+	}
+
+	if (!smb_io_rpc_auth_netsec_neg("", &neg, rpc_in_p, 0)) {
+		DEBUG(0,("pipe_netsec_auth_bind: Could not unmarshal SCHANNEL auth neg\n"));
+		return False;
+	}
+
+	p->netsec_auth_validated = True;
+
+	memset(a->sess_key, 0, sizeof(a->sess_key));
+	memcpy(a->sess_key, last_dcinfo.sess_key, sizeof(last_dcinfo.sess_key));
+
+	a->seq_num = 0;
+
+	/* The client opens a second RPC NETLOGON pipe without
+		doing a auth2. The credentials for the schannel are
+		re-used from the auth2 the client did before. */
+	p->dc = last_dcinfo;
+
+	init_rpc_hdr_auth(&auth_info, NETSEC_AUTH_TYPE, pauth_info->auth_level, RPC_HDR_AUTH_LEN, 1);
+	if(!smb_io_rpc_hdr_auth("", &auth_info, pout_auth, 0)) {
+		DEBUG(0,("pipe_netsec_auth_bind: marshalling of RPC_HDR_AUTH failed.\n"));
+		return False;
+	}
+
+	/*** NETSEC verifier ***/
+
+	init_rpc_auth_verifier(&auth_verifier, "\001", 0x0);
+	if(!smb_io_rpc_netsec_verifier("", &auth_verifier, pout_auth, 0)) {
+		DEBUG(0,("pipe_netsec_auth_bind: marshalling of RPC_AUTH_VERIFIER failed.\n"));
+		return False;
+	}
+
+	prs_align(pout_auth);
+
+	flags = 5;
+	if(!prs_uint32("flags ", pout_auth, 0, &flags)) {
+		return False;
+	}
+
+	DEBUG(10,("pipe_netsec_auth_bind: schannel auth: domain [%s] myname [%s]\n",
+		neg.domain, neg.myname));
+
+	/* We're finished with this bind - no more packets. */
+	p->pipe_bound = True;
+
+	return True;
+}
+
+/*******************************************************************
+ Handle an NTLMSSP bind auth.
+*******************************************************************/
+
+static BOOL pipe_ntlmssp_auth_bind(pipes_struct *p, prs_struct *rpc_in_p, RPC_HDR_AUTH *pauth_info, prs_struct *pout_auth)
+{
+	RPC_AUTH_VERIFIER auth_verifier;
+	RPC_AUTH_NTLMSSP_NEG ntlmssp_neg;
+	RPC_AUTH_NTLMSSP_CHAL ntlmssp_chal;
+	RPC_HDR_AUTH auth_info;
+
+	if(!smb_io_rpc_auth_verifier("", &auth_verifier, rpc_in_p, 0)) {
+		DEBUG(0,("pipe_ntlmssp_auth_bind: unable to unmarshall RPC_AUTH_VERIFIER struct.\n"));
+		return False;
+	}
+
+	if(!strequal(auth_verifier.signature, "NTLMSSP")) {
+		DEBUG(0,("pipe_ntlmssp_auth_bind: auth_verifier.signature != NTLMSSP\n"));
+		return False;
+	}
+
+	if(auth_verifier.msg_type != NTLMSSP_NEGOTIATE) {
+		DEBUG(0,("pipe_ntlmssp_auth_bind: auth_verifier.msg_type (%d) != NTLMSSP_NEGOTIATE\n",
+			auth_verifier.msg_type));
+		return False;
+	}
+
+	if(!smb_io_rpc_auth_ntlmssp_neg("", &ntlmssp_neg, rpc_in_p, 0)) {
+		DEBUG(0,("pipe_ntlmssp_auth_bind: Failed to unmarshall RPC_AUTH_NTLMSSP_NEG.\n"));
+		return False;
+	}
+
+	p->ntlmssp_chal_flags = SMBD_NTLMSSP_NEG_FLAGS;
+	p->ntlmssp_auth_requested = True;
+
+	ZERO_STRUCT(auth_verifier);
+	ZERO_STRUCT(ntlmssp_chal);
+
+	generate_random_buffer(p->challenge, 8);
+
+	/*** Authentication info ***/
+
+	init_rpc_hdr_auth(&auth_info, NTLMSSP_AUTH_TYPE, RPC_PIPE_AUTH_SEAL_LEVEL, RPC_HDR_AUTH_LEN, 1);
+	if(!smb_io_rpc_hdr_auth("", &auth_info, pout_auth, 0)) {
+		DEBUG(0,("pipe_ntlmssp_auth_bind: marshalling of RPC_HDR_AUTH failed.\n"));
+		return False;
+	}
+
+	/*** NTLMSSP verifier ***/
+
+	init_rpc_auth_verifier(&auth_verifier, "NTLMSSP", NTLMSSP_CHALLENGE);
+	if(!smb_io_rpc_auth_verifier("", &auth_verifier, pout_auth, 0)) {
+		DEBUG(0,("pipe_ntlmssp_auth_bind: marshalling of RPC_AUTH_VERIFIER failed.\n"));
+		return False;
+	}
+
+	/* NTLMSSP challenge ***/
+
+	init_rpc_auth_ntlmssp_chal(&ntlmssp_chal, p->ntlmssp_chal_flags, p->challenge);
+	if(!smb_io_rpc_auth_ntlmssp_chal("", &ntlmssp_chal, pout_auth, 0)) {
+		DEBUG(0,("pipe_ntlmssp_auth_bind: marshalling of RPC_AUTH_NTLMSSP_CHAL failed.\n"));
+		return False;
+	}
+
+	DEBUG(10,("pipe_ntlmssp_auth_bind: NTLMSSP auth: domain [%s] myname [%s]\n",
+		ntlmssp_neg.domain, ntlmssp_neg.myname));
+
+	return True;
+}
+
+/*******************************************************************
  Respond to a pipe bind request.
 *******************************************************************/
 
@@ -864,7 +1081,6 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 {
 	RPC_HDR_BA hdr_ba;
 	RPC_HDR_RB hdr_rb;
-	RPC_HDR_AUTH auth_info;
 	uint16 assoc_gid;
 	fstring ack_pipe_name;
 	prs_struct out_hdr_ba;
@@ -877,159 +1093,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	p->ntlmssp_auth_requested = False;
 	p->netsec_auth_validated = False;
 
-	DEBUG(5,("api_pipe_bind_req: decode request. %d\n", __LINE__));
-
-	/*
-	 * Try and find the correct pipe name to ensure
-	 * that this is a pipe name we support.
-	 */
-
-
-	for (i = 0; i < rpc_lookup_size; i++) {
-	        if (strequal(rpc_lookup[i].pipe.clnt, p->name)) {
-                  DEBUG(3, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
-                            rpc_lookup[i].pipe.clnt, rpc_lookup[i].pipe.srv));
-                  fstrcpy(p->pipe_srv_name, rpc_lookup[i].pipe.srv);
-                  break;
-                }
-	}
-
-	if (i == rpc_lookup_size) {
-		if (NT_STATUS_IS_ERR(smb_probe_module("rpc", p->name))) {
-                       DEBUG(3,("api_pipe_bind_req: Unknown pipe name %s in bind request.\n",
-                                p->name ));
-                       if(!setup_bind_nak(p))
-                               return False;
-                       return True;
-                }
-
-                for (i = 0; i < rpc_lookup_size; i++) {
-                       if (strequal(rpc_lookup[i].pipe.clnt, p->name)) {
-                               DEBUG(3, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
-                                         rpc_lookup[i].pipe.clnt, rpc_lookup[i].pipe.srv));
-                               fstrcpy(p->pipe_srv_name, rpc_lookup[i].pipe.srv);
-                               break;
-                       }
-                }
-
-		if (i == rpc_lookup_size) {
-			DEBUG(0, ("module %s doesn't provide functions for pipe %s!\n", p->name, p->name));
-			return False;
-		}
-	}
-
-	/* decode the bind request */
-	if(!smb_io_rpc_hdr_rb("", &hdr_rb, rpc_in_p, 0))  {
-		DEBUG(0,("api_pipe_bind_req: unable to unmarshall RPC_HDR_RB struct.\n"));
-		return False;
-	}
-
-	/*
-	 * Check if this is an authenticated request.
-	 */
-
-	if (p->hdr.auth_len != 0) {
-		RPC_AUTH_VERIFIER auth_verifier;
-		RPC_AUTH_NTLMSSP_NEG ntlmssp_neg;
-
-		/* 
-		 * Decode the authentication verifier.
-		 */
-
-		if(!smb_io_rpc_hdr_auth("", &auth_info, rpc_in_p, 0)) {
-			DEBUG(0,("api_pipe_bind_req: unable to unmarshall RPC_HDR_AUTH struct.\n"));
-			return False;
-		}
-
-		switch(auth_info.auth_type) {
-			case NTLMSSP_AUTH_TYPE:
-
-				if(!smb_io_rpc_auth_verifier("", &auth_verifier, rpc_in_p, 0)) {
-					DEBUG(0,("api_pipe_bind_req: unable to "
-						 "unmarshall RPC_HDR_AUTH struct.\n"));
-					return False;
-				}
-
-				if(!strequal(auth_verifier.signature, "NTLMSSP")) {
-					DEBUG(0,("api_pipe_bind_req: "
-						 "auth_verifier.signature != NTLMSSP\n"));
-					return False;
-				}
-
-				if(auth_verifier.msg_type != NTLMSSP_NEGOTIATE) {
-					DEBUG(0,("api_pipe_bind_req: "
-						 "auth_verifier.msg_type (%d) != NTLMSSP_NEGOTIATE\n",
-						 auth_verifier.msg_type));
-					return False;
-				}
-
-				if(!smb_io_rpc_auth_ntlmssp_neg("", &ntlmssp_neg, rpc_in_p, 0)) {
-					DEBUG(0,("api_pipe_bind_req: "
-						 "Failed to unmarshall RPC_AUTH_NTLMSSP_NEG.\n"));
-					return False;
-				}
-
-				p->ntlmssp_chal_flags = SMBD_NTLMSSP_NEG_FLAGS;
-				p->ntlmssp_auth_requested = True;
-				break;
-
-			case NETSEC_AUTH_TYPE:
-			{
-				RPC_AUTH_NETSEC_NEG neg;
-				struct netsec_auth_struct *a = &(p->netsec_auth);
-
-				if (!server_auth2_negotiated) {
-					DEBUG(0, ("Attempt to bind using schannel "
-						  "without successful serverauth2\n"));
-					return False;
-				}
-
-				if (!smb_io_rpc_auth_netsec_neg("", &neg, rpc_in_p, 0)) {
-					DEBUG(0,("api_pipe_bind_req: "
-						 "Could not unmarshal SCHANNEL auth neg\n"));
-					return False;
-				}
-
-				p->netsec_auth_validated = True;
-
-				memset(a->sess_key, 0, sizeof(a->sess_key));
-				memcpy(a->sess_key, last_dcinfo.sess_key, sizeof(last_dcinfo.sess_key));
-
-				a->seq_num = 0;
-
-				DEBUG(10,("schannel auth: domain [%s] myname [%s]\n",
-					  neg.domain, neg.myname));
-				break;
-			}
-
-			case SPNEGO_AUTH_TYPE:
-			default:
-				DEBUG(0,("api_pipe_bind_req: unknown auth type %x requested.\n",
-					 auth_info.auth_type ));
-				return False;
-		}
-	}
-
-	switch(p->hdr.pkt_type) {
-		case RPC_BIND:
-			/* name has to be \PIPE\xxxxx */
-			fstrcpy(ack_pipe_name, "\\PIPE\\");
-			fstrcat(ack_pipe_name, p->pipe_srv_name);
-			reply_pkt_type = RPC_BINDACK;
-			break;
-		case RPC_ALTCONT:
-			/* secondary address CAN be NULL
-			 * as the specs say it's ignored.
-			 * It MUST NULL to have the spoolss working.
-			 */
-			fstrcpy(ack_pipe_name,"");
-			reply_pkt_type = RPC_ALTCONTRESP;
-			break;
-		default:
-			return False;
-	}
-
-	DEBUG(5,("api_pipe_bind_req: make response. %d\n", __LINE__));
+	prs_init( &outgoing_rpc, 0, p->mem_ctx, MARSHALL);
 
 	/* 
 	 * Marshall directly into the outgoing PDU space. We
@@ -1037,7 +1101,6 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	 * header and are never sending more than one PDU here.
 	 */
 
-	prs_init( &outgoing_rpc, 0, p->mem_ctx, MARSHALL);
 	prs_give_memory( &outgoing_rpc, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
 
 	/*
@@ -1058,10 +1121,131 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		return False;
 	}
 
-	if (p->ntlmssp_auth_requested)
+	DEBUG(5,("api_pipe_bind_req: decode request. %d\n", __LINE__));
+
+	/*
+	 * Try and find the correct pipe name to ensure
+	 * that this is a pipe name we support.
+	 */
+
+
+	for (i = 0; i < rpc_lookup_size; i++) {
+	        if (strequal(rpc_lookup[i].pipe.clnt, p->name)) {
+			DEBUG(3, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
+				rpc_lookup[i].pipe.clnt, rpc_lookup[i].pipe.srv));
+			fstrcpy(p->pipe_srv_name, rpc_lookup[i].pipe.srv);
+			break;
+		}
+	}
+
+	if (i == rpc_lookup_size) {
+		if (NT_STATUS_IS_ERR(smb_probe_module("rpc", p->name))) {
+                       DEBUG(3,("api_pipe_bind_req: Unknown pipe name %s in bind request.\n",
+                                p->name ));
+			prs_mem_free(&outgoing_rpc);
+			prs_mem_free(&out_hdr_ba);
+			prs_mem_free(&out_auth);
+
+			if(!setup_bind_nak(p)) {
+				return False;
+			}
+			return True;
+                }
+
+                for (i = 0; i < rpc_lookup_size; i++) {
+                       if (strequal(rpc_lookup[i].pipe.clnt, p->name)) {
+                               DEBUG(3, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
+                                         rpc_lookup[i].pipe.clnt, rpc_lookup[i].pipe.srv));
+                               fstrcpy(p->pipe_srv_name, rpc_lookup[i].pipe.srv);
+                               break;
+                       }
+                }
+
+		if (i == rpc_lookup_size) {
+			DEBUG(0, ("module %s doesn't provide functions for pipe %s!\n", p->name, p->name));
+			goto err_exit;
+		}
+	}
+
+	/* decode the bind request */
+	if(!smb_io_rpc_hdr_rb("", &hdr_rb, rpc_in_p, 0))  {
+		DEBUG(0,("api_pipe_bind_req: unable to unmarshall RPC_HDR_RB struct.\n"));
+		goto err_exit;
+	}
+
+	/*
+	 * Check if this is an authenticated bind request.
+	 */
+
+	if (p->hdr.auth_len != 0) {
+		RPC_HDR_AUTH auth_info;
+
+		/* 
+		 * Decode the authentication verifier.
+		 */
+
+		if(!smb_io_rpc_hdr_auth("", &auth_info, rpc_in_p, 0)) {
+			DEBUG(0,("api_pipe_bind_req: unable to unmarshall RPC_HDR_AUTH struct.\n"));
+			goto err_exit;
+		}
+
+		switch(auth_info.auth_type) {
+			case NTLMSSP_AUTH_TYPE:
+				if (!pipe_ntlmssp_auth_bind(p, rpc_in_p, &auth_info, &out_auth)) {
+					goto err_exit;
+				}
+				break;
+
+			case NETSEC_AUTH_TYPE:
+				if (!pipe_netsec_auth_bind(p, rpc_in_p, &auth_info, &out_auth)) {
+					goto err_exit;
+				}
+				break;
+
+			case SPNEGO_AUTH_TYPE:
+				if (!pipe_spnego_auth_bind_negotiate(p, rpc_in_p, &auth_info, &out_auth)) {
+					goto err_exit;
+				}
+				break;
+
+			default:
+				DEBUG(0,("api_pipe_bind_req: unknown auth type %x requested.\n",
+					 auth_info.auth_type ));
+				goto err_exit;
+		}
+	} else {
+		/* Unauthenticated bind request. */
+		/* We're finished - no more packets. */
+		p->pipe_bound = True;
+	}
+
+	switch(p->hdr.pkt_type) {
+		case RPC_BIND:
+			/* name has to be \PIPE\xxxxx */
+			fstrcpy(ack_pipe_name, "\\PIPE\\");
+			fstrcat(ack_pipe_name, p->pipe_srv_name);
+			reply_pkt_type = RPC_BINDACK;
+			break;
+		case RPC_ALTCONT:
+			/* secondary address CAN be NULL
+			 * as the specs say it's ignored.
+			 * It MUST NULL to have the spoolss working.
+			 */
+			fstrcpy(ack_pipe_name,"");
+			reply_pkt_type = RPC_ALTCONTRESP;
+			break;
+		default:
+			DEBUG(0,("api_pipe_bind_req: unknown packet type 0x%x\n", (unsigned int)p->hdr.pkt_type ));
+			goto err_exit;
+	}
+
+	DEBUG(5,("api_pipe_bind_req: make response. %d\n", __LINE__));
+
+	if (p->ntlmssp_auth_requested) {
 		assoc_gid = 0x7a77;
-	else
+	} else {
 		assoc_gid = hdr_rb.bba.assoc_gid ? hdr_rb.bba.assoc_gid : 0x53f0;
+	}
 
 	/*
 	 * Create the bind response struct.
@@ -1102,78 +1286,12 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	}
 
 	/*
-	 * Now the authentication.
-	 */
-
-	if (p->ntlmssp_auth_requested) {
-		RPC_AUTH_VERIFIER auth_verifier;
-		RPC_AUTH_NTLMSSP_CHAL ntlmssp_chal;
-
-		generate_random_buffer(p->challenge, 8);
-
-		/*** Authentication info ***/
-
-		init_rpc_hdr_auth(&auth_info, NTLMSSP_AUTH_TYPE, RPC_PIPE_AUTH_SEAL_LEVEL, RPC_HDR_AUTH_LEN, 1);
-		if(!smb_io_rpc_hdr_auth("", &auth_info, &out_auth, 0)) {
-			DEBUG(0,("api_pipe_bind_req: marshalling of RPC_HDR_AUTH failed.\n"));
-			goto err_exit;
-		}
-
-		/*** NTLMSSP verifier ***/
-
-		init_rpc_auth_verifier(&auth_verifier, "NTLMSSP", NTLMSSP_CHALLENGE);
-		if(!smb_io_rpc_auth_verifier("", &auth_verifier, &out_auth, 0)) {
-			DEBUG(0,("api_pipe_bind_req: marshalling of RPC_AUTH_VERIFIER failed.\n"));
-			goto err_exit;
-		}
-
-		/* NTLMSSP challenge ***/
-
-		init_rpc_auth_ntlmssp_chal(&ntlmssp_chal, p->ntlmssp_chal_flags, p->challenge);
-		if(!smb_io_rpc_auth_ntlmssp_chal("", &ntlmssp_chal, &out_auth, 0)) {
-			DEBUG(0,("api_pipe_bind_req: marshalling of RPC_AUTH_NTLMSSP_CHAL failed.\n"));
-			goto err_exit;
-		}
-
-		/* Auth len in the rpc header doesn't include auth_header. */
-		auth_len = prs_offset(&out_auth) - RPC_HDR_AUTH_LEN;
-	}
-
-	if (p->netsec_auth_validated) {
-		RPC_AUTH_VERIFIER auth_verifier;
-		uint32 flags;
-
-		/* The client opens a second RPC NETLOGON pipe without
-                   doing a auth2. The credentials for the schannel are
-                   re-used from the auth2 the client did before. */
-		p->dc = last_dcinfo;
-
-		init_rpc_hdr_auth(&auth_info, NETSEC_AUTH_TYPE, auth_info.auth_level, RPC_HDR_AUTH_LEN, 1);
-		if(!smb_io_rpc_hdr_auth("", &auth_info, &out_auth, 0)) {
-			DEBUG(0,("api_pipe_bind_req: marshalling of RPC_HDR_AUTH failed.\n"));
-			goto err_exit;
-		}
-
-		/*** NETSEC verifier ***/
-
-		init_rpc_auth_verifier(&auth_verifier, "\001", 0x0);
-		if(!smb_io_rpc_netsec_verifier("", &auth_verifier, &out_auth, 0)) {
-			DEBUG(0,("api_pipe_bind_req: marshalling of RPC_AUTH_VERIFIER failed.\n"));
-			goto err_exit;
-		}
-
-		prs_align(&out_auth);
-
-		flags = 5;
-		if(!prs_uint32("flags ", &out_auth, 0, &flags))
-			goto err_exit;
-
-		auth_len = prs_offset(&out_auth) - RPC_HDR_AUTH_LEN;
-	}
-
-	/*
 	 * Create the header, now we know the length.
 	 */
+
+	if (prs_offset(&out_auth)) {
+		auth_len = prs_offset(&out_auth) - RPC_HDR_AUTH_LEN;
+	}
 
 	init_rpc_hdr(&p->hdr, reply_pkt_type, RPC_FLG_FIRST | RPC_FLG_LAST,
 			p->hdr.call_id,
@@ -1198,14 +1316,10 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		goto err_exit;
 	}
 
-	if((p->ntlmssp_auth_requested|p->netsec_auth_validated) &&
-	   !prs_append_prs_data( &outgoing_rpc, &out_auth)) {
+	if (auth_len && !prs_append_prs_data( &outgoing_rpc, &out_auth)) {
 		DEBUG(0,("api_pipe_bind_req: append of auth info failed.\n"));
 		goto err_exit;
 	}
-
-	if(!p->ntlmssp_auth_requested)
-		p->pipe_bound = True;
 
 	/*
 	 * Setup the lengths for the initial reply.
@@ -1222,6 +1336,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
   err_exit:
 
+	p->pipe_bound = False;
 	prs_mem_free(&outgoing_rpc);
 	prs_mem_free(&out_hdr_ba);
 	prs_mem_free(&out_auth);
@@ -1341,6 +1456,7 @@ BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *rpc_in)
 /****************************************************************************
  Deal with schannel processing on an RPC request.
 ****************************************************************************/
+
 BOOL api_pipe_netsec_process(pipes_struct *p, prs_struct *rpc_in)
 {
 	/*
@@ -1668,5 +1784,3 @@ void get_pipe_fns( int idx, struct api_struct **fns, int *n_fns )
 
 	return;
 }
-
-
