@@ -3370,6 +3370,7 @@ struct ldap_search_state {
 	struct smbldap_state *connection;
 
 	uint16 acct_flags;
+	uint16 group_type;
 
 	const char *base;
 	int scope;
@@ -3609,7 +3610,7 @@ static BOOL ldapuser2displayentry(struct ldap_search_state *state,
 	ldap_value_free(vals);
 
 	if (!sid_peek_check_rid(get_global_sam_sid(), &sid, &result->rid)) {
-		DEBUG(0, ("%s is not our domain\n", vals[0]));
+		DEBUG(0, ("sid %s does not belong to our domain\n", sid_string_static(&sid)));
 		return False;
 	}
 
@@ -3635,7 +3636,7 @@ static BOOL ldapsam_search_users(struct pdb_methods *methods,
 	if ((acct_flags != 0) && ((acct_flags & ACB_NORMAL) != 0))
 		state->base = lp_ldap_user_suffix();
 	else if ((acct_flags != 0) &&
-		 ((acct_flags & (ACB_WSTRUST|ACB_SVRTRUST)) != 0))
+		 ((acct_flags & (ACB_WSTRUST|ACB_SVRTRUST|ACB_DOMTRUST)) != 0))
 		state->base = lp_ldap_machine_suffix();
 	else
 		state->base = lp_ldap_suffix();
@@ -3671,10 +3672,25 @@ static BOOL ldapgroup2displayentry(struct ldap_search_state *state,
 {
 	char **vals;
 	DOM_SID sid;
+	uint16 group_type;
 
 	result->account_name = "";
 	result->fullname = "";
 	result->description = "";
+
+
+	vals = ldap_get_values(ld, entry, "sambaGroupType");
+	if ((vals == NULL) || (vals[0] == NULL)) {
+		DEBUG(5, ("\"sambaGroupType\" not found\n"));
+		return False;
+	}
+
+	group_type = atoi(vals[0]);
+
+	if ((state->group_type != 0) &&
+	    ((state->group_type != group_type))) {
+		return False;
+	}
 
 	vals = ldap_get_values(ld, entry, "cn");
 	if ((vals == NULL) || (vals[0] == NULL)) {
@@ -3722,12 +3738,32 @@ static BOOL ldapgroup2displayentry(struct ldap_search_state *state,
 		return False;
 	}
 
-	if (!sid_peek_check_rid(get_global_sam_sid(), &sid, &result->rid)) {
-		DEBUG(0, ("%s is not our domain\n", vals[0]));
-		return False;
-	}
 	ldap_value_free(vals);
 
+	switch (group_type) {
+		case SID_NAME_DOM_GRP:
+		case SID_NAME_ALIAS:
+
+			if (!sid_peek_check_rid(get_global_sam_sid(), &sid, &result->rid)) {
+				DEBUG(0, ("%s is not in our domain\n", sid_string_static(&sid)));
+				return False;
+			}
+			break;
+	
+		case SID_NAME_WKN_GRP:
+
+			if (!sid_peek_check_rid(&global_sid_Builtin, &sid, &result->rid)) {
+
+				DEBUG(0, ("%s is not in builtin sid\n", sid_string_static(&sid)));
+				return False;
+			}
+			break;
+
+		default:
+			DEBUG(0,("unkown group type: %d\n", group_type));
+			return False;
+	}
+	
 	return True;
 }
 
@@ -3753,10 +3789,11 @@ static BOOL ldapsam_search_grouptype(struct pdb_methods *methods,
 					"(&(objectclass=sambaGroupMapping)"
 					"(sambaGroupType=%d))", type);
 	state->attrs = talloc_attrs(search->mem_ctx, "cn", "sambaSid",
-				    "displayName", "description", NULL);
+				    "displayName", "description", "sambaGroupType", NULL);
 	state->attrsonly = 0;
 	state->pagedresults_cookie = NULL;
 	state->entries = NULL;
+	state->group_type = type;
 	state->ldap2displayentry = ldapgroup2displayentry;
 
 	if ((state->filter == NULL) || (state->attrs == NULL)) {

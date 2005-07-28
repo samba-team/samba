@@ -286,6 +286,7 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 
 	vfs->files[fd] = SMB_MALLOC_P(struct files_struct);
 	vfs->files[fd]->fsp_name = SMB_STRDUP(argv[1]);
+	vfs->files[fd]->fh = SMB_MALLOC_P(struct fd_handle);
 	vfs->files[fd]->fh->fd = fd;
 	vfs->files[fd]->conn = vfs->conn;
 	printf("open: fd=%d\n", fd);
@@ -345,6 +346,7 @@ static NTSTATUS cmd_close(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 		printf("close: ok\n");
 
 	SAFE_FREE(vfs->files[fd]->fsp_name);
+	SAFE_FREE(vfs->files[fd]->fh);
 	SAFE_FREE(vfs->files[fd]);
 	vfs->files[fd] = NULL;
 	return NT_STATUS_OK;

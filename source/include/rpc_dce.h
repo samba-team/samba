@@ -66,6 +66,9 @@ enum RPC_PKT_TYPE {
 #define RPC_AUTH_NETSEC_SIGN_OR_SEAL_CHK_LEN 	0x20
 #define RPC_AUTH_NETSEC_SIGN_ONLY_CHK_LEN 	0x18
 
+/* SPNEGO auth type. */
+#define SPNEGO_AUTH_TYPE 0x9
+
 /* The 7 here seems to be required to get Win2k not to downgrade us
    to NT4.  Actually, anything other than 1ff would seem to do... */
 #define NETLOGON_NEG_AUTH2_FLAGS 0x000701ff
@@ -169,32 +172,25 @@ typedef struct rpc_hdr_bba_info {
 
 #define RPC_HDR_BBA_LEN 8
 
+/* RPC_HDR_AUTH */
+typedef struct rpc_hdr_auth_info {
+	uint8 auth_type; /* See XXX_AUTH_TYPE above. */
+	uint8 auth_level; /* See RPC_PIPE_AUTH_XXX_LEVEL above. */
+	uint8 auth_pad_len;
+	uint8 auth_reserved;
+	uint32 auth_context_id;
+} RPC_HDR_AUTH;
+
+#define RPC_HDR_AUTH_LEN 8
+
 /* RPC_HDR_AUTHA */
 typedef struct rpc_hdr_autha_info {
 	uint16 max_tsize;       /* maximum transmission fragment size (0x1630) */
 	uint16 max_rsize;       /* max receive fragment size (0x1630) */
-
-	uint8 auth_type; /* 0x0a */
-	uint8 auth_level; /* 0x06 */
-	uint8 stub_type_len; /* don't know */
-	uint8 padding; /* padding */
-
-	uint32 unknown; /* 0x0014a0c0 */
+	RPC_HDR_AUTH auth;
 } RPC_HDR_AUTHA;
 
-#define RPC_HDR_AUTHA_LEN 12
-
-/* RPC_HDR_AUTH */
-typedef struct rpc_hdr_auth_info {
-	uint8 auth_type; /* 0x0a */
-	uint8 auth_level; /* 0x06 */
-	uint8 padding;
-	uint8 reserved; /* padding */
-
-	uint32 auth_context; /* pointer */
-} RPC_HDR_AUTH;
-
-#define RPC_HDR_AUTH_LEN 8
+#define RPC_HDR_AUTHA_LEN (RPC_HDR_AUTH_LEN+4)
 
 /* this is TEMPORARILY coded up as a specific structure */
 /* this structure comes after the bind request */

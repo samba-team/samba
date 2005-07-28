@@ -1327,6 +1327,9 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 
+	(*server_info)->login_server = unistr2_tdup(mem_ctx, 
+						    &(info3->uni_logon_srv));
+
 	(*server_info)->ptok = token; 
 
 	SAFE_FREE(lgroupSIDs);

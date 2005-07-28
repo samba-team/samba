@@ -556,7 +556,6 @@ static int open_mode_check(connection_struct *conn,
 			   uint32 access_mask,
 			   uint32 share_access,
 			   uint32 create_options,
-			   int *p_flags,
 			   int *p_oplock_request,
 			   BOOL *p_all_current_opens_are_level_II)
 {
@@ -1469,7 +1468,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		num_share_modes = open_mode_check(conn, fname, dev, inode,
 						  access_mask, share_access,
 						  create_options,
-						  &flags, &oplock_request,
+						  &oplock_request,
 						  &all_current_opens_are_level_II);
 		if(num_share_modes == -1) {
 
@@ -1625,7 +1624,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		num_share_modes = open_mode_check(conn, fname, dev, inode,
 						  access_mask, share_access,
 						  create_options,
-						  &flags, &oplock_request,
+						  &oplock_request,
 						  &all_current_opens_are_level_II);
 
 		if(num_share_modes == -1) {

@@ -1156,7 +1156,9 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 						memcpy(p,status,21);
 						make_dir_struct(p,mask,fname,size, mode,date,
 								!allow_long_path_components);
-						dptr_fill(p+12,dptr_num);
+						if (!dptr_fill(p+12,dptr_num)) {
+							break;
+						}
 						numentries++;
 						p += DIR_STRUCT_SIZE;
 					}
@@ -1352,7 +1354,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 		put_dos_date3(outbuf,smb_vwv2,mtime);
 	}
 	SIVAL(outbuf,smb_vwv4,(uint32)size);
-	SSVAL(outbuf,smb_vwv6,FILE_WAS_OPENED);
+	SSVAL(outbuf,smb_vwv6,GET_OPENX_MODE(deny_mode));
 
 	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
 		SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
@@ -5308,7 +5310,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
 		if (nread < (ssize_t)N)
 			tcount = total_read + nread;
 
-		set_message(outbuf,8,nread,False);
+		set_message(outbuf,8,nread+pad,False);
 		SIVAL(outbuf,smb_vwv0,startpos);
 		SSVAL(outbuf,smb_vwv2,tcount);
 		SSVAL(outbuf,smb_vwv6,nread);

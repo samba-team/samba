@@ -945,7 +945,8 @@ BOOL make_spoolss_q_addprinterex( TALLOC_CTX *mem_ctx, SPOOL_Q_ADDPRINTEREX *q_u
 
 	q_u->user_switch=1;
 
-	q_u->user_ctr.level                = 1;
+	q_u->user_ctr.level		    = 1;
+	q_u->user_ctr.user.user1            = TALLOC_P( get_talloc_ctx(), SPOOL_USER_1 );
 	q_u->user_ctr.user.user1->build     = 1381;
 	q_u->user_ctr.user.user1->major     = 2; 
 	q_u->user_ctr.user.user1->minor     = 0;
@@ -3816,6 +3817,22 @@ BOOL spoolss_io_q_setprinter(const char *desc, SPOOL_Q_SETPRINTER *q_u, prs_stru
 		return False;
 	if(!prs_uint32("level", ps, depth, &q_u->level))
 		return False;
+	
+	/* check for supported levels and structures we know about */
+		
+	switch ( q_u->level ) {
+		case 0:
+		case 2:
+		case 3:
+		case 7:
+			/* supported levels */
+			break;
+		default:
+			DEBUG(0,("spoolss_io_q_setprinter: unsupported printer info level [%d]\n", 
+				q_u->level));
+			return True;
+	}
+			
 
 	if(!spool_io_printer_info_level("", &q_u->info, ps, depth))
 		return False;

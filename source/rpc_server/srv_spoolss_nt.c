@@ -274,6 +274,7 @@ static Printer_entry *find_printer_index_by_hnd(pipes_struct *p, POLICY_HND *hnd
 	return find_printer;
 }
 
+#ifdef ENABLE_PRINT_HND_OBJECT_CACHE
 /****************************************************************************
  look for a printer object cached on an open printer handle
 ****************************************************************************/
@@ -327,6 +328,8 @@ void invalidate_printer_hnd_cache( char *printername )
 
 	return;
 }
+#endif
+
 /****************************************************************************
  Close printer index by handle.
 ****************************************************************************/
@@ -1213,6 +1216,7 @@ static void receive_notify2_message_list(int msg_type, pid_t src, void *msg, siz
 	return;
 }
 
+#ifdef ENABLE_PRINT_HND_OBJECT_CACHE
 /********************************************************************
  callback to MSG_PRINTER_CHANGED.  When a printer is changed by 
  one smbd, all of processes must clear their printer cache immediately.
@@ -1228,6 +1232,7 @@ void receive_printer_mod_msg(int msg_type, pid_t src, void *buf, size_t len)
 	
 	invalidate_printer_hnd_cache( printername );
 }
+#endif
 
 /********************************************************************
  Send a message to ourself about new driver being installed
@@ -7487,7 +7492,7 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 	/* check to see if the printer already exists */
 
 	if ((snum = print_queue_snum(printer->info_2->sharename)) != -1) {
-		DEBUG(5, ("_spoolss_addprinterex: Attempted to add a printer named [%s] when one already existed!\n", 
+		DEBUG(5, ("spoolss_addprinterex_level_2: Attempted to add a printer named [%s] when one already existed!\n", 
 			printer->info_2->sharename));
 		free_a_printer(&printer, 2);
 		return WERR_PRINTER_ALREADY_EXISTS;
@@ -7500,7 +7505,12 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 		if ( !add_printer_hook(p->pipe_user.nt_user_token, printer) ) {
 			free_a_printer(&printer,2);
 			return WERR_ACCESS_DENIED;
-	}
+		}
+	} else {
+		DEBUG(0,("spoolss_addprinterex_level_2: add printer for printer %s called and no"
+			"smb.conf parameter \"addprinter command\" is defined. This"
+			"parameter must exist for this call to succeed\n",
+			printer->info_2->sharename ));
 	}
 
 	/* use our primary netbios name since get_a_printer() will convert 

@@ -21,8 +21,6 @@
   test code for internal messaging
  */
 
-#define NO_SYSLOG
-
 #include "includes.h"
 
 static int pong_count;

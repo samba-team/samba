@@ -18,8 +18,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#define NO_SYSLOG
-
 #include "includes.h"
 
 extern char *optarg;
@@ -715,7 +713,7 @@ static BOOL run_netbench(int client)
 
 	nb_setup(cli);
 
-	slprintf(cname,sizeof(fname), "client%d", client);
+	slprintf(cname,sizeof(cname)-1, "client%d", client);
 
 	f = fopen(client_txt, "r");
 

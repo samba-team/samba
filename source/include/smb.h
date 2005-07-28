@@ -150,6 +150,7 @@ typedef union unid_t {
 
 /*
  * SMB UCS2 (16-bit unicode) internal type.
+ * smb_ucs2_t is *always* in little endian format.
  */
 
 typedef uint16 smb_ucs2_t;
@@ -166,6 +167,10 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 
 /* turn a 7 bit character into a ucs2 character */
 #define UCS2_CHAR(c) ((c) << UCS2_SHIFT)
+
+/* Copy into a smb_ucs2_t from a possibly unaligned buffer. Return the copied smb_ucs2_t */
+#define COPY_UCS2_CHAR(dest,src) (((unsigned char *)(dest))[0] = ((unsigned char *)(src))[0],\
+				((unsigned char *)(dest))[1] = ((unsigned char *)(src))[1], (dest))
 
 /* pipe string names */
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
@@ -557,7 +562,7 @@ struct current_user
 
 /* Defines for the sent_oplock_break field above. */
 #define NO_BREAK_SENT 0
-#define EXCLUSIVE_BREAK_SENT 1
+#define BREAK_TO_NONE_SENT 1
 #define LEVEL_II_BREAK_SENT 2
 
 typedef struct {
@@ -1643,6 +1648,8 @@ typedef struct user_struct
 	int homes_snum;
 
 	struct auth_serversupplied_info *server_info;
+
+	struct auth_ntlmssp_state *auth_ntlmssp_state;
 
 } user_struct;
 

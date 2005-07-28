@@ -117,7 +117,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	uchar pwbuf[516];
 	SAM_USERINFO_CTR ctr;
 	SAM_USER_INFO_24 p24;
-	SAM_USER_INFO_10 p10;
+	SAM_USER_INFO_16 p16;
 	uchar md4_trust_password[16];
 
 	/* Misc */
@@ -287,15 +287,15 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	   userinfo2 level 0x10 fails.  -tpot */
 
 	ZERO_STRUCT(ctr);
-	ctr.switch_value = 0x10;
-	ctr.info.id10 = &p10;
+	ctr.switch_value = 16;
+	ctr.info.id16 = &p16;
 
-	init_sam_user_info10(&p10, acb_info);
+	init_sam_user_info16(&p16, acb_info);
 
 	/* Ignoring the return value is necessary for joining a domain
 	   as a normal user with "Add workstation to domain" privilege. */
 
-	result = cli_samr_set_userinfo2(cli, mem_ctx, &user_pol, 0x10, 
+	result = cli_samr_set_userinfo2(cli, mem_ctx, &user_pol, 16, 
 					&cli->user_session_key, &ctr);
 
 	/* Now check the whole process from top-to-bottom */

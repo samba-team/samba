@@ -276,7 +276,7 @@ BOOL remove_oplock(files_struct *fsp, BOOL break_to_none)
 		return False;
 	}
 
-	if (fsp->sent_oplock_break == EXCLUSIVE_BREAK_SENT || break_to_none) {
+	if (fsp->sent_oplock_break == BREAK_TO_NONE_SENT || break_to_none) {
 		/*
 		 * Deal with a reply when a break-to-none was sent.
 		 */
@@ -461,12 +461,12 @@ pid %d, port %d, dev = %x, inode = %.0f, file_id = %lu\n",
 		 */
 		DEBUG(3,("process_local_message: oplock break requested with "
 			 "no outstanding oplocks. Returning success.\n"));
-		return True;
-	}
 
-	if (!oplock_break(dev, inode, file_id, False)) {
-		DEBUG(0,("process_local_message: oplock break failed.\n"));
-		return False;
+	} else {
+		if (!oplock_break(dev, inode, file_id, False)) {
+			DEBUG(0,("process_local_message: oplock break failed.\n"));
+			return False;
+		}
 	}
 
 	/* 
@@ -526,24 +526,22 @@ static void prepare_break_message(char *outbuf, files_struct *fsp, BOOL level2)
  Function to do the waiting before sending a local break.
 ****************************************************************************/
 
-static void wait_before_sending_break(BOOL local_request)
+static void wait_before_sending_break(void)
 {
-	if(local_request) {
-		struct timeval cur_tv;
-		long wait_left = (long)lp_oplock_break_wait_time();
+	struct timeval cur_tv;
+	long wait_left = (long)lp_oplock_break_wait_time();
 
-		if (wait_left == 0)
-			return;
+	if (wait_left == 0)
+		return;
 
-		GetTimeOfDay(&cur_tv);
+	GetTimeOfDay(&cur_tv);
 
-		wait_left -= ((cur_tv.tv_sec - smb_last_time.tv_sec)*1000) +
+	wait_left -= ((cur_tv.tv_sec - smb_last_time.tv_sec)*1000) +
                 ((cur_tv.tv_usec - smb_last_time.tv_usec)/1000);
 
-		if(wait_left > 0) {
-			wait_left = MIN(wait_left, 1000);
-			sys_usleep(wait_left * 1000);
-		}
+	if(wait_left > 0) {
+		wait_left = MIN(wait_left, 1000);
+		sys_usleep(wait_left * 1000);
 	}
 }
 
@@ -633,7 +631,9 @@ static BOOL oplock_break_level2(files_struct *fsp, BOOL local_request)
 		 * and has reported to cause problems on NT. JRA.
 		 */
 
-		wait_before_sending_break(local_request);
+		if (local_request) {
+			wait_before_sending_break();
+		}
 
 		/* Prepare the SMBlockingX message. */
 		prepare_break_message( outbuf, fsp, False);
@@ -770,7 +770,9 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 	 * and has reported to cause problems on NT. JRA.
 	 */
 
-	wait_before_sending_break(local_request);
+	if (local_request) {
+		wait_before_sending_break();
+	}
 
 	/* Prepare the SMBlockingX message. */
 
@@ -784,7 +786,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 
 	prepare_break_message( outbuf, fsp, using_levelII);
 	/* Remember if we just sent a break to level II on this file. */
-	fsp->sent_oplock_break = using_levelII? LEVEL_II_BREAK_SENT:EXCLUSIVE_BREAK_SENT;
+	fsp->sent_oplock_break = using_levelII? LEVEL_II_BREAK_SENT:BREAK_TO_NONE_SENT;
 
 	/* Save the server smb signing state. */
 	sign_state = srv_oplock_set_signing(False);

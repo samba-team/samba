@@ -385,15 +385,20 @@ void standard_sub_basic(const char *smb_name, char *str,size_t len)
 		case 'i' :
 			string_sub(p,"%i", client_socket_addr(),l);
 			break;
-		case 'L' : 
-			if (local_machine_name && *local_machine_name)
-				string_sub(p,"%L", local_machine_name,l); 
-			else {
+		case 'L' :
+			if (!StrnCaseCmp(p, "\%LOGONSERVER\%", 13)) {
+				p++;
+				break;
+			}
+
+			if (local_machine_name && *local_machine_name) {
+				string_sub_once(p, "%L", local_machine_name, l); 
+			} else {
 				pstring temp_name;
 
 				pstrcpy(temp_name, global_myname());
 				strlower_m(temp_name);
-				string_sub(p,"%L", temp_name,l); 
+				string_sub_once(p, "%L", temp_name, l); 
 			}
 			break;
 		case 'M' :

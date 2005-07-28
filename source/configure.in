@@ -752,6 +752,18 @@ CPPFLAGS="$old_CPPFLAGS"
 # subdirectory of headers.
 AC_CHECK_HEADERS(valgrind.h valgrind/valgrind.h valgrind/memcheck.h)
 
+/* check for linux on amd64 since valgrind is not quite there yet */
+case "$host_os" in
+	*linux*)
+		case "$UNAME_P" in
+			*x86_64*)
+				AC_DEFINE(HAVE_64BIT_LINUX,1,[Whether we are running on 64bit linux])
+				;;
+		esac
+		;;
+esac
+
+
 #
 # HPUX has a bug in that including shadow.h causes a re-definition of MAXINT.
 # This causes configure to fail to detect it. Check for shadow separately on HPUX.
@@ -1182,6 +1194,57 @@ if test x$ac_cv_func_fstat64 = xno ; then
   if test x$ac_cv_func_fstat64 = xyes ; then
     AC_DEFINE(HAVE_FSTAT64,1,[Whether fstat64() is available])
   fi
+fi
+
+#################################################
+# Check whether struct stat has timestamps with sub-second resolution.
+# At least IRIX and Solaris have these.
+#
+# We check that 
+#	all of st_mtim, st_atim and st_ctim exist
+#	all of the members are in fact of type struct timespec
+#
+# There is some conflicting standards weirdness about whether we should use
+# "struct timespec" or "timespec_t". Linux doesn't have timespec_t, so we
+# prefer struct timespec.
+
+AC_CACHE_CHECK([whether struct stat has sub-second timestamps], samba_stat_hires,
+    [
+	AC_TRY_COMPILE(
+	    [
+#if TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  include <time.h>
+# endif
+#endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+	    ],
+	    [
+		struct timespec t;
+		struct stat s = {0};
+		t.tv_sec = s.st_mtim.tv_sec;
+		t.tv_nsec = s.st_mtim.tv_nsec;
+		t.tv_sec = s.st_ctim.tv_sec;
+		t.tv_nsec = s.st_ctim.tv_nsec;
+		t.tv_sec = s.st_atim.tv_sec;
+		t.tv_nsec = s.st_atim.tv_nsec;
+	    ],
+	    samba_stat_hires=yes, samba_stat_hires=no)
+    ])
+
+if test x"$samba_stat_hires" = x"yes" ; then
+    AC_DEFINE(HAVE_STAT_ST_MTIM, 1, [whether struct stat contains st_mtim])
+    AC_DEFINE(HAVE_STAT_ST_ATIM, 1, [whether struct stat contains st_atim])
+    AC_DEFINE(HAVE_STAT_ST_CTIM, 1, [whether struct stat contains st_ctim])
+    AC_DEFINE(HAVE_STAT_HIRES_TIMESTAMPS, 1,
+	    [whether struct stat has sub-second timestamps])
 fi
 
 #####################################
@@ -4024,7 +4087,7 @@ AC_ARG_WITH(acl-support,
 		AC_DEFINE(HAVE_TRU64_ACLS,1,[Whether Tru64 ACLs are available])
 		ACL_LIBS="$ACL_LIBS -lpacl"
 		;;
-	*freebsd5*|*freebsd6*)
+	*freebsd[[5-9]]*)
 		AC_MSG_RESULT(Using FreeBSD posix ACLs)
 		AC_DEFINE(HAVE_POSIX_ACLS,1,[Whether FreeBSD POSIX ACLs are available])
 		AC_DEFINE(HAVE_ACL_GET_PERM_NP,1,[Whether acl_get_perm_np() is available])
@@ -4423,7 +4486,7 @@ case "$host_os" in
 	*linux*)
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_linux.o"
 		;;
-	*freebsd5*|*freebsd6*)
+	*freebsd[[5-9]]*)
 		# FreeBSD winbind client is implemented as a wrapper around
 		# the Linux version.
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_freebsd.o \

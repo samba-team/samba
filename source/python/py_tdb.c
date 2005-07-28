@@ -376,49 +376,6 @@ static BOOL make_lock_list(PyObject *py_keys, TDB_DATA **keys, int *num_keys)
 	return True;
 }
 
-PyObject *py_tdb_hnd_lock(PyObject *self, PyObject *args)
-{
-	tdb_hnd_object *obj = (tdb_hnd_object *)self;
-	PyObject *py_keys;
-	TDB_DATA *keys;
-	int num_keys, result;
-
-        if (!obj->tdb) {
-		PyErr_SetString(py_tdb_error, "tdb object has been closed"); 
-		return NULL;
-        }	
-
-	if (!PyArg_ParseTuple(args, "O", &py_keys))
-		return NULL;
-
-	if (!make_lock_list(py_keys, &keys, &num_keys))
-		return NULL;
-
-	result = tdb_lockkeys(obj->tdb, num_keys, keys);
-
-	free(keys);
-
-	return PyInt_FromLong(result != -1);
-}
-
-PyObject *py_tdb_hnd_unlock(PyObject *self, PyObject *args)
-{
-	tdb_hnd_object *obj = (tdb_hnd_object *)self;
-	
-        if (!obj->tdb) {
-		PyErr_SetString(py_tdb_error, "tdb object has been closed"); 
-		return NULL;
-        }	
-	
-	if (!PyArg_ParseTuple(args, ""))
-		return NULL;
-	
-	tdb_unlockkeys(obj->tdb);
-
-	Py_INCREF(Py_None);
-	return Py_None;
-}
-
 /*
  * tdb traversal
  */
@@ -582,8 +539,6 @@ static PyMethodDef tdb_hnd_methods[] = {
 	{ "next_key", (PyCFunction)py_tdb_hnd_next_key, METH_VARARGS },
 	{ "lock_all", (PyCFunction)py_tdb_hnd_lock_all, METH_VARARGS },
 	{ "unlock_all", (PyCFunction)py_tdb_hnd_unlock_all, METH_VARARGS },
-	{ "lock", (PyCFunction)py_tdb_hnd_lock, METH_VARARGS },
-	{ "unlock", (PyCFunction)py_tdb_hnd_unlock, METH_VARARGS },
 	{ "traverse", (PyCFunction)py_tdb_hnd_traverse, METH_VARARGS | METH_KEYWORDS },
 	{ "chainlock", (PyCFunction)py_tdb_hnd_chainlock, METH_VARARGS | METH_KEYWORDS },
 	{ "chainunlock", (PyCFunction)py_tdb_hnd_chainunlock, METH_VARARGS | METH_KEYWORDS },

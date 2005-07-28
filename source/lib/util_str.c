@@ -909,14 +909,15 @@ BOOL string_set(char **dest,const char *src)
  enough room!
 
  This routine looks for pattern in s and replaces it with 
- insert. It may do multiple replacements.
+ insert. It may do multiple replacements or just one.
 
  Any of " ; ' $ or ` in the insert string are replaced with _
  if len==0 then the string cannot be extended. This is different from the old
  use of len==0 which was for no length checks to be done.
 **/
 
-void string_sub(char *s,const char *pattern, const char *insert, size_t len)
+void string_sub2(char *s,const char *pattern, const char *insert, size_t len, 
+		 BOOL remove_unsafe_characters, BOOL replace_once)
 {
 	char *p;
 	ssize_t ls,lp,li, i;
@@ -951,15 +952,32 @@ void string_sub(char *s,const char *pattern, const char *insert, size_t len)
 			case '%':
 			case '\r':
 			case '\n':
-				p[i] = '_';
-				break;
+				if ( remove_unsafe_characters ) {
+					p[i] = '_';
+					/* yes this break should be here since we want to 
+					   fall throw if not replacing unsafe chars */
+					break;
+				}
 			default:
 				p[i] = insert[i];
 			}
 		}
 		s = p + li;
 		ls += (li-lp);
+
+		if (replace_once)
+			break;
 	}
+}
+
+void string_sub_once(char *s, const char *pattern, const char *insert, size_t len)
+{
+	string_sub2( s, pattern, insert, len, True, True );
+}
+
+void string_sub(char *s,const char *pattern, const char *insert, size_t len)
+{
+	string_sub2( s, pattern, insert, len, True, False );
 }
 
 void fstring_sub(char *s,const char *pattern,const char *insert)
