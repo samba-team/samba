@@ -14,7 +14,7 @@ know:
 After you have decided on those, choose the 'Provisioning' menu item
 on the left, and fill in the form.<p>
 
-<b>Warning!</b> When you provision, your existing user database is
+<b>Warning!</b> When you select <b>'Initial provision'</b>, your existing user database is
 wiped and replaced with a new one.
 
 <% page_footer(); %>
