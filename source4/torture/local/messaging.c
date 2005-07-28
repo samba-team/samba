@@ -63,6 +63,7 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 	int pong_count = 0;
 	BOOL ret = True;
 	struct timeval tv;
+	int timelimit = lp_parm_int(-1, "torture", "timelimit", 10);
 
 	lp_set_cmdline("lock dir", "lockdir.tmp");
 
@@ -88,8 +89,8 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 
 	tv = timeval_current();
 
-	printf("Sending pings for 10 seconds\n");
-	while (timeval_elapsed(&tv) < 10.0) {
+	printf("Sending pings for %d seconds\n", timelimit);
+	while (timeval_elapsed(&tv) < timelimit) {
 		DATA_BLOB data;
 		NTSTATUS status1, status2;
 
@@ -150,5 +151,5 @@ BOOL torture_local_messaging(void)
 
 	talloc_free(mem_ctx);
 
-	return True;
+	return ret;
 }
