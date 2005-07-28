@@ -216,9 +216,15 @@ __EOD__
 sub _prepare_depend_CC_rule()
 {
 	return << '__EOD__';
-.c.d:
+
+%.d: %.c
 	@echo "Generating dependencies for $<"
 	@$(CC) -MM -MG -MT $(<:.c=.o) -MF $@ $(CFLAGS) $<
+
+# Ugly fallback used for generating a dependency file when
+# make doesn't know how to build the related C file
+%.d: 
+	@touch $@
 
 __EOD__
 }
