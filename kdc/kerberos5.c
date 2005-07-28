@@ -575,7 +575,8 @@ get_pa_etype_info2(krb5_context context,
 	ret = krb5_unparse_name(context, client->principal, &name);
 	if (ret)
 	    name = "<unparse_name failed>";
-	kdc_log(context, config, 0, "internal error in get_pa_etype_info2(%s): %d != %d", 
+	kdc_log(context, config, 0,
+		"internal error in get_pa_etype_info2(%s): %d != %d", 
 		name, n, pa.len);
 	if (ret == 0)
 	    free(name);
@@ -620,24 +621,26 @@ _kdc_check_flags(krb5_context context,
 	
 	if(!client->flags.client){
 	    kdc_log(context, config, 0,
-		    "Principal may not act as client -- %s", 
-		    client_name);
+		    "Principal may not act as client -- %s", client_name);
 	    return KRB5KDC_ERR_POLICY;
 	}
 	
 	if (client->valid_start && *client->valid_start > kdc_time) {
-	    kdc_log(context, config, 0, "Client not yet valid -- %s", client_name);
+	    kdc_log(context, config, 0,
+		    "Client not yet valid -- %s", client_name);
 	    return KRB5KDC_ERR_CLIENT_NOTYET;
 	}
 	
 	if (client->valid_end && *client->valid_end < kdc_time) {
-	    kdc_log(context, config, 0, "Client expired -- %s", client_name);
+	    kdc_log(context, config, 0,
+		    "Client expired -- %s", client_name);
 	    return KRB5KDC_ERR_NAME_EXP;
 	}
 	
 	if (client->pw_end && *client->pw_end < kdc_time
 	    && !server->flags.change_pw) {
-	    kdc_log(context, config, 0, "Client's key has expired -- %s", client_name);
+	    kdc_log(context, config, 0,
+		    "Client's key has expired -- %s", client_name);
 	    return KRB5KDC_ERR_KEY_EXPIRED;
 	}
     }
@@ -646,33 +649,38 @@ _kdc_check_flags(krb5_context context,
     
     if (server != NULL) {
 	if (server->flags.invalid) {
-	    kdc_log(context, config, 0, "Server has invalid flag set -- %s", server_name);
+	    kdc_log(context, config, 0,
+		    "Server has invalid flag set -- %s", server_name);
 	    return KRB5KDC_ERR_POLICY;
 	}
 
 	if(!server->flags.server){
-	    kdc_log(context, config, 0, "Principal may not act as server -- %s", 
-		    server_name);
+	    kdc_log(context, config, 0,
+		    "Principal may not act as server -- %s", server_name);
 	    return KRB5KDC_ERR_POLICY;
 	}
 
 	if(!is_as_req && server->flags.initial) {
-	    kdc_log(context, config, 0, "AS-REQ is required for server -- %s", server_name);
+	    kdc_log(context, config, 0,
+		    "AS-REQ is required for server -- %s", server_name);
 	    return KRB5KDC_ERR_POLICY;
 	}
 
 	if (server->valid_start && *server->valid_start > kdc_time) {
-	    kdc_log(context, config, 0, "Server not yet valid -- %s", server_name);
+	    kdc_log(context, config, 0,
+		    "Server not yet valid -- %s", server_name);
 	    return KRB5KDC_ERR_SERVICE_NOTYET;
 	}
 
 	if (server->valid_end && *server->valid_end < kdc_time) {
-	    kdc_log(context, config, 0, "Server expired -- %s", server_name);
+	    kdc_log(context, config, 0,
+		    "Server expired -- %s", server_name);
 	    return KRB5KDC_ERR_SERVICE_EXP;
 	}
 
 	if (server->pw_end && *server->pw_end < kdc_time) {
-	    kdc_log(context, config, 0, "Server's key has expired -- %s", server_name);
+	    kdc_log(context, config, 0,
+		    "Server's key has expired -- %s", server_name);
 	    return KRB5KDC_ERR_KEY_EXPIRED;
 	}
     }
