@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "libcli/ldap/ldap.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 
 /*
   encode a NDR uint32 as a ldap filter element

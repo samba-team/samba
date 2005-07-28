@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 
 /****************************************************************************
  Query FS Info - SMBdskattr call (async send)

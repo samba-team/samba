@@ -26,6 +26,7 @@
 #include "lib/events/events.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 
 static struct dcerpc_interface_list *dcerpc_pipes = NULL;
 
