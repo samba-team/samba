@@ -1,4 +1,5 @@
 # master list of build config files for Samba4
+config.mk
 heimdal_build/config.mk
 dsdb/config.mk
 gtk/config.mk

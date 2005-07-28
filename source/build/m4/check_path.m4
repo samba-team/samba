@@ -14,16 +14,16 @@ AC_PREFIX_DEFAULT(/usr/local/samba)
 AC_ARG_WITH(fhs, 
 [  --with-fhs              Use FHS-compliant paths (default=no)],
     configdir="${sysconfdir}/samba"
-    lockdir="\${VARDIR}/cache/samba"
-    piddir="\${VARDIR}/run/samba"
-    logfilebase="\${VARDIR}/log/samba"
+    lockdir="\${localstatedir}/cache/samba"
+    piddir="\${localstatedir}/run/samba"
+    logfilebase="\${localstatedir}/log/samba"
     privatedir="\${CONFIGDIR}/private"
     libdir="\${prefix}/lib/samba"
     swatdir="\${DATADIR}/samba/swat",
-    configdir="\${LIBDIR}"
-    logfilebase="\${VARDIR}"
-    lockdir="\${VARDIR}/locks"
-    piddir="\${VARDIR}/locks"
+    configdir="\${libdir}"
+    logfilebase="\${localstatedir}"
+    lockdir="\${localstatedir}/locks"
+    piddir="\${localstatedir}/locks"
     privatedir="\${prefix}/private"
     swatdir="\${prefix}/swat")
 
@@ -152,8 +152,6 @@ AC_ARG_ENABLE(developer, [  --enable-developer      Turn on developer warnings a
 	CFLAGS="${CFLAGS} -g -Wall"
         developer=yes
     	DEVELOPER_CFLAGS="-Wshadow -Werror-implicit-function-declaration -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -Wdeclaration-after-statement -Wmissing-format-attribute -Wformat=2 -Wno-format-y2k -DDEBUG_PASSWORD -DDEVELOPER"
-        SMB_INFO_BUILD_ENV="$SMB_INFO_BUILD_ENV 
-        	\$SETTINGS{DEVELOPER} = \"YES\";"
     fi])
 
 debug=no

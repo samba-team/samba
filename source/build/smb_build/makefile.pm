@@ -509,9 +509,8 @@ bin/.TARGET_$ctx->{NAME}:
 ";
 }
 
-sub _prepare_proto_rules($)
+sub _prepare_proto_rules()
 {
-	my $settings = shift;
 	my $output = "";
 
 	$output .= << '__EOD__';
@@ -761,10 +760,9 @@ __EOD__
 	return $output;
 }
 
-sub _prepare_rule_lists($$)
+sub _prepare_rule_lists($)
 {
 	my $depend = shift;
-	my $settings = shift;
 	my $output = "";
 
 	foreach my $key (values %{$depend}) {
@@ -779,7 +777,7 @@ sub _prepare_rule_lists($$)
 
 	my $idl_ctx;
 	$output .= _prepare_IDL($idl_ctx);
-	$output .= _prepare_proto_rules($settings);
+	$output .= _prepare_proto_rules();
 	$output .= _prepare_install_rules($depend);
 
 	return $output;
@@ -793,9 +791,9 @@ sub _prepare_rule_lists($$)
 # $OUTPUT -	the global OUTPUT context
 #
 # $output -		the resulting output buffer
-sub _prepare_makefile_in($$)
+sub _prepare_makefile_in($)
 {
-	my ($CTX, $settings) = @_;
+	my ($CTX) = @_;
 	my $output;
 
 	$output  = "########################################\n";
@@ -828,7 +826,7 @@ sub _prepare_makefile_in($$)
 	$output .= _prepare_man_rule("7");
 	$output .= _prepare_manpages($CTX);
 	$output .= _prepare_target_settings($CTX);
-	$output .= _prepare_rule_lists($CTX, $settings);
+	$output .= _prepare_rule_lists($CTX);
 
 	my @all = ();
 	
@@ -850,12 +848,12 @@ sub _prepare_makefile_in($$)
 # $OUTPUT	-	the global OUTPUT context
 #
 # $output -		the resulting output buffer
-sub create_makefile_in($$$)
+sub create_makefile_in($$)
 {
-	my ($CTX, $settings,$file) = @_;
+	my ($CTX, $file) = @_;
 
 	open(MAKEFILE_IN,">$file") || die ("Can't open $file\n");
-	print MAKEFILE_IN _prepare_makefile_in($CTX, $settings);
+	print MAKEFILE_IN _prepare_makefile_in($CTX);
 	close(MAKEFILE_IN);
 
 	print "config.smb_build.pl: creating $file\n";

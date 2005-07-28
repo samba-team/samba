@@ -8,7 +8,7 @@
 ###########################################################
 
 use strict;
-package input;
+package smb_build::input;
 
 my $subsystem_default_output_type = "OBJLIST";
 my $srcdir = ".";
@@ -51,6 +51,7 @@ sub check_module($$)
 
 	die("Module $mod->{NAME} does not have a SUBSYSTEM set") if not defined($mod->{SUBSYSTEM});
 
+
 	($mod->{DEFAULT_BUILD} = "STATIC") if not defined($mod->{DEFAULT_BUILD});
 	
 	my $use_default = 0;
@@ -62,12 +63,17 @@ sub check_module($$)
 		return;
 	}
 
-	if ($mod->{ENABLE} ne "YES")
+	if (($mod->{ENABLE} eq "STATIC") or 
+	 	($mod->{ENABLE} eq "NOT") or 
+		($mod->{ENABLE} eq "SHARED")) {
+		$mod->{DEFAULT_BUILD} = $mod->{ENABLE};
+	} elsif ($mod->{ENABLE} ne "YES")
 	{
 		$mod->{CHOSEN_BUILD} = "NOT";
 	}
 
-	if (not defined($mod->{CHOSEN_BUILD}) or $mod->{CHOSEN_BUILD} eq "DEFAULT") {
+	if (not defined($mod->{CHOSEN_BUILD}) or $mod->{CHOSEN_BUILD} eq "DEFAULT") 
+	{
 		$mod->{CHOSEN_BUILD} = $mod->{DEFAULT_BUILD};
 	}
 
@@ -145,14 +151,22 @@ sub calc_unique_deps($$)
 # check_input($INPUT)
 #
 # $INPUT -	the global INPUT context
-sub check($)
+# $enabled - list of enabled subsystems/libs
+sub check($$)
 {
-	my $INPUT = shift;
+	my ($INPUT, $enabled) = @_;
 
 	($subsystem_default_output_type = $ENV{SUBSYSTEM_OUTPUT_TYPE}) if (defined($ENV{"SUBSYSTEM_OUTPUT_TYPE"}));
 
 	foreach my $part (values %$INPUT) {
-		($part->{ENABLE} = "YES") if not defined($part->{ENABLE});
+		if (defined($enabled->{$part->{NAME}})) { 
+			$part->{ENABLE} = $enabled->{$part->{NAME}};
+			next;
+		}
+		
+		unless(defined($part->{ENABLE})) {
+			$part->{ENABLE} = "YES";
+		}
 	}
 
 	foreach my $k (keys %$INPUT) {
@@ -166,12 +180,6 @@ sub check($)
 		check_library($INPUT, $part) if ($part->{TYPE} eq "LIBRARY");
 		check_binary($INPUT, $part) if ($part->{TYPE} eq "BINARY");
 		check_target($INPUT, $part) if ($part->{TYPE} eq "TARGET");
-
-		#FIXME: REQUIRED_LIBRARIES needs to go
-		if (defined($part->{REQUIRED_LIBRARIES})) {
-			push(@{$part->{REQUIRED_SUBSYSTEMS}}, @{$part->{REQUIRED_LIBRARIES}});
-			delete ($part->{REQUIRED_LIBRARIES});
-		}
 	}
 
 	my %depend = %$INPUT;

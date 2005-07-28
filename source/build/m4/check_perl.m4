@@ -8,7 +8,7 @@ dnl
 AC_PATH_PROG(PERL, perl)
 if test x"$PERL" = x""; then
 	AC_MSG_WARN([No version of perl was not found!])
-	AC_MSG_ERROR([Please Install perl from http://www.perl.com/])
+	AC_MSG_ERROR([Please install perl from http://www.perl.com/])
 fi
 if test x"$debug" = x"yes";then
 	PERL="$PERL -W"

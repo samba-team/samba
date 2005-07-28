@@ -177,7 +177,7 @@ AC_CHECK_DECL(h_errno,
 #endif])
 
 # these are disabled unless heimdal is found below
-SMB_MODULE_DEFAULT(KERBEROS_LIB, NOT)
+SMB_SUBSYSTEM_ENABLE(KERBEROS_LIB, NO)
 SMB_BINARY_ENABLE(asn1_compile, NO)
 SMB_BINARY_ENABLE(compile_et, NO)
 
@@ -194,7 +194,7 @@ if test -d heimdal; then
 	AC_DEFINE(HAVE_KRB5,1,[Whether kerberos is available])
 	CFLAGS="${CFLAGS} -Iheimdal_build -Iheimdal/lib/krb5 -Iheimdal/lib/gssapi -Iheimdal/lib/asn1 -Iheimdal/lib/com_err -Iheimdal/lib/hdb -Iheimdal/kdc"
 	HAVE_KRB5=YES
-	SMB_MODULE_DEFAULT(KERBEROS_LIB, STATIC)
+	SMB_SUBSYSTEM_ENABLE(KERBEROS_LIB, YES)
 	SMB_BINARY_ENABLE(asn1_compile, YES)
 	SMB_BINARY_ENABLE(compile_et, YES)
 fi
