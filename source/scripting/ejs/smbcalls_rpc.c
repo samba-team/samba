@@ -46,33 +46,28 @@ struct ejs_irpc_connection {
 /*
   setup a context for talking to a irpc server
      example: 
-        var conn = new Object();
-        status = irpc_connect(conn, "smb_server");
+        status = irpc.connect("smb_server");
 */
-static int ejs_irpc_connect(MprVarHandle eid, int argc, struct MprVar **argv)
+static int ejs_irpc_connect(MprVarHandle eid, int argc, char **argv)
 {
 	NTSTATUS status;
 	int i;
-	struct MprVar *conn;
 	struct event_context *ev;
 	struct ejs_irpc_connection *p;
+	struct MprVar *this = mprGetProperty(ejsGetLocalObject(eid), "this", 0);
 
 	/* validate arguments */
-	if (argc != 2 ||
-	    argv[0]->type != MPR_TYPE_OBJECT ||
-	    argv[1]->type != MPR_TYPE_STRING) {
+	if (argc != 1) {
 		ejsSetErrorMsg(eid, "rpc_connect invalid arguments");
 		return -1;
 	}
 
-	conn           = argv[0];
-
-	p = talloc(conn, struct ejs_irpc_connection);
+	p = talloc(this, struct ejs_irpc_connection);
 	if (p == NULL) {
 		return -1;
 	}
 
-	p->server_name = mprToString(argv[1]);
+	p->server_name = argv[0];
 
 	ev = talloc_find_parent_bytype(mprMemCtx(), struct event_context);
 
@@ -93,7 +88,7 @@ static int ejs_irpc_connect(MprVarHandle eid, int argc, struct MprVar **argv)
 		talloc_free(p);
 		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	} else {
-		mprSetPtrChild(conn, "irpc", p);
+		mprSetPtrChild(this, "irpc", p);
 		status = NT_STATUS_OK;
 	}
 
@@ -104,32 +99,37 @@ static int ejs_irpc_connect(MprVarHandle eid, int argc, struct MprVar **argv)
 
 /*
   connect to an rpc server
-     example: 
-        var conn = new Object();
-        status = rpc_connect(conn, "ncacn_ip_tcp:localhost", "rpcecho");
+     examples: 
+        status = rpc.connect("ncacn_ip_tcp:localhost");
+        status = rpc.connect("ncacn_ip_tcp:localhost", "pipe_name");
 */
-static int ejs_rpc_connect(MprVarHandle eid, int argc, struct MprVar **argv)
+static int ejs_rpc_connect(MprVarHandle eid, int argc, char **argv)
 {
 	const char *binding, *pipe_name;
 	const struct dcerpc_interface_table *iface;
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
-	struct MprVar *conn;
 	struct cli_credentials *creds = cmdline_credentials;
 	struct event_context *ev;
+	struct MprVar *this = mprGetProperty(ejsGetLocalObject(eid), "this", 0);
 
 	/* validate arguments */
-	if (argc != 3 ||
-	    argv[0]->type != MPR_TYPE_OBJECT ||
-	    argv[1]->type != MPR_TYPE_STRING ||
-	    argv[2]->type != MPR_TYPE_STRING) {
+	if (argc < 1) {
 		ejsSetErrorMsg(eid, "rpc_connect invalid arguments");
 		return -1;
 	}
 
-	conn       = argv[0];
-	binding    = mprToString(argv[1]);
-	pipe_name  = mprToString(argv[2]);
+	binding    = argv[0];
+	if (strchr(binding, ':') == NULL) {
+		/* its an irpc connect */
+		return ejs_irpc_connect(eid, argc, argv);
+	}
+
+	if (argc > 1) {
+		pipe_name = argv[1];
+	} else {
+		pipe_name = mprToString(mprGetProperty(this, "pipe_name", NULL));
+	}
 
 	iface = idl_iface_by_name(pipe_name);
 	if (iface == NULL) {
@@ -146,7 +146,7 @@ static int ejs_rpc_connect(MprVarHandle eid, int argc, struct MprVar **argv)
 
 	ev = talloc_find_parent_bytype(mprMemCtx(), struct event_context);
 
-	status = dcerpc_pipe_connect(conn, &p, binding, 
+	status = dcerpc_pipe_connect(this, &p, binding, 
 				     iface->uuid, iface->if_version, 
 				     creds, ev);
 	if (!NT_STATUS_IS_OK(status)) goto done;
@@ -156,8 +156,8 @@ static int ejs_rpc_connect(MprVarHandle eid, int argc, struct MprVar **argv)
 
 	/* by making the pipe a child of the connection variable, it will
 	   auto close when it goes out of scope in the script */
-	mprSetPtrChild(conn, "pipe", p);
-	mprSetPtr(conn, "iface", iface);
+	mprSetPtrChild(this, "pipe", p);
+	mprSetPtr(this, "iface", iface);
 
 done:
 	mpr_Return(eid, mprNTSTATUS(status));
@@ -168,7 +168,7 @@ done:
 /*
   make an irpc call - called via the same interface as rpc
 */
-static int ejs_irpc_call(int eid, struct MprVar *conn, struct MprVar *io, 
+static int ejs_irpc_call(int eid, struct MprVar *io, 
 			 const struct dcerpc_interface_table *iface, int callnum,
 			 ejs_pull_function_t ejs_pull, ejs_push_function_t ejs_push)
 {
@@ -181,7 +181,7 @@ static int ejs_irpc_call(int eid, struct MprVar *conn, struct MprVar *io,
 	int i, count;
 	struct MprVar *results;
 
-	p = mprGetPtr(conn, "irpc");
+	p = mprGetThisPtr(eid, "irpc");
 
 	ejs = talloc(mprMemCtx(), struct ejs_rpc);
 	if (ejs == NULL) {
@@ -273,7 +273,7 @@ done:
 		  const struct dcerpc_interface_table *iface, int callnum,
 		  ejs_pull_function_t ejs_pull, ejs_push_function_t ejs_push)
 {
-	struct MprVar *conn, *io;
+	struct MprVar *io;
 	struct dcerpc_pipe *p;
 	NTSTATUS status;
 	void *ptr;
@@ -281,23 +281,20 @@ done:
 	struct ejs_rpc *ejs;
 	const struct dcerpc_interface_call *call;
 
-	if (argc != 2 ||
-	    argv[0]->type != MPR_TYPE_OBJECT ||
-	    argv[1]->type != MPR_TYPE_OBJECT) {
+	if (argc != 1 || argv[0]->type != MPR_TYPE_OBJECT) {
 		ejsSetErrorMsg(eid, "rpc_call invalid arguments");
 		return -1;
 	}
 	    
-	conn     = argv[0];
-	io       = argv[1];
+	io       = argv[0];
 
-	if (mprGetPtr(conn, "irpc")) {
+	if (mprGetThisPtr(eid, "irpc")) {
 		/* its an irpc call */
-		return ejs_irpc_call(eid, conn, io, iface, callnum, ejs_pull, ejs_push);
+		return ejs_irpc_call(eid, io, iface, callnum, ejs_pull, ejs_push);
 	}
 
 	/* get the pipe info */
-	p = mprGetPtr(conn, "pipe");
+	p = mprGetThisPtr(eid, "pipe");
 	if (p == NULL) {
 		ejsSetErrorMsg(eid, "rpc_call invalid pipe");
 		return -1;
@@ -389,9 +386,20 @@ void smb_setup_ejs_rpc(void)
 {
 	struct ejs_register *r;
 
-	ejsDefineCFunction(-1, "rpc_connect", ejs_rpc_connect, NULL, MPR_VAR_SCRIPT_HANDLE);
-	ejsDefineCFunction(-1, "irpc_connect", ejs_irpc_connect, NULL, MPR_VAR_SCRIPT_HANDLE);
 	for (r=ejs_registered;r;r=r->next) {
 		ejsDefineCFunction(-1, r->name, r->fn, NULL, MPR_VAR_SCRIPT_HANDLE);
 	}
+}
+
+/*
+  hook called by generated RPC interfaces at the end of their init routines
+  used to add generic operations on the pipe
+*/
+int ejs_rpc_init(struct MprVar *obj, const char *name)
+{
+	mprSetStringCFunction(obj, "connect", ejs_rpc_connect);
+	if (mprGetProperty(obj, "pipe_name", NULL) == NULL) {
+		mprSetVar(obj, "pipe_name", mprString(name));
+	}
+	return 0;
 }

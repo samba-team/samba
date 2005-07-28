@@ -21,39 +21,39 @@ libinclude("samr.js");
 /*
   test the samr_Connect interface
 */
-function test_Connect(conn)
+function test_Connect(samr)
 {
 	print("Testing samr_Connect\n");
-	return samrConnect(conn);
+	return samrConnect(samr);
 }
 
 
 /*
   test the samr_LookupDomain interface
 */
-function test_LookupDomain(conn, handle, domain)
+function test_LookupDomain(samr, handle, domain)
 {
 	print("Testing samr_LookupDomain\n");
-	return samrLookupDomain(conn, handle, domain);
+	return samrLookupDomain(samr, handle, domain);
 }
 
 /*
   test the samr_OpenDomain interface
 */
-function test_OpenDomain(conn, handle, sid)
+function test_OpenDomain(samr, handle, sid)
 {
 	print("Testing samr_OpenDomain\n");
-	return samrOpenDomain(conn, handle, sid);
+	return samrOpenDomain(samr, handle, sid);
 }
 
 /*
   test the samr_EnumDomainUsers interface
 */
-function test_EnumDomainUsers(conn, dom_handle)
+function test_EnumDomainUsers(samr, dom_handle)
 {
 	var i, users;
 	print("Testing samr_EnumDomainUsers\n");
-	users = samrEnumDomainUsers(conn, dom_handle);
+	users = samrEnumDomainUsers(samr, dom_handle);
 	print("Found " + users.length + " users\n");
 	for (i=0;i<users.length;i++) {
 		println("\t" + users[i].name + "\t(" + users[i].idx + ")");
@@ -63,10 +63,10 @@ function test_EnumDomainUsers(conn, dom_handle)
 /*
   test the samr_EnumDomainGroups interface
 */
-function test_EnumDomainGroups(conn, dom_handle)
+function test_EnumDomainGroups(samr, dom_handle)
 {
 	print("Testing samr_EnumDomainGroups\n");
-	var i, groups = samrEnumDomainGroups(conn, dom_handle);
+	var i, groups = samrEnumDomainGroups(samr, dom_handle);
 	print("Found " + groups.length + " groups\n");
 	for (i=0;i<groups.length;i++) {
 		println("\t" + groups[i].name + "\t(" + groups[i].idx + ")");
@@ -76,10 +76,10 @@ function test_EnumDomainGroups(conn, dom_handle)
 /*
   test domain specific ops
 */
-function test_domain_ops(conn, dom_handle)
+function test_domain_ops(samr, dom_handle)
 {
-	test_EnumDomainUsers(conn, dom_handle);
-	test_EnumDomainGroups(conn, dom_handle);
+	test_EnumDomainUsers(samr, dom_handle);
+	test_EnumDomainGroups(samr, dom_handle);
 }
 
 
@@ -87,22 +87,22 @@ function test_domain_ops(conn, dom_handle)
 /*
   test the samr_EnumDomains interface
 */
-function test_EnumDomains(conn, handle)
+function test_EnumDomains(samr, handle)
 {
 	var i, domains;
 	print("Testing samr_EnumDomains\n");
 
-	domains = samrEnumDomains(conn, handle);
+	domains = samrEnumDomains(samr, handle);
 	print("Found " + domains.length + " domains\n");
 	for (i=0;i<domains.length;i++) {
 		print("\t" + domains[i].name + "\n");
 	}
 	for (i=0;i<domains.length;i++) {
 		print("Testing domain " + domains[i].name + "\n");
-		sid = samrLookupDomain(conn, handle, domains[i].name);
-		dom_handle = test_OpenDomain(conn, handle, sid);
-		test_domain_ops(conn, dom_handle);
-		samrClose(conn, dom_handle);
+		sid = samrLookupDomain(samr, handle, domains[i].name);
+		dom_handle = test_OpenDomain(samr, handle, sid);
+		test_domain_ops(samr, dom_handle);
+		samrClose(samr, dom_handle);
 	}
 }
 
@@ -111,18 +111,18 @@ if (options.ARGV.length != 1) {
    return -1;
 }
 var binding = options.ARGV[0];
-var conn = new Object();
+var samr = samr_init();
 
 print("Connecting to " + binding + "\n");
-status = rpc_connect(conn, binding, "samr");
+status = samr.connect(binding);
 if (status.is_ok != true) {
    print("Failed to connect to " + binding + " - " + status.errstr + "\n");
    return -1;
 }
 
-handle = test_Connect(conn);
-test_EnumDomains(conn, handle);
-samrClose(conn, handle);
+handle = test_Connect(samr);
+test_EnumDomains(samr, handle);
+samrClose(samr, handle);
 
 print("All OK\n");
 return 0;
