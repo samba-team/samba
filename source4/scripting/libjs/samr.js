@@ -159,8 +159,8 @@ function samrFillUserInfo(conn, dom_handle, users, level)
 	var i;
 	for (i=0;i<users.length;i++) {
 		var r, user_handle, info;
-		user_handle = samrOpenUser(dom_handle, users[i].idx);
-		info = samrQueryUserInfo(user_handle, level);
+		user_handle = samrOpenUser(conn, dom_handle, users[i].idx);
+		info = samrQueryUserInfo(conn, user_handle, level);
 		info.name = users[i].name;
 		info.idx  = users[i].idx;
 		users[i] = info;
