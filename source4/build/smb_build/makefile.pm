@@ -37,8 +37,9 @@ BINDIR = @bindir@
 SBINDIR = @sbindir@
 LIBDIR = @libdir@
 CONFIGDIR = @configdir@
-VARDIR = @localstatedir@
+localstatedir = @localstatedir@
 SWATDIR = @swatdir@
+VARDIR = @localstatedir@
 
 # The permissions to give the executables
 INSTALLPERMS = 0755
