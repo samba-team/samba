@@ -13,8 +13,6 @@ if test -n "${SAMBA_VERSION_SVN_REVISION}";then
 	echo "BUILD REVISION: ${SAMBA_VERSION_SVN_REVISION}"
 fi
 
-SMB_INFO_BUILD_ENV=""
-
 sinclude(build/m4/check_path.m4)
 sinclude(build/m4/check_perl.m4)
 sinclude(build/m4/check_cc.m4)
