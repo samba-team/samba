@@ -873,6 +873,7 @@ _kdc_as_rep(krb5_context context,
 	    size_t len;
 	    EncryptedData enc_data;
 	    Key *pa_key;
+	    char *str;
 	    
 	    found_pa = 1;
 	    
@@ -924,14 +925,23 @@ _kdc_as_rep(krb5_context context,
 					      &ts_data);
 	    krb5_crypto_destroy(context, crypto);
 	    if(ret){
+		ret = krb5_enctype_to_string(context, 
+					     pa_key->key.keytype, &str);
+		if (ret)
+		    str = NULL;
+		kdc_log(context, config, 5, 
+			"Failed to decrypt PA-DATA -- %s "
+			"(enctype %s) error %d",
+			client_name, str ? str : "unknown enctype", ret);
+		free(str);
+
+
 		if(hdb_next_enctype2key(context, client, 
 					enc_data.etype, &pa_key) == 0)
 		    goto try_next_key;
-		free_EncryptedData(&enc_data);
 		e_text = "Failed to decrypt PA-DATA";
-		kdc_log(context, config, 
-			5, "Failed to decrypt PA-DATA -- %s",
-			client_name);
+
+		free_EncryptedData(&enc_data);
 		ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
 		continue;
 	    }
@@ -958,9 +968,15 @@ _kdc_as_rep(krb5_context context,
 		goto out;
 	    }
 	    et.flags.pre_authent = 1;
+
+	    ret = krb5_enctype_to_string(context,pa_key->key.keytype, &str);
+	    if (ret)
+		str = NULL;
+
 	    kdc_log(context, config, 2,
-		    "ENC-TS Pre-authentication succeeded -- %s", 
-		    client_name);
+		    "ENC-TS Pre-authentication succeeded -- %s using %s", 
+		    client_name, str ? str : "unknown enctype");
+	    free(str);
 	    break;
 	}
 #ifdef PKINIT
