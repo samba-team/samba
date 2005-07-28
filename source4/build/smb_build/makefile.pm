@@ -7,6 +7,7 @@
 ###########################################################
 
 package makefile;
+use config qw(%config);
 use strict;
 
 sub _prepare_command_interpreters($)
@@ -118,7 +119,7 @@ sub _prepare_SUFFIXES($)
 
 	$output = << '__EOD__';
 .SUFFIXES:
-.SUFFIXES: .c .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml
+.SUFFIXES: .c .d .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml
 
 __EOD__
 
@@ -208,6 +209,16 @@ dynconfig.o: dynconfig.c Makefile
 	@echo Compiling $*.c
 	@$(CC) $(CFLAGS) @PICFLAG@ $(PATH_FLAGS) -c $< -o $@
 @BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
+
+__EOD__
+}
+
+sub _prepare_depend_CC_rule()
+{
+	return << '__EOD__';
+.c.d:
+	@echo "Generating dependencies for $<"
+	@$(CC) -MM -MG -MT $(<:.c=.o) -MF $@ $(CFLAGS) $<
 
 __EOD__
 }
@@ -561,6 +572,13 @@ distclean: clean
 	-rm -f config.log config.cache
 	-rm -f samba4-deps.dot
 	-rm -f lib/registry/winregistry.pc
+__EOD__
+
+	if ($config{developer} eq "yes") {
+		$output .= "\t@-rm -f \$(_ALL_OBJS_OBJS:.o=.d)\n";
+	}
+
+	$output .= << '__EOD__';
 
 removebackup:
 	-rm -f *.bak *~ */*.bak */*~ */*/*.bak */*/*~ */*/*/*.bak */*/*/*~
@@ -821,6 +839,8 @@ sub _prepare_makefile_in($)
 	$output .= _prepare_std_CC_rule("c","o",'@PICFLAG@',"Compiling","Rule for std objectfiles");
 	$output .= _prepare_std_CC_rule("h","h.gch",'@PICFLAG@',"Precompiling","Rule for precompiled headerfiles");
 
+	$output .= _prepare_depend_CC_rule();
+	
 	$output .= _prepare_man_rule("1");
 	$output .= _prepare_man_rule("3");
 	$output .= _prepare_man_rule("5");
@@ -836,6 +856,16 @@ sub _prepare_makefile_in($)
 	}
 	
 	$output .= _prepare_make_target({ TARGET => "all", DEPEND_LIST => \@all });
+
+	if ($config{developer} eq "yes") {
+		$output .= <<__EOD__
+-include \$(_ALL_OBJS_OBJS:.o=.d)
+IDL_FILES = \$(wildcard librpc/idl/*.idl)
+\$(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%.c,\$(IDL_FILES)) \\
+\$(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_\%_c.c,\$(IDL_FILES)) \\
+\$(patsubst librpc/idl/%.idl,librpc/gen_ndr/ndr_%.h,\$(IDL_FILES)): idl
+__EOD__
+	}
 
 	return $output;
 }
@@ -862,3 +892,4 @@ sub create_makefile_in($$)
 }
 
 1;
+
