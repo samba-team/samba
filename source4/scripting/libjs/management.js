@@ -10,16 +10,15 @@
 */
 function smbsrv_sessions()
 {
-	var conn = new Object();
 	var irpc = irpc_init();
-	status = irpc_connect(conn, "smb_server");
+	status = irpc.connect("smb_server");
 	if (status.is_ok != true) {
 		return undefined;
 	}
 
 	var io = irpcObj();
 	io.input.level = irpc.SMBSRV_INFO_SESSIONS;
-	status = irpc.smbsrv_information(conn, io);
+	status = irpc.smbsrv_information(io);
 	if (status.is_ok != true) {
 		return undefined;
 	}
@@ -43,16 +42,15 @@ function smbsrv_sessions()
 */
 function smbsrv_trees()
 {
-	var conn = new Object();
 	var irpc = irpc_init();
-	status = irpc_connect(conn, "smb_server");
+	status = irpc.connect("smb_server");
 	if (status.is_ok != true) {
 		return undefined;
 	}
 
 	var io = irpcObj();
 	io.input.level = irpc.SMBSRV_INFO_TREES;
-	status = irpc.smbsrv_information(conn, io);
+	status = irpc.smbsrv_information(io);
 	if (status.is_ok != true) {
 		return undefined;
 	}
@@ -76,16 +74,15 @@ function smbsrv_trees()
 */
 function nbtd_statistics()
 {
-	var conn = new Object();
 	var irpc = irpc_init();
-	status = irpc_connect(conn, "nbt_server");
+	status = irpc.connect("nbt_server");
 	if (status.is_ok != true) {
 		return undefined;
 	}
 
 	var io = irpcObj();
 	io.input.level = irpc.NBTD_INFO_STATISTICS;
-	status = irpc.nbtd_information(conn, io);
+	status = irpc.nbtd_information(io);
 	if (status.is_ok != true) {
 		return undefined;
 	}
@@ -113,7 +110,6 @@ function service_enabled(name)
 */
 function server_status(name)
 {
-	var conn = new Object();
 	var i;
 	var io;
 	var irpc = irpc_init();
@@ -122,13 +118,13 @@ function server_status(name)
 		return "DISABLED";
 	}
 	
-	status = irpc_connect(conn, name + "_server");
+	status = irpc.connect(name + "_server");
 	if (status.is_ok != true) {
 		return "DOWN";
 	}
 
 	var io = irpcObj();
-	status = irpc.irpc_uptime(conn, io);
+	status = irpc.irpc_uptime(io);
 	if (status.is_ok != true) {
 		return "NOT RESPONDING";
 	}
@@ -141,19 +137,18 @@ function server_status(name)
 */
 function stream_server_status(name)
 {
-	var conn = new Object();
 	var irpc = irpc_init();
 
 	if (!service_enabled(name)) {
 		return "DISABLED";
 	}
-	status = irpc_connect(conn, name + "_server");
+	status = irpc.connect(name + "_server");
 	if (status.is_ok != true) {
 		return "0 connections";
 	}
 
 	var io = irpcObj();
-	status = irpc.irpc_uptime(conn, io);
+	status = irpc.irpc_uptime(io);
 	if (status.is_ok != true) {
 		return "NOT RESPONDING";
 	}
