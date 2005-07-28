@@ -19,6 +19,10 @@ my %attribute_types = (
 	"ADD_OBJ_FILES" => "list",
 	"OBJ_FILES" => "list",
 	"SUBSYSTEM" => "string",
+	"CFLAGS" => "list",
+	"CPPFLAGS" => "list",
+	"LDFLAGS" => "list",
+	"LIBS" => "list",
 	"INIT_FUNCTION" => "string",
 	"MAJOR_VERSION" => "string",
 	"MINOR_VERSION" => "string",
@@ -168,7 +172,7 @@ sub import_file($$)
 		$input->{$name}{TYPE} = $type;
 
 		foreach my $key (values %{$result->{$section}}) {
-			$key->{VAL} = input::strtrim($key->{VAL});
+			$key->{VAL} = smb_build::input::strtrim($key->{VAL});
 			my $vartype = $attribute_types{$key->{KEY}};
 			if (not defined($vartype)) {
 				die("Unknown attribute $key->{KEY}");
@@ -176,7 +180,7 @@ sub import_file($$)
 			if ($vartype eq "string") {
 				$input->{$name}{$key->{KEY}} = $key->{VAL};
 			} elsif ($vartype eq "list") {
-				$input->{$name}{$key->{KEY}} = [input::str2array($key->{VAL})];
+				$input->{$name}{$key->{KEY}} = [smb_build::input::str2array($key->{VAL})];
 			} elsif ($vartype eq "bool") {
 				if (($key->{VAL} ne "YES") and ($key->{VAL} ne "NO")) {
 					die("Invalid value for bool attribute $key->{KEY}: $key->{VAL}");
@@ -184,6 +188,22 @@ sub import_file($$)
 				$input->{$name}{$key->{KEY}} = $key->{VAL};
 			}
 		}
+	}
+}
+
+sub import_files($$)
+{
+	my ($input, $config_list) = @_;
+
+	open(IN, $config_list) or die("Can't open $config_list: $!");
+	my @mkfiles = grep{!/^#/} <IN>;
+	close(IN);
+
+	$| = 1;
+
+	foreach (@mkfiles) {
+		s/\n//g;
+		import_file($input, $_);
 	}
 }
 1;
