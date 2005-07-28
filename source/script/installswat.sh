@@ -3,7 +3,7 @@
 
 SWATDIR=`echo $1 | sed 's/\/\//\//g'`
 SRCDIR=$2/
-BOOKDIR=$SWATDIR/using_samba
+BOOKDIR=$SWATDIR/help/using_samba
 
 echo Installing SWAT in $SWATDIR
 echo Installing the Samba Web Administration Tool
@@ -75,7 +75,7 @@ done
 
 if [ -d $SRCDIR../docs/htmldocs/ ]; then
 
-    for dir in htmldocs/ htmldocs/Samba-HOWTO-Collection htmldocs/Samba-Guide htmldocs/Samba-Developers-Guide
+    for dir in htmldocs/manpages  htmldocs/Samba3-ByExample  htmldocs/Samba3-Developers-Guide  htmldocs/Samba3-HOWTO  
     do 
     
       if [ ! -d $SRCDIR../docs/$dir ]; then

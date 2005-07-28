@@ -5104,7 +5104,7 @@ static NTSTATUS vampire_trusted_domain(struct cli_state *cli,
 {
 	NTSTATUS nt_status;
 	LSA_TRUSTED_DOMAIN_INFO *info;
-	char *cleartextpwd;
+	char *cleartextpwd = NULL;
 	DATA_BLOB data;
 	smb_ucs2_t *uni_dom_name;
 
