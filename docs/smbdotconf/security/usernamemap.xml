@@ -10,6 +10,13 @@
     that users use on DOS or Windows machines to those that the UNIX 
     box uses. The other is to map multiple users to a single username 
     so that they can more easily share files.</para>
+
+    <para>Please note that for user or share mode security, the
+    username map is applied prior to validating the user credentials.
+    Domain member servers (domain or ads) apply the username map 
+    after the user has been successfully authenticated by the domain
+    controller and require fully qualified enties in the map table
+    (e.g. biddle = DOMAIN\foo).</para>
     
     <para>The map file is parsed line by line. Each line should 
     contain a single UNIX username on the left then a '=' followed 
