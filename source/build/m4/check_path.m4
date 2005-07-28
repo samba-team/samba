@@ -146,6 +146,7 @@ AC_ARG_WITH(selftest-prefix,
   esac])
 
 developer=no
+AC_SUBST(developer)
 AC_ARG_ENABLE(developer, [  --enable-developer      Turn on developer warnings and debugging (default=no)],
     [if test x$enable_developer = xyes; then
 	debug=yes
