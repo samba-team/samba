@@ -393,6 +393,13 @@ hdb_unseal_key_mkey(krb5_context context, Key *k, hdb_master_key mkey)
 		       k->key.keyvalue.data,
 		       k->key.keyvalue.length,
 		       &res);
+    if(ret == KRB5KRB_AP_ERR_BAD_INTEGRITY) {
+	/* try to decrypt with MIT key usage */
+	ret = krb5_decrypt(context, key->crypto, 0,
+			   k->key.keyvalue.data,
+			   k->key.keyvalue.length,
+			   &res);
+    }    
     if (ret)
 	return ret;
 
