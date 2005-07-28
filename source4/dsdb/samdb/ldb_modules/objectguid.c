@@ -35,6 +35,7 @@
 #include "includes.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 #include <time.h>
 
 struct private_data {
