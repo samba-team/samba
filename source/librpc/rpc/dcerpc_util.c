@@ -25,6 +25,8 @@
 #include "includes.h"
 #include "system/network.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
+#include "librpc/gen_ndr/ndr_dcerpc.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 
 /*
   find the pipe name for a local IDL interface

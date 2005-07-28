@@ -27,6 +27,7 @@
 #include "ldap_parse.h"
 #include "lib/ldb/include/ldb.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 #include "db_wrap.h"
 
 
