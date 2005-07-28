@@ -1,17 +1,70 @@
+                   =================================
+                   Release Notes for Samba 3.0.20rc1
+                              Jul 28, 2005
+                   ==================================
+
+This is a release candidate of the 3.0.20 codebase and is 
+provided for testing purposes only.  While close to the final
+stable release, this snapshot is *not* intended for production
+servers.  If all goes well, this could become the final
+3.0.20 release.
+
+Additional features introduced in Samba 3.0.20pre2 include:
+
+  o 
+
+What happened to 3.0.15 - 3.0.19?
+==================================
+
+After some discussion it was deemed that the amount of changes 
+going into the next Samba 3.0 release needed something to catch
+people's attention.  Skipping several releases was chosen as 
+the best solution with the least overhead.  There will be no
+3.0.15 - 3.0.19 ever released.  The next production release
+following 3.0.20 should be 3.0.21.
+
+The original announcement about the version number change can 
+be found in the samba mailing list archives:
+
+http://marc.theaimsgroup.com/?l=samba&m=111721010206997&w=2
+
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.20pre1
+------------------------
+
+    Parameter Name                      Action
+    --------------                      ------
+    acl group control			New
+    username map script			New
+
+commits
+-------
+
+o   Jeremy Allison <jra@samba.org>
+o   Gerald (Jerry) Carter <jerry@samba.org>
+o   Guenther Deschner <gd@samba.org>
+o   Volker Lendecke <vl@samba.org>
+o   Jim McDonough <jmcd@us.ibm.com>
+o   Lars Mueller <lmuelle@samba.org>
+o   James Peach <jpeach@sgi.com>
+o   Marcin Porwit <mporwit@centeris.com>
+o   Smitty <smitty@plainjoe.org>
+o   Simo Sorce <idra@samba.org>
+
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
                    ==================================
                    Release Notes for Samba 3.0.20pre2
                               Jul 12, 2005
                    ==================================
-
-This is a preview release of the Samba 3.0.20 code base and
-is provided for testing only.  This release is *not* intended
-for production servers.  There has been a substantial amount 
-of development since the 3.0.14a stable release (and since the
-3.0.20pre1 release as well).  We would like to ask the Samba 
-community for help in testing these changes as we work towards
-the next official, production Samba 3.0 release.  This is 
-the last anticipated preX release before moving onto the 
-Release Candidate state of testing.
 
 Additional features introduced in Samba 3.0.20pre2 include:
 
@@ -193,8 +246,6 @@ o   Brett Trotter <blt@iastate.edu>
     * Fix definition of global_sid_* in vfs_acl.c.
 
 
-
-Release Notes for older release follow:
 
       --------------------------------------------------
                    ==================================
