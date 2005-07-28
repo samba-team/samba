@@ -68,8 +68,6 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
     size_t sz;
     void *p;
 
-    printf("cms verify signed data\n");
-
     hx509_lock_init(&lock);
     hx509_lock_add_password(lock, "foobar");
 
@@ -85,7 +83,8 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 	ret = hx509_certs_append(anchors, lock, 
 				 opt->anchors_strings.strings[i]);
 	if (ret)
-	    errx(1, "hx509_certs_append: chain: %d", ret);
+	    errx(1, "hx509_certs_append: anchor: %s: %d", 
+		 opt->anchors_strings.strings[i], ret);
     }
 
     ret = hx509_certs_init("MEMORY:cert-store", 0, NULL, &store);
@@ -94,7 +93,8 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 	ret = hx509_certs_append(store, lock, 
 				 opt->certificate_strings.strings[i]);
 	if (ret)
-	    errx(1, "hx509_certs_append: chain: %d", ret);
+	    errx(1, "hx509_certs_append: store: %s %d",
+		 opt->certificate_strings.strings[i], ret);
     }
 
     if (opt->content_info_flag) {
@@ -163,23 +163,22 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     void *p;
     int ret, i;
 
-    ret = hx509_certs_init("MEMORY:cert-store", 0, NULL, &store);
-
     contentType = oid_id_pkcs7_data();
 
     if (argc < 2)
 	errx(1, "argc < 2");
 
-    printf("cms create signed data\n");
-
     hx509_lock_init(&lock);
     hx509_lock_add_password(lock, "foobar");
+
+    ret = hx509_certs_init("MEMORY:cert-store", 0, NULL, &store);
 
     for (i = 0; i < opt->certificate_strings.num_strings; i++) {
 	ret = hx509_certs_append(store, lock, 
 				 opt->certificate_strings.strings[i]);
 	if (ret)
-	    errx(1, "hx509_certs_append: chain: %d", ret);
+	    errx(1, "hx509_certs_append: store: %s: %d", 
+		 opt->certificate_strings.strings[i], ret);
     }
 
     _hx509_query_clear(&q);
@@ -249,13 +248,8 @@ cms_unenvelope(struct cms_unenvelope_options *opt, int argc, char **argv)
     hx509_certs certs;
     size_t sz;
     void *p;
-    int ret;
+    int ret, i;
     hx509_lock lock;
-
-    if (argc != 3)
-	errx(1, "argc != 3");
-
-    printf("cms unenvelope data\n");
 
     hx509_lock_init(&lock);
     hx509_lock_add_password(lock, "foobar");
@@ -289,10 +283,16 @@ cms_unenvelope(struct cms_unenvelope_options *opt, int argc, char **argv)
     }
 
     ret = hx509_certs_init("MEMORY:cert-store", 0, NULL, &certs);
-
-    ret = hx509_certs_init(argv[2], 0, lock, &certs);
     if (ret)
-	errx(1, "hx509_certs_init: %d", ret);
+	errx(1, "hx509_certs_init: MEMORY: %d", ret);
+
+    for (i = 0; i < opt->certificate_strings.num_strings; i++) {
+	ret = hx509_certs_append(certs, lock, 
+				 opt->certificate_strings.strings[i]);
+	if (ret)
+	    errx(1, "hx509_certs_append: %s: %d",
+		 opt->certificate_strings.strings[i], ret);
+    }
 
     ret = hx509_cms_unenvelope(certs, co.data, co.length, &contentType, &o);
     if (co.data != p)
@@ -320,24 +320,30 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
     hx509_query q;
     hx509_certs certs;
     hx509_cert cert;
-    int ret;
+    int ret, i;
     size_t sz;
     void *p;
+    hx509_lock lock;
 
-    if (argc != 3)
-	errx(1, "argc ! = 3");
-
-    printf("cms create enveloped\n");
+    hx509_lock_init(&lock);
+    hx509_lock_add_password(lock, "foobar");
 
     ret = _hx509_map_file(argv[0], &p, &sz);
     if (ret)
 	err(1, "map_file: %s: %d", argv[0], ret);
 
-    ret = hx509_certs_init(argv[2], 0, NULL, &certs);
-    if (ret)
-	errx(1, "hx509_certs_init: %d", ret);
+    ret = hx509_certs_init("MEMORY:cert-store", 0, NULL, &certs);
+
+    for (i = 0; i < opt->certificate_strings.num_strings; i++) {
+	ret = hx509_certs_append(certs, lock, 
+				 opt->certificate_strings.strings[i]);
+	if (ret)
+	    errx(1, "hx509_certs_append: certs: %s: %d", 
+		 opt->certificate_strings.strings[i], ret);
+    }
 
     _hx509_query_clear(&q);
+    q.match |= HX509_QUERY_KU_ENCIPHERMENT;
     ret = _hx509_certs_find(certs, &q, &cert);
     if (ret)
 	errx(1, "hx509_certs_find: %d", ret);
@@ -370,6 +376,8 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
 	free_ContentInfo(&ci);
 
     }
+
+    hx509_lock_free(lock);
 
     ret = _hx509_write_file(argv[1], o.data, o.length);
     if (ret)
@@ -470,21 +478,21 @@ pcert_verify(struct verify_options *opt, int argc, char **argv)
 
 	    ret = hx509_certs_append(chain, NULL, s);
 	    if (ret)
-		errx(1, "hx509_certs_append: chain: %d", ret);
+		errx(1, "hx509_certs_append: chain: %s: %d", s, ret);
 
 	} else if (strncmp(s, "anchor:", 7) == 0) {
 	    s += 7;
 
 	    ret = hx509_certs_append(anchors, NULL, s);
 	    if (ret)
-		errx(1, "hx509_certs_append: anchor: %d", ret);
+		errx(1, "hx509_certs_append: anchor: %s: %d", s, ret);
 
 	} else if (strncmp(s, "cert:", 5) == 0) {
 	    s += 5;
 
 	    ret = hx509_certs_append(certs, NULL, s);
 	    if (ret)
-		errx(1, "hx509_certs_append: certs: %d", ret);
+		errx(1, "hx509_certs_append: certs: %s: %d", s, ret);
 
 	} else {
 	    errx(1, "unknown option to verify: `%s'\n", s);
@@ -542,7 +550,7 @@ query(struct query_options *opt, int argc, char **argv)
 
 	ret = hx509_certs_append(certs, lock, argv[0]);
 	if (ret)
-	    errx(1, "hx509_certs_append: %d", ret);
+	    errx(1, "hx509_certs_append: %s: %d", argv[0], ret);
 
 	argc--;
 	argv++;
