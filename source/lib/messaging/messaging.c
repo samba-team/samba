@@ -717,7 +717,9 @@ NTSTATUS irpc_call(struct messaging_context *msg_ctx,
 {
 	struct irpc_request *irpc = irpc_call_send(msg_ctx, server_id, 
 						   table, callnum, r);
-	return irpc_call_recv(irpc);
+	NTSTATUS status = irpc_call_recv(irpc);
+	talloc_free(irpc);
+	return status;
 }
 
 /*
