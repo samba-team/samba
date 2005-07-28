@@ -46,11 +46,9 @@ static BOOL test_addone(TALLOC_CTX *mem_ctx,
 {
 	struct echo_AddOne r;
 	NTSTATUS status;
-	uint32_t res;
 
 	/* make the call */
 	r.in.in_data = random();
-	r.out.out_data = &res;
 
 	status = IRPC_CALL(msg_ctx1, MSG_ID2, rpcecho, ECHO_ADDONE, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -59,13 +57,13 @@ static BOOL test_addone(TALLOC_CTX *mem_ctx,
 	}
 
 	/* check the answer */
-	if (res != r.in.in_data + 1) {
+	if (*r.out.out_data != r.in.in_data + 1) {
 		printf("AddOne wrong answer - %u should be %u\n", 
 		       *r.out.out_data, r.in.in_data+1);
 		return False;
 	}
 
-	printf("%u + 1 = %u\n", r.in.in_data, res);
+	printf("%u + 1 = %u\n", r.in.in_data, *r.out.out_data);
 
 	return True;	
 }
@@ -79,6 +77,7 @@ static void irpc_callback(struct irpc_request *irpc)
 		printf("irpc call failed - %s\n", nt_errstr(status));
 	}
 	(*pong_count)++;
+	talloc_free(irpc);
 }
 
 /*
@@ -94,15 +93,14 @@ static BOOL test_speed(TALLOC_CTX *mem_ctx,
 	BOOL ret = True;
 	struct timeval tv;
 	struct echo_AddOne r;
-	uint32_t res;
+	int timelimit = lp_parm_int(-1, "torture", "timelimit", 10);
 
 	tv = timeval_current();
 
 	r.in.in_data = 0;
-	r.out.out_data = &res;
 
-	printf("Sending echo for 10 seconds\n");
-	while (timeval_elapsed(&tv) < 10.0) {
+	printf("Sending echo for %d seconds\n", timelimit);
+	while (timeval_elapsed(&tv) < timelimit) {
 		struct irpc_request *irpc;
 
 		irpc = IRPC_CALL_SEND(msg_ctx1, MSG_ID2, rpcecho, ECHO_ADDONE, &r);
@@ -162,5 +160,5 @@ BOOL torture_local_irpc(void)
 
 	talloc_free(mem_ctx);
 
-	return True;
+	return ret;
 }
