@@ -3,15 +3,18 @@
                               Jul 28, 2005
                    ==================================
 
-This is a release candidate of the 3.0.20 codebase and is 
-provided for testing purposes only.  While close to the final
-stable release, this snapshot is *not* intended for production
-servers.  If all goes well, this could become the final
-3.0.20 release.
+This is a release candidate of the 3.0.20 code base and is provided 
+for testing purposes only.  While close to the final stable release, 
+this snapshot is *not* intended for production servers.  If all goes 
+well, this could become the final 3.0.20 release.
 
-Additional features introduced in Samba 3.0.20pre2 include:
+Common bugs fixed in 3.0.20rc1 include:
 
-  o 
+  o Print server upgrade failures.
+  o OS/2 interoperability bugs.
+  o Winbindd crashes on Solaris Sparc.
+  o Interoperability problems with Win2003-SP1 & Win2000-SP4.SR1.
+
 
 What happened to 3.0.15 - 3.0.19?
 ==================================
@@ -40,21 +43,128 @@ Changes since 3.0.20pre1
     Parameter Name                      Action
     --------------                      ------
     acl group control			New
+    min password length			Removed
     username map script			New
+
 
 commits
 -------
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 2878: Fix Norton commander not running on OS/2 clients. 
+    * Cleanup SAMR user info structure naming.
+    * BUG 2889:  Fix directly listings from OS/2 clients.
+    * Added "acl group control" parameter.
+    * Add debug warning if AddPrinterEx() is called without having
+      an 'add printer command'  defined.
+    * Add better log messages when modifying ldap entries.
+    * BUG 2829: Fix strXX_w() functions on non-x86 platforms when 
+      when string is unaligned.
+    * BUG 2918: Fix SMB chaining by ensuring that deferred open 
+      message buffer is nor reused.
+
+
+o   Timur Bakeyev <timur@com.bat.ru>
+    * Fix detection of FreeBSD 7.x platforms in autoconf checks.
+    * BUG 2908: Fix string length logic error in msdfs code.
+    * BUG 2909: Fix typo that caused smbd to call the wrong 
+      aio_fsync function.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * Fix parallel NTLMSSP processing by removing global state.
+
+
 o   Gerald (Jerry) Carter <jerry@samba.org>
+    * BUG 2872: Fix cut-n-paste error when checking pointer value 
+      in ntlmssp_set_workstation().
+    * Fix upgrade path from earlier nt*tdb files.
+    * Removed print handle object cache.
+    * BUG 2853: Don't strip out characters like '$' from printer 
+      names when substituting for the lpq command.
+    * BUG 2557: Gracefully fail on unsupported SetPrinter() levels.
+    * Fix build issues on x86_64-linux systems caused by valgrind 
+      headers.  Thanks to Bent Vangli to the suggestions.
+    * Refactor spoolss client calls.
+    * Adding 'username map script'.
+    * Disable schannel on the LSA and SAMR pipes in winbindd client 
+      code to deal with Windows 2003 SP1 and Windows 2000 SP4 SR1.
+
+
 o   Guenther Deschner <gd@samba.org>
+    * Various compiler warning fixes.
+    * Fix segfault in the client AddPrinterEx-call of 'net 
+      rpc printer'.
+    * Fix build issues when --with-aio-support is enabled.
+    * BUG 2502: Removed the deprecated 'min passwd length parameter'.
+    * Honour the CC environment variable in python build.
+    * Fix searches in pdb_ldap for inter-domain trust accounts.
+    * Don't expand the %L in %LOGONSERVER% from user attributes.
+    * Fix bug in 'net rpc vampire' that caused accounts to be created 
+      with no assigned ACB flags.
+    * Fix enumeration of builtin-aliases.
+    * Avoid unset rids for builtin-aliases.
+
+
+o   John Janosik <jpjanosi@us.ibm.com>
+    * BUG 2077: Correctly fill in the correct server name when 
+      processing trusted domain logins.
+
+
 o   Volker Lendecke <vl@samba.org>
-o   Jim McDonough <jmcd@us.ibm.com>
-o   Lars Mueller <lmuelle@samba.org>
+    * Fix set afs ACL calls on files and directories in the root of 
+      a share.
+    * Refactoring work on internal open code
+    * Correctly initialize the version in a new set of nt*tdb files.
+    * Remove smb_run_idle_events() from main process loop in smbd 
+      and instead rely upon the timeout processing to handle 
+      dropping idle LDAP connections.
+
+
+o   Jason Mader <jason@ncac.gwu.edu>
+    * BUG 2882, 2885, 2890, 2891, 2900: Various compiler warning fixes 
+      and code  cleanups.
+
+
+o   Kalim Moghul <kalim@samba.org>
+    * Removed unused printmode command from smbclient.
+
+
+o   Lars Müller <lmuelle@samba.org>
+    * Fix spoolss python bindings after C++ compiler changes and 
+      other python fixes.
+    * BUG 2659: Don't trump on memory in smbtorture.
+    * BUG 2060: Add -fPIC which is the case for all other Samba 
+      shared libs.
+
+
+o   Marcel Müller <mueller@maazl.de>
+    * Ensure we correctly set the return packet size to include the 
+      pad bytes in reply_readbmpx().
+
+
 o   James Peach <jpeach@sgi.com>
-o   Marcin Porwit <mporwit@centeris.com>
+    * BUG 2285: Patch for hires timestamps and efficient notify code.
+
+
+o   Tim Potter <tpot@samba.org>
+    * Remove unused autoconf #define's.
+    * BUG 2893: Fix inverted assignment in 'net rpc printer' code.
+    * Removed unused function declarations in tdb.h.
+    * BUG 2895: Don't wrap non-existent functions in the python 
+      tdb bindings.
+
+
 o   Smitty <smitty@plainjoe.org>
+    * Compile fixes for smbget when using --enable-developer.
+
+
 o   Simo Sorce <idra@samba.org>
+    * Fix memory issues issues in vfstest (reported by Rainer Link).
+
+
+o   Andrew Tridgell <tridge@samba.org>
+    * Merge socket wrapper library fixes from Samba 4.
 
 
 
@@ -678,8 +788,8 @@ o   Jeremy Allison <jra@samba.org>
 
 o   Timur Bakeyev <timur@com.bat.ru>
     * BUG 2546: Add support for FreeBSD EA API
-    
-    
+
+
 o   Gerald (Jerry) Carter <jerry@samba.org>
     * Added support for \svcctl pipe rpcs.
     * Added 'net rpc service' subcommand for managing Win32 
