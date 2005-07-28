@@ -880,7 +880,7 @@ static BOOL pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
 	/* Grab the SPNEGO blob. */
 	blob = data_blob(NULL,p->hdr.auth_len);
 
-	if (!prs_copy_data_out((char *)&blob.data, rpc_in_p, p->hdr.auth_len)) {
+	if (!prs_copy_data_out(blob.data, rpc_in_p, p->hdr.auth_len)) {
 		DEBUG(0,("pipe_spnego_auth_bind_negotiate: Failed to pull %u bytes - the SPNEGO auth header.\n",
 			(unsigned int)p->hdr.auth_len ));
 		data_blob_free(&blob);
