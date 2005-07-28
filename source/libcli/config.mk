@@ -81,3 +81,26 @@ ADD_OBJ_FILES = libcli/clireadwrite.o \
 		libcli/clitrans2.o \
 		libcli/climessage.o \
 		libcli/clideltree.o
+
+[SUBSYSTEM::LIBCLI_RAW]
+REQUIRED_SUBSYSTEMS = LIBCLI_RAW_KRB5
+OBJ_FILES = libcli/raw/rawfile.o \
+		libcli/raw/smb_signing.o \
+		libcli/raw/clisocket.o \
+		libcli/raw/clitransport.o \
+		libcli/raw/clisession.o \
+		libcli/raw/clitree.o \
+		libcli/raw/rawrequest.o \
+		libcli/raw/rawreadwrite.o \
+		libcli/raw/rawsearch.o \
+		libcli/raw/rawsetfileinfo.o \
+		libcli/raw/raweas.o \
+		libcli/raw/rawtrans.o \
+		libcli/raw/clioplock.o \
+		libcli/raw/rawnegotiate.o \
+		libcli/raw/rawfsinfo.o \
+		libcli/raw/rawfileinfo.o \
+		libcli/raw/rawnotify.o \
+		libcli/raw/rawioctl.o \
+		libcli/raw/rawacl.o \
+		libcli/raw/rawdate.o
