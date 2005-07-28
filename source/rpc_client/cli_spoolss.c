@@ -1467,7 +1467,7 @@ WERROR cli_spoolss_getprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_GETPRINTERDATAEX in;
 	SPOOL_R_GETPRINTERDATAEX out;
-	uint32 offered;
+	uint32 offered = 0;
 
 	ZERO_STRUCT(in);
 	ZERO_STRUCT(out);
@@ -1753,7 +1753,7 @@ WERROR cli_spoolss_enumprinterkey(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_ENUMPRINTERKEY in;
 	SPOOL_R_ENUMPRINTERKEY out;
-	uint32 offered;
+	uint32 offered = 0;
 
 	ZERO_STRUCT(in);
 	ZERO_STRUCT(out);
