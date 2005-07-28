@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -172,41 +172,6 @@ kdb_prop(void *arg, Principal *p)
 
 #endif /* KRB4 */
 
-#ifndef KRB4
-static time_t
-krb_life_to_time(time_t start, int life)
-{
-    static int lifetimes[] = {
-	  38400,   41055,   43894,   46929,   50174,   53643,   57352,   61318,
-	  65558,   70091,   74937,   80119,   85658,   91581,   97914,  104684,
-	 111922,  119661,  127935,  136781,  146239,  156350,  167161,  178720,
-	 191077,  204289,  218415,  233517,  249664,  266926,  285383,  305116,
-	 326213,  348769,  372885,  398668,  426234,  455705,  487215,  520904,
-	 556921,  595430,  636601,  680618,  727680,  777995,  831789,  889303,
-	 950794, 1016537, 1086825, 1161973, 1242318, 1328218, 1420057, 1518247,
-	1623226, 1735464, 1855462, 1983758, 2120925, 2267576, 2424367, 2592000
-    };
-
-#if 0
-    int i;
-    double q = exp((log(2592000.0) - log(38400.0)) / 63);
-    double x = 38400;
-    for(i = 0; i < 64; i++) {
-	lifetimes[i] = (int)x;
-	x *= q;
-    }
-#endif
-
-    if(life == 0xff)
-	return NEVERDATE;
-    if(life < 0x80)
-	return start + life * 5 * 60;
-    if(life > 0xbf)
-	life = 0xbf;
-    return start + lifetimes[life - 0x80];
-}
-#endif /* !KRB4 */
-
 int
 v4_prop(void *arg, struct v4_principal *p)
 {
@@ -252,7 +217,7 @@ v4_prop(void *arg, struct v4_principal *p)
     ent.keys.val[2].key.keytype = ETYPE_DES_CBC_CRC;
 
     {
-	int life = krb_life_to_time(0, p->max_life);
+	int life = _krb5_krb_life_to_time(0, p->max_life);
 	if(life == NEVERDATE){
 	    ent.max_life = NULL;
 	} else {
