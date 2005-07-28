@@ -1022,19 +1022,6 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(TALLOC_CTX *tmp_ctx,
 		return status;
 	}
 
-	/* Look up identifier using the epmapper */
-	if (!binding->endpoint) {
-		status = dcerpc_epm_map_binding(tmp_ctx, binding, 
-						pipe_uuid, pipe_version, 
-						p->conn->event_ctx);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("Failed to map DCERPC/TCP NCACN_NP pipe for '%s' - %s\n", 
-				 pipe_uuid, nt_errstr(status)));
-			return status;
-		}
-		DEBUG(2,("Mapped to DCERPC/NP pipe %s\n", binding->endpoint));
-	}
-
 	pipe_name = binding->endpoint;
 
 	status = dcerpc_pipe_open_smb(p->conn, cli->tree, pipe_name);
@@ -1055,19 +1042,6 @@ static NTSTATUS dcerpc_pipe_connect_ncalrpc(TALLOC_CTX *tmp_ctx,
 					    uint32_t pipe_version)
 {
 	NTSTATUS status;
-
-	/* Look up identifier using the epmapper */
-	if (!binding->endpoint) {
-		status = dcerpc_epm_map_binding(tmp_ctx, binding, 
-						pipe_uuid, pipe_version, 
-						p->conn->event_ctx);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("Failed to map DCERPC/TCP NCALRPC identifier for '%s' - %s\n", 
-				 pipe_uuid, nt_errstr(status)));
-			return status;
-		}
-		DEBUG(2,("Mapped to DCERPC/LRPC identifier %s\n", binding->endpoint));
-	}
 
 	status = dcerpc_pipe_open_pipe(p->conn, binding->endpoint);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1118,18 +1092,6 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(TALLOC_CTX *tmp_ctx,
 	NTSTATUS status;
 	uint32_t port = 0;
 
-	if (!binding->endpoint) {
-		status = dcerpc_epm_map_binding(tmp_ctx, binding, 
-						pipe_uuid, pipe_version, 
-						p->conn->event_ctx);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("Failed to map DCERPC/TCP port for '%s' - %s\n", 
-				 pipe_uuid, nt_errstr(status)));
-			return status;
-		}
-		DEBUG(2,("Mapped to DCERPC/TCP port %s\n", binding->endpoint));
-	}
-
 	port = atoi(binding->endpoint);
 
 	status = dcerpc_pipe_open_tcp(p->conn, binding->host, port);
@@ -1165,6 +1127,23 @@ NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 	tmp_ctx = talloc_named(p, 0, "dcerpc_pipe_connect_b tmp_ctx");
+
+	switch (binding->transport) {
+	case NCACN_NP:
+	case NCACN_IP_TCP:
+	case NCALRPC:
+		if (!binding->endpoint) {
+			status = dcerpc_epm_map_binding(tmp_ctx, binding, 
+							pipe_uuid, pipe_version, 
+							p->conn->event_ctx);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(0,("Failed to map DCERPC endpoint for '%s' - %s\n", 
+					 pipe_uuid, nt_errstr(status)));
+				return status;
+			}
+			DEBUG(2,("Mapped to DCERPC endpoint %s\n", binding->endpoint));
+		}
+	}
 
 	switch (binding->transport) {
 	case NCACN_NP:
@@ -1237,7 +1216,7 @@ NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx,
 				       credentials, ev);
 
 	if (NT_STATUS_IS_OK(status)) {
-		*pp = talloc_reference(parent_ctx, *pp);
+		*pp = talloc_steal(parent_ctx, *pp);
 	}
 	talloc_free(tmp_ctx);
 
