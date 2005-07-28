@@ -16,8 +16,6 @@ if (ok == false) {
 
 libinclude("base.js");
 
-echo = rpcecho_init();
-
 /*
   generate a ramp as an integer array
  */
@@ -34,7 +32,7 @@ function ramp_array(N)
 /*
   test the echo_AddOne interface
 */
-function test_AddOne(conn)
+function test_AddOne(echo)
 {
 	var io = irpcObj();
 
@@ -42,7 +40,7 @@ function test_AddOne(conn)
 
 	for (i=0;i<10;i++) {
 		io.input.in_data = i;
-		status = echo.echo_AddOne(conn, io);
+		status = echo.echo_AddOne(io);
 		check_status_ok(status);
 		assert(io.output.out_data == i + 1);
 	}
@@ -51,7 +49,7 @@ function test_AddOne(conn)
 /*
   test the echo_EchoData interface
 */
-function test_EchoData(conn)
+function test_EchoData(echo)
 {
 	var io = irpcObj();
 
@@ -60,7 +58,7 @@ function test_EchoData(conn)
 	for (i=0; i<30; i=i+5) {
 		io.input.len = i;
 		io.input.in_data = ramp_array(i);
-		status = echo.echo_EchoData(conn, io);
+		status = echo.echo_EchoData(io);
 		check_status_ok(status);
 		check_array_equal(io.input.in_data, io.output.out_data);
 	}
@@ -70,7 +68,7 @@ function test_EchoData(conn)
 /*
   test the echo_SinkData interface
 */
-function test_SinkData(conn)
+function test_SinkData(echo)
 {
 	var io = irpcObj();
 
@@ -79,7 +77,7 @@ function test_SinkData(conn)
 	for (i=0; i<30; i=i+5) {
 		io.input.len = i;
 		io.input.data = ramp_array(i);
-		status = echo.echo_SinkData(conn, io);
+		status = echo.echo_SinkData(io);
 		check_status_ok(status);
 	}
 }
@@ -88,7 +86,7 @@ function test_SinkData(conn)
 /*
   test the echo_SourceData interface
 */
-function test_SourceData(conn)
+function test_SourceData(echo)
 {
 	var io = irpcObj();
 
@@ -96,7 +94,7 @@ function test_SourceData(conn)
 
 	for (i=0; i<30; i=i+5) {
 		io.input.len = i;
-		status = echo.echo_SourceData(conn, io);
+		status = echo.echo_SourceData(io);
 		check_status_ok(status);
 		correct = ramp_array(i);
 		check_array_equal(correct, io.output.data);
@@ -107,14 +105,14 @@ function test_SourceData(conn)
 /*
   test the echo_TestCall interface
 */
-function test_TestCall(conn)
+function test_TestCall(echo)
 {
 	var io = irpcObj();
 
 	print("Testing echo_TestCall\n");
 
 	io.input.s1 = "my test string";
-	status = echo.echo_TestCall(conn, io);
+	status = echo.echo_TestCall(io);
 	check_status_ok(status);
 	assert("this is a test string" == io.output.s2);
 }
@@ -122,7 +120,7 @@ function test_TestCall(conn)
 /*
   test the echo_TestCall2 interface
 */
-function test_TestCall2(conn)
+function test_TestCall2(echo)
 {
 	var io = irpcObj();
 
@@ -130,7 +128,7 @@ function test_TestCall2(conn)
 
 	for (i=1;i<=7;i++) {
 		io.input.level = i;
-		status = echo.echo_TestCall2(conn, io);
+		status = echo.echo_TestCall2(io);
 		check_status_ok(status);
 	}
 }
@@ -138,21 +136,21 @@ function test_TestCall2(conn)
 /*
   test the echo_TestSleep interface
 */
-function test_TestSleep(conn)
+function test_TestSleep(echo)
 {
 	var io = irpcObj();
 
 	print("Testing echo_TestSleep\n");
 
 	io.input.seconds = 1;
-	status = echo.echo_TestSleep(conn, io);
+	status = echo.echo_TestSleep(io);
 	check_status_ok(status);
 }
 
 /*
   test the echo_TestEnum interface
 */
-function test_TestEnum(conn)
+function test_TestEnum(echo)
 {
 	var io = irpcObj();
 
@@ -164,7 +162,7 @@ function test_TestEnum(conn)
 	io.input.foo2.e2 = echo.ECHO_ENUM1_32;
 	io.input.foo3 = new Object();
 	io.input.foo3.e1 = echo.ECHO_ENUM2;
-	status = echo.echo_TestEnum(conn, io);
+	status = echo.echo_TestEnum(io);
 	check_status_ok(status);
 	assert(io.output.foo1    == echo.ECHO_ENUM1);
 	assert(io.output.foo2.e1 == echo.ECHO_ENUM2);
@@ -175,7 +173,7 @@ function test_TestEnum(conn)
 /*
   test the echo_TestSurrounding interface
 */
-function test_TestSurrounding(conn)
+function test_TestSurrounding(echo)
 {
 	var io = irpcObj();
 
@@ -184,7 +182,7 @@ function test_TestSurrounding(conn)
 	io.input.data = new Object();
 	io.input.data.x = 10;
 	io.input.data.surrounding = ramp_array(10);
-	status = echo.echo_TestSurrounding(conn, io);
+	status = echo.echo_TestSurrounding(io);
 	check_status_ok(status);
 	assert(io.output.data.surrounding.length == 20);
 	check_array_zero(io.output.data.surrounding);
@@ -193,48 +191,43 @@ function test_TestSurrounding(conn)
 /*
   test the echo_TestDoublePointer interface
 */
-function test_TestDoublePointer(conn)
+function test_TestDoublePointer(echo)
 {
 	var io = irpcObj();
 
 	print("Testing echo_TestDoublePointer\n");
 	
 	io.input.data = 7;
-	status = echo.echo_TestDoublePointer(conn, io);
+	status = echo.echo_TestDoublePointer(io);
 	check_status_ok(status);
 	assert(io.input.data == io.input.data);
 }
 
 
-if (ARGV.length == 0) {
-   print("Usage: echo.js <RPCBINDING>\n");
-   exit(0);
-}
-
 if (options.ARGV.length != 1) {
-   println("Usage: samr.js <BINDING>");
+   println("Usage: echo.js <BINDING>");
    return -1;
 }
 var binding = options.ARGV[0];
-var conn = new Object();
+var echo = rpcecho_init();
 
 print("Connecting to " + binding + "\n");
-status = rpc_connect(conn, binding, "rpcecho");
+status = echo.connect(binding);
 if (status.is_ok != true) {
-   print("Failed to connect to " + binding + " - " + status.errstr + "\n");
+   printf("Failed to connect to %s - %s\n", binding, status.errstr);
    return;
 }
 
-test_AddOne(conn);
-test_EchoData(conn);
-test_SinkData(conn);
-test_SourceData(conn);
-test_TestCall(conn);
-test_TestCall2(conn);
-test_TestSleep(conn);
-test_TestEnum(conn);
-test_TestSurrounding(conn);
-test_TestDoublePointer(conn);
+test_AddOne(echo);
+test_EchoData(echo);
+test_SinkData(echo);
+test_SourceData(echo);
+test_TestCall(echo);
+test_TestCall2(echo);
+test_TestSleep(echo);
+test_TestEnum(echo);
+test_TestSurrounding(echo);
+test_TestDoublePointer(echo);
 
 print("All OK\n");
 return 0;

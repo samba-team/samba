@@ -704,7 +704,7 @@ sub EjsInterface($$)
 			pidl "mprSetVar(obj, \"$v\", mprCreateNumberVar($value));";
 		}
 	}
-	pidl "return 0;";
+	pidl "return ejs_rpc_init(obj, \"$name\");";
 	deindent;
 	pidl "}\n";
 

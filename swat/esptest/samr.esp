@@ -7,9 +7,9 @@
 <h1>Samba4 samr rpc test</h1>
 
 <%
-var conn    = new Object();
+var conn  = samr_init();
 var binding = "ncalrpc:";
-status = rpc_connect(conn, binding, "samr");
+status = conn.connect(binding);
 check_status_ok(status);
 
 handle = samrConnect(conn);
