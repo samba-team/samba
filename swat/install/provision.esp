@@ -37,14 +37,15 @@ f.element[7].label = "Host IP";
 f.element[7].name  = "HOSTIP";
 f.element[8].label = "Default Site";
 f.element[8].name  = "DEFAULTSITE";
-f.submit[0] = "Provision";
-f.submit[1] = "Cancel";
+f.submit[0] = "Initial provision";
+f.submit[1] = "Provision";
+f.submit[2] = "Cancel";
 
 if (form['submit'] == "Cancel") {
 	redirect("/");
 }
 
-if (form['submit'] == "Provision") {
+if ((form['submit'] == "Provision") || (form['submit'] == "Initial provision")) {
 	for (r in form) {
 		subobj[r] = form[r];
 	}
@@ -57,7 +58,9 @@ for (i=0;i<f.element.length;i++) {
 lp.set("realm", subobj.REALM);
 
 if (form['submit'] == "Provision") {
-	provision(subobj, writefln);
+	provision(subobj, writefln, true);
+} else if (form['submit'] == "Initial provision") {
+	provision(subobj, writefln, false);
 } else {
 	f.display();
 }
