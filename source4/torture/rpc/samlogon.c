@@ -722,7 +722,7 @@ static BOOL test_lmv2_ntlm_broken(struct samlogon_state *samlogon_state,
 	case NO_DOMAIN:
 		/* TODO - test with various domain cases, and without domain */
 		if (!SMBNTLMv2encrypt(samlogon_state->mem_ctx, 
-				      samlogon_state->account_name, NULL,
+				      samlogon_state->account_name, "",
 				      samlogon_state->password, &samlogon_state->chall,
 				      &names_blob,
 				      &lmv2_response, &ntlmv2_response, 
@@ -894,17 +894,17 @@ static BOOL test_ntlmv2_lmv2_broken_no_dom(struct samlogon_state *samlogon_state
 	return test_lmv2_ntlmv2_broken(samlogon_state, BREAK_LM, NO_DOMAIN, error_string);
 }
 
-#if 0
 static BOOL test_ntlmv2_ntlmv2_broken(struct samlogon_state *samlogon_state, char **error_string) 
 {
 	return test_lmv2_ntlmv2_broken(samlogon_state, BREAK_NT, UPPER_DOMAIN, error_string);
 }
-#endif
 
+#if 0
 static BOOL test_ntlmv2_ntlmv2_broken_no_dom(struct samlogon_state *samlogon_state, char **error_string) 
 {
 	return test_lmv2_ntlmv2_broken(samlogon_state, BREAK_NT, NO_DOMAIN, error_string);
 }
+#endif
 
 static BOOL test_ntlmv2_both_broken(struct samlogon_state *samlogon_state, char **error_string) 
 {
@@ -1146,9 +1146,7 @@ static const struct ntlm_tests {
 	{test_lmv2_no_dom, "LMv2 (no domain)", False},
 	{test_ntlmv2_lmv2_broken, "NTLMv2 and LMv2, LMv2 broken", False},
 	{test_ntlmv2_lmv2_broken_no_dom, "NTLMv2 and LMv2, LMv2 broken (no domain)", False},
-#if 0
 	{test_ntlmv2_ntlmv2_broken, "NTLMv2 and LMv2, NTLMv2 broken", False},
-#endif
 #if 0
 	{test_ntlmv2_ntlmv2_broken_no_dom, "NTLMv2 and LMv2, NTLMv2 broken (no domain)", False},
 #endif
