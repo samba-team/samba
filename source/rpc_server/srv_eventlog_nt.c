@@ -209,8 +209,7 @@ static BOOL cleanup_eventlog_parameters(TDB_CONTEXT *levtlog_tdb)
     
 	/* for each eventlog that we have, find info related to it and copy to the new DB */
 	evtlog_list = lp_eventlog_list();
-	while (*evtlog_list) 
-	{
+	while (evtlog_list && *evtlog_list) {
 		DEBUG(10,("cleanup_eventlog_parameters: Cleaning up =>[%s]\n",*evtlog_list));	
 	
 		safe_strcpy(evtlogname,(*evtlog_list),sizeof(evtlogname)-1);
