@@ -20,7 +20,7 @@ AC_ARG_WITH(fhs,
     privatedir="\${CONFIGDIR}/private"
     libdir="\${prefix}/lib/samba"
     swatdir="\${DATADIR}/samba/swat",
-    configdir="\${libdir}"
+    configdir="\${LIBDIR}"
     logfilebase="\${localstatedir}"
     lockdir="\${localstatedir}/locks"
     piddir="\${localstatedir}/locks"
