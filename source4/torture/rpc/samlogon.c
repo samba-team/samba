@@ -1146,7 +1146,9 @@ static const struct ntlm_tests {
 	{test_lmv2_no_dom, "LMv2 (no domain)", False},
 	{test_ntlmv2_lmv2_broken, "NTLMv2 and LMv2, LMv2 broken", False},
 	{test_ntlmv2_lmv2_broken_no_dom, "NTLMv2 and LMv2, LMv2 broken (no domain)", False},
+#if 0
 	{test_ntlmv2_ntlmv2_broken, "NTLMv2 and LMv2, NTLMv2 broken", False},
+#endif
 #if 0
 	{test_ntlmv2_ntlmv2_broken_no_dom, "NTLMv2 and LMv2, NTLMv2 broken (no domain)", False},
 #endif
