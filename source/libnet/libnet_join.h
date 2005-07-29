@@ -21,60 +21,30 @@
 
 #include "librpc/gen_ndr/ndr_netlogon.h"
 
-/* struct and enum for doing a remote domain join */
-enum libnet_JoinDomain_level {
-	LIBNET_JOIN_DOMAIN_GENERIC,
-	LIBNET_JOIN_DOMAIN_SAMR,
+struct libnet_JoinDomain {
+	struct {
+		const char *domain_name;
+		const char *account_name;
+		uint32_t  acct_type;
+	} in;
+
+	struct {
+		const char *error_string;
+		const char *join_password;
+		struct dom_sid *domain_sid;
+		const char *domain_name;
+		const char *realm;
+	} out;
 };
 
-union libnet_JoinDomain {
+struct libnet_Join {
 	struct {
-		enum libnet_JoinDomain_level level;
-
-		struct _libnet_JoinDomain_in {
-			const char *domain_name;
-			const char *account_name;
-			uint32_t  acct_type;
-		} in;
-
-		struct _libnet_JoinDomain_out {
-			const char *error_string;
-			const char *join_password;
-		} out;
-	} generic;
-
+		const char *domain_name;
+		enum netr_SchannelType secure_channel_type;
+	} in;
+	
 	struct {
-		enum libnet_JoinDomain_level level;
-		struct _libnet_JoinDomain_in in;
-		struct _libnet_JoinDomain_out out;
-	} samr;
-
-};
-
-/* struct and enum for doing a remote domain join */
-enum libnet_Join_level {
-	LIBNET_JOIN_GENERIC,
-	LIBNET_JOIN_PRIMARY,
-};
-
-union libnet_Join {
-	struct {
-		enum libnet_Join_level level;
-
-		struct _libnet_Join_in {
-			const char *domain_name;
-			enum netr_SchannelType secure_channel_type;
-		} in;
-
-		struct _libnet_Join_out {
-			const char *error_string;
-		} out;
-	} generic;
-
-	struct {
-		enum libnet_Join_level level;
-		struct _libnet_Join_in in;
-		struct _libnet_Join_out out;
-	} ldb;
+		const char *error_string;
+	} out;
 };
 
