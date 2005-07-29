@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_samr.h"
-#include "lib/crypto/crypto.h"
+#include "librpc/gen_ndr/ndr_lsa.h"
 #include "lib/ldb/include/ldb.h"
 #include "include/secrets.h"
 
@@ -43,15 +43,23 @@
  *
  * 7. do a samrSetUserInfo to set the account flags
  */
-static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx, 
-				       TALLOC_CTX *mem_ctx, union libnet_JoinDomain *r)
+NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_JoinDomain *r)
 {
+	TALLOC_CTX *tmp_ctx;
+
 	NTSTATUS status;
 	struct libnet_RpcConnect c;
+	struct lsa_ObjectAttribute attr;
+	struct lsa_QosInfo qos;
+	struct lsa_OpenPolicy2 lsa_open_policy;
+	struct policy_handle lsa_p_handle;
+	struct lsa_QueryInfoPolicy2 lsa_query_info2;
+	struct lsa_QueryInfoPolicy lsa_query_info;
+
+	struct dcerpc_binding *samr_binding;
+	struct dcerpc_pipe *samr_pipe;
 	struct samr_Connect sc;
 	struct policy_handle p_handle;
-	struct samr_LookupDomain ld;
-	struct lsa_String d_name;
 	struct samr_OpenDomain od;
 	struct policy_handle d_handle;
 	struct samr_LookupNames ln;
@@ -69,21 +77,148 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx,
 	uint32_t rid, access_granted;
 	int policy_min_pw_len = 0;
 
-	/* prepare connect to the SAMR pipe of PDC */
-	c.level                     = LIBNET_RPC_CONNECT_PDC;
-	c.in.domain_name            = r->samr.in.domain_name;
-	c.in.dcerpc_iface_name      = DCERPC_SAMR_NAME;
-	c.in.dcerpc_iface_uuid      = DCERPC_SAMR_UUID;
-	c.in.dcerpc_iface_version   = DCERPC_SAMR_VERSION;
+	struct dom_sid *domain_sid;
+	const char *domain_name;
+	const char *realm = NULL; /* Also flag for remote being AD */
 
-	/* 1. connect to the SAMR pipe of the PDC */
-	status = libnet_RpcConnect(ctx, mem_ctx, &c);
+	tmp_ctx = talloc_named(mem_ctx, 0, "libnet_Join temp context");
+	if (!tmp_ctx) {
+		r->out.error_string = NULL;
+		return NT_STATUS_NO_MEMORY;
+	}
+
+
+	/* prepare connect to the LSA pipe of PDC */
+	c.level                     = LIBNET_RPC_CONNECT_PDC;
+	c.in.domain_name            = r->in.domain_name;
+	c.in.dcerpc_iface_name      = DCERPC_LSARPC_NAME;
+	c.in.dcerpc_iface_uuid      = DCERPC_LSARPC_UUID;
+	c.in.dcerpc_iface_version   = DCERPC_LSARPC_VERSION;
+
+	/* connect to the LSA pipe of the PDC */
+	status = libnet_RpcConnect(ctx, tmp_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
-						"Connection to SAMR pipe of PDC of domain '%s' failed: %s\n",
-						r->samr.in.domain_name, nt_errstr(status));
+		r->out.error_string = talloc_asprintf(mem_ctx,
+						"Connection to LSA pipe of PDC of domain '%s' failed: %s",
+						r->in.domain_name, nt_errstr(status));
+		talloc_free(tmp_ctx);
 		return status;
 	}
+
+	
+	/* Get an LSA policy handle */
+
+	ZERO_STRUCT(lsa_p_handle);
+	qos.len = 0;
+	qos.impersonation_level = 2;
+	qos.context_mode = 1;
+	qos.effective_only = 0;
+
+	attr.len = 0;
+	attr.root_dir = NULL;
+	attr.object_name = NULL;
+	attr.attributes = 0;
+	attr.sec_desc = NULL;
+	attr.sec_qos = &qos;
+
+	lsa_open_policy.in.attr = &attr;
+	lsa_open_policy.in.system_name = talloc_asprintf(tmp_ctx, "\\%s", lp_netbios_name());
+	lsa_open_policy.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	lsa_open_policy.out.handle = &lsa_p_handle;
+
+	status = dcerpc_lsa_OpenPolicy2(c.out.dcerpc_pipe, tmp_ctx, &lsa_open_policy);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->out.error_string = talloc_asprintf(mem_ctx,
+						"lsa_OpenPolicy2 failed: %s",
+						nt_errstr(status));
+		talloc_free(tmp_ctx);
+		return status;
+	}
+
+	lsa_query_info2.in.handle = &lsa_p_handle;
+	lsa_query_info2.in.level = LSA_POLICY_INFO_DNS;
+
+	status = dcerpc_lsa_QueryInfoPolicy2(c.out.dcerpc_pipe, tmp_ctx, 
+					     &lsa_query_info2);
+	
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+		if (!NT_STATUS_IS_OK(status)) {
+			r->out.error_string = talloc_asprintf(mem_ctx,
+							      "lsa_QueryInfoPolicy2 failed: %s",
+							      nt_errstr(status));
+			talloc_free(tmp_ctx);
+			return status;
+		}
+		realm = lsa_query_info2.out.info->dns.dns_domain.string;
+	}
+
+	lsa_query_info.in.handle = &lsa_p_handle;
+	lsa_query_info.in.level = LSA_POLICY_INFO_DOMAIN;
+
+	status = dcerpc_lsa_QueryInfoPolicy(c.out.dcerpc_pipe, tmp_ctx, 
+					     &lsa_query_info);
+	
+	if (!NT_STATUS_IS_OK(status)) {
+		r->out.error_string = talloc_asprintf(mem_ctx,
+						      "lsa_QueryInfoPolicy2 failed: %s",
+						      nt_errstr(status));
+		talloc_free(tmp_ctx);
+		return status;
+	}
+	domain_sid = lsa_query_info.out.info->domain.sid;
+	domain_name = lsa_query_info.out.info->domain.name.string;
+	
+	r->out.domain_sid = talloc_steal(mem_ctx, domain_sid);
+	r->out.domain_name = talloc_steal(mem_ctx, domain_name);
+	r->out.realm = talloc_steal(mem_ctx, realm);
+
+	/*
+	  step 1 - establish a SAMR connection, on the same CIFS transport
+	*/
+
+	/* Find the original binding string */
+	status = dcerpc_parse_binding(tmp_ctx, c.out.dcerpc_pipe->conn->binding_string, &samr_binding);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->out.error_string
+			= talloc_asprintf(mem_ctx,
+					  "Failed to parse dcerpc binding '%s'", 
+					  c.out.dcerpc_pipe->conn->binding_string);
+		talloc_free(tmp_ctx);
+		return status;
+	}
+
+	/* Make binding string for samr, not the other pipe */
+	status = dcerpc_epm_map_binding(tmp_ctx, samr_binding, 
+					DCERPC_SAMR_UUID, DCERPC_SAMR_VERSION,
+					c.out.dcerpc_pipe->conn->event_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->out.error_string
+			= talloc_asprintf(mem_ctx,
+					  "Failed to map DCERPC/TCP NCACN_NP pipe for '%s' - %s", 
+					  DCERPC_NETLOGON_UUID, nt_errstr(status));
+		talloc_free(tmp_ctx);
+		return status;
+	}
+
+	/* Setup a SAMR connection */
+	status = dcerpc_secondary_connection(c.out.dcerpc_pipe, &samr_pipe, samr_binding);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->out.error_string = talloc_asprintf(mem_ctx,
+						      "SAMR secondary connection failed: %s",
+						      nt_errstr(status));
+		talloc_free(tmp_ctx);
+		return status;
+	}
+
+	status = dcerpc_pipe_auth(samr_pipe, samr_binding, DCERPC_SAMR_UUID, 
+				  DCERPC_SAMR_VERSION, ctx->cred);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->out.error_string = talloc_asprintf(mem_ctx,
+						      "SAMR bind failed: %s",
+						      nt_errstr(status));
+		talloc_free(tmp_ctx);
+		return status;
+        }
 
 	/* prepare samr_Connect */
 	ZERO_STRUCT(p_handle);
@@ -92,109 +227,93 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx,
 	sc.out.connect_handle = &p_handle;
 
 	/* 2. do a samr_Connect to get a policy handle */
-	status = dcerpc_samr_Connect(c.out.dcerpc_pipe, mem_ctx, &sc);
+	status = dcerpc_samr_Connect(samr_pipe, tmp_ctx, &sc);
 	if (!NT_STATUS_IS_OK(status)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
+		r->out.error_string = talloc_asprintf(mem_ctx,
 						"samr_Connect failed: %s\n",
 						nt_errstr(status));
-		goto disconnect;
+		talloc_free(tmp_ctx);
+		return status;
 	}
 
 	/* check result of samr_Connect */
 	if (!NT_STATUS_IS_OK(sc.out.result)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
+		r->out.error_string = talloc_asprintf(mem_ctx,
 						"samr_Connect failed: %s\n", 
 						nt_errstr(sc.out.result));
 		status = sc.out.result;
-		goto disconnect;
-	}
-
-	/* prepare samr_LookupDomain */
-	d_name.string = r->samr.in.domain_name;
-	ld.in.connect_handle = &p_handle;
-	ld.in.domain_name = &d_name;
-
-	/* 3. do a samr_LookupDomain to get the domain sid */
-	status = dcerpc_samr_LookupDomain(c.out.dcerpc_pipe, mem_ctx, &ld);
-	if (!NT_STATUS_IS_OK(status)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
-						"samr_LookupDomain for [%s] failed: %s\n",
-						r->samr.in.domain_name, nt_errstr(status));
-		goto disconnect;
-	}
-
-	/* check result of samr_LookupDomain */
-	if (!NT_STATUS_IS_OK(ld.out.result)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
-						"samr_LookupDomain for [%s] failed: %s\n",
-						r->samr.in.domain_name, nt_errstr(ld.out.result));
-		status = ld.out.result;
-		goto disconnect;
+		talloc_free(tmp_ctx);
+		return status;
 	}
 
 	/* prepare samr_OpenDomain */
 	ZERO_STRUCT(d_handle);
 	od.in.connect_handle = &p_handle;
 	od.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	od.in.sid = ld.out.sid;
+	od.in.sid = domain_sid;
 	od.out.domain_handle = &d_handle;
 
 	/* 4. do a samr_OpenDomain to get a domain handle */
-	status = dcerpc_samr_OpenDomain(c.out.dcerpc_pipe, mem_ctx, &od);
+	status = dcerpc_samr_OpenDomain(samr_pipe, tmp_ctx, &od);
 	if (!NT_STATUS_IS_OK(status)) {
-		r->samr.out.error_string = talloc_asprintf(mem_ctx,
+		r->out.error_string = talloc_asprintf(mem_ctx,
 						"samr_OpenDomain for [%s] failed: %s\n",
-						r->samr.in.domain_name, nt_errstr(status));
-		goto disconnect;
+						r->in.domain_name, nt_errstr(status));
+		talloc_free(tmp_ctx);
+		return status;
 	}
 
 	/* prepare samr_CreateUser2 */
 	ZERO_STRUCT(u_handle);
 	cu.in.domain_handle  = &d_handle;
 	cu.in.access_mask     = SEC_FLAG_MAXIMUM_ALLOWED;
-	samr_account_name.string = r->samr.in.account_name;
+	samr_account_name.string = r->in.account_name;
 	cu.in.account_name    = &samr_account_name;
-	cu.in.acct_flags      = r->samr.in.acct_type;
+	cu.in.acct_flags      = r->in.acct_type;
 	cu.out.user_handle    = &u_handle;
 	cu.out.rid            = &rid;
 	cu.out.access_granted = &access_granted;
 
 	/* 4. do a samr_CreateUser2 to get an account handle, or an error */
-	status = dcerpc_samr_CreateUser2(c.out.dcerpc_pipe, mem_ctx, &cu);
+	status = dcerpc_samr_CreateUser2(samr_pipe, tmp_ctx, &cu);
 	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-			r->samr.out.error_string = talloc_asprintf(mem_ctx,
+			r->out.error_string = talloc_asprintf(mem_ctx,
 								   "samr_CreateUser2 for [%s] failed: %s\n",
-								   r->samr.in.domain_name, nt_errstr(status));
-			goto disconnect;
+								   r->in.domain_name, nt_errstr(status));
+			talloc_free(tmp_ctx);
+			return status;
 
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 		/* prepare samr_LookupNames */
 		ln.in.domain_handle = &d_handle;
 		ln.in.num_names = 1;
-		ln.in.names = talloc_array(mem_ctx, struct lsa_String, 1);
+		ln.in.names = talloc_array(tmp_ctx, struct lsa_String, 1);
 		if (!ln.in.names) {
-			r->samr.out.error_string = "Out of Memory";
+			r->out.error_string = NULL;
+			talloc_free(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
-		ln.in.names[0].string = r->samr.in.account_name;
+		ln.in.names[0].string = r->in.account_name;
 		
 		/* 5. do a samr_LookupNames to get the users rid */
-		status = dcerpc_samr_LookupNames(c.out.dcerpc_pipe, mem_ctx, &ln);
+		status = dcerpc_samr_LookupNames(samr_pipe, tmp_ctx, &ln);
 		if (!NT_STATUS_IS_OK(status)) {
-			r->samr.out.error_string = talloc_asprintf(mem_ctx,
-								   "samr_LookupNames for [%s] failed: %s\n",
-						r->samr.in.account_name, nt_errstr(status));
-			goto disconnect;
+			r->out.error_string = talloc_asprintf(mem_ctx,
+							      "samr_LookupNames for [%s] failed: %s\n",
+						r->in.account_name, nt_errstr(status));
+			talloc_free(tmp_ctx);
+			return status;
 		}
 		
 		
 		/* check if we got one RID for the user */
 		if (ln.out.rids.count != 1) {
-			r->samr.out.error_string = talloc_asprintf(mem_ctx,
-								   "samr_LookupNames for [%s] returns %d RIDs\n",
-								   r->samr.in.account_name, ln.out.rids.count);
+			r->out.error_string = talloc_asprintf(mem_ctx,
+							      "samr_LookupNames for [%s] returns %d RIDs\n",
+							      r->in.account_name, ln.out.rids.count);
 			status = NT_STATUS_INVALID_PARAMETER;
-			goto disconnect;	
+			talloc_free(tmp_ctx);
+			return status;	
 		}
 		
 		/* prepare samr_OpenUser */
@@ -205,64 +324,68 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx,
 		ou.out.user_handle = &u_handle;
 		
 		/* 6. do a samr_OpenUser to get a user handle */
-		status = dcerpc_samr_OpenUser(c.out.dcerpc_pipe, mem_ctx, &ou);
+		status = dcerpc_samr_OpenUser(samr_pipe, tmp_ctx, &ou);
 		if (!NT_STATUS_IS_OK(status)) {
-			r->samr.out.error_string = talloc_asprintf(mem_ctx,
-								   "samr_OpenUser for [%s] failed: %s\n",
-								   r->samr.in.account_name, nt_errstr(status));
-			goto disconnect;
+			r->out.error_string = talloc_asprintf(mem_ctx,
+							      "samr_OpenUser for [%s] failed: %s\n",
+							      r->in.account_name, nt_errstr(status));
+			talloc_free(tmp_ctx);
+			return status;
 		}
 	}
 
 	pwp.in.user_handle = &u_handle;
 
-	status = dcerpc_samr_GetUserPwInfo(c.out.dcerpc_pipe, mem_ctx, &pwp);
+	status = dcerpc_samr_GetUserPwInfo(samr_pipe, tmp_ctx, &pwp);
 	if (NT_STATUS_IS_OK(status)) {
 		policy_min_pw_len = pwp.out.info.min_password_length;
 	}
 
-	r->samr.out.join_password = generate_random_str(mem_ctx, MAX(8, policy_min_pw_len));
+	r->out.join_password = generate_random_str(mem_ctx, MAX(8, policy_min_pw_len));
 
 	r2.samr_handle.level		= LIBNET_SET_PASSWORD_SAMR_HANDLE;
-	r2.samr_handle.in.account_name	= r->samr.in.account_name;
-	r2.samr_handle.in.newpassword	= r->samr.out.join_password;
+	r2.samr_handle.in.account_name	= r->in.account_name;
+	r2.samr_handle.in.newpassword	= r->out.join_password;
 	r2.samr_handle.in.user_handle   = &u_handle;
-	r2.samr_handle.in.dcerpc_pipe   = c.out.dcerpc_pipe;
+	r2.samr_handle.in.dcerpc_pipe   = samr_pipe;
 
-	status = libnet_SetPassword(ctx, mem_ctx, &r2);
+	status = libnet_SetPassword(ctx, tmp_ctx, &r2);
 
-	r->samr.out.error_string = r2.samr_handle.out.error_string;
+	r->out.error_string = r2.samr_handle.out.error_string;
 
 	if (!NT_STATUS_IS_OK(status)) {
-		goto disconnect;
+			talloc_free(tmp_ctx);
+		return status;
 	}
 
 	/* prepare samr_QueryUserInfo (get flags) */
 	qui.in.user_handle = &u_handle;
 	qui.in.level = 16;
 	
-	status = dcerpc_samr_QueryUserInfo(c.out.dcerpc_pipe, mem_ctx, &qui);
+	status = dcerpc_samr_QueryUserInfo(samr_pipe, tmp_ctx, &qui);
 	if (!NT_STATUS_IS_OK(status)) {
-		r->samr.out.error_string
+		r->out.error_string
 			= talloc_asprintf(mem_ctx,
 					  "samr_QueryUserInfo for [%s] failed: %s\n",
-					  r->samr.in.account_name, nt_errstr(status));
-		goto disconnect;
+					  r->in.account_name, nt_errstr(status));
+			talloc_free(tmp_ctx);
+		return status;
 	}
 	if (!qui.out.info) {
 		status = NT_STATUS_INVALID_PARAMETER;
-		r->samr.out.error_string
+		r->out.error_string
 			= talloc_asprintf(mem_ctx,
 					  "samr_QueryUserInfo failed to return qui.out.info for [%s]: %s\n",
-					  r->samr.in.account_name, nt_errstr(status));
-		goto disconnect;
+					  r->in.account_name, nt_errstr(status));
+			talloc_free(tmp_ctx);
+		return status;
 	}
 
 	/* Possibly change account type */
 	if ((qui.out.info->info16.acct_flags & (ACB_WSTRUST | ACB_SVRTRUST | ACB_DOMTRUST)) 
-	    != r->samr.in.acct_type) {
+	    != r->in.acct_type) {
 		acct_flags = (qui.out.info->info16.acct_flags & ~(ACB_WSTRUST | ACB_SVRTRUST | ACB_DOMTRUST))
-			      | r->samr.in.acct_type;
+			      | r->in.acct_type;
 	} else {
 		acct_flags = qui.out.info->info16.acct_flags;
 	}
@@ -278,66 +401,43 @@ static NTSTATUS libnet_JoinDomain_samr(struct libnet_context *ctx,
 		sui.in.info = &u_info;
 		sui.in.level = 16;
 		
-		dcerpc_samr_SetUserInfo(c.out.dcerpc_pipe, mem_ctx, &sui);
+		dcerpc_samr_SetUserInfo(samr_pipe, tmp_ctx, &sui);
 		if (!NT_STATUS_IS_OK(status)) {
-			r->samr.out.error_string
+			r->out.error_string
 				= talloc_asprintf(mem_ctx,
 						  "samr_SetUserInfo for [%s] failed to remove ACB_DISABLED flag: %s\n",
-						  r->samr.in.account_name, nt_errstr(status));
-			goto disconnect;
+						  r->in.account_name, nt_errstr(status));
+			talloc_free(tmp_ctx);
+			return status;
 		}
 	}
 
-disconnect:
-	/* close connection */
-	talloc_free(c.out.dcerpc_pipe);
-
-	return status;
-}
-
-static NTSTATUS libnet_JoinDomain_generic(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_JoinDomain *r)
-{
-	NTSTATUS status;
-	union libnet_JoinDomain r2;
-
-	r2.samr.level		= LIBNET_JOIN_DOMAIN_SAMR;
-	r2.samr.in.account_name	= r->generic.in.account_name;
-	r2.samr.in.domain_name	= r->generic.in.domain_name;
-	r2.samr.in.acct_type	= r->generic.in.acct_type;
-
-	status = libnet_JoinDomain(ctx, mem_ctx, &r2);
-
-	r->generic.out.error_string = r2.samr.out.error_string;
-	r->generic.out.join_password = r2.samr.out.join_password;
-
-	return status;
-}
-
-NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_JoinDomain *r)
-{
-	switch (r->generic.level) {
-		case LIBNET_JOIN_DOMAIN_GENERIC:
-			return libnet_JoinDomain_generic(ctx, mem_ctx, r);
-		case LIBNET_JOIN_DOMAIN_SAMR:
-			return libnet_JoinDomain_samr(ctx, mem_ctx, r);
+	/* Now, if it was AD, then we want to start looking changing a
+	 * few more things */
+	if (!realm) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_OK;
 	}
+		
+	
+	/* close connection */
+	talloc_free(tmp_ctx);
 
-	return NT_STATUS_INVALID_LEVEL;
+	return NT_STATUS_OK;
 }
-
 
 static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx, 
 					   TALLOC_CTX *mem_ctx, 
-					   union libnet_Join *r)
+					   struct libnet_Join *r)
 {
 	NTSTATUS status;
 	int ret;
 
 	struct ldb_context *ldb;
-	union libnet_JoinDomain r2;
+	struct libnet_JoinDomain r2;
 	const char *base_dn = "cn=Primary Domains";
 	const struct ldb_val *prior_secret;
-	const char *prior_modified_time;
+	const struct ldb_val *prior_modified_time;
 	struct ldb_message **msgs, *msg;
 	char *sct;
 	const char *attrs[] = {
@@ -348,21 +448,19 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 		NULL
 	};
 
-	r2.generic.level = LIBNET_JOIN_DOMAIN_GENERIC;
-
-	if (r->generic.in.secure_channel_type == SEC_CHAN_BDC) {
-		r2.generic.in.acct_type = ACB_SVRTRUST;
-	} else if (r->generic.in.secure_channel_type == SEC_CHAN_WKSTA) {
-		r2.generic.in.acct_type = ACB_WSTRUST;
+	if (r->in.secure_channel_type == SEC_CHAN_BDC) {
+		r2.in.acct_type = ACB_SVRTRUST;
+	} else if (r->in.secure_channel_type == SEC_CHAN_WKSTA) {
+		r2.in.acct_type = ACB_WSTRUST;
 	}
-	r2.generic.in.domain_name  = r->generic.in.domain_name;
+	r2.in.domain_name  = r->in.domain_name;
 
-	r2.generic.in.account_name = talloc_asprintf(mem_ctx, "%s$", lp_netbios_name());
+	r2.in.account_name = talloc_asprintf(mem_ctx, "%s$", lp_netbios_name());
 
 	/* Local secrets are stored in secrets.ldb */
 	ldb = secrets_db_connect(mem_ctx);
 	if (!ldb) {
-		r->generic.out.error_string
+		r->out.error_string
 			= talloc_asprintf(mem_ctx, 
 					  "Could not open secrets database\n");
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
@@ -371,107 +469,96 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	/* join domain */
 	status = libnet_JoinDomain(ctx, mem_ctx, &r2);
 
-	r->generic.out.error_string = r2.generic.out.error_string;
+	r->out.error_string = r2.out.error_string;
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	sct = talloc_asprintf(mem_ctx, "%d", r->generic.in.secure_channel_type);
+	sct = talloc_asprintf(mem_ctx, "%d", r->in.secure_channel_type);
 	msg = ldb_msg_new(mem_ctx);
 
 	/* search for the secret record */
 	ret = gendb_search(ldb,
 			   mem_ctx, base_dn, &msgs, attrs,
-			   SECRETS_PRIMARY_DOMAIN_FILTER,
-			   r->generic.in.domain_name);
+			   "(|" SECRETS_PRIMARY_DOMAIN_FILTER "(realm=%s))",
+			   r2.out.domain_name, r2.out.realm);
+
+	msg->dn = talloc_asprintf(mem_ctx, "flatname=%s,%s", 
+				  r2.out.domain_name,
+				  base_dn);
+	
+	samdb_msg_add_string(ldb, mem_ctx, msg, "flatname", r2.out.domain_name);
+	if (r2.out.realm) {
+		samdb_msg_add_string(ldb, mem_ctx, msg, "realm", r2.out.realm);
+	}
+	samdb_msg_add_string(ldb, mem_ctx, msg, "objectClass", "primaryDomain");
+	samdb_msg_add_string(ldb, mem_ctx, msg, "secret", r2.out.join_password);
+	
+	samdb_msg_add_string(ldb, mem_ctx, msg, "samAccountName", r2.in.account_name);
+	
+	samdb_msg_add_string(ldb, mem_ctx, msg, "secureChannelType", sct);
+	
+
 	if (ret == 0) {
-		msg->dn = talloc_asprintf(mem_ctx, "flatname=%s,%s", 
-					  r->generic.in.domain_name,
-					  base_dn);
-		
-		samdb_msg_add_string(ldb, mem_ctx, msg, "flatname", r->generic.in.domain_name);
-		samdb_msg_add_string(ldb, mem_ctx, msg, "objectClass", "primaryDomain");
-		samdb_msg_add_string(ldb, mem_ctx, msg, "secret", r2.generic.out.join_password);
-
-		samdb_msg_add_string(ldb, mem_ctx, msg, "samAccountName", r2.generic.in.account_name);
-
-		samdb_msg_add_string(ldb, mem_ctx, msg, "secureChannelType", sct);
-
-		/* create the secret */
-		ret = samdb_add(ldb, mem_ctx, msg);
-		if (ret != 0) {
-			r->generic.out.error_string
-				= talloc_asprintf(mem_ctx, 
-						  "Failed to create secret record %s\n", 
-						  msg->dn);
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-		return NT_STATUS_OK;
-	} else if (ret != 1) {
-		r->generic.out.error_string
+	} else if (ret == -1) {
+		r->out.error_string
 			= talloc_asprintf(mem_ctx, 
-					  "Found %d records matching cn=%s under DN %s\n", ret, 
-					  r->generic.in.domain_name, base_dn);
+					  "Search for domain: %s and realm: %s failed: %s", 
+					  r2.out.domain_name, r2.out.realm, ldb_errstring(ldb));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	} else {
+		int i;
+		for (i = 0; i < ret; i++) {
+			ldb_delete(ldb, msgs[i]->dn);
+		}
+
+		prior_secret = ldb_msg_find_ldb_val(msgs[0], "secret");
+		if (prior_secret) {
+			samdb_msg_set_value(ldb, mem_ctx, msg, "priorSecret", prior_secret);
+		}
+		samdb_msg_set_string(ldb, mem_ctx, msg, "secret", r2.out.join_password);
+		
+		prior_modified_time = ldb_msg_find_ldb_val(msgs[0], 
+							   "whenChanged");
+		if (prior_modified_time) {
+			samdb_msg_set_value(ldb, mem_ctx, msg, "priorWhenChanged", 
+					    prior_modified_time);
+		}
+		
+		samdb_msg_set_string(ldb, mem_ctx, msg, "samAccountName", r2.in.account_name);
+		samdb_msg_set_string(ldb, mem_ctx, msg, "secureChannelType", sct);
 	}
 
-	msg->dn = msgs[0]->dn;
-
-	prior_secret = ldb_msg_find_ldb_val(msgs[0], "secret");
-	if (prior_secret) {
-		samdb_msg_set_value(ldb, mem_ctx, msg, "priorSecret", prior_secret);
-	}
-	samdb_msg_set_string(ldb, mem_ctx, msg, "secret", r2.generic.out.join_password);
-	
-	prior_modified_time = ldb_msg_find_string(msgs[0], 
-						 "whenChanged", NULL);
-	if (prior_modified_time) {
-		samdb_msg_set_string(ldb, mem_ctx, msg, "priorWhenChanged", 
-				     prior_modified_time);
-	}
-	
-	samdb_msg_set_string(ldb, mem_ctx, msg, "samAccountName", r2.generic.in.account_name);
-	samdb_msg_set_string(ldb, mem_ctx, msg, "secureChannelType", sct);
-
-	/* update the secret */
-	ret = samdb_replace(ldb, mem_ctx, msg);
+	/* create the secret */
+	ret = samdb_add(ldb, mem_ctx, msg);
 	if (ret != 0) {
-		DEBUG(0,("Failed to create secret record %s\n", msg->dn));
+		r->out.error_string
+			= talloc_asprintf(mem_ctx, 
+					  "Failed to create secret record %s\n", 
+					  msg->dn);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	return NT_STATUS_OK;
 }
 
-NTSTATUS libnet_Join_generic(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_Join *r)
+NTSTATUS libnet_Join(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_Join *r)
 {
 	NTSTATUS nt_status;
-	union libnet_Join r2;
-	r2.generic.in.secure_channel_type = r->generic.in.secure_channel_type;
-	r2.generic.in.domain_name = r->generic.in.domain_name;
+	struct libnet_Join r2;
+	r2.in.secure_channel_type = r->in.secure_channel_type;
+	r2.in.domain_name = r->in.domain_name;
 	
-	if ((r->generic.in.secure_channel_type == SEC_CHAN_WKSTA)
-	    || (r->generic.in.secure_channel_type == SEC_CHAN_BDC)) {
-		r2.generic.level = LIBNET_JOIN_PRIMARY;
-		nt_status = libnet_Join(ctx, mem_ctx, &r2);
+	if ((r->in.secure_channel_type == SEC_CHAN_WKSTA)
+	    || (r->in.secure_channel_type == SEC_CHAN_BDC)) {
+		nt_status = libnet_Join_primary_domain(ctx, mem_ctx, &r2);
 	} else {
-		r->generic.out.error_string
+		r->out.error_string
 			= talloc_asprintf(mem_ctx, "Invalid secure channel type specified (%08X) attempting to join domain %s",
-					 r->generic.in.secure_channel_type, r->generic.in.domain_name);
+					 r->in.secure_channel_type, r->in.domain_name);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	r->generic.out.error_string = r2.generic.out.error_string;
+	r->out.error_string = r2.out.error_string;
 	return nt_status;
 }
 
-NTSTATUS libnet_Join(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_Join *r)
-{
-	switch (r->generic.level) {
-	case LIBNET_JOIN_GENERIC:
-		return libnet_Join_generic(ctx, mem_ctx, r);
-	case LIBNET_JOIN_PRIMARY:
-		return libnet_Join_primary_domain(ctx, mem_ctx, r);
-	}
-
-	return NT_STATUS_INVALID_LEVEL;
-}
 
