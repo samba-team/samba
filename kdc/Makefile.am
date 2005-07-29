@@ -88,6 +88,6 @@ LDADD = $(top_builddir)/lib/hdb/libhdb.la \
 	$(LIB_roken) \
 	$(DBLIB)
 
-kdc_LDADD = libkdc.la $(LIB_pidfile)
+kdc_LDADD = libkdc.la $(LDADD) $(LIB_pidfile)
 
 include_HEADERS = kdc.h kdc-protos.h
