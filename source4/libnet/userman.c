@@ -518,40 +518,30 @@ static NTSTATUS usermod_open(struct composite_context *c,
 	if (s->change.fields) {
 		if (s->change.fields & USERMOD_FIELD_ACCOUNT_NAME) {
 			level = 7;
-			i->info7.account_name.length = 2*strlen_m(s->change.account_name);
-			i->info7.account_name.size   = 2*strlen_m(s->change.account_name);
 			i->info7.account_name.string = s->change.account_name;
 
 			s->change.fields ^= USERMOD_FIELD_ACCOUNT_NAME;
 
 		} else if (s->change.fields & USERMOD_FIELD_FULL_NAME) {
 			level = 8;
-			i->info8.full_name.length = 2*strlen_m(s->change.full_name);
-			i->info8.full_name.size   = 2*strlen_m(s->change.full_name);
 			i->info8.full_name.string = s->change.full_name;
 			
 			s->change.fields ^= USERMOD_FIELD_FULL_NAME;
 
 		} else if (s->change.fields & USERMOD_FIELD_DESCRIPTION) {
 			level = 13;
-			i->info13.description.length = 2*strlen_m(s->change.description);
-			i->info13.description.size   = 2*strlen_m(s->change.description);
 			i->info13.description.string = s->change.description;
 			
 			s->change.fields ^= USERMOD_FIELD_DESCRIPTION;
 
 		} else if (s->change.fields & USERMOD_FIELD_LOGON_SCRIPT) {
 			level = 11;
-			i->info11.logon_script.length = 2*strlen_m(s->change.logon_script);
-			i->info11.logon_script.size   = 2*strlen_m(s->change.logon_script);
 			i->info11.logon_script.string = s->change.logon_script;
 			
 			s->change.fields ^= USERMOD_FIELD_LOGON_SCRIPT;
 
 		} else if (s->change.fields & USERMOD_FIELD_PROFILE_PATH) {
 			level = 12;
-			i->info12.profile_path.length = 2*strlen_m(s->change.profile_path);
-			i->info12.profile_path.size   = 2*strlen_m(s->change.profile_path);
 			i->info12.profile_path.string = s->change.profile_path;
 
 			s->change.fields ^= USERMOD_FIELD_PROFILE_PATH;
@@ -564,8 +554,8 @@ static NTSTATUS usermod_open(struct composite_context *c,
 		}
 	}
 
-	s->setuser.in.level        = level;
-	s->setuser.in.info         = i;
+	s->setuser.in.level  = level;
+	s->setuser.in.info   = i;
 
 	s->req = dcerpc_samr_SetUserInfo_send(s->pipe, c, &s->setuser);
 
