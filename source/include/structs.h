@@ -166,12 +166,11 @@ struct dcesrv_endpoint;
 struct dcesrv_call_state;
 struct dcesrv_auth;
 
-union libnet_Join;
-union libnet_JoinDomain;
+struct libnet_Join;
+struct libnet_JoinDomain;
 union libnet_ChangePassword;
 union libnet_SetPassword;
 union libnet_RemoteTOD;
-union libnet_JoinDomain;
 struct libnet_RpcConnect;
 struct libnet_CreateUser;
 struct libnet_ListShares;
