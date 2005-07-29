@@ -534,7 +534,15 @@ static BOOL test_ntlm_in_both(struct samlogon_state *samlogon_state, char **erro
  * Test the NTLMv2 and LMv2 responses
  */
 
-static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state, enum ntlm_break break_which, char **error_string) 
+enum ntlmv2_domain {
+	UPPER_DOMAIN,
+	NO_DOMAIN
+};
+
+static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state, 
+				    enum ntlm_break break_which, 
+				    enum ntlmv2_domain ntlmv2_domain, 
+				    char **error_string) 
 {
 	BOOL pass = True;
 	NTSTATUS nt_status;
@@ -550,15 +558,29 @@ static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state, enum 
 	ZERO_STRUCT(lm_session_key);
 	ZERO_STRUCT(user_session_key);
 	
-	/* TODO - test with various domain cases, and without domain */
-	if (!SMBNTLMv2encrypt(samlogon_state->mem_ctx, 
-			      samlogon_state->account_name, samlogon_state->account_domain, 
-			      samlogon_state->password, &samlogon_state->chall,
-			      &names_blob,
-			      &lmv2_response, &ntlmv2_response, 
-			      &lmv2_session_key, &ntlmv2_session_key)) {
-		data_blob_free(&names_blob);
-		return False;
+	switch (ntlmv2_domain) {
+	case UPPER_DOMAIN:
+		if (!SMBNTLMv2encrypt(samlogon_state->mem_ctx, 
+				      samlogon_state->account_name, samlogon_state->account_domain, 
+				      samlogon_state->password, &samlogon_state->chall,
+				      &names_blob,
+				      &lmv2_response, &ntlmv2_response, 
+				      &lmv2_session_key, &ntlmv2_session_key)) {
+			data_blob_free(&names_blob);
+			return False;
+		}
+		break;
+	case NO_DOMAIN:
+		if (!SMBNTLMv2encrypt(samlogon_state->mem_ctx, 
+				      samlogon_state->account_name, "",
+				      samlogon_state->password, &samlogon_state->chall,
+				      &names_blob,
+				      &lmv2_response, &ntlmv2_response, 
+				      &lmv2_session_key, &ntlmv2_session_key)) {
+			data_blob_free(&names_blob);
+			return False;
+		}
+		break;
 	}
 	data_blob_free(&names_blob);
 
@@ -653,7 +675,10 @@ static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state, enum 
  * Test the NTLM and LMv2 responses
  */
 
-static BOOL test_lmv2_ntlm_broken(struct samlogon_state *samlogon_state, enum ntlm_break break_which, char **error_string) 
+static BOOL test_lmv2_ntlm_broken(struct samlogon_state *samlogon_state, 
+				  enum ntlm_break break_which, 
+				  enum ntlmv2_domain ntlmv2_domain, 
+				  char **error_string) 
 {
 	BOOL pass = True;
 	NTSTATUS nt_status;
@@ -680,17 +705,34 @@ static BOOL test_lmv2_ntlm_broken(struct samlogon_state *samlogon_state, enum nt
 
 	ZERO_STRUCT(lm_session_key);
 	ZERO_STRUCT(user_session_key);
-	
-	/* TODO - test with various domain cases, and without domain */
-	if (!SMBNTLMv2encrypt(samlogon_state->mem_ctx, 
-			      samlogon_state->account_name, samlogon_state->account_domain, 
-			      samlogon_state->password, &samlogon_state->chall,
-			      &names_blob,
-			      &lmv2_response, &ntlmv2_response, 
-			      &lmv2_session_key, &ntlmv2_session_key)) {
-		data_blob_free(&names_blob);
-		return False;
+
+	switch (ntlmv2_domain) {
+	case UPPER_DOMAIN:
+		/* TODO - test with various domain cases, and without domain */
+		if (!SMBNTLMv2encrypt(samlogon_state->mem_ctx, 
+				      samlogon_state->account_name, samlogon_state->account_domain, 
+				      samlogon_state->password, &samlogon_state->chall,
+				      &names_blob,
+				      &lmv2_response, &ntlmv2_response, 
+				      &lmv2_session_key, &ntlmv2_session_key)) {
+			data_blob_free(&names_blob);
+			return False;
+		}
+		break;
+	case NO_DOMAIN:
+		/* TODO - test with various domain cases, and without domain */
+		if (!SMBNTLMv2encrypt(samlogon_state->mem_ctx, 
+				      samlogon_state->account_name, NULL,
+				      samlogon_state->password, &samlogon_state->chall,
+				      &names_blob,
+				      &lmv2_response, &ntlmv2_response, 
+				      &lmv2_session_key, &ntlmv2_session_key)) {
+			data_blob_free(&names_blob);
+			return False;
+		}
+		break;
 	}
+
 	data_blob_free(&names_blob);
 
 	nt_status = check_samlogon(samlogon_state,
@@ -785,8 +827,15 @@ static BOOL test_lmv2_ntlm_broken(struct samlogon_state *samlogon_state, enum nt
 
 static BOOL test_lmv2_ntlmv2(struct samlogon_state *samlogon_state, char **error_string) 
 {
-	return test_lmv2_ntlmv2_broken(samlogon_state, BREAK_NONE, error_string);
+	return test_lmv2_ntlmv2_broken(samlogon_state, BREAK_NONE, UPPER_DOMAIN, error_string);
 }
+
+#if 0
+static BOOL test_lmv2_ntlmv2_no_dom(struct samlogon_state *samlogon_state, char **error_string) 
+{
+	return test_lmv2_ntlmv2_broken(samlogon_state, BREAK_NONE, NO_DOMAIN, error_string);
+}
+#endif
 
 /* 
  * Test the LMv2 response only
@@ -794,7 +843,12 @@ static BOOL test_lmv2_ntlmv2(struct samlogon_state *samlogon_state, char **error
 
 static BOOL test_lmv2(struct samlogon_state *samlogon_state, char **error_string) 
 {
-	return test_lmv2_ntlmv2_broken(samlogon_state, NO_NT, error_string);
+	return test_lmv2_ntlmv2_broken(samlogon_state, NO_NT, UPPER_DOMAIN, error_string);
+}
+
+static BOOL test_lmv2_no_dom(struct samlogon_state *samlogon_state, char **error_string) 
+{
+	return test_lmv2_ntlmv2_broken(samlogon_state, NO_NT, NO_DOMAIN, error_string);
 }
 
 /* 
@@ -803,7 +857,12 @@ static BOOL test_lmv2(struct samlogon_state *samlogon_state, char **error_string
 
 static BOOL test_ntlmv2(struct samlogon_state *samlogon_state, char **error_string) 
 {
-	return test_lmv2_ntlmv2_broken(samlogon_state, NO_LM, error_string);
+	return test_lmv2_ntlmv2_broken(samlogon_state, NO_LM, UPPER_DOMAIN, error_string);
+}
+
+static BOOL test_ntlmv2_no_dom(struct samlogon_state *samlogon_state, char **error_string) 
+{
+	return test_lmv2_ntlmv2_broken(samlogon_state, NO_LM, NO_DOMAIN, error_string);
 }
 
 static BOOL test_lm_ntlm(struct samlogon_state *samlogon_state, char **error_string) 
@@ -827,32 +886,64 @@ static BOOL test_lm_ntlm_both_broken(struct samlogon_state *samlogon_state, char
 }
 static BOOL test_ntlmv2_lmv2_broken(struct samlogon_state *samlogon_state, char **error_string) 
 {
-	return test_lmv2_ntlmv2_broken(samlogon_state, BREAK_LM, error_string);
+	return test_lmv2_ntlmv2_broken(samlogon_state, BREAK_LM, UPPER_DOMAIN, error_string);
 }
 
+static BOOL test_ntlmv2_lmv2_broken_no_dom(struct samlogon_state *samlogon_state, char **error_string) 
+{
+	return test_lmv2_ntlmv2_broken(samlogon_state, BREAK_LM, NO_DOMAIN, error_string);
+}
+
+#if 0
 static BOOL test_ntlmv2_ntlmv2_broken(struct samlogon_state *samlogon_state, char **error_string) 
 {
-	return test_lmv2_ntlmv2_broken(samlogon_state, BREAK_NT, error_string);
+	return test_lmv2_ntlmv2_broken(samlogon_state, BREAK_NT, UPPER_DOMAIN, error_string);
+}
+#endif
+
+static BOOL test_ntlmv2_ntlmv2_broken_no_dom(struct samlogon_state *samlogon_state, char **error_string) 
+{
+	return test_lmv2_ntlmv2_broken(samlogon_state, BREAK_NT, NO_DOMAIN, error_string);
 }
 
 static BOOL test_ntlmv2_both_broken(struct samlogon_state *samlogon_state, char **error_string) 
 {
-	return test_lmv2_ntlmv2_broken(samlogon_state, BREAK_BOTH, error_string);
+	return test_lmv2_ntlmv2_broken(samlogon_state, BREAK_BOTH, UPPER_DOMAIN, error_string);
+}
+
+static BOOL test_ntlmv2_both_broken_no_dom(struct samlogon_state *samlogon_state, char **error_string) 
+{
+	return test_lmv2_ntlmv2_broken(samlogon_state, BREAK_BOTH, NO_DOMAIN, error_string);
 }
 
 static BOOL test_lmv2_ntlm_both_broken(struct samlogon_state *samlogon_state, char **error_string) 
 {
-	return test_lmv2_ntlm_broken(samlogon_state, BREAK_BOTH, error_string);
+	return test_lmv2_ntlm_broken(samlogon_state, BREAK_BOTH, UPPER_DOMAIN, error_string);
+}
+
+static BOOL test_lmv2_ntlm_both_broken_no_dom(struct samlogon_state *samlogon_state, char **error_string) 
+{
+	return test_lmv2_ntlm_broken(samlogon_state, BREAK_BOTH, NO_DOMAIN, error_string);
 }
 
 static BOOL test_lmv2_ntlm_break_ntlm(struct samlogon_state *samlogon_state, char **error_string) 
 {
-	return test_lmv2_ntlm_broken(samlogon_state, BREAK_NT, error_string);
+	return test_lmv2_ntlm_broken(samlogon_state, BREAK_NT, UPPER_DOMAIN, error_string);
+}
+
+static BOOL test_lmv2_ntlm_break_ntlm_no_dom(struct samlogon_state *samlogon_state, char **error_string) 
+{
+	return test_lmv2_ntlm_broken(samlogon_state, BREAK_NT, NO_DOMAIN, error_string);
 }
 
 static BOOL test_lmv2_ntlm_break_lm(struct samlogon_state *samlogon_state, char **error_string) 
 {
-	return test_lmv2_ntlm_broken(samlogon_state, BREAK_LM, error_string);
+	return test_lmv2_ntlm_broken(samlogon_state, BREAK_LM, UPPER_DOMAIN, error_string);
+}
+
+static BOOL test_lmv2_ntlm_break_lm_no_dom(struct samlogon_state *samlogon_state, char **error_string) 
+{
+	return test_lmv2_ntlm_broken(samlogon_state, BREAK_LM, NO_DOMAIN, error_string);
 }
 
 /* 
@@ -1040,6 +1131,9 @@ static const struct ntlm_tests {
 	BOOL expect_fail;
 } test_table[] = {
 	{test_lmv2_ntlmv2, "NTLMv2 and LMv2", False},
+#if 0
+	{test_lmv2_ntlmv2_no_dom, "NTLMv2 and LMv2 (no domain)", False},
+#endif
 	{test_lm, "LM", False},
 	{test_lm_ntlm, "LM and NTLM", False},
 	{test_lm_ntlm_both_broken, "LM and NTLM, both broken", False},
@@ -1047,16 +1141,26 @@ static const struct ntlm_tests {
 	{test_ntlm_in_lm, "NTLM in LM", False},
 	{test_ntlm_in_both, "NTLM in both", False},
 	{test_ntlmv2, "NTLMv2", False},
+	{test_ntlmv2_no_dom, "NTLMv2 (no domain)", False},
 	{test_lmv2, "LMv2", False},
+	{test_lmv2_no_dom, "LMv2 (no domain)", False},
 	{test_ntlmv2_lmv2_broken, "NTLMv2 and LMv2, LMv2 broken", False},
+	{test_ntlmv2_lmv2_broken_no_dom, "NTLMv2 and LMv2, LMv2 broken (no domain)", False},
 	{test_ntlmv2_ntlmv2_broken, "NTLMv2 and LMv2, NTLMv2 broken", False},
+#if 0
+	{test_ntlmv2_ntlmv2_broken_no_dom, "NTLMv2 and LMv2, NTLMv2 broken (no domain)", False},
+#endif
 	{test_ntlmv2_both_broken, "NTLMv2 and LMv2, both broken", False},
+	{test_ntlmv2_both_broken_no_dom, "NTLMv2 and LMv2, both broken (no domain)", False},
 	{test_ntlm_lm_broken, "NTLM and LM, LM broken", False},
 	{test_ntlm_ntlm_broken, "NTLM and LM, NTLM broken", False},
 	{test_ntlm2, "NTLM2 (NTLMv2 session security)", False},
 	{test_lmv2_ntlm_both_broken, "LMv2 and NTLM, both broken", False},
+	{test_lmv2_ntlm_both_broken_no_dom, "LMv2 and NTLM, both broken (no domain)", False},
 	{test_lmv2_ntlm_break_ntlm, "LMv2 and NTLM, NTLM broken", False},
+	{test_lmv2_ntlm_break_ntlm_no_dom, "LMv2 and NTLM, NTLM broken (no domain)", False},
 	{test_lmv2_ntlm_break_lm, "LMv2 and NTLM, LMv2 broken", False},
+	{test_lmv2_ntlm_break_lm_no_dom, "LMv2 and NTLM, LMv2 broken (no domain)", False},
 	{test_plaintext_none_broken, "Plaintext", True},
 	{test_plaintext_lm_broken, "Plaintext LM broken", True},
 	{test_plaintext_nt_broken, "Plaintext NT broken", True},
