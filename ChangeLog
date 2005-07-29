@@ -1,3 +1,7 @@
+2005-07-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/Makefile.am (kdc_LDADD): add LDADD
+	
 2005-07-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/kerberos5.c (_kdc_as_rep): log what enctypes was using in
@@ -7,8 +11,6 @@
 	libkrb5 instead of including our own here too.
 
 	* kdc/kerberos5.c: indent printf strings
-
-2005-07-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/hdb/mkey.c (hdb_unseal_key_mkey): try to unseal key with
 	keyusage 0 in case the key was encrypted with MIT Kerberos (old
