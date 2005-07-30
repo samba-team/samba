@@ -31,4 +31,13 @@ interface misc
 		SEC_CHAN_DOMAIN  = 4,
 		SEC_CHAN_BDC     = 6
 	} netr_SchannelType;
+
+	/* SAM database types */
+	typedef [public,v1_enum] enum {
+		SAM_DATABASE_DOMAIN  = 0, /* Domain users and groups */
+		SAM_DATABASE_BUILTIN = 1, /* BUILTIN users and groups */
+		SAM_DATABASE_PRIVS   = 2 /* Privileges */
+	} netr_SamDatabaseID;
+
+
 }

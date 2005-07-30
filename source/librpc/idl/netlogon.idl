@@ -291,12 +291,7 @@ interface netlogon
 	/*****************/
 	/* Function 0x07 */
 
-	/* SAM database types */
-	typedef [v1_enum] enum {
-		SAM_DATABASE_DOMAIN  = 0, /* Domain users and groups */
-		SAM_DATABASE_BUILTIN = 1, /* BUILTIN users and groups */
-		SAM_DATABASE_PRIVS   = 2 /* Privileges */
-	} netr_SamDatabaseID;
+	declare enum netr_SamDatabaseID;
 
 	typedef struct {
 		unistr *account_name;

@@ -405,11 +405,13 @@
 		uint16               lm20_token;
 	} nbt_netlogon_response_from_pdc2;
 
+	declare enum netr_SamDatabaseID;
+
 	/* announce change to UAS or SAM */
 	typedef struct {
-		uint32           db_index;
-		hyper            serial;
-		NTTIME           timestamp;
+		netr_SamDatabaseID   db_index;
+		hyper                serial;
+		NTTIME               timestamp;
 	} nbt_db_change;
 
 	/* used to announce SAM changes */
