@@ -106,8 +106,10 @@ for (r in options) {
 	subobj[key] = options[r];
 }
 
+var blank = (options["blank"] != undefined);
+
 message("Provisioning for %s in realm %s\n", subobj.DOMAIN, subobj.REALM);
 message("Using administrator password: %s\n", subobj.ADMINPASS);
-provision(subobj, message, options["blank"] != undefined);
+provision(subobj, message, blank);
 message("All OK\n");
 return 0;
