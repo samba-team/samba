@@ -1,3 +1,5 @@
+#error "remove this line to fix the build"
+
 /* 
    Unix SMB/CIFS implementation.
    SMB torture tester
