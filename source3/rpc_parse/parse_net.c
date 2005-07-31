@@ -792,7 +792,7 @@ BOOL net_io_r_auth(const char *desc, NET_R_AUTH *r_a, prs_struct *ps, int depth)
 
 void init_q_auth_2(NET_Q_AUTH_2 *q_a,
 		const char *logon_srv, const char *acct_name, uint16 sec_chan, const char *comp_name,
-		DOM_CHAL *clnt_chal, uint32 clnt_flgs)
+		const DOM_CHAL *clnt_chal, uint32 clnt_flgs)
 {
 	DEBUG(5,("init_q_auth_2: %d\n", __LINE__));
 
