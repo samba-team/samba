@@ -27,12 +27,18 @@
 
 const uint32_t MSG_ID1 = 1, MSG_ID2 = 2;
 
+static BOOL test_debug;
+
 /*
   serve up AddOne over the irpc system
 */
 static NTSTATUS irpc_AddOne(struct irpc_message *irpc, struct echo_AddOne *r)
 {
 	*r->out.out_data = r->in.in_data + 1;
+	if (test_debug) {
+		printf("irpc_AddOne: in=%u in+1=%u out=%u\n", 
+			r->in.in_data, r->in.in_data+1, *r->out.out_data);
+	}
 	return NT_STATUS_OK;
 }
 
@@ -50,7 +56,9 @@ static BOOL test_addone(TALLOC_CTX *mem_ctx,
 	/* make the call */
 	r.in.in_data = random() & 0xFFFFFFFF;
 
+	test_debug = True;
 	status = IRPC_CALL(msg_ctx1, MSG_ID2, rpcecho, ECHO_ADDONE, &r);
+	test_debug = False;
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("AddOne failed - %s\n", nt_errstr(status));
 		return False;
@@ -58,8 +66,8 @@ static BOOL test_addone(TALLOC_CTX *mem_ctx,
 
 	/* check the answer */
 	if (*r.out.out_data != r.in.in_data + 1) {
-		printf("AddOne wrong answer - %u should be %u\n", 
-		       *r.out.out_data, r.in.in_data+1);
+		printf("AddOne wrong answer - %u + 1 = %u should be %u\n", 
+		       r.in.in_data, *r.out.out_data, r.in.in_data+1);
 		return False;
 	}
 
