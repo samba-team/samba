@@ -48,7 +48,7 @@ static BOOL test_addone(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	/* make the call */
-	r.in.in_data = random();
+	r.in.in_data = random() & 0xFFFFFFFF;
 
 	status = IRPC_CALL(msg_ctx1, MSG_ID2, rpcecho, ECHO_ADDONE, &r);
 	if (!NT_STATUS_IS_OK(status)) {
