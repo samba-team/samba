@@ -79,10 +79,15 @@ static BOOL test_addone(TALLOC_CTX *mem_ctx,
 
 static void irpc_callback(struct irpc_request *irpc)
 {
+	struct echo_AddOne *r = irpc->r;
 	int *pong_count = (int *)irpc->async.private;
 	NTSTATUS status = irpc_call_recv(irpc);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("irpc call failed - %s\n", nt_errstr(status));
+	}
+	if (*r->out.out_data != r->in.in_data + 1) {
+		printf("AddOne wrong answer - %u + 1 = %u should be %u\n", 
+		       r->in.in_data, *r->out.out_data, r->in.in_data+1);
 	}
 	(*pong_count)++;
 	talloc_free(irpc);
