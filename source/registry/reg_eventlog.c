@@ -186,7 +186,7 @@ static char* trim_eventlog_reg_path( const char *path )
  Enumerate registry subkey names given a registry path.  
  Caller is responsible for freeing memory to **subkeys
 *********************************************************************/
-int eventlog_subkey_info( char *key, REGSUBKEY_CTR *subkey_ctr )
+int eventlog_subkey_info( const char *key, REGSUBKEY_CTR *subkey_ctr )
 {
 	char 	*path;
 	BOOL       	top_level = False;
