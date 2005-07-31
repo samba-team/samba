@@ -70,6 +70,27 @@ if test x"$samba_cv_immediate_structures" = x"yes"; then
 fi
 
 ############################################
+# check if the compiler handles c99 struct initialization
+AC_CACHE_CHECK([for c99 struct initialization],samba_cv_c99_struct_initialization, [
+    AC_TRY_COMPILE([
+#include <stdio.h>],
+[
+   struct foo {
+       int x;
+       char y;
+   } ;
+   struct foo bar = {
+   	.y = 'X',
+	.x = 1
+   };	 
+],
+	samba_cv_c99_struct_initialization=yes,samba_cv_c99_struct_initialization=no)])
+if test x"$samba_cv_c99_struct_initialization" != x"yes"; then
+	AC_MSG_WARN([C compiler does not support c99 struct initialization!])
+	AC_MSG_ERROR([Please Install gcc from http://gcc.gnu.org/])
+fi
+
+############################################
 # check if the compiler can handle negative enum values
 AC_CACHE_CHECK([that the C compiler understands negative enum values],SMB_BUILD_CC_NEGATIVE_ENUM_VALUES, [
     AC_TRY_COMPILE([
