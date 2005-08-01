@@ -94,6 +94,8 @@ cat >$CONFFILE<<EOF
 	tls enabled = $TLS_ENABLED
 	panic action = $SRCDIR/script/gdb_backtrace %PID% %PROG%
 	wins support = yes
+	domain master = yes
+	domain logons = yes
 
 [tmp]
 	path = $TMPDIR
@@ -145,5 +147,15 @@ kill `cat $PIDDIR/smbd.pid`
 END=`date`
 echo "START: $START ($0)";
 echo "END:   $END ($0)";
+
+# if there were any valgrind failures, show them
+list=`find $PREFIX -name 'valgrind.log*'`
+if [ x$list != x ]; then
+    for f in $PREFIX/valgrind.log*; do
+	echo "VALGRIND FAILURE";
+	failed=`expr $failed + 1`
+	cat $f
+    done
+fi
 
 teststatus $0 $failed
