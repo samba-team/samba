@@ -1,5 +1,5 @@
 #!/bin/sh
-exec bin/smbscript "$0" ${1+"$@"}
+exec smbscript "$0" ${1+"$@"}
 /*
 	provision a Samba4 server
 	Copyright Andrew Tridgell 2005
