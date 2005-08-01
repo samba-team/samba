@@ -29,27 +29,43 @@
 /*
   test the AddOne interface
 */
+#define TEST_ADDONE(value) do { \
+	n = i = value; \
+	r.in.in_data = n; \
+	r.out.out_data = &n; \
+	status = dcerpc_echo_AddOne(p, mem_ctx, &r); \
+	if (!NT_STATUS_IS_OK(status)) { \
+		printf("AddOne(%d) failed - %s\n", i, nt_errstr(status)); \
+		return False; \
+	} \
+	if (n != i+1) { \
+		printf("%d + 1 != %u (should be %u)\n", i, n, i+1); \
+		ret = False; \
+	} else { \
+		printf("%d + 1 = %u\n", i, n); \
+	} \
+} while(0)
+
 static BOOL test_addone(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
-	int i;
+	BOOL ret = True;
+	uint32_t i;
 	NTSTATUS status;
+	uint32_t n;
+	struct echo_AddOne r;
 
 	printf("\nTesting AddOne\n");
 
 	for (i=0;i<10;i++) {
-		uint32_t n = i;
-		struct echo_AddOne r;
-		r.in.in_data = n;
-		r.out.out_data = &n;
-		status = dcerpc_echo_AddOne(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("AddOne(%d) failed - %s\n", i, nt_errstr(status));
-			return False;
-		}
-		printf("%d + 1 = %u\n", i, n);
+		TEST_ADDONE(i);
 	}
 
-	return True;
+	TEST_ADDONE(0x7FFFFFFE);
+	TEST_ADDONE(0xFFFFFFFE);
+	TEST_ADDONE(0xFFFFFFFF);
+	TEST_ADDONE(random() & 0xFFFFFFFF);
+
+	return ret;
 }
 
 /*
