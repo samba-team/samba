@@ -29,7 +29,7 @@ struct irpc_message {
 };
 
 /* don't allow calls to take too long */
-#define IRPC_CALL_TIMEOUT 10
+#define IRPC_CALL_TIMEOUT 1000
 
 
 /* the server function type */
@@ -42,11 +42,11 @@ typedef NTSTATUS (*irpc_function_t)(struct irpc_message *, void *r);
 			  (irpc_function_t)function, private)
 
 /* make a irpc call */
-#define IRPC_CALL(msg_ctx, server_id, pipename, funcname, ptr) \
-   irpc_call(msg_ctx, server_id, &dcerpc_table_ ## pipename, DCERPC_ ## funcname, ptr)
+#define IRPC_CALL(msg_ctx, server_id, pipename, funcname, ptr, ctx) \
+   irpc_call(msg_ctx, server_id, &dcerpc_table_ ## pipename, DCERPC_ ## funcname, ptr, ctx)
 
-#define IRPC_CALL_SEND(msg_ctx, server_id, pipename, funcname, ptr) \
-   irpc_call_send(msg_ctx, server_id, &dcerpc_table_ ## pipename, DCERPC_ ## funcname, ptr)
+#define IRPC_CALL_SEND(msg_ctx, server_id, pipename, funcname, ptr, ctx) \
+   irpc_call_send(msg_ctx, server_id, &dcerpc_table_ ## pipename, DCERPC_ ## funcname, ptr, ctx)
 
 
 /*
@@ -60,6 +60,7 @@ struct irpc_request {
 	void *r;
 	NTSTATUS status;
 	BOOL done;
+	TALLOC_CTX *mem_ctx;
 	struct {
 		void (*fn)(struct irpc_request *);
 		void *private;
@@ -89,12 +90,12 @@ NTSTATUS irpc_register(struct messaging_context *msg_ctx,
 struct irpc_request *irpc_call_send(struct messaging_context *msg_ctx, 
 				    uint32_t server_id, 
 				    const struct dcerpc_interface_table *table, 
-				    int callnum, void *r);
+				    int callnum, void *r, TALLOC_CTX *ctx);
 NTSTATUS irpc_call_recv(struct irpc_request *irpc);
 NTSTATUS irpc_call(struct messaging_context *msg_ctx, 
 		   uint32_t server_id, 
 		   const struct dcerpc_interface_table *table, 
-		   int callnum, void *r);
+		   int callnum, void *r, TALLOC_CTX *ctx);
 
 NTSTATUS irpc_add_name(struct messaging_context *msg_ctx, const char *name);
 uint32_t *irpc_servers_byname(struct messaging_context *msg_ctx, const char *name);
