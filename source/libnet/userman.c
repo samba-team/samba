@@ -449,19 +449,20 @@ NTSTATUS libnet_rpc_userdel(struct dcerpc_pipe *pipe,
 
 static void usermod_handler(struct rpc_request*);
 
-enum usermod_stage { USERMOD_LOOKUP, USERMOD_OPEN, USERMOD_MODIFY };
+enum usermod_stage { USERMOD_LOOKUP, USERMOD_OPEN, USERMOD_QUERY, USERMOD_MODIFY };
 
 struct usermod_state {
-	enum usermod_stage        stage;
-	struct dcerpc_pipe        *pipe;
-	struct rpc_request        *req;
-	struct policy_handle      domain_handle;
-	struct policy_handle      user_handle;
-	struct usermod_change     change;
-	union  samr_UserInfo      info;
-	struct samr_LookupNames   lookupname;
-	struct samr_OpenUser      openuser;
-	struct samr_SetUserInfo   setuser;
+	enum usermod_stage         stage;
+	struct dcerpc_pipe         *pipe;
+	struct rpc_request         *req;
+	struct policy_handle       domain_handle;
+	struct policy_handle       user_handle;
+	struct usermod_change      change;
+	union  samr_UserInfo       info;
+	struct samr_LookupNames    lookupname;
+	struct samr_OpenUser       openuser;
+	struct samr_SetUserInfo    setuser;
+	struct samr_QueryUserInfo  queryuser;
 };
 
 
@@ -500,6 +501,84 @@ static NTSTATUS usermod_lookup(struct composite_context *c,
 }
 
 
+static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
+				  union samr_UserInfo *i)
+{
+	if (s->change.fields) {
+		if (s->change.fields & USERMOD_FIELD_ACCOUNT_NAME) {
+			*level = 7;
+			i->info7.account_name.string = s->change.account_name;
+
+			s->change.fields ^= USERMOD_FIELD_ACCOUNT_NAME;
+
+		} else if (s->change.fields & USERMOD_FIELD_FULL_NAME) {
+			*level = 8;
+			i->info8.full_name.string = s->change.full_name;
+			
+			s->change.fields ^= USERMOD_FIELD_FULL_NAME;
+
+		} else if (s->change.fields & USERMOD_FIELD_DESCRIPTION) {
+			*level = 13;
+			i->info13.description.string = s->change.description;
+			
+			s->change.fields ^= USERMOD_FIELD_DESCRIPTION;
+
+		} else if (s->change.fields & USERMOD_FIELD_COMMENT) {
+			*level = 2;
+
+			if (s->stage == USERMOD_QUERY) {
+				/* the user info is obtained, so now set the required field */
+				i->info2.comment.string = s->change.comment;
+				s->change.fields ^= USERMOD_FIELD_COMMENT;
+
+			} else {
+				/* we need to query the user info before setting one field in it */
+				s->stage = USERMOD_QUERY;
+				return s->change.fields;
+			}
+
+		} else if (s->change.fields & USERMOD_FIELD_ALLOW_PASS_CHG) {
+			*level = 3;
+			
+			if (s->stage == USERMOD_QUERY) {
+				i->info3.allow_password_change = timeval_to_nttime(s->change.allow_password_change);
+				s->change.fields ^= USERMOD_FIELD_ALLOW_PASS_CHG;
+
+			} else {
+				s->stage = USERMOD_QUERY;
+			}
+
+		} else if (s->change.fields & USERMOD_FIELD_LOGON_SCRIPT) {
+			*level = 11;
+			i->info11.logon_script.string = s->change.logon_script;
+			
+			s->change.fields ^= USERMOD_FIELD_LOGON_SCRIPT;
+
+		} else if (s->change.fields & USERMOD_FIELD_PROFILE_PATH) {
+			*level = 12;
+			i->info12.profile_path.string = s->change.profile_path;
+
+			s->change.fields ^= USERMOD_FIELD_PROFILE_PATH;
+
+		} else if (s->change.fields & USERMOD_FIELD_ACCT_EXPIRY) {
+			*level = 17;
+			i->info17.acct_expiry = timeval_to_nttime(s->change.acct_expiry);
+
+			s->change.fields ^= USERMOD_FIELD_ACCT_EXPIRY;
+		}
+	}
+
+	/* We're going to be back here again soon unless all fields have been set */
+	if (s->change.fields) {
+		s->stage = USERMOD_OPEN;
+	} else {
+		s->stage = USERMOD_MODIFY;
+	}
+
+	return s->change.fields;
+}
+
+
 /**
  * Stage 2: Open user account
  */
@@ -512,62 +591,29 @@ static NTSTATUS usermod_open(struct composite_context *c,
 	c->status = dcerpc_ndr_request_recv(s->req);
 	NT_STATUS_NOT_OK_RETURN(c->status);
 
-	s->setuser.in.user_handle  = &s->user_handle;
-
-	/* Prepare UserInfo level and data based on bitmask field */
-	if (s->change.fields) {
-		if (s->change.fields & USERMOD_FIELD_ACCOUNT_NAME) {
-			level = 7;
-			i->info7.account_name.string = s->change.account_name;
-
-			s->change.fields ^= USERMOD_FIELD_ACCOUNT_NAME;
-
-		} else if (s->change.fields & USERMOD_FIELD_FULL_NAME) {
-			level = 8;
-			i->info8.full_name.string = s->change.full_name;
-			
-			s->change.fields ^= USERMOD_FIELD_FULL_NAME;
-
-		} else if (s->change.fields & USERMOD_FIELD_DESCRIPTION) {
-			level = 13;
-			i->info13.description.string = s->change.description;
-			
-			s->change.fields ^= USERMOD_FIELD_DESCRIPTION;
-
-		} else if (s->change.fields & USERMOD_FIELD_LOGON_SCRIPT) {
-			level = 11;
-			i->info11.logon_script.string = s->change.logon_script;
-			
-			s->change.fields ^= USERMOD_FIELD_LOGON_SCRIPT;
-
-		} else if (s->change.fields & USERMOD_FIELD_PROFILE_PATH) {
-			level = 12;
-			i->info12.profile_path.string = s->change.profile_path;
-
-			s->change.fields ^= USERMOD_FIELD_PROFILE_PATH;
-
-		} else if (s->change.fields & USERMOD_FIELD_ACCT_EXPIRY) {
-			level = 17;
-			i->info17.acct_expiry = timeval_to_nttime(s->change.acct_expiry);
-
-			s->change.fields ^= USERMOD_FIELD_ACCT_EXPIRY;
-		}
+	if (s->stage == USERMOD_QUERY) {
+		s->info = *s->queryuser.out.info;
 	}
 
-	s->setuser.in.level  = level;
-	s->setuser.in.info   = i;
+	/* Prepare UserInfo level and data based on bitmask field */
+	s->change.fields = usermod_setfields(s, &level, i);
 
-	s->req = dcerpc_samr_SetUserInfo_send(s->pipe, c, &s->setuser);
+	if (s->stage == USERMOD_QUERY) {
+		s->queryuser.in.user_handle = &s->user_handle;
+		s->queryuser.in.level       = level;
+
+		s->req = dcerpc_samr_QueryUserInfo_send(s->pipe, c, &s->queryuser);
+
+	} else {
+		s->setuser.in.user_handle  = &s->user_handle;
+		s->setuser.in.level        = level;
+		s->setuser.in.info         = i;
+
+		s->req = dcerpc_samr_SetUserInfo_send(s->pipe, c, &s->setuser);
+	}
 
 	s->req->async.callback = usermod_handler;
 	s->req->async.private  = c;
-
-	/* Get back here again unless all fields have been set */
-	if (s->change.fields) {
-		s->stage = USERMOD_OPEN;
-	} else {
-		s->stage = USERMOD_MODIFY;
-	}
 
 	return NT_STATUS_OK;
 }
@@ -605,9 +651,12 @@ static void usermod_handler(struct rpc_request *req)
 	case USERMOD_LOOKUP:
 		c->status = usermod_lookup(c, s);
 		break;
+
 	case USERMOD_OPEN:
+	case USERMOD_QUERY:
 		c->status = usermod_open(c, s);
 		break;
+
 	case USERMOD_MODIFY:
 		c->status = usermod_modify(c, s);
 		break;
