@@ -497,16 +497,16 @@ struct timeval timeval_current_ofs(uint32_t secs, uint32_t usecs)
 
 /*
   compare two timeval structures. 
-  Return 1 if tv2 > tv1
-  Return 0 if tv2 == tv1
-  Return -1 if tv2 < tv1
+  Return -1 if tv1 < tv2
+  Return 0 if tv1 == tv2
+  Return 1 if tv1 > tv2
 */
 int timeval_compare(const struct timeval *tv1, const struct timeval *tv2)
 {
-	if (tv2->tv_sec  > tv1->tv_sec)  return 1;
-	if (tv2->tv_sec  < tv1->tv_sec)  return -1;
-	if (tv2->tv_usec > tv1->tv_usec) return 1;
-	if (tv2->tv_usec < tv1->tv_usec) return -1;
+	if (tv1->tv_sec  > tv2->tv_sec)  return 1;
+	if (tv1->tv_sec  < tv2->tv_sec)  return -1;
+	if (tv1->tv_usec > tv2->tv_usec) return 1;
+	if (tv1->tv_usec < tv2->tv_usec) return -1;
 	return 0;
 }
 
@@ -572,7 +572,7 @@ struct timeval timeval_until(const struct timeval *tv1,
 			     const struct timeval *tv2)
 {
 	struct timeval t;
-	if (timeval_compare(tv2, tv1) >= 0) {
+	if (timeval_compare(tv1, tv2) >= 0) {
 		return timeval_zero();
 	}
 	t.tv_sec = tv2->tv_sec - tv1->tv_sec;

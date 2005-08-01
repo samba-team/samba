@@ -311,7 +311,8 @@ static struct timed_event *std_event_add_timed(struct event_context *ev, TALLOC_
 	for (cur_te = std_ev->timed_events; cur_te; cur_te = cur_te->next) {
 		/* if the new event comes before the current one break */
 		if (!timeval_is_zero(&cur_te->next_event) &&
-		    timeval_compare(&cur_te->next_event, &te->next_event) < 0) {
+		    timeval_compare(&te->next_event,
+				    &cur_te->next_event) < 0) {
 			break;
 		}
 
