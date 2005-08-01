@@ -2201,7 +2201,7 @@ static WERROR cmd_spoolss_enum_data_ex( struct cli_state *cli,
 	uint32 i;
 	BOOL got_hnd = False;
 	pstring printername;
-	fstring servername, user
+	fstring servername, user;
 	const char *keyname = NULL;
 	POLICY_HND hnd;
 	REGVAL_CTR ctr;
