@@ -561,21 +561,21 @@ struct timeval timeval_max(struct timeval *tv1, struct timeval *tv2)
 
 /*
   return the difference between two timevals as a timeval
-  if tv2 comes after tv1, then return a zero timeval
-  (this is *tv1 - *tv2)
+  if tv1 comes after tv2, then return a zero timeval
+  (this is *tv2 - *tv1)
 */
-struct timeval timeval_diff(struct timeval *tv1, struct timeval *tv2)
+struct timeval timeval_until(struct timeval *tv1, struct timeval *tv2)
 {
 	struct timeval t;
-	if (timeval_compare(tv1, tv2) >= 0) {
+	if (timeval_compare(tv2, tv1) >= 0) {
 		return timeval_zero();
 	}
-	t.tv_sec = tv1->tv_sec - tv2->tv_sec;
-	if (tv2->tv_usec > tv1->tv_usec) {
+	t.tv_sec = tv2->tv_sec - tv1->tv_sec;
+	if (tv1->tv_usec > tv2->tv_usec) {
 		t.tv_sec--;
-		t.tv_usec = 1000000 - (tv2->tv_usec - tv1->tv_usec);
+		t.tv_usec = 1000000 - (tv1->tv_usec - tv2->tv_usec);
 	} else {
-		t.tv_usec = tv1->tv_usec - tv2->tv_usec;
+		t.tv_usec = tv2->tv_usec - tv1->tv_usec;
 	}
 	return t;
 }

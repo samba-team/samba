@@ -281,7 +281,7 @@ static struct timed_event *gtk_event_add_timed(struct event_context *ev, TALLOC_
 	te->additional_data	= gtk_te;
 
 	cur_tv			= timeval_current();
-	diff_tv			= timeval_diff(&next_event, &cur_tv);
+	diff_tv			= timeval_until(&cur_tv, &next_event);
 	timeout			= ((diff_tv.tv_usec+999)/1000)+(diff_tv.tv_sec*1000);
 
 	gtk_te->te_id		= g_timeout_add(timeout, gtk_event_timed_handler, te);
