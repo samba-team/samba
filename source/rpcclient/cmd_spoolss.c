@@ -2201,7 +2201,7 @@ static WERROR cmd_spoolss_enum_data_ex( struct cli_state *cli,
 	uint32 i;
 	BOOL got_hnd = False;
 	pstring printername;
-	fstring servername, user;
+	fstring servername, user
 	const char *keyname = NULL;
 	POLICY_HND hnd;
 	REGVAL_CTR ctr;
@@ -2233,8 +2233,7 @@ static WERROR cmd_spoolss_enum_data_ex( struct cli_state *cli,
 
 	/* Enumerate subkeys */
 
-	result = cli_spoolss_enumprinterdataex(
-		cli, mem_ctx, &hnd, keyname, NULL);
+	result = cli_spoolss_enumprinterdataex(cli, mem_ctx, &hnd, keyname, &ctr);
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;

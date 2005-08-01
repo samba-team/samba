@@ -741,7 +741,9 @@ out_free:
 		return 1;
 	}
 
+#if 0	/* COMMENT OUT FOR TESTING */
 	memset(cmdline_auth_info.password,'X',sizeof(cmdline_auth_info.password));
+#endif
 
 	/* Load command lists */
 
