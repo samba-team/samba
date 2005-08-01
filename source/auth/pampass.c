@@ -202,7 +202,7 @@ struct chat_struct {
  Create a linked list containing chat data.
 ***************************************************************/
 
-static struct chat_struct *make_pw_chat(char *p) 
+static struct chat_struct *make_pw_chat(const char *p) 
 {
 	fstring prompt;
 	fstring reply;
