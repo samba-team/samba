@@ -152,9 +152,11 @@ echo "END:   $END ($0)";
 list=`find $PREFIX -name 'valgrind.log*'`
 if [ x$list != x ]; then
     for f in $PREFIX/valgrind.log*; do
-	echo "VALGRIND FAILURE";
-	failed=`expr $failed + 1`
-	cat $f
+	if [ -s $f ]; then
+	    echo "VALGRIND FAILURE";
+	    failed=`expr $failed + 1`
+	    cat $f
+	fi
     done
 fi
 
