@@ -265,6 +265,9 @@ struct smbsrv_connection {
 
 	BOOL processing;
 
+	/* mark a connection for termination */
+	BOOL terminate;
+
 	/* configuration parameters */
 	struct {
 		enum security_types security;
