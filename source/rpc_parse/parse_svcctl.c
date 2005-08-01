@@ -714,7 +714,7 @@ BOOL svcctl_io_q_query_service_config2(const char *desc, SVCCTL_Q_QUERY_SERVICE_
 void init_service_description_buffer(RPC_DATA_BLOB *str,  const char *service_desc, int blob_length)
 {
 	uint32 offset;
-	char *bp;
+	uint8 *bp;
 
 	ZERO_STRUCTP(str);
 

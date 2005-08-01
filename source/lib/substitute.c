@@ -386,7 +386,7 @@ void standard_sub_basic(const char *smb_name, char *str,size_t len)
 			string_sub(p,"%i", client_socket_addr(),l);
 			break;
 		case 'L' :
-			if (!StrnCaseCmp(p, "\%LOGONSERVER\%", 13)) {
+			if (!StrnCaseCmp(p, "%LOGONSERVER%", strlen("%LOGONSERVER%"))) {
 				p++;
 				break;
 			}
