@@ -5,14 +5,14 @@
 
 
 
-# the precedence actually doesn't matter at all for this grammer, but
+# the precedence actually doesn't matter at all for this grammar, but
 # by providing a precedence we reduce the number of conflicts
 # enormously
 %left   '-' '+' '&' '|' '*' '>' '.' '/' '(' ')' '[' ',' ';'
 
 
 ################
-# grammer
+# grammar
 %%
 idl: 
 	#empty  { {} }
