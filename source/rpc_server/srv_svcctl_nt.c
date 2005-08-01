@@ -350,7 +350,7 @@ WERROR _svcctl_query_status(pipes_struct *p, SVCCTL_Q_QUERY_STATUS *q_u, SVCCTL_
  we have to call the right status routine...
 **********************************************************************/
 
-static WERROR enum_internal_services(TALLOC_CTX *tcx,ENUM_SERVICES_STATUS **svc_ptr, int existing_services, int *added) 
+static WERROR enum_internal_services(TALLOC_CTX *tcx,ENUM_SERVICES_STATUS **svc_ptr, int existing_services, uint32 *added) 
 {
 	int num_services = 2;
 	int i = 0;
@@ -443,8 +443,6 @@ WERROR _svcctl_enum_services_status(pipes_struct *p, SVCCTL_Q_ENUM_SERVICES_STAT
 	/* _svcctl_read_LSB_data(NULL,NULL); */
 	/* init_svcctl_db(); */
 	
-	num_int_services = 0;
-
 	/* num_int_services = num_internal_services(); */
 
 	/* num_ext_services =  num_external_services(); */
