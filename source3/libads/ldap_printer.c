@@ -286,7 +286,7 @@ WERROR get_remote_printer_publishing_data(struct cli_state *cli,
 		return result;
 	}
 	
-	result = cli_spoolss_enumprinterdataex(cli, mem_ctx, &pol, SPOOL_DSDRIVER_KEY, NULL);
+	result = cli_spoolss_enumprinterdataex(cli, mem_ctx, &pol, SPOOL_DSDRIVER_KEY, &dsdriver_ctr);
 
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(3, ("Unable to do enumdataex on %s, error is %s.\n",
@@ -300,7 +300,7 @@ WERROR get_remote_printer_publishing_data(struct cli_state *cli,
 					  dsdriver_ctr.values[i]);
 	}
 	
-	result = cli_spoolss_enumprinterdataex(cli, mem_ctx, &pol, SPOOL_DSSPOOLER_KEY, NULL);
+	result = cli_spoolss_enumprinterdataex(cli, mem_ctx, &pol, SPOOL_DSSPOOLER_KEY, &dsspooler_ctr);
 
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(3, ("Unable to do enumdataex on %s, error is %s.\n",
