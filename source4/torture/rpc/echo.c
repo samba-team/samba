@@ -254,7 +254,7 @@ static BOOL test_sleep(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 				total_done++;
 				done[i] = True;
 				rcv[i]	= timeval_current();
-				diff[i]	= timeval_diff(&rcv[i], &snd[i]);
+				diff[i]	= timeval_until(&snd[i], &rcv[i]);
 				status	= dcerpc_ndr_request_recv(req[i]);
 				if (!NT_STATUS_IS_OK(status)) {
 					printf("TestSleep(%d) failed - %s\n",

@@ -488,7 +488,7 @@ static int std_event_loop_once(struct event_context *ev)
 	/* work out the right timeout for all timed events */
 	if (std_ev->timed_events) {
 		struct timeval t = timeval_current();
-		tval = timeval_diff(&std_ev->timed_events->next_event, &t);
+		tval = timeval_until(&t, &std_ev->timed_events->next_event);
 		if (timeval_is_zero(&tval)) {
 			std_event_loop_timer(ev);
 			return 0;
