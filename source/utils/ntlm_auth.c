@@ -300,6 +300,8 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	BOOL first = False;
 	const char *reply_code;
 	struct cli_credentials *creds;
+
+	TALLOC_CTX *mem_ctx;
 	
 	if (strlen(buf) < 2) {
 		DEBUG(1, ("query [%s] invalid", buf));
@@ -413,6 +415,9 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		return;
 	}
 
+	/* update */
+	mem_ctx = talloc_named(NULL, 0, "manage_gensec_request internal mem_ctx");
+	
 	if (strncmp(buf, "UG", 2) == 0) {
 		int i;
 		char *grouplist = NULL;
@@ -426,7 +431,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		}
 		
 		/* get the string onto the context */
-		grouplist = talloc_strdup(session_info, "");
+		grouplist = talloc_strdup(mem_ctx, "");
 		
 		for (i=0; i<session_info->security_token->num_sids; i++) {
 			struct security_token *token = session_info->security_token; 
@@ -438,21 +443,21 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		mux_printf(mux_id, "GL %s\n", grouplist);
 		talloc_free(session_info);
 		data_blob_free(&in);
+		talloc_free(mem_ctx);
 		return;
 	}
 
-	/* update */
-
-	nt_status = gensec_update(*gensec_state, NULL, in, &out);
+	nt_status = gensec_update(*gensec_state, mem_ctx, in, &out);
 	
 	/* don't leak 'bad password'/'no such user' info to the network client */
 	nt_status = auth_nt_status_squash(nt_status);
 
 	if (out.length) {
-		out_base64 = base64_encode_data_blob(NULL, out);
+		out_base64 = base64_encode_data_blob(mem_ctx, out);
 	} else {
 		out_base64 = NULL;
 	}
+
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		reply_arg = "*";
 		if (first) {
@@ -517,7 +522,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		}
 	}
 
-	SAFE_FREE(out_base64);
+	talloc_free(mem_ctx);
 	return;
 }
 
