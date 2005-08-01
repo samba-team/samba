@@ -149,8 +149,8 @@ echo "START: $START ($0)";
 echo "END:   $END ($0)";
 
 # if there were any valgrind failures, show them
-list=`find $PREFIX -name 'valgrind.log*'`
-if [ x$list != x ]; then
+count=`find $PREFIX -name 'valgrind.log*' | wc -l`
+if [ "$count" != 0 ]; then
     for f in $PREFIX/valgrind.log*; do
 	if [ -s $f ]; then
 	    echo "VALGRIND FAILURE";
