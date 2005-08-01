@@ -416,6 +416,8 @@ struct fd_handle {
 				 */
 };
 
+struct timed_event;
+struct idle_event;
 struct share_mode_entry;
 
 typedef struct files_struct {

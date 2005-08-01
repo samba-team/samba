@@ -260,6 +260,166 @@ BOOL push_deferred_open_smb_message(struct timeval *ptv,
 			smb_len(current_inbuf)+4, &tv, private_data, priv_len);
 }
 
+static struct timed_event *timed_events;
+
+struct timed_event {
+	struct timed_event *next, *prev;
+	struct timeval when;
+	void (*handler)(struct timed_event *te,
+			const struct timeval *now,
+			void *private_data);
+	void *private_data;
+};
+
+static int timed_event_destructor(void *p)
+{
+	struct timed_event *te = talloc_get_type_abort(p, struct timed_event);
+	DLIST_REMOVE(timed_events, te);
+	return 0;
+}
+
+/****************************************************************************
+ Schedule a function for future calling, cancel with talloc_free().
+ It's the responsibility of the handler to call talloc_free() on the event 
+ handed to it.
+****************************************************************************/
+
+struct timed_event *add_timed_event(TALLOC_CTX *mem_ctx,
+				    struct timeval when,
+				    void (*handler)(struct timed_event *te,
+						    const struct timeval *now,
+						    void *private_data),
+				    void *private_data)
+{
+	struct timed_event *te, *last_te, *cur_te;
+
+	te = TALLOC_P(mem_ctx, struct timed_event);
+	if (te == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return NULL;
+	}
+
+	te->when = when;
+	te->handler = handler;
+	te->private_data = private_data;
+
+	/* keep the list ordered */
+	last_te = NULL;
+	for (cur_te = timed_events; cur_te; cur_te = cur_te->next) {
+		/* if the new event comes before the current one break */
+		if (!timeval_is_zero(&cur_te->when) &&
+		    timeval_compare(&te->when, &cur_te->when) < 0) {
+			break;
+		}
+		last_te = cur_te;
+	}
+
+	DLIST_ADD_AFTER(timed_events, te, last_te);
+	talloc_set_destructor(te, timed_event_destructor);
+	return te;
+}
+
+static void run_events(void)
+{
+	struct timeval now;
+
+	if (timed_events == NULL) {
+		/* No syscall if there are no events */
+		return;
+	}
+
+	GetTimeOfDay(&now);
+
+	if (timeval_compare(&timed_events->when, &now) < 0) {
+		/* Nothing to do yet */
+		return;
+	}
+
+	timed_events->handler(timed_events, &now, timed_events->private_data);
+	return;
+}
+
+static int timed_events_timeout(void)
+{
+	struct timeval now, timeout;
+
+	if (timed_events == NULL) {
+		return -1;
+	}
+
+	now = timeval_current();
+	timeout = timeval_until(&now, &timed_events->when);
+
+	/* We need that additional millisecond here. Select() under Linux
+	 * seems to return a bit early, and due to a second
+	 * setup_select_timeout in timeout_processing and
+	 * receive_message_or_smb interpreting a zero timeout as "wait
+	 * indefinitely" we could end up with processing the event *very*
+	 * late. This can probably change once we don't use milliseconds but
+	 * struct timevals everywhere. -- vl */
+
+	return (timeout.tv_sec * 1000) + ((timeout.tv_usec+999) / 1000)	+ 1;
+}
+
+struct idle_event {
+	struct timed_event *te;
+	struct timeval interval;
+	BOOL (*handler)(const struct timeval *now, void *private_data);
+	void *private_data;
+};
+
+static void idle_event_handler(struct timed_event *te,
+			       const struct timeval *now,
+			       void *private_data)
+{
+	struct idle_event *event =
+		talloc_get_type_abort(private_data, struct idle_event);
+
+	talloc_free(event->te);
+
+	if (!event->handler(now, event->private_data)) {
+		/* Don't repeat, delete ourselves */
+		talloc_free(event);
+		return;
+	}
+
+	event->te = add_timed_event(event, timeval_sum(now, &event->interval),
+				    idle_event_handler, event);
+
+	/* We can't do much but fail here. */
+	SMB_ASSERT(event->te != NULL);
+}
+
+struct idle_event *add_idle_event(TALLOC_CTX *mem_ctx,
+				  struct timeval interval,
+				  BOOL (*handler)(const struct timeval *now,
+						  void *private_data),
+				  void *private_data)
+{
+	struct idle_event *result;
+	struct timeval now = timeval_current();
+
+	result = TALLOC_P(mem_ctx, struct idle_event);
+	if (result == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return NULL;
+	}
+
+	result->interval = interval;
+	result->handler = handler;
+	result->private_data = private_data;
+
+	result->te = add_timed_event(result, timeval_sum(&now, &interval),
+				     idle_event_handler, result);
+	if (result->te == NULL) {
+		DEBUG(0, ("add_timed_event failed\n"));
+		talloc_free(result);
+		return NULL;
+	}
+
+	return result;
+}
+	
 /****************************************************************************
  Do all async processing in here. This includes UDB oplock messages, kernel
  oplock messages, change notify events etc.
@@ -1277,6 +1437,10 @@ static int setup_select_timeout(void)
 	if (print_notify_messages_pending())
 		select_timeout = MIN(select_timeout, 1000);
 
+	t = timed_events_timeout();
+	if (t != -1)
+		select_timeout = MIN(select_timeout, t);
+
 	return select_timeout;
 }
 
@@ -1621,6 +1785,8 @@ void smbd_process(void)
 				return;
 			num_smbs = 0; /* Reset smb counter. */
 		}
+
+		run_events();
 
 #if defined(DEVELOPER)
 		clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, InBuffer, total_buffer_size);
