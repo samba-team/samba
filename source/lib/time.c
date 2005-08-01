@@ -435,7 +435,7 @@ struct timeval timeval_zero(void)
 /*
   return True if a timeval is zero
 */
-BOOL timeval_is_zero(struct timeval *tv)
+BOOL timeval_is_zero(const struct timeval *tv)
 {
 	return tv->tv_sec == 0 && tv->tv_usec == 0;
 }
@@ -465,7 +465,8 @@ struct timeval timeval_set(uint32_t secs, uint32_t usecs)
 /*
   return a timeval ofs microseconds after tv
 */
-struct timeval timeval_add(struct timeval *tv, uint32_t secs, uint32_t usecs)
+struct timeval timeval_add(const struct timeval *tv,
+			   uint32_t secs, uint32_t usecs)
 {
 	struct timeval tv2 = *tv;
 	const uint_t million = 1000000;
@@ -479,7 +480,8 @@ struct timeval timeval_add(struct timeval *tv, uint32_t secs, uint32_t usecs)
 /*
   return the sum of two timeval structures
 */
-struct timeval timeval_sum(struct timeval *tv1, struct timeval *tv2)
+struct timeval timeval_sum(const struct timeval *tv1,
+			   const struct timeval *tv2)
 {
 	return timeval_add(tv1, tv2->tv_sec, tv2->tv_usec);
 }
@@ -499,7 +501,7 @@ struct timeval timeval_current_ofs(uint32_t secs, uint32_t usecs)
   Return 0 if tv2 == tv1
   Return -1 if tv2 < tv1
 */
-int timeval_compare(struct timeval *tv1, struct timeval *tv2)
+int timeval_compare(const struct timeval *tv1, const struct timeval *tv2)
 {
 	if (tv2->tv_sec  > tv1->tv_sec)  return 1;
 	if (tv2->tv_sec  < tv1->tv_sec)  return -1;
@@ -511,7 +513,7 @@ int timeval_compare(struct timeval *tv1, struct timeval *tv2)
 /*
   return True if a timer is in the past
 */
-BOOL timeval_expired(struct timeval *tv)
+BOOL timeval_expired(const struct timeval *tv)
 {
 	struct timeval tv2 = timeval_current();
 	if (tv2.tv_sec > tv->tv_sec) return True;
@@ -522,7 +524,7 @@ BOOL timeval_expired(struct timeval *tv)
 /*
   return the number of seconds elapsed between two times
 */
-double timeval_elapsed2(struct timeval *tv1, struct timeval *tv2)
+double timeval_elapsed2(const struct timeval *tv1, const struct timeval *tv2)
 {
 	return (tv2->tv_sec - tv1->tv_sec) + 
 	       (tv2->tv_usec - tv1->tv_usec)*1.0e-6;
@@ -531,7 +533,7 @@ double timeval_elapsed2(struct timeval *tv1, struct timeval *tv2)
 /*
   return the number of seconds elapsed since a given time
 */
-double timeval_elapsed(struct timeval *tv)
+double timeval_elapsed(const struct timeval *tv)
 {
 	struct timeval tv2 = timeval_current();
 	return timeval_elapsed2(tv, &tv2);
@@ -540,7 +542,8 @@ double timeval_elapsed(struct timeval *tv)
 /*
   return the lesser of two timevals
 */
-struct timeval timeval_min(struct timeval *tv1, struct timeval *tv2)
+struct timeval timeval_min(const struct timeval *tv1,
+			   const struct timeval *tv2)
 {
 	if (tv1->tv_sec < tv2->tv_sec) return *tv1;
 	if (tv1->tv_sec > tv2->tv_sec) return *tv2;
@@ -551,7 +554,8 @@ struct timeval timeval_min(struct timeval *tv1, struct timeval *tv2)
 /*
   return the greater of two timevals
 */
-struct timeval timeval_max(struct timeval *tv1, struct timeval *tv2)
+struct timeval timeval_max(const struct timeval *tv1,
+			   const struct timeval *tv2)
 {
 	if (tv1->tv_sec > tv2->tv_sec) return *tv1;
 	if (tv1->tv_sec < tv2->tv_sec) return *tv2;
@@ -564,7 +568,8 @@ struct timeval timeval_max(struct timeval *tv1, struct timeval *tv2)
   if tv1 comes after tv2, then return a zero timeval
   (this is *tv2 - *tv1)
 */
-struct timeval timeval_until(struct timeval *tv1, struct timeval *tv2)
+struct timeval timeval_until(const struct timeval *tv1,
+			     const struct timeval *tv2)
 {
 	struct timeval t;
 	if (timeval_compare(tv2, tv1) >= 0) {
@@ -584,7 +589,7 @@ struct timeval timeval_until(struct timeval *tv1, struct timeval *tv2)
 /*
   convert a timeval to a NTTIME
 */
-NTTIME timeval_to_nttime(struct timeval *tv)
+NTTIME timeval_to_nttime(const struct timeval *tv)
 {
 	return 10*(tv->tv_usec + 
 		  ((TIME_FIXUP_CONSTANT + (uint64_t)tv->tv_sec) * 1000000));
