@@ -68,7 +68,7 @@ static BOOL test_addone(TALLOC_CTX *mem_ctx,
 	r.in.in_data = value;
 
 	test_debug = True;
-	status = IRPC_CALL(msg_ctx1, MSG_ID2, rpcecho, ECHO_ADDONE, &r);
+	status = IRPC_CALL(msg_ctx1, MSG_ID2, rpcecho, ECHO_ADDONE, &r, mem_ctx);
 	test_debug = False;
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("AddOne failed - %s\n", nt_errstr(status));
@@ -101,7 +101,7 @@ static BOOL test_echodata(TALLOC_CTX *mem_ctx,
 	r.in.in_data = talloc_strdup(mem_ctx, "0123456789");
 	r.in.len = strlen(r.in.in_data);
 
-	status = IRPC_CALL(msg_ctx1, MSG_ID2, rpcecho, ECHO_ECHODATA, &r);
+	status = IRPC_CALL(msg_ctx1, MSG_ID2, rpcecho, ECHO_ECHODATA, &r, mem_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("EchoData failed - %s\n", nt_errstr(status));
 		return False;
@@ -163,7 +163,7 @@ static BOOL test_speed(TALLOC_CTX *mem_ctx,
 	while (timeval_elapsed(&tv) < timelimit) {
 		struct irpc_request *irpc;
 
-		irpc = IRPC_CALL_SEND(msg_ctx1, MSG_ID2, rpcecho, ECHO_ADDONE, &r);
+		irpc = IRPC_CALL_SEND(msg_ctx1, MSG_ID2, rpcecho, ECHO_ADDONE, &r, mem_ctx);
 		if (irpc == NULL) {
 			printf("AddOne send failed\n");
 			return False;

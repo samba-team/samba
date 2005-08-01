@@ -500,9 +500,11 @@ static void irpc_handler_reply(struct messaging_context *msg_ctx,
 	irpc->status = irpc->table->calls[irpc->callnum].ndr_pull(ndr, NDR_OUT, irpc->r);
 	if (NT_STATUS_IS_OK(irpc->status)) {
 		irpc->status = header->status;
+		talloc_steal(irpc->mem_ctx, ndr);
+	} else {
+		talloc_steal(irpc, ndr);
 	}
 	irpc->done = True;
-	talloc_steal(irpc, ndr);
 	if (irpc->async.fn) {
 		irpc->async.fn(irpc);
 	}
@@ -634,7 +636,7 @@ static void irpc_timeout(struct event_context *ev, struct timed_event *te,
 struct irpc_request *irpc_call_send(struct messaging_context *msg_ctx, 
 				    uint32_t server_id, 
 				    const struct dcerpc_interface_table *table, 
-				    int callnum, void *r)
+				    int callnum, void *r, TALLOC_CTX *ctx)
 {
 	struct irpc_header header;
 	struct ndr_push *ndr;
@@ -653,6 +655,7 @@ struct irpc_request *irpc_call_send(struct messaging_context *msg_ctx,
 	irpc->r        = r;
 	irpc->done     = False;
 	irpc->async.fn = NULL;
+	irpc->mem_ctx  = ctx;
 
 	talloc_set_destructor(irpc, irpc_destructor);
 
@@ -713,10 +716,11 @@ NTSTATUS irpc_call_recv(struct irpc_request *irpc)
 NTSTATUS irpc_call(struct messaging_context *msg_ctx, 
 		   uint32_t server_id, 
 		   const struct dcerpc_interface_table *table, 
-		   int callnum, void *r)
+		   int callnum, void *r,
+		   TALLOC_CTX *mem_ctx)
 {
 	struct irpc_request *irpc = irpc_call_send(msg_ctx, server_id, 
-						   table, callnum, r);
+						   table, callnum, r, mem_ctx);
 	NTSTATUS status = irpc_call_recv(irpc);
 	talloc_free(irpc);
 	return status;

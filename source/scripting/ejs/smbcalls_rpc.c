@@ -219,7 +219,7 @@ static int ejs_irpc_call(int eid, struct MprVar *io,
 	/* make the actual calls */
 	for (i=0;i<count;i++) {
 		reqs[i] = irpc_call_send(p->msg_ctx, p->dest_ids[i], 
-					 iface, callnum, ptr);
+					 iface, callnum, ptr, ptr);
 		if (reqs[i] == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto done;
