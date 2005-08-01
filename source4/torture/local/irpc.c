@@ -48,13 +48,14 @@ static NTSTATUS irpc_AddOne(struct irpc_message *irpc, struct echo_AddOne *r)
 */
 static BOOL test_addone(TALLOC_CTX *mem_ctx, 
 			struct messaging_context *msg_ctx1,
-			struct messaging_context *msg_ctx2)
+			struct messaging_context *msg_ctx2,
+			uint32_t value)
 {
 	struct echo_AddOne r;
 	NTSTATUS status;
 
 	/* make the call */
-	r.in.in_data = random() & 0xFFFFFFFF;
+	r.in.in_data = value;
 
 	test_debug = True;
 	status = IRPC_CALL(msg_ctx1, MSG_ID2, rpcecho, ECHO_ADDONE, &r);
@@ -168,7 +169,11 @@ BOOL torture_local_irpc(void)
 	IRPC_REGISTER(msg_ctx1, rpcecho, ECHO_ADDONE, irpc_AddOne, NULL);
 	IRPC_REGISTER(msg_ctx2, rpcecho, ECHO_ADDONE, irpc_AddOne, NULL);
 
-	ret &= test_addone(mem_ctx, msg_ctx1, msg_ctx2);
+	ret &= test_addone(mem_ctx, msg_ctx1, msg_ctx2, 0);
+	ret &= test_addone(mem_ctx, msg_ctx1, msg_ctx2, 0x7FFFFFFE);
+	ret &= test_addone(mem_ctx, msg_ctx1, msg_ctx2, 0xFFFFFFFE);
+	ret &= test_addone(mem_ctx, msg_ctx1, msg_ctx2, 0xFFFFFFFF);
+	ret &= test_addone(mem_ctx, msg_ctx1, msg_ctx2, random() & 0xFFFFFFFF);
 	ret &= test_speed(mem_ctx, msg_ctx1, msg_ctx2, ev);
 
 	talloc_free(mem_ctx);
