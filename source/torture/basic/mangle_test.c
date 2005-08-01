@@ -177,6 +177,8 @@ BOOL torture_mangle(void)
 	for (i=0;i<torture_numops;i++) {
 		fstring name;
 
+		ZERO_STRUCT(name);
+
 		gen_name(name);
 
 		if (!test_one(cli, name)) {
