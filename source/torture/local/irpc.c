@@ -42,6 +42,16 @@ static NTSTATUS irpc_AddOne(struct irpc_message *irpc, struct echo_AddOne *r)
 	return NT_STATUS_OK;
 }
 
+/*
+  serve up EchoData over the irpc system
+*/
+static NTSTATUS irpc_EchoData(struct irpc_message *irpc, struct echo_EchoData *r)
+{
+	r->out.out_data = talloc_memdup(r, r->in.in_data, r->in.len);
+	NT_STATUS_HAVE_NO_MEMORY(r->out.out_data);
+	return NT_STATUS_OK;
+}
+
 
 /*
   test a addone call over the internal messaging system
@@ -73,6 +83,42 @@ static BOOL test_addone(TALLOC_CTX *mem_ctx,
 	}
 
 	printf("%u + 1 = %u\n", r.in.in_data, *r.out.out_data);
+
+	return True;	
+}
+
+/*
+  test a echodata call over the internal messaging system
+*/
+static BOOL test_echodata(TALLOC_CTX *mem_ctx, 
+			  struct messaging_context *msg_ctx1,
+			  struct messaging_context *msg_ctx2)
+{
+	struct echo_EchoData r;
+	NTSTATUS status;
+
+	/* make the call */
+	r.in.in_data = talloc_strdup(mem_ctx, "0123456789");
+	r.in.len = strlen(r.in.in_data);
+
+	status = IRPC_CALL(msg_ctx1, MSG_ID2, rpcecho, ECHO_ECHODATA, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("EchoData failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	/* check the answer */
+	if (memcmp(r.out.out_data, r.in.in_data, r.in.len) != 0) {
+		printf("EchoData wrong answer\n");
+		NDR_PRINT_OUT_DEBUG(echo_EchoData, &r);
+		return False;
+	}
+
+	printf("Echo '%*.*s' -> '%*.*s'\n", 
+	       r.in.len, r.in.len,
+	       r.in.in_data,
+	       r.in.len, r.in.len,
+	       r.out.out_data);
 
 	return True;	
 }
@@ -169,11 +215,15 @@ BOOL torture_local_irpc(void)
 	IRPC_REGISTER(msg_ctx1, rpcecho, ECHO_ADDONE, irpc_AddOne, NULL);
 	IRPC_REGISTER(msg_ctx2, rpcecho, ECHO_ADDONE, irpc_AddOne, NULL);
 
+	IRPC_REGISTER(msg_ctx1, rpcecho, ECHO_ECHODATA, irpc_EchoData, NULL);
+	IRPC_REGISTER(msg_ctx2, rpcecho, ECHO_ECHODATA, irpc_EchoData, NULL);
+
 	ret &= test_addone(mem_ctx, msg_ctx1, msg_ctx2, 0);
 	ret &= test_addone(mem_ctx, msg_ctx1, msg_ctx2, 0x7FFFFFFE);
 	ret &= test_addone(mem_ctx, msg_ctx1, msg_ctx2, 0xFFFFFFFE);
 	ret &= test_addone(mem_ctx, msg_ctx1, msg_ctx2, 0xFFFFFFFF);
 	ret &= test_addone(mem_ctx, msg_ctx1, msg_ctx2, random() & 0xFFFFFFFF);
+	ret &= test_echodata(mem_ctx, msg_ctx1, msg_ctx2);
 	ret &= test_speed(mem_ctx, msg_ctx1, msg_ctx2, ev);
 
 	talloc_free(mem_ctx);
