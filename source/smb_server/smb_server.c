@@ -659,7 +659,7 @@ error:
 */
 void smbsrv_terminate_connection(struct smbsrv_connection *smb_conn, const char *reason)
 {
-	stream_terminate_connection(smb_conn->connection, reason);
+	smb_conn->terminate = True;
 }
 
 /*
@@ -684,10 +684,10 @@ static void smbsrv_recv(struct stream_connection *conn, uint16_t flags)
 	smb_conn->processing = True;
 	status = receive_smb_request(smb_conn);
 	smb_conn->processing = False;
-	if (NT_STATUS_IS_ERR(status)) {
+	if (NT_STATUS_IS_ERR(status) || smb_conn->terminate) {
 		talloc_free(conn->event.fde);
 		conn->event.fde = NULL;
-		smbsrv_terminate_connection(smb_conn, nt_errstr(status));
+		stream_terminate_connection(smb_conn->connection, nt_errstr(status));
 		return;
 	}
 
@@ -717,7 +717,7 @@ static void smbsrv_send(struct stream_connection *conn, uint16_t flags)
 		status = socket_send(conn->socket, &blob, &sendlen, 0);
 		if (NT_STATUS_IS_ERR(status)) {
 			smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
-			return;
+			break;
 		}
 		if (sendlen == 0) {
 			break;
@@ -731,6 +731,11 @@ static void smbsrv_send(struct stream_connection *conn, uint16_t flags)
 			DLIST_REMOVE(smb_conn->pending_send, req);
 			req_destroy(req);
 		}
+	}
+
+	if (smb_conn->terminate) {
+		stream_terminate_connection(smb_conn->connection, "send termination");
+		return;
 	}
 
 	/* if no more requests are pending to be sent then
