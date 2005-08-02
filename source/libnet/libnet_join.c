@@ -23,6 +23,7 @@
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
+#include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "lib/ldb/include/ldb.h"
 #include "include/secrets.h"
 
@@ -73,6 +74,14 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	struct samr_GetUserPwInfo pwp;
 	struct lsa_String samr_account_name;
 
+	struct dcerpc_pipe *drsuapi_pipe;
+	struct dcerpc_binding *drsuapi_binding;
+	struct drsuapi_DsBind r_drsuapi_bind;
+	struct drsuapi_DsCrackNames r_crack_names;
+	struct drsuapi_DsNameString names[1];
+	struct policy_handle drsuapi_bind_handle;
+	struct GUID drsuapi_bind_guid;
+
 	uint32_t acct_flags;
 	uint32_t rid, access_granted;
 	int policy_min_pw_len = 0;
@@ -80,6 +89,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	struct dom_sid *domain_sid;
 	const char *domain_name;
 	const char *realm = NULL; /* Also flag for remote being AD */
+	const char *account_dn;
 
 	tmp_ctx = talloc_named(mem_ctx, 0, "libnet_Join temp context");
 	if (!tmp_ctx) {
@@ -418,7 +428,104 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		talloc_free(tmp_ctx);
 		return NT_STATUS_OK;
 	}
-		
+
+	drsuapi_binding = talloc(tmp_ctx, struct dcerpc_binding);
+	*drsuapi_binding = *samr_binding;
+	drsuapi_binding->transport = NCACN_IP_TCP;
+	drsuapi_binding->endpoint = NULL;
+	drsuapi_binding->flags |= DCERPC_SEAL;
+	
+	status = dcerpc_pipe_connect_b(tmp_ctx, 
+				       &drsuapi_pipe,
+				       drsuapi_binding,
+				       DCERPC_DRSUAPI_UUID,
+				       DCERPC_DRSUAPI_VERSION, 
+				       ctx->cred, 
+				       ctx->event_ctx);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		r->out.error_string = talloc_asprintf(mem_ctx,
+						"Connection to DRSUAPI pipe of PDC of domain '%s' failed: %s",
+						r->in.domain_name, nt_errstr(status));
+		talloc_free(tmp_ctx);
+		return status;
+	}
+	
+	GUID_from_string(DRSUAPI_DS_BIND_GUID, &drsuapi_bind_guid);
+
+	r_drsuapi_bind.in.bind_guid = &drsuapi_bind_guid;
+	r_drsuapi_bind.in.bind_info = NULL;
+	r_drsuapi_bind.out.bind_handle = &drsuapi_bind_handle;
+
+	status = dcerpc_drsuapi_DsBind(drsuapi_pipe, tmp_ctx, &r_drsuapi_bind);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			r->out.error_string
+				= talloc_asprintf(mem_ctx,
+						  "dcerpc_drsuapi_DsBind for [%s\\%s] failed - %s\n", 
+						  domain_name, r->in.account_name, 
+						  dcerpc_errstr(tmp_ctx, drsuapi_pipe->last_fault_code));
+			talloc_free(tmp_ctx);
+			return status;
+		} else {
+			r->out.error_string
+				= talloc_asprintf(mem_ctx,
+						  "dcerpc_drsuapi_DsBind for [%s\\%s] failed - %s\n", 
+						  domain_name, r->in.account_name, 
+						  nt_errstr(status));
+			talloc_free(tmp_ctx);
+			return status;
+		}
+	} else if (!W_ERROR_IS_OK(r_crack_names.out.result)) {
+		r->out.error_string
+				= talloc_asprintf(mem_ctx,
+						  "DsBind failed - %s\n", win_errstr(r_drsuapi_bind.out.result));
+			talloc_free(tmp_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	ZERO_STRUCT(r_crack_names);
+	r_crack_names.in.bind_handle		= &drsuapi_bind_handle;
+	r_crack_names.in.level			= 1;
+	r_crack_names.in.req.req1.unknown1		= 0x000004e4;
+	r_crack_names.in.req.req1.unknown2		= 0x00000407;
+	r_crack_names.in.req.req1.count		= 1;
+	r_crack_names.in.req.req1.names		= names;
+	r_crack_names.in.req.req1.format_flags	= DRSUAPI_DS_NAME_FLAG_NO_FLAGS;
+	r_crack_names.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
+	r_crack_names.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
+	names[0].str = talloc_asprintf(tmp_ctx, "%s\\%s", domain_name, r->in.account_name);
+
+	status = dcerpc_drsuapi_DsCrackNames(drsuapi_pipe, tmp_ctx, &r_crack_names);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			r->out.error_string
+				= talloc_asprintf(mem_ctx,
+						  "dcerpc_drsuapi_DsCrackNames for [%s\\%s] failed - %s\n", 
+						  domain_name, r->in.account_name, 
+						  dcerpc_errstr(tmp_ctx, drsuapi_pipe->last_fault_code));
+			talloc_free(tmp_ctx);
+			return status;
+		} else {
+			r->out.error_string
+				= talloc_asprintf(mem_ctx,
+						  "dcerpc_drsuapi_DsCrackNames for [%s\\%s] failed - %s\n", 
+						  domain_name, r->in.account_name, 
+						  nt_errstr(status));
+			talloc_free(tmp_ctx);
+			return status;
+		}
+	} else if (!W_ERROR_IS_OK(r_crack_names.out.result)) {
+		r->out.error_string
+				= talloc_asprintf(mem_ctx,
+						  "DsCrackNames failed - %s\n", win_errstr(r_crack_names.out.result));
+		talloc_free(tmp_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	account_dn = r_crack_names.out.ctr.ctr1->array[0].result_name;
+
+	printf("Account DN is: %s\n", account_dn);
 	
 	/* close connection */
 	talloc_free(tmp_ctx);
