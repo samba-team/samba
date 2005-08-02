@@ -443,6 +443,7 @@ typedef struct files_struct {
 	time_t last_write_time;
 	int oplock_type;
 	int sent_oplock_break;
+	struct timed_event *oplock_timeout;
 	BOOL level2_around;
 	int num_waiting_for_level2_inform;
 

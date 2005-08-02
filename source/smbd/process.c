@@ -274,6 +274,7 @@ struct timed_event {
 static int timed_event_destructor(void *p)
 {
 	struct timed_event *te = talloc_get_type_abort(p, struct timed_event);
+	DEBUG(10, ("Destroying timed event\n"));
 	DLIST_REMOVE(timed_events, te);
 	return 0;
 }
@@ -325,13 +326,15 @@ static void run_events(void)
 
 	if (timed_events == NULL) {
 		/* No syscall if there are no events */
+		DEBUG(10, ("run_events: No events\n"));
 		return;
 	}
 
 	GetTimeOfDay(&now);
 
-	if (timeval_compare(&timed_events->when, &now) < 0) {
+	if (timeval_compare(&now, &timed_events->when) < 0) {
 		/* Nothing to do yet */
+		DEBUG(10, ("run_events: Nothing to do\n"));
 		return;
 	}
 
@@ -339,26 +342,21 @@ static void run_events(void)
 	return;
 }
 
-static int timed_events_timeout(void)
+struct timeval timed_events_timeout(void)
 {
 	struct timeval now, timeout;
 
 	if (timed_events == NULL) {
-		return -1;
+		return timeval_set(SMBD_SELECT_TIMEOUT, 0);
 	}
 
 	now = timeval_current();
 	timeout = timeval_until(&now, &timed_events->when);
 
-	/* We need that additional millisecond here. Select() under Linux
-	 * seems to return a bit early, and due to a second
-	 * setup_select_timeout in timeout_processing and
-	 * receive_message_or_smb interpreting a zero timeout as "wait
-	 * indefinitely" we could end up with processing the event *very*
-	 * late. This can probably change once we don't use milliseconds but
-	 * struct timevals everywhere. -- vl */
+	DEBUG(10, ("timed_events_timeout: %d/%d\n", (int)timeout.tv_sec,
+		   (int)timeout.tv_usec));
 
-	return (timeout.tv_sec * 1000) + ((timeout.tv_usec+999) / 1000)	+ 1;
+	return timeout;
 }
 
 struct idle_event {
@@ -481,17 +479,17 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 {
 	fd_set fds;
 	int selrtn;
-	struct timeval to;
-	struct timeval *pto;
+	struct timeval to = timeval_set(SMBD_SELECT_TIMEOUT, 0);
 	int maxfd;
 
 	smb_read_error = 0;
 
  again:
 
-	to.tv_sec = timeout / 1000;
-	to.tv_usec = (timeout % 1000) * 1000;
-	pto = timeout > 0 ? &to : NULL;
+	if (timeout >= 0) {
+		to.tv_sec = timeout / 1000;
+		to.tv_usec = (timeout % 1000) * 1000;
+	}
 
 	/*
 	 * Note that this call must be before processing any SMB
@@ -540,9 +538,8 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 				/* Make a more accurate select timeout. */
 				to.tv_sec = tdif / 1000000;
 				to.tv_usec = tdif % 1000000;
-				pto = &to;
 				DEBUG(10,("receive_message_or_smb: select with timeout of [%u.%06u]\n",
-					(unsigned int)pto->tv_sec, (unsigned int)pto->tv_usec ));
+					(unsigned int)to.tv_sec, (unsigned int)to.tv_usec ));
 			}
 		}
 
@@ -581,11 +578,19 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 		 */
 		goto again;
 	}
+
+	{
+		struct timeval tmp = timed_events_timeout();
+		to = timeval_min(&to, &tmp);
+		if (timeval_is_zero(&to)) {
+			return True;
+		}
+	}
 	
 	FD_SET(smbd_server_fd(),&fds);
 	maxfd = setup_oplock_select_set(&fds);
 
-	selrtn = sys_select(MAX(maxfd,smbd_server_fd())+1,&fds,NULL,NULL,pto);
+	selrtn = sys_select(MAX(maxfd,smbd_server_fd())+1,&fds,NULL,NULL,&to);
 
 	/* if we get EINTR then maybe we have received an oplock
 	   signal - treat this as select returning 1. This is ugly, but
@@ -1431,15 +1436,12 @@ static int setup_select_timeout(void)
 	select_timeout *= 1000;
 
 	t = change_notify_timeout();
+	DEBUG(10, ("change_notify_timeout: %d\n", t));
 	if (t != -1)
 		select_timeout = MIN(select_timeout, t*1000);
 
 	if (print_notify_messages_pending())
 		select_timeout = MIN(select_timeout, 1000);
-
-	t = timed_events_timeout();
-	if (t != -1)
-		select_timeout = MIN(select_timeout, t);
 
 	return select_timeout;
 }
@@ -1792,7 +1794,7 @@ void smbd_process(void)
 		clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, InBuffer, total_buffer_size);
 #endif
 
-		while (!receive_message_or_smb(InBuffer,BUFFER_SIZE+LARGE_WRITEX_HDR_SIZE,select_timeout)) {
+		while (!receive_message_or_smb(InBuffer,BUFFER_SIZE+LARGE_WRITEX_HDR_SIZE,-1)) {
 			if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
 				return;
 			num_smbs = 0; /* Reset smb counter. */

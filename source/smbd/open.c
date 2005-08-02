@@ -1593,7 +1593,13 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		/* delay_for_oplocks might delete the fsp */
 		open_time = fsp->open_time;
 		if (delay_for_oplocks(fsp, second_try)) {
-			defer_open(&open_time, OPLOCK_BREAK_USEC_WAIT,
+			/* Normally the smbd we asked should respond within
+			 * OPLOCK_BREAK_TIMEOUT seconds regardless of whether
+			 * the client did, give twice the timeout as a safety
+			 * measure here in case the other smbd is stuck
+			 * somewhere else. */
+			defer_open(&open_time,
+				   (OPLOCK_BREAK_TIMEOUT*2) * 1000000,
 				   fname, dev, inode);
 			return NULL;
 		}

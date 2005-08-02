@@ -1018,6 +1018,18 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 	return True;
 }
 
+static void oplock_timeout_handler(struct timed_event *te,
+				   const struct timeval *now,
+				   void *private_data)
+{
+	files_struct *fsp = private_data;
+
+	DEBUG(0, ("Oplock break failed -- replying anyway\n"));
+	global_client_failed_oplock_break = True;
+	remove_oplock(fsp);
+	reply_to_oplock_break_requests(fsp);
+}
+
 static void process_oplock_break_message(int msg_type, pid_t src,
 					 void *buf, size_t len)
 {
@@ -1115,6 +1127,20 @@ static void process_oplock_break_message(int msg_type, pid_t src,
 	ADD_TO_ARRAY(NULL, struct share_mode_entry, *msg,
 		     &fsp->pending_break_messages,
 		     &fsp->num_pending_break_messages);
+
+	if (fsp->oplock_timeout != NULL) {
+		DEBUG(0, ("Logic problem -- have an oplock event hanging "
+			  "around\n"));
+	}
+
+	fsp->oplock_timeout =
+		add_timed_event(NULL,
+				timeval_current_ofs(OPLOCK_BREAK_TIMEOUT, 0),
+				oplock_timeout_handler, fsp);
+
+	if (fsp->oplock_timeout == NULL) {
+		DEBUG(0, ("Could not add oplock timeout handler\n"));
+	}
 }
 
 static void process_kernel_oplock_break(int msg_type, pid_t src,
@@ -1187,6 +1213,10 @@ void reply_to_oplock_break_requests(files_struct *fsp)
 
 	SAFE_FREE(fsp->pending_break_messages);
 	fsp->num_pending_break_messages = 0;
+	if (fsp->oplock_timeout != NULL) {
+		talloc_free(fsp->oplock_timeout);
+		fsp->oplock_timeout = NULL;
+	}
 	return;
 }
 
