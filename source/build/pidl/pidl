@@ -19,7 +19,7 @@ use Parse::Pidl::Util;
 sub SaveStructure($$)
 {
 	my($filename,$v) = @_;
-	Parse::Pidl::Util::FileSave($filename, Parse::Pidl::Util::MyDumper($v));
+	FileSave($filename, Parse::Pidl::Util::MyDumper($v));
 }
 
 #####################################################################
@@ -27,10 +27,39 @@ sub SaveStructure($$)
 sub LoadStructure($)
 {
 	my $f = shift;
-	my $contents = Parse::Pidl::Util::FileLoad($f);
+	my $contents = FileLoad($f);
 	defined $contents || return undef;
 	return eval "$contents";
 }
+
+#####################################################################
+# read a file into a string
+sub FileLoad($)
+{
+    my($filename) = shift;
+    local(*INPUTFILE);
+    open(INPUTFILE, $filename) || return undef;
+    my($saved_delim) = $/;
+    undef $/;
+    my($data) = <INPUTFILE>;
+    close(INPUTFILE);
+    $/ = $saved_delim;
+    return $data;
+}
+
+#####################################################################
+# write a string into a file
+sub FileSave($$)
+{
+    my($filename) = shift;
+    my($v) = shift;
+    local(*FILE);
+    open(FILE, ">$filename") || die "can't open $filename";    
+    print FILE $v;
+    close(FILE);
+}
+
+
 
 my($opt_help) = 0;
 my($opt_parse) = 0;
@@ -171,7 +200,7 @@ sub process_file($)
 
 	if ($opt_diff) {
 		my($tempfile) = "$outputdir/$basename.tmp";
-		Parse::Pidl::Util::FileSave($tempfile, IdlDump::Dump($pidl));
+		FileSave($tempfile, IdlDump::Dump($pidl));
 		system("diff -wu $idl_file $tempfile");
 		unlink($tempfile);
 	}
@@ -181,7 +210,7 @@ sub process_file($)
 		my $res = Parse::Pidl::Samba::COM::Header::Parse($pidl);
 		if ($res) {
 			my $comh_filename = ($opt_com_header or "$outputdir/com_$basename.h");
-			Parse::Pidl::Util::FileSave($comh_filename, 
+			FileSave($comh_filename, 
 			"#include \"librpc/gen_ndr/ndr_orpc.h\"\n" . 
 			"#include \"$outputdir/ndr_$basename.h\"\n" . 
 			$res);
@@ -194,7 +223,7 @@ sub process_file($)
 		my $res = Parse::Pidl::Samba::COM::Proxy::Parse($pidl);
 		if ($res) {
 			my ($client) = ($opt_dcom_proxy or "$outputdir/$basename\_p.c");
-			Parse::Pidl::Util::FileSave($client, 
+			FileSave($client, 
 			"#include \"includes.h\"\n" .
 			"#include \"$outputdir/com_$basename.h\"\n" . 
 			"#include \"lib/com/dcom/dcom.h\"\n" .$res);
@@ -224,13 +253,13 @@ sub process_file($)
 	if (defined($opt_header)) {
 		my $header = ($opt_header or "$outputdir/$basename.h");
 		require Parse::Pidl::Samba::Header;
-		Parse::Pidl::Util::FileSave($header, Parse::Pidl::Samba::Header::Parse($pidl));
+		FileSave($header, Parse::Pidl::Samba::Header::Parse($pidl));
 	}
 
 	if (defined($opt_ndr_header)) {
 		my $header = ($opt_ndr_header or "$outputdir/ndr_$basename.h");
 		require Parse::Pidl::Samba::NDR::Header;
-		Parse::Pidl::Util::FileSave($header, Parse::Pidl::Samba::NDR::Header::Parse($pidl, $basename));
+		FileSave($header, Parse::Pidl::Samba::NDR::Header::Parse($pidl, $basename));
 		if (defined($opt_swig)) {
 		  require Parse::Pidl::Samba::SWIG;
 		  my($filename) = ($opt_swig or "$outputdir/$basename.i");
@@ -242,7 +271,7 @@ sub process_file($)
 	  require Parse::Pidl::Ethereal::NDR::Header;
 	  my($eparserhdr) = ($opt_eth_header or "$outputdir/packet-dcerpc-$basename.h");
 
-	  Parse::Pidl::Util::FileSave($eparserhdr, Parse::Pidl::Ethereal::NDR::Header::Parse($ndr));
+	  FileSave($eparserhdr, Parse::Pidl::Ethereal::NDR::Header::Parse($ndr));
 	}
 
 	my $h_filename = "$outputdir/ndr_$basename.h";
@@ -250,15 +279,15 @@ sub process_file($)
 		require Parse::Pidl::Samba::NDR::Client;
 		my ($client) = ($opt_client or "$outputdir/ndr_$basename\_c.c");
 
-		Parse::Pidl::Util::FileSave($client, Parse::Pidl::Samba::NDR::Client::Parse($ndr,$h_filename));
+		FileSave($client, Parse::Pidl::Samba::NDR::Client::Parse($ndr,$h_filename));
 	}
 
 	if (defined($opt_ejs)) {
 		require Parse::Pidl::Samba::EJS;
 		require Parse::Pidl::Samba::EJSHeader;
-		Parse::Pidl::Util::FileSave("$outputdir/ndr_$basename\_ejs.c", Parse::Pidl::Samba::EJS::Parse($ndr, $h_filename));
+		FileSave("$outputdir/ndr_$basename\_ejs.c", Parse::Pidl::Samba::EJS::Parse($ndr, $h_filename));
 
-		Parse::Pidl::Util::FileSave("$outputdir/ndr_$basename\_ejs.h", Parse::Pidl::Samba::EJSHeader::Parse($ndr));
+		FileSave("$outputdir/ndr_$basename\_ejs.h", Parse::Pidl::Samba::EJSHeader::Parse($ndr));
 	}
 
 	if (defined($opt_server)) {
@@ -274,7 +303,7 @@ sub process_file($)
 			}
 		}
 
-		Parse::Pidl::Util::FileSave(($opt_server or "$outputdir/ndr_$basename\_s.c"), Parse::Pidl::Samba::NDR::Server::Parse($ndr,$h_filename));
+		FileSave(($opt_server or "$outputdir/ndr_$basename\_s.c"), Parse::Pidl::Samba::NDR::Server::Parse($ndr,$h_filename));
 
 		if ($dcom ne "") {
 			$dcom = "
@@ -285,32 +314,32 @@ sub process_file($)
 
 $dcom
 ";
-	Parse::Pidl::Util::FileSave("$outputdir/$basename\_d.c", $dcom);
+	FileSave("$outputdir/$basename\_d.c", $dcom);
 		}
 	}
 
 	if (defined($opt_ndr_parser)) {
 		my $parser = ($opt_ndr_parser or "$outputdir/ndr_$basename.c");
 		require Parse::Pidl::Samba::NDR::Parser;
-		Parse::Pidl::Util::FileSave($parser, Parse::Pidl::Samba::NDR::Parser::Parse($ndr, $parser));
+		FileSave($parser, Parse::Pidl::Samba::NDR::Parser::Parse($ndr, $parser));
 	}
 
 	if (defined($opt_eth_parser)) {
 	  require Parse::Pidl::Ethereal::NDR::Parser;
 	  my($eparser) = ($opt_eth_parser or "$outputdir/packet-dcerpc-$basename.c");
-	  Parse::Pidl::Util::FileSave($eparser, Parse::Pidl::Ethereal::NDR::Parser::Parse($ndr, $basename, $eparser));
+	  FileSave($eparser, Parse::Pidl::Ethereal::NDR::Parser::Parse($ndr, $basename, $eparser));
 	}
 
 	my $tdr_parser = ($opt_tdr_parser or "$outputdir/tdr_$basename.c");
 	my $tdr_header = ($opt_tdr_header or "$outputdir/tdr_$basename.h");
 	if (defined($opt_tdr_parser)) {
 		require Parse::Pidl::Samba::TDR;
-		Parse::Pidl::Util::FileSave($tdr_parser, Parse::Pidl::Samba::TDR::Parser($pidl, $tdr_header));
+		FileSave($tdr_parser, Parse::Pidl::Samba::TDR::Parser($pidl, $tdr_header));
 	}
 
 	if (defined($opt_tdr_header)) {
 		require Parse::Pidl::Samba::TDR;
-		Parse::Pidl::Util::FileSave($tdr_header, Parse::Pidl::Samba::TDR::Header($pidl, $outputdir));
+		FileSave($tdr_header, Parse::Pidl::Samba::TDR::Header($pidl, $outputdir));
 	}
 
 	if ($opt_template) {
