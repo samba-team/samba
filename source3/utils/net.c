@@ -219,7 +219,7 @@ NTSTATUS connect_to_ipc_anonymous(struct cli_state **c,
  *
  * @return Normal NTSTATUS return.
  **/
-NTSTATUS connect_pipe(struct cli_state **cli_dst, int pipe_num, BOOL *got_pipe)
+NTSTATUS connect_dst_pipe(struct cli_state **cli_dst, int pipe_num, BOOL *got_pipe)
 {
 	NTSTATUS nt_status;
 	char *server_name = SMB_STRDUP("127.0.0.1");
