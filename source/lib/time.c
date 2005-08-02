@@ -366,7 +366,7 @@ time_t nt_time_to_unix_abs(NTTIME *nt)
 		return(0);
 
 	if (nt->high==0x80000000 && nt->low==0)
-		return -1;
+		return (time_t)-1;
 
 	/* reverse the time */
 	/* it's a negative value, turn it to positive */
@@ -421,7 +421,7 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 		nt->high = 0x7fffffff;
 		return;
 	}		
-	if (t == -1) {
+	if (t == (time_t)-1) {
 		nt->low = 0xffffffff;
 		nt->high = 0xffffffff;
 		return;
@@ -462,7 +462,7 @@ void unix_to_nt_time_abs(NTTIME *nt, time_t t)
 		return;
 	}
 		
-	if (t == -1) {
+	if (t == (time_t)-1) {
 		/* that's what NT uses for infinite */
 		nt->low = 0x0;
 		nt->high = 0x80000000;
