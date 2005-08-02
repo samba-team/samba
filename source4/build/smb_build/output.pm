@@ -14,7 +14,7 @@ sub generate_mergedobj($)
 {
 	my $subsys = shift;
 
-	$subsys->{OUTPUT} = $subsys->{TARGET} = "bin/$subsys->{TYPE}_$subsys->{NAME}.o";
+	$subsys->{OUTPUT} = $subsys->{TARGET} = "bin/subsystems/$subsys->{TYPE}_$subsys->{NAME}.o";
 }
 
 sub generate_objlist($)
