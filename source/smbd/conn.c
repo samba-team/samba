@@ -225,10 +225,10 @@ void conn_clear_vuid_cache(uint16 vuid)
 }
 
 /****************************************************************************
- Free a conn structure.
+ Free a conn structure - internal part.
 ****************************************************************************/
 
-void conn_free(connection_struct *conn)
+void conn_free_internal(connection_struct *conn)
 {
  	vfs_handle_struct *handle = NULL, *thandle = NULL;
  	TALLOC_CTX *mem_ctx = NULL;
@@ -242,8 +242,6 @@ void conn_free(connection_struct *conn)
 			handle->free_data(&handle->data);
 		handle = thandle;
 	}
-
-	DLIST_REMOVE(Connections, conn);
 
 	if (conn->ngroups && conn->groups) {
 		SAFE_FREE(conn->groups);
@@ -264,15 +262,25 @@ void conn_free(connection_struct *conn)
 	string_free(&conn->connectpath);
 	string_free(&conn->origpath);
 
-	bitmap_clear(bmap, conn->cnum);
-	num_open--;
-
 	mem_ctx = conn->mem_ctx;
 	ZERO_STRUCTP(conn);
 	talloc_destroy(mem_ctx);
 }
 
+/****************************************************************************
+ Free a conn structure.
+****************************************************************************/
 
+void conn_free(connection_struct *conn)
+{
+	DLIST_REMOVE(Connections, conn);
+
+	bitmap_clear(bmap, conn->cnum);
+	num_open--;
+
+	conn_free_internal(conn);
+}
+ 
 /****************************************************************************
 receive a smbcontrol message to forcibly unmount a share
 the message contains just a share name and all instances of that
