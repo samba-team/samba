@@ -253,7 +253,6 @@ WERROR _svcctl_open_service(pipes_struct *p, SVCCTL_Q_OPEN_SERVICE *q_u, SVCCTL_
 	uint32 access_granted = 0;
 	NTSTATUS status;
 	pstring service;
-	SERVICE_INFO *scm_info;
 
 	rpcstr_pull(service, q_u->servicename.buffer, sizeof(service), q_u->servicename.uni_str_len*2, 0);
 	
@@ -262,7 +261,7 @@ WERROR _svcctl_open_service(pipes_struct *p, SVCCTL_Q_OPEN_SERVICE *q_u, SVCCTL_
 	
 	/* based on my tests you can open a service if you have a valid scm handle */
 	
-	if ( !(scm_info = find_service_info_by_hnd( p, &q_u->handle )) )
+	if ( !find_service_info_by_hnd( p, &q_u->handle ) )
 		return WERR_BADFID;
 			
 	/* perform access checks */
