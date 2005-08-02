@@ -43,43 +43,43 @@ struct ap_table {
 static const struct ap_table account_policy_names[] = {
 	{AP_MIN_PASSWORD_LEN, "min password length", MINPASSWDLENGTH, 
 		"Minimal password length (default: 5)", 
-		LDAP_ATTRIBUTE_AP_PWD_MIN_LEN },
+		"sambaMinPwdLength" },
 
 	{AP_PASSWORD_HISTORY, "password history", 0,
 		"Length of Password History Entries (default: 0 => off)", 
-		LDAP_ATTRIBUTE_AP_PWD_HIST_LEN },
+		"sambaPwdHistoryLength" },
 		
 	{AP_USER_MUST_LOGON_TO_CHG_PASS, "user must logon to change password", 0,
 		"Force Users to logon for password change (default: 0 => off, 2 => on)",
-		LDAP_ATTRIBUTE_AP_LOGON_TO_CHG_PASS },
+		"sambaLogonToChgPwd" },
 	
 	{AP_MAX_PASSWORD_AGE, "maximum password age", (uint32) -1,
 		"Maximum password age, in seconds (default: -1 => never expire passwords)", 
-		LDAP_ATTRIBUTE_AP_PWD_MAX_AGE },
+		"sambaMaxPwdAge" },
 		
 	{AP_MIN_PASSWORD_AGE,"minimum password age", 0,
 		"Minimal password age, in seconds (default: 0 => allow immediate password change)", 
-		LDAP_ATTRIBUTE_AP_PWD_MIN_AGE },
+		"sambaMinPwdAge" },
 		
 	{AP_LOCK_ACCOUNT_DURATION, "lockout duration", 30,
 		"Lockout duration in minutes (default: 30, -1 => forever)",
-		LDAP_ATTRIBUTE_AP_LOCKOUT_DURATION },
+		"sambaLockoutDuration" },
 		
 	{AP_RESET_COUNT_TIME, "reset count minutes", 30,
 		"Reset time after lockout in minutes (default: 30)", 
-		LDAP_ATTRIBUTE_AP_LOCKOUT_OBSERVATION },
+		"sambaLockoutObservationWindow" },
 		
 	{AP_BAD_ATTEMPT_LOCKOUT, "bad lockout attempt", 0,
 		"Lockout users after bad logon attempts (default: 0 => off)", 
-		LDAP_ATTRIBUTE_AP_LOCKOUT_TRESHOLD },
+		"sambaLockoutThreshold" },
 		
 	{AP_TIME_TO_LOGOUT, "disconnect time", -1,
 		"Disconnect Users outside logon hours (default: -1 => off, 0 => on)", 
-		LDAP_ATTRIBUTE_AP_FORCE_LOGOFF }, 
+		"sambaForceLogoff" }, 
 		
 	{AP_REFUSE_MACHINE_PW_CHANGE, "refuse machine password change", 0,
 		"Allow Machine Password changes (default: 0 => off)",
-		LDAP_ATTRIBUTE_AP_REFUSE_MACHINE_PWD_CHANGE },
+		"sambaRefuseMachinePwdChange" },
 		
 	{0, NULL, 0, "", NULL}
 };

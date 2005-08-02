@@ -52,20 +52,6 @@
 #define LDAP_ATTRIBUTE_GIDNUMBER	"gidNumber"
 #define LDAP_ATTRIBUTE_SID_LIST		"sambaSIDList"
 
-#define LDAP_ATTRIBUTE_AP_PWD_MIN_LEN		"sambaMinPwdLength"
-#define LDAP_ATTRIBUTE_AP_PWD_HIST_LEN		"sambaPwdHistoryLength"
-#define LDAP_ATTRIBUTE_AP_PWD_MIN_AGE		"sambaMinPwdAge"
-#define LDAP_ATTRIBUTE_AP_PWD_MAX_AGE		"sambaMaxPwdAge"
-#define LDAP_ATTRIBUTE_AP_FORCE_LOGOFF		"sambaForceLogoff"
-#define LDAP_ATTRIBUTE_AP_LOCKOUT_TRESHOLD	"sambaLockoutThreshold"
-#define LDAP_ATTRIBUTE_AP_LOCKOUT_DURATION	"sambaLockoutDuration"
-#define LDAP_ATTRIBUTE_AP_LOCKOUT_OBSERVATION	"sambaLockoutObservationWindow"
-#define LDAP_ATTRIBUTE_AP_LOGON_TO_CHG_PASS	"sambaLogonToChgPwd"
-#define LDAP_ATTRIBUTE_AP_REFUSE_MACHINE_PWD_CHANGE "sambaRefuseMachinePwdChange"
-
-
-
-
 /* attribute map table indexes */
 
 #define LDAP_ATTR_LIST_END		0
