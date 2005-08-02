@@ -140,6 +140,13 @@ idl: build/pidl/Parse/Pidl/IDL.pm
 build/pidl/Parse/Pidl/IDL.pm: build/pidl/idl.yp
 	-yapp -s -m 'Parse::Pidl::IDL' -o build/pidl/Parse/Pidl/IDL.pm build/pidl/idl.yp 
 
+smb_interfaces: build/pidl/smb_interfaces.pm
+	$(PERL) -Ibuild/pidl script/build_smb_interfaces.pl \
+		include/smb_interfaces.h
+
+build/pidl/smb_interfaces.pm: build/pidl/smb_interfaces.yp
+	-yapp -s -m 'smb_interfaces' -o build/pidl/smb_interfaces.pm build/pidl/smb_interfaces.yp 
+
 pch: proto include/includes.h.gch
 
 pch_clean:
