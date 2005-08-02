@@ -681,7 +681,7 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 		reply_spnego_ntlmssp(conn, inbuf, outbuf, vuid, 
 					   &vuser->auth_ntlmssp_state,
 					   &chal, nt_status, False);
-		data_blob_free(&blob1);
+		data_blob_free(&chal);
 		return -1;
 	}
 
