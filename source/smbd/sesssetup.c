@@ -353,7 +353,8 @@ static int reply_spnego_kerberos(connection_struct *conn,
 static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *outbuf,
 				 uint16 vuid,
 				 AUTH_NTLMSSP_STATE **auth_ntlmssp_state,
-				 DATA_BLOB *ntlmssp_blob, NTSTATUS nt_status) 
+				 DATA_BLOB *ntlmssp_blob, NTSTATUS nt_status, 
+				 BOOL wrap) 
 {
 	BOOL ret;
 	DATA_BLOB response;
@@ -406,9 +407,16 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *out
 		}
 	}
 
-        response = spnego_gen_auth_response(ntlmssp_blob, nt_status, OID_NTLMSSP);
+	if (wrap) {
+		response = spnego_gen_auth_response(ntlmssp_blob, nt_status, OID_NTLMSSP);
+	} else {
+		response = *ntlmssp_blob;
+	}
+
 	ret = reply_sesssetup_blob(conn, outbuf, response, nt_status);
-	data_blob_free(&response);
+	if (wrap) {
+		data_blob_free(&response);
+	}
 
 	/* NT_STATUS_MORE_PROCESSING_REQUIRED from our NTLMSSP code tells us,
 	   and the other end, that we are not finished yet. */
@@ -504,8 +512,8 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	data_blob_free(&secblob);
 
 	reply_spnego_ntlmssp(conn, inbuf, outbuf, vuid, auth_ntlmssp_state,
-			     &chal, nt_status);
-		
+			     &chal, nt_status, True);
+
 	data_blob_free(&chal);
 
 	/* already replied */
@@ -550,7 +558,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 
 	reply_spnego_ntlmssp(conn, inbuf, outbuf, vuid, 
 			     auth_ntlmssp_state,
-			     &auth_reply, nt_status);
+			     &auth_reply, nt_status, True);
 		
 	data_blob_free(&auth_reply);
 
@@ -650,6 +658,31 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 					&vuser->auth_ntlmssp_state);
 		data_blob_free(&blob1);
 		return ret;
+	}
+
+	if (strncmp(blob1.data, "NTLMSSP", 7) == 0) {
+		DATA_BLOB chal;
+		NTSTATUS nt_status;
+		if (!vuser->auth_ntlmssp_state) {
+			nt_status = auth_ntlmssp_start(&vuser->auth_ntlmssp_state);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				/* Kill the intermediate vuid */
+				invalidate_vuid(vuid);
+				
+				return ERROR_NT(nt_status);
+			}
+		}
+
+		nt_status = auth_ntlmssp_update(vuser->auth_ntlmssp_state,
+						blob1, &chal);
+		
+		data_blob_free(&blob1);
+		
+		reply_spnego_ntlmssp(conn, inbuf, outbuf, vuid, 
+					   &vuser->auth_ntlmssp_state,
+					   &chal, nt_status, False);
+		data_blob_free(&blob1);
+		return -1;
 	}
 
 	/* what sort of packet is this? */
