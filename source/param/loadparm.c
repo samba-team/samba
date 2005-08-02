@@ -235,7 +235,6 @@ typedef struct
 	char *szLdapUserSuffix;
 	char *szLdapIdmapSuffix;
 	char *szLdapGroupSuffix;
-	char *szLdapPrinterSuffix;
 #ifdef WITH_LDAP_SAMCONFIG
 	int ldap_port;
 	char *szLdapServer;
@@ -1531,7 +1530,6 @@ static void init_globals(void)
 	string_set(&Globals.szLdapUserSuffix, "");
 	string_set(&Globals.szLdapGroupSuffix, "");
 	string_set(&Globals.szLdapIdmapSuffix, "");
-	string_set(&Globals.szLdapPrinterSuffix, "");
 
 	string_set(&Globals.szLdapAdminDn, "");
 	Globals.ldap_ssl = LDAP_SSL_ON;
