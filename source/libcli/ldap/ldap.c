@@ -787,36 +787,68 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 		break;
 	}
 	case 9: {
-		char *oid, *attr, *value;
+		char *oid = NULL, *attr = NULL, *value;
 		uint8_t dnAttributes;
 		/* an extended search */
 		if (!asn1_start_tag(data, ASN1_CONTEXT(filter_tag))) {
 			goto failed;
 		}
 
-		asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(1));
-		asn1_read_LDAPString(data, &oid);
-		asn1_end_tag(data);
-		asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(2));
-		asn1_read_LDAPString(data, &attr);
-		asn1_end_tag(data);
+		/* FIXME: read carefully rfc2251.txt there are a number of 'MUST's
+		   we need to check we properly implement --SSS */ 
+		/* either oid or type must be defined */
+		if (asn1_peek_tag(data, ASN1_CONTEXT_SIMPLE(1))) { /* optional */
+			asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(1));
+			asn1_read_LDAPString(data, &oid);
+			asn1_end_tag(data);
+		}
+		if (asn1_peek_tag(data, ASN1_CONTEXT_SIMPLE(2))) {	/* optional  */
+			asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(2));
+			asn1_read_LDAPString(data, &attr);
+			asn1_end_tag(data);
+		}
 		asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(3));
 		asn1_read_LDAPString(data, &value);
 		asn1_end_tag(data);
-		asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(4));
-		asn1_read_uint8(data, &dnAttributes);
-		asn1_end_tag(data);
-		if ((data->has_error) || (oid == NULL) || (value == NULL)) {
+		/* dnAttributes is marked as BOOLEAN DEFAULT FALSE
+		   it is not marked as OPTIONAL but openldap tools
+		   do not set this unless it is to be set as TRUE
+		   NOTE: openldap tools do not work with AD as it
+		   seems that AD always requires the dnAttributes
+		   boolean value to be set */
+		if (asn1_peek_tag(data, ASN1_CONTEXT_SIMPLE(4))) {
+			asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(4));
+			asn1_read_uint8(data, &dnAttributes);
+			asn1_end_tag(data);
+		} else {
+			dnAttributes = 0;
+		}
+		if ((oid == NULL && attr == NULL) || (value == NULL)) {
 			goto failed;
 		}
 
-		ret->operation               = LDB_OP_EXTENDED;
-		ret->u.extended.attr         = talloc_steal(ret, attr);
-		ret->u.extended.rule_id      = talloc_steal(ret, oid);
-		ret->u.extended.value.data   = talloc_steal(ret, value);
-		ret->u.extended.value.length = strlen(value);
-		ret->u.extended.dnAttributes = dnAttributes;
+		if (oid) {
+			ret->operation               = LDB_OP_EXTENDED;
 
+			/* From the RFC2251: If the type field is
+			   absent and matchingRule is present, the matchValue is compared
+			   against all attributes in an entry which support that matchingRule
+			*/
+			if (attr) {
+				ret->u.extended.attr = talloc_steal(ret, attr);
+			} else {
+				ret->u.extended.attr = talloc_strdup(ret, "*");
+			}
+			ret->u.extended.rule_id      = talloc_steal(ret, oid);
+			ret->u.extended.value.data   = talloc_steal(ret, value);
+			ret->u.extended.value.length = strlen(value);
+			ret->u.extended.dnAttributes = dnAttributes;
+		} else {
+			ret->operation               = LDB_OP_EQUALITY;
+			ret->u.equality.attr         = talloc_steal(ret, attr);
+			ret->u.equality.value.data   = talloc_steal(ret, value);
+			ret->u.equality.value.length = strlen(value);
+		}
 		if (!asn1_end_tag(data)) {
 			goto failed;
 		}
