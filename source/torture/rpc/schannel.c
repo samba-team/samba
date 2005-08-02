@@ -34,11 +34,38 @@ static BOOL test_samr_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct samr_GetDomPwInfo r;
+	struct samr_Connect connect;
+	struct samr_OpenDomain opendom;
 	int i;
 	struct lsa_String name;
+	struct policy_handle handle;
+	struct policy_handle domain_handle;
 
 	name.string = lp_workgroup();
 	r.in.domain_name = &name;
+
+	connect.in.system_name = 0;
+	connect.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	connect.out.connect_handle = &handle;
+	
+	printf("Testing Connect and OpenDomain on BUILTIN\n");
+
+	status = dcerpc_samr_Connect(p, mem_ctx, &connect);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Connect failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	opendom.in.connect_handle = &handle;
+	opendom.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	opendom.in.sid = dom_sid_parse_talloc(mem_ctx, "S-1-5-32");
+	opendom.out.domain_handle = &domain_handle;
+
+	status = dcerpc_samr_OpenDomain(p, mem_ctx, &opendom);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("OpenDomain failed - %s\n", nt_errstr(status));
+		return False;
+	}
 
 	printf("Testing GetDomPwInfo with name %s\n", r.in.domain_name->string);
 	
