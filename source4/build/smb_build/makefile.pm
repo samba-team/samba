@@ -85,7 +85,7 @@ sub _prepare_compiler_linker($)
 CC=@CC@
 CFLAGS=-Iinclude -I. -I$(srcdir)/include -I$(srcdir) -D_SAMBA_BUILD_ -DHAVE_CONFIG_H -Ilib @CFLAGS@ @CPPFLAGS@
 
-LD=@CC@
+LD=@LD@
 LD_FLAGS=@LDFLAGS@ @CFLAGS@ -Lbin
 
 STLD=ar
@@ -405,6 +405,27 @@ __EOD__
 	return $output;
 }
 
+sub _prepare_mergedobj_rule($)
+{
+	my $ctx = shift;
+
+	return "" unless $ctx->{TARGET};
+
+	my $output = "";
+
+	my $tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
+
+	$output .= "$ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST = $tmpdepend\n";
+
+	$output .= "$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJS)\n";
+
+	$output .= "\t\@echo \"Linking subsystem $ctx->{NAME}\"\n";
+	$output .= "\t@\$(LD) -r \$($ctx->{TYPE}_$ctx->{NAME}_OBJS) -o $ctx->{TARGET}\n";
+	$output .= "\n";
+
+	return $output;
+}
+
 sub _prepare_objlist_rule($)
 {
 	my $ctx = shift;
@@ -506,7 +527,7 @@ BINARY_$ctx->{NAME}_LINK_FLAGS =$tmpflag
 #
 bin/$ctx->{BINARY}: bin/.dummy \$(BINARY_$ctx->{NAME}_DEPEND_LIST) \$(BINARY_$ctx->{NAME}_OBJS)
 	\@echo Linking \$\@
-	\@\$(LD) \$(LD_FLAGS) -o \$\@ \\
+	\@\$(CC) \$(LD_FLAGS) -o \$\@ \\
 		\$\(BINARY_$ctx->{NAME}_LINK_FLAGS) \\
 		\$\(BINARY_$ctx->{NAME}_LINK_LIST) \\
 		\$\(BINARY_$ctx->{NAME}_LINK_FLAGS)
@@ -579,6 +600,7 @@ distclean: clean
 	-rm -f config.status
 	-rm -f config.log config.cache
 	-rm -f samba4-deps.dot
+	-rm -f config.pm config.mk
 	-rm -f lib/registry/winregistry.pc
 __EOD__
 
@@ -795,6 +817,7 @@ sub _prepare_rule_lists($)
 	foreach my $key (values %{$depend}) {
 		next unless defined $key->{OUTPUT_TYPE};
 
+		($output .= _prepare_mergedobj_rule($key)) if $key->{OUTPUT_TYPE} eq "MERGEDOBJ";
 		($output .= _prepare_objlist_rule($key)) if $key->{OUTPUT_TYPE} eq "OBJLIST";
 		($output .= _prepare_static_library_rule($key)) if $key->{OUTPUT_TYPE} eq "STATIC_LIBRARY";
 		($output .= _prepare_shared_library_rule($key)) if $key->{OUTPUT_TYPE} eq "SHARED_LIBRARY";
