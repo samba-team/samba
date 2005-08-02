@@ -948,7 +948,7 @@ BOOL remove_msdfs_link(struct junction_map* jucn)
 	return ret;
 }
 
-static int form_junctions(int snum, struct junction_map* jucn, int jn_remain)
+static int form_junctions(TALLOC_CTX *ctx, int snum, struct junction_map* jucn, int jn_remain)
 {
 	int cnt = 0;
 	DIR *dirp;
@@ -981,7 +981,7 @@ static int form_junctions(int snum, struct junction_map* jucn, int jn_remain)
 	jucn[cnt].volume_name[0] = '\0';
 	jucn[cnt].referral_count = 1;
 
-	ref = jucn[cnt].referral_list = SMB_MALLOC_P(struct referral);
+	ref = jucn[cnt].referral_list = TALLOC_P(ctx, struct referral);
 	if (jucn[cnt].referral_list == NULL) {
 		DEBUG(0, ("Malloc failed!\n"));
 		goto out;
@@ -1023,7 +1023,7 @@ out:
 	return cnt;
 }
 
-int enum_msdfs_links(struct junction_map* jucn, int jn_max)
+int enum_msdfs_links(TALLOC_CTX *ctx, struct junction_map* jucn, int jn_max)
 {
 	int i=0;
 	int jn_count = 0;
@@ -1033,7 +1033,7 @@ int enum_msdfs_links(struct junction_map* jucn, int jn_max)
 
 	for(i=0;i < lp_numservices() && (jn_max - jn_count) > 0;i++) {
 		if(lp_msdfs_root(i)) 
-			jn_count += form_junctions(i,jucn,jn_max - jn_count);
+			jn_count += form_junctions(ctx, i,jucn,jn_max - jn_count);
 	}
 	return jn_count;
 }
