@@ -70,7 +70,7 @@ element:
 	| union
 	| STRUCT IDENTIFIER pointers IDENTIFIER ';'
 		{{
-			"NAME" => $_[2],
+			"NAME" => [$_[2]],
 			"POINTERS" => $_[3],
 			"TYPE" => "struct $_[2]",
 		}}
@@ -82,20 +82,21 @@ element:
 		}}
 	| CONST type pointers IDENTIFIER array ';'
 		{{
-			   "NAME" => $_[4],
+			   "NAME" => [$_[4]],
 			   "TYPE" => $_[2],
 			   "POINTERS" => $_[3],
 		}}
 	| type pointers IDENTIFIER array ';'
 		{{
-			   "NAME" => $_[3],
+			   "NAME" => [$_[3]],
 			   "TYPE" => $_[1],
 			   "POINTERS" => $_[2],
+			   "ARRAY_LENGTH" => $_[4]
 		}}
 ;
 
 array: #empty
-	| '[' CONSTANT  ']'
+	| '[' CONSTANT  ']'	{ int($_[2]) }
 ;
 
 type: IDENTIFIER
