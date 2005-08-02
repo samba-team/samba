@@ -808,8 +808,10 @@ BOOL svcctl_io_r_query_service_config2(const char *desc, SVCCTL_R_QUERY_SERVICE_
 	if (r_u->returned > 4) {
 		if (!prs_uint32("offset", ps, depth, &r_u->offset))
 			return False;
-		if(!prs_unistr2(True, "description     ", ps, depth, r_u->description))
+
+		if ( !prs_pointer( desc, ps, depth, (void**)&r_u->description, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2 ) )
 			return False;
+
 		if(!prs_align(ps))
 			return False;
 	} else {
