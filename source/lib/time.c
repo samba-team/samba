@@ -853,6 +853,15 @@ struct timeval timeval_sum(const struct timeval *tv1,
 }
 
 /*
+  return a timeval secs/usecs into the future
+*/
+struct timeval timeval_current_ofs(uint32_t secs, uint32_t usecs)
+{
+	struct timeval tv = timeval_current();
+	return timeval_add(&tv, secs, usecs);
+}
+
+/*
   compare two timeval structures. 
   Return -1 if tv1 < tv2
   Return 0 if tv1 == tv2
@@ -887,6 +896,30 @@ struct timeval timeval_until(const struct timeval *tv1,
 		t.tv_usec = tv2->tv_usec - tv1->tv_usec;
 	}
 	return t;
+}
+
+/*
+  return the lesser of two timevals
+*/
+struct timeval timeval_min(const struct timeval *tv1,
+			   const struct timeval *tv2)
+{
+	if (tv1->tv_sec < tv2->tv_sec) return *tv1;
+	if (tv1->tv_sec > tv2->tv_sec) return *tv2;
+	if (tv1->tv_usec < tv2->tv_usec) return *tv1;
+	return *tv2;
+}
+
+/*
+  return the greater of two timevals
+*/
+struct timeval timeval_max(const struct timeval *tv1,
+			   const struct timeval *tv2)
+{
+	if (tv1->tv_sec > tv2->tv_sec) return *tv1;
+	if (tv1->tv_sec < tv2->tv_sec) return *tv2;
+	if (tv1->tv_usec > tv2->tv_usec) return *tv1;
+	return *tv2;
 }
 
 /****************************************************************************
