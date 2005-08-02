@@ -33,6 +33,10 @@
 #include <sys/id.h>
 #endif
 
+#ifdef HAVE_CRYPT_H
+#include <crypt.h>
+#endif
+
 #ifdef HAVE_SHADOW_H
 #include <shadow.h>
 #endif
