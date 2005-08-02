@@ -10,6 +10,9 @@ ADD_OBJ_FILES = \
 # End SUBSYSTEM LIBNETIF
 ##############################
 
+[SUBSYSTEM::TDR]
+INIT_OBJ_FILES = lib/tdr/tdr.o
+
 ##############################
 # Start SUBSYSTEM LIBCRYPTO
 [SUBSYSTEM::LIBCRYPTO]
