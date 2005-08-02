@@ -133,11 +133,10 @@ static BOOL create_conn_struct(connection_struct *conn, int snum, char *path)
 	pstring connpath;
 
 	ZERO_STRUCTP(conn);
+
 	conn->service = snum;
 	pstrcpy(connpath, path);
 	pstring_sub(connpath , "%S", lp_servicename(snum));
-
-	string_set(&conn->connectpath, connpath);
 
 	/* needed for smbd_vfs_init() */
 	
@@ -146,9 +145,11 @@ static BOOL create_conn_struct(connection_struct *conn, int snum, char *path)
                 return False;
         }
 	
+	string_set(&conn->connectpath, connpath);
+
 	if (!smbd_vfs_init(conn)) {
 		DEBUG(0,("create_conn_struct: smbd_vfs_init failed.\n"));
-		talloc_destroy( conn->mem_ctx );
+		conn_free_internal(conn);
 		return False;
 	}
 
@@ -161,9 +162,10 @@ static BOOL create_conn_struct(connection_struct *conn, int snum, char *path)
 	if (vfs_ChDir(conn,conn->connectpath) != 0) {
 		DEBUG(3,("create_conn_struct: Can't ChDir to new conn path %s. Error was %s\n",
 					conn->connectpath, strerror(errno) ));
-		talloc_destroy( conn->mem_ctx );
+		conn_free_internal(conn);
 		return False;
 	}
+
 	return True;
 }
 
@@ -477,7 +479,7 @@ BOOL get_referred_path(TALLOC_CTX *ctx, char *pathname, struct junction_map *juc
 	struct dfs_path dp;
 
 	struct connection_struct conns;
-	struct connection_struct* conn = &conns;
+	struct connection_struct *conn = &conns;
 	pstring conn_path;
 	int snum;
 	BOOL ret = False;
@@ -585,10 +587,7 @@ BOOL get_referred_path(TALLOC_CTX *ctx, char *pathname, struct junction_map *juc
 
 out:
 
-	if (conn->mem_ctx) {
-		talloc_destroy( conn->mem_ctx );
-	}
-	
+	conn_free_internal(conn);
 	return ret;
 }
 
@@ -937,6 +936,8 @@ BOOL create_msdfs_link(struct junction_map *jucn, BOOL exists)
 	BOOL insert_comma = False;
 	BOOL ret = False;
 
+	ZERO_STRUCT(conns);
+
 	if(!junction_to_local_path(jucn, path, sizeof(path), conn)) {
 		return False;
 	}
@@ -981,7 +982,8 @@ BOOL create_msdfs_link(struct junction_map *jucn, BOOL exists)
 	ret = True;
 	
 out:
-	talloc_destroy( conn->mem_ctx );
+
+	conn_free_internal(conn);
 	return ret;
 }
 
@@ -992,6 +994,8 @@ BOOL remove_msdfs_link(struct junction_map *jucn)
  	connection_struct *conn = &conns;
 	BOOL ret = False;
 
+	ZERO_STRUCT(conns);
+
 	if( junction_to_local_path(jucn, path, sizeof(path), conn) ) {
 		if( SMB_VFS_UNLINK(conn, path) == 0 ) {
 			ret = True;
@@ -999,6 +1003,7 @@ BOOL remove_msdfs_link(struct junction_map *jucn)
 		talloc_destroy( conn->mem_ctx );
 	}
 
+	conn_free_internal(conn);
 	return ret;
 }
 
@@ -1012,6 +1017,8 @@ static int form_junctions(TALLOC_CTX *ctx, int snum, struct junction_map *jucn, 
 	connection_struct conn;
 	struct referral *ref = NULL;
  
+	ZERO_STRUCT(conn);
+
 	if (jn_remain <= 0) {
 		return 0;
 	}
@@ -1078,7 +1085,8 @@ static int form_junctions(TALLOC_CTX *ctx, int snum, struct junction_map *jucn, 
 	SMB_VFS_CLOSEDIR(&conn,dirp);
 
 out:
-	conn_free(&conn);
+
+	conn_free_internal(&conn);
 	return cnt;
 }
 
