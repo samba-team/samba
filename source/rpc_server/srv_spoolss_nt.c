@@ -2283,7 +2283,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 		
 	if (!StrCaseCmp(value, "W3SvcInstalled")) {
 		*type = REG_DWORD;
-		if((*data = (uint8 *)TALLOC_ZERO(ctx, 4*sizeof(uint8) )) == NULL)
+		if ( !(*data = TALLOC_ARRAY(ctx, uint8, sizeof(uint32) )) )
 			return WERR_NOMEM;
 		*needed = 0x4;
 		return WERR_OK;
@@ -2291,7 +2291,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 
 	if (!StrCaseCmp(value, "BeepEnabled")) {
 		*type = REG_DWORD;
-		if((*data = (uint8 *)TALLOC(ctx, 4*sizeof(uint8) )) == NULL)
+		if ( !(*data = TALLOC_ARRAY(ctx, uint8, sizeof(uint32) )) )
 			return WERR_NOMEM;
 		SIVAL(*data, 0, 0x00);
 		*needed = 0x4;			
@@ -2300,7 +2300,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 
 	if (!StrCaseCmp(value, "EventLog")) {
 		*type = REG_DWORD;
-		if((*data = (uint8 *)TALLOC(ctx, 4 )) == NULL)
+		if ( !(*data = TALLOC_ARRAY(ctx, uint8, sizeof(uint32) )) )
 			return WERR_NOMEM;
 		/* formally was 0x1b */
 		SIVAL(*data, 0, 0x0);
@@ -2310,7 +2310,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 
 	if (!StrCaseCmp(value, "NetPopup")) {
 		*type = REG_DWORD;
-		if((*data = (uint8 *)TALLOC(ctx, 4 )) == NULL)
+		if ( !(*data = TALLOC_ARRAY(ctx, uint8, sizeof(uint32) )) )
 			return WERR_NOMEM;
 		SIVAL(*data, 0, 0x00);
 		*needed = 0x4;
@@ -2319,7 +2319,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 
 	if (!StrCaseCmp(value, "MajorVersion")) {
 		*type = REG_DWORD;
-		if((*data = (uint8 *)TALLOC(ctx, 4 )) == NULL)
+		if ( !(*data = TALLOC_ARRAY(ctx, uint8, sizeof(uint32) )) )
 			return WERR_NOMEM;
 
 		/* Windows NT 4.0 seems to not allow uploading of drivers
@@ -2338,7 +2338,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 
 	if (!StrCaseCmp(value, "MinorVersion")) {
 		*type = REG_DWORD;
-		if((*data = (uint8 *)TALLOC(ctx, 4 )) == NULL)
+		if ( !(*data = TALLOC_ARRAY(ctx, uint8, sizeof(uint32) )) )
 			return WERR_NOMEM;
 		SIVAL(*data, 0, 0);
 		*needed = 0x4;
@@ -2356,7 +2356,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 		*type = REG_BINARY;
 		*needed = 0x114;
 
-		if ( !(*data = TALLOC_ZERO_ARRAY(ctx, uint8, *needed)) )
+		if ( !(*data = TALLOC_ZERO_ARRAY(ctx, uint8, (*needed > in_size) ? *needed:in_size )) )
 			return WERR_NOMEM;
 
 		SIVAL(*data, 0, *needed);	/* size */
@@ -2402,7 +2402,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 
 	if (!StrCaseCmp(value, "DsPresent")) {
 		*type = REG_DWORD;
-		if((*data = (uint8 *)TALLOC(ctx, 4 )) == NULL)
+		if ( !(*data = TALLOC_ARRAY(ctx, uint8, sizeof(uint32) )) )
 			return WERR_NOMEM;
 
 		/* only show the publish check box if we are a 
