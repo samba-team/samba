@@ -321,7 +321,7 @@ BOOL init_eventlog_parameters(void)
 	}
 	tdb_unlock_bystring(evtlog_tdb, vstring);
 
-	DEBUG(0,("Cleaning up eventlog parameters db\n"));
+	DEBUG(3,("Cleaning up eventlog parameters db\n"));
 
 	cleanup_eventlog_parameters(evtlog_tdb);
 	return True;
