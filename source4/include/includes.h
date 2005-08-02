@@ -132,6 +132,7 @@ extern int errno;
 #include "smb.h"
 #include "byteorder.h"
 #include "module.h"
+#include "lib/tdr/tdr.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/misc.h"
 #include "librpc/gen_ndr/dcerpc.h"
