@@ -136,6 +136,10 @@ static void interpret_interface(TALLOC_CTX *mem_ctx, const char *token)
 	/* maybe it is a DNS name */
 	p = strchr_m(token,'/');
 	if (!p) {
+		/* don't try to do dns lookups on wildcard names */
+		if (strpbrk(token, "*?") != NULL) {
+			return;
+		}
 		ip.s_addr = interpret_addr2(token).addr;
 		for (i=0;i<total_probed;i++) {
 			if (ip.s_addr == probed_ifaces[i].ip.s_addr &&
