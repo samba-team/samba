@@ -349,7 +349,7 @@ WERROR _svcctl_query_status(pipes_struct *p, SVCCTL_Q_QUERY_STATUS *q_u, SVCCTL_
  we have to call the right status routine...
 **********************************************************************/
 
-static WERROR enum_internal_services(TALLOC_CTX *tcx,ENUM_SERVICES_STATUS **svc_ptr, int existing_services, uint32 *added) 
+static WERROR enum_internal_services(TALLOC_CTX *ctx,ENUM_SERVICES_STATUS **svc_ptr, int existing_services, uint32 *added) 
 {
 	int num_services = 2;
 	int i = 0;
@@ -360,24 +360,23 @@ static WERROR enum_internal_services(TALLOC_CTX *tcx,ENUM_SERVICES_STATUS **svc_
 
 	services = *svc_ptr;
 
-#if 0
-	/* *svc_ptr has the pointer to the array if there is one already. NULL if not. */
-	if ((existing_services>0) && svc_ptr && *svc_ptr) { /* reallocate vs. allocate */
-		DEBUG(8,("enum_internal_services: REALLOCing %d services\n", num_services));
-		services = TALLOC_REALLOC_ARRAY(tcx,*svc_ptr,ENUM_SERVICES_STATUS,existing_services+num_services);
-		if (!rsvcs) 
+	if ( (existing_services > 0) && svc_ptr && *svc_ptr ) {
+		ENUM_SERVICES_STATUS *tmp_services = NULL;		
+		uint32 total_svc = existing_services + num_services;
+		
+		if ( !(tmp_services = TALLOC_REALLOC_ARRAY( ctx, services, ENUM_SERVICES_STATUS, total_svc )) )
 			return WERR_NOMEM;
-		*svc_ptr = services;
-	} else {
-		if ( !(services = TALLOC_ARRAY( tcx, ENUM_SERVICES_STATUS, num_services )) )
-			return WERR_NOMEM;
-	}
-#endif
-
-	if (existing_services > 0) {
+			
+		services = tmp_services;
 		i += existing_services;
+	} 
+	else {
+		if ( !(services = TALLOC_ARRAY( ctx, ENUM_SERVICES_STATUS, num_services )) )
+			return WERR_NOMEM;
 	}
-	DEBUG(8,("enum_internal_services: Creating %d services, starting index %d\n", num_services,existing_services));
+
+	DEBUG(8,("enum_internal_services: Creating %d services, starting index %d\n", 
+		num_services, existing_services));
 				
 	init_unistr( &services[i].servicename, "Spooler" );
 	init_unistr( &services[i].displayname, "Print Spooler" );
@@ -409,7 +408,8 @@ static WERROR enum_internal_services(TALLOC_CTX *tcx,ENUM_SERVICES_STATUS **svc_
 	else
 		services[i].status.state              = SVCCTL_STOPPED;
 
-	*added = num_services;
+	*added   = num_services;
+	*svc_ptr = services;
 
 	return WERR_OK;
 }
@@ -420,12 +420,10 @@ static WERROR enum_internal_services(TALLOC_CTX *tcx,ENUM_SERVICES_STATUS **svc_
 WERROR _svcctl_enum_services_status(pipes_struct *p, SVCCTL_Q_ENUM_SERVICES_STATUS *q_u, SVCCTL_R_ENUM_SERVICES_STATUS *r_u)
 {
 	ENUM_SERVICES_STATUS *services = NULL;
-	uint32 num_int_services = 0;
-	uint32 num_ext_services = 0;
+	uint32 num_int_services, num_ext_services, total_services;
 	int i = 0;
-	size_t buffer_size;
+	size_t buffer_size = 0;
 	WERROR result = WERR_OK;
-	WERROR ext_result = WERR_OK;
 	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
 	
 	/* perform access checks */
@@ -436,46 +434,38 @@ WERROR _svcctl_enum_services_status(pipes_struct *p, SVCCTL_Q_ENUM_SERVICES_STAT
 	if ( !(info->access_granted & SC_RIGHT_MGR_ENUMERATE_SERVICE) )
 		return WERR_ACCESS_DENIED;
 
+	num_int_services = 0;
+	num_ext_services = 0;
+
 	/* num_services = str_list_count( lp_enable_svcctl() ); */
 
 	/* here's where we'll read the db of external services */
 	/* _svcctl_read_LSB_data(NULL,NULL); */
 	/* init_svcctl_db(); */
 	
-	/* num_int_services = num_internal_services(); */
-
-	/* num_ext_services =  num_external_services(); */
-
 	if ( !(services = TALLOC_ARRAY(p->mem_ctx, ENUM_SERVICES_STATUS, num_int_services+num_ext_services )) )
-          return WERR_NOMEM;
+		return WERR_NOMEM;
 
-        result = enum_internal_services(p->mem_ctx, &services, 0, &num_int_services);
-
-	if (W_ERROR_IS_OK(result)) {
+	if ( W_ERROR_IS_OK(enum_internal_services(p->mem_ctx, &services, 0, &num_int_services)) )
 		DEBUG(8,("_svcctl_enum_services_status: Got %d internal services\n", num_int_services));
-	} 
 
-	/* ext_result=enum_external_services(p->mem_ctx, &services, num_int_services, &num_ext_services); */
-
-	if (W_ERROR_IS_OK(ext_result)) {
+#if 0	
+	if ( W_ERROR_IS_OK(enum_external_services(p->mem_ctx, &services, num_int_services, &num_ext_services)) )
 		DEBUG(8,("_svcctl_enum_services_status: Got %d external services\n", num_ext_services));
-	} 
+#endif
 
-        DEBUG(8,("_svcctl_enum_services_status: total of %d services\n", num_int_services+num_ext_services));
+	total_services = num_int_services + num_ext_services; 
 
-	buffer_size = 0;
-        for (i=0;i<num_int_services+num_ext_services;i++) {
-	  buffer_size += svcctl_sizeof_enum_services_status(&services[i]);
+        DEBUG(8,("_svcctl_enum_services_status: total of %d services\n", total_services ));
+
+        for ( i=0; i<total_services; i++ ) {
+		buffer_size += svcctl_sizeof_enum_services_status(&services[i]);
 	}
 
-	/* */
 	buffer_size += buffer_size % 4;
-	DEBUG(8,("_svcctl_enum_services_status: buffer size passed %d, we need %d\n",
-		 q_u->buffer_size, buffer_size));
 
 	if (buffer_size > q_u->buffer_size ) {
-		num_int_services = 0;
-		num_ext_services = 0;
+		total_services = 0;
 		result = WERR_MORE_DATA;
 	}
 
@@ -487,7 +477,7 @@ WERROR _svcctl_enum_services_status(pipes_struct *p, SVCCTL_Q_ENUM_SERVICES_STAT
 	}
 
 	r_u->needed      = (buffer_size > q_u->buffer_size) ? buffer_size : q_u->buffer_size;
-	r_u->returned    = num_int_services+num_ext_services;
+	r_u->returned    = total_services;
 
 	if ( !(r_u->resume = TALLOC_P( p->mem_ctx, uint32 )) )
 		return WERR_NOMEM;
