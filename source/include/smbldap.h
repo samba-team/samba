@@ -39,7 +39,6 @@
 #define LDAP_OBJ_IDMAP_ENTRY		"sambaIdmapEntry"
 #define LDAP_OBJ_SID_ENTRY		"sambaSidEntry"
 #define LDAP_OBJ_TRUST_PASSWORD         "sambaTrustPassword"
-#define LDAP_OBJ_ACCOUNT_POLICY		"sambaAccountPolicy"
 
 #define LDAP_OBJ_ACCOUNT		"account"
 #define LDAP_OBJ_POSIXACCOUNT		"posixAccount"
@@ -52,6 +51,20 @@
 #define LDAP_ATTRIBUTE_UIDNUMBER	"uidNumber"
 #define LDAP_ATTRIBUTE_GIDNUMBER	"gidNumber"
 #define LDAP_ATTRIBUTE_SID_LIST		"sambaSIDList"
+
+#define LDAP_ATTRIBUTE_AP_PWD_MIN_LEN		"sambaMinPwdLength"
+#define LDAP_ATTRIBUTE_AP_PWD_HIST_LEN		"sambaPwdHistoryLength"
+#define LDAP_ATTRIBUTE_AP_PWD_MIN_AGE		"sambaMinPwdAge"
+#define LDAP_ATTRIBUTE_AP_PWD_MAX_AGE		"sambaMaxPwdAge"
+#define LDAP_ATTRIBUTE_AP_FORCE_LOGOFF		"sambaForceLogoff"
+#define LDAP_ATTRIBUTE_AP_LOCKOUT_TRESHOLD	"sambaLockoutThreshold"
+#define LDAP_ATTRIBUTE_AP_LOCKOUT_DURATION	"sambaLockoutDuration"
+#define LDAP_ATTRIBUTE_AP_LOCKOUT_OBSERVATION	"sambaLockoutObservationWindow"
+#define LDAP_ATTRIBUTE_AP_LOGON_TO_CHG_PASS	"sambaLogonToChgPwd"
+#define LDAP_ATTRIBUTE_AP_REFUSE_MACHINE_PWD_CHANGE "sambaRefuseMachinePwdChange"
+
+
+
 
 /* attribute map table indexes */
 
@@ -100,8 +113,6 @@
 #define LDAP_ATTR_MOD_TIMESTAMP         41
 #define LDAP_ATTR_LOGON_HOURS		42 
 #define LDAP_ATTR_TRUST_PASSWD_FLAGS    43
-#define LDAP_ATTR_ACCOUNT_POLICY_NAME	44
-#define LDAP_ATTR_ACCOUNT_POLICY_VAL	45
 
 
 typedef struct _attrib_map_entry {
@@ -122,7 +133,6 @@ extern ATTRIB_MAP_ENTRY groupmap_attr_list_to_delete[];
 extern ATTRIB_MAP_ENTRY idpool_attr_list[];
 extern ATTRIB_MAP_ENTRY sidmap_attr_list[];
 extern ATTRIB_MAP_ENTRY trustpw_attr_list[];
-extern ATTRIB_MAP_ENTRY acctpol_attr_list[];
 
 
 /* Function declarations -- not included in proto.h so we don't

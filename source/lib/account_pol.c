@@ -38,30 +38,51 @@ struct ap_table {
 	const char *string;
 	uint32 default_val;
 	const char *description;
+	const char *ldap_attr;
 };
 
 static const struct ap_table account_policy_names[] = {
 	{AP_MIN_PASSWORD_LEN, "min password length", MINPASSWDLENGTH, 
-		"Minimal password length (default: 5)"},
+		"Minimal password length (default: 5)", 
+		LDAP_ATTRIBUTE_AP_PWD_MIN_LEN },
+
 	{AP_PASSWORD_HISTORY, "password history", 0,
-		"Length of Password History Entries (default: 0 => off)" },
+		"Length of Password History Entries (default: 0 => off)", 
+		LDAP_ATTRIBUTE_AP_PWD_HIST_LEN },
+		
 	{AP_USER_MUST_LOGON_TO_CHG_PASS, "user must logon to change password", 0,
-		"Force Users to logon for password change (default: 0 => off, 2 => on)"},
-	{AP_MAX_PASSWORD_AGE, "maximum password age", (uint32)-1,
-		"Maximum password age, in seconds (default: -1 => never expire passwords)"},
+		"Force Users to logon for password change (default: 0 => off, 2 => on)",
+		LDAP_ATTRIBUTE_AP_LOGON_TO_CHG_PASS },
+	
+	{AP_MAX_PASSWORD_AGE, "maximum password age", (uint32) -1,
+		"Maximum password age, in seconds (default: -1 => never expire passwords)", 
+		LDAP_ATTRIBUTE_AP_PWD_MAX_AGE },
+		
 	{AP_MIN_PASSWORD_AGE,"minimum password age", 0,
-		"Minimal password age, in seconds (default: 0 => allow immediate password change)"},
+		"Minimal password age, in seconds (default: 0 => allow immediate password change)", 
+		LDAP_ATTRIBUTE_AP_PWD_MIN_AGE },
+		
 	{AP_LOCK_ACCOUNT_DURATION, "lockout duration", 30,
-		"Lockout duration in minutes (default: 30, -1 => forever)"},
+		"Lockout duration in minutes (default: 30, -1 => forever)",
+		LDAP_ATTRIBUTE_AP_LOCKOUT_DURATION },
+		
 	{AP_RESET_COUNT_TIME, "reset count minutes", 30,
-		"Reset time after lockout in minutes (default: 30)"},
+		"Reset time after lockout in minutes (default: 30)", 
+		LDAP_ATTRIBUTE_AP_LOCKOUT_OBSERVATION },
+		
 	{AP_BAD_ATTEMPT_LOCKOUT, "bad lockout attempt", 0,
-		"Lockout users after bad logon attempts (default: 0 => off)"},
+		"Lockout users after bad logon attempts (default: 0 => off)", 
+		LDAP_ATTRIBUTE_AP_LOCKOUT_TRESHOLD },
+		
 	{AP_TIME_TO_LOGOUT, "disconnect time", -1,
-		"Disconnect Users outside logon hours (default: -1 => off, 0 => on)"}, 
+		"Disconnect Users outside logon hours (default: -1 => off, 0 => on)", 
+		LDAP_ATTRIBUTE_AP_FORCE_LOGOFF }, 
+		
 	{AP_REFUSE_MACHINE_PW_CHANGE, "refuse machine password change", 0,
-		"Allow Machine Password changes (default: 0 => off)"},
-	{0, NULL, 0, ""}
+		"Allow Machine Password changes (default: 0 => off)",
+		LDAP_ATTRIBUTE_AP_REFUSE_MACHINE_PWD_CHANGE },
+		
+	{0, NULL, 0, "", NULL}
 };
 
 char *account_policy_names_list(void)
@@ -100,7 +121,20 @@ const char *decode_account_policy_name(int field)
 			return account_policy_names[i].string;
 	}
 	return NULL;
+}
 
+/****************************************************************************
+Get the account policy LDAP attribute as a string from its #define'ed number
+****************************************************************************/
+
+const char *get_account_policy_attr(int field)
+{
+	int i;
+	for (i=0; account_policy_names[i].field; i++) {
+		if (field == account_policy_names[i].field)
+			return account_policy_names[i].ldap_attr;
+	}
+	return NULL;
 }
 
 /****************************************************************************
@@ -115,7 +149,6 @@ const char *account_policy_get_desc(int field)
 			return account_policy_names[i].description;
 	}
 	return NULL;
-
 }
 
 /****************************************************************************
@@ -130,7 +163,6 @@ int account_policy_name_to_fieldnum(const char *name)
 			return account_policy_names[i].field;
 	}
 	return 0;
-
 }
 
 /*****************************************************************************
@@ -212,84 +244,6 @@ static BOOL account_policy_set_default_on_empty(int account_policy)
 }
 
 /*****************************************************************************
-Check migration success, set marker if required
-*****************************************************************************/
-
-static BOOL already_migrated_account_policies(BOOL store_migration_success)
-{
-	pstring key;
-	uint32 value;
-
-	slprintf(key, sizeof(key)-1, "%s", AP_MIGRATED);
-
-	if (tdb_fetch_uint32(tdb, key, &value)) {
-		return True;
-	}
-
-	if (store_migration_success) {
-
-		if (!tdb_store_uint32(tdb, key, 1)) {
-			DEBUG(1, ("tdb_store_uint32 failed for %s\n", key));
-			return False;
-		}
-		return True;
-	}
-
-	return False;
-}
-
-/*****************************************************************************
-Migrate account policies to passdb
-*****************************************************************************/
-
-static BOOL migrate_account_policy_names_to_passdb(void)
-{
-	int i;
-	uint32 tmp_val;
-	BOOL got_pol;
-
-	if (already_migrated_account_policies(False)) {
-		return True;
-	}
-
-	DEBUG(1,("start migrating account policies into passdb\n"));
-
-	for (i=1; decode_account_policy_name(i) != NULL; i++) {
-
-		got_pol = False;
-
-		if (pdb_get_account_policy(i, &tmp_val)) {
-			DEBUG(10,("account policy already in passdb\n"));
-			got_pol = True;
-		}
-
-		if (!got_pol && !account_policy_get(i, &tmp_val)) {
-			DEBUG(0,("very weird: could not get value for account policy\n"));
-			return False;
-		}
-
-		DEBUGADD(1,("\tmigrating account policy (#%d: %s with value: %d) to passdb\n", 
-			i, decode_account_policy_name(i), tmp_val));
-
-		/* set policy via new passdb api */
-		if (!pdb_set_account_policy(i, tmp_val)) {
-			DEBUG(0,("failed to set account_policy\n"));
-			return False;
-		}
-
-	}
-
-	if (!already_migrated_account_policies(True)) {
-		DEBUG(0,("could not store marker for account policy migration in the tdb\n"));
-		return False;
-	}
-		
-	DEBUGADD(1,("succesfully migrated account policies into passdb\n"));
-
-	return True;
-}
-
-/*****************************************************************************
  Open the account policy tdb.
 ***`*************************************************************************/
 
@@ -324,11 +278,6 @@ BOOL init_account_policy(void)
 		}
 	}
 
-	if (!migrate_account_policy_names_to_passdb()) {
-		DEBUG(0,("Could not migrate account policy tdb to passdb.\n"));
-		return False;
-	}
-
 	tdb_unlock_bystring(tdb, vstring);
 
 	/* These exist by default on NT4 in [HKLM\SECURITY\Policy\Accounts] */
@@ -344,7 +293,7 @@ BOOL init_account_policy(void)
 }
 
 /*****************************************************************************
-Internal function
+Get an account policy (from tdb) 
 *****************************************************************************/
 
 BOOL account_policy_get(int field, uint32 *value)
@@ -376,7 +325,7 @@ BOOL account_policy_get(int field, uint32 *value)
 
 
 /****************************************************************************
-Get an account policy from a (migrated tdb)
+Set an account policy (in tdb) 
 ****************************************************************************/
 
 BOOL account_policy_set(int field, uint32 value)
@@ -408,28 +357,28 @@ Set an account policy in the cache
 
 BOOL cache_account_policy_set(int field, uint32 value)
 {
-	uint32 lastset, i;
+	uint32 lastset;
+	const char *policy_name = NULL;
 
-	for (i=0; account_policy_names[i].field; i++) {
-
-		if (account_policy_names[i].field == field) {
-
-			DEBUG(10,("cache_account_policy_set: updating account pol cache\n"));
-
-			if (!account_policy_set(field, value)) {
-				return False;
-			}
-
-			if (!account_policy_cache_timestamp(&lastset, True, 
-							    decode_account_policy_name(field))) 
-			{
-				DEBUG(10,("cache_account_policy_set: failed to get lastest cache update timestamp\n"));
-				return False;
-			}
-
-			DEBUG(10,("cache_account_policy_set: cache valid until: %s\n", http_timestring(lastset+AP_TTL)));
-		}
+	policy_name = decode_account_policy_name(field);
+	if (policy_name == NULL) {
+		DEBUG(0,("cache_account_policy_set: no policy found\n"));
+		return False;
 	}
+
+	DEBUG(10,("cache_account_policy_set: updating account pol cache\n"));
+
+	if (!account_policy_set(field, value)) {
+		return False;
+	}
+
+	if (!account_policy_cache_timestamp(&lastset, True, policy_name)) 
+	{
+		DEBUG(10,("cache_account_policy_set: failed to get lastest cache update timestamp\n"));
+		return False;
+	}
+
+	DEBUG(10,("cache_account_policy_set: cache valid until: %s\n", http_timestring(lastset+AP_TTL)));
 
 	return True;
 }
@@ -440,7 +389,7 @@ Get an account policy from the cache
 
 BOOL cache_account_policy_get(int field, uint32 *value)
 {
-	uint32 lastset, i;
+	uint32 lastset;
 
 	if (!account_policy_cache_timestamp(&lastset, False, 
 					    decode_account_policy_name(field))) 
@@ -454,13 +403,7 @@ BOOL cache_account_policy_get(int field, uint32 *value)
 		return False;
 	} 
 
-	for (i=0; account_policy_names[i].field; i++) {
-		if (account_policy_names[i].field == field) {
-			return account_policy_get(field, value);
-		}
-	}
-
-	return False;
+	return account_policy_get(field, value);
 }
 
 

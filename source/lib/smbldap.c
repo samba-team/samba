@@ -208,15 +208,6 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 	{ LDAP_ATTR_LIST_END,		NULL			}	
 };
 
-/* attributes used for account policies */
-
-ATTRIB_MAP_ENTRY acctpol_attr_list[] = {
-	{ LDAP_ATTR_OBJCLASS,		"objectClass"			},
-	{ LDAP_ATTR_ACCOUNT_POLICY_NAME,"sambaAccountPolicyName"	},
-	{ LDAP_ATTR_ACCOUNT_POLICY_VAL,	"sambaAccountPolicyValue"	},
-	{ LDAP_ATTR_LIST_END,		NULL				},
-};
-
 /**********************************************************************
  perform a simple table lookup and return the attribute name 
  **********************************************************************/
@@ -1376,7 +1367,7 @@ static BOOL smbldap_check_root_dse(struct smbldap_state *ldap_state, const char 
 	}
 
 	rc = ldap_search_s(ldap_state->ldap_struct, "", LDAP_SCOPE_BASE, 
-			   "(objectclass=*)", attrs, 0 , &msg);
+			   "(objectclass=*)", CONST_DISCARD(char **, attrs), 0 , &msg);
 
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(3,("smbldap_check_root_dse: Could not search rootDSE\n"));

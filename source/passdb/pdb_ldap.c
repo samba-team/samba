@@ -3273,228 +3273,41 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods, int policy_index, uint32 *value)
+static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods, int policy_index, uint32 value)
 {
 	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
-	LDAPMessage *result = NULL;
-	LDAPMessage *entry = NULL;
-	int count;
 	int rc;
-	pstring filter;
-	char **vals;
-	const char *policy_string = NULL;
-	uint32 tmp_val;
-	BOOL found_tdb = False;
+	LDAPMod **mods = NULL;
+	fstring value_string;
+	const char *policy_attr = NULL;
 
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
 
-	const char *attrs[] = {
-		NULL,
-		NULL,
-		NULL 
-	};
+	const char *attrs[2];
 
-	attrs[0] = get_attr_key2string(acctpol_attr_list, LDAP_ATTR_ACCOUNT_POLICY_NAME);
-	attrs[1] = get_attr_key2string(acctpol_attr_list, LDAP_ATTR_ACCOUNT_POLICY_VAL);
+	DEBUG(10,("ldapsam_set_account_policy\n"));
 
-	if (cache_account_policy_get(policy_index, value)) {
-		DEBUG(11,("ldapsam_get_account_policy: got valid value from cache\n"));
-		return NT_STATUS_OK;
-	}
-
-	policy_string = decode_account_policy_name(policy_index);
-	if (!policy_string) {
-		DEBUG(0,("ldapsam_get_account_policy: invalid policy index: %d\n", policy_index));
-		return ntstatus;
-	}
-
-	pstr_sprintf(filter, "(&(objectclass=%s)(%s=%s))",
-		     LDAP_OBJ_ACCOUNT_POLICY, 
-		     get_attr_key2string(acctpol_attr_list,
-					 LDAP_ATTR_ACCOUNT_POLICY_NAME), policy_string);
-	
 	if (!ldap_state->domain_dn) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-search:		
-	rc = smbldap_search(ldap_state->smbldap_state, ldap_state->domain_dn,
-			    LDAP_SCOPE_ONELEVEL, filter, attrs, 0, &result);
-
-	if (rc != LDAP_SUCCESS) 
-		return ntstatus;
-
-	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct,
-				   result);
-
-	/* handle deleted ldap-entries (migrate on the fly, use a default as last resort) - gd */
-	if (count < 1 && !found_tdb) {
-
-		found_tdb = False;
-
-		DEBUG(3,("ldapsam_get_account_policy: no entry for that policy in ldap found\n"));
-
-		if (!account_policy_get(policy_index, &tmp_val)) {
-			DEBUG(10,("ldapsam_get_account_policy: failed to get account_policy from tdb\n"));
-			found_tdb = True;
-		}
-
-		if (!found_tdb && !account_policy_get_default(policy_index, &tmp_val)) {
-			ldap_msgfree(result);
-			return ntstatus;
-		}
-
-		if (!pdb_set_account_policy(policy_index, tmp_val)) {
-			DEBUG(1,("ldapsam_get_account_policy: failed to set account_policy\n"));
-			ldap_msgfree(result);
-			return ntstatus;
-		}
-
-		DEBUG(3,("ldapsam_get_account_policy: set account policy value based on %s value.\n", 
-			found_tdb ? "tdb":"default"));
-
-		ldap_msgfree(result);
-		goto search;
-	}
-
-	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, result);
-
-	if (!entry) {
-		ldap_msgfree(result);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	vals = ldap_get_values(ldap_state->smbldap_state->ldap_struct, entry, 
-		get_attr_key2string(acctpol_attr_list, LDAP_ATTR_ACCOUNT_POLICY_VAL));
-
-	if (vals == NULL) 
-		goto out;
-
-	*value = (uint32)atol(vals[0]);
-
-	if (!cache_account_policy_set(policy_index, *value)) {
-		DEBUG(0,("ldapsam_get_account_policy: failed to update local tdb as a cache\n"));
-		return ntstatus;
-	}
-
-	ntstatus = NT_STATUS_OK;
-
-out:
-	ldap_value_free(vals);
-	ldap_msgfree(result);
-
-	return ntstatus;
-}
-
-static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods, int policy_index, uint32 value)
-{
-	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
-	LDAPMessage *result = NULL;
-	LDAPMessage *entry = NULL;
-	int count;
-	int rc;
-	pstring filter, dn;
-	int modop;
-	LDAPMod **mods = NULL;
-	fstring value_string;
-	char *old_dn = NULL;
-	const char *policy_string = NULL;
-	const char *policy_description = NULL;
-
-	struct ldapsam_privates *ldap_state =
-		(struct ldapsam_privates *)methods->private_data;
-
-	const char *attrs[] = {
-		NULL,
-		NULL,
-		NULL 
-	};
-
-	attrs[0] = get_attr_key2string(acctpol_attr_list, LDAP_ATTR_ACCOUNT_POLICY_NAME), 
-	attrs[1] = get_attr_key2string(acctpol_attr_list, LDAP_ATTR_ACCOUNT_POLICY_VAL), 
-
-	policy_string = decode_account_policy_name(policy_index);
-	if (!policy_string) {
+	policy_attr = get_account_policy_attr(policy_index);
+	if (policy_attr == NULL) {
 		DEBUG(0,("ldapsam_set_account_policy: invalid policy\n"));
 		return ntstatus;
 	}
 
-	policy_description = account_policy_get_desc(policy_index);
-	if (!policy_description) {
-		DEBUG(0,("ldapsam_set_account_policy: no description for policy found\n"));
-		return ntstatus;
-	}
-
-	pstr_sprintf(filter, "(&(objectclass=%s)(%s=%s))",
-		     LDAP_OBJ_ACCOUNT_POLICY, 
-		     get_attr_key2string(acctpol_attr_list,
-					 LDAP_ATTR_ACCOUNT_POLICY_NAME), policy_string);
-
-	if (!ldap_state->domain_dn) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	rc = smbldap_search(ldap_state->smbldap_state, ldap_state->domain_dn,
-			    LDAP_SCOPE_ONELEVEL, filter, attrs, 0, &result);
-
-	if (rc != LDAP_SUCCESS) 
-		return ntstatus;
-
-	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result);
+	attrs[0] = policy_attr;
+	attrs[1] = NULL;
 
 	slprintf(value_string, sizeof(value_string) - 1, "%i", value);
 
-	if (count == 1) {
+	smbldap_set_mod(&mods, LDAP_MOD_REPLACE, policy_attr, value_string);
 
-		modop = LDAP_MOD_REPLACE;
-
-		entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, result);
-
-		if (!entry) {
-			ldap_msgfree(result);
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-
-		old_dn = smbldap_get_dn(ldap_state->smbldap_state->ldap_struct, entry);
-		if (!old_dn) {
-			ldap_msgfree(result);
-			return ntstatus;
-		}
-
-		smbldap_set_mod(&mods, modop,
-			get_attr_key2string(acctpol_attr_list, LDAP_ATTR_ACCOUNT_POLICY_VAL), 
-			value_string);
-
-		rc = smbldap_modify(ldap_state->smbldap_state, old_dn, mods);
-
-	} else {
-
-		modop = LDAP_MOD_ADD;
-
-		pstr_sprintf(dn, "%s=%s,%s",
- 			get_attr_key2string(acctpol_attr_list, LDAP_ATTR_ACCOUNT_POLICY_NAME), policy_string,
-			ldap_state->domain_dn);
-
-		smbldap_set_mod( &mods, modop, "objectClass", LDAP_OBJ_ACCOUNT_POLICY );
-
-		smbldap_make_mod( ldap_state->smbldap_state->ldap_struct, entry, &mods, 
-			get_attr_key2string(acctpol_attr_list, LDAP_ATTR_ACCOUNT_POLICY_NAME), 
-			policy_string);
-
-		smbldap_make_mod( ldap_state->smbldap_state->ldap_struct, entry, &mods, 
-			get_attr_key2string(acctpol_attr_list, LDAP_ATTR_ACCOUNT_POLICY_VAL), 
-			value_string);
-
-		smbldap_make_mod( ldap_state->smbldap_state->ldap_struct, entry, &mods, 
-			"description", 
-			policy_description);
-
-		rc = smbldap_add(ldap_state->smbldap_state, dn, mods);
-	}
+	rc = smbldap_modify(ldap_state->smbldap_state, ldap_state->domain_dn, mods);
 
 	ldap_mods_free(mods, True);
-	ldap_msgfree(result);
 
 	if (rc != LDAP_SUCCESS) {
 		char *ld_error = NULL;
@@ -3502,18 +3315,140 @@ static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods, int poli
 				LDAP_OPT_ERROR_STRING,&ld_error);
 		
 		DEBUG(0, ("ldapsam_set_account_policy: Could not set account policy "
-			  "for %s, error: %s (%s)\n", dn, ldap_err2string(rc),
+			  "for %s, error: %s (%s)\n", ldap_state->domain_dn, ldap_err2string(rc),
 			  ld_error?ld_error:"unknown"));
 		SAFE_FREE(ld_error);
-		SAFE_FREE(old_dn);
 		return ntstatus;
 	}
-
-	SAFE_FREE(old_dn);
 
 	if (!cache_account_policy_set(policy_index, value)) {
 		DEBUG(0,("ldapsam_set_account_policy: failed to update local tdb cache\n"));
 		return ntstatus;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ldapsam_get_account_policy_from_ldap(struct pdb_methods *methods, int policy_index, uint32 *value)
+{
+	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
+	LDAPMessage *result = NULL;
+	LDAPMessage *entry = NULL;
+	int count;
+	int rc;
+	char **vals;
+	const char *policy_attr = NULL;
+
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)methods->private_data;
+
+	const char *attrs[2];
+
+	DEBUG(10,("ldapsam_get_account_policy_from_ldap\n"));
+
+	if (!ldap_state->domain_dn) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	policy_attr = get_account_policy_attr(policy_index);
+	if (!policy_attr) {
+		DEBUG(0,("ldapsam_get_account_policy_from_ldap: invalid policy index: %d\n", policy_index));
+		return ntstatus;
+	}
+
+	attrs[0] = policy_attr;
+	attrs[1] = NULL;
+
+	rc = smbldap_search(ldap_state->smbldap_state, ldap_state->domain_dn,
+			    LDAP_SCOPE_BASE, "(objectclass=*)", attrs, 0, &result);
+
+	if (rc != LDAP_SUCCESS) {
+		char *ld_error = NULL;
+		ldap_get_option(ldap_state->smbldap_state->ldap_struct,
+				LDAP_OPT_ERROR_STRING,&ld_error);
+		
+		DEBUG(0, ("ldapsam_get_account_policy_from_ldap: Could not set account policy "
+			  "for %s, error: %s (%s)\n", ldap_state->domain_dn, ldap_err2string(rc),
+			  ld_error?ld_error:"unknown"));
+		SAFE_FREE(ld_error);
+		return ntstatus;
+	}
+
+	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result);
+	if (count < 1) {
+		goto out;
+	}
+
+	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, result);
+	if (entry == NULL) {
+		goto out;
+	}
+
+	vals = ldap_get_values(ldap_state->smbldap_state->ldap_struct, entry, policy_attr);
+	if (vals == NULL) {
+		goto out;
+	}
+
+	*value = (uint32)atol(vals[0]);
+	
+	ntstatus = NT_STATUS_OK;
+
+out:
+	if (vals)
+		ldap_value_free(vals);
+	ldap_msgfree(result);
+
+	return ntstatus;
+}
+
+/* wrapper around ldapsam_get_account_policy_from_ldap(), handles tdb as cache 
+
+   - if there is a valid cache entry, return that
+   - if there is an LDAP entry, update cache and return 
+   - otherwise set to default, update cache and return
+
+   Guenther
+*/
+static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods, int policy_index, uint32 *value)
+{
+	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
+
+	if (cache_account_policy_get(policy_index, value)) {
+		DEBUG(11,("ldapsam_get_account_policy: got valid value from cache\n"));
+		return NT_STATUS_OK;
+	}
+
+	ntstatus = ldapsam_get_account_policy_from_ldap(methods, policy_index, value);
+	if (NT_STATUS_IS_OK(ntstatus)) {
+		goto update_cache;
+	}
+
+	DEBUG(10,("ldapsam_get_account_policy: failed to retrieve from ldap, returning default.\n"));
+
+#if 0
+	/* should we automagically migrate old tdb value here ? */
+	if (account_policy_get(policy_index, value))
+		goto update_ldap;
+
+	DEBUG(10,("ldapsam_get_account_policy: no tdb for %d, trying default\n", policy_index));
+#endif
+
+	if (!account_policy_get_default(policy_index, value)) {
+		return ntstatus;
+	}
+	
+/* update_ldap: */
+ 
+ 	ntstatus = ldapsam_set_account_policy(methods, policy_index, *value);
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		return ntstatus;
+	}
+		
+ update_cache:
+ 
+	if (!cache_account_policy_set(policy_index, *value)) {
+		DEBUG(0,("ldapsam_get_account_policy: failed to update local tdb as a cache\n"));
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	return NT_STATUS_OK;

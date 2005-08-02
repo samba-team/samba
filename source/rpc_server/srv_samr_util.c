@@ -291,7 +291,7 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 		uint32 expire;
 		time_t new_time;
 		if (pdb_get_pass_must_change_time(to) == 0) {
-			if (!account_policy_get(AP_MAX_PASSWORD_AGE, &expire)
+			if (!pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &expire)
 			    || expire == (uint32)-1) {
 				new_time = get_time_t_max();
 			} else {
@@ -531,7 +531,7 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 		uint32 expire;
 		time_t new_time;
 		if (pdb_get_pass_must_change_time(to) == 0) {
-			if (!account_policy_get(AP_MAX_PASSWORD_AGE, &expire)
+			if (!pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &expire)
 			    || expire == (uint32)-1) {
 				new_time = get_time_t_max();
 			} else {

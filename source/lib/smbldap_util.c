@@ -30,32 +30,29 @@
  Add the account-policies below the sambaDomain object to LDAP, 
 *********************************************************************/
 static NTSTATUS add_new_domain_account_policies(struct smbldap_state *ldap_state,
-						const char *domain_name)
+					 	const char *domain_name)
 {
 	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
-	int i, ldap_op, rc;
+	int i, rc;
 	uint32 policy_default;
-	const char *policy_string = NULL;
-	const char *policy_description = NULL;
+	const char *policy_attr = NULL;
 	pstring dn;
-	fstring policy_default_str;
+	LDAPMod **mods = NULL;
 
 	DEBUG(3,("Adding new account policies for domain\n"));
-	ldap_op = LDAP_MOD_ADD;
+	
+	pstr_sprintf(dn, "%s=%s,%s", 
+		get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN),
+		domain_name, lp_ldap_suffix());
 
 	for (i=1; decode_account_policy_name(i) != NULL; i++) {
-		LDAPMod **mods = NULL;
 
-		policy_string = decode_account_policy_name(i);
-		if (!policy_string) {
+		pstring val;
+
+		policy_attr = get_account_policy_attr(i);
+		if (!policy_attr) {
 			DEBUG(0,("add_new_domain_account_policies: ops. no policy!\n"));
-			return ntstatus;
-		}
-
-		policy_description = account_policy_get_desc(i);
-		if (!policy_description) {
-			DEBUG(0,("add_new_domain_account_policies: no description for policy found\n"));
-			return ntstatus;
+			continue;
 		}
 
 		if (!account_policy_get_default(i, &policy_default)) {
@@ -63,46 +60,30 @@ static NTSTATUS add_new_domain_account_policies(struct smbldap_state *ldap_state
 			return ntstatus;
 		}
 
-		slprintf(policy_default_str, sizeof(policy_default_str) - 1, "%i", policy_default);
+		DEBUG(10,("add_new_domain_account_policies: adding \"%s\" with value: %d\n", policy_attr, policy_default));
 
-		pstr_sprintf(dn, "%s=%s,%s=%s,%s",
- 			get_attr_key2string(acctpol_attr_list, LDAP_ATTR_ACCOUNT_POLICY_NAME), policy_string,
-			get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), get_global_sam_name(),
-			lp_ldap_suffix());
+		pstr_sprintf(val, "%d", policy_default); 
 
-		smbldap_set_mod( &mods, ldap_op, "objectClass", LDAP_OBJ_ACCOUNT_POLICY );
+		smbldap_set_mod( &mods, LDAP_MOD_REPLACE, policy_attr, val);
 
-		smbldap_set_mod( &mods, ldap_op,
-			get_attr_key2string(acctpol_attr_list, LDAP_ATTR_ACCOUNT_POLICY_NAME), 
-			policy_string);
-
-		smbldap_set_mod( &mods, ldap_op,
-			get_attr_key2string(acctpol_attr_list, LDAP_ATTR_ACCOUNT_POLICY_VAL), 
-			policy_default_str);
-
-		smbldap_set_mod( &mods, ldap_op, "description", policy_description);
-
-		rc = smbldap_add(ldap_state, dn, mods);
+		rc = smbldap_modify(ldap_state, dn, mods);
 
 		if (rc!=LDAP_SUCCESS) {
 			char *ld_error = NULL;
 			ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_ERROR_STRING, &ld_error);
-			DEBUG(1,("failed to add account policy dn= %s with: %s\n\t%s\n",
-			       dn, ldap_err2string(rc),
-			       ld_error?ld_error:"unknown"));
+			DEBUG(1,("failed to add account policies to dn= %s with: %s\n\t%s\n",
+				dn, ldap_err2string(rc),
+				ld_error ? ld_error : "unknown"));
 			SAFE_FREE(ld_error);
-
 			ldap_mods_free(mods, True);
 			return ntstatus;
 		}
-
-		DEBUG(2,("added: domain account policy = [%s] in the LDAP database\n", policy_string));
-		ldap_mods_free(mods, True);
 	}
+
+	ldap_mods_free(mods, True);
 
 	return NT_STATUS_OK;
 }
-
 
 /**********************************************************************
  Add the sambaDomain to LDAP, so we don't have to search for this stuff

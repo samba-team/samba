@@ -37,7 +37,7 @@ static int netlogon_params( REGVAL_CTR *regvals )
 {
 	uint32 dwValue;
 	
-	if ( !account_policy_get(AP_REFUSE_MACHINE_PW_CHANGE, &dwValue) )
+	if ( !pdb_get_account_policy(AP_REFUSE_MACHINE_PW_CHANGE, &dwValue) )
 		dwValue = 0;
 		
 	regval_ctr_addvalue( regvals, "RefusePasswordChange", REG_DWORD,
