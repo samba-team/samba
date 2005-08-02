@@ -1404,7 +1404,6 @@ if test "$enable_shared" = "yes"; then
 			AC_DEFINE(BROKEN_STRNDUP,1,[Does strndup work correctly])
 			;;
 		*hpux*) AC_DEFINE(HPUX,1,[Whether the host os is HPUX])
-			SHLIBEXT="sl"
 			# Use special PIC flags for the native HP-UX compiler.
 			if test $ac_cv_prog_cc_Ae = yes; then
 				BLDSHARED="true"
@@ -1415,7 +1414,13 @@ if test "$enable_shared" = "yes"; then
 			elif test "${GCC}" = "yes"; then
 				PICFLAGS="-fPIC"
 			fi
-			DYNEXP="-Wl,-E"
+			if test "$host_cpu" = "ia64"; then
+				SHLIBEXT="so"
+				DYNEXP="-Wl,-E,+b /usr/local/lib/hpux32:/usr/lib/hpux32"
+			else
+				SHLIBEXT="sl"
+				DYNEXP="-Wl,-E,+b /usr/local/lib:/usr/lib"
+			fi
 			AC_DEFINE(STAT_ST_BLOCKSIZE,8192,[The size of a block])
 			AC_DEFINE(POSIX_ACL_NEEDS_MASK,1,[Does a POSIX ACL need a mask element])
 			;;
@@ -1905,7 +1910,8 @@ dnl in both libiconv and in libc. In this case the jm_ICONV test will always
 dnl succeed when the header is found. To counter this, make sure the 
 dnl library directory is there and check the ABI directory first (which
 dnl should be harmless on other systems.
-    for l in "lib32" "lib" ; do
+dnl For IA64 HPUX systems, the libs are located in lib/hpux32 instead of lib.
+    for l in "lib32" "lib" "lib/hpux32"; do
         if test -d "$i/$l" ; then
                 LDFLAGS="$save_LDFLAGS -L$i/$l"
                 LIBS=
