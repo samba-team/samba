@@ -10,7 +10,7 @@
 use strict;
 package smb_build::input;
 
-my $subsystem_default_output_type = "OBJLIST";
+my $subsystem_default_output_type = "MERGEDOBJ";
 my $srcdir = ".";
 
 sub strtrim($)

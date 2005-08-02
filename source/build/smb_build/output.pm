@@ -10,6 +10,13 @@
 package output;
 use strict;
 
+sub generate_mergedobj($)
+{
+	my $subsys = shift;
+
+	$subsys->{OUTPUT} = $subsys->{TARGET} = "bin/$subsys->{TYPE}_$subsys->{NAME}.o";
+}
+
 sub generate_objlist($)
 {
 	my $subsys = shift;
@@ -85,15 +92,23 @@ sub create_output($)
 		next if $part->{NAME} eq "ALL_OBJS";
 		next if not defined($part->{OUTPUT_TYPE});
 
-		generate_binary($part) if $part->{OUTPUT_TYPE} eq "BINARY";
-		generate_objlist($part) if $part->{OUTPUT_TYPE} eq "OBJLIST";
-		generate_shared_library($part) if $part->{OUTPUT_TYPE} eq "SHARED_LIBRARY";
-		generate_static_library($part) if $part->{OUTPUT_TYPE} eq "STATIC_LIBRARY";
-
 		# Combine object lists
 		push(@{$part->{OBJ_LIST}}, @{$part->{INIT_OBJ_FILES}}) if defined($part->{INIT_OBJ_FILES});
 		push(@{$part->{OBJ_LIST}}, @{$part->{ADD_OBJ_FILES}}) if defined($part->{ADD_OBJ_FILES});
 		push(@{$part->{OBJ_LIST}}, @{$part->{OBJ_FILES}}) if defined($part->{OBJ_FILES});
+
+		if ((not defined($part->{OBJ_LIST}) or 
+			scalar(@{$part->{OBJ_LIST}}) == 0) and 
+			$part->{OUTPUT_TYPE} eq "MERGEDOBJ") {
+			$part->{OUTPUT_TYPE} = "OBJLIST";
+		}
+
+		generate_binary($part) if $part->{OUTPUT_TYPE} eq "BINARY";
+		generate_mergedobj($part) if $part->{OUTPUT_TYPE} eq "MERGEDOBJ";
+		generate_objlist($part) if $part->{OUTPUT_TYPE} eq "OBJLIST";
+		generate_shared_library($part) if $part->{OUTPUT_TYPE} eq "SHARED_LIBRARY";
+		generate_static_library($part) if $part->{OUTPUT_TYPE} eq "STATIC_LIBRARY";
+
 
 		push(@{$depend->{ALL_OBJS}->{OBJ_LIST}}, @{$part->{OBJ_LIST}}) if (defined(@{$part->{OBJ_LIST}}));
 		
