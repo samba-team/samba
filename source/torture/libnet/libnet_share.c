@@ -27,6 +27,85 @@
 #define TEST_SHARENAME "libnetsharetest"
 
 
+void test_displayshares(struct libnet_ListShares s)
+{
+	int i, j;
+
+	struct share_type {
+		enum srvsvc_ShareType type;
+		const char *desc;
+	} share_types[] = {
+		{ STYPE_DISKTREE, "STYPE_DISKTREE" },
+		{ STYPE_DISKTREE_TEMPORARY, "STYPE_DISKTREE_TEMPORARY" },
+		{ STYPE_DISKTREE_HIDDEN, "STYPE_DISKTREE_HIDDEN" },
+		{ STYPE_PRINTQ, "STYPE_PRINTQ" },
+		{ STYPE_PRINTQ_TEMPORARY, "STYPE_PRINTQ_TEMPORARY" },
+		{ STYPE_PRINTQ_HIDDEN, "STYPE_PRINTQ_HIDDEN" },
+		{ STYPE_DEVICE, "STYPE_DEVICE" },
+		{ STYPE_DEVICE_TEMPORARY, "STYPE_DEVICE_TEMPORARY" },
+		{ STYPE_DEVICE_HIDDEN, "STYPE_DEVICE_HIDDEN" },
+		{ STYPE_IPC, "STYPE_IPC" },
+		{ STYPE_IPC_TEMPORARY, "STYPE_IPC_TEMPORARY" },
+		{ STYPE_IPC_HIDDEN, "STYPE_IPC_HIDDEN" }
+	};
+
+	switch (s.in.level) {
+	case 0:
+		for (i = 0; i < s.out.ctr.ctr0->count; i++) {
+			printf("\t[%d] %s\n", i, s.out.ctr.ctr0->array[i].name);
+		}
+		break;
+
+	case 1:
+		for (i = 0; i < s.out.ctr.ctr1->count; i++) {
+			for (j = 0; j < ARRAY_SIZE(share_types); j++) {
+				if (share_types[j].type == s.out.ctr.ctr1->array[i].type) break;
+			}
+			printf("\t[%d] %s (%s)\t%s\n", i, s.out.ctr.ctr1->array[i].name,
+			       s.out.ctr.ctr1->array[i].comment, share_types[j].desc);
+		}
+		break;
+
+	case 2:
+		for (i = 0; i < s.out.ctr.ctr2->count; i++) {
+			for (j = 0; j < ARRAY_SIZE(share_types); j++) {
+				if (share_types[j].type == s.out.ctr.ctr2->array[i].type) break;
+			}
+			printf("\t[%d] %s\t%s\n\t    %s\n\t    [perms=0x%08x, max_usr=%d, cur_usr=%d, path=%s, pass=%s]\n",
+			       i, s.out.ctr.ctr2->array[i].name, share_types[j].desc, s.out.ctr.ctr2->array[i].comment,
+			       s.out.ctr.ctr2->array[i].permissions, s.out.ctr.ctr2->array[i].max_users,
+			       s.out.ctr.ctr2->array[i].current_users, s.out.ctr.ctr2->array[i].path,
+			       s.out.ctr.ctr2->array[i].password);
+		}
+		break;
+
+	case 501:
+		for (i = 0; i < s.out.ctr.ctr501->count; i++) {
+			for (j = 0; j < ARRAY_SIZE(share_types); j++) {
+				if (share_types[j].type == s.out.ctr.ctr501->array[i].type) break;
+			}
+			printf("\t[%d] %s\t%s [csc_policy=0x%08x]\n\t    %s\n", i, s.out.ctr.ctr501->array[i].name,
+			       share_types[j].desc, s.out.ctr.ctr501->array[i].csc_policy,
+			       s.out.ctr.ctr501->array[i].comment);
+		}
+		break;
+
+	case 502:
+		for (i = 0; i < s.out.ctr.ctr502->count; i++) {
+			for (j = 0; j < ARRAY_SIZE(share_types); j++) {
+				if (share_types[j].type == s.out.ctr.ctr502->array[i].type) break;
+			}
+			printf("\t[%d] %s\t%s\n\t    %s\n\t    [perms=0x%08x, max_usr=%d, cur_usr=%d, path=%s, pass=%s, unknown=0x%08x]\n",
+			       i, s.out.ctr.ctr502->array[i].name, share_types[j].desc, s.out.ctr.ctr502->array[i].comment,
+			       s.out.ctr.ctr502->array[i].permissions, s.out.ctr.ctr502->array[i].max_users,
+			       s.out.ctr.ctr502->array[i].current_users, s.out.ctr.ctr502->array[i].path,
+			       s.out.ctr.ctr502->array[i].password, s.out.ctr.ctr502->array[i].unknown);
+		}
+		break;
+	}
+}
+
+
 BOOL torture_listshares(void)
 {
 	struct libnet_ListShares share;
@@ -57,6 +136,9 @@ BOOL torture_listshares(void)
 			printf("libnet_ListShare level %u failed - %s\n", share.in.level, nt_errstr(status));
 			ret = False;
 		}
+
+		printf("listing shares:\n");
+		test_displayshares(share);
 	}
 
 	return ret;
