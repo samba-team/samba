@@ -27,7 +27,7 @@ struct: STRUCT optional_identifier '{' elements '}' pointers optional_identifier
 		my $name = defined($_[2]) ? $_[2] : $_[7];
 		{
 			"NAME" => $name,
-			"TYPE" => "STRUCT",
+			"TYPE" => "struct",
 			"DATA" => $_[4],
 		}
 	}
@@ -39,7 +39,7 @@ union:
 		my $name = defined($_[2]) ? $_[2] : $_[7];
 		{
 			"NAME" => $name,
-			"TYPE" => "UNION",
+			"TYPE" => "union",
 			"DATA" => $_[4],
 		}
 	}
@@ -69,19 +69,29 @@ element:
 	| struct
 	| union
 	| STRUCT IDENTIFIER pointers IDENTIFIER ';'
+		{{
+			"NAME" => $_[2],
+			"POINTERS" => $_[3],
+			"TYPE" => "struct $_[2]",
+		}}
 	| UNION IDENTIFIER pointers IDENTIFIER ';'
+		{{
+			"NAME" => $_[2],
+			"POINTERS" => $_[3],
+			"TYPE" => "union $_[2]",
+		}}
 	| CONST type pointers IDENTIFIER array ';'
-	      {{
+		{{
 			   "NAME" => $_[4],
 			   "TYPE" => $_[2],
 			   "POINTERS" => $_[3],
-              }}
+		}}
 	| type pointers IDENTIFIER array ';'
-	      {{
+		{{
 			   "NAME" => $_[3],
 			   "TYPE" => $_[1],
 			   "POINTERS" => $_[2],
-              }}
+		}}
 ;
 
 array: #empty
@@ -90,6 +100,7 @@ array: #empty
 
 type: IDENTIFIER
 	| ENUM IDENTIFIER
+		{ "enum $_[2]" }
 ;
 
 pointers: 
