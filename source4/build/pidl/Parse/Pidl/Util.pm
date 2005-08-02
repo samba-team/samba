@@ -53,41 +53,6 @@ sub FlattenHash($)
 }
 
 #####################################################################
-# return the modification time of a file
-sub FileModtime($)
-{
-    my($filename) = shift;
-    return (stat($filename))[9];
-}
-
-#####################################################################
-# read a file into a string
-sub FileLoad($)
-{
-    my($filename) = shift;
-    local(*INPUTFILE);
-    open(INPUTFILE, $filename) || return undef;
-    my($saved_delim) = $/;
-    undef $/;
-    my($data) = <INPUTFILE>;
-    close(INPUTFILE);
-    $/ = $saved_delim;
-    return $data;
-}
-
-#####################################################################
-# write a string into a file
-sub FileSave($$)
-{
-    my($filename) = shift;
-    my($v) = shift;
-    local(*FILE);
-    open(FILE, ">$filename") || die "can't open $filename";    
-    print FILE $v;
-    close(FILE);
-}
-
-#####################################################################
 # a dumper wrapper to prevent dependence on the Data::Dumper module
 # unless we actually need it
 sub MyDumper($)
