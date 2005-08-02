@@ -319,7 +319,7 @@ WERROR _dfs_enum(pipes_struct *p, DFS_Q_DFS_ENUM *q_u, DFS_R_DFS_ENUM *r_u)
 	struct junction_map jn[MAX_MSDFS_JUNCTIONS];
 	int num_jn = 0;
 
-	num_jn = enum_msdfs_links(jn, ARRAY_SIZE(jn));
+	num_jn = enum_msdfs_links(p->mem_ctx, jn, ARRAY_SIZE(jn));
 	vfs_ChDir(p->conn,p->conn->connectpath);
     
 	DEBUG(5,("make_reply_dfs_enum: %d junctions found in Dfs, doing level %d\n", num_jn, level));
