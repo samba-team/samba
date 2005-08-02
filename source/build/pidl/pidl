@@ -43,6 +43,8 @@ my($opt_template) = 0;
 my($opt_client);
 my($opt_server);
 my($opt_ndr_parser);
+my($opt_tdr_header);
+my($opt_tdr_parser);
 my($opt_eth_parser);
 my($opt_eth_header);
 my($opt_keep);
@@ -74,6 +76,8 @@ Options:
  --header[=OUTFILE]    create generic header file
  --ndr-header[=OUTFILE]create a C NDR-specific header file
  --ndr-parser[=OUTFILE]create a C NDR parser
+ --tdr-header[=OUTFILE]create a C TDR header file
+ --tdr-parser[=OUTFILE]create a C TDR parser
  --ejs[=OUTFILE]       create ejs wrapper file
  --client[=OUTFILE]    create a C NDR client
  --server[=OUTFILE]    create server boilerplate
@@ -103,6 +107,8 @@ GetOptions (
 	    'ndr-header:s' => \$opt_ndr_header,
 		'header:s' => \$opt_header,
 	    'server:s' => \$opt_server,
+	    'tdr-header:s' => \$opt_tdr_header,
+	    'tdr-parser:s' => \$opt_tdr_parser,
 	    'template' => \$opt_template,
 	    'ndr-parser:s' => \$opt_ndr_parser,
 	    'client:s' => \$opt_client,
@@ -293,6 +299,18 @@ $dcom
 	  require Parse::Pidl::Ethereal::NDR::Parser;
 	  my($eparser) = ($opt_eth_parser or "$outputdir/packet-dcerpc-$basename.c");
 	  Parse::Pidl::Util::FileSave($eparser, Parse::Pidl::Ethereal::NDR::Parser::Parse($ndr, $basename, $eparser));
+	}
+
+	my $tdr_parser = ($opt_tdr_parser or "$outputdir/tdr_$basename.c");
+	my $tdr_header = ($opt_tdr_header or "$outputdir/tdr_$basename.h");
+	if (defined($opt_tdr_parser)) {
+		require Parse::Pidl::Samba::TDR;
+		Parse::Pidl::Util::FileSave($tdr_parser, Parse::Pidl::Samba::TDR::Parser($pidl, $tdr_header));
+	}
+
+	if (defined($opt_tdr_header)) {
+		require Parse::Pidl::Samba::TDR;
+		Parse::Pidl::Util::FileSave($tdr_header, Parse::Pidl::Samba::TDR::Header($pidl, $outputdir));
 	}
 
 	if ($opt_template) {
