@@ -4974,7 +4974,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 		return -1;
 	}
 
-	if (push_ucs2_talloc(mem_ctx, &uni_domain_name, domain_name_pol) < 0) {
+	if (push_ucs2_talloc(mem_ctx, &uni_domain_name, domain_name_pol) == (size_t)-1) {
 		DEBUG(0, ("Could not convert domain name %s to unicode\n",
 			  domain_name_pol));
 		return -1;
@@ -5128,7 +5128,7 @@ static NTSTATUS vampire_trusted_domain(struct cli_state *cli,
 		goto done;
 	}
 	
-	if (push_ucs2_talloc(mem_ctx, &uni_dom_name, trusted_dom_name) < 0) {
+	if (push_ucs2_talloc(mem_ctx, &uni_dom_name, trusted_dom_name) == (size_t)-1) {
 		DEBUG(0, ("Could not convert domain name %s to unicode\n",
 			  trusted_dom_name));
 		nt_status = NT_STATUS_UNSUCCESSFUL;
