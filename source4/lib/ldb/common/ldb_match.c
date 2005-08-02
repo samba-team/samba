@@ -187,6 +187,8 @@ static int ldb_match_equality(struct ldb_context *ldb,
 		return 0;
 	}
 
+	/* TODO: handle the "*" case derived from an extended search
+	   operation without the attibute type defined */
 	el = ldb_msg_find_element(msg, tree->u.equality.attr);
 	if (el == NULL) {
 		return 0;
