@@ -96,6 +96,9 @@ SHLD_FLAGS=@LDSHFLAGS@ @LDFLAGS@ -Lbin
 
 XSLTPROC=@XSLTPROC@
 
+LEX=@LEX@
+YACC=@YACC@
+
 __EOD__
 }
 
@@ -119,7 +122,7 @@ sub _prepare_SUFFIXES($)
 
 	$output = << '__EOD__';
 .SUFFIXES:
-.SUFFIXES: .c .d .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml
+.SUFFIXES: .c .et .y .l .d .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml
 
 __EOD__
 
@@ -216,6 +219,36 @@ dynconfig.o: dynconfig.c Makefile
 	@echo Compiling $*.c
 	@$(CC) $(CFLAGS) @PICFLAG@ $(PATH_FLAGS) -c $< -o $@
 @BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
+
+__EOD__
+}
+
+sub _prepare_et_rule()
+{
+	return << '__EOD__';
+
+.et.c: 
+	$(MAKE) bin/compile_et
+	./bin/compile_et $<
+	mv `basename $@` $@
+
+__EOD__
+}
+
+sub _prepare_yacc_rule()
+{
+	return << '__EOD__';
+.y.c:
+	$(YACC) -d -o $@ $<	
+	
+__EOD__
+}
+
+sub _prepare_lex_rule()
+{
+	return << '__EOD__';
+.l.c:
+	$(LEX) -o $@ $<
 
 __EOD__
 }
@@ -869,6 +902,9 @@ sub _prepare_makefile_in($)
 	$output .= _prepare_dummy_MAKEDIR();
 	$output .= _prepare_std_CC_rule("c","o",'@PICFLAG@',"Compiling","Rule for std objectfiles");
 	$output .= _prepare_std_CC_rule("h","h.gch",'@PICFLAG@',"Precompiling","Rule for precompiled headerfiles");
+	$output .= _prepare_lex_rule();
+	$output .= _prepare_yacc_rule();
+	$output .= _prepare_et_rule();
 
 	$output .= _prepare_depend_CC_rule();
 	
