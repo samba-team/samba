@@ -94,6 +94,19 @@ struct socket_info
 
 static struct socket_info *sockets = NULL;
 
+
+static const char *socket_wrapper_dir(void)
+{
+	const char *s = getenv("SOCKET_WRAPPER_DIR");
+	if (s == NULL) {
+		return NULL;
+	}
+	if (strncmp(s, "./", 2) == 0) {
+		s += 2;
+	}
+	return s;
+}
+
 static int convert_un_in(const struct sockaddr_un *un, struct sockaddr_in *in, socklen_t *len)
 {
 	unsigned int prt;
@@ -127,12 +140,12 @@ static int convert_in_un(struct socket_info *si, const struct sockaddr_in *in, s
 		prt = 5000;
 		do {
 			snprintf(un->sun_path, sizeof(un->sun_path), "%s/"SOCKET_FORMAT, 
-				 getenv("SOCKET_WRAPPER_DIR"), type, ++prt);
+				 socket_wrapper_dir(), type, ++prt);
 		} while (stat(un->sun_path, &st) == 0 && prt < 10000);
 		((struct sockaddr_in *)si->myname)->sin_port = htons(prt);
 	} 
 	snprintf(un->sun_path, sizeof(un->sun_path), "%s/"SOCKET_FORMAT, 
-		 getenv("SOCKET_WRAPPER_DIR"), type, prt);
+		 socket_wrapper_dir(), type, prt);
 	return 0;
 }
 
@@ -204,7 +217,7 @@ int swrap_socket(int domain, int type, int protocol)
 	struct socket_info *si;
 	int fd;
 
-	if (!getenv("SOCKET_WRAPPER_DIR")) {
+	if (!socket_wrapper_dir()) {
 		return real_socket(domain, type, protocol);
 	}
 	
@@ -279,7 +292,7 @@ static int swrap_auto_bind(struct socket_info *si)
 	
 	for (i=0;i<1000;i++) {
 		snprintf(un_addr.sun_path, sizeof(un_addr.sun_path), 
-			 "%s/"SOCKET_FORMAT, getenv("SOCKET_WRAPPER_DIR"), 
+			 "%s/"SOCKET_FORMAT, socket_wrapper_dir(),
 			 SOCK_DGRAM, i + 10000);
 		if (bind(si->fd, (struct sockaddr *)&un_addr, 
 			 sizeof(un_addr)) == 0) {
