@@ -128,10 +128,14 @@ static BOOL parse_processed_dfs_path(char* pathname, struct dfs_path* pdp, BOOL 
 
 static BOOL create_conn_struct( connection_struct *conn, int snum, char *path)
 {
+	pstring connpath;
+
 	ZERO_STRUCTP(conn);
 	conn->service = snum;
-	conn->connectpath = path;
-	pstring_sub(conn->connectpath , "%S", lp_servicename(snum));
+	pstrcpy(connpath, path);
+	pstring_sub(connpath , "%S", lp_servicename(snum));
+
+	string_set(&conn->connectpath, connpath);
 
 	/* needed for smbd_vfs_init() */
 	
