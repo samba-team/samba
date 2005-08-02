@@ -114,18 +114,31 @@ BOOL torture_listshares(void)
 	int i;
 	BOOL ret = True;
 	struct libnet_context* libnetctx;
-	const char* host;
+	const char *binding, *host;
+	struct dcerpc_binding *bind;
 	TALLOC_CTX *mem_ctx;
 
 	mem_ctx = talloc_init("test_listshares");
-	host = lp_parm_string(-1, "torture", "host");
+	binding = lp_parm_string(-1, "torture", "binding");
+	status = dcerpc_parse_binding(mem_ctx, binding, &bind);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Error while parsing the binding string\n");
+		ret = False;
+		goto done;
+	}
 
 	libnetctx = libnet_context_init(NULL);
+	if (!libnetctx) {
+		printf("Couldn't allocate libnet context\n");
+		ret = False;
+		goto done;
+	}
+
 	libnetctx->cred = cmdline_credentials;
 	
 	printf("Testing libnet_ListShare\n");
 	
-	share.in.server_name = talloc_asprintf(mem_ctx, "%s", host);
+	share.in.server_name = talloc_asprintf(mem_ctx, "%s", bind->host);
 
 	for (i = 0; i < ARRAY_SIZE(levels); i++) {
 		share.in.level = levels[i];
@@ -135,12 +148,15 @@ BOOL torture_listshares(void)
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("libnet_ListShare level %u failed - %s\n", share.in.level, nt_errstr(status));
 			ret = False;
+			goto done;
 		}
 
 		printf("listing shares:\n");
 		test_displayshares(share);
 	}
 
+done:
+	talloc_free(mem_ctx);
 	return ret;
 }
 
