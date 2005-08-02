@@ -24,9 +24,9 @@ definition:
 
 struct: STRUCT optional_identifier '{' elements '}' pointers optional_identifiers ';'
 	{
-		my $name = defined($_[2]) ? $_[2] : $_[7];
 		{
-			"NAME" => $name,
+			"NAME" => $_[7],
+			"STRUCT_NAME" => $_[2],
 			"TYPE" => "struct",
 			"DATA" => $_[4],
 		}
@@ -36,9 +36,9 @@ struct: STRUCT optional_identifier '{' elements '}' pointers optional_identifier
 union:
 	UNION optional_identifier '{' elements '}' pointers optional_identifier ';'
 	{
-		my $name = defined($_[2]) ? $_[2] : $_[7];
 		{
-			"NAME" => $name,
+			"NAME" => $_[7],
+			"UNION_NAME" => $_[2],
 			"TYPE" => "union",
 			"DATA" => $_[4],
 		}
