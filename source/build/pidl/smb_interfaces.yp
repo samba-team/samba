@@ -70,6 +70,12 @@ element:
 	| union
 	| STRUCT IDENTIFIER pointers IDENTIFIER ';'
 	| UNION IDENTIFIER pointers IDENTIFIER ';'
+	| CONST type pointers IDENTIFIER array ';'
+	      {{
+			   "NAME" => $_[4],
+			   "TYPE" => $_[2],
+			   "POINTERS" => $_[3],
+              }}
 	| type pointers IDENTIFIER array ';'
 	      {{
 			   "NAME" => $_[3],
