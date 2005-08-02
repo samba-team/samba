@@ -780,8 +780,10 @@ copy_print_driver_3(TALLOC_CTX *mem_ctx,
 		return nt_status;
 
 	while (valid) {
+		
 		rpcstr_pull(dependentfiles, i1->dependentfiles+length, sizeof(dependentfiles), -1, STR_TERMINATE);
-		length+=strlen(dependentfiles)+1;
+		length += strlen(dependentfiles)+1;
+		
 		if (strlen(dependentfiles) > 0) {
 
 			nt_status = net_copy_driverfile(mem_ctx, 
@@ -1468,7 +1470,7 @@ NTSTATUS rpc_printer_migrate_security_internals(const DOM_SID *domain_sid, const
 	DEBUG(3,("copying printer ACLs\n"));
 
 	/* connect destination PI_SPOOLSS */
-	nt_status = connect_pipe(&cli_dst, PI_SPOOLSS, &got_dst_spoolss_pipe);
+	nt_status = connect_dst_pipe(&cli_dst, PI_SPOOLSS, &got_dst_spoolss_pipe);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
@@ -1617,7 +1619,7 @@ NTSTATUS rpc_printer_migrate_forms_internals(const DOM_SID *domain_sid, const ch
 	DEBUG(3,("copying forms\n"));
 	
 	/* connect destination PI_SPOOLSS */
-	nt_status = connect_pipe(&cli_dst, PI_SPOOLSS, &got_dst_spoolss_pipe);
+	nt_status = connect_dst_pipe(&cli_dst, PI_SPOOLSS, &got_dst_spoolss_pipe);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 	
@@ -1797,7 +1799,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(const DOM_SID *domain_sid, const 
 
 	DEBUG(3,("copying printer-drivers\n"));
 
-	nt_status = connect_pipe(&cli_dst, PI_SPOOLSS, &got_dst_spoolss_pipe);
+	nt_status = connect_dst_pipe(&cli_dst, PI_SPOOLSS, &got_dst_spoolss_pipe);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 	
@@ -1806,7 +1808,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(const DOM_SID *domain_sid, const 
 	nt_status = connect_to_service(&cli_share_src, &cli->dest_ip, 
 			cli->desthost, "print$", "A:");
 	if (!NT_STATUS_IS_OK(nt_status)) 
-		return nt_status;
+		goto done;
 
 	got_src_driver_share = True;
 
@@ -1826,7 +1828,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(const DOM_SID *domain_sid, const 
 		goto done;
 	}
 
-	if (!num_printers) {
+	if (num_printers == 0) {
 		printf ("no printers found on server.\n");
 		nt_status = NT_STATUS_OK;
 		goto done;
@@ -2002,13 +2004,13 @@ NTSTATUS rpc_printer_migrate_printers_internals(const DOM_SID *domain_sid, const
 	DEBUG(3,("copying printers\n"));
 
 	/* connect destination PI_SPOOLSS */
-	nt_status = connect_pipe(&cli_dst, PI_SPOOLSS, &got_dst_spoolss_pipe);
+	nt_status = connect_dst_pipe(&cli_dst, PI_SPOOLSS, &got_dst_spoolss_pipe);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
 
 	/* enum printers */
-	if (!get_printer_info(cli, mem_ctx, 2, argc, argv, &num_printers, &ctr_enum)) {
+	if (!get_printer_info(cli, mem_ctx, level, argc, argv, &num_printers, &ctr_enum)) {
 		nt_status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -2169,7 +2171,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const
 	DEBUG(3,("copying printer settings\n"));
 
 	/* connect destination PI_SPOOLSS */
-	nt_status = connect_pipe(&cli_dst, PI_SPOOLSS, &got_dst_spoolss_pipe);
+	nt_status = connect_dst_pipe(&cli_dst, PI_SPOOLSS, &got_dst_spoolss_pipe);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
