@@ -4165,6 +4165,7 @@ AC_ARG_WITH(aio-support,
 [ case "$withval" in
   yes)
 
+	AC_MSG_RESULT(yes)
 	case "$host_os" in
 	*)
 		AC_CHECK_LIB(rt,aio_read,[AIO_LIBS="$ACL_LIBS -lrt"])
@@ -4192,6 +4193,94 @@ samba_cv_HAVE_AIO64=yes,samba_cv_HAVE_AIO64=no)
 			AC_DEFINE(WITH_AIO, 1, [Using asynchronous io])
 			LIBS="$LIBS -lrt"
 		fi
+
+		if test x"$samba_cv_HAVE_AIO" = x"yes"; then
+			AC_MSG_CHECKING(for aio_read)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_read(&a); }],
+[AC_DEFINE(HAVE_AIO_READ, 1, [Have aio_read]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+
+			AC_MSG_CHECKING(for aio_write)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_write(&a); }],
+[AC_DEFINE(HAVE_AIO_WRITE, 1, [Have aio_write]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+
+			AC_MSG_CHECKING(for aio_fsync)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_fsync(1, &a); }],
+[AC_DEFINE(HAVE_AIO_FSYNC, 1, [Have aio_fsync]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+
+			AC_MSG_CHECKING(for aio_return)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_return(&a); }],
+[AC_DEFINE(HAVE_AIO_RETURN, 1, [Have aio_return]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+
+			AC_MSG_CHECKING(for aio_error)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_error(&a); }],
+[AC_DEFINE(HAVE_AIO_ERROR, 1, [Have aio_error]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+
+			AC_MSG_CHECKING(for aio_cancel)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_cancel(1, &a); }],
+[AC_DEFINE(HAVE_AIO_CANCEL, 1, [Have aio_cancel]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+
+			AC_MSG_CHECKING(for aio_suspend)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_suspend(&a, 1, NULL); }],
+[AC_DEFINE(HAVE_AIO_SUSPEND, 1, [Have aio_suspend]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+		fi
+
+		if test x"$samba_cv_HAVE_AIO64" = x"yes"; then
+			AC_MSG_CHECKING(for aio_read64)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_read64(&a); }],
+[AC_DEFINE(HAVE_AIO_READ64, 1, [Have aio_read64]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+
+			AC_MSG_CHECKING(for aio_write64)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_write64(&a); }],
+[AC_DEFINE(HAVE_AIO_WRITE64, 1, [Have aio_write64]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+
+			AC_MSG_CHECKING(for aio_fsync64)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_fsync64(1, &a); }],
+[AC_DEFINE(HAVE_AIO_FSYNC64, 1, [Have aio_fsync64]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+
+			AC_MSG_CHECKING(for aio_return64)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_return64(&a); }],
+[AC_DEFINE(HAVE_AIO_RETURN64, 1, [Have aio_return64]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+
+			AC_MSG_CHECKING(for aio_error64)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_error64(&a); }],
+[AC_DEFINE(HAVE_AIO_ERROR64, 1, [Have aio_error64]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+
+			AC_MSG_CHECKING(for aio_cancel64)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_cancel64(1, &a); }],
+[AC_DEFINE(HAVE_AIO_CANCEL64, 1, [Have aio_cancel64]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+
+			AC_MSG_CHECKING(for aio_suspend64)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_suspend64(&a, 1, NULL); }],
+[AC_DEFINE(HAVE_AIO_SUSPEND64, 1, [Have aio_suspend64]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+		fi
             ;;
         esac
         ;;
@@ -4203,9 +4292,6 @@ samba_cv_HAVE_AIO64=yes,samba_cv_HAVE_AIO64=no)
   AC_DEFINE(HAVE_NO_AIO,1,[Whether no asynchronous io support should be built in])
   AC_MSG_RESULT(no)
 )
-
-AC_CHECK_FUNCS(aio_cancel aio_cancel64 aio_error aio_error64 aio_fsync aio_fsync64 aio_read aio_read64)
-AC_CHECK_FUNCS(aio_return aio_return64 aio_suspend aio_suspend64 aio_write aio_write64)
 
 #################################################
 # check for sendfile support
