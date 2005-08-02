@@ -591,10 +591,6 @@ static NTSTATUS usermod_open(struct composite_context *c,
 	c->status = dcerpc_ndr_request_recv(s->req);
 	NT_STATUS_NOT_OK_RETURN(c->status);
 
-	if (s->stage == USERMOD_QUERY) {
-		s->info = *s->queryuser.out.info;
-	}
-
 	/* Prepare UserInfo level and data based on bitmask field */
 	s->change.fields = usermod_setfields(s, &level, i);
 
@@ -611,6 +607,35 @@ static NTSTATUS usermod_open(struct composite_context *c,
 
 		s->req = dcerpc_samr_SetUserInfo_send(s->pipe, c, &s->setuser);
 	}
+
+	s->req->async.callback = usermod_handler;
+	s->req->async.private  = c;
+
+	return NT_STATUS_OK;
+}
+
+
+/**
+ * Stage 2a (optional): Query the user information
+ */
+static NTSTATUS usermod_query(struct composite_context *c,
+			      struct usermod_state *s)
+{
+	union samr_UserInfo *i = &s->info;
+	uint16_t level;
+
+	c->status = dcerpc_ndr_request_recv(s->req);
+	NT_STATUS_NOT_OK_RETURN(c->status);
+
+	s->info = *s->queryuser.out.info;
+
+	s->change.fields = usermod_setfields(s, &level, i);
+
+	s->setuser.in.user_handle  = &s->user_handle;
+	s->setuser.in.level        = level;
+	s->setuser.in.info         = i;
+	
+	s->req = dcerpc_samr_SetUserInfo_send(s->pipe, c, &s->setuser);
 
 	s->req->async.callback = usermod_handler;
 	s->req->async.private  = c;
@@ -653,8 +678,11 @@ static void usermod_handler(struct rpc_request *req)
 		break;
 
 	case USERMOD_OPEN:
-	case USERMOD_QUERY:
 		c->status = usermod_open(c, s);
+		break;
+
+	case USERMOD_QUERY:
+		c->status = usermod_query(c, s);
 		break;
 
 	case USERMOD_MODIFY:
