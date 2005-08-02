@@ -1095,7 +1095,7 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 	}
 
 
-	while(1) {
+	do {
 
 		if (!got_params)
 			get_query_dispinfo_params(
@@ -1108,7 +1108,7 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 
 		loop_count++;
 
-		if (!NT_STATUS_IS_OK(result) && !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) 
+		if (NT_STATUS_IS_ERR(result))
 			break;
 
 		if (num_entries == 0) 
@@ -1133,7 +1133,7 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 				break;
 			}
 		}
-	}
+	} while ( NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
  done:
 	return result;
