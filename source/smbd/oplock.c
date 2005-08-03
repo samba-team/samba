@@ -1136,6 +1136,7 @@ static void process_oplock_break_message(int msg_type, pid_t src,
 	fsp->oplock_timeout =
 		add_timed_event(NULL,
 				timeval_current_ofs(OPLOCK_BREAK_TIMEOUT, 0),
+				"oplock_timeout_handler",
 				oplock_timeout_handler, fsp);
 
 	if (fsp->oplock_timeout == NULL) {

@@ -265,6 +265,7 @@ static struct timed_event *timed_events;
 struct timed_event {
 	struct timed_event *next, *prev;
 	struct timeval when;
+	const char *event_name;
 	void (*handler)(struct timed_event *te,
 			const struct timeval *now,
 			void *private_data);
@@ -274,7 +275,8 @@ struct timed_event {
 static int timed_event_destructor(void *p)
 {
 	struct timed_event *te = talloc_get_type_abort(p, struct timed_event);
-	DEBUG(10, ("Destroying timed event\n"));
+	DEBUG(10, ("Destroying timed event %x \"%s\"\n", (unsigned)te,
+		   te->event_name));
 	DLIST_REMOVE(timed_events, te);
 	return 0;
 }
@@ -287,6 +289,7 @@ static int timed_event_destructor(void *p)
 
 struct timed_event *add_timed_event(TALLOC_CTX *mem_ctx,
 				    struct timeval when,
+				    const char *event_name,
 				    void (*handler)(struct timed_event *te,
 						    const struct timeval *now,
 						    void *private_data),
@@ -301,6 +304,7 @@ struct timed_event *add_timed_event(TALLOC_CTX *mem_ctx,
 	}
 
 	te->when = when;
+	te->event_name = event_name;
 	te->handler = handler;
 	te->private_data = private_data;
 
@@ -317,6 +321,9 @@ struct timed_event *add_timed_event(TALLOC_CTX *mem_ctx,
 
 	DLIST_ADD_AFTER(timed_events, te, last_te);
 	talloc_set_destructor(te, timed_event_destructor);
+
+	DEBUG(10, ("Added timed event \"%s\": %x\n", event_name,
+		   (unsigned)te));
 	return te;
 }
 
@@ -337,6 +344,9 @@ static void run_events(void)
 		DEBUG(10, ("run_events: Nothing to do\n"));
 		return;
 	}
+
+	DEBUG(10, ("Running event \"%s\" %x\n", timed_events->event_name,
+		   (unsigned)timed_events));
 
 	timed_events->handler(timed_events, &now, timed_events->private_data);
 	return;
@@ -382,6 +392,7 @@ static void idle_event_handler(struct timed_event *te,
 	}
 
 	event->te = add_timed_event(event, timeval_sum(now, &event->interval),
+				    "idle_event_handler",
 				    idle_event_handler, event);
 
 	/* We can't do much but fail here. */
@@ -408,6 +419,7 @@ struct idle_event *add_idle_event(TALLOC_CTX *mem_ctx,
 	result->private_data = private_data;
 
 	result->te = add_timed_event(result, timeval_sum(&now, &interval),
+				     "idle_event_handler",
 				     idle_event_handler, result);
 	if (result->te == NULL) {
 		DEBUG(0, ("add_timed_event failed\n"));
