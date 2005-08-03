@@ -1,0 +1,78 @@
+# master list of build config files for Samba4
+include heimdal_build/config.mk
+include config.mk
+include dsdb/config.mk
+include gtk/config.mk
+include smbd/config.mk
+include smbd/process_model.mk
+include libnet/config.mk
+include auth/config.mk
+include nsswitch/config.mk
+include lib/basic.mk
+include lib/socket/config.mk
+include lib/ldb/config.mk
+include lib/talloc/config.mk
+include lib/tdb/config.mk
+include lib/tls/config.mk
+include lib/registry/config.mk
+include lib/messaging/config.mk
+include lib/events/config.mk
+include lib/popt/config.mk
+include lib/cmdline/config.mk
+include lib/socket_wrapper/config.mk
+include lib/appweb/config.mk
+include param/config.mk
+include smb_server/config.mk
+include rpc_server/config.mk
+include ldap_server/config.mk
+include web_server/config.mk
+include winbind/config.mk
+include nbt_server/config.mk
+include cldap_server/config.mk
+include auth/gensec/config.mk
+include auth/kerberos/config.mk
+include auth/ntlmssp/config.mk
+include libcli/auth/config.mk
+include libcli/ldap/config.mk
+include libcli/config.mk
+include utils/net/config.mk
+include utils/config.mk
+include ntvfs/posix/config.mk
+include ntvfs/config.mk
+include ntvfs/unixuid/config.mk
+include ntptr/config.mk
+include torture/config.mk
+include librpc/config.mk
+include client/config.mk
+include libcli/config.mk
+include libcli/security/config.mk
+include lib/com/config.mk
+include scripting/config.mk
+include kdc/config.mk
+include lib/replace/config.mk
+include scripting/ejs/config.mk
+
+binaries: $(BIN_PROGS) $(SBIN_PROGS)
+manpages: $(MANPAGES)
+
+showlayout: 
+	@echo "Samba will be installed into:"
+	@echo "  basedir: $(BASEDIR)"
+	@echo "  bindir:  $(BINDIR)"
+	@echo "  sbindir: $(SBINDIR)"
+	@echo "  libdir:  $(LIBDIR)"
+	@echo "  vardir:  $(VARDIR)"
+	@echo "  privatedir:  $(PRIVATEDIR)"
+	@echo "  piddir:   $(PIDDIR)"
+	@echo "  lockdir:  $(LOCKDIR)"
+	@echo "  swatdir:  $(SWATDIR)"
+	@echo "  mandir:   $(MANDIR)"
+
+showflags:
+	@echo "Samba will be compiled with flags:"
+	@echo "  CFLAGS = $(CFLAGS)"
+	@echo "  LD_FLAGS = $(LD_FLAGS)"
+	@echo "  STLD_FLAGS = $(STLD_FLAGS)"
+	@echo "  SHLD_FLAGS = $(SHLD_FLAGS)"
+
+
