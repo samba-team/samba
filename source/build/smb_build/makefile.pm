@@ -248,11 +248,10 @@ sub _prepare_obj_list($$)
 	my ($var,$ctx) = @_;
 
 	my $tmplist = array2oneperline($ctx->{OBJ_LIST});
+	return "" if ($tmplist eq "");
 
 	return << "__EOD__";
-# $var $ctx->{NAME} OBJ LIST
 $var\_$ctx->{NAME}_OBJS =$tmplist
-
 __EOD__
 }
 
@@ -261,6 +260,7 @@ sub _prepare_cflags($$)
 	my ($var,$ctx) = @_;
 
 	my $tmplist = array2oneperline($ctx->{CFLAGS});
+	return "" if ($tmplist eq "");
 
 	return << "__EOD__";
 $var\_$ctx->{NAME}_CFLAGS =$tmplist
@@ -298,7 +298,6 @@ sub _prepare_shared_library_rule($)
 
 	$output = << "__EOD__";
 LIBRARY_$ctx->{NAME}_DEPEND_LIST =$tmpdepend
-#
 LIBRARY_$ctx->{NAME}_SHARED_LINK_LIST =$tmpshlink
 LIBRARY_$ctx->{NAME}_SHARED_LINK_FLAGS =$tmpshflag
 #
@@ -502,9 +501,13 @@ clean: delheaders
 	@echo Removing generated files
 	@-rm -rf librpc/gen_*
 	@echo Removing generated ASN1 files
-	@-find heimdal/lib/asn1 -name 'asn1_*.[xc]' -exec rm -f '{}' \;
-	@-find heimdal/lib/gssapi -name 'asn1_*.[xc]' -exec rm -f '{}' \;
-	@-find heimdal/lib/hdb -name 'asn1_*.[xc]' -exec rm -f '{}' \;
+	@-find heimdal/lib/asn1 -name 'asn1_*.[c]' -exec rm -f '{}' \;
+	@-find heimdal/lib/gssapi -name 'asn1_*.[c]' -exec rm -f '{}' \;
+	@-find heimdal/lib/hdb -name 'asn1_*.[c]' -exec rm -f '{}' \;
+	@-rm -f heimdal/lib/roken/vis.h heimdal/lib/roken/err.h
+	@-rm -f heimdal/lib/hdb/hdb_asn1.h
+	@-rm -f heimdal/lib/gssapi/spnego_asn1.h
+	@-rm -f heimdal/lib/asn1/krb5_asn1.h
 
 
 distclean: clean
