@@ -389,7 +389,7 @@ interface netlogon
 	typedef struct {
 		lsa_String domain_name;
 		lsa_String comment;
-		NTTIME force_logoff_time;
+		dlong force_logoff_time;
 		uint16 min_password_length;
 		uint16 password_history_length;
 		/* yes, these are signed. They are in negative 100ns */
