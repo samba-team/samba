@@ -163,8 +163,8 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 	samdb_msg_add_string(state->sam_ldb, mem_ctx, 
 			     msg, "oEMInformation", domain->comment.string);
 
-	samdb_msg_add_uint64(state->sam_ldb, mem_ctx, 
-			     msg, "forceLogff", domain->force_logoff_time);
+	samdb_msg_add_int64(state->sam_ldb, mem_ctx, 
+			     msg, "forceLogoff", domain->force_logoff_time);
 
 	samdb_msg_add_uint(state->sam_ldb, mem_ctx, 
 			  msg, "minPwdLen", domain->min_password_length);
@@ -179,7 +179,7 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 			  msg, "pwdHistoryLength", domain->password_history_length);
 
 	samdb_msg_add_uint64(state->sam_ldb, mem_ctx, 
-			     msg, "modifiedCountAtLastProm", 
+			     msg, "modifiedCount", 
 			     domain->sequence_num);
 
 	samdb_msg_add_uint64(state->sam_ldb, mem_ctx, 
@@ -283,7 +283,7 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 	ADD_OR_DEL(uint64, "accountExpires", acct_expiry);
 	
 	if (samdb_msg_add_acct_flags(state->sam_ldb, mem_ctx, msg, 
-				     "userAccountConrol", user->acct_flags) != 0) { 
+				     "userAccountControl", user->acct_flags) != 0) { 
 		return NT_STATUS_NO_MEMORY; 
 	} 
 	
