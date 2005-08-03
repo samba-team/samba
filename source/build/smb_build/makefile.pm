@@ -105,51 +105,7 @@ __EOD__
 sub _prepare_SUFFIXES()
 {
 	return << '__EOD__';
-.SUFFIXES: .c .et .y .l .d .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml
-
-__EOD__
-}
-
-sub _prepare_IDL()
-{
-	return << '__EOD__';
-idl_full: build/pidl/Parse/Pidl/IDL.pm
-	@CPP="$(CPP)" PERL="$(PERL)" script/build_idl.sh FULL @PIDL_ARGS@
-
-idl: build/pidl/Parse/Pidl/IDL.pm
-	@CPP="$(CPP)" PERL="$(PERL)" script/build_idl.sh PARTIAL @PIDL_ARGS@
-
-build/pidl/Parse/Pidl/IDL.pm: build/pidl/idl.yp
-	-yapp -s -m 'Parse::Pidl::IDL' -o build/pidl/Parse/Pidl/IDL.pm build/pidl/idl.yp 
-
-smb_interfaces: build/pidl/smb_interfaces.pm
-	$(PERL) -Ibuild/pidl script/build_smb_interfaces.pl \
-		include/smb_interfaces.h
-
-build/pidl/smb_interfaces.pm: build/pidl/smb_interfaces.yp
-	-yapp -s -m 'smb_interfaces' -o build/pidl/smb_interfaces.pm build/pidl/smb_interfaces.yp 
-
-pch: proto include/includes.h.gch
-
-pch_clean:
-	-rm -f include/includes.h.gch
-
-basics: idl proto_exists HEIMDAL_EXTERNAL
-
-test: $(DEFAULT_TEST_TARGET)
-
-test-swrap: all
-	./script/tests/selftest.sh ${selftest_prefix}/st all SOCKET_WRAPPER
-
-test-noswrap: all
-	./script/tests/selftest.sh ${selftest_prefix}/st all
-
-quicktest: all
-	./script/tests/selftest.sh ${selftest_prefix}/st quick SOCKET_WRAPPER
-
-valgrindtest: all
-	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
-	./script/tests/selftest.sh ${selftest_prefix}/st quick SOCKET_WRAPPER
+.SUFFIXES: .x .c .et .y .l .d .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml
 
 __EOD__
 }
@@ -217,36 +173,6 @@ dynconfig.o: dynconfig.c Makefile
 	@echo Compiling $*.c
 	@$(CC) $(CFLAGS) @PICFLAG@ $(PATH_FLAGS) -c $< -o $@
 @BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
-
-__EOD__
-}
-
-sub _prepare_et_rule()
-{
-	return << '__EOD__';
-
-.et.c: 
-	$(MAKE) bin/compile_et
-	./bin/compile_et $<
-	mv `basename $@` $@
-
-__EOD__
-}
-
-sub _prepare_yacc_rule()
-{
-	return << '__EOD__';
-.y.c:
-	$(YACC) -d -o $@ $<	
-	
-__EOD__
-}
-
-sub _prepare_lex_rule()
-{
-	return << '__EOD__';
-.l.c:
-	$(LEX) -o $@ $<
 
 __EOD__
 }
@@ -580,6 +506,7 @@ clean: delheaders
 	@-find heimdal/lib/gssapi -name 'asn1_*.[xc]' -exec rm -f '{}' \;
 	@-find heimdal/lib/hdb -name 'asn1_*.[xc]' -exec rm -f '{}' \;
 
+
 distclean: clean
 	-rm -f bin/.dummy
 	-rm -f include/config.h include/smb_build.h
@@ -638,55 +565,6 @@ sub _prepare_target_settings($)
 	return $output;
 }
 
-sub _prepare_install_rules()
-{
-	return << '__EOD__';
-install: showlayout installbin installdat installswat
-
-# DESTDIR is used here to prevent packagers wasting their time
-# duplicating the Makefile. Remove it and you will have the privilege
-# of packaging each samba release for multiple versions of multiple
-# distributions and operating systems, or at least supplying patches
-# to all the packaging files required for this, prior to committing
-# the removal of DESTDIR. Do not remove it even though you think it
-# is not used.
-
-installdirs:
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(PRIVATEDIR) $(DESTDIR)$(PIDDIR) $(DESTDIR)$(LOCKDIR) $(DESTDIR)$(PRIVATEDIR)/tls
-
-installbin: all installdirs
-	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(SBIN_PROGS)
-	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(BIN_PROGS)
-
-installdat: installdirs
-	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR)$(LIBDIR) $(srcdir)
-
-installswat: installdirs
-	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir) $(DESTDIR)$(LIBDIR)
-
-installman: installdirs
-	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(MANPAGES)
-
-uninstall: uninstallbin uninstallman
-
-uninstallbin:
-	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(SBIN_PROGS)
-	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(BIN_PROGS)
-
-uninstallman:
-	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(MANPAGES)
-
-everything: all
-
-etags:
-	etags `find $(srcdir) -name "*.[ch]"`
-
-ctags:
-	ctags `find $(srcdir) -name "*.[ch]"`
-
-__EOD__
-}
-
 sub _prepare_rule_lists($)
 {
 	my $depend = shift;
@@ -703,9 +581,7 @@ sub _prepare_rule_lists($)
 		($output .= _prepare_custom_rule($key) ) if $key->{TYPE} eq "TARGET";
 	}
 
-	$output .= _prepare_IDL();
 	$output .= _prepare_proto_rules();
-	$output .= _prepare_install_rules();
 
 	return $output;
 }
@@ -735,9 +611,6 @@ sub _prepare_makefile_in($)
 	$output .= _prepare_dummy_MAKEDIR();
 	$output .= _prepare_std_CC_rule("c","o",$config{PICFLAG},"Compiling","Rule for std objectfiles");
 	$output .= _prepare_std_CC_rule("h","h.gch",$config{PICFLAG},"Precompiling","Rule for precompiled headerfiles");
-	$output .= _prepare_lex_rule();
-	$output .= _prepare_yacc_rule();
-	$output .= _prepare_et_rule();
 
 	$output .= _prepare_depend_CC_rule();
 	
@@ -749,14 +622,6 @@ sub _prepare_makefile_in($)
 	$output .= _prepare_binaries($CTX);
 	$output .= _prepare_target_settings($CTX);
 	$output .= _prepare_rule_lists($CTX);
-
-	my @all = ();
-	
-	foreach my $part (values %{$CTX}) {
-		push (@all, $part->{TARGET}) if defined ($part->{OUTPUT_TYPE}) and $part->{OUTPUT_TYPE} eq "BINARY";	
-	}
-	
-	$output .= _prepare_make_target({ TARGET => "all", DEPEND_LIST => \@all });
 
 	if ($config{developer} eq "yes") {
 		$output .= <<__EOD__
