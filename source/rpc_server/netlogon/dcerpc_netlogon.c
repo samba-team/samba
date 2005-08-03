@@ -870,11 +870,12 @@ static WERROR netr_DSRGETSITENAME(struct dcesrv_call_state *dce_call, TALLOC_CTX
   fill in a netr_DomainTrustInfo from a ldb search result
 */
 static NTSTATUS fill_domain_primary_info(TALLOC_CTX *mem_ctx, struct ldb_message *res,
-					 struct netr_DomainTrustInfo *info)
+					 struct netr_DomainTrustInfo *info, 
+					 const char *local_domain)
 {
 	ZERO_STRUCTP(info);
 
-	info->domainname.string = samdb_result_string(res, "name", NULL);
+	info->domainname.string = local_domain;
 	info->fulldomainname.string = talloc_asprintf(info, "%s.", samdb_result_string(res, "dnsDomain", NULL));
 	/* TODO: we need proper forest support */
 	info->forest.string = info->fulldomainname.string;
@@ -888,12 +889,13 @@ static NTSTATUS fill_domain_primary_info(TALLOC_CTX *mem_ctx, struct ldb_message
   fill in a netr_DomainTrustInfo from a ldb search result
 */
 static NTSTATUS fill_domain_trust_info(TALLOC_CTX *mem_ctx, struct ldb_message *res,
-				       struct netr_DomainTrustInfo *info, BOOL is_local)
+				       struct netr_DomainTrustInfo *info, 
+				       const char *local_domain, BOOL is_local)
 {
 	ZERO_STRUCTP(info);
 
 	if (is_local) {
-		info->domainname.string = samdb_result_string(res, "name", NULL);
+		info->domainname.string = local_domain;
 		info->fulldomainname.string = samdb_result_string(res, "dnsDomain", NULL);
 		info->forest.string = NULL;
 		info->guid = samdb_result_guid(res, "objectGUID");
@@ -917,14 +919,17 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 					struct netr_LogonGetDomainInfo *r)
 {
 	struct server_pipe_state *pipe_state = dce_call->context->private;
-	const char * const attrs[] = { "name", "dnsDomain", "objectSid", 
+	const char * const attrs[] = { "dnsDomain", "objectSid", 
 				       "objectGUID", "flatName", "securityIdentifier",
 				       NULL };
-	void *sam_ctx;
-	struct ldb_message **res1, **res2;
+	const char * const ref_attrs[] = { "nETBIOSName", NULL };
+	struct ldb_context *sam_ctx;
+	struct ldb_message **res1, **res2, **ref_res;
 	struct netr_DomainInfo1 *info1;
-	int ret1, ret2, i;
+	int ret, ret1, ret2, i;
 	NTSTATUS status;
+
+	const char *local_domain;
 
 	status = netr_creds_server_step_check(pipe_state, 
 					      r->in.credential, r->out.return_authenticator);
@@ -947,6 +952,17 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
+	/* try and find the domain */
+	ret = gendb_search(sam_ctx, mem_ctx, NULL, 
+			   &ref_res, ref_attrs, 
+			   "(&(objectClass=crossRef)(ncName=%s))", 
+			   res1[0]->dn);
+	if (ret != 1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	local_domain = samdb_result_string(ref_res[0], "nETBIOSName", NULL);
+
 	ret2 = gendb_search(sam_ctx, mem_ctx, NULL, &res2, attrs, "(objectClass=trustedDomain)");
 	if (ret2 == -1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -966,19 +982,19 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = fill_domain_primary_info(mem_ctx, res1[0], &info1->domaininfo);
+	status = fill_domain_primary_info(mem_ctx, res1[0], &info1->domaininfo, local_domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	for (i=0;i<ret2;i++) {
-		status = fill_domain_trust_info(mem_ctx, res2[i], &info1->trusts[i], False);
+		status = fill_domain_trust_info(mem_ctx, res2[i], &info1->trusts[i], NULL, False);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
 	}
 
-	status = fill_domain_trust_info(mem_ctx, res1[0], &info1->trusts[i], True);
+	status = fill_domain_trust_info(mem_ctx, res1[0], &info1->trusts[i], local_domain, True);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
