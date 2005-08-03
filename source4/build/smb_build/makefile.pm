@@ -430,7 +430,7 @@ sub _prepare_mergedobj_rule($)
 
 	$output .= "$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJS)\n";
 
-	$output .= "\t\@echo \"Linking subsystem $ctx->{NAME}\"\n";
+	$output .= "\t\@echo \"Pre-Linking $ctx->{TYPE} $ctx->{NAME}\"\n";
 	$output .= "\t@\$(LD) -r \$($ctx->{TYPE}_$ctx->{NAME}_OBJS) -o $ctx->{TARGET}\n";
 	$output .= "\n";
 
