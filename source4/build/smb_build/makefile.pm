@@ -510,7 +510,7 @@ clean: delheaders
 distclean: clean
 	-rm -f bin/.dummy
 	-rm -f include/config.h include/smb_build.h
-	-rm -f Makefile*
+	-rm -f Makefile Makefile.in
 	-rm -f config.status
 	-rm -f config.log config.cache
 	-rm -f samba4-deps.dot
@@ -519,7 +519,7 @@ distclean: clean
 __EOD__
 
 	if ($config{developer} eq "yes") {
-		$output .= "\t@-rm -f \$(_ALL_OBJS_OBJS:.o=.d)\n";
+		$output .= "\t\@-rm -f \$(_ALL_OBJS_OBJS:.o=.d)\n";
 	}
 
 	$output .= << '__EOD__';
