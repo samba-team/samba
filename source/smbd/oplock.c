@@ -236,8 +236,11 @@ void release_file_oplock(files_struct *fsp)
 
 	if (fsp->oplock_type == LEVEL_II_OPLOCK)
 		level_II_oplocks_open--;
-	else if (fsp->oplock_type)
+	else if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
 		exclusive_oplocks_open--;
+	
+	SMB_ASSERT(exclusive_oplocks_open>=0);
+	SMB_ASSERT(level_II_oplocks_open>=0);
 	
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
