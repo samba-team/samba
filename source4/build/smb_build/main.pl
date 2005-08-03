@@ -18,10 +18,10 @@ use strict;
 
 my $INPUT = {};
 
-config_mk::import_files($INPUT, "config.list");
+my $mkfile = config_mk::import_files($INPUT, "config.list");
 my $DEPEND = smb_build::input::check($INPUT, \%config::enabled);
 my $OUTPUT = output::create_output($DEPEND);
-makefile::create_makefile_in($OUTPUT, "Makefile.in");
+makefile::create_makefile_in($OUTPUT, $mkfile, "Makefile.in");
 smb_build_h::create_smb_build_h($OUTPUT, "include/smb_build.h");
 
 open DOTTY, ">samba4-deps.dot";
