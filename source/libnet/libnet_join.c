@@ -158,6 +158,8 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		return status;
 	}
 
+	/* Look to see if this is ADS (a fault indicates NT4 or Samba 3.0) */
+
 	lsa_query_info2.in.handle = &lsa_p_handle;
 	lsa_query_info2.in.level = LSA_POLICY_INFO_DNS;
 
@@ -174,6 +176,8 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		}
 		realm = lsa_query_info2.out.info->dns.dns_domain.string;
 	}
+
+	/* Grab the domain SID (regardless of the result of the previous call */
 
 	lsa_query_info.in.handle = &lsa_p_handle;
 	lsa_query_info.in.level = LSA_POLICY_INFO_DOMAIN;
@@ -196,7 +200,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	r->out.realm = talloc_steal(mem_ctx, realm);
 
 	/*
-	  step 1 - establish a SAMR connection, on the same CIFS transport
+	  establish a SAMR connection, on the same CIFS transport
 	*/
 
 	/* Find the original binding string */
@@ -357,13 +361,15 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		}
 	}
 
+	/* Find out what password policy this user has */
 	pwp.in.user_handle = &u_handle;
 
 	status = dcerpc_samr_GetUserPwInfo(samr_pipe, tmp_ctx, &pwp);
 	if (NT_STATUS_IS_OK(status)) {
 		policy_min_pw_len = pwp.out.info.min_password_length;
 	}
-
+	
+	/* Grab a password of that minimum length */
 	r->out.join_password = generate_random_str(mem_ctx, MAX(8, policy_min_pw_len));
 
 	r2.samr_handle.level		= LIBNET_SET_PASSWORD_SAMR_HANDLE;
@@ -436,12 +442,21 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	}
 
 	/* Now, if it was AD, then we want to start looking changing a
-	 * few more things */
+	 * few more things.  Otherwise, we are done. */
 	if (!realm) {
+		r->out.realm = NULL;
+		r->out.kvno = 0;
 		talloc_free(tmp_ctx);
 		return NT_STATUS_OK;
 	}
 
+	/* We need to convert between a samAccountName and domain to a
+	 * DN in the directory.  The correct way to do this is with
+	 * DRSUAPI CrackNames */
+
+
+	/* Fiddle with the bindings, so get to DRSUAPI on
+	 * NCACN_IP_TCP, sealed */
 	drsuapi_binding = talloc(tmp_ctx, struct dcerpc_binding);
 	*drsuapi_binding = *samr_binding;
 	drsuapi_binding->transport = NCACN_IP_TCP;
@@ -464,6 +479,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		return status;
 	}
 	
+	/* get a DRSUAPI pipe handle */
 	GUID_from_string(DRSUAPI_DS_BIND_GUID, &drsuapi_bind_guid);
 
 	r_drsuapi_bind.in.bind_guid = &drsuapi_bind_guid;
@@ -497,6 +513,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
+	/* Actually 'crack' the names */
 	ZERO_STRUCT(r_crack_names);
 	r_crack_names.in.bind_handle		= &drsuapi_bind_handle;
 	r_crack_names.in.level			= 1;
@@ -534,9 +551,20 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 						  "DsCrackNames failed - %s\n", win_errstr(r_crack_names.out.result));
 		talloc_free(tmp_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
+	} else if (r_crack_names.out.level != 1 
+		   || !r_crack_names.out.ctr.ctr1 
+		   || r_crack_names.out.ctr.ctr1->count != 1 
+		   || r_crack_names.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
+		
+		r->out.error_string = talloc_asprintf(mem_ctx, "DsCrackNames failed\n");
+		talloc_free(tmp_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	account_dn = r_crack_names.out.ctr.ctr1->array[0].result_name;
+
+
+	/* Now we know the user's DN, open with LDAP, read and modify a few things */
 
 	remote_ldb_url = talloc_asprintf(tmp_ctx, "ldap://%s", 
 					 drsuapi_binding->host);
@@ -546,7 +574,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	/* search for the secret record */
+	/* search for the user's record */
 	ldb_ret = ldb_search(remote_ldb, account_dn, LDB_SCOPE_BASE, 
 			     NULL, attrs, &msgs);
 
@@ -558,8 +586,11 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 					  ldb_errstring(remote_ldb));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	/* If we have a kvno recorded in AD, we need it locally as well */
 	r->out.kvno = ldb_msg_find_uint(msgs[0], "msDS-KeyVersionNumber", 0);
 
+	/* Prepare a new message, for the modify */
 	msg = ldb_msg_new(tmp_ctx);
 	if (!msg) {
 		return NT_STATUS_NO_MEMORY;
