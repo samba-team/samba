@@ -395,6 +395,21 @@ include ./heimdal_build/et_deps.pl heimdal/lib/krb5/heim_err.et|
 include ./heimdal_build/et_deps.pl heimdal/lib/krb5/k524_err.et|
 include ./heimdal_build/et_deps.pl heimdal/lib/krb5/krb5_err.et|
 
+heimdal_clean:
+	@echo Removing generated ASN1 files
+	@-find heimdal/lib/asn1 -name 'asn1_*.[c]' -exec rm -f '{}' \;
+	@-find heimdal/lib/gssapi -name 'asn1_*.[c]' -exec rm -f '{}' \;
+	@-find heimdal/lib/hdb -name 'asn1_*.[c]' -exec rm -f '{}' \;
+	@-rm -f heimdal/lib/roken/vis.h heimdal/lib/roken/err.h
+	@-rm -f heimdal/lib/hdb/hdb_asn1.h
+	@-rm -f heimdal/lib/gssapi/spnego_asn1.h
+	@-rm -f heimdal/lib/asn1/krb5_asn1.h
+	@-rm -f heimdal/lib/asn1/asn1_err.{c,h}
+	@-rm -f heimdal/lib/hdb/hdb_err.{c,h}
+	@-rm -f heimdal/lib/krb5/heim_err.{c,h}
+	@-rm -f heimdal/lib/krb5/k524_err.{c,h}
+	@-rm -f heimdal/lib/krb5/krb5_err.{c,h}
+
 #######################
 # Start SUBSYSTEM HEIMDAL
 [SUBSYSTEM::HEIMDAL]
