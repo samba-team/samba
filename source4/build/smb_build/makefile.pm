@@ -10,17 +10,6 @@ package makefile;
 use config qw(%config);
 use strict;
 
-sub _prepare_command_interpreters($)
-{
-	my $ctx = shift;
-
-	return << '__EOD__';
-SHELL=/bin/sh
-PERL=@PERL@
-
-__EOD__
-}
-
 sub _prepare_path_vars($)
 {
 	my $ctx = shift;
@@ -81,23 +70,25 @@ sub _prepare_compiler_linker($)
 {
 	my $ctx = shift;
 
-	return << '__EOD__';
-CC=@CC@
-CFLAGS=-Iinclude -I. -I$(srcdir)/include -I$(srcdir) -D_SAMBA_BUILD_ -DHAVE_CONFIG_H -Ilib @CFLAGS@ @CPPFLAGS@
+	return << "__EOD__";
+SHELL=$config{SHELL}
+PERL=$config{PERL}
+CC=$config{CC}
+CFLAGS=-Iinclude -I. -I\$(srcdir)/include -I\$(srcdir) -D_SAMBA_BUILD_ -DHAVE_CONFIG_H -Ilib $config{CFLAGS} $config{CPPFLAGS}
 
-LD=@LD@
-LD_FLAGS=@LDFLAGS@ @CFLAGS@ -Lbin
+LD=$config{LD}
+LD_FLAGS=$config{LDFLAGS} $config{CFLAGS} -Lbin
 
-STLD=ar
+STLD=$config{AR}
 STLD_FLAGS=-rc
 
-SHLD=@CC@
-SHLD_FLAGS=@LDSHFLAGS@ @LDFLAGS@ -Lbin
+SHLD=$config{CC}
+SHLD_FLAGS=$config{LDSHFLAGS} $config{LDFLAGS} -Lbin
 
-XSLTPROC=@XSLTPROC@
+XSLTPROC=$config{XSLTPROC}
 
-LEX=@LEX@
-YACC=@YACC@
+LEX=$config{LEX}
+YACC=$config{YACC}
 
 __EOD__
 }
@@ -135,10 +126,10 @@ sub _prepare_IDL($)
 
 	return << '__EOD__';
 idl_full: build/pidl/Parse/Pidl/IDL.pm
-	CPP="@CPP@" PERL="$(PERL)" script/build_idl.sh FULL @PIDL_ARGS@
+	CPP="$(CPP)" PERL="$(PERL)" script/build_idl.sh FULL @PIDL_ARGS@
 
 idl: build/pidl/Parse/Pidl/IDL.pm
-	@CPP="@CPP@" PERL="$(PERL)" script/build_idl.sh PARTIAL @PIDL_ARGS@
+	@CPP="$(CPP)" PERL="$(PERL)" script/build_idl.sh PARTIAL @PIDL_ARGS@
 
 build/pidl/Parse/Pidl/IDL.pm: build/pidl/idl.yp
 	-yapp -s -m 'Parse::Pidl::IDL' -o build/pidl/Parse/Pidl/IDL.pm build/pidl/idl.yp 
@@ -182,6 +173,32 @@ sub _prepare_man_rule($)
 	return << "__EOD__";
 .$suffix.xml.$suffix:
 	\$(XSLTPROC) -o \$@ http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl \$<
+
+__EOD__
+}
+
+sub _prepare_binaries($)
+{
+	my $ctx = shift;
+
+	my @bbn_list = ();
+	my @sbn_list = ();
+
+	foreach (values %$ctx) {
+		next unless defined $_->{OUTPUT_TYPE};
+		next unless ($_->{OUTPUT_TYPE} eq "BINARY");
+
+		push (@sbn_list, $_->{OUTPUT}) if ($_->{INSTALLDIR} eq "SBINDIR");
+		push(@bbn_list, $_->{OUTPUT}) if ($_->{INSTALLDIR} eq "BINDIR");
+	}
+
+	my $bbn = join(' ', @bbn_list);
+	my $sbn = join(' ', @sbn_list);
+	return << "__EOD__";
+BIN_PROGS = $bbn
+SBIN_PROGS = $sbn
+
+binaries: \$(BIN_PROGS) \$(SBIN_PROGS)
 
 __EOD__
 }
@@ -282,11 +299,7 @@ __EOD__
 # $output -		the resulting output buffer
 sub _prepare_std_CC_rule($$$$$)
 {
-	my $src = shift;
-	my $dst = shift;
-	my $flags = shift;
-	my $message = shift;
-	my $comment = shift;
+	my ($src,$dst,$flags,$message,$comment) = @_;
 	my $flagsstr = "";
 	my $output;
 
@@ -319,7 +332,6 @@ sub array2oneperline($)
 sub array2oneline($)
 {
 	my $array = shift;
-	my $i;
 	my $output = "";
 
 	foreach (@{$array}) {
@@ -389,17 +401,11 @@ __EOD__
 sub _prepare_shared_library_rule($)
 {
 	my $ctx = shift;
-	my $tmpdepend;
-	my $tmpstlink;
-	my $tmpstflag;
-	my $tmpshlink;
-	my $tmpshflag;
-	my $tmprules;
 	my $output;
 
-	$tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
-	$tmpshlink = array2oneperline($ctx->{LINK_LIST});
-	$tmpshflag = array2oneperline($ctx->{LINK_FLAGS});
+	my $tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
+	my $tmpshlink = array2oneperline($ctx->{LINK_LIST});
+	my $tmpshflag = array2oneperline($ctx->{LINK_FLAGS});
 
 	$output = << "__EOD__";
 LIBRARY_$ctx->{NAME}_DEPEND_LIST =$tmpdepend
@@ -495,17 +501,11 @@ sub _prepare_objlist_rule($)
 sub _prepare_static_library_rule($)
 {
 	my $ctx = shift;
-	my $tmpdepend;
-	my $tmpstlink;
-	my $tmpstflag;
-	my $tmpshlink;
-	my $tmpshflag;
-	my $tmprules;
 	my $output;
 
-	$tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
-	$tmpstlink = array2oneperline($ctx->{LINK_LIST});
-	$tmpstflag = array2oneperline($ctx->{LINK_FLAGS});
+	my $tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
+	my $tmpstlink = array2oneperline($ctx->{LINK_LIST});
+	my $tmpstflag = array2oneperline($ctx->{LINK_FLAGS});
 
 	$output = << "__EOD__";
 LIBRARY_$ctx->{NAME}_DEPEND_LIST =$tmpdepend
@@ -715,36 +715,7 @@ showflags:
 	@echo "  STLD_FLAGS = $(STLD_FLAGS)"
 	@echo "  SHLD_FLAGS = $(SHLD_FLAGS)"
 
-SBIN_PROGS = bin/smbd
-
-BIN_PROGS = bin/smbclient \
-		bin/net \
-		bin/nmblookup \
-		bin/smbscript \
-		bin/ntlm_auth
-
-TORTURE_PROGS = bin/smbtorture \
-		bin/gentest \
-		bin/locktest \
-		bin/masktest \
-		bin/ndrdump
-
-LDB_PROGS = 	bin/ldbadd \
-		bin/ldbdel \
-		bin/ldbmodify \
-		bin/ldbedit \
-		bin/ldbsearch
-
-REG_PROGS = 	bin/regpatch \
-		bin/regshell \
-		bin/regtree \
-		bin/regdiff
-
-GTK_PROGS = bin/gregedit \
-		bin/gwsam \
-		bin/gepdump
-
-install: showlayout installbin installtorture installldb installreg installdat installswat installmisc installgtk
+install: showlayout installbin installdat installswat
 
 # DESTDIR is used here to prevent packagers wasting their time
 # duplicating the Makefile. Remove it and you will have the privilege
@@ -761,46 +732,20 @@ installbin: all installdirs
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(SBIN_PROGS)
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(BIN_PROGS)
 
-installtorture: all installdirs
-	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(TORTURE_PROGS)
-
-installldb: all installdirs
-	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(LDB_PROGS)
-
-installreg: all installdirs
-	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(REG_PROGS)
-
-installgtk: all installdirs
-	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(GTK_PROGS)
-
 installdat: installdirs
 	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR)$(LIBDIR) $(srcdir)
 
 installswat: installdirs
 	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir) $(DESTDIR)$(LIBDIR)
 
-installmisc: installdirs
-	@$(SHELL) $(srcdir)/script/installmisc.sh $(srcdir) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(BINDIR)
-
 installman: installdirs
 	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(MANPAGES)
 
-uninstall: uninstallbin uninstalltorture uninstallldb uninstallreg uninstallgtk
+uninstall: uninstallbin uninstallman
 
 uninstallbin:
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(SBIN_PROGS)
-
-uninstalltorture:
-	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(TORTURE_PROGS)
-
-uninstallldb:
-	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(LDB_PROGS)
-
-uninstallreg:
-	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(REG_PROGS)
-
-uninstallgtk:
-	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(GTK_PROGS)
+	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(BIN_PROGS)
 
 uninstallman:
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(MANPAGES)
@@ -884,9 +829,6 @@ sub _prepare_makefile_in($)
 	$output .= "########################################\n";
 	$output .= "\n";
 
-	my $cmd_ctx;
-	$output .= _prepare_command_interpreters($cmd_ctx);
-
 	my $path_ctx;
 	$output .= _prepare_path_vars($path_ctx);
 
@@ -913,6 +855,7 @@ sub _prepare_makefile_in($)
 	$output .= _prepare_man_rule("5");
 	$output .= _prepare_man_rule("7");
 	$output .= _prepare_manpages($CTX);
+	$output .= _prepare_binaries($CTX);
 	$output .= _prepare_target_settings($CTX);
 	$output .= _prepare_rule_lists($CTX);
 
@@ -959,4 +902,3 @@ sub create_makefile_in($$)
 }
 
 1;
-

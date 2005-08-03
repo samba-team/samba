@@ -7,3 +7,4 @@ dnl
 dnl Check if we use GNU ld
 AC_PATH_PROG(LD, ld)
 AC_PROG_LD_GNU
+AC_PATH_PROG(AR, ar)
