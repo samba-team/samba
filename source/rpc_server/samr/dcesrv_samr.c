@@ -161,7 +161,12 @@ static NTSTATUS samr_LookupDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	struct samr_connect_state *c_state;
 	struct dcesrv_handle *h;
 	struct dom_sid *sid;
-		
+	const char * const dom_attrs[] = { "objectSid", NULL};
+	const char * const ref_attrs[] = { "ncName", NULL};
+	struct ldb_message **dom_msgs;
+	struct ldb_message **ref_msgs;
+	int ret;
+
 	r->out.sid = NULL;
 
 	DCESRV_PULL_HANDLE(h, r->in.connect_handle, SAMR_HANDLE_CONNECT);
@@ -172,10 +177,31 @@ static NTSTATUS samr_LookupDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	sid = samdb_search_dom_sid(c_state->sam_ctx,
-				   mem_ctx, NULL, "objectSid",
-				   "(&(name=%s)(objectclass=domain))",
+	if (strcasecmp(r->in.domain_name->string, "BUILTIN") == 0) {
+		ret = gendb_search(c_state->sam_ctx,
+				   mem_ctx, NULL, &dom_msgs, dom_attrs,
+				   "(objectClass=builtinDomain)");
+	} else {
+		ret = gendb_search(c_state->sam_ctx,
+				   mem_ctx, NULL, &ref_msgs, ref_attrs,
+				   "(&(&(nETBIOSName=%s)(objectclass=crossRef))(ncName=*))", 
 				   r->in.domain_name->string);
+		if (ret != 1) {
+			return NT_STATUS_NO_SUCH_DOMAIN;
+		}
+		
+		ret = gendb_search_dn(c_state->sam_ctx, mem_ctx, 
+				      samdb_result_string(ref_msgs[0], "ncName", NULL), 
+				      &dom_msgs, dom_attrs);
+	}
+
+	if (ret != 1) {
+		return NT_STATUS_NO_SUCH_DOMAIN;
+	}
+	
+	sid = samdb_result_dom_sid(mem_ctx, dom_msgs[0],
+				   "objectSid");
+		
 	if (sid == NULL) {
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
@@ -197,8 +223,11 @@ static NTSTATUS samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	struct samr_connect_state *c_state;
 	struct dcesrv_handle *h;
 	struct samr_SamArray *array;
-	const char **domains;
 	int count, i, start_i;
+	const char * const dom_attrs[] = { "cn", NULL};
+	const char * const ref_attrs[] = { "nETBIOSName", NULL};
+	struct ldb_message **dom_msgs;
+	struct ldb_message **ref_msgs;
 
 	*r->out.resume_handle = 0;
 	r->out.sam = NULL;
@@ -208,9 +237,9 @@ static NTSTATUS samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	c_state = h->data;
 
-	count = samdb_search_string_multiple(c_state->sam_ctx,
-					     mem_ctx, NULL, &domains, 
-					     "name", "(objectclass=domain)");
+	count = gendb_search(c_state->sam_ctx,
+			   mem_ctx, NULL, &dom_msgs, dom_attrs,
+			   "(objectClass=domain)");
 	if (count == -1) {
 		DEBUG(0,("samdb: no domains found in EnumDomains\n"));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -239,8 +268,18 @@ static NTSTATUS samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	}
 
 	for (i=0;i<count-start_i;i++) {
+		int ret;
 		array->entries[i].idx = start_i + i;
-		array->entries[i].name.string = domains[start_i+i];
+		/* try and find the domain */
+		ret = gendb_search(c_state->sam_ctx, mem_ctx, NULL, &ref_msgs, ref_attrs, 
+				   "(&(objectClass=crossRef)(ncName=%s))", 
+				   dom_msgs[0]->dn);
+		if (ret == 1) {
+			array->entries[i].name.string = samdb_result_string(ref_msgs[0], "nETBIOSName", NULL);
+		} else {
+			/* Builtin? If we can't find the reference, punt */
+			array->entries[i].name.string = samdb_result_string(dom_msgs[0], "cn", NULL);
+		}
 	}
 
 	r->out.sam = array;
@@ -261,8 +300,10 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	const char *domain_name;
 	struct samr_connect_state *c_state;
 	struct samr_domain_state *d_state;
-	const char * const attrs[2] = { "name", NULL};
-	struct ldb_message **msgs;
+	const char * const dom_attrs[] = { NULL};
+	const char * const ref_attrs[] = { "nETBIOSName", NULL};
+	struct ldb_message **dom_msgs;
+	struct ldb_message **ref_msgs;
 	int ret;
 
 	ZERO_STRUCTP(r->out.domain_handle);
@@ -276,14 +317,22 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	}
 
 	ret = gendb_search(c_state->sam_ctx,
-			   mem_ctx, NULL, &msgs, attrs,
+			   mem_ctx, NULL, &dom_msgs, dom_attrs,
 			   "(&(objectSid=%s)(objectclass=domain))", 
 			   ldap_encode_ndr_dom_sid(mem_ctx, r->in.sid));
 	if (ret != 1) {
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
-	domain_name = ldb_msg_find_string(msgs[0], "name", NULL);
+	ret = gendb_search(c_state->sam_ctx,
+			   mem_ctx, NULL, &ref_msgs, ref_attrs,
+			   "(&(&(nETBIOSName=*)(objectclass=crossRef))(ncName=%s))", 
+			   dom_msgs[0]->dn);
+	if (ret != 1) {
+		return NT_STATUS_NO_SUCH_DOMAIN;
+	}
+
+	domain_name = ldb_msg_find_string(ref_msgs[0], "nETBIOSName", NULL);
 	if (domain_name == NULL) {
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
@@ -297,7 +346,7 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	d_state->sam_ctx = c_state->sam_ctx;
 	d_state->domain_sid = dom_sid_dup(d_state, r->in.sid);
 	d_state->domain_name = talloc_strdup(d_state, domain_name);
-	d_state->domain_dn = talloc_strdup(d_state, msgs[0]->dn);
+	d_state->domain_dn = talloc_strdup(d_state, dom_msgs[0]->dn);
 	if (!d_state->domain_sid || !d_state->domain_name || !d_state->domain_dn) {
 		talloc_free(d_state);
 		return NT_STATUS_NO_MEMORY;		
@@ -356,21 +405,33 @@ static NTSTATUS samr_info_DomInfo1(struct samr_domain_state *state,
 static NTSTATUS samr_info_DomInfo2(struct samr_domain_state *state, TALLOC_CTX *mem_ctx,
 				   struct samr_DomInfo2 *info)
 {
-	const char * const attrs[] = { "comment", "name", NULL };
+	const char * const dom_attrs[] = { "comment", NULL };
+	const char * const ref_attrs[] = { "nETBIOSName", NULL };
 	int ret;
-	struct ldb_message **res;
-
+	struct ldb_message **dom_msgs;
+	struct ldb_message **ref_msgs;
+	const char *domain_name;
+	
 	ret = gendb_search_dn(state->sam_ctx, mem_ctx,
-			      state->domain_dn , &res, attrs);
+			      state->domain_dn, &dom_msgs, dom_attrs);
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
+	ret = gendb_search(state->sam_ctx,
+			   mem_ctx, NULL, &ref_msgs, ref_attrs,
+			   "(&(&(nETBIOSName=*)(objectclass=crossRef))(ncName=%s))", 
+			   dom_msgs[0]->dn);
+	if (ret != 1) {
+		return NT_STATUS_NO_SUCH_DOMAIN;
+	}
+
+	domain_name = ldb_msg_find_string(ref_msgs[0], "nETBIOSName", NULL);
 	/* where is this supposed to come from? is it settable? */
 	info->force_logoff_time = 0x8000000000000000LL;
 
-	info->comment.string = samdb_result_string(res[0], "comment", NULL);
-	info->domain_name.string  = samdb_result_string(res[0], "name", NULL);
+	info->comment.string = samdb_result_string(dom_msgs[0], "comment", NULL);
+	info->domain_name.string  = domain_name;
 
 	info->primary.string = lp_netbios_name();
 	info->sequence_num = 0;

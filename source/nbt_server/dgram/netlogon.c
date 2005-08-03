@@ -25,6 +25,7 @@
 #include "nbt_server/nbt_server.h"
 #include "smbd/service_task.h"
 #include "lib/socket/socket.h"
+#include "lib/ldb/include/ldb.h"
 
 /*
   reply to a GETDC request
@@ -37,9 +38,28 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 	struct nbt_name *name = &packet->data.msg.dest_name;
 	struct nbt_netlogon_packet reply;
 	struct nbt_netlogon_response_from_pdc *pdc;
+	const char *ref_attrs[] = {"nETBIOSName", NULL};
+	struct ldb_message **ref_res;
+	struct ldb_context *samctx;
+	int ret;
 
 	/* only answer getdc requests on the PDC or LOGON names */
 	if (name->type != NBT_NAME_PDC && name->type != NBT_NAME_LOGON) {
+		return;
+	}
+
+	samctx = samdb_connect(packet);
+	if (samctx == NULL) {
+		DEBUG(2,("Unable to open sam in getdc reply\n"));
+		return;
+	}
+
+	ret = gendb_search(samctx, samctx, NULL, &ref_res, ref_attrs,
+			   "(&(&(nETBIOSName=%s)(objectclass=crossRef))(ncName=*))", 
+			   name->name);
+	
+	if (ret != 1) {
+		DEBUG(2,("Unable to find domain reference '%s' in sam\n", name->name));
 		return;
 	}
 
@@ -50,7 +70,7 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 
 	pdc->pdc_name         = lp_netbios_name();
 	pdc->unicode_pdc_name = pdc->pdc_name;
-	pdc->domain_name      = lp_workgroup();
+	pdc->domain_name      = samdb_result_string(ref_res[0], "nETBIOSName", name->name);;
 	pdc->nt_version       = 1;
 	pdc->lmnt_token       = 0xFFFF;
 	pdc->lm20_token       = 0xFFFF;
@@ -77,8 +97,9 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 	struct nbt_netlogon_packet reply;
 	struct nbt_netlogon_response_from_pdc2 *pdc;
 	struct ldb_context *samctx;
-	const char *attrs[] = {"realm", "dnsDomain", "objectGUID", NULL};
-	struct ldb_message **res;
+	const char *ref_attrs[] = {"nETBIOSName", "ncName", NULL};
+	const char *dom_attrs[] = {"dnsDomain", "objectGUID", NULL};
+	struct ldb_message **ref_res, **dom_res;
 	int ret;
 	const char **services = lp_server_services();
 
@@ -93,11 +114,21 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 		return;
 	}
 
-	/* try and find the domain */
-	ret = gendb_search(samctx, samctx, NULL, &res, attrs, 
-			   "(&(name=%s)(objectClass=domainDNS))", name->name);
+	ret = gendb_search(samctx, samctx, NULL, &ref_res, ref_attrs,
+				  "(&(&(nETBIOSName=%s)(objectclass=crossRef))(ncName=*))", 
+				  name->name);
+	
 	if (ret != 1) {
-		DEBUG(2,("Unable to find domain '%s' in sam\n", name->name));
+		DEBUG(2,("Unable to find domain reference '%s' in sam\n", name->name));
+		return;
+	}
+
+	/* try and find the domain */
+	ret = gendb_search_dn(samctx, samctx, 
+			      samdb_result_string(ref_res[0], "ncName", NULL), 
+			      &dom_res, dom_attrs);
+	if (ret != 1) {
+		DEBUG(2,("Unable to find domain from reference '%s' in sam\n", ref_res[0]->dn));
 		return;
 	}
 
@@ -126,15 +157,15 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 		pdc->server_type |= NBT_SERVER_KDC;
 	}
 
-	pdc->domain_uuid      = samdb_result_guid(res[0], "objectGUID");
-	pdc->forest           = samdb_result_string(res[0], "realm", lp_realm());
-	pdc->dns_domain       = samdb_result_string(res[0], "dnsDomain", lp_realm());
+	pdc->domain_uuid      = samdb_result_guid(dom_res[0], "objectGUID");
+	pdc->forest           = samdb_result_string(dom_res[0], "dnsDomain", lp_realm());
+	pdc->dns_domain       = samdb_result_string(dom_res[0], "dnsDomain", lp_realm());
 
 	/* TODO: get our full DNS name from somewhere else */
 	pdc->pdc_dns_name     = talloc_asprintf(packet, "%s.%s", 
 						strlower_talloc(packet, lp_netbios_name()), 
 						pdc->dns_domain);
-	pdc->domain           = name->name;
+	pdc->domain           = samdb_result_string(dom_res[0], "nETBIOSName", name->name);;
 	pdc->pdc_name         = lp_netbios_name();
 	pdc->user_name        = netlogon->req.pdc2.user_name;
 	/* TODO: we need to make sure these are in our DNS zone */

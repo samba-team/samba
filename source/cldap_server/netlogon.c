@@ -39,8 +39,9 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 				     uint32_t version,
 				     union nbt_cldap_netlogon *netlogon)
 {
-	const char *attrs[] = {"realm", "dnsDomain", "objectGUID", "name", NULL};
-	struct ldb_message **res;
+	const char *ref_attrs[] = {"nETBIOSName", NULL};
+	const char *dom_attrs[] = {"dnsDomain", "objectGUID", NULL};
+	struct ldb_message **ref_res, **dom_res;
 	int ret;
 	const char **services = lp_server_services();
 	uint32_t server_type;
@@ -68,12 +69,21 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 	}
 
 	/* try and find the domain */
-	ret = gendb_search(cldapd->samctx, mem_ctx, NULL, &res, attrs, 
+	ret = gendb_search(cldapd->samctx, mem_ctx, NULL, &dom_res, dom_attrs, 
 			   "(&(objectClass=domainDNS)(|(dnsDomain=%s)(objectGUID=%s)))", 
 			   domain?domain:"", 
 			   domain_guid?domain_guid:"");
 	if (ret != 1) {
 		DEBUG(2,("Unable to find domain '%s' in sam\n", domain));
+		return NT_STATUS_NO_SUCH_DOMAIN;
+	}
+
+	/* try and find the domain */
+	ret = gendb_search(cldapd->samctx, mem_ctx, NULL, &ref_res, ref_attrs, 
+			   "(&(objectClass=crossRef)(ncName=%s))", 
+			   dom_res[0]->dn);
+	if (ret != 1) {
+		DEBUG(2,("Unable to find referece to '%s' in sam\n", dom_res[0]->dn));
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
@@ -92,13 +102,14 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 	}
 
 	pdc_name         = talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name());
-	domain_uuid      = samdb_result_guid(res[0], "objectGUID");
-	realm            = samdb_result_string(res[0], "dnsDomain", lp_realm());
-	dns_domain       = samdb_result_string(res[0], "dnsDomain", lp_realm());
+	domain_uuid      = samdb_result_guid(dom_res[0], "objectGUID");
+	realm            = samdb_result_string(dom_res[0], "dnsDomain", lp_realm());
+	dns_domain       = samdb_result_string(dom_res[0], "dnsDomain", lp_realm());
 	pdc_dns_name     = talloc_asprintf(mem_ctx, "%s.%s", 
 					   strlower_talloc(mem_ctx, lp_netbios_name()), 
 					   dns_domain);
-	flatname         = samdb_result_string(res[0], "name", lp_workgroup());
+
+	flatname         = samdb_result_string(ref_res[0], "nETBIOSName", lp_workgroup());
 	site_name        = "Default-First-Site-Name";
 	site_name2       = "Default-First-Site-Name";
 	pdc_ip           = iface_best_ip(src_address);
