@@ -52,7 +52,7 @@ include kdc/config.mk
 include lib/replace/config.mk
 include scripting/ejs/config.mk
 
-all: basics binaries
+all: proto bin/asn1_compile bin/compile_et basics binaries
 binaries: $(BIN_PROGS) $(SBIN_PROGS)
 manpages: $(MANPAGES)
 everything: all
