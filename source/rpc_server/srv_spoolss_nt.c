@@ -1488,19 +1488,23 @@ static void copy_printer_default(TALLOC_CTX *ctx, PRINTER_DEFAULT *new_def, PRIN
  * SPOOL_Q_OPEN_PRINTER_EX structure
  ********************************************************************/
 
-static void convert_to_openprinterex(TALLOC_CTX *ctx, SPOOL_Q_OPEN_PRINTER_EX *q_u_ex, SPOOL_Q_OPEN_PRINTER *q_u)
+static WERROR convert_to_openprinterex(TALLOC_CTX *ctx, SPOOL_Q_OPEN_PRINTER_EX *q_u_ex, SPOOL_Q_OPEN_PRINTER *q_u)
 {
 	if (!q_u_ex || !q_u)
-		return;
+		return WERR_OK;
 
 	DEBUG(8,("convert_to_openprinterex\n"));
 				
 	if ( q_u->printername ) {
-		q_u_ex->printername = TALLOC_P( ctx, UNISTR2 );
+		q_u_ex->printername = TALLOC_ZERO_P( ctx, UNISTR2 );
+		if (q_u_ex->printername == NULL)
+			return WERR_NOMEM;
 		copy_unistr2(q_u_ex->printername, q_u->printername);
 	}
 	
 	copy_printer_default(ctx, &q_u_ex->printer_default, &q_u->printer_default);
+
+	return WERR_OK;
 }
 
 /********************************************************************
@@ -1522,7 +1526,9 @@ WERROR _spoolss_open_printer(pipes_struct *p, SPOOL_Q_OPEN_PRINTER *q_u, SPOOL_R
 	
 	/* convert the OpenPrinter() call to OpenPrinterEx() */
 	
-	convert_to_openprinterex(p->mem_ctx, &q_u_ex, q_u);
+	r_u_ex.status = convert_to_openprinterex(p->mem_ctx, &q_u_ex, q_u);
+	if (!W_ERROR_IS_OK(r_u_ex.status))
+		return r_u_ex.status;
 	
 	r_u_ex.status = _spoolss_open_printer_ex(p, &q_u_ex, &r_u_ex);
 	
