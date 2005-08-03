@@ -1076,11 +1076,13 @@ static void process_oplock_break_message(int msg_type, pid_t src,
 		return;
 	}
 
-	/* Paranoia checks */
-
-	if (msg->op_type != fsp->oplock_type) {
-		DEBUG(0, ("Logic problem -- got oplock type %d, have %d\n",
-			  msg->op_type, fsp->oplock_type));
+	if (EXCLUSIVE_OPLOCK_TYPE(msg->op_type) &&
+	    !EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
+		DEBUG(3, ("Already downgraded oplock on %.0f/%.0f: %s\n",
+			  (double)fsp->dev, (double)fsp->inode,
+			  fsp->fsp_name));
+		message_send_pid(src, MSG_SMB_BREAK_RESPONSE,
+				 msg, sizeof(*msg), True);
 		return;
 	}
 
@@ -1239,26 +1241,6 @@ static void process_oplock_break_response(int msg_type, pid_t src,
 	DEBUG(10, ("Got oplock break response from pid %d: %d/%d/%d mid %d\n",
 		   (int)src, (int)msg->dev, (int)msg->inode,
 		   (int)msg->share_file_id, (int)msg->op_port));
-
-	/* Paranoia check: There can't be an exclusive oplock around at this
-	 * point */
-
-	{
-		int i, num_share_modes;
-		BOOL delete_on_close;
-		share_mode_entry *share_modes;
-
-		num_share_modes = get_share_modes(msg->dev, msg->inode,
-						  &share_modes,
-						  &delete_on_close);
-		for (i=0; i<num_share_modes; i++) {
-			if (EXCLUSIVE_OPLOCK_TYPE(share_modes[i].op_type)) {
-				smb_panic("exclusive oplock left in share "
-					  "mode database\n");
-			}
-		}
-		SAFE_FREE(share_modes);
-	}
 
 	/* Here's the hack from open.c, store the mid in the 'port' field */
 	schedule_deferred_open_smb_message(msg->op_port);
