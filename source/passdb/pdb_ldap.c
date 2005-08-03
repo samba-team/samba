@@ -3336,7 +3336,7 @@ static NTSTATUS ldapsam_get_account_policy_from_ldap(struct pdb_methods *methods
 	LDAPMessage *entry = NULL;
 	int count;
 	int rc;
-	char **vals;
+	char **vals = NULL;
 	const char *policy_attr = NULL;
 
 	struct ldapsam_privates *ldap_state =
