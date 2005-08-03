@@ -1233,9 +1233,10 @@ static WERROR netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce_call, 
 {
 	struct netr_DomainTrust *trusts;
 	void *sam_ctx;
-	int ret, i;
-	struct ldb_message **res;
-	const char * const attrs[] = { "name", "dnsDomain", "objectSid", "objectGUID", NULL };
+	int ret;
+	struct ldb_message **dom_res, **ref_res;
+	const char * const dom_attrs[] = { "dnsDomain", "objectSid", "objectGUID", NULL };
+	const char * const ref_attrs[] = { "nETBIOSName", NULL };
 
 	ZERO_STRUCT(r->out);
 
@@ -1244,39 +1245,47 @@ static WERROR netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce_call, 
 		return WERR_GENERAL_FAILURE;
 	}
 
-	ret = gendb_search(sam_ctx, mem_ctx, NULL, &res, attrs, "(objectClass=domainDNS)");
+	ret = gendb_search(sam_ctx, mem_ctx, NULL, &dom_res, dom_attrs, "(&(objectClass=domainDNS)(dnsDomain=%s))", lp_realm());
 	if (ret == -1) {
 		return WERR_GENERAL_FAILURE;		
 	}
 
-	if (ret == 0) {
-		return WERR_OK;
+	if (ret != 1) {
+		return WERR_GENERAL_FAILURE;
 	}
+
+	ret = gendb_search(sam_ctx, mem_ctx, NULL, &ref_res, ref_attrs, "(&(objectClass=crossRef)(ncName=%s))", dom_res[0]->dn);
+	if (ret == -1) {
+		return WERR_GENERAL_FAILURE;
+	}
+
+	if (ret != 1) {
+		return WERR_GENERAL_FAILURE;
+	}
+
+
 
 	trusts = talloc_array(mem_ctx, struct netr_DomainTrust, ret);
 	if (trusts == NULL) {
 		return WERR_NOMEM;
 	}
 	
-	r->out.count = ret;
+	r->out.count = 1;
 	r->out.trusts = trusts;
 
 	/* TODO: add filtering by trust_flags, and correct trust_type
 	   and attributes */
-	for (i=0;i<ret;i++) {
-		trusts[i].netbios_name = samdb_result_string(res[i], "name", NULL);
-		trusts[i].dns_name     = samdb_result_string(res[i], "dnsDomain", NULL);
-		trusts[i].trust_flags = 
-			NETR_TRUST_FLAG_TREEROOT | 
-			NETR_TRUST_FLAG_IN_FOREST | 
-			NETR_TRUST_FLAG_PRIMARY;
-		trusts[i].parent_index = 0;
-		trusts[i].trust_type = 2;
-		trusts[i].trust_attributes = 0;
-		trusts[i].sid  = samdb_result_dom_sid(mem_ctx, res[i], "objectSid");
-		trusts[i].guid = samdb_result_guid(res[i], "objectGUID");
-	}
-	
+	trusts[0].netbios_name = samdb_result_string(ref_res[0], "nETBIOSName", NULL);
+	trusts[0].dns_name     = samdb_result_string(dom_res[0], "dnsDomain", NULL);
+	trusts[0].trust_flags = 
+		NETR_TRUST_FLAG_TREEROOT | 
+		NETR_TRUST_FLAG_IN_FOREST | 
+		NETR_TRUST_FLAG_PRIMARY;
+	trusts[0].parent_index = 0;
+	trusts[0].trust_type = 2;
+	trusts[0].trust_attributes = 0;
+	trusts[0].sid  = samdb_result_dom_sid(mem_ctx, dom_res[0], "objectSid");
+	trusts[0].guid = samdb_result_guid(dom_res[0], "objectGUID");
 
 	return WERR_OK;
 }

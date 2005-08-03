@@ -58,18 +58,19 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 		case DRSUAPI_DS_NAME_FORMAT_CANONICAL: {
 			char *str;
 
-			str = talloc_asprintf(mem_ctx, "%s/", lp_realm());
+			str = talloc_strdup(mem_ctx, name);
 			WERR_TALLOC_CHECK(str);
-
-			ret = strcasecmp(str, name);
-			talloc_free(str);
-			if (ret != 0) {
-				info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
+			
+			if (strlen(str) == 0 || str[strlen(str)-1] != '/') {
+				info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 				return WERR_OK;
 			}
+			
+			str[strlen(str)-1] = '\0';
 
-			domain_filter = talloc_asprintf(mem_ctx, "(&(objectClass=domainDNS)(name=%s))",
-								lp_workgroup());
+			domain_filter = talloc_asprintf(mem_ctx, 
+							"(&(&(&(dnsRoot=%s)(objectclass=crossRef)))(nETBIOSName=*)(ncName=*))", 
+							str);
 			WERR_TALLOC_CHECK(domain_filter);
 
 			break;
