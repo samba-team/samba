@@ -117,6 +117,7 @@ static NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 				   const char *workstation_list,
 				   const struct auth_usersupplied_info *user_info)
 {
+	NTTIME now;
 	DEBUG(4,("authsam_account_ok: Checking SMB password for user %s\n", user_info->mapped.account_name));
 
 	/* Quit if the account was disabled. */
@@ -132,7 +133,8 @@ static NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Test account expire time */
-	if ((acct_expiry) != -1 && time(NULL) > nt_time_to_unix(acct_expiry)) {
+	unix_to_nt_time(&now, time(NULL));
+	if (now > acct_expiry) {
 		DEBUG(1,("authsam_account_ok: Account for user '%s' has expired.\n", user_info->mapped.account_name));
 		DEBUG(3,("authsam_account_ok: Account expired at '%s'.\n", 
 			 nt_time_string(mem_ctx, acct_expiry)));
@@ -148,7 +150,7 @@ static NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 		}
 
 		/* check for expired password */
-		if ((must_change_time) != 0 && nt_time_to_unix(must_change_time) < time(NULL)) {
+		if ((must_change_time != 0) && (must_change_time < now)) {
 			DEBUG(1,("sam_account_ok: Account for user '%s' password expired!.\n", 
 				 user_info->mapped.account_name));
 			DEBUG(1,("sam_account_ok: Password expired at '%s' unix time.\n", 
@@ -356,7 +358,7 @@ static NTSTATUS authsam_authenticate(struct auth_context *auth_context,
 	NTSTATUS nt_status;
 	const char *domain_dn = samdb_result_string(msgs_domain[0], "nCName", "");
 
-	acct_flags = samdb_result_acct_flags(msgs[0], "sAMAcctFlags");
+	acct_flags = samdb_result_acct_flags(msgs[0], "userAccountControl");
 	
 	/* Quit if the account was locked out. */
 	if (acct_flags & ACB_AUTOLOCK) {
