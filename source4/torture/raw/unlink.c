@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
@@ -169,6 +170,7 @@ done:
 */
 static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
+	union smb_open op;
 	struct smb_unlink io;
 	struct smb_rmdir dio;
 	NTSTATUS status;
@@ -271,6 +273,108 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_rmdir(cli->tree, &dio);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
+	printf("Testing open dir with delete_on_close\n");
+	fnum = create_directory_handle(cli->tree, dname);
+	smbcli_close(cli->tree, fnum);
+	fnum2 = create_complex_file(cli, mem_ctx, inside);
+	smbcli_close(cli->tree, fnum2);
+
+	op.generic.level = RAW_OPEN_NTCREATEX;
+	op.ntcreatex.in.root_fid = 0;
+	op.ntcreatex.in.flags = 0;
+	op.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	op.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY |NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+	op.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	op.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+	op.ntcreatex.in.alloc_size = 0;
+	op.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	op.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	op.ntcreatex.in.security_flags = 0;
+	op.ntcreatex.in.fname = dname;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &op);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = op.ntcreatex.out.fnum;
+
+	smbcli_close(cli->tree, fnum);
+
+	status = smb_raw_rmdir(cli->tree, &dio);
+	CHECK_STATUS(status, NT_STATUS_DIRECTORY_NOT_EMPTY);
+
+
+	printf("Testing double open dir with second delete_on_close\n");
+	fnum = create_directory_handle(cli->tree, dname);
+	fnum2 = create_complex_file(cli, mem_ctx, inside);
+	smbcli_close(cli->tree, fnum2);
+
+	op.generic.level = RAW_OPEN_NTCREATEX;
+	op.ntcreatex.in.root_fid = 0;
+	op.ntcreatex.in.flags = 0;
+	op.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	op.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY |NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+	op.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	op.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+	op.ntcreatex.in.alloc_size = 0;
+	op.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	op.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	op.ntcreatex.in.security_flags = 0;
+	op.ntcreatex.in.fname = dname;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &op);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum2 = op.ntcreatex.out.fnum;
+
+	smbcli_close(cli->tree, fnum2);
+	smbcli_close(cli->tree, fnum);
+
+	status = smb_raw_rmdir(cli->tree, &dio);
+	CHECK_STATUS(status, NT_STATUS_DIRECTORY_NOT_EMPTY);
+
+
+	printf("Testing pre-existing open dir with second delete_on_close\n");
+	fnum = create_directory_handle(cli->tree, dname);
+	smbcli_close(cli->tree, fnum);
+
+	fnum = create_complex_file(cli, mem_ctx, inside);
+	smbcli_close(cli->tree, fnum);
+
+	/* we have a dir with a file in it, no handles open */
+
+	op.generic.level = RAW_OPEN_NTCREATEX;
+	op.ntcreatex.in.root_fid = 0;
+	op.ntcreatex.in.flags = 0;
+	op.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	op.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY |NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+	op.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	op.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE | NTCREATEX_SHARE_ACCESS_DELETE;
+	op.ntcreatex.in.alloc_size = 0;
+	op.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	op.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	op.ntcreatex.in.security_flags = 0;
+	op.ntcreatex.in.fname = dname;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &op);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = op.ntcreatex.out.fnum;
+
+	/* open without delete on close */
+	op.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	status = smb_raw_open(cli->tree, mem_ctx, &op);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum2 = op.ntcreatex.out.fnum;
+
+	/* close 2nd file handle */
+	smbcli_close(cli->tree, fnum2);
+
+	status = smb_raw_rmdir(cli->tree, &dio);
+	CHECK_STATUS(status, NT_STATUS_DIRECTORY_NOT_EMPTY);
+	
+
+	smbcli_close(cli->tree, fnum);
+
+	status = smb_raw_rmdir(cli->tree, &dio);
+	CHECK_STATUS(status, NT_STATUS_DIRECTORY_NOT_EMPTY);
+	
 done:
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
