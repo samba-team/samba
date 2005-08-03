@@ -17,6 +17,7 @@ f.element[0].name  = "USERNAME";
 f.element[1].label = "Unix Name";
 f.element[1].name  = "UNIXNAME";
 f.element[2].label = "Password";
+f.element[2].type  = "password";
 f.element[2].name  = "PASSWORD";
 f.submit[0] = "Add";
 f.submit[1] = "Cancel";
