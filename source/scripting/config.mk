@@ -31,6 +31,4 @@ scripting/swig/_dcerpc.so: scripting/swig/dcerpc_wrap.o $(LIBRARY_swig_dcerpc_DE
 	$(SHLD) $(SHLD_FLAGS) -o scripting/swig/_dcerpc.so scripting/swig/dcerpc_wrap.o $(LIBRARY_swig_dcerpc_SHARED_LINK_LIST) $(LIBRARY_swig_dcerpc_SHARED_LINK_FLAGS)
 
 swig_clean:
-	-rm -f scripting/swig/_tdb.so scripting/swig/tdb.pyc \
-		scripting/swig/tdb.py scripting/swig/tdb_wrap.c \
-		scripting/swig/tdb_wrap.o
+	-rm -f scripting/swig/_tdb.so scripting/swig/tdb.pyc scripting/swig/tdb.py scripting/swig/tdb_wrap.c scripting/swig/tdb_wrap.o
