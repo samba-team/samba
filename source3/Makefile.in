@@ -771,6 +771,14 @@ pch:
 	rm -f $(srcdir)/include/includes.h.gch
 	$(CC) -I. -I$(srcdir) $(FLAGS) -c $(srcdir)/include/includes.h -o $(srcdir)/include/includes.h.gch
 
+##
+## Targets for 'make test'
+##
+test: all
+	@echo Running Samba 3 Test suite
+	sh ./script/tests/runtests.sh t_dir
+
+
 # These dependencies are only approximately correct: we want to make
 # sure Samba's paths are updated if ./configure is re-run.  Really it
 # would be nice if "make prefix=/opt/samba all" also rebuilt things,
@@ -1433,7 +1441,7 @@ TOPFILES=dynconfig.o dynconfig.@PICSUFFIX@
 clean: delheaders python_clean
 	-rm -f core */*~ *~ */*.o */*.@PICSUFFIX@ */*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(MODULES) $(TORTURE_PROGS) \
-		$(LIBSMBCLIENT) $(EVERYTHING_PROGS) .headers.stamp
+		$(LIBSMBCLIENT) $(EVERYTHING_PROGS) .headers.stamp t_dir
 
 # Making this target will just make sure that the prototype files
 # exist, not necessarily that they are up to date.  Since they're
@@ -1572,9 +1580,9 @@ check: check-programs
 # because they're not all needed.
 check-programs: bin/t_strcmp bin/t_strstr bin/t_push_ucs2 bin/smbcontrol bin/t_snprintf
 
-test: all
-	@if test -z "$(SMB4TORTURE)"; then \
-		echo "Please set the SMB4TORTURE environment variable"; \
-		exit 1; \
-	fi
-	./script/smb4torture.sh `pwd`/prefix-test $(SMB4TORTURE)
+#test: all
+#	@if test -z "$(SMB4TORTURE)"; then \
+#		echo "Please set the SMB4TORTURE environment variable"; \
+#		exit 1; \
+#	fi
+#	./script/smb4torture.sh `pwd`/prefix-test $(SMB4TORTURE)
