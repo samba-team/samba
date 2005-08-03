@@ -808,7 +808,7 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 	struct samr_displayentry *entries = NULL;
 
 	DEBUG(5, ("samr_reply_query_dispinfo: %d\n", __LINE__));
-	r_u->status = NT_STATUS_OK;
+	r_u->status = NT_STATUS_UNSUCCESSFUL;
 
 	/* find the policy handle.  open a policy on it. */
 	if (!find_policy_by_hnd(p, &q_u->domain_pol, (void **)&info))
@@ -951,8 +951,10 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 	/* calculate the total size */
 	total_data_size=num_account*struct_size;
 
-	if (enum_context+max_entries < num_account)
+	if (num_account)
 		r_u->status = STATUS_MORE_ENTRIES;
+	else
+		r_u->status = NT_STATUS_OK;
 
 	DEBUG(5, ("_samr_query_dispinfo: %d\n", __LINE__));
 
