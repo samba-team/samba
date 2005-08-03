@@ -497,15 +497,11 @@ clean: delheaders heimdal_clean
 	@echo Removing objects
 	@-find . -name '*.o' -exec rm -f '{}' \;
 	@echo Removing binaries
-	@-rm -f bin/*
+	@-rm -f $(BIN_PROGS) $(SBIN_PROGS)
 	@echo Removing dummy targets
 	@-rm -f bin/.*_*
 	@echo Removing generated files
 	@-rm -rf librpc/gen_*
-
-
-
-
 
 distclean: clean
 	-rm -f bin/.dummy
