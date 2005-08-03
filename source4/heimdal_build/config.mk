@@ -379,11 +379,11 @@ REQUIRED_SUBSYSTEMS = COMPILE_ET LIBREPLACE
 # End BINARY compile_et
 #######################
 
-heimdal/lib/roken/vis.hin: heimdal/lib/roken/vis.h
-	@cp heimdal/lib/roken/vis.h heimdal/lib/roken/vis.hin
+heimdal/lib/roken/vis.h: heimdal/lib/roken/vis.hin
+	@cp heimdal/lib/roken/vis.hin heimdal/lib/roken/vis.h
 
-heimdal/lib/roken/err.hin: heimdal/lib/roken/err.h
-	@cp heimdal/lib/roken/err.h heimdal/lib/roken/err.hin
+heimdal/lib/roken/err.h: heimdal/lib/roken/err.hin
+	@cp heimdal/lib/roken/err.hin heimdal/lib/roken/err.h
 
 include ./heimdal_build/asn1_deps.pl heimdal/lib/hdb/hdb.asn1 hdb_asn1|
 include ./heimdal_build/asn1_deps.pl heimdal/lib/gssapi/spnego.asn1 spnego_asn1|

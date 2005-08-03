@@ -52,7 +52,7 @@ include kdc/config.mk
 include lib/replace/config.mk
 include scripting/ejs/config.mk
 
-all: binaries
+all: basics binaries
 binaries: $(BIN_PROGS) $(SBIN_PROGS)
 manpages: $(MANPAGES)
 everything: all
@@ -140,7 +140,7 @@ pch: proto include/includes.h.gch
 pch_clean:
 	-rm -f include/includes.h.gch
 
-basics: idl proto_exists 
+basics: idl proto_exists heimdal/lib/hdb/hdb_asn1.h heimdal/lib/gssapi/spnego_asn1.h heimdal/lib/asn1/krb5_asn1.h heimdal/lib/roken/vis.h heimdal/lib/roken/err.h
 
 test: $(DEFAULT_TEST_TARGET)
 
