@@ -1590,6 +1590,8 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		dev = psbuf->st_dev;
 		inode = psbuf->st_ino;
 
+		lock_share_entry(dev, inode);
+
 		/* delay_for_oplocks might delete the fsp */
 		open_time = fsp->open_time;
 		if (delay_for_oplocks(fsp, second_try)) {
@@ -1601,10 +1603,9 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			defer_open(&open_time,
 				   (OPLOCK_BREAK_TIMEOUT*2) * 1000000,
 				   fname, dev, inode);
+			unlock_share_entry(dev, inode);
 			return NULL;
 		}
-
-		lock_share_entry(dev, inode);
 
 		num_share_modes = open_mode_check(conn, fname, dev, inode,
 						  access_mask, share_access,
