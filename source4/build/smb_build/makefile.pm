@@ -491,7 +491,7 @@ proto: idl headers
 proto_test:
 	@[ -f $(builddir)/include/proto.h ] || $(MAKE) proto
 
-clean: delheaders
+clean: delheaders heimdal_clean
 	@echo Removing objects
 	@-find . -name '*.o' -exec rm -f '{}' \;
 	@echo Removing binaries
@@ -500,14 +500,9 @@ clean: delheaders
 	@-rm -f bin/.*_*
 	@echo Removing generated files
 	@-rm -rf librpc/gen_*
-	@echo Removing generated ASN1 files
-	@-find heimdal/lib/asn1 -name 'asn1_*.[c]' -exec rm -f '{}' \;
-	@-find heimdal/lib/gssapi -name 'asn1_*.[c]' -exec rm -f '{}' \;
-	@-find heimdal/lib/hdb -name 'asn1_*.[c]' -exec rm -f '{}' \;
-	@-rm -f heimdal/lib/roken/vis.h heimdal/lib/roken/err.h
-	@-rm -f heimdal/lib/hdb/hdb_asn1.h
-	@-rm -f heimdal/lib/gssapi/spnego_asn1.h
-	@-rm -f heimdal/lib/asn1/krb5_asn1.h
+
+
+
 
 
 distclean: clean
