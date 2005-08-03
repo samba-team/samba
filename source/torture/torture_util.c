@@ -42,7 +42,7 @@ BOOL torture_setup_dir(struct smbcli_state *cli, const char *dname)
 /*
   create a directory, returning a handle to it
 */
-int create_directory_handle(struct smbcli_tree *tree, const char *dname)
+NTSTATUS create_directory_handle(struct smbcli_tree *tree, const char *dname, int *fnum)
 {
 	NTSTATUS status;
 	union smb_open io;
@@ -64,13 +64,13 @@ int create_directory_handle(struct smbcli_tree *tree, const char *dname)
 	io.ntcreatex.in.fname = dname;
 
 	status = smb_raw_open(tree, mem_ctx, &io);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
-		return -1;
+	talloc_free(mem_ctx);
+
+	if (NT_STATUS_IS_OK(status)) {
+		*fnum = io.ntcreatex.out.fnum;
 	}
 
-	talloc_free(mem_ctx);
-	return io.ntcreatex.out.fnum;
+	return status;
 }
 
 /*
