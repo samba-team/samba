@@ -34,6 +34,7 @@ struct libnet_JoinDomain {
 		struct dom_sid *domain_sid;
 		const char *domain_name;
 		const char *realm;
+		unsigned int kvno;
 	} out;
 };
 
