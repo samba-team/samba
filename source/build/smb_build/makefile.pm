@@ -3,6 +3,7 @@
 ### - create output for Makefile			###
 ###							###
 ###  Copyright (C) Stefan (metze) Metzmacher 2004	###
+###  Copyright (C) Jelmer Vernooij 2005			###
 ###  Released under the GNU GPL				###
 ###########################################################
 
@@ -15,13 +16,13 @@ sub _prepare_path_vars()
 	my $output;
 
 	$output = << '__EOD__';
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-VPATH=@srcdir@
-srcdir=@srcdir@
-builddir=@builddir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+VPATH = @srcdir@
+srcdir = @srcdir@
+builddir = @builddir@
 
-BASEDIR= @prefix@
+BASEDIR = @prefix@
 BINDIR = @bindir@
 SBINDIR = @sbindir@
 LIBDIR = @libdir@
@@ -107,13 +108,11 @@ sub _prepare_SUFFIXES()
 __EOD__
 }
 
-sub _prepare_IDL($)
+sub _prepare_IDL()
 {
-	my $ctx = shift;
-
 	return << '__EOD__';
 idl_full: build/pidl/Parse/Pidl/IDL.pm
-	CPP="$(CPP)" PERL="$(PERL)" script/build_idl.sh FULL @PIDL_ARGS@
+	@CPP="$(CPP)" PERL="$(PERL)" script/build_idl.sh FULL @PIDL_ARGS@
 
 idl: build/pidl/Parse/Pidl/IDL.pm
 	@CPP="$(CPP)" PERL="$(PERL)" script/build_idl.sh PARTIAL @PIDL_ARGS@
@@ -442,11 +441,10 @@ sub _prepare_objlist_rule($)
 {
 	my $ctx = shift;
 	my $tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
-	my $output;
 
 	return "" unless $ctx->{TARGET};
 
-	$output = "$ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST = $tmpdepend\n";
+	my $output = "$ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST = $tmpdepend\n";
 	$output .= "$ctx->{TARGET}: ";
 	$output .= "\$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJS)\n";
 	$output .= "\t\@touch $ctx->{TARGET}\n";
@@ -516,16 +514,12 @@ __EOD__
 sub _prepare_binary_rule($)
 {
 	my $ctx = shift;
-	my $tmpdepend;
-	my $tmplink;
-	my $tmpflag;
-	my $output;
 
-	$tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
-	$tmplink = array2oneperline($ctx->{LINK_LIST});
-	$tmpflag = array2oneperline($ctx->{LINK_FLAGS});
+	my $tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
+	my $tmplink = array2oneperline($ctx->{LINK_LIST});
+	my $tmpflag = array2oneperline($ctx->{LINK_FLAGS});
 
-	$output = << "__EOD__";
+	my $output = << "__EOD__";
 #
 BINARY_$ctx->{NAME}_DEPEND_LIST =$tmpdepend
 BINARY_$ctx->{NAME}_LINK_LIST =$tmplink
@@ -692,7 +686,7 @@ install: showlayout installbin installdat installswat
 
 # DESTDIR is used here to prevent packagers wasting their time
 # duplicating the Makefile. Remove it and you will have the privilege
-# of package each samba release for multiple versions of multiple
+# of packaging each samba release for multiple versions of multiple
 # distributions and operating systems, or at least supplying patches
 # to all the packaging files required for this, prior to committing
 # the removal of DESTDIR. Do not remove it even though you think it
@@ -724,7 +718,6 @@ uninstallman:
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(MANPAGES)
 
 # Swig extensions
-
 swig: scripting/swig/_tdb.so scripting/swig/_dcerpc.so
 
 scripting/swig/tdb_wrap.c: scripting/swig/tdb.i
@@ -776,8 +769,7 @@ sub _prepare_rule_lists($)
 		($output .= _prepare_custom_rule($key) ) if $key->{TYPE} eq "TARGET";
 	}
 
-	my $idl_ctx;
-	$output .= _prepare_IDL($idl_ctx);
+	$output .= _prepare_IDL();
 	$output .= _prepare_proto_rules();
 	$output .= _prepare_install_rules($depend);
 
@@ -807,8 +799,8 @@ sub _prepare_makefile_in($)
 	$output .= _prepare_default_rule();
 	$output .= _prepare_SUFFIXES();
 	$output .= _prepare_dummy_MAKEDIR();
-	$output .= _prepare_std_CC_rule("c","o",'@PICFLAG@',"Compiling","Rule for std objectfiles");
-	$output .= _prepare_std_CC_rule("h","h.gch",'@PICFLAG@',"Precompiling","Rule for precompiled headerfiles");
+	$output .= _prepare_std_CC_rule("c","o",$config{PICFLAG},"Compiling","Rule for std objectfiles");
+	$output .= _prepare_std_CC_rule("h","h.gch",$config{PICFLAG},"Precompiling","Rule for precompiled headerfiles");
 	$output .= _prepare_lex_rule();
 	$output .= _prepare_yacc_rule();
 	$output .= _prepare_et_rule();

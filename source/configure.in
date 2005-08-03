@@ -40,19 +40,6 @@ sinclude(web_server/config.m4)
 sinclude(auth/config.m4)
 sinclude(kdc/config.m4)
 
-ALLLIBS_LIBS="$LIBS"
-ALLLIBS_CFLAGS="$CFLAGS"
-ALLLIBS_CPPFLAGS="$CPPFLAGS"
-ALLLIBS_LDFLAGS="$LDFLAGS"
-
-SMB_EXT_LIB_ENABLE(ALLLIBS,YES)
-
-SMB_EXT_LIB(ALLLIBS,
-		[${ALLLIBS_LIBS}],
-		[${ALLLIBS_CFLAGS}],
-		[${ALLLIBS_CPPFLAGS}],
-		[${ALLLIBS_LDFLAGS}])
-
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
 
 #################################################
