@@ -161,30 +161,81 @@ done:
 }
 
 
+BOOL test_addshare(struct dcerpc_pipe *pipe, TALLOC_CTX *mem_ctx, const char *host,
+		   const char* share)
+{
+	NTSTATUS status;
+	struct srvsvc_NetShareAdd add;
+	struct srvsvc_NetShareInfo2 i;
+	
+	i.name         = share;
+	i.type         = STYPE_DISKTREE;
+	i.path         = "C:\\WINDOWS\\TEMP";
+	i.max_users    = 5;
+	i.comment      = "Comment to the test share";
+	i.password     = NULL;
+	i.permissions  = 0x0;
+
+	add.in.server_unc = host;
+	add.in.level      = 2;
+	add.in.info.info2 = &i;
+
+	status = dcerpc_srvsvc_NetShareAdd(pipe, mem_ctx, &add);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to add a new share\n");
+		return False;
+	}
+
+	printf("share added\n");
+	return True;
+}
+
+
 BOOL torture_delshare(void)
 {
+	struct dcerpc_pipe *p;
+	struct dcerpc_binding *bind;
 	struct libnet_context* libnetctx;
-	const char* host;
+	const char *host, *binding;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS  status;
 	BOOL ret = True;
 	struct libnet_DelShare share;
 	
 	mem_ctx = talloc_init("test_listshares");
-	host = lp_parm_string(-1, "torture", "host");
+	binding = lp_parm_string(-1, "torture", "binding");
+	status = dcerpc_parse_binding(mem_ctx, binding, &bind);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Error while parsing the binding string\n");
+		ret = False;
+		goto done;
+	}
 
 	libnetctx = libnet_context_init(NULL);
 	libnetctx->cred = cmdline_credentials;
 
-	share.in.server_name	= host;
+	status = torture_rpc_connection(mem_ctx,
+					&p,
+					DCERPC_SRVSVC_NAME,
+					DCERPC_SRVSVC_UUID,
+					DCERPC_SRVSVC_VERSION);
+
+	if (!test_addshare(p, mem_ctx, host, TEST_SHARENAME)) {
+		ret = False;
+		goto done;
+	}
+
+	share.in.server_name	= bind->host;
 	share.in.share_name	= TEST_SHARENAME;
 
 	status = libnet_DelShare(libnetctx, mem_ctx, &share);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = False;
+		goto done;
 	}
 
-	talloc_free(mem_ctx);
 
+done:
+	talloc_free(mem_ctx);
 	return ret;
 }
