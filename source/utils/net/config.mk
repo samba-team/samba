@@ -3,6 +3,7 @@
 #################################
 # Start BINARY net
 [BINARY::net]
+INSTALLDIR = BINDIR
 OBJ_FILES = \
 		utils/net/net.o \
 		utils/net/net_password.o \

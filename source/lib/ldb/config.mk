@@ -123,6 +123,7 @@ REQUIRED_SUBSYSTEMS = LIBLDB LIBCMDLINE LIBBASIC
 ################################################
 # Start BINARY ldbadd
 [BINARY::ldbadd]
+INSTALLDIR = BINDIR
 OBJ_FILES = \
 		lib/ldb/tools/ldbadd.o
 REQUIRED_SUBSYSTEMS = \
@@ -134,6 +135,7 @@ MANPAGE = lib/ldb/man/ldbadd.1
 ################################################
 # Start BINARY ldbdel
 [BINARY::ldbdel]
+INSTALLDIR = BINDIR
 OBJ_FILES= \
 		lib/ldb/tools/ldbdel.o
 REQUIRED_SUBSYSTEMS = \
@@ -145,6 +147,7 @@ MANPAGE = lib/ldb/man/ldbdel.1
 ################################################
 # Start BINARY ldbmodify
 [BINARY::ldbmodify]
+INSTALLDIR = BINDIR
 OBJ_FILES= \
 		lib/ldb/tools/ldbmodify.o
 REQUIRED_SUBSYSTEMS = \
@@ -156,6 +159,7 @@ MANPAGE = lib/ldb/man/ldbmodify.1
 ################################################
 # Start BINARY ldbsearch
 [BINARY::ldbsearch]
+INSTALLDIR = BINDIR
 OBJ_FILES= \
 		lib/ldb/tools/ldbsearch.o
 REQUIRED_SUBSYSTEMS = \
@@ -167,6 +171,7 @@ MANPAGE = lib/ldb/man/ldbsearch.1
 ################################################
 # Start BINARY ldbedit
 [BINARY::ldbedit]
+INSTALLDIR = BINDIR
 OBJ_FILES= \
 		lib/ldb/tools/ldbedit.o
 REQUIRED_SUBSYSTEMS = \
@@ -178,6 +183,7 @@ MANPAGE = lib/ldb/man/ldbedit.1
 ################################################
 # Start BINARY ldbrename
 [BINARY::ldbrename]
+INSTALLDIR = BINDIR
 OBJ_FILES= \
 		lib/ldb/tools/ldbrename.o
 REQUIRED_SUBSYSTEMS = \
@@ -189,6 +195,7 @@ MANPAGE = lib/ldb/man/ldbrename.1
 ################################################
 # Start BINARY ldbtest
 [BINARY::ldbtest]
+INSTALLDIR = BINDIR
 OBJ_FILES= \
 		lib/ldb/tools/ldbtest.o
 REQUIRED_SUBSYSTEMS = \

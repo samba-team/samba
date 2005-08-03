@@ -3,6 +3,7 @@
 #################################
 # Start BINARY smbclient
 [BINARY::smbclient]
+INSTALLDIR = BINDIR
 OBJ_FILES = \
 		client/client.o
 REQUIRED_SUBSYSTEMS = \

@@ -28,6 +28,7 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 # Start BINARY tdbtool
 [BINARY::tdbtool]
+INSTALLDIR = BINDIR
 ENABLE = NO
 OBJ_FILES= \
 		lib/tdb/tools/tdbtool.o
@@ -39,6 +40,7 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 # Start BINARY tdbtorture
 [BINARY::tdbtorture]
+INSTALLDIR = BINDIR
 OBJ_FILES= \
 		lib/tdb/tools/tdbtorture.o
 REQUIRED_SUBSYSTEMS = \
@@ -49,6 +51,7 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 # Start BINARY tdbdump
 [BINARY::tdbdump]
+INSTALLDIR = BINDIR
 OBJ_FILES= \
 		lib/tdb/tools/tdbdump.o
 REQUIRED_SUBSYSTEMS = \
@@ -59,6 +62,7 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 # Start BINARY tdbbackup
 [BINARY::tdbbackup]
+INSTALLDIR = BINDIR
 ENABLE = NO
 OBJ_FILES= \
 		lib/tdb/tools/tdbbackup.o

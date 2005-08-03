@@ -95,6 +95,7 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 # Start BINARY smbd
 [BINARY::smbd]
+INSTALLDIR = SBINDIR
 OBJ_FILES = \
 		smbd/server.o
 REQUIRED_SUBSYSTEMS = \

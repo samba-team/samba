@@ -3,6 +3,7 @@
 #################################
 # Start BINARY ndrdump
 [BINARY::ndrdump]
+INSTALLDIR = BINDIR
 OBJ_FILES = \
 		utils/ndrdump.o
 REQUIRED_SUBSYSTEMS = \
@@ -19,6 +20,7 @@ MANPAGE = utils/man/ndrdump.1
 #################################
 # Start BINARY ntlm_auth
 [BINARY::ntlm_auth]
+INSTALLDIR = BINDIR
 OBJ_FILES = \
 		utils/ntlm_auth.o
 REQUIRED_SUBSYSTEMS = \
@@ -34,6 +36,7 @@ MANPAGE = utils/man/ntlm_auth.1
 #################################
 # Start BINARY getntacl
 [BINARY::getntacl]
+INSTALLDIR = BINDIR
 OBJ_FILES = \
 		utils/getntacl.o
 REQUIRED_SUBSYSTEMS = \
@@ -48,6 +51,7 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 # Start BINARY setntacl
 [BINARY::setntacl]
+INSTALLDIR = BINDIR
 OBJ_FILES = \
 		utils/setntacl.o
 REQUIRED_SUBSYSTEMS = \
@@ -61,6 +65,7 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 # Start BINARY setnttoken
 [BINARY::setnttoken]
+INSTALLDIR = BINDIR
 OBJ_FILES = \
 		utils/setnttoken.o
 REQUIRED_SUBSYSTEMS = \
@@ -76,6 +81,7 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 # Start BINARY nmblookup
 [BINARY::nmblookup]
+INSTALLDIR = BINDIR
 OBJ_FILES = \
 		utils/nmblookup.o
 REQUIRED_SUBSYSTEMS = \
