@@ -10,9 +10,8 @@ package makefile;
 use config qw(%config);
 use strict;
 
-sub _prepare_path_vars($)
+sub _prepare_path_vars()
 {
-	my $ctx = shift;
 	my $output;
 
 	$output = << '__EOD__';
@@ -66,24 +65,22 @@ __EOD__
 	return $output;
 }
 
-sub _prepare_compiler_linker($)
+sub _prepare_compiler_linker()
 {
-	my $ctx = shift;
-
 	return << "__EOD__";
 SHELL=$config{SHELL}
 PERL=$config{PERL}
 CC=$config{CC}
-CFLAGS=-Iinclude -I. -I\$(srcdir)/include -I\$(srcdir) -D_SAMBA_BUILD_ -DHAVE_CONFIG_H -Ilib $config{CFLAGS} $config{CPPFLAGS}
+CFLAGS=-I\$(srcdir)/include -I\$(srcdir) -D_SAMBA_BUILD_ -DHAVE_CONFIG_H -I\$(srcdir)/lib $config{CFLAGS} $config{CPPFLAGS}
 
 LD=$config{LD}
-LD_FLAGS=$config{LDFLAGS} $config{CFLAGS} -Lbin
+LD_FLAGS=$config{LDFLAGS} -Lbin
 
 STLD=$config{AR}
 STLD_FLAGS=-rc
 
 SHLD=$config{CC}
-SHLD_FLAGS=$config{LDSHFLAGS} $config{LDFLAGS} -Lbin
+SHLD_FLAGS=$config{LDSHFLAGS} -Lbin
 
 XSLTPROC=$config{XSLTPROC}
 
@@ -93,31 +90,21 @@ YACC=$config{YACC}
 __EOD__
 }
 
-sub _prepare_default_rule($)
+sub _prepare_default_rule()
 {
-	my $ctx = shift;
-	my $output;
-
-	$output = << '__EOD__';
+	return << '__EOD__';
 default: all
 
 __EOD__
-
-	return $output;
 }
 
-sub _prepare_SUFFIXES($)
+sub _prepare_SUFFIXES()
 {
-	my $ctx = shift;
-	my $output;
-
-	$output = << '__EOD__';
+	return << '__EOD__';
 .SUFFIXES:
 .SUFFIXES: .c .et .y .l .d .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml
 
 __EOD__
-
-	return $output;
 }
 
 sub _prepare_IDL($)
@@ -192,8 +179,8 @@ sub _prepare_binaries($)
 		push(@bbn_list, $_->{OUTPUT}) if ($_->{INSTALLDIR} eq "BINDIR");
 	}
 
-	my $bbn = join(' ', @bbn_list);
-	my $sbn = join(' ', @sbn_list);
+	my $bbn = array2oneperline(\@bbn_list);
+	my $sbn = array2oneperline(\@sbn_list);
 	return << "__EOD__";
 BIN_PROGS = $bbn
 SBIN_PROGS = $sbn
@@ -215,7 +202,7 @@ sub _prepare_manpages($)
 		}
 	}
 	
-	my $mp = join(' ', @mp_list);
+	my $mp = array2oneperline(\@mp_list);
 	return << "__EOD__";
 MANPAGES = $mp
 
@@ -324,20 +311,6 @@ sub array2oneperline($)
 		next unless defined($_);
 
 		$output .= " \\\n\t\t$_";
-	}
-
-	return $output;
-}
-
-sub array2oneline($)
-{
-	my $array = shift;
-	my $output = "";
-
-	foreach (@{$array}) {
-		next unless defined($_);
-
-		$output .= "$_ ";
 	}
 
 	return $output;
@@ -829,18 +802,10 @@ sub _prepare_makefile_in($)
 	$output .= "########################################\n";
 	$output .= "\n";
 
-	my $path_ctx;
-	$output .= _prepare_path_vars($path_ctx);
-
-	my $compiler_ctx;
-	$output .= _prepare_compiler_linker($compiler_ctx);
-
-	my $rules_ctx;
-	$output .= _prepare_default_rule($rules_ctx);
-
-	my $suffix_ctx;
-	$output .= _prepare_SUFFIXES($suffix_ctx);
-
+	$output .= _prepare_path_vars();
+	$output .= _prepare_compiler_linker();
+	$output .= _prepare_default_rule();
+	$output .= _prepare_SUFFIXES();
 	$output .= _prepare_dummy_MAKEDIR();
 	$output .= _prepare_std_CC_rule("c","o",'@PICFLAG@',"Compiling","Rule for std objectfiles");
 	$output .= _prepare_std_CC_rule("h","h.gch",'@PICFLAG@',"Precompiling","Rule for precompiled headerfiles");
