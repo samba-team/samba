@@ -82,6 +82,8 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	struct policy_handle drsuapi_bind_handle;
 	struct GUID drsuapi_bind_guid;
 
+	struct ldb_context *remote_ldb;
+
 	uint32_t acct_flags;
 	uint32_t rid, access_granted;
 	int policy_min_pw_len = 0;
@@ -90,6 +92,17 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	const char *domain_name;
 	const char *realm = NULL; /* Also flag for remote being AD */
 	const char *account_dn;
+
+	char *remote_ldb_url;
+	struct ldb_message **msgs, *msg;
+	int ldb_ret;
+
+	const char *attrs[] = {
+		"msDS-KeyVersionNumber",
+		"servicePrincipalName",
+		"dNSHostName",
+		NULL,
+	};
 
 	tmp_ctx = talloc_named(mem_ctx, 0, "libnet_Join temp context");
 	if (!tmp_ctx) {
@@ -476,7 +489,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 			talloc_free(tmp_ctx);
 			return status;
 		}
-	} else if (!W_ERROR_IS_OK(r_crack_names.out.result)) {
+	} else if (!W_ERROR_IS_OK(r_drsuapi_bind.out.result)) {
 		r->out.error_string
 				= talloc_asprintf(mem_ctx,
 						  "DsBind failed - %s\n", win_errstr(r_drsuapi_bind.out.result));
@@ -525,8 +538,57 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 
 	account_dn = r_crack_names.out.ctr.ctr1->array[0].result_name;
 
-	printf("Account DN is: %s\n", account_dn);
-	
+	remote_ldb_url = talloc_asprintf(tmp_ctx, "ldap://%s", 
+					 drsuapi_binding->host);
+	remote_ldb = ldb_wrap_connect(tmp_ctx, remote_ldb_url, 0, NULL);
+
+	if (!remote_ldb) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* search for the secret record */
+	ldb_ret = ldb_search(remote_ldb, account_dn, LDB_SCOPE_BASE, 
+			     NULL, attrs, &msgs);
+
+	if (ldb_ret != 1) {
+		r->out.error_string
+			= talloc_asprintf(mem_ctx,
+					  "ldb_search for %s failed - %s\n", 
+					  account_dn, 
+					  ldb_errstring(remote_ldb));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	r->out.kvno = ldb_msg_find_uint(msgs[0], "msDS-KeyVersionNumber", 0);
+
+	msg = ldb_msg_new(tmp_ctx);
+	if (!msg) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	msg->dn = msgs[0]->dn;
+
+	{
+		char *service_principal_name[2];
+		char *dns_host_name = strlower_talloc(mem_ctx, 
+						      talloc_asprintf(mem_ctx, 
+								      "%s.%s", lp_netbios_name(), realm));
+		service_principal_name[0] = talloc_asprintf(tmp_ctx, "host/%s", dns_host_name);
+		service_principal_name[1] = talloc_asprintf(tmp_ctx, "host/%s", strlower_talloc(mem_ctx, lp_netbios_name()));
+
+		samdb_msg_add_string(remote_ldb, tmp_ctx, msg, "dNSHostName", dns_host_name);
+		samdb_msg_add_string(remote_ldb, tmp_ctx, msg, "servicePrincipalName", service_principal_name[0]);
+		samdb_msg_add_string(remote_ldb, tmp_ctx, msg, "servicePrincipalName", service_principal_name[1]);
+		
+		ldb_ret = samdb_replace(remote_ldb, tmp_ctx, msg);
+		if (ldb_ret != 0) {
+			r->out.error_string
+				= talloc_asprintf(mem_ctx, 
+						  "Failed to replace entries on %s\n", 
+						  msg->dn);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+	}
+
 	/* close connection */
 	talloc_free(tmp_ctx);
 
@@ -604,7 +666,11 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	samdb_msg_add_string(ldb, mem_ctx, msg, "samAccountName", r2.in.account_name);
 	
 	samdb_msg_add_string(ldb, mem_ctx, msg, "secureChannelType", sct);
-	
+
+	if (r2.out.kvno) {
+		samdb_msg_add_uint(ldb, mem_ctx, msg, "msDS-KeyVersionNumber",
+				   r2.out.kvno);
+	}
 
 	if (ret == 0) {
 	} else if (ret == -1) {
