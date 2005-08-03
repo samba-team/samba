@@ -484,7 +484,7 @@ BOOL torture_raw_sfileinfo(void)
 	CHECK_STR(NAME_INFO, name_info, fname.s, path_fname);
 
 	printf("Trying rename with a root fid\n");
-	d_fnum = create_directory_handle(cli->tree, BASEDIR);
+	status = create_directory_handle(cli->tree, BASEDIR, &d_fnum);
 	sfinfo.rename_information.in.new_name  = fnum_fname_new+strlen(BASEDIR)+1;
 	sfinfo.rename_information.in.root_fid = d_fnum;
 	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_INVALID_PARAMETER);
