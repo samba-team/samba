@@ -822,13 +822,6 @@ static BOOL delay_for_oplocks(files_struct *fsp, BOOL second_try)
 	for (i=0; i<num_share_modes; i++) {
 		uint16 op_type = share_modes[i].op_type;
 
-		if ((!second_try) && (op_type == WAITING_FOR_BREAK)) {
-			/* Someone already sent a request, also wait for it. */
-			fsp->oplock_type = WAITING_FOR_BREAK;
-			delay_it = True;
-			goto done;
-		}
-
 		if (EXCLUSIVE_OPLOCK_TYPE(op_type)) {
 			if (is_delete_request(fsp)) {
 				delay_it = BATCH_OPLOCK_TYPE(op_type);
