@@ -94,8 +94,9 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 				account = &p[1];
 			}
 
-			domain_filter = talloc_asprintf(mem_ctx, "(&(objectClass=domainDNS)(name=%s))",
-								domain);
+			domain_filter = talloc_asprintf(mem_ctx, 
+							"(&(&(nETBIOSName=%s)(objectclass=crossRef))(ncName=*))", 
+							domain);
 			WERR_TALLOC_CHECK(domain_filter);
 			if (account) {
 				result_filter = talloc_asprintf(mem_ctx, "(sAMAccountName=%s)",
@@ -115,7 +116,7 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 	/* here we need to set the attrs lists for domain and result lookups */
 	switch (format_desired) {
 		case DRSUAPI_DS_NAME_FORMAT_FQDN_1779: {
-			const char * const _domain_attrs[] = { "dn", "dnsDomain", NULL};
+			const char * const _domain_attrs[] = { "ncName", "dnsRoot", NULL};
 			const char * const _result_attrs[] = { "dn", NULL};
 			
 			domain_attrs = _domain_attrs;
@@ -123,7 +124,7 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 			break;
 		}
 		case DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT: {
-			const char * const _domain_attrs[] = { "name", "dnsDomain", "dn", NULL};
+			const char * const _domain_attrs[] = { "ncName", "dnsRoot", "nETBIOSName", NULL};
 			const char * const _result_attrs[] = { "sAMAccountName", NULL};
 			
 			domain_attrs = _domain_attrs;
@@ -131,7 +132,7 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 			break;
 		}
 		case DRSUAPI_DS_NAME_FORMAT_GUID: {
-			const char * const _domain_attrs[] = { "objectGUID", "dnsDomain", "dn", NULL};
+			const char * const _domain_attrs[] = { "ncName", "dnsRoot", NULL};
 			const char * const _result_attrs[] = { "objectGUID", NULL};
 			
 			domain_attrs = _domain_attrs;
@@ -159,12 +160,12 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 			return WERR_OK;
 	}
 
-	info1->dns_domain_name	= samdb_result_string(domain_res[0], "dnsDomain", NULL);
+	info1->dns_domain_name	= samdb_result_string(domain_res[0], "dnsRoot", NULL);
 	WERR_TALLOC_CHECK(info1->dns_domain_name);
 	info1->status		= DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY;
 
 	if (result_filter) {
-		result_basedn = samdb_result_string(domain_res[0], "dn", NULL);
+		result_basedn = samdb_result_string(domain_res[0], "ncName", NULL);
 
 		ret = gendb_search(b_state->sam_ctx, mem_ctx, result_basedn, &result_res,
 					result_attrs, "%s", result_filter);
@@ -187,7 +188,7 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 	/* here we can use result_res[0] and domain_res[0] */
 	switch (format_desired) {
 		case DRSUAPI_DS_NAME_FORMAT_FQDN_1779: {
-			info1->result_name	= samdb_result_string(result_res[0], "dn", NULL);
+			info1->result_name	= result_res[0]->dn;
 			WERR_TALLOC_CHECK(info1->result_name);
 
 			info1->status		= DRSUAPI_DS_NAME_STATUS_OK;
@@ -197,7 +198,7 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 			const char *_dom;
 			const char *_acc = "";
 
-			_dom = samdb_result_string(domain_res[0], "name", NULL);
+			_dom = samdb_result_string(domain_res[0], "nETBIOSName", NULL);
 			WERR_TALLOC_CHECK(_dom);
 
 			if (result_filter) {
