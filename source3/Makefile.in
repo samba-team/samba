@@ -776,7 +776,7 @@ pch:
 ##
 test: all
 	@echo Running Samba 3 Test suite
-	sh ./script/tests/runtests.sh t_dir
+	@sh ./script/tests/runtests.sh t_dir
 
 
 # These dependencies are only approximately correct: we want to make
