@@ -372,7 +372,7 @@ static NTSTATUS lsa_info_AccountDomain(struct lsa_policy_state *state, TALLOC_CT
 static NTSTATUS lsa_info_DNS(struct lsa_policy_state *state, TALLOC_CTX *mem_ctx,
 			     struct lsa_DnsDomainInfo *info)
 {
-	const char * const attrs[] = { "name", "dnsDomain", "objectGUID", "objectSid", NULL };
+	const char * const attrs[] = { "dnsDomain", "objectGUID", "objectSid", NULL };
 	int ret;
 	struct ldb_message **res;
 
