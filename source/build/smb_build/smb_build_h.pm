@@ -104,7 +104,7 @@ sub create_smb_build_h($$)
 
 	$output .= _prepare_smb_build_h($CTX);
 
-	open(SMB_BUILD_H,"> $file") || die ("Can't open $file\n");
+	open(SMB_BUILD_H,">$file") || die ("Can't open `$file'\n");
 	print SMB_BUILD_H $output;
 	close(SMB_BUILD_H);
 

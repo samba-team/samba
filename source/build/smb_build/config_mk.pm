@@ -55,118 +55,71 @@ sub _parse_config_mk($)
 	my $linenum = -1;
 	my $waiting = 0;
 	my $section = "GLOBAL";
-	my $key;
+	my $makefile = "";
 
-	$result->{ERROR_CODE} = -1;
-
-	open(CONFIG_MK, "< $filename") || die ("Can't open $filename\n");
+	open(CONFIG_MK, "<$filename") or die("Can't open `$filename'\n");
 
 	while (<CONFIG_MK>) {
 		my $line = $_;
-		my $val;
 
 		$linenum++;
 
-		#
-		# lines beginnig with '#' are ignored
-		# 
-		if ($line =~ /^\#.*$/) {
-			next;
-		}
+		# lines beginning with '#' are ignored
+		next if ($line =~ /^\#.*$/);
 
-		#
-		#
-		#
-		if (($waiting == 0) && ($line =~ /^\[([a-zA-Z0-9_:]+)\][\t ]*$/)) {
+		if (not $waiting and ($line =~ /^\[([a-zA-Z0-9_:]+)\][\t ]*$/)) 
+		{
 			$section = $1;
 			next;
 		}
-		
-		#
-		# 1.)	lines with an alphanumeric character indicate
-		# 	a new variable, 
-		# 2.)	followed by zero or more whitespaces or tabs
-		# 3.)	then one '=' character
-		# 4.)	followed by the value of the variable
-		# 5.)	a newline ('\n') can be escaped by a '\' before the newline
-		#	and the next line needs to start with a tab ('\t')
-		#
-		if (($waiting == 0) && ($line =~ /^([a-zA-Z0-9_]+)[\t ]*=(.*)$/)) {
-			$key = $1;
-			$val = $2;
 
-			#
-			# when we have a '\' before the newline 
-			# then skip it and wait for the next line.
-			#
-			if ($val =~ /(.*)(\\)$/) {
+		# empty line
+		if ($line =~ /^[ \t]*$/) {
+			$waiting = 0;
+			$section = "GLOBAL";
+			next;
+		}
+
+		# global stuff is considered part of the makefile
+		if ($section eq "GLOBAL") {
+			$makefile .= $line;
+			next;
+		}
+		
+		# Assignment
+		if (not $waiting and 
+			($line =~ /^([a-zA-Z0-9_]+)([\t ]*)=(.*)$/)) {
+			my $key = $1;
+			my $val = $3;
+
+			# Continuing lines
+			if ($val =~ /^(.*)\\$/) {
 				$val = $1;
-				$waiting = 1;		
-			} else {
-				$waiting = 0;
+				($val.= " $1") while(($line = <CONFIG_MK>) =~ /^[\t ]*(.*)\\$/);
+				$val .= $line;
 			}
 
 			$result->{$section}{$key}{KEY} = $key;
 			$result->{$section}{$key}{VAL} = $val;
+		
 			next;
 		}
 
-		#
-		# when we are waiting for a value to continue then
-		# check if it has a leading tab.
-		#
-		if (($waiting == 1) && ($line =~ /^\t(.*)$/)) {
-			$val = $1;
-
-			#
-			# when we have a '\' before the newline 
-			# then skip it and wait for the next line.
-			#
-			if ($val =~ /(.*)( \\)$/) {
-				$val = $1;
-				$waiting = 1;		
-			} else {
-				$waiting = 0;
-			}
-
-			$result->{$section}{$key}{VAL} .= " ";
-			$result->{$section}{$key}{VAL} .= $val;
-			next;
-		}
-
-		#
-		# catch empty lines they're ignored
-		# and we're no longer waiting for the value to continue
-		#
-		if ($line =~ /^$/) {
-			$waiting = 0;
-			next;
-		}
-
-		close(CONFIG_MK);
-
-		$result->{ERROR_STR} = "Bad line while parsing $filename\n$filename:$linenum: $line";
-
-		return $result;
+		die("$filename:$linenum: Bad line while parsing $filename");
 	}
 
 	close(CONFIG_MK);
 
-	$result->{ERROR_CODE} = 0;
-
-	return $result;
+	return ($result,$makefile);
 }
 
 sub import_file($$)
 {
 	my ($input, $filename) = @_;
 
-	my $result = _parse_config_mk($filename);
-
-	die ($result->{ERROR_STR}) unless $result->{ERROR_CODE} == 0;
+	my ($result, $makefile) = _parse_config_mk($filename);
 
 	foreach my $section (keys %{$result}) {
-		next if ($section eq "ERROR_CODE");
 		my ($type, $name) = split(/::/, $section, 2);
 		
 		$input->{$name}{NAME} = $name;
@@ -176,7 +129,7 @@ sub import_file($$)
 			$key->{VAL} = smb_build::input::strtrim($key->{VAL});
 			my $vartype = $attribute_types{$key->{KEY}};
 			if (not defined($vartype)) {
-				die("Unknown attribute $key->{KEY}");
+				die("$filename:Unknown attribute $key->{KEY} with value $key->{VAL} in section $section");
 			}
 			if ($vartype eq "string") {
 				$input->{$name}{$key->{KEY}} = $key->{VAL};
@@ -184,12 +137,14 @@ sub import_file($$)
 				$input->{$name}{$key->{KEY}} = [smb_build::input::str2array($key->{VAL})];
 			} elsif ($vartype eq "bool") {
 				if (($key->{VAL} ne "YES") and ($key->{VAL} ne "NO")) {
-					die("Invalid value for bool attribute $key->{KEY}: $key->{VAL}");
+					die("Invalid value for bool attribute $key->{KEY}: $key->{VAL} in section $section");
 				}
 				$input->{$name}{$key->{KEY}} = $key->{VAL};
 			}
 		}
 	}
+	
+	return $makefile;
 }
 
 sub import_files($$)
@@ -201,10 +156,12 @@ sub import_files($$)
 	close(IN);
 
 	$| = 1;
+	my $makefragment = "";
 
 	foreach (@mkfiles) {
 		s/\n//g;
-		import_file($input, $_);
+		$makefragment.= import_file($input, $_);
 	}
+	return $makefragment;
 }
 1;
