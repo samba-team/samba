@@ -22,6 +22,7 @@ my %attribute_types = (
 	"CFLAGS" => "list",
 	"CPPFLAGS" => "list",
 	"LDFLAGS" => "list",
+	"INSTALLDIR" => "string",
 	"LIBS" => "list",
 	"INIT_FUNCTION" => "string",
 	"MAJOR_VERSION" => "string",

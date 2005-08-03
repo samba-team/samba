@@ -94,6 +94,7 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 # Start BINARY regdiff
 [BINARY::regdiff]
+INSTALLDIR = BINDIR
 OBJ_FILES= \
 		lib/registry/tools/regdiff.o
 REQUIRED_SUBSYSTEMS = \
@@ -105,6 +106,7 @@ MANPAGE = lib/registry/man/regdiff.1
 ################################################
 # Start BINARY regpatch
 [BINARY::regpatch]
+INSTALLDIR = BINDIR
 OBJ_FILES= \
 		lib/registry/tools/regpatch.o
 REQUIRED_SUBSYSTEMS = \
@@ -116,6 +118,7 @@ MANPAGE = lib/registry/man/regpatch.1
 ################################################
 # Start BINARY regshell
 [BINARY::regshell]
+INSTALLDIR = BINDIR
 OBJ_FILES= \
 		lib/registry/tools/regshell.o
 REQUIRED_SUBSYSTEMS = \
@@ -127,6 +130,7 @@ MANPAGE = lib/registry/man/regshell.1
 ################################################
 # Start BINARY regtree
 [BINARY::regtree]
+INSTALLDIR = BINDIR
 OBJ_FILES= \
 		lib/registry/tools/regtree.o
 REQUIRED_SUBSYSTEMS = \

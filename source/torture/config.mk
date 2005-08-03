@@ -209,6 +209,7 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 # Start BINARY smbtorture
 [BINARY::smbtorture]
+INSTALLDIR = BINDIR
 OBJ_FILES = \
 		torture/torture.o \
 		torture/torture_util.o
@@ -234,6 +235,7 @@ MANPAGE = torture/man/smbtorture.1
 #################################
 # Start BINARY gentest
 [BINARY::gentest]
+INSTALLDIR = BINDIR
 OBJ_FILES = \
 		torture/gentest.o \
 		torture/torture_util.o
@@ -250,6 +252,7 @@ MANPAGE = torture/man/gentest.1
 #################################
 # Start BINARY masktest
 [BINARY::masktest]
+INSTALLDIR = BINDIR
 OBJ_FILES = \
 		torture/masktest.o
 REQUIRED_SUBSYSTEMS = \
@@ -265,6 +268,7 @@ MANPAGE = torture/man/masktest.1
 #################################
 # Start BINARY locktest
 [BINARY::locktest]
+INSTALLDIR = BINDIR
 OBJ_FILES = \
 		torture/locktest.o \
 		torture/torture_util.o
