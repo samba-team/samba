@@ -8,6 +8,9 @@ dnl - own-built libdes
 m4_define([test_headers], [
 		#undef KRB5 /* makes md4.h et al unhappy */
 		#ifdef HAVE_OPENSSL
+		#ifdef HAVE_SYS_TYPES_H
+		#include <sys/types.h>
+		#endif
 		#include <openssl/md4.h>
 		#include <openssl/md5.h>
 		#include <openssl/sha.h>
