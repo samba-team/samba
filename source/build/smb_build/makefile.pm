@@ -196,9 +196,7 @@ sub _prepare_manpages($)
 	my @mp_list = ();
 
 	foreach (values %$ctx) {
-		if (defined($_->{MANPAGE}) and $_->{MANPAGE} ne "") {
-			push (@mp_list, $_->{MANPAGE});
-		}
+		push (@mp_list, $_->{MANPAGE}) if (defined($_->{MANPAGE}) and $_->{MANPAGE} ne "");
 	}
 	
 	my $mp = array2oneperline(\@mp_list);
@@ -286,10 +284,8 @@ __EOD__
 sub _prepare_std_CC_rule($$$$$)
 {
 	my ($src,$dst,$flags,$message,$comment) = @_;
-	my $flagsstr = "";
-	my $output;
 
-	$output = << "__EOD__";
+	return << "__EOD__";
 # $comment
 .$src.$dst:
 	\@echo $message \$\*.$src
@@ -297,8 +293,6 @@ sub _prepare_std_CC_rule($$$$$)
 \@BROKEN_CC\@	-mv `echo \$\@ | sed 's%^.*/%%g'` \$\@
 
 __EOD__
-
-	return $output;
 }
 
 sub array2oneperline($)
@@ -552,9 +546,7 @@ bin/.TARGET_$ctx->{NAME}:
 
 sub _prepare_proto_rules()
 {
-	my $output = "";
-
-	$output .= << '__EOD__';
+	my $output = << '__EOD__';
 # Making this target will just make sure that the prototype files
 # exist, not necessarily that they are up to date.  Since they're
 # removed by 'make clean' this will always be run when you do anything
@@ -627,7 +619,6 @@ sub _prepare_make_target($)
 {
 	my $ctx = shift;
 	my $tmpdepend;
-	my $output;
 
 	$tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
 
@@ -645,9 +636,6 @@ sub _prepare_target_settings($)
 	foreach my $key (values %$CTX) {
 		if (defined($key->{OBJ_LIST})) {
 			$output .= _prepare_obj_list($key->{TYPE}, $key);
-		}
-
-		if (defined($key->{OBJ_LIST})) {
 			$output .= _prepare_cflags($key->{TYPE}, $key);
 		}
 	}
@@ -655,12 +643,9 @@ sub _prepare_target_settings($)
 	return $output;
 }
 
-sub _prepare_install_rules($)
+sub _prepare_install_rules()
 {
-	my $CTX = shift;
-	my $output = "";
-
-	$output .= << '__EOD__';
+	return << '__EOD__';
 
 showlayout: 
 	@echo "Samba will be installed into:"
@@ -749,8 +734,6 @@ ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
 
 __EOD__
-
-	return $output;
 }
 
 sub _prepare_rule_lists($)
@@ -771,7 +754,7 @@ sub _prepare_rule_lists($)
 
 	$output .= _prepare_IDL();
 	$output .= _prepare_proto_rules();
-	$output .= _prepare_install_rules($depend);
+	$output .= _prepare_install_rules();
 
 	return $output;
 }
@@ -846,12 +829,12 @@ __EOD__
 # $OUTPUT	-	the global OUTPUT context
 #
 # $output -		the resulting output buffer
-sub create_makefile_in($$)
+sub create_makefile_in($$$)
 {
-	my ($CTX, $file) = @_;
+	my ($CTX, $mk, $file) = @_;
 
 	open(MAKEFILE_IN,">$file") || die ("Can't open $file\n");
-	print MAKEFILE_IN _prepare_makefile_in($CTX);
+	print MAKEFILE_IN _prepare_makefile_in($CTX) . $mk;
 	close(MAKEFILE_IN);
 
 	print "config.smb_build.pl: creating $file\n";
