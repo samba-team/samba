@@ -117,6 +117,10 @@ NTSTATUS auth_convert_server_info_saminfo3(TALLOC_CTX *mem_ctx,
 
 	sam = &sam3->base;
 
+	sam->domain_sid = dom_sid_dup(mem_ctx, server_info->account_sid);
+	NT_STATUS_HAVE_NO_MEMORY(sam->domain_sid);
+	sam->domain_sid->num_auths--;
+
 	sam->last_logon = server_info->last_logon;
 	sam->last_logoff = server_info->last_logoff;
 	sam->acct_expiry = server_info->acct_expiry;
@@ -139,16 +143,32 @@ NTSTATUS auth_convert_server_info_saminfo3(TALLOC_CTX *mem_ctx,
 	sam->groups.count = 0;
 	sam->groups.rids = NULL;
 
+	if (server_info->n_domain_groups > 0) {
+		int i;
+		sam->groups.rids = talloc_array(sam, struct samr_RidWithAttribute,
+						server_info->n_domain_groups);
+		NT_STATUS_HAVE_NO_MEMORY(sam->groups.rids);
+
+		for (i=0; i<server_info->n_domain_groups; i++) {
+			struct dom_sid *group_sid = server_info->domain_groups[i];
+
+			if (!dom_sid_in_domain(sam->domain_sid, group_sid)) {
+				continue;
+			}
+
+			sam->groups.rids[sam->groups.count].rid = group_sid->sub_auths[group_sid->num_auths-1];
+			sam->groups.rids[sam->groups.count].attributes = 
+				SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+			sam->groups.count += 1;
+		}
+	}
+
 	sam->user_flags = 0x20; /* TODO: w2k3 uses 0x120.  We know 0x20
 			      * as extra sids (PAC doc) but what is
 			      * 0x100? */
 	sam->acct_flags = server_info->acct_flags;
 	sam->logon_server.string = lp_netbios_name();
 	sam->domain.string = server_info->domain_name;
-
-	sam->domain_sid = dom_sid_dup(mem_ctx, server_info->account_sid);
-	NT_STATUS_HAVE_NO_MEMORY(sam->domain_sid);
-	sam->domain_sid->num_auths--;
 
 	ZERO_STRUCT(sam->unknown);
 
@@ -165,7 +185,7 @@ NTSTATUS auth_convert_server_info_saminfo3(TALLOC_CTX *mem_ctx,
 
 	sam3->sidcount	= 0;
 	sam3->sids	= NULL;
-
+#if 0
 	if (server_info->n_domain_groups > 0) {
 		int i;
 		sam3->sids = talloc_array(sam, struct netr_SidAttr,
@@ -173,7 +193,7 @@ NTSTATUS auth_convert_server_info_saminfo3(TALLOC_CTX *mem_ctx,
 		NT_STATUS_HAVE_NO_MEMORY(sam3->sids);
 
 		for (i=0; i<server_info->n_domain_groups; i++) {
-			if (!dom_sid_in_domain(sam->domain_sid, server_info->domain_groups[i])) {
+			if (dom_sid_in_domain(sam->domain_sid, server_info->domain_groups[i])) {
 				continue;
 			}
 			sam3->sids[sam3->sidcount].sid = talloc_reference(sam3->sids,server_info->domain_groups[i]);
@@ -182,7 +202,7 @@ NTSTATUS auth_convert_server_info_saminfo3(TALLOC_CTX *mem_ctx,
 			sam3->sidcount += 1;
 		}
 	}
-
+#endif
 	*_sam3 = sam3;
 
 	return NT_STATUS_OK;
