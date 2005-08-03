@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    process incoming packets - main loop
    Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Volker Lendecke 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -44,7 +45,6 @@ int max_send = BUFFER_SIZE;
 int max_recv = BUFFER_SIZE;
 
 extern int last_message;
-extern int global_oplock_break;
 extern userdom_struct current_user_info;
 extern int smb_read_error;
 SIG_ATOMIC_T reload_after_sighup = 0;
@@ -66,10 +66,7 @@ uint16 get_current_mid(void)
  for processing.
 ****************************************************************************/
 
-static struct pending_message_list *smb_oplock_queue;
-static struct pending_message_list *smb_sharing_violation_queue;
-
-enum q_type { OPLOCK_QUEUE, SHARE_VIOLATION_QUEUE };
+static struct pending_message_list *deferred_open_queue;
 
 /****************************************************************************
  Free up a message.
@@ -87,7 +84,8 @@ static void free_queued_message(struct pending_message_list *msg)
  for processing.
 ****************************************************************************/
 
-static BOOL push_queued_message(enum q_type qt, char *buf, int msg_len, struct timeval *ptv, char *private_data, size_t private_len)
+static BOOL push_queued_message(char *buf, int msg_len, struct timeval *ptv,
+				char *private_data, size_t private_len)
 {
 	struct pending_message_list *tmp_msg;
 	struct pending_message_list *msg = SMB_MALLOC_P(struct pending_message_list);
@@ -120,47 +118,27 @@ static BOOL push_queued_message(enum q_type qt, char *buf, int msg_len, struct t
 		}
 	}
 
-	if (qt == OPLOCK_QUEUE) {
-		DLIST_ADD_END(smb_oplock_queue, msg, tmp_msg);
-	} else {
-		DLIST_ADD_END(smb_sharing_violation_queue, msg, tmp_msg);
-	}
+	DLIST_ADD_END(deferred_open_queue, msg, tmp_msg);
 
-	DEBUG(10,("push_message: pushed message length %u on queue %s\n",
-		(unsigned int)msg_len,
-		qt == OPLOCK_QUEUE ? "smb_oplock_queue" : "smb_sharing_violation_queue" ));
+	DEBUG(10,("push_message: pushed message length %u on "
+		  "deferred_open_queue\n", (unsigned int)msg_len));
 
 	return True;
-}
-
-/****************************************************************************
- Function to push an oplock smb message onto a linked list of local smb messages ready
- for processing.
-****************************************************************************/
-
-BOOL push_oplock_pending_smb_message(char *buf, int msg_len)
-{
-	BOOL ret = push_queued_message(OPLOCK_QUEUE, buf, msg_len, NULL, NULL, 0);
-	if (ret) {
-		/* Push the MID of this packet on the signing queue. */
-		srv_defer_sign_response(SVAL(buf,smb_mid));
-	}
-	return ret;
 }
 
 /****************************************************************************
  Function to delete a sharing violation open message by mid.
 ****************************************************************************/
 
-void remove_sharing_violation_open_smb_message(uint16 mid)
+void remove_deferred_open_smb_message(uint16 mid)
 {
 	struct pending_message_list *pml;
 
-	for (pml = smb_sharing_violation_queue; pml; pml = pml->next) {
+	for (pml = deferred_open_queue; pml; pml = pml->next) {
 		if (mid == SVAL(pml->buf.data,smb_mid)) {
 			DEBUG(10,("remove_sharing_violation_open_smb_message: deleting mid %u len %u\n",
 				(unsigned int)mid, (unsigned int)pml->buf.length ));
-			DLIST_REMOVE(smb_sharing_violation_queue, pml);
+			DLIST_REMOVE(deferred_open_queue, pml);
 			free_queued_message(pml);
 			return;
 		}
@@ -177,7 +155,7 @@ void schedule_deferred_open_smb_message(uint16 mid)
 	struct pending_message_list *pml;
 	int i = 0;
 
-	for (pml = smb_sharing_violation_queue; pml; pml = pml->next) {
+	for (pml = deferred_open_queue; pml; pml = pml->next) {
 		uint16 msg_mid = SVAL(pml->buf.data,smb_mid);
 		DEBUG(10,("schedule_deferred_open_smb_message: [%d] msg_mid = %u\n", i++,
 			(unsigned int)msg_mid ));
@@ -186,7 +164,7 @@ void schedule_deferred_open_smb_message(uint16 mid)
 				mid ));
 			pml->msg_time.tv_sec = 0;
 			pml->msg_time.tv_usec = 0;
-			DLIST_PROMOTE(smb_sharing_violation_queue, pml);
+			DLIST_PROMOTE(deferred_open_queue, pml);
 			return;
 		}
 	}
@@ -203,7 +181,7 @@ BOOL open_was_deferred(uint16 mid)
 {
 	struct pending_message_list *pml;
 
-	for (pml = smb_sharing_violation_queue; pml; pml = pml->next) {
+	for (pml = deferred_open_queue; pml; pml = pml->next) {
 		if (SVAL(pml->buf.data,smb_mid) == mid) {
 			set_saved_error_triple(SMB_SUCCESS, 0, NT_STATUS_OK);
 			return True;
@@ -220,7 +198,7 @@ struct pending_message_list *get_open_deferred_message(uint16 mid)
 {
 	struct pending_message_list *pml;
 
-	for (pml = smb_sharing_violation_queue; pml; pml = pml->next) {
+	for (pml = deferred_open_queue; pml; pml = pml->next) {
 		if (SVAL(pml->buf.data,smb_mid) == mid) {
 			return pml;
 		}
@@ -256,8 +234,8 @@ BOOL push_deferred_open_smb_message(struct timeval *ptv,
  timeout time [%u.%06u]\n", (unsigned int) smb_len(current_inbuf)+4, (unsigned int)mid,
 		(unsigned int)tv.tv_sec, (unsigned int)tv.tv_usec));
 
-	return push_queued_message(SHARE_VIOLATION_QUEUE, current_inbuf,
-			smb_len(current_inbuf)+4, &tv, private_data, priv_len);
+	return push_queued_message(current_inbuf, smb_len(current_inbuf)+4,
+				   &tv, private_data, priv_len);
 }
 
 static struct timed_event *timed_events;
@@ -431,23 +409,21 @@ struct idle_event *add_idle_event(TALLOC_CTX *mem_ctx,
 }
 	
 /****************************************************************************
- Do all async processing in here. This includes UDB oplock messages, kernel
- oplock messages, change notify events etc.
+ Do all async processing in here. This includes kernel oplock messages, change
+ notify events etc.
 ****************************************************************************/
 
-static void async_processing(char *buffer, int buffer_len)
+static void async_processing(void)
 {
 	DEBUG(10,("async_processing: Doing async processing.\n"));
 
 	process_aio_queue();
 
-	/* check for oplock messages (both UDP and kernel) */
-	if (receive_local_message(buffer, buffer_len, 1)) {
-		process_local_message(buffer, buffer_len);
-	}
+	process_kernel_oplocks();
 
-	/* Do the aio check again after receive_local_message as it does a select
-	   and may have eaten our signal. */
+	/* Do the aio check again after receive_local_message as it does a
+	   select and may have eaten our signal. */
+	/* Is this till true? -- vl */
 	process_aio_queue();
 
 	if (got_sig_term) {
@@ -511,28 +487,12 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	message_dispatch();
 
 	/*
-	 * Check to see if we already have a message on the smb queue.
-	 * If so - copy and return it.
-	 */
-  	if(smb_oplock_queue != NULL) {
-		struct pending_message_list *msg = smb_oplock_queue;
-		memcpy(buffer, msg->buf.data, MIN(buffer_len, msg->buf.length));
-  
-		/* Free the message we just copied. */
-		DLIST_REMOVE(smb_oplock_queue, msg);
-		free_queued_message(msg);
-		
-		DEBUG(5,("receive_message_or_smb: returning queued smb message.\n"));
-		return True;
-	}
-
-	/*
 	 * Check to see if we already have a message on the deferred open queue
 	 * and it's time to schedule.
 	 */
-  	if(smb_sharing_violation_queue != NULL) {
+  	if(deferred_open_queue != NULL) {
 		BOOL pop_message = False;
-		struct pending_message_list *msg = smb_sharing_violation_queue;
+		struct pending_message_list *msg = deferred_open_queue;
 
 		if (msg->msg_time.tv_sec == 0 && msg->msg_time.tv_usec == 0) {
 			pop_message = True;
@@ -582,7 +542,7 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 
 	if (oplock_message_waiting(&fds)) {
 		DEBUG(10,("receive_message_or_smb: oplock_message is waiting.\n"));
-		async_processing(buffer, buffer_len);
+		async_processing();
 		/*
 		 * After async processing we must go and do the select again, as
 		 * the state of the flag in fds for the server file descriptor is
@@ -609,7 +569,7 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	   is the best we can do until the oplock code knows more about
 	   signals */
 	if (selrtn == -1 && errno == EINTR) {
-		async_processing(buffer, buffer_len);
+		async_processing();
 		/*
 		 * After async processing we must go and do the select again, as
 		 * the state of the flag in fds for the server file descriptor is
@@ -638,7 +598,7 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	 */
 
 	if (oplock_message_waiting(&fds)) {
-		async_processing(buffer, buffer_len);
+		async_processing();
 		/*
 		 * After async processing we must go and do the select again, as
 		 * the state of the flag in fds for the server file descriptor is
@@ -677,8 +637,6 @@ BOOL receive_next_smb(char *inbuf, int bufsize, int timeout)
 
 void respond_to_all_remaining_local_messages(void)
 {
-	char buffer[1024];
-
 	/*
 	 * Assert we have no exclusive open oplocks.
 	 */
@@ -689,15 +647,7 @@ void respond_to_all_remaining_local_messages(void)
 		return;
 	}
 
-	/*
-	 * Keep doing receive_local_message with a 1 ms timeout until
-	 * we have no more messages.
-	 */
-
-	while(receive_local_message(buffer, sizeof(buffer), 1)) {
-		/* Deal with oplock break requests from other smbd's. */
-		process_local_message(buffer, sizeof(buffer));
-	}
+	process_kernel_oplocks();
 
 	return;
 }
@@ -715,8 +665,7 @@ force write permissions on print services.
 #define TIME_INIT (1<<2)
 #define CAN_IPC (1<<3)
 #define AS_GUEST (1<<5)
-#define QUEUE_IN_OPLOCK (1<<6)
-#define DO_CHDIR (1<<7)
+#define DO_CHDIR (1<<6)
 
 /* 
    define a list of possible SMB messages and their corresponding
@@ -731,19 +680,19 @@ static const struct smb_message_struct {
 
 /* 0x00 */ { "SMBmkdir",reply_mkdir,AS_USER | NEED_WRITE},
 /* 0x01 */ { "SMBrmdir",reply_rmdir,AS_USER | NEED_WRITE},
-/* 0x02 */ { "SMBopen",reply_open,AS_USER | QUEUE_IN_OPLOCK },
+/* 0x02 */ { "SMBopen",reply_open,AS_USER },
 /* 0x03 */ { "SMBcreate",reply_mknew,AS_USER},
 /* 0x04 */ { "SMBclose",reply_close,AS_USER | CAN_IPC },
 /* 0x05 */ { "SMBflush",reply_flush,AS_USER},
-/* 0x06 */ { "SMBunlink",reply_unlink,AS_USER | NEED_WRITE | QUEUE_IN_OPLOCK},
-/* 0x07 */ { "SMBmv",reply_mv,AS_USER | NEED_WRITE | QUEUE_IN_OPLOCK},
+/* 0x06 */ { "SMBunlink",reply_unlink,AS_USER | NEED_WRITE }, 
+/* 0x07 */ { "SMBmv",reply_mv,AS_USER | NEED_WRITE },
 /* 0x08 */ { "SMBgetatr",reply_getatr,AS_USER},
 /* 0x09 */ { "SMBsetatr",reply_setatr,AS_USER | NEED_WRITE},
 /* 0x0a */ { "SMBread",reply_read,AS_USER},
 /* 0x0b */ { "SMBwrite",reply_write,AS_USER | CAN_IPC },
 /* 0x0c */ { "SMBlock",reply_lock,AS_USER},
 /* 0x0d */ { "SMBunlock",reply_unlock,AS_USER},
-/* 0x0e */ { "SMBctemp",reply_ctemp,AS_USER | QUEUE_IN_OPLOCK },
+/* 0x0e */ { "SMBctemp",reply_ctemp,AS_USER },
 /* 0x0f */ { "SMBmknew",reply_mknew,AS_USER}, 
 /* 0x10 */ { "SMBchkpth",reply_chkpth,AS_USER},
 /* 0x11 */ { "SMBexit",reply_exit,DO_CHDIR},
@@ -770,11 +719,11 @@ static const struct smb_message_struct {
 /* 0x26 */ { "SMBtranss",NULL,AS_USER | CAN_IPC},
 /* 0x27 */ { "SMBioctl",reply_ioctl,0},
 /* 0x28 */ { "SMBioctls",NULL,AS_USER},
-/* 0x29 */ { "SMBcopy",reply_copy,AS_USER | NEED_WRITE | QUEUE_IN_OPLOCK },
-/* 0x2a */ { "SMBmove",NULL,AS_USER | NEED_WRITE | QUEUE_IN_OPLOCK },
+/* 0x29 */ { "SMBcopy",reply_copy,AS_USER | NEED_WRITE },
+/* 0x2a */ { "SMBmove",NULL,AS_USER | NEED_WRITE },
 /* 0x2b */ { "SMBecho",reply_echo,0},
 /* 0x2c */ { "SMBwriteclose",reply_writeclose,AS_USER},
-/* 0x2d */ { "SMBopenX",reply_open_and_X,AS_USER | CAN_IPC | QUEUE_IN_OPLOCK },
+/* 0x2d */ { "SMBopenX",reply_open_and_X,AS_USER | CAN_IPC },
 /* 0x2e */ { "SMBreadX",reply_read_and_X,AS_USER | CAN_IPC },
 /* 0x2f */ { "SMBwriteX",reply_write_and_X,AS_USER | CAN_IPC },
 /* 0x30 */ { NULL, NULL, 0 },
@@ -889,12 +838,12 @@ static const struct smb_message_struct {
 /* 0x9d */ { NULL, NULL, 0 },
 /* 0x9e */ { NULL, NULL, 0 },
 /* 0x9f */ { NULL, NULL, 0 },
-/* 0xa0 */ { "SMBnttrans", reply_nttrans, AS_USER | CAN_IPC | QUEUE_IN_OPLOCK},
+/* 0xa0 */ { "SMBnttrans", reply_nttrans, AS_USER | CAN_IPC },
 /* 0xa1 */ { "SMBnttranss", reply_nttranss, AS_USER | CAN_IPC },
-/* 0xa2 */ { "SMBntcreateX", reply_ntcreate_and_X, AS_USER | CAN_IPC | QUEUE_IN_OPLOCK },
+/* 0xa2 */ { "SMBntcreateX", reply_ntcreate_and_X, AS_USER | CAN_IPC },
 /* 0xa3 */ { NULL, NULL, 0 },
 /* 0xa4 */ { "SMBntcancel", reply_ntcancel, 0 },
-/* 0xa5 */ { "SMBntrename", reply_ntrename, AS_USER | NEED_WRITE | QUEUE_IN_OPLOCK },
+/* 0xa5 */ { "SMBntrename", reply_ntrename, AS_USER | NEED_WRITE },
 /* 0xa6 */ { NULL, NULL, 0 },
 /* 0xa7 */ { NULL, NULL, 0 },
 /* 0xa8 */ { NULL, NULL, 0 },
@@ -921,7 +870,7 @@ static const struct smb_message_struct {
 /* 0xbd */ { NULL, NULL, 0 },
 /* 0xbe */ { NULL, NULL, 0 },
 /* 0xbf */ { NULL, NULL, 0 },
-/* 0xc0 */ { "SMBsplopen",reply_printopen,AS_USER | QUEUE_IN_OPLOCK },
+/* 0xc0 */ { "SMBsplopen",reply_printopen,AS_USER},
 /* 0xc1 */ { "SMBsplwr",reply_printwrite,AS_USER},
 /* 0xc2 */ { "SMBsplclose",reply_printclose,AS_USER},
 /* 0xc3 */ { "SMBsplretq",reply_printqueue,AS_USER},
@@ -1059,19 +1008,6 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 		DEBUG(3,("switch message %s (pid %d) conn 0x%x\n",smb_fn_name(type),(int)pid,(unsigned int)conn));
 
 		smb_dump(smb_fn_name(type), 1, inbuf, size);
-		if(global_oplock_break) {
-			if(flags & QUEUE_IN_OPLOCK) {
-				/* 
-				 * Queue this message as we are the process of an oplock break.
-				 */
-
-				DEBUG( 2, ( "switch_message: queueing message due to being in " ) );
-				DEBUGADD( 2, ( "oplock break state.\n" ) );
-
-				push_oplock_pending_smb_message( inbuf, size );
-				return -1;
-			}
-		}
 
 		/* Ensure this value is replaced in the incoming packet. */
 		SSVAL(inbuf,smb_uid,session_tag);

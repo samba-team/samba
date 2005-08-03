@@ -27,7 +27,6 @@
 extern int max_send;
 extern enum protocol_types Protocol;
 extern int smb_read_error;
-extern int global_oplock_break;
 extern uint32 global_client_caps;
 extern struct current_user current_user;
 
@@ -3915,16 +3914,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 				if (fd == -1) {
 					files_struct *new_fsp = NULL;
  
-					if(global_oplock_break) {
-						/* Queue this file modify as we are the process of an oplock break.  */
- 
-						DEBUG(2,("call_trans2setfilepathinfo: queueing message due to being "));
-						DEBUGADD(2,( "in oplock break state.\n"));
- 
-						push_oplock_pending_smb_message(inbuf, length);
-						return -1;
-					}
- 
 					new_fsp = open_file_ntcreate(conn, fname, &sbuf,
 									FILE_WRITE_DATA,
 									FILE_SHARE_READ|FILE_SHARE_WRITE,
@@ -4459,16 +4448,6 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		if (fd == -1) {
 			files_struct *new_fsp = NULL;
 
-			if(global_oplock_break) {
-				/* Queue this file modify as we are the process of an oplock break.  */
-
-				DEBUG(2,("call_trans2setfilepathinfo: queueing message due to being "));
-				DEBUGADD(2,( "in oplock break state.\n"));
-
-				push_oplock_pending_smb_message(inbuf, length);
-				return -1;
-			}
-
 			new_fsp = open_file_ntcreate(conn, fname, &sbuf,
 						FILE_WRITE_DATA,
 						FILE_SHARE_READ|FILE_SHARE_WRITE,
@@ -4862,18 +4841,6 @@ int reply_trans2(connection_struct *conn,
 	unsigned int num_params, num_params_sofar, num_data, num_data_sofar;
 	START_PROFILE(SMBtrans2);
 
-	if(global_oplock_break && (tran_call == TRANSACT2_OPEN)) {
-		/* Queue this open message as we are the process of an
-		 * oplock break.  */
-
-		DEBUG(2,("reply_trans2: queueing message trans2open due to being "));
-		DEBUGADD(2,( "in oplock break state.\n"));
-
-		push_oplock_pending_smb_message(inbuf, length);
-		END_PROFILE(SMBtrans2);
-		return -1;
-	}
-	
 	if (IS_IPC(conn) && (tran_call != TRANSACT2_OPEN)
             && (tran_call != TRANSACT2_GET_DFS_REFERRAL)) {
 		END_PROFILE(SMBtrans2);

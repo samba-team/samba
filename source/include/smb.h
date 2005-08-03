@@ -1516,93 +1516,21 @@ struct kernel_oplock_message {
 #define OPLOCKLEVEL_II 1
 
 /*
- * Loopback command offsets.
- */
-
-#define OPBRK_CMD_LEN_OFFSET 0
-#define OPBRK_CMD_PORT_OFFSET 4
-#define OPBRK_CMD_HEADER_LEN 6
-
-#define OPBRK_MESSAGE_CMD_OFFSET 0
-
-/*
- * Oplock break command code to send over the udp socket.
- * The same message is sent for both exlusive and level II breaks. 
- * 
- * The form of this is :
- *
- *  0     2       2+pid   2+pid+dev 2+pid+dev+ino
- *  +----+--------+-------+--------+---------+
- *  | cmd| pid    | dev   |  inode | fileid  |
- *  +----+--------+-------+--------+---------+
- */
-
-#define OPLOCK_BREAK_PID_OFFSET 2
-#define OPLOCK_BREAK_DEV_OFFSET (OPLOCK_BREAK_PID_OFFSET + sizeof(pid_t))
-#define OPLOCK_BREAK_INODE_OFFSET (OPLOCK_BREAK_DEV_OFFSET + sizeof(SMB_DEV_T))
-#define OPLOCK_BREAK_FILEID_OFFSET (OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
-#define OPLOCK_BREAK_MSG_LEN (OPLOCK_BREAK_FILEID_OFFSET + sizeof(unsigned long))
-
-/* Message types */
-#define OPLOCK_BREAK_CMD 0x1
-#define KERNEL_OPLOCK_BREAK_CMD 0x2
-#define LEVEL_II_OPLOCK_BREAK_CMD 0x3
-#define ASYNC_LEVEL_II_OPLOCK_BREAK_CMD 0x4
-
-/* Add the "deferred open" message. */
-#define RETRY_DEFERRED_OPEN_CMD 0x5
-
-/*
- * And the message format for it. Keep the same message length.
- *
- *  0     2       2+pid   2+pid+dev 2+pid+dev+ino
- *  +----+--------+-------+--------+---------+
- *  | cmd| pid    | dev   |  inode | mid     |
- *  +----+--------+-------+--------+---------+
- */
-
-#define DEFERRED_OPEN_CMD_OFFSET 0
-#define DEFERRED_OPEN_PID_OFFSET 2 /* pid we're *sending* from. */
-#define DEFERRED_OPEN_DEV_OFFSET (DEFERRED_OPEN_PID_OFFSET + sizeof(pid_t))
-#define DEFERRED_OPEN_INODE_OFFSET (DEFERRED_OPEN_DEV_OFFSET + sizeof(SMB_DEV_T))
-#define DEFERRED_OPEN_MID_OFFSET (DEFERRED_OPEN_INODE_OFFSET + sizeof(SMB_INO_T))
-#define DEFERRED_OPEN_MSG_LEN OPLOCK_BREAK_MSG_LEN
-
-/*
  * Capabilities abstracted for different systems.
  */
 
 #define KERNEL_OPLOCK_CAPABILITY 0x1
 
-/*
- * Oplock break command code sent via the kernel interface (if it exists).
- *
- * Form of this is :
- *
- *  0     2       2+devsize 2+devsize+inodesize
- *  +----+--------+--------+----------+
- *  | cmd| dev    |  inode |  fileid  |
- *  +----+--------+--------+----------+
- */
-#define KERNEL_OPLOCK_BREAK_DEV_OFFSET 2
-#define KERNEL_OPLOCK_BREAK_INODE_OFFSET (KERNEL_OPLOCK_BREAK_DEV_OFFSET + sizeof(SMB_DEV_T))
-#define KERNEL_OPLOCK_BREAK_FILEID_OFFSET (KERNEL_OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
-#define KERNEL_OPLOCK_BREAK_MSG_LEN (KERNEL_OPLOCK_BREAK_FILEID_OFFSET + sizeof(unsigned long))
-
-
 /* if a kernel does support oplocks then a structure of the following
    typee is used to describe how to interact with the kernel */
 struct kernel_oplocks {
-	BOOL (*receive_message)(fd_set *fds, char *buffer, int buffer_len);
+	files_struct * (*receive_message)(fd_set *fds);
 	BOOL (*set_oplock)(files_struct *fsp, int oplock_type);
 	void (*release_oplock)(files_struct *fsp);
-	BOOL (*parse_message)(char *msg_start, int msg_len, SMB_INO_T *inode, SMB_DEV_T *dev, unsigned long *file_id);
 	BOOL (*msg_waiting)(fd_set *fds);
 	int notification_fd;
 };
 
-
-#define CMD_REPLY 0x8000
 
 /* this structure defines the functions for doing change notify in
    various implementations */

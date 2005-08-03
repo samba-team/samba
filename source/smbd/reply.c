@@ -30,7 +30,6 @@
 extern enum protocol_types Protocol;
 extern int max_send;
 extern int max_recv;
-extern int global_oplock_break;
 unsigned int smb_echo_count = 0;
 extern uint32 global_client_caps;
 
@@ -2208,15 +2207,6 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	 * and the readraw request croses on the wire, we must
 	 * return a zero length response here.
 	 */
-
-	if(global_oplock_break) {
-		_smb_setlen(header,0);
-		if (write_data(smbd_server_fd(),header,4) != 4)
-			fail_readraw();
-		DEBUG(5,("readbraw - oplock break finished\n"));
-		END_PROFILE(SMBreadbraw);
-		return -1;
-	}
 
 	fsp = file_fsp(inbuf,smb_vwv0);
 

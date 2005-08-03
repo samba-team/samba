@@ -65,7 +65,7 @@ files_struct *file_new(connection_struct *conn)
 {
 	int i;
 	static int first_file;
-	files_struct *fsp, *next;
+	files_struct *fsp;
 
 	/* we want to give out file handles differently on each new
 	   connection because of a common bug in MS clients where they try to
@@ -78,22 +78,6 @@ files_struct *file_new(connection_struct *conn)
 
 	i = bitmap_find(file_bmap, first_file);
 	if (i == -1) {
-		/* 
-		 * Before we give up, go through the open files 
-		 * and see if there are any files opened with a
-		 * batch oplock. If so break the oplock and then
-		 * re-use that entry (if it becomes closed).
-		 * This may help as NT/95 clients tend to keep
-		 * files batch oplocked for quite a long time
-		 * after they have finished with them.
-		 */
-		for (fsp=Files;fsp;fsp=next) {
-			next=fsp->next;
-			if (attempt_close_oplocked_file(fsp)) {
-				return file_new(conn);
-			}
-		}
-
 		DEBUG(0,("ERROR! Out of file structures\n"));
 		set_saved_error_triple(ERRSRV, ERRnofids, NT_STATUS_TOO_MANY_OPENED_FILES);
 		return NULL;

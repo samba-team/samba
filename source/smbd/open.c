@@ -24,7 +24,6 @@
 
 extern struct current_user current_user;
 extern userdom_struct current_user_info;
-extern uint16 global_oplock_port;
 extern uint16 global_smbpid;
 extern BOOL global_client_failed_oplock_break;
 
@@ -508,41 +507,6 @@ static void validate_my_share_entries(int num,
 }
 #endif
 
-struct share_mode_entry_list {
-	struct share_mode_entry_list *next, *prev;
-	share_mode_entry entry;
-};
-
-static void free_broken_entry_list(struct share_mode_entry_list *broken_entry_list)
-{
-	while (broken_entry_list) {
-		struct share_mode_entry_list *broken_entry = broken_entry_list;
-		DLIST_REMOVE(broken_entry_list, broken_entry);
-		SAFE_FREE(broken_entry);
-	}
-}
-
-static BOOL cause_oplock_break(int request, int existing, uint32 access_mask)
-{
-	if ((access_mask == DELETE_ACCESS) &&
-	    (request == NO_OPLOCK)) {
-		/* This is a delete request */
-		return (BATCH_OPLOCK_TYPE(existing) != 0);
-	}
-
-	if (EXCLUSIVE_OPLOCK_TYPE(existing)) {
-		return True;
-	}
-
-#if 0
-	if (LEVEL_II_OPLOCK_TYPE(existing) && (request != NO_OPLOCK)) {
-		return True;
-	}
-#endif
-
-	return False;
-}
-
 static BOOL is_stat_open(uint32 access_mask)
 {
 	return (access_mask &&
@@ -553,7 +517,7 @@ static BOOL is_stat_open(uint32 access_mask)
 }
 
 /****************************************************************************
- Deal with open deny mode and oplock break processing.
+ Deal with share modes
  Invarient: Share mode must be locked on entry and exit.
  Returns -1 on error, or number of share modes on success (may be zero).
 ****************************************************************************/
@@ -569,12 +533,11 @@ static int open_mode_check(connection_struct *conn,
 {
 	int i;
 	int num_share_modes;
-	int oplock_contention_count = 0;
 	share_mode_entry *old_shares = NULL;
-	BOOL broke_oplock;
 	BOOL delete_on_close;
 
-	num_share_modes = get_share_modes(dev, inode, &old_shares, &delete_on_close);
+	num_share_modes = get_share_modes(dev, inode, &old_shares,
+					  &delete_on_close);
 	
 	if(num_share_modes == 0) {
 		SAFE_FREE(old_shares);
@@ -600,173 +563,26 @@ static int open_mode_check(connection_struct *conn,
 	 * Check if the share modes will give us access.
 	 */
 	
-	do {
-		struct share_mode_entry_list *broken_entry_list = NULL;
-		struct share_mode_entry_list *broken_entry = NULL;
-
-		broke_oplock = False;
-		
-		for(i = 0; i < num_share_modes; i++) {
-			share_mode_entry *share_entry = &old_shares[i];
-			BOOL opb_ret;
-			
 #if defined(DEVELOPER)
-			validate_my_share_entries(i, share_entry);
+	for(i = 0; i < num_share_modes; i++) {
+		validate_my_share_entries(i, &old_shares[i]);
+	}
 #endif
 
-			/* 
-			 * By observation of NetBench, oplocks are broken
-			 * *before* share modes are checked. This allows a
-			 * file to be closed by the client if the share mode
-			 * would deny access and the client has an oplock.
-			 * Check if someone has an oplock on this file. If so
-			 * we must break it before continuing.
-			 */
+	if (lp_share_modes(SNUM(conn))) {
+		/* Now we check the share modes, after any oplock breaks. */
+		for(i = 0; i < num_share_modes; i++) {
+			share_mode_entry *share_entry = &old_shares[i];
 
-			if (!cause_oplock_break(*p_oplock_request,
-						share_entry->op_type,
-						access_mask)) {
-				continue;
-			}
-
-			DEBUG(0, ("Still oplocks left\n"));
-			continue;
-
-			/* This is an oplock break */
-
-			DEBUG(5,("open_mode_check: oplock_request = %d, "
-				 "breaking oplock (%x) on file %s, "
-				 "dev = %x, inode = %.0f\n",
-				 *p_oplock_request, share_entry->op_type,
-				 fname, (unsigned int)dev, (double)inode));
-				
-			/* Ensure the reply for the open uses the correct
-			 * sequence number. */
-			/* This isn't a real deferred packet as it's response
-			 * will also increment the sequence.
-			 */
-			srv_defer_sign_response(get_current_mid());
-
-			/* Oplock break - unlock to request it. */
-			unlock_share_entry(dev, inode);
-				
-			opb_ret = request_oplock_break(share_entry);
-				
-			/* Now relock. */
-			lock_share_entry(dev, inode);
-				
-			if (!opb_ret) {
-				DEBUG(0,("open_mode_check: FAILED when breaking "
-					 "oplock (%x) on file %s, dev = %x, "
-					 "inode = %.0f\n",
-					 old_shares[i].op_type, fname,
-					 (unsigned int)dev, (double)inode));
+			/* someone else has a share lock on it, check to see
+			 * if we can too */
+			if (share_conflict(share_entry, access_mask,
+					   share_access)) {
 				SAFE_FREE(old_shares);
-				set_saved_error_triple(ERRDOS, ERRbadshare,
-						       NT_STATUS_SHARING_VIOLATION);
+				errno = EACCES;
 				return -1;
 			}
-				
-			broken_entry = SMB_MALLOC_P(struct share_mode_entry_list);
-			if (!broken_entry) {
-				smb_panic("open_mode_check: malloc fail.\n");
-			}
-			broken_entry->entry = *share_entry;
-			DLIST_ADD(broken_entry_list, broken_entry);
-			broke_oplock = True;
-				
-		} /* end for */
-		
-		if (broke_oplock) {
-			/* Update the current open table. */
-			SAFE_FREE(old_shares);
-			num_share_modes = get_share_modes(dev, inode,
-							  &old_shares,
-							  &delete_on_close);
 		}
-
-		if (lp_share_modes(SNUM(conn))) {
-			/* Now we check the share modes, after any oplock breaks. */
-			for(i = 0; i < num_share_modes; i++) {
-				share_mode_entry *share_entry = &old_shares[i];
-
-				/* someone else has a share lock on it, check to see
-				 * if we can too */
-				if (share_conflict(share_entry, access_mask,
-						   share_access)) {
-					SAFE_FREE(old_shares);
-					free_broken_entry_list(broken_entry_list);
-					errno = EACCES;
-					return -1;
-				}
-			}
-		}
-
-		for(broken_entry = broken_entry_list; broken_entry;
-		    broken_entry = broken_entry->next) {
-			oplock_contention_count++;
-			
-			/* Paranoia check that this is no longer an exlusive entry. */
-			for(i = 0; i < num_share_modes; i++) {
-				share_mode_entry *share_entry = &old_shares[i];
-				
-				if (!(share_modes_identical(&broken_entry->entry,
-							    share_entry) && 
-				      EXCLUSIVE_OPLOCK_TYPE(share_entry->op_type))) {
-					continue;
-				}
-					
-				/*
-				 * This should not happen. The target left this oplock
-				 * as exlusive.... The process *must* be dead.... 
-				 */
-					
-				DEBUG(0,("open_mode_check: exlusive oplock left by "
-					 "process %d after break ! For file %s, "
-					 "dev = %x, inode = %.0f. Deleting it to "
-					 "continue...\n",
-					 (int)broken_entry->entry.pid, fname,
-					 (unsigned int)dev, (double)inode));
-					
-				if (process_exists(broken_entry->entry.pid)) {
-					DEBUG(0,("open_mode_check: Existent process "
-						 "%lu left active oplock.\n",
-						 (unsigned long)broken_entry->entry.pid ));
-				}
-					
-				if (del_share_entry(dev, inode, &broken_entry->entry,
-						    NULL, &delete_on_close) == -1) {
-					free_broken_entry_list(broken_entry_list);
-					errno = EACCES;
-					set_saved_error_triple(ERRDOS, ERRbadshare,
-							       NT_STATUS_SHARING_VIOLATION);
-					return -1;
-				}
-					
-				/*
-				 * We must reload the share modes after deleting the 
-				 * other process's entry.
-				 */
-					
-				SAFE_FREE(old_shares);
-				num_share_modes = get_share_modes(dev, inode,
-								  &old_shares,
-								  &delete_on_close);
-				break;
-			} /* end for paranoia... */
-		} /* end for broken_entry */
-		free_broken_entry_list(broken_entry_list);
-	} while(broke_oplock);
-	
-	/*
-	 * Refuse to grant an oplock in case the contention limit is
-	 * reached when going through the lock list multiple times.
-	 */
-	
-	if(oplock_contention_count >= lp_oplock_contention_limit(SNUM(conn))) {
-		*p_oplock_request = 0;
-		DEBUG(4,("open_mode_check: oplock contention = %d. Not granting oplock.\n",
-			 oplock_contention_count ));
 	}
 	
 	SAFE_FREE(old_shares);
@@ -958,8 +774,8 @@ static void defer_open(struct timeval *ptv,
 		SAFE_FREE(de_array);
 		return;
 	}
-	if (!add_deferred_open(mid, ptv, dev, inode, global_oplock_port, fname)) {
-		remove_sharing_violation_open_smb_message(mid);
+	if (!add_deferred_open(mid, ptv, dev, inode, 0, fname)) {
+		remove_deferred_open_smb_message(mid);
 	}
 
 	/*
@@ -1344,7 +1160,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		unlock_share_entry(dib.dev, dib.inode);
 
 		/* Ensure we don't reprocess this message. */
-		remove_sharing_violation_open_smb_message(mid);
+		remove_deferred_open_smb_message(mid);
 	}
 
 	if (!check_name(fname,conn)) {

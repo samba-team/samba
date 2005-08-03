@@ -24,7 +24,6 @@
 extern int max_send;
 extern enum protocol_types Protocol;
 extern int smb_read_error;
-extern int global_oplock_break;
 extern struct current_user current_user;
 
 static const char *known_nt_pipes[] = {
@@ -2743,21 +2742,6 @@ int reply_nttrans(connection_struct *conn,
 	char *params = NULL, *data = NULL, *setup = NULL;
 	uint32 num_params_sofar, num_data_sofar;
 	START_PROFILE(SMBnttrans);
-
-	if(global_oplock_break &&
-			((function_code == NT_TRANSACT_CREATE) ||
-			 (function_code == NT_TRANSACT_RENAME))) {
-		/*
-		 * Queue this open message as we are the process of an oplock break.
-		 */
-
-		DEBUG(2,("reply_nttrans: queueing message code 0x%x \
-due to being in oplock break state.\n", (unsigned int)function_code ));
-
-		push_oplock_pending_smb_message( inbuf, length);
-		END_PROFILE(SMBnttrans);
-		return -1;
-	}
 
 	if (IS_IPC(conn) && (function_code != NT_TRANSACT_CREATE)) {
 		END_PROFILE(SMBnttrans);
