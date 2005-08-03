@@ -510,6 +510,7 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 	struct samr_Password *new_lmPwdHistory, *new_ntPwdHistory;
 	struct samr_Password local_lmNewHash, local_ntNewHash;
 	int lmPwdHistory_len, ntPwdHistory_len;
+	uint_t kvno;
 	struct ldb_message **res;
 	int count;
 	time_t now = time(NULL);
@@ -534,6 +535,7 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 	lmPwdHash =          samdb_result_hash(res[0],   "lmPwdHash");
 	ntPwdHash =          samdb_result_hash(res[0],   "ntPwdHash");
 	pwdLastSet =         samdb_result_uint64(res[0], "pwdLastSet", 0);
+	kvno =               samdb_result_uint(res[0],   "msDS-KeyVersionNumber", 0);
 
 	/* pull the domain parameters */
 	count = gendb_search_dn(ctx, mem_ctx, domain_dn, &res, domain_attrs);
@@ -679,6 +681,8 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 	}
 
 	CHECK_RET(samdb_msg_add_uint64(ctx, mem_ctx, mod, "pwdLastSet", now_nt));
+
+	CHECK_RET(samdb_msg_add_uint(ctx, mem_ctx, mod, "msDS-KeyVersionNumber", kvno + 1));
 	
 	if (pwdHistoryLength == 0) {
 		CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "lmPwdHistory"));
