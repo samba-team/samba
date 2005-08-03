@@ -1244,6 +1244,9 @@ NTSTATUS pvfs_change_create_options(struct pvfs_state *pvfs,
 	}
 
 	if (f->handle->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
+		if (!pvfs_directory_empty(pvfs, f->handle->name)) {
+			return NT_STATUS_DIRECTORY_NOT_EMPTY;
+		}
 		f->handle->create_options = create_options;
 		return NT_STATUS_OK;
 	}

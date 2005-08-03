@@ -310,3 +310,27 @@ NTSTATUS pvfs_list_seek(struct pvfs_dir *dir, const char *name, uint_t *ofs)
 
 	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 }
+
+
+/*
+  see if a directory is empty
+*/
+BOOL pvfs_directory_empty(struct pvfs_state *pvfs, struct pvfs_filename *name)
+{
+	struct dirent *de;
+	DIR *dir = opendir(name->full_name);
+	if (dir == NULL) {
+		return True;
+	}
+
+	while ((de = readdir(dir))) {
+		if (strcmp(de->d_name, ".") != 0 &&
+		    strcmp(de->d_name, "..") != 0) {
+			closedir(dir);
+			return False;
+		}
+	}
+
+	closedir(dir);
+	return True;
+}
