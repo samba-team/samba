@@ -40,84 +40,74 @@ my %attribute_types = (
 #
 # $filename -	the path of the config.mk file
 #		which should be parsed
-#
-# $result -	the resulting structure
-#
-# $result->{ERROR_CODE} -	the error_code, '0' means success
-# $result->{ERROR_STR} -	the error string
-#
-# $result->{$key}{KEY} -	the key == the variable which was parsed
-# $result->{$key}{VAL} -	the value of the variable
-sub _parse_config_mk($)
+sub run_config_mk($$)
 {
-	my $filename = shift;
+	my ($input, $filename) = @_;
 	my $result;
 	my $linenum = -1;
-	my $waiting = 0;
+	my $infragment = 0;
 	my $section = "GLOBAL";
 	my $makefile = "";
+	
+	open(CONFIG_MK, $filename) or die("Can't open `$filename'\n");
+	my @lines = <CONFIG_MK>;
+	close(CONFIG_MK);
 
-	open(CONFIG_MK, "<$filename") or die("Can't open `$filename'\n");
+	my $line = "";
+	my $prev = "";
 
-	while (<CONFIG_MK>) {
-		my $line = $_;
-
+	foreach (@lines) {
 		$linenum++;
 
 		# lines beginning with '#' are ignored
-		next if ($line =~ /^\#.*$/);
+		next if (/^\#.*$/);
+		
+		if (/^(.*)\\$/) {
+			$prev .= $1;
+			next;
+		} else {
+			$line = "$prev$_";
+			$prev = "";
+		}
 
-		if (not $waiting and ($line =~ /^\[([a-zA-Z0-9_:]+)\][\t ]*$/)) 
+		if ($line =~ /^\[([a-zA-Z0-9_:]+)\][\t ]*$/) 
 		{
 			$section = $1;
+			$infragment = 0;
+			next;
+		}
+
+		# include
+		if ($line =~ /^include (.*)$/) {
+			$makefile .= run_config_mk($input, $1);
 			next;
 		}
 
 		# empty line
 		if ($line =~ /^[ \t]*$/) {
-			$waiting = 0;
 			$section = "GLOBAL";
+			if ($infragment) { $makefile.="\n"; }
 			next;
 		}
 
 		# global stuff is considered part of the makefile
 		if ($section eq "GLOBAL") {
 			$makefile .= $line;
+			$infragment = 1;
 			next;
 		}
+
 		
 		# Assignment
-		if (not $waiting and 
-			($line =~ /^([a-zA-Z0-9_]+)([\t ]*)=(.*)$/)) {
-			my $key = $1;
-			my $val = $3;
-
-			# Continuing lines
-			if ($val =~ /^(.*)\\$/) {
-				$val = $1;
-				($val.= " $1") while(($line = <CONFIG_MK>) =~ /^[\t ]*(.*)\\$/);
-				$val .= $line;
-			}
-
-			$result->{$section}{$key}{KEY} = $key;
-			$result->{$section}{$key}{VAL} = $val;
+		if ($line =~ /^([a-zA-Z0-9_]+)[\t ]*=(.*)$/) {
+			$result->{$section}{$1}{VAL} = $2;
+			$result->{$section}{$1}{KEY} = $1;
 		
 			next;
 		}
 
 		die("$filename:$linenum: Bad line while parsing $filename");
 	}
-
-	close(CONFIG_MK);
-
-	return ($result,$makefile);
-}
-
-sub import_file($$)
-{
-	my ($input, $filename) = @_;
-
-	my ($result, $makefile) = _parse_config_mk($filename);
 
 	foreach my $section (keys %{$result}) {
 		my ($type, $name) = split(/::/, $section, 2);
@@ -143,25 +133,8 @@ sub import_file($$)
 			}
 		}
 	}
-	
+
 	return $makefile;
 }
 
-sub import_files($$)
-{
-	my ($input, $config_list) = @_;
-
-	open(IN, $config_list) or die("Can't open $config_list: $!");
-	my @mkfiles = grep{!/^#/} <IN>;
-	close(IN);
-
-	$| = 1;
-	my $makefragment = "";
-
-	foreach (@mkfiles) {
-		s/\n//g;
-		$makefragment.= import_file($input, $_);
-	}
-	return $makefragment;
-}
 1;

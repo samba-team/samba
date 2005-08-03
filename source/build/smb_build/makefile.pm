@@ -18,6 +18,7 @@ sub _prepare_path_vars()
 	$output = << '__EOD__';
 prefix = @prefix@
 exec_prefix = @exec_prefix@
+selftest_prefix = @selftest_prefix@
 VPATH = @srcdir@
 srcdir = @srcdir@
 builddir = @builddir@
@@ -88,6 +89,8 @@ XSLTPROC=$config{XSLTPROC}
 LEX=$config{LEX}
 YACC=$config{YACC}
 
+DEFAULT_TEST_TARGET=$config{DEFAULT_TEST_TARGET}
+
 __EOD__
 }
 
@@ -102,7 +105,6 @@ __EOD__
 sub _prepare_SUFFIXES()
 {
 	return << '__EOD__';
-.SUFFIXES:
 .SUFFIXES: .c .et .y .l .d .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml
 
 __EOD__
@@ -134,20 +136,20 @@ pch_clean:
 
 basics: idl proto_exists HEIMDAL_EXTERNAL
 
-test: @DEFAULT_TEST_TARGET@
+test: $(DEFAULT_TEST_TARGET)
 
 test-swrap: all
-	./script/tests/selftest.sh @selftest_prefix@/st all SOCKET_WRAPPER
+	./script/tests/selftest.sh ${selftest_prefix}/st all SOCKET_WRAPPER
 
 test-noswrap: all
-	./script/tests/selftest.sh @selftest_prefix@/st all
+	./script/tests/selftest.sh ${selftest_prefix}/st all
 
 quicktest: all
-	./script/tests/selftest.sh @selftest_prefix@/st quick SOCKET_WRAPPER
+	./script/tests/selftest.sh ${selftest_prefix}/st quick SOCKET_WRAPPER
 
 valgrindtest: all
 	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
-	./script/tests/selftest.sh @selftest_prefix@/st quick SOCKET_WRAPPER
+	./script/tests/selftest.sh ${selftest_prefix}/st quick SOCKET_WRAPPER
 
 __EOD__
 }
@@ -174,7 +176,7 @@ sub _prepare_binaries($)
 		next unless defined $_->{OUTPUT_TYPE};
 		next unless ($_->{OUTPUT_TYPE} eq "BINARY");
 
-		push (@sbn_list, $_->{OUTPUT}) if ($_->{INSTALLDIR} eq "SBINDIR");
+		push(@sbn_list, $_->{OUTPUT}) if ($_->{INSTALLDIR} eq "SBINDIR");
 		push(@bbn_list, $_->{OUTPUT}) if ($_->{INSTALLDIR} eq "BINDIR");
 	}
 
@@ -183,9 +185,6 @@ sub _prepare_binaries($)
 	return << "__EOD__";
 BIN_PROGS = $bbn
 SBIN_PROGS = $sbn
-
-binaries: \$(BIN_PROGS) \$(SBIN_PROGS)
-
 __EOD__
 }
 
@@ -202,8 +201,6 @@ sub _prepare_manpages($)
 	my $mp = array2oneperline(\@mp_list);
 	return << "__EOD__";
 MANPAGES = $mp
-
-manpages: \$(MANPAGES)
 
 __EOD__
 }
@@ -416,11 +413,9 @@ sub _prepare_mergedobj_rule($)
 
 	return "" unless $ctx->{TARGET};
 
-	my $output = "";
-
 	my $tmpdepend = array2oneperline($ctx->{DEPEND_LIST});
 
-	$output .= "$ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST = $tmpdepend\n";
+	my $output = "$ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST = $tmpdepend\n";
 
 	$output .= "$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJS)\n";
 
@@ -646,27 +641,6 @@ sub _prepare_target_settings($)
 sub _prepare_install_rules()
 {
 	return << '__EOD__';
-
-showlayout: 
-	@echo "Samba will be installed into:"
-	@echo "  basedir: $(BASEDIR)"
-	@echo "  bindir:  $(BINDIR)"
-	@echo "  sbindir: $(SBINDIR)"
-	@echo "  libdir:  $(LIBDIR)"
-	@echo "  vardir:  $(VARDIR)"
-	@echo "  privatedir:  $(PRIVATEDIR)"
-	@echo "  piddir:   $(PIDDIR)"
-	@echo "  lockdir:  $(LOCKDIR)"
-	@echo "  swatdir:  $(SWATDIR)"
-	@echo "  mandir:   $(MANDIR)"
-
-showflags:
-	@echo "Samba will be compiled with flags:"
-	@echo "  CFLAGS = $(CFLAGS)"
-	@echo "  LD_FLAGS = $(LD_FLAGS)"
-	@echo "  STLD_FLAGS = $(STLD_FLAGS)"
-	@echo "  SHLD_FLAGS = $(SHLD_FLAGS)"
-
 install: showlayout installbin installdat installswat
 
 # DESTDIR is used here to prevent packagers wasting their time
@@ -701,29 +675,6 @@ uninstallbin:
 
 uninstallman:
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(MANPAGES)
-
-# Swig extensions
-swig: scripting/swig/_tdb.so scripting/swig/_dcerpc.so
-
-scripting/swig/tdb_wrap.c: scripting/swig/tdb.i
-	swig -python scripting/swig/tdb.i
-
-scripting/swig/_tdb.so: scripting/swig/tdb_wrap.o $(LIBRARY_swig_tdb_DEPEND_LIST)
-	$(SHLD) $(SHLD_FLAGS) -o scripting/swig/_tdb.so scripting/swig/tdb_wrap.o \
-		$(LIBRARY_swig_tdb_SHARED_LINK_LIST) $(LIBRARY_swig_tdb_SHARED_LINK_FLAGS)
-
-SWIG_INCLUDES = librpc/gen_ndr/samr.i librpc/gen_ndr/lsa.i librpc/gen_ndr/spoolss.i
-
-scripting/swig/dcerpc_wrap.c: scripting/swig/dcerpc.i scripting/swig/samba.i scripting/swig/status_codes.i $(SWIG_INCLUDES)
-	swig -python scripting/swig/dcerpc.i
-
-scripting/swig/_dcerpc.so: scripting/swig/dcerpc_wrap.o $(LIBRARY_swig_dcerpc_DEPEND_LIST)
-	$(SHLD) $(SHLD_FLAGS) -o scripting/swig/_dcerpc.so scripting/swig/dcerpc_wrap.o $(LIBRARY_swig_dcerpc_SHARED_LINK_LIST) $(LIBRARY_swig_dcerpc_SHARED_LINK_FLAGS)
-
-swig_clean:
-	-rm -f scripting/swig/_tdb.so scripting/swig/tdb.pyc \
-		scripting/swig/tdb.py scripting/swig/tdb_wrap.c \
-		scripting/swig/tdb_wrap.o
 
 everything: all
 

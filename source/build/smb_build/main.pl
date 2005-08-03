@@ -18,7 +18,7 @@ use strict;
 
 my $INPUT = {};
 
-my $mkfile = config_mk::import_files($INPUT, "config.list");
+my $mkfile = config_mk::run_config_mk($INPUT, "Makefile.core");
 my $DEPEND = smb_build::input::check($INPUT, \%config::enabled);
 my $OUTPUT = output::create_output($DEPEND);
 makefile::create_makefile_in($OUTPUT, $mkfile, "Makefile.in");
