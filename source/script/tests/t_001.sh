@@ -1,5 +1,7 @@
 #!/bin/sh
 
+. $SCRIPTDIR/functions
+
 cat >$CONFFILE<<EOF
 [global]
 	netbios name = LOCALHOST
