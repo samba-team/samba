@@ -3,6 +3,7 @@
    Test suite for libnet calls.
 
    Copyright (C) Gregory LEOCADIE <gleocadie@idealx.com> 2005
+   Copyright (C) Rafal Szczesniak  2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
