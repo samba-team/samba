@@ -75,7 +75,7 @@ static int pvfs_dir_handle_destructor(void *p)
 			DEBUG(0,("Warning: xattr rmdir hook failed for '%s' - %s\n",
 				 h->name->full_name, nt_errstr(status)));
 		}
-		if (rmdir(h->name->full_name) != 0) {
+		if (rmdir(h->name->full_name) != 0 && errno != ENOTEMPTY) {
 			DEBUG(0,("pvfs_close: failed to rmdir '%s' - %s\n", 
 				 h->name->full_name, strerror(errno)));
 		}
