@@ -841,6 +841,11 @@ static BOOL delay_for_oplocks(files_struct *fsp, BOOL second_try)
 		fsp->oplock_type = LEVEL_II_OPLOCK;
 	}
 
+	if ((fsp->oplock_type == NO_OPLOCK) && have_level2) {
+		/* Store a level2 oplock, but don't tell the client */
+		fsp->oplock_type = FAKE_LEVEL_II_OPLOCK;
+	}
+
 	if (delay_it) {
 		DEBUG(10, ("Sending break request to PID %d\n",
 			   (int)exclusive->pid));
@@ -851,11 +856,6 @@ static BOOL delay_for_oplocks(files_struct *fsp, BOOL second_try)
 			DEBUG(3, ("Could not send oplock break message\n"));
 		}
 		file_free(fsp);
-	}
-
-	if ((fsp->oplock_type == NO_OPLOCK) && have_level2) {
-		/* Store a level2 oplock, but don't tell the client */
-		fsp->oplock_type = FAKE_LEVEL_II_OPLOCK;
 	}
 
 	SAFE_FREE(share_modes);
