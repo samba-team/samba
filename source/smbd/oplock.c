@@ -1268,113 +1268,6 @@ static void process_open_retry_message(int msg_type, pid_t src,
 	schedule_deferred_open_smb_message(msg->mid);
 }
 
-static void process_inform_level2_message(int msg_type, pid_t src,
-					  void *buf, size_t len)
-{
-	struct inform_level2_message *msg = buf;
-	files_struct *fsp;
-
-	if (buf == NULL) {
-		DEBUG(0, ("Got NULL buffer\n"));
-		return;
-	}
-
-	if (len != sizeof(*msg)) {
-		DEBUG(0, ("Got invalid msg len %d\n", len));
-		return;
-	}
-
-	DEBUG(10, ("Got inform level2 message pid %d: %d/%d/%d mid %d\n",
-		   (int)src, (int)msg->dev, (int)msg->inode,
-		   (int)msg->target_file_id, (int)msg->mid));
-
-	fsp = file_find_dif(msg->dev, msg->inode, msg->target_file_id);
-
-	if (fsp == NULL) {
-		DEBUG(0, ("Got inform level2 message without file around\n"));
-		return;
-	}
-
-	if (fsp->oplock_type != NO_OPLOCK) {
-		DEBUG(0, ("Got inform level2 from pid %d for a file "
-			  "(%d/%d/%d) without an oplock\n", (int)src,
-			  (int)msg->dev, (int)msg->inode,
-			  (int)msg->target_file_id));
-	}
-
-	if (fsp->level2_around) {
-		DEBUG(0, ("Got inform level2 from pid %d for a file "
-			  "(%d/%d/%d), I already know\n", (int)src,
-			  (int)msg->dev, (int)msg->inode,
-			  (int)msg->target_file_id));
-	}
-
-	fsp->level2_around = True;
-
-	message_send_pid(src, MSG_SMB_INFORM_LEVEL2_REPLY,
-			 msg, len, True);
-}
-
-static void process_inform_level2_reply(int msg_type, pid_t src,
-					void *buf, size_t len)
-{
-	struct inform_level2_message *msg = buf;
-	files_struct *fsp;
-
-	if (buf == NULL) {
-		DEBUG(0, ("Got NULL buffer\n"));
-		return;
-	}
-
-	if (len != sizeof(*msg)) {
-		DEBUG(0, ("Got invalid msg len %d\n", len));
-		return;
-	}
-
-	DEBUG(10, ("Got inform level2 reply pid %d: %d/%d/%d mid %d\n",
-		   (int)src, (int)msg->dev, (int)msg->inode,
-		   (int)msg->source_file_id, (int)msg->mid));
-
-	fsp = file_find_dif(msg->dev, msg->inode, msg->source_file_id);
-
-	if (fsp == NULL) {
-		DEBUG(0, ("Got inform level2 reply without file around\n"));
-		return;
-	}
-
-	if (fsp->oplock_type != WAITING_FOR_BREAK) {
-		DEBUG(0, ("Got inform level2 reply from pid %d for a file "
-			  "(%d/%d/%d), fsp->oplock_type=%d\n", (int)src,
-			  (int)msg->dev, (int)msg->inode,
-			  (int)msg->source_file_id, fsp->oplock_type));
-	}
-
-	if (fsp->num_waiting_for_level2_inform <= 0) {
-		DEBUG(0, ("Not waiting for level2 informs\n"));
-		return;
-	}
-
-	fsp->num_waiting_for_level2_inform -= 1;
-
-	if (fsp->num_waiting_for_level2_inform == 0) {
-		struct share_mode_lock *lck =
-			get_share_mode_lock(NULL, msg->dev, msg->inode);
-		BOOL dummy;
-
-		if (lck == NULL) {
-			DEBUG(0, ("Could not lock share mode\n"));
-			return;
-		}
-
-		del_share_mode(fsp, NULL, &dummy);
-		talloc_free(lck);
-
-		fsp->is_stat = True;
-		close_file(fsp, False);
-		schedule_deferred_open_smb_message(msg->mid);
-	}
-}
-
 /****************************************************************************
  Send an oplock break message to another smbd process. If the oplock is held 
  by the local smbd then call the oplock break function directly.
@@ -1643,7 +1536,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 	 * the shared memory area whilst doing this.
 	 */
 
-	if (!fsp->level2_around)
+	if (!LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
 		return;
 
 	if (lock_share_entry_fsp(fsp) == False) {
@@ -1671,8 +1564,10 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 		DEBUG(10,("release_level_2_oplocks_on_change: share_entry[%i]->op_type == %d\n",
 				i, share_entry->op_type ));
 
-		if (share_entry->op_type == NO_OPLOCK)
+		if ((share_entry->op_type == NO_OPLOCK) ||
+		    (share_entry->op_type == FAKE_LEVEL_II_OPLOCK)) {
 			continue;
+		}
 
 		/* Paranoia .... */
 		if (EXCLUSIVE_OPLOCK_TYPE(share_entry->op_type)) {
@@ -1717,9 +1612,8 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 		}
 	}
 
-	fsp->level2_around = False;
-
 	SAFE_FREE(share_list);
+	remove_all_share_oplocks(fsp);
 	unlock_share_entry_fsp(fsp);
 }
 
@@ -1786,10 +1680,6 @@ BOOL init_oplocks(void)
 			 process_oplock_break_response);
 	message_register(MSG_SMB_KERNEL_BREAK,
 			 process_kernel_oplock_break);
-	message_register(MSG_SMB_INFORM_LEVEL2,
-			 process_inform_level2_message);
-	message_register(MSG_SMB_INFORM_LEVEL2_REPLY,
-			 process_inform_level2_reply);
 	message_register(MSG_SMB_OPEN_RETRY,
 			 process_open_retry_message);
 

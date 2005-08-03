@@ -781,32 +781,27 @@ static BOOL is_delete_request(files_struct *fsp) {
 /*
  * 1) No files open at all: Grant whatever the client wants.
  *
- * 2) Someone already sent an oplock break request: Delay the call, notify that
- *    we're waiting for a reply.
- *
- * 3) Exclusive (or batch) oplock around: If the requested access is a delete
+ * 2) Exclusive (or batch) oplock around: If the requested access is a delete
  *    request, break if the oplock around is a batch oplock. If it's another
  *    requested access type, break.
  * 
- * 4) Only level2 around: Grant level2 and do nothing else.
- *
- * 5) Some files with no oplocks around: Inform them and grant level2.
+ * 3) Only level2 around: Grant level2 and do nothing else.
  */
 
 static BOOL delay_for_oplocks(files_struct *fsp, BOOL second_try)
 {
 	int i, num_share_modes, num_level2;
 	share_mode_entry *share_modes;
-	BOOL delete_on_close, broke_oplock;
+	struct share_mode_entry *exclusive = NULL;
+	BOOL delete_on_close;
 	BOOL delay_it = False;
-	struct inform_level2_message level2_message;
+	BOOL have_level2 = False;
 
 	if (is_stat_open(fsp->access_mask)) {
 		fsp->oplock_type = NO_OPLOCK;
 		return False;
 	}
 
-	broke_oplock = False;
 	num_level2 = 0;
 
 	num_share_modes = get_share_modes(fsp->dev, fsp->inode, &share_modes,
@@ -815,87 +810,54 @@ static BOOL delay_for_oplocks(files_struct *fsp, BOOL second_try)
 	if (num_share_modes == 0) {
 		/* No files open at all: Directly grant whatever the client
 		 * wants. */
-		delay_it = False;
-		goto done;
+
+		if (fsp->oplock_type == NO_OPLOCK) {
+			/* Store a level2 oplock, but don't tell the client */
+			fsp->oplock_type = FAKE_LEVEL_II_OPLOCK;
+		}
+		return False;
 	}
 
 	for (i=0; i<num_share_modes; i++) {
-		uint16 op_type = share_modes[i].op_type;
 
-		if (EXCLUSIVE_OPLOCK_TYPE(op_type)) {
-			if (is_delete_request(fsp)) {
-				delay_it = BATCH_OPLOCK_TYPE(op_type);
-			} else {
-				delay_it = True;
-			}
-			if (delay_it) {
-				DEBUG(10, ("Sending break request to PID %d\n",
-					   (int)share_modes[i].pid));
-				SMB_ASSERT(!second_try);
-				share_modes[i].op_port = get_current_mid();
-				if (!message_send_pid(share_modes[i].pid,
-						      MSG_SMB_BREAK_REQUEST,
-						      &share_modes[i],
-						      sizeof(share_modes[i]),
-						      True)) {
-					DEBUG(3, ("Could not send oplock "
-						  "break message\n"));
-				}
-				file_free(fsp);
-			}
-			goto done;
+		if (EXCLUSIVE_OPLOCK_TYPE(share_modes[i].op_type)) {
+			SMB_ASSERT(exclusive == NULL);			
+			exclusive = &share_modes[i];
 		}
 
-		if (LEVEL_II_OPLOCK_TYPE(op_type)) {
-			num_level2 += 1;
+		if (share_modes[i].op_type == LEVEL_II_OPLOCK) {
+			have_level2 = True;
 		}
 	}
 
-	/* No exclusive oplock around */
-
-	if (fsp->oplock_type == NO_OPLOCK) {
-		/* We're lining up in the line of 'no oplock opens' */
-		fsp->level2_around = (num_level2 != 0);
-		delay_it = False;
-		goto done;
+	if (exclusive != NULL) { /* Found an exclusive oplock */
+		SMB_ASSERT(!have_level2);
+		delay_it = is_delete_request(fsp) ?
+			BATCH_OPLOCK_TYPE(exclusive->op_type) :	True;
 	}
 
-	if ((num_level2 != 0) || (second_try)) {
-		/* Either no no-oplocks around, or all no-oplocks have already
-		 * been informed about an existing level2. We can only grant
-		 * level2 however. */
+	if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
+		/* We can at most grant level2 */
 		fsp->oplock_type = LEVEL_II_OPLOCK;
-		fsp->level2_around = True;
-		delay_it = False;
-		goto done;
 	}
 
-	/* We have open files, but none has an oplock right now. We want one,
-	 * so we need to inform all processes that we're about to grant
-	 * level2 */
-
-	level2_message.dev = fsp->dev;
-	level2_message.inode = fsp->inode;
-	level2_message.mid = get_current_mid();
-	level2_message.source_file_id = fsp->file_id;
-
-	for (i=0; i<num_share_modes; i++) {
-		DEBUG(10, ("Sending level2 info request to PID %d\n",
-			   (int)share_modes[i].pid));
-		level2_message.target_file_id = share_modes[i].share_file_id;
-		if (!message_send_pid(share_modes[i].pid,
-				      MSG_SMB_INFORM_LEVEL2,
-				      &level2_message, sizeof(level2_message),
-				      True)) {
-			DEBUG(3, ("Could not send level2 information to pid "
-				  "%d\n", (int)share_modes[i].pid));
+	if (delay_it) {
+		DEBUG(10, ("Sending break request to PID %d\n",
+			   (int)exclusive->pid));
+		SMB_ASSERT(!second_try);
+		exclusive->op_port = get_current_mid();
+		if (!message_send_pid(exclusive->pid, MSG_SMB_BREAK_REQUEST,
+				      exclusive, sizeof(*exclusive), True)) {
+			DEBUG(3, ("Could not send oplock break message\n"));
 		}
+		file_free(fsp);
 	}
-	fsp->num_waiting_for_level2_inform = num_share_modes;
-	fsp->oplock_type = WAITING_FOR_BREAK;
-	delay_it = True;
 
- done:
+	if ((fsp->oplock_type == NO_OPLOCK) && have_level2) {
+		/* Store a level2 oplock, but don't tell the client */
+		fsp->oplock_type = FAKE_LEVEL_II_OPLOCK;
+	}
+
 	SAFE_FREE(share_modes);
 	return delay_it;
 }
@@ -1890,7 +1852,8 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	 */
 
 	set_share_mode(fsp, 0, fsp->oplock_type);
-	if (fsp->oplock_type != NO_OPLOCK) {
+	if ((fsp->oplock_type != NO_OPLOCK) &&
+	    (fsp->oplock_type != FAKE_LEVEL_II_OPLOCK)) {
 		set_file_oplock(fsp, fsp->oplock_type);
 	}
 

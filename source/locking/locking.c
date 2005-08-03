@@ -90,7 +90,8 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
 		if  (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && (lock_type == READ_LOCK || lock_type == WRITE_LOCK)) {
 			DEBUG(10,("is_locked: optimisation - exclusive oplock on file %s\n", fsp->fsp_name ));
 			ret = 0;
-		} else if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type) && (lock_type == READ_LOCK)) {
+		} else if ((fsp->oplock_type == LEVEL_II_OPLOCK) &&
+			   (lock_type == READ_LOCK)) {
 			DEBUG(10,("is_locked: optimisation - level II oplock on file %s\n", fsp->fsp_name ));
 			ret = 0;
 		} else {
@@ -855,10 +856,12 @@ static BOOL mod_share_mode( SMB_DEV_T dev, SMB_INO_T inode, share_mode_entry *en
 
 	/* find any with our pid and call the supplied function */
 	for (i=0;i<data->u.s.num_share_mode_entries;i++) {
-		if (share_modes_identical(entry, &shares[i])) {
-			mod_fn(&shares[i], dev, inode, param);
-			need_store=True;
+		if ((entry != NULL) &&
+		    !share_modes_identical(entry, &shares[i])) {
+			continue;
 		}
+		mod_fn(&shares[i], dev, inode, param);
+		need_store=True;
 	}
 
 	/* if the mod fn was called then store it back */
@@ -930,6 +933,16 @@ BOOL downgrade_share_oplock(files_struct *fsp)
 	 */
 	fill_share_mode((char *)&entry, fsp, 0, 0);
 	return mod_share_mode(fsp->dev, fsp->inode, &entry, downgrade_share_oplock_fn, NULL);
+}
+
+/*******************************************************************
+ We've just told all the smbd's that our level2 or fake level2 has been
+ written to.
+********************************************************************/
+BOOL remove_all_share_oplocks(files_struct *fsp)
+{
+	return mod_share_mode(fsp->dev, fsp->inode, NULL,
+			      remove_share_oplock_fn, NULL);
 }
 
 /*******************************************************************

@@ -444,8 +444,6 @@ typedef struct files_struct {
 	int oplock_type;
 	int sent_oplock_break;
 	struct timed_event *oplock_timeout;
-	BOOL level2_around;
-	int num_waiting_for_level2_inform;
 
 	struct share_mode_entry *pending_break_messages;
 	int num_pending_break_messages;
@@ -1479,11 +1477,13 @@ extern int chain_size;
 #define BATCH_OPLOCK 2
 #define LEVEL_II_OPLOCK 4
 #define INTERNAL_OPEN_ONLY 8
-#define WAITING_FOR_BREAK 16
+#define FAKE_LEVEL_II_OPLOCK 16	/* Client requested no_oplock, but we have to
+				 * inform potential level2 holders on
+				 * write. */
 
 #define EXCLUSIVE_OPLOCK_TYPE(lck) ((lck) & ((unsigned int)EXCLUSIVE_OPLOCK|(unsigned int)BATCH_OPLOCK))
 #define BATCH_OPLOCK_TYPE(lck) ((lck) & (unsigned int)BATCH_OPLOCK)
-#define LEVEL_II_OPLOCK_TYPE(lck) ((lck) & (unsigned int)LEVEL_II_OPLOCK)
+#define LEVEL_II_OPLOCK_TYPE(lck) ((lck) & ((unsigned int)LEVEL_II_OPLOCK|(unsigned int)FAKE_LEVEL_II_OPLOCK))
 
 struct inform_level2_message {
 	SMB_DEV_T dev;

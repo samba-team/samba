@@ -862,7 +862,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n",
 		} else {
 			SCVAL(p,0, EXCLUSIVE_OPLOCK_RETURN);
 		}
-	} else if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type)) {
+	} else if (fsp->oplock_type == LEVEL_II_OPLOCK) {
 		SCVAL(p,0, LEVEL_II_OPLOCK_RETURN);
 	} else {
 		SCVAL(p,0,NO_OPLOCK_RETURN);
