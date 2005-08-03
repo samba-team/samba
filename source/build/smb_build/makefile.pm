@@ -89,6 +89,8 @@ XSLTPROC=$config{XSLTPROC}
 LEX=$config{LEX}
 YACC=$config{YACC}
 
+CPP=$config{CPP}
+
 DEFAULT_TEST_TARGET=$config{DEFAULT_TEST_TARGET}
 
 __EOD__
