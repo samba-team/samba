@@ -360,17 +360,8 @@ static NTSTATUS lsa_OpenPolicy(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 static NTSTATUS lsa_info_AccountDomain(struct lsa_policy_state *state, TALLOC_CTX *mem_ctx,
 				       struct lsa_DomainInfo *info)
 {
-	const char * const attrs[] = { "objectSid", "name", NULL};
-	int ret;
-	struct ldb_message **res;
-
-	ret = gendb_search_dn(state->sam_ldb, mem_ctx, state->domain_dn, &res, attrs);
-	if (ret != 1) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	info->name.string = samdb_result_string(res[0], "name", NULL);
-	info->sid         = samdb_result_dom_sid(mem_ctx, res[0], "objectSid");
+	info->name.string = state->domain_name;
+	info->sid         = state->domain_sid;
 
 	return NT_STATUS_OK;
 }
@@ -390,11 +381,11 @@ static NTSTATUS lsa_info_DNS(struct lsa_policy_state *state, TALLOC_CTX *mem_ctx
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	info->name.string       = samdb_result_string(res[0],           "name", NULL);
+	info->name.string = state->domain_name;
+	info->sid         = state->domain_sid;
 	info->dns_domain.string = samdb_result_string(res[0],           "dnsDomain", NULL);
 	info->dns_forest.string = samdb_result_string(res[0],           "dnsDomain", NULL);
 	info->domain_guid       = samdb_result_guid(res[0],             "objectGUID");
-	info->sid               = samdb_result_dom_sid(mem_ctx, res[0], "objectSid");
 
 	return NT_STATUS_OK;
 }
