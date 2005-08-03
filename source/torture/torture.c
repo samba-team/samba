@@ -2346,6 +2346,7 @@ static struct {
 	{"NET-API-CREATEUSER", torture_createuser, 0},
 	{"NET-API-RPCCONNECT", torture_rpc_connect, 0},
 	{"NET-API-LISTSHARES", torture_listshares, 0},
+	{"NET-API-DELSHARE", torture_delshare, 0},
 
 	{NULL, NULL, 0}};
 
