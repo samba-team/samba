@@ -220,7 +220,8 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 
 	printf("Testing with directory and delete_on_close 0\n");
-	fnum = create_directory_handle(cli->tree, dname);
+	status = create_directory_handle(cli->tree, dname, &fnum);
+	CHECK_STATUS(status, NT_STATUS_OK);
 
 	sfinfo.disposition_info.level = RAW_SFILEINFO_DISPOSITION_INFORMATION;
 	sfinfo.disposition_info.file.fnum = fnum;
@@ -234,7 +235,9 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("Testing with directory delete_on_close 1\n");
-	fnum = create_directory_handle(cli->tree, dname);
+	status = create_directory_handle(cli->tree, dname, &fnum);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	
 	sfinfo.disposition_info.file.fnum = fnum;
 	sfinfo.disposition_info.in.delete_on_close = 1;
 	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
@@ -247,7 +250,9 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 
 	printf("Testing with non-empty directory delete_on_close\n");
-	fnum = create_directory_handle(cli->tree, dname);
+	status = create_directory_handle(cli->tree, dname, &fnum);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	
 	fnum2 = create_complex_file(cli, mem_ctx, inside);
 
 	sfinfo.disposition_info.file.fnum = fnum;
@@ -274,7 +279,9 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
 	printf("Testing open dir with delete_on_close\n");
-	fnum = create_directory_handle(cli->tree, dname);
+	status = create_directory_handle(cli->tree, dname, &fnum);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	
 	smbcli_close(cli->tree, fnum);
 	fnum2 = create_complex_file(cli, mem_ctx, inside);
 	smbcli_close(cli->tree, fnum2);
@@ -301,9 +308,13 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_rmdir(cli->tree, &dio);
 	CHECK_STATUS(status, NT_STATUS_DIRECTORY_NOT_EMPTY);
 
+	smbcli_deltree(cli->tree, dname);
 
 	printf("Testing double open dir with second delete_on_close\n");
-	fnum = create_directory_handle(cli->tree, dname);
+	status = create_directory_handle(cli->tree, dname, &fnum);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smbcli_close(cli->tree, fnum);
+	
 	fnum2 = create_complex_file(cli, mem_ctx, inside);
 	smbcli_close(cli->tree, fnum2);
 
@@ -325,14 +336,16 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	fnum2 = op.ntcreatex.out.fnum;
 
 	smbcli_close(cli->tree, fnum2);
-	smbcli_close(cli->tree, fnum);
 
 	status = smb_raw_rmdir(cli->tree, &dio);
 	CHECK_STATUS(status, NT_STATUS_DIRECTORY_NOT_EMPTY);
 
+	smbcli_deltree(cli->tree, dname);
 
 	printf("Testing pre-existing open dir with second delete_on_close\n");
-	fnum = create_directory_handle(cli->tree, dname);
+	status = create_directory_handle(cli->tree, dname, &fnum);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	
 	smbcli_close(cli->tree, fnum);
 
 	fnum = create_complex_file(cli, mem_ctx, inside);
