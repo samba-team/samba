@@ -47,26 +47,27 @@ BOOL copy_tdb_uint32_value_to_new_tdb(TDB_CONTEXT *new_tdb, TDB_CONTEXT *tdb, ch
 	if (!tdb || !new_tdb || !vname ) {
 		return False;
 	}
+	
 	DEBUG(10,("copy_tdb_uint32_value_to_new_tdb: Copying item %s, default if not found %x\n",vname,dft));
 	pstrcpy(u_vname, vname);
+	
 	/* NORMALIZE */
+	
 	strupper_m(u_vname);
     
-	tdb_lock_bystring(tdb, u_vname, 0);
-	rval= tdb_fetch_uint32(tdb, u_vname ,&data_value);
+	rval = tdb_fetch_uint32(tdb, u_vname, &data_value);
+	
 	DEBUG(10,("copy_tdb_uint32_value_to_new_tdb: rval is %x\n",rval));
     
-	if (!rval) {
+	if ( !rval ) {
 		DEBUG(10,("copy_tdb_uint32_value_to_new_tdb: Couldn't read [%s] value default will be %x\n",u_vname, dft));
 		data_value = dft;
 	}
-	tdb_unlock_bystring(tdb, u_vname);
     
-	tdb_lock_bystring(new_tdb, u_vname, 0);
 	DEBUG(10,("copy_tdb_uint32_value_to_new_tdb: Copying item %s, value is %x\n",u_vname, data_value));
     
-	tdb_store_uint32(new_tdb, u_vname,data_value);
-	tdb_unlock_bystring(new_tdb, u_vname);
+	tdb_store_uint32(new_tdb, u_vname, data_value);
+	
 	return True;
 }
  
@@ -203,7 +204,7 @@ BOOL read_evtlog_uint32_reg_value(char *evtlogname, char *vname, uint32 *davalue
 
 ****************************************************************************/
 
-static BOOL cleanup_eventlog_parameters(TDB_CONTEXT *levtlog_tdb)
+static BOOL cleanup_eventlog_parameters( TDB_CONTEXT *levtlog_tdb )
 {
 	TDB_CONTEXT *new_tdb;
 	const char *vstring = "INFO/version";
@@ -211,52 +212,52 @@ static BOOL cleanup_eventlog_parameters(TDB_CONTEXT *levtlog_tdb)
 	const char        **evtlog_list;
 	pstring  old_tdbfile,new_tdbfile;
     
-	pstrcpy(new_tdbfile, lock_path("eventlog_params.tdb.new")); 
-	pstrcpy(old_tdbfile, lock_path("eventlog_params.tdb")); 
+	pstrcpy( new_tdbfile, lock_path("eventlog_params.tdb.new") ); 
+	pstrcpy( old_tdbfile, lock_path("eventlog_params.tdb") ); 
     
-	unlink(new_tdbfile); /* remove any existing file */
+	unlink( new_tdbfile ); /* remove any existing file */
     
-	new_tdb = tdb_open_log(new_tdbfile, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
-	if (!new_tdb) {
+	if ( !(new_tdb = tdb_open_log(new_tdbfile, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600)) ) {
 		DEBUG(0,("Failed to create new eventlog parameters db\n"));
 		return False;
 	}
+	
 	/* write initial information out */
-	tdb_lock_bystring(new_tdb, vstring, 0);
+	
 	tdb_store_uint32(new_tdb, vstring, EVENTLOG_VERSION_V1);
-	tdb_unlock_bystring(new_tdb, vstring);
     
 	/* for each eventlog that we have, find info related to it and copy to the new DB */
+	
 	evtlog_list = lp_eventlog_list();
 	while (evtlog_list && *evtlog_list) {
+	
 		DEBUG(10,("cleanup_eventlog_parameters: Cleaning up =>[%s]\n",*evtlog_list));	
 	
 		fstrcpy(evtlogname,*evtlog_list);
 		fstrcat(evtlogname,"/RETENTION");
 		copy_tdb_uint32_value_to_new_tdb(new_tdb,levtlog_tdb,evtlogname,0x93A80);
+		
 		fstrcpy(evtlogname,*evtlog_list);
 		fstrcat(evtlogname,"/MAXSIZE");
 		copy_tdb_uint32_value_to_new_tdb(new_tdb,levtlog_tdb,evtlogname,0x80000);
+		
 		evtlog_list++;
 	}  
     
 	DEBUG(10,("cleanup_eventlog_parameters: removing current TDB\n"));
     
-	/* close current TDB */
-	tdb_unlockall(evtlog_tdb);
 	tdb_close(evtlog_tdb);
-    
-	/* close current new_tdb */
-	tdb_unlockall(new_tdb);
 	tdb_close(new_tdb);
     
 	/* unlink current TDB */
-	if (0 != unlink(old_tdbfile)) {
+	
+	if ( unlink(old_tdbfile) != 0 ) {
 		DEBUG(1,("cleanup_eventlog_parameters: unable to unlink old file %s %s\n",old_tdbfile,strerror(errno)));
 	}
     
 	/* rename new_tdb  */
-	if (0 != rename(new_tdbfile,old_tdbfile)) {
+	
+	if ( rename(new_tdbfile,old_tdbfile) != 0 ) {
 		DEBUG(1,("cleanup_eventlog_parameters: Can't rename new to old : %s\n",strerror(errno)));
 	}
 	DEBUG(10,("cleanup_eventlog_parameters: Renamed %s to %s : \n",new_tdbfile,old_tdbfile));
@@ -296,34 +297,41 @@ void eventlog_refresh_external_parameters(void)
  Open the eventlog parameter tdb. This code a clone of init_group_mapping.
 ****************************************************************************/
 
-BOOL init_eventlog_parameters(void)
+BOOL init_eventlog_parameters( void )
 {
 	const char *vstring = "INFO/version";
-	uint32 vers_id;
+	int vers_id;
 	
-	if (evtlog_tdb) {
+	if ( evtlog_tdb ) {
 		return True;
 	}
 
 	evtlog_tdb = tdb_open_log(lock_path("eventlog_params.tdb"), 0, TDB_DEFAULT, O_RDWR, 0600);
-	if (!evtlog_tdb) {
-		DEBUG(0,("Failed to open eventlog parameters db\n"));
+	
+	if ( !evtlog_tdb ) {
+	
 		evtlog_tdb = tdb_open_log(lock_path("eventlog_params.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
-		if (!evtlog_tdb) {
+		
+		if ( !evtlog_tdb ) {
+			DEBUG(0,("Failed to open or create eventlog_params.tdb\n"));
 			return False;
 		}
+			
 		DEBUG(0,("Created new eventlog parameters db\n"));
 	}
-	if ((-1 == tdb_fetch_uint32(evtlog_tdb, vstring,&vers_id)) || (vers_id != EVENTLOG_VERSION_V1)) {
+	
+	vers_id = tdb_fetch_int32( evtlog_tdb, vstring );
+	
+	if ( vers_id != EVENTLOG_VERSION_V1 ) {
 		/* wrong version of DB, or db was just created */
 		tdb_traverse(evtlog_tdb, tdb_traverse_delete_fn, NULL);
 		tdb_store_uint32(evtlog_tdb, vstring, EVENTLOG_VERSION_V1);
 	}
-	tdb_unlock_bystring(evtlog_tdb, vstring);
 
 	DEBUG(3,("Cleaning up eventlog parameters db\n"));
 
-	cleanup_eventlog_parameters(evtlog_tdb);
+	cleanup_eventlog_parameters( evtlog_tdb );
+	
 	return True;
 }
 
