@@ -638,7 +638,6 @@ typedef struct {
 	struct timeval time;
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
-	uint16 port;
 } deferred_open_entry;
 
 /* Internal message queue for deferred opens. */
@@ -655,7 +654,7 @@ struct share_mode_lock;
 /* struct returned by get_share_modes */
 typedef struct share_mode_entry {
 	pid_t pid;
-	uint16 op_port;
+	uint16 op_mid;
 	uint16 op_type;
 	uint32 access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
 	uint32 share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */

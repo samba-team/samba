@@ -474,11 +474,11 @@ char *share_mode_str(int num, share_mode_entry *e)
 
 	slprintf(share_str, sizeof(share_str)-1, "share_mode_entry[%d]: "
 		 "pid = %lu, share_access = 0x%x, private_options = 0x%x, "
-		 "access_mask = 0x%x, port = 0x%x, type= 0x%x, file_id = %lu, "
+		 "access_mask = 0x%x, mid = 0x%x, type= 0x%x, file_id = %lu, "
 		 "dev = 0x%x, inode = %.0f",
 		 num, (unsigned long)e->pid,
 		 e->share_access, e->private_options,
-		 e->access_mask, e->op_port, e->op_type, e->share_file_id,
+		 e->access_mask, e->op_mid, e->op_type, e->share_file_id,
 		 (unsigned int)e->dev, (double)e->inode );
 
 	return share_str;
@@ -610,7 +610,7 @@ BOOL get_delete_on_close_flag(SMB_DEV_T dev, SMB_INO_T inode)
  Fill a share mode entry.
 ********************************************************************/
 
-static void fill_share_mode(char *p, files_struct *fsp, uint16 port, uint16 op_type)
+static void fill_share_mode(char *p, files_struct *fsp, uint16 mid, uint16 op_type)
 {
 	share_mode_entry *e = (share_mode_entry *)p;
 	void *x = &e->time; /* Needed to force alignment. p may not be aligned.... */
@@ -620,7 +620,7 @@ static void fill_share_mode(char *p, files_struct *fsp, uint16 port, uint16 op_t
 	e->share_access = fsp->share_access;
 	e->private_options = fsp->fh->private_options;
 	e->access_mask = fsp->access_mask;
-	e->op_port = port;
+	e->op_mid = mid;
 	e->op_type = op_type;
 	memcpy(x, &fsp->open_time, sizeof(struct timeval));
 	e->share_file_id = fsp->file_id;
@@ -630,7 +630,7 @@ static void fill_share_mode(char *p, files_struct *fsp, uint16 port, uint16 op_t
 
 /*******************************************************************
  Check if two share mode entries are identical, ignoring oplock 
- and port info and desired_access.
+ and mid info and desired_access.
 ********************************************************************/
 
 BOOL share_modes_identical( share_mode_entry *e1, share_mode_entry *e2)
@@ -757,7 +757,7 @@ ssize_t del_share_mode(files_struct *fsp, share_mode_entry **ppse,
  Set the share mode of a file. Return False on fail, True on success.
 ********************************************************************/
 
-BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
+BOOL set_share_mode(files_struct *fsp, uint16 mid, uint16 op_type)
 {
 	TDB_DATA dbuf;
 	struct locking_data *data;
@@ -790,7 +790,7 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 
 		offset = sizeof(*data) + sizeof(share_mode_entry);
 		safe_strcpy(p + offset, fname, size - offset - 1);
-		fill_share_mode(p + sizeof(*data), fsp, port, op_type);
+		fill_share_mode(p + sizeof(*data), fsp, mid, op_type);
 		dbuf.dptr = p;
 		dbuf.dsize = size;
 		if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1)
@@ -817,7 +817,7 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 		return False;
 	}
 	memcpy(p, dbuf.dptr, sizeof(*data));
-	fill_share_mode(p + sizeof(*data), fsp, port, op_type);
+	fill_share_mode(p + sizeof(*data), fsp, mid, op_type);
 	memcpy(p + sizeof(*data) + sizeof(share_mode_entry), dbuf.dptr + sizeof(*data),
 	       dbuf.dsize - sizeof(*data));
 	SAFE_FREE(dbuf.dptr);
@@ -890,12 +890,12 @@ static void remove_share_oplock_fn(share_mode_entry *entry, SMB_DEV_T dev, SMB_I
 	DEBUG(10,("remove_share_oplock_fn: removing oplock info for entry dev=%x ino=%.0f\n",
 		  (unsigned int)dev, (double)inode ));
 	/* Delete the oplock info. */
-	entry->op_port = 0;
+	entry->op_mid = 0;
 	entry->op_type = NO_OPLOCK;
 }
 
 /*******************************************************************
- Remove an oplock port and mode entry from a share mode.
+ Remove an oplock mid and mode entry from a share mode.
 ********************************************************************/
 
 BOOL remove_share_oplock(files_struct *fsp)
@@ -982,9 +982,9 @@ char *deferred_open_str(int num, deferred_open_entry *e)
 	static pstring de_str;
 
 	slprintf(de_str, sizeof(de_str)-1, "deferred_open_entry[%d]: \
-pid = %lu, mid = %u, dev = 0x%x, inode = %.0f, port = %u, time = [%u.%06u]",
+pid = %lu, mid = %u, dev = 0x%x, inode = %.0f, mid = %u, time = [%u.%06u]",
 		num, (unsigned long)e->pid, (unsigned int)e->mid, (unsigned int)e->dev, (double)e->inode,
-		(unsigned int)e->port,
+		(unsigned int)e->mid,
 		(unsigned int)e->time.tv_sec, (unsigned int)e->time.tv_usec );
 
 	return de_str;
@@ -1144,7 +1144,6 @@ static BOOL deferred_open_entries_identical( deferred_open_entry *e1, deferred_o
 {
 	return (e1->pid == e2->pid &&
 		e1->mid == e2->mid &&
-		e1->port == e2->port &&
 		e1->dev == e2->dev &&
 		e1->inode == e2->inode &&
 		e1->time.tv_sec == e2->time.tv_sec &&
@@ -1226,7 +1225,7 @@ BOOL delete_deferred_open_entry(deferred_open_entry *entry)
  Fill a deferred open entry.
 ********************************************************************/
 
-static void fill_deferred_open(char *p, uint16 mid, struct timeval *ptv, SMB_DEV_T dev, SMB_INO_T inode, uint16 port)
+static void fill_deferred_open(char *p, uint16 mid, struct timeval *ptv, SMB_DEV_T dev, SMB_INO_T inode)
 {
 	deferred_open_entry *e = (deferred_open_entry *)p;
 	void *x = &e->time; /* Needed to force alignment. p may not be aligned.... */
@@ -1237,14 +1236,13 @@ static void fill_deferred_open(char *p, uint16 mid, struct timeval *ptv, SMB_DEV
 	memcpy(x, ptv, sizeof(struct timeval));
 	e->dev = dev;
 	e->inode = inode;
-	e->port = port;
 }
 
 /*******************************************************************
  Add a deferred open record. Return False on fail, True on success.
 ********************************************************************/
 
-BOOL add_deferred_open(uint16 mid, struct timeval *ptv, SMB_DEV_T dev, SMB_INO_T inode, uint16 port, const char *fname)
+BOOL add_deferred_open(uint16 mid, struct timeval *ptv, SMB_DEV_T dev, SMB_INO_T inode, const char *fname)
 {
 	TDB_DATA dbuf;
 	struct deferred_open_data *data;
@@ -1272,7 +1270,7 @@ BOOL add_deferred_open(uint16 mid, struct timeval *ptv, SMB_DEV_T dev, SMB_INO_T
 
 		offset = sizeof(*data) + sizeof(deferred_open_entry);
 		safe_strcpy(p + offset, fname, size - offset - 1);
-		fill_deferred_open(p + sizeof(*data), mid, ptv, dev, inode, port);
+		fill_deferred_open(p + sizeof(*data), mid, ptv, dev, inode);
 		dbuf.dptr = p;
 		dbuf.dsize = size;
 		if (tdb_store(deferred_open_tdb, key, dbuf, TDB_REPLACE) == -1)
@@ -1299,7 +1297,7 @@ BOOL add_deferred_open(uint16 mid, struct timeval *ptv, SMB_DEV_T dev, SMB_INO_T
 		return False;
 	}
 	memcpy(p, dbuf.dptr, sizeof(*data));
-	fill_deferred_open(p + sizeof(*data), mid, ptv, dev, inode, port);
+	fill_deferred_open(p + sizeof(*data), mid, ptv, dev, inode);
 	memcpy(p + sizeof(*data) + sizeof(deferred_open_entry), dbuf.dptr + sizeof(*data),
 	       dbuf.dsize - sizeof(*data));
 	SAFE_FREE(dbuf.dptr);

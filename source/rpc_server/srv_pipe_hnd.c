@@ -1112,6 +1112,10 @@ static BOOL close_internal_rpc_pipe_hnd(void *np_conn)
 	prs_mem_free(&p->out_data.rdata);
 	prs_mem_free(&p->in_data.data);
 
+	if (p->auth.auth_data_free_func) {
+		(*p->auth.auth_data_free_func)(&p->auth);
+	}
+
 	if (p->mem_ctx) {
 		talloc_destroy(p->mem_ctx);
 	}

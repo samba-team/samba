@@ -896,6 +896,15 @@ static BOOL pipe_spnego_auth_bind_kerberos(pipes_struct *p, prs_struct *rpc_in_p
 	return False;
 }
 
+static void free_pipe_spnego_auth_data(struct pipe_auth_data *auth)
+{
+	AUTH_NTLMSSP_STATE *a = auth->a_u.spnego_auth->auth_ntlmssp_state;
+
+	if (a) {
+		auth_ntlmssp_end(&a);
+	}
+}
+
 /*******************************************************************
  Handle a SPNEGO bind auth.
 *******************************************************************/
@@ -948,15 +957,22 @@ static BOOL pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
 		data_blob_free(&blob);
 		return ret;
 	}
-#if 1
-	data_blob_free(&secblob);
-	return False;
-#else
 
-	if (*auth_ntlmssp_state) {
-		auth_ntlmssp_end(auth_ntlmssp_state);
+	if (p->auth.auth_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP && p->auth.a_u.spnego_auth) {
+		/* Free any previous auth type. */
+		free_pipe_spnego_auth_data(&p->auth);
 	}
 
+	p->auth.a_u.spnego_auth = TALLOC_P(p->pipe_state_mem_ctx, struct spnego_ntlmssp_auth_struct);
+	if (!p->auth.a_u.spnego_auth) {
+		return False;
+	}
+
+	p->auth.auth_data_free_func = &free_pipe_spnego_auth_data;
+	p->auth.auth_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
+
+	return False;
+#if 0
 	nt_status = auth_ntlmssp_start(auth_ntlmssp_state);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return ERROR_NT(nt_status);
@@ -968,6 +984,7 @@ static BOOL pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
 
         reply_spnego_ntlmssp(conn, inbuf, outbuf, vuid, auth_ntlmssp_state, &chal, nt_status);
         data_blob_free(&chal);
+	data_blob_free(&secblob);
 	return True;
 #endif
 }
@@ -997,6 +1014,8 @@ static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p, RPC_H
 	if (!p->auth.a_u.schannel_auth) {
 		return False;
 	}
+
+	p->auth.auth_data_free_func = NULL;
 	p->auth.auth_type = PIPE_AUTH_TYPE_SCHANNEL;
 
 	memset(p->auth.a_u.schannel_auth->sess_key, 0, sizeof(p->auth.a_u.schannel_auth->sess_key));
@@ -1075,6 +1094,8 @@ static BOOL pipe_ntlmssp_auth_bind(pipes_struct *p, prs_struct *rpc_in_p, RPC_HD
 	if (!p->auth.a_u.ntlmssp_auth) {
 		return False;
 	}
+
+	p->auth.auth_data_free_func = NULL;
 
 	p->auth.auth_type = PIPE_AUTH_TYPE_NTLMSSP;
 	p->auth.a_u.ntlmssp_auth->ntlmssp_chal_flags = SMBD_NTLMSSP_NEG_FLAGS;

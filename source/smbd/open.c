@@ -666,7 +666,7 @@ static BOOL delay_for_oplocks(files_struct *fsp, BOOL second_try)
 		DEBUG(10, ("Sending break request to PID %d\n",
 			   (int)exclusive->pid));
 		SMB_ASSERT(!second_try);
-		exclusive->op_port = get_current_mid();
+		exclusive->op_mid = get_current_mid();
 		if (!message_send_pid(exclusive->pid, MSG_SMB_BREAK_REQUEST,
 				      exclusive, sizeof(*exclusive), True)) {
 			DEBUG(3, ("Could not send oplock break message\n"));
@@ -774,7 +774,7 @@ static void defer_open(struct timeval *ptv,
 		SAFE_FREE(de_array);
 		return;
 	}
-	if (!add_deferred_open(mid, ptv, dev, inode, 0, fname)) {
+	if (!add_deferred_open(mid, ptv, dev, inode, fname)) {
 		remove_deferred_open_smb_message(mid);
 	}
 

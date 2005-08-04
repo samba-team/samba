@@ -573,10 +573,10 @@ static void process_oplock_break_response(int msg_type, pid_t src,
 
 	DEBUG(10, ("Got oplock break response from pid %d: %d/%d/%d mid %d\n",
 		   (int)src, (int)msg->dev, (int)msg->inode,
-		   (int)msg->share_file_id, (int)msg->op_port));
+		   (int)msg->share_file_id, (int)msg->op_mid));
 
 	/* Here's the hack from open.c, store the mid in the 'port' field */
-	schedule_deferred_open_smb_message(msg->op_port);
+	schedule_deferred_open_smb_message(msg->op_mid);
 }
 
 static void process_open_retry_message(int msg_type, pid_t src,
