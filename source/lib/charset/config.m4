@@ -26,19 +26,18 @@ for i in $LOOK_DIRS ; do
 dnl Try to find iconv(3)
     jm_ICONV($i)
 
+    TMP_ICONV_LIBS="$LIBS"
+
     CPPFLAGS=$save_CPPFLAGS
+    LDFLAGS=$save_LDFLAGS
+    LIBS=$save_LIBS
+    export LDFLAGS LIBS CPPFLAGS
+
     if test -n "$ICONV_FOUND" ; then
-        LDFLAGS=$save_LDFLAGS
-        LIB_ADD_DIR(LDFLAGS, "$i/lib")
-        CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
-        LIBS="$save_LIBS $LIBS"
-        ICONV_LOCATION=$i
-        export LDFLAGS LIBS CPPFLAGS
+        LIB_ADD_DIR(ICONV_LDFLAGS, $i/lib)
+        CFLAGS_ADD_DIR(ICONV_CPPFLAGS, $i/include)
+        ICONV_LIBS="$TMP_ICONV_LIBS"
         break
-    else
-	LDFLAGS=$save_LDFLAGS
-        LIBS=$save_LIBS
-        export LDFLAGS LIBS CPPFLAGS
     fi
 done
 
@@ -63,4 +62,4 @@ if test x"$ICONV_FOUND" = x"no" -o x"$samba_cv_HAVE_NATIVE_ICONV" != x"yes" ; th
     Install libiconv from http://freshmeat.net/projects/libiconv/ for better charset compatibility!])
 fi
 
-SMB_SUBSYSTEM(CHARSET,lib/iconv.o,lib/charcnv.o,[${TMP_CHARSET_LIBS}])
+SMB_EXT_LIB(ICONV,[${ICONV_LIBS}],[${ICONV_CFLAGS}],[${ICONV_CPPFLAGS}],[${ICONV_LDFLAGS}])
