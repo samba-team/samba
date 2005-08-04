@@ -28,7 +28,7 @@
 #define TEST_SHARENAME "libnetsharetest"
 
 
-void test_displayshares(struct libnet_ListShares s)
+static void test_displayshares(struct libnet_ListShares s)
 {
 	int i, j;
 
@@ -162,8 +162,8 @@ done:
 }
 
 
-BOOL test_addshare(struct dcerpc_pipe *pipe, TALLOC_CTX *mem_ctx, const char *host,
-		   const char* share)
+static BOOL test_addshare(struct dcerpc_pipe *pipe, TALLOC_CTX *mem_ctx, const char *host,
+			  const char* share)
 {
 	NTSTATUS status;
 	struct srvsvc_NetShareAdd add;
