@@ -154,7 +154,10 @@ include/proto.h: $(PROTO_PROTO_OBJS:.o=.c)
 	@touch include/proto.h
 
 proto: include/proto.h
-pch: proto include/includes.h.gch
+pch: include/config.h \
+	include/proto.h \
+	idl \
+	include/includes.h.gch
 
 basics: include/config.h \
 	include/proto.h \
