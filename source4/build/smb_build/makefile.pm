@@ -466,34 +466,12 @@ bin/.TARGET_$ctx->{NAME}:
 ";
 }
 
-sub _prepare_proto_rules()
+sub _prepare_clean_rules()
 {
 	my $output = << '__EOD__';
-# Making this target will just make sure that the prototype files
-# exist, not necessarily that they are up to date.  Since they're
-# removed by 'make clean' this will always be run when you do anything
-# afterwards.
-proto_exists: include/proto.h
-
-delheaders: pch_clean
-	-rm -f $(builddir)/include/proto.h
-
-include/proto.h:
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh "$(PERL)" \
-	  -h _PROTO_H_ $(builddir)/include/proto.h \
-	  $(PROTO_PROTO_OBJS)
-
-# 'make headers' or 'make proto' calls a subshell because we need to
-# make sure these commands are executed in sequence even for a
-# parallel make.
-headers: delheaders proto_exists
-
-proto: idl headers
-
-proto_test:
-	@[ -f $(builddir)/include/proto.h ] || $(MAKE) proto
-
-clean: delheaders heimdal_clean
+clean: heimdal_clean
+	@echo Removing headers
+	@-rm -f include/proto.h
 	@echo Removing objects
 	@-find . -name '*.o' -exec rm -f '{}' \;
 	@echo Removing binaries
@@ -577,7 +555,7 @@ sub _prepare_rule_lists($)
 		($output .= _prepare_custom_rule($key) ) if $key->{TYPE} eq "TARGET";
 	}
 
-	$output .= _prepare_proto_rules();
+	$output .= _prepare_clean_rules();
 
 	return $output;
 }
