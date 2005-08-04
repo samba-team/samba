@@ -6,6 +6,7 @@ SUBSYSTEM = SOCKET
 INIT_OBJ_FILES = \
 		lib/socket/socket_ipv4.o
 NOPROTO=YES
+REQUIRED_SUBSYSTEMS = EXT_LIB_SOCKET
 # End MODULE socket_ipv4
 ################################################
 
@@ -16,6 +17,7 @@ SUBSYSTEM = SOCKET
 INIT_OBJ_FILES = \
 		lib/socket/socket_ipv6.o
 NOPROTO=YES
+REQUIRED_SUBSYSTEMS = EXT_LIB_SOCKET
 # End MODULE socket_ipv6
 ################################################
 
@@ -26,6 +28,7 @@ SUBSYSTEM = SOCKET
 INIT_OBJ_FILES = \
 		lib/socket/socket_unix.o
 NOPROTO=YES
+REQUIRED_SUBSYSTEMS = EXT_LIB_SOCKET
 # End MODULE socket_unix
 ################################################
 
