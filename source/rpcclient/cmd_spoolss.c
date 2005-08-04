@@ -2296,7 +2296,7 @@ static WERROR cmd_spoolss_enum_printerkey( struct cli_state *cli,
 
 	/* Enumerate subkeys */
 
-	result = cli_spoolss_enumprinterkey(cli, mem_ctx, &hnd, keyname, NULL, NULL);
+	result = cli_spoolss_enumprinterkey(cli, mem_ctx, &hnd, keyname, &keylist, NULL);
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
