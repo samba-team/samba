@@ -124,6 +124,64 @@ static int ejs_creds_set_password(MprVarHandle eid, int argc, char **argv)
 
 
 /*
+  set realm
+*/
+static int ejs_creds_set_realm(MprVarHandle eid, int argc, char **argv)
+{
+	struct cli_credentials *creds = ejs_creds_get_credentials(eid);
+	if (argc != 1) {
+		ejsSetErrorMsg(eid, "bad arguments to set_realm");
+		return -1;
+	}
+
+	cli_credentials_set_realm(creds, argv[0], CRED_SPECIFIED);
+	mpr_Return(eid, mprCreateBoolVar(True));
+	return 0;
+}
+
+
+/*
+  get realm
+*/
+static int ejs_creds_get_realm(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	struct cli_credentials *creds = ejs_creds_get_credentials(eid);
+	
+	mpr_Return(eid, mprString(cli_credentials_get_realm(creds)));
+	return 0;
+}
+
+
+/*
+  set workstation
+*/
+static int ejs_creds_set_workstation(MprVarHandle eid, int argc, char **argv)
+{
+	struct cli_credentials *creds = ejs_creds_get_credentials(eid);
+	if (argc != 1) {
+		ejsSetErrorMsg(eid, "bad arguments to set_workstation");
+		return -1;
+	}
+	
+	cli_credentials_set_workstation(creds, argv[0], CRED_SPECIFIED);
+	mpr_Return(eid, mprCreateBoolVar(True));
+	return 0;
+}
+
+
+/*
+  get workstation
+*/
+static int ejs_creds_get_workstation(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	struct cli_credentials *creds = ejs_creds_get_credentials(eid);
+	
+	mpr_Return(eid, mprString(cli_credentials_get_workstation(creds)));
+	return 0;
+}
+
+
+/*
   initialise credentials ejs object
 */
 static int ejs_credentials_init(MprVarHandle eid, int argc, struct MprVar **argv)
@@ -149,6 +207,10 @@ static int ejs_credentials_init(MprVarHandle eid, int argc, struct MprVar **argv
 	mprSetStringCFunction(obj, "set_username", ejs_creds_set_username);
 	mprSetCFunction(obj, "get_password", ejs_creds_get_password);
 	mprSetStringCFunction(obj, "set_password", ejs_creds_set_password);
+	mprSetCFunction(obj, "get_realm", ejs_creds_get_realm);
+	mprSetStringCFunction(obj, "set_realm", ejs_creds_set_realm);
+	mprSetCFunction(obj, "get_workstation", ejs_creds_get_workstation);
+	mprSetStringCFunction(obj, "set_workstation", ejs_creds_set_workstation);
 
 	return 0;
 }
