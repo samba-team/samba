@@ -543,7 +543,7 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smblsa_sid_check_privilege - %s\n", nt_errstr(status));
 	}
-	printf("SEC_PRIV_TAKE_OWNERSHIP - %s\n", has_restore_privilege?"Yes":"No");
+	printf("SEC_PRIV_TAKE_OWNERSHIP - %s\n", has_take_ownership_privilege?"Yes":"No");
 
 	for (i=0;i<ARRAY_SIZE(file_mappings);i++) {
 		uint32_t expected_mask = 
@@ -823,7 +823,7 @@ static BOOL test_owner_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smblsa_sid_check_privilege - %s\n", nt_errstr(status));
 	}
-	printf("SEC_PRIV_TAKE_OWNERSHIP - %s\n", has_restore_privilege?"Yes":"No");
+	printf("SEC_PRIV_TAKE_OWNERSHIP - %s\n", has_take_ownership_privilege?"Yes":"No");
 
 	sd = security_descriptor_create(mem_ctx,
 					NULL, NULL,
