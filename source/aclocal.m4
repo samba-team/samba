@@ -139,7 +139,7 @@ break])
 fi
 LIBS=$ac_func_search_ext_save_LIBS])
 AS_IF([test "$ac_cv_search_ext_$1" != no],
-  [test "$ac_cv_search_ext_$1" = "none required" || $3="$ac_cv_search_ext_$1"
+  [test "$ac_cv_search_ext_$1" = "none required" || $3="$ac_cv_search_ext_$1 $$3"
   $4],
       [$5])dnl
 ])
