@@ -1075,9 +1075,6 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 
 	/* if this was a stream create then create the stream as well */
 	if (!name->stream_exists) {
-		if (!(access_mask & SEC_FILE_WRITE_ATTRIBUTE)) {
-			return NT_STATUS_ACCESS_DENIED;
-		}
 		status = pvfs_stream_create(pvfs, f->handle->name, fd);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(lck);
