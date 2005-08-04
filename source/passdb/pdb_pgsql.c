@@ -39,7 +39,7 @@ typedef struct pdb_pgsql_data {
   const char *port   ;
   const char *user   ;
   const char *pass   ;
-  
+
   const char *location ;
 } pdb_pgsql_data ;
 
@@ -59,8 +59,9 @@ struct pdb_context *the_pdb_context;
 		DEBUG(0, ("invalid methods!\n")); \
 			return ; \
 	} \
-	data = (struct pdb_pgsql_data *)methods->private_data;\
+	data = (struct pdb_pgsql_data *)methods->private_data; \
 }
+
 
 #define config_value( data, name, default_value ) \
   lp_parm_const_string( GLOBAL_SECTION_SNUM, (data)->location, name, default_value )
