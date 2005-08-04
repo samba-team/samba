@@ -348,6 +348,8 @@ static int reply_spnego_kerberos(connection_struct *conn,
  Send a session setup reply, wrapped in SPNEGO.
  Get vuid and check first.
  End the NTLMSSP exchange context if we are OK/complete fail
+ This should be split into two functions, one to handle each
+ leg of the NTLM auth steps.
 ***************************************************************************/
 
 static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *outbuf,
@@ -422,6 +424,7 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *out
 	   and the other end, that we are not finished yet. */
 
 	if (!ret || !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		/* NB. This is *NOT* an error case. JRA */
 		auth_ntlmssp_end(auth_ntlmssp_state);
 		/* Kill the intermediate vuid */
 		invalidate_vuid(vuid);

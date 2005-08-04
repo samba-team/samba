@@ -185,11 +185,6 @@ struct ntlmssp_auth_struct {
 	uint32 ntlmssp_seq_num;
 };
 
-/* auth state for spnego ntlmssp. */
-struct spnego_ntlmssp_auth_struct {
-	AUTH_NTLMSSP_STATE *auth_ntlmssp_state;
-};
-
 /* auth state for all bind types. */
 
 struct pipe_auth_data {
@@ -197,7 +192,7 @@ struct pipe_auth_data {
 	union {
 		struct ntlmssp_auth_struct *ntlmssp_auth;
 		struct schannel_auth_struct *schannel_auth;
-		struct spnego_ntlmssp_auth_struct *spnego_auth;
+		AUTH_NTLMSSP_STATE *auth_ntlmssp_state;
 	} a_u;
 	void (*auth_data_free_func)(struct pipe_auth_data *);
 };

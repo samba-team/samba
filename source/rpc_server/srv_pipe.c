@@ -839,6 +839,7 @@ BOOL check_bind_req(struct pipes_struct *p, RPC_IFACE* abstract,
 /*******************************************************************
  Register commands to an RPC pipe
 *******************************************************************/
+
 NTSTATUS rpc_pipe_register_commands(int version, const char *clnt, const char *srv, const struct api_struct *cmds, int size)
 {
         struct rpc_table *rpc_entry;
@@ -898,26 +899,33 @@ static BOOL pipe_spnego_auth_bind_kerberos(pipes_struct *p, prs_struct *rpc_in_p
 
 static void free_pipe_spnego_auth_data(struct pipe_auth_data *auth)
 {
-	AUTH_NTLMSSP_STATE *a = auth->a_u.spnego_auth->auth_ntlmssp_state;
+	AUTH_NTLMSSP_STATE *a = auth->a_u.auth_ntlmssp_state;
 
 	if (a) {
 		auth_ntlmssp_end(&a);
 	}
+	auth->a_u.auth_ntlmssp_state = NULL;
 }
 
 /*******************************************************************
- Handle a SPNEGO bind auth.
+ Handle the first part of a SPNEGO bind auth.
 *******************************************************************/
 
 static BOOL pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_p, RPC_HDR_AUTH *pauth_info, prs_struct *pout_auth)
 {
-        DATA_BLOB secblob;
 	DATA_BLOB blob;
+       	DATA_BLOB secblob;
+       	DATA_BLOB response;
+       	DATA_BLOB chal;
 	char *OIDs[ASN1_MAX_OIDS];
         int i;
+	NTSTATUS status;
         BOOL got_kerberos_mechanism = False;
+	AUTH_NTLMSSP_STATE *a = NULL;
 
 	ZERO_STRUCT(secblob);
+	ZERO_STRUCT(chal);
+	ZERO_STRUCT(response);
 
 	/* Grab the SPNEGO blob. */
 	blob = data_blob(NULL,p->hdr.auth_len);
@@ -925,20 +933,17 @@ static BOOL pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
 	if (!prs_copy_data_out(blob.data, rpc_in_p, p->hdr.auth_len)) {
 		DEBUG(0,("pipe_spnego_auth_bind_negotiate: Failed to pull %u bytes - the SPNEGO auth header.\n",
 			(unsigned int)p->hdr.auth_len ));
-		data_blob_free(&blob);
-		return False;
+		goto err;
 	}
 
 	if (blob.data[0] != ASN1_APPLICATION(0)) {
-		data_blob_free(&blob);
-		return False;
+		goto err;
 	}
 
 	/* parse out the OIDs and the first sec blob */
 	if (!parse_negTokenTarg(blob, OIDs, &secblob)) {
 		DEBUG(0,("pipe_spnego_auth_bind_negotiate: Failed to parse the security blob.\n"));
-		data_blob_free(&blob);
-		return False;
+		goto err;
         }
 
 	if (strcmp(OID_KERBEROS5, OIDs[0]) == 0 || strcmp(OID_KERBEROS5_OLD, OIDs[0]) == 0) {
@@ -958,35 +963,56 @@ static BOOL pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
 		return ret;
 	}
 
-	if (p->auth.auth_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP && p->auth.a_u.spnego_auth) {
+	if (p->auth.auth_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP && p->auth.a_u.auth_ntlmssp_state) {
 		/* Free any previous auth type. */
 		free_pipe_spnego_auth_data(&p->auth);
 	}
 
-	p->auth.a_u.spnego_auth = TALLOC_P(p->pipe_state_mem_ctx, struct spnego_ntlmssp_auth_struct);
-	if (!p->auth.a_u.spnego_auth) {
-		return False;
+	/* Initialize the NTLM engine. */
+	status = auth_ntlmssp_start(&a);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto err;
 	}
 
+	/*
+	 * Pass the first security blob of data to it.
+	 * This can return an error or NT_STATUS_MORE_PROCESSING_REQUIRED
+	 * which means we need another packet to complete the bind.
+	 */
+
+        status = auth_ntlmssp_update(a, secblob, &chal);
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		DEBUG(3,("pipe_spnego_auth_bind_negotiate: auth_ntlmssp_update failed.\n"));
+		goto err;
+	}
+
+	/* Generate the response blob we need for step 2 of the bind. */
+	response = spnego_gen_auth_response(&chal, status, OID_NTLMSSP);
+
+	p->auth.a_u.auth_ntlmssp_state = a;
 	p->auth.auth_data_free_func = &free_pipe_spnego_auth_data;
 	p->auth.auth_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
 
-	return False;
-#if 0
-	nt_status = auth_ntlmssp_start(auth_ntlmssp_state);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return ERROR_NT(nt_status);
-	}
-
-        nt_status = auth_ntlmssp_update(*auth_ntlmssp_state, secblob, &chal);
-
-        data_blob_free(&secblob);
-
-        reply_spnego_ntlmssp(conn, inbuf, outbuf, vuid, auth_ntlmssp_state, &chal, nt_status);
-        data_blob_free(&chal);
+	data_blob_free(&blob);
 	data_blob_free(&secblob);
-	return True;
-#endif
+	data_blob_free(&chal);
+	data_blob_free(&response);
+
+	/* We can't set pipe_bound True yet - we need a response packet... */
+	return False;
+
+ err:
+
+	data_blob_free(&blob);
+	data_blob_free(&secblob);
+	data_blob_free(&chal);
+	data_blob_free(&response);
+
+	p->auth.a_u.auth_ntlmssp_state = NULL;
+	p->auth.auth_type = PIPE_AUTH_TYPE_NONE;
+
+	return False;
 }
 
 /*******************************************************************
@@ -1014,9 +1040,6 @@ static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p, RPC_H
 	if (!p->auth.a_u.schannel_auth) {
 		return False;
 	}
-
-	p->auth.auth_data_free_func = NULL;
-	p->auth.auth_type = PIPE_AUTH_TYPE_SCHANNEL;
 
 	memset(p->auth.a_u.schannel_auth->sess_key, 0, sizeof(p->auth.a_u.schannel_auth->sess_key));
 	memcpy(p->auth.a_u.schannel_auth->sess_key, last_dcinfo.sess_key, sizeof(last_dcinfo.sess_key));
@@ -1053,6 +1076,9 @@ static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p, RPC_H
 		neg.domain, neg.myname));
 
 	/* We're finished with this bind - no more packets. */
+	p->auth.auth_data_free_func = NULL;
+	p->auth.auth_type = PIPE_AUTH_TYPE_SCHANNEL;
+
 	p->pipe_bound = True;
 
 	return True;
@@ -1095,9 +1121,6 @@ static BOOL pipe_ntlmssp_auth_bind(pipes_struct *p, prs_struct *rpc_in_p, RPC_HD
 		return False;
 	}
 
-	p->auth.auth_data_free_func = NULL;
-
-	p->auth.auth_type = PIPE_AUTH_TYPE_NTLMSSP;
 	p->auth.a_u.ntlmssp_auth->ntlmssp_chal_flags = SMBD_NTLMSSP_NEG_FLAGS;
 	p->auth.a_u.ntlmssp_auth->ntlmssp_auth_requested = True;
 
@@ -1135,6 +1158,9 @@ static BOOL pipe_ntlmssp_auth_bind(pipes_struct *p, prs_struct *rpc_in_p, RPC_HD
 
 	DEBUG(10,("pipe_ntlmssp_auth_bind: NTLMSSP auth: domain [%s] myname [%s]\n",
 		ntlmssp_neg.domain, ntlmssp_neg.myname));
+
+	p->auth.auth_data_free_func = NULL;
+	p->auth.auth_type = PIPE_AUTH_TYPE_NTLMSSP;
 
 	/* We can't set pipe_bound True yet - we need a response packet... */
 	return True;
