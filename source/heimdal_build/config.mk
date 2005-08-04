@@ -397,7 +397,7 @@ include ./heimdal_build/et_deps.pl heimdal/lib/krb5/krb5_err.et|
 
 heimdal_clean:
 	@echo Removing generated ASN1 files
-	@-find heimdal/lib/asn1 -name 'asn1_*.[c]' -exec rm -f '{}' \;
+	@-find heimdal/lib/asn1 -name 'asn1_*.[cx]' -exec rm -f '{}' \;
 	@-find heimdal/lib/gssapi -name 'asn1_*.[c]' -exec rm -f '{}' \;
 	@-find heimdal/lib/hdb -name 'asn1_*.[c]' -exec rm -f '{}' \;
 	@-rm -f heimdal/lib/roken/vis.h heimdal/lib/roken/err.h
