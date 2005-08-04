@@ -1589,7 +1589,7 @@ WERROR cli_spoolss_enumprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	if ( value_needed )
 		*value_needed = out.realvaluesize;
-	if ( data_offered )
+	if ( data_needed )
 		*data_needed = out.realdatasize;
 		
 	if (!W_ERROR_IS_OK(out.status))
