@@ -24,8 +24,9 @@ foreach(<IN>) {
 	if (/^([A-Za-z0-9_-]+)[ \t]*::= /) {
 		my $output = $1;
 		$output =~ s/-/_/g;
-		print "$dirname/asn1_$output.c: $header\n";
-		print "\t\@mv $dirname/asn1_$output.x $dirname/asn1_$output.c\n\n";
+		print "$dirname/asn1_$output.x: $header\n";
+		print "$dirname/asn1_$output.c: $dirname/asn1_$output.x\n";
+		print "\t\@cp $dirname/asn1_$output.x $dirname/asn1_$output.c\n\n";
 	}
 }
 close(IN);
