@@ -54,17 +54,17 @@ esac
 AC_HEADER_DIRENT
 AC_HEADER_TIME
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS(arpa/inet.h sys/select.h fcntl.h sys/fcntl.h sys/time.h)
-AC_CHECK_HEADERS(utime.h grp.h sys/id.h limits.h memory.h net/if.h)
+AC_CHECK_HEADERS(sys/select.h fcntl.h sys/fcntl.h sys/time.h)
+AC_CHECK_HEADERS(utime.h grp.h sys/id.h limits.h memory.h)
 AC_CHECK_HEADERS(compat.h math.h)
 AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h sys/mode.h)
-AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h sys/socket.h)
+AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h)
 AC_CHECK_HEADERS(sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
-AC_CHECK_HEADERS(fnmatch.h pwd.h sys/termio.h sys/time.h sys/statfs.h sys/statvfs.h stdarg.h sys/sockio.h)
+AC_CHECK_HEADERS(fnmatch.h pwd.h sys/termio.h sys/time.h sys/statfs.h sys/statvfs.h stdarg.h)
 AC_CHECK_HEADERS(security/pam_modules.h security/_pam_macros.h dlfcn.h)
 AC_CHECK_HEADERS(sys/syslog.h syslog.h)
 AC_CHECK_HEADERS(stdint.h inttypes.h locale.h)
-AC_CHECK_HEADERS(shadow.h netdb.h netinet/in.h netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
+AC_CHECK_HEADERS(shadow.h)
 AC_CHECK_HEADERS(nss.h nss_common.h ns_api.h sys/security.h security/pam_appl.h)
 AC_CHECK_HEADERS(sys/capability.h syscall.h sys/syscall.h)
 AC_CHECK_HEADERS(sys/acl.h)
@@ -93,46 +93,9 @@ AC_CHECK_TYPES(long long)
 
 ############################################
 # we need dlopen/dlclose/dlsym/dlerror for PAM, the password database plugins and the plugin loading code
-AC_SEARCH_LIBS(dlopen, [dl], [
-			   tmp=$ac_cv_search_dlopen
-			   if test "$ac_cv_search_dlopen" = "none required"; then 
-			       tmp=""
-			   fi
-			   SMB_EXT_LIB(DL, [$tmp])]
-			   )
+AC_SEARCH_LIBS_EXT(dlopen, [dl], DL_LIBS)
+SMB_EXT_LIB(DL,[${DL_LIBS}],[${DL_CFLAGS}],[${DL_CPPFLAGS}],[${DL_LDFLAGS}])
 # dlopen/dlclose/dlsym/dlerror will be checked again later and defines will be set then
-
-############################################
-# check for unix domain sockets
-AC_CACHE_CHECK([for unix domain sockets],samba_cv_unixsocket, [
-    AC_TRY_COMPILE([
-#include <sys/types.h>
-#include <stdlib.h>
-#include <stddef.h>
-#include <sys/socket.h>
-#include <sys/un.h>],
-[
-  struct sockaddr_un sunaddr; 
-  sunaddr.sun_family = AF_UNIX;
-],
-	samba_cv_unixsocket=yes,samba_cv_unixsocket=no)])
-if test x"$samba_cv_unixsocket" = x"yes"; then
-   AC_DEFINE(HAVE_UNIXSOCKET,1,[If we need to build with unixscoket support])
-fi
-
-
-AC_CACHE_CHECK([for socklen_t type],samba_cv_socklen_t, [
-    AC_TRY_COMPILE([
-#include <sys/types.h>
-#if STDC_HEADERS
-#include <stdlib.h>
-#include <stddef.h>
-#endif
-#include <sys/socket.h>],[socklen_t i = 0],
-	samba_cv_socklen_t=yes,samba_cv_socklen_t=no)])
-if test x"$samba_cv_socklen_t" = x"yes"; then
-   AC_DEFINE(HAVE_SOCKLEN_T_TYPE,1,[Whether we have the variable type socklen_t])
-fi
 
 AC_CACHE_CHECK([for sig_atomic_t type],samba_cv_sig_atomic_t, [
     AC_TRY_COMPILE([
@@ -158,40 +121,6 @@ AC_HAVE_DECL(snprintf, [#include <stdio.h>])
 
 AC_FUNC_MEMCMP
 
-# The following test taken from the cvs sources
-# If we can't find connect, try looking in -lsocket, -lnsl, and -linet.
-# The Irix 5 libc.so has connect and gethostbyname, but Irix 5 also has
-# libsocket.so which has a bad implementation of gethostbyname (it
-# only looks in /etc/hosts), so we only look for -lsocket if we need
-# it.
-AC_CHECK_FUNCS(connect)
-if test x"$ac_cv_func_connect" = x"no"; then
-    case "$LIBS" in
-    *-lnsl*) ;;
-    *) AC_CHECK_LIB(nsl_s, printf) ;;
-    esac
-    case "$LIBS" in
-    *-lnsl*) ;;
-    *) AC_CHECK_LIB(nsl, printf) ;;
-    esac
-    case "$LIBS" in
-    *-lsocket*) ;;
-    *) AC_CHECK_LIB(socket, connect) ;;
-    esac
-    case "$LIBS" in
-    *-linet*) ;;
-    *) AC_CHECK_LIB(inet, connect) ;;
-    esac
-    dnl We can't just call AC_CHECK_FUNCS(connect) here, because the value
-    dnl has been cached.
-    if test x"$ac_cv_lib_socket_connect" = x"yes" || 
-       test x"$ac_cv_lib_inet_connect" = x"yes"; then
-        # ac_cv_func_connect=yes
-        # don't!  it would cause AC_CHECK_FUNC to succeed next time configure is run
-        AC_DEFINE(HAVE_CONNECT,1,[Whether the system has connect()])
-    fi
-fi
-
 AC_CHECK_FUNCS(dlopen dlsym dlerror waitpid getcwd strdup strndup strnlen strtoul strtoull strtouq strerror chroot)
 AC_CHECK_FUNCS(bzero memset strlcpy strlcat)
 AC_CHECK_FUNCS(memmove vsnprintf snprintf asprintf vasprintf setsid pipe crypt16 getauthuid)
@@ -204,10 +133,6 @@ AC_CHECK_FUNCS(syslog vsyslog timegm backtrace)
 AC_CHECK_FUNCS(setbuffer)
 
 AC_CHECK_FUNCS(pread pwrite)
-
-#####################################
-# we might need the resolv library on some systems
-AC_CHECK_LIB(resolv, dn_expand)
 
 # Assume non-shared by default and override below
 BLDSHARED="false"
@@ -400,16 +325,6 @@ if test $ac_cv_shlib_works = no; then
 fi
 fi
 
-AC_CACHE_CHECK([for sin_len in sock],samba_cv_HAVE_SOCK_SIN_LEN,[
-AC_TRY_COMPILE([#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>],
-[struct sockaddr_in sock; sock.sin_len = sizeof(sock);],
-samba_cv_HAVE_SOCK_SIN_LEN=yes,samba_cv_HAVE_SOCK_SIN_LEN=no)])
-if test x"$samba_cv_HAVE_SOCK_SIN_LEN" = x"yes"; then
-    AC_DEFINE(HAVE_SOCK_SIN_LEN,1,[Whether the sockaddr_in struct has a sin_len property])
-fi
-
 AC_CACHE_CHECK([for __FUNCTION__ macro],samba_cv_HAVE_FUNCTION_MACRO,[
 AC_TRY_COMPILE([#include <stdio.h>], [printf("%s\n", __FUNCTION__);],
 samba_cv_HAVE_FUNCTION_MACRO=yes,samba_cv_HAVE_FUNCTION_MACRO=no)])
@@ -579,38 +494,11 @@ if test x"$samba_cv_HAVE_FTRUNCATE_EXTEND" = x"yes"; then
     AC_DEFINE(HAVE_FTRUNCATE_EXTEND,1,[Truncate extend])
 fi
 
-AC_CACHE_CHECK([for AF_LOCAL socket support], samba_cv_HAVE_WORKING_AF_LOCAL, [
-AC_TRY_RUN([#include "${srcdir-.}/build/tests/unixsock.c"],
-	   samba_cv_HAVE_WORKING_AF_LOCAL=yes,
-	   samba_cv_HAVE_WORKING_AF_LOCAL=no,
-	   samba_cv_HAVE_WORKING_AF_LOCAL=cross)])
-if test x"$samba_cv_HAVE_WORKING_AF_LOCAL" != xno
-then
-    AC_DEFINE(HAVE_WORKING_AF_LOCAL, 1, [Define if you have working AF_LOCAL sockets])
-fi
-
 AC_CACHE_CHECK([for broken getgroups],samba_cv_HAVE_BROKEN_GETGROUPS,[
 AC_TRY_RUN([#include "${srcdir-.}/build/tests/getgroups.c"],
            samba_cv_HAVE_BROKEN_GETGROUPS=yes,samba_cv_HAVE_BROKEN_GETGROUPS=no,samba_cv_HAVE_BROKEN_GETGROUPS=cross)])
 if test x"$samba_cv_HAVE_BROKEN_GETGROUPS" = x"yes"; then
     AC_DEFINE(HAVE_BROKEN_GETGROUPS,1,[Whether getgroups is broken])
-fi
-
-AC_CACHE_CHECK([for broken inet_ntoa],samba_cv_REPLACE_INET_NTOA,[
-AC_TRY_RUN([
-#include <stdio.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#ifdef HAVE_ARPA_INET_H
-#include <arpa/inet.h>
-#endif
-main() { struct in_addr ip; ip.s_addr = 0x12345678;
-if (strcmp(inet_ntoa(ip),"18.52.86.120") &&
-    strcmp(inet_ntoa(ip),"120.86.52.18")) { exit(0); } 
-exit(1);}],
-           samba_cv_REPLACE_INET_NTOA=yes,samba_cv_REPLACE_INET_NTOA=no,samba_cv_REPLACE_INET_NTOA=cross)])
-if test x"$samba_cv_REPLACE_INET_NTOA" = x"yes"; then
-    AC_DEFINE(REPLACE_INET_NTOA,1,[Whether inet_ntoa should be replaced])
 fi
 
 AC_CACHE_CHECK([for secure mkstemp],samba_cv_HAVE_SECURE_MKSTEMP,[
@@ -641,46 +529,6 @@ main() { exit(sysconf(_SC_NGROUPS_MAX) == -1 ? 1 : 0); }],
 samba_cv_SYSCONF_SC_NGROUPS_MAX=yes,samba_cv_SYSCONF_SC_NGROUPS_MAX=no,samba_cv_SYSCONF_SC_NGROUPS_MAX=cross)])
 if test x"$samba_cv_SYSCONF_SC_NGROUPS_MAX" = x"yes"; then
     AC_DEFINE(SYSCONF_SC_NGROUPS_MAX,1,[Whether sysconf(_SC_NGROUPS_MAX) is available])
-fi
-
-##################
-# look for a method of finding the list of network interfaces
-iface=no;
-AC_CACHE_CHECK([for iface AIX],samba_cv_HAVE_IFACE_AIX,[
-AC_TRY_RUN([
-#define HAVE_IFACE_AIX 1
-#define AUTOCONF_TEST 1
-#include "confdefs.h"
-#include "${srcdir-.}/lib/netif/netif.c"],
-           samba_cv_HAVE_IFACE_AIX=yes,samba_cv_HAVE_IFACE_AIX=no,samba_cv_HAVE_IFACE_AIX=cross)])
-if test x"$samba_cv_HAVE_IFACE_AIX" = x"yes"; then
-    iface=yes;AC_DEFINE(HAVE_IFACE_AIX,1,[Whether iface AIX is available])
-fi
-
-if test $iface = no; then
-AC_CACHE_CHECK([for iface ifconf],samba_cv_HAVE_IFACE_IFCONF,[
-AC_TRY_RUN([
-#define HAVE_IFACE_IFCONF 1
-#define AUTOCONF_TEST 1
-#include "confdefs.h"
-#include "${srcdir-.}/lib/netif/netif.c"],
-           samba_cv_HAVE_IFACE_IFCONF=yes,samba_cv_HAVE_IFACE_IFCONF=no,samba_cv_HAVE_IFACE_IFCONF=cross)])
-if test x"$samba_cv_HAVE_IFACE_IFCONF" = x"yes"; then
-    iface=yes;AC_DEFINE(HAVE_IFACE_IFCONF,1,[Whether iface ifconf is available])
-fi
-fi
-
-if test $iface = no; then
-AC_CACHE_CHECK([for iface ifreq],samba_cv_HAVE_IFACE_IFREQ,[
-AC_TRY_RUN([
-#define HAVE_IFACE_IFREQ 1
-#define AUTOCONF_TEST 1
-#include "confdefs.h"
-#include "${srcdir-.}/lib/netif/netif.c"],
-           samba_cv_HAVE_IFACE_IFREQ=yes,samba_cv_HAVE_IFACE_IFREQ=no,samba_cv_HAVE_IFACE_IFREQ=cross)])
-if test x"$samba_cv_HAVE_IFACE_IFREQ" = x"yes"; then
-    iface=yes;AC_DEFINE(HAVE_IFACE_IFREQ,1,[Whether iface ifreq is available])
-fi
 fi
 
 AC_CACHE_CHECK([for working mmap],samba_cv_HAVE_MMAP,[

@@ -11,12 +11,14 @@ AC_CONFIG_HEADER(include/config.h)
 
 sinclude(build/m4/env.m4)
 sinclude(build/m4/rewrite.m4)
+sinclude(lib/replace/config.m4)
 sinclude(lib/replace/win32/config.m4)
 sinclude(lib/replace/repdir/config.m4)
 sinclude(heimdal_build/config.m4)
 sinclude(lib/popt/config.m4)
 sinclude(lib/iconv.m4)
 sinclude(lib/socket/config.m4)
+sinclude(lib/netif/config.m4)
 sinclude(lib/talloc/config.m4)
 sinclude(lib/tdb/config.m4)
 sinclude(lib/ldb/sqlite3.m4)
@@ -64,6 +66,14 @@ AC_TRY_RUN([#include "${srcdir-.}/build/tests/summary.c"],
 
 builddir=`pwd`
 AC_SUBST(builddir)
+
+LIBS=`echo $LIBS | sed -e 's/ *//g'`
+if test x"$LIBS" != x""; then
+	echo "LIBS: $LIBS"
+	AC_MSG_WARN([the global \$LIBS variable contains some libraries!])
+	AC_MSG_WARN([this should not happen, please report to samba-technical@lists.samba.org!])
+	AC_MSG_ERROR([only _EXT macros from aclocal.m4 should be used!])
+fi
 
 dnl Remove -L/usr/lib/? from LDFLAGS and LIBS
 LIB_REMOVE_USR_LIB(LDFLAGS)
