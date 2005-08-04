@@ -1785,6 +1785,8 @@ static BOOL torture_ntdenytest(struct smbcli_state *cli1, struct smbcli_state *c
 	int failures = 0;
 	uint8_t buf[1];
 
+	printf("format: server correct\n");
+
 	ZERO_STRUCT(buf);
 
 	fname = talloc_asprintf(cli1, "\\ntdeny_%d.dll", client);
