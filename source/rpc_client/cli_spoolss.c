@@ -1586,9 +1586,11 @@ WERROR cli_spoolss_enumprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	            spoolss_io_q_enumprinterdata,
 	            spoolss_io_r_enumprinterdata, 
 	            WERR_GENERAL_FAILURE );
-		    
-	*value_needed = out.realvaluesize;
-	*data_needed = out.realdatasize;
+
+	if ( value_needed )
+		*value_needed = out.realvaluesize;
+	if ( data_offered )
+		*data_needed = out.realdatasize;
 		
 	if (!W_ERROR_IS_OK(out.status))
 		return out.status;
