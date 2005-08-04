@@ -77,7 +77,7 @@ showflags:
 	@echo "  STLD_FLAGS = $(STLD_FLAGS)"
 	@echo "  SHLD_FLAGS = $(SHLD_FLAGS)"
 
-install: showlayout installbin installdat installswat
+install: showlayout installbin installdat installswat installmisc
 
 # DESTDIR is used here to prevent packagers wasting their time
 # duplicating the Makefile. Remove it and you will have the privilege
@@ -103,7 +103,13 @@ installswat: installdirs
 installman: installdirs
 	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(MANPAGES)
 
-uninstall: uninstallbin uninstallman
+installmisc: installdirs
+	@$(SHELL) $(srcdir)/script/installmisc.sh $(srcdir) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(BINDIR)
+
+uninstall: uninstallbin uninstallman uninstallmisc
+
+uninstallmisc:
+	#FIXME
 
 uninstallbin:
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(SBIN_PROGS)
