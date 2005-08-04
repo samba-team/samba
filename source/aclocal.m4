@@ -117,8 +117,33 @@ m4_define([AH_CHECK_LIB_EXT],
 [AH_TEMPLATE(AS_TR_CPP(HAVE_LIB$1),
              [Define to 1 if you have the `]$1[' library (-l]$1[).])])
 
-# AC_CHECK_FUNCS_EXT(FUNCTION, [ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
-# -----------------------------------------------------------------
+dnl AC_SEARCH_LIBS_EXT(FUNCTION, SEARCH-LIBS, EXT_LIBS,
+dnl                    [ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND],
+dnl                    [OTHER-LIBRARIES])
+dnl --------------------------------------------------------
+dnl Search for a library defining FUNC, if it's not already available.
+AC_DEFUN([AC_SEARCH_LIBS_EXT],
+[AC_CACHE_CHECK([for library containing $1], [ac_cv_search_ext_$1],
+[
+ac_func_search_ext_save_LIBS=$LIBS
+ac_cv_search_ext_$1=no
+AC_LINK_IFELSE([AC_LANG_CALL([], [$1])],
+	       [ac_cv_search_ext_$1="none required"])
+if test "$ac_cv_search_ext_$1" = no; then
+  for ac_lib in $2; do
+    LIBS="-l$ac_lib $$3 $6 $ac_func_search_save_ext_LIBS"
+    AC_LINK_IFELSE([AC_LANG_CALL([], [$1])],
+		   [ac_cv_search_ext_$1="-l$ac_lib"
+break])
+  done
+fi
+LIBS=$ac_func_search_ext_save_LIBS])
+AS_IF([test "$ac_cv_search_ext_$1" != no],
+  [test "$ac_cv_search_ext_$1" = "none required" || $3="$ac_cv_search_ext_$1"
+  $4],
+      [$5])dnl
+])
+
 dnl check for a function in a $LIBS and $OTHER_LIBS libraries variable.
 dnl AC_CHECK_FUNC_EXT(func,OTHER_LIBS,IF-TRUE,IF-FALSE)
 AC_DEFUN([AC_CHECK_FUNC_EXT],
