@@ -72,6 +72,7 @@
 #define ERRpipeclosing 232 /* named pipe close in progress */
 #define ERRnotconnected 233 /* No process on other end of named pipe */
 #define ERRmoredata 234 /* More data to be returned */
+#define ERReainconsistent 255 /* from EMC */
 #define ERRnomoreitems 259
 #define ERRbaddirectory 267 /* Invalid directory name in a path. */
 #define ERReasnotsupported 282 /* Extended attributes */
