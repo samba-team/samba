@@ -396,11 +396,11 @@ include ./heimdal_build/et_deps.pl heimdal/lib/krb5/k524_err.et|
 include ./heimdal_build/et_deps.pl heimdal/lib/krb5/krb5_err.et|
 
 heimdal_basics: \
+	heimdal/lib/roken/vis.h \
+	heimdal/lib/roken/err.h \
 	heimdal/lib/hdb/hdb_asn1.h \
 	heimdal/lib/gssapi/spnego_asn1.h \
 	heimdal/lib/asn1/krb5_asn1.h \
-	heimdal/lib/roken/vis.h \
-	heimdal/lib/roken/err.h \
 	heimdal/lib/asn1/asn1_err.h \
 	heimdal/lib/hdb/hdb_err.h \
 	heimdal/lib/krb5/heim_err.h \
