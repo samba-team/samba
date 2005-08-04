@@ -969,7 +969,8 @@ static BOOL test_ntcreatex_brlocked(struct smbcli_state *cli, TALLOC_CTX *mem_ct
 	NTSTATUS status;
 	BOOL ret = True;
 
-	/* reasonable default parameters */
+	printf("Testing ntcreatex with a byte range locked file\n");
+
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
 	io.ntcreatex.in.root_fid = 0;
