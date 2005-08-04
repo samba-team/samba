@@ -614,6 +614,7 @@ static const nt_err_code_struct nt_errs[] =
 	DOS_CODE(ERRDOS, ERRinvalidprintmonitor),
 	DOS_CODE(ERRDOS, ERRprintmonitorinuse),
 	DOS_CODE(ERRDOS, ERRprinterhasjobsqueued),
+	DOS_CODE(ERRDOS, ERReainconsistent),
 
 	DOS_CODE(ERRSRV, ERRerror),
 	DOS_CODE(ERRSRV, ERRbadpw),
