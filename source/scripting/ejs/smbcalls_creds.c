@@ -48,6 +48,26 @@ static int ejs_creds_get_domain(MprVarHandle eid, int argc, struct MprVar **argv
 }
 
 
+/*
+  set a domain
+*/
+static int ejs_creds_set_domain(MprVarHandle eid, int argc, char **argv)
+{
+	struct cli_credentials *creds = ejs_creds_get_credentials(eid);
+	if (argc != 1) {
+		ejsSetErrorMsg(eid, "bad arguments to set_domain");
+		return -1;
+	}
+
+	cli_credentials_set_domain(creds, argv[0], CRED_SPECIFIED);
+	mpr_Return(eid, mprCreateBoolVar(True));
+	return 0;
+}
+
+
+/*
+  get a username
+*/
 static int ejs_creds_get_username(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	struct cli_credentials *creds = ejs_creds_get_credentials(eid);
@@ -56,6 +76,10 @@ static int ejs_creds_get_username(MprVarHandle eid, int argc, struct MprVar **ar
 	return 0;
 }
 
+
+/*
+  set a username
+*/
 static int ejs_creds_set_username(MprVarHandle eid, int argc, char **argv)
 {
 	struct cli_credentials *creds = ejs_creds_get_credentials(eid);
@@ -65,6 +89,35 @@ static int ejs_creds_set_username(MprVarHandle eid, int argc, char **argv)
 	}
 
 	cli_credentials_set_username(creds, argv[0], CRED_SPECIFIED);
+	mpr_Return(eid, mprCreateBoolVar(True));
+	return 0;
+}
+
+
+/*
+  get user password
+*/
+static int ejs_creds_get_password(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	struct cli_credentials *creds = ejs_creds_get_credentials(eid);
+	
+	mpr_Return(eid, mprString(cli_credentials_get_password(creds)));
+	return 0;
+}
+
+
+/*
+  set user password
+*/
+static int ejs_creds_set_password(MprVarHandle eid, int argc, char **argv)
+{
+	struct cli_credentials *creds = ejs_creds_get_credentials(eid);
+	if (argc != 1) {
+		ejsSetErrorMsg(eid, "bad arguments to set_password");
+		return -1;
+	}
+
+	cli_credentials_set_password(creds, argv[0], CRED_SPECIFIED);
 	mpr_Return(eid, mprCreateBoolVar(True));
 	return 0;
 }
@@ -91,8 +144,11 @@ static int ejs_credentials_init(MprVarHandle eid, int argc, struct MprVar **argv
 
 	/* setup our object methods */
 	mprSetCFunction(obj, "get_domain", ejs_creds_get_domain);
+	mprSetStringCFunction(obj, "set_domain", ejs_creds_set_domain);
 	mprSetCFunction(obj, "get_username", ejs_creds_get_username);
 	mprSetStringCFunction(obj, "set_username", ejs_creds_set_username);
+	mprSetCFunction(obj, "get_password", ejs_creds_get_password);
+	mprSetStringCFunction(obj, "set_password", ejs_creds_set_password);
 
 	return 0;
 }
