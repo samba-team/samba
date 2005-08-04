@@ -206,7 +206,7 @@ static BOOL test_stream_io(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 done:
 	smbcli_close(cli->tree, fnum);
-	return True;
+	return ret;
 }
 
 /* 
