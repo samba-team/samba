@@ -67,6 +67,7 @@ struct libnet_rpc_userdel {
 #define USERMOD_FIELD_PROFILE_PATH    ( 0x00000200 )
 #define USERMOD_FIELD_ACCT_EXPIRY     ( 0x00004000 )
 #define USERMOD_FIELD_ALLOW_PASS_CHG  ( 0x00008000 )
+#define USERMOD_FIELD_FORCE_PASS_CHG  ( 0x00010000 )
 #define USERMOD_FIELD_ACCT_FLAGS      ( 0x00100000 )
 
 struct libnet_rpc_usermod {
@@ -85,6 +86,7 @@ struct libnet_rpc_usermod {
 			const char *profile_path;
 			struct timeval *acct_expiry;
 			struct timeval *allow_password_change;
+			struct timeval *force_password_change;
 		} change;
 	} in;
 };

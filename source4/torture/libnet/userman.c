@@ -418,15 +418,19 @@ BOOL torture_usermod(void)
 	int i;
 
 	struct timeval expiry = { 12345, 67890 };
+	struct timeval allow  = { 67890, 12345 };
+	struct timeval force  = { 33333, 55444 };
 
 	struct usermod_change changes[] = {
-		{ USERMOD_FIELD_ACCOUNT_NAME, "changed", NULL, NULL, NULL, NULL, NULL, NULL, NULL },
-		{ USERMOD_FIELD_FULL_NAME,    NULL, "Testing full account name", NULL, NULL, NULL, NULL, NULL, NULL },
-		{ USERMOD_FIELD_DESCRIPTION,  NULL, NULL, "Description of tested account", NULL, NULL, NULL, NULL, NULL },
-		{ USERMOD_FIELD_COMMENT,      NULL, NULL, NULL, "Comment for the tested account", NULL, NULL, NULL, NULL },
-		{ USERMOD_FIELD_LOGON_SCRIPT, NULL, NULL, NULL, NULL, "test_logon.cmd", NULL, NULL, NULL },
-		{ USERMOD_FIELD_PROFILE_PATH, NULL, NULL, NULL, NULL, NULL, "\\\\TESTSRV\\profiles\\test", NULL, NULL },
-		{ USERMOD_FIELD_ACCT_EXPIRY,  NULL, NULL, NULL, NULL, NULL, NULL, &expiry, NULL }
+		{ USERMOD_FIELD_ACCOUNT_NAME,   "changed", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL },
+		{ USERMOD_FIELD_FULL_NAME,      NULL, "Testing full account name", NULL, NULL, NULL, NULL, NULL, NULL, NULL },
+		{ USERMOD_FIELD_DESCRIPTION,    NULL, NULL, "Description of tested account", NULL, NULL, NULL, NULL, NULL, NULL },
+		{ USERMOD_FIELD_COMMENT,        NULL, NULL, NULL, "Comment for the tested account", NULL, NULL, NULL, NULL, NULL },
+		{ USERMOD_FIELD_LOGON_SCRIPT,   NULL, NULL, NULL, NULL, "test_logon.cmd", NULL, NULL, NULL, NULL },
+		{ USERMOD_FIELD_PROFILE_PATH,   NULL, NULL, NULL, NULL, NULL, "\\\\TESTSRV\\profiles\\test", NULL, NULL, NULL },
+		{ USERMOD_FIELD_ACCT_EXPIRY,    NULL, NULL, NULL, NULL, NULL, NULL, &expiry, NULL, NULL },
+		{ USERMOD_FIELD_ALLOW_PASS_CHG, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &allow, NULL },
+		{ USERMOD_FIELD_FORCE_PASS_CHG, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &force }
 	};
 	
 	mem_ctx = talloc_init("test_userdel");
