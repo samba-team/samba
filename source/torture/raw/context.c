@@ -262,7 +262,7 @@ static BOOL test_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	BOOL ret = True;
-	const char *share;
+	const char *share, *host;
 	struct smbcli_tree *tree;
 	union smb_tcon tcon;
 	union smb_open io;
@@ -279,6 +279,7 @@ static BOOL test_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	}
 
 	share = lp_parm_string(-1, "torture", "share");
+	host  = lp_parm_string(-1, "torture", "host");
 	
 	printf("create a second tree context on the same session\n");
 	tree = smbcli_tree_init(cli->session, mem_ctx, False);
@@ -286,10 +287,11 @@ static BOOL test_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	tcon.generic.level = RAW_TCON_TCONX;
 	tcon.tconx.in.flags = 0;
 	tcon.tconx.in.password = data_blob(NULL, 0);
-	tcon.tconx.in.path = share;
+	tcon.tconx.in.path = talloc_asprintf(mem_ctx, "\\\\%s\\%s", host, share);
 	tcon.tconx.in.device = "A:";	
 	status = smb_tree_connect(tree, mem_ctx, &tcon);
 	CHECK_STATUS(status, NT_STATUS_OK);
+	
 
 	tree->tid = tcon.tconx.out.tid;
 	printf("tid1=%d tid2=%d\n", cli->tree->tid, tree->tid);
