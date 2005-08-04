@@ -143,6 +143,12 @@ static WERROR open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY *
 		
 	ZERO_STRUCTP( regkey );
 	
+	/* Tag this as a Performance Counter Key */
+	if(0==StrnCaseCmp(subkeyname, KEY_HKPD, strlen(KEY_HKPD)))
+	   regkey->type = REG_KEY_HKPD;
+	else
+	    regkey->type = REG_KEY_GENERIC;
+
 	/* 
 	 * very crazy, but regedit.exe on Win2k will attempt to call 
 	 * REG_OPEN_ENTRY with a keyname of "".  We should return a new 
@@ -340,6 +346,22 @@ WERROR _reg_open_hklm(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_
 /*******************************************************************
  ********************************************************************/
 
+WERROR _reg_open_hkpd(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_u)
+{
+    return open_registry_key( p, &r_u->pol, NULL, KEY_HKPD, 0x0 );
+}
+
+/*******************************************************************
+ ********************************************************************/
+
+WERROR _reg_open_hkpt(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_u)
+{
+    return open_registry_key( p, &r_u->pol, NULL, KEY_HKPT, 0x0 );
+}
+
+/*******************************************************************
+ ********************************************************************/
+
 WERROR _reg_open_hkcr(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_u)
 {
 	SEC_DESC *sec_desc;
@@ -446,15 +468,92 @@ WERROR _reg_query_value(pipes_struct *p, REG_Q_QUERY_VALUE *q_u, REG_R_QUERY_VAL
 		return WERR_BADFID;
 		
 	DEBUG(7,("_reg_info: policy key name = [%s]\n", regkey->name));
+	DEBUG(7,("_reg_info: policy key type = [%08x]\n", regkey->type));
 	
 	rpcstr_pull(name, q_u->name.string->buffer, sizeof(name), q_u->name.string->uni_str_len*2, 0);
 
-	DEBUG(5,("reg_info: looking up value: [%s]\n", name));
+	DEBUG(5,("_reg_info: looking up value: [%s]\n", name));
 
 	regval_ctr_init( &regvals );
 	
-	for ( i=0; fetch_reg_values_specific(regkey, &val, i); i++ ) 
+	/* Handle QueryValue calls on HKEY_PERFORMANCE_DATA */
+	if(regkey->type == REG_KEY_HKPD) 
 	{
+		if(strequal(name, "Global"))
+		{
+			uint32 outbuf_len;
+			prs_struct prs_hkpd;
+			prs_init(&prs_hkpd, q_u->bufsize, p->mem_ctx, MARSHALL);
+			status = reg_perfcount_get_hkpd(&prs_hkpd, q_u->bufsize, &outbuf_len, NULL);
+			regval_ctr_addvalue(&regvals, "HKPD", REG_BINARY,
+					    prs_hkpd.data_p, outbuf_len);
+			val = dup_registry_value(regval_ctr_specific_value(&regvals, 0));
+			prs_mem_free(&prs_hkpd);
+		}
+		else if(strequal(name, "Counter 009"))
+		{
+			uint32 base_index;
+			uint32 buffer_size;
+			char *buffer;
+			
+			buffer = NULL;
+			base_index = reg_perfcount_get_base_index();
+			buffer_size = reg_perfcount_get_counter_names(base_index, &buffer);
+			regval_ctr_addvalue(&regvals, "Counter 009", 
+					    REG_MULTI_SZ, buffer, buffer_size);
+			
+			val = dup_registry_value(regval_ctr_specific_value(&regvals, 0));
+			
+			if(buffer_size > 0)
+			{
+				SAFE_FREE(buffer);
+				status = WERR_OK;
+			}
+		}
+		else if(strequal(name, "Explain 009"))
+		{		
+			uint32 base_index;
+			uint32 buffer_size;
+			char *buffer;
+			
+			buffer = NULL;
+			base_index = reg_perfcount_get_base_index();
+			buffer_size = reg_perfcount_get_counter_help(base_index, &buffer);
+			regval_ctr_addvalue(&regvals, "Explain 009", 
+					    REG_MULTI_SZ, buffer, buffer_size);
+			
+			val = dup_registry_value(regval_ctr_specific_value(&regvals, 0));
+			
+			if(buffer_size > 0)
+			{
+				SAFE_FREE(buffer);
+				status = WERR_OK;
+			}
+		}
+		else if(isdigit(name[0]))
+		{
+			/* we probably have a request for a specific object here */
+			uint32 outbuf_len;
+			prs_struct prs_hkpd;
+			prs_init(&prs_hkpd, q_u->bufsize, p->mem_ctx, MARSHALL);
+			status = reg_perfcount_get_hkpd(&prs_hkpd, q_u->bufsize, &outbuf_len, name);
+			regval_ctr_addvalue(&regvals, "HKPD", REG_BINARY,
+					    prs_hkpd.data_p, outbuf_len);
+			
+			val = dup_registry_value(regval_ctr_specific_value(&regvals, 0));
+			prs_mem_free(&prs_hkpd);
+		}
+		else
+		{
+			DEBUG(3,("Unsupported key name [%s] for HKPD.\n", name));
+			return WERR_BADFILE;
+		}
+	}
+	/* HKPT calls can be handled out of reg_dynamic.c with the hkpt_params handler */
+	else
+	{
+	    for ( i=0; fetch_reg_values_specific(regkey, &val, i); i++ ) 
+	    {
 		DEBUG(10,("_reg_info: Testing value [%s]\n", val->valuename));
 		if ( strequal( val->valuename, name ) ) {
 			DEBUG(10,("_reg_info: Found match for value [%s]\n", name));
@@ -463,6 +562,7 @@ WERROR _reg_query_value(pipes_struct *p, REG_Q_QUERY_VALUE *q_u, REG_R_QUERY_VAL
 		}
 		
 		free_registry_value( val );
+	    }
 	}
 
 	init_reg_r_query_value(q_u->ptr_buf, r_u, val, status);
@@ -474,7 +574,6 @@ WERROR _reg_query_value(pipes_struct *p, REG_Q_QUERY_VALUE *q_u, REG_R_QUERY_VAL
 
 	return status;
 }
-
 
 /*****************************************************************************
  Implementation of REG_QUERY_KEY
@@ -1418,5 +1517,3 @@ WERROR _reg_set_key_sec(pipes_struct *p, REG_Q_SET_KEY_SEC  *q_u, REG_R_SET_KEY_
 		
 	return WERR_ACCESS_DENIED;
 }
-
-
