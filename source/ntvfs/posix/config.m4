@@ -25,16 +25,17 @@ dnl ############################################
 dnl use flistxattr as the key function for having 
 dnl sufficient xattr support for posix xattr backend
 AC_CHECK_HEADERS(sys/attributes.h attr/xattr.h sys/xattr.h)
-AC_SEARCH_LIBS(flistxattr, [attr])
-AC_CHECK_FUNCS(flistxattr)
-
+AC_SEARCH_LIBS_EXT(flistxattr, [attr], XATTR_LIBS)
+AC_CHECK_FUNC_EXT(flistxattr, $XATTR_LIBS)
+SMB_EXT_LIB(XATTR,[${XATTR_LIBS}],[${XATTR_CFLAGS}],[${XATTR_CPPFLAGS}],[${XATTR_LDFLAGS}])
 if test x"$ac_cv_func_flistxattr" = x"yes"; then
 	AC_DEFINE(HAVE_XATTR_SUPPORT,1,[Whether we have xattr support])
 fi
 
 AC_CHECK_HEADERS(blkid/blkid.h)
-AC_SEARCH_LIBS(blkid_get_cache, [blkid])
-AC_CHECK_FUNCS(blkid_get_cache)
+AC_SEARCH_LIBS_EXT(blkid_get_cache, [blkid], BLKID_LIBS)
+AC_CHECK_FUNC_EXT(blkid_get_cache, $BLKID_LIBS)
+SMB_EXT_LIB(BLKID,[${BLKID_LIBS}],[${BLKID_CFLAGS}],[${BLKID_CPPFLAGS}],[${BLKID_LDFLAGS}])
 if test x"$ac_cv_func_blkid_get_cache" = x"yes"; then
 	AC_DEFINE(HAVE_LIBBLKID,1,[Whether we have blkid support (e2fsprogs)])
 fi
