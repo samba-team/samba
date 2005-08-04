@@ -145,9 +145,6 @@ void release_file_oplock(files_struct *fsp)
 	SMB_ASSERT(exclusive_oplocks_open>=0);
 	SMB_ASSERT(level_II_oplocks_open>=0);
 	
-	SMB_ASSERT(exclusive_oplocks_open>=0);
-	SMB_ASSERT(level_II_oplocks_open>=0);
-	
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	
