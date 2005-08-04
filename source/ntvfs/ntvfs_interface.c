@@ -35,7 +35,11 @@ NTSTATUS ntvfs_connect(struct smbsrv_request *req, const char *sharename)
 
 NTSTATUS ntvfs_disconnect(struct smbsrv_tcon *tcon)
 {
-	struct ntvfs_module_context *ntvfs = tcon->ntvfs_ctx->modules;
+	struct ntvfs_module_context *ntvfs;
+	if (tcon->ntvfs_ctx == NULL) {
+		return NT_STATUS_INVALID_CONNECTION;
+	}
+	ntvfs = tcon->ntvfs_ctx->modules;
 	if (!ntvfs->ops->disconnect) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
