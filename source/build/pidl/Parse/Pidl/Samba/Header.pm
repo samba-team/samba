@@ -62,7 +62,7 @@ sub HeaderElement($)
 		next if is_constant($_);
 		$numstar++;
 	}
-	$numstar-- if ($element->{TYPE} eq "string");
+	$numstar-- if Parse::Pidl::Typelist::scalar_is_reference($element->{TYPE});
 	pidl "*" foreach (1..$numstar);
 	pidl $element->{NAME};
 	foreach (@{$element->{ARRAY_LEN}}) {
