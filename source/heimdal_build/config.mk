@@ -297,7 +297,7 @@ ADD_OBJ_FILES = \
 	heimdal/lib/roken/strupr.o \
 	heimdal/lib/roken/strpool.o \
 	heimdal_build/replace.o
-REQUIRED_SUBSYSTEMS = HEIMDAL_ROKEN_ADDRINFO
+REQUIRED_SUBSYSTEMS = HEIMDAL_ROKEN_ADDRINFO EXT_LIB_SOCKET
 NOPROTO = YES
 # End SUBSYSTEM HEIMDAL_ROKEN
 #######################
