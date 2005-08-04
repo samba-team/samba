@@ -31,6 +31,6 @@ ADD_OBJ_FILES = \
 		ntvfs/posix/pvfs_acl.o \
 		ntvfs/posix/xattr_system.o \
 		ntvfs/posix/xattr_tdb.o
-REQUIRED_SUBSYSTEMS = NDR_XATTR ntvfs_common
+REQUIRED_SUBSYSTEMS = NDR_XATTR ntvfs_common EXT_LIB_XATTR EXT_LIB_BLKID
 # End MODULE ntvfs_posix
 ################################################
