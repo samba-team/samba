@@ -10,6 +10,7 @@ include auth/config.mk
 include nsswitch/config.mk
 include lib/basic.mk
 include lib/socket/config.mk
+include lib/charset/config.mk
 include lib/ldb/config.mk
 include lib/talloc/config.mk
 include lib/tdb/config.mk
