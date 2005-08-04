@@ -28,7 +28,7 @@ SAMBA_VERSION_RELEASE=20
 # so SAMBA's version will be                           #
 # <MAJOR>.<MINOR>.<RELEASE><REVISION>                  #
 #                                                      #
-# e.g. SAMBA_VERSION_PRE_RELEASE=a                     #
+# e.g. SAMBA_VERSION_REVISION=a                        #
 #  ->  "2.2.8a"                                        #
 ########################################################
 SAMBA_VERSION_REVISION=
