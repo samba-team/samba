@@ -757,10 +757,9 @@ static BOOL _reg_perfcount_init_data_block_perf(PERF_DATA_BLOCK *block,
 	unsigned long long PerfFreq, PerfTime, PerfTime100nSec;
 	TDB_CONTEXT *counters;
 	BOOL status;
+	pstring fname;
     
 	status = False;
-    
-	pstring fname;
     
 	pstrcpy(fname, lp_counters_dir());
 	pstrcat(fname, "/data.tdb");
