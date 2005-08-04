@@ -58,7 +58,7 @@ NTSTATUS create_directory_handle(struct smbcli_tree *tree, const char *dname, in
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
 	io.ntcreatex.in.alloc_size = 0;
-	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = dname;
@@ -72,6 +72,7 @@ NTSTATUS create_directory_handle(struct smbcli_tree *tree, const char *dname, in
 
 	return status;
 }
+
 
 /*
   sometimes we need a fairly complex file to work with, so we can test

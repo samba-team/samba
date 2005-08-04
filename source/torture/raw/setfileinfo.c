@@ -174,6 +174,14 @@ BOOL torture_raw_sfileinfo(void)
 		dump_all_info(mem_ctx, &finfo1); \
 	}} while (0)
 
+#define CHECK_STATUS(status, correct) do { \
+	if (!NT_STATUS_EQUAL(status, correct)) { \
+		printf("(%s) Incorrect status %s - should be %s\n", \
+		       __location__, nt_errstr(status), nt_errstr(correct)); \
+		ret = False; \
+		goto done; \
+	}} while (0)
+
 	
 	printf("test setattr\n");
 	sfinfo.setattr.in.attrib = FILE_ATTRIBUTE_READONLY;
@@ -485,6 +493,7 @@ BOOL torture_raw_sfileinfo(void)
 
 	printf("Trying rename with a root fid\n");
 	status = create_directory_handle(cli->tree, BASEDIR, &d_fnum);
+	CHECK_STATUS(status, NT_STATUS_OK);
 	sfinfo.rename_information.in.new_name  = fnum_fname_new+strlen(BASEDIR)+1;
 	sfinfo.rename_information.in.root_fid = d_fnum;
 	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_INVALID_PARAMETER);
