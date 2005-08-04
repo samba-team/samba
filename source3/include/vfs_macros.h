@@ -234,11 +234,11 @@
 
 /* AIO operations. */
 #define SMB_VFS_OPAQUE_AIO_READ(fsp,aiocb) ((fsp)->conn->vfs_opaque.ops.aio_read((fsp)->conn->vfs_opaque.handles.aio_read,(fsp),(aiocb)))
-#define SMB_VFS_OPAQUE_AIO_WRITE(fsp,aiocb) ((fsp)->conn->vfs_opaque.ops.aio_write((fsp)->conn->vfs_opaque.handles.aio_read,(fsp),(aiocb)))
-#define SMB_VFS_OPAQUE_AIO_RETURN(fsp,aiocb) ((fsp)->conn->vfs_opaque.ops.aio_return((fsp)->conn->vfs_opaque.handles.aio_read,(fsp),(aiocb)))
-#define SMB_VFS_OPAQUE_AIO_CANCEL(fsp,fd,aiocb) ((fsp)->conn->vfs_opaque.ops.aio_cancel((fsp)->conn->vfs_opaque.handles.aio_read,(fsp),(fd),(aiocb)))
-#define SMB_VFS_OPAQUE_AIO_ERROR(fsp,aiocb) ((fsp)->conn->vfs_opaque.ops.aio_error((fsp)->conn->vfs_opaque.handles.aio_read,(fsp),(aiocb)))
-#define SMB_VFS_OPAQUE_AIO_FSYNC(fsp,op,aiocb) ((fsp)->conn->vfs_opaque.ops.aio_fsync((fsp)->conn->vfs_opaque.handles.aio_read,(fsp),(op),(aiocb)))
+#define SMB_VFS_OPAQUE_AIO_WRITE(fsp,aiocb) ((fsp)->conn->vfs_opaque.ops.aio_write((fsp)->conn->vfs_opaque.handles.aio_write,(fsp),(aiocb)))
+#define SMB_VFS_OPAQUE_AIO_RETURN(fsp,aiocb) ((fsp)->conn->vfs_opaque.ops.aio_return((fsp)->conn->vfs_opaque.handles.aio_return,(fsp),(aiocb)))
+#define SMB_VFS_OPAQUE_AIO_CANCEL(fsp,fd,aiocb) ((fsp)->conn->vfs_opaque.ops.aio_cancel((fsp)->conn->vfs_opaque.handles.cancel,(fsp),(fd),(aiocb)))
+#define SMB_VFS_OPAQUE_AIO_ERROR(fsp,aiocb) ((fsp)->conn->vfs_opaque.ops.aio_error((fsp)->conn->vfs_opaque.handles.aio_error,(fsp),(aiocb)))
+#define SMB_VFS_OPAQUE_AIO_FSYNC(fsp,op,aiocb) ((fsp)->conn->vfs_opaque.ops.aio_fsync((fsp)->conn->vfs_opaque.handles.aio_fsync,(fsp),(op),(aiocb)))
 #define SMB_VFS_OPAQUE_AIO_SUSPEND(fsp,aiocb,n,ts) ((fsp)->conn->vfs_opaque.ops.aio_suspend((fsp)->conn->vfs_opaque.handles.aio_suspend,(fsp),(aiocb),(n),(ts)))
 
 /*******************************************************************
@@ -345,11 +345,11 @@
 
 /* AIO operations. */
 #define SMB_VFS_NEXT_AIO_READ(handle,fsp,aiocb) ((handle)->vfs_next.ops.aio_read((handle)->vfs_next.handles.aio_read,(fsp),(aiocb)))
-#define SMB_VFS_NEXT_AIO_WRITE(handle,fsp,aiocb) ((handle)->vfs_next.ops.aio_write((handle)->vfs_next.handles.aio_read,(fsp),(aiocb)))
-#define SMB_VFS_NEXT_AIO_RETURN(handle,fsp,aiocb) ((handle)->vfs_next.ops.aio_return((handle)->vfs_next.handles.aio_read,(fsp),(aiocb)))
-#define SMB_VFS_NEXT_AIO_CANCEL(handle,fsp,fd,aiocb) ((handle)->vfs_next.ops.aio_cancel((handle)->vfs_next.handles.aio_read,(fsp),(fd),(aiocb)))
-#define SMB_VFS_NEXT_AIO_ERROR(handle,fsp,aiocb) ((handle)->vfs_next.ops.aio_error((handle)->vfs_next.handles.aio_read,(fsp),(aiocb)))
-#define SMB_VFS_NEXT_AIO_FSYNC(handle,fsp,op,aiocb) ((handle)->vfs_next.ops.aio_fsync((handle)->vfs_next.handles.aio_read,(fsp),(op),(aiocb)))
+#define SMB_VFS_NEXT_AIO_WRITE(handle,fsp,aiocb) ((handle)->vfs_next.ops.aio_write((handle)->vfs_next.handles.aio_write,(fsp),(aiocb)))
+#define SMB_VFS_NEXT_AIO_RETURN(handle,fsp,aiocb) ((handle)->vfs_next.ops.aio_return((handle)->vfs_next.handles.aio_return,(fsp),(aiocb)))
+#define SMB_VFS_NEXT_AIO_CANCEL(handle,fsp,fd,aiocb) ((handle)->vfs_next.ops.aio_cancel((handle)->vfs_next.handles.aio_cancel,(fsp),(fd),(aiocb)))
+#define SMB_VFS_NEXT_AIO_ERROR(handle,fsp,aiocb) ((handle)->vfs_next.ops.aio_error((handle)->vfs_next.handles.aio_error,(fsp),(aiocb)))
+#define SMB_VFS_NEXT_AIO_FSYNC(handle,fsp,op,aiocb) ((handle)->vfs_next.ops.aio_fsync((handle)->vfs_next.handles.aio_fsync,(fsp),(op),(aiocb)))
 #define SMB_VFS_NEXT_AIO_SUSPEND(handle,fsp,aiocb,n,ts) ((handle)->vfs_next.ops.aio_suspend((handle)->vfs_next.handles.aio_suspend,(fsp),(aiocb),(n),(ts)))
 
 #endif /* _VFS_MACROS_H */
