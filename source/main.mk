@@ -180,7 +180,9 @@ valgrindtest: all
 	./script/tests/selftest.sh ${selftest_prefix}/st quick SOCKET_WRAPPER
 
 .y.c:
-	$(YACC) -d -o $@ $<	
+	@echo "Building $< with $(YACC)"
+	@-$(srcdir)/script/yacc_compile.sh "$(YACC)" "$<" "$@"
 
 .l.c:
-	$(LEX) -o $@ $<
+	@echo "Building $< with $(LEX)"
+	@-$(srcdir)/script/lex_compile.sh "$(LEX)" "$<" "$@"
