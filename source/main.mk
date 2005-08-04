@@ -52,7 +52,7 @@ include kdc/config.mk
 include lib/replace/config.mk
 include scripting/ejs/config.mk
 
-all: proto bin/asn1_compile bin/compile_et basics binaries
+all: binary_asn1_compile binary_compile_et binaries
 binaries: $(BIN_PROGS) $(SBIN_PROGS)
 manpages: $(MANPAGES)
 everything: all
@@ -141,12 +141,25 @@ smb_interfaces: build/pidl/smb_interfaces.pm
 build/pidl/smb_interfaces.pm: build/pidl/smb_interfaces.yp
 	-yapp -s -m 'smb_interfaces' -o build/pidl/smb_interfaces.pm build/pidl/smb_interfaces.yp 
 
+include/config.h:
+	@echo "include/config.h not present"
+	@echo "You need to rerun ./autogen.sh and ./configure"
+	@/bin/false
+
+include/proto.h: $(PROTO_PROTO_OBJS:.o=.c)
+	@-rm -f include/includes.h.gch
+	@$(SHELL) script/mkproto.sh "$(PERL)" \
+	  -h _PROTO_H_ include/proto.h \
+	  $(PROTO_PROTO_OBJS)
+	@touch include/proto.h
+
+proto: include/proto.h
 pch: proto include/includes.h.gch
 
-pch_clean:
-	-rm -f include/includes.h.gch
-
-basics: idl proto_exists heimdal/lib/hdb/hdb_asn1.h heimdal/lib/gssapi/spnego_asn1.h heimdal/lib/asn1/krb5_asn1.h heimdal/lib/roken/vis.h heimdal/lib/roken/err.h heimdal/lib/asn1/asn1_err.h heimdal/lib/hdb/hdb_err.h heimdal/lib/krb5/heim_err.h heimdal/lib/krb5/k524_err.h heimdal/lib/krb5/krb5_err.h
+basics: include/config.h \
+	include/proto.h \
+	idl \
+	heimdal_basics
 
 test: $(DEFAULT_TEST_TARGET)
 
