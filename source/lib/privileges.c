@@ -758,7 +758,7 @@ char* luid_to_privilege_name(const LUID *set)
 
 	for ( i=0; !se_priv_equal(&privs[i].se_priv, &se_priv_end); i++ ) {
 		if ( set->low == privs[i].luid.low ) {
-			fstrcpy( name, privs[set->low - 1].name );
+			fstrcpy( name, privs[i].name );
 			return name;
 		}
 	}
