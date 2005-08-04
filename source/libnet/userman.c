@@ -546,6 +546,19 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 
 			} else {
 				s->stage = USERMOD_QUERY;
+				return s->change.fields;
+			}
+
+		} else if (s->change.fields & USERMOD_FIELD_FORCE_PASS_CHG) {
+			*level = 3;
+
+			if (s->stage == USERMOD_QUERY) {
+				i->info3.force_password_change = timeval_to_nttime(s->change.force_password_change);
+				s->change.fields ^= USERMOD_FIELD_FORCE_PASS_CHG;
+
+			} else {
+				s->stage = USERMOD_QUERY;
+				return s->change.fields;
 			}
 
 		} else if (s->change.fields & USERMOD_FIELD_LOGON_SCRIPT) {
