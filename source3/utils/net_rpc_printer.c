@@ -939,7 +939,7 @@ net_spoolss_enumprinterkey(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	WERROR result;
 
 	/* enumprinterkey call */
-	result = cli_spoolss_enumprinterkey(cli, mem_ctx, hnd, keyname, NULL, NULL);
+	result = cli_spoolss_enumprinterkey(cli, mem_ctx, hnd, keyname, keylist, NULL);
 		
 	if (!W_ERROR_IS_OK(result)) {
 		printf("enumprinterkey failed: %s\n", dos_errstr(result));
