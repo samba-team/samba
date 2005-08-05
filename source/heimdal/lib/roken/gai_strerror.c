@@ -40,7 +40,7 @@ RCSID("$Id: gai_strerror.c,v 1.5 2005/04/12 11:28:42 lha Exp $");
 
 static struct gai_error {
     int code;
-    const char *str;
+    char *str;
 } errors[] = {
 {EAI_NOERROR,		"no error"},
 #ifdef EAI_ADDRFAMILY
@@ -65,7 +65,7 @@ static struct gai_error {
  *
  */
 
-const char * ROKEN_LIB_FUNCTION
+char * ROKEN_LIB_FUNCTION
 gai_strerror(int ecode)
 {
     struct gai_error *g;
