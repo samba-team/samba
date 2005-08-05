@@ -672,13 +672,12 @@ static BOOL setup_bind_nak(pipes_struct *p)
 	prs_init( &outgoing_rpc, 0, p->mem_ctx, MARSHALL);
 	prs_give_memory( &outgoing_rpc, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
 
-
 	/*
 	 * Initialize a bind_nak header.
 	 */
 
 	init_rpc_hdr(&nak_hdr, RPC_BINDNACK, RPC_FLG_FIRST | RPC_FLG_LAST,
-            p->hdr.call_id, RPC_HEADER_LEN + sizeof(uint16), 0);
+		p->hdr.call_id, RPC_HEADER_LEN + sizeof(uint16), 0);
 
 	/*
 	 * Marshall the header into the outgoing PDU.
@@ -696,7 +695,7 @@ static BOOL setup_bind_nak(pipes_struct *p)
 
 	if(!prs_uint16("reject code", &outgoing_rpc, 0, &zero)) {
 		prs_mem_free(&outgoing_rpc);
-        return False;
+		return False;
 	}
 
 	p->out_data.data_sent_length = 0;
@@ -1238,10 +1237,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 			prs_mem_free(&out_hdr_ba);
 			prs_mem_free(&out_auth);
 
-			if(!setup_bind_nak(p)) {
-				return False;
-			}
-			return True;
+			return setup_bind_nak(p);
                 }
 
                 for (i = 0; i < rpc_lookup_size; i++) {
@@ -1433,7 +1429,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	prs_mem_free(&outgoing_rpc);
 	prs_mem_free(&out_hdr_ba);
 	prs_mem_free(&out_auth);
-	return False;
+	return setup_bind_nak(p);
 }
 
 /****************************************************************************
