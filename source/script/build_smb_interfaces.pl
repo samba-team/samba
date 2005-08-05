@@ -45,12 +45,31 @@ foreach my $x (@{$header}) {
 
   prototypes_for($x);
 
-  # Prototypes for non-anonymous nested structures and unions
-
   foreach my $e1 (@{$x->{DATA}}) {
     foreach my $e2 (@{$e1->{DATA}}) {
+
+      # Prototypes for non-anonymous nested structures and unions:
+      #
+      # e.g struct foo {...};
+
       if (defined($e2->{STRUCT_NAME}) or defined($e2->{UNION_NAME})) {
 	prototypes_for($e2);
+      }
+
+      # We also would like to push/pull nested structures and unions: 
+      #
+      # e.g struct foo {
+      #         struct {...} bar;
+      #     };
+
+      if ($e2->{TYPE} eq "struct") {
+	if (defined($e2->{NAME}) and !defined($e2->{STRUCT_NAME})) {
+	  foreach my $x (@{$e2->{NAME}}) {
+	    $name = "$e1->{NAME}[0]_$x";
+	    print FILE "NTSTATUS ejs_push_$name(struct ejs_rpc *, struct MprVar *, const char *, const uint32_t *);\n";
+	    print FILE "NTSTATUS ejs_pull_$name(struct ejs_rpc *, struct MprVar *, const char *, const uint32_t *);\n";
+	  }
+	}
       }
     }
   }
@@ -97,6 +116,11 @@ sub print_field($$) {
     if ($f->{POINTERS} > 0) {
       print FILE "\t// alloc $x?\n";
     }
+
+    if ($f->{TYPE} eq "struct") {
+      $type = $f->{STRUCT_NAME};
+    }
+
     print FILE "\tNDR_CHECK(ejs_pull_$type(ejs, v, \"$x\", ${deref}r->$suffix.$x));\n";
   }
 }
@@ -138,6 +162,33 @@ foreach my $x (@{$header}) {
   print FILE "}\n\n";
 }
 
+# Nested anonymous structures
+
+foreach my $x (@{$header}) {
+  foreach my $e1 (@{$x->{DATA}}) {
+    foreach my $e2 (@{$e1->{DATA}}) {
+      if ($e2->{TYPE} eq "struct") {
+	if (defined($e2->{NAME}) and !defined($e2->{STRUCT_NAME})) {
+	  foreach my $x (@{$e2->{NAME}}) {
+
+	    $name = "$e1->{NAME}[0]_$x";
+
+	    print FILE "static NTSTATUS ejs_push_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const uint32_t *r)\n";
+	    print FILE "{\n";
+	    print FILE "\treturn NT_STATUS_OK;\n";
+	    print FILE "}\n\n";
+
+	    print FILE "static NTSTATUS ejs_pull_$name(struct ejs_rpc *ejs, struct MprVar *v, const char *name, const uint32_t *r)\n";
+	    print FILE "{\n";
+	    print FILE "\treturn NT_STATUS_OK;\n";
+	    print FILE "}\n\n";
+	  }
+	}
+      }
+    }
+  }
+}
+
 # Top level call functions
 
 foreach my $x (@{$header}) {
@@ -148,7 +199,7 @@ foreach my $x (@{$header}) {
 
   print FILE "static int ejs_$x->{STRUCT_NAME}(int eid, int argc, struct MprVar **argv)\n";
   print FILE "{\n";
-  print FILE "\tstruct $x->{STRUCT_NAME} parms;\n";
+  print FILE "\tstruct $x->{STRUCT_NAME} params;\n";
   print FILE "\tstruct smbcli_tree *tree;\n";
   print FILE "\tNTSTATUS result;\n\n";
 
@@ -183,7 +234,7 @@ __HERE__
 
 print FILE "static int ejs_${basename}_init(int eid, int argc, struct MprVar **argv)\n";
 print FILE "{\n";
-print FILE "\tstruct MprVar *obj = mprInitObject(eid, \"${basename}\", argc, argtv);\n\n";
+print FILE "\tstruct MprVar *obj = mprInitObject(eid, \"${basename}\", argc, argv);\n\n";
 
 foreach my $x (@{$header}) {
   next, if $x->{STRUCT_NAME} eq "";
