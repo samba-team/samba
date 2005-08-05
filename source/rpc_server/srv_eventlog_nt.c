@@ -80,56 +80,44 @@ BOOL copy_tdb_uint32_value_to_new_tdb(TDB_CONTEXT *new_tdb, TDB_CONTEXT *tdb, ch
 
 ****************************************************************************/
 
-BOOL write_evtlog_uint32_reg_value(char *evtlogname, char *vname, uint32 davalue)
+BOOL write_evtlog_uint32_reg_value(const char *evtlogname, const char *vname, uint32 davalue)
 {
 	fstring evt_keyname;
-	const char **evtlog_list;
+	const char **evtlog_list = lp_eventlog_list();
     
-	if (!evtlog_tdb) {
+	if (!evtlog_tdb || !evtlogname || !*evtlogname || !vname || !*vname )
 		return False;
-	}
-	if (!evtlogname) {
-		return False;
-	}
-	if (!*evtlogname) {
-		return False;
-	}
-	if (!vname) {
-		return False;
-	}
-	if (!*vname) {
-		return False;
-	}
     
-	/* make sure that we care about the particular eventlog name -- no bogus filling up of the tdb */
+	/* make sure that we care about the particular eventlog name. 
+	   no bogus filling up of the tdb */
     
-	evtlog_list = lp_eventlog_list();
-    
-	if (!evtlog_list) {
+	if ( !evtlog_list ) 
 		return False;
-	}
-	while (*evtlog_list) {
-		if (0 == StrCaseCmp(evtlogname,*evtlog_list)) {
+
+	for ( /*nothing */; *evtlog_list; evtlog_list++ ) {
+		if ( strequal(evtlogname,*evtlog_list) ) 
 			break;
-		}
-		evtlog_list++;
 	}
-	if (!*evtlog_list) {
-		DEBUG(0,("write_evtlog_uint32_reg_value: We don't care about eventlogs named %s\n",evtlogname));
+
+	if ( !*evtlog_list ) {
+		DEBUG(0,("write_evtlog_uint32_reg_value: We don't care about eventlogs named %s\n",
+			evtlogname));
 		return False;
 	}
-	/* the eventlog name is okay, but we should be checking the values that we're keeping at a higher level */
-	fstrcpy(evt_keyname,evtlogname);
-	fstrcat(evt_keyname,"/");
-	fstrcat(evt_keyname,vname);
-    
-	/* NORMALIZE  */
+
+	/* the eventlog name is okay, but we should be checking the 
+	   values that we're keeping at a higher level */
+
+	/* normalize the key */
+
+	fstr_sprintf(evt_keyname, "%s/%s", evtlogname, vname );
 	strupper_m(evt_keyname);
     
-	tdb_lock_bystring(evtlog_tdb, evt_keyname, 0);
-	DEBUG(10,("write_evtlog_uint32_reg_value: Storing value for [%s], value is %x\n",evt_keyname, davalue));
-	tdb_store_uint32(evtlog_tdb, evt_keyname,davalue);
-	tdb_unlock_bystring(evtlog_tdb, evt_keyname);
+	DEBUG(10,("write_evtlog_uint32_reg_value: Storing value for [%s], value is %x\n",
+		evt_keyname, davalue));
+
+	tdb_store_uint32(evtlog_tdb, evt_keyname, davalue);
+
 	return True;
 }
 
@@ -137,63 +125,47 @@ BOOL write_evtlog_uint32_reg_value(char *evtlogname, char *vname, uint32 davalue
   Read a parameter from the eventlog_param tdb relevant to eventlogs.
 ****************************************************************************/
 
-BOOL read_evtlog_uint32_reg_value(char *evtlogname, char *vname, uint32 *davalue)
+BOOL read_evtlog_uint32_reg_value(const char *evtlogname, const char *vname, uint32 *davalue)
 {
 	fstring evt_keyname;
-	const char **evtlog_list;
+	const char **evtlog_list = lp_eventlog_list();
 	uint32 l_davalue;
-	int    rc;
     
-	if (!evtlog_tdb) {
+	if (!evtlog_tdb || !evtlogname || !*evtlogname || !vname || !*vname )
 		return False;
-	}
-	if (!evtlogname) {
+
+	if ( !evtlog_list )
 		return False;
-	}
-	if (!*evtlogname) {
-		return False;
-	}
-	if (!vname) {
-		return False;
-	}
-	if (!*vname) {
-		return False;
-	}
     
-	evtlog_list = lp_eventlog_list();
-	if (!evtlog_list) {
-		return False;
-	}
-    
-	while (*evtlog_list) {
-		if (0 == StrCaseCmp(evtlogname,*evtlog_list)) {
+	for ( /* nothing */; *evtlog_list; evtlog_list++ ) {
+		if ( strequal(evtlogname,*evtlog_list) )
 			break;
-		}
-		evtlog_list++;
 	}
-	if (!*evtlog_list) {
-		DEBUG(0,("read_evtlog_uint32_reg_value: We don't care about eventlogs named %s\n",evtlogname));
+
+	if ( !*evtlog_list ) {
+		DEBUG(0,("read_evtlog_uint32_reg_value: We don't care about eventlogs named %s\n",
+			evtlogname));
 		return False;
 	}
-	/* the eventlog name is okay, but we should be checking the values that we're keeping at a higher level */
-	fstrcpy(evt_keyname,evtlogname);
-	fstrcat(evt_keyname,"/");
-	fstrcat(evt_keyname,vname);
-    
-	/* NORMALIZE  */
+
+	/* the eventlog name is okay, but we should be checking the values 
+	   that we're keeping at a higher level */
+
+	/* normalize the key */
+	fstr_sprintf( evt_keyname, "%s/%s", evtlogname, vname );
 	strupper_m(evt_keyname);
     
-	tdb_lock_bystring(evtlog_tdb, evt_keyname, 0);
-    
-	rc = tdb_fetch_uint32(evtlog_tdb, evt_keyname,&l_davalue);
-	if (-1 != rc) {
-		*davalue = l_davalue;
-		DEBUG(10,("read_evtlog_uint32_reg_value: Read value for [%s], value is %x\n",evt_keyname, *davalue));
-	} else {
-		DEBUG(10,("read_evtlog_uint32_reg_value: Read value for [%s], VALUE NOT FOUND\n",evt_keyname));
+	if ( tdb_fetch_uint32(evtlog_tdb, evt_keyname,&l_davalue) == -1 ) {
+		DEBUG(10,("read_evtlog_uint32_reg_value: Read value for [%s], VALUE NOT FOUND\n",
+			evt_keyname));
+		return False;
 	}
+
+	*davalue = l_davalue;
+
+	DEBUG(10,("read_evtlog_uint32_reg_value: Read value for [%s], value is %x\n",
+		evt_keyname, *davalue));
     
-	tdb_unlock_bystring(evtlog_tdb, evt_keyname);
 	return True;
 }
 
@@ -279,15 +251,16 @@ static BOOL cleanup_eventlog_parameters( TDB_CONTEXT *levtlog_tdb )
 
 void eventlog_refresh_external_parameters(void)
 {
-	const char **evtlog_list;
-    
-	evtlog_list = lp_eventlog_list();
-	while (evtlog_list && *evtlog_list) {
+	const char **evtlog_list = lp_eventlog_list();
+
+	if ( !evtlog_list )
+		return ;
+
+	for ( /* nothing */; *evtlog_list; evtlog_list++ ) {
 		DEBUG(10,("eventlog_refresh_external_parameters: Refreshing =>[%s]\n",*evtlog_list));	
-		if (!eventlog_control_eventlog( (char *)*evtlog_list)) {
+		if (!eventlog_control_eventlog( *evtlog_list)) {
 			DEBUG(0,("eventlog_refresh_external_parameters: failed to refresh [%s]\n",*evtlog_list));
 		}
-		evtlog_list++;
 	}  
     
 	return;
@@ -338,11 +311,11 @@ BOOL init_eventlog_parameters( void )
 static void free_eventlog_info(void *ptr)
 {
 	struct eventlog_info *info = (struct eventlog_info *)ptr;
-	memset(info->source_log_file_name, '0', sizeof(*(info->source_log_file_name)));
-	memset(info->source_server_name, '0', sizeof(*(info->source_server_name)));
-	memset(info->handle_string, '0', sizeof(*(info->handle_string)));
-	memset(info, 0, sizeof(*(info)));
+
+	ZERO_STRUCTP( info );
 	SAFE_FREE(info);
+
+	return;
 }
 
 
@@ -350,7 +323,7 @@ static Eventlog_info *find_eventlog_info_by_hnd(pipes_struct *p, POLICY_HND *han
 {
 	Eventlog_info *info = NULL;
     
-	if(!(find_policy_by_hnd(p,handle,(void **)&info))) {
+	if ( !find_policy_by_hnd(p,handle,(void **)&info) ) {
 		DEBUG(2,("find_eventlog_info_by_hnd: eventlog not found.\n"));
 	}
 
@@ -379,7 +352,7 @@ void policy_handle_to_string(POLICY_HND *handle, fstring *dest)
  *     INPUT: <control_cmd> <log name> <retention> <maxsize>
  *     OUTPUT: nothing
  */
-BOOL eventlog_control_eventlog(char *evtlogname)
+BOOL eventlog_control_eventlog(const char *evtlogname)
 {
 	char *cmd = lp_eventlog_control_cmd();
 	pstring command;
@@ -395,7 +368,7 @@ BOOL eventlog_control_eventlog(char *evtlogname)
 	}
 
 	uiRetention = 0x93A80;
-	uiMaxSize = 0x80000;  // defaults
+	uiMaxSize = 0x80000;  
 	/* evtlogname=info->source_log_file_name; */
 
 	pstrcpy(v_name,"Retention");

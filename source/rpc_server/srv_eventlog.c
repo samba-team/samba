@@ -27,7 +27,6 @@ static BOOL api_eventlog_open_eventlog(pipes_struct *p)
 {
 	EVENTLOG_Q_OPEN_EVENTLOG q_u;
 	EVENTLOG_R_OPEN_EVENTLOG r_u;
-
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
@@ -53,7 +52,6 @@ static BOOL api_eventlog_close_eventlog(pipes_struct *p)
 {
 	EVENTLOG_Q_CLOSE_EVENTLOG q_u;
 	EVENTLOG_R_CLOSE_EVENTLOG r_u;
-
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
@@ -79,7 +77,6 @@ static BOOL api_eventlog_get_num_records(pipes_struct *p)
 {
 	EVENTLOG_Q_GET_NUM_RECORDS q_u;
 	EVENTLOG_R_GET_NUM_RECORDS r_u;
-
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
@@ -105,7 +102,6 @@ static BOOL api_eventlog_get_oldest_entry(pipes_struct *p)
 {
 	EVENTLOG_Q_GET_OLDEST_ENTRY q_u;
 	EVENTLOG_R_GET_OLDEST_ENTRY r_u;
-
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
@@ -131,7 +127,6 @@ static BOOL api_eventlog_read_eventlog(pipes_struct *p)
 {
 	EVENTLOG_Q_READ_EVENTLOG q_u;
 	EVENTLOG_R_READ_EVENTLOG r_u;
-
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
@@ -157,7 +152,6 @@ static BOOL api_eventlog_clear_eventlog(pipes_struct *p)
 {
 	EVENTLOG_Q_CLEAR_EVENTLOG q_u;
 	EVENTLOG_R_CLEAR_EVENTLOG r_u;
-
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
