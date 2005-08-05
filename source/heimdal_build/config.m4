@@ -209,8 +209,12 @@ AC_CHECK_FUNC(gai_strerror)
 if test t$ac_cv_func_gai_strerror != tyes; then
     AC_SEARCH_LIBS_EXT(gai_strerror, [xnet], XNET_LIBS)
     AC_CHECK_FUNC_EXT(gai_strerror, $XNET_LIBS)
-    if test t$ac_cv_func_gai_strerror != tyes; then
+    if test t$ac_cv_func_ext_gai_strerror != tyes; then
 	SMB_SUBSYSTEM_ENABLE(HEIMDAL_ROKEN_GAI_STRERROR, YES)
+    else
+	AC_DEFINE(HAVE_GAI_STRERROR,1,[Whether gai_strerror() is available])
     fi
+else
+    AC_DEFINE(HAVE_GAI_STRERROR,1,[Whether gai_strerror() is available])
 fi
 SMB_EXT_LIB(XNET,[${XNET_LIBS}],[${XNET_CFLAGS}],[${XNET_CPPFLAGS}],[${XNET_LDFLAGS}])
