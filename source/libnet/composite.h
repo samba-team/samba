@@ -87,6 +87,7 @@ struct libnet_rpc_usermod {
 			struct timeval *acct_expiry;
 			struct timeval *allow_password_change;
 			struct timeval *force_password_change;
+			uint32_t acct_flags;
 		} change;
 	} in;
 };

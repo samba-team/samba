@@ -422,15 +422,15 @@ BOOL torture_usermod(void)
 	struct timeval force  = { 33333, 55444 };
 
 	struct usermod_change changes[] = {
-		{ USERMOD_FIELD_ACCOUNT_NAME,   "changed", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL },
-		{ USERMOD_FIELD_FULL_NAME,      NULL, "Testing full account name", NULL, NULL, NULL, NULL, NULL, NULL, NULL },
-		{ USERMOD_FIELD_DESCRIPTION,    NULL, NULL, "Description of tested account", NULL, NULL, NULL, NULL, NULL, NULL },
-		{ USERMOD_FIELD_COMMENT,        NULL, NULL, NULL, "Comment for the tested account", NULL, NULL, NULL, NULL, NULL },
-		{ USERMOD_FIELD_LOGON_SCRIPT,   NULL, NULL, NULL, NULL, "test_logon.cmd", NULL, NULL, NULL, NULL },
-		{ USERMOD_FIELD_PROFILE_PATH,   NULL, NULL, NULL, NULL, NULL, "\\\\TESTSRV\\profiles\\test", NULL, NULL, NULL },
-		{ USERMOD_FIELD_ACCT_EXPIRY,    NULL, NULL, NULL, NULL, NULL, NULL, &expiry, NULL, NULL },
-		{ USERMOD_FIELD_ALLOW_PASS_CHG, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &allow, NULL },
-		{ USERMOD_FIELD_FORCE_PASS_CHG, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &force }
+		{ USERMOD_FIELD_ACCOUNT_NAME,   "changed", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0 },
+		{ USERMOD_FIELD_FULL_NAME,      NULL, "Testing full account name", NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0 },
+		{ USERMOD_FIELD_DESCRIPTION,    NULL, NULL, "Description of tested account", NULL, NULL, NULL, NULL, NULL, NULL, 0 },
+		{ USERMOD_FIELD_COMMENT,        NULL, NULL, NULL, "Comment for the tested account", NULL, NULL, NULL, NULL, NULL, 0 },
+		{ USERMOD_FIELD_LOGON_SCRIPT,   NULL, NULL, NULL, NULL, "test_logon.cmd", NULL, NULL, NULL, NULL, 0 },
+		{ USERMOD_FIELD_PROFILE_PATH,   NULL, NULL, NULL, NULL, NULL, "\\\\TESTSRV\\profiles\\test", NULL, NULL, NULL, 0 },
+		{ USERMOD_FIELD_ACCT_EXPIRY,    NULL, NULL, NULL, NULL, NULL, NULL, &expiry, NULL, NULL, 0 },
+		{ USERMOD_FIELD_ALLOW_PASS_CHG, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &allow, NULL, 0 },
+		{ USERMOD_FIELD_FORCE_PASS_CHG, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &force, ACB_NORMAL }
 	};
 	
 	mem_ctx = talloc_init("test_userdel");
