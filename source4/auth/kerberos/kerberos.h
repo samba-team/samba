@@ -127,17 +127,29 @@ NTSTATUS create_memory_keytab(TALLOC_CTX *parent_ctx,
 			      struct smb_krb5_context *smb_krb5_context,
 			      krb5_keytab *keytab);
 NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
-			     struct PAC_LOGON_INFO **logon_info_out,
+			     struct PAC_DATA **pac_data_out,
 			     DATA_BLOB blob,
 			     struct smb_krb5_context *smb_krb5_context,
-			     krb5_keyblock *service_keyblock,
-			     krb5_keyblock *krbtgt_keyblock);
-
-krb5_error_code kerberos_encode_pac(TALLOC_CTX *mem_ctx,
+			     krb5_keyblock *krbtgt_keyblock,
+			     krb5_keyblock *service_keyblock);
+NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
+				 struct PAC_LOGON_INFO **logon_info,
+				 DATA_BLOB blob,
+				 struct smb_krb5_context *smb_krb5_context,
+				 krb5_keyblock *krbtgt_keyblock,
+				 krb5_keyblock *service_keyblock);
+krb5_error_code kerberos_create_pac(TALLOC_CTX *mem_ctx,
 				    struct auth_serversupplied_info *server_info,
 				    krb5_context context,
 				    krb5_keyblock *krbtgt_keyblock,
 				    krb5_keyblock *server_keyblock,
+				    DATA_BLOB *pac);
+
+krb5_error_code kerberos_encode_pac(TALLOC_CTX *mem_ctx,
+				    struct PAC_DATA *pac_data,
+				    krb5_context context,
+				    krb5_keyblock *krbtgt_keyblock,
+				    krb5_keyblock *service_keyblock,
 				    DATA_BLOB *pac);
 #endif /* HAVE_KRB5 */
 

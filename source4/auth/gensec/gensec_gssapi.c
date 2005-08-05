@@ -795,9 +795,9 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		gss_release_buffer(&min_stat, &pac);
 		
 		/* decode and verify the pac */
-		nt_status = kerberos_decode_pac(mem_ctx, &logon_info, pac_blob,
-						gensec_gssapi_state->smb_krb5_context,
-						NULL, keyblock);
+		nt_status = kerberos_pac_logon_info(mem_ctx, &logon_info, pac_blob,
+						    gensec_gssapi_state->smb_krb5_context,
+						    NULL, keyblock);
 
 		if (NT_STATUS_IS_OK(nt_status)) {
 			union netr_Validation validation;
