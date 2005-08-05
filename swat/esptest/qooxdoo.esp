@@ -114,4 +114,4 @@
 
  <div id="canvas" style="overflow:hidden;position:static;margin-top:38px;margin-left:10px;margin-right:700px;width:700px"></div>
 
-<% page_footer() %>
+<% page_footer(); %>
