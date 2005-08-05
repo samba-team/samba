@@ -312,7 +312,8 @@ sub ParseElement($)
 		TYPE => $e->{TYPE},
 		PROPERTIES => $e->{PROPERTIES},
 		LEVELS => GetElementLevelTable($e),
-		ALIGN => align_type($e->{TYPE})
+		ALIGN => align_type($e->{TYPE}),
+		ORIGINAL => $e
 	};
 }
 
@@ -342,7 +343,8 @@ sub ParseStruct($)
 		TYPE => "STRUCT",
 		SURROUNDING_ELEMENT => $surrounding,
 		ELEMENTS => \@elements,
-		PROPERTIES => $struct->{PROPERTIES}
+		PROPERTIES => $struct->{PROPERTIES},
+		ORIGINAL => $struct
 	};
 }
 
@@ -377,7 +379,8 @@ sub ParseUnion($)
 		TYPE => "UNION",
 		SWITCH_TYPE => $switch_type,
 		ELEMENTS => \@elements,
-		PROPERTIES => $e->{PROPERTIES}
+		PROPERTIES => $e->{PROPERTIES},
+		ORIGINAL => $e
 	};
 }
 
@@ -389,7 +392,8 @@ sub ParseEnum($)
 		TYPE => "ENUM",
 		BASE_TYPE => Parse::Pidl::Typelist::enum_type_fn($e),
 		ELEMENTS => $e->{ELEMENTS},
-		PROPERTIES => $e->{PROPERTIES}
+		PROPERTIES => $e->{PROPERTIES},
+		ORIGINAL => $e
 	};
 }
 
@@ -401,7 +405,8 @@ sub ParseBitmap($)
 		TYPE => "BITMAP",
 		BASE_TYPE => Parse::Pidl::Typelist::bitmap_type_fn($e),
 		ELEMENTS => $e->{ELEMENTS},
-		PROPERTIES => $e->{PROPERTIES}
+		PROPERTIES => $e->{PROPERTIES},
+		ORIGINAL => $e
 	};
 }
 
@@ -431,7 +436,8 @@ sub ParseTypedef($$)
 		NAME => $d->{NAME},
 		TYPE => $d->{TYPE},
 		PROPERTIES => $d->{PROPERTIES},
-		DATA => $data
+		DATA => $data,
+		ORIGINAL => $d
 	};
 }
 
@@ -473,7 +479,8 @@ sub ParseFunction($$$)
 			OPNUM => $thisopnum,
 			RETURN_TYPE => $rettype,
 			PROPERTIES => $d->{PROPERTIES},
-			ELEMENTS => \@elements
+			ELEMENTS => \@elements,
+			ORIGINAL => $d
 		};
 }
 
