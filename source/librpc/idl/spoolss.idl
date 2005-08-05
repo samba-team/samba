@@ -748,7 +748,8 @@
 		SPOOLSS_PRINTER_DATA_TYPE_NULL = 0,
 		SPOOLSS_PRINTER_DATA_TYPE_STRING = 1,
 		SPOOLSS_PRINTER_DATA_TYPE_BINARY = 3,
-		SPOOLSS_PRINTER_DATA_TYPE_UINT32 = 4
+		SPOOLSS_PRINTER_DATA_TYPE_UINT32 = 4,
+		SPOOLSS_PRINTER_DATA_TYPE_STRING_ARRAY = 7
 	} spoolss_PrinterDataType;
 
 	typedef [nodiscriminant,gensize] union {
@@ -756,6 +757,7 @@
 		[case(SPOOLSS_PRINTER_DATA_TYPE_STRING)] nstring string;
 		[case(SPOOLSS_PRINTER_DATA_TYPE_BINARY),flag(NDR_REMAINING)] DATA_BLOB binary;
 		[case(SPOOLSS_PRINTER_DATA_TYPE_UINT32)] uint32 value;
+		[case(SPOOLSS_PRINTER_DATA_TYPE_STRING_ARRAY)] nstring_array string_array;
 		[default,flag(NDR_REMAINING)] DATA_BLOB data;
 	} spoolss_PrinterData;
 
