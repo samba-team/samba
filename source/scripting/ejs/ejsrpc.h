@@ -95,7 +95,14 @@ NTSTATUS ejs_push_dom_sid(struct ejs_rpc *ejs,
 			  struct MprVar *v, const char *name, const struct dom_sid *r);
 NTSTATUS ejs_push_null(struct ejs_rpc *ejs, struct MprVar *v, const char *name);
 BOOL ejs_pull_null(struct ejs_rpc *ejs, struct MprVar *v, const char *name);
-
+NTSTATUS ejs_pull_DATA_BLOB(struct ejs_rpc *ejs, 
+			    struct MprVar *v, const char *name, DATA_BLOB *r);
+NTSTATUS ejs_push_DATA_BLOB(struct ejs_rpc *ejs, 
+			    struct MprVar *v, const char *name, const DATA_BLOB *r);
+NTSTATUS ejs_pull_BOOL(struct ejs_rpc *ejs, 
+		       struct MprVar *v, const char *name, BOOL *r);
+NTSTATUS ejs_push_BOOL(struct ejs_rpc *ejs, 
+		       struct MprVar *v, const char *name, const BOOL *r);
 
 #define EJS_ALLOC_SIZE(ejs, s, size) do { \
   (s) = talloc_size(ejs, size); \

@@ -292,3 +292,29 @@ NTSTATUS ejs_push_lsa_String(struct ejs_rpc *ejs,
 	return ejs_push_string(ejs, v, name, r->string);
 }
 
+NTSTATUS ejs_pull_DATA_BLOB(struct ejs_rpc *ejs, 
+			    struct MprVar *v, const char *name, DATA_BLOB *r)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS ejs_push_DATA_BLOB(struct ejs_rpc *ejs, 
+			    struct MprVar *v, const char *name, 
+			    const DATA_BLOB *r)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS ejs_pull_BOOL(struct ejs_rpc *ejs, 
+		       struct MprVar *v, const char *name, BOOL *r)
+{
+	NDR_CHECK(mprGetVar(&v, name));
+	*r = mprVarToBool(v);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ejs_push_BOOL(struct ejs_rpc *ejs, 
+		       struct MprVar *v, const char *name, const BOOL *r)
+{
+	return mprSetVar(v, name, mprCreateBoolVar(*r));
+}
