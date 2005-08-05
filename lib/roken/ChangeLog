@@ -1,3 +1,9 @@
+2005-08-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gai_strerror.c, roken.h.in: Make return value of gai_strerror
+	const to match SUSv3.  Prompted by Stefan Metzmacher change to
+	Samba.
+
 2005-07-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* roken.h.in: Remove parameter names to avoid shadow warnings.
