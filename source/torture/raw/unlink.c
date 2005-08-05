@@ -195,7 +195,7 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("Testing with delete_on_close 0\n");
 	fnum = create_complex_file(cli, mem_ctx, fname);
 
-	sfinfo.disposition_info.level = RAW_SFILEINFO_DISPOSITION_INFORMATION;
+	sfinfo.disposition_info.level = RAW_SFILEINFO_DISPOSITION_INFO;
 	sfinfo.disposition_info.file.fnum = fnum;
 	sfinfo.disposition_info.in.delete_on_close = 0;
 	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
@@ -223,7 +223,7 @@ static BOOL test_delete_on_close(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = create_directory_handle(cli->tree, dname, &fnum);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	sfinfo.disposition_info.level = RAW_SFILEINFO_DISPOSITION_INFORMATION;
+	sfinfo.disposition_info.level = RAW_SFILEINFO_DISPOSITION_INFO;
 	sfinfo.disposition_info.file.fnum = fnum;
 	sfinfo.disposition_info.in.delete_on_close = 0;
 	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
