@@ -560,6 +560,7 @@ static tdb_off tdb_dump_record(TDB_CONTEXT *tdb, tdb_off offset)
 static int tdb_dump_chain(TDB_CONTEXT *tdb, int i)
 {
 	tdb_off rec_ptr, top;
+	int hash_length = 0;
 
 	top = TDB_HASH_TOP(i);
 
@@ -574,7 +575,10 @@ static int tdb_dump_chain(TDB_CONTEXT *tdb, int i)
 
 	while (rec_ptr) {
 		rec_ptr = tdb_dump_record(tdb, rec_ptr);
+		hash_length += 1;
 	}
+
+	printf("chain %d length %d\n", i, hash_length);
 
 	return tdb_unlock(tdb, i, F_WRLCK);
 }
