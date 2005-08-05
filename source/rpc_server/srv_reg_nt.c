@@ -393,8 +393,6 @@ WERROR _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY 
 	uint32 access_granted;
 	WERROR result;
 
-	DEBUG(5,("reg_open_entry: Enter\n"));
-
 	if ( !parent )
 		return WERR_BADFID;
 
@@ -440,8 +438,6 @@ WERROR _reg_query_value(pipes_struct *p, REG_Q_QUERY_VALUE *q_u, REG_R_QUERY_VAL
 	REGVAL_CTR		regvals;
 	int			i;
 
-	DEBUG(5,("_reg_info: Enter\n"));
-
 	if ( !regkey )
 		return WERR_BADFID;
 		
@@ -470,8 +466,6 @@ WERROR _reg_query_value(pipes_struct *p, REG_Q_QUERY_VALUE *q_u, REG_R_QUERY_VAL
 	regval_ctr_destroy( &regvals );
 	free_registry_value( val );
 
-	DEBUG(5,("_reg_info: Exit\n"));
-
 	return status;
 }
 
@@ -484,8 +478,6 @@ WERROR _reg_query_key(pipes_struct *p, REG_Q_QUERY_KEY *q_u, REG_R_QUERY_KEY *r_
 {
 	WERROR 	status = WERR_OK;
 	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
-	
-	DEBUG(5,("_reg_query_key: Enter\n"));
 	
 	if ( !regkey )
 		return WERR_BADFID; 
@@ -508,8 +500,6 @@ WERROR _reg_query_key(pipes_struct *p, REG_Q_QUERY_KEY *q_u, REG_R_QUERY_KEY *r_
 	   
 	ZERO_STRUCT(r_u->mod_time);	
 
-	DEBUG(5,("_reg_query_key: Exit\n"));
-	
 	return status;
 }
 
@@ -523,14 +513,10 @@ WERROR _reg_getversion(pipes_struct *p, REG_Q_GETVERSION *q_u, REG_R_GETVERSION 
 	WERROR 	status = WERR_OK;
 	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
 	
-	DEBUG(5,("_reg_getversion: Enter\n"));
-	
 	if ( !regkey )
 		return WERR_BADFID;
 	
 	r_u->win_version = 0x00000005;	/* Windows 2000 registry API version */
-	
-	DEBUG(5,("_reg_getversion: Exit\n"));
 	
 	return status;
 }
@@ -546,8 +532,6 @@ WERROR _reg_enum_key(pipes_struct *p, REG_Q_ENUM_KEY *q_u, REG_R_ENUM_KEY *r_u)
 	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
 	char		*subkey = NULL;
 	
-	
-	DEBUG(5,("_reg_enum_key: Enter\n"));
 	
 	if ( !regkey )
 		return WERR_BADFID; 
@@ -566,8 +550,6 @@ WERROR _reg_enum_key(pipes_struct *p, REG_Q_ENUM_KEY *q_u, REG_R_ENUM_KEY *r_u)
 	
 	init_reg_r_enum_key( r_u, subkey );
 	
-	DEBUG(5,("_reg_enum_key: Exit\n"));
-	
 done:	
 	SAFE_FREE( subkey );
 	return status;
@@ -584,12 +566,10 @@ WERROR _reg_enum_value(pipes_struct *p, REG_Q_ENUM_VALUE *q_u, REG_R_ENUM_VALUE 
 	REGISTRY_VALUE	*val;
 	
 	
-	DEBUG(5,("_reg_enum_value: Enter\n"));
-	
 	if ( !regkey )
 		return WERR_BADFID; 
 
-	DEBUG(8,("_reg_enum_key: enumerating values for key [%s]\n", regkey->name));
+	DEBUG(8,("_reg_enum_value: enumerating values for key [%s]\n", regkey->name));
 
 	if ( !fetch_reg_values_specific( regkey, &val, q_u->val_index ) ) {
 		status = WERR_NO_MORE_ITEMS;
@@ -602,9 +582,6 @@ WERROR _reg_enum_value(pipes_struct *p, REG_Q_ENUM_VALUE *q_u, REG_R_ENUM_VALUE 
 	
 	init_reg_r_enum_val( r_u, val );
 
-
-	DEBUG(5,("_reg_enum_value: Exit\n"));
-	
 done:	
 	free_registry_value( val );
 	
@@ -900,8 +877,6 @@ WERROR _reg_restore_key(pipes_struct *p, REG_Q_RESTORE_KEY  *q_u, REG_R_RESTORE_
 	pstring         filename;
 	int             snum;
 	
-	DEBUG(5,("_reg_restore_key: Enter\n"));
-	
 	if ( !regkey )
 		return WERR_BADFID; 
 
@@ -1079,8 +1054,6 @@ WERROR _reg_save_key(pipes_struct *p, REG_Q_SAVE_KEY  *q_u, REG_R_SAVE_KEY *r_u)
 	pstring         filename;
 	int             snum;
 	
-	DEBUG(5,("_reg_save_key: Enter\n"));
-		 
 	if ( !regkey )
 		return WERR_BADFID; 
 
