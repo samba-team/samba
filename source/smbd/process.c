@@ -1527,6 +1527,7 @@ char *get_InBuffer(void)
 void set_InBuffer(char *new_inbuf)
 {
 	InBuffer = new_inbuf;
+	current_inbuf = InBuffer;
 }
 
 char *get_OutBuffer(void)
@@ -1547,6 +1548,9 @@ void set_OutBuffer(char *new_outbuf)
 void free_InBuffer(char *inbuf)
 {
 	if (!aio_inbuffer_in_use(inbuf)) {
+		if (current_inbuf == inbuf) {
+			current_inbuf = NULL;
+		}
 		SAFE_FREE(inbuf);
 	}
 }
