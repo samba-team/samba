@@ -1,5 +1,7 @@
 2005-08-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gai_strerror.c: sprinkel more const
+	
 	* gai_strerror.c, roken.h.in: Make return value of gai_strerror
 	const to match SUSv3.  Prompted by Stefan Metzmacher change to
 	Samba.
