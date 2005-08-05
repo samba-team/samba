@@ -20,8 +20,13 @@ installdir() {
     done
 }
 
-installdir *.esp *.js */*.js */*.ejs */*.esp
-installdir */*.png */*.ico */*.gif */*.css
+installdir `find . -name '*.js'`
+installdir `find . -name '*.esp'`
+installdir `find . -name '*.css'`
+installdir `find . -name '*.png'`
+installdir `find . -name '*.ico'`
+installdir `find . -name '*.gif'`
+installdir `find . -name '*.ejs'`
 
 cat << EOF
 ======================================================================
