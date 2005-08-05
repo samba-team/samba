@@ -23,7 +23,7 @@
 	    setWidth("40%");
 	    setMinHeight(400);
 	    setBottom(48);
-	    setMinWidth(700);
+	    setMinWidth(500);
     };
 
     var gl = new QxGridLayout("auto,auto,auto,auto,auto", "100%");
