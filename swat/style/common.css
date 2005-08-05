@@ -206,6 +206,53 @@ html>body .slogan { 	/**** Opera needs its own rule *********/
 }
 
 
+/* links menu
+***********************************************************/
+#links {
+	position:absolute;
+	top:152px;
+	left:81%;
+	width:180px;
+	padding:0;
+	width:18%;
+	background-color:#F5F8FF;
+	border:2px groove #3878CD;
+	padding:0;
+	padding-bottom:5px;
+	margin:0;
+	z-index:1;
+}
+#links ul {
+	list-style-type:none;
+	text-align:center;
+	padding:0;
+	margin:0;
+}
+#links a,
+#links a:link,
+#links a:visited {
+	display:block;
+	height:20px;
+	font-size:small;
+	color:#2B5C9F;
+}
+#links a:hover {
+	color:#FFF;
+	background-color:#3878CD;
+}
+#links a:active {
+	color:#FFFF64;
+	background-color:#3878CD;
+	font-size:14px;
+}
+#links img {
+	padding:0;
+	margin:0;
+	width:180px;
+	height:30px;
+}
+
+
 /* Text and alignment formats
 ***********************************************************/
 .punch {

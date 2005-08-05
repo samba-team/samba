@@ -10,60 +10,6 @@
 */
 
 
-/* Right-side column 
-***********************************************************/
-#links {
-	float:left;
-	margin:115px 0 0 81%;  
-	padding:0;
-    width:18%;
-}
-* html #links {
-	position:absolute;
-	top:115px;
-	left:82%;
-	float:none;
-	width:17%;
-	margin:0;
-}
-#links h4 {
-	margin-top:10px;
-	margin-left:1.5px;
-	font-size:small;
-}
-#links ul {
-	list-style-type:none;
-	padding:0;
-	padding-top:5px;
-	margin-left:20px;
-}
-#links a {
-	font-size:small;
-}
-#links p {
-	margin-top:25px;
-	margin-left:20px;
-}
-.releases {
-	padding:2px;
-	margin-top:35px;
-	border:1px solid #CCC;
-	background-color:#E5E9F5;
-}
-.beyond, .related, .intl {
-	padding:2px;
-	margin-top:25px;
-	border:1px solid #CCC;
-	background-color:#E5E9F5;
-}
-.beyond li {
-	margin-bottom:10px;
-}
-.contacts li{
-	list-style-type:disc;
-}
-
-
 /* Middle content column
 ***********************************************************/
 #content {

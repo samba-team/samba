@@ -56,6 +56,6 @@ swat_menus.docs = simple_menu(
 	"XHTML Spec", "http://www.w3.org/TR/xhtml1/",
 	"JavaScript Spec", "http://www.ecma-international.org/publications/files/ecma-st/ECMA-262.pdf",
 	"CSS Specs", "http://www.w3.org/Style/CSS/#specs",
-	"CSS1/2 Reference", "http://www.w3schools.com/css/css_reference.asp");
-
+	"CSS1/2 Reference", "http://www.w3schools.com/css/css_reference.asp",
+	"qooxdoo info", "http://qooxdoo.sourceforge.net/");
 
