@@ -90,6 +90,7 @@ struct epm_tower;
 struct drsuapi_DsCrackNames;
 
 struct PAC_BUFFER;
+struct PAC_DATA;
 
 struct samr_ChangePasswordUser;
 struct samr_OemChangePasswordUser2;
