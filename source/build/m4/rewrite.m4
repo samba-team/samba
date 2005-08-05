@@ -28,6 +28,14 @@ case "$host_os" in
       fi
     ;;
 #
+# on AIX having _LARGE_FILES and _LARGE_FILE_API defined
+# causes compile errors because function will declared 2 times
+# with different prototypes
+#
+    *aix*)
+      CPPFLAGS="$CPPFLAGS -D_POSIX_SOURCE"
+    ;;
+#
 # VOS may need to have POSIX support and System V compatibility enabled.
 #
     *vos*)
