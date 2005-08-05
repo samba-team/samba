@@ -13,14 +13,17 @@ uint32 reg_perfcount_get_base_index(void)
 	char key[] = "1";
 	uint32 retval = 0;
 	char buf[PERFCOUNT_MAX_LEN];
+	const char *counter_dir = lp_counters_dir();
+	
 
-	pstrcpy(fname, lp_counters_dir());
-	pstrcat(fname, "/names.tdb");
+	if ( !*counter_dir ) 
+		return 0;
+
+	pstr_sprintf( fname, "%s/names.tdb", counter_dir );
 
 	names = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDONLY, 0444);
 
-	if(names == NULL)
-	{
+	if ( !names ) {
 		DEBUG(1, ("reg_perfcount_get_base_index: unable to open [%s].\n", fname));
 		return 0;
 	}    
