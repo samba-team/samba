@@ -543,7 +543,7 @@ freeaddrinfo(struct addrinfo *ai);
 #endif
 
 #ifndef HAVE_GAI_STRERROR
-char * ROKEN_LIB_FUNCTION
+const char * ROKEN_LIB_FUNCTION
 gai_strerror(int ecode);
 #endif
 
