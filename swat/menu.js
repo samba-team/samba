@@ -10,6 +10,7 @@ swat_menus.main = simple_menu(
 	"Main Menu",
 	"Servers",            session_uri("/?menu=servers"),
 	"Installation",       session_uri("/install/"),
+	"Configuration",      session_uri("/config/"),
 	"ESP Tests",          session_uri("/esptest/"));
 
 swat_menus.servers = simple_menu(
@@ -30,7 +31,8 @@ swat_menus.esptest = simple_menu(
 	"session variables",     session_uri("/esptest/session.esp"),
 	"loadparm access",       session_uri("/esptest/loadparm.esp"),
 	"exception handling",    session_uri("/esptest/exception.esp"),
-	"environment variables", session_uri("/esptest/showvars.esp"));
+	"environment variables", session_uri("/esptest/showvars.esp"),
+	"qooxdoo",               session_uri("/esptest/qooxdoo.esp"));
 
 
 swat_menus.install = simple_menu(
