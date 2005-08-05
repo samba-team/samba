@@ -1,0 +1,117 @@
+<% 
+  page_header("columns", "ESP qooxdoo test", "esptest"); 
+
+  libinclude("encoder.js");
+
+  var thispage = request.REQUEST_URI;
+%>
+
+<script type="text/javascript" src="/scripting/client/encoder.js"></script>
+<script type="text/javascript" src="/scripting/client/call.js"></script>
+
+<h1>Samba4 qooxdoo test</h1>
+
+  <script type="text/javascript">
+
+  window.application.main = function()
+  {
+    var inlineWidget = new QxInline;
+    var fieldSet = new QxFieldSet("thefieldset");
+
+    with(fieldSet)
+    {
+	    setWidth("40%");
+	    setMinHeight(400);
+	    setBottom(48);
+	    setMinWidth(700);
+    };
+
+    var gl = new QxGridLayout("auto,auto,auto,auto,auto", "100%");
+    gl.setEdge(0);
+    gl.setCellPaddingTop(3);
+    gl.setCellPaddingBottom(3);
+
+    inlineWidget.add(fieldSet);
+
+    var d = this.getClientWindow().getDocument();
+
+    function myCheckBox(label, name, value) {
+	    var w = new QxCheckBox(label, value, name, value);
+	    w.setWidth("100%");
+	    return w;
+    }
+
+    function myTextField(name, value) {
+	    var w = new QxTextField(value);
+	    return w;
+    }
+
+    var stopit = 0;
+    var shared = new Object();
+    shared.counter = 0;
+
+    function callback(o) {
+	    shared = o;
+	    var r = "Response:\\n";
+	    for (var i in shared) {
+		    r = r + "\\t" + i + " : " + shared[i] + "\\n";
+	    }
+	    ta.setText(r);
+	    shared.counter++;
+	    if (stopit == 0) {
+		    server_call('remote.esp', 'testfunc', callback, shared);
+	    }
+    }
+
+    function start_call() { 
+	    server_call('remote.esp', 'printf', null, 
+			"Starting calls ... (stopit=%d)\\n", stopit);
+	    stopit = 0;
+	    server_call('remote.esp', 'testfunc', callback, shared);
+    };
+
+    function stop_call() { 
+	    server_call('remote.esp', 'printf', null, "Stopping calls\\n");
+	    stopit = 1;
+    };
+
+    function myButton(name, label, call) {
+        var b = new QxButton(label);
+	b.setWidth("25%");
+	b.setVerticalAlign("top");
+	b.name = name;
+	b.addEventListener("click", call);
+	return b;
+    };
+
+    var c1 = myCheckBox("Enable The Server", 'checkbox1', false);
+    var c2 = myCheckBox("Another Server", 'checkbox2', true);
+    var t3 = myTextField("mytext", "hello");
+    var b1 = myButton("send", "Make Call", start_call);
+    var b2 = myButton("stop", "Stop Call", stop_call);
+    var ta = new QxTextArea;
+    ta.setText("initial text");
+    ta.setWidth("80%");
+    ta.setHeight(150);
+    ta.setVerticalAlign("top");
+
+    gl.add(c1, { row : 1, col : 1 });
+    gl.add(c2, { row : 2, col : 1 });
+    gl.add(t3, { row : 3, col : 1, scaleHorizontal: true });
+    gl.add(b1, { row : 4, col : 1 });
+    gl.add(ta, { row : 5, col : 1 });
+    gl.add(b2, { row : 6, col : 1 });
+
+    fieldSet.add(gl);
+
+    inlineWidget.add(fieldSet);
+
+    d.add(inlineWidget, "canvas");
+  };
+
+  </script>
+
+
+ <div id="canvas" style="overflow:hidden;position:static;margin-top:38px;margin-left:10px;margin-right:700px;width:700px"></div>
+
+<% page_footer() %>
