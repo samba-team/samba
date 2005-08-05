@@ -95,6 +95,10 @@ NTSTATUS ejs_push_dom_sid(struct ejs_rpc *ejs,
 			  struct MprVar *v, const char *name, const struct dom_sid *r);
 NTSTATUS ejs_push_null(struct ejs_rpc *ejs, struct MprVar *v, const char *name);
 BOOL ejs_pull_null(struct ejs_rpc *ejs, struct MprVar *v, const char *name);
+NTSTATUS ejs_push_WERROR(struct ejs_rpc *ejs, 
+			 struct MprVar *v, const char *name, const WERROR *r);
+NTSTATUS ejs_push_NTSTATUS(struct ejs_rpc *ejs, 
+			 struct MprVar *v, const char *name, const NTSTATUS *r);
 NTSTATUS ejs_pull_DATA_BLOB(struct ejs_rpc *ejs, 
 			    struct MprVar *v, const char *name, DATA_BLOB *r);
 NTSTATUS ejs_push_DATA_BLOB(struct ejs_rpc *ejs, 

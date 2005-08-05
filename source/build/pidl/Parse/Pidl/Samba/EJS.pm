@@ -628,6 +628,11 @@ sub EjsPushFunction($)
 		EjsPushElementTop($e, $env);
 	}
 
+	if ($d->{RETURN_TYPE}) {
+		my $t = $d->{RETURN_TYPE};
+		pidl "NDR_CHECK(ejs_push_$t(ejs, v, \"result\", &r->out.result));";
+	}
+
 	pidl "return NT_STATUS_OK;";
 	deindent;
 	pidl "}\n";

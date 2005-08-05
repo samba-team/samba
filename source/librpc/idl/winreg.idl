@@ -14,7 +14,7 @@
   depends(lsa,initshutdown)
 ] interface winreg
 {
-	typedef struct {
+	typedef [public,noejs] struct {
 		[value(strlen_m_term(name)*2)] uint16 name_len;
 		[value(strlen_m_term(name)*2)] uint16 name_size;
 		unistr *name;
