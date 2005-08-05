@@ -319,7 +319,7 @@ $dcom
 	  my $eheader = $eparser;
 	  $eheader =~ s/\.c$/\.h/;
 
-	  my ($dp, $dh) = Parse::Pidl::Ethereal::NDR::Parser::Parse($ndr, $basename, $eparser);
+	  my ($dp, $dh) = Parse::Pidl::Ethereal::NDR::Parse($ndr, $eheader, $eparser);
 	  FileSave($eparser, $dp);
 	  FileSave($eheader, $dh);
 	}
