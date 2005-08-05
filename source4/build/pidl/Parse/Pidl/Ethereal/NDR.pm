@@ -6,7 +6,7 @@
 # Portions based on idl2eth.c by Ronnie Sahlberg
 # released under the GNU GPL
 
-package Parse::Pidl::Ethereal::NDR::Parser;
+package Parse::Pidl::Ethereal::NDR;
 
 use strict;
 use Parse::Pidl::Typelist;
@@ -20,6 +20,14 @@ my %ptrtype_mappings = (
 	"ptr" => "NDR_POINTER_PTR"
 );
 
+my %dissectors = (
+	"uint16" => "dissect_ndr_uint16",
+	"uint8" => "dissect_ndr_uint8",
+	"uint32" => "dissect_ndr_uint32",
+	"time_t" => "dissect_ndr_time_t",
+	"GUID" => "dissect_ndr_uuid_t"
+);
+
 sub type2ft($)
 {
     my($t) = shift;
@@ -29,9 +37,7 @@ sub type2ft($)
     return "FT_UINT64", if $t eq "HYPER_T" or $t eq "NTTIME"
 	or $t eq "NTTIME_1sec" or $t eq "NTTIME_hyper" or $t eq "hyper";
    
-   # Type is an enum
-
-    return "FT_UINT16";
+    return "FT_NONE";
 }
 
 # Determine the display base for an element
@@ -144,7 +150,7 @@ sub Enum($$$)
 	pidl_code "return offset;";
 	pidl_code "}\n";
 
-	register_type($name, $dissectorname, enum_ft($e), "BASE_DEC", "0", "VALS($valsstring)", enum_size($e));
+	register_hf_field($name, $dissectorname, enum_ft($e), "BASE_DEC", "0", "VALS($valsstring)", enum_size($e));
 }
 
 sub Bitmap($$$)
@@ -215,7 +221,13 @@ sub ElementLevel($$$$)
 	my ($e,$l,$hf,$myname) = @_;
 
 	if ($l->{TYPE} eq "POINTER") {
-		pidl_code "offset=dissect_ndr_pointer(tvb,offset,pinfo,tree,drep,$myname\_,$ptrtype_mappings{$l->{POINTER_TYPE}},\"\",$hf);";
+		my $type;
+		if ($l->{LEVEL} eq "TOP") {
+			$type = "toplevel";
+		} elsif ($l->{LEVEL} eq "EMBEDDED") {
+			$type = "embedded";
+		}
+		pidl_code "offset=dissect_ndr_$type\_pointer(tvb,offset,pinfo,tree,drep,$myname\_,$ptrtype_mappings{$l->{POINTER_TYPE}},\"\",$hf);";
 	} elsif ($l->{TYPE} eq "ARRAY") {
 		my $af = "";
 
@@ -225,8 +237,9 @@ sub ElementLevel($$$$)
 
 		pidl_code "offset=dissect_ndr_$af(tvb,offset,pinfo,tree,drep,$myname\_);";
 	} elsif ($l->{TYPE} eq "DATA") {
-#		pidl_code "guint32 param="  . FindDissectorParam($dissectorname).";";
-#		pidl_code "offset=$type->{DISSECTOR}(tvb, offset, pinfo, tree, drep, $hf, param);";
+		pidl_code "guint32 param="  . FindDissectorParam($myname).";";
+		defined($dissectors{$l->{DATA_TYPE}}) or warn("Unknown data type $l->{DATA_TYPE}");
+		pidl_code "offset=".$dissectors{$l->{DATA_TYPE}}."(tvb, offset, pinfo, tree, drep, $hf, param);";
 	} elsif ($_->{TYPE} eq "SUBCONTEXT") {
 		die("subcontext() not supported")
 	}
@@ -240,8 +253,7 @@ sub Element($$$)
 
 	return if (EmitProhibited($dissectorname));
 
-	my $hf = "";
-	#FIXME	my $hf = register_hf_field("hf_$ifname\_$pn\_$e->{NAME}", $e->{NAME}, "$ifname.$pn.$e->{NAME}", $type->{FT_TYPE}, $type->{BASE_TYPE}, $type->{VALS}, $type->{MASK}, "");
+	my $hf = register_hf_field("hf_$ifname\_$pn\_$e->{NAME}", $e->{NAME}, "$ifname.$pn.$e->{NAME}", type2ft($e->{TYPE}), "BASE_HEX", "NULL", 0, "");
 	my $add = "";
 
 	foreach (@{$e->{LEVELS}}) {
@@ -312,7 +324,7 @@ sub Struct($$$)
 	register_ett("ett_$ifname\_$name");
 
 	my $res = "";
-	($res.=Element($_, $name, $ifname)."\n") foreach (@{$e->{ELEMENTS}});
+	($res.="\t".Element($_, $name, $ifname)."\n") foreach (@{$e->{ELEMENTS}});
 
 	pidl_hdr "int $dissectorname(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *parent_tree, guint8 *drep, int hf_index, guint32 param _U_);";
 
@@ -337,7 +349,7 @@ sub Struct($$$)
 	deindent;
 	pidl_code "}";
 
-	pidl_code "$res";
+	pidl_code "\n$res";
 
 
 	pidl_code "";
@@ -351,7 +363,7 @@ sub Union($$$)
 {
 	my ($e,$name,$ifname) = @_;
 
-	my $dissectorname = "$ifname\_dissect_union_$name";
+	my $dissectorname = "$ifname\_dissect_$name";
 	
 	register_ett("ett_$ifname\_$name");
 
@@ -465,6 +477,10 @@ sub RegisterInterfaceHandoff($)
 sub ProcessInterface($)
 {
 	my $x = shift;
+
+	foreach (@{$x->{TYPEDEFS}}) {
+		$dissectors{$_->{NAME}} = "$x->{NAME}_dissect_$_->{NAME}";
+	}
 
 	if (defined($x->{UUID})) {
 		my $if_uuid = $x->{UUID};
