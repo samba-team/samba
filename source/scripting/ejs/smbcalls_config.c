@@ -45,6 +45,27 @@ static int ejs_lpServices(MprVarHandle eid, int argc, char **argv)
 
 
 /*
+  return a list of parameter categories
+*/
+static int ejs_lpCategories(MprVarHandle eid, int argc, char **argv)
+{
+	struct parm_struct *parm_table = lp_parm_table();
+	int i;
+	const char **list = NULL;
+	if (argc != 0) return -1;
+	
+	for (i=0;parm_table[i].label;i++) {
+		if (parm_table[i].class == P_SEPARATOR) {
+			list = str_list_add(list, parm_table[i].label);
+		}
+	}
+	talloc_steal(mprMemCtx(), list);
+	mpr_Return(eid, mprList("categories", list));
+	return 0;
+}
+
+
+/*
   allow access to loadparm variables from inside ejs scripts in swat
   
   can be called in 4 ways:
@@ -185,6 +206,7 @@ static int ejs_loadparm_init(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetStringCFunction(obj, "set", ejs_lpSet);
 	mprSetStringCFunction(obj, "reload", ejs_lpReload);
 	mprSetStringCFunction(obj, "services", ejs_lpServices);
+	mprSetStringCFunction(obj, "categories", ejs_lpCategories);
 	return 0;
 }
 
