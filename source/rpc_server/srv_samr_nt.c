@@ -1229,7 +1229,7 @@ static BOOL make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names,
 	}
 
 	for (i = 0; i < num_names; i++) {
-		DEBUG(10, ("names[%d]:%s\n", i, *names[i] ? names[i] : ""));
+		DEBUG(10, ("names[%d]:%s\n", i, names[i] && *names[i] ? names[i] : ""));
 		init_unistr2(&uni_name[i], names[i], UNI_FLAGS_NONE);
 		init_uni_hdr(&hdr_name[i], &uni_name[i]);
 	}
