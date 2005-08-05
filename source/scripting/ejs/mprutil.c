@@ -403,7 +403,7 @@ void mpr_ReturnString(int eid, const char *s)
 }
 
 /*
-  get a poiner in the current object
+  get a pointer in the current object
 */
 void *mprGetThisPtr(int eid, const char *name)
 {
