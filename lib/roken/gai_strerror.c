@@ -40,7 +40,7 @@ RCSID("$Id$");
 
 static struct gai_error {
     int code;
-    char *str;
+    const char *str;
 } errors[] = {
 {EAI_NOERROR,		"no error"},
 #ifdef EAI_ADDRFAMILY
