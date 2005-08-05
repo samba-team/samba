@@ -5,23 +5,33 @@
 */
 [ uuid("82273fdc-e32a-18c3-3f78-827929dc23ea"),
   version(0.0),
-  depends(security),
+  depends(lsa,security),
   pointer_default(unique),
   pointer_default_top(unique),
   helpstring("Event Logger")
 ] interface eventlog
 {
+	typedef enum {
+		EVENTLOG_SEQUENTIAL_READ = 0x0001,
+		EVENTLOG_SEEK_READ = 0x0002,
+		EVENTLOG_FORWARDS_READ = 0x0004,
+		EVENTLOG_BACKWARDS_READ = 0x0008
+	} eventlogReadFlags;
+
+	typedef enum {
+		EVENTLOG_SUCCESS = 0x0000,
+		EVENTLOG_ERROR_TYPE = 0x0001,
+		EVENTLOG_WARNING_TYPE = 0x0002,
+		EVENTLOG_INFORMATION_TYPE = 0x0004,
+		EVENTLOG_AUDIT_SUCCESS = 0x0008,
+		EVENTLOG_AUDIT_FAILURE = 0x0010
+	} eventlogEventTypes;
+
 	typedef struct {
 		uint16 unknown0;
 		uint16 unknown1;
 	} eventlog_OpenUnknown0;
-
-	typedef struct {
-		[value(2*strlen_m(name))] uint16 name_len;
-		[value(2*strlen_m(name))] uint16 name_size;
-		unistr_noterm *name;
-	} eventlog_String;
-
+	
 	typedef struct { 
 		uint32 size;
 		uint32 reserved;
@@ -35,7 +45,7 @@
 		uint16 reserved_flag;
 		uint32 closingrecord;
 		uint32 stringoffset;
-		[size_is(num_of_strings)] eventlog_String bla[*];
+		[size_is(num_of_strings)] lsa_String bla[*];
 		uint32 sid_length;
 		[size_is(sid_length)] dom_sid *sids;
 		uint32 data_length;
@@ -46,7 +56,10 @@
 
 	/******************/
 	/* Function: 0x00 */
-	NTSTATUS eventlog_ClearEventLogW();
+	NTSTATUS eventlog_ClearEventLogW(
+		[in,ref] policy_handle *handle,
+		[in] lsa_String *unknown
+	);
 
 	/******************/
 	/* Function: 0x01 */
@@ -82,8 +95,8 @@
 	/* Function: 0x07 */
 	NTSTATUS eventlog_OpenEventLogW(
 		[in]	    eventlog_OpenUnknown0 *unknown0,
-		[in]	    eventlog_String source,
-		[in]	    eventlog_String unknown1,
+		[in]	    lsa_String logname,
+		[in]	    lsa_String servername,
 		[in]	    uint32 unknown2,
 		[in]	    uint32 unknown3,
 		[out,ref]   policy_handle *handle
