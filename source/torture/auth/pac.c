@@ -28,14 +28,12 @@
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 
-#ifdef HAVE_KRB5
-
 static BOOL torture_pac_self_check(void) 
 {
 	NTSTATUS nt_status;
 	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "PAC self check");
 	DATA_BLOB tmp_blob;
-	struct PAC_LOGON_INFO *pac_info;
+	struct PAC_DATA *pac_data;
 
 	/* Generate a nice, arbitary keyblock */
 	uint8_t server_bytes[16];
@@ -100,7 +98,7 @@ static BOOL torture_pac_self_check(void)
 	}
 	
 	/* OK, go ahead and make a PAC */
-	ret = kerberos_encode_pac(mem_ctx, server_info, 
+	ret = kerberos_create_pac(mem_ctx, server_info, 
 				  smb_krb5_context->krb5_context,  
 				  &krbtgt_keyblock,
 				  &server_keyblock,
@@ -122,7 +120,7 @@ static BOOL torture_pac_self_check(void)
 	dump_data(10,tmp_blob.data,tmp_blob.length);
 
 	/* Now check that we can read it back */
-	nt_status = kerberos_decode_pac(mem_ctx, &pac_info,
+	nt_status = kerberos_decode_pac(mem_ctx, &pac_data,
 					tmp_blob,
 					smb_krb5_context,
 					&krbtgt_keyblock,
@@ -197,8 +195,7 @@ static BOOL torture_pac_saved_check(void)
 	NTSTATUS nt_status;
 	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "PAC saved check");
 	DATA_BLOB tmp_blob, validate_blob;
-	struct PAC_LOGON_INFO *pac_info;
-	struct PAC_DATA pac_data;
+	struct PAC_DATA *pac_data;
 	krb5_keyblock server_keyblock;
 	krb5_keyblock krbtgt_keyblock;
 	uint8_t server_bytes[16];
@@ -264,35 +261,37 @@ static BOOL torture_pac_saved_check(void)
 	dump_data(10,tmp_blob.data,tmp_blob.length);
 
 	/* Decode and verify the signaure on the PAC */
-	nt_status = kerberos_decode_pac(mem_ctx, &pac_info,
+	nt_status = kerberos_decode_pac(mem_ctx, &pac_data,
 					tmp_blob,
 					smb_krb5_context,
 					&krbtgt_keyblock,
 					&server_keyblock);
-	krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-				    &krbtgt_keyblock);
-	krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-				    &server_keyblock);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("PAC decoding failed: %s\n", 
 			  nt_errstr(nt_status)));
 
+		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+					    &krbtgt_keyblock);
+		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+					    &server_keyblock);
 		talloc_free(mem_ctx);
 		return False;
 	}
 
-	nt_status = ndr_pull_struct_blob(&tmp_blob, mem_ctx, &pac_data,
-					 (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0,("can't parse the PAC\n"));
-		talloc_free(mem_ctx);
-		return False;
-	}
+	ret = kerberos_encode_pac(mem_ctx, 
+				  pac_data,
+				  smb_krb5_context->krb5_context,
+				  &krbtgt_keyblock,
+				  &server_keyblock,
+				  &validate_blob);
 
-	nt_status = ndr_push_struct_blob(&validate_blob, mem_ctx, &pac_data,
-					 (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0, ("PAC push failed: %s\n", nt_errstr(nt_status)));
+	krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+				    &krbtgt_keyblock);
+	krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+				    &server_keyblock);
+
+	if (ret != 0) {
+		DEBUG(0, ("PAC push failed\n"));
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -328,14 +327,3 @@ BOOL torture_pac(void)
 	ret &= torture_pac_saved_check();
 	return ret;
 }
-
-#else 
-
-BOOL torture_pac(void) 
-{
-	printf("Cannot do PAC test without Krb5\n");
-	return False;
-}
-
-#endif
-
