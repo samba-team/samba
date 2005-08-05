@@ -8,7 +8,7 @@ package Parse::Pidl::Ethereal::Conformance;
 require Exporter;
 
 @ISA = qw(Exporter);
-@EXPORT_OK = qw(EmitProhibited FindDissectorParam %hf_renames);
+@EXPORT_OK = qw(EmitProhibited FindDissectorParam %hf_renames %protocols);
 
 use strict;
 
@@ -21,7 +21,7 @@ sub handle_union_tag_size($$)
 	#FIXME	
 }
 
-use vars qw(%hf_renames %types %header_fields);
+use vars qw(%hf_renames %types %header_fields %protocols);
 
 sub handle_type($$$$$$$)
 {
@@ -86,6 +86,25 @@ sub handle_noemit($)
 	push (@noemit, $type);
 }
 
+
+sub handle_protocol($$$$)
+{
+	my ($name, $longname, $shortname, $filtername) = @_;
+
+	$protocols{$name} = {
+		LONGNAME => $longname,
+		SHORTNAME => $shortname,
+		FILTERNAME => $filtername
+	};
+}
+
+sub handle_fielddescription($$)
+{
+	my ($field,$desc) = @_;
+
+	#FIXME
+}
+
 my %field_handlers = (
 	UNION_TAG_SIZE => \&handle_union_tag_size,
 	TYPE => \&handle_type,
@@ -93,7 +112,9 @@ my %field_handlers = (
 	PARAM_VALUE => \&handle_param_value, 
 	HF_FIELD => \&handle_hf_field, 
 	HF_RENAME => \&handle_hf_rename, 
-	STRIP_PREFIX => \&handle_strip_prefix
+	STRIP_PREFIX => \&handle_strip_prefix,
+	PROTOCOL => \&handle_protocol,
+	FIELD_DESCRIPTION => \&handle_fielddescription
 );
 
 sub Parse($)

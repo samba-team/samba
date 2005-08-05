@@ -5,7 +5,13 @@
 
 package Parse::Pidl::Dump;
 
+use Exporter;
+
+@ISA = qw(Exporter);
+@EXPORT_OK = qw(DumpTypedef DumpStruct DumpEnum DumpBitmap DumpUnion DumpFunction);
+
 use strict;
+use Parse::Pidl::Util qw(has_property);
 
 my($res);
 
@@ -68,7 +74,7 @@ sub DumpStruct($)
     $res .= "struct {\n";
     if (defined $struct->{ELEMENTS}) {
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-	    $res .= DumpElement($e);
+	    $res .= "\t" . DumpElement($e);
 	    $res .= ";\n";
 	}
     }
@@ -85,7 +91,39 @@ sub DumpEnum($)
     my($enum) = shift;
     my($res);
 
-    $res .= "enum";
+    $res .= "enum {\n";
+
+    foreach (@{$enum->{ELEMENTS}}) {
+    	if (/^([A-Za-z0-9_]+)[ \t]*\((.*)\)$/) {
+		$res .= "\t$1 = $2,\n";
+	} else {
+		$res .= "\t$_,\n";
+	}
+    }
+
+    $res.= "}";
+    
+    return $res;
+}
+
+#####################################################################
+# dump a struct
+sub DumpBitmap($)
+{
+    my($bitmap) = shift;
+    my($res);
+
+    $res .= "bitmap {\n";
+
+    foreach (@{$bitmap->{ELEMENTS}}) {
+    	if (/^([A-Za-z0-9_]+)[ \t]*\((.*)\)$/) {
+		$res .= "\t$1 = $2,\n";
+	} else {
+		die ("Bitmap $bitmap->{NAME} has field $_ without proper value");
+	}
+    }
+
+    $res.= "}";
     
     return $res;
 }
@@ -98,7 +136,7 @@ sub DumpUnionElement($)
     my($element) = shift;
     my($res);
 
-    if (util::has_property($element, "default")) {
+    if (has_property($element, "default")) {
 	$res .= "[default] ;\n";
     } else {
 	$res .= "[case($element->{PROPERTIES}->{case})] ";
@@ -135,12 +173,10 @@ sub DumpType($)
     my($res);
 
     if (ref($data) eq "HASH") {
-	($data->{TYPE} eq "STRUCT") &&
-	    ($res .= DumpStruct($data));
-	($data->{TYPE} eq "UNION") &&
-	    ($res .= DumpUnion($data));
-	($data->{TYPE} eq "ENUM") &&
-	    ($res .= DumpEnum($data));
+	($data->{TYPE} eq "STRUCT") && ($res .= DumpStruct($data));
+	($data->{TYPE} eq "UNION") && ($res .= DumpUnion($data));
+	($data->{TYPE} eq "ENUM") && ($res .= DumpEnum($data));
+	($data->{TYPE} eq "BITMAP") && ($res .= DumpBitmap($data));
     } else {
 	$res .= "$data";
     }
