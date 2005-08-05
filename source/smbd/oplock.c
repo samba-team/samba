@@ -110,9 +110,8 @@ void process_kernel_oplocks(void)
 
 BOOL set_file_oplock(files_struct *fsp, int oplock_type)
 {
-	if (koplocks) {
-		koplocks->set_oplock(fsp, oplock_type);
-	}
+	if (koplocks && !koplocks->set_oplock(fsp, oplock_type))
+		return False;
 
 	fsp->oplock_type = oplock_type;
 	fsp->sent_oplock_break = NO_BREAK_SENT;

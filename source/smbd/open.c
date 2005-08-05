@@ -1670,7 +1670,10 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	set_share_mode(fsp, 0, fsp->oplock_type);
 	if ((fsp->oplock_type != NO_OPLOCK) &&
 	    (fsp->oplock_type != FAKE_LEVEL_II_OPLOCK)) {
-		set_file_oplock(fsp, fsp->oplock_type);
+		if (!set_file_oplock(fsp, fsp->oplock_type)) {
+			/* Could not get the kernel oplock */
+			fsp->oplock_type = NO_OPLOCK;
+		}
 	}
 
 	if (create_options & FILE_DELETE_ON_CLOSE) {
