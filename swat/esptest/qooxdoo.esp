@@ -48,7 +48,6 @@
 
     var stopit = 0;
     var shared = new Object();
-    shared.counter = 0;
 
     function callback(o) {
 	    shared = o;
@@ -57,6 +56,11 @@
 		    r = r + "\\t" + i + " : " + shared[i] + "\\n";
 	    }
 	    ta.setText(r);
+	    if (shared.start_time == 0) {
+		    shared.start_time = shared.nttime;
+	    }
+	    shared.time_diff = shared.nttime - shared.start_time;
+	    shared.rate = shared.counter / (shared.time_diff * 0.0000001);
 	    shared.counter++;
 	    if (stopit == 0) {
 		    server_call('remote.esp', 'testfunc', callback, shared);
@@ -67,6 +71,8 @@
 	    server_call('remote.esp', 'printf', null, 
 			"Starting calls ... (stopit=%d)\\n", stopit);
 	    stopit = 0;
+	    shared.counter = 0;
+	    shared.start_time = 0;
 	    server_call('remote.esp', 'testfunc', callback, shared);
     };
 
