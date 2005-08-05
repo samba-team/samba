@@ -449,6 +449,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	if (!(p->dc.authenticated && deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, &q_u->clnt_id.cred, &srv_cred)))
 		return NT_STATUS_INVALID_HANDLE;
 
+	reseed_client_creds(&p->dc.clnt_cred, &q_u->clnt_id.cred);
 	memcpy(&p->dc.srv_cred, &p->dc.clnt_cred, sizeof(p->dc.clnt_cred));
 
 	DEBUG(5,("_net_srv_pwset: %d\n", __LINE__));
@@ -545,6 +546,8 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 						     &q_u->sam_id.client.cred, &srv_cred)))
 		return NT_STATUS_INVALID_HANDLE;
 
+	/* what happens if we get a logoff for an unknown user? */
+	reseed_client_creds(&p->dc.clnt_cred, &q_u->sam_id.client.cred);
 	memcpy(&p->dc.srv_cred, &p->dc.clnt_cred, sizeof(p->dc.clnt_cred));
 
 	/* XXXX maybe we want to say 'no', reject the client's credentials */
@@ -602,11 +605,6 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	/* checks and updates credentials.  creates reply credentials */
 	if (!(p->dc.authenticated && deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, &q_u->sam_id.client.cred, &srv_cred)))
 		return NT_STATUS_INVALID_HANDLE;
-
-	memcpy(&p->dc.srv_cred, &p->dc.clnt_cred, sizeof(p->dc.clnt_cred));
-    
-	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
-	memcpy(&r_u->srv_creds, &srv_cred, sizeof(r_u->srv_creds));
 
 	/* find the username */
     
@@ -718,6 +716,15 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		free_server_info(&server_info);
 		return status;
 	}
+
+	/* moved from right after deal_with_creds above, since we weren't
+	   supposed to update unless logon was successful */
+
+	reseed_client_creds(&p->dc.clnt_cred, &q_u->sam_id.client.cred);
+	memcpy(&p->dc.srv_cred, &p->dc.clnt_cred, sizeof(p->dc.clnt_cred));
+    
+	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
+	memcpy(&r_u->srv_creds, &srv_cred, sizeof(r_u->srv_creds));
 
 	if (server_info->guest) {
 		/* We don't like guest domain logons... */
