@@ -10,7 +10,7 @@
 
 	<para>See also the <smbconfoption name="msdfs root"/> share  level  parameter.  For
 	more  information  on  setting  up a Dfs tree on Samba,
-	refer to <link linkend="msdfs"/>.
+	refer to <link linkend="msdfs">the MSFDS chapter in the book Samba3-HOWTO</link>.
 	</para>
 </description>
 
