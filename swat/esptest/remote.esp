@@ -1,0 +1,19 @@
+<%
+libinclude("server_call.js");
+
+/* this is a call that the client js code can make - it just adds
+   some more elements to the passed object, then returns the object */
+function testfunc(x) {
+	var sys = sys_init();
+	x.nttime = sys.nttime();
+	x.timestring = sys.httptime(x.nttime);
+	return x;
+}
+
+/* register a call for clients to make */
+var call = servCallObj();
+call.add('testfunc', testfunc);
+
+/* run the function that was asked for */
+call.run();
+%>
