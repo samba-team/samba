@@ -3,11 +3,14 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 
+<script type="text/javascript" src="/style/qooxdoo/widgets/qooxdoo.js"></script>
+
   <title>@@global.page.title</title>
 
 <link rel="stylesheet" href="/style/common.css" type="text/css" media="all" />
 <link rel="stylesheet" href="/style/columns.css" type="text/css" media="all" />
 <link rel="stylesheet" href="/style/swat.css" type="text/css" media="all" />
+<link rel="stylesheet" href="/style/qooxdoo/layouts/application.css" type="text/css" media="all" />
 <link rel="shortcut icon" href="/images/favicon.ico" />
 
 <!--[if gte IE 5.5]>
@@ -81,4 +84,4 @@ filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src='/images/logo.png'
 
  
 <div id="content">
-  <div class="center">
+  <div id="middle" class="center">
