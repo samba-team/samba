@@ -70,7 +70,7 @@
 		return EINVAL;
 	}
 
-	ret = kerberos_encode_pac(mem_ctx, server_info, 
+	ret = kerberos_create_pac(mem_ctx, server_info, 
 				  context, 
 				  krbtgt_keyblock,
 				  server_keyblock,
