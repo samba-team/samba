@@ -58,3 +58,16 @@ struct parm_struct {
 		const char **lvalue;
 	} def;
 };
+
+#define FLAG_BASIC 	0x0001 /* fundamental options */
+#define FLAG_SHARE 	0x0002 /* file sharing options */
+#define FLAG_PRINT 	0x0004 /* printing options */
+#define FLAG_GLOBAL 	0x0008 /* local options that should be globally settable in SWAT */
+#define FLAG_WIZARD 	0x0010 /* Parameters that the wizard will operate on */
+#define FLAG_ADVANCED 	0x0020 /* Parameters that the wizard will operate on */
+#define FLAG_DEVELOPER 	0x0040 /* Parameters that the wizard will operate on */
+#define FLAG_DEPRECATED 0x1000 /* options that should no longer be used */
+#define FLAG_HIDE  	0x2000 /* options that should be hidden in SWAT */
+#define FLAG_DOS_STRING 0x4000 /* convert from UNIX to DOS codepage when reading this string. */
+#define FLAG_CMDLINE    0x8000 /* this option was set from the command line */
+
