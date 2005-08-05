@@ -45,12 +45,16 @@ static const char *builtin_registry_paths[] = {
 	KEY_PRINTING,
 	KEY_SHARES,
 	KEY_EVENTLOG,
+	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Perflib",
+	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Perflib\\009",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print\\Monitors",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\ProductOptions",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\TcpIp\\Parameters",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Netlogon\\Parameters",
 	"HKU",
 	"HKCR",
+	"HKPD",
+	"HKPT",
 	 NULL };
 
 struct builtin_regkey_value {
@@ -64,12 +68,14 @@ struct builtin_regkey_value {
 };
 
 static struct builtin_regkey_value builtin_registry_values[] = {
-	{ "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",         
-		"SystemRoot", REG_SZ, { "c:\\Windows" } },
-	{ "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Ports",  
+	{ KEY_PRINTING_PORTS,
 		SAMBA_PRINTER_PORT_NAME, REG_SZ, { "" } },
-	{ "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Printers",  
+	{ KEY_PRINTING_2K,
 		"DefaultSpoolDirectory", REG_SZ, { "C:\\Windows\\System32\\Spool\\Printers" } },
+	{ KEY_EVENTLOG,
+		"DisplayName", REG_SZ, { "Event Log" } }, 
+	{ KEY_EVENTLOG,
+		"ErrorControl", REG_DWORD, { (char*)0x00000001 } },
 	{ NULL, NULL, 0, { NULL } }
 };
 
