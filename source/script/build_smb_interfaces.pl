@@ -77,7 +77,7 @@ sub print_field($$) {
   my $f = shift;
   my $suffix = shift;
 
-  my $type = "UNKNOWN";
+  my $type = $f->{TYPE};
 
   if ($f->{TYPE} eq "char" and $f->{POINTERS} == 1) {
     $type = "string";
@@ -88,8 +88,16 @@ sub print_field($$) {
     $type =~ s/_t$//;
   }
 
+  my $deref = "&";
+  if ($f->{POINTERS} == 1 && $type ne "string") {
+    $deref = "";
+  }
+
   foreach my $x (@{$f->{NAME}}) {
-    print FILE "\tNDR_CHECK(ejs_pull_$type(ejs, v, \"$x\", &r->$suffix.$x));\n";
+    if ($f->{POINTERS} > 0) {
+      print FILE "\t// alloc $x?\n";
+    }
+    print FILE "\tNDR_CHECK(ejs_pull_$type(ejs, v, \"$x\", ${deref}r->$suffix.$x));\n";
   }
 }
 
