@@ -75,7 +75,6 @@ my($opt_ndr_parser);
 my($opt_tdr_header);
 my($opt_tdr_parser);
 my($opt_eth_parser);
-my($opt_eth_header);
 my($opt_keep);
 my($opt_swig);
 my($opt_dcom_proxy);
@@ -111,8 +110,7 @@ Options:
  --client[=OUTFILE]    create a C NDR client
  --server[=OUTFILE]    create server boilerplate
  --template            print a template for a pipe
- --eth-parser[=OUTFILE]create an ethereal parser
- --eth-header[=OUTFILE]create an ethereal header file
+ --eth-parser[=OUTFILE]create ethereal parser and header
  --swig[=OUTFILE]      create swig wrapper file
  --diff                run diff on the idl and dumped output
  --keep[=OUTFILE]      keep the .pidl file
@@ -142,7 +140,6 @@ GetOptions (
 	    'ndr-parser:s' => \$opt_ndr_parser,
 	    'client:s' => \$opt_client,
 	    'eth-parser:s' => \$opt_eth_parser,
-	    'eth-header:s' => \$opt_eth_header,
 	    'ejs' => \$opt_ejs,
 	    'diff' => \$opt_diff,
 	    'odl' => \$opt_odl,
@@ -242,9 +239,8 @@ sub process_file($)
 	}
 
 	if (defined($opt_ndr_header) or defined($opt_eth_parser) or 
-	    defined($opt_eth_header) or defined($opt_client) or 
-	    defined($opt_server) or defined($opt_ndr_parser) or 
-	    defined($opt_ejs)) {
+	    defined($opt_client) or defined($opt_server) or 
+	    defined($opt_ndr_parser) or defined($opt_ejs)) {
 		require Parse::Pidl::NDR;
 		Parse::Pidl::NDR::Validate($pidl);
 		$ndr = Parse::Pidl::NDR::Parse($pidl);
@@ -265,13 +261,6 @@ sub process_file($)
 		  my($filename) = ($opt_swig or "$outputdir/$basename.i");
 		  Parse::Pidl::Samba::SWIG::RewriteHeader($pidl, $header, $filename);
 		}
-	}
-
-	if (defined($opt_eth_header)) {
-	  require Parse::Pidl::Ethereal::NDR::Header;
-	  my($eparserhdr) = ($opt_eth_header or "$outputdir/packet-dcerpc-$basename.h");
-
-	  FileSave($eparserhdr, Parse::Pidl::Ethereal::NDR::Header::Parse($ndr));
 	}
 
 	my $h_filename = "$outputdir/ndr_$basename.h";
@@ -325,9 +314,14 @@ $dcom
 	}
 
 	if (defined($opt_eth_parser)) {
-	  require Parse::Pidl::Ethereal::NDR::Parser;
+	  require Parse::Pidl::Ethereal::NDR;
 	  my($eparser) = ($opt_eth_parser or "$outputdir/packet-dcerpc-$basename.c");
-	  FileSave($eparser, Parse::Pidl::Ethereal::NDR::Parser::Parse($ndr, $basename, $eparser));
+	  my $eheader = $eparser;
+	  $eheader =~ s/\.c$/\.h/;
+
+	  my ($dp, $dh) = Parse::Pidl::Ethereal::NDR::Parser::Parse($ndr, $basename, $eparser);
+	  FileSave($eparser, $dp);
+	  FileSave($eheader, $dh);
 	}
 
 	my $tdr_parser = ($opt_tdr_parser or "$outputdir/tdr_$basename.c");
