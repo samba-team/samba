@@ -1742,7 +1742,7 @@ void smbd_process(void)
 		clobber_region(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, InBuffer, total_buffer_size);
 #endif
 
-		while (!receive_message_or_smb(InBuffer,BUFFER_SIZE+LARGE_WRITEX_HDR_SIZE,-1)) {
+		while (!receive_message_or_smb(InBuffer,BUFFER_SIZE+LARGE_WRITEX_HDR_SIZE,select_timeout)) {
 			if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
 				return;
 			num_smbs = 0; /* Reset smb counter. */
