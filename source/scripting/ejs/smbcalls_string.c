@@ -336,6 +336,85 @@ static int ejs_vsprintf(MprVarHandle eid, int argc, struct MprVar **argv)
 	return ret;
 }
 
+
+/*
+  encode a string, replacing all non-alpha with %02x form
+*/
+static int ejs_encodeURIComponent(MprVarHandle eid, int argc, char **argv)
+{
+	int i, j, count=0;
+	const char *s;
+	char *ret;
+	if (argc != 1) {
+		ejsSetErrorMsg(eid, "encodeURIComponent invalid arguments");
+		return -1;
+	}
+	
+	s = argv[0];
+
+	for (i=0;s[i];i++) {
+		if (!isalnum(s[i])) count++;
+	}
+	
+	ret = talloc_size(mprMemCtx(), i + count*2 + 1);
+	if (ret == NULL) {
+		return -1;
+	}
+	for (i=j=0;s[i];i++,j++) {
+		if (!isalnum(s[i])) {
+			snprintf(ret+j, 4, "%%%02X", (unsigned)s[i]);
+			j += 2;
+		} else {
+			ret[j] = s[i];
+		}
+	}
+	ret[j] = 0;
+	mpr_Return(eid, mprString(ret));
+	talloc_free(ret);
+	return 0;
+}
+
+/*
+  encode a string, replacing all non-alpha of %02x form
+*/
+static int ejs_decodeURIComponent(MprVarHandle eid, int argc, char **argv)
+{
+	int i, j, count=0;
+	const char *s;
+	char *ret;
+	if (argc != 1) {
+		ejsSetErrorMsg(eid, "decodeURIComponent invalid arguments");
+		return -1;
+	}
+	
+	s = argv[0];
+
+	ret = talloc_size(mprMemCtx(), strlen(s) + 1);
+	if (ret == NULL) {
+		return -1;
+	}
+
+	for (i=j=0;s[i];i++,j++) {
+		if (s[i] == '%') {
+			unsigned c;
+			if (sscanf(s+i+1, "%02X", &c) != 1) {
+				ejsSetErrorMsg(eid, "decodeURIComponent bad format");
+				return -1;
+			}
+			ret[j] = c;
+			i += 2;
+		} else {
+			ret[j] = s[i];
+		}
+		if (!isalnum(s[i])) count++;
+	}
+	
+	ret[j] = 0;
+	mpr_Return(eid, mprString(ret));
+	talloc_free(ret);
+	return 0;
+}
+
 /*
   initialise string ejs subsystem
 */
@@ -351,6 +430,8 @@ static int ejs_string_init(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetCFunction(obj, "join", ejs_join);
 	mprSetCFunction(obj, "sprintf", ejs_sprintf);
 	mprSetCFunction(obj, "vsprintf", ejs_vsprintf);
+	mprSetStringCFunction(obj, "encodeURIComponent", ejs_encodeURIComponent);
+	mprSetStringCFunction(obj, "decodeURIComponent", ejs_decodeURIComponent);
 
 	return 0;
 }
