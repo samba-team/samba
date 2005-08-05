@@ -203,6 +203,12 @@ if test t$ac_cv_func_getaddrinfo != tyes; then
 	SMB_SUBSYSTEM_ENABLE(HEIMDAL_ROKEN_ADDRINFO, YES)
 fi
 
+# only add inet_aton if needed
+SMB_SUBSYSTEM_ENABLE(HEIMDAL_ROKEN_INET_ATON, NO)
+if test t$ac_cv_func_inet_aton != tyes; then
+	SMB_SUBSYSTEM_ENABLE(HEIMDAL_ROKEN_INET_ATON, YES)
+fi
+
 # only add gai_strerror if needed
 SMB_SUBSYSTEM_ENABLE(HEIMDAL_ROKEN_GAI_STRERROR, NO)
 AC_CHECK_FUNC(gai_strerror)
