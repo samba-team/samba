@@ -10,7 +10,7 @@
 	links of the form <filename
 	moreinfo="none">msdfs:serverA\\shareA,serverB\\shareB</filename>
 	and so on.  For more information on setting up a Dfs tree on
-	Samba, refer to <link linkend="msdfs"/>.</para>
+	Samba, refer to <link linkend="msdfs">the MSDFS chapter in the Samba3-HOWTO book</link>.</para>
 </description>
 
 <related>host msdfs</related>

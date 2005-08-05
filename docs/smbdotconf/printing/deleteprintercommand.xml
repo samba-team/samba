@@ -16,7 +16,7 @@
     from the print system and from <filename moreinfo="none">smb.conf</filename>.
     </para>
 		
-    <para>The <smbcomfoption name="deleteprinter command"/> is 
+    <para>The <smbconfoption name="deleteprinter command"/> is 
     automatically called with only one parameter: <smbconfoption name="printer name"/>.
 	</para>
 		
