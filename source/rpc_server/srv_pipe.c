@@ -666,7 +666,7 @@ static BOOL setup_bind_nak(pipes_struct *p)
 
 	if(!prs_uint16("reject code", &outgoing_rpc, 0, &zero)) {
 		prs_mem_free(&outgoing_rpc);
-        return False;
+		return False;
 	}
 
 	p->out_data.data_sent_length = 0;
@@ -896,11 +896,9 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
 	if (i == rpc_lookup_size) {
 		if (NT_STATUS_IS_ERR(smb_probe_module("rpc", p->name))) {
-                       DEBUG(3,("api_pipe_bind_req: Unknown pipe name %s in bind request.\n",
-                                p->name ));
-                       if(!setup_bind_nak(p))
-                               return False;
-                       return True;
+			DEBUG(3,("api_pipe_bind_req: Unknown pipe name %s in bind request.\n",
+				p->name ));
+			return setup_bind_nak(p);
                 }
 
                 for (i = 0; i < rpc_lookup_size; i++) {
@@ -921,7 +919,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	/* decode the bind request */
 	if(!smb_io_rpc_hdr_rb("", &hdr_rb, rpc_in_p, 0))  {
 		DEBUG(0,("api_pipe_bind_req: unable to unmarshall RPC_HDR_RB struct.\n"));
-		return False;
+		return setup_bind_nak(p);
 	}
 
 	/*
@@ -938,7 +936,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
 		if(!smb_io_rpc_hdr_auth("", &auth_info, rpc_in_p, 0)) {
 			DEBUG(0,("api_pipe_bind_req: unable to unmarshall RPC_HDR_AUTH struct.\n"));
-			return False;
+			return setup_bind_nak(p);
 		}
 
 		switch(auth_info.auth_type) {
@@ -947,26 +945,26 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 				if(!smb_io_rpc_auth_verifier("", &auth_verifier, rpc_in_p, 0)) {
 					DEBUG(0,("api_pipe_bind_req: unable to "
 						 "unmarshall RPC_HDR_AUTH struct.\n"));
-					return False;
+					return setup_bind_nak(p);
 				}
 
 				if(!strequal(auth_verifier.signature, "NTLMSSP")) {
 					DEBUG(0,("api_pipe_bind_req: "
 						 "auth_verifier.signature != NTLMSSP\n"));
-					return False;
+					return setup_bind_nak(p);
 				}
 
 				if(auth_verifier.msg_type != NTLMSSP_NEGOTIATE) {
 					DEBUG(0,("api_pipe_bind_req: "
 						 "auth_verifier.msg_type (%d) != NTLMSSP_NEGOTIATE\n",
 						 auth_verifier.msg_type));
-					return False;
+					return setup_bind_nak(p);
 				}
 
 				if(!smb_io_rpc_auth_ntlmssp_neg("", &ntlmssp_neg, rpc_in_p, 0)) {
 					DEBUG(0,("api_pipe_bind_req: "
 						 "Failed to unmarshall RPC_AUTH_NTLMSSP_NEG.\n"));
-					return False;
+					return setup_bind_nak(p);
 				}
 
 				p->ntlmssp_chal_flags = SMBD_NTLMSSP_NEG_FLAGS;
@@ -981,13 +979,13 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 				if (!server_auth2_negotiated) {
 					DEBUG(0, ("Attempt to bind using schannel "
 						  "without successful serverauth2\n"));
-					return False;
+					return setup_bind_nak(p);
 				}
 
 				if (!smb_io_rpc_auth_netsec_neg("", &neg, rpc_in_p, 0)) {
 					DEBUG(0,("api_pipe_bind_req: "
 						 "Could not unmarshal SCHANNEL auth neg\n"));
-					return False;
+					return setup_bind_nak(p);
 				}
 
 				p->netsec_auth_validated = True;
@@ -1006,7 +1004,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 			default:
 				DEBUG(0,("api_pipe_bind_req: unknown auth type %x requested.\n",
 					 auth_info.auth_type ));
-				return False;
+				return setup_bind_nak(p);
 		}
 	}
 
