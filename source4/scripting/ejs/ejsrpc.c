@@ -25,6 +25,7 @@
 #include "scripting/ejs/smbcalls.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
+#include "librpc/gen_ndr/ndr_winreg.h"
 #include "scripting/ejs/ejsrpc.h"
 
 /*
@@ -182,6 +183,18 @@ NTSTATUS ejs_push_NTTIME(struct ejs_rpc *ejs,
 	return ejs_push_hyper(ejs, v, name, r);
 }
 
+NTSTATUS ejs_push_WERROR(struct ejs_rpc *ejs, 
+			struct MprVar *v, const char *name, const WERROR *r)
+{
+	return ejs_push_string(ejs, v, name, win_errstr(*r));
+}
+
+NTSTATUS ejs_push_NTSTATUS(struct ejs_rpc *ejs, 
+			   struct MprVar *v, const char *name, const NTSTATUS *r)
+{
+	return ejs_push_string(ejs, v, name, nt_errstr(*r));
+}
+
 
 /*
   pull a enum from a mpr variable to a C element
@@ -290,6 +303,24 @@ NTSTATUS ejs_push_lsa_String(struct ejs_rpc *ejs,
 			     struct MprVar *v, const char *name, const struct lsa_String *r)
 {
 	return ejs_push_string(ejs, v, name, r->string);
+}
+
+/*
+  pull a winreg_String
+*/
+NTSTATUS ejs_pull_winreg_String(struct ejs_rpc *ejs, 
+			     struct MprVar *v, const char *name, struct winreg_String *r)
+{
+	return ejs_pull_string(ejs, v, name, &r->name);
+}
+
+/*
+  push a winreg_String
+*/
+NTSTATUS ejs_push_winreg_String(struct ejs_rpc *ejs, 
+			     struct MprVar *v, const char *name, const struct winreg_String *r)
+{
+	return ejs_push_string(ejs, v, name, r->name);
 }
 
 NTSTATUS ejs_pull_DATA_BLOB(struct ejs_rpc *ejs, 
