@@ -194,13 +194,18 @@ REGISTRY_VALUE* dup_registry_value( REGISTRY_VALUE *val )
 	/* copy all the non-pointer initial data */
 	
 	memcpy( copy, val, sizeof(REGISTRY_VALUE) );
-	if ( val->data_p ) 
+	
+	copy->size = 0;
+	copy->data_p = NULL;
+	
+	if ( val->data_p && val->size ) 
 	{
 		if ( !(copy->data_p = memdup( val->data_p, val->size )) ) {
 			DEBUG(0,("dup_registry_value: memdup() failed for [%d] bytes!\n",
 				val->size));
 			SAFE_FREE( copy );
 		}
+		copy->size = val->size;
 	}
 	
 	return copy;	
