@@ -64,7 +64,6 @@ AC_CHECK_FUNCS([				\
 	inet_aton				\
 	gethostname				\
 	getnameinfo				\
-	gai_strerror				\
 	iruserok				\
 	putenv					\
 	rcmd					\
@@ -91,7 +90,6 @@ AC_CHECK_FUNCS([				\
 	flock					\
 	getaddrinfo				\
 	freeaddrinfo				\
-	gai_strerror				\
 	writev
 ])
 
@@ -204,3 +202,15 @@ SMB_SUBSYSTEM_ENABLE(HEIMDAL_ROKEN_ADDRINFO, NO)
 if test t$ac_cv_func_getaddrinfo != tyes; then
 	SMB_SUBSYSTEM_ENABLE(HEIMDAL_ROKEN_ADDRINFO, YES)
 fi
+
+# only add gai_strerror if needed
+SMB_SUBSYSTEM_ENABLE(HEIMDAL_ROKEN_GAI_STRERROR, NO)
+AC_CHECK_FUNC(gai_strerror)
+if test t$ac_cv_func_gai_strerror != tyes; then
+    AC_SEARCH_LIBS_EXT(gai_strerror, [xnet], XNET_LIBS)
+    AC_CHECK_FUNC_EXT(gai_strerror, $XNET_LIBS)
+    if test t$ac_cv_func_gai_strerror != tyes; then
+	SMB_SUBSYSTEM_ENABLE(HEIMDAL_ROKEN_GAI_STRERROR, YES)
+    fi
+fi
+SMB_EXT_LIB(XNET,[${XNET_LIBS}],[${XNET_CFLAGS}],[${XNET_CPPFLAGS}],[${XNET_LDFLAGS}])

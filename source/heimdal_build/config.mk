@@ -261,10 +261,15 @@ NOPROTO = YES
 #######################
 
 #######################
+# Start SUBSYSTEM HEIMDAL_ROKEN_GAI_STRERROR
+[SUBSYSTEM::HEIMDAL_ROKEN_GAI_STRERROR]
+ADD_OBJ_FILES = heimdal/lib/roken/gai_strerror.o
+NOPROTO = YES
+
+#######################
 # Start SUBSYSTEM HEIMDAL_ROKEN_ADDRINFO
 [SUBSYSTEM::HEIMDAL_ROKEN_ADDRINFO]
 ADD_OBJ_FILES = \
-	heimdal/lib/roken/gai_strerror.o \
 	heimdal/lib/roken/getaddrinfo.o \
 	heimdal/lib/roken/freeaddrinfo.o \
 	heimdal/lib/roken/getipnodebyaddr.o \
@@ -297,7 +302,11 @@ ADD_OBJ_FILES = \
 	heimdal/lib/roken/strupr.o \
 	heimdal/lib/roken/strpool.o \
 	heimdal_build/replace.o
-REQUIRED_SUBSYSTEMS = HEIMDAL_ROKEN_ADDRINFO EXT_LIB_SOCKET
+REQUIRED_SUBSYSTEMS = \
+			HEIMDAL_ROKEN_ADDRINFO \
+			HEIMDAL_ROKEN_GAI_STRERROR \
+			EXT_LIB_SOCKET \
+			EXT_LIB_XNET
 NOPROTO = YES
 # End SUBSYSTEM HEIMDAL_ROKEN
 #######################
