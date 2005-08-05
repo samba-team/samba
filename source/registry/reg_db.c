@@ -68,13 +68,13 @@ struct builtin_regkey_value {
 };
 
 static struct builtin_regkey_value builtin_registry_values[] = {
-	{ "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Ports",  
+	{ KEY_PRINTING_PORTS,
 		SAMBA_PRINTER_PORT_NAME, REG_SZ, { "" } },
-	{ "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Printers",  
+	{ KEY_PRINTING_2K,
 		"DefaultSpoolDirectory", REG_SZ, { "C:\\Windows\\System32\\Spool\\Printers" } },
-	{ "HKLM\\SYSTEM\\CurrentControlSet\\Services\\Eventlog",
+	{ KEY_EVENTLOG,
 		"DisplayName", REG_SZ, { "Event Log" } }, 
-	{ "HKLM\\SYSTEM\\CurrentControlSet\\Services\\Eventlog",
+	{ KEY_EVENTLOG,
 		"ErrorControl", REG_DWORD, { (char*)0x00000001 } },
 	{ NULL, NULL, 0, { NULL } }
 };
