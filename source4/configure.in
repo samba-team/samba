@@ -83,7 +83,7 @@ dnl Remove -I/usr/include/? from CFLAGS and CPPFLAGS
 CFLAGS_REMOVE_USR_INCLUDE(CFLAGS)
 CFLAGS_REMOVE_USR_INCLUDE(CPPFLAGS)
 
-echo "configure: creating config.pl"
+echo "configure: creating config.pm"
 cat >config.pm<<CEOF
 # config.pm - Autogenerate by configure. DO NOT EDIT!
 
