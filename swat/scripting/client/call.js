@@ -5,6 +5,37 @@
 	released under the GNU GPL Version 2 or later
 */
 
+var __call = new Object();
+
+/*
+  we can't use the qooxdoo portability layer for this, as it assumes
+  you are using an XML transport, so instead replicate the portability
+  code for remote calls here. Don't look too closely or you will go
+  blind.
+*/
+__call._activex = window.ActiveXObject && !(new QxClient).isOpera() ? true : false;
+__call._activexobj = null;
+__call._ok = QxXmlHttpLoader._http || QxXmlHttpLoader._activex;
+
+if (__call._activex) {
+	var servers = ["MSXML2", "Microsoft", "MSXML", "MSXML3"];
+	for (var i=0; i<servers.length; i++) {
+		try {
+			var o = new ActiveXObject(servers[i] + ".XMLHTTP");
+			__call._activexobj = servers[i];
+			o = null;
+		} catch(ex) {};
+	};
+};
+
+/*
+  return a http object ready for a remote call
+*/
+function __http_object() {
+	return __call._activex ? 
+		new ActiveXObject(__call._activexobj + ".XMLHTTP") : 
+		new XMLHttpRequest();
+}
 
 /*
 	usage:
@@ -18,7 +49,7 @@
 	object. 'callback' may be null.
 */
 function server_call(url, func, callback) {
-	var req = new XMLHttpRequest();
+	var req = __http_object();
 	req.open("POST", url, true);
 	req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded'); 
 	var args = new Object();
