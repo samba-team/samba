@@ -103,7 +103,10 @@ static void websrv_recv(struct stream_connection *conn, uint16_t flags)
 	   a blank line) and any post data, as indicated by the
 	   content_length */
 	if (web->input.end_of_headers &&
-	    web->input.partial.length == web->input.content_length) {
+	    web->input.partial.length >= web->input.content_length) {
+		if (web->input.partial.length > web->input.content_length) {
+			web->input.partial.data[web->input.content_length] = 0;
+		}
 		EVENT_FD_NOT_READABLE(web->conn->event.fde);
 		http_process_input(web);
 	}
