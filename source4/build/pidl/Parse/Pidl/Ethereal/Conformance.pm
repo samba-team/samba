@@ -8,7 +8,7 @@ package Parse::Pidl::Ethereal::Conformance;
 require Exporter;
 
 @ISA = qw(Exporter);
-@EXPORT_OK = qw(EmitProhibited FindDissectorParam);
+@EXPORT_OK = qw(EmitProhibited FindDissectorParam %hf_renames);
 
 use strict;
 
@@ -25,7 +25,7 @@ sub handle_type($$$$$$$)
 	#FIXME
 }
 
-my %hf_renames = ();
+use vars qw(%hf_renames);
 
 sub handle_hf_rename($$)
 {
