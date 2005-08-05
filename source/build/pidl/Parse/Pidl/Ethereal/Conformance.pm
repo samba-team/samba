@@ -16,16 +16,28 @@ use Parse::Pidl::Util qw(has_property);
 
 sub handle_union_tag_size($$)
 {
+	my ($union,$size) = @_;
+
 	#FIXME	
 }
+
+use vars qw(%hf_renames %types %header_fields);
 
 sub handle_type($$$$$$$)
 {
 	my ($name,$dissectorname,$ft_type,$base_type,$mask,$valsstring,$alignment) = @_;
-	#FIXME
+
+	$types{$name} = {
+		NAME => $name,
+		DISSECTOR_NAME => $dissectorname,
+		FT_TYPE => $ft_type,
+		BASE_TYPE => $base_type,
+		MASK => $mask,
+		VALSSTRING => $valsstring,
+		ALIGNMENT => $alignment
+	};
 }
 
-use vars qw(%hf_renames);
 
 sub handle_hf_rename($$)
 {
@@ -45,12 +57,23 @@ sub handle_param_value($$)
 
 sub handle_hf_field($$$$$$$$)
 {
-	my ($hf,$title,$filter,$ft_type,$base_type,$valsstring,$mask,$blub) = @_;
+	my ($hf,$title,$filter,$ft_type,$base_type,$valsstring,$mask,$blurb) = @_;
 
+	$header_fields{$hf} = {
+		HF => $hf,
+		TITLE => $title,
+		FILTER => $filter,
+		FT_TYPE => $ft_type,
+		BASE_TYPE => $base_type,
+		VALSSTRING => $valsstring,
+		MASK => $mask,
+		BLURB => $blurb
+	};
 }
 
 sub handle_strip_prefix($)
 {
+	my $x = shift;
 	#FIXME
 }
 
