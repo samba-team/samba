@@ -8,7 +8,7 @@ package Parse::Pidl::Ethereal::Conformance;
 require Exporter;
 
 @ISA = qw(Exporter);
-@EXPORT_OK = qw(EmitProhibited);
+@EXPORT_OK = qw(EmitProhibited FindDissectorParam);
 
 use strict;
 
@@ -33,9 +33,13 @@ sub handle_hf_rename($$)
 	$hf_renames{$old} = $new;
 }
 
+my %dissectorparams = ();
+
 sub handle_param_value($$)
 {
 	my ($dissector_name,$value) = @_;
+
+	$dissectorparams{$dissector_name} = $value;
 
 }
 
@@ -92,6 +96,15 @@ sub EmitProhibited($)
 	my $type = shift;
 
 	return 1 if (grep(/$type/,@noemit));
+
+	return 0;
+}
+
+sub FindDissectorParam($)
+{
+	my $type = shift;
+
+	return $dissectorparams{$type} if defined ($dissectorparams{$type});
 
 	return 0;
 }
