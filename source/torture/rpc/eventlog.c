@@ -22,12 +22,13 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_eventlog.h"
+#include "librpc/gen_ndr/ndr_lsa.h"
 
-static void init_eventlog_String(struct eventlog_String *name, const char *s)
+static void init_lsa_String(struct lsa_String *name, const char *s)
 {
-	name->name = s;
-	name->name_len = 2*strlen_m(s);
-	name->name_size = name->name_len;
+	name->string = s;
+	name->length = 2*strlen_m(s);
+	name->size = name->length;
 }
 
 static BOOL test_GetNumRecords(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *handle)
@@ -62,6 +63,8 @@ static BOOL test_ReadEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct
 	r.in.offset = offset;
 	r.in.handle = handle;
 	r.in.number_of_bytes = 0x0;
+
+	r.out.data = talloc(mem_ctx, uint8_t);
 
 	status = dcerpc_eventlog_ReadEventLogW(p, mem_ctx, &r);
 
@@ -112,6 +115,26 @@ static BOOL test_CloseEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+static BOOL test_ClearEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			       struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct eventlog_ClearEventLogW r;
+
+	r.in.handle = handle;
+	r.in.unknown = NULL;
+
+	printf("Testing ClearEventLog\n");
+
+	status = dcerpc_eventlog_ClearEventLogW(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ClearEventLog failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
 static BOOL test_OpenEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -124,8 +147,8 @@ static BOOL test_OpenEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct
 	unknown0.unknown1 = 0x0001;
 
 	r.in.unknown0 = &unknown0;
-	init_eventlog_String(&r.in.source, "system");
-	init_eventlog_String(&r.in.unknown1, NULL);
+	init_lsa_String(&r.in.logname, "system");
+	init_lsa_String(&r.in.servername, NULL);
 	r.in.unknown2 = 0x00000001;
 	r.in.unknown3 = 0x00000001;
 	r.out.handle = handle;
@@ -170,6 +193,10 @@ BOOL torture_rpc_eventlog(void)
 		return False;
 	}
 
+#if 0
+	test_ClearEventLog(p, mem_ctx, &handle); /* Destructive test */
+#endif
+	
 	test_GetNumRecords(p, mem_ctx, &handle);
 
 	test_ReadEventLog(p, mem_ctx, &handle, 0);
