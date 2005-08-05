@@ -28,8 +28,8 @@ static TDB_CONTEXT *evtlog_tdb; /* used for eventlog parameter tdb file */
 
 typedef struct eventlog_info {
 	/* for use by the \PIPE\eventlog policy */
-	fstring source_log_file_name;
-	fstring source_server_name;
+	fstring logname;
+	fstring servername;
 	fstring handle_string;
 	uint32 num_records;
 	uint32 oldest_entry;
@@ -369,7 +369,7 @@ BOOL eventlog_control_eventlog(const char *evtlogname)
 
 	uiRetention = 0x93A80;
 	uiMaxSize = 0x80000;  
-	/* evtlogname=info->source_log_file_name; */
+	/* evtlogname=info->logname; */
 
 	pstrcpy(v_name,"Retention");
 
@@ -431,7 +431,7 @@ static BOOL _eventlog_open_eventlog_hook(Eventlog_info *info)
 	memset(command, 0, sizeof(command));
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"",
 		 cmd,
-		 info->source_log_file_name,
+		 info->logname,
 		 info->handle_string);
 
 	DEBUG(10, ("Running [%s]\n", command));
@@ -452,7 +452,7 @@ static BOOL _eventlog_open_eventlog_hook(Eventlog_info *info)
 	if(numlines) {
 		DEBUGADD(10, ("Line[0] = [%s]\n", qlines[0]));
 		if(0 == strncmp(qlines[0], "SUCCESS", strlen("SUCCESS"))) {
-			DEBUGADD(10, ("Able to open [%s].\n", info->source_log_file_name));
+			DEBUGADD(10, ("Able to open [%s].\n", info->logname));
 			file_lines_free(qlines);
 			return True;
 		}
@@ -462,46 +462,51 @@ static BOOL _eventlog_open_eventlog_hook(Eventlog_info *info)
 	return False;
 }
 
-WERROR _eventlog_open_eventlog(pipes_struct *p,
-			       EVENTLOG_Q_OPEN_EVENTLOG *q_u,
-			       EVENTLOG_R_OPEN_EVENTLOG *r_u)
+/*******************************************************************
+*******************************************************************/
+
+WERROR _eventlog_open_eventlog(pipes_struct *p, EVENTLOG_Q_OPEN_EVENTLOG *q_u, EVENTLOG_R_OPEN_EVENTLOG *r_u)
 {
 	Eventlog_info *info = NULL;
     
-	if(!q_u || !r_u) {
+	if ( !q_u || !r_u ) {
 		return WERR_NOMEM;
 	}
     
-	if((info = SMB_MALLOC_P(Eventlog_info)) == NULL) {
+	if ( !(info = SMB_MALLOC_P(Eventlog_info)) ) 
 		return WERR_NOMEM;
-	}
     
 	ZERO_STRUCTP(info);
 
-	if(q_u->servername_ptr != 0) {
-		unistr2_to_ascii(info->source_server_name, &q_u->servername, sizeof(info->source_server_name));
+
+	if ( q_u->servername.string ) {
+		UNISTR2 *sname = q_u->servername.string;
+
+		rpcstr_pull( info->servername, sname->buffer, sizeof(info->servername), sname->uni_str_len*2, 0 );
 	} else {
 		/* if servername == NULL, use the local computer */
-		fstrcpy(info->source_server_name, global_myname());
+		fstrcpy(info->servername, global_myname());
 	}
-	DEBUG(10, ("_eventlog_open_eventlog: Using [%s] as the server name.\n", info->source_server_name));
+	DEBUG(10, ("_eventlog_open_eventlog: Using [%s] as the server name.\n", info->servername));
 
-	if(q_u->sourcename_ptr != 0) {
-		unistr2_to_ascii(info->source_log_file_name, &q_u->sourcename, sizeof(info->source_log_file_name));
+	if ( q_u->logname.string ) {
+		UNISTR2 *lname = q_u->logname.string;
+
+		rpcstr_pull( info->logname, lname->buffer, sizeof(info->logname), lname->uni_str_len*2, 0 );
 	} else {
 		/* if sourcename == NULL, default to "Application" log */
-		fstrcpy(info->source_log_file_name, "Application");
+		fstrcpy(info->logname, "Application");
 	}
-	DEBUG(10, ("_eventlog_open_eventlog: Using [%s] as the source log file.\n", info->source_log_file_name));
+	DEBUG(10, ("_eventlog_open_eventlog: Using [%s] as the source log file.\n", info->logname));
 
-	if(!create_policy_hnd(p, &r_u->handle, free_eventlog_info, (void *)info)) {
+	if ( !create_policy_hnd(p, &r_u->handle, free_eventlog_info, (void *)info) ) {
 		free_eventlog_info(info);
 		return WERR_NOMEM;
 	}
 	
 	policy_handle_to_string(&r_u->handle, &info->handle_string);
 
-	if(!(_eventlog_open_eventlog_hook(info))) {
+	if ( !(_eventlog_open_eventlog_hook(info)) ) {
 		close_policy_hnd(p, &r_u->handle);
 		return WERR_BADFILE;
 	}
@@ -535,7 +540,7 @@ static BOOL _eventlog_get_num_records_hook(Eventlog_info *info)
 	memset(command, 0, sizeof(command));
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"", 
 		 cmd,
-		 info->source_log_file_name,
+		 info->logname,
 		 info->handle_string);
 
 	DEBUG(10, ("Running [%s]\n", command));
@@ -614,7 +619,7 @@ static BOOL _eventlog_get_oldest_entry_hook(Eventlog_info *info)
 	memset(command, 0, sizeof(command));
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"", 
 		 cmd,
-		 info->source_log_file_name,
+		 info->logname,
 		 info->handle_string);
 
 	DEBUG(10, ("Running [%s]\n", command));
@@ -692,7 +697,7 @@ static BOOL _eventlog_close_eventlog_hook(Eventlog_info *info)
 	memset(command, 0, sizeof(command));
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"", 
 		 cmd, 
-		 info->source_log_file_name, 
+		 info->logname, 
 		 info->handle_string);
 
 	DEBUG(10, ("Running [%s]\n", command));
@@ -713,7 +718,7 @@ static BOOL _eventlog_close_eventlog_hook(Eventlog_info *info)
 	if(numlines) {
 		DEBUGADD(10, ("Line[0] = [%s]\n", qlines[0]));
 		if(0 == strncmp(qlines[0], "SUCCESS", 7)) {
-			DEBUGADD(10, ("Able to close [%s].\n", info->source_log_file_name));
+			DEBUGADD(10, ("Able to close [%s].\n", info->logname));
 			file_lines_free(qlines);
 			return True;
 		}
@@ -953,7 +958,7 @@ static BOOL _eventlog_read_eventlog_hook(Eventlog_info *info,
 
 	slprintf(command, sizeof(command)-1, "%s \"%s\" %s %d %d \"%s\"",
 		 cmd,
-		 info->source_log_file_name,
+		 info->logname,
 		 direction,
 		 starting_record,
 		 buffer_size,
@@ -1204,13 +1209,13 @@ static BOOL _eventlog_clear_eventlog_hook(Eventlog_info *info,
 	if(strlen(backup_file_name) > 0) {
 		slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\"",
 			 cmd,
-			 info->source_log_file_name,
+			 info->logname,
 			 backup_file_name,
 			 info->handle_string);
 	} else {
 		slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"", 
 			 cmd, 
-			 info->source_log_file_name, 
+			 info->logname, 
 			 info->handle_string);
 	}
 
@@ -1232,7 +1237,7 @@ static BOOL _eventlog_clear_eventlog_hook(Eventlog_info *info,
 	if(numlines) {
 		DEBUGADD(10, ("Line[0] = [%s]\n", qlines[0]));
 		if(0 == strncmp(qlines[0], "SUCCESS", strlen("SUCCESS"))) {
-			DEBUGADD(10, ("Able to clear [%s].\n", info->source_log_file_name));
+			DEBUGADD(10, ("Able to clear [%s].\n", info->logname));
 			file_lines_free(qlines);
 			return True;
 		}
@@ -1262,11 +1267,11 @@ WERROR _eventlog_clear_eventlog(pipes_struct *p,
 		unistr2_to_ascii(backup_file_name, &(q_u->backup_file), sizeof(backup_file_name));
 		DEBUG(10, ("_eventlog_clear_eventlog: Using [%s] as the backup file name for log [%s].",
 			   backup_file_name,
-			   info->source_log_file_name));
+			   info->logname));
 	} else {
 		/* if backup_file == NULL, do not back up the log before clearing it */
 		DEBUG(10, ("_eventlog_clear_eventlog: clearing [%s] log without making a backup.",
-			   info->source_log_file_name));
+			   info->logname));
 	}
 
 	if(!(_eventlog_clear_eventlog_hook(info, backup_file_name))) {

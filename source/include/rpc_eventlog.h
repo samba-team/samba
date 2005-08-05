@@ -50,15 +50,16 @@
 /***********************************/
 
 typedef struct {
-	uint32 unknown1;
+	uint16 unknown1;
 	uint16 unknown2;
-	uint16 unknown3;
-	uint16 sourcename_length;
-	uint16 sourcename_size;
-	uint32 sourcename_ptr;
-	UNISTR2 sourcename;
-	uint32 servername_ptr;
-	UNISTR2 servername;
+} EVENTLOG_OPEN_UNKNOWN0;
+
+typedef struct {
+	EVENTLOG_OPEN_UNKNOWN0 *unknown0;
+	UNISTR4 logname;
+	UNISTR4 servername;
+	uint32 unknown1;
+	uint32 unknown2;
 } EVENTLOG_Q_OPEN_EVENTLOG;
 
 typedef struct {
