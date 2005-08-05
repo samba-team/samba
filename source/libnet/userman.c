@@ -578,6 +578,12 @@ static uint32_t usermod_setfields(struct usermod_state *s, uint16_t *level,
 			i->info17.acct_expiry = timeval_to_nttime(s->change.acct_expiry);
 
 			s->change.fields ^= USERMOD_FIELD_ACCT_EXPIRY;
+
+		} else if (s->change.fields & USERMOD_FIELD_ACCT_FLAGS) {
+			*level = 16;
+			i->info16.acct_flags = s->change.acct_flags;
+
+			s->change.fields ^= USERMOD_FIELD_ACCT_FLAGS;
 		}
 	}
 
