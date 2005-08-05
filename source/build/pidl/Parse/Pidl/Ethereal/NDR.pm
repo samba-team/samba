@@ -12,9 +12,9 @@ use strict;
 use Parse::Pidl::Typelist;
 use Parse::Pidl::Util qw(has_property ParseExpr);
 use Parse::Pidl::NDR;
-use Parse::Pidl::Ethereal::Conformance qw(EmitProhibited FindDissectorParam);
+use Parse::Pidl::Ethereal::Conformance qw(EmitProhibited FindDissectorParam %hf_renames);
 
-my %ptrtype_define_mappings = (
+my %ptrtype_mappings = (
 	"unique" => "NDR_POINTER_UNIQUE",
 	"ref" => "NDR_POINTER_REF",
 	"ptr" => "NDR_POINTER_PTR"
@@ -208,56 +208,79 @@ sub Bitmap($$$)
 	deindent;
 	pidl_code "return offset;";
 	pidl_code "}\n";
-	register_new_type($name, $dissectorname, bitmap_ft($e), "BASE_HEX", "0", "NULL", $e->{ALIGN});
 }
 
-sub FindType($) 
+sub ElementLevel($$$$)
 {
-	my $foo = shift;
-#FIXME
-	return {
-		FT_TYPE => "FIXME",
-		BASE_TYPE => "FIXME",
-		VALS => "VALS",
-		MASK => 0,
-		DISSECTOR => "FOOBNA"
-	};
+	my ($e,$l,$hf,$myname) = @_;
+
+	if ($l->{TYPE} eq "POINTER") {
+		pidl_code "offset=dissect_ndr_pointer(tvb,offset,pinfo,tree,drep,$myname\_,$ptrtype_mappings{$l->{POINTER_TYPE}},\"\",$hf);";
+	} elsif ($l->{TYPE} eq "ARRAY") {
+		my $af = "";
+
+		($af = "ucarray") if ($l->{IS_VARYING});
+		($af = "uvarray") if ($l->{IS_CONFORMANT});
+		($af = "ucvarray") if ($l->{IS_CONFORMANT} and $l->{IS_VARYING});
+
+		pidl_code "offset=dissect_ndr_$af(tvb,offset,pinfo,tree,drep,$myname\_);";
+	} elsif ($l->{TYPE} eq "DATA") {
+#		pidl_code "guint32 param="  . FindDissectorParam($dissectorname).";";
+#		pidl_code "offset=$type->{DISSECTOR}(tvb, offset, pinfo, tree, drep, $hf, param);";
+	} elsif ($_->{TYPE} eq "SUBCONTEXT") {
+		die("subcontext() not supported")
+	}
 }
 
 sub Element($$$)
 {
 	my ($e,$pn,$ifname) = @_;
 
-	my $hf_index = "hf_$ifname\_$pn\_$e->{NAME}";
 	my $dissectorname = "$ifname\_dissect\_$ifname\_$pn\_$e->{NAME}";
 
 	return if (EmitProhibited($dissectorname));
 
-	my $type = FindType($e->{DATA_TYPE});
+	my $hf = "";
+	#FIXME	my $hf = register_hf_field("hf_$ifname\_$pn\_$e->{NAME}", $e->{NAME}, "$ifname.$pn.$e->{NAME}", $type->{FT_TYPE}, $type->{BASE_TYPE}, $type->{VALS}, $type->{MASK}, "");
+	my $add = "";
 
-	my $hf = register_hf_field($hf_index, $e->{NAME}, "$ifname.$pn.$e->{NAME}", $type->{FT_TYPE}, $type->{BASE_TYPE}, $type->{VALS}, $type->{MASK}, "");
-	
-	pidl_code "static int";
-	pidl_code "$dissectorname(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep)";
-	pidl_code "{";
-	indent;
-	pidl_code "guint32 param="  . FindDissectorParam($dissectorname).";";
-	pidl_code "offset=$type->{DISSECTOR}(tvb, offset, pinfo, tree, drep, $hf, param);";
-	pidl_code "return offset;";
-	deindent;
-	pidl_code "}\n";
+	foreach (@{$e->{LEVELS}}) {
+		next if ($_->{TYPE} eq "SWITCH");
+		pidl_code "static int";
+		pidl_code "$dissectorname$add(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep)";
+		pidl_code "{";
+		indent;
+
+		ElementLevel($e,$_,$hf,$dissectorname.$add);
+
+		pidl_code "return offset;";
+		deindent;
+		pidl_code "}\n";
+		$add.="_";
+	}
+
+	return "offset=$dissectorname(tvb,offset,pinfo,tree,drep);";
 }
 
 sub Function($$$)
 {
 	my ($fn,$ifname) = @_;
+
+	my %dissectornames;
+
+	foreach (@{$fn->{ELEMENTS}}) {
+		$dissectornames{$_->{NAME}} = Element($_, $fn->{NAME}, $ifname) 
+	}
 	
 	pidl_code "static int";
 	pidl_code "$ifname\_dissect\_$fn->{NAME}_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, guint8 *drep _U_)";
 	pidl_code "{";
 	indent;
 	foreach (@{$fn->{ELEMENTS}}) {
-		Element($_, $fn->{NAME}, $ifname) if (grep(/in/,@{$_->{DIRECTION}}));
+		if (grep(/in/,@{$_->{DIRECTION}})) {
+			pidl_code "dissectornames{$_->{NAME}};";
+			pidl_code "offset=dissect_deferred_pointers(pinfo,tvb,offset,drep);";
+		}
 	}
 	pidl_code "return offset;";
 	deindent;
@@ -268,7 +291,11 @@ sub Function($$$)
 	pidl_code "{";
 	indent;
 	foreach (@{$fn->{ELEMENTS}}) {
-		Element($_, $fn->{NAME}, $ifname) if (grep(/out/,@{$_->{DIRECTION}}));
+		if (grep(/out/,@{$_->{DIRECTION}})) {
+			pidl_code "$dissectornames{$_->{NAME}};";
+			pidl_code "offset=dissect_deferred_pointers(pinfo,tvb,offset,drep);";
+		}
+
 	}
 	pidl_code "return offset;";
 	deindent;
@@ -283,6 +310,9 @@ sub Struct($$$)
 	return if (EmitProhibited($dissectorname));
 
 	register_ett("ett_$ifname\_$name");
+
+	my $res = "";
+	($res.=Element($_, $name, $ifname)."\n") foreach (@{$e->{ELEMENTS}});
 
 	pidl_hdr "int $dissectorname(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *parent_tree, guint8 *drep, int hf_index, guint32 param _U_);";
 
@@ -307,9 +337,8 @@ sub Struct($$$)
 	deindent;
 	pidl_code "}";
 
-	pidl_code "";
+	pidl_code "$res";
 
-	Element($_, $name, $ifname) foreach (@{$e->{ELEMENTS}});
 
 	pidl_code "";
 	pidl_code "proto_item_set_len(item, offset-old_offset);";
@@ -325,6 +354,13 @@ sub Union($$$)
 	my $dissectorname = "$ifname\_dissect_union_$name";
 	
 	register_ett("ett_$ifname\_$name");
+
+	my $res = "";
+	foreach (@{$e->{ELEMENTS}}) {
+		$res.="\t\t\t$_->{CASE}:\n";
+		$res.="\t\t\t\t".Element($_, $name, $ifname)."\n";
+		$res.="\t\t\tbreak;\n\n";
+	}
 
 	pidl_code "static int";
 	pidl_code "$dissectorname(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *parent_tree, guint8 *drep, int hf_index, guint32 param _U_)";
@@ -357,14 +393,7 @@ sub Union($$$)
 	pidl_code "offset = dissect_ndr_$e->{SWITCH_TYPE}(tvb, offset, pinfo, tree, drep, hf_index, &level);";
 
 	pidl_code "switch(level) {";
-	foreach (@{$e->{ELEMENTS}}) {
-		pidl_code "$_->{CASE}:";
-		indent;
-		Element($_, $name, $ifname);
-		deindent;
-		pidl_code "break;";
-	}
-
+	pidl_code $res;
 	pidl_code "proto_item_set_len(item, offset-old_offset);";
 	pidl_code "return offset;";
 	deindent;
@@ -560,7 +589,9 @@ my %hf = ();
 
 sub register_hf_field($$$$$$$$) 
 {
-	my ($index,$name,$filter_name,$ft_type,$base_type,$valsstring,$mask,$fixme) = @_;
+	my ($index,$name,$filter_name,$ft_type,$base_type,$valsstring,$mask,$blurb) = @_;
+
+	return $hf_renames{$index} if defined ($hf_renames{$index});
 
 	$hf{$index} = {
 		INDEX => $index,
@@ -569,8 +600,11 @@ sub register_hf_field($$$$$$$$)
 		FT_TYPE => $ft_type,
 		BASE_TYPE => $base_type,
 		VALS => $valsstring,
-		MASK => $mask
+		MASK => $mask,
+		BLURB => $blurb
 	};
+
+	return $index;
 }
 
 sub DumpHfDeclaration()
@@ -594,7 +628,7 @@ sub DumpHfList()
 	foreach (values %hf) 
 	{
 		$res .= "\t{ &$_->{INDEX}, 
-	  { \"$_->{NAME}\", \"$_->{FILTER}\", $_->{FT_TYPE}, $_->{BASE_TYPE}, $_->{VALS}, $_->{MASK}, FIXME, HFILL }},
+	  { \"$_->{NAME}\", \"$_->{FILTER}\", $_->{FT_TYPE}, $_->{BASE_TYPE}, $_->{VALS}, $_->{MASK}, \"$_->{BLURB}\", HFILL }},
 ";
 	}
 
