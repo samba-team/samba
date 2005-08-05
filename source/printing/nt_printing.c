@@ -2102,19 +2102,20 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 		fstring *tddfs;
 
 		tddfs = SMB_REALLOC_ARRAY(driver.dependentfiles, fstring, i+2);
-		if (tddfs == NULL) {
+		if ( !tddfs ) {
 			DEBUG(0,("get_a_printer_driver_3: failed to enlarge buffer!\n"));
 			break;
 		}
-		else driver.dependentfiles = tddfs;
+		else 
+			driver.dependentfiles = tddfs;
 
 		len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "f",
 				  &driver.dependentfiles[i]);
 		i++;
 	}
 	
-	if (driver.dependentfiles != NULL)
-		fstrcpy(driver.dependentfiles[i], "");
+	if ( driver.dependentfiles )
+		fstrcpy( driver.dependentfiles[i], "" );
 
 	SAFE_FREE(dbuf.dptr);
 
@@ -4944,6 +4945,7 @@ static BOOL delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct 
 {
 	int i = 0;
 	char *s;
+	pstring file;
 	connection_struct *conn;
 	DATA_BLOB null_pw;
 	NTSTATUS nt_status;
@@ -4985,45 +4987,50 @@ static BOOL delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct 
 	
 	if ( *info_3->driverpath ) {
 		if ( (s = strchr( &info_3->driverpath[1], '\\' )) != NULL ) {
-			driver_unix_convert(s, conn, NULL, &bad_path, &st);
+			pstrcpy( file, s );
+			driver_unix_convert(file, conn, NULL, &bad_path, &st);
 			DEBUG(10,("deleting driverfile [%s]\n", s));
-			unlink_internals(conn, 0, s);
+			unlink_internals(conn, 0, file);
 		}
 	}
 		
 	if ( *info_3->configfile ) {
 		if ( (s = strchr( &info_3->configfile[1], '\\' )) != NULL ) {
-			driver_unix_convert(s, conn, NULL, &bad_path, &st);
+			pstrcpy( file, s );
+			driver_unix_convert(file, conn, NULL, &bad_path, &st);
 			DEBUG(10,("deleting configfile [%s]\n", s));
-			unlink_internals(conn, 0, s);
+			unlink_internals(conn, 0, file);
 		}
 	}
 	
 	if ( *info_3->datafile ) {
 		if ( (s = strchr( &info_3->datafile[1], '\\' )) != NULL ) {
-			driver_unix_convert(s, conn, NULL, &bad_path, &st);
+			pstrcpy( file, s );
+			driver_unix_convert(file, conn, NULL, &bad_path, &st);
 			DEBUG(10,("deleting datafile [%s]\n", s));
-			unlink_internals(conn, 0, s);
+			unlink_internals(conn, 0, file);
 		}
 	}
 	
 	if ( *info_3->helpfile ) {
 		if ( (s = strchr( &info_3->helpfile[1], '\\' )) != NULL ) {
-			driver_unix_convert(s, conn, NULL, &bad_path, &st);
+			pstrcpy( file, s );
+			driver_unix_convert(file, conn, NULL, &bad_path, &st);
 			DEBUG(10,("deleting helpfile [%s]\n", s));
-			unlink_internals(conn, 0, s);
+			unlink_internals(conn, 0, file);
 		}
 	}
 	
 	/* check if we are done removing files */
 	
 	if ( info_3->dependentfiles ) {
-		while ( *info_3->dependentfiles[i] ) {
-			char *file;
+		while ( info_3->dependentfiles[i][0] ) {
+			char *p;
 
 			/* bypass the "\print$" portion of the path */
 			
-			if ( (file = strchr( info_3->dependentfiles[i]+1, '\\' )) != NULL ) {
+			if ( (p = strchr( info_3->dependentfiles[i]+1, '\\' )) != NULL ) {
+				pstrcpy( file, p );
 				driver_unix_convert(file, conn, NULL, &bad_path, &st);
 				DEBUG(10,("deleting dependent file [%s]\n", file));
 				unlink_internals(conn, 0, file );
