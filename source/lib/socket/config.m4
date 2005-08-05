@@ -33,11 +33,11 @@ AC_CHECK_FUNCS(connect)
 if test x"$ac_cv_func_connect" = x"no"; then
     case "$LIBS $SOCKET_LIBS" in
     *-lnsl*) ;;
-    *) AC_CHECK_LIB_EXT(nsl_s, SOCKET_LIBS, inet_aton) ;;
+    *) AC_CHECK_LIB_EXT(nsl_s, SOCKET_LIBS, printf) ;;
     esac
     case "$LIBS $SOCKET_LIBS" in
     *-lnsl*) ;;
-    *) AC_CHECK_LIB_EXT(nsl, SOCKET_LIBS, inet_aton) ;;
+    *) AC_CHECK_LIB_EXT(nsl, SOCKET_LIBS, printf) ;;
     esac
     case "$LIBS $SOCKET_LIBS" in
     *-lsocket*) ;;
