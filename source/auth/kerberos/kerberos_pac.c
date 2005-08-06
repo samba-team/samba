@@ -216,7 +216,7 @@ static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx,
 					smb_krb5_context,
 					krbtgt_keyblock,
 					service_keyblock);
-	if (NT_STATUS_IS_OK(nt_status)) {
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
 
