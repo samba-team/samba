@@ -29,6 +29,7 @@
 #include "libcli/composite/composite.h"
 
 #if 0
+
 static NTSTATUS after_negprot(struct smbcli_transport **dst_transport,
 			      const char *dest_host, uint16_t port,
 			      const char *my_name)
@@ -501,79 +502,6 @@ static NTSTATUS setup_netlogon_creds(struct smbcli_transport *transport,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS torture_samlogon(struct dcerpc_pipe *p,
-				 struct creds_CredentialState *netlogon_creds,
-				 const char *workstation,
-				 const char *domain,
-				 const char *username,
-				 const char *password)
-{
-	TALLOC_CTX *mem_ctx;
-	struct netr_LogonSamLogon log;
-	struct netr_NetworkInfo ninfo;
-	struct netr_Authenticator auth, auth2;
-	uint8_t user_session_key[16];
-	DATA_BLOB ntlmv2_response = data_blob(NULL, 0);
-	DATA_BLOB lmv2_response = data_blob(NULL, 0);
-	DATA_BLOB names_blob;
-	DATA_BLOB chall;
-	NTSTATUS status;
-
-	mem_ctx = talloc_init("torture_samlogon");
-
-	ZERO_STRUCT(user_session_key);
-
-	printf("testing netr_LogonSamLogon\n");
-
-	log.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s",
-					     dcerpc_server_name(p));
-	log.in.workstation = workstation;
-	log.in.credential = &auth;
-	log.in.return_authenticator = &auth2;
-	log.in.validation_level = 3;
-	log.in.logon_level = 2;
-	log.in.logon.network = &ninfo;
-
-	chall = data_blob_talloc(mem_ctx, NULL, 8);
-	generate_random_buffer(chall.data, 8);	
-
-	names_blob = NTLMv2_generate_names_blob(mem_ctx, workstation,
-						lp_workgroup());
-	ZERO_STRUCT(user_session_key);
-
-	if (!SMBNTLMv2encrypt(username, domain, password,
-			      &chall, &names_blob,
-			      &lmv2_response, &ntlmv2_response, 
-			      NULL, NULL)) {
-		data_blob_free(&names_blob);
-		talloc_free(mem_ctx);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	data_blob_free(&names_blob);
-
-	ninfo.identity_info.domain_name.string = domain;
-	ninfo.identity_info.parameter_control = 0;
-	ninfo.identity_info.logon_id_low = 0;
-	ninfo.identity_info.logon_id_high = 0;
-	ninfo.identity_info.account_name.string = username;
-	ninfo.identity_info.workstation.string = workstation;
-	memcpy(ninfo.challenge, chall.data, 8);
-	ninfo.nt.data = ntlmv2_response.data;
-	ninfo.nt.length = ntlmv2_response.length;
-	ninfo.lm.data = NULL;
-	ninfo.lm.length = 0;
-
-	ZERO_STRUCT(auth2);
-	creds_client_authenticator(netlogon_creds, &auth);
-
-	log.out.return_authenticator = NULL;
-	status = dcerpc_netr_LogonSamLogon(p, mem_ctx, &log);
-	talloc_free(mem_ctx);
-	data_blob_free(&lmv2_response);
-	data_blob_free(&ntlmv2_response);
-	return status;
-}
-
 static NTSTATUS test_getgroups(struct smbcli_transport *transport,
 			       const char *name)
 {
@@ -659,7 +587,7 @@ static NTSTATUS test_getgroups(struct smbcli_transport *transport,
 
 	{
 		struct samr_LookupNames l;
-		struct samr_String samr_name;
+		struct lsa_String samr_name;
 		struct samr_OpenUser o;
 
 		samr_name.string = name;
@@ -832,7 +760,7 @@ static NTSTATUS test_getallsids(struct smbcli_transport *transport,
 
 	{
 		struct samr_LookupNames l;
-		struct samr_String samr_name;
+		struct lsa_String samr_name;
 		struct samr_OpenUser o;
 
 		samr_name.string = name;
@@ -1038,22 +966,20 @@ static BOOL xp_login(const char *dcname, const char *wksname,
 	if (!NT_STATUS_IS_OK(status))
                 return False;
 
-	status = torture_samlogon(netlogon_schannel_pipe,
-				  netlogon_creds, wksname, domain,
-				  user1name, user1pw);
-
-	if (!NT_STATUS_IS_OK(status))
-                return False;
-
+	if (!test_InteractiveLogon(netlogon_schannel_pipe, mem_ctx, 
+				   netlogon_creds, wksname, domain,
+				   user1name, user1pw)) {
+		return False;
+	}
+		
 	talloc_free(netlogon_pipe);
 
-	status = torture_samlogon(netlogon_schannel_pipe,
-				  netlogon_creds, wksname, domain,
-				  user2name, user2pw);
-
-	if (!NT_STATUS_IS_OK(status))
-                return False;
-
+	if (!test_InteractiveLogon(netlogon_schannel_pipe, mem_ctx, 
+				   netlogon_creds, wksname, domain,
+				   user1name, user1pw)) {
+		return False;
+	}
+		
 	status = test_getgroups(transport, user2name);
 	
 	if (!NT_STATUS_IS_OK(status))
@@ -1093,8 +1019,6 @@ static BOOL xp_login(const char *dcname, const char *wksname,
 	return True;
 }
 
-#endif
-
 struct user_pw {
 	const char *username;
 	const char *password;
@@ -1112,10 +1036,8 @@ static const struct user_pw machines[] = {
 
 BOOL torture_rpc_login(void)
 {
-#if 0
 	const char *pdcname = "pdcname";
 	const char *domainname = "domain";
-#endif
 
 	int useridx1 = rand() % ARRAY_SIZE(users);
 	int useridx2 = rand() % ARRAY_SIZE(users);
@@ -1125,13 +1047,18 @@ BOOL torture_rpc_login(void)
 	       users[useridx1].username,
 	       users[useridx2].username);
 
-#if 0
 	return xp_login(pdcname, machines[machidx].username,
 			domainname, machines[machidx].password,
 			users[useridx1].username,
 			users[useridx1].password,
 			users[useridx2].username,
 			users[useridx2].password);
-#endif
 	return False;
 }
+#else 
+
+BOOL torture_rpc_login(void)
+{
+	return False;
+}
+#endif
