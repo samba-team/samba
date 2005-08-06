@@ -27,13 +27,13 @@
 #define PAC_TYPE_LOGON_INFO 1
 #define PAC_TYPE_SERVER_CHECKSUM 6
 #define PAC_TYPE_PRIVSVR_CHECKSUM 7
-#define PAC_TYPE_UNKNOWN_10 10
+#define PAC_TYPE_LOGON_NAME 10
 
-typedef struct unknown_type_10 {
-	NTTIME unknown_time;
+typedef struct pac_logon_name {
+	NTTIME logon_time;
 	uint16 len;
 	uint16 *username; /* might not be null terminated, so not UNISTR */
-} UNKNOWN_TYPE_10;
+} PAC_LOGON_NAME;
 
 typedef struct pac_signature_data {
 	uint32 type;
@@ -130,7 +130,7 @@ typedef struct pac_info_ctr
 		PAC_LOGON_INFO *logon_info;
 		PAC_SIGNATURE_DATA *srv_cksum;
 		PAC_SIGNATURE_DATA *privsrv_cksum;
-		UNKNOWN_TYPE_10 *type_10;
+		PAC_LOGON_NAME *logon_name;
 	} pac;
 } PAC_INFO_CTR;
 
