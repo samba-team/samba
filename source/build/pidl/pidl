@@ -318,8 +318,10 @@ $dcom
 	  my($eparser) = ($opt_eth_parser or "$outputdir/packet-dcerpc-$basename.c");
 	  my $eheader = $eparser;
 	  $eheader =~ s/\.c$/\.h/;
+	  my $cnffile = $idl_file;
+	  $cnffile =~ s/\.idl$/\.cnf/;
 
-	  my ($dp, $dh) = Parse::Pidl::Ethereal::NDR::Parse($ndr, $eheader, $eparser);
+	  my ($dp, $dh) = Parse::Pidl::Ethereal::NDR::Parse($ndr, $eheader, $cnffile);
 	  FileSave($eparser, $dp);
 	  FileSave($eheader, $dh);
 	}

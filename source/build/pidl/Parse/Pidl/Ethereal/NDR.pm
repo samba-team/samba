@@ -7,11 +7,11 @@
 # released under the GNU GPL
 
 # TODO:
-#  - order of functions generated per element level
 #  - subcontexts using tvb_new_subset()
 #  - fixed arrays
-#  - strip prefixes
 #  - allow overrides in conformance file
+#  - more built-in types:
+#    sec_desc_buf -> lsa_dissect_sec_desc_buf
 
 package Parse::Pidl::Ethereal::NDR;
 
@@ -20,9 +20,11 @@ use Parse::Pidl::Typelist;
 use Parse::Pidl::Util qw(has_property ParseExpr property_matches);
 use Parse::Pidl::NDR;
 use Parse::Pidl::Dump qw(DumpTypedef DumpFunction);
-use Parse::Pidl::Ethereal::Conformance qw(EmitProhibited FindDissectorParam %hf_renames %protocols);
+use Parse::Pidl::Ethereal::Conformance qw(ReadConformance);
 
 my %types;
+
+my $conformance = {};
 
 my %ptrtype_mappings = (
 	"unique" => "NDR_POINTER_UNIQUE",
@@ -42,6 +44,17 @@ sub type2ft($)
     return "FT_STRING" if ($t eq "string");
    
     return "FT_NONE";
+}
+
+sub StripPrefixes($)
+{
+	my ($s) = @_;
+
+	foreach (@{$conformance->{strip_prefixes}}) {
+		$s =~ s/^$_\_//g;
+	}
+
+	return $s;
 }
 
 # Convert a IDL structure field name (e.g access_mask) to a prettier
@@ -104,7 +117,8 @@ sub Enum($$$)
 {
 	my ($e,$name,$ifname) = @_;
 	my $valsstring = "$ifname\_$name\_vals";
-	my $dissectorname = "$ifname\_dissect\_$name";
+	my $dissectorname = "$ifname\_dissect\_".StripPrefixes($name);
+	return if (defined($conformance->{noemit}->{$dissectorname}));
 
     	foreach (@{$e->{ELEMENTS}}) {
 		if (/([^=]*)=(.*)/) {
@@ -142,7 +156,7 @@ sub Enum($$$)
 sub Bitmap($$$)
 {
 	my ($e,$name,$ifname) = @_;
-	my $dissectorname = "$ifname\_dissect\_$name";
+	my $dissectorname = "$ifname\_dissect\_".StripPrefixes($name);
 
 	register_ett("ett_$ifname\_$name");
 
@@ -217,7 +231,7 @@ sub ElementLevel($$$$$)
 		} elsif ($l->{LEVEL} eq "EMBEDDED") {
 			$type = "embedded";
 		}
-		pidl_code "offset=dissect_ndr_$type\_pointer(tvb,offset,pinfo,tree,drep,$myname\_,$ptrtype_mappings{$l->{POINTER_TYPE}},\"".field2name($e->{NAME}) . " ($e->{TYPE})\",$hf);";
+		pidl_code "offset=dissect_ndr_$type\_pointer(tvb,offset,pinfo,tree,drep,$myname\_,$ptrtype_mappings{$l->{POINTER_TYPE}},\"".field2name(StripPrefixes($e->{NAME})) . " (".StripPrefixes($e->{TYPE}).")\",$hf);";
 	} elsif ($l->{TYPE} eq "ARRAY") {
 		my $af = "";
 
@@ -240,7 +254,10 @@ sub ElementLevel($$$$$)
 				pidl_code "offset=dissect_ndr_vstring(tvb,offset,pinfo,tree,drep,$bs,$hf,FALSE,NULL);";
 			}
 		} elsif (defined($types{$l->{DATA_TYPE}})) {
-			my $param = FindDissectorParam($myname);
+			my $param = 0;
+			if (defined($conformance->{dissectorparams}->{$myname})) {
+				$param = $conformance->{dissectorparams}->{$myname};
+			}
 			my $x = $types{$l->{DATA_TYPE}}->{CALL};
 			$x =~ s/\@HF\@/$hf/g;
 			$x =~ s/\@PARAM\@/$param/g;
@@ -249,7 +266,15 @@ sub ElementLevel($$$$$)
 			warn("Unknown data type `$l->{DATA_TYPE}'");
 		}
 	} elsif ($_->{TYPE} eq "SUBCONTEXT") {
-		die("subcontext() not supported")
+		my $num_bits = ($l->{HEADER_SIZE}*8);
+		pidl_code "guint$num_bits size;";
+		pidl_code "int start_offset=offset;";
+		pidl_code "tvbuff_t *subtvb;";
+		pidl_code "offset=dissect_ndr_uint$num_bits(tvb,offset,pinfo,drep,&size);";
+		pidl_code "proto_tree_add_text(tree,tvb,start_offset,offset-start_offset+size,\"Subcontext size\");";
+
+		pidl_code "subtvb = tvb_new_subset(tvb,offset,size,-1);";
+		pidl_code "$myname\_(subtvb,0,pinfo,tree,drep);";
 	}
 }
 
@@ -257,13 +282,17 @@ sub Element($$$)
 {
 	my ($e,$pn,$ifname) = @_;
 
-	my $dissectorname = "$ifname\_dissect\_$ifname\_$pn\_$e->{NAME}";
+	my $dissectorname = "$ifname\_dissect\_".StripPrefixes($pn)."\_".StripPrefixes($e->{NAME});
 
-	return if (EmitProhibited($dissectorname));
+	my $call_code = "offset=$dissectorname(tvb,offset,pinfo,tree,drep);";
 
 	my $hf = register_hf_field("hf_$ifname\_$pn\_$e->{NAME}", field2name($e->{NAME}), "$ifname.$pn.$e->{NAME}", type2ft($e->{TYPE}), "BASE_HEX", "NULL", 0, "");
-	my $add = "";
 
+	if (defined($conformance->{noemit}->{$dissectorname})) {
+		return $call_code;
+	}
+
+	my $add = "";
 
 	foreach (@{$e->{LEVELS}}) {
 		next if ($_->{TYPE} eq "SWITCH");
@@ -281,7 +310,7 @@ sub Element($$$)
 		$add.="_";
 	}
 
-	return "offset=$dissectorname(tvb,offset,pinfo,tree,drep);";
+	return $call_code;
 }
 
 sub Function($$$)
@@ -306,6 +335,14 @@ sub Function($$$)
 			pidl_code "";
 		}
 	}
+
+	if (not defined($fn->{RETURN_TYPE})) {
+	} elsif ($fn->{RETURN_TYPE} eq "NTSTATUS") {
+		pidl_code "offset=dissect_ntstatus(tvb,offset,pinfo,tree,drep,hf\_$ifname\_status, NULL);";
+	} elsif ($fn->{RETURN_TYPE} eq "WERROR") {
+		pidl_code "offset=dissect_ndr_uint32(tvb,offset,pinfo,tree,drep,hf\_$ifname\_werror, NULL);";
+	}
+
 	pidl_code "return offset;";
 	deindent;
 	pidl_code "}\n";
@@ -321,6 +358,7 @@ sub Function($$$)
 		}
 
 	}
+
 	pidl_code "return offset;";
 	deindent;
 	pidl_code "}\n";
@@ -329,9 +367,9 @@ sub Function($$$)
 sub Struct($$$)
 {
 	my ($e,$name,$ifname) = @_;
-	my $dissectorname = "$ifname\_dissect\_$name";
+	my $dissectorname = "$ifname\_dissect\_".StripPrefixes($name);
 
-	return if (EmitProhibited($dissectorname));
+	return if (defined($conformance->{noemit}->{$dissectorname}));
 
 	register_ett("ett_$ifname\_$name");
 
@@ -377,7 +415,8 @@ sub Union($$$)
 {
 	my ($e,$name,$ifname) = @_;
 
-	my $dissectorname = "$ifname\_dissect_$name";
+	my $dissectorname = "$ifname\_dissect_".StripPrefixes($name);
+	return if (defined($conformance->{noemit}->{$dissectorname}));
 	
 	register_ett("ett_$ifname\_$name");
 
@@ -411,6 +450,7 @@ sub Union($$$)
 	indent;
 	pidl_code "item=proto_tree_add_text(parent_tree,tvb,offset,-1,\"$name\");";
 	pidl_code "tree=proto_item_add_subtree(item,ett_$ifname\_$name);";
+	deindent;
 	pidl_code "}";
 
 	pidl_code "";
@@ -464,10 +504,10 @@ sub RegisterInterface($)
 	    	$name = $x->{PROPERTIES}->{helpstring};
 	    }
 
-	    if (defined($protocols{$x->{NAME}})) {
-		$short_name = $protocols{$x->{NAME}}->{SHORTNAME};
-		$name = $protocols{$x->{NAME}}->{LONGNAME};
-		$filter_name = $protocols{$x->{NAME}}->{FILTERNAME};
+	    if (defined($conformance->{protocols}->{$x->{NAME}})) {
+		$short_name = $conformance->{protocols}->{$x->{NAME}}->{SHORTNAME};
+		$name = $conformance->{protocols}->{$x->{NAME}}->{LONGNAME};
+		$filter_name = $conformance->{protocols}->{$x->{NAME}}->{FILTERNAME};
 	    }
 
 	    pidl_code "proto_dcerpc_$x->{NAME} = proto_register_protocol($name, \"$short_name\", \"$filter_name\");";
@@ -499,7 +539,9 @@ sub RegisterInterfaceHandoff($)
 
 sub ProcessInterface($)
 {
-	my $x = shift;
+	my ($x) = @_;
+
+	push(@{$conformance->{strip_prefixes}}, $x->{NAME});
 
 	my $define = "__PACKET_DCERPC_" . uc($_->{NAME}) . "_H";
 	pidl_hdr "#ifndef $define";
@@ -515,6 +557,8 @@ sub ProcessInterface($)
 	pidl_def "static gint proto_dcerpc_$x->{NAME} = -1;";
 	register_ett("ett_dcerpc_$x->{NAME}");
 	register_hf_field("hf_$x->{NAME}_opnum", "Operation", "$x->{NAME}.opnum", "FT_UINT16", "BASE_DEC", "NULL", 0, "");
+	register_hf_field("hf_$x->{NAME}_status", "Status", "$x->{NAME}.status", "FT_UINT32", "BASE_HEX", "VALS(NT_errors)", 0, "");
+	register_hf_field("hf_$x->{NAME}_werror", "Windows Error", "$x->{NAME}.werror", "FT_UINT32", "BASE_HEX", "NULL", 0, "");
 
 	if (defined($x->{UUID})) {
 		my $if_uuid = $x->{UUID};
@@ -568,8 +612,14 @@ sub register_type($$$$$$$)
 }
 
 # Loads the default types
-sub Initialize()
+sub Initialize($)
 {
+	my $cnf_file = shift;
+
+	$conformance = {};
+
+	ReadConformance($cnf_file, $conformance) or print "Warning: Not using conformance file `$cnf_file'\n";
+	
 	foreach my $bytes (qw(1 2 4 8)) {
 		my $bits = $bytes * 8;
 		register_type("uint$bits", "offset=dissect_ndr_uint$bits(tvb,offset,pinfo,tree,drep,\@HF\@,NULL);", "FT_UINT$bits", "BASE_DEC", 0, "NULL", $bytes);
@@ -601,18 +651,12 @@ sub Initialize()
 
 #####################################################################
 # Generate ethereal parser and header code
-sub Parse($$$)
+sub Parse($$)
 {
-	my($ndr,$module,$filename) = @_;
-
-	Initialize();
+	my($ndr,$h_filename,$cnf_file) = @_;
+	Initialize($cnf_file);
 
 	$tabs = "";
-	my $h_filename = $filename;
-
-	if ($h_filename =~ /(.*)\.c/) {
-		$h_filename = "$1.h";
-	}
 
 	%res = (code=>"",def=>"",hdr=>"");
 
@@ -644,6 +688,7 @@ sub Parse($$$)
 	$parser.=$res{ett};
 	$parser.=$res{hf};
 	$parser.=$res{def};
+	$parser.=$conformance->{override};
 	$parser.=$res{code};
 
 	my $header = "/* autogenerated by pidl */\n\n";
@@ -695,7 +740,7 @@ sub register_hf_field($$$$$$$$)
 {
 	my ($index,$name,$filter_name,$ft_type,$base_type,$valsstring,$mask,$blurb) = @_;
 
-	return $hf_renames{$index} if defined ($hf_renames{$index});
+	return $conformance->{hf_renames}->{$index} if defined ($conformance->{hf_renames}->{$index});
 
 	$hf{$index} = {
 		INDEX => $index,
@@ -759,6 +804,5 @@ sub DumpFunctionTable($)
 
 	return "$res};\n";
 }
-
 
 1;

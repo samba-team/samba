@@ -68,7 +68,7 @@
 		uint32 job_time;
 		atsvc_DaysOfMonth days_of_month;
 		atsvc_DaysOfWeek days_of_week;
-		uint8 flags;
+		atsvc_Flags flags;
 		unistr *command;
 	} atsvc_JobInfo;
 
@@ -93,7 +93,7 @@
 		uint32 job_time;
 		atsvc_DaysOfMonth days_of_month;
 		atsvc_DaysOfWeek days_of_week;
-		uint8 flags;
+		atsvc_Flags flags;
 		unistr *command;
 	} atsvc_JobEnumInfo;
 

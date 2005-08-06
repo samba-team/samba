@@ -8,26 +8,17 @@ package Parse::Pidl::Ethereal::Conformance;
 require Exporter;
 
 @ISA = qw(Exporter);
-@EXPORT_OK = qw(EmitProhibited FindDissectorParam %hf_renames %protocols);
+@EXPORT_OK = qw(ReadConformance);
 
 use strict;
 
 use Parse::Pidl::Util qw(has_property);
 
-sub handle_union_tag_size($$)
+sub handle_type($$$$$$$$)
 {
-	my ($union,$size) = @_;
+	my ($data,$name,$dissectorname,$ft_type,$base_type,$mask,$valsstring,$alignment) = @_;
 
-	#FIXME	
-}
-
-use vars qw(%hf_renames %types %header_fields %protocols);
-
-sub handle_type($$$$$$$)
-{
-	my ($name,$dissectorname,$ft_type,$base_type,$mask,$valsstring,$alignment) = @_;
-
-	$types{$name} = {
+	$data->{types}->{$name} = {
 		NAME => $name,
 		DISSECTOR_NAME => $dissectorname,
 		FT_TYPE => $ft_type,
@@ -39,27 +30,24 @@ sub handle_type($$$$$$$)
 }
 
 
-sub handle_hf_rename($$)
+sub handle_hf_rename($$$)
 {
-	my ($old,$new) = @_;
-	$hf_renames{$old} = $new;
+	my ($data,$old,$new) = @_;
+	$data->{hf_renames}{$old} = $new;
 }
 
-my %dissectorparams = ();
-
-sub handle_param_value($$)
+sub handle_param_value($$$)
 {
-	my ($dissector_name,$value) = @_;
+	my ($data,$dissector_name,$value) = @_;
 
-	$dissectorparams{$dissector_name} = $value;
-
+	$data->{dissectorparams}->{$dissector_name} = $value;
 }
 
-sub handle_hf_field($$$$$$$$)
+sub handle_hf_field($$$$$$$$$)
 {
-	my ($hf,$title,$filter,$ft_type,$base_type,$valsstring,$mask,$blurb) = @_;
+	my ($data,$hf,$title,$filter,$ft_type,$base_type,$valsstring,$mask,$blurb) = @_;
 
-	$header_fields{$hf} = {
+	$data->{header_fields}->{$hf} = {
 		HF => $hf,
 		TITLE => $title,
 		FILTER => $filter,
@@ -71,42 +59,39 @@ sub handle_hf_field($$$$$$$$)
 	};
 }
 
-sub handle_strip_prefix($)
+sub handle_strip_prefix($$)
 {
-	my $x = shift;
-	#FIXME
+	my ($data,$x) = @_;
+
+	push (@{$data->{strip_prefixes}}, $x);
 }
 
-my @noemit = ();
-
-sub handle_noemit($)
+sub handle_noemit($$)
 {
-	my $type = shift;
+	my ($data,$type) = @_;
 
-	push (@noemit, $type);
+	$data->{noemit}->{$type} = 1;
 }
 
-
-sub handle_protocol($$$$)
+sub handle_protocol($$$$$)
 {
-	my ($name, $longname, $shortname, $filtername) = @_;
+	my ($data, $name, $longname, $shortname, $filtername) = @_;
 
-	$protocols{$name} = {
+	$data->{protocols}->{$name} = {
 		LONGNAME => $longname,
 		SHORTNAME => $shortname,
 		FILTERNAME => $filtername
 	};
 }
 
-sub handle_fielddescription($$)
+sub handle_fielddescription($$$)
 {
-	my ($field,$desc) = @_;
+	my ($data,$field,$desc) = @_;
 
-	#FIXME
+	$data->{fielddescription}->{$field} = $desc;
 }
 
 my %field_handlers = (
-	UNION_TAG_SIZE => \&handle_union_tag_size,
 	TYPE => \&handle_type,
 	NOEMIT => \&handle_noemit, 
 	PARAM_VALUE => \&handle_param_value, 
@@ -117,40 +102,51 @@ my %field_handlers = (
 	FIELD_DESCRIPTION => \&handle_fielddescription
 );
 
-sub Parse($)
+sub ReadConformance($$)
 {
-	my $f = shift;
+	my ($f,$data) = @_;
 
-	open(IN,$f) or return undef;
+	$data->{override} = "";
+
+	my $incodeblock = 0;
+
+	open(IN,"<$f") or return undef;
+
+	my $ln = 0;
 
 	foreach (<IN>) {
+		$ln++;
 		next if (/^#.*$/);
 		next if (/^$/);
 
+		s/[\r\n]//g;
+
+		if ($_ eq "CODE START") {
+			$incodeblock = 1;
+			next;
+		} elsif ($incodeblock and $_ eq "CODE END") {
+			$incodeblock = 0;
+			next;
+		} elsif ($incodeblock) {
+			$data->{override}.="$_\n";
+			next;
+		}
+
 		my @fields = split(/ /);
+
+		my $cmd = $fields[0];
+
+		shift @fields;
+
+		if (not defined($field_handlers{$cmd})) {
+			print "$f:$ln: Warning: Unknown command `$cmd'\n";
+			next;
+		}
 		
-		$field_handlers{$fields[0]}(@fields);
+		$field_handlers{$cmd}($data, @fields);
 	}
 
 	close(IN);
-}
-
-sub EmitProhibited($)
-{
-	my $type = shift;
-
-	return 1 if (grep(/$type/,@noemit));
-
-	return 0;
-}
-
-sub FindDissectorParam($)
-{
-	my $type = shift;
-
-	return $dissectorparams{$type} if defined ($dissectorparams{$type});
-
-	return 0;
 }
 
 1;
