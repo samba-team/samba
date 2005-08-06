@@ -7,9 +7,6 @@
 # released under the GNU GPL
 
 # TODO:
-#  - subcontexts using tvb_new_subset()
-#  - fixed arrays
-#  - allow overrides in conformance file
 #  - more built-in types:
 #    sec_desc_buf -> lsa_dissect_sec_desc_buf
 
@@ -109,6 +106,7 @@ sub PrintIdl($)
 sub Interface($)
 {
 	my($interface) = @_;
+	Const($_,$interface->{NAME}) foreach (@{$interface->{CONSTS}});
 	Typedef($_,$interface->{NAME}) foreach (@{$interface->{TYPEDEFS}});
 	Function($_,$interface->{NAME}) foreach (@{$interface->{FUNCTIONS}});
 }
@@ -122,22 +120,20 @@ sub Enum($$$)
 
     	foreach (@{$e->{ELEMENTS}}) {
 		if (/([^=]*)=(.*)/) {
-			pidl_hdr "#define $1 $2";
+			pidl_hdr "#define $1 ($2)";
 		}
 	}
 	
-	pidl_hdr "extern const value_string $valsstring;";
+	pidl_hdr "extern const value_string $valsstring\[];";
 	pidl_hdr "int $dissectorname(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep, int hf_index, guint32 param);";
 
 	pidl_def "const value_string ".$valsstring."[] = {";
-	indent;
     	foreach (@{$e->{ELEMENTS}}) {
 		next unless (/([^=]*)=(.*)/);
-		pidl_code "{ $1, \"$2\" },";
+		pidl_def "\t{ $1, \"$1\" },";
 	}
 
 	pidl_def "{ 0, NULL }";
-	deindent;
 	pidl_def "};";
 
 	pidl_code "int";
@@ -146,6 +142,7 @@ sub Enum($$$)
 	indent;
 	pidl_code "offset=dissect_ndr_$e->{BASE_TYPE}(tvb, offset, pinfo, tree, drep, hf_index, NULL);";
 	pidl_code "return offset;";
+	deindent;
 	pidl_code "}\n";
 
 	my $enum_size = $e->{BASE_TYPE};
@@ -233,13 +230,22 @@ sub ElementLevel($$$$$)
 		}
 		pidl_code "offset=dissect_ndr_$type\_pointer(tvb,offset,pinfo,tree,drep,$myname\_,$ptrtype_mappings{$l->{POINTER_TYPE}},\"".field2name(StripPrefixes($e->{NAME})) . " (".StripPrefixes($e->{TYPE}).")\",$hf);";
 	} elsif ($l->{TYPE} eq "ARRAY") {
-		my $af = "";
+		
+		if ($l->{IS_INLINE}) {
+			warn ("Inline arrays not supported");
+			pidl_code "/* FIXME: Handle inline array */";
+		} elsif ($l->{IS_FIXED}) {
+			pidl_code "int i;";
+			pidl_code "for (i = 0; i < $l->{SIZE_IS}; i++)";
+			pidl_code "\toffset=$myname\_(tvb,offset,pinfo,tree,drep);";
+		} else {
+			my $af = "";
+			($af = "ucarray") if ($l->{IS_CONFORMANT});
+			($af = "uvarray") if ($l->{IS_VARYING});
+			($af = "ucvarray") if ($l->{IS_CONFORMANT} and $l->{IS_VARYING});
 
-		($af = "ucarray") if ($l->{IS_CONFORMANT});
-		($af = "uvarray") if ($l->{IS_VARYING});
-		($af = "ucvarray") if ($l->{IS_CONFORMANT} and $l->{IS_VARYING});
-
-		pidl_code "offset=dissect_ndr_$af(tvb,offset,pinfo,tree,drep,$myname\_);";
+			pidl_code "offset=dissect_ndr_$af(tvb,offset,pinfo,tree,drep,$myname\_);";
+		}
 	} elsif ($l->{TYPE} eq "DATA") {
 		if ($l->{DATA_TYPE} eq "string") {
 			my $bs = 2;
@@ -264,17 +270,20 @@ sub ElementLevel($$$$$)
 			pidl_code "$x";
 		} else {
 			warn("Unknown data type `$l->{DATA_TYPE}'");
+			pidl_code "/* FIXME: Handle unknown data type $l->{DATA_TYPE} */";
 		}
 	} elsif ($_->{TYPE} eq "SUBCONTEXT") {
 		my $num_bits = ($l->{HEADER_SIZE}*8);
 		pidl_code "guint$num_bits size;";
 		pidl_code "int start_offset=offset;";
 		pidl_code "tvbuff_t *subtvb;";
-		pidl_code "offset=dissect_ndr_uint$num_bits(tvb,offset,pinfo,drep,&size);";
+		pidl_code "offset=dissect_ndr_uint$num_bits(tvb,offset,pinfo,tree,drep,$hf,&size);";
 		pidl_code "proto_tree_add_text(tree,tvb,start_offset,offset-start_offset+size,\"Subcontext size\");";
 
 		pidl_code "subtvb = tvb_new_subset(tvb,offset,size,-1);";
 		pidl_code "$myname\_(subtvb,0,pinfo,tree,drep);";
+	} else {
+		die("Unknown type `$_->{TYPE}'");
 	}
 }
 
@@ -422,11 +431,11 @@ sub Union($$$)
 
 	my $res = "";
 	foreach (@{$e->{ELEMENTS}}) {
-		$res.="\t\t\t$_->{CASE}:\n";
+		$res.="\n\t\t$_->{CASE}:\n";
 		if ($_->{TYPE} ne "EMPTY") {
-			$res.="\t\t\t\t".Element($_, $name, $ifname)."\n";
+			$res.="\t\t\t".Element($_, $name, $ifname)."\n";
 		}
-		$res.="\t\t\tbreak;\n\n";
+		$res.="\t\tbreak;\n";
 	}
 
 	pidl_code "static int";
@@ -457,14 +466,24 @@ sub Union($$$)
 
 	pidl_code "offset = dissect_ndr_$e->{SWITCH_TYPE}(tvb, offset, pinfo, tree, drep, hf_index, &level);";
 
-	pidl_code "switch(level) {";
-	pidl_code $res;
+	pidl_code "switch(level) {$res\t}";
 	pidl_code "proto_item_set_len(item, offset-old_offset);";
 	pidl_code "return offset;";
 	deindent;
 	pidl_code "}";
 
 	register_type($name, "offset=$dissectorname(tvb,offset,pinfo,tree,drep,\@HF\@,\@PARAM\@);", "FT_NONE", "BASE_NONE", 0, "NULL", 0);
+}
+
+sub Const($$)
+{
+	my ($const,$ifname) = @_;
+	
+	if (!defined($const->{ARRAY_LEN}[0])) {
+    		pidl_hdr "#define $const->{NAME}\t( $const->{VALUE} )\n";
+    	} else {
+    		pidl_hdr "#define $const->{NAME}\t $const->{VALUE}\n";
+    	}
 }
 
 sub Typedef($$)
@@ -550,6 +569,7 @@ sub ProcessInterface($)
 
 	if (defined $x->{PROPERTIES}->{depends}) {
 		foreach (split / /, $x->{PROPERTIES}->{depends}) {
+			next if($_ eq "security");
 			pidl_hdr "#include \"packet-dcerpc-$_\.h\"\n";
 		}
 	}
@@ -623,13 +643,13 @@ sub Initialize($)
 	foreach my $bytes (qw(1 2 4 8)) {
 		my $bits = $bytes * 8;
 		register_type("uint$bits", "offset=dissect_ndr_uint$bits(tvb,offset,pinfo,tree,drep,\@HF\@,NULL);", "FT_UINT$bits", "BASE_DEC", 0, "NULL", $bytes);
-		register_type("int$bits", "offset=dissect_ndr_int$bits(tvb,offset,pinfo,tree,drep,\@HF\@,NULL);", "FT_INT$bits", "BASE_DEC", 0, "NULL", $bytes);
+		register_type("int$bits", "offset=dissect_ndr_uint$bits(tvb,offset,pinfo,tree,drep,\@HF\@,NULL);", "FT_INT$bits", "BASE_DEC", 0, "NULL", $bytes);
 	}
 		
 	register_type("udlong", "offset=dissect_ndr_duint32(tvb,offset,pinfo,tree,drep,\@HF\@,NULL);", "FT_UINT64", "BASE_DEC", 0, "NULL", 4);
 	register_type("bool8", "offset=dissect_ndr_uint8(tvb,offset,pinfo,tree,drep,\@HF\@,NULL);","FT_INT8", "BASE_DEC", 0, "NULL", 1);
-	register_type("char", "offset=dissect_ndr_int8(tvb,offset,pinfo,tree,drep,\@HF\@,NULL);","FT_INT8", "BASE_DEC", 0, "NULL", 1);
-	register_type("long", "offset=dissect_ndr_int32(tvb,offset,pinfo,tree,drep,\@HF\@,NULL);","FT_INT32", "BASE_DEC", 0, "NULL", 4);
+	register_type("char", "offset=dissect_ndr_uint8(tvb,offset,pinfo,tree,drep,\@HF\@,NULL);","FT_INT8", "BASE_DEC", 0, "NULL", 1);
+	register_type("long", "offset=dissect_ndr_uint32(tvb,offset,pinfo,tree,drep,\@HF\@,NULL);","FT_INT32", "BASE_DEC", 0, "NULL", 4);
 	register_type("dlong", "offset=dissect_ndr_duint32(tvb,offset,pinfo,tree,drep,\@HF\@,NULL);","FT_INT64", "BASE_DEC", 0, "NULL", 8);
 	register_type("GUID", "offset=dissect_ndr_uuid_t(tvb,offset,pinfo,tree,drep,\@HF\@,NULL);","FT_GUID", "BASE_NONE", 0, "NULL", 4);
 	register_type("policy_handle", "offset=dissect_nt_policy_hnd(tvb,offset,pinfo,tree,drep,\@HF\@,NULL,NULL,\@PARAM\@&0x01,\@PARAM\@&0x02);","FT_BYTES", "BASE_NONE", 0, "NULL", 4);
