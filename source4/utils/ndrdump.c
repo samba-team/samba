@@ -240,10 +240,9 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 		dump_data(0, ndr->data+ndr->offset, ndr->data_size - ndr->offset);
 	}
 
-	pr = talloc(NULL, struct ndr_print);
+	pr = talloc_zero(NULL, struct ndr_print);
 	pr->print = ndr_print_debug_helper;
 	pr->depth = 1;
-	pr->flags = 0;
 	f->ndr_print(pr, function, flags, st);
 
 	if (!NT_STATUS_IS_OK(status) ||
