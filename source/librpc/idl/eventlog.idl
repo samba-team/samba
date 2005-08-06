@@ -172,5 +172,7 @@
 
 	/*****************/
 	/* Function 0x17 */
-	NTSTATUS eventlog_FlushEventLog();	
+	NTSTATUS eventlog_FlushEventLog(
+		[in,ref] policy_handle *handle
+	);	
 }

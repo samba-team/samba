@@ -31,7 +31,8 @@ static void init_lsa_String(struct lsa_String *name, const char *s)
 	name->size = name->length;
 }
 
-static BOOL test_GetNumRecords(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *handle)
+static BOOL test_GetNumRecords(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			       struct policy_handle *handle)
 {
 	NTSTATUS status;
 	struct eventlog_GetNumRecords r;
@@ -52,7 +53,8 @@ static BOOL test_GetNumRecords(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struc
 	return True;
 }
 
-static BOOL test_ReadEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t offset)
+static BOOL test_ReadEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			      struct policy_handle *handle, uint32_t offset)
 {
 	NTSTATUS status;
 	struct eventlog_ReadEventLogW r;
@@ -91,7 +93,7 @@ static BOOL test_ReadEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct
 }
 
 static BOOL test_CloseEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			struct policy_handle *handle)
+			       struct policy_handle *handle)
 {
 	NTSTATUS status;
 	struct eventlog_CloseEventLog r;
@@ -101,8 +103,31 @@ static BOOL test_CloseEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing CloseEventLog\n");
 
 	status = dcerpc_eventlog_CloseEventLog(p, mem_ctx, &r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("CloseEventLog failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
+static BOOL test_FlushEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			       struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct eventlog_FlushEventLog r;
+
+	r.in.handle = handle;
+
+	printf("Testing FlushEventLog\n");
+
+	status = dcerpc_eventlog_FlushEventLog(p, mem_ctx, &r);
+
+	/* Huh?  Does this RPC always return access denied? */
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		printf("FlushEventLog failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
@@ -121,6 +146,7 @@ static BOOL test_ClearEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing ClearEventLog\n");
 
 	status = dcerpc_eventlog_ClearEventLogW(p, mem_ctx, &r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("ClearEventLog failed - %s\n", nt_errstr(status));
 		return False;
@@ -129,7 +155,8 @@ static BOOL test_ClearEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-static BOOL test_OpenEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct policy_handle *handle)
+static BOOL test_OpenEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			      struct policy_handle *handle)
 {
 	NTSTATUS status;
 	struct eventlog_OpenEventLogW r;
@@ -164,8 +191,8 @@ static BOOL test_OpenEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct
 
 BOOL torture_rpc_eventlog(void)
 {
-    NTSTATUS status;
-    struct dcerpc_pipe *p;
+	NTSTATUS status;
+	struct dcerpc_pipe *p;
 	struct policy_handle handle;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
@@ -177,6 +204,7 @@ BOOL torture_rpc_eventlog(void)
 					DCERPC_EVENTLOG_NAME, 
 					DCERPC_EVENTLOG_UUID, 
 					DCERPC_EVENTLOG_VERSION);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return False;
@@ -188,14 +216,16 @@ BOOL torture_rpc_eventlog(void)
 	}
 
 #if 0
-	test_ClearEventLog(p, mem_ctx, &handle); /* Destructive test */
+	ret &= test_ClearEventLog(p, mem_ctx, &handle); /* Destructive test */
 #endif
 	
-	test_GetNumRecords(p, mem_ctx, &handle);
+	ret &= test_GetNumRecords(p, mem_ctx, &handle);
 
-	test_ReadEventLog(p, mem_ctx, &handle, 0);
+	ret &= test_ReadEventLog(p, mem_ctx, &handle, 0);
 
-	test_CloseEventLog(p, mem_ctx, &handle);
+	ret &= test_FlushEventLog(p, mem_ctx, &handle);
+
+	ret &= test_CloseEventLog(p, mem_ctx, &handle);
 
 	talloc_free(mem_ctx);
 
