@@ -308,7 +308,7 @@ static BOOL torture_pac_saved_check(void)
 		return False;
 	}
 
-	tmp_blob = data_blob_const(saved_pac, sizeof(saved_pac));
+	tmp_blob = data_blob(saved_pac, sizeof(saved_pac));
 	
 	/*tmp_blob.data = file_load(lp_parm_string(-1,"torture","pac_file"), &tmp_blob.length);*/
 	
@@ -371,6 +371,11 @@ static BOOL torture_pac_saved_check(void)
 
 	if (!dom_sid_equal(dom_sid_parse_talloc(mem_ctx, "S-1-5-21-3048156945-3961193616-3706469200-1005"), 
 			   server_info_out->account_sid)) {
+		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+					    &krbtgt_keyblock);
+		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+					    &server_keyblock);
+
 		printf("PAC Decode resulted in *different* domain SID: %s != %s\n",
 		       "S-1-5-21-3048156945-3961193616-3706469200-1005", 
 		       dom_sid_string(mem_ctx, server_info_out->account_sid));
@@ -385,12 +390,12 @@ static BOOL torture_pac_saved_check(void)
 				  &server_keyblock,
 				  &validate_blob);
 
-	krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-				    &krbtgt_keyblock);
-	krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
-				    &server_keyblock);
-
 	if (ret != 0) {
+		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+					    &krbtgt_keyblock);
+		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+					    &server_keyblock);
+
 		DEBUG(0, ("PAC push failed\n"));
 		talloc_free(mem_ctx);
 		return False;
@@ -403,6 +408,11 @@ static BOOL torture_pac_saved_check(void)
 	 * pointer, padding etc algorithms as win2k3.
 	 */
 	if (tmp_blob.length != validate_blob.length) {
+		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+					    &krbtgt_keyblock);
+		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+					    &server_keyblock);
+
 		DEBUG(0, ("PAC push failed: orignial buffer length[%u] != created buffer length[%u]\n",
 				(unsigned)tmp_blob.length, (unsigned)validate_blob.length));
 		talloc_free(mem_ctx);
@@ -410,11 +420,40 @@ static BOOL torture_pac_saved_check(void)
 	}
 
 	if (memcmp(tmp_blob.data, validate_blob.data, tmp_blob.length) != 0) {
+		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+					    &krbtgt_keyblock);
+		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+					    &server_keyblock);
+
 		DEBUG(0, ("PAC push failed: length[%u] matches, but data does not\n",
 			  (unsigned)tmp_blob.length));
 		talloc_free(mem_ctx);
 		return False;
 	}
+
+	/* Finally...  Bugger up the signature, and check we fail the checksum */
+	
+	tmp_blob.data[tmp_blob.length - 2] = 0xff;
+	nt_status = kerberos_decode_pac(mem_ctx, &pac_data,
+					tmp_blob,
+					smb_krb5_context,
+					&krbtgt_keyblock,
+					&server_keyblock);
+	if (NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(1, ("PAC decoding DID NOT fail on broken checksum\n"));
+
+		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+					    &krbtgt_keyblock);
+		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+					    &server_keyblock);
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+				    &krbtgt_keyblock);
+	krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
+				    &server_keyblock);
 
 	talloc_free(mem_ctx);
 	return True;
