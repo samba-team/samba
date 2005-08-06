@@ -1259,10 +1259,11 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 /*
   test an ADS style interactive domain logon
 */
-static BOOL test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-				  struct creds_CredentialState *creds, 
-				  const char *account_domain, const char *account_name,
-				  const char *plain_pass)
+BOOL test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			   struct creds_CredentialState *creds, 
+			   const char *workstation_name,
+			   const char *account_domain, const char *account_name,
+			   const char *plain_pass)
 {
 	NTSTATUS status;
 	TALLOC_CTX *fn_ctx = talloc_named(mem_ctx, 0, "test_InteractiveLogon function-level context");
@@ -1290,7 +1291,7 @@ static BOOL test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	pinfo.identity_info.logon_id_low = 0;
 	pinfo.identity_info.logon_id_high = 0;
 	pinfo.identity_info.account_name.string = account_name;
-	pinfo.identity_info.workstation.string = TEST_MACHINE_NAME;
+	pinfo.identity_info.workstation.string = workstation_name;
 
 	if (!E_deshash(plain_pass, pinfo.lmpassword.hash)) {
 		ZERO_STRUCT(pinfo.lmpassword.hash);
@@ -1491,6 +1492,7 @@ BOOL torture_rpc_samlogon(void)
 	for (ci = 0; ci < ARRAY_SIZE(usercreds); ci++) {
 		
 		if (!test_InteractiveLogon(p, mem_ctx, creds,
+					   TEST_MACHINE_NAME,
 					   usercreds[ci].domain,
 					   usercreds[ci].username,
 					   usercreds[ci].password)) {
@@ -1514,6 +1516,7 @@ BOOL torture_rpc_samlogon(void)
 
 	for (i=0; i < ARRAY_SIZE(credential_flags); i++) {
 		if (!test_InteractiveLogon(p, mem_ctx, creds,
+					   TEST_MACHINE_NAME,
 					   usercreds[0].domain,
 					   usercreds[0].username,
 					   usercreds[0].password)) {
