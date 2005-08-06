@@ -313,9 +313,9 @@
 	WERROR winreg_QueryMultipleValues(
 		[in,ref] policy_handle *key_handle, 
 		[in,out,ref,size_is(num_values),length_is(num_values)] QueryMultipleValue *values,
-        [in] uint32 num_values,
-        [in,out,size_is(*buffer_size),length_is(*buffer_size)] uint8 *buffer,
-        [in,out,ref] uint32 *buffer_size
+		[in] uint32 num_values,
+		[in,out,size_is(*buffer_size),length_is(*buffer_size)] uint8 *buffer,
+		[in,out,ref] uint32 *buffer_size
 	);
 
 	/******************/
