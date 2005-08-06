@@ -11,20 +11,20 @@
   helpstring("Event Logger")
 ] interface eventlog
 {
-	typedef enum {
+	typedef bitmap {
 		EVENTLOG_SEQUENTIAL_READ = 0x0001,
-		EVENTLOG_SEEK_READ = 0x0002,
-		EVENTLOG_FORWARDS_READ = 0x0004,
-		EVENTLOG_BACKWARDS_READ = 0x0008
+		EVENTLOG_SEEK_READ       = 0x0002,
+		EVENTLOG_FORWARDS_READ   = 0x0004,
+		EVENTLOG_BACKWARDS_READ  = 0x0008
 	} eventlogReadFlags;
 
-	typedef enum {
-		EVENTLOG_SUCCESS = 0x0000,
-		EVENTLOG_ERROR_TYPE = 0x0001,
-		EVENTLOG_WARNING_TYPE = 0x0002,
+	typedef bitmap {
+		EVENTLOG_SUCCESS          = 0x0000,
+		EVENTLOG_ERROR_TYPE       = 0x0001,
+		EVENTLOG_WARNING_TYPE     = 0x0002,
 		EVENTLOG_INFORMATION_TYPE = 0x0004,
-		EVENTLOG_AUDIT_SUCCESS = 0x0008,
-		EVENTLOG_AUDIT_FAILURE = 0x0010
+		EVENTLOG_AUDIT_SUCCESS    = 0x0008,
+		EVENTLOG_AUDIT_FAILURE    = 0x0010
 	} eventlogEventTypes;
 
 	typedef struct {
@@ -116,7 +116,7 @@
 		[in,ref] policy_handle *handle,
 		[in] uint32 flags,
 		[in] uint32 offset,
-		[in,out] uint32 number_of_bytes,
+		[in] uint32 number_of_bytes,
 		[out,ref,size_is(number_of_bytes)] uint8 *data,
 		[out] uint32 sent_size,
 		[out] uint32 real_size
