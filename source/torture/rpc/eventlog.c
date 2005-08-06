@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    test suite for eventlog rpc operations
 
-   Copyright (C) Tim Potter 2003
+   Copyright (C) Tim Potter 2003,2005
    Copyright (C) Jelmer Vernooij 2004
    
    This program is free software; you can redistribute it and/or modify
@@ -59,19 +59,12 @@ static BOOL test_ReadEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct
 
 	printf("\ntesting ReadEventLog\n");
 
-	r.in.flags = 0x0;
-	r.in.offset = offset;
 	r.in.handle = handle;
-	r.in.number_of_bytes = 0x0;
-
-	r.out.data = talloc(mem_ctx, uint8_t);
+	r.in.flags = EVENTLOG_BACKWARDS_READ|EVENTLOG_SEQUENTIAL_READ;
+	r.in.offset = 0;
+	r.in.number_of_bytes = 0;
 
 	status = dcerpc_eventlog_ReadEventLogW(p, mem_ctx, &r);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("ReadEventLog failed - %s\n", nt_errstr(status));
-		return False;
-	}
 
 	if (NT_STATUS_IS_OK(r.out.result)) {
 		/* No data */
@@ -84,6 +77,7 @@ static BOOL test_ReadEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct
 	}
 
 	r.in.number_of_bytes = r.out.real_size;
+	r.out.data = talloc_size(mem_ctx, r.in.number_of_bytes);
 
 	status = dcerpc_eventlog_ReadEventLogW(p, mem_ctx, &r);
 
