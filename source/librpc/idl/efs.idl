@@ -1,3 +1,4 @@
+#include "idl_types.h"
 /*
 	IDL definitions from original packet-dcerpc-efs.c
         by Jean-Baptiste Marchand
@@ -6,6 +7,7 @@
 [ 
   uuid("c681d488-d850-11d0-8c52-00c04fd90f7e"),
   version(1.0),
+  depends(security),
   pointer_default(unique)
 ] interface efs
 {
@@ -13,7 +15,7 @@
 WERROR EfsRpcOpenFileRaw(
 	[out,ref] policy_handle *pvContext,
 	[in] unistr FileName,
-	[in] long Flags
+	[in] uint32 Flags
 	);
 
 WERROR EfsRpcReadFileRaw(
@@ -37,23 +39,23 @@ WERROR EfsRpcEncryptFileSrv(
 
 WERROR EfsRpcDecryptFileSrv(
 	[in] unistr FileName, 
-	[in] long Reserved
+	[in] uint32 Reserved
 );
 
 typedef struct {
-	long   cbData;
+	uint32 cbData;
 	[size_is(cbData), unique]  uint8  *pbData;
 } EFS_HASH_BLOB;
 
 typedef struct {
-	long cbTotalLength;
-	[unique] SID *pUserSid;
+	uint32 cbTotalLength;
+	[unique] dom_sid *pUserSid;
 	[unique] EFS_HASH_BLOB  *pHash;
 	[unique] unistr *lpDisplayInformation;
 } ENCRYPTION_CERTIFICATE_HASH;
 
 typedef struct {
-	long nCert_Hash;
+	uint32 nCert_Hash;
 	/* this is a pointer to an array of pointers */
 	[size_is(nCert_Hash)] ENCRYPTION_CERTIFICATE_HASH *pUsers[*];
 } ENCRYPTION_CERTIFICATE_HASH_LIST;
@@ -79,14 +81,14 @@ WERROR EfsRpcAddUsersToFile(
 );
 
 typedef struct {
-	long dwCertEncodingType;
-	long cbData;
+	uint32 dwCertEncodingType;
+	uint32 cbData;
   [size_is(cbData)] [unique] uint8 *pbData;
 } EFS_CERTIFICATE_BLOB;
 
 typedef struct {
-	long TotalLength;
-	[unique] SID *pUserSid;
+	uint32 TotalLength;
+	[unique] dom_sid *pUserSid;
 	[unique] EFS_CERTIFICATE_BLOB *pCertBlob;
 } ENCRYPTION_CERTIFICATE;
 
