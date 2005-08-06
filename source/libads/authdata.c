@@ -43,31 +43,31 @@ static DATA_BLOB unwrap_pac(DATA_BLOB *auth_data)
 	return pac_contents;
 }
 
-static BOOL pac_io_unknown_type_10(const char *desc, UNKNOWN_TYPE_10 *type_10,
-				   prs_struct *ps, int depth)
+static BOOL pac_io_logon_name(const char *desc, PAC_LOGON_NAME *logon_name,
+			      prs_struct *ps, int depth)
 {
-	if (NULL == type_10)
+	if (NULL == logon_name)
 		return False;
 
-	prs_debug(ps, depth, desc, "pac_io_unknown_type_10");
+	prs_debug(ps, depth, desc, "pac_io_logon_name");
 	depth++;
 
-	if (!smb_io_time("unknown_time", &type_10->unknown_time, ps, depth))
+	if (!smb_io_time("logon_time", &logon_name->logon_time, ps, depth))
 		return False;
 
-	if (!prs_uint16("len", ps, depth, &type_10->len))
+	if (!prs_uint16("len", ps, depth, &logon_name->len))
 		return False;
 
-	if (UNMARSHALLING(ps) && type_10->len) {
-		type_10->username = PRS_ALLOC_MEM(ps, uint16, type_10->len);
-		if (!type_10->username) {
+	if (UNMARSHALLING(ps) && logon_name->len) {
+		logon_name->username = PRS_ALLOC_MEM(ps, uint16, logon_name->len);
+		if (!logon_name->username) {
 			DEBUG(3, ("No memory available\n"));
 			return False;
 		}
 	}
 
-	if (!prs_uint16s(True, "name", ps, depth, type_10->username, 
-			 (type_10->len / sizeof(uint16))))
+	if (!prs_uint16s(True, "name", ps, depth, logon_name->username, 
+			 (logon_name->len / sizeof(uint16))))
 		return False;
 
 	return True;
@@ -499,15 +499,15 @@ static BOOL pac_io_pac_info_hdr_ctr(const char *desc, PAC_INFO_HDR *hdr,
 			return False;
 		break;
 
-	case PAC_TYPE_UNKNOWN_10:
-		DEBUG(5, ("PAC_TYPE_UNKNOWN_10\n"));
+	case PAC_TYPE_LOGON_NAME:
+		DEBUG(5, ("PAC_TYPE_LOGON_NAME\n"));
 		if (UNMARSHALLING(ps))
-			hdr->ctr->pac.type_10 = PRS_ALLOC_MEM(ps, UNKNOWN_TYPE_10, 1);
-		if (!hdr->ctr->pac.type_10) {
+			hdr->ctr->pac.logon_name = PRS_ALLOC_MEM(ps, PAC_LOGON_NAME, 1);
+		if (!hdr->ctr->pac.logon_name) {
 			DEBUG(3, ("No memory available\n"));
 			return False;
 		}
-		if (!pac_io_unknown_type_10(desc, hdr->ctr->pac.type_10,
+		if (!pac_io_logon_name(desc, hdr->ctr->pac.logon_name,
 					    ps, depth))
 			return False;
 		break;
