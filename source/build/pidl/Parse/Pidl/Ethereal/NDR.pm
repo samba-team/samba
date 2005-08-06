@@ -6,10 +6,6 @@
 # Portions based on idl2eth.c by Ronnie Sahlberg
 # released under the GNU GPL
 
-# TODO:
-#  - more built-in types:
-#    sec_desc_buf -> lsa_dissect_sec_desc_buf
-
 package Parse::Pidl::Ethereal::NDR;
 
 use strict;
@@ -21,7 +17,7 @@ use Parse::Pidl::Ethereal::Conformance qw(ReadConformance);
 
 my %types;
 
-my $conformance = {};
+my $conformance = {imports=>{}};
 
 my %ptrtype_mappings = (
 	"unique" => "NDR_POINTER_UNIQUE",
@@ -221,6 +217,12 @@ sub ElementLevel($$$$$)
 {
 	my ($e,$l,$hf,$myname,$pn) = @_;
 
+	my $param = 0;
+
+	if (defined($conformance->{dissectorparams}->{$myname})) {
+		$param = $conformance->{dissectorparams}->{$myname};
+	}
+
 	if ($l->{TYPE} eq "POINTER") {
 		my $type;
 		if ($l->{LEVEL} eq "TOP") {
@@ -248,29 +250,39 @@ sub ElementLevel($$$$$)
 		}
 	} elsif ($l->{TYPE} eq "DATA") {
 		if ($l->{DATA_TYPE} eq "string") {
-			my $bs = 2;
+			my $bs = 2; # Byte size defaults to that of UCS2
 
-			if (property_matches($e, "flag", ".*LIBNDR_FLAG_STR_ASCII.*")) {
-				$bs = 1;
-			}
+
+			($bs = 1) if (property_matches($e, "flag", ".*LIBNDR_FLAG_STR_ASCII.*"));
 			
 			if (property_matches($e, "flag", ".*LIBNDR_FLAG_STR_SIZE4.*") and property_matches($e, "flag", ".*LIBNDR_FLAG_STR_LEN4.*")) {
 				pidl_code "offset=dissect_ndr_cvstring(tvb,offset,pinfo,tree,drep,$bs,$hf,FALSE,NULL);";
-			} elsif (property_matches($e, "flag", ".*LIBNDR_FLAG_LEN4.*")) {
+			} elsif (property_matches($e, "flag", ".*LIBNDR_FLAG_STR_SIZE4.*")) {
 				pidl_code "offset=dissect_ndr_vstring(tvb,offset,pinfo,tree,drep,$bs,$hf,FALSE,NULL);";
+			} else {
+				warn("Unable to handle string with flags $e->{PROPERTIES}->{flags}");
 			}
-		} elsif (defined($types{$l->{DATA_TYPE}})) {
-			my $param = 0;
-			if (defined($conformance->{dissectorparams}->{$myname})) {
-				$param = $conformance->{dissectorparams}->{$myname};
-			}
-			my $x = $types{$l->{DATA_TYPE}}->{CALL};
-			$x =~ s/\@HF\@/$hf/g;
-			$x =~ s/\@PARAM\@/$param/g;
-			pidl_code "$x";
 		} else {
-			warn("Unknown data type `$l->{DATA_TYPE}'");
-			pidl_code "/* FIXME: Handle unknown data type $l->{DATA_TYPE} */";
+			my $call;
+
+			if (defined($types{$l->{DATA_TYPE}})) {
+				$call= $types{$l->{DATA_TYPE}}->{CALL};
+			} elsif ($conformance->{imports}->{$l->{DATA_TYPE}}) {
+				$call = $conformance->{imports}->{$l->{DATA_TYPE}};	
+			} else {
+				warn("Unknown data type `$l->{DATA_TYPE}'");
+				pidl_code "/* FIXME: Handle unknown data type $l->{DATA_TYPE} */";
+				if ($l->{DATA_TYPE} =~ /^([a-z]+)\_(.*)$/)
+				{
+					pidl_code "offset=$1_dissect_$2(tvb,offset,pinfo,tree,drep,$hf,$param);";
+				}
+
+				return;
+			}
+
+			$call =~ s/\@HF\@/$hf/g;
+			$call =~ s/\@PARAM\@/$param/g;
+			pidl_code "$call";
 		}
 	} elsif ($_->{TYPE} eq "SUBCONTEXT") {
 		my $num_bits = ($l->{HEADER_SIZE}*8);

@@ -91,6 +91,14 @@ sub handle_fielddescription($$$)
 	$data->{fielddescription}->{$field} = $desc;
 }
 
+sub handle_import
+{
+	my $data = shift @_;
+	my $dissectorname = shift @_;
+
+	$data->{imports}->{$dissectorname} = join(' ', @_);
+}
+
 my %field_handlers = (
 	TYPE => \&handle_type,
 	NOEMIT => \&handle_noemit, 
@@ -99,7 +107,8 @@ my %field_handlers = (
 	HF_RENAME => \&handle_hf_rename, 
 	STRIP_PREFIX => \&handle_strip_prefix,
 	PROTOCOL => \&handle_protocol,
-	FIELD_DESCRIPTION => \&handle_fielddescription
+	FIELD_DESCRIPTION => \&handle_fielddescription,
+	IMPORT => \&handle_import
 );
 
 sub ReadConformance($$)
