@@ -1,19 +1,20 @@
                    =================================
-                   Release Notes for Samba 3.0.20rc1
-                              Jul 28, 2005
+                   Release Notes for Samba 3.0.20rc2
+                              Aug 7, 2005
                    ==================================
 
-This is a release candidate of the 3.0.20 code base and is provided 
-for testing purposes only.  While close to the final stable release, 
-this snapshot is *not* intended for production servers.  If all goes 
-well, this could become the final 3.0.20 release.
+This is the second release candidate of the 3.0.20 code base 
+and is provided for testing purposes only.  While close to 
+the final stable release this snapshot is *not* intended for 
+production servers.  If all goes well, this could become the 
+final 3.0.20 release.
 
-Common bugs fixed in 3.0.20rc1 include:
+Common bugs fixed in 3.0.20rc2 include:
 
-  o Print server upgrade failures.
-  o OS/2 interoperability bugs.
-  o Winbindd crashes on Solaris Sparc.
-  o Interoperability problems with Win2003-SP1 & Win2000-SP4.SR1.
+  o Crash bugs in the client spoolss code.
+  o Authentication failures caused by unsupported mechanisms.
+  o Failures from common MS management tools such as User 
+    Manager, Print Migrator, and Server Manager.
 
 
 What happened to 3.0.15 - 3.0.19?
@@ -37,7 +38,120 @@ http://marc.theaimsgroup.com/?l=samba&m=111721010206997&w=2
 Changes
 #######
 
-Changes since 3.0.20pre1
+Changes since 3.0.20rc1
+------------------------
+
+
+commits
+-------
+
+o   Jeremy Allison <jra@samba.org>
+    * Refactor rpc_bind structures for better future work.
+    * BUG 2942: Add missing value in debug message.
+    * BUG 2946: Fix regressions in str[n]cmp_w) functions found
+      by 'mangling method = hash'.
+    * Fix memory leaks in the msdfs trans2 server code.
+    * Convert msdfs server to be talloc'd based.
+    * Fix up stackable vfs interface.
+    * Fix rpc fault when encountering an unknown rpc_bind auth 
+      type.
+    * BUG 2954: More AIX 5.1 AIO compile fixes.
+    * Fix valgrind bug in interaction with new aio buffer (found
+      by Volker).
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * Support raw NTLMSSP authentication for Windows Vista 
+      clients.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Fix bugs in client spoolss code after refactoring work.
+    * Fix Valgrind warnings of invalid reads in the spoolss 
+      server code.
+    * Fixed a segv when enumerating services on a Samba host.
+    * Fix segv in the service control server code.
+    * Fix crashes in client spoolss calls caused by not checking 
+      for a valid pointer from the caller.
+    * Fix regression in DeleteDriver() server routines.
+    * Fix dup_a_regval() when size is 0.
+    * Fix usrmgr.exe crash when viewing user properties at 
+      debuglevel 10.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Allow use of a non-default smb.conf by rpcclient.
+    * Fix querydispinfo search semantics in rpcclient test code.
+    * Fix querydispinfo server semantics to allow to list more 
+      then 511 users.
+    * Fix server crash bug in ancient OpenPrinter() call.
+    * Fix a crash bug when enumerating privileges via the LSA 
+      calls.
+    * Fix crash in EnumPrinterKey() client calls caused by previous 
+      refactoring work.
+
+
+o   William Jojo <jojowil@hvcc.edu>
+    * AIX AIO fixes.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Fix various compiler warnings.
+    * Add chain length statistics to tdbtool.
+
+
+o   Jason Mader <jason@ncac.gwu.edu>
+    * Various compiler warning fixes about mistyped variables.
+
+
+o   Jim McDonough <jmcd@us.ibm.com>
+    * BUG 2953: Prevent the credentials chain on DC gets out 
+      of sync with client when NT_STATUS_NO_USER is returned.
+
+
+o   Lars Müller <lmuelle@samba.org>
+    * Re-enable the VERSION_REVISION option in case of another 
+      letter release.
+
+
+o   Tim Potter <tpot@samba.org>
+    * BUG 2940, 2943: Fixed various compiler warnings regarding 
+      mismatched types and unused variables.
+    * BUG 1888, 1894: Fix warnings when time_t is an unsigned type.
+    * BUG 2733: Fix incorrect SHLIBEXT is set when running 
+      configure script on HPUX IA.
+
+
+o   Fernando Schapachnik <fernando@mecon.gov.ar>
+    * Add logon hours support for the Postgres backend.
+ 
+
+o   Jelmer Vernooij <jelmer@samba.org>
+    * Merge socket wrapper fixes for IRIX systems from the 
+      Samba 4 branch.
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
+                   =================================
+                   Release Notes for Samba 3.0.20rc1
+                              Jul 28, 2005
+                   ==================================
+
+Common bugs fixed in 3.0.20rc1 include:
+
+  o Print server upgrade failures.
+  o OS/2 interoperability bugs.
+  o Winbindd crashes on Solaris Sparc.
+  o Interoperability problems with Win2003-SP1 & Win2000-SP4.SR1.
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.20pre2
 ------------------------
 
     Parameter Name                      Action
@@ -1018,11 +1132,6 @@ o   Simo Sorce <irda@samba.org>
     * Debian packaging fixes.
     
 
-
-
-
-Release Notes for older release follow:
-
       --------------------------------------------------
                    ==============================
                    Release Notes for Samba 3.0.13
@@ -1168,75 +1277,8 @@ smb.conf changes
     log nt token command		New
     write cache				Deprecated
 
-Changes since 3.0.12rc1
------------------------
 
 
-o   Jeremy Allison <jra@samba.org>
-    * Debug log message cleanups.
-    * Add case insensitive search for a principal match on logon 
-      verification in the system keytab (based on patch by 
-      Michael Brown <mbrown@fensystems.co.uk>).
-    * Revert the previous SMB signing change from Nalin Dahyabhai
-      when using DES keys.
-    * Add missing RESOLVE_DFSPATH() calls for older SMB commands.
-    * Fix FindFirst() server code to deal with resume names of ".."
-      and "." (found by Jim McDonough).
-    * BUG 2451: Fix missing functions in full audit VFS module.
-    * Ensure that smbd logs failures reported by DISK_FREE()
-      (reported by Ying Li <ying.li2@hp.com>).
-    * Ensure that smbclient obeys the max protocol argument again.
-    * BUG 2335: Return correct error code for OS/2 clients (based on
-      negotiated protocol level).
-    * BUG 2460, 2464: remove dead code and unused variables 
-      (reported by Jason Mader).
-
-
-o   Vince Brimhall <vbrimhall@novell.com>
-    * BUG 2453: Change the way pdb_nds.c handles users with no 
-      Universal or Simple Password.
-    * NDS schema file corrections.
-
-
-o   Gerald (Jerry) Carter <jerry@samba.org>
-    * Various small compile fixes and cleanup warnings.
-    * BUG 2456: Fix compile failure on non-gcc platforms due to
-      non-standard pragma.
-
-
-o   Guenther Deschner <gd@samba.org>
-    * Add example perl script to check for multiple LDAP entries
-      after running 'net rpc vampire'.
-    * Add more output when listing printer forms via rpcclient.
-    * Debug log message cleanup.
-
-
-o   William Jojo <jojowil@hvcc.edu>
-    * BUG 2445: Patch to avoid default ACLs on AIX.
-
-
-o   Derrell Lipman <derrell.lipman@unwireduniverse.com>
-    * Implement better solution for backwards binary compatibility
-      in libsmbclient while adding new fields to struct _SMBCCTX.
-
-
-o   Mark Loeser <halcy0n@gentoo.org>
-    * BUG 2443: Compile fix for gcc4.
-
-
-o   Jim McDonough <jmcd@us.ibm.com>
-    * BUG 2338: Fix coredump when OS/2 checks for long file name 
-      support (with .+,;=[].) (thanks to Guenter Kukkukk).
-
-
-o   John Terpstra <jht@samba.org>
-    * Add the capability to set account description using pdbedit.
-
-
-o   Doug VanLeuven <roamdad@sonic.net> 
-    * Add more case/realm/name permutations to the kerberos keytab.
-    
-    
 Changes since 3.0.11
 --------------------
 
@@ -1270,17 +1312,34 @@ o   Jeremy Allison <jra@samba.org>
     * Various oplock, share mode, and byte range locking fixes
       found by Connectathon tests.
     * BUG 2271: Fix resume key issues in trans2FindFirst() client 
-      code.
+      code (inspired by patch from Satwik Hebbar).
     * BUG 2382, 2045: More pending modtime and delayed write fixes
       for MS Excel (incorporates partial patches from 
       ke_miyata@itg.hitachi.co.jp).
-      
+    * Debug log message cleanups.
+    * Add case insensitive search for a principal match on logon 
+      verification in the system keytab (based on patch by 
+      Michael Brown <mbrown@fensystems.co.uk>).
+    * Revert the previous SMB signing change from Nalin Dahyabhai
+      when using DES keys.
+    * Add missing RESOLVE_DFSPATH() calls for older SMB commands.
+    * Fix FindFirst() server code to deal with resume names of ".."
+      and "." (found by Jim McDonough).
+    * BUG 2451: Fix missing functions in full audit VFS module.
+    * Ensure that smbd logs failures reported by DISK_FREE()
+      (reported by Ying Li <ying.li2@hp.com>).
+    * Ensure that smbclient obeys the max protocol argument again.
+    * BUG 2335: Return correct error code for OS/2 clients (based on
+      negotiated protocol level).
+    * BUG 2460, 2464: remove dead code and unused variables 
+      (reported by Jason Mader).
+
 
 o   Andrew Bartlett <abartlet@samba.org>
     * Avoid length-limited intermediate copy of NT and LM responses 
       in NETLOGON client.
     * Debug message cleanups in the NTLMSSP implementation.
-      
+
 
 o   Manuel Baena <mbaena@lcc.uma.es>
     * Print actual error message in smbmnt.c:fullpath().
@@ -1289,9 +1348,12 @@ o   Manuel Baena <mbaena@lcc.uma.es>
 o   Vince Brimhall <vbrimhall@novell.com>
     * Add support for Novell NDS universal password.
     * BUG 2424: Ensure that uidNumber and gidNumber use match 
-      the RFC2307 schema
-    
-    
+      the RFC2307 schema.
+    * BUG 2453: Change the way pdb_nds.c handles users with no 
+      Universal or Simple Password.
+    * NDS schema file corrections.
+
+
 o   Gerald (Jerry) Carter <jerry@samba.org>
     * Add trans2 client call for checking dfs referrals
     * Convert smbclient to use TRANS_QPATHINFO(SMB_QUERY_FILE_BASIC_INFO) 
@@ -1333,13 +1395,16 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * BUG 2215: Rewrite questionable code that was causing gcc to 
       choke.
     * Add server support for LsaLookupPrivValue().
-      
+    * Various small compile fixes and cleanup warnings.
+    * BUG 2456: Fix compile failure on non-gcc platforms due to
+      non-standard pragma.
+
 
 o   Kevin Dalley <kevin@kelphead.org>
     * BUG 2398: Don't force smbclient to assume a dry run if the 
       target tarfile is /dev/null.
-      
-      
+
+
 o   Guenther Deschner <gd@samba.org>
     * Fix crash bug in the client-spoolss enumdataex-call.
     * Expand the valid-workstation-scheme by expanding names 
@@ -1351,7 +1416,11 @@ o   Guenther Deschner <gd@samba.org>
     * Add examples/misc/adssearch.pl.
     * BUG 2343: Build fixes.
     * Support get_user_info_7 in SAMR server RPC.
-    * Fix server_role in the samr_query_dom_info calls. 
+    * Fix server_role in the samr_query_dom_info calls.
+    * Add example perl script to check for multiple LDAP entries
+      after running 'net rpc vampire'.
+    * Add more output when listing printer forms via rpcclient.
+    * Debug log message cleanup.
 
 
 o   Steve French <sfrench@us.ibm.com>
@@ -1363,15 +1432,18 @@ o   Steve French <sfrench@us.ibm.com>
     * Update for new CIFS POSIX info levels.
     * Ignore users mount parm in mount.cifs.
 
-
 o   SATOH Fumiyasu <fumiya@samba.gr.jp>
     * BUG 1549: Don't truncate service names in smbstatus.
-    
+
+
+o   William Jojo <jojowil@hvcc.edu>
+    * BUG 2445: Patch to avoid default ACLs on AIX.
+
 
 o   S Murthy Kambhampaty <smk_va@yahoo.com>
     * Add idmap_rid module to Fedora and RedHat spec files.      
-      
-      
+
+
 o   Volker Lendecke <vl@samba.org>
     * BUG 2401: Flush internal getpwnam() cache after deleting a 
       user.
@@ -1397,12 +1469,7 @@ o   Herb Lewis <herb@samba.org>
     * BUG 2417: Add help lines for net rpc group addmem and 
       delmem commands.
     
-    
-o   Jason Mader <jason@ncac.gwu.edu>
-    * Compiler warning fixes (BUGS BUG 2132, 2134, 2289, 2327, 2340,
-      2341, 2342)
-    
-    
+
 o   Derrell Lipman <derrell.lipman@unwireduniverse.com>
     * Add support to libsmbclient for getting and setting DOS 
       attributes using EA functions.
@@ -1413,12 +1480,24 @@ o   Derrell Lipman <derrell.lipman@unwireduniverse.com>
       connection context.
     * Ensure that cli_tdis() sets the cnum field to -1 so that callers
       can determine a dead tree connection.
-    
+    * Implement better solution for backwards binary compatibility
+      in libsmbclient while adding new fields to struct _SMBCCTX.
 
-o   Justin Ossevoort <justin@snt.utwente.nl>
-    * BUG 2316: Fix crashes in pdb_pgsql.
-    
-    
+
+o   Mark Loeser <halcy0n@gentoo.org>
+    * BUG 2443: Compile fix for gcc4.
+
+
+o   Jim McDonough <jmcd@us.ibm.com>
+    * BUG 2338: Fix coredump when OS/2 checks for long file name 
+      support (with .+,;=[].) (thanks to Guenter Kukkukk).
+
+
+o   Jason Mader <jason@ncac.gwu.edu>
+    * Compiler warning fixes (BUGS BUG 2132, 2134, 2289, 2327, 2340,
+      2341, 2342)
+
+
 o   Jim McDonough <jmcd@us.ibm.com>
     * Fixes for server schannel implementation when 'restrict 
       anonymous = 1' is set in smb.conf.
@@ -1439,16 +1518,20 @@ o   Jim McDonough <jmcd@us.ibm.com>
 o   Stefan Metzmacher <metze@samba.org>    
     * Fix memleaks in the nttrans code.
 
-    
+
 o   Mike Nix <mnix@wanm.com.au>
     * Add SMBsplopen and SMBsplclose client calls.
-    
+
+
+o   Justin Ossevoort <justin@snt.utwente.nl>
+    * BUG 2316: Fix crashes in pdb_pgsql.
+
 
 o   James Peach <jpeach@sgi.com>
     * Fixes in string handling code.
     * Fix oplock2 test in client smbtorture.
-    
-    
+
+
 o   Tim Potter <tpot@samba.org>
     * Fix up example pdb modules after prototype change for 
       setsampwent.
@@ -1465,9 +1548,14 @@ o   Richard Sharpe <rsharpe@samba.org>
 
 o   Simo Sorce <idra@samba.org>
     * Debian packaging fixes.
-      
-      
-o   Doug VanLeuven <roamdad@sonic.net>
+
+
+o   John Terpstra <jht@samba.org>
+    * Add the capability to set account description using pdbedit.
+
+
+o   Doug VanLeuven <roamdad@sonic.net> 
+    * Add more case/realm/name permutations to the kerberos keytab.
     * AIX compile fixes.
 
 
@@ -2535,12 +2623,6 @@ o   Igor Zhbanov <bsg@uniyar.ac.ru>
                   Release Notes for Samba 3.0.7
                            Sept 13, 2004
                   =============================
-
-This is the latest stable release of Samba. This is the version
-that production Samba servers should be running for all
-current bug-fixes.  There have been several important issues
-fixes since the 3.0.6 release.  See the "Changes" section for
-details on exact updates.
 
 Common bugs fixed in 3.0.7 include:
 
