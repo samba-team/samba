@@ -45,6 +45,21 @@ realm to what the client asked for, even just in case differences.
 Heimdal has the same problem, and this applies to the krb5 layer, not
 just gssapi.
 
+We need to test if the canonicalisation is controlled by the KDCOption
+flags, windows always sends the Canonicalize flags
+
+Old Clients (samba3 and HPUX clients) uses 'selfmade' gssapi/krb5
+for using it in the CIFS session setup. Because they use krb5_mk_req()
+they get a chksum field depending on the encryption type, but that's wrong
+for GSSAPI (see rfc 1964 section 1.1.1). The Cheksum type 8003
+should be used in the Authenticator of the AP-REQ! That allows the channel bindings,
+the GCC_C_* req_flags and optional delegation tickets to be passed from the client to the server.
+Hower windows doesn't seems to care about if the checksum is of the wrong type,
+for CIFS SessionSetups, it seems that the req_flags are just set to 0.
+So this can't work for LDAP connections with sign or seal, or for any DCERPC
+connection.
+
+So we need to also support old clients!
 
 Principal Names, long and short names
 -------------------------------------
