@@ -1470,21 +1470,21 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 				if (ntlm_server_1_lm_session_key 
 				    && (memcmp(zeros, lm_key, 
 					       sizeof(lm_key)) != 0)) {
-					hex_encode((const unsigned char *)lm_key,
-						   sizeof(lm_key),
-						   &hex_lm_key);
+					hex_lm_key = hex_encode(NULL,
+								(const unsigned char *)lm_key,
+								sizeof(lm_key));
 					x_fprintf(x_stdout, "LANMAN-Session-Key: %s\n", hex_lm_key);
-					SAFE_FREE(hex_lm_key);
+					talloc_free(hex_lm_key);
 				}
 
 				if (ntlm_server_1_user_session_key 
 				    && (memcmp(zeros, user_session_key, 
 					       sizeof(user_session_key)) != 0)) {
-					hex_encode((const unsigned char *)user_session_key, 
-						   sizeof(user_session_key), 
-						   &hex_user_session_key);
+					hex_user_session_key = hex_encode(NULL,
+									  (const unsigned char *)user_session_key, 
+									  sizeof(user_session_key));
 					x_fprintf(x_stdout, "User-Session-Key: %s\n", hex_user_session_key);
-					SAFE_FREE(hex_user_session_key);
+					talloc_free(hex_user_session_key);
 				}
 			}
 		}
@@ -1533,7 +1533,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 	}
 
 	if (strequal(request, "LANMAN-Challenge")) {
-		challenge = strhex_to_data_blob(parameter);
+		challenge = strhex_to_data_blob(NULL, parameter);
 		if (challenge.length != 8) {
 			x_fprintf(x_stdout, "Error: hex decode of %s failed! (got %d bytes, expected 8)\n.\n", 
 				  parameter,
@@ -1541,7 +1541,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 			challenge = data_blob(NULL, 0);
 		}
 	} else if (strequal(request, "NT-Response")) {
-		nt_response = strhex_to_data_blob(parameter);
+		nt_response = strhex_to_data_blob(NULL, parameter);
 		if (nt_response.length < 24) {
 			x_fprintf(x_stdout, "Error: hex decode of %s failed! (only got %d bytes, needed at least 24)\n.\n", 
 				  parameter,
@@ -1549,7 +1549,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 			nt_response = data_blob(NULL, 0);
 		}
 	} else if (strequal(request, "LANMAN-Response")) {
-		lm_response = strhex_to_data_blob(parameter);
+		lm_response = strhex_to_data_blob(NULL, parameter);
 		if (lm_response.length != 24) {
 			x_fprintf(x_stdout, "Error: hex decode of %s failed! (got %d bytes, expected 24)\n.\n", 
 				  parameter,
@@ -1672,20 +1672,18 @@ static BOOL check_auth_crap(void)
 	if (request_lm_key 
 	    && (memcmp(zeros, lm_key, 
 		       sizeof(lm_key)) != 0)) {
-		hex_encode((const unsigned char *)lm_key,
-			   sizeof(lm_key),
-			   &hex_lm_key);
+		hex_lm_key = hex_encode(NULL, (const unsigned char *)lm_key,
+					sizeof(lm_key));
 		x_fprintf(x_stdout, "LM_KEY: %s\n", hex_lm_key);
-		SAFE_FREE(hex_lm_key);
+		talloc_free(hex_lm_key);
 	}
 	if (request_user_session_key 
 	    && (memcmp(zeros, user_session_key, 
 		       sizeof(user_session_key)) != 0)) {
-		hex_encode((const unsigned char *)user_session_key, 
-			   sizeof(user_session_key), 
-			   &hex_user_session_key);
+		hex_user_session_key = hex_encode(NULL, (const unsigned char *)user_session_key, 
+						  sizeof(user_session_key));
 		x_fprintf(x_stdout, "NT_KEY: %s\n", hex_user_session_key);
-		SAFE_FREE(hex_user_session_key);
+		talloc_free(hex_user_session_key);
 	}
 
         return True;
@@ -1775,7 +1773,7 @@ enum {
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case OPT_CHALLENGE:
-			opt_challenge = strhex_to_data_blob(hex_challenge);
+			opt_challenge = strhex_to_data_blob(NULL, hex_challenge);
 			if (opt_challenge.length != 8) {
 				x_fprintf(x_stderr, "hex decode of %s failed! (only got %d bytes)\n", 
 					  hex_challenge,
@@ -1784,7 +1782,7 @@ enum {
 			}
 			break;
 		case OPT_LM: 
-			opt_lm_response = strhex_to_data_blob(hex_lm_response);
+			opt_lm_response = strhex_to_data_blob(NULL, hex_lm_response);
 			if (opt_lm_response.length != 24) {
 				x_fprintf(x_stderr, "hex decode of %s failed! (only got %d bytes)\n", 
 					  hex_lm_response,
@@ -1794,7 +1792,7 @@ enum {
 			break;
 
 		case OPT_NT: 
-			opt_nt_response = strhex_to_data_blob(hex_nt_response);
+			opt_nt_response = strhex_to_data_blob(NULL, hex_nt_response);
 			if (opt_nt_response.length < 24) {
 				x_fprintf(x_stderr, "hex decode of %s failed! (only got %d bytes)\n", 
 					  hex_nt_response,

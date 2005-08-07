@@ -795,9 +795,14 @@ size_t strhex_to_str(char *p, size_t len, const char *strhex)
 	return num_chars;
 }
 
-DATA_BLOB strhex_to_data_blob(const char *strhex) 
+DATA_BLOB strhex_to_data_blob(TALLOC_CTX *mem_ctx, const char *strhex) 
 {
-	DATA_BLOB ret_blob = data_blob(NULL, strlen(strhex)/2+1);
+	DATA_BLOB ret_blob;
+
+	if (mem_ctx != NULL)
+		ret_blob = data_blob_talloc(mem_ctx, NULL, strlen(strhex)/2+1);
+	else
+		data_blob(NULL, strlen(strhex)/2+1);
 
 	ret_blob.length = strhex_to_str((char*)ret_blob.data, 	
 					strlen(strhex), 
@@ -810,16 +815,17 @@ DATA_BLOB strhex_to_data_blob(const char *strhex)
  * Routine to print a buffer as HEX digits, into an allocated string.
  */
 
-void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer)
+char *hex_encode(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len)
 {
 	int i;
 	char *hex_buffer;
 
-	*out_hex_buffer = SMB_XMALLOC_ARRAY(char, (len*2)+1);
-	hex_buffer = *out_hex_buffer;
+	hex_buffer = TALLOC_ARRAY(mem_ctx, char, (len*2)+1);
 
 	for (i = 0; i < len; i++)
 		slprintf(&hex_buffer[i*2], 3, "%02X", buff_in[i]);
+
+	return hex_buffer;
 }
 
 /**
