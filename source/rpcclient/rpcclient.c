@@ -384,11 +384,10 @@ static NTSTATUS setup_schannel(struct cli_state *cli, int pipe_auth_flags,
 	ret = cli_nt_setup_netsec(cli, sec_channel_type, pipe_auth_flags, trust_password);
 	if (NT_STATUS_IS_OK(ret)) {
 		char *hex_session_key;
-		hex_encode(cli->pipes[cli->pipe_idx].auth_info.sess_key,
-			   sizeof(cli->pipes[cli->pipe_idx].auth_info.sess_key),
-			   &hex_session_key);
+		hex_session_key = hex_encode(NULL, cli->pipes[cli->pipe_idx].auth_info.sess_key,
+					     sizeof(cli->pipes[cli->pipe_idx].auth_info.sess_key));
 		printf("Got Session key: %s\n", hex_session_key);
-		SAFE_FREE(hex_session_key);
+		talloc_free(hex_session_key);
 	}
 	return ret;
 }
