@@ -1416,7 +1416,9 @@ static void copyVarCore(MprVar *dest, MprVar *src, int copyDepth)
 		break;
 
 	case MPR_TYPE_PTR:
-		dest->ptr = src->ptr;
+		/* we have to reference here so talloc structures survive a
+		   copy */
+		dest->ptr = talloc_reference(dest, src->ptr);
 		break;
 
 	case MPR_TYPE_STRING_CFUNCTION:
@@ -1477,7 +1479,7 @@ static void copyVarCore(MprVar *dest, MprVar *src, int copyDepth)
 					srcProp->visited = 1;
 					copyVarCore(destProp, srcProp, copyDepth);
 					srcProp->visited = 0;
-					last = srcProp;
+					last = destProp;
 				}
 			}
 			dest->properties->numItems = src->properties->numItems;
