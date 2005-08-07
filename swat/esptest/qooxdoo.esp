@@ -1,9 +1,5 @@
 <% 
   page_header("columns", "ESP qooxdoo test", "esptest"); 
-
-  libinclude("encoder.js");
-
-  var thispage = request.REQUEST_URI;
 %>
 
 <script type="text/javascript" src="/scripting/client/encoder.js"></script>
@@ -34,17 +30,6 @@
     inlineWidget.add(fieldSet);
 
     var d = this.getClientWindow().getDocument();
-
-    function myCheckBox(label, name, value) {
-	    var w = new QxCheckBox(label, value, name, value);
-	    w.setWidth("100%");
-	    return w;
-    }
-
-    function myTextField(name, value) {
-	    var w = new QxTextField(value);
-	    return w;
-    }
 
     var stopit = 0;
     var shared = new Object();
@@ -84,15 +69,19 @@
     function myButton(name, label, call) {
         var b = new QxButton(label);
 	b.setWidth("25%");
-	b.setVerticalAlign("top");
-	b.name = name;
 	b.addEventListener("click", call);
 	return b;
     };
 
+    function myCheckBox(label, name, value) {
+	    var w = new QxCheckBox(label, value, name, value);
+	    w.setWidth("100%");
+	    return w;
+    }
+
     var c1 = myCheckBox("Enable The Server", 'checkbox1', false);
     var c2 = myCheckBox("Another Server", 'checkbox2', true);
-    var t3 = myTextField("mytext", "hello");
+    var t3 = new QxTextField("hello");
     var b1 = myButton("send", "Make Call", start_call);
     var b2 = myButton("stop", "Stop Call", stop_call);
     var ta = new QxTextArea;
