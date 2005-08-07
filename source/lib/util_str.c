@@ -802,7 +802,7 @@ DATA_BLOB strhex_to_data_blob(TALLOC_CTX *mem_ctx, const char *strhex)
 	if (mem_ctx != NULL)
 		ret_blob = data_blob_talloc(mem_ctx, NULL, strlen(strhex)/2+1);
 	else
-		data_blob(NULL, strlen(strhex)/2+1);
+		ret_blob = data_blob(NULL, strlen(strhex)/2+1);
 
 	ret_blob.length = strhex_to_str((char*)ret_blob.data, 	
 					strlen(strhex), 
