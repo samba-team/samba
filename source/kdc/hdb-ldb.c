@@ -461,7 +461,7 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 	char *princ_str_talloc;
 	char *short_princ;
 
-	struct ldb_message **msg;
+	struct ldb_message **msg = NULL;
 
 	/* Structure assignment, so we don't mess with the source parameter */
 	struct Principal princ = *principal;
@@ -521,7 +521,6 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 	count = ldb_search(ldb_ctx, realm_dn, LDB_SCOPE_SUBTREE, filter, 
 			   princ_attrs, &msg);
 
-	*pmsg = talloc_steal(mem_ctx, msg);
 	if (count < 1) {
 		krb5_warnx(context, "ldb_search: basedn: '%s' filter: '%s' failed: %d", 
 			   realm_dn, filter, count);
@@ -529,12 +528,14 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 				      realm_dn, filter, count);
 		return HDB_ERR_NOENTRY;
 	} else if (count > 1) {
+		talloc_free(msg);
 		krb5_warnx(context, "ldb_search: basedn: '%s' filter: '%s' more than 1 entry: %d", 
 			   realm_dn, filter, count);
 		krb5_set_error_string(context, "ldb_search: basedn: '%s' filter: '%s' more than 1 entry: %d", 
 				      realm_dn, filter, count);
 		return HDB_ERR_NOENTRY;
 	}
+	*pmsg = talloc_steal(mem_ctx, msg);
 	return 0;
 }
 
