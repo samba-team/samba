@@ -690,10 +690,24 @@ static void display_reg_value(REGISTRY_VALUE value)
 			    STR_TERMINATE);
 		printf("%s: REG_SZ: %s\n", value.valuename, text);
 		break;
-	case REG_BINARY:
-		printf("%s: REG_BINARY: unknown length value not displayed\n",
-		       value.valuename);
+	case REG_BINARY: {
+		char *hex = hex_encode(NULL, value.data_p, value.size);
+		size_t i, len;
+		printf("%s: REG_BINARY:", value.valuename);
+		len = strlen(hex);
+		for (i=0; i<len; i++) {
+			if (hex[i] == '\0') {
+				break;
+			}
+			if (i%40 == 0) {
+				putchar('\n');
+			}
+			putchar(hex[i]);
+		}
+		talloc_free(hex);
+		putchar('\n');
 		break;
+	}
 	case REG_MULTI_SZ: {
 		uint16 *curstr = (uint16 *) value.data_p;
 		uint8 *start = value.data_p;
@@ -1955,7 +1969,7 @@ static WERROR cmd_spoolss_setprinterdata(struct cli_state *cli,
 
 	/* parse the command arguements */
 	if (argc < 5) {
-		printf ("Usage: %s <printer> <string|dword|multistring>"
+		printf ("Usage: %s <printer> <string|binary|dword|multistring>"
 			" <value> <data>\n",
 			argv[0]);
 		return WERR_INVALID_PARAM;
@@ -1972,11 +1986,9 @@ static WERROR cmd_spoolss_setprinterdata(struct cli_state *cli,
 		value.type = REG_SZ;
 	}
 
-#if 0
 	if (strequal(argv[2], "binary")) {
 		value.type = REG_BINARY;
 	}
-#endif
 
 	if (strequal(argv[2], "dword")) {
 		value.type = REG_DWORD;
@@ -2026,6 +2038,12 @@ static WERROR cmd_spoolss_setprinterdata(struct cli_state *cli,
 		uint32 data = strtoul(argv[4], NULL, 10);
 		value.size = sizeof(data);
 		value.data_p = TALLOC_MEMDUP(mem_ctx, &data, sizeof(data));
+		break;
+	}
+	case REG_BINARY: {
+		DATA_BLOB data = strhex_to_data_blob(mem_ctx, argv[4]);
+		value.data_p = data.data;
+		value.size = data.length;
 		break;
 	}
 	case REG_MULTI_SZ: {
