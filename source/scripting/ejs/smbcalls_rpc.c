@@ -109,7 +109,7 @@ static int ejs_rpc_connect(MprVarHandle eid, int argc, char **argv)
 	const struct dcerpc_interface_table *iface;
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
-	struct cli_credentials *creds = cmdline_credentials;
+	struct cli_credentials *creds;
 	struct event_context *ev;
 	struct MprVar *this = mprGetProperty(ejsGetLocalObject(eid), "this", 0);
 
@@ -137,11 +137,14 @@ static int ejs_rpc_connect(MprVarHandle eid, int argc, char **argv)
 		goto done;
 	}
 
+	creds = mprGetPtr(this, "credentials.creds");
+	if (creds == NULL) {
+		creds = cmdline_credentials;
+	}
 	if (creds == NULL) {
 		creds = cli_credentials_init(mprMemCtx());
 		cli_credentials_guess(creds);
-		cli_credentials_set_username(creds, "", CRED_GUESSED);
-		cli_credentials_set_password(creds, "", CRED_GUESSED);
+		cli_credentials_set_anonymous(creds);
 	}
 
 	ev = talloc_find_parent_bytype(mprMemCtx(), struct event_context);
@@ -157,7 +160,6 @@ static int ejs_rpc_connect(MprVarHandle eid, int argc, char **argv)
 	/* by making the pipe a child of the connection variable, it will
 	   auto close when it goes out of scope in the script */
 	mprSetPtrChild(this, "pipe", p);
-	mprSetPtr(this, "iface", iface);
 
 done:
 	mpr_Return(eid, mprNTSTATUS(status));
@@ -352,7 +354,6 @@ done:
 	}
 	return 0;
 }
-
 
 /* a list of registered ejs rpc modules */
 static struct ejs_register {
