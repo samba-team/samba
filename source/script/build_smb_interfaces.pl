@@ -6,13 +6,95 @@
 use File::Basename;
 use Data::Dumper;
 
-my $file = shift;
-my $basename = basename($file, ".h");
+#
+# Generate parse tree for header file
+#
 
+my $file = shift;
 require smb_interfaces;
 my $parser = new smb_interfaces;
 $header = $parser->parse($file);
 
+#
+# Make second pass over tree to make it easier to process.  Ugh - this
+# is all done in place as the parser generates references.
+#
+
+my $newheader = [];
+
+sub flatten_names($) {
+  my $obj = shift;
+
+  # Map NAME, STRUCT_NAME and UNION_NAME elements into a more likeable
+  # property.
+
+  if ($obj->{TYPE} eq "struct" or $obj->{TYPE} eq "union") {
+
+    # struct foo {};
+    # struct {} bar;
+    # struct foo {} bar;
+
+    $obj->{TYPE_NAME} = defined($obj->{STRUCT_NAME}) ? $obj->{STRUCT_NAME} 
+      : $obj->{UNION_NAME};
+
+    delete $obj->{STRUCT_NAME};
+    delete $obj->{UNION_NAME};
+  }
+
+  # Convert DATA array to a hash by field name
+
+  foreach my $elt (@{$obj->{DATA}}) {
+    foreach my $name (@{$elt->{NAME}}) {
+      $obj->{FIELDS}{$name} = $elt;
+      delete $obj->{FIELDS}{$name}{NAME};
+    }
+  }
+
+  # Recurse down into substructures
+
+  foreach my $elt (@{$obj->{DATA}}) {
+    flatten_names($elt);
+  }
+
+  delete $obj->{DATA};
+}
+
+foreach my $s (@{$header}) {	# For each parsed structure
+  flatten_names($s);
+}
+
+print Dumper($header);
+
+exit;
+
+foreach my $s (@{$header}) {	# For each parsed structure
+  print Dumper($s);
+  my $newdata;
+  foreach my $e (@{$s->{DATA}}) { # For each element in structure
+    foreach my $n (@{$e->{NAME}}) { # For each field in element
+
+      my $newdata2;
+      foreach my $e2 (@{$e->{DATA}}) {
+	foreach my $n2 (@{$e2->{NAME}}) {
+	  my $d = $e2;
+	  $d->{NAME} = $n2;
+	  push(@{$newdata2}, $d);
+	}
+      }
+
+      push(@{$newdata}, {"NAME" => $n, "DATA" => $newdata2});
+    }
+  }
+  my $newstruct = $s;
+  $newstruct->{DATA} = $newdata;
+  push(@{$newheader}, $newstruct);
+}
+
+print Dumper($newheader);
+exit 0;
+
+
+my $basename = basename($file, ".h");
 stat "libcli/gen_raw" || mkdir("libcli/gen_raw") || die("mkdir");
 
 # Create header
