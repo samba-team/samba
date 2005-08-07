@@ -40,6 +40,37 @@ function __http_object() {
 /*
 	usage:
 
+	  vserver_call(url, func, callback, args);
+
+	'func' is a function name to call on the server
+	any additional arguments are passed to func() on the server
+
+	The callback() function is called with the returned
+	object. 'callback' may be null.
+*/
+function vserver_call(url, func, callback, args) {
+	var args2 = new Object();
+	args2.length = args.length;
+	var i;
+	for (i=0;i<args.length;i++) {
+		args2[i] = args[i];
+	}
+	var req = __http_object();
+	req.open("POST", url, true);
+	req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded'); 
+	req.send("func=" + func + "&args=" + encodeObject(args2));
+	req.onreadystatechange = function() { 
+		if (4 == req.readyState && callback != null) {
+			var o = decodeObject(req.responseText);
+			callback(o.res);
+		}
+	}
+}
+
+
+/*
+	usage:
+
 	  server_call(url, func, callback, ...);
 
 	'func' is a function name to call on the server
@@ -49,21 +80,19 @@ function __http_object() {
 	object. 'callback' may be null.
 */
 function server_call(url, func, callback) {
-	var req = __http_object();
-	req.open("POST", url, true);
-	req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded'); 
 	var args = new Object();
 	var i;
 	for (i=3;i<arguments.length;i++) {
 		args[i-3] = arguments[i];
 	}
 	args.length = i-3;
-	req.send("func=" + func + "&args=" + encodeObject(args));
-	req.onreadystatechange = function() { 
-		if (4 == req.readyState && callback != null) {
-			var o = decodeObject(req.responseText);
-			callback(o.res);
-		}
-	}
+	vserver_call(url, func, callback, args);
 }
 
+
+/*
+	call printf on the server
+*/
+function srv_printf() {
+	vserver_call('/scripting/general_calls.esp', 'srv_printf', null, arguments);
+}
