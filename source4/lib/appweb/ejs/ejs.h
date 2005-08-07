@@ -71,6 +71,9 @@ extern void 	ejsClose(void);
 extern EjsId	ejsOpenEngine(EjsHandle primaryHandle, EjsHandle altHandle);
 extern void		ejsCloseEngine(EjsId eid);
 
+void *ejs_save_state(void);
+void ejs_restore_state(void *ptr);
+
 /*
  *	Evaluation functions
  */
