@@ -8,15 +8,6 @@
 libinclude("encoder.js");
 
 /*
-  a remote printf, for displaying stuff on smbd stdout
-*/
-function __server_printf()
-{
-	print(vsprintf(arguments));
-	return undefined;
-}
-
-/*
   register a new call
 */
 function __register_call(name, func)
@@ -86,10 +77,6 @@ function servCallObj()
 	c.add = __register_call;
 	c.run = __run_call;
 	c.calls = new Object();
-
-	/* add some basic calls */
-	c.add('printf', __server_printf);
-
 	return c;
 }
 
