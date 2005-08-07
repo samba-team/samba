@@ -1566,14 +1566,16 @@ Makefile: $(srcdir)/Makefile.in config.status
 # FIXME: LD_LIBRARY_PATH is not portable, but in the absence of
 # libtool I don't know a better way to do it.  Perhaps we should fix
 # libbigballofmud to link statically?
-
-check: check-programs
-	LD_LIBRARY_PATH="`pwd`/bin:$$LD_LIBRARY_PATH" \
-	PATH="`pwd`/bin:$$PATH" \
-	python stf/standardcheck.py; \
-	if test -n "$(PYTHON)"; then \
-		python stf/pythoncheck.py; \
-	fi
+##
+## not working...to be replaced by 'make test' --jerry
+##
+#check: check-programs
+#	LD_LIBRARY_PATH="`pwd`/bin:$$LD_LIBRARY_PATH" \
+#	PATH="`pwd`/bin:$$PATH" \
+#	python stf/standardcheck.py; \
+#	if test -n "$(PYTHON)"; then \
+#		python stf/pythoncheck.py; \
+#	fi
 
 # These are called by the test suite and need to be built before
 # running it.  For the time being we don't build all of BIN_PROGS,
