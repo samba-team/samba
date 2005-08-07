@@ -21,6 +21,9 @@ function __count_members(o) {
 	for (i in o) { 
 		count++;  
 	}
+	if (o.length != undefined) {
+		count++;
+	}
 	return count;
 }
 
@@ -31,28 +34,39 @@ function __replace(str, old, rep) {
 	return s.join(rep, a);
 }
 
+function encodeElement(e, name) {
+	var t = typeof(e);
+	var r;
+	var s = string_init();
+	if (t == 'object' && e == null) {
+		t = 'null';
+	}
+	if (t == 'object') {
+		r = s.sprintf("%s:%s:%s", name, t, encodeObject(e));
+	} else if (t == "string") {
+		var enc = s.encodeURIComponent(e);
+		var rep = __replace(enc, '%', '#');
+		r = s.sprintf("%s:%s:%s:", 
+			      name, t, __replace(s.encodeURIComponent(e),'%','#'));
+	} else if (t == "boolean" || t == "number") {
+		r = s.sprintf("%s:%s:%s:", name, t, "" + e);
+	} else if (t == "undefined" || t == "null") {
+		r = s.sprintf("%s:%s:", name, t);
+	} else {
+		println("Unable to linearise type " + t);
+		r = "";
+	}
+	return r;
+}
+
 function encodeObject(o) {
 	var s = string_init();
 	var i, r = s.sprintf("%u:", __count_members(o));
 	for (i in o) {
-		var t = typeof(o[i]);
-		if (t == 'object' && o[i] == null) {
-			t = 'null';
-		}
-		if (t == 'object') {
-			r = s.sprintf("%s%s:%s:%s", r, i, t, encodeObject(o[i]));
-		} else if (t == "string") {
-			var enc = s.encodeURIComponent(o[i]);
-			var rep = __replace(enc, '%', '#');
-			r = s.sprintf("%s%s:%s:%s:", 
-				      r, i, t, __replace(s.encodeURIComponent(o[i]),'%','#'));
-		} else if (t == "boolean" || t == "number") {
-			r = s.sprintf("%s%s:%s:%s:", r, i, t, "" + o[i]);
-		} else if (t == "undefined" || t == "null") {
-			r = s.sprintf("%s%s:%s:", r, i, t);
-		} else {
-			println("Unable to linearise type " + t);
-		}
+		r = r + encodeElement(o[i], i);
+	}
+	if (o.length != undefined) {
+		r = r + encodeElement(o.length, 'length');
 	}
 	return r;
 }
