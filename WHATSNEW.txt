@@ -77,6 +77,8 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * Fix dup_a_regval() when size is 0.
     * Fix usrmgr.exe crash when viewing user properties at 
       debuglevel 10.
+    * Do not enumerate any privileges when 'enable privileges = no'
+      and log a message if a client tries.
 
 
 o   Guenther Deschner <gd@samba.org>
