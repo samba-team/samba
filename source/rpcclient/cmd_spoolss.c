@@ -698,11 +698,10 @@ static void display_reg_value(REGISTRY_VALUE value)
 		uint16 *curstr = (uint16 *) value.data_p;
 		uint8 *start = value.data_p;
 		printf("%s: REG_MULTI_SZ:\n", value.valuename);
-		while ((*curstr != 0) && 
-		       ((uint8 *) curstr < start + value.size)) {
+		while (((uint8 *) curstr < start + value.size)) {
 			rpcstr_pull(text, curstr, sizeof(text), -1, 
 				    STR_TERMINATE);
-			printf("  %s\n", text);
+			printf("  %s\n", *text != 0 ? text : "NULL");
 			curstr += strlen(text) + 1;
 		}
 	}
@@ -1953,18 +1952,44 @@ static WERROR cmd_spoolss_setprinterdata(struct cli_state *cli,
 	PRINTER_INFO_CTR ctr;
 	PRINTER_INFO_0 info;
 	REGISTRY_VALUE value;
-	UNISTR2 data;
 
 	/* parse the command arguements */
-	if (argc != 4) {
-		printf ("Usage: %s <printer> <value> <data>\n", argv[0]);
-		return WERR_OK;
+	if (argc < 5) {
+		printf ("Usage: %s <printer> <string|dword|multistring>"
+			" <value> <data>\n",
+			argv[0]);
+		return WERR_INVALID_PARAM;
 	}
 
 	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
 	strupper_m(servername);
 	slprintf(printername, sizeof(servername)-1, "%s\\%s", servername, argv[1]);
 	fstrcpy(user, cli->user_name);
+
+	value.type = REG_NONE;
+
+	if (strequal(argv[2], "string")) {
+		value.type = REG_SZ;
+	}
+
+#if 0
+	if (strequal(argv[2], "binary")) {
+		value.type = REG_BINARY;
+	}
+#endif
+
+	if (strequal(argv[2], "dword")) {
+		value.type = REG_DWORD;
+	}
+
+	if (strequal(argv[2], "multistring")) {
+		value.type = REG_MULTI_SZ;
+	}
+
+	if (value.type == REG_NONE) {
+		printf("Unknown data type: %s\n", argv[2]);
+		return WERR_INVALID_PARAM;
+	}
 
 	/* get a printer handle */
 	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "",
@@ -1987,19 +2012,65 @@ static WERROR cmd_spoolss_setprinterdata(struct cli_state *cli,
 
 	/* Set the printer data */
 	
-	init_unistr2(&data, argv[3], UNI_STR_TERMINATE);
-	fstrcpy(value.valuename, argv[2]);
-	value.type = REG_SZ;
-	value.size = data.uni_str_len * 2;
-	value.data_p = TALLOC_MEMDUP(mem_ctx, data.buffer, value.size);
+	fstrcpy(value.valuename, argv[3]);
+
+	switch (value.type) {
+	case REG_SZ: {
+		UNISTR2 data;
+		init_unistr2(&data, argv[4], UNI_STR_TERMINATE);
+		value.size = data.uni_str_len * 2;
+		value.data_p = TALLOC_MEMDUP(mem_ctx, data.buffer, value.size);
+		break;
+	}
+	case REG_DWORD: {
+		uint32 data = strtoul(argv[4], NULL, 10);
+		value.size = sizeof(data);
+		value.data_p = TALLOC_MEMDUP(mem_ctx, &data, sizeof(data));
+		break;
+	}
+	case REG_MULTI_SZ: {
+		int i;
+		size_t len = 0;
+		char *p;
+
+		for (i=4; i<argc; i++) {
+			if (strcmp(argv[i], "NULL") == 0) {
+				argv[i] = "";
+			}
+			len += strlen(argv[i])+1;
+		}
+
+		value.size = len*2;
+		value.data_p = TALLOC_ARRAY(mem_ctx, char, value.size);
+		if (value.data_p == NULL) {
+			result = WERR_NOMEM;
+			goto done;
+		}
+
+		p = value.data_p;
+		len = value.size;
+		for (i=4; i<argc; i++) {
+			size_t l = (strlen(argv[i])+1)*2;
+			rpcstr_push(p, argv[i], len, STR_TERMINATE);
+			p += l;
+			len -= l;
+		}
+		SMB_ASSERT(len == 0);
+		break;
+	}
+	default:
+		printf("Unknown data type: %s\n", argv[2]);
+		result = WERR_INVALID_PARAM;
+		goto done;
+	}
 
 	result = cli_spoolss_setprinterdata(cli, mem_ctx, &pol, &value);
 		
 	if (!W_ERROR_IS_OK(result)) {
-		printf ("Unable to set [%s=%s]!\n", argv[2], argv[3]);
+		printf ("Unable to set [%s=%s]!\n", argv[3], argv[4]);
 		goto done;
 	}
-	printf("\tSetPrinterData succeeded [%s: %s]\n", argv[2], argv[3]);
+	printf("\tSetPrinterData succeeded [%s: %s]\n", argv[3], argv[4]);
 	
         result = cli_spoolss_getprinter(cli, mem_ctx, &pol, 0, &ctr);
 
