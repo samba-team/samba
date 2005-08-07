@@ -53,8 +53,7 @@
     }
 
     function start_call() { 
-	    server_call('remote.esp', 'printf', null, 
-			"Starting calls ... (stopit=%d)\\n", stopit);
+    	    srv_printf("Starting calls ... (stopit=%d)\\n", stopit);
 	    stopit = 0;
 	    shared.counter = 0;
 	    shared.start_time = 0;
@@ -62,7 +61,7 @@
     };
 
     function stop_call() { 
-	    server_call('remote.esp', 'printf', null, "Stopping calls\\n");
+	    srv_printf("Stopping calls\\n");
 	    stopit = 1;
     };
 
