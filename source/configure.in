@@ -1404,7 +1404,6 @@ if test "$enable_shared" = "yes"; then
 			AC_DEFINE(BROKEN_STRNDUP,1,[Does strndup work correctly])
 			;;
 		*hpux*) AC_DEFINE(HPUX,1,[Whether the host os is HPUX])
-			SHLIBEXT="sl"
 			# Use special PIC flags for the native HP-UX compiler.
 			if test $ac_cv_prog_cc_Ae = yes; then
 				BLDSHARED="true"
@@ -1415,7 +1414,13 @@ if test "$enable_shared" = "yes"; then
 			elif test "${GCC}" = "yes"; then
 				PICFLAGS="-fPIC"
 			fi
-			DYNEXP="-Wl,-E"
+			if test "$host_cpu" = "ia64"; then
+				SHLIBEXT="so"
+				DYNEXP="-Wl,-E,+b /usr/local/lib/hpux32:/usr/lib/hpux32"
+			else
+				SHLIBEXT="sl"
+				DYNEXP="-Wl,-E,+b /usr/local/lib:/usr/lib"
+			fi
 			AC_DEFINE(STAT_ST_BLOCKSIZE,8192,[The size of a block])
 			AC_DEFINE(POSIX_ACL_NEEDS_MASK,1,[Does a POSIX ACL need a mask element])
 			;;
@@ -1905,7 +1910,8 @@ dnl in both libiconv and in libc. In this case the jm_ICONV test will always
 dnl succeed when the header is found. To counter this, make sure the 
 dnl library directory is there and check the ABI directory first (which
 dnl should be harmless on other systems.
-    for l in "lib32" "lib" ; do
+dnl For IA64 HPUX systems, the libs are located in lib/hpux32 instead of lib.
+    for l in "lib32" "lib" "lib/hpux32"; do
         if test -d "$i/$l" ; then
                 LDFLAGS="$save_LDFLAGS -L$i/$l"
                 LIBS=
@@ -4165,6 +4171,7 @@ AC_ARG_WITH(aio-support,
 [ case "$withval" in
   yes)
 
+	AC_MSG_RESULT(yes)
 	case "$host_os" in
 	*)
 		AC_CHECK_LIB(rt,aio_read,[AIO_LIBS="$ACL_LIBS -lrt"])
@@ -4192,6 +4199,94 @@ samba_cv_HAVE_AIO64=yes,samba_cv_HAVE_AIO64=no)
 			AC_DEFINE(WITH_AIO, 1, [Using asynchronous io])
 			LIBS="$LIBS -lrt"
 		fi
+
+		if test x"$samba_cv_HAVE_AIO" = x"yes"; then
+			AC_MSG_CHECKING(for aio_read)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_read(&a); }],
+[AC_DEFINE(HAVE_AIO_READ, 1, [Have aio_read]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+
+			AC_MSG_CHECKING(for aio_write)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_write(&a); }],
+[AC_DEFINE(HAVE_AIO_WRITE, 1, [Have aio_write]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+
+			AC_MSG_CHECKING(for aio_fsync)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_fsync(1, &a); }],
+[AC_DEFINE(HAVE_AIO_FSYNC, 1, [Have aio_fsync]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+
+			AC_MSG_CHECKING(for aio_return)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_return(&a); }],
+[AC_DEFINE(HAVE_AIO_RETURN, 1, [Have aio_return]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+
+			AC_MSG_CHECKING(for aio_error)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_error(&a); }],
+[AC_DEFINE(HAVE_AIO_ERROR, 1, [Have aio_error]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+
+			AC_MSG_CHECKING(for aio_cancel)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_cancel(1, &a); }],
+[AC_DEFINE(HAVE_AIO_CANCEL, 1, [Have aio_cancel]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+
+			AC_MSG_CHECKING(for aio_suspend)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_suspend(&a, 1, NULL); }],
+[AC_DEFINE(HAVE_AIO_SUSPEND, 1, [Have aio_suspend]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+		fi
+
+		if test x"$samba_cv_HAVE_AIO64" = x"yes"; then
+			AC_MSG_CHECKING(for aio_read64)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_read64(&a); }],
+[AC_DEFINE(HAVE_AIO_READ64, 1, [Have aio_read64]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+
+			AC_MSG_CHECKING(for aio_write64)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_write64(&a); }],
+[AC_DEFINE(HAVE_AIO_WRITE64, 1, [Have aio_write64]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+
+			AC_MSG_CHECKING(for aio_fsync64)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_fsync64(1, &a); }],
+[AC_DEFINE(HAVE_AIO_FSYNC64, 1, [Have aio_fsync64]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+
+			AC_MSG_CHECKING(for aio_return64)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_return64(&a); }],
+[AC_DEFINE(HAVE_AIO_RETURN64, 1, [Have aio_return64]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+
+			AC_MSG_CHECKING(for aio_error64)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_error64(&a); }],
+[AC_DEFINE(HAVE_AIO_ERROR64, 1, [Have aio_error64]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+
+			AC_MSG_CHECKING(for aio_cancel64)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_cancel64(1, &a); }],
+[AC_DEFINE(HAVE_AIO_CANCEL64, 1, [Have aio_cancel64]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+
+			AC_MSG_CHECKING(for aio_suspend64)
+			AC_LINK_IFELSE([#include <aio.h>
+int main() { struct aiocb a; return aio_suspend64(&a, 1, NULL); }],
+[AC_DEFINE(HAVE_AIO_SUSPEND64, 1, [Have aio_suspend64]) AC_MSG_RESULT(yes)],
+[AC_MSG_RESULT(no)])
+		fi
             ;;
         esac
         ;;
@@ -4203,9 +4298,6 @@ samba_cv_HAVE_AIO64=yes,samba_cv_HAVE_AIO64=no)
   AC_DEFINE(HAVE_NO_AIO,1,[Whether no asynchronous io support should be built in])
   AC_MSG_RESULT(no)
 )
-
-AC_CHECK_FUNCS(aio_cancel aio_cancel64 aio_error aio_error64 aio_fsync aio_fsync64 aio_read aio_read64)
-AC_CHECK_FUNCS(aio_return aio_return64 aio_suspend aio_suspend64 aio_write aio_write64)
 
 #################################################
 # check for sendfile support

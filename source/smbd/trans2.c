@@ -1122,7 +1122,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
 				if(lp_host_msdfs() && 
 				   lp_msdfs_root(SNUM(conn)) &&
-				   is_msdfs_link(conn, pathreal, NULL, NULL,
+				   is_msdfs_link(NULL,conn, pathreal, NULL, NULL,
 						 &sbuf)) {
 
 					DEBUG(5,("get_lanman2_dir_entry: Masquerading msdfs link %s as a directory\n", pathreal));

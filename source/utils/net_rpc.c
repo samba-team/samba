@@ -2586,9 +2586,8 @@ static WERROR get_share_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 		init_enum_hnd(&hnd, 0);
 
-		result = cli_srvsvc_net_share_enum(cli, mem_ctx, level, ctr, 
-					   preferred_len, &hnd);
-		goto done;
+		return cli_srvsvc_net_share_enum(cli, mem_ctx, level, ctr, 
+						 preferred_len, &hnd);
 	}
 
 	/* request just one share */
@@ -2827,7 +2826,7 @@ rpc_share_migrate_shares_internals(const DOM_SID *domain_sid, const char *domain
 		goto done;
 
 	/* connect destination PI_SRVSVC */
-        nt_status = connect_pipe(&cli_dst, PI_SRVSVC, &got_dst_srvsvc_pipe);
+        nt_status = connect_dst_pipe(&cli_dst, PI_SRVSVC, &got_dst_srvsvc_pipe);
         if (!NT_STATUS_IS_OK(nt_status))
                 return nt_status;
 
@@ -3235,7 +3234,7 @@ rpc_share_migrate_security_internals(const DOM_SID *domain_sid, const char *doma
 		goto done;
 
 	/* connect destination PI_SRVSVC */
-        nt_status = connect_pipe(&cli_dst, PI_SRVSVC, &got_dst_srvsvc_pipe);
+        nt_status = connect_dst_pipe(&cli_dst, PI_SRVSVC, &got_dst_srvsvc_pipe);
         if (!NT_STATUS_IS_OK(nt_status))
                 return nt_status;
 
@@ -4975,7 +4974,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 		return -1;
 	}
 
-	if (push_ucs2_talloc(mem_ctx, &uni_domain_name, domain_name_pol) < 0) {
+	if (push_ucs2_talloc(mem_ctx, &uni_domain_name, domain_name_pol) == (size_t)-1) {
 		DEBUG(0, ("Could not convert domain name %s to unicode\n",
 			  domain_name_pol));
 		return -1;
@@ -5129,7 +5128,7 @@ static NTSTATUS vampire_trusted_domain(struct cli_state *cli,
 		goto done;
 	}
 	
-	if (push_ucs2_talloc(mem_ctx, &uni_dom_name, trusted_dom_name) < 0) {
+	if (push_ucs2_talloc(mem_ctx, &uni_dom_name, trusted_dom_name) == (size_t)-1) {
 		DEBUG(0, ("Could not convert domain name %s to unicode\n",
 			  trusted_dom_name));
 		nt_status = NT_STATUS_UNSUCCESSFUL;

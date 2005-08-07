@@ -667,11 +667,6 @@ out_free:
 	if (!interactive) 
 		reopen_logs();
 	
-	/* Load smb.conf file */
-
-	if (!lp_load(dyn_CONFIGFILE,True,False,False))
-		fprintf(stderr, "Can't load %s\n", dyn_CONFIGFILE);
-
 	/* Parse options */
 
 	pc = poptGetContext("rpcclient", argc, (const char **) argv,
@@ -710,6 +705,11 @@ out_free:
 
 	if (!init_names())
 		return 1;
+
+	/* Load smb.conf file */
+
+	if (!lp_load(dyn_CONFIGFILE,True,False,False))
+		fprintf(stderr, "Can't load %s\n", dyn_CONFIGFILE);
 
 	/*
 	 * Get password

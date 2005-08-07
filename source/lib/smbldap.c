@@ -456,7 +456,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 	   the old value, should it exist. */
 
 	if ((newval != NULL) && (strlen(newval) > 0)) {
-		DEBUG(10,("smbldap_make_mod: adding attribute |%s| value |%s|\n", attribute));
+		DEBUG(10,("smbldap_make_mod: adding attribute |%s| value |%s|\n", attribute, newval));
 		smbldap_set_mod(mods, LDAP_MOD_ADD, attribute, newval);
 	}
 }

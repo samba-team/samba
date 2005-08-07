@@ -631,6 +631,8 @@ BOOL spoolss_io_devmode(const char *desc, prs_struct *ps, int depth, DEVICEMODE 
 	int available_space;		/* size of the device mode left to parse */
 					/* only important on unmarshalling       */
 	int i = 0;
+	uint16 *unistr_buffer;
+	int j;
 					
 	struct optional_fields {
 		fstring		name;
@@ -662,12 +664,20 @@ BOOL spoolss_io_devmode(const char *desc, prs_struct *ps, int depth, DEVICEMODE 
 	depth++;
 
 	if (UNMARSHALLING(ps)) {
-		devmode->devicename.buffer = PRS_ALLOC_MEM(ps, uint16, 32);
+		devmode->devicename.buffer = PRS_ALLOC_MEM(ps, uint16, MAXDEVICENAME);
 		if (devmode->devicename.buffer == NULL)
 			return False;
+		unistr_buffer = devmode->devicename.buffer;
 	}
-
-	if (!prs_uint16uni(True,"devicename", ps, depth, devmode->devicename.buffer, MAXDEVICENAME))
+	else {
+		/* devicename is a static sized string but the buffer we set is not */
+		unistr_buffer = PRS_ALLOC_MEM(ps, uint16, MAXDEVICENAME);
+		memset( unistr_buffer, 0x0, MAXDEVICENAME );
+		for ( j=0; devmode->devicename.buffer[j]; j++ )
+			unistr_buffer[j] = devmode->devicename.buffer[j];
+	}
+		
+	if (!prs_uint16uni(True,"devicename", ps, depth, unistr_buffer, MAXDEVICENAME))
 		return False;
 	
 	if (!prs_uint16("specversion",      ps, depth, &devmode->specversion))
@@ -709,12 +719,20 @@ BOOL spoolss_io_devmode(const char *desc, prs_struct *ps, int depth, DEVICEMODE 
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		devmode->formname.buffer = PRS_ALLOC_MEM(ps, uint16, 32);
+		devmode->formname.buffer = PRS_ALLOC_MEM(ps, uint16, MAXDEVICENAME);
 		if (devmode->formname.buffer == NULL)
 			return False;
+		unistr_buffer = devmode->formname.buffer;
 	}
-
-	if (!prs_uint16uni(True, "formname",  ps, depth, devmode->formname.buffer, 32))
+	else {
+		/* devicename is a static sized string but the buffer we set is not */
+		unistr_buffer = PRS_ALLOC_MEM(ps, uint16, MAXDEVICENAME);
+		memset( unistr_buffer, 0x0, MAXDEVICENAME );
+		for ( j=0; devmode->formname.buffer[j]; j++ )
+			unistr_buffer[j] = devmode->formname.buffer[j];
+	}
+	
+	if (!prs_uint16uni(True, "formname",  ps, depth, unistr_buffer, MAXDEVICENAME))
 		return False;
 	if (!prs_uint16("logpixels",        ps, depth, &devmode->logpixels))
 		return False;

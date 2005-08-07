@@ -815,7 +815,7 @@ int strcmp_wa(const smb_ucs2_t *a, const char *b)
 		a++;
 		b++;
 	}
-	return (cp - UCS2_CHAR(*b));
+	return (*(COPY_UCS2_CHAR(&cp,a)) - UCS2_CHAR(*b));
 }
 
 int strncmp_wa(const smb_ucs2_t *a, const char *b, size_t len)
@@ -828,7 +828,7 @@ int strncmp_wa(const smb_ucs2_t *a, const char *b, size_t len)
 		b++;
 		n++;
 	}
-	return (len - n)?(cp - UCS2_CHAR(*b)):0;
+	return (len - n)?(*(COPY_UCS2_CHAR(&cp,a)) - UCS2_CHAR(*b)):0;
 }
 
 smb_ucs2_t *strpbrk_wa(const smb_ucs2_t *s, const char *p)

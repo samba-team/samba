@@ -1488,19 +1488,23 @@ static void copy_printer_default(TALLOC_CTX *ctx, PRINTER_DEFAULT *new_def, PRIN
  * SPOOL_Q_OPEN_PRINTER_EX structure
  ********************************************************************/
 
-static void convert_to_openprinterex(TALLOC_CTX *ctx, SPOOL_Q_OPEN_PRINTER_EX *q_u_ex, SPOOL_Q_OPEN_PRINTER *q_u)
+static WERROR convert_to_openprinterex(TALLOC_CTX *ctx, SPOOL_Q_OPEN_PRINTER_EX *q_u_ex, SPOOL_Q_OPEN_PRINTER *q_u)
 {
 	if (!q_u_ex || !q_u)
-		return;
+		return WERR_OK;
 
 	DEBUG(8,("convert_to_openprinterex\n"));
 				
 	if ( q_u->printername ) {
-		q_u_ex->printername = TALLOC_P( ctx, UNISTR2 );
+		q_u_ex->printername = TALLOC_ZERO_P( ctx, UNISTR2 );
+		if (q_u_ex->printername == NULL)
+			return WERR_NOMEM;
 		copy_unistr2(q_u_ex->printername, q_u->printername);
 	}
 	
 	copy_printer_default(ctx, &q_u_ex->printer_default, &q_u->printer_default);
+
+	return WERR_OK;
 }
 
 /********************************************************************
@@ -1522,7 +1526,9 @@ WERROR _spoolss_open_printer(pipes_struct *p, SPOOL_Q_OPEN_PRINTER *q_u, SPOOL_R
 	
 	/* convert the OpenPrinter() call to OpenPrinterEx() */
 	
-	convert_to_openprinterex(p->mem_ctx, &q_u_ex, q_u);
+	r_u_ex.status = convert_to_openprinterex(p->mem_ctx, &q_u_ex, q_u);
+	if (!W_ERROR_IS_OK(r_u_ex.status))
+		return r_u_ex.status;
 	
 	r_u_ex.status = _spoolss_open_printer_ex(p, &q_u_ex, &r_u_ex);
 	
@@ -2283,7 +2289,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 		
 	if (!StrCaseCmp(value, "W3SvcInstalled")) {
 		*type = REG_DWORD;
-		if((*data = (uint8 *)TALLOC_ZERO(ctx, 4*sizeof(uint8) )) == NULL)
+		if ( !(*data = TALLOC_ARRAY(ctx, uint8, sizeof(uint32) )) )
 			return WERR_NOMEM;
 		*needed = 0x4;
 		return WERR_OK;
@@ -2291,7 +2297,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 
 	if (!StrCaseCmp(value, "BeepEnabled")) {
 		*type = REG_DWORD;
-		if((*data = (uint8 *)TALLOC(ctx, 4*sizeof(uint8) )) == NULL)
+		if ( !(*data = TALLOC_ARRAY(ctx, uint8, sizeof(uint32) )) )
 			return WERR_NOMEM;
 		SIVAL(*data, 0, 0x00);
 		*needed = 0x4;			
@@ -2300,7 +2306,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 
 	if (!StrCaseCmp(value, "EventLog")) {
 		*type = REG_DWORD;
-		if((*data = (uint8 *)TALLOC(ctx, 4 )) == NULL)
+		if ( !(*data = TALLOC_ARRAY(ctx, uint8, sizeof(uint32) )) )
 			return WERR_NOMEM;
 		/* formally was 0x1b */
 		SIVAL(*data, 0, 0x0);
@@ -2310,7 +2316,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 
 	if (!StrCaseCmp(value, "NetPopup")) {
 		*type = REG_DWORD;
-		if((*data = (uint8 *)TALLOC(ctx, 4 )) == NULL)
+		if ( !(*data = TALLOC_ARRAY(ctx, uint8, sizeof(uint32) )) )
 			return WERR_NOMEM;
 		SIVAL(*data, 0, 0x00);
 		*needed = 0x4;
@@ -2319,7 +2325,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 
 	if (!StrCaseCmp(value, "MajorVersion")) {
 		*type = REG_DWORD;
-		if((*data = (uint8 *)TALLOC(ctx, 4 )) == NULL)
+		if ( !(*data = TALLOC_ARRAY(ctx, uint8, sizeof(uint32) )) )
 			return WERR_NOMEM;
 
 		/* Windows NT 4.0 seems to not allow uploading of drivers
@@ -2338,7 +2344,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 
 	if (!StrCaseCmp(value, "MinorVersion")) {
 		*type = REG_DWORD;
-		if((*data = (uint8 *)TALLOC(ctx, 4 )) == NULL)
+		if ( !(*data = TALLOC_ARRAY(ctx, uint8, sizeof(uint32) )) )
 			return WERR_NOMEM;
 		SIVAL(*data, 0, 0);
 		*needed = 0x4;
@@ -2356,7 +2362,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 		*type = REG_BINARY;
 		*needed = 0x114;
 
-		if ( !(*data = TALLOC_ZERO_ARRAY(ctx, uint8, *needed)) )
+		if ( !(*data = TALLOC_ZERO_ARRAY(ctx, uint8, (*needed > in_size) ? *needed:in_size )) )
 			return WERR_NOMEM;
 
 		SIVAL(*data, 0, *needed);	/* size */
@@ -2402,7 +2408,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 
 	if (!StrCaseCmp(value, "DsPresent")) {
 		*type = REG_DWORD;
-		if((*data = (uint8 *)TALLOC(ctx, 4 )) == NULL)
+		if ( !(*data = TALLOC_ARRAY(ctx, uint8, sizeof(uint32) )) )
 			return WERR_NOMEM;
 
 		/* only show the publish check box if we are a 
