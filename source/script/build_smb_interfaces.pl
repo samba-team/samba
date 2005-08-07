@@ -16,53 +16,46 @@ my $parser = new smb_interfaces;
 $header = $parser->parse($file);
 
 #
-# Make second pass over tree to make it easier to process.  Ugh - this
-# is all done in place as the parser generates references.
+# Make second pass over tree to make it easier to process.
 #
 
-my $newheader = [];
+my @structs;
 
-sub flatten_names($) {
+sub flatten_structs($) {
   my $obj = shift;
+  my $s = { %$obj };
 
   # Map NAME, STRUCT_NAME and UNION_NAME elements into a more likeable
   # property.
 
-  if ($obj->{TYPE} eq "struct" or $obj->{TYPE} eq "union") {
+  if (defined($obj->{STRUCT_NAME}) or defined($obj->{UNION_NAME})) {
 
-    # struct foo {};
-    # struct {} bar;
-    # struct foo {} bar;
-
-    $obj->{TYPE_NAME} = defined($obj->{STRUCT_NAME}) ? $obj->{STRUCT_NAME} 
+    $s->{TYPE_DEFINED} = defined($obj->{STRUCT_NAME}) ? $obj->{STRUCT_NAME} 
       : $obj->{UNION_NAME};
 
-    delete $obj->{STRUCT_NAME};
-    delete $obj->{UNION_NAME};
+    delete $s->{STRUCT_NAME};
+    delete $s->{UNION_NAME};
   }
-
-  # Convert DATA array to a hash by field name
 
   foreach my $elt (@{$obj->{DATA}}) {
     foreach my $name (@{$elt->{NAME}}) {
-      $obj->{FIELDS}{$name} = $elt;
-      $obj->{FIELDS}{$name}{NAME} = $name;
-      $obj->{FIELDS}{$name}{PARENT} = $obj;
+      my $new_elt = { %$elt };
+      $new_elt->{NAME} = $name;
+      push(@{$s->{FIELDS}}, flatten_structs($new_elt));
     }
   }
 
-  # Recurse down into substructures
+  delete $s->{DATA};
 
-  foreach my $elt (@{$obj->{DATA}}) {
-    flatten_names($elt);
-  }
-
-  delete $obj->{DATA};
+  return $s;
 }
 
 foreach my $s (@{$header}) {	# For each parsed structure
-  flatten_names($s);
+  print Dumper(flatten_structs($s));
 }
+
+print Dumper(@structs);
+exit;
 
 #
 # Generate header
@@ -111,7 +104,7 @@ exit;
 sub struct_name($)
 {
   my $obj = shift;
-  return defined($obj->{STRUCT_NAME}) ? $obj->{STRUCT_NAME} : $obj->{UNION_NAME};
+  return defined($obj->{STRUCT_NAE}) ? $obj->{STRUCT_NAME} : $obj->{UNION_NAME};
 }
 
 sub prototypes_for($)
