@@ -58,6 +58,33 @@ static void			*lockData;
 #define ejsUnlock()	
 #endif
 
+
+/*
+  save/restore global ejs state - used to cope with simultaneous ejs requests
+  this is a workaround for the use of global variables in ejs
+*/
+struct ejs_state_ctx {
+	struct MprVar master;
+	struct MprArray *ejsList;
+};
+
+void *ejs_save_state(void)
+{
+	struct ejs_state_ctx *ctx = talloc(talloc_autofree_context(), struct ejs_state_ctx);
+	ctx->master = master;
+	ctx->ejsList = ejsList;
+	return ctx;
+}
+
+void ejs_restore_state(void *ptr)
+{
+	struct ejs_state_ctx *ctx = talloc_get_type(ptr, struct ejs_state_ctx);
+	master = ctx->master;
+	ejsList = ctx->ejsList;
+	talloc_free(ctx);
+}
+
+
 /****************************** Forward Declarations **************************/
 
 static char	*getNextVarToken(char **next, char *tokBuf, int tokBufLen);
