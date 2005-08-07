@@ -211,7 +211,9 @@ void ejsCloseEngine(EjsId eid)
 	mprDestroyVar(&ep->result);
 	mprDestroyVar(&ep->tokenNumber);
 
-	mprDeleteProperty(ep->local, "local");
+	if (ep->local) {
+		mprDeleteProperty(ep->local, "local");
+	}
 	mprDeleteProperty(ep->global, "this");
 	mprDeleteProperty(ep->global, "global");
 
