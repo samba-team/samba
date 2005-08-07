@@ -752,6 +752,7 @@ void http_process_input(struct websrv_context *web)
 	struct esp_data *edata = talloc_get_type(web->task->private, struct esp_data);
 	char *p;
 	void *save_mpr_ctx = mprMemCtx();
+	void *ejs_save = ejs_save_state();
 	int i;
 	const char *file_type = NULL;
 	BOOL esp_enable = False;
@@ -802,6 +803,7 @@ void http_process_input(struct websrv_context *web)
 	if (web->input.url == NULL) {
 		http_error(web, 400, "You must specify a GET or POST request");
 		mprSetCtx(save_mpr_ctx);
+		ejs_restore_state(ejs_save);
 		return;
 	}
 	
@@ -811,6 +813,7 @@ void http_process_input(struct websrv_context *web)
 		if (!NT_STATUS_IS_OK(status)) {
 			http_error(web, 400, "Malformed POST data");
 			mprSetCtx(save_mpr_ctx);
+			ejs_restore_state(ejs_save);
 			return;
 		}
 	} 
@@ -819,6 +822,7 @@ void http_process_input(struct websrv_context *web)
 		if (!NT_STATUS_IS_OK(status)) {
 			http_error(web, 400, "Malformed GET data");
 			mprSetCtx(save_mpr_ctx);
+			ejs_restore_state(ejs_save);
 			return;
 		}
 	}
@@ -899,6 +903,7 @@ void http_process_input(struct websrv_context *web)
 
 	talloc_free(esp);
 	mprSetCtx(save_mpr_ctx);
+	ejs_restore_state(ejs_save);
 	return;
 	
 internal_error:
@@ -906,6 +911,7 @@ internal_error:
 	talloc_free(esp);
 	http_error(web, 500, "Internal server error");
 	mprSetCtx(save_mpr_ctx);
+	ejs_restore_state(ejs_save);
 }
 
 
