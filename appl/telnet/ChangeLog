@@ -1,3 +1,16 @@
+2005-08-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* telnetd/telnetd.c: Fix printing of /etc/issue{,.net}.
+	
+	* telnetd/utility.c: make writenet take const void * and size_t,
+	abort if size it too large
+
+	* telnetd/state.c: Fix ansi c warning.
+
+	* telnetd/sys_term.c: no need to typecast argument to writenet
+
+	* telnetd/ext.h: make writenet take const void * and size_t
+
 2005-07-07  Assar Westerlund  <assar@kth.se>
 
 	* libtelnet/kerberos.c: Do not assume that des_key_schedule is an
