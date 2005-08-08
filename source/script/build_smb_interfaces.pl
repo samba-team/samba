@@ -41,7 +41,7 @@ sub flatten_structs($) {
     foreach my $name (@{$elt->{NAME}}) {
       my $new_elt = { %$elt };
       $new_elt->{NAME} = $name;
-      $new_elt->{PARENT} = $s;
+#      $new_elt->{PARENT} = $s;
       push(@{$s->{FIELDS}}, flatten_structs($new_elt));
     }
   }
@@ -69,6 +69,32 @@ print FILE "#include \"lib/appweb/ejs/ejs.h\"\n";
 print FILE "#include \"scripting/ejs/ejsrpc.h\"\n"; # TODO: remove this
 print FILE "\n";
 
+sub transfer_element($$$) {
+  my $dir = shift;
+  my $prefix = shift;
+  my $elt = shift;
+
+  print FILE "\tejs_${dir}_$elt->{TYPE}(ejs, v, \"$prefix.$elt->{NAME}\")\n";
+}
+
+sub transfer_struct($$) {
+  my $dir = shift;
+  my $struct = shift;
+
+  foreach my $field (@{$struct->{FIELDS}}) {
+    next if $dir eq "pull" and $field->{NAME} eq "out";
+    next if $dir eq "push" and $field->{NAME} eq "in";
+
+    if ($field->{TYPE} eq "struct") {
+      foreach $subfield (@{$field->{FIELDS}}) {
+	transfer_element($dir, $field->{NAME}, $subfield);
+      }
+    } else {
+      transfer_element($dir, $struct->{NAME}, $field);
+    }
+  }
+}
+
 # Top level call functions
 
 foreach my $s (@newheader) {
@@ -88,20 +114,14 @@ foreach my $s (@newheader) {
     print FILE "\t\treturn -1;\n";
     print FILE "\t}\n\n";
 
-    foreach my $field (@{$s->{FIELDS}}) {
-      next if $field->{NAME} eq "out";
-      print FILE "\t// pull params.$field->{NAME}\n";
-    }
+    transfer_struct("pull", $s);
 
     my $fn = $s->{TYPE_DEFINED};
     $fn =~ s/^smb_/smb_raw_/;
 
     print FILE "\n\tresult = $fn(tree, &params);\n\n";
 
-    foreach my $field (@{$s->{FIELDS}}) {
-      next if $field->{NAME} eq "in";
-      print FILE "\t// push params.$field->{NAME}\n";
-    }
+    transfer_struct("push", $s);
 
     print FILE "\n\tmpr_Return(eid, mprNTSTATUS(result));\n\n";
     print FILE "\tif (NT_STATUS_EQUAL(status, NT_STATUS_INTERNAL_ERROR)) {\n";
@@ -128,20 +148,14 @@ foreach my $s (@newheader) {
       print FILE "\t\treturn -1;\n";
       print FILE "\t}\n\n";
 
-      foreach my $field (@{$arm->{FIELDS}}) {
-	next if $field->{NAME} eq "out";
-	print FILE "\t// pull params.$arm->{NAME}.$field->{NAME}\n";
-      }
+      transfer_struct("pull", $arm);
 
       my $fn = $s->{TYPE_DEFINED};
       $fn =~ s/^smb_/smb_raw_/;
 
       print FILE "\n\tresult = $fn(tree, &params);\n\n";
 
-      foreach my $field (@{$arm->{FIELDS}}) {
-	next if $field->{NAME} eq "in";
-	print FILE "\t// push params.$arm->{NAME}.$field->{NAME}\n";
-      }
+      transfer_struct("push", $arm);
 
       print FILE "\n\tmpr_Return(eid, mprNTSTATUS(result));\n\n";
       print FILE "\tif (NT_STATUS_EQUAL(status, NT_STATUS_INTERNAL_ERROR)) {\n";
