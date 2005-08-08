@@ -32,7 +32,8 @@ swat_menus.esptest = simple_menu(
 	"loadparm access",       session_uri("/esptest/loadparm.esp"),
 	"exception handling",    session_uri("/esptest/exception.esp"),
 	"environment variables", session_uri("/esptest/showvars.esp"),
-	"qooxdoo",               session_uri("/esptest/qooxdoo.esp"));
+	"qooxdoo",               session_uri("/esptest/qooxdoo.esp"),
+	"registry",              session_uri("/esptest/registry.esp"));
 
 
 swat_menus.install = simple_menu(
