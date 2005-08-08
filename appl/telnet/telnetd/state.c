@@ -427,14 +427,14 @@ send_do(int option, int init)
 extern void auth_request(void);
 #endif
 #ifdef	ENCRYPTION
-extern void encrypt_send_support();
+extern void encrypt_send_support(void);
 #endif
 
 void
 willoption(int option)
 {
     int changeok = 0;
-    void (*func)() = 0;
+    void (*func)(void) = NULL;
 
     /*
      * process input from peer.
