@@ -1144,7 +1144,7 @@ startslave(const char *host, const char *utmp_host,
 #ifdef ENCRYPTION
 	if (!no_warn && (encrypt_output == 0 || decrypt_input == 0))
 #endif
-	    writenet((unsigned char*)tbuf, strlen(tbuf));
+	    writenet(tbuf, strlen(tbuf));
     }
 # ifdef	PARENT_DOES_UTMP
     utmp_sig_init();
