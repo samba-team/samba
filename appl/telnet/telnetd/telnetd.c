@@ -778,10 +778,17 @@ show_issue(void)
     if(f == NULL)
 	f = fopen(SYSCONFDIR "/issue", "r");
     if(f){
-	while(fgets(buf, sizeof(buf)-2, f)){
+	while(fgets(buf, sizeof(buf), f) != NULL) {
 	    size_t len = strcspn(buf, "\r\n");
-	    len = strlcpy(buf + len, "\r\n", sizeof(buf) - len);
-	    writenet((unsigned char*)buf, len);
+	    if(len == strlen(buf)) {
+		/* there's no newline */
+		writenet(buf, len);
+	    } else {
+		/* replace newline with \r\n */
+		buf[len] = '\0';
+		writenet(buf, len);
+		writenet("\r\n", 2);
+	    }
 	}
 	fclose(f);
     }
