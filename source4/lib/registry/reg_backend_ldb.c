@@ -250,7 +250,7 @@ static WERROR ldb_open_hive(struct registry_hive *hive, struct registry_key **k)
 	talloc_set_destructor (hive, ldb_free_hive);
 	(*k)->name = talloc_strdup(*k, "");
 	(*k)->backend_data = kd = talloc_zero(*k, struct ldb_key_data);
-	kd->dn = talloc_strdup(*k, "hive=");
+	kd->dn = talloc_strdup(*k, "hive=NONE");
 	
 
 	return WERR_OK;

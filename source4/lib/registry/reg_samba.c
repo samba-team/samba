@@ -27,7 +27,8 @@ static WERROR reg_samba_get_predef (struct registry_context *ctx, uint32_t hkey,
 {
 	WERROR error;
 	const char *conf;
-	char *backend, *location;
+	char *backend;
+	const char *location;
 	const char *hivename = reg_get_predef_name(hkey);
 
 	*k = NULL;
@@ -38,12 +39,13 @@ static WERROR reg_samba_get_predef (struct registry_context *ctx, uint32_t hkey,
 		return WERR_NOT_SUPPORTED;
 	}
 
-	backend = talloc_strdup(NULL, conf);
-	location = strchr(backend, ':');
-
+	location = strchr(conf, ':');
 	if (location) {
-		*location = '\0';
+		backend = talloc_strndup(ctx, conf, (int)(location - conf));
 		location++;
+	} else {
+		backend = talloc_strdup(ctx, "ldb");
+		location = conf;
 	}
 
 	/* FIXME: Different hive backend for HKEY_CLASSES_ROOT: merged view of HKEY_LOCAL_MACHINE\Software\Classes
