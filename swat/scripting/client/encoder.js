@@ -37,7 +37,7 @@ function encodeObject(o) {
 			r = r + "" + i + ":" + t + ":" + o[i] + ":";
 		} else if (t == 'undefined' || t == 'null') {
 			r = r + "" + i + ":" + t + ":";
-		} else {
+		} else if (t != 'function') {
 			alert("Unable to encode type " + t);
 		}
 	}
