@@ -399,9 +399,10 @@ struct dom_sid *samdb_result_sid_prefix(TALLOC_CTX *mem_ctx, struct ldb_message 
 /*
   pull a NTTIME in a result set. 
 */
-NTTIME samdb_result_nttime(struct ldb_message *msg, const char *attr, const char *default_value)
+NTTIME samdb_result_nttime(struct ldb_message *msg, const char *attr, NTTIME default_value)
 {
-	const char *str = ldb_msg_find_string(msg, attr, default_value);
+	const char *str = ldb_msg_find_string(msg, attr, NULL);
+	if (!str) return default_value;
 	return nttime_from_string(str);
 }
 
