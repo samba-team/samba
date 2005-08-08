@@ -134,6 +134,10 @@ exec_shell(const char *shell, int fallback)
 
 static enum { NONE = 0, AUTH_KRB4 = 1, AUTH_KRB5 = 2, AUTH_OTP = 3 } auth;
 
+#ifdef KRB4
+static krb5_boolean get_v4_tgt = FALSE;
+#endif
+
 #ifdef OTP
 static OtpContext otp_ctx;
 
@@ -181,8 +185,6 @@ krb5_to4 (krb5_ccache id)
 {
     krb5_error_code ret;
     krb5_principal princ;
-
-    int get_v4_tgt;
 
     ret = krb5_cc_get_principal(context, id, &princ);
     if(ret == 0) {
@@ -235,6 +237,8 @@ krb5_to4 (krb5_ccache id)
 	    memset(&c, 0, sizeof(c));
 	    krb5_free_cred_contents(context, &cred);
 	}
+	if (ret != 0)
+	    get_v4_tgt = FALSE;
 	krb5_free_principal(context, mcred.server);
 	krb5_free_principal(context, mcred.client);
     }
@@ -614,7 +618,8 @@ do_login(const struct passwd *pwd, char *tty, char *ttyn)
 #endif /* KRB5 */
 
 #ifdef KRB4
-    krb4_get_afs_tokens (pwd);
+    if (auth == AUTH_KRB4 || get_v4_tgt)
+	krb4_get_afs_tokens (pwd);
 #endif /* KRB4 */
 
     add_env("PATH", _PATH_DEFPATH);
@@ -716,7 +721,7 @@ main(int argc, char **argv)
     int try;
 
     char username[32];
-    int optind = 0;
+    int optidx = 0;
 
     int ask = 1;
     struct sigaction sa;
@@ -736,10 +741,10 @@ main(int argc, char **argv)
     openlog("login", LOG_ODELAY, LOG_AUTH);
 
     if (getarg (args, sizeof(args) / sizeof(args[0]), argc, argv,
-		&optind))
+		&optidx))
 	usage (1);
-    argc -= optind;
-    argv += optind;
+    argc -= optidx;
+    argv += optidx;
 
     if(help_flag)
 	usage(0);
