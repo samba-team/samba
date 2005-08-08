@@ -12,31 +12,21 @@
 function folder_list(t, list) {
 	var i;
 	t.populated = true;
-	t.reg_list = new Object();
+	t.removeAll();
 	for (i=0;i<list.length;i++) {
 		var te;
-		if (t.reg_list.working != undefined) {
-			te = t.reg_list.working;
-			t.reg_list = new Object();
-			te.label = list[i];
-		} else {
-			te = new QxTreeFolder(list[i]);
-			t.add(te);
-		}
+		te = new QxTreeFolder(list[i]);
+		t.add(te);
 		te.binding = t.binding;
 		if (t.reg_path == '\\\\') {
 			te.reg_path = list[i];
 		} else {
 			te.reg_path = t.reg_path + '\\\\' + list[i];
 		}
-		te.reg_list = new Object();
-		te.reg_list.working = new QxTreeFolder('Working ...');
-		te.add(te.reg_list.working);
-		t.reg_list[list[i]] = te;
+		te.add(new QxTreeFolder('Working ...'));
 		te.addEventListener("click", function() { 
 			var el = this; folder_click(el); 
 		});
-		te.setOverflow("auto");
 		t.setOpen(1);
 	}
 }
@@ -54,16 +44,15 @@ function registry_tree(binding) {
       var t = new QxTree("registry: " + binding);
       t.binding = binding;
       t.reg_path = "\\\\";
-      t.reg_list = new Object();
       t.populated = false;
       with(t)
       {
         setBackgroundColor(255);
         setBorder(QxBorder.presets.inset);
-        setOverflow("auto");
+        setOverflow("scroll");
         setStyleProperty("padding", "2px");
-        setWidth(200);
-        setHeight("100%");
+        setWidth(400);
+        setHeight(400);
         setTop(20);
 	addEventListener("click", function() { folder_click(t); });
       }
@@ -74,7 +63,7 @@ function registry_tree(binding) {
   {
     var inlineWidget = new QxInline;
     var fieldSet = new QxFieldSet("Registry");
-    var binding = "ncacn_np:win2003";
+    var binding = "ncalrpc:";
 
     with(fieldSet)
     {
