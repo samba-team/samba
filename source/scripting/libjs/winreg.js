@@ -42,29 +42,48 @@ function winreg_open_path(reg, path)
 	var list = new Object();
 
 	list.length = 0;
+
+	/* cope with a leading slash */
+	if (components[0] == '') {
+		for (i=0;i<(components.length-1);i++) {
+			components[i] = components[i+1];
+		}
+		components.length--;
+	}
 	
+	if (components.length == 0) {
+		return undefined;
+	}
+
 	var handle = winreg_open_hive(reg, components[0]);
 	if (handle == undefined) {
 		return undefined;
 	}
 
-	for (i=1;i<components.length;i++) {
-		io = irpcObj();
-		io.input.handle  = handle;
-		io.input.keyname = components[i];
-		io.input.unknown = 0;
-		io.input.access_mask = reg.SEC_FLAG_MAXIMUM_ALLOWED;
-		var status = reg.winreg_OpenKey(io);
-		if (!status.is_ok) {
-			return undefined;
-		}
-		if (io.output.result != "WERR_OK") {
-			return undefined;
-		}
-
-		handle = io.output.handle;
+	if (components.length == 1) {
+		return handle;
 	}
-	return handle;
+
+	var hpath = components[1];
+
+	for (i=2;i<components.length;i++) {
+		hpath = hpath + "\\" + components[i];
+	}
+
+	io = irpcObj();
+	io.input.handle  = handle;
+	io.input.keyname = hpath;
+	io.input.unknown = 0;
+	io.input.access_mask = reg.SEC_FLAG_MAXIMUM_ALLOWED;
+	var status = reg.winreg_OpenKey(io);
+	if (!status.is_ok) {
+		return undefined;
+	}
+	if (io.output.result != "WERR_OK") {
+		return undefined;
+	}
+	
+	return io.output.handle;
 }
 
 /*
@@ -76,6 +95,10 @@ function winreg_enum_path(reg, path)
 {
 	var list = new Object();
 	list.length = 0;
+
+	if (path == null || path == "\\" || path == "") {
+		return new Array("HKLM", "HKU");
+	}
 	
 	handle = winreg_open_path(reg, path);
 	if (handle == undefined) {
@@ -106,7 +129,6 @@ function winreg_enum_path(reg, path)
 		if (out.result != "WERR_OK") {
 			return list;
 		}
-
 		list[list.length] = out.out_name.name;
 		list.length++;
 	}
