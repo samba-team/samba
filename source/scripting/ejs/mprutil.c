@@ -357,14 +357,15 @@ void mprSetPtrChild(struct MprVar *v, const char *propname, const void *p)
 */
 void *mprGetPtr(struct MprVar *v, const char *propname)
 {
-	NTSTATUS status = mprGetVar(&v, propname);
-	if (!NT_STATUS_IS_OK(status)) {
+	struct MprVar *val;
+	val = mprGetProperty(v, propname, NULL);
+	if (val == NULL) {
 		return NULL;
 	}
-	if (v->type != MPR_TYPE_PTR) {
+	if (val->type != MPR_TYPE_PTR) {
 		return NULL;
 	}
-	return v->ptr;
+	return val->ptr;
 }
 
 /*

@@ -112,6 +112,7 @@ static int ejs_rpc_connect(MprVarHandle eid, int argc, char **argv)
 	struct cli_credentials *creds;
 	struct event_context *ev;
 	struct MprVar *this = mprGetProperty(ejsGetLocalObject(eid), "this", 0);
+	struct MprVar *credentials;
 
 	/* validate arguments */
 	if (argc < 1) {
@@ -137,8 +138,10 @@ static int ejs_rpc_connect(MprVarHandle eid, int argc, char **argv)
 		goto done;
 	}
 
-	creds = mprGetPtr(this, "credentials.creds");
-	if (creds == NULL) {
+	credentials = mprGetProperty(this, "credentials", NULL);
+	if (credentials) {
+		creds = mprGetPtr(credentials, "creds");
+	} else {
 		creds = cmdline_credentials;
 	}
 	if (creds == NULL) {
