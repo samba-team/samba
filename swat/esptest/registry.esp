@@ -1,0 +1,120 @@
+<% 
+  page_header("columns", "ESP registry edit", "esptest"); 
+%>
+
+<script type="text/javascript" src="/scripting/client/encoder.js"></script>
+<script type="text/javascript" src="/scripting/client/call.js"></script>
+
+<h1>Registry Editor</h1>
+
+  <script type="text/javascript">
+
+function folder_list(t, list) {
+	var i;
+	t.populated = true;
+	t.reg_list = new Object();
+	for (i=0;i<list.length;i++) {
+		var te;
+		if (t.reg_list.working != undefined) {
+			te = t.reg_list.working;
+			t.reg_list = new Object();
+			te.label = list[i];
+		} else {
+			te = new QxTreeFolder(list[i]);
+			t.add(te);
+		}
+		te.binding = t.binding;
+		if (t.reg_path == '\\\\') {
+			te.reg_path = list[i];
+		} else {
+			te.reg_path = t.reg_path + '\\\\' + list[i];
+		}
+		te.reg_list = new Object();
+		te.reg_list.working = new QxTreeFolder('Working ...');
+		te.add(te.reg_list.working);
+		t.reg_list[list[i]] = te;
+		te.addEventListener("click", function() { 
+			var el = this; folder_click(el); 
+		});
+		te.setOverflow("auto");
+		t.setOpen(1);
+	}
+}
+
+function folder_click(t) {
+	if (!t.populated) {
+		server_call("registry_calls.esp", 'enum_path', 
+			    function(list) { folder_list(t, list); }, 
+			    t.binding, t.reg_path);
+	}
+}
+
+/* return a registry tree for the given server */
+function registry_tree(binding) {
+      var t = new QxTree("registry: " + binding);
+      t.binding = binding;
+      t.reg_path = "\\\\";
+      t.reg_list = new Object();
+      t.populated = false;
+      with(t)
+      {
+        setBackgroundColor(255);
+        setBorder(QxBorder.presets.inset);
+        setOverflow("auto");
+        setStyleProperty("padding", "2px");
+        setWidth(200);
+        setHeight("100%");
+        setTop(20);
+	addEventListener("click", function() { folder_click(t); });
+      }
+      return t;
+}
+
+  window.application.main = function()
+  {
+    var inlineWidget = new QxInline;
+    var fieldSet = new QxFieldSet("Registry");
+    var binding = "ncacn_np:win2003";
+
+    with(fieldSet)
+    {
+	    setWidth("40%");
+	    setMinHeight(500);
+	    setBottom(48);
+	    setMinWidth(500);
+    };
+
+    var gl = new QxGridLayout("auto,auto,auto,auto,auto", "100%");
+    gl.setEdge(0);
+    gl.setCellPaddingTop(3);
+    gl.setCellPaddingBottom(3);
+
+    inlineWidget.add(fieldSet);
+
+    var t = registry_tree(binding);
+
+    function change_binding(e) {
+	    binding = e.getNewValue();
+    	    srv_printf("changed binding to %s\\n", binding);
+	    gl.remove(t);
+	    t = registry_tree(binding);
+	    gl.add(t, { row : 2, col : 1 });
+    }
+
+    var b = new QxTextField(binding);
+    b.addEventListener("changeText", change_binding);
+
+    gl.add(b, { row : 1, col : 1 });
+    gl.add(t, { row : 2, col : 1 });
+
+    fieldSet.add(gl);
+    inlineWidget.add(fieldSet);
+    this.getClientWindow().getDocument().add(inlineWidget, "canvas");
+  };
+
+  </script>
+
+
+ <div id="canvas" style="overflow:hidden;position:static;margin-top:38px;margin-left:10px;margin-right:700px;width:700px"></div>
+
+<% page_footer(); %>
