@@ -7,7 +7,8 @@ use File::Basename;
 
 my $file = shift;
 my $prefix = shift;
-
+my $x_file, @x_files;
+my $c_file, @c_files;
 if (not defined ($prefix)) { $prefix = "asn1"; }
 
 $dirname = dirname($file);
@@ -24,9 +25,23 @@ foreach(<IN>) {
 	if (/^([A-Za-z0-9_-]+)[ \t]*::= /) {
 		my $output = $1;
 		$output =~ s/-/_/g;
-		print "$dirname/asn1_$output.x: $header\n";
-		print "$dirname/asn1_$output.c: $dirname/asn1_$output.x\n";
-		print "\t\@cp $dirname/asn1_$output.x $dirname/asn1_$output.c\n\n";
+		$c_file = "$dirname/asn1_$output.c";
+		$x_file = "$dirname/asn1_$output.x";
+		print "$x_file: $header\n";
+		print "$c_file: $dirname/asn1_$output.x\n";
+		print "\t\@cp $x_file $c_file\n\n";
+		push @x_files, $x_file;
+		push @c_files, $c_file;
 	}
 }
 close(IN);
+print $prefix."_clean: \n";
+print "\t\@echo \"Deleting ASN1 ouput files generated from $file\"";
+print "\n\t\@rm -f $header";
+foreach $c_file (@c_files) {
+    print "\n\t\@rm -f $c_file";
+}
+foreach $x_file (@x_files) {
+    print "\n\t\@rm -f $x_file";
+}
+print "\n\n";
