@@ -323,13 +323,15 @@ netflush(void)
  *    len - How many bytes to write
  */
 void
-writenet(unsigned char *ptr, int len)
+writenet(const void *ptr, size_t len)
 {
     /* flush buffer if no room for new data) */
     while ((&netobuf[BUFSIZ] - nfrontp) < len) {
 	/* if this fails, don't worry, buffer is a little big */
 	netflush();
     }
+    if ((&netobuf[BUFSIZ] - nfrontp) < len)
+	abort();
 
     memmove(nfrontp, ptr, len);
     nfrontp += len;
