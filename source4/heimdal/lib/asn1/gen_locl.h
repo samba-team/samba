@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gen_locl.h,v 1.10 2005/06/16 19:58:58 lha Exp $ */
+/* $Id: gen_locl.h,v 1.12 2005/07/12 06:27:30 lha Exp $ */
 
 #ifndef __GEN_LOCL_H__
 #define __GEN_LOCL_H__
@@ -51,6 +51,8 @@
 #include <roken.h>
 #include "hash.h"
 #include "symbol.h"
+#include "asn1-common.h"
+#include "der.h"
 
 void generate_type (const Symbol *);
 void generate_constant (const Symbol *);
@@ -61,10 +63,14 @@ void generate_type_free (const Symbol *s);
 void generate_type_length (const Symbol *s);
 void generate_type_copy (const Symbol *s);
 void generate_type_maybe (const Symbol *s);
-void generate_glue (const Symbol *s);
+void generate_glue (const Type *, const char*);
 
-void unique_reset(void);
-int unique_get_next(void);
+const char *classname(Der_class);
+const char *valuename(Der_class class, int);
+
+void gen_compare_defval(const char *var, struct value *val);
+void gen_assign_defval(const char *var, struct value *val);
+
 
 void init_generate (const char *filename, const char *basename);
 const char *get_filename (void);
@@ -72,6 +78,12 @@ void close_generate(void);
 void add_import(const char *module);
 int yyparse(void);
 
+int preserve_type(const char *);
+
 extern FILE *headerfile, *codefile, *logfile;
+extern int dce_fix;
+extern int rfc1510_bitstring;
+
+extern int error_flag;
 
 #endif /* __GEN_LOCL_H__ */

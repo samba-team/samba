@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -1051,28 +1051,27 @@ spnego_accept_sec_context
 }
 
 OM_uint32
-gss_accept_sec_context(
-	OM_uint32 * minor_status,
-	gss_ctx_id_t * context_handle,
-	const gss_cred_id_t acceptor_cred_handle,
-	const gss_buffer_t input_token,
-	const gss_channel_bindings_t input_chan_bindings,
-	gss_name_t * src_name,
-	gss_OID * actual_mech_type,
-	gss_buffer_t output_token,
-	OM_uint32 * ret_flags,
-	OM_uint32 * time_rec,
-	gss_cred_id_t * delegated_cred_handle)
+gss_accept_sec_context
+           (OM_uint32 * minor_status,
+            gss_ctx_id_t * context_handle,
+            const gss_cred_id_t acceptor_cred_handle,
+            const gss_buffer_t input_token_buffer,
+            const gss_channel_bindings_t input_chan_bindings,
+            gss_name_t * src_name,
+            gss_OID * mech_type,
+            gss_buffer_t output_token,
+            OM_uint32 * ret_flags,
+            OM_uint32 * time_rec,
+            gss_cred_id_t * delegated_cred_handle
+           )
 {
-	ssize_t mech_len;
-	const u_char *p;
+    ssize_t mech_len;
+    const u_char *p;
 
-	GSSAPI_KRB5_INIT ();
-
-	*minor_status = 0;
+    *minor_status = 0;
 
 	if (src_name)			*src_name		= GSS_C_NO_NAME;
-	if (actual_mech_type)		*actual_mech_type	= GSS_C_NO_OID;
+    if (mech_type)		*mech_type	= GSS_C_NO_OID;
 
 	output_token->length = 0;
 	output_token->value  = NULL;
@@ -1081,8 +1080,8 @@ gss_accept_sec_context(
 	if (time_rec)			*time_rec		= 0;
 	if (delegated_cred_handle)	*delegated_cred_handle	= NULL;
 
-	mech_len = gssapi_krb5_get_mech(input_token->value,
-					input_token->length,
+	mech_len = gssapi_krb5_get_mech(input_token_buffer->value,
+					input_token_buffer->length,
 					&p);
 
 	/* This could be 'dce style' kerberos, where the OID is missing :-( */
@@ -1091,10 +1090,10 @@ gss_accept_sec_context(
 		return gsskrb5_accept_sec_context(minor_status,
 						  context_handle,
 						  acceptor_cred_handle,
-						  input_token,
+						  input_token_buffer,
 						  input_chan_bindings,
 						  src_name,
-						  actual_mech_type,
+						  mech_type,
 						  output_token,
 						  ret_flags,
 						  time_rec,
@@ -1104,10 +1103,10 @@ gss_accept_sec_context(
 		return spnego_accept_sec_context(minor_status,
 						 context_handle,
 						 acceptor_cred_handle,
-						 input_token,
+						 input_token_buffer,
 						 input_chan_bindings,
 						 src_name,
-						 actual_mech_type,
+						 mech_type,
 						 output_token,
 						 ret_flags,
 						 time_rec,

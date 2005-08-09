@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id: crypto.c,v 1.123 2005/06/29 22:20:33 lha Exp $");
+RCSID("$Id: crypto.c,v 1.128 2005/07/20 07:22:43 lha Exp $");
 
 #undef CRYPTO_DEBUG
 #ifdef CRYPTO_DEBUG
@@ -2124,7 +2124,8 @@ verify_checksum(krb5_context context,
 	return KRB5_PROG_SUMTYPE_NOSUPP;
     }
     if(ct->checksumsize != cksum->checksum.length) {
-	krb5_clear_error_string (context);
+	krb5_set_error_string (context, "checksum length was %d, but should be %d for checksum type %s",
+			       cksum->checksum.length, ct->checksumsize, ct->name);
 	return KRB5KRB_AP_ERR_BAD_INTEGRITY; /* XXX */
     }
     keyed_checksum = (ct->flags & F_KEYED) != 0;
@@ -2145,8 +2146,11 @@ verify_checksum(krb5_context context,
 
     (*ct->checksum)(context, dkey, data, len, usage, &c);
 
-    if(c.checksum.length != cksum->checksum.length || 
-       memcmp(c.checksum.data, cksum->checksum.data, c.checksum.length)) {
+    if(c.checksum.length != cksum->checksum.length) {
+ 	krb5_set_error_string (context, "(INTERNAL ERROR) our checksum length was %d, but should be %d for checksum type %s",
+			       c.checksum.length, ct->checksumsize, ct->name);
+	ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
+    } else if (memcmp(c.checksum.data, cksum->checksum.data, c.checksum.length)) {
 	krb5_clear_error_string (context);
 	ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
     } else {
@@ -3246,7 +3250,7 @@ static krb5_error_code
 encrypt_internal_derived(krb5_context context,
 			 krb5_crypto crypto,
 			 unsigned usage,
-			 void *data,
+			 const void *data,
 			 size_t len,
 			 krb5_data *result,
 			 void *ivec)
@@ -3315,7 +3319,7 @@ encrypt_internal_derived(krb5_context context,
 static krb5_error_code
 encrypt_internal(krb5_context context,
 		 krb5_crypto crypto,
-		 void *data,
+		 const void *data,
 		 size_t len,
 		 krb5_data *result,
 		 void *ivec)
@@ -3395,7 +3399,7 @@ static krb5_error_code
 encrypt_internal_special(krb5_context context,
 			 krb5_crypto crypto,
 			 int usage,
-			 void *data,
+			 const void *data,
 			 size_t len,
 			 krb5_data *result,
 			 void *ivec)
@@ -3624,7 +3628,7 @@ krb5_error_code KRB5_LIB_FUNCTION
 krb5_encrypt_ivec(krb5_context context,
 		  krb5_crypto crypto,
 		  unsigned usage,
-		  void *data,
+		  const void *data,
 		  size_t len,
 		  krb5_data *result,
 		  void *ivec)
@@ -3643,7 +3647,7 @@ krb5_error_code KRB5_LIB_FUNCTION
 krb5_encrypt(krb5_context context,
 	     krb5_crypto crypto,
 	     unsigned usage,
-	     void *data,
+	     const void *data,
 	     size_t len,
 	     krb5_data *result)
 {
@@ -4228,13 +4232,8 @@ wrapped_length (krb5_context context,
 {
     struct encryption_type *et = crypto->et;
     size_t padsize = et->padsize;
-    size_t checksumsize;
+    size_t checksumsize = CHECKSUMSIZE(et->checksum);
     size_t res;
-
-    if (et->keyed_checksum)
-	checksumsize = et->keyed_checksum->checksumsize;
-    else
-	checksumsize = et->checksum->checksumsize;
 
     res =  et->confoundersize + checksumsize + data_len;
     res =  (res + padsize - 1) / padsize * padsize;
@@ -4305,6 +4304,65 @@ krb5_random_to_key(krb5_context context,
 
     return 0;
 }
+
+krb5_error_code
+_krb5_pk_octetstring2key(krb5_context context,
+			 krb5_enctype type,
+			 const void *dhdata,
+			 size_t dhsize,
+			 const heim_octet_string *c_n,
+			 const heim_octet_string *k_n,
+			 krb5_keyblock *key)
+{
+    struct encryption_type *et = _find_enctype(type);
+    krb5_error_code ret;
+    size_t keylen, offset;
+    void *keydata;
+    unsigned char counter;
+    unsigned char shaoutput[20];
+
+    if(et == NULL) {
+	krb5_set_error_string(context, "encryption type %d not supported",
+			      type);
+	return KRB5_PROG_ETYPE_NOSUPP;
+    }
+    keylen = (et->keytype->bits + 7) / 8;
+
+    keydata = malloc(keylen);
+    if (keydata == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	return ENOMEM;
+    }
+
+    counter = 0;
+    offset = 0;
+    do {
+	SHA_CTX m;
+	
+	SHA1_Init(&m);
+	SHA1_Update(&m, &counter, 1);
+	SHA1_Update(&m, dhdata, dhsize);
+	if (c_n)
+	    SHA1_Update(&m, c_n->data, c_n->length);
+	if (k_n)
+	    SHA1_Update(&m, k_n->data, k_n->length);
+	SHA1_Final(shaoutput, &m);
+
+	memcpy((unsigned char *)keydata + offset,
+	       shaoutput,
+	       min(keylen - offset, sizeof(shaoutput)));
+
+	offset += sizeof(shaoutput);
+	counter++;
+    } while(offset < keylen);
+    memset(shaoutput, 0, sizeof(shaoutput));
+
+    ret = krb5_random_to_key(context, type, keydata, keylen, key);
+    memset(keydata, 0, sizeof(keylen));
+    free(keydata);
+    return ret;
+}
+
 
 #ifdef CRYPTO_DEBUG
 

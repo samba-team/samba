@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002, 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003-2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,33 +31,25 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: der_locl.h,v 1.6 2005/07/12 06:27:22 lha Exp $ */
+#ifndef __HEIM_ANY_H__
+#define __HEIM_ANY_H__ 1
 
-#ifndef __DER_LOCL_H__
-#define __DER_LOCL_H__
+typedef struct heim_octet_string heim_any;
+typedef struct heim_octet_string heim_any_set;
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <limits.h>
-#include <ctype.h>
-#include <time.h>
-#include <errno.h>
-#include <roken.h>
+int	encode_heim_any(unsigned char *, size_t, const heim_any *, size_t *);
+int	decode_heim_any(const unsigned char *, size_t, heim_any *, size_t *);
+void	free_heim_any(heim_any *);
+size_t	length_heim_any(const heim_any *);
+int	copy_heim_any(const heim_any *, heim_any *);
 
-#include <asn1-common.h>
-#include <asn1_err.h>
-#include <der.h>
+int	encode_heim_any_set(unsigned char *, size_t,
+			    const heim_any_set *, size_t *);
+int	decode_heim_any_set(const unsigned char *, size_t,
+			    heim_any_set *,size_t *);
+void	free_heim_any_set(heim_any_set *);
+size_t	length_heim_any_set(const heim_any_set *);
+int	copy_heim_any_set(const heim_any_set *, heim_any_set *);
+int	heim_any_cmp(const heim_any_set *, const heim_any_set *);
 
-#ifndef HAVE_TIMEGM
-time_t timegm (struct tm *);
-#endif
-
-size_t _heim_len_unsigned (unsigned);
-size_t _heim_len_int (int);
-
-#endif /* __DER_LOCL_H__ */
+#endif /* __HEIM_ANY_H__ */

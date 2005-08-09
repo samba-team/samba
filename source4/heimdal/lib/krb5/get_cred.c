@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: get_cred.c,v 1.107 2005/06/16 22:57:14 lha Exp $");
+RCSID("$Id: get_cred.c,v 1.108 2005/07/13 07:38:02 lha Exp $");
 
 /*
  * Take the `body' and encode it into `padata' using the credentials
@@ -837,10 +837,6 @@ krb5_get_credentials_with_flags(krb5_context context,
     if (in_creds->session.keytype)
 	options |= KRB5_TC_MATCH_KEYTYPE;
 
-    ret = krb5_cc_retrieve_cred(context,
-				ccache,
-				options,
-				in_creds, res_creds);
     /* 
      * If we got a credential, check if credential is expired before
      * returning it.

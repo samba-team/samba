@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: keytab_file.c,v 1.18 2005/05/31 21:50:43 lha Exp $");
+RCSID("$Id: keytab_file.c,v 1.20 2005/07/13 06:08:07 lha Exp $");
 
 #define KRB5_KT_VNO_1 1
 #define KRB5_KT_VNO_2 2
@@ -332,6 +332,12 @@ fkt_start_seq_get_int(krb5_context context,
 	return ret;
     }
     c->sp = krb5_storage_from_fd(c->fd);
+    if (c->sp == NULL) {
+	_krb5_xunlock(context, c->fd);
+	close(c->fd);
+	krb5_set_error_string (context, "malloc: out of memory");
+	return ENOMEM;
+    }
     krb5_storage_set_eof_code(c->sp, KRB5_KT_END);
     ret = krb5_ret_int8(c->sp, &pvno);
     if(ret) {

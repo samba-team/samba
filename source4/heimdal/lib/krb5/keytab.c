@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: keytab.c,v 1.60 2005/05/19 14:04:45 lha Exp $");
+RCSID("$Id: keytab.c,v 1.62 2005/07/06 01:14:42 lha Exp $");
 
 /*
  * Register a new keytab in `ops'
@@ -240,8 +240,8 @@ krb5_kt_get_name(krb5_context context,
 }
 
 /*
- * Finish using the keytab in `id'.  All resources will be released.
- * Return 0 or an error.
+ * Finish using the keytab in `id'.  All resources will be released,
+ * even on errors.  Return 0 or an error.
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -251,8 +251,8 @@ krb5_kt_close(krb5_context context,
     krb5_error_code ret;
 
     ret = (*id->close)(context, id);
-    if(ret == 0)
-	free(id);
+    memset(id, 0, sizeof(*id));
+    free(id);
     return ret;
 }
 
@@ -302,8 +302,10 @@ krb5_kt_get_entry(krb5_context context,
 	return (*id->get)(context, id, principal, kvno, enctype, entry);
 
     ret = krb5_kt_start_seq_get (context, id, &cursor);
-    if (ret)
+    if (ret) {
+	krb5_clear_error_string(context);
 	return KRB5_KT_NOTFOUND; /* XXX i.e. file not found */
+    }
 
     entry->vno = 0;
     while (krb5_kt_next_entry(context, id, &tmp, &cursor) == 0) {

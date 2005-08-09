@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -33,45 +33,24 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: gai_strerror.c,v 1.7 2005/08/05 09:31:35 lha Exp $");
+RCSID("$Id: ecalloc.c,v 1.2 2005/04/12 11:28:36 lha Exp $");
 #endif
 
-#include "roken.h"
+#include <stdlib.h>
+#include <err.h>
 
-static struct gai_error {
-    int code;
-    const char *str;
-} errors[] = {
-{EAI_NOERROR,		"no error"},
-#ifdef EAI_ADDRFAMILY
-{EAI_ADDRFAMILY,	"address family for nodename not supported"},
-#endif
-{EAI_AGAIN,		"temporary failure in name resolution"},
-{EAI_BADFLAGS,		"invalid value for ai_flags"},
-{EAI_FAIL,		"non-recoverable failure in name resolution"},
-{EAI_FAMILY,		"ai_family not supported"},
-{EAI_MEMORY,		"memory allocation failure"},
-#ifdef EAI_NODATA
-{EAI_NODATA,		"no address associated with nodename"},
-#endif
-{EAI_NONAME,		"nodename nor servname provided, or not known"},
-{EAI_SERVICE,		"servname not supported for ai_socktype"},
-{EAI_SOCKTYPE,		"ai_socktype not supported"},
-{EAI_SYSTEM,		"system error returned in errno"},
-{0,			NULL},
-};
+#include <roken.h>
 
 /*
- *
+ * Like calloc but never fails.
  */
 
-const char * ROKEN_LIB_FUNCTION
-gai_strerror(int ecode)
+void * ROKEN_LIB_FUNCTION
+ecalloc (size_t number, size_t size)
 {
-    struct gai_error *g;
+    void *tmp = calloc (number, size);
 
-    for (g = errors; g->str != NULL; ++g)
-	if (g->code == ecode)
-	    return g->str;
-    return "unknown error code in gai_strerror";
+    if (tmp == NULL && number * size != 0)
+	errx (1, "calloc %lu failed", (unsigned long)number * size);
+    return tmp;
 }

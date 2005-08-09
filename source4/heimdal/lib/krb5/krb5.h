@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: krb5.h,v 1.236 2005/06/11 00:05:24 lha Exp $ */
+/* $Id: krb5.h,v 1.237 2005/07/09 14:47:21 lha Exp $ */
 
 #ifndef __KRB5_H__
 #define __KRB5_H__
@@ -567,8 +567,8 @@ typedef struct krb5_auth_context_data {
   
     krb5_rcache rcache;
 
-    krb5_keytype keytype;	/* ¿requested key type ? */
-    krb5_cksumtype cksumtype;	/* ¡requested checksum type! */
+    krb5_keytype keytype;	/* Â¿requested key type ? */
+    krb5_cksumtype cksumtype;	/* Â¡requested checksum type! */
   
 }krb5_auth_context_data, *krb5_auth_context;
 
@@ -617,28 +617,28 @@ typedef struct _krb5_prompt {
     krb5_prompt_type type;
 } krb5_prompt;
 
-typedef int (*krb5_prompter_fct)(krb5_context context,
-				 void *data,
-				 const char *name,
-				 const char *banner,
-				 int num_prompts,
-				 krb5_prompt prompts[]);
-typedef krb5_error_code (*krb5_key_proc)(krb5_context context,
-					 krb5_enctype type,
-					 krb5_salt salt,
-					 krb5_const_pointer keyseed,
-					 krb5_keyblock **key);
-typedef krb5_error_code (*krb5_decrypt_proc)(krb5_context context,
-					     krb5_keyblock *key,
-					     krb5_key_usage usage,
-					     krb5_const_pointer decrypt_arg,
-					     krb5_kdc_rep *dec_rep);
-typedef krb5_error_code (*krb5_s2k_proc)(krb5_context context,
-					 krb5_enctype type,
-					 krb5_const_pointer keyseed,
-					 krb5_salt salt,
-					 krb5_data *s2kparms,
-					 krb5_keyblock **key);
+typedef int (*krb5_prompter_fct)(krb5_context /*context*/,
+				 void * /*data*/,
+				 const char * /*name*/,
+				 const char * /*banner*/,
+				 int /*num_prompts*/,
+				 krb5_prompt /*prompts*/[]);
+typedef krb5_error_code (*krb5_key_proc)(krb5_context /*context*/,
+					 krb5_enctype /*type*/,
+					 krb5_salt /*salt*/,
+					 krb5_const_pointer /*keyseed*/,
+					 krb5_keyblock ** /*key*/);
+typedef krb5_error_code (*krb5_decrypt_proc)(krb5_context /*context*/,
+					     krb5_keyblock * /*key*/,
+					     krb5_key_usage /*usage*/,
+					     krb5_const_pointer /*decrypt_arg*/,
+					     krb5_kdc_rep * /*dec_rep*/);
+typedef krb5_error_code (*krb5_s2k_proc)(krb5_context /*context*/,
+					 krb5_enctype /*type*/,
+					 krb5_const_pointer /*keyseed*/,
+					 krb5_salt /*salt*/,
+					 krb5_data * /*s2kparms*/,
+					 krb5_keyblock ** /*key*/);
 
 struct _krb5_get_init_creds_opt_private;
 

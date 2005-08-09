@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: parse.y,v 1.23 2004/10/13 17:41:48 lha Exp $ */
+/* $Id: parse.y,v 1.24 2005/07/12 06:27:35 lha Exp $ */
 
 %{
 #ifdef HAVE_CONFIG_H
@@ -43,223 +43,770 @@
 #include "symbol.h"
 #include "lex.h"
 #include "gen_locl.h"
+#include "der.h"
 
-RCSID("$Id: parse.y,v 1.23 2004/10/13 17:41:48 lha Exp $");
+RCSID("$Id: parse.y,v 1.24 2005/07/12 06:27:35 lha Exp $");
 
 static Type *new_type (Typetype t);
+static Type *new_tag(int tagclass, int tagvalue, int tagenv, Type *oldtype);
 void yyerror (char *);
+static struct objid *new_objid(const char *label, int value);
+static void add_oid_to_tail(struct objid *, struct objid *);
+static void fix_labels(Symbol *s);
 
-static void append (Member *l, Member *r);
+struct string_list {
+    char *string;
+    struct string_list *next;
+};
 
 %}
 
 %union {
-  int constant;
-  char *name;
-  Type *type;
-  Member *member;
-  char *defval;
+    int constant;
+    struct value *value;
+    struct range range;
+    char *name;
+    Type *type;
+    Member *member;
+    struct objid *objid;
+    char *defval;
+    struct string_list *sl;
+    struct tagtype tag;
+    struct memhead *members;
 }
 
-%token INTEGER SEQUENCE CHOICE OF OCTET STRING GeneralizedTime GeneralString 
-%token BIT APPLICATION OPTIONAL EEQUAL TBEGIN END DEFINITIONS ENUMERATED
-%token UTF8String NULLTYPE
-%token EXTERNAL DEFAULT
-%token DOTDOT DOTDOTDOT
-%token BOOLEAN
-%token IMPORTS FROM
-%token OBJECT IDENTIFIER
-%token <name> IDENT 
-%token <constant> CONSTANT
+%token kw_ABSENT
+%token kw_ABSTRACT_SYNTAX
+%token kw_ALL
+%token kw_APPLICATION
+%token kw_AUTOMATIC
+%token kw_BEGIN
+%token kw_BIT
+%token kw_BMPString
+%token kw_BOOLEAN
+%token kw_BY
+%token kw_CHARACTER
+%token kw_CHOICE
+%token kw_CLASS
+%token kw_COMPONENT
+%token kw_COMPONENTS
+%token kw_CONSTRAINED
+%token kw_CONTAINING
+%token kw_DEFAULT
+%token kw_DEFINITIONS
+%token kw_EMBEDDED
+%token kw_ENCODED
+%token kw_END
+%token kw_ENUMERATED
+%token kw_EXCEPT
+%token kw_EXPLICIT
+%token kw_EXPORTS
+%token kw_EXTENSIBILITY
+%token kw_EXTERNAL
+%token kw_FALSE
+%token kw_FROM
+%token kw_GeneralString
+%token kw_GeneralizedTime
+%token kw_GraphicString
+%token kw_IA5String
+%token kw_IDENTIFIER
+%token kw_IMPLICIT
+%token kw_IMPLIED
+%token kw_IMPORTS
+%token kw_INCLUDES
+%token kw_INSTANCE
+%token kw_INTEGER
+%token kw_INTERSECTION
+%token kw_ISO646String
+%token kw_MAX
+%token kw_MIN
+%token kw_MINUS_INFINITY
+%token kw_NULL
+%token kw_NumericString
+%token kw_OBJECT
+%token kw_OCTET
+%token kw_OF
+%token kw_OPTIONAL
+%token kw_ObjectDescriptor
+%token kw_PATTERN
+%token kw_PDV
+%token kw_PLUS_INFINITY
+%token kw_PRESENT
+%token kw_PRIVATE
+%token kw_PrintableString
+%token kw_REAL
+%token kw_RELATIVE_OID
+%token kw_SEQUENCE
+%token kw_SET
+%token kw_SIZE
+%token kw_STRING
+%token kw_SYNTAX
+%token kw_T61String
+%token kw_TAGS
+%token kw_TRUE
+%token kw_TYPE_IDENTIFIER
+%token kw_TeletexString
+%token kw_UNION
+%token kw_UNIQUE
+%token kw_UNIVERSAL
+%token kw_UTCTime
+%token kw_UTF8String
+%token kw_UniversalString
+%token kw_VideotexString
+%token kw_VisibleString
+%token kw_WITH
 
-%type <constant> constant optional2
-%type <type> type
-%type <member> memberdecls memberdecl memberdeclstart bitdecls bitdecl
+%token RANGE
+%token EEQUAL
+%token ELLIPSIS
 
-%type <defval> defvalue
+%token <name> IDENTIFIER  referencename
+%token <name> STRING
 
-%start envelope
+%token <constant> NUMBER
+%type <constant> SignedNumber
+%type <constant> Class tagenv
+
+%type <value> Value
+%type <value> BuiltinValue
+%type <value> IntegerValue
+%type <value> BooleanValue
+%type <value> ObjectIdentifierValue
+%type <value> CharacterStringValue
+%type <value> NullValue
+%type <value> DefinedValue
+%type <value> ReferencedValue
+%type <value> Valuereference
+
+%type <type> Type
+%type <type> BuiltinType
+%type <type> BitStringType
+%type <type> BooleanType
+%type <type> ChoiceType
+%type <type> EnumeratedType
+%type <type> IntegerType
+%type <type> NullType
+%type <type> OctetStringType
+%type <type> SequenceType
+%type <type> SequenceOfType
+%type <type> SetType
+%type <type> SetOfType
+%type <type> TaggedType
+%type <type> ReferencedType
+%type <type> DefinedType
+%type <type> UsefulType
+%type <type> ObjectIdentifierType
+%type <type> CharacterStringType
+%type <type> RestrictedCharactedStringType
+
+%type <tag> Tag
+
+%type <member> ComponentType
+%type <member> NamedBit
+%type <member> NamedNumber
+%type <member> NamedType
+%type <members> ComponentTypeList 
+%type <members> Enumerations
+%type <members> NamedBitList
+%type <members> NamedNumberList
+
+%type <objid> objid objid_list objid_element objid_opt
+%type <range> range
+
+%type <sl> referencenames
+
+%start ModuleDefinition
 
 %%
 
-envelope	: IDENT DEFINITIONS EEQUAL TBEGIN specification END {}
-		;
-
-specification	:
-		| specification declaration
-		;
-
-declaration	: imports_decl
-		| type_decl
-		| constant_decl
-		;
-
-referencenames	: IDENT ',' referencenames
+ModuleDefinition: IDENTIFIER kw_DEFINITIONS TagDefault ExtensionDefault
+			EEQUAL kw_BEGIN ModuleBody kw_END
 		{
-			Symbol *s = addsym($1);
+			checkundefined();
+		}
+		;
+
+TagDefault	: kw_EXPLICIT kw_TAGS
+		| kw_IMPLICIT kw_TAGS
+		      { error_message("implicit tagging is not supported"); }
+		| kw_AUTOMATIC kw_TAGS
+		      { error_message("automatic tagging is not supported"); }
+		| /* empty */
+		;
+
+ExtensionDefault: kw_EXTENSIBILITY kw_IMPLIED
+		      { error_message("no extensibility options supported"); }
+		| /* empty */
+		;
+
+ModuleBody	: /* Exports */ Imports AssignmentList
+		| /* empty */
+		;
+
+Imports		: kw_IMPORTS SymbolsImported ';'
+		| /* empty */
+		;
+
+SymbolsImported	: SymbolsFromModuleList
+		| /* empty */
+		;
+
+SymbolsFromModuleList: SymbolsFromModule
+		| SymbolsFromModuleList SymbolsFromModule
+		;
+
+SymbolsFromModule: referencenames kw_FROM IDENTIFIER objid_opt
+		{ 
+		    struct string_list *sl;
+		    for(sl = $1; sl != NULL; sl = sl->next) {
+			Symbol *s = addsym(sl->string);
 			s->stype = Stype;
+		    }
+		    add_import($3);
 		}
-		| IDENT
+		;
+
+AssignmentList	: Assignment
+		| Assignment AssignmentList
+		;
+
+Assignment	: TypeAssignment
+		| ValueAssignment
+		;
+
+referencenames	: IDENTIFIER ',' referencenames
 		{
-			Symbol *s = addsym($1);
-			s->stype = Stype;
+		    $$ = emalloc(sizeof(*$$));
+		    $$->string = $1;
+		    $$->next = $3;
 		}
-		;
-
-imports_decl	: IMPORTS referencenames FROM IDENT ';'
-		{ add_import($4); }
-		;
-
-type_decl	: IDENT EEQUAL type
+		| IDENTIFIER
 		{
-		  Symbol *s = addsym ($1);
-		  s->stype = Stype;
-		  s->type = $3;
-		  generate_type (s);
+		    $$ = emalloc(sizeof(*$$));
+		    $$->string = $1;
+		    $$->next = NULL;
 		}
 		;
 
-constant_decl	: IDENT type EEQUAL constant
+TypeAssignment	: IDENTIFIER EEQUAL Type
 		{
-		  Symbol *s = addsym ($1);
-		  s->stype = SConstant;
-		  s->constant = $4;
-		  generate_constant (s);
+		    Symbol *s = addsym ($1);
+		    s->stype = Stype;
+		    s->type = $3;
+		    fix_labels(s);
+		    generate_type (s);
 		}
 		;
 
-type		: INTEGER     { $$ = new_type(TInteger); }
-		| INTEGER '(' constant DOTDOT constant ')' {
-		    if($3 != 0)
-			error_message("Only 0 supported as low range");
-		    if($5 != INT_MIN && $5 != UINT_MAX && $5 != INT_MAX)
-			error_message("Only %u supported as high range",
-				      UINT_MAX);
-		    $$ = new_type(TUInteger);
+Type		: BuiltinType
+		| ReferencedType
+		;
+
+BuiltinType	: BitStringType
+		| BooleanType
+		| CharacterStringType
+		| ChoiceType
+		| EnumeratedType
+		| IntegerType
+		| NullType
+		| ObjectIdentifierType
+		| OctetStringType
+		| SequenceType
+		| SequenceOfType
+		| SetType
+		| SetOfType
+		| TaggedType
+		;
+
+BooleanType	: kw_BOOLEAN
+		{
+			$$ = new_tag(ASN1_C_UNIV, UT_Boolean, 
+				     TE_EXPLICIT, new_type(TBoolean));
 		}
-                | INTEGER '{' bitdecls '}'
-                {
+		;
+
+range		: '(' Value RANGE Value ')'
+		{
+			if($2->type != integervalue || 
+			   $4->type != integervalue)
+				error_message("Non-integer value used in range");
+			$$.min = $2->u.integervalue;
+			$$.max = $4->u.integervalue;
+		}
+		;
+
+IntegerType	: kw_INTEGER
+		{
+			$$ = new_tag(ASN1_C_UNIV, UT_Integer, 
+				     TE_EXPLICIT, new_type(TInteger));
+		}
+		| kw_INTEGER range
+		{
 			$$ = new_type(TInteger);
-			$$->members = $3;
-                }
-		| OBJECT IDENTIFIER { $$ = new_type(TOID); }
-		| ENUMERATED '{' bitdecls '}'
-		{
-			$$ = new_type(TEnumerated);
-			$$->members = $3;
+			$$->range = emalloc(sizeof(*$$->range));
+			*($$->range) = $2;
+			$$ = new_tag(ASN1_C_UNIV, UT_Integer, TE_EXPLICIT, $$);
 		}
-		| OCTET STRING { $$ = new_type(TOctetString); }
-		| GeneralString { $$ = new_type(TGeneralString); }
-		| UTF8String { $$ = new_type(TUTF8String); }
-                | NULLTYPE { $$ = new_type(TNull); }
-		| GeneralizedTime { $$ = new_type(TGeneralizedTime); }
-		| SEQUENCE OF type
+		| kw_INTEGER '{' NamedNumberList '}'
 		{
-		  $$ = new_type(TSequenceOf);
-		  $$->subtype = $3;
+		  $$ = new_type(TInteger);
+		  $$->members = $3;
+		  $$ = new_tag(ASN1_C_UNIV, UT_Integer, TE_EXPLICIT, $$);
 		}
-		| SEQUENCE '{' memberdecls '}'
+		;
+
+NamedNumberList	: NamedNumber
+		{
+			$$ = emalloc(sizeof(*$$));
+			ASN1_TAILQ_INIT($$);
+			ASN1_TAILQ_INSERT_HEAD($$, $1, members);
+		}
+		| NamedNumberList ',' NamedNumber
+		{
+			ASN1_TAILQ_INSERT_TAIL($1, $3, members);
+			$$ = $1;
+		}
+		| NamedNumberList ',' ELLIPSIS
+			{ $$ = $1; } /* XXX used for Enumerations */
+		;
+
+NamedNumber	: IDENTIFIER '(' SignedNumber ')'
+		{
+			$$ = emalloc(sizeof(*$$));
+			$$->name = $1;
+			$$->gen_name = estrdup($1);
+			output_name ($$->gen_name);
+			$$->val = $3;
+			$$->optional = 0;
+			$$->ellipsis = 0;
+			$$->type = NULL;
+		}
+		;
+
+EnumeratedType	: kw_ENUMERATED '{' Enumerations '}'
+		{
+		  $$ = new_type(TInteger);
+		  $$->members = $3;
+		  $$ = new_tag(ASN1_C_UNIV, UT_Enumerated, TE_EXPLICIT, $$);
+		}
+		;
+
+Enumerations	: NamedNumberList /* XXX */
+		;
+
+BitStringType	: kw_BIT kw_STRING
+		{
+		  $$ = new_type(TBitString);
+		  $$->members = emalloc(sizeof(*$$->members));
+		  ASN1_TAILQ_INIT($$->members);
+		  $$ = new_tag(ASN1_C_UNIV, UT_BitString, TE_EXPLICIT, $$);
+		}
+		| kw_BIT kw_STRING '{' NamedBitList '}'
+		{
+		  $$ = new_type(TBitString);
+		  $$->members = $4;
+		  $$ = new_tag(ASN1_C_UNIV, UT_BitString, TE_EXPLICIT, $$);
+		}
+		;
+
+ObjectIdentifierType: kw_OBJECT kw_IDENTIFIER
+		{
+			$$ = new_tag(ASN1_C_UNIV, UT_OID, 
+				     TE_EXPLICIT, new_type(TOID));
+		}
+		;
+OctetStringType	: kw_OCTET kw_STRING
+		{
+			$$ = new_tag(ASN1_C_UNIV, UT_OctetString, 
+				     TE_EXPLICIT, new_type(TOctetString));
+		}
+		;
+
+NullType	: kw_NULL
+		{
+			$$ = new_tag(ASN1_C_UNIV, UT_Null, 
+				     TE_EXPLICIT, new_type(TNull));
+		}
+		;
+
+SequenceType	: kw_SEQUENCE '{' /* ComponentTypeLists */ ComponentTypeList '}'
 		{
 		  $$ = new_type(TSequence);
 		  $$->members = $3;
+		  $$ = new_tag(ASN1_C_UNIV, UT_Sequence, TE_EXPLICIT, $$);
 		}
-		| CHOICE '{' memberdecls '}'
+		| kw_SEQUENCE '{' '}'
+		{
+		  $$ = new_type(TSequence);
+		  $$->members = NULL;
+		  $$ = new_tag(ASN1_C_UNIV, UT_Sequence, TE_EXPLICIT, $$);
+		}
+		;
+
+SequenceOfType	: kw_SEQUENCE kw_OF Type
+		{
+		  $$ = new_type(TSequenceOf);
+		  $$->subtype = $3;
+		  $$ = new_tag(ASN1_C_UNIV, UT_Sequence, TE_EXPLICIT, $$);
+		}
+		;
+
+SetType		: kw_SET '{' /* ComponentTypeLists */ ComponentTypeList '}'
+		{
+		  $$ = new_type(TSet);
+		  $$->members = $3;
+		  $$ = new_tag(ASN1_C_UNIV, UT_Set, TE_EXPLICIT, $$);
+		}
+		| kw_SET '{' '}'
+		{
+		  $$ = new_type(TSet);
+		  $$->members = NULL;
+		  $$ = new_tag(ASN1_C_UNIV, UT_Set, TE_EXPLICIT, $$);
+		}
+		;
+
+SetOfType	: kw_SET kw_OF Type
+		{
+		  $$ = new_type(TSetOf);
+		  $$->subtype = $3;
+		  $$ = new_tag(ASN1_C_UNIV, UT_Set, TE_EXPLICIT, $$);
+		}
+		;
+
+ChoiceType	: kw_CHOICE '{' /* AlternativeTypeLists */ ComponentTypeList '}'
 		{
 		  $$ = new_type(TChoice);
 		  $$->members = $3;
 		}
-		| BIT STRING '{' bitdecls '}'
-		{
-		  $$ = new_type(TBitString);
-		  $$->members = $4;
-		}
-		| IDENT
+		;
+
+ReferencedType	: DefinedType
+		| UsefulType
+		;
+
+DefinedType	: IDENTIFIER
 		{
 		  Symbol *s = addsym($1);
 		  $$ = new_type(TType);
-		  if(s->stype != Stype)
+		  if(s->stype != Stype && s->stype != SUndefined)
 		    error_message ("%s is not a type\n", $1);
 		  else
 		    $$->symbol = s;
 		}
-		| '[' APPLICATION constant ']' type
+		;
+
+UsefulType	: kw_GeneralizedTime
 		{
-		  $$ = new_type(TApplication);
-		  $$->subtype = $5;
-		  $$->application = $3;
+			$$ = new_tag(ASN1_C_UNIV, UT_GeneralizedTime, 
+				     TE_EXPLICIT, new_type(TGeneralizedTime));
 		}
-		| BOOLEAN     { $$ = new_type(TBoolean); }
-		;
-
-memberdecls	: { $$ = NULL; }
-		| memberdecl	{ $$ = $1; }
-		| memberdecls  ',' DOTDOTDOT { $$ = $1; }
-		| memberdecls ',' memberdecl { $$ = $1; append($$, $3); }
-		;
-
-memberdeclstart : IDENT '[' constant ']' type
+		| kw_UTCTime
 		{
-		  $$ = malloc(sizeof(*$$));
-		  $$->name = $1;
-		  $$->gen_name = strdup($1);
-		  output_name ($$->gen_name);
-		  $$->val = $3;
-		  $$->optional = 0;
-		  $$->defval = NULL;
-		  $$->type = $5;
-		  $$->next = $$->prev = $$;
+			$$ = new_tag(ASN1_C_UNIV, UT_UTCTime, 
+				     TE_EXPLICIT, new_type(TUTCTime));
 		}
 		;
 
-
-memberdecl	: memberdeclstart optional2
-		{ $1->optional = $2 ; $$ = $1; }
-		| memberdeclstart defvalue
-		{ $1->defval = $2 ; $$ = $1; }
-		| memberdeclstart
-		{ $$ = $1; }
-		;
-
-
-optional2	: OPTIONAL { $$ = 1; }
-		;
-
-defvalue	: DEFAULT constant
-		{ asprintf(&$$, "%d", $2); }
-		| DEFAULT '"' IDENT '"'
-		{ $$ = strdup ($3); }
-		;
-
-bitdecls	: { $$ = NULL; }
-		| bitdecl { $$ = $1; }
-		| bitdecls ',' DOTDOTDOT { $$ = $1; }
-		| bitdecls ',' bitdecl { $$ = $1; append($$, $3); }
-		;
-
-bitdecl		: IDENT '(' constant ')'
+TaggedType	: Tag tagenv Type
 		{
-		  $$ = malloc(sizeof(*$$));
+			$$ = new_type(TTag);
+			$$->tag = $1;
+			$$->tag.tagenv = $2;
+			if($3->type == TTag && $2 == TE_IMPLICIT) {
+				$$->subtype = $3->subtype;
+				free($3);
+			} else
+				$$->subtype = $3;
+		}
+		;
+
+Tag		: '[' Class NUMBER ']'
+		{
+			$$.tagclass = $2;
+			$$.tagvalue = $3;
+			$$.tagenv = TE_EXPLICIT;
+		}
+		;
+
+Class		: /* */
+		{
+			$$ = ASN1_C_CONTEXT;
+		}
+		| kw_UNIVERSAL
+		{
+			$$ = ASN1_C_UNIV;
+		}
+		| kw_APPLICATION
+		{
+			$$ = ASN1_C_APPL;
+		}
+		| kw_PRIVATE
+		{
+			$$ = ASN1_C_PRIVATE;
+		}
+		;
+
+tagenv		: /* */
+		{
+			$$ = TE_EXPLICIT;
+		}
+		| kw_EXPLICIT
+		{
+			$$ = TE_EXPLICIT;
+		}
+		| kw_IMPLICIT
+		{
+			$$ = TE_IMPLICIT;
+		}
+		;
+
+
+ValueAssignment	: IDENTIFIER Type EEQUAL Value
+		{
+			Symbol *s;
+			s = addsym ($1);
+
+			s->stype = SValue;
+			s->value = $4;
+			generate_constant (s);
+		}
+		;
+
+CharacterStringType: RestrictedCharactedStringType
+		;
+
+RestrictedCharactedStringType: kw_GeneralString
+		{
+			$$ = new_tag(ASN1_C_UNIV, UT_GeneralString, 
+				     TE_EXPLICIT, new_type(TGeneralString));
+		}
+		| kw_UTF8String
+		{
+			$$ = new_tag(ASN1_C_UNIV, UT_UTF8String, 
+				     TE_EXPLICIT, new_type(TUTF8String));
+		}
+		| kw_PrintableString
+		{
+			$$ = new_tag(ASN1_C_UNIV, UT_PrintableString, 
+				     TE_EXPLICIT, new_type(TPrintableString));
+		}
+		| kw_IA5String
+		{
+			$$ = new_tag(ASN1_C_UNIV, UT_IA5String, 
+				     TE_EXPLICIT, new_type(TIA5String));
+		}
+		| kw_BMPString
+		{
+			$$ = new_tag(ASN1_C_UNIV, UT_BMPString, 
+				     TE_EXPLICIT, new_type(TBMPString));
+		}
+		| kw_UniversalString
+		{
+			$$ = new_tag(ASN1_C_UNIV, UT_UniversalString, 
+				     TE_EXPLICIT, new_type(TUniversalString));
+		}
+
+		;
+
+ComponentTypeList: ComponentType
+		{
+			$$ = emalloc(sizeof(*$$));
+			ASN1_TAILQ_INIT($$);
+			ASN1_TAILQ_INSERT_HEAD($$, $1, members);
+		}
+		| ComponentTypeList ',' ComponentType
+		{
+			ASN1_TAILQ_INSERT_TAIL($1, $3, members);
+			$$ = $1;
+		}
+		| ComponentTypeList ',' ELLIPSIS
+		{
+		        struct member *m = ecalloc(1, sizeof(*m));
+			m->name = estrdup("...");
+			m->gen_name = estrdup("asn1_ellipsis");
+			m->ellipsis = 1;
+			ASN1_TAILQ_INSERT_TAIL($1, m, members);
+			$$ = $1;
+		}
+		;
+
+NamedType	: IDENTIFIER Type
+		{
+		  $$ = emalloc(sizeof(*$$));
 		  $$->name = $1;
-		  $$->gen_name = strdup($1);
+		  $$->gen_name = estrdup($1);
+		  output_name ($$->gen_name);
+		  $$->type = $2;
+		  $$->ellipsis = 0;
+		}
+		;
+
+ComponentType	: NamedType
+		{
+			$$ = $1;
+			$$->optional = 0;
+			$$->defval = NULL;
+		}
+		| NamedType kw_OPTIONAL
+		{
+			$$ = $1;
+			$$->optional = 1;
+			$$->defval = NULL;
+		}
+		| NamedType kw_DEFAULT Value
+		{
+			$$ = $1;
+			$$->optional = 0;
+			$$->defval = $3;
+		}
+		;
+
+NamedBitList	: NamedBit
+		{
+			$$ = emalloc(sizeof(*$$));
+			ASN1_TAILQ_INIT($$);
+			ASN1_TAILQ_INSERT_HEAD($$, $1, members);
+		}
+		| NamedBitList ',' NamedBit
+		{
+			ASN1_TAILQ_INSERT_TAIL($1, $3, members);
+			$$ = $1;
+		}
+		;
+
+NamedBit	: IDENTIFIER '(' NUMBER ')'
+		{
+		  $$ = emalloc(sizeof(*$$));
+		  $$->name = $1;
+		  $$->gen_name = estrdup($1);
 		  output_name ($$->gen_name);
 		  $$->val = $3;
 		  $$->optional = 0;
+		  $$->ellipsis = 0;
 		  $$->type = NULL;
-		  $$->prev = $$->next = $$;
 		}
 		;
 
-constant	: CONSTANT	{ $$ = $1; }
-		| '-' CONSTANT	{ $$ = -$2; }
-		| IDENT	{
-				  Symbol *s = addsym($1);
-				  if(s->stype != SConstant)
-				    error_message ("%s is not a constant\n",
-						   s->name);
-				  else
-				    $$ = s->constant;
-				}
+objid_opt	: objid
+		| /* empty */ { $$ = NULL; }
 		;
+
+objid		: '{' objid_list '}'
+		{
+			$$ = $2;
+		}
+		;
+
+objid_list	:  /* empty */
+		{
+			$$ = NULL;
+		}
+		| objid_element objid_list
+		{
+		        if ($2) {
+				$$ = $2;
+				add_oid_to_tail($2, $1);
+			} else {
+				$$ = $1;
+			}
+		}
+		;
+
+objid_element	: IDENTIFIER '(' NUMBER ')'
+		{
+			$$ = new_objid($1, $3);
+		}
+		| IDENTIFIER
+		{
+		    Symbol *s = addsym($1);
+		    if(s->stype != SValue ||
+		       s->value->type != objectidentifiervalue) {
+			error_message("%s is not an object identifier\n", 
+				      s->name);
+			exit(1);
+		    }
+		    $$ = s->value->u.objectidentifiervalue;
+		}
+		| NUMBER
+		{
+		    $$ = new_objid(NULL, $1);
+		}
+		;
+
+Value		: BuiltinValue
+		| ReferencedValue
+		;
+
+BuiltinValue	: BooleanValue
+		| CharacterStringValue
+		| IntegerValue
+		| ObjectIdentifierValue
+		| NullValue
+		;
+
+ReferencedValue	: DefinedValue
+		;
+
+DefinedValue	: Valuereference
+		;
+
+Valuereference	: IDENTIFIER
+		{
+			Symbol *s = addsym($1);
+			if(s->stype != SValue)
+				error_message ("%s is not a value\n",
+						s->name);
+			else
+				$$ = s->value;
+		}
+		;
+
+CharacterStringValue: STRING
+		{
+			$$ = emalloc(sizeof(*$$));
+			$$->type = stringvalue;
+			$$->u.stringvalue = $1;
+		}
+		;
+
+BooleanValue	: kw_TRUE
+		{
+			$$ = emalloc(sizeof(*$$));
+			$$->type = booleanvalue;
+			$$->u.booleanvalue = 0;
+		}
+		| kw_FALSE
+		{
+			$$ = emalloc(sizeof(*$$));
+			$$->type = booleanvalue;
+			$$->u.booleanvalue = 0;
+		}
+		;
+
+IntegerValue	: SignedNumber
+		{
+			$$ = emalloc(sizeof(*$$));
+			$$->type = integervalue;
+			$$->u.integervalue = $1;
+		}
+		;
+
+SignedNumber	: NUMBER
+		;
+
+NullValue	: kw_NULL
+		{
+		}
+		;
+
+ObjectIdentifierValue: objid
+		{
+			$$ = emalloc(sizeof(*$$));
+			$$->type = objectidentifiervalue;
+			$$->u.objectidentifiervalue = $1;
+		}
+		;
+
 %%
 
 void
@@ -269,27 +816,80 @@ yyerror (char *s)
 }
 
 static Type *
-new_type (Typetype tt)
+new_tag(int tagclass, int tagvalue, int tagenv, Type *oldtype)
 {
-  Type *t = malloc(sizeof(*t));
-  if (t == NULL) {
-      error_message ("out of memory in malloc(%lu)", 
-		     (unsigned long)sizeof(*t));
-      exit (1);
-  }
-  t->type = tt;
-  t->application = 0;
-  t->members = NULL;
-  t->subtype = NULL;
-  t->symbol  = NULL;
-  return t;
+    Type *t;
+    if(oldtype->type == TTag && oldtype->tag.tagenv == TE_IMPLICIT) {
+	t = oldtype;
+	oldtype = oldtype->subtype; /* XXX */
+    } else
+	t = new_type (TTag);
+    
+    t->tag.tagclass = tagclass;
+    t->tag.tagvalue = tagvalue;
+    t->tag.tagenv = tagenv;
+    t->subtype = oldtype;
+    return t;
+}
+
+static struct objid *
+new_objid(const char *label, int value)
+{
+    struct objid *s;
+    s = emalloc(sizeof(*s));
+    s->label = label;
+    s->value = value;
+    s->next = NULL;
+    return s;
 }
 
 static void
-append (Member *l, Member *r)
+add_oid_to_tail(struct objid *head, struct objid *tail)
 {
-  l->prev->next = r;
-  r->prev = l->prev;
-  l->prev = r;
-  r->next = l;
+    struct objid *o;
+    o = head;
+    while (o->next)
+	o = o->next;
+    o->next = tail;
+}
+
+static Type *
+new_type (Typetype tt)
+{
+    Type *t = ecalloc(1, sizeof(*t));
+    t->type = tt;
+    return t;
+}
+
+static void fix_labels2(Type *t, const char *prefix);
+static void fix_labels1(struct memhead *members, const char *prefix)
+{
+    Member *m;
+
+    if(members == NULL)
+	return;
+    ASN1_TAILQ_FOREACH(m, members, members) {
+	asprintf(&m->label, "%s_%s", prefix, m->gen_name);
+	if (m->label == NULL)
+	    errx(1, "malloc");
+	if(m->type != NULL)
+	    fix_labels2(m->type, m->label);
+    }
+}
+
+static void fix_labels2(Type *t, const char *prefix)
+{
+    for(; t; t = t->subtype)
+	fix_labels1(t->members, prefix);
+}
+
+static void
+fix_labels(Symbol *s)
+{
+    char *p;
+    asprintf(&p, "choice_%s", s->gen_name);
+    if (p == NULL)
+	errx(1, "malloc");
+    fix_labels2(s->type, p);
+    free(p);
 }
