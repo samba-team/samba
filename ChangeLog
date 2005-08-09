@@ -1,3 +1,9 @@
+2005-08-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/db3.c (DB_open): catch errors from the d->open calls
+	instead of letting them slip though to d->cursor. Bug repport from
+	Andrew Bartlett <abartlet@samba.org>
+
 2005-07-29  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/Makefile.am (kdc_LDADD): add LDADD
