@@ -98,6 +98,24 @@ krb5_verify_opt_init(krb5_verify_opt *opt)
     opt->service = "host";
 }
 
+int KRB5_LIB_FUNCTION
+krb5_verify_opt_alloc(krb5_context context, krb5_verify_opt **opt)
+{
+    *opt = calloc(1, sizeof(**opt));
+    if ((*opt) == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	return ENOMEM;
+    }
+    krb5_verify_opt_init(*opt);
+    return 0;
+}
+
+void KRB5_LIB_FUNCTION
+krb5_verify_opt_free(krb5_verify_opt *opt)
+{
+    free(opt);
+}
+
 void KRB5_LIB_FUNCTION
 krb5_verify_opt_set_ccache(krb5_verify_opt *opt, krb5_ccache ccache)
 {
