@@ -1369,30 +1369,35 @@ check_tgs_flags(krb5_context context,
 	
     if(f.validate){
 	if(!tgt->flags.invalid || tgt->starttime == NULL){
-	    kdc_log(context, config, 0, "Bad request to validate ticket");
+	    kdc_log(context, config, 0,
+		    "Bad request to validate ticket");
 	    return KRB5KDC_ERR_BADOPTION;
 	}
 	if(*tgt->starttime > kdc_time){
-	    kdc_log(context, config, 0, "Early request to validate ticket");
+	    kdc_log(context, config, 0,
+		    "Early request to validate ticket");
 	    return KRB5KRB_AP_ERR_TKT_NYV;
 	}
 	/* XXX  tkt = tgt */
 	et->flags.invalid = 0;
     }else if(tgt->flags.invalid){
-	kdc_log(context, config, 0, "Ticket-granting ticket has INVALID flag set");
+	kdc_log(context, config, 0, 
+		"Ticket-granting ticket has INVALID flag set");
 	return KRB5KRB_AP_ERR_TKT_INVALID;
     }
 
     if(f.forwardable){
 	if(!tgt->flags.forwardable){
-	    kdc_log(context, config, 0, "Bad request for forwardable ticket");
+	    kdc_log(context, config, 0,
+		    "Bad request for forwardable ticket");
 	    return KRB5KDC_ERR_BADOPTION;
 	}
 	et->flags.forwardable = 1;
     }
     if(f.forwarded){
 	if(!tgt->flags.forwardable){
-	    kdc_log(context, config, 0, "Request to forward non-forwardable ticket");
+	    kdc_log(context, config, 0,
+		    "Request to forward non-forwardable ticket");
 	    return KRB5KDC_ERR_BADOPTION;
 	}
 	et->flags.forwarded = 1;
@@ -1855,7 +1860,8 @@ tgs_check_authenticator(krb5_context context,
     free(buf);
     krb5_crypto_destroy(context, crypto);
     if(ret){
-	kdc_log(context, config, 0, "Failed to verify checksum: %s", 
+	kdc_log(context, config, 0,
+		"Failed to verify authenticator checksum: %s", 
 		krb5_get_err_text(context, ret));
     }
 out:
