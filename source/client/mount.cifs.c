@@ -39,7 +39,7 @@
 #include <fcntl.h>
 
 #define MOUNT_CIFS_VERSION_MAJOR "1"
-#define MOUNT_CIFS_VERSION_MINOR "8"
+#define MOUNT_CIFS_VERSION_MINOR "9"
 
 #ifndef MOUNT_CIFS_VENDOR_SUFFIX
 #define MOUNT_CIFS_VENDOR_SUFFIX ""
@@ -127,8 +127,10 @@ static int open_cred_file(char * file_name)
 	if(fs == NULL)
 		return errno;
 	line_buf = malloc(4096);
-	if(line_buf == NULL)
+	if(line_buf == NULL) {
+		fclose(fs);
 		return -ENOMEM;
+	}
 
 	while(fgets(line_buf,4096,fs)) {
 		/* parse line from credential file */
@@ -570,12 +572,14 @@ static void check_for_comma(char ** ppasswrd)
 	char *pass;
 	int i,j;
 	int number_of_commas = 0;
-	int len = strlen(*ppasswrd);
+	int len;
 
 	if(ppasswrd == NULL)
 		return;
 	else 
 		(pass = *ppasswrd);
+
+	len = strlen(pass);
 
 	for(i=0;i<len;i++)  {
 		if(pass[i] == ',')
@@ -692,7 +696,6 @@ static char * parse_server(char ** punc_name)
 	char * ipaddress_string = NULL;
 	struct hostent * host_entry;
 	struct in_addr server_ipaddr;
-	int rc;
 
 	if(length > 1023) {
 		printf("mount error: UNC name too long");
@@ -715,6 +718,13 @@ static char * parse_server(char ** punc_name)
 			if(share) {
 				free_share_name = 1;
 				*punc_name = malloc(length+3);
+				if(*punc_name == NULL) {
+					/* put the original string back  if 
+					   no memory left */
+					*punc_name = unc_name;
+					return NULL;
+				}
+					
 				*share = '/';
 				strncpy((*punc_name)+2,unc_name,length);
 				unc_name = *punc_name;
@@ -744,8 +754,7 @@ continue_unc_parsing:
 					return NULL;
 				}
 				if(host_entry == NULL) {
-					printf("mount error: could not find target server. TCP name %s not found ", unc_name);
-					printf(" rc = %d\n",rc);
+					printf("mount error: could not find target server. TCP name %s not found\n", unc_name);
 					return NULL;
 				} else {
 					/* BB should we pass an alternate version of the share name as Unicode */
@@ -1018,6 +1027,9 @@ mount_retry:
 		optlen = 0;
 	if(share_name)
 		optlen += strlen(share_name) + 4;
+	else {
+		printf("No server share name specified\n");
+	}
 	if(user_name)
 		optlen += strlen(user_name) + 6;
 	if(ipaddr)
