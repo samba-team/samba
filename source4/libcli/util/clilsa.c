@@ -69,7 +69,7 @@ static NTSTATUS smblsa_connect(struct smbcli_state *cli)
 	tcon.tconx.in.password = data_blob(NULL, 0);
 	tcon.tconx.in.path = "ipc$";
 	tcon.tconx.in.device = "IPC";	
-	status = smb_tree_connect(lsa->ipc_tree, lsa, &tcon);
+	status = smb_raw_tcon(lsa->ipc_tree, lsa, &tcon);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lsa);
 		return status;

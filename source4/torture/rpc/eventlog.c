@@ -54,40 +54,44 @@ static BOOL test_GetNumRecords(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_ReadEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			      struct policy_handle *handle, uint32_t offset)
+			      struct policy_handle *handle)
 {
 	NTSTATUS status;
 	struct eventlog_ReadEventLogW r;
 
 	printf("\ntesting ReadEventLog\n");
 
+	r.in.offset = 0;
 	r.in.handle = handle;
 	r.in.flags = EVENTLOG_BACKWARDS_READ|EVENTLOG_SEQUENTIAL_READ;
-	r.in.offset = 0;
-	r.in.number_of_bytes = 0;
 
-	status = dcerpc_eventlog_ReadEventLogW(p, mem_ctx, &r);
+	while (1) {
+		r.in.number_of_bytes = 0;
+		r.out.data = NULL;
 
-	if (NT_STATUS_IS_OK(r.out.result)) {
-		/* No data */
-		return True;
+		status = dcerpc_eventlog_ReadEventLogW(p, mem_ctx, &r);
+
+		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_END_OF_FILE)) {
+			break;
+		}
+
+		if (!NT_STATUS_EQUAL(r.out.result, NT_STATUS_BUFFER_TOO_SMALL)) {
+			printf("ReadEventLog failed - %s\n", nt_errstr(r.out.result));
+			return False;
+		}
+		
+		r.in.number_of_bytes = r.out.real_size;
+		r.out.data = talloc_size(mem_ctx, r.in.number_of_bytes);
+
+		status = dcerpc_eventlog_ReadEventLogW(p, mem_ctx, &r);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("ReadEventLog failed - %s\n", nt_errstr(status));
+			return False;
+		}
+		
+		r.in.offset++;
 	}
-
-	if (!NT_STATUS_EQUAL(r.out.result, NT_STATUS_BUFFER_TOO_SMALL)) {
-		printf("ReadEventLog failed - %s\n", nt_errstr(r.out.result));
-		return False;
-	}
-
-	r.in.number_of_bytes = r.out.real_size;
-	r.out.data = talloc_size(mem_ctx, r.in.number_of_bytes);
-
-	status = dcerpc_eventlog_ReadEventLogW(p, mem_ctx, &r);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("ReadEventLog failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
 
 	return True;
 }
@@ -168,7 +172,7 @@ static BOOL test_OpenEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	unknown0.unknown1 = 0x0001;
 
 	r.in.unknown0 = &unknown0;
-	init_lsa_String(&r.in.logname, "system");
+	init_lsa_String(&r.in.logname, "dns server");
 	init_lsa_String(&r.in.servername, NULL);
 	r.in.unknown2 = 0x00000001;
 	r.in.unknown3 = 0x00000001;
@@ -221,7 +225,7 @@ BOOL torture_rpc_eventlog(void)
 	
 	ret &= test_GetNumRecords(p, mem_ctx, &handle);
 
-	ret &= test_ReadEventLog(p, mem_ctx, &handle, 0);
+	ret &= test_ReadEventLog(p, mem_ctx, &handle);
 
 	ret &= test_FlushEventLog(p, mem_ctx, &handle);
 
