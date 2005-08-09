@@ -78,7 +78,8 @@ struct smbcli_session *smbcli_session_init(struct smbcli_transport *transport,
 /****************************************************************************
  Perform a session setup (async send)
 ****************************************************************************/
-struct smbcli_request *smb_raw_session_setup_send(struct smbcli_session *session, union smb_sesssetup *parms) 
+struct smbcli_request *smb_raw_sesssetup_send(struct smbcli_session *session, 
+					      union smb_sesssetup *parms) 
 {
 	struct smbcli_request *req = NULL;
 
@@ -150,9 +151,9 @@ struct smbcli_request *smb_raw_session_setup_send(struct smbcli_session *session
 /****************************************************************************
  Perform a session setup (async recv)
 ****************************************************************************/
-NTSTATUS smb_raw_session_setup_recv(struct smbcli_request *req, 
-				    TALLOC_CTX *mem_ctx, 
-				    union smb_sesssetup *parms) 
+NTSTATUS smb_raw_sesssetup_recv(struct smbcli_request *req, 
+				TALLOC_CTX *mem_ctx, 
+				union smb_sesssetup *parms) 
 {
 	uint16_t len;
 	uint8_t *p;
@@ -222,11 +223,11 @@ failed:
 /*
  Perform a session setup (sync interface)
 */
-NTSTATUS smb_raw_session_setup(struct smbcli_session *session, TALLOC_CTX *mem_ctx, 
-			       union smb_sesssetup *parms) 
+NTSTATUS smb_raw_sesssetup(struct smbcli_session *session, 
+			   TALLOC_CTX *mem_ctx, union smb_sesssetup *parms) 
 {
-	struct smbcli_request *req = smb_raw_session_setup_send(session, parms);
-	return smb_raw_session_setup_recv(req, mem_ctx, parms);
+	struct smbcli_request *req = smb_raw_sesssetup_send(session, parms);
+	return smb_raw_sesssetup_recv(req, mem_ctx, parms);
 }
 
 

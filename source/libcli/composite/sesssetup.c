@@ -79,7 +79,7 @@ static void request_handler(struct smbcli_request *req)
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	DATA_BLOB null_data_blob = data_blob(NULL, 0);
 
-	c->status = smb_raw_session_setup_recv(req, state, &state->setup);
+	c->status = smb_raw_sesssetup_recv(req, state, &state->setup);
 
 	switch (state->setup.old.level) {
 	case RAW_SESSSETUP_OLD:
@@ -115,7 +115,7 @@ static void request_handler(struct smbcli_request *req)
 			smbcli_transport_simple_set_signing(session->transport, session_key, null_data_blob);
 		}
 
-		state->req = smb_raw_session_setup_send(session, &state->setup);
+		state->req = smb_raw_sesssetup_send(session, &state->setup);
 		state->req->async.fn = request_handler;
 		state->req->async.private = c;
 		return;
@@ -221,7 +221,7 @@ static struct smbcli_request *session_setup_nt1(struct composite_context *c,
 		return NULL;
 	}
 
-	return smb_raw_session_setup_send(session, &state->setup);
+	return smb_raw_sesssetup_send(session, &state->setup);
 }
 
 
@@ -256,7 +256,7 @@ static struct smbcli_request *session_setup_old(struct composite_context *c,
 								strlen(password));
 	}
 	
-	return smb_raw_session_setup_send(session, &state->setup);
+	return smb_raw_sesssetup_send(session, &state->setup);
 }
 
 
@@ -344,7 +344,7 @@ static struct smbcli_request *session_setup_spnego(struct composite_context *c,
 		smbcli_transport_simple_set_signing(session->transport, session_key, null_data_blob);
 	}
 
-	return smb_raw_session_setup_send(session, &state->setup);
+	return smb_raw_sesssetup_send(session, &state->setup);
 }
 
 
