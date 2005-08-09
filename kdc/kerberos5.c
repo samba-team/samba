@@ -186,22 +186,27 @@ log_timestamp(krb5_context context,
 	      KerberosTime authtime, KerberosTime *starttime, 
 	      KerberosTime endtime, KerberosTime *renew_till)
 {
-    char atime[100], stime[100], etime[100], rtime[100];
+    char authtime_str[100], starttime_str[100], 
+	endtime_str[100], renewtime_str[100];
     
-    krb5_format_time(context, authtime, atime, sizeof(atime), TRUE); 
+    krb5_format_time(context, authtime, 
+		     authtime_str, sizeof(authtime_str), TRUE); 
     if (starttime)
-	krb5_format_time(context, *starttime, stime, sizeof(stime), TRUE); 
+	krb5_format_time(context, *starttime, 
+			 starttime_str, sizeof(starttime_str), TRUE); 
     else
-	strlcpy(stime, "unset", sizeof(stime));
-    krb5_format_time(context, endtime, etime, sizeof(etime), TRUE); 
+	strlcpy(starttime_str, "unset", sizeof(starttime_str));
+    krb5_format_time(context, endtime, 
+		     endtime_str, sizeof(endtime_str), TRUE); 
     if (renew_till)
-	krb5_format_time(context, *renew_till, rtime, sizeof(rtime), TRUE); 
+	krb5_format_time(context, *renew_till, 
+			 renewtime_str, sizeof(renewtime_str), TRUE); 
     else
-	strlcpy(rtime, "unset", sizeof(rtime));
+	strlcpy(renewtime_str, "unset", sizeof(renewtime_str));
     
     kdc_log(context, config, 5,
 	    "%s authtime: %s starttime: %s endtype: %s renew till: %s",
-	    type, atime, stime, etime, rtime);
+	    type, authtime_str, starttime_str, endtime_str, renewtime_str);
 }
 
 static krb5_error_code
