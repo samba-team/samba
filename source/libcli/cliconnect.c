@@ -61,7 +61,7 @@ NTSTATUS smbcli_negprot(struct smbcli_state *cli)
 	return smb_raw_negotiate(cli->transport, lp_maxprotocol());
 }
 
-/* wrapper around smb_raw_session_setup() */
+/* wrapper around smb_raw_sesssetup() */
 NTSTATUS smbcli_session_setup(struct smbcli_state *cli, 
 			      struct cli_credentials *credentials)
 {
