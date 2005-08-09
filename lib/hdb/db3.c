@@ -267,23 +267,27 @@ DB_open(krb5_context context, HDB *db, int flags, mode_t mode)
     }
     db_create(&d, NULL, 0);
     db->hdb_db = d;
+
 #if (DB_VERSION_MAJOR >= 4) && (DB_VERSION_MINOR >= 1)
-    if ((ret = d->open(db->hdb_db, NULL, fn, NULL, DB_BTREE, myflags, mode))) {
+    ret = d->open(db->hdb_db, NULL, fn, NULL, DB_BTREE, myflags, mode);
 #else
-    if ((ret = d->open(db->hdb_db, fn, NULL, DB_BTREE, myflags, mode))) {
+    ret = d->open(db->hdb_db, fn, NULL, DB_BTREE, myflags, mode);
 #endif
-      if(ret == ENOENT)
+
+    if (ret == ENOENT) {
 	/* try to open without .db extension */
 #if (DB_VERSION_MAJOR >= 4) && (DB_VERSION_MINOR >= 1)
-	if (d->open(db->hdb_db, NULL, db->hdb_name, NULL, DB_BTREE, myflags, mode)) {
+	ret = d->open(db->hdb_db, NULL, db->hdb_name, NULL, DB_BTREE, myflags, mode);
 #else
-	if (d->open(db->hdb_db, db->hdb_name, NULL, DB_BTREE, myflags, mode)) {
+	ret = d->open(db->hdb_db, db->hdb_name, NULL, DB_BTREE, myflags, mode);
 #endif
-	  free(fn);
-	  krb5_set_error_string(context, "opening %s: %s",
-				db->hdb_name, strerror(ret));
-	  return ret;
-	}
+    }
+
+    if (ret) {
+	free(fn);
+	krb5_set_error_string(context, "opening %s: %s",
+			      db->hdb_name, strerror(ret));
+	return ret;
     }
     free(fn);
 
