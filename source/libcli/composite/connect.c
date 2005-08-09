@@ -77,7 +77,7 @@ static NTSTATUS connect_tcon(struct composite_context *c,
 	struct connect_state *state = talloc_get_type(c->private, struct connect_state);
 	NTSTATUS status;
 
-	status = smb_tree_connect_recv(state->req, c, state->io_tcon);
+	status = smb_raw_tcon_recv(state->req, c, state->io_tcon);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	io->out.tree->tid = state->io_tcon->tconx.out.tid;
@@ -134,7 +134,7 @@ static NTSTATUS connect_session_setup(struct composite_context *c,
 		state->io_tcon->tconx.in.device = io->in.service_type;
 	}
 
-	state->req = smb_tree_connect_send(io->out.tree, state->io_tcon);
+	state->req = smb_raw_tcon_send(io->out.tree, state->io_tcon);
 	NT_STATUS_HAVE_NO_MEMORY(state->req);
 
 	state->req->async.fn = request_handler;

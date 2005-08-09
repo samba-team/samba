@@ -56,8 +56,8 @@ struct smbcli_tree *smbcli_tree_init(struct smbcli_session *session,
 /****************************************************************************
  Send a tconX (async send)
 ****************************************************************************/
-struct smbcli_request *smb_tree_connect_send(struct smbcli_tree *tree, 
-					     union smb_tcon *parms)
+struct smbcli_request *smb_raw_tcon_send(struct smbcli_tree *tree, 
+					 union smb_tcon *parms)
 {
 	struct smbcli_request *req = NULL;
 
@@ -92,8 +92,8 @@ struct smbcli_request *smb_tree_connect_send(struct smbcli_tree *tree,
 /****************************************************************************
  Send a tconX (async recv)
 ****************************************************************************/
-NTSTATUS smb_tree_connect_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, 
-			       union smb_tcon *parms)
+NTSTATUS smb_raw_tcon_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, 
+			   union smb_tcon *parms)
 {
 	uint8_t *p;
 
@@ -134,11 +134,11 @@ failed:
 /****************************************************************************
  Send a tconX (sync interface)
 ****************************************************************************/
-NTSTATUS smb_tree_connect(struct smbcli_tree *tree, TALLOC_CTX *mem_ctx, 
-			  union smb_tcon *parms)
+NTSTATUS smb_raw_tcon(struct smbcli_tree *tree, TALLOC_CTX *mem_ctx, 
+		      union smb_tcon *parms)
 {
-	struct smbcli_request *req = smb_tree_connect_send(tree, parms);
-	return smb_tree_connect_recv(req, mem_ctx, parms);
+	struct smbcli_request *req = smb_raw_tcon_send(tree, parms);
+	return smb_raw_tcon_recv(req, mem_ctx, parms);
 }
 
 
