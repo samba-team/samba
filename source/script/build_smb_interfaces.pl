@@ -74,7 +74,10 @@ sub transfer_element($$$) {
   my $prefix = shift;
   my $elt = shift;
 
-  print FILE "\tejs_${dir}_$elt->{TYPE}(ejs, v, \"$prefix.$elt->{NAME}\")\n";
+  $type = $elt->{TYPE};
+  $type =~ s/_t$//;
+
+  print FILE "\tejs_${dir}_$type(ejs, v, \"$prefix.$elt->{NAME}\")\n";
 }
 
 sub transfer_struct($$) {
@@ -101,29 +104,44 @@ foreach my $s (@newheader) {
 
   if ($s->{TYPE} eq "struct") {
 
-    # Top level struct
+    # Push/pull top level struct
+
+    print FILE "NTSTATUS ejs_pull_$s->{TYPE_DEFINED}(struct ejs_rpc *ejs, struct MprVar *v, struct $s->{TYPE_DEFINED} *r)\n";
+    print FILE "{\n";
+    print FILE "\treturn NT_STATUS_OK;\n";
+    print FILE "}\n\n";
+
+    print FILE "NTSTATUS ejs_push_$s->{TYPE_DEFINED}(struct ejs_rpc *ejs, struct MprVar *v, const struct $s->{TYPE_DEFINED} *r)\n";
+    print FILE "{\n";
+    print FILE "\treturn NT_STATUS_OK;\n";
+    print FILE "}\n\n";
+
+    # Top level ejs function
 
     print FILE "static int ejs_$s->{TYPE_DEFINED}(int eid, int argc, struct MprVar **argv)\n";
     print FILE "{\n";
     print FILE "\tstruct $s->{TYPE_DEFINED} params;\n";
     print FILE "\tstruct smbcli_tree *tree;\n";
-    print FILE "\tNTSTATUS result;\n\n";
+    print FILE "\tNTSTATUS status;\n\n";
 
     print FILE "\tif (argc != 1 || argv[0]->type != MPR_TYPE_OBJECT) {\n";
     print FILE "\t\tejsSetErrorMsg(eid, \"invalid arguments\");\n";
     print FILE "\t\treturn -1;\n";
     print FILE "\t}\n\n";
 
-    transfer_struct("pull", $s);
+    print FILE "\tstatus = ejs_pull_$s->{TYPE_DEFINED}(ejs, io, ptr);\n";
+    print FILE "\tif (!NT_STATUS_IS_OK(status)) {\n";
+    print FILE "\t\treturn -1;\n";
+    print FILE "\t}\n\n";
 
     my $fn = $s->{TYPE_DEFINED};
     $fn =~ s/^smb_/smb_raw_/;
 
-    print FILE "\n\tresult = $fn(tree, &params);\n\n";
+    print FILE "\tresult = $fn(tree, &params);\n\n";
 
-    transfer_struct("push", $s);
+    print FILE "\tstatus = ejs_push_$s->{TYPE_DEFINED}(ejs, io, ptr);\n\n";
 
-    print FILE "\n\tmpr_Return(eid, mprNTSTATUS(result));\n\n";
+    print FILE "\tmpr_Return(eid, mprNTSTATUS(result));\n\n";
     print FILE "\tif (NT_STATUS_EQUAL(status, NT_STATUS_INTERNAL_ERROR)) {\n";
     print FILE "\t\treturn -1;\n";
     print FILE "\t}\n\n";
@@ -137,6 +155,18 @@ foreach my $s (@newheader) {
 
     foreach my $arm (@{$s->{FIELDS}}) {
 
+      # Push/pull union arm
+
+      print FILE "NTSTATUS ejs_pull_$s->{TYPE_DEFINED}_$arm->{NAME}(struct ejs_rpc *ejs, struct MprVar *v, struct $s->{TYPE_DEFINED}_$arm->{NAME} *r)\n";
+      print FILE "{\n";
+      print FILE "\treturn NT_STATUS_OK;\n";
+      print FILE "}\n\n";
+
+      print FILE "NTSTATUS ejs_push_$s->{TYPE_DEFINED}_$arm->{NAME}(struct ejs_rpc *ejs, struct MprVar *v, const struct $s->{TYPE_DEFINED}_$arm->{NAME} *r)\n";
+      print FILE "{\n";
+      print FILE "\treturn NT_STATUS_OK;\n";
+      print FILE "}\n\n";
+
       print FILE "static int ejs_$s->{TYPE_DEFINED}_$arm->{NAME}(int eid, int argc, struct MprVar **argv)\n";
       print FILE "{\n";
       print FILE "\tunion $s->{TYPE_DEFINED} params;\n";
@@ -148,16 +178,19 @@ foreach my $s (@newheader) {
       print FILE "\t\treturn -1;\n";
       print FILE "\t}\n\n";
 
-      transfer_struct("pull", $arm);
+      print FILE "\tstatus = ejs_pull_$s->{TYPE_DEFINED}_$arm->{NAME}(ejs, io, ptr);\n";
+      print FILE "\tif (!NT_STATUS_IS_OK(status)) {\n";
+      print FILE "\t\treturn -1;\n";
+      print FILE "\t}\n\n";
 
       my $fn = $s->{TYPE_DEFINED};
       $fn =~ s/^smb_/smb_raw_/;
 
-      print FILE "\n\tresult = $fn(tree, &params);\n\n";
+      print FILE "\tresult = $fn(tree, &params);\n\n";
 
-      transfer_struct("push", $arm);
+      print FILE "\tstatus = ejs_push_$s->{TYPE_DEFINED}_$arm->{NAME}(ejs, io, ptr);\n\n";
 
-      print FILE "\n\tmpr_Return(eid, mprNTSTATUS(result));\n\n";
+      print FILE "\tmpr_Return(eid, mprNTSTATUS(result));\n\n";
       print FILE "\tif (NT_STATUS_EQUAL(status, NT_STATUS_INTERNAL_ERROR)) {\n";
       print FILE "\t\treturn -1;\n";
       print FILE "\t}\n\n";
