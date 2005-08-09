@@ -83,7 +83,7 @@ NTSTATUS smbcli_session_setup(struct smbcli_state *cli,
 	return status;
 }
 
-/* wrapper around smb_tree_connect() */
+/* wrapper around smb_raw_tcon() */
 NTSTATUS smbcli_tconX(struct smbcli_state *cli, const char *sharename, 
 		      const char *devtype, const char *password)
 {
@@ -116,7 +116,7 @@ NTSTATUS smbcli_tconX(struct smbcli_state *cli, const char *sharename,
 	tcon.tconx.in.path = sharename;
 	tcon.tconx.in.device = devtype;
 	
-	status = smb_tree_connect(cli->tree, mem_ctx, &tcon);
+	status = smb_raw_tcon(cli->tree, mem_ctx, &tcon);
 
 	cli->tree->tid = tcon.tconx.out.tid;
 

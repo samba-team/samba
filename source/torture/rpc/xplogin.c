@@ -147,7 +147,7 @@ static NTSTATUS anon_ipc(struct smbcli_transport *transport,
 					    transport->called.name);
 	tcon.tconx.in.device = "IPC";
 
-	status = smb_tree_connect(tree, mem_ctx, &tcon);
+	status = smb_raw_tcon(tree, mem_ctx, &tcon);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tree);

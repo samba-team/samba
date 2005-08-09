@@ -289,7 +289,7 @@ static BOOL test_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	tcon.tconx.in.password = data_blob(NULL, 0);
 	tcon.tconx.in.path = talloc_asprintf(mem_ctx, "\\\\%s\\%s", host, share);
 	tcon.tconx.in.device = "A:";	
-	status = smb_tree_connect(tree, mem_ctx, &tcon);
+	status = smb_raw_tcon(tree, mem_ctx, &tcon);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	
 
@@ -298,7 +298,7 @@ static BOOL test_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("try a tconx with a bad device type\n");
 	tcon.tconx.in.device = "FOO";	
-	status = smb_tree_connect(tree, mem_ctx, &tcon);
+	status = smb_raw_tcon(tree, mem_ctx, &tcon);
 	CHECK_STATUS(status, NT_STATUS_BAD_DEVICE_TYPE);
 
 
