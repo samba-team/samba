@@ -45,7 +45,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: des.c,v 1.14 2005/06/18 22:47:17 lha Exp $");
+RCSID("$Id: des.c,v 1.15 2005/07/20 10:49:22 lha Exp $");
 #endif
 
 #include <stdio.h>
@@ -267,9 +267,11 @@ DES_ecb_encrypt(DES_cblock *input, DES_cblock *output,
  */
 
 void
-DES_cbc_encrypt(unsigned char *input, unsigned char *output, long length,
+DES_cbc_encrypt(const void *in, void *out, long length,
 		DES_key_schedule *ks, DES_cblock *iv, int forward_encrypt)
 {
+    const unsigned char *input = in;
+    unsigned char *output = out;
     uint32_t u[2];
     uint32_t uiv[2];
 
@@ -328,9 +330,11 @@ DES_cbc_encrypt(unsigned char *input, unsigned char *output, long length,
  */
 
 void
-DES_pcbc_encrypt(unsigned char *input, unsigned char *output, long length,
+DES_pcbc_encrypt(const void *in, void *out, long length,
 		 DES_key_schedule *ks, DES_cblock *iv, int forward_encrypt)
 {
+    const unsigned char *input = in;
+    unsigned char *output = out;
     uint32_t u[2];
     uint32_t uiv[2];
 
@@ -430,11 +434,13 @@ DES_ecb3_encrypt(DES_cblock *input,
  */
 
 void
-DES_ede3_cbc_encrypt(const unsigned char *input, unsigned char *output,
+DES_ede3_cbc_encrypt(const void *in, void *out,
 		     long length, DES_key_schedule *ks1, 
 		     DES_key_schedule *ks2, DES_key_schedule *ks3,
 		     DES_cblock *iv, int forward_encrypt)
 {
+    const unsigned char *input = in;
+    unsigned char *output = out;
     uint32_t u[2];
     uint32_t uiv[2];
 
@@ -494,10 +500,12 @@ DES_ede3_cbc_encrypt(const unsigned char *input, unsigned char *output,
  */
 
 void
-DES_cfb64_encrypt(unsigned char *input, unsigned char *output, 
+DES_cfb64_encrypt(const void *in, void *out, 
 		  long length, DES_key_schedule *ks, DES_cblock *iv,
 		  int *num, int forward_encrypt)
 {
+    const unsigned char *input = in;
+    unsigned char *output = out;
     unsigned char tmp[DES_CBLOCK_LEN];
     uint32_t uiv[2];
 
@@ -555,9 +563,10 @@ DES_cfb64_encrypt(unsigned char *input, unsigned char *output,
  */
 
 uint32_t
-DES_cbc_cksum(const unsigned char *input, DES_cblock *output,
+DES_cbc_cksum(const void *in, DES_cblock *output,
 	      long length, DES_key_schedule *ks, DES_cblock *iv)
 {
+    const unsigned char *input = in;
     uint32_t uiv[2];
     uint32_t u[2] = { 0, 0 };
 

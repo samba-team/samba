@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: pkinit.c,v 1.36 2005/07/01 15:37:24 lha Exp $");
+RCSID("$Id: pkinit.c,v 1.37 2005/07/26 18:37:02 lha Exp $");
 
 #ifdef PKINIT
 
@@ -927,8 +927,10 @@ pk_mk_pa_reply_enckey(krb5_context context,
     enc_alg->parameters->data = params.data;
     enc_alg->parameters->length = params.length;
 
-    if (client_params->type == PKINIT_COMPAT_WIN2K || client_params->type == PKINIT_COMPAT_19 || client_params->type == PKINIT_COMPAT_25) {
-	ReplyKeyPack kp;
+    switch (client_params->type) {
+    case PKINIT_COMPAT_WIN2K:
+    case PKINIT_COMPAT_19: {
+	ReplyKeyPack_19 kp;
 	memset(&kp, 0, sizeof(kp));
 
 	ret = copy_EncryptionKey(reply_key, &kp.replyKey);
@@ -938,9 +940,25 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	}
 	kp.nonce = client_params->nonce;
 	
+	ASN1_MALLOC_ENCODE(ReplyKeyPack_19, 
+			   buf.data, buf.length,
+			   &kp, &size,ret);
+	free_ReplyKeyPack_19(&kp);
+    }
+    case PKINIT_COMPAT_25: {
+	ReplyKeyPack kp;
+	memset(&kp, 0, sizeof(kp));
+
+	ret = copy_EncryptionKey(reply_key, &kp.replyKey);
+	if (ret) {
+	    krb5_clear_error_string(context);
+	    goto out;
+	}
+	/* XXX add whatever is the outcome of asChecksum discussion here */
 	ASN1_MALLOC_ENCODE(ReplyKeyPack, buf.data, buf.length, &kp, &size,ret);
 	free_ReplyKeyPack(&kp);
-    } else {
+    }
+    default:
 	krb5_abortx(context, "internal pkinit error");
     }
     if (ret) {

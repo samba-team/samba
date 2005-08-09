@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002, 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,33 +31,21 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: der_locl.h,v 1.6 2005/07/12 06:27:22 lha Exp $ */
+/* $Id: libasn1.h,v 1.11 2005/07/12 06:27:34 lha Exp $ */
 
-#ifndef __DER_LOCL_H__
-#define __DER_LOCL_H__
+#ifndef __LIBASN1_H__
+#define __LIBASN1_H__
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <assert.h>
-#include <stdio.h>
+
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
-#include <ctype.h>
-#include <time.h>
 #include <errno.h>
-#include <roken.h>
+#include "krb5_asn1.h"
+#include "der.h"
+#include "asn1_err.h"
+#include <parse_units.h>
 
-#include <asn1-common.h>
-#include <asn1_err.h>
-#include <der.h>
-
-#ifndef HAVE_TIMEGM
-time_t timegm (struct tm *);
-#endif
-
-size_t _heim_len_unsigned (unsigned);
-size_t _heim_len_int (int);
-
-#endif /* __DER_LOCL_H__ */
+#endif /* __LIBASN1_H__ */

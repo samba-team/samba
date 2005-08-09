@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "der_locl.h"
 
-RCSID("$Id: der_copy.c,v 1.12 2003/11/07 07:39:43 lha Exp $");
+RCSID("$Id: der_copy.c,v 1.13 2005/07/12 06:27:20 lha Exp $");
 
 int
 copy_general_string (const heim_general_string *from, heim_general_string *to)
@@ -45,7 +45,61 @@ copy_general_string (const heim_general_string *from, heim_general_string *to)
 }
 
 int
+copy_utf8string (const heim_utf8_string *from, heim_utf8_string *to)
+{
+    return copy_general_string(from, to);
+}
+
+int
+copy_printable_string (const heim_printable_string *from, 
+		       heim_printable_string *to)
+{
+    return copy_general_string(from, to);
+}
+
+int
+copy_ia5_string (const heim_printable_string *from, 
+		       heim_printable_string *to)
+{
+    return copy_general_string(from, to);
+}
+
+int
+copy_bmp_string (const heim_bmp_string *from, heim_bmp_string *to)
+{
+    to->length = from->length;
+    to->data   = malloc(to->length * sizeof(to->data[0]));
+    if(to->length != 0 && to->data == NULL)
+	return ENOMEM;
+    memcpy(to->data, from->data, to->length * sizeof(to->data[0]));
+    return 0;
+}
+
+int
+copy_universal_string (const heim_universal_string *from,
+		       heim_universal_string *to)
+{
+    to->length = from->length;
+    to->data   = malloc(to->length * sizeof(to->data[0]));
+    if(to->length != 0 && to->data == NULL)
+	return ENOMEM;
+    memcpy(to->data, from->data, to->length * sizeof(to->data[0]));
+    return 0;
+}
+
+int
 copy_octet_string (const heim_octet_string *from, heim_octet_string *to)
+{
+    to->length = from->length;
+    to->data   = malloc(to->length);
+    if(to->length != 0 && to->data == NULL)
+	return ENOMEM;
+    memcpy(to->data, from->data, to->length);
+    return 0;
+}
+
+int
+copy_heim_integer (const heim_integer *from, heim_integer *to)
 {
     to->length = from->length;
     to->data   = malloc(to->length);
@@ -64,5 +118,19 @@ copy_oid (const heim_oid *from, heim_oid *to)
 	return ENOMEM;
     memcpy(to->components, from->components,
 	   to->length * sizeof(*to->components));
+    return 0;
+}
+
+int
+copy_bit_string (const heim_bit_string *from, heim_bit_string *to)
+{
+    size_t len;
+
+    len = (from->length + 7) / 8;
+    to->length = from->length;
+    to->data   = malloc(len);
+    if(len != 0 && to->data == NULL)
+	return ENOMEM;
+    memcpy(to->data, from->data, len);
     return 0;
 }

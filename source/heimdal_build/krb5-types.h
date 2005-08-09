@@ -3,6 +3,9 @@
 
 #ifndef __krb5_types_h__
 #define __krb5_types_h__
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #if HAVE_INTTYPES_H
 #include <inttypes.h>

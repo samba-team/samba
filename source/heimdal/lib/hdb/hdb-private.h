@@ -5,10 +5,14 @@
 #include <stdarg.h>
 
 krb5_error_code
-_hdb_fetch(krb5_context context, HDB *db, unsigned flags, 	   
-	   krb5_principal principal,
-	   enum hdb_ent_type ent_type,
-	   hdb_entry *entry);
+_hdb_fetch (
+	krb5_context /*context*/,
+	HDB */*db*/,
+	unsigned /*flags*/,
+	krb5_principal /*principal*/,
+	enum hdb_ent_type /*ent_type*/,
+	hdb_entry */*entry*/);
+
 krb5_error_code
 _hdb_remove (
 	krb5_context /*context*/,

@@ -7,18 +7,22 @@ use File::Basename;
 
 my $file = shift;
 my $prefix = shift;
+my $options = shift;
 my $x_file, @x_files;
 my $c_file, @c_files;
 if (not defined ($prefix)) { $prefix = "asn1"; }
 
 $dirname = dirname($file);
 $basename = basename($file);
+if (not defined $options) {
+    $options = "";
+}
 
 my $header = "$dirname/$prefix.h";
 
 print "$header: $file bin/asn1_compile\n";
 print "\t\@echo \"Compiling ASN1 file $file\"\n";
-print "\t\@cd $dirname && ../../../bin/asn1_compile $basename $prefix\n\n";
+print "\t\@cd $dirname && ../../../bin/asn1_compile $options $basename $prefix\n\n";
 
 open(IN,$file) or die("Can't open $file: $!");
 foreach(<IN>) {

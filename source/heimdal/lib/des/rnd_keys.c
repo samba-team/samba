@@ -34,7 +34,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 
-RCSID("$Id: rnd_keys.c,v 1.68 2005/06/29 22:28:10 lha Exp $");
+RCSID("$Id: rnd_keys.c,v 1.69 2005/07/20 10:49:24 lha Exp $");
 #endif
 
 #ifdef KRB5
@@ -240,8 +240,9 @@ static RETSIGTYPE
  * It's not neccessary to be root to run it.
  */
 void
-DES_rand_data(unsigned char *data, int size)
+DES_rand_data(void *outdata, int size)
 {
+    unsigned char *data = outdata;
     struct itimerval tv, otv;
     RETSIGTYPE (*osa)(int);
     int i, j;
@@ -388,7 +389,7 @@ memcpy((char *)sequence_index, (ll), sizeof(sequence_index));
  * Set the sequnce number to this value (a long long).
  */
 void
-DES_set_sequence_number(unsigned char *ll)
+DES_set_sequence_number(void *ll)
 {
     set_sequence_number(ll);
 }

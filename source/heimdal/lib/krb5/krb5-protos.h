@@ -1305,7 +1305,7 @@ krb5_encrypt (
 	krb5_context /*context*/,
 	krb5_crypto /*crypto*/,
 	unsigned /*usage*/,
-	void */*data*/,
+	const void */*data*/,
 	size_t /*len*/,
 	krb5_data */*result*/);
 
@@ -1324,7 +1324,7 @@ krb5_encrypt_ivec (
 	krb5_context /*context*/,
 	krb5_crypto /*crypto*/,
 	unsigned /*usage*/,
-	void */*data*/,
+	const void */*data*/,
 	size_t /*len*/,
 	krb5_data */*result*/,
 	void */*ivec*/);
@@ -2424,7 +2424,7 @@ krb5_principal_get_comp_string (
 const char* KRB5_LIB_FUNCTION
 krb5_principal_get_realm (
 	krb5_context /*context*/,
-	krb5_const_principal /*principal*/);
+	krb5_principal /*principal*/);
 
 int KRB5_LIB_FUNCTION
 krb5_principal_get_type (

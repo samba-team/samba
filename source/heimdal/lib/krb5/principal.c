@@ -76,7 +76,7 @@ krb5_principal_get_type(krb5_context context,
 
 const char* KRB5_LIB_FUNCTION
 krb5_principal_get_realm(krb5_context context,
-			 krb5_const_principal principal)
+			 krb5_principal principal)
 {
     return princ_realm(principal);
 }			 
@@ -235,19 +235,19 @@ static const char replace_chars[] = " ntb\\/@";
 #define add_char(BASE, INDEX, LEN, C) do { if((INDEX) < (LEN)) (BASE)[(INDEX)++] = (C); }while(0);
 
 static size_t
-quote_string(const char *s, char *out, size_t string_index, size_t len)
+quote_string(const char *s, char *out, size_t idx, size_t len)
 {
     const char *p, *q;
-    for(p = s; *p && string_index < len; p++){
+    for(p = s; *p && idx < len; p++){
 	if((q = strchr(quotable_chars, *p))){
-	    add_char(out, string_index, len, '\\');
-	    add_char(out, string_index, len, replace_chars[q - quotable_chars]);
+	    add_char(out, idx, len, '\\');
+	    add_char(out, idx, len, replace_chars[q - quotable_chars]);
 	}else
-	    add_char(out, string_index, len, *p);
+	    add_char(out, idx, len, *p);
     }
-    if(string_index < len)
-	out[string_index] = '\0';
-    return string_index;
+    if(idx < len)
+	out[idx] = '\0';
+    return idx;
 }
 
 

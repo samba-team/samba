@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: pkinit.c,v 1.55 2005/05/19 18:49:05 lha Exp $");
+RCSID("$Id: pkinit.c,v 1.58 2005/07/23 10:42:01 lha Exp $");
 
 #ifdef PKINIT
 
@@ -407,34 +407,25 @@ _krb5_pk_create_sign(krb5_context context,
 	goto out;
     }
 
-    sd.certificates->data = NULL;
-    sd.certificates->length = 0;
+    i = sk_X509_num(id->cert);
+    sd.certificates->val = malloc(sizeof(sd.certificates->val[0]) * i);
+    if (sd.certificates->val == NULL) {
+	krb5_clear_error_string(context);
+	ret = ENOMEM;
+	goto out;
+    }
+    sd.certificates->len = i;
 
     for (i = 0; i < sk_X509_num(id->cert); i++) {
-	void *data;
-
 	OPENSSL_ASN1_MALLOC_ENCODE(X509, 
-				   buf.data,
-				   buf.length,
+				   sd.certificates->val[i].data,
+				   sd.certificates->val[i].length,
 				   sk_X509_value(id->cert, i),
 				   ret);
 	if (ret) {
 	    krb5_clear_error_string(context);
 	    goto out;
 	}
-	data = realloc(sd.certificates->data, 
-		       sd.certificates->length + buf.length);
-	if (data == NULL) {
-	    free(buf.data);
-	    krb5_clear_error_string(context);
-	    ret = ENOMEM;
-	    goto out;
-	}
-	memcpy(((char *)data) + sd.certificates->length,
-	       buf.data, buf.length);
-	sd.certificates->length += buf.length;
-	sd.certificates->data = data;
-	free(buf.data);
     }
 
     ASN1_MALLOC_ENCODE(SignedData, sd_data->data, sd_data->length, 
@@ -563,7 +554,7 @@ build_auth_pack(krb5_context context,
     if (ret == 0 && dh) {
 	DomainParameters dp;
 	heim_integer dh_pub_key;
-	krb5_data buf;
+	krb5_data dhbuf;
 	size_t size;
 
 	ALLOC(a->clientPublicValue, 1);
@@ -615,25 +606,25 @@ build_auth_pack(krb5_context context,
 	if (ret)
 	    return ret;
 
-	buf.length = length_heim_integer(&dh_pub_key);
-	buf.data = malloc(buf.length);
-	if (buf.data == NULL) {
+	dhbuf.length = length_heim_integer(&dh_pub_key);
+	dhbuf.data = malloc(dhbuf.length);
+	if (dhbuf.data == NULL) {
 	    free_heim_integer(&dh_pub_key);
 	    krb5_set_error_string(context, "malloc: out of memory");
 	    return ret;
 	}
-	ret = der_put_heim_integer((char *)buf.data + buf.length - 1,
-				   buf.length, &dh_pub_key, &size);
+	ret = der_put_heim_integer((char *)dhbuf.data + dhbuf.length - 1,
+				   dhbuf.length, &dh_pub_key, &size);
 	free_heim_integer(&dh_pub_key);
 	if (ret) {
-	    free(buf.data);
+	    free(dhbuf.data);
 	    return ret;
 	}
-	if (size != buf.length)
+	if (size != dhbuf.length)
 	    krb5_abortx(context, "asn1 internal error");
 
-	a->clientPublicValue->subjectPublicKey.length = buf.length * 8;
-	a->clientPublicValue->subjectPublicKey.data = buf.data;
+	a->clientPublicValue->subjectPublicKey.length = dhbuf.length * 8;
+	a->clientPublicValue->subjectPublicKey.data = dhbuf.data;
     }
 
     return ret;
@@ -894,7 +885,7 @@ _krb5_pk_mk_padata(krb5_context context,
 
     if (provisioning_server) {
 	/* PacketCable requires the PROV-SRV-LOCATION authenticator */
-	const PROV_SRV_LOCATION prov_server = (char *)provisioning_server;
+	const PROV_SRV_LOCATION prov_server = rk_UNCONST(provisioning_server);
 
 	ASN1_MALLOC_ENCODE(PROV_SRV_LOCATION, buf.data, buf.length,
 			   &prov_server, &size, ret);
@@ -1104,13 +1095,16 @@ pk_verify_chain_standard(krb5_context context,
 }
 
 static int
-cert_to_X509(krb5_context context, CertificateSetReal *set,
+cert_to_X509(krb5_context context, CertificateSet *set,
 	     STACK_OF(X509_CRL) **certs)
 {
     krb5_error_code ret;
     int i;
 
     *certs = sk_X509_new_null();
+
+    if (set == NULL)
+	return 0;
 
     ret = 0;
     for (i = 0; i < set->len; i++) {
@@ -1134,45 +1128,6 @@ cert_to_X509(krb5_context context, CertificateSetReal *set,
     return ret;
 }
 
-static krb5_error_code
-any_to_CertificateSet(krb5_context context, heim_any *cert, 
-		      CertificateSetReal *set)
-{
-    size_t size, len, length;
-    heim_any *val;
-    int ret;
-    char *p;
-    
-    set->len = 0;
-    set->val = NULL;
-
-    len = 0;
-    p = cert->data;
-    length = cert->length;
-    while (len < cert->length) {
-	val = realloc(set->val, (set->len + 1) * sizeof(set->val[0]));
-	if (val == NULL) {
-	    ret = ENOMEM;
-	    goto out;
-	}
-	set->val = val;
-	ret = decode_heim_any(p, length, &set->val[set->len], &size);
-	if (ret)
-	    goto out;
-	set->len++;
-
-	p += size;
-	len += size;
-	length -= size;
-    }
-    return 0;
- out:
-    krb5_clear_error_string(context);
-    free_CertificateSetReal(set);
-    set->val = NULL;
-    return ret;
-}
-
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_pk_verify_sign(krb5_context context,
 		     const char *data,
@@ -1187,7 +1142,6 @@ _krb5_pk_verify_sign(krb5_context context,
     const EVP_MD *evp_type;
     EVP_PKEY *public_key;
     krb5_error_code ret;
-    CertificateSetReal set;
     EVP_MD_CTX md;
     X509 *cert;
     SignedData sd;
@@ -1227,15 +1181,14 @@ _krb5_pk_verify_sign(krb5_context context,
 
     signer_info = &sd.signerInfos.val[0];
   
-    ret = any_to_CertificateSet(context, sd.certificates, &set);
-    if (ret) {
-	krb5_set_error_string(context,
-			      "PKINIT: failed to decode CertificateSet");
-	goto out;
-    }
+    {
+	CertificateSet set;
+	set.val = sd.certificates->val;
+	set.len = sd.certificates->len;
 
-    ret = cert_to_X509(context, &set, &certificates);
-    free_CertificateSetReal(&set);
+	ret = cert_to_X509(context, &set, &certificates);
+	free_CertificateSet(&set);
+    }
     if (ret) {
 	krb5_set_error_string(context,
 			      "PKINIT: failed to decode Certificates");
@@ -1530,7 +1483,6 @@ pk_rd_pa_reply_enckey(krb5_context context,
     /* win2k uses ContentInfo */
     if (win2k_compat) {
 	ContentInfo ci;
-	size_t size;
 
 	ret = decode_ContentInfo(p, length, &ci, &size);
 	if (ret) {
@@ -1604,6 +1556,8 @@ pk_rd_pa_reply_dh(krb5_context context,
                   ContentInfo *rep,
 		  krb5_pk_init_ctx ctx,
 		  krb5_enctype etype,
+		  const DHNonce *c_n,
+		  const DHNonce *k_n,
                   unsigned nonce,
                   PA_DATA *pa,
                   krb5_keyblock **key)
@@ -1666,6 +1620,30 @@ pk_rd_pa_reply_dh(krb5_context context,
 	goto out;
     }
 
+    if (kdc_dh_info.dhKeyExpiration) {
+	if (k_n == NULL) {
+	    krb5_set_error_string(context, "pkinit; got key expiration "
+				  "without server nonce");
+	    ret = KRB5KRB_ERR_GENERIC;
+	    goto out;
+	}
+	if (c_n == NULL) {
+	    krb5_set_error_string(context, "pkinit; got DH reuse but no "
+				  "client nonce");
+	    ret = KRB5KRB_ERR_GENERIC;
+	    goto out;
+	}
+    } else {
+	if (k_n) {
+	    krb5_set_error_string(context, "pkinit; got server nonce "
+				  "without key expiration");
+	    ret = KRB5KRB_ERR_GENERIC;
+	    goto out;
+	}
+	c_n = NULL;
+    }
+
+
     p = kdc_dh_info.subjectPublicKey.data;
     size = (kdc_dh_info.subjectPublicKey.length + 7) / 8;
     dh_pub_key = d2i_ASN1_INTEGER(NULL, &p, size);
@@ -1684,14 +1662,21 @@ pk_rd_pa_reply_dh(krb5_context context,
 	goto out;
     }
 
-    dh_gen_key = malloc(DH_size(ctx->dh));
+    dh_gen_keylen = DH_size(ctx->dh);
+    size = BN_num_bytes(ctx->dh->p);
+    if (size < dh_gen_keylen)
+	size = dh_gen_keylen;
+
+    dh_gen_key = malloc(size);
     if (dh_gen_key == NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
 	ret = ENOMEM;
 	goto out;
     }
+    memset(dh_gen_key, 0, size - dh_gen_keylen);
 
-    dh_gen_keylen = DH_compute_key(dh_gen_key, kdc_dh_pubkey, ctx->dh);
+    dh_gen_keylen = DH_compute_key(dh_gen_key + (size - dh_gen_keylen),
+				   kdc_dh_pubkey, ctx->dh);
     if (dh_gen_keylen == -1) {
 	krb5_set_error_string(context, 
 			      "PKINIT: Can't compute Diffie-Hellman key (%s)",
@@ -1707,7 +1692,11 @@ pk_rd_pa_reply_dh(krb5_context context,
 	goto out;
     }
 
-    ret = krb5_random_to_key(context, etype, dh_gen_key, dh_gen_keylen, *key);
+    ret = _krb5_pk_octetstring2key(context,
+				   etype,
+				   dh_gen_key, dh_gen_keylen,
+				   c_n, k_n,
+				   *key);
     if (ret) {
 	krb5_set_error_string(context,
 			      "PKINIT: can't create key from DH key");
@@ -1761,6 +1750,25 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 	    return ret;
 
 	switch (rep.element) {
+	case choice_PA_PK_AS_REP_dhInfo:
+	    ret = decode_ContentInfo(rep.u.dhInfo.dhSignedData.data,
+				     rep.u.dhInfo.dhSignedData.length,
+				     &ci,
+				     &size);
+	    if (ret) {
+		krb5_set_error_string(context,
+				      "PKINIT: -25 decoding failed DH "
+				      "ContentInfo: %d", ret);
+
+		free_PA_PK_AS_REP(&rep);
+		break;
+	    }
+	    ret = pk_rd_pa_reply_dh(context, &ci, ctx,
+				    etype, NULL, NULL, nonce, pa, key);
+	    free_ContentInfo(&ci);
+	    free_PA_PK_AS_REP(&rep);
+
+	    break;
 	case choice_PA_PK_AS_REP_encKeyPack:
 	    ret = decode_ContentInfo(rep.u.encKeyPack.data,
 				     rep.u.encKeyPack.length,
@@ -1799,7 +1807,8 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 	    switch(rep19.element) {
 	    case choice_PA_PK_AS_REP_19_dhSignedData:
 		ret = pk_rd_pa_reply_dh(context, &rep19.u.dhSignedData, ctx,
-					etype, nonce, pa, key);
+					etype, NULL, NULL, 
+					nonce, pa, key);
 		break;
 	    case choice_PA_PK_AS_REP_19_encKeyPack:
 		ret = pk_rd_pa_reply_enckey(context, 0,
@@ -2314,8 +2323,8 @@ _krb5_pk_load_openssl_id(krb5_context context,
     FILE *f;
     krb5_error_code (*load_pair)(krb5_context, 
 				 char *, 
-				 krb5_prompter_fct prompter,
-				 void * prompter_data,
+				 krb5_prompter_fct,
+				 void *,
 				 const char *,
 				 struct krb5_pk_identity *) = NULL;
 
@@ -2553,24 +2562,29 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 
 	dh = DH_new();
 	if (dh == NULL) {
+	    krb5_set_error_string(context, "malloc: out of memory");
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
 	    return ENOMEM;
 	}
 	opt->private->pk_init_ctx->dh = dh;
 	if (!BN_hex2bn(&dh->p, P)) {
+	    krb5_set_error_string(context, "malloc: out of memory");
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
 	    return ENOMEM;
 	}
 	if (!BN_hex2bn(&dh->g, G)) {
+	    krb5_set_error_string(context, "malloc: out of memory");
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
 	    return ENOMEM;
 	}
 	if (!BN_hex2bn(&dh->q, Q)) {
+	    krb5_set_error_string(context, "malloc: out of memory");
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
 	    return ENOMEM;
 	}
 	/* XXX generate a new key for each request ? */
 	if (DH_generate_key(dh) != 1) {
+	    krb5_set_error_string(context, "malloc: out of memory");
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
 	    return ENOMEM;
 	}

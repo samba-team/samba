@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1999, 2000, 2003 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,59 +33,51 @@
 
 #include "gen_locl.h"
 
-RCSID("$Id: gen_glue.c,v 1.8 2005/04/25 18:07:07 lha Exp $");
+RCSID("$Id: gen_glue.c,v 1.9 2005/07/12 06:27:29 lha Exp $");
 
 static void
-generate_2int (const Symbol *s)
+generate_2int (const Type *t, const char *gen_name)
 {
-    Type *t = s->type;
     Member *m;
-    int tag = -1;
 
     fprintf (headerfile,
 	     "unsigned %s2int(%s);\n",
-	     s->gen_name, s->gen_name);
+	     gen_name, gen_name);
 
     fprintf (codefile,
 	     "unsigned %s2int(%s f)\n"
 	     "{\n"
 	     "unsigned r = 0;\n",
-	     s->gen_name, s->gen_name);
+	     gen_name, gen_name);
 
-    for (m = t->members; m && m->val != tag; m = m->next) {
+    ASN1_TAILQ_FOREACH(m, t->members, members) {
 	fprintf (codefile, "if(f.%s) r |= (1U << %d);\n",
 		 m->gen_name, m->val);
-	
-	if (tag == -1)
-	    tag = m->val;
     }
     fprintf (codefile, "return r;\n"
 	     "}\n\n");
 }
 
 static void
-generate_int2 (const Symbol *s)
+generate_int2 (const Type *t, const char *gen_name)
 {
-    Type *t = s->type;
     Member *m;
-    int tag = -1;
 
     fprintf (headerfile,
 	     "%s int2%s(unsigned);\n",
-	     s->gen_name, s->gen_name);
+	     gen_name, gen_name);
 
     fprintf (codefile,
 	     "%s int2%s(unsigned n)\n"
 	     "{\n"
 	     "\t%s flags;\n\n",
-	     s->gen_name, s->gen_name, s->gen_name);
+	     gen_name, gen_name, gen_name);
 
-    for (m = t->members; m && m->val != tag; m = m->next) {
-	fprintf (codefile, "\tflags.%s = (n >> %d) & 1;\n",
-		 m->gen_name, m->val);
-	
-	if (tag == -1)
-	    tag = m->val;
+    if(t->members) {
+	ASN1_TAILQ_FOREACH(m, t->members, members) {
+	    fprintf (codefile, "\tflags.%s = (n >> %d) & 1;\n",
+		     m->gen_name, m->val);
+	}
     }
     fprintf (codefile, "\treturn flags;\n"
 	     "}\n\n");
@@ -96,28 +88,24 @@ generate_int2 (const Symbol *s)
  */
 
 static void
-generate_units (const Symbol *s)
+generate_units (const Type *t, const char *gen_name)
 {
-    Type *t = s->type;
     Member *m;
-    int tag = -1;
 
     fprintf (headerfile,
 	     "const struct units * asn1_%s_units(void);",
-	     s->gen_name);
+	     gen_name);
 
     fprintf (codefile,
 	     "static struct units %s_units[] = {\n",
-	     s->gen_name);
+	     gen_name);
 
-    if(t->members)
-	for (m = t->members->prev; m && m->val != tag; m = m->prev) {
+    if(t->members) {
+	ASN1_TAILQ_FOREACH_REVERSE(m, t->members, memhead, members) {
 	    fprintf (codefile,
 		     "\t{\"%s\",\t1U << %d},\n", m->gen_name, m->val);
-	    
-	    if (tag == -1)
-		tag = m->val;
 	}
+    }
 
     fprintf (codefile,
 	     "\t{NULL,\t0}\n"
@@ -127,19 +115,24 @@ generate_units (const Symbol *s)
 	     "const struct units * asn1_%s_units(void){\n"
 	     "return %s_units;\n"
 	     "}\n\n",
-	     s->gen_name, s->gen_name);
+	     gen_name, gen_name);
 
 
 }
 
 void
-generate_glue (const Symbol *s)
+generate_glue (const Type *t, const char *gen_name)
 {
-    switch(s->type->type) {
+    switch(t->type) {
+    case TTag:
+	generate_glue(t->subtype, gen_name);
+	break;
     case TBitString :
-	generate_2int (s);
-	generate_int2 (s);
-	generate_units (s);
+	if (!ASN1_TAILQ_EMPTY(t->members)) {
+	    generate_2int (t, gen_name);
+	    generate_int2 (t, gen_name);
+	    generate_units (t, gen_name);
+	}
 	break;
     default :
 	break;

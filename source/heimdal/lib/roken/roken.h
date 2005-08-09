@@ -32,7 +32,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: roken.h.in,v 1.175 2005/07/07 19:16:17 lha Exp $ */
+/* $Id: roken.h.in,v 1.177 2005/08/05 09:06:29 lha Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -143,15 +143,15 @@ ROKEN_CPP_START
 #endif
 
 #ifndef HAVE_PUTENV
-int ROKEN_LIB_FUNCTION putenv(const char *string);
+int ROKEN_LIB_FUNCTION putenv(const char *);
 #endif
 
 #if !defined(HAVE_SETENV) || defined(NEED_SETENV_PROTO)
-int ROKEN_LIB_FUNCTION setenv(const char *var, const char *val, int rewrite);
+int ROKEN_LIB_FUNCTION setenv(const char *, const char *, int);
 #endif
 
 #if !defined(HAVE_UNSETENV) || defined(NEED_UNSETENV_PROTO)
-void ROKEN_LIB_FUNCTION unsetenv(const char *name);
+void ROKEN_LIB_FUNCTION unsetenv(const char *);
 #endif
 
 #if !defined(HAVE_GETUSERSHELL) || defined(NEED_GETUSERSHELL_PROTO)
@@ -160,46 +160,46 @@ void ROKEN_LIB_FUNCTION endusershell(void);
 #endif
 
 #if !defined(HAVE_SNPRINTF) || defined(NEED_SNPRINTF_PROTO)
-int ROKEN_LIB_FUNCTION snprintf (char *str, size_t sz, const char *format, ...)
+int ROKEN_LIB_FUNCTION snprintf (char *, size_t, const char *, ...)
      __attribute__ ((format (printf, 3, 4)));
 #endif
 
 #if !defined(HAVE_VSNPRINTF) || defined(NEED_VSNPRINTF_PROTO)
 int ROKEN_LIB_FUNCTION 
-     vsnprintf (char *str, size_t sz, const char *format, va_list ap)
+     vsnprintf (char *, size_t, const char *, va_list)
      __attribute__((format (printf, 3, 0)));
 #endif
 
 #if !defined(HAVE_ASPRINTF) || defined(NEED_ASPRINTF_PROTO)
 int ROKEN_LIB_FUNCTION
-     asprintf (char **ret, const char *format, ...)
+     asprintf (char **, const char *, ...)
      __attribute__ ((format (printf, 2, 3)));
 #endif
 
 #if !defined(HAVE_VASPRINTF) || defined(NEED_VASPRINTF_PROTO)
 int ROKEN_LIB_FUNCTION
-    vasprintf (char **ret, const char *format, va_list ap)
+    vasprintf (char **, const char *, va_list)
      __attribute__((format (printf, 2, 0)));
 #endif
 
 #if !defined(HAVE_ASNPRINTF) || defined(NEED_ASNPRINTF_PROTO)
 int ROKEN_LIB_FUNCTION
-    asnprintf (char **ret, size_t max_sz, const char *format, ...)
+    asnprintf (char **, size_t, const char *, ...)
      __attribute__ ((format (printf, 3, 4)));
 #endif
 
 #if !defined(HAVE_VASNPRINTF) || defined(NEED_VASNPRINTF_PROTO)
 int ROKEN_LIB_FUNCTION
-    vasnprintf (char **ret, size_t max_sz, const char *format, va_list ap)
+    vasnprintf (char **, size_t, const char *, va_list)
      __attribute__((format (printf, 3, 0)));
 #endif
 
 #ifndef HAVE_STRDUP
-char * ROKEN_LIB_FUNCTION strdup(const char *old);
+char * ROKEN_LIB_FUNCTION strdup(const char *);
 #endif
 
 #if !defined(HAVE_STRNDUP) || defined(NEED_STRNDUP_PROTO)
-char * ROKEN_LIB_FUNCTION strndup(const char *old, size_t sz);
+char * ROKEN_LIB_FUNCTION strndup(const char *, size_t);
 #endif
 
 #ifndef HAVE_STRLWR
@@ -219,7 +219,7 @@ ssize_t ROKEN_LIB_FUNCTION strsep_copy(const char**, const char*, char*, size_t)
 #endif
 
 #ifndef HAVE_STRCASECMP
-int ROKEN_LIB_FUNCTION strcasecmp(const char *s1, const char *s2);
+int ROKEN_LIB_FUNCTION strcasecmp(const char *, const char *);
 #endif
 
 #ifdef NEED_FCLOSE_PROTO
@@ -227,7 +227,7 @@ int ROKEN_LIB_FUNCTION fclose(FILE *);
 #endif
 
 #ifdef NEED_STRTOK_R_PROTO
-char * ROKEN_LIB_FUNCTION strtok_r(char *s1, const char *s2, char **lasts);
+char * ROKEN_LIB_FUNCTION strtok_r(char *, const char *, char **);
 #endif
 
 #ifndef HAVE_STRUPR
@@ -235,11 +235,11 @@ char * ROKEN_LIB_FUNCTION strupr(char *);
 #endif
 
 #ifndef HAVE_STRLCPY
-size_t ROKEN_LIB_FUNCTION strlcpy (char *dst, const char *src, size_t dst_sz);
+size_t ROKEN_LIB_FUNCTION strlcpy (char *, const char *, size_t);
 #endif
 
 #ifndef HAVE_STRLCAT
-size_t ROKEN_LIB_FUNCTION strlcat (char *dst, const char *src, size_t dst_sz);
+size_t ROKEN_LIB_FUNCTION strlcat (char *, const char *, size_t);
 #endif
 
 #ifndef HAVE_GETDTABLESIZE
@@ -247,13 +247,13 @@ int ROKEN_LIB_FUNCTION getdtablesize(void);
 #endif
 
 #if !defined(HAVE_STRERROR) && !defined(strerror)
-char * ROKEN_LIB_FUNCTION strerror(int eno);
+char * ROKEN_LIB_FUNCTION strerror(int);
 #endif
 
 #if !defined(HAVE_HSTRERROR) || defined(NEED_HSTRERROR_PROTO)
 /* This causes a fatal error under Psoriasis */
 #if !(defined(SunOS) && (SunOS >= 50))
-const char * ROKEN_LIB_FUNCTION hstrerror(int herr);
+const char * ROKEN_LIB_FUNCTION hstrerror(int);
 #endif
 #endif
 
@@ -262,7 +262,7 @@ extern int h_errno;
 #endif
 
 #if !defined(HAVE_INET_ATON) || defined(NEED_INET_ATON_PROTO)
-int ROKEN_LIB_FUNCTION inet_aton(const char *cp, struct in_addr *adr);
+int ROKEN_LIB_FUNCTION inet_aton(const char *, struct in_addr *);
 #endif
 
 #ifndef HAVE_INET_NTOP
@@ -272,31 +272,31 @@ inet_ntop(int af, const void *src, char *dst, size_t size);
 
 #ifndef HAVE_INET_PTON
 int ROKEN_LIB_FUNCTION
-inet_pton(int af, const char *src, void *dst);
+inet_pton(int, const char *, void *);
 #endif
 
 #if !defined(HAVE_GETCWD)
-char* ROKEN_LIB_FUNCTION getcwd(char *path, size_t size);
+char* ROKEN_LIB_FUNCTION getcwd(char *, size_t);
 #endif
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
-struct passwd * ROKEN_LIB_FUNCTION k_getpwnam (const char *user);
-struct passwd * ROKEN_LIB_FUNCTION k_getpwuid (uid_t uid);
+struct passwd * ROKEN_LIB_FUNCTION k_getpwnam (const char *);
+struct passwd * ROKEN_LIB_FUNCTION k_getpwuid (uid_t);
 #endif
 
 const char * ROKEN_LIB_FUNCTION get_default_username (void);
 
 #ifndef HAVE_SETEUID
-int ROKEN_LIB_FUNCTION seteuid(uid_t euid);
+int ROKEN_LIB_FUNCTION seteuid(uid_t);
 #endif
 
 #ifndef HAVE_SETEGID
-int ROKEN_LIB_FUNCTION setegid(gid_t egid);
+int ROKEN_LIB_FUNCTION setegid(gid_t);
 #endif
 
 #ifndef HAVE_LSTAT
-int ROKEN_LIB_FUNCTION lstat(const char *path, struct stat *buf);
+int ROKEN_LIB_FUNCTION lstat(const char *, struct stat *);
 #endif
 
 #if !defined(HAVE_MKSTEMP) || defined(NEED_MKSTEMP_PROTO)
@@ -304,35 +304,35 @@ int ROKEN_LIB_FUNCTION mkstemp(char *);
 #endif
 
 #ifndef HAVE_CGETENT
-int ROKEN_LIB_FUNCTION cgetent(char **buf, char **db_array, const char *name);
-int ROKEN_LIB_FUNCTION cgetstr(char *buf, const char *cap, char **str);
+int ROKEN_LIB_FUNCTION cgetent(char **, char **, const char *);
+int ROKEN_LIB_FUNCTION cgetstr(char *, const char *, char **);
 #endif
 
 #ifndef HAVE_INITGROUPS
-int ROKEN_LIB_FUNCTION initgroups(const char *name, gid_t basegid);
+int ROKEN_LIB_FUNCTION initgroups(const char *, gid_t);
 #endif
 
 #ifndef HAVE_FCHOWN
-int ROKEN_LIB_FUNCTION fchown(int fd, uid_t owner, gid_t group);
+int ROKEN_LIB_FUNCTION fchown(int, uid_t, gid_t);
 #endif
 
 #if !defined(HAVE_DAEMON) || defined(NEED_DAEMON_PROTO)
-int ROKEN_LIB_FUNCTION daemon(int nochdir, int noclose);
+int ROKEN_LIB_FUNCTION daemon(int, int);
 #endif
 
 #ifndef HAVE_INNETGR
-int ROKEN_LIB_FUNCTION innetgr(const char *netgroup, const char *machine, 
-	    const char *user, const char *domain);
+int ROKEN_LIB_FUNCTION innetgr(const char *, const char *, 
+	    const char *, const char *);
 #endif
 
 #ifndef HAVE_CHOWN
-int ROKEN_LIB_FUNCTION chown(const char *path, uid_t owner, gid_t group);
+int ROKEN_LIB_FUNCTION chown(const char *, uid_t, gid_t);
 #endif
 
 #ifndef HAVE_RCMD
 int ROKEN_LIB_FUNCTION
-    rcmd(char **ahost, unsigned short inport, const char *locuser,
-	 const char *remuser, const char *cmd, int *fd2p);
+    rcmd(char **, unsigned short, const char *,
+	 const char *, const char *, int *);
 #endif
 
 #if !defined(HAVE_INNETGR) || defined(NEED_INNETGR_PROTO)
@@ -341,27 +341,27 @@ int ROKEN_LIB_FUNCTION innetgr(const char*, const char*,
 #endif
 
 #ifndef HAVE_IRUSEROK
-int ROKEN_LIB_FUNCTION iruserok(unsigned raddr, int superuser, 
-    const char *ruser, const char *luser);
+int ROKEN_LIB_FUNCTION iruserok(unsigned, int, 
+    const char *, const char *);
 #endif
 
 #if !defined(HAVE_GETHOSTNAME) || defined(NEED_GETHOSTNAME_PROTO)
-int ROKEN_LIB_FUNCTION gethostname(char *name, int namelen);
+int ROKEN_LIB_FUNCTION gethostname(char *, int);
 #endif
 
 #ifndef HAVE_WRITEV
 ssize_t ROKEN_LIB_FUNCTION
-writev(int d, const struct iovec *iov, int iovcnt);
+writev(int, const struct iovec *, int);
 #endif
 
 #ifndef HAVE_READV
 ssize_t ROKEN_LIB_FUNCTION
-readv(int d, const struct iovec *iov, int iovcnt);
+readv(int, const struct iovec *, int);
 #endif
 
 #ifndef HAVE_MKSTEMP
 int ROKEN_LIB_FUNCTION
-mkstemp(char *template);
+mkstemp(char *);
 #endif
 
 #ifndef HAVE_PIDFILE
@@ -393,22 +393,22 @@ unsigned short ROKEN_LIB_FUNCTION bswap16(unsigned short);
 int flock(int fd, int operation);
 #endif /* HAVE_FLOCK */
 
-time_t ROKEN_LIB_FUNCTION tm2time (struct tm tm, int local);
+time_t ROKEN_LIB_FUNCTION tm2time (struct tm, int);
 
-int ROKEN_LIB_FUNCTION unix_verify_user(char *user, char *password);
+int ROKEN_LIB_FUNCTION unix_verify_user(char *, char *);
 
-int ROKEN_LIB_FUNCTION roken_concat (char *s, size_t len, ...);
+int ROKEN_LIB_FUNCTION roken_concat (char *, size_t, ...);
 
-size_t ROKEN_LIB_FUNCTION roken_mconcat (char **s, size_t max_len, ...);
+size_t ROKEN_LIB_FUNCTION roken_mconcat (char **, size_t, ...);
 
-int ROKEN_LIB_FUNCTION roken_vconcat (char *s, size_t len, va_list args);
+int ROKEN_LIB_FUNCTION roken_vconcat (char *, size_t, va_list);
 
 size_t ROKEN_LIB_FUNCTION
-    roken_vmconcat (char **s, size_t max_len, va_list args);
+    roken_vmconcat (char **, size_t, va_list);
 
-ssize_t ROKEN_LIB_FUNCTION net_write (int fd, const void *buf, size_t nbytes);
+ssize_t ROKEN_LIB_FUNCTION net_write (int, const void *, size_t);
 
-ssize_t ROKEN_LIB_FUNCTION net_read (int fd, void *buf, size_t nbytes);
+ssize_t ROKEN_LIB_FUNCTION net_read (int, void *, size_t);
 
 int ROKEN_LIB_FUNCTION issuid(void);
 
@@ -422,7 +422,7 @@ struct winsize {
 int ROKEN_LIB_FUNCTION get_window_size(int fd, struct winsize *);
 
 #ifndef HAVE_VSYSLOG
-void ROKEN_LIB_FUNCTION vsyslog(int pri, const char *fmt, va_list ap);
+void ROKEN_LIB_FUNCTION vsyslog(int, const char *, va_list);
 #endif
 
 #if !HAVE_DECL_OPTARG
@@ -441,22 +441,22 @@ extern char **environ;
 
 #ifndef HAVE_GETIPNODEBYNAME
 struct hostent * ROKEN_LIB_FUNCTION
-getipnodebyname (const char *name, int af, int flags, int *error_num);
+getipnodebyname (const char *, int, int, int *);
 #endif
 
 #ifndef HAVE_GETIPNODEBYADDR
 struct hostent * ROKEN_LIB_FUNCTION
-getipnodebyaddr (const void *src, size_t len, int af, int *error_num);
+getipnodebyaddr (const void *, size_t, int, int *);
 #endif
 
 #ifndef HAVE_FREEHOSTENT
 void ROKEN_LIB_FUNCTION
-freehostent (struct hostent *h);
+freehostent (struct hostent *);
 #endif
 
 #ifndef HAVE_COPYHOSTENT
 struct hostent * ROKEN_LIB_FUNCTION
-copyhostent (const struct hostent *h);
+copyhostent (const struct hostent *);
 #endif
 
 #ifndef HAVE_SOCKLEN_T
@@ -523,35 +523,35 @@ struct addrinfo {
 
 #ifndef HAVE_GETADDRINFO
 int ROKEN_LIB_FUNCTION
-getaddrinfo(const char *nodename,
-	    const char *servname,
-	    const struct addrinfo *hints,
-	    struct addrinfo **res);
+getaddrinfo(const char *,
+	    const char *,
+	    const struct addrinfo *,
+	    struct addrinfo **);
 #endif
 
 #ifndef HAVE_GETNAMEINFO
 int ROKEN_LIB_FUNCTION
-getnameinfo(const struct sockaddr *sa, socklen_t salen,
-		char *host, size_t hostlen,
-		char *serv, size_t servlen,
-		int flags);
+getnameinfo(const struct sockaddr *, socklen_t,
+		char *, size_t,
+		char *, size_t,
+		int);
 #endif
 
 #ifndef HAVE_FREEADDRINFO
 void ROKEN_LIB_FUNCTION
-freeaddrinfo(struct addrinfo *ai);
+freeaddrinfo(struct addrinfo *);
 #endif
 
 #ifndef HAVE_GAI_STRERROR
-char * ROKEN_LIB_FUNCTION
-gai_strerror(int ecode);
+const char * ROKEN_LIB_FUNCTION
+gai_strerror(int);
 #endif
 
 int ROKEN_LIB_FUNCTION
-getnameinfo_verified(const struct sockaddr *sa, socklen_t salen,
-		     char *host, size_t hostlen,
-		     char *serv, size_t servlen,
-		     int flags);
+getnameinfo_verified(const struct sockaddr *, socklen_t,
+		     char *, size_t,
+		     char *, size_t,
+		     int);
 
 int ROKEN_LIB_FUNCTION
 roken_getaddrinfo_hostspec(const char *, int, struct addrinfo **); 
@@ -560,20 +560,19 @@ roken_getaddrinfo_hostspec2(const char *, int, int, struct addrinfo **);
 
 #ifndef HAVE_STRFTIME
 size_t ROKEN_LIB_FUNCTION
-strftime (char *buf, size_t maxsize, const char *format,
-	  const struct tm *tm);
+strftime (char *, size_t, const char *, const struct tm *);
 #endif
 
 #ifndef HAVE_STRPTIME
 char * ROKEN_LIB_FUNCTION
-strptime (const char *buf, const char *format, struct tm *timeptr);
+strptime (const char *, const char *, struct tm *);
 #endif
 
 #ifndef HAVE_EMALLOC
 void * ROKEN_LIB_FUNCTION emalloc (size_t);
 #endif
 #ifndef HAVE_ECALLOC
-void * ROKEN_LIB_FUNCTION ecalloc(size_t num, size_t sz);
+void * ROKEN_LIB_FUNCTION ecalloc(size_t, size_t);
 #endif
 #ifndef HAVE_EREALLOC
 void * ROKEN_LIB_FUNCTION erealloc (void *, size_t);
@@ -626,7 +625,7 @@ roken_gethostbyaddr(const void*, size_t, int);
 #endif
 
 #ifndef HAVE_SETPROGNAME
-void ROKEN_LIB_FUNCTION setprogname(const char *argv0);
+void ROKEN_LIB_FUNCTION setprogname(const char *);
 #endif
 
 #ifndef HAVE_GETPROGNAME
@@ -638,46 +637,46 @@ extern const char *__progname;
 #endif
 
 void ROKEN_LIB_FUNCTION mini_inetd_addrinfo (struct addrinfo*);
-void ROKEN_LIB_FUNCTION mini_inetd (int port);
+void ROKEN_LIB_FUNCTION mini_inetd (int);
 
 #ifndef HAVE_LOCALTIME_R
 struct tm * ROKEN_LIB_FUNCTION
-localtime_r(const time_t *timer, struct tm *result);
+localtime_r(const time_t *, struct tm *);
 #endif
 
 #if !defined(HAVE_STRSVIS) || defined(NEED_STRSVIS_PROTO)
 int ROKEN_LIB_FUNCTION
-strsvis(char *dst, const char *src, int flag, const char *extra);
+strsvis(char *, const char *, int, const char *);
 #endif
 
 #if !defined(HAVE_STRUNVIS) || defined(NEED_STRUNVIS_PROTO)
 int ROKEN_LIB_FUNCTION
-strunvis(char *dst, const char *src);
+strunvis(char *, const char *);
 #endif
 
 #if !defined(HAVE_STRVIS) || defined(NEED_STRVIS_PROTO)
 int ROKEN_LIB_FUNCTION
-strvis(char *dst, const char *src, int flag);
+strvis(char *, const char *, int);
 #endif
 
 #if !defined(HAVE_STRVISX) || defined(NEED_STRVISX_PROTO)
 int ROKEN_LIB_FUNCTION
-strvisx(char *dst, const char *src, size_t len, int flag);
+strvisx(char *, const char *, size_t, int);
 #endif
 
 #if !defined(HAVE_SVIS) || defined(NEED_SVIS_PROTO)
 char * ROKEN_LIB_FUNCTION
-svis(char *dst, int c, int flag, int nextc, const char *extra);
+svis(char *, int, int, int, const char *);
 #endif
 
 #if !defined(HAVE_UNVIS) || defined(NEED_UNVIS_PROTO)
 int ROKEN_LIB_FUNCTION
-unvis(char *cp, int c, int *astate, int flag);
+unvis(char *, int, int *, int);
 #endif
 
 #if !defined(HAVE_VIS) || defined(NEED_VIS_PROTO)
 char * ROKEN_LIB_FUNCTION
-vis(char *dst, int c, int flag, int nextc);
+vis(char *, int, int, int);
 #endif
 
 #if !defined(HAVE_CLOSEFROM)

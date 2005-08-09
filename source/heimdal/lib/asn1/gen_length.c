@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "gen_locl.h"
 
-RCSID("$Id: gen_length.c,v 1.14 2004/01/19 17:54:33 lha Exp $");
+RCSID("$Id: gen_length.c,v 1.18 2005/07/19 18:01:59 lha Exp $");
 
 static void
 length_primitive (const char *typename,
@@ -43,7 +43,22 @@ length_primitive (const char *typename,
     fprintf (codefile, "%s += length_%s(%s);\n", variable, typename, name);
 }
 
-static void
+static size_t
+length_tag(unsigned int tag)
+{
+    size_t len = 0;
+    
+    if(tag <= 30)
+	return 1;
+    while(tag) {
+	tag /= 128;
+	len++;
+    }
+    return len + 1;
+}
+
+
+static int
 length_type (const char *name, const Type *t, const char *variable)
 {
     switch (t->type) {
@@ -55,19 +70,28 @@ length_type (const char *name, const Type *t, const char *variable)
 		 variable, t->symbol->gen_name, name);
 	break;
     case TInteger:
-        if(t->members == NULL)
-            length_primitive ("integer", name, variable);
-        else {
-            char *s;
-            asprintf(&s, "(const int*)%s", name);
-            if(s == NULL)
+	if(t->members) {
+	    char *s;
+	    asprintf(&s, "(const int*)%s", name);
+	    if(s == NULL)
 		errx (1, "out of memory");
-            length_primitive ("integer", s, variable);
-            free(s);
-        }
+	    length_primitive ("integer", s, variable);
+	    free(s);
+	} else if (t->range == NULL) {
+	    length_primitive ("heim_integer", name, variable);
+	} else if (t->range->min == INT_MIN && t->range->max == INT_MAX) {
+	    length_primitive ("integer", name, variable);
+	} else if (t->range->min == 0 && t->range->max == UINT_MAX) {
+	    length_primitive ("unsigned", name, variable);
+	} else if (t->range->min == 0 && t->range->max == INT_MAX) {
+	    length_primitive ("unsigned", name, variable);
+	} else
+	    errx(1, "%s: unsupported range %d -> %d", 
+		 name, t->range->min, t->range->max);
+
 	break;
-    case TUInteger:
-	length_primitive ("unsigned", name, variable);
+    case TBoolean:
+	fprintf (codefile, "%s += 1;\n", variable);
 	break;
     case TEnumerated :
 	length_primitive ("enumerated", name, variable);
@@ -75,71 +99,112 @@ length_type (const char *name, const Type *t, const char *variable)
     case TOctetString:
 	length_primitive ("octet_string", name, variable);
 	break;
-    case TOID :
-	length_primitive ("oid", name, variable);
-	break;
     case TBitString: {
-	/*
-	 * XXX - Hope this is correct
-	 * look at TBitString case in `encode_type'
-	 */
-	fprintf (codefile, "%s += 7;\n", variable);
+	if (ASN1_TAILQ_EMPTY(t->members))
+	    length_primitive("bit_string", name, variable);
+	else {
+	    if (!rfc1510_bitstring) {
+		Member *m;
+		int pos = ASN1_TAILQ_LAST(t->members, memhead)->val;
+
+		fprintf(codefile,
+			"do {\n");
+		ASN1_TAILQ_FOREACH_REVERSE(m, t->members, memhead, members) {
+		    while (m->val / 8 < pos / 8) {
+			pos -= 8;
+		    }
+		    fprintf (codefile,
+			     "if((%s)->%s) { %s += %d; break; }\n",
+			     name, m->gen_name, variable, (pos + 8) / 8);
+		}
+		fprintf(codefile,
+			"} while(0);\n");
+		fprintf (codefile, "%s += 1;\n", variable);
+	    } else {
+		fprintf (codefile, "%s += 5;\n", variable);
+	    }
+	}
 	break;
     }
-    case TSequence: {
-	Member *m;
-	int tag = -1;
-	int oldret_counter = unique_get_next();
+    case TSet:
+    case TSequence:
+    case TChoice: {
+	Member *m, *have_ellipsis = NULL;
 
 	if (t->members == NULL)
 	    break;
       
-	for (m = t->members; m && tag != m->val; m = m->next) {
-	    char *s;
+	if(t->type == TChoice)
+	    fprintf (codefile, "switch((%s)->element) {\n", name);
 
-	    asprintf (&s, "%s(%s)->%s",
-		      m->optional ? "" : "&", name, m->gen_name);
+	ASN1_TAILQ_FOREACH(m, t->members, members) {
+	    char *s;
+	    
+	    if (m->ellipsis) {
+		have_ellipsis = m;
+		continue;
+	    }
+
+	    if(t->type == TChoice)
+		fprintf(codefile, "case %s:\n", m->label);
+
+	    asprintf (&s, "%s(%s)->%s%s",
+		      m->optional ? "" : "&", name, 
+		      t->type == TChoice ? "u." : "", m->gen_name);
+	    if (s == NULL)
+		errx(1, "malloc");
 	    if (m->optional)
 		fprintf (codefile, "if(%s)", s);
+	    else if(m->defval)
+		gen_compare_defval(s + 1, m->defval);
 	    fprintf (codefile, "{\n"
-		     "int oldret%d = %s;\n"
-		     "%s = 0;\n", oldret_counter, variable, variable);
+		     "size_t oldret = %s;\n"
+		     "%s = 0;\n", variable, variable);
 	    length_type (s, m->type, "ret");
-	    fprintf (codefile, "%s += 1 + length_len(%s) + oldret%d;\n",
-		     variable, variable, oldret_counter);
+	    fprintf (codefile, "ret += oldret;\n");
 	    fprintf (codefile, "}\n");
-	    if (tag == -1)
-		tag = m->val;
 	    free (s);
+	    if(t->type == TChoice)
+		fprintf(codefile, "break;\n");
 	}
-	fprintf (codefile,
-		 "%s += 1 + length_len(%s);\n", variable, variable);
+	if(t->type == TChoice) {
+	    if (have_ellipsis)
+		fprintf(codefile,
+			"case %s:\n"
+			"ret += (%s)->u.%s.length;\n"
+			"break;\n",
+			have_ellipsis->label,
+			name,
+			have_ellipsis->gen_name);
+	    fprintf (codefile, "}\n"); /* switch */
+	}
 	break;
     }
+    case TSetOf:
     case TSequenceOf: {
 	char *n;
-	int oldret_counter = unique_get_next();
-	int oldret_counter_inner = unique_get_next();
 
 	fprintf (codefile,
 		 "{\n"
-		 "int oldret%d = %s;\n"
+		 "int oldret = %s;\n"
 		 "int i;\n"
 		 "%s = 0;\n",
-		 oldret_counter, variable, variable);
+		 variable, variable);
 
 	fprintf (codefile, "for(i = (%s)->len - 1; i >= 0; --i){\n", name);
-	fprintf (codefile, "int oldret%d = %s;\n"
-		 "%s = 0;\n", oldret_counter_inner, variable, variable);
+	fprintf (codefile, "int oldret = %s;\n"
+		 "%s = 0;\n", variable, variable);
 	asprintf (&n, "&(%s)->val[i]", name);
+	if (n == NULL)
+	    errx(1, "malloc");
 	length_type(n, t->subtype, variable);
-	fprintf (codefile, "%s += oldret%d;\n",
-		 variable, oldret_counter_inner);
+	fprintf (codefile, "%s += oldret;\n",
+		 variable);
 	fprintf (codefile, "}\n");
 
 	fprintf (codefile,
-		 "%s += 1 + length_len(%s) + oldret%d;\n"
-		 "}\n", variable, variable, oldret_counter);
+		 "%s += oldret;\n"
+		 "}\n", variable);
 	free(n);
 	break;
     }
@@ -149,28 +214,44 @@ length_type (const char *name, const Type *t, const char *variable)
     case TGeneralString:
 	length_primitive ("general_string", name, variable);
 	break;
+    case TUTCTime:
+	length_primitive ("utctime", name, variable);
+	break;
     case TUTF8String:
 	length_primitive ("utf8string", name, variable);
 	break;
+    case TPrintableString:
+	length_primitive ("printable_string", name, variable);
+	break;
+    case TIA5String:
+	length_primitive ("ia5_string", name, variable);
+	break;
+    case TBMPString:
+	length_primitive ("bmp_string", name, variable);
+	break;
+    case TUniversalString:
+	length_primitive ("universal_string", name, variable);
+	break;
     case TNull:
-	fprintf (codefile, "%s += length_nulltype();\n", variable);
+	fprintf (codefile, "/* NULL */\n");
 	break;
-    case TApplication:
+    case TTag:
 	length_type (name, t->subtype, variable);
-	fprintf (codefile, "ret += 1 + length_len (ret);\n");
+	fprintf (codefile, "ret += %lu + length_len (ret);\n", 
+		 (unsigned long)length_tag(t->tag.tagvalue));
 	break;
-    case TBoolean:
-	length_primitive ("boolean", name, variable);
+    case TOID:
+	length_primitive ("oid", name, variable);
 	break;
     default :
 	abort ();
     }
+    return 0;
 }
 
 void
 generate_type_length (const Symbol *s)
 {
-  unique_reset();
   fprintf (headerfile,
 	   "size_t length_%s(const %s *);\n",
 	   s->gen_name, s->gen_name);

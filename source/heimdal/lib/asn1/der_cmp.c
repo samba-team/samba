@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003-2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,8 +33,6 @@
 
 #include "der_locl.h"
 
-RCSID("$Id: der_cmp.c,v 1.2 2004/04/26 20:54:02 lha Exp $");
-
 int
 heim_oid_cmp(const heim_oid *p, const heim_oid *q)
 {
@@ -51,4 +49,51 @@ heim_octet_string_cmp(const heim_octet_string *p, const heim_octet_string *q)
     if (p->length != q->length)
 	return p->length - q->length;
     return memcmp(p->data, q->data, p->length);
+}
+
+int
+heim_bit_string_cmp(const heim_bit_string *p, const heim_bit_string *q)
+{
+    int i, r1, r2;
+    if (p->length != q->length)
+	return p->length - q->length;
+    i = memcmp(p->data, q->data, p->length / 8);
+    if (i)
+	return i;
+    if ((p->length % 8) == 0)
+	return 0;
+    i = (p->length / 8);
+    r1 = ((unsigned char *)p->data)[i];
+    r2 = ((unsigned char *)q->data)[i];
+    i = 8 - (p->length % 8);
+    r1 = r1 >> i;
+    r2 = r2 >> i;
+    return r1 - r2;
+}
+
+int
+heim_integer_cmp(const heim_integer *p, const heim_integer *q)
+{
+    if (p->length != q->length)
+	return p->length - q->length;
+    if (p->negative != q->negative)
+	return p->negative - q->negative;
+    return memcmp(p->data, q->data, p->length);
+}
+
+int
+heim_bmp_string_cmp(const heim_bmp_string *p, const heim_bmp_string *q)
+{
+    if (p->length != q->length)
+	return p->length - q->length;
+    return memcmp(p->data, q->data, q->length * sizeof(q->data[0]));
+}
+
+int
+heim_universal_string_cmp(const heim_universal_string *p, 
+			  const heim_universal_string *q)
+{
+    if (p->length != q->length)
+	return p->length - q->length;
+    return memcmp(p->data, q->data, q->length * sizeof(q->data[0]));
 }
