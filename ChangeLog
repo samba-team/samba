@@ -1,5 +1,23 @@
 2005-08-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/kerberos5.c (_kdc_as_rep): preserve the error code in the
+	ENC-TS case.  From: Andrew Bartlett <abartlet@samba.org>
+
+	* kdc/kerberos5.c (tgs_rep2): only needs to log "Failed to verify
+	authenticator" once, its already done by
+	tgs_check_authenticator().
+	
+	* kdc/kerberos5.c: Indent strings.
+
+	* kdc/kerberos5.c (log_timestamp): avoid shadow warnings From:
+	Andrew Bartlett <abartlet@samba.org>
+	
+	* lib/krb5/verify_user.c: Add krb5_verify_opt_alloc and
+	krb5_verify_opt_free.
+	
+	* lib/krb5/krb5_verify_user.3: Document krb5_verify_opt_alloc and
+	krb5_verify_opt_free.
+
 	* lib/hdb/db3.c (DB_open): catch errors from the d->open calls
 	instead of letting them slip though to d->cursor. Bug repport from
 	Andrew Bartlett <abartlet@samba.org>
