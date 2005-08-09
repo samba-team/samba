@@ -2057,6 +2057,10 @@ tgs_rep2(krb5_context context,
 
     ret = tgs_check_authenticator(context, config, 
 				  ac, b, &e_text, &tgt->key);
+    if (ret) {
+	krb5_auth_con_free(context, ac);
+	goto out2;
+    }
 
     if (b->enc_authorization_data) {
 	krb5_keyblock *subkey;
@@ -2120,12 +2124,6 @@ tgs_rep2(krb5_context context,
 
     krb5_auth_con_free(context, ac);
 
-    if(ret){
-	kdc_log(context, config, 0, "Failed to verify authenticator: %s", 
-		krb5_get_err_text(context, ret));
-	goto out2;
-    }
-    
     {
 	PrincipalName *s;
 	Realm r;
