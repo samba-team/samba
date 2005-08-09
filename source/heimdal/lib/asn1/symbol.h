@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,64 +31,109 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: symbol.h,v 1.11 2003/10/03 00:28:29 lha Exp $ */
+/* $Id: symbol.h,v 1.12 2005/07/12 06:27:40 lha Exp $ */
 
 #ifndef _SYMBOL_H
 #define _SYMBOL_H
 
+#include "asn1_queue.h"
+
 enum typetype { 
-    TApplication,
     TBitString,
     TBoolean,
-    TChoice,
+    TChoice, 
     TEnumerated,
-    TGeneralString,
-    TGeneralizedTime,
+    TGeneralString, 
+    TGeneralizedTime, 
+    TIA5String,
     TInteger, 
     TNull,
-    TOID,
-    TOctetString,
-    TSequence,
+    TOID, 
+    TOctetString, 
+    TPrintableString,
+    TSequence, 
     TSequenceOf,
+    TSet, 
+    TSetOf,
+    TTag, 
     TType, 
-    TUInteger,
-    TUTF8String
+    TUTCTime, 
+    TUTF8String,
+    TBMPString,
+    TUniversalString
 };
 
 typedef enum typetype Typetype;
 
 struct type;
 
+struct value {
+    enum { booleanvalue, 
+	   nullvalue, 
+	   integervalue, 
+	   stringvalue, 
+	   objectidentifiervalue
+    } type;
+    union {
+	int booleanvalue;
+	int integervalue;
+	char *stringvalue;
+	struct objid *objectidentifiervalue;
+    } u;
+};
+
 struct member {
-  char *name;
-  char *gen_name;
-  int val;
-  int optional;
-  struct type *type;
-  struct member *next, *prev;
-  char *defval;
+    char *name;
+    char *gen_name;
+    char *label;
+    int val;
+    int optional;
+    int ellipsis;
+    struct type *type;
+    ASN1_TAILQ_ENTRY(member) members;
+    struct value *defval;
 };
 
 typedef struct member Member;
 
+ASN1_TAILQ_HEAD(memhead, member);
+
 struct symbol;
 
+struct tagtype {
+    int tagclass;
+    int tagvalue;
+    enum { TE_IMPLICIT, TE_EXPLICIT } tagenv;
+};
+
+struct range {
+    int min;
+    int max;
+};
+
 struct type {
-  Typetype type;
-  int application;
-  Member *members;
-  struct type *subtype;
-  struct symbol *symbol;
+    Typetype type;
+    struct memhead *members;
+    struct symbol *symbol;
+    struct type *subtype;
+    struct tagtype tag;
+    struct range *range;
 };
 
 typedef struct type Type;
 
+struct objid {
+    const char *label;
+    int value;
+    struct objid *next;
+};
+
 struct symbol {
-  char *name;
-  char *gen_name;
-  enum { SUndefined, SConstant, Stype } stype;
-  int constant;
-  Type *type;
+    char *name;
+    char *gen_name;
+    enum { SUndefined, SValue, Stype } stype;
+    struct value *value;
+    Type *type;
 };
 
 typedef struct symbol Symbol;
@@ -96,4 +141,5 @@ typedef struct symbol Symbol;
 void initsym (void);
 Symbol *addsym (char *);
 void output_name (char *);
+int checkundefined(void);
 #endif

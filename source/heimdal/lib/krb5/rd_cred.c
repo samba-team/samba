@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: rd_cred.c,v 1.23 2005/06/17 04:31:48 lha Exp $");
+RCSID("$Id: rd_cred.c,v 1.24 2005/07/13 08:22:50 lha Exp $");
 
 static krb5_error_code
 compare_addrs(krb5_context context,
@@ -67,6 +67,8 @@ krb5_rd_cred(krb5_context context,
     krb5_data enc_krb_cred_part_data;
     krb5_crypto crypto;
     int i;
+
+    memset(&enc_krb_cred_part, 0, sizeof(enc_krb_cred_part));
 
     if ((auth_context->flags & 
 	 (KRB5_AUTH_CONTEXT_RET_TIME | KRB5_AUTH_CONTEXT_RET_SEQUENCE)) &&
@@ -262,9 +264,14 @@ krb5_rd_cred(krb5_context context,
 	
     }
     (*ret_creds)[i] = NULL;
+
+    free_KRB_CRED (&cred);
+    free_EncKrbCredPart(&enc_krb_cred_part);
+
     return 0;
 
   out:
+    free_EncKrbCredPart(&enc_krb_cred_part);
     free_KRB_CRED (&cred);
     if(*ret_creds) {
 	for(i = 0; (*ret_creds)[i]; i++)

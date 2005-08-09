@@ -1,7 +1,7 @@
-/* A Bison parser, made by GNU Bison 1.875d.  */
+/* A Bison parser, made by GNU Bison 1.875c.  */
 
 /* Skeleton parser for Yacc-like parsing with Bison,
-   Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003, 2004 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,81 +29,203 @@
    /* Put the tokens into the symbol table, so that GDB and other debuggers
       know about them.  */
    enum yytokentype {
-     INTEGER = 258,
-     SEQUENCE = 259,
-     CHOICE = 260,
-     OF = 261,
-     OCTET = 262,
-     STRING = 263,
-     GeneralizedTime = 264,
-     GeneralString = 265,
-     BIT = 266,
-     APPLICATION = 267,
-     OPTIONAL = 268,
-     EEQUAL = 269,
-     TBEGIN = 270,
-     END = 271,
-     DEFINITIONS = 272,
-     ENUMERATED = 273,
-     UTF8String = 274,
-     NULLTYPE = 275,
-     EXTERNAL = 276,
-     DEFAULT = 277,
-     DOTDOT = 278,
-     DOTDOTDOT = 279,
-     BOOLEAN = 280,
-     IMPORTS = 281,
-     FROM = 282,
-     OBJECT = 283,
-     IDENTIFIER = 284,
-     IDENT = 285,
-     CONSTANT = 286
+     kw_ABSENT = 258,
+     kw_ABSTRACT_SYNTAX = 259,
+     kw_ALL = 260,
+     kw_APPLICATION = 261,
+     kw_AUTOMATIC = 262,
+     kw_BEGIN = 263,
+     kw_BIT = 264,
+     kw_BMPString = 265,
+     kw_BOOLEAN = 266,
+     kw_BY = 267,
+     kw_CHARACTER = 268,
+     kw_CHOICE = 269,
+     kw_CLASS = 270,
+     kw_COMPONENT = 271,
+     kw_COMPONENTS = 272,
+     kw_CONSTRAINED = 273,
+     kw_CONTAINING = 274,
+     kw_DEFAULT = 275,
+     kw_DEFINITIONS = 276,
+     kw_EMBEDDED = 277,
+     kw_ENCODED = 278,
+     kw_END = 279,
+     kw_ENUMERATED = 280,
+     kw_EXCEPT = 281,
+     kw_EXPLICIT = 282,
+     kw_EXPORTS = 283,
+     kw_EXTENSIBILITY = 284,
+     kw_EXTERNAL = 285,
+     kw_FALSE = 286,
+     kw_FROM = 287,
+     kw_GeneralString = 288,
+     kw_GeneralizedTime = 289,
+     kw_GraphicString = 290,
+     kw_IA5String = 291,
+     kw_IDENTIFIER = 292,
+     kw_IMPLICIT = 293,
+     kw_IMPLIED = 294,
+     kw_IMPORTS = 295,
+     kw_INCLUDES = 296,
+     kw_INSTANCE = 297,
+     kw_INTEGER = 298,
+     kw_INTERSECTION = 299,
+     kw_ISO646String = 300,
+     kw_MAX = 301,
+     kw_MIN = 302,
+     kw_MINUS_INFINITY = 303,
+     kw_NULL = 304,
+     kw_NumericString = 305,
+     kw_OBJECT = 306,
+     kw_OCTET = 307,
+     kw_OF = 308,
+     kw_OPTIONAL = 309,
+     kw_ObjectDescriptor = 310,
+     kw_PATTERN = 311,
+     kw_PDV = 312,
+     kw_PLUS_INFINITY = 313,
+     kw_PRESENT = 314,
+     kw_PRIVATE = 315,
+     kw_PrintableString = 316,
+     kw_REAL = 317,
+     kw_RELATIVE_OID = 318,
+     kw_SEQUENCE = 319,
+     kw_SET = 320,
+     kw_SIZE = 321,
+     kw_STRING = 322,
+     kw_SYNTAX = 323,
+     kw_T61String = 324,
+     kw_TAGS = 325,
+     kw_TRUE = 326,
+     kw_TYPE_IDENTIFIER = 327,
+     kw_TeletexString = 328,
+     kw_UNION = 329,
+     kw_UNIQUE = 330,
+     kw_UNIVERSAL = 331,
+     kw_UTCTime = 332,
+     kw_UTF8String = 333,
+     kw_UniversalString = 334,
+     kw_VideotexString = 335,
+     kw_VisibleString = 336,
+     kw_WITH = 337,
+     RANGE = 338,
+     EEQUAL = 339,
+     ELLIPSIS = 340,
+     IDENTIFIER = 341,
+     referencename = 342,
+     STRING = 343,
+     NUMBER = 344
    };
 #endif
-#define INTEGER 258
-#define SEQUENCE 259
-#define CHOICE 260
-#define OF 261
-#define OCTET 262
-#define STRING 263
-#define GeneralizedTime 264
-#define GeneralString 265
-#define BIT 266
-#define APPLICATION 267
-#define OPTIONAL 268
-#define EEQUAL 269
-#define TBEGIN 270
-#define END 271
-#define DEFINITIONS 272
-#define ENUMERATED 273
-#define UTF8String 274
-#define NULLTYPE 275
-#define EXTERNAL 276
-#define DEFAULT 277
-#define DOTDOT 278
-#define DOTDOTDOT 279
-#define BOOLEAN 280
-#define IMPORTS 281
-#define FROM 282
-#define OBJECT 283
-#define IDENTIFIER 284
-#define IDENT 285
-#define CONSTANT 286
+#define kw_ABSENT 258
+#define kw_ABSTRACT_SYNTAX 259
+#define kw_ALL 260
+#define kw_APPLICATION 261
+#define kw_AUTOMATIC 262
+#define kw_BEGIN 263
+#define kw_BIT 264
+#define kw_BMPString 265
+#define kw_BOOLEAN 266
+#define kw_BY 267
+#define kw_CHARACTER 268
+#define kw_CHOICE 269
+#define kw_CLASS 270
+#define kw_COMPONENT 271
+#define kw_COMPONENTS 272
+#define kw_CONSTRAINED 273
+#define kw_CONTAINING 274
+#define kw_DEFAULT 275
+#define kw_DEFINITIONS 276
+#define kw_EMBEDDED 277
+#define kw_ENCODED 278
+#define kw_END 279
+#define kw_ENUMERATED 280
+#define kw_EXCEPT 281
+#define kw_EXPLICIT 282
+#define kw_EXPORTS 283
+#define kw_EXTENSIBILITY 284
+#define kw_EXTERNAL 285
+#define kw_FALSE 286
+#define kw_FROM 287
+#define kw_GeneralString 288
+#define kw_GeneralizedTime 289
+#define kw_GraphicString 290
+#define kw_IA5String 291
+#define kw_IDENTIFIER 292
+#define kw_IMPLICIT 293
+#define kw_IMPLIED 294
+#define kw_IMPORTS 295
+#define kw_INCLUDES 296
+#define kw_INSTANCE 297
+#define kw_INTEGER 298
+#define kw_INTERSECTION 299
+#define kw_ISO646String 300
+#define kw_MAX 301
+#define kw_MIN 302
+#define kw_MINUS_INFINITY 303
+#define kw_NULL 304
+#define kw_NumericString 305
+#define kw_OBJECT 306
+#define kw_OCTET 307
+#define kw_OF 308
+#define kw_OPTIONAL 309
+#define kw_ObjectDescriptor 310
+#define kw_PATTERN 311
+#define kw_PDV 312
+#define kw_PLUS_INFINITY 313
+#define kw_PRESENT 314
+#define kw_PRIVATE 315
+#define kw_PrintableString 316
+#define kw_REAL 317
+#define kw_RELATIVE_OID 318
+#define kw_SEQUENCE 319
+#define kw_SET 320
+#define kw_SIZE 321
+#define kw_STRING 322
+#define kw_SYNTAX 323
+#define kw_T61String 324
+#define kw_TAGS 325
+#define kw_TRUE 326
+#define kw_TYPE_IDENTIFIER 327
+#define kw_TeletexString 328
+#define kw_UNION 329
+#define kw_UNIQUE 330
+#define kw_UNIVERSAL 331
+#define kw_UTCTime 332
+#define kw_UTF8String 333
+#define kw_UniversalString 334
+#define kw_VideotexString 335
+#define kw_VisibleString 336
+#define kw_WITH 337
+#define RANGE 338
+#define EEQUAL 339
+#define ELLIPSIS 340
+#define IDENTIFIER 341
+#define referencename 342
+#define STRING 343
+#define NUMBER 344
 
 
 
 
 #if ! defined (YYSTYPE) && ! defined (YYSTYPE_IS_DECLARED)
-#line 56 "parse.y"
+#line 64 "parse.y"
 typedef union YYSTYPE {
-  int constant;
-  char *name;
-  Type *type;
-  Member *member;
-  char *defval;
+    int constant;
+    struct value *value;
+    struct range range;
+    char *name;
+    Type *type;
+    Member *member;
+    struct objid *objid;
+    char *defval;
+    struct string_list *sl;
+    struct tagtype tag;
+    struct memhead *members;
 } YYSTYPE;
-/* Line 1285 of yacc.c.  */
-#line 107 "parse.h"
+/* Line 1275 of yacc.c.  */
+#line 229 "parse.h"
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
 # define YYSTYPE_IS_TRIVIAL 1

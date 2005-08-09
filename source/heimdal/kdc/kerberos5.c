@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2005 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2005 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -189,22 +189,26 @@ log_timestamp(krb5_context context,
 	      KerberosTime authtime, KerberosTime *starttime, 
 	      KerberosTime endtime, KerberosTime *renew_till)
 {
-    char atime[100], stime[100], etime[100], rtime[100];
+    char authtime_str[100], starttime_str[100], endtime_str[100], renewtime_str[100];
     
-    krb5_format_time(context, authtime, atime, sizeof(atime), TRUE); 
+    krb5_format_time(context, authtime, 
+		     authtime_str, sizeof(authtime_str), TRUE); 
     if (starttime)
-	krb5_format_time(context, *starttime, stime, sizeof(stime), TRUE); 
+	krb5_format_time(context, *starttime, 
+			 starttime_str, sizeof(starttime_str), TRUE); 
     else
-	strlcpy(stime, "unset", sizeof(stime));
-    krb5_format_time(context, endtime, etime, sizeof(etime), TRUE); 
+	strlcpy(starttime_str, "unset", sizeof(starttime_str));
+    krb5_format_time(context, endtime, 
+		     endtime_str, sizeof(endtime_str), TRUE); 
     if (renew_till)
-	krb5_format_time(context, *renew_till, rtime, sizeof(rtime), TRUE); 
+	krb5_format_time(context, *renew_till, 
+			 renewtime_str, sizeof(renewtime_str), TRUE); 
     else
-	strlcpy(rtime, "unset", sizeof(rtime));
+	strlcpy(renewtime_str, "unset", sizeof(renewtime_str));
     
     kdc_log(context, config, 5,
 	    "%s authtime: %s starttime: %s endtype: %s renew till: %s",
-	    type, atime, stime, etime, rtime);
+	    type, authtime_str, starttime_str, endtime_str, renewtime_str);
 }
 
 static krb5_error_code
@@ -578,7 +582,8 @@ get_pa_etype_info2(krb5_context context,
 	ret = krb5_unparse_name(context, client->principal, &name);
 	if (ret)
 	    name = "<unparse_name failed>";
-	kdc_log(context, config, 0, "internal error in get_pa_etype_info2(%s): %d != %d", 
+	kdc_log(context, config, 0,
+		"internal error in get_pa_etype_info2(%s): %d != %d", 
 		name, n, pa.len);
 	if (ret == 0)
 	    free(name);
@@ -623,24 +628,26 @@ _kdc_check_flags(krb5_context context,
 	
 	if(!client->flags.client){
 	    kdc_log(context, config, 0,
-		    "Principal may not act as client -- %s", 
-		    client_name);
+		    "Principal may not act as client -- %s", client_name);
 	    return KRB5KDC_ERR_POLICY;
 	}
 	
 	if (client->valid_start && *client->valid_start > kdc_time) {
-	    kdc_log(context, config, 0, "Client not yet valid -- %s", client_name);
+	    kdc_log(context, config, 0,
+		    "Client not yet valid -- %s", client_name);
 	    return KRB5KDC_ERR_CLIENT_NOTYET;
 	}
 	
 	if (client->valid_end && *client->valid_end < kdc_time) {
-	    kdc_log(context, config, 0, "Client expired -- %s", client_name);
+	    kdc_log(context, config, 0,
+		    "Client expired -- %s", client_name);
 	    return KRB5KDC_ERR_NAME_EXP;
 	}
 	
 	if (client->pw_end && *client->pw_end < kdc_time
 	    && !server->flags.change_pw) {
-	    kdc_log(context, config, 0, "Client's key has expired -- %s", client_name);
+	    kdc_log(context, config, 0,
+		    "Client's key has expired -- %s", client_name);
 	    return KRB5KDC_ERR_KEY_EXPIRED;
 	}
     }
@@ -649,33 +656,38 @@ _kdc_check_flags(krb5_context context,
     
     if (server != NULL) {
 	if (server->flags.invalid) {
-	    kdc_log(context, config, 0, "Server has invalid flag set -- %s", server_name);
+	    kdc_log(context, config, 0,
+		    "Server has invalid flag set -- %s", server_name);
 	    return KRB5KDC_ERR_POLICY;
 	}
 
 	if(!server->flags.server){
-	    kdc_log(context, config, 0, "Principal may not act as server -- %s", 
-		    server_name);
+	    kdc_log(context, config, 0,
+		    "Principal may not act as server -- %s", server_name);
 	    return KRB5KDC_ERR_POLICY;
 	}
 
 	if(!is_as_req && server->flags.initial) {
-	    kdc_log(context, config, 0, "AS-REQ is required for server -- %s", server_name);
+	    kdc_log(context, config, 0,
+		    "AS-REQ is required for server -- %s", server_name);
 	    return KRB5KDC_ERR_POLICY;
 	}
 
 	if (server->valid_start && *server->valid_start > kdc_time) {
-	    kdc_log(context, config, 0, "Server not yet valid -- %s", server_name);
+	    kdc_log(context, config, 0,
+		    "Server not yet valid -- %s", server_name);
 	    return KRB5KDC_ERR_SERVICE_NOTYET;
 	}
 
 	if (server->valid_end && *server->valid_end < kdc_time) {
-	    kdc_log(context, config, 0, "Server expired -- %s", server_name);
+	    kdc_log(context, config, 0,
+		    "Server expired -- %s", server_name);
 	    return KRB5KDC_ERR_SERVICE_EXP;
 	}
 
 	if (server->pw_end && *server->pw_end < kdc_time) {
-	    kdc_log(context, config, 0, "Server's key has expired -- %s", server_name);
+	    kdc_log(context, config, 0,
+		    "Server's key has expired -- %s", server_name);
 	    return KRB5KDC_ERR_KEY_EXPIRED;
 	}
     }
@@ -868,6 +880,7 @@ _kdc_as_rep(krb5_context context,
 	    size_t len;
 	    EncryptedData enc_data;
 	    Key *pa_key;
+	    char *str;
 	    
 	    found_pa = 1;
 	    
@@ -919,14 +932,24 @@ _kdc_as_rep(krb5_context context,
 					      &ts_data);
 	    krb5_crypto_destroy(context, crypto);
 	    if(ret){
+		krb5_error_code ret2;
+		ret2 = krb5_enctype_to_string(context, 
+					     pa_key->key.keytype, &str);
+		if (ret2)
+		    str = NULL;
+		kdc_log(context, config, 5, 
+			"Failed to decrypt PA-DATA -- %s "
+			"(enctype %s) error %s",
+			client_name, str ? str : "unknown enctype", 
+			krb5_get_err_text(context, ret));
+		free(str);
+
 		if(hdb_next_enctype2key(context, client, 
 					enc_data.etype, &pa_key) == 0)
 		    goto try_next_key;
-		free_EncryptedData(&enc_data);
 		e_text = "Failed to decrypt PA-DATA";
-		kdc_log(context, config, 
-			5, "Failed to decrypt PA-DATA -- %s",
-			client_name);
+
+		free_EncryptedData(&enc_data);
 		ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
 		continue;
 	    }
@@ -953,9 +976,15 @@ _kdc_as_rep(krb5_context context,
 		goto out;
 	    }
 	    et.flags.pre_authent = 1;
+
+	    ret = krb5_enctype_to_string(context,pa_key->key.keytype, &str);
+	    if (ret)
+		str = NULL;
+
 	    kdc_log(context, config, 2,
-		    "ENC-TS Pre-authentication succeeded -- %s", 
-		    client_name);
+		    "ENC-TS Pre-authentication succeeded -- %s using %s", 
+		    client_name, str ? str : "unknown enctype");
+	    free(str);
 	    break;
 	}
 #ifdef PKINIT
@@ -1877,7 +1906,7 @@ tgs_check_authenticator(krb5_context context,
     free(buf);
     krb5_crypto_destroy(context, crypto);
     if(ret){
-	kdc_log(context, config, 0, "Failed to verify checksum: %s", 
+	kdc_log(context, config, 0, "Failed to verify authenticator checksum: %s", 
 		krb5_get_err_text(context, ret));
     }
 out:
@@ -2073,7 +2102,11 @@ tgs_rep2(krb5_context context,
 
     ret = tgs_check_authenticator(context, config, 
 				  ac, b, &e_text, &tgt->key);
-
+    if(ret){
+	krb5_auth_con_free(context, ac);
+	goto out2;
+    }
+    
     if (b->enc_authorization_data) {
 	krb5_keyblock *subkey;
 	krb5_data ad;
@@ -2134,14 +2167,6 @@ tgs_rep2(krb5_context context,
 	}
     }
 
-    krb5_auth_con_free(context, ac);
-
-    if(ret){
-	kdc_log(context, config, 0, "Failed to verify authenticator: %s", 
-		krb5_get_err_text(context, ret));
-	goto out2;
-    }
-    
     {
 	PrincipalName *s;
 	Realm r;

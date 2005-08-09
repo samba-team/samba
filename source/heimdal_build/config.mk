@@ -53,6 +53,7 @@ ADD_OBJ_FILES = \
 	heimdal/lib/gssapi/asn1_ContextFlags.o \
 	heimdal/lib/gssapi/asn1_MechType.o \
 	heimdal/lib/gssapi/asn1_MechTypeList.o \
+	heimdal/lib/gssapi/asn1_NegotiationToken.o \
 	heimdal/lib/gssapi/asn1_NegTokenInit.o \
 	heimdal/lib/gssapi/asn1_NegTokenTarg.o \
 	heimdal/lib/gssapi/8003.o \
@@ -236,8 +237,9 @@ ADD_OBJ_FILES = \
 	heimdal/lib/asn1/asn1_Ticket.o \
 	heimdal/lib/asn1/asn1_TicketFlags.o \
 	heimdal/lib/asn1/asn1_TransitedEncoding.o \
-	heimdal/lib/asn1/asn1_UNSIGNED.o \
-	heimdal/lib/asn1/asn1_err.o
+	heimdal/lib/asn1/asn1_err.o \
+	heimdal/lib/asn1/asn1_krb5int32.o \
+	heimdal/lib/asn1/asn1_krb5uint32.o
 NOPROTO = YES
 # End SUBSYSTEM HEIMDAL_KRB5
 #######################
@@ -357,6 +359,8 @@ ADD_OBJ_FILES = \
 	heimdal/lib/roken/strupr.o \
 	heimdal/lib/roken/getprogname.o \
 	heimdal/lib/roken/get_window_size.o \
+	heimdal/lib/roken/estrdup.o \
+	heimdal/lib/roken/ecalloc.o \
 	heimdal/lib/asn1/symbol.o \
 	heimdal_build/replace.o
 NOPROTO = YES
@@ -403,7 +407,7 @@ heimdal/lib/roken/err.h: heimdal/lib/roken/err.hin
 
 include ./heimdal_build/asn1_deps.pl heimdal/lib/hdb/hdb.asn1 hdb_asn1|
 include ./heimdal_build/asn1_deps.pl heimdal/lib/gssapi/spnego.asn1 spnego_asn1|
-include ./heimdal_build/asn1_deps.pl heimdal/lib/asn1/k5.asn1 krb5_asn1|
+include ./heimdal_build/asn1_deps.pl heimdal/lib/asn1/k5.asn1 krb5_asn1 --encode-rfc1510-bit-string|
 
 include ./heimdal_build/et_deps.pl heimdal/lib/asn1/asn1_err.et|
 include ./heimdal_build/et_deps.pl heimdal/lib/hdb/hdb_err.et|
@@ -423,11 +427,7 @@ heimdal_basics: \
 	heimdal/lib/krb5/k524_err.h \
 	heimdal/lib/krb5/krb5_err.h
 
-heimdal_clean:
-	@echo Removing generated ASN1 files
-	@-find heimdal/lib/asn1 -name 'asn1_*.[cx]' -exec rm -f '{}' \;
-	@-find heimdal/lib/gssapi -name 'asn1_*.[c]' -exec rm -f '{}' \;
-	@-find heimdal/lib/hdb -name 'asn1_*.[c]' -exec rm -f '{}' \;
+heimdal_clean:	hdb_asn1_clean spnego_asn1_clean krb5_asn1_clean
 	@-rm -f heimdal/lib/roken/vis.h heimdal/lib/roken/err.h
 	@-rm -f heimdal/lib/hdb/hdb_asn1.h
 	@-rm -f heimdal/lib/gssapi/spnego_asn1.h
