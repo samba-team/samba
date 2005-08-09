@@ -930,16 +930,18 @@ _kdc_as_rep(krb5_context context,
 					      &ts_data);
 	    krb5_crypto_destroy(context, crypto);
 	    if(ret){
-		ret = krb5_enctype_to_string(context, 
+		krb5_error_code ret2;
+		ret2 = krb5_enctype_to_string(context, 
 					     pa_key->key.keytype, &str);
-		if (ret)
+		if (ret2)
 		    str = NULL;
 		kdc_log(context, config, 5, 
 			"Failed to decrypt PA-DATA -- %s "
-			"(enctype %s) error %d",
-			client_name, str ? str : "unknown enctype", ret);
+			"(enctype %s) error %s",
+			client_name,
+			str ? str : "unknown enctype", 
+			krb5_get_err_text(context, ret));
 		free(str);
-
 
 		if(hdb_next_enctype2key(context, client, 
 					enc_data.etype, &pa_key) == 0)
