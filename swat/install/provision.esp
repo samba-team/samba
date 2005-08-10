@@ -8,7 +8,7 @@
 <h1>Samba4 provisioning</h1>
 
 <%
-var f = FormObj("Provisioning", 9, 2);
+var f = FormObj("Provisioning", 0, 3);
 var i;
 var lp = loadparm_init();
 
@@ -18,26 +18,19 @@ if (lp.get("realm") == "") {
 
 
 var subobj = provision_guess();
+/* Don't supply default password for web interface */
+subobj.ADMINPASS = "";
 
-f.element[0].label = "Realm";
-f.element[0].name  = "REALM";
-f.element[1].label = "Domain Name";
-f.element[1].name  = "DOMAIN";
-f.element[2].label = "Host Name";
-f.element[2].name  = "HOSTNAME";
-f.element[3].label = "Administrator Password";
-f.element[3].name  = "ADMINPASS";
-f.element[3].type  = "password";
-f.element[4].label = "Domain SID";
-f.element[4].name  = "DOMAINSID";
-f.element[5].label = "Host GUID";
-f.element[5].name  = "HOSTGUID";
-f.element[6].label = "Base DN";
-f.element[6].name  = "BASEDN";
-f.element[7].label = "Host IP";
-f.element[7].name  = "HOSTIP";
-f.element[8].label = "Default Site";
-f.element[8].name  = "DEFAULTSITE";
+f.add("REALM", "Realm");
+f.add("DOMAIN", "Domain Name");
+f.add("HOSTNAME", "Hostname");
+f.add("ADMINPASS", "Administrator Password", "password");
+f.add("CONFIRM", "Confirm Password", "password");
+f.add("DOMAINSID", "Domain SID");
+f.add("HOSTGUID", "Host GUID");
+f.add("BASEDN", "Base DN");
+f.add("HOSTIP", "Host IP");
+f.add("DEFAULTSITE", "Default Site");
 f.submit[0] = "Initial provision";
 f.submit[1] = "Provision";
 f.submit[2] = "Cancel";
@@ -58,11 +51,15 @@ for (i=0;i<f.element.length;i++) {
 
 lp.set("realm", subobj.REALM);
 
-if (form['submit'] == "Provision") {
+var goodpass = (subobj.CONFIRM == subobj.ADMINPASS);
+if (form['submit'] == "Provision" && goodpass) {
 	provision(subobj, writefln, true);
-} else if (form['submit'] == "Initial provision") {
+} else if (form['submit'] == "Initial provision" && goodpass) {
 	provision(subobj, writefln, false);
 } else {
+	if (!goodpass && form['submit'] != undefined) {
+		write("<h3>Passwords don't match.  Please try again.</h3>");
+	}
 	f.display();
 }
 %>

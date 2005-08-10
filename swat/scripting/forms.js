@@ -10,6 +10,8 @@
     f.action        = action to be taken on submit (optional, defaults to current page)
     f.class         = css class (optional, defaults to 'form')
     f.submit        = an array of submit labels
+    f.add(name, label, [type], [value])  =
+	Add another element
     f.element[i].label = element label
     f.element[i].name  = element name (defaults to label)
     f.element[i].type  = element type (defaults to text)
@@ -69,6 +71,22 @@ function form_display() {
 	write("</form>\n");
 }
 
+function __addMethod(name, label)
+{
+	var f = this;
+	var i = f.element.length;
+	f.element[i] = new Object();
+	f.element[i].name = name;
+	f.element[i].label = label;
+	f.element[i].type = "text";
+	f.element[i].value = "";
+	if (arguments.length > 2) {
+		f.element[i].type = arguments[2];
+	}
+	if (arguments.length > 3) {
+		f.element[i].value = arguments[3];
+	}
+}
 
 /*
   create a Form object with the defaults filled in, ready for display()
@@ -81,6 +99,7 @@ function FormObj(name, num_elements, num_submits)
 	f.submit =  new Array(num_submits);
 	f.action = session_uri(request.REQUEST_URI);
 	f.class = "defaultform";
+	f.add = __addMethod;
 	for (i in f.element) {
 		f.element[i] = new Object();
 		f.element[i].type = "text";
