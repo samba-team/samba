@@ -341,6 +341,9 @@ done:
 		goto done;
 	}
 	status = dcerpc_ndr_request_recv(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 
 	/* print the 'out' structure, if needed */
 	if (p->conn->flags & DCERPC_DEBUG_PRINT_OUT) {
