@@ -46,7 +46,6 @@ enum hdb_ldb_ent_type
 static const char * const krb5_attrs[] = {
 	"objectClass",
 	"cn",
-	"name",
 	"sAMAccountName",
 
 	"userPrincipalName",
