@@ -1,4 +1,38 @@
-<% 
+<%
+/******************************/
+/* server side AJAJ functions */
+libinclude("base.js");
+libinclude("winreg.js");
+libinclude("server_call.js");
+
+/* 
+   server side call to return a listing of elements in a winreg path
+*/
+function enum_path(binding, path) {
+	printf("enum_path(%s, %s)\n", binding, path);
+	var reg = winreg_init();
+	security_init(reg);
+
+	reg.credentials = session.authinfo.credentials;
+
+	var status = reg.connect(binding);
+	if (status.is_ok != true) {
+		printVars(status);
+		return undefined;
+	}
+	var list = winreg_enum_path(reg, path);
+	return list;
+}
+
+/* register a call for clients to make */
+var call = servCallObj();
+call.add('enum_path', enum_path);
+
+/* run the function that was asked for */
+call.run();
+
+  /***********************/
+  /* now the main page */
   page_header("columns", "ESP registry edit", "esptest"); 
 %>
 
@@ -33,7 +67,7 @@ function folder_list(t, list) {
 
 function folder_click(t) {
 	if (!t.populated) {
-		server_call("registry_calls.esp", 'enum_path', 
+		server_call_url("@@request.REQUEST_URI", 'enum_path', 
 			    function(list) { folder_list(t, list); }, 
 			    t.binding, t.reg_path);
 	}
@@ -54,8 +88,10 @@ function registry_tree(binding) {
         setWidth(400);
         setHeight(400);
         setTop(20);
-	addEventListener("click", function() { folder_click(t); });
       }
+      t.addEventListener("click", function() { 
+	      var el = this; folder_click(el); 
+      });
       return t;
 }
 

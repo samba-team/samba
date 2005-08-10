@@ -21,20 +21,20 @@ function __register_call(name, func)
 */
 function __run_call() {
 	var c = this;
-	var name = form['func'];
+	var name = form['ajaj_func'];
 	if (name == undefined) {
-		println("no function name given in run_call");
+		/* no function to run */
 		return;
 	}
-	var args = form['args'];
+	var args = form['ajaj_args'];
 	if (args == undefined) {
 		println("no function arguments given in run_call");
-		return;
+		exit(0);
 	}
 	args = decodeObject(args);
 	if (c.calls[name] == undefined) {
 		println("undefined remote call " + name);
-		return;
+		exit(0);
 	}
 	var f = c.calls[name];
 	var res;
@@ -59,11 +59,12 @@ function __run_call() {
 		res = f(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7]);
 	} else {
 		println("too many arguments for remote call: " + name);
-		return;
+		exit(0);
 	}
 	var repobj = new Object();
 	repobj.res = res;
 	write(encodeObject(repobj));
+	exit(0);
 }
 
 

@@ -12,7 +12,6 @@ var call = servCallObj();
 */
 function srv_printf()
 {
-	println("in srv_printf");
 	var s = string_init();
 	print(s.vsprintf(arguments));
 	return undefined;

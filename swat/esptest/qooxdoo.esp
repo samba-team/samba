@@ -1,4 +1,26 @@
-<% 
+<%
+/******************************/
+/* server side AJAJ functions */
+libinclude("server_call.js");
+
+/* this is a call that the client js code can make - it just adds
+   some more elements to the passed object, then returns the object */
+function testfunc(x) {
+	var sys = sys_init();
+	x.nttime = sys.nttime();
+	x.timestring = sys.httptime(x.nttime);
+	return x;
+}
+
+/* register a call for clients to make */
+var call = servCallObj();
+call.add('testfunc', testfunc);
+
+/* run the function that was asked for */
+call.run();
+
+  /***********************/
+  /* now the main page */
   page_header("columns", "ESP qooxdoo test", "esptest"); 
 %>
 
@@ -48,7 +70,7 @@
 	    shared.rate = shared.counter / (shared.time_diff * 0.0000001);
 	    shared.counter++;
 	    if (stopit == 0) {
-		    server_call('remote.esp', 'testfunc', callback, shared);
+		    server_call_url("@@request.REQUEST_URI", 'testfunc', callback, shared);
 	    }
     }
 
@@ -57,7 +79,7 @@
 	    stopit = 0;
 	    shared.counter = 0;
 	    shared.start_time = 0;
-	    server_call('remote.esp', 'testfunc', callback, shared);
+	    server_call_url("@@request.REQUEST_URI", 'testfunc', callback, shared);
     };
 
     function stop_call() { 
