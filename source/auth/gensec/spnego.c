@@ -354,6 +354,7 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 			 * for better luck next time */
 
 			if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_PARAMETER)) {
+				*unwrapped_out = data_blob(NULL, 0);
 				nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 			}
 		}
