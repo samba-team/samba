@@ -38,12 +38,24 @@ RCSID("$Id$");
 
 static void
 test_dh2key(krb5_context context, 
-	    const heim_octet_string *K,
+	    const heim_octet_string *dh,
 	    const heim_octet_string *c_n,
 	    const heim_octet_string *k_n,
 	    krb5_enctype etype)
 {
-    return;
+    krb5_error_code ret;
+    krb5_keyblock key;
+
+
+    ret = _krb5_pk_octetstring2key(context,
+				   etype,
+				   dh->data, dh->length,
+				   c_n,
+				   k_n,
+				   &key);
+    if (ret != 0)
+	krb5_err(context, 1, ret, "_krb5_pk_octetstring2key");
+
 }
 
 
@@ -101,7 +113,8 @@ main(int argc, char **argv)
 	errx (1, "krb5_init_context failed: %d", ret);
 
     for (i = 0; i < sizeof(enctypes)/sizeof(enctypes[0]); i++) {
-	test_dh2key(context, NULL, NULL, NULL, enctypes[i]);
+	krb5_data d = { 0, NULL };
+	test_dh2key(context, &d, NULL, NULL, enctypes[i]);
     }
 
     krb5_free_context(context);
