@@ -286,7 +286,25 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 
 	DEBUG(10,("INFO_21 PASS_MUST_CHANGE_AT_NEXT_LOGON: %02X\n",from->passmustchange));
 	if (from->passmustchange==PASS_MUST_CHANGE_AT_NEXT_LOGON) {
-		pdb_set_pass_must_change_time(to,0, PDB_CHANGED);		
+		pdb_set_pass_must_change_time(to,0, PDB_CHANGED);
+	} else {
+		uint32 expire;
+		time_t new_time;
+		if (pdb_get_pass_must_change_time(to) == 0) {
+			if (!account_policy_get(AP_MAX_PASSWORD_AGE, &expire)
+			    || expire == (uint32)-1) {
+				new_time = get_time_t_max();
+			} else {
+				time_t old_time = pdb_get_pass_last_set_time(to);
+				new_time = old_time + expire;
+				if ((new_time) < time(0)) {
+					new_time = time(0) + expire;
+				}
+			}
+			if (!pdb_set_pass_must_change_time (to, new_time, PDB_CHANGED)) {
+				DEBUG (0, ("pdb_set_pass_must_change_time failed!\n"));
+			}
+		}
 	}
 
 	DEBUG(10,("INFO_21 PADDING_2: %02X\n",from->padding2));
@@ -490,7 +508,6 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 		DEBUG(15,("INFO_23 LOGON_HRS.HOURS: %s -> %s\n",pdb_get_hours(to),from->logon_hrs.hours));
 		/* Fix me: only update if it changes --metze */
 		pdb_set_hours(to, from->logon_hrs.hours, PDB_CHANGED);
-
 	}
 
 	if (from->fields_present & ACCT_BAD_PWD_COUNT) {
@@ -510,6 +527,24 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 	DEBUG(10,("INFO_23 PASS_MUST_CHANGE_AT_NEXT_LOGON: %02X\n",from->passmustchange));
 	if (from->passmustchange==PASS_MUST_CHANGE_AT_NEXT_LOGON) {
 		pdb_set_pass_must_change_time(to,0, PDB_CHANGED);		
+	} else {
+		uint32 expire;
+		time_t new_time;
+		if (pdb_get_pass_must_change_time(to) == 0) {
+			if (!account_policy_get(AP_MAX_PASSWORD_AGE, &expire)
+			    || expire == (uint32)-1) {
+				new_time = get_time_t_max();
+			} else {
+				time_t old_time = pdb_get_pass_last_set_time(to);
+				new_time = old_time + expire;
+				if ((new_time) < time(0)) {
+					new_time = time(0) + expire;
+				}
+			}
+			if (!pdb_set_pass_must_change_time (to, new_time, PDB_CHANGED)) {
+				DEBUG (0, ("pdb_set_pass_must_change_time failed!\n"));
+			}
+		}
 	}
 
 	DEBUG(10,("INFO_23 PADDING_2: %02X\n",from->padding2));
