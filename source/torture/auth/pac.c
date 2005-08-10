@@ -413,7 +413,7 @@ static BOOL torture_pac_saved_check(void)
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
 
-		DEBUG(0, ("PAC push failed: orignial buffer length[%u] != created buffer length[%u]\n",
+		DEBUG(0, ("PAC push failed: original buffer length[%u] != created buffer length[%u]\n",
 				(unsigned)tmp_blob.length, (unsigned)validate_blob.length));
 		talloc_free(mem_ctx);
 		return False;
@@ -432,8 +432,8 @@ static BOOL torture_pac_saved_check(void)
 	}
 
 	/* Finally...  Bugger up the signature, and check we fail the checksum */
-	
-	tmp_blob.data[tmp_blob.length - 2] = 0xff;
+	tmp_blob.data[tmp_blob.length - 2]++;
+
 	nt_status = kerberos_decode_pac(mem_ctx, &pac_data,
 					tmp_blob,
 					smb_krb5_context,
