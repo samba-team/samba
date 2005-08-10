@@ -48,7 +48,7 @@ function __http_object() {
 	The callback() function is called with the returned
 	object. 'callback' may be null.
 */
-function vserver_call(url, func, callback, args) {
+function vserver_call_url(url, func, callback, args) {
 	var args2 = new Object();
 	args2.length = args.length;
 	var i;
@@ -58,7 +58,7 @@ function vserver_call(url, func, callback, args) {
 	var req = __http_object();
 	req.open("POST", url, true);
 	req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded'); 
-	req.send("func=" + func + "&args=" + encodeObject(args2));
+	req.send("ajaj_func=" + func + "&ajaj_args=" + encodeObject(args2));
 	req.onreadystatechange = function() { 
 		if (4 == req.readyState && callback != null) {
 			var o = decodeObject(req.responseText);
@@ -71,7 +71,7 @@ function vserver_call(url, func, callback, args) {
 /*
 	usage:
 
-	  server_call(url, func, callback, ...);
+	  server_call_url(url, func, callback, ...);
 
 	'func' is a function name to call on the server
 	any additional arguments are passed to func() on the server
@@ -79,14 +79,14 @@ function vserver_call(url, func, callback, args) {
 	The callback() function is called with the returned
 	object. 'callback' may be null.
 */
-function server_call(url, func, callback) {
+function server_call_url(url, func, callback) {
 	var args = new Object();
 	var i;
 	for (i=3;i<arguments.length;i++) {
 		args[i-3] = arguments[i];
 	}
 	args.length = i-3;
-	vserver_call(url, func, callback, args);
+	vserver_call_url(url, func, callback, args);
 }
 
 
@@ -94,5 +94,25 @@ function server_call(url, func, callback) {
 	call printf on the server
 */
 function srv_printf() {
-	vserver_call('/scripting/general_calls.esp', 'srv_printf', null, arguments);
+	vserver_call_url('/scripting/general_calls.esp', 'srv_printf', null, arguments);
+}
+
+/*
+	usage:
+
+	  server_call(func, callback, ...);
+
+	'func' is a function name to call on the server
+	any additional arguments are passed to func() on the server
+
+	The callback() function is called with the returned
+	object. 'callback' may be null.
+*/
+function server_call(func, callback) {
+	var args = new Array(arguments.length-2);
+	var i;
+	for (i=0;i<args.length;i++) {
+		args[i] = arguments[i+1];
+	}
+	vserver_call_url("@request.REQUEST_URI", func, callback, args);
 }
