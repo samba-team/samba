@@ -354,21 +354,45 @@ hdb_write_master_key(krb5_context context, const char *filename,
     return ret;
 }
 
-static hdb_master_key
-find_master_key(Key *key, hdb_master_key mkey)
+hdb_master_key
+_hdb_find_master_key(u_int32_t *mkvno, hdb_master_key mkey)
 {
     hdb_master_key ret = NULL;
     while(mkey) {
 	if(ret == NULL && mkey->keytab.vno == 0)
 	    ret = mkey;
-	if(key->mkvno == NULL) {
+	if(mkvno == NULL) {
 	    if(ret == NULL || mkey->keytab.vno > ret->keytab.vno)
 		ret = mkey;
-	} else if(mkey->keytab.vno == *key->mkvno)
+	} else if(mkey->keytab.vno == *mkvno)
 	    return mkey;
 	mkey = mkey->next;
     }
     return ret;
+}
+
+int
+_hdb_mkey_version(hdb_master_key mkey)
+{
+    return mkey->keytab.vno;
+}
+
+int
+_hdb_mkey_decrypt(krb5_context context, hdb_master_key key,
+		  krb5_key_usage usage,
+		  void *ptr, size_t size, krb5_data *res)
+{
+    return krb5_decrypt(context, key->crypto, usage,
+			ptr, size, res);
+}
+
+int
+_hdb_mkey_encrypt(krb5_context context, hdb_master_key key,
+		  krb5_key_usage usage,
+		  const void *ptr, size_t size, krb5_data *res)
+{
+    return krb5_encrypt(context, key->crypto, usage,
+			ptr, size, res);
 }
 
 krb5_error_code
@@ -384,21 +408,21 @@ hdb_unseal_key_mkey(krb5_context context, Key *k, hdb_master_key mkey)
     if(k->mkvno == NULL)
 	return 0;
 	
-    key = find_master_key(k, mkey);
+    key = _hdb_find_master_key(k->mkvno, mkey);
 
     if (key == NULL)
 	return HDB_ERR_NO_MKEY;
 
-    ret = krb5_decrypt(context, key->crypto, HDB_KU_MKEY,
-		       k->key.keyvalue.data,
-		       k->key.keyvalue.length,
-		       &res);
+    ret = _hdb_mkey_decrypt(context, key, HDB_KU_MKEY,
+			    k->key.keyvalue.data,
+			    k->key.keyvalue.length,
+			    &res);
     if(ret == KRB5KRB_AP_ERR_BAD_INTEGRITY) {
 	/* try to decrypt with MIT key usage */
-	ret = krb5_decrypt(context, key->crypto, 0,
-			   k->key.keyvalue.data,
-			   k->key.keyvalue.length,
-			   &res);
+	ret = _hdb_mkey_decrypt(context, key, 0,
+				k->key.keyvalue.data,
+				k->key.keyvalue.length,
+				&res);
     }    
     if (ret)
 	return ret;
@@ -462,18 +486,15 @@ hdb_seal_key_mkey(krb5_context context, Key *k, hdb_master_key mkey)
     krb5_data res;
     hdb_master_key key;
 
-    if(k->mkvno != NULL)
-	return 0;
-
-    key = find_master_key(k, mkey);
+    key = _hdb_find_master_key(k->mkvno, mkey);
 
     if (key == NULL)
 	return HDB_ERR_NO_MKEY;
 
-    ret = krb5_encrypt(context, key->crypto, HDB_KU_MKEY,
-		       k->key.keyvalue.data,
-		       k->key.keyvalue.length,
-		       &res);
+    ret = _hdb_mkey_encrypt(context, key, HDB_KU_MKEY,
+			    k->key.keyvalue.data,
+			    k->key.keyvalue.length,
+			    &res);
     if (ret)
 	return ret;
 
@@ -481,9 +502,11 @@ hdb_seal_key_mkey(krb5_context context, Key *k, hdb_master_key mkey)
     free(k->key.keyvalue.data);
     k->key.keyvalue = res;
 
-    k->mkvno = malloc(sizeof(*k->mkvno));
-    if (k->mkvno == NULL)
-	return ENOMEM;
+    if (k->mkvno == NULL) {
+	k->mkvno = malloc(sizeof(*k->mkvno));
+	if (k->mkvno == NULL)
+	    return ENOMEM;
+    }
     *k->mkvno = key->keytab.vno;
 	
     return 0;
