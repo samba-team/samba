@@ -43,43 +43,43 @@ call.run();
 
   <script type="text/javascript">
 
-function folder_list(t, list) {
+function folder_list(parent, list) {
 	var i;
-	t.populated = true;
-	t.removeAll();
+	parent.populated = true;
+	parent.removeAll();
 	for (i=0;i<list.length;i++) {
-		var te;
-		te = new QxTreeFolder(list[i]);
-		t.add(te);
-		te.binding = t.binding;
-		if (t.reg_path == '\\\\') {
-			te.reg_path = list[i];
+		var child;
+		child = new QxTreeFolder(list[i]);
+		parent.add(child);
+		child.binding = parent.binding;
+		if (parent.reg_path == '\\\\') {
+			child.reg_path = list[i];
 		} else {
-			te.reg_path = t.reg_path + '\\\\' + list[i];
+			child.reg_path = parent.reg_path + '\\\\' + list[i];
 		}
-		te.add(new QxTreeFolder('Working ...'));
-		te.addEventListener("click", function() { 
+		child.add(new QxTreeFolder('Working ...'));
+		child.addEventListener("click", function() { 
 			var el = this; folder_click(el); 
 		});
-		t.setOpen(1);
+		parent.setOpen(1);
 	}
 }
 
-function folder_click(t) {
-	if (!t.populated) {
+function folder_click(node) {
+	if (!node.populated) {
 		server_call_url("@@request.REQUEST_URI", 'enum_path', 
-			    function(list) { folder_list(t, list); }, 
-			    t.binding, t.reg_path);
+			    function(list) { folder_list(node, list); }, 
+			    node.binding, node.reg_path);
 	}
 }
 
 /* return a registry tree for the given server */
 function registry_tree(binding) {
-      var t = new QxTree("registry: " + binding);
-      t.binding = binding;
-      t.reg_path = "\\\\";
-      t.populated = false;
-      with(t)
+      var tree = new QxTree("registry: " + binding);
+      tree.binding = binding;
+      tree.reg_path = "\\\\";
+      tree.populated = false;
+      with(tree)
       {
         setBackgroundColor(255);
         setBorder(QxBorder.presets.inset);
@@ -89,10 +89,10 @@ function registry_tree(binding) {
         setHeight(400);
         setTop(20);
       }
-      t.addEventListener("click", function() { 
+      tree.addEventListener("click", function() { 
 	      var el = this; folder_click(el); 
       });
-      return t;
+      return tree;
 }
 
   window.application.main = function()
