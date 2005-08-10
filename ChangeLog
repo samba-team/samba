@@ -1,3 +1,9 @@
+2005-08-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/mkey.c: Expose the crypto operations on the master key.
+
+	* lib/krb5/test_pkinit_dh2key.c: even more bits, not done yet
+	
 2005-08-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/kerberos5.c (_kdc_as_rep): preserve the error code in the
