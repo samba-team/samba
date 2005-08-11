@@ -2,6 +2,12 @@ Changes in release 0.8
 
  * New ASN.1 compiler
 
+ * Bug fixes
+
+Changes in release 0.7.1
+
+* Bug fixes
+
 Changes in release 0.7
 
  * Support for KCM, a process based credential cache
