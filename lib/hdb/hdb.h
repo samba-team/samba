@@ -38,13 +38,14 @@
 
 #include <hdb_err.h>
 
+#include <heim_asn1.h>
 #include <hdb_asn1.h>
 
 enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 
 /* flags for various functions */
-#define HDB_F_DECRYPT	1 /* decrypt keys */
-#define HDB_F_REPLACE	2 /* replace entry */
+#define HDB_F_DECRYPT		1 /* decrypt keys */
+#define HDB_F_REPLACE		2 /* replace entry */
 
 /* key usage for master key */
 #define HDB_KU_MKEY	0x484442
@@ -65,20 +66,20 @@ typedef struct HDB{
     krb5_error_code (*hdb_store)(krb5_context,struct HDB*,unsigned,hdb_entry*);
     krb5_error_code (*hdb_remove)(krb5_context, struct HDB*, hdb_entry*);
     krb5_error_code (*hdb_firstkey)(krb5_context, struct HDB*, 
-				unsigned, hdb_entry*);
+				    unsigned, hdb_entry*);
     krb5_error_code (*hdb_nextkey)(krb5_context, struct HDB*, 
-			       unsigned, hdb_entry*);
+				   unsigned, hdb_entry*);
     krb5_error_code (*hdb_lock)(krb5_context, struct HDB*, int operation);
     krb5_error_code (*hdb_unlock)(krb5_context, struct HDB*);
     krb5_error_code (*hdb_rename)(krb5_context, struct HDB*, const char*);
     krb5_error_code (*hdb__get)(krb5_context,struct HDB*,krb5_data,krb5_data*);
     krb5_error_code (*hdb__put)(krb5_context, struct HDB*, int, 
-			    krb5_data, krb5_data);
+				krb5_data, krb5_data);
     krb5_error_code (*hdb__del)(krb5_context, struct HDB*, krb5_data);
     krb5_error_code (*hdb_destroy)(krb5_context, struct HDB*);
 }HDB;
 
-#define HDB_INTERFACE_VERSION	1
+#define HDB_INTERFACE_VERSION	2
 
 struct hdb_so_method {
     int version;
