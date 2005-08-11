@@ -200,12 +200,13 @@ change_pw(krb5_context context,
 	goto out;
     }
 
-    ret = krb5_change_password(context,
-			       &cpw_cred,
-			       newpw,
-			       &result_code,
-			       &result_code_string,
-			       &result_string);
+    ret = krb5_set_password(context,
+			    &cpw_cred,
+			    newpw,
+			    ccache->client,
+			    &result_code,
+			    &result_code_string,
+			    &result_string);
     if (ret) {
 	kcm_log(0, "Failed to change password for principal %s: %s",
 		cpn, krb5_get_err_text(context, ret));
