@@ -67,10 +67,6 @@ static struct field_name {
     { NULL }
 };
 
-static struct field_name tl_field_names[] = {
-    { NULL }
-};
-
 struct field_info {
     struct field_name *ff;
     char *header;
@@ -350,14 +346,6 @@ setup_columns(struct get_entry_data *data, const char *column_info)
 	    if(strcasecmp(field, f->fieldname) == 0) {
 		add_column(data, f, header);
 		break;
-	    }
-	}
-	if (f->fieldname == NULL) {
-	    for(f = tl_field_names; f->fieldname != NULL; f++) {
-		if(strcasecmp(field, f->fieldname) == 0) {
-		    add_column(data, f, header);
-		    break;
-		}
 	    }
 	}
 	if(f->fieldname == NULL) {
