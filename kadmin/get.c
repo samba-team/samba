@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -41,27 +41,34 @@ RCSID("$Id$");
 static struct field_name {
     const char *fieldname;
     unsigned int fieldvalue;
+    unsigned int subvalue;
+    u_int32_t extra_mask;
     const char *default_header;
     const char *def_longheader;
     unsigned int flags;
 } field_names[] = {
-    { "principal", KADM5_PRINCIPAL, "Principal", "Principal", 0 },
-    { "princ_expire_time", KADM5_PRINC_EXPIRE_TIME, "Expiration", "Principal expires", 0 },
-    { "pw_expiration", KADM5_PW_EXPIRATION, "PW-exp", "Password expires", 0 },
-    { "last_pwd_change", KADM5_LAST_PWD_CHANGE, "PW-change", "Last password change", 0 },
-    { "max_life", KADM5_MAX_LIFE, "Max life", "Max ticket life", 0 },
-    { "max_rlife", KADM5_MAX_RLIFE, "Max renew", "Max renewable life", 0 },
-    { "mod_time", KADM5_MOD_TIME, "Mod time", "Last modified", 0 },
-    { "mod_name", KADM5_MOD_NAME, "Modifier", "Modifier", 0 },
-    { "attributes", KADM5_ATTRIBUTES, "Attributes", "Attributes", 0 },
-    { "kvno", KADM5_KVNO, "Kvno", "Kvno", RTBL_ALIGN_RIGHT  },
-    { "mkvno", KADM5_MKVNO, "Mkvno", "Mkvno", RTBL_ALIGN_RIGHT },
-    { "last_success", KADM5_LAST_SUCCESS, "Last login", "Last successful login", 0 },
-    { "last_failed", KADM5_LAST_FAILED, "Last fail", "Last failed login", 0 },
-    { "fail_auth_count", KADM5_FAIL_AUTH_COUNT, "Fail count", "Failed login count", RTBL_ALIGN_RIGHT },
+    { "principal", KADM5_PRINCIPAL, 0, 0, "Principal", "Principal", 0 },
+    { "princ_expire_time", KADM5_PRINC_EXPIRE_TIME, 0, 0, "Expiration", "Principal expires", 0 },
+    { "pw_expiration", KADM5_PW_EXPIRATION, 0, 0, "PW-exp", "Password expires", 0 },
+    { "last_pwd_change", KADM5_LAST_PWD_CHANGE, 0, 0, "PW-change", "Last password change", 0 },
+    { "max_life", KADM5_MAX_LIFE, 0, 0, "Max life", "Max ticket life", 0 },
+    { "max_rlife", KADM5_MAX_RLIFE, 0, 0, "Max renew", "Max renewable life", 0 },
+    { "mod_time", KADM5_MOD_TIME, 0, 0, "Mod time", "Last modified", 0 },
+    { "mod_name", KADM5_MOD_NAME, 0, 0, "Modifier", "Modifier", 0 },
+    { "attributes", KADM5_ATTRIBUTES, 0, 0, "Attributes", "Attributes", 0 },
+    { "kvno", KADM5_KVNO, 0, 0, "Kvno", "Kvno", RTBL_ALIGN_RIGHT  },
+    { "mkvno", KADM5_MKVNO, 0, 0, "Mkvno", "Mkvno", RTBL_ALIGN_RIGHT },
+    { "last_success", KADM5_LAST_SUCCESS, 0, 0, "Last login", "Last successful login", 0 },
+    { "last_failed", KADM5_LAST_FAILED, 0, 0, "Last fail", "Last failed login", 0 },
+    { "fail_auth_count", KADM5_FAIL_AUTH_COUNT, 0, 0, "Fail count", "Failed login count", RTBL_ALIGN_RIGHT },
     
-    { "policy", KADM5_POLICY, "Policy", "Policy", 0 },
-    { "keytypes", KADM5_KEY_DATA, "Keytypes", "Keytypes", 0 },
+    { "policy", KADM5_POLICY, 0, 0, "Policy", "Policy", 0 },
+    { "keytypes", KADM5_KEY_DATA, 0, KADM5_PRINCIPAL, "Keytypes", "Keytypes", 0 },
+    { "password", KADM5_TL_DATA, KRB5_TL_PASSWORD, KADM5_KEY_DATA, "Password", "Password", 0 },
+    { NULL }
+};
+
+static struct field_name tl_field_names[] = {
     { NULL }
 };
 
@@ -75,6 +82,7 @@ struct get_entry_data {
     void (*format)(struct get_entry_data*, kadm5_principal_ent_t);
     rtbl_t table;
     u_int32_t mask;
+    u_int32_t extra_mask;
     struct field_info *chead, **ctail;
 };
 
@@ -91,6 +99,7 @@ add_column(struct get_entry_data *data, struct field_name *ff, const char *heade
     *data->ctail = f;
     data->ctail = &f->next;
     data->mask |= ff->fieldvalue;
+    data->extra_mask |= ff->extra_mask;
     if(data->table != NULL)
 	rtbl_add_column_by_id(data->table, ff->fieldvalue, 
 			      header ? header : ff->default_header, ff->flags);
@@ -152,7 +161,7 @@ format_keytype(krb5_key_data *k, krb5_salt *def_salt, char *buf, size_t buf_len)
 
 static void
 format_field(kadm5_principal_ent_t princ, unsigned int field, 
-	     char *buf, size_t buf_len, int condensed)
+	     unsigned int subfield, char *buf, size_t buf_len, int condensed)
 {
     switch(field) {
     case KADM5_PRINCIPAL:
@@ -234,6 +243,29 @@ format_field(kadm5_principal_ent_t princ, unsigned int field,
 	krb5_free_salt (context, def_salt);
 	break;
     }
+    case KADM5_TL_DATA: {
+	krb5_tl_data *tl;
+
+	for (tl = princ->tl_data; tl != NULL; tl = tl->tl_data_next)
+	    if (tl->tl_data_type == subfield)
+		break;
+	if (tl == NULL) {
+	    strlcpy(buf, "no stored value", buf_len);
+	    break;
+	}
+
+	switch (subfield) {
+	case KRB5_TL_PASSWORD:
+	    snprintf(buf, buf_len, "\"%.*s\"",
+		     (int)tl->tl_data_length,
+		     (const char *)tl->tl_data_contents);
+	    break;
+	default:
+	    snprintf(buf, buf_len, "unknown type %d", subfield);
+	    break;
+	}
+	break;
+    }
     default:
 	strlcpy(buf, "<unknown>", buf_len);
 	break;
@@ -247,7 +279,7 @@ print_entry_short(struct get_entry_data *data, kadm5_principal_ent_t princ)
     struct field_info *f;
     
     for(f = data->chead; f != NULL; f = f->next) {
-	format_field(princ, f->ff->fieldvalue, buf, sizeof(buf), 1);
+	format_field(princ, f->ff->fieldvalue, f->ff->subvalue, buf, sizeof(buf), 1);
 	rtbl_add_column_entry_by_id(data->table, f->ff->fieldvalue, buf);
     }
 }
@@ -265,7 +297,7 @@ print_entry_long(struct get_entry_data *data, kadm5_principal_ent_t princ)
 	    width = w;
     }
     for(f = data->chead; f != NULL; f = f->next) {
-	format_field(princ, f->ff->fieldvalue, buf, sizeof(buf), 0);
+	format_field(princ, f->ff->fieldvalue, f->ff->subvalue, buf, sizeof(buf), 0);
 	printf("%*s: %s\n", width, f->header ? f->header : f->ff->def_longheader, buf);
     }
     printf("\n");
@@ -281,7 +313,7 @@ do_get_entry(krb5_principal principal, void *data)
     memset(&princ, 0, sizeof(princ));
     ret = kadm5_get_principal(kadm_handle, principal, 
 			      &princ,
-			      e->mask);
+			      e->mask | e->extra_mask);
     if(ret)
 	return ret;
     else {
@@ -321,6 +353,14 @@ setup_columns(struct get_entry_data *data, const char *column_info)
 		break;
 	    }
 	}
+	if (f->fieldname == NULL) {
+	    for(f = tl_field_names; f->fieldname != NULL; f++) {
+		if(strcasecmp(field, f->fieldname) == 0) {
+		    add_column(data, f, header);
+		    break;
+		}
+	    }
+	}
 	if(f->fieldname == NULL) {
 	    krb5_warnx(context, "unknown field name \"%s\"", field);
 	    free_columns(data);
@@ -331,7 +371,7 @@ setup_columns(struct get_entry_data *data, const char *column_info)
 }
 
 #define DEFAULT_COLUMNS_SHORT "principal,princ_expire_time,pw_expiration,last_pwd_change,max_life,max_rlife"
-#define DEFAULT_COLUMNS_LONG "principal,princ_expire_time,pw_expiration,last_pwd_change,max_life,max_rlife,kvno,mkvno,last_success,last_failed,fail_auth_count,mod_time,mod_name,attributes,keytypes"
+#define DEFAULT_COLUMNS_LONG "principal,princ_expire_time,pw_expiration,last_pwd_change,max_life,max_rlife,kvno,mkvno,last_success,last_failed,fail_auth_count,mod_time,mod_name,attributes,keytypes,password"
 #define DEFAULT_COLUMNS_TERSE "principal="
 
 static int
@@ -354,6 +394,7 @@ getit(struct get_options *opt, const char *name, int argc, char **argv)
     data.chead = NULL;
     data.ctail = &data.chead;
     data.mask = 0;
+    data.extra_mask = 0;
 
     if(opt->short_flag || opt->terse_flag) {
 	data.table = rtbl_create();
