@@ -1,3 +1,7 @@
+2005-08-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* asn1_gen.c: rename optind to optidx to avoid shadow warnings
+
 2005-07-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rfc2459.asn1: add id-rsadsi-rc2-cbc

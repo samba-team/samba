@@ -1,3 +1,7 @@
+2005-08-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* init_sec_context.c: avoid warnings, update (c)
+
 2005-07-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* init_sec_context.c (spnego_initial): use NegotiationToken
