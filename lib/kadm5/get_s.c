@@ -95,7 +95,7 @@ kadm5_s_get_principal(void *server_handle,
     if(mask & KADM5_PW_EXPIRATION && ent.pw_end)
 	out->pw_expiration = *ent.pw_end;
     if(mask & KADM5_LAST_PWD_CHANGE)
-	/* XXX implement */;
+	hdb_entry_get_pw_change_time(&ent, &out->last_pwd_change);
     if(mask & KADM5_ATTRIBUTES){
 	out->attributes |= ent.flags.postdate ? 0 : KRB5_KDB_DISALLOW_POSTDATED;
 	out->attributes |= ent.flags.forwardable ? 0 : KRB5_KDB_DISALLOW_FORWARDABLE;
