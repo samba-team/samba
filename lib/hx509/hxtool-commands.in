@@ -86,6 +86,13 @@ command = {
 command = {
 	name = "cms-unenvelope"
 	option = {
+		long = "certificate"
+		short = "c"
+		type = "strings"
+		argument = "certificate-store"
+		help = "certificate used to decrypt the data"
+	}
+	option = {
 		long = "content-info"
 		type = "flag"
 		help = "wrapped out-data in a ContentInfo"
@@ -98,12 +105,19 @@ command = {
 	name = "cms-envelope"
 	function = "cms_create_enveloped"
 	option = {
+		long = "certificate"
+		short = "c"
+		type = "strings"
+		argument = "certificate-store"
+		help = "certificate used to encrypt the data"
+	}
+	option = {
 		long = "content-info"
 		type = "flag"
 		help = "wrapped out-data in a ContentInfo"
 	}
-	min_args="3"
-	argument="certificate in-file out-file"
+	min_args="2"
+	argument="in-file out-file"
 	help = "Envelope a file containing a EnvelopedData object"
 }
 command = {
