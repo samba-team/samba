@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "libcli/security/security.h"
+#include "librpc/gen_ndr/security.h"
 #include "lib/ldb/include/ldb.h"
 
 /*
@@ -35,7 +35,7 @@ static NTSTATUS samdb_privilege_setup_sid(void *samctx, TALLOC_CTX *mem_ctx,
 	struct ldb_message **res = NULL;
 	struct ldb_message_element *el;
 	int ret, i;
-	const char *sidstr;
+	char *sidstr;
 	
 	*mask = 0;
 
@@ -55,7 +55,7 @@ static NTSTATUS samdb_privilege_setup_sid(void *samctx, TALLOC_CTX *mem_ctx,
 	}
 
 	for (i=0;i<el->num_values;i++) {
-		const char *priv_str = el->values[i].data;
+		const char *priv_str = (const char *)el->values[i].data;
 		int privilege = sec_privilege_id(priv_str);
 		if (privilege == -1) {
 			DEBUG(1,("Unknown privilege '%s' in samdb\n",

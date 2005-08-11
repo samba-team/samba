@@ -317,4 +317,12 @@ interface security
 		[range(0,0x40000),value(ndr_size_security_descriptor(sd))] uint32 sd_size;
 		[subcontext(4)] security_descriptor *sd;
 	} sec_desc_buf;
+
+	typedef [public] struct {
+		dom_sid *user_sid;
+		dom_sid *group_sid;
+		uint32 num_sids;
+		[size_is(num_sids)] dom_sid *sids[*];
+		udlong privilege_mask;
+	} security_token;
 }
