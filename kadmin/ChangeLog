@@ -1,5 +1,13 @@
 2005-08-11  Love Hörquist Åstrand  <lha@it.su.se>
 
+	* get.c: Remove structure that is never used (sneaked in the large
+	TL_DATA patch).
+
+	* kadmin-commands.in: Rename password-quality to
+	verify-password-quality.
+	
+	* get.c: Indent.
+	
 	* server.c: Avoid shadowing exp().
 
 	* load.c: Parse extensions.

@@ -1,5 +1,7 @@
 2005-08-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* get_s.c: Implement KADM5_LAST_PWD_CHANGE.
+	
 	* set_keys.c: Set and clear password where appropriate.
 
 	* randkey_s.c: Operation modifies tl_data.
