@@ -22,7 +22,7 @@
 */
 
 #include "includes.h"
-#include "libcli/security/security.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 /*****************************************************************
  Compare the auth portion of two sids.
