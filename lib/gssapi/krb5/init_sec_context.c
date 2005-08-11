@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -416,7 +416,7 @@ init_auth
     }
 
     ret = gssapi_krb5_encapsulate (minor_status, &outbuf, output_token,
-				   "\x01\x00", GSS_KRB5_MECHANISM);
+				   (u_char *)"\x01\x00", GSS_KRB5_MECHANISM);
     if (ret)
 	goto failure;
 
@@ -818,9 +818,6 @@ spnego_initial
     u_char *buf;
     size_t buf_size, buf_len;
     krb5_data data;
-#if 1
-    size_t ni_len;
-#endif
 
     memset (&ni, 0, sizeof(ni));
 
