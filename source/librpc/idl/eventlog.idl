@@ -32,26 +32,25 @@
 		uint16 unknown1;
 	} eventlog_OpenUnknown0;
 	
-	typedef struct { 
+	typedef [public] struct { 
 		uint32 size;
 		uint32 reserved;
-		uint32 recordnumber;
-		uint32 creationtime;
-		uint32 writetime;
-		uint32 eventnumber;
-		uint16 eventtype;
+		uint32 record_number;
+		uint32 time_generated;
+		uint32 time_written;
+		uint32 event_id;
+		uint16 event_type;
 		uint16 num_of_strings;
-		uint16 category;
-		uint16 reserved_flag;
-		uint32 closingrecord;
+		uint16 event_category;
+		uint16 reserved_flags;
+		uint32 closing_record_number;
 		uint32 stringoffset;
-		[size_is(num_of_strings)] lsa_String bla[*];
 		uint32 sid_length;
-		[size_is(sid_length)] dom_sid *sids;
+		uint32 sid_offset;
 		uint32 data_length;
-		[size_is(data_length)] uint8 *data;
-		unistr *source_name;
-		unistr *machine_name;
+		uint32 data_offset;
+		nstring source_name;
+		nstring computer_name;
 	} eventlog_Record;
 
 	/******************/
@@ -70,7 +69,6 @@
 	NTSTATUS eventlog_CloseEventLog(
 		[in,out,ref] policy_handle *handle
 	);
-
 
 	/******************/
 	/* Function: 0x03 */
