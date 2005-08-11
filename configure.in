@@ -539,6 +539,8 @@ AC_CONFIG_FILES(Makefile 		\
 	appl/test/Makefile		\
 	appl/kf/Makefile		\
 	appl/dceutils/Makefile		\
+	tests/Makefile			\
+	tests/db/Makefile		\
 	doc/Makefile			\
 	tools/Makefile			\
 )
