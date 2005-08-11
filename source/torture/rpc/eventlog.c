@@ -66,6 +66,12 @@ static BOOL test_ReadEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.flags = EVENTLOG_BACKWARDS_READ|EVENTLOG_SEQUENTIAL_READ;
 
 	while (1) {
+		DATA_BLOB blob;
+		struct eventlog_Record rec;
+		struct ndr_pull *ndr;
+
+		/* Read first for number of bytes in record */
+
 		r.in.number_of_bytes = 0;
 		r.out.data = NULL;
 
@@ -80,6 +86,8 @@ static BOOL test_ReadEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			return False;
 		}
 		
+		/* Now read the actual record */
+
 		r.in.number_of_bytes = r.out.real_size;
 		r.out.data = talloc_size(mem_ctx, r.in.number_of_bytes);
 
@@ -90,6 +98,24 @@ static BOOL test_ReadEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			return False;
 		}
 		
+		/* Decode a user-marshalled record */
+
+		blob.length = r.out.sent_size;
+		blob.data = talloc_steal(mem_ctx, r.out.data);
+
+		ndr = ndr_pull_init_blob(&blob, mem_ctx);
+
+		status = ndr_pull_eventlog_Record(
+			ndr, NDR_SCALARS|NDR_BUFFERS, &rec);
+
+		NDR_PRINT_DEBUG(eventlog_Record, &rec);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("ReadEventLog failed parsing event log record "
+			       "- %s\n", nt_errstr(status));
+			return False;
+		}
+
 		r.in.offset++;
 	}
 
