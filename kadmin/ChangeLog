@@ -1,3 +1,16 @@
+2005-08-11  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* server.c: Avoid shadowing exp().
+
+	* load.c: Parse extensions.
+
+	* kadmin_locl.h: Include <hex.h>.
+	
+	* get.c: Extend struct field_name to have a subvalue and a
+	extra_mask.  Use that to implement printing of KADM5_TL_DATA
+	options and fix a dependency bug (keys needed principal to print
+	the salting).
+	
 2005-07-08  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* lower amount of shadow and const warnings
