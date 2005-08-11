@@ -606,6 +606,9 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	if (!(p->dc.authenticated && deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, &q_u->sam_id.client.cred, &srv_cred)))
 		return NT_STATUS_INVALID_HANDLE;
 
+	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
+	memcpy(&r_u->srv_creds, &srv_cred, sizeof(r_u->srv_creds));
+
 	/* find the username */
     
 	switch (q_u->sam_id.logon_level) {
@@ -723,9 +726,6 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	reseed_client_creds(&p->dc.clnt_cred, &q_u->sam_id.client.cred);
 	memcpy(&p->dc.srv_cred, &p->dc.clnt_cred, sizeof(p->dc.clnt_cred));
     
-	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
-	memcpy(&r_u->srv_creds, &srv_cred, sizeof(r_u->srv_creds));
-
 	if (server_info->guest) {
 		/* We don't like guest domain logons... */
 		DEBUG(5,("_net_sam_logon: Attempted domain logon as GUEST denied.\n"));
