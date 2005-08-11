@@ -90,6 +90,7 @@
 #include <krb5_locl.h>
 #include <hdb.h>
 #include <hdb_err.h>
+#include <hex.h>
 #include <kadm5/admin.h>
 #include <kadm5/private.h>
 #include <kadm5/kadm5_err.h>
