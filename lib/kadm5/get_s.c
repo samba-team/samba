@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -34,6 +34,35 @@
 #include "kadm5_locl.h"
 
 RCSID("$Id$");
+
+static kadm5_ret_t
+add_tl_data(kadm5_principal_ent_t ent, int16_t type, 
+	    const void *data, size_t size)
+{
+    krb5_tl_data *tl;
+
+    tl = calloc(1, sizeof(*tl));
+    if (tl == NULL)
+	return _kadm5_error_code(ENOMEM);
+
+    tl->tl_data_type = type;
+    tl->tl_data_length = size;
+    tl->tl_data_contents = malloc(size);
+    if (tl->tl_data_contents == NULL) {
+	free(tl);
+	return _kadm5_error_code(ENOMEM);
+    }
+    memcpy(tl->tl_data_contents, data, size);
+
+    tl->tl_data_next = ent->tl_data;
+    ent->tl_data = tl;
+    ent->n_tl_data++;
+
+    return 0;
+}
+
+krb5_ssize_t KRB5_LIB_FUNCTION
+_krb5_put_int(void *buffer, unsigned long value, size_t size); /* XXX */
 
 kadm5_ret_t
 kadm5_s_get_principal(void *server_handle, 
@@ -183,8 +212,35 @@ kadm5_s_get_principal(void *server_handle,
 	kadm5_free_principal_ent(context, out);
 	goto out;
     }
-    if(mask & KADM5_TL_DATA)
-	/* XXX implement */;
+    if(mask & KADM5_TL_DATA) {
+	time_t last_pw_expire;
+
+	ret = hdb_entry_get_pw_change_time(&ent, &last_pw_expire);
+	if (ret == 0 && last_pw_expire) {
+	    unsigned char buf[4];
+	    _krb5_put_int(buf, last_pw_expire, sizeof(buf));
+	    ret = add_tl_data(out, KRB5_TL_LAST_PWD_CHANGE, buf, sizeof(buf));
+	}
+	if(ret){
+	    kadm5_free_principal_ent(context, out);
+	    goto out;
+	}
+	/* 
+	 * If the client was allowed to get key data, let it have the
+	 * password too.
+	 */
+	if(mask & KADM5_KEY_DATA) {
+	    heim_utf8_string pw;
+
+	    ret = hdb_entry_get_password(context->context, 
+					 context->db, &ent, &pw);
+	    if (ret == 0) {
+		ret = add_tl_data(out, KRB5_TL_PASSWORD, pw, strlen(pw) + 1);
+		free(pw);
+	    }
+	    ret = 0;
+	}
+    }
 out:
     hdb_free_entry(context->context, &ent);
 
