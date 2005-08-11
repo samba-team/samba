@@ -29,7 +29,7 @@
 /*
   encode a NDR uint32 as a ldap filter element
 */
-const char *ldap_encode_ndr_uint32(TALLOC_CTX *mem_ctx, uint32_t value)
+char *ldap_encode_ndr_uint32(TALLOC_CTX *mem_ctx, uint32_t value)
 {
 	uint8_t buf[4];
 	struct ldb_val val;
@@ -42,11 +42,11 @@ const char *ldap_encode_ndr_uint32(TALLOC_CTX *mem_ctx, uint32_t value)
 /*
   encode a NDR dom_sid as a ldap filter element
 */
-const char *ldap_encode_ndr_dom_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
+char *ldap_encode_ndr_dom_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 {
 	DATA_BLOB blob;
 	NTSTATUS status;
-	const char *ret;
+	char *ret;
 	status = ndr_push_struct_blob(&blob, mem_ctx, sid, 
 				      (ndr_push_flags_fn_t)ndr_push_dom_sid);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -61,11 +61,11 @@ const char *ldap_encode_ndr_dom_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *s
 /*
   encode a NDR GUID as a ldap filter element
 */
-const char *ldap_encode_ndr_GUID(TALLOC_CTX *mem_ctx, struct GUID *guid)
+char *ldap_encode_ndr_GUID(TALLOC_CTX *mem_ctx, struct GUID *guid)
 {
 	DATA_BLOB blob;
 	NTSTATUS status;
-	const char *ret;
+	char *ret;
 	status = ndr_push_struct_blob(&blob, mem_ctx, guid, 
 				      (ndr_push_flags_fn_t)ndr_push_GUID);
 	if (!NT_STATUS_IS_OK(status)) {

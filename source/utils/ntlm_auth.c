@@ -28,7 +28,7 @@
 #include "system/passwd.h"
 #include "lib/cmdline/popt_common.h"
 #include "auth/auth.h"
-#include "libcli/security/security.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
