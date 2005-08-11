@@ -529,13 +529,18 @@ kadm5_log_replay_modify (kadm5_server_context *context,
     ret = context->db->hdb_fetch(context->context, context->db, 
 				 HDB_F_DECRYPT, &ent);
     if (ret)
-	return ret;
+	goto out;
     if (mask & KADM5_PRINC_EXPIRE_TIME) {
 	if (log_ent.valid_end == NULL) {
 	    ent.valid_end = NULL;
 	} else {
-	    if (ent.valid_end == NULL)
+	    if (ent.valid_end == NULL) {
 		ent.valid_end = malloc(sizeof(*ent.valid_end));
+		if (ent.valid_end == NULL) {
+		    ret = ENOMEM;
+		    goto out;
+		}
+	    }
 	    *ent.valid_end = *log_ent.valid_end;
 	}
     }
@@ -543,8 +548,13 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	if (log_ent.pw_end == NULL) {
 	    ent.pw_end = NULL;
 	} else {
-	    if (ent.pw_end == NULL)
+	    if (ent.pw_end == NULL) {
 		ent.pw_end = malloc(sizeof(*ent.pw_end));
+		if (ent.pw_end == NULL) {
+		    ret = ENOMEM;
+		    goto out;
+		}
+	    }
 	    *ent.pw_end = *log_ent.pw_end;
 	}
     }
@@ -558,17 +568,28 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	if (log_ent.max_life == NULL) {
 	    ent.max_life = NULL;
 	} else {
-	    if (ent.max_life == NULL)
+	    if (ent.max_life == NULL) {
 		ent.max_life = malloc (sizeof(*ent.max_life));
+		if (ent.max_life == NULL) {
+		    ret = ENOMEM;
+		    goto out;
+		}
+	    }
 	    *ent.max_life = *log_ent.max_life;
 	}
     }
     if ((mask & KADM5_MOD_TIME) && (mask & KADM5_MOD_NAME)) {
 	if (ent.modified_by == NULL) {
 	    ent.modified_by = malloc(sizeof(*ent.modified_by));
+	    if (ent.modified_by == NULL) {
+		ret = ENOMEM;
+		goto out;
+	    }
 	} else
 	    free_Event(ent.modified_by);
-	copy_Event(log_ent.modified_by, ent.modified_by);
+	ret = copy_Event(log_ent.modified_by, ent.modified_by);
+	if (ret)
+	    goto out;
     }
     if (mask & KADM5_KVNO) {
 	ent.kvno = log_ent.kvno;
@@ -589,8 +610,13 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	if (log_ent.max_renew == NULL) {
 	    ent.max_renew = NULL;
 	} else {
-	    if (ent.max_renew == NULL)
+	    if (ent.max_renew == NULL) {
 		ent.max_renew = malloc (sizeof(*ent.max_renew));
+		if (ent.max_renew == NULL) {
+		    ret = ENOMEM;
+		    goto out;
+		}
+	    }
 	    *ent.max_renew = *log_ent.max_renew;
 	}
     }
@@ -615,12 +641,36 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 
 	ent.keys.len = num;
 	ent.keys.val = malloc(len * sizeof(*ent.keys.val));
-	for (i = 0; i < ent.keys.len; ++i)
-	    copy_Key(&log_ent.keys.val[i],
-		     &ent.keys.val[i]);
+	for (i = 0; i < ent.keys.len; ++i) {
+	    ret = copy_Key(&log_ent.keys.val[i],
+			   &ent.keys.val[i]);
+	    if (ret)
+		goto out;
+	}
+    }
+    if ((mask & KADM5_TL_DATA) && log_ent.extensions) {
+	HDB_extensions *es = ent.extensions;
+
+	if (ent.extensions == NULL) {
+	    ent.extensions = calloc(1, sizeof(*ent.extensions));
+	    if (ent.extensions == NULL)
+		goto out;
+	}
+
+	ret = copy_HDB_extensions(es, ent.extensions);
+	if (ret) {
+	    free(ent.extensions);
+	    ent.extensions = es;
+	    goto out;
+	}
+	if (es) {
+	    free_HDB_extensions(es);
+	    free(es);
+	}
     }
     ret = context->db->hdb_store(context->context, context->db, 
 				 HDB_F_REPLACE, &ent);
+ out:
     hdb_free_entry (context->context, &ent);
     hdb_free_entry (context->context, &log_ent);
     return ret;
