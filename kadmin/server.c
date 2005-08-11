@@ -47,7 +47,7 @@ kadmind_dispatch(void *kadm_handle, krb5_boolean initial,
     char *op = "";
     krb5_principal princ, princ2;
     kadm5_principal_ent_rec ent;
-    char *password, *exp;
+    char *password, *expression;
     krb5_keyblock *new_keys;
     int n_keys;
     char **princs;
@@ -384,19 +384,20 @@ kadmind_dispatch(void *kadm_handle, krb5_boolean initial,
 	if(ret)
 	    goto fail;
 	if(tmp){
-	    ret = krb5_ret_string(sp, &exp);
+	    ret = krb5_ret_string(sp, &expression);
 	    if(ret)
 		goto fail;
 	}else
-	    exp = NULL;
-	krb5_warnx(context->context, "%s: %s %s", client, op, exp ? exp : "*");
+	    expression = NULL;
+	krb5_warnx(context->context, "%s: %s %s", client, op,
+		   expression ? expression : "*");
 	ret = _kadm5_acl_check_permission(context, KADM5_PRIV_LIST, NULL);
 	if(ret){
-	    free(exp);
+	    free(expression);
 	    goto fail;
 	}
-	ret = kadm5_get_principals(kadm_handle, exp, &princs, &n_princs);
-	free(exp);
+	ret = kadm5_get_principals(kadm_handle, expression, &princs, &n_princs);
+	free(expression);
 	krb5_storage_free(sp);
 	sp = krb5_storage_emem();
 	krb5_store_int32(sp, ret);
