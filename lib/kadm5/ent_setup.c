@@ -57,6 +57,57 @@ attr_to_flags(unsigned attr, HDBFlags *flags)
 }
 
 /*
+ * Modify the `ent' according to `tl_data'.
+ */
+
+static kadm5_ret_t
+perform_tl_data(krb5_context context,
+		HDB *db,
+		hdb_entry *ent, 
+		const krb5_tl_data *tl_data)
+{
+    HDB_extension ext;
+    kadm5_ret_t ret = 0;
+
+    if (tl_data->tl_data_type == KRB5_TL_PASSWORD) {
+	heim_utf8_string pw = tl_data->tl_data_contents;
+
+	if (pw[tl_data->tl_data_length] != '\0')
+	    return KADM5_BAD_TL_TYPE;
+
+	ret = hdb_entry_set_password(context, db, ent, pw);
+
+    } else if (tl_data->tl_data_type == KRB5_TL_LAST_PWD_CHANGE) {
+	unsigned char *s;
+	time_t t;
+
+	if (tl_data->tl_data_length != 4)
+	    return KADM5_BAD_TL_TYPE;
+
+	s = tl_data->tl_data_contents;
+
+	t = s[0] | (s[1] << 8) | (s[2] << 16) | (s[3] << 24);
+
+	ret = hdb_entry_set_pw_change_time(context, ent, t);
+
+    } else if (tl_data->tl_data_type == KRB5_TL_EXTENSION) {
+	ret = decode_HDB_extension(tl_data->tl_data_contents,
+				   tl_data->tl_data_length,
+				   &ext,
+				   NULL);
+	if (ret)
+	    return KADM5_BAD_TL_TYPE;
+	
+	ret = hdb_replace_extension(context, ent, &ext);
+
+    } else {
+	return KADM5_BAD_TL_TYPE;
+    }
+    return ret;
+}
+
+
+/*
  * Create the hdb entry `ent' based on data from `princ' with
  * `princ_mask' specifying what fields to be gotten from there and
  * `mask' specifying what fields we want filled in.
@@ -134,7 +185,14 @@ _kadm5_setup_entry(kadm5_server_context *context,
 	_kadm5_set_keys2(context, ent, princ->n_key_data, princ->key_data);
     }
     if(mask & KADM5_TL_DATA) {
-	/* XXX */
+	krb5_tl_data *tl;
+
+	for (tl = princ->tl_data; tl != NULL; tl = tl->tl_data_next) {
+	    kadm5_ret_t ret;
+	    ret = perform_tl_data(context->context, context->db, ent, tl);
+	    if (ret)
+		return ret;
+	}
     }
     if(mask & KADM5_FAIL_AUTH_COUNT) {
 	/* XXX */
