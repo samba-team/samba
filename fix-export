@@ -1,10 +1,11 @@
 #! /bin/sh
 # $Id$
 
-echo "fixing distribution in $1..."
+distdir="$1"
+echo "fixing distribution in $distdir..."
 
-test -d "$1" || { echo not a dir in \$1 ; exit 1 ; }
-cd $1
+test -d "$distdir" || { echo not a dir in \$distdir ; exit 1 ; }
+cd $distdir
 
 if test "$DATEDVERSION"; then
 	ed -s configure.in << END
@@ -80,3 +81,7 @@ rm fix-export make-release make-release.el
 find . -name .cvsignore -print | xargs rm
 find . -name .__afs\* -print | xargs rm
 rm -fr autom4te*.cache
+
+echo "tar cf - ${distdir} \| gzip -9 > ${distdir}.tar.gz"
+echo "gpg -ba -u 0x45D901D8 ${distdir}.tar.gz"
+
