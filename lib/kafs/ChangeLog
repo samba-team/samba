@@ -1,3 +1,9 @@
+2005-06-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* common.c: rename index to idx
+
+	* afssys.c (k_afs_cell_of_file): unconst path
+	
 2005-06-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* use struct kafs_data everywhere, don't mix with the typedef
