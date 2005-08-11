@@ -61,7 +61,6 @@ static struct field_name {
     { "last_success", KADM5_LAST_SUCCESS, 0, 0, "Last login", "Last successful login", 0 },
     { "last_failed", KADM5_LAST_FAILED, 0, 0, "Last fail", "Last failed login", 0 },
     { "fail_auth_count", KADM5_FAIL_AUTH_COUNT, 0, 0, "Fail count", "Failed login count", RTBL_ALIGN_RIGHT },
-    
     { "policy", KADM5_POLICY, 0, 0, "Policy", "Policy", 0 },
     { "keytypes", KADM5_KEY_DATA, 0, KADM5_PRINCIPAL, "Keytypes", "Keytypes", 0 },
     { "password", KADM5_TL_DATA, KRB5_TL_PASSWORD, KADM5_KEY_DATA, "Password", "Password", 0 },
