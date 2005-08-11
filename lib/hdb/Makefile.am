@@ -5,19 +5,27 @@ include $(top_srcdir)/Makefile.am.common
 AM_CPPFLAGS += -I../asn1 -I$(srcdir)/../asn1 $(INCLUDE_des)
 
 BUILT_SOURCES = \
-	$(foo:.x=.c)	\
+	$(gen_files_hdb:.x=.c)	\
 	hdb_err.c \
 	hdb_err.h
 
-foo = \
-	asn1_Event.x \
-	asn1_GENERATION.x \
-	asn1_HDBFlags.x \
-	asn1_Key.x \
+gen_files_hdb = \
 	asn1_Salt.x \
+	asn1_Key.x \
+	asn1_Event.x \
+	asn1_HDBFlags.x \
+	asn1_GENERATION.x \
+	asn1_HDB_Ext_PKINIT_acl.x \
+	asn1_HDB_Ext_PKINIT_certificate.x \
+	asn1_HDB_Ext_Constrained_delegation_acl.x \
+	asn1_HDB_Ext_Lan_Manager_OWF.x \
+	asn1_HDB_Ext_Password.x \
+	asn1_HDB_Ext_Aliases.x \
+	asn1_HDB_extension.x \
+	asn1_HDB_extensions.x \
 	asn1_hdb_entry.x
 
-CLEANFILES = $(BUILT_SOURCES) $(foo) hdb_asn1.h hdb_asn1_files
+CLEANFILES = $(BUILT_SOURCES) $(gen_files_hdb) hdb_asn1.h hdb_asn1_files
 
 noinst_PROGRAMS = convert_db
 LDADD = libhdb.la \
@@ -48,6 +56,7 @@ hdb_source =					\
 	common.c				\
 	db.c					\
 	db3.c					\
+	ext.c					\
 	$(ldap)					\
 	hdb.c					\
 	keys.c					\
@@ -84,7 +93,7 @@ $(srcdir)/hdb-protos.h:
 $(srcdir)/hdb-private.h:
 	cd $(srcdir); perl ../../cf/make-proto.pl -q -P comment -p hdb-private.h $(hdb_source) || rm -f hdb-private.h
 
-$(foo) hdb_asn1.h: hdb_asn1_files
+$(gen_files_hdb) hdb_asn1.h: hdb_asn1_files
 
 hdb_asn1_files: ../asn1/asn1_compile$(EXEEXT) $(srcdir)/hdb.asn1
 	../asn1/asn1_compile$(EXEEXT) $(srcdir)/hdb.asn1 hdb_asn1
