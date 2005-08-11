@@ -1,3 +1,23 @@
+2005-08-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* set_keys.c: Set and clear password where appropriate.
+
+	* randkey_s.c: Operation modifies tl_data.
+
+	* log.c (kadm5_log_replay_modify): Check return values of
+	malloc(), replace all extensions.
+
+	* kadm5_err.et: Make BAD_TL_TYPE error more helpful.
+
+	* get_s.c: Expose KADM5_TL_DATA options to the client.
+
+	* ent_setup.c: Merge in KADM5_TL_DATA in the database.
+
+	* chpass_s.c: Operations modify extensions, mark that with
+	TL_DATA.
+
+	* admin.h: Add more TL types (password and extension).
+
 2005-06-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* constify
