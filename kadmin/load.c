@@ -49,6 +49,7 @@ struct entry {
     char *pw_end;
     char *flags;
     char *generation;
+    char *extensions;
 };
 
 static char *
@@ -309,6 +310,49 @@ parse_generation(char *str, GENERATION **gen)
     return 0;
 }
 
+static int
+parse_extensions(char *str, HDB_extensions **e)
+{
+    char *p;
+    int ret;
+
+    if(strcmp(str, "-") == 0 || *str == '\0') {
+	*e = NULL;
+	return 0;
+    }
+    *e = calloc(1, sizeof(**e));
+
+    p = strsep(&str, ":");
+
+    while (p) {
+	HDB_extension ext;
+	ssize_t len;
+	void *d;
+
+	len = strlen(p);
+	d = malloc(len);
+
+	len = hex_decode(p, d, len);
+	if (len < 0)
+	    return -1;
+
+	ret = decode_HDB_extension(d, len, &ext, NULL);
+	free(d);
+	if (ret)
+	    return -1;
+	d = realloc((*e)->val, ((*e)->len + 1) * sizeof((*e)->val[0]));
+	if (d == NULL)
+	    abort();
+	(*e)->val = d;
+	(*e)->val[(*e)->len] = ext;
+	(*e)->len++;
+
+	p = strsep(&str, ":");
+    }
+
+    return 0;
+}
+
 
 /*
  * Parse the dump file in `filename' and create the database (merging
@@ -353,7 +397,12 @@ doit(const char *filename, int mergep)
     while(fgets(s, sizeof(s), f) != NULL) {
 	ret = 0;
 	line++;
-	e.principal = s;
+
+	p = s;
+	while (isspace((unsigned char)*p))
+	    p++;
+
+	e.principal = p;
 	for(p = s; *p; p++){
 	    if(*p == '\\')
 		p++;
@@ -392,6 +441,9 @@ doit(const char *filename, int mergep)
 	p = skip_next(p);
 
 	e.generation = p;
+	p = skip_next(p);
+
+	e.extensions = p;
 	p = skip_next(p);
 
 	memset(&ent, 0, sizeof(ent));
@@ -467,6 +519,13 @@ doit(const char *filename, int mergep)
 	if(parse_generation(e.generation, &ent.generation) == -1) {
 	    fprintf (stderr, "%s:%d:error parsing generation (%s)\n",
 		     filename, line, e.generation);
+	    hdb_free_entry (context, &ent);
+	    continue;
+	}
+
+	if(parse_extensions(e.extensions, &ent.extensions) == -1) {
+	    fprintf (stderr, "%s:%d:error parsing extension (%s)\n",
+		     filename, line, e.extensions);
 	    hdb_free_entry (context, &ent);
 	    continue;
 	}
