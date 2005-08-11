@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999-2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999-2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -31,6 +31,7 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 #include "hdb_locl.h"
+#include <hex.h>
 #include <ctype.h>
 
 RCSID("$Id$");
@@ -91,8 +92,9 @@ append_hex(krb5_context context, krb5_storage *sp, krb5_data *data)
     if(printable)
 	return append_string(context, sp, "\"%.*s\"",
 			     data->length, data->data);
-    for(i = 0; i < data->length; i++) 
-	append_string(context, sp, "%02x", ((unsigned char*)data->data)[i]);
+    hex_encode(data->data, data->length, &p);
+    append_string(context, sp, "%s", p);
+    free(p);
     return 0;
 }
 
@@ -198,11 +200,41 @@ entry2string_int (krb5_context context, krb5_storage *sp, hdb_entry *ent)
 
     /* --- generation number */
     if(ent->generation) {
-	append_string(context, sp, "%s:%d:%d", time2str(ent->generation->time),
+	append_string(context, sp, "%s:%d:%d ", time2str(ent->generation->time),
 		      ent->generation->usec,
 		      ent->generation->gen);
     } else
+	append_string(context, sp, "- ");
+
+    /* --- extensions */
+    if(ent->extensions && ent->extensions->len > 0) {
+	for(i = 0; i < ent->extensions->len; i++) {
+	    void *d;
+	    size_t size, sz;
+
+	    ASN1_MALLOC_ENCODE(HDB_extension, d, size,
+			       &ent->extensions->val[i], &sz, ret);
+	    if (ret) {
+		krb5_clear_error_string(context);
+		return ret;
+	    }
+	    if(size != sz)
+		krb5_abortx(context, "internal asn.1 encoder error");
+
+	    if (hex_encode(d, size, &p) < 0) {
+		free(d);
+		krb5_set_error_string(context, "malloc: out of memory");
+		return ENOMEM;
+	    }
+
+	    free(d);
+	    append_string(context, sp, "%s%s", p, 
+			  ent->extensions->len - 1 != i ? ":" : "");
+	    free(p);
+	}
+    } else
 	append_string(context, sp, "-");
+
     
     return 0;
 }
