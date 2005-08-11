@@ -57,6 +57,18 @@ _kadm5_set_keys(kadm5_server_context *context,
     _kadm5_free_keys (context->context, ent->keys.len, ent->keys.val);
     ent->keys.val = keys;
     ent->keys.len = num_keys;
+
+    hdb_entry_set_pw_change_time(context->context, ent, 0);
+
+    if (krb5_config_get_bool_default(context->context, NULL, FALSE, 
+				     "kadmin", "save-password", NULL))
+    {
+	ret = hdb_entry_set_password(context->context, context->db,
+				     ent, password);
+	if (ret)
+	    return ret;
+    }
+
     return 0;
 }
 
@@ -109,6 +121,10 @@ _kadm5_set_keys2(kadm5_server_context *context,
     _kadm5_free_keys (context->context, ent->keys.len, ent->keys.val);
     ent->keys.len = len;
     ent->keys.val = keys;
+
+    hdb_entry_set_pw_change_time(context->context, ent, 0);
+    hdb_entry_clear_password(context->context, ent);
+
     return 0;
  out:
     _kadm5_free_keys (context->context, len, keys);
@@ -149,6 +165,10 @@ _kadm5_set_keys3(kadm5_server_context *context,
     _kadm5_free_keys (context->context, ent->keys.len, ent->keys.val);
     ent->keys.len = len;
     ent->keys.val = keys;
+
+    hdb_entry_set_pw_change_time(context->context, ent, 0);
+    hdb_entry_clear_password(context->context, ent);
+
     return 0;
  out:
     _kadm5_free_keys (context->context, len, keys);
@@ -245,6 +265,9 @@ out:
    ent->keys.len = num_keys;
    *new_keys     = kblock;
    *n_keys       = num_keys;
+
+   hdb_entry_set_pw_change_time(context->context, ent, 0);
+   hdb_entry_clear_password(context->context, ent);
 
    return 0;
 }
