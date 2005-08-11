@@ -1,5 +1,16 @@
 2005-07-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ftpd/ftpcmd.y: Fix shadow warning.
+
+	* ftp/security.c: Fix shadow warning.
+	* ftp/security.c: Fix shadow warnings.
+	
+	* ftp/ruserpass.c: Fix shadow warnings.
+
+	* ftp/ftp.c: Fix shadow warnings.
+	
+	* ftp/cmds.c: fix shadow warnings
+
 	* Add Kerberos 5 klist, old patch from Tomas Nyström (remove krb4
 	support). Support klist in client for kerberos 5 clase.
 	Clean up delegation of gss tokens and do afslog.
