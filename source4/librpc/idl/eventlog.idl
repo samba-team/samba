@@ -51,6 +51,8 @@
 		uint32 data_offset;
 		nstring source_name;
 		nstring computer_name;
+		nstring strings[num_of_strings];
+		astring raw_data;
 	} eventlog_Record;
 
 	/******************/
