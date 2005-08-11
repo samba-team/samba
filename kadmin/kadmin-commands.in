@@ -358,7 +358,7 @@ command = {
 }
 
 command = {
-	name = "password-quality"
+	name = "verify-password-quality"
 	name = "pwq"
 	function = "password_quality"
 	argument = "principal password"
