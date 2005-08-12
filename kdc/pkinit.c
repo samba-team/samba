@@ -947,7 +947,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	free_ReplyKeyPack_19(&kp);
     }
     case PKINIT_COMPAT_27: {
-	krb5_crypto crypto;
+	krb5_crypto ascrypto;
 	ReplyKeyPack kp;
 	memset(&kp, 0, sizeof(kp));
 
@@ -957,21 +957,21 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	    goto out;
 	}
 
-	ret = krb5_crypto_init(context, reply_key, 0, &crypto);
+	ret = krb5_crypto_init(context, reply_key, 0, &ascrypto);
 	if (ret) {
 	    krb5_clear_error_string(context);
 	    goto out;
 	}
 
-	ret = krb5_create_checksum(context, crypto, 6,
-				   req_buffer.data, req_buffer.length,
+	ret = krb5_create_checksum(context, ascrypto, 6, 0,
+				   req_buffer->data, req_buffer->length,
 				   &kp.asChecksum);
 	if (ret) {
 	    krb5_clear_error_string(context);
 	    goto out;
 	}
 			     
-	ret = krb5_crypto_destroy(context, crypto);
+	ret = krb5_crypto_destroy(context, ascrypto);
 	if (ret) {
 	    krb5_clear_error_string(context);
 	    goto out;
@@ -1314,6 +1314,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	    ret = pk_mk_pa_reply_enckey(context,
 					client_params,
 					req,
+					req_buffer,
 					&client_params->reply_key,
 					&rep.u.encKeyPack);
 	} else {
@@ -1366,6 +1367,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	    ret = pk_mk_pa_reply_enckey(context,
 					client_params,
 					req,
+					req_buffer,
 					&client_params->reply_key,
 					&info);
 	    if (ret) {
