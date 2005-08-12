@@ -1,5 +1,10 @@
 2005-08-12  Love Hörnquist Åstrand  <lha@it.su.se>
 	
+	* lib/krb5/krb5_keytab.3: Fix the version number for
+	fcc-mit-ticketflags.
+
+	* lib/krb5/fcache.c: Revert previous, I was confused.
+	
 	* lib/krb5/krb5_keytab.3: Document fcc-mit-ticketflags in
 	COMPATIBILITY section.
 	
