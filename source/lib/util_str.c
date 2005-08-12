@@ -183,7 +183,7 @@ char **toktocliplist(int *ctok, const char *sep)
 int StrCaseCmp(const char *s, const char *t)
 {
 
-	const char * ps, * pt;
+	const char *ps, *pt;
 	size_t size;
 	smb_ucs2_t *buffer_s, *buffer_t;
 	int ret;
@@ -211,17 +211,17 @@ int StrCaseCmp(const char *s, const char *t)
 			return +1;
 	}
 
-	size = push_ucs2_allocate(&buffer_s, s);
+	size = push_ucs2_allocate(&buffer_s, ps);
 	if (size == (size_t)-1) {
-		return strcmp(s, t); 
+		return strcmp(ps, pt); 
 		/* Not quite the right answer, but finding the right one
 		   under this failure case is expensive, and it's pretty close */
 	}
 	
-	size = push_ucs2_allocate(&buffer_t, t);
+	size = push_ucs2_allocate(&buffer_t, pt);
 	if (size == (size_t)-1) {
 		SAFE_FREE(buffer_s);
-		return strcmp(s, t); 
+		return strcmp(ps, pt); 
 		/* Not quite the right answer, but finding the right one
 		   under this failure case is expensive, and it's pretty close */
 	}
