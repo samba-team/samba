@@ -4,7 +4,7 @@
 #ifndef __krb5_types_h__
 #define __krb5_types_h__
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
 #if HAVE_INTTYPES_H
@@ -22,7 +22,6 @@
 
 
 typedef socklen_t krb5_socklen_t;
-#include <unistd.h>
 typedef ssize_t krb5_ssize_t;
 
 #endif /* __krb5_types_h__ */
