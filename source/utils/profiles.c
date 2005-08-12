@@ -530,7 +530,6 @@ int main(int argc, char *argv[])
   SK_HDR *sk_hdr;
   DWORD first_sk_off, sk_off;
   MY_SEC_DESC *sec_desc;
-  int *ptr;
   struct poptOption long_options[] = {
 	  POPT_AUTOHELP
 	  { "verbose", 'v', POPT_ARG_NONE, NULL, 'v', "Sets verbose mode" },
@@ -694,7 +693,6 @@ int main(int argc, char *argv[])
 	      (0x1000 + sk_off + 4));
       exit(8);
     }
-    ptr = (int *)sk_hdr;
     if (verbose) fprintf(stdout, "Off: %08X, Refs: %u, Size: %u\n",
 			 sk_off, IVAL(&sk_hdr->ref_cnt, 0), 
 			 IVAL(&sk_hdr->rec_size, 0));
