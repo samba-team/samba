@@ -18,7 +18,9 @@ if [ -r $DEST ]; then
 fi
 TOP=`pwd`
 if cd $dir && $LEX $file; then
-	sed '/^#/ s|$base.yy\.c|$DEST|' $base.yy.c > $base.c
-	rm -f $base.yy.c
+	if [ -r $base.yy.c ];then
+		sed '/^#/ s|$base.yy\.c|$DEST|' $base.yy.c > $base.c
+		rm -f $base.yy.c
+	fi
 fi
 cd $TOP

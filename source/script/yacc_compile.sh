@@ -18,8 +18,11 @@ if [ -r $DEST ]; then
 fi
 TOP=`pwd`
 if cd $dir && $YACC -d $file; then
-	sed -e "/^#/!b" -e "s|y\.tab\.h|$base.h|" y.tab.h > $base.h
-	sed '/^#/ s|y\.tab\.c|$base.c|' y.tab.c > $base.c
-	rm -f y.tab.c y.tab.h
+	if [ -r y.tab.h -a -r y.tab.c ];then
+		echo "move files"
+		sed -e "/^#/!b" -e "s|y\.tab\.h|$base.h|" y.tab.h > $base.h
+		sed '/^#/ s|y\.tab\.c|$base.c|' y.tab.c > $base.c
+		rm -f y.tab.c y.tab.h
+	fi
 fi
 cd $TOP
