@@ -420,7 +420,7 @@ fcc_store_cred(krb5_context context,
 	sp = krb5_storage_from_fd(fd);
 	krb5_storage_set_eof_code(sp, KRB5_CC_END);
 	storage_set_flags(context, sp, FCACHE(id)->version);
-	if (!krb5_config_get_bool_default(context, NULL, TRUE,
+	if (!krb5_config_get_bool_default(context, NULL, FALSE,
 					  "libdefaults",
 					  "fcc-mit-ticketflags",
 					  NULL))
