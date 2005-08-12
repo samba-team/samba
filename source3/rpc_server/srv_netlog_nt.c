@@ -716,6 +716,15 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	/* Check account and password */
     
 	if (!NT_STATUS_IS_OK(status)) {
+		/* If we don't know what this domain is, we need to 
+		   indicate that we are not authoritative.  This 
+		   allows the client to decide if it needs to try 
+		   a local user.  Fix by jpjanosi@us.ibm.com, #2976 */
+                if ( NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER) 
+		     && !strequal(nt_domain, get_global_sam_name())
+		     && !is_trusted_domain(nt_domain) )
+			r_u->auth_resp = 0; /* We are not authoritative */
+
 		free_server_info(&server_info);
 		return status;
 	}
