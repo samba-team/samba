@@ -47,6 +47,8 @@ commits
 o   Jeremy Allison <jra@samba.org>
     * Fix minor compiler warnings in printing/printing.c.
     * Merge new DOS error code from SAMBA_4.
+    * Fix issue when non-English characters in filenames and 
+      directories.
 
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
