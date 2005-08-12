@@ -8040,13 +8040,14 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 		/* data - counted in bytes */
 
 		*out_max_data_len = in_data_len;
-		if ( (*data_out = (uint8 *)TALLOC_ZERO(p->mem_ctx, in_data_len*sizeof(uint8))) == NULL) 
+		if ( in_data_len && (*data_out = (uint8 *)TALLOC_ZERO(p->mem_ctx, in_data_len*sizeof(uint8))) == NULL) 
 		{
 			result = WERR_NOMEM;
 			goto done;
 		}
 		data_len = regval_size(val);
-		memcpy( *data_out, regval_data_p(val), data_len );
+		if ( *data_out )
+			memcpy( *data_out, regval_data_p(val), data_len );
 		*out_data_len = data_len;
 	}
 
