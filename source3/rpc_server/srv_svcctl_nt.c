@@ -756,7 +756,6 @@ WERROR _svcctl_query_service_config2( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CO
 {
 	POLICY_HND *handle;
 	SERVICE_INFO *service_info;
-        uint32   level;
 	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
 	
 	/* perform access checks */
@@ -789,10 +788,8 @@ WERROR _svcctl_query_service_config2( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CO
            in the *r_query_config2 marshalling routine...
 	*/
 
-	level = q_u->info_level;
-
 #if 0
-	if (SERVICE_CONFIG_DESCRIPTION == level) {
+	if (SERVICE_CONFIG_DESCRIPTION == q_u->info_level) {
 		if (service_info && service_info->shortdescription) {
 			/* length of the string, plus the terminator... */
 			string_buffer_size = strlen(service_info->shortdescription)+1; 
