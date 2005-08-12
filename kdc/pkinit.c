@@ -640,7 +640,7 @@ _kdc_pk_rd_padata(krb5_context context,
 	PA_PK_AS_REQ r;
 	ContentInfo info;
 
-	type = "PK-INIT-25";
+	type = "PK-INIT-27";
 	pa_contentType = oid_id_pkauthdata();
 
 	ret = decode_PA_PK_AS_REQ(pa->padata_value.data,
@@ -1283,7 +1283,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 		krb5_abortx(context, "Internal ASN.1 encoder error");
 
 	} else {
-	    krb5_set_error_string(context, "DH -25 not implemented");
+	    krb5_set_error_string(context, "DH -27 not implemented");
 	    ret = KRB5KRB_ERR_GENERIC;
 	}
 	if (ret) {
@@ -1357,7 +1357,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	memset(&rep, 0, sizeof(rep));
 
 	if (client_params->dh) {
-	    krb5_set_error_string(context, "DH -25 not implemented");
+	    krb5_set_error_string(context, "DH -27 not implemented");
 	    ret = KRB5KRB_ERR_GENERIC;
 	} else {
 	    rep.element = choice_PA_PK_AS_REP_encKeyPack;
