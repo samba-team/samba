@@ -1159,6 +1159,7 @@ static struct parm_struct parm_table[] = {
 	{"eventlog num records command", P_STRING, P_GLOBAL, &Globals.szEventLogNumRecordsCommand, handle_eventlog, NULL, FLAG_ADVANCED},
 	{"eventlog oldest record command", P_STRING, P_GLOBAL, &Globals.szEventLogOldestRecordCommand, handle_eventlog, NULL, FLAG_ADVANCED},
 	{"eventlog close command", P_STRING, P_GLOBAL, &Globals.szEventLogCloseCommand, handle_eventlog, NULL, FLAG_ADVANCED},
+	{"eventlog control command", P_STRING, P_GLOBAL, &Globals.szEventLogControlCommand, handle_eventlog, NULL, FLAG_ADVANCED},
 	{"eventlog list",  P_LIST, P_GLOBAL, &Globals.szEventLogs, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
 	
 	{"config file", P_STRING, P_GLOBAL, &Globals.szConfigFile, NULL, NULL, FLAG_HIDE}, 

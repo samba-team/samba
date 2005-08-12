@@ -666,12 +666,14 @@ static BOOL parse_logentry(char *line, Eventlog_entry *entry, BOOL *eor)
 		while(isspace(stop[0])) {
 			stop++;
 		}
-		memset(temp, 0, sizeof(temp));
-		temp_len = strlen(stop);
-		strncpy(temp, stop, temp_len);
-		rpcstr_push((void *)(entry->data_record.user_data), temp,
-			    sizeof(entry->data_record.user_data), STR_TERMINATE);
-		entry->data_record.user_data_len = (strlen_w((const smb_ucs2_t *)entry->data_record.user_data) * 2) + 2;
+		entry->data_record.user_data_len = strlen(stop);
+		memset(entry->data_record.user_data, 0, sizeof(entry->data_record.user_data));
+		if(entry->data_record.user_data_len > 0) {
+			/* copy no more than the first 1024 bytes */
+			if(entry->data_record.user_data_len > sizeof(entry->data_record.user_data))
+				entry->data_record.user_data_len = sizeof(entry->data_record.user_data);
+			memcpy(entry->data_record.user_data, stop, entry->data_record.user_data_len);
+		}
 	} else {
 		/* some other eventlog entry -- not implemented, so dropping on the floor */
 		DEBUG(10, ("Unknown entry [%s]. Ignoring.\n", line));
