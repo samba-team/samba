@@ -78,6 +78,7 @@ static BOOL logon_hours_ok(SAM_ACCOUNT *sampass)
 	/* In logon hours first bit is Sunday from 12AM to 1AM */
 	const uint8 *hours;
 	struct tm *utctime;
+	time_t lasttime;
 	uint8 bitmask, bitpos;
 
 	hours = pdb_get_hours(sampass);
@@ -86,7 +87,8 @@ static BOOL logon_hours_ok(SAM_ACCOUNT *sampass)
 		return True;
 	}
 
-	utctime = localtime(&smb_last_time.tv_sec);
+	lasttime = (time_t)smb_last_time.tv_sec;
+	utctime = localtime(&lasttime);
 
 	/* find the corresponding byte and bit */
 	bitpos = (utctime->tm_wday * 24 + utctime->tm_hour) % 168;
