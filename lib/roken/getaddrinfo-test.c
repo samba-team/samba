@@ -109,13 +109,13 @@ doit (const char *nodename, const char *servname)
 int
 main(int argc, char **argv)
 {
-    int optind = 0;
+    int optidx = 0;
     int i;
 
     setprogname (argv[0]);
 
     if (getarg (args, sizeof(args) / sizeof(args[0]), argc, argv,
-		&optind))
+		&optidx))
 	usage (1);
 
     if (help_flag)
@@ -126,8 +126,8 @@ main(int argc, char **argv)
 	return 0;
     }
 
-    argc -= optind;
-    argv += optind;
+    argc -= optidx;
+    argv += optidx;
 
     if (argc % 2 != 0)
 	usage (1);
