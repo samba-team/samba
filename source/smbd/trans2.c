@@ -878,8 +878,9 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	SSVAL(params,2,open_attr);
 	put_dos_date2(params,4, mtime);
 	SIVAL(params,8, (uint32)size);
-	SSVAL(params,12,open_ofun);
-	SSVAL(params,16,0); /* Padding. */
+	SSVAL(params,12,deny_mode);
+	SSVAL(params,14,0); /* open_type - file or directory. */
+	SSVAL(params,16,0); /* open_state - only valid for IPC device. */
 
 	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
 		smb_action |= EXTENDED_OPLOCK_GRANTED;

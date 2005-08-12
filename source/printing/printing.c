@@ -399,8 +399,10 @@ uint32 sysjob_to_jobid(int unix_jobid)
 		if (!lp_print_ok(snum))
 			continue;
 		pdb = get_print_db_byname(lp_const_servicename(snum));
-		if (pdb)
-			tdb_traverse(pdb->tdb, unixjob_traverse_fn, &unix_jobid);
+		if (!pdb) {
+			continue;
+		}
+		tdb_traverse(pdb->tdb, unixjob_traverse_fn, &unix_jobid);
 		release_print_db(pdb);
 		if (sysjob_to_jobid_value != (uint32)-1)
 			return sysjob_to_jobid_value;
@@ -1067,6 +1069,10 @@ static void print_queue_update_internal( const char *sharename,
 	TDB_DATA jcdata;
 	fstring keystr, cachestr;
 	struct tdb_print_db *pdb = get_print_db_byname(sharename);
+
+	if (!pdb) {
+		return;
+	}
 	
 	DEBUG(5,("print_queue_update_internal: printer = %s, type = %d, lpq command = [%s]\n",
 		sharename, current_printif->type, lpq_command));
@@ -1426,6 +1432,11 @@ static void print_queue_update(int snum, BOOL force)
 	   sent.  */
 
 	pdb = get_print_db_byname(sharename);
+	if (!pdb) {
+		SAFE_FREE(buffer);
+		return;
+	}
+
 	snprintf(key, sizeof(key), "MSG_PENDING/%s", sharename);
 
 	if ( !tdb_store_uint32( pdb->tdb, key, time(NULL) ) ) {
@@ -1730,6 +1741,10 @@ static BOOL remove_from_jobs_changed(const char* sharename, uint32 jobid)
 	size_t job_count, i;
 	BOOL ret = False;
 	BOOL gotlock = False;
+
+	if (!pdb) {
+		return False;
+	}
 
 	ZERO_STRUCT(data);
 
@@ -2057,11 +2072,14 @@ static int get_queue_status(const char* sharename, print_status_struct *status)
 	struct tdb_print_db *pdb = get_print_db_byname(sharename);
 	int len;
 
+	if (status) {
+		ZERO_STRUCTP(status);
+	}
+
 	if (!pdb)
 		return 0;
 
 	if (status) {
-		ZERO_STRUCTP(status);
 		fstr_sprintf(keystr, "STATUS/%s", sharename);
 		data = tdb_fetch(pdb->tdb, string_tdb_data(keystr));
 		if (data.dptr) {
