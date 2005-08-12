@@ -9,12 +9,12 @@ file=`basename $SRC`
 base=`basename $SRC .y`
 if [ -z "$YACC" ]; then
 	echo "yacc not found"
-	return;
+	exit;
 fi
 if [ -r $DEST ]; then
 	if [ x`find $SRC -newer $DEST -print` != x$SRC ]; then
-	    return;
-    fi
+		exit;
+	fi
 fi
 TOP=`pwd`
 if cd $dir && $YACC -d $file; then

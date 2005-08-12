@@ -9,16 +9,16 @@ file=`basename $SRC`
 base=`basename $SRC .l`
 if [ -z "$LEX" ]; then
 	echo "lex not found - not regenerating $DEST"
-	return;
+	exit;
 fi
 if [ -r $DEST ]; then
-    if [ x`find $SRC -newer $DEST -print` != x$SRC ]; then
-	    return;
-    fi
+	if [ x`find $SRC -newer $DEST -print` != x$SRC ]; then
+		exit;
+	fi
 fi
 TOP=`pwd`
 if cd $dir && $LEX $file; then
-    sed '/^#/ s|$base.yy\.c|$DEST|' $base.yy.c > $base.c
-    rm -f $base.yy.c
+	sed '/^#/ s|$base.yy\.c|$DEST|' $base.yy.c > $base.c
+	rm -f $base.yy.c
 fi
 cd $TOP
