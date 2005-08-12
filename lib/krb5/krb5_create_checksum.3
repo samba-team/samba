@@ -1,4 +1,4 @@
-.\" Copyright (c) 1999-2004 Kungliga Tekniska Högskolan
+.\" Copyright (c) 1999-2005 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd March 20, 2004
+.Dd August 12, 2005
 .Dt NAME 3
 .Os HEIMDAL
 .Sh NAME
@@ -85,7 +85,8 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fo krb5_create_checksum
 .Fa "krb5_context context"
 .Fa "krb5_crypto crypto"
-.Fa "unsigned usage_or_type"
+.Fa "krb5_key_usage usage"
+.Fa "int type"
 .Fa "void *data"
 .Fa "size_t len"
 .Fa "Checksum *result"
@@ -221,4 +222,5 @@ globally disables the checksum type.
 .\" .Sh BUGS
 .Sh SEE ALSO
 .Xr krb5_crypto_init 3 ,
+.Xr krb5_c_encrypt 3 ,
 .Xr krb5_encrypt 3
