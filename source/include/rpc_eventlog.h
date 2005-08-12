@@ -171,11 +171,7 @@ typedef struct {
 
 typedef struct {
 	POLICY_HND handle;
-	uint32 unknown1;
-	uint16 backup_file_length;
-	uint16 backup_file_size;
-	uint32 backup_file_ptr;
-	UNISTR2 backup_file;
+	UNISTR4 backupfile;
 } EVENTLOG_Q_CLEAR_EVENTLOG;
 
 typedef struct {

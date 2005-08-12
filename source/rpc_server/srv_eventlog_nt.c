@@ -26,8 +26,7 @@
 #define EVENTLOG_VERSION_V1 1 /* Will there be more? */
 static TDB_CONTEXT *evtlog_tdb; /* used for eventlog parameter tdb file */
 
-typedef struct eventlog_info {
-	/* for use by the \PIPE\eventlog policy */
+typedef struct {
 	fstring logname;
 	fstring servername;
 	fstring handle_string;
@@ -35,50 +34,15 @@ typedef struct eventlog_info {
 	uint32 oldest_entry;
 	uint32 active_entry;
 	uint32 flags;
-} Eventlog_info;
+} EventlogInfo;
 
-
-BOOL copy_tdb_uint32_value_to_new_tdb(TDB_CONTEXT *new_tdb, TDB_CONTEXT *tdb, char *vname, uint32 dft)
-{
-	uint32   data_value;
-	pstring  u_vname;
-	BOOL rval;
-
-	if (!tdb || !new_tdb || !vname ) {
-		return False;
-	}
-	
-	DEBUG(10,("copy_tdb_uint32_value_to_new_tdb: Copying item %s, default if not found %x\n",vname,dft));
-	pstrcpy(u_vname, vname);
-	
-	/* NORMALIZE */
-	
-	strupper_m(u_vname);
-    
-	rval = tdb_fetch_uint32(tdb, u_vname, &data_value);
-	
-	DEBUG(10,("copy_tdb_uint32_value_to_new_tdb: rval is %x\n",rval));
-    
-	if ( !rval ) {
-		DEBUG(10,("copy_tdb_uint32_value_to_new_tdb: Couldn't read [%s] value default will be %x\n",u_vname, dft));
-		data_value = dft;
-	}
-    
-	DEBUG(10,("copy_tdb_uint32_value_to_new_tdb: Copying item %s, value is %x\n",u_vname, data_value));
-    
-	tdb_store_uint32(new_tdb, u_vname, data_value);
-	
-	return True;
-}
- 
-/***************************************************************************
-  Write an entry (presumably coming from a registry write) that has an eventlog
-  parameter to the eventlog tdb. 
-
-  After this call, it's probably a good thing to update_eventlog_external to inform
-  any supporting machinery that a parameter changed.
-
-****************************************************************************/
+  
+/********************************************************************
+  Write an entry (presumably coming from a registry write) that has an 
+  eventlog parameter to the eventlog tdb.   After this call, it's probably 
+  a good thing to update_eventlog_external to inform any supporting 
+  machinery that a parameter changed.
+********************************************************************/
 
 BOOL write_evtlog_uint32_reg_value(const char *evtlogname, const char *vname, uint32 davalue)
 {
@@ -121,9 +85,9 @@ BOOL write_evtlog_uint32_reg_value(const char *evtlogname, const char *vname, ui
 	return True;
 }
 
-/***************************************************************************
-  Read a parameter from the eventlog_param tdb relevant to eventlogs.
-****************************************************************************/
+/********************************************************************
+ Read a parameter from the eventlog_param tdb relevant to eventlogs.
+********************************************************************/
 
 BOOL read_evtlog_uint32_reg_value(const char *evtlogname, const char *vname, uint32 *davalue)
 {
@@ -169,85 +133,10 @@ BOOL read_evtlog_uint32_reg_value(const char *evtlogname, const char *vname, uin
 	return True;
 }
 
-/***************************************************************************
-  Prune entries in smb.conf to only the entries that we care about -- 
-    take the currently existing TDB context -- filter to the entries that we have
-    read from smb.conf, write them to new TDB, close/unlink the old, rename new to old.
-
-****************************************************************************/
-
-static BOOL cleanup_eventlog_parameters( TDB_CONTEXT *levtlog_tdb )
-{
-	TDB_CONTEXT *new_tdb;
-	const char *vstring = "INFO/version";
-	fstring evtlogname;
-	const char        **evtlog_list;
-	pstring  old_tdbfile,new_tdbfile;
-    
-	pstrcpy( new_tdbfile, lock_path("eventlog_params.tdb.new") ); 
-	pstrcpy( old_tdbfile, lock_path("eventlog_params.tdb") ); 
-    
-	unlink( new_tdbfile ); /* remove any existing file */
-    
-	if ( !(new_tdb = tdb_open_log(new_tdbfile, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600)) ) {
-		DEBUG(0,("Failed to create new eventlog parameters db\n"));
-		return False;
-	}
-	
-	/* write initial information out */
-	
-	tdb_store_uint32(new_tdb, vstring, EVENTLOG_VERSION_V1);
-    
-	/* for each eventlog that we have, find info related to it and copy to the new DB */
-	
-	evtlog_list = lp_eventlog_list();
-	while (evtlog_list && *evtlog_list) {
-	
-		DEBUG(10,("cleanup_eventlog_parameters: Cleaning up =>[%s]\n",*evtlog_list));	
-	
-		fstrcpy(evtlogname,*evtlog_list);
-		fstrcat(evtlogname,"/RETENTION");
-		copy_tdb_uint32_value_to_new_tdb(new_tdb,levtlog_tdb,evtlogname,0x93A80);
-		
-		fstrcpy(evtlogname,*evtlog_list);
-		fstrcat(evtlogname,"/MAXSIZE");
-		copy_tdb_uint32_value_to_new_tdb(new_tdb,levtlog_tdb,evtlogname,0x80000);
-		
-		evtlog_list++;
-	}  
-    
-	DEBUG(10,("cleanup_eventlog_parameters: removing current TDB\n"));
-    
-	tdb_close(evtlog_tdb);
-	tdb_close(new_tdb);
-    
-	/* unlink current TDB */
-	
-	if ( unlink(old_tdbfile) != 0 ) {
-		DEBUG(1,("cleanup_eventlog_parameters: unable to unlink old file %s %s\n",old_tdbfile,strerror(errno)));
-	}
-    
-	/* rename new_tdb  */
-	
-	if ( rename(new_tdbfile,old_tdbfile) != 0 ) {
-		DEBUG(1,("cleanup_eventlog_parameters: Can't rename new to old : %s\n",strerror(errno)));
-	}
-	DEBUG(10,("cleanup_eventlog_parameters: Renamed %s to %s : \n",new_tdbfile,old_tdbfile));
-    
-	evtlog_tdb = tdb_open_log(old_tdbfile, 0, TDB_DEFAULT, O_RDWR, 0600);
-    
-	if (!evtlog_tdb) {
-		DEBUG(1,("cleanup_eventlog_parameters: Can't re-open eventlog parameter db\n"));
-	}
-    
-	return True;
-}
-
-/****************************************************************
-
-  Inform the external eventlog machinery of default values (on startup probably)
-
-***************************************************************/
+/********************************************************************
+ Inform the external eventlog machinery of default values (on startup 
+ probably)
+********************************************************************/
 
 void eventlog_refresh_external_parameters(void)
 {
@@ -266,9 +155,9 @@ void eventlog_refresh_external_parameters(void)
 	return;
 }
 
-/****************************************************************************
+/********************************************************************
  Open the eventlog parameter tdb. This code a clone of init_group_mapping.
-****************************************************************************/
+********************************************************************/
 
 BOOL init_eventlog_parameters( void )
 {
@@ -303,32 +192,34 @@ BOOL init_eventlog_parameters( void )
 
 	DEBUG(3,("Cleaning up eventlog parameters db\n"));
 
-	cleanup_eventlog_parameters( evtlog_tdb );
-	
 	return True;
 }
 
+/********************************************************************
+********************************************************************/
+
 static void free_eventlog_info(void *ptr)
 {
-	struct eventlog_info *info = (struct eventlog_info *)ptr;
-
-	ZERO_STRUCTP( info );
-	SAFE_FREE(info);
-
-	return;
+	talloc_free( ptr );
 }
 
+/********************************************************************
+********************************************************************/
 
-static Eventlog_info *find_eventlog_info_by_hnd(pipes_struct *p, POLICY_HND *handle)
+static EventlogInfo *find_eventlog_info_by_hnd(pipes_struct *p, POLICY_HND *handle)
 {
-	Eventlog_info *info = NULL;
+	EventlogInfo *info;
     
 	if ( !find_policy_by_hnd(p,handle,(void **)&info) ) {
 		DEBUG(2,("find_eventlog_info_by_hnd: eventlog not found.\n"));
+		return NULL;
 	}
 
 	return info;
 }
+
+/********************************************************************
+********************************************************************/
 
 void policy_handle_to_string(POLICY_HND *handle, fstring *dest)
 {
@@ -345,13 +236,14 @@ void policy_handle_to_string(POLICY_HND *handle, fstring *dest)
 		 handle->data5[4]);
 }
 
-/**
- * Callout to control the specified event log - passing out only the MaxSize and Retention values, along with eventlog name
- * 
- *    uses smbrun...
- *     INPUT: <control_cmd> <log name> <retention> <maxsize>
- *     OUTPUT: nothing
- */
+/********************************************************************
+ Callout to control the specified event log - passing out only 
+ the MaxSize and Retention values, along with eventlog name
+ uses smbrun...
+      INPUT: <control_cmd> <log name> <retention> <maxsize>
+      OUTPUT: nothing
+********************************************************************/
+
 BOOL eventlog_control_eventlog(const char *evtlogname)
 {
 	char *cmd = lp_eventlog_control_cmd();
@@ -406,6 +298,9 @@ BOOL eventlog_control_eventlog(const char *evtlogname)
 }
 
 
+/********************************************************************
+********************************************************************/
+
 /**
  * Callout to open the specified event log
  * 
@@ -414,7 +309,7 @@ BOOL eventlog_control_eventlog(const char *evtlogname)
  *     OUTPUT: the string "SUCCESS" if the command succeeded
  *             no such string if there was a failure.
  */
-static BOOL _eventlog_open_eventlog_hook(Eventlog_info *info)
+static BOOL open_eventlog_hook( EventlogInfo *info )
 {
 	char *cmd = lp_eventlog_open_cmd();
 	char **qlines;
@@ -428,8 +323,7 @@ static BOOL _eventlog_open_eventlog_hook(Eventlog_info *info)
 		return False;
 	}
 
-	memset(command, 0, sizeof(command));
-	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"",
+	pstr_sprintf(command, "%s \"%s\" \"%s\"",
 		 cmd,
 		 info->logname,
 		 info->handle_string);
@@ -459,61 +353,12 @@ static BOOL _eventlog_open_eventlog_hook(Eventlog_info *info)
 	}
 
 	file_lines_free(qlines);
+
 	return False;
 }
 
-/*******************************************************************
-*******************************************************************/
-
-WERROR _eventlog_open_eventlog(pipes_struct *p, EVENTLOG_Q_OPEN_EVENTLOG *q_u, EVENTLOG_R_OPEN_EVENTLOG *r_u)
-{
-	Eventlog_info *info = NULL;
-    
-	if ( !q_u || !r_u ) {
-		return WERR_NOMEM;
-	}
-    
-	if ( !(info = SMB_MALLOC_P(Eventlog_info)) ) 
-		return WERR_NOMEM;
-    
-	ZERO_STRUCTP(info);
-
-
-	if ( q_u->servername.string ) {
-		UNISTR2 *sname = q_u->servername.string;
-
-		rpcstr_pull( info->servername, sname->buffer, sizeof(info->servername), sname->uni_str_len*2, 0 );
-	} else {
-		/* if servername == NULL, use the local computer */
-		fstrcpy(info->servername, global_myname());
-	}
-	DEBUG(10, ("_eventlog_open_eventlog: Using [%s] as the server name.\n", info->servername));
-
-	if ( q_u->logname.string ) {
-		UNISTR2 *lname = q_u->logname.string;
-
-		rpcstr_pull( info->logname, lname->buffer, sizeof(info->logname), lname->uni_str_len*2, 0 );
-	} else {
-		/* if sourcename == NULL, default to "Application" log */
-		fstrcpy(info->logname, "Application");
-	}
-	DEBUG(10, ("_eventlog_open_eventlog: Using [%s] as the source log file.\n", info->logname));
-
-	if ( !create_policy_hnd(p, &r_u->handle, free_eventlog_info, (void *)info) ) {
-		free_eventlog_info(info);
-		return WERR_NOMEM;
-	}
-	
-	policy_handle_to_string(&r_u->handle, &info->handle_string);
-
-	if ( !(_eventlog_open_eventlog_hook(info)) ) {
-		close_policy_hnd(p, &r_u->handle);
-		return WERR_BADFILE;
-	}
-	
-	return WERR_OK;
-}
-
+/********************************************************************
+********************************************************************/
 /**
  * Callout to get the number of records in the specified event log
  * 
@@ -523,7 +368,7 @@ WERROR _eventlog_open_eventlog(pipes_struct *p, EVENTLOG_Q_OPEN_EVENTLOG *q_u, E
  *             entries in the log. If there are no entries in the log, return 0.
  */
 
-static BOOL _eventlog_get_num_records_hook(Eventlog_info *info)
+static BOOL get_num_records_hook(EventlogInfo *info)
 {
 	char *cmd = lp_eventlog_num_records_cmd();
 	char **qlines;
@@ -569,28 +414,8 @@ static BOOL _eventlog_get_num_records_hook(Eventlog_info *info)
 	return False;
 }
 
-WERROR _eventlog_get_num_records(pipes_struct *p,
-				 EVENTLOG_Q_GET_NUM_RECORDS *q_u,
-				 EVENTLOG_R_GET_NUM_RECORDS *r_u)
-{
-	Eventlog_info *info = NULL;
-	POLICY_HND *handle = NULL;
-
-	if(!q_u || !r_u) {
-		return WERR_NOMEM;
-	}
-
-	handle = &q_u->handle;
-	info = find_eventlog_info_by_hnd(p, handle);
-
-	if(!(_eventlog_get_num_records_hook(info))) {
-		return WERR_BADFILE;
-	}
-
-	r_u->num_records = info->num_records;
-
-	return WERR_OK;
-}
+/********************************************************************
+********************************************************************/
 
 /**
  * Callout to find the oldest record in the log
@@ -602,7 +427,7 @@ WERROR _eventlog_get_num_records(pipes_struct *p,
  *             If there are no entries in the log, returns a 0
  */
 
-static BOOL _eventlog_get_oldest_entry_hook(Eventlog_info *info)
+static BOOL get_oldest_entry_hook(EventlogInfo *info)
 {
 	char *cmd = lp_eventlog_oldest_record_cmd();
 	char **qlines;
@@ -648,29 +473,8 @@ static BOOL _eventlog_get_oldest_entry_hook(Eventlog_info *info)
 	return False;
 }
 
-WERROR _eventlog_get_oldest_entry(pipes_struct *p,
-				  EVENTLOG_Q_GET_OLDEST_ENTRY *q_u,
-				  EVENTLOG_R_GET_OLDEST_ENTRY *r_u)
-{
-	Eventlog_info *info = NULL;
-	POLICY_HND *handle = NULL;
-
-	if(!q_u || !r_u) {
-		return WERR_NOMEM;
-	}
-
-	handle = &q_u->handle;
-	info = find_eventlog_info_by_hnd(p, handle);
-
-	if(!(_eventlog_get_oldest_entry_hook(info))) {
-		return WERR_BADFILE;
-	}
-
-	r_u->oldest_entry = info->oldest_entry;
-
-	return WERR_OK;
-}
-
+/********************************************************************
+********************************************************************/
 /**
  * Callout to close the specified event log
  * 
@@ -680,7 +484,7 @@ WERROR _eventlog_get_oldest_entry(pipes_struct *p,
  *             no such string if there was a failure.
  */
 
-static BOOL _eventlog_close_eventlog_hook(Eventlog_info *info)
+static BOOL close_eventlog_hook(EventlogInfo *info)
 {
 	char *cmd = lp_eventlog_close_cmd();
 	char **qlines;
@@ -728,34 +532,10 @@ static BOOL _eventlog_close_eventlog_hook(Eventlog_info *info)
 	return False;
 }
 
-WERROR _eventlog_close_eventlog(pipes_struct *p,
-				EVENTLOG_Q_CLOSE_EVENTLOG *q_u,
-				EVENTLOG_R_CLOSE_EVENTLOG *r_u)
-{
-	Eventlog_info *info = NULL;
-	POLICY_HND *handle;
+/********************************************************************
+********************************************************************/
 
-	if(!q_u || !r_u) {
-		return WERR_NOMEM;
-	}
-
-	handle = &q_u->handle;
-    
-	info = find_eventlog_info_by_hnd(p, handle);
-	if(!(_eventlog_close_eventlog_hook(info))) {
-		return WERR_BADFILE;
-	}
-
-	if(!(close_policy_hnd(p, handle))) {
-		/* WERR_NOMEM is probably not the correct error, but until I figure out a better
-		   one it will have to do */
-		return WERR_NOMEM;
-	}
-
-	return WERR_OK;
-}
-
-static BOOL _eventlog_read_parse_line(char *line, Eventlog_entry *entry, BOOL *eor)
+static BOOL parse_logentry(char *line, Eventlog_entry *entry, BOOL *eor)
 {
 	char *start = NULL, *stop = NULL;
 	pstring temp;
@@ -765,7 +545,7 @@ static BOOL _eventlog_read_parse_line(char *line, Eventlog_entry *entry, BOOL *e
 
 	/* empty line signyfiying record delimeter, or we're at the end of the buffer */
 	if(start == NULL || strlen(start) == 0) {
-		DEBUG(6, ("_eventlog_read_parse_line: found end-of-record indicator.\n"));
+		DEBUG(6, ("parse_logentry: found end-of-record indicator.\n"));
 		*eor = True;
 		return True;
 	}
@@ -773,7 +553,7 @@ static BOOL _eventlog_read_parse_line(char *line, Eventlog_entry *entry, BOOL *e
 		return False;
 	}
     
-	DEBUG(6, ("_eventlog_read_parse_line: trying to parse [%s].\n", line));
+	DEBUG(6, ("parse_logentry: trying to parse [%s].\n", line));
 
 	if(0 == strncmp(start, "LEN", stop - start)) {
 		/* This will get recomputed later anyway -- probably not necessary */
@@ -902,6 +682,9 @@ static BOOL _eventlog_read_parse_line(char *line, Eventlog_entry *entry, BOOL *e
 	return True;
 }
 
+/********************************************************************
+********************************************************************/
+
 /**
  * Callout to read entries from the specified event log
  *
@@ -933,14 +716,10 @@ static BOOL _eventlog_read_parse_line(char *line, Eventlog_entry *entry, BOOL *e
  *               <empty line>  - end-of-record indicator 
  */
 
-static BOOL _eventlog_read_eventlog_hook(Eventlog_info *info,
-					 Eventlog_entry *entry, 
-					 const char *direction, 
-					 int starting_record, 
-					 int buffer_size, 
-					 BOOL *eof,
-					 char ***buffer,
-					 int *numlines)
+static BOOL read_eventlog_hook(EventlogInfo *info, Eventlog_entry *entry, 
+					 const char *direction, int starting_record, 
+					 int buffer_size, BOOL *eof,
+					 char ***buffer, int *numlines)
 {
 	char *cmd = lp_eventlog_read_cmd();
 	pstring command;
@@ -986,7 +765,7 @@ static BOOL _eventlog_read_eventlog_hook(Eventlog_info *info,
 		  for(i = 0; i < numlines; i++)
 		  {
 		  DEBUGADD(10, ("Line[%d] = %s\n", i, qlines[i]));
-		  _eventlog_read_parse_line(qlines[i], entry);
+		  parse_logentry(qlines[i], entry);
 		  }
 		  file_lines_free(qlines);
 		*/
@@ -998,8 +777,11 @@ static BOOL _eventlog_read_eventlog_hook(Eventlog_info *info,
 /*    file_lines_free(qlines);*/
 	return False;
 }
-	
-static Eventlog_entry *_eventlog_read_package_entry(prs_struct *ps,
+
+/********************************************************************
+********************************************************************/
+
+static Eventlog_entry *read_package_entry(prs_struct *ps,
 						    EVENTLOG_Q_READ_EVENTLOG *q_u,
 						    EVENTLOG_R_READ_EVENTLOG *r_u,
 						    Eventlog_entry *entry)
@@ -1067,7 +849,10 @@ static Eventlog_entry *_eventlog_read_package_entry(prs_struct *ps,
 	return ee_new;
 }
 
-static BOOL _eventlog_add_record_to_resp(EVENTLOG_R_READ_EVENTLOG *r_u, Eventlog_entry *ee_new)
+/********************************************************************
+********************************************************************/
+
+static BOOL add_record_to_resp(EVENTLOG_R_READ_EVENTLOG *r_u, Eventlog_entry *ee_new)
 {
 	Eventlog_entry *insert_point;
 
@@ -1088,92 +873,9 @@ static BOOL _eventlog_add_record_to_resp(EVENTLOG_R_READ_EVENTLOG *r_u, Eventlog
 
 	return True;
 }
-    
-WERROR _eventlog_read_eventlog(pipes_struct *p,
-			       EVENTLOG_Q_READ_EVENTLOG *q_u,
-			       EVENTLOG_R_READ_EVENTLOG *r_u)
-{
-	Eventlog_info *info = NULL;
-	POLICY_HND *handle;
-	Eventlog_entry entry, *ee_new;
-	BOOL eof = False, eor = False;
-	const char *direction = "";
-	uint32 num_records_read = 0;
-	prs_struct *ps;
-	int numlines, i;
-	char **buffer;
 
-	if(!q_u || !r_u) {
-		return WERR_NOMEM;
-	}
-
-	handle = &q_u->handle;
-	info = find_eventlog_info_by_hnd(p, handle);
-	info->flags = q_u->flags;
-	ps = &p->out_data.rdata;
-	/* if this is the first time we're reading on this handle */
-	if(info->active_entry == 0) {
-		/* Rather than checking the EVENTLOG_SEQUENTIAL_READ/EVENTLOG_SEEK_READ flags,
-		   we'll just go to the offset specified in the request, or the oldest entry
-		   if no offset is specified */
-		if(q_u->offset > 0) {
-			info->active_entry = q_u->offset;
-		} else {
-			info->active_entry = info->oldest_entry;
-		}
-	}
-    
-	if(q_u->flags & EVENTLOG_FORWARDS_READ) {
-		direction = "forward";
-	} else if(q_u->flags & EVENTLOG_BACKWARDS_READ) {
-		direction = "backward";
-	}
-
-	if(!(_eventlog_read_eventlog_hook(info, &entry, direction, info->active_entry, q_u->max_read_size, &eof, &buffer, &numlines))) {
-		if(eof == False) {
-			return WERR_NOMEM;
-		}
-	}
-	if(numlines > 0) {
-		ZERO_STRUCT(entry);
-		for(i = 0; i < numlines; i++) {
-			num_records_read = r_u->num_records;
-			DEBUGADD(10, ("Line[%d] = [%s]\n", i, buffer[i]));
-			_eventlog_read_parse_line(buffer[i], &entry, &eor);
-			if(eor == True) {
-				/* package ee_new entry */
-				if((ee_new = _eventlog_read_package_entry(ps, q_u, r_u, &entry)) == NULL) {
-					SAFE_FREE(buffer);
-					return WERR_NOMEM;
-				}
-				/* Now see if there is enough room to add */
-				if(r_u->num_bytes_in_resp + ee_new->record.length > q_u->max_read_size) {
-					r_u->bytes_in_next_record = ee_new->record.length;
-					/* response would be too big to fit in client-size buffer */
-					break;
-				}
-				_eventlog_add_record_to_resp(r_u, ee_new);
-				ZERO_STRUCT(entry);
-				eor=False;
-				num_records_read = r_u->num_records - num_records_read;
-				DEBUG(10, ("_eventlog_read_eventlog: read [%d] records for a total of [%d] records using [%d] bytes out of a max of [%d].\n",
-					   num_records_read,
-					   r_u->num_records,
-					   r_u->num_bytes_in_resp,
-					   q_u->max_read_size));
-				/* update the active record */
-				if(info->flags & EVENTLOG_FORWARDS_READ) {
-					info->active_entry += num_records_read;
-				} else if(info->flags & EVENTLOG_BACKWARDS_READ) {
-					info->active_entry -= num_records_read;
-				}
-			}
-		}
-		SAFE_FREE(buffer);
-	}
-
-	return WERR_OK;
-}
+/********************************************************************
+********************************************************************/
 
 /**
  * Callout to clear (and optionally backup) a specified event log
@@ -1190,7 +892,7 @@ WERROR _eventlog_read_eventlog(pipes_struct *p,
  *               eventlog_io_q_clear_eventlog for info about odd file name behavior
  */
 
-static BOOL _eventlog_clear_eventlog_hook(Eventlog_info *info,
+static BOOL clear_eventlog_hook(EventlogInfo *info,
 					  pstring backup_file_name)
 {
 	char *cmd = lp_eventlog_clear_cmd();
@@ -1247,36 +949,202 @@ static BOOL _eventlog_clear_eventlog_hook(Eventlog_info *info,
 	return False;
 }
 
-WERROR _eventlog_clear_eventlog(pipes_struct *p,
-				EVENTLOG_Q_CLEAR_EVENTLOG *q_u,
-				EVENTLOG_R_CLEAR_EVENTLOG *r_u)
-{
-	Eventlog_info *info = NULL;
-	pstring backup_file_name;
-	POLICY_HND *handle = NULL;
+/*******************************************************************
+*******************************************************************/
 
-	if(!q_u || !r_u) {
+WERROR _eventlog_open_eventlog(pipes_struct *p, EVENTLOG_Q_OPEN_EVENTLOG *q_u, EVENTLOG_R_OPEN_EVENTLOG *r_u)
+{
+	EventlogInfo *info = NULL;
+    
+	if ( !(info = talloc_zero(NULL, EventlogInfo)) ) 
+		return WERR_NOMEM;
+
+	if ( q_u->servername.string ) {
+		UNISTR2 *sname = q_u->servername.string;
+
+		rpcstr_pull( info->servername, sname->buffer, sizeof(info->servername), sname->uni_str_len*2, 0 );
+	} else {
+		/* if servername == NULL, use the local computer */
+		fstrcpy(info->servername, global_myname());
+	}
+	DEBUG(10, ("_eventlog_open_eventlog: Using [%s] as the server name.\n", info->servername));
+
+	if ( q_u->logname.string ) {
+		UNISTR2 *lname = q_u->logname.string;
+
+		rpcstr_pull( info->logname, lname->buffer, sizeof(info->logname), lname->uni_str_len*2, 0 );
+	} else {
+		/* if sourcename == NULL, default to "Application" log */
+		fstrcpy(info->logname, "Application");
+	}
+	DEBUG(10, ("_eventlog_open_eventlog: Using [%s] as the source log file.\n", info->logname));
+
+	if ( !create_policy_hnd(p, &r_u->handle, free_eventlog_info, (void *)info) ) {
+		free_eventlog_info(info);
 		return WERR_NOMEM;
 	}
+	
+	policy_handle_to_string(&r_u->handle, &info->handle_string);
 
-	handle = &q_u->handle;
-	info = find_eventlog_info_by_hnd(p, handle);
-	memset(backup_file_name, 0, sizeof(backup_file_name));
+	if ( !(open_eventlog_hook(info)) ) {
+		close_policy_hnd(p, &r_u->handle);
+		return WERR_BADFILE;
+	}
+	
+	return WERR_OK;
+}
 
-	if(q_u->backup_file_ptr != 0) {
-		unistr2_to_ascii(backup_file_name, &(q_u->backup_file), sizeof(backup_file_name));
+/********************************************************************
+********************************************************************/
+
+WERROR _eventlog_clear_eventlog(pipes_struct *p, EVENTLOG_Q_CLEAR_EVENTLOG *q_u, EVENTLOG_R_CLEAR_EVENTLOG *r_u)
+{
+	EventlogInfo *info = find_eventlog_info_by_hnd(p, &q_u->handle);
+	pstring backup_file_name;
+
+	if ( q_u->backupfile.string ) {
+		unistr2_to_ascii(backup_file_name, q_u->backupfile.string, sizeof(backup_file_name));
 		DEBUG(10, ("_eventlog_clear_eventlog: Using [%s] as the backup file name for log [%s].",
-			   backup_file_name,
-			   info->logname));
+			   backup_file_name, info->logname));
 	} else {
-		/* if backup_file == NULL, do not back up the log before clearing it */
+		pstrcpy( backup_file_name, "" );
 		DEBUG(10, ("_eventlog_clear_eventlog: clearing [%s] log without making a backup.",
 			   info->logname));
 	}
 
-	if(!(_eventlog_clear_eventlog_hook(info, backup_file_name))) {
+	if ( !(clear_eventlog_hook(info, backup_file_name)) )
 		return WERR_BADFILE;
+
+	return WERR_OK;
+}
+
+/********************************************************************
+********************************************************************/
+
+WERROR _eventlog_close_eventlog(pipes_struct *p, EVENTLOG_Q_CLOSE_EVENTLOG *q_u, EVENTLOG_R_CLOSE_EVENTLOG *r_u)
+{
+	EventlogInfo *info = find_eventlog_info_by_hnd(p,&q_u->handle);
+
+	if ( !(close_eventlog_hook(info)) )
+		return WERR_BADFILE;
+
+	if ( !(close_policy_hnd(p, &q_u->handle)) ) {
+		return WERR_BADFID;
 	}
 
 	return WERR_OK;
 }
+
+/********************************************************************
+********************************************************************/
+   
+WERROR _eventlog_read_eventlog(pipes_struct *p, EVENTLOG_Q_READ_EVENTLOG *q_u, EVENTLOG_R_READ_EVENTLOG *r_u)
+{
+	EventlogInfo *info = find_eventlog_info_by_hnd(p, &q_u->handle);
+	Eventlog_entry entry, *ee_new;
+	BOOL eof = False, eor = False;
+	const char *direction = "";
+	uint32 num_records_read = 0;
+	prs_struct *ps;
+	int numlines, i;
+	char **buffer;
+
+	info->flags = q_u->flags;
+	ps = &p->out_data.rdata;
+
+	/* if this is the first time we're reading on this handle */
+
+	if ( info->active_entry == 0 ) {
+
+		/* Rather than checking the EVENTLOG_SEQUENTIAL_READ/EVENTLOG_SEEK_READ flags,
+		   we'll just go to the offset specified in the request, or the oldest entry
+		   if no offset is specified */
+
+		if(q_u->offset > 0) 
+			info->active_entry = q_u->offset;
+		else
+			info->active_entry = info->oldest_entry;
+	}
+    
+	if ( info->flags & EVENTLOG_FORWARDS_READ ) 
+		direction = "forward";
+	else if ( info->flags & EVENTLOG_BACKWARDS_READ )
+		direction = "backward";
+
+	if ( !(read_eventlog_hook(info, &entry, direction, info->active_entry, q_u->max_read_size, &eof, &buffer, &numlines)) ) {
+		if(eof == False) {
+			return WERR_NOMEM;
+		}
+	}
+
+	if(numlines > 0) {
+		ZERO_STRUCT(entry);
+		for(i = 0; i < numlines; i++) {
+			num_records_read = r_u->num_records;
+			DEBUGADD(10, ("Line[%d] = [%s]\n", i, buffer[i]));
+			parse_logentry(buffer[i], &entry, &eor);
+			if(eor == True) {
+				/* package ee_new entry */
+				if((ee_new = read_package_entry(ps, q_u, r_u, &entry)) == NULL) {
+					SAFE_FREE(buffer);
+					return WERR_NOMEM;
+				}
+				/* Now see if there is enough room to add */
+				if(r_u->num_bytes_in_resp + ee_new->record.length > q_u->max_read_size) {
+					r_u->bytes_in_next_record = ee_new->record.length;
+					/* response would be too big to fit in client-size buffer */
+					break;
+				}
+				add_record_to_resp(r_u, ee_new);
+				ZERO_STRUCT(entry);
+				eor=False;
+				num_records_read = r_u->num_records - num_records_read;
+				DEBUG(10, ("_eventlog_read_eventlog: read [%d] records for a total of [%d] records using [%d] bytes out of a max of [%d].\n",
+					   num_records_read,
+					   r_u->num_records,
+					   r_u->num_bytes_in_resp,
+					   q_u->max_read_size));
+				/* update the active record */
+				if(info->flags & EVENTLOG_FORWARDS_READ) {
+					info->active_entry += num_records_read;
+				} else if(info->flags & EVENTLOG_BACKWARDS_READ) {
+					info->active_entry -= num_records_read;
+				}
+			}
+		}
+		SAFE_FREE(buffer);
+	}
+
+	return WERR_OK;
+}
+
+/********************************************************************
+********************************************************************/
+
+WERROR _eventlog_get_oldest_entry(pipes_struct *p, EVENTLOG_Q_GET_OLDEST_ENTRY *q_u, EVENTLOG_R_GET_OLDEST_ENTRY *r_u)
+{
+	EventlogInfo *info = find_eventlog_info_by_hnd(p, &q_u->handle);
+
+	if ( !(get_oldest_entry_hook(info)) ) 
+		return WERR_BADFILE;
+
+	r_u->oldest_entry = info->oldest_entry;
+
+	return WERR_OK;
+}
+
+/********************************************************************
+********************************************************************/
+
+WERROR _eventlog_get_num_records(pipes_struct *p, EVENTLOG_Q_GET_NUM_RECORDS *q_u, EVENTLOG_R_GET_NUM_RECORDS *r_u)
+{
+	EventlogInfo *info = find_eventlog_info_by_hnd(p, &q_u->handle);
+
+	if ( !(get_num_records_hook(info)) )
+		return WERR_BADFILE;
+
+	r_u->num_records = info->num_records;
+
+	return WERR_OK;
+}
+

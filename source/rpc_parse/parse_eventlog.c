@@ -405,17 +405,8 @@ BOOL eventlog_io_q_clear_eventlog(const char *desc, EVENTLOG_Q_CLEAR_EVENTLOG *q
 		return False;
 	if(!(smb_io_pol_hnd("log handle", &(q_u->handle), ps, depth)))
 		return False;
-	if(!prs_align(ps))
-		return False;
-	if(!(prs_uint32("unknown1", ps, depth, &q_u->unknown1)))
-		return False;
-	if(!(prs_uint16("backup_file_length", ps, depth, &q_u->backup_file_length)))
-		return False;
-	if(!(prs_uint16("backup_file_size", ps, depth, &q_u->backup_file_size)))
-		return False;
-	if(!prs_uint32("backup_file_ptr", ps, depth, &q_u->backup_file_ptr))
-		return False;
-	if(!smb_io_unistr2("backup file", &q_u->backup_file, q_u->backup_file_ptr, ps, depth))
+
+	if ( !prs_unistr4("backupfile", ps, depth, &q_u->backupfile) )
 		return False;
 
 	return True;
