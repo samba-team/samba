@@ -640,7 +640,8 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	char *sidstr;
 	char **members;
-	int i, num_members;
+	int i;
+	size_t num_members;
 	fstring sid_string;
 	BOOL more_values;
 	const char **attrs;
