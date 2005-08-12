@@ -1,3 +1,7 @@
+2005-08-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* getaddrinfo-test.c: Rename optind to optidx to avoid shadowing.
+
 2005-08-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gai_strerror.c: sprinkel more const
