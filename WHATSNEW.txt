@@ -1,6 +1,6 @@
                    =================================
-                   Release Notes for Samba 3.0.20rc2
-                              Aug 7, 2005
+                   Release Notes for Samba 3.0.20rc3
+                               Aug XX, 2005
                    ==================================
 
 This is the second release candidate of the 3.0.20 code base 
@@ -32,6 +32,75 @@ be found in the samba mailing list archives:
 
 http://marc.theaimsgroup.com/?l=samba&m=111721010206997&w=2
 
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.20rc2
+------------------------
+
+commits
+-------
+
+o   Jeremy Allison <jra@samba.org>
+    * Fix minor compiler warnings in printing/printing.c.
+    * Merge new DOS error code from SAMBA_4.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Fix error in EnumPrinterData() reported by valgrind.
+    * Fix broken help links in SWAT editor caused by new doc layout.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Allow admins to uncheck the "User must change Password at 
+      next Logon" checkbox in Usermanager (merge from trunk).
+
+
+o   Steve French <sfrench@us.ibm.com>
+    * Fix minor compiler warnings in the mount.cifs helper.
+
+
+o   John Janosik <jpjanosi@us.ibm.com>
+    * BUG 2976: Mark logons for unknown domains with a 
+      non-authoritative response.
+
+
+o   Marcel <samba.10.maazl@spamgourmet.com>
+    * Fix regression in OS/2 trans2 open code.
+
+
+o   Jim McDonough <jmcd@us.ibm.com>
+    * BUG 2953: Additional fixes for domain trusts.  Also clears
+      up the "bad stub" error when attempting to logon to a Samba
+      domain with a bad username.
+
+
+o   Luke Mewburn <lukem@NetBSD.org>
+    * Compiler warning fixes.
+
+
+o   James Peach <jpeach@sgi.com>
+    * BUG 2314: Fix const compiler warnings in the quota code.
+
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
+                   =================================
+                   Release Notes for Samba 3.0.20rc2
+                              Aug 7, 2005
+                   ==================================
+
+Common bugs fixed in 3.0.20rc2 include:
+
+  o Crash bugs in the client spoolss code.
+  o Authentication failures caused by unsupported mechanisms.
+  o Failures from common MS management tools such as User 
+    Manager, Print Migrator, and Server Manager.
 
 
 ######################################################################
@@ -131,9 +200,6 @@ o   Fernando Schapachnik <fernando@mecon.gov.ar>
 o   Jelmer Vernooij <jelmer@samba.org>
     * Merge socket wrapper fixes for IRIX systems from the 
       Samba 4 branch.
-
-
-Release Notes for older release follow:
 
       --------------------------------------------------
                    =================================
