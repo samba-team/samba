@@ -3558,75 +3558,80 @@ static const struct
 int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *params,
 		     int tdscnt,int tpscnt,int mdrcnt,int mprcnt)
 {
-  int api_command;
-  char *rdata = NULL;
-  char *rparam = NULL;
-  int rdata_len = 0;
-  int rparam_len = 0;
-  BOOL reply=False;
-  int i;
+	int api_command;
+	char *rdata = NULL;
+	char *rparam = NULL;
+	int rdata_len = 0;
+	int rparam_len = 0;
+	BOOL reply=False;
+	int i;
 
-  if (!params) {
-	  DEBUG(0,("ERROR: NULL params in api_reply()\n"));
-	  return 0;
-  }
+	if (!params) {
+		DEBUG(0,("ERROR: NULL params in api_reply()\n"));
+		return 0;
+	}
 
-  api_command = SVAL(params,0);
+	api_command = SVAL(params,0);
 
-  DEBUG(3,("Got API command %d of form <%s> <%s> (tdscnt=%d,tpscnt=%d,mdrcnt=%d,mprcnt=%d)\n",
-	   api_command,
-	   params+2,
-	   skip_string(params+2,1),
-	   tdscnt,tpscnt,mdrcnt,mprcnt));
+	DEBUG(3,("Got API command %d of form <%s> <%s> (tdscnt=%d,tpscnt=%d,mdrcnt=%d,mprcnt=%d)\n",
+		api_command,
+		params+2,
+		skip_string(params+2,1),
+		tdscnt,tpscnt,mdrcnt,mprcnt));
 
-  for (i=0;api_commands[i].name;i++) {
-    if (api_commands[i].id == api_command && api_commands[i].fn) {
-        DEBUG(3,("Doing %s\n",api_commands[i].name));
-        break;
-    }
-  }
+	for (i=0;api_commands[i].name;i++) {
+		if (api_commands[i].id == api_command && api_commands[i].fn) {
+			DEBUG(3,("Doing %s\n",api_commands[i].name));
+			break;
+		}
+	}
 
-  /* Check whether this api call can be done anonymously */
+	/* Check whether this api call can be done anonymously */
 
-  if (api_commands[i].auth_user && lp_restrict_anonymous()) {
-	  user_struct *user = get_valid_user_struct(vuid);
+	if (api_commands[i].auth_user && lp_restrict_anonymous()) {
+		user_struct *user = get_valid_user_struct(vuid);
 
-	  if (!user || user->guest)
-		  return ERROR_NT(NT_STATUS_ACCESS_DENIED);
-  }
+		if (!user || user->guest) {
+			return ERROR_NT(NT_STATUS_ACCESS_DENIED);
+		}
+	}
 
-  rdata = (char *)SMB_MALLOC(1024);
-  if (rdata)
-    memset(rdata,'\0',1024);
+	rdata = (char *)SMB_MALLOC(1024);
+	if (rdata) {
+		memset(rdata,'\0',1024);
+	}
 
-  rparam = (char *)SMB_MALLOC(1024);
-  if (rparam)
-    memset(rparam,'\0',1024);
+	rparam = (char *)SMB_MALLOC(1024);
+	if (rparam) {
+		memset(rparam,'\0',1024);
+	}
 
-  if(!rdata || !rparam) {
-    DEBUG(0,("api_reply: malloc fail !\n"));
-    return -1;
-  }
+	if(!rdata || !rparam) {
+		DEBUG(0,("api_reply: malloc fail !\n"));
+		SAFE_FREE(rdata);
+		SAFE_FREE(rparam);
+		return -1;
+	}
 
-  reply = api_commands[i].fn(conn,vuid,params,data,mdrcnt,mprcnt,
-			     &rdata,&rparam,&rdata_len,&rparam_len);
+	reply = api_commands[i].fn(conn,vuid,params,data,mdrcnt,mprcnt,
+				&rdata,&rparam,&rdata_len,&rparam_len);
 
 
-  if (rdata_len > mdrcnt ||
-      rparam_len > mprcnt) {
-      reply = api_TooSmall(conn,vuid,params,data,mdrcnt,mprcnt,
-			   &rdata,&rparam,&rdata_len,&rparam_len);
-  }
+	if (rdata_len > mdrcnt ||
+				rparam_len > mprcnt) {
+		reply = api_TooSmall(conn,vuid,params,data,mdrcnt,mprcnt,
+					&rdata,&rparam,&rdata_len,&rparam_len);
+	}
 
-  /* if we get False back then it's actually unsupported */
-  if (!reply)
-    api_Unsupported(conn,vuid,params,data,mdrcnt,mprcnt,
-		    &rdata,&rparam,&rdata_len,&rparam_len);
+	/* if we get False back then it's actually unsupported */
+	if (!reply) {
+		api_Unsupported(conn,vuid,params,data,mdrcnt,mprcnt,
+			&rdata,&rparam,&rdata_len,&rparam_len);
+	}
 
-  send_trans_reply(outbuf, rparam, rparam_len, rdata, rdata_len, False);
+	send_trans_reply(outbuf, rparam, rparam_len, rdata, rdata_len, False);
 
-  SAFE_FREE(rdata);
-  SAFE_FREE(rparam);
-  
-  return -1;
+	SAFE_FREE(rdata);
+	SAFE_FREE(rparam);
+	return -1;
 }
