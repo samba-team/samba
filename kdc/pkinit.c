@@ -66,7 +66,7 @@ struct krb5_pk_cert {
 enum pkinit_type {
     PKINIT_COMPAT_WIN2K = 1,
     PKINIT_COMPAT_19 = 2,
-    PKINIT_COMPAT_25 = 3
+    PKINIT_COMPAT_27 = 3
 };
 
 struct pk_client_params {
@@ -796,7 +796,7 @@ _kdc_pk_rd_padata(krb5_context context,
 	    goto out;
 	}
 
-	client_params->type = PKINIT_COMPAT_25;
+	client_params->type = PKINIT_COMPAT_27;
 	client_params->nonce = ap.pkAuthenticator.nonce;
 
 	if (ap.clientPublicValue) {
@@ -851,6 +851,7 @@ static krb5_error_code
 pk_mk_pa_reply_enckey(krb5_context context,
 		      pk_client_params *client_params,
 		      const KDC_REQ *req,
+		      const krb5_data *req_buffer,
 		      krb5_keyblock *reply_key,
 		      ContentInfo *content_info)
 {
@@ -945,7 +946,8 @@ pk_mk_pa_reply_enckey(krb5_context context,
 			   &kp, &size,ret);
 	free_ReplyKeyPack_19(&kp);
     }
-    case PKINIT_COMPAT_25: {
+    case PKINIT_COMPAT_27: {
+	krb5_crypto crypto;
 	ReplyKeyPack kp;
 	memset(&kp, 0, sizeof(kp));
 
@@ -954,7 +956,26 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	    krb5_clear_error_string(context);
 	    goto out;
 	}
-	/* XXX add whatever is the outcome of asChecksum discussion here */
+
+	ret = krb5_crypto_init(context, reply_key, 0, &crypto);
+	if (ret) {
+	    krb5_clear_error_string(context);
+	    goto out;
+	}
+
+	ret = krb5_create_checksum(context, crypto, 6,
+				   req_buffer.data, req_buffer.length,
+				   &kp.asChecksum);
+	if (ret) {
+	    krb5_clear_error_string(context);
+	    goto out;
+	}
+			     
+	ret = krb5_crypto_destroy(context, crypto);
+	if (ret) {
+	    krb5_clear_error_string(context);
+	    goto out;
+	}
 	ASN1_MALLOC_ENCODE(ReplyKeyPack, buf.data, buf.length, &kp, &size,ret);
 	free_ReplyKeyPack(&kp);
     }
@@ -1194,6 +1215,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 		    pk_client_params *client_params,
 		    const hdb_entry *client,
 		    const KDC_REQ *req,
+		    const krb5_data *req_buffer,
 		    krb5_keyblock **reply_key,
 		    METHOD_DATA *md)
 {
@@ -1223,7 +1245,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
     } else
 	enctype = ETYPE_DES3_CBC_SHA1;
 
-    if (client_params->type == PKINIT_COMPAT_25) {
+    if (client_params->type == PKINIT_COMPAT_27) {
 	PA_PK_AS_REP rep;
 
 	pa_type = KRB5_PADATA_PK_AS_REP;
@@ -1239,6 +1261,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	    ret = pk_mk_pa_reply_enckey(context,
 					client_params,
 					req,
+					req_buffer,
 					&client_params->reply_key,
 					&info);
 	    if (ret) {
