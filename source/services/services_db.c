@@ -21,19 +21,11 @@
 
 #include "includes.h"
 
-#if 0
-
-/* backend database routines for services.tdb */
-
-#define SERVICEDB_VERSION_V1 1 /* Will there be more? */
 #define INTERNAL_SERVICES_LIST "NETLOGON Spooler"
 
-/*                                                                                                                     */
-/* scripts will execute from the following libdir, if they are in the enable svcctl=<list of scripts>                  */
-/* these should likely be symbolic links. Note that information about them will be extracted from the files themselves */
-/* using the LSB standard keynames for various information                                                             */
-
+#define SERVICEDB_VERSION_V1 1
 #define SCVCTL_DATABASE_VERSION_V1 1
+
 static TDB_CONTEXT *service_tdb; /* used for services tdb file */
 
 /* there are two types of services -- internal, and external.
@@ -67,46 +59,39 @@ typedef struct Internal_service_struct
 } Internal_service_description;
 
 
-static const Internal_service_description ISD[] = {
-	{ "NETLOGON",	"Net Logon",	"Provides logon and authentication service to the network", 	0x110,	NULL, NULL},
-	{ "Spooler",	"Spooler",	"Printing Services", 						0x0020, NULL, NULL},
-	{ NULL, NULL, NULL, 0, NULL, NULL}
-};
-
-
 /********************************************************************
- allocate an array of external services and return them. Null return 
- is okay, make sure &added is also zero! 
 ********************************************************************/
 
-int num_external_services(void)
+int num_external_services( void )
 {
 	int num_services;
 	char **svc_list;
 	pstring keystring, external_services_string;
-	TDB_DATA key_data;
+	TDB_DATA data;
 
 
-	if (!service_tdb) {
+	if ( !service_tdb ) {
 		DEBUG(8,("enum_external_services: service database is not open!!!\n"));
-		num_services = 0;
-	} else {
-		pstrcpy(keystring,"EXTERNAL_SERVICES");
-		key_data = tdb_fetch_bystring(service_tdb, keystring);
+		return 0;
+	}
+	
+	pstrcpy(keystring,"EXTERNAL_SERVICES");
+	data = tdb_fetch_bystring(service_tdb, keystring);
 
-		if ((key_data.dptr != NULL) && (key_data.dsize != 0)) {
-			strncpy(external_services_string,key_data.dptr,key_data.dsize);
-			external_services_string[key_data.dsize] = 0;
-			DEBUG(8,("enum_external_services: services list is %s, size is %d\n",external_services_string,key_data.dsize));
-		}
-	} 
+	if ( data.dptr && data.dsize ) {
+		strncpy( external_services_string, data.dptr, data.dsize );
+		external_services_string[data.dsize] = 0;
+		DEBUG(8,("enum_external_services: services list is %s, size is %d\n",
+			external_services_string, data.dsize));
+	}
+	
+	SAFE_FREE( data.dptr );
+	
 	svc_list = str_list_make(external_services_string,NULL);
- 
 	num_services = str_list_count( (const char **)svc_list);
 
 	return num_services;
 }
-
 
 
 /********************************************************************
@@ -171,7 +156,7 @@ WERROR enum_external_services(TALLOC_CTX *tcx,ENUM_SERVICES_STATUS **svc_ptr, in
 	}
 
 #if 0
-/* *svc_ptr has the pointer to the array if there is one already. NULL if not. */
+	/* *svc_ptr has the pointer to the array if there is one already. NULL if not. */
 	if ((existing_services>0) && svc_ptr && *svc_ptr) { /* reallocate vs. allocate */
 		DEBUG(8,("enum_external_services: REALLOCing %x to %d services\n", *svc_ptr, existing_services+num_services));
 
@@ -347,23 +332,28 @@ static BOOL get_internal_service_data(const Internal_service_description *isd, S
 
 BOOL get_service_info(TDB_CONTEXT *stdb,char *service_name, Service_info *si) 
 {
+	pstring keystring,sn;
+	TDB_DATA kbuf, dbuf;
 
-  pstring keystring,sn;
-  TDB_DATA kbuf, dbuf;
-  if ((stdb == NULL) || (si == NULL) || (service_name==NULL) || (*service_name == 0)) return False;
+	if ((stdb == NULL) || (si == NULL) || (service_name==NULL) || (*service_name == 0)) 
+		return False;
 
-  /* TODO  - error handling -- what if the service isn't in the DB?  */
-  slprintf(keystring, sizeof(keystring)-1, "SVCCTL/SERVICE_INFO/%s", service_name);
-  /* tdb_lock_bystring(stdb, keystring, 0); */
-  DEBUGADD(10, ("_svcctl_read_service_tdb_to_si: Key is  [%s]\n", keystring));
-  kbuf.dptr = keystring;
-  kbuf.dsize = strlen(keystring)+1;
-  dbuf = tdb_fetch(stdb, kbuf);
-  if (!dbuf.dptr) {
-        DEBUGADD(10, ("_svcctl_read_service_tdb_to_si: Could not find record associated with [%s]\n", keystring));
-	return False;
-  }
-  tdb_unpack(dbuf.dptr, dbuf.dsize, "PPPPPPPPPPP",
+	/* TODO  - error handling -- what if the service isn't in the DB?  */
+
+	slprintf(keystring, sizeof(keystring)-1, "SVCCTL/SERVICE_INFO/%s", service_name);
+
+	/* tdb_lock_bystring(stdb, keystring, 0); */
+
+	DEBUGADD(10, ("_svcctl_read_service_tdb_to_si: Key is  [%s]\n", keystring));
+	kbuf.dptr = keystring;
+	kbuf.dsize = strlen(keystring)+1;
+	dbuf = tdb_fetch(stdb, kbuf);
+
+	if (!dbuf.dptr) {
+		DEBUGADD(10, ("_svcctl_read_service_tdb_to_si: Could not find record associated with [%s]\n", keystring));
+		return False;
+	}
+	tdb_unpack(dbuf.dptr, dbuf.dsize, "PPPPPPPPPPP",
 			  sn,
 			  si->servicetype,
 			  si->filename,
@@ -375,8 +365,10 @@ BOOL get_service_info(TDB_CONTEXT *stdb,char *service_name, Service_info *si)
 			  si->requiredstop,
 			  si->description,
 			  si->shortdescription);
-  SAFE_FREE(dbuf.dptr);
-  return True;
+
+	SAFE_FREE(dbuf.dptr);
+
+	return True;
 }
 
 /*********************************************************************
@@ -388,12 +380,16 @@ BOOL store_service_info(TDB_CONTEXT *stdb,char *service_name, Service_info *si)
 	pstring pbuf;
 	int len;
 	TDB_DATA kbuf,dbuf;
+
 	/* Note -- when we write to the tdb, we "index" on the filename field, not the nice name.
 	   when a service is "opened", it is opened by the nice (SERVICENAME) name, not the file name. So there needs to be a mapping from
 	   nice name back to the file name. */
 
-	if ((stdb == NULL) || (si == NULL) || (service_name==NULL) || (*service_name == 0)) return False;
+	if ((stdb == NULL) || (si == NULL) || (service_name==NULL) || (*service_name == 0)) 
+		return False;
+
 	/* todo - mayke the service type an ENUM, add any security descriptor structures into it */
+
 	len= tdb_pack(pbuf,sizeof(pbuf),"PPPPPPPPPPP",
 		      service_name,si->servicetype,si->filename,si->provides,si->dependencies,
 		      si->shouldstart,si->shouldstop,si->requiredstart,si->requiredstop,si->description,
@@ -402,12 +398,14 @@ BOOL store_service_info(TDB_CONTEXT *stdb,char *service_name, Service_info *si)
 		/* todo error here */
 		return False;
 	}
+
 	slprintf(keystring, sizeof(keystring)-1, "SVCCTL/SERVICE_INFO/%s", service_name);
 	DEBUGADD(10, ("_svcctl_write_si_to_service_tdb: Key is  [%s]\n", keystring));
 	kbuf.dsize = strlen(keystring)+1;
 	kbuf.dptr = keystring;
 	dbuf.dsize = len;
 	dbuf.dptr = pbuf;
+
 	return (tdb_store(stdb, kbuf, dbuf, TDB_REPLACE) == 0);
 }
 
@@ -426,7 +424,7 @@ BOOL init_svcctl_db(void)
 	pstring external_service_list;
 	pstring internal_service_list;
 	Service_info si;
-	const Internal_service_description *isd_ptr;
+	const Internal_service_description *isd_ptr = NULL;
 	/* svc_list = str_list_make( "etc/init.d/skeleton  etc/init.d/syslog", NULL ); */
 	svc_list=(char **)lp_enable_svcctl(); 
 
@@ -475,7 +473,8 @@ BOOL init_svcctl_db(void)
 	/* Get the INTERNAL services */
 	
 	pstrcpy(internal_service_list,"");
-	isd_ptr = ISD; 
+
+	/* isd_ptr = ISD;  */
 
 	while (isd_ptr && (isd_ptr->filename)) {
 		DEBUG(10,("Reading information on service %s\n",isd_ptr->filename));
@@ -496,4 +495,3 @@ BOOL init_svcctl_db(void)
 
 	return True;
 }
-#endif
