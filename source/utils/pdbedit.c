@@ -235,7 +235,7 @@ static int print_user_info (struct pdb_context *in, const char *username, BOOL v
 static int print_users_list (struct pdb_context *in, BOOL verbosity, BOOL smbpwdstyle)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
-	BOOL check, ret;
+	BOOL check;
 	
 	check = NT_STATUS_IS_OK(in->pdb_setsampwent(in, False, 0));
 	if (!check) {
@@ -245,7 +245,7 @@ static int print_users_list (struct pdb_context *in, BOOL verbosity, BOOL smbpwd
 	check = True;
 	if (!(NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent)))) return 1;
 
-	while (check && (ret = NT_STATUS_IS_OK(in->pdb_getsampwent (in, sam_pwent)))) {
+	while (check && NT_STATUS_IS_OK(in->pdb_getsampwent (in, sam_pwent))) {
 		if (verbosity)
 			printf ("---------------\n");
 		print_sam_info (sam_pwent, verbosity, smbpwdstyle);
@@ -264,7 +264,7 @@ static int print_users_list (struct pdb_context *in, BOOL verbosity, BOOL smbpwd
 static int fix_users_list (struct pdb_context *in)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
-	BOOL check, ret;
+	BOOL check;
 	
 	check = NT_STATUS_IS_OK(in->pdb_setsampwent(in, False, 0));
 	if (!check) {
@@ -274,7 +274,7 @@ static int fix_users_list (struct pdb_context *in)
 	check = True;
 	if (!(NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent)))) return 1;
 
-	while (check && (ret = NT_STATUS_IS_OK(in->pdb_getsampwent (in, sam_pwent)))) {
+	while (check && NT_STATUS_IS_OK(in->pdb_getsampwent (in, sam_pwent))) {
 		printf("Updating record for user %s\n", pdb_get_username(sam_pwent));
 	
 		if (!pdb_update_sam_account(sam_pwent)) {
@@ -430,12 +430,12 @@ static int new_user (struct pdb_context *in, const char *username,
 			const char *profile, char *user_sid, char *group_sid)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
-	NTSTATUS nt_status;
+
 	char *password1, *password2, *staticpass;
 	
 	get_global_sam_sid();
 
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam_new(&sam_pwent, username, 0))) {
+	if (!NT_STATUS_IS_OK(pdb_init_sam_new(&sam_pwent, username, 0))) {
 		DEBUG(0, ("could not create account to add new user %s\n", username));
 		return -1;
 	}
