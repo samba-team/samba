@@ -726,6 +726,7 @@ krb5_error_code
 _kdc_as_rep(krb5_context context, 
 	    krb5_kdc_configuration *config,
 	    KDC_REQ *req, 
+	    const krb5_data *req_buffer, 
 	    krb5_data *reply,
 	    const char *from,
 	    struct sockaddr *from_addr)
@@ -1307,8 +1308,9 @@ _kdc_as_rep(krb5_context context,
     reply_key = &ckey->key;
 #if PKINIT
     if (pkp) {
-	ret = _kdc_pk_mk_pa_reply(context, config, pkp, client, req,
-			      &reply_key, rep.padata);
+	ret = _kdc_pk_mk_pa_reply(context, config, pkp, client, 
+				  req, req_buffer, 
+				  &reply_key, rep.padata);
 	if (ret)
 	    goto out;
     }
