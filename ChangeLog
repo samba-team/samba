@@ -1,3 +1,52 @@
+2005-08-12  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* lib/krb5/krb5_keytab.3: Document fcc-mit-ticketflags in
+	COMPATIBILITY section.
+	
+	* lib/krb5/fcache.c (fcc_store_cred): default to MIT style ticket
+	flags.
+
+	* kdc/pkinit.c (pk_mk_pa_reply_enckey): add missing break;
+
+	* lib/krb5/krb5_create_checksum.3: Update prototype for
+	krb5_create_checksum.
+	
+	* kdc/pkinit.c: Make compile.
+	
+	* lib/krb5/pkinit.c: Implement verification of asChecksum, now
+	client side code is using -27 of the pk-init draft.
+	
+	* kdc/kdc_locl.h: update prototype for _kdc_as_rep
+
+	* kdc/pkinit.c: Fill in asChecksum, we now implements -27 in the KDC.
+	
+	* kdc/process.c: Pass down the request buffer to _kdc_as_rep().
+
+	* kdc/kerberos5.c (_kdc_as_rep): Pass down the request buffer to
+	_kdc_pk_mk_pa_reply.
+
+2005-08-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/ext.c: HDB extensions access glue.
+
+	* kcm/acquire.c: Use krb5_set_password instead of
+	krb5_change_password.
+
+	* configure.in: Add tests/Makefile and tests/db/Makefile.
+
+	* NEWS: New ASN.1 compiler
+
+	* lib/hdb/Makefile.am: Build extensions.
+
+	* lib/hdb/print.c: Print extensions.
+
+	* lib/hdb/hdb_err.et: Add error "Entry contains unknown mandatory
+	extension".
+
+	* lib/hdb/hdb.h: Update interface version (and indent).
+	
+	* lib/hdb/hdb.asn1: Add support for HDB-extension.
+
 2005-08-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/test_pkinit_dh2key.c: add tests vectors from
