@@ -978,6 +978,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	}
 	ASN1_MALLOC_ENCODE(ReplyKeyPack, buf.data, buf.length, &kp, &size,ret);
 	free_ReplyKeyPack(&kp);
+	break;
     }
     default:
 	krb5_abortx(context, "internal pkinit error");
