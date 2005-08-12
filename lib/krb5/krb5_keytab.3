@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd March 28, 2005
+.Dd August 12, 2005
 .Dt KRB5_KEYTAB 3
 .Os HEIMDAL
 .Sh NAME
@@ -468,6 +468,15 @@ main (int argc, char **argv)
     return 0;
 }
 .Ed
+.Sh COMPATIBILITY
+Heimdal stored the ticket flags in machine bit-field order before
+Heimdal 0.8.  The behavior was possible to change in Heimdal 0.7 with
+the option
+.Li [libdefaults]fcc-mit-ticketflags .
+Heimdal 0.7 also code to detech that ticket flags was in the wrong
+order and correct them.  This matters when doing delegation in GSS-API
+because the client code looks at the flag to determin if its possible
+to do delegation if the user requested it.
 .Sh SEE ALSO
 .Xr krb5.conf 5 ,
 .Xr kerberos 8
