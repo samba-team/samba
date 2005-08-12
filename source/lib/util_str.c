@@ -266,12 +266,12 @@ BOOL strequal(const char *s1, const char *s2)
  **/
 BOOL strnequal(const char *s1,const char *s2,size_t n)
 {
-  if (s1 == s2)
-	  return(True);
-  if (!s1 || !s2 || !n)
-	  return(False);
+	if (s1 == s2)
+		return(True);
+	if (!s1 || !s2 || !n)
+		return(False);
   
-  return(StrnCaseCmp(s1,s2,n)==0);
+	return(StrnCaseCmp(s1,s2,n)==0);
 }
 
 /**
@@ -280,12 +280,12 @@ BOOL strnequal(const char *s1,const char *s2,size_t n)
 
 BOOL strcsequal(const char *s1,const char *s2)
 {
-  if (s1 == s2)
-	  return(True);
-  if (!s1 || !s2)
-	  return(False);
+	if (s1 == s2)
+		return(True);
+	if (!s1 || !s2)
+		return(False);
   
-  return(strcmp(s1,s2)==0);
+	return(strcmp(s1,s2)==0);
 }
 
 /**
