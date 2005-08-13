@@ -102,16 +102,22 @@ AC_DEFUN(AC_HAVE_DECL,
 ])
 
 
-dnl check for a function in a library, but don't
+dnl Check for a function in a library, but don't
 dnl keep adding the same library to the LIBS variable.
+dnl Check whether the function is available in the current
+dnl LIBS before adding the library. This prevents us spuriously
+dnl finding symbols that are in libc.
 dnl AC_LIBTESTFUNC(lib,func)
 AC_DEFUN(AC_LIBTESTFUNC,
-[case "$LIBS" in
-  *-l$1*) AC_CHECK_FUNCS($2) ;;
-  *) AC_CHECK_LIB($1, $2) 
-     AC_CHECK_FUNCS($2)
-  ;;
-  esac
+[
+  AC_CHECK_FUNCS($2, [],
+      [ case "$LIBS" in
+          *-l$1*) AC_CHECK_FUNCS($2) ;;
+          *) AC_CHECK_LIB($1, $2) 
+             AC_CHECK_FUNCS($2)
+          ;;
+        esac
+      ])
 ])
 
 # AC_CHECK_LIB_EXT(LIBRARY, [EXT_LIBS], [FUNCTION],
