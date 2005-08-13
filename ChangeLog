@@ -1,3 +1,8 @@
+2005-08-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/init_creds_pw.c: Save the request buffer so that
+	pre-auth mechanism that needs it can verify the reply.
+
 2005-08-12  Love Hörnquist Åstrand  <lha@it.su.se>
 	
 	* lib/krb5/test_mem.c: Rename logf to avoid shadowing.
