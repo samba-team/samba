@@ -48,6 +48,7 @@ static int		evalExpr(Ejs *ep, MprVar *lhs, int rel, MprVar *rhs);
 static int 		evalFloatExpr(Ejs *ep, double l, int rel, double r);
 #endif 
 static int 		evalBoolExpr(Ejs *ep, bool l, int rel, bool r);
+static int 		evalPtrExpr(Ejs *ep, void *l, int rel, void *r);
 static int 		evalNumericExpr(Ejs *ep, MprNum l, int rel, MprNum r);
 static int 		evalStringExpr(Ejs *ep, MprVar *lhs, int rel, MprVar *rhs);
 static int		evalFunction(Ejs *ep, MprVar *obj, int flags);
@@ -1670,8 +1671,8 @@ static int evalExpr(Ejs *ep, MprVar *lhs, int rel, MprVar *rhs)
 		return 0;
 
 	case MPR_TYPE_PTR:
-		mprCopyVarValue(&ep->result, mprCreateBoolVar(lhs->ptr == rhs->ptr), 0);
-		return 0;
+		rc = evalPtrExpr(ep, lhs->ptr, rel, rhs->ptr);
+		break;
 
 	case MPR_TYPE_BOOL:
 		rc = evalBoolExpr(ep, lhs->boolean, rel, rhs->boolean);
@@ -1797,6 +1798,28 @@ static int evalBoolExpr(Ejs *ep, bool l, int rel, bool r)
 		break;
 	case EJS_EXPR_BOOL_COMP:
 		lval = (r == 0) ? 1 : 0;
+		break;
+	default:
+		ejsError(ep, "Bad operator %d", rel);
+		return -1;
+	}
+	mprCopyVarValue(&ep->result, mprCreateBoolVar(lval), 0);
+	return 0;
+}
+
+static int evalPtrExpr(Ejs *ep, void *l, int rel, void *r) 
+{
+	bool	lval;
+
+	switch (rel) {
+	case EJS_EXPR_EQ:
+		lval = l == r;
+		break;
+	case EJS_EXPR_NOTEQ:
+		lval = l != r;
+		break;
+	case EJS_EXPR_BOOL_COMP:
+		lval = (r == NULL) ? 1 : 0;
 		break;
 	default:
 		ejsError(ep, "Bad operator %d", rel);
