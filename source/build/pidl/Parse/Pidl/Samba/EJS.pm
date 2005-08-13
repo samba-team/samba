@@ -374,8 +374,20 @@ sub EjsPullFunction($)
 	indent;
 	pidl "NDR_CHECK(ejs_pull_struct_start(ejs, &v, \"input\"));";
 
+	# we pull non-array elements before array elements as arrays
+	# may have length_is() or size_is() properties that depend
+	# on the non-array elements
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		next unless (grep(/in/, @{$e->{DIRECTION}}));
+		next if (has_property($e, "length_is") || 
+			 has_property($e, "size_is"));
+		EjsPullElementTop($e, $env);
+	}
+
+	foreach my $e (@{$d->{ELEMENTS}}) {
+		next unless (grep(/in/, @{$e->{DIRECTION}}));
+		next unless (has_property($e, "length_is") || 
+			     has_property($e, "size_is"));
 		EjsPullElementTop($e, $env);
 	}
 
