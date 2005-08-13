@@ -78,7 +78,7 @@ sub transfer_element($$$) {
   $type = $elt->{TYPE};
   $type =~ s/_t$//;
 
-  print FILE "\tejs_${dir}_$type(ejs, v, \"$prefix.$elt->{NAME}\")\n";
+  print FILE "\tNDR_CHECK(ejs_${dir}_$type(ejs, v, \"$prefix.$elt->{NAME}\"));\n";
 }
 
 sub transfer_struct($$) {
@@ -121,6 +121,13 @@ foreach my $s (@newheader) {
     transfer_struct("push", $s);
 
     print FILE "\n\treturn NT_STATUS_OK;\n";
+    print FILE "}\n\n";
+
+    # Function call
+
+    print FILE "static int ejs_$s->{TYPE_DEFINED}(int eid, int argc, struct MprVar **argv)\n";
+    print FILE "{\n";
+    print FILE "\treturn ejs_raw_call(eid, argc, argv, (ejs_pull_function_t)ejs_pull_$s->{TYPE_DEFINED}, (ejs_push_function_t)ejs_push_$s->{TYPE_DEFINED});\n";
     print FILE "}\n\n";
 
   } else {
