@@ -103,4 +103,5 @@ OBJ_FILES = libcli/raw/rawfile.o \
 		libcli/raw/rawnotify.o \
 		libcli/raw/rawioctl.o \
 		libcli/raw/rawacl.o \
-		libcli/raw/rawdate.o
+		libcli/raw/rawdate.o \
+		libcli/raw/rawlpq.o
