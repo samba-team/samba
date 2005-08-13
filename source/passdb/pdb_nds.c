@@ -227,7 +227,7 @@ static int berDecodeLoginData(
 	size_t   *retDataLen,
 	void     *retData )
 {
-	int rc=0, err = 0;
+	int err = 0;
 	BerElement *replyBer = NULL;
 	char    *retOctStr = NULL;
 	size_t  retOctStrLen = 0;
@@ -248,7 +248,7 @@ static int berDecodeLoginData(
 			goto Cleanup;
 		}
 	
-		if( (rc = ber_scanf(replyBer, "{iis}", serverVersion, &err, retOctStr, &retOctStrLen)) != -1)
+		if(ber_scanf(replyBer, "{iis}", serverVersion, &err, retOctStr, &retOctStrLen) != -1)
 		{
 			if (*retDataLen >= retOctStrLen)
 			{
@@ -268,7 +268,7 @@ static int berDecodeLoginData(
 	}
 	else
 	{
-		if( (rc = ber_scanf(replyBer, "{ii}", serverVersion, &err)) == -1)
+		if(ber_scanf(replyBer, "{ii}", serverVersion, &err) == -1)
 		{
 			if (!err)
 			{
@@ -663,7 +663,7 @@ Cleanup:
 int pdb_nds_get_password(
 	struct smbldap_state *ldap_state,
 	char *object_dn,
-	int *pwd_len,
+	size_t *pwd_len,
 	char *pwd )
 {
 	LDAP *ld = ldap_state->ldap_struct;
@@ -757,7 +757,7 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 		LDAPMessage *entry = NULL;
 		const char **attr_list;
 		size_t pwd_len;
-		uchar clear_text_pw[512];
+		char clear_text_pw[512];
 		const char *p = NULL;
 		LDAP *ld = NULL;
 		int ldap_port = 0;
@@ -800,7 +800,7 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 				got_clear_text_pw = True;
 			}
 		} else {
-			generate_random_buffer(clear_text_pw, 24);
+			generate_random_buffer((unsigned char *)clear_text_pw, 24);
 			clear_text_pw[24] = '\0';
 			DEBUG(5,("pdb_nds_update_login_attempts: using random password %s\n", clear_text_pw));
 		}
