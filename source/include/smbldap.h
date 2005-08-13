@@ -22,6 +22,8 @@
 #ifndef _SMBLDAP_H
 #define _SMBLDAP_H
 
+struct smbldap_state;
+
 #ifdef HAVE_LDAP
 
 /* specify schema versions between 2.2. and 3.0 */
@@ -119,6 +121,10 @@ extern ATTRIB_MAP_ENTRY sidmap_attr_list[];
 /* Function declarations -- not included in proto.h so we don't
    have to worry about LDAP structure types */
 
+NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx,
+                      const char *location,
+                      struct smbldap_state **smbldap_state);
+
 const char* get_attr_key2string( ATTRIB_MAP_ENTRY table[], int key );
 const char** get_attr_list( ATTRIB_MAP_ENTRY table[] );
 void free_attr_list( const char **list );
@@ -131,6 +137,10 @@ BOOL smbldap_get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
 				   int max_len);
 BOOL smbldap_get_single_pstring (LDAP * ldap_struct, LDAPMessage * entry,
 				 const char *attribute, pstring value);
+char *smbldap_get_dn(LDAP *ld, LDAPMessage *entry);
+int smbldap_modify(struct smbldap_state *ldap_state,
+                   const char *dn,
+                   LDAPMod *attrs[]);
 
 /**
  * Struct to keep the state for all the ldap stuff 
@@ -180,9 +190,21 @@ struct ldapsam_privates {
 	char *location;
 };
 
-#endif 	/* HAVE_LDAP */
+/* Functions shared between pdb_ldap.c and pdb_nds.c. */
+NTSTATUS pdb_init_ldapsam_compat(PDB_CONTEXT *pdb_context,
+                                 PDB_METHODS **pdb_method,
+                                 const char *location);
+void private_data_free_fn(void **result);
+int ldapsam_search_suffix_by_name(struct ldapsam_privates *ldap_state,
+                                  const char *user,
+                                  LDAPMessage ** result,
+                                  const char **attr);
+NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context,
+                          PDB_METHODS **pdb_method,
+                          const char *location);
+const char** get_userattr_list( int schema_ver );
 
-struct smbldap_state;
+#endif 	/* HAVE_LDAP */
 
 #define LDAP_CONNECT_DEFAULT_TIMEOUT   15
 #define LDAP_PAGE_SIZE 1024
