@@ -332,12 +332,12 @@ static int package(struct pack_desc* p, ...)
 
 static void PACKI(struct pack_desc* desc, const char *t,int v)
 {
-  PACK(desc,t,v);
+	PACK(desc,t,v);
 }
 
 static void PACKS(struct pack_desc* desc,const char *t,const char *v)
 {
-  PACK(desc,t,v);
+	PACK(desc,t,v);
 }
 
 
@@ -346,51 +346,56 @@ static void PACKS(struct pack_desc* desc,const char *t,const char *v)
   ****************************************************************************/
 static void PackDriverData(struct pack_desc* desc)
 {
-  char drivdata[4+4+32];
-  SIVAL(drivdata,0,sizeof drivdata); /* cb */
-  SIVAL(drivdata,4,1000);	/* lVersion */
-  memset(drivdata+8,0,32);	/* szDeviceName */
-  push_ascii(drivdata+8,"NULL",-1, STR_TERMINATE);
-  PACKl(desc,"l",drivdata,sizeof drivdata); /* pDriverData */
+	char drivdata[4+4+32];
+	SIVAL(drivdata,0,sizeof drivdata); /* cb */
+	SIVAL(drivdata,4,1000);	/* lVersion */
+	memset(drivdata+8,0,32);	/* szDeviceName */
+	push_ascii(drivdata+8,"NULL",-1, STR_TERMINATE);
+	PACKl(desc,"l",drivdata,sizeof drivdata); /* pDriverData */
 }
 
 static int check_printq_info(struct pack_desc* desc,
- 			     int uLevel, char *id1, char *id2)
+				unsigned int uLevel, char *id1, char *id2)
 {
-  desc->subformat = NULL;
-  switch( uLevel ) {
-  case 0:
-    desc->format = "B13";
-    break;
-  case 1:
-    desc->format = "B13BWWWzzzzzWW";
-    break;
-  case 2:
-    desc->format = "B13BWWWzzzzzWN";
-    desc->subformat = "WB21BB16B10zWWzDDz";
-    break;
-  case 3:
-    desc->format = "zWWWWzzzzWWzzl";
-    break;
-  case 4:
-    desc->format = "zWWWWzzzzWNzzl";
-    desc->subformat = "WWzWWDDzz";
-    break;
-  case 5:
-    desc->format = "z";
-    break;
-  case 51:
-    desc->format = "K";
-    break;
-  case 52:
-    desc->format = "WzzzzzzzzN";
-    desc->subformat = "z";
-    break;
-  default: return False;
-  }
-  if (strcmp(desc->format,id1) != 0) return False;
-  if (desc->subformat && strcmp(desc->subformat,id2) != 0) return False;
-  return True;
+	desc->subformat = NULL;
+	switch( uLevel ) {
+		case 0:
+			desc->format = "B13";
+			break;
+		case 1:
+			desc->format = "B13BWWWzzzzzWW";
+			break;
+		case 2:
+			desc->format = "B13BWWWzzzzzWN";
+			desc->subformat = "WB21BB16B10zWWzDDz";
+			break;
+		case 3:
+			desc->format = "zWWWWzzzzWWzzl";
+			break;
+		case 4:
+			desc->format = "zWWWWzzzzWNzzl";
+			desc->subformat = "WWzWWDDzz";
+			break;
+		case 5:
+			desc->format = "z";
+			break;
+		case 51:
+			desc->format = "K";
+			break;
+		case 52:
+			desc->format = "WzzzzzzzzN";
+			desc->subformat = "z";
+			break;
+		default:
+			return False;
+	}
+	if (strcmp(desc->format,id1) != 0) {
+		return False;
+	}
+	if (desc->subformat && strcmp(desc->subformat,id2) != 0) {
+		return False;
+	}
+	return True;
 }
 
 
@@ -721,7 +726,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 	char *str2 = skip_string(str1,1);
 	char *p = skip_string(str2,1);
 	char *QueueName = p;
-	int uLevel;
+	unsigned int uLevel;
 	int count=0;
 	int snum;
 	char* str3;
@@ -824,134 +829,169 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param,
  			      char **rdata, char** rparam,
  			      int *rdata_len, int *rparam_len)
 {
-  char *param_format = param+2;
-  char *output_format1 = skip_string(param_format,1);
-  char *p = skip_string(output_format1,1);
-  int uLevel = SVAL(p,0);
-  char *output_format2 = p + 4;
-  int services = lp_numservices();
-  int i, n;
-  struct pack_desc desc;
-  print_queue_struct **queue = NULL;
-  print_status_struct *status = NULL;
-  int* subcntarr = NULL;
-  int queuecnt, subcnt=0, succnt=0;
+	char *param_format = param+2;
+	char *output_format1 = skip_string(param_format,1);
+	char *p = skip_string(output_format1,1);
+	unsigned int uLevel = SVAL(p,0);
+	char *output_format2 = p + 4;
+	int services = lp_numservices();
+	int i, n;
+	struct pack_desc desc;
+	print_queue_struct **queue = NULL;
+	print_status_struct *status = NULL;
+	int *subcntarr = NULL;
+	int queuecnt = 0, subcnt = 0, succnt = 0;
  
-  memset((char *)&desc,'\0',sizeof(desc));
+	memset((char *)&desc,'\0',sizeof(desc));
 
-  DEBUG(3,("DosPrintQEnum uLevel=%d\n",uLevel));
+	DEBUG(3,("DosPrintQEnum uLevel=%d\n",uLevel));
  
-  if (!prefix_ok(param_format,"WrLeh")) return False;
-  if (!check_printq_info(&desc,uLevel,output_format1,output_format2)) {
-    /*
-     * Patch from Scott Moomaw <scott@bridgewater.edu>
-     * to return the 'invalid info level' error if an
-     * unknown level was requested.
-     */
-    *rdata_len = 0;
-    *rparam_len = 6;
-    *rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
-    SSVALS(*rparam,0,ERRunknownlevel);
-    SSVAL(*rparam,2,0);
-    SSVAL(*rparam,4,0);
-    return(True);
-  }
+	if (!prefix_ok(param_format,"WrLeh")) {
+		return False;
+	}
+	if (!check_printq_info(&desc,uLevel,output_format1,output_format2)) {
+		/*
+		 * Patch from Scott Moomaw <scott@bridgewater.edu>
+		 * to return the 'invalid info level' error if an
+		 * unknown level was requested.
+		 */
+		*rdata_len = 0;
+		*rparam_len = 6;
+		*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+		SSVALS(*rparam,0,ERRunknownlevel);
+		SSVAL(*rparam,2,0);
+		SSVAL(*rparam,4,0);
+		return(True);
+	}
 
-  queuecnt = 0;
-  for (i = 0; i < services; i++)
-    if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i))
-      queuecnt++;
-  if (uLevel > 0) {
-    if((queue = SMB_MALLOC_ARRAY(print_queue_struct*, queuecnt)) == NULL) {
-      DEBUG(0,("api_DosPrintQEnum: malloc fail !\n"));
-      return False;
-    }
-    memset(queue,0,queuecnt*sizeof(print_queue_struct*));
-    if((status = SMB_MALLOC_ARRAY(print_status_struct,queuecnt)) == NULL) {
-      DEBUG(0,("api_DosPrintQEnum: malloc fail !\n"));
-      return False;
-    }
-    memset(status,0,queuecnt*sizeof(print_status_struct));
-    if((subcntarr = SMB_MALLOC_ARRAY(int,queuecnt)) == NULL) {
-      DEBUG(0,("api_DosPrintQEnum: malloc fail !\n"));
-      return False;
-    }
-    subcnt = 0;
-    n = 0;
-    for (i = 0; i < services; i++)
-      if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i)) {
- 	subcntarr[n] = print_queue_status(i, &queue[n],&status[n]);
- 	subcnt += subcntarr[n];
- 	n++;
-      }
-  }
-  if (mdrcnt > 0) *rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
-  desc.base = *rdata;
-  desc.buflen = mdrcnt;
+	for (i = 0; i < services; i++) {
+		if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i)) {
+			queuecnt++;
+		}
+	}
 
-  if (init_package(&desc,queuecnt,subcnt)) {
-    n = 0;
-    succnt = 0;
-    for (i = 0; i < services; i++)
-      if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i)) {
-	fill_printq_info(conn,i,uLevel,&desc,subcntarr[n],queue[n],&status[n]);
-	n++;
-	if (desc.errcode == NERR_Success) succnt = n;
-      }
-  }
+	if((queue = SMB_MALLOC_ARRAY(print_queue_struct*, queuecnt)) == NULL) {
+		DEBUG(0,("api_DosPrintQEnum: malloc fail !\n"));
+		goto err;
+	}
+	memset(queue,0,queuecnt*sizeof(print_queue_struct*));
+	if((status = SMB_MALLOC_ARRAY(print_status_struct,queuecnt)) == NULL) {
+		DEBUG(0,("api_DosPrintQEnum: malloc fail !\n"));
+		goto err;
+	}
+	memset(status,0,queuecnt*sizeof(print_status_struct));
+	if((subcntarr = SMB_MALLOC_ARRAY(int,queuecnt)) == NULL) {
+		DEBUG(0,("api_DosPrintQEnum: malloc fail !\n"));
+		goto err;
+	}
 
-  SAFE_FREE(subcntarr);
+	subcnt = 0;
+	n = 0;
+	for (i = 0; i < services; i++) {
+		if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i)) {
+			subcntarr[n] = print_queue_status(i, &queue[n],&status[n]);
+			subcnt += subcntarr[n];
+			n++;
+		}
+	}
+
+	if (mdrcnt > 0) {
+		*rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
+		if (!*rdata) {
+			goto err;
+		}
+	}
+	desc.base = *rdata;
+	desc.buflen = mdrcnt;
+
+	if (init_package(&desc,queuecnt,subcnt)) {
+		n = 0;
+		succnt = 0;
+		for (i = 0; i < services; i++) {
+			if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i)) {
+				fill_printq_info(conn,i,uLevel,&desc,subcntarr[n],queue[n],&status[n]);
+				n++;
+				if (desc.errcode == NERR_Success) {
+					succnt = n;
+				}
+			}
+		}
+	}
+
+	SAFE_FREE(subcntarr);
  
-  *rdata_len = desc.usedlen;
-  *rparam_len = 8;
-  *rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
-  SSVALS(*rparam,0,desc.errcode);
-  SSVAL(*rparam,2,0);
-  SSVAL(*rparam,4,succnt);
-  SSVAL(*rparam,6,queuecnt);
+	*rdata_len = desc.usedlen;
+	*rparam_len = 8;
+	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
+	if (!*rparam) {
+		goto err;
+	}
+	SSVALS(*rparam,0,desc.errcode);
+	SSVAL(*rparam,2,0);
+	SSVAL(*rparam,4,succnt);
+	SSVAL(*rparam,6,queuecnt);
   
-  for (i = 0; i < queuecnt; i++) {
-    if (queue) SAFE_FREE(queue[i]);
-  }
+	for (i = 0; i < queuecnt; i++) {
+		if (queue) {
+			SAFE_FREE(queue[i]);
+		}
+	}
 
-  SAFE_FREE(queue);
-  SAFE_FREE(status);
+	SAFE_FREE(queue);
+	SAFE_FREE(status);
   
-  return True;
+	return True;
+
+  err:
+
+	SAFE_FREE(subcntarr);
+	for (i = 0; i < queuecnt; i++) {
+		if (queue) {
+			SAFE_FREE(queue[i]);
+		}
+	}
+	SAFE_FREE(queue);
+	SAFE_FREE(status);
+
+	return False;
 }
 
 /****************************************************************************
-  get info level for a server list query
-  ****************************************************************************/
+ Get info level for a server list query.
+****************************************************************************/
+
 static BOOL check_server_info(int uLevel, char* id)
 {
-  switch( uLevel ) {
-  case 0:
-    if (strcmp(id,"B16") != 0) return False;
-    break;
-  case 1:
-    if (strcmp(id,"B16BBDz") != 0) return False;
-    break;
-  default: 
-    return False;
-  }
-  return True;
+	switch( uLevel ) {
+		case 0:
+			if (strcmp(id,"B16") != 0) {
+				return False;
+			}
+			break;
+		case 1:
+			if (strcmp(id,"B16BBDz") != 0) {
+				return False;
+			}
+			break;
+		default: 
+			return False;
+	}
+	return True;
 }
 
-struct srv_info_struct
-{
-  fstring name;
-  uint32 type;
-  fstring comment;
-  fstring domain;
-  BOOL server_added;
+struct srv_info_struct {
+	fstring name;
+	uint32 type;
+	fstring comment;
+	fstring domain;
+	BOOL server_added;
 };
 
-
 /*******************************************************************
-  get server info lists from the files saved by nmbd. Return the
-  number of entries
-  ******************************************************************/
+ Get server info lists from the files saved by nmbd. Return the
+ number of entries.
+******************************************************************/
+
 static int get_server_info(uint32 servertype, 
 			   struct srv_info_struct **servers,
 			   const char *domain)
@@ -1059,10 +1099,10 @@ static int get_server_info(uint32 servertype,
   return(count);
 }
 
-
 /*******************************************************************
-  fill in a server info structure
-  ******************************************************************/
+ Fill in a server info structure.
+******************************************************************/
+
 static int fill_srv_info(struct srv_info_struct *service, 
 			 int uLevel, char **buf, int *buflen, 
 			 char **stringbuf, int *stringspace, char *baseaddr)
@@ -1141,13 +1181,14 @@ static int fill_srv_info(struct srv_info_struct *service,
 
 static BOOL srv_comp(struct srv_info_struct *s1,struct srv_info_struct *s2)
 {
-  return(strcmp(s1->name,s2->name));
+	return(strcmp(s1->name,s2->name));
 }
 
 /****************************************************************************
-  view list of servers available (or possibly domains). The info is
-  extracted from lists saved by nmbd on the local host
-  ****************************************************************************/
+ View list of servers available (or possibly domains). The info is
+ extracted from lists saved by nmbd on the local host.
+****************************************************************************/
+
 static BOOL api_RNetServerEnum(connection_struct *conn, uint16 vuid, char *param, char *data,
 			       int mdrcnt, int mprcnt, char **rdata, 
 			       char **rparam, int *rdata_len, int *rparam_len)
@@ -1275,6 +1316,7 @@ static BOOL api_RNetServerEnum(connection_struct *conn, uint16 vuid, char *param
 /****************************************************************************
   command 0x34 - suspected of being a "Lookup Names" stub api
   ****************************************************************************/
+
 static BOOL api_RNetGroupGetUsers(connection_struct *conn, uint16 vuid, char *param, char *data,
 			       int mdrcnt, int mprcnt, char **rdata, 
 			       char **rparam, int *rdata_len, int *rparam_len)
@@ -1308,6 +1350,7 @@ static BOOL api_RNetGroupGetUsers(connection_struct *conn, uint16 vuid, char *pa
 /****************************************************************************
   get info about a share
   ****************************************************************************/
+
 static BOOL check_share_info(int uLevel, char* id)
 {
   switch( uLevel ) {
@@ -1464,6 +1507,7 @@ static BOOL api_RNetShareGetInfo(connection_struct *conn,uint16 vuid, char *para
   twelve byte strings for share names (plus one for a nul terminator).
   Share names longer than 12 bytes must be skipped.
  ****************************************************************************/
+
 static BOOL api_RNetShareEnum( connection_struct *conn,
                                uint16             vuid,
                                char              *param,
@@ -1547,11 +1591,12 @@ static BOOL api_RNetShareEnum( connection_struct *conn,
  	   counted,total,uLevel,
   	   buf_len,*rdata_len,mdrcnt));
   return(True);
-} /* api_RNetShareEnum */
+}
 
 /****************************************************************************
   Add a share
   ****************************************************************************/
+
 static BOOL api_RNetShareAdd(connection_struct *conn,uint16 vuid, char *param,char *data,
 				 int mdrcnt,int mprcnt,
 				 char **rdata,char **rparam,
@@ -1638,12 +1683,12 @@ static BOOL api_RNetShareAdd(connection_struct *conn,uint16 vuid, char *param,ch
   SSVAL(*rparam,0,res);
   SSVAL(*rparam,2,0);
   return True;
-
 }
 
 /****************************************************************************
   view list of groups available
   ****************************************************************************/
+
 static BOOL api_RNetGroupEnum(connection_struct *conn,uint16 vuid, char *param,char *data,
   			      int mdrcnt,int mprcnt,
   			      char **rdata,char **rparam,
@@ -1733,8 +1778,9 @@ static BOOL api_RNetGroupEnum(connection_struct *conn,uint16 vuid, char *param,c
 }
 
 /*******************************************************************
-  get groups that a user is a member of
-  ******************************************************************/
+ Get groups that a user is a member of.
+******************************************************************/
+
 static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *param,char *data,
   			      int mdrcnt,int mprcnt,
   			      char **rdata,char **rparam,
@@ -1839,8 +1885,9 @@ out:
 }
 
 /*******************************************************************
-  get all users 
-  ******************************************************************/
+ Get all users.
+******************************************************************/
+
 static BOOL api_RNetUserEnum(connection_struct *conn,uint16 vuid, char *param,char *data,
 				 int mdrcnt,int mprcnt,
 				 char **rdata,char **rparam,
@@ -1869,7 +1916,8 @@ static BOOL api_RNetUserEnum(connection_struct *conn,uint16 vuid, char *param,ch
   
 	resume_context = SVAL(p,0);
 	cli_buf_size=SVAL(p+2,0);
-	DEBUG(10,("api_RNetUserEnum:resume context: %d, client buffer size: %d\n", resume_context, cli_buf_size));
+	DEBUG(10,("api_RNetUserEnum:resume context: %d, client buffer size: %d\n",
+			resume_context, cli_buf_size));
 
 	*rparam_len = 8;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
@@ -1928,11 +1976,10 @@ static BOOL api_RNetUserEnum(connection_struct *conn,uint16 vuid, char *param,ch
 	return True;
 }
 
-
-
 /****************************************************************************
-  get the time of day info
-  ****************************************************************************/
+ Get the time of day info.
+****************************************************************************/
+
 static BOOL api_NetRemoteTOD(connection_struct *conn,uint16 vuid, char *param,char *data,
 			     int mdrcnt,int mprcnt,
 			     char **rdata,char **rparam,
@@ -1974,8 +2021,6 @@ static BOOL api_NetRemoteTOD(connection_struct *conn,uint16 vuid, char *param,ch
     SSVAL(p,18,1900+t->tm_year);
     SCVAL(p,20,t->tm_wday);
   }
-
-
   return(True);
 }
 
@@ -2117,6 +2162,7 @@ static BOOL api_SamOEMChangePassword(connection_struct *conn,uint16 vuid, char *
   delete a print job
   Form: <W> <> 
   ****************************************************************************/
+
 static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param,char *data,
 				int mdrcnt,int mprcnt,
 				char **rdata,char **rparam,
@@ -2184,6 +2230,7 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 /****************************************************************************
   Purge a print queue - or pause or resume it.
   ****************************************************************************/
+
 static BOOL api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid, char *param,char *data,
 				 int mdrcnt,int mprcnt,
 				 char **rdata,char **rparam,
@@ -2233,7 +2280,6 @@ static BOOL api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid, char *param
 	return(True);
 }
 
-
 /****************************************************************************
   set the property of a print job (undocumented?)
   ? function = 0xb -> set name of print job
@@ -2241,6 +2287,7 @@ static BOOL api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid, char *param
   Form: <WWsTP> <WWzWWDDzzzzzzzzzzlz> 
   or   <WWsTP> <WB21BB16B10zWWzDDz> 
 ****************************************************************************/
+
 static int check_printjob_info(struct pack_desc* desc,
 			       int uLevel, char* id)
 {
@@ -2328,8 +2375,9 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 
 
 /****************************************************************************
-  get info about the server
-  ****************************************************************************/
+ Get info about the server.
+****************************************************************************/
+
 static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *param,char *data,
 				  int mdrcnt,int mprcnt,
 				  char **rdata,char **rparam,
@@ -2434,10 +2482,10 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
   return(True);
 }
 
-
 /****************************************************************************
-  get info about the server
-  ****************************************************************************/
+ Get info about the server.
+****************************************************************************/
+
 static BOOL api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid, char *param,char *data,
 				int mdrcnt,int mprcnt,
 				char **rdata,char **rparam,
@@ -2912,10 +2960,10 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
   return(True);
 }
 
-
 /****************************************************************************
-  api_WAccessGetUserPerms
-  ****************************************************************************/
+ api_WAccessGetUserPerms
+****************************************************************************/
+
 static BOOL api_WAccessGetUserPerms(connection_struct *conn,uint16 vuid, char *param,char *data,
 				    int mdrcnt,int mprcnt,
 				    char **rdata,char **rparam,
@@ -2944,6 +2992,7 @@ static BOOL api_WAccessGetUserPerms(connection_struct *conn,uint16 vuid, char *p
 /****************************************************************************
   api_WPrintJobEnumerate
   ****************************************************************************/
+
 static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *param,char *data,
 				 int mdrcnt,int mprcnt,
 				 char **rdata,char **rparam,
@@ -3500,56 +3549,53 @@ static BOOL api_Unsupported(connection_struct *conn,uint16 vuid, char *param,cha
   return(True);
 }
 
-
-
-
-static const struct
-{
-  const char *name;
-  int id;
-  BOOL (*fn)(connection_struct *,uint16,char *,char *,
-	     int,int,char **,char **,int *,int *);
-  BOOL auth_user;		/* Deny anonymous access? */
+static const struct {
+	const char *name;
+	int id;
+	BOOL (*fn)(connection_struct *,uint16,char *,char *,
+			int,int,char **,char **,int *,int *);
+	BOOL auth_user;		/* Deny anonymous access? */
 } api_commands[] = {
-  {"RNetShareEnum",	RAP_WshareEnum,		api_RNetShareEnum, True},
-  {"RNetShareGetInfo",	RAP_WshareGetInfo,	api_RNetShareGetInfo},
-  {"RNetShareAdd",	RAP_WshareAdd,		api_RNetShareAdd},
-  {"RNetSessionEnum",	RAP_WsessionEnum,	api_RNetSessionEnum, True},
-  {"RNetServerGetInfo",	RAP_WserverGetInfo,	api_RNetServerGetInfo},
-  {"RNetGroupEnum",	RAP_WGroupEnum,		api_RNetGroupEnum, True},
-  {"RNetGroupGetUsers", RAP_WGroupGetUsers,	api_RNetGroupGetUsers, True},
-  {"RNetUserEnum", 	RAP_WUserEnum,		api_RNetUserEnum, True},
-  {"RNetUserGetInfo",	RAP_WUserGetInfo,	api_RNetUserGetInfo},
-  {"NetUserGetGroups",	RAP_WUserGetGroups,	api_NetUserGetGroups},
-  {"NetWkstaGetInfo",	RAP_WWkstaGetInfo,	api_NetWkstaGetInfo},
-  {"DosPrintQEnum",	RAP_WPrintQEnum,	api_DosPrintQEnum, True},
-  {"DosPrintQGetInfo",	RAP_WPrintQGetInfo,	api_DosPrintQGetInfo},
-  {"WPrintQueuePause",  RAP_WPrintQPause,	api_WPrintQueueCtrl},
-  {"WPrintQueueResume", RAP_WPrintQContinue,	api_WPrintQueueCtrl},
-  {"WPrintJobEnumerate",RAP_WPrintJobEnum,	api_WPrintJobEnumerate},
-  {"WPrintJobGetInfo",	RAP_WPrintJobGetInfo,	api_WPrintJobGetInfo},
-  {"RDosPrintJobDel",	RAP_WPrintJobDel,	api_RDosPrintJobDel},
-  {"RDosPrintJobPause",	RAP_WPrintJobPause,	api_RDosPrintJobDel},
-  {"RDosPrintJobResume",RAP_WPrintJobContinue,	api_RDosPrintJobDel},
-  {"WPrintDestEnum",	RAP_WPrintDestEnum,	api_WPrintDestEnum},
-  {"WPrintDestGetInfo",	RAP_WPrintDestGetInfo,	api_WPrintDestGetInfo},
-  {"NetRemoteTOD",	RAP_NetRemoteTOD,	api_NetRemoteTOD},
-  {"WPrintQueuePurge",	RAP_WPrintQPurge,	api_WPrintQueueCtrl},
-  {"NetServerEnum",	RAP_NetServerEnum2,	api_RNetServerEnum}, /* anon OK */
-  {"WAccessGetUserPerms",RAP_WAccessGetUserPerms,api_WAccessGetUserPerms},
-  {"SetUserPassword",	RAP_WUserPasswordSet2,	api_SetUserPassword},
-  {"WWkstaUserLogon",	RAP_WWkstaUserLogon,	api_WWkstaUserLogon},
-  {"PrintJobInfo",	RAP_WPrintJobSetInfo,	api_PrintJobInfo},
-  {"WPrintDriverEnum",	RAP_WPrintDriverEnum,	api_WPrintDriverEnum},
-  {"WPrintQProcEnum",	RAP_WPrintQProcessorEnum,api_WPrintQProcEnum},
-  {"WPrintPortEnum",	RAP_WPrintPortEnum,	api_WPrintPortEnum},
-  {"SamOEMChangePassword",RAP_SamOEMChgPasswordUser2_P,api_SamOEMChangePassword}, /* anon OK */
-  {NULL,		-1,	api_Unsupported}};
+	{"RNetShareEnum",	RAP_WshareEnum,		api_RNetShareEnum, True},
+	{"RNetShareGetInfo",	RAP_WshareGetInfo,	api_RNetShareGetInfo},
+	{"RNetShareAdd",	RAP_WshareAdd,		api_RNetShareAdd},
+	{"RNetSessionEnum",	RAP_WsessionEnum,	api_RNetSessionEnum, True},
+	{"RNetServerGetInfo",	RAP_WserverGetInfo,	api_RNetServerGetInfo},
+	{"RNetGroupEnum",	RAP_WGroupEnum,		api_RNetGroupEnum, True},
+	{"RNetGroupGetUsers", RAP_WGroupGetUsers,	api_RNetGroupGetUsers, True},
+	{"RNetUserEnum", 	RAP_WUserEnum,		api_RNetUserEnum, True},
+	{"RNetUserGetInfo",	RAP_WUserGetInfo,	api_RNetUserGetInfo},
+	{"NetUserGetGroups",	RAP_WUserGetGroups,	api_NetUserGetGroups},
+	{"NetWkstaGetInfo",	RAP_WWkstaGetInfo,	api_NetWkstaGetInfo},
+	{"DosPrintQEnum",	RAP_WPrintQEnum,	api_DosPrintQEnum, True},
+	{"DosPrintQGetInfo",	RAP_WPrintQGetInfo,	api_DosPrintQGetInfo},
+	{"WPrintQueuePause",  RAP_WPrintQPause,	api_WPrintQueueCtrl},
+	{"WPrintQueueResume", RAP_WPrintQContinue,	api_WPrintQueueCtrl},
+	{"WPrintJobEnumerate",RAP_WPrintJobEnum,	api_WPrintJobEnumerate},
+	{"WPrintJobGetInfo",	RAP_WPrintJobGetInfo,	api_WPrintJobGetInfo},
+	{"RDosPrintJobDel",	RAP_WPrintJobDel,	api_RDosPrintJobDel},
+	{"RDosPrintJobPause",	RAP_WPrintJobPause,	api_RDosPrintJobDel},
+	{"RDosPrintJobResume",RAP_WPrintJobContinue,	api_RDosPrintJobDel},
+	{"WPrintDestEnum",	RAP_WPrintDestEnum,	api_WPrintDestEnum},
+	{"WPrintDestGetInfo",	RAP_WPrintDestGetInfo,	api_WPrintDestGetInfo},
+	{"NetRemoteTOD",	RAP_NetRemoteTOD,	api_NetRemoteTOD},
+	{"WPrintQueuePurge",	RAP_WPrintQPurge,	api_WPrintQueueCtrl},
+	{"NetServerEnum",	RAP_NetServerEnum2,	api_RNetServerEnum}, /* anon OK */
+	{"WAccessGetUserPerms",RAP_WAccessGetUserPerms,api_WAccessGetUserPerms},
+	{"SetUserPassword",	RAP_WUserPasswordSet2,	api_SetUserPassword},
+	{"WWkstaUserLogon",	RAP_WWkstaUserLogon,	api_WWkstaUserLogon},
+	{"PrintJobInfo",	RAP_WPrintJobSetInfo,	api_PrintJobInfo},
+	{"WPrintDriverEnum",	RAP_WPrintDriverEnum,	api_WPrintDriverEnum},
+	{"WPrintQProcEnum",	RAP_WPrintQProcessorEnum,api_WPrintQProcEnum},
+	{"WPrintPortEnum",	RAP_WPrintPortEnum,	api_WPrintPortEnum},
+	{"SamOEMChangePassword",RAP_SamOEMChgPasswordUser2_P,api_SamOEMChangePassword}, /* anon OK */
+	{NULL,		-1,	api_Unsupported}
+	/*  The following RAP calls are not implemented by Samba:
 
-/*  The following RAP calls are not implemented by Samba:
+	RAP_WFileEnum2 - anon not OK 
+	*/
+};
 
-        RAP_WFileEnum2 - anon not OK 
-*/
 
 /****************************************************************************
  Handle remote api calls
@@ -3617,8 +3663,7 @@ int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *
 				&rdata,&rparam,&rdata_len,&rparam_len);
 
 
-	if (rdata_len > mdrcnt ||
-				rparam_len > mprcnt) {
+	if (rdata_len > mdrcnt || rparam_len > mprcnt) {
 		reply = api_TooSmall(conn,vuid,params,data,mdrcnt,mprcnt,
 					&rdata,&rparam,&rdata_len,&rparam_len);
 	}
