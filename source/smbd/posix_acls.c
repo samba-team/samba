@@ -1548,8 +1548,12 @@ Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
 		 * entries can be converted to *_OBJ. Usually we will already have these
 		 * entries in the Default ACL, and the Access ACL will not have them.
 		 */
-		check_owning_objs(file_ace, pfile_owner_sid, pfile_grp_sid);
-		check_owning_objs(dir_ace, pfile_owner_sid, pfile_grp_sid);
+		if (file_ace) {
+			check_owning_objs(file_ace, pfile_owner_sid, pfile_grp_sid);
+		}
+		if (dir_ace) {
+			check_owning_objs(dir_ace, pfile_owner_sid, pfile_grp_sid);
+		}
 	}
 
 	*ppfile_ace = file_ace;
@@ -2801,7 +2805,7 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 	
 		if (count_canon_ace_list(file_ace) == 0) {
 			DEBUG(0,("get_nt_acl : No ACLs on file (%s) !\n", fsp->fsp_name ));
-			return 0;
+			goto done;
 		}
 
 		if (fsp->is_directory && def_acl) {
@@ -2950,33 +2954,37 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 	if(!psd) {
 		DEBUG(0,("get_nt_acl: Unable to malloc space for security descriptor.\n"));
 		sd_size = 0;
-	} else {
-		/*
-		 * Windows 2000: The DACL_PROTECTED flag in the security
-		 * descriptor marks the ACL as non-inheriting, i.e., no
-		 * ACEs from higher level directories propagate to this
-		 * ACL. In the POSIX ACL model permissions are only
-		 * inherited at file create time, so ACLs never contain
-		 * any ACEs that are inherited dynamically. The DACL_PROTECTED
-		 * flag doesn't seem to bother Windows NT.
-		 * Always set this if map acl inherit is turned off.
-		 */
-		if (get_protected_flag(pal) || !lp_map_acl_inherit(SNUM(conn))) {
-			psd->type |= SE_DESC_DACL_PROTECTED;
-		}
+		goto done;
 	}
 
-	if (psd->dacl)
+	/*
+	 * Windows 2000: The DACL_PROTECTED flag in the security
+	 * descriptor marks the ACL as non-inheriting, i.e., no
+	 * ACEs from higher level directories propagate to this
+	 * ACL. In the POSIX ACL model permissions are only
+	 * inherited at file create time, so ACLs never contain
+	 * any ACEs that are inherited dynamically. The DACL_PROTECTED
+	 * flag doesn't seem to bother Windows NT.
+	 * Always set this if map acl inherit is turned off.
+	 */
+	if (get_protected_flag(pal) || !lp_map_acl_inherit(SNUM(conn))) {
+		psd->type |= SE_DESC_DACL_PROTECTED;
+	}
+
+	if (psd->dacl) {
 		dacl_sort_into_canonical_order(psd->dacl->ace, (unsigned int)psd->dacl->num_aces);
+	}
 
 	*ppdesc = psd;
 
  done:
 
-	if (posix_acl)
+	if (posix_acl) {
 		SMB_VFS_SYS_ACL_FREE_ACL(conn, posix_acl);
-	if (def_acl)
+	}
+	if (def_acl) {
 		SMB_VFS_SYS_ACL_FREE_ACL(conn, def_acl);
+	}
 	free_canon_ace_list(file_ace);
 	free_canon_ace_list(dir_ace);
 	free_inherited_info(pal);
