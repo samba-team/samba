@@ -99,52 +99,6 @@ sub transfer_struct($$) {
   }
 }
 
-# Should a structure definition require a memory context to return
-# data?
-
-sub struct_need_mem_ctx($) {
-  my $s = shift;
-
-  for my $f (@{$s->{FIELDS}}) {
-    if ($f->{NAME} eq "out") {
-
-      # Look for pointers
-
-      for my $e (@{$f->{FIELDS}}) {
-	if (defined($e->{POINTERS})) {
-	  return 1;
-	}
-      }
-      return 0;
-    }
-  }
-
-  # No 'out' structure found so we can't return anything
-
-  return 0;
-}
-
-# Does the top-level structure definition require a memory context to
-# return data?
-
-sub need_mem_ctx($) {
-  my $s = shift;
-
-  # Check for presence of an 'out' nested structure that contains a
-  # pointer.
-
-  if ($s->{TYPE} eq "struct") {
-    return struct_need_mem_ctx($s);
-  } else {
-    foreach my $ss (@{$s->{FIELDS}}) {
-      return 1 if struct_need_mem_ctx($ss);
-    }
-    return 0;
-  }
-
-  return 1;
-}
-
 # Top level call functions
 
 foreach my $s (@newheader) {
@@ -161,62 +115,6 @@ foreach my $s (@newheader) {
     print FILE "NTSTATUS ejs_push_$s->{TYPE_DEFINED}(struct ejs_rpc *ejs, struct MprVar *v, const struct $s->{TYPE_DEFINED} *r)\n";
     print FILE "{\n";
     print FILE "\treturn NT_STATUS_OK;\n";
-    print FILE "}\n\n";
-
-    # Top level ejs function
-
-    print FILE "static int ejs_$s->{TYPE_DEFINED}(int eid, int argc, struct MprVar **argv)\n";
-    print FILE "{\n";
-    print FILE "\tstruct MprVar *io;\n";
-    print FILE "\tstruct ejs_rpc *ejs;\n";
-    print FILE "\tstruct $s->{TYPE_DEFINED} params;\n";
-    print FILE "\tstruct smbcli_tree *tree;\n";
-    print FILE "\tNTSTATUS status;\n";
-    print FILE "\tvoid *ptr;\n\n";
-
-    print FILE "\tif (argc != 1 || argv[0]->type != MPR_TYPE_OBJECT) {\n";
-    print FILE "\t\tejsSetErrorMsg(eid, \"invalid arguments\");\n";
-    print FILE "\t\treturn -1;\n";
-    print FILE "\t}\n\n";
-
-    print FILE "\tio = argv[0];\n\n";
-
-    print FILE "\tejs = talloc(mprMemCtx(), struct ejs_rpc);\n";
-    print FILE "\tif (ejs == NULL) {\n";
-    print FILE "\t\tstatus = NT_STATUS_NO_MEMORY;\n";
-    print FILE "\t\treturn -1;\n";
-    print FILE "\t}\n\n";
-
-    print FILE "\tptr = talloc_zero_size(ejs, sizeof(struct $s->{TYPE_DEFINED}));\n";
-    print FILE "\tif (ptr == NULL) {\n";
-    print FILE "\t\tstatus = NT_STATUS_NO_MEMORY;\n";
-    print FILE "\t\treturn -1;\n";
-    print FILE "\t}\n\n";
-
-    print FILE "\tejs->eid = eid;\n\n";
-
-    print FILE "\tstatus = ejs_pull_$s->{TYPE_DEFINED}(ejs, io, ptr);\n";
-    print FILE "\tif (!NT_STATUS_IS_OK(status)) {\n";
-    print FILE "\t\treturn -1;\n";
-    print FILE "\t}\n\n";
-
-    my $fn = $s->{TYPE_DEFINED};
-    $fn =~ s/^smb_/smb_raw_/;
-
-    if (need_mem_ctx($s)) {
-      print FILE "\tstatus = $fn(tree, mprMemCtx(), &params);\n\n";
-    } else {
-      print FILE "\tstatus = $fn(tree, &params);\n\n";
-    }
-
-    print FILE "\tstatus = ejs_push_$s->{TYPE_DEFINED}(ejs, io, ptr);\n\n";
-
-    print FILE "\tmpr_Return(eid, mprNTSTATUS(status));\n\n";
-    print FILE "\tif (NT_STATUS_EQUAL(status, NT_STATUS_INTERNAL_ERROR)) {\n";
-    print FILE "\t\treturn -1;\n";
-    print FILE "\t}\n\n";
-    print FILE "\treturn 0;\n";
-
     print FILE "}\n\n";
 
   } else {
@@ -237,86 +135,8 @@ foreach my $s (@newheader) {
       print FILE "\treturn NT_STATUS_OK;\n";
       print FILE "}\n\n";
 
-      print FILE "static int ejs_$s->{TYPE_DEFINED}_$arm->{NAME}(int eid, int argc, struct MprVar **argv)\n";
-      print FILE "{\n";
-      print FILE "\tstruct MprVar *io;\n";
-      print FILE "\tstruct ejs_rpc *ejs;\n";
-      print FILE "\tunion $s->{TYPE_DEFINED} params;\n";
-      print FILE "\tstruct smbcli_tree *tree;\n";
-      print FILE "\tNTSTATUS status;\n";
-      print FILE "\tvoid *ptr;\n\n";
-
-      print FILE "\tif (argc != 1 || argv[0]->type != MPR_TYPE_OBJECT) {\n";
-      print FILE "\t\tejsSetErrorMsg(eid, \"invalid arguments\");\n";
-      print FILE "\t\treturn -1;\n";
-      print FILE "\t}\n\n";
-
-      print FILE "\tio = argv[0];\n\n";
-
-      print FILE "\tejs = talloc(mprMemCtx(), struct ejs_rpc);\n";
-      print FILE "\tif (ejs == NULL) {\n";
-      print FILE "\t\tstatus = NT_STATUS_NO_MEMORY;\n";
-      print FILE "\t\treturn -1;\n";
-      print FILE "\t}\n\n";
-
-      print FILE "\tptr = talloc_zero_size(ejs, sizeof(union $s->{TYPE_DEFINED}));\n";
-      print FILE "\tif (ptr == NULL) {\n";
-      print FILE "\t\tstatus = NT_STATUS_NO_MEMORY;\n";
-      print FILE "\t\treturn -1;\n";
-      print FILE "\t}\n\n";
-
-      print FILE "\tejs->eid = eid;\n\n";
-
-      print FILE "\tstatus = ejs_pull_$s->{TYPE_DEFINED}_$arm->{NAME}(ejs, io, ptr);\n";
-      print FILE "\tif (!NT_STATUS_IS_OK(status)) {\n";
-      print FILE "\t\treturn -1;\n";
-      print FILE "\t}\n\n";
-
-      my $fn = $s->{TYPE_DEFINED};
-      $fn =~ s/^smb_/smb_raw_/;
-
-      if (need_mem_ctx($s)) {
-	print FILE "\tstatus = $fn(tree, mprMemCtx(), &params);\n\n";
-      } else {
-	print FILE "\tstatus = $fn(tree, &params);\n\n";
-      }
-
-      print FILE "\tstatus = ejs_push_$s->{TYPE_DEFINED}_$arm->{NAME}(ejs, io, ptr);\n\n";
-
-      print FILE "\tmpr_Return(eid, mprNTSTATUS(status));\n\n";
-      print FILE "\tif (NT_STATUS_EQUAL(status, NT_STATUS_INTERNAL_ERROR)) {\n";
-      print FILE "\t\treturn -1;\n";
-      print FILE "\t}\n\n";
-      print FILE "\treturn 0;\n";
-
-      print FILE "}\n\n";
     }
   }
 }
-
-# Module initialisation
-
-print FILE "static int ejs_${basename}_init(int eid, int argc, struct MprVar **argv)\n";
-print FILE "{\n";
-print FILE "\tstruct MprVar *obj = mprInitObject(eid, \"${basename}\", argc, argv);\n\n";
-
-foreach my $s (@newheader) {
-  if ($s->{TYPE} eq "struct") {
-    print FILE "\tmprSetCFunction(obj, \"$s->{TYPE_DEFINED}\", ejs_$s->{TYPE_DEFINED});\n";
-  } else {
-    foreach my $arm (@{$s->{FIELDS}}) {
-      print FILE "\tmprSetCFunction(obj, \"$s->{TYPE_DEFINED}_$arm->{NAME}\", ejs_$s->{TYPE_DEFINED});\n";
-    }
-  }
-}
-
-print FILE "}\n\n";
-
-print FILE "NTSTATUS ejs_init_${basename}(void)\n";
-print FILE "{\n";
-print FILE "\treturn smbcalls_register_ejs(\"${basename}_init\", ejs_${basename}_init);\n";
-print FILE "}\n";
 
 close(FILE);
-
-exit;
