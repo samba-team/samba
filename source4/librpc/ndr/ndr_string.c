@@ -621,6 +621,10 @@ NTSTATUS ndr_check_string_terminator(struct ndr_pull *ndr, const void *_var, uin
 NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var, uint32_t length, uint8_t byte_mul, int chset)
 {
 	int ret;
+	if (length == 0) {
+		*var = talloc_strdup(ndr, "");
+		return NT_STATUS_OK;
+	}
 	NDR_PULL_NEED_BYTES(ndr, length*byte_mul);
 	ret = convert_string_talloc(ndr, chset, CH_UNIX, 
 				    ndr->data+ndr->offset, 
