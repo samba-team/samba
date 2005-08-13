@@ -109,12 +109,18 @@ foreach my $s (@newheader) {
 
     print FILE "NTSTATUS ejs_pull_$s->{TYPE_DEFINED}(struct ejs_rpc *ejs, struct MprVar *v, struct $s->{TYPE_DEFINED} *r)\n";
     print FILE "{\n";
-    print FILE "\treturn NT_STATUS_OK;\n";
+
+    transfer_struct("pull", $s);
+
+    print FILE "\n\treturn NT_STATUS_OK;\n";
     print FILE "}\n\n";
 
     print FILE "NTSTATUS ejs_push_$s->{TYPE_DEFINED}(struct ejs_rpc *ejs, struct MprVar *v, const struct $s->{TYPE_DEFINED} *r)\n";
     print FILE "{\n";
-    print FILE "\treturn NT_STATUS_OK;\n";
+
+    transfer_struct("push", $s);
+
+    print FILE "\n\treturn NT_STATUS_OK;\n";
     print FILE "}\n\n";
 
   } else {
@@ -127,12 +133,18 @@ foreach my $s (@newheader) {
 
       print FILE "NTSTATUS ejs_pull_$s->{TYPE_DEFINED}_$arm->{NAME}(struct ejs_rpc *ejs, struct MprVar *v, union $s->{TYPE_DEFINED} *r)\n";
       print FILE "{\n";
-      print FILE "\treturn NT_STATUS_OK;\n";
+
+      transfer_struct("pull", $arm);
+
+      print FILE "\n\treturn NT_STATUS_OK;\n";
       print FILE "}\n\n";
 
       print FILE "NTSTATUS ejs_push_$s->{TYPE_DEFINED}_$arm->{NAME}(struct ejs_rpc *ejs, struct MprVar *v, const union $s->{TYPE_DEFINED} *r)\n";
       print FILE "{\n";
-      print FILE "\treturn NT_STATUS_OK;\n";
+
+      transfer_struct("push", $arm);
+
+      print FILE "\n\treturn NT_STATUS_OK;\n";
       print FILE "}\n\n";
 
     }
