@@ -759,7 +759,7 @@ CPPFLAGS="$old_CPPFLAGS"
 # subdirectory of headers.
 AC_CHECK_HEADERS(valgrind.h valgrind/valgrind.h valgrind/memcheck.h)
 
-/* check for linux on amd64 since valgrind is not quite there yet */
+# check for linux on amd64 since valgrind is not quite there yet
 case "$host_os" in
 	*linux*)
 		case "$UNAME_P" in
