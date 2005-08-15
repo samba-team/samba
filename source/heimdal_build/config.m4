@@ -1,4 +1,3 @@
-
 m4_define([upcase],`echo $1 | tr abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ`)dnl
 
 dnl love_FIND_FUNC(func, includes, arguments)
@@ -165,9 +164,11 @@ if test "$ac_cv_type_signal" = "void" ; then
 fi
 AC_SUBST(VOID_RETSIGTYPE)
 
-AC_CHECK_DECL(h_errno, 
-              [AC_DEFINE(HAVE_DECL_H_ERRNO,1,whether h_errno is declared)], [], [
-#ifdef HAVE_SYS_TYPES_H
+
+sinclude(heimdal/cf/check-var.m4)
+
+rk_CHECK_VAR(h_errno, 
+[#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
 #ifdef HAVE_NETDB_H
