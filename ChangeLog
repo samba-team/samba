@@ -1,3 +1,7 @@
+2005-08-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/kdc_locl.h: Update prototype for _kdc_pk_mk_pa_reply.
+
 2005-08-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/init_creds_pw.c: Save the request buffer so that
