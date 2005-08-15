@@ -177,7 +177,7 @@ struct composite_context *libnet_rpc_domain_open_send(struct dcerpc_pipe *p,
 	if (c == NULL) goto failure;
 
 	s = talloc_zero(c, struct domain_open_state);
-	if (c == NULL) goto failure;
+	if (s == NULL) goto failure;
 
 	c->state       = SMBCLI_REQUEST_SEND;
 	c->private     = s;
