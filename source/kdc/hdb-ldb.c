@@ -644,6 +644,7 @@ static krb5_error_code LDB_lookup_spn_alias(krb5_context context, struct ldb_con
 	if (!spnmappings || spnmappings->num_values == 0) {
 		krb5_warnx(context, "ldb_search: dn: %s no sPNMappings attribute", service_dn);
 		krb5_set_error_string(context, "ldb_search: dn: %s no sPNMappings attribute", service_dn);
+		return HDB_ERR_NOENTRY;
 	}
 
 	for (i = 0; i < spnmappings->num_values; i++) {
@@ -664,6 +665,7 @@ static krb5_error_code LDB_lookup_spn_alias(krb5_context context, struct ldb_con
 				   service_dn, mapping);
 			krb5_set_error_string(context, "ldb_search: dn: %s sPNMapping malformed: %s", 
 					      service_dn, mapping);
+			return HDB_ERR_NOENTRY;
 		}
 		p[0] = '\0';
 		p++;
