@@ -105,6 +105,34 @@ SID plus the RID) can be used to create access control lists (ACLs) attached to 
 organizational access control. UNIX systems recognize only local security identifiers.
 </para>
 
+<para>
+<indexterm><primary>SID</primary></indexterm>
+A SID represents a security context. For example, every Windows machine has local accounts within the security
+context of the local machine which has a unique SID. Every domain (NT4, ADS, Samba) contains accounts that
+exist within the domain security context which is defined by the domain SID.
+</para>
+
+<para>
+<indexterm><primary>SID</primary></indexterm>
+<indexterm><primary>RID</primary></indexterm>
+A domain member server will have a SID that differs from the domain SID.  The domain member server can be
+configured to regard all domain users as local users. It can also be configured to recognize domain users and
+groups as non-local. SIDs are persistent. A typical domain of user SID looks like this:
+<screen>
+S-1-5-21-726309263-4128913605-1168186429
+</screen>
+Every account (user, group, machine, trust, etc.) is assigned a RID. This is done automatically as an account
+is created. Samba produces the RID algorithmically. The UNIX operating system uses a separate name space for
+user and group identifiers (the UID and GID) but Windows allocates the RID from a single name space. A Windows
+user and a Windows group can not have the same RID. Just as the UNIX user <literal>root</literal> has the
+UID=0, the Windows Administrator has the well-known RID=500. The RID is catenated to the Windows domain SID,
+so Administrator account for a domain that has the above SID will have the user SID
+<screen>
+S-1-5-21-726309263-4128913605-1168186429-500
+</screen>
+The result is that every all accounts in the Windows networking world have a globally unique security identifier.
+</para>
+
 <note><para>
 <indexterm><primary>domain</primary><secondary>member</secondary></indexterm>
 <indexterm><primary>machine account</primary></indexterm>
