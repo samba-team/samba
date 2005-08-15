@@ -118,6 +118,7 @@ krb5_error_code	_kdc_pk_mk_pa_reply(krb5_context,
 				    pk_client_params *,
 				    const hdb_entry *,
 				    const KDC_REQ *,
+				    const krb5_data *,
 				    krb5_keyblock **,
 				    METHOD_DATA *);
 krb5_error_code _kdc_pk_check_client(krb5_context, 
