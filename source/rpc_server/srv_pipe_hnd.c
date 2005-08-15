@@ -106,10 +106,11 @@ static int pipe_handle_offset;
 
 void set_pipe_handle_offset(int max_open_files)
 {
-  if(max_open_files < 0x7000)
-    pipe_handle_offset = 0x7000;
-  else
-    pipe_handle_offset = max_open_files + 10; /* For safety. :-) */
+	if(max_open_files < 0x7000) {
+		pipe_handle_offset = 0x7000;
+	} else {
+		pipe_handle_offset = max_open_files + 10; /* For safety. :-) */
+	}
 }
 
 /****************************************************************************
@@ -655,8 +656,9 @@ static BOOL process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 
 		free_pipe_context(p);
 
-		if(pipe_init_outgoing_data(p))
+		if(pipe_init_outgoing_data(p)) {
 			ret = api_pipe_request(p);
+		}
 
 		free_pipe_context(p);
 
@@ -713,19 +715,28 @@ static ssize_t process_complete_pdu(pipes_struct *p)
 
 	switch (p->hdr.pkt_type) {
 		case RPC_BIND:
+			/*
+			 * We assume that a pipe bind is only in one pdu.
+			 */
+			if(pipe_init_outgoing_data(p)) {
+				reply = api_pipe_bind_req(p, &rpc_in);
+			}
+			break;
 		case RPC_ALTCONT:
 			/*
 			 * We assume that a pipe bind is only in one pdu.
 			 */
-			if(pipe_init_outgoing_data(p))
-				reply = api_pipe_bind_req(p, &rpc_in);
+			if(pipe_init_outgoing_data(p)) {
+				reply = api_pipe_alter_context(p, &rpc_in);
+			}
 			break;
 		case RPC_BINDRESP:
 			/*
 			 * We assume that a pipe bind_resp is only in one pdu.
 			 */
-			if(pipe_init_outgoing_data(p))
+			if(pipe_init_outgoing_data(p)) {
 				reply = api_pipe_bind_auth_resp(p, &rpc_in);
+			}
 			break;
 		case RPC_REQUEST:
 			reply = process_request_pdu(p, &rpc_in);
