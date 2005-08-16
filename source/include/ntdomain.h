@@ -181,7 +181,7 @@ struct ntlmssp_auth_struct {
 	BOOL ntlmssp_auth_requested; /* If the client wanted authenticated rpc. */
 	BOOL ntlmssp_auth_validated; /* If the client *got* authenticated rpc. */
 	unsigned char challenge[8];
-	unsigned char ntlmssp_hash[258];
+	unsigned char ntlmssp_arc4_state[258];
 	uint32 ntlmssp_seq_num;
 };
 

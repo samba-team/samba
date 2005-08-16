@@ -55,30 +55,10 @@ extern struct current_user current_user;
 struct dcinfo last_dcinfo;
 BOOL server_auth2_negotiated = False;
 
-static void NTLMSSPcalc_p( pipes_struct *p, unsigned char *data, int len)
+static void NTLMSSPcalc_p( pipes_struct *p, unsigned char *data, size_t len)
 {
-	unsigned char *hash = p->auth.a_u.ntlmssp_auth->ntlmssp_hash;
-	unsigned char index_i = hash[256];
-	unsigned char index_j = hash[257];
-	int ind;
-
-	for( ind = 0; ind < len; ind++) {
-		unsigned char tc;
-		unsigned char t;
-
-		index_i++;
-		index_j += hash[index_i];
-
-		tc = hash[index_i];
-		hash[index_i] = hash[index_j];
-		hash[index_j] = tc;
-
-		t = hash[index_i] + hash[index_j];
-		data[ind] = data[ind] ^ hash[t];
-	}
-
-	hash[256] = index_i;
-	hash[257] = index_j;
+	unsigned char *a4state = p->auth.a_u.ntlmssp_auth->ntlmssp_arc4_state;
+	smb_arc4_crypt(a4state, data, len);
 }
 
 /*******************************************************************
@@ -495,39 +475,20 @@ succeeded authentication on named pipe %s, but session key was of incorrect leng
 		return False;
 	} else {
 		uchar p24[24];
+		unsigned char k2[8];
 		NTLMSSPOWFencrypt(server_info->lm_session_key.data, lm_owf, p24);
-		{
-			unsigned char j = 0;
-			int ind;
 
-			unsigned char k2[8];
+		memcpy(k2, p24, 5);
+		k2[5] = 0xe5;
+		k2[6] = 0x38;
+		k2[7] = 0xb0;
 
-			memcpy(k2, p24, 5);
-			k2[5] = 0xe5;
-			k2[6] = 0x38;
-			k2[7] = 0xb0;
+		smb_arc4_init(pa->ntlmssp_arc4_state, k2, 8);
 
-			for (ind = 0; ind < 256; ind++)
-				pa->ntlmssp_hash[ind] = (unsigned char)ind;
+		dump_data_pw("NTLMSSP hash (v1)\n", pa->ntlmssp_arc4_state, 
+			     sizeof(pa->ntlmssp_arc4_state));
 
-			for( ind = 0; ind < 256; ind++) {
-				unsigned char tc;
-
-				j += (pa->ntlmssp_hash[ind] + k2[ind%8]);
-
-				tc = pa->ntlmssp_hash[ind];
-				pa->ntlmssp_hash[ind] = pa->ntlmssp_hash[j];
-				pa->ntlmssp_hash[j] = tc;
-			}
-
-			pa->ntlmssp_hash[256] = 0;
-			pa->ntlmssp_hash[257] = 0;
-		}
-
-		dump_data_pw("NTLMSSP hash (v1)\n", pa->ntlmssp_hash, 
-			     sizeof(pa->ntlmssp_hash));
-
-/*		NTLMSSPhash(p->ntlmssp_hash, p24); */
+/*		NTLMSSPhash(p->ntlmssp_arc4_state, p24); */
 		pa->ntlmssp_seq_num = 0;
 
 	}
@@ -1789,8 +1750,8 @@ BOOL api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in)
 		 * has already been consumed.
 		 */
 		char *data = prs_data_p(rpc_in) + RPC_HDR_REQ_LEN;
-		dump_data_pw("NTLMSSP hash (v1)\n", p->auth.a_u.ntlmssp_auth->ntlmssp_hash, 
-			     sizeof(p->auth.a_u.ntlmssp_auth->ntlmssp_hash));
+		dump_data_pw("NTLMSSP hash (v1)\n", p->auth.a_u.ntlmssp_auth->ntlmssp_arc4_state, 
+			     sizeof(p->auth.a_u.ntlmssp_auth->ntlmssp_arc4_state));
 
 		dump_data_pw("Incoming RPC PDU (NTLMSSP sealed)\n", 
 			     (const unsigned char *)data, data_len);
