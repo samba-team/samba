@@ -415,6 +415,10 @@ int ldb_dn_compare_base(struct ldb_context *ldb,
 	int ret;
 	int n0, n1;
 
+	if (base->comp_num > dn->comp_num) {
+		return (dn->comp_num - base->comp_num);
+	}
+
 	/* if the number of components doesn't match they differ */
 	n0 = base->comp_num - 1;
 	n1 = dn->comp_num - 1;
