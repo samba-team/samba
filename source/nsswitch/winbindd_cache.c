@@ -469,21 +469,12 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 	centry->sequence_number = centry_uint32(centry);
 
 	if (centry_expired(domain, kstr, centry)) {
-		extern BOOL opt_dual_daemon;
-
 		DEBUG(10,("wcache_fetch: entry %s expired for domain %s\n",
 			 kstr, domain->name ));
 
-		if (opt_dual_daemon) {
-			extern BOOL background_process;
-			background_process = True;
-			DEBUG(10,("wcache_fetch: background processing expired entry %s for domain %s\n",
-				 kstr, domain->name ));
-		} else {
-			centry_free(centry);
-			free(kstr);
-			return NULL;
-		}
+		centry_free(centry);
+		free(kstr);
+		return NULL;
 	}
 
 	DEBUG(10,("wcache_fetch: returning entry %s for domain %s\n",

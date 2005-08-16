@@ -27,7 +27,6 @@
 #include "winbindd.h"
 
 BOOL opt_nocache = False;
-BOOL opt_dual_daemon = True;
 static BOOL interactive = False;
 
 extern BOOL override_logfile;
@@ -139,12 +138,6 @@ static void print_winbindd_status(void)
 
 static void flush_caches(void)
 {
-#if 0
-	/* Clear cached user and group enumation info */	
-	if (!opt_dual_daemon) /* Until we have coherent cache flush. */
-		wcache_flush_cache();
-#endif
-
 	/* We need to invalidate cached user list entries on a SIGHUP 
            otherwise cached access denied errors due to restrict anonymous
            hang around until the sequence number changes. */
@@ -692,30 +685,6 @@ static BOOL remove_idle_client(void)
 	return False;
 }
 
-/* Process a complete received packet from a client */
-
-void winbind_process_packet(struct winbindd_cli_state *state)
-{
-	/* Process request */
-	
-	/* Ensure null termination of entire request */
-	state->request.null_term = '\0';
-
-	state->pid = state->request.pid;
-
-	process_request(state);
-
-	/* Update client state */
-	
-	state->read_buf_len = 0;
-	state->write_buf_len = sizeof(struct winbindd_response);
-
-	/* we might need to send it to the dual daemon */
-	if (opt_dual_daemon) {
-		dual_send_request(state);
-	}
-}
-
 /* Process incoming clients on listen_sock.  We use a tricky non-blocking,
    non-forking, non-threaded model which allows us to handle many
    simultaneous connections while remaining impervious to many denial of
@@ -764,10 +733,6 @@ static void process_loop(void)
 	timeout.tv_sec = WINBINDD_ESTABLISH_LOOP;
 	timeout.tv_usec = 0;
 
-	if (opt_dual_daemon) {
-		maxfd = dual_select_setup(&w_fds, maxfd);
-	}
-
 	/* Set up client readers and writers */
 
 	state = winbindd_client_list();
@@ -809,12 +774,6 @@ static void process_loop(void)
 
 		perror("select");
 		exit(1);
-	}
-
-	/* Create a new connection if listen_sock readable */
-
-	if (opt_dual_daemon) {
-		dual_select(&w_fds);
 	}
 
 	ev = fd_events;
@@ -917,7 +876,6 @@ int main(int argc, char **argv)
 		{ "stdout", 'S', POPT_ARG_VAL, &log_stdout, True, "Log to stdout" },
 		{ "foreground", 'F', POPT_ARG_VAL, &Fork, False, "Daemon in foreground mode" },
 		{ "interactive", 'i', POPT_ARG_NONE, NULL, 'i', "Interactive mode" },
-		{ "single-daemon", 'Y', POPT_ARG_VAL, &opt_dual_daemon, False, "Single daemon mode" },
 		{ "no-caching", 'n', POPT_ARG_VAL, &opt_nocache, True, "Disable caching" },
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
@@ -1047,10 +1005,6 @@ int main(int argc, char **argv)
 	if (interactive)
 		setpgid( (pid_t)0, (pid_t)0);
 #endif
-
-	if (opt_dual_daemon) {
-		do_dual_daemon();
-	}
 
 	/* Initialise messaging system */
 
