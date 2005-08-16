@@ -146,14 +146,15 @@ static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
 				       struct smbsrv_request *req, struct unix_sec_ctx **sec)
 {
 	struct unixuid_private *private = ntvfs->private_data;
-	struct security_token *token = req->session->session_info->security_token;
-	void *ctx = talloc_new(req);
+	struct security_token *token;
 	struct unix_sec_ctx *newsec;
 	NTSTATUS status;
 
 	if (req->session == NULL) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	token = req->session->session_info->security_token;
 
 	*sec = save_unix_security(req);
 	if (*sec == NULL) {
@@ -165,7 +166,6 @@ static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
 	} else {
 		status = nt_token_to_unix_security(ntvfs, req, token, &newsec);
 		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(ctx);
 			return status;
 		}
 		if (private->last_sec_ctx) {
@@ -178,11 +178,8 @@ static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
 
 	status = set_unix_security(newsec);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(ctx);
 		return status;
 	}
-
-	talloc_free(ctx);
 
 	return NT_STATUS_OK;
 }
