@@ -63,7 +63,8 @@ if (options['unixname'] == undefined) {
 	options.unixname = options.username;
 }
 
-if (getpwnam(options.unixname) == undefined) {
+var nss = nss_init();
+if (nss.getpwnam(options.unixname) == undefined) {
 	printf("ERROR: Unix user '%s' does not exist\n", options.unixname);
 	exit(1);
 }
