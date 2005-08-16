@@ -101,6 +101,11 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 {
 	struct winbind_cache *ret = wcache;
 
+	/* we have to know what type of domain we are dealing with first */
+
+	if ( !domain->initialized )
+		set_dc_type_and_flags( domain );
+
 	if (!domain->backend) {
 		extern struct winbindd_methods reconnect_methods;
 		switch (lp_security()) {
@@ -364,9 +369,6 @@ static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
 
 	/* important! make sure that we know if this is a native 
 	   mode domain or not */
-
-	if ( !domain->initialized )
-		set_dc_type_and_flags( domain );
 
 	status = domain->backend->sequence_number(domain, &domain->sequence_number);
 
