@@ -71,7 +71,7 @@ static int ldb_match_scope(struct ldb_context *ldb,
 		break;
 
 	case LDB_SCOPE_ONELEVEL:
-		if (dn->comp_num != base->comp_num) {
+		if (dn->comp_num == (base->comp_num + 1)) {
 			if (ldb_dn_compare_base(ldb, base, dn) == 0) {
 				ret = 1;
 			}
