@@ -327,7 +327,8 @@ int ejsEvalFile(EjsId eid, char *path, MprVar *result, char **emsg)
  *	Error return
  */
 error:
-	*emsg = mprStrdup(ep->error);
+	if(emsg)
+		*emsg = mprStrdup(ep->error);
 	return -1;
 }
 
