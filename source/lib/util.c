@@ -2738,7 +2738,7 @@ int _Insure_trap_error(int a1, int a2, int a3, int a4, int a5, int a6)
 
 uint32 map_share_mode_to_deny_mode(uint32 share_access, uint32 private_options)
 {
-	switch (share_access) {
+	switch (share_access & ~FILE_SHARE_DELETE) {
 		case FILE_SHARE_NONE:
 			return DENY_ALL;
 		case FILE_SHARE_READ:
@@ -2746,7 +2746,6 @@ uint32 map_share_mode_to_deny_mode(uint32 share_access, uint32 private_options)
 		case FILE_SHARE_WRITE:
 			return DENY_READ;
 		case FILE_SHARE_READ|FILE_SHARE_WRITE:
-		case FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE:
 			return DENY_NONE;
 	}
 	if (private_options & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS) {
