@@ -357,78 +357,81 @@ void cred_hash3(unsigned char *out, unsigned char *in, const unsigned char *key,
         des_crypt56(out + 8, in + 8, key2, forw);
 }
 
-void SamOEMhash( unsigned char *data, const unsigned char *key, int val)
+/*****************************************************************
+ Initialize state for an arc4 crypt/decrpyt.
+ arc4 state is 258 bytes - last 2 bytes are the index bytes.
+*****************************************************************/
+
+void smb_arc4_init(unsigned char arc4_state_out[258], const unsigned char *key, size_t keylen)
 {
-	unsigned char s_box[256];
-	unsigned char index_i = 0;
-	unsigned char index_j = 0;
+	size_t ind;
 	unsigned char j = 0;
-	int ind;
 
 	for (ind = 0; ind < 256; ind++) {
-		s_box[ind] = (unsigned char)ind;
+		arc4_state_out[ind] = (unsigned char)ind;
 	}
 
 	for( ind = 0; ind < 256; ind++) {
 		unsigned char tc;
 
-		j += (s_box[ind] + key[ind%16]);
+		j += (arc4_state_out[ind] + key[ind%keylen]);
 
-		tc = s_box[ind];
-		s_box[ind] = s_box[j];
-		s_box[j] = tc;
+		tc = arc4_state_out[ind];
+		arc4_state_out[ind] = arc4_state_out[j];
+		arc4_state_out[j] = tc;
 	}
-	for( ind = 0; ind < val; ind++) {
-		unsigned char tc;
-		unsigned char t;
-
-		index_i++;
-		index_j += s_box[index_i];
-
-		tc = s_box[index_i];
-		s_box[index_i] = s_box[index_j];
-		s_box[index_j] = tc;
-
-		t = s_box[index_i] + s_box[index_j];
-		data[ind] = data[ind] ^ s_box[t];
-	}
+	arc4_state_out[256] = 0;
+	arc4_state_out[257] = 0;
 }
 
-void SamOEMhashBlob( unsigned char *data, int len, DATA_BLOB *key)
+/*****************************************************************
+ Do the arc4 crypt/decrpyt.
+ arc4 state is 258 bytes - last 2 bytes are the index bytes.
+*****************************************************************/
+
+void smb_arc4_crypt(unsigned char arc4_state_inout[258], unsigned char *data, size_t len)
 {
-	unsigned char s_box[256];
-	unsigned char index_i = 0;
-	unsigned char index_j = 0;
-	unsigned char j = 0;
-	int ind;
+	unsigned char index_i = arc4_state_inout[256];
+	unsigned char index_j = arc4_state_inout[257];
+        size_t ind;
 
-	for (ind = 0; ind < 256; ind++) {
-		s_box[ind] = (unsigned char)ind;
-	}
-
-	for( ind = 0; ind < 256; ind++) {
-		unsigned char tc;
-
-		j += (s_box[ind] + key->data[ind%key->length]);
-
-		tc = s_box[ind];
-		s_box[ind] = s_box[j];
-		s_box[j] = tc;
-	}
 	for( ind = 0; ind < len; ind++) {
 		unsigned char tc;
 		unsigned char t;
 
 		index_i++;
-		index_j += s_box[index_i];
+		index_j += arc4_state_inout[index_i];
 
-		tc = s_box[index_i];
-		s_box[index_i] = s_box[index_j];
-		s_box[index_j] = tc;
+		tc = arc4_state_inout[index_i];
+		arc4_state_inout[index_i] = arc4_state_inout[index_j];
+		arc4_state_inout[index_j] = tc;
 
-		t = s_box[index_i] + s_box[index_j];
-		data[ind] = data[ind] ^ s_box[t];
+		t = arc4_state_inout[index_i] + arc4_state_inout[index_j];
+		data[ind] = data[ind] ^ arc4_state_inout[t];
 	}
+
+	arc4_state_inout[256] = index_i;
+	arc4_state_inout[257] = index_j;
+}
+
+/*****************************************************************
+ arc4 crypt/decrypt with a 16 byte key.
+*****************************************************************/
+
+void SamOEMhash( unsigned char *data, const unsigned char key[16], size_t len)
+{
+	unsigned char arc4_state[258];
+
+	smb_arc4_init(arc4_state, key, 16);
+	smb_arc4_crypt(arc4_state, data, len);
+}
+
+void SamOEMhashBlob( unsigned char *data, size_t len, DATA_BLOB *key)
+{
+	unsigned char arc4_state[258];
+
+	smb_arc4_init(arc4_state, key->data, key->length);
+	smb_arc4_crypt(arc4_state, data, len);
 }
 
 /* Decode a sam password hash into a password.  The password hash is the
