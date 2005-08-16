@@ -55,6 +55,10 @@ o   Jeremy Allison <jra@samba.org>
 o   Gerald (Jerry) Carter <jerry@samba.org>
     * Fix error in EnumPrinterData() reported by valgrind.
     * Fix broken help links in SWAT editor caused by new doc layout.
+    * Ensure that a domain structure in winbind is initialized prior
+      to assiging the methods for communicating to a DC.
+    * BUG 3000: Remove background updates of winbind cache and allow
+      child processes to immediately update and expired cache entry.
 
 
 o   Guenther Deschner <gd@samba.org>
