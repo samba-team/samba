@@ -491,16 +491,16 @@ static size_t req_pull_ucs2(struct smbsrv_request *req, const char **dest, const
 		src_len = byte_len;
 	} else {
 		src_len = req->in.data_size - PTR_DIFF(src, req->in.data);
-		if (src_len < 0) {
-			*dest = NULL;
-			return 0;
-		}
-
 		if (byte_len != -1 && src_len > byte_len) {
 			src_len = byte_len;
 		}
 	}
 
+	if (src_len < 0) {
+		*dest = NULL;
+		return 0;
+	}
+	
 	src_len2 = utf16_len_n(src, src_len);
 	if (src_len2 == 0) {
 		*dest = talloc_strdup(req, "");
