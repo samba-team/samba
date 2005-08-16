@@ -1812,7 +1812,8 @@ sub AllocateArrayLevel($$$$$)
 	}
 
 	if (grep(/in/,@{$e->{DIRECTION}}) and
-	    grep(/out/,@{$e->{DIRECTION}})) {
+	    grep(/out/,@{$e->{DIRECTION}}) and
+	    $pl->{POINTER_TYPE} eq "ref") {
 		pidl "memcpy(r->out.$e->{NAME},r->in.$e->{NAME},$size * sizeof(*r->in.$e->{NAME}));";
 	}
 }
