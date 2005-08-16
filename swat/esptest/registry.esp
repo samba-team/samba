@@ -43,25 +43,25 @@ call.run();
 
   <script type="text/javascript">
 
-function folder_list(parent, list) {
+function folder_list(fParent, list) {
 	var i;
-	parent.populated = true;
-	parent.removeAll();
+	fParent.populated = true;
+	fParent.removeAll();
 	for (i=0;i<list.length;i++) {
-		var child;
-		child = new QxTreeFolder(list[i]);
-		parent.add(child);
-		child.binding = parent.binding;
-		if (parent.reg_path == '\\\\') {
-			child.reg_path = list[i];
+		var fChild;
+		fChild = new QxTreeFolder(list[i]);
+		fParent.add(fChild);
+		fChild.binding = fParent.binding;
+		if (fParent.reg_path == '\\\\') {
+			fChild.reg_path = list[i];
 		} else {
-			child.reg_path = parent.reg_path + '\\\\' + list[i];
+			fChild.reg_path = fParent.reg_path + '\\\\' + list[i];
 		}
-		child.add(new QxTreeFolder('Working ...'));
-		child.addEventListener("click", function() { 
+		fChild.add(new QxTreeFolder('Working ...'));
+		fChild.addEventListener("click", function() { 
 			var el = this; folder_click(el); 
 		});
-		parent.setOpen(1);
+		fParent.setOpen(1);
 	}
 }
 
