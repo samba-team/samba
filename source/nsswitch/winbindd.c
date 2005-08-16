@@ -733,25 +733,6 @@ static BOOL remove_idle_client(void)
 	return False;
 }
 
-/* Process a complete received packet from a client */
-
-void winbind_process_packet(struct winbindd_cli_state *state)
-{
-	/* Process request */
-	
-	/* Ensure null termination of entire request */
-	state->request.null_term = '\0';
-
-	state->pid = state->request.pid;
-
-	process_request(state);
-
-	/* Update client state */
-	
-	state->read_buf_len = 0;
-	state->write_buf_len = sizeof(struct winbindd_response);
-}
-
 /* Process incoming clients on listen_sock.  We use a tricky non-blocking,
    non-forking, non-threaded model which allows us to handle many
    simultaneous connections while remaining impervious to many denial of
@@ -842,8 +823,6 @@ static void process_loop(void)
 		perror("select");
 		exit(1);
 	}
-
-	/* Create a new connection if listen_sock readable */
 
 	ev = fd_events;
 	while (ev != NULL) {
