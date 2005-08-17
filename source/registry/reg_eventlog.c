@@ -114,7 +114,7 @@ static int eventlog_subkey_values( char *key, REGVAL_CTR *val )
 		uiDisplayNameId = 0x07;
 		regval_ctr_addvalue( val, "CategoryCount",    REG_DWORD, (char*)&uiDisplayNameId,       sizeof(uint32) ); 
 	
-		init_unistr2( &data, "%SystemRoot%\\system32\\sambamsg.dll", UNI_STR_TERMINATE);
+		init_unistr2( &data, "%SystemRoot%\\system32\\eventlog.dll", UNI_STR_TERMINATE);
 		regval_ctr_addvalue( val, "CategoryMessageFile", REG_EXPAND_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
 	
 		num_values = regval_ctr_numvals( val );	
@@ -190,20 +190,34 @@ int eventlog_subkey_info( const char *key, REGSUBKEY_CTR *subkey_ctr )
 			regsubkey_ctr_addkey( subkey_ctr, *evtlog_list);
 
 		return regsubkey_ctr_numkeys( subkey_ctr );
+	} else {
+		/* if we get <logname>/<logname> then we don't add anymore */
+
+	 	if (strchr(path,'\\')) {
+	 		DEBUG(10,("eventlog_subkey_info: Not adding subkey to %s\n",path));	
+	 		return 0;
+	 	}
+
+		/* add in a subkey with the same name as the eventlog... */
+
+		DEBUG(10,("eventlog_subkey_info: Looking to add eventlog subkey to %s\n",path));	
+
+		/* look for a match */
+
+		evtlog_list = lp_eventlog_list(); 
+
+		if ( !evtlog_list )
+			return -1; 
+
+		for ( /* nothing */; *evtlog_list; evtlog_list++ ) { 
+			if ( strequal(path,*evtlog_list) ) {
+				regsubkey_ctr_addkey( subkey_ctr, path);
+				return regsubkey_ctr_numkeys( subkey_ctr );
+			}
+		}
 	}
 
-	/* look for a match */
 
-	if ( !evtlog_list )
-		return -1;
-
-	for ( /* nothing */; *evtlog_list; evtlog_list++ ) { 
-		
-		/* if we find a match, then return 0 subkeys */
-
-		if ( strequal(path,*evtlog_list) ) 
-			return 0;
-	}
 	
 	SAFE_FREE( path );
 
