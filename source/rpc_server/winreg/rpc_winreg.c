@@ -166,13 +166,15 @@ static WERROR winreg_EnumKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 	r->out.result = reg_key_get_subkey_by_index(mem_ctx, (struct registry_key *)h->data, r->in.enum_index, &key);
 
 	if (W_ERROR_IS_OK(r->out.result)) {
-		if (2*strlen_m(key->name) > r->in.name->size) {
+		if (2*strlen_m_term(key->name) > r->in.name->size) {
 			return WERR_MORE_DATA;
 		}
-		r->out.name->length = 2*strlen_m(key->name);
+		r->out.name->length = 2*strlen_m_term(key->name);
 		r->out.name->name = key->name;
 		r->out.class = talloc_zero(mem_ctx, struct winreg_StringBuf);
-		r->out.last_changed_time = &key->last_mod;
+		if (r->in.last_changed_time) {
+			r->out.last_changed_time = &key->last_mod;
+		}
 	}
 	
 	return r->out.result;
@@ -213,13 +215,13 @@ static WERROR winreg_EnumValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	}
 	
 	/* and enough room for the name */
-	if (r->in.name->size < 2*strlen_m(value->name)) {
+	if (r->in.name->size < 2*strlen_m_term(value->name)) {
 		return WERR_MORE_DATA;		
 	}
 
 	r->out.name->name = value->name;
-	r->out.name->length = 2*strlen_m(value->name);
-	r->out.name->size = 2*strlen_m(value->name);
+	r->out.name->length = 2*strlen_m_term(value->name);
+	r->out.name->size = 2*strlen_m_term(value->name);
 
 	if (r->in.value) {
 		r->out.value = value->data_blk;
@@ -294,11 +296,15 @@ static WERROR winreg_OpenKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
-	newh = dcesrv_handle_new(dce_call->context, HTYPE_REGKEY);
-
-	result = reg_open_key(newh, (struct registry_key *)h->data, 
-			      r->in.keyname.name, (struct registry_key **)&newh->data);
-
+	if (r->in.keyname.name && strcmp(r->in.keyname.name, "") == 0) {
+		newh = talloc_reference(dce_call->context, h);
+		result = WERR_OK;
+	} else {
+		newh = dcesrv_handle_new(dce_call->context, HTYPE_REGKEY);
+		result = reg_open_key(newh, (struct registry_key *)h->data, 
+				      r->in.keyname.name, (struct registry_key **)&newh->data);
+	}
+	
 	if (W_ERROR_IS_OK(result)) {
 		r->out.handle = &newh->wire_handle; 
 	} else {
