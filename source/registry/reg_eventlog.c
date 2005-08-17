@@ -330,7 +330,7 @@ static BOOL eventlog_store_value( const char *key, REGVAL_CTR *val )
 			   there's something new...
 			   all values needed are pulled by the routine... */
 				   
-			eventlog_control_eventlog(evtlog_key);
+			control_eventlog_hook(evtlog_key);
 		}
 	}
 	
