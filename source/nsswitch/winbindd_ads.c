@@ -499,28 +499,27 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 	}
 	
 	count = ads_count_replies(ads, res);
-	if (count == 0) {
-		DEBUG(5,("lookup_usergroups: No supp groups found\n"));
-		
-		status = ads_ntstatus(rc);
-		goto done;
-	}
 	
 	*user_sids = NULL;
 	*num_groups = 0;
 
+	/* always add the primary group to the sid array */
 	add_sid_to_array(mem_ctx, primary_group, user_sids, num_groups);
 
-	for (msg = ads_first_entry(ads, res); msg;
-	     msg = ads_next_entry(ads, msg)) {
-		DOM_SID group_sid;
+	if (count > 0) {
+		for (msg = ads_first_entry(ads, res); msg;
+		     msg = ads_next_entry(ads, msg)) {
+			DOM_SID group_sid;
 		
-		if (!ads_pull_sid(ads, msg, "objectSid", &group_sid)) {
-			DEBUG(1,("No sid for this group ?!?\n"));
-			continue;
+			if (!ads_pull_sid(ads, msg, "objectSid", &group_sid)) {
+				DEBUG(1,("No sid for this group ?!?\n"));
+				continue;
+			}
+
+			add_sid_to_array(mem_ctx, &group_sid, user_sids,
+					 num_groups);
 		}
 
-		add_sid_to_array(mem_ctx, &group_sid, user_sids, num_groups);
 	}
 
 	status = (user_sids != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
