@@ -209,7 +209,8 @@ static WERROR winreg_EnumValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	}
 
 	/* check the client has enough room for the value */
-	if (r->in.size != NULL && 
+	if (r->in.value != NULL &&
+	    r->in.size != NULL && 
 	    value->data_len > *r->in.size) {
 		return WERR_MORE_DATA;
 	}
