@@ -177,8 +177,8 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx, struct registry_key *p
 	struct winreg_EnumValue r;
 	uint32_t type, len1, zero = 0;
 	NTSTATUS status;
-	uint8_t buf8;
-	uint16_t buf16;
+	struct winreg_StringBuf name;
+	uint8_t u8;
 	
 	if(mykeydata->num_values == -1) {
 		error = rpc_query_key(parent);
@@ -187,17 +187,18 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx, struct registry_key *p
 
 	len1 = mykeydata->max_valdatalen;
 	
+	name.length = 0;
+	name.size   = mykeydata->max_valnamelen * 2;
+	name.name   = "";
+
 	r.in.handle = &mykeydata->pol;
 	r.in.enum_index = n;
-	r.in.name_in.length = 0;
-	r.in.name_in.size = mykeydata->max_valnamelen * 2;
-	r.in.name_in.name = &buf16;
+	r.in.name = &name;
 	r.in.type = &type;
-	r.in.value = &buf8;
+	r.in.value = &u8;
 	r.in.length = &zero;
 	r.in.size = &len1;
-	r.out.type = &type;
-
+	r.out.name = &name;
 	
 	status = dcerpc_winreg_EnumValue((struct dcerpc_pipe *)parent->hive->backend_data, mem_ctx, &r);
 	if(NT_STATUS_IS_ERR(status)) {
@@ -208,7 +209,7 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx, struct registry_key *p
 	if(NT_STATUS_IS_OK(status) && 
 	   W_ERROR_IS_OK(r.out.result) && r.out.length) {
 		*value = talloc(mem_ctx, struct registry_value);
-		(*value)->name = talloc_strdup(mem_ctx, r.out.name_out.name);
+		(*value)->name = talloc_strdup(mem_ctx, r.out.name->name);
 		(*value)->data_type = type;
 		(*value)->data_len = *r.out.length;
 		(*value)->data_blk = talloc_memdup(mem_ctx, r.out.value, *r.out.length);
@@ -221,27 +222,29 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx, struct registry_key *p
 static WERROR rpc_get_subkey_by_index(TALLOC_CTX *mem_ctx, struct registry_key *parent, int n, struct registry_key **subkey) 
 {
 	struct winreg_EnumKey r;
-	struct winreg_EnumKeyNameRequest keyname;
-	struct winreg_String classname;
-	struct winreg_Time tm;
 	struct rpc_key_data *mykeydata = parent->backend_data;
 	NTSTATUS status;
+	struct winreg_StringBuf namebuf, classbuf;
+	NTTIME change_time = 0;
+
+	namebuf.length = 0;
+	namebuf.size   = 1024;
+	namebuf.name   = NULL;
+	classbuf.length = 0;
+	classbuf.size   = 0;
+	classbuf.name   = NULL;
 
 	r.in.handle = &mykeydata->pol;
-	keyname.unknown = 0x0000020a;
-	init_winreg_String(&keyname.key_name, NULL);
-	init_winreg_String(&classname, NULL);
-	r.in.in_name = &keyname;
-	r.in.class = &classname;
-	tm.low = tm.high = 0x7fffffff;
-	r.in.last_changed_time = &tm;
-
 	r.in.enum_index = n;
-	r.in.unknown = r.out.unknown = 0x0414;
-	r.in.key_name_len = r.out.key_name_len = 0;
+	r.in.name = &namebuf;
+	r.in.class = &classbuf;
+	r.in.last_changed_time = &change_time;
+	r.out.name = &namebuf;
+
 	status = dcerpc_winreg_EnumKey((struct dcerpc_pipe *)parent->hive->backend_data, mem_ctx, &r);
 	if(NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(r.out.result)) {
-			return rpc_open_key(mem_ctx, parent, talloc_strdup(mem_ctx, r.out.out_name->name), subkey);
+		char *name = talloc_strdup(mem_ctx, r.out.name->name);
+		return rpc_open_key(mem_ctx, parent, name, subkey);
 	}
 
 	return r.out.result;

@@ -166,11 +166,13 @@ static WERROR winreg_EnumKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 	r->out.result = reg_key_get_subkey_by_index(mem_ctx, (struct registry_key *)h->data, r->in.enum_index, &key);
 
 	if (W_ERROR_IS_OK(r->out.result)) {
-		r->out.key_name_len = strlen(key->name);
-		r->out.out_name = talloc_zero(mem_ctx, struct winreg_EnumKeyNameResponse);
-		r->out.out_name->name = key->name;
-		r->out.class = talloc_zero(mem_ctx, struct winreg_String);
-		r->out.last_changed_time = talloc_zero(mem_ctx, struct winreg_Time);
+		if (2*strlen_m(key->name) > r->in.name->size) {
+			return WERR_MORE_DATA;
+		}
+		r->out.name->length = 2*strlen_m(key->name);
+		r->out.name->name = key->name;
+		r->out.class = talloc_zero(mem_ctx, struct winreg_StringBuf);
+		r->out.last_changed_time = &key->last_mod;
 	}
 	
 	return r->out.result;
@@ -196,14 +198,38 @@ static WERROR winreg_EnumValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	if (!W_ERROR_IS_OK(result)) {
 		return result;
 	}
+
+	/* the client can optionally pass a NULL for type, meaning they don't
+	   want that back */
+	if (r->in.type != NULL) {
+		r->out.type = talloc(mem_ctx, uint32_t);
+		*r->out.type = value->data_type;
+	}
+
+	/* check the client has enough room for the value */
+	if (r->in.size != NULL && 
+	    value->data_len > *r->in.size) {
+		return WERR_MORE_DATA;
+	}
 	
-	r->out.type = talloc(mem_ctx, uint32_t);
-	*r->out.type = value->data_type;
-	r->out.name_out.name = value->name;
-	r->out.value = value->data_blk;
-	r->out.size = talloc(mem_ctx, uint32_t);
-	r->out.length = r->out.size;
-	*r->out.size = value->data_len;
+	/* and enough room for the name */
+	if (r->in.name->size < 2*strlen_m(value->name)) {
+		return WERR_MORE_DATA;		
+	}
+
+	r->out.name->name = value->name;
+	r->out.name->length = 2*strlen_m(value->name);
+	r->out.name->size = 2*strlen_m(value->name);
+
+	if (r->in.value) {
+		r->out.value = value->data_blk;
+	}
+
+	if (r->in.size) {
+		r->out.size = talloc(mem_ctx, uint32_t);
+		*r->out.size = value->data_len;
+		r->out.length = r->out.size;
+	}
 	
 	return WERR_OK;
 }
