@@ -1330,6 +1330,8 @@ sub ParseStructPull($$)
 		ParseElementPull($e, "ndr", "r->", $env, 1, 0);
 	}	
 
+	add_deferred();
+
 	deindent;
 	pidl "}";
 	pidl "if (ndr_flags & NDR_BUFFERS) {";
@@ -1343,10 +1345,10 @@ sub ParseStructPull($$)
 		ParseElementPull($e, "ndr", "r->", $env, 0, 1);
 	}
 
+	add_deferred();
+
 	deindent;
 	pidl "}";
-
-	add_deferred();
 
 	end_flags($struct);
 	# restore the old relative_base_offset
