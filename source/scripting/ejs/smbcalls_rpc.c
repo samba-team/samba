@@ -329,17 +329,19 @@ done:
 		goto done;
 	}
 
+	/* make the actual call */
+	req = dcerpc_ndr_request_send(p, NULL, iface, callnum, ptr, ptr);
+
 	/* if requested, print the structure */
 	if (p->conn->flags & DCERPC_DEBUG_PRINT_IN) {
 		ndr_print_function_debug(call->ndr_print, call->name, NDR_IN, ptr);
 	}
 
-	/* make the actual call */
-	req = dcerpc_ndr_request_send(p, NULL, iface, callnum, ptr, ptr);
 	if (req == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
+
 	status = dcerpc_ndr_request_recv(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
