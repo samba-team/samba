@@ -34,12 +34,21 @@ if (status.is_ok != true) {
 	return -1;
 }
 
-function list_path(path) {
-	var list = winreg_enum_path(reg, path);
+function list_values(path) {
+	var list = winreg_enum_values(reg, path);
 	var i;
 	if (list == undefined) {
 		return;
 	}
+	for (i=0;i<list.length;i++) {
+		printf("\ttype=%2d size=%4d  '%s'\n", list[i].type, list[i].size, list[i].name);
+	}
+}
+
+function list_path(path) {
+	var list = winreg_enum_path(reg, path);
+	var i;
+	list_values(path);
 	for (i=0;i<list.length;i++) {
 		var npath;
 		if (path) {
