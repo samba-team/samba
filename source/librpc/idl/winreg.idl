@@ -233,7 +233,7 @@
 		[in,ref]           policy_handle *handle,
 		[in]               winreg_String name,
 		[in]               uint32 type,
-		[in,size_is(size)] uint8  *data,
+		[in,size_is(size),ref] uint8  *data,
 		[in]               uint32 size
 	);
 
