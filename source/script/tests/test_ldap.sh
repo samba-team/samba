@@ -10,7 +10,7 @@ fi
 
 # see if we support ldaps
 if grep HAVE_LIBGNUTLS.1 include/config.h > /dev/null && 
-    grep tls.enabled.=yes $CONFFILE > /dev/null; then
+    test -n "$CONFFILE" && grep tls.enabled.=yes $CONFFILE > /dev/null; then
     PROTOCOLS="ldap ldaps"
 else
     PROTOCOLS="ldap"
