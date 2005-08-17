@@ -493,10 +493,6 @@ uint32_t ndr_get_array_size(struct ndr_pull *ndr, const void *p)
 NTSTATUS ndr_check_array_size(struct ndr_pull *ndr, void *p, uint32_t size)
 {
 	uint32_t stored;
-	/* a NULL array is OK */
-	if (*(void **)p == NULL) {
-		return NT_STATUS_OK;
-	}
 	stored = ndr_token_peek(&ndr->array_size_list, p);
 	if (stored != size) {
 		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, 
@@ -535,10 +531,6 @@ uint32_t ndr_get_array_length(struct ndr_pull *ndr, const void *p)
 NTSTATUS ndr_check_array_length(struct ndr_pull *ndr, void *p, uint32_t length)
 {
 	uint32_t stored;
-	/* a NULL array is OK */
-	if (*(void **)p == NULL) {
-		return NT_STATUS_OK;
-	}
 	stored = ndr_token_peek(&ndr->array_length_list, p);
 	if (stored != length) {
 		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, 
