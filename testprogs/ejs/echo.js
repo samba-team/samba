@@ -22,10 +22,11 @@ libinclude("base.js");
 function ramp_array(N)
 {
 	var a = new Array(N);
+	var data = datablob_init();
 	for (i=0;i<N;i++) {
 		a[i] = i;
 	}
-	return a;
+	return data.blobFromArray(a);
 }
 
 
@@ -60,7 +61,7 @@ function test_EchoData(echo)
 		io.input.in_data = ramp_array(i);
 		status = echo.echo_EchoData(io);
 		check_status_ok(status);
-		check_array_equal(io.input.in_data, io.output.out_data);
+		assert(true == echo.blobCompare(io.input.in_data, io.output.out_data));
 	}
 }
 
@@ -97,7 +98,7 @@ function test_SourceData(echo)
 		status = echo.echo_SourceData(io);
 		check_status_ok(status);
 		correct = ramp_array(i);
-		check_array_equal(correct, io.output.data);
+		assert(true == echo.blobCompare(correct, io.output.data));
 	}
 }
 
@@ -181,7 +182,7 @@ function test_TestSurrounding(echo)
 	
 	io.input.data = new Object();
 	io.input.data.x = 10;
-	io.input.data.surrounding = ramp_array(10);
+	io.input.data.surrounding = new Array(10);
 	status = echo.echo_TestSurrounding(io);
 	check_status_ok(status);
 	assert(io.output.data.surrounding.length == 20);
@@ -210,6 +211,7 @@ if (options.ARGV.length != 1) {
 }
 var binding = options.ARGV[0];
 var echo = rpcecho_init();
+datablob_init(echo);
 
 print("Connecting to " + binding + "\n");
 status = echo.connect(binding);
