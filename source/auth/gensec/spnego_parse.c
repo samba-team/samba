@@ -25,9 +25,6 @@
 #include "auth/auth.h"
 #include "asn_1.h"
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_AUTH
-
 static BOOL read_negTokenInit(struct asn1_data *asn1, struct spnego_negTokenInit *token)
 {
 	ZERO_STRUCTP(token);

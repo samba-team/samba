@@ -29,9 +29,6 @@
 #include "pstring.h"
 #include "db_wrap.h"
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_PASSDB
-
 static struct tdb_wrap *tdb;
 
 /**

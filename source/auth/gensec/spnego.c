@@ -25,9 +25,6 @@
 #include "includes.h"
 #include "auth/auth.h"
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_AUTH
-
 enum spnego_state_position {
 	SPNEGO_SERVER_START,
 	SPNEGO_CLIENT_START,
