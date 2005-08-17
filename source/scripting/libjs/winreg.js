@@ -138,7 +138,7 @@ function winreg_enum_path(reg, path)
 		var status = reg.winreg_EnumKey(io);
 		if (!status.is_ok) {
 			winreg_close(reg, handle);
-			return;
+			return list;
 		}
 		var out = io.output;
 		if (out.result == "WERR_MORE_DATA") {
@@ -146,7 +146,7 @@ function winreg_enum_path(reg, path)
 			idx--;
 			if (io.input.name.size > 32000) {
 				winreg_close(reg, handle);
-				return undefined;
+				return list;
 			}
 			continue;
 		}
@@ -198,7 +198,7 @@ function winreg_enum_values(reg, path)
 		var status = reg.winreg_EnumValue(io);
 		if (!status.is_ok) {
 			winreg_close(reg, handle);
-			return;
+			return list;
 		}
 		var out = io.output;
 		if (out.result == "WERR_MORE_DATA") {
@@ -208,7 +208,7 @@ function winreg_enum_values(reg, path)
 			/* limit blobs to 1M */
 			if (io.input.size > 1000000) {
 				winreg_close(reg, handle);
-				return undefined;
+				return list;
 			}
 			continue;
 		}
