@@ -147,7 +147,7 @@ void eventlog_refresh_external_parameters(void)
 
 	for ( /* nothing */; *evtlog_list; evtlog_list++ ) {
 		DEBUG(10,("eventlog_refresh_external_parameters: Refreshing =>[%s]\n",*evtlog_list));	
-		if (!eventlog_control_eventlog( *evtlog_list)) {
+		if (!control_eventlog_hook( *evtlog_list)) {
 			DEBUG(0,("eventlog_refresh_external_parameters: failed to refresh [%s]\n",*evtlog_list));
 		}
 	}  
@@ -244,7 +244,7 @@ void policy_handle_to_string(POLICY_HND *handle, fstring *dest)
       OUTPUT: nothing
 ********************************************************************/
 
-BOOL eventlog_control_eventlog(const char *evtlogname)
+BOOL control_eventlog_hook(const char *evtlogname)
 {
 	char *cmd = lp_eventlog_control_cmd();
 	pstring command;
@@ -255,7 +255,7 @@ BOOL eventlog_control_eventlog(const char *evtlogname)
 	uint32 uiMaxSize;
 
 	if(cmd == NULL || strlen(cmd) == 0) {
-		DEBUG(0, ("eventlog_control_eventlog: Must define an \"eventlog control command\" entry in the config.\n"));
+		DEBUG(0, ("control_eventlog_hook: Must define an \"eventlog control command\" entry in the config.\n"));
 		return False;
 	}
 
@@ -266,12 +266,12 @@ BOOL eventlog_control_eventlog(const char *evtlogname)
 	pstrcpy(v_name,"Retention");
 
 	if (!read_evtlog_uint32_reg_value(evtlogname, v_name, &uiRetention)) {
-		DEBUG(0, ("eventlog_control_eventlog: Warning - can't read Retention for eventlog %s, using default.\n",evtlogname));
+		DEBUG(0, ("control_eventlog_hook: Warning - can't read Retention for eventlog %s, using default.\n",evtlogname));
 	}
 
 	pstrcpy(v_name,"MaxSize");
 	if (!read_evtlog_uint32_reg_value(evtlogname, v_name, &uiMaxSize)) {
-		DEBUG(0, ("eventlog_control_eventlog: Warning - can't read MaxSize for eventlog %s, using default.\n",evtlogname));
+		DEBUG(0, ("control_eventlog_hook: Warning - can't read MaxSize for eventlog %s, using default.\n",evtlogname));
 	}
 
 	memset(command, 0, sizeof(command));
@@ -281,12 +281,12 @@ BOOL eventlog_control_eventlog(const char *evtlogname)
 		 uiRetention,
 		 uiMaxSize);
 
-	DEBUG(10, ("eventlog_control_eventlog: Running [%s]\n", command));
+	DEBUG(10, ("control_eventlog_hook: Running [%s]\n", command));
 	ret = smbrun(command, &fd);
 	DEBUGADD(10, ("returned [%d]\n", ret));
 
 	if(ret != 0) {
-		DEBUG(10, ("eventlog_control_eventlog: Command returned  [%d]\n", ret));
+		DEBUG(10, ("control_eventlog_hook: Command returned  [%d]\n", ret));
 		if(fd != -1) {
 			close(fd);
 		}
@@ -294,7 +294,7 @@ BOOL eventlog_control_eventlog(const char *evtlogname)
 	}
 
 	close(fd);
-	return False;
+	return True;
 }
 
 
