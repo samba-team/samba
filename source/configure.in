@@ -4697,6 +4697,11 @@ else
         AC_MSG_RESULT(no$winbind_no_reason)
 fi
 
+# Solaris 10 does have new member in nss_XbyY_key
+AC_CHECK_MEMBER(union nss_XbyY_key.ipnode.af_family,
+		AC_DEFINE(HAVE_NSS_XBYY_KEY_IPNODE, 1, [Defined if union nss_XbyY_key has ipnode field]),,
+		[#include <nss_dbdefs.h>])
+
 # Solaris has some extra fields in struct passwd that need to be
 # initialised otherwise nscd crashes.  
  
