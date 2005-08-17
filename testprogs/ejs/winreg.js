@@ -17,8 +17,6 @@ if (ok == false) {
 	return -1;
 }
 
-libinclude("base.js");
-
 if (options.ARGV.length < 1) {
 	println("Usage: winreg.js <BINDING>");
 	return -1;
