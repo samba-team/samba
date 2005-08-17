@@ -165,22 +165,32 @@ sub EjsPullString($$$$$)
 sub EjsPullArray($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
+	my $nl = Parse::Pidl::NDR::GetNextLevel($e, $l);
 	my $length = Parse::Pidl::Util::ParseExpr($l->{LENGTH_IS}, $env);
+	my $size = Parse::Pidl::Util::ParseExpr($l->{SIZE_IS}, $env);
 	my $pl = Parse::Pidl::NDR::GetPrevLevel($e, $l);
 	if ($pl && $pl->{TYPE} eq "POINTER") {
 		$var = get_pointer_to($var);
+	}
+	# uint8 arrays are treated as data blobs
+	if ($nl->{TYPE} eq 'DATA' && $e->{TYPE} eq 'uint8') {
+		if (!$l->{IS_FIXED}) {
+			pidl "EJS_ALLOC_N(ejs, $var, $size);";
+		}
+		pidl "ejs_pull_array_uint8(ejs, v, $name, $var, $length);";
+		return;
 	}
 	my $avar = $var . "[i]";
 	pidl "{";
 	indent;
 	pidl "uint32_t i;";
 	if (!$l->{IS_FIXED}) {
-		pidl "EJS_ALLOC_N(ejs, $var, $length);";
+		pidl "EJS_ALLOC_N(ejs, $var, $size);";
 	}
 	pidl "for (i=0;i<$length;i++) {";
 	indent;
 	pidl "char *id = talloc_asprintf(ejs, \"%s.%u\", $name, i);";
-	EjsPullElement($e, Parse::Pidl::NDR::GetNextLevel($e, $l), $avar, "id", $env);
+	EjsPullElement($e, $nl, $avar, "id", $env);
 	pidl "talloc_free(id);";
 	deindent;
 	pidl "}";
@@ -451,10 +461,16 @@ sub EjsPushSwitch($$$$$)
 sub EjsPushArray($$$$$)
 {
 	my ($e, $l, $var, $name, $env) = @_;
+	my $nl = Parse::Pidl::NDR::GetNextLevel($e, $l);
 	my $length = Parse::Pidl::Util::ParseExpr($l->{LENGTH_IS}, $env);
 	my $pl = Parse::Pidl::NDR::GetPrevLevel($e, $l);
 	if ($pl && $pl->{TYPE} eq "POINTER") {
 		$var = get_pointer_to($var);
+	}
+	# uint8 arrays are treated as data blobs
+	if ($nl->{TYPE} eq 'DATA' && $e->{TYPE} eq 'uint8') {
+		pidl "ejs_push_array_uint8(ejs, v, $name, $var, $length);";
+		return;
 	}
 	my $avar = $var . "[i]";
 	pidl "{";
@@ -463,7 +479,7 @@ sub EjsPushArray($$$$$)
 	pidl "for (i=0;i<$length;i++) {";
 	indent;
 	pidl "const char *id = talloc_asprintf(ejs, \"%s.%u\", $name, i);";
-	EjsPushElement($e, Parse::Pidl::NDR::GetNextLevel($e, $l), $avar, "id", $env);
+	EjsPushElement($e, $nl, $avar, "id", $env);
 	deindent;
 	pidl "}";
 	pidl "ejs_push_uint32(ejs, v, $name \".length\", &i);";

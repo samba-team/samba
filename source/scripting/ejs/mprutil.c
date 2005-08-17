@@ -318,6 +318,31 @@ struct MprVar mprNTSTATUS(NTSTATUS status)
 }
 
 /*
+  create a data-blob in a mpr variable
+*/
+struct MprVar mprDataBlob(DATA_BLOB blob)
+{
+	struct MprVar res;
+	struct data_blob *pblob = talloc(mprMemCtx(), struct data_blob);
+	*pblob = data_blob_talloc(pblob, blob.data, blob.length);
+
+	res = mprObject("DATA_BLOB");
+
+	mprSetVar(&res, "size", mprCreateIntegerVar(blob.length));
+	mprSetPtrChild(&res, "blob", pblob);
+
+	return res;
+}
+
+/*
+  return a data blob from a mpr var created using mprDataBlob
+*/
+struct data_blob *mprToDataBlob(struct MprVar *v)
+{
+	return talloc_get_type(mprGetPtr(v, "blob"), struct data_blob);
+}
+
+/*
   turn a WERROR into a MprVar object with lots of funky properties
 */
 struct MprVar mprWERROR(WERROR status)

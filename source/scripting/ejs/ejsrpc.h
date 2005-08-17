@@ -108,6 +108,13 @@ NTSTATUS ejs_pull_BOOL(struct ejs_rpc *ejs,
 NTSTATUS ejs_push_BOOL(struct ejs_rpc *ejs, 
 		       struct MprVar *v, const char *name, const BOOL *r);
 
+NTSTATUS ejs_pull_array_uint8(struct ejs_rpc *ejs, 
+			      struct MprVar *v, const char *name, 
+			      uint8_t *r, uint32_t length);
+NTSTATUS ejs_push_array_uint8(struct ejs_rpc *ejs, 
+			      struct MprVar *v, const char *name, 
+			      const uint8_t *r, uint32_t length);
+
 #define EJS_ALLOC_SIZE(ejs, s, size) do { \
   (s) = talloc_size(ejs, size); \
   if (!(s)) return ejs_panic(ejs, "out of memory"); \

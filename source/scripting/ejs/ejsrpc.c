@@ -349,3 +349,40 @@ NTSTATUS ejs_push_BOOL(struct ejs_rpc *ejs,
 {
 	return mprSetVar(v, name, mprCreateBoolVar(*r));
 }
+
+
+/*
+  pull a uint8 array from a mpr variable to a C element - treating as a data blob
+*/
+NTSTATUS ejs_pull_array_uint8(struct ejs_rpc *ejs, 
+			      struct MprVar *v, const char *name, 
+			      uint8_t *r, uint32_t length)
+{
+	NTSTATUS status;
+	DATA_BLOB *blob;
+
+	status = mprGetVar(&v, name);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	blob = mprToDataBlob(v);
+	if (blob == NULL) {
+		return NT_STATUS_OBJECT_NAME_INVALID;
+	}
+	if (blob->length != length) {
+		return NT_STATUS_INFO_LENGTH_MISMATCH;
+	}
+	memcpy(r, blob->data, length);
+	return NT_STATUS_OK;
+	
+}
+
+NTSTATUS ejs_push_array_uint8(struct ejs_rpc *ejs, 
+			      struct MprVar *v, const char *name, 
+			      const uint8_t *r, uint32_t length)
+{
+	DATA_BLOB blob;
+	blob.data = discard_const(r);
+	blob.length = length;
+	mprSetVar(v, name, mprDataBlob(blob));
+	return NT_STATUS_OK;
+}
