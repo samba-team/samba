@@ -1,13 +1,14 @@
 <samba:parameter name="ldap suffix"
                  context="G"
-				 type="string"
+		 type="string"
 		 advanced="1" developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>Specifies where user and machine accounts are added to the
-		tree. Can be overriden by <smbconfoption name="ldap user suffix"/> and 
-		<smbconfoption name="ldap machine suffix"/>. It also used as the base dn for all ldap
-searches. </para>
+	tree. Can be overriden by <smbconfoption name="ldap user suffix"/> and 
+	<smbconfoption name="ldap machine suffix"/>. It also used as the base dn for all ldap
+	searches. </para>
 </description>
 <value type="default"></value>
+<value type="example">dc=samba,dc=org</value>
 </samba:parameter>
