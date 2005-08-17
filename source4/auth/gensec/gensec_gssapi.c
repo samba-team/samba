@@ -29,9 +29,6 @@
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "auth/auth.h"
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_AUTH
-
 struct gensec_gssapi_state {
 	gss_ctx_id_t gssapi_context;
 	struct gss_channel_bindings_struct *input_chan_bindings;

@@ -30,9 +30,6 @@
 #include "auth/auth.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_WINBIND
-
 #define SQUID_BUFFER_SIZE 2010
 
 enum stdio_helper_mode {
