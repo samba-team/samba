@@ -24,9 +24,6 @@
 #include "lib/crypto/crypto.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_AUTH
-
 /****************************************************************************
  Core of smb password checking routine.
 ****************************************************************************/

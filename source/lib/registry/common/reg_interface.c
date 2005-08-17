@@ -22,9 +22,6 @@
 #include "dlinklist.h"
 #include "registry.h"
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_REGISTRY
-
 /* List of available backends */
 static struct reg_init_function_entry *backends = NULL;
 
