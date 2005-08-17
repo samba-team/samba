@@ -4,10 +4,9 @@
 				 type="enum"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-	<para>This option is used to define whether
-	or not Samba should sync the LDAP password with the NT
-	and LM hashes for normal accounts (NOT for
-	workstation, server or domain trusts) on a password
+	<para>
+	This option is used to define whether or not Samba should sync the LDAP password with the NT
+	and LM hashes for normal accounts (NOT for workstation, server or domain trusts) on a password
 	change via SAMBA.  
 	</para>
 
