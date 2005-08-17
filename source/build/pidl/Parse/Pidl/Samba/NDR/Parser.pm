@@ -86,7 +86,11 @@ sub get_value_of($)
 }
 
 my $res = "";
+my $deferred = "";
 my $tabs = "";
+
+####################################
+# pidl() is our basic output routine
 sub pidl($)
 {
 	my $d = shift;
@@ -95,6 +99,31 @@ sub pidl($)
 		$res .= $d;
 	}
 	$res .="\n";
+}
+
+####################################
+# defer() is like pidl(), but adds to 
+# a deferred buffer which is then added to the 
+# output buffer at the end of the structure/union/function
+# This is needed to cope with code that must be pushed back
+# to the end of a block of elements
+sub defer($)
+{
+	my $d = shift;
+	if ($d) {
+		$deferred .= $tabs;
+		$deferred .= $d;
+	}
+	$deferred .="\n";
+}
+
+########################################
+# add the deferred content to the current
+# output
+sub add_deferred()
+{
+	$res .= $deferred;
+	$deferred = "";
 }
 
 sub indent()
@@ -115,6 +144,18 @@ sub check_null_pointer($)
 	if ($size =~ /^\*/) {
 		my $size2 = substr($size, 1);
 		pidl "if ($size2 == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;";
+	}
+}
+
+#####################################################################
+# check that a variable we get from ParseExpr isn't a null pointer, 
+# putting the check at the end of the structure/function
+sub check_null_pointer_deferred($)
+{
+	my $size = shift;
+	if ($size =~ /^\*/) {
+		my $size2 = substr($size, 1);
+		defer "if ($size2 == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;";
 	}
 }
 
@@ -278,14 +319,14 @@ sub ParseArrayPullHeader($$$$$)
 
 	if ($l->{IS_CONFORMANT} and not $l->{IS_ZERO_TERMINATED}) {
 		my $size = ParseExpr($l->{SIZE_IS}, $env);
-		check_null_pointer($size);
-		pidl "NDR_CHECK(ndr_check_array_size(ndr, (void*)" . get_pointer_to($var_name) . ", $size));";
+		check_null_pointer_deferred($size);
+		defer "NDR_CHECK(ndr_check_array_size(ndr, (void*)" . get_pointer_to($var_name) . ", $size));";
 	}
 
 	if ($l->{IS_VARYING} and not $l->{IS_ZERO_TERMINATED}) {
 		my $length = ParseExpr($l->{LENGTH_IS}, $env);
-		check_null_pointer($length);
-		pidl "NDR_CHECK(ndr_check_array_length(ndr, (void*)" . get_pointer_to($var_name) . ", $length));";
+		check_null_pointer_deferred($length);
+		defer "NDR_CHECK(ndr_check_array_length(ndr, (void*)" . get_pointer_to($var_name) . ", $length));";
 	}
 
 	if (!$l->{IS_FIXED}) {
@@ -1305,6 +1346,8 @@ sub ParseStructPull($$)
 	deindent;
 	pidl "}";
 
+	add_deferred();
+
 	end_flags($struct);
 	# restore the old relative_base_offset
 	pidl "ndr_pull_restore_relative_base_offset(ndr, _save_relative_base_offset);" if defined($struct->{PROPERTIES}{relative_base});
@@ -1577,6 +1620,9 @@ sub ParseUnionPull($$)
 
 	deindent;
 	pidl "}";
+
+	add_deferred();
+
 	end_flags($e);
 	# restore the old relative_base_offset
 	pidl "ndr_pull_restore_relative_base_offset(ndr, _save_relative_base_offset);" if defined($e->{PROPERTIES}{relative_base});
@@ -1892,6 +1938,7 @@ sub ParseFunctionPull($)
 		}
 	}
 
+	add_deferred();
 	deindent;
 	pidl "}";
 	
@@ -1908,8 +1955,10 @@ sub ParseFunctionPull($)
 		pidl "NDR_CHECK(ndr_pull_$fn->{RETURN_TYPE}(ndr, NDR_SCALARS, &r->out.result));";
 	}
 
+	add_deferred();
 	deindent;
 	pidl "}";
+
 	pidl "return NT_STATUS_OK;";
 	deindent;
 	pidl "}";
