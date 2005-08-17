@@ -98,53 +98,33 @@
 	} winreg_Time;
 
 	typedef struct {
-		uint32 unknown;
-		winreg_String key_name;
-	} winreg_EnumKeyNameRequest;
+		/* we can't use value(strlen_m(name)*2) here as it
+		   doesn't propogate to the length_is() property
+		   below. Jelmer, can this be fixed? */
+		uint16 length; 
+		uint16 size;
+		[size_is(size/2),length_is(length/2),charset(UTF16)] uint16 *name;
+	} winreg_StringBuf;
 
-	typedef struct {
-		uint32 unknown1;
-		uint32 unknown2;
-		lstring name;
-	} winreg_EnumKeyNameResponse;
-
-	/******************/
-	/* Function: 0x09 */
 	WERROR winreg_EnumKey(
-		[in,ref]    policy_handle *handle,
-		[in] uint32 enum_index,
-		[in,out]    uint16 key_name_len,
-		[in,out]    uint16 unknown,
-		[in]        winreg_EnumKeyNameRequest *in_name,
-		[out]       winreg_EnumKeyNameResponse *out_name,
-		[in,out]    winreg_String *class,
-		[in,out]    winreg_Time *last_changed_time
+		[in,ref]        policy_handle    *handle,
+		[in]            uint32           enum_index,
+		[in,out,ref]    winreg_StringBuf *name,
+		[in,out,unique] winreg_StringBuf *class,
+		[in,out,unique] NTTIME           *last_changed_time
 	);
 
 	/******************/
 	/* Function: 0x0a */
 
-	/* 
-	   this is equivalent IDL to a winreg_String, but we need to
-	   have absolute control over the length/size fields as the
-	   server looks at those to see what size buffer we have, so
-	   we can't use the automatic unistr handing in pidl.
-	*/
-	typedef struct {
-		uint16 length;
-		uint16 size;
-		[size_is(size/2),length_is(length/2)] uint16 *name;
-	} winreg_EnumValueString;
-
 	WERROR winreg_EnumValue(
-		[in,ref] policy_handle *handle,
-		[in]     uint32 enum_index,
-		[in]     winreg_EnumValueString name_in,
-		[out]    winreg_String name_out,
-		[in,out] uint32 *type,
-		[in,out,size_is(*size),length_is(*length)] uint8 *value,
-		[in,out] uint32 *size,
-		[in,out] uint32 *length
+		[in,ref]        policy_handle *handle,
+		[in]            uint32 enum_index,
+		[in,out,ref]    winreg_StringBuf *name,
+		[in,out,unique] uint32 *type,
+		[in,out,unique,size_is(*size),length_is(*length)] uint8 *value,
+		[in,out,unique] uint32 *size,
+		[in,out,unique] uint32 *length
 	);
 
 	/******************/

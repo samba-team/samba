@@ -223,7 +223,7 @@ static BOOL test_OpenKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.handle = hive_handle;
 	init_winreg_String(&r.in.keyname, keyname);
 	r.in.unknown = 0x00000000;
-	r.in.access_mask = 0x02000000;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.handle = key_handle;
 
 	status = dcerpc_winreg_OpenKey(p, mem_ctx, &r);
@@ -301,35 +301,37 @@ static BOOL test_EnumKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			 struct policy_handle *handle, int depth)
 {
 	struct winreg_EnumKey r;
-	struct winreg_EnumKeyNameRequest keyname;
-	struct winreg_String classname;
-	struct winreg_Time tm;
+	struct winreg_StringBuf class, name;
 	NTSTATUS status;
+	NTTIME t = 0;
 
 	printf("Testing EnumKey\n\n");
 
+	class.length = 0;
+	class.size   = 0;
+	class.name   = NULL;
+
 	r.in.handle = handle;
 	r.in.enum_index = 0;
-	r.in.key_name_len = r.out.key_name_len = 0;
-	r.in.unknown = r.out.unknown = 0x0414;
-	keyname.unknown = 0x0000020a;
-	init_winreg_String(&keyname.key_name, NULL);
-	init_winreg_String(&classname, NULL);
-	r.in.in_name = &keyname;
-	r.in.class = &classname;
-	tm.low = tm.high = 0x7fffffff;
-	r.in.last_changed_time = &tm;
+	r.in.name = &name;
+	r.in.class = &class;
+	r.out.name = &name;
+	r.in.last_changed_time = &t;
 
 	do {
+		name.length = 0;
+		name.size   = 1024;
+		name.name   = NULL;
+
 		status = dcerpc_winreg_EnumKey(p, mem_ctx, &r);
 
 		if (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(r.out.result)) {
 			struct policy_handle key_handle;
 
-			printf("EnumKey: %d: %s\n", r.in.enum_index, r.out.out_name->name);
+			printf("EnumKey: %d: %s\n", r.in.enum_index, r.out.name->name);
 
 			if (!test_OpenKey(
-				    p, mem_ctx, handle, r.out.out_name->name,
+				    p, mem_ctx, handle, r.out.name->name,
 				    &key_handle)) {
 			} else {
 				test_key(p, mem_ctx, &key_handle, depth + 1);
@@ -433,15 +435,18 @@ static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	uint32_t size = max_valbufsize, zero = 0;
 	BOOL ret = True;
 	uint8_t buf8;
-	uint16_t buf16;
+	struct winreg_StringBuf name;
 
 	printf("testing EnumValue\n");
 
+	name.length = 0;
+	name.size   = 1024;
+	name.name   = "";
+
 	r.in.handle = handle;
 	r.in.enum_index = 0;
-	r.in.name_in.length = 0;
-	r.in.name_in.size = 0x200;
-	r.in.name_in.name = &buf16;
+	r.in.name = &name;
+	r.out.name = &name;
 	r.in.type = &type;
 	r.in.value = &buf8;
 	r.in.length = &zero;
@@ -455,8 +460,8 @@ static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 
 		if (W_ERROR_IS_OK(r.out.result)) {
-			ret &= test_QueryValue(p, mem_ctx, handle, r.out.name_out.name);
-			ret &= test_QueryMultipleValues(p, mem_ctx, handle, r.out.name_out.name);
+			ret &= test_QueryValue(p, mem_ctx, handle, r.out.name->name);
+			ret &= test_QueryMultipleValues(p, mem_ctx, handle, r.out.name->name);
 		}
 
 		r.in.enum_index++;

@@ -4,6 +4,18 @@
 	released under the GNU GPL v2 or later
 */	
 
+libinclude("base.js");
+
+/*
+  close a handle
+*/
+function winreg_close(reg, handle)
+{
+	var io = irpcObj();
+	io.input.handle = handle;
+	reg.winreg_CloseKey(io);
+}
+
 
 /*
   open a hive
@@ -76,6 +88,9 @@ function winreg_open_path(reg, path)
 	io.input.unknown = 0;
 	io.input.access_mask = reg.SEC_FLAG_MAXIMUM_ALLOWED;
 	var status = reg.winreg_OpenKey(io);
+
+	winreg_close(reg, handle);
+
 	if (!status.is_ok) {
 		return undefined;
 	}
@@ -100,38 +115,116 @@ function winreg_enum_path(reg, path)
 		return new Array("HKLM", "HKU");
 	}
 	
-	handle = winreg_open_path(reg, path);
+	var handle = winreg_open_path(reg, path);
 	if (handle == undefined) {
 		return undefined;
 	}
 
 	var io = irpcObj();
-	var wtime = new Object();
-	wtime.low  = 2147483647;
-	wtime.high = 2147483647;
-	var keyname = new Object();
-	keyname.unknown  = 522;
-	keyname.key_name = NULL;
-
 	io.input.handle            = handle;
-	io.input.key_name_len      = 0;
-	io.input.unknown           = 1044;
-	io.input.in_name           = keyname;
-	io.input.class             = "";
-	io.input.last_changed_time = wtime;
-	
+	io.input.name = new Object();
+	io.input.name.length = 0;
+	io.input.name.size   = 32;
+	io.input.name.name   = NULL;
+	io.input.class = new Object();
+	io.input.class.length = 0;
+	io.input.class.size   = 1024;
+	io.input.class.name   = NULL;
+	io.input.last_changed_time = 0;
+
 	var idx = 0;
 	for (idx=0;idx >= 0;idx++) {
-		io.input.enum_index        = idx;
+		io.input.enum_index = idx;
 		var status = reg.winreg_EnumKey(io);
-		if (!status.is_ok) return;
+		if (!status.is_ok) {
+			winreg_close(reg, handle);
+			return;
+		}
 		var out = io.output;
+		if (out.result == "WERR_MORE_DATA") {
+			io.input.name.size = io.input.name.size * 2;
+			idx--;
+			if (io.input.name.size > 32000) {
+				winreg_close(reg, handle);
+				return undefined;
+			}
+			continue;
+		}
 		if (out.result != "WERR_OK") {
+			winreg_close(reg, handle);
 			return list;
 		}
-		list[list.length] = out.out_name.name;
+		list[list.length] = out.name.name;
 		list.length++;
 	}
 
+	winreg_close(reg, handle);
+	return list;
+}
+
+
+/*
+	return a list of values for a winreg server given a path
+	usage:
+	   list = winreg_enum_values(reg, path);
+
+	each returned list element is an object containing a name, a
+	type and a value
+*/
+function winreg_enum_values(reg, path)
+{
+	var list = new Object();
+	list.length = 0;
+
+	var handle = winreg_open_path(reg, path);
+	if (handle == undefined) {
+		return undefined;
+	}
+
+	var io = irpcObj();
+	io.input.handle      = handle;
+	io.input.name        = new Object();
+	io.input.name.length = 0;
+	io.input.name.size   = 128;
+	io.input.name.name   = "";
+	io.input.type        = 0;
+	io.input.value       = new Array(0);
+	io.input.size        = 1024;
+	io.input.length      = 0;
+
+	var idx;
+	for (idx=0;idx >= 0;idx++) {
+		io.input.enum_index = idx;
+		var status = reg.winreg_EnumValue(io);
+		if (!status.is_ok) {
+			winreg_close(reg, handle);
+			return;
+		}
+		var out = io.output;
+		if (out.result == "WERR_MORE_DATA") {
+			io.input.size = io.input.size * 2;
+			io.input.name.size = io.input.name.size * 2;
+			idx--;
+			/* limit blobs to 1M */
+			if (io.input.size > 1000000) {
+				winreg_close(reg, handle);
+				return undefined;
+			}
+			continue;
+		}
+		if (out.result != "WERR_OK") {
+			winreg_close(reg, handle);
+			return list;
+		}
+		var el   = new Object();
+		el.name  = out.name.name;
+		el.type  = out.type;
+		el.value = out.value;
+		el.size  = out.size;
+		list[list.length] = el;
+		list.length++;
+	}
+
+	winreg_close(reg, handle);
 	return list;
 }
