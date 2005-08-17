@@ -93,6 +93,11 @@ o   James Peach <jpeach@sgi.com>
     * BUG 2314: Fix const compiler warnings in the quota code.
 
 
+o   Ed Plese <ed@edplese.com>
+    * Fix faulty logic which caused winbindd to return failure 
+      when a user passessed no supplementary groups.
+
+
 
 Release Notes for older release follow:
 
