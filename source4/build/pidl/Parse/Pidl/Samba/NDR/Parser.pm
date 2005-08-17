@@ -319,14 +319,18 @@ sub ParseArrayPullHeader($$$$$)
 
 	if ($l->{IS_CONFORMANT} and not $l->{IS_ZERO_TERMINATED}) {
 		my $size = ParseExpr($l->{SIZE_IS}, $env);
+		defer "if ($var_name) {";
 		check_null_pointer_deferred($size);
 		defer "NDR_CHECK(ndr_check_array_size(ndr, (void*)" . get_pointer_to($var_name) . ", $size));";
+		defer "}";
 	}
 
 	if ($l->{IS_VARYING} and not $l->{IS_ZERO_TERMINATED}) {
 		my $length = ParseExpr($l->{LENGTH_IS}, $env);
+		defer "if ($var_name) {";
 		check_null_pointer_deferred($length);
 		defer "NDR_CHECK(ndr_check_array_length(ndr, (void*)" . get_pointer_to($var_name) . ", $length));";
+		defer "}"
 	}
 
 	if (!$l->{IS_FIXED}) {
