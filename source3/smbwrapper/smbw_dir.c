@@ -188,7 +188,7 @@ int smbw_dir_open(const char *fname)
 		goto failed;
 	}
 
-	dir = (struct smbw_dir *)malloc(sizeof(*dir));
+	dir = SMB_MALLOC_P(struct smbw_dir);
 	if (!dir) {
 		errno = ENOMEM;
 		goto failed;
@@ -265,7 +265,7 @@ int smbw_dir_open(const char *fname)
 
 	dir->fd = fd;
 	dir->srv = srv;
-	dir->path = strdup(s);
+	dir->path = SMB_STRDUP(s);
 
 	DEBUG(4,("  -> %d\n", dir->count));
 
@@ -578,7 +578,7 @@ char *smbw_getcwd(char *buf, size_t size)
 
 	if (!buf) {
 		if (size <= 0) size = strlen(smbw_cwd)+1;
-		buf = (char *)malloc(size);
+		buf = SMB_MALLOC_ARRAY(char, size);
 		if (!buf) {
 			errno = ENOMEM;
 			smbw_busy--;
