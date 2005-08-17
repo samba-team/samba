@@ -337,4 +337,294 @@ _nss_winbind_group_constr (const char* db_name,
 	return be;
 }
 
+/*****************************************************************
+ hosts and ipnodes backend
+ *****************************************************************/
+
+/* this parser is shared between get*byname and get*byaddr, as key type
+   in request is stored in different locations, I had to provide the
+   address family as an argument, caller must free the winbind response. */
+
+static NSS_STATUS
+parse_response(int af, nss_XbyY_args_t* argp, struct winbindd_response *response)
+{
+	struct hostent *he = (struct hostent *)argp->buf.result;
+	char *buffer = argp->buf.buffer;
+	int buflen =  argp->buf.buflen;
+	NSS_STATUS ret;
+
+	char *p, *data;
+	int addrcount = 0;
+	int len = 0;
+	struct in_addr *addrp;
+	struct in6_addr *addrp6;
+	int i;
+
+	/* response is tab separated list of ip addresses with hostname
+	   and newline at the end. so at first we will strip newline
+	   then construct list of addresses for hostent.
+	*/
+	p = strchr(response->data.winsresp, '\n');
+	if(p) *p = '\0';
+	else {/* it must be broken */
+		argp->h_errno = NO_DATA;
+		return NSS_STATUS_UNAVAIL;
+	}
+
+	for(; p != response->data.winsresp; p--) {
+		if(*p == '\t') addrcount++;
+	}
+
+	if(addrcount == 0) {/* it must be broken */
+		argp->h_errno = NO_DATA;
+		return NSS_STATUS_UNAVAIL;
+	}
+
+	/* allocate space for addresses and h_addr_list */
+	he->h_addrtype = af;
+	if( he->h_addrtype == AF_INET) {
+		he->h_length =  sizeof(struct in_addr);
+		addrp = (struct in_addr *)ROUND_DOWN(buffer + buflen,
+						sizeof(struct in_addr));
+		addrp -= addrcount;
+		he->h_addr_list = (char **)ROUND_DOWN(addrp, sizeof (char*));
+		he->h_addr_list -= addrcount+1;
+	} else {
+		he->h_length = sizeof(struct in6_addr);
+		addrp6 = (struct in6_addr *)ROUND_DOWN(buffer + buflen,
+						sizeof(struct in6_addr));
+		addrp6 -= addrcount;
+		he->h_addr_list = (char **)ROUND_DOWN(addrp6, sizeof (char*));
+		he->h_addr_list -= addrcount+1;
+	}
+
+	/* buffer too small?! */
+	if((char *)he->h_addr_list < buffer ) {
+		argp->erange = 1;
+		return NSS_STR_PARSE_ERANGE;
+	}
+	
+	data = response->data.winsresp;
+	for( i = 0; i < addrcount; i++) {
+		p = strchr(data, '\t');
+		if(p == NULL) break; /* just in case... */
+
+		*p = '\0'; /* terminate the string */
+		if(he->h_addrtype == AF_INET) {
+		  he->h_addr_list[i] = (char *)&addrp[i];
+		  if ((addrp[i].s_addr = inet_addr(data)) == -1) {
+		    argp->erange = 1;
+		    return NSS_STR_PARSE_ERANGE;
+		  }
+		} else {
+		  he->h_addr_list[i] = (char *)&addrp6[i];
+		  if (strchr(data, ':') != 0) {
+			if (inet_pton(AF_INET6, data, &addrp6[i]) != 1) {
+			  argp->erange = 1;
+			  return NSS_STR_PARSE_ERANGE;
+			}
+		  } else {
+			struct in_addr in4;
+			if ((in4.s_addr = inet_addr(data)) == -1) {
+			  argp->erange = 1;
+			  return NSS_STR_PARSE_ERANGE;
+			}
+			IN6_INADDR_TO_V4MAPPED(&in4, &addrp6[i]);
+		  }
+		}
+		data = p+1;
+	}
+
+	he->h_addr_list[i] = (char *)NULL;
+
+	len = strlen(data);
+	if(len > he->h_addr_list - (char**)argp->buf.buffer) {
+		argp->erange = 1;
+		return NSS_STR_PARSE_ERANGE;
+	}
+
+	/* this is a bit overkill to use _nss_netdb_aliases here since
+	   there seems to be no aliases but it will create all data for us */
+	he->h_aliases = _nss_netdb_aliases(data, len, buffer,
+				((char*) he->h_addr_list) - buffer);
+	if(he->h_aliases == NULL) {
+	    argp->erange = 1;
+	    ret = NSS_STR_PARSE_ERANGE;
+	} else {
+	    he->h_name = he->h_aliases[0];
+	    he->h_aliases++;
+	    ret = NSS_STR_PARSE_SUCCESS;
+	}
+
+	argp->returnval = (void*)he;
+	return ret;
+}
+
+static NSS_STATUS
+_nss_winbind_ipnodes_getbyname(nss_backend_t* be, void *args)
+{
+	nss_XbyY_args_t *argp = (nss_XbyY_args_t*) args;
+	struct winbindd_response response;
+	struct winbindd_request request;
+	NSS_STATUS ret;
+	int af;
+
+	ZERO_STRUCT(response);
+	ZERO_STRUCT(request);
+
+	/* I assume there that AI_ADDRCONFIG cases are handled in nss
+	   frontend code, at least it seems done so in solaris...
+
+	   we will give NO_DATA for pure IPv6; IPv4 will be returned for
+	   AF_INET or for AF_INET6 and AI_ALL|AI_V4MAPPED we have to map
+	   IPv4 to IPv6.
+	 */
+#ifdef HAVE_NSS_XBYY_KEY_IPNODE
+	af = argp->key.ipnode.af_family;
+	if(af == AF_INET6 && argp->key.ipnode.flags == 0) {
+		argp->h_errno = NO_DATA;
+		return NSS_STATUS_UNAVAIL;
+	}
+#else
+	/* I'm not that sure if this is correct, but... */
+	af = AF_INET6;
+#endif
+
+	strncpy(request.data.winsreq, argp->key.name, strlen(argp->key.name)) ;
+
+	if( (ret = winbindd_request_response(WINBINDD_WINS_BYNAME, &request, &response))
+		== NSS_STATUS_SUCCESS ) {
+	  ret = parse_response(af, argp, &response);
+	}
+
+	free_response(&response);
+	return ret;
+}
+
+static NSS_STATUS
+_nss_winbind_hosts_getbyname(nss_backend_t* be, void *args)
+{
+	nss_XbyY_args_t *argp = (nss_XbyY_args_t*) args;
+	struct winbindd_response response;
+	struct winbindd_request request;
+	NSS_STATUS ret;
+
+	ZERO_STRUCT(response);
+	ZERO_STRUCT(request);
+	
+	strncpy(request.data.winsreq, argp->key.name, strlen(argp->key.name));
+
+	if( (ret = winbindd_request_response(WINBINDD_WINS_BYNAME, &request, &response))
+		== NSS_STATUS_SUCCESS ) {
+	  ret = parse_response(AF_INET, argp, &response);
+	}
+
+	free_response(&response);
+	return ret;
+}
+
+static NSS_STATUS
+_nss_winbind_hosts_getbyaddr(nss_backend_t* be, void *args)
+{
+	NSS_STATUS ret;
+	struct winbindd_response response;
+	struct winbindd_request request;
+	nss_XbyY_args_t	*argp = (nss_XbyY_args_t *)args;
+	const char *p;
+
+	ZERO_STRUCT(response);
+	ZERO_STRUCT(request);
+
+	/* winbindd currently does not resolve IPv6 */
+	if(argp->key.hostaddr.type == AF_INET6) {
+		argp->h_errno = NO_DATA;
+		return NSS_STATUS_UNAVAIL;
+	}
+
+	p = inet_ntop(argp->key.hostaddr.type, argp->key.hostaddr.addr,
+			request.data.winsreq, INET6_ADDRSTRLEN);
+
+	ret = winbindd_request_response(WINBINDD_WINS_BYIP, &request, &response);
+
+	if( ret == NSS_STATUS_SUCCESS) {
+	  parse_response(argp->key.hostaddr.type, argp, &response);
+	}
+	free_response(&response);
+        return ret;
+}
+
+/* winbind does not provide setent, getent, endent for wins */
+static NSS_STATUS
+_nss_winbind_common_endent(nss_backend_t* be, void *args)
+{
+        return (NSS_STATUS_UNAVAIL);
+}
+
+static NSS_STATUS
+_nss_winbind_common_setent(nss_backend_t* be, void *args)
+{
+        return (NSS_STATUS_UNAVAIL);
+}
+
+static NSS_STATUS
+_nss_winbind_common_getent(nss_backend_t* be, void *args)
+{
+        return (NSS_STATUS_UNAVAIL);
+}
+
+static nss_backend_t*
+_nss_winbind_common_constr (nss_backend_op_t ops[], int n_ops)
+{
+	nss_backend_t* be;
+
+	if(!(be = (nss_backend_t*) malloc(sizeof(nss_backend_t))) )
+	return NULL;
+
+	be->ops = ops;
+	be->n_ops = n_ops;
+
+	return be;
+}
+
+static NSS_STATUS
+_nss_winbind_common_destr (nss_backend_t* be, void* args)
+{
+	SAFE_FREE(be);
+	return NSS_STATUS_SUCCESS;
+}
+
+static nss_backend_op_t ipnodes_ops[] = {
+	_nss_winbind_common_destr,
+	_nss_winbind_common_endent,
+	_nss_winbind_common_setent,
+	_nss_winbind_common_getent,
+	_nss_winbind_ipnodes_getbyname,
+	_nss_winbind_hosts_getbyaddr,
+};
+
+nss_backend_t *
+_nss_winbind_ipnodes_constr(dummy1, dummy2, dummy3)
+        const char      *dummy1, *dummy2, *dummy3;
+{
+	return (_nss_winbind_common_constr(ipnodes_ops,
+		sizeof (ipnodes_ops) / sizeof (ipnodes_ops[0])));
+}
+
+static nss_backend_op_t host_ops[] = {
+	_nss_winbind_common_destr,
+	_nss_winbind_common_endent,
+	_nss_winbind_common_setent,
+	_nss_winbind_common_getent,
+	_nss_winbind_hosts_getbyname,
+	_nss_winbind_hosts_getbyaddr,
+};
+
+nss_backend_t *
+_nss_winbind_hosts_constr(dummy1, dummy2, dummy3)
+        const char      *dummy1, *dummy2, *dummy3;
+{
+	return (_nss_winbind_common_constr(host_ops,
+		sizeof (host_ops) / sizeof (host_ops[0])));
+}
+
 #endif /* SUN_NSS */
