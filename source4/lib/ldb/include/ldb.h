@@ -371,7 +371,7 @@ struct ldb_dn *ldb_dn_make_child(void *mem_ctx,
 				 const struct ldb_dn_component *component,
 				 const struct ldb_dn *base);
 struct ldb_dn *ldb_dn_compose(void *mem_ctx, const struct ldb_dn *dn1, const struct ldb_dn *dn2);
-struct ldb_dn *ldb_dn_compose_string_dn(void *mem_ctx, const char *dn1, const struct ldb_dn *dn2);
+struct ldb_dn *ldb_dn_string_compose(void *mem_ctx, const struct ldb_dn *base, const char *child_fmt, ...);
 struct ldb_dn_component *ldb_dn_get_rdn(void *mem_ctx, const struct ldb_dn *dn);
 
 /* useful functions for ldb_message structure manipulation */

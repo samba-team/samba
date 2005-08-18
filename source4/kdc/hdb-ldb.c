@@ -624,10 +624,9 @@ static krb5_error_code LDB_lookup_spn_alias(krb5_context context, struct ldb_con
 	int count;
 	struct ldb_message **msg;
 	struct ldb_message_element *spnmappings;
-	struct ldb_dn *service_dn = ldb_dn_compose_string_dn(mem_ctx,
+	struct ldb_dn *service_dn = ldb_dn_string_compose(mem_ctx, realm_dn,
 						"CN=Directory Service,CN=Windows NT"
-						",CN=Services,CN=Configuration", 
-						realm_dn);
+						",CN=Services,CN=Configuration");
 	char *service_dn_str = ldb_dn_linearize(mem_ctx, service_dn);
 	const char *directory_attrs[] = {
 		"sPNMappings", 
