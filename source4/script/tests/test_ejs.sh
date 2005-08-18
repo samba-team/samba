@@ -24,3 +24,4 @@ for f in samr.js echo.js ldb.js; do
     testit "$f" $SCRIPTDIR/$f $CONFIGURATION ncalrpc: -U$USERNAME%$PASSWORD || failed=`expr $failed + 1`
 done
 
+testit "winreg" scripting/bin/winreg $CONFIGURATION ncalrpc: 'HKLM' -U$USERNAME%$PASSWORD || failed=`expr $failed + 1`
