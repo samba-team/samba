@@ -130,7 +130,7 @@ so Administrator account for a domain that has the above SID will have the user 
 <screen>
 S-1-5-21-726309263-4128913605-1168186429-500
 </screen>
-The result is that every all accounts in the Windows networking world have a globally unique security identifier.
+The result is that every account in the Windows networking world has a globally unique security identifier.
 </para>
 
 <note><para>
