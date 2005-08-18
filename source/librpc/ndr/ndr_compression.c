@@ -71,11 +71,12 @@ static NTSTATUS ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpull,
 }
 
 static NTSTATUS ndr_pull_compression_mszip(struct ndr_pull *subndr,
-					   struct ndr_pull *comndr,
+					   struct ndr_pull **_comndr,
 					   ssize_t decompressed_len)
 {
 	NTSTATUS status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 	struct ndr_push *ndrpush;
+	struct ndr_pull *comndr;
 	DATA_BLOB uncompressed;
 	uint32_t payload_header[4];
 	uint32_t payload_size;
@@ -101,7 +102,10 @@ static NTSTATUS ndr_pull_compression_mszip(struct ndr_pull *subndr,
 				      (int)uncompressed.length, (int)decompressed_len);
 	}
 
-	*comndr = *subndr;
+	comndr = talloc_zero(subndr, struct ndr_pull);
+	NT_STATUS_HAVE_NO_MEMORY(comndr);
+	comndr->flags		= subndr->flags;
+
 	comndr->data		= uncompressed.data;
 	comndr->data_size	= uncompressed.length;
 	comndr->offset		= 0;
@@ -127,6 +131,7 @@ static NTSTATUS ndr_pull_compression_mszip(struct ndr_pull *subndr,
 	comndr->data_size	= payload_size;
 	comndr->offset		= 0;
 
+	*_comndr = comndr;
 	return NT_STATUS_OK;
 }
 
@@ -140,16 +145,14 @@ static NTSTATUS ndr_push_compression_mszip(struct ndr_push *subndr,
   handle compressed subcontext buffers, which in midl land are user-marshalled, but
   we use magic in pidl to make them easier to cope with
 */
-NTSTATUS ndr_pull_compression(struct ndr_pull *subndr,
-			      struct ndr_pull *comndr,
-			      enum ndr_compression_alg compression_alg,
-			      ssize_t decompressed_len)
+NTSTATUS ndr_pull_compression_start(struct ndr_pull *subndr,
+				    struct ndr_pull **_comndr,
+				    enum ndr_compression_alg compression_alg,
+				    ssize_t decompressed_len)
 {
-	comndr->flags = subndr->flags;
-
 	switch (compression_alg) {
 	case NDR_COMPRESSION_MSZIP:
-		return ndr_pull_compression_mszip(subndr, comndr, decompressed_len);
+		return ndr_pull_compression_mszip(subndr, _comndr, decompressed_len);
 	default:
 		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION, "Bad compression algorithm %d (PULL)", 
 				      compression_alg);
@@ -157,15 +160,40 @@ NTSTATUS ndr_pull_compression(struct ndr_pull *subndr,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS ndr_pull_compression_end(struct ndr_pull *subndr,
+				  struct ndr_pull *comndr,
+				  enum ndr_compression_alg compression_alg,
+				  ssize_t decompressed_len)
+{
+	return NT_STATUS_OK;
+}
+
 /*
   push a compressed subcontext
 */
-NTSTATUS ndr_push_compression(struct ndr_push *subndr,
-			      struct ndr_push *comndr,
-			      enum ndr_compression_alg compression_alg)
+NTSTATUS ndr_push_compression_start(struct ndr_push *subndr,
+				    struct ndr_push **_comndr,
+				    enum ndr_compression_alg compression_alg,
+				    ssize_t decompressed_len)
 {
-	comndr->flags = subndr->flags;
+	struct ndr_push *comndr;
 
+	comndr = ndr_push_init_ctx(subndr);
+	NT_STATUS_HAVE_NO_MEMORY(comndr);
+	comndr->flags	= subndr->flags;
+
+	*_comndr = comndr;
+	return NT_STATUS_OK;
+}
+
+/*
+  push a compressed subcontext
+*/
+NTSTATUS ndr_push_compression_end(struct ndr_push *subndr,
+				  struct ndr_push *comndr,
+				  enum ndr_compression_alg compression_alg,
+				  ssize_t decompressed_len)
+{
 	switch (compression_alg) {
 	case NDR_COMPRESSION_MSZIP:
 		return ndr_push_compression_mszip(subndr, comndr);
