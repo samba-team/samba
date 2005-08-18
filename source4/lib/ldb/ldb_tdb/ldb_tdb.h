@@ -57,7 +57,7 @@ int ltdb_check_at_attributes_values(const struct ldb_val *value);
 struct ldb_parse_tree;
 
 int ltdb_search_indexed(struct ldb_module *module, 
-			const char *base,
+			const struct ldb_dn *base,
 			enum ldb_scope scope,
 			struct ldb_parse_tree *tree,
 			const char * const attrs[], struct ldb_message ***res);
@@ -81,23 +81,23 @@ int ltdb_unpack_data(struct ldb_module *module,
 int ltdb_has_wildcard(struct ldb_module *module, const char *attr_name, 
 		      const struct ldb_val *val);
 void ltdb_search_dn1_free(struct ldb_module *module, struct ldb_message *msg);
-int ltdb_search_dn1(struct ldb_module *module, const char *dn, struct ldb_message *msg);
+int ltdb_search_dn1(struct ldb_module *module, const struct ldb_dn *dn, struct ldb_message *msg);
 int ltdb_add_attr_results(struct ldb_module *module, struct ldb_message *msg,
 			  const char * const attrs[], 
 			  int *count, 
 			  struct ldb_message ***res);
-int ltdb_search(struct ldb_module *module, const char *base,
+int ltdb_search(struct ldb_module *module, const struct ldb_dn *base,
 		enum ldb_scope scope, const char *expression,
 		const char * const attrs[], struct ldb_message ***res);
-int ltdb_search_bytree(struct ldb_module *module, const char *base,
+int ltdb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 		       enum ldb_scope scope, struct ldb_parse_tree *tree,
 		       const char * const attrs[], struct ldb_message ***res);
 
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_tdb.c  */
-struct TDB_DATA ltdb_key(struct ldb_module *module, const char *dn);
+struct TDB_DATA ltdb_key(struct ldb_module *module, const struct ldb_dn *dn);
 int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flgs);
-int ltdb_delete_noindex(struct ldb_module *module, const char *dn);
+int ltdb_delete_noindex(struct ldb_module *module, const struct ldb_dn *dn);
 int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *msg);
 int ltdb_lock_read(struct ldb_module *module);
 int ltdb_unlock_read(struct ldb_module *module);

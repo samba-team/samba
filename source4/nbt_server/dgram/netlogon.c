@@ -125,10 +125,11 @@ static void nbtd_netlogon_getdc2(struct dgram_mailslot_handler *dgmslot,
 
 	/* try and find the domain */
 	ret = gendb_search_dn(samctx, samctx, 
-			      samdb_result_string(ref_res[0], "ncName", NULL), 
+			      samdb_result_dn(samctx, ref_res[0], "ncName", NULL), 
 			      &dom_res, dom_attrs);
 	if (ret != 1) {
-		DEBUG(2,("Unable to find domain from reference '%s' in sam\n", ref_res[0]->dn));
+		DEBUG(2,("Unable to find domain from reference '%s' in sam\n",
+			 ldb_dn_linearize(samctx, ref_res[0]->dn)));
 		return;
 	}
 

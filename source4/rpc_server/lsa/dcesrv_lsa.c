@@ -49,9 +49,9 @@ struct lsa_policy_state {
 	struct ldb_context *sam_ldb;
 	struct sidmap_context *sidmap;
 	uint32_t access_mask;
-	const char *domain_dn;
-	const char *builtin_dn;
-	const char *system_dn;
+	const struct ldb_dn *domain_dn;
+	const struct ldb_dn *builtin_dn;
+	const struct ldb_dn *system_dn;
 	const char *domain_name;
 	struct dom_sid *domain_sid;
 	struct dom_sid *builtin_sid;
@@ -65,7 +65,7 @@ struct lsa_account_state {
 	struct lsa_policy_state *policy;
 	uint32_t access_mask;
 	struct dom_sid *account_sid;
-	const char *account_dn;
+	const struct ldb_dn *account_dn;
 };
 
 
@@ -75,7 +75,7 @@ struct lsa_account_state {
 struct lsa_secret_state {
 	struct lsa_policy_state *policy;
 	uint32_t access_mask;
-	const char *secret_dn;
+	const struct ldb_dn *secret_dn;
 	struct ldb_context *sam_ldb;
 	BOOL global;
 };
@@ -86,7 +86,7 @@ struct lsa_secret_state {
 struct lsa_trusted_domain_state {
 	struct lsa_policy_state *policy;
 	uint32_t access_mask;
-	const char *trusted_domain_dn;
+	const struct ldb_dn *trusted_domain_dn;
 };
 
 /* 
@@ -254,14 +254,14 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 
 	/* work out the domain_dn - useful for so many calls its worth
 	   fetching here */
-	state->domain_dn = talloc_steal(state, samdb_result_string(msgs_domain[0], "nCName", NULL));
+	state->domain_dn = samdb_result_dn(state, msgs_domain[0], "nCName", NULL);
 	if (!state->domain_dn) {
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
 
 	/* work out the builtin_dn - useful for so many calls its worth
 	   fetching here */
-	state->builtin_dn = talloc_steal(state, 
+	state->builtin_dn = ldb_dn_explode(state, 
 					 samdb_search_string(state->sam_ldb, mem_ctx, NULL,
 							     "dn", "objectClass=builtinDomain"));
 	if (!state->builtin_dn) {
@@ -270,7 +270,7 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 
 	/* work out the system_dn - useful for so many calls its worth
 	   fetching here */
-	state->system_dn = talloc_steal(state, 
+	state->system_dn = ldb_dn_explode(state, 
 					samdb_search_string(state->sam_ldb, mem_ctx, state->domain_dn,
 							    "dn", "(&(objectClass=container)(cn=System))"));
 	if (!state->system_dn) {
@@ -279,8 +279,8 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 
 	state->domain_sid = talloc_steal(state, 
 					 samdb_search_dom_sid(state->sam_ldb, state,
-							      state->domain_dn, "objectSid", 
-							      "dn=%s", state->domain_dn));
+							      state->domain_dn, "objectSid", "dn=%s",
+							      ldb_dn_linearize(mem_ctx, state->domain_dn)));
 	if (!state->domain_sid) {
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
@@ -598,12 +598,14 @@ static NTSTATUS lsa_CreateTrustedDomain(struct dcesrv_call_state *dce_call, TALL
 	}
 	
 	if (ret < 0 || ret > 1) {
-		DEBUG(0,("Found %d records matching DN %s\n", ret, policy_state->system_dn));
+		DEBUG(0,("Found %d records matching DN %s\n", ret,
+			 ldb_dn_linearize(mem_ctx, policy_state->system_dn)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	
-	msg->dn = talloc_asprintf(mem_ctx, "cn=%s,%s", r->in.info->name.string, 
-				  policy_state->system_dn);
+	msg->dn = ldb_dn_build_child(mem_ctx, "cn",
+				     r->in.info->name.string, 
+				     policy_state->system_dn);
 	if (!msg->dn) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -627,7 +629,8 @@ static NTSTATUS lsa_CreateTrustedDomain(struct dcesrv_call_state *dce_call, TALL
 	/* create the trusted_domain */
 	ret = samdb_add(trusted_domain_state->policy->sam_ldb, mem_ctx, msg);
 	if (ret != 0) {
-		DEBUG(0,("Failed to create trusted_domain record %s\n", msg->dn));
+		DEBUG(0,("Failed to create trusted_domain record %s\n",
+			 ldb_dn_linearize(mem_ctx, msg->dn)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -690,7 +693,8 @@ static NTSTATUS lsa_OpenTrustedDomain(struct dcesrv_call_state *dce_call, TALLOC
 	}
 	
 	if (ret != 1) {
-		DEBUG(0,("Found %d records matching DN %s\n", ret, policy_state->system_dn));
+		DEBUG(0,("Found %d records matching DN %s\n", ret,
+			 ldb_dn_linearize(mem_ctx, policy_state->system_dn)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -755,7 +759,8 @@ static NTSTATUS lsa_OpenTrustedDomainByName(struct dcesrv_call_state *dce_call,
 	}
 	
 	if (ret != 1) {
-		DEBUG(0,("Found %d records matching DN %s\n", ret, policy_state->system_dn));
+		DEBUG(0,("Found %d records matching DN %s\n", ret,
+			 ldb_dn_linearize(mem_ctx, policy_state->system_dn)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -1300,11 +1305,12 @@ static NTSTATUS lsa_OpenAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	
 	/* check it really exists */
 	astate->account_dn = 
-		samdb_search_string(state->sam_ldb, astate,
-				    NULL, "dn", 
-				    "(&(objectSid=%s)(objectClass=group))", 
-				    ldap_encode_ndr_dom_sid(mem_ctx,
-							    astate->account_sid));
+		ldb_dn_explode(mem_ctx,
+				samdb_search_string(state->sam_ldb, astate,
+						    NULL, "dn", 
+						    "(&(objectSid=%s)(objectClass=group))", 
+						    ldap_encode_ndr_dom_sid(mem_ctx,
+									    astate->account_sid)));
 	if (astate->account_dn == NULL) {
 		talloc_free(astate);
 		return NT_STATUS_NO_SUCH_USER;
@@ -1466,7 +1472,7 @@ static NTSTATUS lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	msg->dn = talloc_strdup(mem_ctx, dn);
+	msg->dn = ldb_dn_explode(mem_ctx, dn);
 	if (msg->dn == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1732,11 +1738,12 @@ static NTSTATUS lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		}
 		
 		if (ret < 0 || ret > 1) {
-			DEBUG(0,("Found %d records matching DN %s\n", ret, policy_state->system_dn));
+			DEBUG(0,("Found %d records matching DN %s\n", ret,
+				 ldb_dn_linearize(mem_ctx, policy_state->system_dn)));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		msg->dn = talloc_asprintf(mem_ctx, "cn=%s,%s", name2, policy_state->system_dn);
+		msg->dn = ldb_dn_build_child(mem_ctx, "cn", name2, policy_state->system_dn);
 		if (!name2 || !msg->dn) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -1753,20 +1760,24 @@ static NTSTATUS lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 		secret_state->sam_ldb = talloc_reference(secret_state, secrets_db_connect(mem_ctx));
 		/* search for the secret record */
-		ret = gendb_search(secret_state->sam_ldb,
-				   mem_ctx, "cn=LSA Secrets", &msgs, attrs,
-				   "(&(cn=%s)(objectclass=secret))", 
-				   name);
+		ret = gendb_search(secret_state->sam_ldb, mem_ctx,
+				   ldb_dn_explode(mem_ctx, "cn=LSA Secrets"),
+				   &msgs, attrs,
+				   "(&(cn=%s)(objectclass=secret))", name);
 		if (ret > 0) {
 			return NT_STATUS_OBJECT_NAME_COLLISION;
 		}
 		
 		if (ret < 0 || ret > 1) {
-			DEBUG(0,("Found %d records matching DN %s\n", ret, policy_state->system_dn));
+			DEBUG(0,("Found %d records matching DN %s\n", ret,
+				 ldb_dn_linearize(mem_ctx, policy_state->system_dn)));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		msg->dn = talloc_asprintf(mem_ctx, "cn=%s,cn=LSA Secrets", name);
+		msg->dn = ldb_dn_build_child(mem_ctx,
+					     "cn", name,
+					     ldb_dn_build_child(mem_ctx,
+								"cn", "LSA Secrets", NULL));
 		samdb_msg_add_string(secret_state->sam_ldb, mem_ctx, msg, "cn", name);
 	} 
 
@@ -1785,7 +1796,8 @@ static NTSTATUS lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	/* create the secret */
 	ret = samdb_add(secret_state->sam_ldb, mem_ctx, msg);
 	if (ret != 0) {
-		DEBUG(0,("Failed to create secret record %s\n", msg->dn));
+		DEBUG(0,("Failed to create secret record %s\n",
+			 ldb_dn_linearize(mem_ctx, msg->dn)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -1858,7 +1870,8 @@ static NTSTATUS lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		}
 		
 		if (ret != 1) {
-			DEBUG(0,("Found %d records matching DN %s\n", ret, policy_state->system_dn));
+			DEBUG(0,("Found %d records matching DN %s\n", ret,
+				 ldb_dn_linearize(mem_ctx, policy_state->system_dn)));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 	
@@ -1872,16 +1885,17 @@ static NTSTATUS lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		}
 
 		/* search for the secret record */
-		ret = gendb_search(secret_state->sam_ldb,
-				   mem_ctx, "cn=LSA Secrets", &msgs, attrs,
-				   "(&(cn=%s)(objectclass=secret))", 
-				   name);
+		ret = gendb_search(secret_state->sam_ldb, mem_ctx,
+				   ldb_dn_explode(mem_ctx, "cn=LSA Secrets"),
+				   &msgs, attrs,
+				   "(&(cn=%s)(objectclass=secret))", name);
 		if (ret == 0) {
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 		
 		if (ret != 1) {
-			DEBUG(0,("Found %d records matching DN %s\n", ret, policy_state->system_dn));
+			DEBUG(0,("Found %d records matching DN %s\n", ret,
+				 ldb_dn_linearize(mem_ctx, policy_state->system_dn)));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 	} 
@@ -2032,7 +2046,8 @@ static NTSTATUS lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 			}
 			
 			if (ret != 1) {
-				DEBUG(0,("Found %d records matching dn=%s\n", ret, secret_state->secret_dn));
+				DEBUG(0,("Found %d records matching dn=%s\n", ret,
+					 ldb_dn_linearize(mem_ctx, secret_state->secret_dn)));
 				return NT_STATUS_INTERNAL_DB_CORRUPTION;
 			}
 

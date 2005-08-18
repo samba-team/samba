@@ -100,16 +100,15 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	msg = ldb_msg_new(mem_ctx);
+	msg = ldb_msg_new(ldb);
 	if (msg == NULL) {
 		talloc_free(ldb);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	msg->dn = talloc_asprintf(msg, "computerName=%s", creds->computer_name);
+	msg->dn = ldb_dn_build_child(msg, "computerName", creds->computer_name, NULL);
 	if (msg->dn == NULL) {
 		talloc_free(ldb);
-		talloc_free(msg);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -134,13 +133,11 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 
 	if (ret != 0) {
 		DEBUG(0,("Unable to add %s to session key db - %s\n", 
-			 msg->dn, ldb_errstring(ldb)));
+			 ldb_dn_linearize(msg, msg->dn), ldb_errstring(ldb)));
 		talloc_free(ldb);
-		talloc_free(msg);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	talloc_free(msg);
 	talloc_free(ldb);
 
 	return NT_STATUS_OK;

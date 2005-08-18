@@ -60,11 +60,11 @@ struct ldb_context *ldbsearch_ldb;
 static int do_compare_msg(struct ldb_message **el1,
 			  struct ldb_message **el2)
 {
-	return ldb_dn_cmp(ldbsearch_ldb, (*el1)->dn, (*el2)->dn);
+	return ldb_dn_compare(ldbsearch_ldb, (*el1)->dn, (*el2)->dn);
 }
 
 static int do_search(struct ldb_context *ldb,
-		     const char *basedn,
+		     const struct ldb_dn *basedn,
 		     int scope,
                      int sort_attribs,
 		     const char *expression,
@@ -120,6 +120,7 @@ static int do_search(struct ldb_context *ldb,
  int main(int argc, const char **argv)
 {
 	struct ldb_context *ldb;
+	struct ldb_dn *basedn = NULL;
 	const char * const * attrs = NULL;
 	struct ldb_cmdline *options;
 	int ret = -1;
@@ -142,16 +143,24 @@ static int do_search(struct ldb_context *ldb,
 		attrs = (const char * const *)(options->argv);
 	}
 
+	if (options->basedn != NULL) {
+		basedn = ldb_dn_explode(ldb, options->basedn);
+		if (basedn == NULL) {
+			fprintf(stderr, "Invalid Base DN format\n");
+			exit(1);
+		}
+	}
+
 	if (options->interactive) {
 		char line[1024];
 		while (fgets(line, sizeof(line), stdin)) {
-			if (do_search(ldb, options->basedn, 
+			if (do_search(ldb, basedn, 
 				      options->scope, options->sorted, line, attrs) == -1) {
 				ret = -1;
 			}
 		}
 	} else {
-		ret = do_search(ldb, options->basedn, options->scope, options->sorted, 
+		ret = do_search(ldb, basedn, options->scope, options->sorted, 
 				expression, attrs);
 	}
 

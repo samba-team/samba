@@ -45,14 +45,14 @@ static struct ldb_context *sptr_db_connect(TALLOC_CTX *mem_ctx)
 
 static int sptr_db_search(struct ldb_context *ldb,
 			  TALLOC_CTX *mem_ctx,
-			  const char *basedn,
+			  const struct ldb_dn *basedn,
 			  struct ldb_message ***res,
 			  const char * const *attrs,
 			  const char *format, ...) PRINTF_ATTRIBUTE(6,7);
 
 static int sptr_db_search(struct ldb_context *ldb,
 			  TALLOC_CTX *mem_ctx,
-			  const char *basedn,
+			  const struct ldb_dn *basedn,
 			  struct ldb_message ***res,
 			  const char * const *attrs,
 			  const char *format, ...)
@@ -222,8 +222,9 @@ static WERROR sptr_EnumPrintServerForms(struct ntptr_GenericHandle *server, TALL
 	int i;
 	union spoolss_FormInfo *info;
 
-	count = sptr_db_search(sptr_db, mem_ctx, "CN=Forms,CN=PrintServer", &msgs, NULL,
-			       "(&(objectClass=form))");
+	count = sptr_db_search(sptr_db, mem_ctx,
+				ldb_dn_explode(mem_ctx, "CN=Forms,CN=PrintServer"),
+				&msgs, NULL, "(&(objectClass=form))");
 
 	if (count == 0) return WERR_OK;
 	if (count < 0) return WERR_GENERAL_FAILURE;
@@ -276,8 +277,9 @@ static WERROR sptr_AddPrintServerForm(struct ntptr_GenericHandle *server, TALLOC
 		if (!r->in.info.info1) {
 			return WERR_FOOBAR;
 		}
-		count = sptr_db_search(sptr_db, mem_ctx, "CN=Forms,CN=PrintServer", &msgs, attrs,
-				       "(&(form-name=%s)(objectClass=form))",
+		count = sptr_db_search(sptr_db, mem_ctx,
+				       ldb_dn_explode(mem_ctx, "CN=Forms,CN=PrintServer"),
+				       &msgs, attrs, "(&(form-name=%s)(objectClass=form))",
 				       r->in.info.info1->form_name);
 
 		if (count == 1) return WERR_FOOBAR;
@@ -292,8 +294,9 @@ static WERROR sptr_AddPrintServerForm(struct ntptr_GenericHandle *server, TALLOC
 		W_ERROR_HAVE_NO_MEMORY(msg);
 
 		/* add core elements to the ldb_message for the Form */
-		msg->dn = talloc_asprintf(msg, "form-name=%s,CN=Forms,CN=PrintServer",
-						r->in.info.info1->form_name);
+		msg->dn = ldb_dn_build_child(msg,
+					     "form-name", r->in.info.info1->form_name,
+					     ldb_dn_explode(msg, "CN=Forms,CN=PrintServer"));
 		SET_STRING(sptr_db, msg, "objectClass", "form");
 
 		SET_UINT(sptr_db, msg, "flags", r->in.info.info1->flags);
@@ -341,8 +344,9 @@ static WERROR sptr_SetPrintServerForm(struct ntptr_GenericHandle *server, TALLOC
 			return WERR_FOOBAR;
 		}
 
-		count = sptr_db_search(sptr_db, mem_ctx, "CN=Forms,CN=PrintServer", &msgs, attrs,
-				       "(&(form-name=%s)(objectClass=form))",
+		count = sptr_db_search(sptr_db, mem_ctx,
+				       ldb_dn_explode(mem_ctx, "CN=Forms,CN=PrintServer"),
+				       &msgs, attrs, "(&(form-name=%s)(objectClass=form))",
 				       r->in.info.info1->form_name);
 
 		if (count == 0) return WERR_FOOBAR;
@@ -403,8 +407,9 @@ static WERROR sptr_DeletePrintServerForm(struct ntptr_GenericHandle *server, TAL
 		return WERR_FOOBAR;
 	}
 
-	count = sptr_db_search(sptr_db, mem_ctx, "CN=Forms,CN=PrintServer", &msgs, attrs,
-			       "(&(form-name=%s)(objectclass=form))",
+	count = sptr_db_search(sptr_db, mem_ctx,
+			       ldb_dn_explode(mem_ctx, "CN=Forms,CN=PrintServer"),
+			       &msgs, attrs, "(&(form-name=%s)(objectclass=form))",
 			       r->in.form_name);
 
 	if (count == 0) return WERR_FOOBAR;
@@ -695,7 +700,7 @@ static WERROR sptr_GetPrinterForm(struct ntptr_GenericHandle *printer, TALLOC_CT
 {
 	struct ldb_context *sptr_db = talloc_get_type(printer->ntptr->private_data, struct ldb_context);
 	struct ldb_message **msgs;
-	const char *base_dn;
+	const struct ldb_dn *base_dn;
 	int count;
 	union spoolss_FormInfo *info;
 
@@ -705,7 +710,11 @@ static WERROR sptr_GetPrinterForm(struct ntptr_GenericHandle *printer, TALLOC_CT
 	 * }
 	 */
 
-	base_dn = talloc_asprintf(mem_ctx, "CN=Forms,CN=%s,CN=Printers", printer->object_name);
+	base_dn = ldb_dn_compose_string_dn(mem_ctx,
+					   "CN=Forms",
+					   ldb_dn_build_child(mem_ctx,
+							      "CN", printer->object_name,
+							      ldb_dn_explode(mem_ctx, "CN=Printers")));
 	W_ERROR_HAVE_NO_MEMORY(base_dn);
 
 	count = sptr_db_search(sptr_db, mem_ctx, base_dn, &msgs, NULL,

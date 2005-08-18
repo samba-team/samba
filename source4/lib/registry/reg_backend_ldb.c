@@ -25,7 +25,7 @@
 
 struct ldb_key_data 
 {
-	const char *dn;
+	const struct ldb_dn *dn;
 	struct ldb_message **subkeys, **values;
 	int subkey_count, value_count;
 };
@@ -113,39 +113,34 @@ static int reg_close_ldb_key (void *data)
 	return 0;
 }
 
-static char *reg_path_to_ldb(TALLOC_CTX *mem_ctx, struct registry_key *from, const char *path, const char *add)
+static struct ldb_dn *reg_path_to_ldb(TALLOC_CTX *mem_ctx, struct registry_key *from, const char *path, const char *add)
 {
-	char *ret = talloc_strdup(mem_ctx, "");
+	TALLOC_CTX *local_ctx;
+	struct ldb_dn *ret = ldb_dn_new(mem_ctx);
 	char *mypath = talloc_strdup(mem_ctx, path);
 	char *begin;
 	struct ldb_key_data *kd = from->backend_data;
 
-	if(add) 
-		ret = talloc_asprintf_append(ret, "%s", add);
+	local_ctx = talloc_named(mem_ctx, 0, "reg_path_to_ldb context");
+
+	if (add) 
+		ret = ldb_dn_compose(local_ctx, ret, ldb_dn_explode(mem_ctx, add));
 
 	while(mypath) {
 		char *keyname;
-		struct ldb_val val;
-		char *key;
 
 		begin = strrchr(mypath, '\\');
 
 		if (begin) keyname = begin + 1;
 		else keyname = mypath;
 
-		val.data = keyname;
-		val.length = strlen(keyname);
-		
-		key = ldb_dn_escape_value(mem_ctx, val);
-		if (key == NULL) {
-			return NULL;
+		if(strlen(keyname)) {
+			struct ldb_dn *base;
+
+			base = ldb_dn_build_child(local_ctx, "key", keyname, NULL);
+			ret = ldb_dn_compose(local_ctx, ret, base);
 		}
 
-		if (strlen(key))
-			ret = talloc_asprintf_append(ret, "key=%s,", key);
-
-		talloc_free(key);
-			
 		if(begin) {
 			*begin = '\0';
 		} else {
@@ -153,7 +148,7 @@ static char *reg_path_to_ldb(TALLOC_CTX *mem_ctx, struct registry_key *from, con
 		}
 	}
 
-	ret = talloc_asprintf_append(ret, "%s", kd->dn);
+	ret = ldb_dn_compose(local_ctx, ret, kd->dn);
 
 	return ret;
 }
@@ -170,7 +165,7 @@ static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, 
 		kd->subkey_count = ldb_search(c, kd->dn, LDB_SCOPE_ONELEVEL, "(key=*)", NULL, &kd->subkeys);
 
 		if(kd->subkey_count < 0) {
-			DEBUG(0, ("Error getting subkeys for '%s': %s\n", kd->dn, ldb_errstring(c)));
+			DEBUG(0, ("Error getting subkeys for '%s': %s\n", ldb_dn_linearize(mem_ctx, kd->dn), ldb_errstring(c)));
 			return WERR_FOOBAR;
 		}
 	} 
@@ -185,7 +180,7 @@ static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, 
 	(*subkey)->backend_data = newkd = talloc_zero(*subkey, struct ldb_key_data);
 	(*subkey)->last_mod = 0; /* TODO: we need to add this to the
 				    ldb backend properly */
-	newkd->dn = talloc_strdup(mem_ctx, kd->subkeys[idx]->dn);
+	newkd->dn = ldb_dn_copy(mem_ctx, kd->subkeys[idx]->dn);
 
 	return WERR_OK;
 }
@@ -200,7 +195,7 @@ static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, i
 		kd->value_count = ldb_search(c, kd->dn, LDB_SCOPE_ONELEVEL, "(value=*)", NULL,&kd->values);
 
 		if(kd->value_count < 0) {
-			DEBUG(0, ("Error getting values for '%s': %s\n", kd->dn, ldb_errstring(c)));
+			DEBUG(0, ("Error getting values for '%s': %s\n", ldb_dn_linearize(mem_ctx, kd->dn), ldb_errstring(c)));
 			return WERR_FOOBAR;
 		}
 	}
@@ -218,18 +213,18 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, struct registry_key *h, const ch
 {
 	struct ldb_context *c = h->hive->backend_data;
 	struct ldb_message **msg;
-	char *ldap_path;
+	struct ldb_dn *ldap_path;
 	int ret;
 	struct ldb_key_data *newkd;
 
 	ldap_path = reg_path_to_ldb(mem_ctx, h, name, NULL);
 
-	ret = ldb_search(c, ldap_path, LDB_SCOPE_BASE, "(key=*)", NULL,&msg);
+	ret = ldb_search(c, ldap_path, LDB_SCOPE_BASE, "(key=*)", NULL, &msg);
 
 	if(ret == 0) {
 		return WERR_BADFILE;
 	} else if(ret < 0) {
-		DEBUG(0, ("Error opening key '%s': %s\n", ldap_path, ldb_errstring(c)));
+		DEBUG(0, ("Error opening key '%s': %s\n", ldb_dn_linearize(ldap_path, ldap_path), ldb_errstring(c)));
 		return WERR_FOOBAR;
 	}
 
@@ -237,7 +232,7 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, struct registry_key *h, const ch
 	talloc_set_destructor(*key, reg_close_ldb_key);
 	(*key)->name = talloc_strdup(mem_ctx, strrchr(name, '\\')?strchr(name, '\\'):name);
 	(*key)->backend_data = newkd = talloc_zero(*key, struct ldb_key_data);
-	newkd->dn = talloc_strdup(mem_ctx, msg[0]->dn); 
+	newkd->dn = ldb_dn_copy(mem_ctx, msg[0]->dn); 
 
 	talloc_free(msg);
 
@@ -265,7 +260,7 @@ static WERROR ldb_open_hive(struct registry_hive *hive, struct registry_key **k)
 	talloc_set_destructor (hive, ldb_free_hive);
 	(*k)->name = talloc_strdup(*k, "");
 	(*k)->backend_data = kd = talloc_zero(*k, struct ldb_key_data);
-	kd->dn = talloc_strdup(*k, "hive=NONE");
+	kd->dn = ldb_dn_explode(*k, "hive=NONE");
 	
 
 	return WERR_OK;
@@ -303,11 +298,12 @@ static WERROR ldb_del_key (struct registry_key *key, const char *child)
 {
 	int ret;
 	struct ldb_key_data *kd = key->backend_data;
-	char *childdn = talloc_asprintf(NULL, "key=%s,%s", child, kd->dn);
+	TALLOC_CTX *local_ctx = talloc_named(NULL, 0, "ldb_del_key mem ctx");
+	struct ldb_dn *childdn = ldb_dn_build_child(local_ctx, "key", child, kd->dn);
 
 	ret = ldb_delete(key->hive->backend_data, childdn);
 
-	talloc_free(childdn);
+	talloc_free(local_ctx);
 
 	if (ret < 0) {
 		DEBUG(1, ("ldb_del_key: %s\n", ldb_errstring(key->hive->backend_data)));
@@ -321,11 +317,12 @@ static WERROR ldb_del_value (struct registry_key *key, const char *child)
 {
 	int ret;
 	struct ldb_key_data *kd = key->backend_data;
-	char *childdn = talloc_asprintf(NULL, "value=%s,%s", child, kd->dn);
+	TALLOC_CTX *local_ctx = talloc_named(NULL, 0, "ldb_del_value mem ctx");
+	struct ldb_dn *childdn = ldb_dn_build_child(local_ctx, "value", child, kd->dn);
 
 	ret = ldb_delete(key->hive->backend_data, childdn);
 
-	talloc_free(childdn);
+	talloc_free(local_ctx);
 
 	if (ret < 0) {
 		DEBUG(1, ("ldb_del_value: %s\n", ldb_errstring(key->hive->backend_data)));
@@ -345,7 +342,7 @@ static WERROR ldb_set_value (struct registry_key *parent, const char *name, uint
 
 	msg = reg_ldb_pack_value(ctx, mem_ctx, name, type, data, len);
 
-	msg->dn = talloc_asprintf(mem_ctx, "value=%s,%s", name, kd->dn);
+	msg->dn = ldb_dn_build_child(msg, "value", name, kd->dn);
 
 	ret = ldb_add(ctx, msg);
 	if (ret < 0) {

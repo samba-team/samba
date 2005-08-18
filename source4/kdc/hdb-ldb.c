@@ -447,7 +447,7 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 					    TALLOC_CTX *mem_ctx,
 					    krb5_const_principal principal,
 					    enum hdb_ldb_ent_type ent_type,
-					    const char *realm_dn,
+					    const struct ldb_dn *realm_dn,
 					    struct ldb_message ***pmsg)
 {
 	krb5_error_code ret;
@@ -459,6 +459,8 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 	char *princ_str;
 	char *princ_str_talloc;
 	char *short_princ;
+
+	char *realm_dn_str;
 
 	struct ldb_message **msg = NULL;
 
@@ -520,18 +522,20 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 	count = ldb_search(ldb_ctx, realm_dn, LDB_SCOPE_SUBTREE, filter, 
 			   princ_attrs, &msg);
 
+	realm_dn_str = ldb_dn_linearize(mem_ctx, realm_dn);
+
 	if (count < 1) {
 		krb5_warnx(context, "ldb_search: basedn: '%s' filter: '%s' failed: %d", 
-			   realm_dn, filter, count);
+			   realm_dn_str, filter, count);
 		krb5_set_error_string(context, "ldb_search: basedn: '%s' filter: '%s' failed: %d", 
-				      realm_dn, filter, count);
+				      realm_dn_str, filter, count);
 		return HDB_ERR_NOENTRY;
 	} else if (count > 1) {
 		talloc_free(msg);
 		krb5_warnx(context, "ldb_search: basedn: '%s' filter: '%s' more than 1 entry: %d", 
-			   realm_dn, filter, count);
+			   realm_dn_str, filter, count);
 		krb5_set_error_string(context, "ldb_search: basedn: '%s' filter: '%s' more than 1 entry: %d", 
-				      realm_dn, filter, count);
+				      realm_dn_str, filter, count);
 		return HDB_ERR_NOENTRY;
 	}
 	*pmsg = talloc_steal(mem_ctx, msg);
@@ -544,7 +548,8 @@ static krb5_error_code LDB_lookup_realm(krb5_context context, struct ldb_context
 					struct ldb_message ***pmsg)
 {
 	int count;
-	const char *realm_dn;
+	struct ldb_dn *realm_dn;
+	const char *realm_dn_str;
 	char *cross_ref_filter;
 	struct ldb_message **cross_ref_msg;
 	struct ldb_message **msg;
@@ -585,7 +590,8 @@ static krb5_error_code LDB_lookup_realm(krb5_context context, struct ldb_context
 		return HDB_ERR_NOENTRY;
 	}
 
-	realm_dn = ldb_msg_find_string(cross_ref_msg[0], "nCName", NULL);
+	realm_dn_str = ldb_msg_find_string(cross_ref_msg[0], "nCName", NULL);
+	realm_dn = ldb_dn_explode(mem_ctx, realm_dn_str);
 
 	count = ldb_search(ldb_ctx, realm_dn, LDB_SCOPE_BASE, "(objectClass=domain)",
 			   realm_attrs, &msg);
@@ -596,12 +602,12 @@ static krb5_error_code LDB_lookup_realm(krb5_context context, struct ldb_context
 	}
 
 	if (count < 1) {
-		krb5_warnx(context, "ldb_search: dn: %s not found: %d", realm_dn, count);
-		krb5_set_error_string(context, "ldb_search: dn: %s not found: %d", realm_dn, count);
+		krb5_warnx(context, "ldb_search: dn: %s not found: %d", realm_dn_str, count);
+		krb5_set_error_string(context, "ldb_search: dn: %s not found: %d", realm_dn_str, count);
 		return HDB_ERR_NOENTRY;
 	} else if (count > 1) {
-		krb5_warnx(context, "ldb_search: dn: '%s' more than 1 entry: %d", realm_dn, count);
-		krb5_set_error_string(context, "ldb_search: dn: %s more than 1 entry: %d", realm_dn, count);
+		krb5_warnx(context, "ldb_search: dn: '%s' more than 1 entry: %d", realm_dn_str, count);
+		krb5_set_error_string(context, "ldb_search: dn: %s more than 1 entry: %d", realm_dn_str, count);
 		return HDB_ERR_NOENTRY;
 	}
 
@@ -610,7 +616,7 @@ static krb5_error_code LDB_lookup_realm(krb5_context context, struct ldb_context
 
 static krb5_error_code LDB_lookup_spn_alias(krb5_context context, struct ldb_context *ldb_ctx, 
 					    TALLOC_CTX *mem_ctx,
-					    const char *realm_dn,
+					    const struct ldb_dn *realm_dn,
 					    const char *alias_from,
 					    char **alias_to)
 {
@@ -618,9 +624,11 @@ static krb5_error_code LDB_lookup_spn_alias(krb5_context context, struct ldb_con
 	int count;
 	struct ldb_message **msg;
 	struct ldb_message_element *spnmappings;
-	char *service_dn = talloc_asprintf(mem_ctx, 
-					   "CN=Directory Service,CN=Windows NT,CN=Services,CN=Configuration,%s", 
-					   realm_dn);
+	struct ldb_dn *service_dn = ldb_dn_compose_string_dn(mem_ctx,
+						"CN=Directory Service,CN=Windows NT"
+						",CN=Services,CN=Configuration", 
+						realm_dn);
+	char *service_dn_str = ldb_dn_linearize(mem_ctx, service_dn);
 	const char *directory_attrs[] = {
 		"sPNMappings", 
 		NULL
@@ -631,19 +639,19 @@ static krb5_error_code LDB_lookup_spn_alias(krb5_context context, struct ldb_con
 	talloc_steal(mem_ctx, msg);
 
 	if (count < 1) {
-		krb5_warnx(context, "ldb_search: dn: %s not found: %d", service_dn, count);
-		krb5_set_error_string(context, "ldb_search: dn: %s not found: %d", service_dn, count);
+		krb5_warnx(context, "ldb_search: dn: %s not found: %d", service_dn_str, count);
+		krb5_set_error_string(context, "ldb_search: dn: %s not found: %d", service_dn_str, count);
 		return HDB_ERR_NOENTRY;
 	} else if (count > 1) {
-		krb5_warnx(context, "ldb_search: dn: %s found %d times!", service_dn, count);
-		krb5_set_error_string(context, "ldb_search: dn: %s found %d times!", service_dn, count);
+		krb5_warnx(context, "ldb_search: dn: %s found %d times!", service_dn_str, count);
+		krb5_set_error_string(context, "ldb_search: dn: %s found %d times!", service_dn_str, count);
 		return HDB_ERR_NOENTRY;
 	}
 	
 	spnmappings = ldb_msg_find_element(msg[0], "sPNMappings");
 	if (!spnmappings || spnmappings->num_values == 0) {
-		krb5_warnx(context, "ldb_search: dn: %s no sPNMappings attribute", service_dn);
-		krb5_set_error_string(context, "ldb_search: dn: %s no sPNMappings attribute", service_dn);
+		krb5_warnx(context, "ldb_search: dn: %s no sPNMappings attribute", service_dn_str);
+		krb5_set_error_string(context, "ldb_search: dn: %s no sPNMappings attribute", service_dn_str);
 		return HDB_ERR_NOENTRY;
 	}
 
@@ -652,8 +660,8 @@ static krb5_error_code LDB_lookup_spn_alias(krb5_context context, struct ldb_con
 		mapping = talloc_strdup(mem_ctx, 
 					(const char *)spnmappings->values[i].data);
 		if (!mapping) {
-			krb5_warnx(context, "LDB_lookup_spn_alias: ldb_search: dn: %s did not have an sPNMapping", service_dn);
-			krb5_set_error_string(context, "LDB_lookup_spn_alias: ldb_search: dn: %s did not have an sPNMapping", service_dn);
+			krb5_warnx(context, "LDB_lookup_spn_alias: ldb_search: dn: %s did not have an sPNMapping", service_dn_str);
+			krb5_set_error_string(context, "LDB_lookup_spn_alias: ldb_search: dn: %s did not have an sPNMapping", service_dn_str);
 			return HDB_ERR_NOENTRY;
 		}
 		
@@ -662,9 +670,9 @@ static krb5_error_code LDB_lookup_spn_alias(krb5_context context, struct ldb_con
 		p = strchr(mapping, '=');
 		if (!p) {
 			krb5_warnx(context, "ldb_search: dn: %s sPNMapping malformed: %s", 
-				   service_dn, mapping);
+				   service_dn_str, mapping);
 			krb5_set_error_string(context, "ldb_search: dn: %s sPNMapping malformed: %s", 
-					      service_dn, mapping);
+					      service_dn_str, mapping);
 			return HDB_ERR_NOENTRY;
 		}
 		p[0] = '\0';
@@ -729,7 +737,7 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db, unsigned flags,
 	krb5_error_code ret;
 
 	const char *realm;
-	const char *realm_dn;
+	const struct ldb_dn *realm_dn;
 	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "LDB_fetch context");
 
 	if (!mem_ctx) {
@@ -927,7 +935,7 @@ static krb5_error_code LDB_firstkey(krb5_context context, HDB *db, unsigned flag
 	struct ldb_context *ldb_ctx = (struct ldb_context *)db->hdb_db;
 	struct hdb_ldb_seq *priv = (struct hdb_ldb_seq *)db->hdb_openp;
 	char *realm;
-	char *realm_dn = NULL;
+	struct ldb_dn *realm_dn = NULL;
 	struct ldb_message **msgs = NULL;
 	struct ldb_message **realm_msgs = NULL;
 	krb5_error_code ret;

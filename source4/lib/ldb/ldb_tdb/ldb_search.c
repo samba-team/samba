@@ -94,7 +94,7 @@ static int msg_add_all_elements(struct ldb_module *module, struct ldb_message *r
 	for (i=0;i<msg->num_elements;i++) {
 		const struct ldb_attrib_handler *h;
 		h = ldb_attrib_handler(ldb, msg->elements[i].name);
-		if ((msg->dn[0] != '@') && (h->flags & LDB_ATTR_FLAG_HIDDEN)) {
+		if (ldb_dn_is_special(msg->dn) && (h->flags & LDB_ATTR_FLAG_HIDDEN)) {
 			continue;
 		}
 		if (msg_add_element(ldb, ret, &msg->elements[i]) != 0) {
@@ -122,7 +122,7 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
 		return NULL;
 	}
 
-	ret->dn = talloc_strdup(ret, msg->dn);
+	ret->dn = ldb_dn_copy(ret, msg->dn);
 	if (!ret->dn) {
 		talloc_free(ret);
 		return NULL;
@@ -163,8 +163,8 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
 			}
 			el2.num_values = 1;
 			el2.values = &val;
-			val.data = ret->dn;
-			val.length = strlen(ret->dn);
+			val.data = ldb_dn_linearize(ret, ret->dn);
+			val.length = strlen(val.data);
 
 			if (msg_add_element(ldb, ret, &el2) != 0) {
 				talloc_free(ret);
@@ -194,7 +194,7 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
 
   return 1 on success, 0 on record-not-found and -1 on error
 */
-int ltdb_search_dn1(struct ldb_module *module, const char *dn, struct ldb_message *msg)
+int ltdb_search_dn1(struct ldb_module *module, const struct ldb_dn *dn, struct ldb_message *msg)
 {
 	struct ltdb_private *ltdb = module->private_data;
 	int ret;
@@ -231,7 +231,7 @@ int ltdb_search_dn1(struct ldb_module *module, const char *dn, struct ldb_messag
 	}
 
 	if (!msg->dn) {
-		msg->dn = talloc_strdup(tdb_data2.dptr, dn);
+		msg->dn = ldb_dn_copy(tdb_data2.dptr, dn);
 	}
 	if (!msg->dn) {
 		talloc_free(tdb_data2.dptr);
@@ -245,7 +245,7 @@ int ltdb_search_dn1(struct ldb_module *module, const char *dn, struct ldb_messag
 /*
   search the database for a single simple dn
 */
-static int ltdb_search_dn(struct ldb_module *module, const char *dn,
+static int ltdb_search_dn(struct ldb_module *module, const struct ldb_dn *dn,
 			  const char * const attrs[], struct ldb_message ***res)
 {
 	struct ldb_context *ldb = module->ldb;
@@ -347,7 +347,7 @@ int ltdb_add_attr_results(struct ldb_module *module, struct ldb_message *msg,
 struct ltdb_search_info {
 	struct ldb_module *module;
 	struct ldb_parse_tree *tree;
-	const char *base;
+	const struct ldb_dn *base;
 	enum ldb_scope scope;
 	const char * const *attrs;
 	struct ldb_message **msgs;
@@ -384,7 +384,11 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	}
 
 	if (!msg->dn) {
-		msg->dn = key.dptr + 3;
+		msg->dn = ldb_dn_explode(msg, key.dptr + 3);
+		if (msg->dn == NULL) {
+			talloc_free(msg);
+			return -1;
+		}
 	}
 
 	/* see if it matches the given expression */
@@ -411,7 +415,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
   this is the "full search" non-indexed variant
 */
 static int ltdb_search_full(struct ldb_module *module, 
-			    const char *base,
+			    const struct ldb_dn *base,
 			    enum ldb_scope scope,
 			    struct ldb_parse_tree *tree,
 			    const char * const attrs[], struct ldb_message ***res)
@@ -454,7 +458,7 @@ static int ltdb_search_full(struct ldb_module *module,
   search the database with a LDAP-like expression.
   choses a search method
 */
-int ltdb_search_bytree(struct ldb_module *module, const char *base,
+int ltdb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 		       enum ldb_scope scope, struct ldb_parse_tree *tree,
 		       const char * const attrs[], struct ldb_message ***res)
 {
@@ -466,7 +470,14 @@ int ltdb_search_bytree(struct ldb_module *module, const char *base,
 	if (tree->operation == LDB_OP_EQUALITY &&
 	    (ldb_attr_cmp(tree->u.equality.attr, "dn") == 0 ||
 	     ldb_attr_cmp(tree->u.equality.attr, "distinguishedName") == 0)) {
-		return ltdb_search_dn(module, tree->u.equality.value.data, attrs, res);
+		struct ldb_dn *dn;
+		dn = ldb_dn_explode(module->ldb, tree->u.equality.value.data);
+		if (dn == NULL) {
+			return -1;
+		}
+		ret = ltdb_search_dn(module, dn, attrs, res);
+		talloc_free(dn);
+		return ret;
 	}
 
 	if (ltdb_lock_read(module) != 0) {
@@ -497,7 +508,7 @@ int ltdb_search_bytree(struct ldb_module *module, const char *base,
   search the database with a LDAP-like expression.
   choses a search method
 */
-int ltdb_search(struct ldb_module *module, const char *base,
+int ltdb_search(struct ldb_module *module, const struct ldb_dn *base,
 		enum ldb_scope scope, const char *expression,
 		const char * const attrs[], struct ldb_message ***res)
 {
