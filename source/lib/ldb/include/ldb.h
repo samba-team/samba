@@ -349,12 +349,8 @@ int ldb_attrib_add_handlers(struct ldb_context *ldb,
 
 /* The following definitions come from lib/ldb/common/ldb_dn.c  */
 
-#ifndef BOOL
-typedef int BOOL;
-#endif
-
-BOOL ldb_dn_is_special(const struct ldb_dn *dn);
-BOOL ldb_dn_check_special(const struct ldb_dn *dn, const char *check);
+int ldb_dn_is_special(const struct ldb_dn *dn);
+int ldb_dn_check_special(const struct ldb_dn *dn, const char *check);
 char *ldb_dn_escape_value(void *mem_ctx, struct ldb_val value);
 struct ldb_dn *ldb_dn_new(void *mem_ctx);
 struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn);
