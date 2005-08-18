@@ -710,11 +710,7 @@ static WERROR sptr_GetPrinterForm(struct ntptr_GenericHandle *printer, TALLOC_CT
 	 * }
 	 */
 
-	base_dn = ldb_dn_compose_string_dn(mem_ctx,
-					   "CN=Forms",
-					   ldb_dn_build_child(mem_ctx,
-							      "CN", printer->object_name,
-							      ldb_dn_explode(mem_ctx, "CN=Printers")));
+	base_dn = ldb_dn_string_compose(mem_ctx, NULL, "CN=Forms, CN=%s, CN=Printers", printer->object_name);
 	W_ERROR_HAVE_NO_MEMORY(base_dn);
 
 	count = sptr_db_search(sptr_db, mem_ctx, base_dn, &msgs, NULL,
