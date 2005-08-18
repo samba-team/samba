@@ -214,7 +214,7 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, struct registry_key *h, const ch
 	ret = ldb_search(c, ldap_path, LDB_SCOPE_BASE, "(key=*)", NULL,&msg);
 
 	if(ret == 0) {
-		return WERR_NO_MORE_ITEMS;
+		return WERR_BADFILE;
 	} else if(ret < 0) {
 		DEBUG(0, ("Error opening key '%s': %s\n", ldap_path, ldb_errstring(c)));
 		return WERR_FOOBAR;
