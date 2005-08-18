@@ -50,6 +50,7 @@ struct ndr_pull *ndr_pull_init_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 
 	ndr = talloc_zero(mem_ctx, struct ndr_pull);
 	if (!ndr) return NULL;
+	ndr->current_mem_ctx = mem_ctx;
 
 	ndr->data = blob->data;
 	ndr->data_size = blob->length;
@@ -359,6 +360,7 @@ NTSTATUS ndr_pull_subcontext_start(struct ndr_pull *ndr,
 	subndr = talloc_zero(ndr, struct ndr_pull);
 	NT_STATUS_HAVE_NO_MEMORY(subndr);
 	subndr->flags		= ndr->flags;
+	subndr->current_mem_ctx	= ndr->current_mem_ctx;
 
 	subndr->data = ndr->data + ndr->offset;
 	subndr->offset = 0;
