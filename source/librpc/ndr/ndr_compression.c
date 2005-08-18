@@ -105,6 +105,7 @@ static NTSTATUS ndr_pull_compression_mszip(struct ndr_pull *subndr,
 	comndr = talloc_zero(subndr, struct ndr_pull);
 	NT_STATUS_HAVE_NO_MEMORY(comndr);
 	comndr->flags		= subndr->flags;
+	comndr->current_mem_ctx	= subndr->current_mem_ctx;
 
 	comndr->data		= uncompressed.data;
 	comndr->data_size	= uncompressed.length;

@@ -836,6 +836,59 @@ sub CalcNdrFlags($$$)
 	return undef;
 }
 
+sub ParseMemCtxPullStart($$$)
+{
+	my $e = shift;
+	my $l = shift;
+	my $ptr_name = shift;
+
+	my $mem_r_ctx = "_mem_save_$e->{NAME}_$l->{LEVEL_INDEX}";
+	my $mem_c_ctx = $ptr_name;
+	my $mem_c_flags = "0";
+
+	return if ($l->{TYPE} eq "ARRAY" and $l->{IS_FIXED});
+
+	if (($l->{TYPE} eq "POINTER") and ($l->{POINTER_TYPE} eq "ref")) {
+		my $nl = GetNextLevel($e, $l);
+		my $next_is_array = ($nl->{TYPE} eq "ARRAY");
+		my $next_is_string = (($nl->{TYPE} eq "DATA") and 
+					($nl->{DATA_TYPE} eq "string"));
+		if ($next_is_array or $next_is_string) {
+			return;
+		} else {
+			$mem_c_flags = "LIBNDR_FLAG_REF_ALLOC";
+		}
+	}
+
+	pidl "$mem_r_ctx = NDR_PULL_GET_MEM_CTX(ndr);";
+	pidl "NDR_PULL_SET_MEM_CTX(ndr, $mem_c_ctx, $mem_c_flags);";
+}
+
+sub ParseMemCtxPullEnd($$)
+{
+	my $e = shift;
+	my $l = shift;
+
+	my $mem_r_ctx = "_mem_save_$e->{NAME}_$l->{LEVEL_INDEX}";
+	my $mem_r_flags = "0";
+
+	return if ($l->{TYPE} eq "ARRAY" and $l->{IS_FIXED});
+
+	if (($l->{TYPE} eq "POINTER") and ($l->{POINTER_TYPE} eq "ref")) {
+		my $nl = GetNextLevel($e, $l);
+		my $next_is_array = ($nl->{TYPE} eq "ARRAY");
+		my $next_is_string = (($nl->{TYPE} eq "DATA") and 
+					($nl->{DATA_TYPE} eq "string"));
+		if ($next_is_array or $next_is_string) {
+			return;
+		} else {
+			$mem_r_flags = "LIBNDR_FLAG_REF_ALLOC";
+		}
+	}
+
+	pidl "NDR_PULL_SET_MEM_CTX(ndr, $mem_r_ctx, $mem_r_flags);";
+}
+
 sub ParseElementPullLevel
 {
 	my($e,$l,$ndr,$var_name,$env,$primitives,$deferred) = @_;
@@ -890,8 +943,12 @@ sub ParseElementPullLevel
 			}
 		}
 
+		ParseMemCtxPullStart($e,$l, $var_name);
+
 		$var_name = get_value_of($var_name);
 		ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, 1, 1);
+
+		ParseMemCtxPullEnd($e,$l);
 
 		if ($l->{POINTER_TYPE} ne "ref") {
     			if ($l->{POINTER_TYPE} eq "relative") {
@@ -904,8 +961,11 @@ sub ParseElementPullLevel
 			not has_fast_array($e,$l) and not has_property($e, "charset")) {
 		my $length = ParseExpr($l->{LENGTH_IS}, $env);
 		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
+		my $array_name = $var_name;
 
 		$var_name = $var_name . "[$counter]";
+
+		ParseMemCtxPullStart($e,$l, $array_name);
 
 		if (($primitives and not $l->{IS_DEFERRED}) or ($deferred and $l->{IS_DEFERRED})) {
 			pidl "for ($counter = 0; $counter < $length; $counter++) {";
@@ -927,6 +987,9 @@ sub ParseElementPullLevel
 			deindent;
 			pidl "}";
 		}
+
+		ParseMemCtxPullEnd($e,$l);
+
 	} elsif ($l->{TYPE} eq "SWITCH") {
 		ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
 	}
@@ -969,7 +1032,7 @@ sub ParsePtrPull($$$$)
 
 		unless ($next_is_array or $next_is_string) {
 			pidl "if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {";
-			pidl "\tNDR_ALLOC($ndr, $var_name);"; 
+			pidl "\tNDR_PULL_ALLOC($ndr, $var_name);"; 
 			pidl "}";
 		}
 		
@@ -987,9 +1050,13 @@ sub ParsePtrPull($$$$)
 	# Don't do this for arrays, they're allocated at the actual level 
 	# of the array
 	unless ($next_is_array or $next_is_string) { 
-		pidl "NDR_ALLOC($ndr, $var_name);"; 
+		pidl "NDR_PULL_ALLOC($ndr, $var_name);"; 
 	} else {
-		pidl "NDR_ALLOC_SIZE($ndr, $var_name, 1);"; # FIXME: Yes, this is nasty. We allocate an array twice - once just to indicate that  it's there, then the real allocation...
+		# FIXME: Yes, this is nasty.
+		# We allocate an array twice
+		# - once just to indicate that it's there,
+		# - then the real allocation...
+		pidl "NDR_PULL_ALLOC_SIZE($ndr, $var_name, 1);";
 	}
 
 	#pidl "memset($var_name, 0, sizeof($var_name));";
@@ -1285,6 +1352,37 @@ sub DeclareArrayVariables($)
 	}
 }
 
+sub need_decl_mem_ctx($$)
+{
+	my $e = shift;
+	my $l = shift;
+
+	return 0 if has_fast_array($e,$l);
+	return 0 if (has_property($e, "charset") and ($l->{TYPE} ne "POINTER"));
+	return 1 if (($l->{TYPE} eq "ARRAY") and not $l->{IS_FIXED});
+
+	if (($l->{TYPE} eq "POINTER") and ($l->{POINTER_TYPE} eq "ref")) {
+		my $nl = GetNextLevel($e, $l);
+		my $next_is_array = ($nl->{TYPE} eq "ARRAY");
+		my $next_is_string = (($nl->{TYPE} eq "DATA") and 
+					($nl->{DATA_TYPE} eq "string"));
+		return 0 if ($next_is_array or $next_is_string);
+	}
+	return 1 if ($l->{TYPE} eq "POINTER");
+
+	return 0;
+}
+
+sub DeclareMemCtxVariables($)
+{
+	my $e = shift;
+	foreach my $l (@{$e->{LEVELS}}) {
+		if (need_decl_mem_ctx($e, $l)) {
+			pidl "TALLOC_CTX *_mem_save_$e->{NAME}_$l->{LEVEL_INDEX};";
+		}
+	}
+}
+
 #####################################################################
 # parse a struct - pull side
 sub ParseStructPull($$)
@@ -1299,6 +1397,7 @@ sub ParseStructPull($$)
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		DeclarePtrVariables($e);
 		DeclareArrayVariables($e);
+		DeclareMemCtxVariables($e);
 	}
 
 	# save the old relative_base_offset
@@ -1541,6 +1640,14 @@ sub ParseUnionPull($$)
 			$switch_type = Parse::Pidl::Typelist::enum_type_fn(getType($switch_type));
 		}
 		pidl Parse::Pidl::Typelist::mapType($switch_type) . " _level;";
+	}
+
+	my %double_cases = ();
+	foreach my $el (@{$e->{ELEMENTS}}) {
+		next if ($el->{TYPE} eq "EMPTY");
+		next if ($double_cases{"$el->{NAME}"});
+		DeclareMemCtxVariables($el);
+		$double_cases{"$el->{NAME}"} = 1;
 	}
 
 	start_flags($e);
@@ -1846,12 +1953,12 @@ sub AllocateArrayLevel($$$$$)
 	if (defined($pl) and 
 	    $pl->{TYPE} eq "POINTER" and 
 	    $pl->{POINTER_TYPE} eq "ref"
-		and not $l->{IS_ZERO_TERMINATED}) {
-	    pidl "if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {";
-	    pidl "\tNDR_ALLOC_N($ndr, $var, $size);";
-	    pidl "}";
+	    and not $l->{IS_ZERO_TERMINATED}) {
+		pidl "if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {";
+		pidl "\tNDR_PULL_ALLOC_N($ndr, $var, $size);";
+		pidl "}";
 	} else {
-		pidl "NDR_ALLOC_N($ndr, $var, $size);";
+		pidl "NDR_PULL_ALLOC_N($ndr, $var, $size);";
 	}
 
 	if (grep(/in/,@{$e->{DIRECTION}}) and
@@ -1876,8 +1983,16 @@ sub ParseFunctionPull($)
 
 	# declare any internal pointers we need
 	foreach my $e (@{$fn->{ELEMENTS}}) { 
-		DeclarePtrVariables($e); 
+		DeclarePtrVariables($e);
 		DeclareArrayVariables($e);
+	}
+
+	my %double_cases = ();
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		next if ($e->{TYPE} eq "EMPTY");
+		next if ($double_cases{"$e->{NAME}"});
+		DeclareMemCtxVariables($e);
+		$double_cases{"$e->{NAME}"} = 1;
 	}
 
 	pidl "if (flags & NDR_IN) {";
@@ -1917,7 +2032,7 @@ sub ParseFunctionPull($)
 			my $size = ParseExpr($e->{LEVELS}[1]->{SIZE_IS}, $env);
 			check_null_pointer($size);
 			
-			pidl "NDR_ALLOC_N(ndr, r->out.$e->{NAME}, $size);";
+			pidl "NDR_PULL_ALLOC_N(ndr, r->out.$e->{NAME}, $size);";
 
 			if (grep(/in/, @{$e->{DIRECTION}})) {
 				pidl "memcpy(r->out.$e->{NAME}, r->in.$e->{NAME}, $size * sizeof(*r->in.$e->{NAME}));";
@@ -1925,7 +2040,7 @@ sub ParseFunctionPull($)
 				pidl "memset(r->out.$e->{NAME}, 0, $size * sizeof(*r->out.$e->{NAME}));";
 			}
 		} else {
-			pidl "NDR_ALLOC(ndr, r->out.$e->{NAME});";
+			pidl "NDR_PULL_ALLOC(ndr, r->out.$e->{NAME});";
 		
 			if (grep(/in/, @{$e->{DIRECTION}})) {
 				pidl "*r->out.$e->{NAME} = *r->in.$e->{NAME};";

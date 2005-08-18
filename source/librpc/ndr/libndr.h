@@ -54,6 +54,8 @@ struct ndr_pull {
 	struct ndr_token_list *array_length_list;
 	struct ndr_token_list *switch_list;
 
+	TALLOC_CTX *current_mem_ctx;
+
 	/* this is used to ensure we generate unique reference IDs
 	   between request and reply */
 	uint32_t ptr_count;
@@ -224,28 +226,46 @@ enum ndr_compression_alg {
                                 return _status; \
                         } while (0)
 
+#define NDR_PULL_GET_MEM_CTX(ndr) (ndr->current_mem_ctx)
 
-#define NDR_ALLOC_SIZE(ndr, s, size) do { \
-	                       (s) = talloc_size(ndr, size); \
-                               if ((size) && !(s)) return ndr_pull_error(ndr, NDR_ERR_ALLOC, \
-							       "Alloc %u failed\n", \
-							       (unsigned)size); \
-                           } while (0)
+#define NDR_PULL_SET_MEM_CTX(ndr, mem_ctx, flgs) do {\
+	if ( !(flgs) || (ndr->flags & flgs) ) {\
+		if (!(mem_ctx)) {\
+			return ndr_pull_error(ndr, NDR_ERR_ALLOC, "NDR_PULL_SET_MEM_CTX(NULL): %s\n", __location__); \
+		}\
+		ndr->current_mem_ctx = discard_const(mem_ctx);\
+	}\
+} while(0)
 
-#define NDR_ALLOC(ndr, s) NDR_ALLOC_SIZE(ndr, s, sizeof(*(s)))
+#define _NDR_PULL_FIX_CURRENT_MEM_CTX(ndr) do {\
+	if (!ndr->current_mem_ctx) {\
+		ndr->current_mem_ctx = talloc_new(ndr);\
+		if (!ndr->current_mem_ctx) {\
+			return ndr_pull_error(ndr, NDR_ERR_ALLOC, "_NDR_PULL_FIX_CURRENT_MEM_CTX() failed: %s\n", __location__); \
+		}\
+	}\
+} while(0)
 
-
-#define NDR_ALLOC_N_SIZE(ndr, s, n, elsize) do { \
-	(s) = talloc_array_size(ndr, elsize, n); \
-	if (!(s)) return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Alloc %u * %u failed\n", (unsigned)n, (unsigned)elsize); \
+#define NDR_PULL_ALLOC_SIZE(ndr, s, size) do { \
+	_NDR_PULL_FIX_CURRENT_MEM_CTX(ndr);\
+	(s) = talloc_size(ndr->current_mem_ctx, size); \
+	if (!(s)) return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Alloc %u failed: %s\n",(unsigned)size, __location__); \
 } while (0)
 
-#define NDR_ALLOC_N(ndr, s, n) NDR_ALLOC_N_SIZE(ndr, s, n, sizeof(*(s)))
+#define NDR_PULL_ALLOC(ndr, s) NDR_PULL_ALLOC_SIZE(ndr, s, sizeof(*(s)))
+
+#define NDR_PULL_ALLOC_N_SIZE(ndr, s, n, elsize) do { \
+	_NDR_PULL_FIX_CURRENT_MEM_CTX(ndr);\
+	(s) = talloc_array_size(ndr->current_mem_ctx, elsize, n); \
+	if (!(s)) return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Alloc %u * %u failed: %s\n", (unsigned)n, (unsigned)elsize, __location__); \
+} while (0)
+
+#define NDR_PULL_ALLOC_N(ndr, s, n) NDR_PULL_ALLOC_N_SIZE(ndr, s, n, sizeof(*(s)))
 
 
 #define NDR_PUSH_ALLOC_SIZE(ndr, s, size) do { \
        (s) = talloc_size(ndr, size); \
-       if (!(s)) return ndr_push_error(ndr, NDR_ERR_ALLOC, "push alloc %u failed\n", (unsigned)size); \
+       if (!(s)) return ndr_push_error(ndr, NDR_ERR_ALLOC, "push alloc %u failed: %s\n", (unsigned)size, __location__); \
 } while (0)
 
 #define NDR_PUSH_ALLOC(ndr, s) NDR_PUSH_ALLOC_SIZE(ndr, s, sizeof(*(s)))
