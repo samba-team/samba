@@ -788,6 +788,10 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	/* call the dispatch function */
 	status = context->iface->dispatch(call, call, call->r);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5,("dcerpc fault in call %s:%02x - %s\n",
+			 context->iface->name, 
+			 call->pkt.u.request.opnum,
+			 dcerpc_errstr(pull, call->fault_code)));
 		return dcesrv_fault(call, call->fault_code);
 	}
 
