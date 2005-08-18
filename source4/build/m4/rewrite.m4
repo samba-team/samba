@@ -121,7 +121,7 @@ AC_HAVE_DECL(snprintf, [#include <stdio.h>])
 
 AC_FUNC_MEMCMP
 
-AC_CHECK_FUNCS(dlopen dlsym dlerror waitpid getcwd strdup strndup strnlen strtoul strtoull strtouq strerror chroot)
+AC_CHECK_FUNCS(dlopen dlsym dlerror waitpid getcwd strdup strndup strnlen strerror chroot)
 AC_CHECK_FUNCS(bzero memset strlcpy strlcat)
 AC_CHECK_FUNCS(memmove vsnprintf snprintf asprintf vasprintf setsid pipe crypt16 getauthuid)
 AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction innetgr setnetgrent getnetgrent endnetgrent)
