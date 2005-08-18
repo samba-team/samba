@@ -78,6 +78,7 @@ NTSTATUS ndr_push_PAC_BUFFER(struct ndr_push *ndr, int ndr_flags, const struct P
 NTSTATUS ndr_pull_PAC_BUFFER(struct ndr_pull *ndr, int ndr_flags, struct PAC_BUFFER *r)
 {
 	uint32_t _ptr_info;
+	TALLOC_CTX *_mem_save_info_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_PAC_TYPE(ndr, NDR_SCALARS, &r->type));
@@ -87,7 +88,7 @@ NTSTATUS ndr_pull_PAC_BUFFER(struct ndr_pull *ndr, int ndr_flags, struct PAC_BUF
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN8);
 			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info));
 			if (_ptr_info) {
-				NDR_ALLOC(ndr, r->info);
+				NDR_PULL_ALLOC(ndr, r->info);
 				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->info, _ptr_info));
 			} else {
 				r->info = NULL;
@@ -104,6 +105,8 @@ NTSTATUS ndr_pull_PAC_BUFFER(struct ndr_pull *ndr, int ndr_flags, struct PAC_BUF
 				struct ndr_pull_save _relative_save;
 				ndr_pull_save(ndr, &_relative_save);
 				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->info));
+				_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->info, 0);
 				{
 					struct ndr_pull *_ndr_info;
 					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_info, 0, r->_ndr_size));
@@ -111,6 +114,7 @@ NTSTATUS ndr_pull_PAC_BUFFER(struct ndr_pull *ndr, int ndr_flags, struct PAC_BUF
 					NDR_CHECK(ndr_pull_PAC_INFO(_ndr_info, NDR_SCALARS|NDR_BUFFERS, r->info));
 					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_info, 0, r->_ndr_size));
 				}
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
 				ndr_pull_restore(ndr, &_relative_save);
 			}
 			ndr->flags = _flags_save_PAC_INFO;
