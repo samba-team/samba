@@ -26,7 +26,7 @@
   handle obfuscated subcontext buffers, which in midl land are user-marshalled, but
   we use magic in pidl to make them easier to cope with
 */
-NTSTATUS ndr_pull_obfuscation(struct ndr_pull *ndr, uint8_t salt)
+NTSTATUS ndr_pull_obfuscation_start(struct ndr_pull *ndr, uint8_t salt)
 {
 	uint32_t i;
 
@@ -37,10 +37,20 @@ NTSTATUS ndr_pull_obfuscation(struct ndr_pull *ndr, uint8_t salt)
 	return NT_STATUS_OK;
 }
 
+NTSTATUS ndr_pull_obfuscation_end(struct ndr_pull *ndr, uint8_t salt)
+{
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_obfuscation_start(struct ndr_push *ndr, uint8_t salt)
+{
+	return NT_STATUS_OK;
+}
+
 /*
   push a obfuscated subcontext
 */
-NTSTATUS ndr_push_obfuscation(struct ndr_push *ndr, uint8_t salt)
+NTSTATUS ndr_push_obfuscation_end(struct ndr_push *ndr, uint8_t salt)
 {
 	uint32_t i;
 

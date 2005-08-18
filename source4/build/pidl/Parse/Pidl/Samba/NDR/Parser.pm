@@ -367,30 +367,29 @@ sub compression_dlen($$$)
 	return ParseExpr($dlen, $env);
 }
 
-sub ParseCompressionPushStart($$$)
+sub ParseCompressionPushStart($$$$)
 {
-	my ($e,$l,$ndr) = @_;
+	my ($e,$l,$ndr,$env) = @_;
 	my $comndr = "$ndr\_compressed";
+	my $alg = compression_alg($e, $l);
+	my $dlen = compression_dlen($e, $l, $env);
 
 	pidl "{";
 	indent;
 	pidl "struct ndr_push *$comndr;";
-	pidl "";
-	pidl "$comndr = ndr_push_init_ctx($ndr);";
-	pidl "if (!$comndr) return NT_STATUS_NO_MEMORY;";
-	pidl "$comndr->flags = $ndr->flags;";
-	pidl "";
-	
+	pidl "NDR_CHECK(ndr_push_compression_start($ndr, &$comndr, $alg, $dlen));";
+
 	return $comndr;
 }
 
-sub ParseCompressionPushEnd($$$)
+sub ParseCompressionPushEnd($$$$)
 {
-	my ($e,$l,$ndr) = @_;
+	my ($e,$l,$ndr,$env) = @_;
 	my $comndr = "$ndr\_compressed";
 	my $alg = compression_alg($e, $l);
+	my $dlen = compression_dlen($e, $l, $env);
 
-	pidl "NDR_CHECK(ndr_push_compression($ndr, $comndr, $alg));";
+	pidl "NDR_CHECK(ndr_push_compression_end($ndr, $comndr, $alg, $dlen));";
 	deindent;
 	pidl "}";
 }
@@ -405,17 +404,19 @@ sub ParseCompressionPullStart($$$$)
 	pidl "{";
 	indent;
 	pidl "struct ndr_pull *$comndr;";
-	pidl "NDR_ALLOC($ndr, $comndr);";
-	pidl "NDR_CHECK(ndr_pull_compression($ndr, $comndr, $alg, $dlen));";
+	pidl "NDR_CHECK(ndr_pull_compression_start($ndr, &$comndr, $alg, $dlen));";
 
 	return $comndr;
 }
 
-sub ParseCompressionPullEnd($$$)
+sub ParseCompressionPullEnd($$$$)
 {
-	my ($e,$l,$ndr) = @_;
+	my ($e,$l,$ndr,$env) = @_;
 	my $comndr = "$ndr\_compressed";
+	my $alg = compression_alg($e, $l);
+	my $dlen = compression_dlen($e, $l, $env);
 
+	pidl "NDR_CHECK(ndr_pull_compression_end($ndr, $comndr, $alg, $dlen));";
 	deindent;
 	pidl "}";
 }
@@ -423,8 +424,9 @@ sub ParseCompressionPullEnd($$$)
 sub ParseObfuscationPushStart($$)
 {
 	my ($e,$ndr) = @_;
+	my $obfuscation = has_property($e, "obfuscation");
 
-	# nothing to do here
+	pidl "NDR_CHECK(ndr_push_obfuscation_start($ndr, $obfuscation));";
 
 	return $ndr;
 }
@@ -434,7 +436,7 @@ sub ParseObfuscationPushEnd($$)
 	my ($e,$ndr) = @_;
 	my $obfuscation = has_property($e, "obfuscation");
 
-	pidl "NDR_CHECK(ndr_push_obfuscation($ndr, $obfuscation));";
+	pidl "NDR_CHECK(ndr_push_obfuscation_end($ndr, $obfuscation));";
 }
 
 sub ParseObfuscationPullStart($$)
@@ -442,7 +444,7 @@ sub ParseObfuscationPullStart($$)
 	my ($e,$ndr) = @_;
 	my $obfuscation = has_property($e, "obfuscation");
 
-	pidl "NDR_CHECK(ndr_pull_obfuscation($ndr, $obfuscation));";
+	pidl "NDR_CHECK(ndr_pull_obfuscation_start($ndr, $obfuscation));";
 
 	return $ndr;
 }
@@ -450,100 +452,89 @@ sub ParseObfuscationPullStart($$)
 sub ParseObfuscationPullEnd($$)
 {
 	my ($e,$ndr) = @_;
+	my $obfuscation = has_property($e, "obfuscation");
 
-	# nothing to do here
+	pidl "NDR_CHECK(ndr_pull_obfuscation_end($ndr, $obfuscation));";
 }
 
-sub ParseSubcontextPushStart($$$$$)
+sub ParseSubcontextPushStart($$$$)
 {
-	my ($e,$l,$ndr,$var_name,$ndr_flags) = @_;
-	my $retndr = "_ndr_$e->{NAME}";
+	my ($e,$l,$ndr,$env) = @_;
+	my $subndr = "_ndr_$e->{NAME}";
+	my $subcontext_size = ParseExpr($l->{SUBCONTEXT_SIZE},$env);
 
 	pidl "{";
 	indent;
-	pidl "struct ndr_push *$retndr;";
-	pidl "";
-	pidl "$retndr = ndr_push_init_ctx($ndr);";
-	pidl "if (!$retndr) return NT_STATUS_NO_MEMORY;";
-	pidl "$retndr->flags = $ndr->flags;";
-	pidl "";
+	pidl "struct ndr_push *$subndr;";
+	pidl "NDR_CHECK(ndr_push_subcontext_start($ndr, &$subndr, $l->{HEADER_SIZE}, $subcontext_size));";
 
 	if (defined $l->{COMPRESSION}) {
-		$retndr = ParseCompressionPushStart($e, $l, $retndr);
+		$subndr = ParseCompressionPushStart($e, $l, $subndr, $env);
 	}
 
 	if (defined $l->{OBFUSCATION}) {
-		$retndr = ParseObfuscationPushStart($e, $retndr);
+		$subndr = ParseObfuscationPushStart($e, $subndr);
 	}
 
-	return $retndr;
+	return $subndr;
 }
 
 sub ParseSubcontextPushEnd($$$$)
 {
-	my ($e,$l,$ndr_flags,$env) = @_;
-	my $ndr = "_ndr_$e->{NAME}";
+	my ($e,$l,$ndr,$env) = @_;
+	my $subndr = "_ndr_$e->{NAME}";
 	my $subcontext_size = ParseExpr($l->{SUBCONTEXT_SIZE},$env);
 
 	if (defined $l->{COMPRESSION}) {
-		ParseCompressionPushEnd($e, $l, $ndr);
+		ParseCompressionPushEnd($e, $l, $subndr, $env);
 	}
 
 	if (defined $l->{OBFUSCATION}) {
-		ParseObfuscationPushEnd($e, $ndr);
+		ParseObfuscationPushEnd($e, $subndr);
 	}
 
-	pidl "NDR_CHECK(ndr_push_subcontext_header(ndr, $l->{HEADER_SIZE}, $subcontext_size, $ndr));";
-	pidl "NDR_CHECK(ndr_push_bytes(ndr, $ndr->data, $ndr->offset));";
+	pidl "NDR_CHECK(ndr_push_subcontext_end($ndr, $subndr, $l->{HEADER_SIZE}, $subcontext_size));";
 	deindent;
 	pidl "}";
 }
 
-sub ParseSubcontextPullStart($$$$$$)
+sub ParseSubcontextPullStart($$$$)
 {
-	my ($e,$l,$ndr,$var_name,$ndr_flags,$env) = @_;
-	my $retndr = "_ndr_$e->{NAME}";
+	my ($e,$l,$ndr,$env) = @_;
+	my $subndr = "_ndr_$e->{NAME}";
 	my $subcontext_size = ParseExpr($l->{SUBCONTEXT_SIZE},$env);
 
 	pidl "{";
 	indent;
-	pidl "struct ndr_pull *$retndr;";
-	pidl "NDR_ALLOC(ndr, $retndr);";
-	pidl "NDR_CHECK(ndr_pull_subcontext_header($ndr, $l->{HEADER_SIZE}, $subcontext_size, $retndr));"; 
+	pidl "struct ndr_pull *$subndr;";
+	pidl "NDR_CHECK(ndr_pull_subcontext_start($ndr, &$subndr, $l->{HEADER_SIZE}, $subcontext_size));";
 
 	if (defined $l->{COMPRESSION}) {
-		$retndr = ParseCompressionPullStart($e, $l, $retndr, $env);
+		$subndr = ParseCompressionPullStart($e, $l, $subndr, $env);
 	}
 
 	if (defined $l->{OBFUSCATION}) {
-		$retndr = ParseObfuscationPullStart($e, $retndr);
+		$subndr = ParseObfuscationPullStart($e, $subndr);
 	}
 	
-	return ($retndr,$var_name);
+	return $subndr;
 }
 
-sub ParseSubcontextPullEnd($$$)
+sub ParseSubcontextPullEnd($$$$)
 {
-	my ($e,$l,$env) = @_;
-	my $ndr = "_ndr_$e->{NAME}";
+	my ($e,$l,$ndr,$env) = @_;
+	my $subndr = "_ndr_$e->{NAME}";
+	my $subcontext_size = ParseExpr($l->{SUBCONTEXT_SIZE},$env);
 
 	if (defined $l->{COMPRESSION}) {
-		ParseCompressionPullEnd($e, $l, $ndr);
+		ParseCompressionPullEnd($e, $l, $subndr, $env);
 	}
 
 	if (defined $l->{OBFUSCATION}) {
-		ParseObfuscationPullEnd($e, $ndr);
+		ParseObfuscationPullEnd($e, $subndr);
 	}
 
-	my $advance;
-	if (defined($l->{SUBCONTEXT_SIZE}) and ($l->{SUBCONTEXT_SIZE} ne "-1")) {
-		$advance = ParseExpr($l->{SUBCONTEXT_SIZE},$env);
-	} elsif ($l->{HEADER_SIZE}) {
-		$advance = "$ndr->data_size";
-	} else {
-		$advance = "$ndr->offset";
-	}
-	pidl "NDR_CHECK(ndr_pull_advance(ndr, $advance));";
+	pidl "NDR_CHECK(ndr_pull_subcontext_end($ndr, $subndr, $l->{HEADER_SIZE}, $subcontext_size));";
 	deindent;
 	pidl "}";
 }
@@ -560,9 +551,9 @@ sub ParseElementPushLevel
 
 	if (defined($ndr_flags)) {
 		if ($l->{TYPE} eq "SUBCONTEXT") {
-			$ndr = ParseSubcontextPushStart($e, $l, $ndr, $var_name, $ndr_flags);
-			ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, 1, 1);
-			ParseSubcontextPushEnd($e, $l, $ndr_flags, $env);
+			my $subndr = ParseSubcontextPushStart($e, $l, $ndr, $env);
+			ParseElementPushLevel($e, GetNextLevel($e, $l), $subndr, $var_name, $env, 1, 1);
+			ParseSubcontextPushEnd($e, $l, $ndr, $env);
 		} elsif ($l->{TYPE} eq "POINTER") {
 			ParsePtrPush($e, $l, $var_name);
 		} elsif ($l->{TYPE} eq "ARRAY") {
@@ -858,11 +849,11 @@ sub ParseElementPullLevel
 	# Only pull something if there's actually something to be pulled
 	if (defined($ndr_flags)) {
 		if ($l->{TYPE} eq "SUBCONTEXT") {
-			($ndr,$var_name) = ParseSubcontextPullStart($e, $l, $ndr, $var_name, $ndr_flags, $env);
-			ParseElementPullLevel($e, GetNextLevel($e,$l), $ndr, $var_name, $env, 1, 1);
-			ParseSubcontextPullEnd($e, $l, $env);
+			my $subndr = ParseSubcontextPullStart($e, $l, $ndr, $env);
+			ParseElementPullLevel($e, GetNextLevel($e,$l), $subndr, $var_name, $env, 1, 1);
+			ParseSubcontextPullEnd($e, $l, $ndr, $env);
 		} elsif ($l->{TYPE} eq "ARRAY") {
-			my $length = ParseArrayPullHeader($e, $l, $ndr, $var_name, $env); 
+			my $length = ParseArrayPullHeader($e, $l, $ndr, $var_name, $env);
 
 			my $nl = GetNextLevel($e, $l);
 
