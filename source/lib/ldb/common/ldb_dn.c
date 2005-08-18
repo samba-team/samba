@@ -43,14 +43,14 @@
 
 #define LDB_SPECIAL "@SPECIAL"
 
-BOOL ldb_dn_is_special(const struct ldb_dn *dn)
+int ldb_dn_is_special(const struct ldb_dn *dn)
 {
 	if (dn == NULL || dn->comp_num != 1) return 0;
 
 	return ! strcmp(dn->components[0].name, LDB_SPECIAL);
 }
 
-BOOL ldb_dn_check_special(const struct ldb_dn *dn, const char *check)
+int ldb_dn_check_special(const struct ldb_dn *dn, const char *check)
 {
 	if (dn == NULL || dn->comp_num != 1) return 0;
 
