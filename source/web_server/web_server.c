@@ -153,12 +153,13 @@ static void websrv_send(struct stream_connection *conn, uint16_t flags)
 		web->output.nsent = 0;
 
 		nread = read(web->output.fd, buf, sizeof(buf));
-		if (nread == 0) {
-			close(web->output.fd);
-			web->output.fd = -1;
-		}
 		if (nread == -1 && errno == EINTR) {
 			return;
+		}
+		if (nread <= 0) {
+			close(web->output.fd);
+			web->output.fd = -1;
+			nread = 0;
 		}
 		web->output.content = data_blob_talloc(web, buf, nread);
 	}
