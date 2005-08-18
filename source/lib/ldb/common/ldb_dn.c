@@ -56,7 +56,7 @@ static int ldb_dn_is_valid_attribute_name(const char *name)
 	return 1;
 }
 
-static char *ldb_dn_escape_value(void *mem_ctx, struct ldb_val value)
+char *ldb_dn_escape_value(void *mem_ctx, struct ldb_val value)
 {
 	const char *p, *s, *src;
 	char *d, *dst;

@@ -126,12 +126,24 @@ static char *reg_path_to_ldb(TALLOC_CTX *mem_ctx, struct registry_key *from, con
 	while(mypath) {
 		char *keyname;
 		begin = strrchr(mypath, '\\');
+		struct ldb_val val;
+		char *key;
 
-		if(begin) keyname = begin + 1;
+		if (begin) keyname = begin + 1;
 		else keyname = mypath;
 
-		if(strlen(keyname))
-			ret = talloc_asprintf_append(ret, "key=%s,", keyname);
+		val.data = keyname;
+		val.length = strlen(keyname);
+		
+		key = ldb_dn_escape_value(mem_ctx, val);
+		if (key == NULL) {
+			return NULL;
+		}
+
+		if (strlen(key))
+			ret = talloc_asprintf_append(ret, "key=%s,", key);
+
+		talloc_free(key);
 			
 		if(begin) {
 			*begin = '\0';
