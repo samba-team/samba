@@ -342,6 +342,7 @@ int ldb_attrib_add_handlers(struct ldb_context *ldb,
 
 int ldb_dn_cmp(struct ldb_context *ldb, const char *dn1, const char *dn2);
 int ldb_attr_cmp(const char *dn1, const char *dn2);
+char *ldb_dn_escape_value(void *mem_ctx, struct ldb_val value);
 
 /* case-fold a DN */
 char *ldb_dn_fold(void * mem_ctx,
