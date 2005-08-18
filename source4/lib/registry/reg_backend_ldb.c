@@ -170,6 +170,8 @@ static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, 
 	talloc_set_destructor(*subkey, reg_close_ldb_key);
 	(*subkey)->name = talloc_strdup(mem_ctx, el->values[0].data);
 	(*subkey)->backend_data = newkd = talloc_zero(*subkey, struct ldb_key_data);
+	(*subkey)->last_mod = 0; /* TODO: we need to add this to the
+				    ldb backend properly */
 	newkd->dn = talloc_strdup(mem_ctx, kd->subkeys[idx]->dn);
 
 	return WERR_OK;
