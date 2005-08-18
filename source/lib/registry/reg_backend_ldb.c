@@ -125,9 +125,10 @@ static char *reg_path_to_ldb(TALLOC_CTX *mem_ctx, struct registry_key *from, con
 
 	while(mypath) {
 		char *keyname;
-		begin = strrchr(mypath, '\\');
 		struct ldb_val val;
 		char *key;
+
+		begin = strrchr(mypath, '\\');
 
 		if (begin) keyname = begin + 1;
 		else keyname = mypath;
