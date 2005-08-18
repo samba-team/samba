@@ -353,6 +353,7 @@ struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn)
 
 	/* Allocate a structure to hold the exploded DN */
 	edn = ldb_dn_new(mem_ctx);
+	pdn = NULL;
 
 	/* Empty DNs */
 	if (dn[0] == '\0') {
