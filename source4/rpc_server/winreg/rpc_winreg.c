@@ -495,8 +495,12 @@ static WERROR winreg_AbortSystemShutdown(struct dcesrv_call_state *dce_call, TAL
   winreg_GetVersion 
 */
 static WERROR winreg_GetVersion(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct winreg_GetVersion *r)
+				struct winreg_GetVersion *r)
 {
+	struct dcesrv_handle *h;
+
+	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
+
 	r->out.version = 5;
 	return WERR_OK;
 }
