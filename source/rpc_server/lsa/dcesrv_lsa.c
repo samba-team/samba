@@ -1774,10 +1774,7 @@ static NTSTATUS lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		msg->dn = ldb_dn_build_child(mem_ctx,
-					     "cn", name,
-					     ldb_dn_build_child(mem_ctx,
-								"cn", "LSA Secrets", NULL));
+		msg->dn = ldb_dn_string_compose(mem_ctx, NULL, "cn=%s,cn=LSA Secrets", name);
 		samdb_msg_add_string(secret_state->sam_ldb, mem_ctx, msg, "cn", name);
 	} 
 

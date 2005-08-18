@@ -771,7 +771,9 @@ struct ldb_dn *ldb_dn_compose(void *mem_ctx, const struct ldb_dn *dn1, const str
 		new->comp_num = dn1->comp_num;
 		new->components = talloc_array(new, struct ldb_dn_component, new->comp_num);
 	} else {
-		new = ldb_dn_copy_partial(mem_ctx, dn2, dn2->comp_num + dn1?dn1->comp_num:0);
+		int comp_num = dn2->comp_num;
+		if (dn1 != NULL) comp_num += dn1->comp_num;
+		new = ldb_dn_copy_partial(mem_ctx, dn2, comp_num);
 	}
 
 	if (dn1 == NULL) {
@@ -790,11 +792,26 @@ failed:
 	return NULL;
 }
 
-struct ldb_dn *ldb_dn_compose_string_dn(void *mem_ctx, const char *dn1, const struct ldb_dn *dn2)
+struct ldb_dn *ldb_dn_string_compose(void *mem_ctx, const struct ldb_dn *base, const char *child_fmt, ...)
 {
-	if (dn1 == NULL) return NULL;
+	struct ldb_dn *dn;
+	char *child_str;
+	va_list ap;
+	int ret;
+	
+	if (child_fmt == NULL) return NULL;
 
-	return ldb_dn_compose(mem_ctx, ldb_dn_explode(mem_ctx, dn1), dn2);
+	va_start(ap, child_fmt);
+	ret = vasprintf(&child_str, child_fmt, ap);
+	va_end(ap);
+
+	if (ret <= 0) return NULL;
+
+	dn = ldb_dn_compose(mem_ctx, ldb_dn_explode(mem_ctx, child_str), base);
+
+	free(child_str);
+
+	return dn;
 }
 
 struct ldb_dn_component *ldb_dn_get_rdn(void *mem_ctx, const struct ldb_dn *dn)

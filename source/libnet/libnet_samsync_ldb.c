@@ -337,11 +337,8 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 	if (add) {
 		samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, 
 				     "objectClass", obj_class);
-		msg->dn = ldb_dn_build_child(mem_ctx,
-					     "CN", cn_name,
-					     ldb_dn_build_child(mem_ctx,
-								"CN", container,
-								state->base_dn[database]));
+		msg->dn = ldb_dn_string_compose(mem_ctx, state->base_dn[database],
+						"CN=%s, CN=%s", cn_name, container);
 		if (!msg->dn) {
 			return NT_STATUS_NO_MEMORY;		
 		}
@@ -477,11 +474,8 @@ static NTSTATUS samsync_ldb_handle_group(TALLOC_CTX *mem_ctx,
 	if (add) {
 		samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, 
 				     "objectClass", obj_class);
-		msg->dn = ldb_dn_build_child(mem_ctx,
-					     "CN", cn_name,
-					     ldb_dn_build_child(mem_ctx,
-								"CN", container,
-								state->base_dn[database]));
+		msg->dn = ldb_dn_string_compose(mem_ctx, state->base_dn[database],
+						"CN=%s, CN=%s", cn_name, container);
 		if (!msg->dn) {
 			return NT_STATUS_NO_MEMORY;		
 		}
@@ -694,11 +688,8 @@ static NTSTATUS samsync_ldb_handle_alias(TALLOC_CTX *mem_ctx,
 	if (add) {
 		samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, 
 				     "objectClass", obj_class);
-		msg->dn = ldb_dn_build_child(mem_ctx,
-					     "CN", cn_name,
-					     ldb_dn_build_child(mem_ctx,
-								"CN", container,
-								state->base_dn[database]));
+		msg->dn = ldb_dn_string_compose(mem_ctx, state->base_dn[database],
+						"CN=%s, CN=%s", cn_name, container);
 		if (!msg->dn) {
 			return NT_STATUS_NO_MEMORY;		
 		}

@@ -554,11 +554,8 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 	}
 
 	/* add core elements to the ldb_message for the user */
-	msg->dn = ldb_dn_build_child(mem_ctx,
-				     "CN", groupname,
-				     ldb_dn_build_child(mem_ctx,
-							"CN", "Users",
-							d_state->domain_dn));
+	msg->dn = ldb_dn_string_compose(mem_ctx, d_state->domain_dn,
+					"CN=%s, CN=Users", groupname);
 	if (!msg->dn) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -991,11 +988,8 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 	}
 
 	/* add core elements to the ldb_message for the alias */
-	msg->dn = ldb_dn_build_child(mem_ctx,
-				     "CN", alias_name,
-				     ldb_dn_build_child(mem_ctx,
-							"CN", "Users",
-							d_state->domain_dn));
+	msg->dn = ldb_dn_string_compose(mem_ctx, d_state->domain_dn,
+					"CN=%s, CN=Users", alias_name);
 	if (!msg->dn) {
 		return NT_STATUS_NO_MEMORY;
 	}
