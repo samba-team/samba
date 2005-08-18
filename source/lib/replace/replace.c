@@ -515,3 +515,14 @@ int sys_waitpid(pid_t pid,int *status,int options)
 #endif
 }
 #endif
+
+#ifndef HAVE_SETEGID
+ int setegid(gid_t egid)
+{
+#ifdef HAVE_SETRESGID
+	return setresgid(-1, egid, -1);
+#else
+#  error "You need a setegid function"
+#endif
+}
+#endif

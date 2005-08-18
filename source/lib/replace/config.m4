@@ -15,4 +15,5 @@ if test x"$samba_cv_REPLACE_INET_NTOA" = x"yes"; then
     AC_DEFINE(REPLACE_INET_NTOA,1,[Whether inet_ntoa should be replaced])
 fi
 
-AC_CHECK_FUNCS(strtoull __strtoull strtouq strtoll __strtoll strtoq seteuid setresuid)
+AC_CHECK_FUNCS(strtoull __strtoull strtouq strtoll __strtoll strtoq)
+AC_CHECK_FUNCS(seteuid setresuid setegid setresgid)
