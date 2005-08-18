@@ -63,15 +63,10 @@ NTSTATUS ndr_push_PAC_BUFFER(struct ndr_push *ndr, int ndr_flags, const struct P
 				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->info));
 				{
 					struct ndr_push *_ndr_info;
-
-					_ndr_info = ndr_push_init_ctx(ndr);
-					if (!_ndr_info) return NT_STATUS_NO_MEMORY;
-					_ndr_info->flags = ndr->flags;
-
+					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_info, 0, _subcontext_size_PAC_INFO(r->info,r->type,0)));
 					NDR_CHECK(ndr_push_set_switch_value(_ndr_info, r->info, r->type));
 					NDR_CHECK(ndr_push_PAC_INFO(_ndr_info, NDR_SCALARS|NDR_BUFFERS, r->info));
-					NDR_CHECK(ndr_push_subcontext_header(ndr, 0, _subcontext_size_PAC_INFO(r->info,r->type,0), _ndr_info));
-					NDR_CHECK(ndr_push_bytes(ndr, _ndr_info->data, _ndr_info->offset));
+					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_info, 0, _subcontext_size_PAC_INFO(r->info,r->type,0)));
 				}
 			}
 			ndr->flags = _flags_save_PAC_INFO;
@@ -111,11 +106,10 @@ NTSTATUS ndr_pull_PAC_BUFFER(struct ndr_pull *ndr, int ndr_flags, struct PAC_BUF
 				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->info));
 				{
 					struct ndr_pull *_ndr_info;
-					NDR_ALLOC(ndr, _ndr_info);
-					NDR_CHECK(ndr_pull_subcontext_header(ndr, 0, r->_ndr_size, _ndr_info));
+					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_info, 0, r->_ndr_size));
 					NDR_CHECK(ndr_pull_set_switch_value(_ndr_info, r->info, r->type));
 					NDR_CHECK(ndr_pull_PAC_INFO(_ndr_info, NDR_SCALARS|NDR_BUFFERS, r->info));
-					NDR_CHECK(ndr_pull_advance(ndr, r->_ndr_size));
+					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_info, 0, r->_ndr_size));
 				}
 				ndr_pull_restore(ndr, &_relative_save);
 			}
