@@ -56,14 +56,14 @@ struct ldb_module {
 */
 struct ldb_module_ops {
 	const char *name;
-	int (*search)(struct ldb_module *, const char *, enum ldb_scope,
+	int (*search)(struct ldb_module *, const struct ldb_dn *, enum ldb_scope,
 		      const char *, const char * const [], struct ldb_message ***);
-	int (*search_bytree)(struct ldb_module *, const char *, enum ldb_scope,
+	int (*search_bytree)(struct ldb_module *, const struct ldb_dn *, enum ldb_scope,
 			     struct ldb_parse_tree *, const char * const [], struct ldb_message ***);
 	int (*add_record)(struct ldb_module *, const struct ldb_message *);
 	int (*modify_record)(struct ldb_module *, const struct ldb_message *);
-	int (*delete_record)(struct ldb_module *, const char *);
-	int (*rename_record)(struct ldb_module *, const char *, const char *);
+	int (*delete_record)(struct ldb_module *, const struct ldb_dn *);
+	int (*rename_record)(struct ldb_module *, const struct ldb_dn *, const struct ldb_dn *);
 	int (*named_lock)(struct ldb_module *, const char *);
 	int (*named_unlock)(struct ldb_module *, const char *);
 	const char * (*errstring)(struct ldb_module *);
@@ -106,16 +106,6 @@ struct ldb_context {
 	struct ldb_schema schema;
 };
 
-/* internal ldb exploded dn structures */
-struct ldb_dn_component {
-	char *name;
-	struct ldb_val value;
-};
-struct ldb_dn {
-	int comp_num;
-	struct ldb_dn_component *components;
-};
-
 /* the modules init function */
 typedef struct ldb_module *(*ldb_module_init_function)(struct ldb_context *ldb, const char *options[]);
 
@@ -132,19 +122,19 @@ typedef struct ldb_module *(*ldb_module_init_function)(struct ldb_context *ldb, 
 
 int ldb_load_modules(struct ldb_context *ldb, const char *options[]);
 int ldb_next_search(struct ldb_module *module, 
-	       const char *base,
+	       const struct ldb_dn *base,
 	       enum ldb_scope scope,
 	       const char *expression,
 	       const char * const *attrs, struct ldb_message ***res);
 int ldb_next_search_bytree(struct ldb_module *module, 
-			   const char *base,
+			   const struct ldb_dn *base,
 			   enum ldb_scope scope,
 			   struct ldb_parse_tree *tree,
 			   const char * const *attrs, struct ldb_message ***res);
 int ldb_next_add_record(struct ldb_module *module, const struct ldb_message *message);
 int ldb_next_modify_record(struct ldb_module *module, const struct ldb_message *message);
-int ldb_next_delete_record(struct ldb_module *module, const char *dn);
-int ldb_next_rename_record(struct ldb_module *module, const char *olddn, const char *newdn);
+int ldb_next_delete_record(struct ldb_module *module, const struct ldb_dn *dn);
+int ldb_next_rename_record(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn);
 int ldb_next_named_lock(struct ldb_module *module, const char *lockname);
 int ldb_next_named_unlock(struct ldb_module *module, const char *lockname);
 const char *ldb_next_errstring(struct ldb_module *module);
@@ -174,10 +164,10 @@ struct ldb_module *schema_module_init(struct ldb_context *ldb, const char *optio
 struct ldb_module *rdn_name_module_init(struct ldb_context *ldb, const char *options[]);
 
 
-int ldb_match_msg(struct ldb_context *ldb, 
+int ldb_match_msg(struct ldb_context *ldb,
 		  struct ldb_message *msg,
 		  struct ldb_parse_tree *tree,
-		  const char *base,
+		  const struct ldb_dn *base,
 		  enum ldb_scope scope);
 
 void ldb_remove_attrib_handler(struct ldb_context *ldb, const char *attrib);
@@ -187,15 +177,6 @@ int ldb_set_attrib_handlers(struct ldb_context *ldb,
 			    const struct ldb_attrib_handler *handlers, 
 			    unsigned num_handlers);
 int ldb_setup_wellknown_attributes(struct ldb_context *ldb);
-
-
-/* The following definitions come from lib/ldb/common/ldb_dn.c  */
-struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn);
-char *ldb_dn_linearize(void *mem_ctx, const struct ldb_dn *edn);
-int ldb_dn_compare_base(struct ldb_context *ldb, const struct ldb_dn *base, const struct ldb_dn *dn);
-int ldb_dn_compare(struct ldb_context *ldb, const struct ldb_dn *edn0, const struct ldb_dn *edn1);
-struct ldb_dn *ldb_dn_casefold(struct ldb_context *ldb, const struct ldb_dn *edn);
-struct ldb_dn *ldb_dn_explode_casefold(struct ldb_context *ldb, const char *dn);
 
 /* The following definitions come from lib/ldb/common/ldb_attributes.c  */
 const char **ldb_subclass_list(struct ldb_context *ldb, const char *class);

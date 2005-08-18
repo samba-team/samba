@@ -139,8 +139,15 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		int ret;
 		const char * const attrs[] = { "@LIST" , NULL};
 		struct ldb_message **msg = NULL;
+		struct ldb_dn *mods;
 
-		ret = ldb_search(ldb, "@MODULES", LDB_SCOPE_BASE, "", attrs, &msg);
+		mods = ldb_dn_explode(ldb, "@MODULES");
+		if (mods == NULL) {
+			return -1;
+		}
+
+		ret = ldb_search(ldb, mods, LDB_SCOPE_BASE, "", attrs, &msg);
+		talloc_free(mods);
 		if (ret == 0 || (ret == 1 && msg[0]->num_elements == 0)) {
 			ldb_debug(ldb, LDB_DEBUG_TRACE, "no modules required by the db\n");
 		} else {
@@ -233,7 +240,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 */
 
 int ldb_next_search(struct ldb_module *module, 
-		    const char *base,
+		    const struct ldb_dn *base,
 		    enum ldb_scope scope,
 		    const char *expression,
 		    const char * const *attrs, struct ldb_message ***res)
@@ -245,7 +252,7 @@ int ldb_next_search(struct ldb_module *module,
 }
 
 int ldb_next_search_bytree(struct ldb_module *module, 
-			   const char *base,
+			   const struct ldb_dn *base,
 			   enum ldb_scope scope,
 			   struct ldb_parse_tree *tree,
 			   const char * const *attrs, struct ldb_message ***res)
@@ -272,7 +279,7 @@ int ldb_next_modify_record(struct ldb_module *module, const struct ldb_message *
 	return module->next->ops->modify_record(module->next, message);
 }
 
-int ldb_next_delete_record(struct ldb_module *module, const char *dn)
+int ldb_next_delete_record(struct ldb_module *module, const struct ldb_dn *dn)
 {
 	if (!module->next) {
 		return -1;
@@ -280,7 +287,7 @@ int ldb_next_delete_record(struct ldb_module *module, const char *dn)
 	return module->next->ops->delete_record(module->next, dn);
 }
 
-int ldb_next_rename_record(struct ldb_module *module, const char *olddn, const char *newdn)
+int ldb_next_rename_record(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
 {
 	if (!module->next) {
 		return -1;

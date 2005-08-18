@@ -42,25 +42,14 @@
   check if the scope matches in a search result
 */
 static int ldb_match_scope(struct ldb_context *ldb,
-			   const char *base_str,
-			   const char *dn_str,
+			   const struct ldb_dn *base,
+			   const struct ldb_dn *dn,
 			   enum ldb_scope scope)
 {
-	struct ldb_dn *base;
-	struct ldb_dn *dn;
 	int ret = 0;
 
-	if (base_str == NULL) {
+	if (base == NULL || dn == NULL) {
 		return 1;
-	}
-
-	base = ldb_dn_explode_casefold(ldb, base_str);
-	if (base == NULL) return 0;
-
-	dn = ldb_dn_explode_casefold(ldb, dn_str);
-	if (dn == NULL) {
-		talloc_free(base);
-		return 0;
 	}
 
 	switch (scope) {
@@ -86,8 +75,6 @@ static int ldb_match_scope(struct ldb_context *ldb,
 		break;
 	}
 
-	talloc_free(base);
-	talloc_free(dn);
 	return ret;
 }
 
@@ -98,7 +85,6 @@ static int ldb_match_scope(struct ldb_context *ldb,
 static int ldb_match_present(struct ldb_context *ldb, 
 			    struct ldb_message *msg,
 			    struct ldb_parse_tree *tree,
-			    const char *base,
 			    enum ldb_scope scope)
 {
 
@@ -116,7 +102,6 @@ static int ldb_match_present(struct ldb_context *ldb,
 static int ldb_match_comparison(struct ldb_context *ldb, 
 				struct ldb_message *msg,
 				struct ldb_parse_tree *tree,
-				const char *base,
 				enum ldb_scope scope,
 				enum ldb_parse_op comp_op)
 {
@@ -158,29 +143,23 @@ static int ldb_match_comparison(struct ldb_context *ldb,
 static int ldb_match_equality(struct ldb_context *ldb, 
 			      struct ldb_message *msg,
 			      struct ldb_parse_tree *tree,
-			      const char *base,
 			      enum ldb_scope scope)
 {
 	unsigned int i;
 	struct ldb_message_element *el;
 	const struct ldb_attrib_handler *h;
-	struct ldb_dn *msgdn, *valuedn;
+	struct ldb_dn *valuedn;
 	int ret;
 
 	if (ldb_attr_cmp(tree->u.equality.attr, "dn") == 0) {
 
-		msgdn = ldb_dn_explode_casefold(ldb, msg->dn);
-		if (msgdn == NULL) return 0;
-
 		valuedn = ldb_dn_explode_casefold(ldb, tree->u.equality.value.data);
 		if (valuedn == NULL) {
-			talloc_free(msgdn);
 			return 0;
 		}
 
-		ret = ldb_dn_compare(ldb, msgdn, valuedn);
+		ret = ldb_dn_compare(ldb, msg->dn, valuedn);
 
-		talloc_free(msgdn);
 		talloc_free(valuedn);
 
 		if (ret == 0) return 1;
@@ -277,7 +256,6 @@ failed:
 static int ldb_match_substring(struct ldb_context *ldb, 
 			       struct ldb_message *msg,
 			       struct ldb_parse_tree *tree,
-			       const char *base,
 			       enum ldb_scope scope)
 {
 	unsigned int i;
@@ -327,7 +305,6 @@ static int ldb_comparator_or(struct ldb_val *v1, struct ldb_val *v2)
 static int ldb_match_extended(struct ldb_context *ldb, 
 			      struct ldb_message *msg,
 			      struct ldb_parse_tree *tree,
-			      const char *base,
 			      enum ldb_scope scope)
 {
 	int i;
@@ -391,7 +368,6 @@ static int ldb_match_extended(struct ldb_context *ldb,
 static int ldb_match_message(struct ldb_context *ldb, 
 			     struct ldb_message *msg,
 			     struct ldb_parse_tree *tree,
-			     const char *base,
 			     enum ldb_scope scope)
 {
 	unsigned int i;
@@ -400,43 +376,41 @@ static int ldb_match_message(struct ldb_context *ldb,
 	switch (tree->operation) {
 	case LDB_OP_AND:
 		for (i=0;i<tree->u.list.num_elements;i++) {
-			v = ldb_match_message(ldb, msg, tree->u.list.elements[i],
-					       base, scope);
+			v = ldb_match_message(ldb, msg, tree->u.list.elements[i], scope);
 			if (!v) return 0;
 		}
 		return 1;
 
 	case LDB_OP_OR:
 		for (i=0;i<tree->u.list.num_elements;i++) {
-			v = ldb_match_message(ldb, msg, tree->u.list.elements[i],
-					      base, scope);
+			v = ldb_match_message(ldb, msg, tree->u.list.elements[i], scope);
 			if (v) return 1;
 		}
 		return 0;
 
 	case LDB_OP_NOT:
-		return ! ldb_match_message(ldb, msg, tree->u.isnot.child, base, scope);
+		return ! ldb_match_message(ldb, msg, tree->u.isnot.child, scope);
 
 	case LDB_OP_EQUALITY:
-		return ldb_match_equality(ldb, msg, tree, base, scope);
+		return ldb_match_equality(ldb, msg, tree, scope);
 
 	case LDB_OP_SUBSTRING:
-		return ldb_match_substring(ldb, msg, tree, base, scope);
+		return ldb_match_substring(ldb, msg, tree, scope);
 
 	case LDB_OP_GREATER:
-		return ldb_match_comparison(ldb, msg, tree, base, scope, LDB_OP_GREATER);
+		return ldb_match_comparison(ldb, msg, tree, scope, LDB_OP_GREATER);
 
 	case LDB_OP_LESS:
-		return ldb_match_comparison(ldb, msg, tree, base, scope, LDB_OP_LESS);
+		return ldb_match_comparison(ldb, msg, tree, scope, LDB_OP_LESS);
 
 	case LDB_OP_PRESENT:
-		return ldb_match_present(ldb, msg, tree, base, scope);
+		return ldb_match_present(ldb, msg, tree, scope);
 
 	case LDB_OP_APPROX:
-		return ldb_match_comparison(ldb, msg, tree, base, scope, LDB_OP_APPROX);
+		return ldb_match_comparison(ldb, msg, tree, scope, LDB_OP_APPROX);
 
 	case LDB_OP_EXTENDED:
-		return ldb_match_extended(ldb, msg, tree, base, scope);
+		return ldb_match_extended(ldb, msg, tree, scope);
 
 	}
 
@@ -446,12 +420,12 @@ static int ldb_match_message(struct ldb_context *ldb,
 int ldb_match_msg(struct ldb_context *ldb,
 		  struct ldb_message *msg,
 		  struct ldb_parse_tree *tree,
-		  const char *base,
+		  const struct ldb_dn *base,
 		  enum ldb_scope scope)
 {
 	if ( ! ldb_match_scope(ldb, base, msg->dn, scope) ) {
 		return 0;
 	}
 
-	return ldb_match_message(ldb, msg, tree, base, scope);
+	return ldb_match_message(ldb, msg, tree, scope);
 }

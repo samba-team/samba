@@ -41,8 +41,26 @@
 
 #define LDB_DN_NULL_FAILED(x) if (!(x)) goto failed
 
+#define LDB_SPECIAL "@SPECIAL"
+
+BOOL ldb_dn_is_special(const struct ldb_dn *dn)
+{
+	if (dn == NULL || dn->comp_num != 1) return 0;
+
+	return ! strcmp(dn->components[0].name, LDB_SPECIAL);
+}
+
+BOOL ldb_dn_check_special(const struct ldb_dn *dn, const char *check)
+{
+	if (dn == NULL || dn->comp_num != 1) return 0;
+
+	return ! strcmp(dn->components[0].value.data, check);
+}
+
 static int ldb_dn_is_valid_attribute_name(const char *name)
 {
+	if (name == NULL) return 0;
+
 	while (*name) {
 		if (! isascii(*name)) {
 			return 0;
@@ -165,6 +183,8 @@ static int get_quotes_position(const char *source, int *quote_start, int *quote_
 {
 	const char *p;
 
+	if (source == NULL || quote_start == NULL || quote_end == NULL) return -1;
+
 	p = source;
 
 	/* check if there are quotes surrounding the value */
@@ -196,6 +216,8 @@ static char *seek_to_separator(char *string, const char *separators)
 {
 	char *p;
 	int ret, qs, qe;
+
+	if (string == NULL || separators == NULL) return NULL;
 
 	p = strchr(string, '=');
 	LDB_DN_NULL_FAILED(p);
@@ -254,6 +276,11 @@ static struct ldb_dn_component ldb_dn_explode_component(void *mem_ctx, char *raw
 	char *p;
 	int ret, qs, qe;
 
+	if (raw_component == NULL) {
+		dc.name = NULL;
+		return dc;
+	}
+
 	/* find attribute type/value separator */
 	p = strchr(raw_component, '=');
 	LDB_DN_NULL_FAILED(p);
@@ -300,14 +327,10 @@ failed:
 	return dc;
 }
 
-struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn)
+struct ldb_dn *ldb_dn_new(void *mem_ctx)
 {
-	struct ldb_dn *edn; /* the exploded dn */
-	char *pdn, *p;
+	struct ldb_dn *edn;
 
-	pdn = NULL;
-
-	/* Allocate a structure to hold the exploded DN */
 	edn = talloc(mem_ctx, struct ldb_dn);
 	LDB_DN_NULL_FAILED(edn);
 
@@ -315,12 +338,33 @@ struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn)
 	edn->comp_num = 0;
 	edn->components = NULL;
 
+	return edn;
+
+failed:
+	return NULL;
+}
+
+struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn)
+{
+	struct ldb_dn *edn; /* the exploded dn */
+	char *pdn, *p;
+
+	if (dn == NULL) return NULL;
+
+	/* Allocate a structure to hold the exploded DN */
+	edn = ldb_dn_new(mem_ctx);
+
+	/* Empty DNs */
+	if (dn[0] == '\0') {
+		return edn;
+	}
+
 	/* Special DNs case */
 	if (dn[0] == '@') {
 		edn->comp_num = 1;
 		edn->components = talloc(edn, struct ldb_dn_component);
 		if (edn->components == NULL) goto failed;
-		edn->components[0].name = talloc_strdup(edn->components, "@SPECIAL");
+		edn->components[0].name = talloc_strdup(edn->components, LDB_SPECIAL);
 		if (edn->components[0].name == NULL) goto failed;
 		edn->components[0].value.data = talloc_strdup(edn->components, dn);
 		if (edn->components[0].value.data== NULL) goto failed;
@@ -376,8 +420,10 @@ char *ldb_dn_linearize(void *mem_ctx, const struct ldb_dn *edn)
 	char *dn, *value;
 	int i;
 
+	if (edn == NULL) return NULL;
+
 	/* Special DNs */
-	if ((edn->comp_num == 1) && strcmp("@SPECIAL", edn->components[0].name) == 0) {
+	if (ldb_dn_is_special(edn)) {
 		dn = talloc_strdup(mem_ctx, edn->components[0].value.data);
 		return dn;
 	}
@@ -419,6 +465,10 @@ int ldb_dn_compare_base(struct ldb_context *ldb,
 		return (dn->comp_num - base->comp_num);
 	}
 
+	if (base == NULL || base->comp_num == 0) return 0;
+	if (dn == NULL || dn->comp_num == 0) return -1;
+	if (base->comp_num > dn->comp_num) return -1;
+
 	/* if the number of components doesn't match they differ */
 	n0 = base->comp_num - 1;
 	n1 = dn->comp_num - 1;
@@ -450,6 +500,8 @@ int ldb_dn_compare(struct ldb_context *ldb,
 		   const struct ldb_dn *edn0,
 		   const struct ldb_dn *edn1)
 {
+	if (edn0 == NULL || edn1 == NULL) return edn1 - edn0;
+
 	if (edn0->comp_num != edn1->comp_num)
 		return (edn1->comp_num - edn0->comp_num);
 
@@ -461,6 +513,8 @@ int ldb_dn_cmp(struct ldb_context *ldb, const char *dn0, const char *dn1)
 	struct ldb_dn *edn0;
 	struct ldb_dn *edn1;
 	int ret;
+
+	if (dn0 == NULL || dn1 == NULL) return dn1 - dn0;
 
 	edn0 = ldb_dn_explode_casefold(ldb, dn0);
 	if (edn0 == NULL) return 0;
@@ -488,7 +542,9 @@ struct ldb_dn *ldb_dn_casefold(struct ldb_context *ldb, const struct ldb_dn *edn
 	struct ldb_dn *cedn;
 	int i;
 
-	cedn = talloc(ldb, struct ldb_dn);
+	if (edn == NULL) return NULL;
+
+	cedn = ldb_dn_new(ldb);
 	LDB_DN_NULL_FAILED(cedn);
 
 	cedn->comp_num = edn->comp_num;
@@ -521,6 +577,8 @@ struct ldb_dn *ldb_dn_explode_casefold(struct ldb_context *ldb, const char *dn)
 {
 	struct ldb_dn *edn, *cdn;
 
+	if (dn == NULL) return NULL;
+
 	edn = ldb_dn_explode(ldb, dn);
 	if (edn == NULL) return NULL;
 
@@ -529,3 +587,235 @@ struct ldb_dn *ldb_dn_explode_casefold(struct ldb_context *ldb, const char *dn)
 	talloc_free(edn);
 	return cdn;
 }
+
+char *ldb_dn_linearize_casefold(struct ldb_context *ldb, const struct ldb_dn *edn)
+{
+	struct ldb_dn *cdn;
+	char *dn;
+
+	if (edn == NULL) return NULL;
+
+	/* Special DNs */
+	if (ldb_dn_is_special(edn)) {
+		dn = talloc_strdup(ldb, edn->components[0].value.data);
+		return dn;
+	}
+
+	cdn = ldb_dn_casefold(ldb, edn);
+	if (cdn == NULL) return NULL;
+
+	dn = ldb_dn_linearize(ldb, cdn);
+	if (dn == NULL) {
+		talloc_free(cdn);
+		return NULL;
+	}
+
+	talloc_free(cdn);
+	return dn;
+}
+
+static struct ldb_dn_component ldb_dn_copy_component(void *mem_ctx, struct ldb_dn_component *src)
+{
+	struct ldb_dn_component dst;
+	
+	dst.name = NULL;
+
+	if (src == NULL) {
+		return dst;
+	}
+
+	dst.value = ldb_val_dup(mem_ctx, &(src->value));
+	if (dst.value.data == NULL) {
+		return dst;
+	}
+
+	dst.name = talloc_strdup(mem_ctx, src->name);
+	if (dst.name == NULL) {
+		talloc_free(dst.value.data);
+	}
+
+	return dst;
+}
+
+/* copy specified number of elements of a dn into a new one
+   element are copied from top level up to the unique rdn
+   num_el may be greater then dn->comp_num (see ldb_dn_make_child)
+*/
+struct ldb_dn *ldb_dn_copy_partial(void *mem_ctx, const struct ldb_dn *dn, int num_el)
+{
+	struct ldb_dn *new;
+	int i, n, e;
+
+	if (dn == NULL) return NULL;
+	if (num_el <= 0) return NULL;
+
+	new = ldb_dn_new(mem_ctx);
+	LDB_DN_NULL_FAILED(new);
+
+	new->comp_num = num_el;
+	n = new->comp_num - 1;
+	new->components = talloc_array(new, struct ldb_dn_component, new->comp_num);
+
+	if (dn->comp_num == 0) return new;
+	e = dn->comp_num - 1;
+
+	for (i = 0; i < new->comp_num; i++) {
+		new->components[n - i] = ldb_dn_copy_component(new->components,
+								&(dn->components[e - i]));
+		if ((e - i) == 0) {
+			return new;
+		}
+	}
+
+	return new;
+
+failed:
+	talloc_free(new);
+	return NULL;
+}
+
+struct ldb_dn *ldb_dn_copy(void *mem_ctx, const struct ldb_dn *dn)
+{
+	if (dn == NULL) return NULL;
+	return ldb_dn_copy_partial(mem_ctx, dn, dn->comp_num);
+}
+
+struct ldb_dn *ldb_dn_get_parent(void *mem_ctx, const struct ldb_dn *dn)
+{
+	if (dn == NULL) return NULL;
+	return ldb_dn_copy_partial(mem_ctx, dn, dn->comp_num - 1);
+}
+
+struct ldb_dn_component *ldb_dn_build_component(void *mem_ctx, const char *attr,
+							       const char *val)
+{
+	struct ldb_dn_component *dc;
+
+	if (attr == NULL || val == NULL) return NULL;
+
+	dc = talloc(mem_ctx, struct ldb_dn_component);
+	if (dc == NULL) return NULL;
+
+	dc->name = talloc_strdup(dc, attr);
+	if (dc->name ==  NULL) {
+		talloc_free(dc);
+		return NULL;
+	}
+
+	dc->value.data = talloc_strdup(dc, val);
+	if (dc->value.data ==  NULL) {
+		talloc_free(dc);
+		return NULL;
+	}
+
+	dc->value.length = strlen(val);
+
+	return dc;
+}
+
+struct ldb_dn *ldb_dn_build_child(void *mem_ctx, const char *attr,
+						 const char * value,
+						 const struct ldb_dn *base)
+{
+	struct ldb_dn *new;
+	if (! ldb_dn_is_valid_attribute_name(attr)) return NULL;
+	if (value == NULL || value == '\0') return NULL; 
+
+	if (base != NULL) {
+		new = ldb_dn_copy_partial(mem_ctx, base, base->comp_num + 1);
+		LDB_DN_NULL_FAILED(new);
+	} else {
+		new = ldb_dn_new(mem_ctx);
+		LDB_DN_NULL_FAILED(new);
+
+		new->comp_num = 1;
+		new->components = talloc_array(new, struct ldb_dn_component, new->comp_num);
+	}
+
+	new->components[0].name = talloc_strdup(new->components, attr);
+	LDB_DN_NULL_FAILED(new->components[0].name);
+
+	new->components[0].value.data = talloc_strdup(new->components, value);
+	LDB_DN_NULL_FAILED(new->components[0].value.data);
+	new->components[0].value.length = strlen(new->components[0].value.data);
+
+	return new;
+
+failed:
+	talloc_free(new);
+	return NULL;
+
+}
+
+struct ldb_dn *ldb_dn_make_child(void *mem_ctx, const struct ldb_dn_component *component,
+						const struct ldb_dn *base)
+{
+	if (component == NULL) return NULL;
+
+	return ldb_dn_build_child(mem_ctx, component->name, component->value.data, base);
+}
+
+struct ldb_dn *ldb_dn_compose(void *mem_ctx, const struct ldb_dn *dn1, const struct ldb_dn *dn2)
+{
+	int i;
+	struct ldb_dn *new;
+
+	if (dn2 == NULL && dn1 == NULL) {
+		return NULL;
+	}
+
+	if (dn2 == NULL) {
+		new = ldb_dn_new(mem_ctx);
+		LDB_DN_NULL_FAILED(new);
+
+		new->comp_num = dn1->comp_num;
+		new->components = talloc_array(new, struct ldb_dn_component, new->comp_num);
+	} else {
+		new = ldb_dn_copy_partial(mem_ctx, dn2, dn2->comp_num + dn1?dn1->comp_num:0);
+	}
+
+	if (dn1 == NULL) {
+		return new;
+	}
+
+	for (i = 0; i < dn1->comp_num; i++) {
+		new->components[i] = ldb_dn_copy_component(new->components,
+								&(dn1->components[i]));
+	}
+
+	return new;
+
+failed:
+	talloc_free(new);
+	return NULL;
+}
+
+struct ldb_dn *ldb_dn_compose_string_dn(void *mem_ctx, const char *dn1, const struct ldb_dn *dn2)
+{
+	if (dn1 == NULL) return NULL;
+
+	return ldb_dn_compose(mem_ctx, ldb_dn_explode(mem_ctx, dn1), dn2);
+}
+
+struct ldb_dn_component *ldb_dn_get_rdn(void *mem_ctx, const struct ldb_dn *dn)
+{
+	struct ldb_dn_component *rdn;
+
+	if (dn == NULL) return NULL;
+
+	if (dn->comp_num < 1) {
+		return NULL;
+	}
+
+	rdn = talloc(mem_ctx, struct ldb_dn_component);
+	if (rdn == NULL) return NULL;
+
+	*rdn = ldb_dn_copy_component(mem_ctx, &dn->components[0]);
+	if (rdn->name == NULL) {
+		talloc_free(rdn);
+		return NULL;
+	}
+
+	return rdn;
+}
+

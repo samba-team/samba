@@ -41,7 +41,7 @@ struct private_data {
 	const char *error_string;
 };
 
-static int timestamps_search(struct ldb_module *module, const char *base,
+static int timestamps_search(struct ldb_module *module, const struct ldb_dn *base,
 				  enum ldb_scope scope, const char *expression,
 				  const char * const *attrs, struct ldb_message ***res)
 {
@@ -49,7 +49,7 @@ static int timestamps_search(struct ldb_module *module, const char *base,
 	return ldb_next_search(module, base, scope, expression, attrs, res);
 }
 
-static int timestamps_search_bytree(struct ldb_module *module, const char *base,
+static int timestamps_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 				    enum ldb_scope scope, struct ldb_parse_tree *tree,
 				    const char * const *attrs, struct ldb_message ***res)
 {
@@ -101,7 +101,8 @@ static int timestamps_add_record(struct ldb_module *module, const struct ldb_mes
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_add_record\n");
 
-	if (msg->dn[0] == '@') { /* do not manipulate our control entries */
+	/* do not manipulate our control entries */
+	if (ldb_dn_is_special(msg->dn)) {
 		return ldb_next_add_record(module, msg);
 	}
 
@@ -159,8 +160,9 @@ static int timestamps_modify_record(struct ldb_module *module, const struct ldb_
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_modify_record\n");
 
-	if (msg->dn[0] == '@') { /* do not manipulate our control entries */
-		return ldb_next_modify_record(module, msg);
+	/* do not manipulate our control entries */
+	if (ldb_dn_is_special(msg->dn)) {
+		return ldb_next_add_record(module, msg);
 	}
 
 	timeval = time(NULL);
@@ -201,13 +203,13 @@ static int timestamps_modify_record(struct ldb_module *module, const struct ldb_
 	return ret;
 }
 
-static int timestamps_delete_record(struct ldb_module *module, const char *dn)
+static int timestamps_delete_record(struct ldb_module *module, const struct ldb_dn *dn)
 {
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_delete_record\n");
 	return ldb_next_delete_record(module, dn);
 }
 
-static int timestamps_rename_record(struct ldb_module *module, const char *olddn, const char *newdn)
+static int timestamps_rename_record(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
 {
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_rename_record\n");
 	return ldb_next_rename_record(module, olddn, newdn);

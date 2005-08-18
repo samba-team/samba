@@ -74,8 +74,15 @@ int ltdb_pack_data(struct ldb_module *module,
 	struct ldb_context *ldb = module->ldb;
 	unsigned int i, j, real_elements=0;
 	size_t size;
+	char *dn;
 	char *p;
 	size_t len;
+
+	dn = ldb_dn_linearize(ldb, message->dn);
+	if (dn == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
 
 	for (i=0;i<message->num_elements;i++) {
 		if (message->elements[i].num_values != 0) {
@@ -86,7 +93,7 @@ int ltdb_pack_data(struct ldb_module *module,
 	/* work out how big it needs to be */
 	size = 8;
 
-	size += 1 + strlen(message->dn);
+	size += 1 + strlen(dn);
 
 	for (i=0;i<message->num_elements;i++) {
 		if (message->elements[i].num_values == 0) {
@@ -101,6 +108,7 @@ int ltdb_pack_data(struct ldb_module *module,
 	/* allocate it */
 	data->dptr = talloc_array(ldb, char, size);
 	if (!data->dptr) {
+		talloc_free(dn);
 		errno = ENOMEM;
 		return -1;
 	}
@@ -113,8 +121,8 @@ int ltdb_pack_data(struct ldb_module *module,
 
 	/* the dn needs to be packed so we can be case preserving
 	   while hashing on a case folded dn */
-	len = strlen(message->dn);
-	memcpy(p, message->dn, len+1);
+	len = strlen(dn);
+	memcpy(p, dn, len+1);
 	p += len + 1;
 	
 	for (i=0;i<message->num_elements;i++) {
@@ -135,6 +143,7 @@ int ltdb_pack_data(struct ldb_module *module,
 		}
 	}
 
+	talloc_free(dn);
 	return 0;
 }
 
@@ -179,7 +188,11 @@ int ltdb_unpack_data(struct ldb_module *module,
 			errno = EIO;
 			goto failed;
 		}
-		message->dn = p;
+		message->dn = ldb_dn_explode(message, p);
+		if (message->dn == NULL) {
+			errno = ENOMEM;
+			goto failed;
+		}
 		remaining -= len + 1;
 		p += len + 1;
 		break;

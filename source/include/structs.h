@@ -197,6 +197,7 @@ struct test_join_ads_dc;
 struct netr_LMSessionKey;
 
 struct ldb_val;
+struct ldb_dn;
 struct ldb_message;
 struct ldb_context;
 struct ldb_parse_tree;

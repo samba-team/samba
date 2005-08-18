@@ -29,7 +29,7 @@
 */
 int gendb_search_v(struct ldb_context *ldb, 
 		   TALLOC_CTX *mem_ctx,
-		   const char *basedn,
+		   const struct ldb_dn *basedn,
 		   struct ldb_message ***res,
 		   const char * const *attrs,
 		   const char *format, 
@@ -55,7 +55,8 @@ int gendb_search_v(struct ldb_context *ldb,
 	if (*res) talloc_steal(mem_ctx, *res);
 
 	DEBUG(4,("gendb_search_v: %s %s -> %d  (%s)\n", 
-		 basedn?basedn:"NULL", expr?expr:"NULL", count,
+		 basedn?ldb_dn_linearize(mem_ctx,basedn):"NULL",
+		 expr?expr:"NULL", count,
 		 count==-1?ldb_errstring(ldb):"OK"));
 
 	free(expr);
@@ -68,7 +69,7 @@ int gendb_search_v(struct ldb_context *ldb,
 */
 int gendb_search(struct ldb_context *ldb,
 		 TALLOC_CTX *mem_ctx, 
-		 const char *basedn,
+		 const struct ldb_dn *basedn,
 		 struct ldb_message ***res,
 		 const char * const *attrs,
 		 const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
@@ -85,11 +86,11 @@ int gendb_search(struct ldb_context *ldb,
 
 int gendb_search_dn(struct ldb_context *ldb,
 		 TALLOC_CTX *mem_ctx, 
-		 const char *dn,
+		 const struct ldb_dn *dn,
 		 struct ldb_message ***res,
 		 const char * const *attrs)
 {
-	return gendb_search(ldb, mem_ctx, dn, res, attrs, "dn=%s", dn);
+	return gendb_search(ldb, mem_ctx, dn, res, attrs, "dn=%s", ldb_dn_linearize(mem_ctx, dn));
 }
 
 /*

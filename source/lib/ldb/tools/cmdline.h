@@ -40,6 +40,8 @@ struct ldb_cmdline {
 	int num_records;
 	int num_searches;
 	const char *sasl_mechanism;
+	const char *input;
+	const char *output;
 };
 
 struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const char **argv,

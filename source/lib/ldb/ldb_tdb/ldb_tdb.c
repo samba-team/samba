@@ -50,14 +50,12 @@
   note that the key for a record can depend on whether the 
   dn refers to a case sensitive index record or not
 */
-struct TDB_DATA ltdb_key(struct ldb_module *module, const char *dn)
+struct TDB_DATA ltdb_key(struct ldb_module *module, const struct ldb_dn *dn)
 {
 	struct ldb_context *ldb = module->ldb;
 	TDB_DATA key;
 	char *key_str = NULL;
 	char *dn_folded = NULL;
-	struct ldb_dn *edn = NULL;
-	struct ldb_dn *cedn = NULL;
 
 	/*
 	  most DNs are case insensitive. The exception is index DNs for
@@ -70,26 +68,14 @@ struct TDB_DATA ltdb_key(struct ldb_module *module, const char *dn)
 	  2) if the dn starts with @ then leave it alone - the indexing code handles
 	     the rest
 	*/
-	if (*dn == '@') {
-		dn_folded = talloc_strdup(ldb, dn);
-	} else {
-		edn = ldb_dn_explode(ldb, dn);
-		if (!edn)
-			goto failed;
 
-		cedn = ldb_dn_casefold(ldb, edn);
-		if (!cedn)
-			goto failed;
-
-                dn_folded = ldb_dn_linearize(ldb, cedn);
-		if (!dn_folded)
-			goto failed;
-
-		talloc_free(edn);
-		talloc_free(cedn);
+	dn_folded = ldb_dn_linearize_casefold(ldb, dn);
+	if (!dn_folded) {
+		goto failed;
 	}
 
 	key_str = talloc_asprintf(ldb, "DN=%s", dn_folded);
+
 	talloc_free(dn_folded);
 
 	if (!key_str) {
@@ -102,8 +88,6 @@ struct TDB_DATA ltdb_key(struct ldb_module *module, const char *dn)
 	return key;
 
 failed:
-	talloc_free(edn);
-	talloc_free(cedn);
 	errno = ENOMEM;
 	key.dptr = NULL;
 	key.dsize = 0;
@@ -116,7 +100,8 @@ failed:
 static int ltdb_lock(struct ldb_module *module, const char *lockname)
 {
 	struct ltdb_private *ltdb = module->private_data;
-	char *lock_dn;
+	struct ldb_dn *lock_dn;
+	char *ldn;
 	TDB_DATA key;
 	int ret;
 
@@ -124,10 +109,17 @@ static int ltdb_lock(struct ldb_module *module, const char *lockname)
 		return -1;
 	}
 
-	lock_dn = talloc_asprintf(module->ldb, "%s_%s", LDBLOCK, lockname);	
-	if (lock_dn == NULL) {
+	ldn = talloc_asprintf(module->ldb, "%s_%s", LDBLOCK, lockname);	
+	if (ldn == NULL) {
 		return -1;
 	}
+
+	lock_dn = ldb_dn_explode(module->ldb, ldn);
+	if (lock_dn == NULL) {
+		talloc_free(ldn);
+		return -1;
+	}
+	talloc_free(ldn);
 
 	key = ltdb_key(module, lock_dn);
 	if (!key.dptr) {
@@ -149,17 +141,25 @@ static int ltdb_lock(struct ldb_module *module, const char *lockname)
 static int ltdb_unlock(struct ldb_module *module, const char *lockname)
 {
 	struct ltdb_private *ltdb = module->private_data;
-	char *lock_dn;
+	struct ldb_dn *lock_dn;
+	char *ldn;
 	TDB_DATA key;
 
 	if (lockname == NULL) {
 		return -1;
 	}
 
-	lock_dn = talloc_asprintf(module->ldb, "%s_%s", LDBLOCK, lockname);	
-	if (lock_dn == NULL) {
+	ldn = talloc_asprintf(module->ldb, "%s_%s", LDBLOCK, lockname);	
+	if (ldn == NULL) {
 		return -1;
 	}
+
+	lock_dn = ldb_dn_explode(module->ldb, ldn);
+	if (lock_dn == NULL) {
+		talloc_free(ldn);
+		return -1;
+	}
+	talloc_free(ldn);
 
 	key = ltdb_key(module, lock_dn);
 	if (!key.dptr) {
@@ -183,11 +183,21 @@ int ltdb_lock_read(struct ldb_module *module)
 {
 	struct ltdb_private *ltdb = module->private_data;
 	TDB_DATA key;
+	struct ldb_dn *lock_dn;
 	int ret;
-	key = ltdb_key(module, LDBLOCK);
-	if (!key.dptr) {
+
+	lock_dn = ldb_dn_explode(module, LDBLOCK);
+	if (lock_dn == NULL) {
 		return -1;
 	}
+
+	key = ltdb_key(module, lock_dn);
+	if (!key.dptr) {
+		talloc_free(lock_dn);
+		return -1;
+	}
+	talloc_free(lock_dn);
+
 	ret = tdb_chainlock_read(ltdb->tdb, key);
 	talloc_free(key.dptr);
 	return ret;
@@ -199,11 +209,21 @@ int ltdb_lock_read(struct ldb_module *module)
 int ltdb_unlock_read(struct ldb_module *module)
 {
 	struct ltdb_private *ltdb = module->private_data;
+	struct ldb_dn *lock_dn;
 	TDB_DATA key;
-	key = ltdb_key(module, LDBLOCK);
-	if (!key.dptr) {
+
+	lock_dn = ldb_dn_explode(module, LDBLOCK);
+	if (lock_dn == NULL) {
 		return -1;
 	}
+
+	key = ltdb_key(module, lock_dn);
+	if (!key.dptr) {
+		talloc_free(lock_dn);
+		return -1;
+	}
+	talloc_free(lock_dn);
+
 	tdb_chainunlock_read(ltdb->tdb, key);
 	talloc_free(key.dptr);
 	return 0;
@@ -217,8 +237,9 @@ int ltdb_check_special_dn(struct ldb_module *module, const struct ldb_message *m
 {
 	struct ltdb_private *ltdb = module->private_data;
 	int i, j;
-
-	if (strcmp(msg->dn, LTDB_ATTRIBUTES) != 0) {
+ 
+	if (! ldb_dn_is_special(msg->dn) ||
+	    ! ldb_dn_check_special(msg->dn, LTDB_ATTRIBUTES)) {
 		return 0;
 	}
 
@@ -241,17 +262,19 @@ int ltdb_check_special_dn(struct ldb_module *module, const struct ldb_message *m
   we've made a modification to a dn - possibly reindex and 
   update sequence number
 */
-static int ltdb_modified(struct ldb_module *module, const char *dn)
+static int ltdb_modified(struct ldb_module *module, const struct ldb_dn *dn)
 {
 	int ret = 0;
 
-	if (strcmp(dn, LTDB_INDEXLIST) == 0 ||
-	    strcmp(dn, LTDB_ATTRIBUTES) == 0) {
+	if (ldb_dn_is_special(dn) &&
+	    (ldb_dn_check_special(dn, LTDB_INDEXLIST) ||
+	     ldb_dn_check_special(dn, LTDB_ATTRIBUTES)) ) {
 		ret = ltdb_reindex(module);
 	}
 
 	if (ret == 0 &&
-	    strcmp(dn, LTDB_BASEINFO) != 0) {
+	    !(ldb_dn_is_special(dn) &&
+	      ldb_dn_check_special(dn, LTDB_BASEINFO)) ) {
 		ret = ltdb_increase_sequence_number(module);
 	}
 
@@ -335,7 +358,7 @@ static int ltdb_add(struct ldb_module *module, const struct ldb_message *msg)
   delete a record from the database, not updating indexes (used for deleting
   index records)
 */
-int ltdb_delete_noindex(struct ldb_module *module, const char *dn)
+int ltdb_delete_noindex(struct ldb_module *module, const struct ldb_dn *dn)
 {
 	struct ltdb_private *ltdb = module->private_data;
 	TDB_DATA tdb_key;
@@ -355,7 +378,7 @@ int ltdb_delete_noindex(struct ldb_module *module, const char *dn)
 /*
   delete a record from the database
 */
-static int ltdb_delete(struct ldb_module *module, const char *dn)
+static int ltdb_delete(struct ldb_module *module, const struct ldb_dn *dn)
 {
 	struct ltdb_private *ltdb = module->private_data;
 	int ret;
@@ -477,12 +500,18 @@ static int msg_delete_attribute(struct ldb_module *module,
 				struct ldb_context *ldb,
 				struct ldb_message *msg, const char *name)
 {
+	char *dn;
 	unsigned int i, j;
+
+	dn = ldb_dn_linearize(ldb, msg->dn);
+	if (dn == NULL) {
+		return -1;
+	}
 
 	for (i=0;i<msg->num_elements;i++) {
 		if (ldb_attr_cmp(msg->elements[i].name, name) == 0) {
 			for (j=0;j<msg->elements[i].num_values;j++) {
-				ltdb_index_del_value(module, msg->dn, &msg->elements[i], j);
+				ltdb_index_del_value(module, dn, &msg->elements[i], j);
 			}
 			talloc_free(msg->elements[i].values);
 			if (msg->num_elements > (i+1)) {
@@ -499,6 +528,7 @@ static int msg_delete_attribute(struct ldb_module *module,
 		}
 	}
 
+	talloc_free(dn);
 	return 0;
 }
 
@@ -593,6 +623,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 		struct ldb_message_element *el = &msg->elements[i];
 		struct ldb_message_element *el2;
 		struct ldb_val *vals;
+		char *dn;
 
 		switch (msg->elements[i].flags & LDB_FLAG_MOD_MASK) {
 
@@ -650,6 +681,10 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 			break;
 
 		case LDB_FLAG_MOD_DELETE:
+
+			dn = ldb_dn_linearize(msg2, msg->dn);
+			if (dn == NULL) goto failed;
+
 			/* we could be being asked to delete all
 			   values or just some values */
 			if (msg->elements[i].num_values == 0) {
@@ -668,7 +703,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 					ltdb->last_err_string = "No such attribute";
 					goto failed;
 				}
-				if (ltdb_index_del_value(module, msg->dn, &msg->elements[i], j) != 0) {
+				if (ltdb_index_del_value(module, dn, &msg->elements[i], j) != 0) {
 					goto failed;
 				}
 			}
@@ -730,7 +765,7 @@ static int ltdb_modify(struct ldb_module *module, const struct ldb_message *msg)
 /*
   rename a record
 */
-static int ltdb_rename(struct ldb_module *module, const char *olddn, const char *newdn)
+static int ltdb_rename(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
 {
 	struct ltdb_private *ltdb = module->private_data;
 	int ret;
@@ -761,7 +796,7 @@ static int ltdb_rename(struct ldb_module *module, const char *olddn, const char 
 		goto failed;
 	}
 
-	msg->dn = talloc_strdup(msg, newdn);
+	msg->dn = ldb_dn_copy(msg, newdn);
 	if (!msg->dn) {
 		goto failed;
 	}

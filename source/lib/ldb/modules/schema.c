@@ -1,7 +1,7 @@
 /* 
    ldb database library
 
-   Copyright (C) Simo Sorce  2004
+   Copyright (C) Simo Sorce  2004-2005
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -72,28 +72,6 @@ struct schema_structures {
 	struct schema_attribute_list optional_attrs;
 };
 
-/* This function embedds the knowledge of aliased names.
-   Currently it handles only dn vs distinguishedNAme as a special case as AD
-   only have this special alias case, in future we should read the schema
-   to find out which names have an alias and check for them */
-static int schema_attr_cmp(const char *attr1, const char *attr2)
-{
-	int ret;
-
-	ret = ldb_attr_cmp(attr1, attr2);
-	if (ret != 0) {
-		if ((ldb_attr_cmp("dn", attr1) == 0) &&
-		    (ldb_attr_cmp("distinguishedName", attr2) == 0)) {
-			return 0;
-		}
-		if ((ldb_attr_cmp("dn", attr2) == 0) &&
-		    (ldb_attr_cmp("distinguishedName", attr1) == 0)) {
-			return 0;
-		}
-	}
-	return ret;
-}
-
 static struct schema_attribute *schema_find_attribute(struct schema_attribute_list *list, const char *attr_name)
 {
 	unsigned int i;
@@ -110,7 +88,7 @@ static struct schema_attribute *schema_find_attribute(struct schema_attribute_li
    objectclasses go in the objectclasses structure */
 static int get_msg_attributes(struct schema_structures *ss, const struct ldb_message *msg, int flag_mask)
 {
-	int i, j, k, l;
+	int i, j, anum, cnum;
 
 	ss->entry_attrs.attr = talloc_realloc(ss, ss->entry_attrs.attr,
 					      struct schema_attribute,
@@ -119,9 +97,9 @@ static int get_msg_attributes(struct schema_structures *ss, const struct ldb_mes
 		return -1;
 	}
 
-	for (i = 0, j = ss->entry_attrs.num; i < msg->num_elements; i++) {
+	for (i = 0, anum = ss->entry_attrs.num; i < msg->num_elements; i++) {
 
-		if (schema_attr_cmp(msg->elements[i].name, "objectclass") == 0) {
+		if (ldb_attr_cmp(msg->elements[i].name, "objectclass") == 0) {
 
 			ss->objectclasses.attr = talloc_realloc(ss, ss->objectclasses.attr,
 								struct schema_attribute,
@@ -130,34 +108,33 @@ static int get_msg_attributes(struct schema_structures *ss, const struct ldb_mes
 				return -1;
 			}
 
-			for (k = 0, l = ss->objectclasses.num; k < msg->elements[i].num_values; k++) {
-				ss->objectclasses.attr[l].name = msg->elements[i].values[k].data;
-				ss->objectclasses.attr[l].flags = msg->elements[i].flags & flag_mask;
-				l++;
+			for (j = 0, cnum = ss->objectclasses.num; j < msg->elements[i].num_values; j++) {
+				ss->objectclasses.attr[cnum+j].name = msg->elements[i].values[j].data;
+				ss->objectclasses.attr[cnum+j].flags = msg->elements[i].flags & flag_mask;
 			}
 			ss->objectclasses.num += msg->elements[i].num_values;
 		}
 
-		ss->entry_attrs.attr[j].flags = msg->elements[i].flags & flag_mask;
-		ss->entry_attrs.attr[j].name = talloc_reference(ss->entry_attrs.attr,
+		/* TODO: Check for proper attribute Syntax ! */
+
+		ss->entry_attrs.attr[anum+i].flags = msg->elements[i].flags & flag_mask;
+		ss->entry_attrs.attr[anum+i].name = talloc_reference(ss->entry_attrs.attr,
 							    msg->elements[i].name);
-		if (ss->entry_attrs.attr[j].name == NULL) {
+		if (ss->entry_attrs.attr[anum+i].name == NULL) {
 			return -1;
 		}
-		j++;
 	}
 	ss->entry_attrs.num += msg->num_elements;
 
 	return 0;
 }
 
-static int get_entry_attributes(struct ldb_context *ldb, const char *dn, struct schema_structures *ss)
+static int get_entry_attributes(struct ldb_context *ldb, const struct ldb_dn *dn, struct schema_structures *ss)
 {
-	char *filter = talloc_asprintf(ss, "dn=%s", dn);
 	struct ldb_message **srch;
 	int ret;
 
-	ret = ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &srch);
+	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, NULL, NULL, &srch);
 	if (ret != 1) {
 		return ret;
 	}
@@ -190,7 +167,7 @@ static int add_attribute_uniq(void *mem_ctx, struct schema_attribute_list *list,
 		for (c = 0; c < list->num; c++) {
 			len = strlen(list->attr[c].name);
 			if (len == el->values[i].length) {
-				if (schema_attr_cmp(list->attr[c].name, el->values[i].data) == 0) {
+				if (ldb_attr_cmp(list->attr[c].name, el->values[i].data) == 0) {
 					found = 1;
 					break;
 				}
@@ -254,11 +231,15 @@ static int get_attr_list_recursive(struct ldb_module *module, struct schema_stru
 
 			is_aux = 0;
 			is_class = 0;
-			if (schema_attr_cmp((*srch)->elements[j].name, "systemAuxiliaryclass") == 0) {
+			if (ldb_attr_cmp((*srch)->elements[j].name, "systemAuxiliaryclass") == 0) {
 				is_aux = SCHEMA_FLAG_AUXILIARY;
 				is_class = 1;
 			}
-			if (schema_attr_cmp((*srch)->elements[j].name, "subClassOf") == 0) {
+			if (ldb_attr_cmp((*srch)->elements[j].name, "auxiliaryClass") == 0) {
+				is_aux = SCHEMA_FLAG_AUXILIARY;
+				is_class = 1;
+			}
+			if (ldb_attr_cmp((*srch)->elements[j].name, "subClassOf") == 0) {
 				is_class = 1;
 			}
 
@@ -271,8 +252,8 @@ static int get_attr_list_recursive(struct ldb_module *module, struct schema_stru
 				}
 			} else {
 
-				if (schema_attr_cmp((*srch)->elements[j].name, "mustContain") == 0 ||
-					schema_attr_cmp((*srch)->elements[j].name, "SystemMustContain") == 0) {
+				if (ldb_attr_cmp((*srch)->elements[j].name, "mustContain") == 0 ||
+					ldb_attr_cmp((*srch)->elements[j].name, "SystemMustContain") == 0) {
 					if (add_attribute_uniq(schema_struct,
 								&schema_struct->required_attrs,
 								SCHEMA_FLAG_RESET,
@@ -281,8 +262,8 @@ static int get_attr_list_recursive(struct ldb_module *module, struct schema_stru
 					}
 				}
 
-				if (schema_attr_cmp((*srch)->elements[j].name, "mayContain") == 0 ||
-				    schema_attr_cmp((*srch)->elements[j].name, "SystemMayContain") == 0) {
+				if (ldb_attr_cmp((*srch)->elements[j].name, "mayContain") == 0 ||
+				    ldb_attr_cmp((*srch)->elements[j].name, "SystemMayContain") == 0) {
 
 					if (add_attribute_uniq(schema_struct,
 								&schema_struct->optional_attrs,
@@ -299,14 +280,14 @@ static int get_attr_list_recursive(struct ldb_module *module, struct schema_stru
 }
 
 /* search */
-static int schema_search(struct ldb_module *module, const char *base,
+static int schema_search(struct ldb_module *module, const struct ldb_dn *base,
 		       enum ldb_scope scope, const char *expression,
 		       const char * const *attrs, struct ldb_message ***res)
 {
 	return ldb_next_search(module, base, scope, expression, attrs, res); 
 }
 
-static int schema_search_bytree(struct ldb_module *module, const char *base,
+static int schema_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 				enum ldb_scope scope, struct ldb_parse_tree *tree,
 				const char * const *attrs, struct ldb_message ***res)
 {
@@ -329,9 +310,12 @@ static int schema_add_record(struct ldb_module *module, const struct ldb_message
 		Free all structures and commit the change
 	*/
 
-	if (msg->dn[0] == '@') { /* do not check on our control entries */
+	/* do not check on our control entries */
+	if (ldb_dn_is_special(msg->dn)) {
 		return ldb_next_add_record(module, msg);
 	}
+
+	/* TODO: check parent exists */
 
 	entry_structs = talloc_zero(module, struct schema_structures);
 	if (!entry_structs) {
@@ -414,8 +398,9 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 		Free all structures and commit the change.
 	*/
 
-	if (msg->dn[0] == '@') { /* do not check on our control entries */
-		return ldb_next_modify_record(module, msg);
+	/* do not check on our control entries */
+	if (ldb_dn_is_special(msg->dn)) {
+		return ldb_next_add_record(module, msg);
 	}
 
 	/* allocate object structs */
@@ -504,14 +489,14 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 }
 
 /* delete_record */
-static int schema_delete_record(struct ldb_module *module, const char *dn)
+static int schema_delete_record(struct ldb_module *module, const struct ldb_dn *dn)
 {
 /*	struct private_data *data = (struct private_data *)module->private_data; */
 	return ldb_next_delete_record(module, dn);
 }
 
 /* rename_record */
-static int schema_rename_record(struct ldb_module *module, const char *olddn, const char *newdn)
+static int schema_rename_record(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
 {
 	return ldb_next_rename_record(module, olddn, newdn);
 }

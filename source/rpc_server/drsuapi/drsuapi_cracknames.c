@@ -36,7 +36,7 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 	const char *domain_filter = NULL;
 	const char * const *domain_attrs;
 	struct ldb_message **domain_res = NULL;
-	const char *result_basedn = NULL;
+	const struct ldb_dn *result_basedn = NULL;
 	const char *result_filter = NULL;
 	const char * const *result_attrs;
 	struct ldb_message **result_res = NULL;
@@ -166,7 +166,7 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 	info1->status		= DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY;
 
 	if (result_filter) {
-		result_basedn = samdb_result_string(domain_res[0], "ncName", NULL);
+		result_basedn = samdb_result_dn(mem_ctx, domain_res[0], "ncName", NULL);
 
 		ret = gendb_search(b_state->sam_ctx, mem_ctx, result_basedn, &result_res,
 					result_attrs, "%s", result_filter);
@@ -189,7 +189,7 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 	/* here we can use result_res[0] and domain_res[0] */
 	switch (format_desired) {
 		case DRSUAPI_DS_NAME_FORMAT_FQDN_1779: {
-			info1->result_name	= result_res[0]->dn;
+			info1->result_name	= ldb_dn_linearize(mem_ctx, result_res[0]->dn);
 			WERR_TALLOC_CHECK(info1->result_name);
 
 			info1->status		= DRSUAPI_DS_NAME_STATUS_OK;

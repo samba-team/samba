@@ -81,9 +81,10 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 	/* try and find the domain */
 	ret = gendb_search(cldapd->samctx, mem_ctx, NULL, &ref_res, ref_attrs, 
 			   "(&(objectClass=crossRef)(ncName=%s))", 
-			   dom_res[0]->dn);
+			   ldb_dn_linearize(mem_ctx, dom_res[0]->dn));
 	if (ret != 1) {
-		DEBUG(2,("Unable to find referece to '%s' in sam\n", dom_res[0]->dn));
+		DEBUG(2,("Unable to find referece to '%s' in sam\n",
+			 ldb_dn_linearize(mem_ctx, dom_res[0]->dn)));
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 

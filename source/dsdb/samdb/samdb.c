@@ -43,7 +43,7 @@ struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx)
 */
 int samdb_search_domain(struct ldb_context *sam_ldb,
 			TALLOC_CTX *mem_ctx, 
-			const char *basedn,
+			const struct ldb_dn *basedn,
 			struct ldb_message ***res,
 			const char * const *attrs,
 			const struct dom_sid *domain_sid,
@@ -84,7 +84,7 @@ int samdb_search_domain(struct ldb_context *sam_ldb,
 */
 const char *samdb_search_string_v(struct ldb_context *sam_ldb,
 				  TALLOC_CTX *mem_ctx,
-				  const char *basedn,
+				  const struct ldb_dn *basedn,
 				  const char *attr_name,
 				  const char *format, va_list ap) _PRINTF_ATTRIBUTE(5,0)
 {
@@ -113,7 +113,7 @@ const char *samdb_search_string_v(struct ldb_context *sam_ldb,
 */
 const char *samdb_search_string(struct ldb_context *sam_ldb,
 				TALLOC_CTX *mem_ctx,
-				const char *basedn,
+				const struct ldb_dn *basedn,
 				const char *attr_name,
 				const char *format, ...) _PRINTF_ATTRIBUTE(5,6)
 {
@@ -132,7 +132,7 @@ const char *samdb_search_string(struct ldb_context *sam_ldb,
 */
 struct dom_sid *samdb_search_dom_sid(struct ldb_context *sam_ldb,
 				     TALLOC_CTX *mem_ctx,
-				     const char *basedn,
+				     const struct ldb_dn *basedn,
 				     const char *attr_name,
 				     const char *format, ...) _PRINTF_ATTRIBUTE(5,6)
 {
@@ -165,7 +165,7 @@ struct dom_sid *samdb_search_dom_sid(struct ldb_context *sam_ldb,
 */
 int samdb_search_count(struct ldb_context *sam_ldb,
 		       TALLOC_CTX *mem_ctx,
-		       const char *basedn,
+		       const struct ldb_dn *basedn,
 		       const char *format, ...) _PRINTF_ATTRIBUTE(4,5)
 {
 	va_list ap;
@@ -187,7 +187,7 @@ int samdb_search_count(struct ldb_context *sam_ldb,
 uint_t samdb_search_uint(struct ldb_context *sam_ldb,
 			 TALLOC_CTX *mem_ctx,
 			 uint_t default_value,
-			 const char *basedn,
+			 const struct ldb_dn *basedn,
 			 const char *attr_name,
 			 const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
 {
@@ -215,7 +215,7 @@ uint_t samdb_search_uint(struct ldb_context *sam_ldb,
 int64_t samdb_search_int64(struct ldb_context *sam_ldb,
 			   TALLOC_CTX *mem_ctx,
 			   int64_t default_value,
-			   const char *basedn,
+			   const struct ldb_dn *basedn,
 			   const char *attr_name,
 			   const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
 {
@@ -243,7 +243,7 @@ int64_t samdb_search_int64(struct ldb_context *sam_ldb,
 */
 int samdb_search_string_multiple(struct ldb_context *sam_ldb,
 				 TALLOC_CTX *mem_ctx,
-				 const char *basedn,
+				 const struct ldb_dn *basedn,
 				 const char ***strs,
 				 const char *attr_name,
 				 const char *format, ...) _PRINTF_ATTRIBUTE(6,7)
@@ -310,6 +310,14 @@ const char *samdb_result_string(struct ldb_message *msg, const char *attr,
 				const char *default_value)
 {
 	return ldb_msg_find_string(msg, attr, default_value);
+}
+
+struct ldb_dn *samdb_result_dn(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+			       const char *attr, struct ldb_dn *default_value)
+{
+	const char *string = samdb_result_string(msg, attr, NULL);
+	if (string == NULL) return default_value;
+	return ldb_dn_explode(mem_ctx, string);
 }
 
 /*
@@ -421,7 +429,7 @@ uint64_t samdb_result_uint64(struct ldb_message *msg, const char *attr, uint64_t
 */
 NTTIME samdb_result_allow_password_change(struct ldb_context *sam_ldb, 
 					  TALLOC_CTX *mem_ctx, 
-					  const char *domain_dn, 
+					  const struct ldb_dn *domain_dn, 
 					  struct ldb_message *msg, 
 					  const char *attr)
 {
@@ -433,7 +441,7 @@ NTTIME samdb_result_allow_password_change(struct ldb_context *sam_ldb,
 	}
 
 	minPwdAge = samdb_search_int64(sam_ldb, mem_ctx, 0,
-				       domain_dn, "minPwdAge", "dn=%s", domain_dn);
+				       domain_dn, "minPwdAge", "dn=%s", ldb_dn_linearize(mem_ctx, domain_dn));
 
 	/* yes, this is a -= not a += as minPwdAge is stored as the negative
 	   of the number of 100-nano-seconds */
@@ -448,7 +456,7 @@ NTTIME samdb_result_allow_password_change(struct ldb_context *sam_ldb,
 */
 NTTIME samdb_result_force_password_change(struct ldb_context *sam_ldb, 
 					  TALLOC_CTX *mem_ctx, 
-					  const char *domain_dn, 
+					  const struct ldb_dn *domain_dn, 
 					  struct ldb_message *msg, 
 					  const char *attr)
 {
@@ -460,7 +468,7 @@ NTTIME samdb_result_force_password_change(struct ldb_context *sam_ldb,
 	}
 
 	maxPwdAge = samdb_search_int64(sam_ldb, mem_ctx, 0, domain_dn, 
-				       "maxPwdAge", "dn=%s", domain_dn);
+				       "maxPwdAge", "dn=%s", ldb_dn_linearize(mem_ctx, domain_dn));
 	if (maxPwdAge == 0) {
 		return 0;
 	} else {
@@ -899,7 +907,7 @@ int samdb_add(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_messa
 /*
   delete a record
 */
-int samdb_delete(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, const char *dn)
+int samdb_delete(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, const struct ldb_dn *dn)
 {
 	return ldb_delete(sam_ldb, dn);
 }

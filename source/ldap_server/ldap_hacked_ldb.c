@@ -24,7 +24,6 @@
 #include "includes.h"
 #include "dynconfig.h"
 #include "ldap_server/ldap_server.h"
-#include "ldap_parse.h"
 #include "lib/ldb/include/ldb.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_misc.h"
@@ -131,12 +130,12 @@ DEBUG(0, (__location__": convert_values(ncname): nc dn = '%s'\n", nc_filter));
 
 		
 		/* first the NC stuff */
-		count = ldb_search(samdb, "", LDB_SCOPE_BASE, nc_filter, s_attrs, &res);
+		count = ldb_search(samdb, NULL, LDB_SCOPE_BASE, nc_filter, s_attrs, &res);
 		if (count != 1) {
 			DEBUG(0, (__location__": convert_values(ncname): nc_count: %d \n", count));
 			return NT_STATUS_FOOBAR;
 		}
-DEBUG(0, (__location__": convert_values(ncname): nc_res '%s'\n", res[0]->dn));
+DEBUG(0, (__location__": convert_values(ncname): nc_res '%s'\n", ldb_dn_linearize(mem_ctx, res[0]->dn)));
 		nc_guid_str = samdb_result_string(res[0], "objectGUID", NULL);
 
 		status = GUID_from_string(nc_guid_str, &nc_guid);
@@ -159,7 +158,7 @@ DEBUG(0, (__location__": convert_values(ncname): dn='%s'\n",*dn));
 
 		dom_filter = talloc_asprintf(mem_ctx, "(dn=%s)", dom_dn);
 DEBUG(0, (__location__": convert_values(ncname): dom dn = '%s'\n", dom_filter));
-		count = ldb_search(samdb, "", LDB_SCOPE_BASE, dom_filter, s_attrs, &res);
+		count = ldb_search(samdb, NULL, LDB_SCOPE_BASE, dom_filter, s_attrs, &res);
 		if (count != 1) {
 			DEBUG(0, (__location__": convert_values(ncname): dom_count: %d \n", count));
 			return NT_STATUS_OK;
@@ -292,18 +291,12 @@ static NTSTATUS hacked_Search(struct ldapsrv_partition *partition, struct ldapsr
 	int count, j, y, i;
 	const char **attrs = NULL;
 	enum ldb_scope scope = LDB_SCOPE_DEFAULT;
-	struct ldap_dn *basedn;
-	const char *basedn_str;
+	struct ldb_dn *basedn;
 
 	local_ctx = talloc_named(call, 0, "hacked_Search local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
-	basedn = ldap_parse_dn(local_ctx, r->basedn);
-	if (!basedn) {
-		basedn_str = r->basedn;
-	} else {
-		basedn_str = basedn->dn;
-	}
+	basedn = ldb_dn_explode(local_ctx, r->basedn);
 
 	switch (r->scope) {
 		case LDAP_SEARCH_SCOPE_BASE:
@@ -330,9 +323,9 @@ static NTSTATUS hacked_Search(struct ldapsrv_partition *partition, struct ldapsr
 		}
 		attrs[j] = NULL;
 	}
-DEBUG(0,("hacked basedn: %s\n", basedn_str));
+DEBUG(0,("hacked basedn: %s\n", ldb_dn_linearize(local_ctx, basedn)));
 DEBUGADD(0,("hacked filter: %s\n", ldb_filter_from_tree(r, r->tree)));
-	count = ldb_search_bytree(samdb, basedn_str, scope, r->tree, attrs, &res);
+	count = ldb_search_bytree(samdb, basedn, scope, r->tree, attrs, &res);
 	talloc_steal(samdb, res);
 
 	if (count < 1) {
@@ -345,7 +338,7 @@ DEBUGADD(0,("hacked filter: %s\n", ldb_filter_from_tree(r, r->tree)));
 		NT_STATUS_HAVE_NO_MEMORY(ent_r);
 
 		ent = &ent_r->msg->r.SearchResultEntry;
-		ent->dn = talloc_steal(ent_r, res[0]->dn);
+		ent->dn = ldb_dn_linearize(ent_r, res[0]->dn);
 		DEBUG(0,("hacked result [0] dn: %s\n", ent->dn));
 		ent->num_attributes = 0;
 		ent->attributes = NULL;
@@ -390,7 +383,7 @@ queue_reply:
 			NT_STATUS_HAVE_NO_MEMORY(ent_r);
 
 			ent = &ent_r->msg->r.SearchResultEntry;
-			ent->dn = talloc_steal(ent_r, res[i]->dn);
+			ent->dn = ldb_dn_linearize(ent_r, res[i]->dn);
 			DEBUG(0,("hacked result [%d] dn: %s\n", i, ent->dn));
 			ent->num_attributes = 0;
 			ent->attributes = NULL;
@@ -606,7 +599,7 @@ static NTSTATUS hldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_cal
 				     struct ldap_AddRequest *r)
 {
 	void *local_ctx;
-	struct ldap_dn *dn;
+	struct ldb_dn *dn;
 	struct ldap_Result *add_result;
 	struct ldapsrv_reply *add_reply;
 	int ldb_ret;
@@ -622,15 +615,14 @@ static NTSTATUS hldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_cal
 	samdb = ldapsrv_sam_connect(call);
 	NT_STATUS_HAVE_NO_MEMORY(samdb);
 
-	dn = ldap_parse_dn(local_ctx, r->dn);
-	VALID_DN_SYNTAX(dn,1);
-
-	DEBUG(10, ("hldb_add: dn: [%s]\n", dn->dn));
-
 	msg = talloc(local_ctx, struct ldb_message);
 	NT_STATUS_HAVE_NO_MEMORY(msg);
 
-	msg->dn = dn->dn;
+	msg->dn = ldb_dn_explode(local_ctx, r->dn);
+	VALID_DN_SYNTAX(dn, 1);
+
+	DEBUG(10, ("hldb_add: dn: [%s]\n", ldb_dn_linearize(local_ctx, dn)));
+
 	msg->private_data = NULL;
 	msg->num_elements = 0;
 	msg->elements = NULL;
@@ -679,7 +671,7 @@ reply:
 	if (result == LDAP_SUCCESS) {
 		ldb_ret = ldb_add(samdb, msg);
 		if (ldb_ret == 0) {
-			DEBUG(0,("hldb_Add: added: '%s'\n", msg->dn));
+			DEBUG(0,("hldb_Add: added: '%s'\n", ldb_dn_linearize(msg, msg->dn)));
 			result = LDAP_SUCCESS;
 			errstr = NULL;
 		} else {
@@ -707,7 +699,7 @@ static NTSTATUS hldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_cal
 				     struct ldap_DelRequest *r)
 {
 	void *local_ctx;
-	struct ldap_dn *dn;
+	struct ldb_dn *dn;
 	struct ldap_Result *del_result;
 	struct ldapsrv_reply *del_reply;
 	int ldb_ret;
@@ -721,17 +713,17 @@ static NTSTATUS hldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_cal
 	samdb = ldapsrv_sam_connect(call);
 	NT_STATUS_HAVE_NO_MEMORY(samdb);
 
-	dn = ldap_parse_dn(local_ctx, r->dn);
+	dn = ldb_dn_explode(local_ctx, r->dn);
 	VALID_DN_SYNTAX(dn,1);
 
-	DEBUG(10, ("hldb_Del: dn: [%s]\n", dn->dn));
+	DEBUG(10, ("hldb_Del: dn: [%s]\n", ldb_dn_linearize(local_ctx, dn)));
 
 reply:
 	del_reply = ldapsrv_init_reply(call, LDAP_TAG_DelResponse);
 	NT_STATUS_HAVE_NO_MEMORY(del_reply);
 
 	if (result == LDAP_SUCCESS) {
-		ldb_ret = ldb_delete(samdb, dn->dn);
+		ldb_ret = ldb_delete(samdb, dn);
 		if (ldb_ret == 0) {
 			result = LDAP_SUCCESS;
 			errstr = NULL;
@@ -760,7 +752,7 @@ static NTSTATUS hldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_
 				     struct ldap_ModifyRequest *r)
 {
 	void *local_ctx;
-	struct ldap_dn *dn;
+	struct ldb_dn *dn;
 	struct ldap_Result *modify_result;
 	struct ldapsrv_reply *modify_reply;
 	int ldb_ret;
@@ -776,15 +768,14 @@ static NTSTATUS hldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_
 	samdb = ldapsrv_sam_connect(call);
 	NT_STATUS_HAVE_NO_MEMORY(samdb);
 
-	dn = ldap_parse_dn(local_ctx, r->dn);
-	VALID_DN_SYNTAX(dn,1);
-
-	DEBUG(10, ("hldb_modify: dn: [%s]\n", dn->dn));
-
 	msg = talloc(local_ctx, struct ldb_message);
 	NT_STATUS_HAVE_NO_MEMORY(msg);
 
-	msg->dn = dn->dn;
+	msg->dn = ldb_dn_explode(local_ctx, r->dn);
+	VALID_DN_SYNTAX(dn,1);
+
+	DEBUG(10, ("hldb_modify: dn: [%s]\n", ldb_dn_linearize(local_ctx, dn)));
+
 	msg->private_data = NULL;
 	msg->num_elements = 0;
 	msg->elements = NULL;
@@ -856,7 +847,7 @@ reply:
 			if (strcmp("Type or value exists", errstr) ==0){
 				result = LDAP_ATTRIBUTE_OR_VALUE_EXISTS;
 			}
-			DEBUG(0,("failed to modify: %s - %u - %s\n", msg->dn, result, errstr));
+			DEBUG(0,("failed to modify: %s - %u - %s\n", ldb_dn_linearize(local_ctx, msg->dn), result, errstr));
 		}
 	}
 
@@ -876,7 +867,7 @@ static NTSTATUS hldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 				     struct ldap_CompareRequest *r)
 {
 	void *local_ctx;
-	struct ldap_dn *dn;
+	struct ldb_dn *dn;
 	struct ldap_Result *compare;
 	struct ldapsrv_reply *compare_r;
 	int result = LDAP_SUCCESS;
@@ -893,10 +884,10 @@ static NTSTATUS hldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 	samdb = ldapsrv_sam_connect(call);
 	NT_STATUS_HAVE_NO_MEMORY(samdb);
 
-	dn = ldap_parse_dn(local_ctx, r->dn);
+	dn = ldb_dn_explode(local_ctx, r->dn);
 	VALID_DN_SYNTAX(dn,1);
 
-	DEBUG(10, ("hldb_Compare: dn: [%s]\n", dn->dn));
+	DEBUG(10, ("hldb_Compare: dn: [%s]\n", ldb_dn_linearize(local_ctx, dn)));
 	filter = talloc_asprintf(local_ctx, "(%s=%*s)", r->attribute, 
 				 (int)r->value.length, r->value.data);
 	NT_STATUS_HAVE_NO_MEMORY(filter);
@@ -910,7 +901,7 @@ reply:
 	NT_STATUS_HAVE_NO_MEMORY(compare_r);
 
 	if (result == LDAP_SUCCESS) {
-		count = ldb_search(samdb, dn->dn, LDB_SCOPE_BASE, filter, attrs, &res);
+		count = ldb_search(samdb, dn, LDB_SCOPE_BASE, filter, attrs, &res);
 		talloc_steal(samdb, res);
 		if (count == 1) {
 			DEBUG(10,("hldb_Compare: matched\n"));
@@ -946,15 +937,15 @@ reply:
 static NTSTATUS hldb_ModifyDN(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_ModifyDNRequest *r)
 {
 	void *local_ctx;
-	struct ldap_dn *olddn, *newrdn, *newsuperior;
+	struct ldb_dn *olddn, *newrdn, *newsuperior;
 	struct ldap_Result *modifydn;
 	struct ldapsrv_reply *modifydn_r;
 	int ldb_ret;
 	struct ldb_context *samdb;
 	const char *errstr = NULL;
 	int result = LDAP_SUCCESS;
-	const char *newdn = NULL;
-	char *parentdn = NULL;
+	const struct ldb_dn *newdn = NULL;
+	struct ldb_dn *parentdn = NULL;
 
 	local_ctx = talloc_named(call, 0, "hldb_ModifyDN local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
@@ -962,14 +953,14 @@ static NTSTATUS hldb_ModifyDN(struct ldapsrv_partition *partition, struct ldapsr
 	samdb = ldapsrv_sam_connect(call);
 	NT_STATUS_HAVE_NO_MEMORY(samdb);
 
-	olddn = ldap_parse_dn(local_ctx, r->dn);
+	olddn = ldb_dn_explode(local_ctx, r->dn);
 	VALID_DN_SYNTAX(olddn,2);
 
-	newrdn = ldap_parse_dn(local_ctx, r->newrdn);
+	newrdn = ldb_dn_explode(local_ctx, r->newrdn);
 	VALID_DN_SYNTAX(newrdn,1);
 
-	DEBUG(10, ("hldb_ModifyDN: olddn: [%s]\n", olddn->dn));
-	DEBUG(10, ("hldb_ModifyDN: newrdn: [%s]\n", newrdn->dn));
+	DEBUG(10, ("hldb_ModifyDN: olddn: [%s]\n", ldb_dn_linearize(local_ctx, olddn)));
+	DEBUG(10, ("hldb_ModifyDN: newrdn: [%s]\n", ldb_dn_linearize(local_ctx, newrdn)));
 
 	/* we can't handle the rename if we should not remove the old dn */
 	if (!r->deleteolddn) {
@@ -985,30 +976,22 @@ static NTSTATUS hldb_ModifyDN(struct ldapsrv_partition *partition, struct ldapsr
 	}
 
 	if (r->newsuperior) {
-		newsuperior = ldap_parse_dn(local_ctx, r->newsuperior);
+		newsuperior = ldb_dn_explode(local_ctx, r->newsuperior);
 		VALID_DN_SYNTAX(newsuperior,0);
-		DEBUG(10, ("hldb_ModifyDN: newsuperior: [%s]\n", newsuperior->dn));
+		DEBUG(10, ("hldb_ModifyDN: newsuperior: [%s]\n", ldb_dn_linearize(local_ctx, newsuperior)));
 		
 		if (newsuperior->comp_num < 1) {
 			result = LDAP_AFFECTS_MULTIPLE_DSAS;
 			errstr = "Error new Superior DN invalid";
 			goto reply;
 		}
-		parentdn = newsuperior->dn;
+		parentdn = newsuperior;
 	}
 
 	if (!parentdn) {
-		int i;
-		parentdn = talloc_strdup(local_ctx, olddn->components[1]->component);
-		NT_STATUS_HAVE_NO_MEMORY(parentdn);
-		for(i=2; i < olddn->comp_num; i++) {
-			char *old = parentdn;
-			parentdn = talloc_asprintf(local_ctx, "%s,%s", old, olddn->components[i]->component);
-			NT_STATUS_HAVE_NO_MEMORY(parentdn);
-			talloc_free(old);
-		}
+		parentdn = ldb_dn_get_parent(local_ctx, olddn);
 	}
-	newdn = talloc_asprintf(local_ctx, "%s,%s", newrdn->dn, parentdn);
+	newdn = ldb_dn_make_child(local_ctx, ldb_dn_get_rdn(local_ctx, newrdn), parentdn);
 	NT_STATUS_HAVE_NO_MEMORY(newdn);
 
 reply:
@@ -1016,7 +999,7 @@ reply:
 	NT_STATUS_HAVE_NO_MEMORY(modifydn_r);
 
 	if (result == LDAP_SUCCESS) {
-		ldb_ret = ldb_rename(samdb, olddn->dn, newdn);
+		ldb_ret = ldb_rename(samdb, olddn, newdn);
 		if (ldb_ret == 0) {
 			result = LDAP_SUCCESS;
 			errstr = NULL;

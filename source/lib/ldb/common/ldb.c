@@ -114,7 +114,7 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
 
 */
 int ldb_search(struct ldb_context *ldb, 
-	       const char *base,
+	       const struct ldb_dn *base,
 	       enum ldb_scope scope,
 	       const char *expression,
 	       const char * const *attrs, struct ldb_message ***res)
@@ -131,7 +131,7 @@ int ldb_search(struct ldb_context *ldb,
 
 */
 int ldb_search_bytree(struct ldb_context *ldb, 
-		      const char *base,
+		      const struct ldb_dn *base,
 		      enum ldb_scope scope,
 		      struct ldb_parse_tree *tree,
 		      const char * const *attrs, struct ldb_message ***res)
@@ -162,7 +162,7 @@ int ldb_modify(struct ldb_context *ldb,
 /*
   delete a record from the database
 */
-int ldb_delete(struct ldb_context *ldb, const char *dn)
+int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
 {
 	return ldb->modules->ops->delete_record(ldb->modules, dn);
 }
@@ -170,7 +170,7 @@ int ldb_delete(struct ldb_context *ldb, const char *dn)
 /*
   rename a record in the database
 */
-int ldb_rename(struct ldb_context *ldb, const char *olddn, const char *newdn)
+int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
 {
 	return ldb->modules->ops->rename_record(ldb->modules, olddn, newdn);
 }

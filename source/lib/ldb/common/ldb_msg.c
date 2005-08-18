@@ -344,7 +344,6 @@ const char *ldb_msg_find_string(const struct ldb_message *msg,
 	return v->data;
 }
 
-
 /*
   sort the elements of a message by name
 */
@@ -354,32 +353,23 @@ void ldb_msg_sort_elements(struct ldb_message *msg)
 	      (comparison_fn_t)ldb_msg_element_compare_name);
 }
 
-
-/*
-  free a message created using ldb_msg_copy
-*/
-void ldb_msg_free(struct ldb_context *ldb, struct ldb_message *msg)
-{
-	talloc_free(msg);
-}
-
 /*
   copy a message, allocating new memory for all parts
 */
-struct ldb_message *ldb_msg_copy(struct ldb_context *ldb, 
+struct ldb_message *ldb_msg_copy(TALLOC_CTX *mem_ctx, 
 				 const struct ldb_message *msg)
 {
 	struct ldb_message *msg2;
 	int i, j;
 
-	msg2 = talloc(ldb, struct ldb_message);
+	msg2 = talloc(mem_ctx, struct ldb_message);
 	if (msg2 == NULL) return NULL;
 
 	msg2->elements = NULL;
 	msg2->num_elements = 0;
 	msg2->private_data = NULL;
 
-	msg2->dn = talloc_strdup(msg2, msg->dn);
+	msg2->dn = ldb_dn_copy(msg2, msg->dn);
 	if (msg2->dn == NULL) goto failed;
 
 	msg2->elements = talloc_array(msg2, struct ldb_message_element, msg->num_elements);
@@ -396,12 +386,11 @@ struct ldb_message *ldb_msg_copy(struct ldb_context *ldb,
 		if (el2->name == NULL) goto failed;
 		el2->values = talloc_array(msg2->elements, struct ldb_val, el1->num_values);
 		for (j=0;j<el1->num_values;j++) {
-			el2->values[j] = ldb_val_dup(ldb, &el1->values[j]);
+			el2->values[j] = ldb_val_dup(el2->values, &el1->values[j]);
 			if (el2->values[j].data == NULL &&
 			    el1->values[j].length != 0) {
 				goto failed;
 			}
-			el2->values[j].data = talloc_steal(el2->values, el2->values[j].data);
 			el2->num_values++;
 		}
 

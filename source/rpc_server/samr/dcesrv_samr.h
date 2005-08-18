@@ -49,7 +49,7 @@ struct samr_domain_state {
 	uint32_t access_mask;
 	struct dom_sid *domain_sid;
 	const char *domain_name;
-	const char *domain_dn;
+	const struct ldb_dn *domain_dn;
 };
 
 /*
@@ -61,5 +61,5 @@ struct samr_account_state {
 	uint32_t access_mask;
 	struct dom_sid *account_sid;
 	const char *account_name;
-	const char *account_dn;
+	const struct ldb_dn *account_dn;
 };

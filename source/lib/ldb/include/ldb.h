@@ -64,6 +64,16 @@ struct ldb_val {
 };
 #endif
 
+/* internal ldb exploded dn structures */
+struct ldb_dn_component {
+	char *name;
+	struct ldb_val value;
+};
+struct ldb_dn {
+	int comp_num;
+	struct ldb_dn_component *components;
+};
+
 /* these flags are used in ldd_message_element.flags fields. The
    LDA_FLAGS_MOD_* flags are used in ldap_modify() calls to specify
    whether attributes are being added, deleted or modified */
@@ -95,7 +105,7 @@ struct ldb_message_element {
   number of elements. 
 */
 struct ldb_message {
-	char *dn;
+	struct ldb_dn *dn;
 	unsigned int num_elements;
 	struct ldb_message_element *elements;
 	void *private_data; /* private to the backend */
@@ -259,7 +269,7 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
   use talloc_free to free the ldb_message returned
 */
 int ldb_search(struct ldb_context *ldb, 
-	       const char *base,
+	       const const struct ldb_dn *base,
 	       enum ldb_scope scope,
 	       const char *expression,
 	       const char * const *attrs, struct ldb_message ***res);
@@ -268,7 +278,7 @@ int ldb_search(struct ldb_context *ldb,
   like ldb_search() but takes a parse tree
 */
 int ldb_search_bytree(struct ldb_context *ldb, 
-		      const char *base,
+		      const struct ldb_dn *base,
 		      enum ldb_scope scope,
 		      struct ldb_parse_tree *tree,
 		      const char * const *attrs, struct ldb_message ***res);
@@ -289,7 +299,7 @@ int ldb_modify(struct ldb_context *ldb,
 /*
   rename a record in the database
 */
-int ldb_rename(struct ldb_context *ldb, const char *olddn, const char *newdn);
+int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct ldb_dn *newdn);
 
 /*
   create a named lock
@@ -304,7 +314,7 @@ int ldb_unlock(struct ldb_context *ldb, const char *lockname);
 /*
   delete a record from the database
 */
-int ldb_delete(struct ldb_context *ldb, const char *dn);
+int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn);
 
 
 /*
@@ -337,18 +347,37 @@ int ldb_attrib_add_handlers(struct ldb_context *ldb,
 			    const struct ldb_attrib_handler *handlers, 
 			    unsigned num_handlers);
 
+/* The following definitions come from lib/ldb/common/ldb_dn.c  */
+BOOL ldb_dn_is_special(const struct ldb_dn *dn);
+BOOL ldb_dn_check_special(const struct ldb_dn *dn, const char *check);
+char *ldb_dn_escape_value(void *mem_ctx, struct ldb_val value);
+struct ldb_dn *ldb_dn_new(void *mem_ctx);
+struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn);
+char *ldb_dn_linearize(void *mem_ctx, const struct ldb_dn *edn);
+char *ldb_dn_linearize_casefold(struct ldb_context *ldb, const struct ldb_dn *edn);
+int ldb_dn_compare_base(struct ldb_context *ldb, const struct ldb_dn *base, const struct ldb_dn *dn);
+int ldb_dn_compare(struct ldb_context *ldb, const struct ldb_dn *edn0, const struct ldb_dn *edn1);
+struct ldb_dn *ldb_dn_casefold(struct ldb_context *ldb, const struct ldb_dn *edn);
+struct ldb_dn *ldb_dn_explode_casefold(struct ldb_context *ldb, const char *dn);
+struct ldb_dn *ldb_dn_copy_partial(void *mem_ctx, const struct ldb_dn *dn, int num_el);
+struct ldb_dn *ldb_dn_copy(void *mem_ctx, const struct ldb_dn *dn);
+struct ldb_dn *ldb_dn_get_parent(void *mem_ctx, const struct ldb_dn *dn);
+struct ldb_dn_component *ldb_dn_build_component(void *mem_ctx, const char *attr,
+							       const char *val);
+struct ldb_dn *ldb_dn_build_child(void *mem_ctx, const char *attr,
+						 const char * value,
+						 const struct ldb_dn *base);
+struct ldb_dn *ldb_dn_make_child(void *mem_ctx,
+				 const struct ldb_dn_component *component,
+				 const struct ldb_dn *base);
+struct ldb_dn *ldb_dn_compose(void *mem_ctx, const struct ldb_dn *dn1, const struct ldb_dn *dn2);
+struct ldb_dn *ldb_dn_compose_string_dn(void *mem_ctx, const char *dn1, const struct ldb_dn *dn2);
+struct ldb_dn_component *ldb_dn_get_rdn(void *mem_ctx, const struct ldb_dn *dn);
 
 /* useful functions for ldb_message structure manipulation */
-
 int ldb_dn_cmp(struct ldb_context *ldb, const char *dn1, const char *dn2);
 int ldb_attr_cmp(const char *dn1, const char *dn2);
 char *ldb_dn_escape_value(void *mem_ctx, struct ldb_val value);
-
-/* case-fold a DN */
-char *ldb_dn_fold(void * mem_ctx,
-                  const char * dn,
-                  void * user_data,
-                  int (* case_fold_attr_fn)(void * user_data, char * attr));
 
 /* create an empty message */
 struct ldb_message *ldb_msg_new(void *mem_ctx);
@@ -411,9 +440,7 @@ const char *ldb_msg_find_string(const struct ldb_message *msg,
 
 void ldb_msg_sort_elements(struct ldb_message *msg);
 
-void ldb_msg_free(struct ldb_context *ldb, struct ldb_message *msg);
-
-struct ldb_message *ldb_msg_copy(struct ldb_context *ldb, 
+struct ldb_message *ldb_msg_copy(void *mem_ctx, 
 				 const struct ldb_message *msg);
 
 struct ldb_message *ldb_msg_canonicalize(struct ldb_context *ldb, 

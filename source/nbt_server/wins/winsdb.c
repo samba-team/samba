@@ -37,7 +37,7 @@ static BOOL winsdb_save_version(struct wins_server *winssrv)
 	struct ldb_message *msg = ldb_msg_new(winssrv);
 	if (msg == NULL) goto failed;
 
-	msg->dn = talloc_strdup(msg, "CN=VERSION");
+	msg->dn = ldb_dn_explode(msg, "CN=VERSION");
 	if (msg->dn == NULL) goto failed;
 
 	ret |= ldb_msg_add_fmt(ldb, msg, "minVersion", "%llu", winssrv->min_version);
@@ -184,7 +184,7 @@ static struct ldb_message *winsdb_message(struct wins_server *winssrv,
 	struct ldb_message *msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) goto failed;
 
-	msg->dn = winsdb_dn(msg, rec->name);
+	msg->dn = ldb_dn_explode(msg, winsdb_dn(msg, rec->name));
 	if (msg->dn == NULL) goto failed;
 	ret |= ldb_msg_add_fmt(ldb, msg, "objectClass", "wins");
 	ret |= ldb_msg_add_fmt(ldb, msg, "active", "%u", rec->state);
@@ -272,11 +272,11 @@ uint8_t winsdb_delete(struct wins_server *winssrv, struct winsdb_record *rec)
 	struct ldb_context *ldb = winssrv->wins_db;
 	TALLOC_CTX *tmp_ctx = talloc_new(winssrv);
 	int ret;
-	const char *dn;
+	const struct ldb_dn *dn;
 
 	winsdb_remove_version(winssrv, rec->version);
 
-	dn = winsdb_dn(tmp_ctx, rec->name);
+	dn = ldb_dn_explode(tmp_ctx, winsdb_dn(tmp_ctx, rec->name));
 	if (dn == NULL) goto failed;
 
 	ret = ldb_delete(ldb, dn);

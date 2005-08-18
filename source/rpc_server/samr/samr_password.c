@@ -108,7 +108,7 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	msg->dn = talloc_strdup(msg, a_state->account_dn);
+	msg->dn = ldb_dn_copy(msg, a_state->account_dn);
 	if (!msg->dn) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -143,7 +143,7 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 	uint32_t new_pass_len;
 	struct samr_CryptPassword *pwbuf = r->in.password;
 	void *sam_ctx;
-	const char *user_dn, *domain_dn;
+	const struct ldb_dn *user_dn, *domain_dn;
 	int ret;
 	struct ldb_message **res, *mod;
 	const char * const attrs[] = { "objectSid", "lmPwdHash", "unicodePwd", NULL };
@@ -210,9 +210,10 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	domain_dn = samdb_search_string(sam_ctx, mem_ctx, NULL, "dn",
-					"(objectSid=%s)", 
-					ldap_encode_ndr_dom_sid(mem_ctx, domain_sid));
+	domain_dn = ldb_dn_explode(mem_ctx,
+				   samdb_search_string(sam_ctx, mem_ctx, NULL, "dn",
+							"(objectSid=%s)", 
+							ldap_encode_ndr_dom_sid(mem_ctx, domain_sid)));
 	if (!domain_dn) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -222,7 +223,7 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	mod->dn = talloc_strdup(mod, user_dn);
+	mod->dn = ldb_dn_copy(mod, user_dn);
 	if (!mod->dn) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -261,7 +262,7 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	char new_pass[512];
 	uint32_t new_pass_len;
 	void *sam_ctx = NULL;
-	const char *user_dn, *domain_dn = NULL;
+	const struct ldb_dn *user_dn, *domain_dn = NULL;
 	int ret;
 	struct ldb_message **res, *mod;
 	const char * const attrs[] = { "objectSid", "ntPwdHash", "lmPwdHash", "unicodePwd", NULL };
@@ -360,9 +361,10 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 		goto failed;
 	}
 
-	domain_dn = samdb_search_string(sam_ctx, mem_ctx, NULL, "dn",
-					"(objectSid=%s)", 
-					ldap_encode_ndr_dom_sid(mem_ctx, domain_sid));
+	domain_dn = ldb_dn_explode(mem_ctx,
+				   samdb_search_string(sam_ctx, mem_ctx, NULL, "dn",
+							"(objectSid=%s)", 
+							ldap_encode_ndr_dom_sid(mem_ctx, domain_sid)));
 	if (!domain_dn) {
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto failed;
@@ -373,7 +375,7 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	mod->dn = talloc_strdup(mod, user_dn);
+	mod->dn = ldb_dn_copy(mod, user_dn);
 	if (!mod->dn) {
 		status = NT_STATUS_NO_MEMORY;
 		goto failed;
@@ -485,7 +487,8 @@ static BOOL samdb_password_complexity_ok(const char *pass)
   changes (as is needed by some of the set user info levels)
 */
 NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
-			    const char *user_dn, const char *domain_dn,
+			    const struct ldb_dn *user_dn,
+			    const struct ldb_dn *domain_dn,
 			    struct ldb_message *mod,
 			    const char *new_pass,
 			    struct samr_Password *lmNewHash, 
@@ -743,7 +746,7 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 */
 NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 			   void *sam_ctx,
-			   const char *account_dn, const char *domain_dn,
+			   const struct ldb_dn *account_dn, const struct ldb_dn *domain_dn,
 			   TALLOC_CTX *mem_ctx,
 			   struct ldb_message *msg, 
 			   struct samr_CryptPassword *pwbuf)
@@ -785,7 +788,7 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 */
 NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 			      void *sam_ctx,
-			      const char *account_dn, const char *domain_dn,
+			      const struct ldb_dn *account_dn, const struct ldb_dn *domain_dn,
 			      TALLOC_CTX *mem_ctx,
 			      struct ldb_message *msg, 
 			      struct samr_CryptPasswordEx *pwbuf)

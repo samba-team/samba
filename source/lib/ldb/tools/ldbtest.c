@@ -58,7 +58,7 @@ static double _end_timer(void)
 }
 
 static void add_records(struct ldb_context *ldb,
-			const char *basedn,
+			const struct ldb_dn *basedn,
 			int count)
 {
 	struct ldb_message msg;
@@ -77,7 +77,7 @@ static void add_records(struct ldb_context *ldb,
 
 		asprintf(&name, "Test%d", i);
 
-		msg.dn = talloc_asprintf(tmp_ctx, "cn=%s,%s", name, basedn);
+		msg.dn = ldb_dn_build_child(tmp_ctx, "cn", name, basedn);
 		msg.num_elements = 6;
 		msg.elements = el;
 
@@ -145,7 +145,7 @@ static void add_records(struct ldb_context *ldb,
 }
 
 static void modify_records(struct ldb_context *ldb,
-			   const char *basedn,
+			   const struct ldb_dn *basedn,
 			   int count)
 {
 	struct ldb_message msg;
@@ -158,7 +158,7 @@ static void modify_records(struct ldb_context *ldb,
 		TALLOC_CTX *tmp_ctx = talloc_new(ldb);
 		
 		name = talloc_asprintf(tmp_ctx, "Test%d", i);
-		msg.dn = talloc_asprintf(tmp_ctx, "cn=%s,%s", name, basedn);
+		msg.dn = ldb_dn_build_child(tmp_ctx, "cn", name, basedn);
 
 		msg.num_elements = 3;
 		msg.elements = el;
@@ -197,29 +197,30 @@ static void modify_records(struct ldb_context *ldb,
 
 
 static void delete_records(struct ldb_context *ldb,
-			   const char *basedn,
+			   const struct ldb_dn *basedn,
 			   int count)
 {
 	int i;
 
 	for (i=0;i<count;i++) {
-		char *dn;
-		asprintf(&dn, "cn=Test%d,%s", i, basedn);
+		struct ldb_dn *dn;
+		char *name = talloc_asprintf(ldb, "Test%d", i);
+		dn = ldb_dn_build_child(name, "cn", name, basedn);
 
 		printf("Deleting uid Test%d\r", i);
 		fflush(stdout);
 
 		if (ldb_delete(ldb, dn) != 0) {
-			printf("Delete of %s failed - %s\n", dn, ldb_errstring(ldb));
+			printf("Delete of %s failed - %s\n", ldb_dn_linearize(ldb, dn), ldb_errstring(ldb));
 			exit(1);
 		}
-		free(dn);
+		talloc_free(name);
 	}
 
 	printf("\n");
 }
 
-static void search_uid(struct ldb_context *ldb, int nrecords, int nsearches)
+static void search_uid(struct ldb_context *ldb, struct ldb_dn *basedn, int nrecords, int nsearches)
 {
 	int i;
 
@@ -230,7 +231,7 @@ static void search_uid(struct ldb_context *ldb, int nrecords, int nsearches)
 		int ret;
 
 		asprintf(&expr, "(uid=TEST%d)", uid);
-		ret = ldb_search(ldb, options->basedn, LDB_SCOPE_SUBTREE, expr, NULL, &res);
+		ret = ldb_search(ldb, basedn, LDB_SCOPE_SUBTREE, expr, NULL, &res);
 
 		if (uid < nrecords && ret != 1) {
 			printf("Failed to find %s - %s\n", expr, ldb_errstring(ldb));
@@ -257,19 +258,23 @@ static void search_uid(struct ldb_context *ldb, int nrecords, int nsearches)
 
 static void start_test(struct ldb_context *ldb, int nrecords, int nsearches)
 {
+	struct ldb_dn *basedn;
+
+	basedn = ldb_dn_explode(ldb, options->basedn);
+
 	printf("Adding %d records\n", nrecords);
-	add_records(ldb, options->basedn, nrecords);
+	add_records(ldb, basedn, nrecords);
 
 	printf("Starting search on uid\n");
 	_start_timer();
-	search_uid(ldb, nrecords, nsearches);
+	search_uid(ldb, basedn, nrecords, nsearches);
 	printf("uid search took %.2f seconds\n", _end_timer());
 
 	printf("Modifying records\n");
-	modify_records(ldb, options->basedn, nrecords);
+	modify_records(ldb, basedn, nrecords);
 
 	printf("Deleting records\n");
-	delete_records(ldb, options->basedn, nrecords);
+	delete_records(ldb, basedn, nrecords);
 }
 
 
@@ -290,31 +295,37 @@ static void start_test_index(struct ldb_context **ldb)
 {
 	struct ldb_message *msg;
 	struct ldb_message **res;
+	struct ldb_dn *indexlist;
+	struct ldb_dn *basedn;
 	int ret;
 
 	printf("Starting index test\n");
 
-	ldb_delete(*ldb, "@INDEXLIST");
+	indexlist = ldb_dn_explode(NULL, "@INDEXLIST");
+
+	ldb_delete(*ldb, indexlist);
 
 	msg = ldb_msg_new(NULL);
 
-	msg->dn = strdup("@INDEXLIST");
+	msg->dn = indexlist;
 	ldb_msg_add_string(*ldb, msg, "@IDXATTR", strdup("uid"));
 
 	if (ldb_add(*ldb, msg) != 0) {
-		printf("Add of %s failed - %s\n", msg->dn, ldb_errstring(*ldb));
+		printf("Add of %s failed - %s\n", ldb_dn_linearize(*ldb, msg->dn), ldb_errstring(*ldb));
 		exit(1);
 	}
 
+	basedn = ldb_dn_explode(NULL, options->basedn);
+
 	memset(msg, 0, sizeof(*msg));
-	asprintf(&msg->dn, "cn=%s,%s", "test", options->basedn);
+	msg->dn = ldb_dn_build_child(msg, "cn", "test", basedn);
 	ldb_msg_add_string(*ldb, msg, "cn", strdup("test"));
 	ldb_msg_add_string(*ldb, msg, "sn", strdup("test"));
 	ldb_msg_add_string(*ldb, msg, "uid", strdup("test"));
 	ldb_msg_add_string(*ldb, msg, "objectClass", strdup("OpenLDAPperson"));
 
 	if (ldb_add(*ldb, msg) != 0) {
-		printf("Add of %s failed - %s\n", msg->dn, ldb_errstring(*ldb));
+		printf("Add of %s failed - %s\n", ldb_dn_linearize(*ldb, msg->dn), ldb_errstring(*ldb));
 		exit(1);
 	}
 
@@ -331,14 +342,14 @@ static void start_test_index(struct ldb_context **ldb)
 		exit(1);
 	}
 
-	ret = ldb_search(*ldb, options->basedn, LDB_SCOPE_SUBTREE, "uid=test", NULL, &res);
+	ret = ldb_search(*ldb, basedn, LDB_SCOPE_SUBTREE, "uid=test", NULL, &res);
 	if (ret != 1) {
 		printf("Should have found 1 record - found %d\n", ret);
 		exit(1);
 	}
 
 	if (ldb_delete(*ldb, msg->dn) != 0 ||
-	    ldb_delete(*ldb, "@INDEXLIST") != 0) {
+	    ldb_delete(*ldb, indexlist) != 0) {
 		printf("cleanup failed - %s\n", ldb_errstring(*ldb));
 		exit(1);
 	}

@@ -42,7 +42,7 @@ struct private_data {
 };
 
 /* search */
-static int skel_search(struct ldb_module *module, const char *base,
+static int skel_search(struct ldb_module *module, const struct ldb_dn *base,
 		       enum ldb_scope scope, const char *expression,
 		       const char * const *attrs, struct ldb_message ***res)
 {
@@ -62,13 +62,13 @@ static int skel_modify_record(struct ldb_module *module, const struct ldb_messag
 }
 
 /* delete_record */
-static int skel_delete_record(struct ldb_module *module, const char *dn)
+static int skel_delete_record(struct ldb_module *module, const struct ldb_dn *dn)
 {
 	return ldb_next_delete_record(module, dn);
 }
 
 /* rename_record */
-static int skel_rename_record(struct ldb_module *module, const char *olddn, const char *newdn)
+static int skel_rename_record(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
 {
 	return ldb_next_rename_record(module, olddn, newdn);
 }

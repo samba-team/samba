@@ -41,7 +41,7 @@ struct private_data {
 	const char *error_string;
 };
 
-static int rdn_name_search(struct ldb_module *module, const char *base,
+static int rdn_name_search(struct ldb_module *module, const struct ldb_dn *base,
 				  enum ldb_scope scope, const char *expression,
 				  const char * const *attrs, struct ldb_message ***res)
 {
@@ -49,7 +49,7 @@ static int rdn_name_search(struct ldb_module *module, const char *base,
 	return ldb_next_search(module, base, scope, expression, attrs, res);
 }
 
-static int rdn_name_search_bytree(struct ldb_module *module, const char *base,
+static int rdn_name_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 				    enum ldb_scope scope, struct ldb_parse_tree *tree,
 				    const char * const *attrs, struct ldb_message ***res)
 {
@@ -70,21 +70,6 @@ static struct ldb_message_element *rdn_name_find_attribute(const struct ldb_mess
 	return NULL;
 }
 
-static struct ldb_dn_component *get_rdn(void *mem_ctx, const char *dn)
-{
-	struct ldb_dn *dn_exploded = ldb_dn_explode(mem_ctx, dn);
-
-	if (!dn_exploded) {
-		return NULL;
-	}
-	
-	if (dn_exploded->comp_num < 1) {
-		return NULL;
-	}
-	
-	return  &dn_exploded->components[0];
-}
-
 /* add_record: add crateTimestamp/modifyTimestamp attributes */
 static int rdn_name_add_record(struct ldb_module *module, const struct ldb_message *msg)
 {
@@ -97,7 +82,8 @@ static int rdn_name_add_record(struct ldb_module *module, const struct ldb_messa
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_name_add_record\n");
 
-	if (msg->dn[0] == '@') { /* do not manipulate our control entries */
+	/* do not manipulate our control entries */
+	if (ldb_dn_is_special(msg->dn)) {
 		return ldb_next_add_record(module, msg);
 	}
 
@@ -119,12 +105,14 @@ static int rdn_name_add_record(struct ldb_module *module, const struct ldb_messa
 		msg2->elements[i] = msg->elements[i];
 	}
 
-	rdn = get_rdn(msg2, msg2->dn);
+	rdn = ldb_dn_get_rdn(msg2, msg2->dn);
 	if (!rdn) {
+		talloc_free(msg2);
 		return -1;
 	}
 	
 	if (ldb_msg_add_value(module->ldb, msg2, "name", &rdn->value) != 0) {
+		talloc_free(msg2);
 		return -1;
 	}
 
@@ -132,6 +120,7 @@ static int rdn_name_add_record(struct ldb_module *module, const struct ldb_messa
 
 	if (!attribute) {
 		if (ldb_msg_add_value(module->ldb, msg2, rdn->name, &rdn->value) != 0) {
+			talloc_free(msg2);
 			return -1;
 		}
 	} else {
@@ -145,8 +134,9 @@ static int rdn_name_add_record(struct ldb_module *module, const struct ldb_messa
 			}
 		}
 		if (i == attribute->num_values) {
-			data->error_string = talloc_asprintf(data, "RDN mismatch on %s: %s", msg2->dn, rdn->name);
+			data->error_string = talloc_asprintf(data, "RDN mismatch on %s: %s", ldb_dn_linearize(msg2, msg2->dn), rdn->name);
 			ldb_debug(module->ldb, LDB_DEBUG_FATAL, "%s\n", data->error_string);
+			talloc_free(msg2);
 			return -1;
 		}
 	}
@@ -167,6 +157,11 @@ static int rdn_name_modify_record(struct ldb_module *module, const struct ldb_me
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_name_modify_record\n");
 
+	/* do not manipulate our control entries */
+	if (ldb_dn_is_special(msg->dn)) {
+		return ldb_next_add_record(module, msg);
+	}
+
 	/* Perhaps someone above us knows better */
 	if ((attribute = rdn_name_find_attribute(msg, "name")) != NULL ) {
 		return ldb_next_add_record(module, msg);
@@ -185,17 +180,20 @@ static int rdn_name_modify_record(struct ldb_module *module, const struct ldb_me
 		msg2->elements[i] = msg->elements[i];
 	}
 	
-	rdn = get_rdn(msg2, msg2->dn);
+	rdn = ldb_dn_get_rdn(msg2, msg2->dn);
 	if (!rdn) {
+		talloc_free(msg2);
 		return -1;
 	}
 	
 	if (ldb_msg_add_value(module->ldb, msg2, "name", &rdn->value) != 0) {
+		talloc_free(msg2);
 		return -1;
 	}
 
 	attribute = rdn_name_find_attribute(msg2, "name");
 	if (!attribute) {
+		talloc_free(msg2);
 		return -1;
 	}
 
@@ -207,13 +205,13 @@ static int rdn_name_modify_record(struct ldb_module *module, const struct ldb_me
 	return ret;
 }
 
-static int rdn_name_delete_record(struct ldb_module *module, const char *dn)
+static int rdn_name_delete_record(struct ldb_module *module, const struct ldb_dn *dn)
 {
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_name_delete_record\n");
 	return ldb_next_delete_record(module, dn);
 }
 
-static int rdn_name_rename_record(struct ldb_module *module, const char *olddn, const char *newdn)
+static int rdn_name_rename_record(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
 {
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_name_rename_record\n");
 	return ldb_next_rename_record(module, olddn, newdn);

@@ -40,57 +40,77 @@
 /*
   rename a record
 */
-static int lldb_rename(struct ldb_module *module, const char *olddn, const char *newdn)
+static int lldb_rename(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
 {
+	TALLOC_CTX *local_ctx;
 	struct lldb_private *lldb = module->private_data;
 	int ret = 0;
-	char *newrdn, *p;
+	char *old_dn;
+	char *newrdn;
 	const char *parentdn = "";
 
 	/* ignore ltdb specials */
-	if (olddn[0] == '@' ||newdn[0] == '@') {
+	if (ldb_dn_is_special(olddn) || ldb_dn_is_special(newdn)) {
 		return 0;
 	}
 
-	newrdn = talloc_strdup(lldb, newdn);
-	if (!newrdn) {
+	local_ctx = talloc_named(lldb, 0, "lldb_rename local context");
+	if (local_ctx == NULL) {
 		return -1;
 	}
 
-	p = strchr(newrdn, ',');
-	if (p) {
-		*p++ = '\0';
-		parentdn = p;
+	old_dn = ldb_dn_linearize(local_ctx, olddn);
+	if (old_dn == NULL) {
+		goto failed;
 	}
 
-	lldb->last_rc = ldap_rename_s(lldb->ldap, olddn, newrdn, parentdn, 1, NULL, NULL);
+	newrdn = talloc_asprintf(lldb, "%s=%s",
+				      newdn->components[0].name,
+				      ldb_dn_escape_value(lldb, newdn->components[0].value));
+	if (!newrdn) {
+		goto failed;
+	}
+
+	parentdn = ldb_dn_linearize(lldb, ldb_dn_get_parent(lldb, newdn));
+	if (!parentdn) {
+		goto failed;
+	}
+
+	lldb->last_rc = ldap_rename_s(lldb->ldap, old_dn, newrdn, parentdn, 1, NULL, NULL);
 	if (lldb->last_rc != LDAP_SUCCESS) {
 		ret = -1;
 	}
 
-	talloc_free(newrdn);
-
+	talloc_free(local_ctx);
 	return ret;
+
+failed:
+	talloc_free(local_ctx);
+	return -1;
 }
 
 /*
   delete a record
 */
-static int lldb_delete(struct ldb_module *module, const char *dn)
+static int lldb_delete(struct ldb_module *module, const struct ldb_dn *edn)
 {
 	struct lldb_private *lldb = module->private_data;
+	char *dn;
 	int ret = 0;
 
 	/* ignore ltdb specials */
-	if (dn[0] == '@') {
+	if (ldb_dn_is_special(edn)) {
 		return 0;
 	}
-	
+
+	dn = ldb_dn_linearize(lldb, edn);
+
 	lldb->last_rc = ldap_delete_s(lldb->ldap, dn);
 	if (lldb->last_rc != LDAP_SUCCESS) {
 		ret = -1;
 	}
 
+	talloc_free(dn);
 	return ret;
 }
 
@@ -152,27 +172,33 @@ static int lldb_add_msg_attr(struct ldb_context *ldb,
 /*
   search for matching records
 */
-static int lldb_search(struct ldb_module *module, const char *base,
+static int lldb_search(struct ldb_module *module, const struct ldb_dn *base,
 		       enum ldb_scope scope, const char *expression,
 		       const char * const *attrs, struct ldb_message ***res)
 {
 	struct ldb_context *ldb = module->ldb;
 	struct lldb_private *lldb = module->private_data;
 	int count, msg_count;
+	char *search_base;
 	LDAPMessage *ldapres, *msg;
 
+	search_base = ldb_dn_linearize(ldb, base);
 	if (base == NULL) {
-		base = "";
+		search_base = talloc_strdup(ldb, "");
+	}
+	if (search_base == NULL) {
+		return -1;
 	}
 
 	if (expression == NULL || expression[0] == '\0') {
 		expression = "objectClass=*";
 	}
 
-	lldb->last_rc = ldap_search_s(lldb->ldap, base, (int)scope, 
+	lldb->last_rc = ldap_search_s(lldb->ldap, search_base, (int)scope, 
 				      expression, 
 				      discard_const_p(char *, attrs), 
 				      0, &ldapres);
+	talloc_free(search_base);
 	if (lldb->last_rc != LDAP_SUCCESS) {
 		return -1;
 	}
@@ -218,7 +244,7 @@ static int lldb_search(struct ldb_module *module, const char *base,
 			goto failed;
 		}
 
-		(*res)[msg_count]->dn = talloc_strdup((*res)[msg_count], dn);
+		(*res)[msg_count]->dn = ldb_dn_explode((*res)[msg_count], dn);
 		ldap_memfree(dn);
 		if (!(*res)[msg_count]->dn) {
 			goto failed;
@@ -261,7 +287,7 @@ failed:
 /*
   search for matching records using a ldb_parse_tree
 */
-static int lldb_search_bytree(struct ldb_module *module, const char *base,
+static int lldb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 			      enum ldb_scope scope, struct ldb_parse_tree *tree,
 			      const char * const *attrs, struct ldb_message ***res)
 {
@@ -357,16 +383,26 @@ static int lldb_add(struct ldb_module *module, const struct ldb_message *msg)
 	struct ldb_context *ldb = module->ldb;
 	struct lldb_private *lldb = module->private_data;
 	LDAPMod **mods;
+	char *dn;
 	int ret = 0;
 
 	/* ignore ltdb specials */
-	if (msg->dn[0] == '@') {
+	if (ldb_dn_is_special(msg->dn)) {
 		return 0;
 	}
 
 	mods = lldb_msg_to_mods(ldb, msg, 0);
+	if (mods == NULL) {
+		return -1;
+	}
 
-	lldb->last_rc = ldap_add_s(lldb->ldap, msg->dn, mods);
+	dn = ldb_dn_linearize(mods, msg->dn);
+	if (dn == NULL) {
+		talloc_free(mods);
+		return -1;
+	}
+
+	lldb->last_rc = ldap_add_s(lldb->ldap, dn, mods);
 	if (lldb->last_rc != LDAP_SUCCESS) {
 		ret = -1;
 	}
@@ -385,16 +421,26 @@ static int lldb_modify(struct ldb_module *module, const struct ldb_message *msg)
 	struct ldb_context *ldb = module->ldb;
 	struct lldb_private *lldb = module->private_data;
 	LDAPMod **mods;
+	char *dn;
 	int ret = 0;
 
 	/* ignore ltdb specials */
-	if (msg->dn[0] == '@') {
+	if (ldb_dn_is_special(msg->dn)) {
 		return 0;
 	}
 
 	mods = lldb_msg_to_mods(ldb, msg, 1);
+	if (mods == NULL) {
+		return -1;
+	}
 
-	lldb->last_rc = ldap_modify_s(lldb->ldap, msg->dn, mods);
+	dn = ldb_dn_linearize(mods, msg->dn);
+	if (dn == NULL) {
+		talloc_free(mods);
+		return -1;
+	}
+
+	lldb->last_rc = ldap_modify_s(lldb->ldap, dn, mods);
 	if (lldb->last_rc != LDAP_SUCCESS) {
 		ret = -1;
 	}

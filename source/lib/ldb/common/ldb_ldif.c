@@ -275,7 +275,7 @@ int ldb_ldif_write(struct ldb_context *ldb,
 
 	msg = ldif->msg;
 
-	ret = fprintf_fn(private_data, "dn: %s\n", msg->dn);
+	ret = fprintf_fn(private_data, "dn: %s\n", ldb_dn_linearize(msg->dn, msg->dn));
 	CHECK_RET;
 
 	if (ldif->changetype != LDB_CHANGETYPE_NONE) {
@@ -587,7 +587,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 		goto failed;
 	}
 
-	msg->dn = value.data;
+	msg->dn = ldb_dn_explode(msg, value.data);
 
 	while (next_attr(ldif, &s, &attr, &value) == 0) {
 		const struct ldb_attrib_handler *h;		

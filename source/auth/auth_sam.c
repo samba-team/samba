@@ -217,7 +217,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 	int ret;
 	int ret_domain;
 
-	const char *domain_dn = NULL;
+	const struct ldb_dn *domain_dn = NULL;
 
 	const char *attrs[] = {"unicodePwd", "lmPwdHash", "ntPwdHash",
 			       "userAccountControl",
@@ -265,7 +265,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		domain_dn = samdb_result_string(msgs_domain[0], "nCName", NULL);
+		domain_dn = samdb_result_dn(mem_ctx, msgs_domain[0], "nCName", NULL);
 	}
 
 	/* pull the user attributes */
@@ -316,7 +316,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 		}
 
 		ret_domain = gendb_search(sam_ctx, mem_ctx, NULL, &msgs_domain, domain_attrs,
-					  "(nCName=%s)", msgs_tmp[0]->dn);
+					  "(nCName=%s)", ldb_dn_linearize(msgs_tmp, msgs_tmp[0]->dn));
 
 		if (ret_domain == -1) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -324,13 +324,13 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 		
 		if (ret_domain == 0) {
 			DEBUG(3,("check_sam_security: Couldn't find domain [%s] in passdb file.\n",
-				 msgs_tmp[0]->dn));
+				 ldb_dn_linearize(msgs_tmp, msgs_tmp[0]->dn)));
 			return NT_STATUS_NO_SUCH_USER;
 		}
 		
 		if (ret_domain > 1) {
 			DEBUG(0,("Found %d records matching domain [%s]\n", 
-				 ret_domain, msgs_tmp[0]->dn));
+				 ret_domain, ldb_dn_linearize(msgs_tmp, msgs_tmp[0]->dn)));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
@@ -356,7 +356,7 @@ static NTSTATUS authsam_authenticate(struct auth_context *auth_context,
 	NTTIME last_set_time;
 	struct samr_Password *lm_pwd, *nt_pwd;
 	NTSTATUS nt_status;
-	const char *domain_dn = samdb_result_string(msgs_domain[0], "nCName", "");
+	struct ldb_dn *domain_dn = samdb_result_dn(mem_ctx, msgs_domain[0], "nCName", ldb_dn_new(mem_ctx));
 
 	acct_flags = samdb_result_acct_flags(msgs[0], "userAccountControl");
 	
@@ -407,7 +407,8 @@ static NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_context
 	struct dom_sid **groupSIDs = NULL;
 	struct dom_sid *account_sid;
 	struct dom_sid *primary_group_sid;
-	const char *str, *ncname;
+	const char *str;
+	struct ldb_dn *ncname;
 	int i;
 	uint_t rid;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
@@ -415,7 +416,7 @@ static NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_context
 	group_ret = gendb_search(sam_ctx,
 				 tmp_ctx, NULL, &group_msgs, group_attrs,
 				 "(&(member=%s)(sAMAccountType=*))", 
-				 msgs[0]->dn);
+				 ldb_dn_linearize(tmp_ctx, msgs[0]->dn));
 	if (group_ret == -1) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -490,7 +491,7 @@ static NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_context
 	server_info->acct_expiry = samdb_result_nttime(msgs[0], "accountExpires", 0);
 	server_info->last_password_change = samdb_result_nttime(msgs[0], "pwdLastSet", 0);
 
-	ncname = samdb_result_string(msgs_domain[0], "nCName", "");
+	ncname = samdb_result_dn(mem_ctx, msgs_domain[0], "nCName", ldb_dn_new(mem_ctx));
 
 	server_info->allow_password_change = samdb_result_allow_password_change(sam_ctx, mem_ctx, 
 							ncname, msgs[0], "pwdLastSet");
