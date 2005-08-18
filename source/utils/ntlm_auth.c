@@ -349,7 +349,9 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			cli_credentials_set_conf(creds);
 			if (opt_username) {
 				cli_credentials_set_username(creds, opt_username, CRED_SPECIFIED);
-			} 
+			} else {
+				cli_credentials_set_username(creds, "", CRED_GUESSED);
+			}
 			if (opt_domain) {
 				cli_credentials_set_domain(creds, opt_domain, CRED_SPECIFIED);
 			}
@@ -359,6 +361,9 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 				creds->password_obtained = CRED_CALLBACK;
 				creds->password_cb = get_password;
 				creds->priv_data = (void*)mux_id;
+			}
+			if (opt_workstation) {
+				cli_credentials_set_workstation(creds, opt_workstation, CRED_SPECIFIED);
 			}
 
 			gensec_set_credentials(*gensec_state, creds);
@@ -498,7 +503,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		}
 	} else if ((*gensec_state)->gensec_role == GENSEC_CLIENT) {
 		reply_code = "AF";
-		reply_arg = NULL;
+		reply_arg = out_base64;
 	} else {
 		abort();
 	}
@@ -862,6 +867,7 @@ enum {
 		{ "password", 0, POPT_ARG_STRING, &opt_password, OPT_PASSWORD, "User's plaintext password"},		
 		{ "multiplex", 0, POPT_ARG_NONE, &opt_multiplex, OPT_MULTIPLEX, "Multiplex Mode"},
 		POPT_COMMON_SAMBA
+		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
 
