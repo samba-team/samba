@@ -45,4 +45,9 @@ static /**/const char *const rcsid[] = { (const char *)rcsid, "\100(#)" msg }
 #include "lib/replace/replace.h"
 #endif
 
+/* we need to tell roken about the functions that Samba replaces in lib/replace */
+#ifndef HAVE_SETEUID
+#define HAVE_SETEUID 1
+#endif
+
 #endif

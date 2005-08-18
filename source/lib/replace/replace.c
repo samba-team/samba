@@ -340,75 +340,6 @@ duplicate a string
 #endif /* REPLACE_INET_NTOA */
 #endif
 
-#ifndef HAVE_STRTOUL
-#ifndef ULONG_MAX
-#define	ULONG_MAX	((unsigned long)(~0L))		/* 0xFFFFFFFF */
-#endif
-
-/*
- * Convert a string to an unsigned long integer.
- * Taken from libg++ - libiberty code.
- *
- * Ignores `locale' stuff.  Assumes that the upper and lower case
- * alphabets and digits are each contiguous.
- */
- unsigned long strtoul(const char *nptr, char **endptr, int base)
-{
-	const char *s = nptr;
-	unsigned long acc;
-	int c;
-	unsigned long cutoff;
-	int neg = 0, any, cutlim;
-
-	/*
-	 * See strtol for comments as to the logic used.
-	 */
-	do {
-		c = *s++;
-	} while (isspace(c));
-	if (c == '-') {
-		neg = 1;
-		c = *s++;
-	} else if (c == '+')
-		c = *s++;
-	if ((base == 0 || base == 16) &&
-	    c == '0' && (*s == 'x' || *s == 'X')) {
-		c = s[1];
-		s += 2;
-		base = 16;
-	}
-	if (base == 0)
-		base = c == '0' ? 8 : 10;
-	cutoff = (unsigned long)ULONG_MAX / (unsigned long)base;
-	cutlim = (int)((unsigned long)ULONG_MAX % (unsigned long)base);
-	for (acc = 0, any = 0;; c = *s++) {
-		if (isdigit(c))
-			c -= '0';
-		else if (isalpha(c))
-			c -= isupper(c) ? 'A' - 10 : 'a' - 10;
-		else
-			break;
-		if (c >= base)
-			break;
-		if (any < 0 || acc > cutoff || acc == cutoff && c > cutlim)
-			any = -1;
-		else {
-			any = 1;
-			acc *= base;
-			acc += c;
-		}
-	}
-	if (any < 0) {
-		acc = ULONG_MAX;
-		errno = ERANGE;
-	} else if (neg)
-		acc = -acc;
-	if (endptr != 0)
-		*endptr = (char *) (any ? s - 1 : nptr);
-	return (acc);
-}
-#endif /* HAVE_STRTOUL */
-
 #ifndef HAVE_SETLINEBUF
  int setlinebuf(FILE *stream)
 {
@@ -511,17 +442,23 @@ int get_time_zone(time_t t)
 {
 #ifdef HAVE_STRTOUQ
 	return strtouq(str, endptr, base);
+#elif defined(HAVE___STRTOULL) 
+	return __strtoull(str, endptr, base);
 #else
-	unsigned long long int v;
-	if (sscanf(str, "%lli", &v) != 1) {
-		errno = EINVAL;
-		return 0;
-	}
-	if (endptr) {
-		/* try to get endptr right - uggh */
-		strtoul(str, endptr, base);
-	}
-	return v;
+# error "You need a strtoull function"
+#endif
+}
+#endif
+
+#ifndef HAVE_STRTOLL
+ long long int strtoll(const char *str, char **endptr, int base)
+{
+#ifdef HAVE_STRTOQ
+	return strtoq(str, endptr, base);
+#elif defined(HAVE___STRTOLL) 
+	return __strtoll(str, endptr, base);
+#else
+# error "You need a strtoll function"
 #endif
 }
 #endif
@@ -567,3 +504,14 @@ int sys_waitpid(pid_t pid,int *status,int options)
   return wait4(pid, status, options, NULL);
 #endif /* USE_WAITPID */
 }
+
+#ifndef HAVE_SETEUID
+ int seteuid(uid_t euid)
+{
+#ifdef HAVE_SETRESUID
+	return setresuid(-1, euid, -1);
+#else
+#  error "You need a seteuid function"
+#endif
+}
+#endif
