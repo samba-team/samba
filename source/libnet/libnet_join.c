@@ -91,7 +91,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	struct dom_sid *domain_sid;
 	const char *domain_name;
 	const char *realm = NULL; /* Also flag for remote being AD */
-	const char *account_dn;
+	const struct ldb_dn *account_dn;
 
 	char *remote_ldb_url;
 	struct ldb_message **msgs, *msg;
@@ -561,8 +561,13 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	account_dn = r_crack_names.out.ctr.ctr1->array[0].result_name;
-
+	account_dn = ldb_dn_explode(mem_ctx, r_crack_names.out.ctr.ctr1->array[0].result_name);
+	if (account_dn == NULL) {
+		r->out.error_string
+			= talloc_asprintf(mem_ctx, "Invalid account dn: %s",
+					  r_crack_names.out.ctr.ctr1->array[0].result_name);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	/* Now we know the user's DN, open with LDAP, read and modify a few things */
 
@@ -581,8 +586,8 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	if (ldb_ret != 1) {
 		r->out.error_string
 			= talloc_asprintf(mem_ctx,
-					  "ldb_search for %s failed - %s\n", 
-					  account_dn, 
+					  "ldb_search for %s failed - %s\n",
+					  ldb_dn_linearize(mem_ctx, account_dn),
 					  ldb_errstring(remote_ldb));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -615,7 +620,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 			r->out.error_string
 				= talloc_asprintf(mem_ctx, 
 						  "Failed to replace entries on %s\n", 
-						  msg->dn);
+						  ldb_dn_linearize(mem_ctx, msg->dn));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 	}
@@ -635,7 +640,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 
 	struct ldb_context *ldb;
 	struct libnet_JoinDomain r2;
-	const char *base_dn = "cn=Primary Domains";
+	const struct ldb_dn *base_dn = ldb_dn_explode(mem_ctx, "cn=Primary Domains");
 	const struct ldb_val *prior_secret;
 	const struct ldb_val *prior_modified_time;
 	struct ldb_message **msgs, *msg;
@@ -679,13 +684,12 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 
 	/* search for the secret record */
 	ret = gendb_search(ldb,
-			   mem_ctx, base_dn, &msgs, attrs,
+			   mem_ctx, base_dn,
+			   &msgs, attrs,
 			   "(|" SECRETS_PRIMARY_DOMAIN_FILTER "(realm=%s))",
 			   r2.out.domain_name, r2.out.realm);
 
-	msg->dn = talloc_asprintf(mem_ctx, "flatname=%s,%s", 
-				  r2.out.domain_name,
-				  base_dn);
+	msg->dn = ldb_dn_build_child(mem_ctx, "flatname", r2.out.domain_name, base_dn);
 	
 	samdb_msg_add_string(ldb, mem_ctx, msg, "flatname", r2.out.domain_name);
 	if (r2.out.realm) {
@@ -739,7 +743,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 		r->out.error_string
 			= talloc_asprintf(mem_ctx, 
 					  "Failed to create secret record %s\n", 
-					  msg->dn);
+					  ldb_dn_linearize(ldb, msg->dn));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	return NT_STATUS_OK;

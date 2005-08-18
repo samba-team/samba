@@ -61,7 +61,7 @@ static void usage(void)
 	struct ldb_context *ldb;
 	int ret;
 	struct ldb_cmdline *options;
-	const char *dn1, *dn2;
+	const struct ldb_dn *dn1, *dn2;
 
 	ldb = ldb_init(NULL);
 
@@ -71,15 +71,15 @@ static void usage(void)
 		usage();
 	}
 
-	dn1 = options->argv[0];
-	dn2 = options->argv[1];
+	dn1 = ldb_dn_explode(ldb, options->argv[0]);
+	dn2 = ldb_dn_explode(ldb, options->argv[1]);
 
 	ret = ldb_rename(ldb, dn1, dn2);
 	if (ret == 0) {
 		printf("Renamed 1 record\n");
 	} else  {
 		printf("rename of '%s' to '%s' failed - %s\n", 
-			dn1, dn2, ldb_errstring(ldb));
+			options->argv[0], options->argv[1], ldb_errstring(ldb));
 	}
 
 	talloc_free(ldb);

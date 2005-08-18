@@ -83,7 +83,7 @@ static int modify_record(struct ldb_context *ldb,
 
 	if (ldb_modify(ldb, mod) != 0) {
 		fprintf(stderr, "failed to modify %s - %s\n", 
-			msg1->dn, ldb_errstring(ldb));
+			ldb_dn_linearize(ldb, msg1->dn), ldb_errstring(ldb));
 		return -1;
 	}
 
@@ -96,11 +96,11 @@ static int modify_record(struct ldb_context *ldb,
 static struct ldb_message *msg_find(struct ldb_context *ldb,
 				    struct ldb_message **msgs,
 				    int count,
-				    const char *dn)
+				    const struct ldb_dn *dn)
 {
 	int i;
 	for (i=0;i<count;i++) {
-		if (ldb_dn_cmp(ldb, dn, msgs[i]->dn) == 0) {
+		if (ldb_dn_compare(ldb, dn, msgs[i]->dn) == 0) {
 			return msgs[i];
 		}
 	}
@@ -128,7 +128,8 @@ static int merge_edits(struct ldb_context *ldb,
 			}
 			if (ldb_add(ldb, msgs2[i]) != 0) {
 				fprintf(stderr, "failed to add %s - %s\n",
-					msgs2[i]->dn, ldb_errstring(ldb));
+					ldb_dn_linearize(ldb, msgs2[i]->dn),
+					ldb_errstring(ldb));
 				return -1;
 			}
 			adds++;
@@ -148,7 +149,8 @@ static int merge_edits(struct ldb_context *ldb,
 			}
 			if (ldb_delete(ldb, msgs1[i]->dn) != 0) {
 				fprintf(stderr, "failed to delete %s - %s\n",
-					msgs1[i]->dn, ldb_errstring(ldb));
+					ldb_dn_linearize(ldb, msgs1[i]->dn),
+					ldb_errstring(ldb));
 				return -1;
 			}
 			deletes++;
@@ -279,6 +281,7 @@ static void usage(void)
 {
 	struct ldb_context *ldb;
 	struct ldb_message **msgs;
+	struct ldb_dn *basedn = NULL;
 	int ret;
 	const char *expression = "(|(objectclass=*)(dn=*))";
 	const char * const * attrs = NULL;
@@ -299,7 +302,15 @@ static void usage(void)
 		attrs = (const char * const *)(options->argv);
 	}
 
-	ret = ldb_search(ldb, options->basedn, options->scope, expression, attrs, &msgs);
+	if (options->basedn != NULL) {
+		basedn = ldb_dn_explode(ldb, options->basedn);
+		if (basedn == NULL) {
+			printf("Invalid Base DN format\n");
+			exit(1);
+		}
+	}
+
+	ret = ldb_search(ldb, basedn, options->scope, expression, attrs, &msgs);
 	if (ret == -1) {
 		printf("search failed - %s\n", ldb_errstring(ldb));
 		exit(1);

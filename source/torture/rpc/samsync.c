@@ -1025,13 +1025,13 @@ static BOOL samsync_handle_account(TALLOC_CTX *mem_ctx, struct samsync_state *sa
 	}
 
 	if ((account->privilege_entries && !e.out.privs)) {
-		printf("Account %s has privilages in SamSync, but not LSA\n",
+		printf("Account %s has privileges in SamSync, but not LSA\n",
 		       dom_sid_string(mem_ctx, dom_sid));
 		return False;
 	}
 
 	if (!account->privilege_entries && e.out.privs && e.out.privs->count) {
-		printf("Account %s has privilages in LSA, but not SamSync\n",
+		printf("Account %s has privileges in LSA, but not SamSync\n",
 		       dom_sid_string(mem_ctx, dom_sid));
 		return False;
 	}

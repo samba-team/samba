@@ -51,7 +51,8 @@ static int ejs_ldbSearch(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	const char **attrs = NULL;
 	const char *expression;
-	const char *basedn = NULL;
+	const char *base = NULL;
+	struct ldb_dn *basedn = NULL;
 	int scope = LDB_SCOPE_DEFAULT;
 	TALLOC_CTX *tmp_ctx = talloc_new(mprMemCtx());
 	struct ldb_context *ldb;
@@ -79,8 +80,15 @@ static int ejs_ldbSearch(MprVarHandle eid, int argc, struct MprVar **argv)
 		goto failed;
 	}
 	if (argc > 1) {
-		basedn = mprToString(argv[1]);
+		base = mprToString(argv[1]);
 		/* a null basedn is valid */
+	}
+	if (base != NULL) {
+		basedn = ldb_dn_explode(tmp_ctx, base);
+		if (basedn == NULL) {
+			ejsSetErrorMsg(eid, "ldb.search malformed base dn");
+			goto failed;
+		}
 	}
 	if (argc > 2) {
 		scope = mprToInt(argv[2]);
@@ -160,7 +168,7 @@ static int ejs_ldbAddModify(MprVarHandle eid, int argc, struct MprVar **argv,
 */
 static int ejs_ldbDelete(MprVarHandle eid, int argc, struct MprVar **argv)
 {
-	const char *dn;
+	struct ldb_dn *dn;
 	struct ldb_context *ldb;
 	int ret;
 
@@ -169,13 +177,20 @@ static int ejs_ldbDelete(MprVarHandle eid, int argc, struct MprVar **argv)
 		return -1;
 	}
 
-	dn = mprToString(argv[0]);
-
 	ldb = ejs_get_ldb_context(eid);
 	if (ldb == NULL) {
 		return -1;
 	}
+
+	dn = ldb_dn_explode(ldb, mprToString(argv[0]));
+	if (dn == NULL) {
+		ejsSetErrorMsg(eid, "ldb.delete malformed dn");
+		return -1;
+	}
+
 	ret = ldb_delete(ldb, dn);
+
+	talloc_free(dn);
 
 	mpr_Return(eid, mprCreateBoolVar(ret == 0));
 	return 0;
@@ -188,18 +203,11 @@ static int ejs_ldbDelete(MprVarHandle eid, int argc, struct MprVar **argv)
 */
 static int ejs_ldbRename(MprVarHandle eid, int argc, struct MprVar **argv)
 {
-	const char *dn1, *dn2;
+	struct ldb_dn *dn1, *dn2;
 	struct ldb_context *ldb;
 	int ret;
 
 	if (argc != 2) {
-		ejsSetErrorMsg(eid, "ldb.rename invalid arguments");
-		return -1;
-	}
-
-	dn1 = mprToString(argv[0]);
-	dn2 = mprToString(argv[1]);
-	if (dn1 == NULL || dn2 == NULL) {
 		ejsSetErrorMsg(eid, "ldb.rename invalid arguments");
 		return -1;
 	}
@@ -209,7 +217,17 @@ static int ejs_ldbRename(MprVarHandle eid, int argc, struct MprVar **argv)
 		return -1;
 	}
 
+	dn1 = ldb_dn_explode(ldb, mprToString(argv[0]));
+	dn2 = ldb_dn_explode(ldb, mprToString(argv[1]));
+	if (dn1 == NULL || dn2 == NULL) {
+		ejsSetErrorMsg(eid, "ldb.rename invalid or malformed arguments");
+		return -1;
+	}
+
 	ret = ldb_rename(ldb, dn1, dn2);
+
+	talloc_free(dn1);
+	talloc_free(dn2);
 
 	mpr_Return(eid, mprCreateBoolVar(ret == 0));
 	return 0;

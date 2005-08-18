@@ -45,56 +45,76 @@ struct ildb_private {
 /*
   rename a record
 */
-static int ildb_rename(struct ldb_module *module, const char *olddn, const char *newdn)
+static int ildb_rename(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
 {
+	TALLOC_CTX *local_ctx;
 	struct ildb_private *ildb = module->private_data;
 	int ret = 0;
-	char *newrdn, *p;
-	const char *parentdn = "";
+	char *old_dn;
+	char *newrdn, *parentdn;
 
 	/* ignore ltdb specials */
-	if (olddn[0] == '@' ||newdn[0] == '@') {
+	if (ldb_dn_is_special(olddn) || ldb_dn_is_special(newdn)) {
 		return 0;
 	}
 
-	newrdn = talloc_strdup(ildb, newdn);
-	if (!newrdn) {
+	local_ctx = talloc_named(ildb, 0, "ildb_rename local context");
+	if (local_ctx == NULL) {
 		return -1;
 	}
 
-	p = strchr(newrdn, ',');
-	if (p) {
-		*p++ = '\0';
-		parentdn = p;
+	old_dn = ldb_dn_linearize(local_ctx, olddn);
+	if (old_dn == NULL) {
+		goto failed;
 	}
 
-	ildb->last_rc = ildap_rename(ildb->ldap, olddn, newrdn, parentdn, True);
+	newrdn = talloc_asprintf(local_ctx, "%s=%s",
+					    newdn->components[0].name,
+					    ldb_dn_escape_value(ildb, newdn->components[0].value));
+	if (newrdn == NULL) {
+		goto failed;
+	}
+
+	parentdn = ldb_dn_linearize(local_ctx, ldb_dn_get_parent(ildb, newdn));
+	if (parentdn == NULL) {
+		goto failed;
+	}
+
+	ildb->last_rc = ildap_rename(ildb->ldap, old_dn, newrdn, parentdn, True);
 	if (!NT_STATUS_IS_OK(ildb->last_rc)) {
 		ret = -1;
 	}
 
-	talloc_free(newrdn);
-
+	talloc_free(local_ctx);
 	return ret;
+
+failed:
+	talloc_free(local_ctx);
+	return -1;
 }
 
 /*
   delete a record
 */
-static int ildb_delete(struct ldb_module *module, const char *dn)
+static int ildb_delete(struct ldb_module *module, const struct ldb_dn *dn)
 {
 	struct ildb_private *ildb = module->private_data;
+	char *del_dn;
 	int ret = 0;
 
 	/* ignore ltdb specials */
-	if (dn[0] == '@') {
+	if (ldb_dn_is_special(dn)) {
 		return 0;
 	}
 	
-	ildb->last_rc = ildap_delete(ildb->ldap, dn);
+	del_dn = ldb_dn_linearize(ildb, dn);
+
+	ildb->last_rc = ildap_delete(ildb->ldap, del_dn);
 	if (!NT_STATUS_IS_OK(ildb->last_rc)) {
 		ret = -1;
 	}
+
+	talloc_free(del_dn);
 
 	return ret;
 }
@@ -105,13 +125,14 @@ static void ildb_rootdse(struct ldb_module *module);
 /*
   search for matching records
 */
-static int ildb_search(struct ldb_module *module, const char *base,
+static int ildb_search(struct ldb_module *module, const struct ldb_dn *base,
 		       enum ldb_scope scope, const char *expression,
 		       const char * const *attrs, struct ldb_message ***res)
 {
 	struct ildb_private *ildb = module->private_data;
 	int count, i;
 	struct ldap_message **ldapres, *msg;
+	char *search_base;
 
 	if (scope == LDB_SCOPE_DEFAULT) {
 		scope = LDB_SCOPE_SUBTREE;
@@ -122,19 +143,26 @@ static int ildb_search(struct ldb_module *module, const char *base,
 			ildb_rootdse(module);
 		}
 		if (ildb->rootDSE != NULL) {
-			base = ldb_msg_find_string(ildb->rootDSE, 
-						   "defaultNamingContext", "");
+			search_base = talloc_strdup(ildb,
+						ldb_msg_find_string(ildb->rootDSE, 
+								"defaultNamingContext", ""));
 		} else {
-			base = "";
+			search_base = talloc_strdup(ildb, "");
 		}
+	} else {
+		search_base = ldb_dn_linearize(ildb, base);
+	}
+	if (search_base == NULL) {
+		return -1;
 	}
 
 	if (expression == NULL || expression[0] == '\0') {
 		expression = "objectClass=*";
 	}
 
-	ildb->last_rc = ildap_search(ildb->ldap, base, scope, expression, attrs, 
+	ildb->last_rc = ildap_search(ildb->ldap, search_base, scope, expression, attrs, 
 				     0, &ldapres);
+	talloc_free(search_base);
 	if (!NT_STATUS_IS_OK(ildb->last_rc)) {
 		return -1;
 	}
@@ -166,7 +194,10 @@ static int ildb_search(struct ldb_module *module, const char *base,
 		}
 		(*res)[i+1] = NULL;
 
-		(*res)[i]->dn = talloc_steal((*res)[i], search->dn);
+		(*res)[i]->dn = ldb_dn_explode((*res)[i], search->dn);
+		if ((*res)[i]->dn == NULL) {
+			goto failed;
+		}
 		(*res)[i]->num_elements = search->num_attributes;
 		(*res)[i]->elements = talloc_steal((*res)[i], search->attributes);
 		(*res)[i]->private_data = NULL;
@@ -185,7 +216,7 @@ failed:
 /*
   search for matching records using a ldb_parse_tree
 */
-static int ildb_search_bytree(struct ldb_module *module, const char *base,
+static int ildb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 			      enum ldb_scope scope, struct ldb_parse_tree *tree,
 			      const char * const *attrs, struct ldb_message ***res)
 {
@@ -264,16 +295,26 @@ static int ildb_add(struct ldb_module *module, const struct ldb_message *msg)
 	struct ldb_context *ldb = module->ldb;
 	struct ildb_private *ildb = module->private_data;
 	struct ldap_mod **mods;
+	char *dn;
 	int ret = 0;
 
 	/* ignore ltdb specials */
-	if (msg->dn[0] == '@') {
+	if (ldb_dn_is_special(msg->dn)) {
 		return 0;
 	}
 
 	mods = ildb_msg_to_mods(ldb, msg, 0);
+	if (mods == NULL) {
+		return -1;
+	}
 
-	ildb->last_rc = ildap_add(ildb->ldap, msg->dn, mods);
+	dn = ldb_dn_linearize(mods, msg->dn);
+	if (dn == NULL) {
+		talloc_free(mods);
+		return -1;
+	}
+
+	ildb->last_rc = ildap_add(ildb->ldap, dn, mods);
 	if (!NT_STATUS_IS_OK(ildb->last_rc)) {
 		ret = -1;
 	}
@@ -292,16 +333,26 @@ static int ildb_modify(struct ldb_module *module, const struct ldb_message *msg)
 	struct ldb_context *ldb = module->ldb;
 	struct ildb_private *ildb = module->private_data;
 	struct ldap_mod **mods;
+	char *dn;
 	int ret = 0;
 
 	/* ignore ltdb specials */
-	if (msg->dn[0] == '@') {
+	if (ldb_dn_is_special(msg->dn)) {
 		return 0;
 	}
 
 	mods = ildb_msg_to_mods(ldb, msg, 1);
+	if (mods == NULL) {
+		return -1;
+	}
 
-	ildb->last_rc = ildap_modify(ildb->ldap, msg->dn, mods);
+	dn = ldb_dn_linearize(mods, msg->dn);
+	if (dn == NULL) {
+		talloc_free(mods);
+		return -1;
+	}
+
+	ildb->last_rc = ildap_modify(ildb->ldap, dn, mods);
 	if (!NT_STATUS_IS_OK(ildb->last_rc)) {
 		ret = -1;
 	}
@@ -372,12 +423,14 @@ static void ildb_rootdse(struct ldb_module *module)
 {
 	struct ildb_private *ildb = module->private_data;
 	struct ldb_message **res = NULL;
+	struct ldb_dn *empty_dn = ldb_dn_new(ildb);
 	int ret;
-	ret = ildb_search(module, "", LDB_SCOPE_BASE, "dn=dc=rootDSE", NULL, &res);
+	ret = ildb_search(module, empty_dn, LDB_SCOPE_BASE, "dn=dc=rootDSE", NULL, &res);
 	if (ret == 1) {
 		ildb->rootDSE = talloc_steal(ildb, res[0]);
 	}
-	talloc_free(res);
+	if (ret != -1) talloc_free(res);
+	talloc_free(empty_dn);
 }
 
 

@@ -44,7 +44,7 @@ struct private_data {
 	const char *error_string;
 };
 
-static int samldb_search(struct ldb_module *module, const char *base,
+static int samldb_search(struct ldb_module *module, const struct ldb_dn *base,
 				  enum ldb_scope scope, const char *expression,
 				  const char * const *attrs, struct ldb_message ***res)
 {
@@ -52,7 +52,7 @@ static int samldb_search(struct ldb_module *module, const char *base,
 	return ldb_next_search(module, base, scope, expression, attrs, res);
 }
 
-static int samldb_search_bytree(struct ldb_module *module, const char *base,
+static int samldb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 				enum ldb_scope scope, struct ldb_parse_tree *tree,
 				const char * const *attrs, struct ldb_message ***res)
 {
@@ -65,7 +65,7 @@ static int samldb_search_bytree(struct ldb_module *module, const char *base,
   return 0 on failure, the id on success
 */
 static int samldb_allocate_next_rid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
-				   const char *dn, uint32_t *id)
+				   const struct ldb_dn *dn, uint32_t *id)
 {
 	const char * const attrs[2] = { "nextRid", NULL };
 	struct ldb_message **res = NULL;
@@ -82,7 +82,7 @@ static int samldb_allocate_next_rid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx
 	}
 	str = ldb_msg_find_string(res[0], "nextRid", NULL);
 	if (str == NULL) {
-		ldb_debug(ldb, LDB_DEBUG_FATAL, "attribute nextRid not found in %s\n", dn);
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "attribute nextRid not found in %s\n", ldb_dn_linearize(res, dn));
 		talloc_free(res);
 		return -1;
 	}
@@ -99,7 +99,7 @@ static int samldb_allocate_next_rid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx
 	/* we do a delete and add as a single operation. That prevents
 	   a race */
 	ZERO_STRUCT(msg);
-	msg.dn = talloc_strdup(mem_ctx, dn);
+	msg.dn = ldb_dn_copy(mem_ctx, dn);
 	if (!msg.dn) {
 		return -1;
 	}
@@ -141,29 +141,35 @@ static int samldb_allocate_next_rid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx
 	return 0;
 }
 
-static char *samldb_search_domain(struct ldb_module *module, TALLOC_CTX *mem_ctx, const char *dn)
+static struct ldb_dn *samldb_search_domain(struct ldb_module *module, TALLOC_CTX *mem_ctx, const struct ldb_dn *dn)
 {
-	const char *sdn;
+	TALLOC_CTX *local_ctx;
+	struct ldb_dn *sdn;
 	struct ldb_message **res = NULL;
 	int ret = 0;
 
-	sdn = dn;
-	while ((sdn = strchr(sdn, ',')) != NULL) {
+	local_ctx = talloc_named(mem_ctx, 0, "samldb_search_domain memory conext");
+	if (local_ctx == NULL) return NULL;
 
-		sdn++;
-
+	sdn = ldb_dn_copy(local_ctx, dn);
+	do {
 		ret = ldb_search(module->ldb, sdn, LDB_SCOPE_BASE, "objectClass=domain", NULL, &res);
 		talloc_free(res);
 
 		if (ret == 1)
 			break;
-	}
+
+	} while ((sdn = ldb_dn_get_parent(local_ctx, sdn)));
 
 	if (ret != 1) {
+		talloc_free(local_ctx);
 		return NULL;
 	}
 
-	return talloc_strdup(mem_ctx, sdn);
+	talloc_steal(mem_ctx, sdn);
+	talloc_free(local_ctx);
+
+	return sdn;
 }
 
 /* search the domain related to the provided dn
@@ -171,11 +177,11 @@ static char *samldb_search_domain(struct ldb_module *module, TALLOC_CTX *mem_ctx
    return the new sid string
 */
 static struct dom_sid *samldb_get_new_sid(struct ldb_module *module, 
-					  TALLOC_CTX *mem_ctx, const char *obj_dn)
+					  TALLOC_CTX *mem_ctx, const struct ldb_dn *obj_dn)
 {
 	const char * const attrs[2] = { "objectSid", NULL };
 	struct ldb_message **res = NULL;
-	const char *dom_dn;
+	const struct ldb_dn *dom_dn;
 	uint32_t rid;
 	int ret, tries = 10;
 	struct dom_sid *dom_sid, *obj_sid;
@@ -190,7 +196,7 @@ static struct dom_sid *samldb_get_new_sid(struct ldb_module *module,
 	
 	dom_dn = samldb_search_domain(module, mem_ctx, obj_dn);
 	if (dom_dn == NULL) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Invalid dn (%s) not child of a domain object!\n", obj_dn);
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Invalid dn (%s) not child of a domain object!\n", ldb_dn_linearize(mem_ctx, obj_dn));
 		return NULL;
 	}
 
@@ -221,7 +227,7 @@ static struct dom_sid *samldb_get_new_sid(struct ldb_module *module,
 		}
 	}
 	if (ret != 0) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Failed to increment nextRid of %s\n", dom_dn);
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Failed to increment nextRid of %s\n", ldb_dn_linearize(mem_ctx, dom_dn));
 		talloc_free(res);
 		return NULL;
 	}
@@ -241,22 +247,6 @@ static char *samldb_generate_samAccountName(const void *mem_ctx) {
 	/* TODO: randomize name */	
 
 	return name;
-}
-
-static BOOL samldb_get_rdn(void *mem_ctx, const char *dn, struct ldb_dn_component **rdn)
-{
-	struct ldb_dn *dn_exploded = ldb_dn_explode(mem_ctx, dn);
-
-	if (!dn_exploded) {
-		return False;
-	}
-	
-	if (dn_exploded->comp_num < 1) {
-		return False;
-	}
-	
-	*rdn = &dn_exploded->components[0];
-	return True;
 }
 
 /* if value is not null also check for attribute to have exactly that value */
@@ -390,8 +380,8 @@ static struct ldb_message *samldb_fill_group_object(struct ldb_module *module, c
 		return NULL;
 	}
 
-	if ( ! samldb_get_rdn(msg2, msg2->dn, &rdn)) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_group_object: Bad DN (%s)!\n", msg2->dn);
+	if ((rdn = ldb_dn_get_rdn(msg2, msg2->dn)) == NULL) {
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_group_object: Bad DN (%s)!\n", ldb_dn_linearize(msg2, msg2->dn));
 		return NULL;
 	}
 	if (strcasecmp(rdn->name, "cn") != 0) {
@@ -454,7 +444,7 @@ static struct ldb_message *samldb_fill_user_or_computer_object(struct ldb_module
 		}
 	}
 
-	if ( ! samldb_get_rdn(msg2, msg2->dn, &rdn)) {
+	if ((rdn = ldb_dn_get_rdn(msg2, msg2->dn)) == NULL) {
 		return NULL;
 	}
 	if (strcasecmp(rdn->name, "cn") != 0) {
@@ -510,13 +500,15 @@ static struct ldb_message *samldb_fill_foreignSecurityPrincipal_object(struct ld
 		return NULL;
 	}
 
+	talloc_steal(msg, msg2);
+
 	if (samldb_copy_template(module, msg2, "(&(CN=TemplateForeignSecurityPrincipal)(objectclass=foreignSecurityPrincipalTemplate))") != 0) {
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "samldb_fill_foreignSecurityPrincipal_object: Error copying template!\n");
 		return NULL;
 	}
 
-	if ( ! samldb_get_rdn(msg2, msg2->dn, &rdn)) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_foreignSecurityPrincipal_object: Bad DN (%s)!\n", msg2->dn);
+	if ((rdn = ldb_dn_get_rdn(msg2, msg2->dn)) == NULL) {
+		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "samldb_fill_foreignSecurityPrincipal_object: Bad DN (%s)!\n", ldb_dn_linearize(msg2, msg2->dn));
 		return NULL;
 	}
 	if (strcasecmp(rdn->name, "cn") != 0) {
@@ -538,8 +530,6 @@ static struct ldb_message *samldb_fill_foreignSecurityPrincipal_object(struct ld
 		talloc_free(sid);
 	}
 
-	talloc_steal(msg, msg2);
-
 	return msg2;
 }
 
@@ -551,7 +541,7 @@ static int samldb_add_record(struct ldb_module *module, const struct ldb_message
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_add_record\n");
 
-	if (msg->dn[0] == '@') { /* do not manipulate our control entries */
+	if (strcmp(msg->dn->components[0].name, "@SPEACIAL") == 0) { /* do not manipulate our control entries */
 		return ldb_next_add_record(module, msg);
 	}
 
@@ -584,13 +574,13 @@ static int samldb_modify_record(struct ldb_module *module, const struct ldb_mess
 	return ldb_next_modify_record(module, msg);
 }
 
-static int samldb_delete_record(struct ldb_module *module, const char *dn)
+static int samldb_delete_record(struct ldb_module *module, const struct ldb_dn *dn)
 {
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_delete_record\n");
 	return ldb_next_delete_record(module, dn);
 }
 
-static int samldb_rename_record(struct ldb_module *module, const char *olddn, const char *newdn)
+static int samldb_rename_record(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
 {
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_rename_record\n");
 	return ldb_next_rename_record(module, olddn, newdn);

@@ -41,7 +41,7 @@
 #include "system/filesys.h"
 #endif
 
-static int ldb_delete_recursive(struct ldb_context *ldb, const char *dn)
+static int ldb_delete_recursive(struct ldb_context *ldb, const struct ldb_dn *dn)
 {
 	int ret, i, total=0;
 	const char *attrs[] = { "dn", NULL };
@@ -94,7 +94,13 @@ static void usage(void)
 	}
 
 	for (i=0;i<options->argc;i++) {
-		const char *dn = options->argv[i];
+		const struct ldb_dn *dn;
+
+		dn = ldb_dn_explode(ldb, options->argv[i]);
+		if (dn == NULL) {
+			printf("Invalid DN format\n");
+			exit(1);
+		}
 		if (options->recursive) {
 			ret = ldb_delete_recursive(ldb, dn);
 		} else {
@@ -104,7 +110,9 @@ static void usage(void)
 			}
 		}
 		if (ret != 0) {
-			printf("delete of '%s' failed - %s\n", dn, ldb_errstring(ldb));
+			printf("delete of '%s' failed - %s\n",
+				ldb_dn_linearize(ldb, dn),
+				ldb_errstring(ldb));
 		}
 	}
 

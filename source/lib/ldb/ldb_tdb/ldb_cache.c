@@ -115,11 +115,17 @@ static int ltdb_attributes_load(struct ldb_module *module)
 {
 	struct ltdb_private *ltdb = module->private_data;
 	struct ldb_message *msg = ltdb->cache->attributes;
+	struct ldb_dn *dn;
 	int i;
 
-	if (ltdb_search_dn1(module, LTDB_ATTRIBUTES, msg) == -1) {
+	dn = ldb_dn_explode(module->ldb, LTDB_ATTRIBUTES);
+	if (dn == NULL) goto failed;
+
+	if (ltdb_search_dn1(module, dn, msg) == -1) {
+		talloc_free(dn);
 		goto failed;
 	}
+	talloc_free(dn);
 	/* mapping these flags onto ldap 'syntaxes' isn't strictly correct,
 	   but its close enough for now */
 	for (i=0;i<msg->num_elements;i++) {
@@ -176,11 +182,17 @@ static int ltdb_subclasses_load(struct ldb_module *module)
 {
 	struct ltdb_private *ltdb = module->private_data;
 	struct ldb_message *msg = ltdb->cache->subclasses;
+	struct ldb_dn *dn;
 	int i, j;
 
-	if (ltdb_search_dn1(module, LTDB_SUBCLASSES, msg) == -1) {
+	dn = ldb_dn_explode(module->ldb, LTDB_SUBCLASSES);
+	if (dn == NULL) goto failed;
+
+	if (ltdb_search_dn1(module, dn, msg) == -1) {
+		talloc_free(dn);
 		goto failed;
 	}
+	talloc_free(dn);
 
 	for (i=0;i<msg->num_elements;i++) {
 		struct ldb_message_element *el = &msg->elements[i];
@@ -245,7 +257,7 @@ static int ltdb_baseinfo_init(struct ldb_module *module)
 
 	msg->num_elements = 1;
 	msg->elements = &el;
-	msg->dn = talloc_strdup(msg, LTDB_BASEINFO);
+	msg->dn = ldb_dn_explode(msg, LTDB_BASEINFO);
 	if (!msg->dn) {
 		goto failed;
 	}
@@ -303,6 +315,8 @@ int ltdb_cache_reload(struct ldb_module *module)
 int ltdb_cache_load(struct ldb_module *module)
 {
 	struct ltdb_private *ltdb = module->private_data;
+	struct ldb_dn *baseinfo_dn = NULL;
+	struct ldb_dn *indexlist_dn = NULL;
 	double seq;
 
 	if (ltdb->cache == NULL) {
@@ -321,8 +335,11 @@ int ltdb_cache_load(struct ldb_module *module)
 	talloc_free(ltdb->cache->baseinfo);
 	ltdb->cache->baseinfo = talloc(ltdb->cache, struct ldb_message);
 	if (ltdb->cache->baseinfo == NULL) goto failed;
-	
-	if (ltdb_search_dn1(module, LTDB_BASEINFO, ltdb->cache->baseinfo) == -1) {
+
+	baseinfo_dn = ldb_dn_explode(module->ldb, LTDB_BASEINFO);
+	if (baseinfo_dn == NULL) goto failed;
+
+	if (ltdb_search_dn1(module, baseinfo_dn, ltdb->cache->baseinfo) == -1) {
 		goto failed;
 	}
 	
@@ -331,7 +348,7 @@ int ltdb_cache_load(struct ldb_module *module)
 		if (ltdb_baseinfo_init(module) != 0) {
 			goto failed;
 		}
-		if (ltdb_search_dn1(module, LTDB_BASEINFO, ltdb->cache->baseinfo) != 1) {
+		if (ltdb_search_dn1(module, baseinfo_dn, ltdb->cache->baseinfo) != 1) {
 			goto failed;
 		}
 	}
@@ -362,7 +379,10 @@ int ltdb_cache_load(struct ldb_module *module)
 		goto failed;
 	}
 	    
-	if (ltdb_search_dn1(module, LTDB_INDEXLIST, ltdb->cache->indexlist) == -1) {
+	indexlist_dn = ldb_dn_explode(module->ldb, LTDB_INDEXLIST);
+	if (indexlist_dn == NULL) goto failed;
+
+	if (ltdb_search_dn1(module, indexlist_dn, ltdb->cache->indexlist) == -1) {
 		goto failed;
 	}
 
@@ -374,9 +394,13 @@ int ltdb_cache_load(struct ldb_module *module)
 	}
 
 done:
+	talloc_free(baseinfo_dn);
+	talloc_free(indexlist_dn);
 	return 0;
 
 failed:
+	talloc_free(baseinfo_dn);
+	talloc_free(indexlist_dn);
 	return -1;
 }
 
@@ -407,8 +431,18 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 
 	msg->num_elements = 1;
 	msg->elements = &el;
-	msg->dn = talloc_strdup(msg, LTDB_BASEINFO);
+	msg->dn = ldb_dn_explode(msg, LTDB_BASEINFO);
+	if (msg->dn == NULL) {
+		talloc_free(msg);
+		errno = ENOMEM;
+		return -1;
+	}
 	el.name = talloc_strdup(msg, LTDB_SEQUENCE_NUMBER);
+	if (el.name == NULL) {
+		talloc_free(msg);
+		errno = ENOMEM;
+		return -1;
+	}
 	el.values = &val;
 	el.num_values = 1;
 	el.flags = LDB_FLAG_MOD_REPLACE;
