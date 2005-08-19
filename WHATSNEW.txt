@@ -77,7 +77,7 @@ Experimental support for async IO has been added to smbd for
 certain platforms.  To enable this new feature, Samba must be 
 compiled to include the --with-aio-support configure option.
 In addition, the "aio read size" and "aio write size" to non-zero
-values.  See the smb,conf(5) man page for more details on these 
+values.  See the smb.conf(5) man page for more details on these 
 settings.
 
 
