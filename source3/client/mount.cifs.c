@@ -506,6 +506,8 @@ static int parse_options(char * options, int * filesys_flags)
 			*filesys_flags &= ~MS_NOSUID;
 		} else if (strncmp(data, "nodev", 5) == 0) {
 			*filesys_flags |= MS_NODEV;
+		} else if (strncmp(data, "nobrl", 5) == 0) {
+			*filesys_flags &= ~MS_MANDLOCK;
 		} else if (strncmp(data, "dev", 3) == 0) {
 			*filesys_flags &= ~MS_NODEV;
 		} else if (strncmp(data, "noexec", 6) == 0) {
@@ -1138,8 +1140,6 @@ mount_retry:
 					strcat(mountent.mnt_opts,"rw");
 				if(flags & MS_MANDLOCK)
 					strcat(mountent.mnt_opts,",mand");
-				else
-					strcat(mountent.mnt_opts,",nomand");
 				if(flags & MS_NOEXEC)
 					strcat(mountent.mnt_opts,",noexec");
 				if(flags & MS_NOSUID)
