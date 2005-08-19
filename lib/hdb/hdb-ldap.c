@@ -666,7 +666,13 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
     }
 
     if (ent->etypes) {
-	/* clobber and replace encryption types. */
+	int add_krb5EncryptionType = 0;
+
+	/* 
+	 * Only add/modify krb5EncryptionType if its a new heimdal
+	 * entry or krb5EncryptionType already exists on the entry.
+	 */
+
 	if (!is_new_entry) {
 	    values = ldap_get_values(HDB2LDAP(db), msg, "krb5EncryptionType");
 	    if (values) {
@@ -675,19 +681,24 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
 				  NULL);
 		if (ret)
 		    goto out;
+		add_krb5EncryptionType = 1;
 	    }
-	}
-	for (i = 0; i < ent->etypes->len; i++) {
-	    if (is_samba_account && 
-		ent->keys.val[i].key.keytype == ETYPE_ARCFOUR_HMAC_MD5)
-	    {
-		;
-	    } else if (is_heimdal_entry) {
-		ret = LDAP_addmod_integer(context, &mods, LDAP_MOD_ADD,
-					  "krb5EncryptionType",
-					  ent->etypes->val[i]);
-		if (ret)
-		    goto out;
+	} else if (is_heimdal_entry)
+	    add_krb5EncryptionType = 1;
+
+	if (add_krb5EncryptionType) {
+	    for (i = 0; i < ent->etypes->len; i++) {
+		if (is_samba_account && 
+		    ent->keys.val[i].key.keytype == ETYPE_ARCFOUR_HMAC_MD5)
+		{
+		    ;
+		} else if (is_heimdal_entry) {
+		    ret = LDAP_addmod_integer(context, &mods, LDAP_MOD_ADD,
+					      "krb5EncryptionType",
+					      ent->etypes->val[i]);
+		    if (ret)
+			goto out;
+		}
 	    }
 	}
     }
