@@ -486,6 +486,9 @@ hdb_seal_key_mkey(krb5_context context, Key *k, hdb_master_key mkey)
     krb5_data res;
     hdb_master_key key;
 
+    if(k->mkvno != NULL)
+	return 0;
+
     key = _hdb_find_master_key(k->mkvno, mkey);
 
     if (key == NULL)
