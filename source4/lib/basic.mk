@@ -22,7 +22,8 @@ INIT_OBJ_FILES = \
 ADD_OBJ_FILES = \
 		lib/crypto/md5.o \
 		lib/crypto/hmacmd5.o \
-		lib/crypto/md4.o
+		lib/crypto/md4.o \
+		lib/crypto/arcfour.o
 # End SUBSYSTEM LIBCRYPTO
 ##############################
 
