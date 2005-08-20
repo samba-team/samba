@@ -408,11 +408,11 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 	DATA_BLOB null_data_blob = data_blob(NULL,0);
 	const char **mechTypes = NULL;
 	DATA_BLOB unwrapped_out = data_blob(NULL, 0);
+	const struct gensec_security_ops_wrapper *all_sec;
 
 	mechTypes = gensec_security_oids(out_mem_ctx, GENSEC_OID_SPNEGO);
 
-	const struct gensec_security_ops_wrapper *all_sec
-		= gensec_security_by_oid_list(out_mem_ctx, 
+	all_sec	= gensec_security_by_oid_list(out_mem_ctx, 
 					      mechTypes,
 					      GENSEC_OID_SPNEGO);
 	for (i=0; all_sec && all_sec[i].op; i++) {
@@ -432,27 +432,38 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 			continue;
 		}
 
-		nt_status = gensec_update(spnego_state->sub_sec_security,
-					  out_mem_ctx, 
-					  null_data_blob,
-					  &unwrapped_out);
-
-		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_PARAMETER)
-		    && !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) 
-		    && !NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(3, ("SPNEGO(%s) creating NEG_TOKEN_INIT failed: %s\n", 
-				  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
-			talloc_free(spnego_state->sub_sec_security);
-			spnego_state->sub_sec_security = NULL;
-			/* Pretend we never started it (lets the first run find some incompatible demand) */
-
-			continue;
+		/* In the client, try and produce the first (optimistic) packet */
+		if (spnego_state->state_position = SPNEGO_CLIENT_START) {
+			nt_status = gensec_update(spnego_state->sub_sec_security,
+						  out_mem_ctx, 
+						  null_data_blob,
+						  &unwrapped_out);
+			
+			if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) 
+			    && !NT_STATUS_IS_OK(nt_status)) {
+				DEBUG(1, ("SPNEGO(%s) creating NEG_TOKEN_INIT failed: %s\n", 
+					  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
+				talloc_free(spnego_state->sub_sec_security);
+				spnego_state->sub_sec_security = NULL;
+				/* Pretend we never started it (lets the first run find some incompatible demand) */
+				
+				continue;
+			}
 		}
+
 		spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
+		
+		/* List the remaining mechs as options */
 		spnego_out.negTokenInit.mechTypes = gensec_security_oids_from_ops_wrapped(out_mem_ctx, 
 											  &all_sec[i]);
 		spnego_out.negTokenInit.reqFlags = 0;
-		spnego_out.negTokenInit.mechListMIC = null_data_blob;
+		
+		if (spnego_state->state_position = SPNEGO_SERVER_START) {
+			spnego_out.negTokenInit.mechListMIC
+				= data_blob_string_const(talloc_asprintf(out_mem_ctx, "%s$@%s", lp_netbios_name(), lp_realm()));
+		} else {
+			spnego_out.negTokenInit.mechListMIC = null_data_blob;
+		}
 		spnego_out.negTokenInit.mechToken = unwrapped_out;
 		
 		if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
