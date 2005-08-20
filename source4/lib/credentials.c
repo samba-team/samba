@@ -496,7 +496,6 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 	struct ldb_context *ldb;
 	int ldb_ret;
 	struct ldb_message **msgs;
-	const char *base_dn = SECRETS_PRIMARY_DOMAIN_DN;
 	const char *attrs[] = {
 		"secret",
 		"samAccountName",
@@ -527,7 +526,8 @@ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cred)
 
 	/* search for the secret record */
 	ldb_ret = gendb_search(ldb,
-			       mem_ctx, base_dn, &msgs, attrs,
+			       mem_ctx, ldb_dn_explode(mem_ctx, SECRETS_PRIMARY_DOMAIN_DN), 
+			       &msgs, attrs,
 			       SECRETS_PRIMARY_DOMAIN_FILTER, 
 			       cli_credentials_get_domain(cred));
 	if (ldb_ret == 0) {
