@@ -1,9 +1,25 @@
-- Each of the various password database backends(tdb,ldap,smbpaswd) available in Samba3 need to be accessible and converted to the SAM database in Samba4.
-- Printer database needs to be read from the Samba3 TDB and added to the apprioprate LDAP subtree.
-- The WINS database needs to be converted from both plain text file and TDB file to LDAP/LDB.
-- The account policy database needs to be read in from a TDB and applied to the data in LDAP/LDB.
-- The privilege database needs to be read from a TDB and added to the SAM database in LDB.
-- Group mappings need to be read from the TDB and added to the SAM database.
-- The share info database and the configuration file from Samba3 need to be read and converted to either xattrs or a TDB in Samba4
-- Secrets.tdb, containing the domain formation, needs to be merged into the SAM database.
-- Last, but not least, a Samba3 configuration file should be parsable in Samba4. This file can be used for producing a Samba4 smb.conf file as well as for updating the various databases mentioned above.
+Three possible viable approaches:
+ 1) TDB conversion approach. Read in TDB dump out LDIF (one-way)
+  - samr.ldb: from tdbsam/smbpasswd, account_policy.tdb, secrets.tdb, group_mapping.tdb, idmap.tdb, privilege.tdb
+  - registry.ldb: from registry.tdb
+  - wins.ldif: from wins.tdb/wins.dat
+  - smb.conf/ea's: generated from the old smb.conf + share_info.tdb
+
+  (one-way upgrades can be done by using ldbsearch -a on these dynamically
+  generated ldb's)
+
+ 2) samr "mapping" backend (alternative for samr.ldb) (two-way)
+
+ 3) The vampire way of doing things (one-way)
+  - samba3 pidl backend 
+  - Samba4 vampire + server side samsync support in Samba3
+  - unixinfo (\unixinfo)
+   - in Samba4 (client side)
+   - in Samba3 (server side)
+  - winsrepl (thru seperate pipe?)
+  - enum/add shares (\srvsvc)
+  - enum/add registry (\winreg)
+  - enum/add printers (\winreg, perhaps also \spoolss(?))
+  - convert smb.conf (using Jerry's registry hack)
+
+(going with a combination of 1 and 2)
