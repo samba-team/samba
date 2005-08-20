@@ -2,10 +2,8 @@
 
 /**
   DCOM interfaces
-  http://www.grimes.demon.co.uk/DCOM/DCOMSpec.htm
+  http://www.ietf.org/internet-drafts/draft-brown-dcom-v1-spec-04.txt
  */
-
-#define OLESTR unistr
 
 [
 	uuid("18f70770-8e64-11cf-9af1-0020af6e72f4"),
