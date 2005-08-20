@@ -128,14 +128,6 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 
 	talloc_set_destructor(gensec_gssapi_state, gensec_gssapi_destory); 
 
-	if (gensec_security->want_features & GENSEC_FEATURE_SESSION_KEY) {
-#ifndef HAVE_GSSKRB5_GET_INITIATOR_SUBKEY
-		/* GSSAPI won't give us the session keys, without the
-		 * right hooks.  This is critical when requested, so
-		 * fail outright. */
-		return NT_STATUS_INVALID_PARAMETER;
-#endif
-	}
 	if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
 		gensec_gssapi_state->want_flags |= GSS_C_INTEG_FLAG;
 	}
@@ -143,13 +135,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 		gensec_gssapi_state->want_flags |= GSS_C_CONF_FLAG;
 	}
 	if (gensec_security->want_features & GENSEC_FEATURE_DCE_STYLE) {
-#ifndef GSS_C_DCE_STYLE
-		/* GSSAPI DCE_STYLE is critical when requested, so
-		 * fail outright */
-		return NT_STATUS_INVALID_PARAMETER;
-#else
 		gensec_gssapi_state->want_flags |= GSS_C_DCE_STYLE;
-#endif
 	}
 
 	gensec_gssapi_state->gss_oid = gss_mech_krb5;
@@ -678,12 +664,16 @@ static BOOL gensec_gssapi_have_feature(struct gensec_security *gensec_security,
 		return gensec_gssapi_state->got_flags & GSS_C_CONF_FLAG;
 	}
 	if (feature & GENSEC_FEATURE_SESSION_KEY) {
-#ifdef HAVE_GSSKRB5_GET_INITIATOR_SUBKEY
 		if ((gensec_gssapi_state->gss_oid->length == gss_mech_krb5->length)
 		    && (memcmp(gensec_gssapi_state->gss_oid->elements, gss_mech_krb5->elements, gensec_gssapi_state->gss_oid->length) == 0)) {
 			return True;
 		}
-#endif 
+	}
+	if (feature & GENSEC_FEATURE_DCE_STYLE) {
+		return True;
+	}
+	if (feature & GENSEC_FEATURE_ASYNC_REPLIES) {
+		return True;
 	}
 	return False;
 }
@@ -698,7 +688,6 @@ static NTSTATUS gensec_gssapi_session_key(struct gensec_security *gensec_securit
 		return NT_STATUS_OK;
 	}
 
-#ifdef HAVE_GSSKRB5_GET_INITIATOR_SUBKEY
 	/* Ensure we only call this for GSSAPI/krb5, otherwise things could get very ugly */
 	if ((gensec_gssapi_state->gss_oid->length == gss_mech_krb5->length)
 	    && (memcmp(gensec_gssapi_state->gss_oid->elements, gss_mech_krb5->elements, 
@@ -723,7 +712,6 @@ static NTSTATUS gensec_gssapi_session_key(struct gensec_security *gensec_securit
 		}
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
-#endif
 	
 	DEBUG(1, ("NO session key for this mech\n"));
 	return NT_STATUS_NO_USER_SESSION_KEY;
