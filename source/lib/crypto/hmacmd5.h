@@ -1,6 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-   Interface header: Scheduler service
+   Interface header:    HMAC MD5 code
    Copyright (C) Luke Kenneth Casson Leighton 1996-1999
    Copyright (C) Andrew Tridgell 1992-1999
    
