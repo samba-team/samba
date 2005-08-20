@@ -14,7 +14,7 @@
 	to close the file causing the violation in the meantime.
 	</para>
 
-	<para>Unix by default does not have this behaviour.</para>
+	<para>UNIX by default does not have this behaviour.</para>
 
 	<para>
 	There should be no reason to turn off this parameter, as it is
