@@ -180,7 +180,6 @@ struct gensec_ntlmssp_state
 
 	struct auth_context *auth_context;
 	struct auth_serversupplied_info *server_info;
-	uint32_t have_features;
 };
 
 
