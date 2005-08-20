@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "libcli/raw/libcliraw.h"
 
 static BOOL check_delete_on_close(struct smbcli_state *cli, int fnum,
 				  const char *fname, BOOL expect_it)
@@ -130,6 +131,14 @@ static BOOL check_delete_on_close(struct smbcli_state *cli, int fnum,
 	talloc_free(mem_ctx);
 	return res;
 }
+
+#define CHECK_STATUS(_cli, _expected) do { \
+	if (!NT_STATUS_EQUAL(_cli->tree->session->transport->error.e.nt_status, _expected)) { \
+		printf("(%d) Incorrect status %s - should be %s\n", \
+		       __LINE__, nt_errstr(_cli->tree->session->transport->error.e.nt_status), nt_errstr(_expected)); \
+		correct = False; \
+		goto fail; \
+	}} while (0)
 
 /*
   Test delete on close semantics.
@@ -383,8 +392,10 @@ BOOL torture_test_delete(void)
 		       __location__, fname );
 		correct = False;
 		goto fail;
-	} else
-		printf("fourth delete on close test succeeded.\n");
+	}
+	CHECK_STATUS(cli1, NT_STATUS_DELETE_PENDING);
+
+	printf("fourth delete on close test succeeded.\n");
 	
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
 		printf("(%s) close - 2 failed (%s)\n", 
