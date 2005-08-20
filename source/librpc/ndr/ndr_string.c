@@ -650,7 +650,13 @@ NTSTATUS ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var, 
 		return ndr_push_error(ndr, NDR_ERR_CHARCNV, 
 				      "Bad character conversion");
 	}
-	ndr->offset += ret;
+
+	/* Make sure the remaining part of the string is filled with zeroes */
+	if (ret < (byte_mul*length)) {
+		memset(ndr->data+ndr->offset+ret, 0, (byte_mul*length)-ret);
+	}
+
+	ndr->offset += length;
 
 	return NT_STATUS_OK;
 }
