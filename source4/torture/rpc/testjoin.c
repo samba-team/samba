@@ -28,6 +28,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "system/time.h"
+#include "lib/crypto/crypto.h"
 
 struct test_join {
 	struct dcerpc_pipe *p;
