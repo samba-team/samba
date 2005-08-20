@@ -74,7 +74,7 @@ validate: $(addsuffix -validate,$(MAIN_DOCS))
 # Intermediate docbook docs
 #
 $(DOCBOOKDIR)/%.xml: %/index.xml xslt/expand-sambadoc.xsl
-	@echo "Converting Samba-specific tags..."
+	@echo "Converting Samba-specific tags for $*..."
 	@mkdir -p $(@D)
 	@$(XSLTPROC) --stringparam latex.imagebasedir "$*/" --stringparam noreference 1 --xinclude --output $@ xslt/expand-sambadoc.xsl $<
 
