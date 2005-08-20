@@ -70,14 +70,13 @@ static NTSTATUS authsam_password_ok(struct auth_context *auth_context,
 		/* NO break */
 	}
 	case AUTH_PASSWORD_HASH:
+		*lm_sess_key = data_blob(NULL, 0);
+		*user_sess_key = data_blob(NULL, 0);
 		status = hash_password_check(mem_ctx, 
 					     user_info->password.hash.lanman,
 					     user_info->password.hash.nt,
 					     user_info->mapped.account_name,
-					     user_info->client.account_name, 
-					     user_info->client.domain_name, 
-					     lm_pwd, nt_pwd,
-					     user_sess_key, lm_sess_key);
+					     lm_pwd, nt_pwd);
 		NT_STATUS_NOT_OK_RETURN(status);
 		break;
 		
