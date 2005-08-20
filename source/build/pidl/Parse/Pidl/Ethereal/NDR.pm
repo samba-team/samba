@@ -260,7 +260,7 @@ sub ElementLevel($$$$$)
 			} elsif (property_matches($e, "flag", ".*LIBNDR_FLAG_STR_SIZE4.*")) {
 				pidl_code "offset=dissect_ndr_vstring(tvb,offset,pinfo,tree,drep,$bs,$hf,FALSE,NULL);";
 			} else {
-				warn("Unable to handle string with flags $e->{PROPERTIES}->{flags}");
+				warn("Unable to handle string with flags $e->{PROPERTIES}->{flag}");
 			}
 		} else {
 			my $call;
