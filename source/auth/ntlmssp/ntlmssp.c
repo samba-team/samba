@@ -138,8 +138,14 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 			ntlmssp_command = NTLMSSP_INITIAL;
 			break;
 		case NTLMSSP_SERVER:
-			/* 'datagram' mode - no neg packet */
-			ntlmssp_command = NTLMSSP_NEGOTIATE;
+			if (gensec_security->want_features & GENSEC_FEATURE_DATAGRAM_MODE) {
+				/* 'datagram' mode - no neg packet */
+				ntlmssp_command = NTLMSSP_NEGOTIATE;
+			} else {
+				/* This is normal in SPNEGO mech negotiation fallback */
+				DEBUG(2, ("Failed to parse NTLMSSP packet: zero length\n"));
+				return NT_STATUS_INVALID_PARAMETER;
+			}
 			break;
 		}
 	} else {
