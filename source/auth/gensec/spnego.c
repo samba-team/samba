@@ -433,7 +433,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 		}
 
 		/* In the client, try and produce the first (optimistic) packet */
-		if (spnego_state->state_position = SPNEGO_CLIENT_START) {
+		if (spnego_state->state_position == SPNEGO_CLIENT_START) {
 			nt_status = gensec_update(spnego_state->sub_sec_security,
 						  out_mem_ctx, 
 						  null_data_blob,
@@ -458,7 +458,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 											  &all_sec[i]);
 		spnego_out.negTokenInit.reqFlags = 0;
 		
-		if (spnego_state->state_position = SPNEGO_SERVER_START) {
+		if (spnego_state->state_position == SPNEGO_SERVER_START) {
 			spnego_out.negTokenInit.mechListMIC
 				= data_blob_string_const(talloc_asprintf(out_mem_ctx, "%s$@%s", lp_netbios_name(), lp_realm()));
 		} else {
