@@ -344,9 +344,12 @@ sub Function($$$)
 		$dissectornames{$_->{NAME}} = Element($_, $fn->{NAME}, $ifname) 
 	}
 	
+	my $fn_name = $_->{NAME};
+	$fn_name =~ s/^${ifname}_//;
+
 	PrintIdl DumpFunction($fn->{ORIGINAL});
 	pidl_code "static int";
-	pidl_code "$ifname\_dissect\_$fn->{NAME}_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, guint8 *drep _U_)";
+	pidl_code "$ifname\_dissect\_${fn_name}_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, guint8 *drep _U_)";
 	pidl_code "{";
 	indent;
 	foreach (@{$fn->{ELEMENTS}}) {
@@ -369,7 +372,7 @@ sub Function($$$)
 	pidl_code "}\n";
 
 	pidl_code "static int";
-	pidl_code "$ifname\_dissect\_$fn->{NAME}_request(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, guint8 *drep _U_)";
+	pidl_code "$ifname\_dissect\_${fn_name}_request(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, guint8 *drep _U_)";
 	pidl_code "{";
 	indent;
 	foreach (@{$fn->{ELEMENTS}}) {
@@ -826,10 +829,11 @@ sub DumpFunctionTable($)
 	my $if = shift;
 
 	my $res = "static dcerpc_sub_dissector $if->{NAME}\_dissectors[] = {\n";
-	
 	foreach (@{$if->{FUNCTIONS}}) {
-		$res.= "\t{ $_->{OPNUM}, \"$_->{NAME}\",\n";
-		$res.= "\t   $if->{NAME}_dissect_$_->{NAME}_request, $if->{NAME}_dissect_$_->{NAME}_response},\n";
+	        my $fn_name = $_->{NAME};
+		$fn_name =~ s/^$if->{NAME}_//;
+		$res.= "\t{ $_->{OPNUM}, \"$fn_name\",\n";
+		$res.= "\t   $if->{NAME}_dissect_${fn_name}_request, $if->{NAME}_dissect_${fn_name}_response},\n";
 	}
 
 	$res .= "\t{ 0, NULL, NULL, NULL }\n";
