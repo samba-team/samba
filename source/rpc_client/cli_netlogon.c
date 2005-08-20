@@ -36,7 +36,7 @@ NTSTATUS cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal,
         NET_R_REQ_CHAL r;
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-        prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+        prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
         prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
         
         /* create and send a MSRPC command with api NET_REQCHAL */
@@ -85,7 +85,7 @@ NTSTATUS rpccli_net_req_chal(struct rpc_pipe_client *cli,
         NET_R_REQ_CHAL r;
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-        prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->cli->mem_ctx, MARSHALL);
+        prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, cli->cli->mem_ctx, MARSHALL);
         prs_init(&rbuf, 0, cli->cli->mem_ctx, UNMARSHALL);
         
         /* create and send a MSRPC command with api NET_REQCHAL */
@@ -142,7 +142,7 @@ NTSTATUS cli_net_auth2(struct cli_state *cli,
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	fstring machine_acct;
 
-        prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+        prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
         prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	if ( sec_chan == SEC_CHAN_DOMAIN )
@@ -221,7 +221,7 @@ NTSTATUS rpccli_net_auth2(struct rpc_pipe_client *cli,
         NET_R_AUTH_2 r;
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-        prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+        prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
         prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
         /* create and send a MSRPC command with api NET_AUTH2 */
@@ -279,7 +279,7 @@ NTSTATUS cli_net_auth3(struct cli_state *cli,
         NET_R_AUTH_3 r;
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-        prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+        prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
         prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
         /* create and send a MSRPC command with api NET_AUTH2 */
@@ -411,7 +411,7 @@ NTSTATUS cli_netlogon_logon_ctrl2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Initialise input parameters */
@@ -458,7 +458,7 @@ NTSTATUS rpccli_netlogon_getdcname(struct rpc_pipe_client *cli,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Initialise input parameters */
@@ -537,7 +537,7 @@ NTSTATUS cli_netlogon_sam_sync(struct cli_state *cli, TALLOC_CTX *mem_ctx, DOM_C
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Initialise input parameters */
@@ -597,7 +597,7 @@ NTSTATUS cli_netlogon_sam_deltas(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Initialise input parameters */
@@ -659,7 +659,7 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
         /* Initialise input parameters */
@@ -787,7 +787,7 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Initialise input parameters */

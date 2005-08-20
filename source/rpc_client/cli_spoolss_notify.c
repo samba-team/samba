@@ -47,7 +47,7 @@ WERROR cli_spoolss_reply_open_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx
 	
 	/* Initialise input parameters */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	make_spoolss_q_replyopenprinter(&q, printer, printerlocal, type);
@@ -87,7 +87,7 @@ WERROR cli_spoolss_reply_close_printer(struct cli_state *cli, TALLOC_CTX *mem_ct
 
 	/* Initialise input parameters */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	make_spoolss_q_reply_closeprinter(&q, handle);
@@ -131,7 +131,7 @@ WERROR cli_spoolss_routerreplyprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx
 
 	/* Initialise input parameters */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	make_spoolss_q_routerreplyprinter(&q, pol, condition, change_id);
@@ -181,7 +181,7 @@ WERROR cli_spoolss_rrpcn(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	ZERO_STRUCT(notify_info);
@@ -242,7 +242,7 @@ WERROR cli_spoolss_rffpcnex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Initialise input parameters */

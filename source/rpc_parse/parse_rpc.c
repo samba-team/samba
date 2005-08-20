@@ -669,8 +669,8 @@ void init_rpc_hdr_auth(RPC_HDR_AUTH *rai,
 				uint8 auth_pad_len,
 				uint32 auth_context_id)
 {
-	rai->auth_type     = auth_type; /* nt lm ssp 0x0a */
-	rai->auth_level    = auth_level; /* 0x06 */
+	rai->auth_type     = auth_type;
+	rai->auth_level    = auth_level;
 	rai->auth_pad_len  = auth_pad_len;
 	rai->auth_reserved = 0;
 	rai->auth_context_id = auth_context_id;
@@ -691,9 +691,9 @@ BOOL smb_io_rpc_hdr_auth(const char *desc, RPC_HDR_AUTH *rai, prs_struct *ps, in
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint8 ("auth_type    ", ps, depth, &rai->auth_type)) /* 0x0a nt lm ssp */
+	if(!prs_uint8 ("auth_type    ", ps, depth, &rai->auth_type))
 		return False;
-	if(!prs_uint8 ("auth_level   ", ps, depth, &rai->auth_level)) /* 0x06 */
+	if(!prs_uint8 ("auth_level   ", ps, depth, &rai->auth_level))
 		return False;
 	if(!prs_uint8 ("auth_pad_len ", ps, depth, &rai->auth_pad_len))
 		return False;

@@ -35,7 +35,7 @@ NTSTATUS cli_dfs_exist(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -80,7 +80,7 @@ NTSTATUS cli_dfs_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -124,7 +124,7 @@ NTSTATUS cli_dfs_remove(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -169,7 +169,7 @@ NTSTATUS cli_dfs_get_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -215,7 +215,7 @@ NTSTATUS cli_dfs_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */

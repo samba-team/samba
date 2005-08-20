@@ -744,7 +744,7 @@ static void notify_system_time(struct spoolss_notify_msg *msg,
 		return;
 	}
 
-	if (!prs_init(&ps, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
+	if (!prs_init(&ps, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
 		DEBUG(5, ("notify_system_time: prs_init() failed\n"));
 		return;
 	}

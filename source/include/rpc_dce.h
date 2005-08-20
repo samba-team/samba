@@ -34,7 +34,7 @@ enum RPC_PKT_TYPE {
 	RPC_BINDNACK = 0x0D,
 	RPC_ALTCONT  = 0x0E,
 	RPC_ALTCONTRESP = 0x0F,
-	RPC_BINDRESP = 0x10 /* not the real name!  this is undocumented! */
+	RPC_AUTH3 = 0x10 /* not the real name!  this is undocumented! */
 };
 
 /* DCE/RPC flags */
@@ -42,32 +42,40 @@ enum RPC_PKT_TYPE {
 #define RPC_FLG_LAST  0x02
 #define RPC_FLG_NOCALL 0x20
 
-/* No auth type on a bind - anonymous.. */
-#define ANONYMOUS_AUTH_TYPE 0
 
 #define SMBD_NTLMSSP_NEG_FLAGS 0x000082b1 /* ALWAYS_SIGN|NEG_NTLM|NEG_LM|NEG_SEAL|NEG_SIGN|NEG_UNICODE */
 
 /* NTLMSSP signature version */
 #define NTLMSSP_SIGN_VERSION 0x01
 
-/* NTLMSSP auth type */
-#define NTLMSSP_AUTH_TYPE 0xa
+/* DCE RPC auth types - extended by Microsoft. */
+#define RPC_ANONYMOUS_AUTH_TYPE    0
+#define RPC_SPNEGO_AUTH_TYPE       9 
+#define RPC_NTLMSSP_AUTH_TYPE     10
+#define RPC_KRB5_AUTH_TYPE        16 /* Not yet implemented. */ 
+#define RPC_SCHANNEL_AUTH_TYPE    68 /* 0x44 */
 
 /* DCE-RPC standard identifiers to indicate 
    signing or sealing of an RPC pipe */
+#define RPC_AUTH_LEVEL_NONE      1
+#define RPC_AUTH_LEVEL_CONNECT   2
+#define RPC_AUTH_LEVEL_CALL      3
+#define RPC_AUTH_LEVEL_PACKET    4
+#define RPC_AUTH_LEVEL_INTEGRITY 5
+#define RPC_AUTH_LEVEL_PRIVACY   6
+
+#if 0
 #define RPC_PIPE_AUTH_SIGN_LEVEL 0x5
 #define RPC_PIPE_AUTH_SEAL_LEVEL 0x6
+#endif
 
 /* Netlogon schannel auth type and level */
-#define SCHANNEL_AUTH_TYPE 0x44
 #define SCHANNEL_SIGN_SIGNATURE { 0x77, 0x00, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00 }
 #define SCHANNEL_SEAL_SIGNATURE { 0x77, 0x00, 0x7a, 0x00, 0xff, 0xff, 0x00, 0x00 }
 
 #define RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN 	0x20
 #define RPC_AUTH_SCHANNEL_SIGN_ONLY_CHK_LEN 	0x18
 
-/* SPNEGO auth type. */
-#define SPNEGO_AUTH_TYPE 0x9
 
 /* The 7 here seems to be required to get Win2k not to downgrade us
    to NT4.  Actually, anything other than 1ff would seem to do... */
@@ -87,9 +95,12 @@ enum schannel_direction {
 #define AUTH_PIPE_NTLMSSP   0x0004
 #define AUTH_PIPE_SCHANNEL  0x0008
 
+/* Maximum size of the signing data in a fragment. */
+#define RPC_MAX_SIGN_SIZE 0x20 /* 32 */
+
 /* Maximum PDU fragment size. */
 /* #define MAX_PDU_FRAG_LEN 0x1630		this is what wnt sets */
-#define MAX_PDU_FRAG_LEN 0x10b8			/* this is what w2k sets */
+#define RPC_MAX_PDU_FRAG_LEN 0x10b8			/* this is what w2k sets */
 
 /* RPC_IFACE */
 typedef struct rpc_iface_info {

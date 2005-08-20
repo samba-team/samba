@@ -445,7 +445,7 @@ static void fill_in_printer_values( NT_PRINTER_INFO_LEVEL_2 *info2, REGVAL_CTR *
 	/* use a prs_struct for converting the devmode and security 
 	   descriptor to REG_BINARY */
 	
-	prs_init( &prs, MAX_PDU_FRAG_LEN, regval_ctr_getctx(values), MARSHALL);
+	prs_init( &prs, RPC_MAX_PDU_FRAG_LEN, regval_ctr_getctx(values), MARSHALL);
 
 	/* stream the device mode */
 		

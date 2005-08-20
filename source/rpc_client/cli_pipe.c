@@ -36,15 +36,15 @@ void get_auth_type_level(int pipe_auth_flags, int *auth_type, int *auth_level)
 	*auth_type = 0;
 	*auth_level = 0;
 	if (pipe_auth_flags & AUTH_PIPE_SEAL) {
-		*auth_level = RPC_PIPE_AUTH_SEAL_LEVEL;
+		*auth_level = RPC_AUTH_LEVEL_PRIVACY;
 	} else if (pipe_auth_flags & AUTH_PIPE_SIGN) {
-		*auth_level = RPC_PIPE_AUTH_SIGN_LEVEL;
+		*auth_level = RPC_AUTH_LEVEL_INTEGRITY;
 	}
 	
 	if (pipe_auth_flags & AUTH_PIPE_SCHANNEL) {
-		*auth_type = SCHANNEL_AUTH_TYPE;
+		*auth_type = RPC_SCHANNEL_AUTH_TYPE;
 	} else if (pipe_auth_flags & AUTH_PIPE_NTLMSSP) {
-		*auth_type = NTLMSSP_AUTH_TYPE;
+		*auth_type = RPC_NTLMSSP_AUTH_TYPE;
 	}
 }
 
@@ -313,13 +313,17 @@ static BOOL rpc_auth_pipe(struct rpc_pipe_client *cli, prs_struct *rdata,
 				return False;
 			}
 			nt_status = ntlmssp_unseal_packet(cli->ntlmssp_pipe_state, 
-								 (unsigned char *)reply_data, data_len,
-								 &sig);
+							(unsigned char *)reply_data, data_len,
+							prs_data_p(rdata) + fragment_start,
+							len - auth_len,
+							&sig);
 		} 
 		else if (cli->pipe_auth_flags & AUTH_PIPE_SIGN) {
 			nt_status = ntlmssp_check_packet(cli->ntlmssp_pipe_state, 
-								(const unsigned char *)reply_data, data_len,
-								&sig);
+							reply_data, data_len,
+							prs_data_p(rdata) + fragment_start,
+							len - auth_len,
+							&sig);
 		}
 
 		data_blob_free(&sig);
@@ -747,7 +751,7 @@ static NTSTATUS create_rpc_bind_req(struct rpc_pipe_client *cli,
 			abstract, transfer);
 
 	/* create the bind request RPC_HDR_RB */
-	init_rpc_hdr_rb(&hdr_rb, MAX_PDU_FRAG_LEN, MAX_PDU_FRAG_LEN, 0x0, &rpc_ctx);
+	init_rpc_hdr_rb(&hdr_rb, RPC_MAX_PDU_FRAG_LEN, RPC_MAX_PDU_FRAG_LEN, 0x0, &rpc_ctx);
 
 	/* Create the request RPC_HDR */
 	init_rpc_hdr(&hdr, RPC_BIND, 0x3, rpc_call_id, 
@@ -813,7 +817,7 @@ static NTSTATUS create_rpc_bind_resp(struct rpc_pipe_client *cli,
 	}
 
 	/* Create the request RPC_HDR */
-	init_rpc_hdr(&hdr, RPC_BINDRESP, 0x0, rpc_call_id,
+	init_rpc_hdr(&hdr, RPC_AUTH3, 0x0, rpc_call_id,
 		     RPC_HEADER_LEN + RPC_HDR_AUTHA_LEN + ntlmssp_reply.length,
 		     ntlmssp_reply.length );
 	
@@ -828,7 +832,7 @@ static NTSTATUS create_rpc_bind_resp(struct rpc_pipe_client *cli,
 	
 	/* Create the request RPC_HDR_AUTHA */
 	init_rpc_hdr_auth(&hdr_auth, auth_type, auth_level, 0, 0x0014a0c0);
-	init_rpc_hdr_autha(&hdr_autha, MAX_PDU_FRAG_LEN, MAX_PDU_FRAG_LEN, &hdr_auth);
+	init_rpc_hdr_autha(&hdr_autha, RPC_MAX_PDU_FRAG_LEN, RPC_MAX_PDU_FRAG_LEN, &hdr_auth);
 
 	if(!smb_io_rpc_hdr_autha("hdr_autha", &hdr_autha, rpc_out, 0)) {
 		DEBUG(0,("create_rpc_bind_resp: failed to marshall RPC_HDR_AUTHA.\n"));
@@ -1016,6 +1020,11 @@ BOOL rpc_api_pipe_req_int(struct rpc_pipe_client *cli, uint8 op_num,
 					nt_status = ntlmssp_seal_packet(cli->ntlmssp_pipe_state,
 									       (unsigned char*)prs_data_p(&sec_blob),
 									       data_and_padding_size,
+										/* These next 2 parameters are wrong. We
+										   need to contruct the full fragment
+										   first for NTLMv2. JRA */
+									       (unsigned char*)prs_data_p(&sec_blob),
+									       data_and_padding_size,
 									       &sign_blob);
 					if (!NT_STATUS_IS_OK(nt_status)) {
 						prs_mem_free(&sec_blob);
@@ -1026,7 +1035,13 @@ BOOL rpc_api_pipe_req_int(struct rpc_pipe_client *cli, uint8 op_num,
 					
 					nt_status = ntlmssp_sign_packet(cli->ntlmssp_pipe_state,
 									       (unsigned char*)prs_data_p(&sec_blob),
-									       data_and_padding_size, &sign_blob);
+									       data_and_padding_size,
+										/* These next 2 parameters are wrong. We
+										   need to contruct the full fragment
+										   first for NTLMv2. JRA */
+									       (unsigned char*)prs_data_p(&sec_blob),
+									       data_and_padding_size,
+										&sign_blob);
 					if (!NT_STATUS_IS_OK(nt_status)) {
 						prs_mem_free(&sec_blob);
 						return False;
@@ -1334,7 +1349,7 @@ static BOOL rpc_pipe_bind(struct rpc_pipe_client *cli)
 	prs_struct rpc_out;
 	prs_struct rdata;
 	uint32 rpc_call_id;
-	char buffer[MAX_PDU_FRAG_LEN];
+	char buffer[RPC_MAX_PDU_FRAG_LEN];
 
 	if ( (cli->pipe_idx < 0) || (cli->pipe_idx >= PI_MAX_PIPES) )
 		return False;
@@ -1348,7 +1363,7 @@ static BOOL rpc_pipe_bind(struct rpc_pipe_client *cli)
 	prs_init(&rpc_out, 0, cli->cli->mem_ctx, MARSHALL);
 
 	/*
-	 * Use the MAX_PDU_FRAG_LEN buffer to store the bind request.
+	 * Use the RPC_MAX_PDU_FRAG_LEN buffer to store the bind request.
 	 */
 
 	prs_give_memory( &rpc_out, buffer, sizeof(buffer), False);

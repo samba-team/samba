@@ -142,7 +142,7 @@ BOOL netsamlogon_cache_store(TALLOC_CTX *mem_ctx, const char * username, NET_USE
 		
 	/* Prepare data */
 	
-	prs_init( &ps,MAX_PDU_FRAG_LEN , mem_ctx, MARSHALL);
+	prs_init( &ps, RPC_MAX_PDU_FRAG_LEN , mem_ctx, MARSHALL);
 	
 	if ( !prs_uint32( "timestamp", &ps, 0, (uint32*)&t ) )
 		return False;

@@ -254,7 +254,7 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 		 * is greater.
 		 */
 
-		new_size = MAX(MAX_PDU_FRAG_LEN,extra_space);
+		new_size = MAX(RPC_MAX_PDU_FRAG_LEN,extra_space);
 
 		if((new_data = SMB_MALLOC(new_size)) == NULL) {
 			DEBUG(0,("prs_grow: Malloc failure for size %u.\n", (unsigned int)new_size));

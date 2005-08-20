@@ -73,7 +73,7 @@ typedef struct _output_data {
 	 * The current PDU being returned. This inclues
 	 * headers, data and authentication footer.
 	 */
-	unsigned char current_pdu[MAX_PDU_FRAG_LEN];
+	unsigned char current_pdu[RPC_MAX_PDU_FRAG_LEN];
 
 	/* The amount of data in the current_pdu buffer. */
 	uint32 current_pdu_len;
@@ -87,9 +87,9 @@ typedef struct _input_data {
 	 * This is the current incoming pdu. The data here
 	 * is collected via multiple writes until a complete
 	 * pdu is seen, then the data is copied into the in_data
-	 * structure. The maximum size of this is 0x1630 (MAX_PDU_FRAG_LEN).
+	 * structure. The maximum size of this is 0x1630 (RPC_MAX_PDU_FRAG_LEN).
 	 */
-	unsigned char current_in_pdu[MAX_PDU_FRAG_LEN];
+	unsigned char current_in_pdu[RPC_MAX_PDU_FRAG_LEN];
 
 	/*
 	 * The amount of data needed to complete the in_pdu.
@@ -168,6 +168,13 @@ typedef struct pipe_rpc_fns {
 enum pipe_auth_type { PIPE_AUTH_TYPE_NONE = 0, PIPE_AUTH_TYPE_NTLMSSP, PIPE_AUTH_TYPE_SCHANNEL,
 			PIPE_AUTH_TYPE_SPNEGO_NTLMSSP, PIPE_AUTH_TYPE_SPNEGO_KRB5 };
 
+/* Possible auth levels. */
+enum pipe_auth_level { PIPE_AUTH_LEVEL_NONE = 0,
+			PIPE_AUTH_LEVEL_CONNECT = 1,	/* We treat as NONE. */
+			PIPE_AUTH_LEVEL_INTEGRITY = 2,	/* Sign. */
+			PIPE_AUTH_LEVEL_PRIVACY = 3	/* Seal. */
+};
+
 /* auth state for schannel. */
 struct schannel_auth_struct {
 	uchar sess_key[16];
@@ -175,6 +182,7 @@ struct schannel_auth_struct {
 	int auth_flags;
 };
 
+#if 0
 /* auth state for ntlmssp. */
 struct ntlmssp_auth_struct {
 	uint32 ntlmssp_chal_flags; /* Client challenge flags. */
@@ -184,19 +192,19 @@ struct ntlmssp_auth_struct {
 	unsigned char ntlmssp_arc4_state[258];
 	uint32 ntlmssp_seq_num;
 };
+#endif
 
 /* auth state for all bind types. */
 
 struct pipe_auth_data {
 	enum pipe_auth_type auth_type;
 	union {
-		struct ntlmssp_auth_struct *ntlmssp_auth;
 		struct schannel_auth_struct *schannel_auth;
 		AUTH_NTLMSSP_STATE *auth_ntlmssp_state;
 	} a_u;
 	void (*auth_data_free_func)(struct pipe_auth_data *);
 };
-	
+
 /*
  * DCE/RPC-specific samba-internal-specific handling of data on
  * NamedPipes.
@@ -223,6 +231,7 @@ typedef struct pipes_struct {
 	TALLOC_CTX *pipe_state_mem_ctx;
 
 	struct pipe_auth_data auth;
+	enum pipe_auth_level auth_level;
 
 #if 0
 	uint32 ntlmssp_chal_flags; /* Client challenge flags. */
@@ -247,14 +256,13 @@ typedef struct pipes_struct {
 	fstring wks;
 
 	/*
-	 * Unix user name and credentials.
+	 * Unix user name and credentials used when a pipe is authenticated.
 	 */
 
 	fstring pipe_user_name;
 	struct current_user pipe_user;
-
 	DATA_BLOB session_key;
-
+ 
 	/*
 	 * Set to true when an RPC bind has been done on this pipe.
 	 */

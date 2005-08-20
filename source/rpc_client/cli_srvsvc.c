@@ -37,7 +37,7 @@ WERROR cli_srvsvc_net_srv_get_info(struct cli_state *cli,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Initialise input parameters */
@@ -81,7 +81,7 @@ WERROR cli_srvsvc_net_share_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Initialise input parameters */
@@ -238,7 +238,7 @@ WERROR cli_srvsvc_net_share_get_info(struct cli_state *cli,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Initialise input parameters */
@@ -386,7 +386,7 @@ WERROR cli_srvsvc_net_share_set_info(struct cli_state *cli,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Initialise input parameters */
@@ -430,7 +430,7 @@ WERROR cli_srvsvc_net_share_del(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Initialise input parameters */
@@ -474,7 +474,7 @@ WERROR cli_srvsvc_net_share_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	init_srv_q_net_share_add(&q,cli->srv_name_slash, netname, type, remark,
@@ -514,7 +514,7 @@ WERROR cli_srvsvc_net_remote_tod(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Initialise input parameters */
@@ -562,7 +562,7 @@ WERROR cli_srvsvc_net_file_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Initialise input parameters */
@@ -645,7 +645,7 @@ WERROR cli_srvsvc_net_file_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Initialise input parameters */

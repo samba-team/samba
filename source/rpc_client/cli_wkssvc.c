@@ -45,7 +45,7 @@ NTSTATUS cli_wks_query_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 
 	/* init rpc parse structures */
-	prs_init(&buf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&buf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	DEBUG(4, ("WksQueryInfo\n"));

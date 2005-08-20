@@ -61,12 +61,14 @@ enum NTLM_MESSAGE_TYPE
 #define NTLMSSP_CHAL_TARGET_INFO           0x00800000
 #define NTLMSSP_NEGOTIATE_128              0x20000000 /* 128-bit encryption */
 #define NTLMSSP_NEGOTIATE_KEY_EXCH         0x40000000
-#define NTLMSSP_NEGOTIATE_080000000        0x80000000
+#define NTLMSSP_NEGOTIATE_56               0x80000000
 
 #define NTLMSSP_NAME_TYPE_SERVER      0x01
 #define NTLMSSP_NAME_TYPE_DOMAIN      0x02
 #define NTLMSSP_NAME_TYPE_SERVER_DNS  0x03
 #define NTLMSSP_NAME_TYPE_DOMAIN_DNS  0x04
+
+#define NTLMSSP_SIG_SIZE 16
 
 typedef struct ntlmssp_state 
 {
@@ -142,23 +144,22 @@ typedef struct ntlmssp_state
 	const char *(*get_global_myname)(void);
 	const char *(*get_domain)(void);
 
-	/* SMB Signing */
-	
-	uint32 ntlmssp_seq_num;
-
 	/* ntlmv2 */
-	unsigned char send_sign_const[16];
-	unsigned char send_seal_const[16];
-	unsigned char recv_sign_const[16];
-	unsigned char recv_seal_const[16];
 
-	unsigned char send_sign_arc4_state[258];
+	unsigned char send_sign_key[16];
+	unsigned char send_seal_key[16];
+	unsigned char recv_sign_key[16];
+	unsigned char recv_seal_key[16];
+
 	unsigned char send_seal_arc4_state[258];
-	unsigned char recv_sign_arc4_state[258];
 	unsigned char recv_seal_arc4_state[258];
 
+	uint32 ntlm2_send_seq_num;
+	uint32 ntlm2_recv_seq_num;
+
 	/* ntlmv1 */
-	unsigned char ntlmssp_arc4_state[258];
+	unsigned char ntlmv1_arc4_state[258];
+	uint32 ntlmv1_seq_num;
 
 	/* it turns out that we don't always get the
 	   response in at the time we want to process it.
@@ -166,4 +167,3 @@ typedef struct ntlmssp_state
 	DATA_BLOB stored_response; 
 	
 } NTLMSSP_STATE;
-

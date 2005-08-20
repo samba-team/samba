@@ -44,7 +44,7 @@ NTSTATUS cli_shutdown_init(struct cli_state * cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT (q_s);
 	ZERO_STRUCT (r_s);
 
-	prs_init(&qbuf , MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf , RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -85,7 +85,7 @@ NTSTATUS cli_shutdown_init_ex(struct cli_state * cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT (q_s);
 	ZERO_STRUCT (r_s);
 
-	prs_init(&qbuf , MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf , RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -122,7 +122,7 @@ NTSTATUS cli_shutdown_abort(struct cli_state * cli, TALLOC_CTX *mem_ctx)
 	ZERO_STRUCT (q_s);
 	ZERO_STRUCT (r_s);
 
-	prs_init(&qbuf , MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf , RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 	
 	/* Marshall data and send request */

@@ -26,7 +26,7 @@
 #define CLI_DO_RPC( pcli, ctx, pipe_num, opnum, q_in, r_out, \
                              q_ps, r_ps, q_io_fn, r_io_fn, default_error ) \
 {	r_out.status = default_error;\
-	prs_init( &q_ps, MAX_PDU_FRAG_LEN, ctx, MARSHALL ); \
+	prs_init( &q_ps, RPC_MAX_PDU_FRAG_LEN, ctx, MARSHALL ); \
 	prs_init( &r_ps, 0, ctx, UNMARSHALL );\
 	if ( q_io_fn("", &q_in, &q_ps, 0) ) {\
 		if ( rpc_api_pipe_req(pcli, pipe_num, opnum, &q_ps, &r_ps) ) {\
@@ -44,7 +44,7 @@
 #define CLI_DO_RPC_EX( pcli, ctx, pipe_num, opnum, q_in, r_out, \
                              q_ps, r_ps, q_io_fn, r_io_fn, default_error ) \
 {	r_out.status = default_error;\
-	prs_init( &q_ps, MAX_PDU_FRAG_LEN, ctx, MARSHALL ); \
+	prs_init( &q_ps, RPC_MAX_PDU_FRAG_LEN, ctx, MARSHALL ); \
 	prs_init( &r_ps, 0, ctx, UNMARSHALL );\
 	if ( q_io_fn("", &q_in, &q_ps, 0) ) {\
 		if ( rpc_api_pipe_req_int(pcli, opnum, &q_ps, &r_ps) ) {\

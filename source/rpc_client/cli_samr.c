@@ -42,7 +42,7 @@ NTSTATUS rpccli_samr_connect(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -97,7 +97,7 @@ NTSTATUS cli_samr_connect4(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -146,7 +146,7 @@ NTSTATUS rpccli_samr_close(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -203,7 +203,7 @@ NTSTATUS rpccli_samr_open_domain(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -265,7 +265,7 @@ NTSTATUS rpccli_samr_open_user(struct rpc_pipe_client *cli,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -325,7 +325,7 @@ NTSTATUS rpccli_samr_open_group(struct rpc_pipe_client *cli,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -385,7 +385,7 @@ NTSTATUS cli_samr_create_dom_group(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -432,7 +432,7 @@ NTSTATUS cli_samr_add_groupmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -476,7 +476,7 @@ NTSTATUS cli_samr_del_groupmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -522,7 +522,7 @@ NTSTATUS rpccli_samr_query_userinfo(struct rpc_pipe_client *cli,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -575,7 +575,7 @@ NTSTATUS cli_samr_set_groupinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -620,7 +620,7 @@ NTSTATUS cli_samr_query_groupinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -669,7 +669,7 @@ NTSTATUS rpccli_samr_query_usergroups(struct rpc_pipe_client *cli,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -724,7 +724,7 @@ NTSTATUS cli_samr_set_aliasinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -773,7 +773,7 @@ NTSTATUS rpccli_samr_query_useraliases(struct rpc_pipe_client *cli,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	sid_ptrs = TALLOC_ARRAY(mem_ctx, uint32, num_sids);
@@ -841,7 +841,7 @@ NTSTATUS rpccli_samr_query_groupmem(struct rpc_pipe_client *cli,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -920,7 +920,7 @@ NTSTATUS cli_samr_enum_dom_users(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 	
 	/* Fill query structure with parameters */
@@ -998,7 +998,7 @@ NTSTATUS rpccli_samr_enum_dom_groups(struct rpc_pipe_client *cli,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -1088,7 +1088,7 @@ NTSTATUS rpccli_samr_enum_als_groups(struct rpc_pipe_client *cli,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -1180,7 +1180,7 @@ NTSTATUS rpccli_samr_query_aliasmem(struct rpc_pipe_client *cli,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -1254,7 +1254,7 @@ NTSTATUS rpccli_samr_open_alias(struct rpc_pipe_client *cli,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -1317,7 +1317,7 @@ NTSTATUS cli_samr_create_dom_alias(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -1367,7 +1367,7 @@ NTSTATUS cli_samr_add_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -1413,7 +1413,7 @@ NTSTATUS cli_samr_del_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
  	/* Initialise parse structures */
 
- 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+ 	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
  	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
  	/* Marshall data and send request */
@@ -1460,7 +1460,7 @@ NTSTATUS cli_samr_query_alias_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -1513,7 +1513,7 @@ NTSTATUS rpccli_samr_query_dom_info(struct rpc_pipe_client *cli,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -1610,7 +1610,7 @@ NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -1709,7 +1709,7 @@ NTSTATUS rpccli_samr_query_dispinfo(struct rpc_pipe_client *cli,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -1788,7 +1788,7 @@ NTSTATUS rpccli_samr_lookup_rids(struct rpc_pipe_client *cli,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -1871,7 +1871,7 @@ NTSTATUS cli_samr_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -1936,7 +1936,7 @@ NTSTATUS cli_samr_create_dom_user(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -1996,7 +1996,7 @@ NTSTATUS cli_samr_set_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -2053,7 +2053,7 @@ NTSTATUS cli_samr_set_userinfo2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -2101,7 +2101,7 @@ NTSTATUS cli_samr_delete_dom_group(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -2147,7 +2147,7 @@ NTSTATUS cli_samr_delete_dom_alias(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -2193,7 +2193,7 @@ NTSTATUS cli_samr_delete_dom_user(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -2241,7 +2241,7 @@ NTSTATUS cli_samr_remove_sid_foreign_domain(struct cli_state *cli,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -2288,7 +2288,7 @@ NTSTATUS cli_samr_query_sec_obj(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -2335,7 +2335,7 @@ NTSTATUS cli_samr_get_dom_pwinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
@@ -2387,7 +2387,7 @@ NTSTATUS cli_samr_lookup_domain(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */

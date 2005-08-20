@@ -35,7 +35,7 @@ NTSTATUS cli_echo_add_one(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	if (!prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
+	if (!prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	if (!prs_init(&rbuf, 0, mem_ctx, UNMARSHALL)) {
@@ -81,7 +81,7 @@ NTSTATUS cli_echo_data(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	if (!prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
+	if (!prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	if (!prs_init(&rbuf, 0, mem_ctx, UNMARSHALL)) {
@@ -129,7 +129,7 @@ NTSTATUS cli_echo_sink_data(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	if (!prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
+	if (!prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	if (!prs_init(&rbuf, 0, mem_ctx, UNMARSHALL)) {
@@ -174,7 +174,7 @@ NTSTATUS cli_echo_source_data(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise parse structures */
 
-	if (!prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
+	if (!prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	if (!prs_init(&rbuf, 0, mem_ctx, UNMARSHALL)) {

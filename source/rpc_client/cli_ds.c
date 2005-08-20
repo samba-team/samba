@@ -40,7 +40,7 @@ NTSTATUS rpccli_ds_getprimarydominfo(struct rpc_pipe_client *cli,
 
 	/* Initialise parse structures */
 
-	if (!prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
+	if (!prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	if (!prs_init(&rbuf, 0, mem_ctx, UNMARSHALL)) {
@@ -110,7 +110,7 @@ NTSTATUS rpccli_ds_enum_domain_trusts(struct rpc_pipe_client *cli,
 
 	/* Initialise parse structures */
 
-	if (!prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
+	if (!prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
 		return NT_STATUS_NO_MEMORY;;
 	}
 	if (!prs_init(&rbuf, 0, mem_ctx, UNMARSHALL)) {
