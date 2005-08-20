@@ -760,7 +760,7 @@ static unsigned lineno = 1;
 
 static void handle_comment(int type);
 static char *handle_string(void);
-#line 764 "lex.yy.c"
+#line 764 "lex.c"
 
 /* Macros after this point can all be overridden by user definitions in
  * section 1.
@@ -913,7 +913,7 @@ YY_DECL
 
 #line 62 "lex.l"
 
-#line 917 "lex.yy.c"
+#line 917 "lex.c"
 
 	if ( yy_init )
 		{
@@ -1481,7 +1481,7 @@ YY_RULE_SETUP
 #line 168 "lex.l"
 ECHO;
 	YY_BREAK
-#line 1485 "lex.yy.c"
+#line 1485 "lex.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 

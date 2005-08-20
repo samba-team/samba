@@ -1,4 +1,4 @@
--- $Id: hdb.asn1,v 1.12 2004/11/10 18:50:27 lha Exp $
+-- $Id: hdb.asn1,v 1.13 2005/08/11 13:15:44 lha Exp $
 HDB DEFINITIONS ::=
 BEGIN
 
@@ -50,6 +50,51 @@ GENERATION ::= SEQUENCE {
 	gen[2]		INTEGER (0..4294967295)		-- generation number
 }
 
+HDB-Ext-PKINIT-acl ::= SEQUENCE OF SEQUENCE {
+	subject[0]	UTF8String,
+	issuer[1]	UTF8String
+}
+
+HDB-Ext-PKINIT-certificate ::= SEQUENCE OF OCTET STRING
+
+HDB-Ext-Constrained-delegation-acl ::= SEQUENCE OF Principal
+
+-- hdb-ext-referrals ::= PA-SERVER-REFERRAL-DATA
+
+HDB-Ext-Lan-Manager-OWF ::= OCTET STRING
+
+HDB-Ext-Password ::= SEQUENCE {
+	mkvno[0]	INTEGER (0..4294967295) OPTIONAL, -- master key version number
+	password	OCTET STRING
+}
+
+HDB-Ext-Aliases ::= SEQUENCE {
+	case-insensitive[0]	BOOLEAN, -- case insensitive name allowed
+	aliases[1]		SEQUENCE OF Principal -- all names, inc primary
+}
+
+
+HDB-extension ::= SEQUENCE {
+        mandatory[0]    BOOLEAN,        -- kdc MUST understand this extension,
+                                        --   if not the whole entry must
+                                        --   be rejected
+        data[1]          CHOICE {
+	        pkinit-acl[0]			HDB-Ext-PKINIT-acl,
+	        pkinit-cert[1]  		HDB-Ext-PKINIT-certificate,
+		allowed-to-delegate-to[2]   HDB-Ext-Constrained-delegation-acl,
+--		referral-info[3]		HDB-Ext-Referrals,
+		lm-owf[4]			HDB-Ext-Lan-Manager-OWF,
+		password[5]			HDB-Ext-Password,
+		aliases[6]			HDB-Ext-Aliases,
+		last-pw-change[7]		KerberosTime,
+		...
+	},
+	...
+}
+
+HDB-extensions ::= SEQUENCE OF HDB-extension
+
+
 hdb_entry ::= SEQUENCE {
 	principal[0]	Principal  OPTIONAL, -- this is optional only 
 					     -- for compatibility with libkrb5
@@ -64,7 +109,8 @@ hdb_entry ::= SEQUENCE {
 	max-renew[9]	INTEGER (0..4294967295) OPTIONAL,
 	flags[10]	HDBFlags,
 	etypes[11]	SEQUENCE OF INTEGER (0..4294967295) OPTIONAL,
-	generation[12]	GENERATION OPTIONAL
+	generation[12]	GENERATION OPTIONAL,
+        extensions[13]  HDB-extensions OPTIONAL
 }
 
 END

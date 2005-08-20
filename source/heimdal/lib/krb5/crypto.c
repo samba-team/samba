@@ -2124,8 +2124,7 @@ verify_checksum(krb5_context context,
 	return KRB5_PROG_SUMTYPE_NOSUPP;
     }
     if(ct->checksumsize != cksum->checksum.length) {
-	krb5_set_error_string (context, "checksum length was %d, but should be %d for checksum type %s",
-			       cksum->checksum.length, ct->checksumsize, ct->name);
+	krb5_clear_error_string (context);
 	return KRB5KRB_AP_ERR_BAD_INTEGRITY; /* XXX */
     }
     keyed_checksum = (ct->flags & F_KEYED) != 0;
@@ -2146,11 +2145,8 @@ verify_checksum(krb5_context context,
 
     (*ct->checksum)(context, dkey, data, len, usage, &c);
 
-    if(c.checksum.length != cksum->checksum.length) {
- 	krb5_set_error_string (context, "(INTERNAL ERROR) our checksum length was %d, but should be %d for checksum type %s",
-			       c.checksum.length, ct->checksumsize, ct->name);
-	ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
-    } else if (memcmp(c.checksum.data, cksum->checksum.data, c.checksum.length)) {
+    if(c.checksum.length != cksum->checksum.length || 
+       memcmp(c.checksum.data, cksum->checksum.data, c.checksum.length)) {
 	krb5_clear_error_string (context);
 	ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
     } else {

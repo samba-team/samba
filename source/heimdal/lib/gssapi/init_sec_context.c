@@ -33,7 +33,7 @@
 
 #include "gssapi_locl.h"
 
-RCSID("$Id: init_sec_context.c,v 1.58 2005/07/13 07:00:15 lha Exp $");
+RCSID("$Id: init_sec_context.c,v 1.59 2005/08/11 10:47:25 lha Exp $");
 
 /*
  * copy the addresses from `input_chan_bindings' (if any) to
@@ -989,9 +989,6 @@ spnego_initial
     u_char *buf;
     size_t buf_size, buf_len;
     krb5_data data;
-#if 1
-    size_t ni_len;
-#endif
 
     memset (&ni, 0, sizeof(ni));
 

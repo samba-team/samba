@@ -189,7 +189,8 @@ log_timestamp(krb5_context context,
 	      KerberosTime authtime, KerberosTime *starttime, 
 	      KerberosTime endtime, KerberosTime *renew_till)
 {
-    char authtime_str[100], starttime_str[100], endtime_str[100], renewtime_str[100];
+    char authtime_str[100], starttime_str[100], 
+	endtime_str[100], renewtime_str[100];
     
     krb5_format_time(context, authtime, 
 		     authtime_str, sizeof(authtime_str), TRUE); 
@@ -728,6 +729,7 @@ krb5_error_code
 _kdc_as_rep(krb5_context context, 
 	    krb5_kdc_configuration *config,
 	    KDC_REQ *req, 
+	    const krb5_data *req_buffer, 
 	    krb5_data *reply,
 	    const char *from,
 	    struct sockaddr *from_addr)
@@ -940,7 +942,8 @@ _kdc_as_rep(krb5_context context,
 		kdc_log(context, config, 5, 
 			"Failed to decrypt PA-DATA -- %s "
 			"(enctype %s) error %s",
-			client_name, str ? str : "unknown enctype", 
+			client_name,
+			str ? str : "unknown enctype", 
 			krb5_get_err_text(context, ret));
 		free(str);
 
@@ -1308,8 +1311,9 @@ _kdc_as_rep(krb5_context context,
     reply_key = &ckey->key;
 #if PKINIT
     if (pkp) {
-	ret = _kdc_pk_mk_pa_reply(context, config, pkp, client, req,
-			      &reply_key, rep.padata);
+	ret = _kdc_pk_mk_pa_reply(context, config, pkp, client, 
+				  req, req_buffer, 
+				  &reply_key, rep.padata);
 	if (ret)
 	    goto out;
     }
@@ -1372,30 +1376,35 @@ check_tgs_flags(krb5_context context,
 	
     if(f.validate){
 	if(!tgt->flags.invalid || tgt->starttime == NULL){
-	    kdc_log(context, config, 0, "Bad request to validate ticket");
+	    kdc_log(context, config, 0,
+		    "Bad request to validate ticket");
 	    return KRB5KDC_ERR_BADOPTION;
 	}
 	if(*tgt->starttime > kdc_time){
-	    kdc_log(context, config, 0, "Early request to validate ticket");
+	    kdc_log(context, config, 0,
+		    "Early request to validate ticket");
 	    return KRB5KRB_AP_ERR_TKT_NYV;
 	}
 	/* XXX  tkt = tgt */
 	et->flags.invalid = 0;
     }else if(tgt->flags.invalid){
-	kdc_log(context, config, 0, "Ticket-granting ticket has INVALID flag set");
+	kdc_log(context, config, 0, 
+		"Ticket-granting ticket has INVALID flag set");
 	return KRB5KRB_AP_ERR_TKT_INVALID;
     }
 
     if(f.forwardable){
 	if(!tgt->flags.forwardable){
-	    kdc_log(context, config, 0, "Bad request for forwardable ticket");
+	    kdc_log(context, config, 0,
+		    "Bad request for forwardable ticket");
 	    return KRB5KDC_ERR_BADOPTION;
 	}
 	et->flags.forwardable = 1;
     }
     if(f.forwarded){
 	if(!tgt->flags.forwardable){
-	    kdc_log(context, config, 0, "Request to forward non-forwardable ticket");
+	    kdc_log(context, config, 0,
+		    "Request to forward non-forwardable ticket");
 	    return KRB5KDC_ERR_BADOPTION;
 	}
 	et->flags.forwarded = 1;
@@ -1906,7 +1915,8 @@ tgs_check_authenticator(krb5_context context,
     free(buf);
     krb5_crypto_destroy(context, crypto);
     if(ret){
-	kdc_log(context, config, 0, "Failed to verify authenticator checksum: %s", 
+	kdc_log(context, config, 0,
+		"Failed to verify authenticator checksum: %s", 
 		krb5_get_err_text(context, ret));
     }
 out:
@@ -2102,11 +2112,11 @@ tgs_rep2(krb5_context context,
 
     ret = tgs_check_authenticator(context, config, 
 				  ac, b, &e_text, &tgt->key);
-    if(ret){
+    if (ret) {
 	krb5_auth_con_free(context, ac);
 	goto out2;
     }
-    
+
     if (b->enc_authorization_data) {
 	krb5_keyblock *subkey;
 	krb5_data ad;
@@ -2166,6 +2176,8 @@ tgs_rep2(krb5_context context,
 	    goto out2;
 	}
     }
+
+    krb5_auth_con_free(context, ac);
 
     {
 	PrincipalName *s;

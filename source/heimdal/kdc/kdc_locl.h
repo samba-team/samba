@@ -32,7 +32,7 @@
  */
 
 /* 
- * $Id: kdc_locl.h,v 1.71 2005/07/01 15:36:16 lha Exp $ 
+ * $Id: kdc_locl.h,v 1.72 2005/08/12 08:46:39 lha Exp $ 
  */
 
 #ifndef __KDC_LOCL_H__
@@ -61,7 +61,8 @@ extern struct timeval _kdc_now;
 krb5_error_code
 _kdc_as_rep(krb5_context context, 
 	    krb5_kdc_configuration *config,
-	    KDC_REQ*, krb5_data*, const char*, struct sockaddr*);
+	    KDC_REQ*, const krb5_data*, krb5_data*, 
+	    const char*, struct sockaddr*);
 
 krb5_kdc_configuration *
 configure(krb5_context context, int argc, char **argv);

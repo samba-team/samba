@@ -34,7 +34,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: process.c,v 1.2 2005/06/30 01:54:49 lha Exp $");
+RCSID("$Id: process.c,v 1.3 2005/08/12 08:25:48 lha Exp $");
 
 /*
  * handle the request in `buf, len', from `addr' (or `from' as a string),
@@ -58,7 +58,13 @@ krb5_kdc_process_generic_request(krb5_context context,
 
     gettimeofday(&_kdc_now, NULL);
     if(decode_AS_REQ(buf, len, &req, &i) == 0){
-	ret = _kdc_as_rep(context, config, &req, reply, from, addr);
+	krb5_data req_buffer;
+
+	req_buffer.data = buf;
+	req_buffer.length = len;
+
+	ret = _kdc_as_rep(context, config, &req, &req_buffer, 
+			  reply, from, addr);
 	free_AS_REQ(&req);
 	return ret;
     }else if(decode_TGS_REQ(buf, len, &req, &i) == 0){
@@ -105,7 +111,13 @@ krb5_kdc_process_krb5_request(krb5_context context,
 
     gettimeofday(&_kdc_now, NULL);
     if(decode_AS_REQ(buf, len, &req, &i) == 0){
-	ret = _kdc_as_rep(context, config, &req, reply, from, addr);
+	krb5_data req_buffer;
+
+	req_buffer.data = buf;
+	req_buffer.length = len;
+
+	ret = _kdc_as_rep(context, config, &req, &req_buffer,
+			  reply, from, addr);
 	free_AS_REQ(&req);
 	return ret;
     }else if(decode_TGS_REQ(buf, len, &req, &i) == 0){

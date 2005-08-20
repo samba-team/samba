@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: pkinit.c,v 1.58 2005/07/23 10:42:01 lha Exp $");
+RCSID("$Id: pkinit.c,v 1.59 2005/08/12 08:53:00 lha Exp $");
 
 #ifdef PKINIT
 
@@ -58,7 +58,7 @@ RCSID("$Id: pkinit.c,v 1.58 2005/07/23 10:42:01 lha Exp $");
 enum {
     COMPAT_WIN2K = 1,
     COMPAT_19 = 2,
-    COMPAT_25 = 3
+    COMPAT_27 = 3
 };
 
 
@@ -716,7 +716,7 @@ pk_mk_padata(krb5_context context,
 	    krb5_abortx(context, "internal ASN1 encoder error");
 
 	oid = oid_id_pkauthdata();
-    } else if (compat == COMPAT_25) {
+    } else if (compat == COMPAT_27) {
 	AuthPack ap;
 	
 	memset(&ap, 0, sizeof(ap));
@@ -802,7 +802,7 @@ pk_mk_padata(krb5_context context,
 
 	free_PA_PK_AS_REQ_19(&req_19);
 
-    } else if (compat == COMPAT_25) {
+    } else if (compat == COMPAT_27) {
 
 	pa_type = KRB5_PADATA_PK_AS_REQ;
 
@@ -871,7 +871,7 @@ _krb5_pk_mk_padata(krb5_context context,
 	if (ret)
 	    goto out;
 
-	ret = pk_mk_padata(context, COMPAT_25, ctx, req_body, nonce, md);
+	ret = pk_mk_padata(context, COMPAT_27, ctx, req_body, nonce, md);
 	if (ret)
 	    goto out;
     }
@@ -1280,10 +1280,10 @@ _krb5_pk_verify_sign(krb5_context context,
 }
 
 static krb5_error_code
-get_reply_key(krb5_context context,
-	      const krb5_data *content,
-	      unsigned nonce,
-	      krb5_keyblock **key)
+get_reply_key_19(krb5_context context,
+		 const krb5_data *content,
+		 unsigned nonce,
+		 krb5_keyblock **key)
 {
     ReplyKeyPack_19 key_pack;
     krb5_error_code ret;
@@ -1324,6 +1324,69 @@ get_reply_key(krb5_context context,
 }
 
 static krb5_error_code
+get_reply_key(krb5_context context,
+	      const krb5_data *content,
+	      const krb5_data *req_buffer,
+	      krb5_keyblock **key)
+{
+    ReplyKeyPack key_pack;
+    krb5_error_code ret;
+    size_t size;
+
+    ret = decode_ReplyKeyPack(content->data,
+			      content->length,
+			      &key_pack,
+			      &size);
+    if (ret) {
+	krb5_set_error_string(context, "PKINIT decoding reply key failed");
+	free_ReplyKeyPack(&key_pack);
+	return ret;
+    }
+    
+    {
+	krb5_crypto crypto;
+
+	/* 
+	 * XXX Verify kp.replyKey is a allowed enctype in the
+	 * configuration file
+	 */
+
+	ret = krb5_crypto_init(context, &key_pack.replyKey, 0, &crypto);
+	if (ret) {
+	    free_ReplyKeyPack(&key_pack);
+	    return ret;
+	}
+
+	ret = krb5_verify_checksum(context, crypto, 6,
+				   req_buffer->data, req_buffer->length,
+				   &key_pack.asChecksum);
+	krb5_crypto_destroy(context, crypto);
+	if (ret) {
+	    free_ReplyKeyPack(&key_pack);
+	    return ret;
+	}
+    }
+
+    *key = malloc (sizeof (**key));
+    if (*key == NULL) {
+	krb5_set_error_string(context, "PKINIT failed allocating reply key");
+	free_ReplyKeyPack(&key_pack);
+	krb5_set_error_string(context, "malloc: out of memory");
+	return ENOMEM;
+    }
+
+    ret = copy_EncryptionKey(&key_pack.replyKey, *key);
+    free_ReplyKeyPack(&key_pack);
+    if (ret) {
+	krb5_set_error_string(context, "PKINIT failed copying reply key");
+	free(*key);
+    }
+
+    return ret;
+}
+
+
+static krb5_error_code
 pk_verify_host(krb5_context context, struct krb5_pk_cert *host)
 {
     /* XXX */
@@ -1332,11 +1395,12 @@ pk_verify_host(krb5_context context, struct krb5_pk_cert *host)
 
 static krb5_error_code
 pk_rd_pa_reply_enckey(krb5_context context,
-		      int win2k_compat,
+		      int type,
                       ContentInfo *rep,
 		      krb5_pk_init_ctx ctx,
 		      krb5_enctype etype,
 	       	      unsigned nonce,
+		      const krb5_data *req_buffer,
 	       	      PA_DATA *pa,
 	       	      krb5_keyblock **key) 
 {
@@ -1418,7 +1482,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 
   
     /* verify content type */
-    if (win2k_compat) {
+    if (type == COMPAT_WIN2K) {
 	if (heim_oid_cmp(&ed.encryptedContentInfo.contentType, oid_id_pkcs7_data())) {
 	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	    goto out;
@@ -1481,7 +1545,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
     length = plain.length;
 
     /* win2k uses ContentInfo */
-    if (win2k_compat) {
+    if (type == COMPAT_WIN2K) {
 	ContentInfo ci;
 
 	ret = decode_ContentInfo(p, length, &ci, &size);
@@ -1518,7 +1582,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	goto out;
     }
 
-    if (win2k_compat) {
+    if (type == COMPAT_WIN2K) {
 	if (heim_oid_cmp(&contentType, oid_id_pkcs7_data()) != 0) {
 	    krb5_set_error_string(context, "PKINIT: reply key, wrong oid");
 	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
@@ -1532,7 +1596,15 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	}
     }
 
-    ret = get_reply_key(context, &content, nonce, key);
+    switch(type) {
+    case COMPAT_WIN2K:
+    case COMPAT_19:
+	ret = get_reply_key_19(context, &content, nonce, key);
+	break;
+    case COMPAT_27:
+	ret = get_reply_key(context, &content, req_buffer, key);
+	break;
+    }
     if (ret)
 	goto out;
 
@@ -1728,6 +1800,7 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 		     void *c,
 		     krb5_enctype etype,
 		     unsigned nonce,
+		     const krb5_data *req_buffer,
 		     PA_DATA *pa,
 		     krb5_keyblock **key)
 {
@@ -1736,7 +1809,7 @@ _krb5_pk_rd_pa_reply(krb5_context context,
     ContentInfo ci;
     size_t size;
 
-    /* Check for PK-INIT -25 */
+    /* Check for PK-INIT -27 */
     if (pa->padata_type == KRB5_PADATA_PK_AS_REP) {
 	PA_PK_AS_REP rep;
 
@@ -1781,8 +1854,8 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 				      "ContentInfo: %d", ret);
 		break;
 	    }
-	    ret = pk_rd_pa_reply_enckey(context, 0, &ci, ctx,
-					etype, nonce, pa, key);
+	    ret = pk_rd_pa_reply_enckey(context, COMPAT_27, &ci, ctx,
+					etype, nonce, req_buffer, pa, key);
 	    free_ContentInfo(&ci);
 	    return ret;
 	default:
@@ -1811,9 +1884,9 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 					nonce, pa, key);
 		break;
 	    case choice_PA_PK_AS_REP_19_encKeyPack:
-		ret = pk_rd_pa_reply_enckey(context, 0,
+		ret = pk_rd_pa_reply_enckey(context, COMPAT_19,
 					    &rep19.u.encKeyPack, ctx,
-					    etype, nonce, pa, key);
+					    etype, nonce, NULL, pa, key);
 		break;
 	    default:
 		krb5_set_error_string(context, "PKINIT: -19 reply invalid "
@@ -1857,8 +1930,8 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 				      ret);
 		return ret;
 	    }
-	    ret = pk_rd_pa_reply_enckey(context, 1, &ci, ctx,
-					etype, nonce, pa, key);
+	    ret = pk_rd_pa_reply_enckey(context, COMPAT_WIN2K, &ci, ctx,
+					etype, nonce, NULL, pa, key);
 	    free_ContentInfo(&ci);
 	    break;
 	default:

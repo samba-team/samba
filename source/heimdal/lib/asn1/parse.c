@@ -1,7 +1,7 @@
-/* A Bison parser, made by GNU Bison 1.875c.  */
+/* A Bison parser, made by GNU Bison 2.0.  */
 
 /* Skeleton parser for Yacc-like parsing with Bison,
-   Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003, 2004 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -291,7 +291,7 @@ typedef union YYSTYPE {
     struct tagtype tag;
     struct memhead *members;
 } YYSTYPE;
-/* Line 191 of yacc.c.  */
+/* Line 190 of yacc.c.  */
 #line 296 "parse.c"
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
@@ -303,7 +303,7 @@ typedef union YYSTYPE {
 /* Copy the second part of user declarations.  */
 
 
-/* Line 214 of yacc.c.  */
+/* Line 213 of yacc.c.  */
 #line 308 "parse.c"
 
 #if ! defined (yyoverflow) || YYERROR_VERBOSE
@@ -319,14 +319,10 @@ typedef union YYSTYPE {
 
 # ifdef YYSTACK_USE_ALLOCA
 #  if YYSTACK_USE_ALLOCA
-#   define YYSTACK_ALLOC alloca
-#  endif
-# else
-#  if defined (alloca) || defined (_ALLOCA_H)
-#   define YYSTACK_ALLOC alloca
-#  else
 #   ifdef __GNUC__
 #    define YYSTACK_ALLOC __builtin_alloca
+#   else
+#    define YYSTACK_ALLOC alloca
 #   endif
 #  endif
 # endif
@@ -352,7 +348,7 @@ typedef union YYSTYPE {
 /* A type that is properly aligned for any stack member.  */
 union yyalloc
 {
-  short yyss;
+  short int yyss;
   YYSTYPE yyvs;
   };
 
@@ -362,7 +358,7 @@ union yyalloc
 /* The size of an array large to enough to hold all stacks, each with
    N elements.  */
 # define YYSTACK_BYTES(N) \
-     ((N) * (sizeof (short) + sizeof (YYSTYPE))				\
+     ((N) * (sizeof (short int) + sizeof (YYSTYPE))			\
       + YYSTACK_GAP_MAXIMUM)
 
 /* Copy COUNT objects from FROM to TO.  The source and destination do
@@ -404,7 +400,7 @@ union yyalloc
 #if defined (__STDC__) || defined (__cplusplus)
    typedef signed char yysigned_char;
 #else
-   typedef short yysigned_char;
+   typedef short int yysigned_char;
 #endif
 
 /* YYFINAL -- State number of the termination state. */
@@ -471,7 +467,7 @@ static const unsigned char yytranslate[] =
 #if YYDEBUG
 /* YYPRHS[YYN] -- Index of the first RHS symbol of rule number YYN in
    YYRHS.  */
-static const unsigned short yyprhs[] =
+static const unsigned short int yyprhs[] =
 {
        0,     0,     3,    12,    15,    18,    21,    22,    25,    26,
       29,    30,    34,    35,    37,    38,    40,    43,    48,    50,
@@ -489,7 +485,7 @@ static const unsigned short yyprhs[] =
 };
 
 /* YYRHS -- A `-1'-separated list of the rules' RHS. */
-static const short yyrhs[] =
+static const short int yyrhs[] =
 {
       99,     0,    -1,    86,    21,   100,   101,    84,     8,   102,
       24,    -1,    27,    70,    -1,    38,    70,    -1,     7,    70,
@@ -527,7 +523,7 @@ static const short yyrhs[] =
 };
 
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
-static const unsigned short yyrline[] =
+static const unsigned short int yyrline[] =
 {
        0,   222,   222,   229,   230,   232,   234,   237,   239,   242,
      243,   246,   247,   250,   251,   254,   255,   258,   269,   270,
@@ -592,7 +588,7 @@ static const char *const yytname[] =
 # ifdef YYPRINT
 /* YYTOKNUM[YYLEX-NUM] -- Internal token number corresponding to
    token YYLEX-NUM.  */
-static const unsigned short yytoknum[] =
+static const unsigned short int yytoknum[] =
 {
        0,   256,   257,   258,   259,   260,   261,   262,   263,   264,
      265,   266,   267,   268,   269,   270,   271,   272,   273,   274,
@@ -670,7 +666,7 @@ static const unsigned char yydefact[] =
 };
 
 /* YYDEFGOTO[NTERM-NUM]. */
-static const short yydefgoto[] =
+static const short int yydefgoto[] =
 {
       -1,     2,     8,    13,    18,    19,    21,    22,    23,    27,
       28,    24,    29,    56,    57,    58,    85,    59,   110,   111,
@@ -724,7 +720,7 @@ static const yysigned_char yypgoto[] =
    number is the opposite.  If zero, do what YYDEFACT says.
    If YYTABLE_NINF, syntax error.  */
 #define YYTABLE_NINF -13
-static const short yytable[] =
+static const short int yytable[] =
 {
       35,    36,    37,    88,   139,    38,    90,    17,    93,    98,
        5,   149,   151,   105,   105,   150,    39,   154,   167,   105,
@@ -744,7 +740,7 @@ static const short yytable[] =
      163,     0,   170
 };
 
-static const short yycheck[] =
+static const short int yycheck[] =
 {
        9,    10,    11,    53,    97,    14,    53,    40,     6,    27,
        7,    91,    20,    86,    86,    95,    25,    91,    85,    86,
@@ -840,19 +836,52 @@ do								\
     }								\
 while (0)
 
+
 #define YYTERROR	1
 #define YYERRCODE	256
 
-/* YYLLOC_DEFAULT -- Compute the default location (before the actions
-   are run).  */
 
+/* YYLLOC_DEFAULT -- Set CURRENT to span from RHS[1] to RHS[N].
+   If N is 0, then set CURRENT to the empty location which ends
+   the previous symbol: RHS[0] (always defined).  */
+
+#define YYRHSLOC(Rhs, K) ((Rhs)[K])
 #ifndef YYLLOC_DEFAULT
-# define YYLLOC_DEFAULT(Current, Rhs, N)		\
-   ((Current).first_line   = (Rhs)[1].first_line,	\
-    (Current).first_column = (Rhs)[1].first_column,	\
-    (Current).last_line    = (Rhs)[N].last_line,	\
-    (Current).last_column  = (Rhs)[N].last_column)
+# define YYLLOC_DEFAULT(Current, Rhs, N)				\
+    do									\
+      if (N)								\
+	{								\
+	  (Current).first_line   = YYRHSLOC (Rhs, 1).first_line;	\
+	  (Current).first_column = YYRHSLOC (Rhs, 1).first_column;	\
+	  (Current).last_line    = YYRHSLOC (Rhs, N).last_line;		\
+	  (Current).last_column  = YYRHSLOC (Rhs, N).last_column;	\
+	}								\
+      else								\
+	{								\
+	  (Current).first_line   = (Current).last_line   =		\
+	    YYRHSLOC (Rhs, 0).last_line;				\
+	  (Current).first_column = (Current).last_column =		\
+	    YYRHSLOC (Rhs, 0).last_column;				\
+	}								\
+    while (0)
 #endif
+
+
+/* YY_LOCATION_PRINT -- Print the location on the stream.
+   This macro was not mandated originally: define only if we know
+   we won't break user code: when these are the locations we know.  */
+
+#ifndef YY_LOCATION_PRINT
+# if YYLTYPE_IS_TRIVIAL
+#  define YY_LOCATION_PRINT(File, Loc)			\
+     fprintf (File, "%d.%d-%d.%d",			\
+              (Loc).first_line, (Loc).first_column,	\
+              (Loc).last_line,  (Loc).last_column)
+# else
+#  define YY_LOCATION_PRINT(File, Loc) ((void) 0)
+# endif
+#endif
+
 
 /* YYLEX -- calling `yylex' with the right arguments.  */
 
@@ -876,19 +905,13 @@ do {						\
     YYFPRINTF Args;				\
 } while (0)
 
-# define YYDSYMPRINT(Args)			\
-do {						\
-  if (yydebug)					\
-    yysymprint Args;				\
-} while (0)
-
-# define YYDSYMPRINTF(Title, Token, Value, Location)		\
+# define YY_SYMBOL_PRINT(Title, Type, Value, Location)		\
 do {								\
   if (yydebug)							\
     {								\
       YYFPRINTF (stderr, "%s ", Title);				\
       yysymprint (stderr, 					\
-                  Token, Value);	\
+                  Type, Value);	\
       YYFPRINTF (stderr, "\n");					\
     }								\
 } while (0)
@@ -900,12 +923,12 @@ do {								\
 
 #if defined (__STDC__) || defined (__cplusplus)
 static void
-yy_stack_print (short *bottom, short *top)
+yy_stack_print (short int *bottom, short int *top)
 #else
 static void
 yy_stack_print (bottom, top)
-    short *bottom;
-    short *top;
+    short int *bottom;
+    short int *top;
 #endif
 {
   YYFPRINTF (stderr, "Stack now");
@@ -955,8 +978,7 @@ do {					\
 int yydebug;
 #else /* !YYDEBUG */
 # define YYDPRINTF(Args)
-# define YYDSYMPRINT(Args)
-# define YYDSYMPRINTF(Title, Token, Value, Location)
+# define YY_SYMBOL_PRINT(Title, Type, Value, Location)
 # define YY_STACK_PRINT(Bottom, Top)
 # define YY_REDUCE_PRINT(Rule)
 #endif /* !YYDEBUG */
@@ -973,10 +995,6 @@ int yydebug;
    Do not make this value too large; the results are undefined if
    SIZE_MAX < YYSTACK_BYTES (YYMAXDEPTH)
    evaluated with infinite-precision integer arithmetic.  */
-
-#if defined (YYMAXDEPTH) && YYMAXDEPTH == 0
-# undef YYMAXDEPTH
-#endif
 
 #ifndef YYMAXDEPTH
 # define YYMAXDEPTH 10000
@@ -1059,15 +1077,15 @@ yysymprint (yyoutput, yytype, yyvaluep)
   (void) yyvaluep;
 
   if (yytype < YYNTOKENS)
-    {
-      YYFPRINTF (yyoutput, "token %s (", yytname[yytype]);
-# ifdef YYPRINT
-      YYPRINT (yyoutput, yytoknum[yytype], *yyvaluep);
-# endif
-    }
+    YYFPRINTF (yyoutput, "token %s (", yytname[yytype]);
   else
     YYFPRINTF (yyoutput, "nterm %s (", yytname[yytype]);
 
+
+# ifdef YYPRINT
+  if (yytype < YYNTOKENS)
+    YYPRINT (yyoutput, yytoknum[yytype], *yyvaluep);
+# endif
   switch (yytype)
     {
       default:
@@ -1083,16 +1101,21 @@ yysymprint (yyoutput, yytype, yyvaluep)
 
 #if defined (__STDC__) || defined (__cplusplus)
 static void
-yydestruct (int yytype, YYSTYPE *yyvaluep)
+yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep)
 #else
 static void
-yydestruct (yytype, yyvaluep)
+yydestruct (yymsg, yytype, yyvaluep)
+    const char *yymsg;
     int yytype;
     YYSTYPE *yyvaluep;
 #endif
 {
   /* Pacify ``unused variable'' warnings.  */
   (void) yyvaluep;
+
+  if (!yymsg)
+    yymsg = "Deleting";
+  YY_SYMBOL_PRINT (yymsg, yytype, yyvaluep, yylocationp);
 
   switch (yytype)
     {
@@ -1121,10 +1144,10 @@ int yyparse ();
 
 
 
-/* The lookahead symbol.  */
+/* The look-ahead symbol.  */
 int yychar;
 
-/* The semantic value of the lookahead symbol.  */
+/* The semantic value of the look-ahead symbol.  */
 YYSTYPE yylval;
 
 /* Number of syntax errors so far.  */
@@ -1160,7 +1183,7 @@ yyparse ()
   int yyresult;
   /* Number of tokens to shift before error messages enabled.  */
   int yyerrstatus;
-  /* Lookahead token as an internal (translated) token number.  */
+  /* Look-ahead token as an internal (translated) token number.  */
   int yytoken = 0;
 
   /* Three stacks and their tools:
@@ -1172,9 +1195,9 @@ yyparse ()
      to reallocate them elsewhere.  */
 
   /* The state stack.  */
-  short	yyssa[YYINITDEPTH];
-  short *yyss = yyssa;
-  register short *yyssp;
+  short int yyssa[YYINITDEPTH];
+  short int *yyss = yyssa;
+  register short int *yyssp;
 
   /* The semantic value stack.  */
   YYSTYPE yyvsa[YYINITDEPTH];
@@ -1211,6 +1234,9 @@ yyparse ()
   yyssp = yyss;
   yyvsp = yyvs;
 
+
+  yyvsp[0] = yylval;
+
   goto yysetstate;
 
 /*------------------------------------------------------------.
@@ -1236,7 +1262,7 @@ yyparse ()
 	   these so that the &'s don't force the real ones into
 	   memory.  */
 	YYSTYPE *yyvs1 = yyvs;
-	short *yyss1 = yyss;
+	short int *yyss1 = yyss;
 
 
 	/* Each stack pointer address is followed by the size of the
@@ -1264,7 +1290,7 @@ yyparse ()
 	yystacksize = YYMAXDEPTH;
 
       {
-	short *yyss1 = yyss;
+	short int *yyss1 = yyss;
 	union yyalloc *yyptr =
 	  (union yyalloc *) YYSTACK_ALLOC (YYSTACK_BYTES (yystacksize));
 	if (! yyptr)
@@ -1300,18 +1326,18 @@ yyparse ()
 yybackup:
 
 /* Do appropriate processing given the current state.  */
-/* Read a lookahead token if we need one and don't already have one.  */
+/* Read a look-ahead token if we need one and don't already have one.  */
 /* yyresume: */
 
-  /* First try to decide what to do without reference to lookahead token.  */
+  /* First try to decide what to do without reference to look-ahead token.  */
 
   yyn = yypact[yystate];
   if (yyn == YYPACT_NINF)
     goto yydefault;
 
-  /* Not known => get a lookahead token if don't already have one.  */
+  /* Not known => get a look-ahead token if don't already have one.  */
 
-  /* YYCHAR is either YYEMPTY or YYEOF or a valid lookahead symbol.  */
+  /* YYCHAR is either YYEMPTY or YYEOF or a valid look-ahead symbol.  */
   if (yychar == YYEMPTY)
     {
       YYDPRINTF ((stderr, "Reading a token: "));
@@ -1326,7 +1352,7 @@ yybackup:
   else
     {
       yytoken = YYTRANSLATE (yychar);
-      YYDSYMPRINTF ("Next token is", yytoken, &yylval, &yylloc);
+      YY_SYMBOL_PRINT ("Next token is", yytoken, &yylval, &yylloc);
     }
 
   /* If the proper action on seeing token YYTOKEN is to reduce or to
@@ -1346,8 +1372,8 @@ yybackup:
   if (yyn == YYFINAL)
     YYACCEPT;
 
-  /* Shift the lookahead token.  */
-  YYDPRINTF ((stderr, "Shifting token %s, ", yytname[yytoken]));
+  /* Shift the look-ahead token.  */
+  YY_SYMBOL_PRINT ("Shifting", yytoken, &yylval, &yylloc);
 
   /* Discard the token being shifted unless it is eof.  */
   if (yychar != YYEOF)
@@ -1422,38 +1448,38 @@ yyreduce:
 #line 259 "parse.y"
     { 
 		    struct string_list *sl;
-		    for(sl = yyvsp[-3].sl; sl != NULL; sl = sl->next) {
+		    for(sl = (yyvsp[-3].sl); sl != NULL; sl = sl->next) {
 			Symbol *s = addsym(sl->string);
 			s->stype = Stype;
 		    }
-		    add_import(yyvsp[-1].name);
+		    add_import((yyvsp[-1].name));
 		}
     break;
 
   case 22:
 #line 278 "parse.y"
     {
-		    yyval.sl = emalloc(sizeof(*yyval.sl));
-		    yyval.sl->string = yyvsp[-2].name;
-		    yyval.sl->next = yyvsp[0].sl;
+		    (yyval.sl) = emalloc(sizeof(*(yyval.sl)));
+		    (yyval.sl)->string = (yyvsp[-2].name);
+		    (yyval.sl)->next = (yyvsp[0].sl);
 		}
     break;
 
   case 23:
 #line 284 "parse.y"
     {
-		    yyval.sl = emalloc(sizeof(*yyval.sl));
-		    yyval.sl->string = yyvsp[0].name;
-		    yyval.sl->next = NULL;
+		    (yyval.sl) = emalloc(sizeof(*(yyval.sl)));
+		    (yyval.sl)->string = (yyvsp[0].name);
+		    (yyval.sl)->next = NULL;
 		}
     break;
 
   case 24:
 #line 292 "parse.y"
     {
-		    Symbol *s = addsym (yyvsp[-2].name);
+		    Symbol *s = addsym ((yyvsp[-2].name));
 		    s->stype = Stype;
-		    s->type = yyvsp[0].type;
+		    s->type = (yyvsp[0].type);
 		    fix_labels(s);
 		    generate_type (s);
 		}
@@ -1462,7 +1488,7 @@ yyreduce:
   case 41:
 #line 322 "parse.y"
     {
-			yyval.type = new_tag(ASN1_C_UNIV, UT_Boolean, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_Boolean, 
 				     TE_EXPLICIT, new_type(TBoolean));
 		}
     break;
@@ -1470,18 +1496,18 @@ yyreduce:
   case 42:
 #line 329 "parse.y"
     {
-			if(yyvsp[-3].value->type != integervalue || 
-			   yyvsp[-1].value->type != integervalue)
+			if((yyvsp[-3].value)->type != integervalue || 
+			   (yyvsp[-1].value)->type != integervalue)
 				error_message("Non-integer value used in range");
-			yyval.range.min = yyvsp[-3].value->u.integervalue;
-			yyval.range.max = yyvsp[-1].value->u.integervalue;
+			(yyval.range).min = (yyvsp[-3].value)->u.integervalue;
+			(yyval.range).max = (yyvsp[-1].value)->u.integervalue;
 		}
     break;
 
   case 43:
 #line 339 "parse.y"
     {
-			yyval.type = new_tag(ASN1_C_UNIV, UT_Integer, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_Integer, 
 				     TE_EXPLICIT, new_type(TInteger));
 		}
     break;
@@ -1489,90 +1515,90 @@ yyreduce:
   case 44:
 #line 344 "parse.y"
     {
-			yyval.type = new_type(TInteger);
-			yyval.type->range = emalloc(sizeof(*yyval.type->range));
-			*(yyval.type->range) = yyvsp[0].range;
-			yyval.type = new_tag(ASN1_C_UNIV, UT_Integer, TE_EXPLICIT, yyval.type);
+			(yyval.type) = new_type(TInteger);
+			(yyval.type)->range = emalloc(sizeof(*(yyval.type)->range));
+			*((yyval.type)->range) = (yyvsp[0].range);
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_Integer, TE_EXPLICIT, (yyval.type));
 		}
     break;
 
   case 45:
 #line 351 "parse.y"
     {
-		  yyval.type = new_type(TInteger);
-		  yyval.type->members = yyvsp[-1].members;
-		  yyval.type = new_tag(ASN1_C_UNIV, UT_Integer, TE_EXPLICIT, yyval.type);
+		  (yyval.type) = new_type(TInteger);
+		  (yyval.type)->members = (yyvsp[-1].members);
+		  (yyval.type) = new_tag(ASN1_C_UNIV, UT_Integer, TE_EXPLICIT, (yyval.type));
 		}
     break;
 
   case 46:
 #line 359 "parse.y"
     {
-			yyval.members = emalloc(sizeof(*yyval.members));
-			ASN1_TAILQ_INIT(yyval.members);
-			ASN1_TAILQ_INSERT_HEAD(yyval.members, yyvsp[0].member, members);
+			(yyval.members) = emalloc(sizeof(*(yyval.members)));
+			ASN1_TAILQ_INIT((yyval.members));
+			ASN1_TAILQ_INSERT_HEAD((yyval.members), (yyvsp[0].member), members);
 		}
     break;
 
   case 47:
 #line 365 "parse.y"
     {
-			ASN1_TAILQ_INSERT_TAIL(yyvsp[-2].members, yyvsp[0].member, members);
-			yyval.members = yyvsp[-2].members;
+			ASN1_TAILQ_INSERT_TAIL((yyvsp[-2].members), (yyvsp[0].member), members);
+			(yyval.members) = (yyvsp[-2].members);
 		}
     break;
 
   case 48:
 #line 370 "parse.y"
-    { yyval.members = yyvsp[-2].members; }
+    { (yyval.members) = (yyvsp[-2].members); }
     break;
 
   case 49:
 #line 374 "parse.y"
     {
-			yyval.member = emalloc(sizeof(*yyval.member));
-			yyval.member->name = yyvsp[-3].name;
-			yyval.member->gen_name = estrdup(yyvsp[-3].name);
-			output_name (yyval.member->gen_name);
-			yyval.member->val = yyvsp[-1].constant;
-			yyval.member->optional = 0;
-			yyval.member->ellipsis = 0;
-			yyval.member->type = NULL;
+			(yyval.member) = emalloc(sizeof(*(yyval.member)));
+			(yyval.member)->name = (yyvsp[-3].name);
+			(yyval.member)->gen_name = estrdup((yyvsp[-3].name));
+			output_name ((yyval.member)->gen_name);
+			(yyval.member)->val = (yyvsp[-1].constant);
+			(yyval.member)->optional = 0;
+			(yyval.member)->ellipsis = 0;
+			(yyval.member)->type = NULL;
 		}
     break;
 
   case 50:
 #line 387 "parse.y"
     {
-		  yyval.type = new_type(TInteger);
-		  yyval.type->members = yyvsp[-1].members;
-		  yyval.type = new_tag(ASN1_C_UNIV, UT_Enumerated, TE_EXPLICIT, yyval.type);
+		  (yyval.type) = new_type(TInteger);
+		  (yyval.type)->members = (yyvsp[-1].members);
+		  (yyval.type) = new_tag(ASN1_C_UNIV, UT_Enumerated, TE_EXPLICIT, (yyval.type));
 		}
     break;
 
   case 52:
 #line 398 "parse.y"
     {
-		  yyval.type = new_type(TBitString);
-		  yyval.type->members = emalloc(sizeof(*yyval.type->members));
-		  ASN1_TAILQ_INIT(yyval.type->members);
-		  yyval.type = new_tag(ASN1_C_UNIV, UT_BitString, TE_EXPLICIT, yyval.type);
+		  (yyval.type) = new_type(TBitString);
+		  (yyval.type)->members = emalloc(sizeof(*(yyval.type)->members));
+		  ASN1_TAILQ_INIT((yyval.type)->members);
+		  (yyval.type) = new_tag(ASN1_C_UNIV, UT_BitString, TE_EXPLICIT, (yyval.type));
 		}
     break;
 
   case 53:
 #line 405 "parse.y"
     {
-		  yyval.type = new_type(TBitString);
-		  yyval.type->members = yyvsp[-1].members;
-		  yyval.type = new_tag(ASN1_C_UNIV, UT_BitString, TE_EXPLICIT, yyval.type);
+		  (yyval.type) = new_type(TBitString);
+		  (yyval.type)->members = (yyvsp[-1].members);
+		  (yyval.type) = new_tag(ASN1_C_UNIV, UT_BitString, TE_EXPLICIT, (yyval.type));
 		}
     break;
 
   case 54:
 #line 413 "parse.y"
     {
-			yyval.type = new_tag(ASN1_C_UNIV, UT_OID, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_OID, 
 				     TE_EXPLICIT, new_type(TOID));
 		}
     break;
@@ -1580,7 +1606,7 @@ yyreduce:
   case 55:
 #line 419 "parse.y"
     {
-			yyval.type = new_tag(ASN1_C_UNIV, UT_OctetString, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_OctetString, 
 				     TE_EXPLICIT, new_type(TOctetString));
 		}
     break;
@@ -1588,7 +1614,7 @@ yyreduce:
   case 56:
 #line 426 "parse.y"
     {
-			yyval.type = new_tag(ASN1_C_UNIV, UT_Null, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_Null, 
 				     TE_EXPLICIT, new_type(TNull));
 		}
     break;
@@ -1596,81 +1622,81 @@ yyreduce:
   case 57:
 #line 433 "parse.y"
     {
-		  yyval.type = new_type(TSequence);
-		  yyval.type->members = yyvsp[-1].members;
-		  yyval.type = new_tag(ASN1_C_UNIV, UT_Sequence, TE_EXPLICIT, yyval.type);
+		  (yyval.type) = new_type(TSequence);
+		  (yyval.type)->members = (yyvsp[-1].members);
+		  (yyval.type) = new_tag(ASN1_C_UNIV, UT_Sequence, TE_EXPLICIT, (yyval.type));
 		}
     break;
 
   case 58:
 #line 439 "parse.y"
     {
-		  yyval.type = new_type(TSequence);
-		  yyval.type->members = NULL;
-		  yyval.type = new_tag(ASN1_C_UNIV, UT_Sequence, TE_EXPLICIT, yyval.type);
+		  (yyval.type) = new_type(TSequence);
+		  (yyval.type)->members = NULL;
+		  (yyval.type) = new_tag(ASN1_C_UNIV, UT_Sequence, TE_EXPLICIT, (yyval.type));
 		}
     break;
 
   case 59:
 #line 447 "parse.y"
     {
-		  yyval.type = new_type(TSequenceOf);
-		  yyval.type->subtype = yyvsp[0].type;
-		  yyval.type = new_tag(ASN1_C_UNIV, UT_Sequence, TE_EXPLICIT, yyval.type);
+		  (yyval.type) = new_type(TSequenceOf);
+		  (yyval.type)->subtype = (yyvsp[0].type);
+		  (yyval.type) = new_tag(ASN1_C_UNIV, UT_Sequence, TE_EXPLICIT, (yyval.type));
 		}
     break;
 
   case 60:
 #line 455 "parse.y"
     {
-		  yyval.type = new_type(TSet);
-		  yyval.type->members = yyvsp[-1].members;
-		  yyval.type = new_tag(ASN1_C_UNIV, UT_Set, TE_EXPLICIT, yyval.type);
+		  (yyval.type) = new_type(TSet);
+		  (yyval.type)->members = (yyvsp[-1].members);
+		  (yyval.type) = new_tag(ASN1_C_UNIV, UT_Set, TE_EXPLICIT, (yyval.type));
 		}
     break;
 
   case 61:
 #line 461 "parse.y"
     {
-		  yyval.type = new_type(TSet);
-		  yyval.type->members = NULL;
-		  yyval.type = new_tag(ASN1_C_UNIV, UT_Set, TE_EXPLICIT, yyval.type);
+		  (yyval.type) = new_type(TSet);
+		  (yyval.type)->members = NULL;
+		  (yyval.type) = new_tag(ASN1_C_UNIV, UT_Set, TE_EXPLICIT, (yyval.type));
 		}
     break;
 
   case 62:
 #line 469 "parse.y"
     {
-		  yyval.type = new_type(TSetOf);
-		  yyval.type->subtype = yyvsp[0].type;
-		  yyval.type = new_tag(ASN1_C_UNIV, UT_Set, TE_EXPLICIT, yyval.type);
+		  (yyval.type) = new_type(TSetOf);
+		  (yyval.type)->subtype = (yyvsp[0].type);
+		  (yyval.type) = new_tag(ASN1_C_UNIV, UT_Set, TE_EXPLICIT, (yyval.type));
 		}
     break;
 
   case 63:
 #line 477 "parse.y"
     {
-		  yyval.type = new_type(TChoice);
-		  yyval.type->members = yyvsp[-1].members;
+		  (yyval.type) = new_type(TChoice);
+		  (yyval.type)->members = (yyvsp[-1].members);
 		}
     break;
 
   case 66:
 #line 488 "parse.y"
     {
-		  Symbol *s = addsym(yyvsp[0].name);
-		  yyval.type = new_type(TType);
+		  Symbol *s = addsym((yyvsp[0].name));
+		  (yyval.type) = new_type(TType);
 		  if(s->stype != Stype && s->stype != SUndefined)
-		    error_message ("%s is not a type\n", yyvsp[0].name);
+		    error_message ("%s is not a type\n", (yyvsp[0].name));
 		  else
-		    yyval.type->symbol = s;
+		    (yyval.type)->symbol = s;
 		}
     break;
 
   case 67:
 #line 499 "parse.y"
     {
-			yyval.type = new_tag(ASN1_C_UNIV, UT_GeneralizedTime, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_GeneralizedTime, 
 				     TE_EXPLICIT, new_type(TGeneralizedTime));
 		}
     break;
@@ -1678,7 +1704,7 @@ yyreduce:
   case 68:
 #line 504 "parse.y"
     {
-			yyval.type = new_tag(ASN1_C_UNIV, UT_UTCTime, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_UTCTime, 
 				     TE_EXPLICIT, new_type(TUTCTime));
 		}
     break;
@@ -1686,72 +1712,72 @@ yyreduce:
   case 69:
 #line 511 "parse.y"
     {
-			yyval.type = new_type(TTag);
-			yyval.type->tag = yyvsp[-2].tag;
-			yyval.type->tag.tagenv = yyvsp[-1].constant;
-			if(yyvsp[0].type->type == TTag && yyvsp[-1].constant == TE_IMPLICIT) {
-				yyval.type->subtype = yyvsp[0].type->subtype;
-				free(yyvsp[0].type);
+			(yyval.type) = new_type(TTag);
+			(yyval.type)->tag = (yyvsp[-2].tag);
+			(yyval.type)->tag.tagenv = (yyvsp[-1].constant);
+			if((yyvsp[0].type)->type == TTag && (yyvsp[-1].constant) == TE_IMPLICIT) {
+				(yyval.type)->subtype = (yyvsp[0].type)->subtype;
+				free((yyvsp[0].type));
 			} else
-				yyval.type->subtype = yyvsp[0].type;
+				(yyval.type)->subtype = (yyvsp[0].type);
 		}
     break;
 
   case 70:
 #line 524 "parse.y"
     {
-			yyval.tag.tagclass = yyvsp[-2].constant;
-			yyval.tag.tagvalue = yyvsp[-1].constant;
-			yyval.tag.tagenv = TE_EXPLICIT;
+			(yyval.tag).tagclass = (yyvsp[-2].constant);
+			(yyval.tag).tagvalue = (yyvsp[-1].constant);
+			(yyval.tag).tagenv = TE_EXPLICIT;
 		}
     break;
 
   case 71:
 #line 532 "parse.y"
     {
-			yyval.constant = ASN1_C_CONTEXT;
+			(yyval.constant) = ASN1_C_CONTEXT;
 		}
     break;
 
   case 72:
 #line 536 "parse.y"
     {
-			yyval.constant = ASN1_C_UNIV;
+			(yyval.constant) = ASN1_C_UNIV;
 		}
     break;
 
   case 73:
 #line 540 "parse.y"
     {
-			yyval.constant = ASN1_C_APPL;
+			(yyval.constant) = ASN1_C_APPL;
 		}
     break;
 
   case 74:
 #line 544 "parse.y"
     {
-			yyval.constant = ASN1_C_PRIVATE;
+			(yyval.constant) = ASN1_C_PRIVATE;
 		}
     break;
 
   case 75:
 #line 550 "parse.y"
     {
-			yyval.constant = TE_EXPLICIT;
+			(yyval.constant) = TE_EXPLICIT;
 		}
     break;
 
   case 76:
 #line 554 "parse.y"
     {
-			yyval.constant = TE_EXPLICIT;
+			(yyval.constant) = TE_EXPLICIT;
 		}
     break;
 
   case 77:
 #line 558 "parse.y"
     {
-			yyval.constant = TE_IMPLICIT;
+			(yyval.constant) = TE_IMPLICIT;
 		}
     break;
 
@@ -1759,10 +1785,10 @@ yyreduce:
 #line 565 "parse.y"
     {
 			Symbol *s;
-			s = addsym (yyvsp[-3].name);
+			s = addsym ((yyvsp[-3].name));
 
 			s->stype = SValue;
-			s->value = yyvsp[0].value;
+			s->value = (yyvsp[0].value);
 			generate_constant (s);
 		}
     break;
@@ -1770,7 +1796,7 @@ yyreduce:
   case 80:
 #line 579 "parse.y"
     {
-			yyval.type = new_tag(ASN1_C_UNIV, UT_GeneralString, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_GeneralString, 
 				     TE_EXPLICIT, new_type(TGeneralString));
 		}
     break;
@@ -1778,7 +1804,7 @@ yyreduce:
   case 81:
 #line 584 "parse.y"
     {
-			yyval.type = new_tag(ASN1_C_UNIV, UT_UTF8String, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_UTF8String, 
 				     TE_EXPLICIT, new_type(TUTF8String));
 		}
     break;
@@ -1786,7 +1812,7 @@ yyreduce:
   case 82:
 #line 589 "parse.y"
     {
-			yyval.type = new_tag(ASN1_C_UNIV, UT_PrintableString, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_PrintableString, 
 				     TE_EXPLICIT, new_type(TPrintableString));
 		}
     break;
@@ -1794,7 +1820,7 @@ yyreduce:
   case 83:
 #line 594 "parse.y"
     {
-			yyval.type = new_tag(ASN1_C_UNIV, UT_IA5String, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_IA5String, 
 				     TE_EXPLICIT, new_type(TIA5String));
 		}
     break;
@@ -1802,7 +1828,7 @@ yyreduce:
   case 84:
 #line 599 "parse.y"
     {
-			yyval.type = new_tag(ASN1_C_UNIV, UT_BMPString, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_BMPString, 
 				     TE_EXPLICIT, new_type(TBMPString));
 		}
     break;
@@ -1810,7 +1836,7 @@ yyreduce:
   case 85:
 #line 604 "parse.y"
     {
-			yyval.type = new_tag(ASN1_C_UNIV, UT_UniversalString, 
+			(yyval.type) = new_tag(ASN1_C_UNIV, UT_UniversalString, 
 				     TE_EXPLICIT, new_type(TUniversalString));
 		}
     break;
@@ -1818,17 +1844,17 @@ yyreduce:
   case 86:
 #line 612 "parse.y"
     {
-			yyval.members = emalloc(sizeof(*yyval.members));
-			ASN1_TAILQ_INIT(yyval.members);
-			ASN1_TAILQ_INSERT_HEAD(yyval.members, yyvsp[0].member, members);
+			(yyval.members) = emalloc(sizeof(*(yyval.members)));
+			ASN1_TAILQ_INIT((yyval.members));
+			ASN1_TAILQ_INSERT_HEAD((yyval.members), (yyvsp[0].member), members);
 		}
     break;
 
   case 87:
 #line 618 "parse.y"
     {
-			ASN1_TAILQ_INSERT_TAIL(yyvsp[-2].members, yyvsp[0].member, members);
-			yyval.members = yyvsp[-2].members;
+			ASN1_TAILQ_INSERT_TAIL((yyvsp[-2].members), (yyvsp[0].member), members);
+			(yyval.members) = (yyvsp[-2].members);
 		}
     break;
 
@@ -1839,108 +1865,108 @@ yyreduce:
 			m->name = estrdup("...");
 			m->gen_name = estrdup("asn1_ellipsis");
 			m->ellipsis = 1;
-			ASN1_TAILQ_INSERT_TAIL(yyvsp[-2].members, m, members);
-			yyval.members = yyvsp[-2].members;
+			ASN1_TAILQ_INSERT_TAIL((yyvsp[-2].members), m, members);
+			(yyval.members) = (yyvsp[-2].members);
 		}
     break;
 
   case 89:
 #line 634 "parse.y"
     {
-		  yyval.member = emalloc(sizeof(*yyval.member));
-		  yyval.member->name = yyvsp[-1].name;
-		  yyval.member->gen_name = estrdup(yyvsp[-1].name);
-		  output_name (yyval.member->gen_name);
-		  yyval.member->type = yyvsp[0].type;
-		  yyval.member->ellipsis = 0;
+		  (yyval.member) = emalloc(sizeof(*(yyval.member)));
+		  (yyval.member)->name = (yyvsp[-1].name);
+		  (yyval.member)->gen_name = estrdup((yyvsp[-1].name));
+		  output_name ((yyval.member)->gen_name);
+		  (yyval.member)->type = (yyvsp[0].type);
+		  (yyval.member)->ellipsis = 0;
 		}
     break;
 
   case 90:
 #line 645 "parse.y"
     {
-			yyval.member = yyvsp[0].member;
-			yyval.member->optional = 0;
-			yyval.member->defval = NULL;
+			(yyval.member) = (yyvsp[0].member);
+			(yyval.member)->optional = 0;
+			(yyval.member)->defval = NULL;
 		}
     break;
 
   case 91:
 #line 651 "parse.y"
     {
-			yyval.member = yyvsp[-1].member;
-			yyval.member->optional = 1;
-			yyval.member->defval = NULL;
+			(yyval.member) = (yyvsp[-1].member);
+			(yyval.member)->optional = 1;
+			(yyval.member)->defval = NULL;
 		}
     break;
 
   case 92:
 #line 657 "parse.y"
     {
-			yyval.member = yyvsp[-2].member;
-			yyval.member->optional = 0;
-			yyval.member->defval = yyvsp[0].value;
+			(yyval.member) = (yyvsp[-2].member);
+			(yyval.member)->optional = 0;
+			(yyval.member)->defval = (yyvsp[0].value);
 		}
     break;
 
   case 93:
 #line 665 "parse.y"
     {
-			yyval.members = emalloc(sizeof(*yyval.members));
-			ASN1_TAILQ_INIT(yyval.members);
-			ASN1_TAILQ_INSERT_HEAD(yyval.members, yyvsp[0].member, members);
+			(yyval.members) = emalloc(sizeof(*(yyval.members)));
+			ASN1_TAILQ_INIT((yyval.members));
+			ASN1_TAILQ_INSERT_HEAD((yyval.members), (yyvsp[0].member), members);
 		}
     break;
 
   case 94:
 #line 671 "parse.y"
     {
-			ASN1_TAILQ_INSERT_TAIL(yyvsp[-2].members, yyvsp[0].member, members);
-			yyval.members = yyvsp[-2].members;
+			ASN1_TAILQ_INSERT_TAIL((yyvsp[-2].members), (yyvsp[0].member), members);
+			(yyval.members) = (yyvsp[-2].members);
 		}
     break;
 
   case 95:
 #line 678 "parse.y"
     {
-		  yyval.member = emalloc(sizeof(*yyval.member));
-		  yyval.member->name = yyvsp[-3].name;
-		  yyval.member->gen_name = estrdup(yyvsp[-3].name);
-		  output_name (yyval.member->gen_name);
-		  yyval.member->val = yyvsp[-1].constant;
-		  yyval.member->optional = 0;
-		  yyval.member->ellipsis = 0;
-		  yyval.member->type = NULL;
+		  (yyval.member) = emalloc(sizeof(*(yyval.member)));
+		  (yyval.member)->name = (yyvsp[-3].name);
+		  (yyval.member)->gen_name = estrdup((yyvsp[-3].name));
+		  output_name ((yyval.member)->gen_name);
+		  (yyval.member)->val = (yyvsp[-1].constant);
+		  (yyval.member)->optional = 0;
+		  (yyval.member)->ellipsis = 0;
+		  (yyval.member)->type = NULL;
 		}
     break;
 
   case 97:
 #line 691 "parse.y"
-    { yyval.objid = NULL; }
+    { (yyval.objid) = NULL; }
     break;
 
   case 98:
 #line 695 "parse.y"
     {
-			yyval.objid = yyvsp[-1].objid;
+			(yyval.objid) = (yyvsp[-1].objid);
 		}
     break;
 
   case 99:
 #line 701 "parse.y"
     {
-			yyval.objid = NULL;
+			(yyval.objid) = NULL;
 		}
     break;
 
   case 100:
 #line 705 "parse.y"
     {
-		        if (yyvsp[0].objid) {
-				yyval.objid = yyvsp[0].objid;
-				add_oid_to_tail(yyvsp[0].objid, yyvsp[-1].objid);
+		        if ((yyvsp[0].objid)) {
+				(yyval.objid) = (yyvsp[0].objid);
+				add_oid_to_tail((yyvsp[0].objid), (yyvsp[-1].objid));
 			} else {
-				yyval.objid = yyvsp[-1].objid;
+				(yyval.objid) = (yyvsp[-1].objid);
 			}
 		}
     break;
@@ -1948,76 +1974,76 @@ yyreduce:
   case 101:
 #line 716 "parse.y"
     {
-			yyval.objid = new_objid(yyvsp[-3].name, yyvsp[-1].constant);
+			(yyval.objid) = new_objid((yyvsp[-3].name), (yyvsp[-1].constant));
 		}
     break;
 
   case 102:
 #line 720 "parse.y"
     {
-		    Symbol *s = addsym(yyvsp[0].name);
+		    Symbol *s = addsym((yyvsp[0].name));
 		    if(s->stype != SValue ||
 		       s->value->type != objectidentifiervalue) {
 			error_message("%s is not an object identifier\n", 
 				      s->name);
 			exit(1);
 		    }
-		    yyval.objid = s->value->u.objectidentifiervalue;
+		    (yyval.objid) = s->value->u.objectidentifiervalue;
 		}
     break;
 
   case 103:
 #line 731 "parse.y"
     {
-		    yyval.objid = new_objid(NULL, yyvsp[0].constant);
+		    (yyval.objid) = new_objid(NULL, (yyvsp[0].constant));
 		}
     break;
 
   case 113:
 #line 754 "parse.y"
     {
-			Symbol *s = addsym(yyvsp[0].name);
+			Symbol *s = addsym((yyvsp[0].name));
 			if(s->stype != SValue)
 				error_message ("%s is not a value\n",
 						s->name);
 			else
-				yyval.value = s->value;
+				(yyval.value) = s->value;
 		}
     break;
 
   case 114:
 #line 765 "parse.y"
     {
-			yyval.value = emalloc(sizeof(*yyval.value));
-			yyval.value->type = stringvalue;
-			yyval.value->u.stringvalue = yyvsp[0].name;
+			(yyval.value) = emalloc(sizeof(*(yyval.value)));
+			(yyval.value)->type = stringvalue;
+			(yyval.value)->u.stringvalue = (yyvsp[0].name);
 		}
     break;
 
   case 115:
 #line 773 "parse.y"
     {
-			yyval.value = emalloc(sizeof(*yyval.value));
-			yyval.value->type = booleanvalue;
-			yyval.value->u.booleanvalue = 0;
+			(yyval.value) = emalloc(sizeof(*(yyval.value)));
+			(yyval.value)->type = booleanvalue;
+			(yyval.value)->u.booleanvalue = 0;
 		}
     break;
 
   case 116:
 #line 779 "parse.y"
     {
-			yyval.value = emalloc(sizeof(*yyval.value));
-			yyval.value->type = booleanvalue;
-			yyval.value->u.booleanvalue = 0;
+			(yyval.value) = emalloc(sizeof(*(yyval.value)));
+			(yyval.value)->type = booleanvalue;
+			(yyval.value)->u.booleanvalue = 0;
 		}
     break;
 
   case 117:
 #line 787 "parse.y"
     {
-			yyval.value = emalloc(sizeof(*yyval.value));
-			yyval.value->type = integervalue;
-			yyval.value->u.integervalue = yyvsp[0].constant;
+			(yyval.value) = emalloc(sizeof(*(yyval.value)));
+			(yyval.value)->type = integervalue;
+			(yyval.value)->u.integervalue = (yyvsp[0].constant);
 		}
     break;
 
@@ -2030,17 +2056,17 @@ yyreduce:
   case 120:
 #line 803 "parse.y"
     {
-			yyval.value = emalloc(sizeof(*yyval.value));
-			yyval.value->type = objectidentifiervalue;
-			yyval.value->u.objectidentifiervalue = yyvsp[0].objid;
+			(yyval.value) = emalloc(sizeof(*(yyval.value)));
+			(yyval.value)->type = objectidentifiervalue;
+			(yyval.value)->u.objectidentifiervalue = (yyvsp[0].objid);
 		}
     break;
 
 
     }
 
-/* Line 1000 of yacc.c.  */
-#line 2044 "parse.c"
+/* Line 1037 of yacc.c.  */
+#line 2070 "parse.c"
 
   yyvsp -= yylen;
   yyssp -= yylen;
@@ -2140,7 +2166,7 @@ yyerrlab:
 
   if (yyerrstatus == 3)
     {
-      /* If just tried and failed to reuse lookahead token after an
+      /* If just tried and failed to reuse look-ahead token after an
 	 error, discard it.  */
 
       if (yychar <= YYEOF)
@@ -2150,23 +2176,22 @@ yyerrlab:
 	  if (yychar == YYEOF)
 	     for (;;)
 	       {
+
 		 YYPOPSTACK;
 		 if (yyssp == yyss)
 		   YYABORT;
-		 YYDSYMPRINTF ("Error: popping", yystos[*yyssp], yyvsp, yylsp);
-		 yydestruct (yystos[*yyssp], yyvsp);
+		 yydestruct ("Error: popping",
+                             yystos[*yyssp], yyvsp);
 	       }
         }
       else
 	{
-	  YYDSYMPRINTF ("Error: discarding", yytoken, &yylval, &yylloc);
-	  yydestruct (yytoken, &yylval);
+	  yydestruct ("Error: discarding", yytoken, &yylval);
 	  yychar = YYEMPTY;
-
 	}
     }
 
-  /* Else will try to reuse lookahead token after shifting the error
+  /* Else will try to reuse look-ahead token after shifting the error
      token.  */
   goto yyerrlab1;
 
@@ -2183,7 +2208,7 @@ yyerrorlab:
      goto yyerrorlab;
 #endif
 
-  yyvsp -= yylen;
+yyvsp -= yylen;
   yyssp -= yylen;
   yystate = *yyssp;
   goto yyerrlab1;
@@ -2213,8 +2238,8 @@ yyerrlab1:
       if (yyssp == yyss)
 	YYABORT;
 
-      YYDSYMPRINTF ("Error: popping", yystos[*yyssp], yyvsp, yylsp);
-      yydestruct (yystos[yystate], yyvsp);
+
+      yydestruct ("Error: popping", yystos[yystate], yyvsp);
       YYPOPSTACK;
       yystate = *yyssp;
       YY_STACK_PRINT (yyss, yyssp);
@@ -2223,10 +2248,11 @@ yyerrlab1:
   if (yyn == YYFINAL)
     YYACCEPT;
 
-  YYDPRINTF ((stderr, "Shifting error token, "));
-
   *++yyvsp = yylval;
 
+
+  /* Shift the error token. */
+  YY_SYMBOL_PRINT ("Shifting", yystos[yyn], yyvsp, yylsp);
 
   yystate = yyn;
   goto yynewstate;
@@ -2243,6 +2269,9 @@ yyacceptlab:
 | yyabortlab -- YYABORT comes here.  |
 `-----------------------------------*/
 yyabortlab:
+  yydestruct ("Error: discarding lookahead",
+              yytoken, &yylval);
+  yychar = YYEMPTY;
   yyresult = 1;
   goto yyreturn;
 
