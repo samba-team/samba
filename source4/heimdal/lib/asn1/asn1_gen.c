@@ -40,7 +40,7 @@
 #include <hex.h>
 #include <err.h>
 
-RCSID("$Id: asn1_gen.c,v 1.2 2005/07/12 06:27:14 lha Exp $");
+RCSID("$Id: asn1_gen.c,v 1.3 2005/08/11 10:44:43 lha Exp $");
 
 static int
 doit(const char *fn)
@@ -166,11 +166,11 @@ usage(int code)
 int
 main(int argc, char **argv)
 {
-    int optind = 0;
+    int optidx = 0;
 
     setprogname (argv[0]);
 
-    if(getarg(args, num_args, argc, argv, &optind))
+    if(getarg(args, num_args, argc, argv, &optidx))
 	usage(1);
     if(help_flag)
 	usage(0);
@@ -178,8 +178,8 @@ main(int argc, char **argv)
 	print_version(NULL);
 	exit(0);
     }
-    argv += optind;
-    argc -= optind;
+    argv += optidx;
+    argc -= optidx;
     if (argc != 1)
 	usage (1);
 

@@ -293,6 +293,16 @@ _krb5_pk_mk_padata (
 	unsigned /*nonce*/,
 	METHOD_DATA */*md*/);
 
+krb5_error_code
+_krb5_pk_octetstring2key (
+	krb5_context /*context*/,
+	krb5_enctype /*type*/,
+	const void */*dhdata*/,
+	size_t /*dhsize*/,
+	const heim_octet_string */*c_n*/,
+	const heim_octet_string */*k_n*/,
+	krb5_keyblock */*key*/);
+
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_pk_rd_pa_reply (
 	krb5_context /*context*/,

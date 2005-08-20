@@ -20,6 +20,12 @@ hdb_check_db_format (
 	HDB */*db*/);
 
 krb5_error_code
+hdb_clear_extension (
+	krb5_context /*context*/,
+	hdb_entry */*entry*/,
+	int /*type*/);
+
+krb5_error_code
 hdb_clear_master_key (
 	krb5_context /*context*/,
 	HDB */*db*/);
@@ -54,6 +60,51 @@ hdb_entry2value (
 	krb5_context /*context*/,
 	hdb_entry */*ent*/,
 	krb5_data */*value*/);
+
+krb5_error_code
+hdb_entry_check_mandatory (
+	krb5_context /*context*/,
+	const hdb_entry */*ent*/);
+
+int
+hdb_entry_clear_password (
+	krb5_context /*context*/,
+	hdb_entry */*entry*/);
+
+int
+hdb_entry_get_password (
+	krb5_context /*context*/,
+	HDB */*db*/,
+	const hdb_entry */*entry*/,
+	char **/*p*/);
+
+krb5_error_code
+hdb_entry_get_pkinit_acl (
+	const hdb_entry */*entry*/,
+	const HDB_Ext_PKINIT_acl **/*a*/);
+
+krb5_error_code
+hdb_entry_get_pw_change_time (
+	const hdb_entry */*entry*/,
+	time_t */*t*/);
+
+int
+hdb_entry_set_password (
+	krb5_context /*context*/,
+	HDB */*db*/,
+	hdb_entry */*entry*/,
+	const char */*p*/);
+
+krb5_error_code
+hdb_entry_set_pw_change_time (
+	krb5_context /*context*/,
+	hdb_entry */*entry*/,
+	time_t /*t*/);
+
+HDB_extension *
+hdb_find_extension (
+	const hdb_entry */*entry*/,
+	int /*type*/);
 
 krb5_error_code
 hdb_foreach (
@@ -141,7 +192,7 @@ hdb_next_enctype2key (
 int
 hdb_principal2key (
 	krb5_context /*context*/,
-	krb5_principal /*p*/,
+	krb5_const_principal /*p*/,
 	krb5_data */*key*/);
 
 krb5_error_code
@@ -164,6 +215,12 @@ hdb_read_master_key (
 	krb5_context /*context*/,
 	const char */*filename*/,
 	hdb_master_key */*mkey*/);
+
+krb5_error_code
+hdb_replace_extension (
+	krb5_context /*context*/,
+	hdb_entry */*entry*/,
+	const HDB_extension */*ext*/);
 
 krb5_error_code
 hdb_seal_key (
