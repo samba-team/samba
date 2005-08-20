@@ -442,7 +442,6 @@ static BOOL share_conflict(share_mode_entry *entry,
 		DEBUG(10,("share_conflict: check %d conflict am = 0x%x, right = 0x%x, \
 sa = 0x%x, share = 0x%x\n", (num), (unsigned int)(am), (unsigned int)(right), (unsigned int)(sa), \
 			(unsigned int)(share) )); \
-		set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION); \
 		return True; \
 	}
 #else
@@ -451,7 +450,6 @@ sa = 0x%x, share = 0x%x\n", (num), (unsigned int)(am), (unsigned int)(right), (u
 		DEBUG(10,("share_conflict: check %d conflict am = 0x%x, right = 0x%x, \
 sa = 0x%x, share = 0x%x\n", (num), (unsigned int)(am), (unsigned int)(right), (unsigned int)(sa), \
 			(unsigned int)(share) )); \
-		set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION); \
 		return True; \
 	}
 #endif
@@ -522,14 +520,15 @@ static BOOL is_stat_open(uint32 access_mask)
  Returns -1 on error, or number of share modes on success (may be zero).
 ****************************************************************************/
 
-static int open_mode_check(connection_struct *conn,
-			   const char *fname,
-			   SMB_DEV_T dev,
-			   SMB_INO_T inode, 
-			   uint32 access_mask,
-			   uint32 share_access,
-			   uint32 create_options,
-			   int *p_oplock_request)
+static NTSTATUS open_mode_check(connection_struct *conn,
+				const char *fname,
+				SMB_DEV_T dev,
+				SMB_INO_T inode, 
+				uint32 access_mask,
+				uint32 share_access,
+				uint32 create_options,
+				int *p_oplock_request,
+				BOOL *file_existed)
 {
 	int i;
 	int num_share_modes;
@@ -541,22 +540,23 @@ static int open_mode_check(connection_struct *conn,
 	
 	if(num_share_modes == 0) {
 		SAFE_FREE(old_shares);
-		return 0;
+		return NT_STATUS_OK;
 	}
+
+	*file_existed = True;
 	
 	if (is_stat_open(access_mask)) {
 		/* Stat open that doesn't trigger oplock breaks or share mode
 		 * checks... ! JRA. */
 		SAFE_FREE(old_shares);
-		return num_share_modes;
+		return NT_STATUS_OK;
 	}
 
 	/* A delete on close prohibits everything */
 
 	if (delete_on_close) {
 		SAFE_FREE(old_shares);
-		errno = EACCES;
-		return -1;
+		return NT_STATUS_DELETE_PENDING;
 	}
 
 	/*
@@ -579,14 +579,13 @@ static int open_mode_check(connection_struct *conn,
 			if (share_conflict(share_entry, access_mask,
 					   share_access)) {
 				SAFE_FREE(old_shares);
-				errno = EACCES;
-				return -1;
+				return NT_STATUS_SHARING_VIOLATION;
 			}
 		}
 	}
 	
 	SAFE_FREE(old_shares);
-	return num_share_modes;
+	return NT_STATUS_OK;
 }
 
 static BOOL is_delete_request(files_struct *fsp) {
@@ -1094,7 +1093,6 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	BOOL internal_only_open = False;
 	SMB_DEV_T dev = 0;
 	SMB_INO_T inode = 0;
-	int num_share_modes = 0;
 	BOOL fsp_open = False;
 	files_struct *fsp = NULL;
 	mode_t new_unx_mode = (mode_t)0;
@@ -1104,6 +1102,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	struct pending_message_list *pml = NULL;
 	uint16 mid = get_current_mid();
 	BOOL second_try = False;
+	NTSTATUS status;
 
 	if (conn->printer) {
 		/* 
@@ -1378,37 +1377,42 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			return NULL;
 		}
 
-		num_share_modes = open_mode_check(conn, fname, dev, inode,
-						  access_mask, share_access,
-						  create_options,
-						  &oplock_request);
-		if(num_share_modes == -1) {
+		status = open_mode_check(conn, fname, dev, inode,
+					 access_mask, share_access,
+					 create_options, &oplock_request,
+					 &file_existed);
 
-			if (!internal_only_open) {
-				NTSTATUS status;
-				get_saved_error_triple(NULL, NULL, &status);
-				if (NT_STATUS_EQUAL(status,NT_STATUS_SHARING_VIOLATION)) {
-					/* Check if this can be done with the
-					 * deny_dos and fcb calls. */
-					if (create_options &
-					    (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS|
-					     NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
-						files_struct *fsp_dup;
-						fsp_dup = fcb_or_dos_open(conn, fname, dev,
-									  inode, access_mask,
-									  share_access,
-									  create_options);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
+			/* DELETE_PENDING is not deferred for a second */
+			set_saved_error_triple(ERRDOS, ERRnoaccess, status);
+			unlock_share_entry(dev, inode);
+			file_free(fsp);
+			return NULL;
+		}
 
-						if (fsp_dup) {
-							unlock_share_entry(dev, inode);
-							file_free(fsp);
-							if (pinfo) {
-								*pinfo = FILE_WAS_OPENED;
-							}
-							conn->num_files_open++;
-							return fsp_dup;
-						}
+		if (!NT_STATUS_IS_OK(status)) {
+
+			SMB_ASSERT(NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION));
+
+			/* Check if this can be done with the deny_dos and fcb
+			 * calls. */
+			if (create_options &
+			    (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS|
+			     NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
+				files_struct *fsp_dup;
+				fsp_dup = fcb_or_dos_open(conn, fname, dev,
+							  inode, access_mask,
+							  share_access,
+							  create_options);
+
+				if (fsp_dup) {
+					unlock_share_entry(dev, inode);
+					file_free(fsp);
+					if (pinfo) {
+						*pinfo = FILE_WAS_OPENED;
 					}
+					conn->num_files_open++;
+					return fsp_dup;
 				}
 			}
 
@@ -1449,7 +1453,6 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			 */
 
 			if ((!second_try) && (!internal_only_open)) {
-				NTSTATUS status;
 				get_saved_error_triple(NULL, NULL, &status);
 				if (NT_STATUS_EQUAL(status,NT_STATUS_SHARING_VIOLATION) &&
 				    lp_defer_sharing_violations()) {
@@ -1534,34 +1537,40 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 		lock_share_entry_fsp(fsp);
 
-		num_share_modes = open_mode_check(conn, fname, dev, inode,
-						  access_mask, share_access,
-						  create_options,
-						  &oplock_request);
+		status = open_mode_check(conn, fname, dev, inode,
+					 access_mask, share_access,
+					 create_options, &oplock_request,
+					 &file_existed);
 
-		if(num_share_modes == -1) {
-			NTSTATUS status;
-			get_saved_error_triple(NULL, NULL, &status);
-			if (NT_STATUS_EQUAL(status,NT_STATUS_SHARING_VIOLATION)) {
-				/* Check if this can be done with the deny_dos
-				 * and fcb calls. */
-				if (create_options &
-				    (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS|
-				     NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
-					files_struct *fsp_dup;
-					fsp_dup = fcb_or_dos_open(conn, fname, dev, inode,
-								  access_mask, share_access,
-								  create_options);
-					if (fsp_dup) {
-						unlock_share_entry(dev, inode);
-						fd_close(conn, fsp);
-						file_free(fsp);
-						if (pinfo) {
-							*pinfo = FILE_WAS_OPENED;
-						}
-						conn->num_files_open++;
-						return fsp_dup;
+		if (NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
+			set_saved_error_triple(ERRDOS, ERRnoaccess, status);
+			unlock_share_entry(dev, inode);
+			file_free(fsp);
+			return NULL;
+		}
+
+		if (!NT_STATUS_IS_OK(status)) {
+
+			SMB_ASSERT(NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION));
+
+			/* Check if this can be done with the deny_dos and fcb
+			 * calls. */
+			if (create_options &
+			    (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS|
+			     NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
+				files_struct *fsp_dup;
+				fsp_dup = fcb_or_dos_open(conn, fname, dev, inode,
+							  access_mask, share_access,
+							  create_options);
+				if (fsp_dup) {
+					unlock_share_entry(dev, inode);
+					fd_close(conn, fsp);
+					file_free(fsp);
+					if (pinfo) {
+						*pinfo = FILE_WAS_OPENED;
 					}
+					conn->num_files_open++;
+					return fsp_dup;
 				}
 
 				/* 
@@ -1589,15 +1598,6 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			set_saved_error_triple(ERRDOS, ERRbadshare,
 					       NT_STATUS_SHARING_VIOLATION);
 			return NULL;
-		}
-
-		/*
-		 * If there are any share modes set then the file *did*
-		 * exist. Ensure we return the correct value for action.
-		 */
-
-		if (num_share_modes > 0) {
-			file_existed = True;
 		}
 
 		/*
