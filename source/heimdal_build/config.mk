@@ -21,11 +21,21 @@ NOPROTO = YES
 ADD_OBJ_FILES = \
 	heimdal/lib/hdb/db.o \
 	heimdal/lib/hdb/hdb.o \
+	heimdal/lib/hdb/ext.o \
 	heimdal/lib/hdb/keys.o \
+	heimdal/lib/hdb/mkey.o \
 	heimdal/lib/hdb/ndbm.o \
 	heimdal/lib/hdb/asn1_Event.o \
 	heimdal/lib/hdb/asn1_GENERATION.o \
 	heimdal/lib/hdb/asn1_HDBFlags.o \
+	heimdal/lib/hdb/asn1_HDB_Ext_Aliases.o \
+	heimdal/lib/hdb/asn1_HDB_Ext_Constrained_delegation_acl.o \
+	heimdal/lib/hdb/asn1_HDB_Ext_Lan_Manager_OWF.o \
+	heimdal/lib/hdb/asn1_HDB_Ext_PKINIT_acl.o \
+	heimdal/lib/hdb/asn1_HDB_Ext_PKINIT_certificate.o \
+	heimdal/lib/hdb/asn1_HDB_Ext_Password.o \
+	heimdal/lib/hdb/asn1_HDB_extension.o \
+	heimdal/lib/hdb/asn1_HDB_extensions.o \
 	heimdal/lib/hdb/asn1_Key.o \
 	heimdal/lib/hdb/asn1_Salt.o \
 	heimdal/lib/hdb/asn1_hdb_entry.o \

@@ -3251,6 +3251,14 @@ krb5_verify_init_creds_opt_set_ap_req_nofail (
 	krb5_verify_init_creds_opt */*options*/,
 	int /*ap_req_nofail*/);
 
+int KRB5_LIB_FUNCTION
+krb5_verify_opt_alloc (
+	krb5_context /*context*/,
+	krb5_verify_opt **/*opt*/);
+
+void KRB5_LIB_FUNCTION
+krb5_verify_opt_free (krb5_verify_opt */*opt*/);
+
 void KRB5_LIB_FUNCTION
 krb5_verify_opt_init (krb5_verify_opt */*opt*/);
 

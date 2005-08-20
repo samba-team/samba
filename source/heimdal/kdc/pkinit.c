@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: pkinit.c,v 1.37 2005/07/26 18:37:02 lha Exp $");
+RCSID("$Id: pkinit.c,v 1.41 2005/08/12 09:21:40 lha Exp $");
 
 #ifdef PKINIT
 
@@ -66,7 +66,7 @@ struct krb5_pk_cert {
 enum pkinit_type {
     PKINIT_COMPAT_WIN2K = 1,
     PKINIT_COMPAT_19 = 2,
-    PKINIT_COMPAT_25 = 3
+    PKINIT_COMPAT_27 = 3
 };
 
 struct pk_client_params {
@@ -640,7 +640,7 @@ _kdc_pk_rd_padata(krb5_context context,
 	PA_PK_AS_REQ r;
 	ContentInfo info;
 
-	type = "PK-INIT-25";
+	type = "PK-INIT-27";
 	pa_contentType = oid_id_pkauthdata();
 
 	ret = decode_PA_PK_AS_REQ(pa->padata_value.data,
@@ -796,7 +796,7 @@ _kdc_pk_rd_padata(krb5_context context,
 	    goto out;
 	}
 
-	client_params->type = PKINIT_COMPAT_25;
+	client_params->type = PKINIT_COMPAT_27;
 	client_params->nonce = ap.pkAuthenticator.nonce;
 
 	if (ap.clientPublicValue) {
@@ -851,6 +851,7 @@ static krb5_error_code
 pk_mk_pa_reply_enckey(krb5_context context,
 		      pk_client_params *client_params,
 		      const KDC_REQ *req,
+		      const krb5_data *req_buffer,
 		      krb5_keyblock *reply_key,
 		      ContentInfo *content_info)
 {
@@ -945,7 +946,8 @@ pk_mk_pa_reply_enckey(krb5_context context,
 			   &kp, &size,ret);
 	free_ReplyKeyPack_19(&kp);
     }
-    case PKINIT_COMPAT_25: {
+    case PKINIT_COMPAT_27: {
+	krb5_crypto ascrypto;
 	ReplyKeyPack kp;
 	memset(&kp, 0, sizeof(kp));
 
@@ -954,9 +956,29 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	    krb5_clear_error_string(context);
 	    goto out;
 	}
-	/* XXX add whatever is the outcome of asChecksum discussion here */
+
+	ret = krb5_crypto_init(context, reply_key, 0, &ascrypto);
+	if (ret) {
+	    krb5_clear_error_string(context);
+	    goto out;
+	}
+
+	ret = krb5_create_checksum(context, ascrypto, 6, 0,
+				   req_buffer->data, req_buffer->length,
+				   &kp.asChecksum);
+	if (ret) {
+	    krb5_clear_error_string(context);
+	    goto out;
+	}
+			     
+	ret = krb5_crypto_destroy(context, ascrypto);
+	if (ret) {
+	    krb5_clear_error_string(context);
+	    goto out;
+	}
 	ASN1_MALLOC_ENCODE(ReplyKeyPack, buf.data, buf.length, &kp, &size,ret);
 	free_ReplyKeyPack(&kp);
+	break;
     }
     default:
 	krb5_abortx(context, "internal pkinit error");
@@ -1194,6 +1216,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 		    pk_client_params *client_params,
 		    const hdb_entry *client,
 		    const KDC_REQ *req,
+		    const krb5_data *req_buffer,
 		    krb5_keyblock **reply_key,
 		    METHOD_DATA *md)
 {
@@ -1223,7 +1246,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
     } else
 	enctype = ETYPE_DES3_CBC_SHA1;
 
-    if (client_params->type == PKINIT_COMPAT_25) {
+    if (client_params->type == PKINIT_COMPAT_27) {
 	PA_PK_AS_REP rep;
 
 	pa_type = KRB5_PADATA_PK_AS_REP;
@@ -1239,6 +1262,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	    ret = pk_mk_pa_reply_enckey(context,
 					client_params,
 					req,
+					req_buffer,
 					&client_params->reply_key,
 					&info);
 	    if (ret) {
@@ -1259,7 +1283,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 		krb5_abortx(context, "Internal ASN.1 encoder error");
 
 	} else {
-	    krb5_set_error_string(context, "DH -25 not implemented");
+	    krb5_set_error_string(context, "DH -27 not implemented");
 	    ret = KRB5KRB_ERR_GENERIC;
 	}
 	if (ret) {
@@ -1291,6 +1315,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	    ret = pk_mk_pa_reply_enckey(context,
 					client_params,
 					req,
+					req_buffer,
 					&client_params->reply_key,
 					&rep.u.encKeyPack);
 	} else {
@@ -1332,7 +1357,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	memset(&rep, 0, sizeof(rep));
 
 	if (client_params->dh) {
-	    krb5_set_error_string(context, "DH -25 not implemented");
+	    krb5_set_error_string(context, "DH -27 not implemented");
 	    ret = KRB5KRB_ERR_GENERIC;
 	} else {
 	    rep.element = choice_PA_PK_AS_REP_encKeyPack;
@@ -1343,6 +1368,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	    ret = pk_mk_pa_reply_enckey(context,
 					client_params,
 					req,
+					req_buffer,
 					&client_params->reply_key,
 					&info);
 	    if (ret) {

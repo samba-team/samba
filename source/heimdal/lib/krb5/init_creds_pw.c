@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: init_creds_pw.c,v 1.87 2005/06/17 04:15:20 lha Exp $");
+RCSID("$Id: init_creds_pw.c,v 1.88 2005/08/13 08:25:32 lha Exp $");
 
 typedef struct krb5_get_init_creds_ctx {
     krb5_kdc_flags flags;
@@ -45,6 +45,7 @@ typedef struct krb5_get_init_creds_ctx {
     unsigned nonce;
     unsigned pk_nonce;
 
+    krb5_data req_buffer;
     AS_REQ as_req;
     int pa_counter;
 
@@ -1158,6 +1159,7 @@ process_pa_data_to_key(krb5_context context,
 				   ctx->pk_init_ctx,
 				   etype,
 				   ctx->pk_nonce,
+				   &ctx->req_buffer,
 				   pa,
 				   key);
 #else
@@ -1218,7 +1220,6 @@ init_cred_loop(krb5_context context,
 
     ctx->pa_counter = 0;
     while (ctx->pa_counter < MAX_PA_COUNTER) {
-	krb5_data req;
 
 	ctx->pa_counter++;
 
@@ -1237,17 +1238,20 @@ init_cred_loop(krb5_context context,
 				    prompter, prompter_data);
 	if (ret)
 	    goto out;
-	ASN1_MALLOC_ENCODE(AS_REQ, req.data, req.length, 
+
+	krb5_data_free(&ctx->req_buffer);
+
+	ASN1_MALLOC_ENCODE(AS_REQ, 
+			   ctx->req_buffer.data, ctx->req_buffer.length, 
 			   &ctx->as_req, &len, ret);
 	if (ret)
 	    goto out;
-	if(len != req.length)
+	if(len != ctx->req_buffer.length)
 	    krb5_abortx(context, "internal error in ASN.1 encoder");
 
-	ret = krb5_sendto_kdc_flags (context, &req, 
+	ret = krb5_sendto_kdc_flags (context, &ctx->req_buffer, 
 				     &creds->client->realm, &resp,
 				     send_to_kdc_flags);
-	krb5_data_free(&req);
 	if (ret)
 	    goto out;
 
@@ -1336,6 +1340,7 @@ init_cred_loop(krb5_context context,
 	krb5_free_keyblock(context, key);
     }
 out:
+    krb5_data_free(&ctx->req_buffer);
     free_METHOD_DATA(&md);
     memset(&md, 0, sizeof(md));
 
