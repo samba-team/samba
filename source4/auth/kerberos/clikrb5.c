@@ -76,7 +76,7 @@
 #endif
 
 #if defined(HAVE_KRB5_PRINCIPAL2SALT) && defined(HAVE_KRB5_USE_ENCTYPE) && defined(HAVE_KRB5_STRING_TO_KEY) && defined(HAVE_KRB5_ENCRYPT_BLOCK)
- int create_kerberos_key_from_string_direct(krb5_context context,
+ int create_kerberos_key_from_string(krb5_context context,
 					krb5_principal host_princ,
 					krb5_data *password,
 					krb5_keyblock *key,
@@ -97,7 +97,7 @@
 	return ret;
 }
 #elif defined(HAVE_KRB5_GET_PW_SALT) && defined(HAVE_KRB5_STRING_TO_KEY_SALT)
- int create_kerberos_key_from_string_direct(krb5_context context,
+ int create_kerberos_key_from_string(krb5_context context,
 					krb5_principal host_princ,
 					krb5_data *password,
 					krb5_keyblock *key,
@@ -117,27 +117,6 @@
 #else
 #error UNKNOWN_CREATE_KEY_FUNCTIONS
 #endif
-
- int create_kerberos_key_from_string(krb5_context context,
-					krb5_principal host_princ,
-					krb5_data *password,
-					krb5_keyblock *key,
-					krb5_enctype enctype)
-{
-	krb5_principal salt_princ = NULL;
-	int ret;
-	/*
-	 * Check if we've determined that the KDC is salting keys for this
-	 * principal/enctype in a non-obvious way.  If it is, try to match
-	 * its behavior.
-	 */
-	salt_princ = kerberos_fetch_salt_princ_for_host_princ(context, host_princ, enctype);
-	ret = create_kerberos_key_from_string_direct(context, salt_princ ? salt_princ : host_princ, password, key, enctype);
-	if (salt_princ) {
-		krb5_free_principal(context, salt_princ);
-	}
-	return ret;
-}
 
 #if defined(HAVE_KRB5_GET_PERMITTED_ENCTYPES)
  krb5_error_code get_kerberos_allowed_etypes(krb5_context context, 
