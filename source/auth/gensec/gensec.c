@@ -210,6 +210,44 @@ const char **gensec_security_oids_from_ops(TALLOC_CTX *mem_ctx,
 
 
 /**
+ * Return OIDS from the security subsystems listed
+ */
+
+const char **gensec_security_oids_from_ops_wrapped(TALLOC_CTX *mem_ctx, 
+						   const struct gensec_security_ops_wrapper *wops)
+{
+	int i;
+	int j = 0;
+	int k;
+	const char **oid_list;
+	if (!wops) {
+		return NULL;
+	}
+	oid_list = talloc_array(mem_ctx, const char *, 1);
+	if (!oid_list) {
+		return NULL;
+	}
+	
+	for (i=0; wops[i].op; i++) {
+		if (!wops[i].op->oid) {
+			continue;
+		}
+		
+		for (k = 0; wops[i].op->oid[k]; k++) {
+			oid_list = talloc_realloc(mem_ctx, oid_list, const char *, j + 2);
+			if (!oid_list) {
+				return NULL;
+			}
+			oid_list[j] = wops[i].op->oid[k];
+			j++;
+		}
+	}
+	oid_list[j] = NULL;
+	return oid_list;
+}
+
+
+/**
  * Return all the security subsystems currently enabled in GENSEC 
  */
 
@@ -366,6 +404,7 @@ NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_security,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	gensec_want_feature(gensec_security, GENSEC_FEATURE_DCE_STYLE);
+	gensec_want_feature(gensec_security, GENSEC_FEATURE_ASYNC_REPLIES);
 	if (auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {
 		gensec_want_feature(gensec_security, GENSEC_FEATURE_SIGN);
 	} else if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
@@ -463,15 +502,9 @@ NTSTATUS gensec_unseal_packet(struct gensec_security *gensec_security,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 	if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
-		if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
-			return gensec_check_packet(gensec_security, mem_ctx, 
-						   data, length, 
-						   whole_pdu, pdu_length, 
-						   sig);
-		}
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-
+	
 	return gensec_security->ops->unseal_packet(gensec_security, mem_ctx, 
 						   data, length, 
 						   whole_pdu, pdu_length, 
@@ -504,15 +537,9 @@ NTSTATUS gensec_seal_packet(struct gensec_security *gensec_security,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 	if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
-		if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
-			return gensec_sign_packet(gensec_security, mem_ctx, 
-						  data, length, 
-						  whole_pdu, pdu_length, 
-						  sig);
-		}
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-
+	
 	return gensec_security->ops->seal_packet(gensec_security, mem_ctx, data, length, whole_pdu, pdu_length, sig);
 }
 
@@ -572,6 +599,10 @@ NTSTATUS gensec_session_key(struct gensec_security *gensec_security,
 	if (!gensec_security->ops->session_key) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
+	if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SESSION_KEY)) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+	
 	return gensec_security->ops->session_key(gensec_security, session_key);
 }
 
@@ -633,7 +664,12 @@ BOOL gensec_have_feature(struct gensec_security *gensec_security,
 	if (!gensec_security->ops->have_feature) {
 		return False;
 	}
-	return gensec_security->ops->have_feature(gensec_security, feature);
+	
+	/* Can only 'have' a feature if you already 'want'ed it */
+	if (gensec_security->want_features & feature) {
+		return gensec_security->ops->have_feature(gensec_security, feature);
+	}
+	return False;
 }
 
 /** 
