@@ -59,8 +59,6 @@ sub FileSave($$)
     close(FILE);
 }
 
-
-
 my($opt_help) = 0;
 my($opt_parse) = 0;
 my($opt_dump) = 0;
@@ -93,33 +91,37 @@ sub ShowHelp()
 print "perl IDL parser and code generator
 Copyright (C) tridge\@samba.org
 
-Usage: pidl [options] <idlfile>
+Usage: pidl [options] [--] <idlfile> [<idlfile>...]
 
-Options:
- --help                this help page
- --outputdir=OUTDIR    put output in OUTDIR/ [.]
- --parse               parse a idl file to a .pidl file
- --dump                dump a pidl file back to idl
- --uint-enums          don't use C enums, instead use uint* types
- --header[=OUTFILE]    create generic header file
- --ndr-header[=OUTFILE]create a C NDR-specific header file
- --ndr-parser[=OUTFILE]create a C NDR parser
- --tdr-header[=OUTFILE]create a C TDR header file
- --tdr-parser[=OUTFILE]create a C TDR parser
- --ejs[=OUTFILE]       create ejs wrapper file
- --client[=OUTFILE]    create a C NDR client
- --server[=OUTFILE]    create server boilerplate
- --template            print a template for a pipe
- --eth-parser[=OUTFILE]create ethereal parser and header
- --swig[=OUTFILE]      create swig wrapper file
- --diff                run diff on the idl and dumped output
- --keep[=OUTFILE]      keep the .pidl file
- --odl                 accept ODL input
- --dcom-proxy[=OUTFILE]create DCOM proxy (implies --odl)
- --com-header[=OUTFILE]create header for COM interfaces (implies --odl)
- --warn-compat         warn about incompatibility with other compilers
- --quiet               be quiet
- --verbose             be verbose
+Generic Options:
+ --help                  this help page
+ --outputdir=OUTDIR      put output in OUTDIR/ [.]
+ --parse                 parse a idl file to a .pidl file
+ --dump                  dump a pidl file back to idl
+ --diff                  run diff on the idl and dumped output
+ --keep[=OUTFILE]        keep the .pidl file
+ --odl                   accept ODL input
+ --warn-compat           warn about incompatibility with other compilers
+ --quiet                 be quiet
+ --verbose               be verbose
+
+Samba 4 output:
+ --header[=OUTFILE]      create generic header file
+ --uint-enums            don't use C enums, instead use uint* types
+ --ndr-header[=OUTFILE]  create a C NDR-specific header file
+ --ndr-parser[=OUTFILE]  create a C NDR parser
+ --client[=OUTFILE]      create a C NDR client
+ --tdr-header[=OUTFILE]  create a C TDR header file
+ --tdr-parser[=OUTFILE]  create a C TDR parser
+ --ejs[=OUTFILE]         create ejs wrapper file
+ --swig[=OUTFILE]        create swig wrapper file
+ --server[=OUTFILE]      create server boilerplate
+ --template              print a template for a pipe
+ --dcom-proxy[=OUTFILE]  create DCOM proxy (implies --odl)
+ --com-header[=OUTFILE]  create header for COM interfaces (implies --odl)
+
+Ethereal parsers:
+ --eth-parser[=OUTFILE]  create ethereal parser and header
 \n";
     exit(0);
 }
