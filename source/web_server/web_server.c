@@ -52,7 +52,11 @@ static void websrv_timeout(struct event_context *event_context,
 			   struct timeval t, void *private)
 {
 	struct websrv_context *web = talloc_get_type(private, struct websrv_context);
-	stream_terminate_connection(web->conn, "websrv_timeout: timed out");
+	struct stream_connection *conn = web->conn;
+	web->conn = NULL;
+	/* TODO: send a message to any running esp context on this connection
+	   to stop running */
+	stream_terminate_connection(conn, "websrv_timeout: timed out");	
 }
 
 /*
@@ -108,7 +112,17 @@ static void websrv_recv(struct stream_connection *conn, uint16_t flags)
 			web->input.partial.data[web->input.content_length] = 0;
 		}
 		EVENT_FD_NOT_READABLE(web->conn->event.fde);
+
+		/* the reference/unlink code here is quite subtle. It
+		 is needed because the rendering of the web-pages, and
+		 in particular the esp/ejs backend, is semi-async.  So
+		 we could well end up in the connection timeout code
+		 while inside http_process_input(), but we must not
+		 destroy the stack variables being used by that
+		 rendering process when we handle the timeout. */
+		talloc_reference(web->task, web);
 		http_process_input(web);
+		talloc_unlink(web->task, web);
 	}
 	return;
 

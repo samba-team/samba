@@ -501,6 +501,7 @@ static void esp_request(struct esp_state *esp, const char *url)
 		return;
 	}
 #endif
+
 	res = espProcessRequest(esp->req, url, buf, &emsg);
 	if (res != 0 && emsg) {
 		http_writeBlock(web, "<pre>", 5);
@@ -866,6 +867,12 @@ void http_process_input(struct websrv_context *web)
 		}
 	}
 
+	if (web->conn == NULL) {
+		/* the connection has been terminated above us, probably
+		   via a timeout */
+		goto internal_error;
+	}
+
 	if (!web->output.output_pending) {
 		http_output_headers(web);
 		EVENT_FD_WRITEABLE(web->conn->event.fde);
@@ -909,7 +916,9 @@ void http_process_input(struct websrv_context *web)
 internal_error:
 	mprSetCtx(esp);
 	talloc_free(esp);
-	http_error(web, 500, "Internal server error");
+	if (web->conn != NULL) {
+		http_error(web, 500, "Internal server error");
+	}
 	mprSetCtx(save_mpr_ctx);
 	ejs_restore_state(ejs_save);
 }
