@@ -85,6 +85,8 @@ static WERROR winreg_CloseKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 
 	talloc_free(h);
 
+	ZERO_STRUCTP(r->out.handle);
+
 	return WERR_OK;
 }
 
@@ -123,15 +125,10 @@ static WERROR winreg_DeleteKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		       struct winreg_DeleteKey *r)
 {
 	struct dcesrv_handle *h;
-	WERROR result;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
-
-	if (W_ERROR_IS_OK(result)) {
-		return reg_key_del((struct registry_key *)h->data, r->in.key.name);
-	}
-
-	return result;
+	
+	return reg_key_del((struct registry_key *)h->data, r->in.key.name);
 }
 
 
