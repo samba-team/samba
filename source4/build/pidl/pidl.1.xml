@@ -16,15 +16,25 @@
 	<cmdsynopsis>
 		<command>pidl</command>
 		<arg choice="opt">--help</arg>
-		<arg choice="opt">--output OUTNAME</arg>
+		<arg choice="opt">--outputdir OUTNAME</arg>
 		<arg choice="opt">--parse</arg>
 		<arg choice="opt">--dump</arg>
+		<arg choice="opt">--ndr-header[=OUTPUT]</arg>
 		<arg choice="opt">--header[=OUTPUT]</arg>
-		<arg choice="opt">--parser[=OUTPUT]</arg>
+		<arg choice="opt">--ejs[=OUTPUT]</arg>
+		<arg choice="opt">--swig[=OUTPUT]</arg>
+		<arg choice="opt">--uint-enums</arg>
+		<arg choice="opt">--ndr-parser[=OUTPUT]</arg>
+		<arg choice="opt">--client</arg>
 		<arg choice="opt">--server</arg>
+		<arg choice="opt">--dcom-proxy</arg>
+		<arg choice="opt">--com-header</arg>
+		<arg choice="opt">--odl</arg>
+		<arg choice="opt">--warn-compat</arg>
+		<arg choice="opt">--quiet</arg>
+		<arg choice="opt">--verbose</arg>
 		<arg choice="opt">--template</arg>
 		<arg choice="opt">--eth-parser[=OUTPUT]</arg>
-		<arg choice="opt">--eth-header[=OUTPUT]</arg>
 		<arg choice="opt">--diff</arg>
 		<arg choice="opt">--keep</arg>
 		<arg choice="req">idlfile</arg>
@@ -76,11 +86,9 @@
 		</varlistentry>
 		
 		<varlistentry>
-		<term>--output OUTNAME</term>
-		<listitem><para>Write output files to OUTNAME.*, e.g. 
-				OUTNAME.pidl. If --output is not used, the name of 
-				the input IDL file is used without the extension and the dot 
-				before the extension.
+		<term>--outputdir OUTNAME</term>
+		<listitem><para>Write output files to the specified directory. 
+				Defaults to the current directory.
 		</para></listitem>
 		</varlistentry>
 		
@@ -101,15 +109,20 @@
 		<varlistentry>
 		<term>--header</term>
 		<listitem><para>
-				Generate a C header file for the specified interface. File will be named OUTNAME.h.</para></listitem>
+				Generate a C header file for the specified interface. Filename defaults to OUTNAME.h.</para></listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>--ndr-header</term>
+		<listitem><para>
+				Generate a C header file with the prototypes for the NDR parsers. Filename defaults to ndr_OUTNAME.h.</para></listitem>
+		</varlistentry>
 
 		<varlistentry>
-		<term>--parser</term>
+		<term>--ndr-parser</term>
 		<listitem><para>
-				Generate a C file capable of parsing data sent using the interface. 
-				File will be named OUTNAME.c.
+				Generate a C file containing NDR parsers. 
+				Filename defaults to ndr_OUTNAME.c.
 		</para></listitem>
 		</varlistentry>
 
@@ -118,7 +131,7 @@
 		<term>--server</term>
 		<listitem><para>
 		Generate boilerplate for the RPC server that implements 
-		the interface. Generates OUTNAME_s.c</para></listitem>
+		the interface. Filename defaults to ndr_OUTNAME_s.c</para></listitem>
 		</varlistentry>
 
 
@@ -134,16 +147,15 @@
 		<varlistentry>
 		<term>--eth-parser</term>
 		<listitem><para>
-		Generate an Ethereal dissector (in C) for the interface. Output will 
-		be written to packet-dcerpc-OUTNAME.c.
-		</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>--eth-header</term>
-		<listitem><para>
-		Generate a header file for the Ethereal dissector. Output will 
-		be written to packet-dcerpc-OUTNAME.h.
+		Generate an Ethereal dissector (in C) for the interface. Filename
+		defaults to packet-dcerpc-OUTNAME.c. 
+		</para>
+	
+		<para>Pidl will read additional data 
+			from an ethereal conformance file if present. Such a file should 
+			have the same location as the IDL file but with the extension 
+			<quote>cnf</quote> rather then <quote>idl</quote>. See 
+			below for details on the format of this file.
 		</para></listitem>
 		</varlistentry>
 
@@ -167,12 +179,9 @@
 </refsect1>
 
 <refsect1>
-	<title>SYNTAX</title>
+	<title>IDL SYNTAX</title>
 
 	<para>IDL files are always preprocessed using the C preprocessor.</para>
-
-	<para>Each IDL file describes exactly one interface. Interfaces 
-		can contain several C-like function definitions.</para>
 
 	<para>Pretty much everything in an interface (the interface itself,
 		functions, parameters) can have attributes (or properties 
@@ -187,29 +196,6 @@
 
 	<para>C-style comments can be used.</para>
 	
-</refsect1>
-
-<refsect1>
-	<title>MIDL TYPES</title>
-
-<para>
-pidl uses slightly different types to midl by default. The following
-defines in your MS IDL may make things easier to use the same IDL on
-both platforms.
-</para>
-
-<programlisting>
-#define unistr [string] wchar_t *
-#define uint8 char
-#define uint16 short
-#define uint32 long
-#define HYPER_T hyper
-</programlisting>
-
-<para>
-	Let's look at the multiple ways you can encode an array.
-</para>
-
 <refsect2>
 	<title>CONFORMANT ARRAYS</title>
 
@@ -286,7 +272,6 @@ pidl takes a different approach, and writes it like this:
 <refsect2>
 	<title>VARYING ARRAYS</title>
 
-
 <para>
 A varying array looks like this:
 </para>
@@ -356,6 +341,9 @@ embedded structures in security descriptors and spoolss.
 </para>
 
 </refsect2>
+
+<para>This section is by no means complete. See the OpenGroup and MSDN 
+	documentation for additional information.</para>
 </refsect1>
 
 <refsect1>
@@ -371,13 +359,6 @@ embedded structures in security descriptors and spoolss.
 		<title>Typelibs (.tlb files)</title>
 
 		<!-- FIXME -->
-	</refsect2>
-
-	<refsect2>
-		<title>strings</title>
-
-		<para>Strings in pidl are a data type rather then an attribute.</para>
-		<!--FIXME-->
 	</refsect2>
 
 	<refsect2>
@@ -426,9 +407,7 @@ The [value(expression)] property is a pidl extension that allows you
 to specify the value of a field when it is put on the wire. This
 allows fields that always have a well-known value to be automatically
 filled in, thus making the API more programmer friendly. The
-expression can be any C expression, although if you refer to variables
-in the current structure you will need to dereference them with
-r->. See samr_Name as a good example.
+expression can be any C expression.
 		</para></listitem>
 	</varlistentry>
 		
@@ -469,10 +448,12 @@ spoolss structures.
 		</para></listitem>
 	</varlistentry>
 
-	<varlistentry><term>align</term>
+	<varlistentry><term>charset(name)</term>
 		<listitem><para>
-				Force the alignment of the field this attribute is placed 
-				on to the number of bytes specified.
+				Specify that the array or string uses the specified 
+				charset. If this attribute is specified, pidl will 
+				take care of converting the character data from this format 
+				to the host format. Commonly used values are UCS2, DOS and UTF8.
 		</para></listitem>
 	</varlistentry>
 </variablelist>
@@ -488,6 +469,81 @@ spoolss structures.
 </refsect1>
 
 <refsect1>
+	<title>ETHEREAL CONFORMANCE FILES</title>
+
+<para>
+Pidl needs additional data for ethereal output. This data is read from 
+so-called conformance files. This section describes the format of these 
+files.</para>
+
+<para>
+Conformance files are simple text files with a single command on each line.
+Empty lines and lines starting with a '#' character are ignored.
+Arguments to commands are seperated by spaces.
+</para>
+
+<para>
+The following commands are currently supported:
+</para>
+
+<variablelist>
+
+<varlistentry>
+	<term>TYPE name dissector ft_type base_type mask valsstring alignment</term>
+	<listitem><para>FIXME</para></listitem>
+</varlistentry>
+
+<varlistentry>
+	<term>NOEMIT type</term>
+	<listitem><para>
+			Suppress emitting a dissect_type function for the specified type
+	</para></listitem>
+</varlistentry>
+
+<varlistentry>
+	<term>PARAM_VALUE type param</term>
+	<listitem><para>
+		FIXME
+	</para></listitem>
+</varlistentry>
+
+<varlistentry>
+	<term>HF_FIELD hf title filter ft_type base_type valsstring mask blurb</term>
+	<listitem><para>
+	FIXME
+	</para></listitem>
+</varlistentry>
+
+<varlistentry>
+	<term>HF_RENAME old_hf_name new_hf_name</term>
+	<listitem><para>FIXME</para></listitem>
+</varlistentry>
+
+<varlistentry>
+	<term>STRIP_PREFIX prefix</term>
+	<listitem><para>	FIXME</para></listitem>
+</varlistentry>
+	
+<varlistentry>
+	<term>PROTOCOL longname shortname filtername</term>
+	<listitem><para>FIXME</para></listitem>
+</varlistentry>
+
+<varlistentry>
+	<term>FIELD_DESCRIPTION field desc</term>
+	<listitem><para>FIXME</para></listitem>
+</varlistentry>
+
+<varlistentry>
+	<term>IMPORT dissector code...</term>
+	<listitem><para>FIXME</para></listitem>
+</varlistentry>
+
+</variablelist>
+
+</refsect1>
+
+<refsect1>
 	<title>VERSION</title>
 
 	<para>This man page is correct for version 4.0 of the Samba suite.</para>
@@ -496,7 +552,7 @@ spoolss structures.
 <refsect1>
 	<title>SEE ALSO</title>
 
-	<para><ulink url="http://msdn.microsoft.com/library/en-us/rpc/rpc/field_attributes.asp">Field Attributes [Remote Procedure Call]</ulink>, ethereal</para>
+	<para><ulink url="http://msdn.microsoft.com/library/en-us/rpc/rpc/field_attributes.asp">Field Attributes [Remote Procedure Call]</ulink>, <ulink url="http://wiki.ethereal.com/DCE/RPC">Ethereal Wiki on DCE/RPC</ulink>.</para>
 
 </refsect1>
 
@@ -508,7 +564,7 @@ spoolss structures.
 	<para>pidl was written by Andrew Tridgell, Stefan Metzmacher, Tim 
 		Potter and Jelmer Vernooij. </para>
 
-	<para>This manpage was written by Andrew Tridgell and Jelmer Vernooij. </para>
+	<para>This manpage was written by Jelmer Vernooij, partially based on the original pidl README by Andrew Tridgell. </para>
 	
 </refsect1>
 
