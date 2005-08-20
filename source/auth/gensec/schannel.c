@@ -236,6 +236,12 @@ static BOOL schannel_have_feature(struct gensec_security *gensec_security,
 		       GENSEC_FEATURE_SEAL)) {
 		return True;
 	}
+	if (feature & GENSEC_FEATURE_DCE_STYLE) {
+		return True;
+	}
+	if (feature & GENSEC_FEATURE_ASYNC_REPLIES) {
+		return True;
+	}
 	return False;
 }
 

@@ -394,60 +394,74 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 	return NT_STATUS_INVALID_PARAMETER;
 }
 
-/** create a client negTokenInit 
+/** create a negTokenInit 
  *
- * This is the case, where the client is the first one who sends data
+ * This is the same packet, no matter if the client or server sends it first, but it is always the first packet
 */
-
-static NTSTATUS gensec_spnego_client_negTokenInit(struct gensec_security *gensec_security, 
+static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec_security, 
 						  struct spnego_state *spnego_state,
 						  TALLOC_CTX *out_mem_ctx, 
 						  const DATA_BLOB in, DATA_BLOB *out) 
 {
-	DATA_BLOB null_data_blob = data_blob(NULL, 0);
-	NTSTATUS nt_status;
+	int i;
+	NTSTATUS nt_status = NT_STATUS_INVALID_PARAMETER;
+	DATA_BLOB null_data_blob = data_blob(NULL,0);
 	const char **mechTypes = NULL;
 	DATA_BLOB unwrapped_out = data_blob(NULL, 0);
 
 	mechTypes = gensec_security_oids(out_mem_ctx, GENSEC_OID_SPNEGO);
 
-	if (!mechTypes) {
-		DEBUG(1, ("no GENSEC OID backends available\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	nt_status = gensec_subcontext_start(spnego_state, 
-					    gensec_security, 
-					    &spnego_state->sub_sec_security);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
-	/* select our preferred mech */
-	nt_status = gensec_start_mech_by_oid(spnego_state->sub_sec_security,
-					     mechTypes[0]);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(spnego_state->sub_sec_security);
-		spnego_state->sub_sec_security = NULL;
-		return nt_status;
-	}
-	nt_status = gensec_update(spnego_state->sub_sec_security,
-				  out_mem_ctx, in, &unwrapped_out);
-	if (NT_STATUS_IS_OK(nt_status) || NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+	const struct gensec_security_ops_wrapper *all_sec
+		= gensec_security_by_oid_list(out_mem_ctx, 
+					      mechTypes,
+					      GENSEC_OID_SPNEGO);
+	for (i=0; all_sec && all_sec[i].op; i++) {
 		struct spnego_data spnego_out;
+		nt_status = gensec_subcontext_start(spnego_state,
+						    gensec_security,
+						    &spnego_state->sub_sec_security);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+		/* select the sub context */
+		nt_status = gensec_start_mech_by_ops(spnego_state->sub_sec_security,
+						     all_sec[i].op);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			talloc_free(spnego_state->sub_sec_security);
+			spnego_state->sub_sec_security = NULL;
+			continue;
+		}
+
+		nt_status = gensec_update(spnego_state->sub_sec_security,
+					  out_mem_ctx, 
+					  null_data_blob,
+					  &unwrapped_out);
+
+		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_PARAMETER)
+		    && !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) 
+		    && !NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(3, ("SPNEGO(%s) creating NEG_TOKEN_INIT failed: %s\n", 
+				  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
+			talloc_free(spnego_state->sub_sec_security);
+			spnego_state->sub_sec_security = NULL;
+			/* Pretend we never started it (lets the first run find some incompatible demand) */
+
+			continue;
+		}
 		spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
-		spnego_out.negTokenInit.mechTypes = mechTypes;
+		spnego_out.negTokenInit.mechTypes = gensec_security_oids_from_ops_wrapped(out_mem_ctx, 
+											  &all_sec[i]);
 		spnego_out.negTokenInit.reqFlags = 0;
 		spnego_out.negTokenInit.mechListMIC = null_data_blob;
 		spnego_out.negTokenInit.mechToken = unwrapped_out;
 		
 		if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
-			DEBUG(1, ("Failed to write SPNEGO reply to NEG_TOKEN_INIT\n"));
+			DEBUG(1, ("Failed to write NEG_TOKEN_INIT\n"));
 				return NT_STATUS_INVALID_PARAMETER;
 		}
 		
 		/* set next state */
 		spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
-		spnego_state->state_position = SPNEGO_CLIENT_TARG;
 		
 		if (NT_STATUS_IS_OK(nt_status)) {
 			spnego_state->no_response_expected = True;
@@ -535,8 +549,8 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 				     out_mem_ctx, in, out);
 	case SPNEGO_SERVER_START:
 	{
+		NTSTATUS nt_status;
 		if (in.length) {
-			NTSTATUS nt_status;
 
 			len = spnego_read_data(in, &spnego);
 			if (len == -1) {
@@ -571,25 +585,9 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			
 			return nt_status;
 		} else {
-			const char **mechlist = gensec_security_oids(out_mem_ctx, GENSEC_OID_SPNEGO);
-
-			spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
-			spnego_out.negTokenInit.mechTypes = mechlist;
-			spnego_out.negTokenInit.reqFlags = 0;
-			spnego_out.negTokenInit.mechListMIC
-				= data_blob_string_const(talloc_asprintf(out_mem_ctx, "%s$@%s", lp_netbios_name(), lp_realm()));
-			spnego_out.negTokenInit.mechToken = data_blob(NULL, 0);
-			
-			if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
-				DEBUG(1, ("Failed to write SPNEGO reply to NEG_TOKEN_INIT\n"));
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-			
-			/* set next state */
-			spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
 			spnego_state->state_position = SPNEGO_SERVER_TARG;
-			
-			return NT_STATUS_MORE_PROCESSING_REQUIRED;
+			return gensec_spnego_create_negTokenInit(gensec_security, spnego_state, 
+								 out_mem_ctx, in, out);
 		}
 	}
 	
@@ -602,7 +600,8 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 
 		if (!in.length) {
 			/* client to produce negTokenInit */
-			return gensec_spnego_client_negTokenInit(gensec_security, spnego_state, 
+			spnego_state->state_position = SPNEGO_CLIENT_TARG;
+			return gensec_spnego_create_negTokenInit(gensec_security, spnego_state, 
 								 out_mem_ctx, in, out);
 		}
 		

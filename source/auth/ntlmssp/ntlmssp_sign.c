@@ -49,7 +49,7 @@ static void calc_ntlmv2_key(TALLOC_CTX *mem_ctx,
 	*subkey = data_blob_talloc(mem_ctx, NULL, 16);
 	MD5Init(&ctx3);
 	MD5Update(&ctx3, session_key.data, session_key.length);
-	MD5Update(&ctx3, constant, strlen(constant)+1);
+	MD5Update(&ctx3, (const uint8_t *)constant, strlen(constant)+1);
 	MD5Final(subkey->data, &ctx3);
 }
 
@@ -131,21 +131,6 @@ NTSTATUS gensec_ntlmssp_sign_packet(struct gensec_security *gensec_security,
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
 
-	if (!gensec_ntlmssp_state->session_key.length) {
-		DEBUG(3, ("NO session key, cannot check sign packet\n"));
-		return NT_STATUS_NO_USER_SESSION_KEY;
-	}
-	
-	if (!(gensec_security->want_features & GENSEC_FEATURE_SIGN)) {
-		DEBUG(3, ("GENSEC Signing not requested - cannot sign packet!\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (!gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) {
-		DEBUG(3, ("NTLMSSP Signing not negotiated - cannot sign packet!\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	
 	return ntlmssp_make_packet_signature(gensec_ntlmssp_state, sig_mem_ctx, 
 					     data, length, 
 					     whole_pdu, pdu_length, 
@@ -171,11 +156,6 @@ NTSTATUS gensec_ntlmssp_check_packet(struct gensec_security *gensec_security,
 	if (!gensec_ntlmssp_state->session_key.length) {
 		DEBUG(3, ("NO session key, cannot check packet signature\n"));
 		return NT_STATUS_NO_USER_SESSION_KEY;
-	}
-
-	if (!(gensec_security->want_features & (GENSEC_FEATURE_SEAL|GENSEC_FEATURE_SIGN))) {
-		DEBUG(3, ("GENSEC Signing/Sealing not requested - cannot check packet!\n"));
-		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (sig->length < 8) {
@@ -244,17 +224,6 @@ NTSTATUS gensec_ntlmssp_seal_packet(struct gensec_security *gensec_security,
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
-	if (!(gensec_security->want_features & GENSEC_FEATURE_SEAL)) {
-		DEBUG(3, ("GENSEC Sealing not requested - cannot seal packet!\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (!gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
-		DEBUG(3, ("NTLMSSP Sealing not negotiated - cannot seal packet!\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-
 	DEBUG(10,("ntlmssp_seal_data: seal\n"));
 	dump_data_pw("ntlmssp clear data\n", data, length);
 	if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
@@ -317,43 +286,14 @@ NTSTATUS gensec_ntlmssp_unseal_packet(struct gensec_security *gensec_security,
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
-	if (!(gensec_security->want_features & GENSEC_FEATURE_SEAL)) {
-		DEBUG(3, ("GENSEC Sealing not requested - cannot unseal packet!\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
 	dump_data_pw("ntlmssp sealed data\n", data, length);
 	if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		arcfour_crypt_sbox(gensec_ntlmssp_state->crypt.ntlm2.recv_seal_arcfour_state, data, length);
-
-		nt_status = ntlmssp_make_packet_signature(gensec_ntlmssp_state, sig_mem_ctx, 
-							  data, length, 
-							  whole_pdu, pdu_length, 
-							  NTLMSSP_RECEIVE, &local_sig, True);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return nt_status;
-		}
-
-		if (local_sig.length != sig->length ||
-		    memcmp(local_sig.data, 
-			   sig->data, sig->length) != 0) {
-			DEBUG(5, ("BAD SIG NTLM2: wanted signature of\n"));
-			dump_data(5, local_sig.data, local_sig.length);
-			
-			DEBUG(5, ("BAD SIG: got signature of\n"));
-			dump_data(5, sig->data, sig->length);
-			
-			DEBUG(0, ("NTLMSSP NTLM2 packet check failed due to invalid signature!\n"));
-			return NT_STATUS_ACCESS_DENIED;
-		}
-
-		dump_data_pw("ntlmssp clear data\n", data, length);
-		return NT_STATUS_OK;
 	} else {
 		arcfour_crypt_sbox(gensec_ntlmssp_state->crypt.ntlm.arcfour_state, data, length);
-		dump_data_pw("ntlmssp clear data\n", data, length);
-		return gensec_ntlmssp_check_packet(gensec_security, sig_mem_ctx, data, length, whole_pdu, pdu_length, sig);
 	}
+	dump_data_pw("ntlmssp clear data\n", data, length);
+	return gensec_ntlmssp_check_packet(gensec_security, sig_mem_ctx, data, length, whole_pdu, pdu_length, sig);
 }
 
 /**
@@ -406,11 +346,18 @@ NTSTATUS ntlmssp_sign_init(struct gensec_ntlmssp_state *gensec_ntlmssp_state)
 		NT_STATUS_HAVE_NO_MEMORY(gensec_ntlmssp_state->crypt.ntlm2.send_seal_arcfour_state);
 
 		/**
-		   Weaken NTLMSSP keys to cope with down-level clients, servers and export restrictions.
+		   Weaken NTLMSSP keys to cope with down-level
+		   clients, servers and export restrictions.
 		   
-		   We probably should have some parameters to control this, once we get NTLM2 working.
+		   We probably should have some parameters to control
+		   this, once we get NTLM2 working.
 		*/
 
+		/* Key weakening was not performed on the master key
+		 * for NTLM2 (in ntlmssp_weaken_keys()), but must be
+		 * done on the encryption subkeys only.  That is why
+		 * we don't have this code for the ntlmv1 case.
+		 */
 
 		if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_128) {
 			
@@ -500,35 +447,34 @@ NTSTATUS gensec_ntlmssp_wrap(struct gensec_security *gensec_security,
 	DATA_BLOB sig;
 	NTSTATUS nt_status;
 
-	if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
+	if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
 
 		*out = data_blob_talloc(sig_mem_ctx, NULL, in->length + NTLMSSP_SIG_SIZE);
 		memcpy(out->data + NTLMSSP_SIG_SIZE, in->data, in->length);
-
+		
 	        nt_status = gensec_ntlmssp_seal_packet(gensec_security, sig_mem_ctx, 
 						       out->data + NTLMSSP_SIG_SIZE, 
 						       out->length - NTLMSSP_SIG_SIZE, 
 						       out->data + NTLMSSP_SIG_SIZE, 
 						       out->length - NTLMSSP_SIG_SIZE, 
 						       &sig);
-
+		
 		if (NT_STATUS_IS_OK(nt_status)) {
 			memcpy(out->data, sig.data, NTLMSSP_SIG_SIZE);
 		}
 		return nt_status;
 
-	} else if ((gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) 
-		   || (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN)) {
+	} else if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
 
 		*out = data_blob_talloc(sig_mem_ctx, NULL, in->length + NTLMSSP_SIG_SIZE);
 		memcpy(out->data + NTLMSSP_SIG_SIZE, in->data, in->length);
 
 	        nt_status = gensec_ntlmssp_sign_packet(gensec_security, sig_mem_ctx, 
-						out->data + NTLMSSP_SIG_SIZE, 
-						out->length - NTLMSSP_SIG_SIZE, 
-						out->data + NTLMSSP_SIG_SIZE, 
-						out->length - NTLMSSP_SIG_SIZE, 
-						&sig);
+						       out->data + NTLMSSP_SIG_SIZE, 
+						       out->length - NTLMSSP_SIG_SIZE, 
+						       out->data + NTLMSSP_SIG_SIZE, 
+						       out->length - NTLMSSP_SIG_SIZE, 
+						       &sig);
 
 		if (NT_STATUS_IS_OK(nt_status)) {
 			memcpy(out->data, sig.data, NTLMSSP_SIG_SIZE);
@@ -550,7 +496,7 @@ NTSTATUS gensec_ntlmssp_unwrap(struct gensec_security *gensec_security,
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
 	DATA_BLOB sig;
 
-	if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
+	if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
 		if (in->length < NTLMSSP_SIG_SIZE) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -564,8 +510,7 @@ NTSTATUS gensec_ntlmssp_unwrap(struct gensec_security *gensec_security,
 						    out->data, out->length, 
 						    &sig);
 						  
-	} else if ((gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) 
-		   || (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN)) {
+	} else if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
 		if (in->length < NTLMSSP_SIG_SIZE) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -575,9 +520,9 @@ NTSTATUS gensec_ntlmssp_unwrap(struct gensec_security *gensec_security,
 		*out = data_blob_talloc(sig_mem_ctx, in->data + NTLMSSP_SIG_SIZE, in->length - NTLMSSP_SIG_SIZE);
 		
 	        return gensec_ntlmssp_check_packet(gensec_security, sig_mem_ctx, 
-					    out->data, out->length, 
-					    out->data, out->length, 
-					    &sig);
+						   out->data, out->length, 
+						   out->data, out->length, 
+						   &sig);
 	} else {
 		*out = *in;
 		return NT_STATUS_OK;

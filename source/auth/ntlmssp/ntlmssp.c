@@ -185,25 +185,6 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 		return status;
 	}
 	
-	gensec_ntlmssp_state->have_features = 0;
-
-	if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) {
-		gensec_ntlmssp_state->have_features |= GENSEC_FEATURE_SIGN;
-	}
-
-	if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
-		gensec_ntlmssp_state->have_features |= GENSEC_FEATURE_SEAL;
-	}
-
-	if (gensec_ntlmssp_state->session_key.data) {
-		gensec_ntlmssp_state->have_features |= GENSEC_FEATURE_SESSION_KEY;
-	}
-
-	/* only NTLMv2 can handle async replies */
-	if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
-		gensec_ntlmssp_state->have_features |= GENSEC_FEATURE_ASYNC_REPLIES;
-	}
-
 	return status;
 }
 
@@ -317,10 +298,35 @@ static BOOL gensec_ntlmssp_have_feature(struct gensec_security *gensec_security,
 					uint32_t feature)
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
-	if (gensec_ntlmssp_state->have_features & feature) {
+	if (feature & GENSEC_FEATURE_SIGN) {
+		if (!gensec_ntlmssp_state->session_key.length) {
+			return False;
+		}
+		if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) {
+			return True;
+		}
+	}
+	if (feature & GENSEC_FEATURE_SEAL) {
+		if (!gensec_ntlmssp_state->session_key.length) {
+			return False;
+		}
+		if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
+			return True;
+		}
+	}
+	if (feature & GENSEC_FEATURE_SESSION_KEY) {
+		if (gensec_ntlmssp_state->session_key.length) {
+			return True;
+		}
+	}
+	if (feature & GENSEC_FEATURE_DCE_STYLE) {
 		return True;
 	}
-
+	if (feature & GENSEC_FEATURE_ASYNC_REPLIES) {
+		if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
+			return True;
+		}
+	}
 	return False;
 }
 
@@ -335,7 +341,6 @@ NTSTATUS gensec_ntlmssp_start(struct gensec_security *gensec_security)
 
 	gensec_ntlmssp_state->auth_context = NULL;
 	gensec_ntlmssp_state->server_info = NULL;
-	gensec_ntlmssp_state->have_features = 0;
 
 	gensec_security->private_data = gensec_ntlmssp_state;
 	return NT_STATUS_OK;
