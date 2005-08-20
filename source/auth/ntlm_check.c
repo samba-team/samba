@@ -221,31 +221,16 @@ NTSTATUS hash_password_check(TALLOC_CTX *mem_ctx,
 			     const struct samr_Password *client_lanman,
 			     const struct samr_Password *client_nt,
 			     const char *username, 
-			     const char *client_username, 
-			     const char *client_domain,
 			     const struct samr_Password *stored_lanman, 
-			     const struct samr_Password *stored_nt, 
-			     DATA_BLOB *user_sess_key, 
-			     DATA_BLOB *lm_sess_key)
+			     const struct samr_Password *stored_nt)
 {
 	if (stored_nt == NULL) {
 		DEBUG(3,("ntlm_password_check: NO NT password stored for user %s.\n", 
 			 username));
 	}
 
-	if (lm_sess_key) {
-		*lm_sess_key = data_blob(NULL, 0);
-	}
-	if (user_sess_key) {
-		*user_sess_key = data_blob(NULL, 0);
-	}
-
 	if (client_nt && stored_nt) {
 		if (memcmp(client_nt->hash, stored_nt->hash, sizeof(stored_nt->hash)) == 0) {
-			if (user_sess_key) {
-				*user_sess_key = data_blob_talloc(mem_ctx, NULL, 16);
-				SMBsesskeygen_ntv1(stored_nt->hash, user_sess_key->data);
-			}
 			return NT_STATUS_OK;
 		} else {
 			DEBUG(3,("ntlm_password_check: Interactive logon: NT password check failed for user %s\n",
@@ -308,56 +293,30 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			 username));
 	}
 
-	if (lm_sess_key) {
-		*lm_sess_key = data_blob(NULL, 0);
-	}
-	if (user_sess_key) {
-		*user_sess_key = data_blob(NULL, 0);
-	}
+	*lm_sess_key = data_blob(NULL, 0);
+	*user_sess_key = data_blob(NULL, 0);
 
 	/* Check for cleartext netlogon. Used by Exchange 5.5. */
 	if (challenge->length == sizeof(zeros) && 
 	    (memcmp(challenge->data, zeros, challenge->length) == 0 )) {
+		struct samr_Password client_nt;
+		struct samr_Password client_lm;
+		uint8_t dospwd[14]; 
 
 		DEBUG(4,("ntlm_password_check: checking plaintext passwords for user %s\n",
 			 username));
-		if (stored_nt && nt_response->length) {
-			uint8_t pwhash[16];
-			mdfour(pwhash, nt_response->data, nt_response->length);
-			if (memcmp(pwhash, stored_nt->hash, sizeof(pwhash)) == 0) {
-				return NT_STATUS_OK;
-			} else {
-				DEBUG(3,("ntlm_password_check: NT (Unicode) plaintext password check failed for user %s\n",
-					 username));
-				return NT_STATUS_WRONG_PASSWORD;
-			}
-
-		} else if (!lp_lanman_auth()) {
-			DEBUG(3,("ntlm_password_check: (plaintext password check) LANMAN passwords NOT PERMITTED for user %s\n",
-				 username));
-
-		} else if (stored_lanman && lm_response->length) {
-			uint8_t dospwd[14]; 
-			uint8_t p16[16]; 
-			ZERO_STRUCT(dospwd);
-			
-			memcpy(dospwd, lm_response->data, MIN(lm_response->length, sizeof(dospwd)));
-			/* Only the fisrt 14 chars are considered, password need not be null terminated. */
-
-			/* we *might* need to upper-case the string here */
-			E_P16((const uint8_t *)dospwd, p16);
-
-			if (memcmp(p16, stored_lanman->hash, sizeof(p16)) == 0) {
-				return NT_STATUS_OK;
-			} else {
-				DEBUG(3,("ntlm_password_check: LANMAN (ASCII) plaintext password check failed for user %s\n",
-					 username));
-				return NT_STATUS_WRONG_PASSWORD;
-			}
-		} else {
-			DEBUG(3, ("Plaintext authentication for user %s attempted, but neither NT nor LM passwords available\n", username));
-			return NT_STATUS_WRONG_PASSWORD;
-		}
+		mdfour(client_nt.hash, nt_response->data, nt_response->length);
+		ZERO_STRUCT(dospwd);
+		
+		memcpy(dospwd, lm_response->data, MIN(lm_response->length, sizeof(dospwd)));
+		/* Only the fisrt 14 chars are considered, password need not be null terminated. */
+		
+		/* we *might* need to upper-case the string here */
+		E_P16((const uint8_t *)dospwd, client_lm.hash);
+		
+		return hash_password_check(mem_ctx, &client_lm, &client_nt, 
+					   username,  
+					   stored_lanman, stored_nt);
 	}
 
 	if (nt_response->length != 0 && nt_response->length < 24) {
@@ -377,11 +336,9 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 					 client_domain,
 					 False,
 					 user_sess_key)) {
-			if (lm_sess_key) {
-				*lm_sess_key = *user_sess_key;
-				if (user_sess_key->length) {
-					lm_sess_key->length = 8;
-				}
+			*lm_sess_key = *user_sess_key;
+			if (user_sess_key->length) {
+				lm_sess_key->length = 8;
 			}
 			return NT_STATUS_OK;
 		}
@@ -394,11 +351,9 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 					 client_domain,
 					 True,
 					 user_sess_key)) {
-			if (lm_sess_key) {
-				*lm_sess_key = *user_sess_key;
-				if (user_sess_key->length) {
-					lm_sess_key->length = 8;
-				}
+			*lm_sess_key = *user_sess_key;
+			if (user_sess_key->length) {
+				lm_sess_key->length = 8;
 			}
 			return NT_STATUS_OK;
 		}
@@ -411,11 +366,9 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 					 "",
 					 False,
 					 user_sess_key)) {
-			if (lm_sess_key) {
-				*lm_sess_key = *user_sess_key;
-				if (user_sess_key->length) {
-					lm_sess_key->length = 8;
-				}
+			*lm_sess_key = *user_sess_key;
+			if (user_sess_key->length) {
+				lm_sess_key->length = 8;
 			}
 			return NT_STATUS_OK;
 		} else {
@@ -517,15 +470,13 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 					    client_domain,
 					    False,
 					    user_sess_key);
-		} else if (user_sess_key) {
+		} else {
 			/* Otherwise, use the LMv2 session key */
 			*user_sess_key = tmp_sess_key;
 		}
-		if (user_sess_key && lm_sess_key) {
-			*lm_sess_key = *user_sess_key;
-			if (user_sess_key->length) {
-				lm_sess_key->length = 8;
-			}
+		*lm_sess_key = *user_sess_key;
+		if (user_sess_key->length) {
+			lm_sess_key->length = 8;
 		}
 		return NT_STATUS_OK;
 	}
@@ -550,15 +501,13 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 					    client_domain,
 					    True,
 					    user_sess_key);
-		} else if (user_sess_key) {
+		} else {
 			/* Otherwise, use the LMv2 session key */
 			*user_sess_key = tmp_sess_key;
 		}
-		if (user_sess_key && lm_sess_key) {
-			*lm_sess_key = *user_sess_key;
-			if (user_sess_key->length) {
-				lm_sess_key->length = 8;
-			}
+		*lm_sess_key = *user_sess_key;
+		if (user_sess_key->length) {
+			lm_sess_key->length = 8;
 		}
 		return NT_STATUS_OK;
 	}
@@ -583,15 +532,13 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 					    "",
 					    False,
 					    user_sess_key);
-		} else if (user_sess_key) {
+		} else {
 			/* Otherwise, use the LMv2 session key */
 			*user_sess_key = tmp_sess_key;
 		}
-		if (user_sess_key && lm_sess_key) {
-			*lm_sess_key = *user_sess_key;
-			if (user_sess_key->length) {
-				lm_sess_key->length = 8;
-			}
+		*lm_sess_key = *user_sess_key;
+		if (user_sess_key->length) {
+			lm_sess_key->length = 8;
 		}
 		return NT_STATUS_OK;
 	}
