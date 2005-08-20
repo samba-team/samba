@@ -199,7 +199,11 @@ sub HeaderType($$$)
 	}
 
 	if (has_property($e, "charset")) {
-		pidl "const char";
+		if ($e->{POINTERS} > 0) {
+			pidl "const char";
+		} else {
+			pidl "char";
+		}
 	} else {
 		pidl mapType($e->{TYPE});
 	}

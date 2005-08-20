@@ -1,5 +1,4 @@
-- True multiple dimension array / strings in arrays support (closely related to 
-	things specified above)
+- True multiple dimension array / strings in arrays support
 
 - compatibility mode for generating MIDL-readable data:
  - strip out pidl-specific properties
@@ -9,3 +8,4 @@
   a (regular) remote error occurs
  
 - support nested elements
+- fix stand-alone installation
