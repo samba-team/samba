@@ -1,145 +1,39 @@
 <%
-/******************************/
-/* server side AJAJ functions */
-libinclude("base.js");
-libinclude("winreg.js");
-libinclude("server_call.js");
-
-/* 
-   server side call to return a listing of elements in a winreg path
-*/
-function enum_path(binding, path) {
-	printf("enum_path(%s, %s)\n", binding, path);
-	var reg = winreg_init();
-	security_init(reg);
-
-	reg.credentials = session.authinfo.credentials;
-
-	var status = reg.connect(binding);
-	if (status.is_ok != true) {
-		printVars(status);
-		return undefined;
-	}
-	var list = winreg_enum_path(reg, path);
-	return list;
-}
-
-/* register a call for clients to make */
-var call = servCallObj();
-call.add('enum_path', enum_path);
-
-/* run the function that was asked for */
-call.run();
-
-  /***********************/
-  /* now the main page */
   page_header("columns", "ESP registry edit", "esptest"); 
 %>
 
 <script type="text/javascript" src="/scripting/client/encoder.js"></script>
 <script type="text/javascript" src="/scripting/client/call.js"></script>
+<script type="text/javascript" src="/scripting/client/regedit.js"></script>
 
 <h1>Registry Editor</h1>
 
-  <script type="text/javascript">
+<script type="text/javascript">
 
-function folder_list(fParent, list) {
-	var i;
-	fParent.populated = true;
-	fParent.removeAll();
-	for (i=0;i<list.length;i++) {
-		var fChild;
-		fChild = new QxTreeFolder(list[i]);
-		fParent.add(fChild);
-		fChild.binding = fParent.binding;
-		if (fParent.reg_path == '\\\\') {
-			fChild.reg_path = list[i];
-		} else {
-			fChild.reg_path = fParent.reg_path + '\\\\' + list[i];
-		}
-		fChild.add(new QxTreeFolder('Working ...'));
-		fChild.addEventListener("click", function() { 
-			var el = this; folder_click(el); 
-		});
-		fParent.setOpen(1);
-	}
-}
-
-function folder_click(node) {
-	if (!node.populated) {
-		server_call_url("@@request.REQUEST_URI", 'enum_path', 
-			    function(list) { folder_list(node, list); }, 
-			    node.binding, node.reg_path);
-	}
-}
-
-/* return a registry tree for the given server */
-function registry_tree(binding) {
-      var tree = new QxTree("registry: " + binding);
-      tree.binding = binding;
-      tree.reg_path = "\\\\";
-      tree.populated = false;
-      with(tree)
-      {
-        setBackgroundColor(255);
-        setBorder(QxBorder.presets.inset);
-        setOverflow("scroll");
-        setStyleProperty("padding", "2px");
-        setWidth(400);
-        setHeight(400);
-        setTop(20);
-      }
-      tree.addEventListener("click", function() { 
-	      var el = this; folder_click(el); 
-      });
-      return tree;
-}
-
-  window.application.main = function()
-  {
+/*** init the page for qooxdoo ***/
+window.application.main = function()
+{
+    var doc = this.getClientWindow().getDocument();
     var inlineWidget = new QxInline;
-    var fieldSet = new QxFieldSet("Registry");
-    var binding = "ncalrpc:";
+    var qwidget = new QxWidget;
+    qwidget.setHeight(800);
+    qwidget.setWidth("100%");
+    qwidget.setBorder(QxBorder.presets.groove);
 
-    with(fieldSet)
-    {
-	    setWidth("40%");
-	    setMinHeight(500);
-	    setBottom(48);
-	    setMinWidth(500);
-    };
+    var btn1 = new QxButton("Registry Editor");
+    btn1.set({ top: 20, left : 30 });
+    btn1.addEventListener("click", function() {
+	    var regedit = regedit_widget("ncalrpc:");
+	    qwidget.add(regedit);
+	    regedit.startup();
+    });
+    qwidget.add(btn1);
+    inlineWidget.add(qwidget);
+    doc.add(inlineWidget, "canvas");
+}
 
-    var gl = new QxGridLayout("auto,auto,auto,auto,auto", "100%");
-    gl.setEdge(0);
-    gl.setCellPaddingTop(3);
-    gl.setCellPaddingBottom(3);
+</script>
 
-    inlineWidget.add(fieldSet);
-
-    var t = registry_tree(binding);
-
-    function change_binding(e) {
-	    binding = e.getNewValue();
-    	    srv_printf("changed binding to %s\\n", binding);
-	    gl.remove(t);
-	    t = registry_tree(binding);
-	    gl.add(t, { row : 2, col : 1 });
-    }
-
-    var b = new QxTextField(binding);
-    b.addEventListener("changeText", change_binding);
-
-    gl.add(b, { row : 1, col : 1 });
-    gl.add(t, { row : 2, col : 1 });
-
-    fieldSet.add(gl);
-    inlineWidget.add(fieldSet);
-    this.getClientWindow().getDocument().add(inlineWidget, "canvas");
-  };
-
-  </script>
-
-
- <div id="canvas" style="overflow:hidden;position:static;margin-top:38px;margin-left:10px;margin-right:700px;width:700px"></div>
+<div id="canvas" style="overflow:hidden;position:static;margin-top:38px;margin-left:10px;margin-right:700px;width:700px"></div>
 
 <% page_footer(); %>
