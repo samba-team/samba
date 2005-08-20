@@ -32,7 +32,7 @@ enum deny_result {A_0=0, A_X=1, A_R=2, A_W=3, A_RW=5};
 
 static const char *denystr(int denymode)
 {
-	struct {
+	const struct {
 		int v;
 		const char *name; 
 	} deny_modes[] = {
@@ -52,7 +52,7 @@ static const char *denystr(int denymode)
 
 static const char *openstr(int mode)
 {
-	struct {
+	const struct {
 		int v;
 		const char *name; 
 	} open_modes[] = {
@@ -69,7 +69,7 @@ static const char *openstr(int mode)
 
 static const char *resultstr(enum deny_result res)
 {
-	struct {
+	const struct {
 		enum deny_result res;
 		const char *name; 
 	} results[] = {
