@@ -1,0 +1,35 @@
+<%
+/* 
+   server side AJAJ functions for registry editing. These go along
+   with scripting/client/regedit.js 
+*/
+libinclude("base.js");
+libinclude("winreg.js");
+libinclude("server_call.js");
+
+/* 
+   server side call to return a listing of elements in a winreg path
+*/
+function enum_path(binding, path) {
+	printf("enum_path(%s, %s)\n", binding, path);
+	var reg = winreg_init();
+	security_init(reg);
+
+	reg.credentials = session.authinfo.credentials;
+
+	var status = reg.connect(binding);
+	if (status.is_ok != true) {
+		printVars(status);
+		return undefined;
+	}
+	var list = winreg_enum_path(reg, path);
+	return list;
+}
+
+/* register a call for clients to make */
+var call = servCallObj();
+call.add('enum_path', enum_path);
+
+/* run the function that was asked for */
+call.run();
+%>
