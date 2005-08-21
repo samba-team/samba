@@ -9,6 +9,7 @@ include libnet/config.mk
 include auth/config.mk
 include nsswitch/config.mk
 include lib/basic.mk
+include lib/samba3/config.mk
 include lib/socket/config.mk
 include lib/charset/config.mk
 include lib/ldb/config.mk
