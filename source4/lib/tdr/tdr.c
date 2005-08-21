@@ -125,7 +125,7 @@ NTSTATUS tdr_print_uint16(struct tdr_print *tdr, const char *name, uint16_t *v)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS tdr_pull_uint32(struct tdr_pull *tdr, uint16_t *v)
+NTSTATUS tdr_pull_uint32(struct tdr_pull *tdr, uint32_t *v)
 {
 	TDR_PULL_NEED_BYTES(tdr, 4);
 	*v = TDR_IVAL(tdr, tdr->offset);
@@ -133,7 +133,7 @@ NTSTATUS tdr_pull_uint32(struct tdr_pull *tdr, uint16_t *v)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS tdr_push_uint32(struct tdr_push *tdr, const uint16_t *v)
+NTSTATUS tdr_push_uint32(struct tdr_push *tdr, const uint32_t *v)
 {
 	TDR_PUSH_NEED_BYTES(tdr, 4);
 	TDR_SIVAL(tdr, tdr->offset, *v);
@@ -147,21 +147,24 @@ NTSTATUS tdr_print_uint32(struct tdr_print *tdr, const char *name, uint32_t *v)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS tdr_pull_charset(struct tdr_pull *tdr, char **v, uint32_t length, uint32_t el_size, int chset)
+NTSTATUS tdr_pull_charset(struct tdr_pull *tdr, const char **v, uint32_t length, uint32_t el_size, int chset)
 {
 	int ret;
+
 	if (length == -1) {
 		switch (chset) {
-		case CH_DOS:
-			length = ascii_len_n((const char*)tdr->data+tdr->offset, tdr->length-tdr->offset);
-			break;
-		case CH_UTF16:
-			length = utf16_len_n(tdr->data+tdr->offset, tdr->length-tdr->offset);
-		default:
-			return NT_STATUS_INVALID_PARAMETER;
+			case CH_DOS:
+				length = ascii_len_n((const char*)tdr->data+tdr->offset, tdr->length-tdr->offset);
+				break;
+			case CH_UTF16:
+				length = utf16_len_n(tdr->data+tdr->offset, tdr->length-tdr->offset);
+				break;
+
+			default:
+				return NT_STATUS_INVALID_PARAMETER;
 		}
 	}
-	
+
 	TDR_PULL_NEED_BYTES(tdr, el_size*length);
 	
 	ret = convert_string_talloc(tdr, chset, CH_UNIX, tdr->data+tdr->offset, el_size*length, (void **)v);
@@ -175,16 +178,23 @@ NTSTATUS tdr_pull_charset(struct tdr_pull *tdr, char **v, uint32_t length, uint3
 
 NTSTATUS tdr_push_charset(struct tdr_push *tdr, const char **v, uint32_t length, uint32_t el_size, int chset)
 {
-	int ret;
-	TDR_PUSH_NEED_BYTES(tdr, el_size*length);
+	ssize_t ret, required;
 
-	ret = convert_string(CH_UNIX, chset, *v, length, tdr->data+tdr->offset, el_size*length);
+	required = el_size * length;
+	TDR_PUSH_NEED_BYTES(tdr, required);
+
+	ret = convert_string(CH_UNIX, chset, *v, strlen(*v), tdr->data+tdr->offset, required);
 
 	if (ret == -1) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	/* Make sure the remaining part of the string is filled with zeroes */
+	if (ret < required) {
+		memset(tdr->data+tdr->offset+ret, 0, required-ret);
+	}
 	
-	tdr->offset += ret;
+	tdr->offset += required;
 						 
 	return NT_STATUS_OK;
 }
@@ -227,3 +237,68 @@ NTSTATUS tdr_print_ipv4address(struct tdr_print *tdr, const char *name,
 	tdr->print(tdr, "%-25s: %s", name, *address);
 	return NT_STATUS_OK;
 }
+
+/*
+  parse a hyper
+*/
+NTSTATUS tdr_pull_hyper(struct tdr_pull *tdr, uint64_t *v)
+{
+	TDR_PULL_NEED_BYTES(tdr, 8);
+	*v = TDR_IVAL(tdr, tdr->offset);
+	*v |= (uint64_t)(TDR_IVAL(tdr, tdr->offset+4)) << 32;
+	tdr->offset += 8;
+	return NT_STATUS_OK;
+}
+
+/*
+  push a hyper
+*/
+NTSTATUS tdr_push_hyper(struct tdr_push *tdr, uint64_t *v)
+{
+	TDR_PUSH_NEED_BYTES(tdr, 8);
+	TDR_SIVAL(tdr, tdr->offset, ((*v) & 0xFFFFFFFF));
+	TDR_SIVAL(tdr, tdr->offset+4, ((*v)>>32));
+	tdr->offset += 8;
+	return NT_STATUS_OK;
+}
+
+
+
+/*
+  push a NTTIME
+*/
+NTSTATUS tdr_push_NTTIME(struct tdr_push *tdr, NTTIME *t)
+{
+	TDR_CHECK(tdr_push_hyper(tdr, t));
+	return NT_STATUS_OK;
+}
+
+/*
+  pull a NTTIME
+*/
+NTSTATUS tdr_pull_NTTIME(struct tdr_pull *tdr, NTTIME *t)
+{
+	TDR_CHECK(tdr_pull_hyper(tdr, t));
+	return NT_STATUS_OK;
+}
+
+/*
+  push a time_t
+*/
+NTSTATUS tdr_push_time_t(struct tdr_push *tdr, time_t *t)
+{
+	return tdr_push_uint32(tdr, (uint32_t *)t);
+}
+
+/*
+  pull a time_t
+*/
+NTSTATUS tdr_pull_time_t(struct tdr_pull *tdr, time_t *t)
+{
+	uint32_t tt;
+	TDR_CHECK(tdr_pull_uint32(tdr, &tt));
+	*t = tt;
+	return NT_STATUS_OK;
+}
+
+
