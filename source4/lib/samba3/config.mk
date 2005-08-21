@@ -7,4 +7,12 @@ INIT_OBJ_FILES = \
 # End SUBSYSTEM LIBSAMBA3
 ################################################
 
-
+################################################
+# Start BINARY samba3dump
+[BINARY::samba3dump]
+INSTALLDIR = BINDIR
+INIT_OBJ_FILES = \
+		lib/samba3/samba3dump.o
+REQUIRED_SUBSYSTEMS = LIBBASIC LIBCMDLINE LIBSAMBA3
+# End BINARY samba3dump
+################################################
