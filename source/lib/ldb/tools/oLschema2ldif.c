@@ -53,9 +53,10 @@
 #define SCHEMA_MAY 7
 #define SCHEMA_SINGLE_VALUE 8
 #define SCHEMA_EQUALITY 9
-#define SCHEMA_SUBSTR 10
-#define SCHEMA_SYNTAX 11
-#define SCHEMA_DESC 12
+#define SCHEMA_ORDERING 10
+#define SCHEMA_SUBSTR 11
+#define SCHEMA_SYNTAX 12
+#define SCHEMA_DESC 13
 
 
 struct schema_conv {
@@ -181,7 +182,15 @@ static struct token *get_next_schema_token(TALLOC_CTX *ctx, char **string)
 		talloc_free(type);
 		token->type = SCHEMA_SUP;
 
-		token->value = get_def_value(ctx, &c);
+		if (*c == '(') {
+			c++;
+			n = strcspn(c, ")");
+			token->value = talloc_strndup(ctx, c, n);
+			c += n;
+			c++;
+		} else {
+			token->value = get_def_value(ctx, &c);
+		}
 
 		c = skip_spaces(c);
 		*string = c;
@@ -257,6 +266,17 @@ static struct token *get_next_schema_token(TALLOC_CTX *ctx, char **string)
 	if (strcasecmp("EQUALITY", type) == 0) {
 		talloc_free(type);
 		token->type = SCHEMA_EQUALITY;
+
+		token->value = get_def_value(ctx, &c);
+
+		c = skip_spaces(c);
+		*string = c;
+		return token;
+	}
+
+	if (strcasecmp("ORDERING", type) == 0) {
+		talloc_free(type);
+		token->type = SCHEMA_ORDERING;
 
 		token->value = get_def_value(ctx, &c);
 
@@ -381,7 +401,7 @@ static struct ldb_message *process_entry(TALLOC_CTX *mem_ctx, const char *entry)
 			break;
 
 		case SCHEMA_SUP:
-			MSG_ADD_STRING("subClassOf", token->value);
+			MSG_ADD_M_STRING("subClassOf", token->value);
 			break;
 
 		case SCHEMA_STRUCTURAL:
@@ -409,6 +429,10 @@ static struct ldb_message *process_entry(TALLOC_CTX *mem_ctx, const char *entry)
 			break;
 
 		case SCHEMA_EQUALITY:
+			/* TODO */
+			break;
+
+		case SCHEMA_ORDERING:
 			/* TODO */
 			break;
 
