@@ -61,6 +61,19 @@ sub has_fast_array($$)
 	return ($t->{NAME} eq "uint8") or ($t->{NAME} eq "string");
 }
 
+sub is_charset_array($$)
+{
+	my ($e,$l) = @_;
+
+	return 0 if ($l->{TYPE} ne "ARRAY");
+
+	my $nl = GetNextLevel($e,$l);
+
+	return 0 unless ($nl->{TYPE} eq "DATA");
+
+	return has_property($e, "charset");
+}
+
 sub get_pointer_to($)
 {
 	my $var_name = shift;
@@ -333,7 +346,7 @@ sub ParseArrayPullHeader($$$$$)
 		defer "}"
 	}
 
-	if (!$l->{IS_FIXED}) {
+	if (not $l->{IS_FIXED} and not is_charset_array($e, $l)) {
 		AllocateArrayLevel($e,$l,$ndr,$env,$size);
 	}
 
@@ -545,7 +558,8 @@ sub ParseElementPushLevel
 
 	my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
 
-	if ($l->{TYPE} eq "ARRAY" and ($l->{IS_CONFORMANT} or $l->{IS_VARYING})) {
+	if ($l->{TYPE} eq "ARRAY" and ($l->{IS_CONFORMANT} or $l->{IS_VARYING} 
+		or is_charset_array($e, $l))) {
 		$var_name = get_pointer_to($var_name);
 	}
 
@@ -562,8 +576,8 @@ sub ParseElementPushLevel
 			my $nl = GetNextLevel($e, $l);
 
 			# Allow speedups for arrays of scalar types
-			if (has_property($e, "charset")) {
-				pidl "NDR_CHECK(ndr_push_charset($ndr, $ndr_flags, $var_name, $length, sizeof(" . Parse::Pidl::Typelist::mapType($nl->{DATA_TYPE}) . "), CH_$e->{PROPERTIES}->{charset}));";
+			if (is_charset_array($e,$l)) {
+				pidl "NDR_CHECK(ndr_push_charset($ndr, $ndr_flags, $var_name, $length, sizeof(" . mapType($nl->{DATA_TYPE}) . "), CH_$e->{PROPERTIES}->{charset}));";
 				return;
 			} elsif (has_fast_array($e,$l)) {
 				pidl "NDR_CHECK(ndr_push_array_$nl->{DATA_TYPE}($ndr, $ndr_flags, $var_name, $length));";
@@ -592,7 +606,7 @@ sub ParseElementPushLevel
 			pidl "}";
 		}
 	} elsif ($l->{TYPE} eq "ARRAY" and not has_fast_array($e,$l) and
-		not has_property($e, "charset")) {
+		not is_charset_array($e, $l)) {
 		my $length = ParseExpr($l->{LENGTH_IS}, $env);
 		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
 
@@ -690,7 +704,8 @@ sub ParseElementPrint($$$)
 		} elsif ($l->{TYPE} eq "ARRAY") {
 			my $length;
 
-			if ($l->{IS_CONFORMANT} or $l->{IS_VARYING}) { 
+			if ($l->{IS_CONFORMANT} or $l->{IS_VARYING} or 
+				is_charset_array($e,$l)) { 
 				$var_name = get_pointer_to($var_name); 
 			}
 			
@@ -700,7 +715,7 @@ sub ParseElementPrint($$$)
 				$length = ParseExpr($l->{LENGTH_IS}, $env);
 			}
 
-			if (has_property($e, "charset")) {
+			if (is_charset_array($e,$l)) {
 				pidl "ndr_print_string(ndr, \"$e->{NAME}\", $var_name);";
 				last;
 			} elsif (has_fast_array($e, $l)) {
@@ -741,7 +756,7 @@ sub ParseElementPrint($$$)
 			}
 			pidl "ndr->depth--;";
 		} elsif (($l->{TYPE} eq "ARRAY")
-			and not has_property($e, "charset")
+			and not is_charset_array($e,$l)
 			and not has_fast_array($e,$l)) {
 			pidl "free(idx_$l->{LEVEL_INDEX});";
 			deindent;
@@ -895,7 +910,8 @@ sub ParseElementPullLevel
 
 	my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
 
-	if ($l->{TYPE} eq "ARRAY" and ($l->{IS_VARYING} or $l->{IS_CONFORMANT})) {
+	if ($l->{TYPE} eq "ARRAY" and ($l->{IS_VARYING} or $l->{IS_CONFORMANT} 
+		or is_charset_array($e,$l))) {
 		$var_name = get_pointer_to($var_name);
 	}
 
@@ -910,8 +926,8 @@ sub ParseElementPullLevel
 
 			my $nl = GetNextLevel($e, $l);
 
-			if (has_property($e, "charset")) {
-				pidl "NDR_CHECK(ndr_pull_charset($ndr, $ndr_flags, ".get_pointer_to($var_name).", $length, sizeof(" . Parse::Pidl::Typelist::mapType($nl->{DATA_TYPE}) . "), CH_$e->{PROPERTIES}->{charset}));";
+			if (is_charset_array($e,$l)) {
+				pidl "NDR_CHECK(ndr_pull_charset($ndr, $ndr_flags, ".get_pointer_to($var_name).", $length, sizeof(" . mapType($nl->{DATA_TYPE}) . "), CH_$e->{PROPERTIES}->{charset}));";
 				return;
 			} elsif (has_fast_array($e, $l)) {
 				pidl "NDR_CHECK(ndr_pull_array_$nl->{DATA_TYPE}($ndr, $ndr_flags, $var_name, $length));";
@@ -958,7 +974,7 @@ sub ParseElementPullLevel
 			pidl "}";
 		}
 	} elsif ($l->{TYPE} eq "ARRAY" and 
-			not has_fast_array($e,$l) and not has_property($e, "charset")) {
+			not has_fast_array($e,$l) and not is_charset_array($e, $l)) {
 		my $length = ParseExpr($l->{LENGTH_IS}, $env);
 		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
 		my $array_name = $var_name;
@@ -1162,7 +1178,7 @@ sub ParseEnumPull($$)
 {
 	my($enum,$name) = @_;
 	my($type_fn) = $enum->{BASE_TYPE};
-	my($type_v_decl) = Parse::Pidl::Typelist::mapType($type_fn);
+	my($type_v_decl) = mapType($type_fn);
 
 	pidl "$type_v_decl v;";
 	start_flags($enum);
@@ -1237,7 +1253,7 @@ sub ParseBitmapPull($$)
 {
 	my($bitmap,$name) = @_;
 	my $type_fn = $bitmap->{BASE_TYPE};
-	my($type_decl) = Parse::Pidl::Typelist::mapType($bitmap->{BASE_TYPE});
+	my($type_decl) = mapType($bitmap->{BASE_TYPE});
 
 	pidl "$type_decl v;";
 	start_flags($bitmap);
@@ -1252,7 +1268,7 @@ sub ParseBitmapPull($$)
 sub ParseBitmapPrintElement($$$)
 {
 	my($e,$bitmap,$name) = @_;
-	my($type_decl) = Parse::Pidl::Typelist::mapType($bitmap->{BASE_TYPE});
+	my($type_decl) = mapType($bitmap->{BASE_TYPE});
 	my($type_fn) = $bitmap->{BASE_TYPE};
 	my($flag);
 
@@ -1270,7 +1286,7 @@ sub ParseBitmapPrintElement($$$)
 sub ParseBitmapPrint($$)
 {
 	my($bitmap,$name) = @_;
-	my($type_decl) = Parse::Pidl::Typelist::mapType($bitmap->{TYPE});
+	my($type_decl) = mapType($bitmap->{TYPE});
 	my($type_fn) = $bitmap->{BASE_TYPE};
 
 	start_flags($bitmap);
@@ -1345,7 +1361,7 @@ sub DeclareArrayVariables($)
 
 	foreach my $l (@{$e->{LEVELS}}) {
 		next if has_fast_array($e,$l);
-		next if has_property($e, "charset");
+		next if is_charset_array($e,$l);
 		if ($l->{TYPE} eq "ARRAY") {
 			pidl "uint32_t cntr_$e->{NAME}_$l->{LEVEL_INDEX};";
 		}
@@ -1358,7 +1374,7 @@ sub need_decl_mem_ctx($$)
 	my $l = shift;
 
 	return 0 if has_fast_array($e,$l);
-	return 0 if (has_property($e, "charset") and ($l->{TYPE} ne "POINTER"));
+	return 0 if is_charset_array($e,$l);
 	return 1 if (($l->{TYPE} eq "ARRAY") and not $l->{IS_FIXED});
 
 	if (($l->{TYPE} eq "POINTER") and ($l->{POINTER_TYPE} eq "ref")) {
@@ -1639,7 +1655,7 @@ sub ParseUnionPull($$)
 		if (Parse::Pidl::Typelist::typeIs($switch_type, "ENUM")) {
 			$switch_type = Parse::Pidl::Typelist::enum_type_fn(getType($switch_type));
 		}
-		pidl Parse::Pidl::Typelist::mapType($switch_type) . " _level;";
+		pidl mapType($switch_type) . " _level;";
 	}
 
 	my %double_cases = ();
@@ -1943,8 +1959,6 @@ sub ParseFunctionPush($)
 sub AllocateArrayLevel($$$$$)
 {
 	my ($e,$l,$ndr,$env,$size) = @_;
-
-	return if (has_property($e, "charset"));
 
 	my $var = ParseExpr($e->{NAME}, $env);
 

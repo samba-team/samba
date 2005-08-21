@@ -647,7 +647,7 @@ NTSTATUS ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var, 
 	
 	NDR_PUSH_NEED_BYTES(ndr, required);
 	ret = convert_string(CH_UNIX, chset, 
-			     var, length,
+			     var, strlen(var),
 			     ndr->data+ndr->offset, required);
 	if (ret == -1) {
 		return ndr_push_error(ndr, NDR_ERR_CHARCNV, 
