@@ -7,8 +7,11 @@ Three possible viable approaches:
 
   (one-way upgrades can be done by using ldbsearch -a on these dynamically
   generated ldb's)
+  Since TDB's are local, there isn't much point in writing back backwards 
+  compatible data.
 
  2) samr "mapping" backend (alternative for samr.ldb) (two-way)
+    This would allow users to keep mixed domains containing Samba3 and Samba4.
 
  3) The vampire way of doing things (one-way)
   - samba3 pidl backend 

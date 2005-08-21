@@ -21,6 +21,8 @@
 #ifndef _SAMBA3_SAM_H /* _SAMBA3_SAM_H */
 #define _SAMBA3_SAM_H 
 
+#include "librpc/gen_ndr/security.h"
+
 struct samba3_samaccount {
 	uint32_t logon_time,
 		logoff_time,
@@ -47,6 +49,30 @@ struct samba3_samaccount {
 	uint8_t	*lm_pw_ptr, *nt_pw_ptr;
 	uint8_t *nt_pw_hist_ptr;
 	uint8_t	*hours;
+};
+
+/* SID Types */
+enum SID_NAME_USE
+{
+	SID_NAME_USE_NONE = 0,
+	SID_NAME_USER    = 1, /* user */
+	SID_NAME_DOM_GRP,     /* domain group */
+	SID_NAME_DOMAIN,      /* domain sid */
+	SID_NAME_ALIAS,       /* local group */
+	SID_NAME_WKN_GRP,     /* well-known group */
+	SID_NAME_DELETED,     /* deleted account: needed for c2 rating */
+	SID_NAME_INVALID,     /* invalid account */
+	SID_NAME_UNKNOWN,     /* unknown sid type */
+	SID_NAME_COMPUTER     /* sid for a computer */
+};
+
+struct samba3_groupmapping {
+	struct pdb_methods *methods;
+	gid_t gid;
+	struct dom_sid *sid;
+	enum SID_NAME_USE sid_name_use;
+	const char *nt_name;
+	const char *comment;
 };
 
 #endif /* _SAMBA3_SAM_H */

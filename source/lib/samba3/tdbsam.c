@@ -26,6 +26,7 @@
 
 #include "includes.h"
 #include "system/iconv.h"
+#include "system/filesys.h"
 #include "lib/tdb/include/tdbutil.h"
 #include "lib/samba3/sam.h"
 
@@ -37,18 +38,18 @@
 /**
  * Open the TDB passwd database, check version and convert it if needed.
  * @param name filename of the tdbsam file.
- * @param open_flags file access mode.
+ * @param version version of the tdbsam database
  * @return a TDB_CONTEXT handle on the tdbsam file.
  **/
 
-static TDB_CONTEXT * tdbsam_open (const char *name, int open_flags, int32_t *version)
+static TDB_CONTEXT *tdbsam_open (const char *name, int32_t *version)
 {
 	TDB_CONTEXT 	*pdb_tdb;
 	
 	/* Try to open tdb passwd */
 	if (!(pdb_tdb = tdb_open(name, 0, TDB_DEFAULT, 
-				     open_flags, 0600))) {
-		DEBUG(0, ("Unable to open/create TDB passwd\n"));
+				     O_RDONLY, 0600))) {
+		DEBUG(0, ("Unable to open TDB passwd\n"));
 		return NULL;
 	}
 
@@ -69,7 +70,7 @@ static TDB_CONTEXT * tdbsam_open (const char *name, int open_flags, int32_t *ver
 	return pdb_tdb;
 }
 
-static BOOL init_sam_from_buffer_v0(TDB_CONTEXT *tdb, struct samba3_samaccount *sampass, uint8_t *buf, uint32_t buflen)
+static BOOL init_sam_from_buffer_v0(TDB_CONTEXT *tdb, struct samba3_samaccount *sampass, TDB_DATA buf)
 {
 	uint32_t	username_len, domain_len, nt_username_len,
 		dir_drive_len, unknown_str_len, munged_dial_len,
@@ -80,13 +81,13 @@ static BOOL init_sam_from_buffer_v0(TDB_CONTEXT *tdb, struct samba3_samaccount *
 	uint32_t		len = 0;
 	uint32_t		lm_pw_len, nt_pw_len, hourslen;
 	
-	if(sampass == NULL || buf == NULL) {
+	if(sampass == NULL || buf.dptr == NULL) {
 		DEBUG(0, ("init_sam_from_buffer_v0: NULL parameters found!\n"));
 		return False;
 	}
 
 	/* unpack the buffer into variables */
-	len = tdb_unpack (tdb, (char *)buf, buflen, TDB_FORMAT_STRING_V0,
+	len = tdb_unpack (tdb, (char *)buf.dptr, buf.dsize, TDB_FORMAT_STRING_V0,
 		&sampass->logon_time,					/* d */
 		&sampass->logoff_time,					/* d */
 		&sampass->kickoff_time,					/* d */
@@ -133,7 +134,7 @@ static BOOL init_sam_from_buffer_v0(TDB_CONTEXT *tdb, struct samba3_samaccount *
 	return True;
 }
 
-static BOOL init_sam_from_buffer_v1(TDB_CONTEXT *tdb, struct samba3_samaccount *sampass, uint8_t *buf, uint32_t buflen)
+static BOOL init_sam_from_buffer_v1(TDB_CONTEXT *tdb, struct samba3_samaccount *sampass, TDB_DATA buf)
 {
 	uint32_t	username_len, domain_len, nt_username_len,
 		dir_drive_len, unknown_str_len, munged_dial_len,
@@ -144,13 +145,13 @@ static BOOL init_sam_from_buffer_v1(TDB_CONTEXT *tdb, struct samba3_samaccount *
 	uint32_t		len = 0;
 	uint32_t		lm_pw_len, nt_pw_len, hourslen;
 	
-	if(sampass == NULL || buf == NULL) {
+	if(sampass == NULL || buf.dptr == NULL) {
 		DEBUG(0, ("init_sam_from_buffer_v1: NULL parameters found!\n"));
 		return False;
 	}
 
 	/* unpack the buffer into variables */
-	len = tdb_unpack (tdb, (char *)buf, buflen, TDB_FORMAT_STRING_V1,
+	len = tdb_unpack (tdb, (char *)buf.dptr, buf.dsize, TDB_FORMAT_STRING_V1,
 		&sampass->logon_time,					/* d */
 		&sampass->logoff_time,					/* d */
 		&sampass->kickoff_time,				/* d */
@@ -199,7 +200,7 @@ static BOOL init_sam_from_buffer_v1(TDB_CONTEXT *tdb, struct samba3_samaccount *
 	return True;
 }
 
-static BOOL init_sam_from_buffer_v2(TDB_CONTEXT *tdb, struct samba3_samaccount *sampass, uint8_t *buf, uint32_t buflen)
+static BOOL init_sam_from_buffer_v2(TDB_CONTEXT *tdb, struct samba3_samaccount *sampass, TDB_DATA buf)
 {
 	uint32_t	username_len, domain_len, nt_username_len,
 		dir_drive_len, unknown_str_len, munged_dial_len,
@@ -209,13 +210,13 @@ static BOOL init_sam_from_buffer_v2(TDB_CONTEXT *tdb, struct samba3_samaccount *
 	uint32_t		len = 0;
 	uint32_t		lm_pw_len, nt_pw_len, nt_pw_hist_len, hourslen;
 	
-	if(sampass == NULL || buf == NULL) {
+	if(sampass == NULL || buf.dptr == NULL) {
 		DEBUG(0, ("init_sam_from_buffer_v2: NULL parameters found!\n"));
 		return False;
 	}
 
 	/* unpack the buffer into variables */
-	len = tdb_unpack (tdb, (char *)buf, buflen, TDB_FORMAT_STRING_V2,
+	len = tdb_unpack (tdb, (char *)buf.dptr, buf.dsize, TDB_FORMAT_STRING_V2,
 		&sampass->logon_time,					/* d */
 		&sampass->logoff_time,					/* d */
 		&sampass->kickoff_time,					/* d */
@@ -263,4 +264,44 @@ static BOOL init_sam_from_buffer_v2(TDB_CONTEXT *tdb, struct samba3_samaccount *
 	}
 
 	return True;
+}
+
+NTSTATUS samba3_read_tdbsam(TALLOC_CTX *ctx, const char *filename, struct samba3_samaccount **accounts, uint32_t *count)
+{
+	int32_t version;
+	TDB_CONTEXT *tdb = tdbsam_open(filename, &version);
+	TDB_DATA key, val;
+
+	if (tdb == NULL)
+		return NT_STATUS_UNSUCCESSFUL;
+
+	if (version < 0 || version > 2) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+	
+	*accounts = NULL;
+	*count = 0;
+
+	for (key = tdb_firstkey(tdb); key.dptr; key = tdb_nextkey(tdb, key))
+	{
+		if (strncmp(key.dptr, "RID/", 4) == 0) continue;
+
+		val = tdb_fetch(tdb, key);
+
+		*accounts = talloc_realloc(ctx, *accounts, struct samba3_samaccount, (*count)+1);
+
+		switch (version) 
+		{
+			case 0: init_sam_from_buffer_v0(tdb, &(*accounts)[*count], val); break;
+			case 1: init_sam_from_buffer_v1(tdb, &(*accounts)[*count], val); break;
+			case 2: init_sam_from_buffer_v2(tdb, &(*accounts)[*count], val); break;
+
+		}
+
+		(*count)++;
+	}
+	
+	tdb_close(tdb);
+	
+	return NT_STATUS_OK;
 }
