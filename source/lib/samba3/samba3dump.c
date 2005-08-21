@@ -20,10 +20,33 @@
 */
 
 #include "includes.h"
+#include "lib/samba3/policy.h"
 #include "lib/samba3/sam.h"
 #include "lib/cmdline/popt_common.h"
 
 static const char *libdir = "/var/lib/samba";
+
+static NTSTATUS print_policy(void)
+{
+	struct samba3_policy *ret;
+	char *policy_file;
+	TALLOC_CTX *mem_ctx = talloc_init(NULL);
+
+	policy_file = talloc_asprintf(mem_ctx, "%s/account_policy.tdb", libdir);
+
+	printf("Opening policy file %s\n", policy_file);
+
+	ret = samba3_read_account_policy(mem_ctx, policy_file);
+
+	if (ret == NULL) 
+		return NT_STATUS_UNSUCCESSFUL;
+	
+	printf("Min password length: %d\n", ret->min_password_length);
+
+	talloc_free(mem_ctx);
+
+	return NT_STATUS_OK;
+}
 
 static NTSTATUS print_sam(void)
 {
@@ -39,8 +62,10 @@ static NTSTATUS print_sam(void)
 	status = samba3_read_tdbsam(NULL, tdbsam_file, &accounts, &count);
 	if (NT_STATUS_IS_ERR(status)) {
 		fprintf(stderr, "Error reading tdbsam database %s\n", tdbsam_file);
+		SAFE_FREE(tdbsam_file);
 		return status;
 	}
+	SAFE_FREE(tdbsam_file);
 
 	for (i = 0; i < count; i++) {
 		printf("%d: %s\n", accounts[i].user_rid, accounts[i].username);
@@ -68,6 +93,7 @@ int main(int argc, char **argv)
 	}
 
 	print_sam();
+	print_policy();
 
 	poptFreeContext(pc);
 
