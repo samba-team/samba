@@ -10,26 +10,69 @@ libinclude("base.js");
 
 <script type="text/javascript">
 
+/* Qooxdoo's browser sniffer doesn't distinguish IE version.
+    We'll cover IE 6 for now, but these checks need to be
+    revisited for fuller browser coverage. */
+var browser = QxClient().engine;
+
+function docWidth()
+{
+  var x;
+  if (browser != "mshtml") {
+    x = window.innerWidth;
+  } else {
+    x = document.documentElement.clientWidth;
+  }
+  return x;
+}
+
+function docHeight()
+{
+  var y;
+  // Less 25px to not cover the toolbar
+  if (browser != "mshtml") {
+    y = window.innerHeight - 25;
+  } else {
+    y = document.documentElement.clientHeight;
+  }
+  return y;
+}
+
 /*** init the page for qooxdoo ***/
 window.application.main = function()
 {
+  var doc = this.getClientWindow().getClientDocument();
   // Don't declare local with var
-  doc = this.getClientWindow().getClientDocument();
+  w = new QxWidget();
+  with(w) {
+    setTop(0);
+    setLeft(0);
+    setWidth(docWidth());
+    setHeight(docHeight());
+  }
+  doc.add(w);
+
+}
+
+window.onresize = function() 
+{
+      w.setWidth(docWidth());
+      w.setHeight(docHeight());
 }
 
 function showReg()
 {
 	var regedit = regedit_widget("ncalrpc:");
-	doc.add(regedit);
+	w.add(regedit);
 	regedit.startup();
 }
 
 function startSwat()
 {
   // Don't declare local with var (for now)
-  w1 = new QxWindow("Welcome to SWAT.");
-  w1.setSpace(100, 100, 100, 100);
-  doc.add(w1);
+  var w1 = new QxWindow("Welcome to SWAT.");
+  w1.setSpace("40%", 0, "35%", 0);
+  w.add(w1);
 
   var btn1 = new QxButton("View Registry");
   btn1.set({ top: 20, left : 30 });
@@ -39,8 +82,6 @@ function startSwat()
   w1.setVisible(true);
 }
 </script>
-
-<div id="canvas" style="overflow:hidden;position:static;margin-top:38px;margin-left:10px;margin-right:700px;width:700px"></div>
 
 <div id="toolbar">
 	<h3><a href="javascript:startSwat()">SWAT (Start)</a></h3>
