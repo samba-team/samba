@@ -1455,15 +1455,13 @@ static NTSTATUS get_user_info_18(pipes_struct *p, TALLOC_CTX *mem_ctx, SAM_USER_
 	BOOL ret;
 	NTSTATUS nt_status;
 
-	if (p->auth.auth_type != PIPE_AUTH_TYPE_NTLMSSP) {
+	if (p->auth.auth_type != PIPE_AUTH_TYPE_NTLMSSP || p->auth.auth_type != PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-#if 0 /* JRA FIXME ! */
-	if (!(p->auth.a_u.ntlmssp_auth->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SIGN) ||
-			!(p->auth.a_u.ntlmssp_auth->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SEAL))
+	if (p->auth_level != PIPE_AUTH_LEVEL_PRIVACY) {
 		return NT_STATUS_ACCESS_DENIED;
-#endif
+	}
 
 	/*
 	 * Do *NOT* do become_root()/unbecome_root() here ! JRA.
