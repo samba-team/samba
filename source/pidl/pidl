@@ -347,6 +347,9 @@ $dcom
 	}
 }
 
-foreach my $filename (@ARGV) {
-	process_file($filename);
+if (scalar(@ARGV) == 0) {
+	print "pidl: no input files\n";
+	exit(0);
 }
+
+process_file($_) foreach (@ARGV);
