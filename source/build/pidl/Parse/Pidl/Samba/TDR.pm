@@ -50,6 +50,13 @@ sub ParserElement($$$)
 		$name = ", \"$e->{NAME}\"$array";
 	}
 
+	if (has_property($e, "flag")) {
+		pidl "{";
+		indent;
+		pidl "uint32_t saved_flags = tdr->flags;";
+		pidl "tdr->flags |= $e->{PROPERTIES}->{flag};";
+	}
+
 	if (has_property($e, "charset")) {
 		fatal($e,"charset() on non-array element") unless (defined($e->{ARRAY_LEN}) and scalar(@{$e->{ARRAY_LEN}}) > 0);
 		
@@ -58,6 +65,7 @@ sub ParserElement($$$)
 		pidl "TDR_CHECK(tdr_$t\_charset(tdr$name, &v->$e->{NAME}, $len, sizeof($e->{TYPE}_t), CH_$e->{PROPERTIES}->{charset}));";
 		return;
 	}
+
 
 	if (has_property($e, "switch_is")) {
 		$switch = ", " . ParseExpr($e->{PROPERTIES}->{switch_is}, $env);
@@ -82,6 +90,12 @@ sub ParserElement($$$)
 	pidl "TDR_CHECK(tdr_$t\_$e->{TYPE}(tdr$name$switch, &v->$e->{NAME}$array));";
 
 	if ($array) { deindent; pidl "}"; }
+
+	if (has_property($e, "flag")) {
+		pidl "tdr->flags = saved_flags;";
+		deindent;
+		pidl "}";
+	}
 }
 
 sub ParserStruct($$$$)

@@ -34,7 +34,7 @@
 	} \
 } while(0)
 
-#define TDR_BE(tdr) ((tdr)->flags & TDR_FLAG_BIGENDIAN)
+#define TDR_BE(tdr) ((tdr)->flags & TDR_BIG_ENDIAN)
 
 #define TDR_SVAL(tdr, ofs) (TDR_BE(tdr)?RSVAL(tdr->data,ofs):SVAL(tdr->data,ofs))
 #define TDR_IVAL(tdr, ofs) (TDR_BE(tdr)?RIVAL(tdr->data,ofs):IVAL(tdr->data,ofs))
@@ -45,11 +45,9 @@
 
 struct tdr_pull *tdr_pull_init(TALLOC_CTX *mem_ctx, DATA_BLOB *blob)
 {
-	struct tdr_pull *tdr = talloc(mem_ctx, struct tdr_pull);
+	struct tdr_pull *tdr = talloc_zero(mem_ctx, struct tdr_pull);
 	tdr->data = blob->data;
 	tdr->length = blob->length;
-	tdr->offset = 0;
-	tdr->flags = 0;
 	return tdr;
 }
 
@@ -167,7 +165,7 @@ NTSTATUS tdr_pull_charset(struct tdr_pull *tdr, const char **v, uint32_t length,
 
 	TDR_PULL_NEED_BYTES(tdr, el_size*length);
 	
-	ret = convert_string_talloc(tdr, chset, CH_UNIX, tdr->data+tdr->offset, el_size*length, (void **)v);
+	ret = convert_string_talloc(tdr, chset, CH_UNIX, tdr->data+tdr->offset, el_size*length, discard_const_p(void *, v));
 
 	if (ret == -1) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -301,4 +299,81 @@ NTSTATUS tdr_pull_time_t(struct tdr_pull *tdr, time_t *t)
 	return NT_STATUS_OK;
 }
 
+NTSTATUS tdr_print_time_t(struct tdr_print *tdr, const char *name, time_t *t)
+{
+	if (*t == (time_t)-1 || *t == 0) {
+		tdr->print(tdr, "%-25s: (time_t)%d", name, (int)*t);
+	} else {
+		tdr->print(tdr, "%-25s: %s", name, timestring(tdr, *t));
+	}
 
+	return NT_STATUS_OK;
+}
+
+NTSTATUS tdr_print_NTTIME(struct tdr_print *tdr, const char *name, NTTIME *t)
+{
+	tdr->print(tdr, "%-25s: %s", name, nt_time_string(tdr, *t));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS tdr_print_DATA_BLOB(struct tdr_print *tdr, const char *name, DATA_BLOB *r)
+{
+	tdr->print(tdr, "%-25s: DATA_BLOB length=%u", name, r->length);
+	if (r->length) {
+		dump_data(10, r->data, r->length);
+	}
+
+	return NT_STATUS_OK;
+}
+
+#define TDR_ALIGN(tdr,n) (((tdr)->offset & ((n)-1)) == 0?0:((n)-((tdr)->offset&((n)-1))))
+
+/*
+  push a DATA_BLOB onto the wire. 
+*/
+NTSTATUS tdr_push_DATA_BLOB(struct tdr_push *tdr, DATA_BLOB *blob)
+{
+	if (tdr->flags & TDR_ALIGN2) {
+		blob->length = TDR_ALIGN(tdr, 2);
+	} else if (tdr->flags & TDR_ALIGN4) {
+		blob->length = TDR_ALIGN(tdr, 4);
+	} else if (tdr->flags & TDR_ALIGN8) {
+		blob->length = TDR_ALIGN(tdr, 8);
+	}
+
+	TDR_PUSH_NEED_BYTES(tdr, blob->length);
+	
+	memcpy(tdr->data+tdr->offset, blob->data, blob->length);
+	return NT_STATUS_OK;
+}
+
+/*
+  pull a DATA_BLOB from the wire. 
+*/
+NTSTATUS tdr_pull_DATA_BLOB(struct tdr_pull *tdr, DATA_BLOB *blob)
+{
+	uint32_t length;
+
+	if (tdr->flags & TDR_ALIGN2) {
+		length = TDR_ALIGN(tdr, 2);
+	} else if (tdr->flags & TDR_ALIGN4) {
+		length = TDR_ALIGN(tdr, 4);
+	} else if (tdr->flags & TDR_ALIGN8) {
+		length = TDR_ALIGN(tdr, 8);
+	} else if (tdr->flags & TDR_REMAINING) {
+		length = tdr->length - tdr->offset;
+	} else {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (tdr->length - tdr->offset < length) {
+		length = tdr->length - tdr->offset;
+	}
+
+	TDR_PULL_NEED_BYTES(tdr, length);
+
+	*blob = data_blob_talloc(tdr, tdr->data+tdr->offset, length);
+	tdr->offset += length;
+	return NT_STATUS_OK;
+}

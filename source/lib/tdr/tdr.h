@@ -18,7 +18,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#define TDR_FLAG_BIGENDIAN		1
+#define TDR_BIG_ENDIAN			0x01
+#define TDR_ALIGN2			0x02
+#define TDR_ALIGN4			0x04
+#define TDR_ALIGN8			0x08
+#define TDR_REMAINING			0x10
 
 struct tdr_pull {
 	uint8_t *data;
@@ -38,6 +42,7 @@ struct tdr_push {
 struct tdr_print {
 	int level;
 	void (*print)(struct tdr_print *, const char *, ...);
+	int flags;
 };
 
 #define TDR_CHECK(call) do { NTSTATUS _status; \
