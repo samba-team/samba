@@ -127,21 +127,21 @@ etags:
 ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
 
-idl_full: build/pidl/Parse/Pidl/IDL.pm
+idl_full: pidl/Parse/Pidl/IDL.pm
 	@CPP="$(CPP)" PERL="$(PERL)" script/build_idl.sh FULL @PIDL_ARGS@
 
-idl: build/pidl/Parse/Pidl/IDL.pm
+idl: pidl/Parse/Pidl/IDL.pm
 	@CPP="$(CPP)" PERL="$(PERL)" script/build_idl.sh PARTIAL @PIDL_ARGS@
 
-build/pidl/Parse/Pidl/IDL.pm: build/pidl/idl.yp
-	-yapp -s -m 'Parse::Pidl::IDL' -o build/pidl/Parse/Pidl/IDL.pm build/pidl/idl.yp 
+pidl/Parse/Pidl/IDL.pm: pidl/idl.yp
+	-yapp -s -m 'Parse::Pidl::IDL' -o pidl/Parse/Pidl/IDL.pm pidl/idl.yp 
 
-smb_interfaces: build/pidl/smb_interfaces.pm
-	$(PERL) -Ibuild/pidl script/build_smb_interfaces.pl \
+smb_interfaces: pidl/smb_interfaces.pm
+	$(PERL) -Ipidl script/build_smb_interfaces.pl \
 		include/smb_interfaces.h
 
-build/pidl/smb_interfaces.pm: build/pidl/smb_interfaces.yp
-	-yapp -s -m 'smb_interfaces' -o build/pidl/smb_interfaces.pm build/pidl/smb_interfaces.yp 
+pidl/smb_interfaces.pm: pidl/smb_interfaces.yp
+	-yapp -s -m 'smb_interfaces' -o pidl/smb_interfaces.pm pidl/smb_interfaces.yp 
 
 include/config.h:
 	@echo "include/config.h not present"
