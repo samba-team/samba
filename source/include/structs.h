@@ -273,3 +273,4 @@ struct PAC_LOGON_INFO;
 struct kdc_server;
 struct smb_krb5_context;
 
+struct samba3_samaccount;
