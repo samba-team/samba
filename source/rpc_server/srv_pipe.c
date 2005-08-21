@@ -1183,27 +1183,11 @@ static BOOL pipe_spnego_auth_bind_continue(pipes_struct *p, prs_struct *rpc_in_p
 		goto err;
 	}
 
-#if 0
-	/* Copy the blob into the pout_auth parse struct */
-	init_rpc_hdr_auth(&auth_info, SPNEGO_AUTH_TYPE, pauth_info->auth_level, RPC_HDR_AUTH_LEN, 1);
-	if(!smb_io_rpc_hdr_auth("", &auth_info, pout_auth, 0)) {
-		DEBUG(0,("pipe_spnego_auth_bind_continue: marshalling of RPC_HDR_AUTH failed.\n"));
-		goto err;
-	}
-
-	if (!prs_copy_data_in(pout_auth, auth_reply.data, auth_reply.length)) {
-		DEBUG(0,("pipe_spnego_auth_bind_continue: marshalling of data blob failed.\n"));
-		goto err;
-	}
-#endif
-
 	data_blob_free(&spnego_blob);
 	data_blob_free(&auth_blob);
 	data_blob_free(&auth_reply);
 
 	p->pipe_bound = True;
-
-	/* We need to call the equivalent of api_pipe_ntlmssp_verify() here... */
 
 	return True;
 
@@ -1658,20 +1642,6 @@ BOOL api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 	prs_struct out_auth;
 	prs_struct outgoing_rpc;
 	int auth_len = 0;
-	unsigned int auth_type = RPC_ANONYMOUS_AUTH_TYPE;
-
-	if (p->pipe_bound) {
-		/*
-		 * We should free the bound resources here to allow a
-		 * rebind with a different security context I think. JRA.
-		 */
-		if (p->auth.auth_data_free_func) {
-			(*p->auth.auth_data_free_func)(&p->auth);
-		}
-		p->auth.auth_type = PIPE_AUTH_TYPE_NONE;
-		p->auth_level = PIPE_AUTH_LEVEL_NONE;
-		p->pipe_bound = False;
-	}
 
 	prs_init( &outgoing_rpc, 0, p->mem_ctx, MARSHALL);
 
@@ -1730,52 +1700,27 @@ BOOL api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 			DEBUG(0,("api_pipe_alter_context: unable to unmarshall RPC_HDR_AUTH struct.\n"));
 			goto err_exit;
 		}
-		auth_type = auth_info.auth_type;
+
+		/*
+		 * Currently only the SPNEGO auth type uses the alter ctx
+		 * response in place of the NTLMSSP auth3 type.
+		 */
+
+		if (auth_info.auth_type == RPC_SPNEGO_AUTH_TYPE) {
+			/* We can only finish if the pipe is unbound. */
+			if (!p->pipe_bound) {
+				if (!pipe_spnego_auth_bind_continue(p, rpc_in_p, &auth_info, &out_auth)) {
+					goto err_exit;
+				}
+			} else {
+				goto err_exit;
+			}
+		}
 	} else {
 		ZERO_STRUCT(auth_info);
 	}
 
 	assoc_gid = hdr_rb.bba.assoc_gid ? hdr_rb.bba.assoc_gid : 0x53f0;
-
-	switch(auth_type) {
-		case RPC_NTLMSSP_AUTH_TYPE:
-			if (!pipe_ntlmssp_auth_bind(p, rpc_in_p, &auth_info, &out_auth)) {
-				goto err_exit;
-			}
-			assoc_gid = 0x7a77;
-			break;
-
-		case RPC_SCHANNEL_AUTH_TYPE:
-			if (!pipe_schannel_auth_bind(p, rpc_in_p, &auth_info, &out_auth)) {
-				goto err_exit;
-			}
-			break;
-
-		case RPC_SPNEGO_AUTH_TYPE:
-			if (p->auth.auth_type == PIPE_AUTH_TYPE_NONE) {
-				if (!pipe_spnego_auth_bind_negotiate(p, rpc_in_p, &auth_info, &out_auth)) {
-					goto err_exit;
-				}
-			} else {
-				if (!pipe_spnego_auth_bind_continue(p, rpc_in_p, &auth_info, &out_auth)) {
-					goto err_exit;
-				}
-			}
-			break;
-
-		case RPC_ANONYMOUS_AUTH_TYPE:
-			/* Unauthenticated bind request. */
-			/* We're finished - no more packets. */
-			p->auth.auth_type = PIPE_AUTH_TYPE_NONE;
-			/* We must set the pipe auth_level here also. */
-			p->auth_level = PIPE_AUTH_LEVEL_NONE;
-			p->pipe_bound = True;
-			break;
-
-		default:
-			DEBUG(0,("api_pipe_alter_context: unknown auth type %x requested.\n", auth_type ));
-			goto err_exit;
-	}
 
 	/*
 	 * Create the bind response struct.
