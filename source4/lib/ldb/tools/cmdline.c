@@ -151,13 +151,13 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 	*ret = options;
 
 	/* all utils need some option */
-	if (ldb) {
-		if (ret->url == NULL) {
-			fprintf(stderr, "You must supply a url with -H or with $LDB_URL\n");
-			if (usage) usage();
-			goto failed;
-		}
+	if (ret->url == NULL) {
+		fprintf(stderr, "You must supply a url with -H or with $LDB_URL\n");
+		if (usage) usage();
+		goto failed;
+	}
 
+	if (strcmp(ret->url, "NONE") != 0) {
 		if (ldb_connect(ldb, ret->url, 0, ret->options) != 0) {
 			fprintf(stderr, "Failed to connect to %s - %s\n", 
 				ret->url, ldb_errstring(ldb));
