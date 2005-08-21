@@ -202,3 +202,14 @@ REQUIRED_SUBSYSTEMS = \
 		LIBLDB_CMDLINE
 # End BINARY ldbtest
 ################################################
+
+################################################
+# Start BINARY oLschema2ldif
+[BINARY::oLschema2ldif]
+INSTALLDIR = BINDIR
+OBJ_FILES= \
+		lib/ldb/tools/oLschema2ldif.o
+REQUIRED_SUBSYSTEMS = \
+		LIBLDB_CMDLINE
+# End BINARY oLschema2ldif
+################################################
