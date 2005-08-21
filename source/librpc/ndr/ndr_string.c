@@ -641,22 +641,25 @@ NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var,
 
 NTSTATUS ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var, uint32_t length, uint8_t byte_mul, int chset)
 {
-	ssize_t ret;
-	NDR_PUSH_NEED_BYTES(ndr, byte_mul*length);
+	ssize_t ret, required;
+
+	required = byte_mul * length;
+	
+	NDR_PUSH_NEED_BYTES(ndr, required);
 	ret = convert_string(CH_UNIX, chset, 
 			     var, length,
-			     ndr->data+ndr->offset, byte_mul*length);
+			     ndr->data+ndr->offset, required);
 	if (ret == -1) {
 		return ndr_push_error(ndr, NDR_ERR_CHARCNV, 
 				      "Bad character conversion");
 	}
 
 	/* Make sure the remaining part of the string is filled with zeroes */
-	if (ret < (byte_mul*length)) {
-		memset(ndr->data+ndr->offset+ret, 0, (byte_mul*length)-ret);
+	if (ret < required) {
+		memset(ndr->data+ndr->offset+ret, 0, required-ret);
 	}
 
-	ndr->offset += length;
+	ndr->offset += required;
 
 	return NT_STATUS_OK;
 }
