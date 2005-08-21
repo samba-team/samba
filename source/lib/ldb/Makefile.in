@@ -61,7 +61,7 @@ OBJS =  $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(L
 
 LDB_LIB = lib/libldb.a
 
-BINS = bin/ldbadd bin/ldbsearch bin/ldbdel bin/ldbmodify bin/ldbedit bin/ldbrename bin/ldbtest
+BINS = bin/ldbadd bin/ldbsearch bin/ldbdel bin/ldbmodify bin/ldbedit bin/ldbrename bin/ldbtest bin/oLschema2ldif
 
 LIBS = $(LDB_LIB)($(OBJS))
 
@@ -101,6 +101,9 @@ bin/ldbrename: tools/ldbrename.o tools/cmdline.o $(LIBS)
 
 bin/ldbtest: tools/ldbtest.o tools/cmdline.o $(LIBS)
 	$(CC) -o bin/ldbtest tools/ldbtest.o tools/cmdline.o $(LIB_FLAGS)
+
+bin/oLschema2ldif: tools/oLschema2ldif.o tools/cmdline.o $(LIBS)
+	$(CC) -o bin/oLschema2ldif tools/oLschema2ldif.o tools/cmdline.o $(LIB_FLAGS)
 
 .SUFFIXES: .1 .2 .3 .yo
 
