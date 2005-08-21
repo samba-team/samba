@@ -9,6 +9,7 @@
 
 use strict;
 
+use lib "lib";
 use Getopt::Long;
 use File::Basename;
 use Parse::Pidl;
