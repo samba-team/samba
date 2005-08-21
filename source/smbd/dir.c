@@ -1100,6 +1100,9 @@ const char *ReadDirName(struct smb_Dir *dirp, long *poffset)
 		}
 		dirp->file_number++;
 		return n;
+	} else if (*poffset == END_OF_DIRECTORY_OFFSET) {
+		*poffset = dirp->offset = END_OF_DIRECTORY_OFFSET;
+		return NULL;
 	} else {
 		/* A real offset, seek to it. */
 		SeekDir(dirp, *poffset);
@@ -1122,7 +1125,7 @@ const char *ReadDirName(struct smb_Dir *dirp, long *poffset)
 		dirp->file_number++;
 		return e->name;
 	}
-	dirp->offset = END_OF_DIRECTORY_OFFSET;
+	*poffset = dirp->offset = END_OF_DIRECTORY_OFFSET;
 	return NULL;
 }
 
@@ -1147,6 +1150,8 @@ void SeekDir(struct smb_Dir *dirp, long offset)
 	if (offset != dirp->offset) {
 		if (offset == START_OF_DIRECTORY_OFFSET || offset == DOT_DOT_DIRECTORY_OFFSET) {
 			RewindDir(dirp, &offset);
+		} else if (offset == END_OF_DIRECTORY_OFFSET) {
+			; /* Don't seek in this case. */
 		} else {
 			SMB_VFS_SEEKDIR(dirp->conn, dirp->dir, offset);
 		}
