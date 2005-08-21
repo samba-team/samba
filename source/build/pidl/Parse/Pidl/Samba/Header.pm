@@ -59,14 +59,16 @@ sub HeaderElement($)
 	my $numstar = $element->{POINTERS};
 	foreach (@{$element->{ARRAY_LEN}})
 	{
-		next if is_constant($_);
+		next if is_constant($_) and 
+			not has_property($element, "charset");
 		$numstar++;
 	}
 	$numstar-- if Parse::Pidl::Typelist::scalar_is_reference($element->{TYPE});
 	pidl "*" foreach (1..$numstar);
 	pidl $element->{NAME};
 	foreach (@{$element->{ARRAY_LEN}}) {
-		next unless is_constant($_);
+		next unless (is_constant($_) and 
+			not has_property($element, "charset"));
 		pidl "[$_]";
 	}
 
@@ -199,11 +201,7 @@ sub HeaderType($$$)
 	}
 
 	if (has_property($e, "charset")) {
-		if ($e->{POINTERS} > 0) {
-			pidl "const char";
-		} else {
-			pidl "char";
-		}
+		pidl "const char";
 	} else {
 		pidl mapType($e->{TYPE});
 	}
