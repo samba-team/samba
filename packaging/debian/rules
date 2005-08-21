@@ -24,7 +24,7 @@ configure:
 		--with-syslog \
 		--with-readline \
 		--with-ldap 
-	cd $(SOURCEPATH)/build/pidl && perl Makefile.PL verbose INSTALLDIRS=vendor PREFIX=/usr
+	cd $(SOURCEPATH)/pidl && perl Makefile.PL verbose INSTALLDIRS=vendor PREFIX=/usr
 	touch $@
 
 build: configure
@@ -32,7 +32,7 @@ build: configure
 	$(MAKE) -C $(SOURCEPATH) proto 
 	-$(MAKE) -C $(SOURCEPATH) pch
 	$(MAKE) -C $(SOURCEPATH) all
-	$(MAKE) -C $(SOURCEPATH)/build/pidl all
+	$(MAKE) -C $(SOURCEPATH)/pidl all
 	touch $@
 
 clean:
@@ -65,7 +65,7 @@ install: build
 	$(MAKE) -C $(SOURCEPATH) manpages installman DESTDIR=$(CURDIR)/debian/tmp
 	mkdir -p $(CURDIR)/debian/tmp/etc/samba4
 	cp $(CURDIR)/debian/smb.conf $(CURDIR)/debian/tmp/etc/samba4
-	$(MAKE) -C $(SOURCEPATH)/build/pidl install DESTDIR=$(CURDIR)/debian/tmp
+	$(MAKE) -C $(SOURCEPATH)/pidl install DESTDIR=$(CURDIR)/debian/tmp
 
 binary-arch: build install
 	dh_testdir -a
