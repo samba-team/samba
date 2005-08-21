@@ -38,7 +38,9 @@ int32_t tdb_change_int32_atomic(TDB_CONTEXT *tdb, const char *keystr, int32_t *o
 int tdb_lock_bystring(TDB_CONTEXT *tdb, const char *keyval);
 void tdb_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval);
 int32_t tdb_fetch_int32(TDB_CONTEXT *tdb, const char *keystr);
+BOOL tdb_store_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32_t value);
 int tdb_store_int32(TDB_CONTEXT *tdb, const char *keystr, int32_t v);
+BOOL tdb_fetch_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32_t *value);
 int tdb_traverse_delete_fn(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf,
                      void *state);
 int tdb_store_bystring(TDB_CONTEXT *tdb, const char *keystr, TDB_DATA data, int flags);
