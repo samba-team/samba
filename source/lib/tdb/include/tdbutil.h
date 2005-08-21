@@ -43,5 +43,7 @@ int tdb_traverse_delete_fn(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf,
                      void *state);
 int tdb_store_bystring(TDB_CONTEXT *tdb, const char *keystr, TDB_DATA data, int flags);
 TDB_DATA tdb_fetch_bystring(TDB_CONTEXT *tdb, const char *keystr);
+int tdb_unpack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...);
+size_t tdb_pack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...);
 
 #endif /* __TDBUTIL_H__ */
