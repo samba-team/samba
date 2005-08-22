@@ -153,7 +153,7 @@ NTSTATUS smb_tree_disconnect(struct smbcli_tree *tree)
 	req = smbcli_request_setup(tree, SMBtdis, 0, 0);
 
 	if (smbcli_request_send(req)) {
-		smbcli_request_receive(req);
+		(void) smbcli_request_receive(req);
 	}
 	return smbcli_request_destroy(req);
 }

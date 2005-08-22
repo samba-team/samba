@@ -389,7 +389,7 @@ BOOL handle_oplock_break(struct smbcli_transport *transport, uint_t len, const u
 */
 NTSTATUS smbcli_request_simple_recv(struct smbcli_request *req)
 {
-	smbcli_request_receive(req);
+	(void) smbcli_request_receive(req);
 	return smbcli_request_destroy(req);
 }
 
