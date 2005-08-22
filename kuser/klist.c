@@ -323,14 +323,15 @@ check_for_tgt (krb5_context context,
     pattern.client = principal;
 
     ret = krb5_cc_retrieve_cred (context, ccache, 0, &pattern, &creds);
-    expired = time(NULL) > creds.times.endtime;
     krb5_free_principal (context, pattern.server);
-    krb5_free_cred_contents (context, &creds);
     if (ret) {
 	if (ret == KRB5_CC_END)
 	    return 1;
 	krb5_err (context, 1, ret, "krb5_cc_retrieve_cred");
     }
+    expired = time(NULL) > creds.times.endtime;
+    krb5_free_cred_contents (context, &creds);
+
     return expired;
 }
 
