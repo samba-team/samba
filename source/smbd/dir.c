@@ -42,7 +42,7 @@ struct name_cache_entry {
 
 struct smb_Dir {
 	connection_struct *conn;
-	DIR *dir;
+	SMB_STRUCT_DIR *dir;
 	long offset;
 	char *dir_path;
 	struct name_cache_entry *name_cache;

@@ -34,7 +34,7 @@ static int vfs_extd_audit_debug_level = DBGC_VFS;
 
 static int audit_connect(vfs_handle_struct *handle, connection_struct *conn, const char *svc, const char *user);
 static void audit_disconnect(vfs_handle_struct *handle, connection_struct *conn);
-static DIR *audit_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname, const char *mask, uint32 attr);
+static SMB_STRUCT_DIR *audit_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname, const char *mask, uint32 attr);
 static int audit_mkdir(vfs_handle_struct *handle, connection_struct *conn, const char *path, mode_t mode);
 static int audit_rmdir(vfs_handle_struct *handle, connection_struct *conn, const char *path);
 static int audit_open(vfs_handle_struct *handle, connection_struct *conn, const char *fname, int flags, mode_t mode);
@@ -125,9 +125,9 @@ static void audit_disconnect(vfs_handle_struct *handle, connection_struct *conn)
 	return;
 }
 
-static DIR *audit_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname, const char *mask, uint32 attr)
+static SMB_STRUCT_DIR *audit_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname, const char *mask, uint32 attr)
 {
-	DIR *result;
+	SMB_STRUCT_DIR *result;
 
 	result = SMB_VFS_NEXT_OPENDIR(handle, conn, fname, mask, attr);
 

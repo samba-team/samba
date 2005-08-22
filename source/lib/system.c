@@ -366,7 +366,7 @@ FILE *sys_fopen(const char *path, const char *type)
  An opendir wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 
-DIR *sys_opendir(const char *name)
+SMB_STRUCT_DIR *sys_opendir(const char *name)
 {
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OPENDIR64)
 	return opendir64(name);
@@ -379,7 +379,7 @@ DIR *sys_opendir(const char *name)
  A readdir wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 
-SMB_STRUCT_DIRENT *sys_readdir(DIR *dirp)
+SMB_STRUCT_DIRENT *sys_readdir(SMB_STRUCT_DIR *dirp)
 {
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_READDIR64)
 	return readdir64(dirp);
@@ -392,7 +392,7 @@ SMB_STRUCT_DIRENT *sys_readdir(DIR *dirp)
  A seekdir wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 
-void sys_seekdir(DIR *dirp, long offset)
+void sys_seekdir(SMB_STRUCT_DIR *dirp, long offset)
 {
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_SEEKDIR64)
 	seekdir64(dirp, offset);
@@ -405,7 +405,7 @@ void sys_seekdir(DIR *dirp, long offset)
  A telldir wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 
-long sys_telldir(DIR *dirp)
+long sys_telldir(SMB_STRUCT_DIR *dirp)
 {
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_TELLDIR64)
 	return (long)telldir64(dirp);
@@ -418,7 +418,7 @@ long sys_telldir(DIR *dirp)
  A rewinddir wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 
-void sys_rewinddir(DIR *dirp)
+void sys_rewinddir(SMB_STRUCT_DIR *dirp)
 {
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_REWINDDIR64)
 	rewinddir64(dirp);
@@ -431,7 +431,7 @@ void sys_rewinddir(DIR *dirp)
  A close wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 
-int sys_closedir(DIR *dirp)
+int sys_closedir(SMB_STRUCT_DIR *dirp)
 {
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_CLOSEDIR64)
 	return closedir64(dirp);
