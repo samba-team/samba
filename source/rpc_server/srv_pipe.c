@@ -200,7 +200,7 @@ static BOOL create_next_pdu_ntlmssp(pipes_struct *p)
 	} else {
 		auth_type = RPC_SPNEGO_AUTH_TYPE;
 	}
-	if (p->auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
+	if (p->auth.auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
 		auth_level = RPC_AUTH_LEVEL_PRIVACY;
 	} else {
 		auth_level = RPC_AUTH_LEVEL_INTEGRITY;
@@ -215,7 +215,7 @@ static BOOL create_next_pdu_ntlmssp(pipes_struct *p)
 
 	/* Generate the sign blob. */
 
-	switch (p->auth_level) {
+	switch (p->auth.auth_level) {
 		case PIPE_AUTH_LEVEL_PRIVACY:
 			/* Data portion is encrypted. */
 			status = ntlmssp_seal_packet(a->ntlmssp_state,
@@ -417,7 +417,7 @@ static BOOL create_next_pdu_schannel(pipes_struct *p)
 
 		init_rpc_hdr_auth(&auth_info,
 				RPC_SCHANNEL_AUTH_TYPE,
-				p->auth_level == PIPE_AUTH_LEVEL_PRIVACY ?
+				p->auth.auth_level == PIPE_AUTH_LEVEL_PRIVACY ?
 					RPC_AUTH_LEVEL_PRIVACY : RPC_AUTH_LEVEL_INTEGRITY,
 				ss_padding_len, 1);
 
@@ -431,7 +431,7 @@ static BOOL create_next_pdu_schannel(pipes_struct *p)
 		prs_init(&rauth, 0, p->mem_ctx, MARSHALL);
 
 		schannel_encode(p->auth.a_u.schannel_auth, 
-			      p->auth_level,
+			      p->auth.auth_level,
 			      SENDER_IS_ACCEPTOR,
 			      &verf, data, data_len + ss_padding_len);
 
@@ -581,7 +581,7 @@ static BOOL create_next_pdu_noauth(pipes_struct *p)
 
 BOOL create_next_pdu(pipes_struct *p)
 {
-	switch(p->auth_level) {
+	switch(p->auth.auth_level) {
 		case PIPE_AUTH_LEVEL_NONE:
 		case PIPE_AUTH_LEVEL_CONNECT:
 			/* This is incorrect for auth level connect. Fixme. JRA */
@@ -600,7 +600,7 @@ BOOL create_next_pdu(pipes_struct *p)
 	}
 
 	DEBUG(0,("create_next_pdu: invalid internal auth level %u / type %u",
-			(unsigned int)p->auth_level,
+			(unsigned int)p->auth.auth_level,
 			(unsigned int)p->auth.auth_type));
 	return False;
 }
@@ -821,7 +821,7 @@ static BOOL setup_bind_nak(pipes_struct *p)
 	if (p->auth.auth_data_free_func) {
 		(*p->auth.auth_data_free_func)(&p->auth);
 	}
-	p->auth_level = PIPE_AUTH_LEVEL_NONE;
+	p->auth.auth_level = PIPE_AUTH_LEVEL_NONE;
 	p->auth.auth_type = PIPE_AUTH_TYPE_NONE;
 	p->pipe_bound = False;
 
@@ -1481,10 +1481,10 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		/* Work out if we have to sign or seal etc. */
 		switch (auth_info.auth_level) {
 			case RPC_AUTH_LEVEL_INTEGRITY:
-				p->auth_level = PIPE_AUTH_LEVEL_INTEGRITY;
+				p->auth.auth_level = PIPE_AUTH_LEVEL_INTEGRITY;
 				break;
 			case RPC_AUTH_LEVEL_PRIVACY:
-				p->auth_level = PIPE_AUTH_LEVEL_PRIVACY;
+				p->auth.auth_level = PIPE_AUTH_LEVEL_PRIVACY;
 				break;
 			default:
 				DEBUG(0,("api_pipe_bind_req: unexpected auth level (%u).\n",
@@ -1522,7 +1522,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 			/* We're finished - no more packets. */
 			p->auth.auth_type = PIPE_AUTH_TYPE_NONE;
 			/* We must set the pipe auth_level here also. */
-			p->auth_level = PIPE_AUTH_LEVEL_NONE;
+			p->auth.auth_level = PIPE_AUTH_LEVEL_NONE;
 			p->pipe_bound = True;
 			break;
 
@@ -1837,7 +1837,7 @@ BOOL api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in, NTSTATUS
 	
 	*pstatus = NT_STATUS_OK;
 
-	if (p->auth_level == PIPE_AUTH_LEVEL_NONE || p->auth_level == PIPE_AUTH_LEVEL_CONNECT) {
+	if (p->auth.auth_level == PIPE_AUTH_LEVEL_NONE || p->auth.auth_level == PIPE_AUTH_LEVEL_CONNECT) {
 		return True;
 	}
 
@@ -1885,7 +1885,7 @@ BOOL api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in, NTSTATUS
 	auth_blob.data = prs_data_p(rpc_in) + prs_offset(rpc_in);
 	auth_blob.length = auth_len;
 	
-	switch (p->auth_level) {
+	switch (p->auth.auth_level) {
 		case PIPE_AUTH_LEVEL_PRIVACY:
 			/* Data is encrypted. */
 			*pstatus = ntlmssp_unseal_packet(a->ntlmssp_state,
@@ -1985,7 +1985,7 @@ BOOL api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in)
 	}
 
 	if (!schannel_decode(p->auth.a_u.schannel_auth,
-			   p->auth_level,
+			   p->auth.auth_level,
 			   SENDER_IS_INITIATOR,
 			   &schannel_chk,
 			   prs_data_p(rpc_in)+old_offset, data_len)) {

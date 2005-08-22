@@ -184,7 +184,8 @@ struct schannel_auth_struct {
 /* auth state for all bind types. */
 
 struct pipe_auth_data {
-	enum pipe_auth_type auth_type;
+	enum pipe_auth_type auth_type; /* switch for union below. */
+	enum pipe_auth_level auth_level;
 	union {
 		struct schannel_auth_struct *schannel_auth;
 		AUTH_NTLMSSP_STATE *auth_ntlmssp_state;
@@ -218,9 +219,8 @@ typedef struct pipes_struct {
 	TALLOC_CTX *pipe_state_mem_ctx;
 
 	struct pipe_auth_data auth;
-	enum pipe_auth_level auth_level;
 
-	struct dcinfo dc; /* Keeps the creds data. */
+	struct dcinfo dc; /* Keeps the creds data from netlogon. */
 
 	/*
 	 * Windows user info.
