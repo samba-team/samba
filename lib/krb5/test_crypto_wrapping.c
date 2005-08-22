@@ -73,8 +73,8 @@ test_wrapping(krb5_context context,
 
 	ret = krb5_encrypt(context, crypto, 0, buf, size, &data);
 	if (ret)
-	    krb5_err(context, 1, ret, "encrypt size %d using %s",
-		     size, etype_name);
+	    krb5_err(context, 1, ret, "encrypt size %lu using %s",
+		     (unsigned long)size, etype_name);
 
 	wrapped_size = krb5_get_wrapped_length(context, crypto, size);
 
