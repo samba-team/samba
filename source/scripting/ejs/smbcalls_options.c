@@ -156,7 +156,7 @@ static int ejs_GetOptions(MprVarHandle eid, int argc, struct MprVar **argv)
 					      poptStrerror(opt));
 			mprSetVar(options, "ERROR", mprString(err));
 			talloc_free(tmp_ctx);
-			mpr_Return(eid, mprCreateBoolVar(0));
+			mpr_Return(eid, mprCreateUndefinedVar());
 			return 0;
 		}
 		opt -= BASE_OPTNUM;
