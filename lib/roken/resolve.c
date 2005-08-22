@@ -534,7 +534,11 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
 	}
 	if (len < 0) {
 #ifdef HAVE_RES_NSEARCH
+#ifdef HAVE_RES_NDESTROY
+	    res_ndestroy(&state);
+#else
 	    res_nclose(&state);
+#endif
 #endif
 	    free(reply);
 	    return NULL;
