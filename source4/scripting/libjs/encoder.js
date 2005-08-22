@@ -52,6 +52,8 @@ function encodeElement(e, name) {
 		r = s.sprintf("%s:%s:%s:", name, t, "" + e);
 	} else if (t == "undefined" || t == "null") {
 		r = s.sprintf("%s:%s:", name, t);
+	} else if (t == "pointer") {
+		r = s.sprintf("%s:string:(POINTER):", name);
 	} else {
 		println("Unable to linearise type " + t);
 		r = "";
