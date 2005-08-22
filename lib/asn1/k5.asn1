@@ -68,7 +68,11 @@ PADATA-TYPE ::= INTEGER {
 	KRB5-PADATA-TD-APP-DEFINED-ERROR(106),	-- application specific
 	KRB5-PADATA-TD-REQ-NONCE(107),		-- INTEGER
 	KRB5-PADATA-TD-REQ-SEQ(108),		-- INTEGER
-	KRB5-PADATA-PA-PAC-REQUEST(128)		-- jbrezak@exchange.microsoft.com
+	KRB5-PADATA-PA-PAC-REQUEST(128),	-- jbrezak@exchange.microsoft.com
+	KRB5-PADATA-PK-AS-09-BINDING(132)	-- client send this to 
+						-- tell KDC that is supports 
+						-- the asCheckSum in the
+						--  PK-AS-REP
 }
 
 AUTHDATA-TYPE ::= INTEGER {
