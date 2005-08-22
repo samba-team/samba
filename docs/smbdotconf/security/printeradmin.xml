@@ -13,6 +13,13 @@
 	caution with use in the global stanza as this can
 	cause side effects.
 	</para>
+
+	<para>
+	This parameter has been marked deprecated in favor 
+	of using the SePrintOperatorPrivilege and individual
+	print security descriptors.  It will be removed in a future release.
+	</para>
+	
 </description>
 
 <value type="default"></value>
