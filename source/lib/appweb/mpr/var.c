@@ -181,6 +181,13 @@ static bool freeVarStorage(MprVar *vp, int force)
 		}
 		break;
 
+	case MPR_TYPE_PTR:
+		if (vp->allocatedData) {
+			vp->allocatedData = 0;
+			mprFree(vp->ptr);
+		}
+		break;
+
 	case MPR_TYPE_OBJECT:
 #if VAR_DEBUG
 		/*
@@ -1418,7 +1425,12 @@ static void copyVarCore(MprVar *dest, MprVar *src, int copyDepth)
 	case MPR_TYPE_PTR:
 		/* we have to reference here so talloc structures survive a
 		   copy */
-		dest->ptr = talloc_reference(dest, src->ptr);
+		if (src->allocatedData) {
+			dest->ptr = talloc_reference(mprMemCtx(), src->ptr);
+			dest->allocatedData = 1;
+		} else {
+			dest->ptr = src->ptr;
+		}
 		break;
 
 	case MPR_TYPE_STRING_CFUNCTION:
