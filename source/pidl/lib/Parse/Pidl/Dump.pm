@@ -208,9 +208,9 @@ sub DumpFunction($)
 
     $res .= DumpType($function->{RETURN_TYPE});
     $res .= " $function->{NAME}(\n";
-    for my $d (@{$function->{DATA}}) {
-	$first || ($res .= ",\n"); $first = 0;
-	$res .= DumpElement($d);
+    for my $d (@{$function->{ELEMENTS}}) {
+		unless ($first) { $res .= ",\n"; } $first = 0;
+		$res .= DumpElement($d);
     }
     $res .= "\n);\n\n";
 
