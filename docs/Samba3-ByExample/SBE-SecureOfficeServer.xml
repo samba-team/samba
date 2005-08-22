@@ -1786,7 +1786,9 @@ sleeth1.abmas.biz has address 192.168.1.1
 <screen>
 hosts:        wins
 </screen>
-			The next step is to make certain that Samba is running using <command>ps ax|grep mbd</command>, and then execute the following:
+			The next step is to make certain that Samba is running using <command>ps ax | grep mbd</command>,
+			and that <command>winbindd</command> is running by executing <command>ps ax | grep winbind</command>.
+			Having validated that Samba is operational, excute the following:
 <screen>
 &rootprompt; ping diamond
 PING diamond (192.168.1.1) 56(84) bytes of data.
