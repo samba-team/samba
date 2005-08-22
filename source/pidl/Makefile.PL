@@ -9,8 +9,8 @@ WriteMakefile(
 
 sub MY::postamble {
 <<'EOT';
-Parse/Pidl/IDL.pm :: idl.yp
-	yapp -s -m 'Parse::Pidl::IDL' -o 'Parse/Pidl/IDL.pm' idl.yp
+lib/Parse/Pidl/IDL.pm :: idl.yp
+	yapp -s -m 'Parse::Pidl::IDL' -o 'lib/Parse/Pidl/IDL.pm' idl.yp
 
 doc: pidl.1 pidl.1.html
 
