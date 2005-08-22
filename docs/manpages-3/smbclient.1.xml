@@ -715,19 +715,9 @@
 		<varlistentry>
 		<term>print &lt;file name&gt;</term>
 		<listitem><para>Print the specified file from the local machine 
-		through a printable service on the server. </para>
-
-		<para>See also the printmode command.</para></listitem>
+		through a printable service on the server. </para></listitem>
 		</varlistentry>
 		
-		
-		
-		<varlistentry>
-		<term>printmode &lt;graphics or text&gt;</term>
-		<listitem><para>Set the print mode to suit either binary data 
-		(such as graphical information) or text. Subsequent print
-		commands will use the currently set print mode. </para></listitem>
-		</varlistentry>
 		
 		
 		<varlistentry>
