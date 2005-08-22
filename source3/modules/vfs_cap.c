@@ -38,14 +38,14 @@ static SMB_BIG_UINT cap_disk_free(vfs_handle_struct *handle, connection_struct *
 					 dfree, dsize);
 }
 
-static DIR *cap_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname, const char *mask, uint32 attr)
+static SMB_STRUCT_DIR *cap_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname, const char *mask, uint32 attr)
 {
         pstring capname;
         capencode(capname, fname);
 	return SMB_VFS_NEXT_OPENDIR(handle, conn, capname, mask, attr);
 }
 
-static SMB_STRUCT_DIRENT *cap_readdir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp)
+static SMB_STRUCT_DIRENT *cap_readdir(vfs_handle_struct *handle, connection_struct *conn, SMB_STRUCT_DIR *dirp)
 {
         SMB_STRUCT_DIRENT *result;
 	DEBUG(3,("cap: cap_readdir\n"));
