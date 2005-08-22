@@ -724,7 +724,7 @@ NTSTATUS smb_raw_search_close(struct smbcli_tree *tree,
 	SSVAL(req->out.vwv, VWV(0), io->findclose.in.handle);
 
 	if (smbcli_request_send(req)) {
-		smbcli_request_receive(req);
+		(void) smbcli_request_receive(req);
 	}
 
 	return smbcli_request_destroy(req);
