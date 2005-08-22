@@ -151,7 +151,7 @@ BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
 			DEBUG(1, ("Failed to establish session_info: %s\n", nt_errstr(status)));
 			return False;
 		}
-		/* Now that we are authenticated, got back to the generic session key... */
+		/* Now that we are authenticated, go back to the generic session key... */
 		dce_conn->auth_state.session_key = dcesrv_generic_session_key;
 		return True;
 	} else {
