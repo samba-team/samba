@@ -80,6 +80,7 @@ typedef struct regf_hbin {
 typedef struct {
 	uint32 nk_off;
 	uint8 keycheck[sizeof(uint32)];
+	char *fullname;
 } REGF_HASH_REC;
 
 typedef struct {
