@@ -230,9 +230,10 @@ BOOL push_deferred_open_smb_message(struct timeval *ptv,
 	tv.tv_sec = tdif / 1000000;
 	tv.tv_usec = tdif % 1000000;
 	
-	DEBUG(10,("push_deferred_open_smb_message: pushing message len %u mid %u\
- timeout time [%u.%06u]\n", (unsigned int) smb_len(current_inbuf)+4, (unsigned int)mid,
-		(unsigned int)tv.tv_sec, (unsigned int)tv.tv_usec));
+	DEBUG(10,("push_deferred_open_smb_message: pushing message len %u mid %u "
+		  "timeout time [%u.%06u]\n",
+		  (unsigned int) smb_len(current_inbuf)+4, (unsigned int)mid,
+		  (unsigned int)tv.tv_sec, (unsigned int)tv.tv_usec));
 
 	return push_queued_message(current_inbuf, smb_len(current_inbuf)+4,
 				   &tv, private_data, priv_len);
