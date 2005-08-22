@@ -185,6 +185,24 @@ AC_FIND_FUNC(res_nsearch, resolv,
 ],
 [0,0,0,0,0,0])
 
+AC_FIND_FUNC(res_ndestroy, resolv,
+[
+#include <stdio.h>
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_ARPA_NAMESER_H
+#include <arpa/nameser.h>
+#endif
+#ifdef HAVE_RESOLV_H
+#include <resolv.h>
+#endif
+],
+[0])
+
 AC_FIND_FUNC(dn_expand, resolv,
 [
 #include <stdio.h>
