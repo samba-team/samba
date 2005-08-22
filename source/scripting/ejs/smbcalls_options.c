@@ -28,8 +28,7 @@
 
 /*
   usage:
-      var options = new Object();
-      result = GetOptions(argv, options, 
+      options = GetOptions(argv, 
                           "realm=s", 
                           "enablexx", 
                           "myint=i");
@@ -41,6 +40,7 @@
 
       additional command line arguments are placed in options.ARGV
 */
+
 static int ejs_GetOptions(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	poptContext pc;
@@ -52,13 +52,15 @@ static int ejs_GetOptions(MprVarHandle eid, int argc, struct MprVar **argv)
 	} tables[] = {
 		{ "POPT_AUTOHELP", poptHelpOptions, "Help options:" },
 		{ "POPT_COMMON_SAMBA", popt_common_samba, "Common Samba options:" },
-		{ "POPT_COMMON_CONNECTION", popt_common_connection, "Connection options:" },
+ 		{ "POPT_COMMON_CONNECTION", popt_common_connection, "Connection options:" },
 		{ "POPT_COMMON_CREDENTIALS", popt_common_credentials, "Authentication options:" },
 		{ "POPT_COMMON_VERSION", popt_common_version, "Common Samba options:" }
 	};
+
+	struct MprVar *options = mprInitObject(eid, "options", 0, NULL);
+
 	TALLOC_CTX *tmp_ctx = talloc_new(mprMemCtx());
 	struct poptOption *long_options = NULL;
-	struct MprVar *options;
 	int i, num_options = 0;
 	int opt_argc;
 	const char **opt_argv;
@@ -66,15 +68,12 @@ static int ejs_GetOptions(MprVarHandle eid, int argc, struct MprVar **argv)
 	const int BASE_OPTNUM = 0x100000;
 
 	/* validate arguments */
-	if (argc < 2 ||
-	    argv[0]->type != MPR_TYPE_OBJECT ||
-	    argv[1]->type != MPR_TYPE_OBJECT) {
+	if (argc < 1 || argv[0]->type != MPR_TYPE_OBJECT) {
 		ejsSetErrorMsg(eid, "GetOptions invalid arguments");
 		return -1;
 	}
 
 	opt_argv = mprToArray(tmp_ctx, argv[0]);
-	options  = argv[1];
 	opt_argc = str_list_length(opt_argv);
 
 	long_options = talloc_array(tmp_ctx, struct poptOption, 1);
@@ -178,7 +177,10 @@ static int ejs_GetOptions(MprVarHandle eid, int argc, struct MprVar **argv)
 	poptFreeContext(pc);
 
 	talloc_free(tmp_ctx);
-	mpr_Return(eid, mprCreateBoolVar(1));
+
+	/* setup methods */
+	mprSetCFunction(options, "get_credentials", ejs_credentials_cmdline);
+
 	return 0;
 }
 

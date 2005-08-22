@@ -11,12 +11,12 @@ libinclude("management.js");
 
 var options = new Object();
 
-ok = GetOptions(ARGV, options,
+options = GetOptions(ARGV,
 		"POPT_AUTOHELP",
 		"POPT_COMMON_SAMBA",
 		"POPT_COMMON_VERSION",
 		"nbt");
-if (ok == false) {
+if (options == undefined) {
 	println("Failed to parse options: " + options.ERROR);
 	return -1;
 }

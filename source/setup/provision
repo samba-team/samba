@@ -6,8 +6,7 @@ exec smbscript "$0" ${1+"$@"}
 	Released under the GNU GPL v2 or later
 */
 
-options = new Object();
-ok = GetOptions(ARGV, options, 
+options = GetOptions(ARGV,
 		"POPT_AUTOHELP",
 		"POPT_COMMON_SAMBA",
 		"POPT_COMMON_VERSION",
@@ -29,8 +28,9 @@ ok = GetOptions(ARGV, options,
 		'users=s',
 		'quiet',
                 'blank');
-if (ok == false) {
-   println("Failed to parse options: " + options.ERROR);
+
+if (options == undefined) {
+   println("Failed to parse options: ", options.ERROR);
    return -1;
 }
 

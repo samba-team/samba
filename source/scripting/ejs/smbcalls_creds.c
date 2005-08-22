@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "scripting/ejs/smbcalls.h"
 #include "lib/appweb/ejs/ejs.h"
+#include "lib/cmdline/popt_common.h"
 
 /*
   helper function to get the local objects credentials ptr
@@ -184,19 +185,9 @@ static int ejs_creds_get_workstation(MprVarHandle eid, int argc, struct MprVar *
 /*
   initialise credentials ejs object
 */
-static int ejs_credentials_init(MprVarHandle eid, int argc, struct MprVar **argv)
+static int ejs_credentials_obj(MprVarHandle eid, int argc, struct MprVar **argv, struct cli_credentials *creds)
 {
 	struct MprVar *obj = mprInitObject(eid, "credentials", argc, argv);
-	struct cli_credentials *creds;
-
-	creds = cli_credentials_init(mprMemCtx());
-	if (creds == NULL) {
-		return -1;
-	}
-
-	cli_credentials_guess(creds);
-	cli_credentials_set_username(creds, "", CRED_GUESSED);
-	cli_credentials_set_password(creds, "", CRED_GUESSED);
 
 	mprSetPtrChild(obj, "creds", creds);
 
@@ -213,6 +204,30 @@ static int ejs_credentials_init(MprVarHandle eid, int argc, struct MprVar **argv
 	mprSetStringCFunction(obj, "set_workstation", ejs_creds_set_workstation);
 
 	return 0;
+}
+
+
+/*
+  initialise credentials ejs object
+*/
+static int ejs_credentials_init(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	struct cli_credentials *creds;
+
+	creds = cli_credentials_init(mprMemCtx());
+	if (creds == NULL) {
+		return -1;
+	}
+
+	return ejs_credentials_obj(eid, argc, argv, creds);
+}
+
+/*
+  initialise cmdline credentials ejs object
+*/
+int ejs_credentials_cmdline(int eid, int argc, struct MprVar **argv)
+{
+	return ejs_credentials_obj(eid, argc, argv, cmdline_credentials);
 }
 
 
