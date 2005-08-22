@@ -86,7 +86,7 @@ function __registry_tree(binding)
 		setBorder(QxBorder.presets.inset);
 		setOverflow("scroll");
 		setStyleProperty("padding", "2px");
-		setWidth("100%");
+		setWidth("50%");
 		setHeight("90%");
 		setTop("10%");
 	}
@@ -97,8 +97,27 @@ function __registry_tree(binding)
 }
 
 /*
-  create a registry editing widget and return it as a object
+  the table of values
+*/
+function __values_table()
+{
+	var headings = new Array("Name", "Type", "Size", "Value");
+	var table = document.createElement('table');
+	table.border = "1";
+	var body = document.createElement('tbody');
+	table.appendChild(body);
+	var th = document.createElement('th');
+	for (var i=0;i<headings.length;i++) {
+		var td = document.createElement('td');
+		td.appendChild(document.createTextNode(headings[i]));
+		th.appendChild(td);
+	}
+	body.appendChild(th);
+	return table;
+}
 
+/*
+  create a registry editing widget and return it as a object
 */
 function regedit_widget(binding) 
 {
@@ -114,7 +133,7 @@ function regedit_widget(binding)
 		setHeight("100%");
 	};
 
-	var gl = new QxGridLayout("auto,auto,auto,auto,auto", "100%");
+	var gl = new QxGridLayout("auto,auto,auto,auto,auto", "50%,50%");
 	gl.setEdge(0);
 	gl.setCellPaddingTop(3);
 	gl.setCellPaddingBottom(3);
@@ -134,8 +153,11 @@ function regedit_widget(binding)
 	var b = new QxTextField(regedit.binding);
 	b.addEventListener("changeText", change_binding);
 
-	gl.add(b, { row : 1, col : 1 });
-	gl.add(t, { row : 2, col : 1 });
+	var values = new __values_table();
+
+	gl.add(b,      { row : 1, col : 1 });
+	gl.add(t,      { row : 2, col : 1 });
+//	gl.add(values, { row : 2, col : 2 });
 	
 	fieldSet.add(gl);
 	regedit.add(fieldSet);
