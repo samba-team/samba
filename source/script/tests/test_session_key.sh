@@ -35,4 +35,5 @@ transport="ncacn_np"
    name="RPC-SECRETS on $transport with $ntlmoptions"
    testit "$name" bin/smbtorture $TORTURE_OPTIONS $transport:"$server[$bindoptions]" $ntlmoptions -U"$username"%"$password" -W $domain RPC-SECRETS "$*" || failed=`expr $failed + 1`
   done
+
 testok $0 $failed
