@@ -127,14 +127,14 @@ etags:
 ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
 
-idl_full: pidl/Parse/Pidl/IDL.pm
+idl_full: pidl/lib/Parse/Pidl/IDL.pm
 	@CPP="$(CPP)" PERL="$(PERL)" script/build_idl.sh FULL @PIDL_ARGS@
 
-idl: pidl/Parse/Pidl/IDL.pm
+idl: pidl/lib/Parse/Pidl/IDL.pm
 	@CPP="$(CPP)" PERL="$(PERL)" script/build_idl.sh PARTIAL @PIDL_ARGS@
 
-pidl/Parse/Pidl/IDL.pm: pidl/idl.yp
-	-yapp -s -m 'Parse::Pidl::IDL' -o pidl/Parse/Pidl/IDL.pm pidl/idl.yp 
+pidl/lib/Parse/Pidl/IDL.pm: pidl/idl.yp
+	-yapp -s -m 'Parse::Pidl::IDL' -o pidl/lib/Parse/Pidl/IDL.pm pidl/idl.yp 
 
 smb_interfaces: pidl/smb_interfaces.pm
 	$(PERL) -Ipidl script/build_smb_interfaces.pl \
