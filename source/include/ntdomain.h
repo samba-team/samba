@@ -179,20 +179,7 @@ enum pipe_auth_level { PIPE_AUTH_LEVEL_NONE = 0,
 struct schannel_auth_struct {
 	uchar sess_key[16];
 	uint32 seq_num;
-	int auth_flags;
 };
-
-#if 0
-/* auth state for ntlmssp. */
-struct ntlmssp_auth_struct {
-	uint32 ntlmssp_chal_flags; /* Client challenge flags. */
-	BOOL ntlmssp_auth_requested; /* If the client wanted authenticated rpc. */
-	BOOL ntlmssp_auth_validated; /* If the client *got* authenticated rpc. */
-	unsigned char challenge[8];
-	unsigned char ntlmssp_arc4_state[258];
-	uint32 ntlmssp_seq_num;
-};
-#endif
 
 /* auth state for all bind types. */
 
@@ -232,19 +219,6 @@ typedef struct pipes_struct {
 
 	struct pipe_auth_data auth;
 	enum pipe_auth_level auth_level;
-
-#if 0
-	uint32 ntlmssp_chal_flags; /* Client challenge flags. */
-	BOOL ntlmssp_auth_requested; /* If the client wanted authenticated rpc. */
-	BOOL ntlmssp_auth_validated; /* If the client *got* authenticated rpc. */
-	unsigned char challenge[8];
-	unsigned char ntlmssp_hash[258];
-	uint32 ntlmssp_seq_num;
-
-	/* schannel auth state. */
-	BOOL netsec_auth_validated;
-	struct netsec_auth_struct netsec_auth;
-#endif
 
 	struct dcinfo dc; /* Keeps the creds data. */
 

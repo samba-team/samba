@@ -405,7 +405,6 @@ static BOOL create_next_pdu_schannel(pipes_struct *p)
 		/*
 		 * Schannel processing.
 		 */
-		int auth_type, auth_level;
 		char *data;
 		RPC_HDR_AUTH auth_info;
 
@@ -416,9 +415,11 @@ static BOOL create_next_pdu_schannel(pipes_struct *p)
 		data = prs_data_p(&outgoing_pdu) + data_pos;
 		/* Check it's the type of reply we were expecting to decode */
 
-		get_auth_type_level(p->auth.a_u.schannel_auth->auth_flags, &auth_type, &auth_level);
-		init_rpc_hdr_auth(&auth_info, auth_type, auth_level, 
-					  ss_padding_len, 1);
+		init_rpc_hdr_auth(&auth_info,
+				RPC_SCHANNEL_AUTH_TYPE,
+				p->auth_level == PIPE_AUTH_LEVEL_PRIVACY ?
+					RPC_AUTH_LEVEL_PRIVACY : RPC_AUTH_LEVEL_INTEGRITY,
+				ss_padding_len, 1);
 
 		if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, &outgoing_pdu, 0)) {
 			DEBUG(0,("create_next_pdu_schannel: failed to marshall RPC_HDR_AUTH.\n"));
@@ -430,7 +431,7 @@ static BOOL create_next_pdu_schannel(pipes_struct *p)
 		prs_init(&rauth, 0, p->mem_ctx, MARSHALL);
 
 		schannel_encode(p->auth.a_u.schannel_auth, 
-			      p->auth.a_u.schannel_auth->auth_flags,
+			      p->auth_level,
 			      SENDER_IS_ACCEPTOR,
 			      &verf, data, data_len + ss_padding_len);
 
@@ -1978,25 +1979,13 @@ BOOL api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in)
 		return False;
 	}
 
-	if (auth_info.auth_level == RPC_AUTH_LEVEL_PRIVACY) {
-		p->auth.a_u.schannel_auth->auth_flags = AUTH_PIPE_SCHANNEL|AUTH_PIPE_SIGN|AUTH_PIPE_SEAL;
-	} else if (auth_info.auth_level == RPC_AUTH_LEVEL_INTEGRITY) {
-		p->auth.a_u.schannel_auth->auth_flags = AUTH_PIPE_SCHANNEL|AUTH_PIPE_SIGN;
-	} else {
-		DEBUG(0,("Invalid auth level %d on schannel\n",
-			 auth_info.auth_level));
-		return False;
-	}
-
-	if(!smb_io_rpc_auth_schannel_chk("", RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN, 
-		&schannel_chk, rpc_in, 0)) 
-	{
+	if(!smb_io_rpc_auth_schannel_chk("", RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN, &schannel_chk, rpc_in, 0)) {
 		DEBUG(0,("failed to unmarshal RPC_AUTH_SCHANNEL_CHK.\n"));
 		return False;
 	}
 
 	if (!schannel_decode(p->auth.a_u.schannel_auth,
-			   p->auth.a_u.schannel_auth->auth_flags,
+			   p->auth_level,
 			   SENDER_IS_INITIATOR,
 			   &schannel_chk,
 			   prs_data_p(rpc_in)+old_offset, data_len)) {

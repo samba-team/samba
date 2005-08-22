@@ -1412,7 +1412,7 @@ BOOL prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16], int len)
  ********************************************************************/
 
 static void schannel_digest(struct schannel_auth_struct *a,
-			  int auth_flags,
+			  enum pipe_auth_level auth_level,
 			  RPC_AUTH_SCHANNEL_CHK * verf,
 			  char *data, size_t data_len,
 			  uchar digest_final[16]) 
@@ -1427,7 +1427,7 @@ static void schannel_digest(struct schannel_auth_struct *a,
 	   out of order */
 	MD5Update(&ctx3, zeros, sizeof(zeros));
 	MD5Update(&ctx3, verf->sig, sizeof(verf->sig));
-	if (auth_flags & AUTH_PIPE_SEAL) {
+	if (auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
 		MD5Update(&ctx3, verf->confounder, sizeof(verf->confounder));
 	}
 	MD5Update(&ctx3, (const unsigned char *)data, data_len);
@@ -1517,7 +1517,7 @@ static BOOL init_rpc_auth_schannel_chk(RPC_AUTH_SCHANNEL_CHK * chk,
  quite compatible with what MS does.
  ********************************************************************/
 
-void schannel_encode(struct schannel_auth_struct *a, int auth_flags, 
+void schannel_encode(struct schannel_auth_struct *a, enum pipe_auth_level auth_level,
 		   enum schannel_direction direction,
 		   RPC_AUTH_SCHANNEL_CHK * verf,
 		   char *data, size_t data_len)
@@ -1533,9 +1533,9 @@ void schannel_encode(struct schannel_auth_struct *a, int auth_flags,
 
 	DEBUG(10,("SCHANNEL: schannel_encode seq_num=%d data_len=%lu\n", a->seq_num, (unsigned long)data_len));
 	
-	if (auth_flags & AUTH_PIPE_SEAL) {
+	if (auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
 		schannel_sig = schannel_seal_sig;
-	} else if (auth_flags & AUTH_PIPE_SIGN) {
+	} else {
 		schannel_sig = schannel_sign_sig;
 	}
 
@@ -1561,10 +1561,10 @@ void schannel_encode(struct schannel_auth_struct *a, int auth_flags,
 				 seq_num, confounder);
 				
 	/* produce a digest of the packet to prove it's legit (before we seal it) */
-	schannel_digest(a, auth_flags, verf, data, data_len, digest_final);
+	schannel_digest(a, auth_level, verf, data, data_len, digest_final);
 	memcpy(verf->packet_digest, digest_final, sizeof(verf->packet_digest));
 
-	if (auth_flags & AUTH_PIPE_SEAL) {
+	if (auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
 		uchar sealing_key[16];
 
 		/* get the key to encode the data with */
@@ -1596,7 +1596,7 @@ void schannel_encode(struct schannel_auth_struct *a, int auth_flags,
  as well as decode sealed messages
  ********************************************************************/
 
-BOOL schannel_decode(struct schannel_auth_struct *a, int auth_flags,
+BOOL schannel_decode(struct schannel_auth_struct *a, enum pipe_auth_level auth_level,
 		   enum schannel_direction direction, 
 		   RPC_AUTH_SCHANNEL_CHK * verf, char *data, size_t data_len)
 {
@@ -1610,9 +1610,9 @@ BOOL schannel_decode(struct schannel_auth_struct *a, int auth_flags,
 
 	DEBUG(10,("SCHANNEL: schannel_decode seq_num=%d data_len=%lu\n", a->seq_num, (unsigned long)data_len));
 	
-	if (auth_flags & AUTH_PIPE_SEAL) {
+	if (auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
 		schannel_sig = schannel_seal_sig;
-	} else if (auth_flags & AUTH_PIPE_SIGN) {
+	} else {
 		schannel_sig = schannel_sign_sig;
 	}
 
@@ -1661,7 +1661,7 @@ BOOL schannel_decode(struct schannel_auth_struct *a, int auth_flags,
 		return False;
 	}
 
-	if (auth_flags & AUTH_PIPE_SEAL) {
+	if (auth_level == PIPE_AUTH_LEVEL_PRIVACY) {
 		uchar sealing_key[16];
 		
 		/* get the key to extract the data with */
@@ -1682,7 +1682,7 @@ BOOL schannel_decode(struct schannel_auth_struct *a, int auth_flags,
 	}
 
 	/* digest includes 'data' after unsealing */
-	schannel_digest(a, auth_flags, verf, data, data_len, digest_final);
+	schannel_digest(a, auth_level, verf, data, data_len, digest_final);
 
 	dump_data_pw("Calculated digest:\n", digest_final, 
 		     sizeof(digest_final));
