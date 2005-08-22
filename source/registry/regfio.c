@@ -1670,7 +1670,7 @@ static BOOL create_vk_record( REGF_FILE *file, REGF_VK_REC *vk, REGISTRY_VALUE *
 
 static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 {
-	return StrnCaseCmp( h1->keycheck, h2->keycheck, sizeof(uint32) );
+	return strcmp( h1->fullname, h2->fullname );
 }
 
 /*******************************************************************
@@ -1722,6 +1722,7 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 
 		hash->nk_off = prs_offset( &nk->hbin->ps ) + nk->hbin->first_hbin_off - HBIN_HDR_SIZE;
 		memcpy( hash->keycheck, name, sizeof(uint32) );
+		hash->fullname = talloc_strdup( file->mem_ctx, name );
 		parent->subkey_index++;
 
 		/* sort the list by keyname */
@@ -1852,8 +1853,8 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 				nk->max_bytes_valuename = namelen * 2;
 
 			datalen = regval_size( r );
-			if ( datalen*2 > nk->max_bytes_value )
-				nk->max_bytes_value = datalen * 2;
+			if ( datalen > nk->max_bytes_value )
+				nk->max_bytes_value = datalen;
 		}
 	}
 
