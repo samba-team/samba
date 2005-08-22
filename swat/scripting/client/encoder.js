@@ -71,7 +71,7 @@ function decodeObjectArray(a) {
 			value = a[a.i]; a.i++;
 			o[name] = value * 1;
 		} else {
-			alert("Unable to delinearise type " + t);
+			alert("Unable to delinearise type " + type);
 		}
 	}
 	return o;
