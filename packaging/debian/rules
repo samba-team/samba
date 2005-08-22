@@ -32,7 +32,7 @@ build: configure
 	$(MAKE) -C $(SOURCEPATH) proto 
 	-$(MAKE) -C $(SOURCEPATH) pch
 	$(MAKE) -C $(SOURCEPATH) all
-	$(MAKE) -C $(SOURCEPATH)/pidl all
+	$(MAKE) -C $(SOURCEPATH)/pidl all doc
 	touch $@
 
 clean:
