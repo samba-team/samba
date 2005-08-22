@@ -71,27 +71,27 @@ static int skel_get_shadow_copy_data(vfs_handle_struct *handle, files_struct *fs
 	return vfswrap_get_shadow_copy_data(NULL, fsp, shadow_copy_data, labels);
 }
 
-static DIR *skel_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname, const char *mask, uint32 attr)
+static SMB_STRUCT_DIR *skel_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname, const char *mask, uint32 attr)
 {
 	return vfswrap_opendir(NULL, conn, fname, mask, attr);
 }
 
-static SMB_STRUCT_DIRENT *skel_readdir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp)
+static SMB_STRUCT_DIRENT *skel_readdir(vfs_handle_struct *handle, connection_struct *conn, SMB_STRUCT_DIR *dirp)
 {
 	return vfswrap_readdir(NULL, conn, dirp);
 }
 
-static void skel_seekdir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp, long offset)
+static void skel_seekdir(vfs_handle_struct *handle, connection_struct *conn, SMB_STRUCT_DIR *dirp, long offset)
 {
 	return vfswrap_seekdir(NULL, conn, dirp, offset);
 }
 
-static long skel_telldir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp)
+static long skel_telldir(vfs_handle_struct *handle, connection_struct *conn, SMB_STRUCT_DIR *dirp)
 {
 	return vfswrap_telldir(NULL, conn, dirp);
 }
 
-static void skel_rewinddir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp)
+static void skel_rewinddir(vfs_handle_struct *handle, connection_struct *conn, SMB_STRUCT_DIR *dirp)
 {
 	return vfswrap_rewinddir(NULL, conn, dirp);
 }
@@ -106,7 +106,7 @@ static int skel_rmdir(vfs_handle_struct *handle, connection_struct *conn, const 
 	return vfswrap_rmdir(NULL, conn, path);
 }
 
-static int skel_closedir(vfs_handle_struct *handle, connection_struct *conn, DIR *dir)
+static int skel_closedir(vfs_handle_struct *handle, connection_struct *conn, SMB_STRUCT_DIR *dir)
 {
 	return vfswrap_closedir(NULL, conn, dir);
 }

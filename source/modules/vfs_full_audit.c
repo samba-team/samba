@@ -86,22 +86,22 @@ static int smb_full_audit_get_shadow_copy_data(struct vfs_handle_struct *handle,
                                 struct files_struct *fsp,
                                 SHADOW_COPY_DATA *shadow_copy_data, BOOL labels);
 
-static DIR *smb_full_audit_opendir(vfs_handle_struct *handle, connection_struct *conn,
+static SMB_STRUCT_DIR *smb_full_audit_opendir(vfs_handle_struct *handle, connection_struct *conn,
 			  const char *fname, const char *mask, uint32 attr);
 static SMB_STRUCT_DIRENT *smb_full_audit_readdir(vfs_handle_struct *handle,
-				    connection_struct *conn, DIR *dirp);
+				    connection_struct *conn, SMB_STRUCT_DIR *dirp);
 static void smb_full_audit_seekdir(vfs_handle_struct *handle, connection_struct *conn,
-			DIR *dirp, long offset);
+			SMB_STRUCT_DIR *dirp, long offset);
 static long smb_full_audit_telldir(vfs_handle_struct *handle, connection_struct *conn,
-			DIR *dirp);
+			SMB_STRUCT_DIR *dirp);
 static void smb_full_audit_rewinddir(vfs_handle_struct *handle, connection_struct *conn,
-			DIR *dirp);
+			SMB_STRUCT_DIR *dirp);
 static int smb_full_audit_mkdir(vfs_handle_struct *handle, connection_struct *conn,
 		       const char *path, mode_t mode);
 static int smb_full_audit_rmdir(vfs_handle_struct *handle, connection_struct *conn,
 		       const char *path);
 static int smb_full_audit_closedir(vfs_handle_struct *handle, connection_struct *conn,
-			  DIR *dirp);
+			  SMB_STRUCT_DIR *dirp);
 static int smb_full_audit_open(vfs_handle_struct *handle, connection_struct *conn,
 		      const char *fname, int flags, mode_t mode);
 static int smb_full_audit_close(vfs_handle_struct *handle, files_struct *fsp, int fd);
@@ -845,10 +845,10 @@ static int smb_full_audit_get_shadow_copy_data(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static DIR *smb_full_audit_opendir(vfs_handle_struct *handle, connection_struct *conn,
+static SMB_STRUCT_DIR *smb_full_audit_opendir(vfs_handle_struct *handle, connection_struct *conn,
 			  const char *fname, const char *mask, uint32 attr)
 {
-	DIR *result;
+	SMB_STRUCT_DIR *result;
 
 	result = SMB_VFS_NEXT_OPENDIR(handle, conn, fname, mask, attr);
 
@@ -858,7 +858,7 @@ static DIR *smb_full_audit_opendir(vfs_handle_struct *handle, connection_struct 
 }
 
 static SMB_STRUCT_DIRENT *smb_full_audit_readdir(vfs_handle_struct *handle,
-				    connection_struct *conn, DIR *dirp)
+				    connection_struct *conn, SMB_STRUCT_DIR *dirp)
 {
 	SMB_STRUCT_DIRENT *result;
 
@@ -873,7 +873,7 @@ static SMB_STRUCT_DIRENT *smb_full_audit_readdir(vfs_handle_struct *handle,
 }
 
 static void smb_full_audit_seekdir(vfs_handle_struct *handle, connection_struct *conn,
-			DIR *dirp, long offset)
+			SMB_STRUCT_DIR *dirp, long offset)
 {
 	SMB_VFS_NEXT_SEEKDIR(handle, conn, dirp, offset);
 
@@ -882,7 +882,7 @@ static void smb_full_audit_seekdir(vfs_handle_struct *handle, connection_struct 
 }
 
 static long smb_full_audit_telldir(vfs_handle_struct *handle, connection_struct *conn,
-			DIR *dirp)
+			SMB_STRUCT_DIR *dirp)
 {
 	long result;
 
@@ -894,7 +894,7 @@ static long smb_full_audit_telldir(vfs_handle_struct *handle, connection_struct 
 }
 
 static void smb_full_audit_rewinddir(vfs_handle_struct *handle, connection_struct *conn,
-			DIR *dirp)
+			SMB_STRUCT_DIR *dirp)
 {
 	SMB_VFS_NEXT_REWINDDIR(handle, conn, dirp);
 
@@ -927,7 +927,7 @@ static int smb_full_audit_rmdir(vfs_handle_struct *handle, connection_struct *co
 }
 
 static int smb_full_audit_closedir(vfs_handle_struct *handle, connection_struct *conn,
-			  DIR *dirp)
+			  SMB_STRUCT_DIR *dirp)
 {
 	int result;
 

@@ -744,6 +744,18 @@ typedef int socklen_t;
 #endif
 
 /*
+ * Type for DIR structure.
+ */
+
+#ifndef SMB_STRUCT_DIR
+#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_DIR64)
+#    define SMB_STRUCT_DIR DIR64
+#  else
+#    define SMB_STRUCT_DIR DIR
+#  endif
+#endif
+
+/*
  * Defines for 64 bit fcntl locks.
  */
 
