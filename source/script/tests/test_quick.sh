@@ -36,4 +36,4 @@ for t in $tests; do
 done
 
 testok $0 $failed
-sleep 10000
+
