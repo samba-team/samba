@@ -50,4 +50,9 @@ static /**/const char *const rcsid[] = { (const char *)rcsid, "\100(#)" msg }
 #define HAVE_SETEUID 1
 #endif
 
+#define GETHOSTBYADDR_PROTO_COMPATIBLE
+#define GETSERVBYNAME_PROTO_COMPATIBLE
+#define OPENLOG_PROTO_COMPATIBLE
+#define GETSOCKNAME_PROTO_COMPATIBLE
+
 #endif
