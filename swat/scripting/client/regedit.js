@@ -5,10 +5,17 @@
 	released under the GNU GPL Version 2 or later
 */
 
-function __folder_list(fParent, list) 
+
+/*
+  callback from the key enumeration call
+*/
+function __folder_keys(fParent, list) 
 {
 	var i;
-	fParent.removeAll();
+	if (fParent.working == 1) {
+		fParent.working = 0;
+		fParent.removeAll();
+	}
 	for (i=0;i<list.length;i++) {
 		var fChild;
 		fChild = new QxTreeFolder(list[i]);
@@ -19,20 +26,50 @@ function __folder_list(fParent, list)
 		} else {
 			fChild.reg_path = fParent.reg_path + '\\' + list[i];
 		}
+		fChild.working = 1;
 		fChild.add(new QxTreeFolder('Working ...'));
 		fChild.addEventListener("click", function() { 
 			var el = this; __folder_click(el); 
 		});
-		fParent.setOpen(1);
 	}
+	fParent.setOpen(1);
 }
 
+/*
+  callback from the key enumeration call
+*/
+function __folder_values(fParent, list) 
+{
+	var i;
+	if (list.length == 0) {
+		return;
+	}
+	if (fParent.working == 1) {
+		fParent.working = 0;
+		fParent.removeAll();
+	}
+	for (i=0;i<list.length;i++) {
+		var fChild;
+		fChild = new QxTreeFile(list[i].name);
+		fChild.parent = fParent;
+		fChild.details = list[i];
+		fParent.add(fChild);
+	}
+	fParent.setOpen(1);
+}
+
+/*
+  called when someone clicks on a folder
+*/
 function __folder_click(node) 
 {
 	if (!node.populated) {
 		node.populated = true;
-		server_call_url("/scripting/server/regedit.esp", 'enum_path', 
-				function(list) { __folder_list(node, list); }, 
+		server_call_url("/scripting/server/regedit.esp", 'enum_keys', 
+				function(list) { __folder_keys(node, list); }, 
+				node.binding, node.reg_path);
+		server_call_url("/scripting/server/regedit.esp", 'enum_values', 
+				function(list) { __folder_values(node, list); }, 
 				node.binding, node.reg_path);
 	}
 }

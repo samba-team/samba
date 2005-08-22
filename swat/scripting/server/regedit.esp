@@ -8,10 +8,10 @@ libinclude("winreg.js");
 libinclude("server_call.js");
 
 /* 
-   server side call to return a listing of elements in a winreg path
+   server side call to return a listing of keys in a winreg path
 */
-function enum_path(binding, path) {
-	printf("enum_path(%s, %s)\n", binding, path);
+function enum_keys(binding, path) {
+	printf("enum_keys(%s, %s)\n", binding, path);
 	var reg = winreg_init();
 	security_init(reg);
 
@@ -22,13 +22,31 @@ function enum_path(binding, path) {
 		printVars(status);
 		return undefined;
 	}
-	var list = winreg_enum_path(reg, path);
-	return list;
+	return winreg_enum_path(reg, path);
+}
+
+/* 
+   server side call to return a listing of values in a winreg path
+*/
+function enum_values(binding, path) {
+	printf("enum_values(%s, %s)\n", binding, path);
+	var reg = winreg_init();
+	security_init(reg);
+
+	reg.credentials = session.authinfo.credentials;
+
+	var status = reg.connect(binding);
+	if (status.is_ok != true) {
+		printVars(status);
+		return undefined;
+	}
+	return winreg_enum_values(reg, path);
 }
 
 /* register a call for clients to make */
 var call = servCallObj();
-call.add('enum_path', enum_path);
+call.add('enum_keys', enum_keys);
+call.add('enum_values', enum_values);
 
 /* run the function that was asked for */
 call.run();
