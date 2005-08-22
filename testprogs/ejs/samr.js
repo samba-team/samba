@@ -3,14 +3,12 @@
   test samr calls from ejs
 */	
 
-var options = new Object();
-
-ok = GetOptions(ARGV, options,
-		"POPT_AUTOHELP",
-		"POPT_COMMON_SAMBA",
-		"POPT_COMMON_CREDENTIALS");
-if (ok == false) {
-   println("Failed to parse options: " + options.ERROR);
+var options = GetOptions(ARGV, 
+			 "POPT_AUTOHELP",
+			 "POPT_COMMON_SAMBA",
+			 "POPT_COMMON_CREDENTIALS");
+if (options == undefined) {
+   println("Failed to parse options");
    return -1;
 }
 
