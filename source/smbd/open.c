@@ -603,7 +603,7 @@ static BOOL is_delete_request(files_struct *fsp) {
  * 3) Only level2 around: Grant level2 and do nothing else.
  */
 
-static BOOL delay_for_oplocks(files_struct *fsp, BOOL second_try)
+static BOOL delay_for_oplocks(files_struct *fsp, BOOL first_try)
 {
 	int i, num_share_modes, num_level2;
 	share_mode_entry *share_modes;
@@ -664,7 +664,7 @@ static BOOL delay_for_oplocks(files_struct *fsp, BOOL second_try)
 	if (delay_it) {
 		DEBUG(10, ("Sending break request to PID %d\n",
 			   (int)exclusive->pid));
-		SMB_ASSERT(!second_try);
+		SMB_ASSERT(first_try);
 		exclusive->op_mid = get_current_mid();
 		if (!message_send_pid(exclusive->pid, MSG_SMB_BREAK_REQUEST,
 				      exclusive, sizeof(*exclusive), True)) {
@@ -1101,7 +1101,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	uint32 existing_dos_attributes = 0;
 	struct pending_message_list *pml = NULL;
 	uint16 mid = get_current_mid();
-	BOOL second_try = False;
+	BOOL first_try = True;
 	NTSTATUS status;
 
 	if (conn->printer) {
@@ -1139,7 +1139,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	if ((pml = get_open_deferred_message(mid)) != NULL) {
 		struct dev_inode_bundle dib;
 
-		second_try = True;
+		first_try = False;
 
 		memcpy(&dib, pml->private_data.data, sizeof(dib));
 
@@ -1364,7 +1364,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 		/* delay_for_oplocks might delete the fsp */
 		open_time = fsp->open_time;
-		if (delay_for_oplocks(fsp, second_try)) {
+		if (delay_for_oplocks(fsp, first_try)) {
 			/* Normally the smbd we asked should respond within
 			 * OPLOCK_BREAK_TIMEOUT seconds regardless of whether
 			 * the client did, give twice the timeout as a safety
@@ -1452,7 +1452,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			 * cope with the braindead 1 second delay.
 			 */
 
-			if ((!second_try) && (!internal_only_open)) {
+			if (first_try && (!internal_only_open)) {
 				get_saved_error_triple(NULL, NULL, &status);
 				if (NT_STATUS_EQUAL(status,NT_STATUS_SHARING_VIOLATION) &&
 				    lp_defer_sharing_violations()) {
