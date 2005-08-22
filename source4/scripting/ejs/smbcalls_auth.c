@@ -105,16 +105,19 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 	const char *password;
 	const char *domain;
 	const char *remote_host;
-	struct MprVar auth;
+	struct MprVar auth, *creds_obj;
+	struct cli_credentials *creds;
 
 	if (argc != 1 || argv[0]->type != MPR_TYPE_OBJECT) {
 		ejsSetErrorMsg(eid, "userAuth invalid arguments, this function requires an object.");
 		return -1;
 	}
 
-	username = mprToString(mprGetProperty(argv[0], "username", NULL));
-	password = mprToString(mprGetProperty(argv[0], "password", NULL));
-	domain = mprToString(mprGetProperty(argv[0], "domain", NULL));
+	/* get credential values from credentials object */
+	creds = mprGetPtr(argv[0], "creds");
+	username    = cli_credentials_get_username(creds);
+	password    = cli_credentials_get_password(creds);
+	domain      = cli_credentials_get_domain(creds);
 	remote_host = mprToString(mprGetProperty(argv[0], "rhost", NULL));
 
 	if (username == NULL || password == NULL || domain == NULL) {
