@@ -1,5 +1,8 @@
 2005-08-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kuser/klist.c (check_for_tgt): Re-order code so it only free the
+	credential if one was returned.
+	
 	* lib/krb5/test_crypto_wrapping.c: Fix printing of size_t.
 
 2005-08-19  Love Hörnquist Åstrand  <lha@it.su.se>
