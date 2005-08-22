@@ -105,17 +105,22 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 	uint8_t *data;
 	size_t size;
 	DATA_BLOB blob;
-	struct ndr_pull *ndr;
+	struct ndr_pull *ndr_pull;
+	struct ndr_print *ndr_print;
 	TALLOC_CTX *mem_ctx;
 	int flags;
 	poptContext pc;
 	NTSTATUS status;
 	void *st;
+	void *v_st;
 	const char *ctx_filename = NULL;
+	BOOL validate = False;
+	BOOL dumpdata = False;
 	int opt;
-	struct ndr_print *pr;
 	struct poptOption long_options[] = {
 		{"context-file", 'c', POPT_ARG_STRING, &ctx_filename, 0, "In-filename to parse first", "CTX-FILE" },
+		{"validate", 0, POPT_ARG_NONE, &validate, 0, "try to validate the data", NULL },	
+		{"dump-data", 0, POPT_ARG_NONE, &dumpdata, 0, "dump the hex data", NULL },	
 		POPT_COMMON_SAMBA
 		POPT_AUTOHELP
 		POPT_TABLEEND
@@ -182,6 +187,12 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 		exit(1);
 	}
 
+	v_st = talloc_zero_size(mem_ctx, f->struct_size);
+	if (!v_st) {
+		printf("Unable to allocate %d bytes\n", (int)f->struct_size);
+		exit(1);
+	}
+
 	if (ctx_filename) {
 		if (flags == NDR_IN) {
 			printf("Context file can only be used for \"out\" packages\n");
@@ -197,19 +208,20 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 		blob.data = data;
 		blob.length = size;
 
-		ndr = ndr_pull_init_blob(&blob, mem_ctx);
-		ndr->flags |= LIBNDR_FLAG_REF_ALLOC;
+		ndr_pull = ndr_pull_init_blob(&blob, mem_ctx);
+		ndr_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
-		status = f->ndr_pull(ndr, NDR_IN, st);
+		status = f->ndr_pull(ndr_pull, NDR_IN, st);
 
-		if (ndr->offset != ndr->data_size) {
-			printf("WARNING! %d unread bytes while parsing context file\n", ndr->data_size - ndr->offset);
+		if (ndr_pull->offset != ndr_pull->data_size) {
+			printf("WARNING! %d unread bytes while parsing context file\n", ndr_pull->data_size - ndr_pull->offset);
 		}
 
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("pull for context file returned %s\n", nt_errstr(status));
 			exit(1);
 		}
+		memcpy(v_st, st, f->struct_size);
 	} 
 
 	if (filename)
@@ -228,33 +240,90 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 	blob.data = data;
 	blob.length = size;
 
-	ndr = ndr_pull_init_blob(&blob, mem_ctx);
-	ndr->flags |= LIBNDR_FLAG_REF_ALLOC;
+	ndr_pull = ndr_pull_init_blob(&blob, mem_ctx);
+	ndr_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
-	status = f->ndr_pull(ndr, flags, st);
+	status = f->ndr_pull(ndr_pull, flags, st);
 
 	printf("pull returned %s\n", nt_errstr(status));
 
-	if (ndr->offset != ndr->data_size) {
-		printf("WARNING! %d unread bytes\n", ndr->data_size - ndr->offset);
-		dump_data(0, ndr->data+ndr->offset, ndr->data_size - ndr->offset);
+	if (ndr_pull->offset != ndr_pull->data_size) {
+		printf("WARNING! %d unread bytes\n", ndr_pull->data_size - ndr_pull->offset);
+		dump_data(0, ndr_pull->data+ndr_pull->offset, ndr_pull->data_size - ndr_pull->offset);
 	}
 
-	pr = talloc_zero(NULL, struct ndr_print);
-	pr->print = ndr_print_debug_helper;
-	pr->depth = 1;
-	f->ndr_print(pr, function, flags, st);
+	if (dumpdata) {
+		printf("%d bytes consumed\n", ndr_pull->offset);
+		dump_data(0, ndr_pull->data, ndr_pull->offset);
+	}
+
+	ndr_print = talloc_zero(mem_ctx, struct ndr_print);
+	ndr_print->print = ndr_print_debug_helper;
+	ndr_print->depth = 1;
+	f->ndr_print(ndr_print, function, flags, st);
 
 	if (!NT_STATUS_IS_OK(status) ||
-	    ndr->offset != ndr->data_size) {
+	    ndr_pull->offset != ndr_pull->data_size) {
 		printf("dump FAILED\n");
 		exit(1);
 	}
 
+	if (validate) {
+		DATA_BLOB v_blob;
+		struct ndr_push *ndr_v_push;
+		struct ndr_pull *ndr_v_pull;
+		struct ndr_print *ndr_v_print;
+
+		ndr_v_push = ndr_push_init_ctx(mem_ctx);
+		
+		status = f->ndr_push(ndr_v_push, flags, st);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("validate push FAILED\n");
+			exit(1);
+		}
+
+		v_blob = ndr_push_blob(ndr_v_push);
+
+		if (dumpdata) {
+			printf("%d bytes generated (validate)\n", v_blob.length);
+			dump_data(0, v_blob.data, v_blob.length);
+		}
+
+		ndr_v_pull = ndr_pull_init_blob(&v_blob, mem_ctx);
+		ndr_v_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+
+		status = f->ndr_pull(ndr_v_pull, flags, v_st);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("validate pull FAILED\n");
+			exit(1);
+		}
+
+		printf("pull returned %s\n", nt_errstr(status));
+
+		if (ndr_v_pull->offset != ndr_v_pull->data_size) {
+			printf("ERROR! %d unread bytes in validation\n", ndr_v_pull->data_size - ndr_v_pull->offset);
+			dump_data(0, ndr_v_pull->data+ndr_v_pull->offset, ndr_v_pull->data_size - ndr_v_pull->offset);
+			exit(1);
+		}
+
+		ndr_v_print = talloc_zero(mem_ctx, struct ndr_print);
+		ndr_v_print->print = ndr_print_debug_helper;
+		ndr_v_print->depth = 1;
+		f->ndr_print(ndr_v_print, function, flags, v_st);
+
+		if (blob.length != v_blob.length) {
+			printf("WARNING! orig bytes:%d validated pushed bytes:%d\n", blob.length, v_blob.length);
+		}
+
+		if (ndr_pull->offset != ndr_v_pull->offset) {
+			printf("WARNING! orig pulled bytes:%d validated pulled bytes:%d\n", ndr_pull->offset, ndr_v_pull->offset);
+		}
+	}
+
 	printf("dump OK\n");
 
-	talloc_free(pr);
-	
+	talloc_free(mem_ctx);
+
 	poptFreeContext(pc);
 	
 	return 0;
