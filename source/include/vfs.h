@@ -59,7 +59,8 @@
 /* Changed to version 12 to add mask and attributes to opendir(). JRA 
    Also include aio calls. JRA. */
 /* Changed to version 13 as the internal structure of files_struct has changed. JRA */
-#define SMB_VFS_INTERFACE_VERSION 13
+/* Changed to version 14 as the we had to change DIR to SMB_STRUCT_DIR. JRA */
+#define SMB_VFS_INTERFACE_VERSION 14
 
 
 /* to bug old modules which are trying to compile with the old functions */
@@ -224,14 +225,14 @@ struct vfs_ops {
 		
 		/* Directory operations */
 		
-		DIR *(*opendir)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *fname, const char *mask, uint32 attributes);
-		SMB_STRUCT_DIRENT *(*readdir)(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *dirp);
-		void (*seekdir)(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *dirp, long offset);
-		long (*telldir)(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *dirp);
-		void (*rewind_dir)(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *dirp);
+		SMB_STRUCT_DIR *(*opendir)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *fname, const char *mask, uint32 attributes);
+		SMB_STRUCT_DIRENT *(*readdir)(struct vfs_handle_struct *handle, struct connection_struct *conn, SMB_STRUCT_DIR *dirp);
+		void (*seekdir)(struct vfs_handle_struct *handle, struct connection_struct *conn, SMB_STRUCT_DIR *dirp, long offset);
+		long (*telldir)(struct vfs_handle_struct *handle, struct connection_struct *conn, SMB_STRUCT_DIR *dirp);
+		void (*rewind_dir)(struct vfs_handle_struct *handle, struct connection_struct *conn, SMB_STRUCT_DIR *dirp);
 		int (*mkdir)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path, mode_t mode);
 		int (*rmdir)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path);
-		int (*closedir)(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *dir);
+		int (*closedir)(struct vfs_handle_struct *handle, struct connection_struct *conn, SMB_STRUCT_DIR *dir);
 		
 		/* File operations */
 		

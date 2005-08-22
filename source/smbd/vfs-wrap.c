@@ -88,9 +88,9 @@ int vfswrap_get_shadow_copy_data(struct vfs_handle_struct *handle, struct files_
     
 /* Directory operations */
 
-DIR *vfswrap_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname, const char *mask, uint32 attr)
+SMB_STRUCT_DIR *vfswrap_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname, const char *mask, uint32 attr)
 {
-	DIR *result;
+	SMB_STRUCT_DIR *result;
 
 	START_PROFILE(syscall_opendir);
 	result = sys_opendir(fname);
@@ -98,7 +98,7 @@ DIR *vfswrap_opendir(vfs_handle_struct *handle, connection_struct *conn, const c
 	return result;
 }
 
-SMB_STRUCT_DIRENT *vfswrap_readdir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp)
+SMB_STRUCT_DIRENT *vfswrap_readdir(vfs_handle_struct *handle, connection_struct *conn, SMB_STRUCT_DIR *dirp)
 {
 	SMB_STRUCT_DIRENT *result;
 
@@ -108,14 +108,14 @@ SMB_STRUCT_DIRENT *vfswrap_readdir(vfs_handle_struct *handle, connection_struct 
 	return result;
 }
 
-void vfswrap_seekdir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp, long offset)
+void vfswrap_seekdir(vfs_handle_struct *handle, connection_struct *conn, SMB_STRUCT_DIR *dirp, long offset)
 {
 	START_PROFILE(syscall_seekdir);
 	sys_seekdir(dirp, offset);
 	END_PROFILE(syscall_seekdir);
 }
 
-long vfswrap_telldir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp)
+long vfswrap_telldir(vfs_handle_struct *handle, connection_struct *conn, SMB_STRUCT_DIR *dirp)
 {
 	long result;
 	START_PROFILE(syscall_telldir);
@@ -124,7 +124,7 @@ long vfswrap_telldir(vfs_handle_struct *handle, connection_struct *conn, DIR *di
 	return result;
 }
 
-void vfswrap_rewinddir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp)
+void vfswrap_rewinddir(vfs_handle_struct *handle, connection_struct *conn, SMB_STRUCT_DIR *dirp)
 {
 	START_PROFILE(syscall_rewinddir);
 	sys_rewinddir(dirp);
@@ -170,7 +170,7 @@ int vfswrap_rmdir(vfs_handle_struct *handle, connection_struct *conn, const char
 	return result;
 }
 
-int vfswrap_closedir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp)
+int vfswrap_closedir(vfs_handle_struct *handle, connection_struct *conn, SMB_STRUCT_DIR *dirp)
 {
 	int result;
 
