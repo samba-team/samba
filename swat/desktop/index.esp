@@ -38,6 +38,60 @@ function docHeight()
   return y;
 }
 
+function showMessage(m)
+{
+    var message = new QxWindow();
+    with(message) {
+      setWidth(300);
+      setTop("35%");
+      setLeft("35%");
+      setShowMaximize(false);
+      setShowMinimize(false);
+    }
+
+    var note = new QxAtom(m);
+    with(note) {
+      setTop(10);
+      setLeft(10);
+    }
+
+    var ok = new QxButton("OK");
+    with(ok) {
+      setLeft("42%");
+      setBottom(2);
+    }
+    ok.addEventListener("click", function() {
+      w.remove(message);
+    });
+
+    message.add(note);
+    message.add(ok);
+    w.add(message);
+    message.setVisible(true);
+}
+
+function showContextMenu(e)
+{
+
+  var aboutCmd = new QxCommand();
+  aboutCmd.addEventListener("execute", function() {
+    showMessage("SWAT, the Samba Web Administration Tool.<br/>This tool is currently under development.");
+  });
+
+  var menu = new QxMenu;
+
+  var sub1 = new QxMenuButton("About SWAT", null, aboutCmd);
+  var sep = new QxMenuSeparator();
+  var sub2 = new QxMenuButton("More menu later...", null);
+
+  menu.add(sub1, sep, sub2);
+
+  menu.setLeft(e.getClientX());
+  menu.setTop(e.getClientY());
+  w.add(menu);
+  menu.setVisible(true);
+}
+
 /*** init the page for qooxdoo ***/
 window.application.main = function()
 {
@@ -50,14 +104,15 @@ window.application.main = function()
     setWidth(docWidth());
     setHeight(docHeight());
   }
+  doc.addEventListener("contextmenu", showContextMenu);
   doc.add(w);
 
 }
 
 window.onresize = function() 
 {
-      w.setWidth(docWidth());
-      w.setHeight(docHeight());
+  w.setWidth(docWidth());
+  w.setHeight(docHeight());
 }
 
 function showReg()
