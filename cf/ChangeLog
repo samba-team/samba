@@ -1,4 +1,8 @@
-2005-08-03  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-08-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* roken-frag.m4: Check for res_ndestroy.
+
+2005-08-03 Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* crypto.m4: Add <sys/types.h>, OpenSSL 0.9.8 needs it for size_t.
 	From: Quanah Gibson-Mount <quanah@stanford.edu>

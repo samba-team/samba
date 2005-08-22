@@ -1,4 +1,9 @@
-2005-08-12  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-08-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* resolve.c (dns_lookup_int): if we have res_ndestroy, prefeer
+	that before res_nclose
+
+2005-08-12 Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* getaddrinfo-test.c: Rename optind to optidx to avoid shadowing.
 

@@ -1,4 +1,14 @@
-2005-08-11  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-08-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* k5.asn1: Add KRB5-PADATA-PK-AS-09-BINDING, client send
+	this (with an empty pa-data.padata-value) to tell the KDC that the
+	client support the binding the PA-REP to the AS-REQ packet. This
+	is to fix the problem lack of binding the AS-REQ to the PK-AS-REP
+	in pre PK-INIT-27. The nonce is replaced with a asCheckSum.
+	
+2005-08-11 Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* canthandle.asn1: Allocation is done on CONTEXT tags.
 
 	* asn1_gen.c: rename optind to optidx to avoid shadow warnings
 
