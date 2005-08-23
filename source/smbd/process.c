@@ -183,7 +183,7 @@ BOOL open_was_deferred(uint16 mid)
 
 	for (pml = deferred_open_queue; pml; pml = pml->next) {
 		if (SVAL(pml->buf.data,smb_mid) == mid) {
-			set_saved_error_triple(SMB_SUCCESS, 0, NT_STATUS_OK);
+			set_saved_ntstatus(NT_STATUS_OK);
 			return True;
 		}
 	}
@@ -980,7 +980,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 		pid = sys_getpid();
 
 	errno = 0;
-	set_saved_error_triple(0, 0, NT_STATUS_OK);
+	set_saved_ntstatus(NT_STATUS_OK);
 
 	last_message = type;
 

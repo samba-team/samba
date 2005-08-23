@@ -1666,11 +1666,11 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 			&info);
 
 	if (!fsp1) {
-		get_saved_error_triple(NULL, NULL, &status);
+		status = get_saved_ntstatus();
 		if (NT_STATUS_IS_OK(status)) {
 			status = NT_STATUS_ACCESS_DENIED;
 		}
-		set_saved_error_triple(0, 0, NT_STATUS_OK);
+		set_saved_ntstatus(NT_STATUS_OK);
 		return status;
 	}
 
@@ -1684,11 +1684,11 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 			&info);
 
 	if (!fsp2) {
-		get_saved_error_triple(NULL, NULL, &status);
+		status = get_saved_ntstatus();
 		if (NT_STATUS_IS_OK(status)) {
 			status = NT_STATUS_ACCESS_DENIED;
 		}
-		set_saved_error_triple(0, 0, NT_STATUS_OK);
+		set_saved_ntstatus(NT_STATUS_OK);
 		close_file(fsp1,False);
 		return status;
 	}

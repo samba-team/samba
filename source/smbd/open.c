@@ -281,8 +281,7 @@ static BOOL open_file(files_struct *fsp,
 		/* Don't create files with Microsoft wildcard characters. */
 		if ((local_flags & O_CREAT) && !file_existed &&
 		    ms_has_wild(fname))  {
-			set_saved_error_triple(ERRDOS, ERRinvalidname,
-					       NT_STATUS_OBJECT_NAME_INVALID);
+			set_saved_ntstatus(NT_STATUS_OBJECT_NAME_INVALID);
 			return False;
 		}
 
@@ -1213,7 +1212,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 				DEBUG(5,("open_file_ntcreate: FILE_OPEN "
 					 "requested for file %s and file "
 					 "doesn't exist.\n", fname ));
-				set_saved_error_triple(ERRDOS, ERRbadfile, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+				set_saved_ntstatus(NT_STATUS_OBJECT_NAME_NOT_FOUND);
 				errno = ENOENT;
 				return NULL;
 			}
@@ -1226,7 +1225,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 				DEBUG(5,("open_file_ntcreate: FILE_OVERWRITE "
 					 "requested for file %s and file "
 					 "doesn't exist.\n", fname ));
-				set_saved_error_triple(ERRDOS, ERRbadfile, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+				set_saved_ntstatus(NT_STATUS_OBJECT_NAME_NOT_FOUND);
 				errno = ENOENT;
 				return NULL;
 			}
@@ -1257,8 +1256,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			break;
 
 		default:
-			set_saved_error_triple(ERRDOS, ERRinvalidparam,
-					       NT_STATUS_INVALID_PARAMETER);
+			set_saved_ntstatus(NT_STATUS_INVALID_PARAMETER);
 			return NULL;
 	}
 
@@ -1335,8 +1333,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		DEBUG(5,("open_file_ntcreate: write access requested for "
 			 "file %s on read only %s\n",
 			 fname, !CAN_WRITE(conn) ? "share" : "file" ));
-		set_saved_error_triple(ERRDOS, ERRnoaccess,
-				       NT_STATUS_ACCESS_DENIED);
+		set_saved_ntstatus(NT_STATUS_ACCESS_DENIED);
 		errno = EACCES;
 		return NULL;
 	}
@@ -1384,7 +1381,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
 			/* DELETE_PENDING is not deferred for a second */
-			set_saved_error_triple(ERRDOS, ERRnoaccess, status);
+			set_saved_ntstatus(status);
 			unlock_share_entry(dev, inode);
 			file_free(fsp);
 			return NULL;
@@ -1443,8 +1440,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 			if (!fsp_open && errno) {
 				/* Default error. */
-				set_saved_error_triple(ERRDOS, ERRnoaccess,
-						       NT_STATUS_ACCESS_DENIED);
+				set_saved_ntstatus(NT_STATUS_ACCESS_DENIED);
 			}
 
 			/* 
@@ -1452,16 +1448,13 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			 * cope with the braindead 1 second delay.
 			 */
 
-			if (first_try && (!internal_only_open)) {
-				get_saved_error_triple(NULL, NULL, &status);
-				if (NT_STATUS_EQUAL(status,NT_STATUS_SHARING_VIOLATION) &&
-				    lp_defer_sharing_violations()) {
-					/* The fsp->open_time here represents
-					 * the current time of day. */
-					defer_open(&fsp->open_time,
-						   SHARING_VIOLATION_USEC_WAIT,
-						   fname, dev, inode);
-				}
+			if (first_try && (!internal_only_open) &&
+			    lp_defer_sharing_violations()) {
+				/* The fsp->open_time here represents the
+				 * current time of day. */
+				defer_open(&fsp->open_time,
+					   SHARING_VIOLATION_USEC_WAIT,
+					   fname, dev, inode);
 			}
 
 			unlock_share_entry(dev, inode);
@@ -1471,8 +1464,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 				 * We have detected a sharing violation here
 				 * so return the correct error code
 				 */
-				set_saved_error_triple(ERRDOS, ERRbadshare,
-						       NT_STATUS_SHARING_VIOLATION);
+				set_saved_ntstatus(NT_STATUS_SHARING_VIOLATION);
 			}
 			file_free(fsp);
 			return NULL;
@@ -1543,7 +1535,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 					 &file_existed);
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
-			set_saved_error_triple(ERRDOS, ERRnoaccess, status);
+			set_saved_ntstatus(status);
 			unlock_share_entry(dev, inode);
 			file_free(fsp);
 			return NULL;
@@ -1595,8 +1587,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			 * We have detected a sharing violation here, so
 			 * return the correct code.
 			 */
-			set_saved_error_triple(ERRDOS, ERRbadshare,
-					       NT_STATUS_SHARING_VIOLATION);
+			set_saved_ntstatus(NT_STATUS_SHARING_VIOLATION);
 			return NULL;
 		}
 
@@ -1688,16 +1679,13 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		result = can_set_delete_on_close(fsp, True, dosattr);
 
 		if (!NT_STATUS_IS_OK(result)) {
-			uint8 u_e_c;
-			uint32 u_e_code;
 			BOOL dummy_del_on_close;
 			/* Remember to delete the mode we just added. */
 			del_share_mode(fsp, NULL, &dummy_del_on_close);
 			unlock_share_entry_fsp(fsp);
 			fd_close(conn,fsp);
 			file_free(fsp);
-			ntstatus_to_dos(result, &u_e_c, &u_e_code);
-			set_saved_error_triple(u_e_c, u_e_code, result);
+			set_saved_ntstatus(result);
 			return NULL;
 		}
 		set_delete_on_close(fsp, True);
@@ -1867,8 +1855,7 @@ files_struct *open_directory(connection_struct *conn,
 				DEBUG(5,("open_directory: FILE_OPEN requested "
 					 "for directory %s and it doesn't "
 					 "exist.\n", fname ));
-				set_saved_error_triple(ERRDOS, ERRbadfile,
-						       NT_STATUS_OBJECT_NAME_NOT_FOUND);
+				set_saved_ntstatus(NT_STATUS_OBJECT_NAME_NOT_FOUND);
 				return NULL;
 			}
 			info = FILE_WAS_OPENED;
@@ -1908,8 +1895,7 @@ files_struct *open_directory(connection_struct *conn,
 				 "0x%x for directory %s\n",
 				 (unsigned int)create_disposition, fname));
 			file_free(fsp);
-			set_saved_error_triple(ERRDOS, ERRinvalidparam,
-					       NT_STATUS_INVALID_PARAMETER);
+			set_saved_ntstatus(NT_STATUS_INVALID_PARAMETER);
 			return NULL;
 	}
 

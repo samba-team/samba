@@ -1778,7 +1778,7 @@ static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype,
 	}
 
 	/* We need a better way to return NT status codes from open... */
-	set_saved_error_triple(0, 0, NT_STATUS_OK);
+	set_saved_ntstatus(NT_STATUS_OK);
 
 	fsp = open_file_ntcreate(conn, fname, pst,
 				DELETE_ACCESS,
@@ -1790,12 +1790,12 @@ static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype,
 				NULL);
 
 	if (!fsp) {
-		NTSTATUS ret;
-		if (get_saved_error_triple(NULL, NULL, &ret)) {
-			set_saved_error_triple(0, 0, NT_STATUS_OK);
+		NTSTATUS ret = get_saved_ntstatus();
+		if (!NT_STATUS_IS_OK(ret)) {
+			set_saved_ntstatus(NT_STATUS_OK);
 			return ret;
 		}
-		set_saved_error_triple(0, 0, NT_STATUS_OK);
+		set_saved_ntstatus(NT_STATUS_OK);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	close_file(fsp,False);
@@ -1859,7 +1859,7 @@ NTSTATUS can_delete(connection_struct *conn, char *fname, uint32 dirtype, BOOL b
 		   don't do it here as we'll get it wrong. */
 
 		/* We need a better way to return NT status codes from open... */
-		set_saved_error_triple(0, 0, NT_STATUS_OK);
+		set_saved_ntstatus(NT_STATUS_OK);
 
 		fsp = open_file_ntcreate(conn, fname, &sbuf,
 					DELETE_ACCESS,
@@ -1871,12 +1871,12 @@ NTSTATUS can_delete(connection_struct *conn, char *fname, uint32 dirtype, BOOL b
 					NULL);
 
 		if (!fsp) {
-			NTSTATUS ret;
-			if (get_saved_error_triple(NULL, NULL, &ret)) {
-				set_saved_error_triple(0, 0, NT_STATUS_OK);
+			NTSTATUS ret = get_saved_ntstatus();
+			if (!NT_STATUS_IS_OK(ret)) {
+				set_saved_ntstatus(NT_STATUS_OK);
 				return ret;
 			}
-			set_saved_error_triple(0, 0, NT_STATUS_OK);
+			set_saved_ntstatus(NT_STATUS_OK);
 			return NT_STATUS_ACCESS_DENIED;
 		}
 		close_file(fsp,False);

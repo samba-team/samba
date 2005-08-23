@@ -85,7 +85,7 @@ files_struct *file_new(connection_struct *conn)
 
 	fsp = SMB_MALLOC_P(files_struct);
 	if (!fsp) {
-		set_saved_error_triple(ERRDOS, ERRnomem, NT_STATUS_NO_MEMORY);
+		set_saved_ntstatus(NT_STATUS_NO_MEMORY);
 		return NULL;
 	}
 
@@ -94,7 +94,7 @@ files_struct *file_new(connection_struct *conn)
 	fsp->fh = SMB_MALLOC_P(struct fd_handle);
 	if (!fsp->fh) {
 		SAFE_FREE(fsp);
-		set_saved_error_triple(ERRDOS, ERRnomem, NT_STATUS_NO_MEMORY);
+		set_saved_ntstatus(NT_STATUS_NO_MEMORY);
 		return NULL;
 	}
 
