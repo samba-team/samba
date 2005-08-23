@@ -6,7 +6,7 @@
 ###  Released under the GNU GPL				###
 ###########################################################
 
-package config_mk;
+package smb_build::config_mk;
 use smb_build::input;
 
 use strict;
@@ -33,6 +33,10 @@ my %attribute_types = (
 	"MANPAGE" => "string"
 );
 
+use vars qw(@parsed_files);
+
+@parsed_files = ();
+
 ###########################################################
 # The parsing function which parses the file
 #
@@ -48,6 +52,8 @@ sub run_config_mk($$)
 	my $infragment = 0;
 	my $section = "GLOBAL";
 	my $makefile = "";
+
+	push (@parsed_files, $filename);
 	
 	open(CONFIG_MK, $filename) or die("Can't open `$filename'\n");
 	my @lines = <CONFIG_MK>;
