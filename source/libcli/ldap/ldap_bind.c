@@ -141,6 +141,7 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 {
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = NULL;
+
 	DATA_BLOB input = data_blob(NULL, 0);
 	DATA_BLOB output = data_blob(NULL, 0);
 
@@ -183,19 +184,33 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 	tmp_ctx = talloc_new(conn);
 	if (tmp_ctx == NULL) goto failed;
 
-	status = gensec_update(conn->gensec, tmp_ctx, input, &output);
-
 	while (1) {
+		NTSTATUS gensec_status;
 		struct ldap_message *response;
 		struct ldap_message *msg;
 		struct ldap_request *req;
 		int result = LDAP_OTHER;
 	
-		if (NT_STATUS_IS_OK(status) && output.length == 0) {
-			break;
-		}
+		status = gensec_update(conn->gensec, tmp_ctx,
+				       input,
+				       &output);
+		/* The status value here, from GENSEC is vital to the security
+		 * of the system.  Even if the other end accepts, if GENSEC
+		 * claims 'MORE_PROCESSING_REQUIRED' then you must keep
+		 * feeding it blobs, or else the remote host/attacker might
+		 * avoid mutal authentication requirements.
+		 *
+		 * Likewise, you must not feed GENSEC too much (after the OK),
+		 * it doesn't like that either
+		 */
+
+		gensec_status = status;
+
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) && 
 		    !NT_STATUS_IS_OK(status)) {
+			break;
+		}
+		if (output.length == 0) {
 			break;
 		}
 
@@ -225,12 +240,15 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn, struct cli_credentials *cr
 		result = response->r.BindResponse.response.resultcode;
 
 		if (result != LDAP_SUCCESS && result != LDAP_SASL_BIND_IN_PROGRESS) {
+			status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 			break;
 		}
 
-		status = gensec_update(conn->gensec, tmp_ctx,
-				       response->r.BindResponse.SASL.secblob,
-				       &output);
+		/* This is where we check if GENSEC wanted to be fed more data */
+		if (!NT_STATUS_EQUAL(gensec_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			break;
+		}
+		input = response->r.BindResponse.SASL.secblob;
 	}
 
 	if (NT_STATUS_IS_OK(status) &&

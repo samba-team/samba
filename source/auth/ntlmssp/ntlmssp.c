@@ -123,7 +123,12 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 	*out = data_blob(NULL, 0);
 
 	if (gensec_ntlmssp_state->expected_state == NTLMSSP_DONE) {
-		return NT_STATUS_OK;
+		/* We are strict here because other modules, which we
+		 * don't fully control (such as GSSAPI) are also
+		 * strict, but are tested less often */
+
+		DEBUG(1, ("Called NTLMSSP after state machine was 'done'\n"));
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (!out_mem_ctx) {

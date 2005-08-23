@@ -29,7 +29,7 @@
 
 struct sesssetup_state {
 	union smb_sesssetup setup;
-	NTSTATUS session_key_err;
+	NTSTATUS gensec_status;
 	struct smb_composite_sesssetup *io;
 	struct smbcli_request *req;
 };
@@ -78,6 +78,7 @@ static void request_handler(struct smbcli_request *req)
 	struct smbcli_session *session = req->session;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	DATA_BLOB null_data_blob = data_blob(NULL, 0);
+	NTSTATUS session_key_err;
 
 	c->status = smb_raw_sesssetup_recv(req, state, &state->setup);
 
@@ -96,29 +97,41 @@ static void request_handler(struct smbcli_request *req)
 		    !NT_STATUS_IS_OK(c->status)) {
 			break;
 		}
-		c->status = gensec_update(session->gensec, state,
-					  state->setup.spnego.out.secblob,
-					  &state->setup.spnego.in.secblob);
-		if (!NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED) && 
-		    !NT_STATUS_IS_OK(c->status)) {
-			break;
-		}
-		if (state->setup.spnego.in.secblob.length == 0) {
-			break;
-		}
+		if (NT_STATUS_EQUAL(state->gensec_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 
+			/* The status value here, from the earlier pass at GENSEC is
+			 * vital to the security of the system.  Even if the other end
+			 * accepts, if GENSEC claims 'MORE_PROCESSING_REQUIRED' then
+			 * you must keep feeding it blobs, or else the remote
+			 * host/attacker might avoid mutal authentication
+			 * requirements */
+			
+			state->gensec_status = gensec_update(session->gensec, state,
+							 state->setup.spnego.out.secblob,
+							 &state->setup.spnego.in.secblob);
+			c->status = state->gensec_status;
+			if (!NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED) && 
+			    !NT_STATUS_IS_OK(c->status)) {
+				break;
+			}
+		} else {
+			state->setup.spnego.in.secblob = data_blob(NULL, 0);
+		}
+			
 		/* we need to do another round of session setup. We keep going until both sides
 		   are happy */
-		state->session_key_err = gensec_session_key(session->gensec, &session_key);
-		if (NT_STATUS_IS_OK(state->session_key_err)) {
+		session_key_err = gensec_session_key(session->gensec, &session_key);
+		if (NT_STATUS_IS_OK(session_key_err)) {
 			set_user_session_key(session, &session_key);
 			smbcli_transport_simple_set_signing(session->transport, session_key, null_data_blob);
 		}
 
-		state->req = smb_raw_sesssetup_send(session, &state->setup);
-		state->req->async.fn = request_handler;
-		state->req->async.private = c;
-		return;
+		if (state->setup.spnego.in.secblob.length) {
+			state->req = smb_raw_sesssetup_send(session, &state->setup);
+			state->req->async.fn = request_handler;
+			state->req->async.private = c;
+			return;
+		}
 	}
 
 	/* enforce the local signing required flag */
@@ -144,9 +157,10 @@ static void request_handler(struct smbcli_request *req)
 /*
   send a nt1 style session setup
 */
-static struct smbcli_request *session_setup_nt1(struct composite_context *c,
-						struct smbcli_session *session, 
-						struct smb_composite_sesssetup *io) 
+static NTSTATUS session_setup_nt1(struct composite_context *c,
+				  struct smbcli_session *session, 
+				  struct smb_composite_sesssetup *io,
+				  struct smbcli_request **req) 
 {
 	struct sesssetup_state *state = talloc_get_type(c->private, struct sesssetup_state);
 	const struct samr_Password *nt_hash = cli_credentials_get_nt_hash(io->in.credentials, state);
@@ -180,7 +194,7 @@ static struct smbcli_request *session_setup_nt1(struct composite_context *c,
 						   &lmv2_response, &ntlmv2_response, 
 						   &lmv2_session_key, &session_key)) {
 				data_blob_free(&names_blob);
-				return NULL;
+				return NT_STATUS_NO_MEMORY;
 			}
 			data_blob_free(&names_blob);
 			state->setup.nt1.in.password1 = lmv2_response;
@@ -218,19 +232,24 @@ static struct smbcli_request *session_setup_nt1(struct composite_context *c,
 		state->setup.nt1.in.password2 = data_blob(NULL, 0);
 	} else {
 		/* could match windows client and return 'cannot logon from this workstation', but it just confuses everybody */
-		return NULL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	return smb_raw_sesssetup_send(session, &state->setup);
+	*req = smb_raw_sesssetup_send(session, &state->setup);
+	if (!*req) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return (*req)->status;
 }
 
 
 /*
   old style session setup (pre NT1 protocol level)
 */
-static struct smbcli_request *session_setup_old(struct composite_context *c,
-						struct smbcli_session *session,
-						struct smb_composite_sesssetup *io)
+static NTSTATUS session_setup_old(struct composite_context *c,
+				  struct smbcli_session *session, 
+				  struct smb_composite_sesssetup *io,
+				  struct smbcli_request **req) 
 {
 	struct sesssetup_state *state = talloc_get_type(c->private, struct sesssetup_state);
 	const char *password = cli_credentials_get_password(io->in.credentials);
@@ -256,19 +275,24 @@ static struct smbcli_request *session_setup_old(struct composite_context *c,
 								strlen(password));
 	}
 	
-	return smb_raw_sesssetup_send(session, &state->setup);
+	*req = smb_raw_sesssetup_send(session, &state->setup);
+	if (!*req) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return (*req)->status;
 }
 
 
 /*
-  old style session setup (pre NT1 protocol level)
+  Modern, all singing, all dancing extended security (and possibly SPNEGO) request
 */
-static struct smbcli_request *session_setup_spnego(struct composite_context *c, 
-						   struct smbcli_session *session,
-						   struct smb_composite_sesssetup *io)
+static NTSTATUS session_setup_spnego(struct composite_context *c,
+				     struct smbcli_session *session, 
+				     struct smb_composite_sesssetup *io,
+				     struct smbcli_request **req) 
 {
 	struct sesssetup_state *state = talloc_get_type(c->private, struct sesssetup_state);
-	NTSTATUS status;
+	NTSTATUS status, session_key_err;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	DATA_BLOB null_data_blob = data_blob(NULL, 0);
 	const char *chosen_oid = NULL;
@@ -290,7 +314,7 @@ static struct smbcli_request *session_setup_spnego(struct composite_context *c,
 	status = gensec_client_start(session, &session->gensec, c->event_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start GENSEC client mode: %s\n", nt_errstr(status)));
-		return NULL;
+		return status;
 	}
 
 	gensec_want_feature(session->gensec, GENSEC_FEATURE_SESSION_KEY);
@@ -299,21 +323,21 @@ static struct smbcli_request *session_setup_spnego(struct composite_context *c,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC client credentails: %s\n", 
 			  nt_errstr(status)));
-		return NULL;
+		return status;
 	}
 
 	status = gensec_set_target_hostname(session->gensec, session->transport->socket->hostname);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC target hostname: %s\n", 
 			  nt_errstr(status)));
-		return NULL;
+		return status;
 	}
 
 	status = gensec_set_target_service(session->gensec, "cifs");
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC target service: %s\n", 
 			  nt_errstr(status)));
-		return NULL;
+		return status;
 	}
 
 	if (session->transport->negotiate.secblob.length) {
@@ -327,24 +351,30 @@ static struct smbcli_request *session_setup_spnego(struct composite_context *c,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC client SPNEGO mechanism %s: %s\n",
 			  gensec_get_name_by_oid(chosen_oid), nt_errstr(status)));
-		return NULL;
+		return status;
 	}
 	
 	status = gensec_update(session->gensec, state,
 			       session->transport->negotiate.secblob,
 			       &state->setup.spnego.in.secblob);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) && 
+	    !NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed initial gensec_update with mechanism %s: %s\n",
 			  gensec_get_name_by_oid(chosen_oid), nt_errstr(status)));
-		return NULL;
+		return status;
 	}
+	state->gensec_status = status;
 
-	state->session_key_err = gensec_session_key(session->gensec, &session_key);
-	if (NT_STATUS_IS_OK(state->session_key_err)) {
+	session_key_err = gensec_session_key(session->gensec, &session_key);
+	if (NT_STATUS_IS_OK(session_key_err)) {
 		smbcli_transport_simple_set_signing(session->transport, session_key, null_data_blob);
 	}
 
-	return smb_raw_sesssetup_send(session, &state->setup);
+	*req = smb_raw_sesssetup_send(session, &state->setup);
+	if (!*req) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return (*req)->status;
 }
 
 
@@ -358,12 +388,16 @@ struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *se
 {
 	struct composite_context *c;
 	struct sesssetup_state *state;
+	NTSTATUS status;
 
 	c = talloc_zero(session, struct composite_context);
-	if (c == NULL) goto failed;
+	if (c == NULL) return NULL;
 
 	state = talloc(c, struct sesssetup_state);
-	if (state == NULL) goto failed;
+	if (state == NULL) {
+		c->state = SMBCLI_REQUEST_ERROR;
+		c->status = NT_STATUS_NO_MEMORY;
+	}
 
 	state->io = io;
 
@@ -380,24 +414,24 @@ struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *se
 
 	/* see what session setup interface we will use */
 	if (session->transport->negotiate.protocol < PROTOCOL_NT1) {
-		state->req = session_setup_old(c, session, io);
+		status = session_setup_old(c, session, io, &state->req);
 	} else if (!session->transport->options.use_spnego ||
 		   !(io->in.capabilities & CAP_EXTENDED_SECURITY)) {
-		state->req = session_setup_nt1(c, session, io);
+		status = session_setup_nt1(c, session, io, &state->req);
 	} else {
-		state->req = session_setup_spnego(c, session, io);
+		status = session_setup_spnego(c, session, io, &state->req);
 	}
 
-	if (state->req == NULL) goto failed;
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) || 
+	    NT_STATUS_IS_OK(status)) {
+		state->req->async.fn = request_handler;
+		state->req->async.private = c;
+		return c;
+	}
 
-	state->req->async.fn = request_handler;
-	state->req->async.private = c;
-
+	c->state = SMBCLI_REQUEST_ERROR;
+	c->status = status;
 	return c;
-
-failed:
-	talloc_free(c);
-	return NULL;
 }
 
 

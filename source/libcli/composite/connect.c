@@ -136,6 +136,9 @@ static NTSTATUS connect_session_setup(struct composite_context *c,
 
 	state->req = smb_raw_tcon_send(io->out.tree, state->io_tcon);
 	NT_STATUS_HAVE_NO_MEMORY(state->req);
+	if (state->req->state == SMBCLI_REQUEST_ERROR) {
+		return state->req->status;
+	}
 
 	state->req->async.fn = request_handler;
 	state->req->async.private = c;
@@ -171,6 +174,9 @@ static NTSTATUS connect_negprot(struct composite_context *c,
 
 	state->creq = smb_composite_sesssetup_send(state->session, state->io_setup);
 	NT_STATUS_HAVE_NO_MEMORY(state->creq);
+	if (state->creq->state == SMBCLI_REQUEST_ERROR) {
+		return state->creq->status;
+	}
 
 	state->creq->async.fn = composite_handler;
 	state->creq->async.private = c;
