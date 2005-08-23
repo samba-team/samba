@@ -764,7 +764,6 @@ krb5_425_conv_principal_ext2(krb5_context context,
 	}
 #else
 	struct addrinfo hints, *ai;
-	int ret;
 	
 	memset (&hints, 0, sizeof(hints));
 	hints.ai_flags = AI_CANONNAME;
