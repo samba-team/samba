@@ -105,7 +105,7 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 	const char *password;
 	const char *domain;
 	const char *remote_host;
-	struct MprVar auth, *creds_obj;
+	struct MprVar auth;
 	struct cli_credentials *creds;
 
 	if (argc != 1 || argv[0]->type != MPR_TYPE_OBJECT) {
@@ -115,6 +115,10 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 
 	/* get credential values from credentials object */
 	creds = mprGetPtr(argv[0], "creds");
+	if (creds == NULL) {
+		ejsSetErrorMsg(eid, "userAuth requires a 'creds' element");
+		return -1;
+	}
 	username    = cli_credentials_get_username(creds);
 	password    = cli_credentials_get_password(creds);
 	domain      = cli_credentials_get_domain(creds);
