@@ -1,4 +1,4 @@
-.\" Copyright (c) 2000 - 2004 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2000 - 2005 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -32,7 +32,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd March 20, 2004
+.Dd August 23, 2005
 .Dt KRB5_CONFIG_GET 3
 .Os HEIMDAL
 .Sh NAME
@@ -279,12 +279,17 @@ as returned by
 .Fn krb5_config_get_strings
 and
 .Fn krb5_config_vget_strings .
+If the argument
+.Fa strings
+is a 
+.Dv NULL
+pointer, no action occurs.
 .Pp
 .Fn krb5_config_file_free
 free the result of
 .Fn krb5_config_parse_file
 and
-.Fa krb5_config_parse_file_multi .
+.Fn krb5_config_parse_file_multi .
 .Sh SEE ALSO
 .Xr krb5_appdefault 3 ,
 .Xr krb5_init_context 3 ,
