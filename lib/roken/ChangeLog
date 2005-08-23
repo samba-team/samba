@@ -1,3 +1,9 @@
+2005-08-23 Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* setprogname.c (setprogname): const poision
+	
+	* print_version.c: Removed, moved to libvers.
+
 2005-08-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* resolve.c (dns_lookup_int): if we have res_ndestroy, prefeer
