@@ -353,11 +353,13 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 
 	gensec_ntlmssp_state->expected_state = NTLMSSP_DONE;
 
-	nt_status = ntlmssp_sign_init(gensec_ntlmssp_state);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(1, ("Could not setup NTLMSSP signing/sealing system (error was: %s)\n", 
-			  nt_errstr(nt_status)));
-		return nt_status;
+	if (gensec_security->want_features & GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL) {
+		nt_status = ntlmssp_sign_init(gensec_ntlmssp_state);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(1, ("Could not setup NTLMSSP signing/sealing system (error was: %s)\n", 
+				  nt_errstr(nt_status)));
+			return nt_status;
+		}
 	}
 
 	return nt_status;

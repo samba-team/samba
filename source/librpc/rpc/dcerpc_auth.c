@@ -50,6 +50,8 @@ NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p, uint8_t auth_type, uint8_t auth
 	DATA_BLOB credentials;
 	DATA_BLOB null_data_blob = data_blob(NULL, 0);
 
+	int num_passes = 0;
+
 	if (!p->conn->security_state.generic_state) {
 		status = gensec_client_start(p, &p->conn->security_state.generic_state,
 					     p->conn->event_ctx);
@@ -73,33 +75,27 @@ NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p, uint8_t auth_type, uint8_t auth
 	p->conn->security_state.auth_info->auth_context_id = random();
 	p->conn->security_state.auth_info->credentials = null_data_blob;
 
-	status = gensec_update(p->conn->security_state.generic_state, tmp_ctx,
-			       null_data_blob,
-			       &credentials);
-
-	p->conn->security_state.auth_info->credentials = credentials;
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		/* We are demanding a reply, so use a request that will get us one */
-		status = dcerpc_bind_byuuid(p, tmp_ctx, uuid, version);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto done;
-		}
-	} else if (NT_STATUS_IS_OK(status)) {
-		/* We don't care for the reply, so jump to the end */
-		status = dcerpc_bind_byuuid(p, tmp_ctx, uuid, version);
-		goto done;
-	} else {
-		/* Something broke in GENSEC - bail */
-		goto done;
-	}
-
 	while (1) {
+		num_passes++;
 		status = gensec_update(p->conn->security_state.generic_state, tmp_ctx,
 				       p->conn->security_state.auth_info->credentials,
 				       &credentials);
+
+		/* The status value here, from GENSEC is vital to the security
+		 * of the system.  Even if the other end accepts, if GENSEC
+		 * claims 'MORE_PROCESSING_REQUIRED' then you must keep
+		 * feeding it blobs, or else the remote host/attacker might
+		 * avoid mutal authentication requirements.
+		 *
+		 * Likewise, you must not feed GENSEC too much (after the OK),
+		 * it doesn't like that either
+		 */
+
 		if (!NT_STATUS_IS_OK(status) 
 		    && !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			DEBUG(1, ("Failed DCERPC client gensec_update with mechanism %s: %s\n",
+				  gensec_get_name_by_authtype(auth_type), nt_errstr(status)));
+
 			break;
 		}
 
@@ -110,18 +106,25 @@ NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p, uint8_t auth_type, uint8_t auth
 		p->conn->security_state.auth_info->credentials = credentials;
 		
 		if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			/* We are demanding a reply, so use a request that will get us one */
-			status = dcerpc_alter_context(p, tmp_ctx, &p->syntax, &p->transfer_syntax);
+			if (num_passes == 1) {
+				status = dcerpc_bind_byuuid(p, tmp_ctx, uuid, version);
+			} else {
+				/* We are demanding a reply, so use a request that will get us one */
+				status = dcerpc_alter_context(p, tmp_ctx, &p->syntax, &p->transfer_syntax);
+			}
 			if (!NT_STATUS_IS_OK(status)) {
 				break;
 			}
-		} else {
+		} else if (NT_STATUS_IS_OK(status)) {
 			/* NO reply expected, so just send it */
-			status = dcerpc_auth3(p->conn, tmp_ctx);
-			credentials = data_blob(NULL, 0);
-			if (!NT_STATUS_IS_OK(status)) {
-				break;
+			if (num_passes == 1) {
+				status = dcerpc_bind_byuuid(p, tmp_ctx, uuid, version);
+			} else {
+				status = dcerpc_auth3(p->conn, tmp_ctx);
 			}
+			break;
+		} else {
+			break;
 		}
 	};
 
