@@ -1,4 +1,8 @@
-2005-08-11  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-08-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* display_status.c: Constify strings to avoid warnings.
+	
+2005-08-11 Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* init_sec_context.c: avoid warnings, update (c)
 
