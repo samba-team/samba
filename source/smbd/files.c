@@ -76,10 +76,15 @@ files_struct *file_new(connection_struct *conn)
 		first_file = (sys_getpid() ^ (int)time(NULL)) % real_max_open_files;
 	}
 
+	/* TODO: Port the id-tree implementation from Samba4 */
+
 	i = bitmap_find(file_bmap, first_file);
 	if (i == -1) {
 		DEBUG(0,("ERROR! Out of file structures\n"));
-		set_saved_error_triple(ERRSRV, ERRnofids, NT_STATUS_TOO_MANY_OPENED_FILES);
+		/* TODO: We have to unconditionally return a DOS error here,
+		 * W2k3 even returns ERRDOS/ERRnofids for ntcreate&x with
+		 * NTSTATUS negotiated */
+		set_saved_ntstatus(NT_STATUS_TOO_MANY_OPENED_FILES);
 		return NULL;
 	}
 
