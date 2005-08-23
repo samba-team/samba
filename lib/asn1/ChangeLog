@@ -1,4 +1,10 @@
-2005-08-22  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-08-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* parse.y: Const poision yyerror.
+
+	* gen.c: Const poision.
+	
+2005-08-22 Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* k5.asn1: Add KRB5-PADATA-PK-AS-09-BINDING, client send
 	this (with an empty pa-data.padata-value) to tell the KDC that the
