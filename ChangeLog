@@ -1,4 +1,24 @@
-2005-08-22  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-08-23 Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/Makefile.am: Add test_hostname to check_PROGRAMS but
+	not TESTS, I have no same dns to use.
+
+	* lib/krb5/test_hostname.c: Testprogram for krb5_expand_hostname()
+	and krb5_expand_hostname_realms().
+	
+	* configure.in: Build KCM if we have doors or unix sockets.
+
+	* lib/krb5/principal.c (krb5_425_conv_principal_ex2): Remove
+	shadowing variable.
+
+	* lib/krb5/get_host_realm.c (dns_find_realm): Fix const warnings,
+	plug memory leak. From: Stefan Metzmacher <metze@samba.org>
+	
+	* lib/krb5/krb5_config.3: Document what happens with NULL to
+	krb5_config_free_strings
+	(nothing). Mdoc nit.
+	
+2005-08-22 Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kuser/klist.c (check_for_tgt): Re-order code so it only free the
 	credential if one was returned.
