@@ -122,7 +122,7 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 	username    = cli_credentials_get_username(creds);
 	password    = cli_credentials_get_password(creds);
 	domain      = cli_credentials_get_domain(creds);
-	remote_host = mprToString(mprGetProperty(argv[0], "rhost", NULL));
+	remote_host = cli_credentials_get_workstation(creds);
 
 	if (username == NULL || password == NULL || domain == NULL) {
 		mpr_Return(eid, mprCreateUndefinedVar());
