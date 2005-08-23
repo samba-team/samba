@@ -235,6 +235,20 @@ sub GenerateStructEnv($)
 	return \%env;
 }
 
+sub EnvSubstituteValue($$)
+{
+	my ($env,$s) = @_;
+
+	# Substitute the value() values in the env
+	foreach my $e (@{$s->{ELEMENTS}}) {
+		next unless (my $v = has_property($e, "value"));
+		
+		$env->{$e->{NAME}} = ParseExpr($v, $env);
+	}
+
+	return $env;
+}
+
 sub GenerateFunctionInEnv($)
 {
 	my $fn = shift;
@@ -1095,6 +1109,8 @@ sub ParseStructPush($$)
 
 	my $env = GenerateStructEnv($struct);
 
+	EnvSubstituteValue($env, $struct);
+
 	# save the old relative_base_offset
 	pidl "uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);" if defined($struct->{PROPERTIES}{relative_base});
 
@@ -1325,6 +1341,8 @@ sub ParseStructPrint($$)
 	return unless defined $struct->{ELEMENTS};
 
 	my $env = GenerateStructEnv($struct);
+
+	EnvSubstituteValue($env, $struct);
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		DeclareArrayVariables($e);
@@ -1870,6 +1888,7 @@ sub ParseFunctionPrint($)
 	pidl "ndr->depth++;";
 
 	my $env = GenerateFunctionInEnv($fn);
+	EnvSubstituteValue($env, $fn);
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/in/,@{$e->{DIRECTION}})) {
@@ -1924,6 +1943,8 @@ sub ParseFunctionPush($)
 	indent;
 
 	my $env = GenerateFunctionInEnv($fn);
+
+	EnvSubstituteValue($env, $fn);
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/in/,@{$e->{DIRECTION}})) {
