@@ -23,8 +23,7 @@ if (options.ARGV.length < 1) {
 	return -1;
 }
 var binding = options.ARGV[0];
-reg = winreg_init();
-security_init(reg);
+reg = winregObj();
 
 print("Connecting to " + binding + "\n");
 status = reg.connect(binding);
@@ -34,18 +33,34 @@ if (status.is_ok != true) {
 }
 
 function list_values(path) {
-	var list = winreg_enum_values(reg, path);
+	var list = reg.enum_values(path);
 	var i;
 	if (list == undefined) {
 		return;
 	}
 	for (i=0;i<list.length;i++) {
-		printf("\ttype=%2d size=%4d  '%s'\n", list[i].type, list[i].size, list[i].name);
+		var v = list[i];
+		printf("\ttype=%-30s size=%4d  '%s'\n", reg.typestring(v.type), v.size, v.name);
+		if (v.type == reg.REG_SZ || v.type == reg.REG_EXPAND_SZ) {
+			printf("\t\t'%s'\n", v.value);
+		}
+		if (v.type == reg.REG_MULTI_SZ) {
+			var j;
+			for (j in v.value) {
+				printf("\t\t'%s'\n", v.value[j]);
+			}
+		}
+		if (v.type == reg.REG_DWORD || v.type == reg.REG_DWORD_BIG_ENDIAN) {
+			printf("\t\t0x%08x (%d)\n", v.value, v.value);
+		}
+		if (v.type == reg.REG_QWORD) {
+			printf("\t\t0x%llx (%lld)\n", v.value, v.value);
+		}
 	}
 }
 
 function list_path(path) {
-	var list = winreg_enum_path(reg, path);
+	var list = reg.enum_path(path);
 	var i;
 	list_values(path);
 	for (i=0;i<list.length;i++) {
