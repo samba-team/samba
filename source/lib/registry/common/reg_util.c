@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "registry.h"
+#include "librpc/gen_ndr/winreg.h"
 
 static const struct {
 	uint32_t id;

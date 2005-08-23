@@ -25,6 +25,7 @@
 #include "registry.h"
 #include "lib/cmdline/popt_common.h"
 #include "system/filesys.h"
+#include "librpc/gen_ndr/winreg.h"
 
 /*
  * Routines to parse a REGEDIT4 file
