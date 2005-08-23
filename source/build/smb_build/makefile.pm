@@ -123,6 +123,24 @@ sub _prepare_man_rule($)
 __EOD__
 }
 
+sub _prepare_config_status()
+{
+	my @parsed_files = @smb_build::config_mk::parsed_files;
+	my $deps = "";
+	
+	foreach (@parsed_files) {
+		/^([^ |]+)/;
+		$deps.= " $1";
+	}
+
+	return "
+
+Makefile: config.status $deps
+	./config.status
+
+";
+}
+
 sub _prepare_binaries($)
 {
 	my $ctx = shift;
@@ -596,6 +614,7 @@ sub _prepare_makefile_in($)
 	$output .= _prepare_binaries($CTX);
 	$output .= _prepare_target_settings($CTX);
 	$output .= _prepare_rule_lists($CTX);
+	$output .= _prepare_config_status();
 
 	if ($config{developer} eq "yes") {
 		$output .= <<__EOD__
