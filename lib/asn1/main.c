@@ -77,8 +77,8 @@ int
 main(int argc, char **argv)
 {
     int ret;
-    char *file;
-    char *name = NULL;
+    const char *file;
+    const char *name = NULL;
     int optidx = 0;
 
     setprogname(argv[0]);
