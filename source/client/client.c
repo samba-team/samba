@@ -1379,7 +1379,7 @@ static int cmd_select(void)
 static int file_find(struct file_list **list, const char *directory, 
 		      const char *expression, BOOL match)
 {
-	DIR *dir;
+	SMB_STRUCT_DIR *dir;
 	struct file_list *entry;
         struct stat statbuf;
         int ret;
@@ -1387,7 +1387,7 @@ static int file_find(struct file_list **list, const char *directory,
 	BOOL isdir;
 	const char *dname;
 
-        dir = opendir(directory);
+        dir = sys_opendir(directory);
 	if (!dir)
 		return -1;
 	
@@ -1416,14 +1416,14 @@ static int file_find(struct file_list **list, const char *directory,
 				
 				if (ret == -1) {
 					SAFE_FREE(path);
-					closedir(dir);
+					sys_closedir(dir);
 					return -1;
 				}
 			}
 			entry = SMB_MALLOC_P(struct file_list);
 			if (!entry) {
 				d_printf("Out of memory in file_find\n");
-				closedir(dir);
+				sys_closedir(dir);
 				return -1;
 			}
 			entry->file_path = path;
@@ -1434,7 +1434,7 @@ static int file_find(struct file_list **list, const char *directory,
 		}
         }
 
-	closedir(dir);
+	sys_closedir(dir);
 	return 0;
 }
 

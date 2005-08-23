@@ -960,7 +960,7 @@ FILE *wsys_fopen(const smb_ucs2_t *wfname, const char *type)
  Wide opendir. Just narrow and call sys_xxx.
 ****************************************************************************/
 
-DIR *wsys_opendir(const smb_ucs2_t *wfname)
+SMB_STRUCT_DIR *wsys_opendir(const smb_ucs2_t *wfname)
 {
 	pstring fname;
 	return opendir(unicode_to_unix(fname,wfname,sizeof(fname)));
@@ -970,7 +970,7 @@ DIR *wsys_opendir(const smb_ucs2_t *wfname)
  Wide readdir. Return a structure pointer containing a wide filename.
 ****************************************************************************/
 
-SMB_STRUCT_WDIRENT *wsys_readdir(DIR *dirp)
+SMB_STRUCT_WDIRENT *wsys_readdir(SMB_STRUCT_DIR *dirp)
 {
 	static SMB_STRUCT_WDIRENT retval;
 	SMB_STRUCT_DIRENT *dirval = sys_readdir(dirp);
