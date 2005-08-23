@@ -69,17 +69,6 @@ uint16 get_current_mid(void)
 static struct pending_message_list *deferred_open_queue;
 
 /****************************************************************************
- Free up a message.
-****************************************************************************/
-
-static void free_queued_message(struct pending_message_list *msg)
-{
-	data_blob_free(&msg->buf);
-	data_blob_free(&msg->private_data);
-	SAFE_FREE(msg);
-}
-
-/****************************************************************************
  Function to push a message onto the tail of a linked list of smb messages ready
  for processing.
 ****************************************************************************/
@@ -90,19 +79,19 @@ static BOOL push_queued_message(char *buf, int msg_len,
 				char *private_data, size_t private_len)
 {
 	struct pending_message_list *tmp_msg;
-	struct pending_message_list *msg = SMB_MALLOC_P(struct pending_message_list);
+	struct pending_message_list *msg;
+
+	msg = TALLOC_ZERO_P(NULL, struct pending_message_list);
 
 	if(msg == NULL) {
 		DEBUG(0,("push_message: malloc fail (1)\n"));
 		return False;
 	}
 
-	memset(msg,'\0',sizeof(*msg));
-
-	msg->buf = data_blob(buf, msg_len);
+	msg->buf = data_blob_talloc(msg, buf, msg_len);
 	if(msg->buf.data == NULL) {
 		DEBUG(0,("push_message: malloc fail (2)\n"));
-		SAFE_FREE(msg);
+		talloc_free(msg);
 		return False;
 	}
 
@@ -110,11 +99,11 @@ static BOOL push_queued_message(char *buf, int msg_len,
 	msg->end_time = end_time;
 
 	if (private_data) {
-		msg->private_data = data_blob(private_data, private_len);
+		msg->private_data = data_blob_talloc(msg, private_data,
+						     private_len);
 		if (msg->private_data.data == NULL) {
 			DEBUG(0,("push_message: malloc fail (3)\n"));
-			data_blob_free(&msg->buf);
-			SAFE_FREE(msg);
+			talloc_free(msg);
 			return False;
 		}
 	}
@@ -137,10 +126,12 @@ void remove_deferred_open_smb_message(uint16 mid)
 
 	for (pml = deferred_open_queue; pml; pml = pml->next) {
 		if (mid == SVAL(pml->buf.data,smb_mid)) {
-			DEBUG(10,("remove_sharing_violation_open_smb_message: deleting mid %u len %u\n",
-				(unsigned int)mid, (unsigned int)pml->buf.length ));
+			DEBUG(10,("remove_sharing_violation_open_smb_message: "
+				  "deleting mid %u len %u\n",
+				  (unsigned int)mid,
+				  (unsigned int)pml->buf.length ));
 			DLIST_REMOVE(deferred_open_queue, pml);
-			free_queued_message(pml);
+			talloc_free(pml);
 			return;
 		}
 	}
