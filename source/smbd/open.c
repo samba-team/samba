@@ -492,6 +492,13 @@ static void validate_my_share_entries(int num,
 			  "share entry with an open file\n");
 	}
 
+	if ((share_entry->op_type == NO_OPLOCK) &&
+	    (fsp->oplock_type == FAKE_LEVEL_II_OPLOCK)) {
+		/* Someone has already written to it, but I haven't yet
+		 * noticed */
+		return;
+	}
+
 	if (((uint16)fsp->oplock_type) != share_entry->op_type) {
 		pstring str;
 		DEBUG(0,("validate_my_share_entries: PANIC : %s\n",

@@ -633,6 +633,24 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 	DEBUG(10,("release_level_2_oplocks_on_change: num_share_modes = %d\n", 
 			num_share_modes ));
 
+	if (fsp->oplock_type == FAKE_LEVEL_II_OPLOCK) {
+		/* See if someone else has already downgraded us, then we
+		   don't have to do anything */
+		for (i=0; i<num_share_modes; i++) {
+			if ((share_list[i].op_type == NO_OPLOCK) &&
+			    (share_list[i].share_file_id == fsp->file_id) &&
+			    (share_list[i].dev == fsp->dev) &&
+			    (share_list[i].inode == fsp->inode) &&
+			    (share_list[i].pid == sys_getpid())) {
+				/* We're done */
+				fsp->oplock_type = NO_OPLOCK;
+				SAFE_FREE(share_list);
+				unlock_share_entry_fsp(fsp);
+				return;
+			}
+		}
+	}
+
 	for(i = 0; i < num_share_modes; i++) {
 		share_mode_entry *share_entry = &share_list[i];
 
