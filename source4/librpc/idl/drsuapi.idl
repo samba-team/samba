@@ -936,13 +936,30 @@ interface drsuapi
 
 	typedef struct {
 		uint32 unknown1;
+		WERROR status;
 		uint32 unknown2;
-		uint32 unknown3;
-	} drsuapi_DsAddEntryCtr3Info1;
+		uint16 unknown3;
+	} drsuapi_DsAddEntryErrorInfoX;
 
 	typedef [switch_type(uint32)] union {
-		[case(1)] drsuapi_DsAddEntryCtr3Info1 info1;
-	} drsuapi_DsAddEntryCtr3Info;
+/*		[case(1)] drsuapi_DsAddEntryErrorInfo1 error1;
+		[case(2)] drsuapi_DsAddEntryErrorInfo2 error2;
+		[case(3)] drsuapi_DsAddEntryErrorInfo3 error3;
+*/		[case(4)] drsuapi_DsAddEntryErrorInfoX error4;
+		[case(5)] drsuapi_DsAddEntryErrorInfoX error5;
+		[case(6)] drsuapi_DsAddEntryErrorInfoX error6;
+		[case(7)] drsuapi_DsAddEntryErrorInfoX error7;
+	} drsuapi_DsAddEntryErrorInfo;
+
+	typedef struct {
+		WERROR status;
+		uint32 level;
+		[switch_is(level)] drsuapi_DsAddEntryErrorInfo *info;
+	} drsuapi_DsAddEntryError1;
+
+	typedef [switch_type(uint32)] union {
+		[case(1)] drsuapi_DsAddEntryError1 info1;
+	} drsuapi_DsAddEntryError;
 
 	typedef struct {
 		GUID guid;
@@ -951,13 +968,22 @@ interface drsuapi
 
 	typedef struct {
 		drsuapi_DsReplicaObjectIdentifier *id;
+		uint32 unknown1;
+		drsuapi_DsAddEntryErrorInfoX error;
+		[range(0,10000)] uint32 count;
+		[size_is(count)] drsuapi_DsReplicaObjectIdentifier2 *objects;
+	} drsuapi_DsAddEntryCtr2;
+
+	typedef struct {
+		drsuapi_DsReplicaObjectIdentifier *id;
 		uint32 level;
-		[switch_is(level)] drsuapi_DsAddEntryCtr3Info *info;
+		[switch_is(level)] drsuapi_DsAddEntryError *error;
 		[range(0,10000)] uint32 count;
 		[size_is(count)] drsuapi_DsReplicaObjectIdentifier2 *objects;
 	} drsuapi_DsAddEntryCtr3;
 
 	typedef [switch_type(int32)] union {
+		[case(2)] drsuapi_DsAddEntryCtr2 ctr2;
 		[case(3)] drsuapi_DsAddEntryCtr3 ctr3;
 	} drsuapi_DsAddEntryCtr;
 
