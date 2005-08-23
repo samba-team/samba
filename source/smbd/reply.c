@@ -3738,7 +3738,7 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	if( is_ntfs_stream_name(directory)) {
 		DEBUG(5,("reply_mkdir: failing create on filename %s with colon in name\n", directory));
 		END_PROFILE(SMBmkdir);
-		return ERROR_FORCE_DOS(ERRDOS, ERRinvalidname);
+		return ERROR_NT(NT_STATUS_NOT_A_DIRECTORY);
 	}
 
 	status = mkdir_internal(conn, directory,bad_path);

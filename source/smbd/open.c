@@ -1833,9 +1833,7 @@ files_struct *open_directory(connection_struct *conn,
 
 	if (is_ntfs_stream_name(fname)) {
 		DEBUG(0,("open_directory: %s is a stream name!\n", fname ));
-		/* NB. Is the DOS error ERRbadpath or ERRbaddirectory ? */
-		set_saved_error_triple(ERRDOS, ERRbadpath,
-				       NT_STATUS_NOT_A_DIRECTORY);
+		set_saved_ntstatus(NT_STATUS_NOT_A_DIRECTORY);
 		return NULL;
 	}
 
