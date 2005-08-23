@@ -64,7 +64,7 @@ static int findpty(char **slave)
 {
 	int master;
 	static fstring line;
-	DIR *dirp;
+	SMB_STRUCT_DIR *dirp;
 	const char *dpname;
 
 #if defined(HAVE_GRANTPT)
@@ -93,7 +93,7 @@ static int findpty(char **slave)
 
 	fstrcpy(line, "/dev/ptyXX");
 
-	dirp = opendir("/dev");
+	dirp = sys_opendir("/dev");
 	if (!dirp)
 		return (-1);
 	while ((dpname = readdirname(dirp)) != NULL)
@@ -110,12 +110,12 @@ static int findpty(char **slave)
 				DEBUG(3, ("pty: opened %s\n", line));
 				line[5] = 't';
 				*slave = line;
-				closedir(dirp);
+				sys_closedir(dirp);
 				return (master);
 			}
 		}
 	}
-	closedir(dirp);
+	sys_closedir(dirp);
 	return (-1);
 }
 
