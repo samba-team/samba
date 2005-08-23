@@ -1839,9 +1839,7 @@ files_struct *open_directory(connection_struct *conn,
 
 	if (dir_existed && !S_ISDIR(psbuf->st_mode)) {
 		DEBUG(0,("open_directory: %s is not a directory !\n", fname ));
-		/* NB. Is the DOS error ERRbadpath or ERRbaddirectory ? */
-		set_saved_error_triple(ERRDOS, ERRbadpath,
-				       NT_STATUS_NOT_A_DIRECTORY);
+		set_saved_ntstatus(NT_STATUS_NOT_A_DIRECTORY);
 		return NULL;
 	}
 
