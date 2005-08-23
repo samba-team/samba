@@ -29,6 +29,7 @@
 #include "system/iconv.h"
 #include "system/time.h"
 #include "lib/appweb/esp/esp.h"
+#include "lib/appweb/ejs/ejsInternal.h"
 #include "dlinklist.h"
 #include "lib/tls/tls.h"
 
@@ -42,17 +43,6 @@ struct esp_state {
 	struct MprVar variables[ESP_OBJ_MAX];
 	struct session_data *session;
 };
-
-/* destroy a esp session */
-static int esp_destructor(void *ptr)
-{
-	struct esp_state *esp = talloc_get_type(ptr, struct esp_state);
-
-	if (esp->req) {
-		espDestroyRequest(esp->req);
-	}
-	return 0;
-}
 
 /*
   output the http headers
@@ -338,7 +328,7 @@ static void http_destroySession(EspHandle handle)
 void http_error(struct websrv_context *web, int code, const char *info)
 {
 	char *s;
-	s = talloc_asprintf(web,"<HTML><HEAD><TITLE>Error %u</TITLE></HEAD><BODY><H1>Error %u</H1>%s<p></BODY></HTML>\r\n\r\n", 
+	s = talloc_asprintf(web,"<HTML><HEAD><TITLE>Error %u</TITLE></HEAD><BODY><H1>Error %u</H1><pre>%s</pre><p></BODY></HTML>\r\n\r\n", 
 			    code, code, info);
 	if (s == NULL) {
 		stream_terminate_connection(web->conn, "http_error: out of memory");
@@ -468,8 +458,14 @@ static const char *exception_reason;
 
 void ejs_exception(const char *reason)
 {
-	exception_reason = reason;
-	DEBUG(0,("%s", reason));
+	Ejs *ep = ejsPtr(0);
+	if (ep) {
+		ejsSetErrorMsg(0, "%s", reason);
+		exception_reason = ep->error;
+	} else {
+		exception_reason = reason;
+	}
+	DEBUG(0,("%s", exception_reason));
 	longjmp(ejs_exception_buf, -1);
 }
 #else
@@ -796,8 +792,6 @@ void http_process_input(struct websrv_context *web)
 		mprCopyVar(&esp->variables[ESP_APPLICATION_OBJ], 
 			   edata->application_data, MPR_DEEP_COPY);
 	}
-
-	talloc_set_destructor(esp, esp_destructor);
 
 	smb_setup_ejs_functions();
 

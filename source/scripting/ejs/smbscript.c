@@ -24,17 +24,21 @@
 #include "includes.h"
 #include "dynconfig.h"
 #include "lib/appweb/ejs/ejs.h"
+#include "lib/appweb/ejs/ejsInternal.h"
 #include "scripting/ejs/smbcalls.h"
+
+static EjsId eid;
 
 void ejs_exception(const char *reason)
 {
-	fprintf(stderr, "smbscript exception: %s", reason);
+	Ejs *ep = ejsPtr(eid);
+	ejsSetErrorMsg(eid, "%s", reason);
+	fprintf(stderr, "%s", ep->error);
 	exit(127);
 }
 
  int main(int argc, const char **argv)
 {
-	EjsId eid;
 	EjsHandle handle = 0;
 	MprVar result;
 	char *emsg, *script;
