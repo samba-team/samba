@@ -22,6 +22,7 @@
 #include "registry.h"
 #include "lib/ldb/include/ldb.h"
 #include "db_wrap.h"
+#include "librpc/gen_ndr/winreg.h"
 
 struct ldb_key_data 
 {
@@ -51,7 +52,7 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx, struct ldb_message *msg, c
 		*len = convert_string_talloc(mem_ctx, CH_UTF8, CH_UTF16, val->data, val->length, data);
 		break;
 
-	case REG_DWORD_LE:
+	case REG_DWORD:
 		*len = 4;
 		*data = talloc(mem_ctx, uint32_t);
 		SIVAL(*data, 0, strtol(val->data, NULL, 0));
@@ -78,7 +79,7 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx, TALLOC_CT
 		val.length = convert_string_talloc(mem_ctx, CH_UTF16, CH_UTF8, data, len, &val.data);
 		ldb_msg_add_value(ctx, msg, "data", &val);
 		break;
-	case REG_DWORD_LE:
+	case REG_DWORD:
 		ldb_msg_add_string(ctx, msg, "data", talloc_asprintf(mem_ctx, "0x%x", IVAL(data, 0)));
 		break;
 	default:
