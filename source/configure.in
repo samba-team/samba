@@ -1635,8 +1635,8 @@ AC_TRY_COMPILE([
 #include <dirent.h>],
 [DIR64 de;],
 samba_cv_HAVE_STRUCT_DIR64=yes,samba_cv_HAVE_STRUCT_DIR64=no)])
-if test x"$samba_cv_HAVE_STRUCT_DIRENT64" = x"yes" && test x"$ac_cv_func_readdir64" = x"yes"; then
-    AC_DEFINE(HAVE_STRUCT_DIRENT64,1,[Whether the 'DIR64' abstract data type is available])
+if test x"$samba_cv_HAVE_STRUCT_DIR64" = x"yes" && test x"$ac_cv_func_readdir64" = x"yes"; then
+    AC_DEFINE(HAVE_STRUCT_DIR64,1,[Whether the 'DIR64' abstract data type is available])
 fi
 
 AC_CACHE_CHECK([for struct dirent64],samba_cv_HAVE_STRUCT_DIRENT64,[
