@@ -13,18 +13,18 @@
 ] interface atsvc
 {
 	typedef [bitmap32bit] bitmap {
-                First   =       0x00000001,
-                Second  =       0x00000002,
-                Third   =       0x00000004,
-                Fourth  =       0x00000008,
-                Fifth   =       0x00000010,
-                Sixth   =       0x00000020,
-                Seventh =       0x00000040,
-                Eight   =       0x00000080,
-                Ninth   =       0x00000100,
-                Tenth   =       0x00000200,
-                Eleventh=       0x00000400,
-                Twelfth =       0x00000800,
+                First           =       0x00000001,
+                Second          =       0x00000002,
+                Third           =       0x00000004,
+                Fourth          =       0x00000008,
+                Fifth           =       0x00000010,
+                Sixth           =       0x00000020,
+                Seventh         =       0x00000040,
+                Eight           =       0x00000080,
+                Ninth           =       0x00000100,
+                Tenth           =       0x00000200,
+                Eleventh        =       0x00000400,
+                Twelfth         =       0x00000800,
                 Thitteenth      =       0x00001000,
                 Fourteenth      =       0x00002000,
                 Fifteenth       =       0x00004000,
@@ -55,13 +55,13 @@
         } atsvc_Flags;
 
 	typedef [bitmap8bit] bitmap {
-		DAYSOFWEEK_MONDAY = 0x01,
-		DAYSOFWEEK_TUESDAY = 0x02,
+		DAYSOFWEEK_MONDAY    = 0x01,
+		DAYSOFWEEK_TUESDAY   = 0x02,
 		DAYSOFWEEK_WEDNESDAY = 0x04,
-		DAYSOFWEEK_THURSDAY = 0x08,
-		DAYSOFWEEK_FRIDAY = 0x10,
-		DAYSOFWEEK_SATURDAY = 0x20,
-		DAYSOFWEEK_SUNDAY = 0x40
+		DAYSOFWEEK_THURSDAY  = 0x08,
+		DAYSOFWEEK_FRIDAY    = 0x10,
+		DAYSOFWEEK_SATURDAY  = 0x20,
+		DAYSOFWEEK_SUNDAY    = 0x40
 	} atsvc_DaysOfWeek;
 	
 	typedef struct {
