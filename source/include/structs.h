@@ -77,8 +77,11 @@ struct spoolss_DeviceMode;
 struct ntptr_context;
 struct ntptr_GenericHandle;
 
+struct drsuapi_DsCrackNames;
 struct drsuapi_DsReplicaObjectListItem;
 struct drsuapi_DsReplicaObjectListItemEx;
+struct drsuapi_DsAttributeValueDNString;
+struct drsuapi_DsReplicaObjectIdentifier3;
 
 struct MULTI_QI;
 struct COSERVERINFO;
@@ -86,8 +89,6 @@ struct COSERVERINFO;
 
 struct epm_floor;
 struct epm_tower;
-
-struct drsuapi_DsCrackNames;
 
 struct PAC_BUFFER;
 struct PAC_DATA;
