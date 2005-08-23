@@ -78,14 +78,14 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 	 * The only difference between guest and "anonymous"
 	 * is the addition of Authenticated_Users.
 	 */
-	ptoken->sids[2] = dom_sid_parse_talloc(mem_ctx, SID_WORLD);
+	ptoken->sids[2] = dom_sid_parse_talloc(ptoken->sids, SID_WORLD);
 	NT_STATUS_HAVE_NO_MEMORY(ptoken->sids[2]);
-	ptoken->sids[3] = dom_sid_parse_talloc(mem_ctx, SID_NT_NETWORK);
+	ptoken->sids[3] = dom_sid_parse_talloc(ptoken->sids, SID_NT_NETWORK);
 	NT_STATUS_HAVE_NO_MEMORY(ptoken->sids[3]);
 	ptoken->num_sids = 4;
 
 	if (is_authenticated) {
-		ptoken->sids[4] = dom_sid_parse_talloc(mem_ctx, SID_NT_AUTHENTICATED_USERS);
+		ptoken->sids[4] = dom_sid_parse_talloc(ptoken->sids, SID_NT_AUTHENTICATED_USERS);
 		NT_STATUS_HAVE_NO_MEMORY(ptoken->sids[4]);
 		ptoken->num_sids++;
 	}
@@ -99,9 +99,9 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 				break;
 			}
 		}
-		
+
 		if (check_sid_idx == ptoken->num_sids) {
-			ptoken->sids[ptoken->num_sids++] = talloc_reference(ptoken, groupSIDs[i]);
+			ptoken->sids[ptoken->num_sids++] = talloc_reference(ptoken->sids, groupSIDs[i]);
 		}
 	}
 
