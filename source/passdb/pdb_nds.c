@@ -714,9 +714,13 @@ int pdb_nds_set_password(
 	if (rc == LDAP_SUCCESS) {
 		DEBUG(5,("NDS Universal Password changed for user %s\n", object_dn));
 	} else {
+		char *ld_error = NULL;
+		ldap_get_option(ld, LDAP_OPT_ERROR_STRING, &ld_error);
+		
 		/* This will fail if Universal Password is not enabled for the user's context */
-		DEBUG(3,("NDS Universal Password could not be changed for user %s: %d\n",
-				 object_dn, rc));
+		DEBUG(3,("NDS Universal Password could not be changed for user %s: %s (%s)\n",
+				 object_dn, ldap_err2string(rc), ld_error?ld_error:"unknown"));
+		SAFE_FREE(ld_error);
 	}
 
 	/* Set eDirectory Password */
