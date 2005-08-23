@@ -167,10 +167,6 @@ static NTSTATUS is_valid_name(const smb_ucs2_t *fname, BOOL allow_wildcards, BOO
 	if (strcmp_wa(fname, ".")==0 || strcmp_wa(fname, "..")==0)
 		return NT_STATUS_OK;
 
-	/* Name cannot start with '.' */
-	if (*fname == UCS2_CHAR('.'))
-		return NT_STATUS_UNSUCCESSFUL;
-	
 	if (only_8_3) {
 		ret = has_valid_83_chars(fname, allow_wildcards);
 		if (!NT_STATUS_IS_OK(ret))
@@ -247,6 +243,10 @@ static NTSTATUS is_8_3_w(const smb_ucs2_t *fname, BOOL allow_wildcards)
 	if (strcmp_wa(fname, ".") == 0 || strcmp_wa(fname, "..") == 0)
 		return NT_STATUS_OK;
 
+	/* Name cannot start with '.' */
+	if (*fname == UCS2_CHAR('.'))
+		return NT_STATUS_UNSUCCESSFUL;
+	
 	if (!NT_STATUS_IS_OK(is_valid_name(fname, allow_wildcards, True)))
 		goto done;
 
