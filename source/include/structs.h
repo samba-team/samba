@@ -80,8 +80,6 @@ struct ntptr_GenericHandle;
 struct drsuapi_DsCrackNames;
 struct drsuapi_DsReplicaObjectListItem;
 struct drsuapi_DsReplicaObjectListItemEx;
-struct drsuapi_DsAttributeValueDNString;
-struct drsuapi_DsReplicaObjectIdentifier3;
 
 struct MULTI_QI;
 struct COSERVERINFO;

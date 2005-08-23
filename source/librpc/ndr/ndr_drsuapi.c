@@ -61,18 +61,3 @@ void ndr_print_drsuapi_DsReplicaObjectListItemEx(struct ndr_print *ndr, const ch
 		ndr_print_drsuapi_DsReplicaObjectListItemEx(ndr, "next_object", r->next_object);
 	}
 }
-
-uint32_t _ndr_size_drsuapi_DsReplicaObjectIdentifier3(const void *ndr,
-						      const struct drsuapi_DsAttributeValueDNString *dn,
-						      const struct drsuapi_DsReplicaObjectIdentifier3 *id,
-						      uint32_t flags)
-{
-	if (talloc_get_type(ndr, struct ndr_pull)) {
-		return dn->__ndr_size;
-	} else if (talloc_get_type(ndr, struct ndr_push)) {
-		return ndr_size_drsuapi_DsReplicaObjectIdentifier3(id, flags) + 2;
-	} else if  (talloc_get_type(ndr, struct ndr_print)) {
-		return ndr_size_drsuapi_DsReplicaObjectIdentifier3(id, flags) + 2;
-	}
-	return 0;
-}
