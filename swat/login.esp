@@ -22,13 +22,13 @@ f.display();
 
 <%
 	if (request.REQUEST_METHOD == "POST") {
-		var authinfo = new Object();
-		authinfo.username = form.Username;
-		authinfo.password = form.Password;
-		authinfo.domain = form.Domain;
-		authinfo.rhost = request['REMOTE_HOST'];
+		var creds = credentials_init();
+		creds.set_username(form.Username);
+		creds.set_password(form.Password);
+		creds.set_domain(form.Domain);
+		creds.set_workstation(request['REMOTE_HOST']);
 
-		auth = userAuth(authinfo);
+		auth = userAuth(creds);
 		if (auth == undefined) {
 			write("<b>Invalid login - please try again<br /></b>\n");
 		} else if (auth.result) {
@@ -37,10 +37,7 @@ f.display();
 
 			session.authinfo.username = auth.username;
 			session.authinfo.domain = auth.domain;
-			session.authinfo.credentials = credentials_init();
-			session.authinfo.credentials.set_username(authinfo.username);
-			session.authinfo.credentials.set_domain(authinfo.domain);
-			session.authinfo.credentials.set_password(authinfo.password);
+			session.authinfo.credentials = creds;
 			
 			/* if the user was asking for the login page, then now
 			   redirect them to the main page. Otherwise just
