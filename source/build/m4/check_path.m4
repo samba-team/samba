@@ -150,9 +150,22 @@ AC_SUBST(developer)
 AC_ARG_ENABLE(developer, [  --enable-developer      Turn on developer warnings and debugging (default=no)],
     [if test x$enable_developer = xyes; then
 	debug=yes
-	CFLAGS="${CFLAGS} -g -Wall"
         developer=yes
-    	DEVELOPER_CFLAGS="-Wshadow -Werror-implicit-function-declaration -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -Wdeclaration-after-statement -Wmissing-format-attribute -Wformat=2 -Wno-format-y2k -DDEBUG_PASSWORD -DDEVELOPER"
+	DEVELOPER_CFLAGS="-DDEBUG_PASSWORD -DDEVELOPER"
+	if test x"$GCC" = x"yes" ; then
+	    AX_CFLAGS_GCC_OPTION(-Wall, DEVELOPER_CFLAGS)
+	    AX_CFLAGS_GCC_OPTION(-Wshadow, DEVELOPER_CFLAGS)
+	    AX_CFLAGS_GCC_OPTION(-Werror-implicit-function-declaration, DEVELOPER_CFLAGS)
+	    AX_CFLAGS_GCC_OPTION(-Wstrict-prototypes, DEVELOPER_CFLAGS)
+	    AX_CFLAGS_GCC_OPTION(-Wpointer-arith, DEVELOPER_CFLAGS)
+	    AX_CFLAGS_GCC_OPTION(-Wcast-qual, DEVELOPER_CFLAGS)
+	    AX_CFLAGS_GCC_OPTION(-Wcast-align, DEVELOPER_CFLAGS)
+	    AX_CFLAGS_GCC_OPTION(-Wwrite-strings, DEVELOPER_CFLAGS)
+	    AX_CFLAGS_GCC_OPTION(-Wmissing-format-attribute, DEVELOPER_CFLAGS)
+	    AX_CFLAGS_GCC_OPTION(-Wformat=2, DEVELOPER_CFLAGS)
+	    AX_CFLAGS_GCC_OPTION(-Wno-format-y2k, DEVELOPER_CFLAGS)
+	    AX_CFLAGS_GCC_OPTION(-Wno-declaration-after-statement, DEVELOPER_CFLAGS)
+	fi
     fi])
 
 debug=no
