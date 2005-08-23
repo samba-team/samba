@@ -1,5 +1,17 @@
-2005-08-23  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-08-23 Love Hörnquist Åstrand <lha@it.su.se>
 
+	* gen_encode.c: Change name of oldret for each instance its used
+	to avoid shadow warning. From: Stefan Metzmacher
+	<metze@samba.org>.
+
+	* gen_length.c: Change name of oldret for each instance its used
+	to avoid shadow warning. From: Stefan Metzmacher
+	<metze@samba.org>.
+
+	* gen_decode.c: Change name of oldret for each instance its used
+	to avoid shadow warning. From: Stefan Metzmacher
+	<metze@samba.org>.
+	
 	* parse.y: Const poision yyerror.
 
 	* gen.c: Const poision.
