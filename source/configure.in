@@ -9,9 +9,6 @@ AC_INIT([samba],[],[samba-technical@samba.org])
 AC_CONFIG_SRCDIR([include/includes.h])
 AC_CONFIG_HEADER(include/config.h)
 
-# Macros used by configuration rules.
-sinclude(build/m4/ax_cflags_gcc_option.m4)
-
 # Configuration rules.
 sinclude(build/m4/env.m4)
 sinclude(build/m4/rewrite.m4)
