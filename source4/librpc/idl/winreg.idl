@@ -14,6 +14,21 @@
   depends(lsa,initshutdown)
 ] interface winreg
 {
+	typedef [v1_enum] enum {
+		REG_NONE                       = 0,
+		REG_SZ                         = 1,
+		REG_EXPAND_SZ                  = 2,
+		REG_BINARY                     = 3,
+		REG_DWORD                      = 4,
+		REG_DWORD_BIG_ENDIAN           = 5,
+		REG_LINK                       = 6,
+		REG_MULTI_SZ                   = 7,
+		REG_RESOURCE_LIST              = 8,
+		REG_FULL_RESOURCE_DESCRIPTOR   = 9,
+		REG_RESOURCE_REQUIREMENTS_LIST = 10,
+		REG_QWORD                      = 11
+	} winreg_Type;
+
 	typedef [public,noejs] struct {
 		[value(strlen_m_term(name)*2)] uint16 name_len;
 		[value(strlen_m_term(name)*2)] uint16 name_size;
@@ -93,11 +108,6 @@
 	);
 
 	typedef struct {
-		uint32 low;
-		uint32 high;
-	} winreg_Time;
-
-	typedef struct {
 		/* we can't use value(strlen_m(name)*2) here as it
 		   doesn't propogate to the length_is() property
 		   below. Jelmer, can this be fixed? */
@@ -121,7 +131,7 @@
 		[in,ref]        policy_handle *handle,
 		[in]            uint32 enum_index,
 		[in,out,ref]    winreg_StringBuf *name,
-		[in,out,unique] uint32 *type,
+		[in,out,unique] winreg_Type *type,
 		[in,out,unique,size_is(*size),length_is(*length)] uint8 *value,
 		[in,out,unique] uint32 *size,
 		[in,out,unique] uint32 *length
@@ -190,7 +200,7 @@
 		[out] uint32 max_valnamelen,
 		[out] uint32 max_valbufsize,
 		[out] uint32 secdescsize,
-		[out] winreg_Time last_changed_time
+		[out] NTTIME last_changed_time
 	);
 
 	/******************/
@@ -198,7 +208,7 @@
 	WERROR winreg_QueryValue(
 		[in,ref] policy_handle *handle,
 		[in] winreg_String value_name,
-		[in,out] uint32 *type,
+		[in,out] winreg_Type *type,
 		[in,out,size_is(*size),length_is(*length)] uint8 *data,
 		[in,out] uint32 *size,
 		[in,out] uint32 *length
@@ -232,7 +242,7 @@
 	WERROR winreg_SetValue(
 		[in,ref]           policy_handle *handle,
 		[in]               winreg_String name,
-		[in]               uint32 type,
+		[in]               winreg_Type type,
 		[in,size_is(size),ref] uint8  *data,
 		[in]               uint32 size
 	);
@@ -283,7 +293,7 @@
 
 	typedef struct {
 		winreg_String *name;
-		uint32 type;
+		winreg_Type type;
 		uint32 offset;
 		uint32 length;
 	} QueryMultipleValue;
