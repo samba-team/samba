@@ -32,7 +32,8 @@ TESTS =						\
 	test_pkinit_dh2key			\
 	test_time
 
-check_PROGRAMS = $(TESTS)
+check_PROGRAMS = $(TESTS) test_hostname
+
 
 LDADD = libkrb5.la \
 	$(LIB_des) \
