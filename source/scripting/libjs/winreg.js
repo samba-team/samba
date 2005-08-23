@@ -9,31 +9,31 @@ libinclude("base.js");
 /*
   close a handle
 */
-function winreg_close(reg, handle)
+function __winreg_close(handle)
 {
 	var io = irpcObj();
 	io.input.handle = handle;
-	reg.winreg_CloseKey(io);
+	this.winreg_CloseKey(io);
 }
 
 
 /*
   open a hive
 */
-function winreg_open_hive(reg, hive)
+function __winreg_open_hive(hive)
 {
 	var io = irpcObj();
 	io.input.system_name = NULL;
-	io.input.access_required = reg.SEC_FLAG_MAXIMUM_ALLOWED;
+	io.input.access_required = this.SEC_FLAG_MAXIMUM_ALLOWED;
 	var status;
 	if (hive == "HKLM") {
-		status = reg.winreg_OpenHKLM(io);
+		status = this.winreg_OpenHKLM(io);
 	} else if (hive == "HKCR") {
-		status = reg.winreg_OpenHKCR(io);
+		status = this.winreg_OpenHKCR(io);
 	} else if (hive == "HKPD") {
-		status = reg.winreg_OpenHKPD(io);
+		status = this.winreg_OpenHKPD(io);
 	} else if (hive == "HKU") {
-		status = reg.winreg_OpenHKU(io);
+		status = this.winreg_OpenHKU(io);
 	} else {
 		println("Unknown hive " + hive);
 		return undefined;
@@ -47,7 +47,7 @@ function winreg_open_hive(reg, hive)
 /*
   open a handle to a path
 */
-function winreg_open_path(reg, path)
+function __winreg_open_path(path)
 {
 	var s = string_init();
 	var i, components = s.split('\\', path);
@@ -67,7 +67,7 @@ function winreg_open_path(reg, path)
 		return undefined;
 	}
 
-	var handle = winreg_open_hive(reg, components[0]);
+	var handle = this.open_hive(components[0]);
 	if (handle == undefined) {
 		return undefined;
 	}
@@ -86,10 +86,10 @@ function winreg_open_path(reg, path)
 	io.input.handle  = handle;
 	io.input.keyname = hpath;
 	io.input.unknown = 0;
-	io.input.access_mask = reg.SEC_FLAG_MAXIMUM_ALLOWED;
-	var status = reg.winreg_OpenKey(io);
+	io.input.access_mask = this.SEC_FLAG_MAXIMUM_ALLOWED;
+	var status = this.winreg_OpenKey(io);
 
-	winreg_close(reg, handle);
+	this.close(handle);
 
 	if (!status.is_ok) {
 		return undefined;
@@ -104,9 +104,9 @@ function winreg_open_path(reg, path)
 /*
 	return a list of keys for a winreg server given a path
 	usage:
-	   list = winreg_enum_path(reg, path);
+	   list = reg.enum_path(path);
 */
-function winreg_enum_path(reg, path)
+function __winreg_enum_path(path)
 {
 	var list = new Object();
 	list.length = 0;
@@ -115,7 +115,7 @@ function winreg_enum_path(reg, path)
 		return new Array("HKLM", "HKU");
 	}
 	
-	var handle = winreg_open_path(reg, path);
+	var handle = this.open_path(path);
 	if (handle == undefined) {
 		return undefined;
 	}
@@ -135,9 +135,9 @@ function winreg_enum_path(reg, path)
 	var idx = 0;
 	for (idx=0;idx >= 0;idx++) {
 		io.input.enum_index = idx;
-		var status = reg.winreg_EnumKey(io);
+		var status = this.winreg_EnumKey(io);
 		if (!status.is_ok) {
-			winreg_close(reg, handle);
+			this.close(handle);
 			return list;
 		}
 		var out = io.output;
@@ -145,20 +145,20 @@ function winreg_enum_path(reg, path)
 			io.input.name.size = io.input.name.size * 2;
 			idx--;
 			if (io.input.name.size > 32000) {
-				winreg_close(reg, handle);
+				this.close(handle);
 				return list;
 			}
 			continue;
 		}
 		if (out.result != "WERR_OK") {
-			winreg_close(reg, handle);
+			this.close(handle);
 			return list;
 		}
 		list[list.length] = out.name.name;
 		list.length++;
 	}
 
-	winreg_close(reg, handle);
+	this.close(handle);
 	return list;
 }
 
@@ -166,17 +166,18 @@ function winreg_enum_path(reg, path)
 /*
 	return a list of values for a winreg server given a path
 	usage:
-	   list = winreg_enum_values(reg, path);
+	   list = reg.enum_values(path);
 
 	each returned list element is an object containing a name, a
 	type and a value
 */
-function winreg_enum_values(reg, path)
+function __winreg_enum_values(path)
 {
+	var data = datablob_init();
 	var list = new Object();
 	list.length = 0;
 
-	var handle = winreg_open_path(reg, path);
+	var handle = this.open_path(path);
 	if (handle == undefined) {
 		return undefined;
 	}
@@ -195,9 +196,9 @@ function winreg_enum_values(reg, path)
 	var idx;
 	for (idx=0;idx >= 0;idx++) {
 		io.input.enum_index = idx;
-		var status = reg.winreg_EnumValue(io);
+		var status = this.winreg_EnumValue(io);
 		if (!status.is_ok) {
-			winreg_close(reg, handle);
+			this.close(handle);
 			return list;
 		}
 		var out = io.output;
@@ -207,24 +208,56 @@ function winreg_enum_values(reg, path)
 			idx--;
 			/* limit blobs to 1M */
 			if (io.input.size > 1000000) {
-				winreg_close(reg, handle);
+				this.close(handle);
 				return list;
 			}
 			continue;
 		}
 		if (out.result != "WERR_OK") {
-			winreg_close(reg, handle);
+			this.close(handle);
 			return list;
 		}
 		var el   = new Object();
 		el.name  = out.name.name;
 		el.type  = out.type;
-		el.value = out.value;
+		el.rawvalue = out.value;
+		el.value = data.regToVar(el.rawvalue, el.type);
 		el.size  = out.size;
 		list[list.length] = el;
 		list.length++;
 	}
 
-	winreg_close(reg, handle);
+	this.close(handle);
 	return list;
+}
+
+/*
+  return a string for a winreg type
+*/
+function __winreg_typestring(type)
+{
+	return this.typenames[type];
+}
+
+/*
+  initialise the winreg lib, returning an object
+*/
+function winregObj()
+{
+	var reg = winreg_init();
+	security_init(reg);
+
+	reg.typenames = new Array("REG_NONE", "REG_SZ", "REG_EXPAND_SZ", "REG_BINARY", 
+				  "REG_DWORD", "REG_DWORD_BIG_ENDIAN", "REG_LINK", "REG_MULTI_SZ",
+				  "REG_RESOURCE_LIST", "REG_FULL_RESOURCE_DESCRIPTOR", 
+				  "REG_RESOURCE_REQUIREMENTS_LIST", "REG_QWORD");
+
+	reg.close = __winreg_close;
+	reg.open_hive = __winreg_open_hive;
+	reg.open_path = __winreg_open_path;
+	reg.enum_path = __winreg_enum_path;
+	reg.enum_values = __winreg_enum_values;
+	reg.typestring = __winreg_typestring;
+
+	return reg;
 }
