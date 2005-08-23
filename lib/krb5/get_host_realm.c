@@ -94,30 +94,41 @@ dns_find_realm(krb5_context context,
 	       const char *domain,
 	       krb5_realm **realms)
 {
-    static char *default_labels[] = { "_kerberos", NULL };
+    static const char *default_labels[] = { "_kerberos", NULL };
     char dom[MAXHOSTNAMELEN];
     struct dns_reply *r;
-    char **labels;
+    const char **labels;
+    char **config_labels;
     int i, ret;
     
-    labels = krb5_config_get_strings(context, NULL, "libdefaults",
-	"dns_lookup_realm_labels", NULL);
-    if(labels == NULL)
+    config_labels = krb5_config_get_strings(context, NULL, "libdefaults",
+					    "dns_lookup_realm_labels", NULL);
+    if(config_labels != NULL)
+	labels = (const char **)config_labels;
+    else
 	labels = default_labels;
     if(*domain == '.')
 	domain++;
     for (i = 0; labels[i] != NULL; i++) {
 	ret = snprintf(dom, sizeof(dom), "%s.%s.", labels[i], domain);
-	if(ret < 0 || ret >= sizeof(dom))
+	if(ret < 0 || ret >= sizeof(dom)) {
+	    if (config_labels)
+		krb5_config_free_strings(config_labels);
 	    return -1;
+	}
     	r = dns_lookup(dom, "TXT");
     	if(r != NULL) {
 	    ret = copy_txt_to_realms (r->head, realms);
 	    dns_free_data(r);
-	    if(ret == 0)
+	    if(ret == 0) {
+		if (config_labels)
+		    krb5_config_free_strings(config_labels);
 		return 0;
+	    }
 	}
     }
+    if (config_labels)
+	krb5_config_free_strings(config_labels);
     return -1;
 }
 
