@@ -122,7 +122,7 @@ struct dom_sid *dom_sid_parse_talloc(TALLOC_CTX *mem_ctx, const char *sidstr)
 		return NULL;
 	}
 
-	ret->sub_auths = talloc_array(mem_ctx, uint32_t, num_sub_auths);
+	ret->sub_auths = talloc_array(ret, uint32_t, num_sub_auths);
 	if (!ret->sub_auths) {
 		return NULL;
 	}
