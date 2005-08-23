@@ -27,7 +27,8 @@ extern userdom_struct current_user_info;
 extern uint16 global_smbpid;
 extern BOOL global_client_failed_oplock_break;
 
-struct dev_inode_bundle {
+struct deferred_open_record {
+	BOOL delayed_for_oplocks;
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
 };
@@ -602,7 +603,7 @@ static BOOL is_delete_request(files_struct *fsp) {
  * 3) Only level2 around: Grant level2 and do nothing else.
  */
 
-static BOOL delay_for_oplocks(files_struct *fsp, BOOL first_try)
+static BOOL delay_for_oplocks(files_struct *fsp)
 {
 	int i, num_share_modes, num_level2;
 	share_mode_entry *share_modes;
@@ -663,7 +664,6 @@ static BOOL delay_for_oplocks(files_struct *fsp, BOOL first_try)
 	if (delay_it) {
 		DEBUG(10, ("Sending break request to PID %d\n",
 			   (int)exclusive->pid));
-		SMB_ASSERT(first_try);
 		exclusive->op_mid = get_current_mid();
 		if (!message_send_pid(exclusive->pid, MSG_SMB_BREAK_REQUEST,
 				      exclusive, sizeof(*exclusive), True)) {
@@ -705,75 +705,54 @@ static void delete_defered_open_entry_record(SMB_DEV_T dev, SMB_INO_T inode)
  Handle the 1 second delay in returning a SHARING_VIOLATION error.
 ****************************************************************************/
 
-static void defer_open(struct timeval *ptv,
-		       SMB_BIG_INT usec_timeout,
+static void defer_open(struct timeval request_time,
+		       struct timeval timeout,
 		       const char *fname,
-		       SMB_DEV_T dev,
-		       SMB_INO_T inode)
+		       struct deferred_open_record *state)
 {
 	uint16 mid = get_current_mid();
 	pid_t mypid = sys_getpid();
 	deferred_open_entry *de_array = NULL;
 	int num_de_entries, i;
-	struct dev_inode_bundle dib;
+	struct timeval now, end_time;
 
-	dib.dev = dev;
-	dib.inode = inode;
+	GetTimeOfDay(&now);
+	end_time = timeval_sum(&request_time, &timeout);
 
-	num_de_entries = get_deferred_opens(dev, inode, &de_array);
+	if (timeval_compare(&end_time, &now) < 0) {
+		/* Request already timed out */
+		DEBUG(10, ("Request timed out\n"));
+		return;
+	}
+
+	/* Paranoia check */
+
+	num_de_entries = get_deferred_opens(state->dev, state->inode, &de_array);
 	for (i = 0; i < num_de_entries; i++) {
 		deferred_open_entry *entry = &de_array[i];
 		if (entry->pid == mypid && entry->mid == mid) {
-			/*
-			 * Check if a 1 second timeout has expired.
-			 */
-			if (usec_time_diff(ptv, &entry->time) > usec_timeout) {
-				DEBUG(10,("defer_open_sharing_error: Deleting "
-					  "deferred open entry for mid %u, "
-					  "file %s\n",
-					  (unsigned int)mid, fname ));
-
-				/* Expired, return a real error. */
-				/* Remove the deferred open entry from the array. */
-
-				delete_deferred_open_entry(entry);
-				SAFE_FREE(de_array);
-				return;
-			}
-			/*
-			 * If the timeout hasn't expired yet and we still have
-			 * a sharing violation, just leave the entry in the
-			 * deferred open array alone. We do need to reschedule
-			 * this open call though (with the original created
-			 * time).
-			 */
-			DEBUG(10,("defer_open_sharing_error: time [%u.%06u] "
-				  "updating deferred open entry for mid %u, file %s\n",
-				  (unsigned int)entry->time.tv_sec,
-				  (unsigned int)entry->time.tv_usec,
-				  (unsigned int)mid, fname ));
-
-			push_deferred_open_smb_message(&entry->time,
-						       usec_timeout,
-						       (char *)&dib,
-						       sizeof(dib));
-			SAFE_FREE(de_array);
-			return;
+			DEBUG(0, ("Trying to defer an already deferred "
+				  "request: mid=%d, exiting\n", mid));
+			exit_server("exiting");
 		}
 	}
+	SAFE_FREE(de_array);
+
+	/* End paranoia check */
 
 	DEBUG(10,("defer_open_sharing_error: time [%u.%06u] adding deferred "
 		  "open entry for mid %u, file %s\n",
-		  (unsigned int)ptv->tv_sec, (unsigned int)ptv->tv_usec,
+		  (unsigned int)request_time.tv_sec,
+		  (unsigned int)request_time.tv_usec,
 		  (unsigned int)mid, fname ));
 
-	if (!push_deferred_open_smb_message(ptv, usec_timeout,
-					    (char *)&dib, sizeof(dib))) {
-		SAFE_FREE(de_array);
-		return;
+	if (!push_deferred_smb_message(mid, request_time, timeout,
+				       (char *)state, sizeof(*state))) {
+		exit_server("push_deferred_smb_message failed\n");
 	}
-	if (!add_deferred_open(mid, ptv, dev, inode, fname)) {
-		remove_deferred_open_smb_message(mid);
+	if (!add_deferred_open(mid, &request_time, state->dev, state->inode,
+			       fname)) {
+		exit_server("Could not add deferred open to locking.tdb\n");
 	}
 
 	/*
@@ -784,8 +763,6 @@ static void defer_open(struct timeval *ptv,
 	 */
 
 	srv_defer_sign_response(mid);
-
-	SAFE_FREE(de_array);
 }
 
 /****************************************************************************
@@ -1100,7 +1077,8 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	uint32 existing_dos_attributes = 0;
 	struct pending_message_list *pml = NULL;
 	uint16 mid = get_current_mid();
-	BOOL first_try = True;
+	BOOL delayed_for_oplocks = False;
+	struct timeval request_time = timeval_zero();
 	NTSTATUS status;
 
 	if (conn->printer) {
@@ -1136,11 +1114,11 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	}
 
 	if ((pml = get_open_deferred_message(mid)) != NULL) {
-		struct dev_inode_bundle dib;
+		struct deferred_open_record *state =
+			(struct deferred_open_record *)pml->private_data.data;
 
-		first_try = False;
-
-		memcpy(&dib, pml->private_data.data, sizeof(dib));
+		request_time = pml->request_time;
+		delayed_for_oplocks = state->delayed_for_oplocks;
 
 		/* There could be a race condition where the dev/inode pair
 		   has changed since we deferred the message. If so, just
@@ -1153,9 +1131,9 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		   spurious oplock break. */
 
 		/* Now remove the deferred open entry under lock. */
-		lock_share_entry(dib.dev, dib.inode);
-		delete_defered_open_entry_record(dib.dev, dib.inode);
-		unlock_share_entry(dib.dev, dib.inode);
+		lock_share_entry(state->dev, state->inode);
+		delete_defered_open_entry_record(state->dev, state->inode);
+		unlock_share_entry(state->dev, state->inode);
 
 		/* Ensure we don't reprocess this message. */
 		remove_deferred_open_smb_message(mid);
@@ -1350,26 +1328,39 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	fsp->access_mask = access_mask;
 	fsp->oplock_type = oplock_request;
 
-	if (file_existed) {
+	if (timeval_is_zero(&request_time)) {
+		request_time = fsp->open_time;
+	}
 
-		struct timeval open_time;
+	if (file_existed) {
 
 		dev = psbuf->st_dev;
 		inode = psbuf->st_ino;
 
 		lock_share_entry(dev, inode);
 
-		/* delay_for_oplocks might delete the fsp */
-		open_time = fsp->open_time;
-		if (delay_for_oplocks(fsp, first_try)) {
+		if (delay_for_oplocks(fsp)) {
+			struct deferred_open_record state;
+
+			if (delayed_for_oplocks) {
+				DEBUG(0, ("Trying to delay for oplocks twice\n"));
+				exit_server("exiting");
+			}
+
 			/* Normally the smbd we asked should respond within
 			 * OPLOCK_BREAK_TIMEOUT seconds regardless of whether
 			 * the client did, give twice the timeout as a safety
 			 * measure here in case the other smbd is stuck
 			 * somewhere else. */
-			defer_open(&open_time,
-				   (OPLOCK_BREAK_TIMEOUT*2) * 1000000,
-				   fname, dev, inode);
+
+			state.delayed_for_oplocks = True;
+			state.dev = dev;
+			state.inode = inode;
+
+			defer_open(request_time, 
+				   timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0),
+				   fname, &state);
+
 			unlock_share_entry(dev, inode);
 			return NULL;
 		}
@@ -1448,13 +1439,14 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			 * cope with the braindead 1 second delay.
 			 */
 
-			if (first_try && (!internal_only_open) &&
-			    lp_defer_sharing_violations()) {
-				/* The fsp->open_time here represents the
-				 * current time of day. */
-				defer_open(&fsp->open_time,
-					   SHARING_VIOLATION_USEC_WAIT,
-					   fname, dev, inode);
+			if (!internal_only_open && lp_defer_sharing_violations()) {
+				struct deferred_open_record state;
+				state.delayed_for_oplocks = False;
+				state.dev = dev;
+				state.inode = inode;
+				defer_open(request_time,
+					   timeval_set(0, SHARING_VIOLATION_USEC_WAIT),
+					   fname, &state);
 			}
 
 			unlock_share_entry(dev, inode);
@@ -1571,12 +1563,14 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 				 * delay.
 				 */
 
-				/* The fsp->open_time here represents the
-				 * current time of day. */
 				if (lp_defer_sharing_violations()) {
-					defer_open(&fsp->open_time,
-						   SHARING_VIOLATION_USEC_WAIT,
-						   fname, dev, inode);
+					struct deferred_open_record state;
+					state.delayed_for_oplocks = False;
+					state.dev = dev;
+					state.inode = inode;
+					defer_open(request_time,
+						   timeval_set(0, SHARING_VIOLATION_USEC_WAIT),
+						   fname, &state);
 				}
 			}
 

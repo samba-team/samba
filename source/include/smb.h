@@ -643,7 +643,8 @@ typedef struct {
 /* Internal message queue for deferred opens. */
 struct pending_message_list {
 	struct pending_message_list *next, *prev;
-	struct timeval msg_time; /* The timeout time */
+	struct timeval request_time; /* When was this first issued? */
+	struct timeval end_time; /* When does this time out? */
 	DATA_BLOB buf;
 	DATA_BLOB private_data;
 };

@@ -84,7 +84,9 @@ static void free_queued_message(struct pending_message_list *msg)
  for processing.
 ****************************************************************************/
 
-static BOOL push_queued_message(char *buf, int msg_len, struct timeval *ptv,
+static BOOL push_queued_message(char *buf, int msg_len,
+				struct timeval request_time,
+				struct timeval end_time,
 				char *private_data, size_t private_len)
 {
 	struct pending_message_list *tmp_msg;
@@ -104,9 +106,8 @@ static BOOL push_queued_message(char *buf, int msg_len, struct timeval *ptv,
 		return False;
 	}
 
-	if (ptv) {
-		msg->msg_time = *ptv;
-	}
+	msg->request_time = request_time;
+	msg->end_time = end_time;
 
 	if (private_data) {
 		msg->private_data = data_blob(private_data, private_len);
@@ -162,8 +163,8 @@ void schedule_deferred_open_smb_message(uint16 mid)
 		if (mid == msg_mid) {
 			DEBUG(10,("schedule_deferred_open_smb_message: scheduling mid %u\n",
 				mid ));
-			pml->msg_time.tv_sec = 0;
-			pml->msg_time.tv_usec = 0;
+			pml->end_time.tv_sec = 0;
+			pml->end_time.tv_usec = 0;
 			DLIST_PROMOTE(deferred_open_queue, pml);
 			return;
 		}
@@ -211,32 +212,24 @@ struct pending_message_list *get_open_deferred_message(uint16 mid)
  messages ready for processing.
 ****************************************************************************/
 
-BOOL push_deferred_open_smb_message(struct timeval *ptv,
-				    SMB_BIG_INT usec_timeout,
-				    char *private_data, size_t priv_len)
+BOOL push_deferred_smb_message(uint16 mid,
+			       struct timeval request_time,
+			       struct timeval timeout,
+			       char *private_data, size_t priv_len)
 {
-	uint16 mid = SVAL(current_inbuf,smb_mid);
-	struct timeval tv;
-	SMB_BIG_INT tdif;
+	struct timeval end_time;
 
-	tv = *ptv;
-	tdif = tv.tv_sec;
-	tdif *= 1000000;
-	tdif += tv.tv_usec;
+	end_time = timeval_sum(&request_time, &timeout);
 
-	/* Add on the timeout. */
-	tdif += usec_timeout;
-	
-	tv.tv_sec = tdif / 1000000;
-	tv.tv_usec = tdif % 1000000;
-	
 	DEBUG(10,("push_deferred_open_smb_message: pushing message len %u mid %u "
 		  "timeout time [%u.%06u]\n",
 		  (unsigned int) smb_len(current_inbuf)+4, (unsigned int)mid,
-		  (unsigned int)tv.tv_sec, (unsigned int)tv.tv_usec));
+		  (unsigned int)end_time.tv_sec,
+		  (unsigned int)end_time.tv_usec));
 
 	return push_queued_message(current_inbuf, smb_len(current_inbuf)+4,
-				   &tv, private_data, priv_len);
+				   request_time, end_time,
+				   private_data, priv_len);
 }
 
 static struct timed_event *timed_events;
@@ -495,14 +488,14 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 		BOOL pop_message = False;
 		struct pending_message_list *msg = deferred_open_queue;
 
-		if (msg->msg_time.tv_sec == 0 && msg->msg_time.tv_usec == 0) {
+		if (timeval_is_zero(&msg->end_time)) {
 			pop_message = True;
 		} else {
 			struct timeval tv;
 			SMB_BIG_INT tdif;
 
 			GetTimeOfDay(&tv);
-			tdif = usec_time_diff(&msg->msg_time, &tv);
+			tdif = usec_time_diff(&msg->end_time, &tv);
 			if (tdif <= 0) {
 				/* Timed out. Schedule...*/
 				pop_message = True;
