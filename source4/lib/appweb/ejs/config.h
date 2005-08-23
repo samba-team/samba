@@ -8,7 +8,7 @@
 #define BLD_APPWEB_CONFIG "normal.conf"
 #define BLD_APPWEB 0
 #define BLD_COMPANY "Mbedthis"
-#define BLD_DEBUG 1
+#define BLD_DEBUG 0
 #define BLD_DIRS "bootstrap include obj bin mpr ejs esp http doc appWeb appWebSamples images"
 #define BLD_HTTP_PORT 7777
 #define BLD_LIB_VERSION "1.0.0"
