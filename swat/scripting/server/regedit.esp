@@ -12,8 +12,7 @@ libinclude("server_call.js");
 */
 function enum_keys(binding, path) {
 	printf("enum_keys(%s, %s)\n", binding, path);
-	var reg = winreg_init();
-	security_init(reg);
+	var reg = winregObj();
 
 	reg.credentials = session.authinfo.credentials;
 
@@ -22,7 +21,7 @@ function enum_keys(binding, path) {
 		printVars(status);
 		return undefined;
 	}
-	return winreg_enum_path(reg, path);
+	return reg.enum_path(path);
 }
 
 /* 
@@ -30,8 +29,7 @@ function enum_keys(binding, path) {
 */
 function enum_values(binding, path) {
 	printf("enum_values(%s, %s)\n", binding, path);
-	var reg = winreg_init();
-	security_init(reg);
+	var reg = winregObj();
 
 	reg.credentials = session.authinfo.credentials;
 
@@ -40,7 +38,7 @@ function enum_values(binding, path) {
 		printVars(status);
 		return undefined;
 	}
-	return winreg_enum_values(reg, path);
+	return reg.enum_values(path);
 }
 
 /* register a call for clients to make */
