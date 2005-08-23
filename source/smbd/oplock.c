@@ -665,7 +665,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 			abort();
 		}
 
-		message_send_pid(share_entry->pid, MSG_SMB_AYNC_LEVEL2_BREAK,
+		message_send_pid(share_entry->pid, MSG_SMB_ASYNC_LEVEL2_BREAK,
 				 share_entry, sizeof(*share_entry), True);
 	}
 
@@ -684,7 +684,7 @@ BOOL init_oplocks(void)
 
 	message_register(MSG_SMB_BREAK_REQUEST,
 			 process_oplock_break_message);
-	message_register(MSG_SMB_AYNC_LEVEL2_BREAK,
+	message_register(MSG_SMB_ASYNC_LEVEL2_BREAK,
 			 process_oplock_break_message);
 	message_register(MSG_SMB_BREAK_RESPONSE,
 			 process_oplock_break_response);
