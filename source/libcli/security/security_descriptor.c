@@ -317,14 +317,14 @@ struct security_descriptor *security_descriptor_create(TALLOC_CTX *mem_ctx,
 	if (sd == NULL) return NULL;
 
 	if (owner_sid) {
-		sd->owner_sid = dom_sid_parse_talloc(mem_ctx, owner_sid);
+		sd->owner_sid = dom_sid_parse_talloc(sd, owner_sid);
 		if (sd->owner_sid == NULL) {
 			talloc_free(sd);
 			return NULL;
 		}
 	}
 	if (group_sid) {
-		sd->group_sid = dom_sid_parse_talloc(mem_ctx, group_sid);
+		sd->group_sid = dom_sid_parse_talloc(sd, group_sid);
 		if (sd->group_sid == NULL) {
 			talloc_free(sd);
 			return NULL;
@@ -353,6 +353,7 @@ struct security_descriptor *security_descriptor_create(TALLOC_CTX *mem_ctx,
 		}
 		ace->trustee = *sid;
 		status = security_descriptor_dacl_add(sd, ace);
+		/* TODO: check: would talloc_free(ace) here be correct? */
 		if (!NT_STATUS_IS_OK(status)) {
 			va_end(ap);
 			talloc_free(sd);
