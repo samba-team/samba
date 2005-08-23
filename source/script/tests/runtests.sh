@@ -19,8 +19,6 @@ cd $OLD_PWD
 ## setup the various environment variables we need
 ##
 
-DOMAIN=SAMBA-TEST
-
 SRCDIR=`pwd`
 SCRIPTDIR=$SRCDIR/script/tests
 TMPDIR=$PREFIX_ABS/tmp
@@ -32,15 +30,42 @@ LOCKDIR=$PREFIX_ABS/lockdir
 LOGDIR=$PREFIX_ABS/logs
 SOCKET_WRAPPER_DIR=$PREFIX_ABS/sockwrap
 CONFIGURATION="-s $CONFFILE"
-
 PATH=`pwd`/bin:$PATH
-
-rm -rf $PREFIX/*
-mkdir -p $PRIVATEDIR $LIBDIR $PIDDIR $LOCKDIR $TMPDIR $LOGDIR $SOCKET_WRAPPER_DIR
 
 export PREFIX_ABS CONFIGURATION CONFFILE PATH SOCKET_WRAPPER_DIR DOMAIN
 export PRIVATEDIR LIBDIR PIDDIR LOCKDIR TMPDIR LOGDIR
 export SRCDIR SCRIPTDIR
+
+## 
+## create the test directory layout
+##
+
+/bin/rm -rf $PREFIX/*
+mkdir -p $PRIVATEDIR $LIBDIR $PIDDIR $LOCKDIR $TMPDIR $LOGDIR $SOCKET_WRAPPER_DIR
+
+##
+## Create the common config include file with the basic settings
+##
+
+cat >$LIBDIR/common.conf<<EOF
+	netbios name = LOCALHOST
+	workgroup = SAMBA-TEST
+
+	private dir = $PRIVATEDIR
+	pid directory = $PIDDIR
+	lock directory = $LOCKDIR
+	log file = $LOGDIR/log.%m
+	log level = 0
+
+	interfaces = lo
+	bind interfaces only = yes
+
+	panic action = $PREFIX_ABS/script/tests/gdb_backtrace /proc/%d/exe %d
+EOF
+
+##
+## ready to go...now loop through the tests
+##
 
 for testfile in `ls $SCRIPTDIR/t_*sh | sort`; do
 	echo ">>>>>> Starting test driver `basename $testfile` <<<<<"
