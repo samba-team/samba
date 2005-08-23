@@ -1010,7 +1010,7 @@ BOOL remove_msdfs_link(struct junction_map *jucn)
 static int form_junctions(TALLOC_CTX *ctx, int snum, struct junction_map *jucn, int jn_remain)
 {
 	int cnt = 0;
-	DIR *dirp;
+	SMB_STRUCT_DIR *dirp;
 	char* dname;
 	pstring connect_path;
 	char* service_name = lp_servicename(snum);
