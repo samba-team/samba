@@ -1020,8 +1020,6 @@ int main(int argc, char **argv)
 	
 	poptFreeContext(pc);
 
-	netsamlogon_cache_init(); /* Non-critical */
-	
 	init_domain_list();
 
 	init_idmap_child();
