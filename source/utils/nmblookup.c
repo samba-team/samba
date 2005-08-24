@@ -178,7 +178,7 @@ static void process_one(const char *name)
 	enum nbt_name_type node_type = NBT_NAME_CLIENT;
 	char *node_name, *p;
 	struct nbt_name_socket *nbtsock;
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 
 	if (!options.case_sensitive) {
 		name = strupper_talloc(tmp_ctx, name);
