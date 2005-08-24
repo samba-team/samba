@@ -1,5 +1,11 @@
-2005-08-24 Love Hörnquist Åstrand <lha@it.su.se>
+2005-08-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* iprop.8: SEE ALSO iprop-log.
+
+	* Makefile.am: man_MANS += iprop-log.8
+
+	* iprop-log.8: Basic for documentation of iprop-log.
+	
 	* remove replay_log.c, dump_log.c, and truncate_log.c, folded into
 	iprop-log.
 
