@@ -32,8 +32,8 @@
 		[in] uint8 reboot
 	);
 
-    WERROR initshutdown_Abort(
-		[in]    uint16 *server
+	WERROR initshutdown_Abort(
+		[in] uint16 *server
 	);
 
 	WERROR initshutdown_InitEx(
