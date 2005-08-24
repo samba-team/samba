@@ -52,6 +52,56 @@ command = {
 	max_args = "0"
 }
 command = {
+	name = "truncate"
+	option = {
+		long = "config-file"
+		short = "c"
+		type = "string"
+		help = "configuration file"
+		argument = "file"
+	}
+	option = {
+		long = "realm"
+		short = "r"
+		type = "string"
+		help = "realm"
+	}
+	function = "iprop_truncate"
+	help = "Truncate the log, preserve the version number."
+	max_args = "0"
+}
+command = {
+	name = "replay"
+	option = {
+		long = "start-version"
+		type = "integer"
+		help = "start replay with this version"
+		argument = "version-number"
+	}
+	option = {
+		long = "end-version"
+		type = "integer"
+		help = "end replay with this version"
+		argument = "version-number"
+	}
+	option = {
+		long = "config-file"
+		short = "c"
+		type = "string"
+		help = "configuration file"
+		argument = "file"
+	}
+	option = {
+		long = "realm"
+		short = "r"
+		type = "string"
+		help = "realm"
+	}
+	function = "iprop_replay"
+	help = "Replay the log on the database."
+	max_args = "0"
+}
+command = {
 	name = "help"
 	argument = "command"
 	max_args = "1"

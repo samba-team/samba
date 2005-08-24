@@ -40,6 +40,44 @@ RCSID("$Id$");
 
 static krb5_context context;
 
+static kadm5_server_context *
+get_kadmin_context(const char *config_file, char *realm)
+{
+    kadm5_config_params conf;
+    krb5_error_code ret;
+    void *kadm_handle;
+    char **files;
+
+    if (config_file == NULL)
+	config_file = HDB_DB_DIR "/kdc.conf";
+
+    ret = krb5_prepend_config_files_default(config_file, &files);
+    if (ret)
+	krb5_err(context, 1, ret, "getting configuration files");
+
+    ret = krb5_set_config_files(context, files);
+    krb5_free_config_files(files);
+    if (ret)
+	krb5_err(context, 1, ret, "reading configuration files");
+
+    memset(&conf, 0, sizeof(conf));
+    if(realm) {
+	conf.mask |= KADM5_CONFIG_REALM;
+	conf.realm = realm;
+    }
+
+    ret = kadm5_init_with_password_ctx (context,
+					KADM5_ADMIN_SERVICE,
+					NULL,
+					KADM5_ADMIN_SERVICE,
+					&conf, 0, 0, 
+					&kadm_handle);
+    if (ret)
+	krb5_err (context, 1, ret, "kadm5_init_with_password_ctx");
+
+    return (kadm5_server_context *)kadm_handle;
+}
+
 /*
  * dump log
  */
@@ -64,7 +102,8 @@ print_entry(kadm5_server_context *server_context,
 	    time_t timestamp,
 	    enum kadm_ops op,
 	    u_int32_t len,
-	    krb5_storage *sp)
+	    krb5_storage *sp,
+	    void *ctx)
 {
     char t[256];
     int32_t mask;
@@ -224,47 +263,17 @@ print_entry(kadm5_server_context *server_context,
 int
 iprop_dump(struct dump_options *opt, int argc, char **argv)
 {
-    const char *config_file = opt->config_file_string;
-    void *kadm_handle;
     kadm5_server_context *server_context;
-    kadm5_config_params conf;
-    char **files;
     krb5_error_code ret;
 
-    if (config_file == NULL)
-	config_file = HDB_DB_DIR "/kdc.conf";
-
-    ret = krb5_prepend_config_files_default(config_file, &files);
-    if (ret)
-	krb5_err(context, 1, ret, "getting configuration files");
-
-    ret = krb5_set_config_files(context, files);
-    krb5_free_config_files(files);
-    if (ret)
-	krb5_err(context, 1, ret, "reading configuration files");
-
-    memset(&conf, 0, sizeof(conf));
-    if(opt->realm_string) {
-	conf.mask |= KADM5_CONFIG_REALM;
-	conf.realm = opt->realm_string;
-    }
-
-    ret = kadm5_init_with_password_ctx (context,
-					KADM5_ADMIN_SERVICE,
-					NULL,
-					KADM5_ADMIN_SERVICE,
-					&conf, 0, 0, 
-					&kadm_handle);
-    if (ret)
-	krb5_err (context, 1, ret, "kadm5_init_with_password_ctx");
-
-    server_context = (kadm5_server_context *)kadm_handle;
+    server_context = get_kadmin_context(opt->config_file_string, 
+					opt->realm_string);
 
     ret = kadm5_log_init (server_context);
     if (ret)
 	krb5_err (context, 1, ret, "kadm5_log_init");
 
-    ret = kadm5_log_foreach (server_context, print_entry);
+    ret = kadm5_log_foreach (server_context, print_entry, NULL);
     if(ret)
 	krb5_warn(context, ret, "kadm5_log_foreach");
 
@@ -274,7 +283,90 @@ iprop_dump(struct dump_options *opt, int argc, char **argv)
     return 0;
 }
 
+int
+iprop_truncate(struct truncate_options *opt, int argc, char **argv)
+{
+    kadm5_server_context *server_context;
+    krb5_error_code ret;
 
+    server_context = get_kadmin_context(opt->config_file_string, 
+					opt->realm_string);
+
+    ret = kadm5_log_truncate (server_context);
+    if (ret)
+	krb5_err (context, 1, ret, "kadm5_log_truncate");
+
+    return 0;
+}
+
+/*
+ * Replay log
+ */
+
+int start_version = -1;
+int end_version = -1;
+
+static void
+apply_entry(kadm5_server_context *server_context,
+	    u_int32_t ver,
+	    time_t timestamp,
+	    enum kadm_ops op,
+	    u_int32_t len,
+	    krb5_storage *sp, 
+	    void *ctx)
+{
+    struct replay_options *opt = ctx;
+    krb5_error_code ret;
+
+    if((opt->start_version_integer != -1 && ver < opt->start_version_integer) ||
+       (opt->end_version_integer != -1 && ver > opt->end_version_integer)) {
+	/* XXX skip this entry */
+	krb5_storage_seek(sp, len, SEEK_CUR);
+	return;
+    }
+    printf ("ver %u... ", ver);
+    fflush (stdout);
+
+    ret = kadm5_log_replay (server_context,
+			    op, ver, len, sp);
+    if (ret)
+	krb5_warn (server_context->context, ret, "kadm5_log_replay");
+
+    
+    printf ("done\n");
+}
+
+int
+iprop_replay(struct replay_options *opt, int argc, char **argv)
+{
+    kadm5_server_context *server_context;
+    krb5_error_code ret;
+
+    server_context = get_kadmin_context(opt->config_file_string, 
+					opt->realm_string);
+
+    ret = server_context->db->hdb_open(context,
+				       server_context->db,
+				       O_RDWR | O_CREAT, 0);
+    if (ret)
+	krb5_err (context, 1, ret, "db->open");
+
+    ret = kadm5_log_init (server_context);
+    if (ret)
+	krb5_err (context, 1, ret, "kadm5_log_init");
+
+    ret = kadm5_log_foreach (server_context, apply_entry, opt);
+    if(ret)
+	krb5_warn(context, ret, "kadm5_log_foreach");
+    ret = kadm5_log_end (server_context);
+    if (ret)
+	krb5_warn(context, ret, "kadm5_log_end");
+    ret = server_context->db->hdb_close (context, server_context->db);
+    if (ret)
+	krb5_err (context, 1, ret, "db->close");
+
+    return 0;
+}
 
 static int help_flag;
 static int version_flag;

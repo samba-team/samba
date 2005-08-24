@@ -7,7 +7,7 @@ SLC = $(top_builddir)/lib/sl/slc
 lib_LTLIBRARIES = libkadm5srv.la libkadm5clnt.la
 libkadm5srv_la_LDFLAGS = -version-info 7:7:0
 libkadm5clnt_la_LDFLAGS = -version-info 6:5:2
-sbin_PROGRAMS = replay_log truncate_log iprop-log
+sbin_PROGRAMS = iprop-log
 check_PROGRAMS = default_keys
 noinst_PROGRAMS = test_pw_quality
 
@@ -96,13 +96,9 @@ libkadm5clnt_la_SOURCES = $(SOURCES_client) client_glue.c
 
 iprop_log_SOURCES = iprop-log.c iprop-commands.c
 
-replay_log_SOURCES = replay_log.c kadm5_locl.h
-
 ipropd_master_SOURCES = ipropd_master.c iprop.h kadm5_locl.h
 
 ipropd_slave_SOURCES = ipropd_slave.c iprop.h kadm5_locl.h
-
-truncate_log_SOURCES = truncate_log.c
 
 man_MANS = kadm5_pwcheck.3 iprop.8
 
