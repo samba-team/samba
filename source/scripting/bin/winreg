@@ -12,7 +12,8 @@ libinclude("winreg.js");
 var options = GetOptions(ARGV,
 			 "POPT_AUTOHELP",
 			 "POPT_COMMON_SAMBA",
-			 "POPT_COMMON_CREDENTIALS");
+			 "POPT_COMMON_CREDENTIALS",
+			 "createkey=s");
 if (options == undefined) {
 	println("Failed to parse options");
 	return -1;
@@ -61,6 +62,10 @@ function list_values(path) {
 
 function list_path(path) {
 	var list = reg.enum_path(path);
+	if (list == undefined) {
+		println("Unable to list " + path);
+		return;
+	}
 	var i;
 	list_values(path);
 	for (i=0;i<list.length;i++) {
@@ -83,6 +88,13 @@ if (options.ARGV.length > 1) {
 	root = '';
 }
 
-printf("Listing registry tree '%s'\n", root);
-list_path(root);
+if (options.createkey) {
+	var ok = reg.create_key("HKLM\\SOFTWARE", options.createkey);
+	if (!ok) {
+		
+	}
+} else {
+	printf("Listing registry tree '%s'\n", root);
+	list_path(root);
+}
 return 0;
