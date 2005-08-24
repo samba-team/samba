@@ -23,6 +23,10 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_winreg.h"
 
+#define TEST_KEY_BASE "smbtorture test"
+#define TEST_KEY1 TEST_KEY_BASE "\\spottyfoot"
+#define TEST_KEY2 TEST_KEY_BASE "\\with a SD (#1)"
+
 static void init_initshutdown_String(TALLOC_CTX *mem_ctx, struct initshutdown_String *name, const char *s)
 {
 	name->name = talloc(mem_ctx, struct initshutdown_String_sub);
@@ -131,6 +135,68 @@ static BOOL test_CreateKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+
+/*
+  createkey testing with a SD
+*/
+static BOOL test_CreateKey_sd(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			      struct policy_handle *handle, const char *name, 
+			      const char *class, struct policy_handle *newhandle)
+{
+	struct winreg_CreateKey r;
+	NTSTATUS status;
+	uint32_t action_taken = 0;
+	struct security_descriptor *sd;
+	DATA_BLOB sdblob;
+	struct winreg_SecBuf secbuf;
+
+	sd = security_descriptor_create(mem_ctx,
+					NULL, NULL,
+					SID_NT_AUTHENTICATED_USERS,
+					SEC_ACE_TYPE_ACCESS_ALLOWED,
+					SEC_GENERIC_ALL,
+					SEC_ACE_FLAG_OBJECT_INHERIT,
+					NULL);
+
+	status = ndr_push_struct_blob(&sdblob, mem_ctx, sd, 
+				      (ndr_push_flags_fn_t)ndr_push_security_descriptor);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to push security_descriptor ?!\n");
+		return False;
+	}
+
+	secbuf.sd.data = sdblob.data;
+	secbuf.sd.len = sdblob.length;
+	secbuf.sd.size = sdblob.length;
+	secbuf.length = sdblob.length-10;
+	secbuf.inherit = 0;
+
+	printf("\ntesting CreateKey with sd\n");
+
+	r.in.handle = handle;
+	r.out.new_handle = newhandle;
+	init_winreg_String(&r.in.name, name);	
+	init_winreg_String(&r.in.class, class);
+	r.in.options = 0x0;
+	r.in.access_required = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.in.action_taken = r.out.action_taken = &action_taken;
+	r.in.secdesc = &secbuf;
+
+	status = dcerpc_winreg_CreateKey(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("CreateKey with sd failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("CreateKey with sd failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
+
+	return True;
+}
+
 static BOOL test_GetKeySecurity(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			  struct policy_handle *handle)
 {
@@ -145,8 +211,8 @@ static BOOL test_GetKeySecurity(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r.in.handle = handle;
 	r.in.sd = r.out.sd = talloc_zero(mem_ctx, struct KeySecurityData);
-	r.in.sd->size = 0xffff;
-	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.in.sd->size = 0x1000;
+	r.in.sec_info = SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL;
 
 	status = dcerpc_winreg_GetKeySecurity(p, mem_ctx, &r);
 
@@ -163,8 +229,8 @@ static BOOL test_GetKeySecurity(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	sdblob.data = r.out.sd->data;
 	sdblob.length = r.out.sd->len;
 
-	status = ndr_pull_struct_blob_all(&sdblob, mem_ctx, &sd, 
-					  (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+	status = ndr_pull_struct_blob(&sdblob, mem_ctx, &sd, 
+				      (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("pull_security_descriptor failed - %s\n", nt_errstr(status));
 		return False;
@@ -256,6 +322,20 @@ static BOOL test_OpenKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	return True;
 }
+
+static BOOL test_Cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			 struct policy_handle *handle, const char *key)
+{
+	struct winreg_DeleteKey r;
+
+	r.in.handle = handle;
+	init_winreg_String(&r.in.key, key);
+
+	dcerpc_winreg_DeleteKey(p, mem_ctx, &r);
+
+	return True;
+}
+
 
 static BOOL test_DeleteKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			   struct policy_handle *handle, const char *key)
@@ -390,10 +470,10 @@ static BOOL test_QueryMultipleValues(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.num_values = 1;
 	r.in.buffer_size = r.out.buffer_size = talloc(mem_ctx, uint32_t);
 	*r.in.buffer_size = 0x00;
-	r.in.buffer = r.out.buffer = talloc_zero_array(mem_ctx, uint8_t, *r.in.buffer_size);
-
 	do { 
 		*r.in.buffer_size += 0x20;
+		r.in.buffer = r.out.buffer = talloc_zero_array(mem_ctx, uint8_t, 
+							       *r.in.buffer_size);
 
 		status = dcerpc_winreg_QueryMultipleValues(p, mem_ctx, &r);
 	
@@ -490,89 +570,6 @@ static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-static BOOL test_OpenHKLM(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			  struct policy_handle *handle)
-{
-	NTSTATUS status;
-	struct winreg_OpenHKLM r;
-	BOOL ret = True;
-
-	printf("\ntesting OpenHKLM\n");
-
-	r.in.system_name = 0;
-	r.in.access_required = SEC_FLAG_MAXIMUM_ALLOWED;
-	r.out.handle = handle;
-
-	status = dcerpc_winreg_OpenHKLM(p, mem_ctx, &r);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenHKLM failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("OpenHKLM failed - %s\n", win_errstr(r.out.result));
-		return False;
-	}
-
-	return ret;
-}
-
-static BOOL test_OpenHKU(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			 struct policy_handle *handle)
-{
-	NTSTATUS status;
-	struct winreg_OpenHKU r;
-	BOOL ret = True;
-
-	printf("\ntesting OpenHKU\n");
-
-	r.in.system_name = 0;
-	r.in.access_required = SEC_FLAG_MAXIMUM_ALLOWED;
-	r.out.handle = handle;
-
-	status = dcerpc_winreg_OpenHKU(p, mem_ctx, &r);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenHKU failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("OpenHKU failed - %s\n", win_errstr(r.out.result));
-		return False;
-	}
-
-	return ret;
-}
-
-static BOOL test_OpenHKCR(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			  struct policy_handle *handle)
-{
-	NTSTATUS status;
-	struct winreg_OpenHKCR r;
-	BOOL ret = True;
-
-	printf("\ntesting OpenHKCR\n");
-
-	r.in.system_name = 0;
-	r.in.access_required = SEC_FLAG_MAXIMUM_ALLOWED;
-	r.out.handle = handle;
-
-	status = dcerpc_winreg_OpenHKCR(p, mem_ctx, &r);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenHKCR failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("OpenHKU failed - %s\n", win_errstr(r.out.result));
-		return False;
-	}
-	return ret;
-}
-
 static BOOL test_InitiateSystemShutdown(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			const char *msg, uint32_t timeout)
 {
@@ -655,29 +652,6 @@ static BOOL test_AbortSystemShutdown(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return True;
 }
 
-static BOOL test_OpenHKCU(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			  struct policy_handle *handle)
-{
-	NTSTATUS status;
-	struct winreg_OpenHKCU r;
-	BOOL ret = True;
-
-	printf("\ntesting OpenHKCU\n");
-
-	r.in.system_name = 0;
-	r.in.access_required = SEC_FLAG_MAXIMUM_ALLOWED;
-	r.out.handle = handle;
-
-	status = dcerpc_winreg_OpenHKCU(p, mem_ctx, &r);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenHKCU failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	return ret;
-}
-
 #define MAX_DEPTH 2		/* Only go this far down the tree */
 
 static BOOL test_key(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
@@ -708,20 +682,27 @@ static BOOL test_key(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-typedef BOOL winreg_open_fn(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			    struct policy_handle *handle);
+typedef NTSTATUS (*winreg_open_fn)(struct dcerpc_pipe *, TALLOC_CTX *, void *);
 
-static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, void *fn)
+static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, winreg_open_fn open_fn)
 {
 	struct policy_handle handle, newhandle;
 	BOOL ret = True, created = False, deleted = False;
-	winreg_open_fn *open_fn = (winreg_open_fn *)fn;
+	struct winreg_OpenHKLM r;
+	NTSTATUS status;
 
-	if (!open_fn(p, mem_ctx, &handle)) {
+	r.in.system_name = 0;
+	r.in.access_required = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.out.handle = &handle;
+	
+	status = open_fn(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
 
-	if (!test_CreateKey(p, mem_ctx, &handle, "spottyfoot", NULL)) {
+	test_Cleanup(p, mem_ctx, &handle, TEST_KEY_BASE);
+
+	if (!test_CreateKey(p, mem_ctx, &handle, TEST_KEY1, NULL)) {
 		printf("CreateKey failed - not considering a failure\n");
 	} else {
 		created = True;
@@ -732,12 +713,12 @@ static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, void *fn)
 		ret = False;
 	}
 
-	if (created && !test_OpenKey(p, mem_ctx, &handle, "spottyfoot", &newhandle)) {
+	if (created && !test_OpenKey(p, mem_ctx, &handle, TEST_KEY1, &newhandle)) {
 		printf("CreateKey failed (OpenKey after Create didn't work)\n");
 		ret = False;
 	}
 
-	if (created && !test_DeleteKey(p, mem_ctx, &handle, "spottyfoot")) {
+	if (created && !test_DeleteKey(p, mem_ctx, &handle, TEST_KEY1)) {
 		printf("DeleteKey failed\n");
 		ret = False;
 	} else {
@@ -749,7 +730,7 @@ static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, void *fn)
 		ret = False;
 	}
 
-	if (deleted && test_OpenKey(p, mem_ctx, &handle, "spottyfoot", &newhandle)) {
+	if (deleted && test_OpenKey(p, mem_ctx, &handle, TEST_KEY1, &newhandle)) {
 		printf("DeleteKey failed (OpenKey after Delete didn't work)\n");
 		ret = False;
 	}
@@ -759,9 +740,32 @@ static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, void *fn)
 		ret = False;
 	}
 
+	if (created && !test_CreateKey_sd(p, mem_ctx, &handle, TEST_KEY2, 
+					  NULL, &newhandle)) {
+		printf("CreateKey failed - not considering a failure\n");
+		created = False;
+	} else {
+		created = True;
+	}
+
+	if (created && !test_GetKeySecurity(p, mem_ctx, &newhandle)) {
+		printf("GetKeySecurity failed\n");
+		ret = False;
+	}
+
+	if (created && !test_CloseKey(p, mem_ctx, &newhandle)) {
+		printf("CloseKey failed\n");
+		ret = False;
+	}
+
+	if (created && !test_DeleteKey(p, mem_ctx, &handle, TEST_KEY2)) {
+		printf("DeleteKey failed\n");
+		ret = False;
+	}
+
 	/* The HKCR hive has a very large fanout */
 
-	if (open_fn == test_OpenHKCR) {
+	if (open_fn == (void *)dcerpc_winreg_OpenHKCR) {
 		if(!test_key(p, mem_ctx, &handle, MAX_DEPTH - 1)) {
 			ret = False;
 		}
@@ -780,10 +784,11 @@ BOOL torture_rpc_winreg(void)
 	struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
-	winreg_open_fn *open_fns[] = { test_OpenHKLM, test_OpenHKU,
-				       test_OpenHKCR, test_OpenHKCU };
+	winreg_open_fn open_fns[] = { (winreg_open_fn)dcerpc_winreg_OpenHKLM, 
+				       (winreg_open_fn)dcerpc_winreg_OpenHKU,
+				       (winreg_open_fn)dcerpc_winreg_OpenHKCR,
+				       (winreg_open_fn)dcerpc_winreg_OpenHKCU };
 	int i;
-
 	mem_ctx = talloc_init("torture_rpc_winreg");
 
 	status = torture_rpc_connection(mem_ctx, 

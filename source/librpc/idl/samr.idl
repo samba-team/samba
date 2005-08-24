@@ -16,6 +16,8 @@
   depends(lsa,security)
 ] interface samr
 {
+	declare bitmap security_secinfo;
+
 	/* account control (acct_flags) bits */
 	typedef [public,bitmap32bit] bitmap {
 		ACB_DISABLED  = 0x00000001,  /* 1 = User account disabled */
@@ -52,7 +54,7 @@
 
 	NTSTATUS samr_SetSecurity (
 		[in,ref]          policy_handle *handle,
-		[in]              uint32 sec_info,
+		[in]              security_secinfo sec_info,
 		[in,ref]          sec_desc_buf *sdbuf
 		);
 
@@ -61,7 +63,7 @@
 
 	NTSTATUS samr_QuerySecurity (
 		[in,ref]          policy_handle *handle,
-		[in]              uint32 sec_info,
+		[in]              security_secinfo sec_info,
 		[out]             sec_desc_buf *sdbuf
 		);
 
