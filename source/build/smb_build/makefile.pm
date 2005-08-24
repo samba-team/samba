@@ -26,6 +26,7 @@ builddir = @builddir@
 BASEDIR = @prefix@
 BINDIR = @bindir@
 SBINDIR = @sbindir@
+datadir = @datadir@
 LIBDIR = @libdir@
 CONFIGDIR = @configdir@
 localstatedir = @localstatedir@
