@@ -25,7 +25,7 @@
    such as the local SID and machine trust password */
 
 #include "includes.h"
-#include "tdb.h"
+#include "lib/tdb/include/tdb.h"
 #include "lib/samba3/samba3.h"
 #include "system/filesys.h"
 #include "librpc/gen_ndr/ndr_security.h"
