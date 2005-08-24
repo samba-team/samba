@@ -25,7 +25,7 @@ You can also combine steps 2 to 4 like this:
      make -sf Makefile.ldb clean all test-tdb gcov
 
 Note that you should not expect 100% coverage, as some error paths
-(such as memory allocation failures) are verr hard to trigger. There
+(such as memory allocation failures) are very hard to trigger. There
 are ways of working around this, but they are quite tricky (they
 involve allocation wrappers that "fork and fail on malloc").
 

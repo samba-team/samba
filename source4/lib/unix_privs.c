@@ -31,7 +31,7 @@
   talloc_free() this pointer.
 
   Note that this call is considered successful even if it does not
-  manage to gain too privileges, but it will call smb_abort() if it
+  manage to gain root privileges, but it will call smb_abort() if it
   fails to restore the privileges afterwards. The logic is that
   failing to gain root access can be caught by whatever operation
   needs to be run as root failing, but failing to lose the root
@@ -67,4 +67,3 @@ void *root_privileges(void)
 	talloc_set_destructor(s, privileges_destructor);
 	return s;
 }
-
