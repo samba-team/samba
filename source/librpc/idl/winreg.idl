@@ -83,14 +83,28 @@
 
 	/******************/
 	/* Function: 0x06 */
+
+	typedef struct {
+		[size_is(size),length_is(len)] uint8 *data;
+		uint32 size;
+		uint32 len;
+	} KeySecurityData;
+
+	typedef struct {
+		uint32 length;
+		KeySecurityData sd;
+		bool8  inherit;
+	} winreg_SecBuf;
+
 	WERROR winreg_CreateKey(
-		[in,out,ref] policy_handle *handle,
-		[in] winreg_String key,
+		[in,ref] policy_handle *handle,
+		[in] winreg_String name,
 		[in] winreg_String class,
 		[in] uint32 options,
-		[in] uint32 access_mask,
-		[in,out,ref] uint32 *action_taken,
-		[in] sec_desc_buf *sec_desc
+		[in] uint32 access_required,
+		[in,unique] winreg_SecBuf *secdesc,
+		[out,ref] policy_handle *new_handle,
+		[in,out,unique] uint32 *action_taken
 	);
 
 	/******************/
@@ -143,18 +157,12 @@
 		[in,ref] policy_handle *handle
 	);
 
-	typedef struct {
-		[size_is(size),length_is(len)] uint8 *data;
-		uint32 size;
-		uint32 len;
-	} KeySecurityData;
-
 	/******************/
 	/* Function: 0x0c */
 	WERROR winreg_GetKeySecurity(
 		[in,ref] policy_handle *handle,
 		[in] uint32 access_mask,
-		[in,out,ref] KeySecurityData *data
+		[in,out,ref] KeySecurityData *sd
 	);
 
 	/******************/
