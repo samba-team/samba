@@ -456,6 +456,7 @@ static BOOL test_QueryMultipleValues(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	struct winreg_QueryMultipleValues r;
 	NTSTATUS status;
+	uint32_t bufsize=0;
 
 	printf("Testing QueryMultipleValues\n");
 
@@ -469,9 +470,9 @@ static BOOL test_QueryMultipleValues(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r.in.num_values = 1;
 	r.in.buffer_size = r.out.buffer_size = talloc(mem_ctx, uint32_t);
-	*r.in.buffer_size = 0x00;
+	*r.in.buffer_size = bufsize;
 	do { 
-		*r.in.buffer_size += 0x20;
+		*r.in.buffer_size = bufsize;
 		r.in.buffer = r.out.buffer = talloc_zero_array(mem_ctx, uint8_t, 
 							       *r.in.buffer_size);
 
@@ -481,7 +482,8 @@ static BOOL test_QueryMultipleValues(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			printf("QueryMultipleValues failed - %s\n", nt_errstr(status));
 			return False;
 		}
-
+		talloc_free(r.in.buffer);
+		bufsize += 0x20;
 	} while (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA));
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
