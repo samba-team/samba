@@ -707,6 +707,15 @@ static void delete_defered_open_entry_record(SMB_DEV_T dev, SMB_INO_T inode)
 	SAFE_FREE(de_array);
 }
 
+static BOOL request_timed_out(struct timeval request_time,
+			      struct timeval timeout)
+{
+	struct timeval now, end_time;
+	GetTimeOfDay(&now);
+	end_time = timeval_sum(&request_time, &timeout);
+	return (timeval_compare(&end_time, &now) < 0);
+}
+
 /****************************************************************************
  Handle the 1 second delay in returning a SHARING_VIOLATION error.
 ****************************************************************************/
@@ -720,17 +729,6 @@ static void defer_open(struct timeval request_time,
 	pid_t mypid = sys_getpid();
 	deferred_open_entry *de_array = NULL;
 	int num_de_entries, i;
-	struct timeval now, end_time;
-
-	GetTimeOfDay(&now);
-	end_time = timeval_sum(&request_time, &timeout);
-
-	if (timeval_compare(&end_time, &now) < 0) {
-		/* Request already timed out */
-		DEBUG(10, ("Request timed out\n"));
-		return;
-	}
-
 	/* Paranoia check */
 
 	num_de_entries = get_deferred_opens(state->dev, state->inode, &de_array);
@@ -1347,11 +1345,14 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 		if (delay_for_oplocks(fsp)) {
 			struct deferred_open_record state;
+			struct timeval timeout;
 
 			if (delayed_for_oplocks) {
 				DEBUG(0, ("Trying to delay for oplocks twice\n"));
 				exit_server("exiting");
 			}
+
+			timeout = timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0);
 
 			/* Normally the smbd we asked should respond within
 			 * OPLOCK_BREAK_TIMEOUT seconds regardless of whether
@@ -1363,9 +1364,10 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			state.dev = dev;
 			state.inode = inode;
 
-			defer_open(request_time, 
-				   timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0),
-				   fname, &state);
+			if (!request_timed_out(request_time, timeout)) {
+				defer_open(request_time, timeout,
+					   fname, &state);
+			}
 
 			unlock_share_entry(dev, inode);
 			return NULL;
@@ -1444,14 +1446,22 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			 * cope with the braindead 1 second delay.
 			 */
 
-			if (!internal_only_open && lp_defer_sharing_violations()) {
+			if (!internal_only_open &&
+			    lp_defer_sharing_violations()) {
+				struct timeval timeout;
 				struct deferred_open_record state;
+
+				timeout = timeval_set(0, SHARING_VIOLATION_USEC_WAIT);
+
 				state.delayed_for_oplocks = False;
 				state.dev = dev;
 				state.inode = inode;
-				defer_open(request_time,
-					   timeval_set(0, SHARING_VIOLATION_USEC_WAIT),
-					   fname, &state);
+
+				if (!request_timed_out(request_time,
+						       timeout)) {
+					defer_open(request_time, timeout,
+						   fname, &state);
+				}
 			}
 
 			unlock_share_entry(dev, inode);
@@ -1514,14 +1524,15 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		return NULL;
 	}
 
-	/*
-	 * Deal with the race condition where two smbd's detect the file
-	 * doesn't exist and do the create at the same time. One of them will
-	 * win and set a share mode, the other (ie. this one) should check if
-	 * the requested share mode for this create is allowed.
-	 */
-
 	if (!file_existed) { 
+
+		/*
+		 * Deal with the race condition where two smbd's detect the
+		 * file doesn't exist and do the create at the same time. One
+		 * of them will win and set a share mode, the other (ie. this
+		 * one) should check if the requested share mode for this
+		 * create is allowed.
+		 */
 
 		/*
 		 * Now the file exists and fsp is successfully opened,
@@ -1539,63 +1550,26 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 					 access_mask, share_access,
 					 create_options, &file_existed);
 
-		if (NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
-			set_saved_ntstatus(status);
+		if (!NT_STATUS_IS_OK(status)) {
+			struct deferred_open_record state;
+
 			unlock_share_entry(dev, inode);
 			fd_close(conn, fsp);
 			file_free(fsp);
-			return NULL;
-		}
 
-		if (!NT_STATUS_IS_OK(status)) {
+			state.delayed_for_oplocks = False;
+			state.dev = dev;
+			state.inode = inode;
 
-			SMB_ASSERT(NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION));
+			/* Do it all over again immediately. In the second
+			 * round we will find that the file existed and handle
+			 * the DELETE_PENDING and FCB cases correctly. No need
+			 * to duplicate the code here. Essentially this is a
+			 * "goto top of this function", but don't tell
+			 * anybody... */
 
-			/* Check if this can be done with the deny_dos and fcb
-			 * calls. */
-			if (create_options &
-			    (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS|
-			     NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
-				files_struct *fsp_dup;
-				fsp_dup = fcb_or_dos_open(conn, fname, dev, inode,
-							  access_mask, share_access,
-							  create_options);
-				if (fsp_dup) {
-					unlock_share_entry(dev, inode);
-					fd_close(conn, fsp);
-					file_free(fsp);
-					if (pinfo) {
-						*pinfo = FILE_WAS_OPENED;
-					}
-					conn->num_files_open++;
-					return fsp_dup;
-				}
-
-				/* 
-				 * If we're returning a share violation,
-				 * ensure we cope with the braindead 1 second
-				 * delay.
-				 */
-
-				if (lp_defer_sharing_violations()) {
-					struct deferred_open_record state;
-					state.delayed_for_oplocks = False;
-					state.dev = dev;
-					state.inode = inode;
-					defer_open(request_time,
-						   timeval_set(0, SHARING_VIOLATION_USEC_WAIT),
-						   fname, &state);
-				}
-			}
-
-			unlock_share_entry_fsp(fsp);
-			fd_close(conn,fsp);
-			file_free(fsp);
-			/*
-			 * We have detected a sharing violation here, so
-			 * return the correct code.
-			 */
-			set_saved_ntstatus(NT_STATUS_SHARING_VIOLATION);
+			defer_open(request_time, timeval_zero(),
+				   fname, &state);
 			return NULL;
 		}
 
