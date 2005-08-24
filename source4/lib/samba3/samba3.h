@@ -137,6 +137,53 @@ struct samba3_regdb
 	struct samba3_regkey *keys;
 };
 
+struct samba3_secrets
+{
+	struct cli_credentials *ipc_cred;
+	
+	uint32_t ldappw_count;
+	struct samba3_ldappw 
+	{
+		char *dn;
+		char *password;
+	} *ldappws;
+
+	uint32_t domain_count;
+	struct samba3_domainsecrets 
+	{
+		char *name;
+		struct dom_sid sid;
+		struct GUID guid;
+		char *plaintext_pw;
+		time_t last_change_time;
+		struct {
+			uint8_t hash[16];
+			time_t mod_time;
+		} hash_pw;;
+		int sec_channel_type;
+	} *domains;
+
+	uint32_t trusted_domain_count;
+	struct samba3_trusted_dom_pass {
+		uint32_t uni_name_len;
+		const char *uni_name[32]; /* unicode domain name */
+		const char *pass;		/* trust relationship's password */
+		time_t mod_time;
+		struct dom_sid domain_sid;	/* remote domain's sid */
+	} *trusted_domains;
+
+	uint32_t afs_keyfile_count;
+
+	struct samba3_afs_keyfile {
+		uint32_t nkeys;
+		struct {
+			uint32_t kvno;
+			char key[8];
+		} entry[8];
+		char *cell;
+	} *afs_keyfiles;
+};
+
 struct samba3 
 {
 	uint32_t winsdb_count;
@@ -145,6 +192,7 @@ struct samba3
 	uint32_t samaccount_count;
 	struct samba3_samaccount *samaccounts;
 
+	struct samba3_secrets secrets;
 	struct samba3_groupdb group;
 	struct samba3_idmapdb idmap;
 	struct samba3_policy policy;
