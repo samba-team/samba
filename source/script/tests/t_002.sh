@@ -17,7 +17,7 @@ EOF
 
 start_smbd || exit $?
 
-smbclient $CONFIGURATION -L localhost -N -p 139
+smbtorture //localhost/test -U${USERNAME}%${PASSWORD} FDPASS
 ret=$?
 
 stop_smbd

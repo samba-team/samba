@@ -5,6 +5,10 @@ if [ "x$1" == "x" ]; then
 	exit 1
 fi
 
+if [ $# == 2 ]; then
+	testnum=$2
+fi
+
 ##
 ## create the test directory
 ##
@@ -18,6 +22,9 @@ cd $OLD_PWD
 ##
 ## setup the various environment variables we need
 ##
+
+USERNAME=`whoami`
+PASSWORD=test
 
 SRCDIR=`pwd`
 SCRIPTDIR=$SRCDIR/script/tests
@@ -35,6 +42,7 @@ PATH=`pwd`/bin:$PATH
 export PREFIX_ABS CONFIGURATION CONFFILE PATH SOCKET_WRAPPER_DIR DOMAIN
 export PRIVATEDIR LIBDIR PIDDIR LOCKDIR TMPDIR LOGDIR
 export SRCDIR SCRIPTDIR
+export USERNAME PASSWORD
 
 ## 
 ## create the test directory layout
@@ -42,6 +50,7 @@ export SRCDIR SCRIPTDIR
 
 /bin/rm -rf $PREFIX/*
 mkdir -p $PRIVATEDIR $LIBDIR $PIDDIR $LOCKDIR $TMPDIR $LOGDIR $SOCKET_WRAPPER_DIR
+chmod 1777 $TMPDIR
 
 ##
 ## Create the common config include file with the basic settings
@@ -57,17 +66,46 @@ cat >$LIBDIR/common.conf<<EOF
 	log file = $LOGDIR/log.%m
 	log level = 0
 
+	passdb backend = tdbsam
+
 	interfaces = lo
 	bind interfaces only = yes
 
-	panic action = $PREFIX_ABS/script/tests/gdb_backtrace /proc/%d/exe %d
+	panic action = $SCRIPTDIR/gdb_backtrace %d
 EOF
+
+cat >$LIBDIR/smb.conf<<EOF
+[global]
+	include = $LIBDIR/common.conf
+EOF
+
+
+##
+## create a test account
+##
+
+(echo $PASSWORD; echo $PASSWORD) | smbpasswd -c $LIBDIR/smb.conf -L -s -a $USERNAME
+
 
 ##
 ## ready to go...now loop through the tests
 ##
 
+if [ -f $SCRIPTDIR/t_$testnum.sh ]; then
+	testfile=$SCRIPTDIR/t_$testnum.sh
+	echo ">>>>>> Starting test driver `basename $testfile` <<<<<"
+	sh $testfile
+	if [ $? = 0 ]; then
+		echo ">>>>> test ok <<<<<"
+	else
+		echo ">>>>> test failed <<<<<"
+	fi
+
+	exit 0
+fi
+
 for testfile in `ls $SCRIPTDIR/t_*sh | sort`; do
+	echo " "
 	echo ">>>>>> Starting test driver `basename $testfile` <<<<<"
 	sh $testfile
 	if [ $? = 0 ]; then
