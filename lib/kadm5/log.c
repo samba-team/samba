@@ -732,7 +732,9 @@ kadm5_log_foreach (kadm5_server_context *context,
 				time_t timestamp,
 				enum kadm_ops op,
 				u_int32_t len,
-				krb5_storage *sp))
+				krb5_storage *,
+				void *),
+		   void *ctx)
 {
     int fd = context->log_context.log_fd;
     krb5_storage *sp;
@@ -747,7 +749,7 @@ kadm5_log_foreach (kadm5_server_context *context,
 	krb5_ret_int32 (sp, &timestamp);
 	krb5_ret_int32 (sp, &op);
 	krb5_ret_int32 (sp, &len);
-	(*func)(context, ver, timestamp, op, len, sp);
+	(*func)(context, ver, timestamp, op, len, sp, ctx);
 	krb5_storage_seek(sp, 8, SEEK_CUR);
     }
     return 0;
