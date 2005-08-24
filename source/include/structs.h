@@ -273,3 +273,5 @@ struct kdc_server;
 struct smb_krb5_context;
 
 struct samba3_samaccount;
+struct samba3_idmap;
+struct samba3_winsdb_entry;
