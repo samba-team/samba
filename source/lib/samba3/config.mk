@@ -4,7 +4,10 @@
 INIT_OBJ_FILES = \
 		lib/samba3/smbpasswd.o \
 		lib/samba3/tdbsam.o \
-		lib/samba3/policy.o
+		lib/samba3/policy.o \
+		lib/samba3/idmap.o \
+		lib/samba3/winsdb.o
+#		lib/samba3/secrets.o
 # End SUBSYSTEM LIBSAMBA3
 ################################################
 

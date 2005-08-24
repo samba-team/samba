@@ -25,7 +25,7 @@
 
 #include "includes.h"
 #include "lib/tdb/include/tdbutil.h"
-#include "lib/samba3/sam.h"
+#include "lib/samba3/samba3.h"
 #include "system/filesys.h"
 
 /* High water mark keys */
