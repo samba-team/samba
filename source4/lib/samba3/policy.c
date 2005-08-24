@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "lib/tdb/include/tdbutil.h"
-#include "lib/samba3/policy.h"
+#include "lib/samba3/samba3.h"
 #include "system/filesys.h"
 
 #define DATABASE_VERSION 2
@@ -65,3 +65,5 @@ struct samba3_policy *samba3_read_account_policy(TALLOC_CTX *ctx, const char *fn
 	return ret;
 }
 
+
+/* FIXME: Read privileges as well */

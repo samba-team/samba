@@ -42,6 +42,7 @@
 #include "tdb.h"
 #include "system/filesys.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "lib/tdb/include/tdbutil.h"
 
 /* structure for storing machine account password
    (ie. when samba server is member of a domain */
@@ -57,6 +58,78 @@ struct afs_key {
 	char key[8];
 };
 
+/*
+ * storage structure for trusted domain
+ */
+typedef struct trusted_dom_pass {
+	size_t uni_name_len;
+	const char *uni_name[32]; /* unicode domain name */
+	size_t pass_len;
+	const char *pass;		/* trust relationship's password */
+	time_t mod_time;
+	struct dom_sid domain_sid;	/* remote domain's sid */
+} TRUSTED_DOM_PASS;
+
+/**
+ * Unpack SID into a pointer
+ *
+ * @param pack_buf pointer to buffer with packed representation
+ * @param bufsize size of the buffer
+ * @param sid pointer to sid structure to be filled with unpacked data
+ *
+ * @return size of structure unpacked from buffer
+ **/
+static size_t tdb_sid_unpack(TDB_CONTEXT *tdb, char* pack_buf, int bufsize, struct dom_sid* sid)
+{
+	int idx, len = 0;
+	
+	if (!sid || !pack_buf) return -1;
+
+	len += tdb_unpack(tdb, pack_buf + len, bufsize - len, "bb",
+	                  &sid->sid_rev_num, &sid->num_auths);
+			  
+	for (idx = 0; idx < 6; idx++) {
+		len += tdb_unpack(tdb, pack_buf + len, bufsize - len, "b", &sid->id_auth[idx]);
+	}
+	
+	for (idx = 0; idx < 15; idx++) {
+		len += tdb_unpack(tdb, pack_buf + len, bufsize - len, "d", &sid->sub_auths[idx]);
+	}
+	
+	return len;
+}
+
+/**
+ * Unpack TRUSTED_DOM_PASS passed by pointer
+ *
+ * @param pack_buf pointer to buffer with packed representation
+ * @param bufsize size of the buffer
+ * @param pass pointer to trusted domain password to be filled with unpacked data
+ *
+ * @return size of structure unpacked from buffer
+ **/
+static size_t tdb_trusted_dom_pass_unpack(TDB_CONTEXT *tdb, char* pack_buf, int bufsize, TRUSTED_DOM_PASS* pass)
+{
+	int idx, len = 0;
+	
+	if (!pack_buf || !pass) return -1;
+
+	/* unpack unicode domain name and plaintext password */
+	len += tdb_unpack(tdb, pack_buf, bufsize - len, "d", &pass->uni_name_len);
+	
+	for (idx = 0; idx < 32; idx++)
+		len +=  tdb_unpack(tdb, pack_buf + len, bufsize - len, "w", &pass->uni_name[idx]);
+
+	len += tdb_unpack(tdb, pack_buf + len, bufsize - len, "dPd", &pass->pass_len, &pass->pass,
+	                  &pass->mod_time);
+	
+	/* unpack domain sid */
+	len += tdb_sid_unpack(tdb, pack_buf + len, bufsize - len, &pass->domain_sid);
+	
+	return len;	
+}
+
+
 static TDB_CONTEXT *secrets_open(const char *fname)
 {
 	TDB_CONTEXT *tdb = tdb_open(fname, 0, TDB_DEFAULT, O_RDONLY, 0600);
@@ -69,31 +142,18 @@ static TDB_CONTEXT *secrets_open(const char *fname)
 	return tdb;
 }
 
-/* read a entry from the secrets database - the caller must free the result
-   if size is non-null then the size of the entry is put in there
- */
-static void *secrets_fetch(TDB_CONTEXT *tdb, const char *key, size_t *size)
-{
-	TDB_DATA kbuf, dbuf;
-	
-	kbuf.dptr = strdup(key);
-	kbuf.dsize = strlen(key);
-	dbuf = tdb_fetch(tdb, kbuf);
-	if (size)
-		*size = dbuf.dsize;
-	free(kbuf.dptr);
-	return dbuf.dptr;
-}
-
 static BOOL secrets_fetch_domain_sid(TDB_CONTEXT *tdb, const char *domain, struct dom_sid *sid)
 {
 	struct dom_sid *dyn_sid;
+	TDB_DATA val;
 	char *key;
 	size_t size;
 
 	asprintf(&key, "%s/%s", SECRETS_DOMAIN_SID, domain);
 	strupper_m(key);
-	dyn_sid = (struct dom_sid *)secrets_fetch(tdb, key, &size);
+	
+	val = tdb_fetch_bystring(tdb, key);
+	/* FIXME: Convert val to dyn_sid */
 	SAFE_FREE(key);
 
 	if (dyn_sid == NULL)
@@ -114,17 +174,20 @@ static BOOL secrets_fetch_domain_guid(TDB_CONTEXT *tdb, const char *domain, stru
 {
 	struct GUID *dyn_guid;
 	char *key;
+	TDB_DATA val;
 	size_t size;
 
 	asprintf(&key, "%s/%s", SECRETS_DOMAIN_GUID, domain);
 	strupper_m(key);
-	dyn_guid = (struct GUID *)secrets_fetch(tdb, key, &size);
+	val = tdb_fetch_bystring(tdb, key);
+
+	dyn_guid = (struct GUID *)val.dptr;
 
 	if (!dyn_guid) {
 		return False;
 	}
 
-	if (size != sizeof(struct GUID))
+	if (val.dsize != sizeof(struct GUID))
 	{ 
 		DEBUG(1,("GUID size %d is wrong!\n", (int)size));
 		SAFE_FREE(dyn_guid);
@@ -183,7 +246,7 @@ static BOOL secrets_fetch_trust_account_password(TDB_CONTEXT *tdb,
 {
 	struct machine_acct_pass *pass;
 	char *plaintext;
-	size_t size;
+	TDB_DATA val;
 
 	plaintext = secrets_fetch_machine_password(tdb, domain, pass_last_set_time, 
 						   channel);
@@ -193,23 +256,22 @@ static BOOL secrets_fetch_trust_account_password(TDB_CONTEXT *tdb,
 		SAFE_FREE(plaintext);
 		return True;
 	}
-
-	if (!(pass = secrets_fetch(tdb, trust_keystr(domain), &size))) {
-		DEBUG(5, ("secrets_fetch failed!\n"));
+	
+	val = tdb_fetch_bystring(tdb, trust_keystr(domain));
+	if (!val.dptr) {
+		DEBUG(5, ("tdb_fetch_bystring failed!\n"));
 		return False;
 	}
 	
-	if (size != sizeof(*pass)) {
+	if (val.dsize != sizeof(*pass)) {
 		DEBUG(0, ("secrets were of incorrect size!\n"));
 		return False;
 	}
 
+	pass = (struct machine_acct_pass *)val.dptr;
+
 	if (pass_last_set_time) *pass_last_set_time = pass->mod_time;
 	memcpy(ret_pwd, pass->hash, 16);
-	SAFE_FREE(pass);
-
-	if (channel) 
-		*channel = get_default_sec_channel();
 
 	return True;
 }
@@ -221,25 +283,24 @@ static BOOL secrets_fetch_trust_account_password(TDB_CONTEXT *tdb,
 static BOOL secrets_fetch_trusted_domain_password(TDB_CONTEXT *tdb, const char *domain, char** pwd, struct dom_sid **sid, time_t *pass_last_set_time)
 {
 	struct trusted_dom_pass pass;
-	size_t size;
 	
 	/* unpacking structures */
-	char* pass_buf;
 	int pass_len = 0;
+	TDB_DATA val;
 
 	ZERO_STRUCT(pass);
 
 	/* fetching trusted domain password structure */
-	if (!(pass_buf = secrets_fetch(tdb, trustdom_keystr(domain), &size))) {
+	val = tdb_fetch_bystring(tdb, trustdom_keystr(domain));
+	if (!val.dptr) {
 		DEBUG(5, ("secrets_fetch failed!\n"));
 		return False;
 	}
 
 	/* unpack trusted domain password */
-	pass_len = tdb_trusted_dom_pass_unpack(pass_buf, size, &pass);
-	SAFE_FREE(pass_buf);
+	pass_len = tdb_trusted_dom_pass_unpack(val.dptr, val.dsize, &pass);
 
-	if (pass_len != size) {
+	if (pass_len != val.dsize) {
 		DEBUG(5, ("Invalid secrets size. Unpacked data doesn't match trusted_dom_pass structure.\n"));
 		return False;
 	}
@@ -272,38 +333,23 @@ static char *secrets_fetch_machine_password(TDB_CONTEXT *tdb, const char *domain
 {
 	char *key = NULL;
 	char *ret;
+	TDB_DATA val;
 	asprintf(&key, "%s/%s", SECRETS_MACHINE_PASSWORD, domain);
 	strupper_m(key);
-	ret = (char *)secrets_fetch(tdb, key, NULL);
+	val = tdb_fetch_bystring(tdb, key);
 	SAFE_FREE(key);
 	
 	if (pass_last_set_time) {
-		size_t size;
-		uint32_t *last_set_time;
 		asprintf(&key, "%s/%s", SECRETS_MACHINE_LAST_CHANGE_TIME, domain);
 		strupper_m(key);
-		last_set_time = secrets_fetch(tdb, key, &size);
-		if (last_set_time) {
-			*pass_last_set_time = IVAL(last_set_time,0);
-			SAFE_FREE(last_set_time);
-		} else {
-			*pass_last_set_time = 0;
-		}
+		tdb_fetch_uint32(tdb, key, (uint32_t *)pass_last_set_time);
 		SAFE_FREE(key);
 	}
 	
 	if (channel) {
-		size_t size;
-		uint32_t *channel_type;
 		asprintf(&key, "%s/%s", SECRETS_MACHINE_SEC_CHANNEL_TYPE, domain);
 		strupper_m(key);
-		channel_type = secrets_fetch(tdb, key, &size);
-		if (channel_type) {
-			*channel = IVAL(channel_type,0);
-			SAFE_FREE(channel_type);
-		} else {
-			*channel = get_default_sec_channel();
-		}
+		tdb_fetch_uint32(tdb, key, channel);
 		SAFE_FREE(key);
 	}
 	
@@ -317,12 +363,14 @@ static BOOL fetch_ldap_pw(TDB_CONTEXT *tdb, const char *dn, char** pw)
 {
 	char *key = NULL;
 	size_t size;
+	TDB_DATA val;
 	
 	if (asprintf(&key, "%s/%s", SECRETS_LDAP_BIND_PW, dn) < 0) {
 		DEBUG(0, ("fetch_ldap_pw: asprintf failed!\n"));
 	}
 	
-	*pw=secrets_fetch(tdb, key, &size);
+	val = tdb_fetch_bystring(tdb, key);
+	*pw = val.dptr;
 	SAFE_FREE(key);
 
 	if (!size) {
@@ -363,8 +411,6 @@ static NTSTATUS secrets_get_trusted_domains(TDB_CONTEXT *tdb, TALLOC_CTX* ctx, i
 	struct trusted_dom_pass *pass = talloc(ctx, struct trusted_dom_pass);
 	NTSTATUS status;
 
-	if (!secrets_init()) return NT_STATUS_ACCESS_DENIED;
-	
 	if (!pass) {
 		DEBUG(0, ("talloc_zero failed!\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -540,3 +586,5 @@ static void secrets_fetch_ipc_userpass(TDB_CONTEXT *tdb, char **username, char *
 		*password = smb_xstrdup("");
 	}
 }
+
+

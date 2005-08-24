@@ -28,7 +28,7 @@
 #include "system/iconv.h"
 #include "system/filesys.h"
 #include "lib/tdb/include/tdbutil.h"
-#include "lib/samba3/sam.h"
+#include "lib/samba3/samba3.h"
 
 #define TDB_FORMAT_STRING_V0       "ddddddBBBBBBBBBBBBddBBwdwdBwwd"
 #define TDB_FORMAT_STRING_V1       "dddddddBBBBBBBBBBBBddBBwdwdBwwd"

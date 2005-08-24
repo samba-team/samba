@@ -20,8 +20,7 @@
 */
 
 #include "includes.h"
-#include "lib/samba3/policy.h"
-#include "lib/samba3/sam.h"
+#include "lib/samba3/samba3.h"
 #include "lib/cmdline/popt_common.h"
 
 static const char *libdir = "/var/lib/samba";
