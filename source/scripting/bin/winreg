@@ -6,9 +6,6 @@ exec smbscript "$0" ${1+"$@"}
   Released under the GNU GPL v2 or later
 */	
 
-libinclude("base.js");
-libinclude("winreg.js");
-
 var options = GetOptions(ARGV,
 			 "POPT_AUTOHELP",
 			 "POPT_COMMON_SAMBA",
@@ -18,6 +15,9 @@ if (options == undefined) {
 	println("Failed to parse options");
 	return -1;
 }
+
+libinclude("base.js");
+libinclude("winreg.js");
 
 if (options.ARGV.length < 1) {
 	println("Usage: winreg.js <BINDING> [path]");
@@ -91,7 +91,7 @@ if (options.ARGV.length > 1) {
 if (options.createkey) {
 	var ok = reg.create_key("HKLM\\SOFTWARE", options.createkey);
 	if (!ok) {
-		
+		println("Failed to create key");
 	}
 } else {
 	printf("Listing registry tree '%s'\n", root);
