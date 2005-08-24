@@ -8,7 +8,7 @@
   version(1.0),
   pointer_default(unique),
   pointer_default_top(unique),
-  helpstring("Queue/List/Remove jobs for later execution"),
+  helpstring("Microsoft AT-Scheduler Service"),
   endpoint("ncacn_np:[\\pipe\\atsvc]", "ncalrpc:")
 ] interface atsvc
 {
