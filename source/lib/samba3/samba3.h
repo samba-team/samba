@@ -75,6 +75,20 @@ struct samba3_groupmapping {
 	const char *comment;
 };
 
+struct samba3_alias {
+	struct dom_sid *sid;
+	uint32_t member_count;
+	struct dom_sid **members;
+};
+
+struct samba3_groupdb {
+	uint32_t groupmap_count;
+	struct samba3_groupmapping *groupmappings;
+
+	uint32_t alias_count;
+	struct samba3_alias *aliases;
+};
+
 struct samba3_idmap_mapping
 {
 	enum { IDMAP_GROUP, IDMAP_USER } type;
@@ -82,7 +96,7 @@ struct samba3_idmap_mapping
 	struct dom_sid *sid;
 };
 
-struct samba3_idmap 
+struct samba3_idmapdb
 {
 	/* High water marks */
 	uint32_t user_hwm;
@@ -114,6 +128,19 @@ struct samba3_policy
 	uint32_t bad_lockout_minutes;
 	uint32_t disconnect_time;
 	uint32_t refuse_machine_password_change;
+};
+
+struct samba3 
+{
+	uint32_t winsdb_count;
+	struct samba3_winsdb_entry *winsdb_entries;
+	
+	uint32_t samaccount_count;
+	struct samba3_samaccount *samaccounts;
+
+	struct samba3_groupdb group;
+	struct samba3_idmapdb idmap;
+	struct samba3_policy policy;
 };
 
 #endif /* _SAMBA3_H */

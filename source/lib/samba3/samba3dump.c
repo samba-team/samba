@@ -23,49 +23,18 @@
 #include "lib/samba3/samba3.h"
 #include "lib/cmdline/popt_common.h"
 
-static const char *libdir = "/var/lib/samba";
-
-static NTSTATUS print_policy(void)
+static NTSTATUS print_policy(struct samba3_policy *ret)
 {
-	struct samba3_policy *ret;
-	char *policy_file;
-	TALLOC_CTX *mem_ctx = talloc_init(NULL);
-
-	policy_file = talloc_asprintf(mem_ctx, "%s/account_policy.tdb", libdir);
-
-	printf("Opening policy file %s\n", policy_file);
-
-	ret = samba3_read_account_policy(mem_ctx, policy_file);
-
-	if (ret == NULL) 
-		return NT_STATUS_UNSUCCESSFUL;
-	
 	printf("Min password length: %d\n", ret->min_password_length);
-
-	talloc_free(mem_ctx);
 
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS print_sam(void)
+static NTSTATUS print_sam(struct samba3 *samba3)
 {
-	struct samba3_samaccount *accounts;
-	uint32_t count, i;
-	char *tdbsam_file;
-	NTSTATUS status;
+	struct samba3_samaccount *accounts = samba3->samaccounts;
+	uint32_t count = samba3->samaccount_count, i;
 	
-	asprintf(&tdbsam_file, "%s/passdb.tdb", libdir);
-
-	printf("Opening TDB sam %s\n", tdbsam_file);
-
-	status = samba3_read_tdbsam(NULL, tdbsam_file, &accounts, &count);
-	if (NT_STATUS_IS_ERR(status)) {
-		fprintf(stderr, "Error reading tdbsam database %s\n", tdbsam_file);
-		SAFE_FREE(tdbsam_file);
-		return status;
-	}
-	SAFE_FREE(tdbsam_file);
-
 	for (i = 0; i < count; i++) {
 		printf("%d: %s\n", accounts[i].user_rid, accounts[i].username);
 	}
@@ -76,6 +45,8 @@ static NTSTATUS print_sam(void)
 int main(int argc, char **argv)
 {
 	int opt;
+	const char *libdir = "/var/lib/samba";
+	struct samba3 *samba3;
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -91,8 +62,10 @@ int main(int argc, char **argv)
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
 
-	print_sam();
-	print_policy();
+	samba3 = samba3_read(libdir, NULL);
+
+	print_sam(samba3);
+	print_policy(&samba3->policy);
 
 	poptFreeContext(pc);
 
