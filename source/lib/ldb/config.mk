@@ -38,6 +38,14 @@ NOPROTO = YES
 ################################################
 
 ################################################
+# Start MODULE libldb_map
+[MODULE::libldb_map]
+SUBSYSTEM = LIBLDB
+INIT_OBJ_FILES = lib/ldb/ldb_map/ldb_map.o
+# End MODULE libldb_map
+################################################
+
+################################################
 # Start MODULE libldb_sqlite3
 [MODULE::libldb_sqlite3]
 SUBSYSTEM = LIBLDB
