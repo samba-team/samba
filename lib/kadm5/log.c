@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -772,31 +772,54 @@ kadm5_log_goto_end (int fd)
  */
 
 kadm5_ret_t
-kadm5_log_previous (krb5_storage *sp,
+kadm5_log_previous (krb5_context context,
+		    krb5_storage *sp,
 		    u_int32_t *ver,
 		    time_t *timestamp,
 		    enum kadm_ops *op,
 		    u_int32_t *len)
 {
+    krb5_error_code ret;
     off_t off;
     int32_t tmp;
 
     krb5_storage_seek(sp, -8, SEEK_CUR);
-    krb5_ret_int32 (sp, &tmp);
+    ret = krb5_ret_int32 (sp, &tmp);
+    if (ret)
+	goto end_of_storage;
     *len = tmp;
-    krb5_ret_int32 (sp, &tmp);
+    ret = krb5_ret_int32 (sp, &tmp);
     *ver = tmp;
     off = 24 + *len;
     krb5_storage_seek(sp, -off, SEEK_CUR);
-    krb5_ret_int32 (sp, &tmp);
-    assert(tmp == *ver);
-    krb5_ret_int32 (sp, &tmp);
+    ret = krb5_ret_int32 (sp, &tmp);
+    if (ret)
+	goto end_of_storage;
+    if (tmp != *ver) {
+	krb5_set_error_string(context, "kadm5_log_previous: log entry "
+			      "have consistency failure, version number wrong");
+	return KADM5_BAD_DB;
+    }
+    ret = krb5_ret_int32 (sp, &tmp);
+    if (ret)
+	goto end_of_storage;
     *timestamp = tmp;
-    krb5_ret_int32 (sp, &tmp);
+    ret = krb5_ret_int32 (sp, &tmp);
     *op = tmp;
-    krb5_ret_int32 (sp, &tmp);
-    assert(tmp == *len);
+    ret = krb5_ret_int32 (sp, &tmp);
+    if (ret)
+	goto end_of_storage;
+    if (tmp != *ver) {
+	krb5_set_error_string(context, "kadm5_log_previous: log entry "
+			      "have consistency failure, length wrong");
+	return KADM5_BAD_DB;
+    }
     return 0;
+
+ end_of_storage:
+    krb5_set_error_string(context, "kadm5_log_previous: end of storage "
+			  "reached before end");
+    return ret;
 }
 
 /*
