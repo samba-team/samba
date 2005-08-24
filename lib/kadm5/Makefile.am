@@ -2,10 +2,12 @@
 
 include $(top_srcdir)/Makefile.am.common
 
+SLC = $(top_builddir)/lib/sl/slc
+
 lib_LTLIBRARIES = libkadm5srv.la libkadm5clnt.la
 libkadm5srv_la_LDFLAGS = -version-info 7:7:0
 libkadm5clnt_la_LDFLAGS = -version-info 6:5:2
-sbin_PROGRAMS = dump_log replay_log truncate_log
+sbin_PROGRAMS = replay_log truncate_log iprop-log
 check_PROGRAMS = default_keys
 noinst_PROGRAMS = test_pw_quality
 
@@ -92,7 +94,13 @@ SOURCES_server =				\
 libkadm5srv_la_SOURCES = $(SOURCES_server) server_glue.c
 libkadm5clnt_la_SOURCES = $(SOURCES_client) client_glue.c
 
-dump_log_SOURCES = dump_log.c kadm5_locl.h
+
+iprop-commands.c iprop-commands.h: iprop-commands.in
+	$(SLC) $(srcdir)/iprop-commands.in
+
+$(iprop_log_SOURCES): iprop-commands.h
+
+iprop_log_SOURCES = iprop-log.c iprop-commands.c
 
 replay_log_SOURCES = replay_log.c kadm5_locl.h
 
@@ -116,7 +124,22 @@ LDADD = \
 	$(LIB_dlopen) \
 	$(LIB_pidfile)
 
-CLEANFILES = kadm5_err.c kadm5_err.h
+iprop_log_LDADD = \
+	libkadm5srv.la \
+	$(top_builddir)/lib/hdb/libhdb.la \
+	$(LIB_openldap) \
+	$(top_builddir)/lib/krb5/libkrb5.la \
+	$(top_builddir)/lib/asn1/libasn1.la \
+	$(LIB_des) \
+	$(top_builddir)/lib/sl/libsl.la \
+	$(LIB_readline) \
+	$(LIB_roken) \
+	$(DBLIB) \
+	$(LIB_dlopen) \
+	$(LIB_pidfile)
+
+
+CLEANFILES = kadm5_err.c kadm5_err.h iprop-commands.h iprop-commands.c
 
 $(libkadm5srv_la_OBJECTS): kadm5_err.h
 
