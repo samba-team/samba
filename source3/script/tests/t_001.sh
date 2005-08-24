@@ -5,6 +5,7 @@
 cat >$CONFFILE<<EOF
 [global]
 	include = $LIBDIR/common.conf
+	smb ports = 139
 
 [test]
 	path = $TMPDIR
