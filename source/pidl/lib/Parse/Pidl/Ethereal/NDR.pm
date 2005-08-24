@@ -1,7 +1,7 @@
 ##################################################
 # Samba4 NDR parser generator for IDL structures
 # Copyright tridge@samba.org 2000-2003
-# Copyright tpot@samba.org 2001
+# Copyright tpot@samba.org 2001,2005
 # Copyright jelmer@samba.org 2004-2005
 # Portions based on idl2eth.c by Ronnie Sahlberg
 # released under the GNU GPL
@@ -180,6 +180,10 @@ sub Bitmap($$$)
 
 	pidl_code "offset=dissect_ndr_$e->{BASE_TYPE}(tvb, offset, pinfo, NULL, drep, -1, &flags);";
 
+	pidl_code "proto_item_append_text(item, \": \");\n";
+	pidl_code "if (!flags)";
+	pidl_code "\tproto_item_append_text(item, \"(No values set)\");\n";
+
 	foreach (@{$e->{ELEMENTS}}) {
 		next unless (/([^ ]*) (.*)/);
 		my ($en,$ev) = ($1,$2);
@@ -195,14 +199,16 @@ sub Bitmap($$$)
 		
 		pidl_code "proto_tree_add_boolean(tree, $hf_bitname, tvb, offset-$e->{ALIGN}, $e->{ALIGN}, flags);";
 		pidl_code "if (flags&$ev){";
-		pidl_code "\tproto_item_append_text(item,\"$en \");";
+		pidl_code "\tproto_item_append_text(item,\"$en\");";
+		pidl_code "\tif (flags & (~$ev))";
+		pidl_code "\t\tproto_item_append_text(item, \", \");";
 		pidl_code "}";
 		pidl_code "flags&=(~$ev);";
 		pidl_code "";
 	}
 
 	pidl_code "if(flags){";
-	pidl_code "\tproto_item_append_text(item, \"UNKNOWN-FLAGS\");";
+	pidl_code "\tproto_item_append_text(item, \"Unknown bitmap value 0x%x\", flags);";
 	pidl_code "}\n";
 	pidl_code "return offset;";
 	deindent;
@@ -230,7 +236,7 @@ sub ElementLevel($$$$$)
 		} elsif ($l->{LEVEL} eq "EMBEDDED") {
 			$type = "embedded";
 		}
-		pidl_code "offset=dissect_ndr_$type\_pointer(tvb,offset,pinfo,tree,drep,$myname\_,$ptrtype_mappings{$l->{POINTER_TYPE}},\"".field2name(StripPrefixes($e->{NAME})) . " (".StripPrefixes($e->{TYPE}).")\",$hf);";
+		pidl_code "offset=dissect_ndr_$type\_pointer(tvb,offset,pinfo,tree,drep,$myname\_,$ptrtype_mappings{$l->{POINTER_TYPE}},\"Pointer to ".field2name(StripPrefixes($e->{NAME})) . " ($e->{TYPE})\",$hf);";
 	} elsif ($l->{TYPE} eq "ARRAY") {
 		
 		if ($l->{IS_INLINE}) {
@@ -256,7 +262,9 @@ sub ElementLevel($$$$$)
 			($bs = 1) if (property_matches($e, "flag", ".*LIBNDR_FLAG_STR_ASCII.*"));
 			
 			if (property_matches($e, "flag", ".*LIBNDR_FLAG_STR_SIZE4.*") and property_matches($e, "flag", ".*LIBNDR_FLAG_STR_LEN4.*")) {
-				pidl_code "offset=dissect_ndr_cvstring(tvb,offset,pinfo,tree,drep,$bs,$hf,FALSE,NULL);";
+			        pidl_code "char *data;\n";
+				pidl_code "offset=dissect_ndr_cvstring(tvb,offset,pinfo,tree,drep,$bs,$hf,FALSE,&data);";
+				pidl_code "proto_item_append_text(tree, \": %s\", data);";
 			} elsif (property_matches($e, "flag", ".*LIBNDR_FLAG_STR_SIZE4.*")) {
 				pidl_code "offset=dissect_ndr_vstring(tvb,offset,pinfo,tree,drep,$bs,$hf,FALSE,NULL);";
 			} else {
@@ -708,7 +716,11 @@ sub Parse($$)
 	$res{headers} .= "#include \"packet-dcerpc.h\"\n";
 	$res{headers} .= "#include \"packet-dcerpc-nt.h\"\n";
 	$res{headers} .= "#include \"packet-windows-common.h\"\n";
-	$res{headers} .= "#include \"$h_filename\"\n";
+
+	use File::Basename;	
+	my $h_basename = basename($h_filename);
+
+	$res{headers} .= "#include \"$h_basename\"\n";
 	pidl_code "";
 
 	# Ethereal protocol registration
