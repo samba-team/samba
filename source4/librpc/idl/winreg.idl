@@ -14,6 +14,8 @@
   depends(lsa,initshutdown)
 ] interface winreg
 {
+	declare bitmap security_secinfo;
+
 	typedef [v1_enum] enum {
 		REG_NONE                       = 0,
 		REG_SZ                         = 1,
@@ -96,6 +98,12 @@
 		bool8  inherit;
 	} winreg_SecBuf;
 
+	typedef [v1_enum] enum {
+		REG_ACTION_NONE         = 0, /* used by caller */
+		REG_CREATED_NEW_KEY     = 1,
+		REG_OPENED_EXISTING_KEY = 2
+	} winreg_CreateAction;
+
 	WERROR winreg_CreateKey(
 		[in,ref] policy_handle *handle,
 		[in] winreg_String name,
@@ -104,7 +112,7 @@
 		[in] uint32 access_required,
 		[in,unique] winreg_SecBuf *secdesc,
 		[out,ref] policy_handle *new_handle,
-		[in,out,unique] uint32 *action_taken
+		[in,out,unique] winreg_CreateAction *action_taken
 	);
 
 	/******************/
@@ -161,7 +169,7 @@
 	/* Function: 0x0c */
 	WERROR winreg_GetKeySecurity(
 		[in,ref] policy_handle *handle,
-		[in] uint32 access_mask,
+		[in] security_secinfo sec_info,
 		[in,out,ref] KeySecurityData *sd
 	);
 
