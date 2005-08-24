@@ -94,12 +94,6 @@ SOURCES_server =				\
 libkadm5srv_la_SOURCES = $(SOURCES_server) server_glue.c
 libkadm5clnt_la_SOURCES = $(SOURCES_client) client_glue.c
 
-
-iprop-commands.c iprop-commands.h: iprop-commands.in
-	$(SLC) $(srcdir)/iprop-commands.in
-
-$(iprop_log_SOURCES): iprop-commands.h
-
 iprop_log_SOURCES = iprop-log.c iprop-commands.c
 
 replay_log_SOURCES = replay_log.c kadm5_locl.h
@@ -139,11 +133,15 @@ iprop_log_LDADD = \
 	$(LIB_pidfile)
 
 
-CLEANFILES = kadm5_err.c kadm5_err.h iprop-commands.h iprop-commands.c
+iprop-commands.c iprop-commands.h: iprop-commands.in
+	$(SLC) $(srcdir)/iprop-commands.in
 
 $(libkadm5srv_la_OBJECTS): kadm5_err.h
+$(iprop_log_OBJECTS): iprop-commands.h
 
 client_glue.lo server_glue.lo: $(srcdir)/common_glue.c
+
+CLEANFILES = kadm5_err.c kadm5_err.h iprop-commands.h iprop-commands.c
 
 # to help stupid solaris make
 
