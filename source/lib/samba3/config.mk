@@ -8,7 +8,8 @@ ADD_OBJ_FILES = \
 		lib/samba3/idmap.o \
 		lib/samba3/winsdb.o \
 		lib/samba3/samba3.o \
-		lib/samba3/group.o
+		lib/samba3/group.o \
+		lib/samba3/registry.o
 #		lib/samba3/secrets.o
 # End SUBSYSTEM LIBSAMBA3
 ################################################
