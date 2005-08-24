@@ -1,6 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-   Registry interface
+   Samba3 interfaces
    Copyright (C) Jelmer Vernooij			2005.
    
    This program is free software; you can redistribute it and/or modify
@@ -18,8 +18,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef _SAMBA3_SAM_H /* _SAMBA3_SAM_H */
-#define _SAMBA3_SAM_H 
+#ifndef _SAMBA3_H /* _SAMBA3_H */
+#define _SAMBA3_H 
 
 #include "librpc/gen_ndr/security.h"
 
@@ -75,4 +75,45 @@ struct samba3_groupmapping {
 	const char *comment;
 };
 
-#endif /* _SAMBA3_SAM_H */
+struct samba3_idmap_mapping
+{
+	enum { IDMAP_GROUP, IDMAP_USER } type;
+	uint32_t unix_id;
+	struct dom_sid *sid;
+};
+
+struct samba3_idmap 
+{
+	/* High water marks */
+	uint32_t user_hwm;
+	uint32_t group_hwm;
+
+	uint32_t mapping_count;
+	struct samba3_idmap_mapping *mappings;
+};
+
+struct samba3_winsdb_entry 
+{
+	char *name;
+	int nb_flags;
+	int type;
+	time_t ttl;
+	uint32_t ip_count;
+	struct ipv4_addr *ips;
+};
+
+struct samba3_policy
+{
+	uint32_t min_password_length;
+	uint32_t password_history;
+	uint32_t user_must_logon_to_change_password;
+	uint32_t maximum_password_age;
+	uint32_t minimum_password_age;
+	uint32_t lockout_duration;
+	uint32_t reset_count_minutes;
+	uint32_t bad_lockout_minutes;
+	uint32_t disconnect_time;
+	uint32_t refuse_machine_password_change;
+};
+
+#endif /* _SAMBA3_H */
