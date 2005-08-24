@@ -670,7 +670,7 @@ static void make_group_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp,
 		/*
 		 * JRA. I think this should include the null. TNG does not.
 		 */
-		init_unistr2(&uni_name[i], entries[i].account_name,
+		init_unistr2(&uni_name[i], entries[i].fullname,
 			     UNI_STR_TERMINATE);
 		init_sam_entry(&sam[i], &uni_name[i], entries[i].rid);
 	}
