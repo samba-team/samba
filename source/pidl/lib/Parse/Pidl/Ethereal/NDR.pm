@@ -176,7 +176,7 @@ sub Bitmap($$$)
 	pidl_code "if(parent_tree) {";
 	indent;
 	pidl_code "item = proto_tree_add_item(parent_tree, hf_index, tvb, offset, $e->{ALIGN}, TRUE);";
-	pidl_code "tree=proto_item_add_subtree(item,ett_$ifname\_$name);";
+	pidl_code "tree = proto_item_add_subtree(item,ett_$ifname\_$name);";
 	deindent;
 	pidl_code "}\n";
 
@@ -352,7 +352,7 @@ sub Function($$$)
 	my %dissectornames;
 
 	foreach (@{$fn->{ELEMENTS}}) {
-		$dissectornames{$_->{NAME}} = Element($_, $fn->{NAME}, $ifname) 
+	    $dissectornames{$_->{NAME}} = Element($_, $fn->{NAME}, $ifname) if not defined($dissectornames{$_->{NAME}});
 	}
 	
 	my $fn_name = $_->{NAME};
@@ -664,7 +664,7 @@ sub Initialize($)
 
 	$conformance = {};
 
-	ReadConformance($cnf_file, $conformance) or print "Warning: Not using conformance file `$cnf_file'\n";
+	ReadConformance($cnf_file, $conformance) or print "Warning: No conformance file `$cnf_file'\n";
 	
 	foreach my $bytes (qw(1 2 4 8)) {
 		my $bits = $bytes * 8;
