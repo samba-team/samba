@@ -534,7 +534,6 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 				uint32 access_mask,
 				uint32 share_access,
 				uint32 create_options,
-				int *p_oplock_request,
 				BOOL *file_existed)
 {
 	int i;
@@ -1374,8 +1373,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 		status = open_mode_check(conn, fname, dev, inode,
 					 access_mask, share_access,
-					 create_options, &oplock_request,
-					 &file_existed);
+					 create_options, &file_existed);
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
 			/* DELETE_PENDING is not deferred for a second */
@@ -1530,8 +1528,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 		status = open_mode_check(conn, fname, dev, inode,
 					 access_mask, share_access,
-					 create_options, &oplock_request,
-					 &file_existed);
+					 create_options, &file_existed);
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
 			set_saved_ntstatus(status);
