@@ -51,26 +51,11 @@ struct samba3_samaccount {
 	uint8_t	*hours;
 };
 
-/* SID Types */
-enum SID_NAME_USE
-{
-	SID_NAME_USE_NONE = 0,
-	SID_NAME_USER    = 1, /* user */
-	SID_NAME_DOM_GRP,     /* domain group */
-	SID_NAME_DOMAIN,      /* domain sid */
-	SID_NAME_ALIAS,       /* local group */
-	SID_NAME_WKN_GRP,     /* well-known group */
-	SID_NAME_DELETED,     /* deleted account: needed for c2 rating */
-	SID_NAME_INVALID,     /* invalid account */
-	SID_NAME_UNKNOWN,     /* unknown sid type */
-	SID_NAME_COMPUTER     /* sid for a computer */
-};
-
 struct samba3_groupmapping {
 	struct pdb_methods *methods;
 	gid_t gid;
 	struct dom_sid *sid;
-	enum SID_NAME_USE sid_name_use;
+	int sid_name_use;
 	const char *nt_name;
 	const char *comment;
 };
@@ -130,6 +115,28 @@ struct samba3_policy
 	uint32_t refuse_machine_password_change;
 };
 
+struct samba3_regval {
+	char *name;
+	uint16_t		type;
+	DATA_BLOB 		data;
+};
+
+struct samba3_regkey {
+	char *name;
+	
+	uint32_t value_count;
+	struct samba3_regval *values;
+
+	uint32_t subkey_count;
+	char **subkeys;
+};
+
+struct samba3_regdb
+{
+	uint32_t key_count;
+	struct samba3_regkey *keys;
+};
+
 struct samba3 
 {
 	uint32_t winsdb_count;
@@ -141,6 +148,7 @@ struct samba3
 	struct samba3_groupdb group;
 	struct samba3_idmapdb idmap;
 	struct samba3_policy policy;
+	struct samba3_regdb registry;
 };
 
 #endif /* _SAMBA3_H */
