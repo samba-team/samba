@@ -329,8 +329,8 @@ static BOOL test_Cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct winreg_DeleteKey r;
 
 	r.in.handle = handle;
-	init_winreg_String(&r.in.key, key);
 
+	init_winreg_String(&r.in.key, key);
 	dcerpc_winreg_DeleteKey(p, mem_ctx, &r);
 
 	return True;
@@ -700,6 +700,8 @@ static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, winreg_open_fn
 		return False;
 	}
 
+	test_Cleanup(p, mem_ctx, &handle, TEST_KEY1);
+	test_Cleanup(p, mem_ctx, &handle, TEST_KEY2);
 	test_Cleanup(p, mem_ctx, &handle, TEST_KEY_BASE);
 
 	if (!test_CreateKey(p, mem_ctx, &handle, TEST_KEY1, NULL)) {
@@ -730,7 +732,8 @@ static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, winreg_open_fn
 		ret = False;
 	}
 
-	if (deleted && test_OpenKey(p, mem_ctx, &handle, TEST_KEY1, &newhandle)) {
+	if (created && deleted && 
+	    test_OpenKey(p, mem_ctx, &handle, TEST_KEY1, &newhandle)) {
 		printf("DeleteKey failed (OpenKey after Delete didn't work)\n");
 		ret = False;
 	}
@@ -774,6 +777,8 @@ static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, winreg_open_fn
 	if(!test_key(p, mem_ctx, &handle, 0)) {
 		ret = False;
 	}
+
+	test_Cleanup(p, mem_ctx, &handle, TEST_KEY_BASE);
 
 	return ret;
 }
