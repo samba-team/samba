@@ -1533,6 +1533,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		if (NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
 			set_saved_ntstatus(status);
 			unlock_share_entry(dev, inode);
+			fd_close(conn, fsp);
 			file_free(fsp);
 			return NULL;
 		}
