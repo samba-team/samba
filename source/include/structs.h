@@ -278,4 +278,5 @@ struct samba3_groupdb;
 struct samba3_winsdb_entry;
 struct samba3_policy;
 struct samba3_regdb;
+struct samba3_secrets;
 struct samba3;
