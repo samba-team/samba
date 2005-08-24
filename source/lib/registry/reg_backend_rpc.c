@@ -29,14 +29,7 @@ static struct hive_operations reg_backend_rpc;
 
 static void init_winreg_String(struct winreg_String *name, const char *s)
 {
-    name->name = s;
-    if (s) {
-        name->name_len = 2 * (strlen_m(s) + 1);
-        name->name_size = name->name_len;
-    } else {
-        name->name_len = 0;
-        name->name_size = 0;
-    }
+	name->name = s;
 }
 
 
@@ -255,14 +248,14 @@ static WERROR rpc_add_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, cons
 	NTSTATUS status;
 	struct winreg_CreateKey r;
 
-	init_winreg_String(&r.in.key, name);
+	init_winreg_String(&r.in.name, name);
 	init_winreg_String(&r.in.class, NULL);
 
 	r.in.handle = parent->backend_data;
-	r.out.handle = talloc(mem_ctx, struct policy_handle);	
+	r.out.new_handle = talloc(mem_ctx, struct policy_handle);	
 	r.in.options = 0;
-	r.in.access_mask = access_mask;
-	r.in.sec_desc = NULL;
+	r.in.access_required = access_mask;
+	r.in.secdesc = NULL;
 
 	status = dcerpc_winreg_CreateKey((struct dcerpc_pipe *)(parent->hive->backend_data), mem_ctx, &r);
 
@@ -274,7 +267,7 @@ static WERROR rpc_add_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, cons
 	if (W_ERROR_IS_OK(r.out.result)) {
 		*key = talloc(mem_ctx, struct registry_key);
 		(*key)->name = talloc_strdup(*key, name);
-		(*key)->backend_data = r.out.handle;
+		(*key)->backend_data = r.out.new_handle;
 	}
 
 	return r.out.result;

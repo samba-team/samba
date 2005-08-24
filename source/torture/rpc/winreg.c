@@ -108,13 +108,13 @@ static BOOL test_CreateKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("\ntesting CreateKey\n");
 
 	r.in.handle = handle;
-	r.out.handle = &newhandle;
-	init_winreg_String(&r.in.key, name);	
+	r.out.new_handle = &newhandle;
+	init_winreg_String(&r.in.name, name);	
 	init_winreg_String(&r.in.class, class);
 	r.in.options = 0x0;
-	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.in.access_required = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.in.action_taken = r.out.action_taken = &action_taken;
-	r.in.sec_desc = NULL;
+	r.in.secdesc = NULL;
 
 	status = dcerpc_winreg_CreateKey(p, mem_ctx, &r);
 
@@ -136,14 +136,16 @@ static BOOL test_GetKeySecurity(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct winreg_GetKeySecurity r;
+	struct security_descriptor sd;
+	DATA_BLOB sdblob;
 
 	printf("\ntesting GetKeySecurity\n");
 
 	ZERO_STRUCT(r);
 
 	r.in.handle = handle;
-	r.in.data = r.out.data =  talloc_zero(mem_ctx, struct KeySecurityData);
-	r.in.data->size = 0xffff;
+	r.in.sd = r.out.sd = talloc_zero(mem_ctx, struct KeySecurityData);
+	r.in.sd->size = 0xffff;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 
 	status = dcerpc_winreg_GetKeySecurity(p, mem_ctx, &r);
@@ -158,7 +160,20 @@ static BOOL test_GetKeySecurity(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	return False;
+	sdblob.data = r.out.sd->data;
+	sdblob.length = r.out.sd->len;
+
+	status = ndr_pull_struct_blob_all(&sdblob, mem_ctx, &sd, 
+					  (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("pull_security_descriptor failed - %s\n", nt_errstr(status));
+		return False;
+	}
+	if (p->conn->flags & DCERPC_DEBUG_PRINT_OUT) {
+		NDR_PRINT_DEBUG(security_descriptor, &sd);
+	}
+
+	return True;
 }
 
 static BOOL test_CloseKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
