@@ -101,26 +101,26 @@ Generic Options:
  --parse                 parse a idl file to a .pidl file
  --dump                  dump a pidl file back to idl
  --diff                  run diff on the idl and dumped output
- --keep[=OUTFILE]        keep the .pidl file
+ --keep[=OUTFILE]        keep the .pidl file [BASENAME.pidl]
  --odl                   accept ODL input
  --warn-compat           warn about incompatibility with other compilers
  --quiet                 be quiet
  --verbose               be verbose
 
 Samba 4 output:
- --header[=OUTFILE]      create generic header file
+ --header[=OUTFILE]      create generic header file [BASENAME.h]
  --uint-enums            don't use C enums, instead use uint* types
- --ndr-header[=OUTFILE]  create a C NDR-specific header file
- --ndr-parser[=OUTFILE]  create a C NDR parser
- --client[=OUTFILE]      create a C NDR client
- --tdr-header[=OUTFILE]  create a C TDR header file
- --tdr-parser[=OUTFILE]  create a C TDR parser
- --ejs[=OUTFILE]         create ejs wrapper file
- --swig[=OUTFILE]        create swig wrapper file
- --server[=OUTFILE]      create server boilerplate
+ --ndr-header[=OUTFILE]  create a C NDR-specific header file [ndr_BASENAME.h]
+ --ndr-parser[=OUTFILE]  create a C NDR parser [ndr_BASENAME.c]
+ --client[=OUTFILE]      create a C NDR client [ndr_BASENAME_c.c]
+ --tdr-header[=OUTFILE]  create a C TDR header file [tdr_BASENAME.h]
+ --tdr-parser[=OUTFILE]  create a C TDR parser [tdr_BASENAME.c]
+ --ejs[=OUTFILE]         create ejs wrapper file [BASENAME_ejs.c]
+ --swig[=OUTFILE]        create swig wrapper file [BASENAME.i]
+ --server[=OUTFILE]      create server boilerplate [ndr_BASENAME_s.c]
  --template              print a template for a pipe
- --dcom-proxy[=OUTFILE]  create DCOM proxy (implies --odl)
- --com-header[=OUTFILE]  create header for COM interfaces (implies --odl)
+ --dcom-proxy[=OUTFILE]  create DCOM proxy (implies --odl) [ndr_BASENAME_p.c]
+ --com-header[=OUTFILE]  create header for COM (implies --odl) [com_BASENAME.h]
 
 Ethereal parsers:
  --eth-parser[=OUTFILE]  create ethereal parser and header
@@ -325,7 +325,7 @@ $dcom
 	  my $cnffile = $idl_file;
 	  $cnffile =~ s/\.idl$/\.cnf/;
 
-	  my ($dp, $dh) = Parse::Pidl::Ethereal::NDR::Parse($ndr, $eheader, $cnffile);
+	  my ($dp, $dh) = Parse::Pidl::Ethereal::NDR::Parse($ndr, $idl_file, $eheader, $cnffile);
 	  FileSave($eparser, $dp);
 	  FileSave($eheader, $dh);
 	}
