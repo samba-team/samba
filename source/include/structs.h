@@ -280,3 +280,5 @@ struct samba3_policy;
 struct samba3_regdb;
 struct samba3_secrets;
 struct samba3;
+
+struct ldb_map_mappings;

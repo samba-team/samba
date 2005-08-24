@@ -27,3 +27,24 @@
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
 
+/* 
+ * sambaGroupMapping -> group
+ * 	gidNumber -> ???
+ * 	sambaSID -> member
+ * 	sambaGroupType -> groupType
+ * 	displayName -> name
+ * 	description -> description
+ * 	sambaSIDList -> member 
+ */
+
+struct ldb_map_mappings samba3_mappings;
+
+/* the init function */
+#ifdef HAVE_DLOPEN_DISABLED
+ struct ldb_module *init_module(struct ldb_context *ldb, const char *options[])
+#else
+struct ldb_module *ldb_samba3_module_init(struct ldb_context *ldb, const char *options[])
+#endif
+{
+	return ldb_map_init(ldb, &samba3_mappings, options);
+}
