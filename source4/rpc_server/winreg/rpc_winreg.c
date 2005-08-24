@@ -99,17 +99,34 @@ static WERROR winreg_CreateKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 {
 	struct dcesrv_handle *h, *newh;
 	WERROR error;
+	struct security_descriptor sd;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 	
 	newh = dcesrv_handle_new(dce_call->context, HTYPE_REGKEY);
 
-	error = reg_key_add_name(newh, (struct registry_key *)h->data, r->in.key.name, 
-				 r->in.access_mask, 
-				 r->in.sec_desc?r->in.sec_desc->sd:NULL, 
+	/* the security descriptor is optional */
+	if (r->in.secdesc != NULL) {
+		DATA_BLOB sdblob;
+		NTSTATUS status;
+		sdblob.data = r->in.secdesc->sd.data;
+		sdblob.length = r->in.secdesc->sd.len;
+		if (sdblob.data == NULL) {
+			return WERR_INVALID_PARAM;
+		}
+		status = ndr_pull_struct_blob_all(&sdblob, mem_ctx, &sd, 
+						  (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+		if (!NT_STATUS_IS_OK(status)) {
+			return WERR_INVALID_PARAM;
+		}
+	}
+
+	error = reg_key_add_name(newh, (struct registry_key *)h->data, r->in.name.name, 
+				 r->in.access_required, 
+				 r->in.secdesc?&sd:NULL, 
 				 (struct registry_key **)&newh->data);
 	if (W_ERROR_IS_OK(error)) {
-		r->out.handle = &newh->wire_handle;
+		r->out.new_handle = &newh->wire_handle;
 	} else {
 		talloc_free(newh);
 	}
