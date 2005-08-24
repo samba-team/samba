@@ -23,6 +23,7 @@
 #include "system/time.h"
 #include "system/filesys.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "lib/events/events.h"
 
 /* enum for whether reads/writes are possible on a file */
 enum rdwr_mode {RDWR_NONE, RDWR_RDONLY, RDWR_WRONLY, RDWR_RDWR};
@@ -1236,6 +1237,130 @@ done:
 	return ret;
 }
 
+/* A little torture test to expose a race condition in Samba 3.0.20 ... :-) */
+
+static BOOL test_raw_open_multi(void)
+{
+	struct smbcli_state *cli;
+	TALLOC_CTX *mem_ctx = talloc_init("torture_test_oplock_multi");
+	const char *fname = "\\test_oplock.dat";
+	NTSTATUS status;
+	BOOL ret = True;
+	union smb_open io;
+	struct smbcli_state **clients;
+	struct smbcli_request **requests;
+	union smb_open *ios;
+	const char *host = lp_parm_string(-1, "torture", "host");
+	const char *share = lp_parm_string(-1, "torture", "share");
+	int i, num_files = 3;
+	struct event_context *ev;
+	int num_ok = 0;
+	int num_collision = 0;
+	
+	ev = event_context_init(mem_ctx);
+	clients = talloc_array(mem_ctx, struct smbcli_state *, num_files);
+	requests = talloc_array(mem_ctx, struct smbcli_request *, num_files);
+	ios = talloc_array(mem_ctx, union smb_open, num_files);
+	if ((ev == NULL) || (clients == NULL) || (requests == NULL) ||
+	    (ios == NULL)) {
+		DEBUG(0, ("talloc failed\n"));
+		return False;
+	}
+
+	if (!torture_open_connection_share(mem_ctx, &cli, host, share, ev)) {
+		return False;
+	}
+
+	cli->tree->session->transport->options.request_timeout = 60000;
+
+	for (i=0; i<num_files; i++) {
+		if (!torture_open_connection_share(mem_ctx, &(clients[i]),
+						   host, share, ev)) {
+			DEBUG(0, ("Could not open %d'th connection\n", i));
+			return False;
+		}
+		clients[i]->tree->session->transport->
+			options.request_timeout = 60000;
+	}
+
+	/* cleanup */
+	smbcli_unlink(cli->tree, fname);
+
+	/*
+	  base ntcreatex parms
+	*/
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE|
+		NTCREATEX_SHARE_ACCESS_DELETE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+	io.ntcreatex.in.flags = 0;
+
+	for (i=0; i<num_files; i++) {
+		ios[i] = io;
+		requests[i] = smb_raw_open_send(clients[i]->tree, &ios[i]);
+		if (requests[i] == NULL) {
+			DEBUG(0, ("could not send %d'th request\n", i));
+			return False;
+		}
+	}
+
+	DEBUG(10, ("waiting for replies\n"));
+	while (1) {
+		BOOL unreplied = False;
+		for (i=0; i<num_files; i++) {
+			if (requests[i] == NULL) {
+				continue;
+			}
+			if (requests[i]->state < SMBCLI_REQUEST_DONE) {
+				unreplied = True;
+				break;
+			}
+			status = smb_raw_open_recv(requests[i], mem_ctx,
+						   &ios[i]);
+
+			DEBUG(0, ("File %d returned status %s\n", i,
+				  nt_errstr(status)));
+
+			if (NT_STATUS_IS_OK(status)) {
+				num_ok += 1;
+			} 
+
+			if (NT_STATUS_EQUAL(status,
+					    NT_STATUS_OBJECT_NAME_COLLISION)) {
+				num_collision += 1;
+			}
+
+			requests[i] = NULL;
+		}
+		if (!unreplied) {
+			break;
+		}
+
+		if (event_loop_once(ev) != 0) {
+			DEBUG(0, ("event_loop_once failed\n"));
+			return False;
+		}
+	}
+
+	if ((num_ok != 1) || (num_ok + num_collision != num_files)) {
+		ret = False;
+	}
+
+	for (i=0; i<num_files; i++) {
+		torture_close_connection(clients[i]);
+	}
+	talloc_free(mem_ctx);
+	return ret;
+}
 
 /* basic testing of all RAW_OPEN_* calls 
 */
@@ -1257,6 +1382,7 @@ BOOL torture_raw_open(void)
 
 	ret &= test_ntcreatex_brlocked(cli, mem_ctx);
 	ret &= test_open(cli, mem_ctx);
+	ret &= test_raw_open_multi();
 	ret &= test_openx(cli, mem_ctx);
 	ret &= test_ntcreatex(cli, mem_ctx);
 	ret &= test_nttrans_create(cli, mem_ctx);
