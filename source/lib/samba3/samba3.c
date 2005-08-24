@@ -47,5 +47,9 @@ struct samba3 *samba3_read(const char *libdir, TALLOC_CTX *ctx)
 	samba3_read_account_policy(dbfile, ctx, &ret->policy);
 	SAFE_FREE(dbfile);
 
+	asprintf(&dbfile, "%s/registry.tdb", libdir);
+	samba3_read_regdb(dbfile, ctx, &ret->registry);
+	SAFE_FREE(dbfile);
+
 	return ret;
 }

@@ -22,151 +22,123 @@
 /* Implementation of internal registry database functions. */
 
 #include "includes.h"
+#include "lib/samba3/samba3.h"
+#include "librpc/gen_ndr/winreg.h"
+#include "lib/tdb/include/tdbutil.h"
+#include "system/filesys.h"
+#include "pstring.h"
 
 #define VALUE_PREFIX	"SAMBA_REGVAL"
 #define REGVER_V1	1	/* first db version with write support */
-	
-/***********************************************************************
- Open the registry database
- ***********************************************************************/
- 
-static TDB_CONTEXT *samba3_open_registry ( const char *fn )
-{
-	uint32_t vers_id;
-
-	/* placeholder tdb; reinit upon startup */
-	
-	if ( !(tdb = tdb_open_log(lock_path("registry.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0600)) )
-	{
-		return NULL;
-	}
-
-	vers_id = tdb_fetch_int32(tdb, "INFO/version");
-	
-	if (vers_id > REGVER_V1) 
-		return NULL;
-
-	return True;
-}
-
-/***********************************************************************
- Retrieve an array of strings containing subkeys.  Memory should be 
- released by the caller.  
- ***********************************************************************/
-
-int regdb_fetch_keys( TDB_CONTEXT *tdb, const char* key, REGSUBKEY_CTR *ctr )
-{
-	char *path;
-	uint32_t num_items;
-	TDB_DATA dbuf;
-	char *buf;
-	uint32_t buflen, len;
-	int i;
-	fstring subkeyname;
-
-	DEBUG(11,("regdb_fetch_keys: Enter key => [%s]\n", key ? key : "NULL"));
-	
-	path = talloc_strdup(key);
-	
-	/* convert to key format */
-	for ( i = 0; path[i]; i++) {
-		if ( path[i] == '\\' )
-			path[i] = '/';
-	}
-	strupper_m( path );
-	
-	dbuf = tdb_fetch_bystring( tdb, path );
-	
-	buf = dbuf.dptr;
-	buflen = dbuf.dsize;
-	
-	if ( !buf ) {
-		DEBUG(5,("regdb_fetch_keys: tdb lookup failed to locate key [%s]\n", key));
-		return -1;
-	}
-	
-	len = tdb_unpack( buf, buflen, "d", &num_items);
-	
-	for (i=0; i<num_items; i++) {
-		len += tdb_unpack( buf+len, buflen-len, "f", subkeyname );
-		regsubkey_ctr_addkey( ctr, subkeyname );
-	}
-
-	SAFE_FREE( dbuf.dptr );
-	
-	DEBUG(11,("regdb_fetch_keys: Exit [%d] items\n", num_items));
-	
-	return num_items;
-}
 
 /****************************************************************************
- Unpack a list of registry values frem the TDB
+ Unpack a list of registry values from the TDB
  ***************************************************************************/
  
-static int regdb_unpack_values(REGVAL_CTR *values, char *buf, int buflen)
+static int regdb_unpack_values(TDB_CONTEXT *tdb, TALLOC_CTX *ctx, struct samba3_regkey *key, TDB_DATA data )
 {
 	int 		len = 0;
 	uint32_t	type;
-	char 		*valuename;
 	uint32_t	size;
 	uint8_t		*data_p;
 	uint32_t	num_values = 0;
 	int 		i;
+	fstring valuename;
 	
 	/* loop and unpack the rest of the registry values */
 	
-	len += tdb_unpack(buf+len, buflen-len, "d", &num_values);
+	len += tdb_unpack(tdb, data.dptr+len, data.dsize-len, "d", &num_values);
 	
 	for ( i=0; i<num_values; i++ ) {
+		struct samba3_regval val;
 		/* unpack the next regval */
 		
 		type = REG_NONE;
 		size = 0;
 		data_p = NULL;
-		len += tdb_unpack(buf+len, buflen-len, "fdB",
+		len += tdb_unpack(tdb, data.dptr+len, data.dsize-len, "fdB",
 				  valuename,
-				  &type,
+				  &val.type,
 				  &size,
 				  &data_p);
-				
-		/* add the new value. Paranoid protective code -- make sure data_p is valid */
+		val.name = talloc_strdup(ctx, valuename);
+		val.data = data_blob_talloc(ctx, data_p, size);
 
-		if ( size && data_p ) {
-			regval_ctr_addvalue( values, valuename, type, (const char *)data_p, size );
-			SAFE_FREE(data_p); /* 'B' option to tdb_unpack does a malloc() */
-		}
-
-		DEBUG(8,("specific: [%s], len: %d\n", valuename, size));
+		key->values = talloc_realloc(ctx, key->values, struct samba3_regval, key->value_count+1);
+		key->values[key->value_count] = val;
+		key->value_count++;
 	}
 
 	return len;
 }
 
+
+	
 /***********************************************************************
- Retrieve an array of strings containing subkeys.  Memory should be 
- released by the caller.
+ Open the registry database
  ***********************************************************************/
-
-int regdb_fetch_values( TDB_CONTEXT *tdb, const char* key, REGVAL_CTR *values )
+ 
+NTSTATUS samba3_read_regdb ( const char *fn, TALLOC_CTX *ctx, struct samba3_regdb *db )
 {
-	TDB_DATA data;
-	pstring keystr;
+	uint32_t vers_id;
+	TDB_CONTEXT *tdb;
+	TDB_DATA kbuf, vbuf;
 
-	DEBUG(10,("regdb_fetch_values: Looking for value of key [%s] \n", key));
+	/* placeholder tdb; reinit upon startup */
 	
-	pstr_sprintf( keystr, "%s/%s", VALUE_PREFIX, key );
-	normalize_reg_path( keystr );
-	
-	data = tdb_fetch_bystring( tdb, keystr );
-	
-	if ( !data.dptr ) {
-		/* all keys have zero values by default */
-		return 0;
+	if ( !(tdb = tdb_open(fn, 0, TDB_DEFAULT, O_RDONLY, 0600)) )
+	{
+		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	vers_id = tdb_fetch_int32(tdb, "INFO/version");
+
+	db->key_count = 0;
+	db->keys = NULL;
 	
-	regdb_unpack_values( values, data.dptr, data.dsize );
+	if (vers_id > REGVER_V1) 
+		return NT_STATUS_UNSUCCESSFUL;
+
+	for (kbuf = tdb_firstkey(tdb); kbuf.dptr; kbuf = tdb_nextkey(tdb, kbuf))
+	{
+		uint32_t len;
+		int i;
+		struct samba3_regkey key;
+		char *skey;
+			
+		if (strncmp(kbuf.dptr, VALUE_PREFIX, strlen(VALUE_PREFIX)))
+			continue;
+
+		vbuf = tdb_fetch(tdb, kbuf);
+
+		key.name = talloc_strdup(ctx, kbuf.dptr); 
+
+		len = tdb_unpack(tdb, vbuf.dptr, vbuf.dsize, "d", &key.subkey_count);
+
+		key.value_count = 0;
+		key.values = NULL;
+		key.subkeys = talloc_array(ctx, char *, key.subkey_count);
 	
-	SAFE_FREE( data.dptr );
+		for (i = 0; i < key.subkey_count; i++) {
+			fstring tmp;
+			len += tdb_unpack( tdb, vbuf.dptr+len, vbuf.dsize-len, "f", tmp );
+			key.subkeys[i] = talloc_strdup(ctx, tmp);
+		}
+
+		skey = talloc_asprintf(ctx, "%s/%s", VALUE_PREFIX, kbuf.dptr );
 	
-	return regval_ctr_numvals(values);
+		vbuf = tdb_fetch_bystring( tdb, skey );
+	
+		if ( vbuf.dptr ) {
+			regdb_unpack_values( tdb, ctx, &key, vbuf );
+		}
+
+		db->keys = talloc_realloc(ctx, db->keys, struct samba3_regkey, db->key_count+1);
+		db->keys[i] = key;
+		db->key_count++;
+	}
+
+	tdb_close(tdb);
+
+	return NT_STATUS_OK;
 }
