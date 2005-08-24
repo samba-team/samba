@@ -35,7 +35,7 @@ function __winreg_open_hive(hive)
 	} else if (hive == "HKU") {
 		status = this.winreg_OpenHKU(io);
 	} else {
-		println("Unknown hive " + hive);
+		this._last_error = "Unknown hive " + hive;
 		return undefined;
 	}
 	if (!status.is_ok) {
@@ -231,6 +231,40 @@ function __winreg_enum_values(path)
 	return list;
 }
 
+
+/*
+  create a new key
+    ok = reg.create_key(path, key);
+*/
+function __winreg_create_key(path, key)
+{
+	var handle = this.open_path(path);
+	if (handle == undefined) {
+		return undefined;
+	}
+
+	var io = irpcObj();
+	io.input.handle = handle;
+	io.input.name = key;
+	io.input.class = NULL;
+	io.input.options = 0;
+	io.input.access_required = this.SEC_FLAG_MAXIMUM_ALLOWED;
+	io.input.secdesc = NULL;
+	io.input.action_taken = 0;	
+
+	var status = this.winreg_CreateKey(io);
+	this.close(handle);
+	if (!status.is_ok) {
+		return false;
+	}
+	if (io.output.result != "WERR_OK") {
+		return false;
+	}
+	this.close(io.output.new_handle);
+	return true;
+}
+
+
 /*
   return a string for a winreg type
 */
@@ -252,12 +286,13 @@ function winregObj()
 				  "REG_RESOURCE_LIST", "REG_FULL_RESOURCE_DESCRIPTOR", 
 				  "REG_RESOURCE_REQUIREMENTS_LIST", "REG_QWORD");
 
-	reg.close = __winreg_close;
-	reg.open_hive = __winreg_open_hive;
-	reg.open_path = __winreg_open_path;
-	reg.enum_path = __winreg_enum_path;
+	reg.close       = __winreg_close;
+	reg.open_hive   = __winreg_open_hive;
+	reg.open_path   = __winreg_open_path;
+	reg.enum_path   = __winreg_enum_path;
 	reg.enum_values = __winreg_enum_values;
-	reg.typestring = __winreg_typestring;
+	reg.create_key  = __winreg_create_key;
+	reg.typestring  = __winreg_typestring;
 
 	return reg;
 }
