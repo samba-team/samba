@@ -774,7 +774,7 @@ pch:
 ##
 ## Targets for 'make test'
 ##
-test: all
+test: all torture
 	@echo Running Samba 3 Test suite
 	@sh ./script/tests/runtests.sh t_dir
 
@@ -1441,7 +1441,8 @@ TOPFILES=dynconfig.o dynconfig.@PICSUFFIX@
 clean: delheaders python_clean
 	-rm -f core */*~ *~ */*.o */*.@PICSUFFIX@ */*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(MODULES) $(TORTURE_PROGS) \
-		$(LIBSMBCLIENT) $(EVERYTHING_PROGS) .headers.stamp t_dir
+		$(LIBSMBCLIENT) $(EVERYTHING_PROGS) .headers.stamp 
+	-rm -rf t_dir
 
 # Making this target will just make sure that the prototype files
 # exist, not necessarily that they are up to date.  Since they're
