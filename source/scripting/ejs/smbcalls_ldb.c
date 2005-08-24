@@ -132,7 +132,7 @@ static int ejs_ldbAddModify(MprVarHandle eid, int argc, struct MprVar **argv,
 	const char *ldifstring;
 	struct ldb_context *ldb;
 	struct ldb_ldif *ldif;
-	int ret;
+	int ret = 0;
 
 	if (argc != 1) {
 		ejsSetErrorMsg(eid, "ldb.add/modify invalid arguments");
