@@ -44,6 +44,19 @@ export PRIVATEDIR LIBDIR PIDDIR LOCKDIR TMPDIR LOGDIR
 export SRCDIR SCRIPTDIR
 export USERNAME PASSWORD
 
+
+##
+## verify that we were built with --enable-socket-wrapper
+##
+
+if test "x`smbd -b | grep SOCKET_WRAPPER`" == "x"; then
+	echo "***"
+	echo "*** You must include --enable-socket-wrapper when compiling Samba"
+	echo "*** in order to execute 'make test'.  Exiting...."
+	echo "***"
+	exit 1
+fi
+
 ## 
 ## create the test directory layout
 ##
