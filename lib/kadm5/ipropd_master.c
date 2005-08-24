@@ -435,7 +435,8 @@ send_diffs (krb5_context context, slave *s, int log_fd,
     for (;;) {
 	ret = kadm5_log_previous (context, sp, &ver, &timestamp, &op, &len);
 	if (ret)
-	    krb5_err(context, ret, "send_diffs: failed to find previous entry");
+	    krb5_err(context, 1, ret, 
+		     "send_diffs: failed to find previous entry");
 	left = krb5_storage_seek(sp, -16, SEEK_CUR);
 	if (ver == s->version)
 	    return 0;
