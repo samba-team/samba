@@ -76,16 +76,17 @@ failed:
 	return NULL;
 }
 
-BOOL torture_open_connection_share(struct smbcli_state **c, 
+BOOL torture_open_connection_share(TALLOC_CTX *mem_ctx,
+				   struct smbcli_state **c, 
 				   const char *hostname, 
-				   const char *sharename)
+				   const char *sharename,
+				   struct event_context *ev)
 {
 	NTSTATUS status;
 
-	status = smbcli_full_connection(NULL,
-					c, hostname, 
+	status = smbcli_full_connection(mem_ctx, c, hostname, 
 					sharename, NULL,
-					cmdline_credentials, NULL);
+					cmdline_credentials, ev);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to open connection - %s\n", nt_errstr(status));
 		return False;
@@ -102,7 +103,7 @@ BOOL torture_open_connection(struct smbcli_state **c)
 	const char *host = lp_parm_string(-1, "torture", "host");
 	const char *share = lp_parm_string(-1, "torture", "share");
 
-	return torture_open_connection_share(c, host, share);
+	return torture_open_connection_share(NULL, c, host, share, NULL);
 }
 
 
@@ -2107,9 +2108,11 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 
 			while (1) {
 				if (hostname) {
-					if (torture_open_connection_share(&current_cli,
+					if (torture_open_connection_share(NULL,
+									  &current_cli,
 									  hostname, 
-									  sharename)) {
+									  sharename,
+									  NULL)) {
 						break;
 					}
 				} else if (torture_open_connection(&current_cli)) {
