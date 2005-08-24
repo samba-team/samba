@@ -297,13 +297,6 @@ interface security
 		SEC_DESC_SELF_RELATIVE		= 0x8000
 	} security_descriptor_type;
 
-	/* bits that determine which parts of a security descriptor
-	   are being queried/set */
-	const int SECINFO_OWNER                = 0x00000001;
-	const int SECINFO_GROUP                = 0x00000002;
-	const int SECINFO_DACL                 = 0x00000004;
-	const int SECINFO_SACL                 = 0x00000008;
-
 	typedef [public,flag(NDR_LITTLE_ENDIAN)] struct {
 		security_descriptor_revision revision;
 		security_descriptor_type type;     /* SEC_DESC_xxxx flags */
@@ -325,4 +318,13 @@ interface security
 		[size_is(num_sids)] dom_sid *sids[*];
 		udlong privilege_mask;
 	} security_token;
+
+	/* bits that determine which parts of a security descriptor
+	   are being queried/set */
+	typedef [public,bitmap32bit] bitmap {
+		SECINFO_OWNER                = 0x00000001,
+		SECINFO_GROUP                = 0x00000002,
+		SECINFO_DACL                 = 0x00000004,
+		SECINFO_SACL                 = 0x00000008
+	} security_secinfo;
 }

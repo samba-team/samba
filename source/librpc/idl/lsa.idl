@@ -13,6 +13,8 @@
   depends(security)
 ] interface lsarpc
 {
+	declare bitmap security_secinfo;
+
 	typedef [public,noejs] struct {
 		[value(2*strlen_m(string))] uint16 length;
 		[value(2*strlen_m(string))] uint16 size;
@@ -79,7 +81,7 @@
 
 	NTSTATUS lsa_QuerySecurity (
 		[in,ref]     policy_handle *handle,
-		[in]         uint32 sec_info,
+		[in]         security_secinfo sec_info,
 		[out]        sec_desc_buf *sdbuf
 		);
 
