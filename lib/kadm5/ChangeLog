@@ -1,4 +1,21 @@
-2005-08-24  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-08-24 Love Hörnquist Åstrand <lha@it.su.se>
+
+	* remove replay_log.c, dump_log.c, and truncate_log.c, folded into
+	iprop-log.
+
+	* log.c (kadm5_log_foreach): add a context variable and pass it
+	down to `func´.
+
+	* iprop-commands.in: Move truncate_log and replay_log into
+	iprop-log.
+
+	* iprop-log.c: Move truncate_log and replay_log into iprop-log.
+	
+	* Makefile.am: Move truncate_log and replay_log into iprop-log.
+	
+	* Makefile.am: Make this work with a clean directory.
+
+	* ipropd_master.c: Make compile.
 
 	* ipropd_master.c: Update to new signature of kadm5_log_previous.
 
