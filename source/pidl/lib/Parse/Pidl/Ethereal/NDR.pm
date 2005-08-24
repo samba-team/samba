@@ -95,6 +95,8 @@ sub PrintIdl($)
 	foreach (split /\n/, $idl) {
 		pidl_code "/* IDL: $_ */";
 	}
+
+	pidl_code "";
 }
 
 #####################################################################
@@ -136,14 +138,14 @@ sub Enum($$$)
 	pidl_code "$dissectorname(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep, int hf_index, guint32 param _U_)";
 	pidl_code "{";
 	indent;
-	pidl_code "offset=dissect_ndr_$e->{BASE_TYPE}(tvb, offset, pinfo, tree, drep, hf_index, NULL);";
+	pidl_code "offset = dissect_ndr_$e->{BASE_TYPE}(tvb, offset, pinfo, tree, drep, hf_index, NULL);";
 	pidl_code "return offset;";
 	deindent;
 	pidl_code "}\n";
 
 	my $enum_size = $e->{BASE_TYPE};
 	$enum_size =~ s/uint//g;
-	register_type($name, "offset=$dissectorname(tvb,offset,pinfo,tree,drep,\@HF\@,\@PARAM\@);", type2ft($e->{BASE_TYPE}), "BASE_DEC", "0", "VALS($valsstring)", $enum_size / 8);
+	register_type($name, "offset = $dissectorname(tvb, offset, pinfo, tree, drep, \@HF\@, \@PARAM\@);", type2ft($e->{BASE_TYPE}), "BASE_DEC", "0", "VALS($valsstring)", $enum_size / 8);
 }
 
 sub Bitmap($$$)
@@ -160,8 +162,8 @@ sub Bitmap($$$)
 	pidl_code "$dissectorname(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *parent_tree, guint8 *drep, int hf_index, guint32 param _U_)";
 	pidl_code "{";
 	indent;
-	pidl_code "proto_item *item=NULL;";
-	pidl_code "proto_tree *tree=NULL;";
+	pidl_code "proto_item *item = NULL;";
+	pidl_code "proto_tree *tree = NULL;";
 	pidl_code "";
 		
 	pidl_code "g$e->{BASE_TYPE} flags;";
@@ -173,12 +175,12 @@ sub Bitmap($$$)
 
 	pidl_code "if(parent_tree) {";
 	indent;
-	pidl_code "item=proto_tree_add_item(parent_tree, hf_index, tvb, offset, $e->{ALIGN}, TRUE);";
+	pidl_code "item = proto_tree_add_item(parent_tree, hf_index, tvb, offset, $e->{ALIGN}, TRUE);";
 	pidl_code "tree=proto_item_add_subtree(item,ett_$ifname\_$name);";
 	deindent;
 	pidl_code "}\n";
 
-	pidl_code "offset=dissect_ndr_$e->{BASE_TYPE}(tvb, offset, pinfo, NULL, drep, -1, &flags);";
+	pidl_code "offset = dissect_ndr_$e->{BASE_TYPE}(tvb, offset, pinfo, NULL, drep, -1, &flags);";
 
 	pidl_code "proto_item_append_text(item, \": \");\n";
 	pidl_code "if (!flags)";
@@ -199,7 +201,7 @@ sub Bitmap($$$)
 		
 		pidl_code "proto_tree_add_boolean(tree, $hf_bitname, tvb, offset-$e->{ALIGN}, $e->{ALIGN}, flags);";
 		pidl_code "if (flags&$ev){";
-		pidl_code "\tproto_item_append_text(item,\"$en\");";
+		pidl_code "\tproto_item_append_text(item, \"$en\");";
 		pidl_code "\tif (flags & (~$ev))";
 		pidl_code "\t\tproto_item_append_text(item, \", \");";
 		pidl_code "}";
@@ -216,7 +218,7 @@ sub Bitmap($$$)
 
 	my $size = $e->{BASE_TYPE};
 	$size =~ s/uint//g;
-	register_type($name, "offset=$dissectorname(tvb,offset,pinfo,tree,drep,\@HF\@,\@PARAM\@);", type2ft($e->{BASE_TYPE}), "BASE_DEC", "0", "NULL", $size/8);
+	register_type($name, "offset = $dissectorname(tvb, offset, pinfo, tree, drep, \@HF\@, \@PARAM\@);", type2ft($e->{BASE_TYPE}), "BASE_DEC", "0", "NULL", $size/8);
 }
 
 sub ElementLevel($$$$$)
@@ -236,7 +238,7 @@ sub ElementLevel($$$$$)
 		} elsif ($l->{LEVEL} eq "EMBEDDED") {
 			$type = "embedded";
 		}
-		pidl_code "offset=dissect_ndr_$type\_pointer(tvb,offset,pinfo,tree,drep,$myname\_,$ptrtype_mappings{$l->{POINTER_TYPE}},\"Pointer to ".field2name(StripPrefixes($e->{NAME})) . " ($e->{TYPE})\",$hf);";
+		pidl_code "offset = dissect_ndr_$type\_pointer(tvb, offset, pinfo, tree, drep, $myname\_, $ptrtype_mappings{$l->{POINTER_TYPE}}, \"Pointer to ".field2name(StripPrefixes($e->{NAME})) . " ($e->{TYPE})\",$hf);";
 	} elsif ($l->{TYPE} eq "ARRAY") {
 		
 		if ($l->{IS_INLINE}) {
@@ -245,14 +247,14 @@ sub ElementLevel($$$$$)
 		} elsif ($l->{IS_FIXED}) {
 			pidl_code "int i;";
 			pidl_code "for (i = 0; i < $l->{SIZE_IS}; i++)";
-			pidl_code "\toffset=$myname\_(tvb,offset,pinfo,tree,drep);";
+			pidl_code "\toffset = $myname\_(tvb, offset, pinfo, tree, drep);";
 		} else {
 			my $af = "";
 			($af = "ucarray") if ($l->{IS_CONFORMANT});
 			($af = "uvarray") if ($l->{IS_VARYING});
 			($af = "ucvarray") if ($l->{IS_CONFORMANT} and $l->{IS_VARYING});
 
-			pidl_code "offset=dissect_ndr_$af(tvb,offset,pinfo,tree,drep,$myname\_);";
+			pidl_code "offset = dissect_ndr_$af(tvb, offset, pinfo, tree, drep, $myname\_);";
 		}
 	} elsif ($l->{TYPE} eq "DATA") {
 		if ($l->{DATA_TYPE} eq "string") {
@@ -263,10 +265,10 @@ sub ElementLevel($$$$$)
 			
 			if (property_matches($e, "flag", ".*LIBNDR_FLAG_STR_SIZE4.*") and property_matches($e, "flag", ".*LIBNDR_FLAG_STR_LEN4.*")) {
 			        pidl_code "char *data;\n";
-				pidl_code "offset=dissect_ndr_cvstring(tvb,offset,pinfo,tree,drep,$bs,$hf,FALSE,&data);";
+				pidl_code "offset = dissect_ndr_cvstring(tvb, offset, pinfo, tree, drep, $bs, $hf, FALSE, &data);";
 				pidl_code "proto_item_append_text(tree, \": %s\", data);";
 			} elsif (property_matches($e, "flag", ".*LIBNDR_FLAG_STR_SIZE4.*")) {
-				pidl_code "offset=dissect_ndr_vstring(tvb,offset,pinfo,tree,drep,$bs,$hf,FALSE,NULL);";
+				pidl_code "offset = dissect_ndr_vstring(tvb, offset, pinfo, tree, drep, $bs, $hf, FALSE, NULL);";
 			} else {
 				warn("Unable to handle string with flags $e->{PROPERTIES}->{flag}");
 			}
@@ -282,7 +284,7 @@ sub ElementLevel($$$$$)
 				pidl_code "/* FIXME: Handle unknown data type $l->{DATA_TYPE} */";
 				if ($l->{DATA_TYPE} =~ /^([a-z]+)\_(.*)$/)
 				{
-					pidl_code "offset=$1_dissect_$2(tvb,offset,pinfo,tree,drep,$hf,$param);";
+					pidl_code "offset = $1_dissect_$2(tvb,offset,pinfo,tree,drep,$hf,$param);";
 				}
 
 				return;
@@ -295,13 +297,13 @@ sub ElementLevel($$$$$)
 	} elsif ($_->{TYPE} eq "SUBCONTEXT") {
 		my $num_bits = ($l->{HEADER_SIZE}*8);
 		pidl_code "guint$num_bits size;";
-		pidl_code "int start_offset=offset;";
+		pidl_code "int start_offset = offset;";
 		pidl_code "tvbuff_t *subtvb;";
-		pidl_code "offset=dissect_ndr_uint$num_bits(tvb,offset,pinfo,tree,drep,$hf,&size);";
-		pidl_code "proto_tree_add_text(tree,tvb,start_offset,offset-start_offset+size,\"Subcontext size\");";
+		pidl_code "offset = dissect_ndr_uint$num_bits(tvb, offset, pinfo, tree, drep, $hf, &size);";
+		pidl_code "proto_tree_add_text(tree, tvb, start_offset, offset - start_offset + size, \"Subcontext size\");";
 
-		pidl_code "subtvb = tvb_new_subset(tvb,offset,size,-1);";
-		pidl_code "$myname\_(subtvb,0,pinfo,tree,drep);";
+		pidl_code "subtvb = tvb_new_subset(tvb, offset, size, -1);";
+		pidl_code "$myname\_(subtvb, 0, pinfo, tree, drep);";
 	} else {
 		die("Unknown type `$_->{TYPE}'");
 	}
@@ -313,7 +315,7 @@ sub Element($$$)
 
 	my $dissectorname = "$ifname\_dissect\_".StripPrefixes($pn)."\_".StripPrefixes($e->{NAME});
 
-	my $call_code = "offset=$dissectorname(tvb,offset,pinfo,tree,drep);";
+	my $call_code = "offset = $dissectorname(tvb, offset, pinfo, tree, drep);";
 
 	my $hf = register_hf_field("hf_$ifname\_$pn\_$e->{NAME}", field2name($e->{NAME}), "$ifname.$pn.$e->{NAME}", type2ft($e->{TYPE}), "BASE_HEX", "NULL", 0, "");
 
@@ -333,6 +335,7 @@ sub Element($$$)
 
 		ElementLevel($e,$_,$hf,$dissectorname.$add,$pn);
 
+		pidl_code "";
 		pidl_code "return offset;";
 		deindent;
 		pidl_code "}\n";
@@ -363,16 +366,16 @@ sub Function($$$)
 	foreach (@{$fn->{ELEMENTS}}) {
 		if (grep(/out/,@{$_->{DIRECTION}})) {
 			pidl_code "$dissectornames{$_->{NAME}}";
-			pidl_code "offset=dissect_deferred_pointers(pinfo,tvb,offset,drep);";
+			pidl_code "offset = dissect_deferred_pointers(pinfo, tvb, offset, drep);";
 			pidl_code "";
 		}
 	}
 
 	if (not defined($fn->{RETURN_TYPE})) {
 	} elsif ($fn->{RETURN_TYPE} eq "NTSTATUS") {
-		pidl_code "offset=dissect_ntstatus(tvb,offset,pinfo,tree,drep,hf\_$ifname\_status, NULL);";
+		pidl_code "offset = dissect_ntstatus(tvb, offset, pinfo, tree, drep, hf\_$ifname\_status, NULL);";
 	} elsif ($fn->{RETURN_TYPE} eq "WERROR") {
-		pidl_code "offset=dissect_ndr_uint32(tvb,offset,pinfo,tree,drep,hf\_$ifname\_werror, NULL);";
+		pidl_code "offset = dissect_ndr_uint32(tvb, offset, pinfo, tree, drep, hf\_$ifname\_werror, NULL);";
 	}
 
 	pidl_code "return offset;";
@@ -386,7 +389,7 @@ sub Function($$$)
 	foreach (@{$fn->{ELEMENTS}}) {
 		if (grep(/in/,@{$_->{DIRECTION}})) {
 			pidl_code "$dissectornames{$_->{NAME}}";
-			pidl_code "offset=dissect_deferred_pointers(pinfo,tvb,offset,drep);";
+			pidl_code "offset = dissect_deferred_pointers(pinfo, tvb, offset, drep);";
 		}
 
 	}
@@ -424,23 +427,23 @@ sub Struct($$$)
 	}
 	pidl_code "";
 
-	pidl_code "old_offset=offset;";
+	pidl_code "old_offset = offset;";
 	pidl_code "";
 	pidl_code "if(parent_tree){";
 	indent;
-	pidl_code "item=proto_tree_add_item(parent_tree, hf_index, tvb, offset, -1, TRUE);";
-	pidl_code "tree=proto_item_add_subtree(item, ett_$ifname\_$name);";
+	pidl_code "item = proto_tree_add_item(parent_tree, hf_index, tvb, offset, -1, TRUE);";
+	pidl_code "tree = proto_item_add_subtree(item, ett_$ifname\_$name);";
 	deindent;
 	pidl_code "}";
 
 	pidl_code "\n$res";
 
-	pidl_code "proto_item_set_len(item, offset-old_offset);";
+	pidl_code "proto_item_set_len(item, offset-old_offset);\n";
 	pidl_code "return offset;";
 	deindent;
 	pidl_code "}\n";
 
-	register_type($name, "offset=$dissectorname(tvb,offset,pinfo,tree,drep,\@HF\@,\@PARAM\@);", "FT_NONE", "BASE_NONE", 0, "NULL", 0);
+	register_type($name, "offset = $dissectorname(tvb,offset,pinfo,tree,drep,\@HF\@,\@PARAM\@);", "FT_NONE", "BASE_NONE", 0, "NULL", 0);
 }
 
 sub Union($$$)
@@ -465,8 +468,8 @@ sub Union($$$)
 	pidl_code "$dissectorname(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *parent_tree, guint8 *drep, int hf_index, guint32 param _U_)";
 	pidl_code "{";
 	indent;
-	pidl_code "proto_item *item=NULL;";
-	pidl_code "proto_tree *tree=NULL;";
+	pidl_code "proto_item *item = NULL;";
+	pidl_code "proto_tree *tree = NULL;";
 	pidl_code "int old_offset;";
 	pidl_code "g$e->{SWITCH_TYPE} level;";
 	pidl_code "";
@@ -477,11 +480,11 @@ sub Union($$$)
 
 	pidl_code "";
 
-	pidl_code "old_offset=offset;";
+	pidl_code "old_offset = offset;";
 	pidl_code "if(parent_tree){";
 	indent;
-	pidl_code "item=proto_tree_add_text(parent_tree,tvb,offset,-1,\"$name\");";
-	pidl_code "tree=proto_item_add_subtree(item,ett_$ifname\_$name);";
+	pidl_code "item = proto_tree_add_text(parent_tree, tvb, offset, -1, \"$name\");";
+	pidl_code "tree = proto_item_add_subtree(item, ett_$ifname\_$name);";
 	deindent;
 	pidl_code "}";
 
@@ -490,12 +493,12 @@ sub Union($$$)
 	pidl_code "offset = dissect_ndr_$e->{SWITCH_TYPE}(tvb, offset, pinfo, tree, drep, hf_index, &level);";
 
 	pidl_code "switch(level) {$res\t}";
-	pidl_code "proto_item_set_len(item, offset-old_offset);";
+	pidl_code "proto_item_set_len(item, offset-old_offset);\n";
 	pidl_code "return offset;";
 	deindent;
 	pidl_code "}";
 
-	register_type($name, "offset=$dissectorname(tvb,offset,pinfo,tree,drep,\@HF\@,\@PARAM\@);", "FT_NONE", "BASE_NONE", 0, "NULL", 0);
+	register_type($name, "offset = $dissectorname(tvb, offset, pinfo, tree, drep, \@HF\@, \@PARAM\@);", "FT_NONE", "BASE_NONE", 0, "NULL", 0);
 }
 
 sub Const($$)
@@ -665,30 +668,30 @@ sub Initialize($)
 	
 	foreach my $bytes (qw(1 2 4 8)) {
 		my $bits = $bytes * 8;
-		register_type("uint$bits", "offset=dissect_ndr_uint$bits(tvb,offset,pinfo,tree,drep,\@HF\@,NULL);", "FT_UINT$bits", "BASE_DEC", 0, "NULL", $bytes);
-		register_type("int$bits", "offset=dissect_ndr_uint$bits(tvb,offset,pinfo,tree,drep,\@HF\@,NULL);", "FT_INT$bits", "BASE_DEC", 0, "NULL", $bytes);
+		register_type("uint$bits", "offset = dissect_ndr_uint$bits(tvb, offset, pinfo, tree, drep, \@HF\@,NULL);", "FT_UINT$bits", "BASE_DEC", 0, "NULL", $bytes);
+		register_type("int$bits", "offset = dissect_ndr_uint$bits(tvb, offset, pinfo, tree, drep, \@HF\@, NULL);", "FT_INT$bits", "BASE_DEC", 0, "NULL", $bytes);
 	}
 		
-	register_type("udlong", "offset=dissect_ndr_duint32(tvb,offset,pinfo,tree,drep,\@HF\@,NULL);", "FT_UINT64", "BASE_DEC", 0, "NULL", 4);
-	register_type("bool8", "offset=dissect_ndr_uint8(tvb,offset,pinfo,tree,drep,\@HF\@,NULL);","FT_INT8", "BASE_DEC", 0, "NULL", 1);
-	register_type("char", "offset=dissect_ndr_uint8(tvb,offset,pinfo,tree,drep,\@HF\@,NULL);","FT_INT8", "BASE_DEC", 0, "NULL", 1);
-	register_type("long", "offset=dissect_ndr_uint32(tvb,offset,pinfo,tree,drep,\@HF\@,NULL);","FT_INT32", "BASE_DEC", 0, "NULL", 4);
-	register_type("dlong", "offset=dissect_ndr_duint32(tvb,offset,pinfo,tree,drep,\@HF\@,NULL);","FT_INT64", "BASE_DEC", 0, "NULL", 8);
-	register_type("GUID", "offset=dissect_ndr_uuid_t(tvb,offset,pinfo,tree,drep,\@HF\@,NULL);","FT_GUID", "BASE_NONE", 0, "NULL", 4);
-	register_type("policy_handle", "offset=dissect_nt_policy_hnd(tvb,offset,pinfo,tree,drep,\@HF\@,NULL,NULL,\@PARAM\@&0x01,\@PARAM\@&0x02);","FT_BYTES", "BASE_NONE", 0, "NULL", 4);
-	register_type("NTTIME", "offset=dissect_ndr_nt_NTTIME(tvb,offset,pinfo,tree,drep,\@HF\@);","FT_ABSOLUTE_TIME", "BASE_NONE", 0, "NULL", 4);
-	register_type("NTTIME_hyper", "offset=dissect_ndr_nt_NTTIME(tvb,offset,pinfo,tree,drep,\@HF\@);","FT_ABSOLUTE_TIME", "BASE_NONE", 0, "NULL", 4);
-	register_type("time_t", "offset=dissect_ndr_time_t(tvb,offset,pinfo,tree,drep,\@HF\@,NULL);","FT_ABSOLUTE_TIME", "BASE_DEC", 0, "NULL", 4);
-	register_type("NTTIME_1sec", "offset=dissect_ndr_nt_NTTIME(tvb,offset,pinfo,tree,drep,\@HF\@);", "FT_ABSOLUTE_TIME", "BASE_NONE", 0, "NULL", 4);
+	register_type("udlong", "offset = dissect_ndr_duint32(tvb, offset, pinfo, tree, drep, \@HF\@, NULL);", "FT_UINT64", "BASE_DEC", 0, "NULL", 4);
+	register_type("bool8", "offset = dissect_ndr_uint8(tvb, offset, pinfo, tree, drep, \@HF\@, NULL);","FT_INT8", "BASE_DEC", 0, "NULL", 1);
+	register_type("char", "offset = dissect_ndr_uint8(tvb, offset, pinfo, tree, drep, \@HF\@, NULL);","FT_INT8", "BASE_DEC", 0, "NULL", 1);
+	register_type("long", "offset = dissect_ndr_uint32(tvb, offset, pinfo, tree, drep, \@HF\@, NULL);","FT_INT32", "BASE_DEC", 0, "NULL", 4);
+	register_type("dlong", "offset = dissect_ndr_duint32(tvb, offset, pinfo, tree, drep, \@HF\@, NULL);","FT_INT64", "BASE_DEC", 0, "NULL", 8);
+	register_type("GUID", "offset = dissect_ndr_uuid_t(tvb, offset, pinfo, tree, drep, \@HF\@, NULL);","FT_GUID", "BASE_NONE", 0, "NULL", 4);
+	register_type("policy_handle", "offset = dissect_nt_policy_hnd(tvb, offset, pinfo, tree, drep, \@HF\@, NULL, NULL, \@PARAM\@&0x01, \@PARAM\@&0x02);","FT_BYTES", "BASE_NONE", 0, "NULL", 4);
+	register_type("NTTIME", "offset = dissect_ndr_nt_NTTIME(tvb, offset, pinfo, tree, drep, \@HF\@);","FT_ABSOLUTE_TIME", "BASE_NONE", 0, "NULL", 4);
+	register_type("NTTIME_hyper", "offset = dissect_ndr_nt_NTTIME(tvb, offset, pinfo, tree, drep, \@HF\@);","FT_ABSOLUTE_TIME", "BASE_NONE", 0, "NULL", 4);
+	register_type("time_t", "offset = dissect_ndr_time_t(tvb, offset, pinfo,tree, drep, \@HF\@, NULL);","FT_ABSOLUTE_TIME", "BASE_DEC", 0, "NULL", 4);
+	register_type("NTTIME_1sec", "offset = dissect_ndr_nt_NTTIME(tvb, offset, pinfo, tree, drep, \@HF\@);", "FT_ABSOLUTE_TIME", "BASE_NONE", 0, "NULL", 4);
 	register_type("SID", "
 		dcerpc_info *di = (dcerpc_info *)pinfo->private_data;
 
 		di->hf_index = \@HF\@;
 
-		offset=dissect_ndr_nt_SID_with_options(tvb,offset,pinfo,tree,drep,param);
+		offset = dissect_ndr_nt_SID_with_options(tvb, offset, pinfo, tree, drep, param);
 	","FT_STRING", "BASE_DEC", 0, "NULL", 4);
 	register_type("WERROR", 
-		"offset=dissect_ndr_uint32(tvb,offset,pinfo,tree,drep,\@HF\@,NULL);","FT_UINT32", "BASE_DEC", 0, "VALS(NT_errors)", 4);
+		"offset = dissect_ndr_uint32(tvb, offset, pinfo, tree, drep, \@HF\@, NULL);","FT_UINT32", "BASE_DEC", 0, "VALS(NT_errors)", 4);
 
 }
 
