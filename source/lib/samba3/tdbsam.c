@@ -266,7 +266,7 @@ static BOOL init_sam_from_buffer_v2(TDB_CONTEXT *tdb, struct samba3_samaccount *
 	return True;
 }
 
-NTSTATUS samba3_read_tdbsam(TALLOC_CTX *ctx, const char *filename, struct samba3_samaccount **accounts, uint32_t *count)
+NTSTATUS samba3_read_tdbsam(const char *filename, TALLOC_CTX *ctx, struct samba3_samaccount **accounts, uint32_t *count)
 {
 	int32_t version;
 	TDB_CONTEXT *tdb = tdbsam_open(filename, &version);

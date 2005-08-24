@@ -24,6 +24,7 @@
 #include "lib/samba3/samba3.h"
 #include "lib/tdb/include/tdbutil.h"
 #include "system/filesys.h"
+#include "pstring.h"
 
 #define DATABASE_VERSION_V1 1 /* native byte format. */
 #define DATABASE_VERSION_V2 2 /* le format. */
@@ -37,47 +38,19 @@
  */
 #define MEMBEROF_PREFIX "MEMBEROF/"
 
-#define ENUM_ONLY_MAPPED True
-#define ENUM_ALL_MAPPED False
-
-
-/****************************************************************************
-dump the mapping group mapping to a text file
-****************************************************************************/
-static const char *decode_sid_name_use(enum SID_NAME_USE name_use)
-{	
-	switch(name_use) {
-		case SID_NAME_USER:
-			return "User";
-		case SID_NAME_DOM_GRP:
-			return "Domain group";
-		case SID_NAME_DOMAIN:
-			return "Domain";
-		case SID_NAME_ALIAS:
-			return "Local group";
-		case SID_NAME_WKN_GRP:
-			return "Builtin group";
-		case SID_NAME_DELETED:
-			return "Deleted";
-		case SID_NAME_INVALID:
-			return "Invalid";
-		case SID_NAME_UNKNOWN:
-		default:
-			return "Unknown type";
-	}
-}
-
 /****************************************************************************
  Open the group mapping tdb.
 ****************************************************************************/
-static TDB_CONTEXT *tdbgroup_open(const char *file)
+NTSTATUS samba3_read_grouptdb(const char *file, TALLOC_CTX *ctx, struct samba3_groupdb *db)
 {
 	int32_t vers_id;
+	TDB_DATA kbuf, dbuf, newkey;
+	int ret;
 	
 	TDB_CONTEXT *tdb = tdb_open(file, 0, TDB_DEFAULT, O_RDONLY, 0600);
 	if (!tdb) {
 		DEBUG(0,("Failed to open group mapping database\n"));
-		return NULL;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* Cope with byte-reversed older versions of the db. */
@@ -88,396 +61,77 @@ static TDB_CONTEXT *tdbgroup_open(const char *file)
 	}
 
 	if (vers_id != DATABASE_VERSION_V2) {
-		return NULL;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return tdb;
-}
-
-/****************************************************************************
- Return the sid and the type of the unix group.
-****************************************************************************/
-
-static BOOL get_group_map_from_sid(TDB_CONTEXT *tdb, struct dom_sid sid, struct samba3_groupmapping *map)
-{
-	TDB_DATA kbuf, dbuf;
-	const char *key;
-	int ret = 0;
-	
-	/* the key is the SID, retrieving is direct */
-
-	kbuf.dptr = talloc_asprintf(tdb, "%s%s", GROUP_PREFIX, dom_sid_string(tdb, &sid));
-	kbuf.dsize = strlen(key)+1;
-		
-	dbuf = tdb_fetch(tdb, kbuf);
-	if (!dbuf.dptr)
-		return False;
-
-	ret = tdb_unpack(tdb, dbuf.dptr, dbuf.dsize, "ddff",
-		&map->gid, &map->sid_name_use, &map->nt_name, &map->comment);
-
-	SAFE_FREE(dbuf.dptr);
-	
-	if ( ret == -1 ) {
-		DEBUG(3,("get_group_map_from_sid: tdb_unpack failure\n"));
-		return False;
-	}
-
-	map->sid = dom_sid_dup(tdb, &sid);
-	
-	return True;
-}
-
-/****************************************************************************
- Return the sid and the type of the unix group.
-****************************************************************************/
-
-static BOOL get_group_map_from_gid(TDB_CONTEXT *tdb, gid_t gid, struct samba3_groupmapping *map)
-{
-	TDB_DATA kbuf, dbuf, newkey;
-	int ret;
-
-	/* we need to enumerate the TDB to find the GID */
+	db->groupmappings = NULL;
+	db->groupmap_count = 0;
+	db->aliases = NULL;
+	db->alias_count = 0;
 
 	for (kbuf = tdb_firstkey(tdb); 
 	     kbuf.dptr; 
 	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+		struct samba3_groupmapping map;
 
-		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0) continue;
-		
-		dbuf = tdb_fetch(tdb, kbuf);
-		if (!dbuf.dptr)
-			continue;
+		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) == 0)
+		{
+			dbuf = tdb_fetch(tdb, kbuf);
+			if (!dbuf.dptr)
+				continue;
 
+			map.sid = dom_sid_parse_talloc(tdb, kbuf.dptr+strlen(GROUP_PREFIX));
 
-		map->sid = dom_sid_parse_talloc(tdb, kbuf.dptr+strlen(GROUP_PREFIX));
-		
-		ret = tdb_unpack(tdb, dbuf.dptr, dbuf.dsize, "ddff",
-				 &map->gid, &map->sid_name_use, &map->nt_name, &map->comment);
+			ret = tdb_unpack(tdb, dbuf.dptr, dbuf.dsize, "ddff",
+							 &map.gid, &map.sid_name_use, &map.nt_name, &map.comment);
 
-		SAFE_FREE(dbuf.dptr);
+			SAFE_FREE(dbuf.dptr);
 
-		if ( ret == -1 ) {
-			DEBUG(3,("get_group_map_from_gid: tdb_unpack failure\n"));
-			return False;
-		}
-	
-		if (gid==map->gid) {
-			SAFE_FREE(kbuf.dptr);
-			return True;
-		}
-	}
+			if ( ret == -1 ) {
+				DEBUG(3,("enum_group_mapping: tdb_unpack failure\n"));
+				continue;
+			}
 
-	return False;
-}
+			db->groupmappings = talloc_realloc(tdb, db->groupmappings, struct samba3_groupmapping, db->groupmap_count+1);
 
-/****************************************************************************
- Return the sid and the type of the unix group.
-****************************************************************************/
+			if (!db->groupmappings) 
+				return NT_STATUS_NO_MEMORY;
 
-static BOOL get_group_map_from_ntname(TDB_CONTEXT *tdb, const char *name, struct samba3_groupmapping *map)
-{
-	TDB_DATA kbuf, dbuf, newkey;
-	int ret;
+			db->groupmappings[db->groupmap_count] = map;
 
-	/* we need to enumerate the TDB to find the name */
+			db->groupmap_count++;
+		} 
 
-	for (kbuf = tdb_firstkey(tdb); 
-	     kbuf.dptr; 
-	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
+		if (strncmp(kbuf.dptr, MEMBEROF_PREFIX, strlen(MEMBEROF_PREFIX)) == 0)
+		{
+			struct samba3_alias alias;
+			pstring alias_string;
+			const char *p;
 
-		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0) continue;
-		
-		dbuf = tdb_fetch(tdb, kbuf);
-		if (!dbuf.dptr)
-			continue;
+			dbuf = tdb_fetch(tdb, kbuf);
+			if (!dbuf.dptr)
+				continue;
 
-		map->sid = dom_sid_parse_talloc(tdb, kbuf.dptr+strlen(GROUP_PREFIX));
-		
-		ret = tdb_unpack(tdb, dbuf.dptr, dbuf.dsize, "ddff",
-				 &map->gid, &map->sid_name_use, &map->nt_name, &map->comment);
+			alias.sid = dom_sid_parse_talloc(ctx, kbuf.dptr+strlen(MEMBEROF_PREFIX));
+			alias.member_count = 0;
+			alias.members = NULL;
 
-		SAFE_FREE(dbuf.dptr);
-		
-		if ( ret == -1 ) {
-			DEBUG(3,("get_group_map_from_ntname: tdb_unpack failure\n"));
-			return False;
-		}
+			p = dbuf.dptr;
+			while (next_token(&p, alias_string, " ", sizeof(alias_string))) {
 
-		if (StrCaseCmp(name, map->nt_name)==0) {
-			SAFE_FREE(kbuf.dptr);
-			return True;
+				alias.members = talloc_realloc(ctx, alias.members, struct dom_sid *, alias.member_count+1);
+				alias.members[alias.member_count] = dom_sid_parse_talloc(ctx, alias_string);
+				alias.member_count++;
+
+			}
+
+			db->aliases = talloc_realloc(ctx, db->aliases, struct samba3_alias, db->alias_count+1);
+			db->aliases[db->alias_count] = alias;
+			db->alias_count++;
 		}
 	}
 
-	return False;
-}
+	tdb_close(tdb);
 
-/****************************************************************************
- Enumerate the group mapping.
-****************************************************************************/
-
-static BOOL enum_group_mapping(TDB_CONTEXT *tdb, enum SID_NAME_USE sid_name_use, struct samba3_groupmapping **rmap,
-			int *num_entries, BOOL unix_only)
-{
-	TDB_DATA kbuf, dbuf, newkey;
-	struct samba3_groupmapping map;
-	struct samba3_groupmapping *mapt;
-	int ret;
-	int entries=0;
-
-	*num_entries=0;
-	*rmap=NULL;
-
-	for (kbuf = tdb_firstkey(tdb); 
-	     kbuf.dptr; 
-	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
-
-		if (strncmp(kbuf.dptr, GROUP_PREFIX, strlen(GROUP_PREFIX)) != 0)
-			continue;
-
-		dbuf = tdb_fetch(tdb, kbuf);
-		if (!dbuf.dptr)
-			continue;
-
-		map.sid = dom_sid_parse_talloc(tdb, kbuf.dptr+strlen(GROUP_PREFIX));
-				
-		ret = tdb_unpack(tdb, dbuf.dptr, dbuf.dsize, "ddff",
-				 &map.gid, &map.sid_name_use, &map.nt_name, &map.comment);
-
-		SAFE_FREE(dbuf.dptr);
-
-		if ( ret == -1 ) {
-			DEBUG(3,("enum_group_mapping: tdb_unpack failure\n"));
-			continue;
-		}
-	
-		/* list only the type or everything if UNKNOWN */
-		if (sid_name_use!=SID_NAME_UNKNOWN  && sid_name_use!=map.sid_name_use) {
-			DEBUG(11,("enum_group_mapping: group %s is not of the requested type\n", map.nt_name));
-			continue;
-		}
-
-		if (unix_only==ENUM_ONLY_MAPPED && map.gid==-1) {
-			DEBUG(11,("enum_group_mapping: group %s is non mapped\n", map.nt_name));
-			continue;
-		}
-
-		DEBUG(11,("enum_group_mapping: returning group %s of type %s\n", map.nt_name ,decode_sid_name_use(map.sid_name_use)));
-
-		mapt = talloc_realloc(tdb, *rmap, struct samba3_groupmapping, entries+1);
-		if (!mapt) {
-			DEBUG(0,("enum_group_mapping: Unable to enlarge group map!\n"));
-			SAFE_FREE(*rmap);
-			return False;
-		}
-		else
-			(*rmap) = mapt;
-
-		mapt[entries].gid = map.gid;
-		mapt[entries].sid = dom_sid_dup(tdb, map.sid);
-		mapt[entries].sid_name_use = map.sid_name_use;
-		mapt[entries].nt_name = map.nt_name;
-		mapt[entries].comment = map.comment;
-
-		entries++;
-
-	}
-
-	*num_entries=entries;
-
-	return True;
-}
-
-/* This operation happens on session setup, so it should better be fast. We
- * store a list of aliases a SID is member of hanging off MEMBEROF/SID. */
-
-static NTSTATUS one_alias_membership(TDB_CONTEXT *tdb, 
-		const struct dom_sid *member, struct dom_sid **sids, int *num)
-{
-	TDB_DATA kbuf, dbuf;
-	const char *p;
-
-	char * key = talloc_asprintf(tdb, "%s%s", MEMBEROF_PREFIX, dom_sid_string(tdb, member));
-
-	kbuf.dsize = strlen(key)+1;
-	kbuf.dptr = key;
-
-	dbuf = tdb_fetch(tdb, kbuf);
-
-	if (dbuf.dptr == NULL) {
-		return NT_STATUS_OK;
-	}
-
-	p = dbuf.dptr;
-
-	while (next_token(&p, string_sid, " ", sizeof(string_sid))) {
-
-		struct dom_sid alias;
-
-		if (!string_to_sid(&alias, string_sid))
-			continue;
-
-		add_sid_to_array_unique(NULL, &alias, sids, num);
-
-		if (sids == NULL)
-			return NT_STATUS_NO_MEMORY;
-	}
-
-	SAFE_FREE(dbuf.dptr);
 	return NT_STATUS_OK;
-}
-
-static NTSTATUS alias_memberships(TDB_CONTEXT *tdb, const struct dom_sid *members, int num_members,
-				  struct dom_sid **sids, int *num)
-{
-	int i;
-
-	*num = 0;
-	*sids = NULL;
-
-	for (i=0; i<num_members; i++) {
-		NTSTATUS status = one_alias_membership(tdb, &members[i], sids, num);
-		if (!NT_STATUS_IS_OK(status))
-			return status;
-	}
-	return NT_STATUS_OK;
-}
-
-struct aliasmem_closure {
-	const struct dom_sid *alias;
-	struct dom_sid **sids;
-	int *num;
-};
-
-static int collect_aliasmem(TDB_CONTEXT *tdb_ctx, TDB_DATA key, TDB_DATA data,
-			    void *state)
-{
-	struct aliasmem_closure *closure = (struct aliasmem_closure *)state;
-	const char *p;
-	fstring alias_string;
-
-	if (strncmp(key.dptr, MEMBEROF_PREFIX,
-		    strlen(MEMBEROF_PREFIX)) != 0)
-		return 0;
-
-	p = data.dptr;
-
-	while (next_token(&p, alias_string, " ", sizeof(alias_string))) {
-
-		struct dom_sid alias, member;
-		const char *member_string;
-		
-
-		if (!string_to_sid(&alias, alias_string))
-			continue;
-
-		if (sid_compare(closure->alias, &alias) != 0)
-			continue;
-
-		/* Ok, we found the alias we're looking for in the membership
-		 * list currently scanned. The key represents the alias
-		 * member. Add that. */
-
-		member_string = strchr(key.dptr, '/');
-
-		/* Above we tested for MEMBEROF_PREFIX which includes the
-		 * slash. */
-
-		SMB_ASSERT(member_string != NULL);
-		member_string += 1;
-
-		if (!string_to_sid(&member, member_string))
-			continue;
-		
-		add_sid_to_array(NULL, &member, closure->sids, closure->num);
-	}
-
-	return 0;
-}
-
-static NTSTATUS enum_aliasmem(TDB_CONTEXT *tdb, const struct dom_sid *alias, struct dom_sid **sids, int *num)
-{
-	struct samba3_groupmapping map;
-	struct aliasmem_closure closure;
-
-	if (!get_group_map_from_sid(*alias, &map))
-		return NT_STATUS_NO_SUCH_ALIAS;
-
-	if ( (map.sid_name_use != SID_NAME_ALIAS) &&
-	     (map.sid_name_use != SID_NAME_WKN_GRP) )
-		return NT_STATUS_NO_SUCH_ALIAS;
-
-	*sids = NULL;
-	*num = 0;
-
-	closure.alias = alias;
-	closure.sids = sids;
-	closure.num = num;
-
-	tdb_traverse(tdb, collect_aliasmem, &closure);
-	return NT_STATUS_OK;
-}
-
-/*
- *
- * High level functions
- * better to use them than the lower ones.
- *
- * we are checking if the group is in the mapping file
- * and if the group is an existing unix group
- *
- */
-
-/* get a domain group from it's SID */
-
-/* get a local (alias) group from it's SID */
-
-static BOOL get_local_group_from_sid(TDB_CONTEXT *tdb, struct dom_sid *sid, struct samba3_groupmapping *map)
-{
-	BOOL ret;
-	
-	/* The group is in the mapping table */
-	ret = pdb_getgrsid(map, *sid);
-	
-	if ( !ret )
-		return False;
-		
-	if ( ( (map->sid_name_use != SID_NAME_ALIAS) &&
-	       (map->sid_name_use != SID_NAME_WKN_GRP) )
-		|| (map->gid == -1)
-		|| (getgrgid(map->gid) == NULL) ) 
-	{
-		return False;
-	} 		
-			
-#if 1 	/* JERRY */
-	/* local groups only exist in the group mapping DB so this 
-	   is not necessary */
-	   
-	else {
-		/* the group isn't in the mapping table.
-		 * make one based on the unix information */
-		uint32_t alias_rid;
-		struct group *grp;
-
-		sid_peek_rid(sid, &alias_rid);
-		map->gid=pdb_group_rid_to_gid(alias_rid);
-		
-		grp = getgrgid(map->gid);
-		if ( !grp ) {
-			DEBUG(3,("get_local_group_from_sid: No unix group for [%ul]\n", map->gid));
-			return False;
-		}
-
-		map->sid_name_use=SID_NAME_ALIAS;
-
-		fstrcpy(map->nt_name, grp->gr_name);
-		fstrcpy(map->comment, "Local Unix Group");
-
-		sid_copy(&map->sid, sid);
-	}
-#endif
-
-	return True;
 }

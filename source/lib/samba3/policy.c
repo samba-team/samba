@@ -30,16 +30,15 @@
  Open the account policy tdb.
 ****************************************************************************/
 
-struct samba3_policy *samba3_read_account_policy(TALLOC_CTX *ctx, const char *fn)
+NTSTATUS samba3_read_account_policy(const char *fn, TALLOC_CTX *ctx, struct samba3_policy *ret)
 {
-	struct samba3_policy *ret;
 	const char *vstring = "INFO/version";
 	uint32_t version;
 
 	TDB_CONTEXT *tdb = tdb_open(fn, 0, TDB_DEFAULT, O_RDONLY, 0600);
 	if (!tdb) {
 		DEBUG(0,("Failed to open account policy database\n"));
-		return NULL;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* handle a Samba upgrade */
@@ -60,10 +59,9 @@ struct samba3_policy *samba3_read_account_policy(TALLOC_CTX *ctx, const char *fn
 	tdb_fetch_uint32(tdb, "disconnect time", &ret->disconnect_time);
 	tdb_fetch_uint32(tdb, "refuse machine password change", &ret->refuse_machine_password_change);
 
+	/* FIXME: Read privileges as well */
+
 	tdb_close(tdb);
 
-	return ret;
+	return NT_STATUS_OK;
 }
-
-
-/* FIXME: Read privileges as well */
