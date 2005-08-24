@@ -1,29 +1,33 @@
-struct objectclass_mapping {
-	char *local_name;
-	char *remote_name;
+/* 
+   ldb database library - map backend
 
-	char *key; /* Name of attribute used in rdn */
+   Copyright (C) Jelmer Vernooij 2005
 
-	/* For mapping attributes used in searches */
-	struct local_attribute_mapping {
-		char *local_name;
+     ** NOTE! The following LGPL license applies to the ldb
+     ** library. This does NOT imply that all of Samba is released
+     ** under the LGPL
+   
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2 of the License, or (at your option) any later version.
 
-		/* Attributes to request from the server for this attribute, 
-		 * needed by generate */
-		char *required_attributes[]; 
+   This library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
 
-		/* If not set, the value for the first element of 
-		 * required_attributes will simply be used here */
-		struct ldb_message_element *(*generate) (LDAPMessage *msg); 
-	} *local_attribute_mappings;
+   You should have received a copy of the GNU Lesser General Public
+   License along with this library; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
 
-	/* Generate LDAPMod for adds and modifies */
-	LDAPMod *(*generate_mod)(struct ldb_message *);
-}
+#ifndef __LDB_MAP_H__
+#define __LDB_MAP_H__
 
-struct ldb_map_backend {
-	struct objectclass_mapping *objectclass_mappings;
+struct ldb_map_mappings 
+{
+
 };
 
-const char *ldb_map_dn(const char *old);
-const char *ldb_map_rdn(const char *old);
+#endif /* __LDB_MAP_H__ */
