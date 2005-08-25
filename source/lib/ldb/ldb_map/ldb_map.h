@@ -25,9 +25,88 @@
 #ifndef __LDB_MAP_H__
 #define __LDB_MAP_H__
 
+/* ldb_map is a skeleton LDB module that can be used for any other modules
+ * that need to map attributes.
+ *
+ * The term 'remote' in this header refers to the connection where the 
+ * original schema is used on while 'local' means the local connection 
+ * that any upper layers will use.
+ *
+ * All local attributes will have to have a definition. Not all remote 
+ * attributes need a definition as LDB is a lot less stricter then LDAP 
+ * (in other words, sending unknown attributes to an LDAP server hurts us, 
+ * returning too much attributes in ldb_search() doesn't)
+ */
+
+struct ldb_map_attribute 
+{
+	const char *local_name; /* local name */
+
+	enum { 
+		MAP_IGNORE, /* Ignore this local attribute. Doesn't exist remotely.  */
+		MAP_KEEP,   /* Keep as is */
+		MAP_RENAME, /* Simply rename the attribute. Name changes, data is the same */
+		MAP_CONVERT, /* Rename + convert data */
+		MAP_GENERATE /* Use generate function for generating new name/data. 
+						Used for generating attributes based on 
+						multiple remote attributes. */
+	} type;
+	
+	/* if set, will be called for expressions that contain this attribute */
+	struct ldb_parse_tree *(*convert_operator) (TALLOC_CTX *ctx, const struct ldb_parse_tree *);	
+
+	union { 
+		struct {
+			const char *remote_name;
+		} rename;
+		
+		struct {
+			const char *remote_name;
+
+			struct ldb_message_element *(*convert_local) (
+				TALLOC_CTX *ctx, 
+				const char *remote_attr,
+				const struct ldb_message_element *);
+
+			struct ldb_message_element *(*convert_remote) (
+				TALLOC_CTX *ctx,
+				const char *local_attr,
+				const struct ldb_message_element *);
+		} convert;
+	
+		struct {
+			/* Generate the local attribute from remote message */
+			struct ldb_message_element *(*generate_local) (
+					TALLOC_CTX *ctx, 
+					const char *attr, 
+					const struct ldb_message *remote);
+
+			/* Update remote message with information from local message */
+			void (*generate_remote) (
+					const char *local_attr,
+					const struct ldb_message *local, 
+					struct ldb_message *remote);
+
+			/* Name(s) for this attribute on the remote server. This is an array since 
+			 * one local attribute's data can be split up into several attributes 
+			 * remotely */
+			const char *remote_names[];
+		} generate;
+	} u;
+};
+
+struct ldb_map_objectclass 
+{
+	const char *local_name;
+	const char *remote_name;
+};
+
+/* Base ldb_map struct. Fill this in to create a mapping backend */
 struct ldb_map_mappings 
 {
-
+	const char *name;
+	const struct ldb_map_attribute *attribute_maps[];
 };
+
 
 #endif /* __LDB_MAP_H__ */
