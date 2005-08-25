@@ -43,9 +43,18 @@ stop_smbd()
 	fi
 }
 
+check_ret_value()
+{
+	ret=$@
+
+	if test $ret != 0; then
+		stop_smbd
+		exit $ret
+	fi
+}
 
 ##
-## start/stop smbd daemon
+## start/stop nmbd daemon
 ##
 check_nmbd_running()
 {
