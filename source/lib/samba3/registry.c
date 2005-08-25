@@ -88,6 +88,7 @@ NTSTATUS samba3_read_regdb ( const char *fn, TALLOC_CTX *ctx, struct samba3_regd
 	
 	if ( !(tdb = tdb_open(fn, 0, TDB_DEFAULT, O_RDONLY, 0600)) )
 	{
+		DEBUG(0, ("Unable to open registry database %s\n", fn));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -96,8 +97,10 @@ NTSTATUS samba3_read_regdb ( const char *fn, TALLOC_CTX *ctx, struct samba3_regd
 	db->key_count = 0;
 	db->keys = NULL;
 	
-	if (vers_id > REGVER_V1) 
+	if (vers_id != -1 && vers_id >= REGVER_V1) {
+		DEBUG(0, ("Registry version mismatch: %d\n", vers_id));
 		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	for (kbuf = tdb_firstkey(tdb); kbuf.dptr; kbuf = tdb_nextkey(tdb, kbuf))
 	{
@@ -106,7 +109,7 @@ NTSTATUS samba3_read_regdb ( const char *fn, TALLOC_CTX *ctx, struct samba3_regd
 		struct samba3_regkey key;
 		char *skey;
 			
-		if (strncmp(kbuf.dptr, VALUE_PREFIX, strlen(VALUE_PREFIX)))
+		if (strncmp(kbuf.dptr, VALUE_PREFIX, strlen(VALUE_PREFIX)) == 0)
 			continue;
 
 		vbuf = tdb_fetch(tdb, kbuf);
@@ -134,7 +137,7 @@ NTSTATUS samba3_read_regdb ( const char *fn, TALLOC_CTX *ctx, struct samba3_regd
 		}
 
 		db->keys = talloc_realloc(ctx, db->keys, struct samba3_regkey, db->key_count+1);
-		db->keys[i] = key;
+		db->keys[db->key_count] = key;
 		db->key_count++;
 	}
 

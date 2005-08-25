@@ -27,23 +27,17 @@
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
 
-/* 
- * 	gidNumber -> ???
- * 	sambaSID -> member
- * 	sambaSIDList -> member (special!)
- */
-
-/* sambaTrustPassword */
-
-/*	sambaDomainName -> name */
-
-/* sambaUnixIdPool */
-
-/* sambaIdmapEntry */
-
-/* sambaAccountPolicy: FIXME */
-
-/* sambaSidEntry: FIXME */
+/* FIXME: 
+ * sambaSID -> member 
+ * sambaSIDList -> member (special!) 
+ * sambaDomainName -> name 
+ * sambaTrustPassword 
+ * sambaUnixIdPool 
+ * sambaIdmapEntry 
+ * sambaAccountPolicy 
+ * sambaSidEntry 
+ * sambaAcctFlags -> systemFlags ?
+ * sambaPasswordHistory  -> ntPwdHistory*/
 
 /* Not necessary:
  * sambaConfig
@@ -54,19 +48,17 @@
  * sambaAlgorithmicRidBase
  */
 
-/* sambaKickoffTime -> ???*/
-/* sambaPwdCanChange  -> ???*/
-/* sambaPwdMustChange  -> ???*/
-/* sambaAcctFlags -> systemFlags ?*/
-/* sambaHomePath  -> ???*/
-/* sambaHomeDrive  -> ???*/
-/* sambaLogonScript  -> ???*/
-/* sambaProfilePath  -> ???*/
-/* sambaUserWorkstations  -> ???*/
-/* sambaDomainName  -> ???*/
-/* sambaMungedDial -> ???*/
-/* sambaPasswordHistory  -> ntPwdHistory*/
-/* sambaLogonHours -> ???*/
+/* Not in Samba4: 
+ * sambaKickoffTime
+ * sambaPwdCanChange
+ * sambaPwdMustChange
+ * sambaHomePath
+ * sambaHomeDrive
+ * sambaLogonScript
+ * sambaProfilePath
+ * sambaUserWorkstations
+ * sambaMungedDial
+ * sambaLogonHours */
 
 /* sambaNextRid -> nextRid */
 const struct ldb_map_attribute attr_nextRid = {
