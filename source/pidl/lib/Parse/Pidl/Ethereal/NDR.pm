@@ -16,6 +16,8 @@ use Parse::Pidl::Dump qw(DumpTypedef DumpFunction);
 use Parse::Pidl::Ethereal::Conformance qw(ReadConformance);
 
 my %types;
+my %hf;
+my @ett;
 
 my $conformance = {imports=>{}};
 
@@ -280,8 +282,6 @@ sub ElementLevel($$$$$)
 			} elsif ($conformance->{imports}->{$l->{DATA_TYPE}}) {
 				$call = $conformance->{imports}->{$l->{DATA_TYPE}};	
 			} else {
-				warn("Unknown data type `$l->{DATA_TYPE}'");
-				pidl_code "/* FIXME: Handle unknown data type $l->{DATA_TYPE} */";
 				if ($l->{DATA_TYPE} =~ /^([a-z]+)\_(.*)$/)
 				{
 					pidl_code "offset = $1_dissect_$2(tvb,offset,pinfo,tree,drep,$hf,$param);";
@@ -705,6 +705,8 @@ sub Parse($$$$)
 	$tabs = "";
 
 	%res = (code=>"",def=>"",hdr=>"");
+	%hf = ();
+	@ett = ();
 
 	my $notice = 
 "/* DO NOT EDIT
@@ -764,8 +766,6 @@ sub Parse($$$$)
 # ETT
 ###############################################################################
 
-my @ett = ();
-
 sub register_ett($)
 {
 	my $name = shift;
@@ -796,8 +796,6 @@ sub DumpEttDeclaration()
 ###############################################################################
 # HF
 ###############################################################################
-
-my %hf = ();
 
 sub register_hf_field($$$$$$$$) 
 {
