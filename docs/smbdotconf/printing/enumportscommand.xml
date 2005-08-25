@@ -17,7 +17,7 @@
     can define <parameter moreinfo="none">enumports command</parameter> to point to
     a program which should generate a list of ports, one per line,
     to standard output.  This listing will then be used in response
-	to the level 1 and 2 EnumPorts() RPC.</para>
+    to the level 1 and 2 EnumPorts() RPC.</para>
 </description>
 
 <value type="default"></value>

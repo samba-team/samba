@@ -53,16 +53,16 @@
 		</listitem>
 	</itemizedlist>
 
-	<para>An example follows:</para>
-	
-	<programlisting>
+	<para>An example follows:
+<programlisting>
 #
 # Sample Samba lmhosts file.
 #
 192.9.200.1	TESTPC
 192.9.200.20	NTSERVER#20
 192.9.200.21	SAMBASERVER
-	</programlisting>
+</programlisting>
+	</para>
 	
 	<para>Contains three IP to NetBIOS name mappings. The first 
 	and third will be returned for any queries for the names "TESTPC" 

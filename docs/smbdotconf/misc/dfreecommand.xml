@@ -28,21 +28,23 @@
 	<para>Note: Your script should <emphasis>NOT</emphasis> be setuid or 
 	setgid and should be owned by (and writeable only by) root!</para>
 
-	<para>Where the script dfree (which must be made executable) could be:</para>
-
-<para><programlisting format="linespecific"> 
+	<para>Where the script dfree (which must be made executable) could be:
+<programlisting format="linespecific"> 
 #!/bin/sh
 df $1 | tail -1 | awk '{print $2&quot; &quot;$4}'
-</programlisting></para>
+</programlisting>
+	</para>
 
-	<para>or perhaps (on Sys V based systems):</para>
-
-<para><programlisting format="linespecific"> 
+	<para>or perhaps (on Sys V based systems):
+<programlisting format="linespecific"> 
 #!/bin/sh
 /usr/bin/df -k $1 | tail -1 | awk '{print $3&quot; &quot;$5}'
-</programlisting></para>
+</programlisting>
+	</para>
 		
-	<para>Note that you may have to replace the command names with full path names on some systems.</para>
+	<para>
+	Note that you may have to replace the command names with full path names on some systems.
+	</para>
 
 </description>
 <value type="default"><comment>By default internal routines for 
