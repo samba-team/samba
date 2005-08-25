@@ -15,17 +15,20 @@
 	service specifies a <smbconfoption name="path"/> of <filename
 	moreinfo="none">/usr/local/samba/netlogon</filename>, and <smbconfoption name="logon
 	script">STARTUP.BAT</smbconfoption>, then the file that will be downloaded is:
-	<screen>
+<programlisting>
 	/usr/local/samba/netlogon/STARTUP.BAT
-	</screen>
+</programlisting>
 	</para>
 
 	<para>
 	The contents of the batch file are entirely your choice.  A suggested command would be to add <command
 	moreinfo="none">NET TIME \\SERVER /SET /YES</command>, to force every machine to synchronize clocks with the
 	same time server.  Another use would be to add <command moreinfo="none">NET USE U: \\SERVER\UTILS</command>
-	for commonly used utilities, or <screen> <userinput>NET USE Q: \\SERVER\ISO9001_QA</userinput></screen> for
-	example.
+	for commonly used utilities, or 
+<programlisting>
+<userinput>NET USE Q: \\SERVER\ISO9001_QA</userinput>
+</programlisting> 
+	for example.
 	</para>
 
 	<para>

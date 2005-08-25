@@ -4,11 +4,12 @@
 		 print="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-    <para>This parameter limits the maximum number of 
-    jobs displayed in a port monitor for Samba printer queue at any given 
-    moment. If this number is exceeded, the excess jobs will not be shown.
-    A value of zero means there is no limit on the number of print
-	jobs reported.</para>
+    <para>
+    This parameter limits the maximum number of jobs displayed in a port monitor for 
+    Samba printer queue at any given moment. If this number is exceeded, the excess 
+    jobs will not be shown. A value of zero means there is no limit on the number of 
+    print jobs reported.
+    </para>
 </description>
 
 <related>max print jobs</related>

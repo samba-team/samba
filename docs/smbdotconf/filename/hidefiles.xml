@@ -31,9 +31,9 @@
 
 	<para>
 	An example of us of this parameter is:
-<screen>
+<programlisting>
 hide files = /.*/DesktopFolderDB/TrashFor%m/resource.frk/
-</screen>
+</programlisting>
 	</para>
 </description>
 

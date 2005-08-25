@@ -94,7 +94,7 @@
 	without <constant>-r</constant> option set would yield output similar
 	to the following</para>
 
-<screen>
+<programlisting>
 IP ADDR         NETBIOS NAME   WORKGROUP/OS/VERSION 
 --------------------------------------------------------------------- 
 192.168.35.10   MINESET-TEST1  [DMVENGR]
@@ -107,7 +107,7 @@ IP ADDR         NETBIOS NAME   WORKGROUP/OS/VERSION
 192.168.35.88   SCNT2         +[MVENGR] [Windows NT 4.0] [NT LAN Manager 4.0]
 192.168.35.93   FROGSTAR-PC    [MVENGR] [Windows 5.0] [Windows 2000 LAN Manager]
 192.168.35.97   HERBNT1       *[HERB-NT] [Windows NT 4.0] [NT LAN Manager 4.0]
-</screen>
+</programlisting>
 
 </refsect1>
 

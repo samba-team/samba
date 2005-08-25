@@ -17,7 +17,7 @@
 	directories you might normally veto DOS/Windows users from seeing 
 	(e.g. <filename moreinfo="none">.AppleDouble</filename>)</para>
 
-<para>Setting <smbconfoption name="delete veto files">yes</smbconfoption> allows these 
+	<para>Setting <smbconfoption name="delete veto files">yes</smbconfoption> allows these 
 	directories to be  transparently deleted when the parent directory 
 	is deleted (so long as the user has permissions to do so).</para>
 </description>

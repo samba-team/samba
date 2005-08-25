@@ -620,10 +620,10 @@ Parameters take the for "parameter=value".  Common options include:</para>
 
 <para>
 Add a new group mapping entry:
-<screen>
+<programlisting>
 net groupmap add {rid=int|sid=string} unixgroup=string \
       [type={domain|local}] [ntgroup=string] [comment=string]
-</screen>
+</programlisting>
 </para>
 
 </refsect3>
@@ -643,10 +643,10 @@ net groupmap add {rid=int|sid=string} unixgroup=string \
 <para>Update en existing group entry</para>
 
 <para>
-<screen>
+<programlisting>
 net groupmap modify {ntgroup=string|sid=SID} [unixgroup=string] \
        [comment=string] [type={domain|local}]
-</screen>
+</programlisting>
 </para>
 </refsect3>
 

@@ -11,7 +11,7 @@
 	in case the lock could later be acquired.  This behavior
 	is used to support PC database formats such as MS Access
 	and FoxPro.
-</para>
+	</para>
 </description>
 <value type="default">3</value>
 </samba:parameter>

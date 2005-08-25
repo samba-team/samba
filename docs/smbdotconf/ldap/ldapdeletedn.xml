@@ -7,7 +7,7 @@
 	<para> This parameter specifies whether a delete
 	operation in the ldapsam deletes the complete entry or only the attributes
 	specific to Samba.
-</para>
+	</para>
 </description>
 
 <value type="default">no</value>

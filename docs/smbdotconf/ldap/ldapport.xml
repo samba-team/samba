@@ -3,13 +3,15 @@
                  context="G"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-	<para>This parameter is only available if Samba has been
-	configure to include the <command moreinfo="none">--with-ldapsam</command> option
-	at compile time.</para>
+	<para>
+	This parameter is only available if Samba has been configure to include the 
+	<command moreinfo="none">--with-ldapsam</command> option at compile time.
+	</para>
 
-	<para>This option is used to control the tcp port number used to contact
-		the <smbconfoption name="ldap server"/>.
-	The default is to use the stand LDAPS port 636.</para>
+	<para>
+	This option is used to control the tcp port number used to contact the 
+	<smbconfoption name="ldap server"/>. The default is to use the stand LDAPS port 636.
+	</para>
 </description>
 <related>ldap ssl</related>
 <value type="default">636<comment>if ldap ssl = on</comment></value>

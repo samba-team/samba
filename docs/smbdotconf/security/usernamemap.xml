@@ -76,15 +76,17 @@
 guest = *
 </programlisting></para>
 
-    <para>Note that the remapping is applied to all occurrences
+    <para>
+    Note that the remapping is applied to all occurrences
     of usernames. Thus if you connect to \\server\fred and <constant>
     fred</constant> is remapped to <constant>mary</constant> then you
     will actually be connecting to \\server\mary and will need to
     supply a password suitable for <constant>mary</constant> not
     <constant>fred</constant>. The only exception to this is the
-    username passed to the <smbconfoption name="password server"/> (if you have one). The password
-    server will receive whatever username the client supplies without
-    modification.</para>
+    username passed to the <smbconfoption name="password server"/> 
+    (if you have one). The password server will receive whatever 
+    username the client supplies without  modification.
+    </para>
 
     <para>Also note that no reverse mapping is done. The main effect
     this has is with printing. Users who have been mapped may have
@@ -117,12 +119,12 @@ guest = *
     after the user has been successfully authenticated.
     </para>
 
-	<para>
-	An example of use is:
-<screen>
+    <para>
+    An example of use is:
+<programlisting>
 username map = /usr/local/samba/lib/users.map
-</screen>
-	</para>
+</programlisting>
+    </para>
 </description>
 
 <value type="default"><comment>no username map</comment></value>

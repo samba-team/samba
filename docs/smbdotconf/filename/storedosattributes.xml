@@ -3,16 +3,16 @@
 		 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-	<para>If this parameter is set Samba no longer attempts to
-	map DOS attributes like SYSTEM, HIDDEN, ARCHIVE or READ-ONLY
-	to UNIX permission bits (such as the <smbconfoption name="map hidden"/>. Instead, DOS attributes will be stored onto an extended
-	attribute in the UNIX filesystem, associated with the file or directory.
-	For this to operate correctly, the parameters <smbconfoption name="map hidden"/>, <smbconfoption name="map system"/>, <smbconfoption name="map archive"/> must be set to off.
-	This parameter writes the DOS attributes as a string into the
-	extended attribute named "user.DOSATTRIB". This extended attribute
-	is explicitly hidden from smbd clients requesting an EA list.
-	On Linux the filesystem must have been mounted with the mount
-	option user_xattr in order for extended attributes to work, also
+	<para>
+	If this parameter is set Samba no longer attempts to map DOS attributes like SYSTEM, HIDDEN, 
+	ARCHIVE or READ-ONLY to UNIX permission bits (such as the <smbconfoption name="map hidden"/>. 
+	Instead, DOS attributes will be stored onto an extended attribute in the UNIX filesystem, 
+	associated with the file or directory. For this to operate correctly, the parameters 
+	<smbconfoption name="map hidden"/>, <smbconfoption name="map system"/>, 
+	<smbconfoption name="map archive"/> must be set to off. This parameter writes the DOS 
+	attributes as a string into the extended attribute named "user.DOSATTRIB". This extended attribute
+	is explicitly hidden from smbd clients requesting an EA list.i On Linux the filesystem must have 
+	been mounted with the mount option user_xattr in order for extended attributes to work, also
 	extended attributes must be compiled into the Linux kernel.
 	</para>
 </description>
