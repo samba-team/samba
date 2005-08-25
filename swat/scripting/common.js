@@ -73,15 +73,15 @@ function page_footer() {
   This allows the login page to use the same style sheets and images
 */
 function always_allowed(uri) {
-	var allowed = new Array("/images/favicon.ico", 
-				"/images/linkpad.gif",
-				"/images/logo.png",
-				"/images/stripes.png",
-				"/style/columns.css",
-				"/style/swat.css",
-				"/style/common.css");
+	var str = string_init();
+	var s = str.split('.', uri);
+	if (s.length < 2) {
+		return false;
+	}
+	var ext = s[s.length-1];
+	var allowed = new Array("ico", "gif", "png","css", "js");
 	for (i in allowed) {
-		if (allowed[i] == uri) {
+		if (allowed[i] == ext) {
 			return true;
 		}
 	}
