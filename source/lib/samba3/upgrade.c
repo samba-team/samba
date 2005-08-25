@@ -121,8 +121,29 @@ int samba3_upgrade_winbind(struct samba3 *samba3, struct ldb_context *ctx, struc
 	return -1;
 }
 
-int samba3_upgrade_winsdb(struct samba3 *samba3, struct ldb_context *ctx, struct ldb_message ***msgs)
+int samba3_upgrade_winsdb(struct samba3 *samba3, struct ldb_context *ldb, struct ldb_message ***msgs)
 {
-	/* FIXME */
-	return -1;
+	int i;
+	int count = 0;
+	
+	for (i = 0; i < samba3->winsdb_count; i++) {
+		struct samba3_winsdb_entry *e = &samba3->winsdb_entries[i];
+		int j;
+		struct ldb_message *msg = msg_array_add(ldb, msgs, &count);
+
+		msg->dn = ldb_dn_string_compose(ldb, NULL, "type=%d,name=%s", e->type, e->name);
+
+		ldb_msg_add_string(ldb, msg, "name", e->name);
+		ldb_msg_add_fmt(ldb, msg, "type", "%d", e->type);
+		ldb_msg_add_string(ldb, msg, "objectClass", "wins");
+		ldb_msg_add_fmt(ldb, msg, "nbFlags", "%x", e->nb_flags);
+		ldb_msg_add_string(ldb, msg, "expires", 
+				  ldap_timestring(msg, e->ttl));
+
+		for (j = 0; j < e->ip_count; j++) {
+			ldb_msg_add_string(ldb, msg, "address", sys_inet_ntoa(e->ips[j]));
+		}
+	}
+
+	return count;
 }
