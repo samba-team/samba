@@ -1485,6 +1485,23 @@ static int evalCond(Ejs *ep, MprVar *lhs, int rel, MprVar *rhs)
 	return 0;
 }
 
+
+/*
+  return true if this string is a valid number
+*/
+static int string_is_number(const char *s)
+{
+	char *endptr = NULL;
+	if (s == NULL || *s == 0) {
+		return 0;
+	}
+	strtod(s, &endptr);
+	if (endptr != NULL && *endptr == 0) {
+		return 1;
+	}
+	return 0;
+}
+
 /******************************************************************************/
 /*
  *	Evaluate an operation. Returns with the result in ep->result. Returns -1
@@ -1533,6 +1550,24 @@ static int evalExpr(Ejs *ep, MprVar *lhs, int rel, MprVar *rhs)
 		/* Nothing more can be done */
 	}
 
+	/* undefined and null are special, in that they don't get promoted when
+	   comparing */
+	if (rel == EJS_EXPR_EQ || rel == EJS_EXPR_NOTEQ) {
+		if (lhs->type == MPR_TYPE_UNDEFINED || rhs->type == MPR_TYPE_UNDEFINED) {
+			return evalBoolExpr(ep, 
+								lhs->type == MPR_TYPE_UNDEFINED, 
+								rel, 
+								rhs->type == MPR_TYPE_UNDEFINED);
+		}
+
+		if (lhs->type == MPR_TYPE_NULL || rhs->type == MPR_TYPE_NULL) {
+			return evalBoolExpr(ep, 
+								lhs->type == MPR_TYPE_NULL, 
+								rel, 
+								rhs->type == MPR_TYPE_NULL);
+		}
+	}
+
 	/*
  	 *	From here on, lhs and rhs may contain allocated data (strings), so 
 	 *	we must always destroy before overwriting.
@@ -1556,7 +1591,7 @@ static int evalExpr(Ejs *ep, MprVar *lhs, int rel, MprVar *rhs)
 	 */
 	if (lhs->type != rhs->type) {
 		if (lhs->type == MPR_TYPE_STRING) {
-			if (isdigit((int) lhs->string[0])) {
+			if (string_is_number(lhs->string)) {
 				num = mprVarToNumber(lhs);
 				lhs->allocatedVar = 0;
 				mprDestroyVar(lhs);
