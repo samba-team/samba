@@ -1,4 +1,8 @@
-2005-08-23 Love Hörnquist Åstrand  <lha@it.su.se>
+2005-08-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* configure.in: Add --disable-afs-support.
+
+2005-08-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/Makefile.am: Add test_hostname to check_PROGRAMS but
 	not TESTS, I have no same dns to use.
