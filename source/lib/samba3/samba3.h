@@ -52,7 +52,6 @@ struct samba3_samaccount {
 };
 
 struct samba3_groupmapping {
-	struct pdb_methods *methods;
 	gid_t gid;
 	struct dom_sid *sid;
 	int sid_name_use;

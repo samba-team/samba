@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "lib/samba3/samba3.h"
 #include "lib/cmdline/popt_common.h"
+#include "lib/ldb/include/ldb.h"
 
 static void print_header(const char *txt)
 {
@@ -51,10 +52,10 @@ static NTSTATUS print_samba3_policy(struct samba3_policy *ret)
 static NTSTATUS print_samba3_sam(struct samba3 *samba3)
 {
 	struct samba3_samaccount *accounts = samba3->samaccounts;
-	uint32_t count = samba3->samaccount_count, i;
+	uint32_t i;
 	print_header("SAM Database");
 	
-	for (i = 0; i < count; i++) {
+	for (i = 0; i < samba3->samaccount_count; i++) {
 		printf("%d: %s\n", accounts[i].user_rid, accounts[i].username);
 	}
 
@@ -85,9 +86,13 @@ static NTSTATUS print_samba3_secrets(struct samba3_secrets *secrets)
 	print_header("Secrets");
 
 	printf("IPC Credentials:\n");
-	printf("	User: %s\n", cli_credentials_get_username(secrets->ipc_cred));
-	printf("	Password: %s\n", cli_credentials_get_password(secrets->ipc_cred));
-	printf("	Domain: %s\n\n", cli_credentials_get_domain(secrets->ipc_cred));
+	if (secrets->ipc_cred->username_obtained) 
+		printf("	User: %s\n", cli_credentials_get_username(secrets->ipc_cred));
+	if (secrets->ipc_cred->password_obtained)
+		printf("	Password: %s\n", cli_credentials_get_password(secrets->ipc_cred));
+
+	if (secrets->ipc_cred->domain_obtained)
+		printf("	Domain: %s\n\n", cli_credentials_get_domain(secrets->ipc_cred));
 
 	printf("LDAP passwords:\n");
 	for (i = 0; i < secrets->ldappw_count; i++) {
@@ -150,6 +155,50 @@ static NTSTATUS print_samba3_winsdb(struct samba3 *samba3)
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS print_samba3_groupdb(struct samba3_groupdb *db)
+{
+	int i;
+	print_header("Group Mappings");
+	
+	for (i = 0; i < db->groupmap_count; i++) 
+	{
+		printf("\t--- Group: %s ---\n", db->groupmappings[i].nt_name);
+		printf("\tComment: %s\n", db->groupmappings[i].comment);
+		printf("\tGID: %d\n", db->groupmappings[i].gid);
+		printf("\tSID Name Use: %d\n", db->groupmappings[i].sid_name_use);
+		printf("\tSID: %s\n\n", dom_sid_string(NULL, db->groupmappings[i].sid));
+	}
+
+	for (i = 0; i < db->alias_count; i++)
+	{
+		int j;
+		printf("\t--- Alias: %s ---\n", dom_sid_string(NULL, db->aliases[i].sid));
+		for (j = 0; j < db->aliases[i].member_count; j++) {
+			printf("\t%s\n", dom_sid_string(NULL,db->aliases[i].members[j]));
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS print_samba3_idmapdb(struct samba3_idmapdb *db)
+{
+	int i;
+	print_header("Winbindd SID<->GID/UID mappings");
+
+	printf("User High Water Mark: %d\n", db->user_hwm);
+	printf("Group High Water Mark: %d\n\n", db->group_hwm);
+
+	for (i = 0; i < db->mapping_count; i++) {
+		printf("%s -> %cID %d", 
+			  dom_sid_string(NULL, db->mappings[i].sid),
+			  (db->mappings[i].type == IDMAP_GROUP)?'G':'U',
+			  db->mappings[i].unix_id);
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS print_samba3(struct samba3 *samba3)
 {
 	print_samba3_sam(samba3);
@@ -158,8 +207,37 @@ static NTSTATUS print_samba3(struct samba3 *samba3)
 	print_samba3_winsdb(samba3);
 	print_samba3_regdb(&samba3->registry);
 	print_samba3_secrets(&samba3->secrets);
+	print_samba3_groupdb(&samba3->group);
+	print_samba3_idmapdb(&samba3->idmap);
 
 	return NT_STATUS_OK;
+}
+
+static BOOL write_ldif(const char *fn, struct ldb_message **messages, int count)
+{
+	FILE *f = fopen(fn, "w+");
+	struct ldb_ldif ldif;
+	int i;
+	struct ldb_context *ldb = ldb_init(NULL);
+
+	if (!f) {
+		DEBUG(0, ("Unable to open LDIF file '%s'\n", fn));
+		talloc_free(ldb);
+		return False;
+	}
+
+	for (i = 0; i < count; i++) {
+		ldif.changetype = LDB_CHANGETYPE_ADD;
+		ldif.msg = messages[i];
+
+		ldb_ldif_write_file(ldb, f, &ldif);
+	}
+
+	talloc_free(ldb);
+
+	fclose(f);
+
+	return True;
 }
  
 int main(int argc, char **argv)
@@ -197,7 +275,33 @@ int main(int argc, char **argv)
 	} else if (!strcmp(format, "text")) {
 		print_samba3(samba3);
 	} else if (!strcmp(format, "ldif")) {
-		printf("FIXME\n");
+		struct ldb_message **msgs;
+		struct ldb_context *ldb = ldb_init(NULL);
+		int i, ret;
+		const char *hives[] = { "hklm", "hkcr", "hku", "hkpd", "hkpt", NULL };
+
+		for (i = 0; hives[i]; i++) {
+			char *fn;
+
+			ret = samba3_upgrade_registry(&samba3->registry, hives[i], ldb, &msgs); 
+
+			printf("Writing %s.ldif\n", hives[i]);
+			asprintf(&fn, "%s.ldif", hives[i]);
+			write_ldif(fn, msgs, ret); 
+			SAFE_FREE(fn);
+		}
+
+		ret = samba3_upgrade_sam(samba3, ldb, &msgs);
+		printf("Writing sam.ldif\n");
+		write_ldif("sam.ldif", msgs, ret);
+
+		ret = samba3_upgrade_winsdb(samba3, ldb, &msgs);
+		printf("Writing wins.ldif\n");
+		write_ldif("wins.ldif", msgs, ret);
+
+		ret = samba3_upgrade_winbind(samba3, ldb, &msgs);
+		printf("Writing winbind.ldif\n");
+		write_ldif("winbind.ldif", msgs, ret);
 	}
 	poptFreeContext(pc);
 

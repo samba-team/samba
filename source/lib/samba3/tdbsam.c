@@ -2,11 +2,7 @@
    Unix SMB/CIFS implementation.
    tdb passdb backend format routines
 
-    Copyright (C) Andrew Tridgell   1992-1998
 	Copyright (C) Simo Sorce        2000-2003
-	Copyright (C) Gerald Carter     2000
-	Copyright (C) Jeremy Allison    2001
-	Copyright (C) Andrew Bartlett   2002
     Copyright (C) Jelmer Vernooij 	2005
    
    This program is free software; you can redistribute it and/or modify
@@ -34,41 +30,6 @@
 #define TDB_FORMAT_STRING_V1       "dddddddBBBBBBBBBBBBddBBwdwdBwwd"
 #define TDB_FORMAT_STRING_V2       "dddddddBBBBBBBBBBBBddBBBwwdBwwd"
 #define TDBSAM_VERSION_STRING      "INFO/version"
-
-/**
- * Open the TDB passwd database, check version and convert it if needed.
- * @param name filename of the tdbsam file.
- * @param version version of the tdbsam database
- * @return a TDB_CONTEXT handle on the tdbsam file.
- **/
-
-static TDB_CONTEXT *tdbsam_open (const char *name, int32_t *version)
-{
-	TDB_CONTEXT 	*pdb_tdb;
-	
-	/* Try to open tdb passwd */
-	if (!(pdb_tdb = tdb_open(name, 0, TDB_DEFAULT, 
-				     O_RDONLY, 0600))) {
-		DEBUG(0, ("Unable to open TDB passwd\n"));
-		return NULL;
-	}
-
-	/* Check the version */
-	*version = tdb_fetch_int32(pdb_tdb, 
-						TDBSAM_VERSION_STRING);
-	if (*version == -1)
-		*version = 0;	/* Version not found, assume version 0 */
-	
-	/* Compare the version */
-	if (*version > 2) {
-		/* Version more recent than the latest known */ 
-		DEBUG(0, ("TDBSAM version unknown: %d\n", *version));
-		tdb_close(pdb_tdb);
-		pdb_tdb = NULL;
-	} 
-	
-	return pdb_tdb;
-}
 
 static BOOL init_sam_from_buffer_v0(TDB_CONTEXT *tdb, struct samba3_samaccount *sampass, TDB_DATA buf)
 {
@@ -269,22 +230,37 @@ static BOOL init_sam_from_buffer_v2(TDB_CONTEXT *tdb, struct samba3_samaccount *
 NTSTATUS samba3_read_tdbsam(const char *filename, TALLOC_CTX *ctx, struct samba3_samaccount **accounts, uint32_t *count)
 {
 	int32_t version;
-	TDB_CONTEXT *tdb = tdbsam_open(filename, &version);
+	TDB_CONTEXT *tdb;
 	TDB_DATA key, val;
 
-	if (tdb == NULL)
+	/* Try to open tdb passwd */
+	if (!(tdb = tdb_open(filename, 0, TDB_DEFAULT, O_RDONLY, 0600))) {
+		DEBUG(0, ("Unable to open TDB passwd file '%s'\n", filename));
 		return NT_STATUS_UNSUCCESSFUL;
-
-	if (version < 0 || version > 2) {
-		return NT_STATUS_NOT_SUPPORTED;
 	}
+
+	/* Check the version */
+	version = tdb_fetch_int32(tdb, 
+						TDBSAM_VERSION_STRING);
+	if (version == -1)
+		version = 0;	/* Version not found, assume version 0 */
+	
+	/* Compare the version */
+	if (version > 2) {
+		/* Version more recent than the latest known */ 
+		DEBUG(0, ("TDBSAM version unknown: %d\n", version));
+		tdb_close(tdb);
+		return NT_STATUS_NOT_SUPPORTED;
+	} 
 	
 	*accounts = NULL;
 	*count = 0;
 
 	for (key = tdb_firstkey(tdb); key.dptr; key = tdb_nextkey(tdb, key))
 	{
-		if (strncmp(key.dptr, "RID/", 4) == 0) continue;
+		BOOL ret;
+		if (strncmp(key.dptr, "USER_", 5) != 0) 
+			continue;
 
 		val = tdb_fetch(tdb, key);
 
@@ -292,10 +268,14 @@ NTSTATUS samba3_read_tdbsam(const char *filename, TALLOC_CTX *ctx, struct samba3
 
 		switch (version) 
 		{
-			case 0: init_sam_from_buffer_v0(tdb, &(*accounts)[*count], val); break;
-			case 1: init_sam_from_buffer_v1(tdb, &(*accounts)[*count], val); break;
-			case 2: init_sam_from_buffer_v2(tdb, &(*accounts)[*count], val); break;
+			case 0: ret = init_sam_from_buffer_v0(tdb, &(*accounts)[*count], val); break;
+			case 1: ret = init_sam_from_buffer_v1(tdb, &(*accounts)[*count], val); break;
+			case 2: ret = init_sam_from_buffer_v2(tdb, &(*accounts)[*count], val); break;
 
+		}
+
+		if (!ret) {
+			DEBUG(0, ("Unable to parse SAM account %s\n", key.dptr));
 		}
 
 		(*count)++;

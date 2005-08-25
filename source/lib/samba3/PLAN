@@ -1,9 +1,12 @@
 Three possible viable approaches:
  1) TDB conversion approach. Read in TDB dump out LDIF (one-way)
-  - samr.ldb: from tdbsam/smbpasswd, account_policy.tdb, secrets.tdb, group_mapping.tdb, idmap.tdb, privilege.tdb
+  - samr.ldb: from tdbsam/smbpasswd, account_policy.tdb, secrets.tdb, group_mapping.tdb, privilege.tdb
   - registry.ldb: from registry.tdb
   - wins.ldif: from wins.tdb/wins.dat
   - smb.conf/ea's: generated from the old smb.conf + share_info.tdb
+  - winbind.ldif: from winbindd_idmap.tdb (custom file format, not used 
+										   by samba4 yet as it doesn't
+										   have Winbind yet)
 
   (one-way upgrades can be done by using ldbsearch -a on these dynamically
   generated ldb's)

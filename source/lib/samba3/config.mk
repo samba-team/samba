@@ -12,7 +12,8 @@ ADD_OBJ_FILES = \
 		lib/samba3/registry.o \
 		lib/samba3/secrets.o \
 		lib/samba3/ldb_samba3.o \
-		lib/samba3/share_info.o
+		lib/samba3/share_info.o \
+		lib/samba3/upgrade.o
 # End SUBSYSTEM LIBSAMBA3
 ################################################
 

@@ -55,7 +55,7 @@ NTSTATUS samba3_read_winsdb( const char *fn, TALLOC_CTX *ctx, struct samba3_wins
 
 		/* Read a line from the wins.dat file. Strips whitespace
 			from the beginning and end of the line.  */
-		line = fgets_slash(NULL,-1,fp);
+		line = fgets_slash(NULL,8,fp);
 		if (!line) 
 			return NT_STATUS_UNSUCCESSFUL;
       
@@ -169,7 +169,7 @@ NTSTATUS samba3_read_winsdb( const char *fn, TALLOC_CTX *ctx, struct samba3_wins
 		entry.ttl = atol(ttl_str);
 
 		*entries = talloc_realloc(ctx, *entries, struct samba3_winsdb_entry, (*count)+1);
-		*entries[*count] = entry;
+		(*entries)[*count] = entry;
 
 		(*count)++;
 	} 
