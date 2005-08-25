@@ -390,7 +390,8 @@ static BOOL torture_pac_saved_check(void)
 		return False;
 	}
 
-	if (!dom_sid_equal(dom_sid_parse_talloc(mem_ctx, "S-1-5-21-3048156945-3961193616-3706469200-1005"), 
+	if (!pac_file &&
+	    !dom_sid_equal(dom_sid_parse_talloc(mem_ctx, "S-1-5-21-3048156945-3961193616-3706469200-1005"), 
 			   server_info_out->account_sid)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &krbtgt_keyblock);
