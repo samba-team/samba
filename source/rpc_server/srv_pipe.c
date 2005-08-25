@@ -1829,7 +1829,8 @@ BOOL api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
  Deal with NTLMSSP sign & seal processing on an RPC request.
 ****************************************************************************/
 
-BOOL api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in, NTSTATUS *pstatus)
+BOOL api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in,
+					uint32 *p_ss_padding_len, NTSTATUS *pstatus)
 {
 	RPC_HDR_AUTH auth_info;
 	uint32 auth_len = p->hdr.auth_len;
@@ -1888,6 +1889,13 @@ BOOL api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in, NTSTATUS
 		return False;
 	}
 
+	/*
+	 * Remember the padding length. We must remove it from the real data
+	 * stream once the sign/seal is done.
+	 */
+
+	*p_ss_padding_len = auth_info.auth_pad_len;
+
 	auth_blob.data = prs_data_p(rpc_in) + prs_offset(rpc_in);
 	auth_blob.length = auth_len;
 	
@@ -1937,7 +1945,7 @@ BOOL api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in, NTSTATUS
  Deal with schannel processing on an RPC request.
 ****************************************************************************/
 
-BOOL api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in)
+BOOL api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss_padding_len)
 {
 	/*
 	 * We always negotiate the following two bits....
@@ -1987,6 +1995,13 @@ BOOL api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in)
 		DEBUG(0,("failed to unmarshal RPC_AUTH_SCHANNEL_CHK.\n"));
 		return False;
 	}
+
+	/*
+	 * Remember the padding length. We must remove it from the real data
+	 * stream once the sign/seal is done.
+	 */
+
+	*p_ss_padding_len = auth_info.auth_pad_len;
 
 	if (!schannel_decode(p->auth.a_u.schannel_auth,
 			   p->auth.auth_level,

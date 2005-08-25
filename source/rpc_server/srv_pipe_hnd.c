@@ -543,6 +543,7 @@ static void free_pipe_context(pipes_struct *p)
 
 static BOOL process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 {
+	uint32 ss_padding_len = 0;
 	size_t data_len = p->hdr.frag_len - RPC_HEADER_LEN - RPC_HDR_REQ_LEN -
 				(p->hdr.auth_len ? RPC_HDR_AUTH_LEN : 0) - p->hdr.auth_len;
 
@@ -573,20 +574,19 @@ static BOOL process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 
 		case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
 		case PIPE_AUTH_TYPE_NTLMSSP:
-			{
-				NTSTATUS status;
-				if(!api_pipe_ntlmssp_auth_process(p, rpc_in_p,&status)) {
-					DEBUG(0,("process_request_pdu: failed to do auth processing.\n"));
-					DEBUG(0,("process_request_pdu: error was %s.\n", nt_errstr(status) ));
-					set_incoming_fault(p);
-					return False;
-				}
+		{
+			NTSTATUS status;
+			if(!api_pipe_ntlmssp_auth_process(p, rpc_in_p, &ss_padding_len, &status)) {
+				DEBUG(0,("process_request_pdu: failed to do auth processing.\n"));
+				DEBUG(0,("process_request_pdu: error was %s.\n", nt_errstr(status) ));
+				set_incoming_fault(p);
+				return False;
 			}
-
 			break;
+		}
 
 		case PIPE_AUTH_TYPE_SCHANNEL:
-			if (!api_pipe_schannel_process(p, rpc_in_p)) {
+			if (!api_pipe_schannel_process(p, rpc_in_p, &ss_padding_len)) {
 				DEBUG(3,("process_request_pdu: failed to do schannel processing.\n"));
 				set_incoming_fault(p);
 				return False;
@@ -597,6 +597,11 @@ static BOOL process_request_pdu(pipes_struct *p, prs_struct *rpc_in_p)
 			DEBUG(0,("process_request_pdu: unknown auth type %u set.\n", (unsigned int)p->auth.auth_type ));
 			set_incoming_fault(p);
 			return False;
+	}
+
+	/* Now we've done the sign/seal we can remove any padding data. */
+	if (data_len > ss_padding_len) {
+		data_len -= ss_padding_len;
 	}
 
 	/*
