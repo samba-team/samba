@@ -657,14 +657,14 @@ static BOOL pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 	p->pipe_user.gid = a->server_info->gid;
 	
 	/*
-	 * Ok - is this the correct session key to copy ?
-	 * It's used inside the rpc_server/srv_samr_nt.c code
-	 * which works - but if this were an NTLMv2 negotiated
-	 * session I doubt this would be correct. JRA.
+	 * Copy the session key from the ntlmssp state.
 	 */
 
 	data_blob_free(&p->session_key);
-	p->session_key = data_blob(a->server_info->lm_session_key.data, a->server_info->lm_session_key.length);
+	p->session_key = data_blob(a->ntlmssp_state->session_key.data, a->ntlmssp_state->session_key.length);
+	if (!p->session_key.data) {
+		return False;
+	}
 
 	p->pipe_user.ngroups = a->server_info->n_groups;
 	if (p->pipe_user.ngroups) {
@@ -1235,6 +1235,12 @@ static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	memcpy(p->auth.a_u.schannel_auth->sess_key, last_dcinfo.sess_key, sizeof(last_dcinfo.sess_key));
 
 	p->auth.a_u.schannel_auth->seq_num = 0;
+
+	/*
+	 * JRA. Should we also copy the schannel session key into the pipe session key p->session_key
+	 * here ? We do that for NTLMSPP, but the session key is already set up from the vuser
+	 * struct of the person who opened the pipe. I need to test this further. JRA.
+	 */
 
 	/* The client opens a second RPC NETLOGON pipe without
 		doing a auth2. The credentials for the schannel are
@@ -1827,7 +1833,7 @@ BOOL api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in, NTSTATUS
 {
 	RPC_HDR_AUTH auth_info;
 	uint32 auth_len = p->hdr.auth_len;
-	uint32 orig_offset = prs_offset(rpc_in);
+	uint32 save_offset = prs_offset(rpc_in);
 	AUTH_NTLMSSP_STATE *a = p->auth.a_u.auth_ntlmssp_state;
 	unsigned char *data = NULL;
 	size_t data_len;
@@ -1869,9 +1875,9 @@ BOOL api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in, NTSTATUS
 	full_packet_data_len = p->hdr.frag_len - auth_len;
 
 	/* Pull the auth header and the following data into a blob. */
-	if(!prs_set_offset(rpc_in, orig_offset + data_len)) {
+	if(!prs_set_offset(rpc_in, RPC_HDR_REQ_LEN + data_len)) {
 		DEBUG(0,("api_pipe_ntlmssp_auth_process: cannot move offset to %u.\n",
-			(unsigned int)orig_offset + data_len ));
+			(unsigned int)RPC_HDR_REQ_LEN + data_len ));
 		*pstatus = NT_STATUS_INVALID_PARAMETER;
 		return False;
 	}
@@ -1917,9 +1923,9 @@ BOOL api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in, NTSTATUS
 	 * Return the current pointer to the data offset.
 	 */
 
-	if(!prs_set_offset(rpc_in, orig_offset)) {
+	if(!prs_set_offset(rpc_in, save_offset)) {
 		DEBUG(0,("api_pipe_auth_process: failed to set offset back to %u\n",
-			(unsigned int)orig_offset ));
+			(unsigned int)save_offset ));
 		*pstatus = NT_STATUS_INVALID_PARAMETER;
 		return False;
 	}
@@ -1938,7 +1944,7 @@ BOOL api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in)
 	 */
 	int data_len;
 	int auth_len;
-	uint32 old_offset;
+	uint32 save_offset = prs_offset(rpc_in);
 	RPC_HDR_AUTH auth_info;
 	RPC_AUTH_SCHANNEL_CHK schannel_chk;
 
@@ -1960,11 +1966,9 @@ BOOL api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in)
 	
 	DEBUG(5,("data %d auth %d\n", data_len, auth_len));
 
-	old_offset = prs_offset(rpc_in);
-
-	if(!prs_set_offset(rpc_in, old_offset + data_len)) {
+	if(!prs_set_offset(rpc_in, RPC_HDR_REQ_LEN + data_len)) {
 		DEBUG(0,("cannot move offset to %u.\n",
-			 (unsigned int)old_offset + data_len ));
+			 (unsigned int)RPC_HDR_REQ_LEN + data_len ));
 		return False;
 	}
 
@@ -1988,7 +1992,7 @@ BOOL api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in)
 			   p->auth.auth_level,
 			   SENDER_IS_INITIATOR,
 			   &schannel_chk,
-			   prs_data_p(rpc_in)+old_offset, data_len)) {
+			   prs_data_p(rpc_in)+RPC_HDR_REQ_LEN, data_len)) {
 		DEBUG(3,("failed to decode PDU\n"));
 		return False;
 	}
@@ -1997,9 +2001,9 @@ BOOL api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in)
 	 * Return the current pointer to the data offset.
 	 */
 
-	if(!prs_set_offset(rpc_in, old_offset)) {
+	if(!prs_set_offset(rpc_in, save_offset)) {
 		DEBUG(0,("failed to set offset back to %u\n",
-			 (unsigned int)old_offset ));
+			 (unsigned int)save_offset ));
 		return False;
 	}
 
