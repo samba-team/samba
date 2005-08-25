@@ -166,7 +166,7 @@ typedef struct pipe_rpc_fns {
 
 /* Different auth types we support. */
 enum pipe_auth_type { PIPE_AUTH_TYPE_NONE = 0, PIPE_AUTH_TYPE_NTLMSSP, PIPE_AUTH_TYPE_SCHANNEL,
-			PIPE_AUTH_TYPE_SPNEGO_NTLMSSP, PIPE_AUTH_TYPE_SPNEGO_KRB5 };
+			PIPE_AUTH_TYPE_SPNEGO_NTLMSSP, PIPE_AUTH_TYPE_KRB5, PIPE_AUTH_TYPE_SPNEGO_KRB5 };
 
 /* Possible auth levels. */
 enum pipe_auth_level { PIPE_AUTH_LEVEL_NONE = 0,

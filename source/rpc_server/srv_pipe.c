@@ -1889,13 +1889,6 @@ BOOL api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in,
 		return False;
 	}
 
-	/*
-	 * Remember the padding length. We must remove it from the real data
-	 * stream once the sign/seal is done.
-	 */
-
-	*p_ss_padding_len = auth_info.auth_pad_len;
-
 	auth_blob.data = prs_data_p(rpc_in) + prs_offset(rpc_in);
 	auth_blob.length = auth_len;
 	
@@ -1938,6 +1931,13 @@ BOOL api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in,
 		return False;
 	}
 
+	/*
+	 * Remember the padding length. We must remove it from the real data
+	 * stream once the sign/seal is done.
+	 */
+
+	*p_ss_padding_len = auth_info.auth_pad_len;
+
 	return True;
 }
 
@@ -1947,11 +1947,8 @@ BOOL api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in,
 
 BOOL api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss_padding_len)
 {
-	/*
-	 * We always negotiate the following two bits....
-	 */
-	int data_len;
-	int auth_len;
+	uint32 data_len;
+	uint32 auth_len;
 	uint32 save_offset = prs_offset(rpc_in);
 	RPC_HDR_AUTH auth_info;
 	RPC_AUTH_SCHANNEL_CHK schannel_chk;
@@ -1959,7 +1956,7 @@ BOOL api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss
 	auth_len = p->hdr.auth_len;
 
 	if (auth_len != RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN) {
-		DEBUG(0,("Incorrect auth_len %d.\n", auth_len ));
+		DEBUG(0,("Incorrect auth_len %u.\n", (unsigned int)auth_len ));
 		return False;
 	}
 
@@ -1968,6 +1965,13 @@ BOOL api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss
 	 * This doesn't include the RPC headers or the auth_len or the RPC_HDR_AUTH_LEN
 	 * preceeding the auth_data.
 	 */
+
+	if (p->hdr.frag_len < RPC_HEADER_LEN + RPC_HDR_REQ_LEN + RPC_HDR_AUTH_LEN + auth_len) {
+		DEBUG(0,("Incorrect frag %u, auth %u.\n",
+			(unsigned int)p->hdr.frag_len,
+			(unsigned int)auth_len ));
+		return False;
+	}
 
 	data_len = p->hdr.frag_len - RPC_HEADER_LEN - RPC_HDR_REQ_LEN - 
 		RPC_HDR_AUTH_LEN - auth_len;
@@ -1996,13 +2000,6 @@ BOOL api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss
 		return False;
 	}
 
-	/*
-	 * Remember the padding length. We must remove it from the real data
-	 * stream once the sign/seal is done.
-	 */
-
-	*p_ss_padding_len = auth_info.auth_pad_len;
-
 	if (!schannel_decode(p->auth.a_u.schannel_auth,
 			   p->auth.auth_level,
 			   SENDER_IS_INITIATOR,
@@ -2024,6 +2021,13 @@ BOOL api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss
 
 	/* The sequence number gets incremented on both send and receive. */
 	p->auth.a_u.schannel_auth->seq_num++;
+
+	/*
+	 * Remember the padding length. We must remove it from the real data
+	 * stream once the sign/seal is done.
+	 */
+
+	*p_ss_padding_len = auth_info.auth_pad_len;
 
 	return True;
 }
