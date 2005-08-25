@@ -34,8 +34,66 @@
  * 	sambaGroupType -> groupType
  * 	displayName -> name
  * 	description -> description
- * 	sambaSIDList -> member 
+ * 	sambaSIDList -> member (special!)
  */
+
+/*
+ * sambaTrustPassword
+ */
+
+/* sambaDomain
+ *	sambaDomainName
+ *	sambaSID
+ *	sambaNextRid 
+ *	sambaNextGroupRid 
+ *	sambaNextUserRid
+ *	sambaAlgorithmicRidBase
+ */
+
+/* sambaUnixIdPool
+ */
+
+/* sambaIdmapEntry */
+
+/* sambaAccountPolicy */
+
+/* sambaSidEntry: FIXME */
+
+/* sambaSamAccount -> user:
+ * uid -> unixName (magic!)
+ * sambaSID -> objectSid
+ * cn -> cn
+ * sambaLMPassword -> lmPwdHash
+ * sambaNTPassword -> ntPwdHash
+ * sambaPwdLastSet -> pwdLastSet
+ * sambaLogonTime -> lastLogon
+ * sambaLogoffTime -> lastLogoff
+ * sambaKickoffTime -> ???
+ * sambaPwdCanChange  -> ???
+ * sambaPwdMustChange  -> ???
+ * sambaAcctFlags -> systemFlags ?
+ * displayName  -> name
+ * sambaHomePath  -> ???
+ * sambaHomeDrive  -> ???
+ * sambaLogonScript  -> ???
+ * sambaProfilePath  -> ???
+ * description -> description
+ * sambaUserWorkstations  -> ???
+ * sambaPrimaryGroupSID -> primaryGroupID
+ * sambaDomainName  -> ???
+ * sambaMungedDial -> ???
+ * sambaBadPasswordCount -> badPwdcount
+ * sambaBadPasswordTime -> badPasswordtime
+ * sambaPasswordHistory  -> ntPwdHistory
+ * sambaLogonHours -> ???
+ */
+
+/* Not necessary:
+ * sambaConfig
+ * sambaShare
+ * sambaConfigOption 
+ */
+
 
 struct ldb_map_mappings samba3_mappings;
 

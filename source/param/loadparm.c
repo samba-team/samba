@@ -83,7 +83,7 @@ static BOOL bLoaded = False;
 #define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && ServicePtrs[(i)]->valid)
 #define VALID(i) ServicePtrs[i]->valid
 
-static BOOL do_parameter(const char *, const char *);
+static BOOL do_parameter(const char *, const char *, void *);
 static BOOL do_parameter_var(const char *pszParmName, const char *fmt, ...);
 
 static BOOL defaults_saved = False;
@@ -783,103 +783,103 @@ static void init_printer_values(void)
 		case PRINT_AIX:
 		case PRINT_LPRNT:
 		case PRINT_LPROS2:
-			do_parameter("Lpqcommand", "lpq -P'%p'");
-			do_parameter("Lprmcommand", "lprm -P'%p' %j");
+			do_parameter("Lpqcommand", "lpq -P'%p'", NULL);
+			do_parameter("Lprmcommand", "lprm -P'%p' %j", NULL);
 			do_parameter("Printcommand",
-				   "lpr -r -P'%p' %s");
+				   "lpr -r -P'%p' %s", NULL);
 			break;
 
 		case PRINT_LPRNG:
 		case PRINT_PLP:
-			do_parameter("Lpqcommand", "lpq -P'%p'");
-			do_parameter("Lprmcommand", "lprm -P'%p' %j");
+			do_parameter("Lpqcommand", "lpq -P'%p'", NULL);
+			do_parameter("Lprmcommand", "lprm -P'%p' %j", NULL);
 			do_parameter("Printcommand",
-				   "lpr -r -P'%p' %s");
+				   "lpr -r -P'%p' %s", NULL);
 			do_parameter("Queuepausecommand",
-				   "lpc stop '%p'");
+				   "lpc stop '%p'", NULL);
 			do_parameter("Queueresumecommand",
-				   "lpc start '%p'");
+				   "lpc start '%p'", NULL);
 			do_parameter("Lppausecommand",
-				   "lpc hold '%p' %j");
+				   "lpc hold '%p' %j", NULL);
 			do_parameter("Lpresumecommand",
-				   "lpc release '%p' %j");
+				   "lpc release '%p' %j", NULL);
 			break;
 
 		case PRINT_CUPS:
 #ifdef HAVE_CUPS
-			do_parameter("Lpqcommand", "");
-			do_parameter("Lprmcommand", "");
-			do_parameter("Printcommand", "");
-			do_parameter("Lppausecommand", "");
-			do_parameter("Lpresumecommand", "");
-			do_parameter("Queuepausecommand", "");
-			do_parameter("Queueresumecommand", "");
+			do_parameter("Lpqcommand", "", NULL);
+			do_parameter("Lprmcommand", "", NULL);
+			do_parameter("Printcommand", "", NULL);
+			do_parameter("Lppausecommand", "", NULL);
+			do_parameter("Lpresumecommand", "", NULL);
+			do_parameter("Queuepausecommand", "", NULL);
+			do_parameter("Queueresumecommand", "", NULL);
 
-	                do_parameter("Printcapname", "cups");
+	                do_parameter("Printcapname", "cups", NULL);
 #else
 			do_parameter("Lpqcommand",
-			           "/usr/bin/lpstat -o '%p'");
+			           "/usr/bin/lpstat -o '%p'", NULL);
 			do_parameter("Lprmcommand",
-			           "/usr/bin/cancel '%p-%j'");
+			           "/usr/bin/cancel '%p-%j'", NULL);
 			do_parameter("Printcommand",
-			           "/usr/bin/lp -d '%p' %s; rm %s");
+			           "/usr/bin/lp -d '%p' %s; rm %s", NULL);
 			do_parameter("Lppausecommand",
-				   "lp -i '%p-%j' -H hold");
+				   "lp -i '%p-%j' -H hold", NULL);
 			do_parameter("Lpresumecommand",
-				   "lp -i '%p-%j' -H resume");
+				   "lp -i '%p-%j' -H resume", NULL);
 			do_parameter("Queuepausecommand",
-			           "/usr/bin/disable '%p'");
+			           "/usr/bin/disable '%p'", NULL);
 			do_parameter("Queueresumecommand",
-			           "/usr/bin/enable '%p'");
-			do_parameter("Printcapname", "lpstat");
+			           "/usr/bin/enable '%p'", NULL);
+			do_parameter("Printcapname", "lpstat", NULL);
 #endif /* HAVE_CUPS */
 			break;
 
 		case PRINT_SYSV:
 		case PRINT_HPUX:
-			do_parameter("Lpqcommand", "lpstat -o%p");
-			do_parameter("Lprmcommand", "cancel %p-%j");
+			do_parameter("Lpqcommand", "lpstat -o%p", NULL);
+			do_parameter("Lprmcommand", "cancel %p-%j", NULL);
 			do_parameter("Printcommand",
-				   "lp -c -d%p %s; rm %s");
+				   "lp -c -d%p %s; rm %s", NULL);
 			do_parameter("Queuepausecommand",
-				   "disable %p");
+				   "disable %p", NULL);
 			do_parameter("Queueresumecommand",
-				   "enable %p");
+				   "enable %p", NULL);
 #ifndef HPUX
 			do_parameter("Lppausecommand",
-				   "lp -i %p-%j -H hold");
+				   "lp -i %p-%j -H hold", NULL);
 			do_parameter("Lpresumecommand",
-				   "lp -i %p-%j -H resume");
+				   "lp -i %p-%j -H resume", NULL);
 #endif /* HPUX */
 			break;
 
 		case PRINT_QNX:
-			do_parameter("Lpqcommand", "lpq -P%p");
-			do_parameter("Lprmcommand", "lprm -P%p %j");
-			do_parameter("Printcommand", "lp -r -P%p %s");
+			do_parameter("Lpqcommand", "lpq -P%p", NULL);
+			do_parameter("Lprmcommand", "lprm -P%p %j", NULL);
+			do_parameter("Printcommand", "lp -r -P%p %s", NULL);
 			break;
 
 		case PRINT_SOFTQ:
-			do_parameter("Lpqcommand", "qstat -l -d%p");
+			do_parameter("Lpqcommand", "qstat -l -d%p", NULL);
 			do_parameter("Lprmcommand",
-				   "qstat -s -j%j -c");
+				   "qstat -s -j%j -c", NULL);
 			do_parameter("Printcommand",
-				   "lp -d%p -s %s; rm %s");
+				   "lp -d%p -s %s; rm %s", NULL);
 			do_parameter("Lppausecommand",
-				   "qstat -s -j%j -h");
+				   "qstat -s -j%j -h", NULL);
 			do_parameter("Lpresumecommand",
-				   "qstat -s -j%j -r");
+				   "qstat -s -j%j -r", NULL);
 			break;
 #ifdef DEVELOPER
 	case PRINT_TEST:
 	case PRINT_VLP:
-		do_parameter("Printcommand", "vlp print %p %s");
-		do_parameter("Lpqcommand", "vlp lpq %p");
-		do_parameter("Lprmcommand", "vlp lprm %p %j");
-		do_parameter("Lppausecommand", "vlp lppause %p %j");
-		do_parameter("Lpresumecommand", "vlp lpresum %p %j");
-		do_parameter("Queuepausecommand", "vlp queuepause %p");
-		do_parameter("Queueresumecommand", "vlp queueresume %p");
+		do_parameter("Printcommand", "vlp print %p %s", NULL);
+		do_parameter("Lpqcommand", "vlp lpq %p", NULL);
+		do_parameter("Lprmcommand", "vlp lprm %p %j", NULL);
+		do_parameter("Lppausecommand", "vlp lppause %p %j", NULL);
+		do_parameter("Lpresumecommand", "vlp lpresum %p %j", NULL);
+		do_parameter("Queuepausecommand", "vlp queuepause %p", NULL);
+		do_parameter("Queueresumecommand", "vlp queueresume %p", NULL);
 		break;
 #endif /* DEVELOPER */
 
@@ -906,166 +906,166 @@ static void init_globals(void)
 		}
 	}
 
-	do_parameter("config file", dyn_CONFIGFILE);
+	do_parameter("config file", dyn_CONFIGFILE, NULL);
 
 	/* options that can be set on the command line must be initialised via
 	   the slower do_parameter() to ensure that FLAG_CMDLINE is obeyed */
 #ifdef TCP_NODELAY
-	do_parameter("socket options", "TCP_NODELAY");
+	do_parameter("socket options", "TCP_NODELAY", NULL);
 #endif
-	do_parameter("workgroup", DEFAULT_WORKGROUP);
+	do_parameter("workgroup", DEFAULT_WORKGROUP, NULL);
 	myname = get_myname();
-	do_parameter("netbios name", myname);
+	do_parameter("netbios name", myname, NULL);
 	SAFE_FREE(myname);
-	do_parameter("max protocol", "NT1");
-	do_parameter("name resolve order", "lmhosts wins host bcast");
+	do_parameter("max protocol", "NT1", NULL);
+	do_parameter("name resolve order", "lmhosts wins host bcast", NULL);
 
 	init_printer_values();
 
-	do_parameter("fstype", FSTYPE_STRING);
-	do_parameter("ntvfs handler", "unixuid default");
-	do_parameter("max connections", "-1");
+	do_parameter("fstype", FSTYPE_STRING, NULL);
+	do_parameter("ntvfs handler", "unixuid default", NULL);
+	do_parameter("max connections", "-1", NULL);
 
-	do_parameter("dcerpc endpoint servers", "epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg dssetup");
-	do_parameter("server services", "smb rpc nbt ldap cldap web kdc");
-	do_parameter("ntptr providor", "simple_ldb");
-	do_parameter("auth methods", "anonymous sam_ignoredomain");
-	do_parameter("smb passwd file", dyn_SMB_PASSWD_FILE);
-	do_parameter("private dir", dyn_PRIVATE_DIR);
-	do_parameter("sam database", "sam.ldb");
-	do_parameter("spoolss database", "spoolss.ldb");
-	do_parameter("wins database", "wins.ldb");
-	do_parameter("registry:HKEY_LOCAL_MACHINE", "hklm.ldb");
+	do_parameter("dcerpc endpoint servers", "epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg dssetup", NULL);
+	do_parameter("server services", "smb rpc nbt ldap cldap web kdc", NULL);
+	do_parameter("ntptr providor", "simple_ldb", NULL);
+	do_parameter("auth methods", "anonymous sam_ignoredomain", NULL);
+	do_parameter("smb passwd file", dyn_SMB_PASSWD_FILE, NULL);
+	do_parameter("private dir", dyn_PRIVATE_DIR, NULL);
+	do_parameter("sam database", "sam.ldb", NULL);
+	do_parameter("spoolss database", "spoolss.ldb", NULL);
+	do_parameter("wins database", "wins.ldb", NULL);
+	do_parameter("registry:HKEY_LOCAL_MACHINE", "hklm.ldb", NULL);
 
 	/* This hive should be dynamically generated by Samba using
 	   data from the sam, but for the moment leave it in a tdb to
 	   keep regedt32 from popping up an annoying dialog. */
-	do_parameter("registry:HKEY_USERS", "hku.ldb");
+	do_parameter("registry:HKEY_USERS", "hku.ldb", NULL);
 	
-	do_parameter("guest account", GUEST_ACCOUNT);
+	do_parameter("guest account", GUEST_ACCOUNT, NULL);
 
 	/* using UTF8 by default allows us to support all chars */
-	do_parameter("unix charset", "UTF8");
+	do_parameter("unix charset", "UTF8", NULL);
 
 	/* Use codepage 850 as a default for the dos character set */
-	do_parameter("dos charset", "CP850");
+	do_parameter("dos charset", "CP850", NULL);
 
 	/*
 	 * Allow the default PASSWD_CHAT to be overridden in local.h.
 	 */
-	do_parameter("passwd chat", DEFAULT_PASSWD_CHAT);
+	do_parameter("passwd chat", DEFAULT_PASSWD_CHAT, NULL);
 
-	do_parameter("passwd program", "");
-	do_parameter("printcap name", PRINTCAP_NAME);
+	do_parameter("passwd program", "", NULL);
+	do_parameter("printcap name", PRINTCAP_NAME, NULL);
 	
-	do_parameter("pid directory", dyn_PIDDIR);
-	do_parameter("lock dir", dyn_LOCKDIR);
-	do_parameter("ncalrpc dir", dyn_NCALRPCDIR);
+	do_parameter("pid directory", dyn_PIDDIR, NULL);
+	do_parameter("lock dir", dyn_LOCKDIR, NULL);
+	do_parameter("ncalrpc dir", dyn_NCALRPCDIR, NULL);
 
-	do_parameter("socket address", "0.0.0.0");
+	do_parameter("socket address", "0.0.0.0", NULL);
 	do_parameter_var("server string", "Samba %s", SAMBA_VERSION_STRING);
 
 	do_parameter_var("announce version", "%d.%d", 
 			 DEFAULT_MAJOR_VERSION,
 			 DEFAULT_MINOR_VERSION);
 
-	do_parameter("logon drive", "");
+	do_parameter("logon drive", "", NULL);
 
-	do_parameter("logon home", "\\\\%N\\%U");
-	do_parameter("logon path", "\\\\%N\\%U\\profile");
-	do_parameter("password server", "*");
+	do_parameter("logon home", "\\\\%N\\%U", NULL);
+	do_parameter("logon path", "\\\\%N\\%U\\profile", NULL);
+	do_parameter("password server", "*", NULL);
 
-	do_parameter("load printers", "True");
+	do_parameter("load printers", "True", NULL);
 
-	do_parameter("max mux", "50");
-	do_parameter("max xmit", "12288");
-	do_parameter("lpqcachetime", "10");
-	do_parameter("DisableSpoolss", "False");
-	do_parameter("password level", "0");
-	do_parameter("username level", "0");
-	do_parameter("LargeReadwrite", "True");
-	do_parameter("minprotocol", "CORE");
-	do_parameter("security", "USER");
-	do_parameter("paranoid server security", "True");
-	do_parameter("EncryptPasswords", "True");
-	do_parameter("ReadRaw", "True");
-	do_parameter("WriteRaw", "True");
-	do_parameter("NullPasswords", "False");
-	do_parameter("ObeyPamRestrictions", "False");
-	do_parameter("lm announce", "Auto");	
-	do_parameter("lm interval", "60");
-	do_parameter("announce as", "NT SERVER");
+	do_parameter("max mux", "50", NULL);
+	do_parameter("max xmit", "12288", NULL);
+	do_parameter("lpqcachetime", "10", NULL);
+	do_parameter("DisableSpoolss", "False", NULL);
+	do_parameter("password level", "0", NULL);
+	do_parameter("username level", "0", NULL);
+	do_parameter("LargeReadwrite", "True", NULL);
+	do_parameter("minprotocol", "CORE", NULL);
+	do_parameter("security", "USER", NULL);
+	do_parameter("paranoid server security", "True", NULL);
+	do_parameter("EncryptPasswords", "True", NULL);
+	do_parameter("ReadRaw", "True", NULL);
+	do_parameter("WriteRaw", "True", NULL);
+	do_parameter("NullPasswords", "False", NULL);
+	do_parameter("ObeyPamRestrictions", "False", NULL);
+	do_parameter("lm announce", "Auto", NULL);	
+	do_parameter("lm interval", "60", NULL);
+	do_parameter("announce as", "NT SERVER", NULL);
 
-	do_parameter("TimeServer", "False");
-	do_parameter("BindInterfacesOnly", "False");
-	do_parameter("PamPasswordChange", "False");
-	do_parameter("Unicode", "True");
-	do_parameter("restrict anonymous", "0");
-	do_parameter("ClientLanManAuth", "True");
-	do_parameter("LanmanAuth", "True");
-	do_parameter("NTLMAuth", "True");
+	do_parameter("TimeServer", "False", NULL);
+	do_parameter("BindInterfacesOnly", "False", NULL);
+	do_parameter("PamPasswordChange", "False", NULL);
+	do_parameter("Unicode", "True", NULL);
+	do_parameter("restrict anonymous", "0", NULL);
+	do_parameter("ClientLanManAuth", "True", NULL);
+	do_parameter("LanmanAuth", "True", NULL);
+	do_parameter("NTLMAuth", "True", NULL);
 	
-	do_parameter("enhanced browsing", "True"); 
-	do_parameter("LockSpinCount", "3");
-	do_parameter("LockSpinTime", "10");
+	do_parameter("enhanced browsing", "True", NULL); 
+	do_parameter("LockSpinCount", "3", NULL);
+	do_parameter("LockSpinTime", "10", NULL);
 #ifdef MMAP_BLACKLIST
-	do_parameter("UseMmap", "False");
+	do_parameter("UseMmap", "False", NULL);
 #else
-	do_parameter("UseMmap", "True");
+	do_parameter("UseMmap", "True", NULL);
 #endif
-	do_parameter("UnixExtensions", "False");
+	do_parameter("UnixExtensions", "False", NULL);
 
 	/* hostname lookups can be very expensive and are broken on
 	   a large number of sites (tridge) */
-	do_parameter("HostnameLookups", "False");
+	do_parameter("HostnameLookups", "False", NULL);
 
-	do_parameter("PreferredMaster", "Auto");
-	do_parameter("os level", "20");
-	do_parameter("LocalMaster", "True");
-	do_parameter("DomainMaster", "Auto");	/* depending on bDomainLogons */
-	do_parameter("DomainLogons", "False");
-	do_parameter("WINSsupport", "False");
-	do_parameter("WINSproxy", "False");
+	do_parameter("PreferredMaster", "Auto", NULL);
+	do_parameter("os level", "20", NULL);
+	do_parameter("LocalMaster", "True", NULL);
+	do_parameter("DomainMaster", "Auto", NULL);	/* depending on bDomainLogons */
+	do_parameter("DomainLogons", "False", NULL);
+	do_parameter("WINSsupport", "False", NULL);
+	do_parameter("WINSproxy", "False", NULL);
 
-	do_parameter("DNSproxy", "True");
+	do_parameter("DNSproxy", "True", NULL);
 
-	do_parameter("AllowTrustedDomains", "True");
+	do_parameter("AllowTrustedDomains", "True", NULL);
 
-	do_parameter("TemplateShell", "/bin/false");
-	do_parameter("TemplateHomedir", "/home/%D/%U");
-	do_parameter("WinbindSeparator", "\\");
+	do_parameter("TemplateShell", "/bin/false", NULL);
+	do_parameter("TemplateHomedir", "/home/%D/%U", NULL);
+	do_parameter("WinbindSeparator", "\\", NULL);
 
-	do_parameter("winbind cache time", "15");
-	do_parameter("WinbindEnumUsers", "True");
-	do_parameter("WinbindEnumGroups", "True");
-	do_parameter("WinbindUseDefaultDomain", "False");
+	do_parameter("winbind cache time", "15", NULL);
+	do_parameter("WinbindEnumUsers", "True", NULL);
+	do_parameter("WinbindEnumGroups", "True", NULL);
+	do_parameter("WinbindUseDefaultDomain", "False", NULL);
 
-	do_parameter("IDMapBackend", "tdb");
+	do_parameter("IDMapBackend", "tdb", NULL);
 
-	do_parameter("name cache timeout", "660"); /* In seconds */
+	do_parameter("name cache timeout", "660", NULL); /* In seconds */
 
-	do_parameter("client signing", "Yes");
-	do_parameter("server signing", "auto");
+	do_parameter("client signing", "Yes", NULL);
+	do_parameter("server signing", "auto", NULL);
 
-	do_parameter("use spnego", "True");
+	do_parameter("use spnego", "True", NULL);
 
-	do_parameter("smb ports", SMB_PORTS);
-	do_parameter("nbt port", "137");
-	do_parameter("dgram port", "138");
-	do_parameter("cldap port", "389");
-	do_parameter("krb5 port", "88");
-	do_parameter("web port", "901");
-	do_parameter("swat directory", dyn_SWATDIR);
+	do_parameter("smb ports", SMB_PORTS, NULL);
+	do_parameter("nbt port", "137", NULL);
+	do_parameter("dgram port", "138", NULL);
+	do_parameter("cldap port", "389", NULL);
+	do_parameter("krb5 port", "88", NULL);
+	do_parameter("web port", "901", NULL);
+	do_parameter("swat directory", dyn_SWATDIR, NULL);
 
-	do_parameter("nt status support", "True");
+	do_parameter("nt status support", "True", NULL);
 
-	do_parameter("max wins ttl", "432000");
-	do_parameter("min wins ttl", "10");
+	do_parameter("max wins ttl", "432000", NULL);
+	do_parameter("min wins ttl", "10", NULL);
 
-	do_parameter("tls enabled", "True");
-	do_parameter("tls keyfile", "tls/key.pem");
-	do_parameter("tls certfile", "tls/cert.pem");
-	do_parameter("tls cafile", "tls/ca.pem");
+	do_parameter("tls enabled", "True", NULL);
+	do_parameter("tls keyfile", "tls/key.pem", NULL);
+	do_parameter("tls certfile", "tls/cert.pem", NULL);
+	do_parameter("tls cafile", "tls/ca.pem", NULL);
 	do_parameter_var("js include", "%s/js", dyn_LIBDIR);
 	do_parameter_var("setup directory", "%s/setup", dyn_LIBDIR);
 }
@@ -1354,7 +1354,7 @@ static int getservicebyname(const char *pszServiceName,
 static void copy_service(service * pserviceDest,
 			 service * pserviceSource, BOOL *pcopymapDest);
 static BOOL service_ok(int iService);
-static BOOL do_section(const char *pszSectionName);
+static BOOL do_section(const char *pszSectionName, void *);
 static void init_copymap(service * pservice);
 
 /* This is a helper function for parametrical options support. */
@@ -2083,7 +2083,7 @@ static BOOL handle_include(const char *pszParmValue, char **ptr)
 	string_set(ptr, fname);
 
 	if (file_exist(fname))
-		return (pm_process(fname, do_section, do_parameter));
+		return (pm_process(fname, do_section, do_parameter, NULL));
 
 	DEBUG(2, ("Can't find include file %s\n", fname));
 
@@ -2449,7 +2449,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
  Process a parameter.
 ***************************************************************************/
 
-static BOOL do_parameter(const char *pszParmName, const char *pszParmValue)
+static BOOL do_parameter(const char *pszParmName, const char *pszParmValue, void *userdata)
 {
 	return (lp_do_parameter(bInGlobalSection ? -2 : iServiceIndex,
 				pszParmName, pszParmValue));
@@ -2469,7 +2469,7 @@ static BOOL do_parameter_var(const char *pszParmName, const char *fmt, ...)
 	va_start(ap, fmt);	
 	s = talloc_vasprintf(NULL, fmt, ap);
 	va_end(ap);
-	ret = do_parameter(pszParmName, s);
+	ret = do_parameter(pszParmName, s, NULL);
 	talloc_free(s);
 	return ret;
 }
@@ -2635,7 +2635,7 @@ static BOOL equal_parameter(parm_type type, void *ptr1, void *ptr2)
  Returns True on success, False on failure. 
 ***************************************************************************/
 
-static BOOL do_section(const char *pszSectionName)
+static BOOL do_section(const char *pszSectionName, void *userdata)
 {
 	BOOL bRetval;
 	BOOL isglobal = ((strwicmp(pszSectionName, GLOBAL_NAME) == 0) ||
@@ -3017,7 +3017,7 @@ BOOL lp_load(void)
 
 	/* We get sections first, so have to start 'behind' to make up */
 	iServiceIndex = -1;
-	bRetval = pm_process(n2, do_section, do_parameter);
+	bRetval = pm_process(n2, do_section, do_parameter, NULL);
 
 	/* finish up the last section */
 	DEBUG(4, ("pm_process() returned %s\n", BOOLSTR(bRetval)));
@@ -3241,7 +3241,7 @@ void lp_remove_service(int snum)
 void lp_copy_service(int snum, const char *new_name)
 {
 	const char *oldname = lp_servicename(snum);
-	do_section(new_name);
+	do_section(new_name, NULL);
 	if (snum >= 0) {
 		snum = lp_servicenumber(new_name);
 		if (snum >= 0)
