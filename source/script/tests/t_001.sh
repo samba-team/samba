@@ -8,13 +8,17 @@ cat >$CONFFILE<<EOF
 	smb ports = 139
 
 [test]
-	path = $TMPDIR
+	path = $PREFIX_ABS/tmp
 	read only = no
 EOF
 
 ##
 ## Test code 
 ##
+
+/bin/rm -rf $PREFIX_ABS/tmp
+mkdir $PREFIX_ABS/tmp
+chmod 1777 $PREFIX_ABS/tmp
 
 start_smbd || exit $?
 
