@@ -2081,13 +2081,17 @@ void free_pipe_rpc_context( PIPE_RPC_FNS *list )
 BOOL api_pipe_request(pipes_struct *p)
 {
 	BOOL ret = False;
+	BOOL changed_user = False;
 	PIPE_RPC_FNS *pipe_fns;
 	
-	if (p->pipe_bound && p->auth.auth_type == PIPE_AUTH_TYPE_NTLMSSP) {
+	if (p->pipe_bound &&
+			((p->auth.auth_type == PIPE_AUTH_TYPE_NTLMSSP) ||
+			 (p->auth.auth_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP))) {
 		if(!become_authenticated_pipe_user(p)) {
 			prs_mem_free(&p->out_data.rdata);
 			return False;
 		}
+		changed_user = True;
 	}
 
 	DEBUG(5, ("Requested \\PIPE\\%s\n", p->name));
@@ -2106,7 +2110,7 @@ BOOL api_pipe_request(pipes_struct *p)
 			p->hdr_req.context_id, p->name));
 	}
 
-	if (p->pipe_bound && p->auth.auth_type == PIPE_AUTH_TYPE_NTLMSSP) {
+	if (changed_user) {
 		unbecome_authenticated_pipe_user();
 	}
 
