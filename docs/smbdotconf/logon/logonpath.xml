@@ -38,18 +38,16 @@
 	This option takes the standard substitutions, allowing you to have separate logon scripts for each user or machine.
 	</para>
 
-	<warning>
-        <para>
-        	Do not quote the value. Setting this as <quote>\\%N\profile\%U</quote>
-		will break profile handling. Where the tdbsam or ldapsam passdb backend
-		is used, at the time the user account is created the value configured
-		for this parameter is written to the passdb backend and that value will
-		over-ride the parameter value present in the smb.conf file. Any error
-		present in the passdb backend account record must be editted using the
-		appropriate tool (pdbedit on the command-line, or any other locally
-		provided system tool.
-		</para>
-	</warning>
+	<warning><para>
+	Do not quote the value. Setting this as <quote>\\%N\profile\%U</quote>
+	will break profile handling. Where the tdbsam or ldapsam passdb backend
+	is used, at the time the user account is created the value configured
+	for this parameter is written to the passdb backend and that value will
+	over-ride the parameter value present in the smb.conf file. Any error
+	present in the passdb backend account record must be editted using the
+	appropriate tool (pdbedit on the command-line, or any other locally
+	provided system tool.
+	</para></warning>
 
 	<para>Note that this option is only useful if Samba is set up as a domain controller.</para>
 
@@ -63,9 +61,9 @@
 
 	<para>
 	An example of use is:
-<screen>
+<programlisting>
 logon path = \\PROFILESERVER\PROFILE\%U
-</screen>
+</programlisting>
 	</para>
 </description>
 <value type="default">\\%N\%U\profile</value>

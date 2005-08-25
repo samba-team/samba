@@ -24,7 +24,7 @@
     been executed, <command moreinfo="none">smbd</command> will reparse the <filename moreinfo="none">
     smb.conf</filename> to associated printer no longer exists.  
     If the sharename is still valid, then <command moreinfo="none">smbd
-</command> will return an ACCESS_DENIED error to the client.</para>
+    </command> will return an ACCESS_DENIED error to the client.</para>
 </description>
 
 <related>addprinter command</related>

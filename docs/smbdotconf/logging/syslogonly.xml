@@ -4,9 +4,10 @@
                  developer="1" advanced="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-    <para>If this parameter is set then Samba debug 
-    messages are logged into the system syslog only, and not to 
-	the debug log files.</para>
+    <para>
+    If this parameter is set then Samba debug messages are logged into the system 
+    syslog only, and not to the debug log files.
+    </para>
 </description>
 <value type="default">no</value>
 </samba:parameter>

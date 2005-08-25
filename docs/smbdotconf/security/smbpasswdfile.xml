@@ -7,12 +7,12 @@
     <para>This option sets the path to the encrypted smbpasswd file. By
     default the path to the smbpasswd file  is compiled into Samba.</para>
 
-	<para>
-	An example of use is:
-<screen>
+    <para>
+    An example of use is:
+<programlisting>
 smb passwd file = /etc/samba/smbpasswd
-</screen>
-	</para>
+</programlisting>
+    </para>
 </description>
 
 <value type="default">${prefix}/private/smbpasswd</value>

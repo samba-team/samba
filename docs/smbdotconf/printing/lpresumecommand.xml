@@ -29,7 +29,7 @@
     <para><command moreinfo="none">lp -i %p-%j -H resume</command></para>
 
     <para>or if the value of the <parameter moreinfo="none">printing</parameter> parameter 
-		is <constant>SOFTQ</constant>, then the default is:</para>
+    is <constant>SOFTQ</constant>, then the default is:</para>
 
     <para><command moreinfo="none">qstat -s -j%j -r</command></para>
 </description>

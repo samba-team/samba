@@ -4,8 +4,9 @@
                  advanced="1" developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-	<para>This option specifies the directory where pid 
-		files will be placed.  </para>
+	<para>
+	This option specifies the directory where pid files will be placed.  
+	</para>
 </description>
 
 <value type="default">${prefix}/var/locks</value>

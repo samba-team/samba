@@ -30,9 +30,9 @@
 	<para>
 	The file consists of sections and parameters. A section begins with the name of the section in square brackets
 	and continues until the next section begins. Sections contain parameters of the form:
-<screen>
+<programlisting>
 <replaceable>name</replaceable> = <replaceable>value </replaceable>
-</screen>
+</programlisting>
 	</para>
 
 	<para>
@@ -179,9 +179,9 @@
 		<para>
 		If you decide to use a <emphasis>path =</emphasis> line in your [homes] section, it may be useful 
 		to use the %S macro. For example:
-<screen>
+<programlisting>
 <userinput moreinfo="none">path = /data/pchome/%S</userinput>
-</screen>
+</programlisting>
 		is useful if you have different home directories for your PCs than for UNIX access.
 		</para>
 
@@ -273,10 +273,10 @@
 		All aliases given for a printer in the printcap file are legitimate printer names as far as the server is concerned. 
 		If your printing subsystem doesn't work like that, you will have to set up a pseudo-printcap. This is a file
 		consisting of one or more lines like this:
-<screen>
+<programlisting>
 alias|alias|alias|alias...    
-</screen>
-</para>
+</programlisting>
+		</para>
 
 		<para>
 		Each alias should be an acceptable printer name for your printing subsystem. In the [global] section,

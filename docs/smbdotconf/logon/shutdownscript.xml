@@ -49,8 +49,9 @@ let &quot;time++&quot;
 
 /sbin/shutdown $3 $4 +$time $1 &amp;
 </programlisting>
-Shutdown does not return so we need to launch it in background.
-</para>
+        Shutdown does not return so we need to launch it in background.
+	</para>
+
 </description>
 <related>abort shutdown script</related>
 <value type="default"></value>

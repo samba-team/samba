@@ -20,13 +20,13 @@
 
 	<para>
 	Examples of use are:
-<screen>
+<programlisting>
 lprm command = /usr/bin/lprm -P%p %j
 
 or
 
 lprm command = /usr/bin/cancel %p-%j
-</screen>
+</programlisting>
 	</para>
 
 </description>

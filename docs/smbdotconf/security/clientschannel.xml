@@ -5,14 +5,13 @@
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 
-    <para>This controls whether the client offers or even
-    demands the use of the netlogon schannel.
-    <parameter>client schannel = no</parameter> does not
-    offer the schannel, <parameter>client schannel =
-    auto</parameter> offers the schannel but does not
-    enforce it, and <parameter>client schannel =
-    yes</parameter> denies access if the server is not
-	able to speak netlogon schannel. </para>
+    <para>
+    This controls whether the client offers or even demands the use of the netlogon schannel.
+    <smbconfoption name="client schannel">no</smbconfoption> does not offer the schannel, 
+    <smbconfoption name="client schannel">auto</smbconfoption> offers the schannel but does not
+    enforce it, and <smbconfoption name="client schannel">yes</smbconfoption> denies access 
+    if the server is not able to speak netlogon schannel. 
+    </para>
 </description>
 <value type="default">auto</value>
 <value type="example">yes</value>
