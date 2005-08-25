@@ -247,13 +247,13 @@ static BOOL torture_pac_saved_check(void)
 	struct PAC_DATA *pac_data;
 	struct PAC_LOGON_INFO *logon_info;
 	union netr_Validation validation;
+	const char *pac_file, *pac_kdc_key, *pac_member_key;
 
 	struct auth_serversupplied_info *server_info_out;
 
 	krb5_keyblock server_keyblock;
 	krb5_keyblock krbtgt_keyblock;
-	uint8_t server_bytes[16];
-	struct samr_Password *krbtgt_bytes;
+	struct samr_Password *krbtgt_bytes, *krbsrv_bytes;
 	
 	krb5_error_code ret;
 
@@ -266,23 +266,39 @@ static BOOL torture_pac_saved_check(void)
 		return False;
 	}
 
+	pac_kdc_key = lp_parm_string(-1,"torture","pac_kdc_key");
+	if (pac_kdc_key == NULL) {
+		pac_kdc_key = "B286757148AF7FD252C53603A150B7E7";
+	}
+
+	pac_member_key = lp_parm_string(-1,"torture","pac_member_key");
+	if (pac_member_key == NULL) {
+		pac_member_key = "D217FAEAE5E6B5F95CCC94077AB8A5FC";
+	}
+
+	printf("Using pac_kdc_key '%s'\n", pac_kdc_key);
+	printf("Using pac_member_key '%s'\n", pac_member_key);
+
 	/* The krbtgt key in use when the above PAC was generated.
 	 * This is an arcfour-hmac-md5 key, extracted with our 'net
 	 * samdump' tool. */
-	krbtgt_bytes = smbpasswd_gethexpwd(mem_ctx, "B286757148AF7FD252C53603A150B7E7");
+	krbtgt_bytes = smbpasswd_gethexpwd(mem_ctx, pac_kdc_key);
 	if (!krbtgt_bytes) {
 		DEBUG(0, ("Could not interpret krbtgt key"));
 		talloc_free(mem_ctx);
 		return False;
 	}
 
-	/* The machine trust account in use when the above PAC 
-	   was generated.  It used arcfour-hmac-md5, so this is easy */
-	E_md4hash("iqvwmii8CuEkyY", server_bytes);
+	krbsrv_bytes = smbpasswd_gethexpwd(mem_ctx, pac_member_key);
+	if (!krbsrv_bytes) {
+		DEBUG(0, ("Could not interpret krbsrv key"));
+		talloc_free(mem_ctx);
+		return False;
+	}
 
 	ret = krb5_keyblock_init(smb_krb5_context->krb5_context,
 				 ENCTYPE_ARCFOUR_HMAC,
-				 server_bytes, sizeof(server_bytes),
+				 krbsrv_bytes->hash, sizeof(krbsrv_bytes->hash),
 				 &server_keyblock);
 	if (ret) {
 		DEBUG(1, ("Server Keyblock encoding failed: %s\n", 
@@ -308,9 +324,14 @@ static BOOL torture_pac_saved_check(void)
 		return False;
 	}
 
-	tmp_blob = data_blob(saved_pac, sizeof(saved_pac));
-	
-	/*tmp_blob.data = file_load(lp_parm_string(-1,"torture","pac_file"), &tmp_blob.length);*/
+	pac_file = lp_parm_string(-1,"torture","pac_file");
+	if (pac_file) {
+		tmp_blob.data = file_load(pac_file, &tmp_blob.length, mem_ctx);
+		printf("Loaded pac of size %d from %s\n", tmp_blob.length, pac_file);
+	} else {
+		tmp_blob = data_blob(saved_pac, sizeof(saved_pac));
+		file_save("x.dat", tmp_blob.data, tmp_blob.length);
+	}
 	
 	dump_data(10,tmp_blob.data,tmp_blob.length);
 
