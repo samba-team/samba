@@ -572,14 +572,17 @@ sub RegisterInterface($)
 sub RegisterInterfaceHandoff($)
 {
 	my $x = shift;
-	pidl_code "void proto_reg_handoff_dcerpc_$x->{NAME}(void)";
-	pidl_code "{";
-	indent;
-	pidl_code "dcerpc_init_uuid(proto_dcerpc_$x->{NAME}, ett_dcerpc_$x->{NAME},";
-	pidl_code "\t&uuid_dcerpc_$x->{NAME}, ver_dcerpc_$x->{NAME},";
-	pidl_code "\t$x->{NAME}_dissectors, hf_$x->{NAME}_opnum);";
-	deindent;
-	pidl_code "}";
+
+	if (defined($x->{UUID})) {
+	    pidl_code "void proto_reg_handoff_dcerpc_$x->{NAME}(void)";
+	    pidl_code "{";
+	    indent;
+	    pidl_code "dcerpc_init_uuid(proto_dcerpc_$x->{NAME}, ett_dcerpc_$x->{NAME},";
+	    pidl_code "\t&uuid_dcerpc_$x->{NAME}, ver_dcerpc_$x->{NAME},";
+	    pidl_code "\t$x->{NAME}_dissectors, hf_$x->{NAME}_opnum);";
+	    deindent;
+	    pidl_code "}";
+	}
 }
 
 sub ProcessInterface($)
