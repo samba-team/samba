@@ -268,7 +268,7 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
   use talloc_free to free the ldb_message returned
 */
 int ldb_search(struct ldb_context *ldb, 
-	       const const struct ldb_dn *base,
+	       const struct ldb_dn *base,
 	       enum ldb_scope scope,
 	       const char *expression,
 	       const char * const *attrs, struct ldb_message ***res);
