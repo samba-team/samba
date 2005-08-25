@@ -184,6 +184,19 @@ struct samba3_secrets
 	} *afs_keyfiles;
 };
 
+struct samba3_parameter {
+	char *name;
+	char *value;
+};
+
+struct samba3_share_info {
+	char *name;
+	struct security_descriptor secdesc;
+
+	uint32_t parameter_count;
+	struct samba3_parameter *parameters;
+};
+
 struct samba3 
 {
 	uint32_t winsdb_count;
@@ -191,6 +204,9 @@ struct samba3
 	
 	uint32_t samaccount_count;
 	struct samba3_samaccount *samaccounts;
+
+	uint32_t share_count;
+	struct samba3_share_info *shares;
 
 	struct samba3_secrets secrets;
 	struct samba3_groupdb group;
