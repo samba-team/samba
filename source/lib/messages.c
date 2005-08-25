@@ -314,7 +314,7 @@ unsigned int messages_pending_for_pid(pid_t pid)
 	char *buf;
 	unsigned int message_count = 0;
 
-	kbuf = message_key_pid(sys_getpid());
+	kbuf = message_key_pid(pid);
 
 	dbuf = tdb_fetch(tdb, kbuf);
 	if (dbuf.dptr == NULL || dbuf.dsize == 0) {
