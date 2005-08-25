@@ -90,8 +90,8 @@ Supported options:
 .Xc
 .El
 .Pp
-Subcommands and their options:
-.Bl -tag -width Ds
+command can be one of the following:
+.Bl -tag -width truncate
 .It truncate
 .Bl -tag -width Ds
 .It Xo
@@ -105,6 +105,10 @@ configuration file
 .Xc
 realm
 .El
+.Pp
+Truncates the log. Sets the new logs version number for the to the
+last entry of the old log.  If the log is truncted by emptying the
+file, the log will start over at the first version (0).
 .It dump
 .Bl -tag -width Ds
 .It Xo
@@ -118,6 +122,8 @@ configuration file
 .Xc
 realm
 .El
+.Pp
+Print out all entires in the log to standard output.
 .It replay
 .Bl -tag -width Ds
 .It Xo
@@ -139,6 +145,9 @@ configuration file
 .Xc
 realm
 .El
+.Pp
+Replay the changes from specififed entires (or all if none is
+specified) in the transaction log to the database.
 .El
 .Sh SEE ALSO
 .Xr iprop 8
