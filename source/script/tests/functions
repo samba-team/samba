@@ -2,13 +2,16 @@
 ## library file for test functions
 ##
 
+
+SMBCONTROL="smbcontrol -t 3"
+
 ##
 ## start/stop smbd daemon
 ##
 check_smbd_running()
 {
 	## the smbcontrol ping will return a 0 on success
-	smbcontrol $CONFIGURATION smbd ping 2>&1 > /dev/null
+	$SMBCONTROL $CONFIGURATION smbd ping 2>&1 > /dev/null
 }
 
 start_smbd()
@@ -19,7 +22,7 @@ start_smbd()
 
 	sleep 1
 
-	smbcontrol $CONFIGURATION `cat $PIDDIR/smbd.pid` ping 2>&1 > /dev/null || return $?
+	$SMBCONTROL $CONFIGURATION `cat $PIDDIR/smbd.pid` ping 2>&1 > /dev/null || return $?
 }
 
 stop_smbd()
@@ -30,7 +33,7 @@ stop_smbd()
 	## belt and braces; first kill and then send a shutdown message
 
 	kill -TERM $smbd_pid
-	smbcontrol $CONFIGURATION smbd shutdown
+	$SMBCONTROL $CONFIGURATION smbd shutdown
 
 	## check to see if smbd is already running
 	check_smbd_running
@@ -47,7 +50,7 @@ stop_smbd()
 check_nmbd_running()
 {
 	## the smbcontrol ping will return a 0 on success
-	smbcontrol $CONFIGURATION nmbd ping 2>&1 > /dev/null
+	$SMBCONTROL $CONFIGURATION nmbd ping 2>&1 > /dev/null
 }
 
 start_nmbd()
