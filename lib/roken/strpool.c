@@ -81,19 +81,18 @@ rk_strpoolprintf(struct rk_strpool *p, const char *fmt, ...)
     len = vasprintf(&str, fmt, ap);
     va_end(ap);
     if (str == NULL) {
-	printf("vasprintf");
 	rk_strpoolfree(p);
 	return NULL;
     }
     str2 = realloc(p->str, len + p->len + 1);
     if (str2 == NULL) {
-	printf("realloc");
 	rk_strpoolfree(p);
 	return NULL;
     }
     p->str = str2;
     memcpy(p->str + p->len, str, len + 1);
     p->len += len;
+    free(str);
     return p;
 }
 
