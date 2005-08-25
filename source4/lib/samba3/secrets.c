@@ -168,6 +168,12 @@ static NTSTATUS machine_acc (TDB_CONTEXT *tdb, const char *key, TDB_DATA vbuf, T
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS random_seed (TDB_CONTEXT *tdb, const char *key, TDB_DATA vbuf, TALLOC_CTX *ctx, struct samba3_secrets *db) 
+{
+	/* Ignore */	
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS domtrust_acc (TDB_CONTEXT *tdb, const char *key, TDB_DATA vbuf, TALLOC_CTX *ctx, struct samba3_secrets *db) 
 {
 	int idx, len = 0;
@@ -213,6 +219,7 @@ static const struct {
 	{ "SECRETS/MACHINE_PASSWORD/", machine_password },
 	{ "SECRETS/$MACHINE.ACC/", machine_acc },
 	{ "SECRETS/$DOMTRUST.ACC/", domtrust_acc },
+	{ "INFO/random_seed", random_seed },
 };
 
 

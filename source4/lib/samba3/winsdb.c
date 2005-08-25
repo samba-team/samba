@@ -34,7 +34,7 @@ NTSTATUS samba3_read_winsdb( const char *fn, TALLOC_CTX *ctx, struct samba3_wins
 	char *line;
 
 	if((fp = x_fopen(fn,O_RDONLY,0)) == NULL) {
-		DEBUG(2,("initialise_wins: Can't open wins database file %s. Error was %s\n",
+		DEBUG(0,("initialise_wins: Can't open wins database file %s. Error was %s\n",
 			fn, strerror(errno) ));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
