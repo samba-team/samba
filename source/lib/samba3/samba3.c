@@ -85,14 +85,17 @@ NTSTATUS samba3_read_smbconf(const char *fn, TALLOC_CTX *ctx, struct samba3 *db)
 	return NT_STATUS_OK;
 }
 
-struct samba3 *samba3_read(const char *libdir, TALLOC_CTX *ctx)
+NTSTATUS samba3_read(const char *smbconf, const char *libdir, TALLOC_CTX *ctx, struct samba3 **samba3)
 {
 	struct samba3 *ret;
 	char *dbfile;
 
-	ret = talloc(ctx, struct samba3);
-	
-	asprintf(&dbfile, "%s/winsdb.dat", libdir);
+	ret = talloc_zero(ctx, struct samba3);
+
+	if (smbconf) 
+		samba3_read_smbconf(smbconf, ctx, ret);
+
+	asprintf(&dbfile, "%s/wins.dat", libdir);
 	samba3_read_winsdb(dbfile, ret, &ret->winsdb_entries, &ret->winsdb_count);
 	SAFE_FREE(dbfile);
 
@@ -100,7 +103,7 @@ struct samba3 *samba3_read(const char *libdir, TALLOC_CTX *ctx)
 	samba3_read_tdbsam(dbfile, ctx, &ret->samaccounts, &ret->samaccount_count);
 	SAFE_FREE(dbfile);
 
-	asprintf(&dbfile, "%s/groupdb.tdb", libdir);
+	asprintf(&dbfile, "%s/group_mapping.tdb", libdir);
 	samba3_read_grouptdb(dbfile, ctx, &ret->group);
 	SAFE_FREE(dbfile);
 
@@ -124,5 +127,7 @@ struct samba3 *samba3_read(const char *libdir, TALLOC_CTX *ctx)
 	samba3_read_share_info(dbfile, ctx, ret);
 	SAFE_FREE(dbfile);
 
-	return ret;
+	*samba3 = ret;
+
+	return NT_STATUS_OK;
 }

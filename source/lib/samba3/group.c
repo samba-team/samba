@@ -46,8 +46,9 @@ NTSTATUS samba3_read_grouptdb(const char *file, TALLOC_CTX *ctx, struct samba3_g
 	int32_t vers_id;
 	TDB_DATA kbuf, dbuf, newkey;
 	int ret;
-	
-	TDB_CONTEXT *tdb = tdb_open(file, 0, TDB_DEFAULT, O_RDONLY, 0600);
+	TDB_CONTEXT *tdb; 
+
+	tdb = tdb_open(file, 0, TDB_DEFAULT, O_RDONLY, 0600);
 	if (!tdb) {
 		DEBUG(0,("Failed to open group mapping database\n"));
 		return NT_STATUS_UNSUCCESSFUL;
@@ -61,6 +62,7 @@ NTSTATUS samba3_read_grouptdb(const char *file, TALLOC_CTX *ctx, struct samba3_g
 	}
 
 	if (vers_id != DATABASE_VERSION_V2) {
+		DEBUG(0, ("Group database version mismatch: %d\n", vers_id));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -80,19 +82,17 @@ NTSTATUS samba3_read_grouptdb(const char *file, TALLOC_CTX *ctx, struct samba3_g
 			if (!dbuf.dptr)
 				continue;
 
-			map.sid = dom_sid_parse_talloc(tdb, kbuf.dptr+strlen(GROUP_PREFIX));
+			map.sid = dom_sid_parse_talloc(ctx, kbuf.dptr+strlen(GROUP_PREFIX));
 
 			ret = tdb_unpack(tdb, dbuf.dptr, dbuf.dsize, "ddff",
 							 &map.gid, &map.sid_name_use, &map.nt_name, &map.comment);
-
-			SAFE_FREE(dbuf.dptr);
 
 			if ( ret == -1 ) {
 				DEBUG(3,("enum_group_mapping: tdb_unpack failure\n"));
 				continue;
 			}
 
-			db->groupmappings = talloc_realloc(tdb, db->groupmappings, struct samba3_groupmapping, db->groupmap_count+1);
+			db->groupmappings = talloc_realloc(ctx, db->groupmappings, struct samba3_groupmapping, db->groupmap_count+1);
 
 			if (!db->groupmappings) 
 				return NT_STATUS_NO_MEMORY;

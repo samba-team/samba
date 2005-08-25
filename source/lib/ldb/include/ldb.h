@@ -162,8 +162,7 @@ struct ldb_debug_ops {
 #define PRINTF_ATTRIBUTE(a,b)
 #endif
 
-
-/* structues for ldb_parse_tree handling code */
+/* structures for ldb_parse_tree handling code */
 enum ldb_parse_op { LDB_OP_AND=1, LDB_OP_OR=2, LDB_OP_NOT=3,
 		    LDB_OP_EQUALITY=4, LDB_OP_SUBSTRING=5,
 		    LDB_OP_GREATER=6, LDB_OP_LESS=7, LDB_OP_PRESENT=8,
