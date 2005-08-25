@@ -189,7 +189,7 @@ static int Continuation(char *line, int pos )
 }
 
 
-static BOOL Section( myFILE *InFile, BOOL (*sfunc)(const char *) )
+static BOOL Section( myFILE *InFile, BOOL (*sfunc)(const char *, void *), void *userdata )
   /* ------------------------------------------------------------------------ **
    * Scan a section name, and pass the name to function sfunc().
    *
@@ -246,7 +246,7 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(const char *) )
           DEBUG(0, ("%s Empty section name in configuration file.\n", func ));
           return( False );
           }
-        if( !sfunc(InFile->bufr) )            /* Got a valid name.  Deal with it. */
+        if( !sfunc(InFile->bufr,userdata) )            /* Got a valid name.  Deal with it. */
           return( False );
         (void)EatComment( InFile );     /* Finish off the line.             */
         return( True );
@@ -285,7 +285,7 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(const char *) )
   return( False );
   } /* Section */
 
-static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *), int c )
+static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *, void *), int c, void *userdata )
   /* ------------------------------------------------------------------------ **
    * Scan a parameter name and value, and pass these two fields to pfunc().
    *
@@ -429,12 +429,13 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *)
     }
   InFile->bufr[end] = '\0';          /* End of value. */
 
-  return( pfunc( InFile->bufr, &InFile->bufr[vstart] ) );   /* Pass name & value to pfunc().  */
+  return( pfunc( InFile->bufr, &InFile->bufr[vstart], userdata ) );   /* Pass name & value to pfunc().  */
   } /* Parameter */
 
 static BOOL Parse( myFILE *InFile,
-                   BOOL (*sfunc)(const char *),
-                   BOOL (*pfunc)(const char *, const char *) )
+                   BOOL (*sfunc)(const char *, void *),
+                   BOOL (*pfunc)(const char *, const char *, void *),
+				   void *userdata )
   /* ------------------------------------------------------------------------ **
    * Scan & parse the input.
    *
@@ -474,7 +475,7 @@ static BOOL Parse( myFILE *InFile,
         break;
 
       case '[':                         /* Section Header. */
-        if( !Section( InFile, sfunc ) )
+        if( !Section( InFile, sfunc, userdata ) )
           return( False );
         c = EatWhitespace( InFile );
         break;
@@ -484,7 +485,7 @@ static BOOL Parse( myFILE *InFile,
         break;
 
       default:                          /* Parameter line. */
-        if( !Parameter( InFile, pfunc, c ) )
+        if( !Parameter( InFile, pfunc, c, userdata ) )
           return( False );
         c = EatWhitespace( InFile );
         break;
@@ -527,8 +528,9 @@ static myFILE *OpenConfFile( const char *FileName )
   } /* OpenConfFile */
 
 BOOL pm_process( const char *FileName,
-                 BOOL (*sfunc)(const char *),
-                 BOOL (*pfunc)(const char *, const char *) )
+                 BOOL (*sfunc)(const char *, void *),
+                 BOOL (*pfunc)(const char *, const char *, void *),
+				 void *userdata)
   /* ------------------------------------------------------------------------ **
    * Process the named parameter file.
    *
@@ -554,7 +556,7 @@ BOOL pm_process( const char *FileName,
   DEBUG( 3, ("%s Processing configuration file \"%s\"\n", func, FileName) );
 
   if( NULL != InFile->bufr )                          /* If we already have a buffer */
-    result = Parse( InFile, sfunc, pfunc );   /* (recursive call), then just */
+    result = Parse( InFile, sfunc, pfunc, userdata );   /* (recursive call), then just */
                                               /* use it.                     */
 
   else                                        /* If we don't have a buffer   */
@@ -567,7 +569,7 @@ BOOL pm_process( const char *FileName,
       myfile_close(InFile);
       return( False );
       }
-    result = Parse( InFile, sfunc, pfunc );
+    result = Parse( InFile, sfunc, pfunc, userdata );
     InFile->bufr  = NULL;
     InFile->bSize = 0;
     }
