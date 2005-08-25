@@ -15,10 +15,10 @@
     LaserJet 5L</command>.</para>
 		
     <para>
-	The need for the file is due to the printer driver namespace problem described in <link
-	linkend="classicalprinting">the chapter on Classical Printing in the book Samba3-HOWTO</link>.  For more
-	details on OS/2 clients, please refer to <link linkend="Other-Clients"/>.
-	</para>
+    The need for the file is due to the printer driver namespace problem described in <link
+    linkend="classicalprinting">the chapter on Classical Printing in the book Samba3-HOWTO</link>.  For more
+    details on OS/2 clients, please refer to <link linkend="Other-Clients"/>.
+    </para>
 </description>
 <value type="default"/>
 </samba:parameter>

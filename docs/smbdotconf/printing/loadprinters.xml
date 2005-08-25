@@ -7,7 +7,7 @@
     <para>A boolean variable that controls whether all 
     printers in the printcap will be loaded for browsing by default. 
     See the <smbconfoption name="printers"/> section for 
-	more details.</para>
+    more details.</para>
 </description>
 
 <value type="default">yes</value>

@@ -29,7 +29,11 @@
 <related>printing</related>
 
 <value type="default"><comment>Currently no default value is given to 
-    this string, unless the value of the <parameter moreinfo="none">printing</parameter> 
-	parameter is <constant>SYSV</constant>, in which case the default is : <command moreinfo="none">lp -i %p-%j -H hold</command> or if the value of the <parameter moreinfo="none">printing</parameter> parameter is <constant>SOFTQ</constant>, then the default is: <command moreinfo="none">qstat -s -j%j -h</command>. </comment></value>
+    this string, unless the value of the <smbconfoption name="printing"/> 
+    parameter is <constant>SYSV</constant>, in which case the default is : 
+    <command moreinfo="none">lp -i %p-%j -H hold</command> or if the value of the 
+    <parameter moreinfo="none">printing</parameter> parameter is 
+    <constant>SOFTQ</constant>, then the default is: 
+    <command moreinfo="none">qstat -s -j%j -h</command>. </comment></value>
 <value type="example">/usr/bin/lpalt %p-%j -p0</value>
 </samba:parameter>

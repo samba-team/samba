@@ -9,7 +9,7 @@
 	the <parameter>path</parameter> parameter is a local AFS import. The
 	special AFS features include the attempt to hand-craft an AFS token
 	if you enabled --with-fake-kaserver in configure.
-</para>
+	</para>
 </description>
 
 <value type="default">no</value>
