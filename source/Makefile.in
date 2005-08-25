@@ -35,8 +35,6 @@ IDMAP_LIBS=@IDMAP_LIBS@
 KRB5LIBS=@KRB5_LIBS@
 LDAP_LIBS=@LDAP_LIBS@
 
-LINK=$(CC) $(FLAGS) $(LDFLAGS)
-
 INSTALLCMD=@INSTALL@
 INSTALLCLIENTCMD_SH=@INSTALLCLIENTCMD_SH@
 INSTALLCLIENTCMD_A=@INSTALLCLIENTCMD_A@
@@ -779,6 +777,14 @@ pch:
 	rm -f $(srcdir)/include/includes.h.gch
 	$(CC) -I. -I$(srcdir) $(FLAGS) -c $(srcdir)/include/includes.h -o $(srcdir)/include/includes.h.gch
 
+##
+## Targets for 'make test'
+##
+test: all torture
+	@echo Running Samba 3 Test suite
+	@sh ./script/tests/runtests.sh t_dir
+
+
 # These dependencies are only approximately correct: we want to make
 # sure Samba's paths are updated if ./configure is re-run.  Really it
 # would be nice if "make prefix=/opt/samba all" also rebuilt things,
@@ -1454,7 +1460,8 @@ TOPFILES=dynconfig.o dynconfig.@PICSUFFIX@
 clean: delheaders python_clean
 	-rm -f core */*~ *~ */*.o */*.@PICSUFFIX@ */*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(MODULES) $(TORTURE_PROGS) \
-		$(LIBSMBCLIENT) $(EVERYTHING_PROGS) .headers.stamp
+		$(LIBSMBCLIENT) $(EVERYTHING_PROGS) .headers.stamp 
+	-rm -rf t_dir
 
 # Making this target will just make sure that the prototype files
 # exist, not necessarily that they are up to date.  Since they're
@@ -1579,16 +1586,25 @@ Makefile: $(srcdir)/Makefile.in config.status
 # FIXME: LD_LIBRARY_PATH is not portable, but in the absence of
 # libtool I don't know a better way to do it.  Perhaps we should fix
 # libbigballofmud to link statically?
-
-check: check-programs
-	LD_LIBRARY_PATH="`pwd`/bin:$$LD_LIBRARY_PATH" \
-	PATH="`pwd`/bin:$$PATH" \
-	python stf/standardcheck.py; \
-	if test -n "$(PYTHON)"; then \
-		python stf/pythoncheck.py; \
-	fi
+##
+## not working...to be replaced by 'make test' --jerry
+##
+#check: check-programs
+#	LD_LIBRARY_PATH="`pwd`/bin:$$LD_LIBRARY_PATH" \
+#	PATH="`pwd`/bin:$$PATH" \
+#	python stf/standardcheck.py; \
+#	if test -n "$(PYTHON)"; then \
+#		python stf/pythoncheck.py; \
+#	fi
 
 # These are called by the test suite and need to be built before
 # running it.  For the time being we don't build all of BIN_PROGS,
 # because they're not all needed.
-check-programs: bin/t_strcmp bin/t_strstr bin/t_push_ucs2 bin/smbcontrol bin/t_snprintf bin/t_asn1
+# check-programs: bin/t_strcmp bin/t_strstr bin/t_push_ucs2 bin/smbcontrol bin/t_snprintf bin/t_asn1
+
+#test: all
+#	@if test -z "$(SMB4TORTURE)"; then \
+#		echo "Please set the SMB4TORTURE environment variable"; \
+#		exit 1; \
+#	fi
+#	./script/smb4torture.sh `pwd`/prefix-test $(SMB4TORTURE)
