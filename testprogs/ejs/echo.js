@@ -229,5 +229,5 @@ test_TestEnum(echo);
 test_TestSurrounding(echo);
 test_TestDoublePointer(echo);
 
-print("All OK\n");
+println("All OK\n");
 return 0;
