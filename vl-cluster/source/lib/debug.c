@@ -456,14 +456,14 @@ static void debug_message(int msg_type, struct process_id src,
 	/* Check, it's a proper string! */
 	if (params_str[len-1] != '\0') {
 		DEBUG(1, ("Invalid debug message from pid %u to pid %u\n",
-			  (unsigned int)proc_to_pid(&src),
+			  (unsigned int)procid_to_pid(&src),
 			  (unsigned int)getpid()));
 		return;
 	}
 
 	DEBUG(3, ("INFO: Remote set of debug to `%s'  (pid %u from pid %u)\n",
 		  params_str, (unsigned int)getpid(),
-		  (unsigned int)proc_to_pid(&src)));
+		  (unsigned int)procid_to_pid(&src)));
 
 	debug_parse_levels(params_str);
 }
@@ -476,7 +476,7 @@ void debug_message_send(pid_t pid, const char *params_str)
 {
 	if (!params_str)
 		return;
-	message_send_pid(pid_to_proc(pid), MSG_DEBUG,
+	message_send_pid(pid_to_procid(pid), MSG_DEBUG,
 			 params_str, strlen(params_str) + 1,
 			 False);
 }
@@ -491,7 +491,7 @@ static void debuglevel_message(int msg_type, struct process_id src,
 	char *message = debug_list_class_names_and_levels();
 
 	DEBUG(1,("INFO: Received REQ_DEBUGLEVEL message from PID %u\n",
-		 (unsigned int)proc_to_pid(&src)));
+		 (unsigned int)procid_to_pid(&src)));
 	message_send_pid(src, MSG_DEBUGLEVEL, message, strlen(message) + 1, True);
 
 	SAFE_FREE(message);

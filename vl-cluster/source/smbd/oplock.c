@@ -98,7 +98,7 @@ void process_kernel_oplocks(void)
 		msg.dev = fsp->dev;
 		msg.inode = fsp->inode;
 		msg.file_id = fsp->file_id;
-		message_send_pid(pid_to_proc(sys_getpid()),
+		message_send_pid(pid_to_procid(sys_getpid()),
 				 MSG_SMB_KERNEL_BREAK,
 				 &msg, sizeof(msg), True);
 	}
@@ -381,7 +381,7 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
 	}
 
 	DEBUG(10, ("Got oplock break message from pid %d: %d/%d/%d\n",
-		   (int)proc_to_pid(&src), (int)msg->dev, (int)msg->inode,
+		   (int)procid_to_pid(&src), (int)msg->dev, (int)msg->inode,
 		   (int)msg->share_file_id));
 
 	fsp = initial_break_processing(msg->dev, msg->inode,
@@ -400,7 +400,7 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
 	if (fsp->sent_oplock_break != NO_BREAK_SENT) {
 		/* Remember we have to inform the requesting PID when the
 		 * client replies */
-		msg->pid = proc_to_pid(&src);
+		msg->pid = procid_to_pid(&src);
 		ADD_TO_ARRAY(NULL, struct share_mode_entry, *msg,
 			     &fsp->pending_break_messages,
 			     &fsp->num_pending_break_messages);
@@ -432,7 +432,7 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
 	}
 
 	/* Need to wait before sending a break message to a file of our own */
-	if (proc_to_pid(&src) == sys_getpid()) {
+	if (procid_to_pid(&src) == sys_getpid()) {
 		wait_before_sending_break();
 	}
 
@@ -456,7 +456,7 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
 		/* Async level2 request, don't send a reply */
 		fsp->sent_oplock_break = ASYNC_LEVEL_II_BREAK_SENT;
 	}
-	msg->pid = proc_to_pid(&src);
+	msg->pid = procid_to_pid(&src);
 	ADD_TO_ARRAY(NULL, struct share_mode_entry, *msg,
 		     &fsp->pending_break_messages,
 		     &fsp->num_pending_break_messages);
@@ -496,7 +496,7 @@ static void process_kernel_oplock_break(int msg_type, struct process_id src,
 	}
 
 	DEBUG(10, ("Got kernel oplock break message from pid %d: %d/%d/%d\n",
-		   (int)proc_to_pid(&src), (int)msg->dev, (int)msg->inode,
+		   (int)procid_to_pid(&src), (int)msg->dev, (int)msg->inode,
 		   (int)msg->file_id));
 
 	fsp = initial_break_processing(msg->dev, msg->inode, msg->file_id);
@@ -541,7 +541,7 @@ void reply_to_oplock_break_requests(files_struct *fsp)
 
 	for (i=0; i<fsp->num_pending_break_messages; i++) {
 		share_mode_entry *msg = &fsp->pending_break_messages[i];
-		message_send_pid(pid_to_proc(msg->pid), MSG_SMB_BREAK_RESPONSE,
+		message_send_pid(pid_to_procid(msg->pid), MSG_SMB_BREAK_RESPONSE,
 				 msg, sizeof(*msg), True);
 	}
 
@@ -570,7 +570,7 @@ static void process_oplock_break_response(int msg_type, struct process_id src,
 	}
 
 	DEBUG(10, ("Got oplock break response from pid %d: %d/%d/%d mid %d\n",
-		   (int)proc_to_pid(&src), (int)msg->dev, (int)msg->inode,
+		   (int)procid_to_pid(&src), (int)msg->dev, (int)msg->inode,
 		   (int)msg->share_file_id, (int)msg->op_mid));
 
 	/* Here's the hack from open.c, store the mid in the 'port' field */
@@ -593,7 +593,7 @@ static void process_open_retry_message(int msg_type, struct process_id src,
 	}
 
 	DEBUG(10, ("Got open retry msg from pid %d: %d/%d mid %d\n",
-		   (int)proc_to_pid(&src), (int)msg->dev, (int)msg->inode,
+		   (int)procid_to_pid(&src), (int)msg->dev, (int)msg->inode,
 		   (int)msg->mid));
 
 	schedule_deferred_open_smb_message(msg->mid);
@@ -684,7 +684,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 			abort();
 		}
 
-		message_send_pid(pid_to_proc(share_entry->pid),
+		message_send_pid(pid_to_procid(share_entry->pid),
 				 MSG_SMB_ASYNC_LEVEL2_BREAK,
 				 share_entry, sizeof(*share_entry), True);
 	}

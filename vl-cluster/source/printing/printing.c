@@ -1452,7 +1452,7 @@ static void print_queue_update(int snum, BOOL force)
 	/* finally send the message */
 	
 	become_root();
-	message_send_pid(pid_to_proc(background_lpq_updater_pid),
+	message_send_pid(pid_to_procid(background_lpq_updater_pid),
 		 MSG_PRINTER_UPDATE, buffer, len, False);
 	unbecome_root();
 

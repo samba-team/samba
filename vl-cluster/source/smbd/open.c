@@ -671,7 +671,7 @@ static BOOL delay_for_oplocks(files_struct *fsp)
 		DEBUG(10, ("Sending break request to PID %d\n",
 			   (int)exclusive->pid));
 		exclusive->op_mid = get_current_mid();
-		if (!message_send_pid(pid_to_proc(exclusive->pid),
+		if (!message_send_pid(pid_to_procid(exclusive->pid),
 				      MSG_SMB_BREAK_REQUEST,
 				      exclusive, sizeof(*exclusive), True)) {
 			DEBUG(3, ("Could not send oplock break message\n"));

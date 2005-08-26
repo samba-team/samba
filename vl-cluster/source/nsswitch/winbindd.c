@@ -893,7 +893,7 @@ static void process_loop(void)
 		DEBUG(3, ("got SIGHUP\n"));
 
 		msg_reload_services(MSG_SMB_CONF_UPDATED,
-				    pid_to_proc(0), NULL, 0);
+				    pid_to_procid(0), NULL, 0);
 		do_sighup = False;
 	}
 

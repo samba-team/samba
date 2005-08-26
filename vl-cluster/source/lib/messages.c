@@ -88,7 +88,7 @@ static void ping_message(int msg_type, struct process_id src,
 {
 	const char *msg = buf ? buf : "none";
 	DEBUG(1,("INFO: Received PING message from PID %u [%s]\n",
-		 (unsigned int)proc_to_pid(&src), msg));
+		 (unsigned int)procid_to_pid(&src), msg));
 	message_send_pid(src, MSG_PONG, buf, len, True);
 }
 
@@ -127,10 +127,12 @@ BOOL message_init(void)
 
 static TDB_DATA message_key_pid(struct process_id pid)
 {
-	static char key[20];
+	static char key[50];
 	TDB_DATA kbuf;
+	char *pidstr = procid_str(NULL, &pid);
 
-	slprintf(key, sizeof(key)-1, "PID/%d", (int)proc_to_pid(&pid));
+	slprintf(key, sizeof(key)-1, "PID/%s", pidstr);
+	talloc_free(pidstr);
 	
 	kbuf.dptr = (char *)key;
 	kbuf.dsize = strlen(key)+1;
@@ -149,16 +151,50 @@ static BOOL message_notify(struct process_id pid)
 	 * sent to places we don't want.
 	 */
 
-	SMB_ASSERT(proc_to_pid(&pid) > 0);
+	SMB_ASSERT(procid_to_pid(&pid) > 0);
 
-	if (kill(proc_to_pid(&pid), SIGUSR1) == -1) {
+	if (!procid_is_local(&pid)) {
+		int fd;
+		char pid_str[20];
+		ssize_t sent;
+		struct sockaddr_in sock_out;
+
+		slprintf(pid_str, sizeof(pid_str)-1, "%d", pid.pid);
+
+		fd = open_socket_in(SOCK_DGRAM, 0, 0, 0, False);
+		if (fd < 0) {
+			DEBUG(0, ("Could not open socket: %s\n",
+				  strerror(errno)));
+			return False;
+		}
+		set_blocking(fd, False);
+
+		ZERO_STRUCT(sock_out);
+		sock_out.sin_family = AF_INET;
+		putip((char *)&sock_out.sin_addr, (char *)&pid.ip);
+		sock_out.sin_port = htons(MESSAGING_PORT);
+
+		sent = sendto(fd, pid_str, strlen(pid_str), 0,
+			      (struct sockaddr *)&sock_out,
+			      sizeof(sock_out));
+		close(fd);
+		
+		if (sent < 0) {
+			DEBUG(0, ("Could not send UDP packet: %s\n",
+				  strerror(errno)));
+			return False;
+		}
+		return True;
+	}
+
+	if (kill(procid_to_pid(&pid), SIGUSR1) == -1) {
 		if (errno == ESRCH) {
 			DEBUG(2,("pid %d doesn't exist - deleting messages "
-				 "record\n", (int)proc_to_pid(&pid)));
+				 "record\n", (int)procid_to_pid(&pid)));
 			tdb_delete(tdb, message_key_pid(pid));
 		} else {
 			DEBUG(2,("message to process %d failed - %s\n",
-				 (int)proc_to_pid(&pid), strerror(errno)));
+				 (int)procid_to_pid(&pid), strerror(errno)));
 		}
 		return False;
 	}
@@ -186,12 +222,12 @@ static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
 	 * sent to places we don't want.
 	 */
 
-	SMB_ASSERT(proc_to_pid(&pid) > 0);
+	SMB_ASSERT(procid_to_pid(&pid) > 0);
 
 	rec.msg_version = MESSAGE_VERSION;
 	rec.msg_type = msg_type;
 	rec.dest = pid;
-	rec.src = pid_to_proc(sys_getpid());
+	rec.src = pid_to_procid(sys_getpid());
 	rec.len = len;
 
 	kbuf = message_key_pid(pid);
@@ -360,7 +396,7 @@ static BOOL retrieve_all_messages(char **msgs_buf, size_t *total_len)
 	*msgs_buf = NULL;
 	*total_len = 0;
 
-	kbuf = message_key_pid(pid_to_proc(sys_getpid()));
+	kbuf = message_key_pid(pid_to_procid(sys_getpid()));
 
 	if (tdb_chainlock(tdb, kbuf) == -1)
 		return False;
@@ -452,7 +488,7 @@ void message_dispatch(void)
 	for (buf = msgs_buf; message_recv(msgs_buf, total_len, &msg_type, &src, &buf, &len); buf += len) {
 		DEBUG(10,("message_dispatch: received msg_type=%d "
 			  "src_pid=%u\n", msg_type,
-			  (unsigned int) proc_to_pid(&src)));
+			  (unsigned int) procid_to_pid(&src)));
 		n_handled = 0;
 		for (dfn = dispatch_fns; dfn; dfn = dfn->next) {
 			if (dfn->msg_type == msg_type) {
@@ -551,7 +587,7 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	/* If the msg send fails because the pid was not found (i.e. smbd died), 
 	 * the msg has already been deleted from the messages.tdb.*/
 
-	if (!message_send_pid(pid_to_proc(crec.pid), msg_all->msg_type,
+	if (!message_send_pid(pid_to_procid(crec.pid), msg_all->msg_type,
 			      msg_all->buf, msg_all->len,
 			      msg_all->duplicates)) {
 		

@@ -127,7 +127,7 @@ static void notify_deferred_opens(files_struct *fsp)
 			 */
 			schedule_deferred_open_smb_message(entry->mid);
 		} else {
-			message_send_pid(pid_to_proc(entry->pid),
+			message_send_pid(pid_to_procid(entry->pid),
 					 MSG_SMB_OPEN_RETRY,
 					 entry, sizeof(*entry), True);
 		}

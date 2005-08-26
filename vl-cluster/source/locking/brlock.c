@@ -545,7 +545,7 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 						DEBUG(10,("brl_unlock: sending unlock message to pid %u\n",
 									(unsigned int)pend_lock->context.pid ));
 
-						message_send_pid(pid_to_proc(pend_lock->context.pid),
+						message_send_pid(pid_to_procid(pend_lock->context.pid),
 								MSG_SMB_UNLOCK,
 								NULL, 0, True);
 					}
@@ -673,7 +673,7 @@ void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum)
 
 				/* We could send specific lock info here... */
 				if (brl_pending_overlap(lock, pend_lock))
-					message_send_pid(pid_to_proc(pend_lock->context.pid),
+					message_send_pid(pid_to_procid(pend_lock->context.pid),
 							MSG_SMB_UNLOCK,
 							NULL, 0, True);
 			}

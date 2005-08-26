@@ -2757,14 +2757,73 @@ uint32 map_share_mode_to_deny_mode(uint32 share_access, uint32 private_options)
 	return (uint32)-1;
 }
 
-pid_t proc_to_pid(const struct process_id *proc)
+pid_t procid_to_pid(const struct process_id *proc)
 {
 	return proc->pid;
 }
 
-struct process_id pid_to_proc(pid_t pid)
+struct process_id pid_to_procid(pid_t pid)
 {
 	struct process_id result;
 	result.pid = pid;
+	result.ip = *interpret_addr2(lp_socket_address());
 	return result;
+}
+
+struct process_id interpret_pid(const char *pid_string)
+{
+	char *p, *tmp;
+	struct process_id result;
+
+	ZERO_STRUCT(result);
+	result.pid = -1;
+
+	if (pid_string == NULL) {
+		return result;
+	}
+
+	tmp = SMB_STRDUP(pid_string);
+	if (tmp == NULL) {
+		DEBUG(0, ("strdup failed\n"));
+		return result;
+	}
+
+	p = strchr(tmp, ':');
+	if (p == NULL) {
+		DEBUG(10, ("Could not find ':' in string %s\n", pid_string));
+		SAFE_FREE(tmp);
+		return result;
+	}
+
+	*p = '\0';
+	p += 1;
+
+	result.pid = strtoull(p, NULL, 10);
+	if (result.pid < 0) {
+		DEBUG(10, ("Invalid pid: %s\n", p));
+		SAFE_FREE(tmp);
+		return result;
+	}
+
+
+	result.ip = *interpret_addr2(tmp);
+	SAFE_FREE(tmp);
+	return result;
+}
+
+char *procid_str(TALLOC_CTX *mem_ctx, const struct process_id *pid)
+{
+	return talloc_asprintf(mem_ctx, "%s:%d", inet_ntoa(pid->ip),
+			       pid->pid);
+}
+
+BOOL procid_valid(const struct process_id *pid)
+{
+	return (pid->pid != -1);
+}
+
+BOOL procid_is_local(const struct process_id *pid)
+{
+	struct in_addr ip = *interpret_addr2(lp_socket_address());
+	return (memcmp(&ip, &pid->ip, sizeof(pid)) == 0);
 }

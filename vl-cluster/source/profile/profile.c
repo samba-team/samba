@@ -90,7 +90,7 @@ void reqprofile_message(int msg_type, struct process_id src,
 	level = 0;
 #endif
 	DEBUG(1,("INFO: Received REQ_PROFILELEVEL message from PID %u\n",
-		 (unsigned int)proc_to_pid(&src)));
+		 (unsigned int)procid_to_pid(&src)));
 	message_send_pid(src, MSG_PROFILELEVEL, &level, sizeof(int), True);
 }
 

@@ -192,6 +192,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 	int maxfd = 0;
 	int i;
 	char *ports;
+	int udp_socket = -1;
 
 	if (!is_daemon) {
 		return open_sockets_inetd();
@@ -223,6 +224,20 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 		}
 	} else {
 		ports = smb_xstrdup(smb_ports);
+	}
+
+	if (is_daemon) {
+		uint32 addr = interpret_addr(lp_socket_address());
+		udp_socket = open_socket_in(SOCK_DGRAM, MESSAGING_PORT, 0,
+					    addr, True);
+		if (udp_socket < 0) {
+			DEBUG(0, ("Could not open UDP socket: %s\n",
+				  strerror(errno)));
+			return False;
+		}
+		set_blocking(udp_socket, False);
+		FD_SET(udp_socket, &listen_set);
+		maxfd = MAX(maxfd, udp_socket);
 	}
 
 	if (lp_interfaces() && lp_bind_interfaces_only()) {
@@ -358,6 +373,48 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 				reload_after_sighup = 0;
 			}
 
+			continue;
+		}
+
+		if ((udp_socket > 0) && (FD_ISSET(udp_socket, &lfds))) {
+			fstring buf;
+			ssize_t received;
+			pid_t pid;
+			char *endptr;
+
+			received = recv(udp_socket, buf, sizeof(buf)-1, 0);
+			DEBUG(10, ("Received %d bytes via UDP\n", received));
+			if (received < 0) {
+				DEBUG(5, ("Error receiving UDP packet: %s\n",
+					  strerror(errno)));
+				continue;
+			}
+			if (received >= sizeof(buf)) {
+				DEBUG(0, ("received too many bytes via UDP: "
+					  "%d\n", received));
+				continue;
+			}
+			buf[received] = '\0';
+
+			pid = strtoul(buf, &endptr, 10);
+			if (buf+received != endptr) {
+				DEBUG(5, ("Received non-integer via UDP: %s\n",
+					  buf));
+				continue;
+			}
+
+			if (pid < 0) {
+				DEBUG(5, ("Received invalid PID %d\n", pid));
+				continue;
+			}
+
+			DEBUG(10, ("Received packet for PID %d\n", pid));
+
+			if (kill(pid, SIGUSR1) == -1) {
+				DEBUG(2, ("Message to process %d failed "
+					  "(%s)\n", (int)pid,
+					  strerror(errno)));
+			}
 			continue;
 		}
 		

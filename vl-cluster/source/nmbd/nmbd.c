@@ -332,18 +332,18 @@ static void msg_nmbd_send_packet(int msg_type, struct process_id src,
 	struct subnet_record *subrec;
 	struct in_addr *local_ip;
 
-	DEBUG(10, ("Received send_packet from %d\n", proc_to_pid(&src)));
+	DEBUG(10, ("Received send_packet from %d\n", procid_to_pid(&src)));
 
 	if (len != sizeof(struct packet_struct)) {
 		DEBUG(2, ("Discarding invalid packet length from %d\n",
-			  proc_to_pid(&src)));
+			  procid_to_pid(&src)));
 		return;
 	}
 
 	if ((p->packet_type != NMB_PACKET) &&
 	    (p->packet_type != DGRAM_PACKET)) {
 		DEBUG(2, ("Discarding invalid packet type from %d: %d\n",
-			  proc_to_pid(&src), p->packet_type));
+			  procid_to_pid(&src), p->packet_type));
 		return;
 	}
 
@@ -351,7 +351,7 @@ static void msg_nmbd_send_packet(int msg_type, struct process_id src,
 
 	if (local_ip == NULL) {
 		DEBUG(2, ("Could not find ip for packet from %d\n",
-			  proc_to_pid(&src)));
+			  procid_to_pid(&src)));
 		return;
 	}
 
@@ -595,7 +595,7 @@ static void process(void)
 		if(reload_after_sighup) {
 			DEBUG( 0, ( "Got SIGHUP dumping debug info.\n" ) );
 			msg_reload_nmbd_services(MSG_SMB_CONF_UPDATED,
-						 pid_to_proc(0), (void*) &no_subnets, 0);
+						 pid_to_procid(0), (void*) &no_subnets, 0);
 			if(no_subnets)
 				return;
 			reload_after_sighup = 0;

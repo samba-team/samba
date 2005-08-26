@@ -45,7 +45,7 @@ static BOOL send_message(struct process_id pid, int msg_type,
 	if (!message_init())
 		return False;
 
-	if (proc_to_pid(&pid) != 0)
+	if (procid_to_pid(&pid) != 0)
 		return message_send_pid(pid, msg_type, buf, len, duplicates);
 
 	tdb = tdb_open_log(lock_path("connections.tdb"), 0, 
@@ -87,7 +87,7 @@ static void wait_replies(BOOL multiple_replies)
 
 static void print_pid_string_cb(int msg_type, struct process_id pid, void *buf, size_t len)
 {
-	printf("PID %u: %.*s", (unsigned int)proc_to_pid(&pid),
+	printf("PID %u: %.*s", (unsigned int)procid_to_pid(&pid),
 	       (int)len, (const char *)buf);
 	num_replies++;
 }
@@ -149,7 +149,9 @@ static BOOL do_election(const struct process_id pid,
 
 static void pong_cb(int msg_type, struct process_id pid, void *buf, size_t len)
 {
-	printf("PONG from pid %u\n", (unsigned int)proc_to_pid(&pid));
+	char *src_string = procid_str(NULL, &pid);
+	printf("PONG from pid %s\n", src_string);
+	talloc_free(src_string);
 	num_replies++;
 }
 
@@ -167,7 +169,7 @@ static BOOL do_ping(const struct process_id pid, const int argc, const char **ar
 
 	message_register(MSG_PONG, pong_cb);
 
-	wait_replies(proc_to_pid(&pid) == 0);
+	wait_replies(procid_to_pid(&pid) == 0);
 
 	/* No replies were received within the timeout period */
 
@@ -243,7 +245,7 @@ static void profilelevel_cb(int msg_type, struct process_id pid, void *buf, size
 		break;
 	}
 	
-	printf("Profiling %s on pid %u\n",s,(unsigned int)proc_to_pid(&pid));
+	printf("Profiling %s on pid %u\n",s,(unsigned int)procid_to_pid(&pid));
 }
 
 static void profilelevel_rqst(int msg_type, struct process_id pid,
@@ -272,7 +274,7 @@ static BOOL do_profilelevel(const struct process_id pid,
 	message_register(MSG_PROFILELEVEL, profilelevel_cb);
 	message_register(MSG_REQ_PROFILELEVEL, profilelevel_rqst);
 
-	wait_replies(proc_to_pid(&pid) == 0);
+	wait_replies(procid_to_pid(&pid) == 0);
 
 	/* No replies were received within the timeout period */
 
@@ -301,7 +303,7 @@ static BOOL do_debuglevel(const struct process_id pid,
 
 	message_register(MSG_DEBUGLEVEL, print_pid_string_cb);
 
-	wait_replies(proc_to_pid(&pid) == 0);
+	wait_replies(procid_to_pid(&pid) == 0);
 
 	/* No replies were received within the timeout period */
 
@@ -439,7 +441,8 @@ static BOOL do_printnotify(const struct process_id pid,
 			return False;
 		}
 
-		notify_printer_byname(argv[2], attribute, argv[4]);
+		notify_printer_byname(argv[2], attribute,
+				      CONST_DISCARD(char *, argv[4]));
 
 		goto send;
 	}
@@ -512,7 +515,7 @@ static BOOL do_poolusage(const struct process_id pid,
 
 	message_register(MSG_POOL_USAGE, print_string_cb);
 
-	wait_replies(proc_to_pid(&pid) == 0);
+	wait_replies(procid_to_pid(&pid) == 0);
 
 	/* No replies were received within the timeout period */
 
@@ -695,33 +698,39 @@ static void usage(poptContext *pc)
 
 /* Return the pid number for a string destination */
 
-static pid_t parse_dest(const char *dest)
+static struct process_id parse_dest(const char *dest)
 {
+	struct process_id result;
 	pid_t pid;
 
 	/* Zero is a special return value for broadcast smbd */
 
-	if (strequal(dest, "smbd"))
-		return 0;
+	if (strequal(dest, "smbd")) {
+		return interpret_pid(":0");
+	}
 
 	/* Try self - useful for testing */
 
-	if (strequal(dest, "self"))
-		return sys_getpid();
+	if (strequal(dest, "self")) {
+		return pid_to_procid(sys_getpid());
+	}
 
 	/* Check for numeric pid number */
 
-	if ((pid = atoi(dest)) != 0)
-		return pid;
+	result = interpret_pid(dest);
+	if (procid_valid(&result)) {
+		return result;
+	}
 
 	/* Look up other destinations in pidfile directory */
 
-	if ((pid = pidfile_pid(dest)) != 0)
-		return pid;
+	if ((pid = pidfile_pid(dest)) != 0) {
+		return pid_to_procid(pid);
+	}
 
 	fprintf(stderr,"Can't find pid for destination '%s'\n", dest);
 
-	return -1;
+	return result;
 }	
 
 /* Execute smbcontrol command */
@@ -729,20 +738,21 @@ static pid_t parse_dest(const char *dest)
 static BOOL do_command(int argc, const char **argv)
 {
 	const char *dest = argv[0], *command = argv[1];
-	pid_t pid;
+	struct process_id pid;
 	int i;
 
 	/* Check destination */
 
-	if ((pid = parse_dest(dest)) == -1)
+	pid = parse_dest(dest);
+	if (!procid_valid(&pid)) {
 		return False;
+	}
 
 	/* Check command */
 
 	for (i = 0; msg_types[i].name; i++) {
 		if (strequal(command, msg_types[i].name))
-			return msg_types[i].fn(pid_to_proc(pid),
-					       argc - 1, argv + 1);
+			return msg_types[i].fn(pid, argc - 1, argv + 1);
 	}
 
 	fprintf(stderr, "smbcontrol: unknown command '%s'\n", command);

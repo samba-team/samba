@@ -1251,7 +1251,7 @@ static BOOL srv_spoolss_drv_upgrade_printer(char* drivername)
 	DEBUG(10,("srv_spoolss_drv_upgrade_printer: Sending message about driver upgrade [%s]\n",
 		drivername));
 		
-	message_send_pid(pid_to_proc(sys_getpid()),
+	message_send_pid(pid_to_procid(sys_getpid()),
 			 MSG_PRINTER_DRVUPGRADE, drivername, len+1, False);
 
 	return True;
@@ -1348,7 +1348,7 @@ static BOOL srv_spoolss_reset_printerdata(char* drivername)
 	DEBUG(10,("srv_spoolss_reset_printerdata: Sending message about resetting printerdata [%s]\n",
 		drivername));
 		
-	message_send_pid(pid_to_proc(sys_getpid()),
+	message_send_pid(pid_to_procid(sys_getpid()),
 			 MSG_PRINTERDATA_INIT_RESET, drivername, len+1, False);
 
 	return True;

@@ -82,7 +82,10 @@
 #define FLAG_MSG_PRINT_NOTIFY	0x0008
 #define FLAG_MSG_PRINT_GENERAL	0x0010
 
+#define MESSAGING_PORT 55064
+
 struct process_id {
+	struct in_addr ip;
 	pid_t pid;
 };
 
