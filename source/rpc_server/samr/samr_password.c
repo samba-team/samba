@@ -210,10 +210,9 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	domain_dn = ldb_dn_explode(mem_ctx,
-				   samdb_search_string(sam_ctx, mem_ctx, NULL, "dn",
-							"(objectSid=%s)", 
-							ldap_encode_ndr_dom_sid(mem_ctx, domain_sid)));
+	domain_dn = samdb_search_dn(sam_ctx, mem_ctx, NULL,
+				    "(objectSid=%s)", 
+				    ldap_encode_ndr_dom_sid(mem_ctx, domain_sid));
 	if (!domain_dn) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -361,10 +360,9 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 		goto failed;
 	}
 
-	domain_dn = ldb_dn_explode(mem_ctx,
-				   samdb_search_string(sam_ctx, mem_ctx, NULL, "dn",
-							"(objectSid=%s)", 
-							ldap_encode_ndr_dom_sid(mem_ctx, domain_sid)));
+	domain_dn = samdb_search_dn(sam_ctx, mem_ctx, NULL,
+				    "(objectSid=%s)", 
+				    ldap_encode_ndr_dom_sid(mem_ctx, domain_sid));
 	if (!domain_dn) {
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto failed;

@@ -58,11 +58,9 @@ static NTSTATUS samsync_ldb_add_foreignSecurityPrincipal(TALLOC_CTX *mem_ctx,
 {
 	const char *sidstr = dom_sid_string(mem_ctx, sid);
 	/* We assume that ForeignSecurityPrincipals are under the BASEDN of the main domain */
-	struct ldb_dn *basedn = ldb_dn_explode(mem_ctx,
-						samdb_search_string(state->sam_ldb, mem_ctx,
-									state->base_dn[SAM_DATABASE_DOMAIN],
-									"dn", "(&(objectClass=container)"
-										"(cn=ForeignSecurityPrincipals))"));
+	struct ldb_dn *basedn = samdb_search_dn(state->sam_ldb, mem_ctx,
+						state->base_dn[SAM_DATABASE_DOMAIN],
+						"(&(objectClass=container)(cn=ForeignSecurityPrincipals))");
 	struct ldb_message *msg;
 	int ret;
 

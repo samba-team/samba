@@ -127,6 +127,28 @@ const char *samdb_search_string(struct ldb_context *sam_ldb,
 	return str;
 }
 
+struct ldb_dn *samdb_search_dn(struct ldb_context *sam_ldb,
+			       TALLOC_CTX *mem_ctx,
+			       const struct ldb_dn *basedn,
+			       const char *format, ...) _PRINTF_ATTRIBUTE(4,5)
+{
+	va_list ap;
+	struct ldb_dn *ret;
+	struct ldb_message **res = NULL;
+	int count;
+
+	va_start(ap, format);
+	count = gendb_search_v(sam_ldb, mem_ctx, basedn, &res, NULL, format, ap);
+	va_end(ap);
+
+	if (count != 1) return NULL;
+
+	ret = talloc_steal(mem_ctx, res[0]->dn);
+	talloc_free(res);
+
+	return ret;
+}
+
 /*
   search the sam for a dom_sid attribute in exactly 1 record
 */

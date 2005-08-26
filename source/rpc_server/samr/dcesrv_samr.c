@@ -2117,11 +2117,8 @@ static NTSTATUS samr_AddAliasMember(struct dcesrv_call_state *dce_call, TALLOC_C
 		 * cn=For...,cn=Builtin,dc={BASEDN}.  -- vl
 		 */
 
-		basedn = ldb_dn_explode(mem_ctx,
-					samdb_search_string(d_state->sam_ctx,
-							    mem_ctx, NULL, "dn",
-							    "(&(objectClass=container)"
-							    "(cn=ForeignSecurityPrincipals))"));
+		basedn = samdb_search_dn(d_state->sam_ctx, mem_ctx, NULL,
+					 "(&(objectClass=container)(cn=ForeignSecurityPrincipals))");
 
 		if (basedn == NULL) {
 			DEBUG(0, ("Failed to find DN for "
