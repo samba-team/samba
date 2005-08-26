@@ -80,7 +80,7 @@ static BOOL copy_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 	}
 
 	if ( swap_sid_in_acl( new_sd, &old_sid, &new_sid ) )
-		DEBUG(1,("Updating ACL for %s\n", nk->keyname ));
+		DEBUG(2,("Updating ACL for %s\n", nk->keyname ));
 
 	regsubkey_ctr_init( &subkeys );
 	regval_ctr_init( &values );
@@ -113,7 +113,7 @@ static BOOL copy_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 	regval_ctr_destroy( &values );
 	regsubkey_ctr_destroy( &subkeys );
 
-	DEBUG(2,("[%s]\n", path));
+	DEBUG(1,("[%s]\n", path));
 
 	return True;
 }
