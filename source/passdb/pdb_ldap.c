@@ -3692,24 +3692,24 @@ static BOOL ldapgroup2displayentry(struct ldap_search_state *state,
 		return False;
 	}
 
-	/* verify that the 'cn' attribute exists */
-
-	vals = ldap_get_values(ld, entry, "cn");
-	if ((vals == NULL) || (vals[0] == NULL)) {
-		DEBUG(5, ("\"cn\" not found\n"));
-		return False;
-	}
-	ldap_value_free(vals);
-
 	/* display name is the NT group name */
 
 	vals = ldap_get_values(ld, entry, "displayName");
-	if ((vals == NULL) || (vals[0] == NULL))
+	if ((vals == NULL) || (vals[0] == NULL)) {
 		DEBUG(8, ("\"displayName\" not found\n"));
-	else
-		pull_utf8_talloc(mem_ctx,
-				 CONST_DISCARD(char **, &result->account_name),
-				 vals[0]);
+
+		/* fallback to the 'cn' attribute */
+		vals = ldap_get_values(ld, entry, "cn");
+		if ((vals == NULL) || (vals[0] == NULL)) {
+			DEBUG(5, ("\"cn\" not found\n"));
+			return False;
+		}
+		pull_utf8_talloc(mem_ctx, CONST_DISCARD(char **, &result->account_name), vals[0]);
+	}
+	else {
+		pull_utf8_talloc(mem_ctx, CONST_DISCARD(char **, &result->account_name), vals[0]);
+	}
+
 	ldap_value_free(vals);
 
 	vals = ldap_get_values(ld, entry, "description");
