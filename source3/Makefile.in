@@ -202,7 +202,8 @@ LIB_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/module.o lib/ldap_escape.o @CHARSET_STATIC@ \
 	  lib/privileges.o lib/secdesc.o lib/secace.o lib/secacl.o @SOCKWRAP@
 
-LIB_NONSMBD_OBJ = $(LIB_OBJ) lib/dummysmbd.o lib/dummyroot.o
+LIB_DUMMY_OBJ = lib/dummysmbd.o lib/dummyroot.o
+LIB_NONSMBD_OBJ = $(LIB_OBJ) $(LIB_DUMMY_OBJ)
 
 READLINE_OBJ = lib/readline.o
 
@@ -328,10 +329,10 @@ CHARSET_MACOSXFS_OBJ = modules/charset_macosxfs.o
 GROUPDB_OBJ = groupdb/mapping.o
 
 PROFILE_OBJ = profile/profile.o
-PROFILES_OBJ = utils/profiles.o lib/dummysmbd.o \
+PROFILES_OBJ = utils/profiles.o \
                $(REGFIO_OBJ) $(REGOBJS_OBJ) $(ERRORMAP_OBJ) \
-               $(LIB_OBJ) $(RPC_PARSE_OBJ1) $(PARAM_OBJ) $(LIBSAMBA_OBJ) \
-               $(DOSERR_OBJ)
+	       $(RPC_PARSE_OBJ1) $(PARAM_OBJ) $(LIBSAMBA_OBJ) \
+               $(DOSERR_OBJ) $(LIB_OBJ) $(LIB_DUMMY_OBJ)
 
 OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o
 
