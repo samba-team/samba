@@ -1,3 +1,7 @@
+2005-08-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* afskrb5.c: Default to use 2b tokens.
+
 2005-06-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* common.c: rename index to idx
