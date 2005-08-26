@@ -1,3 +1,7 @@
+2005-08-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/intro.texi: RFC 4120 replaces RFC 1510
+	
 2005-08-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* configure.in: Add --disable-afs-support.
