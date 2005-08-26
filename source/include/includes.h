@@ -1323,13 +1323,18 @@ extern int DEBUGLEVEL;
 #endif
 
 /* add varargs prototypes with printf checking */
+/*PRINTFLIKE2 */
 int fdprintf(int , const char *, ...) PRINTF_ATTRIBUTE(2,3);
+/*PRINTFLIKE1 */
 int d_printf(const char *, ...) PRINTF_ATTRIBUTE(1,2);
+/*PRINTFLIKE2 */
 int d_fprintf(FILE *f, const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #ifndef HAVE_SNPRINTF_DECL
+/*PRINTFLIKE3 */
 int snprintf(char *,size_t ,const char *, ...) PRINTF_ATTRIBUTE(3,4);
 #endif
 #ifndef HAVE_ASPRINTF_DECL
+/*PRINTFLIKE2 */
 int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #endif
 
@@ -1340,11 +1345,19 @@ int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #if !defined(HAVE_SNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
 #define snprintf smb_snprintf
 #define vsnprintf smb_vsnprintf
+
+/* PRINTFLIKE3 */
+int smb_snprintf(char *str,size_t count,const char *fmt,...);
+int smb_vsnprintf (char *str, size_t count, const char *fmt, va_list args);
+
 #endif
 
+/* PRINTFLIKE2 */
 void sys_adminlog(int priority, const char *format_str, ...) PRINTF_ATTRIBUTE(2,3);
 
+/* PRINTFLIKE2 */
 int pstr_sprintf(pstring s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
+/* PRINTFLIKE2 */
 int fstr_sprintf(fstring s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 
 int d_vfprintf(FILE *f, const char *format, va_list ap) PRINTF_ATTRIBUTE(2,0);
@@ -1355,7 +1368,6 @@ int smb_xvasprintf(char **ptr, const char *format, va_list ap) PRINTF_ATTRIBUTE(
    for snprintf and vsnprintf */
 #define slprintf snprintf
 #define vslprintf vsnprintf
-
 
 /* we need to use __va_copy() on some platforms */
 #ifdef HAVE_VA_COPY
