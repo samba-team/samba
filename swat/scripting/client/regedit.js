@@ -121,12 +121,9 @@ function __values_table()
 */
 function regedit_widget(binding) 
 {
-	var regedit = new QxWindow("Registry Editor");
-	regedit.setSpace(300, 600, 300, 600);
-
 	var fieldSet = new QxFieldSet();
 
-	regedit.binding = binding;
+	fieldSet.binding = binding;
 
 	with(fieldSet) {
 		setWidth("100%");
@@ -138,19 +135,17 @@ function regedit_widget(binding)
 	gl.setCellPaddingTop(3);
 	gl.setCellPaddingBottom(3);
 
-	regedit.add(fieldSet);
-
-	var t = __registry_tree(regedit.binding);
+	var t = __registry_tree(fieldSet.binding);
 
 	function change_binding(e) {
-		regedit.binding = e.getNewValue();
-		srv_printf("changed binding to %s\\n", regedit.binding);
+		fieldSet.binding = e.getNewValue();
+		srv_printf("changed binding to %s\\n", fieldSet.binding);
 		gl.remove(t);
-		t = __registry_tree(regedit.binding);
+		t = __registry_tree(fieldSet.binding);
 		gl.add(t, { row : 2, col : 1 });
 	}
 
-	var b = new QxTextField(regedit.binding);
+	var b = new QxTextField(fieldSet.binding);
 	b.addEventListener("changeText", change_binding);
 
 	var values = new __values_table();
@@ -160,18 +155,6 @@ function regedit_widget(binding)
 //	gl.add(values, { row : 2, col : 2 });
 	
 	fieldSet.add(gl);
-	regedit.add(fieldSet);
 
-	/* 
-	   call the startup() method to display the widget
-	*/
-	regedit.startup = function() {
-		this.setVisible(true);
-		this.setMoveable(true);
-		this.setResizeable(true);
-		this.setResizeMethod("frame");
-		this.setMoveable(true);
-	}
-
-	return regedit;
+	return fieldSet;
 };

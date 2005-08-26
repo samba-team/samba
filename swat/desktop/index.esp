@@ -4,8 +4,8 @@ libinclude("base.js");
 %>
 
 <script type="text/javascript" src="/scripting/client/encoder.js"></script>
-<script type="text/javascript" src="/scripting/client/regedit.js"></script>
-<script type="text/javascript" src="/scripting/client/status.js"></script>
+<script type="text/javascript" src="/scripting/client/call.js"></script>
+<script type="text/javascript" src="/scripting/client/js_scripts.js"></script>
 
 <script type="text/javascript">
 
@@ -91,6 +91,7 @@ function showContextMenu(e)
 }
 
 /*** init the page for qooxdoo ***/
+document.js.add('/scripting/client/status.js');
 window.application.main = function()
 {
 	var doc = this.getClientWindow().getClientDocument();
@@ -108,6 +109,12 @@ window.application.main = function()
 
 	// Always open with stats
 	var win = new QxWindow();
+	win._onclosebuttonclick = function(e)
+	{
+		this.close();
+		e.stopPropagation();
+		document.js.remove('/scripting/client/status.js');
+	};
 	with(win) {
 		setTop(50);
 		setRight(50);
@@ -126,9 +133,26 @@ window.onresize = function()
 
 function showReg()
 {
+	document.js.add('/scripting/client/regedit.js');
+
+	var regWin = new QxWindow("Registry Editor");
+	regWin._onclosebuttonclick = function(e)
+	{
+		this.close();
+		e.stopPropagation();
+		document.js.remove('/scripting/client/regedit.js');
+	};
+	with(regWin) {
+		setTop(100);
+		setLeft(100);
+		setMinWidth(450);
+		setMinHeight(450);
+	}
+	
 	var regedit = regedit_widget("ncalrpc:");
-	w.add(regedit);
-	regedit.startup();
+	regWin.add(regedit);
+	w.add(regWin);
+	regWin.setVisible('true');
 }
 
 function startSwat()
