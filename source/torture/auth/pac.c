@@ -105,6 +105,7 @@ static BOOL torture_pac_self_check(void)
 				  smb_krb5_context->krb5_context,  
 				  &krbtgt_keyblock,
 				  &server_keyblock,
+				  time(NULL),
 				  &tmp_blob);
 	
 	if (ret) {
