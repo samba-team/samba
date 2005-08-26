@@ -1720,7 +1720,7 @@ NTSTATUS init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 **sam,
 		DEBUG(11, ("init_sam_dispinfo_3: entry: %d\n",i));
 
 		init_unistr2(&(*sam)->str[i].uni_grp_name,
-			     entries[i].fullname, UNI_FLAGS_NONE);
+			     entries[i].account_name, UNI_FLAGS_NONE);
 		init_unistr2(&(*sam)->str[i].uni_grp_desc,
 			     entries[i].description, UNI_FLAGS_NONE);
 
