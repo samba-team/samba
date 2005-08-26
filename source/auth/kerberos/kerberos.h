@@ -143,6 +143,7 @@ krb5_error_code kerberos_create_pac(TALLOC_CTX *mem_ctx,
 				    krb5_context context,
 				    krb5_keyblock *krbtgt_keyblock,
 				    krb5_keyblock *server_keyblock,
+				    time_t tgs_authtime,
 				    DATA_BLOB *pac);
 
 krb5_error_code kerberos_encode_pac(TALLOC_CTX *mem_ctx,
