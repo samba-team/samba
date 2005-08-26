@@ -30,7 +30,7 @@ options = GetOptions(ARGV,
                 'blank');
 
 if (options == undefined) {
-   println("Failed to parse options: ", options.ERROR);
+   println("Failed to parse options");
    return -1;
 }
 
