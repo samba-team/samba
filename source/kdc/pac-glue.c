@@ -26,11 +26,12 @@
 #include "kdc/pac-glue.h" /* Ensure we don't get this prototype wrong, as that could be painful */
 
  krb5_error_code samba_get_pac(krb5_context context, 
-			      struct krb5_kdc_configuration *config,
-			      krb5_principal client, 
-			      krb5_keyblock *krbtgt_keyblock, 
-			      krb5_keyblock *server_keyblock, 
-			      krb5_data *pac) 
+			       struct krb5_kdc_configuration *config,
+			       krb5_principal client, 
+			       krb5_keyblock *krbtgt_keyblock, 
+			       krb5_keyblock *server_keyblock, 
+			       time_t tgs_authtime,
+			       krb5_data *pac)
 {
 	krb5_error_code ret;
 	NTSTATUS nt_status;
@@ -74,6 +75,7 @@
 				  context, 
 				  krbtgt_keyblock,
 				  server_keyblock,
+				  tgs_authtime,
 				  &tmp_blob);
 
 	if (ret) {

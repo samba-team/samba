@@ -385,6 +385,7 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 				     krb5_context context,
 				     krb5_keyblock *krbtgt_keyblock,
 				     krb5_keyblock *service_keyblock,
+				     time_t tgs_authtime,
 				     DATA_BLOB *pac)
 {
 	NTSTATUS nt_status;
@@ -478,7 +479,12 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	LOGON_INFO->info3.base.last_logon	= timeval_to_nttime(&tv);
 
 	LOGON_NAME->account_name	= server_info->account_name;
-	LOGON_NAME->logon_time		= timeval_to_nttime(&tv);
+
+	/*
+	  this logon_time field is absolutely critical. This is what
+	  caused all our pac troubles :-)
+	*/
+	unix_to_nt_time(&LOGON_NAME->logon_time, tgs_authtime);
 
 	ret = kerberos_encode_pac(mem_ctx, 
 				  pac_data, 
