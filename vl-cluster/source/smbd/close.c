@@ -114,12 +114,11 @@ static void notify_deferred_opens(files_struct *fsp)
 {
 	deferred_open_entry *de_array = NULL;
 	int num_de_entries, i;
-	pid_t mypid = sys_getpid();
 
 	num_de_entries = get_deferred_opens(fsp->dev, fsp->inode, &de_array);
 	for (i = 0; i < num_de_entries; i++) {
 		deferred_open_entry *entry = &de_array[i];
-		if (entry->pid == mypid) {
+		if (procid_is_me(&entry->pid)) {
 			/*
 			 * We need to notify ourself to retry the open.
 			 * Do this by finding the queued SMB record, moving it
@@ -127,8 +126,7 @@ static void notify_deferred_opens(files_struct *fsp)
 			 */
 			schedule_deferred_open_smb_message(entry->mid);
 		} else {
-			message_send_pid(pid_to_procid(entry->pid),
-					 MSG_SMB_OPEN_RETRY,
+			message_send_pid(entry->pid, MSG_SMB_OPEN_RETRY,
 					 entry, sizeof(*entry), True);
 		}
 	}

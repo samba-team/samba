@@ -731,7 +731,7 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 		/* if a job is not spooled and the process doesn't
                    exist then kill it. This cleans up after smbd
                    deaths */
-		if (!process_exists(pjob.pid)) {
+		if (!process_exists_by_pid(pjob.pid)) {
 			DEBUG(10,("traverse_fn_delete: pjob %u deleted due to !process_exists (%u)\n",
 						(unsigned int)jobid, (unsigned int)pjob.pid ));
 			pjob_delete(ts->sharename, jobid);
@@ -834,7 +834,7 @@ static pid_t get_updating_pid(const char *sharename)
 	updating_pid = IVAL(data.dptr, 0);
 	SAFE_FREE(data.dptr);
 
-	if (process_exists(updating_pid))
+	if (process_exists_by_pid(updating_pid))
 		return updating_pid;
 
 	return (pid_t)-1;

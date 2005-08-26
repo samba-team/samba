@@ -400,7 +400,7 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
 	if (fsp->sent_oplock_break != NO_BREAK_SENT) {
 		/* Remember we have to inform the requesting PID when the
 		 * client replies */
-		msg->pid = procid_to_pid(&src);
+		msg->pid = src;
 		ADD_TO_ARRAY(NULL, struct share_mode_entry, *msg,
 			     &fsp->pending_break_messages,
 			     &fsp->num_pending_break_messages);
@@ -456,7 +456,7 @@ static void process_oplock_break_message(int msg_type, struct process_id src,
 		/* Async level2 request, don't send a reply */
 		fsp->sent_oplock_break = ASYNC_LEVEL_II_BREAK_SENT;
 	}
-	msg->pid = procid_to_pid(&src);
+	msg->pid = src;
 	ADD_TO_ARRAY(NULL, struct share_mode_entry, *msg,
 		     &fsp->pending_break_messages,
 		     &fsp->num_pending_break_messages);
@@ -541,7 +541,7 @@ void reply_to_oplock_break_requests(files_struct *fsp)
 
 	for (i=0; i<fsp->num_pending_break_messages; i++) {
 		share_mode_entry *msg = &fsp->pending_break_messages[i];
-		message_send_pid(pid_to_procid(msg->pid), MSG_SMB_BREAK_RESPONSE,
+		message_send_pid(msg->pid, MSG_SMB_BREAK_RESPONSE,
 				 msg, sizeof(*msg), True);
 	}
 
@@ -642,7 +642,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 			    (share_list[i].share_file_id == fsp->file_id) &&
 			    (share_list[i].dev == fsp->dev) &&
 			    (share_list[i].inode == fsp->inode) &&
-			    (share_list[i].pid == sys_getpid())) {
+			    (procid_is_me(&share_list[i].pid))) {
 				/* We're done */
 				fsp->oplock_type = NO_OPLOCK;
 				SAFE_FREE(share_list);
@@ -684,8 +684,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 			abort();
 		}
 
-		message_send_pid(pid_to_procid(share_entry->pid),
-				 MSG_SMB_ASYNC_LEVEL2_BREAK,
+		message_send_pid(share_entry->pid, MSG_SMB_ASYNC_LEVEL2_BREAK,
 				 share_entry, sizeof(*share_entry), True);
 	}
 

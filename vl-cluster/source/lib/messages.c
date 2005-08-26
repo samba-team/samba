@@ -587,15 +587,16 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	/* If the msg send fails because the pid was not found (i.e. smbd died), 
 	 * the msg has already been deleted from the messages.tdb.*/
 
-	if (!message_send_pid(pid_to_procid(crec.pid), msg_all->msg_type,
+	if (!message_send_pid(crec.pid, msg_all->msg_type,
 			      msg_all->buf, msg_all->len,
 			      msg_all->duplicates)) {
 		
 		/* If the pid was not found delete the entry from connections.tdb */
 
 		if (errno == ESRCH) {
-			DEBUG(2,("pid %u doesn't exist - deleting connections %d [%s]\n",
-					(unsigned int)crec.pid, crec.cnum, crec.name));
+			DEBUG(2,("pid %s doesn't exist - deleting connections %d [%s]\n",
+				 procid_str_static(&crec.pid),
+				 crec.cnum, crec.name));
 			tdb_delete(the_tdb, kbuf);
 		}
 	}

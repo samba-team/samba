@@ -479,7 +479,7 @@ static void validate_my_share_entries(int num,
 {
 	files_struct *fsp;
 
-	if (share_entry->pid != sys_getpid()) {
+	if (!procid_is_me(&share_entry->pid)) {
 		return;
 	}
 
@@ -668,11 +668,10 @@ static BOOL delay_for_oplocks(files_struct *fsp)
 	}
 
 	if (delay_it) {
-		DEBUG(10, ("Sending break request to PID %d\n",
-			   (int)exclusive->pid));
+		DEBUG(10, ("Sending break request to PID %s\n",
+			   procid_str_static(&exclusive->pid)));
 		exclusive->op_mid = get_current_mid();
-		if (!message_send_pid(pid_to_procid(exclusive->pid),
-				      MSG_SMB_BREAK_REQUEST,
+		if (!message_send_pid(exclusive->pid, MSG_SMB_BREAK_REQUEST,
 				      exclusive, sizeof(*exclusive), True)) {
 			DEBUG(3, ("Could not send oplock break message\n"));
 		}
@@ -690,14 +689,13 @@ static BOOL delay_for_oplocks(files_struct *fsp)
 static void delete_defered_open_entry_record(SMB_DEV_T dev, SMB_INO_T inode)
 {
 	uint16 mid = get_current_mid();
-	pid_t mypid = sys_getpid();
 	deferred_open_entry *de_array = NULL;
 	int num_de_entries, i;
 
 	num_de_entries = get_deferred_opens(dev, inode, &de_array);
 	for (i = 0; i < num_de_entries; i++) {
 		deferred_open_entry *entry = &de_array[i];
-		if (entry->pid == mypid && entry->mid == mid &&
+		if (procid_is_me(&entry->pid) && entry->mid == mid &&
 		    entry->dev == dev && entry->inode == inode) {
 			/* Remove the deferred open entry from the array. */
 			delete_deferred_open_entry(entry);
@@ -727,7 +725,6 @@ static void defer_open(struct timeval request_time,
 		       struct deferred_open_record *state)
 {
 	uint16 mid = get_current_mid();
-	pid_t mypid = sys_getpid();
 	deferred_open_entry *de_array = NULL;
 	int num_de_entries, i;
 	/* Paranoia check */
@@ -735,7 +732,7 @@ static void defer_open(struct timeval request_time,
 	num_de_entries = get_deferred_opens(state->dev, state->inode, &de_array);
 	for (i = 0; i < num_de_entries; i++) {
 		deferred_open_entry *entry = &de_array[i];
-		if (entry->pid == mypid && entry->mid == mid) {
+		if (procid_is_me(&entry->pid) && entry->mid == mid) {
 			DEBUG(0, ("Trying to defer an already deferred "
 				  "request: mid=%d, exiting\n", mid));
 			exit_server("exiting");
