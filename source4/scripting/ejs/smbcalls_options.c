@@ -82,7 +82,7 @@ static int ejs_GetOptions(MprVarHandle eid, int argc, struct MprVar **argv)
 	}
 
 	/* create the long_options array */
-	for (i=2;i<argc;i++) {
+	for (i=1;i<argc;i++) {
 		const char *optstr = mprToString(argv[i]);
 		int t, opt_type = POPT_ARG_NONE;
 		const char *s;
