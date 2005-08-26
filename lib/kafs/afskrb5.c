@@ -126,7 +126,7 @@ v5_convert(krb5_context context, krb5_ccache id,
     _kafs_foldup(c, c);
     krb5_appdefault_string (context, "libkafs",
 			    c,
-			    "afs-use-524", "yes", &val);
+			    "afs-use-524", "2b", &val);
     free(c);
 
     if (strcasecmp(val, "local") == 0 || 
