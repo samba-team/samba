@@ -1779,11 +1779,11 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 				REGF_SK_REC *prev = nk->sec_desc->prev;
 
 				nk->sec_desc->prev_sk_off = prev->hbin_off + prev->hbin->first_hbin_off - HBIN_HDR_SIZE;
-				prev->next_sk_off = nk->sk_off;
+				prev->next_sk_off = nk->sec_desc->sk_off;
 			}
 		}
 
-		/* dump the reference count */
+		/* bump the reference count +1 */
 
 		nk->sk_off = nk->sec_desc->sk_off;
 		nk->sec_desc->ref_count++;
