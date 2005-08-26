@@ -23,9 +23,20 @@ window.application.main = function()
     var btn1 = new QxButton("Registry Editor");
     btn1.set({ top: 20, left : 30 });
     btn1.addEventListener("click", function() {
+            var regWindow = new QxWindow("Registry Editor");
+	    with(regWindow) {
+                setTop(50);
+		setLeft(50);
+                setMinWidth(600);
+		setMinHeight(600);
+		setResizeMethod("frame");
+	    }
+
 	    var regedit = regedit_widget("ncalrpc:");
-	    qwidget.add(regedit);
-	    regedit.startup();
+	    regWindow.add(regedit);
+	    qwidget.add(regWindow);
+	    regWindow.setVisible(true);
+
     });
     qwidget.add(btn1);
     inlineWidget.add(qwidget);

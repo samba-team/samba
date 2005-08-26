@@ -5,15 +5,6 @@
 */
 
 
-/* Ensure we always include the proper libs
-   Playing with a way to add/del scripts on the fly...
-*/
-var lib = document.createElement('script');
-lib.setAttribute('type', 'text/javascript');
-lib.setAttribute('src', '/scripting/client/call.js');
-var head = document.getElementsByTagName('head')[0];
-head.appendChild(lib);
-
 // Format for a server status table
 var s = [
 	{ id : "server",
