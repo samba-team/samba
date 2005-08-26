@@ -204,7 +204,8 @@ LIB_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/module.o lib/ldap_escape.o @CHARSET_STATIC@ \
 	  lib/secdesc.o lib/secace.o lib/secacl.o @SOCKWRAP@
 
-LIB_NONSMBD_OBJ = $(LIB_OBJ) lib/dummysmbd.o lib/dummyroot.o
+LIB_DUMMY_OBJ = lib/dummysmbd.o lib/dummyroot.o
+LIB_NONSMBD_OBJ = $(LIB_OBJ) $(LIB_DUMMY_OBJ)
 
 READLINE_OBJ = lib/readline.o
 
