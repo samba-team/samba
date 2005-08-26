@@ -14,7 +14,8 @@ Heimdal is a free implementation of Kerberos 5. The goals are to:
 have an implementation that can be freely used by anyone
 @item
 be protocol compatible with existing implementations and, if not in
-conflict, with RFC 1510 (and any future updated RFC)
+conflict, with RFC 4120 (and any future updated RFC). RFC 4120
+replaced RFC 1510.
 @item
 be reasonably compatible with the M.I.T Kerberos V5 API
 @item
