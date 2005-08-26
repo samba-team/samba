@@ -191,6 +191,7 @@ complete descriptions of new or modified parameters.
 	<listitem><para>domain guest group </para></listitem>
 	<listitem><para>force unknown acl user </para></listitem>
 	<listitem><para>ldap filter</para></listitem>
+	<listitem><para>min password length (deprecated)</para></listitem>
 	<listitem><para>nt smb support </para></listitem>
 	<listitem><para>post script </para></listitem>
 	<listitem><para>printer driver </para></listitem>
@@ -273,6 +274,10 @@ complete descriptions of new or modified parameters.
 <itemizedlist>
 	<listitem><para>allocation roundup size</para></listitem>
 	<listitem><para>acl check permissions</para></listitem>
+	<listitem><para>acl group control</para></listitem>
+	<listitem><para>acl map full control</para></listitem>
+	<listitem><para>aio read size</para></listitem>
+	<listitem><para>aio write size</para></listitem>
 	<listitem><para>ea support</para></listitem>
 	<listitem><para>enable asu support</para></listitem>
 	<listitem><para>force unknown acl user</para></listitem>
@@ -317,7 +322,7 @@ complete descriptions of new or modified parameters.
 	<listitem><para>idmap backend</para></listitem>
 	<listitem><para>idmap gid</para></listitem>
 	<listitem><para>idmap uid</para></listitem>
-	<listitem><para>winbind enable local accounts</para></listitem>
+	<listitem><para>username map script</para></listitem>
 	<listitem><para>winbind nested groups</para></listitem>
 	<listitem><para>winbind trusted domains only</para></listitem>
 	<listitem><para>template primary group</para></listitem>
@@ -354,7 +359,6 @@ complete descriptions of new or modified parameters.
 	<listitem><para>encrypt passwords (enabled by default) </para></listitem>
 	<listitem><para>mangling method (set to hash2 by default) </para></listitem>
 	<listitem><para>map to guest (new parameter added)</para></listitem>
-	<listitem><para>min password length (deprecated)</para></listitem>
 	<listitem><para>only user (deprecated)</para></listitem>
 	<listitem><para>passwd chat </para></listitem>
 	<listitem><para>passwd program </para></listitem>
@@ -366,6 +370,7 @@ complete descriptions of new or modified parameters.
 	<listitem><para>winbind cache time (increased to 5 minutes) </para></listitem>
 	<listitem><para>winbind uid (deprecated in favor of idmap uid) </para></listitem>
 	<listitem><para>winbind gid (deprecated in favor of idmap gid) </para></listitem>
+	<listitem><para>winbindd nss info</para></listitem>
 	<listitem><para>write cache (deprecated)</para></listitem>
 </itemizedlist>
 
