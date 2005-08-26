@@ -6,36 +6,9 @@ libinclude("base.js");
 <script type="text/javascript" src="/scripting/client/encoder.js"></script>
 <script type="text/javascript" src="/scripting/client/call.js"></script>
 <script type="text/javascript" src="/scripting/client/js_scripts.js"></script>
+<script type="text/javascript" src="/scripting/client/swat.js"></script>
 
 <script type="text/javascript">
-
-/* Qooxdoo's browser sniffer doesn't distinguish IE version.
-We'll cover IE 6 for now, but these checks need to be
-revisited for fuller browser coverage. */
-var browser = QxClient().engine;
-
-function docWidth()
-{
-	var x;
-	if (browser != "mshtml") {
-		x = window.innerWidth;
-	} else {
-		x = document.documentElement.clientWidth;
-	}
-	return x;
-}
-
-function docHeight()
-{
-	var y;
-	// Less 25px to not cover the toolbar
-	if (browser != "mshtml") {
-		y = window.innerHeight - 25;
-	} else {
-		y = document.documentElement.clientHeight;
-	}
-	return y;
-}
 
 function showMessage(m)
 {
@@ -69,6 +42,13 @@ function showMessage(m)
 	message.setVisible(true);
 }
 
+function blankW()
+{
+	var blank = new Window("SWAT");
+	w.add(blank);
+	blank.setVisible(true);
+}
+
 function showContextMenu(e)
 {
 	var aboutCmd = new QxCommand();
@@ -76,18 +56,21 @@ function showContextMenu(e)
 		showMessage("SWAT, the Samba Web Administration Tool.<br/>This tool is currently under development.");
 	});
 
-	var menu = new QxMenu;
+	var newWin = new QxCommand();
+	newWin.addEventListener("execute", blankW);
+
+	cmenu = new QxMenu;
 
 	var sub1 = new QxMenuButton("About SWAT", null, aboutCmd);
 	var sep = new QxMenuSeparator();
-	var sub2 = new QxMenuButton("More menu later...", null);
+	var sub2 = new QxMenuButton("New Window", null, newWin);
 
-	menu.add(sub1, sep, sub2);
+	cmenu.add(sub1, sep, sub2);
 
-	menu.setLeft(e.getClientX());
-	menu.setTop(e.getClientY());
-	w.add(menu);
-	menu.setVisible(true);
+	cmenu.setLeft(e.getClientX());
+	cmenu.setTop(e.getClientY());
+	w.add(cmenu);
+	cmenu.setVisible(true);
 }
 
 /*** init the page for qooxdoo ***/
@@ -100,8 +83,8 @@ window.application.main = function()
 	with(w) {
 		setTop(0);
 		setLeft(0);
-		setWidth(docWidth());
-		setHeight(docHeight());
+		setWidth(docX());
+		setHeight(docY());
 	}
 	doc.addEventListener("contextmenu", showContextMenu);
 	doc.add(w);
@@ -127,8 +110,8 @@ window.application.main = function()
 
 window.onresize = function() 
 {
-	w.setWidth(docWidth());
-	w.setHeight(docHeight());
+	w.setWidth(docX());
+	w.setHeight(docY());
 }
 
 function showReg()
@@ -192,8 +175,22 @@ function startSwat()
 		srvMenu.setTop(this.getComputedPageBoxTop() - 3);
 		if (espMenu.getVisible()) {
 			espMenu.setVisible(false);
+		} else if (newMenu.getVisible()) {
+			newMenu.setVisible(false);
 		}
 	}); 
+
+	var openWin = new QxCommand;
+	openWin.addEventListener("execute", function() {
+		blankW();
+	});
+
+	var newMenu = new QxMenu;
+	var new1 = new QxMenuButton("Window", null, openWin);
+	newMenu.add(new1);
+	w.add(newMenu);
+	newMenu.setVisible(false);
+
 	var opt2 = new QxMenuButton("Installation", null);
 	var opt3 = new QxMenuButton("Configuration", null);
 	var opt4 = new QxMenuButton("ESP Tests", null);
@@ -203,15 +200,28 @@ function startSwat()
 		espMenu.setTop(this.getComputedPageBoxTop() - 3);
 		if (srvMenu.getVisible()) {
 			srvMenu.setVisible(false);
+		} else if (newMenu.getVisible()) {
+			newMenu.setVisible(false);
 		}
 	}); 
 	var opt5 = new QxMenuButton("Documentation", null);
+	var opt6 = new QxMenuButton("New", null);
+	opt6.addEventListener("mouseover", function() {
+		newMenu.setVisible(true);
+		newMenu.setLeft(this.getComputedPageBoxRight() + 4);
+		newMenu.setTop(this.getComputedPageBoxTop() - 3);
+		if (srvMenu.getVisible()) {
+			srvMenu.setVisible(false);
+		} else if (espMenu.getVisible()) {
+			espMenu.setVisible(false);
+		}
+	}); 
 	var sep1 = new QxMenuSeparator();
 	var sep2 = new QxMenuSeparator();
 
-	sMenu.add(opt1, opt2, opt3, sep1, opt4, sep2, opt5);
+	sMenu.add(opt1, opt2, opt3, sep1, opt4, sep2, opt5, opt6);
 	sMenu.setLeft(0);
-	sMenu.setTop(docHeight() - 150);
+	sMenu.setTop(docY() - 150);
 	w.add(sMenu);
 	sMenu.setVisible(true);
 }
