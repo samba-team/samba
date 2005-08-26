@@ -11,14 +11,14 @@ var s = [
 	  label : "Server",
 	  content: "text",
           defaultValue : "-",
-          width : 100,
+          width : 100
 	},
 
 	{ id : "status",
 	  label : "Status",
 	  content: "text",
 	  defaultValue : "-",
-	  width: 100,
+	  width: 100
 	}
 ];
 
