@@ -1768,18 +1768,24 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 
 			DLIST_ADD_END( file->sec_desc_list, nk->sec_desc, tmp );
 
-			/* initialize offsets */
-
-			nk->sec_desc->prev_sk_off = nk->sec_desc->sk_off;
-			nk->sec_desc->next_sk_off = nk->sec_desc->sk_off;
-
-			/* now update the offsets for us and the previous sd in the list */
+			/* update the offsets for us and the previous sd in the list.
+			   if this is the first record, then just set the next and prev
+			   offsets to ourself. */
 
 			if ( nk->sec_desc->prev ) {
 				REGF_SK_REC *prev = nk->sec_desc->prev;
 
 				nk->sec_desc->prev_sk_off = prev->hbin_off + prev->hbin->first_hbin_off - HBIN_HDR_SIZE;
 				prev->next_sk_off = nk->sec_desc->sk_off;
+
+				/* the end must loop around to the front */
+				nk->sec_desc->next_sk_off = file->sec_desc_list->sk_off;
+
+				/* and first must loop around to the tail */
+				file->sec_desc_list->prev_sk_off = nk->sec_desc->sk_off;
+			} else {
+				nk->sec_desc->prev_sk_off = nk->sec_desc->sk_off;
+				nk->sec_desc->next_sk_off = nk->sec_desc->sk_off;
 			}
 		}
 
