@@ -32,10 +32,17 @@ function __get_js_script(file)
 
 function __add_js_script(path)
 {
+	// Create a unique ID for this script
+	var srcID = new Date().getTime();
+
 	var script = document.createElement('script');
-	script.setAttribute('type', 'text/javascript');
-	script.setAttribute('src', path);
+	script.type = 'text/javascript';
+	script.id = srcID;
+
 	head.appendChild(script);
+
+	// IE works only with the path set after appending to the document
+	document.getElementById(srcID).src = path;
 }
 
 function __remove_js_script(path)
