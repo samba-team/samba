@@ -25,7 +25,6 @@
 
 /* GLOBAL VARIABLES */
 
-int verbose = 0;
 DOM_SID old_sid, new_sid;
 int change = 0, new_val = 0;
 
@@ -33,21 +32,30 @@ int change = 0, new_val = 0;
 /********************************************************************
 ********************************************************************/
 
-static void swap_sid_in_acl( SEC_DESC *sd, DOM_SID *s1, DOM_SID *s2 )
+static BOOL swap_sid_in_acl( SEC_DESC *sd, DOM_SID *s1, DOM_SID *s2 )
 {
 	SEC_ACL *acl = sd->dacl;
 	int i;
+	BOOL update = False;
 
-	if ( sid_equal( sd->owner_sid, s1 ) )
+	if ( sid_equal( sd->owner_sid, s1 ) ) {
 		sid_copy( sd->owner_sid, s2 );
+		update = True;
+	}
 
-	if ( sid_equal( sd->grp_sid, s1 ) )
+	if ( sid_equal( sd->grp_sid, s1 ) ) {
 		sid_copy( sd->grp_sid, s2 );
+		update = True;
+	}
 
 	for ( i=0; i<acl->num_aces; i++ ) {
-		if ( sid_equal( &acl->ace[i].trustee, s1 ) )
+		if ( sid_equal( &acl->ace[i].trustee, s1 ) ) {
 			sid_copy( &acl->ace[i].trustee, s2 );
+			update = True;
+		}
 	}
+
+	return update;
 }
 
 /********************************************************************
@@ -71,7 +79,8 @@ static BOOL copy_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 		return False;
 	}
 
-	swap_sid_in_acl( new_sd, &old_sid, &new_sid );
+	if ( swap_sid_in_acl( new_sd, &old_sid, &new_sid ) )
+		DEBUG(1,("Updating ACL for %s\n", nk->keyname ));
 
 	regsubkey_ctr_init( &subkeys );
 	regval_ctr_init( &values );
@@ -104,8 +113,7 @@ static BOOL copy_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 	regval_ctr_destroy( &values );
 	regsubkey_ctr_destroy( &subkeys );
 
-	if ( verbose )
-		printf("[%s]\n", path );
+	DEBUG(2,("[%s]\n", path));
 
 	return True;
 }
@@ -121,14 +129,19 @@ int main( int argc, char *argv[] )
 	pstring orig_filename, new_filename;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{ "verbose", 'v', POPT_ARG_NONE, NULL, 'v', "Sets verbose mode" },
 		{ "change-sid", 'c', POPT_ARG_STRING, NULL, 'c', "Provides SID to change" },
 		{ "new-sid", 'n', POPT_ARG_STRING, NULL, 'n', "Provides SID to change to" },
-		{ 0, 0, 0, 0 }
+		POPT_COMMON_SAMBA
+		POPT_COMMON_VERSION
+		POPT_TABLEEND
 	};
-
-
 	poptContext pc;
+
+	/* setup logging options */
+
+	setup_logging( "profiles", True );
+	dbf = x_stderr;
+	x_setbuf( x_stderr, NULL );
 
 	pc = poptGetContext("profiles", argc, (const char **)argv, long_options, 
 		POPT_CONTEXT_KEEP_FIRST);
@@ -157,13 +170,10 @@ int main( int argc, char *argv[] )
 			}
 			break;
 
-		case 'v':
-			verbose++;
-			break;
 		}
 	}
 
-	poptGetArg(pc); /* To get argv[0] */
+	poptGetArg(pc); 
 
 	if (!poptPeekArg(pc)) {
 		poptPrintUsage(pc, stderr, 0);
