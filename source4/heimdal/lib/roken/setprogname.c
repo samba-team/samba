@@ -33,7 +33,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: setprogname.c,v 1.3 2005/04/12 11:29:05 lha Exp $");
+RCSID("$Id: setprogname.c,v 1.4 2005/08/23 10:19:20 lha Exp $");
 #endif
 
 #include "roken.h"
@@ -47,12 +47,12 @@ void ROKEN_LIB_FUNCTION
 setprogname(const char *argv0)
 {
 #ifndef HAVE___PROGNAME
-    char *p;
+    const char *p;
     if(argv0 == NULL)
 	return;
     p = strrchr(argv0, '/');
     if(p == NULL)
-	p = (char *)argv0;
+	p = argv0;
     else
 	p++;
     __progname = p;

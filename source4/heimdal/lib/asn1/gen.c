@@ -33,7 +33,7 @@
 
 #include "gen_locl.h"
 
-RCSID("$Id: gen.c,v 1.62 2005/07/19 18:46:50 lha Exp $");
+RCSID("$Id: gen.c,v 1.63 2005/08/23 10:49:16 lha Exp $");
 
 FILE *headerfile, *codefile, *logfile;
 
@@ -41,7 +41,7 @@ FILE *headerfile, *codefile, *logfile;
 
 static const char *orig_filename;
 static char *header;
-static char *headerbase = STEM;
+static const char *headerbase = STEM;
 
 /*
  * list of all IMPORTs
@@ -77,9 +77,9 @@ init_generate (const char *filename, const char *base)
 
     orig_filename = filename;
     if (base != NULL) {
-	asprintf(&headerbase, "%s", base);
+	headerbase = strdup(base);
 	if (headerbase == NULL)
-	    errx(1, "malloc");
+	    errx(1, "strdup");
     }
     asprintf(&header, "%s.h", headerbase);
     if (header == NULL)
@@ -349,7 +349,7 @@ space(int level)
 	fprintf(headerfile, "  ");
 }
 
-static char *
+static const char *
 last_member_p(struct member *m)
 {
     struct member *n = ASN1_TAILQ_NEXT(m, members);
@@ -521,7 +521,7 @@ define_asn1 (int level, Type *t)
 }
 
 static void
-define_type (int level, char *name, Type *t, int typedefp, int preservep)
+define_type (int level, const char *name, Type *t, int typedefp, int preservep)
 {
     switch (t->type) {
     case TType:

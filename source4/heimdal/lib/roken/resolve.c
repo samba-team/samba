@@ -45,7 +45,7 @@
 
 #include <assert.h>
 
-RCSID("$Id: resolve.c,v 1.51 2005/06/16 16:46:16 lha Exp $");
+RCSID("$Id: resolve.c,v 1.52 2005/08/22 19:16:21 lha Exp $");
 
 #ifdef _AIX /* AIX have broken res_nsearch() in 5.1 (5.0 also ?) */
 #undef HAVE_RES_NSEARCH
@@ -534,7 +534,11 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
 	}
 	if (len < 0) {
 #ifdef HAVE_RES_NSEARCH
+#ifdef HAVE_RES_NDESTROY
+	    res_ndestroy(&state);
+#else
 	    res_nclose(&state);
+#endif
 #endif
 	    free(reply);
 	    return NULL;

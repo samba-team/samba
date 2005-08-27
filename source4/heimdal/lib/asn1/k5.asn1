@@ -1,4 +1,4 @@
--- $Id: k5.asn1,v 1.45 2005/07/13 05:29:49 lha Exp $
+-- $Id: k5.asn1,v 1.46 2005/08/22 19:09:25 lha Exp $
 
 KERBEROS5 DEFINITIONS ::=
 BEGIN
@@ -68,7 +68,11 @@ PADATA-TYPE ::= INTEGER {
 	KRB5-PADATA-TD-APP-DEFINED-ERROR(106),	-- application specific
 	KRB5-PADATA-TD-REQ-NONCE(107),		-- INTEGER
 	KRB5-PADATA-TD-REQ-SEQ(108),		-- INTEGER
-	KRB5-PADATA-PA-PAC-REQUEST(128)		-- jbrezak@exchange.microsoft.com
+	KRB5-PADATA-PA-PAC-REQUEST(128),	-- jbrezak@exchange.microsoft.com
+	KRB5-PADATA-PK-AS-09-BINDING(132)	-- client send this to 
+						-- tell KDC that is supports 
+						-- the asCheckSum in the
+						--  PK-AS-REP
 }
 
 AUTHDATA-TYPE ::= INTEGER {

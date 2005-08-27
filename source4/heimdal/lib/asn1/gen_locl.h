@@ -31,7 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-/* $Id: gen_locl.h,v 1.12 2005/07/12 06:27:30 lha Exp $ */
+/* $Id: gen_locl.h,v 1.13 2005/08/23 10:48:15 lha Exp $ */
 
 #ifndef __GEN_LOCL_H__
 #define __GEN_LOCL_H__
@@ -56,26 +56,26 @@
 
 void generate_type (const Symbol *);
 void generate_constant (const Symbol *);
-void generate_type_encode (const Symbol *s);
-void generate_type_decode (const Symbol *s);
-void generate_seq_type_decode (const Symbol *s);
-void generate_type_free (const Symbol *s);
-void generate_type_length (const Symbol *s);
-void generate_type_copy (const Symbol *s);
-void generate_type_maybe (const Symbol *s);
+void generate_type_encode (const Symbol *);
+void generate_type_decode (const Symbol *);
+void generate_seq_type_decode (const Symbol *);
+void generate_type_free (const Symbol *);
+void generate_type_length (const Symbol *);
+void generate_type_copy (const Symbol *);
+void generate_type_maybe (const Symbol *);
 void generate_glue (const Type *, const char*);
 
 const char *classname(Der_class);
-const char *valuename(Der_class class, int);
+const char *valuename(Der_class, int);
 
-void gen_compare_defval(const char *var, struct value *val);
-void gen_assign_defval(const char *var, struct value *val);
+void gen_compare_defval(const char *, struct value *);
+void gen_assign_defval(const char *, struct value *);
 
 
-void init_generate (const char *filename, const char *basename);
+void init_generate (const char *, const char *);
 const char *get_filename (void);
 void close_generate(void);
-void add_import(const char *module);
+void add_import(const char *);
 int yyparse(void);
 
 int preserve_type(const char *);
