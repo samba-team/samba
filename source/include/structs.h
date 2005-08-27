@@ -282,4 +282,5 @@ struct samba3_secrets;
 struct samba3_share_info;
 struct samba3;
 
-struct ldb_map_mappings;
+struct ldb_map_attribute;
+struct ldb_map_objectclass;
