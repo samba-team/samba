@@ -38,13 +38,15 @@
  * returning too much attributes in ldb_search() doesn't)
  */
 
+struct ldb_map_context;
+
 struct ldb_map_attribute 
 {
 	const char *local_name; /* local name */
 
-	enum { 
+	enum ldb_map_attr_type { 
 		MAP_IGNORE, /* Ignore this local attribute. Doesn't exist remotely.  */
-		MAP_KEEP,   /* Keep as is */
+		MAP_KEEP,   /* Keep as is. Same name locally and remotely. */
 		MAP_RENAME, /* Simply rename the attribute. Name changes, data is the same */
 		MAP_CONVERT, /* Rename + convert data */
 		MAP_GENERATE /* Use generate function for generating new name/data. 
@@ -53,7 +55,7 @@ struct ldb_map_attribute
 	} type;
 	
 	/* if set, will be called for expressions that contain this attribute */
-	struct ldb_parse_tree *(*convert_operator) (TALLOC_CTX *ctx, const struct ldb_parse_tree *);	
+	struct ldb_parse_tree *(*convert_operator) (struct ldb_map_context *, TALLOC_CTX *ctx, const struct ldb_parse_tree *);	
 
 	union { 
 		struct {
@@ -62,27 +64,21 @@ struct ldb_map_attribute
 		
 		struct {
 			const char *remote_name;
-
-			struct ldb_message_element *(*convert_local) (
-				TALLOC_CTX *ctx, 
-				const char *remote_attr,
-				const struct ldb_message_element *);
-
-			struct ldb_message_element *(*convert_remote) (
-				TALLOC_CTX *ctx,
-				const char *local_attr,
-				const struct ldb_message_element *);
+			struct ldb_val (*convert_local) (struct ldb_map_context *, TALLOC_CTX *, const struct ldb_val *);
+			struct ldb_val (*convert_remote) (struct ldb_map_context *, TALLOC_CTX *, const struct ldb_val *);
 		} convert;
 	
 		struct {
 			/* Generate the local attribute from remote message */
 			struct ldb_message_element *(*generate_local) (
+					struct ldb_map_context *, 
 					TALLOC_CTX *ctx, 
-					const char *attr, 
+					const char *attr,
 					const struct ldb_message *remote);
 
 			/* Update remote message with information from local message */
 			void (*generate_remote) (
+					struct ldb_map_context *, 
 					const char *local_attr,
 					const struct ldb_message *local, 
 					struct ldb_message *remote);
@@ -100,6 +96,12 @@ struct ldb_map_objectclass
 {
 	const char *local_name;
 	const char *remote_name;
+};
+
+struct ldb_map_context
+{
+	struct ldb_map_attribute *attribute_maps;
+	const struct ldb_map_objectclass *objectclass_maps;
 };
 
 #endif /* __LDB_MAP_H__ */

@@ -60,86 +60,39 @@
  * sambaMungedDial
  * sambaLogonHours */
 
-static struct ldb_message_element *convert_sid_rid(TALLOC_CTX *ctx, const char *remote_attr, const struct ldb_message_element *el)
+static struct ldb_val convert_sid_rid(struct ldb_map_context *map, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
-	struct ldb_message_element *ret = talloc(ctx, struct ldb_message_element);
-	int i;
-
 	printf("Converting SID TO RID *\n");
 
-	ret->flags = el->flags;
-	ret->name = talloc_strdup(ret, remote_attr);
-	ret->num_values = el->num_values;
-	ret->values = talloc_array(ret, struct ldb_val, ret->num_values);
-
-	for (i = 0; i < ret->num_values; i++) {
-		ret->values[i] = ldb_val_dup(ret->values, &el->values[i]);
-	}
-
-	return ret;
+	return ldb_val_dup(ctx, val);
 }
 
-static struct ldb_message_element *convert_rid_sid(TALLOC_CTX *ctx, const char *remote_attr, const struct ldb_message_element *el)
+static struct ldb_val convert_rid_sid(struct ldb_map_context *map, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
-	struct ldb_message_element *ret = talloc(ctx, struct ldb_message_element);
-	int i;
-
 	printf("Converting RID TO SID *\n");
 
-	ret->flags = el->flags;
-	ret->name = talloc_strdup(ret, remote_attr);
-	ret->num_values = el->num_values;
-	ret->values = talloc_array(ret, struct ldb_val, ret->num_values);
-
-	for (i = 0; i < ret->num_values; i++) {
-		ret->values[i] = ldb_val_dup(ret->values, &el->values[i]);
-	}
-
-	return ret;
+	return ldb_val_dup(ctx, val);
 }
 
-static struct ldb_message_element *convert_unix_id2name(TALLOC_CTX *ctx, const char *remote_attr, const struct ldb_message_element *el)
+static struct ldb_val convert_unix_id2name(struct ldb_map_context *map, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
-	int i;
-	struct ldb_message_element *ret = talloc(ctx, struct ldb_message_element);
-
 	printf("Converting UNIX ID to name\n");
 
-	ret->flags = el->flags;
-	ret->name = talloc_strdup(ret, remote_attr);
-	ret->num_values = el->num_values;
-	ret->values = talloc_array(ret, struct ldb_val, ret->num_values);
-
-	for (i = 0; i < ret->num_values; i++) {
-		ret->values[i] = ldb_val_dup(ret->values, &el->values[i]);
-	}
-
-	return ret;
+	return ldb_val_dup(ctx, val);
 }
 
-static struct ldb_message_element *convert_unix_name2id(TALLOC_CTX *ctx, const char *remote_attr, const struct ldb_message_element *el)
+static struct ldb_val convert_unix_name2id(struct ldb_map_context *map, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
-	struct ldb_message_element *ret = talloc(ctx, struct ldb_message_element);
-	int i;
-
 	printf("Converting UNIX name to ID\n");
 
-	ret->flags = el->flags;
-	ret->name = talloc_strdup(ret, remote_attr);
-	ret->num_values = el->num_values;
-	ret->values = talloc_array(ret, struct ldb_val, ret->num_values);
-
-	for (i = 0; i < ret->num_values; i++) {
-		ret->values[i] = ldb_val_dup(ret->values, &el->values[i]);
-	}
-
-	return ret;
+	return ldb_val_dup(ctx, val);
 }
 
 const struct ldb_map_objectclass samba3_objectclasses[] = {
 	{ "group", "sambaGroupMapping" },
 	{ "user", "sambaSAMAccount" },
 	{ "domain", "sambaDomain" },
+	{ NULL, NULL }
 };
 
 const struct ldb_map_attribute samba3_attributes[] = 
@@ -253,12 +206,21 @@ const struct ldb_map_attribute samba3_attributes[] =
 		.u.rename.remote_name = "sambaSID", 
 	},
 
-	/* sambaPwdLastSet -> pwdLastSet*/
+	/* sambaPwdLastSet -> pwdLastSet */
 	{
 		.local_name = "pwdLastSet",
 		.type = MAP_RENAME,
 		.u.rename.remote_name = "sambaPwdLastSet",
 	},	
+	
+	/* cn -> cn */
+	{
+		.local_name = "cn",
+		.type = MAP_KEEP,
+	},
+	{
+		.local_name = NULL,
+	}
 };
 
 	/* the init function */

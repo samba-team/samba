@@ -30,5 +30,18 @@ echo "Checking for existance of record (mapped)"
 $VALGRIND ldbsearch $OPT "(cn=Foo)" unixName lastLogon cn || exit 1
 
 echo "Checking for existance of record (non-mapped)"
-$VALGRIND ldbsearch $LOC "(cn=Foo)" uid sambaLogonTime cn || exit 1
+$VALGRIND ldbsearch $LOC"(cn=foo)" uid sambaLogonTime cn || exit 1
 
+echo "Adding record with mapped attribute in dn"
+$VALGRIND ldbadd $OPT <<EOF
+dn: unixName=nobody,dc=idealx,dc=org
+unixName: nobody 
+cn: Niemand
+
+EOF
+
+echo "Checking for existance of record (mapped)"
+$VALGRIND ldbsearch $OPT "(unixName=nobody)" unixName cn dn || exit 1
+
+echo "Checking for existance of record (non-mapped)"
+$VALGRIND ldbsearch $OPT "(uid=nobody)" unixName cn dn || exit 1
