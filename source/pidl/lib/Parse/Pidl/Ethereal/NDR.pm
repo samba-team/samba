@@ -326,7 +326,7 @@ sub Element($$$)
 	my $add = "";
 
 	foreach (@{$e->{LEVELS}}) {
-		next if ($_->{TYPE} eq "SWITCH");
+		last if ($_->{TYPE} eq "SWITCH");
 		pidl_def "static int $dissectorname$add(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep);";
 		pidl_code "static int";
 		pidl_code "$dissectorname$add(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep)";
