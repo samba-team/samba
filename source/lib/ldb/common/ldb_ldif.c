@@ -155,10 +155,10 @@ char *ldb_base64_encode(void *mem_ctx, const char *buf, int len)
 	const char *b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 	int bit_offset, byte_offset, idx, i;
 	const uint8_t *d = (const uint8_t *)buf;
-	int bytes = (len*8 + 5)/6;
+	int bytes = (len*8 + 5)/6, pad_bytes = (bytes % 4) ? 4 - (bytes % 4) : 0;
 	char *out;
 
-	out = talloc_array(mem_ctx, char, bytes+2);
+	out = talloc_array(mem_ctx, char, bytes+pad_bytes+1);
 	if (!out) return NULL;
 
 	for (i=0;i<bytes;i++) {
@@ -175,7 +175,8 @@ char *ldb_base64_encode(void *mem_ctx, const char *buf, int len)
 		out[i] = b64[idx];
 	}
 
-	out[i++] = '=';
+	for (;i<bytes+pad_bytes;i++)
+		out[i] = '=';
 	out[i] = 0;
 
 	return out;
