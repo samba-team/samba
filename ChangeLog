@@ -1,3 +1,11 @@
+2005-08-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/rd_req.c (check_transited): Allow empty content of type
+	0 because that is was Microsoft enerates in their TGT.
+
+	* kdc/kerberos5.c (fix_transited_encoding): Allow empty content of
+	type 0 because that is was Microsoft enerates in their TGT.
+
 2005-08-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* doc/intro.texi: RFC 4120 replaces RFC 1510
