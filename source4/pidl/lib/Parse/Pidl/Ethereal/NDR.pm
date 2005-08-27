@@ -115,7 +115,8 @@ sub Enum($$$)
 {
 	my ($e,$name,$ifname) = @_;
 	my $valsstring = "$ifname\_$name\_vals";
-	my $dissectorname = "$ifname\_dissect\_".StripPrefixes($name);
+	my $dissectorname = "$ifname\_dissect\_".StripPrefixes($name)."_enum";
+
 	return if (defined($conformance->{noemit}->{$dissectorname}));
 
     	foreach (@{$e->{ELEMENTS}}) {
@@ -153,10 +154,9 @@ sub Enum($$$)
 sub Bitmap($$$)
 {
 	my ($e,$name,$ifname) = @_;
-	my $dissectorname = "$ifname\_dissect\_".StripPrefixes($name);
+	my $dissectorname = "$ifname\_dissect\_".StripPrefixes($name)."_bitmap";
 
 	register_ett("ett_$ifname\_$name");
-
 
 	pidl_hdr "int $dissectorname(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep, int hf_index, guint32 param);";
 
