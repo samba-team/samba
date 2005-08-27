@@ -41,7 +41,7 @@
 #include <fnmatch.h>
 #include "resolve.h"
 
-RCSID("$Id: principal.c,v 1.90 2005/06/30 01:38:15 lha Exp $");
+RCSID("$Id: principal.c,v 1.91 2005/08/23 08:34:40 lha Exp $");
 
 #define princ_num_comp(P) ((P)->name.name_string.len)
 #define princ_type(P) ((P)->name.name_type)
@@ -69,21 +69,21 @@ krb5_principal_set_type(krb5_context context,
 
 int KRB5_LIB_FUNCTION
 krb5_principal_get_type(krb5_context context,
-			krb5_principal principal)
+			krb5_const_principal principal)
 {
     return princ_type(principal);
 }
 
 const char* KRB5_LIB_FUNCTION
 krb5_principal_get_realm(krb5_context context,
-			 krb5_principal principal)
+			 krb5_const_principal principal)
 {
     return princ_realm(principal);
 }			 
 
 const char* KRB5_LIB_FUNCTION
 krb5_principal_get_comp_string(krb5_context context,
-			       krb5_principal principal,
+			       krb5_const_principal principal,
 			       unsigned int component)
 {
     if(component >= princ_num_comp(principal))
@@ -268,16 +268,6 @@ unparse_name_fixed(krb5_context context,
 	    return ERANGE;
     } 
     /* add realm if different from default realm */
-    if(short_form) {
-	krb5_realm r;
-	krb5_error_code ret;
-	ret = krb5_get_default_realm(context, &r);
-	if(ret)
-	    return ret;
-	if(strcmp(princ_realm(principal), r) != 0)
-	    short_form = 0;
-	free(r);
-    }
     if(!short_form) {
 	add_char(name, idx, len, '@');
 	idx = quote_string(princ_realm(principal), name, idx, len);
@@ -297,12 +287,30 @@ krb5_unparse_name_fixed(krb5_context context,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
+krb5_unparse_name_norealm_fixed(krb5_context context,
+				krb5_const_principal principal,
+				char *name,
+				size_t len)
+{
+    return unparse_name_fixed(context, principal, name, len, TRUE);
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_unparse_name_fixed_short(krb5_context context,
 			      krb5_const_principal principal,
 			      char *name,
 			      size_t len)
 {
-    return unparse_name_fixed(context, principal, name, len, TRUE);
+    krb5_realm r;
+    krb5_error_code ret;
+    krb5_boolean short_form = TRUE;
+    ret = krb5_get_default_realm(context, &r);
+    if(ret)
+	return ret;
+    if(strcmp(princ_realm(principal), r) != 0)
+	short_form = 0;
+    free(r);
+    return unparse_name_fixed(context, principal, name, len, short_form);
 }
 
 static krb5_error_code
@@ -356,6 +364,23 @@ krb5_unparse_name_short(krb5_context context,
 			krb5_const_principal principal,
 			char **name)
 {
+    krb5_realm r;
+    krb5_error_code ret;
+    krb5_boolean short_form = TRUE;
+    ret = krb5_get_default_realm(context, &r);
+    if(ret)
+	return ret;
+    if(strcmp(princ_realm(principal), r) != 0)
+	short_form = 0;
+    free(r);
+    return unparse_name(context, principal, name, short_form);
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_unparse_name_norealm(krb5_context context,
+			       krb5_const_principal principal,
+			       char **name)
+{
     return unparse_name(context, principal, name, TRUE);
 }
 
@@ -372,12 +397,13 @@ krb5_unparse_name_ext(krb5_context context,
 
 #endif
 
-krb5_realm*
+krb5_realm* KRB5_LIB_FUNCTION
 krb5_princ_realm(krb5_context context,
 		 krb5_principal principal)
 {
     return &princ_realm(principal);
 }
+
 
 
 void KRB5_LIB_FUNCTION
@@ -764,7 +790,6 @@ krb5_425_conv_principal_ext2(krb5_context context,
 	}
 #else
 	struct addrinfo hints, *ai;
-	int ret;
 	
 	memset (&hints, 0, sizeof(hints));
 	hints.ai_flags = AI_CANONNAME;

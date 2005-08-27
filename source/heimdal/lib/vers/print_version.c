@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,46 +33,23 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: print_version.c,v 1.9 2005/04/12 11:29:00 lha Exp $");
+RCSID("$Id: print_version.c,v 1.9 2005/01/01 14:27:47 lha Exp $");
 #endif
 #include "roken.h"
 
 #include "print_version.h"
 
-void ROKEN_LIB_FUNCTION
+void
 print_version(const char *progname)
 {
-    const char *arg[] = VERSIONLIST;
-    const int num_args = sizeof(arg) / sizeof(arg[0]);
-    char *msg;
-    size_t len = 0;
-    int i;
+    const char *package_list = VERSIONLIST;
     
     if(progname == NULL)
 	progname = getprogname();
     
-    if(num_args == 0)
-	msg = "no version information";
-    else {
-	for(i = 0; i < num_args; i++) {
-	    if(i > 0)
-		len += 2;
-	    len += strlen(arg[i]);
-	}
-	msg = malloc(len + 1);
-	if(msg == NULL) {
-	    fprintf(stderr, "%s: out of memory\n", progname);
-	    return;
-	}
-	msg[0] = '\0';
-	for(i = 0; i < num_args; i++) {
-	    if(i > 0)
-		strcat(msg, ", ");
-	    strcat(msg, arg[i]);
-	}
-    }
-    fprintf(stderr, "%s (%s)\n", progname, msg);
-    fprintf(stderr, "Copyright (c) 1999 - 2001 Kungliga Tekniska Högskolan\n");
-    if(num_args != 0)
-	free(msg);
+    if(*package_list == '\0')
+	package_list = "no version information";
+    fprintf(stderr, "%s (%s)\n", progname, package_list);
+    fprintf(stderr, "Copyright 1999-2005 Kungliga Tekniska Högskolan\n");
+    fprintf(stderr, "Send bug-reports to %s\n", PACKAGE_BUGREPORT);
 }

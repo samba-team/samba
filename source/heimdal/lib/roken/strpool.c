@@ -33,7 +33,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id: strpool.c,v 1.1 2005/06/28 22:46:57 lha Exp $");
+RCSID("$Id: strpool.c,v 1.2 2005/08/25 14:59:06 lha Exp $");
 #endif
 
 #include <stdarg.h>
@@ -81,19 +81,18 @@ rk_strpoolprintf(struct rk_strpool *p, const char *fmt, ...)
     len = vasprintf(&str, fmt, ap);
     va_end(ap);
     if (str == NULL) {
-	printf("vasprintf");
 	rk_strpoolfree(p);
 	return NULL;
     }
     str2 = realloc(p->str, len + p->len + 1);
     if (str2 == NULL) {
-	printf("realloc");
 	rk_strpoolfree(p);
 	return NULL;
     }
     p->str = str2;
     memcpy(p->str + p->len, str, len + 1);
     p->len += len;
+    free(str);
     return p;
 }
 

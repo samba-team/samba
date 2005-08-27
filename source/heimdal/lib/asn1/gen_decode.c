@@ -34,7 +34,7 @@
 #include "gen_locl.h"
 #include "lex.h"
 
-RCSID("$Id: gen_decode.c,v 1.27 2005/07/19 18:09:30 lha Exp $");
+RCSID("$Id: gen_decode.c,v 1.28 2005/08/23 11:51:25 lha Exp $");
 
 static void
 decode_primitive (const char *typename, const char *name, const char *forwstr)
@@ -198,7 +198,7 @@ find_tag (const Type *t,
 
 static int
 decode_type (const char *name, const Type *t, int optional, 
-	     const char *forwstr)
+	     const char *forwstr, const char *tmpstr)
 {
     switch (t->type) {
     case TType: {
@@ -304,7 +304,7 @@ decode_type (const char *name, const Type *t, int optional,
 		      name, m->gen_name);
 	    if (s == NULL)
 		errx(1, "malloc");
-	    decode_type (s, m->type, m->optional, forwstr);
+	    decode_type (s, m->type, m->optional, forwstr, m->gen_name);
 	    free (s);
 	}
 
@@ -346,7 +346,7 @@ decode_type (const char *name, const Type *t, int optional,
 			"%s = calloc(1, sizeof(*%s));\n"
 			"if (%s == NULL) { e = ENOMEM; %s; }\n",
 			s, s, s, forwstr);
-	    decode_type (s, m->type, 0, forwstr);
+	    decode_type (s, m->type, 0, forwstr, m->gen_name);
 	    free (s);
 
 	    fprintf(codefile, "members |= (1 << %d);\n", memno);
@@ -382,33 +382,45 @@ decode_type (const char *name, const Type *t, int optional,
     case TSetOf:
     case TSequenceOf: {
 	char *n;
+	char *sname;
 
 	fprintf (codefile,
 		 "{\n"
-		 "size_t origlen = len;\n"
-		 "size_t oldret = ret;\n"
-		 "void *tmp;\n"
+		 "size_t %s_origlen = len;\n"
+		 "size_t %s_oldret = ret;\n"
+		 "void *%s_tmp;\n"
 		 "ret = 0;\n"
 		 "(%s)->len = 0;\n"
 		 "(%s)->val = NULL;\n"
-		 "while(ret < origlen) {\n"
-		 "tmp = realloc((%s)->val, "
+		 "while(ret < %s_origlen) {\n"
+		 "%s_tmp = realloc((%s)->val, "
 		 "    sizeof(*((%s)->val)) * ((%s)->len + 1));\n"
-		 "if (tmp == NULL) { %s; }\n"
+		 "if (%s_tmp == NULL) { %s; }\n"
 		 "(%s)->len++;\n"
-		 "(%s)->val = tmp;\n",
-		 name, name, name, name, name, forwstr, name, name);
+		 "(%s)->val = %s_tmp;\n",
+		 tmpstr, tmpstr, tmpstr,
+		 name, name,
+		 tmpstr, tmpstr,
+		 name, name, name,
+		 tmpstr,
+		 forwstr, name, name,
+		 tmpstr);
 
 	asprintf (&n, "&(%s)->val[(%s)->len-1]", name, name);
 	if (n == NULL)
 	    errx(1, "malloc");
-	decode_type (n, t->subtype, 0, forwstr);
+	asprintf (&sname, "%s_s_of", tmpstr);
+	if (sname == NULL)
+	    errx(1, "malloc");
+	decode_type (n, t->subtype, 0, forwstr, sname);
 	fprintf (codefile, 
-		 "len = origlen - ret;\n"
+		 "len = %s_origlen - ret;\n"
 		 "}\n"
-		 "ret += oldret;\n"
-		 "}\n");
+		 "ret += %s_oldret;\n"
+		 "}\n",
+		 tmpstr, tmpstr);
 	free (n);
+	free (sname);
 	break;
     }
     case TGeneralizedTime:
@@ -418,17 +430,21 @@ decode_type (const char *name, const Type *t, int optional,
 	decode_primitive ("general_string", name, forwstr);
 	break;
     case TTag:{
+    	char *tname;
+
 	fprintf(codefile, 
 		"{\n"
-		"size_t tagdatalen, oldlen;\n");
+		"size_t %s_datalen, %s_oldlen;\n",
+		tmpstr, tmpstr);
 	if(dce_fix)
 	    fprintf(codefile, 
 		    "int dce_fix;\n");
 	fprintf(codefile, "e = der_match_tag_and_length(p, len, %s, %s, %s, "
-		"&tagdatalen, &l);\n",
+		"&%s_datalen, &l);\n",
 		classname(t->tag.tagclass),
 		is_primitive_type(t->subtype->type) ? "PRIM" : "CONS",
-		valuename(t->tag.tagclass, t->tag.tagvalue));
+		valuename(t->tag.tagclass, t->tag.tagvalue),
+		tmpstr);
 	if(optional) {
 	    fprintf(codefile, 
 		    "if(e) {\n"
@@ -442,32 +458,38 @@ decode_type (const char *name, const Type *t, int optional,
 	}
 	fprintf (codefile,
 		 "p += l; len -= l; ret += l;\n"
-		 "oldlen = len;\n");
+		 "%s_oldlen = len;\n",
+		 tmpstr);
 	if(dce_fix)
 	    fprintf (codefile,
-		     "if((dce_fix = _heim_fix_dce(tagdatalen, &len)) < 0)\n"
+		     "if((dce_fix = _heim_fix_dce(%s_datalen, &len)) < 0)\n"
 		     "{ e = ASN1_BAD_FORMAT; %s; }\n",
-		     forwstr);
+		     tmpstr, forwstr);
 	else
 	    fprintf(codefile, 
-		    "if (tagdatalen > len) { e = ASN1_OVERRUN; %s; }\n"
-		    "len = tagdatalen;\n", forwstr);
-	decode_type (name, t->subtype, 0, forwstr);
+		    "if (%s_datalen > len) { e = ASN1_OVERRUN; %s; }\n"
+		    "len = %s_datalen;\n", tmpstr, forwstr, tmpstr);
+	asprintf (&tname, "%s_Tag", tmpstr);
+	if (tname == NULL)
+	    errx(1, "malloc");
+	decode_type (name, t->subtype, 0, forwstr, tname);
 	if(dce_fix)
 	    fprintf(codefile,
 		    "if(dce_fix){\n"
 		    "e = der_match_tag_and_length (p, len, "
 		    "(Der_class)0,(Der_type)0, UT_EndOfContent, "
-		    "&tagdatalen, &l);\n"
+		    "&%s_datalen, &l);\n"
 		    "if(e) %s;\np += l; len -= l; ret += l;\n"
-		    "} else \n", forwstr);
+		    "} else \n", tmpstr, forwstr);
 	fprintf(codefile, 
-		"len = oldlen - tagdatalen;\n");
+		"len = %s_oldlen - %s_datalen;\n",
+		tmpstr, tmpstr);
 	if(optional)
 	    fprintf(codefile, 
 		    "}\n");
 	fprintf(codefile, 
 		"}\n");
+	free(tname);
 	break;
     }
     case TChoice: {
@@ -501,7 +523,7 @@ decode_type (const char *name, const Type *t, int optional,
 		      name, m->gen_name);
 	    if (s == NULL)
 		errx(1, "malloc");
-	    decode_type (s, m->type, m->optional, forwstr);
+	    decode_type (s, m->type, m->optional, forwstr, m->gen_name);
 	    fprintf(codefile,
 		    "(%s)->element = %s;\n",
 		    name, m->label);
@@ -573,71 +595,73 @@ decode_type (const char *name, const Type *t, int optional,
 void
 generate_type_decode (const Symbol *s)
 {
-  int preserve = preserve_type(s->name) ? TRUE : FALSE;
+    int preserve = preserve_type(s->name) ? TRUE : FALSE;
 
-  fprintf (headerfile,
-	   "int    "
-	   "decode_%s(const unsigned char *, size_t, %s *, size_t *);\n",
-	   s->gen_name, s->gen_name);
+    fprintf (headerfile,
+	     "int    "
+	     "decode_%s(const unsigned char *, size_t, %s *, size_t *);\n",
+	     s->gen_name, s->gen_name);
 
-  fprintf (codefile, "int\n"
-	   "decode_%s(const unsigned char *p,"
-	   " size_t len, %s *data, size_t *size)\n"
-	   "{\n",
-	   s->gen_name, s->gen_name);
+    fprintf (codefile, "int\n"
+	     "decode_%s(const unsigned char *p,"
+	     " size_t len, %s *data, size_t *size)\n"
+	     "{\n",
+	     s->gen_name, s->gen_name);
 
-  switch (s->type->type) {
-  case TInteger:
-  case TBoolean:
-  case TOctetString:
-  case TOID:
-  case TGeneralizedTime:
-  case TGeneralString:
-  case TUTF8String:
-  case TPrintableString:
-  case TIA5String:
-  case TBMPString:
-  case TUniversalString:
-  case TUTCTime:
-  case TNull:
-  case TEnumerated:
-  case TBitString:
-  case TSequence:
-  case TSequenceOf:
-  case TSet:
-  case TSetOf:
-  case TTag:
-  case TType:
-  case TChoice:
-    fprintf (codefile,
-	     "size_t ret = 0, reallen;\n"
-	     "size_t l;\n"
-	     "int e;\n");
-    if (preserve)
-	fprintf (codefile, "const unsigned char *begin = p;\n");
-
-    fprintf (codefile, "\n");
-    fprintf (codefile, "memset(data, 0, sizeof(*data));\n");
-    fprintf (codefile, "reallen = 0;\n"); /* hack to avoid `unused variable' */
-
-    decode_type ("data", s->type, 0, "goto fail");
-    if (preserve)
+    switch (s->type->type) {
+    case TInteger:
+    case TBoolean:
+    case TOctetString:
+    case TOID:
+    case TGeneralizedTime:
+    case TGeneralString:
+    case TUTF8String:
+    case TPrintableString:
+    case TIA5String:
+    case TBMPString:
+    case TUniversalString:
+    case TUTCTime:
+    case TNull:
+    case TEnumerated:
+    case TBitString:
+    case TSequence:
+    case TSequenceOf:
+    case TSet:
+    case TSetOf:
+    case TTag:
+    case TType:
+    case TChoice:
 	fprintf (codefile,
-		 "data->_save.data = calloc(1, ret);\n"
-		 "if (data->_save.data == NULL) { e = ENOMEM; goto fail; }\n"
-		 "data->_save.length = ret;\n"
-		 "memcpy(data->_save.data, begin, ret);\n");
-    fprintf (codefile, 
-	     "if(size) *size = ret;\n"
-	     "return 0;\n");
-    fprintf (codefile,
-	     "fail:\n"
-	     "free_%s(data);\n"
-	     "return e;\n",
-	     s->gen_name);
-    break;
-  default:
-    abort ();
-  }
-  fprintf (codefile, "}\n\n");
+		 "size_t ret = 0, reallen;\n"
+		 "size_t l;\n"
+		 "int e;\n");
+	if (preserve)
+	    fprintf (codefile, "const unsigned char *begin = p;\n");
+
+	fprintf (codefile, "\n");
+	fprintf (codefile, "memset(data, 0, sizeof(*data));\n"); /* hack to avoid `unused variable' */
+	fprintf (codefile, "reallen = 0;\n"); 
+
+	decode_type ("data", s->type, 0, "goto fail", "Top");
+	if (preserve)
+	    fprintf (codefile,
+		     "data->_save.data = calloc(1, ret);\n"
+		     "if (data->_save.data == NULL) { \n"
+		     "e = ENOMEM; goto fail; \n"
+		     "}\n"
+		     "data->_save.length = ret;\n"
+		     "memcpy(data->_save.data, begin, ret);\n");
+	fprintf (codefile, 
+		 "if(size) *size = ret;\n"
+		 "return 0;\n");
+	fprintf (codefile,
+		 "fail:\n"
+		 "free_%s(data);\n"
+		 "return e;\n",
+		 s->gen_name);
+	break;
+    default:
+	abort ();
+    }
+    fprintf (codefile, "}\n\n");
 }

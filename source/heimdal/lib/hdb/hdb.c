@@ -33,7 +33,7 @@
 
 #include "hdb_locl.h"
 
-RCSID("$Id: hdb.c,v 1.54 2005/05/29 18:12:28 lha Exp $");
+RCSID("$Id: hdb.c,v 1.55 2005/08/19 13:07:03 lha Exp $");
 
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
@@ -174,9 +174,14 @@ hdb_check_db_format(krb5_context context, HDB *db)
     unsigned ver;
     int foo;
 
+    ret = db->hdb_lock(context, db, HDB_RLOCK);
+    if (ret)
+	return ret;
+
     tag.data = HDB_DB_FORMAT_ENTRY;
     tag.length = strlen(tag.data);
     ret = (*db->hdb__get)(context, db, tag, &version);
+    db->hdb_unlock(context, db);
     if(ret)
 	return ret;
     foo = sscanf(version.data, "%u", &ver);
@@ -200,12 +205,19 @@ hdb_init_db(krb5_context context, HDB *db)
     if(ret != HDB_ERR_NOENTRY)
 	return ret;
     
+    ret = db->hdb_lock(context, db, HDB_WLOCK);
+    if (ret)
+	return ret;
+
     tag.data = HDB_DB_FORMAT_ENTRY;
     tag.length = strlen(tag.data);
     snprintf(ver, sizeof(ver), "%u", HDB_DB_FORMAT);
     version.data = ver;
     version.length = strlen(version.data) + 1; /* zero terminated */
     ret = (*db->hdb__put)(context, db, 0, tag, version);
+    ret = db->hdb_unlock(context, db);
+    if (ret)
+	return ret;
     return ret;
 }
 

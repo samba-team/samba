@@ -32,7 +32,7 @@
  */
 
 /* 
- * $Id: kdc_locl.h,v 1.72 2005/08/12 08:46:39 lha Exp $ 
+ * $Id: kdc_locl.h,v 1.73 2005/08/15 11:07:25 lha Exp $ 
  */
 
 #ifndef __KDC_LOCL_H__
@@ -118,6 +118,7 @@ krb5_error_code	_kdc_pk_mk_pa_reply(krb5_context,
 				    pk_client_params *,
 				    const hdb_entry *,
 				    const KDC_REQ *,
+				    const krb5_data *,
 				    krb5_keyblock **,
 				    METHOD_DATA *);
 krb5_error_code _kdc_pk_check_client(krb5_context, 
