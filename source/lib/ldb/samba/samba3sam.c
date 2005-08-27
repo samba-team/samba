@@ -60,7 +60,33 @@
  * sambaMungedDial
  * sambaLogonHours */
 
+static struct ldb_message_element *convert_sid_rid(TALLOC_CTX *ctx, const char *remote_attr, const struct ldb_message_element *el)
+{
+	printf("Converting SID TO RID *\n");
 
+	return talloc_memdup(ctx, el, sizeof(*el));
+}
+
+static struct ldb_message_element *convert_rid_sid(TALLOC_CTX *ctx, const char *remote_attr, const struct ldb_message_element *el)
+{
+	printf("Converting RID TO SID *\n");
+
+	return talloc_memdup(ctx, el, sizeof(*el));
+}
+
+static struct ldb_message_element *convert_unix_id2name(TALLOC_CTX *ctx, const char *remote_attr, const struct ldb_message_element *el)
+{
+	printf("Converting UNIX ID to name\n");
+
+	return talloc_memdup(ctx, el, sizeof(*el));
+}
+
+static struct ldb_message_element *convert_unix_name2id(TALLOC_CTX *ctx, const char *remote_attr, const struct ldb_message_element *el)
+{
+	printf("Converting UNIX name to ID\n");
+
+	return talloc_memdup(ctx, el, sizeof(*el));
+}
 
 const struct ldb_map_objectclass samba3_objectclasses[] = {
 	{ "group", "sambaGroupMapping" },
@@ -110,8 +136,8 @@ const struct ldb_map_attribute samba3_attributes[] =
 		.local_name = "primaryGroupID",
 		.type = MAP_CONVERT,
 		.u.convert.remote_name = "sambaPrimaryGroupSID",
-		.u.convert.convert_local = NULL, /* FIXME: Add domain SID */
-		.u.convert.convert_remote = NULL, /* FIXME: Extract RID */
+		.u.convert.convert_local = convert_rid_sid,
+		.u.convert.convert_remote = convert_sid_rid, 
 	},
 
 	/* sambaBadPasswordCount -> badPwdCount */
@@ -140,8 +166,8 @@ const struct ldb_map_attribute samba3_attributes[] =
 		.local_name = "unixName",
 		.type = MAP_CONVERT,
 		.u.convert.remote_name = "gidNumber",
-		.u.convert.convert_local = NULL, /* FIXME: Lookup gid */
-		.u.convert.convert_remote = NULL, /* FIXME: Lookup groupname */
+		.u.convert.convert_local = convert_unix_id2name,
+		.u.convert.convert_remote = convert_unix_name2id, 
 	},
 
 	/* uid -> unixName */
@@ -149,8 +175,8 @@ const struct ldb_map_attribute samba3_attributes[] =
 		.local_name = "unixName",
 		.type = MAP_CONVERT,
 		.u.convert.remote_name = "uid",
-		.u.convert.convert_local = NULL, /* FIXME: Lookup uid */
-		.u.convert.convert_remote = NULL, /* FIXME: Lookup username */
+		.u.convert.convert_local = convert_unix_id2name,
+		.u.convert.convert_remote = convert_unix_name2id,
 	},
 
 	/* displayName -> name */
@@ -194,5 +220,5 @@ struct ldb_module *init_module(struct ldb_context *ldb, const char *options[])
 struct ldb_module *ldb_samba3sam_module_init(struct ldb_context *ldb, const char *options[])
 #endif
 {
-	return ldb_map_init(ldb, &samba3_attributes, &samba3_objectclasses, options);
+	return ldb_map_init(ldb, samba3_attributes, samba3_objectclasses, options);
 }
