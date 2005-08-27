@@ -136,6 +136,10 @@ check_transited(krb5_context context, Ticket *ticket, EncTicketPart *enc)
     int num_realms;
     krb5_error_code ret;
 	    
+    /* Windows w2k and w2k3 uses this */
+    if(enc->transited.tr_type == 0 && enc->transited.contents.length == 0)
+	return 0;
+
     if(enc->transited.tr_type != DOMAIN_X500_COMPRESS)
 	return KRB5KDC_ERR_TRTYPE_NOSUPP;
 
