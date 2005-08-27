@@ -8,7 +8,7 @@
 <h1>Samba4 provisioning</h1>
 
 <%
-var f = FormObj("Provisioning", 0, 3);
+var f = FormObj("Provisioning", 0, 2);
 var i;
 var lp = loadparm_init();
 
@@ -31,15 +31,14 @@ f.add("HOSTGUID", "Host GUID");
 f.add("BASEDN", "Base DN");
 f.add("HOSTIP", "Host IP");
 f.add("DEFAULTSITE", "Default Site");
-f.submit[0] = "Initial provision";
-f.submit[1] = "Provision";
-f.submit[2] = "Cancel";
+f.submit[0] = "Provision";
+f.submit[1] = "Cancel";
 
 if (form['submit'] == "Cancel") {
 	redirect("/");
 }
 
-if ((form['submit'] == "Provision") || (form['submit'] == "Initial provision")) {
+if (form['submit'] == "Provision") {
 	for (r in form) {
 		subobj[r] = form[r];
 	}
@@ -49,17 +48,20 @@ for (i=0;i<f.element.length;i++) {
 	f.element[i].value = subobj[f.element[i].name];
 }
 
-lp.set("realm", subobj.REALM);
+if (form['submit'] == "Provision") {
+	lp.set("realm", subobj.REALM);
+	var goodpass = (subobj.CONFIRM == subobj.ADMINPASS);
 
-var goodpass = (subobj.CONFIRM == subobj.ADMINPASS);
-if (form['submit'] == "Provision" && goodpass) {
-	provision(subobj, writefln, true);
-} else if (form['submit'] == "Initial provision" && goodpass) {
-	provision(subobj, writefln, false);
-} else {
-	if (!goodpass && form['submit'] != undefined) {
+	if (!goodpass) {
 		write("<h3>Passwords don't match.  Please try again.</h3>");
+		f.display();
+	} else if (subobj.ADMINPASS == "") {
+		write("<h3>You must choose an administrator password.  Please try again.</h3>");
+		f.display();
+	} else {
+		provision(subobj, writefln, false);
 	}
+} else {
 	f.display();
 }
 %>
