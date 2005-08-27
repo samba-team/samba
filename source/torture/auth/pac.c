@@ -126,7 +126,7 @@ static BOOL torture_pac_self_check(void)
 	/* Now check that we can read it back */
 	nt_status = kerberos_decode_pac(mem_ctx, &pac_data,
 					tmp_blob,
-					smb_krb5_context,
+					smb_krb5_context->krb5_context,
 					&krbtgt_keyblock,
 					&server_keyblock);
 
@@ -145,7 +145,7 @@ static BOOL torture_pac_self_check(void)
 	/* Now check that we can read it back */
 	nt_status = kerberos_pac_logon_info(mem_ctx, &logon_info,
 					    tmp_blob,
-					    smb_krb5_context,
+					    smb_krb5_context->krb5_context,
 					    &krbtgt_keyblock,
 					    &server_keyblock);
 	

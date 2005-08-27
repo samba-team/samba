@@ -80,7 +80,7 @@ static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx,
  NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 			      struct PAC_DATA **pac_data_out,
 			      DATA_BLOB blob,
-			      struct smb_krb5_context *smb_krb5_context,
+			      krb5_context context,
 			      krb5_keyblock *krbtgt_keyblock,
 			      krb5_keyblock *service_keyblock)
 {
@@ -165,7 +165,7 @@ static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx,
 	/* verify by service_key */
 	status = check_pac_checksum(mem_ctx, 
 				    modified_pac_blob, &srv_sig, 
-				    smb_krb5_context->krb5_context, 
+				    context, 
 				    service_keyblock);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("PAC Decode: Failed to verify the service signature\n"));
@@ -178,7 +178,7 @@ static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx,
 
 		status = check_pac_checksum(mem_ctx, 
 					    service_checksum_blob, &kdc_sig, 
-					    smb_krb5_context->krb5_context, krbtgt_keyblock);
+					    context, krbtgt_keyblock);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("PAC Decode: Failed to verify the krbtgt signature\n"));
 			return status;
@@ -203,7 +203,7 @@ static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx,
  NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
 				  struct PAC_LOGON_INFO **logon_info,
 				  DATA_BLOB blob,
-				  struct smb_krb5_context *smb_krb5_context,
+				  krb5_context context,
 				  krb5_keyblock *krbtgt_keyblock,
 				  krb5_keyblock *service_keyblock)
 {
@@ -213,7 +213,7 @@ static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx,
 
 	nt_status = kerberos_decode_pac(mem_ctx, &pac_data,
 					blob,
-					smb_krb5_context,
+					context,
 					krbtgt_keyblock,
 					service_keyblock);
 	if (!NT_STATUS_IS_OK(nt_status)) {
