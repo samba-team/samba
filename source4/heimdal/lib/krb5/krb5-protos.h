@@ -3164,12 +3164,6 @@ krb5_unparse_name (
 	char **/*name*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_unparse_name_always_short (
-	krb5_context /*context*/,
-	krb5_const_principal /*principal*/,
-	char **/*name*/);
-
-krb5_error_code KRB5_LIB_FUNCTION
 krb5_unparse_name_fixed (
 	krb5_context /*context*/,
 	krb5_const_principal /*principal*/,
@@ -3178,6 +3172,19 @@ krb5_unparse_name_fixed (
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_unparse_name_fixed_short (
+	krb5_context /*context*/,
+	krb5_const_principal /*principal*/,
+	char */*name*/,
+	size_t /*len*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_unparse_name_norealm (
+	krb5_context /*context*/,
+	krb5_const_principal /*principal*/,
+	char **/*name*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_unparse_name_norealm_fixed (
 	krb5_context /*context*/,
 	krb5_const_principal /*principal*/,
 	char */*name*/,
