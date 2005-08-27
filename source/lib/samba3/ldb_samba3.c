@@ -60,121 +60,7 @@
  * sambaMungedDial
  * sambaLogonHours */
 
-/* sambaNextRid -> nextRid */
-const struct ldb_map_attribute attr_nextRid = {
-	.local_name = "nextRid",
-	.type = MAP_RENAME,
-	.u.rename.remote_name = "sambaNextRid",
-};
 
-/* sambaBadPasswordTime -> badPasswordtime*/
-const struct ldb_map_attribute attr_badPasswordTime = {
-	.local_name = "badPasswordTime",
-	.type = MAP_RENAME,
-	.u.rename.remote_name = "sambaBadPasswordTime",
-};
-
-/* sambaLMPassword -> lmPwdHash*/
-const struct ldb_map_attribute attr_lmPwdHash = {
-	.local_name = "lmPwdHash",
-	.type = MAP_RENAME,
-	.u.rename.remote_name = "sambaLMPassword",
-};
-
-/* sambaGroupType -> groupType */
-const struct ldb_map_attribute attr_groupType = {
-	.local_name = "groupType",
-	.type = MAP_RENAME,
-	.u.rename.remote_name = "sambaGroupType",
-};
-
-/* sambaNTPassword -> ntPwdHash*/
-const struct ldb_map_attribute attr_ntPwdHash = {
-	.local_name = "badPwdCount",
-	.type = MAP_RENAME,
-	.u.rename.remote_name = "sambaNTPassword",
-};
-
-/* sambaPrimaryGroupSID -> primaryGroupID */
-const struct ldb_map_attribute attr_primaryGroupID = {
-	.local_name = "primaryGroupID",
-	.type = MAP_CONVERT,
-	.u.convert.remote_name = "sambaPrimaryGroupSID",
-	.u.convert.convert_local = NULL, /* FIXME: Add domain SID */
-	.u.convert.convert_remote = NULL, /* FIXME: Extract RID */
-};
-
-/* sambaBadPasswordCount -> badPwdCount */
-const struct ldb_map_attribute attr_badPwdCount = {
-	.local_name = "badPwdCount",
-	.type = MAP_RENAME,
-	.u.rename.remote_name = "sambaBadPasswordCount",
-};
-
-/* sambaLogonTime -> lastLogon*/
-const struct ldb_map_attribute attr_lastLogon = {
-	.local_name = "lastLogon",
-	.type = MAP_RENAME,
-	.u.rename.remote_name = "sambaLogonTime",
-};
-
-/* sambaLogoffTime -> lastLogoff*/
-const struct ldb_map_attribute attr_lastLogoff = {
-	.local_name = "lastLogoff",
-	.type = MAP_RENAME,
-	.u.rename.remote_name = "sambaLogoffTime",
-};
-
-/* gidNumber -> unixName */
-const struct ldb_map_attribute attr_unixName_gid = {
-	.local_name = "unixName",
-	.type = MAP_CONVERT,
-	.u.convert.remote_name = "gidNumber",
-	.u.convert.convert_local = NULL, /* FIXME: Lookup gid */
-	.u.convert.convert_remote = NULL, /* FIXME: Lookup groupname */
-};
-
-/* uid -> unixName */
-const struct ldb_map_attribute attr_unixName_uid = {
-	.local_name = "unixName",
-	.type = MAP_CONVERT,
-	.u.convert.remote_name = "uid",
-	.u.convert.convert_local = NULL, /* FIXME: Lookup uid */
-	.u.convert.convert_remote = NULL, /* FIXME: Lookup username */
-};
-
-/* displayName -> name */
-const struct ldb_map_attribute attr_name = {
-	.local_name = "name",
-	.type = MAP_RENAME,
-	.u.rename.remote_name = "displayName",
-};
-
-/* cn */
-const struct ldb_map_attribute attr_cn = {
-	.local_name = "cn",
-	.type = MAP_KEEP,
-};
-
-/* description */
-const struct ldb_map_attribute attr_description = {
-	.local_name = "description",
-	.type = MAP_KEEP,
-};
-
-/* sambaSID -> objectSid*/
-const struct ldb_map_attribute attr_objectSid = {
-	.local_name = "objectSid",
-	.type = MAP_RENAME,
-	.u.rename.remote_name = "sambaSID", 
-};
-
-/* sambaPwdLastSet -> pwdLastSet*/
-const struct ldb_map_attribute attr_pwdLastSet = {
-	.local_name = "pwdLastSet",
-	.type = MAP_RENAME,
-	.u.rename.remote_name = "sambaPwdLastSet",
-};
 
 const struct ldb_map_objectclass samba3_objectclasses[] = {
 	{ "group", "sambaGroupMapping" },
@@ -182,35 +68,131 @@ const struct ldb_map_objectclass samba3_objectclasses[] = {
 	{ "domain", "sambaDomain" },
 };
 
-const struct ldb_map_mappings samba3_mappings = 
+const struct ldb_map_attribute samba3_attributes[] = 
 {
-	.name = "samba3",
+	/* sambaNextRid -> nextRid */
 	{
-		&attr_objectSid,
-		&attr_pwdLastSet,
-		&attr_description,
-		&attr_cn,
-		&attr_unixName_uid,
-		&attr_unixName_gid,
-		&attr_name,
-		&attr_lastLogoff,
-		&attr_lastLogon,
-		&attr_primaryGroupID,
-		&attr_badPwdCount,
-		&attr_ntPwdHash,
-		&attr_lmPwdHash,
-		&attr_groupType,
-		&attr_badPasswordTime,
-		&attr_nextRid,
-	}
-};	
+		.local_name = "nextRid",
+		.type = MAP_RENAME,
+		.u.rename.remote_name = "sambaNextRid",
+	},
 
-/* the init function */
+	/* sambaBadPasswordTime -> badPasswordtime*/
+	{
+		.local_name = "badPasswordTime",
+		.type = MAP_RENAME,
+		.u.rename.remote_name = "sambaBadPasswordTime",
+	},
+
+	/* sambaLMPassword -> lmPwdHash*/
+	{
+		.local_name = "lmPwdHash",
+		.type = MAP_RENAME,
+		.u.rename.remote_name = "sambaLMPassword",
+	},
+
+	/* sambaGroupType -> groupType */
+	{
+		.local_name = "groupType",
+		.type = MAP_RENAME,
+		.u.rename.remote_name = "sambaGroupType",
+	},
+
+	/* sambaNTPassword -> ntPwdHash*/
+	{
+		.local_name = "badPwdCount",
+		.type = MAP_RENAME,
+		.u.rename.remote_name = "sambaNTPassword",
+	},
+
+	/* sambaPrimaryGroupSID -> primaryGroupID */
+	{
+		.local_name = "primaryGroupID",
+		.type = MAP_CONVERT,
+		.u.convert.remote_name = "sambaPrimaryGroupSID",
+		.u.convert.convert_local = NULL, /* FIXME: Add domain SID */
+		.u.convert.convert_remote = NULL, /* FIXME: Extract RID */
+	},
+
+	/* sambaBadPasswordCount -> badPwdCount */
+	{
+		.local_name = "badPwdCount",
+		.type = MAP_RENAME,
+		.u.rename.remote_name = "sambaBadPasswordCount",
+	},
+
+	/* sambaLogonTime -> lastLogon*/
+	{
+		.local_name = "lastLogon",
+		.type = MAP_RENAME,
+		.u.rename.remote_name = "sambaLogonTime",
+	},
+
+	/* sambaLogoffTime -> lastLogoff*/
+	{
+		.local_name = "lastLogoff",
+		.type = MAP_RENAME,
+		.u.rename.remote_name = "sambaLogoffTime",
+	},
+
+	/* gidNumber -> unixName */
+	{
+		.local_name = "unixName",
+		.type = MAP_CONVERT,
+		.u.convert.remote_name = "gidNumber",
+		.u.convert.convert_local = NULL, /* FIXME: Lookup gid */
+		.u.convert.convert_remote = NULL, /* FIXME: Lookup groupname */
+	},
+
+	/* uid -> unixName */
+	{
+		.local_name = "unixName",
+		.type = MAP_CONVERT,
+		.u.convert.remote_name = "uid",
+		.u.convert.convert_local = NULL, /* FIXME: Lookup uid */
+		.u.convert.convert_remote = NULL, /* FIXME: Lookup username */
+	},
+
+	/* displayName -> name */
+	{
+		.local_name = "name",
+		.type = MAP_RENAME,
+		.u.rename.remote_name = "displayName",
+	},
+
+	/* cn */
+	{
+		.local_name = "cn",
+		.type = MAP_KEEP,
+	},
+
+	/* description */
+	{
+		.local_name = "description",
+		.type = MAP_KEEP,
+	},
+
+	/* sambaSID -> objectSid*/
+	{
+		.local_name = "objectSid",
+		.type = MAP_RENAME,
+		.u.rename.remote_name = "sambaSID", 
+	},
+
+	/* sambaPwdLastSet -> pwdLastSet*/
+	{
+		.local_name = "pwdLastSet",
+		.type = MAP_RENAME,
+		.u.rename.remote_name = "sambaPwdLastSet",
+	},	
+};
+
+	/* the init function */
 #ifdef HAVE_DLOPEN_DISABLED
- struct ldb_module *init_module(struct ldb_context *ldb, const char *options[])
+	struct ldb_module *init_module(struct ldb_context *ldb, const char *options[])
 #else
-struct ldb_module *ldb_samba3_module_init(struct ldb_context *ldb, const char *options[])
+	struct ldb_module *ldb_samba3_module_init(struct ldb_context *ldb, const char *options[])
 #endif
 {
-	return ldb_map_init(ldb, &samba3_mappings, options);
+	return ldb_map_init(ldb, &samba3_attributes, &samba3_objectclasses, options);
 }
