@@ -90,7 +90,8 @@ struct ldb_map_attribute
 			/* Name(s) for this attribute on the remote server. This is an array since 
 			 * one local attribute's data can be split up into several attributes 
 			 * remotely */
-			const char *remote_names[];
+#define LDB_MAP_MAX_REMOTE_NAMES 10
+			const char *remote_names[LDB_MAP_MAX_REMOTE_NAMES];
 		} generate;
 	} u;
 };
@@ -100,13 +101,5 @@ struct ldb_map_objectclass
 	const char *local_name;
 	const char *remote_name;
 };
-
-/* Base ldb_map struct. Fill this in to create a mapping backend */
-struct ldb_map_mappings 
-{
-	const char *name;
-	const struct ldb_map_attribute *attribute_maps[];
-};
-
 
 #endif /* __LDB_MAP_H__ */

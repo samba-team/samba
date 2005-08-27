@@ -34,7 +34,8 @@
  */
 
 struct map_private {
-	const struct ldb_map_mappings *mappings;
+	const struct ldb_map_attribute *attribute_maps;
+	const struct ldb_map_objectclass *objectclass_maps;
 	const char *last_err_string;
 };
 
@@ -43,9 +44,9 @@ static const struct ldb_map_attribute *map_find_attr_local(struct ldb_module *mo
 {
 	struct map_private *privdat = module->private_data;
 	int i;
-	for (i = 0; privdat->mappings->attribute_maps[i]; i++) {
-		if (!strcmp(privdat->mappings->attribute_maps[i]->local_name, attr)) 
-			return privdat->mappings->attribute_maps[i];
+	for (i = 0; privdat->attribute_maps[i].local_name; i++) {
+		if (!strcmp(privdat->attribute_maps[i].local_name, attr)) 
+			return &privdat->attribute_maps[i];
 	}
 
 	return NULL;
@@ -56,13 +57,13 @@ static const struct ldb_map_attribute *map_find_attr_remote(struct ldb_module *m
 {
 	struct map_private *privdat = module->private_data;
 	int i;
-	for (i = 0; privdat->mappings->attribute_maps[i]; i++) {
-		if (privdat->mappings->attribute_maps[i]->type != MAP_RENAME &&
-			privdat->mappings->attribute_maps[i]->type != MAP_CONVERT) 
+	for (i = 0; privdat->attribute_maps[i].local_name; i++) {
+		if (privdat->attribute_maps[i].type != MAP_RENAME &&
+			privdat->attribute_maps[i].type != MAP_CONVERT) 
 			continue;
 
-		if (!strcmp(privdat->mappings->attribute_maps[i]->u.rename.remote_name, attr)) 
-			return privdat->mappings->attribute_maps[i];
+		if (!strcmp(privdat->attribute_maps[i].u.rename.remote_name, attr)) 
+			return &privdat->attribute_maps[i];
 	}
 
 	return NULL;
@@ -573,7 +574,7 @@ static const struct ldb_module_ops map_ops = {
 };
 
 /* the init function */
-struct ldb_module *ldb_map_init(struct ldb_context *ldb, const struct ldb_map_mappings *mappings, const char *options[])
+struct ldb_module *ldb_map_init(struct ldb_context *ldb, const struct ldb_map_attribute *attrs, const struct ldb_map_objectclass *ocls, const char *options[])
 {
 	struct ldb_module *ctx;
 	struct map_private *data;
@@ -588,7 +589,8 @@ struct ldb_module *ldb_map_init(struct ldb_context *ldb, const struct ldb_map_ma
 		return NULL;
 	}
 
-	data->mappings = mappings;
+	data->attribute_maps = attrs;
+	data->objectclass_maps = ocls;
 	ctx->private_data = data;
 	ctx->ldb = ldb;
 	ctx->prev = ctx->next = NULL;
