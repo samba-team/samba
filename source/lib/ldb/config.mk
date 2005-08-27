@@ -115,7 +115,8 @@ REQUIRED_SUBSYSTEMS = \
 # Start SUBSYSTEM LDBSAMBA
 [SUBSYSTEM::LDBSAMBA]
 OBJ_FILES = \
-		lib/ldb/samba/ldif_handlers.o
+		lib/ldb/samba/ldif_handlers.o \
+		lib/ldb/samba/samba3sam.o
 # End SUBSYSTEM LDBSAMBA
 ################################################
 

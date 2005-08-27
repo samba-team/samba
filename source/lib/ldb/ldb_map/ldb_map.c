@@ -126,6 +126,9 @@ static struct ldb_dn *map_remote_dn(struct ldb_module *module, const struct ldb_
 	struct ldb_dn *newdn;
 	int i;
 
+	if (dn == NULL)
+		return NULL;
+
 	newdn = talloc_memdup(module, dn, sizeof(*dn));
 	if (!newdn) 
 		return NULL;
@@ -182,6 +185,9 @@ static struct ldb_dn *map_local_dn(struct ldb_module *module, const struct ldb_d
 {	struct ldb_dn *newdn;
 	int i;
 	struct ldb_parse_tree eqtree, *new_eqtree;
+
+	if (dn == NULL)
+		return NULL;
 
 	newdn = talloc_memdup(module, dn, sizeof(*dn));
 	if (!newdn) 
@@ -252,14 +258,15 @@ static struct ldb_dn *map_local_dn(struct ldb_module *module, const struct ldb_d
 	return newdn;
 }
 
-
-
 /* Loop over ldb_map_attribute array and add remote_names */
 static const char **ldb_map_attrs(struct ldb_module *module, const char *const attrs[])
 {
 	int i;
 	const char **ret;
 	int ar_size = 0, last_element = 0;
+
+	if (attrs == NULL) 
+		return NULL;
 
 	/* Start with good guess of number of elements */
 	for (i = 0; attrs[i]; i++);

@@ -226,6 +226,17 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 			DLIST_ADD(ldb->modules, current);
 			continue;
 		}
+
+		if (strcmp(modules[i], "samba3sam") == 0) {
+			current = ldb_samba3sam_module_init(ldb, options);
+			if (!current) {
+				ldb_debug(ldb, LDB_DEBUG_FATAL, "function 'init_module' in %s fails\n", modules[i]);
+				return -1;
+			}
+			DLIST_ADD(ldb->modules, current);
+			continue;
+		}
+
 #endif
 
 		ldb_debug(ldb, LDB_DEBUG_WARNING, "WARNING: Module [%s] not found\n", modules[i]);
