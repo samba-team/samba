@@ -423,8 +423,8 @@ static void smb_krb5_debug_wrapper(const char *timestr, const char *msg, void *p
 	
 	initialize_krb5_error_table();
 	
-	*smb_krb5_context = talloc(parent_ctx, struct smb_krb5_context);
-	tmp_ctx = talloc_new(*smb_krb5_context);
+	tmp_ctx = talloc_new(parent_ctx);
+	*smb_krb5_context = talloc(tmp_ctx, struct smb_krb5_context);
 
 	if (!*smb_krb5_context || !tmp_ctx) {
 		talloc_free(*smb_krb5_context);
@@ -445,13 +445,14 @@ static void smb_krb5_debug_wrapper(const char *timestr, const char *msg, void *p
 		char *upper_realm = strupper_talloc(tmp_ctx, lp_realm());
 		if (!upper_realm) {
 			DEBUG(1,("gensec_krb5_start: could not uppercase realm: %s\n", lp_realm()));
+			talloc_free(tmp_ctx);
 			return ENOMEM;
 		}
 		ret = krb5_set_default_realm((*smb_krb5_context)->krb5_context, lp_realm());
 		if (ret) {
 			DEBUG(1,("krb5_set_default_realm failed (%s)\n", 
 				 smb_get_krb5_error_message((*smb_krb5_context)->krb5_context, ret, tmp_ctx)));
-			talloc_free(*smb_krb5_context);
+			talloc_free(tmp_ctx);
 			return ret;
 		}
 	}
@@ -463,7 +464,7 @@ static void smb_krb5_debug_wrapper(const char *timestr, const char *msg, void *p
 	if (ret) {
 		DEBUG(1,("krb5_initlog failed (%s)\n", 
 			 smb_get_krb5_error_message((*smb_krb5_context)->krb5_context, ret, tmp_ctx)));
-		talloc_free(*smb_krb5_context);
+		talloc_free(tmp_ctx);
 		return ret;
 	}
 
@@ -474,12 +475,13 @@ static void smb_krb5_debug_wrapper(const char *timestr, const char *msg, void *p
 	if (ret) {
 		DEBUG(1,("krb5_addlog_func failed (%s)\n", 
 			 smb_get_krb5_error_message((*smb_krb5_context)->krb5_context, ret, tmp_ctx)));
-		talloc_free(*smb_krb5_context);
+		talloc_free(tmp_ctx);
 		return ret;
 	}
 	krb5_set_warn_dest((*smb_krb5_context)->krb5_context, (*smb_krb5_context)->logf);
 
 #endif	
+	talloc_steal(parent_ctx, *smb_krb5_context);
 	talloc_free(tmp_ctx);
 	return 0;
 }
