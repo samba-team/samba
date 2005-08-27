@@ -73,7 +73,12 @@ static struct ldb_parse_tree *ldb_map_parse_tree(struct ldb_module *module, cons
 {
 	int i;
 	const struct ldb_map_attribute *attr;
-	struct ldb_parse_tree *new_tree = talloc_memdup(module, tree, sizeof(*tree));
+	struct ldb_parse_tree *new_tree;
+
+	if (tree == NULL)
+		return NULL;
+	
+	new_tree = talloc_memdup(module, tree, sizeof(*tree));
 
 	/* Find attr in question and:
 	 *  - if it has a convert_operator function, run that
@@ -102,7 +107,7 @@ static struct ldb_parse_tree *ldb_map_parse_tree(struct ldb_module *module, cons
 	attr = map_find_attr_local(module, tree->u.equality.attr);
 
 	if (!attr) {
-		DEBUG(0, ("Unable to find local attribute '%s', leaving as is", tree->u.equality.attr));
+		DEBUG(0, ("Unable to find local attribute '%s', leaving as is\n", tree->u.equality.attr));
 		return new_tree;
 	}
 
@@ -323,22 +328,77 @@ static const char **ldb_map_attrs(struct ldb_module *module, const char *const a
 	return NULL;
 }
 
+static const char **available_local_attributes(struct ldb_module *module, const struct ldb_message *msg)
+{
+	struct map_private *map = module->private_data;
+	int i, j;
+	int count = 0;
+	const char **ret = talloc_array(module, const char *, 1);
+
+	ret[0] = NULL;
+
+	for (i = 0; map->attribute_maps[i].local_name; i++) {
+		BOOL avail = False;
+		const struct ldb_map_attribute *attr = &map->attribute_maps[i];
+
+		/* If all remote attributes for this attribute are present, add the 
+		 * local one to the list */
+		
+		switch (attr->type) {
+		case MAP_IGNORE: break;
+		case MAP_KEEP: 
+				avail = (ldb_msg_find_ldb_val(msg, attr->local_name) != NULL); 
+				break;
+				
+		case MAP_RENAME:
+		case MAP_CONVERT:
+				avail = (ldb_msg_find_ldb_val(msg, attr->u.rename.remote_name) != NULL);
+				break;
+
+		case MAP_GENERATE:
+				avail = True;
+				for (j = 0; attr->u.generate.remote_names[j]; j++) {
+					avail &= (ldb_msg_find_ldb_val(msg, attr->u.generate.remote_names[j]) != NULL);
+				}
+				break;
+		}
+
+		if (!avail)
+			continue;
+
+		ret = talloc_realloc(module, ret, const char *, count+2);
+		ret[count] = attr->local_name;
+		ret[count+1] = NULL;
+		count++;
+	}
+
+	return ret;
+}
+
 static struct ldb_message *ldb_map_message_incoming(struct ldb_module *module, const char * const*attrs, const struct ldb_message *mi)
 {
 	int i;
 	struct ldb_message *msg = talloc_zero(module, struct ldb_message);
 	struct ldb_message_element *elm, *oldelm;
+	const char **newattrs = NULL;
 
 	msg->dn = map_remote_dn(module, mi->dn);
 
 	/* Loop over attrs, find in ldb_map_attribute array and 
 	 * run generate() */
 
+	if (attrs == NULL) {
+		/* Generate list of the local attributes that /can/ be generated
+		 * using the specific remote attributes */
+
+		attrs = newattrs = available_local_attributes(module, mi);
+	}
+
 	for (i = 0; attrs[i]; i++) {
 		const struct ldb_map_attribute *attr = map_find_attr_local(module, attrs[i]);
 
 		if (!attr) {
-			DEBUG(0, ("Unable to find local attribute '%s' when generating incoming message", attrs[i]));
+			DEBUG(0, ("Unable to find local attribute '%s' when generating incoming message\n", attrs[i]));
 			continue;
 		}
 
@@ -372,6 +432,8 @@ static struct ldb_message *ldb_map_message_incoming(struct ldb_module *module, c
 				break;
 		}
 	}
+
+	talloc_free(newattrs);
 
 	return msg;
 }
@@ -482,8 +544,10 @@ static int map_search_bytree(struct ldb_module *module, const struct ldb_dn *bas
 	talloc_free(new_tree);
 	talloc_free(newattrs);
 
+	*res = talloc_array(module, struct ldb_message *, ret);
+
 	for (i = 0; i < ret; i++) {
-		*res[i] = ldb_map_message_incoming(module, attrs, newres[i]);
+		(*res)[i] = ldb_map_message_incoming(module, attrs, newres[i]);
 		talloc_free(newres[i]);
 	}
 
@@ -500,7 +564,7 @@ static int map_search(struct ldb_module *module, const struct ldb_dn *base,
 	struct ldb_parse_tree *tree;
 	int ret;
 
-	tree = ldb_parse_tree(map, expression);
+	tree = ldb_parse_tree(NULL, expression);
 	if (tree == NULL) {
 		map->last_err_string = "expression parse failed";
 		return -1;
