@@ -1505,7 +1505,20 @@ fix_transited_encoding(krb5_context context,
     int num_realms;
     int i;
 
-    if(tr->tr_type != DOMAIN_X500_COMPRESS) {
+    switch (tr->tr_type) {
+    case DOMAIN_X500_COMPRESS:
+	break;
+    case 0:
+	/*
+	 * Allow empty content of type 0 because that is was Microsoft
+	 * generates in their TGT.
+	 */
+	if (tr->contents.length == 0)
+	    break;
+	kdc_log(context, config, 0,
+		"Transited type 0 with non empty content");
+	return KRB5KDC_ERR_TRTYPE_NOSUPP;
+    default:
 	kdc_log(context, config, 0,
 		"Unknown transited type: %u", tr->tr_type);
 	return KRB5KDC_ERR_TRTYPE_NOSUPP;
