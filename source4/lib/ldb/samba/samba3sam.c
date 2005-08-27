@@ -1,5 +1,5 @@
 /* 
-   ldb database library - Samba3 compatibility backend
+   ldb database library - Samba3 SAM compatibility backend
 
    Copyright (C) Jelmer Vernooij 2005
 
@@ -189,9 +189,9 @@ const struct ldb_map_attribute samba3_attributes[] =
 
 	/* the init function */
 #ifdef HAVE_DLOPEN_DISABLED
-	struct ldb_module *init_module(struct ldb_context *ldb, const char *options[])
+struct ldb_module *init_module(struct ldb_context *ldb, const char *options[])
 #else
-	struct ldb_module *ldb_samba3_module_init(struct ldb_context *ldb, const char *options[])
+struct ldb_module *ldb_samba3sam_module_init(struct ldb_context *ldb, const char *options[])
 #endif
 {
 	return ldb_map_init(ldb, &samba3_attributes, &samba3_objectclasses, options);
