@@ -214,8 +214,8 @@ const struct ldb_map_attribute samba3_attributes[] =
 		.local_name = "unixName",
 		.type = MAP_CONVERT,
 		.u.convert.remote_name = "gidNumber",
-		.u.convert.convert_local = convert_unix_id2name,
-		.u.convert.convert_remote = convert_unix_name2id, 
+		.u.convert.convert_local = convert_unix_name2id,
+		.u.convert.convert_remote = convert_unix_id2name, 
 	},
 
 	/* uid -> unixName */
@@ -223,8 +223,8 @@ const struct ldb_map_attribute samba3_attributes[] =
 		.local_name = "unixName",
 		.type = MAP_CONVERT,
 		.u.convert.remote_name = "uid",
-		.u.convert.convert_local = convert_unix_id2name,
-		.u.convert.convert_remote = convert_unix_name2id,
+		.u.convert.convert_local = convert_unix_name2id,
+		.u.convert.convert_remote = convert_unix_id2name,
 	},
 
 	/* displayName -> name */
