@@ -137,9 +137,6 @@ typedef struct
 	char **dcerpc_ep_servers;
 	char **server_services;
 	char *ntptr_providor;
-	char *szWinbindUID;
-	char *szWinbindGID;
-	char *szNonUnixAccountRange;
 	char *szWinbindSeparator;
 	char *swat_directory;
 	BOOL tls_enabled;
@@ -284,9 +281,6 @@ static int default_server_announce;
 /* prototypes for the special type handlers */
 static BOOL handle_include(const char *pszParmValue, char **ptr);
 static BOOL handle_copy(const char *pszParmValue, char **ptr);
-static BOOL handle_winbind_uid(const char *pszParmValue, char **ptr);
-static BOOL handle_winbind_gid(const char *pszParmValue, char **ptr);
-static BOOL handle_non_unix_account_range(const char *pszParmValue, char **ptr);
 
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
@@ -420,7 +414,6 @@ static struct parm_struct parm_table[] = {
 	{"spoolss database", P_STRING, P_GLOBAL, &Globals.szSPOOLSS_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"wins database", P_STRING, P_GLOBAL, &Globals.szWINS_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"private dir", P_STRING, P_GLOBAL, &Globals.szPrivateDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"non unix account range", P_STRING, P_GLOBAL, &Globals.szNonUnixAccountRange, handle_non_unix_account_range, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	
 	{"passwd chat", P_STRING, P_GLOBAL, &Globals.szPasswdChat, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"password level", P_INTEGER, P_GLOBAL, &Globals.pwordlevel, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -555,12 +548,7 @@ static struct parm_struct parm_table[] = {
 
 	{"msdfs root", P_BOOL, P_LOCAL, &sDefault.bMSDfsRoot, NULL, NULL, FLAG_SHARE},
 	{"host msdfs", P_BOOL, P_GLOBAL, &Globals.bHostMSDfs, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-
-	{"Winbind options", P_SEP, P_SEPARATOR},
-
-	{"winbind uid", P_STRING, P_GLOBAL, &Globals.szWinbindUID, handle_winbind_uid, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"winbind gid", P_STRING, P_GLOBAL, &Globals.szWinbindGID, handle_winbind_gid, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"winbind separator", P_STRING, P_GLOBAL, &Globals.szWinbindSeparator, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"winbind separator", P_STRING, P_GLOBAL, &Globals.szWinbindSeparator, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER },
 
 	{NULL, P_BOOL, P_NONE, NULL, NULL, NULL, 0}
 };
@@ -680,7 +668,7 @@ static void init_globals(void)
 	do_parameter("DomainLogons", "False", NULL);
 	do_parameter("WINSsupport", "False", NULL);
 
-	do_parameter("WinbindSeparator", "\\", NULL);
+	do_parameter("winbind separator", "\\", NULL);
 
 	do_parameter("client signing", "Yes", NULL);
 	do_parameter("server signing", "auto", NULL);
@@ -821,6 +809,7 @@ FN_GLOBAL_STRING(lp_smb_passwd_file, &Globals.szSMBPasswdFile)
 FN_GLOBAL_STRING(lp_sam_url, &Globals.szSAM_URL)
 FN_GLOBAL_STRING(lp_spoolss_url, &Globals.szSPOOLSS_URL)
 FN_GLOBAL_STRING(lp_wins_url, &Globals.szWINS_URL)
+FN_GLOBAL_CONST_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
 FN_GLOBAL_STRING(lp_private_dir, &Globals.szPrivateDir)
 FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
 FN_GLOBAL_STRING(lp_lockdir, &Globals.szLockDir)
@@ -844,9 +833,6 @@ FN_GLOBAL_LIST(lp_interfaces, &Globals.szInterfaces)
 FN_GLOBAL_STRING(lp_socket_address, &Globals.szSocketAddress)
 FN_GLOBAL_LIST(lp_netbios_aliases, &Globals.szNetbiosAliases)
 FN_GLOBAL_STRING(lp_panic_action, &Globals.szPanicAction)
-
-
-FN_GLOBAL_CONST_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
 
 FN_GLOBAL_BOOL(lp_disable_netbios, &Globals.bDisableNetbios)
 FN_GLOBAL_BOOL(lp_wins_support, &Globals.bWINSsupport)
@@ -1683,126 +1669,6 @@ static BOOL handle_copy(const char *pszParmValue, char **ptr)
 	free_service(&serviceTemp);
 	return (bRetval);
 }
-
-/***************************************************************************
- Handle winbind/non unix account uid and gid allocation parameters.  The format of these
- parameters is:
-
- [global]
-
-        winbind uid = 1000-1999
-        winbind gid = 700-899
-
- We only do simple parsing checks here.  The strings are parsed into useful
- structures in the winbind daemon code.
-
-***************************************************************************/
-
-/* Some lp_ routines to return winbind [ug]id information */
-
-static uid_t winbind_uid_low, winbind_uid_high;
-static gid_t winbind_gid_low, winbind_gid_high;
-static uint32_t non_unix_account_low, non_unix_account_high;
-
-BOOL lp_winbind_uid(uid_t *low, uid_t *high)
-{
-        if (winbind_uid_low == 0 || winbind_uid_high == 0)
-                return False;
-
-        if (low)
-                *low = winbind_uid_low;
-
-        if (high)
-                *high = winbind_uid_high;
-
-        return True;
-}
-
-BOOL lp_winbind_gid(gid_t *low, gid_t *high)
-{
-        if (winbind_gid_low == 0 || winbind_gid_high == 0)
-                return False;
-
-        if (low)
-                *low = winbind_gid_low;
-
-        if (high)
-                *high = winbind_gid_high;
-
-        return True;
-}
-
-BOOL lp_non_unix_account_range(uint32_t *low, uint32_t *high)
-{
-        if (non_unix_account_low == 0 || non_unix_account_high == 0)
-                return False;
-
-        if (low)
-                *low = non_unix_account_low;
-
-        if (high)
-                *high = non_unix_account_high;
-
-        return True;
-}
-
-/* Do some simple checks on "winbind [ug]id" parameter values */
-
-static BOOL handle_winbind_uid(const char *pszParmValue, char **ptr)
-{
-	uint32_t low, high;
-
-	if (sscanf(pszParmValue, "%u-%u", &low, &high) != 2 || high < low)
-		return False;
-
-	/* Parse OK */
-
-	string_set(ptr, pszParmValue);
-
-        winbind_uid_low = low;
-        winbind_uid_high = high;
-
-	return True;
-}
-
-static BOOL handle_winbind_gid(const char *pszParmValue, char **ptr)
-{
-	uint32_t low, high;
-
-	if (sscanf(pszParmValue, "%u-%u", &low, &high) != 2 || high < low)
-		return False;
-
-	/* Parse OK */
-
-	string_set(ptr, pszParmValue);
-
-        winbind_gid_low = low;
-        winbind_gid_high = high;
-
-	return True;
-}
-
-/***************************************************************************
- Do some simple checks on "non unix account range" parameter values.
-***************************************************************************/
-
-static BOOL handle_non_unix_account_range(const char *pszParmValue, char **ptr)
-{
-	uint32_t low, high;
-
-	if (sscanf(pszParmValue, "%u-%u", &low, &high) != 2 || high < low)
-		return False;
-
-	/* Parse OK */
-
-	string_set(ptr, pszParmValue);
-
-        non_unix_account_low = low;
-        non_unix_account_high = high;
-
-	return True;
-}
-
 
 /***************************************************************************
  Initialise a copymap.

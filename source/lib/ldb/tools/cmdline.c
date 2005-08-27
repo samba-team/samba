@@ -124,13 +124,14 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 
 		case 'o':
 			options.options = talloc_realloc(ret, options.options, 
-							 const char *, num_options+2);
+							 const char *, num_options+3);
 			if (options.options == NULL) {
 				ldb_oom(ldb);
 				goto failed;
 			}
-			options.options[num_options++] = poptGetOptArg(pc);
+			options.options[num_options] = poptGetOptArg(pc);
 			options.options[num_options+1] = NULL;
+			num_options++;
 			break;
 			
 		default:
