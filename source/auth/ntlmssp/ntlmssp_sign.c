@@ -279,8 +279,6 @@ NTSTATUS gensec_ntlmssp_unseal_packet(struct gensec_security *gensec_security,
 				      const DATA_BLOB *sig)
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
-	DATA_BLOB local_sig;
-	NTSTATUS nt_status;
 	if (!gensec_ntlmssp_state->session_key.length) {
 		DEBUG(3, ("NO session key, cannot unseal packet\n"));
 		return NT_STATUS_NO_USER_SESSION_KEY;
@@ -443,7 +441,6 @@ NTSTATUS gensec_ntlmssp_wrap(struct gensec_security *gensec_security,
 			     const DATA_BLOB *in, 
 			     DATA_BLOB *out)
 {
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
 	DATA_BLOB sig;
 	NTSTATUS nt_status;
 
@@ -493,7 +490,6 @@ NTSTATUS gensec_ntlmssp_unwrap(struct gensec_security *gensec_security,
 			       const DATA_BLOB *in, 
 			       DATA_BLOB *out)
 {
-	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
 	DATA_BLOB sig;
 
 	if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
