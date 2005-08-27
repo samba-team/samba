@@ -120,8 +120,9 @@ static struct ldb_parse_tree *ldb_map_parse_tree(struct ldb_module *module, TALL
 
 	attr = map_find_attr_local(module, tree->u.equality.attr);
 
-	if (!attr) {
+	if (!attr || attr->type == MAP_KEEP) {
 		DEBUG(0, ("Unable to find local attribute '%s', leaving as is\n", tree->u.equality.attr));
+		new_tree->u.equality.attr = talloc_strdup(new_tree, tree->u.equality.attr);
 		return new_tree;
 	}
 
@@ -387,6 +388,7 @@ static const char **available_local_attributes(struct ldb_module *module, const 
 	return ret;
 }
 
+/* Used for search */
 static struct ldb_message *ldb_map_message_incoming(struct ldb_module *module, const char * const*attrs, const struct ldb_message *mi)
 {
 	int i;
@@ -418,6 +420,7 @@ static struct ldb_message *ldb_map_message_incoming(struct ldb_module *module, c
 			case MAP_IGNORE:break;
 			case MAP_RENAME:
 				oldelm = ldb_msg_find_element(mi, attr->u.rename.remote_name);
+				if (!oldelm) continue;
 
 				elm = talloc(msg, struct ldb_message_element);
 				elm->name = talloc_strdup(elm, attr->local_name);
@@ -429,14 +432,18 @@ static struct ldb_message *ldb_map_message_incoming(struct ldb_module *module, c
 				
 			case MAP_CONVERT:
 				oldelm = ldb_msg_find_element(mi, attr->u.rename.remote_name);
-				elm = attr->u.convert.convert_local(msg, attr->local_name, oldelm);
+				if (!oldelm) continue;
+
+				elm = attr->u.convert.convert_remote(msg, attr->local_name, oldelm);
+				if (!elm) continue;
 
 				ldb_msg_add(module->ldb, msg, elm, elm->flags);
 				break;
 
 			case MAP_KEEP:
 				oldelm = ldb_msg_find_element(mi, attr->local_name);
-
+				if (!oldelm) continue;
+				
 				elm = talloc(msg, struct ldb_message_element);
 
 				elm->num_values = oldelm->num_values;
@@ -448,6 +455,8 @@ static struct ldb_message *ldb_map_message_incoming(struct ldb_module *module, c
 
 			case MAP_GENERATE:
 				elm = attr->u.generate.generate_local(msg, attr->local_name, mi);
+				if (!elm) continue;
+
 				ldb_msg_add(module->ldb, msg, elm, elm->flags);
 				break;
 			default: 
@@ -461,6 +470,7 @@ static struct ldb_message *ldb_map_message_incoming(struct ldb_module *module, c
 	return msg;
 }
 
+/* Used for add, modify */
 static struct ldb_message *ldb_map_message_outgoing(struct ldb_module *module, const struct ldb_message *mo)
 {
 	struct ldb_message *msg = talloc_zero(module, struct ldb_message);
@@ -493,7 +503,7 @@ static struct ldb_message *ldb_map_message_outgoing(struct ldb_module *module, c
 			break;
 
 		case MAP_CONVERT:
-			elm = attr->u.convert.convert_remote(msg, attr->local_name, &mo->elements[i]);
+			elm = attr->u.convert.convert_local(msg, attr->u.convert.remote_name, &mo->elements[i]);
 			ldb_msg_add(module->ldb, msg, elm, elm->flags);
 			break;
 
