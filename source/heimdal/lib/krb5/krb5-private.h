@@ -309,6 +309,7 @@ _krb5_pk_rd_pa_reply (
 	void */*c*/,
 	krb5_enctype /*etype*/,
 	unsigned /*nonce*/,
+	const krb5_data */*req_buffer*/,
 	PA_DATA */*pa*/,
 	krb5_keyblock **/*key*/);
 

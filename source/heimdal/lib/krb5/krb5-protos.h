@@ -20,6 +20,15 @@ extern "C" {
 #endif
 #endif
 
+void
+initialize_heim_error_table_r (struct et_list **/*list*/);
+
+void
+initialize_k524_error_table_r (struct et_list **/*list*/);
+
+void
+initialize_krb5_error_table_r (struct et_list **/*list*/);
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb524_convert_creds_kdc (
 	krb5_context /*context*/,
@@ -2392,7 +2401,7 @@ krb5_prepend_config_files_default (
 	const char */*filelist*/,
 	char ***/*pfilenames*/);
 
-krb5_realm*
+krb5_realm* KRB5_LIB_FUNCTION
 krb5_princ_realm (
 	krb5_context /*context*/,
 	krb5_principal /*principal*/);
@@ -2418,18 +2427,18 @@ krb5_principal_compare_any_realm (
 const char* KRB5_LIB_FUNCTION
 krb5_principal_get_comp_string (
 	krb5_context /*context*/,
-	krb5_principal /*principal*/,
+	krb5_const_principal /*principal*/,
 	unsigned int /*component*/);
 
 const char* KRB5_LIB_FUNCTION
 krb5_principal_get_realm (
 	krb5_context /*context*/,
-	krb5_principal /*principal*/);
+	krb5_const_principal /*principal*/);
 
 int KRB5_LIB_FUNCTION
 krb5_principal_get_type (
 	krb5_context /*context*/,
-	krb5_principal /*principal*/);
+	krb5_const_principal /*principal*/);
 
 krb5_boolean KRB5_LIB_FUNCTION
 krb5_principal_match (
@@ -3150,6 +3159,12 @@ krb5_timeofday (
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_unparse_name (
+	krb5_context /*context*/,
+	krb5_const_principal /*principal*/,
+	char **/*name*/);
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_unparse_name_always_short (
 	krb5_context /*context*/,
 	krb5_const_principal /*principal*/,
 	char **/*name*/);

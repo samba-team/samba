@@ -33,12 +33,12 @@
 
 #include "gssapi_locl.h"
 
-RCSID("$Id: display_status.c,v 1.12 2005/03/16 13:15:03 lha Exp $");
+RCSID("$Id: display_status.c,v 1.13 2005/08/23 08:30:55 lha Exp $");
 
-static char *
+static const char *
 calling_error(OM_uint32 v)
 {
-    static char *msgs[] = {
+    static const char *msgs[] = {
 	NULL,			/* 0 */
 	"A required input parameter could not be read.", /*  */
 	"A required output parameter could not be written.", /*  */
@@ -55,10 +55,10 @@ calling_error(OM_uint32 v)
 	return msgs[v];
 }
 
-static char *
+static const char *
 routine_error(OM_uint32 v)
 {
-    static char *msgs[] = {
+    static const char *msgs[] = {
 	NULL,			/* 0 */
 	"An unsupported mechanism was requested",
 	"An invalid name was supplied",
@@ -91,10 +91,10 @@ routine_error(OM_uint32 v)
 	return msgs[v];
 }
 
-static char *
+static const char *
 supplementary_error(OM_uint32 v)
 {
-    static char *msgs[] = {
+    static const char *msgs[] = {
 	"normal completion",
 	"continuation call to routine required",
 	"duplicate per-message token detected",

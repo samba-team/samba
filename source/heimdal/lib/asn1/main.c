@@ -35,7 +35,7 @@
 #include <getarg.h>
 #include "lex.h"
 
-RCSID("$Id: main.c,v 1.14 2005/07/12 06:27:34 lha Exp $");
+RCSID("$Id: main.c,v 1.15 2005/08/23 10:50:12 lha Exp $");
 
 extern FILE *yyin;
 
@@ -77,8 +77,8 @@ int
 main(int argc, char **argv)
 {
     int ret;
-    char *file;
-    char *name = NULL;
+    const char *file;
+    const char *name = NULL;
     int optidx = 0;
 
     setprogname(argv[0]);

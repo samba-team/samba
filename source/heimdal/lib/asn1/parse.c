@@ -247,11 +247,11 @@
 #include "gen_locl.h"
 #include "der.h"
 
-RCSID("$Id: parse.y,v 1.24 2005/07/12 06:27:35 lha Exp $");
+RCSID("$Id: parse.y,v 1.25 2005/08/23 10:52:31 lha Exp $");
 
 static Type *new_type (Typetype t);
 static Type *new_tag(int tagclass, int tagvalue, int tagenv, Type *oldtype);
-void yyerror (char *);
+void yyerror (const char *);
 static struct objid *new_objid(const char *label, int value);
 static void add_oid_to_tail(struct objid *, struct objid *);
 static void fix_labels(Symbol *s);
@@ -2298,7 +2298,7 @@ yyreturn:
 
 
 void
-yyerror (char *s)
+yyerror (const char *s)
 {
      error_message ("%s\n", s);
 }

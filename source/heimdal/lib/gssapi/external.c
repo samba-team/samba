@@ -33,7 +33,7 @@
 
 #include "gssapi_locl.h"
 
-RCSID("$Id: external.c,v 1.6 2003/09/08 15:34:19 lha Exp $");
+RCSID("$Id: external.c,v 1.7 2005/08/23 11:59:47 lha Exp $");
 
 /*
  * The implementation must reserve static storage for a
@@ -48,8 +48,7 @@ RCSID("$Id: external.c,v 1.6 2003/09/08 15:34:19 lha Exp $");
  */
 
 static gss_OID_desc gss_c_nt_user_name_oid_desc =
-{10, (void *)"\x2a\x86\x48\x86\xf7\x12"
- "\x01\x02\x01\x01"};
+{10, rk_UNCONST("\x2a\x86\x48\x86\xf7\x12" "\x01\x02\x01\x01")};
 
 gss_OID GSS_C_NT_USER_NAME = &gss_c_nt_user_name_oid_desc;
 
@@ -66,8 +65,7 @@ gss_OID GSS_C_NT_USER_NAME = &gss_c_nt_user_name_oid_desc;
  */
 
 static gss_OID_desc gss_c_nt_machine_uid_name_oid_desc =
-{10, (void *)"\x2a\x86\x48\x86\xf7\x12"
- "\x01\x02\x01\x02"};
+{10, rk_UNCONST("\x2a\x86\x48\x86\xf7\x12" "\x01\x02\x01\x02")};
 
 gss_OID GSS_C_NT_MACHINE_UID_NAME = &gss_c_nt_machine_uid_name_oid_desc;
 
@@ -84,8 +82,7 @@ gss_OID GSS_C_NT_MACHINE_UID_NAME = &gss_c_nt_machine_uid_name_oid_desc;
  */
 
 static gss_OID_desc gss_c_nt_string_uid_name_oid_desc =
-{10, (void *)"\x2a\x86\x48\x86\xf7\x12"
- "\x01\x02\x01\x03"};
+{10, rk_UNCONST("\x2a\x86\x48\x86\xf7\x12" "\x01\x02\x01\x03")};
 
 gss_OID GSS_C_NT_STRING_UID_NAME = &gss_c_nt_string_uid_name_oid_desc;
 
@@ -108,7 +105,7 @@ gss_OID GSS_C_NT_STRING_UID_NAME = &gss_c_nt_string_uid_name_oid_desc;
  */
 
 static gss_OID_desc gss_c_nt_hostbased_service_x_oid_desc =
-{6, (void *)"\x2b\x06\x01\x05\x06\x02"};
+{6, rk_UNCONST("\x2b\x06\x01\x05\x06\x02")};
 
 gss_OID GSS_C_NT_HOSTBASED_SERVICE_X = &gss_c_nt_hostbased_service_x_oid_desc;
 
@@ -124,7 +121,7 @@ gss_OID GSS_C_NT_HOSTBASED_SERVICE_X = &gss_c_nt_hostbased_service_x_oid_desc;
  * to point to that gss_OID_desc.
  */
 static gss_OID_desc gss_c_nt_hostbased_service_oid_desc =
-{10, (void *)"\x2a\x86\x48\x86\xf7\x12" "\x01\x02\x01\x04"};
+{10, rk_UNCONST("\x2a\x86\x48\x86\xf7\x12" "\x01\x02\x01\x04")};
 
 gss_OID GSS_C_NT_HOSTBASED_SERVICE = &gss_c_nt_hostbased_service_oid_desc;
 
@@ -140,7 +137,7 @@ gss_OID GSS_C_NT_HOSTBASED_SERVICE = &gss_c_nt_hostbased_service_oid_desc;
  */
 
 static gss_OID_desc gss_c_nt_anonymous_oid_desc =
-{6, (void *)"\x2b\x06\01\x05\x06\x03"};
+{6, rk_UNCONST("\x2b\x06\01\x05\x06\x03")};
 
 gss_OID GSS_C_NT_ANONYMOUS = &gss_c_nt_anonymous_oid_desc;
 
@@ -156,7 +153,7 @@ gss_OID GSS_C_NT_ANONYMOUS = &gss_c_nt_anonymous_oid_desc;
  */
 
 static gss_OID_desc gss_c_nt_export_name_oid_desc =
-{6, (void *)"\x2b\x06\x01\x05\x06\x04"};
+{6, rk_UNCONST("\x2b\x06\x01\x05\x06\x04") };
 
 gss_OID GSS_C_NT_EXPORT_NAME = &gss_c_nt_export_name_oid_desc;
 
@@ -168,7 +165,7 @@ gss_OID GSS_C_NT_EXPORT_NAME = &gss_c_nt_export_name_oid_desc;
  */
 
 static gss_OID_desc gss_krb5_nt_principal_name_oid_desc =
-{10, (void *)"\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x01"};
+{10, rk_UNCONST("\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x01") };
 
 gss_OID GSS_KRB5_NT_PRINCIPAL_NAME = &gss_krb5_nt_principal_name_oid_desc;
 
@@ -219,12 +216,12 @@ gss_OID GSS_KRB5_NT_STRING_UID_NAME = &gss_c_nt_string_uid_name_oid_desc;
 #if 0 /* This is the old OID */
 
 static gss_OID_desc gss_krb5_mechanism_oid_desc =
-{5, (void *)"\x2b\x05\x01\x05\x02"};
+{5, rk_UNCONST("\x2b\x05\x01\x05\x02")};
 
 #endif
 
 static gss_OID_desc gss_krb5_mechanism_oid_desc =
-{9, (void *)"\x2a\x86\x48\x86\xf7\x12\x01\x02\x02"};
+{9, rk_UNCONST("\x2a\x86\x48\x86\xf7\x12\x01\x02\x02") };
 
 gss_OID GSS_KRB5_MECHANISM = &gss_krb5_mechanism_oid_desc;
 
@@ -236,7 +233,7 @@ gss_OID GSS_KRB5_MECHANISM = &gss_krb5_mechanism_oid_desc;
  */
 
 static gss_OID_desc gss_spnego_mechanism_oid_desc =
-{6, (void *)"\x2b\x06\x01\x05\x05\x02"};
+{6, rk_UNCONST("\x2b\x06\x01\x05\x05\x02")};
 
 gss_OID GSS_SPNEGO_MECHANISM = &gss_spnego_mechanism_oid_desc;
 
@@ -254,12 +251,12 @@ gss_OID GSS_SPNEGO_MECHANISM = &gss_spnego_mechanism_oid_desc;
  */
 
 static gss_OID_desc gss_iakerb_proxy_mechanism_oid_desc =
-{7, (void *)"\x2b\x06\x01\x05\x05\x0a\x01"};
+{7, rk_UNCONST("\x2b\x06\x01\x05\x05\x0a\x01")};
 
 gss_OID GSS_IAKERB_PROXY_MECHANISM = &gss_iakerb_proxy_mechanism_oid_desc;
 
 static gss_OID_desc gss_iakerb_min_msg_mechanism_oid_desc =
-{7, (void *)"\x2b\x06\x01\x05\x05\x0a\x02"};
+{7, rk_UNCONST("\x2b\x06\x01\x05\x05\x0a\x02") };
 
 gss_OID GSS_IAKERB_MIN_MSG_MECHANISM = &gss_iakerb_min_msg_mechanism_oid_desc;
 

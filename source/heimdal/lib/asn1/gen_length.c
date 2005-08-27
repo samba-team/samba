@@ -33,7 +33,7 @@
 
 #include "gen_locl.h"
 
-RCSID("$Id: gen_length.c,v 1.18 2005/07/19 18:01:59 lha Exp $");
+RCSID("$Id: gen_length.c,v 1.19 2005/08/23 11:51:41 lha Exp $");
 
 static void
 length_primitive (const char *typename,
@@ -59,7 +59,8 @@ length_tag(unsigned int tag)
 
 
 static int
-length_type (const char *name, const Type *t, const char *variable)
+length_type (const char *name, const Type *t, 
+	     const char *variable, const char *tmpstr)
 {
     switch (t->type) {
     case TType:
@@ -158,10 +159,10 @@ length_type (const char *name, const Type *t, const char *variable)
 	    else if(m->defval)
 		gen_compare_defval(s + 1, m->defval);
 	    fprintf (codefile, "{\n"
-		     "size_t oldret = %s;\n"
-		     "%s = 0;\n", variable, variable);
-	    length_type (s, m->type, "ret");
-	    fprintf (codefile, "ret += oldret;\n");
+		     "size_t %s_oldret = %s;\n"
+		     "%s = 0;\n", tmpstr, variable, variable);
+	    length_type (s, m->type, "ret", m->gen_name);
+	    fprintf (codefile, "ret += %s_oldret;\n", tmpstr);
 	    fprintf (codefile, "}\n");
 	    free (s);
 	    if(t->type == TChoice)
@@ -183,29 +184,34 @@ length_type (const char *name, const Type *t, const char *variable)
     case TSetOf:
     case TSequenceOf: {
 	char *n;
+	char *sname;
 
 	fprintf (codefile,
 		 "{\n"
-		 "int oldret = %s;\n"
+		 "int %s_oldret = %s;\n"
 		 "int i;\n"
 		 "%s = 0;\n",
-		 variable, variable);
+		 tmpstr, variable, variable);
 
 	fprintf (codefile, "for(i = (%s)->len - 1; i >= 0; --i){\n", name);
-	fprintf (codefile, "int oldret = %s;\n"
-		 "%s = 0;\n", variable, variable);
+	fprintf (codefile, "int %s_for_oldret = %s;\n"
+		 "%s = 0;\n", tmpstr, variable, variable);
 	asprintf (&n, "&(%s)->val[i]", name);
 	if (n == NULL)
 	    errx(1, "malloc");
-	length_type(n, t->subtype, variable);
-	fprintf (codefile, "%s += oldret;\n",
-		 variable);
+	asprintf (&sname, "%s_S_Of", tmpstr);
+	if (sname == NULL)
+	    errx(1, "malloc");
+	length_type(n, t->subtype, variable, sname);
+	fprintf (codefile, "%s += %s_for_oldret;\n",
+		 variable, tmpstr);
 	fprintf (codefile, "}\n");
 
 	fprintf (codefile,
-		 "%s += oldret;\n"
-		 "}\n", variable);
+		 "%s += %s_oldret;\n"
+		 "}\n", variable, tmpstr);
 	free(n);
+	free(sname);
 	break;
     }
     case TGeneralizedTime:
@@ -235,11 +241,17 @@ length_type (const char *name, const Type *t, const char *variable)
     case TNull:
 	fprintf (codefile, "/* NULL */\n");
 	break;
-    case TTag:
-	length_type (name, t->subtype, variable);
+    case TTag:{
+    	char *tname;
+	asprintf(&tname, "%s_tag", tmpstr);
+	if (tname == NULL)
+	    errx(1, "malloc");
+	length_type (name, t->subtype, variable, tname);
 	fprintf (codefile, "ret += %lu + length_len (ret);\n", 
 		 (unsigned long)length_tag(t->tag.tagvalue));
+	free(tname);
 	break;
+    }
     case TOID:
 	length_primitive ("oid", name, variable);
 	break;
@@ -252,18 +264,18 @@ length_type (const char *name, const Type *t, const char *variable)
 void
 generate_type_length (const Symbol *s)
 {
-  fprintf (headerfile,
-	   "size_t length_%s(const %s *);\n",
-	   s->gen_name, s->gen_name);
-
-  fprintf (codefile,
-	   "size_t\n"
-	   "length_%s(const %s *data)\n"
-	   "{\n"
-	   "size_t ret = 0;\n",
-	   s->gen_name, s->gen_name);
-
-  length_type ("data", s->type, "ret");
-  fprintf (codefile, "return ret;\n}\n\n");
+    fprintf (headerfile,
+	     "size_t length_%s(const %s *);\n",
+	     s->gen_name, s->gen_name);
+    
+    fprintf (codefile,
+	     "size_t\n"
+	     "length_%s(const %s *data)\n"
+	     "{\n"
+	     "size_t ret = 0;\n",
+	     s->gen_name, s->gen_name);
+    
+    length_type ("data", s->type, "ret", "Top");
+    fprintf (codefile, "return ret;\n}\n\n");
 }
 

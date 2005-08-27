@@ -33,7 +33,7 @@
 
 #include "gen_locl.h"
 
-RCSID("$Id: gen_encode.c,v 1.18 2005/07/13 10:40:23 lha Exp $");
+RCSID("$Id: gen_encode.c,v 1.19 2005/08/23 11:52:16 lha Exp $");
 
 static void
 encode_primitive (const char *typename, const char *name)
@@ -62,7 +62,7 @@ valuename(Der_class class, int value)
     static char s[32];
     struct { 
 	int value;
-	char *s;
+	const char *s;
     } *p, values[] = {
 #define X(Y) { Y, #Y }
 	X(UT_BMPString),
@@ -105,7 +105,7 @@ valuename(Der_class class, int value)
 }
 
 static int
-encode_type (const char *name, const Type *t)
+encode_type (const char *name, const Type *t, const char *tmpstr)
 {
     int constructed = 1;
 
@@ -260,10 +260,10 @@ encode_type (const char *name, const Type *t)
 	    else if(m->defval)
 		gen_compare_defval(s + 1, m->defval);
 	    fprintf (codefile, "{\n");
-	    fprintf (codefile, "size_t oldret = ret;\n");
+	    fprintf (codefile, "size_t %s_oldret = ret;\n", tmpstr);
 	    fprintf (codefile, "ret = 0;\n");
-	    encode_type (s, m->type);
-	    fprintf (codefile, "ret += oldret;\n");
+	    encode_type (s, m->type, m->gen_name);
+	    fprintf (codefile, "ret += %s_oldret;\n", tmpstr);
 	    fprintf (codefile, "}\n");
 	    free (s);
 	}
@@ -333,20 +333,26 @@ encode_type (const char *name, const Type *t)
     }
     case TSequenceOf: {
 	char *n;
+	char *sname;
 
 	fprintf (codefile,
 		 "for(i = (%s)->len - 1; i >= 0; --i) {\n"
-		 "size_t oldret = ret;\n"
+		 "size_t %s_for_oldret = ret;\n"
 		 "ret = 0;\n",
-		 name);
+		 name, tmpstr);
 	asprintf (&n, "&(%s)->val[i]", name);
 	if (n == NULL)
 	    errx(1, "malloc");
-	encode_type (n, t->subtype);
+	asprintf (&sname, "%s_S_Of", tmpstr);
+	if (sname == NULL)
+	    errx(1, "malloc");
+	encode_type (n, t->subtype, sname);
 	fprintf (codefile,
-		 "ret += oldret;\n"
-		 "}\n");
+		 "ret += %s_for_oldret;\n"
+		 "}\n",
+		 tmpstr);
 	free (n);
+	free (sname);
 	break;
     }
     case TGeneralizedTime:
@@ -358,13 +364,19 @@ encode_type (const char *name, const Type *t)
 	constructed = 0;
 	break;
     case TTag: {
-	int c = encode_type (name, t->subtype);
+    	char *tname;
+	int c;
+	asprintf (&tname, "%s_tag", tmpstr);
+	if (tname == NULL)
+	    errx(1, "malloc");	
+	c = encode_type (name, t->subtype, tname);
 	fprintf (codefile,
 		 "e = der_put_length_and_tag (p, len, ret, %s, %s, %s, &l);\n"
 		 "if (e) return e;\np -= l; len -= l; ret += l;\n\n",
 		 classname(t->tag.tagclass),
 		 c ? "CONS" : "PRIM", 
 		 valuename(t->tag.tagclass, t->tag.tagvalue));
+	free (tname);
 	break;
     }
     case TChoice:{
@@ -396,11 +408,10 @@ encode_type (const char *name, const Type *t)
 		errx(1, "malloc");
 	    if (m->optional)
 		fprintf (codefile, "if(%s) {\n", s2);
-	    fprintf (codefile, "size_t oldret;\n");
-	    fprintf (codefile, "oldret = ret;\n");
+	    fprintf (codefile, "size_t %s_oldret = ret;\n", tmpstr);
 	    fprintf (codefile, "ret = 0;\n");
-	    constructed = encode_type (s2, m->type);
-	    fprintf (codefile, "ret += oldret;\n");
+	    constructed = encode_type (s2, m->type, m->gen_name);
+	    fprintf (codefile, "ret += %s_oldret;\n", tmpstr);
 	    if(m->optional)
 		fprintf (codefile, "}\n");
 	    fprintf(codefile, "break;\n");
@@ -469,53 +480,53 @@ encode_type (const char *name, const Type *t)
 void
 generate_type_encode (const Symbol *s)
 {
-  fprintf (headerfile,
-	   "int    "
-	   "encode_%s(unsigned char *, size_t, const %s *, size_t *);\n",
-	   s->gen_name, s->gen_name);
+    fprintf (headerfile,
+	     "int    "
+	     "encode_%s(unsigned char *, size_t, const %s *, size_t *);\n",
+	     s->gen_name, s->gen_name);
 
-  fprintf (codefile, "int\n"
-	   "encode_%s(unsigned char *p, size_t len,"
-	   " const %s *data, size_t *size)\n"
-	   "{\n",
-	   s->gen_name, s->gen_name);
+    fprintf (codefile, "int\n"
+	     "encode_%s(unsigned char *p, size_t len,"
+	     " const %s *data, size_t *size)\n"
+	     "{\n",
+	     s->gen_name, s->gen_name);
 
-  switch (s->type->type) {
-  case TInteger:
-  case TBoolean:
-  case TOctetString:
-  case TGeneralizedTime:
-  case TGeneralString:
-  case TUTCTime:
-  case TUTF8String:
-  case TPrintableString:
-  case TIA5String:
-  case TBMPString:
-  case TUniversalString:
-  case TNull:
-  case TBitString:
-  case TEnumerated:
-  case TOID:
-  case TSequence:
-  case TSequenceOf:
-  case TSet:
-  case TSetOf:
-  case TTag:
-  case TType:
-  case TChoice:
-    fprintf (codefile,
-	     "size_t ret = 0;\n"
-	     "size_t l;\n"
-	     "int i, e;\n\n");
-    fprintf(codefile, "i = 0;\n"); /* hack to avoid `unused variable' */
+    switch (s->type->type) {
+    case TInteger:
+    case TBoolean:
+    case TOctetString:
+    case TGeneralizedTime:
+    case TGeneralString:
+    case TUTCTime:
+    case TUTF8String:
+    case TPrintableString:
+    case TIA5String:
+    case TBMPString:
+    case TUniversalString:
+    case TNull:
+    case TBitString:
+    case TEnumerated:
+    case TOID:
+    case TSequence:
+    case TSequenceOf:
+    case TSet:
+    case TSetOf:
+    case TTag:
+    case TType:
+    case TChoice:
+	fprintf (codefile,
+		 "size_t ret = 0;\n"
+		 "size_t l;\n"
+		 "int i, e;\n\n");
+	fprintf(codefile, "i = 0;\n"); /* hack to avoid `unused variable' */
     
-      encode_type("data", s->type);
+	encode_type("data", s->type, "Top");
 
-    fprintf (codefile, "*size = ret;\n"
-	     "return 0;\n");
-    break;
-  default:
-    abort ();
-  }
-  fprintf (codefile, "}\n\n");
+	fprintf (codefile, "*size = ret;\n"
+		 "return 0;\n");
+	break;
+    default:
+	abort ();
+    }
+    fprintf (codefile, "}\n\n");
 }

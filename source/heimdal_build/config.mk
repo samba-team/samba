@@ -331,6 +331,14 @@ NOPROTO = YES
 #######################
 
 #######################
+# Start SUBSYSTEM HEIMDAL_VERS
+[SUBSYSTEM::HEIMDAL_VERS]
+ADD_OBJ_FILES = heimdal/lib/vers/print_version.o
+NOPROTO = YES
+# End SUBSYSTEM HEIMDAL_VERS
+#######################
+
+#######################
 # Start SUBSYSTEM HEIMDAL_GLUE
 [SUBSYSTEM::HEIMDAL_GLUE]
 ADD_OBJ_FILES = heimdal_build/glue.o
@@ -364,7 +372,6 @@ ADD_OBJ_FILES = \
 	heimdal/lib/asn1/parse.o \
 	heimdal/lib/roken/emalloc.o \
 	heimdal/lib/roken/getarg.o \
-	heimdal/lib/roken/print_version.o \
 	heimdal/lib/roken/setprogname.o \
 	heimdal/lib/roken/strupr.o \
 	heimdal/lib/roken/getprogname.o \
@@ -380,7 +387,7 @@ NOPROTO = YES
 #######################
 # Start BINARY asn1_compile
 [BINARY::asn1_compile]
-REQUIRED_SUBSYSTEMS = ASN1_COMPILER LIBREPLACE
+REQUIRED_SUBSYSTEMS = ASN1_COMPILER LIBREPLACE HEIMDAL_VERS
 # End BINARY asn1_compile
 #######################
 
@@ -395,7 +402,6 @@ ADD_OBJ_FILES = \
 	heimdal/lib/roken/get_window_size.o \
 	heimdal/lib/roken/getprogname.o \
 	heimdal/lib/roken/strupr.o \
-	heimdal/lib/roken/print_version.o \
 	heimdal/lib/roken/setprogname.o \
 	heimdal_build/replace.o
 NOPROTO = YES
@@ -405,7 +411,7 @@ NOPROTO = YES
 #######################
 # Start BINARY compile_et
 [BINARY::compile_et]
-REQUIRED_SUBSYSTEMS = COMPILE_ET LIBREPLACE
+REQUIRED_SUBSYSTEMS = COMPILE_ET LIBREPLACE HEIMDAL_VERS
 # End BINARY compile_et
 #######################
 
@@ -454,7 +460,7 @@ heimdal_clean:	hdb_asn1_clean spnego_asn1_clean krb5_asn1_clean
 NOPROTO = YES
 REQUIRED_SUBSYSTEMS = \
 		HEIMDAL_GSSAPI HEIMDAL_KRB5 \
-		HEIMDAL_ASN1 HEIMDAL_DES HEIMDAL_ROKEN HEIMDAL_COM_ERR HEIMDAL_GLUE
+		HEIMDAL_ASN1 HEIMDAL_DES HEIMDAL_ROKEN HEIMDAL_COM_ERR HEIMDAL_VERS HEIMDAL_GLUE
 # End SUBSYSTEM HEIMDAL
 #######################
 
