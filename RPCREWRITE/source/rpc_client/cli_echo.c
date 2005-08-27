@@ -30,8 +30,6 @@ NTSTATUS rpccli_echo_add_one(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	ECHO_R_ADD_ONE r;
 	BOOL result = False;
 
-	SMB_ASSERT(cli->pipe_idx == PI_ECHO);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -39,7 +37,7 @@ NTSTATUS rpccli_echo_add_one(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
         init_echo_q_add_one(&q, request);
 
-	CLI_DO_RPC( cli, mem_ctx, ECHO_ADD_ONE,
+	CLI_DO_RPC( cli, mem_ctx, PI_ECHO, ECHO_ADD_ONE,
 			q, r,
 			qbuf, rbuf,
 			echo_io_q_add_one,
@@ -65,8 +63,6 @@ NTSTATUS rpccli_echo_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	ECHO_R_ECHO_DATA r;
 	BOOL result = False;
 
-	SMB_ASSERT(cli->pipe_idx == PI_ECHO);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -74,7 +70,7 @@ NTSTATUS rpccli_echo_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
         init_echo_q_echo_data(&q, size, in_data);
 
-	CLI_DO_RPC( cli, mem_ctx, ECHO_DATA,
+	CLI_DO_RPC( cli, mem_ctx, PI_ECHO, ECHO_DATA,
 			q, r,
 			qbuf, rbuf,
 			echo_io_q_echo_data,
@@ -102,8 +98,6 @@ NTSTATUS rpccli_echo_sink_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	ECHO_R_SINK_DATA r;
 	BOOL result = False;
 
-	SMB_ASSERT(cli->pipe_idx == PI_ECHO);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -111,7 +105,7 @@ NTSTATUS rpccli_echo_sink_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
         init_echo_q_sink_data(&q, size, in_data);
 
-	CLI_DO_RPC( cli, mem_ctx, ECHO_SINK_DATA,
+	CLI_DO_RPC( cli, mem_ctx, PI_ECHO, ECHO_SINK_DATA,
 			q, r,
 			qbuf, rbuf,
 			echo_io_q_sink_data,
@@ -134,8 +128,6 @@ NTSTATUS rpccli_echo_source_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	ECHO_R_SOURCE_DATA r;
 	BOOL result = False;
 
-	SMB_ASSERT(cli->pipe_idx == PI_ECHO);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -143,7 +135,7 @@ NTSTATUS rpccli_echo_source_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 
         init_echo_q_source_data(&q, size);
 
-	CLI_DO_RPC( cli, mem_ctx, ECHO_SOURCE_DATA,
+	CLI_DO_RPC( cli, mem_ctx, PI_ECHO, ECHO_SOURCE_DATA,
 			q, r,
 			qbuf, rbuf,
 			echo_io_q_source_data,

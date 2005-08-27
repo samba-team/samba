@@ -30,8 +30,6 @@ NTSTATUS rpccli_dfs_exist(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	DFS_R_DFS_EXIST r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	SMB_ASSERT(cli->pipe_idx == PI_NETDFS);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -39,7 +37,7 @@ NTSTATUS rpccli_dfs_exist(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
         init_dfs_q_dfs_exist(&q);
 
-	CLI_DO_RPC( cli, mem_ctx, DFS_EXIST,
+	CLI_DO_RPC( cli, mem_ctx, PI_NETDFS, DFS_EXIST,
 		q, r,
 		qbuf, rbuf,
 		dfs_io_q_dfs_exist,
@@ -67,8 +65,6 @@ NTSTATUS rpccli_dfs_add(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	DFS_R_DFS_ADD r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	SMB_ASSERT(cli->pipe_idx == PI_NETDFS);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -77,7 +73,7 @@ NTSTATUS rpccli_dfs_add(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
         init_dfs_q_dfs_add(&q, entrypath, servername, sharename, comment,
 			   flags);
 
-	CLI_DO_RPC( cli, mem_ctx, DFS_ADD,
+	CLI_DO_RPC( cli, mem_ctx, PI_NETDFS, DFS_ADD,
 		q, r,
 		qbuf, rbuf,
 		dfs_io_q_dfs_add,
@@ -103,8 +99,6 @@ NTSTATUS rpccli_dfs_remove(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	DFS_R_DFS_REMOVE r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	SMB_ASSERT(cli->pipe_idx == PI_NETDFS);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -112,7 +106,7 @@ NTSTATUS rpccli_dfs_remove(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
         init_dfs_q_dfs_remove(&q, entrypath, servername, sharename);
 
-	CLI_DO_RPC( cli, mem_ctx, DFS_REMOVE,
+	CLI_DO_RPC( cli, mem_ctx, PI_NETDFS, DFS_REMOVE,
 		q, r,
 		qbuf, rbuf,
 		dfs_io_q_dfs_remove,
@@ -140,8 +134,6 @@ NTSTATUS rpccli_dfs_get_info(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	DFS_R_DFS_GET_INFO r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	SMB_ASSERT(cli->pipe_idx == PI_NETDFS);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -150,7 +142,7 @@ NTSTATUS rpccli_dfs_get_info(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
         init_dfs_q_dfs_get_info(&q, entrypath, servername, sharename,
 				info_level);
 
-	CLI_DO_RPC( cli, mem_ctx, DFS_GET_INFO,
+	CLI_DO_RPC( cli, mem_ctx, PI_NETDFS, DFS_GET_INFO,
 		q, r,
 		qbuf, rbuf,
 		dfs_io_q_dfs_get_info,
@@ -162,7 +154,6 @@ NTSTATUS rpccli_dfs_get_info(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	result = werror_to_ntstatus(r.status);
 	*ctr = r.ctr;
 	
- done:
 	prs_mem_free(&qbuf);
 	prs_mem_free(&rbuf);
 
@@ -179,8 +170,6 @@ NTSTATUS rpccli_dfs_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	DFS_R_DFS_ENUM r;
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	SMB_ASSERT(cli->pipe_idx == PI_NETDFS);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -190,7 +179,7 @@ NTSTATUS rpccli_dfs_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	r.ctr = ctr;
 
-	CLI_DO_RPC( cli, mem_ctx, DFS_ENUM,
+	CLI_DO_RPC( cli, mem_ctx, PI_NETDFS, DFS_ENUM,
 		q, r,
 		qbuf, rbuf,
 		dfs_io_q_dfs_enum,

@@ -53,8 +53,6 @@ NTSTATUS rpccli_lsa_open_policy(struct rpc_pipe_client *cli,
 	LSA_SEC_QOS qos;
 	NTSTATUS result;
 
-	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -69,7 +67,7 @@ NTSTATUS rpccli_lsa_open_policy(struct rpc_pipe_client *cli,
 
 	/* Marshall data and send request */
 
-	CLI_DO_RPC( cli, mem_ctx, LSA_OPENPOLICY,
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_OPENPOLICY,
 			q, r,
 			qbuf, rbuf,
 			lsa_io_q_open_pol,
@@ -107,8 +105,6 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 	NTSTATUS result;
 	char *srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", cli->cli->desthost);;
 
-	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -119,7 +115,7 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 		init_q_open_pol2(&q, srv_name_slash, 0, des_access, NULL);
 	}
 
-	CLI_DO_RPC( cli, mem_ctx, LSA_OPENPOLICY2,
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_OPENPOLICY2,
 			q, r,
 			qbuf, rbuf,
 			lsa_io_q_open_pol2,
@@ -151,14 +147,12 @@ NTSTATUS rpccli_lsa_close(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	LSA_R_CLOSE r;
 	NTSTATUS result;
 
-	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
 	init_lsa_q_close(&q, pol);
 
-	CLI_DO_RPC( cli, mem_ctx, LSA_CLOSE,
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_CLOSE,
 			q, r,
 			qbuf, rbuf,
 			lsa_io_q_close,
@@ -196,8 +190,6 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 	NTSTATUS result;
 	int i;
 
-	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -209,7 +201,7 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 	r.dom_ref = &ref;
 	r.names = &t_names;
 
-	CLI_DO_RPC( cli, mem_ctx, LSA_LOOKUPSIDS,
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_LOOKUPSIDS,
 			q, r,
 			qbuf, rbuf,
 			lsa_io_q_lookup_sids,
@@ -302,8 +294,6 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 	NTSTATUS result;
 	int i;
 	
-	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -312,7 +302,7 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 
 	init_q_lookup_names(mem_ctx, &q, pol, num_names, names);
 
-	CLI_DO_RPC( cli, mem_ctx, LSA_LOOKUPNAMES,
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_LOOKUPNAMES,
 			q, r,
 			qbuf, rbuf,
 			lsa_io_q_lookup_names,
@@ -392,14 +382,12 @@ NTSTATUS rpccli_lsa_query_info_policy(struct rpc_pipe_client *cli,
 	LSA_R_QUERY_INFO r;
 	NTSTATUS result;
 
-	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
 	init_q_query(&q, pol, info_class);
 
-	CLI_DO_RPC(cli, mem_ctx, LSA_QUERYINFOPOLICY,
+	CLI_DO_RPC(cli, mem_ctx, PI_LSARPC, LSA_QUERYINFOPOLICY,
 		q, r,
 		qbuf, rbuf,
 		lsa_io_q_query,
@@ -479,8 +467,6 @@ NTSTATUS rpccli_lsa_query_info_policy2(struct rpc_pipe_client *cli,
 	LSA_R_QUERY_INFO2 r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
-
 	if (info_class != 12)
 		goto done;
 
@@ -489,7 +475,7 @@ NTSTATUS rpccli_lsa_query_info_policy2(struct rpc_pipe_client *cli,
 
 	init_q_query2(&q, pol, info_class);
 
-	CLI_DO_RPC( cli, mem_ctx, LSA_QUERYINFO2,
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_QUERYINFO2,
 		q, r,
 		qbuf, rbuf,
 		lsa_io_q_query_info2,
@@ -569,8 +555,6 @@ NTSTATUS rpccli_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
 	int i;
 	fstring tmp;
 
-	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
-
 	ZERO_STRUCT(in);
 	ZERO_STRUCT(out);
 
@@ -578,7 +562,7 @@ NTSTATUS rpccli_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
 	
         init_q_enum_trust_dom(&in, pol, *enum_ctx, 0x10000);
 
-	CLI_DO_RPC( cli, mem_ctx, LSA_ENUMTRUSTDOM, 
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_ENUMTRUSTDOM, 
 	            in, out, 
 	            qbuf, rbuf,
 	            lsa_io_q_enum_trust_dom,
@@ -641,14 +625,12 @@ NTSTATUS rpccli_lsa_enum_privilege(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	NTSTATUS result;
 	int i;
 
-	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
 	init_q_enum_privs(&q, pol, *enum_context, pref_max_length);
 
-	CLI_DO_RPC( cli, mem_ctx, LSA_ENUM_PRIVS,
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_ENUM_PRIVS,
 		q, r,
 		qbuf, rbuf,
 		lsa_io_q_enum_privs,
@@ -712,14 +694,12 @@ NTSTATUS rpccli_lsa_get_dispname(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	LSA_R_PRIV_GET_DISPNAME r;
 	NTSTATUS result;
 
-	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
 	init_lsa_priv_get_dispname(&q, pol, name, lang_id, lang_id_sys);
 
-	CLI_DO_RPC( cli, mem_ctx, LSA_PRIV_GET_DISPNAME,
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_PRIV_GET_DISPNAME,
 		q, r,
 		qbuf, rbuf,
 		lsa_io_q_priv_get_dispname,
@@ -754,14 +734,12 @@ NTSTATUS rpccli_lsa_enum_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	NTSTATUS result;
 	int i;
 
-	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
         init_lsa_q_enum_accounts(&q, pol, *enum_ctx, pref_max_length);
 
-	CLI_DO_RPC( cli, mem_ctx, LSA_ENUM_ACCOUNTS,
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_ENUM_ACCOUNTS,
 		q, r,
 		qbuf, rbuf,
 		lsa_io_q_enum_accounts,
@@ -820,8 +798,6 @@ NTSTATUS rpccli_lsa_create_account(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	LSA_R_CREATEACCOUNT r;
 	NTSTATUS result;
 
-	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -829,7 +805,7 @@ NTSTATUS rpccli_lsa_create_account(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 
 	init_lsa_q_create_account(&q, dom_pol, sid, desired_access);
 
-	CLI_DO_RPC( cli, mem_ctx, LSA_CREATEACCOUNT,
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_CREATEACCOUNT,
 		q, r,
 		qbuf, rbuf,
 		lsa_io_q_create_account,
@@ -861,8 +837,6 @@ NTSTATUS rpccli_lsa_open_account(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	LSA_R_OPENACCOUNT r;
 	NTSTATUS result;
 
-	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -870,7 +844,7 @@ NTSTATUS rpccli_lsa_open_account(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 
 	init_lsa_q_open_account(&q, dom_pol, sid, des_access);
 
-	CLI_DO_RPC( cli, mem_ctx, LSA_OPENACCOUNT,
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_OPENACCOUNT,
 		q, r,
 		qbuf, rbuf,
 		lsa_io_q_open_account,
@@ -902,8 +876,6 @@ NTSTATUS rpccli_lsa_enum_privsaccount(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	NTSTATUS result;
 	int i;
 
-	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -911,7 +883,7 @@ NTSTATUS rpccli_lsa_enum_privsaccount(struct rpc_pipe_client *cli, TALLOC_CTX *m
 
 	init_lsa_q_enum_privsaccount(&q, pol);
 
-	CLI_DO_RPC( cli, mem_ctx, LSA_ENUMPRIVSACCOUNT,
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_ENUMPRIVSACCOUNT,
 		q, r,
 		qbuf, rbuf,
 		lsa_io_q_enum_privsaccount,
@@ -957,8 +929,6 @@ NTSTATUS rpccli_lsa_lookup_priv_value(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	LSA_R_LOOKUP_PRIV_VALUE r;
 	NTSTATUS result;
 
-	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -966,7 +936,7 @@ NTSTATUS rpccli_lsa_lookup_priv_value(struct rpc_pipe_client *cli, TALLOC_CTX *m
 
 	init_lsa_q_lookup_priv_value(&q, pol, name);
 
-	CLI_DO_RPC( cli, mem_ctx, LSA_LOOKUPPRIVVALUE,
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_LOOKUPPRIVVALUE,
 		q, r,
 		qbuf, rbuf,
 		lsa_io_q_lookup_priv_value,
@@ -1000,8 +970,6 @@ NTSTATUS rpccli_lsa_query_secobj(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	LSA_R_QUERY_SEC_OBJ r;
 	NTSTATUS result;
 
-	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -1009,7 +977,7 @@ NTSTATUS rpccli_lsa_query_secobj(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 
 	init_q_query_sec_obj(&q, pol, sec_info);
 
-	CLI_DO_RPC( cli, mem_ctx, LSA_QUERYSECOBJ,
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_QUERYSECOBJ,
 		q, r,
 		qbuf, rbuf,
 		lsa_io_q_query_sec_obj,
@@ -1049,15 +1017,13 @@ NTSTATUS rpccli_lsa_enum_account_rights(struct rpc_pipe_client *cli, TALLOC_CTX 
 	fstring *privileges;
 	char **names;
 
-	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
 	/* Marshall data and send request */
 	init_q_enum_acct_rights(&q, pol, 2, sid);
 
-	CLI_DO_RPC( cli, mem_ctx, LSA_ENUMACCTRIGHTS,
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_ENUMACCTRIGHTS,
 		q, r,
 		qbuf, rbuf,
 		lsa_io_q_enum_acct_rights,
@@ -1109,15 +1075,13 @@ NTSTATUS rpccli_lsa_add_account_rights(struct rpc_pipe_client *cli, TALLOC_CTX *
 	LSA_R_ADD_ACCT_RIGHTS r;
 	NTSTATUS result;
 
-	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
 	/* Marshall data and send request */
 	init_q_add_acct_rights(&q, pol, &sid, count, privs_name);
 
-	CLI_DO_RPC( cli, mem_ctx, LSA_ADDACCTRIGHTS,
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_ADDACCTRIGHTS,
 		q, r,
 		qbuf, rbuf,
 		lsa_io_q_add_acct_rights,
@@ -1144,15 +1108,13 @@ NTSTATUS rpccli_lsa_remove_account_rights(struct rpc_pipe_client *cli, TALLOC_CT
 	LSA_R_REMOVE_ACCT_RIGHTS r;
 	NTSTATUS result;
 
-	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
 	/* Marshall data and send request */
 	init_q_remove_acct_rights(&q, pol, &sid, removeall?1:0, count, privs_name);
 
-	CLI_DO_RPC( cli, mem_ctx, LSA_REMOVEACCTRIGHTS,
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_REMOVEACCTRIGHTS,
 		q, r,
 		qbuf, rbuf,
 		lsa_io_q_remove_acct_rights,
@@ -1280,8 +1242,6 @@ NTSTATUS rpccli_lsa_open_trusted_domain(struct rpc_pipe_client *cli, TALLOC_CTX 
 	LSA_R_OPEN_TRUSTED_DOMAIN r;
 	NTSTATUS result;
 
-	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -1291,7 +1251,7 @@ NTSTATUS rpccli_lsa_open_trusted_domain(struct rpc_pipe_client *cli, TALLOC_CTX 
 
 	/* Marshall data and send request */
 
-	CLI_DO_RPC( cli, mem_ctx, LSA_OPENTRUSTDOM,
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_OPENTRUSTDOM,
 		q, r,
 		qbuf, rbuf,
 		lsa_io_q_open_trusted_domain,
@@ -1320,8 +1280,6 @@ NTSTATUS rpccli_lsa_query_trusted_domain_info(struct rpc_pipe_client *cli, TALLO
 	LSA_R_QUERY_TRUSTED_DOMAIN_INFO r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -1329,7 +1287,7 @@ NTSTATUS rpccli_lsa_query_trusted_domain_info(struct rpc_pipe_client *cli, TALLO
 
 	init_q_query_trusted_domain_info(&q, pol, info_class); 
 
-	CLI_DO_RPC( cli, mem_ctx, LSA_QUERYTRUSTDOMINFO,
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_QUERYTRUSTDOMINFO,
 		q, r,
 		qbuf, rbuf,
 		lsa_io_q_query_trusted_domain_info,
@@ -1360,8 +1318,6 @@ NTSTATUS rpccli_lsa_query_trusted_domain_info_by_sid(struct rpc_pipe_client *cli
 	LSA_R_QUERY_TRUSTED_DOMAIN_INFO r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -1369,7 +1325,7 @@ NTSTATUS rpccli_lsa_query_trusted_domain_info_by_sid(struct rpc_pipe_client *cli
 
 	init_q_query_trusted_domain_info_by_sid(&q, pol, info_class, dom_sid); 
 
-	CLI_DO_RPC( cli, mem_ctx, LSA_QUERYTRUSTDOMINFOBYSID,
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_QUERYTRUSTDOMINFOBYSID,
 		q, r,
 		qbuf, rbuf,
 		lsa_io_q_query_trusted_domain_info_by_sid,
@@ -1399,8 +1355,6 @@ NTSTATUS rpccli_lsa_query_trusted_domain_info_by_name(struct rpc_pipe_client *cl
 	LSA_R_QUERY_TRUSTED_DOMAIN_INFO r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	SMB_ASSERT(cli->pipe_idx == PI_LSARPC);
-
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -1408,7 +1362,7 @@ NTSTATUS rpccli_lsa_query_trusted_domain_info_by_name(struct rpc_pipe_client *cl
 
 	init_q_query_trusted_domain_info_by_name(&q, pol, info_class, domain_name); 
 
-	CLI_DO_RPC( cli, mem_ctx, LSA_QUERYTRUSTDOMINFOBYNAME,
+	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_QUERYTRUSTDOMINFOBYNAME,
 		q, r,
 		qbuf, rbuf,
 		lsa_io_q_query_trusted_domain_info_by_name,
