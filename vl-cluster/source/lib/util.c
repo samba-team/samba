@@ -1404,23 +1404,22 @@ BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask)
  Check if a process exists. Does this work on all unixes?
 ****************************************************************************/
 
-BOOL process_exists(const struct process_id *pid)
+BOOL process_exists(const struct process_id pid)
 {
-	if (!procid_is_local(pid)) {
+	if (!procid_is_local(&pid)) {
 		/* This *SEVERELY* needs fixing. */
 		return True;
 	}
 
 	/* Doing kill with a non-positive pid causes messages to be
 	 * sent to places we don't want. */
-	SMB_ASSERT(pid->pid > 0);
-	return(kill(pid->pid,0) == 0 || errno != ESRCH);
+	SMB_ASSERT(pid.pid > 0);
+	return(kill(pid.pid,0) == 0 || errno != ESRCH);
 }
 
 BOOL process_exists_by_pid(pid_t pid)
 {
-	struct process_id tmp = pid_to_procid(pid);
-	return process_exists(&tmp);
+	return process_exists(pid_to_procid(pid));
 }
 
 /*******************************************************************

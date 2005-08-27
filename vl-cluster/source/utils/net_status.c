@@ -25,15 +25,13 @@ static int show_session(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 {
 	BOOL *parseable = (BOOL *)state;
 	struct sessionid sessionid;
-	struct process_id tmp;
 
 	if (dbuf.dsize != sizeof(sessionid))
 		return 0;
 
 	memcpy(&sessionid, dbuf.dptr, sizeof(sessionid));
 
-	tmp = pid_to_procid(sessionid.pid);
-	if (!process_exists(&tmp)) {
+	if (!process_exists_by_pid(sessionid.pid)) {
 		return 0;
 	}
 
@@ -99,7 +97,7 @@ static int show_share(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	if (crec.cnum == -1)
 		return 0;
 
-	if (!process_exists(&crec.pid)) {
+	if (!process_exists(crec.pid)) {
 		return 0;
 	}
 
@@ -121,15 +119,13 @@ static int collect_pid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 {
 	struct sessionids *ids = (struct sessionids *)state;
 	struct sessionid sessionid;
-	struct process_id tmp;
 
 	if (dbuf.dsize != sizeof(sessionid))
 		return 0;
 
 	memcpy(&sessionid, dbuf.dptr, sizeof(sessionid));
 
-	tmp = pid_to_procid(sessionid.pid);
-	if (!process_exists(&tmp)) 
+	if (!process_exists_by_pid(sessionid.pid)) 
 		return 0;
 
 	ids->num_entries += 1;
@@ -155,7 +151,7 @@ static int show_share_parseable(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	if (crec.cnum == -1)
 		return 0;
 
-	if (!process_exists(&crec.pid)) {
+	if (!process_exists(crec.pid)) {
 		return 0;
 	}
 

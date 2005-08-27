@@ -252,7 +252,7 @@ static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *stat
 			DEBUG(0,("brlock : delete_fn. LOGIC ERROR ! Shutting down and a record for my pid (%u) exists !\n",
 					(unsigned int)lock->context.pid ));
 
-		} else if (process_exists(lock->context.pid)) {
+		} else if (process_exists(&lock->context.pid)) {
 
 			DEBUG(10,("brlock : delete_fn. pid %u exists.\n", (unsigned int)lock->context.pid ));
 			continue;

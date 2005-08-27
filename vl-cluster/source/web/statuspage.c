@@ -166,7 +166,7 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* st
 
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
 
-	if (crec.cnum == -1 && process_exists(&crec.pid)) {
+	if (crec.cnum == -1 && process_exists(crec.pid)) {
 		char buf[30];
 		slprintf(buf,sizeof(buf)-1,"kill_%s", procid_str_static(&crec.pid));
 		if (cgi_variable(buf)) {
@@ -187,7 +187,7 @@ static int traverse_fn2(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* st
 
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
 	
-	if (crec.cnum == -1 || !process_exists(&crec.pid) ||
+	if (crec.cnum == -1 || !process_exists(crec.pid) ||
 	    procid_equal(&crec.pid, &smbd_pid))
 		return 0;
 
@@ -216,7 +216,7 @@ static int traverse_fn3(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* st
 
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
 
-	if (crec.cnum == -1 || !process_exists(&crec.pid))
+	if (crec.cnum == -1 || !process_exists(crec.pid))
 		return 0;
 
 	printf("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n",

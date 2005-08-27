@@ -548,7 +548,7 @@ int get_share_modes(SMB_DEV_T dev, SMB_INO_T inode,
 
 		for (i = 0; i < num_share_modes; ) {
 			share_mode_entry *entry_p = &shares[i];
-			if (process_exists(&entry_p->pid)) {
+			if (process_exists(entry_p->pid)) {
 				DEBUG(10,("get_share_modes: %s\n", share_mode_str(i, entry_p) ));
 				i++;
 			} else {
@@ -1087,7 +1087,7 @@ int get_deferred_opens(SMB_DEV_T dev, SMB_INO_T inode,
 
 		for (i = 0; i < num_de_entries; ) {
 			deferred_open_entry *entry_p = &de_entries[i];
-			if (process_exists(&entry_p->pid)) {
+			if (process_exists(entry_p->pid)) {
 				DEBUG(10,("get_deferred_opens: %s\n", deferred_open_str(i, entry_p) ));
 				i++;
 			} else {

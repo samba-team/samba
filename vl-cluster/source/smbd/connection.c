@@ -106,7 +106,7 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
 
 	/* If the pid was not found delete the entry from connections.tdb */
 
-	if (cs->Clear && !process_exists(&crec.pid) && (errno == ESRCH)) {
+	if (cs->Clear && !process_exists(crec.pid) && (errno == ESRCH)) {
 		DEBUG(2,("pid %s doesn't exist - deleting connections %d [%s]\n",
 			procid_str_static(&crec.pid), crec.cnum, crec.name));
 		if (tdb_delete(the_tdb, kbuf) != 0)

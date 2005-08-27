@@ -545,7 +545,7 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 	if (crec.cnum == -1)
 		return 0;
 
-	if (!process_exists(&crec.pid) || !Ucrit_checkUid(crec.uid)) {
+	if (!process_exists(crec.pid) || !Ucrit_checkUid(crec.uid)) {
 		return 0;
 	}
 
@@ -561,15 +561,13 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 {
 	struct sessionid sessionid;
 	fstring uid_str, gid_str;
-	struct process_id tmp;
 
 	if (dbuf.dsize != sizeof(sessionid))
 		return 0;
 
 	memcpy(&sessionid, dbuf.dptr, sizeof(sessionid));
 
-	tmp = pid_to_procid(sessionid.pid);
-	if (!process_exists(&tmp) || !Ucrit_checkUid(sessionid.uid)) {
+	if (!process_exists_by_pid(sessionid.pid) || !Ucrit_checkUid(sessionid.uid)) {
 		return 0;
 	}
 
