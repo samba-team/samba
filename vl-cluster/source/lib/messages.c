@@ -87,8 +87,8 @@ static void ping_message(int msg_type, struct process_id src,
 			 void *buf, size_t len)
 {
 	const char *msg = buf ? buf : "none";
-	DEBUG(1,("INFO: Received PING message from PID %u [%s]\n",
-		 (unsigned int)procid_to_pid(&src), msg));
+	DEBUG(1,("INFO: Received PING message from PID %s [%s]\n",
+		 procid_str_static(&src), msg));
 	message_send_pid(src, MSG_PONG, buf, len, True);
 }
 
@@ -227,7 +227,7 @@ static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
 	rec.msg_version = MESSAGE_VERSION;
 	rec.msg_type = msg_type;
 	rec.dest = pid;
-	rec.src = pid_to_procid(sys_getpid());
+	rec.src = procid_self();
 	rec.len = len;
 
 	kbuf = message_key_pid(pid);
