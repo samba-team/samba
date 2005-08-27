@@ -60,8 +60,6 @@ NTSTATUS rpccli_ds_getprimarydominfo(struct rpc_pipe_client *cli,
 	}
 	
 done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
 
 	return result;
 }
@@ -128,8 +126,5 @@ NTSTATUS rpccli_ds_enum_domain_trusts(struct rpc_pipe_client *cli,
 		}
 	}
 	
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;
 }

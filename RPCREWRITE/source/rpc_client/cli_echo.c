@@ -49,9 +49,6 @@ NTSTATUS rpccli_echo_add_one(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	result = True;
 
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -84,9 +81,6 @@ NTSTATUS rpccli_echo_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		memcpy(*out_data, r.data, size);
 	}
 
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -114,9 +108,6 @@ NTSTATUS rpccli_echo_sink_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	result = True;
 
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -143,9 +134,6 @@ NTSTATUS rpccli_echo_source_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 			NT_STATUS_UNSUCCESSFUL);
 
 	result = True;
-
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
 
 	return result ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }

@@ -50,9 +50,6 @@ NTSTATUS rpccli_dfs_exist(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	result = NT_STATUS_OK;
 
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;
 }
 
@@ -84,9 +81,6 @@ NTSTATUS rpccli_dfs_add(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
         result = werror_to_ntstatus(r.status);
 
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;
 }
 
@@ -116,9 +110,6 @@ NTSTATUS rpccli_dfs_remove(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	/* Return result */
 
 	result = werror_to_ntstatus(r.status);
-
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
 
 	return result;
 }
@@ -154,9 +145,6 @@ NTSTATUS rpccli_dfs_get_info(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	result = werror_to_ntstatus(r.status);
 	*ctr = r.ctr;
 	
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;
 }
 
@@ -189,9 +177,6 @@ NTSTATUS rpccli_dfs_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	/* Return result */
 
 	result = werror_to_ntstatus(r.status);
-
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
 
 	return result;
 }

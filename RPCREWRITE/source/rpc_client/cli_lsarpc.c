@@ -83,9 +83,6 @@ NTSTATUS rpccli_lsa_open_policy(struct rpc_pipe_client *cli,
 #endif
 	}
 
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;
 }
 
@@ -103,7 +100,7 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 	LSA_R_OPEN_POL2 r;
 	LSA_SEC_QOS qos;
 	NTSTATUS result;
-	char *srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", cli->cli->desthost);;
+	char *srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", cli->cli->desthost);
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -130,9 +127,6 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 		pol->marker = (char *)malloc(1);
 #endif
 	}
-
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
 
 	return result;
 }
@@ -167,9 +161,6 @@ NTSTATUS rpccli_lsa_close(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 #endif
 		*pol = r.pol;
 	}
-
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
 
 	return result;
 }
@@ -273,8 +264,6 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 	}
 
  done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
 
 	return result;
 }
@@ -362,8 +351,6 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 	}
 
  done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
 
 	return result;
 }
@@ -440,8 +427,6 @@ NTSTATUS rpccli_lsa_query_info_policy(struct rpc_pipe_client *cli,
 	}
 	
  done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
 
 	return result;
 }
@@ -522,8 +507,6 @@ NTSTATUS rpccli_lsa_query_info_policy2(struct rpc_pipe_client *cli,
 	}
 	
  done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
 
 	return result;
 }
@@ -676,8 +659,6 @@ NTSTATUS rpccli_lsa_enum_privilege(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	}
 
  done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
 
 	return result;
 }
@@ -716,8 +697,6 @@ NTSTATUS rpccli_lsa_get_dispname(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	*lang_id_desc = r.lang_id;
 
  done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
 
 	return result;
 }
@@ -774,8 +753,6 @@ NTSTATUS rpccli_lsa_enum_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	*enum_ctx = r.enum_context;
 
  done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
 
 	return result;
 }
@@ -818,9 +795,6 @@ NTSTATUS rpccli_lsa_create_account(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 		*user_pol = r.pol;
 	}
 
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;
 }
 
@@ -856,9 +830,6 @@ NTSTATUS rpccli_lsa_open_account(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	if (NT_STATUS_IS_OK(result = r.status)) {
 		*user_pol = r.pol;
 	}
-
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
 
 	return result;
 }
@@ -913,8 +884,6 @@ NTSTATUS rpccli_lsa_enum_privsaccount(struct rpc_pipe_client *cli, TALLOC_CTX *m
 
 	*count=r.count;
  done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
 
 	return result;
 }
@@ -953,8 +922,6 @@ NTSTATUS rpccli_lsa_lookup_priv_value(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	(*luid).high=r.luid.high;
 
  done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
 
 	return result;
 }
@@ -994,8 +961,6 @@ NTSTATUS rpccli_lsa_query_secobj(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 		*psdb = r.buf;
 
  done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
 
 	return result;
 }
@@ -1264,9 +1229,6 @@ NTSTATUS rpccli_lsa_open_trusted_domain(struct rpc_pipe_client *cli, TALLOC_CTX 
 		*trustdom_pol = r.handle;
 	}
 
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;
 }
 
@@ -1301,9 +1263,6 @@ NTSTATUS rpccli_lsa_query_trusted_domain_info(struct rpc_pipe_client *cli, TALLO
 	*info = r.info;
 		
 done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;
 }
 
@@ -1339,8 +1298,6 @@ NTSTATUS rpccli_lsa_query_trusted_domain_info_by_sid(struct rpc_pipe_client *cli
 	*info = r.info;
 
 done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
 
 	return result;
 }
@@ -1376,8 +1333,6 @@ NTSTATUS rpccli_lsa_query_trusted_domain_info_by_name(struct rpc_pipe_client *cl
 	*info = r.info;
 
 done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
 	
 	return result;
 }
