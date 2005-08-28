@@ -444,7 +444,9 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 	state->request.data.init_conn.dcname
 		[sizeof(state->request.data.init_conn.dcname)-1]='\0';
 
-	fstrcpy(domain->dcname, state->request.data.init_conn.dcname);
+	if (strlen(state->request.data.init_conn.dcname) > 0) {
+		fstrcpy(domain->dcname, state->request.data.init_conn.dcname);
+	}
 
 	if (strlen(domain->dcname) > 0) {
 		if (!resolve_name(domain->dcname, &ipaddr, 0x20)) {
