@@ -136,8 +136,10 @@ static struct ldb_parse_tree *ldb_map_parse_tree(struct ldb_module *module, TALL
 		return attr->convert_operator(privdat, module, tree);
 	}
 
-	if (map_type == MAP_IGNORE)
+	if (map_type == MAP_IGNORE) {
+		DEBUG(0, ("Search on ignored attribute '%s'!\n", tree->u.equality.attr));
 		return NULL;
+	}
 
 	if (map_type == MAP_GENERATE) {
 		DEBUG(0, ("Can't do conversion for MAP_GENERATE in map_parse_tree without convert_operator for '%s'\n", tree->u.equality.attr));
