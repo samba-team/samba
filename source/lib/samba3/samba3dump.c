@@ -244,25 +244,35 @@ int main(int argc, char **argv)
 {
 	int opt;
 	const char *format = "summary";
-	const char *libdir = "/var/lib/samba";
+	char *libdir = NULL;
+	char *smbconf = NULL;
 	struct samba3 *samba3;
 	poptContext pc;
+	TALLOC_CTX *mem_ctx;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{ "format", 0, POPT_ARG_STRING, &format, 'f', "Format to use (one of: summary, text, ldif)" },
-		{ "libdir", 0, POPT_ARG_STRING, &libdir, 'l', "Set libdir [/var/lib/samba]", "LIBDIR" },
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
 
 	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);
 
-	poptSetOtherOptionHelp(pc, "<smb.conf>");
+	poptSetOtherOptionHelp(pc, "<libdir> <smb.conf>");
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
 
-	samba3_read(poptGetArg(pc), libdir, NULL, &samba3);
+	samba3dump_init_subsystems;
+
+	mem_ctx = talloc_init("samba3dump_context");
+
+	libdir = talloc_strdup(mem_ctx, poptGetArg(pc));
+	smbconf = talloc_strdup(mem_ctx, poptGetArg(pc));
+
+	printf("Reading from libdir '%s', smb.conf file '%s'\n", libdir, smbconf);
+
+	samba3_read(smbconf, libdir, mem_ctx, &samba3);
 
 	if (!strcmp(format, "summary")) {
 		printf("WINS db entries: %d\n", samba3->winsdb_count);
@@ -276,7 +286,7 @@ int main(int argc, char **argv)
 		print_samba3(samba3);
 	} else if (!strcmp(format, "ldif")) {
 		struct ldb_message **msgs;
-		struct ldb_context *ldb = ldb_init(NULL);
+		struct ldb_context *ldb = ldb_init(mem_ctx);
 		int i, ret;
 		const char *hives[] = { "hklm", "hkcr", "hku", "hkpd", "hkpt", NULL };
 

@@ -26,7 +26,19 @@ struct smbconf_data {
 	struct samba3_share_info *current_share;
 };
 
-struct samba3_share_info *samba3_find_share(struct samba3 *db, TALLOC_CTX* ctx, const char *name)
+struct samba3_domainsecrets *samba3_find_domainsecrets(struct samba3 *db, const char *name)
+{
+	int i;
+	
+	for (i = 0; i < db->secrets.domain_count; i++) {
+		if (!StrCaseCmp(db->secrets.domains[i].name, name)) 
+			return &db->secrets.domains[i];
+	}
+
+	return NULL;
+}
+
+struct samba3_share_info *samba3_find_share(struct samba3 *db, const char *name)
 {
 	int i;
 	for (i = 0; i < db->share_count; i++) {
@@ -34,19 +46,47 @@ struct samba3_share_info *samba3_find_share(struct samba3 *db, TALLOC_CTX* ctx, 
 			return &db->shares[i];
 	}
 
+	return NULL;
+}
+
+
+struct samba3_share_info *samba3_find_add_share(struct samba3 *db, TALLOC_CTX* ctx, const char *name)
+{
+	struct samba3_share_info *share = samba3_find_share(db, name);
+
+	if (share)
+		return share;
+
 	db->shares = talloc_realloc(ctx, db->shares, struct samba3_share_info, db->share_count+1);
-	ZERO_STRUCT(db->shares[i]);
-	db->shares[i].name = talloc_strdup(ctx, name);
+	ZERO_STRUCT(db->shares[db->share_count]);
+	db->shares[db->share_count].name = talloc_strdup(ctx, name);
 	db->share_count++;
 	
-	return &db->shares[i];
+	return &db->shares[db->share_count-1];
 }
+
+const char *samba3_get_param(struct samba3 *samba3, const char *section, const char *param)
+{
+	int i;
+	struct samba3_share_info *share = samba3_find_share(samba3, section);
+
+	if (share == NULL)
+		return NULL;
+
+	for (i = 0; i < share->parameter_count; i++) {
+		if (!StrCaseCmp(share->parameters[i].name, param))
+			return share->parameters[i].value;
+	}
+
+	return NULL;
+}
+
 
 static BOOL samba3_sfunc (const char *name, void *_db)
 {
 	struct smbconf_data *privdat = _db;
 
-	privdat->current_share = samba3_find_share(privdat->db, privdat->ctx, name);
+	privdat->current_share = samba3_find_add_share(privdat->db, privdat->ctx, name);
 
 	return True;
 }
@@ -76,7 +116,7 @@ NTSTATUS samba3_read_smbconf(const char *fn, TALLOC_CTX *ctx, struct samba3 *db)
 
 	privdat.ctx = ctx;
 	privdat.db = db;
-	privdat.current_share = samba3_find_share(db, ctx, "global");
+	privdat.current_share = samba3_find_add_share(db, ctx, "global");
 	
 	if (!pm_process( fn, samba3_sfunc, samba3_pfunc, &privdat )) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -88,44 +128,44 @@ NTSTATUS samba3_read_smbconf(const char *fn, TALLOC_CTX *ctx, struct samba3 *db)
 NTSTATUS samba3_read(const char *smbconf, const char *libdir, TALLOC_CTX *ctx, struct samba3 **samba3)
 {
 	struct samba3 *ret;
-	char *dbfile;
+	char *dbfile = NULL;
 
 	ret = talloc_zero(ctx, struct samba3);
 
 	if (smbconf) 
 		samba3_read_smbconf(smbconf, ctx, ret);
 
-	asprintf(&dbfile, "%s/wins.dat", libdir);
-	samba3_read_winsdb(dbfile, ret, &ret->winsdb_entries, &ret->winsdb_count);
-	SAFE_FREE(dbfile);
-
-	asprintf(&dbfile, "%s/passdb.tdb", libdir);
-	samba3_read_tdbsam(dbfile, ctx, &ret->samaccounts, &ret->samaccount_count);
-	SAFE_FREE(dbfile);
-
-	asprintf(&dbfile, "%s/group_mapping.tdb", libdir);
-	samba3_read_grouptdb(dbfile, ctx, &ret->group);
-	SAFE_FREE(dbfile);
-
-	asprintf(&dbfile, "%s/winbindd_idmap.tdb", libdir);
-	samba3_read_idmap(dbfile, ctx, &ret->idmap);
-	SAFE_FREE(dbfile);
-
-	asprintf(&dbfile, "%s/account_policy.tdb", libdir);
+	dbfile = talloc_asprintf(ctx, "%s/account_policy.tdb", libdir);
 	samba3_read_account_policy(dbfile, ctx, &ret->policy);
-	SAFE_FREE(dbfile);
+	talloc_free(dbfile);
 
-	asprintf(&dbfile, "%s/registry.tdb", libdir);
+	dbfile = talloc_asprintf(ctx, "%s/registry.tdb", libdir);
 	samba3_read_regdb(dbfile, ctx, &ret->registry);
-	SAFE_FREE(dbfile);
+	talloc_free(dbfile);
 
-	asprintf(&dbfile, "%s/secrets.tdb", libdir);
+	dbfile = talloc_asprintf(ctx, "%s/secrets.tdb", libdir);
 	samba3_read_secrets(dbfile, ctx, &ret->secrets);
-	SAFE_FREE(dbfile);
+	talloc_free(dbfile);
 
-	asprintf(&dbfile, "%s/share_info.tdb", libdir);
+	dbfile = talloc_asprintf(ctx, "%s/share_info.tdb", libdir);
 	samba3_read_share_info(dbfile, ctx, ret);
-	SAFE_FREE(dbfile);
+	talloc_free(dbfile);
+
+	dbfile = talloc_asprintf(ctx, "%s/winbindd_idmap.tdb", libdir);
+	samba3_read_idmap(dbfile, ctx, &ret->idmap);
+	talloc_free(dbfile);
+
+	dbfile = talloc_asprintf(ctx, "%s/wins.dat", libdir);
+	samba3_read_winsdb(dbfile, ret, &ret->winsdb_entries, &ret->winsdb_count);
+	talloc_free(dbfile);
+
+	dbfile = talloc_asprintf(ctx, "%s/passdb.tdb", libdir);
+	samba3_read_tdbsam(dbfile, ctx, &ret->samaccounts, &ret->samaccount_count);
+	talloc_free(dbfile);
+
+	dbfile = talloc_asprintf(ctx, "%s/group_mapping.tdb", libdir);
+	samba3_read_grouptdb(dbfile, ctx, &ret->group);
+	talloc_free(dbfile);
 
 	*samba3 = ret;
 
