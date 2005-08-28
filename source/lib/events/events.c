@@ -158,6 +158,10 @@ int event_loop_wait(struct event_context *ev)
   find an event context that is a parent of the given memory context,
   or create a new event context as a child of the given context if
   none is found
+
+  This should be used in preference to event_context_init() in places
+  where you would prefer to use the existing event context if possible
+  (which is most situations)
 */
 struct event_context *event_context_find(TALLOC_CTX *mem_ctx)
 {
