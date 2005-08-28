@@ -226,6 +226,7 @@ static NTSTATUS ipv4_accept(struct socket_context *sock, struct socket_context *
 
 	(*new_sock)->private_data	= NULL;
 	(*new_sock)->ops		= sock->ops;
+	(*new_sock)->backend_name	= sock->backend_name;
 
 	return NT_STATUS_OK;
 }
