@@ -57,6 +57,8 @@ static NTSTATUS unixdom_init(struct socket_context *sock)
 	}
 	sock->private_data = NULL;
 
+	sock->backend_name = "unix";
+
 	return NT_STATUS_OK;
 }
 
