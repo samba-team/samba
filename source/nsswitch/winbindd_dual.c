@@ -158,9 +158,8 @@ static void async_reply_recv(void *private_data, BOOL success)
 		return;
 	}
 
-	if (state->response->result == WINBINDD_OK)
-		SMB_ASSERT(cache_retrieve_response(child->pid,
-						   state->response));
+	SMB_ASSERT(cache_retrieve_response(child->pid,
+					   state->response));
 
 	DLIST_REMOVE(child->requests, state);
 
@@ -479,12 +478,11 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 			DEBUG(4,("child daemon request %d\n",
 				 (int)state.request.cmd));
 
+			ZERO_STRUCT(state.response);
 			state.request.null_term = '\0';
 			child_process_request(child->domain, &state);
 
-			if (state.response.result == WINBINDD_OK)
-				cache_store_response(sys_getpid(),
-						     &state.response);
+			cache_store_response(sys_getpid(), &state.response);
 
 			SAFE_FREE(state.response.extra_data);
 
