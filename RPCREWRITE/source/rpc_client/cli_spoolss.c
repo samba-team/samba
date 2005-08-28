@@ -827,8 +827,7 @@ WERROR rpccli_spoolss_addprinterex (struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	ZERO_STRUCT(in);
 	ZERO_STRUCT(out);
 	
-	/* This looks wrong to me - shouldn't client be *our* name ? */
-        slprintf(client, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
+        slprintf(client, sizeof(fstring)-1, "\\\\%s", global_myname());
         slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
 	
         strupper_m(client);
