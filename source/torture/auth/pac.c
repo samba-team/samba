@@ -339,7 +339,7 @@ static BOOL torture_pac_saved_check(void)
 	/* Decode and verify the signaure on the PAC */
 	nt_status = kerberos_decode_pac(mem_ctx, &pac_data,
 					tmp_blob,
-					smb_krb5_context,
+					smb_krb5_context->krb5_context,
 					&krbtgt_keyblock,
 					&server_keyblock);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -357,7 +357,7 @@ static BOOL torture_pac_saved_check(void)
 	/* Parse the PAC again, for the logon info this time */
 	nt_status = kerberos_pac_logon_info(mem_ctx, &logon_info,
 					    tmp_blob,
-					    smb_krb5_context,
+					    smb_krb5_context->krb5_context,
 					    &krbtgt_keyblock,
 					    &server_keyblock);
 
@@ -459,7 +459,7 @@ static BOOL torture_pac_saved_check(void)
 
 	nt_status = kerberos_decode_pac(mem_ctx, &pac_data,
 					tmp_blob,
-					smb_krb5_context,
+					smb_krb5_context->krb5_context,
 					&krbtgt_keyblock,
 					&server_keyblock);
 	if (NT_STATUS_IS_OK(nt_status)) {
