@@ -29,6 +29,7 @@
 
 #include "includes.h"
 #include "dlinklist.h"
+#include "lib/events/events.h"
 #include "lib/tdb/include/tdb.h"
 #include "lib/ldb/include/ldb.h"
 #include "db_wrap.h"
@@ -76,12 +77,7 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 	/* we want to use the existing event context if possible. This
 	   relies on the fact that in smbd, everything is a child of
 	   the main event_context */
-	ev = talloc_find_parent_bytype(mem_ctx, struct event_context);
-	if (ev) {
-		ldb_set_opaque(ldb, "EventContext", ev);
-	} else {
-		DEBUG(5,("WARNING: event_context not found\n"));
-	}
+	ev = event_context_find(ldb);
 
 	ret = ldb_register_samba_handlers(ldb);
 	if (ret == -1) {

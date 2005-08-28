@@ -24,6 +24,7 @@
 #include "scripting/ejs/smbcalls.h"
 #include "lib/appweb/ejs/ejs.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "lib/events/events.h"
 
 /*
   look up a netbios name
@@ -69,7 +70,7 @@ static int ejs_resolve_name(MprVarHandle eid, int argc, struct MprVar **argv)
 
 	result = 0;
 
-	nt_status = resolve_name(&name, tmp_ctx, &reply_addr);
+	nt_status = resolve_name(&name, tmp_ctx, &reply_addr, event_context_find(tmp_ctx));
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		mprSetPropertyValue(argv[0], "value", mprString(reply_addr));
