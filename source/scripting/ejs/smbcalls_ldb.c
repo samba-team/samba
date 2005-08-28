@@ -75,10 +75,6 @@ static int ejs_ldbSearch(MprVarHandle eid, int argc, struct MprVar **argv)
 	}
 	
 	expression = mprToString(argv[0]);
-	if (expression == NULL) {
-		ejsSetErrorMsg(eid, "ldb.search invalid expression");
-		goto failed;
-	}
 	if (argc > 1) {
 		base = mprToString(argv[1]);
 		/* a null basedn is valid */
