@@ -86,6 +86,11 @@ void ejs_exception(const char *reason)
 	/* load the script and advance past interpreter line*/
 	script = file_load(fname, &script_size, mem_ctx);
 
+	if (!script) {
+		fprintf(stderr, "Unable to load script from '%s'\n", fname);
+		exit(1);
+	}
+
 	/* allow scriptable js */
 	if (strncmp(script, "#!", 2) == 0) {
 		script += strcspn(script, "\r\n");

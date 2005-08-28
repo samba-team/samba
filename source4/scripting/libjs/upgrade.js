@@ -4,5 +4,10 @@
 	Released under the GNU GPL v2 or later
 */
 
+libinclude("base.js");
 
-return 0;
+function foo() 
+{
+
+	return 0;
+}
