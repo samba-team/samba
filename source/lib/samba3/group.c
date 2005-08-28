@@ -82,15 +82,20 @@ NTSTATUS samba3_read_grouptdb(const char *file, TALLOC_CTX *ctx, struct samba3_g
 			if (!dbuf.dptr)
 				continue;
 
+			ZERO_STRUCT(map);
+
 			map.sid = dom_sid_parse_talloc(ctx, kbuf.dptr+strlen(GROUP_PREFIX));
 
-			ret = tdb_unpack(tdb, dbuf.dptr, dbuf.dsize, "ddff",
-							 &map.gid, &map.sid_name_use, &map.nt_name, &map.comment);
-
+			ret = tdb_unpack(tdb, dbuf.dptr, dbuf.dsize, "dd",
+							 &map.gid, &map.sid_name_use);
+			
 			if ( ret == -1 ) {
 				DEBUG(3,("enum_group_mapping: tdb_unpack failure\n"));
 				continue;
 			}
+
+			map.nt_name = talloc_strdup(ctx, dbuf.dptr+ret);
+			map.comment = talloc_strdup(ctx, dbuf.dptr+ret+strlen(map.nt_name));
 
 			db->groupmappings = talloc_realloc(ctx, db->groupmappings, struct samba3_groupmapping, db->groupmap_count+1);
 
@@ -100,9 +105,7 @@ NTSTATUS samba3_read_grouptdb(const char *file, TALLOC_CTX *ctx, struct samba3_g
 			db->groupmappings[db->groupmap_count] = map;
 
 			db->groupmap_count++;
-		} 
-
-		if (strncmp(kbuf.dptr, MEMBEROF_PREFIX, strlen(MEMBEROF_PREFIX)) == 0)
+		} else if (strncmp(kbuf.dptr, MEMBEROF_PREFIX, strlen(MEMBEROF_PREFIX)) == 0)
 		{
 			struct samba3_alias alias;
 			pstring alias_string;

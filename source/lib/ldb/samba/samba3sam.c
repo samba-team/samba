@@ -200,7 +200,7 @@ const struct ldb_map_attribute samba3_attributes[] =
 	{
 		.local_name = "sAMAccountName",
 		.type = MAP_RENAME,
-		.u.rename.remote_name = "cn",
+		.u.rename.remote_name = "uid",
 	},
 
 	/* objectCategory */
