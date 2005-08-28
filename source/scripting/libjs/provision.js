@@ -318,6 +318,28 @@ function searchone(ldb, expression, attribute)
 }
 
 /*
+  modify an account to remove the 
+*/
+function enable_account(ldb, user_dn)
+{
+	var attrs = new Array("userAccountControl");
+	var res = ldb.search(NULL, user_dn, ldb.SCOPE_ONELEVEL, attrs);
+	assert(res.length == 1);
+	var userAccountControl = res[0].userAccountControl;
+	userAccountControl = userAccountControl - 2; /* remove disabled bit */
+	var mod = sprintf("
+dn: %s
+changetype: modify
+replace: userAccountControl
+userAccountControl: %u
+", 
+			  user_dn, userAccountControl);
+	var ok = ldb.modify(mod);
+	return ok;	
+}
+
+
+/*
   add a new user record
 */
 function newuser(username, unixname, password, message)
@@ -385,7 +407,10 @@ member: %s
 		return false;
 	}
 
-	return true;
+	/*
+	  modify the userAccountControl to remove the disabled bit
+	*/
+	return enable_account(ldb, user_dn);
 }
 
 
