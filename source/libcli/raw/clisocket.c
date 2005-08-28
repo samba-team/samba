@@ -326,7 +326,7 @@ BOOL smbcli_sock_connect_byname(struct smbcli_socket *sock, const char *host, in
 	nbt_name.type = name_type;
 	nbt_name.scope = NULL;
 	
-	status = resolve_name(&nbt_name, sock, &address);
+	status = resolve_name(&nbt_name, sock, &address, sock->event.ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}

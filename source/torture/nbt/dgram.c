@@ -294,7 +294,7 @@ BOOL torture_nbt_dgram(void)
 	name.scope = NULL;
 
 	/* do an initial name resolution to find its IP */
-	status = resolve_name(&name, mem_ctx, &address);
+	status = resolve_name(&name, mem_ctx, &address, event_context_find(mem_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to resolve %s - %s\n",
 		       name.name, nt_errstr(status));

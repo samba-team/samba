@@ -24,6 +24,29 @@
 #include "includes.h"
 #include "lib/socket/socket.h"
 #include "lib/events/events.h"
+#include "librpc/gen_ndr/nbt.h"
+
+
+/*
+  async name resolution handler for socket_connect_ev, returnes either
+  an IP address or 'localhost' (which is specially recognised)
+*/
+static NTSTATUS connect_resolve(TALLOC_CTX *mem_ctx, const char *address, 
+				struct event_context *ev, const char **ret_address)
+{
+	struct nbt_name name;
+
+	if (is_ipaddress(address) || strcasecmp("localhost", address) == 0) {
+		*ret_address = address;
+		return NT_STATUS_OK;
+	}
+
+	name.name = address;
+	name.scope = NULL;
+	name.type = NBT_NAME_CLIENT;
+
+	return resolve_name(&name, mem_ctx, ret_address, ev);
+}
 
 
 /*
@@ -52,6 +75,16 @@ NTSTATUS socket_connect_ev(struct socket_context *sock,
 	TALLOC_CTX *tmp_ctx = talloc_new(sock);
 	NTSTATUS status;
 	
+	/*
+	  we resolve separately to ensure that the name resolutions happens
+	  asynchronously
+	*/
+	status = connect_resolve(tmp_ctx, server_address, ev, &server_address);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return status;
+	}
+
 	set_blocking(socket_get_fd(sock), False);
 
 	status = socket_connect(sock, my_address, my_port, 

@@ -28,6 +28,7 @@
 #include "lib/messaging/irpc.h"
 #include "scripting/ejs/ejsrpc.h"
 #include "dlinklist.h"
+#include "lib/events/events.h"
 
 /*
   state of a irpc 'connection'
@@ -69,7 +70,7 @@ static int ejs_irpc_connect(MprVarHandle eid, int argc, char **argv)
 
 	p->server_name = argv[0];
 
-	ev = talloc_find_parent_bytype(mprMemCtx(), struct event_context);
+	ev = event_context_find(p);
 
 	/* create a messaging context, looping as we have no way to
 	   allocate temporary server ids automatically */
@@ -150,7 +151,7 @@ static int ejs_rpc_connect(MprVarHandle eid, int argc, char **argv)
 		cli_credentials_set_anonymous(creds);
 	}
 
-	ev = talloc_find_parent_bytype(mprMemCtx(), struct event_context);
+	ev = event_context_find(mprMemCtx());
 
 	status = dcerpc_pipe_connect(this, &p, binding, 
 				     iface->uuid, iface->if_version, 

@@ -49,6 +49,8 @@ int event_loop_wait(struct event_context *ev);
 uint16_t event_get_fd_flags(struct fd_event *fde);
 void event_set_fd_flags(struct fd_event *fde, uint16_t flags);
 
+struct event_context *event_context_find(TALLOC_CTX *mem_ctx);
+
 /* bits for file descriptor event flags */
 #define EVENT_FD_READ 1
 #define EVENT_FD_WRITE 2

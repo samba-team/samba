@@ -163,7 +163,7 @@ BOOL torture_nbt_register(void)
 	make_nbt_name_server(&name, strupper_talloc(mem_ctx, lp_parm_string(-1, "torture", "host")));
 
 	/* do an initial name resolution to find its IP */
-	status = resolve_name(&name, mem_ctx, &address);
+	status = resolve_name(&name, mem_ctx, &address, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to resolve %s - %s\n",
 		       name.name, nt_errstr(status));
