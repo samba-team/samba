@@ -53,6 +53,7 @@ static NTSTATUS socket_create_with_ops(TALLOC_CTX *mem_ctx, const struct socket_
 
 	(*new_sock)->private_data = NULL;
 	(*new_sock)->ops = ops;
+	(*new_sock)->backend_name = NULL;
 
 	status = (*new_sock)->ops->fn_init((*new_sock));
 	if (!NT_STATUS_IS_OK(status)) {

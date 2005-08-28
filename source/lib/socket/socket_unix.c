@@ -200,6 +200,7 @@ static NTSTATUS unixdom_accept(struct socket_context *sock,
 
 	(*new_sock)->private_data	= NULL;
 	(*new_sock)->ops		= sock->ops;
+	(*new_sock)->backend_name	= sock->backend_name;
 
 	return NT_STATUS_OK;
 }
