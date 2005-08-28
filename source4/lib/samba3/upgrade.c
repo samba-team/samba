@@ -114,15 +114,114 @@ int samba3_upgrade_sam(struct samba3 *samba3, struct ldb_context *ldb, struct ld
 	int count = 0;
 	struct ldb_message *msg;
 	struct ldb_dn *domaindn = NULL;
+	const char *domainname;
+	struct samba3_domainsecrets *domsec;
+	int i;
 	*msgs = NULL;
+
+	domainname = samba3_get_param(samba3, "global", "workgroup");
+
+	if (domainname == NULL) {
+		DEBUG(0, ("No domain name specified in smb.conf!\n"));
+		return -1;
+	}
+
+	domsec = samba3_find_domainsecrets(samba3, domainname);
 
 	/* Domain */	
 	msg = msg_array_add(ldb, msgs, &count);
-
 	/* FIXME: Guess domain DN by taking ldap bind dn? */
 
-	/* FIXME */
-	return -1;
+	ldb_msg_add_string(ldb, msg, "objectClass", "top");
+	ldb_msg_add_string(ldb, msg, "objectClass", "domain");
+	ldb_msg_add_string(ldb, msg, "objectSid", dom_sid_string(msg, &domsec->sid));
+	ldb_msg_add_string(ldb, msg, "objectGUID", GUID_string(msg, &domsec->guid));
+	ldb_msg_add_string(ldb, msg, "name", domainname);
+	ldb_msg_add_string(ldb, msg, "oEMInformation", "Provisioned by Samba4 (upgraded from Samba3)");
+
+	/* account policy as well */
+
+	ldb_msg_add_fmt(ldb, msg, "minPwdLength", "%d", samba3->policy.min_password_length);
+	ldb_msg_add_fmt(ldb, msg, "pwdHistoryLength", "%d", samba3->policy.password_history);
+	ldb_msg_add_fmt(ldb, msg, "minPwdAge", "%d", samba3->policy.minimum_password_age);
+	ldb_msg_add_fmt(ldb, msg, "maxPwdAge", "%d", samba3->policy.maximum_password_age);
+	ldb_msg_add_fmt(ldb, msg, "lockoutDuration", "%d", samba3->policy.lockout_duration);
+	ldb_msg_add_fmt(ldb, msg, "samba3ResetCountMinutes", "%d", samba3->policy.reset_count_minutes);
+	ldb_msg_add_fmt(ldb, msg, "samba3UserMustLogonToChangePassword", "%d", samba3->policy.user_must_logon_to_change_password);
+	ldb_msg_add_fmt(ldb, msg, "samba3BadLockoutMinutes", "%d", samba3->policy.bad_lockout_minutes);
+	ldb_msg_add_fmt(ldb, msg, "samba3DisconnectTime", "%d", samba3->policy.disconnect_time);
+	ldb_msg_add_fmt(ldb, msg, "samba3RefuseMachinePwdChange", "%d", samba3->policy.refuse_machine_password_change);
+	
+	/* Users */
+	for (i = 0; i < samba3->samaccount_count; i++) {
+		struct samba3_samaccount *sam = &samba3->samaccounts[i];
+
+		msg = msg_array_add(ldb, msgs, &count);
+		msg->dn = ldb_dn_build_child(msg, "cn", sam->fullname, domaindn);
+
+		ldb_msg_add_string(ldb, msg, "objectClass", "top");
+		ldb_msg_add_string(ldb, msg, "objectClass", "person");
+		ldb_msg_add_string(ldb, msg, "objectClass", "user");
+		ldb_msg_add_fmt(ldb, msg, "lastLogon", "%d", sam->logon_time);
+		ldb_msg_add_fmt(ldb, msg, "lastLogoff", "%d", sam->logoff_time);
+		ldb_msg_add_string(ldb, msg, "unixName", sam->username);
+		ldb_msg_add_string(ldb, msg, "name", sam->nt_username);
+		ldb_msg_add_string(ldb, msg, "cn", sam->fullname);
+		ldb_msg_add_string(ldb, msg, "description", sam->acct_desc);
+		ldb_msg_add_fmt(ldb, msg, "primaryGroupID", "%d", sam->group_rid); 
+		ldb_msg_add_fmt(ldb, msg, "badPwdcount", "%d", sam->bad_password_count);
+		ldb_msg_add_fmt(ldb, msg, "logonCount", "%d", sam->logon_count);
+		
+		ldb_msg_add_string(ldb, msg, "samba3Domain", sam->domain);
+		if (sam->dir_drive) 
+			ldb_msg_add_string(ldb, msg, "samba3DirDrive", sam->dir_drive);
+
+		if (sam->munged_dial)
+			ldb_msg_add_string(ldb, msg, "samba3MungedDial", sam->munged_dial);
+
+		if (sam->homedir)
+			ldb_msg_add_string(ldb, msg, "samba3Homedir", sam->homedir);
+
+		if (sam->logon_script)
+			ldb_msg_add_string(ldb, msg, "samba3LogonScript", sam->logon_script);
+
+		if (sam->profile_path)
+			ldb_msg_add_string(ldb, msg, "samba3ProfilePath", sam->profile_path);
+
+		if (sam->workstations)
+			ldb_msg_add_string(ldb, msg, "samba3Workstations", sam->workstations);
+
+		ldb_msg_add_fmt(ldb, msg, "samba3KickOffTime", "%d", sam->kickoff_time);
+		ldb_msg_add_fmt(ldb, msg, "samba3BadPwdTime", "%d", sam->bad_password_time);
+		ldb_msg_add_fmt(ldb, msg, "samba3PassLastSetTime", "%d", sam->pass_last_set_time);
+		ldb_msg_add_fmt(ldb, msg, "samba3PassCanChangeTime", "%d", sam->pass_can_change_time);
+		ldb_msg_add_fmt(ldb, msg, "samba3PassMustChangeTime", "%d", sam->pass_must_change_time);
+		ldb_msg_add_fmt(ldb, msg, "samba3Rid", "%d", sam->user_rid); 
+	
+		/* FIXME: Passwords */
+	}
+
+	/* Groups */
+	for (i = 0; i < samba3->group.groupmap_count; i++) {
+		struct samba3_groupmapping *grp = &samba3->group.groupmappings[i];
+
+		msg = msg_array_add(ldb, msgs, &count);
+
+		if (grp->nt_name != NULL) 
+			msg->dn = ldb_dn_build_child(msg, "cn", grp->nt_name, domaindn);
+		else 
+			msg->dn = ldb_dn_build_child(msg, "cn", dom_sid_string(msg, grp->sid), domaindn);
+
+		ldb_msg_add_string(ldb, msg, "objectClass", "top");
+		ldb_msg_add_string(ldb, msg, "objectClass", "group");
+		ldb_msg_add_string(ldb, msg, "description", grp->comment);
+		ldb_msg_add_string(ldb, msg, "cn", grp->nt_name);
+		ldb_msg_add_string(ldb, msg, "objectSid", dom_sid_string(msg, grp->sid));
+		ldb_msg_add_string(ldb, msg, "unixName", "FIXME");
+		ldb_msg_add_fmt(ldb, msg, "samba3SidNameUse", "%d", grp->sid_name_use);
+	}
+
+	return count;
 }
 
 int samba3_upgrade_winbind(struct samba3 *samba3, struct ldb_context *ldb, struct ldb_message ***msgs)

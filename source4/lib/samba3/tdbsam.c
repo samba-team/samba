@@ -271,6 +271,7 @@ NTSTATUS samba3_read_tdbsam(const char *filename, TALLOC_CTX *ctx, struct samba3
 			case 0: ret = init_sam_from_buffer_v0(tdb, &(*accounts)[*count], val); break;
 			case 1: ret = init_sam_from_buffer_v1(tdb, &(*accounts)[*count], val); break;
 			case 2: ret = init_sam_from_buffer_v2(tdb, &(*accounts)[*count], val); break;
+			default: ret = False; break;
 
 		}
 

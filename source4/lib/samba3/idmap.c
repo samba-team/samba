@@ -39,7 +39,7 @@
  Initialise idmap database. 
 *****************************************************************************/
 
-NTSTATUS samba3_read_idmap( const char *fn, TALLOC_CTX *ctx, struct samba3_idmapdb *idmap )
+NTSTATUS samba3_read_idmap(const char *fn, TALLOC_CTX *ctx, struct samba3_idmapdb *idmap)
 {
 	TDB_CONTEXT *tdb;
 	TDB_DATA key, val;
