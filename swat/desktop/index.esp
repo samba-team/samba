@@ -6,7 +6,7 @@ libinclude("base.js");
 <script type="text/javascript" src="/scripting/client/encoder.js"></script>
 <script type="text/javascript" src="/scripting/client/call.js"></script>
 <script type="text/javascript" src="/scripting/client/js_scripts.js"></script>
-<script type="text/javascript" src="/scripting/client/swat.js"></script>
+<script type="text/javascript" src="/scripting/client/desktop.js"></script>
 
 <script type="text/javascript">
 
