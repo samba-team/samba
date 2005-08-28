@@ -26,8 +26,9 @@ OBJ_FILES = \
 		scripting/ejs/smbcalls_rand.o \
 		scripting/ejs/smbcalls_sys.o \
 		scripting/ejs/smbcalls_creds.o \
+		scripting/ejs/smbcalls_samba3.o \
 		scripting/ejs/mprutil.o
-REQUIRED_SUBSYSTEMS = AUTH EJS LIBBASIC EJSRPC MESSAGING
+REQUIRED_SUBSYSTEMS = AUTH EJS LIBBASIC EJSRPC MESSAGING LIBSAMBA3
 # End SUBSYSTEM SMBCALLS
 #######################
 
