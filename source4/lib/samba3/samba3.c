@@ -107,7 +107,7 @@ NTSTATUS samba3_read(const char *smbconf, const char *libdir, TALLOC_CTX *ctx, s
 	samba3_read_grouptdb(dbfile, ctx, &ret->group);
 	SAFE_FREE(dbfile);
 
-	asprintf(&dbfile, "%s/idmap.tdb", libdir);
+	asprintf(&dbfile, "%s/winbindd_idmap.tdb", libdir);
 	samba3_read_idmap(dbfile, ctx, &ret->idmap);
 	SAFE_FREE(dbfile);
 
