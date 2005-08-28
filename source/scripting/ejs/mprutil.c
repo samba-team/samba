@@ -323,7 +323,7 @@ struct MprVar mprNTSTATUS(NTSTATUS status)
 struct MprVar mprDataBlob(DATA_BLOB blob)
 {
 	struct MprVar res;
-	DATA_BLOB *pblob = talloc(mprMemCtx(), DATA_BLOB);
+	struct datablob *pblob = talloc(mprMemCtx(), struct datablob);
 	*pblob = data_blob_talloc(pblob, blob.data, blob.length);
 
 	res = mprObject("DATA_BLOB");
@@ -337,9 +337,9 @@ struct MprVar mprDataBlob(DATA_BLOB blob)
 /*
   return a data blob from a mpr var created using mprDataBlob
 */
-struct data_blob *mprToDataBlob(struct MprVar *v)
+struct datablob *mprToDataBlob(struct MprVar *v)
 {
-	return talloc_get_type(mprGetPtr(v, "blob"), struct data_blob);
+	return talloc_get_type(mprGetPtr(v, "blob"), struct datablob);
 }
 
 /*
