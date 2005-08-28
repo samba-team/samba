@@ -46,7 +46,7 @@ NTSTATUS samba3_read_idmap( const char *fn, TALLOC_CTX *ctx, struct samba3_idmap
 
 	/* Open idmap repository */
 	if (!(tdb = tdb_open(fn, 0, TDB_DEFAULT, O_RDONLY, 0644))) {
-		DEBUG(0, ("idmap_init: Unable to open idmap database\n"));
+		DEBUG(0, ("idmap_init: Unable to open idmap database '%s'\n", fn));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
