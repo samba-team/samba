@@ -28,8 +28,8 @@
 #include "ldb/include/ldb_private.h"
 
 /* FIXME: 
- * sambaSID -> member 
- * sambaSIDList -> member (special!) 
+ * sambaSID -> member  (dn!)
+ * sambaSIDList -> member (dn!) 
  * sambaDomainName -> name 
  * sambaTrustPassword 
  * sambaUnixIdPool 
@@ -59,6 +59,9 @@
  * sambaUserWorkstations
  * sambaMungedDial
  * sambaLogonHours */
+
+/* In Samba4 but not in Samba3:
+*/
 
 static struct ldb_val convert_sid_rid(struct ldb_map_context *map, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
@@ -193,6 +196,117 @@ const struct ldb_map_attribute samba3_attributes[] =
 		.type = MAP_KEEP,
 	},
 
+	/* sAMAccountName -> cn */
+	{
+		.local_name = "sAMAccountName",
+		.type = MAP_RENAME,
+		.u.rename.remote_name = "cn",
+	},
+
+	/* objectCategory */
+	{
+		.local_name = "objectCategory",
+		.type = MAP_IGNORE,
+	},
+
+	/* objectGUID */
+	{
+		.local_name = "objectGUID",
+		.type = MAP_IGNORE,
+	},
+
+	/* objectVersion */
+	{
+		.local_name = "objectVersion",
+		.type = MAP_IGNORE,
+	},
+
+	/* codePage */
+	{ 
+		.local_name = "codePage",
+		.type = MAP_IGNORE,
+	},
+
+	/* dNSHostName */
+	{
+		.local_name = "dNSHostName",
+		.type = MAP_IGNORE,
+	},
+
+
+	/* dnsDomain */
+	{
+		.local_name = "dnsDomain",
+		.type = MAP_IGNORE,
+	},
+
+	/* dnsRoot */
+	{
+		.local_name = "dnsRoot",
+		.type = MAP_IGNORE,
+	},
+
+	/* countryCode */
+	{
+		.local_name = "countryCode",
+		.type = MAP_IGNORE,
+	},
+
+	/* nTMixedDomain */
+	{ 
+		.local_name = "nTMixedDomain",
+		.type = MAP_IGNORE,
+	},
+
+	/* operatingSystem */
+	{ 
+		.local_name = "operatingSystem",
+		.type = MAP_IGNORE,
+	},
+
+	/* operatingSystemVersion */
+	{
+		.local_name = "operatingSystemVersion",
+		.type = MAP_IGNORE,
+	},
+
+
+	/* servicePrincipalName */
+	{
+		.local_name = "servicePrincipalName",
+		.type = MAP_IGNORE,
+	},
+
+	/* msDS-Behavior-Version */
+	{
+		.local_name = "msDS-Behavior-Version",
+		.type = MAP_IGNORE,
+	},
+
+	/* msDS-KeyVersionNumber */
+	{
+		.local_name = "msDS-KeyVersionNumber",
+		.type = MAP_IGNORE,
+	},
+
+	/* msDs-masteredBy */
+	{
+		.local_name = "msDs-masteredBy",
+		.type = MAP_IGNORE,
+	},
+
+	/* ou */
+	{
+		.local_name = "ou",
+		.type = MAP_KEEP,
+	},
+
+	/* dc */
+	{
+		.local_name = "dc",
+		.type = MAP_KEEP,
+	},
+
 	/* description */
 	{
 		.local_name = "description",
@@ -212,12 +326,295 @@ const struct ldb_map_attribute samba3_attributes[] =
 		.type = MAP_RENAME,
 		.u.rename.remote_name = "sambaPwdLastSet",
 	},	
-	
-	/* cn -> cn */
+
+	/* accountExpires */
 	{
-		.local_name = "cn",
-		.type = MAP_KEEP,
+		.local_name = "accountExpires", 
+		.type = MAP_IGNORE,
 	},
+
+	/* adminCount */
+	{
+		.local_name = "adminCount",
+		.type = MAP_IGNORE,
+	},
+
+	/* canonicalName */
+	{
+		.local_name = "canonicalName",
+		.type = MAP_IGNORE,
+	},
+
+	/* createTimestamp */
+	{
+		.local_name = "createTimestamp",
+		.type = MAP_IGNORE,
+	},
+	
+	/* creationTime */
+	{
+		.local_name = "creationTime",
+		.type = MAP_IGNORE,
+	},
+	
+	/* dMDLocation */
+	{
+		.local_name = "dMDLocation",
+		.type = MAP_IGNORE,
+	},
+	
+	/* fSMORoleOwner */
+	{
+		.local_name = "fSMORoleOwner",
+		.type = MAP_IGNORE,
+	},
+	
+	/* forceLogoff */
+	{
+		.local_name = "forceLogoff",
+		.type = MAP_IGNORE,
+	},
+	
+	/* instanceType */
+	{
+		.local_name = "instanceType",
+		.type = MAP_IGNORE,
+	},
+	
+	/* invocationId */
+	{
+		.local_name = "invocationId",
+		.type = MAP_IGNORE,
+	},
+	
+	/* isCriticalSystemObject */
+	{
+		.local_name = "isCriticalSystemObject",
+		.type = MAP_IGNORE,
+	},
+	
+	/* localPolicyFlags */
+	{
+		.local_name = "localPolicyFlags",
+		.type = MAP_IGNORE,
+	},
+	
+	/* lockOutObservationWindow */
+	{
+		.local_name = "lockOutObservationWindow",
+		.type = MAP_IGNORE,
+	},
+
+	/* lockoutDuration */
+	{
+		.local_name = "lockoutDuration",
+		.type = MAP_IGNORE,
+	},
+
+	/* lockoutThreshold */
+	{
+		.local_name = "lockoutThreshold",
+		.type = MAP_IGNORE,
+	},
+
+	/* logonCount */
+	{
+		.local_name = "logonCount",
+		.type = MAP_IGNORE,
+	},
+
+	/* masteredBy */
+	{
+		.local_name = "masteredBy",
+		.type = MAP_IGNORE,
+	},
+
+	/* maxPwdAge */
+	{
+		.local_name = "maxPwdAge",
+		.type = MAP_IGNORE,
+	},
+
+	/* member */
+	{
+		.local_name = "member",
+		.type = MAP_IGNORE,
+	},
+
+	/* memberOf */
+	{
+		.local_name = "memberOf",
+		.type = MAP_IGNORE,
+	},
+
+	/* minPwdAge */
+	{
+		.local_name = "minPwdAge",
+		.type = MAP_IGNORE,
+	},
+
+	/* minPwdLength */
+	{
+		.local_name = "minPwdLength",
+		.type = MAP_IGNORE,
+	},
+
+	/* modifiedCount */
+	{
+		.local_name = "modifiedCount",
+		.type = MAP_IGNORE,
+	},
+
+	/* modifiedCountAtLastProm */
+	{
+		.local_name = "modifiedCountAtLastProm",
+		.type = MAP_IGNORE,
+	},
+
+	/* modifyTimestamp */
+	{
+		.local_name = "modifyTimestamp",
+		.type = MAP_IGNORE,
+	},
+
+	/* nCName */
+	{
+		.local_name = "nCName",
+		.type = MAP_IGNORE,
+	},
+
+	/* nETBIOSName */
+	{
+		.local_name = "nETBIOSName",
+		.type = MAP_IGNORE,
+	},
+
+	/* oEMInformation */
+	{
+		.local_name = "oEMInformation",
+		.type = MAP_IGNORE,
+	},
+
+	/* privilege */
+	{
+		.local_name = "privilege",
+		.type = MAP_IGNORE,
+	},
+
+	/* pwdHistoryLength */
+	{
+		.local_name = "pwdHistoryLength",
+		.type = MAP_IGNORE,
+	},
+
+	/* pwdProperties */
+	{
+		.local_name = "pwdProperties",
+		.type = MAP_IGNORE,
+	},
+
+	/* rIDAvailablePool */
+	{
+		.local_name = "rIDAvailablePool",
+		.type = MAP_IGNORE,
+	},
+
+	/* revision */
+	{
+		.local_name = "revision",
+		.type = MAP_IGNORE,
+	},
+
+	/* ridManagerReference */
+	{
+		.local_name = "ridManagerReference",
+		.type = MAP_IGNORE,
+	},
+
+	/* sAMAccountType */
+	{
+		.local_name = "sAMAccountType",
+		.type = MAP_IGNORE,
+	},
+
+	/* sPNMappings */
+	{
+		.local_name = "sPNMappings",
+		.type = MAP_IGNORE,
+	},
+
+	/* serverReference */
+	{
+		.local_name = "serverReference",
+		.type = MAP_IGNORE,
+	},
+
+	/* serverState */
+	{
+		.local_name = "serverState",
+		.type = MAP_IGNORE,
+	},
+
+	/* showInAdvancedViewOnly */
+	{
+		.local_name = "showInAdvancedViewOnly",
+		.type = MAP_IGNORE,
+	},
+
+	/* subRefs */
+	{
+		.local_name = "subRefs",
+		.type = MAP_IGNORE,
+	},
+
+	/* systemFlags */
+	{
+		.local_name = "systemFlags",
+		.type = MAP_IGNORE,
+	},
+
+	/* uASCompat */
+	{
+		.local_name = "uASCompat",
+		.type = MAP_IGNORE,
+	},
+
+	/* uSNChanged */
+	{
+		.local_name = "uSNChanged",
+		.type = MAP_IGNORE,
+	},
+
+	/* uSNCreated */
+	{
+		.local_name = "uSNCreated",
+		.type = MAP_IGNORE,
+	},
+
+	/* unicodePwd */
+	{
+		.local_name = "unicodePwd",
+		.type = MAP_IGNORE,
+	},
+
+	/* userAccountControl */
+	{
+		.local_name = "userAccountControl",
+		.type = MAP_IGNORE,
+	},
+
+	/* whenChanged */
+	{
+		.local_name = "whenChanged",
+		.type = MAP_IGNORE,
+	},
+
+	/* whenCreated */
+	{
+		.local_name = "whenCreated",
+		.type = MAP_IGNORE,
+	},
+
 	{
 		.local_name = NULL,
 	}
