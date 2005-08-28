@@ -1,0 +1,40 @@
+<% page_header("columns", "Upgrade", "install"); 
+
+  include("/scripting/forms.js");
+  libinclude("base.js");
+  libinclude("provision.js");
+  libinclude("samba3.js");
+%>
+
+<h1>Import from Samba3</h1>
+
+<%
+var f = FormObj("Import from Samba3", 0, 2);
+var i;
+
+f.add("SMBCONF", "smb.conf file");
+f.add("LIBDIR", "Lib directory");
+f.submit[0] = "Import";
+f.submit[1] = "Cancel";
+
+if (form['submit'] == "Cancel") {
+	redirect("/");
+}
+
+if (form['submit'] == "Import") {
+	for (r in form) {
+		subobj[r] = form[r];
+	}
+}
+
+f.element[0].value = "/etc/samba/smb.conf";
+f.element[1].value = "/var/lib/samba";
+
+if (form['submit'] == "import") {
+	//		provision(subobj, writefln, false);
+} else {
+	f.display();
+}
+%>
+
+<% page_footer(); %>

@@ -1,6 +1,6 @@
 Three possible viable approaches:
  1) TDB conversion approach. Read in TDB dump out LDIF (one-way)
-  - samr.ldb: from tdbsam/smbpasswd, account_policy.tdb, secrets.tdb, group_mapping.tdb, privilege.tdb
+  - samr.ldb: from tdbsam/smbpasswd, account_policy.tdb, secrets.tdb, group_mapping.tdb
   - registry.ldb: from registry.tdb
   - wins.ldif: from wins.tdb/wins.dat
   - smb.conf/ea's: generated from the old smb.conf + share_info.tdb
@@ -29,3 +29,13 @@ Three possible viable approaches:
   - convert smb.conf (using Jerry's registry hack)
 
 (going with a combination of 1 and 2)
+
+ldb mapping backend:
+ - do search in new and old (mapped) backend and merge results?
+
+Upgrade process:
+ - take libdir & smb.conf
+ - read various tdb files / old smb.conf 
+ - write new smb.conf (ejs?)
+  - list of parameters to keep.. generate some of the others
+ - add generated LDIF (ejs?)
