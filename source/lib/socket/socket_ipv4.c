@@ -46,6 +46,8 @@ static NTSTATUS ipv4_init(struct socket_context *sock)
 		return map_nt_error_from_unix(errno);
 	}
 
+	sock->backend_name = "ipv4";
+
 	return NT_STATUS_OK;
 }
 

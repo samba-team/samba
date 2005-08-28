@@ -74,15 +74,20 @@ NTSTATUS socket_connect_ev(struct socket_context *sock,
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(sock);
 	NTSTATUS status;
-	
+
 	/*
 	  we resolve separately to ensure that the name resolutions happens
 	  asynchronously
+
+	  the check for ipv4 is ugly, but how to do it better? We don't want
+	  to try to resolve unix pathnames here
 	*/
-	status = connect_resolve(tmp_ctx, server_address, ev, &server_address);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(tmp_ctx);
-		return status;
+	if (strcmp(sock->backend_name, "ipv4") == 0) {
+		status = connect_resolve(tmp_ctx, server_address, ev, &server_address);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(tmp_ctx);
+			return status;
+		}
 	}
 
 	set_blocking(socket_get_fd(sock), False);

@@ -102,6 +102,7 @@ struct socket_context {
 
 	void *private_data;
 	const struct socket_ops *ops;
+	const char *backend_name;
 };
 
 

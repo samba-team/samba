@@ -44,6 +44,8 @@ static NTSTATUS ipv6_tcp_init(struct socket_context *sock)
 		return map_nt_error_from_unix(errno);
 	}
 
+	sock->backend_name = "ipv6";
+
 	return NT_STATUS_OK;
 }
 
