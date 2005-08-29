@@ -68,17 +68,10 @@ data:: %s", keydn, rv.value, rv.type, base64(rv.data));
 	return ldif;
 }
 
-function upgrade_sam_domain(samba3)
+function upgrade_sam_policy(samba3,dn)
 {
 	var ldif = sprintf("
 dn: %s
-dc: FIXME
-objectClass: top
-objectClass: domain
-objectSid: %s
-objectGUID: %s
-name: %s
-oEMInformation: Provisioned by Samba4 (upgraded from Samba3)
 minPwdLength: %d
 pwdHistoryLength: %d
 minPwdAge: %d
@@ -90,7 +83,7 @@ samba3BadLockoutMinutes: %d
 samba3DisconnectTime: %d
 samba3RefuseMachinePwdChange: %d
 
-", domaindn, domsec.sid, domsec.guid, domainname, samba3.policy.min_password_length, 
+", dn, samba3.policy.min_password_length, 
 	samba3.policy.password_history, samba3.policy.minimum_password_age,
 	samba3.policy.maximum_password_age, samba3.policy.lockout_duration,
 	samba3.policy.reset_count_minutes, samba3.policy.user_must_logon_to_change_password,
@@ -156,33 +149,6 @@ samba3SidNameUse: %d", grp.nt_name, domaindn,
 grp.comment, grp.nt_name, grp.sid, grp.sid_name_use);
 
 	return ldif;
-}
-
-function upgrade_sam(samba3,domaindn)
-{
-	domainname = samba3.get_param("global", "workgroup");
-
-	if (domainname == undefined) {
-		DEBUG(0, ("No domain name specified in smb.conf!\n"));
-		return -1;
-	}
-
-	domsec = samba3.find_domainsecrets(domainname);
-
-	var ldif = upgrade_sam_domain(samba3,domaindn);
-
-	/* Users */
-	for (var i in samba3.samaccounts) {
-		ldif = ldif + upgrade_sam_account(samba3.samaccounts[i],domaindn);
-	}
-
-	/* Groups */
-	for (var i in samba3.group.groupmappings) {
-		ldif = ldif + upgrade_sam_group(samba3.group.groupmappings[i],domaindn);
-
-	}
-
-	return count;
 }
 
 function upgrade_winbind(samba3,domaindn)
@@ -277,4 +243,125 @@ function upgrade_provision(samba3)
 	rdn_list = split(".", subobj.REALM);
 	subobj.RDN_DC       = rdn_list[0];
 	return subobj;
+}
+
+var keep = new Array(
+	"dos charset", 
+	"unix charset",
+	"display charset",
+	"comment",
+	"path",
+	"directory",
+	"workgroup",
+	"realm",
+	"netbios name",
+	"netbios aliases",
+	"netbios scope",
+	"server string",
+	"interfaces",
+	"bind interfaces only",
+	"security",
+	"auth methods",
+	"encrypt passwords",
+	"null passwords",
+	"obey pam restrictions",
+	"password server",
+	"smb passwd file",
+	"sam database",
+	"spoolss database",
+	"wins database",
+	"private dir",
+	"passwd chat",
+	"password level",
+	"lanman auth",
+	"ntlm auth",
+	"client NTLMv2 auth",
+	"client lanman auth",
+	"client plaintext auth",
+	"read only",
+	"hosts allow",
+	"hosts deny",
+	"log level",
+	"debuglevel",
+	"log file",
+	"smb ports",
+	"nbt port",
+	"dgram port",
+	"cldap port",
+	"krb5 port",
+	"web port",
+	"tls enabled",
+	"tls keyfile",
+	"tls certfile",
+	"tls cafile",
+	"tls crlfile",
+	"swat directory",
+	"large readwrite",
+	"max protocol",
+	"min protocol",
+	"unicode",
+	"read raw",
+	"write raw",
+	"disable netbios",
+	"nt status support",
+	"announce version",
+	"announce as",
+	"max mux",
+	"max xmit",
+	"name resolve order",
+	"max wins ttl",
+	"min wins ttl",
+	"time server",
+	"unix extensions",
+	"use spnego",
+	"server signing",
+	"client signing",
+	"rpc big endian",
+	"max connections",
+	"paranoid server security",
+	"socket options",
+	"strict sync",
+	"case insensitive filesystem",
+	"max print jobs",
+	"printable",
+	"print ok",
+	"printer name",
+	"printer",
+	"map system",
+	"map hidden",
+	"map archive",
+	"domain logons",
+	"preferred master",
+	"prefered master",
+	"local master",
+	"domain master",
+	"browseable",
+	"browsable",
+	"wins server",
+	"wins support",
+	"csc policy",
+	"strict locking",
+	"config file",
+	"preload",
+	"auto services",
+	"lock dir",
+	"lock directory",
+	"pid directory",
+	"js include",
+	"setup directory",
+	"socket address",
+	"-valid",
+	"copy",
+	"include",
+	"available",
+	"volume",
+	"fstype",
+	"panic action",
+	"msdfs root",
+	"host msdfs",
+	"winbind separator");
+
+function upgrade_smbconf(samba3)
+{
+	//FIXME
 }
