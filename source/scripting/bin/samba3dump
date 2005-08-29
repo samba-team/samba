@@ -155,10 +155,9 @@ function print_samba3_winsdb(samba3)
 
 function print_samba3_groupmappings(groupdb)
 {
-	var i;
 	print_header("Group Mappings");
 	
-	for (i in groupdb.groupmappings) {
+	for (var i in groupdb.groupmappings) {
 		var g = groupdb.groupmappings[i];
 		printf("\t--- Group: %s ---\n", g.nt_name);
 		printf("\tComment: %s\n", g.comment);
