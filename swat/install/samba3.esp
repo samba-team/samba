@@ -9,7 +9,7 @@
   include("/scripting/forms.js");
   libinclude("base.js");
   libinclude("provision.js");
-  libinclude("samba3.js");
+  libinclude("upgrade.js");
 %>
 
 <h1>Import from Samba3</h1>
@@ -20,10 +20,9 @@ if (form['submit'] == "Cancel") {
 }
 
 if (form['submit'] == "Import") {
-	var samba3 = samba3_read(form['SMBCONF'], form['LIBDIR']);
+	var samba3 = samba3_read(form['LIBDIR'], form['SMBCONF']);
 
 	var subobj = upgrade_provision(samba3);
-
 	var f = FormObj("Import from Samba3", 0, 2);
 
 	f.add("REALM", "Realm");
@@ -41,30 +40,30 @@ if (form['submit'] == "Import") {
 		f.element[i].value = subobj[f.element[i].name];
 	}
 
+	f.add("SMBCONF", "", "hidden", form['SMBCONF']);
+	f.add("LIBDIR", "", "hidden", form['LIBDIR']);
+
 	f.submit[0] = "Continue";
 	f.submit[1] = "Cancel";
 	f.display();	
 } else if (form['submit'] == "Continue") {
-	var subobj = Object();
+	var samba3 = samba3_read(form['LIBDIR'], form['SMBCONF']);
+	assert(samba3 != undefined);
+	var subobj = upgrade_provision(samba3);
 	for (r in form) {
 		subobj[r] = form[r];
 	}
-
-	provision(subobj, writefln, false);
-
-	var samba3 = samba3_read(form['SMBCONF'], form['LIBDIR']);
+	provision(subobj, writefln, true);
 	upgrade(subobj, samba3, writefln);
 } else {
 	var f = FormObj("Import from Samba3", 0, 2);
 
-	f.add("SMBCONF", "smb.conf file");
-	f.add("LIBDIR", "Lib directory");
+	f.add("SMBCONF", "smb.conf file", "text", "/etc/samba/smb.conf");
+	f.add("LIBDIR", "Lib directory", "text", "/var/lib/samba");
 	f.submit[0] = "Import";
 	f.submit[1] = "Cancel";
 
-	f.element[0].value = "/etc/samba/smb.conf";
-	f.element[1].value = "/var/lib/samba";
-
+	write('<p>Warning: This will erase your current configuration!</p>');
 	f.display();
 }
 %>
