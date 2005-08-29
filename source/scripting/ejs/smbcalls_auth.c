@@ -119,6 +119,9 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 		ejsSetErrorMsg(eid, "userAuth requires a 'creds' element");
 		return -1;
 	}
+
+ 	tmp_ctx = talloc_new(mprMemCtx());	
+	
 	username    = cli_credentials_get_username(creds, tmp_ctx);
 	password    = cli_credentials_get_password(creds);
 	domain      = cli_credentials_get_domain(creds);
@@ -126,10 +129,10 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 
 	if (username == NULL || password == NULL || domain == NULL) {
 		mpr_Return(eid, mprCreateUndefinedVar());
+		talloc_free(tmp_ctx);
 		return 0;
 	}
 
- 	tmp_ctx = talloc_new(mprMemCtx());	
 	auth = mprObject("auth");
 
 	if (domain && strcmp("System User", domain) == 0) {
