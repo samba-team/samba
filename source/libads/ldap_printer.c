@@ -265,8 +265,7 @@ WERROR get_remote_printer_publishing_data(struct cli_state *cli,
 {
 	WERROR result;
 	char *printername, *servername;
-	REGVAL_CTR dsdriver_ctr, dsspooler_ctr;
-	BOOL got_dsdriver = False, got_dsspooler = False;
+	REGVAL_CTR *dsdriver_ctr, *dsspooler_ctr;
 	uint32 i;
 	POLICY_HND pol;
 
@@ -286,36 +285,44 @@ WERROR get_remote_printer_publishing_data(struct cli_state *cli,
 		return result;
 	}
 	
-	result = cli_spoolss_enumprinterdataex(cli, mem_ctx, &pol, SPOOL_DSDRIVER_KEY, &dsdriver_ctr);
+	if ( !(dsdriver_ctr = TALLOC_ZERO_P( mem_ctx, REGVAL_CTR )) ) 
+		return WERR_NOMEM;
+
+	result = cli_spoolss_enumprinterdataex(cli, mem_ctx, &pol, SPOOL_DSDRIVER_KEY, dsdriver_ctr);
 
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(3, ("Unable to do enumdataex on %s, error is %s.\n",
 			  printername, dos_errstr(result)));
 	} else {
+		uint32 num_values = regval_ctr_numvals( dsdriver_ctr );
 
 		/* Have the data we need now, so start building */
-		got_dsdriver = True;
-		for (i=0; i < dsdriver_ctr.num_values; i++)
-			map_regval_to_ads(mem_ctx, mods, 
-					  dsdriver_ctr.values[i]);
+		for (i=0; i < num_values; i++) {
+			map_regval_to_ads(mem_ctx, mods, dsdriver_ctr->values[i]);
+		}
 	}
 	
-	result = cli_spoolss_enumprinterdataex(cli, mem_ctx, &pol, SPOOL_DSSPOOLER_KEY, &dsspooler_ctr);
+	if ( !(dsspooler_ctr = TALLOC_ZERO_P( mem_ctx, REGVAL_CTR )) )
+		return WERR_NOMEM;
+
+	result = cli_spoolss_enumprinterdataex(cli, mem_ctx, &pol, SPOOL_DSSPOOLER_KEY, dsspooler_ctr);
 
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(3, ("Unable to do enumdataex on %s, error is %s.\n",
 			  printername, dos_errstr(result)));
 	} else {
-		got_dsspooler = True;
-		for (i=0; i < dsspooler_ctr.num_values; i++)
-			map_regval_to_ads(mem_ctx, mods, 
-					  dsspooler_ctr.values[i]);
+		uint32 num_values = regval_ctr_numvals( dsspooler_ctr );
+
+		for (i=0; i<num_values; i++) {
+			map_regval_to_ads(mem_ctx, mods, dsspooler_ctr->values[i]);
+		}
 	}
 	
 	ads_mod_str(mem_ctx, mods, SPOOL_REG_PRINTERNAME, printer);
 
-	if (got_dsdriver) regval_ctr_destroy(&dsdriver_ctr);
-	if (got_dsspooler) regval_ctr_destroy(&dsspooler_ctr);
+	TALLOC_FREE( dsdriver_ctr );
+	TALLOC_FREE( dsspooler_ctr );
+
 	cli_spoolss_close_printer(cli, mem_ctx, &pol);
 
 	return result;
@@ -328,9 +335,9 @@ BOOL get_local_printer_publishing_data(TALLOC_CTX *mem_ctx,
 	uint32 key,val;
 
 	for (key=0; key < data->num_keys; key++) {
-		REGVAL_CTR ctr = data->keys[key].values;
-		for (val=0; val < ctr.num_values; val++)
-			map_regval_to_ads(mem_ctx, mods, ctr.values[val]);
+		REGVAL_CTR *ctr = data->keys[key].values;
+		for (val=0; val < ctr->num_values; val++)
+			map_regval_to_ads(mem_ctx, mods, ctr->values[val]);
 	}
 	return True;
 }

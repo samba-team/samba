@@ -331,28 +331,35 @@ static BOOL write_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 			         const char *parentpath )
 {
 	REGF_NK_REC *key, *subkey;
-	REGVAL_CTR values;
-	REGSUBKEY_CTR subkeys;
+	REGVAL_CTR *values;
+	REGSUBKEY_CTR *subkeys;
 	int i;
 	pstring path;
 
-	regsubkey_ctr_init( &subkeys );
-	regval_ctr_init( &values );
-	
+	if ( !( subkeys = TALLOC_ZERO_P( infile->mem_ctx, REGSUBKEY_CTR )) ) {
+		DEBUG(0,("write_registry_tree: talloc() failed!\n"));
+		return False;
+	}
+
+	if ( !(values = TALLOC_ZERO_P( subkeys, REGVAL_CTR )) ) {
+		DEBUG(0,("write_registry_tree: talloc() failed!\n"));
+		return False;
+	}
+
 	/* copy values into the REGVAL_CTR */
 	
 	for ( i=0; i<nk->num_values; i++ ) {
-		regval_ctr_addvalue( &values, nk->values[i].valuename, nk->values[i].type,
+		regval_ctr_addvalue( values, nk->values[i].valuename, nk->values[i].type,
 			nk->values[i].data, (nk->values[i].data_size & ~VK_DATA_IN_OFFSET) );
 	}
 
 	/* copy subkeys into the REGSUBKEY_CTR */
 	
 	while ( (subkey = regfio_fetch_subkey( infile, nk )) ) {
-		regsubkey_ctr_addkey( &subkeys, subkey->keyname );
+		regsubkey_ctr_addkey( subkeys, subkey->keyname );
 	}
 	
-	key = regfio_write_key( outfile, nk->keyname, &values, &subkeys, nk->sec_desc->sec_desc, parent );
+	key = regfio_write_key( outfile, nk->keyname, values, subkeys, nk->sec_desc->sec_desc, parent );
 
 	/* write each one of the subkeys out */
 
@@ -362,8 +369,7 @@ static BOOL write_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 		write_registry_tree( infile, subkey, key, outfile, path );
 	}
 
-	regval_ctr_destroy( &values );
-	regsubkey_ctr_destroy( &subkeys );
+	TALLOC_FREE( subkeys );
 
 	d_printf("[%s]\n", path );
 	

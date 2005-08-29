@@ -125,7 +125,7 @@ static WERROR open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY *
 {
 	REGISTRY_KEY 	*regkey = NULL;
 	WERROR     	result = WERR_OK;
-	REGSUBKEY_CTR	subkeys;
+	REGSUBKEY_CTR	*subkeys = NULL;
 	pstring		subkeyname2;
 	int		subkey_len;
 	
@@ -173,21 +173,25 @@ static WERROR open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY *
 	if ( !(regkey->hook = reghook_cache_find( regkey->name )) ) {
 		DEBUG(0,("open_registry_key: Failed to assigned a REGISTRY_HOOK to [%s]\n",
 			regkey->name ));
-		return WERR_BADFILE;
+		result = WERR_BADFILE;
+		goto done;
 	}
 	
 	/* check if the path really exists; failed is indicated by -1 */
 	/* if the subkey count failed, bail out */
 
-	regsubkey_ctr_init( &subkeys );
-	
-	if ( fetch_reg_keys( regkey, &subkeys ) == -1 )  {
+	if ( !(subkeys = TALLOC_ZERO_P( p->mem_ctx, REGSUBKEY_CTR )) ) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+
+	if ( fetch_reg_keys( regkey, subkeys ) == -1 )  {
 		result = WERR_BADFILE;
 		goto done;
 	}
 		
 	if ( !create_policy_hnd( p, hnd, free_regkey_info, regkey ) ) {
-			result = WERR_BADFILE; 
+		result = WERR_BADFILE; 
 		goto done;
 	}
 	
@@ -198,7 +202,7 @@ static WERROR open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY *
 done:
 	/* clean up */
 
-	regsubkey_ctr_destroy( &subkeys );
+	TALLOC_FREE( subkeys );
 	
 	if ( ! NT_STATUS_IS_OK(result) )
 		SAFE_FREE( regkey );
@@ -235,31 +239,32 @@ static BOOL get_subkey_information( REGISTRY_KEY *key, uint32 *maxnum, uint32 *m
 {
 	int 		num_subkeys, i;
 	uint32 		max_len;
-	REGSUBKEY_CTR 	subkeys;
+	REGSUBKEY_CTR 	*subkeys;
 	uint32 		len;
 	
 	if ( !key )
 		return False;
 
-	regsubkey_ctr_init( &subkeys );	
-	   
-	if ( fetch_reg_keys( key, &subkeys ) == -1 )
+	if ( !(subkeys = TALLOC_ZERO_P( NULL, REGSUBKEY_CTR )) )
+		return False;
+
+	if ( fetch_reg_keys( key, subkeys ) == -1 )
 		return False;
 
 	/* find the longest string */
 	
 	max_len = 0;
-	num_subkeys = regsubkey_ctr_numkeys( &subkeys );
+	num_subkeys = regsubkey_ctr_numkeys( subkeys );
 	
 	for ( i=0; i<num_subkeys; i++ ) {
-		len = strlen( regsubkey_ctr_specific_key(&subkeys, i) );
+		len = strlen( regsubkey_ctr_specific_key(subkeys, i) );
 		max_len = MAX(max_len, len);
 	}
 
 	*maxnum = num_subkeys;
 	*maxlen = max_len*2;
 	
-	regsubkey_ctr_destroy( &subkeys );
+	TALLOC_FREE( subkeys );
 	
 	return True;
 }
@@ -271,7 +276,7 @@ static BOOL get_subkey_information( REGISTRY_KEY *key, uint32 *maxnum, uint32 *m
 static BOOL get_value_information( REGISTRY_KEY *key, uint32 *maxnum, 
                                     uint32 *maxlen, uint32 *maxsize )
 {
-	REGVAL_CTR 	values;
+	REGVAL_CTR 	*values;
 	REGISTRY_VALUE	*val;
 	uint32 		sizemax, lenmax;
 	int 		i, num_values;
@@ -279,29 +284,30 @@ static BOOL get_value_information( REGISTRY_KEY *key, uint32 *maxnum,
 	if ( !key )
 		return False;
 
-	regval_ctr_init( &values );
+	if ( !(values = TALLOC_ZERO_P( NULL, REGVAL_CTR )) )
+		return False;
 	
-	if ( fetch_reg_values( key, &values ) == -1 )
+	if ( fetch_reg_values( key, values ) == -1 )
 		return False;
 	
 	lenmax = sizemax = 0;
-	num_values = regval_ctr_numvals( &values );
+	num_values = regval_ctr_numvals( values );
 	
-	val = regval_ctr_specific_value( &values, 0 );
+	val = regval_ctr_specific_value( values, 0 );
 	
 	for ( i=0; i<num_values && val; i++ ) 
 	{
 		lenmax  = MAX(lenmax,  val->valuename ? strlen(val->valuename)+1 : 0 );
 		sizemax = MAX(sizemax, val->size );
 		
-		val = regval_ctr_specific_value( &values, i );
+		val = regval_ctr_specific_value( values, i );
 	}
 
 	*maxnum   = num_values;
 	*maxlen   = lenmax;
 	*maxsize  = sizemax;
 	
-	regval_ctr_destroy( &values );
+	TALLOC_FREE( values );
 	
 	return True;
 }
@@ -422,7 +428,7 @@ WERROR _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY 
 	
 	/* check granted access first; what is the correct mask here? */
 
-	if ( !(parent->access_granted & (SEC_RIGHTS_ENUM_SUBKEYS|SEC_RIGHTS_CREATE_SUBKEY)) )
+	if ( !(parent->access_granted & (SEC_RIGHTS_ENUM_SUBKEYS|SEC_RIGHTS_CREATE_SUBKEY|SEC_RIGHTS_QUERY_VALUE|SEC_RIGHTS_SET_VALUE)) )
 		return WERR_ACCESS_DENIED;
 	
 	/* open the key first to get the appropriate REGISTRY_HOOK 
@@ -457,7 +463,7 @@ WERROR _reg_query_value(pipes_struct *p, REG_Q_QUERY_VALUE *q_u, REG_R_QUERY_VAL
 	fstring 		name;
 	REGISTRY_KEY 		*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
 	REGISTRY_VALUE		*val = NULL;
-	REGVAL_CTR		regvals;
+	REGVAL_CTR		*regvals;
 	int			i;
 
 	if ( !regkey )
@@ -470,7 +476,8 @@ WERROR _reg_query_value(pipes_struct *p, REG_Q_QUERY_VALUE *q_u, REG_R_QUERY_VAL
 
 	DEBUG(5,("_reg_info: looking up value: [%s]\n", name));
 
-	regval_ctr_init( &regvals );
+	if ( !(regvals = TALLOC_P( p->mem_ctx, REGVAL_CTR )) ) 
+		return WERR_NOMEM;
 	
 	/* Handle QueryValue calls on HKEY_PERFORMANCE_DATA */
 	if(regkey->type == REG_KEY_HKPD) 
@@ -481,9 +488,9 @@ WERROR _reg_query_value(pipes_struct *p, REG_Q_QUERY_VALUE *q_u, REG_R_QUERY_VAL
 			prs_struct prs_hkpd;
 			prs_init(&prs_hkpd, q_u->bufsize, p->mem_ctx, MARSHALL);
 			status = reg_perfcount_get_hkpd(&prs_hkpd, q_u->bufsize, &outbuf_len, NULL);
-			regval_ctr_addvalue(&regvals, "HKPD", REG_BINARY,
+			regval_ctr_addvalue(regvals, "HKPD", REG_BINARY,
 					    prs_hkpd.data_p, outbuf_len);
-			val = dup_registry_value(regval_ctr_specific_value(&regvals, 0));
+			val = dup_registry_value(regval_ctr_specific_value(regvals, 0));
 			prs_mem_free(&prs_hkpd);
 		}
 		else if(strequal(name, "Counter 009"))
@@ -495,10 +502,10 @@ WERROR _reg_query_value(pipes_struct *p, REG_Q_QUERY_VALUE *q_u, REG_R_QUERY_VAL
 			buffer = NULL;
 			base_index = reg_perfcount_get_base_index();
 			buffer_size = reg_perfcount_get_counter_names(base_index, &buffer);
-			regval_ctr_addvalue(&regvals, "Counter 009", 
+			regval_ctr_addvalue(regvals, "Counter 009", 
 					    REG_MULTI_SZ, buffer, buffer_size);
 			
-			val = dup_registry_value(regval_ctr_specific_value(&regvals, 0));
+			val = dup_registry_value(regval_ctr_specific_value(regvals, 0));
 			
 			if(buffer_size > 0)
 			{
@@ -515,10 +522,10 @@ WERROR _reg_query_value(pipes_struct *p, REG_Q_QUERY_VALUE *q_u, REG_R_QUERY_VAL
 			buffer = NULL;
 			base_index = reg_perfcount_get_base_index();
 			buffer_size = reg_perfcount_get_counter_help(base_index, &buffer);
-			regval_ctr_addvalue(&regvals, "Explain 009", 
+			regval_ctr_addvalue(regvals, "Explain 009", 
 					    REG_MULTI_SZ, buffer, buffer_size);
 			
-			val = dup_registry_value(regval_ctr_specific_value(&regvals, 0));
+			val = dup_registry_value(regval_ctr_specific_value(regvals, 0));
 			
 			if(buffer_size > 0)
 			{
@@ -533,10 +540,10 @@ WERROR _reg_query_value(pipes_struct *p, REG_Q_QUERY_VALUE *q_u, REG_R_QUERY_VAL
 			prs_struct prs_hkpd;
 			prs_init(&prs_hkpd, q_u->bufsize, p->mem_ctx, MARSHALL);
 			status = reg_perfcount_get_hkpd(&prs_hkpd, q_u->bufsize, &outbuf_len, name);
-			regval_ctr_addvalue(&regvals, "HKPD", REG_BINARY,
+			regval_ctr_addvalue(regvals, "HKPD", REG_BINARY,
 					    prs_hkpd.data_p, outbuf_len);
 			
-			val = dup_registry_value(regval_ctr_specific_value(&regvals, 0));
+			val = dup_registry_value(regval_ctr_specific_value(regvals, 0));
 			prs_mem_free(&prs_hkpd);
 		}
 		else
@@ -563,7 +570,7 @@ WERROR _reg_query_value(pipes_struct *p, REG_Q_QUERY_VALUE *q_u, REG_R_QUERY_VAL
 
 	init_reg_r_query_value(q_u->ptr_buf, r_u, val, status);
 	
-	regval_ctr_destroy( &regvals );
+	TALLOC_FREE( regvals );
 	free_registry_value( val );
 
 	return status;
@@ -873,8 +880,8 @@ static WERROR reg_load_tree( REGF_FILE *regfile, const char *topkeypath,
 {
 	REGF_NK_REC *subkey;
 	REGISTRY_KEY registry_key;
-	REGVAL_CTR values;
-	REGSUBKEY_CTR subkeys;
+	REGVAL_CTR *values;
+	REGSUBKEY_CTR *subkeys;
 	int i;
 	pstring path;
 	WERROR result = WERR_OK;
@@ -890,13 +897,16 @@ static WERROR reg_load_tree( REGF_FILE *regfile, const char *topkeypath,
 	
 	/* now start parsing the values and subkeys */
 
-	regsubkey_ctr_init( &subkeys );
-	regval_ctr_init( &values );
+	if ( !(subkeys = TALLOC_ZERO_P( regfile->mem_ctx, REGSUBKEY_CTR )) )
+		return WERR_NOMEM;
 	
+	if ( !(values = TALLOC_ZERO_P( subkeys, REGVAL_CTR )) )
+		return WERR_NOMEM;
+
 	/* copy values into the REGVAL_CTR */
 	
 	for ( i=0; i<key->num_values; i++ ) {
-		regval_ctr_addvalue( &values, key->values[i].valuename, key->values[i].type,
+		regval_ctr_addvalue( values, key->values[i].valuename, key->values[i].type,
 			key->values[i].data, (key->values[i].data_size & ~VK_DATA_IN_OFFSET) );
 	}
 
@@ -904,20 +914,19 @@ static WERROR reg_load_tree( REGF_FILE *regfile, const char *topkeypath,
 	
 	key->subkey_index = 0;
 	while ( (subkey = regfio_fetch_subkey( regfile, key )) ) {
-		regsubkey_ctr_addkey( &subkeys, subkey->keyname );
+		regsubkey_ctr_addkey( subkeys, subkey->keyname );
 	}
 	
 	/* write this key and values out */
 	
-	if ( !store_reg_values( &registry_key, &values ) 
-		|| !store_reg_keys( &registry_key, &subkeys ) )
+	if ( !store_reg_values( &registry_key, values ) 
+		|| !store_reg_keys( &registry_key, subkeys ) )
 	{
 		DEBUG(0,("reg_load_tree: Failed to load %s!\n", topkeypath));
 		result = WERR_REG_IO_FAILURE;
 	}
 	
-	regval_ctr_destroy( &values );
-	regsubkey_ctr_destroy( &subkeys );
+	TALLOC_FREE( subkeys );
 	
 	if ( !W_ERROR_IS_OK(result) )
 		return result;
@@ -1003,8 +1012,8 @@ static WERROR reg_write_tree( REGF_FILE *regfile, const char *keypath,
                               REGF_NK_REC *parent, SEC_DESC *sec_desc )
 {
 	REGF_NK_REC *key;
-	REGVAL_CTR values;
-	REGSUBKEY_CTR subkeys;
+	REGVAL_CTR *values;
+	REGSUBKEY_CTR *subkeys;
 	int i, num_subkeys;
 	pstring key_tmp;
 	char *keyname, *parentpath;
@@ -1038,24 +1047,27 @@ static WERROR reg_write_tree( REGF_FILE *regfile, const char *keypath,
 	
 	/* lookup the values and subkeys */
 	
-	regsubkey_ctr_init( &subkeys );
-	regval_ctr_init( &values );
-	
-	fetch_reg_keys( &registry_key, &subkeys );
-	fetch_reg_values( &registry_key, &values );
+	if ( !(subkeys = TALLOC_ZERO_P( regfile->mem_ctx, REGSUBKEY_CTR )) )
+		return WERR_NOMEM;
+
+	if ( !(values = TALLOC_ZERO_P( subkeys, REGVAL_CTR )) )
+		return WERR_NOMEM;
+
+	fetch_reg_keys( &registry_key, subkeys );
+	fetch_reg_values( &registry_key, values );
 
 	/* write out this key */
 		
-	if ( !(key = regfio_write_key( regfile, keyname, &values, &subkeys, sec_desc, parent )) ) {
+	if ( !(key = regfio_write_key( regfile, keyname, values, subkeys, sec_desc, parent )) ) {
 		result = WERR_CAN_NOT_COMPLETE;
 		goto done;
 	}
 
 	/* write each one of the subkeys out */
 
-	num_subkeys = regsubkey_ctr_numkeys( &subkeys );
+	num_subkeys = regsubkey_ctr_numkeys( subkeys );
 	for ( i=0; i<num_subkeys; i++ ) {
-		subkeyname = regsubkey_ctr_specific_key( &subkeys, i );
+		subkeyname = regsubkey_ctr_specific_key( subkeys, i );
 		pstr_sprintf( subkeypath, "%s\\%s", keypath, subkeyname );
 		result = reg_write_tree( regfile, subkeypath, key, sec_desc );
 		if ( !W_ERROR_IS_OK(result) )
@@ -1065,8 +1077,7 @@ static WERROR reg_write_tree( REGF_FILE *regfile, const char *keypath,
 	DEBUG(6,("reg_write_tree: wrote key [%s]\n", keypath ));
 
 done:
-	regval_ctr_destroy( &values );
-	regsubkey_ctr_destroy( &subkeys );
+	TALLOC_FREE( subkeys );
 
 	return result;
 }
@@ -1178,7 +1189,7 @@ WERROR _reg_create_key_ex(pipes_struct *p, REG_Q_CREATE_KEY_EX *q_u, REG_R_CREAT
 	REGISTRY_KEY *parent = find_regkey_index_by_hnd(p, &q_u->handle);
 	REGISTRY_KEY *newparent;
 	POLICY_HND newparent_handle;
-	REGSUBKEY_CTR subkeys;
+	REGSUBKEY_CTR *subkeys;
 	BOOL write_result;
 	pstring name;
 	WERROR result;
@@ -1237,19 +1248,22 @@ WERROR _reg_create_key_ex(pipes_struct *p, REG_Q_CREATE_KEY_EX *q_u, REG_R_CREAT
 		goto done;
 	}	
 		
-	regsubkey_ctr_init( &subkeys );
-	
+	if ( !(subkeys = TALLOC_ZERO_P( p->mem_ctx, REGSUBKEY_CTR )) ) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+
 	/* (4) lookup the current keys and add the new one */
 	
-	fetch_reg_keys( newparent, &subkeys );
-	regsubkey_ctr_addkey( &subkeys, name );
+	fetch_reg_keys( newparent, subkeys );
+	regsubkey_ctr_addkey( subkeys, name );
 	
 	/* now write to the registry backend */
 	
-	write_result = store_reg_keys( newparent, &subkeys );
+	write_result = store_reg_keys( newparent, subkeys );
 	
-	regsubkey_ctr_destroy( &subkeys );
-	
+	TALLOC_FREE( subkeys );
+
 	if ( !write_result )
 		return WERR_REG_IO_FAILURE;
 		
@@ -1276,7 +1290,7 @@ done:
 WERROR _reg_set_value(pipes_struct *p, REG_Q_SET_VALUE  *q_u, REG_R_SET_VALUE *r_u)
 {
 	REGISTRY_KEY *key = find_regkey_index_by_hnd(p, &q_u->handle);
-	REGVAL_CTR values;
+	REGVAL_CTR *values;
 	BOOL write_result;
 	fstring valuename;
 
@@ -1297,19 +1311,20 @@ WERROR _reg_set_value(pipes_struct *p, REG_Q_SET_VALUE  *q_u, REG_R_SET_VALUE *r
 
 	DEBUG(8,("_reg_set_value: Setting value for [%s:%s]\n", key->name, valuename));
 		
-	regval_ctr_init( &values );
+	if ( !(values = TALLOC_ZERO_P( p->mem_ctx, REGVAL_CTR )) )
+		return WERR_NOMEM; 
 	
 	/* lookup the current values and add the new one */
 	
-	fetch_reg_values( key, &values );
+	fetch_reg_values( key, values );
 	
-	regval_ctr_addvalue( &values, valuename, q_u->type, q_u->value.buffer, q_u->value.buf_len );
+	regval_ctr_addvalue( values, valuename, q_u->type, q_u->value.buffer, q_u->value.buf_len );
 	
 	/* now write to the registry backend */
 	
-	write_result = store_reg_values( key, &values );
+	write_result = store_reg_values( key, values );
 	
-	regval_ctr_destroy( &values );
+	TALLOC_FREE( values );
 	
 	if ( !write_result )
 		return WERR_REG_IO_FAILURE;
@@ -1325,7 +1340,7 @@ WERROR _reg_delete_key(pipes_struct *p, REG_Q_DELETE_KEY  *q_u, REG_R_DELETE_KEY
 	REGISTRY_KEY *parent = find_regkey_index_by_hnd(p, &q_u->handle);
 	REGISTRY_KEY *newparent;
 	POLICY_HND newparent_handle;
-	REGSUBKEY_CTR subkeys;
+	REGSUBKEY_CTR *subkeys;
 	BOOL write_result;
 	pstring name;
 	WERROR result;
@@ -1384,19 +1399,22 @@ WERROR _reg_delete_key(pipes_struct *p, REG_Q_DELETE_KEY  *q_u, REG_R_DELETE_KEY
 		goto done;
 	}
 
-	regsubkey_ctr_init( &subkeys );
+	if ( !(subkeys = TALLOC_ZERO_P( p->mem_ctx, REGSUBKEY_CTR )) ) {
+		result = WERR_NOMEM;
+		goto done;
+	}
 	
 	/* lookup the current keys and delete the new one */
 	
-	fetch_reg_keys( newparent, &subkeys );
+	fetch_reg_keys( newparent, subkeys );
 	
-	regsubkey_ctr_delkey( &subkeys, name );
+	regsubkey_ctr_delkey( subkeys, name );
 	
 	/* now write to the registry backend */
 	
-	write_result = store_reg_keys( newparent, &subkeys );
+	write_result = store_reg_keys( newparent, subkeys );
 	
-	regsubkey_ctr_destroy( &subkeys );
+	TALLOC_FREE( subkeys );
 
 	result = write_result ? WERR_OK : WERR_REG_IO_FAILURE;
 	
@@ -1416,7 +1434,7 @@ done:
 WERROR _reg_delete_value(pipes_struct *p, REG_Q_DELETE_VALUE  *q_u, REG_R_DELETE_VALUE *r_u)
 {
 	REGISTRY_KEY *key = find_regkey_index_by_hnd(p, &q_u->handle);
-	REGVAL_CTR values;
+	REGVAL_CTR *values;
 	BOOL write_result;
 	fstring valuename;
 	
@@ -1435,19 +1453,20 @@ WERROR _reg_delete_value(pipes_struct *p, REG_Q_DELETE_VALUE  *q_u, REG_R_DELETE
 
 	DEBUG(8,("_reg_delete_value: Setting value for [%s:%s]\n", key->name, valuename));
 
-	regval_ctr_init( &values );
+	if ( !(values = TALLOC_ZERO_P( p->mem_ctx, REGVAL_CTR )) )
+		return WERR_NOMEM;
 	
 	/* lookup the current values and add the new one */
 	
-	fetch_reg_values( key, &values );
+	fetch_reg_values( key, values );
 	
-	regval_ctr_delvalue( &values, valuename );
+	regval_ctr_delvalue( values, valuename );
 	
 	/* now write to the registry backend */
 	
-	write_result = store_reg_values( key, &values );
+	write_result = store_reg_values( key, values );
 	
-	regval_ctr_destroy( &values );
+	TALLOC_FREE( values );
 	
 	if ( !write_result )
 		return WERR_REG_IO_FAILURE;
