@@ -4171,7 +4171,11 @@ static BOOL construct_printer_info_2(Printer_entry *print_hnd, PRINTER_INFO_2 *p
 	if ( ntprinter->info_2->secdesc_buf 
 		&& ntprinter->info_2->secdesc_buf->len != 0 ) 
 	{
-		printer->secdesc = dup_sec_desc( get_talloc_ctx(), ntprinter->info_2->secdesc_buf->sec );
+		/* don't use talloc_steal() here unless you do a deep steal of all 
+		   the SEC_DESC members */
+
+		printer->secdesc = dup_sec_desc( get_talloc_ctx(), 
+			ntprinter->info_2->secdesc_buf->sec );
 	}
 
 	free_a_printer(&ntprinter, 2);
@@ -4205,7 +4209,11 @@ static BOOL construct_printer_info_3(Printer_entry *print_hnd, PRINTER_INFO_3 **
 	printer->flags = 0x4; 
 
 	if (ntprinter->info_2->secdesc_buf && ntprinter->info_2->secdesc_buf->len != 0) {
-		printer->secdesc = dup_sec_desc( get_talloc_ctx(), ntprinter->info_2->secdesc_buf->sec );
+		/* don't use talloc_steal() here unless you do a deep steal of all 
+		   the SEC_DESC members */
+
+		printer->secdesc = dup_sec_desc( get_talloc_ctx(), 
+			ntprinter->info_2->secdesc_buf->sec );
 	}
 
 	free_a_printer(&ntprinter, 2);
