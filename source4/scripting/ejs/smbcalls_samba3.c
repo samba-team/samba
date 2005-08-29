@@ -343,8 +343,8 @@ static struct MprVar mprSamAccounts(struct samba3 *samba3)
 		mprSetVar(&m, "profile_path", mprString(a->profile_path));
 		mprSetVar(&m, "acct_desc", mprString(a->acct_desc));
 		mprSetVar(&m, "workstations", mprString(a->workstations));
-
-		/* FIXME: lm_pw_ptr, nt_pw_ptr */
+		mprSetVar(&m, "lm_pw", mprData(a->lm_pw.hash, 16));
+		mprSetVar(&m, "nt_pw", mprData(a->nt_pw.hash, 16));
 
 		mprAddArray(&mpv, i, m);
 	}

@@ -69,8 +69,8 @@ static BOOL init_sam_from_buffer_v0(TDB_CONTEXT *tdb, struct samba3_samaccount *
 		&munged_dial_len, &sampass->munged_dial,		/* B */
 		&sampass->user_rid,					/* d */
 		&sampass->group_rid,					/* d */
-		&lm_pw_len, &sampass->lm_pw_ptr,			/* B */
-		&nt_pw_len, &sampass->nt_pw_ptr,			/* B */
+		&lm_pw_len, sampass->lm_pw.hash,			/* B */
+		&nt_pw_len, sampass->nt_pw.hash,			/* B */
 		&sampass->acct_ctrl,					/* w */
 		&remove_me, /* remove on the next TDB_FORMAT upgarde */	/* d */
 		&sampass->logon_divs,					/* w */
@@ -85,11 +85,11 @@ static BOOL init_sam_from_buffer_v0(TDB_CONTEXT *tdb, struct samba3_samaccount *
 	}
 
 	if (lm_pw_len != 16) {
-		sampass->lm_pw_ptr = NULL;
+		return False;
 	}
 
 	if (nt_pw_len != 16) {
-		sampass->nt_pw_ptr = NULL;
+		return False;
 	}
 
 	return True;
@@ -135,8 +135,8 @@ static BOOL init_sam_from_buffer_v1(TDB_CONTEXT *tdb, struct samba3_samaccount *
 		&munged_dial_len, &sampass->munged_dial,		/* B */
 		&sampass->user_rid,					/* d */
 		&sampass->group_rid,					/* d */
-		&lm_pw_len, &sampass->lm_pw_ptr,			/* B */
-		&nt_pw_len, &sampass->nt_pw_ptr,			/* B */
+		&lm_pw_len, sampass->lm_pw.hash,			/* B */
+		&nt_pw_len, sampass->nt_pw.hash,			/* B */
 		&sampass->acct_ctrl,					/* w */
 		&remove_me,						/* d */
 		&sampass->logon_divs,					/* w */
@@ -150,12 +150,12 @@ static BOOL init_sam_from_buffer_v1(TDB_CONTEXT *tdb, struct samba3_samaccount *
 		return False;
 	}
 
-	if (sampass->lm_pw_ptr && lm_pw_len != 16) {
-		sampass->lm_pw_ptr = NULL;
+	if (lm_pw_len != 16) {
+		return False;
 	}
 
-	if (sampass->nt_pw_ptr && nt_pw_len != 16) {
-		sampass->nt_pw_ptr = NULL;
+	if (nt_pw_len != 16) {
+		return False;
 	}
 
 	return True;
@@ -199,8 +199,8 @@ static BOOL init_sam_from_buffer_v2(TDB_CONTEXT *tdb, struct samba3_samaccount *
 		&munged_dial_len, &sampass->munged_dial,		/* B */
 		&sampass->user_rid,					/* d */
 		&sampass->group_rid,					/* d */
-		&lm_pw_len, &sampass->lm_pw_ptr,			/* B */
-		&nt_pw_len, &sampass->nt_pw_ptr,			/* B */
+		&lm_pw_len, sampass->lm_pw.hash,			/* B */
+		&nt_pw_len, sampass->nt_pw.hash,			/* B */
 		/* Change from V1 is addition of password history field. */
 		&nt_pw_hist_len, &sampass->nt_pw_hist_ptr,		/* B */
 		&sampass->acct_ctrl,					/* w */
@@ -216,12 +216,12 @@ static BOOL init_sam_from_buffer_v2(TDB_CONTEXT *tdb, struct samba3_samaccount *
 		return False;
 	}
 
-	if (sampass->lm_pw_ptr && lm_pw_len != 16) {
-		sampass->lm_pw_ptr = NULL;
+	if (lm_pw_len != 16) {
+		return False;
 	}
 
-	if (sampass->nt_pw_ptr && nt_pw_len != 16) {
-		sampass->nt_pw_ptr = NULL;
+	if (nt_pw_len != 16) {
+		return False;
 	}
 
 	return True;
