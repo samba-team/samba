@@ -241,7 +241,7 @@ function upgrade_provision(samba3)
 	} else {
 		println("Can't find domain secrets for '" + domainname + "'; using random SID and GUID");
 		subobj.DOMAINGUID = randguid();
-		subobj.DOMAINSID = randguid();
+		subobj.DOMAINSID = randsid();
 	}
 	
 	if (hostsec) {
@@ -270,7 +270,6 @@ function upgrade_provision(samba3)
 				      subobj.DNSDOMAIN);
 	subobj.BASEDN       = "DC=" + join(",DC=", split(".", subobj.REALM));
 	rdn_list = split(".", subobj.REALM);
-	subobj.RDN_DC       = rdn_list[0];
 	return subobj;
 }
 
@@ -403,7 +402,6 @@ function upgrade(subobj, samba3, message)
 
 	message("Importing account policies\n");
 	var ldif = upgrade_sam_policy(samba3,subobj.BASEDN);
-	ldifprint(ldif);
 	ok = samdb.modify(ldif);
 	assert(ok);
 
@@ -411,31 +409,28 @@ function upgrade(subobj, samba3, message)
 
 	message("Importing users\n");
 	for (var i in samba3.samaccounts) {
-		message("Importing user '" + samba3.samaccounts[i].username + "'\n");
+		message("... " + samba3.samaccounts[i].username + "\n");
 		var ldif = upgrade_sam_account(samba3.samaccounts[i],subobj.BASEDN);
-		ldifprint(ldif);
 		ok = samdb.add(ldif);
 		assert(ok);
 	}
 
 	message("Importing groups\n");
 	for (var i in samba3.groupmappings) {
-		message("Importing group '" + samba3.groupmappings[i].username + "'\n");
+		message("... " + samba3.groupmappings[i].nt_name + "\n");
 		var ldif = upgrade_sam_group(samba3.groupmappings[i],subobj.BASEDN);
-		ldifprint(ldif);
 		ok = samdb.add(ldif);
 		assert(ok);
 	}
 
 	message("Importing registry data\n");
-	var hives = new Array("hkcr","hkcu","hklm","hkpd"); 
+	var hives = new Array("hkcr","hkcu","hklm","hkpd","hku","hkpt"); 
 	for (var i in hives) {
-		println("... " + hives[i]);
+		message("... " + hives[i] + "\n");
 		var regdb = ldb_init();
 		ok = regdb.connect(hives[i] + ".ldb");
 		assert(ok);
 		var ldif = upgrade_registry(samba3.registry, hives[i]);
-		ldifprint(ldif);
 		ok = regdb.add(ldif);
 		assert(ok);
 	}
@@ -446,7 +441,6 @@ function upgrade(subobj, samba3, message)
 	assert(ok);
 
 	var ldif = upgrade_wins(samba3);
-	ldifprint(ldif);
 	ok = winsdb.add(ldif);
 	assert(ok);
 

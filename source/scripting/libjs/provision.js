@@ -217,6 +217,8 @@ function provision(subobj, message, blank)
 	subobj.HOSTNAME    = strlower(subobj.HOSTNAME);
 	subobj.DOMAIN      = strupper(subobj.DOMAIN);
 	subobj.NETBIOSNAME = strupper(subobj.HOSTNAME);
+	var rdns = split(",", subobj.BASEDN);
+	subobj.RDN_DC = substr(rdns[0], strlen("DC="));
 
 	data = add_foreign(data, "S-1-5-7",  "Anonymous",           "${NOBODY}");
 	data = add_foreign(data, "S-1-1-0",  "World",               "${NOGROUP}");
@@ -297,9 +299,8 @@ function provision_guess()
 	subobj.DNSNAME      = sprintf("%s.%s", 
 				      strlower(subobj.HOSTNAME), 
 				      subobj.DNSDOMAIN);
-	subobj.BASEDN       = "DC=" + join(",DC=", split(".", subobj.REALM));
 	rdn_list = split(".", subobj.REALM);
-	subobj.RDN_DC       = rdn_list[0];
+	subobj.BASEDN       = "DC=" + join(",DC=", rdn_list);
 	return subobj;
 }
 
