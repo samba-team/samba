@@ -1,0 +1,85 @@
+#!/bin/sh
+exec smbscript "$0" ${1+"$@"}
+/*
+	Upgrade from Samba3
+	Copyright Jelmer Vernooij 2005
+	Released under the GNU GPL v2 or later
+*/
+
+options = GetOptions(ARGV,
+		"POPT_AUTOHELP",
+		"POPT_COMMON_SAMBA",
+		"POPT_COMMON_VERSION",
+		'quiet', 'blank');
+
+if (options == undefined) {
+   println("Failed to parse options");
+   return -1;
+}
+
+libinclude("base.js");
+libinclude("provision.js");
+libinclude("upgrade.js");
+
+/*
+  print a message if quiet is not set
+*/
+function message() 
+{
+	if (options["quiet"] == undefined) {
+		print(vsprintf(arguments));
+	}
+}
+
+/*
+ show some help
+*/
+function ShowHelp()
+{
+	print("
+Samba4 import tool
+
+provision [options] <libdir> <smbconf>
+ --quiet			Be quiet
+ --blank			do not add users or groups, just the structure
+
+You must provide at least a realm and domain
+
+");
+	exit(1);
+}
+
+if (options.ARGV.length != 2) {
+	ShowHelp();
+	exit(1);
+}
+
+message("Reading Samba3 databases and smb.conf\n");
+var samba3 = samba3_read(options.ARGV[0], options.ARGV[1]);
+
+if (samba3 == undefined) {
+	println("Error reading Samba3 data");
+	exit(1);
+}
+
+message("Writing smb.conf\n");
+// FIXME
+
+message("Provisioning\n");
+var subobj = upgrade_provision(samba3);
+provision(subobj, message, blank);
+
+message("Importing account policies\n");
+// FIXME
+
+message("Importing users\n");
+// FIXME
+
+message("Importing groups\n");
+// FIXME
+
+message("Importing WINS data\n");
+// FIXME
+
+message("All OK\n");
+return 0;
