@@ -4,6 +4,7 @@
    provide access to string functions
 
    Copyright (C) Andrew Tridgell 2005
+   Copyright (C) Jelmer Vernooij 2005 (substr)
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -124,6 +125,61 @@ static int ejs_split(MprVarHandle eid, int argc, char **argv)
 	return 0;
 }
 
+/*
+  usage:
+    str = substr(orig[, start_offset[, length]]);
+
+	special cases:
+		if start_offset < 0 then start_offset+=strlen(orig)
+		if length < 0 then length+=strlen(orig)-start_offset
+
+	(as found in many other languages)
+*/
+static int ejs_substr(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	int start_offset = 0;
+	int length = 0;
+	const char *orig;
+	char *target;
+	
+	if (argc < 1 || argc > 3 ||
+	    argv[0]->type != MPR_TYPE_STRING) {
+		ejsSetErrorMsg(eid, "substr invalid arguments");
+		return -1;
+	}
+
+	if (argc == 1) {
+		mpr_Return(eid, *argv[0]);
+		return 0;
+	}
+
+	orig = mprToString(argv[0]);
+	start_offset = mprToInt(argv[1]);
+	if (start_offset < 0) start_offset += strlen(orig);
+	if (start_offset < 0 || start_offset > strlen(orig)) {
+		ejsSetErrorMsg(eid, "substr arg 2 out of bounds");
+		return -1;
+	}
+
+	if (argc == 3) {
+		length = mprToInt(argv[1]);
+		if (length < 0) length += strlen(orig) - start_offset;
+		if (length < 0 || length+start_offset > strlen(orig)) {
+			ejsSetErrorMsg(eid, "substr arg 3 out of bounds");
+			return -1;
+		}
+	} else {
+		length = strlen(orig);
+	}
+
+	target = talloc_strndup(mprMemCtx(), orig+start_offset, length);
+	
+	mpr_Return(eid, mprString(target));
+
+	talloc_free(target);
+
+	return 0;
+}
 
 /*
   usage:
@@ -421,6 +477,7 @@ static int ejs_string_init(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	struct MprVar *obj = mprInitObject(eid, "string", argc, argv);
 
+	mprSetCFunction(obj, "substr", ejs_substr);
 	mprSetStringCFunction(obj, "strlen", ejs_strlen);
 	mprSetStringCFunction(obj, "strlower", ejs_strlower);
 	mprSetStringCFunction(obj, "strupper", ejs_strupper);
