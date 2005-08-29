@@ -1651,8 +1651,6 @@ WERROR cli_spoolss_enumprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if (!W_ERROR_IS_OK(out.status))
 		return out.status;
 
-	regval_ctr_init(ctr);
-
 	for (i = 0; i < out.returned; i++) {
 		PRINTER_ENUM_VALUES *v = &out.ctr.values[i];
 		fstring name;

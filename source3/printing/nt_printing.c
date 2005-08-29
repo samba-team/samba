@@ -616,15 +616,6 @@ BOOL nt_printing_init(void)
 
 	message_register( MSG_PRINTERDATA_INIT_RESET, reset_all_printerdata );
 
-#ifdef ENABLE_PRINT_HND_OBJECT_CACHE
-	/*
-	 * register callback to handle invalidating the printer cache 
-	 * between smbd processes.
-	 */
-
-	message_register( MSG_PRINTER_MOD, receive_printer_mod_msg);
-#endif
-
 	/* of course, none of the message callbacks matter if you don't
 	   tell messages.c that you interested in receiving PRINT_GENERAL 
 	   msgs.  This is done in claim_connection() */
@@ -2260,7 +2251,7 @@ static int pack_values(NT_PRINTER_DATA *data, char *buf, int buflen)
 	/* loop over all keys */
 		
 	for ( i=0; i<data->num_keys; i++ ) {	
-		val_ctr = &data->keys[i].values;
+		val_ctr = data->keys[i].values;
 		num_values = regval_ctr_numvals( val_ctr );
 
 		/* pack the keyname followed by a empty value */
@@ -2288,6 +2279,8 @@ static int pack_values(NT_PRINTER_DATA *data, char *buf, int buflen)
 					regval_type(val),
 					regval_size(val),
 					regval_data_p(val) );
+
+			DEBUG(8,("specific: [%s], len: %d\n", regval_name(val), regval_size(val)));
 		}
 	
 	}
@@ -2402,7 +2395,7 @@ static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 
 	len += pack_devicemode(info->devmode, buf+len, buflen-len);
 	
-	len += pack_values( &info->data, buf+len, buflen-len );
+	len += pack_values( info->data, buf+len, buflen-len );
 
 	if (buflen != len) {
 		char *tb;
@@ -2550,31 +2543,17 @@ void free_nt_devicemode(NT_DEVICEMODE **devmode_ptr)
 /****************************************************************************
  Clean up and deallocate a (maybe partially) allocated NT_PRINTER_INFO_LEVEL_2.
 ****************************************************************************/
+
 static void free_nt_printer_info_level_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr)
 {
 	NT_PRINTER_INFO_LEVEL_2 *info = *info_ptr;
-	NT_PRINTER_DATA		*data;
-	int 			i;
 
 	if ( !info )
 		return;
 
-	DEBUG(106,("free_nt_printer_info_level_2: deleting info\n"));
-
 	free_nt_devicemode(&info->devmode);
 
-	/* clean up all registry keys */
-	
-	data = &info->data;
-	for ( i=0; i<data->num_keys; i++ ) {
-		SAFE_FREE( data->keys[i].name );
-		regval_ctr_destroy( &data->keys[i].values );
-	}
-	SAFE_FREE( data->keys );
-
-	/* finally the top level structure */
-	
-	SAFE_FREE( *info_ptr );
+	TALLOC_FREE( *info_ptr );
 }
 
 
@@ -2662,12 +2641,12 @@ int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
 	NT_PRINTER_KEY	*d;
 	int		key_index;
 	
-	if ( !data || !name )
+	if ( !name || !data )
 		return -1;
-	
+
 	/* allocate another slot in the NT_PRINTER_KEY array */
 	
-	if ( !(d = SMB_REALLOC_ARRAY( data->keys, NT_PRINTER_KEY, data->num_keys+1)) ) {
+	if ( !(d = TALLOC_REALLOC_ARRAY( data, data->keys, NT_PRINTER_KEY, data->num_keys+1)) ) {
 		DEBUG(0,("add_new_printer_key: Realloc() failed!\n"));
 		return -1;
 	}
@@ -2678,11 +2657,13 @@ int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
 	
 	/* initialze new key */
 	
+	data->keys[key_index].name = talloc_strdup( data, name );
+	
+	if ( !(data->keys[key_index].values = TALLOC_ZERO_P( data, REGVAL_CTR )) ) 
+		return -1;
+	
 	data->num_keys++;
-	data->keys[key_index].name = SMB_STRDUP( name );
-	
-	regval_ctr_init( &data->keys[key_index].values );
-	
+
 	DEBUG(10,("add_new_printer_key: Inserted new data key [%s]\n", name ));
 	
 	return key_index;
@@ -2695,16 +2676,14 @@ int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
 int delete_printer_key( NT_PRINTER_DATA *data, const char *name )
 {
 	int i;
-	NT_PRINTER_KEY *printer_key;
 	
 	for ( i=0; i<data->num_keys; i++ ) {
 		if ( strequal( data->keys[i].name, name ) ) {
 		
 			/* cleanup memory */
 			
-			printer_key = &data->keys[i];
-			SAFE_FREE( printer_key->name );
-			regval_ctr_destroy( &printer_key->values );
+			TALLOC_FREE( data->keys[i].name );
+			TALLOC_FREE( data->keys[i].values );
 			
 			/* if not the end of the array, move remaining elements down one slot */
 			
@@ -2923,9 +2902,9 @@ static BOOL map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
         const char *ascii_str;
 	int i;
 
-	if ((i = lookup_printerkey(&info2->data, SPOOL_DSSPOOLER_KEY)) < 0)
-		i = add_new_printer_key(&info2->data, SPOOL_DSSPOOLER_KEY);
-	ctr = &info2->data.keys[i].values;
+	if ((i = lookup_printerkey(info2->data, SPOOL_DSSPOOLER_KEY)) < 0)
+		i = add_new_printer_key(info2->data, SPOOL_DSSPOOLER_KEY);
+	ctr = info2->data->keys[i].values;
 
 	map_sz_into_ctr(ctr, SPOOL_REG_PRINTERNAME, info2->sharename);
 	map_sz_into_ctr(ctr, SPOOL_REG_SHORTSERVERNAME, global_myname());
@@ -2984,9 +2963,9 @@ static void store_printer_guid(NT_PRINTER_INFO_LEVEL_2 *info2,
 	REGVAL_CTR *ctr=NULL;
 
 	/* find the DsSpooler key */
-	if ((i = lookup_printerkey(&info2->data, SPOOL_DSSPOOLER_KEY)) < 0)
-		i = add_new_printer_key(&info2->data, SPOOL_DSSPOOLER_KEY);
-	ctr = &info2->data.keys[i].values;
+	if ((i = lookup_printerkey(info2->data, SPOOL_DSSPOOLER_KEY)) < 0)
+		i = add_new_printer_key(info2->data, SPOOL_DSSPOOLER_KEY);
+	ctr = info2->data->keys[i].values;
 
 	regval_ctr_delvalue(ctr, "objectGUID");
 	regval_ctr_addvalue(ctr, "objectGUID", REG_BINARY, 
@@ -3054,8 +3033,7 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 	ctx = talloc_init("nt_printer_publish_ads");
 	mods = ads_init_mods(ctx);
 
-	get_local_printer_publishing_data(ctx, &mods, 
-	                                  &printer->info_2->data);
+	get_local_printer_publishing_data(ctx, &mods, printer->info_2->data);
 	ads_mod_str(ctx, &mods, SPOOL_REG_PRINTERNAME, 
 	            printer->info_2->sharename);
 
@@ -3238,10 +3216,10 @@ BOOL is_printer_published(Printer_entry *print_hnd, int snum,
 
 	if (!W_ERROR_IS_OK(win_rc) ||
 	    !(printer->info_2->attributes & PRINTER_ATTRIBUTE_PUBLISHED) ||
-	    ((i = lookup_printerkey(&printer->info_2->data, 
-	                            SPOOL_DSSPOOLER_KEY)) < 0) ||
-	    !(ctr = &printer->info_2->data.keys[i].values) ||
-	    !(guid_val = regval_ctr_getvalue(ctr, "objectGUID"))) {
+	    ((i = lookup_printerkey(printer->info_2->data, SPOOL_DSSPOOLER_KEY)) < 0) ||
+	    !(ctr = printer->info_2->data->keys[i].values) ||
+	    !(guid_val = regval_ctr_getvalue(ctr, "objectGUID"))) 
+	{
 		free_a_printer(&printer, 2);
 		return False;
 	}
@@ -3281,7 +3259,7 @@ WERROR delete_all_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key )
 	int		removed_keys = 0;
 	int		empty_slot;
 	
-	data = &p2->data;
+	data = p2->data;
 	empty_slot = data->num_keys;
 
 	if ( !key )
@@ -3290,20 +3268,12 @@ WERROR delete_all_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key )
 	/* remove all keys */
 
 	if ( !strlen(key) ) {
-		for ( i=0; i<data->num_keys; i++ ) {
-			DEBUG(8,("delete_all_printer_data: Removed all Printer Data from key [%s]\n",
-				data->keys[i].name));
-		
-			SAFE_FREE( data->keys[i].name );
-			regval_ctr_destroy( &data->keys[i].values );
-		}
 	
+		TALLOC_FREE( data );
+
 		DEBUG(8,("delete_all_printer_data: Removed all Printer Data from printer [%s]\n",
 			p2->printername ));
 	
-		SAFE_FREE( data->keys );
-		ZERO_STRUCTP( data );
-
 		return WERR_OK;
 	}
 
@@ -3314,9 +3284,9 @@ WERROR delete_all_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key )
 			DEBUG(8,("delete_all_printer_data: Removed all Printer Data from key [%s]\n",
 				data->keys[i].name));
 		
-			SAFE_FREE( data->keys[i].name );
-			regval_ctr_destroy( &data->keys[i].values );
-		
+			TALLOC_FREE( data->keys[i].name );
+			TALLOC_FREE( data->keys[i].values );
+
 			/* mark the slot as empty */
 
 			ZERO_STRUCTP( &data->keys[i] );
@@ -3379,16 +3349,16 @@ WERROR delete_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const 
 		
 	/* find the printer key first */
 
-	key_index = lookup_printerkey( &p2->data, key );
+	key_index = lookup_printerkey( p2->data, key );
 	if ( key_index == -1 )
 		return WERR_OK;
 	
 	/* make sure the value exists so we can return the correct error code */
 	
-	if ( !regval_ctr_getvalue( &p2->data.keys[key_index].values, value ) )
+	if ( !regval_ctr_getvalue( p2->data->keys[key_index].values, value ) )
 		return WERR_BADFILE;
 		
-	regval_ctr_delvalue( &p2->data.keys[key_index].values, value );
+	regval_ctr_delvalue( p2->data->keys[key_index].values, value );
 	
 	DEBUG(8,("delete_printer_data: Removed key => [%s], value => [%s]\n",
 		key, value ));
@@ -3412,14 +3382,14 @@ WERROR add_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const cha
 		
 	/* find the printer key first */
 	
-	key_index = lookup_printerkey( &p2->data, key );
+	key_index = lookup_printerkey( p2->data, key );
 	if ( key_index == -1 )
-		key_index = add_new_printer_key( &p2->data, key );
+		key_index = add_new_printer_key( p2->data, key );
 		
 	if ( key_index == -1 )
 		return WERR_NOMEM;
 	
-	regval_ctr_addvalue( &p2->data.keys[key_index].values, value,
+	regval_ctr_addvalue( p2->data->keys[key_index].values, value,
 		type, (const char *)data, real_len );
 	
 	DEBUG(8,("add_printer_data: Added key => [%s], value => [%s], type=> [%d], size => [%d]\n",
@@ -3435,13 +3405,13 @@ REGISTRY_VALUE* get_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, 
 {
 	int		key_index;
 
-	if ( (key_index = lookup_printerkey( &p2->data, key )) == -1 )
+	if ( (key_index = lookup_printerkey( p2->data, key )) == -1 )
 		return NULL;
 
 	DEBUG(8,("get_printer_data: Attempting to lookup key => [%s], value => [%s]\n",
 		key, value ));
 
-	return regval_ctr_getvalue( &p2->data.keys[key_index].values, value );
+	return regval_ctr_getvalue( p2->data->keys[key_index].values, value );
 }
 
 /****************************************************************************
@@ -3458,7 +3428,7 @@ static int unpack_values(NT_PRINTER_DATA *printer_data, char *buf, int buflen)
 	uint8		*data_p;
 	REGISTRY_VALUE 	*regval_p;
 	int		key_index;
-	
+
 	/* add the "PrinterDriverData" key first for performance reasons */
 	
 	add_new_printer_key( printer_data, SPOOL_PRINTERDATA_KEY );
@@ -3526,7 +3496,7 @@ static int unpack_values(NT_PRINTER_DATA *printer_data, char *buf, int buflen)
 		
 		/* add the new value */
 		
-		regval_ctr_addvalue( &printer_data->keys[key_index].values, valuename, type, (const char *)data_p, size );
+		regval_ctr_addvalue( printer_data->keys[key_index].values, valuename, type, (const char *)data_p, size );
 
 		SAFE_FREE(data_p); /* 'B' option to tdbpack does a malloc() */
 
@@ -3623,44 +3593,41 @@ static void map_to_os2_driver(fstring drivername)
 /****************************************************************************
  Get a default printer info 2 struct.
 ****************************************************************************/
-static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *servername, const char* sharename)
+static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 *info, const char *servername, const char* sharename)
 {
 	int snum;
-	NT_PRINTER_INFO_LEVEL_2 info;
-
-	ZERO_STRUCT(info);
 
 	snum = lp_servicenumber(sharename);
 
-	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", servername);
-	slprintf(info.printername, sizeof(info.printername)-1, "\\\\%s\\%s", 
+	slprintf(info->servername, sizeof(info->servername)-1, "\\\\%s", servername);
+	slprintf(info->printername, sizeof(info->printername)-1, "\\\\%s\\%s", 
 		servername, sharename);
-	fstrcpy(info.sharename, sharename);
-	fstrcpy(info.portname, SAMBA_PRINTER_PORT_NAME);
+	fstrcpy(info->sharename, sharename);
+	fstrcpy(info->portname, SAMBA_PRINTER_PORT_NAME);
 
 	/* by setting the driver name to an empty string, a local NT admin
 	   can now run the **local** APW to install a local printer driver
  	   for a Samba shared printer in 2.2.  Without this, drivers **must** be 
 	   installed on the Samba server for NT clients --jerry */
 #if 0	/* JERRY --do not uncomment-- */
-	if (!*info.drivername)
-		fstrcpy(info.drivername, "NO DRIVER AVAILABLE FOR THIS PRINTER");
+	if (!*info->drivername)
+		fstrcpy(info->drivername, "NO DRIVER AVAILABLE FOR THIS PRINTER");
 #endif
 
 
-	DEBUG(10,("get_a_printer_2_default: driver name set to [%s]\n", info.drivername));
+	DEBUG(10,("get_a_printer_2_default: driver name set to [%s]\n", info->drivername));
 
-	pstrcpy(info.comment, "");
-	fstrcpy(info.printprocessor, "winprint");
-	fstrcpy(info.datatype, "RAW");
+	pstrcpy(info->comment, "");
+	fstrcpy(info->printprocessor, "winprint");
+	fstrcpy(info->datatype, "RAW");
 
-	info.attributes = PRINTER_ATTRIBUTE_SAMBA;
+	info->attributes = PRINTER_ATTRIBUTE_SAMBA;
 
-	info.starttime = 0; /* Minutes since 12:00am GMT */
-	info.untiltime = 0; /* Minutes since 12:00am GMT */
-	info.priority = 1;
-	info.default_priority = 1;
-	info.setuptime = (uint32)time(NULL);
+	info->starttime = 0; /* Minutes since 12:00am GMT */
+	info->untiltime = 0; /* Minutes since 12:00am GMT */
+	info->priority = 1;
+	info->default_priority = 1;
+	info->setuptime = (uint32)time(NULL);
 
 	/*
 	 * I changed this as I think it is better to have a generic
@@ -3673,91 +3640,80 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const 
 	 */
 
 	if (lp_default_devmode(snum)) {
-		if ((info.devmode = construct_nt_devicemode(info.printername)) == NULL)
+		if ((info->devmode = construct_nt_devicemode(info->printername)) == NULL)
 			goto fail;
 	}
 	else {
-		info.devmode = NULL;
+		info->devmode = NULL;
 	}
 
-	/* This will get the current RPC talloc context, but we should be
-	   passing this as a parameter... fixme... JRA ! */
-
-	if (!nt_printing_getsec(get_talloc_ctx(), sharename, &info.secdesc_buf))
+	if (!nt_printing_getsec(info, sharename, &info->secdesc_buf))
 		goto fail;
-
-	*info_ptr = (NT_PRINTER_INFO_LEVEL_2 *)memdup(&info, sizeof(info));
-	if (! *info_ptr) {
-		DEBUG(0,("get_a_printer_2_default: malloc fail.\n"));
-		goto fail;
-	}
 
 	return WERR_OK;
 
-  fail:
-	if (info.devmode)
-		free_nt_devicemode(&info.devmode);
+fail:
+	if (info->devmode)
+		free_nt_devicemode(&info->devmode);
+
 	return WERR_ACCESS_DENIED;
 }
 
 /****************************************************************************
 ****************************************************************************/
-static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *servername, const char *sharename)
+static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info, const char *servername, const char *sharename)
 {
-	NT_PRINTER_INFO_LEVEL_2 info;
 	int len = 0;
 	int snum = lp_servicenumber(sharename);
 	TDB_DATA kbuf, dbuf;
 	fstring printername;
 	char adevice[MAXDEVICENAME];
 		
-	ZERO_STRUCT(info);
-
 	kbuf = make_printer_tdbkey( sharename );
 
 	dbuf = tdb_fetch(tdb_printers, kbuf);
 	if (!dbuf.dptr)
-		return get_a_printer_2_default(info_ptr, servername, sharename);
+		return get_a_printer_2_default(info, servername, sharename);
 
 	len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "dddddddddddfffffPfffff",
-			&info.attributes,
-			&info.priority,
-			&info.default_priority,
-			&info.starttime,
-			&info.untiltime,
-			&info.status,
-			&info.cjobs,
-			&info.averageppm,
-			&info.changeid,
-			&info.c_setprinter,
-			&info.setuptime,
-			info.servername,
-			info.printername,
-			info.sharename,
-			info.portname,
-			info.drivername,
-			info.comment,
-			info.location,
-			info.sepfile,
-			info.printprocessor,
-			info.datatype,
-			info.parameters);
+			&info->attributes,
+			&info->priority,
+			&info->default_priority,
+			&info->starttime,
+			&info->untiltime,
+			&info->status,
+			&info->cjobs,
+			&info->averageppm,
+			&info->changeid,
+			&info->c_setprinter,
+			&info->setuptime,
+			info->servername,
+			info->printername,
+			info->sharename,
+			info->portname,
+			info->drivername,
+			info->comment,
+			info->location,
+			info->sepfile,
+			info->printprocessor,
+			info->datatype,
+			info->parameters);
 
 	/* Samba has to have shared raw drivers. */
-	info.attributes |= PRINTER_ATTRIBUTE_SAMBA;
-	info.attributes &= ~PRINTER_ATTRIBUTE_NOT_SAMBA;
+	info->attributes |= PRINTER_ATTRIBUTE_SAMBA;
+	info->attributes &= ~PRINTER_ATTRIBUTE_NOT_SAMBA;
 
 	/* Restore the stripped strings. */
-	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", servername);
+	slprintf(info->servername, sizeof(info->servername)-1, "\\\\%s", servername);
 
 	if ( lp_force_printername(snum) )
 		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, sharename );
 	else 
-		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, info.printername);
+		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, info->printername);
 
-	fstrcpy(info.printername, printername);
+	fstrcpy(info->printername, printername);
 
-	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
+	len += unpack_devicemode(&info->devmode,dbuf.dptr+len, dbuf.dsize-len);
 
 	/*
 	 * Some client drivers freak out if there is a NULL devmode
@@ -3767,34 +3723,37 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *se
 	 * See comments in get_a_printer_2_default()
 	 */
 
-	if (lp_default_devmode(snum) && !info.devmode) {
+	if (lp_default_devmode(snum) && !info->devmode) {
 		DEBUG(8,("get_a_printer_2: Constructing a default device mode for [%s]\n",
 			printername));
-		info.devmode = construct_nt_devicemode(printername);
+		info->devmode = construct_nt_devicemode(printername);
 	}
 
-	slprintf( adevice, sizeof(adevice), "%s", info.printername );
-	if (info.devmode) {
-		fstrcpy(info.devmode->devicename, adevice);	
+	slprintf( adevice, sizeof(adevice), "%s", info->printername );
+	if (info->devmode) {
+		fstrcpy(info->devmode->devicename, adevice);	
 	}
 
-	len += unpack_values( &info.data, dbuf.dptr+len, dbuf.dsize-len );
+	if ( !(info->data = TALLOC_ZERO_P( info, NT_PRINTER_DATA )) ) {
+		DEBUG(0,("unpack_values: talloc() failed!\n"));
+		return WERR_NOMEM;
+	}
+	len += unpack_values( info->data, dbuf.dptr+len, dbuf.dsize-len );
 
 	/* This will get the current RPC talloc context, but we should be
 	   passing this as a parameter... fixme... JRA ! */
 
-	nt_printing_getsec(get_talloc_ctx(), sharename, &info.secdesc_buf);
+	nt_printing_getsec(info, sharename, &info->secdesc_buf);
 
 	/* Fix for OS/2 drivers. */
 
 	if (get_remote_arch() == RA_OS2)
-		map_to_os2_driver(info.drivername);
+		map_to_os2_driver(info->drivername);
 
 	SAFE_FREE(dbuf.dptr);
-	*info_ptr=memdup(&info, sizeof(info));
 
 	DEBUG(9,("Unpacked printer [%s] name [%s] running driver [%s]\n",
-		 sharename, info.printername, info.drivername));
+		 sharename, info->printername, info->drivername));
 
 	return WERR_OK;	
 }
@@ -3881,29 +3840,6 @@ static uint32 rev_changeid(void)
 #endif
 }
 
-#ifdef ENABLE_PRINT_HND_OBJECT_CACHE
-/********************************************************************
- Send a message to all smbds about the printer that just changed
- ********************************************************************/
- 
-static BOOL send_printer_mod_msg( char* printername )
-{
-	int len = strlen(printername);
-	
-	if (!len)
-		return False;
-
-	DEBUG(10,("send_printer_mod_msg: Sending message about printer change [%s]\n",
-		printername));
-		
-	/* spam everyone that we just changed this printer */
-	
-	message_send_all( conn_tdb_ctx(), MSG_PRINTER_MOD, printername, len+1, False, NULL );
-
-	return True;
-}
-#endif
-
 
 /*
  * The function below are the high level ones.
@@ -3920,21 +3856,6 @@ WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
 	WERROR result;
 	
 	dump_a_printer(printer, level);	
-	
-#ifdef ENABLE_PRINT_HND_OBJECT_CACHE
-	/* 
-	 * invalidate cache for all open handles to this printer.
-	 * cache for a given handle will be updated on the next 
-	 * get_a_printer() 
-	 */
-	 
-	invalidate_printer_hnd_cache( printer->info_2->sharename );
-	
-	/* messages between smbds can only be sent as root */
-	become_root();
-	send_printer_mod_msg( printer->info_2->sharename );
-	unbecome_root();
-#endif
 	
 	switch (level) {
 		case 2:
@@ -4002,7 +3923,8 @@ static BOOL set_driver_init_2( NT_PRINTER_INFO_LEVEL_2 *info_ptr )
 	 * should not be any (if there are delete them).
 	 */
 	 
-	delete_all_printer_data( info_ptr, "" );
+	if ( info_ptr->data )
+		delete_all_printer_data( info_ptr, "" );
 	
 	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, info_ptr->drivername);
 
@@ -4056,8 +3978,13 @@ static BOOL set_driver_init_2( NT_PRINTER_INFO_LEVEL_2 *info_ptr )
 		info_ptr->printername, info_ptr->devmode?"VALID":"NULL", info_ptr->drivername));
 
 	/* Add the printer data 'values' to the new printer */
+
+	if ( !(info_ptr->data = TALLOC_ZERO_P( info_ptr, NT_PRINTER_DATA )) ) {
+		DEBUG(0,("set_driver_init_2: talloc() failed!\n"));
+		return False;
+	}
 	 
-	len += unpack_values( &info_ptr->data, dbuf.dptr+len, dbuf.dsize-len );
+	len += unpack_values( info_ptr->data, dbuf.dptr+len, dbuf.dsize-len );
 	
 
 	SAFE_FREE(dbuf.dptr);
@@ -4136,7 +4063,7 @@ static uint32 update_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	len = 0;
 	len += pack_devicemode(info->devmode, buf+len, buflen-len);
 
-	len += pack_values( &info->data, buf+len, buflen-len );
+	len += pack_values( info->data, buf+len, buflen-len );
 
 	if (buflen < len) {
 		char *tb;
@@ -4337,74 +4264,6 @@ WERROR save_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level, uint8 *dat
 	return status;
 }
 
-#ifdef ENABLE_PRINT_HND_OBJECT_CACHE
-/****************************************************************************
- Deep copy a NT_PRINTER_DATA
-****************************************************************************/
-
-static NTSTATUS copy_printer_data( NT_PRINTER_DATA *dst, NT_PRINTER_DATA *src )
-{
-	int i, j, num_vals, new_key_index;
-	REGVAL_CTR *src_key, *dst_key;
-	
-	if ( !dst || !src )
-		return NT_STATUS_NO_MEMORY;
-	
-	for ( i=0; i<src->num_keys; i++ ) {
-			   
-		/* create a new instance of the printerkey in the destination 
-		   printer_data object */
-		   
-		new_key_index = add_new_printer_key( dst, src->keys[i].name );
-		dst_key = &dst->keys[new_key_index].values;
-
-		src_key = &src->keys[i].values;
-		num_vals = regval_ctr_numvals( src_key );
-		
-		/* dup the printer entire printer key */
-		
-		for ( j=0; j<num_vals; j++ ) {
-			regval_ctr_copyvalue( dst_key, regval_ctr_specific_value(src_key, j) );
-		}
-	}
-		
-	return NT_STATUS_OK;
-}
-
-/****************************************************************************
- Deep copy a NT_PRINTER_INFO_LEVEL_2 structure using malloc()'d memeory
- Caller must free.
-****************************************************************************/
-
-NT_PRINTER_INFO_LEVEL_2* dup_printer_2( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL_2 *printer )
-{
-	NT_PRINTER_INFO_LEVEL_2 *copy;
-	
-	if ( !printer )
-		return NULL;
-	
-	if ( !(copy = SMB_MALLOC_P(NT_PRINTER_INFO_LEVEL_2)) )
-		return NULL;
-		
-	memcpy( copy, printer, sizeof(NT_PRINTER_INFO_LEVEL_2) );
-	
-	/* malloc()'d members copied here */
-	
-	copy->devmode = dup_nt_devicemode( printer->devmode );	
-
-	ZERO_STRUCT( copy->data );
-	copy_printer_data( &copy->data, &printer->data );
-	
-	/* this is talloc()'d; very ugly that we have a structure that 
-	   is half malloc()'d and half talloc()'d but that is the way 
-	   that the PRINTER_INFO stuff is written right now.  --jerry  */
-	   
-	copy->secdesc_buf = dup_sec_desc_buf( ctx, printer->secdesc_buf );
-		
-	return copy;
-}
-#endif
-
 /****************************************************************************
  Get a NT_PRINTER_INFO_LEVEL struct. It returns malloced memory.
 
@@ -4423,20 +4282,22 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 			const char *sharename)
 {
 	WERROR result;
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	fstring servername;
 	
-	*pp_printer = NULL;
-
 	DEBUG(10,("get_a_printer: [%s] level %u\n", sharename, (unsigned int)level));
+
+	if ( !(*pp_printer = TALLOC_ZERO_P(NULL, NT_PRINTER_INFO_LEVEL)) ) {
+		DEBUG(0,("get_a_printer: talloc() fail.\n"));
+		return WERR_NOMEM;
+	}
 
 	switch (level) {
 		case 2:
-			if ((printer = SMB_MALLOC_P(NT_PRINTER_INFO_LEVEL)) == NULL) {
-				DEBUG(0,("get_a_printer: malloc fail.\n"));
+			if ( !((*pp_printer)->info_2 = TALLOC_ZERO_P(*pp_printer, NT_PRINTER_INFO_LEVEL_2)) ) {
+				DEBUG(0,("get_a_printer: talloc() fail.\n"));
+				TALLOC_FREE( *pp_printer );
 				return WERR_NOMEM;
 			}
-			ZERO_STRUCTP(printer);
 
 			if ( print_hnd ) 
 				fstrcpy( servername, print_hnd->servername );
@@ -4445,90 +4306,28 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 				standard_sub_basic( "", servername, sizeof(servername)-1 );
 			}
 
-#ifdef ENABLE_PRINT_HND_OBJECT_CACHE
-			
-			/* 
-			 * check for cache first.  A Printer handle cannot changed
-			 * to another printer object so we only check that the printer 
-			 * is actually for a printer and that the printer_info pointer 
-			 * is valid
-			 */
-			if ( print_hnd 
-				&& (print_hnd->printer_type==PRINTER_HANDLE_IS_PRINTER) 
-				&& print_hnd->printer_info )
-			{
-				/* get_talloc_ctx() works here because we need a short 
-				   lived talloc context */
-
-				if ( !(printer->info_2 = dup_printer_2(get_talloc_ctx(), print_hnd->printer_info->info_2)) ) 
-				{
-					DEBUG(0,("get_a_printer: unable to copy cached printer info!\n"));
-					
-					SAFE_FREE(printer);
-					return WERR_NOMEM;
-				}
-				
-				DEBUG(10,("get_a_printer: using cached copy of printer_info_2\n"));
-				
-				*pp_printer = printer;				
-				result = WERR_OK;
-				
-				break;
-			}
-
-			/* no cache for this handle; see if we can match one from another handle.
-			   Make sure to use a short lived talloc ctx */
-
-			if ( print_hnd )
-				result = find_printer_in_print_hnd_cache(get_talloc_ctx(), &printer->info_2, servername, sharename);
-			
-			/* fail to disk if we don't have it with any open handle */
-
-			if ( !print_hnd || !W_ERROR_IS_OK(result) )
-				result = get_a_printer_2(&printer->info_2, servername, sharename );
-#else
-			result = get_a_printer_2(&printer->info_2, servername, sharename );
-#endif
+			result = get_a_printer_2( (*pp_printer)->info_2, servername, sharename );
 	
 			
 			/* we have a new printer now.  Save it with this handle */
 			
-			if ( W_ERROR_IS_OK(result) ) {
-				dump_a_printer(printer, level);
-
-#ifdef ENABLE_PRINT_HND_OBJECT_CACHE
-				/* save a copy in cache */
-				if ( print_hnd && (print_hnd->printer_type==PRINTER_HANDLE_IS_PRINTER)) {
-					if ( !print_hnd->printer_info )
-						print_hnd->printer_info = SMB_MALLOC_P(NT_PRINTER_INFO_LEVEL);
-
-					if ( print_hnd->printer_info ) {
-						/* make sure to use the handle's talloc ctx here since 
-						   the printer_2 object must last until the handle is closed */
-
-						print_hnd->printer_info->info_2 = dup_printer_2(print_hnd->ctx, printer->info_2);
-						
-						/* don't fail the lookup just because the cache update failed */
-						if ( !print_hnd->printer_info->info_2 )
-							DEBUG(0,("get_a_printer: unable to copy new printer info!\n"));
-					}
-				}
-#endif
-				*pp_printer = printer;	
+			if ( !W_ERROR_IS_OK(result) ) {
+				TALLOC_FREE( *pp_printer );
+				DEBUG(10,("get_a_printer: [%s] level %u returning %s\n", 
+					sharename, (unsigned int)level, dos_errstr(result)));
+				return result;
 			}
-			else
-				SAFE_FREE(printer);
+
+			dump_a_printer( *pp_printer, level);
 			
 			break;
 			
 		default:
-			result=WERR_UNKNOWN_LEVEL;
-			break;
+			TALLOC_FREE( *pp_printer );
+			return WERR_UNKNOWN_LEVEL;
 	}
 	
-	DEBUG(10,("get_a_printer: [%s] level %u returning %s\n", sharename, (unsigned int)level, dos_errstr(result)));
-
-	return result;
+	return WERR_OK;
 }
 
 /****************************************************************************
@@ -4537,30 +4336,25 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 
 uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level)
 {
-	uint32 result;
 	NT_PRINTER_INFO_LEVEL *printer = *pp_printer;
 
-	DEBUG(104,("freeing a printer at level [%d]\n", level));
-
-	if (printer == NULL)
+	if ( !printer )
 		return 0;
 	
 	switch (level) {
 		case 2:
-			if (printer->info_2 != NULL) {
+			if ( printer->info_2 ) 
 				free_nt_printer_info_level_2(&printer->info_2);
-				result=0;
-			} else
-				result=4;
 			break;
 
 		default:
-			result=1;
-			break;
+			DEBUG(0,("free_a_printer: unknown level! [%d]\n", level ));
+			return 1;
 	}
 
-	SAFE_FREE(*pp_printer);
-	return result;
+	TALLOC_FREE(*pp_printer);
+
+	return 0;
 }
 
 /****************************************************************************
