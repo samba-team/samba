@@ -185,10 +185,8 @@ static int ejs_creds_get_workstation(MprVarHandle eid, int argc, struct MprVar *
 /*
   initialise credentials ejs object
 */
-static int ejs_credentials_obj(MprVarHandle eid, int argc, struct MprVar **argv, struct cli_credentials *creds)
+static int ejs_credentials_obj(struct MprVar *obj, struct cli_credentials *creds)
 {
-	struct MprVar *obj = mprInitObject(eid, "credentials", argc, argv);
-
 	mprSetPtrChild(obj, "creds", creds);
 
 	/* setup our object methods */
@@ -207,19 +205,30 @@ static int ejs_credentials_obj(MprVarHandle eid, int argc, struct MprVar **argv,
 }
 
 
+struct MprVar mprCredentials(struct cli_credentials *creds)
+{
+	struct MprVar mpv = mprObject("credentials");
+
+	ejs_credentials_obj(&mpv, creds);
+	
+	return mpv;
+}
+
+
 /*
   initialise credentials ejs object
 */
 static int ejs_credentials_init(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	struct cli_credentials *creds;
+	struct MprVar *obj = mprInitObject(eid, "credentials", argc, argv);
 
 	creds = cli_credentials_init(mprMemCtx());
 	if (creds == NULL) {
 		return -1;
 	}
 
-	return ejs_credentials_obj(eid, argc, argv, creds);
+	return ejs_credentials_obj(obj, creds);
 }
 
 /*
@@ -227,7 +236,8 @@ static int ejs_credentials_init(MprVarHandle eid, int argc, struct MprVar **argv
 */
 int ejs_credentials_cmdline(int eid, int argc, struct MprVar **argv)
 {
-	return ejs_credentials_obj(eid, argc, argv, cmdline_credentials);
+	struct MprVar *obj = mprInitObject(eid, "credentials", argc, argv);
+	return ejs_credentials_obj(obj, cmdline_credentials);
 }
 
 
