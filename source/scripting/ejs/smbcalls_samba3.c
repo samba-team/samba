@@ -25,206 +25,366 @@
 #include "lib/appweb/ejs/ejs.h"
 #include "lib/samba3/samba3.h"
 
+
 #if 0
-struct samba3_samaccount {
-	uint32_t logon_time,
-		logoff_time,
-		kickoff_time,
-		bad_password_time,
-		pass_last_set_time,
-		pass_can_change_time,
-		pass_must_change_time;
-	char *username;
-	char *domain;
-	char *nt_username;
-	char *dir_drive;
-	char *unknown_str;
-	char *munged_dial;
-	char *fullname;
-	char *homedir;
-	char *logon_script;
-	char *profile_path;
-	char *acct_desc;
-	char *workstations;
-	uint32_t user_rid, group_rid, hours_len, unknown_6;
-	uint16_t acct_ctrl, logon_divs;
-	uint16_t bad_password_count, logon_count;
-	uint8_t	*lm_pw_ptr, *nt_pw_ptr;
-	uint8_t *nt_pw_hist_ptr;
-	uint8_t	*hours;
-};
-
-struct samba3_groupmapping {
-	gid_t gid;
-	struct dom_sid *sid;
-	int sid_name_use;
-	const char *nt_name;
-	const char *comment;
-};
-
-struct samba3_alias {
-	struct dom_sid *sid;
-	uint32_t member_count;
-	struct dom_sid **members;
-};
-
-struct samba3_groupdb {
-	uint32_t groupmap_count;
-	struct samba3_groupmapping *groupmappings;
-
-	uint32_t alias_count;
-	struct samba3_alias *aliases;
-};
-
-struct samba3_idmap_mapping
-{
-	enum { IDMAP_GROUP, IDMAP_USER } type;
-	uint32_t unix_id;
-	struct dom_sid *sid;
-};
-
-struct samba3_idmapdb
-{
-	/* High water marks */
-	uint32_t user_hwm;
-	uint32_t group_hwm;
-
-	uint32_t mapping_count;
-	struct samba3_idmap_mapping *mappings;
-};
-
-struct samba3_winsdb_entry 
-{
-	char *name;
-	int nb_flags;
-	int type;
-	time_t ttl;
-	uint32_t ip_count;
-	struct ipv4_addr *ips;
-};
-
-struct samba3_policy
-{
-	uint32_t min_password_length;
-	uint32_t password_history;
-	uint32_t user_must_logon_to_change_password;
-	uint32_t maximum_password_age;
-	uint32_t minimum_password_age;
-	uint32_t lockout_duration;
-	uint32_t reset_count_minutes;
-	uint32_t bad_lockout_minutes;
-	uint32_t disconnect_time;
-	uint32_t refuse_machine_password_change;
-};
-
-struct samba3_regval {
-	char *name;
-	uint16_t		type;
-	DATA_BLOB 		data;
-};
-
-struct samba3_regkey {
-	char *name;
-	
-	uint32_t value_count;
-	struct samba3_regval *values;
-
-	uint32_t subkey_count;
-	char **subkeys;
-};
-
-struct samba3_regdb
-{
-	uint32_t key_count;
-	struct samba3_regkey *keys;
-};
 
 struct samba3_secrets
 {
-	struct cli_credentials *ipc_cred;
-	
-	uint32_t ldappw_count;
-	struct samba3_ldappw 
-	{
-		char *dn;
-		char *password;
-	} *ldappws;
-
-	uint32_t domain_count;
-	struct samba3_domainsecrets 
-	{
-		char *name;
-		struct dom_sid sid;
-		struct GUID guid;
-		char *plaintext_pw;
-		time_t last_change_time;
-		struct {
-			uint8_t hash[16];
-			time_t mod_time;
-		} hash_pw;;
-		int sec_channel_type;
-	} *domains;
-
-	uint32_t trusted_domain_count;
-	struct samba3_trusted_dom_pass {
-		uint32_t uni_name_len;
-		const char *uni_name[32]; /* unicode domain name */
-		const char *pass;		/* trust relationship's password */
-		time_t mod_time;
-		struct dom_sid domain_sid;	/* remote domain's sid */
-	} *trusted_domains;
-
-	uint32_t afs_keyfile_count;
-
-	struct samba3_afs_keyfile {
-		uint32_t nkeys;
-		struct {
-			uint32_t kvno;
-			char key[8];
-		} entry[8];
-		char *cell;
-	} *afs_keyfiles;
-};
-
-struct samba3_parameter {
-	char *name;
-	char *value;
-};
-
-struct samba3_share_info {
-	char *name;
-	struct security_descriptor secdesc;
-
-	uint32_t parameter_count;
-	struct samba3_parameter *parameters;
-};
-
-struct samba3 
-{
-	uint32_t winsdb_count;
-	struct samba3_winsdb_entry *winsdb_entries;
-	
-	uint32_t samaccount_count;
-	struct samba3_samaccount *samaccounts;
-
-	uint32_t share_count;
-	struct samba3_share_info *shares;
-
-	struct samba3_secrets secrets;
-	struct samba3_groupdb group;
-	struct samba3_idmapdb idmap;
-	struct samba3_policy policy;
-	struct samba3_regdb registry;
 };
 
 #endif 
+
+static struct MprVar mprRegistry(struct samba3_regdb *reg)
+{
+	struct MprVar mpv = mprObject("registry"), ks, vs, k, v;
+	int i, j;
+
+	ks = mprObject("array");
+
+	for (i = 0; i < reg->key_count; i++) {
+		k = mprObject("regkey");
+
+		mprSetVar(&k, "name", mprString(reg->keys[i].name));
+
+		vs = mprObject("array");
+		
+		for (j = 0; j < reg->keys[i].value_count; j++) {
+			v = mprObject("regval");
+
+			mprSetVar(&v, "name", mprString(reg->keys[i].values[j].name));
+			mprSetVar(&v, "type", mprCreateIntegerVar(reg->keys[i].values[j].type));
+			mprSetVar(&v, "data", mprDataBlob(reg->keys[i].values[j].data));
+
+			mprAddArray(&vs, j, v);
+		}
+
+		mprSetVar(&k, "values", vs);
+
+		mprAddArray(&ks, i, k);
+	}
+
+	mprSetVar(&mpv, "keys", ks);
+
+	return mpv;
+}
+
+static struct MprVar mprPolicy(struct samba3_policy *pol)
+{
+	struct MprVar mpv = mprObject("policy");
+
+	mprSetVar(&mpv, "min_password_length", mprCreateIntegerVar(pol->min_password_length));
+	mprSetVar(&mpv, "password_history", mprCreateIntegerVar(pol->password_history));
+	mprSetVar(&mpv, "user_must_logon_to_change_password", mprCreateIntegerVar(pol->user_must_logon_to_change_password));
+	mprSetVar(&mpv, "maximum_password_age", mprCreateIntegerVar(pol->maximum_password_age));
+	mprSetVar(&mpv, "minimum_password_age", mprCreateIntegerVar(pol->minimum_password_age));
+	mprSetVar(&mpv, "lockout_duration", mprCreateIntegerVar(pol->lockout_duration));
+	mprSetVar(&mpv, "reset_count_minutes", mprCreateIntegerVar(pol->reset_count_minutes));
+	mprSetVar(&mpv, "bad_lockout_minutes", mprCreateIntegerVar(pol->bad_lockout_minutes));
+	mprSetVar(&mpv, "disconnect_time", mprCreateIntegerVar(pol->disconnect_time));
+	mprSetVar(&mpv, "refuse_machine_password_change", mprCreateIntegerVar(pol->refuse_machine_password_change));
+
+	return mpv;
+}
+
+static struct MprVar mprIdmapDb(struct samba3_idmapdb *db)
+{
+	struct MprVar mpv = mprObject("idmapdb"), mps, mp;
+	int i;
+
+	mprSetVar(&mpv, "user_hwm", mprCreateIntegerVar(db->user_hwm));
+	mprSetVar(&mpv, "group_hwm", mprCreateIntegerVar(db->group_hwm));
+
+	mps = mprObject("array");
+
+	for (i = 0; i < db->mapping_count; i++) {
+		char *tmp;
+		mp = mprObject("idmap");
+
+		mprSetVar(&mp, "type", mprCreateIntegerVar(db->mappings[i].type));
+		mprSetVar(&mp, "unix_id", mprCreateIntegerVar(db->mappings[i].unix_id));
+
+		tmp = dom_sid_string(NULL, db->mappings[i].sid);
+		mprSetVar(&mp, "sid", mprString(tmp));
+		talloc_free(tmp);
+
+		mprAddArray(&mps, i, mp);
+	}
+
+	mprSetVar(&mpv, "mappings", mps);
+
+	return mpv;
+}
+
+static struct MprVar mprGroupMappings(struct samba3_groupdb *db)
+{
+	struct MprVar mpv = mprObject("array"), g;
+	int i;
+
+	for (i = 0; i < db->groupmap_count; i++) {
+		char *tmp;
+		g = mprObject("group");
+
+		mprSetVar(&g, "gid", mprCreateIntegerVar(db->groupmappings[i].gid));
+
+		tmp = dom_sid_string(NULL, db->groupmappings[i].sid);
+		mprSetVar(&g, "sid", mprString(tmp));
+		talloc_free(tmp);
+
+		mprSetVar(&g, "sid_name_use", mprCreateIntegerVar(db->groupmappings[i].sid_name_use));
+		mprSetVar(&g, "nt_name", mprString(db->groupmappings[i].nt_name));
+		mprSetVar(&g, "comment", mprString(db->groupmappings[i].comment));
+
+		mprAddArray(&mpv, i, g);
+	}
+
+	return mpv;
+}
+
+static struct MprVar mprAliases(struct samba3_groupdb *db)
+{
+	struct MprVar mpv = mprObject("array"), a, am;
+	int i, j;
+
+	for (i = 0; i < db->alias_count; i++) {
+		char *tmp;
+		a = mprObject("alias");
+
+		tmp = dom_sid_string(NULL, db->aliases[i].sid);
+		mprSetVar(&a, "sid", mprString(tmp));
+		talloc_free(tmp);
+
+		am = mprObject("array");
+
+		for (j = 0; j < db->aliases[i].member_count; j++) {
+			tmp = dom_sid_string(NULL, db->aliases[i].members[j]);
+			mprAddArray(&am, j, mprString(tmp));
+			talloc_free(tmp);
+		}
+
+		mprSetVar(&a, "members", am);
+	}
+
+	return mpv;
+}
+
+static struct MprVar mprSecrets(struct samba3_secrets *sec)
+{
+	struct MprVar mpv = mprObject("samba3_secrets"), es, e;
+	int i;
+
+	es = mprObject("array");
+
+	for (i = 0; i < sec->ldappw_count; i++) {
+		e = mprObject("ldappw");
+
+		mprSetVar(&e, "dn", mprString(sec->ldappws[i].dn));
+		mprSetVar(&e, "password", mprString(sec->ldappws[i].password));
+
+		mprAddArray(&es, i, e);
+	}
+
+	mprSetVar(&mpv, "ldappws", es);
+
+	for (i = 0; i < sec->domain_count; i++) {
+		char *tmp;
+		struct MprVar v;
+		e = mprObject("domainsecrets");
+
+		mprSetVar(&e, "name", mprString(sec->domains[i].name));
+		
+		tmp = dom_sid_string(NULL, &sec->domains[i].sid);
+		mprSetVar(&e, "sid", mprString(tmp));
+		talloc_free(tmp);
+
+		tmp = GUID_string(NULL, &sec->domains[i].guid);
+		mprSetVar(&e, "guid", mprString(tmp));
+		talloc_free(tmp);
+
+		mprSetVar(&e, "plaintext_pw", mprString(sec->domains[i].plaintext_pw));
+
+		mprSetVar(&e, "last_change_time", mprCreateIntegerVar(sec->domains[i].last_change_time));
+		mprSetVar(&e, "sec_channel_type", mprCreateIntegerVar(sec->domains[i].sec_channel_type));
+
+		v = mprObject("hash_pw");
+
+		mprSetVar(&v, "hash", mprData(sec->domains[i].hash_pw.hash, 16));
+
+		mprSetVar(&v, "mod_time", mprCreateIntegerVar(sec->domains[i].hash_pw.mod_time));
+
+		mprSetVar(&e, "hash_pw", v);
+
+		mprAddArray(&es, i, e);
+	}
+
+	mprSetVar(&mpv, "domains", es);
+
+	es = mprObject("trusted_domains");
+
+	for (i = 0; i < sec->trusted_domain_count; i++) {
+		struct MprVar ns;
+		char *tmp;
+		int j;
+		e = mprObject("trusted_domain");
+
+		ns = mprObject("array");
+
+		for (j = 0; j < sec->trusted_domains[i].uni_name_len; j++) {
+			mprAddArray(&ns, j, mprString(sec->trusted_domains[i].uni_name[j]));
+		}
+
+		mprSetVar(&e, "uni_name", ns);
+
+		mprSetVar(&e, "pass", mprString(sec->trusted_domains[i].pass));
+		mprSetVar(&e, "mod_time", mprCreateIntegerVar(sec->trusted_domains[i].mod_time));
+
+		tmp = dom_sid_string(NULL, &sec->trusted_domains[i].domain_sid);
+		mprSetVar(&e, "domains_sid", mprString(tmp));
+		talloc_free(tmp);
+
+		mprAddArray(&es, i, e);
+	}
+
+	mprSetVar(&mpv, "trusted_domains", es);
+	
+	es = mprObject("array");
+
+	for (i = 0; i < sec->afs_keyfile_count; i++) {
+		struct MprVar ks;
+		int j;
+		e = mprObject("afs_keyfile");
+
+		mprSetVar(&e, "cell", mprString(sec->afs_keyfiles[i].cell));
+
+		ks = mprObject("array");
+		
+		for (j = 0; j < 8; j++) {
+			struct MprVar k = mprObject("entry");
+			
+			mprSetVar(&k, "kvno", mprCreateIntegerVar(sec->afs_keyfiles[i].entry[j].kvno));
+			mprSetVar(&k, "key", mprData((uint8_t*)sec->afs_keyfiles[i].entry[j].key, 8));
+
+			mprAddArray(&ks, j, k);
+		}
+
+		mprSetVar(&e, "entry", ks);
+
+		mprSetVar(&e, "nkeys", mprCreateIntegerVar(sec->afs_keyfiles[i].nkeys));
+
+		mprAddArray(&es, i, e);
+	}
+
+	mprSetVar(&mpv, "afs_keyfiles", es);
+
+	mprSetVar(&mpv, "ipc_cred", mprCredentials(sec->ipc_cred));
+
+	return mpv;
+}
+
+static struct MprVar mprShares(struct samba3 *samba3)
+{
+	struct MprVar mpv = mprObject("array"), s, ps, p;
+	int i, j;
+
+	for (i = 0; i < samba3->share_count; i++) {
+		s = mprObject("share");
+
+		mprSetVar(&s, "name", mprString(samba3->shares[i].name));
+
+		/* FIXME: secdesc */
+
+		ps = mprObject("array");
+
+		for (j = 0; j < samba3->shares[i].parameter_count; j++) {
+			p = mprObject("parameter");
+
+			mprSetVar(&p, "name", mprString(samba3->shares[i].parameters[j].name));
+			mprSetVar(&p, "value", mprString(samba3->shares[i].parameters[j].value));
+
+			mprAddArray(&ps, j, p);
+		}
+
+		mprSetVar(&s, "parameters", ps);
+	}
+
+	return mpv;
+}
+
+static struct MprVar mprSamAccounts(struct samba3 *samba3)
+{
+	struct MprVar mpv = mprObject("array"), m;
+	int i;
+
+	for (i = 0; i < samba3->samaccount_count; i++) {
+		struct samba3_samaccount *a = &samba3->samaccounts[i];
+
+		m = mprObject("samba3_samaccount");
+
+		mprSetVar(&m, "logon_time", mprCreateIntegerVar(a->logon_time));
+		mprSetVar(&m, "logoff_time", mprCreateIntegerVar(a->logoff_time));
+		mprSetVar(&m, "kickoff_time", mprCreateIntegerVar(a->kickoff_time));
+		mprSetVar(&m, "bad_password_time", mprCreateIntegerVar(a->bad_password_time));
+		mprSetVar(&m, "pass_last_set_time", mprCreateIntegerVar(a->pass_last_set_time));
+		mprSetVar(&m, "pass_can_change_time", mprCreateIntegerVar(a->pass_can_change_time));
+		mprSetVar(&m, "pass_must_change_time", mprCreateIntegerVar(a->pass_must_change_time));
+		mprSetVar(&m, "user_rid", mprCreateIntegerVar(a->user_rid));
+		mprSetVar(&m, "group_rid", mprCreateIntegerVar(a->group_rid));
+		mprSetVar(&m, "acct_ctrl", mprCreateIntegerVar(a->acct_ctrl));
+		mprSetVar(&m, "logon_divs", mprCreateIntegerVar(a->logon_divs));
+		mprSetVar(&m, "bad_password_count", mprCreateIntegerVar(a->bad_password_count));
+		mprSetVar(&m, "logon_count", mprCreateIntegerVar(a->logon_count));
+		mprSetVar(&m, "username", mprString(a->username));
+		mprSetVar(&m, "domain", mprString(a->domain));
+		mprSetVar(&m, "nt_username", mprString(a->nt_username));
+		mprSetVar(&m, "dir_drive", mprString(a->dir_drive));
+		mprSetVar(&m, "munged_dial", mprString(a->munged_dial));
+		mprSetVar(&m, "fullname", mprString(a->fullname));
+		mprSetVar(&m, "homedir", mprString(a->homedir));
+		mprSetVar(&m, "logon_script", mprString(a->logon_script));
+		mprSetVar(&m, "profile_path", mprString(a->profile_path));
+		mprSetVar(&m, "acct_desc", mprString(a->acct_desc));
+		mprSetVar(&m, "workstations", mprString(a->workstations));
+
+		/* FIXME: lm_pw_ptr, nt_pw_ptr */
+
+		mprAddArray(&mpv, i, m);
+	}
+
+	return mpv;
+}
+
+static struct MprVar mprWinsEntries(struct samba3 *samba3)
+{
+	struct MprVar mpv = mprObject("array");
+	int i, j;
+
+	for (i = 0; i < samba3->winsdb_count; i++) {
+		struct MprVar w = mprObject("wins_entry"), ips;
+
+		mprSetVar(&w, "name", mprString(samba3->winsdb_entries[i].name));
+		mprSetVar(&w, "nb_flags", mprCreateIntegerVar(samba3->winsdb_entries[i].nb_flags));
+		mprSetVar(&w, "type", mprCreateIntegerVar(samba3->winsdb_entries[i].type));
+		mprSetVar(&w, "ttl", mprCreateIntegerVar(samba3->winsdb_entries[i].ttl));
+
+		ips = mprObject("array");
+
+		for (j = 0; j < samba3->winsdb_entries[i].ip_count; j++) {
+			mprAddArray(&ips, j, mprString(iface_n_ip(i)));
+		}
+
+		mprSetVar(&w, "ips", ips);
+		
+		mprAddArray(&mpv, i, w);
+	}
+
+	return mpv;
+}
 
 /*
   initialise samba3 ejs subsystem
 */
 static int ejs_samba3_read(MprVarHandle eid, int argc, struct MprVar **argv)
 {
-	struct MprVar *mpv = mprInitObject(eid, "samba3", argc, argv);
+	struct MprVar mpv = mprObject("samba3");
 	struct samba3 *samba3;
 	NTSTATUS status;
 
@@ -240,7 +400,17 @@ static int ejs_samba3_read(MprVarHandle eid, int argc, struct MprVar **argv)
 		return -1;
 	}
 
-	mprSetThisPtr(eid, "db", samba3);
+	mprSetVar(&mpv, "winsentries", mprWinsEntries(samba3));
+	mprSetVar(&mpv, "samaccounts", mprSamAccounts(samba3));
+	mprSetVar(&mpv, "shares", mprShares(samba3));
+	mprSetVar(&mpv, "secrets", mprSecrets(&samba3->secrets));
+	mprSetVar(&mpv, "groupmappings", mprGroupMappings(&samba3->group));
+	mprSetVar(&mpv, "aliases", mprAliases(&samba3->group));
+	mprSetVar(&mpv, "idmapdb", mprIdmapDb(&samba3->idmap));
+	mprSetVar(&mpv, "policy", mprPolicy(&samba3->policy));
+	mprSetVar(&mpv, "registry", mprRegistry(&samba3->registry));
+
+	mpr_Return(eid, mpv);
 	
 	return 0;
 }
