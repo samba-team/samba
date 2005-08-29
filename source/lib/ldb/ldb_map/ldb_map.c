@@ -34,6 +34,22 @@
  *     (use MAP_GENERATE instead ?) 
  */
 
+/*
+ - special attribute 'isMapped'
+ - add/modify
+ 	- split up ldb_message into fallback and mapped parts if is_mappable
+ - search: 
+ 	- search local one for not isMapped entries
+	- remove remote attributes from ldb_parse_tree
+	- search remote one
+	 - per record, search local one for additional data (by dn)
+	 - test if (full expression) is now true
+ - delete
+ 	- delete both
+ - rename
+ 	- rename locally and remotely
+*/
+
 static const struct ldb_map_attribute builtin_attribute_maps[];
 
 struct map_private {
@@ -41,6 +57,16 @@ struct map_private {
 	const char *last_err_string;
 };
 
+static struct ldb_map_context *map_get_privdat(struct ldb_module *module)
+{
+	return &((struct map_private *)module->private_data)->context;
+}
+
+static BOOL map_is_mappable(struct ldb_map_context *privdat, const struct ldb_message *msg)
+{
+	/* FIXME */
+	return True;
+}
 
 /* find an attribute by the local name */
 static const struct ldb_map_attribute *map_find_attr_local(struct ldb_map_context *privdat, const char *attr)
@@ -88,7 +114,7 @@ static struct ldb_parse_tree *ldb_map_parse_tree(struct ldb_module *module, TALL
 	struct ldb_parse_tree *new_tree;
 	enum ldb_map_attr_type map_type;
 	struct ldb_val value, newvalue;
-	struct ldb_map_context *privdat = &((struct map_private *)module->private_data)->context;
+	struct ldb_map_context *privdat = map_get_privdat(module);
 
 	if (tree == NULL)
 		return NULL;
@@ -103,16 +129,31 @@ static struct ldb_parse_tree *ldb_map_parse_tree(struct ldb_module *module, TALL
 		
 		new_tree = talloc_memdup(ctx, tree, sizeof(*tree));
 		new_tree->u.list.elements = talloc_array(new_tree, struct ldb_parse_tree *, tree->u.list.num_elements);
-		for (i = 0; i < new_tree->u.list.num_elements; i++) {
-			new_tree->u.list.elements[i] = ldb_map_parse_tree(module, new_tree, tree->u.list.elements[i]);
+		new_tree->u.list.num_elements = 0;
+		for (i = 0; i < tree->u.list.num_elements; i++) {
+			struct ldb_parse_tree *child = ldb_map_parse_tree(module, new_tree, tree->u.list.elements[i]);
+			
+			if (child) {
+				new_tree->u.list.elements[i] = child;
+				new_tree->u.list.num_elements++;
+			}
 		}
 
 		return new_tree;
 	}
 		
 	if (tree->operation == LDB_OP_NOT) {
+		struct ldb_parse_tree *child;
+		
 		new_tree = talloc_memdup(ctx, tree, sizeof(*tree));
-		new_tree->u.isnot.child = ldb_map_parse_tree(module, new_tree, tree->u.isnot.child);
+		child = ldb_map_parse_tree(module, new_tree, tree->u.isnot.child);
+
+		if (!child) {
+			talloc_free(new_tree);
+			return NULL;
+		}
+
+		new_tree->u.isnot.child = child;
 		return new_tree;
 	}
 
@@ -125,7 +166,7 @@ static struct ldb_parse_tree *ldb_map_parse_tree(struct ldb_module *module, TALL
 	attr = map_find_attr_local(privdat, tree->u.equality.attr);
 
 	if (!attr) {
-		DEBUG(0, ("Unable to find local attribute '%s', leaving as is\n", tree->u.equality.attr));
+		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "Unable to find local attribute '%s', leaving as is\n", tree->u.equality.attr);
 		map_type = MAP_KEEP;
 	} else {
 		map_type = attr->type;
@@ -137,12 +178,12 @@ static struct ldb_parse_tree *ldb_map_parse_tree(struct ldb_module *module, TALL
 	}
 
 	if (map_type == MAP_IGNORE) {
-		DEBUG(0, ("Search on ignored attribute '%s'!\n", tree->u.equality.attr));
+		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Search on ignored attribute '%s'\n", tree->u.equality.attr);
 		return NULL;
 	}
 
 	if (map_type == MAP_GENERATE) {
-		DEBUG(0, ("Can't do conversion for MAP_GENERATE in map_parse_tree without convert_operator for '%s'\n", tree->u.equality.attr));
+		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Can't do conversion for MAP_GENERATE in map_parse_tree without convert_operator for '%s'\n", tree->u.equality.attr);
 		return NULL;
 	}
 
@@ -307,7 +348,7 @@ static const char **ldb_map_attrs(struct ldb_module *module, const char *const a
 	int i;
 	const char **ret;
 	int ar_size = 0, last_element = 0;
-	struct ldb_map_context *privdat = &((struct map_private *)module->private_data)->context;
+	struct ldb_map_context *privdat = map_get_privdat(module);
 
 	if (attrs == NULL) 
 		return NULL;
@@ -324,7 +365,7 @@ static const char **ldb_map_attrs(struct ldb_module *module, const char *const a
 		enum ldb_map_attr_type map_type;
 
 		if (!attr) {
-			DEBUG(0, ("Local attribute '%s' does not have a definition!\n", attrs[i]));
+			ldb_debug(module->ldb, LDB_DEBUG_WARNING, "Local attribute '%s' does not have a definition!\n", attrs[i]);
 			map_type = MAP_IGNORE;
 		} else map_type = attr->type;
 
@@ -377,7 +418,7 @@ static const char **ldb_map_attrs(struct ldb_module *module, const char *const a
 
 static const char **available_local_attributes(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct ldb_map_context *privdat = &((struct map_private *)module->private_data)->context;
+	struct ldb_map_context *privdat = map_get_privdat(module);
 	int i, j;
 	int count = 0;
 	const char **ret = talloc_array(module, const char *, 1);
@@ -428,10 +469,12 @@ static struct ldb_message *ldb_map_message_incoming(struct ldb_module *module, c
 	int i, j;
 	struct ldb_message *msg = talloc_zero(module, struct ldb_message);
 	struct ldb_message_element *elm, *oldelm;
-	struct ldb_map_context *privdat = &((struct map_private *)module->private_data)->context;
+	struct ldb_map_context *privdat = map_get_privdat(module);
 	const char **newattrs = NULL;
 
 	msg->dn = map_remote_dn(privdat, module, mi->dn);
+
+	ldb_msg_add_string(module->ldb, msg, "mappedFromDn", ldb_dn_linearize(msg, mi->dn));
 
 	/* Loop over attrs, find in ldb_map_attribute array and 
 	 * run generate() */
@@ -448,7 +491,7 @@ static struct ldb_message *ldb_map_message_incoming(struct ldb_module *module, c
 		enum ldb_map_attr_type map_type;
 
 		if (!attr) {
-			DEBUG(0, ("Unable to find local attribute '%s' when generating incoming message\n", attrs[i]));
+			ldb_debug(module->ldb, LDB_DEBUG_WARNING, "Unable to find local attribute '%s' when generating incoming message\n", attrs[i]);
 			map_type = MAP_IGNORE;
 		} else map_type = attr->type;
 
@@ -501,7 +544,7 @@ static struct ldb_message *ldb_map_message_incoming(struct ldb_module *module, c
 				ldb_msg_add(module->ldb, msg, elm, elm->flags);
 				break;
 			default: 
-				DEBUG(0, ("Unknown attr->type for %s", attr->local_name));
+				ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Unknown attr->type for %s", attr->local_name);
 				break;
 		}
 	}
@@ -512,13 +555,18 @@ static struct ldb_message *ldb_map_message_incoming(struct ldb_module *module, c
 }
 
 /* Used for add, modify */
-static struct ldb_message *ldb_map_message_outgoing(struct ldb_module *module, const struct ldb_message *mo)
+static int ldb_map_message_outgoing(struct ldb_module *module, const struct ldb_message *mo, struct ldb_message **fb, struct ldb_message **mp)
 {
-	struct ldb_map_context *privdat = &((struct map_private *)module->private_data)->context;
+	struct ldb_map_context *privdat = map_get_privdat(module);
 	struct ldb_message *msg = talloc_zero(module, struct ldb_message);
 	struct ldb_message_element *elm;
 	int i,j;
-	
+
+	*fb = talloc_zero(module, struct ldb_message);
+	(*fb)->dn = talloc_reference(*fb, mo->dn);
+
+	*mp = msg;
+
 	msg->private_data = mo->private_data;
 	
 	msg->dn = map_local_dn(privdat, module, mo->dn);
@@ -529,13 +577,21 @@ static struct ldb_message *ldb_map_message_outgoing(struct ldb_module *module, c
 		enum ldb_map_attr_type map_type;
 
 		if (!attr) {
-			DEBUG(0, ("Undefined local attribute '%s', ignoring\n", mo->elements[i].name));
+			ldb_debug(module->ldb, LDB_DEBUG_WARNING, "Undefined local attribute '%s', ignoring\n", mo->elements[i].name);
 			map_type = MAP_IGNORE;
 			continue;
 		} else map_type = attr->type;
 
 		switch (map_type) {
-		case MAP_IGNORE: break;
+		case MAP_IGNORE: /* Add to fallback message */
+			elm = talloc(*fb, struct ldb_message_element);
+
+			elm->num_values = mo->elements[i].num_values;
+			elm->values = talloc_reference(elm, mo->elements[i].values);
+			elm->name = talloc_strdup(elm, mo->elements[i].name);
+			
+			ldb_msg_add(module->ldb, *fb, elm, mo->elements[i].flags);	
+			break;
 		case MAP_RENAME:
 			elm = talloc(msg, struct ldb_message_element);
 
@@ -576,22 +632,25 @@ static struct ldb_message *ldb_map_message_outgoing(struct ldb_module *module, c
 		} 
 	}
 
-	return msg;
+	return 0;
 }
+
 
 /*
   rename a record
 */
 static int map_rename(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
 {
-	struct ldb_map_context *privdat = &((struct map_private *)module->private_data)->context;
+	struct ldb_map_context *privdat = map_get_privdat(module);
 	struct ldb_dn *n_olddn, *n_newdn;
 	int ret;
+
+	ret = ldb_next_rename_record(module, olddn, newdn);
 	
 	n_olddn = map_local_dn(privdat, module, olddn);
 	n_newdn = map_local_dn(privdat, module, newdn);
 
-	ret = ldb_next_rename_record(module, n_olddn, n_newdn);
+	ret = ldb_rename(privdat->mapped_ldb, n_olddn, n_newdn);
 
 	talloc_free(n_olddn);
 	talloc_free(n_newdn);
@@ -604,18 +663,118 @@ static int map_rename(struct ldb_module *module, const struct ldb_dn *olddn, con
 */
 static int map_delete(struct ldb_module *module, const struct ldb_dn *dn)
 {
-	struct ldb_map_context *privdat = &((struct map_private *)module->private_data)->context;
+	struct ldb_map_context *privdat = map_get_privdat(module);
 	struct ldb_dn *newdn;
 	int ret;
 
+	ret = ldb_next_delete_record(module, dn);
+	
 	newdn = map_local_dn(privdat, module, dn);
 
-	ret = ldb_next_delete_record(module, newdn);
+	ret = ldb_delete(privdat->mapped_ldb, newdn);
 
 	talloc_free(newdn);
 
 	return ret;
 }
+
+/* search fallback database */
+static int map_search_bytree_fb(struct ldb_module *module, const struct ldb_dn *base,
+			      enum ldb_scope scope, struct ldb_parse_tree *tree,
+			      const char * const *attrs, struct ldb_message ***res)
+{
+	int ret;
+	struct ldb_parse_tree t_and, t_not, t_present, *childs[2];
+
+	t_present.operation = LDB_OP_PRESENT;
+	t_present.u.present.attr = talloc_strdup(NULL, "isMapped");
+
+	t_not.operation = LDB_OP_NOT;
+	t_not.u.isnot.child = &t_present;
+
+	childs[0] = &t_not;
+	childs[1] = tree;
+	t_and.operation = LDB_OP_AND;
+	t_and.u.list.num_elements = 2;
+	t_and.u.list.elements = childs;
+	
+	ret = ldb_next_search_bytree(module, base, scope, &t_and, attrs, res);
+
+	talloc_free(t_present.u.present.attr);
+
+	return ret;
+}
+
+static int map_search_bytree_mp(struct ldb_module *module, const struct ldb_dn *base,
+			      enum ldb_scope scope, struct ldb_parse_tree *tree,
+			      const char * const *attrs, struct ldb_message ***res)
+{
+	struct ldb_parse_tree *new_tree;
+	struct ldb_dn *new_base;
+	struct ldb_message **newres;
+	const char **newattrs;
+	int mpret, ret;
+	struct ldb_map_context *privdat = map_get_privdat(module);
+	int i;
+
+	/*- search mapped database */
+
+	new_tree = ldb_map_parse_tree(module, module, tree);
+	newattrs = ldb_map_attrs(module, attrs); 
+	new_base = map_local_dn(privdat, module, base);
+
+	mpret = ldb_search_bytree(privdat->mapped_ldb, new_base, scope, new_tree, newattrs, &newres);
+
+	talloc_free(new_base);
+	talloc_free(new_tree);
+	talloc_free(newattrs);
+
+	/*
+	 - per returned record, search local one for additional data (by dn)
+	 - test if (full expression) is now true
+	*/
+
+
+	*res = talloc_array(module, struct ldb_message *, mpret);
+
+	ret = 0;
+
+	for (i = 0; i < mpret; i++) {
+		struct ldb_message *merged = ldb_map_message_incoming(module, attrs, newres[i]);
+		struct ldb_message **extrares = NULL;
+		int extraret;
+		
+		/* Merge with additional data from local database */
+		extraret = ldb_next_search(module, merged->dn, LDB_SCOPE_ONELEVEL, "", NULL, &extrares);
+
+		if (extraret > 1) {
+			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "More then one result for extra data!\n");
+			return -1;
+		} else if (extraret == 1) {
+			int j;
+			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Extra data found for remote DN");
+			for (j = 0; j < merged->num_elements; j++) {
+				ldb_msg_add(module->ldb, merged, &extrares[0]->elements[j], extrares[0]->elements[j].flags);
+			}
+		} else {
+			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "No extra data found for remote DN");
+		}
+
+		talloc_free(extrares);
+		
+		if (ldb_match_msg(module->ldb, merged, tree, base, scope)) {
+			(*res)[ret] = merged;
+			ret++;
+		} else {
+			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Discarded merged message because it did not match");
+		}
+		
+		talloc_free(newres[i]);
+	}
+
+	return ret;
+}
+
 
 /*
   search for matching records using a ldb_parse_tree
@@ -625,30 +784,26 @@ static int map_search_bytree(struct ldb_module *module, const struct ldb_dn *bas
 			      const char * const *attrs, struct ldb_message ***res)
 {
 	int ret;
-	const char **newattrs;
-	struct ldb_parse_tree *new_tree;
-	struct ldb_dn *new_base;
-	struct ldb_message **newres;
-	struct ldb_map_context *privdat = &((struct map_private *)module->private_data)->context;
+	struct ldb_message **fbres, **mpres;
 	int i;
+	int ret_fb, ret_mp;
 
-	new_tree = ldb_map_parse_tree(module, module, tree);
-	newattrs = ldb_map_attrs(module, attrs); 
-	new_base = map_local_dn(privdat, module, base);
+	ret_fb = map_search_bytree_fb(module, base, scope, tree, attrs, &fbres);
+	if (ret_fb == -1)
+		return -1;
 
-	ret = ldb_next_search_bytree(module, new_base, scope, new_tree, newattrs, &newres);
+	ret_mp = map_search_bytree_mp(module, base, scope, tree, attrs, &mpres);
+	if (ret_mp == -1)
+		return -1;
 
-	talloc_free(new_base);
-	talloc_free(new_tree);
-	talloc_free(newattrs);
+	/* Merge results */
+	*res = talloc_array(module, struct ldb_message *, ret_fb + ret_mp);
 
-	*res = talloc_array(module, struct ldb_message *, ret);
+	for (i = 0; i < ret_fb; i++) (*res)[i] = fbres[i];
+	for (i = 0; i < ret_mp; i++) (*res)[ret_fb+i] = mpres[i];
 
-	for (i = 0; i < ret; i++) {
-		(*res)[i] = ldb_map_message_incoming(module, attrs, newres[i]);
-		talloc_free(newres[i]);
-	}
-
+	return ret_fb + ret_mp;
+	
 	return ret;
 }
 /*
@@ -678,12 +833,33 @@ static int map_search(struct ldb_module *module, const struct ldb_dn *base,
 */
 static int map_add(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct ldb_message *nmsg = ldb_map_message_outgoing(module, msg);
 	int ret;
+	struct ldb_map_context *privdat = map_get_privdat(module);
+	struct ldb_message *fb, *mp;
 
-	ret = ldb_next_add_record(module, nmsg);
+	if (!map_is_mappable(privdat, msg)) {
+		return ldb_next_add_record(module, msg);
+	}
 
-	talloc_free(nmsg);
+	if (ldb_map_message_outgoing(module, msg, &fb, &mp) == -1)
+		return -1;
+		
+	ldb_msg_add_string(module->ldb, fb, "isMapped", "TRUE");
+
+	ret = ldb_next_add_record(module, fb);
+	if (ret == -1) {
+		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Adding fallback record failed");
+		return -1;
+	}
+		
+	ret = ldb_add(privdat->mapped_ldb, mp);
+	if (ret == -1) {
+		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Adding mapped record failed");
+		return -1;
+	}
+
+	talloc_free(fb);
+	talloc_free(mp);
 
 	return ret;
 }
@@ -694,12 +870,25 @@ static int map_add(struct ldb_module *module, const struct ldb_message *msg)
 */
 static int map_modify(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct ldb_message *nmsg = ldb_map_message_outgoing(module, msg);
+	struct ldb_map_context *privdat = map_get_privdat(module);
+	struct ldb_message *fb, *mp;
 	int ret;
 
-	ret = ldb_next_modify_record(module, nmsg);
+	if (!map_is_mappable(privdat, msg))
+		return ldb_next_modify_record(module, msg);
+		
 
-	talloc_free(nmsg);
+	if (ldb_map_message_outgoing(module, msg, &fb, &mp) == -1)
+		return -1;
+		
+	ldb_msg_add_string(module->ldb, fb, "isMapped", "TRUE");
+
+	ret = ldb_next_modify_record(module, fb);
+
+	ret = ldb_modify(privdat->mapped_ldb, mp);
+
+	talloc_free(fb);
+	talloc_free(mp);
 
 	return ret;
 }
@@ -740,12 +929,41 @@ static const struct ldb_module_ops map_ops = {
 	.errstring     = map_errstring
 };
 
+static char *map_find_url(struct ldb_context *ldb, const char *name)
+{
+	const char * const attrs[] = { "@MAP_URL" , NULL};
+	struct ldb_message **msg = NULL;
+	struct ldb_dn *mods;
+	char *url;
+	int ret;
+
+	mods = ldb_dn_string_compose(ldb, NULL, "@MAP=%s", name);
+	if (mods == NULL) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "Can't construct DN");
+		return NULL;
+	}
+
+	ret = ldb_search(ldb, mods, LDB_SCOPE_BASE, "", attrs, &msg);
+	talloc_free(mods);
+	if (ret < 1) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "Not enough results found looking for @MAP");
+		return NULL;
+	}
+
+	url = talloc_strdup(ldb, ldb_msg_find_string(msg[0], "@MAP_URL", NULL));
+
+	talloc_free(msg);
+
+	return url;
+}
+
 /* the init function */
-struct ldb_module *ldb_map_init(struct ldb_context *ldb, const struct ldb_map_attribute *attrs, const struct ldb_map_objectclass *ocls, const char *options[])
+struct ldb_module *ldb_map_init(struct ldb_context *ldb, const struct ldb_map_attribute *attrs, const struct ldb_map_objectclass *ocls, const char *name)
 {
 	int i, j;
 	struct ldb_module *ctx;
 	struct map_private *data;
+	char *url;
 
 	ctx = talloc(ldb, struct ldb_module);
 	if (!ctx)
@@ -756,6 +974,21 @@ struct ldb_module *ldb_map_init(struct ldb_context *ldb, const struct ldb_map_at
 		talloc_free(ctx);
 		return NULL;
 	}
+
+	data->context.mapped_ldb = ldb_init(data);
+	url = map_find_url(ldb, name);
+
+	if (!url) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "@MAP=%s not set!\n", name);
+		return NULL;
+	}
+
+	if (ldb_connect(data->context.mapped_ldb, url, 0, NULL) != 0) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "Unable to open mapped database for %s at '%s'\n", name, url);
+		return NULL;
+	}
+
+	talloc_free(url);
 
 	data->last_err_string = NULL;
 
@@ -841,7 +1074,6 @@ static struct ldb_val map_convert_local_objectclass(struct ldb_map_context *map,
 		}
 	}
 
-	DEBUG(1, ("Unable to map local object class '%s'\n", (char *)val->data));
 	return ldb_val_dup(ctx, val); 
 }
 
@@ -859,7 +1091,6 @@ static struct ldb_val map_convert_remote_objectclass(struct ldb_map_context *map
 		}
 	}
 
-	DEBUG(1, ("Unable to map remote object class '%s'\n", (char *)val->data));
 	return ldb_val_dup(ctx, val); 
 }
 

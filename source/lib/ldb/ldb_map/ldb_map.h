@@ -102,6 +102,7 @@ struct ldb_map_context
 {
 	struct ldb_map_attribute *attribute_maps;
 	const struct ldb_map_objectclass *objectclass_maps;
+	struct ldb_context *mapped_ldb;
 };
 
 #endif /* __LDB_MAP_H__ */

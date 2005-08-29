@@ -627,5 +627,5 @@ struct ldb_module *init_module(struct ldb_context *ldb, const char *options[])
 struct ldb_module *ldb_samba3sam_module_init(struct ldb_context *ldb, const char *options[])
 #endif
 {
-	return ldb_map_init(ldb, samba3_attributes, samba3_objectclasses, options);
+	return ldb_map_init(ldb, samba3_attributes, samba3_objectclasses, "samba3sam");
 }

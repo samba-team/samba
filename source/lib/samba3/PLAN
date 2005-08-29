@@ -31,7 +31,7 @@ Three possible viable approaches:
 (going with a combination of 1 and 2)
 
 ldb mapping backend:
- - do search in new and old (mapped) backend and merge results
+
 
 Upgrade process:
  - take libdir & smb.conf
@@ -39,3 +39,6 @@ Upgrade process:
  - write new smb.conf (ejs)
   - list of parameters to keep.. generate some of the others
  - add generated LDIF (ejs). Call out to current provisioning
+
+TODO:
+ - move ini parsing stuff to seperate file param/ini.c
