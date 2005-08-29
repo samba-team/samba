@@ -226,12 +226,12 @@ static int		smb_print(struct cli_state *, char *, FILE *);
     {
       if (getenv("CLASS") == NULL)
       {
-        fprintf(stderr, "ERROR: Unable to connect to SAMBA host, will retry in 60 seconds...");
-        sleep (60);
+        fprintf(stderr, "ERROR: Unable to connect to CIFS host, will retry in 60 seconds...");
+        sleep (60); /* should just waiting and retrying fix authentication  ??? */
       }
       else
       {
-        fprintf(stderr, "ERROR: Unable to connect to SAMBA host, trying next printer...");
+        fprintf(stderr, "ERROR: Unable to connect to CIFS host, trying next printer...");
         return (1);
       }
     }
@@ -425,10 +425,10 @@ static struct cli_state
     return NULL;
   }
     
-  if (!cli_send_tconX(cli, share, "?????",password, strlen(password)+1)) 
+  if (!cli_send_tconX(cli, share, "?????", password, strlen(password)+1)) 
   {
+    fprintf(stderr, "ERROR: Tree connect failed (%s)\n", cli_errstr(cli));
     cli_shutdown(cli);
-    fprintf(stderr, "ERROR: Tree connect failed\n" );
     return NULL;
   }
     
