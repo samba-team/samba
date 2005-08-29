@@ -26,14 +26,6 @@
 #include "lib/samba3/samba3.h"
 
 
-#if 0
-
-struct samba3_secrets
-{
-};
-
-#endif 
-
 static struct MprVar mprRegistry(struct samba3_regdb *reg)
 {
 	struct MprVar mpv = mprObject("registry"), ks, vs, k, v;
@@ -169,6 +161,37 @@ static struct MprVar mprAliases(struct samba3_groupdb *db)
 	return mpv;
 }
 
+static struct MprVar mprDomainSecrets(struct samba3_domainsecrets *ds)
+{
+	struct MprVar v, e = mprObject("domainsecrets");
+	char *tmp;
+
+	mprSetVar(&e, "name", mprString(ds->name));
+
+	tmp = dom_sid_string(NULL, &ds->sid);
+	mprSetVar(&e, "sid", mprString(tmp));
+	talloc_free(tmp);
+
+	tmp = GUID_string(NULL, &ds->guid);
+	mprSetVar(&e, "guid", mprString(tmp));
+	talloc_free(tmp);
+
+	mprSetVar(&e, "plaintext_pw", mprString(ds->plaintext_pw));
+
+	mprSetVar(&e, "last_change_time", mprCreateIntegerVar(ds->last_change_time));
+	mprSetVar(&e, "sec_channel_type", mprCreateIntegerVar(ds->sec_channel_type));
+
+	v = mprObject("hash_pw");
+
+	mprSetVar(&v, "hash", mprData(ds->hash_pw.hash, 16));
+
+	mprSetVar(&v, "mod_time", mprCreateIntegerVar(ds->hash_pw.mod_time));
+
+	mprSetVar(&e, "hash_pw", v);
+
+	return e;
+}
+
 static struct MprVar mprSecrets(struct samba3_secrets *sec)
 {
 	struct MprVar mpv = mprObject("samba3_secrets"), es, e;
@@ -188,34 +211,7 @@ static struct MprVar mprSecrets(struct samba3_secrets *sec)
 	mprSetVar(&mpv, "ldappws", es);
 
 	for (i = 0; i < sec->domain_count; i++) {
-		char *tmp;
-		struct MprVar v;
-		e = mprObject("domainsecrets");
-
-		mprSetVar(&e, "name", mprString(sec->domains[i].name));
-		
-		tmp = dom_sid_string(NULL, &sec->domains[i].sid);
-		mprSetVar(&e, "sid", mprString(tmp));
-		talloc_free(tmp);
-
-		tmp = GUID_string(NULL, &sec->domains[i].guid);
-		mprSetVar(&e, "guid", mprString(tmp));
-		talloc_free(tmp);
-
-		mprSetVar(&e, "plaintext_pw", mprString(sec->domains[i].plaintext_pw));
-
-		mprSetVar(&e, "last_change_time", mprCreateIntegerVar(sec->domains[i].last_change_time));
-		mprSetVar(&e, "sec_channel_type", mprCreateIntegerVar(sec->domains[i].sec_channel_type));
-
-		v = mprObject("hash_pw");
-
-		mprSetVar(&v, "hash", mprData(sec->domains[i].hash_pw.hash, 16));
-
-		mprSetVar(&v, "mod_time", mprCreateIntegerVar(sec->domains[i].hash_pw.mod_time));
-
-		mprSetVar(&e, "hash_pw", v);
-
-		mprAddArray(&es, i, e);
+		mprAddArray(&es, i, mprDomainSecrets(&sec->domains[i]));
 	}
 
 	mprSetVar(&mpv, "domains", es);
@@ -381,6 +377,54 @@ static struct MprVar mprWinsEntries(struct samba3 *samba3)
 	return mpv;
 }
 
+static int ejs_get_param(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	struct samba3 *samba3;
+	const char *tmp;
+
+	if (argc < 2) {
+		ejsSetErrorMsg(eid, "get_param invalid arguments");
+		return -1;
+	}
+
+	samba3 = mprGetThisPtr(eid, "samba3");
+	mprAssert(samba3);
+	tmp = samba3_get_param(samba3, mprToString(argv[0]), mprToString(argv[1]));
+
+	if (tmp == NULL) {
+		mpr_Return(eid, mprCreateUndefinedVar());
+	} else {
+		mpr_Return(eid, mprString(tmp));
+	}
+
+	return 0;
+}
+
+static int ejs_find_domainsecrets(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	struct samba3 *samba3 = NULL;
+	struct samba3_domainsecrets *sec;
+
+	if (argc < 1) {
+		ejsSetErrorMsg(eid, "find_domainsecrets invalid arguments");
+		return -1;
+	}
+
+	samba3 = mprGetThisPtr(eid, "samba3");
+	mprAssert(samba3);
+	sec = samba3_find_domainsecrets(samba3, mprToString(argv[0]));
+
+	if (sec == NULL) {
+		mpr_Return(eid, mprCreateUndefinedVar());
+	} else {
+		mpr_Return(eid, mprDomainSecrets(sec));
+	}
+
+	return 0;
+}
+
+
+
 /*
   initialise samba3 ejs subsystem
 */
@@ -402,6 +446,9 @@ static int ejs_samba3_read(MprVarHandle eid, int argc, struct MprVar **argv)
 		return -1;
 	}
 
+	mprAssert(samba3);
+	
+	mprSetThisPtr(eid, "samba3", samba3);
 	mprSetVar(&mpv, "winsentries", mprWinsEntries(samba3));
 	mprSetVar(&mpv, "samaccounts", mprSamAccounts(samba3));
 	mprSetVar(&mpv, "shares", mprShares(samba3));
@@ -411,6 +458,8 @@ static int ejs_samba3_read(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetVar(&mpv, "idmapdb", mprIdmapDb(&samba3->idmap));
 	mprSetVar(&mpv, "policy", mprPolicy(&samba3->policy));
 	mprSetVar(&mpv, "registry", mprRegistry(&samba3->registry));
+	mprSetCFunction(&mpv, "get_param", ejs_get_param);
+	mprSetCFunction(&mpv, "find_domainsecrets", ejs_find_domainsecrets);
 
 	mpr_Return(eid, mpv);
 	
