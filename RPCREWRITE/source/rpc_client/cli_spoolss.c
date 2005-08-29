@@ -1651,8 +1651,6 @@ WERROR rpccli_spoolss_enumprinterdataex(struct rpc_pipe_client *cli, TALLOC_CTX 
 	if (!W_ERROR_IS_OK(out.status))
 		return out.status;
 
-	regval_ctr_init(ctr);
-
 	for (i = 0; i < out.returned; i++) {
 		PRINTER_ENUM_VALUES *v = &out.ctr.values[i];
 		fstring name;
