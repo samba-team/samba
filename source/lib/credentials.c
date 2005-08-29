@@ -126,7 +126,7 @@ BOOL cli_credentials_set_principal(struct cli_credentials *cred, const char *val
 
 BOOL cli_credentials_authentication_requested(struct cli_credentials *cred) 
 {
-	if (cred->principal_obtained == CRED_SPECIFIED) {
+	if (cred->principal_obtained >= CRED_SPECIFIED) {
 		return True;
 	}
 	if (cred->username_obtained >= CRED_SPECIFIED) {
