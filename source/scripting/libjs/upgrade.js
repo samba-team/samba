@@ -32,14 +32,17 @@ function regkey_to_dn(name)
 
 function upgrade_registry(regdb,prefix)
 {
+	assert(regdb != undefined);
 	var prefix_up = strupper(prefix);
 
 	var ldif = "";
 
 	for (var i in regdb.keys) {
 		var rk = regdb.keys[i];
+		var pts = split("/", rk.name);
+
 		/* Only handle selected hive */
-		if (strncmp(prefix_up, rk.name, strlen(prefix_up)) != 0) {
+		if (strupper(pts[0]) != prefix_up) {
 			continue;
 		}
 
@@ -72,6 +75,8 @@ function upgrade_sam_policy(samba3,dn)
 {
 	var ldif = sprintf("
 dn: %s
+changetype: modify
+replace: minPwdLength
 minPwdLength: %d
 pwdHistoryLength: %d
 minPwdAge: %d
@@ -124,7 +129,7 @@ samba3PassCanChangeTime: %d
 samba3PassMustChangeTime: %d
 samba3Rid: %d
 
-", acc.fullname, domaindn, sam.logon_time, acc.logoff_time, acc.username, acc.nt_username, 
+", acc.fullname, domaindn, acc.logon_time, acc.logoff_time, acc.username, acc.nt_username, 
 acc.fullname, acc.acct_desc, acc.group_rid, acc.bad_password_count, acc.logon_count,
 acc.domain, acc.dir_drive, acc.munged_dial, acc.homedir, acc.logon_script, 
 acc.profile_path, acc.workstations, acc.kickoff_time, acc.bad_password_time, 
@@ -145,7 +150,8 @@ description: %s
 cn: %s
 objectSid: %s
 unixName: FIXME
-samba3SidNameUse: %d", grp.nt_name, domaindn, 
+samba3SidNameUse: %d
+", grp.nt_name, domaindn, 
 grp.comment, grp.nt_name, grp.sid, grp.sid_name_use);
 
 	return ldif;
@@ -185,7 +191,8 @@ dn: type=%d,name=%s
 name: %s
 objectClass: wins
 nbFlags: %x
-expires: %s", e.type, e.name, e.name, e.type, e.nb_flags, sys.ldap_time(e.ttl));
+expires: %s
+", e.type, e.name, e.name, e.type, e.nb_flags, sys.ldaptime(e.ttl));
 
 		for (var i in e.ips) {
 			ldif = ldif + sprintf("address: %s\n", e.ips[i]);
@@ -203,9 +210,20 @@ function upgrade_provision(samba3)
 	var rdn_list;
 
 	var domainname = samba3.get_param("global", "workgroup");
+
+	if (domainname == undefined) {
+		domainname = samba3.secrets.domains[0].name;
+		println("No domain specified in smb.conf file, assuming '" + domainname + "'");
+	}
+	
 	var domsec = samba3.find_domainsecrets(domainname);
 	var hostsec = samba3.find_domainsecrets(hostname());
 	var realm = samba3.get_param("global", "realm");
+
+	if (realm == undefined) {
+		realm = domainname;
+		println("No realm specified in smb.conf file, assuming '" + realm + "'");
+	}
 	random_init(local);
 
 	subobj.REALM        = realm;
@@ -217,9 +235,20 @@ function upgrade_provision(samba3)
 	assert(subobj.HOSTNAME);
 
 	subobj.HOSTIP       = hostip();
-	subobj.DOMAINGUID   = domsec.guid;
-	subobj.DOMAINSID    = domsec.sid;
-	subobj.HOSTGUID     = hostsec.guid;
+	if (domsec != undefined) {
+		subobj.DOMAINGUID   = domsec.guid;
+		subobj.DOMAINSID    = domsec.sid;
+	} else {
+		println("Can't find domain secrets for '" + domainname + "'; using random SID and GUID");
+		subobj.DOMAINGUID = randguid();
+		subobj.DOMAINSID = randguid();
+	}
+	
+	if (hostsec) {
+		subobj.HOSTGUID     = hostsec.guid;
+	} else {
+		subobj.HOSTGUID = randguid();
+	}
 	subobj.INVOCATIONID = randguid();
 	subobj.KRBTGTPASS   = randpass(12);
 	subobj.MACHINEPASS  = randpass(12);
@@ -230,7 +259,7 @@ function upgrade_provision(samba3)
 	subobj.LDAPTIME     = ldaptime;
 	subobj.DATESTRING   = datestring;
 	subobj.USN          = nextusn;
-	subobj.ROOT         = findnss(nss.getpwnam, split(samba3.get_param("global", "admin users")));
+	subobj.ROOT         = findnss(nss.getpwnam, "root");
 	subobj.NOBODY       = findnss(nss.getpwnam, "nobody");
 	subobj.NOGROUP      = findnss(nss.getgrnam, "nogroup", "nobody");
 	subobj.WHEEL        = findnss(nss.getgrnam, "wheel", "root");
@@ -364,4 +393,62 @@ var keep = new Array(
 function upgrade_smbconf(samba3)
 {
 	//FIXME
+}
+
+function upgrade(subobj, samba3, message)
+{
+	var samdb = ldb_init();
+	var ok = samdb.connect("sam.ldb");
+	assert(ok);
+
+	message("Importing account policies\n");
+	var ldif = upgrade_sam_policy(samba3,subobj.BASEDN);
+	ldifprint(ldif);
+	ok = samdb.modify(ldif);
+	assert(ok);
+
+	// FIXME: Enable samba3sam module if original passdb backend was ldap
+
+	message("Importing users\n");
+	for (var i in samba3.samaccounts) {
+		message("Importing user '" + samba3.samaccounts[i].username + "'\n");
+		var ldif = upgrade_sam_account(samba3.samaccounts[i],subobj.BASEDN);
+		ldifprint(ldif);
+		ok = samdb.add(ldif);
+		assert(ok);
+	}
+
+	message("Importing groups\n");
+	for (var i in samba3.groupmappings) {
+		message("Importing group '" + samba3.groupmappings[i].username + "'\n");
+		var ldif = upgrade_sam_group(samba3.groupmappings[i],subobj.BASEDN);
+		ldifprint(ldif);
+		ok = samdb.add(ldif);
+		assert(ok);
+	}
+
+	message("Importing registry data\n");
+	var hives = new Array("hkcr","hkcu","hklm","hkpd"); 
+	for (var i in hives) {
+		println("... " + hives[i]);
+		var regdb = ldb_init();
+		ok = regdb.connect(hives[i] + ".ldb");
+		assert(ok);
+		var ldif = upgrade_registry(samba3.registry, hives[i]);
+		ldifprint(ldif);
+		ok = regdb.add(ldif);
+		assert(ok);
+	}
+
+	message("Importing WINS data\n");
+	var winsdb = ldb_init();
+	ok = winsdb.connect("wins.ldb");
+	assert(ok);
+
+	var ldif = upgrade_wins(samba3);
+	ldifprint(ldif);
+	ok = winsdb.add(ldif);
+	assert(ok);
+
+	return ok;
 }

@@ -210,6 +210,8 @@ static struct MprVar mprSecrets(struct samba3_secrets *sec)
 
 	mprSetVar(&mpv, "ldappws", es);
 
+	es = mprObject("array");
+
 	for (i = 0; i < sec->domain_count; i++) {
 		mprAddArray(&es, i, mprDomainSecrets(&sec->domains[i]));
 	}
@@ -448,7 +450,7 @@ static int ejs_samba3_read(MprVarHandle eid, int argc, struct MprVar **argv)
 
 	mprAssert(samba3);
 	
-	mprSetThisPtr(eid, "samba3", samba3);
+	mprSetPtrChild(&mpv, "samba3", samba3);
 	mprSetVar(&mpv, "winsentries", mprWinsEntries(samba3));
 	mprSetVar(&mpv, "samaccounts", mprSamAccounts(samba3));
 	mprSetVar(&mpv, "shares", mprShares(samba3));

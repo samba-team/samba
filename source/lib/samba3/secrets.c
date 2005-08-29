@@ -72,7 +72,7 @@ static struct samba3_domainsecrets *secrets_find_domain(TALLOC_CTX *ctx, struct 
 
 	db->domains = talloc_realloc(ctx, db->domains, struct samba3_domainsecrets, db->domain_count+1);
 	ZERO_STRUCT(db->domains[db->domain_count]);
-	db->domains[db->domain_count].name = talloc_strdup(ctx, key); 
+	db->domains[db->domain_count].name = talloc_strdup(db->domains, key); 
 
 	db->domain_count++;
 	

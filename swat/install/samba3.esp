@@ -1,5 +1,11 @@
 <% page_header("columns", "Upgrade", "install"); 
 
+ /* frontend to Samba3 upgrade.
+	Based on provision.esp
+	(C) Jelmer Vernooij 2005
+	Published under the GNU GPL
+  */
+
   include("/scripting/forms.js");
   libinclude("base.js");
   libinclude("provision.js");
@@ -14,24 +20,40 @@ if (form['submit'] == "Cancel") {
 }
 
 if (form['submit'] == "Import") {
-	write("LIBDIR: " + form['LIBDIR'] + "\n" + "SMBCONF: " + form['SMBCONF']);
 	var samba3 = samba3_read(form['SMBCONF'], form['LIBDIR']);
 
-	domainname = samba3.get_param("global", "workgroup");
-	var sec = samba3.find_domainsecrets(domainname);
-	write("<p>Import data from Samba3 installation.</p>\n");
-	write("<table>\n");
-	write("<tr><td>Domain name</td><td>" + domainname + "</td></tr>\n");
-	write("<tr><td>Domain SID</td><td>" + sec.sid + "</td></tr>\n");
-	write("<tr><td>Domain GUID</td><td>" + sec.guid + "</td></tr>\n");
-	write("</table>");
+	var subobj = upgrade_provision(samba3);
 
 	var f = FormObj("Import from Samba3", 0, 2);
+
+	f.add("REALM", "Realm");
+	f.add("DOMAIN", "Domain Name");
+	f.add("HOSTNAME", "Hostname");
+	f.add("ADMINPASS", "Administrator Password", "password");
+	f.add("CONFIRM", "Confirm Password", "password");
+	f.add("DOMAINSID", "Domain SID");
+	f.add("HOSTGUID", "Host GUID");
+	f.add("BASEDN", "Base DN");
+	f.add("HOSTIP", "Host IP");
+	f.add("DEFAULTSITE", "Default Site");
+
+	for (i=0;i<f.element.length;i++) {
+		f.element[i].value = subobj[f.element[i].name];
+	}
+
 	f.submit[0] = "Continue";
 	f.submit[1] = "Cancel";
 	f.display();	
 } else if (form['submit'] == "Continue") {
-	// FIXME		  
+	var subobj = Object();
+	for (r in form) {
+		subobj[r] = form[r];
+	}
+
+	provision(subobj, writefln, false);
+
+	var samba3 = samba3_read(form['SMBCONF'], form['LIBDIR']);
+	upgrade(subobj, samba3, writefln);
 } else {
 	var f = FormObj("Import from Samba3", 0, 2);
 
