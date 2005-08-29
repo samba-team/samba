@@ -291,7 +291,7 @@ function provision_guess()
 	subobj.ROOT         = findnss(nss.getpwnam, "root");
 	subobj.NOBODY       = findnss(nss.getpwnam, "nobody");
 	subobj.NOGROUP      = findnss(nss.getgrnam, "nogroup", "nobody");
-	subobj.WHEEL        = findnss(nss.getgrnam, "wheel", "root");
+	subobj.WHEEL        = findnss(nss.getgrnam, "wheel", "root", "staff");
 	subobj.USERS        = findnss(nss.getgrnam, "users", "guest", "other");
 	subobj.DNSDOMAIN    = strlower(subobj.REALM);
 	subobj.DNSNAME      = sprintf("%s.%s", 
