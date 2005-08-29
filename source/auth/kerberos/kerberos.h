@@ -34,6 +34,10 @@ struct smb_krb5_context {
 #endif
 };
 	
+struct ccache_container {
+	struct smb_krb5_context *smb_krb5_context;
+	krb5_ccache ccache;
+};
 
 /* not really ASN.1, but RFC 1964 */
 #define TOK_ID_KRB_AP_REQ	"\x01\x00"
@@ -111,11 +115,10 @@ BOOL kerberos_compatible_enctypes(krb5_context context, krb5_enctype enctype1, k
 void kerberos_free_data_contents(krb5_context context, krb5_data *pdata);
 krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *kt_entry);
 char *smb_get_krb5_error_message(krb5_context context, krb5_error_code code, TALLOC_CTX *mem_ctx);
-NTSTATUS kinit_to_ccache(TALLOC_CTX *parent_ctx,
+ krb5_error_code kinit_to_ccache(TALLOC_CTX *parent_ctx,
 			  struct cli_credentials *credentials,
 			  struct smb_krb5_context *smb_krb5_context,
-			  krb5_ccache *ccache,
-			  const char **ccache_name);
+				 krb5_ccache ccache);
 krb5_error_code smb_krb5_init_context(TALLOC_CTX *parent_ctx, 
 				      struct smb_krb5_context **smb_krb5_context); 
 krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx, 

@@ -25,6 +25,9 @@
 #include "include/secrets.h"
 #include "lib/ldb/include/ldb.h"
 #include "librpc/gen_ndr/ndr_samr.h" /* for struct samrPassword */
+#include "system/kerberos.h"
+#include "auth/kerberos/kerberos.h"
+
 
 /**
  * Create a new credentials structure
@@ -44,6 +47,8 @@ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 	cred->password_obtained = CRED_UNINITIALISED;
 	cred->domain_obtained = CRED_UNINITIALISED;
 	cred->realm_obtained = CRED_UNINITIALISED;
+	cred->ccache_obtained = CRED_UNINITIALISED;
+	cred->principal_obtained = CRED_UNINITIALISED;
 	return cred;
 }
 
@@ -53,10 +58,15 @@ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
  * @retval The username set on this context.
  * @note Return value will never be NULL except by programmer error.
  */
-const char *cli_credentials_get_username(struct cli_credentials *cred)
+const char *cli_credentials_get_username(struct cli_credentials *cred, TALLOC_CTX *mem_ctx)
 {
 	if (cred->machine_account_pending) {
 		cli_credentials_set_machine_account(cred);
+	}
+
+	/* If we have a principal set on this, we want to login with "" domain and user@realm */
+	if (cred->username_obtained < cred->principal_obtained) {
+		return cli_credentials_get_principal(cred, mem_ctx);
 	}
 
 	if (cred->username_obtained == CRED_CALLBACK) {
@@ -64,7 +74,7 @@ const char *cli_credentials_get_username(struct cli_credentials *cred)
 		cred->username_obtained = CRED_SPECIFIED;
 	}
 
-	return cred->username;
+	return talloc_reference(mem_ctx, cred->username);
 }
 
 BOOL cli_credentials_set_username(struct cli_credentials *cred, const char *val, enum credentials_obtained obtained)
@@ -75,6 +85,53 @@ BOOL cli_credentials_set_username(struct cli_credentials *cred, const char *val,
 		return True;
 	}
 
+	return False;
+}
+
+/**
+ * Obtain the client principal for this credentials context.
+ * @param cred credentials context
+ * @retval The username set on this context.
+ * @note Return value will never be NULL except by programmer error.
+ */
+const char *cli_credentials_get_principal(struct cli_credentials *cred, TALLOC_CTX *mem_ctx)
+{
+	if (cred->machine_account_pending) {
+		cli_credentials_set_machine_account(cred);
+	}
+
+	if (cred->principal_obtained == CRED_CALLBACK) {
+		cred->principal = cred->principal_cb(cred);
+		cred->principal_obtained = CRED_SPECIFIED;
+	}
+
+	if (cred->principal_obtained < cred->username_obtained) {
+		return talloc_asprintf(mem_ctx, "%s@%s", 
+				       cli_credentials_get_username(cred, mem_ctx),
+				       cli_credentials_get_realm(cred));
+	}
+	return talloc_reference(mem_ctx, cred->principal);
+}
+
+BOOL cli_credentials_set_principal(struct cli_credentials *cred, const char *val, enum credentials_obtained obtained)
+{
+	if (obtained >= cred->principal_obtained) {
+		cred->principal = talloc_strdup(cred, val);
+		cred->principal_obtained = obtained;
+		return True;
+	}
+
+	return False;
+}
+
+BOOL cli_credentials_authentication_requested(struct cli_credentials *cred) 
+{
+	if (cred->principal_obtained == CRED_SPECIFIED) {
+		return True;
+	}
+	if (cred->username_obtained >= CRED_SPECIFIED) {
+		return True;
+	}
 	return False;
 }
 
@@ -148,6 +205,207 @@ BOOL cli_credentials_set_nt_hash(struct cli_credentials *cred,
 	return False;
 }
 
+int cli_credentials_set_from_ccache(struct cli_credentials *cred, 
+				    enum credentials_obtained obtained)
+{
+	
+	krb5_principal princ;
+	krb5_error_code ret;
+	char *name;
+	char **realm;
+
+	ret = krb5_cc_get_principal(cred->ccache->smb_krb5_context->krb5_context, 
+				    cred->ccache->ccache, &princ);
+
+	if (ret) {
+		char *err_mess = smb_get_krb5_error_message(cred->ccache->smb_krb5_context->krb5_context, ret, cred);
+		DEBUG(1,("failed to get principal from ccache: %s\n", 
+			 err_mess));
+		talloc_free(err_mess);
+		return ret;
+	}
+	
+	ret = krb5_unparse_name(cred->ccache->smb_krb5_context->krb5_context, princ, &name);
+	if (ret) {
+		char *err_mess = smb_get_krb5_error_message(cred->ccache->smb_krb5_context->krb5_context, ret, cred);
+		DEBUG(1,("failed to unparse principal from ccache: %s\n", 
+			 err_mess));
+		talloc_free(err_mess);
+		return ret;
+	}
+
+	realm = krb5_princ_realm(cred->ccache->smb_krb5_context->krb5_context, princ);
+
+	cli_credentials_set_realm(cred, *realm, obtained);
+	cli_credentials_set_principal(cred, name, obtained);
+
+	free(name);
+
+	krb5_free_principal(cred->ccache->smb_krb5_context->krb5_context, princ);
+
+	cred->ccache_obtained = obtained;
+
+	return 0;
+}
+
+
+static int free_mccache(void *ptr) {
+	struct ccache_container *ccc = ptr;
+	krb5_cc_destroy(ccc->smb_krb5_context->krb5_context, ccc->ccache);
+
+	return 0;
+}
+
+static int free_dccache(void *ptr) {
+	struct ccache_container *ccc = ptr;
+	krb5_cc_close(ccc->smb_krb5_context->krb5_context, ccc->ccache);
+
+	return 0;
+}
+
+static int cli_credentials_set_ccache(struct cli_credentials *cred, 
+				      const char *name, 
+				      enum credentials_obtained obtained)
+{
+	krb5_error_code ret;
+	krb5_principal princ;
+	struct ccache_container *ccc = talloc(cred, struct ccache_container);
+	if (!ccc) {
+		return ENOMEM;
+	}
+
+	ret = smb_krb5_init_context(ccc, &ccc->smb_krb5_context);
+	if (ret) {
+		talloc_free(ccc);
+		return ret;
+	}
+	if (name) {
+		ret = krb5_cc_resolve(ccc->smb_krb5_context->krb5_context, name, &ccc->ccache);
+		if (ret) {
+			DEBUG(1,("failed to read krb5 ccache: %s: %s\n", 
+				 name, 
+				 smb_get_krb5_error_message(ccc->smb_krb5_context->krb5_context, ret, ccc)));
+			talloc_free(ccc);
+			return ret;
+		}
+	} else {
+		ret = krb5_cc_default(ccc->smb_krb5_context->krb5_context, &ccc->ccache);
+		if (ret) {
+			DEBUG(1,("failed to read default krb5 ccache: %s\n", 
+				 smb_get_krb5_error_message(ccc->smb_krb5_context->krb5_context, ret, ccc)));
+			talloc_free(ccc);
+			return ret;
+		}
+	}
+
+	talloc_set_destructor(ccc, free_dccache);
+
+	ret = krb5_cc_get_principal(ccc->smb_krb5_context->krb5_context, ccc->ccache, &princ);
+
+	if (ret) {
+		DEBUG(1,("failed to get principal from default ccache: %s\n", 
+			 smb_get_krb5_error_message(ccc->smb_krb5_context->krb5_context, ret, ccc)));
+		talloc_free(ccc);		
+		return ret;
+	}
+
+	krb5_free_principal(ccc->smb_krb5_context->krb5_context, princ);
+
+	cred->ccache = ccc;
+	talloc_steal(cred, ccc);
+
+	ret = cli_credentials_set_from_ccache(cred, obtained);
+
+	if (ret) {
+		return ret;
+	}
+
+	return 0;
+}
+
+
+int cli_credentials_new_ccache(struct cli_credentials *cred)
+{
+	krb5_error_code ret;
+	char *rand_string;
+	struct ccache_container *ccc = talloc(cred, struct ccache_container);
+	char *ccache_name;
+	if (!ccc) {
+		return ENOMEM;
+	}
+
+	rand_string = generate_random_str(NULL, 16);
+	if (!rand_string) {
+		talloc_free(ccc);
+		return ENOMEM;
+	}
+
+	ccache_name = talloc_asprintf(ccc, "MEMORY:%s", 
+			      rand_string);
+	talloc_free(rand_string);
+
+	if (!ccache_name) {
+		talloc_free(ccc);
+		return ENOMEM;
+	}
+
+	ret = smb_krb5_init_context(ccc, &ccc->smb_krb5_context);
+	if (ret) {
+		talloc_free(ccache_name);
+		talloc_free(ccc);
+		return ret;
+	}
+
+	ret = krb5_cc_resolve(ccc->smb_krb5_context->krb5_context, ccache_name, &ccc->ccache);
+	if (ret) {
+		DEBUG(1,("failed to generate a new krb5 ccache (%s): %s\n", 
+			 ccache_name,
+			 smb_get_krb5_error_message(ccc->smb_krb5_context->krb5_context, ret, ccc)));
+		talloc_free(ccache_name);
+		talloc_free(ccc);
+		return ret;
+	}
+
+	talloc_set_destructor(ccc, free_mccache);
+
+	cred->ccache = ccc;
+	talloc_steal(cred, ccc);
+	talloc_free(ccache_name);
+
+	return ret;
+}
+
+int cli_credentials_get_ccache(struct cli_credentials *cred, struct ccache_container **ccc)
+{
+	krb5_error_code ret;
+	
+	if (cred->ccache_obtained >= (MAX(cred->principal_obtained, 
+					  cred->username_obtained))) {
+		*ccc = cred->ccache;
+		return 0;
+	}
+	if (cli_credentials_is_anonymous(cred)) {
+		return EINVAL;
+	}
+
+	ret = cli_credentials_new_ccache(cred);
+	if (ret) {
+		return ret;
+	}
+	ret = kinit_to_ccache(cred, cred, cred->ccache->smb_krb5_context, cred->ccache->ccache);
+	if (ret) {
+		return ret;
+	}
+	ret = cli_credentials_set_from_ccache(cred, cred->principal_obtained);
+
+	if (ret) {
+		return ret;
+	}
+	*ccc = cred->ccache;
+	return ret;
+}
+
+
 /**
  * Obtain the 'short' or 'NetBIOS' domain for this credentials context.
  * @param cred credentials context
@@ -158,6 +416,11 @@ const char *cli_credentials_get_domain(struct cli_credentials *cred)
 {
 	if (cred->machine_account_pending) {
 		cli_credentials_set_machine_account(cred);
+	}
+
+	/* If we have a principal set on this, we want to login with "" domain and user@realm */
+	if (cred->domain_obtained < cred->principal_obtained) {
+		return "";
 	}
 
 	if (cred->domain_obtained == CRED_CALLBACK) {
@@ -198,21 +461,6 @@ const char *cli_credentials_get_realm(struct cli_credentials *cred)
 	}
 
 	return cred->realm;
-}
-
-/**
- * Obtain the user's Kerberos principal for this credentials context.
- * @param cred credentials context
- * @param mem_ctx A talloc context to return the prinipal name on.
- * @retval The user's Kerberos principal
- * @note Return value may be NULL due to out-of memeory or invalid mem_ctx
- */
-char *cli_credentials_get_principal(struct cli_credentials *cred,
-				    TALLOC_CTX *mem_ctx)
-{
-	return talloc_asprintf(mem_ctx, "%s@%s", 
-			       cli_credentials_get_username(cred),
-			       cli_credentials_get_realm(cred));
 }
 
 /**
@@ -419,8 +667,10 @@ void cli_credentials_parse_string(struct cli_credentials *credentials, const cha
 	}
 
 	if ((p = strchr_m(uname,'@'))) {
+		cli_credentials_set_principal(credentials, uname, obtained);
 		*p = 0;
 		cli_credentials_set_realm(credentials, p+1, obtained);
+		return;
 	} else if ((p = strchr_m(uname,'\\')) || (p = strchr_m(uname, '/'))) {
 		*p = 0;
 		cli_credentials_set_domain(credentials, uname, obtained);
@@ -437,9 +687,10 @@ void cli_credentials_parse_string(struct cli_credentials *credentials, const cha
  */
 void cli_credentials_set_conf(struct cli_credentials *cred)
 {
-	cli_credentials_set_domain(cred, lp_workgroup(), CRED_GUESSED);
-	cli_credentials_set_workstation(cred, lp_netbios_name(), CRED_GUESSED);
-	cli_credentials_set_realm(cred, lp_realm(), CRED_GUESSED);
+	cli_credentials_set_username(cred, "", CRED_UNINITIALISED);
+	cli_credentials_set_domain(cred, lp_workgroup(), CRED_UNINITIALISED);
+	cli_credentials_set_workstation(cred, lp_netbios_name(), CRED_UNINITIALISED);
+	cli_credentials_set_realm(cred, lp_realm(), CRED_UNINITIALISED);
 }
 
 /**
@@ -452,35 +703,36 @@ void cli_credentials_guess(struct cli_credentials *cred)
 {
 	char *p;
 
-	cli_credentials_set_username(cred, "", CRED_GUESSED);
 	cli_credentials_set_conf(cred);
 	
 	if (getenv("LOGNAME")) {
-		cli_credentials_set_username(cred, getenv("LOGNAME"), CRED_GUESSED);
+		cli_credentials_set_username(cred, getenv("LOGNAME"), CRED_GUESS_ENV);
 	}
 
 	if (getenv("USER")) {
-		cli_credentials_parse_string(cred, getenv("USER"), CRED_GUESSED);
+		cli_credentials_parse_string(cred, getenv("USER"), CRED_GUESS_ENV);
 		if ((p = strchr_m(getenv("USER"),'%'))) {
 			memset(p,0,strlen(cred->password));
 		}
 	}
 
 	if (getenv("DOMAIN")) {
-		cli_credentials_set_domain(cred, getenv("DOMAIN"), CRED_GUESSED);
+		cli_credentials_set_domain(cred, getenv("DOMAIN"), CRED_GUESS_ENV);
 	}
 
 	if (getenv("PASSWD")) {
-		cli_credentials_set_password(cred, getenv("PASSWD"), CRED_GUESSED);
+		cli_credentials_set_password(cred, getenv("PASSWD"), CRED_GUESS_ENV);
 	}
 
 	if (getenv("PASSWD_FD")) {
-		cli_credentials_parse_password_fd(cred, atoi(getenv("PASSWD_FD")), CRED_GUESSED);
+		cli_credentials_parse_password_fd(cred, atoi(getenv("PASSWD_FD")), CRED_GUESS_FILE);
 	}
 	
 	if (getenv("PASSWD_FILE")) {
-		cli_credentials_parse_password_file(cred, getenv("PASSWD_FILE"), CRED_GUESSED);
+		cli_credentials_parse_password_file(cred, getenv("PASSWD_FILE"), CRED_GUESS_FILE);
 	}
+
+	cli_credentials_set_ccache(cred, NULL, CRED_GUESS_FILE);
 }
 
 /**
@@ -690,13 +942,17 @@ void cli_credentials_set_anonymous(struct cli_credentials *cred)
 
 BOOL cli_credentials_is_anonymous(struct cli_credentials *cred)
 {
-	const char *username = cli_credentials_get_username(cred);
-
+	TALLOC_CTX *tmp_ctx = talloc_new(cred);
+	const char *username = cli_credentials_get_username(cred, tmp_ctx);
+	
 	/* Yes, it is deliberate that we die if we have a NULL pointer
 	 * here - anonymous is "", not NULL, which is 'never specified,
 	 * never guessed', ie programmer bug */
-	if (!username[0]) 
+	if (!username[0]) {
+		talloc_free(tmp_ctx);
 		return True;
-
+	}
+	
+	talloc_free(tmp_ctx);
 	return False;
 }

@@ -349,8 +349,6 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			cli_credentials_set_conf(creds);
 			if (opt_username) {
 				cli_credentials_set_username(creds, opt_username, CRED_SPECIFIED);
-			} else {
-				cli_credentials_set_username(creds, "", CRED_GUESSED);
 			}
 			if (opt_domain) {
 				cli_credentials_set_domain(creds, opt_domain, CRED_SPECIFIED);

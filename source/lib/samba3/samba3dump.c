@@ -86,8 +86,11 @@ static NTSTATUS print_samba3_secrets(struct samba3_secrets *secrets)
 	print_header("Secrets");
 
 	printf("IPC Credentials:\n");
-	if (secrets->ipc_cred->username_obtained) 
-		printf("	User: %s\n", cli_credentials_get_username(secrets->ipc_cred));
+	if (secrets->ipc_cred->username_obtained) {
+		TALLOC_CTX *mem_ctx = talloc_new(NULL);
+		printf("	User: %s\n", cli_credentials_get_username(secrets->ipc_cred, mem_ctx));
+		talloc_free(mem_ctx);
+	}
 	if (secrets->ipc_cred->password_obtained)
 		printf("	Password: %s\n", cli_credentials_get_password(secrets->ipc_cred));
 

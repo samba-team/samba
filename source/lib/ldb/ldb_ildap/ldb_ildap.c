@@ -474,8 +474,7 @@ int ildb_connect(struct ldb_context *ldb, const char *url,
 	ldb->modules->private_data = ildb;
 	ldb->modules->ops = &ildb_ops;
 
-	if (cmdline_credentials != NULL &&
-	    cmdline_credentials->username_obtained > CRED_GUESSED) {
+	if (cmdline_credentials != NULL && cli_credentials_authentication_requested(cmdline_credentials)) {
 		status = ldap_bind_sasl(ildb->ldap, cmdline_credentials);
 		if (!NT_STATUS_IS_OK(status)) {
 			ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to bind - %s\n",
