@@ -100,6 +100,8 @@ static struct MprVar mprIdmapDb(struct samba3_idmapdb *db)
 		char *tmp;
 		mp = mprObject("idmap");
 
+		mprSetVar(&mp, "IDMAP_GROUP", mprCreateIntegerVar(IDMAP_GROUP));
+		mprSetVar(&mp, "IDMAP_USER", mprCreateIntegerVar(IDMAP_USER));
 		mprSetVar(&mp, "type", mprCreateIntegerVar(db->mappings[i].type));
 		mprSetVar(&mp, "unix_id", mprCreateIntegerVar(db->mappings[i].unix_id));
 
