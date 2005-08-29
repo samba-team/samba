@@ -115,7 +115,7 @@ sub Enum($$$)
 {
 	my ($e,$name,$ifname) = @_;
 	my $valsstring = "$ifname\_$name\_vals";
-	my $dissectorname = "$ifname\_dissect\_".StripPrefixes($name)."_enum";
+	my $dissectorname = "$ifname\_dissect\_enum\_".StripPrefixes($name);
 
 	return if (defined($conformance->{noemit}->{$dissectorname}));
 
@@ -154,7 +154,7 @@ sub Enum($$$)
 sub Bitmap($$$)
 {
 	my ($e,$name,$ifname) = @_;
-	my $dissectorname = "$ifname\_dissect\_".StripPrefixes($name)."_bitmap";
+	my $dissectorname = "$ifname\_dissect\_bitmap\_".StripPrefixes($name);
 
 	register_ett("ett_$ifname\_$name");
 
@@ -313,7 +313,7 @@ sub Element($$$)
 {
 	my ($e,$pn,$ifname) = @_;
 
-	my $dissectorname = "$ifname\_dissect\_".StripPrefixes($pn)."\_".StripPrefixes($e->{NAME});
+	my $dissectorname = "$ifname\_dissect\_element\_".StripPrefixes($pn)."\_".StripPrefixes($e->{NAME});
 
 	my $call_code = "offset = $dissectorname(tvb, offset, pinfo, tree, drep);";
 
@@ -402,7 +402,7 @@ sub Function($$$)
 sub Struct($$$)
 {
 	my ($e,$name,$ifname) = @_;
-	my $dissectorname = "$ifname\_dissect\_".StripPrefixes($name);
+	my $dissectorname = "$ifname\_dissect\_struct\_".StripPrefixes($name);
 
 	return if (defined($conformance->{noemit}->{$dissectorname}));
 
