@@ -668,6 +668,62 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
+	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY;
+	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
+	names[0].str = SID_BUILTIN;
+
+	printf("testing DsCrackNames with SID '%s' desired format:%d\n",
+			names[0].str, r.in.req.req1.format_desired);
+
+	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
+		ret = False;
+	} else if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
+		printf("DsCrackNames failed on name - %d\n", r.out.ctr.ctr1->array[0].status);
+		ret = False;
+	}
+
+	if (!ret) {
+		return ret;
+	}
+
+
+	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY;
+	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
+	names[0].str = SID_BUILTIN_ADMINISTRATORS;
+
+	printf("testing DsCrackNames with SID '%s' desired format:%d\n",
+			names[0].str, r.in.req.req1.format_desired);
+
+	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
+		ret = False;
+	} else if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
+		printf("DsCrackNames failed on name - %d\n", r.out.ctr.ctr1->array[0].status);
+		ret = False;
+	}
+
+	if (!ret) {
+		return ret;
+	}
+
+
 	/* NEGATIVE test.  This should parse, but not succeed */
 	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID;
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
