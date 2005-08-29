@@ -230,6 +230,7 @@ static void getpwsid_queryuser_recv(void *private_data, BOOL success,
 				    const char *shell,
 				    uint32 group_rid)
 {
+	fstring username;
 	struct getpwsid_state *s =
 		talloc_get_type_abort(private_data, struct getpwsid_state);
 
@@ -240,7 +241,9 @@ static void getpwsid_queryuser_recv(void *private_data, BOOL success,
 		return;
 	}
 
-	s->username = talloc_strdup(s->state->mem_ctx, acct_name);
+	fstrcpy( username, acct_name );
+	strlower_m( username );
+	s->username = talloc_strdup(s->state->mem_ctx, username);
 	s->fullname = talloc_strdup(s->state->mem_ctx, full_name);
 	s->homedir = talloc_strdup(s->state->mem_ctx, homedir);
 	s->shell = talloc_strdup(s->state->mem_ctx, shell);
