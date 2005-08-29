@@ -1306,3 +1306,40 @@ BOOL torture_rpc_drsuapi(void)
 
 	return ret;
 }
+
+BOOL torture_rpc_drsuapi_cracknames(void)
+{
+        NTSTATUS status;
+        struct dcerpc_pipe *p;
+	TALLOC_CTX *mem_ctx;
+	BOOL ret = True;
+	struct DsPrivate priv;
+
+	mem_ctx = talloc_init("torture_rpc_drsuapi");
+
+	status = torture_rpc_connection(mem_ctx, 
+					&p, 
+					DCERPC_DRSUAPI_NAME,
+					DCERPC_DRSUAPI_UUID,
+					DCERPC_DRSUAPI_VERSION);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	printf("Connected to DRAUAPI pipe\n");
+
+	ZERO_STRUCT(priv);
+
+	ret &= test_DsBind(p, mem_ctx, &priv);
+
+	ret &= test_DsGetDCInfo(p, mem_ctx, &priv);
+
+	ret &= test_DsCrackNames(p, mem_ctx, &priv);
+
+	ret &= test_DsUnbind(p, mem_ctx, &priv);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}

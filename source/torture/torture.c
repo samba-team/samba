@@ -2308,6 +2308,7 @@ static struct {
         {"RPC-COUNTCALLS", torture_rpc_countcalls, 0},
 	{"RPC-MULTIBIND", torture_multi_bind, 0},
 	{"RPC-DRSUAPI", torture_rpc_drsuapi, 0},
+	{"RPC-CRACKNAMES", torture_rpc_drsuapi_cracknames, 0},
 	{"RPC-LOGIN", torture_rpc_login, 0},
 	{"RPC-ROT", torture_rpc_rot, 0},
 	{"RPC-DSSETUP", torture_rpc_dssetup, 0},
