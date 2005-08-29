@@ -2293,7 +2293,7 @@ static WERROR cmd_spoolss_enum_data_ex( struct cli_state *cli,
 	fstring servername, user;
 	const char *keyname = NULL;
 	POLICY_HND hnd;
-	REGVAL_CTR ctr;
+	REGVAL_CTR *ctr = NULL;
 
 	if (argc != 3) {
 		printf("Usage: %s printername <keyname>\n", argv[0]);
@@ -2322,16 +2322,19 @@ static WERROR cmd_spoolss_enum_data_ex( struct cli_state *cli,
 
 	/* Enumerate subkeys */
 
-	result = cli_spoolss_enumprinterdataex(cli, mem_ctx, &hnd, keyname, &ctr);
+	if ( !(ctr = TALLOC_ZERO_P( mem_ctx, REGVAL_CTR )) ) 
+		return WERR_NOMEM;
+
+	result = cli_spoolss_enumprinterdataex(cli, mem_ctx, &hnd, keyname, ctr);
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
-	for (i=0; i < ctr.num_values; i++) {
-		display_reg_value(*(ctr.values[i]));
+	for (i=0; i < ctr->num_values; i++) {
+		display_reg_value(*(ctr->values[i]));
 	}
 
-	regval_ctr_destroy(&ctr);
+	TALLOC_FREE( ctr );
 
 done:
 	if (got_hnd)

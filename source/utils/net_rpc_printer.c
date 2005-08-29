@@ -2159,7 +2159,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const
 	BOOL got_dst_spoolss_pipe = False;
 	POLICY_HND hnd_src, hnd_dst;
 	PRINTER_INFO_CTR ctr_enum, ctr_dst, ctr_dst_publish;
-	REGVAL_CTR reg_ctr;
+	REGVAL_CTR *reg_ctr;
 	struct cli_state *cli_dst = NULL;
 	char *devicename = NULL, *unc_name = NULL, *url = NULL;
 	fstring longname;
@@ -2351,13 +2351,16 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const
 
 			curkey += strlen(subkey) + 1;
 
+			if ( !(reg_ctr = TALLOC_ZERO_P( mem_ctx, REGVAL_CTR )) )
+				return NT_STATUS_NO_MEMORY;
+
 			/* enumerate all src subkeys */
 			if (!net_spoolss_enumprinterdataex(cli, mem_ctx, 0, 
 							   &hnd_src, subkey, 
-							   &reg_ctr)) 
+							   reg_ctr)) 
 				goto done;
 
-			for (j=0; j < reg_ctr.num_values; j++) {
+			for (j=0; j < reg_ctr->num_values; j++) {
 			
 				REGISTRY_VALUE value;
 				UNISTR2 data;
@@ -2365,20 +2368,20 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const
 				/* although samba replies with sane data in most cases we 
 				   should try to avoid writing wrong registry data */
 	
-				if (strequal(reg_ctr.values[j]->valuename, SPOOL_REG_PORTNAME) || 
-				    strequal(reg_ctr.values[j]->valuename, SPOOL_REG_UNCNAME) ||
-				    strequal(reg_ctr.values[j]->valuename, SPOOL_REG_URL) ||
-				    strequal(reg_ctr.values[j]->valuename, SPOOL_REG_SHORTSERVERNAME) ||
-				    strequal(reg_ctr.values[j]->valuename, SPOOL_REG_SERVERNAME)) {
+				if (strequal(reg_ctr->values[j]->valuename, SPOOL_REG_PORTNAME) || 
+				    strequal(reg_ctr->values[j]->valuename, SPOOL_REG_UNCNAME) ||
+				    strequal(reg_ctr->values[j]->valuename, SPOOL_REG_URL) ||
+				    strequal(reg_ctr->values[j]->valuename, SPOOL_REG_SHORTSERVERNAME) ||
+				    strequal(reg_ctr->values[j]->valuename, SPOOL_REG_SERVERNAME)) {
 
-					if (strequal(reg_ctr.values[j]->valuename, SPOOL_REG_PORTNAME)) {
+					if (strequal(reg_ctr->values[j]->valuename, SPOOL_REG_PORTNAME)) {
 				
 						/* although windows uses a multi-sz, we use a sz */
 						init_unistr2(&data, SAMBA_PRINTER_PORT_NAME, UNI_STR_TERMINATE);
 						fstrcpy(value.valuename, SPOOL_REG_PORTNAME);
 					}
 				
-					if (strequal(reg_ctr.values[j]->valuename, SPOOL_REG_UNCNAME)) {
+					if (strequal(reg_ctr->values[j]->valuename, SPOOL_REG_UNCNAME)) {
 					
 						if (asprintf(&unc_name, "\\\\%s\\%s", longname, sharename) < 0) {
 							nt_status = NT_STATUS_NO_MEMORY;
@@ -2388,7 +2391,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const
 						fstrcpy(value.valuename, SPOOL_REG_UNCNAME);
 					}
 
-					if (strequal(reg_ctr.values[j]->valuename, SPOOL_REG_URL)) {
+					if (strequal(reg_ctr->values[j]->valuename, SPOOL_REG_URL)) {
 
 						continue;
 
@@ -2403,13 +2406,13 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const
 #endif
 					}
 
-					if (strequal(reg_ctr.values[j]->valuename, SPOOL_REG_SERVERNAME)) {
+					if (strequal(reg_ctr->values[j]->valuename, SPOOL_REG_SERVERNAME)) {
 
 						init_unistr2(&data, longname, UNI_STR_TERMINATE);
 						fstrcpy(value.valuename, SPOOL_REG_SERVERNAME);
 					}
 
-					if (strequal(reg_ctr.values[j]->valuename, SPOOL_REG_SHORTSERVERNAME)) {
+					if (strequal(reg_ctr->values[j]->valuename, SPOOL_REG_SHORTSERVERNAME)) {
 
 						init_unistr2(&data, global_myname(), UNI_STR_TERMINATE);
 						fstrcpy(value.valuename, SPOOL_REG_SHORTSERVERNAME);
@@ -2430,21 +2433,21 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const
 				} else {
 
 					if (opt_verbose) 
-						display_reg_value(subkey, *(reg_ctr.values[j]));
+						display_reg_value(subkey, *(reg_ctr->values[j]));
 
 					/* here we have to set all subkeys on the dst server */
 					if (!net_spoolss_setprinterdataex(cli_dst, mem_ctx, &hnd_dst, 
-							subkey, reg_ctr.values[j])) 
+							subkey, reg_ctr->values[j])) 
 						goto done;
 
 				}
 
 				DEBUGADD(1,("\tSetPrinterDataEx of key [%s\\%s] succeeded\n", 
-						subkey, reg_ctr.values[j]->valuename));
+						subkey, reg_ctr->values[j]->valuename));
 
 			}
 						
-			regval_ctr_destroy(&reg_ctr);
+			TALLOC_FREE( reg_ctr );
 		}
 
 		safe_free(keylist);

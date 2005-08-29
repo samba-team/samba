@@ -67,8 +67,8 @@ static BOOL copy_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 {
 	REGF_NK_REC *key, *subkey;
 	SEC_DESC *new_sd;
-	REGVAL_CTR values;
-	REGSUBKEY_CTR subkeys;
+	REGVAL_CTR *values;
+	REGSUBKEY_CTR *subkeys;
 	int i;
 	pstring path;
 
@@ -82,23 +82,30 @@ static BOOL copy_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 	if ( swap_sid_in_acl( new_sd, &old_sid, &new_sid ) )
 		DEBUG(2,("Updating ACL for %s\n", nk->keyname ));
 
-	regsubkey_ctr_init( &subkeys );
-	regval_ctr_init( &values );
+	if ( !(subkeys = TALLOC_ZERO_P( NULL, REGSUBKEY_CTR )) ) {
+		DEBUG(0,("copy_registry_tree: talloc() failure!\n"));
+		return False;
+	}
+
+	if ( !(values = TALLOC_ZERO_P( subkeys, REGVAL_CTR )) ) {
+		DEBUG(0,("copy_registry_tree: talloc() failure!\n"));
+		return False;
+	}
 
 	/* copy values into the REGVAL_CTR */
 
 	for ( i=0; i<nk->num_values; i++ ) {
-		regval_ctr_addvalue( &values, nk->values[i].valuename, nk->values[i].type,
+		regval_ctr_addvalue( values, nk->values[i].valuename, nk->values[i].type,
 			nk->values[i].data, (nk->values[i].data_size & ~VK_DATA_IN_OFFSET) );
 	}
 
 	/* copy subkeys into the REGSUBKEY_CTR */
 
 	while ( (subkey = regfio_fetch_subkey( infile, nk )) ) {
-		regsubkey_ctr_addkey( &subkeys, subkey->keyname );
+		regsubkey_ctr_addkey( subkeys, subkey->keyname );
 	}
 
-	key = regfio_write_key( outfile, nk->keyname, &values, &subkeys, new_sd, parent );
+	key = regfio_write_key( outfile, nk->keyname, values, subkeys, new_sd, parent );
 
 	/* write each one of the subkeys out */
 
@@ -110,8 +117,9 @@ static BOOL copy_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 			return False;
 	}
 
-	regval_ctr_destroy( &values );
-	regsubkey_ctr_destroy( &subkeys );
+	/* values is a talloc()'d child of subkeys here so just throw it all away */
+
+	TALLOC_FREE( subkeys );
 
 	DEBUG(1,("[%s]\n", path));
 
