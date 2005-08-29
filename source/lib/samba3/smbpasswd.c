@@ -7,6 +7,7 @@
    Modified by Gerald (Jerry) Carter 2000-2001
    Copyright (C) Tim Potter 2001
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
+   Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -54,6 +55,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_samr.h"
+#include "lib/samba3/samba3.h"
 #include "system/iconv.h"
 
 /*! Convert 32 hex characters into a 16 byte array. */
@@ -206,3 +208,133 @@ char *smbpasswd_encode_acb_info(TALLOC_CTX *mem_ctx, uint16_t acb_info)
 
 	return acct_str;
 }     
+
+NTSTATUS samba3_read_smbpasswd(const char *filename, TALLOC_CTX *ctx, struct samba3_samaccount **accounts, uint32_t *count)
+{
+	int numlines;
+	char **lines;
+	*count = 0;
+	*accounts = NULL;
+	int i;
+
+	lines = file_lines_load(filename, &numlines, ctx);
+
+	*accounts = talloc_array(ctx, struct samba3_samaccount, numlines);
+
+	for (i = 0; i < numlines; i++) {
+		char *p = lines[i], *q;
+		struct samba3_samaccount *acc = &((*accounts)[*count]);
+
+		if (p[0] == '\0' || p[0] == '#')
+			continue;
+
+		ZERO_STRUCTP(acc);
+
+		q = strchr(p, ':');
+		if (!q) {
+			DEBUG(0, ("%s:%d: expected ':'\n", filename, i));
+			continue;
+		}
+
+		acc->username = talloc_strndup(ctx, p, PTR_DIFF(q, p));
+		p = q+1;
+
+		acc->uid = atoi(p);
+
+		q = strchr(p, ':');
+		if (!q) {
+			DEBUG(0, ("%s:%d: expected ':'\n", filename, i));
+			continue;
+		}
+		p = q+1;
+
+		if (strlen(p) < 33) {
+			DEBUG(0, ("%s:%d: expected 32 byte password blob\n", filename, i));
+			continue;
+		}
+
+		if (!strncmp(p, "NO PASSWORD", strlen("NO PASSWORD"))) {
+			acc->acct_ctrl |= ACB_PWNOTREQ;
+		} else if (p[0] == '*' || p[0] == 'X') {
+			/* No password set */
+		} else {
+			struct samr_Password *pw = smbpasswd_gethexpwd(*accounts, p);
+			
+			if (!pw) {
+				DEBUG(0, ("%s:%d: Malformed LM pw entry\n", filename, i));
+				continue;
+			}
+
+			memcpy(acc->lm_pw.hash, pw, sizeof(*pw));
+		}
+
+		if (p[32] != ':') {
+			DEBUG(0, ("%s:%d: expected ':' after 32 byte password blob\n", filename, i));
+			continue;
+		}
+
+		p += 33;
+		
+		if (p[0] == '*' || p[0] == 'X') {
+			/* No password set */
+		} else {
+			struct samr_Password *pw = smbpasswd_gethexpwd(*accounts, p);
+			
+			if (!pw) {
+				DEBUG(0, ("%s:%d: Malformed LM pw entry\n", filename, i));
+				continue;
+			}
+
+			memcpy(acc->nt_pw.hash, pw, sizeof(*pw));
+		}
+		
+		if (p[32] != ':') {
+			DEBUG(0, ("%s:%d: expected ':' after 32 byte password blob\n", filename, i));
+			continue;
+		}
+
+		p += 33;
+
+		if (p[0] == '[') {
+			q = strchr(p, ']');
+			if (!q) {
+				DEBUG(0, ("%s:%d: expected ']'\n", filename, i));
+				continue;
+			}
+			
+			acc->acct_ctrl |= smbpasswd_decode_acb_info(p);
+
+			p = q+1;
+			if (p[0] == ':' && strncmp(p, "LCT-", 4) == 0) {
+				int j;
+				p += 4;
+
+				for(j = 0; j < 8; j++) {
+					if(p[j] == '\0' || !isxdigit(p[j])) {
+						break;
+					}
+				}
+				if(i == 8) {
+					acc->pass_last_set_time = (time_t)strtol((char *)p, NULL, 16);
+				}
+			}
+		} else {
+			/* 'Old' style file. Fake up based on user name. */
+			/*
+			 * Currently trust accounts are kept in the same
+			 * password file as 'normal accounts'. If this changes
+			 * we will have to fix this code. JRA.
+			 */
+			if(acc->username[strlen(acc->username) - 1] == '$') {
+				acc->acct_ctrl &= ~ACB_NORMAL;
+				acc->acct_ctrl |= ACB_WSTRUST;
+			}
+		}
+
+		(*count)++;
+	}
+
+	talloc_free(lines);
+
+	return NT_STATUS_OK;
+}

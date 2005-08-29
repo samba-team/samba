@@ -4,6 +4,7 @@
    provide hooks into smbd C calls from ejs scripts
 
    Copyright (C) Andrew Tridgell 2005
+   Copyright (C) Jelmer Vernooij 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -247,6 +248,64 @@ static int ejs_ldbErrstring(MprVarHandle eid, int argc, struct MprVar **argv)
 	return 0;
 }
 
+/* 
+   base64 encode 
+   usage: 
+    dataout = ldb.encode(datain)
+ */
+static int ejs_base64encode(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	char *ret;
+	DATA_BLOB *blob;
+
+	if (argc != 1) {
+		ejsSetErrorMsg(eid, "ldb.base64encode invalid argument count");
+		return -1;
+	}
+
+	blob = mprToDataBlob(argv[0]);
+	ret = ldb_base64_encode(mprMemCtx(), (char *)blob->data, blob->length);
+
+	if (!ret) {
+		mpr_Return(eid, mprCreateUndefinedVar());
+	} else {
+		mpr_Return(eid, mprString(ret));
+	}
+
+	talloc_free(ret);
+
+	return 0;
+}
+
+/* 
+   base64 decode
+   usage:
+     dataout = ldb.decode(datain)
+ */
+static int ejs_base64decode(MprVarHandle eid, int argc, struct MprVar **argv)
+{
+	char *tmp;
+	int ret;
+	
+	if (argc != 1) {
+		ejsSetErrorMsg(eid, "ldb.base64encode invalid argument count");
+		return -1;
+	}
+
+	tmp = talloc_strdup(mprMemCtx(), mprToString(argv[0]));
+	ret = ldb_base64_decode(tmp);
+	if (ret == -1) {
+		mpr_Return(eid, mprCreateUndefinedVar());
+	} else {
+		mpr_Return(eid, mprData((uint8_t *)tmp, ret));
+	}
+
+	talloc_free(tmp);
+
+	return 0;
+}
+  
+
 /*
   perform an ldb modify
 
@@ -312,6 +371,8 @@ static int ejs_ldb_init(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetCFunction(ldb, "del", ejs_ldbDelete);
 	mprSetCFunction(ldb, "rename", ejs_ldbRename);
 	mprSetCFunction(ldb, "errstring", ejs_ldbErrstring);
+	mprSetCFunction(ldb, "encode", ejs_base64encode);
+	mprSetCFunction(ldb, "decode", ejs_base64decode);
 	mprSetVar(ldb, "SCOPE_BASE", mprCreateNumberVar(LDB_SCOPE_BASE));
 	mprSetVar(ldb, "SCOPE_ONE", mprCreateNumberVar(LDB_SCOPE_ONELEVEL));
 	mprSetVar(ldb, "SCOPE_SUBTREE", mprCreateNumberVar(LDB_SCOPE_SUBTREE));

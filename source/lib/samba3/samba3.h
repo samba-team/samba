@@ -22,6 +22,7 @@
 #define _SAMBA3_H 
 
 #include "librpc/gen_ndr/security.h"
+#include "librpc/gen_ndr/samr.h"
 
 struct samba3_samaccount {
 	uint32_t logon_time,
@@ -43,10 +44,11 @@ struct samba3_samaccount {
 	char *profile_path;
 	char *acct_desc;
 	char *workstations;
+	uid_t uid;
 	uint32_t user_rid, group_rid, hours_len, unknown_6;
 	uint16_t acct_ctrl, logon_divs;
 	uint16_t bad_password_count, logon_count;
-	uint8_t	*lm_pw_ptr, *nt_pw_ptr;
+	struct samr_Password lm_pw, nt_pw;
 	uint8_t *nt_pw_hist_ptr;
 	uint8_t	*hours;
 };
