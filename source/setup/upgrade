@@ -11,7 +11,6 @@ options = GetOptions(ARGV,
 		"POPT_COMMON_SAMBA",
 		"POPT_COMMON_VERSION",
 		'ldif',
-		'dn=s',
 		'quiet', 'blank');
 
 if (options == undefined) {
@@ -35,8 +34,8 @@ function message()
 
 function ldifprint(data)
 {
-	if (options["ldif"] != undefined) {
-		print data;
+	if (options.ldif != undefined) {
+		print(data);
 	}
 }
 
@@ -64,9 +63,7 @@ if (options.ARGV.length != 2) {
 	exit(1);
 }
 
-if (options.dn == undefined) {
-	options.dn = "dc=example,dc=org";
-}
+var lp = loadparm_init();
 
 message("Reading Samba3 databases and smb.conf\n");
 var samba3 = samba3_read(options.ARGV[0], options.ARGV[1]);
@@ -82,49 +79,10 @@ var smbconf = upgrade_smbconf(samba3);
 
 message("Provisioning\n");
 var subobj = upgrade_provision(samba3);
-provision(subobj, message, blank);
+provision(subobj, message, options.blank);
 
-var samdb = ldb_init();
-samdb.connect(lp.get("setup directory") + "/samdb.ldb");
-
-message("Importing account policies\n");
-var ldif = upgrade_policy(samba3);
-ldifprint(ldif);
-samdb.modify(ldif);
-
-// FIXME: Enable samba3sam module if original passdb backend was ldap
-
-message("Importing users\n");
-for (var i in samba3.samaccounts) {
-	message("Importing user '" + samba3.samaccounts[i].username + "'");
-	var ldif = upgrade_sam_account(samba3.samaccounts[i]);
-	ldifprint(ldif);
-	samdb.add(ldif);
-}
-
-message("Importing groups\n");
-for (var i in samba3.groupmappings) {
-	message("Importing group '" + samba3.groupmappings[i].username + "'");
-	var ldif = upgrade_sam_group(samba3.groupmappings[i]);
-	ldifprint(ldif);
-	samdb.add(ldif);
-}
-
-message("Importing WINS data\n");
-var ldif = upgrade_wins(samba3)
-ldifprint(ldif);
-setup_ldb(ldif, "wins", Object());
-
-message("Importing registry data\n");
-var hives = ["hkcr","hkcu","hklm","hkpd"]; 
-for (var i in hives) {
-	var regdb = ldb_init();
-	regdb.connect(lp.get("setup directory") + "/" + hives[i] + ".ldb");
-	var ldif = upgrade_registry(samba3, hives[i]);
-	ldifprint(ldif);
-	ldb.add(ldif);
-}
-
+ok = upgrade(subobj,samba3,message);
+assert(ok);
 
 message("All OK\n");
 return 0;
