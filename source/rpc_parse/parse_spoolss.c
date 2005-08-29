@@ -5356,32 +5356,10 @@ error:
 }
 
 BOOL uni_2_asc_printer_info_2(const SPOOL_PRINTER_INFO_LEVEL_2 *uni,
-                              NT_PRINTER_INFO_LEVEL_2  **asc)
+                              NT_PRINTER_INFO_LEVEL_2  *d)
 {
-	NT_PRINTER_INFO_LEVEL_2 *d;
-	time_t time_unix;
-	
 	DEBUG(7,("Converting from UNICODE to ASCII\n"));
-	time_unix=time(NULL);
 	
-	if (*asc==NULL) {
-		DEBUGADD(8,("allocating memory\n"));
-
-		*asc=SMB_MALLOC_P(NT_PRINTER_INFO_LEVEL_2);
-		if(*asc == NULL)
-			return False;
-		ZERO_STRUCTP(*asc);
-		
-		/* we allocate memory iff called from 
-		 * addprinter(ex) so we can do one time stuff here.
-		 */
-		(*asc)->setuptime=time_unix;
-
-	}	
-	DEBUGADD(8,("start converting\n"));
-
-	d=*asc;
-		
 	d->attributes=uni->attributes;
 	d->priority=uni->priority;
 	d->default_priority=uni->default_priority;

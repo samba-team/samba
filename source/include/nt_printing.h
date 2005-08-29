@@ -245,7 +245,7 @@ typedef struct nt_printer_driver_info_level
 
 typedef struct {
 	char		*name;
-	REGVAL_CTR 	values;
+	REGVAL_CTR 	*values;
 } NT_PRINTER_KEY;
 
 /* container for all printer data */
@@ -320,7 +320,7 @@ typedef struct nt_printer_info_level_2
 	fstring printprocessor;
 	fstring datatype;
 	fstring parameters;
-	NT_PRINTER_DATA data;
+	NT_PRINTER_DATA *data;
 	SEC_DESC_BUF *secdesc_buf;
 	uint32 changeid;
 	uint32 c_setprinter;

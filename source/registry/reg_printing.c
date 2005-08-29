@@ -261,7 +261,7 @@ static int key_printers_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 		return -1;
 	}
 
-	num_subkeys = get_printer_subkeys( &printer->info_2->data, printerdatakey?printerdatakey:"", &subkey_names );
+	num_subkeys = get_printer_subkeys( printer->info_2->data, printerdatakey?printerdatakey:"", &subkey_names );
 	
 	for ( i=0; i<num_subkeys; i++ )
 		regsubkey_ctr_addkey( subkeys, subkey_names[i] );
@@ -345,7 +345,7 @@ static BOOL key_printers_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
 	
 	/* get the top level printer keys */
 	
-	num_existing_keys = get_printer_subkeys( &printer->info_2->data, "", &existing_subkeys );
+	num_existing_keys = get_printer_subkeys( printer->info_2->data, "", &existing_subkeys );
 	
 	for ( i=0; i<num_existing_keys; i++ ) {
 	
@@ -354,7 +354,7 @@ static BOOL key_printers_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
 		if ( !regsubkey_ctr_key_exists( subkeys, existing_subkeys[i] ) ) {
 			DEBUG(5,("key_printers_store_keys: deleting key %s\n", 
 				existing_subkeys[i]));
-			delete_printer_key( &printer->info_2->data, existing_subkeys[i] );
+			delete_printer_key( printer->info_2->data, existing_subkeys[i] );
 		}
 	}
 
@@ -362,10 +362,10 @@ static BOOL key_printers_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
 	for ( i=0; i<num_subkeys; i++ ) {
 		subkeyname = regsubkey_ctr_specific_key(subkeys, i);
 		/* add any missing printer keys */
-		if ( lookup_printerkey(&printer->info_2->data, subkeyname) == -1 ) {
+		if ( lookup_printerkey(printer->info_2->data, subkeyname) == -1 ) {
 			DEBUG(5,("key_printers_store_keys: adding key %s\n", 
 				existing_subkeys[i]));
-			if ( add_new_printer_key( &printer->info_2->data, subkeyname ) == -1 ) 
+			if ( add_new_printer_key( printer->info_2->data, subkeyname ) == -1 ) 
 				return False;
 		}
 	}
@@ -445,7 +445,7 @@ static void fill_in_printer_values( NT_PRINTER_INFO_LEVEL_2 *info2, REGVAL_CTR *
 	/* use a prs_struct for converting the devmode and security 
 	   descriptor to REG_BINARY */
 	
-	prs_init( &prs, MAX_PDU_FRAG_LEN, regval_ctr_getctx(values), MARSHALL);
+	prs_init( &prs, MAX_PDU_FRAG_LEN, values, MARSHALL);
 
 	/* stream the device mode */
 		
@@ -508,7 +508,7 @@ static int key_printers_fetch_values( const char *key, REGVAL_CTR *values )
 		
 	/* iterate over all printer data keys and fill the regval container */
 	
-	p_data = &printer->info_2->data;
+	p_data = printer->info_2->data;
 	if ( (key_index = lookup_printerkey( p_data, printerdatakey )) == -1  ) {
 		/* failure....should never happen if the client has a valid open handle first */
 		DEBUG(10,("key_printers_fetch_values: Unknown keyname [%s]\n", printerdatakey));
@@ -517,9 +517,9 @@ static int key_printers_fetch_values( const char *key, REGVAL_CTR *values )
 		return -1;
 	}
 	
-	num_values = regval_ctr_numvals( &p_data->keys[key_index].values );	
+	num_values = regval_ctr_numvals( p_data->keys[key_index].values );	
 	for ( i=0; i<num_values; i++ )
-		regval_ctr_copyvalue( values, regval_ctr_specific_value(&p_data->keys[key_index].values, i) );
+		regval_ctr_copyvalue( values, regval_ctr_specific_value(p_data->keys[key_index].values, i) );
 			
 
 done:
@@ -702,7 +702,7 @@ static BOOL key_printers_store_values( const char *key, REGVAL_CTR *values )
 		int i;
 		REGISTRY_VALUE *val;
 		
-		delete_printer_key( &printer->info_2->data, keyname );
+		delete_printer_key( printer->info_2->data, keyname );
 		
 		/* deal with any subkeys */
 		for ( i=0; i<num_values; i++ ) {
