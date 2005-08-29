@@ -33,11 +33,6 @@ struct principal_container {
 	krb5_principal principal;
 };
 
-struct ccache_container {
-	struct smb_krb5_context *smb_krb5_context;
-	krb5_ccache ccache;
-};
-
 struct keytab_container {
 	struct smb_krb5_context *smb_krb5_context;
 	krb5_keytab keytab;
@@ -65,7 +60,7 @@ krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx,
 		return ENOMEM;
 	}
 	
-	machine_username = talloc_strdup(mem_ctx, cli_credentials_get_username(machine_account));
+	machine_username = talloc_strdup(mem_ctx, cli_credentials_get_username(machine_account, mem_ctx));
 
 	if (!machine_username) {
 		talloc_free(mem_ctx);
@@ -100,58 +95,30 @@ krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx,
 	return ret;
 }
 
-static int free_ccache(void *ptr) {
-	struct ccache_container *ccc = ptr;
-	/* current heimdal - 0.6.3, which we need anyway, fixes segfaults here */
-	krb5_cc_close(ccc->smb_krb5_context->krb5_context, ccc->ccache);
-
-	return 0;
-}
-
 /**
  * Return a freshly allocated ccache (destroyed by destructor on child
  * of parent_ctx), for a given set of client credentials 
  */
 
- NTSTATUS kinit_to_ccache(TALLOC_CTX *parent_ctx,
+ krb5_error_code kinit_to_ccache(TALLOC_CTX *parent_ctx,
 			  struct cli_credentials *credentials,
 			  struct smb_krb5_context *smb_krb5_context,
-			  krb5_ccache *ccache,
-			  const char **ccache_name) 
+			  krb5_ccache ccache) 
 {
 	krb5_error_code ret;
 	const char *password;
-	char *ccache_string;
 	time_t kdc_time = 0;
-	struct ccache_container *mem_ctx = talloc(parent_ctx, struct ccache_container);
+
+	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
 
 	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
+		return ENOMEM;
 	}
 
 	password = cli_credentials_get_password(credentials);
 	
-	/* this string should be unique */
-	ccache_string = talloc_asprintf(mem_ctx, "MEMORY:%s_%s", 
-					cli_credentials_get_principal(credentials, mem_ctx), 
-					generate_random_str(mem_ctx, 16));
-	
-	ret = krb5_cc_resolve(smb_krb5_context->krb5_context, ccache_string, ccache);
-	if (ret) {
-		DEBUG(1,("failed to generate a new krb5 ccache (%s): %s\n", 
-			 ccache_string,
-			 error_message(ret)));
-		talloc_free(mem_ctx);
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	mem_ctx->smb_krb5_context = talloc_reference(mem_ctx, smb_krb5_context);
-	mem_ctx->ccache = *ccache;
-
-	talloc_set_destructor(mem_ctx, free_ccache);
-
 	if (password) {
-		ret = kerberos_kinit_password_cc(smb_krb5_context->krb5_context, *ccache, 
+		ret = kerberos_kinit_password_cc(smb_krb5_context->krb5_context, ccache, 
 						 cli_credentials_get_principal(credentials, mem_ctx), 
 						 password, NULL, &kdc_time);
 	} else {
@@ -163,7 +130,7 @@ static int free_ccache(void *ptr) {
 		if (!mach_pwd) {
 			talloc_free(mem_ctx);
 			DEBUG(1, ("kinit_to_ccache: No password available for kinit\n"));
-			return NT_STATUS_WRONG_PASSWORD;
+			return EINVAL;
 		}
 		ret = krb5_keyblock_init(smb_krb5_context->krb5_context,
 					 ENCTYPE_ARCFOUR_HMAC,
@@ -171,7 +138,7 @@ static int free_ccache(void *ptr) {
 					 &keyblock);
 		
 		if (ret == 0) {
-			ret = kerberos_kinit_keyblock_cc(smb_krb5_context->krb5_context, *ccache, 
+			ret = kerberos_kinit_keyblock_cc(smb_krb5_context->krb5_context, ccache, 
 							 cli_credentials_get_principal(credentials, mem_ctx), 
 							 &keyblock, NULL, &kdc_time);
 			krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &keyblock);
@@ -192,7 +159,7 @@ static int free_ccache(void *ptr) {
 			 smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
 						    ret, mem_ctx)));
 		talloc_free(mem_ctx);
-		return NT_STATUS_TIME_DIFFERENCE_AT_DC;
+		return ret;
 	}
 	if (ret) {
 		DEBUG(1,("kinit for %s failed (%s)\n", 
@@ -200,11 +167,9 @@ static int free_ccache(void *ptr) {
 			 smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
 						    ret, mem_ctx)));
 		talloc_free(mem_ctx);
-		return NT_STATUS_WRONG_PASSWORD;
+		return ret;
 	} 
-	*ccache_name = ccache_string;
-
-	return NT_STATUS_OK;
+	return 0;
 }
 
 static int free_keytab(void *ptr) {

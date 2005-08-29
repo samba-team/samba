@@ -38,7 +38,7 @@ static BOOL test_LogonUasLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct netr_LogonUasLogon r;
 
 	r.in.server_name = NULL;
-	r.in.account_name = cli_credentials_get_username(cmdline_credentials),
+	r.in.account_name = cli_credentials_get_username(cmdline_credentials, mem_ctx);
 	r.in.workstation = TEST_MACHINE_NAME;
 
 	printf("Testing LogonUasLogon\n");
@@ -59,7 +59,7 @@ static BOOL test_LogonUasLogoff(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct netr_LogonUasLogoff r;
 
 	r.in.server_name = NULL;
-	r.in.account_name = cli_credentials_get_username(cmdline_credentials),
+	r.in.account_name = cli_credentials_get_username(cmdline_credentials, mem_ctx);
 	r.in.workstation = TEST_MACHINE_NAME;
 
 	printf("Testing LogonUasLogoff\n");
@@ -487,7 +487,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct netr_LogonSamLogon r;
 	struct netr_Authenticator auth, auth2;
 	struct netr_NetworkInfo ninfo;
-	const char *username = cli_credentials_get_username(cmdline_credentials);
+	const char *username = cli_credentials_get_username(cmdline_credentials, mem_ctx);
 	const char *password = cli_credentials_get_password(cmdline_credentials);
 	struct creds_CredentialState *creds;
 
