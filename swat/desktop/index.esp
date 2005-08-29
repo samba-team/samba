@@ -7,6 +7,7 @@ libinclude("base.js");
 <script type="text/javascript" src="/scripting/client/call.js"></script>
 <script type="text/javascript" src="/scripting/client/js_scripts.js"></script>
 <script type="text/javascript" src="/scripting/client/desktop.js"></script>
+<script type="text/javascript" src="/scripting/client/status.js"></script>
 
 <script type="text/javascript">
 
@@ -73,45 +74,22 @@ function showContextMenu(e)
 	cmenu.setVisible(true);
 }
 
-/*** init the page for qooxdoo ***/
+// Always open with stats
+var win = new QxWindow();
 document.js.add('/scripting/client/status.js');
-window.application.main = function()
+win._onclosebuttonclick = function(e)
 {
-	var doc = this.getClientWindow().getClientDocument();
-	// Don't declare local with var
-	w = new QxWidget();
-	with(w) {
-		setTop(0);
-		setLeft(0);
-		setWidth(docX());
-		setHeight(docY());
-	}
-	doc.addEventListener("contextmenu", showContextMenu);
-	doc.add(w);
-
-
-	// Always open with stats
-	var win = new QxWindow();
-	win._onclosebuttonclick = function(e)
-	{
-		this.close();
-		e.stopPropagation();
-		document.js.remove('/scripting/client/status.js');
-	};
-	with(win) {
-		setTop(50);
-		setRight(50);
-		setHeight(175);
-	}
-	w.add(win);
-	getServerStatus(win);
+	this.close();
+	e.stopPropagation();
+	document.js.remove('/scripting/client/status.js');
+};
+with(win) {
+	setTop(50);
+	setRight(50);
+	setHeight(175);
 }
-
-window.onresize = function() 
-{
-	w.setWidth(docX());
-	w.setHeight(docY());
-}
+w.add(win);
+getServerStatus(win);
 
 function showReg()
 {
