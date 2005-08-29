@@ -119,7 +119,7 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 		ejsSetErrorMsg(eid, "userAuth requires a 'creds' element");
 		return -1;
 	}
-	username    = cli_credentials_get_username(creds);
+	username    = cli_credentials_get_username(creds, tmp_ctx);
 	password    = cli_credentials_get_password(creds);
 	domain      = cli_credentials_get_domain(creds);
 	remote_host = cli_credentials_get_workstation(creds);

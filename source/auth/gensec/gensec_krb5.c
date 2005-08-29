@@ -45,7 +45,6 @@ struct gensec_krb5_state {
 	enum GENSEC_KRB5_STATE state_position;
 	struct smb_krb5_context *smb_krb5_context;
 	krb5_auth_context auth_context;
-	krb5_ccache ccache;
 	krb5_data ticket;
 	krb5_keyblock *keyblock;
 	char *peer_principal;
@@ -75,7 +74,6 @@ static int gensec_krb5_destory(void *ptr)
 static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 {
 	struct gensec_krb5_state *gensec_krb5_state;
-	krb5_error_code ret = 0;
 
 	gensec_krb5_state = talloc(gensec_security, struct gensec_krb5_state);
 	if (!gensec_krb5_state) {
@@ -85,7 +83,6 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 	gensec_security->private_data = gensec_krb5_state;
 
 	gensec_krb5_state->auth_context = NULL;
-	gensec_krb5_state->ccache = NULL;
 	ZERO_STRUCT(gensec_krb5_state->ticket);
 	ZERO_STRUCT(gensec_krb5_state->keyblock);
 	gensec_krb5_state->session_key = data_blob(NULL, 0);
@@ -93,33 +90,28 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 
 	talloc_set_destructor(gensec_krb5_state, gensec_krb5_destory); 
 
-	ret = smb_krb5_init_context(gensec_krb5_state,
-				    &gensec_krb5_state->smb_krb5_context);
-	if (ret) {
-		DEBUG(1,("gensec_krb5_start: krb5_init_context failed (%s)\n", 
-			 error_message(ret)));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	ret = krb5_auth_con_init(gensec_krb5_state->smb_krb5_context->krb5_context, &gensec_krb5_state->auth_context);
-	if (ret) {
-		DEBUG(1,("gensec_krb5_start: krb5_auth_con_init failed (%s)\n", 
-			 smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, 
-						    ret, gensec_krb5_state)));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
 	return NT_STATUS_OK;
 }
 
 static NTSTATUS gensec_krb5_server_start(struct gensec_security *gensec_security)
 {
 	NTSTATUS nt_status;
+	krb5_error_code ret = 0;
 	struct gensec_krb5_state *gensec_krb5_state;
 
 	nt_status = gensec_krb5_start(gensec_security);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
+	}
+	
+	gensec_krb5_state = gensec_security->private_data;
+
+	ret = smb_krb5_init_context(gensec_krb5_state,
+				    &gensec_krb5_state->smb_krb5_context);
+	if (ret) {
+		DEBUG(1,("gensec_krb5_start: krb5_init_context failed (%s)\n", 
+			 error_message(ret)));
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	gensec_krb5_state = gensec_security->private_data;
@@ -133,7 +125,7 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 	struct gensec_krb5_state *gensec_krb5_state;
 	krb5_error_code ret;
 	NTSTATUS nt_status;
-	const char *ccache_name;
+	struct ccache_container *ccache_container;
 
 	const char *hostname = gensec_get_target_hostname(gensec_security);
 	if (!hostname) {
@@ -154,72 +146,68 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 	gensec_krb5_state = gensec_security->private_data;
 	gensec_krb5_state->state_position = GENSEC_KRB5_CLIENT_START;
 
-	/* TODO: This is effecivly a static/global variable... 
-	 
-	   TODO: If the user set a username, we should use an in-memory CCACHE (see below)
-	*/ 
-	ret = krb5_cc_default(gensec_krb5_state->smb_krb5_context->krb5_context, &gensec_krb5_state->ccache);
+	ret = cli_credentials_get_ccache(gensec_security->credentials, &ccache_container);
 	if (ret) {
-		DEBUG(1,("krb5_cc_default failed (%s)\n",
-			 smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, ret, gensec_krb5_state)));
+		DEBUG(1,("gensec_krb5_start: cli_credentials_get_ccache failed: %s\n", 
+			 error_message(ret)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	gensec_krb5_state->smb_krb5_context = talloc_reference(gensec_krb5_state, ccache_container->smb_krb5_context);
+
+	ret = krb5_auth_con_init(gensec_krb5_state->smb_krb5_context->krb5_context, &gensec_krb5_state->auth_context);
+	if (ret) {
+		DEBUG(1,("gensec_krb5_start: krb5_auth_con_init failed (%s)\n", 
+			 smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, 
+						    ret, gensec_krb5_state)));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
-	
-	while (1) {
-		{
-			krb5_data in_data;
-			in_data.length = 0;
 
-			ret = krb5_mk_req(gensec_krb5_state->smb_krb5_context->krb5_context, 
-					  &gensec_krb5_state->auth_context,
-					  AP_OPTS_USE_SUBKEY | AP_OPTS_MUTUAL_REQUIRED,
-					  gensec_get_target_service(gensec_security),
-					  hostname,
-					  &in_data, gensec_krb5_state->ccache, 
-					  &gensec_krb5_state->ticket);
-			
-		}
-		switch (ret) {
-		case 0:
-			return NT_STATUS_OK;
-		case KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN:
-			DEBUG(3, ("Server [%s] is not registered with our KDC: %s\n", 
-				  hostname, smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, ret, gensec_krb5_state)));
-			return NT_STATUS_ACCESS_DENIED;
-		case KRB5KDC_ERR_PREAUTH_FAILED:
-		case KRB5KRB_AP_ERR_TKT_EXPIRED:
-		case KRB5_CC_END:
-			/* Too much clock skew - we will need to kinit to re-skew the clock */
-		case KRB5KRB_AP_ERR_SKEW:
-		case KRB5_KDCREP_SKEW:
-		{
-			DEBUG(3, ("kerberos (mk_req) failed: %s\n", 
-				  smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, ret, gensec_krb5_state)));
-			/* fall down to remaining code */
-		}
-
-
-		/* just don't print a message for these really ordinary messages */
-		case KRB5_FCC_NOFILE:
-		case KRB5_CC_NOTFOUND:
-		case ENOENT:
-			
-		nt_status = kinit_to_ccache(gensec_krb5_state,  
-					    gensec_security->credentials,
-					    gensec_krb5_state->smb_krb5_context, 
-					    &gensec_krb5_state->ccache, 
-					    &ccache_name);
+	if (!ret) {
+		krb5_data in_data;
+		in_data.length = 0;
 		
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return nt_status;
-		}
+		ret = krb5_mk_req(gensec_krb5_state->smb_krb5_context->krb5_context, 
+				  &gensec_krb5_state->auth_context,
+				  AP_OPTS_USE_SUBKEY | AP_OPTS_MUTUAL_REQUIRED,
+				  gensec_get_target_service(gensec_security),
+				  hostname,
+				  &in_data, ccache_container->ccache, 
+				  &gensec_krb5_state->ticket);
+		
+	}
+	switch (ret) {
+	case 0:
+		return NT_STATUS_OK;
+	case KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN:
+		DEBUG(3, ("Server [%s] is not registered with our KDC: %s\n", 
+			  hostname, smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, ret, gensec_krb5_state)));
+		return NT_STATUS_ACCESS_DENIED;
+	case KRB5KDC_ERR_PREAUTH_FAILED:
+	case KRB5KRB_AP_ERR_TKT_EXPIRED:
+	case KRB5_CC_END:
+		/* Too much clock skew - we will need to kinit to re-skew the clock */
+	case KRB5KRB_AP_ERR_SKEW:
+	case KRB5_KDCREP_SKEW:
+	{
+		DEBUG(3, ("kerberos (mk_req) failed: %s\n", 
+			  smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, ret, gensec_krb5_state)));
+		/* fall down to remaining code */
+	}
+	
+	
+	/* just don't print a message for these really ordinary messages */
+	case KRB5_FCC_NOFILE:
+	case KRB5_CC_NOTFOUND:
+	case ENOENT:
+		
+		return NT_STATUS_UNSUCCESSFUL;
 		break;
-
-		default:
-			DEBUG(0, ("kerberos: %s\n", 
-				  smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, ret, gensec_krb5_state)));
-			return NT_STATUS_UNSUCCESSFUL;
-		}
+		
+	default:
+		DEBUG(0, ("kerberos: %s\n", 
+			  smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, ret, gensec_krb5_state)));
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 }
 

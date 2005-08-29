@@ -1366,13 +1366,13 @@ BOOL torture_rpc_samlogon(void)
 	} usercreds[] = {
 		{
 			cli_credentials_get_domain(cmdline_credentials),
-			cli_credentials_get_username(cmdline_credentials),
+			cli_credentials_get_username(cmdline_credentials, mem_ctx),
 			cli_credentials_get_password(cmdline_credentials),
 			True
 		},
 		{
 			cli_credentials_get_realm(cmdline_credentials),
-			cli_credentials_get_username(cmdline_credentials),
+			cli_credentials_get_username(cmdline_credentials, mem_ctx),
 			cli_credentials_get_password(cmdline_credentials),
 			True
 		},
@@ -1380,7 +1380,7 @@ BOOL torture_rpc_samlogon(void)
 			NULL,
 			talloc_asprintf(mem_ctx, 
 					"%s@%s", 
-					cli_credentials_get_username(cmdline_credentials),
+					cli_credentials_get_username(cmdline_credentials, mem_ctx),
 					cli_credentials_get_domain(cmdline_credentials)
 				),
 			cli_credentials_get_password(cmdline_credentials),
@@ -1390,7 +1390,7 @@ BOOL torture_rpc_samlogon(void)
 			NULL,
 			talloc_asprintf(mem_ctx, 
 					"%s@%s", 
-					cli_credentials_get_username(cmdline_credentials),
+					cli_credentials_get_username(cmdline_credentials, mem_ctx),
 					cli_credentials_get_realm(cmdline_credentials)
 				),
 			cli_credentials_get_password(cmdline_credentials),

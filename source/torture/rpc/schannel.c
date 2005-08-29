@@ -92,7 +92,7 @@ static BOOL test_netlogon_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct netr_LogonSamLogon r;
 	struct netr_Authenticator auth, auth2;
 	struct netr_NetworkInfo ninfo;
-	const char *username = cli_credentials_get_username(cmdline_credentials);
+	const char *username = cli_credentials_get_username(cmdline_credentials, mem_ctx);
 	const char *password = cli_credentials_get_password(cmdline_credentials);
 	int i;
 	BOOL ret = True;

@@ -164,20 +164,10 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* Correctly handle username in the original form of user@REALM, which is valid */
-	if (gensec_security->credentials->realm_obtained
-	    > gensec_security->credentials->domain_obtained) {
-		user = talloc_asprintf(out_mem_ctx, "%s@%s", 
-				       cli_credentials_get_username(gensec_security->credentials), 
-				       cli_credentials_get_realm(gensec_security->credentials));
-		domain = NULL;
-	} else {
-		user = cli_credentials_get_username(gensec_security->credentials);
-		domain = cli_credentials_get_domain(gensec_security->credentials);
-	}
+	user = cli_credentials_get_username(gensec_security->credentials, out_mem_ctx);
+	domain = cli_credentials_get_domain(gensec_security->credentials);
 
 	nt_hash = cli_credentials_get_nt_hash(gensec_security->credentials, out_mem_ctx);
-	password = cli_credentials_get_password(gensec_security->credentials);
 
 	if (!nt_hash) {
 		static const uint8_t zeros[16];
@@ -265,24 +255,29 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		}
 
 		/* lanman auth is insecure, it may be disabled.  We may also not have a password */
-		if (lp_client_lanman_auth() && password) {
-			lm_response = data_blob_talloc(gensec_ntlmssp_state, NULL, 24);
-			if (!SMBencrypt(password,challenge_blob.data,
-					lm_response.data)) {
-				/* If the LM password was too long (and therefore the LM hash being
-				   of the first 14 chars only), don't send it */
-				data_blob_free(&lm_response);
-
-				/* LM Key is incompatible with 'long' passwords */
-				gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
+		if (lp_client_lanman_auth()) {
+			password = cli_credentials_get_password(gensec_security->credentials);
+			if (!password) {
+				lm_response = nt_response;
 			} else {
-				E_deshash(password, lm_hash);
-				lm_session_key = data_blob_talloc(gensec_ntlmssp_state, NULL, 16);
-				memcpy(lm_session_key.data, lm_hash, 8);
-				memset(&lm_session_key.data[8], '\0', 8);
-
-				if (!gensec_ntlmssp_state->use_nt_response) {
+				lm_response = data_blob_talloc(gensec_ntlmssp_state, NULL, 24);
+				if (!SMBencrypt(password,challenge_blob.data,
+						lm_response.data)) {
+					/* If the LM password was too long (and therefore the LM hash being
+					   of the first 14 chars only), don't send it */
+					data_blob_free(&lm_response);
+					
+					/* LM Key is incompatible with 'long' passwords */
+					gensec_ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
+				} else {
+					E_deshash(password, lm_hash);
+					lm_session_key = data_blob_talloc(gensec_ntlmssp_state, NULL, 16);
+					memcpy(lm_session_key.data, lm_hash, 8);
+					memset(&lm_session_key.data[8], '\0', 8);
+					
+					if (!gensec_ntlmssp_state->use_nt_response) {
 					session_key = lm_session_key;
+					}
 				}
 			}
 		} else {
@@ -353,7 +348,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 
 	gensec_ntlmssp_state->expected_state = NTLMSSP_DONE;
 
-	if (gensec_security->want_features & GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL) {
+	if (gensec_security->want_features & (GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL)) {
 		nt_status = ntlmssp_sign_init(gensec_ntlmssp_state);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(1, ("Could not setup NTLMSSP signing/sealing system (error was: %s)\n", 
@@ -362,7 +357,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		}
 	}
 
-	return nt_status;
+	return NT_STATUS_OK;
 }
 
 NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)

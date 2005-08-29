@@ -174,7 +174,7 @@ static NTSTATUS session_setup_nt1(struct composite_context *c,
 	state->setup.nt1.in.capabilities = io->in.capabilities;
 	state->setup.nt1.in.os           = "Unix";
 	state->setup.nt1.in.lanman       = talloc_asprintf(state, "Samba %s", SAMBA_VERSION_STRING);
-	state->setup.nt1.in.user         = cli_credentials_get_username(io->in.credentials);
+	state->setup.nt1.in.user         = cli_credentials_get_username(io->in.credentials, state);
 	state->setup.nt1.in.domain       = cli_credentials_get_domain(io->in.credentials);
 
 	if (!password) {
@@ -260,7 +260,7 @@ static NTSTATUS session_setup_old(struct composite_context *c,
 	state->setup.old.in.vc_num  = 1;
 	state->setup.old.in.sesskey = io->in.sesskey;
 	state->setup.old.in.domain  = cli_credentials_get_domain(io->in.credentials);
-	state->setup.old.in.user    = cli_credentials_get_username(io->in.credentials);
+	state->setup.old.in.user    = cli_credentials_get_username(io->in.credentials, state);
 	state->setup.old.in.os      = "Unix";
 	state->setup.old.in.lanman  = talloc_asprintf(state, "Samba %s", SAMBA_VERSION_STRING);
 	

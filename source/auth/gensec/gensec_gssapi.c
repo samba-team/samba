@@ -208,6 +208,8 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 {
 	struct gensec_gssapi_state *gensec_gssapi_state;
 	struct cli_credentials *creds = gensec_get_credentials(gensec_security);
+	struct ccache_container *ccache;
+	krb5_error_code ret;
 	NTSTATUS nt_status;
 	gss_buffer_desc name_token;
 	OM_uint32 maj_stat, min_stat;
@@ -245,6 +247,13 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	ret = cli_credentials_get_ccache(creds, 
+					 &ccache);
+	if (ret) {
+		DEBUG(1, ("Failed to get CCACHE for gensec_gssapi: %s\n", error_message(ret)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	name_token.value = cli_credentials_get_principal(creds, 
 							 gensec_gssapi_state);
 	name_token.length = strlen(name_token.value);
@@ -260,16 +269,8 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	nt_status = kinit_to_ccache(gensec_gssapi_state, 
-				    creds,
-				    gensec_gssapi_state->smb_krb5_context, 
-				    &gensec_gssapi_state->ccache, &gensec_gssapi_state->ccache_name);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
-
 	maj_stat = gsskrb5_acquire_cred(&min_stat, 
-					NULL, gensec_gssapi_state->ccache,
+					NULL, ccache->ccache,
 					gensec_gssapi_state->client_name,
 					GSS_C_INDEFINITE,
 					GSS_C_NULL_OID_SET,
