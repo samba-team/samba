@@ -62,10 +62,35 @@ static struct ldb_map_context *map_get_privdat(struct ldb_module *module)
 	return &((struct map_private *)module->private_data)->context;
 }
 
+static const struct ldb_map_objectclass *map_find_objectclass_local(struct ldb_map_context *privdat, const char *name)
+{
+	int i;
+	for (i = 0; privdat->objectclass_maps[i].local_name; i++) {
+		if (!ldb_attr_cmp(privdat->objectclass_maps[i].local_name, name))
+			return &privdat->objectclass_maps[i];
+	}
+
+	return NULL;
+}
+
+/* Decide whether a add/modify should be pushed to the 
+ * remote LDAP server. We currently only do this if we see an objectClass we know */
 static BOOL map_is_mappable(struct ldb_map_context *privdat, const struct ldb_message *msg)
 {
-	/* FIXME */
-	return True;
+	int i;
+	struct ldb_message_element *el = ldb_msg_find_element(msg, "objectClass");
+
+	/* No objectClass... */
+	if (el == NULL) {
+		return False;
+	}
+
+	for (i = 0; i < el->num_values; i++) {
+		if (map_find_objectclass_local(privdat, (char *)el->values[i].data))
+			return True;
+	}
+
+	return False;
 }
 
 /* find an attribute by the local name */
@@ -745,22 +770,29 @@ static int map_search_bytree_mp(struct ldb_module *module, const struct ldb_dn *
 		int extraret;
 		
 		/* Merge with additional data from local database */
-		extraret = ldb_next_search(module, merged->dn, LDB_SCOPE_ONELEVEL, "", NULL, &extrares);
+		extraret = ldb_next_search(module, merged->dn, LDB_SCOPE_BASE, "", NULL, &extrares);
 
-		if (extraret > 1) {
+		if (extraret == -1) {
+			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Error searching for extra data!\n");
+		} else if (extraret > 1) {
 			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "More then one result for extra data!\n");
+			talloc_free(newres);
 			return -1;
-		} else if (extraret == 1) {
-			int j;
-			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Extra data found for remote DN");
-			for (j = 0; j < merged->num_elements; j++) {
-				ldb_msg_add(module->ldb, merged, &extrares[0]->elements[j], extrares[0]->elements[j].flags);
-			}
-		} else {
+		} else if (extraret == 0) {
 			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "No extra data found for remote DN");
 		}
+		
+		if (extraret == 1) {
+			int j;
+			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Extra data found for remote DN");
+			for (j = 0; j < extrares[0]->num_elements; j++) {
+				ldb_msg_add(module->ldb, merged, &(extrares[0]->elements[j]), extrares[0]->elements[j].flags);
+			}
 
-		talloc_free(extrares);
+			ldb_msg_add_string(module->ldb, merged, "extraMapped", "TRUE");
+		} else {
+			ldb_msg_add_string(module->ldb, merged, "extraMapped", "FALSE");
+		}
 		
 		if (ldb_match_msg(module->ldb, merged, tree, base, scope)) {
 			(*res)[ret] = merged;
@@ -768,9 +800,9 @@ static int map_search_bytree_mp(struct ldb_module *module, const struct ldb_dn *
 		} else {
 			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Discarded merged message because it did not match");
 		}
-		
-		talloc_free(newres[i]);
 	}
+
+	talloc_free(newres);
 
 	return ret;
 }
@@ -783,7 +815,6 @@ static int map_search_bytree(struct ldb_module *module, const struct ldb_dn *bas
 			      enum ldb_scope scope, struct ldb_parse_tree *tree,
 			      const char * const *attrs, struct ldb_message ***res)
 {
-	int ret;
 	struct ldb_message **fbres, **mpres;
 	int i;
 	int ret_fb, ret_mp;
@@ -803,8 +834,6 @@ static int map_search_bytree(struct ldb_module *module, const struct ldb_dn *bas
 	for (i = 0; i < ret_mp; i++) (*res)[ret_fb+i] = mpres[i];
 
 	return ret_fb + ret_mp;
-	
-	return ret;
 }
 /*
   search for matching records
