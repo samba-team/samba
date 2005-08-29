@@ -183,45 +183,45 @@ int main(int argc, char *argv[])
 	int loops = NLOOPS;
 	pid_t pids[NPROC];
 
-	pids[0] = getpid();
-
-	for (i=0;i<NPROC-1;i++) {
-		if ((pids[i+1]=fork()) == 0) break;
-	}
-
-	db = tdb_open("torture.tdb", 2, TDB_CLEAR_IF_FIRST, 
+	db = tdb_open("torture.tdb", 0, TDB_CLEAR_IF_FIRST, 
 		      O_RDWR | O_CREAT, 0600);
 	if (!db) {
 		fatal("db open failed");
 	}
-	tdb_logging_function(db, tdb_log);
 
-	srand(seed + getpid());
-	srandom(seed + getpid() + time(NULL));
-	for (i=0;i<loops;i++) addrec_db();
+	for (i=0;i<NPROC;i++) {
+		pids[i] = fork();
+		if (pids[i] == 0) {
+			tdb_reopen_all();
 
-	tdb_traverse(db, NULL, NULL);
-	tdb_traverse(db, traverse_fn, NULL);
-	tdb_traverse(db, traverse_fn, NULL);
+			tdb_logging_function(db, tdb_log);
 
-	tdb_close(db);
+			srand(seed + getpid());
+			srandom(seed + getpid() + time(NULL));
+			for (i=0;i<loops;i++) addrec_db();
 
-	if (getpid() == pids[0]) {
-		for (i=0;i<NPROC-1;i++) {
-			int status;
-			if (waitpid(pids[i+1], &status, 0) != pids[i+1]) {
-				printf("failed to wait for %d\n",
-				       (int)pids[i+1]);
-				exit(1);
-			}
-			if (WEXITSTATUS(status) != 0) {
-				printf("child %d exited with status %d\n",
-				       (int)pids[i+1], WEXITSTATUS(status));
-				exit(1);
-			}
+			tdb_traverse(db, NULL, NULL);
+			tdb_traverse(db, traverse_fn, NULL);
+			tdb_traverse(db, traverse_fn, NULL);
+
+			tdb_close(db);
+			exit(0);
 		}
-		printf("OK\n");
 	}
 
+	for (i=0;i<NPROC;i++) {
+		int status;
+		if (waitpid(pids[i], &status, 0) != pids[i]) {
+			printf("failed to wait for %d\n",
+			       (int)pids[i]);
+			exit(1);
+		}
+		if (WEXITSTATUS(status) != 0) {
+			printf("child %d exited with status %d\n",
+			       (int)pids[i], WEXITSTATUS(status));
+			exit(1);
+		}
+	}
+	printf("OK\n");
 	return 0;
 }
