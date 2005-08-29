@@ -35,9 +35,8 @@ function docX()
 function docY()
 {
 	var y;
-	// Less 25px to not cover the toolbar
 	if (browser != "mshtml") {
-		y = window.innerHeight - 25;
+		y = window.innerHeight;
 	} else {
 		y = document.documentElement.clientHeight;
 	}
@@ -154,6 +153,23 @@ window.application.main = function()
 	var doc = this.getClientWindow().getClientDocument();
 	doc.addEventListener("contextmenu", showContextMenu);
 	doc.add(w);
+
+	var bar = new QxMenuBar;
+	with (bar) {
+		setBottom(0);
+		setLeft(0);
+		setWidth("100%");
+		setHeight(25);
+		setBackgroundColor("ThreeDFace");
+	}
+
+	var start = new QxMenuButton("START");
+	start.addEventListener("click", function() {
+		startMenu();
+	});
+	bar.add(start);
+
+	w.add(bar);
 }
 
 window.onresize = function() 

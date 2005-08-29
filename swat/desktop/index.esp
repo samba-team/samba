@@ -8,6 +8,7 @@ libinclude("base.js");
 <script type="text/javascript" src="/scripting/client/js_scripts.js"></script>
 <script type="text/javascript" src="/scripting/client/desktop.js"></script>
 <script type="text/javascript" src="/scripting/client/status.js"></script>
+<script type="text/javascript" src="/scripting/client/regedit.js"></script>
 
 <script type="text/javascript">
 
@@ -115,7 +116,7 @@ function showReg()
 	regWin.setVisible('true');
 }
 
-function startSwat()
+function startMenu() 
 {
 	var sMenu = new QxMenu;
 	with(sMenu) {
@@ -203,9 +204,5 @@ function startSwat()
 	sMenu.setVisible(true);
 }
 </script>
-
-<div id="toolbar">
-<h3><a href="javascript:startSwat()">SWAT (Start)</a></h3>
-</div>
 
 <% page_footer(); %>
