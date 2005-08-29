@@ -44,7 +44,7 @@ function showMessage(m)
 
 function blankW()
 {
-	var blank = new Window("SWAT");
+	var blank = new Window.standard('SWAT');
 	w.add(blank);
 	blank.setVisible(true);
 }
@@ -105,7 +105,6 @@ window.application.main = function()
 	}
 	w.add(win);
 	getServerStatus(win);
-	
 }
 
 window.onresize = function() 

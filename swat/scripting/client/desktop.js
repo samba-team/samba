@@ -11,6 +11,7 @@ We'll cover IE 6 for now, but these checks need to be
 revisited for fuller browser coverage. */
 var browser = QxClient().engine;
 
+// DocX/Y returns the width/height of the page in browser
 function docX()
 {
 	var x;
@@ -34,27 +35,42 @@ function docY()
 	return y;
 }
 
-function sizeX()
+//  If given a number, sizeX/Y returns in pixels a percentage of the browser
+//  window. If given a Window object, sizeX/Y returns the size of that object. 
+function sizeX(s)
 {
-	var sX = Math.floor(docX() * .45);
+	var sX;
+
+	if (typeof(s) == 'number') {
+		sX = Math.floor(docX() * s);
+	} else {
+		sX = s.getMinWidth();
+	}
+
 	return sX;
 }
 
-function sizeY()
+function sizeY(s)
 {
-	var sY = Math.floor(docY() * .45);
+	var sY;
+	if (typeof(s) == 'number') {
+		sY = Math.floor(docY() * s);
+	} else {
+		sY = s.getMinHeight();
+	}
+
 	return sY;
 }
 
-function getPosX()
+function getPosX(win)
 {
-	var y = Math.floor( (docY() - sizeY()) * Math.random() );
+	var y = Math.floor( (docY() - sizeY(win)) * Math.random() );
 	return y;
 }
 
-function getPosY()
+function getPosY(win)
 {
-	var x = Math.floor( (docX() - sizeX()) * Math.random() );
+	var x = Math.floor( (docX() - sizeX(win)) * Math.random() );
 	return x;
 }
 
@@ -85,15 +101,41 @@ function winMenu(e)
 	inset.setVisible(true);
 }
 
-function Window(title)
+function Window(h, src, s)
 {
-	var self = new QxWindow(title);
-	self.setTop(getPosX());
-	self.setLeft(getPosY());
-	self.setMinWidth(sizeX());
-	self.setMinHeight(sizeY());
-	self.addEventListener("contextmenu", winMenu);
-	return self;
+	this.self = new QxWindow(h);
+
+	// Settings for all windows
+	if (s) {
+		this.self.setMinWidth(sizeX(s));
+		this.self.setMinHeight(sizeY(s));
+	}
+	this.self.setTop(getPosX(this.self));
+	this.self.setLeft(getPosY(this.self));
+
+	this.self.addEventListener("contextmenu", winMenu);
+
+	return this.self;
 }
 
+function SmallWindow(h, src)
+{
+	this.self = new Window(h, src, .20);
+	return this.self;
+}
 
+function StandardWindow(h, src)
+{
+	this.self = new Window(h, src, .45);
+	return this.self;
+}
+
+function LargeWindow(h, src)
+{
+	this.self = new Window(h, src, .70);
+	return this.self;
+}
+
+Window.small = SmallWindow;
+Window.standard = StandardWindow;
+Window.large = LargeWindow;
