@@ -6,6 +6,15 @@
 */
 
 
+// The global widget we attach everything to
+var w = new QxWidget();
+with(w) {
+	setTop(0);
+	setLeft(0);
+	setWidth(docX());
+	setHeight(docY());
+}
+
 /* Qooxdoo's browser sniffer doesn't distinguish IE version.
 We'll cover IE 6 for now, but these checks need to be
 revisited for fuller browser coverage. */
@@ -139,3 +148,17 @@ function LargeWindow(h, src)
 Window.small = SmallWindow;
 Window.standard = StandardWindow;
 Window.large = LargeWindow;
+
+window.application.main = function()
+{
+	var doc = this.getClientWindow().getClientDocument();
+	doc.addEventListener("contextmenu", showContextMenu);
+	doc.add(w);
+}
+
+window.onresize = function() 
+{
+	w.setWidth(docX());
+	w.setHeight(docY());
+}
+
