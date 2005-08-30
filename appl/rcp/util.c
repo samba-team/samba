@@ -83,7 +83,7 @@ okname(cp0)
 	int c;
 	unsigned char *cp;
 
-	cp = cp0;
+	cp = (unsigned char *)cp0;
 	do {
 		c = *cp;
 		if (c & 0200)
