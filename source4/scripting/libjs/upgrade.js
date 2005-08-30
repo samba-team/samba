@@ -210,8 +210,8 @@ function upgrade_provision(samba3)
 	var lp = loadparm_init();
 	var rdn_list;
 
-	var domainname = samba3.get_param("global", "workgroup");
-
+	var domainname = samba3.configuration.get("workgroup");
+	
 	if (domainname == undefined) {
 		domainname = samba3.secrets.domains[0].name;
 		println("No domain specified in smb.conf file, assuming '" + domainname + "'");
@@ -219,7 +219,7 @@ function upgrade_provision(samba3)
 	
 	var domsec = samba3.find_domainsecrets(domainname);
 	var hostsec = samba3.find_domainsecrets(hostname());
-	var realm = samba3.get_param("global", "realm");
+	var realm = samba3.configuration.get("realm");
 
 	if (realm == undefined) {
 		realm = domainname;

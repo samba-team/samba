@@ -129,6 +129,7 @@ void smb_setup_ejs_functions(void)
 	smb_setup_ejs_system();
 	smb_setup_ejs_credentials();
 	smb_setup_ejs_samba3();
+	smb_setup_ejs_param();
 	smb_setup_ejs_datablob();
 
 	ejsDefineCFunction(-1, "typeof", ejs_typeof, NULL, MPR_VAR_SCRIPT_HANDLE);
