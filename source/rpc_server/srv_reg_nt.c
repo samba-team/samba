@@ -1078,8 +1078,6 @@ WERROR _reg_save_key(pipes_struct *p, REG_Q_SAVE_KEY  *q_u, REG_R_SAVE_KEY *r_u)
 	DEBUG(2,("_reg_save_key: Saving [%s] to %s in share %s\n", regkey->name, filename, lp_servicename(snum) ));
 		
 	return backup_registry_key( regkey, filename );
-
-	return WERR_OK;
 }
 
 /*******************************************************************
