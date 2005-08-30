@@ -288,8 +288,8 @@ static struct MprVar mprSecrets(struct samba3_secrets *sec)
 
 static struct MprVar mprShares(struct samba3 *samba3)
 {
-	struct MprVar mpv = mprObject("array"), s, ps, p;
-	int i, j;
+	struct MprVar mpv = mprObject("array"), s;
+	int i;
 
 	for (i = 0; i < samba3->share_count; i++) {
 		s = mprObject("share");
@@ -298,18 +298,7 @@ static struct MprVar mprShares(struct samba3 *samba3)
 
 		/* FIXME: secdesc */
 
-		ps = mprObject("array");
-
-		for (j = 0; j < samba3->shares[i].parameter_count; j++) {
-			p = mprObject("parameter");
-
-			mprSetVar(&p, "name", mprString(samba3->shares[i].parameters[j].name));
-			mprSetVar(&p, "value", mprString(samba3->shares[i].parameters[j].value));
-
-			mprAddArray(&ps, j, p);
-		}
-
-		mprSetVar(&s, "parameters", ps);
+		mprAddArray(&mpv, i, s);
 	}
 
 	return mpv;
@@ -389,29 +378,6 @@ static struct MprVar mprWinsEntries(struct samba3 *samba3)
 	return mpv;
 }
 
-static int ejs_get_param(MprVarHandle eid, int argc, struct MprVar **argv)
-{
-	struct samba3 *samba3;
-	const char *tmp;
-
-	if (argc < 2) {
-		ejsSetErrorMsg(eid, "get_param invalid arguments");
-		return -1;
-	}
-
-	samba3 = mprGetThisPtr(eid, "samba3");
-	mprAssert(samba3);
-	tmp = samba3_get_param(samba3, mprToString(argv[0]), mprToString(argv[1]));
-
-	if (tmp == NULL) {
-		mpr_Return(eid, mprCreateUndefinedVar());
-	} else {
-		mpr_Return(eid, mprString(tmp));
-	}
-
-	return 0;
-}
-
 static int ejs_find_domainsecrets(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	struct samba3 *samba3 = NULL;
@@ -434,8 +400,6 @@ static int ejs_find_domainsecrets(MprVarHandle eid, int argc, struct MprVar **ar
 
 	return 0;
 }
-
-
 
 /*
   initialise samba3 ejs subsystem
@@ -470,7 +434,6 @@ static int ejs_samba3_read(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetVar(&mpv, "idmapdb", mprIdmapDb(&samba3->idmap));
 	mprSetVar(&mpv, "policy", mprPolicy(&samba3->policy));
 	mprSetVar(&mpv, "registry", mprRegistry(&samba3->registry));
-	mprSetCFunction(&mpv, "get_param", ejs_get_param);
 	mprSetCFunction(&mpv, "find_domainsecrets", ejs_find_domainsecrets);
 
 	mpr_Return(eid, mpv);

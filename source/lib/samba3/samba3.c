@@ -20,12 +20,6 @@
 #include "includes.h"
 #include "lib/samba3/samba3.h"
 
-struct smbconf_data {
-	TALLOC_CTX *ctx;
-	struct samba3 *db;
-	struct samba3_share_info *current_share;
-};
-
 struct samba3_domainsecrets *samba3_find_domainsecrets(struct samba3 *db, const char *name)
 {
 	int i;
@@ -38,93 +32,6 @@ struct samba3_domainsecrets *samba3_find_domainsecrets(struct samba3 *db, const 
 	return NULL;
 }
 
-struct samba3_share_info *samba3_find_share(struct samba3 *db, const char *name)
-{
-	int i;
-	for (i = 0; i < db->share_count; i++) {
-		if (!strcasecmp_m(db->shares[i].name, name)) 
-			return &db->shares[i];
-	}
-
-	return NULL;
-}
-
-
-struct samba3_share_info *samba3_find_add_share(struct samba3 *db, TALLOC_CTX* ctx, const char *name)
-{
-	struct samba3_share_info *share = samba3_find_share(db, name);
-
-	if (share)
-		return share;
-
-	db->shares = talloc_realloc(ctx, db->shares, struct samba3_share_info, db->share_count+1);
-	ZERO_STRUCT(db->shares[db->share_count]);
-	db->shares[db->share_count].name = talloc_strdup(ctx, name);
-	db->share_count++;
-	
-	return &db->shares[db->share_count-1];
-}
-
-const char *samba3_get_param(struct samba3 *samba3, const char *section, const char *param)
-{
-	int i;
-	struct samba3_share_info *share = samba3_find_share(samba3, section);
-
-	if (share == NULL)
-		return NULL;
-
-	for (i = 0; i < share->parameter_count; i++) {
-		if (!strcasecmp_m(share->parameters[i].name, param))
-			return share->parameters[i].value;
-	}
-
-	return NULL;
-}
-
-
-static BOOL samba3_sfunc (const char *name, void *_db)
-{
-	struct smbconf_data *privdat = _db;
-
-	privdat->current_share = samba3_find_add_share(privdat->db, privdat->ctx, name);
-
-	return True;
-}
-
-static BOOL samba3_pfunc (const char *name, const char *value, void *_db)
-{
-	struct smbconf_data *privdat = _db;
-	struct samba3_parameter *p;
-
-	privdat->current_share->parameters = 
-		talloc_realloc(privdat->ctx, privdat->current_share->parameters,
-					   struct samba3_parameter, 
-					   privdat->current_share->parameter_count+1);
-
-	p = &privdat->current_share->parameters[privdat->current_share->parameter_count];
-	p->name = talloc_strdup(privdat->ctx, name);
-	p->value = talloc_strdup(privdat->ctx, value);
-
-	privdat->current_share->parameter_count++;
-
-	return True;
-}
-
-NTSTATUS samba3_read_smbconf(const char *fn, TALLOC_CTX *ctx, struct samba3 *db)
-{
-	struct smbconf_data privdat;
-
-	privdat.ctx = ctx;
-	privdat.db = db;
-	privdat.current_share = samba3_find_add_share(db, ctx, "global");
-	
-	if (!pm_process( fn, samba3_sfunc, samba3_pfunc, &privdat )) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	return NT_STATUS_OK;
-}
-
 NTSTATUS samba3_read(const char *smbconf, const char *libdir, TALLOC_CTX *ctx, struct samba3 **samba3)
 {
 	struct samba3 *ret;
@@ -133,7 +40,7 @@ NTSTATUS samba3_read(const char *smbconf, const char *libdir, TALLOC_CTX *ctx, s
 	ret = talloc_zero(ctx, struct samba3);
 
 	if (smbconf) 
-		samba3_read_smbconf(smbconf, ctx, ret);
+		ret->configuration = param_read(ret, smbconf);
 
 	dbfile = talloc_asprintf(ctx, "%s/account_policy.tdb", libdir);
 	samba3_read_account_policy(dbfile, ctx, &ret->policy);

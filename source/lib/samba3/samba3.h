@@ -23,6 +23,7 @@
 
 #include "librpc/gen_ndr/security.h"
 #include "librpc/gen_ndr/samr.h"
+#include "param/generic.h"
 
 struct samba3_samaccount {
 	uint32_t logon_time,
@@ -185,21 +186,15 @@ struct samba3_secrets
 	} *afs_keyfiles;
 };
 
-struct samba3_parameter {
-	char *name;
-	char *value;
-};
-
 struct samba3_share_info {
 	char *name;
 	struct security_descriptor secdesc;
-
-	uint32_t parameter_count;
-	struct samba3_parameter *parameters;
 };
 
 struct samba3 
 {
+	struct param_context *configuration;
+
 	uint32_t winsdb_count;
 	struct samba3_winsdb_entry *winsdb_entries;
 	
