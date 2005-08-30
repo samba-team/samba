@@ -1276,14 +1276,22 @@ static int tdb_next_lock(TDB_CONTEXT *tdb, struct tdb_traverse_lock *tlock,
 		   semantics don't change.
 
 		   With a non-indexed ldb search this trick gains us a
-		   factor of more than 10 in speed on a linux 2.6.x
-		   system.
+		   factor of around 80 in speed on a linux 2.6.x
+		   system (testing using ldbtest).
 		 */
 		if (!tlock->off && tlock->hash != 0) {
 			u32 off;
-			if (ofs_read(tdb, TDB_HASH_TOP(tlock->hash), &off) == 0 &&
-			    off == 0) {
-				continue;
+			if (tdb->map_ptr) {
+				for (;tlock->hash < tdb->header.hash_size;tlock->hash++) {
+					if (0 != *(u32 *)(TDB_HASH_TOP(tlock->hash) + (unsigned char *)tdb->map_ptr)) {
+						break;
+					}
+				}
+			} else {
+				if (ofs_read(tdb, TDB_HASH_TOP(tlock->hash), &off) == 0 &&
+				    off == 0) {
+					continue;
+				}
 			}
 		}
 
