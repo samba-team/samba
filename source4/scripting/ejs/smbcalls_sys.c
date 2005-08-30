@@ -137,7 +137,7 @@ static int ejs_sys_httptime(MprVarHandle eid, int argc, struct MprVar **argv)
 
 /*
   unlink a file
-   ok = unlink(fname);
+   ok = sys.unlink(fname);
 */
 static int ejs_sys_unlink(MprVarHandle eid, int argc, char **argv)
 {
@@ -154,7 +154,7 @@ static int ejs_sys_unlink(MprVarHandle eid, int argc, char **argv)
 /*
   load a file as a string
   usage:
-     string = sys_file_load(filename);
+     string = sys.file_load(filename);
 */
 static int ejs_sys_file_load(MprVarHandle eid, int argc, char **argv)
 {
@@ -173,7 +173,7 @@ static int ejs_sys_file_load(MprVarHandle eid, int argc, char **argv)
 /*
   save a file from a string
   usage:
-     ok = sys_file_save(filename, str);
+     ok = sys.file_save(filename, str);
 */
 static int ejs_sys_file_save(MprVarHandle eid, int argc, char **argv)
 {
