@@ -99,7 +99,7 @@ struct ldb_val ldb_val_dup(void *mem_ctx, const struct ldb_val *v)
 {
 	struct ldb_val v2;
 	v2.length = v->length;
-	if (v->length == 0) {
+	if (v->data == NULL) {
 		v2.data = NULL;
 		return v2;
 	}

@@ -66,7 +66,7 @@ static int ldb_default_copy(struct ldb_context *ldb,
 {
 	*out = ldb_val_dup(mem_ctx, in);
 
-	if (out->length == 0) {
+	if (out->data == NULL && in->data != NULL) {
 		return -1;
 	}
 
