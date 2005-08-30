@@ -67,12 +67,6 @@ struct cli_pipe_auth_data {
 	void (*cli_auth_data_free_func)(struct cli_pipe_auth_data *);
 };
 
-struct pipe_netlogon_creds {
-	unsigned char nl_sess_key[16];
-	DOM_CRED nl_clnt_cred;                /* Client credential. */
-	uint32 neg_flags;
-};
-
 struct rpc_pipe_client {
 	struct rpc_pipe_client *prev, *next;
 
@@ -93,7 +87,7 @@ struct rpc_pipe_client {
 	struct cli_pipe_auth_data auth;
 
 	/* The following is only non-null on a netlogon pipe. */
-	struct pipe_netlogon_creds *netlog_creds;
+	struct dcinfo *netlog_creds;
 };
 
 struct cli_state {
