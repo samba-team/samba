@@ -341,7 +341,7 @@ uint32_t interpret_addr(const char *str)
 	}
 	/* recognise 'localhost' as a special name. This fixes problems with
 	   some hosts that don't have localhost in /etc/hosts */
-	if (strcmp(str,"localhost") == 0) {
+	if (strcasecmp(str,"localhost") == 0) {
 		str = "127.0.0.1";
 	}
 
