@@ -308,6 +308,7 @@ AC_CHECK_HEADERS([\
 	sys/timeb.h				\
 	sys/times.h				\
 	sys/un.h				\
+	sys/ucred.h				\
 	termcap.h				\
 	termio.h				\
 	termios.h				\
