@@ -1,0 +1,78 @@
+#!/usr/bin/env smbscript
+
+libinclude("base.js");
+var sys = sys_init();
+var s3url;
+var s3 = ldb_init();
+var ok;
+
+if (ARGV.length == 2) {
+	s3url = ARGV[1];
+	ok = s3.connect(s3url);
+	assert(ok);
+} else {
+	s3url = "tdb://samba3.ldb";
+	sys.unlink("samba3.ldb");
+	println("Adding samba3 LDIF...");
+	var s3 = ldb_init();
+	ok = s3.connect(s3url);
+	assert(ok);
+	var ldif = sys.file_load("../../testdata/samba3/samba3.ldif");
+	assert(ldif != undefined);
+	ok = s3.add(ldif);
+	assert(ok);
+}
+
+println("Initial samba4 LDIF...");
+var s4 = ldb_init();
+ok = s4.connect("tdb://samba4.ldb");
+assert(ok);
+ok = s4.add(sprintf("
+dn: @MODULES
+@LIST: samba3sam
+
+dn: @MAP=samba3sam
+@MAP_URL: %s", s3url));
+assert(ok);
+
+println("Looking up by non-mapped attribute");
+msg = s4.search("(cn=Administrator)");
+assert(msg.length == 1);
+
+println("Looking up by mapped attribute");
+msg = s4.search("(name=Backup Operators)");
+assert(msg.length == 1);
+
+println("Looking up by old name of renamed attribute");
+msg = s4.search("(displayName=Backup Operators)");
+assert(msg.length == 1);
+
+println("Adding a record");
+ok = s4.add("
+dn: cn=Foo,dc=idealx,dc=org
+unixName: root
+lastLogon: 20000
+cn: Foo
+showInAdvancedViewOnly: TRUE
+");
+assert(ok);
+
+println("Checking for existance of record");
+msg = s4.search("(cn=Foo)", new Array('unixName','lastLogon','cn','showInAdvancedViewOnly'));
+assert(msg.length == 1);
+
+println("Checking for persistence of non-mappable attribute");
+msg = s4.search("(cn=Foo)", new Array('showInAdvancedViewOnly'));
+assert(msg.length == 1);
+
+println("Adding record with mapped attribute in dn");
+ok = s4.add("
+dn: unixName=nobody,dc=idealx,dc=org
+unixName: nobody 
+cn: Niemand
+");
+assert(ok);
+
+println("Checking for existance of record (mapped)");
+msg = s4.search("(unixName=nobody)", new Array('unixName','cn','dn'));
+assert(msg.length == 1);

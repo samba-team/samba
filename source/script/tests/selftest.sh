@@ -88,7 +88,7 @@ cat >$CONFFILE<<EOF
 	ncalrpc dir = $NCALRPCDIR
 	lock dir = $LOCKDIR
 	setup directory = $SRCDIR/setup
-        js include = $SRCDIR/scripting/libjs
+	js include = $SRCDIR/scripting/libjs
 	name resolve order = bcast
 	interfaces = lo*
 	tls enabled = $TLS_ENABLED
@@ -107,10 +107,10 @@ cat >$CONFFILE<<EOF
 [cifs]
 	read only = no
 	ntvfs handler = cifs
-        cifs:server = localhost
-        cifs:user = $USERNAME
-        cifs:password = $PASSWORD
-        cifs:domain = $DOMAIN
+	cifs:server = localhost
+	cifs:user = $USERNAME
+	cifs:password = $PASSWORD
+	cifs:domain = $DOMAIN
 	cifs:share = tmp
 EOF
 
