@@ -590,6 +590,12 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 
 	msg->dn = ldb_dn_explode(msg, value.data);
 
+	if (msg->dn == NULL) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "Error: Unable to parse dn '%s'\n", 
+				  value.data);
+		goto failed;
+	}
+
 	while (next_attr(ldif, &s, &attr, &value) == 0) {
 		const struct ldb_attrib_handler *h;		
 		struct ldb_message_element *el;
