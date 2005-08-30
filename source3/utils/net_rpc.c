@@ -5959,6 +5959,7 @@ int net_rpc_usage(int argc, const char **argv)
 	d_printf("  net rpc shutdown \t\tto shutdown a remote server\n");
 	d_printf("  net rpc rights\t\tto manage privileges assigned to SIDs\n");
 	d_printf("  net rpc registry\t\tto manage registry hives\n");
+	d_printf("  net rpc service\t\tto start, stop and query services\n");
 	d_printf("\n");
 	d_printf("'net rpc shutdown' also accepts the following miscellaneous options:\n"); /* misc options */
 	d_printf("\t-r or --reboot\trequest remote server reboot on shutdown\n");
