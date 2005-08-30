@@ -219,6 +219,11 @@ NTSTATUS samba3_read_smbpasswd(const char *filename, TALLOC_CTX *ctx, struct sam
 
 	lines = file_lines_load(filename, &numlines, ctx);
 
+	if (lines == NULL) {
+		DEBUG(0, ("Unable to load lines from %s\n", filename));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	*accounts = talloc_array(ctx, struct samba3_samaccount, numlines);
 
 	for (i = 0; i < numlines; i++) {
