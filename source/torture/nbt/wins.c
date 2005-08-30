@@ -34,7 +34,7 @@
 
 #define CHECK_STRING(v, correct) do { \
 	if ((v) != (correct) && \
-	    ((v)==NULL || (correct)==NULL || StrCaseCmp(v, correct) != 0)) { \
+	    ((v)==NULL || (correct)==NULL || strcasecmp_m(v, correct) != 0)) { \
 		printf("(%s) Incorrect value %s='%s' - should be '%s'\n", \
 		       __location__, #v, v, correct); \
 		ret = False; \

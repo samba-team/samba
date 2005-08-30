@@ -246,7 +246,7 @@ static void map_regval_to_ads(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	int i;
 
 	for (i=0; map[i].valname; i++) {
-		if (StrCaseCmp(map[i].valname, value->valuename) == 0) {
+		if (strcasecmp_m(map[i].valname, value->valuename) == 0) {
 			if (!map[i].fn(ctx, mods, value)) {
 				DEBUG(5, ("Add of value %s to modlist failed\n", value->valuename));
 			} else {

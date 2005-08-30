@@ -554,7 +554,7 @@ static NTSTATUS multiple_search(struct smbcli_state *cli,
 	}} while (0)
 
 #define CHECK_STRING(v, correct) do { \
-	if (StrCaseCmp(v, correct) != 0) { \
+	if (strcasecmp_m(v, correct) != 0) { \
 		printf("(%s) Incorrect value %s='%s' - should be '%s'\n", \
 		       __location__, #v, v, correct); \
 		ret = False; \
@@ -900,7 +900,7 @@ static BOOL test_sorted(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		const char *name1, *name2;
 		name1 = result.list[i].both_directory_info.name.s;
 		name2 = result.list[i+1].both_directory_info.name.s;
-		if (StrCaseCmp(name1, name2) > 0) {
+		if (strcasecmp_m(name1, name2) > 0) {
 			printf("non-alphabetical order at entry %d  '%s' '%s'\n", 
 			       i, name1, name2);
 			printf("Server does not produce sorted directory listings (not an error)\n");

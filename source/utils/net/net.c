@@ -65,7 +65,7 @@ int net_run_function(struct net_context *ctx,
 	}
 
 	for (i=0; functable[i].name; i++) {
-		if (StrCaseCmp(argv[0], functable[i].name) == 0)
+		if (strcasecmp_m(argv[0], functable[i].name) == 0)
 			return functable[i].fn(ctx, argc-1, argv+1);
 	}
 
@@ -88,7 +88,7 @@ int net_run_usage(struct net_context *ctx,
 	}
 */
 	for (i=0; functable[i].name; i++) {
-		if (StrCaseCmp(argv[0], functable[i].name) == 0)
+		if (strcasecmp_m(argv[0], functable[i].name) == 0)
 			if (functable[i].usage) {
 				return functable[i].usage(ctx, argc-1, argv+1);
 			}

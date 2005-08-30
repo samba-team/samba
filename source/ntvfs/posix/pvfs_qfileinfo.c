@@ -82,7 +82,7 @@ NTSTATUS pvfs_query_ea_list(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 		eas->eas[i].name.s = names[i].name.s;
 		eas->eas[i].value = data_blob(NULL, 0);
 		for (j=0;j<ealist->num_eas;j++) {
-			if (StrCaseCmp(eas->eas[i].name.s, 
+			if (strcasecmp_m(eas->eas[i].name.s, 
 				       ealist->eas[j].name) == 0) {
 				eas->eas[i].value = ealist->eas[j].value;
 				break;

@@ -66,7 +66,7 @@ static struct samba3_domainsecrets *secrets_find_domain(TALLOC_CTX *ctx, struct 
 
 	for (i = 0; i < db->domain_count; i++) 
 	{
-		if (!StrCaseCmp(db->domains[i].name, key)) 
+		if (!strcasecmp_m(db->domains[i].name, key)) 
 			return &db->domains[i];
 	}
 

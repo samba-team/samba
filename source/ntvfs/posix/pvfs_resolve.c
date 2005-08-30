@@ -38,12 +38,12 @@ static int component_compare(struct pvfs_state *pvfs, const char *comp, const ch
 {
 	int ret;
 
-	ret = StrCaseCmp(comp, name);
+	ret = strcasecmp_m(comp, name);
 
 	if (ret != 0) {
 		char *shortname = pvfs_short_name_component(pvfs, name);
 		if (shortname) {
-			ret = StrCaseCmp(comp, shortname);
+			ret = strcasecmp_m(comp, shortname);
 			talloc_free(shortname);
 		}
 	}
@@ -197,7 +197,7 @@ static NTSTATUS parse_stream_name(struct pvfs_filename *name, const char *s)
 						 strlen(name->stream_name));
 		return NT_STATUS_OK;
 	}
-	if (StrCaseCmp(p, ":$DATA") != 0) {
+	if (strcasecmp_m(p, ":$DATA") != 0) {
 		return NT_STATUS_OBJECT_NAME_INVALID;
 	}
 	*p = 0;

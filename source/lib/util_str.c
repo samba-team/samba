@@ -80,7 +80,7 @@ BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 /**
  Case insensitive string compararison
 **/
-int StrCaseCmp(const char *s1, const char *s2)
+int strcasecmp_m(const char *s1, const char *s2)
 {
 	codepoint_t c1=0, c2=0;
 	size_t size1, size2;
@@ -122,7 +122,7 @@ BOOL strequal(const char *s1, const char *s2)
 	if (!s1 || !s2)
 		return(False);
   
-	return StrCaseCmp(s1,s2) == 0;
+	return strcasecmp_m(s1,s2) == 0;
 }
 
 /**
@@ -477,7 +477,7 @@ BOOL in_list(const char *s, const char *list, BOOL casesensitive)
 			if (strcmp(tok,s) == 0)
 				return(True);
 		} else {
-			if (StrCaseCmp(tok,s) == 0)
+			if (strcasecmp_m(tok,s) == 0)
 				return(True);
 		}
 	}
