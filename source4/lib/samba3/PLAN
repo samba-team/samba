@@ -1,5 +1,3 @@
 TODO (SoC project):
- - move ini parsing stuff to seperate file param/ini.c
- - parse "passdb backend" setting and parse tdbsam/passdb based on it
  - test ldb_map backend (testsuite?)
  - testsuite for the static upgrade

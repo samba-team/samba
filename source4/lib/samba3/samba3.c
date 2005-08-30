@@ -32,6 +32,55 @@ struct samba3_domainsecrets *samba3_find_domainsecrets(struct samba3 *db, const 
 	return NULL;
 }
 
+NTSTATUS samba3_read_passdb_backends(TALLOC_CTX *ctx, const char *libdir, struct samba3 *samba3)
+{
+	char *dbfile;
+	NTSTATUS status = NT_STATUS_OK;
+	int i;
+	const char **backends = param_get_string_list(samba3->configuration, NULL, "passdb backends", NULL);
+
+	/* Default to smbpasswd */
+	if (backends == NULL) 
+		backends = str_list_make(ctx, "smbpasswd", LIST_SEP);
+	else
+		backends = str_list_copy(ctx, backends);
+
+	for (i = 0; backends[i]; i++) {
+		if (!strncmp(backends[i], "tdbsam", strlen("tdbsam"))) {
+			const char *p = strchr(backends[i], ':');
+			if (p && p[1]) {
+				dbfile = talloc_strdup(ctx, p+1);
+			} else {
+				dbfile = talloc_asprintf(ctx, "%s/passdb.tdb", libdir);
+			}
+			samba3_read_tdbsam(dbfile, ctx, &samba3->samaccounts, &samba3->samaccount_count);
+			talloc_free(dbfile);
+		} else if (!strncmp(backends[i], "smbpasswd", strlen("smbpasswd"))) {
+			const char *p = strchr(backends[i], ':');
+			if (p && p[1]) {
+				dbfile = talloc_strdup(ctx, p+1);
+			} else if ((p = param_get_string(samba3->configuration, NULL, "smb passwd file"))) {
+				dbfile = talloc_strdup(ctx, p);
+			} else {
+				dbfile = talloc_strdup(ctx, "/etc/samba/smbpasswd");
+			}
+
+			samba3_read_smbpasswd(dbfile, ctx, &samba3->samaccounts, &samba3->samaccount_count);
+			talloc_free(dbfile);
+		} else if (!strncmp(backends[i], "ldapsam", strlen("ldapsam"))) {
+			/* Will use samba3sam mapping module */			
+		} else {
+			DEBUG(0, ("Upgrade from %s database not supported", backends[i]));
+			status = NT_STATUS_NOT_SUPPORTED;
+			continue;
+		}
+	}
+
+	talloc_free(backends);
+
+	return status;
+}
+
 NTSTATUS samba3_read(const char *libdir, const char *smbconf, TALLOC_CTX *ctx, struct samba3 **samba3)
 {
 	struct samba3 *ret;
@@ -68,9 +117,7 @@ NTSTATUS samba3_read(const char *libdir, const char *smbconf, TALLOC_CTX *ctx, s
 	samba3_read_winsdb(dbfile, ret, &ret->winsdb_entries, &ret->winsdb_count);
 	talloc_free(dbfile);
 
-	dbfile = talloc_asprintf(ctx, "%s/passdb.tdb", libdir);
-	samba3_read_tdbsam(dbfile, ctx, &ret->samaccounts, &ret->samaccount_count);
-	talloc_free(dbfile);
+	samba3_read_passdb_backends(ctx, libdir, ret);
 
 	dbfile = talloc_asprintf(ctx, "%s/group_mapping.tdb", libdir);
 	samba3_read_grouptdb(dbfile, ctx, &ret->group);
