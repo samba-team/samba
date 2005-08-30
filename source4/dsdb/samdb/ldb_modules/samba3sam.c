@@ -23,7 +23,7 @@
 */
 
 #include "includes.h"
-#include "ldb/ldb_map/ldb_map.h"
+#include "ldb/modules/ldb_map.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
 
