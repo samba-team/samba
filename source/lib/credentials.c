@@ -77,7 +77,8 @@ const char *cli_credentials_get_username(struct cli_credentials *cred, TALLOC_CT
 	return talloc_reference(mem_ctx, cred->username);
 }
 
-BOOL cli_credentials_set_username(struct cli_credentials *cred, const char *val, enum credentials_obtained obtained)
+BOOL cli_credentials_set_username(struct cli_credentials *cred, 
+				  const char *val, enum credentials_obtained obtained)
 {
 	if (obtained >= cred->username_obtained) {
 		cred->username = talloc_strdup(cred, val);
@@ -87,6 +88,20 @@ BOOL cli_credentials_set_username(struct cli_credentials *cred, const char *val,
 
 	return False;
 }
+
+BOOL cli_credentials_set_username_callback(struct cli_credentials *cred,
+				  const char *(*username_cb) (struct cli_credentials *))
+{
+	if (cred->username_obtained < CRED_CALLBACK) {
+		cred->username_cb = username_cb;
+		cred->username_obtained = CRED_CALLBACK;
+		return True;
+	}
+
+	return False;
+}
+
+
 
 /**
  * Obtain the client principal for this credentials context.
@@ -124,6 +139,18 @@ BOOL cli_credentials_set_principal(struct cli_credentials *cred, const char *val
 	return False;
 }
 
+BOOL cli_credentials_set_principal_callback(struct cli_credentials *cred,
+				  const char *(*principal_cb) (struct cli_credentials *))
+{
+	if (cred->principal_obtained < CRED_CALLBACK) {
+		cred->principal_cb = principal_cb;
+		cred->principal_obtained = CRED_CALLBACK;
+		return True;
+	}
+
+	return False;
+}
+
 BOOL cli_credentials_authentication_requested(struct cli_credentials *cred) 
 {
 	if (cred->principal_obtained >= CRED_SPECIFIED) {
@@ -154,13 +181,27 @@ const char *cli_credentials_get_password(struct cli_credentials *cred)
 	return cred->password;
 }
 
-BOOL cli_credentials_set_password(struct cli_credentials *cred, const char *val, enum credentials_obtained obtained)
+BOOL cli_credentials_set_password(struct cli_credentials *cred, 
+				  const char *val, 
+				  enum credentials_obtained obtained)
 {
 	if (obtained >= cred->password_obtained) {
 		cred->password = talloc_strdup(cred, val);
 		cred->password_obtained = obtained;
 
 		cred->nt_hash = NULL;
+		return True;
+	}
+
+	return False;
+}
+
+BOOL cli_credentials_set_password_callback(struct cli_credentials *cred,
+					   const char *(*password_cb) (struct cli_credentials *))
+{
+	if (cred->password_obtained < CRED_CALLBACK) {
+		cred->password_cb = password_cb;
+		cred->password_obtained = CRED_CALLBACK;
 		return True;
 	}
 
@@ -375,7 +416,8 @@ int cli_credentials_new_ccache(struct cli_credentials *cred)
 	return ret;
 }
 
-int cli_credentials_get_ccache(struct cli_credentials *cred, struct ccache_container **ccc)
+int cli_credentials_get_ccache(struct cli_credentials *cred, 
+			       struct ccache_container **ccc)
 {
 	krb5_error_code ret;
 	
@@ -432,11 +474,25 @@ const char *cli_credentials_get_domain(struct cli_credentials *cred)
 }
 
 
-BOOL cli_credentials_set_domain(struct cli_credentials *cred, const char *val, enum credentials_obtained obtained)
+BOOL cli_credentials_set_domain(struct cli_credentials *cred, 
+				const char *val, 
+				enum credentials_obtained obtained)
 {
 	if (obtained >= cred->domain_obtained) {
 		cred->domain = talloc_strdup(cred, val);
 		cred->domain_obtained = obtained;
+		return True;
+	}
+
+	return False;
+}
+
+BOOL cli_credentials_set_domain_callback(struct cli_credentials *cred,
+					 const char *(*domain_cb) (struct cli_credentials *))
+{
+	if (cred->domain_obtained < CRED_CALLBACK) {
+		cred->domain_cb = domain_cb;
+		cred->domain_obtained = CRED_CALLBACK;
 		return True;
 	}
 
@@ -467,11 +523,25 @@ const char *cli_credentials_get_realm(struct cli_credentials *cred)
  * Set the realm for this credentials context, and force it to
  * uppercase for the sainity of our local kerberos libraries 
  */
-BOOL cli_credentials_set_realm(struct cli_credentials *cred, const char *val, enum credentials_obtained obtained)
+BOOL cli_credentials_set_realm(struct cli_credentials *cred, 
+			       const char *val, 
+			       enum credentials_obtained obtained)
 {
 	if (obtained >= cred->realm_obtained) {
 		cred->realm = strupper_talloc(cred, val);
 		cred->realm_obtained = obtained;
+		return True;
+	}
+
+	return False;
+}
+
+BOOL cli_credentials_set_realm_callback(struct cli_credentials *cred,
+					const char *(*realm_cb) (struct cli_credentials *))
+{
+	if (cred->realm_obtained < CRED_CALLBACK) {
+		cred->realm_cb = realm_cb;
+		cred->realm_obtained = CRED_CALLBACK;
 		return True;
 	}
 
@@ -495,11 +565,25 @@ const char *cli_credentials_get_workstation(struct cli_credentials *cred)
 	return cred->workstation;
 }
 
-BOOL cli_credentials_set_workstation(struct cli_credentials *cred, const char *val, enum credentials_obtained obtained)
+BOOL cli_credentials_set_workstation(struct cli_credentials *cred, 
+				     const char *val, 
+				     enum credentials_obtained obtained)
 {
 	if (obtained >= cred->workstation_obtained) {
 		cred->workstation = talloc_strdup(cred, val);
 		cred->workstation_obtained = obtained;
+		return True;
+	}
+
+	return False;
+}
+
+BOOL cli_credentials_set_workstation_callback(struct cli_credentials *cred,
+					      const char *(*workstation_cb) (struct cli_credentials *))
+{
+	if (cred->workstation_obtained < CRED_CALLBACK) {
+		cred->workstation_cb = workstation_cb;
+		cred->workstation_obtained = CRED_CALLBACK;
 		return True;
 	}
 
@@ -514,7 +598,8 @@ BOOL cli_credentials_set_workstation(struct cli_credentials *cred, const char *v
  * @param obtained This enum describes how 'specified' this password is
  */
 
-BOOL cli_credentials_parse_password_fd(struct cli_credentials *credentials, int fd, enum credentials_obtained obtained)
+BOOL cli_credentials_parse_password_fd(struct cli_credentials *credentials, 
+				       int fd, enum credentials_obtained obtained)
 {
 	char *p;
 	char pass[128];

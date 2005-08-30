@@ -132,18 +132,7 @@ static const char *gtk_get_domain(struct cli_credentials *credentials)
 
 void cli_credentials_set_gtk_callbacks(struct cli_credentials *cred)
 {
-	if (cred->password_obtained <= CRED_CALLBACK) {
-		cred->password_cb = gtk_get_userpassword;
-		cred->password_obtained = CRED_CALLBACK;
-	}
-
-	if (cred->username_obtained <= CRED_CALLBACK) {
-		cred->username_cb = gtk_get_username;
-		cred->username_obtained = CRED_CALLBACK;
-	}
-
-	if (cred->domain_obtained <= CRED_CALLBACK) {
-		cred->domain_cb = gtk_get_domain;
-		cred->domain_obtained = CRED_CALLBACK;
-	}
+	cli_credentials_set_username_callback(cred, gtk_get_username);
+	cli_credentials_set_domain_callback(cred, gtk_get_domain);
+	cli_credentials_set_password_callback(cred, gtk_get_userpassword);
 }

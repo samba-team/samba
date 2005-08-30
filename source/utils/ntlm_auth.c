@@ -292,13 +292,32 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	DATA_BLOB out = data_blob(NULL, 0);
 	char *out_base64 = NULL;
 	const char *reply_arg = NULL;
-	struct gensec_security **gensec_state = (struct gensec_security **)private;
+	struct gensec_ntlm_state {
+		struct gensec_security *gensec_state;
+		const char *set_password;
+	};
+	struct gensec_ntlm_state *state;
+
 	NTSTATUS nt_status;
 	BOOL first = False;
 	const char *reply_code;
 	struct cli_credentials *creds;
 
 	TALLOC_CTX *mem_ctx;
+
+	if (*private) {
+		state = *private;
+	} else {
+		state = talloc_zero(NULL, struct gensec_ntlm_state);
+		if (!state) {
+			mux_printf(mux_id, "BH No Memory\n");
+			exit(1);
+		}
+		*private = state;
+		if (opt_password) {
+			state->set_password = opt_password;
+		}
+	}
 	
 	if (strlen(buf) < 2) {
 		DEBUG(1, ("query [%s] invalid", buf));
@@ -313,9 +332,9 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	}
 
 	if (strncmp(buf, "YR", 2) == 0) {
-		if (gensec_state && *gensec_state) {
-			talloc_free(*gensec_state);
-			*gensec_state = NULL;
+		if (state->gensec_state) {
+			talloc_free(state->gensec_state);
+			state->gensec_state = NULL;
 		}
 	} else if ( (strncmp(buf, "OK", 2) == 0)) {
 		/* do nothing */
@@ -334,42 +353,21 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	}
 
 	/* setup gensec */
-	if (!(gensec_state && *gensec_state)) {
+	if (!(state->gensec_state)) {
 		switch (stdio_helper_mode) {
 		case GSS_SPNEGO_CLIENT:
 		case NTLMSSP_CLIENT_1:
 			/* setup the client side */
 
-			nt_status = gensec_client_start(NULL, gensec_state, NULL);
+			nt_status = gensec_client_start(NULL, &state->gensec_state, NULL);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				exit(1);
 			}
 
-			creds = cli_credentials_init(*gensec_state);
-			cli_credentials_set_conf(creds);
-			if (opt_username) {
-				cli_credentials_set_username(creds, opt_username, CRED_SPECIFIED);
-			}
-			if (opt_domain) {
-				cli_credentials_set_domain(creds, opt_domain, CRED_SPECIFIED);
-			}
-			if (opt_password) {
-				cli_credentials_set_password(creds, opt_password, CRED_SPECIFIED);
-			} else {
-				creds->password_obtained = CRED_CALLBACK;
-				creds->password_cb = get_password;
-				creds->priv_data = (void*)mux_id;
-			}
-			if (opt_workstation) {
-				cli_credentials_set_workstation(creds, opt_workstation, CRED_SPECIFIED);
-			}
-
-			gensec_set_credentials(*gensec_state, creds);
-
 			break;
 		case GSS_SPNEGO_SERVER:
 		case SQUID_2_5_NTLMSSP:
-			if (!NT_STATUS_IS_OK(gensec_server_start(NULL, gensec_state, NULL))) {
+			if (!NT_STATUS_IS_OK(gensec_server_start(NULL, &state->gensec_state, NULL))) {
 				exit(1);
 			}
 			break;
@@ -377,10 +375,29 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			abort();
 		}
 
+		creds = cli_credentials_init(state->gensec_state);
+		cli_credentials_set_conf(creds);
+		if (opt_username) {
+			cli_credentials_set_username(creds, opt_username, CRED_SPECIFIED);
+		}
+		if (opt_domain) {
+			cli_credentials_set_domain(creds, opt_domain, CRED_SPECIFIED);
+		}
+		if (state->set_password) {
+			cli_credentials_set_password(creds, state->set_password, CRED_SPECIFIED);
+		} else {
+			cli_credentials_set_password_callback(creds, get_password);
+			creds->priv_data = (void*)mux_id;
+		}
+		if (opt_workstation) {
+			cli_credentials_set_workstation(creds, opt_workstation, CRED_SPECIFIED);
+		}
+		gensec_set_credentials(state->gensec_state, creds);
+
 		switch (stdio_helper_mode) {
 		case GSS_SPNEGO_CLIENT:
 		case GSS_SPNEGO_SERVER:
-			nt_status = gensec_start_mech_by_oid(*gensec_state, GENSEC_OID_SPNEGO);
+			nt_status = gensec_start_mech_by_oid(state->gensec_state, GENSEC_OID_SPNEGO);
 			if (!in.length) {
 				first = True;
 			}
@@ -390,7 +407,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 				first = True;
 			}
 		case SQUID_2_5_NTLMSSP:
-			nt_status = gensec_start_mech_by_oid(*gensec_state, GENSEC_OID_NTLMSSP);
+			nt_status = gensec_start_mech_by_oid(state->gensec_state, GENSEC_OID_NTLMSSP);
 			break;
 		default:
 			abort();
@@ -401,32 +418,36 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			mux_printf(mux_id, "BH\n");
 			return;
 		}
-	}
-	
-	if (strncmp(buf, "PW ", 3) == 0) {
 
-		cli_credentials_set_password((*gensec_state)->credentials, 
-					     talloc_strndup((*gensec_state), 
-							    (const char *)in.data, 
-							    in.length),
-					     CRED_SPECIFIED);
-		mux_printf(mux_id, "OK\n");
-		data_blob_free(&in);
-		return;
 	}
 
 	/* update */
 	mem_ctx = talloc_named(NULL, 0, "manage_gensec_request internal mem_ctx");
 	
+	if (strncmp(buf, "PW ", 3) == 0) {
+		state->set_password = talloc_strndup(state,
+						     (const char *)in.data, 
+						     in.length);
+		
+		cli_credentials_set_password(gensec_get_credentials(state->gensec_state),
+					     state->set_password,
+					     CRED_SPECIFIED);
+		mux_printf(mux_id, "OK\n");
+		data_blob_free(&in);
+		talloc_free(mem_ctx);
+		return;
+	}
+
 	if (strncmp(buf, "UG", 2) == 0) {
 		int i;
 		char *grouplist = NULL;
 		struct auth_session_info *session_info;
 
-		if (!NT_STATUS_IS_OK(gensec_session_info(*gensec_state, &session_info))) { 
+		if (!NT_STATUS_IS_OK(gensec_session_info(state->gensec_state, &session_info))) { 
 			DEBUG(1, ("gensec_session_info failed: %s\n", nt_errstr(nt_status)));
 			mux_printf(mux_id, "BH %s\n", nt_errstr(nt_status));
 			data_blob_free(&in);
+			talloc_free(mem_ctx);
 			return;
 		}
 		
@@ -447,7 +468,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		return;
 	}
 
-	nt_status = gensec_update(*gensec_state, mem_ctx, in, &out);
+	nt_status = gensec_update(state->gensec_state, mem_ctx, in, &out);
 	
 	/* don't leak 'bad password'/'no such user' info to the network client */
 	nt_status = auth_nt_status_squash(nt_status);
@@ -462,9 +483,9 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		reply_arg = "*";
 		if (first) {
 			reply_code = "YR";
-		} else if ((*gensec_state)->gensec_role == GENSEC_CLIENT) { 
+		} else if (state->gensec_state->gensec_role == GENSEC_CLIENT) { 
 			reply_code = "KK";
-		} else if ((*gensec_state)->gensec_role == GENSEC_SERVER) { 
+		} else if (state->gensec_state->gensec_role == GENSEC_SERVER) { 
 			reply_code = "TT";
 		} else {
 			abort();
@@ -483,10 +504,10 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		reply_code = "NA";
 		reply_arg = nt_errstr(nt_status);
 		DEBUG(1, ("GENSEC login failed: %s\n", nt_errstr(nt_status)));
-	} else if /* OK */ ((*gensec_state)->gensec_role == GENSEC_SERVER) {
+	} else if /* OK */ (state->gensec_state->gensec_role == GENSEC_SERVER) {
 		struct auth_session_info *session_info;
 
-		nt_status = gensec_session_info(*gensec_state, &session_info);
+		nt_status = gensec_session_info(state->gensec_state, &session_info);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			reply_code = "BH";
 			reply_arg = nt_errstr(nt_status);
@@ -494,12 +515,12 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		} else {
 
 			reply_code = "AF";
-			reply_arg = talloc_asprintf(*gensec_state, 
+			reply_arg = talloc_asprintf(state->gensec_state, 
 						    "%s%s%s", session_info->server_info->domain_name, 
 						    lp_winbind_separator(), session_info->server_info->account_name);
 			talloc_free(session_info);
 		}
-	} else if ((*gensec_state)->gensec_role == GENSEC_CLIENT) {
+	} else if (state->gensec_state->gensec_role == GENSEC_CLIENT) {
 		reply_code = "AF";
 		reply_arg = out_base64;
 	} else {
