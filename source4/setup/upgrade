@@ -81,8 +81,10 @@ message("Provisioning\n");
 var subobj = upgrade_provision(samba3);
 provision(subobj, message, options.blank);
 
-ok = upgrade(subobj,samba3,message);
-assert(ok);
-
-message("All OK\n");
+var ret = upgrade(subobj,samba3,message);
+if (ret > 0) {
+	message("Failed to import %d entries\n", ret);
+} else {
+	message("All OK\n");
+}
 return 0;
