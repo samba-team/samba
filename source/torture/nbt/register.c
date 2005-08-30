@@ -33,7 +33,7 @@
 	}} while (0)
 
 #define CHECK_STRING(v, correct) do { \
-	if (StrCaseCmp(v, correct) != 0) { \
+	if (strcasecmp_m(v, correct) != 0) { \
 		printf("(%s) Incorrect value %s='%s' - should be '%s'\n", \
 		       __location__, #v, v, correct); \
 		ret = False; \

@@ -1499,7 +1499,7 @@ static NTSTATUS lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_call,
 		if (ldb_flag == LDB_FLAG_MOD_ADD) {
 			int j;
 			for (j=0;j<r2.out.rights->count;j++) {
-				if (StrCaseCmp(r2.out.rights->names[j].string, 
+				if (strcasecmp_m(r2.out.rights->names[j].string, 
 					       rights->names[i].string) == 0) {
 					break;
 				}

@@ -1206,7 +1206,7 @@ static BOOL ads_dump_field(char *field, void **values, void *data_area)
 	}
 
 	for (i=0; handlers[i].name; i++) {
-		if (StrCaseCmp(handlers[i].name, field) == 0) {
+		if (strcasecmp_m(handlers[i].name, field) == 0) {
 			if (!values) /* first time, indicate string or not */
 				return handlers[i].string;
 			handlers[i].handler(field, (struct berval **) values);

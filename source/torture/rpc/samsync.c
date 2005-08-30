@@ -286,7 +286,7 @@ static BOOL samsync_handle_domain(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 	case SAM_DATABASE_DOMAIN:
 		break;
 	case SAM_DATABASE_BUILTIN:
-		if (StrCaseCmp("BUILTIN", domain->domain_name.string) != 0) {
+		if (strcasecmp_m("BUILTIN", domain->domain_name.string) != 0) {
 			printf("BUILTIN domain has different name: %s\n", domain->domain_name.string);
 		}
 		break;
@@ -300,7 +300,7 @@ static BOOL samsync_handle_domain(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 		samsync_state->domain_name[database_id] = 
 			talloc_reference(samsync_state, domain->domain_name.string);
 	} else {
-		if (StrCaseCmp(samsync_state->domain_name[database_id], domain->domain_name.string) != 0) {
+		if (strcasecmp_m(samsync_state->domain_name[database_id], domain->domain_name.string) != 0) {
 			printf("Domain has name varies!: %s != %s\n", samsync_state->domain_name[database_id], 
 			       domain->domain_name.string);
 			return False;
@@ -371,7 +371,7 @@ static BOOL samsync_handle_policy(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 		samsync_state->domain_name[SAM_DATABASE_DOMAIN] = 
 			talloc_reference(samsync_state, policy->primary_domain_name.string);
 	} else {
-		if (StrCaseCmp(samsync_state->domain_name[SAM_DATABASE_DOMAIN], policy->primary_domain_name.string) != 0) {
+		if (strcasecmp_m(samsync_state->domain_name[SAM_DATABASE_DOMAIN], policy->primary_domain_name.string) != 0) {
 			printf("PRIMARY domain has name varies between DOMAIN and POLICY!: %s != %s\n", samsync_state->domain_name[SAM_DATABASE_DOMAIN], 
 			       policy->primary_domain_name.string);
 			return False;
@@ -1194,7 +1194,7 @@ static BOOL test_DatabaseSync(struct samsync_state *samsync_state,
 	for (t=samsync_state->trusted_domains; t; t=t->next) {
 		char *secret_name = talloc_asprintf(trustdom_ctx, "G$$%s", t->name);
 		for (s=samsync_state->secrets; s; s=s->next) {
-			if (StrCaseCmp(s->name, secret_name) == 0) {
+			if (strcasecmp_m(s->name, secret_name) == 0) {
 				NTSTATUS nt_status;
 				struct samr_Password nt_hash;
 				mdfour(nt_hash.hash, s->secret.data, s->secret.length);

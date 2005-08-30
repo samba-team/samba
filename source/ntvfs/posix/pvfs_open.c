@@ -734,7 +734,7 @@ static NTSTATUS pvfs_open_deny_dos(struct ntvfs_module_context *ntvfs,
 		     (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS |
 		      NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) &&
 		    (f2->access_mask & SEC_FILE_WRITE_DATA) &&
-		    StrCaseCmp(f2->handle->name->original_name, 
+		    strcasecmp_m(f2->handle->name->original_name, 
 			       io->generic.in.fname)==0) {
 			break;
 		}

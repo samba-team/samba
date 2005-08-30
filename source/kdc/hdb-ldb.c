@@ -469,7 +469,7 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 
 	/* Allow host/dns.name/realm@REALM, just convert into host/dns.name@REALM */
 	if (princ.name.name_string.len == 3
-	    && StrCaseCmp(princ.name.name_string.val[2], princ.realm) == 0) { 
+	    && strcasecmp_m(princ.name.name_string.val[2], princ.realm) == 0) { 
 		princ.name.name_string.len = 2;
 	}
 
