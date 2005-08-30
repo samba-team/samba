@@ -655,7 +655,6 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	pstring logfile;
 	static BOOL opt_interactive;
 	poptContext pc;
-	int opt;
 	struct poptOption long_options[] = {
 	POPT_AUTOHELP
 	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon(default)" },
@@ -671,7 +670,7 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 	global_nmb_port = NMB_PORT;
 
 	pc = poptGetContext("nmbd", argc, argv, long_options, 0);
-	while ((opt = poptGetNextOpt(pc)) != -1) ;
+	while (poptGetNextOpt(pc) != -1) {};
 	poptFreeContext(pc);
 
 	global_in_nmbd = True;
