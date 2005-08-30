@@ -66,7 +66,11 @@ NTSTATUS samba3_read_share_info(const char *fn, TALLOC_CTX *ctx, struct samba3 *
 
 		name = talloc_strndup(ctx, kbuf.dptr+strlen("SECDESC/"), kbuf.dsize-strlen("SECDESC/"));
 
-		share = samba3_find_add_share(db, ctx, name);
+		db->shares = talloc_realloc(db, db->shares, struct samba3_share_info, db->share_count+1);
+		share = &db->shares[db->share_count];
+		db->share_count++;
+
+		share->name = talloc_strdup(db, name);
 
 		vbuf = tdb_fetch(tdb, kbuf);
 		blob.data = (uint8_t *)vbuf.dptr;

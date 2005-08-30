@@ -284,3 +284,7 @@ struct samba3;
 
 struct ldb_map_attribute;
 struct ldb_map_objectclass;
+
+struct param_context;
+struct param_section;
+struct param;
