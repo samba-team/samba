@@ -122,12 +122,14 @@ const char **param_get_string_list(struct param_context *ctx, const char *sectio
 	return p->list_value;
 }
 
-void param_set_string_list(struct param_context *ctx, const char *section, const char *param, const char **list)
+int param_set_string_list(struct param_context *ctx, const char *section, const char *param, const char **list)
 {
 	struct param *p = param_get_add(ctx, section, param);	
 
 	p->value = str_list_join(p, list, ' ');
 	p->list_value = str_list_copy(p, list);
+
+	return 0;
 }
 
 int param_get_int(struct param_context *ctx, const char *section, const char *param, int default_v)

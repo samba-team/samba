@@ -97,9 +97,12 @@ static int ejs_param_get_list(MprVarHandle eid, int argc, char **argv)
   ok = param.set("name", "value");
   ok = param.set("section", "name", "value");
 */
-static int ejs_param_set(MprVarHandle eid, int argc, char **argv)
+static int ejs_param_set(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	struct param_context *ctx;
+	const char **list;
+	const char *section, *paramname;
+	struct MprVar *value;
 	bool ret;
 	if (argc != 2 && argc != 3) {
 		ejsSetErrorMsg(eid, "param.set invalid argument count");
@@ -108,14 +111,63 @@ static int ejs_param_set(MprVarHandle eid, int argc, char **argv)
 
 	ctx = mprGetThisPtr(eid, "param");
 	mprAssert(ctx);
+
 	
 	if (argc == 3) {
-		ret = param_set_string(ctx, argv[0], argv[1], argv[2]);
+		section = mprToString(argv[0]);
+		paramname = mprToString(argv[1]);
+		value = argv[2];
 	} else {
-		ret = param_set_string(ctx, NULL, argv[0], argv[2]);
+		section = NULL;
+		paramname = mprToString(argv[0]);
+		value = argv[1];
+	}
+	
+	list = mprToList(mprMemCtx(), value);
+	if (list) {
+		ret = param_set_string_list(ctx, section, paramname, list);
+	} else {
+		ret = param_set_string(ctx, section, paramname, mprToString(value));
 	}
 
 	mpr_Return(eid, mprCreateBoolVar(ret));
+	return 0;
+}
+
+/* 
+  param data as a two-level array
+
+  data = param.data;
+  */
+static int ejs_param_data(MprVarHandle eid, int argc, char **argv)
+{
+	struct param_context *ctx;
+	struct MprVar ret;
+	struct param_section *sec;
+
+	if (argc != 0) {
+		ejsSetErrorMsg(eid, "param.data does not take arguments");
+		return -1;
+	}
+
+	ctx = mprGetThisPtr(eid, "param");
+	mprAssert(ctx);
+
+	ret = mprObject("array");
+
+	for (sec = ctx->sections; sec; sec = sec->next) {
+		struct MprVar ps = mprObject("array");
+		struct param *p;
+
+		for (p = sec->parameters; p; p = p->next) {
+			mprSetVar(&ps, p->name, mprString(p->value));
+		}
+		
+		mprSetVar(&ret, sec->name, ps);
+	}
+
+	mpr_Return(eid, ret);
+	
 	return 0;
 }
 
@@ -142,6 +194,7 @@ static int ejs_param_load(MprVarHandle eid, int argc, char **argv)
 	mpr_Return(eid, mprCreateBoolVar(ret));
 	return 0;
 }
+
 
 /*
   save file
@@ -171,9 +224,10 @@ static void param_add_members(struct MprVar *obj)
 {
 	mprSetStringCFunction(obj, "get", ejs_param_get);
 	mprSetStringCFunction(obj, "get_list", ejs_param_get_list);
-	mprSetStringCFunction(obj, "set", ejs_param_set);
+	mprSetCFunction(obj, "set", ejs_param_set);
 	mprSetStringCFunction(obj, "load", ejs_param_load);
 	mprSetStringCFunction(obj, "save", ejs_param_save);
+	mprSetStringCFunction(obj, "data", ejs_param_data);
 }
 
 /*

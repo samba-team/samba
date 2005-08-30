@@ -73,10 +73,6 @@ if (samba3 == undefined) {
 	exit(1);
 }
 
-message("Writing smb.conf\n");
-var smbconf = upgrade_smbconf(samba3);
-// FIXME: Write!
-
 message("Provisioning\n");
 var subobj = upgrade_provision(samba3);
 provision(subobj, message, options.blank);
