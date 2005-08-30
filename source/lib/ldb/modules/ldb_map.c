@@ -50,7 +50,38 @@
  	- rename locally and remotely
 */
 
-static const struct ldb_map_attribute builtin_attribute_maps[];
+static struct ldb_val map_convert_local_dn(struct ldb_map_context *map,
+					   TALLOC_CTX *ctx,
+					   const struct ldb_val *val);
+static struct ldb_val map_convert_remote_dn(struct ldb_map_context *map,
+					    TALLOC_CTX *ctx,
+					    const struct ldb_val *val);
+static struct ldb_val map_convert_local_objectclass(struct ldb_map_context *map,
+						    TALLOC_CTX *ctx,
+						    const struct ldb_val *val);
+static struct ldb_val map_convert_remote_objectclass(struct ldb_map_context *map,
+						     TALLOC_CTX *ctx,
+						     const struct ldb_val *val);
+
+static const struct ldb_map_attribute builtin_attribute_maps[] = {
+	{
+		.local_name = "dn",
+		.type = MAP_CONVERT,
+		.u.convert.remote_name = "dn",
+		.u.convert.convert_local = map_convert_local_dn,
+		.u.convert.convert_remote = map_convert_remote_dn,
+	},
+	{
+		.local_name = "objectclass",
+		.type = MAP_CONVERT,
+		.u.convert.remote_name = "objectclass",
+		.u.convert.convert_local = map_convert_local_objectclass,
+		.u.convert.convert_remote = map_convert_remote_objectclass,
+	},
+	{
+		.local_name = NULL,
+	}
+};
 
 struct map_private {
 	struct ldb_map_context context;
@@ -1128,24 +1159,4 @@ static struct ldb_val map_convert_remote_objectclass(struct ldb_map_context *map
 
 	return ldb_val_dup(ctx, val); 
 }
-
-static const struct ldb_map_attribute builtin_attribute_maps[] = {
-	{
-		.local_name = "dn",
-		.type = MAP_CONVERT,
-		.u.convert.remote_name = "dn",
-		.u.convert.convert_local = map_convert_local_dn,
-		.u.convert.convert_remote = map_convert_remote_dn,
-	},
-	{
-		.local_name = "objectclass",
-		.type = MAP_CONVERT,
-		.u.convert.remote_name = "objectclass",
-		.u.convert.convert_local = map_convert_local_objectclass,
-		.u.convert.convert_remote = map_convert_remote_objectclass,
-	},
-	{
-		.local_name = NULL,
-	}
-};
 
