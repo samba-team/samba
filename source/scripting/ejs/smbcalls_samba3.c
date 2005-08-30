@@ -403,6 +403,8 @@ static int ejs_find_domainsecrets(MprVarHandle eid, int argc, struct MprVar **ar
 
 /*
   initialise samba3 ejs subsystem
+
+  samba3 = samba3_read(libdir,smbconf)
 */
 static int ejs_samba3_read(MprVarHandle eid, int argc, struct MprVar **argv)
 {
@@ -415,7 +417,7 @@ static int ejs_samba3_read(MprVarHandle eid, int argc, struct MprVar **argv)
 		return -1;
 	}
 
-	status = samba3_read(mprToString(argv[0]), mprToString(argv[0]), mprMemCtx(), &samba3);
+	status = samba3_read(mprToString(argv[0]), mprToString(argv[1]), mprMemCtx(), &samba3);
 
 	if (NT_STATUS_IS_ERR(status)) {
 		ejsSetErrorMsg(eid, "samba3_read: error");
@@ -434,6 +436,7 @@ static int ejs_samba3_read(MprVarHandle eid, int argc, struct MprVar **argv)
 	mprSetVar(&mpv, "idmapdb", mprIdmapDb(&samba3->idmap));
 	mprSetVar(&mpv, "policy", mprPolicy(&samba3->policy));
 	mprSetVar(&mpv, "registry", mprRegistry(&samba3->registry));
+	mprSetVar(&mpv, "configuration", mprParam(samba3->configuration));
 	mprSetCFunction(&mpv, "find_domainsecrets", ejs_find_domainsecrets);
 
 	mpr_Return(eid, mpv);
