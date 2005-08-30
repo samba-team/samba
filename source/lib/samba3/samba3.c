@@ -32,15 +32,17 @@ struct samba3_domainsecrets *samba3_find_domainsecrets(struct samba3 *db, const 
 	return NULL;
 }
 
-NTSTATUS samba3_read(const char *smbconf, const char *libdir, TALLOC_CTX *ctx, struct samba3 **samba3)
+NTSTATUS samba3_read(const char *libdir, const char *smbconf, TALLOC_CTX *ctx, struct samba3 **samba3)
 {
 	struct samba3 *ret;
 	char *dbfile = NULL;
 
 	ret = talloc_zero(ctx, struct samba3);
 
-	if (smbconf) 
-		ret->configuration = param_read(ret, smbconf);
+	if (smbconf) {
+		ret->configuration = param_init(ret);
+		param_read(ret->configuration, smbconf);
+	}
 
 	dbfile = talloc_asprintf(ctx, "%s/account_policy.tdb", libdir);
 	samba3_read_account_policy(dbfile, ctx, &ret->policy);

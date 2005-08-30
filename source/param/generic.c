@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "dlinklist.h"
 #include "param/generic.h"
+#include "system/filesys.h"
 
 struct param_section *param_get_section(struct param_context *ctx, const char *name)
 {
@@ -41,7 +42,7 @@ struct param *param_section_get (struct param_section *section, const char *name
 	struct param *p;
 
 	for (p = section->parameters; p; p = p->next) {
-		if (strcasecmp(p->name, name) == 0) 
+		if (strcasecmp_m(p->name, name) == 0) 
 			return p;
 	}
 
@@ -91,11 +92,16 @@ const char *param_get_string(struct param_context *ctx, const char *section, con
 	return p->value;
 }
 
-void param_set_string(struct param_context *ctx, const char *section, const char *param, const char *value)
+int param_set_string(struct param_context *ctx, const char *section, const char *param, const char *value)
 {
 	struct param *p = param_get_add(ctx, section, param);
 
+	if (p == NULL)
+		return -1;
+
 	p->value = talloc_strdup(p, value);
+
+	return 0;
 }
 
 const char **param_get_string_list(struct param_context *ctx, const char *section, const char *param,
@@ -105,6 +111,9 @@ const char **param_get_string_list(struct param_context *ctx, const char *sectio
 	
 	if (p == NULL)
 		return NULL;
+
+	if (separator == NULL)
+		separator = LIST_SEP;
 	
 	if (p->list_value == NULL) {
 		p->list_value = str_list_make(ctx, p->value, separator);
@@ -167,12 +176,11 @@ static BOOL param_sfunc (const char *name, void *_ctx)
 		DLIST_ADD(ctx->sections, section);
 	}
 
+	/* Make sure this section is on top of the list for param_pfunc */
 	DLIST_PROMOTE(ctx->sections, section);
 
 	return True;
 }
-
-
 
 static BOOL param_pfunc (const char *name, const char *value, void *_ctx)
 {
@@ -192,40 +200,48 @@ static BOOL param_pfunc (const char *name, const char *value, void *_ctx)
 	return True;
 }
 
-struct param_context *param_read(TALLOC_CTX *mem_ctx, const char *fn)
+struct param_context *param_init(TALLOC_CTX *mem_ctx)
 {
-	struct param_context *ctx = talloc_zero(mem_ctx, struct param_context);
+	return talloc_zero(mem_ctx, struct param_context);
+}
 
+
+int param_read(struct param_context *ctx, const char *fn)
+{
 	ctx->sections = talloc_zero(ctx, struct param_section);
 	ctx->sections->name = talloc_strdup(ctx->sections, "global");
 	
 	if (!pm_process( fn, param_sfunc, param_pfunc, ctx)) {
-		talloc_free(ctx);
-		return NULL;
+		return -1;
 	}
 
-	return ctx;
+	return 0;
 }
 
-int param_write(FILE *file, struct param_context *ctx)
+int param_write(struct param_context *ctx, const char *fn)
 {
+	XFILE *file;
 	struct param_section *section;
 
-	if (file == NULL)
+	if (fn == NULL || ctx == NULL)
 		return -1;
 
-	if (ctx == NULL)
+	file = x_fopen(fn, O_WRONLY|O_CREAT, 0755);
+
+	if (file == NULL)
 		return -1;
 	
 	for (section = ctx->sections; section; section = section->next) {
 		struct param *param;
 		
-		fprintf(file, "[%s]\n", section->name);
+		x_fprintf(file, "[%s]\n", section->name);
 		for (param = section->parameters; param; param = param->next) {
-			fprintf(file, "\t%s = %s\n", param->name, param->value);
+			x_fprintf(file, "\t%s = %s\n", param->name, param->value);
 		}
-		fprintf(file, "\n");
+		x_fprintf(file, "\n");
 	}
+
+	x_fclose(file);
 
 	return 0;
 }
