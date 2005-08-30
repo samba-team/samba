@@ -25,7 +25,7 @@
 #include "includes.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_private.h"
-#include "lib/ldb/ldb_map/ldb_map.h"
+#include "lib/ldb/modules/ldb_map.h"
 
 /* TODO:
  *  - objectclass hint in ldb_map_attribute 
