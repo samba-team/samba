@@ -164,14 +164,13 @@ function setup_ldb(ldif, dbname, subobj)
 	        erase = arguments[4];
         }
 
-	var dbfile = dbname;
 	var src = lp.get("setup directory") + "/" + ldif;
 
 	var data = sys.file_load(src);
 	data = data + extra;
 	data = substitute_var(data, subobj);
 
-	var ok = ldb.connect(dbfile);
+	var ok = ldb.connect(dbname);
 	assert(ok);
 
 	if (erase) {

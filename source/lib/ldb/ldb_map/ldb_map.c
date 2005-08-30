@@ -754,11 +754,16 @@ static int map_search_bytree_mp(struct ldb_module *module, const struct ldb_dn *
 	talloc_free(new_tree);
 	talloc_free(newattrs);
 
+	if (mpret == -1) {
+		struct map_private *map_private = module->private_data;
+		map_private->last_err_string = ldb_errstring(privdat->mapped_ldb);
+		return -1;
+	}
+
 	/*
-	 - per returned record, search local one for additional data (by dn)
+	 - per returned record, search fallback database for additional data (by dn)
 	 - test if (full expression) is now true
 	*/
-
 
 	*res = talloc_array(module, struct ldb_message *, mpret);
 
@@ -775,7 +780,7 @@ static int map_search_bytree_mp(struct ldb_module *module, const struct ldb_dn *
 		if (extraret == -1) {
 			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Error searching for extra data!\n");
 		} else if (extraret > 1) {
-			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "More then one result for extra data!\n");
+			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "More than one result for extra data!\n");
 			talloc_free(newres);
 			return -1;
 		} else if (extraret == 0) {
@@ -820,12 +825,13 @@ static int map_search_bytree(struct ldb_module *module, const struct ldb_dn *bas
 	int ret_fb, ret_mp;
 
 	ret_fb = map_search_bytree_fb(module, base, scope, tree, attrs, &fbres);
-	if (ret_fb == -1)
+	if (ret_fb == -1) 
 		return -1;
 
 	ret_mp = map_search_bytree_mp(module, base, scope, tree, attrs, &mpres);
-	if (ret_mp == -1)
+	if (ret_mp == -1) {
 		return -1;
+	}
 
 	/* Merge results */
 	*res = talloc_array(module, struct ldb_message *, ret_fb + ret_mp);
