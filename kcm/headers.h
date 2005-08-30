@@ -58,6 +58,9 @@
 #ifdef HAVE_SYS_UN_H
 #include <sys/un.h>
 #endif
+#ifdef HAVE_SYS_UCRED_H
+#include <sys/ucred.h>
+#endif
 #ifdef HAVE_UTIL_H
 #include <util.h>
 #endif
