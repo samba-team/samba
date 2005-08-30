@@ -79,18 +79,18 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 					      "Bad string lengths len1=%u ofs=%u len2=%u\n", 
 					      len1, ofs, len2);
 		}
-		if (len2 == 0) {
-			*s = talloc_strdup(ndr, "");
-			break;
-		}
 		NDR_PULL_NEED_BYTES(ndr, (len2 + c_len_term)*byte_mul);
-		ret = convert_string_talloc(ndr, chset, CH_UNIX, 
-					    ndr->data+ndr->offset, 
-					    (len2 + c_len_term)*byte_mul,
-					    (void **)&as);
-		if (ret == -1) {
-			return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
-					      "Bad character conversion");
+		if (len2 == 0) {
+			as = talloc_strdup(ndr, "");
+		} else {
+			ret = convert_string_talloc(ndr, chset, CH_UNIX, 
+						    ndr->data+ndr->offset, 
+						    (len2 + c_len_term)*byte_mul,
+						    (void **)&as);
+			if (ret == -1) {
+				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
+						      "Bad character conversion");
+			}
 		}
 		NDR_CHECK(ndr_pull_advance(ndr, (len2 + c_len_term)*byte_mul));
 
@@ -125,16 +125,16 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &len1));
 		NDR_PULL_NEED_BYTES(ndr, (len1 + c_len_term)*byte_mul);
 		if (len1 == 0) {
-			*s = talloc_strdup(ndr, "");
-			break;
-		}
-		ret = convert_string_talloc(ndr, chset, CH_UNIX, 
-					    ndr->data+ndr->offset, 
-					    (len1 + c_len_term)*byte_mul,
-					    (void **)&as);
-		if (ret == -1) {
-			return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
-					      "Bad character conversion");
+			as = talloc_strdup(ndr, "");
+		} else {
+			ret = convert_string_talloc(ndr, chset, CH_UNIX, 
+						    ndr->data+ndr->offset, 
+						    (len1 + c_len_term)*byte_mul,
+						    (void **)&as);
+			if (ret == -1) {
+				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
+						      "Bad character conversion");
+			}
 		}
 		NDR_CHECK(ndr_pull_advance(ndr, (len1 + c_len_term)*byte_mul));
 
@@ -162,16 +162,16 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &len1));
 		NDR_PULL_NEED_BYTES(ndr, (len1 + c_len_term)*byte_mul);
 		if (len1 == 0) {
-			*s = talloc_strdup(ndr, "");
-			break;
-		}
-		ret = convert_string_talloc(ndr, chset, CH_UNIX, 
-					    ndr->data+ndr->offset, 
-					    (len1 + c_len_term)*byte_mul,
-					    (void **)&as);
-		if (ret == -1) {
-			return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
-					      "Bad character conversion");
+			as = talloc_strdup(ndr, "");
+		} else {
+			ret = convert_string_talloc(ndr, chset, CH_UNIX, 
+						    ndr->data+ndr->offset, 
+						    (len1 + c_len_term)*byte_mul,
+						    (void **)&as);
+			if (ret == -1) {
+				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
+						      "Bad character conversion");
+			}
 		}
 		NDR_CHECK(ndr_pull_advance(ndr, (len1 + c_len_term)*byte_mul));
 
@@ -195,16 +195,16 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &len3));
 		NDR_PULL_NEED_BYTES(ndr, (len3 + c_len_term)*byte_mul);
 		if (len3 == 0) {
-			*s = talloc_strdup(ndr, "");
-			break;
-		}
-		ret = convert_string_talloc(ndr, chset, CH_UNIX, 
-					    ndr->data+ndr->offset, 
-					    (len3 + c_len_term)*byte_mul,
-					    (void **)&as);
-		if (ret == -1) {
-			return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
-					      "Bad character conversion");
+			as = talloc_strdup(ndr, "");
+		} else {
+			ret = convert_string_talloc(ndr, chset, CH_UNIX, 
+						    ndr->data+ndr->offset, 
+						    (len3 + c_len_term)*byte_mul,
+						    (void **)&as);
+			if (ret == -1) {
+				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
+						      "Bad character conversion");
+			}
 		}
 		NDR_CHECK(ndr_pull_advance(ndr, (len3 + c_len_term)*byte_mul));
 
@@ -226,16 +226,16 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &len3));
 		NDR_PULL_NEED_BYTES(ndr, len3);
 		if (len3 == 0) {
-			*s = talloc_strdup(ndr, "");
-			break;
-		}
-		ret = convert_string_talloc(ndr, chset, CH_UNIX, 
-					    ndr->data+ndr->offset, 
-					    len3,
-					    (void **)&as);
-		if (ret == -1) {
-			return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
-					      "Bad character conversion");
+			as = talloc_strdup(ndr, "");
+		} else {
+			ret = convert_string_talloc(ndr, chset, CH_UNIX, 
+						    ndr->data+ndr->offset, 
+						    len3,
+						    (void **)&as);
+			if (ret == -1) {
+				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
+						      "Bad character conversion");
+			}
 		}
 		NDR_CHECK(ndr_pull_advance(ndr, len3));
 		*s = as;
