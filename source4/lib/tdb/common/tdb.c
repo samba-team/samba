@@ -1287,6 +1287,9 @@ static int tdb_next_lock(TDB_CONTEXT *tdb, struct tdb_traverse_lock *tlock,
 						break;
 					}
 				}
+				if (tlock->hash == tdb->header.hash_size) {
+					continue;
+				}
 			} else {
 				if (ofs_read(tdb, TDB_HASH_TOP(tlock->hash), &off) == 0 &&
 				    off == 0) {
