@@ -377,6 +377,7 @@ interface drsuapi
 	typedef [flag(NDR_PAHEX),v1_enum,public] enum {
 		DRSUAPI_ATTRIBUTE_objectClass		= 0x00000000,
 		DRSUAPI_ATTRIBUTE_description		= 0x0000000d,
+		DRSUAPI_ATTRIBUTE_member		= 0x0000001f,
 		DRSUAPI_ATTRIBUTE_hasMasterNCs		= 0x0002000e,
 		DRSUAPI_ATTRIBUTE_invocationId		= 0x00020073,
 		DRSUAPI_ATTRIBUTE_dMDLocation		= 0x00020024,
@@ -527,6 +528,7 @@ interface drsuapi
 		[case(0x0009037b)]				drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
 
 		/* DN String */
+		[case(DRSUAPI_ATTRIBUTE_member)]		drsuapi_DsAttributeValueCtrDNString dn_string;
 		[case(DRSUAPI_ATTRIBUTE_objectCategory)]	drsuapi_DsAttributeValueCtrDNString dn_string;
 		[case(0x0002000e)]				drsuapi_DsAttributeValueCtrDNString dn_string;
 		[case(0x00020024)]				drsuapi_DsAttributeValueCtrDNString dn_string;
@@ -612,6 +614,18 @@ interface drsuapi
 	} drsuapi_DsGetNCChangesCtr2;
 
 	typedef struct {
+		drsuapi_DsReplicaObjectIdentifier *dn;
+		drsuapi_DsAttributeId attid;
+		/* this dn_string, depends on the attid, maybe could be another
+		 * attribute syntax
+		 */
+		drsuapi_DsAttributeValueDNString dn_string;
+		uint32 u1;
+		NTTIME_1sec time1;
+		drsuapi_DsReplicaMetaData meta_data;
+	} drsuapi_DsReplicaLinkedAttribute;
+
+	typedef struct {
 		GUID guid1;
 		GUID guid2;
 		drsuapi_DsReplicaObjectIdentifier *naming_context;
@@ -626,8 +640,8 @@ interface drsuapi
 		uint32 unknown4;
 		uint32 unknown5;
 		uint32 unknown6;
-		uint32 len1;
-		uint32 array_ptr1;
+		[range(0,1048576)] uint32 linked_attributes_count;
+		[size_is(linked_attributes_count)] drsuapi_DsReplicaLinkedAttribute *linked_attributes;
 		uint32 unknown7;
 	} drsuapi_DsGetNCChangesCtr6;
 
