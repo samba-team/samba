@@ -2,24 +2,6 @@
    ldb database library - Samba3 SAM compatibility backend
 
    Copyright (C) Jelmer Vernooij 2005
-
-     ** NOTE! The following LGPL license applies to the ldb
-     ** library. This does NOT imply that all of Samba is released
-     ** under the LGPL
-   
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #include "includes.h"
@@ -67,12 +49,16 @@ static struct ldb_val convert_sid_rid(struct ldb_map_context *map, TALLOC_CTX *c
 {
 	printf("Converting SID TO RID *\n");
 
+	/* FIXME */
+
 	return ldb_val_dup(ctx, val);
 }
 
 static struct ldb_val convert_rid_sid(struct ldb_map_context *map, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
 	printf("Converting RID TO SID *\n");
+
+	/* FIXME */
 
 	return ldb_val_dup(ctx, val);
 }
@@ -81,12 +67,16 @@ static struct ldb_val convert_unix_id2name(struct ldb_map_context *map, TALLOC_C
 {
 	printf("Converting UNIX ID to name\n");
 
+	/* FIXME */
+
 	return ldb_val_dup(ctx, val);
 }
 
 static struct ldb_val convert_unix_name2id(struct ldb_map_context *map, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
 	printf("Converting UNIX name to ID\n");
+
+	/* FIXME */
 
 	return ldb_val_dup(ctx, val);
 }
@@ -177,10 +167,8 @@ const struct ldb_map_attribute samba3_attributes[] =
 	/* uid -> unixName */
 	{
 		.local_name = "unixName",
-		.type = MAP_CONVERT,
+		.type = MAP_RENAME,
 		.u.convert.remote_name = "uid",
-		.u.convert.convert_local = convert_unix_name2id,
-		.u.convert.convert_remote = convert_unix_id2name,
 	},
 
 	/* displayName -> name */
