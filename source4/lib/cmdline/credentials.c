@@ -29,8 +29,8 @@ static const char *cmdline_get_userpassword(struct cli_credentials *credentials)
 {
 	char *prompt;
 	char *ret;
-	char *domain;
-	char *username;
+	const char *domain;
+	const char *username;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
 	domain = cli_credentials_get_domain(credentials);
@@ -51,8 +51,5 @@ static const char *cmdline_get_userpassword(struct cli_credentials *credentials)
 
 void cli_credentials_set_cmdline_callbacks(struct cli_credentials *cred)
 {
-	if (cred->password_obtained <= CRED_CALLBACK) {
-		cred->password_cb = cmdline_get_userpassword;
-		cred->password_obtained = CRED_CALLBACK;
-	}
+	cli_credentials_set_password_callback(cred, cmdline_get_userpassword);
 }
