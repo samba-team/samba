@@ -264,6 +264,7 @@ static int ejs_base64encode(MprVarHandle eid, int argc, struct MprVar **argv)
 	}
 
 	blob = mprToDataBlob(argv[0]);
+	mprAssert(blob);
 	ret = ldb_base64_encode(mprMemCtx(), (char *)blob->data, blob->length);
 
 	if (!ret) {
@@ -297,7 +298,10 @@ static int ejs_base64decode(MprVarHandle eid, int argc, struct MprVar **argv)
 	if (ret == -1) {
 		mpr_Return(eid, mprCreateUndefinedVar());
 	} else {
-		mpr_Return(eid, mprData((uint8_t *)tmp, ret));
+		DATA_BLOB blob;
+		blob.data = (uint8_t *)tmp;
+		blob.length = ret;
+		mpr_Return(eid, mprDataBlob(blob));
 	}
 
 	talloc_free(tmp);

@@ -165,6 +165,7 @@ static struct MprVar mprDomainSecrets(struct samba3_domainsecrets *ds)
 {
 	struct MprVar v, e = mprObject("domainsecrets");
 	char *tmp;
+	DATA_BLOB blob;
 
 	mprSetVar(&e, "name", mprString(ds->name));
 
@@ -183,7 +184,9 @@ static struct MprVar mprDomainSecrets(struct samba3_domainsecrets *ds)
 
 	v = mprObject("hash_pw");
 
-	mprSetVar(&v, "hash", mprData(ds->hash_pw.hash, 16));
+	blob.data = ds->hash_pw.hash;
+	blob.length = 16;
+	mprSetVar(&v, "hash", mprDataBlob(blob));
 
 	mprSetVar(&v, "mod_time", mprCreateIntegerVar(ds->hash_pw.mod_time));
 
@@ -259,9 +262,12 @@ static struct MprVar mprSecrets(struct samba3_secrets *sec)
 		
 		for (j = 0; j < 8; j++) {
 			struct MprVar k = mprObject("entry");
+			DATA_BLOB blob;
 			
 			mprSetVar(&k, "kvno", mprCreateIntegerVar(sec->afs_keyfiles[i].entry[j].kvno));
-			mprSetVar(&k, "key", mprData((uint8_t*)sec->afs_keyfiles[i].entry[j].key, 8));
+			blob.data = (uint8_t*)sec->afs_keyfiles[i].entry[j].key;
+			blob.length = 8;
+			mprSetVar(&k, "key", mprDataBlob(blob));
 
 			mprAddArray(&ks, j, k);
 		}
@@ -316,6 +322,7 @@ static struct MprVar mprSamAccounts(struct samba3 *samba3)
 
 	for (i = 0; i < samba3->samaccount_count; i++) {
 		struct samba3_samaccount *a = &samba3->samaccounts[i];
+		DATA_BLOB blob;
 
 		m = mprObject("samba3_samaccount");
 
@@ -343,8 +350,11 @@ static struct MprVar mprSamAccounts(struct samba3 *samba3)
 		mprSetVar(&m, "profile_path", mprString(a->profile_path));
 		mprSetVar(&m, "acct_desc", mprString(a->acct_desc));
 		mprSetVar(&m, "workstations", mprString(a->workstations));
-		mprSetVar(&m, "lm_pw", mprData(a->lm_pw.hash, 16));
-		mprSetVar(&m, "nt_pw", mprData(a->nt_pw.hash, 16));
+		blob.length = 16;
+		blob.data = a->lm_pw.hash;
+		mprSetVar(&m, "lm_pw", mprDataBlob(blob));
+		blob.data = a->nt_pw.hash;
+		mprSetVar(&m, "nt_pw", mprDataBlob(blob));
 
 		mprAddArray(&mpv, i, m);
 	}

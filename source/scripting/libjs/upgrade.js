@@ -116,8 +116,6 @@ description: %s
 primaryGroupID: %d
 badPwdcount: %d
 logonCount: %d
-ntPwdHash:: %s
-lmPwdHash:: %s
 samba3Domain: %s
 samba3DirDrive: %s
 samba3MungedDial: %s
@@ -131,6 +129,8 @@ samba3PassLastSetTime: %d
 samba3PassCanChangeTime: %d
 samba3PassMustChangeTime: %d
 samba3Rid: %d
+ntPwdHash:: %s
+lmPwdHash:: %s
 
 ", acc.fullname, domaindn, acc.logon_time, acc.logoff_time, acc.username, acc.nt_username, 
 acc.fullname, acc.acct_desc, acc.group_rid, acc.bad_password_count, acc.logon_count,
@@ -422,18 +422,20 @@ dn: @MAP=samba3sam
 
 	message("Importing users\n");
 	for (var i in samba3.samaccounts) {
-		message("... " + samba3.samaccounts[i].username + "\n");
+		message("... " + samba3.samaccounts[i].username);
 		var ldif = upgrade_sam_account(samba3.samaccounts[i],subobj.BASEDN);
 		ok = samdb.add(ldif);
-		assert(ok);
+		if (!ok) { message("... error!"); }
+		message("\n");
 	}
 
 	message("Importing groups\n");
 	for (var i in samba3.groupmappings) {
-		message("... " + samba3.groupmappings[i].nt_name + "\n");
+		message("... " + samba3.groupmappings[i].nt_name);
 		var ldif = upgrade_sam_group(samba3.groupmappings[i],subobj.BASEDN);
 		ok = samdb.add(ldif);
-		assert(ok);
+		if (!ok) { message("... error!"); }
+		message("\n");
 	}
 
 	message("Importing registry data\n");

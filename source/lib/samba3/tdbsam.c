@@ -84,14 +84,6 @@ static BOOL init_sam_from_buffer_v0(TDB_CONTEXT *tdb, struct samba3_samaccount *
 		return False;
 	}
 
-	if (lm_pw_len != 16) {
-		return False;
-	}
-
-	if (nt_pw_len != 16) {
-		return False;
-	}
-
 	return True;
 }
 
@@ -150,14 +142,6 @@ static BOOL init_sam_from_buffer_v1(TDB_CONTEXT *tdb, struct samba3_samaccount *
 		return False;
 	}
 
-	if (lm_pw_len != 16) {
-		return False;
-	}
-
-	if (nt_pw_len != 16) {
-		return False;
-	}
-
 	return True;
 }
 
@@ -213,14 +197,6 @@ static BOOL init_sam_from_buffer_v2(TDB_CONTEXT *tdb, struct samba3_samaccount *
 		&sampass->unknown_6);					/* d */
 		
 	if (len == (uint32_t) -1)  {
-		return False;
-	}
-
-	if (lm_pw_len != 16) {
-		return False;
-	}
-
-	if (nt_pw_len != 16) {
 		return False;
 	}
 

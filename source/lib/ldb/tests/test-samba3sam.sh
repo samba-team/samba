@@ -1,17 +1,24 @@
 #!/bin/sh
 
-rm -f samba3.ldb samba4.ldb
+S3URL=$1
 
-echo "Adding samba3 LDIF..."
-$VALGRIND ldbadd -H tdb://samba3.ldb < samba3.ldif || exit 1
+if [ -z "$S3URL" ];
+then
+	rm -f samba3.ldb
+	S3URL="tdb://samba3.ldb"
+	echo "Adding samba3 LDIF..."
+	$VALGRIND ldbadd -H tdb://samba3.ldb < samba3.ldif || exit 1
+fi
 
-echo "Adding samba4 LDIF..."
+rm -f samba4.ldb
+
+echo "Initial samba4 LDIF..."
 $VALGRIND ldbadd -H tdb://samba4.ldb <<EOF
 dn: @MODULES
 @LIST: samba3sam
 
 dn: @MAP=samba3sam
-@MAP_URL: tdb://samba3.ldb
+@MAP_URL: $S3URL
 
 EOF
 
