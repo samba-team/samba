@@ -188,7 +188,7 @@ int main( int argc, char *argv[] )
 		exit(1);
 	}
 
-	if ((!change & new_val) || (change & !new_val)) {
+	if ((!change && new_val) || (change && !new_val)) {
 		fprintf(stderr, "You must specify both -c and -n if one or the other is set!\n");
 		poptPrintUsage(pc, stderr, 0);
 		exit(252);
@@ -225,5 +225,5 @@ int main( int argc, char *argv[] )
 
 	poptFreeContext(pc);
 
-	exit( 0 );
+	return( 0 );
 }
