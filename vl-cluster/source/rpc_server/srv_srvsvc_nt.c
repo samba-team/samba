@@ -1598,11 +1598,9 @@ WERROR _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 			DEBUG(3, ("_srv_net_share_set_info: client is trying to change csc policy from the network; must be done with smb.conf\n"));
 			return WERR_ACCESS_DENIED;
 		}
-		break;
 	case 1006:
 	case 1007:
 		return WERR_ACCESS_DENIED;
-		break;
 	case 1501:
 		pstrcpy(pathname, lp_pathname(snum));
 		fstrcpy(comment, lp_comment(snum));
@@ -1754,7 +1752,6 @@ WERROR _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	case 1006:
 	case 1007:
 		return WERR_ACCESS_DENIED;
-		break;
 	case 1501:
 		/* DFS only level. */
 		return WERR_ACCESS_DENIED;
