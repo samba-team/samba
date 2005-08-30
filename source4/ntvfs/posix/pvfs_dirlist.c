@@ -283,14 +283,14 @@ NTSTATUS pvfs_list_seek(struct pvfs_dir *dir, const char *name, uint_t *ofs)
 
 	for (i=dir->name_cache_index;i>=0;i--) {
 		struct name_cache_entry *e = &dir->name_cache[i];
-		if (e->name && StrCaseCmp(name, e->name) == 0) {
+		if (e->name && strcasecmp_m(name, e->name) == 0) {
 			*ofs = e->offset;
 			return NT_STATUS_OK;
 		}
 	}
 	for (i=NAME_CACHE_SIZE-1;i>dir->name_cache_index;i--) {
 		struct name_cache_entry *e = &dir->name_cache[i];
-		if (e->name && StrCaseCmp(name, e->name) == 0) {
+		if (e->name && strcasecmp_m(name, e->name) == 0) {
 			*ofs = e->offset;
 			return NT_STATUS_OK;
 		}
@@ -299,7 +299,7 @@ NTSTATUS pvfs_list_seek(struct pvfs_dir *dir, const char *name, uint_t *ofs)
 	rewinddir(dir->dir);
 
 	while ((de = readdir(dir->dir))) {
-		if (StrCaseCmp(name, de->d_name) == 0) {
+		if (strcasecmp_m(name, de->d_name) == 0) {
 			dir->offset = telldir(dir->dir) + DIR_OFFSET_BASE;
 			*ofs = dir->offset;
 			return NT_STATUS_OK;

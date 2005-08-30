@@ -31,7 +31,7 @@ struct samba3_domainsecrets *samba3_find_domainsecrets(struct samba3 *db, const 
 	int i;
 	
 	for (i = 0; i < db->secrets.domain_count; i++) {
-		if (!StrCaseCmp(db->secrets.domains[i].name, name)) 
+		if (!strcasecmp_m(db->secrets.domains[i].name, name)) 
 			return &db->secrets.domains[i];
 	}
 
@@ -42,7 +42,7 @@ struct samba3_share_info *samba3_find_share(struct samba3 *db, const char *name)
 {
 	int i;
 	for (i = 0; i < db->share_count; i++) {
-		if (!StrCaseCmp(db->shares[i].name, name)) 
+		if (!strcasecmp_m(db->shares[i].name, name)) 
 			return &db->shares[i];
 	}
 
@@ -74,7 +74,7 @@ const char *samba3_get_param(struct samba3 *samba3, const char *section, const c
 		return NULL;
 
 	for (i = 0; i < share->parameter_count; i++) {
-		if (!StrCaseCmp(share->parameters[i].name, param))
+		if (!strcasecmp_m(share->parameters[i].name, param))
 			return share->parameters[i].value;
 	}
 

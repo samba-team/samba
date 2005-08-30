@@ -186,7 +186,7 @@ NTSTATUS pvfs_setfileinfo_ea_set(struct pvfs_state *pvfs,
 		struct ea_struct *ea = &eas[j];
 		/* see if its already there */
 		for (i=0;i<ealist->num_eas;i++) {
-			if (StrCaseCmp(ealist->eas[i].name, ea->name.s) == 0) {
+			if (strcasecmp_m(ealist->eas[i].name, ea->name.s) == 0) {
 				ealist->eas[i].value = ea->value;
 				break;
 			}

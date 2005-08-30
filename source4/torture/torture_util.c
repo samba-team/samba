@@ -366,7 +366,7 @@ NTSTATUS torture_check_ea(struct smbcli_state *cli,
 		return NT_STATUS_EA_CORRUPT_ERROR;
 	}
 
-	if (StrCaseCmp(eaname, info.ea_list.out.eas[0].name.s) != 0) {
+	if (strcasecmp_m(eaname, info.ea_list.out.eas[0].name.s) != 0) {
 		printf("Expected ea '%s' not '%s' in ea_list\n",
 		       eaname, info.ea_list.out.eas[0].name.s);
 		talloc_free(mem_ctx);

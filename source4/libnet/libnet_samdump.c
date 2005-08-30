@@ -184,7 +184,7 @@ static NTSTATUS libnet_SamDump_netlogon(struct libnet_context *ctx, TALLOC_CTX *
 	for (t=samdump_state->trusted_domains; t; t=t->next) {
 		char *secret_name = talloc_asprintf(mem_ctx, "G$$%s", t->name);
 		for (s=samdump_state->secrets; s; s=s->next) {
-			if (StrCaseCmp(s->name, secret_name) == 0) {
+			if (strcasecmp_m(s->name, secret_name) == 0) {
 				char *secret_string;
 				if (convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, 
 							  s->secret.data, s->secret.length, 
