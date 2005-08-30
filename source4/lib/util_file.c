@@ -271,7 +271,7 @@ void *map_file(char *fname, size_t size)
 /****************************************************************************
 parse a buffer into lines
 ****************************************************************************/
-static char **file_lines_parse(char *p, size_t size, int *numlines)
+static char **file_lines_parse(char *p, size_t size, int *numlines, TALLOC_CTX *mem_ctx)
 {
 	int i;
 	char *s, **ret;
@@ -282,11 +282,14 @@ static char **file_lines_parse(char *p, size_t size, int *numlines)
 		if (s[0] == '\n') i++;
 	}
 
-	ret = malloc_array_p(char *, i+2);
+	ret = talloc_array(mem_ctx, char *, i+2);
 	if (!ret) {
-		SAFE_FREE(p);
+		talloc_free(p);
 		return NULL;
 	}	
+	
+	talloc_reference(ret, p);
+	
 	memset(ret, 0, sizeof(ret[0])*(i+2));
 	if (numlines) *numlines = i;
 
@@ -306,33 +309,43 @@ static char **file_lines_parse(char *p, size_t size, int *numlines)
 
 /****************************************************************************
 load a file into memory and return an array of pointers to lines in the file
-must be freed with file_lines_free(). 
+must be freed with talloc_free(). 
 ****************************************************************************/
 char **file_lines_load(const char *fname, int *numlines, TALLOC_CTX *mem_ctx)
 {
 	char *p;
+	char **lines;
 	size_t size;
 
 	p = file_load(fname, &size, mem_ctx);
 	if (!p) return NULL;
 
-	return file_lines_parse(p, size, numlines);
+	lines = file_lines_parse(p, size, numlines, mem_ctx);
+
+	talloc_free(p);
+
+	return lines;
 }
 
 /****************************************************************************
 load a fd into memory and return an array of pointers to lines in the file
-must be freed with file_lines_free(). If convert is true calls unix_to_dos on
+must be freed with talloc_free(). If convert is true calls unix_to_dos on
 the list.
 ****************************************************************************/
 char **fd_lines_load(int fd, int *numlines, TALLOC_CTX *mem_ctx)
 {
 	char *p;
+	char **lines;
 	size_t size;
 
 	p = fd_load(fd, &size, mem_ctx);
 	if (!p) return NULL;
 
-	return file_lines_parse(p, size, numlines);
+	lines = file_lines_parse(p, size, numlines, mem_ctx);
+
+	talloc_free(p);
+
+	return lines;
 }
 
 
