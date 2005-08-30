@@ -123,7 +123,7 @@ update_client_creds(int s, kcm_client *peer)
 	}
     }
 #endif
-#ifdef LOCAL_PEERCRED
+#if defined(LOCAL_PEERCRED) && defined(XUCRED_VERSION)
     {
 	struct xucred peercred;
 	socklen_t peercredlen = sizeof(peercred);
