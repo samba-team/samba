@@ -34,8 +34,7 @@ function upgrade_registry(regdb,prefix)
 {
 	assert(regdb != undefined);
 	var prefix_up = strupper(prefix);
-
-	var ldif = "";
+	var ldif = new Array();
 
 	for (var i in regdb.keys) {
 		var rk = regdb.keys[i];
@@ -51,7 +50,7 @@ function upgrade_registry(regdb,prefix)
 		var pts = split("/", rk.name);
 
 		/* Convert key name to dn */
-		ldif = ldif + sprintf("
+		ldif[rk.name] = sprintf("
 dn: %s
 name: %s
 
@@ -60,7 +59,7 @@ name: %s
 		for (var j in rk.values) {
 			var rv = rk.values[j];
 
-			ldif = ldif + sprintf("
+			ldif[rk.name + " (" + rv.name + ")"] = sprintf("
 dn: %s,value=%s
 value: %s
 type: %d
@@ -396,6 +395,7 @@ function save_smbconf(path,smbconf)
 
 function upgrade(subobj, samba3, message)
 {
+	var ret = 0;
 	var samdb = ldb_init();
 	var ok = samdb.connect("sam.ldb");
 	assert(ok);
@@ -425,7 +425,10 @@ dn: @MAP=samba3sam
 		message("... " + samba3.samaccounts[i].username);
 		var ldif = upgrade_sam_account(samba3.samaccounts[i],subobj.BASEDN);
 		ok = samdb.add(ldif);
-		if (!ok) { message("... error!"); }
+		if (!ok) { 
+			message("... error: " + samdb.errstring()); 
+			ret = ret + 1; 
+		}
 		message("\n");
 	}
 
@@ -434,7 +437,10 @@ dn: @MAP=samba3sam
 		message("... " + samba3.groupmappings[i].nt_name);
 		var ldif = upgrade_sam_group(samba3.groupmappings[i],subobj.BASEDN);
 		ok = samdb.add(ldif);
-		if (!ok) { message("... error!"); }
+		if (!ok) { 
+			message("... error: " + samdb.errstring()); 
+			ret = ret + 1; 
+		}
 		message("\n");
 	}
 
@@ -446,18 +452,26 @@ dn: @MAP=samba3sam
 		ok = regdb.connect(hives[i] + ".ldb");
 		assert(ok);
 		var ldif = upgrade_registry(samba3.registry, hives[i]);
-		ok = regdb.add(ldif);
-		assert(ok);
+		for (var j in ldif) {
+			message("... ... " + j);
+			ok = regdb.add(ldif[j]);
+			if (!ok) { 
+				message("... error: " + regdb.errstring()); 
+				ret = ret + 1; 
+			}
+			message("\n");
+		}
 	}
 
 	message("Importing WINS data\n");
 	var winsdb = ldb_init();
 	ok = winsdb.connect("wins.ldb");
 	assert(ok);
+	ldb_erase(winsdb);
 
 	var ldif = upgrade_wins(samba3);
 	ok = winsdb.add(ldif);
 	assert(ok);
 
-	return ok;
+	return ret;
 }

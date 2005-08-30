@@ -541,7 +541,8 @@ static int samldb_add_record(struct ldb_module *module, const struct ldb_message
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_add_record\n");
 
-	if (strcmp(msg->dn->components[0].name, "@SPECIAL") == 0) { /* do not manipulate our control entries */
+	
+	if (ldb_dn_is_special(msg->dn)) { /* do not manipulate our control entries */
 		return ldb_next_add_record(module, msg);
 	}
 
