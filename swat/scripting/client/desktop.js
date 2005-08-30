@@ -89,26 +89,6 @@ function openIn(e)
 	blank.setVisible(true);
 }
 	
-function winMenu(e)
-{
-	var self = this;
-	var WinWin = new QxCommand();
-	WinWin.addEventListener("execute", function() {
-		var blank = new QxWindow();
-		self.add(blank);
-		blank.setVisible(true);
-	}); 
-
-	var inset = new QxMenu;
-	var sub1 = new QxMenuButton("Open window in a window", null, WinWin);
-
-	inset.add(sub1);
-	self.add(inset)
-
-	cmenu.setVisible(false);
-	inset.setVisible(true);
-}
-
 function Window(h, src, s)
 {
 	this.self = new QxWindow(h);
@@ -121,7 +101,7 @@ function Window(h, src, s)
 	this.self.setTop(getPosX(this.self));
 	this.self.setLeft(getPosY(this.self));
 
-	this.self.addEventListener("contextmenu", winMenu);
+	this.self.addEventListener("contextmenu", contextMenu);
 
 	return this.self;
 }
@@ -148,10 +128,23 @@ Window.small = SmallWindow;
 Window.standard = StandardWindow;
 Window.large = LargeWindow;
 
+function contextMenu(e)
+{	
+	var t = e.getTarget()
+	var tObj = t.getHtmlAttribute("class")
+
+	if (tObj == 'QxWidget') {
+		clientContextMenu(e);
+	} else if (tObj == 'QxWindowPane') {
+		windowContextMenu(t, e);
+	}
+}
+
+
 window.application.main = function()
 {
 	var doc = this.getClientWindow().getClientDocument();
-	doc.addEventListener("contextmenu", showContextMenu);
+	doc.addEventListener("contextmenu", contextMenu);
 	doc.add(w);
 
 	var bar = new QxMenuBar;

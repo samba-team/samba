@@ -51,30 +51,6 @@ function blankW()
 	blank.setVisible(true);
 }
 
-function showContextMenu(e)
-{
-	var aboutCmd = new QxCommand();
-	aboutCmd.addEventListener("execute", function() {
-		showMessage("SWAT, the Samba Web Administration Tool.<br/>This tool is currently under development.");
-	});
-
-	var newWin = new QxCommand();
-	newWin.addEventListener("execute", blankW);
-
-	cmenu = new QxMenu;
-
-	var sub1 = new QxMenuButton("About SWAT", null, aboutCmd);
-	var sep = new QxMenuSeparator();
-	var sub2 = new QxMenuButton("New Window", null, newWin);
-
-	cmenu.add(sub1, sep, sub2);
-
-	cmenu.setLeft(e.getClientX());
-	cmenu.setTop(e.getClientY());
-	w.add(cmenu);
-	cmenu.setVisible(true);
-}
-
 // Always open with stats
 var win = new QxWindow();
 document.js.add('/scripting/client/status.js');
@@ -114,6 +90,48 @@ function showReg()
 	regWin.add(regedit);
 	w.add(regWin);
 	regWin.setVisible('true');
+}
+
+function clientContextMenu(e)
+{
+	var aboutCmd = new QxCommand();
+	aboutCmd.addEventListener("execute", function() {
+		showMessage("SWAT, the Samba Web Administration Tool.<br/>This tool is currently under development.");
+	});
+
+	var newWin = new QxCommand();
+	newWin.addEventListener("execute", blankW);
+
+	var cmenu = new QxMenu;
+
+	var sub1 = new QxMenuButton("About SWAT", null, aboutCmd);
+	var sep = new QxMenuSeparator();
+	var sub2 = new QxMenuButton("New Window", null, newWin);
+
+	cmenu.add(sub1, sep, sub2);
+
+	cmenu.setLeft(e.getClientX());
+	cmenu.setTop(e.getClientY());
+	w.add(cmenu);
+	cmenu.setVisible(true);
+}
+
+function windowContextMenu(t, e)
+{
+	var WinWin = new QxCommand();
+	WinWin.addEventListener("execute", function() {
+		var blank = new QxWindow();
+		t.add(blank);
+		blank.setVisible(true);
+	}); 
+
+	var inset = new QxMenu;
+	var sub1 = new QxMenuButton("Open window in a window", null, WinWin);
+
+	inset.add(sub1);
+	t.add(inset)
+
+	inset.setVisible(true);
 }
 
 function startMenu() 
