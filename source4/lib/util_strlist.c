@@ -22,7 +22,7 @@
 
 /*
   build a null terminated list of strings from a input string and a
-  separator list. The sepatator list must contain characters less than
+  separator list. The separator list must contain characters less than
   or equal to 0x2f for this to work correctly on multi-byte strings
 */
 const char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
@@ -69,6 +69,25 @@ const char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *
 
 	return ret;
 }
+
+/* join a list back to one string */
+char *str_list_join(TALLOC_CTX *mem_ctx, const char **list, char seperator)
+{
+	char *ret = NULL;
+	int i;
+	
+	if (list[0] == NULL)
+		return talloc_strdup(mem_ctx, "");
+
+	ret = talloc_strdup(mem_ctx, list[0]);
+
+	for (i = 1; list[i]; i++) {
+		ret = talloc_asprintf_append(ret, "%c%s", seperator, list[i]);
+	}
+
+	return ret;
+}
+
 
 /*
   return the number of elements in a string list
