@@ -372,7 +372,7 @@ static NTSTATUS ipc_read(struct ntvfs_module_context *ntvfs,
 	DATA_BLOB data;
 	uint16_t fnum;
 	struct pipe_state *p;
-	NTSTATUS status = NT_STATUS_FOOBAR;
+	NTSTATUS status = NT_STATUS_OK;
 
 	if (rd->generic.level != RAW_READ_GENERIC) {
 		return ntvfs_map_read(req, rd, ntvfs);
@@ -388,7 +388,7 @@ static NTSTATUS ipc_read(struct ntvfs_module_context *ntvfs,
 	data.length = rd->readx.in.maxcnt;
 	data.data = rd->readx.out.data;
 	if (data.length > UINT16_MAX) {
-		data.length = 0;
+		data.length = UINT16_MAX;
 	}
 
 	if (data.length != 0) {
