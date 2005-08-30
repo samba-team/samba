@@ -3036,7 +3036,6 @@ static BOOL lsa_io_trustdom_query(const char *desc, prs_struct *ps, int depth, L
 	default:
 		DEBUG(0,("unsupported info-level: %d\n", info->info_class));
 		return False;
-		break;
 	}
 
 	return True;
