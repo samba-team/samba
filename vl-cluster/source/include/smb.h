@@ -759,11 +759,11 @@ struct enum_list {
 };
 
 #define BRLOCK_FN_CAST() \
-	void (*)(SMB_DEV_T dev, SMB_INO_T ino, int pid, \
+	void (*)(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, \
 				 enum brl_type lock_type, \
 				 br_off start, br_off size)
 #define BRLOCK_FN(fn) \
-	void (*fn)(SMB_DEV_T dev, SMB_INO_T ino, int pid, \
+	void (*fn)(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, \
 				 enum brl_type lock_type, \
 				 br_off start, br_off size)
 struct parm_struct

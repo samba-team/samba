@@ -96,12 +96,12 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
 			ret = 0;
 		} else {
 			ret = !brl_locktest(fsp->dev, fsp->inode, fsp->fnum,
-				     global_smbpid, sys_getpid(), conn->cnum, 
+				     global_smbpid, procid_self(), conn->cnum, 
 				     offset, count, lock_type);
 		}
 	} else {
 		ret = !brl_locktest(fsp->dev, fsp->inode, fsp->fnum,
-				global_smbpid, sys_getpid(), conn->cnum,
+				global_smbpid, procid_self(), conn->cnum,
 				offset, count, lock_type);
 	}
 
@@ -144,7 +144,7 @@ static NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_p
 
 	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn)) {
 		status = brl_lock(fsp->dev, fsp->inode, fsp->fnum,
-				  lock_pid, sys_getpid(), conn->cnum, 
+				  lock_pid, procid_self(), conn->cnum, 
 				  offset, count, 
 				  lock_type, my_lock_ctx);
 
@@ -167,7 +167,7 @@ static NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_p
 				 * lock entry.
 				 */
 				(void)brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-								lock_pid, sys_getpid(), conn->cnum, 
+								lock_pid, procid_self(), conn->cnum, 
 								offset, count, False,
 								NULL, NULL);
 			}
@@ -265,7 +265,7 @@ NTSTATUS do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 	posix_data.count = count;
 
 	ok = brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-			lock_pid, sys_getpid(), conn->cnum, offset, count,
+			lock_pid, procid_self(), conn->cnum, offset, count,
 			False, posix_unlock, (void *)&posix_data);
    
 	if (!ok) {
@@ -281,8 +281,6 @@ NTSTATUS do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 
 void locking_close_file(files_struct *fsp)
 {
-	pid_t pid = sys_getpid();
-
 	if (!lp_locking(SNUM(fsp->conn)))
 		return;
 
@@ -290,7 +288,7 @@ void locking_close_file(files_struct *fsp)
 	 * Just release all the brl locks, no need to release individually.
 	 */
 
-	brl_close(fsp->dev, fsp->inode, pid, fsp->conn->cnum, fsp->fnum);
+	brl_close(fsp->dev, fsp->inode, procid_self(), fsp->conn->cnum, fsp->fnum);
 
 	if(lp_posix_locking(SNUM(fsp->conn))) {
 

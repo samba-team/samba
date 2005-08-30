@@ -128,7 +128,7 @@ BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout,
 
 	/* Add a pending lock record for this. */
 	status = brl_lock(blr->fsp->dev, blr->fsp->inode, blr->fsp->fnum,
-			lock_pid, sys_getpid(), blr->fsp->conn->cnum,
+			lock_pid, procid_self(), blr->fsp->conn->cnum,
 			offset, count, PENDING_LOCK, &my_lock_ctx);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -527,7 +527,7 @@ void remove_pending_lock_requests_by_fid(files_struct *fsp)
 file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 
 			brl_unlock(blr->fsp->dev, blr->fsp->inode, blr->fsp->fnum,
-				blr->lock_pid, sys_getpid(), blr->fsp->conn->cnum,
+				blr->lock_pid, procid_self(), blr->fsp->conn->cnum,
 				blr->offset, blr->count, True, NULL, NULL);
 
 			free_blocking_lock_record(blr);
@@ -553,7 +553,7 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 
 			blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
 			brl_unlock(blr->fsp->dev, blr->fsp->inode, blr->fsp->fnum,
-				blr->lock_pid, sys_getpid(), blr->fsp->conn->cnum,
+				blr->lock_pid, procid_self(), blr->fsp->conn->cnum,
 				blr->offset, blr->count, True, NULL, NULL);
 			free_blocking_lock_record(blr);
 		}
@@ -643,7 +643,7 @@ void process_blocking_lock_queue(time_t t)
 				fsp->fnum, fsp->fsp_name ));
 
 			brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-				blr->lock_pid, sys_getpid(), conn->cnum,
+				blr->lock_pid, procid_self(), conn->cnum,
 				blr->offset, blr->count, True, NULL, NULL);
 
 			blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
@@ -660,7 +660,7 @@ void process_blocking_lock_queue(time_t t)
 			blocking_lock_reply_error(blr,NT_STATUS_ACCESS_DENIED);
 
 			brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-					blr->lock_pid, sys_getpid(), conn->cnum,
+					blr->lock_pid, procid_self(), conn->cnum,
 					blr->offset, blr->count, True, NULL, NULL);
 
 			free_blocking_lock_record(blr);
@@ -675,7 +675,7 @@ void process_blocking_lock_queue(time_t t)
 			blocking_lock_reply_error(blr,NT_STATUS_ACCESS_DENIED);
 
 			brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-					blr->lock_pid, sys_getpid(), conn->cnum,
+					blr->lock_pid, procid_self(), conn->cnum,
 					blr->offset, blr->count, True, NULL, NULL);
 
 			free_blocking_lock_record(blr);
@@ -692,7 +692,7 @@ void process_blocking_lock_queue(time_t t)
 		if(blocking_lock_record_process(blr)) {
 
 			brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-					blr->lock_pid, sys_getpid(), conn->cnum,
+					blr->lock_pid, procid_self(), conn->cnum,
 					blr->offset, blr->count, True, NULL, NULL);
 
 			free_blocking_lock_record(blr);
