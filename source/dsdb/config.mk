@@ -22,6 +22,16 @@ INIT_OBJ_FILES = \
 ################################################
 
 ################################################
+# Start MODULE libldb_samba3sam
+[MODULE::libldb_samba3sam]
+SUBSYSTEM = LIBLDB
+INIT_OBJ_FILES = \
+		dsdb/samdb/ldb_modules/samba3sam.o
+#
+# End MODULE libldb_samldb
+################################################
+
+################################################
 # Start SUBSYSTEM SAMDB
 [SUBSYSTEM::SAMDB]
 INIT_OBJ_FILES = \

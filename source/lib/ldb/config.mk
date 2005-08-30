@@ -41,7 +41,7 @@ NOPROTO = YES
 # Start MODULE libldb_map
 [MODULE::libldb_map]
 SUBSYSTEM = LIBLDB
-INIT_OBJ_FILES = lib/ldb/ldb_map/ldb_map.o
+INIT_OBJ_FILES = lib/ldb/modules/ldb_map.o
 # End MODULE libldb_map
 ################################################
 
@@ -115,8 +115,7 @@ REQUIRED_SUBSYSTEMS = \
 # Start SUBSYSTEM LDBSAMBA
 [SUBSYSTEM::LDBSAMBA]
 OBJ_FILES = \
-		lib/ldb/samba/ldif_handlers.o \
-		lib/ldb/samba/samba3sam.o
+		lib/ldb/samba/ldif_handlers.o
 # End SUBSYSTEM LDBSAMBA
 ################################################
 
