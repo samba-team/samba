@@ -160,7 +160,7 @@ struct samba3_secrets
 		struct {
 			uint8_t hash[16];
 			time_t mod_time;
-		} hash_pw;;
+		} hash_pw;
 		int sec_channel_type;
 	} *domains;
 
