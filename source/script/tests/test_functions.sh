@@ -26,11 +26,11 @@ smbd_check_or_start() {
 				rm -f $SOCKET_WRAPPER_DIR/*
 			fi
 			if [ x"$ret" = x"0" ];then
-				echo "smbd exists with status $ret";
-				echo "smbd exists with status $ret" >>$SMBD_TEST_LOG;
+				echo "smbd exits with status $ret";
+				echo "smbd exits with status $ret" >>$SMBD_TEST_LOG;
 			elif [ x"$ret" = x"137" ];then
-				echo "smbd got SIGXCPU and exists with status $ret!"
-				echo "smbd got SIGXCPU and exists with status $ret!">>$SMBD_TEST_LOG;
+				echo "smbd got SIGXCPU and exits with status $ret!"
+				echo "smbd got SIGXCPU and exits with status $ret!">>$SMBD_TEST_LOG;
 			else
 				echo "smbd failed with status $ret!"
 				echo "smbd failed with status $ret!">>$SMBD_TEST_LOG;
