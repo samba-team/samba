@@ -363,8 +363,8 @@ static void usage(void)
 	printf("Usage: ldbtest <options>\n");
 	printf("Options:\n");
 	printf("  -H ldb_url       choose the database (or $LDB_URL)\n");
-	printf("  -r nrecords      database size to use\n");
-	printf("  -s nsearches     number of searches to do\n");
+	printf("  --num-records  nrecords      database size to use\n");
+	printf("  --num-searches nsearches     number of searches to do\n");
 	printf("\n");
 	printf("tests ldb API\n\n");
 	exit(1);
