@@ -311,10 +311,10 @@ static int ejs_base64decode(MprVarHandle eid, int argc, struct MprVar **argv)
   
 
 /*
-  perform an ldb modify
+  perform an ldb add 
 
   syntax:
-    ok = ldb.modify(ldifstring);
+    ok = ldb.add(ldifstring);
 */
 static int ejs_ldbAdd(MprVarHandle eid, int argc, struct MprVar **argv)
 {
@@ -322,10 +322,10 @@ static int ejs_ldbAdd(MprVarHandle eid, int argc, struct MprVar **argv)
 }
 
 /*
-  perform an ldb add
+  perform an ldb modify
 
   syntax:
-    ok = ldb.add(ldifstring);
+    ok = ldb.modify(ldifstring);
 */
 static int ejs_ldbModify(MprVarHandle eid, int argc, struct MprVar **argv)
 {

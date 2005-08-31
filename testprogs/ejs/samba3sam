@@ -1,6 +1,8 @@
 #!/usr/bin/env smbscript
 
 libinclude("base.js");
+var mypath = substr(ARGV[0], 0, -strlen("samba3sam"));
+
 var sys = sys_init();
 var s3url;
 var s3 = ldb_init();
@@ -17,7 +19,7 @@ if (ARGV.length == 2) {
 	var s3 = ldb_init();
 	ok = s3.connect(s3url);
 	assert(ok);
-	var ldif = sys.file_load("../../testdata/samba3/samba3.ldif");
+	var ldif = sys.file_load(mypath + "../../testdata/samba3/samba3.ldif");
 	assert(ldif != undefined);
 	ok = s3.add(ldif);
 	assert(ok);
@@ -25,15 +27,33 @@ if (ARGV.length == 2) {
 
 println("Initial samba4 LDIF...");
 var s4 = ldb_init();
+sys.unlink("samba4.ldb");
 ok = s4.connect("tdb://samba4.ldb");
 assert(ok);
-ok = s4.add(sprintf("
-dn: @MODULES
-@LIST: samba3sam
 
-dn: @MAP=samba3sam
+var ldif = sys.file_load(mypath + "../../source/setup/provision_init.ldif");
+assert(ldif != undefined);
+ok = s4.add(ldif);
+assert(ok);
+
+ok = s4.add(sprintf("dn: @MAP=samba3sam
 @MAP_URL: %s", s3url));
 assert(ok);
+
+ok = s4.modify("
+dn: @MODULES
+replace: @LIST
+@LIST: samldb,timestamps,objectguid,rdn_name,samba3sam");
+assert(ok);
+
+println("Reconnecting to LDB database");
+s4 = ldb_init();
+ok = s4.connect("tdb://samba4.ldb");
+assert(ok);
+
+msg = s4.search("(ou=Users)");
+assert(msg.length == 1);
+assert(msg['mappedFromDn'] == msg['dn']);
 
 println("Looking up by non-mapped attribute");
 msg = s4.search("(cn=Administrator)");

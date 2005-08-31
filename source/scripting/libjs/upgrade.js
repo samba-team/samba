@@ -418,34 +418,6 @@ function upgrade(subobj, samba3, message, paths)
 	ok = samdb.modify(ldif);
 	assert(ok);
 
-	// figure out ldapurl, if applicable
-	var ldapurl = undefined;
-	var pdb = samba3.configuration.get_list("passdb backend");
-	if (pdb != undefined) {
-		for (var b in pdb) {
-			if (substr(pdb[b], 0, 7) == "ldapsam") {
-				ldapurl = substr(pdb[b], 8);
-			}
-		}
-	}
-
-	// URL was not specified in passdb backend but ldap /is/ used
-	if (ldapurl == "") {
-		ldapurl = "ldap://" + samba3.configuration.get("ldap server");
-	}
-
-	// Enable samba3sam module if original passdb backend was ldap
-	if (ldapurl != undefined) {
-		message("Enabling Samba3 LDAP mappings for SAM database\n");
-		var ldif = sprintf("
-dn: @MAP=samba3sam
-@MAP_URL: %s", ldapurl);
-		samdb.add(ldif);
-
-		samdb.modify("dn: @MODULES
-@LIST: samldb,timestamps,objectguid,rdn_name,samba3sam");
-	}
-
 	message("Importing users\n");
 	for (var i in samba3.samaccounts) {
 		var msg = "... " + samba3.samaccounts[i].username;
@@ -499,6 +471,37 @@ dn: @MAP=samba3sam
 	var ldif = upgrade_wins(samba3);
 	ok = winsdb.add(ldif);
 	assert(ok);
+
+	// figure out ldapurl, if applicable
+	var ldapurl = undefined;
+	var pdb = samba3.configuration.get_list("passdb backend");
+	if (pdb != undefined) {
+		for (var b in pdb) {
+			if (substr(pdb[b], 0, 7) == "ldapsam") {
+				ldapurl = substr(pdb[b], 8);
+			}
+		}
+	}
+
+	// URL was not specified in passdb backend but ldap /is/ used
+	if (ldapurl == "") {
+		ldapurl = "ldap://" + samba3.configuration.get("ldap server");
+	}
+
+	// Enable samba3sam module if original passdb backend was ldap
+	if (ldapurl != undefined) {
+		message("Enabling Samba3 LDAP mappings for SAM database\n");
+		var ldif = sprintf("
+dn: @MAP=samba3sam
+@MAP_URL: %s", ldapurl);
+		ok = samdb.add(ldif);
+		assert(ok);
+
+		ok = samdb.modify("dn: @MODULES
+replace: @LIST
+@LIST: samldb,timestamps,objectguid,rdn_name,samba3sam");
+		assert(ok);
+	}
 
 	return ret;
 }
