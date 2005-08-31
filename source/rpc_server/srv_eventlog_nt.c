@@ -23,6 +23,9 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+#define EVENTLOG_VERSION_V1 1 /* Will there be more? */
+static TDB_CONTEXT *evtlog_tdb; /* used for eventlog parameter tdb file */
+
 typedef struct {
 	fstring logname;
 	fstring servername;
@@ -34,6 +37,102 @@ typedef struct {
 } EventlogInfo;
 
   
+/********************************************************************
+  Write an entry (presumably coming from a registry write) that has an 
+  eventlog parameter to the eventlog tdb.   After this call, it's probably 
+  a good thing to update_eventlog_external to inform any supporting 
+  machinery that a parameter changed.
+********************************************************************/
+
+BOOL write_evtlog_uint32_reg_value(const char *evtlogname, const char *vname, uint32 davalue)
+{
+	fstring evt_keyname;
+	const char **evtlog_list = lp_eventlog_list();
+    
+	if (!evtlog_tdb || !evtlogname || !*evtlogname || !vname || !*vname )
+		return False;
+    
+	/* make sure that we care about the particular eventlog name. 
+	   no bogus filling up of the tdb */
+    
+	if ( !evtlog_list ) 
+		return False;
+
+	for ( /*nothing */; *evtlog_list; evtlog_list++ ) {
+		if ( strequal(evtlogname,*evtlog_list) ) 
+			break;
+	}
+
+	if ( !*evtlog_list ) {
+		DEBUG(0,("write_evtlog_uint32_reg_value: We don't care about eventlogs named %s\n",
+			evtlogname));
+		return False;
+	}
+
+	/* the eventlog name is okay, but we should be checking the 
+	   values that we're keeping at a higher level */
+
+	/* normalize the key */
+
+	fstr_sprintf(evt_keyname, "%s/%s", evtlogname, vname );
+	strupper_m(evt_keyname);
+    
+	DEBUG(10,("write_evtlog_uint32_reg_value: Storing value for [%s], value is %x\n",
+		evt_keyname, davalue));
+
+	tdb_store_uint32(evtlog_tdb, evt_keyname, davalue);
+
+	return True;
+}
+
+/********************************************************************
+ Read a parameter from the eventlog_param tdb relevant to eventlogs.
+********************************************************************/
+
+BOOL read_evtlog_uint32_reg_value(const char *evtlogname, const char *vname, uint32 *davalue)
+{
+	fstring evt_keyname;
+	const char **evtlog_list = lp_eventlog_list();
+	uint32 l_davalue;
+    
+	if (!evtlog_tdb || !evtlogname || !*evtlogname || !vname || !*vname )
+		return False;
+
+	if ( !evtlog_list )
+		return False;
+    
+	for ( /* nothing */; *evtlog_list; evtlog_list++ ) {
+		if ( strequal(evtlogname,*evtlog_list) )
+			break;
+	}
+
+	if ( !*evtlog_list ) {
+		DEBUG(0,("read_evtlog_uint32_reg_value: We don't care about eventlogs named %s\n",
+			evtlogname));
+		return False;
+	}
+
+	/* the eventlog name is okay, but we should be checking the values 
+	   that we're keeping at a higher level */
+
+	/* normalize the key */
+	fstr_sprintf( evt_keyname, "%s/%s", evtlogname, vname );
+	strupper_m(evt_keyname);
+    
+	if ( tdb_fetch_uint32(evtlog_tdb, evt_keyname,&l_davalue) == -1 ) {
+		DEBUG(10,("read_evtlog_uint32_reg_value: Read value for [%s], VALUE NOT FOUND\n",
+			evt_keyname));
+		return False;
+	}
+
+	*davalue = l_davalue;
+
+	DEBUG(10,("read_evtlog_uint32_reg_value: Read value for [%s], value is %x\n",
+		evt_keyname, *davalue));
+    
+	return True;
+}
+
 /********************************************************************
  Inform the external eventlog machinery of default values (on startup 
  probably)
@@ -62,18 +161,38 @@ void eventlog_refresh_external_parameters(void)
 
 BOOL init_eventlog_parameters( void )
 {
-	const char **evtlog_list = lp_eventlog_list();
-
-	if ( !evtlog_list )
-		return True;
-
-	for ( /* nothing */; *evtlog_list; evtlog_list++ ) {
+	const char *vstring = "INFO/version";
+	int vers_id;
 	
-		DEBUG(10,("init_eventlog_parameters: Initializing =>[%s]\n",*evtlog_list));	
+	if ( evtlog_tdb ) {
+		return True;
+	}
 
-	}  
+	evtlog_tdb = tdb_open_log(lock_path("eventlog_params.tdb"), 0, TDB_DEFAULT, O_RDWR, 0600);
+	
+	if ( !evtlog_tdb ) {
+	
+		evtlog_tdb = tdb_open_log(lock_path("eventlog_params.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+		
+		if ( !evtlog_tdb ) {
+			DEBUG(0,("Failed to open or create eventlog_params.tdb\n"));
+			return False;
+		}
+			
+		DEBUG(0,("Created new eventlog parameters db\n"));
+	}
+	
+	vers_id = tdb_fetch_int32( evtlog_tdb, vstring );
+	
+	if ( vers_id != EVENTLOG_VERSION_V1 ) {
+		/* wrong version of DB, or db was just created */
+		tdb_traverse(evtlog_tdb, tdb_traverse_delete_fn, NULL);
+		tdb_store_uint32(evtlog_tdb, vstring, EVENTLOG_VERSION_V1);
+	}
 
-    	return True;    
+	DEBUG(3,("Cleaning up eventlog parameters db\n"));
+
+	return True;
 }
 
 /********************************************************************
@@ -146,19 +265,15 @@ BOOL control_eventlog_hook(const char *evtlogname)
 
 	pstrcpy(v_name,"Retention");
 
-#if 0	/* REGISTRY FIX */
 	if (!read_evtlog_uint32_reg_value(evtlogname, v_name, &uiRetention)) {
 		DEBUG(0, ("control_eventlog_hook: Warning - can't read Retention for eventlog %s, using default.\n",evtlogname));
 	}
-#endif
 
 	pstrcpy(v_name,"MaxSize");
-#if 0   /* REGISTRY FIX */
-
 	if (!read_evtlog_uint32_reg_value(evtlogname, v_name, &uiMaxSize)) {
 		DEBUG(0, ("control_eventlog_hook: Warning - can't read MaxSize for eventlog %s, using default.\n",evtlogname));
 	}
-#endif
+
 	memset(command, 0, sizeof(command));
 	slprintf(command, sizeof(command)-1, "%s \"%s\" %u %u",
 		 cmd,
