@@ -37,13 +37,14 @@ NTSTATUS samba3_read_passdb_backends(TALLOC_CTX *ctx, const char *libdir, struct
 	char *dbfile;
 	NTSTATUS status = NT_STATUS_OK;
 	int i;
-	const char **backends = param_get_string_list(samba3->configuration, NULL, "passdb backends", NULL);
+	const char **backends = param_get_string_list(samba3->configuration, NULL, "passdb backend", NULL);
 
 	/* Default to smbpasswd */
 	if (backends == NULL) 
 		backends = str_list_make(ctx, "smbpasswd", LIST_SEP);
 	else
 		backends = str_list_copy(ctx, backends);
+
 
 	for (i = 0; backends[i]; i++) {
 		if (!strncmp(backends[i], "tdbsam", strlen("tdbsam"))) {

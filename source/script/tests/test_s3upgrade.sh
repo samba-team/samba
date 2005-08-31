@@ -3,7 +3,7 @@ PREFIX=$1
 
 if [ -z "$PREFIX" ]
 then
-	print "Usage: test_s3upgrade.sh <prefix"
+	echo "Usage: test_s3upgrade.sh <prefix>"
 	exit 1
 fi
 
