@@ -64,21 +64,21 @@ struct ldb_map_attribute
 		
 		struct {
 			const char *remote_name;
-			struct ldb_val (*convert_local) (struct ldb_map_context *, TALLOC_CTX *, const struct ldb_val *);
-			struct ldb_val (*convert_remote) (struct ldb_map_context *, TALLOC_CTX *, const struct ldb_val *);
+			struct ldb_val (*convert_local) (struct ldb_module *, TALLOC_CTX *, const struct ldb_val *);
+			struct ldb_val (*convert_remote) (struct ldb_module *, TALLOC_CTX *, const struct ldb_val *);
 		} convert;
 	
 		struct {
 			/* Generate the local attribute from remote message */
 			struct ldb_message_element *(*generate_local) (
-					struct ldb_map_context *, 
+					struct ldb_module *, 
 					TALLOC_CTX *ctx, 
 					const char *attr,
 					const struct ldb_message *remote);
 
 			/* Update remote message with information from local message */
 			void (*generate_remote) (
-					struct ldb_map_context *, 
+					struct ldb_module *, 
 					const char *local_attr,
 					const struct ldb_message *local, 
 					struct ldb_message *remote);
