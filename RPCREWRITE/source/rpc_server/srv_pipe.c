@@ -1252,7 +1252,11 @@ static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	/* The client opens a second RPC NETLOGON pipe without
 		doing a auth2. The credentials for the schannel are
 		re-used from the auth2 the client did before. */
-	p->dc = last_dcinfo;
+	p->dc = TALLOC_ZERO_P(p->pipe_state_mem_ctx, struct dcinfo);
+	if (!p->dc) {
+		return False;
+	}
+	*p->dc = last_dcinfo;
 
 	init_rpc_hdr_auth(&auth_info, RPC_SCHANNEL_AUTH_TYPE, pauth_info->auth_level, RPC_HDR_AUTH_LEN, 1);
 	if(!smb_io_rpc_hdr_auth("", &auth_info, pout_auth, 0)) {
