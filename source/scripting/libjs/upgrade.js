@@ -30,7 +30,7 @@ function regkey_to_dn(name)
  *   HKPT
  */
 
-function upgrade_registry(regdb,prefix)
+function upgrade_registry(regdb,prefix,ldb)
 {
 	assert(regdb != undefined);
 	var prefix_up = strupper(prefix);
@@ -63,7 +63,7 @@ name: %s
 dn: %s,value=%s
 value: %s
 type: %d
-data:: %s", keydn, rv.value, rv.type, base64(rv.data));
+data:: %s", keydn, rv.name, rv.name, rv.type, ldb.encode(rv.data));
 		}
 	}
 
@@ -103,8 +103,6 @@ function upgrade_sam_account(acc,domaindn)
 	var ldb = ldb_init();
 	var ldif = sprintf(
 "dn: cn=%s,%s
-objectClass: top
-objectClass: person
 objectClass: user
 lastLogon: %d
 lastLogoff: %d
@@ -480,7 +478,7 @@ dn: @MAP=samba3sam
 		var regdb = ldb_init();
 		ok = regdb.connect(paths[hn]);
 		assert(ok);
-		var ldif = upgrade_registry(samba3.registry, hn);
+		var ldif = upgrade_registry(samba3.registry, hn, regdb);
 		for (var j in ldif) {
 			message("... ... " + j);
 			ok = regdb.add(ldif[j]);
