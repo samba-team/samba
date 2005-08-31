@@ -205,7 +205,7 @@ log_timestamp(krb5_context context,
 	strlcpy(renewtime_str, "unset", sizeof(renewtime_str));
     
     kdc_log(context, config, 5,
-	    "%s authtime: %s starttime: %s endtype: %s renew till: %s",
+	    "%s authtime: %s starttime: %s endtime: %s renew till: %s",
 	    type, authtime_str, starttime_str, endtime_str, renewtime_str);
 }
 
