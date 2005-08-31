@@ -199,16 +199,34 @@ function setup_file(template, fname, subobj)
 	assert(ok);
 }
 
+function provision_default_paths(subobj)
+{
+	var lp = loadparm_init();
+	var paths = new Object();
+	paths.smbconf = lp.get("config file");
+	paths.hklm = "hklm.ldb";
+	paths.hkcu = "hkcu.ldb";
+	paths.hkcr = "hkcr.ldb";
+	paths.hku = "hku.ldb";
+	paths.hkpd = "hkpd.ldb";
+	paths.hkpt = "hkpt.ldb";
+	paths.samdb = "sam.ldb";
+	paths.rootdse = "rootdse.ldb";
+	paths.secrets = "secrets.ldb";
+	paths.dns = lp.get("private dir") + "/" + subobj.DNSDOMAIN + ".zone";
+	paths.winsdb = "wins.ldb";
+	return paths;
+}
+
 /*
   provision samba4 - caution, this wipes all existing data!
 */
-function provision(subobj, message, blank)
+function provision(subobj, message, blank, paths)
 {
 	var data = "";
 	var lp = loadparm_init();
 	var sys = sys_init();
-	var smbconf = lp.get("config file");
-
+	
 	/*
 	  some options need to be upper/lower case
 	*/
@@ -228,31 +246,31 @@ function provision(subobj, message, blank)
 	provision_next_usn = 1;
 
 	/* only install a new smb.conf if there isn't one there already */
-	var st = sys.stat(smbconf);
+	var st = sys.stat(paths.smbconf);
 	if (st == undefined) {
 		message("Setting up smb.conf\n");
-		setup_file("provision.smb.conf", smbconf, subobj);
+		setup_file("provision.smb.conf", paths.smbconf, subobj);
 		lp.reload();
 	}
 	message("Setting up hklm.ldb\n");
-	setup_ldb("hklm.ldif", "hklm.ldb", subobj);
+	setup_ldb("hklm.ldif", paths.hklm, subobj);
 	message("Setting up sam.ldb attributes\n");
-	setup_ldb("provision_init.ldif", "sam.ldb", subobj);
+	setup_ldb("provision_init.ldif", paths.samdb, subobj);
 	message("Setting up sam.ldb templates\n");
-	setup_ldb("provision_templates.ldif", "sam.ldb", subobj, NULL, false);
+	setup_ldb("provision_templates.ldif", paths.samdb, subobj, NULL, false);
 	message("Setting up sam.ldb data\n");
-	setup_ldb("provision.ldif", "sam.ldb", subobj, NULL, false);
+	setup_ldb("provision.ldif", paths.samdb, subobj, NULL, false);
 	if (blank == false) {
 		message("Setting up sam.ldb users and groups\n");
-		setup_ldb("provision_users.ldif", "sam.ldb", subobj, data, false);
+		setup_ldb("provision_users.ldif", paths.samdb, subobj, data, false);
 	}
 	message("Setting up rootdse.ldb\n");
-	setup_ldb("rootdse.ldif", "rootdse.ldb", subobj);
+	setup_ldb("rootdse.ldif", paths.rootdse, subobj);
 	message("Setting up secrets.ldb\n");
-	setup_ldb("secrets.ldif", "secrets.ldb", subobj);
+	setup_ldb("secrets.ldif", paths.secrets, subobj);
 	message("Setting up DNS zone file\n");
 	setup_file("provision.zone", 
-		   lp.get("private dir") + "/" + subobj.DNSDOMAIN + ".zone", 
+		   paths.dns, 
 		   subobj);
 }
 

@@ -53,8 +53,14 @@ if (form['submit'] == "Import") {
 	for (r in form) {
 		subobj[r] = form[r];
 	}
-	provision(subobj, writefln, true);
-	upgrade(subobj, samba3, writefln);
+	var paths = provision_default_paths(subobj);
+
+	provision(subobj, writefln, true, paths);
+	upgrade(subobj, samba3, writefln, paths);
+
+	writefln("Reloading smb.conf\n");
+	var lp = loadparm_init();
+	lp.reload();
 } else {
 	var f = FormObj("Import from Samba3", 0, 2);
 

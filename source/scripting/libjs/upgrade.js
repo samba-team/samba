@@ -403,17 +403,17 @@ function upgrade_smbconf(oldconf,mark)
 	return newconf;
 }
 
-function upgrade(subobj, samba3, message)
+function upgrade(subobj, samba3, message, paths)
 {
 	var ret = 0;
 	var lp = loadparm_init();
 	var samdb = ldb_init();
-	var ok = samdb.connect("sam.ldb");
+	var ok = samdb.connect(paths.samdb);
 	assert(ok);
 
 	message("Writing configuration\n");
 	var newconf = upgrade_smbconf(samba3.configuration,true);
-	newconf.save(lp.get("config file"));
+	newconf.save(paths.smbconf);
 
 	message("Importing account policies\n");
 	var ldif = upgrade_sam_policy(samba3,subobj.BASEDN);
@@ -474,11 +474,12 @@ dn: @MAP=samba3sam
 	message("Importing registry data\n");
 	var hives = new Array("hkcr","hkcu","hklm","hkpd","hku","hkpt"); 
 	for (var i in hives) {
-		message("... " + hives[i] + "\n");
+		var hn = hives[i];
+		message("... " + hn + "\n");
 		var regdb = ldb_init();
-		ok = regdb.connect(hives[i] + ".ldb");
+		ok = regdb.connect(paths[hn]);
 		assert(ok);
-		var ldif = upgrade_registry(samba3.registry, hives[i]);
+		var ldif = upgrade_registry(samba3.registry, hn);
 		for (var j in ldif) {
 			message("... ... " + j);
 			ok = regdb.add(ldif[j]);
@@ -492,16 +493,13 @@ dn: @MAP=samba3sam
 
 	message("Importing WINS data\n");
 	var winsdb = ldb_init();
-	ok = winsdb.connect("wins.ldb");
+	ok = winsdb.connect(paths.winsdb);
 	assert(ok);
 	ldb_erase(winsdb);
 
 	var ldif = upgrade_wins(samba3);
 	ok = winsdb.add(ldif);
 	assert(ok);
-
-	message("Reloading smb.conf\n");
-	lp.reload();
 
 	return ret;
 }

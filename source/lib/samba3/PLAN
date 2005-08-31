@@ -1,3 +1,3 @@
 TODO (SoC project):
- - test ldb_map backend (testsuite?)
+ - finish ldb_map testsuite
  - testsuite for the static upgrade
