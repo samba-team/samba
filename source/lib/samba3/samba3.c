@@ -88,9 +88,12 @@ NTSTATUS samba3_read(const char *libdir, const char *smbconf, TALLOC_CTX *ctx, s
 
 	ret = talloc_zero(ctx, struct samba3);
 
-	if (smbconf) {
+	if (smbconf != NULL) {
 		ret->configuration = param_init(ret);
-		param_read(ret->configuration, smbconf);
+		if (param_read(ret->configuration, smbconf) == -1) {
+			talloc_free(ret);
+			return NT_STATUS_UNSUCCESSFUL;
+		}
 	}
 
 	dbfile = talloc_asprintf(ctx, "%s/account_policy.tdb", libdir);

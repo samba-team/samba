@@ -110,6 +110,6 @@ var blank = (options["blank"] != undefined);
 
 message("Provisioning for %s in realm %s\n", subobj.DOMAIN, subobj.REALM);
 message("Using administrator password: %s\n", subobj.ADMINPASS);
-provision(subobj, message, blank);
+provision(subobj, message, blank, provision_default_paths(subobj));
 message("All OK\n");
 return 0;

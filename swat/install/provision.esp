@@ -59,7 +59,7 @@ if (form['submit'] == "Provision") {
 		write("<h3>You must choose an administrator password.  Please try again.</h3>");
 		f.display();
 	} else {
-		provision(subobj, writefln, false);
+		provision(subobj, writefln, false, provision_default_paths(subobj));
 	}
 } else {
 	f.display();

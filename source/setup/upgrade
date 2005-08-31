@@ -10,7 +10,7 @@ options = GetOptions(ARGV,
 		"POPT_AUTOHELP",
 		"POPT_COMMON_SAMBA",
 		"POPT_COMMON_VERSION",
-		'ldif',
+		'targetdir=s',
 		'quiet', 'blank');
 
 if (options == undefined) {
@@ -32,13 +32,6 @@ function message()
 	}
 }
 
-function ldifprint(data)
-{
-	if (options.ldif != undefined) {
-		print(data);
-	}
-}
-
 /*
  show some help
 */
@@ -48,7 +41,7 @@ function ShowHelp()
 Samba4 import tool
 
 provision [options] <libdir> <smbconf>
- --ldif				Dump LDIF
+ --targetdir=DIR    Output to specified directory
  --quiet			Be quiet
  --blank			do not add users or groups, just the structure
 
@@ -73,11 +66,27 @@ if (samba3 == undefined) {
 	exit(1);
 }
 
+
+
 message("Provisioning\n");
 var subobj = upgrade_provision(samba3);
-provision(subobj, message, options.blank);
+var paths;
+if (options.targetdir != undefined) {
+	paths = new Object();
+	paths.smbconf = sprintf("%s/smb.conf", options.targetdir);
+	var ldbs = new Array("hklm","hkcr","hku","hkcu","hkpd","hkpt","samdb","rootdse","secrets","winsdb");
+	for (var i in ldbs) {
+		var n = ldbs[i];
+		paths[n] = sprintf("tdb://%s/%s.ldb", options.targetdir, n);
+	}
+	paths.dns = options.targetdir+"/dns.zone";
+} else {
+	paths = provision_default_paths(subobj);;
+}
 
-var ret = upgrade(subobj,samba3,message);
+provision(subobj, message, options.blank,paths);
+
+var ret = upgrade(subobj,samba3,message,paths);
 if (ret > 0) {
 	message("Failed to import %d entries\n", ret);
 } else {
