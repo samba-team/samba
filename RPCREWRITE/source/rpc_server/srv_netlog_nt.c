@@ -284,14 +284,14 @@ NTSTATUS _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u
 			sizeof(fstring),q_u->uni_logon_clnt.uni_str_len*2,0);
 
 	/* Save the client challenge to the server. */
-	memcpy(p->dc->clnt_cred.challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
+	memcpy(p->dc->clnt_chal.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
 
 	/* Create a server challenge for the client */
 	/* Set this to a random value. */
-	generate_random_buffer(p->dc->srv_cred.challenge.data, 8);
+	generate_random_buffer(p->dc->srv_chal.data, 8);
 	
 	/* set up the LSA REQUEST CHALLENGE response */
-	init_net_r_req_chal(r_u, &p->dc->srv_cred.challenge, NT_STATUS_OK);
+	init_net_r_req_chal(r_u, &p->dc->srv_chal, NT_STATUS_OK);
 	
 	p->dc->challenge_sent = True;
 
@@ -316,6 +316,7 @@ NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 {
 	fstring mach_acct;
 	fstring remote_machine;
+	DOM_CHAL srv_chal_out;
 
 	if (!p->dc || !p->dc->challenge_sent) {
 		return NT_STATUS_ACCESS_DENIED;
@@ -331,7 +332,11 @@ NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 	}
 
 	/* From the client / server challenges and md4 password, generate sess key */
-	creds_server_init(p->dc);
+	creds_server_init(p->dc,
+			&p->dc->clnt_chal,	/* Stored client chal. */
+			&p->dc->srv_chal,	/* Stored server chal. */
+			p->dc->mach_pw,
+			&srv_chal_out);	
 
 	/* Check client credentials are valid. */
 	if (!creds_server_check(p->dc, &q_u->clnt_chal)) {
@@ -347,7 +352,7 @@ NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 
 	/* set up the LSA AUTH response */
 	/* Return the server credentials. */
-	init_net_r_auth(r_u, &p->dc->srv_cred.challenge, NT_STATUS_OK);
+	init_net_r_auth(r_u, &srv_chal_out, NT_STATUS_OK);
 
 	return r_u->status;
 }
@@ -373,6 +378,7 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	NEG_FLAGS srv_flgs;
 	fstring mach_acct;
 	fstring remote_machine;
+	DOM_CHAL srv_chal_out;
 
 	if (!p->dc || !p->dc->challenge_sent) {
 		return NT_STATUS_ACCESS_DENIED;
@@ -395,7 +401,11 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	}
 
 	/* From the client / server challenges and md4 password, generate sess key */
-	creds_server_init(p->dc);
+	creds_server_init(p->dc,
+			&p->dc->clnt_chal,	/* Stored client chal. */
+			&p->dc->srv_chal,	/* Stored server chal. */
+			p->dc->mach_pw,
+			&srv_chal_out);	
 
 	/* Check client credentials are valid. */
 	if (!creds_server_check(p->dc, &q_u->clnt_chal)) {
@@ -412,7 +422,7 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	}
 
 	/* set up the LSA AUTH 2 response */
-	init_net_r_auth_2(r_u, &p->dc->srv_cred.challenge, &srv_flgs, NT_STATUS_OK);
+	init_net_r_auth_2(r_u, &srv_chal_out, &srv_flgs, NT_STATUS_OK);
 
 	server_auth2_negotiated = True;
 	last_dcinfo = *p->dc;
@@ -433,6 +443,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	unsigned char pwd[16];
 	int i;
 	uint32 acct_ctrl;
+	DOM_CRED cred_out;
 	const uchar *old_pw;
 
 	if (!p->dc || !p->dc->authenticated) {
@@ -449,7 +460,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	/* Do the second part of the credentials chain. This is split out here
 	   so it can be optional for a failed logon. */
 
-	server_reseed(p->dc);
+	creds_reseed_server(p->dc, &cred_out);
 
 	DEBUG(5,("_net_srv_pwset: %d\n", __LINE__));
 
@@ -525,7 +536,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	}
 
 	/* set up the LSA Server Password Set response */
-	init_net_r_srv_pwset(r_u, &p->dc->srv_cred, status);
+	init_net_r_srv_pwset(r_u, &cred_out, status);
 
 	pdb_free_sam(&sampass);
 	return r_u->status;
@@ -557,11 +568,9 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 
 	/* what happens if we get a logoff for an unknown user? */
 
-	server_reseed(p->dc);
-
 	/* XXXX maybe we want to say 'no', reject the client's credentials */
 	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
-	memcpy(&r_u->srv_creds, &p->dc->srv_cred, sizeof(r_u->srv_creds));
+	creds_reseed_server(p->dc, &r_u->srv_creds);
 
 	r_u->status = NT_STATUS_OK;
 
@@ -621,9 +630,6 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 			p->dc->remote_machine, p->dc->mach_acct ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
-
-	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
-	memcpy(&r_u->srv_creds, &p->dc->srv_cred, sizeof(r_u->srv_creds));
 
 	/* find the username */
     
@@ -748,7 +754,8 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	/* moved from right after deal_with_creds above, since we weren't
 	   supposed to update unless logon was successful */
 
-	server_reseed(p->dc);
+	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
+	creds_reseed_server(p->dc, &r_u->srv_creds);
     
 	if (server_info->guest) {
 		/* We don't like guest domain logons... */

@@ -135,9 +135,9 @@ struct handle_list {
 /* Domain controller authentication protocol info */
 struct dcinfo {
 	uint32 sequence; /* "timestamp" from client. */
-	DOM_CRED seed_cred; 
-	DOM_CRED clnt_cred; /* Client credential */
-	DOM_CRED srv_cred;  /* Server credential */
+	DOM_CHAL seed_chal; 
+	DOM_CHAL clnt_chal; /* Client credential */
+	DOM_CHAL srv_chal;  /* Server credential */
  
 	uchar  sess_key[8]; /* Session key */
 	uchar  mach_pw[16];   /* md4(machine password) */
