@@ -120,7 +120,7 @@ const struct ldb_map_attribute samba3_attributes[] =
 
 	/* sambaNTPassword -> ntPwdHash*/
 	{
-		.local_name = "badPwdCount",
+		.local_name = "ntPwdHash",
 		.type = MAP_RENAME,
 		.u.rename.remote_name = "sambaNTPassword",
 	},
