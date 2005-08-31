@@ -8,6 +8,7 @@
 #include "ldb/modules/ldb_map.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 /* FIXME: 
  * sambaSID -> member  (dn!)
@@ -79,6 +80,51 @@ static struct ldb_val convert_unix_name2id(struct ldb_module *module, TALLOC_CTX
 	/* FIXME */
 
 	return ldb_val_dup(ctx, val);
+}
+
+static struct ldb_val encode_sid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
+{
+	struct dom_sid *sid = dom_sid_parse_talloc(ctx, (char *)val->data);
+	struct ldb_val *out = talloc_zero(out, struct ldb_val);
+	NTSTATUS status;
+
+	if (sid == NULL) {
+		return *out;
+	}
+	status = ndr_push_struct_blob(out, ctx, sid, 
+				      (ndr_push_flags_fn_t)ndr_push_dom_sid);
+	talloc_free(sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return *out;
+	}
+
+	return *out;
+}
+
+static struct ldb_val decode_sid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
+{
+	struct dom_sid *sid;
+	NTSTATUS status;
+	struct ldb_val *out = talloc_zero(ctx, struct ldb_val);
+	
+	sid = talloc(ctx, struct dom_sid);
+	if (sid == NULL) {
+		return *out;
+	}
+	status = ndr_pull_struct_blob(val, sid, sid, 
+				      (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(sid);
+		return *out;
+	}
+	out->data = (uint8_t *)dom_sid_string(ctx, sid);
+	talloc_free(sid);
+	if (out->data == NULL) {
+		return *out;
+	}
+	out->length = strlen((const char *)out->data);
+
+	return *out;
 }
 
 const struct ldb_map_objectclass samba3_objectclasses[] = {
@@ -304,8 +350,10 @@ const struct ldb_map_attribute samba3_attributes[] =
 	/* sambaSID -> objectSid*/
 	{
 		.local_name = "objectSid",
-		.type = MAP_RENAME,
-		.u.rename.remote_name = "sambaSID", 
+		.type = MAP_CONVERT,
+		.u.convert.remote_name = "sambaSID", 
+		.u.convert.convert_local = decode_sid,
+		.u.convert.convert_remote = encode_sid,
 	},
 
 	/* sambaPwdLastSet -> pwdLastSet */
