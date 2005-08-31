@@ -560,6 +560,15 @@ void prs_force_dynamic(prs_struct *ps)
 }
 
 /*******************************************************************
+ Associate a session key with a parse struct.
+ ********************************************************************/
+
+void prs_set_session_key(prs_struct *ps, const char sess_key[16])
+{
+	ps->sess_key = sess_key;
+}
+
+/*******************************************************************
  Stream a uint8.
  ********************************************************************/
 
@@ -1382,7 +1391,7 @@ int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps, TALLOC_CTX *me
  hash a stream.
  ********************************************************************/
 
-BOOL prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16], int len)
+BOOL prs_hash1(prs_struct *ps, uint32 offset, int len)
 {
 	char *q;
 
@@ -1391,10 +1400,10 @@ BOOL prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16], int len)
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("prs_hash1\n"));
-	dump_data(100, sess_key, 16);
+	dump_data(100, ps->sess_key, 16);
 	dump_data(100, q, len);
 #endif
-	SamOEMhash((uchar *) q, sess_key, len);
+	SamOEMhash((uchar *) q, ps->sess_key, len);
 
 #ifdef DEBUG_PASSWORD
 	dump_data(100, q, len);

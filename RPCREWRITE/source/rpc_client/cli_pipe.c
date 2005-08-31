@@ -1786,7 +1786,7 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 
 	if (pipe_idx == PI_NETLOGON) {
 		/* Set up a netlogon credential chain for a netlogon pipe. */
-		result->netlog_creds = TALLOC_ZERO_P(mem_ctx, struct pipe_netlogon_creds);
+		result->netlog_creds = TALLOC_ZERO_P(mem_ctx, struct dcinfo);
 		if (result->netlog_creds == NULL) {
 			talloc_destroy(result->mem_ctx);
 			return NULL;
@@ -1973,93 +1973,50 @@ struct rpc_pipe_client *cli_rpc_pipe_open_spnego_ntlmssp(struct cli_state *cli,
 static struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
 							const char *domain)
 {
-	uint32 sec_chan_type = 0;
 	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
-	DOM_CHAL clnt_chal, srv_chal, rcv_chal;
-	const char *server_name;
-	const char *account_name;
-	TALLOC_CTX *mem_ctx = NULL;
-	uint8  mach_pwd[16];
-	unsigned char *sess_key_p = NULL;
-	DOM_CRED *cl_cred_p = NULL;
+	uint32 sec_chan_type = 0;
+	char machine_pwd[16];
+	fstring machine_account;
 	NTSTATUS result;
-
-	/* Get the machine account credentials from secrets.tdb. */
-	if (!get_trust_pw(domain, mach_pwd, &sec_chan_type)) {
-		DEBUG(0, ("get_schannel_session_key: could not fetch trust account password for domain '%s'\n", domain));
-		return NULL;
-	}
 
 	netlogon_pipe = cli_rpc_pipe_open_noauth(cli, PI_NETLOGON);
 	if (!netlogon_pipe) {
 		return NULL;
 	}
 
-	sess_key_p = netlogon_pipe->netlog_creds->nl_sess_key;
-	cl_cred_p = &netlogon_pipe->netlog_creds->nl_clnt_cred;
+	/* Get the machine account credentials from secrets.tdb. */
+	if (!get_trust_pw(domain, machine_pwd, &sec_chan_type)) {
+		DEBUG(0, ("get_schannel_session_key: could not fetch "
+			"trust account password for domain '%s'\n",
+			domain));
+		cli_rpc_pipe_close(netlogon_pipe);
+		return NULL;
+	}
 
-	/* Use this for temporary tallocs as the netlogon pipe is temporary. */
-	mem_ctx = netlogon_pipe->mem_ctx;
-
-	generate_random_buffer(clnt_chal.data, 8);
-
-	server_name = talloc_asprintf(mem_ctx, "\\\\%s", cli->desthost);
-                                                                                                                     
-	/* if we are a DC and this is a trusted domain, then we need to use our
-		domain name in the net_req_auth2() request */
-                                                                                                                     
 	if ( IS_DC ) {
-		account_name = talloc_asprintf( mem_ctx, "%s$", lp_workgroup() );
-	} else {
-		/* Hmmm. Is this correct for trusted domains when we're a member server ? JRA. */
-		if (strequal(domain, lp_workgroup())) {
-			account_name = talloc_asprintf(mem_ctx, "%s$", global_myname());
-		} else {
-			account_name = talloc_asprintf(mem_ctx, "%s$", domain);
-		}
-	}
+		fstrcpy( machine_account, lp_workgroup() );
+        } else {
+                /* Hmmm. Is this correct for trusted domains when we're a member server ? JRA. */
+                if (strequal(domain, lp_workgroup())) {
+                        fstrcpy(machine_account, global_myname());
+                } else {
+                        fstrcpy(machine_account, domain);
+                }
+        }
 
-	if ((server_name == NULL) || (account_name == NULL)) {
-		cli_rpc_pipe_close(netlogon_pipe);
-		return NULL;
-	}
-
-	result = rpccli_net_req_chal(netlogon_pipe, server_name,
-					global_myname(), &clnt_chal, &srv_chal);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(3,("get_schannel_session_key: rpccli_net_req_chal failed with result %s\n",
-			nt_errstr(result) ));
-		cli_rpc_pipe_close(netlogon_pipe);
-		return NULL;
-	}
-
-	/**************** Long-term Session key **************/
-
-	/* calculate the session key */
-	cred_session_key(&clnt_chal, &srv_chal, mach_pwd, sess_key_p);
-	memset(&sess_key_p[8], '\0', 8);
-
-	/* calculate auth2 credentials */
-	cred_create_zerotime(sess_key_p, &clnt_chal, &cl_cred_p->challenge);
-
-	result = rpccli_net_auth2(netlogon_pipe, server_name,
-				account_name, sec_chan_type, global_myname(),
-				&cl_cred_p->challenge,
-				&neg_flags,
-				&rcv_chal);
+	result = rpccli_netlogon_setup_creds(netlogon_pipe,
+					cli->desthost,
+					domain,
+					machine_account,
+					machine_pwd,
+					sec_chan_type,
+					&neg_flags);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(3,("get_schannel_session_key: rpccli_net_auth2 failed with result %s\n",
+		DEBUG(3,("get_schannel_session_key: rpccli_netlogon_setup_creds "
+			"failed with result %s\n",
 			nt_errstr(result) ));
-		cli_rpc_pipe_close(netlogon_pipe);
-		return NULL;
-	}
-
-	if (!cred_assert_zerotime(&rcv_chal, sess_key_p, &srv_chal)) {
-		DEBUG(0, ("get_schannel_session_key: Server %s replied with bad credential\n",
-			cli->desthost));
 		cli_rpc_pipe_close(netlogon_pipe);
 		return NULL;
 	}
@@ -2142,7 +2099,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel(struct cli_state *cli,
 
 	result = cli_rpc_pipe_open_schannel_with_key(cli, pipe_idx,
 				auth_level,
-				netlogon_pipe->netlog_creds->nl_sess_key,
+				netlogon_pipe->netlog_creds->sess_key,
 				domain);
 
 	/* Now we've bound using the session key we can close the netlog pipe. */

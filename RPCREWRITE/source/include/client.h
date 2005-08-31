@@ -87,7 +87,7 @@ struct rpc_pipe_client {
 	struct cli_pipe_auth_data auth;
 
 	/* The following is only non-null on a netlogon pipe. */
-	struct dcinfo *netlog_creds;
+	struct dcinfo *dc;
 };
 
 struct cli_state {

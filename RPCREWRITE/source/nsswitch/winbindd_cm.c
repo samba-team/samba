@@ -1195,8 +1195,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	/**************** Long-term Session key **************/
 
 	/* calculate the session key */
-	cred_session_key(&clnt_chal, &srv_chal, mach_pwd, conn->sess_key);
-	memset((char *)conn->sess_key+8, '\0', 8);
+	cred_create_session_key(&clnt_chal, &srv_chal, mach_pwd, conn->sess_key);
 
 	/* calculate auth2 credentials */
 	zerotime.time = 0;

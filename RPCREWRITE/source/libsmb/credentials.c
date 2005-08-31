@@ -176,17 +176,11 @@ BOOL creds_server_step(struct dcinfo *dc, const DOM_CRED *received_cred)
 	return creds_server_check(dc, &received_cred->challenge);
 }
 
-/*
-  stores new seed in client credentials
-  jmcd - Bug #2953 - moved this functionality out of deal_with_creds, because we're
-  not supposed to move to the next step in the chain if a nonexistent user tries to logon
-*/
-
 /****************************************************************************
- Replace current seed cred and return authenticator.
+ Replace current seed chal. Internal function - due to split server step below.
 ****************************************************************************/
 
-void creds_reseed_server(struct dcinfo *dc, DOM_CRED *cred_out)
+static void creds_reseed(struct dcinfo *dc)
 {
 	DOM_CHAL time_chal;
 
@@ -195,7 +189,22 @@ void creds_reseed_server(struct dcinfo *dc, DOM_CRED *cred_out)
 
 	dc->seed_chal = time_chal;
 
-	DEBUG(5,("cred_server_reseed: seed %s\n", credstr(dc->seed_chal.data) ));
+	DEBUG(5,("cred_reseed: seed %s\n", credstr(dc->seed_chal.data) ));
+}
+
+/*
+  stores new seed in client credentials
+  jmcd - Bug #2953 - moved this functionality out of deal_with_creds, because we're
+  not supposed to move to the next step in the chain if a nonexistent user tries to logon
+*/
+
+/****************************************************************************
+ Replace current seed chal and return authenticator cred.
+****************************************************************************/
+
+void creds_reseed_server(struct dcinfo *dc, DOM_CRED *cred_out)
+{
+	creds_reseed(dc);
 
 	cred_out->timestamp.time = dc->sequence + 1;
 	cred_out->challenge = dc->srv_chal;
@@ -270,199 +279,12 @@ BOOL creds_client_check(const struct dcinfo *dc, const DOM_CHAL *rcv_srv_chal_in
   the server
 ****************************************************************************/
 
-#if 0
- void creds_client_authenticator(struct creds_CredentialState *creds,
-                                struct netr_Authenticator *next)
+void creds_client_step(struct dcinfo *dc, DOM_CRED *next_cred_out)
 {
-        creds->sequence += 2;
-        creds_step(creds);
+        dc->sequence += 2;
+	creds_step(dc);
+	creds_reseed(dc);
 
-	next->cred = creds->client;
-	next->timestamp = creds->sequence;
+	next_cred_out->challenge = dc->clnt_chal;
+	next_cred_out->timestamp.time = dc->sequence;
 }
-
-
-/****************************************************************************
- Create a credential.
-
-Input:
-      8 byte sesssion key
-      8 byte stored credential
-      4 byte timestamp
-
-Output:
-      8 byte credential
-****************************************************************************/
-
-void cred_create(const uchar session_key_in[8],
-		DOM_CHAL *stor_cred_in,
-		UTIME timestamp,
-		DOM_CHAL *cred_out)
-{
-	DOM_CHAL time_cred;
-
-	SIVAL(time_cred.data, 0, IVAL(stor_cred_in->data, 0) + timestamp.time);
-	SIVAL(time_cred.data, 4, IVAL(stor_cred_in->data, 4));
-
-	cred_hash2(cred_out->data, time_cred.data, session_key_in);
-
-	/* debug output*/
-	DEBUG(4,("cred_create\n"));
-
-	DEBUG(5,("	sess_key_in : %s\n", credstr(session_key_in)));
-	DEBUG(5,("	stor_cred_in: %s\n", credstr(stor_cred_in->data)));
-	DEBUG(5,("	timestamp: %x\n"    , timestamp.time));
-	DEBUG(5,("	timecred : %s\n", credstr(time_cred.data)));
-	DEBUG(5,("	calc_cred_out: %s\n", credstr(cred_out->data)));
-}
-
-/****************************************************************************
- Creates a supplied. Assume zero timestamp. Convenience function.
-****************************************************************************/
-
-void cred_create_zerotime(const uchar session_key_in[8],
-			DOM_CHAL *stor_cred_in,
-			DOM_CHAL *cred_out)
-{
-	UTIME ts;
-	zerotime.time = 0;
-	cred_create(session_key_in, stor_cred_in, zerotime, cred_out);
-}
-
-/****************************************************************************
- Check a supplied credential.
-
-Input:
-      8 byte received credential
-      8 byte sesssion key
-      8 byte stored credential
-      4 byte timestamp
-
-Output:
-      returns 1 if computed credential matches received credential
-      returns 0 otherwise
-****************************************************************************/
-
-BOOL cred_assert(const DOM_CHAL *cred_received_in,
-		const uchar session_key_in[8],
-		const DOM_CHAL *stored_cred_in,
-		UTIME timestamp_in)
-{
-	DOM_CHAL cred2;
-
-	cred_create(session_key_in, stored_cred_in, timestamp_in, &cred2);
-
-	/* debug output*/
-	DEBUG(4,("cred_assert\n"));
-
-	DEBUG(5,("	challenge : %s\n", credstr(cred_received_in->data)));
-	DEBUG(5,("	calculated: %s\n", credstr(cred2.data)));
-
-	if (memcmp(cred_received_in->data, cred2.data, 8) == 0) {
-		DEBUG(5, ("credentials check ok\n"));
-		return True;
-	} else {
-		DEBUG(5, ("credentials check wrong\n"));
-		return False;
-	}
-}
-
-/****************************************************************************
- Checks a supplied credential. Assume zero timestamp. Convenience function.
-****************************************************************************/
-
-BOOL cred_assert_zerotime(const DOM_CHAL *cred_received_in,
-			const uchar session_key_in[8],
-			const DOM_CHAL *stored_cred_in)
-{
-	UTIME ts;
-	zerotime.time = 0;
-	return cred_assert(cred_received_in, session_key_in, stored_cred_in, ts);
-}
-
-/****************************************************************************
- Checks credentials; generates next step in the credential chain.
-****************************************************************************/
-
-BOOL clnt_deal_with_creds(const uchar sess_key_in[8],
-			const DOM_CRED *rcv_cred_in,
-			const DOM_CRED *sto_cred_in,
-			DOM_CRED *cred_out)
-{
-	UTIME new_time;
-	uint32 new_cred;
-
-	DEBUG(5,("clnt_deal_with_creds: %d\n", __LINE__));
-
-	/* increment time by one second */
-	new_time.time = sto_cred_in->timestamp.time + 1;
-
-	/* check that the received credentials are valid */
-	if (!cred_assert(&rcv_cred_in->challenge, sess_key_in,
-			 &sto_cred_in->challenge, new_time))
-	{
-		return False;
-	}
-
-	/* New creds based on old. */
-	*cred_out = *sto_cred_in;
-
-	/* first 4 bytes of the new seed is old client 4 bytes + clnt time + 1 */
-	new_cred = IVAL(sto_cred_in->challenge.data, 0);
-	new_cred += new_time.time;
-
-	/* store new seed in outgoing credentials */
-	SIVAL(cred_out->challenge.data, 0, new_cred);
-
-	DEBUG(5,("	new clnt cred: %s\n", credstr(cred_out->challenge.data)));
-	return True;
-}
-
-/****************************************************************************
- Checks credentials; generates next step in the credential chain.
-****************************************************************************/
-
-BOOL srv_deal_with_creds(const uchar sess_key_in[8],
-			const DOM_CRED *sto_cred_in, 
-			const DOM_CRED *rcv_cred_in,
-			DOM_CRED *rtn_cred_out)
-{
-	UTIME new_time;
-	uint32 new_cred;
-
-	DEBUG(5,("deal_with_creds: %d\n", __LINE__));
-
-	/* check that the received client credentials are valid */
-	if (!cred_assert(&rcv_cred->challenge, sess_key_in,
-                    &sto_cred->challenge, rcv_cred->timestamp))
-	{
-		return False;
-	}
-
-	/* increment client time by one second */
-	new_clnt_time.time = rcv_clnt_cred->timestamp.time + 1;
-
-	/* first 4 bytes of the new seed is old client 4 bytes + clnt time + 1 */
-	new_cred = IVAL(sto_clnt_cred->challenge.data, 0);
-	new_cred += new_clnt_time.time;
-
-	DEBUG(5,("deal_with_creds: new_cred[0]=%x\n", new_cred));
-
-	/* doesn't matter that server time is 0 */
-	rtn_srv_cred->timestamp.time = 0;
-
-	DEBUG(5,("deal_with_creds: new_clnt_time=%x\n", new_clnt_time.time));
-
-	/* create return credentials for inclusion in the reply */
-	cred_create(sess_key, &sto_clnt_cred->challenge, new_clnt_time,
-	            &rtn_srv_cred->challenge);
-	
-	DEBUG(5,("deal_with_creds: clnt_cred=%s\n", credstr(sto_clnt_cred->challenge.data)));
-
-	/* Bug #2953 - don't store new seed in client credentials 
-	   here, because we need to make sure we're moving forward first
-	 */
-
-	return True;
-}
-#endif
