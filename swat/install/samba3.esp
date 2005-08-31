@@ -19,11 +19,13 @@ if (form['submit'] == "Cancel") {
 	redirect("/");
 }
 
-if (form['submit'] == "Import") {
+function confirm_form()
+{
 	var samba3 = samba3_read(form['LIBDIR'], form['SMBCONF']);
 
 	var subobj = upgrade_provision(samba3);
 	var f = FormObj("Import from Samba3", 0, 2);
+	subobj.ADMINPASS = "";
 
 	f.add("REALM", "Realm");
 	f.add("DOMAIN", "Domain Name");
@@ -46,6 +48,10 @@ if (form['submit'] == "Import") {
 	f.submit[0] = "Continue";
 	f.submit[1] = "Cancel";
 	f.display();	
+}
+
+if (form['submit'] == "Import") {
+	confirm_form();
 } else if (form['submit'] == "Continue") {
 	var samba3 = samba3_read(form['LIBDIR'], form['SMBCONF']);
 	assert(samba3 != undefined);
@@ -53,14 +59,25 @@ if (form['submit'] == "Import") {
 	for (r in form) {
 		subobj[r] = form[r];
 	}
-	var paths = provision_default_paths(subobj);
 
-	provision(subobj, writefln, true, paths);
-	upgrade(subobj, samba3, writefln, paths);
+	var goodpass = (subobj.CONFIRM == subobj.ADMINPASS);
 
-	writefln("Reloading smb.conf\n");
-	var lp = loadparm_init();
-	lp.reload();
+	if (!goodpass) {
+		write("<h3>Passwords don't match.  Please try again.</h3>");
+		confirm_form();
+	} else if (subobj.ADMINPASS == "") {
+		write("<h3>You must choose an administrator password.  Please try again.</h3>");
+		confirm_form();
+	} else {
+		var paths = provision_default_paths(subobj);
+
+		provision(subobj, writefln, true, paths);
+		upgrade(subobj, samba3, writefln, paths);
+
+		writefln("Reloading smb.conf\n");
+		var lp = loadparm_init();
+		lp.reload();
+	}
 } else {
 	var f = FormObj("Import from Samba3", 0, 2);
 
