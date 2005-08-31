@@ -109,7 +109,12 @@ static const struct ldb_map_objectclass *map_find_objectclass_local(struct ldb_m
 static int map_is_mappable(struct ldb_map_context *privdat, const struct ldb_message *msg)
 {
 	int i;
-	struct ldb_message_element *el = ldb_msg_find_element(msg, "objectClass");
+	struct ldb_message_element *el;
+
+	if (ldb_dn_is_special(msg->dn))
+		return 0;
+	
+	el = ldb_msg_find_element(msg, "objectClass");
 
 	/* No objectClass... */
 	if (el == NULL) {
@@ -222,8 +227,8 @@ static struct ldb_parse_tree *ldb_map_parse_tree(struct ldb_module *module, TALL
 	attr = map_find_attr_local(privdat, tree->u.equality.attr);
 
 	if (!attr) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "Unable to find local attribute '%s', leaving as is\n", tree->u.equality.attr);
-		map_type = MAP_KEEP;
+		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Unable to find local attribute '%s', removing from parse tree\n", tree->u.equality.attr);
+		map_type = MAP_IGNORE;
 	} else {
 		map_type = attr->type;
 	}
@@ -234,7 +239,7 @@ static struct ldb_parse_tree *ldb_map_parse_tree(struct ldb_module *module, TALL
 	}
 
 	if (map_type == MAP_IGNORE) {
-		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Search on ignored attribute '%s'\n", tree->u.equality.attr);
+		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Not mapping search on ignored attribute '%s'\n", tree->u.equality.attr);
 		return NULL;
 	}
 
@@ -554,20 +559,26 @@ static struct ldb_message *ldb_map_message_incoming(struct ldb_module *module, c
 		switch (map_type) {
 			case MAP_IGNORE:break;
 			case MAP_RENAME:
+				ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Renaming remote attribute %s to %s", attr->u.rename.remote_name, attr->local_name);
 				oldelm = ldb_msg_find_element(mi, attr->u.rename.remote_name);
-				if (!oldelm) continue;
+				if (!oldelm)
+					continue;
 
 				elm = talloc(msg, struct ldb_message_element);
 				elm->name = talloc_strdup(elm, attr->local_name);
 				elm->num_values = oldelm->num_values;
-				elm->values = talloc_reference(elm, oldelm->values);
+				elm->values = talloc_array(elm, struct ldb_val, elm->num_values);
+				for (j = 0; j < oldelm->num_values; j++)
+					elm->values[j] = ldb_val_dup(elm, &oldelm->values[j]);
 
 				ldb_msg_add(module->ldb, msg, elm, oldelm->flags);
 				break;
 				
 			case MAP_CONVERT:
+				ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Converting remote attribute %s to %s", attr->u.rename.remote_name, attr->local_name);
 				oldelm = ldb_msg_find_element(mi, attr->u.rename.remote_name);
-				if (!oldelm) continue;
+				if (!oldelm) 
+					continue;
 
 				elm = talloc(msg, struct ldb_message_element);
 				elm->name = talloc_strdup(elm, attr->local_name);
@@ -581,19 +592,24 @@ static struct ldb_message *ldb_map_message_incoming(struct ldb_module *module, c
 				break;
 
 			case MAP_KEEP:
+				ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Keeping remote attribute %s", attr->local_name);
 				oldelm = ldb_msg_find_element(mi, attr->local_name);
 				if (!oldelm) continue;
 				
 				elm = talloc(msg, struct ldb_message_element);
 
 				elm->num_values = oldelm->num_values;
-				elm->values = talloc_reference(elm, oldelm->values);
+				elm->values = talloc_array(elm, struct ldb_val, elm->num_values);
+				for (j = 0; j < oldelm->num_values; j++)
+					elm->values[j] = ldb_val_dup(elm, &oldelm->values[j]);
+
 				elm->name = talloc_strdup(elm, oldelm->name);
 
 				ldb_msg_add(module->ldb, msg, elm, oldelm->flags);
 				break;
 
 			case MAP_GENERATE:
+				ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Generating local attribute %s", attr->local_name);
 				elm = attr->u.generate.generate_local(module, msg, attr->local_name, mi);
 				if (!elm) continue;
 
@@ -614,18 +630,14 @@ static struct ldb_message *ldb_map_message_incoming(struct ldb_module *module, c
 static int ldb_map_message_outgoing(struct ldb_module *module, const struct ldb_message *mo, struct ldb_message **fb, struct ldb_message **mp)
 {
 	struct ldb_map_context *privdat = map_get_privdat(module);
-	struct ldb_message *msg = talloc_zero(module, struct ldb_message);
 	struct ldb_message_element *elm;
 	int i,j;
 
 	*fb = talloc_zero(module, struct ldb_message);
 	(*fb)->dn = talloc_reference(*fb, mo->dn);
 
-	*mp = msg;
-
-	msg->private_data = mo->private_data;
-	
-	msg->dn = map_local_dn(module, module, mo->dn);
+	*mp = talloc_zero(module, struct ldb_message);
+	(*mp)->dn = map_local_dn(module, module, mo->dn);
 
 	/* Loop over mi and call generate_remote for each attribute */
 	for (i = 0; i < mo->num_elements; i++) {
@@ -649,43 +661,57 @@ static int ldb_map_message_outgoing(struct ldb_module *module, const struct ldb_
 			ldb_msg_add(module->ldb, *fb, elm, mo->elements[i].flags);	
 			break;
 		case MAP_RENAME:
-			elm = talloc(msg, struct ldb_message_element);
+			elm = talloc(*mp, struct ldb_message_element);
 
 			elm->name = talloc_strdup(elm, attr->u.rename.remote_name);
 			elm->num_values = mo->elements[i].num_values;
 			elm->values = talloc_reference(elm, mo->elements[i].values);
 
-			ldb_msg_add(module->ldb, msg, elm, mo->elements[i].flags);
+			ldb_msg_add(module->ldb, *mp, elm, mo->elements[i].flags);
 			break;
 
 		case MAP_CONVERT:
-			elm = talloc(msg, struct ldb_message_element);
+			elm = talloc(*mp, struct ldb_message_element);
 
 			elm->name = talloc_strdup(elm, attr->u.rename.remote_name);
 			elm->num_values = mo->elements[i].num_values;
 			elm->values = talloc_array(elm, struct ldb_val, elm->num_values);
 			
 			for (j = 0; j < elm->num_values; j++) {
-				elm->values[j] = attr->u.convert.convert_local(module, msg, &mo->elements[i].values[j]);
+				elm->values[j] = attr->u.convert.convert_local(module, *mp, &mo->elements[i].values[j]);
 			}
 
-			ldb_msg_add(module->ldb, msg, elm, mo->elements[i].flags);
+			ldb_msg_add(module->ldb, *mp, elm, mo->elements[i].flags);
 			break;
 
 		case MAP_KEEP:
-			elm = talloc(msg, struct ldb_message_element);
+			elm = talloc(*mp, struct ldb_message_element);
 
 			elm->num_values = mo->elements[i].num_values;
 			elm->values = talloc_reference(elm, mo->elements[i].values);
 			elm->name = talloc_strdup(elm, mo->elements[i].name);
 			
-			ldb_msg_add(module->ldb, msg, elm, mo->elements[i].flags);	
+			ldb_msg_add(module->ldb, *mp, elm, mo->elements[i].flags);	
 			break;
 
 		case MAP_GENERATE:
-			attr->u.generate.generate_remote(module, attr->local_name, mo, msg);
+			attr->u.generate.generate_remote(module, attr->local_name, mo, *mp);
 			break;
 		} 
+	}
+
+	if ((*fb)->num_elements == 0) {
+		/* No elements, discard.. */
+		talloc_free(*fb);
+		*fb = NULL;
+	} else {
+		ldb_msg_add_string(module->ldb, *fb, "isMapped", "TRUE");
+	}
+
+	if ((*mp)->num_elements == 0) {
+		/* No elements, discard.. */
+		talloc_free(*mp);
+		*mp = NULL;
 	}
 
 	return 0;
@@ -761,6 +787,7 @@ static int map_search_bytree_fb(struct ldb_module *module, const struct ldb_dn *
 	return ret;
 }
 
+/* Search in the database against which we are mapping */
 static int map_search_bytree_mp(struct ldb_module *module, const struct ldb_dn *base,
 			      enum ldb_scope scope, struct ldb_parse_tree *tree,
 			      const char * const *attrs, struct ldb_message ***res)
@@ -776,6 +803,16 @@ static int map_search_bytree_mp(struct ldb_module *module, const struct ldb_dn *
 	/*- search mapped database */
 
 	new_tree = ldb_map_parse_tree(module, module, tree);
+	if (new_tree == NULL) {
+		/* All attributes used in the parse tree are 
+		 * local, apparently. Fall back to enumerating the complete remote 
+		 * database... Rather a slow search then no results. */
+		new_tree = talloc_zero(module, struct ldb_parse_tree);
+		new_tree->operation = LDB_OP_PRESENT;
+		new_tree->u.present.attr = talloc_strdup(new_tree, "dn");
+		return 0;
+	}
+		
 	newattrs = ldb_map_attrs(module, attrs); 
 	new_base = map_local_dn(module, module, base);
 
@@ -801,9 +838,15 @@ static int map_search_bytree_mp(struct ldb_module *module, const struct ldb_dn *
 	ret = 0;
 
 	for (i = 0; i < mpret; i++) {
-		struct ldb_message *merged = ldb_map_message_incoming(module, attrs, newres[i]);
+		struct ldb_message *merged;
 		struct ldb_message **extrares = NULL;
 		int extraret;
+
+		/* Always get special DN's from the fallback database */
+		if (ldb_dn_is_special(newres[i]->dn))
+			continue;
+
+		merged = ldb_map_message_incoming(module, attrs, newres[i]);
 		
 		/* Merge with additional data from local database */
 		extraret = ldb_next_search(module, merged->dn, LDB_SCOPE_BASE, "", NULL, &extrares);
@@ -815,12 +858,12 @@ static int map_search_bytree_mp(struct ldb_module *module, const struct ldb_dn *
 			talloc_free(newres);
 			return -1;
 		} else if (extraret == 0) {
-			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "No extra data found for remote DN");
+			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "No extra data found for remote DN: %s", ldb_dn_linearize(merged, merged->dn));
 		}
 		
 		if (extraret == 1) {
 			int j;
-			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Extra data found for remote DN");
+			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Extra data found for remote DN: %s", ldb_dn_linearize(merged, merged->dn));
 			for (j = 0; j < extrares[0]->num_elements; j++) {
 				ldb_msg_add(module->ldb, merged, &(extrares[0]->elements[j]), extrares[0]->elements[j].flags);
 			}
@@ -830,7 +873,7 @@ static int map_search_bytree_mp(struct ldb_module *module, const struct ldb_dn *
 			ldb_msg_add_string(module->ldb, merged, "extraMapped", "FALSE");
 		}
 		
-		if (ldb_match_msg(module->ldb, merged, tree, base, scope)) {
+		if (ldb_match_msg(module->ldb, merged, tree, base, scope) != 0) {
 			(*res)[ret] = merged;
 			ret++;
 		} else {
@@ -859,6 +902,12 @@ static int map_search_bytree(struct ldb_module *module, const struct ldb_dn *bas
 	if (ret_fb == -1) 
 		return -1;
 
+	/* special dn's are never mapped.. */
+	if (ldb_dn_is_special(base)) {
+		*res = fbres;
+		return ret_fb;
+	}
+
 	ret_mp = map_search_bytree_mp(module, base, scope, tree, attrs, &mpres);
 	if (ret_mp == -1) {
 		return -1;
@@ -866,6 +915,8 @@ static int map_search_bytree(struct ldb_module *module, const struct ldb_dn *bas
 
 	/* Merge results */
 	*res = talloc_array(module, struct ldb_message *, ret_fb + ret_mp);
+
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Merging %d mapped and %d fallback messages", ret_mp, ret_fb);
 
 	for (i = 0; i < ret_fb; i++) (*res)[i] = fbres[i];
 	for (i = 0; i < ret_mp; i++) (*res)[ret_fb+i] = mpres[i];
@@ -909,22 +960,25 @@ static int map_add(struct ldb_module *module, const struct ldb_message *msg)
 
 	if (ldb_map_message_outgoing(module, msg, &fb, &mp) == -1)
 		return -1;
-		
-	ldb_msg_add_string(module->ldb, fb, "isMapped", "TRUE");
 
-	ret = ldb_next_add_record(module, fb);
-	if (ret == -1) {
-		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Adding fallback record failed");
-		return -1;
-	}
-		
-	ret = ldb_add(privdat->mapped_ldb, mp);
-	if (ret == -1) {
-		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Adding mapped record failed");
-		return -1;
+	if (fb != NULL) {
+		ret = ldb_next_add_record(module, fb);
+		if (ret == -1) {
+			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Adding fallback record failed");
+			return -1;
+		}
 	}
 
 	talloc_free(fb);
+		
+	if (mp != NULL) {
+		ret = ldb_add(privdat->mapped_ldb, mp);
+		if (ret == -1) {
+			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Adding mapped record failed");
+			return -1;
+		}
+	}
+
 	talloc_free(mp);
 
 	return ret;
@@ -946,15 +1000,16 @@ static int map_modify(struct ldb_module *module, const struct ldb_message *msg)
 
 	if (ldb_map_message_outgoing(module, msg, &fb, &mp) == -1)
 		return -1;
-		
-	ldb_msg_add_string(module->ldb, fb, "isMapped", "TRUE");
 
-	ret = ldb_next_modify_record(module, fb);
+	if (fb != NULL) {
+		ret = ldb_next_modify_record(module, fb);
+		talloc_free(fb);
+	}
 
-	ret = ldb_modify(privdat->mapped_ldb, mp);
-
-	talloc_free(fb);
-	talloc_free(mp);
+	if (mp != NULL) {
+		ret = ldb_modify(privdat->mapped_ldb, mp);
+		talloc_free(mp);
+	}
 
 	return ret;
 }
