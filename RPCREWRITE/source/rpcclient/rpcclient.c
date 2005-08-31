@@ -149,7 +149,7 @@ static void fetch_machine_sid(struct cli_state *cli)
 		goto error;
 	}
 
-	result = rpccli_lsa_query_info_policy(cli, mem_ctx, &pol, info_class, 
+	result = rpccli_lsa_query_info_policy(lsapipe, mem_ctx, &pol, info_class, 
 					   &domain_name, &dom_sid);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto error;
@@ -548,22 +548,21 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 		
 	}
 
-     /* Run command */
+	/* Run command */
 
-     if ( cmd_entry->returntype == RPC_RTYPE_NTSTATUS ) {
-          ntresult = cmd_entry->ntfn(cli, mem_ctx, argc, (const char **) argv);
-          if (!NT_STATUS_IS_OK(ntresult)) {
-              printf("result was %s\n", nt_errstr(ntresult));
-          }
-     } else {
-          wresult = cmd_entry->wfn( cli, mem_ctx, argc, (const char **) argv);
-          /* print out the DOS error */
-          if (!W_ERROR_IS_OK(wresult)) {
-                  printf( "result was %s\n", dos_errstr(wresult));
-          }
-          ntresult = W_ERROR_IS_OK(wresult)?NT_STATUS_OK:NT_STATUS_UNSUCCESSFUL;
-     }
-            
+	if ( cmd_entry->returntype == RPC_RTYPE_NTSTATUS ) {
+		ntresult = cmd_entry->ntfn(cli, mem_ctx, argc, (const char **) argv);
+		if (!NT_STATUS_IS_OK(ntresult)) {
+			printf("result was %s\n", nt_errstr(ntresult));
+		}
+	} else {
+		wresult = cmd_entry->wfn( cli, mem_ctx, argc, (const char **) argv);
+		/* print out the DOS error */
+		if (!W_ERROR_IS_OK(wresult)) {
+			printf( "result was %s\n", dos_errstr(wresult));
+		}
+		ntresult = W_ERROR_IS_OK(wresult)?NT_STATUS_OK:NT_STATUS_UNSUCCESSFUL;
+	}
 
 	/* Cleanup */
 

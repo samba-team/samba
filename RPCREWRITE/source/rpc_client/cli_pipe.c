@@ -1786,8 +1786,8 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 
 	if (pipe_idx == PI_NETLOGON) {
 		/* Set up a netlogon credential chain for a netlogon pipe. */
-		result->netlog_creds = TALLOC_ZERO_P(mem_ctx, struct dcinfo);
-		if (result->netlog_creds == NULL) {
+		result->dc = TALLOC_ZERO_P(mem_ctx, struct dcinfo);
+		if (result->dc == NULL) {
 			talloc_destroy(result->mem_ctx);
 			return NULL;
 		}
@@ -2099,7 +2099,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel(struct cli_state *cli,
 
 	result = cli_rpc_pipe_open_schannel_with_key(cli, pipe_idx,
 				auth_level,
-				netlogon_pipe->netlog_creds->sess_key,
+				netlogon_pipe->dc->sess_key,
 				domain);
 
 	/* Now we've bound using the session key we can close the netlog pipe. */

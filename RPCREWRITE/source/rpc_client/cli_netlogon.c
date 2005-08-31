@@ -254,9 +254,9 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 				const char *domain,
 				const char *machine_account,
 				const char machine_pwd[16],
+				uint32 sec_chan_type,
 				uint32 *neg_flags_inout)
 {
-	uint32 sec_chan_type = 0;
 	NTSTATUS result;
 	DOM_CHAL clnt_chal_send;
 	DOM_CHAL srv_chal_recv;
