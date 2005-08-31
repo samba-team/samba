@@ -58,7 +58,7 @@ typedef struct _prs_struct {
 #define RPC_BIG_ENDIAN 		1
 #define RPC_LITTLE_ENDIAN	0
 
-#define RPC_PARSE_ALIGN 4
+#define RPC_PARSE_ALIGN 2
 
 typedef struct _output_data {
 	/*
@@ -134,17 +134,18 @@ struct handle_list {
 
 /* Domain controller authentication protocol info */
 struct dcinfo {
-	DOM_CHAL clnt_chal; /* Initial challenge received from client */
-	DOM_CHAL srv_chal;  /* Initial server challenge */
-	DOM_CRED clnt_cred; /* Last client credential */
-	DOM_CRED srv_cred;  /* Last server credential */
+	uint32 sequence; /* "timestamp" from client. */
+	DOM_CRED seed_cred; 
+	DOM_CRED clnt_cred; /* Client credential */
+	DOM_CRED srv_cred;  /* Server credential */
  
 	uchar  sess_key[8]; /* Session key */
-	uchar  md4pw[16];   /* md4(machine password) */
+	uchar  mach_pw[16];   /* md4(machine password) */
 
 	fstring mach_acct;  /* Machine name we've authenticated. */
 
 	fstring remote_machine;  /* Machine name we've authenticated. */
+	fstring domain;
 
 	BOOL challenge_sent;
 	BOOL got_session_key;
@@ -224,7 +225,7 @@ typedef struct pipes_struct {
 
 	struct pipe_auth_data auth;
 
-	struct dcinfo dc; /* Keeps the creds data from netlogon. */
+	struct dcinfo *dc; /* Keeps the creds data from netlogon. */
 
 	/*
 	 * Windows user info.
