@@ -45,7 +45,7 @@
 /* In Samba4 but not in Samba3:
 */
 
-static struct ldb_val convert_sid_rid(struct ldb_map_context *map, TALLOC_CTX *ctx, const struct ldb_val *val)
+static struct ldb_val convert_sid_rid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
 	printf("Converting SID TO RID *\n");
 
@@ -54,7 +54,7 @@ static struct ldb_val convert_sid_rid(struct ldb_map_context *map, TALLOC_CTX *c
 	return ldb_val_dup(ctx, val);
 }
 
-static struct ldb_val convert_rid_sid(struct ldb_map_context *map, TALLOC_CTX *ctx, const struct ldb_val *val)
+static struct ldb_val convert_rid_sid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
 	printf("Converting RID TO SID *\n");
 
@@ -63,7 +63,7 @@ static struct ldb_val convert_rid_sid(struct ldb_map_context *map, TALLOC_CTX *c
 	return ldb_val_dup(ctx, val);
 }
 
-static struct ldb_val convert_unix_id2name(struct ldb_map_context *map, TALLOC_CTX *ctx, const struct ldb_val *val)
+static struct ldb_val convert_unix_id2name(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
 	printf("Converting UNIX ID to name\n");
 
@@ -72,7 +72,7 @@ static struct ldb_val convert_unix_id2name(struct ldb_map_context *map, TALLOC_C
 	return ldb_val_dup(ctx, val);
 }
 
-static struct ldb_val convert_unix_name2id(struct ldb_map_context *map, TALLOC_CTX *ctx, const struct ldb_val *val)
+static struct ldb_val convert_unix_name2id(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
 	printf("Converting UNIX name to ID\n");
 
