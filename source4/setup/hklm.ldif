@@ -1,6 +1,10 @@
 dn: @INDEXLIST
 @IDXATTR: key
 
+dn: @ATTRIBUTES
+key: CASE_INSENSITIVE
+value: CASE_INSENSITIVE
+
 dn: key=control,key=currentcontrolset,key=system,hive=NONE
 key: control
 
