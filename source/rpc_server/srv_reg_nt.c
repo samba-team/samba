@@ -133,21 +133,24 @@ static WERROR open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY *
 		parent ? parent->name : "NULL", subkeyname));
 
 	/* strip any trailing '\'s */
+
 	pstrcpy( subkeyname2, subkeyname );
 	subkey_len = strlen ( subkeyname2 );
+
 	if ( subkey_len && subkeyname2[subkey_len-1] == '\\' )
 		subkeyname2[subkey_len-1] = '\0';
 
-	if ((regkey=SMB_MALLOC_P(REGISTRY_KEY)) == NULL)
+	if ( !(regkey=SMB_MALLOC_P(REGISTRY_KEY)) )
 		return WERR_NOMEM;
 		
 	ZERO_STRUCTP( regkey );
 	
 	/* Tag this as a Performance Counter Key */
-	if(0==StrnCaseCmp(subkeyname, KEY_HKPD, strlen(KEY_HKPD)))
-	   regkey->type = REG_KEY_HKPD;
+
+	if( StrnCaseCmp(subkeyname, KEY_HKPD, strlen(KEY_HKPD)) == 0 )
+		regkey->type = REG_KEY_HKPD;
 	else
-	    regkey->type = REG_KEY_GENERIC;
+		regkey->type = REG_KEY_GENERIC;
 
 	/* 
 	 * very crazy, but regedit.exe on Win2k will attempt to call 

@@ -38,9 +38,7 @@ REGISTRY_HOOK reg_hooks[] = {
   { KEY_PRINTING,    		&printing_ops },
   { KEY_PRINTING_2K, 		&printing_ops },
   { KEY_PRINTING_PORTS, 	&printing_ops },
-#if 0
   { KEY_EVENTLOG,        	&eventlog_ops }, 
-#endif
   { KEY_SHARES,      		&shares_reg_ops },
 #endif
   { NULL, NULL }
