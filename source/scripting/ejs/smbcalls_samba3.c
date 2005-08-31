@@ -55,6 +55,10 @@ static struct MprVar mprRegistry(struct samba3_regdb *reg)
 		mprAddArray(&ks, i, k);
 	}
 
+	if (i == 0) {
+		mprSetVar(&ks, "length", mprCreateIntegerVar(i));
+	}
+
 	mprSetVar(&mpv, "keys", ks);
 
 	return mpv;
@@ -104,6 +108,11 @@ static struct MprVar mprIdmapDb(struct samba3_idmapdb *db)
 		mprAddArray(&mps, i, mp);
 	}
 
+	if (i == 0) {
+		mprSetVar(&mpv, "length", mprCreateIntegerVar(i));
+	}
+
+
 	mprSetVar(&mpv, "mappings", mps);
 
 	return mpv;
@@ -131,6 +140,11 @@ static struct MprVar mprGroupMappings(struct samba3_groupdb *db)
 		mprAddArray(&mpv, i, g);
 	}
 
+	if (i == 0) {
+		mprSetVar(&mpv, "length", mprCreateIntegerVar(i));
+	}
+
+
 	return mpv;
 }
 
@@ -156,6 +170,10 @@ static struct MprVar mprAliases(struct samba3_groupdb *db)
 		}
 
 		mprSetVar(&a, "members", am);
+	}
+
+	if (i == 0) {
+		mprSetVar(&mpv, "length", mprCreateIntegerVar(i));
 	}
 
 	return mpv;
@@ -219,6 +237,10 @@ static struct MprVar mprSecrets(struct samba3_secrets *sec)
 		mprAddArray(&es, i, mprDomainSecrets(&sec->domains[i]));
 	}
 
+	if (i == 0) {
+		mprSetVar(&es, "length", mprCreateIntegerVar(i));
+	}
+
 	mprSetVar(&mpv, "domains", es);
 
 	es = mprObject("trusted_domains");
@@ -245,6 +267,10 @@ static struct MprVar mprSecrets(struct samba3_secrets *sec)
 		talloc_free(tmp);
 
 		mprAddArray(&es, i, e);
+	}
+
+	if (i == 0) {
+		mprSetVar(&es, "length", mprCreateIntegerVar(i));
 	}
 
 	mprSetVar(&mpv, "trusted_domains", es);
@@ -279,6 +305,10 @@ static struct MprVar mprSecrets(struct samba3_secrets *sec)
 		mprAddArray(&es, i, e);
 	}
 
+	if (i == 0) {
+		mprSetVar(&es, "length", mprCreateIntegerVar(i));
+	}
+
 	mprSetVar(&mpv, "afs_keyfiles", es);
 
 	mprSetVar(&mpv, "ipc_cred", mprCredentials(sec->ipc_cred));
@@ -299,6 +329,10 @@ static struct MprVar mprShares(struct samba3 *samba3)
 		/* FIXME: secdesc */
 
 		mprAddArray(&mpv, i, s);
+	}
+
+	if (i == 0) {
+		mprSetVar(&mpv, "length", mprCreateIntegerVar(i));
 	}
 
 	return mpv;
@@ -348,6 +382,10 @@ static struct MprVar mprSamAccounts(struct samba3 *samba3)
 		mprAddArray(&mpv, i, m);
 	}
 
+	if (i == 0) {
+		mprSetVar(&mpv, "length", mprCreateIntegerVar(i));
+	}
+
 	return mpv;
 }
 
@@ -373,6 +411,10 @@ static struct MprVar mprWinsEntries(struct samba3 *samba3)
 		mprSetVar(&w, "ips", ips);
 		
 		mprAddArray(&mpv, i, w);
+	}
+
+	if (i == 0) {
+		mprSetVar(&mpv, "length", mprCreateIntegerVar(i));
 	}
 
 	return mpv;
