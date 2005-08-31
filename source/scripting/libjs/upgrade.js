@@ -448,26 +448,26 @@ dn: @MAP=samba3sam
 
 	message("Importing users\n");
 	for (var i in samba3.samaccounts) {
-		message("... " + samba3.samaccounts[i].username);
+		var msg = "... " + samba3.samaccounts[i].username;
 		var ldif = upgrade_sam_account(samba3.samaccounts[i],subobj.BASEDN);
 		ok = samdb.add(ldif);
 		if (!ok) { 
-			message("... error: " + samdb.errstring()); 
+			msg = msg + "... error: " + samdb.errstring();
 			ret = ret + 1; 
 		}
-		message("\n");
+		message(msg + "\n");
 	}
 
 	message("Importing groups\n");
 	for (var i in samba3.groupmappings) {
-		message("... " + samba3.groupmappings[i].nt_name);
+		var msg = "... " + samba3.groupmappings[i].nt_name;
 		var ldif = upgrade_sam_group(samba3.groupmappings[i],subobj.BASEDN);
 		ok = samdb.add(ldif);
 		if (!ok) { 
-			message("... error: " + samdb.errstring()); 
+			msg = msg + "... error: " + samdb.errstring();
 			ret = ret + 1; 
 		}
-		message("\n");
+		message(msg + "\n");
 	}
 
 	message("Importing registry data\n");
@@ -480,13 +480,13 @@ dn: @MAP=samba3sam
 		assert(ok);
 		var ldif = upgrade_registry(samba3.registry, hn, regdb);
 		for (var j in ldif) {
-			message("... ... " + j);
+			var msg = "... ... " + j;
 			ok = regdb.add(ldif[j]);
 			if (!ok) { 
-				message("... error: " + regdb.errstring()); 
+				msg = msg + "... error: " + regdb.errstring();
 				ret = ret + 1; 
 			}
-			message("\n");
+			message(msg + "\n");
 		}
 	}
 
@@ -501,4 +501,16 @@ dn: @MAP=samba3sam
 	assert(ok);
 
 	return ret;
+}
+
+function upgrade_verify(subobj, samba3,paths,message)
+{
+	message("Verifying account policies\n");
+	var samldb = ldb_init();
+	var ne = 0;
+
+	var ok = samldb.connect(paths.samdb);
+	assert(ok);
+	
+	// FIXME
 }

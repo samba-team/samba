@@ -1,0 +1,51 @@
+#!/usr/bin/env smbscript
+/* Verifies that the data present in this directory
+ Can be read correctly by Samba4. Do not update 
+ without changing the corresponding TDB file!
+ Written by Jelmer Vernooij, 2005.
+ */
+
+libinclude("base.js");
+
+var path = substr(ARGV[0], 0, -strlen("verify"));
+printf("Reading from %s\n", path);
+
+var s = samba3_read(path, path+"smb.conf");
+assert(s != undefined);
+
+// smb.conf checks
+assert(s.configuration.get("passdb backend") != undefined);
+
+var data = s.configuration.data();
+assert(data != undefined);
+var global = data["global"];
+assert(global != undefined);
+assert(global["passdb backend"] == s.configuration.get("passdb backend"));
+assert(global["passdb backend"] != undefined);
+
+println("smb.conf ok");
+
+assert(s.winsentries.length == 22);
+assert(s.samaccounts.length == 3);
+assert(s.shares.length == 0);
+assert(s.registry.keys.length == 28);
+assert(s.groupmappings.length == 13);
+assert(s.aliases.length == 0);
+assert(s.idmapdb.mappings.length == 4);
+
+println("database entry count correct");
+
+// account policies
+assert(s.policy.min_password_length == 5);
+assert(s.policy.minimum_password_age == 0);
+assert(s.policy.maximum_password_age == 999999999);
+assert(s.policy.refuse_machine_password_change == 0);
+assert(s.policy.reset_count_minutes == 0);
+assert(s.policy.disconnect_time == -1);
+assert(s.policy.user_must_logon_to_change_password == 0);
+assert(s.policy.password_history == 0);
+assert(s.policy.lockout_duration == 0);
+assert(s.policy.bad_lockout_minutes == 0);
+
+println("account policies ok");
+

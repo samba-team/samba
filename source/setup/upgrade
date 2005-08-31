@@ -10,6 +10,7 @@ options = GetOptions(ARGV,
 		"POPT_AUTOHELP",
 		"POPT_COMMON_SAMBA",
 		"POPT_COMMON_VERSION",
+		'verify',
 		'targetdir=s',
 		'quiet', 'blank');
 
@@ -92,4 +93,10 @@ if (ret > 0) {
 } else {
 	message("All OK\n");
 }
-return 0;
+
+if (options.verify != undefined) {
+	message("Verifying...\n");
+	ret = upgrade_verify(subobj, samba3,paths,message);
+}
+
+return ret;
