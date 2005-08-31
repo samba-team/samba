@@ -155,6 +155,7 @@ static int ejs_substr(MprVarHandle eid, int argc, struct MprVar **argv)
 
 	orig = mprToString(argv[0]);
 	start_offset = mprToInt(argv[1]);
+	length = strlen(orig);
 	if (start_offset < 0) start_offset += strlen(orig);
 	if (start_offset < 0 || start_offset > strlen(orig)) {
 		ejsSetErrorMsg(eid, "substr arg 2 out of bounds");
@@ -162,14 +163,12 @@ static int ejs_substr(MprVarHandle eid, int argc, struct MprVar **argv)
 	}
 
 	if (argc == 3) {
-		length = mprToInt(argv[1]);
+		length = mprToInt(argv[2]);
 		if (length < 0) length += strlen(orig) - start_offset;
 		if (length < 0 || length+start_offset > strlen(orig)) {
 			ejsSetErrorMsg(eid, "substr arg 3 out of bounds");
 			return -1;
 		}
-	} else {
-		length = strlen(orig);
 	}
 
 	target = talloc_strndup(mprMemCtx(), orig+start_offset, length);
