@@ -10,5 +10,6 @@ fi
 mkdir -p $PREFIX
 rm -f $PREFIX/*
 
+bin/smbscript ../testprogs/ejs/samba3sam
 bin/smbscript ../testdata/samba3/verify ../testdata/samba3
 bin/smbscript setup/upgrade --verify --targetdir=$PREFIX ../testdata/samba3 ../testdata/samba3/smb.conf
