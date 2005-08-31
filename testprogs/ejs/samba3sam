@@ -1,4 +1,8 @@
 #!/usr/bin/env smbscript
+/* (C) Jelmer Vernooij <jelmer@samba.org> 2005
+   Published under the GNU GPL
+   Sponsored by Google Summer of Code
+ */
 
 libinclude("base.js");
 var mypath = substr(ARGV[0], 0, -strlen("samba3sam"));
@@ -57,17 +61,32 @@ assert(msg['mappedFromDn'] == msg['dn']);
 
 println("Looking up by non-mapped attribute");
 msg = s4.search("(cn=Administrator)");
+assert(msg[0].cn == "Administrator");
 assert(msg.length == 1);
 
 println("Looking up by mapped attribute");
 msg = s4.search("(name=Backup Operators)");
+assert(msg[0].name == "Backup Operators");
 assert(msg.length == 1);
 
 println("Looking up by old name of renamed attribute");
 msg = s4.search("(displayName=Backup Operators)");
-assert(msg.length == 1);
+assert(msg.length == 0);
 
-println("Adding a record");
+println("Looking up mapped entry containing SID");
+msg = s4.search("(cn=Replicator)");
+assert(msg.length == 1);
+assert(msg[0].dn == "cn=Replicator,ou=Groups,ou=Tests,dc=vernstok,dc=nl");
+assert(msg[0].objectSid == "S-1-5-21-4231626423-2410014848-2360679739-552");
+assert(msg[0].mappedFromDn == msg[0].dn);
+
+println("Checking mapping of objectclass");
+var oc = msg[0].objectclass;
+for (var i in oc) {
+	assert(oc[i] == "posixGroup" || oc[i] == "group");
+}
+
+println("Adding a record that will be fallbacked");
 ok = s4.add("
 dn: cn=Foo,dc=idealx,dc=org
 unixName: root
@@ -80,19 +99,26 @@ assert(ok);
 println("Checking for existance of record");
 msg = s4.search("(cn=Foo)", new Array('unixName','lastLogon','cn','showInAdvancedViewOnly'));
 assert(msg.length == 1);
+assert(msg[0].showInAdvancedViewOnly == "TRUE");
+assert(msg[0].cn == "Foo");
+assert(msg[0].unixName == "root");
+assert(msg[0].lastLogon == 20000);
 
-println("Checking for persistence of non-mappable attribute");
-msg = s4.search("(cn=Foo)", new Array('showInAdvancedViewOnly'));
-assert(msg.length == 1);
-
-println("Adding record with mapped attribute in dn");
+println("Adding record that will be mapped");
 ok = s4.add("
-dn: unixName=nobody,dc=idealx,dc=org
-unixName: nobody 
+dn: cn=Niemand,ou=Tests,dc=vernstok,dc=nl
+objectClass: user
+unixName: blah
 cn: Niemand
 ");
 assert(ok);
 
 println("Checking for existance of record (mapped)");
-msg = s4.search("(unixName=nobody)", new Array('unixName','cn','dn'));
+msg = s4.search("(unixName=blah)", new Array('unixName','cn','dn'));
 assert(msg.length == 1);
+
+println("Checking for data in destination database");
+msg = s3.search("(cn=Niemand)");
+assert(msg.length >= 1);
+assert(msg[0].displayName == "Niemand");
+
