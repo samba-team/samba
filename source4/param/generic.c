@@ -68,6 +68,9 @@ static struct param *param_get_add(struct param_context *ctx, const char *sectio
 
 	if (section == NULL) {
 		section = talloc_zero(ctx, struct param_section);
+		if (section == NULL)
+			return NULL;
+
 		section->name = talloc_strdup(section, section_name);
 		DLIST_ADD(ctx->sections, section);
 	}
@@ -75,6 +78,9 @@ static struct param *param_get_add(struct param_context *ctx, const char *sectio
 	p = param_section_get(section, name);
 	if (p == NULL) {
 		p = talloc_zero(section, struct param);
+		if (p == NULL)
+			return NULL;
+
 		p->name = talloc_strdup(p, name);
 		DLIST_ADD(section->parameters, p);
 	}
@@ -146,6 +152,9 @@ void param_set_int(struct param_context *ctx, const char *section, const char *p
 {
 	struct param *p = param_get_add(ctx, section, param);
 
+	if (!p) 
+		return;
+
 	p->value = talloc_asprintf(p, "%d", value);
 }
 
@@ -163,6 +172,9 @@ void param_set_ulong(struct param_context *ctx, const char *section, const char 
 {
 	struct param *p = param_get_add(ctx, section, name);
 
+	if (!p)
+		return;
+
 	p->value = talloc_asprintf(p, "%lu", value);
 }
 
@@ -173,6 +185,9 @@ static BOOL param_sfunc (const char *name, void *_ctx)
 
 	if (section == NULL) {
 		section = talloc_zero(ctx, struct param_section);
+		if (section == NULL)
+			return False;
+
 		section->name = talloc_strdup(section, name);
 
 		DLIST_ADD(ctx->sections, section);
@@ -191,6 +206,9 @@ static BOOL param_pfunc (const char *name, const char *value, void *_ctx)
 
 	if (!p) {
 		p = talloc_zero(ctx->sections, struct param);
+		if (p == NULL)
+			return False;
+
 		p->name = talloc_strdup(p, name);
 		p->value = talloc_strdup(p, value);
 		DLIST_ADD(ctx->sections->parameters, p);
@@ -211,8 +229,10 @@ struct param_context *param_init(TALLOC_CTX *mem_ctx)
 int param_read(struct param_context *ctx, const char *fn)
 {
 	ctx->sections = talloc_zero(ctx, struct param_section);
+	if (ctx->sections == NULL)
+		return -1;
+
 	ctx->sections->name = talloc_strdup(ctx->sections, "global");
-	
 	if (!pm_process( fn, param_sfunc, param_pfunc, ctx)) {
 		return -1;
 	}

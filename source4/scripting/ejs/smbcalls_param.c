@@ -70,7 +70,7 @@ static int ejs_param_get_list(MprVarHandle eid, int argc, char **argv)
 	const char **ret;
 
 	if (argc != 1 && argc != 2) {
-		ejsSetErrorMsg(eid, "param.get invalid argument count");
+		ejsSetErrorMsg(eid, "param.get_list invalid argument count");
 		return -1;
 	}
 
@@ -83,7 +83,7 @@ static int ejs_param_get_list(MprVarHandle eid, int argc, char **argv)
 		ret = param_get_string_list(ctx, NULL, argv[0], NULL);
 	}
 
-	if (ret) {
+	if (ret != NULL) {
 		mpr_Return(eid, mprList("array", ret));
 	} else {
 		mpr_Return(eid, mprCreateUndefinedVar());
