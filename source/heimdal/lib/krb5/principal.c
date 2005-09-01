@@ -91,10 +91,11 @@ krb5_principal_get_comp_string(krb5_context context,
     return princ_ncomp(principal, component);
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_parse_name(krb5_context context,
-		const char *name,
-		krb5_principal *principal)
+krb5_error_code 
+parse_name(krb5_context context,
+	   const char *name,
+	   krb5_boolean short_form,
+	   krb5_principal *principal)
 {
     krb5_error_code ret;
     heim_general_string *comp;
@@ -184,19 +185,29 @@ krb5_parse_name(krb5_context context,
 	}
 	*q++ = c;
     }
-    if(got_realm){
-	realm = malloc(q - start + 1);
-	if (realm == NULL) {
-	    krb5_set_error_string (context, "malloc: out of memory");
-	    ret = ENOMEM;
+    if (got_realm) {
+	if (short_form) {
+	    krb5_set_error_string (context, "realm found in 'short' principal expected to be without one!");
+	    ret = KRB5_PARSE_MALFORMED;
 	    goto exit;
+	} else {
+	    realm = malloc(q - start + 1);
+	    if (realm == NULL) {
+		krb5_set_error_string (context, "malloc: out of memory");
+		ret = ENOMEM;
+		goto exit;
+	    }
+	    memcpy(realm, start, q - start);
+	    realm[q - start] = 0;
 	}
-	memcpy(realm, start, q - start);
-	realm[q - start] = 0;
     }else{
-	ret = krb5_get_default_realm (context, &realm);
-	if (ret)
-	    goto exit;
+	if (short_form) {
+	    ret = krb5_get_default_realm (context, &realm);
+	    if (ret)
+	        goto exit;
+	} else {
+	    realm = NULL;
+	}
 
 	comp[n] = malloc(q - start + 1);
 	if (comp[n] == NULL) {
@@ -229,6 +240,21 @@ exit:
     return ret;
 }
 
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_parse_name(krb5_context context,
+		const char *name,
+		krb5_principal *principal)
+{
+    return parse_name(context, name, FALSE, principal);
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_parse_name_norealm(krb5_context context,
+			const char *name,
+			krb5_principal *principal)
+{
+    return parse_name(context, name, TRUE, principal);
+}
 static const char quotable_chars[] = " \n\t\b\\/@";
 static const char replace_chars[] = " ntb\\/@";
 
@@ -323,12 +349,17 @@ unparse_name(krb5_context context,
     int i;
     krb5_error_code ret;
     /* count length */
-    plen = strlen(princ_realm(principal));
-    if(strcspn(princ_realm(principal), quotable_chars) == plen)
-	len += plen;
-    else
-	len += 2*plen;
-    len++;
+    if (!short_flag) {
+	plen = strlen(princ_realm(principal));
+	if(strcspn(princ_realm(principal), quotable_chars) == plen)
+	    len += plen;
+	else
+	    len += 2*plen;
+	len++;
+    } else {
+	len = 0;
+    }
+
     for(i = 0; i < princ_num_comp(principal); i++){
 	plen = strlen(princ_ncomp(principal, i));
 	if(strcspn(princ_ncomp(principal, i), quotable_chars) == plen)

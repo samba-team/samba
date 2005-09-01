@@ -454,11 +454,11 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 	int count;
 	char *filter = NULL;
 	const char * const *princ_attrs = krb5_attrs;
-	char *p;
 
 	char *princ_str;
 	char *princ_str_talloc;
 	char *short_princ;
+	char *short_princ_talloc;
 
 	char *realm_dn_str;
 
@@ -481,20 +481,24 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 		return ret;
 	}
 
+	ret = krb5_unparse_name_norealm(context, &princ, &short_princ);
+
+	if (ret != 0) {
+		free(princ_str);
+		krb5_set_error_string(context, "LDB_lookup_principal: could not parse principal");
+		krb5_warnx(context, "LDB_lookup_principal: could not parse principal");
+		return ret;
+	}
+
 	princ_str_talloc = talloc_strdup(mem_ctx, princ_str);
-	short_princ = talloc_strdup(mem_ctx, princ_str);
+	short_princ_talloc = talloc_strdup(mem_ctx, short_princ);
 	free(princ_str);
+	free(short_princ);
 	if (!short_princ || !princ_str_talloc) {
 		krb5_set_error_string(context, "LDB_lookup_principal: talloc_strdup() failed!");
 		return ENOMEM;
 	}
 
-	p = strchr(short_princ, '@');
-	if (p) {
-		p[0] = '\0';
-	}
-
-	
 	switch (ent_type) {
 	case HDB_LDB_ENT_TYPE_KRBTGT:
 		filter = talloc_asprintf(mem_ctx, "(&(objectClass=user)(samAccountName=%s))", 
@@ -502,15 +506,15 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 		break;
 	case HDB_LDB_ENT_TYPE_CLIENT:
 		filter = talloc_asprintf(mem_ctx, "(&(objectClass=user)(|(samAccountName=%s)(userPrincipalName=%s)))", 
-					 short_princ, princ_str_talloc);
+					 short_princ_talloc, princ_str_talloc);
 		break;
 	case HDB_LDB_ENT_TYPE_SERVER:
 		filter = talloc_asprintf(mem_ctx, "(&(objectClass=user)(|(samAccountName=%s)(servicePrincipalName=%s)))", 
-					 short_princ, short_princ);
+					 short_princ_talloc, short_princ_talloc);
 		break;
 	case HDB_LDB_ENT_TYPE_ANY:
 		filter = talloc_asprintf(mem_ctx, "(&(objectClass=user)(|(|(samAccountName=%s)(servicePrincipalName=%s))(userPrincipalName=%s)))", 
-					 short_princ, short_princ, princ_str_talloc);
+					 short_princ_talloc, short_princ_talloc, princ_str_talloc);
 		break;
 	}
 
