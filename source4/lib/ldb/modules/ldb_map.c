@@ -71,7 +71,11 @@ static const struct ldb_map_attribute builtin_attribute_maps[] = {
 	{
 		.local_name = "dn",
 		.type = MAP_CONVERT,
-		.u.convert.remote_name = "dn",
+		.u = {
+			.convert = {
+				.remote_name = "dn",
+			}
+		},
 		.u.convert.convert_local = map_convert_local_dn,
 		.u.convert.convert_remote = map_convert_remote_dn,
 	},
