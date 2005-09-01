@@ -115,7 +115,7 @@ BOOL torture_listshares(void)
 	int i;
 	BOOL ret = True;
 	struct libnet_context* libnetctx;
-	const char *binding, *host;
+	const char *binding;
 	struct dcerpc_binding *bind;
 	TALLOC_CTX *mem_ctx;
 
