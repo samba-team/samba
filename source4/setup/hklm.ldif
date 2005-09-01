@@ -34,3 +34,6 @@ key: print
 dn: key=currentcontrolset,key=system,hive=NONE
 key: currentcontrolset
 
+dn: key=Terminal Server,key=control,key=currentcontrolset,key=system,hive=NONE
+key: Terminal Server
+
