@@ -1,3 +1,10 @@
+2005-09-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* socket.c: Add socket_set_ipv6only.
+
+	* roken-common.h: Add socket_set_ipv6only, remove some argument
+	names.
+	
 2005-08-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* strpool.c (rk_strpoolprintf): remove debug printf, plug memory
