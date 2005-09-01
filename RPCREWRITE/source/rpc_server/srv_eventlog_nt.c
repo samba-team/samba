@@ -23,9 +23,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-#define EVENTLOG_VERSION_V1 1 /* Will there be more? */
-static TDB_CONTEXT *evtlog_tdb; /* used for eventlog parameter tdb file */
-
 typedef struct {
 	fstring logname;
 	fstring servername;
@@ -38,117 +35,28 @@ typedef struct {
 
   
 /********************************************************************
-  Write an entry (presumably coming from a registry write) that has an 
-  eventlog parameter to the eventlog tdb.   After this call, it's probably 
-  a good thing to update_eventlog_external to inform any supporting 
-  machinery that a parameter changed.
-********************************************************************/
-
-BOOL write_evtlog_uint32_reg_value(const char *evtlogname, const char *vname, uint32 davalue)
-{
-	fstring evt_keyname;
-	const char **evtlog_list = lp_eventlog_list();
-    
-	if (!evtlog_tdb || !evtlogname || !*evtlogname || !vname || !*vname )
-		return False;
-    
-	/* make sure that we care about the particular eventlog name. 
-	   no bogus filling up of the tdb */
-    
-	if ( !evtlog_list ) 
-		return False;
-
-	for ( /*nothing */; *evtlog_list; evtlog_list++ ) {
-		if ( strequal(evtlogname,*evtlog_list) ) 
-			break;
-	}
-
-	if ( !*evtlog_list ) {
-		DEBUG(0,("write_evtlog_uint32_reg_value: We don't care about eventlogs named %s\n",
-			evtlogname));
-		return False;
-	}
-
-	/* the eventlog name is okay, but we should be checking the 
-	   values that we're keeping at a higher level */
-
-	/* normalize the key */
-
-	fstr_sprintf(evt_keyname, "%s/%s", evtlogname, vname );
-	strupper_m(evt_keyname);
-    
-	DEBUG(10,("write_evtlog_uint32_reg_value: Storing value for [%s], value is %x\n",
-		evt_keyname, davalue));
-
-	tdb_store_uint32(evtlog_tdb, evt_keyname, davalue);
-
-	return True;
-}
-
-/********************************************************************
- Read a parameter from the eventlog_param tdb relevant to eventlogs.
-********************************************************************/
-
-BOOL read_evtlog_uint32_reg_value(const char *evtlogname, const char *vname, uint32 *davalue)
-{
-	fstring evt_keyname;
-	const char **evtlog_list = lp_eventlog_list();
-	uint32 l_davalue;
-    
-	if (!evtlog_tdb || !evtlogname || !*evtlogname || !vname || !*vname )
-		return False;
-
-	if ( !evtlog_list )
-		return False;
-    
-	for ( /* nothing */; *evtlog_list; evtlog_list++ ) {
-		if ( strequal(evtlogname,*evtlog_list) )
-			break;
-	}
-
-	if ( !*evtlog_list ) {
-		DEBUG(0,("read_evtlog_uint32_reg_value: We don't care about eventlogs named %s\n",
-			evtlogname));
-		return False;
-	}
-
-	/* the eventlog name is okay, but we should be checking the values 
-	   that we're keeping at a higher level */
-
-	/* normalize the key */
-	fstr_sprintf( evt_keyname, "%s/%s", evtlogname, vname );
-	strupper_m(evt_keyname);
-    
-	if ( tdb_fetch_uint32(evtlog_tdb, evt_keyname,&l_davalue) == -1 ) {
-		DEBUG(10,("read_evtlog_uint32_reg_value: Read value for [%s], VALUE NOT FOUND\n",
-			evt_keyname));
-		return False;
-	}
-
-	*davalue = l_davalue;
-
-	DEBUG(10,("read_evtlog_uint32_reg_value: Read value for [%s], value is %x\n",
-		evt_keyname, *davalue));
-    
-	return True;
-}
-
-/********************************************************************
  Inform the external eventlog machinery of default values (on startup 
  probably)
 ********************************************************************/
 
-void eventlog_refresh_external_parameters(void)
+void eventlog_refresh_external_parameters( void )
 {
-	const char **evtlog_list = lp_eventlog_list();
+	const char **elogs = lp_eventlog_list();
+	int i;
 
-	if ( !evtlog_list )
+	if ( !elogs )
 		return ;
 
-	for ( /* nothing */; *evtlog_list; evtlog_list++ ) {
-		DEBUG(10,("eventlog_refresh_external_parameters: Refreshing =>[%s]\n",*evtlog_list));	
-		if (!control_eventlog_hook( *evtlog_list)) {
-			DEBUG(0,("eventlog_refresh_external_parameters: failed to refresh [%s]\n",*evtlog_list));
+	for ( i=0; elogs[i]; i++ ) {
+	
+		DEBUG(10,("eventlog_refresh_external_parameters: Refreshing =>[%s]\n", 
+			elogs[i]));	
+		
+		/* FIXME!!!! create a default token for root here and pass it in */
+		
+		if ( !control_eventlog_hook( NULL, elogs[i] ) ) {
+			DEBUG(0,("eventlog_refresh_external_parameters: failed to refresh [%s]\n",
+				elogs[i]));
 		}
 	}  
     
@@ -156,51 +64,11 @@ void eventlog_refresh_external_parameters(void)
 }
 
 /********************************************************************
- Open the eventlog parameter tdb. This code a clone of init_group_mapping.
-********************************************************************/
-
-BOOL init_eventlog_parameters( void )
-{
-	const char *vstring = "INFO/version";
-	int vers_id;
-	
-	if ( evtlog_tdb ) {
-		return True;
-	}
-
-	evtlog_tdb = tdb_open_log(lock_path("eventlog_params.tdb"), 0, TDB_DEFAULT, O_RDWR, 0600);
-	
-	if ( !evtlog_tdb ) {
-	
-		evtlog_tdb = tdb_open_log(lock_path("eventlog_params.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
-		
-		if ( !evtlog_tdb ) {
-			DEBUG(0,("Failed to open or create eventlog_params.tdb\n"));
-			return False;
-		}
-			
-		DEBUG(0,("Created new eventlog parameters db\n"));
-	}
-	
-	vers_id = tdb_fetch_int32( evtlog_tdb, vstring );
-	
-	if ( vers_id != EVENTLOG_VERSION_V1 ) {
-		/* wrong version of DB, or db was just created */
-		tdb_traverse(evtlog_tdb, tdb_traverse_delete_fn, NULL);
-		tdb_store_uint32(evtlog_tdb, vstring, EVENTLOG_VERSION_V1);
-	}
-
-	DEBUG(3,("Cleaning up eventlog parameters db\n"));
-
-	return True;
-}
-
-/********************************************************************
 ********************************************************************/
 
 static void free_eventlog_info(void *ptr)
 {
-	talloc_free( ptr );
+	TALLOC_FREE( ptr );
 }
 
 /********************************************************************
@@ -244,52 +112,75 @@ void policy_handle_to_string(POLICY_HND *handle, fstring *dest)
       OUTPUT: nothing
 ********************************************************************/
 
-BOOL control_eventlog_hook(const char *evtlogname)
+BOOL control_eventlog_hook(NT_USER_TOKEN *token, const char *elogname )
 {
 	char *cmd = lp_eventlog_control_cmd();
 	pstring command;
-	pstring v_name;
 	int ret;
 	int fd = -1;
-	uint32 uiRetention;
-	uint32 uiMaxSize;
+	uint32 uiMaxSize, uiRetention;
+	pstring path;
+	REGISTRY_KEY *keyinfo;
+	REGISTRY_VALUE *val;
+	REGVAL_CTR *values;
+	WERROR wresult;
 
-	if(cmd == NULL || strlen(cmd) == 0) {
-		DEBUG(0, ("control_eventlog_hook: Must define an \"eventlog control command\" entry in the config.\n"));
+	if ( !cmd || !*cmd ) {
+		DEBUG(0, ("control_eventlog_hook: No \"eventlog control command\" defined in smb.conf!\n"));
 		return False;
 	}
 
-	uiRetention = 0x93A80;
-	uiMaxSize = 0x80000;  
-	/* evtlogname=info->logname; */
+	/* set resonable defaults.  512Kb on size and 1 week on time */
+	
+	uiMaxSize = 0x80000;
+	uiRetention = 604800;
+	
+	/* the general idea is to internally open the registry 
+	   key and retreive the values.  That way we can continue 
+	   to use the same fetch/store api that we use in 
+	   srv_reg_nt.c */
 
-	pstrcpy(v_name,"Retention");
-
-	if (!read_evtlog_uint32_reg_value(evtlogname, v_name, &uiRetention)) {
-		DEBUG(0, ("control_eventlog_hook: Warning - can't read Retention for eventlog %s, using default.\n",evtlogname));
+	pstr_sprintf( path, "%s/%s", KEY_EVENTLOG, elogname );
+	wresult = regkey_open_internal( &keyinfo, path, token, REG_KEY_READ );
+	
+	if ( !W_ERROR_IS_OK( wresult ) ) {
+		DEBUG(4,("control_eventlog_hook: Failed to open key [%s] (%s)\n",
+			path, dos_errstr(wresult) ));
+		return False;
 	}
-
-	pstrcpy(v_name,"MaxSize");
-	if (!read_evtlog_uint32_reg_value(evtlogname, v_name, &uiMaxSize)) {
-		DEBUG(0, ("control_eventlog_hook: Warning - can't read MaxSize for eventlog %s, using default.\n",evtlogname));
+	
+	if ( !(values = TALLOC_ZERO_P( keyinfo, REGVAL_CTR )) ) {
+		TALLOC_FREE( keyinfo );
+		DEBUG(0,("control_eventlog_hook: talloc() failed!\n"));
+		
+		return False;
 	}
+	fetch_reg_values( keyinfo, values );
+	
+	if ( (val = regval_ctr_getvalue( values, "Retention" )) != NULL )
+		uiRetention = IVAL( regval_data_p(val), 0 );
 
-	memset(command, 0, sizeof(command));
-	slprintf(command, sizeof(command)-1, "%s \"%s\" %u %u",
+	if ( (val = regval_ctr_getvalue( values, "MaxSize" )) != NULL )
+		uiMaxSize = IVAL( regval_data_p(val), 0 );
+		
+	TALLOC_FREE( keyinfo );
+	
+	/* now run the command */
+
+	pstr_sprintf(command, "%s \"%s\" %u %u",
 		 cmd,
-		 evtlogname,
+		 elogname,
 		 uiRetention,
-		 uiMaxSize);
+		 uiMaxSize );
 
 	DEBUG(10, ("control_eventlog_hook: Running [%s]\n", command));
 	ret = smbrun(command, &fd);
 	DEBUGADD(10, ("returned [%d]\n", ret));
 
-	if(ret != 0) {
-		DEBUG(10, ("control_eventlog_hook: Command returned  [%d]\n", ret));
-		if(fd != -1) {
+	if ( ret != 0 ) {
+		DEBUG(10,("control_eventlog_hook: Command returned  [%d]\n", ret));
+		if (fd != -1 )
 			close(fd);
-		}
 		return False;
 	}
 
@@ -958,27 +849,23 @@ WERROR _eventlog_open_eventlog(pipes_struct *p, EVENTLOG_Q_OPEN_EVENTLOG *q_u, E
 {
 	EventlogInfo *info = NULL;
     
-	if ( !(info = talloc_zero(NULL, EventlogInfo)) ) 
+	if ( !(info = TALLOC_ZERO_P(p->mem_ctx, EventlogInfo)) ) 
 		return WERR_NOMEM;
 
-	if ( q_u->servername.string ) {
-		UNISTR2 *sname = q_u->servername.string;
+	fstrcpy(info->servername, global_myname());
+	fstrcpy(info->logname, "Application");
 
-		rpcstr_pull( info->servername, sname->buffer, sizeof(info->servername), sname->uni_str_len*2, 0 );
-	} else {
-		/* if servername == NULL, use the local computer */
-		fstrcpy(info->servername, global_myname());
-	}
-	DEBUG(10, ("_eventlog_open_eventlog: Using [%s] as the server name.\n", info->servername));
+	if ( q_u->servername.string ) {
+		rpcstr_pull( info->servername, q_u->servername.string->buffer, 
+			sizeof(info->servername), q_u->servername.string->uni_str_len*2, 0 );
+	} 
 
 	if ( q_u->logname.string ) {
-		UNISTR2 *lname = q_u->logname.string;
+		rpcstr_pull( info->logname, q_u->logname.string->buffer, 
+			sizeof(info->logname), q_u->logname.string->uni_str_len*2, 0 );
+	} 
 
-		rpcstr_pull( info->logname, lname->buffer, sizeof(info->logname), lname->uni_str_len*2, 0 );
-	} else {
-		/* if sourcename == NULL, default to "Application" log */
-		fstrcpy(info->logname, "Application");
-	}
+	DEBUG(10, ("_eventlog_open_eventlog: Using [%s] as the server name.\n", info->servername));
 	DEBUG(10, ("_eventlog_open_eventlog: Using [%s] as the source log file.\n", info->logname));
 
 	if ( !create_policy_hnd(p, &r_u->handle, free_eventlog_info, (void *)info) ) {
@@ -1004,15 +891,13 @@ WERROR _eventlog_clear_eventlog(pipes_struct *p, EVENTLOG_Q_CLEAR_EVENTLOG *q_u,
 	EventlogInfo *info = find_eventlog_info_by_hnd(p, &q_u->handle);
 	pstring backup_file_name;
 
-	if ( q_u->backupfile.string ) {
+	pstrcpy( backup_file_name, "" );
+
+	if ( q_u->backupfile.string ) 
 		unistr2_to_ascii(backup_file_name, q_u->backupfile.string, sizeof(backup_file_name));
-		DEBUG(10, ("_eventlog_clear_eventlog: Using [%s] as the backup file name for log [%s].",
-			   backup_file_name, info->logname));
-	} else {
-		pstrcpy( backup_file_name, "" );
-		DEBUG(10, ("_eventlog_clear_eventlog: clearing [%s] log without making a backup.",
-			   info->logname));
-	}
+
+	DEBUG(10, ("_eventlog_clear_eventlog: Using [%s] as the backup file name for log [%s].",
+		   backup_file_name, info->logname));
 
 	if ( !(clear_eventlog_hook(info, backup_file_name)) )
 		return WERR_BADFILE;
