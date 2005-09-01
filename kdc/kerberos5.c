@@ -326,8 +326,9 @@ make_etype_info_entry(krb5_context context, ETYPE_INFO_ENTRY *ent, Key *key)
 {
     ent->etype = key->key.keytype;
     if(key->salt){
-	ALLOC(ent->salttype);
 #if 0
+	ALLOC(ent->salttype);
+
 	if(key->salt->type == hdb_pw_salt)
 	    *ent->salttype = 0; /* or 1? or NULL? */
 	else if(key->salt->type == hdb_afs3_salt)
@@ -342,8 +343,17 @@ make_etype_info_entry(krb5_context context, ETYPE_INFO_ENTRY *ent, Key *key)
 	   *know* what cell you are using (e.g by assuming
 	   that the cell is the same as the realm in lower
 	   case) */
-#else
+#elif 0
+	ALLOC(ent->salttype);
 	*ent->salttype = key->salt->type;
+#else
+	/* 
+	 * We shouldn't sent salttype since its incompatible with the
+	 * specification and its break windows clients.  The afs
+	 * salting problem is solved by using KRB5-PADATA-AFS3-SALT
+	 * implemented in Heimdal 0.7 and later.
+	 */
+	ent->salttype = NULL;
 #endif
 	krb5_copy_data(context, &key->salt->salt,
 		       &ent->salt);
