@@ -240,9 +240,15 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
+	/* work out the domain_dn - useful for so many calls its worth
+	   fetching here */
+	state->domain_dn = samdb_base_dn(state);
+	if (!state->domain_dn) {
+		return NT_STATUS_NO_MEMORY;		
+	}
+
 	ret_domain = gendb_search(state->sam_ldb, mem_ctx, NULL, &msgs_domain, domain_attrs,
-				  "(&(&(nETBIOSName=%s)(objectclass=crossRef))(ncName=*))", 
-				  lp_workgroup());
+				  "(&(objectclass=crossRef)(ncName=%s))", ldb_dn_linearize(mem_ctx, state->domain_dn));
 	
 	if (ret_domain == -1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -252,16 +258,9 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
 
-	/* work out the domain_dn - useful for so many calls its worth
-	   fetching here */
-	state->domain_dn = samdb_result_dn(state, msgs_domain[0], "nCName", NULL);
-	if (!state->domain_dn) {
-		return NT_STATUS_NO_SUCH_DOMAIN;		
-	}
-
 	/* work out the builtin_dn - useful for so many calls its worth
 	   fetching here */
-	state->builtin_dn = samdb_search_dn(state->sam_ldb, mem_ctx, NULL, "objectClass=builtinDomain");
+	state->builtin_dn = samdb_search_dn(state->sam_ldb, mem_ctx, state->domain_dn, "(objectClass=builtinDomain)");
 	if (!state->builtin_dn) {
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
@@ -1062,9 +1061,9 @@ static NTSTATUS lsa_authority_list(struct lsa_policy_state *state, TALLOC_CTX *m
 	}
 
 	domains->domains = talloc_realloc(domains, 
-					    domains->domains,
-					    struct lsa_TrustInformation,
-					    domains->count+1);
+					  domains->domains,
+					  struct lsa_TrustInformation,
+					  domains->count+1);
 	if (domains->domains == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1301,9 +1300,9 @@ static NTSTATUS lsa_OpenAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	}
 	
 	/* check it really exists */
-	astate->account_dn = samdb_search_string(state->sam_ldb, astate,
-						 NULL, "(&(objectSid=%s)(objectClass=group))", 
-						 ldap_encode_ndr_dom_sid(mem_ctx, astate->account_sid));
+	astate->account_dn = samdb_search_dn(state->sam_ldb, astate,
+					     NULL, "(&(objectSid=%s)(objectClass=group))", 
+					     ldap_encode_ndr_dom_sid(mem_ctx, astate->account_sid));
 	if (astate->account_dn == NULL) {
 		talloc_free(astate);
 		return NT_STATUS_NO_SUCH_USER;
@@ -1446,7 +1445,6 @@ static NTSTATUS lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_call,
 	struct ldb_message *msg;
 	struct ldb_message_element el;
 	int i, ret;
-	const char *dn;
 	struct lsa_EnumAccountRights r2;
 
 	sidstr = ldap_encode_ndr_dom_sid(mem_ctx, sid);
@@ -1459,14 +1457,9 @@ static NTSTATUS lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	dn = samdb_search_dn(state->sam_ldb, mem_ctx, NULL, "objectSid=%s", sidstr);
-	if (dn == NULL) {
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	msg->dn = ldb_dn_explode(mem_ctx, dn);
+	msg->dn = samdb_search_dn(state->sam_ldb, mem_ctx, NULL, "objectSid=%s", sidstr);
 	if (msg->dn == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	if (ldb_msg_add_empty(state->sam_ldb, msg, "privilege", ldb_flag)) {

@@ -192,7 +192,7 @@ static NTSTATUS samr_LookupDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		
 		ret = gendb_search_dn(c_state->sam_ctx, mem_ctx, 
 				      samdb_result_dn(mem_ctx,
-					ref_msgs[0], "ncName", NULL), 
+						      ref_msgs[0], "ncName", NULL), 
 				      &dom_msgs, dom_attrs);
 	}
 
@@ -319,34 +319,27 @@ static NTSTATUS samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 
 	ret = gendb_search(c_state->sam_ctx,
 			   mem_ctx, NULL, &dom_msgs, dom_attrs,
-			   "(&(objectSid=%s)(&(objectclass=domain)(!(objectClass=builtinDomain))))",
+			   "(&(objectSid=%s)(&(objectclass=domain)))",
 			   ldap_encode_ndr_dom_sid(mem_ctx, r->in.sid));
-	if (ret == -1) {
+	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	} else if (ret == 0) {
-		ret = gendb_search(c_state->sam_ctx,
-				   mem_ctx, NULL, &dom_msgs, dom_attrs,
-				   "(&(objectSid=%s)(objectClass=builtinDomain))", 
-				   ldap_encode_ndr_dom_sid(mem_ctx, r->in.sid));
-		if (ret != 1) {
-			return NT_STATUS_NO_SUCH_DOMAIN;
-		}
-
-		domain_name = ldb_msg_find_string(dom_msgs[0], "cn", NULL);
-		if (domain_name == NULL) {
-			return NT_STATUS_NO_SUCH_DOMAIN;
-		}
 	} else {
 		ret = gendb_search(c_state->sam_ctx,
 				   mem_ctx, NULL, &ref_msgs, ref_attrs,
 				   "(&(&(nETBIOSName=*)(objectclass=crossRef))(ncName=%s))", 
 				   ldb_dn_linearize(mem_ctx, dom_msgs[0]->dn));
-		if (ret != 1) {
-			return NT_STATUS_NO_SUCH_DOMAIN;
-		}
+		if (ret == 0) {
+			domain_name = ldb_msg_find_string(dom_msgs[0], "cn", NULL);
+			if (domain_name == NULL) {
+				return NT_STATUS_NO_SUCH_DOMAIN;
+			}
+		} else if (ret == 1) {
 		
-		domain_name = ldb_msg_find_string(ref_msgs[0], "nETBIOSName", NULL);
-		if (domain_name == NULL) {
+			domain_name = ldb_msg_find_string(ref_msgs[0], "nETBIOSName", NULL);
+			if (domain_name == NULL) {
+				return NT_STATUS_NO_SUCH_DOMAIN;
+			}
+		} else {
 			return NT_STATUS_NO_SUCH_DOMAIN;
 		}
 	}
@@ -1769,7 +1762,7 @@ static NTSTATUS samr_DeleteGroupMember(struct dcesrv_call_state *dce_call, TALLO
   samr_QueryGroupMember 
 */
 static NTSTATUS samr_QueryGroupMember(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct samr_QueryGroupMember *r)
+				      struct samr_QueryGroupMember *r)
 {
 	struct dcesrv_handle *h;
 	struct samr_account_state *a_state;
@@ -3317,9 +3310,9 @@ static NTSTATUS samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
-	ret = gendb_search(sam_ctx, 
-			   mem_ctx, NULL, &msgs, attrs, 
-			   "(&(!(objectClass=builtinDomain))(objectclass=domain))");
+	/* The domain name in this call is ignored */
+	ret = gendb_search_dn(sam_ctx, 
+			   mem_ctx, samdb_base_dn(mem_ctx), &msgs, attrs);
 	if (ret <= 0) {
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
