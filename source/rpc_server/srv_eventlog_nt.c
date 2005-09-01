@@ -38,7 +38,7 @@ typedef struct {
  probably)
 ********************************************************************/
 
-void eventlog_refresh_external_parameters( void )
+void eventlog_refresh_external_parameters( NT_USER_TOKEN *token )
 {
 	const char **elogs = lp_eventlog_list();
 	int i;
@@ -51,9 +51,7 @@ void eventlog_refresh_external_parameters( void )
 		DEBUG(10,("eventlog_refresh_external_parameters: Refreshing =>[%s]\n", 
 			elogs[i]));	
 		
-		/* FIXME!!!! create a default token for root here and pass it in */
-		
-		if ( !control_eventlog_hook( NULL, elogs[i] ) ) {
+		if ( !control_eventlog_hook( token, elogs[i] ) ) {
 			DEBUG(0,("eventlog_refresh_external_parameters: failed to refresh [%s]\n",
 				elogs[i]));
 		}

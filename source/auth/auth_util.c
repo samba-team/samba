@@ -641,6 +641,44 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups,
 }
 
 /******************************************************************************
+ Create a token for the root user to be used internally by smbd.
+ This is similar to running under the context of the LOCAL_SYSTEM account
+ in Windows.  This is a read-only token.  Do not modify it or free() it.
+ Create a copy if your need to change it.
+******************************************************************************/
+
+NT_USER_TOKEN *get_root_nt_token( void )
+{
+	static NT_USER_TOKEN *token = NULL;
+	DOM_SID u_sid, g_sid;
+	DOM_SID g_sids[1];
+	struct passwd *pw;
+	NTSTATUS result;
+	
+	if ( token )
+		return token;
+		
+	if ( !(pw = getpwnam( "root" )) ) {
+		DEBUG(0,("create_root_nt_token: getpwnam\"root\") failed!\n"));
+		return NULL;
+	}
+	
+	/* get the user and primary group SIDs; although the 
+	   BUILTIN\Administrators SId is really the one that matters here */
+	   
+	if ( !NT_STATUS_IS_OK(uid_to_sid(&u_sid, pw->pw_uid)) )
+		return NULL;
+	if ( !NT_STATUS_IS_OK(gid_to_sid(&g_sid, pw->pw_gid)) )
+		return NULL;
+		
+	sid_copy( &g_sids[0], &global_sid_Builtin_Administrators );
+	
+	result = create_nt_user_token( &u_sid, &g_sid, 1, g_sids, False, &token);
+	
+	return NT_STATUS_IS_OK(result) ? token : NULL;
+}
+
+/******************************************************************************
  * this function returns the groups (SIDs) of the local SAM the user is in.
  * If this samba server is a DC of the domain the user belongs to, it returns 
  * both domain groups and local / builtin groups. If the user is in a trusted
