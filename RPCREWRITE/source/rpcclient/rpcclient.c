@@ -139,7 +139,7 @@ static void fetch_machine_sid(struct cli_state *cli)
 		goto error;
 	}
 
-	if ((lsapipe = cli_rpc_pipe_open_noauth(cli, PI_LSARPC)) != NULL) {
+	if ((lsapipe = cli_rpc_pipe_open_noauth(cli, PI_LSARPC)) == NULL) {
 		fprintf(stderr, "could not initialise lsa pipe\n");
 		goto error;
 	}

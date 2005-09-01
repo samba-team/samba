@@ -108,6 +108,9 @@ BOOL prs_init(prs_struct *ps, uint32 size, TALLOC_CTX *ctx, BOOL io)
 		}
 		memset(ps->data_p, '\0', (size_t)size);
 		ps->is_dynamic = True; /* We own this memory. */
+	} else if (MARSHALLING(ps)) {
+		/* If size is zero and we're marshalling we should allocate memory on demand. */
+		ps->is_dynamic = True;
 	}
 
 	return True;
