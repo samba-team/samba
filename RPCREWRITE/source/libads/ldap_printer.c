@@ -258,7 +258,7 @@ static void map_regval_to_ads(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 }
 
 
-WERROR get_remote_printer_publishing_data(struct cli_state *cli, 
+WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli, 
 					  TALLOC_CTX *mem_ctx,
 					  ADS_MODLIST *mods,
 					  const char *printer)
@@ -269,16 +269,16 @@ WERROR get_remote_printer_publishing_data(struct cli_state *cli,
 	uint32 i;
 	POLICY_HND pol;
 
-	asprintf(&servername, "\\\\%s", cli->desthost);
+	asprintf(&servername, "\\\\%s", cli->cli->desthost);
 	asprintf(&printername, "%s\\%s", servername, printer);
 	if (!servername || !printername) {
 		DEBUG(3, ("Insufficient memory\n"));
 		return WERR_NOMEM;
 	}
 	
-	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, 
+	result = rpccli_spoolss_open_printer_ex(cli, mem_ctx, printername, 
 					     "", MAXIMUM_ALLOWED_ACCESS, 
-					     servername, cli->user_name, &pol);
+					     servername, cli->cli->user_name, &pol);
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(3, ("Unable to open printer %s, error is %s.\n",
 			  printername, dos_errstr(result)));
@@ -288,7 +288,7 @@ WERROR get_remote_printer_publishing_data(struct cli_state *cli,
 	if ( !(dsdriver_ctr = TALLOC_ZERO_P( mem_ctx, REGVAL_CTR )) ) 
 		return WERR_NOMEM;
 
-	result = cli_spoolss_enumprinterdataex(cli, mem_ctx, &pol, SPOOL_DSDRIVER_KEY, dsdriver_ctr);
+	result = rpccli_spoolss_enumprinterdataex(cli, mem_ctx, &pol, SPOOL_DSDRIVER_KEY, dsdriver_ctr);
 
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(3, ("Unable to do enumdataex on %s, error is %s.\n",
@@ -305,7 +305,7 @@ WERROR get_remote_printer_publishing_data(struct cli_state *cli,
 	if ( !(dsspooler_ctr = TALLOC_ZERO_P( mem_ctx, REGVAL_CTR )) )
 		return WERR_NOMEM;
 
-	result = cli_spoolss_enumprinterdataex(cli, mem_ctx, &pol, SPOOL_DSSPOOLER_KEY, dsspooler_ctr);
+	result = rpccli_spoolss_enumprinterdataex(cli, mem_ctx, &pol, SPOOL_DSSPOOLER_KEY, dsspooler_ctr);
 
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(3, ("Unable to do enumdataex on %s, error is %s.\n",
@@ -323,7 +323,7 @@ WERROR get_remote_printer_publishing_data(struct cli_state *cli,
 	TALLOC_FREE( dsdriver_ctr );
 	TALLOC_FREE( dsspooler_ctr );
 
-	cli_spoolss_close_printer(cli, mem_ctx, &pol);
+	rpccli_spoolss_close_printer(cli, mem_ctx, &pol);
 
 	return result;
 }

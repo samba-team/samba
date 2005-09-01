@@ -1930,7 +1930,6 @@ static struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_internal(struct cli_sta
 
 struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp(struct cli_state *cli,
 						int pipe_idx,
-						enum pipe_auth_type auth_type,
 						enum pipe_auth_level auth_level,
 						const char *domain,
 						const char *username,
@@ -2080,7 +2079,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cl
  Open a named pipe to an SMB server and bind using schannel (bind type 68).
  Fetch the session key ourselves using a temporary netlogon pipe.
  ****************************************************************************/
-                                                                                                                                                    
+
 struct rpc_pipe_client *cli_rpc_pipe_open_schannel(struct cli_state *cli,
                                                 int pipe_idx,
 						enum pipe_auth_level auth_level,
