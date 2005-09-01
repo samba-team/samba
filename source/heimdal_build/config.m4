@@ -175,6 +175,30 @@ rk_CHECK_VAR(h_errno,
 #include <netdb.h>
 #endif])
 
+sinclude(heimdal/cf/find-func.m4)
+sinclude(heimdal/cf/find-func-no-libs.m4)
+sinclude(heimdal/cf/find-func-no-libs2.m4)
+sinclude(heimdal/cf/resolv.m4)
+
+smb_save_LIBS=$LIBS
+RESOLV_LIBS=""
+LIBS=""
+
+dnl  This fills in the global LIBS...
+rk_RESOLV
+
+dnl AC_CHECK_LIB_EXT(resolv, RESOLV_LIBS, res_search)
+	SMB_EXT_LIB_ENABLE(RESOLV,YES)
+
+if test x"$LIBS" != "x"; then
+	RESOLV_LIBS=$LIBS
+fi
+
+LIBS=$smb_save_LIBS
+
+SMB_EXT_LIB(RESOLV,[${RESOLV_LIBS}],[${RESOLV_CFLAGS}],[${RESOLV_CPPFLAGS}],[${RESOLV_LDFLAGS}])
+
+
 # these are disabled unless heimdal is found below
 SMB_SUBSYSTEM_ENABLE(KERBEROS_LIB, NO)
 SMB_BINARY_ENABLE(asn1_compile, NO)
