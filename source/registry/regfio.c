@@ -1670,7 +1670,7 @@ static BOOL create_vk_record( REGF_FILE *file, REGF_VK_REC *vk, REGISTRY_VALUE *
 
 static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 {
-	return strcmp( h1->fullname, h2->fullname );
+	return StrCaseCmp( h1->fullname, h2->fullname );
 }
 
 /*******************************************************************
