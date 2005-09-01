@@ -55,7 +55,7 @@ static NTSTATUS registry_access_check( SEC_DESC *sec_desc, NT_USER_TOKEN *token,
                                      uint32 access_desired, uint32 *access_granted )
 {
 	NTSTATUS result;
-		
+
 	se_map_generic( &access_desired, &reg_generic_map );
 	se_access_check( sec_desc, token, access_desired, access_granted, &result );
 	
@@ -112,7 +112,7 @@ BOOL init_registry( void )
 
 	/* inform the external eventlog machinery of the change */
 
-	eventlog_refresh_external_parameters();
+	eventlog_refresh_external_parameters( get_root_nt_token() );
 		
 	/* build the cache tree of registry hooks */
 	
