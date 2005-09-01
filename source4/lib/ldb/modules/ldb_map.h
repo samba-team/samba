@@ -2,6 +2,7 @@
    ldb database library - map backend
 
    Copyright (C) Jelmer Vernooij 2005
+   	Development sponsored by the Google Summer of Code program
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -65,6 +66,9 @@ struct ldb_map_attribute
 		struct {
 			const char *remote_name;
 			struct ldb_val (*convert_local) (struct ldb_module *, TALLOC_CTX *, const struct ldb_val *);
+			
+			/* an entry can have convert_remote set to NULL, as long as there as an entry with the same local_name 
+			 * that is non-NULL before it. */
 			struct ldb_val (*convert_remote) (struct ldb_module *, TALLOC_CTX *, const struct ldb_val *);
 		} convert;
 	
