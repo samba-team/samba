@@ -2,6 +2,8 @@ dnl stuff used by DNS resolv code
 
 AC_DEFUN([rk_RESOLV], [
 
+	AC_CHECK_HEADERS(arpa/nameser.h)
+
 	AC_CHECK_HEADERS(resolv.h, , , [AC_INCLUDES_DEFAULT
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
