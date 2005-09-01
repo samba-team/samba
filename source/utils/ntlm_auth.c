@@ -1059,8 +1059,9 @@ static BOOL manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 	status = ntlmssp_update(client_ntlmssp_state, null_blob,
 				       &spnego.negTokenInit.mechToken);
 
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		DEBUG(1, ("Expected MORE_PROCESSING_REQUIRED, got: %s\n",
+	if ( !(NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) ||
+			NT_STATUS_IS_OK(status)) ) {
+		DEBUG(1, ("Expected OK or MORE_PROCESSING_REQUIRED, got: %s\n",
 			  nt_errstr(status)));
 		ntlmssp_end(&client_ntlmssp_state);
 		return False;
