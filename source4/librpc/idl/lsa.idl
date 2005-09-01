@@ -738,10 +738,45 @@
 	NTSTATUS lsa_CloseTrustedDomainEx();
 
 	/* Function 0x35 */
-	NTSTATUS lsa_QueryDomainInformationPolicy();
+
+	/* w2k3 returns either 0x000bbbd000000000 or 0x000a48e800000000 
+	   for unknown6 - gd */
+	typedef struct {
+		uint32 enforce_restrictions;
+		hyper service_tkt_lifetime;
+		hyper user_tkt_lifetime;
+		hyper user_tkt_renewaltime;
+		hyper clock_skew;
+		hyper unknown6;
+	} lsa_DomainInfoKerberos;
+
+	typedef struct {
+		uint32 blob_size;
+		[size_is(blob_size)] uint8 *efs_blob;
+	} lsa_DomainInfoEfs;
+
+	typedef enum {
+		LSA_DOMAIN_INFO_POLICY_EFS=2,
+		LSA_DOMAIN_INFO_POLICY_KERBEROS=3
+	} lsa_DomainInfoEnum;
+
+	typedef [switch_type(uint16)] union {
+		[case(LSA_DOMAIN_INFO_POLICY_EFS)]	lsa_DomainInfoEfs	efs_info;
+		[case(LSA_DOMAIN_INFO_POLICY_KERBEROS)]	lsa_DomainInfoKerberos	kerberos_info;
+	} lsa_DomainInformationPolicy;
+
+	NTSTATUS lsa_QueryDomainInformationPolicy(
+		[in,ref]		policy_handle *handle,
+		[in] 			uint16 level,
+		[out,switch_is(level)]	lsa_DomainInformationPolicy *info
+		);
 
 	/* Function 0x36 */
-	NTSTATUS lsa_SetDomInfoPolicy();
+	NTSTATUS lsa_SetDomainInformationPolicy(
+		[in,ref]		policy_handle *handle,
+		[in] 			uint16 level,
+		[in,switch_is(level)]	lsa_DomainInformationPolicy *info
+		);
 
 	/**********************/
 	/* Function 0x37 */

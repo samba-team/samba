@@ -2479,9 +2479,9 @@ static NTSTATUS lsa_QueryDomainInformationPolicy(struct dcesrv_call_state *dce_c
 /*
   lsa_SetDomInfoPolicy
 */
-static NTSTATUS lsa_SetDomInfoPolicy(struct dcesrv_call_state *dce_call,
-				     TALLOC_CTX *mem_ctx,
-				     struct lsa_SetDomInfoPolicy *r)
+static NTSTATUS lsa_SetDomainInformationPolicy(struct dcesrv_call_state *dce_call,
+					      TALLOC_CTX *mem_ctx,
+					      struct lsa_SetDomainInformationPolicy *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
