@@ -218,6 +218,12 @@ NTSTATUS ntlmssp_update(NTLMSSP_STATE *ntlmssp_state,
 	uint32 ntlmssp_command;
 	int i;
 
+	if (ntlmssp_state->expected_state == NTLMSSP_DONE) {
+		/* Called update after negotiations finished. */
+		DEBUG(1, ("Called NTLMSSP after state machine was 'done'\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	*out = data_blob(NULL, 0);
 
 	if (!in.length && ntlmssp_state->stored_response.length) {
@@ -534,7 +540,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 	DATA_BLOB lm_session_key = data_blob(NULL, 0);
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	uint32 ntlmssp_command, auth_flags;
-	NTSTATUS nt_status;
+	NTSTATUS nt_status = NT_STATUS_OK;
 
 	/* used by NTLM2 */
 	BOOL doing_ntlm2 = False;
@@ -784,8 +790,8 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 
 	data_blob_free(&encrypted_session_key);
 	
-	/* allow arbitarily many authentications */
-	ntlmssp_state->expected_state = NTLMSSP_AUTH;
+	/* Only one authentication allowed per server state. */
+	ntlmssp_state->expected_state = NTLMSSP_DONE;
 
 	return nt_status;
 }
@@ -897,7 +903,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	DATA_BLOB nt_response = data_blob(NULL, 0);
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	DATA_BLOB encrypted_session_key = data_blob(NULL, 0);
-	NTSTATUS nt_status;
+	NTSTATUS nt_status = NT_STATUS_OK;
 
 	if (!msrpc_parse(&reply, "CdBd",
 			 "NTLMSSP",
@@ -1098,14 +1104,13 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	ntlmssp_state->lm_resp = lm_response;
 	ntlmssp_state->nt_resp = nt_response;
 
-	ntlmssp_state->expected_state = NTLMSSP_UNKNOWN;
+	ntlmssp_state->expected_state = NTLMSSP_DONE;
 
 	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_sign_init(ntlmssp_state))) {
 		DEBUG(1, ("Could not setup NTLMSSP signing/sealing system (error was: %s)\n", nt_errstr(nt_status)));
-		return nt_status;
 	}
 
-	return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	return nt_status;
 }
 
 NTSTATUS ntlmssp_client_start(NTLMSSP_STATE **ntlmssp_state)
@@ -1139,7 +1144,7 @@ NTSTATUS ntlmssp_client_start(NTLMSSP_STATE **ntlmssp_state)
 	(*ntlmssp_state)->neg_flags = 
 		NTLMSSP_NEGOTIATE_128 |
 		NTLMSSP_NEGOTIATE_NTLM |
-		NTLMSSP_NEGOTIATE_NTLM2 |
+		lp_client_ntlmv2_auth() ? NTLMSSP_NEGOTIATE_NTLM2 : 0 |
 		NTLMSSP_NEGOTIATE_KEY_EXCH |
 		/*
 		 * We need to set this to allow a later SetPassword
