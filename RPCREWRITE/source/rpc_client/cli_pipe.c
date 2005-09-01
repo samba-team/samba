@@ -1319,10 +1319,10 @@ NTSTATUS rpc_api_pipe_req(struct rpc_pipe_client *cli,
 			/* More packets to come - write and continue. */
 			ssize_t num_written = cli_write(cli->cli, cli->fnum, 8, /* 8 means message mode. */
 							prs_data_p(&outgoing_pdu),
-							(off_t)current_data_offset,
-							(size_t)data_sent_thistime);
+							(off_t)0,
+							(size_t)hdr.frag_len);
 
-			if (num_written != data_sent_thistime) {
+			if (num_written != hdr.frag_len) {
 				prs_mem_free(&outgoing_pdu);
 				return cli_get_nt_error(cli->cli);
 			}
