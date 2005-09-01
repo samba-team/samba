@@ -140,88 +140,134 @@ const struct ldb_map_attribute samba3_attributes[] =
 	{
 		.local_name = "nextRid",
 		.type = MAP_RENAME,
-		.u.rename.remote_name = "sambaNextRid",
+		.u = {
+			.rename = {
+				.remote_name = "sambaNextRid",
+			},
+		},
 	},
 
 	/* sambaBadPasswordTime -> badPasswordtime*/
 	{
 		.local_name = "badPasswordTime",
 		.type = MAP_RENAME,
-		.u.rename.remote_name = "sambaBadPasswordTime",
+		.u = {
+			.rename = {
+				.remote_name = "sambaBadPasswordTime",
+			},
+		},
 	},
 
 	/* sambaLMPassword -> lmPwdHash*/
 	{
 		.local_name = "lmPwdHash",
 		.type = MAP_RENAME,
-		.u.rename.remote_name = "sambaLMPassword",
+		.u = {
+			.rename = {
+				.remote_name = "sambaLMPassword",
+			},
+		},
 	},
 
 	/* sambaGroupType -> groupType */
 	{
 		.local_name = "groupType",
 		.type = MAP_RENAME,
-		.u.rename.remote_name = "sambaGroupType",
+		.u = {
+			.rename = {
+				.remote_name = "sambaGroupType",
+			},
+		},
 	},
 
 	/* sambaNTPassword -> ntPwdHash*/
 	{
 		.local_name = "ntPwdHash",
 		.type = MAP_RENAME,
-		.u.rename.remote_name = "sambaNTPassword",
+		.u = {
+			.rename = {
+				.remote_name = "sambaNTPassword",
+			},
+		},
 	},
 
 	/* sambaPrimaryGroupSID -> primaryGroupID */
 	{
 		.local_name = "primaryGroupID",
 		.type = MAP_CONVERT,
-		.u.convert.remote_name = "sambaPrimaryGroupSID",
-		.u.convert.convert_local = convert_rid_sid,
-		.u.convert.convert_remote = convert_sid_rid, 
+		.u = {
+			.convert = {
+				.remote_name = "sambaPrimaryGroupSID",
+				.convert_local = convert_rid_sid,
+				.convert_remote = convert_sid_rid, 
+			},
+		},
 	},
 
 	/* sambaBadPasswordCount -> badPwdCount */
 	{
 		.local_name = "badPwdCount",
 		.type = MAP_RENAME,
-		.u.rename.remote_name = "sambaBadPasswordCount",
+		.u = {
+			.rename = {
+				.remote_name = "sambaBadPasswordCount",
+			},
+		},
 	},
 
 	/* sambaLogonTime -> lastLogon*/
 	{
 		.local_name = "lastLogon",
 		.type = MAP_RENAME,
-		.u.rename.remote_name = "sambaLogonTime",
+		.u = {
+			.rename = {
+				.remote_name = "sambaLogonTime",
+			},
+		},
 	},
 
 	/* sambaLogoffTime -> lastLogoff*/
 	{
 		.local_name = "lastLogoff",
 		.type = MAP_RENAME,
-		.u.rename.remote_name = "sambaLogoffTime",
+		.u = {
+			.rename = {
+				.remote_name = "sambaLogoffTime",
+			},
+		},
 	},
 
 	/* gidNumber -> unixName */
 	{
 		.local_name = "unixName",
 		.type = MAP_CONVERT,
-		.u.convert.remote_name = "gidNumber",
-		.u.convert.convert_local = convert_unix_name2id,
-		.u.convert.convert_remote = convert_unix_id2name, 
+		.u = {
+			.convert = {
+				.remote_name = "gidNumber",
+			},
+		},
 	},
 
 	/* uid -> unixName */
 	{
 		.local_name = "unixName",
 		.type = MAP_RENAME,
-		.u.convert.remote_name = "uid",
+		.u = {
+			.convert = {
+				.remote_name = "uid",
+			},
+		},
 	},
 
 	/* displayName -> name */
 	{
 		.local_name = "name",
 		.type = MAP_RENAME,
-		.u.rename.remote_name = "displayName",
+		.u = {
+			.rename = {
+				.remote_name = "displayName",
+			},
+		},
 	},
 
 	/* cn */
@@ -234,7 +280,11 @@ const struct ldb_map_attribute samba3_attributes[] =
 	{
 		.local_name = "sAMAccountName",
 		.type = MAP_RENAME,
-		.u.rename.remote_name = "uid",
+		.u = {
+			.rename = {
+				.remote_name = "uid",
+			},
+		},
 	},
 
 	/* objectCategory */
@@ -351,16 +401,24 @@ const struct ldb_map_attribute samba3_attributes[] =
 	{
 		.local_name = "objectSid",
 		.type = MAP_CONVERT,
-		.u.convert.remote_name = "sambaSID", 
-		.u.convert.convert_local = decode_sid,
-		.u.convert.convert_remote = encode_sid,
+		.u = {
+			.convert = {
+				.remote_name = "sambaSID", 
+				.convert_local = decode_sid,
+				.convert_remote = encode_sid,
+			},
+		},
 	},
 
 	/* sambaPwdLastSet -> pwdLastSet */
 	{
 		.local_name = "pwdLastSet",
 		.type = MAP_RENAME,
-		.u.rename.remote_name = "sambaPwdLastSet",
+		.u = {
+			.rename = {
+				.remote_name = "sambaPwdLastSet",
+			},
+		},
 	},	
 
 	/* accountExpires */
