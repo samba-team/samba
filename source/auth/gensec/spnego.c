@@ -4,7 +4,7 @@
    RFC2478 Compliant SPNEGO implementation
    
    Copyright (C) Jim McDonough <jmcd@us.ibm.com>      2003
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
