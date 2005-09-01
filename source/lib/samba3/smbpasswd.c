@@ -213,9 +213,10 @@ NTSTATUS samba3_read_smbpasswd(const char *filename, TALLOC_CTX *ctx, struct sam
 {
 	int numlines;
 	char **lines;
+	int i;
+
 	*count = 0;
 	*accounts = NULL;
-	int i;
 
 	lines = file_lines_load(filename, &numlines, ctx);
 
