@@ -288,3 +288,15 @@ socket_set_reuseaddr (int sock, int val)
 	err (1, "setsockopt SO_REUSEADDR");
 #endif
 }
+
+/*
+ * Set the that the `sock' should bind to only IPv6 addresses.
+ */
+
+void ROKEN_LIB_FUNCTION
+socket_set_ipv6only (int sock, int val)
+{
+#if defined(IPV6_V6ONLY) && defined(HAVE_SETSOCKOPT)
+    setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&val, sizeof(val));
+#endif
+}
