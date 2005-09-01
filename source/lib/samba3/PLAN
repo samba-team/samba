@@ -1,4 +1,3 @@
 TODO (SoC project):
  - [ldb_map] some more strict checking when sending data to an LDAP server
- - [ldb_map] fix rename
  - fix ntPwdHash / lmPwdHash bug
