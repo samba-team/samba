@@ -1477,6 +1477,35 @@ static BOOL test_CreateTrustedDomain(struct dcerpc_pipe *p,
 	return ret;
 }
 
+static BOOL test_QueryDomainInfoPolicy(struct dcerpc_pipe *p, 
+				 TALLOC_CTX *mem_ctx, 
+				 struct policy_handle *handle)
+{
+	struct lsa_QueryDomainInformationPolicy r;
+	NTSTATUS status;
+	int i;
+	BOOL ret = True;
+	printf("\nTesting QueryDomainInformationPolicy\n");
+
+	for (i=2;i<4;i++) {
+		r.in.handle = handle;
+		r.in.level = i;
+
+		printf("\ntrying QueryDomainInformationPolicy level %d\n", i);
+
+		status = dcerpc_lsa_QueryDomainInformationPolicy(p, mem_ctx, &r);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("QueryDomainInformationPolicy failed - %s\n", nt_errstr(status));
+			ret = False;
+			continue;
+		}
+	}
+
+	return ret;
+}
+
+
 static BOOL test_QueryInfoPolicy(struct dcerpc_pipe *p, 
 				 TALLOC_CTX *mem_ctx, 
 				 struct policy_handle *handle)
@@ -1627,6 +1656,10 @@ BOOL torture_rpc_lsa(void)
 	}
 
 	if (!test_lsa_OpenPolicy2(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	if (!test_QueryDomainInfoPolicy(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 
