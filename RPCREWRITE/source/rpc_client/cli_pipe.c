@@ -1242,7 +1242,10 @@ NTSTATUS rpc_api_pipe_req(struct rpc_pipe_client *cli,
 		}
 
 		/* Create and marshall the header and request header. */
-		init_rpc_hdr(&hdr, RPC_REQUEST, flags, call_id, data_sent_thistime + ss_padding, auth_len);
+		init_rpc_hdr(&hdr, RPC_REQUEST, flags, call_id,
+				RPC_HEADER_LEN + RPC_HDR_REQ_LEN + data_sent_thistime + ss_padding,
+				auth_len);
+
 		if(!smb_io_rpc_hdr("hdr    ", &hdr, &outgoing_pdu, 0)) {
 			prs_mem_free(&outgoing_pdu);
 			return NT_STATUS_NO_MEMORY;
