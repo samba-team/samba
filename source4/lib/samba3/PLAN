@@ -1,3 +1,7 @@
 TODO (SoC project):
- - [ldb_map] some more strict checking when sending data to an LDAP server
  - fix ntPwdHash / lmPwdHash bug
+ - ldb_map
+  - convert_remote() can be NULL!
+  - new way of finding remote attribute in map_add()
+   - loop over all attributes 
+    - if local one present, run!
