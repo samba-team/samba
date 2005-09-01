@@ -1280,15 +1280,15 @@ bin/libmsrpc.a: $(LIBMSRPC_PICOBJ)
 
 bin/tdbbackup@EXEEXT@: $(TDBBACKUP_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(DYNEXP) $(TDBBACKUP_OBJ) @SOCKWRAP@
+	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(DYNEXP) $(LIBS) $(TDBBACKUP_OBJ) $(SNPRINTF_OBJ) @SOCKWRAP@
 
 bin/tdbtool@EXEEXT@: $(TDBTOOL_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(DYNEXP) $(TDBTOOL_OBJ) @SOCKWRAP@
+	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(DYNEXP) $(LIBS) $(TDBTOOL_OBJ) $(SNPRINTF_OBJ) @SOCKWRAP@
 
 bin/tdbdump@EXEEXT@: $(TDBDUMP_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(DYNEXP) $(TDBDUMP_OBJ) @SOCKWRAP@
+	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(DYNEXP) $(LIBS) $(TDBDUMP_OBJ) $(SNPRINTF_OBJ) @SOCKWRAP@
 
 bin/t_strcmp@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_strcmp.o
 	$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(DYNEXP) $(LIBS) torture/t_strcmp.o -L ./bin -lbigballofmud
