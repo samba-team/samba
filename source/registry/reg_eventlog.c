@@ -132,7 +132,7 @@ static int elog_fetch_values( const char *key, REGVAL_CTR *values )
 		
 		/* store them for later updates.  Complain if this fails but continue on */
 		
-		if ( !regdb_fetch_values( key, values ) ) {
+		if ( !regdb_store_values( key, values ) ) {
 			DEBUG(0,("elog_fetch_values: Failed to store initial values for log [%s]\n",
 				base ));
 		}
