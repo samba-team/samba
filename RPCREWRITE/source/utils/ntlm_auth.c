@@ -693,7 +693,8 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 		data_blob_free(&reply);
 		DEBUG(10, ("NTLMSSP challenge\n"));
 	} else if (NT_STATUS_IS_OK(nt_status)) {
-		x_fprintf(x_stdout, "AF\n");
+		char *reply_base64 = base64_encode_data_blob(reply);
+		x_fprintf(x_stdout, "AF %s\n", reply_base64);
 		DEBUG(10, ("NTLMSSP OK!\n"));
 		if (ntlmssp_state)
 			ntlmssp_end(&ntlmssp_state);
