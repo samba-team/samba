@@ -49,6 +49,7 @@ static const char *builtin_registry_paths[] = {
 	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Perflib\\009",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print\\Monitors",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\ProductOptions",
+	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Termininal Server\\DefaultUserConfiguration",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\TcpIp\\Parameters",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Netlogon\\Parameters",
 	"HKU",
@@ -163,7 +164,12 @@ static BOOL init_registry_data( void )
 		}
 
 		regdb_fetch_values( builtin_registry_values[i].path, values );
-		switch( builtin_registry_values[i].type ) {
+
+		/* preserve existing values across restarts.  Only add new ones */
+
+		if ( !regval_ctr_key_exists( values, builtin_registry_values[i].valuename ) ) 
+		{
+			switch( builtin_registry_values[i].type ) {
 			case REG_DWORD:
 				regval_ctr_addvalue( values, 
 				                     builtin_registry_values[i].valuename,
@@ -184,8 +190,9 @@ static BOOL init_registry_data( void )
 			default:
 				DEBUG(0,("init_registry_data: invalid value type in builtin_registry_values [%d]\n",
 					builtin_registry_values[i].type));
+			}
+			regdb_store_values( builtin_registry_values[i].path, values );
 		}
-		regdb_store_values( builtin_registry_values[i].path, values );
 		
 		TALLOC_FREE( values );
 	}
@@ -205,8 +212,6 @@ BOOL init_registry_db( void )
 	if ( tdb_reg )
 		return True;
 
-	/* placeholder tdb; reinit upon startup */
-	
 	if ( !(tdb_reg = tdb_open_log(lock_path("registry.tdb"), 0, TDB_DEFAULT, O_RDWR, 0600)) )
 	{
 		tdb_reg = tdb_open_log(lock_path("registry.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
@@ -223,13 +228,14 @@ BOOL init_registry_db( void )
 	vers_id = tdb_fetch_int32(tdb_reg, vstring);
 
 	if ( vers_id != REGVER_V1 ) {
+		/* any upgrade code here if needed */
+	}
 
-		/* create the registry here */
+	/* always setup the necessary keys and values */
 
-		if ( !init_registry_data() ) {
-			DEBUG(0,("init_registry: Failed to initiailize data in registry!\n"));
-			return False;
-		}
+	if ( !init_registry_data() ) {
+		DEBUG(0,("init_registry: Failed to initiailize data in registry!\n"));
+		return False;
 	}
 
 	return True;
