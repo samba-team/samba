@@ -34,7 +34,8 @@ enum NTLM_MESSAGE_TYPE
 	NTLMSSP_NEGOTIATE = 1,
 	NTLMSSP_CHALLENGE = 2,
 	NTLMSSP_AUTH      = 3,
-	NTLMSSP_UNKNOWN   = 4
+	NTLMSSP_UNKNOWN   = 4,
+	NTLMSSP_DONE      = 5 /* samba final state */
 };
 
 /* NTLMSSP negotiation flags */
