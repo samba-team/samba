@@ -159,12 +159,12 @@ static int rdn_name_modify_record(struct ldb_module *module, const struct ldb_me
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(msg->dn)) {
-		return ldb_next_add_record(module, msg);
+		return ldb_next_modify_record(module, msg);
 	}
 
 	/* Perhaps someone above us knows better */
 	if ((attribute = rdn_name_find_attribute(msg, "name")) != NULL ) {
-		return ldb_next_add_record(module, msg);
+		return ldb_next_modify_record(module, msg);
 	}
 
 	msg2 = talloc(module, struct ldb_message);
