@@ -119,10 +119,8 @@ typedef struct {
 /* structure to store the registry handles */
 
 typedef struct _RegistryKey {
-	struct _RegistryKey *prev, *next;
 	uint32		type;
-
-	pstring 	name; 		/* full name of registry key */
+	char		*name; 		/* full name of registry key */
 	uint32 		access_granted;
 	REGISTRY_HOOK	*hook;	
 } REGISTRY_KEY;
