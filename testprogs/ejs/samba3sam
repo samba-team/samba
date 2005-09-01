@@ -122,3 +122,63 @@ msg = s3.search("(cn=Niemand)");
 assert(msg.length >= 1);
 assert(msg[0].displayName == "Niemand");
 
+println("Adding attribute...");
+ok = s4.modify("
+dn: cn=Niemand,ou=Tests,dc=vernstok,dc=nl
+changetype: modify
+add: description
+description: Blah
+");
+assert(ok);
+
+println("Checking whether changes are still there...");
+msg = s4.search("(cn=Niemand)");
+assert(msg.length >= 1);
+assert(msg[0].description == "Blah");
+
+println("Modifying attribute...");
+ok = s4.modify("
+dn: cn=Niemand,ou=Tests,dc=vernstok,dc=nl
+changetype: modify
+replace: description
+description: Blie
+");
+assert(ok);
+
+println("Checking whether changes are still there...");
+msg = s4.search("(cn=Niemand)");
+assert(msg.length >= 1);
+assert(msg[0].description == "Blie");
+
+println("Deleting attribute...");
+ok = s4.modify("
+dn: cn=Niemand,ou=Tests,dc=vernstok,dc=nl
+changetype: modify
+delete: description
+");
+assert(ok);
+
+println("Checking whether changes are no longer there...");
+msg = s4.search("(cn=Niemand)");
+assert(msg.length >= 1);
+assert(msg[0].description == undefined);
+
+println("Renaming record...");
+ok = s4.rename("cn=Niemand,ou=Tests,dc=vernstok,dc=nl", "cn=Iemand,ou=Tests,dc=vernstok,dc=nl");
+
+println("Checking whether old record is gone...");
+msg = s4.search("(cn=Niemand)");
+assert(msg.length == 0);
+
+println("Checking whether new record is there...");
+msg = s4.search("(cn=Iemand)");
+assert(msg.length == 1);
+
+println("Deleting record...");
+ok = s4.del("cn=Iemand,ou=Tests,dc=vernstok,dc=nl");
+assert(ok);
+
+println("Checking whether record is gone...");
+msg = s4.search("(cn=Iemand)");
+assert(msg.length == 0);
+
