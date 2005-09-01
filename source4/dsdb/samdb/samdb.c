@@ -969,3 +969,37 @@ struct security_descriptor *samdb_default_security_descriptor(TALLOC_CTX *mem_ct
 
 	return sd;
 }
+
+struct ldb_dn *samdb_base_dn(TALLOC_CTX *mem_ctx) 
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	int server_role = lp_server_role();
+	const char **split_realm;
+	struct ldb_dn *dn;
+	
+	if (!tmp_ctx) {
+		return NULL;
+	}
+
+	if ((server_role == ROLE_DOMAIN_PDC)
+	    || (server_role == ROLE_DOMAIN_BDC)) {
+		int i;
+		split_realm = str_list_make(tmp_ctx, lp_realm(), ".");
+		if (!split_realm) {
+			talloc_free(tmp_ctx);
+			return NULL;
+		}
+		dn = NULL;
+		i = str_list_length(split_realm);
+		i--;
+		for (; i >= 0; i--) {
+			dn = ldb_dn_build_child(tmp_ctx, "dc", split_realm[i], dn);
+			if (!dn) {
+				talloc_free(tmp_ctx);
+				return NULL;
+			}
+		}
+		return dn;
+	}
+	return ldb_dn_string_compose(mem_ctx, NULL, "cn=%s", lp_netbios_name());
+}
