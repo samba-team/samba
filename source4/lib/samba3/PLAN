@@ -1,2 +1,4 @@
 TODO (SoC project):
- - finish ldb_map testsuite
+ - [ldb_map] some more strict checking when sending data to an LDAP server
+ - [ldb_map] fix rename
+ - fix ntPwdHash / lmPwdHash bug
