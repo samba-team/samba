@@ -1,3 +1,7 @@
+2005-09-01  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* kadm_conn.c: Use socket_set_reuseaddr and socket_set_ipv6only.
+	
 2005-08-11  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* get.c: Remove structure that is never used (sneaked in the large
