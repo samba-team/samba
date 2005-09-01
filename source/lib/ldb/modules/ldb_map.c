@@ -1164,7 +1164,7 @@ struct ldb_module *ldb_map_init(struct ldb_context *ldb, const struct ldb_map_at
 
 static struct ldb_val map_convert_local_dn(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
-	struct ldb_dn *dn, *newdn;;
+	struct ldb_dn *dn, *newdn;
 	struct ldb_val *newval;
 
 	dn = ldb_dn_explode(ctx, (char *)val->data);
@@ -1184,7 +1184,7 @@ static struct ldb_val map_convert_local_dn(struct ldb_module *module, TALLOC_CTX
 
 static struct ldb_val map_convert_remote_dn(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
-	struct ldb_dn *dn, *newdn;;
+	struct ldb_dn *dn, *newdn;
 	struct ldb_val *newval;
 
 	dn = ldb_dn_explode(ctx, (char *)val->data);
