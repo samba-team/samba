@@ -324,6 +324,8 @@ static struct ldb_parse_tree *ldb_map_parse_tree(struct ldb_module *module, TALL
 	}
 
 	if (map_type == MAP_CONVERT) {
+		if (!attr->u.convert.convert_local)
+			return NULL;
 		newvalue = attr->u.convert.convert_local(module, new_tree, &value);
 	} else {
 		newvalue = ldb_val_dup(new_tree, &value);
@@ -435,6 +437,11 @@ static struct ldb_dn *map_local_dn(struct ldb_module *module, TALLOC_CTX *ctx, c
 
 			case MAP_CONVERT: 
 				newdn->components[i].name = talloc_strdup(newdn->components, attr->u.convert.remote_name);
+				if (attr->u.convert.convert_local == NULL) {
+					ldb_debug(module->ldb, LDB_DEBUG_ERROR, "convert_local not set for attribute '%s' used in DN!", dn->components[i].name);
+					talloc_free(newdn);
+					return NULL;
+				}
 				newdn->components[i].value = attr->u.convert.convert_local(module, newdn->components, &dn->components[i].value);
 			break;
 			
@@ -658,8 +665,12 @@ static struct ldb_message *ldb_map_message_incoming(struct ldb_module *module, c
 
 			case MAP_GENERATE:
 				ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Generating local attribute %s", attr->local_name);
+				if (!attr->u.generate.generate_local)
+					continue;
+
 				elm = attr->u.generate.generate_local(module, msg, attr->local_name, mi);
-				if (!elm) continue;
+				if (!elm) 
+					continue;
 
 				ldb_msg_add(module->ldb, msg, elm, elm->flags);
 				break;
@@ -1039,7 +1050,12 @@ static int map_add(struct ldb_module *module, const struct ldb_message *msg)
 				elm = talloc(fb, struct ldb_message_element);
 
 				elm->num_values = msg->elements[i].num_values;
-				elm->values = talloc_reference(elm, msg->elements[i].values);
+				elm->values = talloc_array(elm, struct ldb_val, elm->num_values);
+
+				for (j = 0; j < elm->num_values; j++) {
+					elm->values[j] = ldb_val_dup(elm, &msg->elements[i].values[j]);
+				}
+
 				elm->name = talloc_strdup(elm, msg->elements[i].name);
 				break;
 
@@ -1049,10 +1065,16 @@ static int map_add(struct ldb_module *module, const struct ldb_message *msg)
 
 				elm->name = talloc_strdup(elm, attr->u.rename.remote_name);
 				elm->num_values = msg->elements[i].num_values;
-				elm->values = talloc_reference(elm, msg->elements[i].values);
+				elm->values = talloc_array(elm, struct ldb_val, elm->num_values);
+
+				for (j = 0; j < elm->num_values; j++) {
+					elm->values[j] = ldb_val_dup(elm, &msg->elements[i].values[j]);
+				}
 				break;
 
 			case MAP_CONVERT:
+				if (attr->u.convert.convert_local == NULL)
+					continue;
 				ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Converting %s -> %s", attr->local_name, attr->u.convert.remote_name);
 				elm = talloc(mp, struct ldb_message_element);
 
@@ -1165,6 +1187,8 @@ static int map_modify(struct ldb_module *module, const struct ldb_message *msg)
 				 continue;
 
 			case MAP_CONVERT:
+				 if (!attr->u.convert.convert_local)
+					 continue;
 				 elm = talloc(mp, struct ldb_message_element);
 
 				 elm->name = talloc_strdup(elm, attr->u.rename.remote_name);
@@ -1397,7 +1421,11 @@ static struct ldb_val map_convert_remote_dn(struct ldb_module *module, TALLOC_CT
 
 	newval = talloc(ctx, struct ldb_val);
 	newval->data = (uint8_t *)ldb_dn_linearize(ctx, newdn);
-	newval->length = strlen((char *)newval->data);
+	if (newval->data) {
+		newval->length = strlen((char *)newval->data);
+	} else {
+		newval->length = 0;
+	}
 
 	talloc_free(newdn);
 

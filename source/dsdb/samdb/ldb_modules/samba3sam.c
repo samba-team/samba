@@ -47,6 +47,27 @@
 /* In Samba4 but not in Samba3:
 */
 
+static void generate_hashes (struct ldb_module *module, const char *local_attr,	const struct ldb_message *local, struct ldb_message *remote_mp,	struct ldb_message *remote_fb)
+{
+	const char *upwd = ldb_msg_find_string(local, local_attr, NULL);
+	struct ldb_val val;
+
+	if (!upwd)
+		return;
+
+	ldb_msg_add_string(module->ldb, remote_fb, local_attr, upwd);
+
+	val.length = 16;
+	val.data = talloc_zero_size(module, val.length);
+
+	E_md4hash(upwd, val.data);
+	ldb_msg_add_value(module->ldb, remote_mp, "sambaNTPassword", &val);
+			
+	val.data = talloc_zero_size(module, val.length);
+	E_deshash(upwd, val.data);
+	ldb_msg_add_value(module->ldb, remote_mp, "sambaLMPassword", &val);
+}
+
 
 static struct ldb_message_element *generate_primaryGroupID(struct ldb_module *module, TALLOC_CTX *ctx, const char *attr, const struct ldb_message *remote)
 {
@@ -72,8 +93,8 @@ static struct ldb_message_element *generate_primaryGroupID(struct ldb_module *mo
 static void generate_sambaPrimaryGroupSID(struct ldb_module *module, const char *local_attr, const struct ldb_message *local, struct ldb_message *remote_mp, struct ldb_message *remote_fb)
 {
 	const struct ldb_val *sidval;
+	char *sidstring;
 	struct dom_sid *sid;
-	struct ldb_val out;
 	NTSTATUS status;
 
 	sidval = ldb_msg_find_ldb_val(local, "objectSid");
@@ -94,17 +115,18 @@ static void generate_sambaPrimaryGroupSID(struct ldb_module *module, const char 
 	if (!ldb_msg_find_ldb_val(local, "primaryGroupID"))
 		return; /* Sorry, no SID today.. */
 
-	sid->sub_auths[sid->num_auths-1] = ldb_msg_find_uint(local, "primaryGroupID", 0);
+	sid->num_auths--;
 
-	status = ndr_push_struct_blob(&out, remote_mp, sid, (ndr_push_flags_fn_t)ndr_push_dom_sid);
+	sidstring = dom_sid_string(remote_mp, sid);
 	talloc_free(sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return;
-	}
-
-	ldb_msg_add_value(module->ldb, remote_mp, "sambaPrimaryGroupSID", &out);
+	ldb_msg_add_fmt(module->ldb, remote_mp, "sambaPrimaryGroupSID", "%s-%d", sidstring, ldb_msg_find_uint(local, "primaryGroupID", 0));
+	talloc_free(sidstring);
 }
 
+static struct ldb_val convert_uid_samaccount(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
+{
+	return ldb_val_dup(ctx, val);
+}
 
 static struct ldb_val lookup_homedir(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
@@ -114,6 +136,7 @@ static struct ldb_val lookup_homedir(struct ldb_module *module, TALLOC_CTX *ctx,
 	pwd = getpwnam((char *)val->data);
 
 	if (!pwd) {
+		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "Unable to lookup '%s' in passwd", (char *)val->data);
 		return *talloc_zero(ctx, struct ldb_val);
 	}
 
@@ -383,10 +406,11 @@ const struct ldb_map_attribute samba3_attributes[] =
 	/* sAMAccountName -> cn */
 	{
 		.local_name = "sAMAccountName",
-		.type = MAP_RENAME,
+		.type = MAP_CONVERT,
 		.u = {
-			.rename = {
+			.convert = {
 				.remote_name = "uid",
+				.convert_remote = convert_uid_samaccount,
 			},
 		},
 	},
@@ -846,6 +870,19 @@ const struct ldb_map_attribute samba3_attributes[] =
 			.convert = {
 				.remote_name = "homeDirectory",
 				.convert_local = lookup_homedir,
+			},
+		},
+	},
+	
+	/* unicodePwd */
+	{
+		.local_name = "unicodePwd",
+		.type = MAP_GENERATE,
+		.u = {
+			.generate = {
+				.remote_names = { "sambaNTPassword", "sambaLMPassword", NULL },
+				.generate_local = NULL,
+				.generate_remote = generate_hashes
 			},
 		},
 	},
