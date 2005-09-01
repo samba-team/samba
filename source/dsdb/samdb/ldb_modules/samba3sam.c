@@ -9,8 +9,9 @@
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "system/passwd.h"
 
-/* FIXME: 
+/* 
  * sambaSID -> member  (dn!)
  * sambaSIDList -> member (dn!) 
  * sambaDomainName -> name 
@@ -46,40 +47,114 @@
 /* In Samba4 but not in Samba3:
 */
 
-static struct ldb_val convert_sid_rid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
+
+static struct ldb_message_element *generate_primaryGroupID(struct ldb_module *module, TALLOC_CTX *ctx, const char *attr, const struct ldb_message *remote)
 {
-	printf("Converting SID TO RID *\n");
+	struct ldb_message_element *el;
+	const char *sid = ldb_msg_find_string(remote, attr, NULL);
 
-	/* FIXME */
+	if (!sid)
+		return NULL;
 
-	return ldb_val_dup(ctx, val);
+	if (strchr(sid, '-') == NULL)
+		return NULL;
+
+	el = talloc_zero(ctx, struct ldb_message_element);
+	el->name = talloc_strdup(ctx, "primaryGroupID");
+	el->num_values = 1;
+	el->values = talloc_array(ctx, struct ldb_val, 1);
+	el->values[0].data = (uint8_t *)talloc_strdup(ctx, strchr(sid, '-')+1);
+	el->values[0].length = strlen((char *)el->values[0].data);
+
+	return el;
 }
 
-static struct ldb_val convert_rid_sid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
+static void generate_sambaPrimaryGroupSID(struct ldb_module *module, const char *local_attr, const struct ldb_message *local, struct ldb_message *remote_mp, struct ldb_message *remote_fb)
 {
-	printf("Converting RID TO SID *\n");
+	const struct ldb_val *sidval;
+	struct dom_sid *sid;
+	struct ldb_val out;
+	NTSTATUS status;
 
-	/* FIXME */
+	sidval = ldb_msg_find_ldb_val(local, "objectSid");
 
-	return ldb_val_dup(ctx, val);
+	if (!sidval) 
+		return; /* Sorry, no SID today.. */
+
+	sid = talloc(remote_mp, struct dom_sid);
+	if (sid == NULL) {
+		return;
+	}
+	status = ndr_pull_struct_blob(sidval, sid, sid, (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(sid);
+		return;
+	}
+
+	if (!ldb_msg_find_ldb_val(local, "primaryGroupID"))
+		return; /* Sorry, no SID today.. */
+
+	sid->sub_auths[sid->num_auths-1] = ldb_msg_find_uint(local, "primaryGroupID", 0);
+
+	status = ndr_push_struct_blob(&out, remote_mp, sid, (ndr_push_flags_fn_t)ndr_push_dom_sid);
+	talloc_free(sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return;
+	}
+
+	ldb_msg_add_value(module->ldb, remote_mp, "sambaPrimaryGroupSID", &out);
 }
 
-static struct ldb_val convert_unix_id2name(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
+
+static struct ldb_val lookup_homedir(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
-	printf("Converting UNIX ID to name\n");
+	struct passwd *pwd; 
+	struct ldb_val retval;
+	
+	pwd = getpwnam((char *)val->data);
 
-	/* FIXME */
+	if (!pwd) {
+		return *talloc_zero(ctx, struct ldb_val);
+	}
 
-	return ldb_val_dup(ctx, val);
+	retval.data = (uint8_t *)talloc_strdup(ctx, pwd->pw_dir);
+	retval.length = strlen((char *)retval.data);
+
+	return retval;
 }
 
-static struct ldb_val convert_unix_name2id(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
+static struct ldb_val lookup_gid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
-	printf("Converting UNIX name to ID\n");
+	struct passwd *pwd; 
+	struct ldb_val retval;
+	
+	pwd = getpwnam((char *)val->data);
 
-	/* FIXME */
+	if (!pwd) {
+		return *talloc_zero(ctx, struct ldb_val);
+	}
 
-	return ldb_val_dup(ctx, val);
+	retval.data = (uint8_t *)talloc_asprintf(ctx, "%d", pwd->pw_gid);
+	retval.length = strlen((char *)retval.data);
+
+	return retval;
+}
+
+static struct ldb_val lookup_uid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
+{
+	struct passwd *pwd; 
+	struct ldb_val retval;
+	
+	pwd = getpwnam((char *)val->data);
+
+	if (!pwd) {
+		return *talloc_zero(ctx, struct ldb_val);
+	}
+
+	retval.data = (uint8_t *)talloc_asprintf(ctx, "%d", pwd->pw_uid);
+	retval.length = strlen((char *)retval.data);
+
+	return retval;
 }
 
 static struct ldb_val encode_sid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
@@ -128,16 +203,31 @@ static struct ldb_val decode_sid(struct ldb_module *module, TALLOC_CTX *ctx, con
 }
 
 const struct ldb_map_objectclass samba3_objectclasses[] = {
+	{
+		.local_name = "user",
+		.remote_name = "posixAccount",
+		.base_classes = { "top", NULL },
+		.musts = { "cn", "uid", "uidNumber", "gidNumber", "homeDirectory", NULL },
+		.mays = { "userPassword", "loginShell", "gecos", "description", NULL },
+	},
+	{
+		.local_name = "group",
+		.remote_name = "posixGroup",
+		.base_classes = { "top", NULL },
+		.musts = { "cn", "gidNumber", NULL },
+		.mays = { "userPassword", "memberUid", "description", NULL },
+	},
 	{ 
 		.local_name = "group", 
 		.remote_name = "sambaGroupMapping",
+		.base_classes = { "top", "posixGroup", NULL },
 		.musts = { "gidNumber", "sambaSID", "sambaGroupType", NULL },
 		.mays = { "displayName", "description", "sambaSIDList", NULL },
 	},
 	{ 
 		.local_name = "user", 
 		.remote_name = "sambaSAMAccount",
-		.base_classes = { "top", NULL },
+		.base_classes = { "top", "posixAccount", NULL },
 		.musts = { "uid", "sambaSID", NULL },
 		.mays = { "cn", "sambaLMPassword", "sambaNTPassword",
 			"sambaPwdLastSet", "sambaLogonTime", "sambaLogoffTime",
@@ -156,7 +246,7 @@ const struct ldb_map_objectclass samba3_objectclasses[] = {
 		.musts = { "sambaDomainName", "sambaSID", NULL },
 		.mays = { "sambaNextRid", "sambaNextGroupRid", "sambaNextUserRid", "sambaAlgorithmicRidBase", NULL },
 	},
-	{ NULL, NULL }
+		{ NULL, NULL }
 };
 
 const struct ldb_map_attribute samba3_attributes[] = 
@@ -219,12 +309,12 @@ const struct ldb_map_attribute samba3_attributes[] =
 	/* sambaPrimaryGroupSID -> primaryGroupID */
 	{
 		.local_name = "primaryGroupID",
-		.type = MAP_CONVERT,
+		.type = MAP_GENERATE,
 		.u = {
-			.convert = {
-				.remote_name = "sambaPrimaryGroupSID",
-				.convert_local = convert_rid_sid,
-				.convert_remote = convert_sid_rid, 
+			.generate = {
+				.remote_names = { "sambaPrimaryGroupSID", NULL },
+				.generate_local = generate_primaryGroupID,
+				.generate_remote = generate_sambaPrimaryGroupSID, 
 			},
 		},
 	},
@@ -267,7 +357,7 @@ const struct ldb_map_attribute samba3_attributes[] =
 		.local_name = "unixName",
 		.type = MAP_RENAME,
 		.u = {
-			.convert = {
+			.rename = {
 				.remote_name = "uid",
 			},
 		},
@@ -723,6 +813,42 @@ const struct ldb_map_attribute samba3_attributes[] =
 		.type = MAP_IGNORE,
 	},
 
+	/* uidNumber */
+	{
+		.local_name = "unixName",
+		.type = MAP_CONVERT,
+		.u = {
+			.convert = {
+				.remote_name = "uidNumber",
+				.convert_local = lookup_uid,
+			},
+		},
+	},
+
+	/* gidNumber. Perhaps make into generate so we can distinguish between 
+	 * groups and accounts? */
+	{
+		.local_name = "unixName",
+		.type = MAP_CONVERT,
+		.u = {
+			.convert = {
+				.remote_name = "gidNumber",
+				.convert_local = lookup_gid,
+			},
+		},
+	},
+
+	/* homeDirectory */
+	{
+		.local_name = "unixName",
+		.type = MAP_CONVERT,
+		.u = {
+			.convert = {
+				.remote_name = "homeDirectory",
+				.convert_local = lookup_homedir,
+			},
+		},
+	},
 	{
 		.local_name = NULL,
 	}
