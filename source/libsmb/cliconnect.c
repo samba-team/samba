@@ -600,7 +600,7 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 		nt_status = ntlmssp_update(ntlmssp_state, 
 						  blob_in, &blob_out);
 		data_blob_free(&blob_in);
-		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) || NT_STATUS_IS_OK(nt_status)) {
 			if (turn == 1) {
 				/* and wrap it in a SPNEGO wrapper */
 				msg1 = gen_negTokenInit(OID_NTLMSSP, blob_out);
