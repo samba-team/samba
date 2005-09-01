@@ -227,7 +227,7 @@ void init_reg_q_create_key_ex(REG_Q_CREATE_KEY_EX *q_c, POLICY_HND *hnd,
 	q_c->ptr2 = 1;
 	init_buf_hdr(&q_c->hdr_sec, sec_buf->len, sec_buf->len);
 	q_c->ptr3 = 1;
-	q_c->unknown_2 = 0x00000000;
+	q_c->disposition = TALLOC_P( get_talloc_ctx(), uint32 );
 }
 
 /*******************************************************************
@@ -259,7 +259,7 @@ BOOL reg_io_q_create_key_ex(const char *desc,  REG_Q_CREATE_KEY_EX *q_u,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("reserved", ps, depth, &q_u->reserved))
+	if(!prs_uint32("options", ps, depth, &q_u->options))
 		return False;
 	if(!prs_uint32("access", ps, depth, &q_u->access))
 		return False;
@@ -267,16 +267,15 @@ BOOL reg_io_q_create_key_ex(const char *desc,  REG_Q_CREATE_KEY_EX *q_u,
 	if(!prs_pointer("sec_info", ps, depth, (void**)&q_u->sec_info, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
 		return False;
 
-	if(!prs_uint32("ptr2", ps, depth, &q_u->ptr2))
-		return False;
-	if(!reg_io_hdrbuf_sec(q_u->ptr2, &q_u->ptr3, &q_u->hdr_sec, q_u->data,
-	                      ps, depth))
-		return False;
+	if ( q_u->sec_info ) {
+		if(!prs_uint32("ptr2", ps, depth, &q_u->ptr2))
+			return False;
+		if(!reg_io_hdrbuf_sec(q_u->ptr2, &q_u->ptr3, &q_u->hdr_sec, q_u->data, ps, depth))
+			return False;
+	}
 
-#if 0
-	if(!prs_uint32("unknown_2", ps, depth, &q_u->unknown_2))
+	if(!prs_pointer("disposition", ps, depth, (void**)&q_u->disposition, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))
 		return False;
-#endif
 
 	return True;
 }
