@@ -59,7 +59,7 @@ typedef struct _prs_struct {
 #define RPC_BIG_ENDIAN 		1
 #define RPC_LITTLE_ENDIAN	0
 
-#define RPC_PARSE_ALIGN 2
+#define RPC_PARSE_ALIGN 4
 
 typedef struct _output_data {
 	/*
