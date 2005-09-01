@@ -162,7 +162,7 @@ static int timestamps_modify_record(struct ldb_module *module, const struct ldb_
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(msg->dn)) {
-		return ldb_next_add_record(module, msg);
+		return ldb_next_modify_record(module, msg);
 	}
 
 	timeval = time(NULL);
