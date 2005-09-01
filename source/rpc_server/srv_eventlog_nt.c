@@ -29,7 +29,6 @@ typedef struct {
 	fstring handle_string;
 	uint32 num_records;
 	uint32 oldest_entry;
-	uint32 active_entry;
 	uint32 flags;
 } EventlogInfo;
 
@@ -939,26 +938,12 @@ WERROR _eventlog_read_eventlog(pipes_struct *p, EVENTLOG_Q_READ_EVENTLOG *q_u, E
 	info->flags = q_u->flags;
 	ps = &p->out_data.rdata;
 
-	/* if this is the first time we're reading on this handle */
-
-	if ( info->active_entry == 0 ) {
-
-		/* Rather than checking the EVENTLOG_SEQUENTIAL_READ/EVENTLOG_SEEK_READ flags,
-		   we'll just go to the offset specified in the request, or the oldest entry
-		   if no offset is specified */
-
-		if(q_u->offset > 0) 
-			info->active_entry = q_u->offset;
-		else
-			info->active_entry = info->oldest_entry;
-	}
-    
 	if ( info->flags & EVENTLOG_FORWARDS_READ ) 
 		direction = "forward";
 	else if ( info->flags & EVENTLOG_BACKWARDS_READ )
 		direction = "backward";
 
-	if ( !(read_eventlog_hook(info, &entry, direction, info->active_entry, q_u->max_read_size, &eof, &buffer, &numlines)) ) {
+	if ( !(read_eventlog_hook(info, &entry, direction, q_u->offset, q_u->max_read_size, &eof, &buffer, &numlines)) ) {
 		if(eof == False) {
 			return WERR_NOMEM;
 		}
@@ -991,12 +976,6 @@ WERROR _eventlog_read_eventlog(pipes_struct *p, EVENTLOG_Q_READ_EVENTLOG *q_u, E
 					   r_u->num_records,
 					   r_u->num_bytes_in_resp,
 					   q_u->max_read_size));
-				/* update the active record */
-				if(info->flags & EVENTLOG_FORWARDS_READ) {
-					info->active_entry += num_records_read;
-				} else if(info->flags & EVENTLOG_BACKWARDS_READ) {
-					info->active_entry -= num_records_read;
-				}
 			}
 		}
 		SAFE_FREE(buffer);
