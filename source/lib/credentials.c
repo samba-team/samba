@@ -128,7 +128,9 @@ const char *cli_credentials_get_principal(struct cli_credentials *cred, TALLOC_C
 	return talloc_reference(mem_ctx, cred->principal);
 }
 
-BOOL cli_credentials_set_principal(struct cli_credentials *cred, const char *val, enum credentials_obtained obtained)
+BOOL cli_credentials_set_principal(struct cli_credentials *cred, 
+				   const char *val, 
+				   enum credentials_obtained obtained)
 {
 	if (obtained >= cred->principal_obtained) {
 		cred->principal = talloc_strdup(cred, val);

@@ -688,7 +688,7 @@ struct ldb_dn *ldb_dn_get_parent(void *mem_ctx, const struct ldb_dn *dn)
 }
 
 struct ldb_dn_component *ldb_dn_build_component(void *mem_ctx, const char *attr,
-							       const char *val)
+						const char *val)
 {
 	struct ldb_dn_component *dc;
 
@@ -783,7 +783,7 @@ struct ldb_dn *ldb_dn_compose(void *mem_ctx, const struct ldb_dn *dn1, const str
 
 	for (i = 0; i < dn1->comp_num; i++) {
 		new->components[i] = ldb_dn_copy_component(new->components,
-								&(dn1->components[i]));
+							   &(dn1->components[i]));
 	}
 
 	return new;
