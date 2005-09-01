@@ -779,13 +779,14 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 	SAFE_FREE(rparam);
 
 	if (prdata == NULL) {
-		DEBUG(0,("rpc_api_pipe: Remote machine %s pipe %s "
+		DEBUG(3,("rpc_api_pipe: Remote machine %s pipe %s "
 			"fnum 0x%x failed to return data.\n",
 			cli->cli->desthost,
 			cli_get_pipe_name(cli->pipe_idx),
 			(unsigned int)cli->fnum));
-		ret = NT_STATUS_INVALID_PARAMETER;
-		goto err;
+		/* Yes - some calls can truely return no data... */
+		prs_mem_free(&current_pdu);
+		return NT_STATUS_OK;
 	}
 
 	/*
