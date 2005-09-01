@@ -667,6 +667,8 @@ static NTSTATUS cli_pipe_reset_current_pdu(struct rpc_pipe_client *cli, RPC_HDR 
 	if (current_pdu_len == (uint32)prhdr->frag_len) {
 		prs_mem_free(current_pdu);
 		prs_init(current_pdu, 0, prs_get_mem_context(current_pdu), UNMARSHALL);
+		/* Make current_pdu dynamic with no memory. */
+		prs_give_memory(current_pdu, 0, 0, True);
 		return NT_STATUS_OK;
 	}
 
