@@ -40,6 +40,16 @@ assert(ldif != undefined);
 ok = s4.add(ldif);
 assert(ok);
 
+var ldif = sys.file_load(mypath + "../../source/setup/provision_templates.ldif");
+var subobj = new Object();
+subobj.BASEDN = "dc=vernstok,dc=nl";
+ldif = substitute_var(ldif, subobj);
+assert(ldif != undefined);
+ok = s4.add(ldif);
+assert(ok);
+
+
+
 ok = s4.add(sprintf("dn: @MAP=samba3sam
 @MAP_URL: %s", s3url));
 assert(ok);
@@ -57,7 +67,6 @@ assert(ok);
 
 msg = s4.search("(ou=Users)");
 assert(msg.length == 1);
-assert(msg['mappedFromDn'] == msg['dn']);
 
 println("Looking up by non-mapped attribute");
 msg = s4.search("(cn=Administrator)");
@@ -76,9 +85,8 @@ assert(msg.length == 0);
 println("Looking up mapped entry containing SID");
 msg = s4.search("(cn=Replicator)");
 assert(msg.length == 1);
-assert(msg[0].dn == "cn=Replicator,ou=Groups,ou=Tests,dc=vernstok,dc=nl");
+assert(msg[0].dn == "cn=Replicator,ou=Groups,sambaDomainName=TESTS,dc=vernstok,dc=nl");
 assert(msg[0].objectSid == "S-1-5-21-4231626423-2410014848-2360679739-552");
-assert(msg[0].mappedFromDn == msg[0].dn);
 
 println("Checking mapping of objectclass");
 var oc = msg[0].objectclass;
@@ -89,24 +97,23 @@ for (var i in oc) {
 println("Adding a record that will be fallbacked");
 ok = s4.add("
 dn: cn=Foo,dc=idealx,dc=org
-unixName: root
-lastLogon: 20000
+foo: bar
+blah: Blie
 cn: Foo
 showInAdvancedViewOnly: TRUE
 ");
 assert(ok);
 
 println("Checking for existance of record");
-msg = s4.search("(cn=Foo)", new Array('unixName','lastLogon','cn','showInAdvancedViewOnly'));
+msg = s4.search("(cn=Foo)", new Array('foo','blah','cn','showInAdvancedViewOnly'));
 assert(msg.length == 1);
 assert(msg[0].showInAdvancedViewOnly == "TRUE");
-assert(msg[0].cn == "Foo");
-assert(msg[0].unixName == "root");
-assert(msg[0].lastLogon == 20000);
+assert(msg[0].foo == "bar");
+assert(msg[0].blah == "Blie");
 
 println("Adding record that will be mapped");
 ok = s4.add("
-dn: cn=Niemand,ou=Tests,dc=vernstok,dc=nl
+dn: cn=Niemand,sambaDomainName=TESTS,dc=vernstok,dc=nl
 objectClass: user
 unixName: blah
 cn: Niemand
@@ -116,15 +123,17 @@ assert(ok);
 println("Checking for existance of record (mapped)");
 msg = s4.search("(unixName=blah)", new Array('unixName','cn','dn'));
 assert(msg.length == 1);
+assert(msg[0].cn == "Niemand");
 
 println("Checking for data in destination database");
-msg = s3.search("(cn=Niemand)");
+msg = s3.search("(displayName=Niemand)");
 assert(msg.length >= 1);
+assert(msg[0].sambaSID == "S-1-5-21-4231626423-2410014848-2360679739-2001");
 assert(msg[0].displayName == "Niemand");
 
 println("Adding attribute...");
 ok = s4.modify("
-dn: cn=Niemand,ou=Tests,dc=vernstok,dc=nl
+dn: cn=Niemand,sambaDomainName=TESTS,dc=vernstok,dc=nl
 changetype: modify
 add: description
 description: Blah
@@ -134,11 +143,13 @@ assert(ok);
 println("Checking whether changes are still there...");
 msg = s4.search("(cn=Niemand)");
 assert(msg.length >= 1);
+printVars(msg);
+assert(msg[0].cn == "Niemand");
 assert(msg[0].description == "Blah");
 
 println("Modifying attribute...");
 ok = s4.modify("
-dn: cn=Niemand,ou=Tests,dc=vernstok,dc=nl
+dn: cn=Niemand,sambaDomainName=TESTS,dc=vernstok,dc=nl
 changetype: modify
 replace: description
 description: Blie
@@ -152,7 +163,7 @@ assert(msg[0].description == "Blie");
 
 println("Deleting attribute...");
 ok = s4.modify("
-dn: cn=Niemand,ou=Tests,dc=vernstok,dc=nl
+dn: cn=Niemand,sambaDomainName=TESTS,dc=vernstok,dc=nl
 changetype: modify
 delete: description
 ");
@@ -164,7 +175,7 @@ assert(msg.length >= 1);
 assert(msg[0].description == undefined);
 
 println("Renaming record...");
-ok = s4.rename("cn=Niemand,ou=Tests,dc=vernstok,dc=nl", "cn=Niemand,dc=vernstok,dc=nl");
+ok = s4.rename("cn=Niemand,sambaDomainName=TESTS,dc=vernstok,dc=nl", "cn=Niemand,dc=vernstok,dc=nl");
 
 println("Checking whether DN has changed...");
 msg = s4.search("(cn=Niemand)");
