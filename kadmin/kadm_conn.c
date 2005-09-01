@@ -255,21 +255,15 @@ start_server(krb5_context context)
 	}
 	socks = tmp;
 	for(ap = ai; ap; ap = ap->ai_next) {
-	    int one = 1;
 	    int s = socket(ap->ai_family, ap->ai_socktype, ap->ai_protocol);
 	    if(s < 0) {
 		krb5_warn(context, errno, "socket");
 		continue;
 	    }
-#if defined(SO_REUSEADDR) && defined(HAVE_SETSOCKOPT)
-	    if(setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (void *)&one,
-			  sizeof(one)) < 0)
-		krb5_warn(context, errno, "setsockopt");
-#endif
-	    {
-		int on = 1;
-		setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on));
-	    }
+
+	    socket_set_reuseaddr(s, 1);
+	    socket_set_ipv6only(s, 1);
+
 	    if (bind (s, ap->ai_addr, ap->ai_addrlen) < 0) {
 		krb5_warn(context, errno, "bind");
 		close(s);
