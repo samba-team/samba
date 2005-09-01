@@ -129,7 +129,6 @@ assert(msg[0].cn == "Niemand");
 println("Checking for data in destination database");
 msg = s3.search("(cn=Niemand)");
 assert(msg.length >= 1);
-printVars(msg);
 assert(msg[0].sambaSID == "S-1-5-21-4231626423-2410014848-2360679739-2001");
 assert(msg[0].displayName == "Niemand");
 
