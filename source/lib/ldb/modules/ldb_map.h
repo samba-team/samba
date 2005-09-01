@@ -81,7 +81,8 @@ struct ldb_map_attribute
 					struct ldb_module *, 
 					const char *local_attr,
 					const struct ldb_message *local, 
-					struct ldb_message *remote);
+					struct ldb_message *remote_mp,
+					struct ldb_message *remote_fb);
 
 			/* Name(s) for this attribute on the remote server. This is an array since 
 			 * one local attribute's data can be split up into several attributes 
@@ -92,15 +93,22 @@ struct ldb_map_attribute
 	} u;
 };
 
+#define LDB_MAP_MAX_SUBCLASSES 	10
+#define LDB_MAP_MAX_MUSTS 		10
+#define LDB_MAP_MAX_MAYS 		50
 struct ldb_map_objectclass 
 {
 	const char *local_name;
 	const char *remote_name;
+	const char *base_classes[LDB_MAP_MAX_SUBCLASSES];
+	const char *musts[LDB_MAP_MAX_MUSTS];
+	const char *mays[LDB_MAP_MAX_MAYS];
 };
 
 struct ldb_map_context
 {
 	struct ldb_map_attribute *attribute_maps;
+	/* NOTE: Always declare base classes first here */
 	const struct ldb_map_objectclass *objectclass_maps;
 	struct ldb_context *mapped_ldb;
 };

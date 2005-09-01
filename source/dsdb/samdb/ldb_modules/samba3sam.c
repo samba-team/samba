@@ -85,7 +85,7 @@ static struct ldb_val convert_unix_name2id(struct ldb_module *module, TALLOC_CTX
 static struct ldb_val encode_sid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
 	struct dom_sid *sid = dom_sid_parse_talloc(ctx, (char *)val->data);
-	struct ldb_val *out = talloc_zero(out, struct ldb_val);
+	struct ldb_val *out = talloc_zero(ctx, struct ldb_val);
 	NTSTATUS status;
 
 	if (sid == NULL) {
@@ -128,9 +128,34 @@ static struct ldb_val decode_sid(struct ldb_module *module, TALLOC_CTX *ctx, con
 }
 
 const struct ldb_map_objectclass samba3_objectclasses[] = {
-	{ "group", "sambaGroupMapping" },
-	{ "user", "sambaSAMAccount" },
-	{ "domain", "sambaDomain" },
+	{ 
+		.local_name = "group", 
+		.remote_name = "sambaGroupMapping",
+		.musts = { "gidNumber", "sambaSID", "sambaGroupType", NULL },
+		.mays = { "displayName", "description", "sambaSIDList", NULL },
+	},
+	{ 
+		.local_name = "user", 
+		.remote_name = "sambaSAMAccount",
+		.base_classes = { "top", NULL },
+		.musts = { "uid", "sambaSID", NULL },
+		.mays = { "cn", "sambaLMPassword", "sambaNTPassword",
+			"sambaPwdLastSet", "sambaLogonTime", "sambaLogoffTime",
+			"sambaKickoffTime", "sambaPwdCanChange", "sambaPwdMustChange",
+			"sambaAcctFlags", "displayName", "sambaHomePath", "sambaHomeDrive",
+			"sambaLogonScript", "sambaProfilePath", "description", "sambaUserWorkstations",
+			"sambaPrimaryGroupSID", "sambaDomainName", "sambaMungedDial",
+			"sambaBadPasswordCount", "sambaBadPasswordTime",
+	        "sambaPasswordHistory", "sambaLogonHours", NULL }
+	
+	},
+	{ 
+		.local_name = "domain", 
+		.remote_name = "sambaDomain",
+		.base_classes = { "top", NULL },
+		.musts = { "sambaDomainName", "sambaSID", NULL },
+		.mays = { "sambaNextRid", "sambaNextGroupRid", "sambaNextUserRid", "sambaAlgorithmicRidBase", NULL },
+	},
 	{ NULL, NULL }
 };
 
@@ -233,17 +258,6 @@ const struct ldb_map_attribute samba3_attributes[] =
 		.u = {
 			.rename = {
 				.remote_name = "sambaLogoffTime",
-			},
-		},
-	},
-
-	/* gidNumber -> unixName */
-	{
-		.local_name = "unixName",
-		.type = MAP_CONVERT,
-		.u = {
-			.convert = {
-				.remote_name = "gidNumber",
 			},
 		},
 	},

@@ -541,11 +541,6 @@ function upgrade(subobj, samba3, message, paths)
 	// Enable samba3sam module if original passdb backend was ldap
 	if (ldapurl != undefined) {
 		message("Enabling Samba3 LDAP mappings for SAM database\n");
-		var ldif = sprintf("
-dn: @MAP=samba3sam
-@MAP_URL: %s", ldapurl);
-		ok = samdb.add(ldif);
-		assert(ok);
 
 		ok = samdb.modify("
 dn: @MODULES
@@ -557,6 +552,12 @@ replace: @LIST
 			message("Error enabling samba3sam module: " + samdb.errstring() + "\n");
 			ret = ret + 1;
 		}
+
+		ok = samdb.add(sprintf("
+dn: @MAP=samba3sam
+@MAP_URL: %s", ldapurl));
+		assert(ok);
+
 	}
 
 	return ret;
