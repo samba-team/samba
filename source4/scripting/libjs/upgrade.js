@@ -146,8 +146,8 @@ samba3PassLastSetTime: %d
 samba3PassCanChangeTime: %d
 samba3PassMustChangeTime: %d
 objectSid: %s-%d
-ntPwdHash:: %s
 lmPwdHash:: %s
+ntPwdHash:: %s
 
 ", acc.fullname, domaindn, acc.logon_time, acc.logoff_time, acc.username, acc.nt_username, acc.nt_username, 
 
