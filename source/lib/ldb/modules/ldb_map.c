@@ -725,19 +725,26 @@ static int map_rename(struct ldb_module *module, const struct ldb_dn *olddn, con
 {
 	struct ldb_map_context *privdat = map_get_privdat(module);
 	struct ldb_dn *n_olddn, *n_newdn;
-	int ret;
-
-	ret = ldb_next_rename_record(module, n_olddn, n_newdn);
-
+	int fb_ret, mp_ret;
+	
 	n_olddn = map_local_dn(module, module, olddn);
 	n_newdn = map_local_dn(module, module, newdn);
 
-	ret = ldb_rename(privdat->mapped_ldb, n_olddn, n_newdn);
+	mp_ret = ldb_rename(privdat->mapped_ldb, n_olddn, n_newdn);
+	if (mp_ret != -1) {
+		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Mapped record renamed");
+	}
+
+	fb_ret = ldb_next_rename_record(module, olddn, newdn);
+	
+	if (fb_ret != -1) {
+		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Fallback record renamed");
+	}
 
 	talloc_free(n_olddn);
 	talloc_free(n_newdn);
 	
-	return ret;
+	return (fb_ret == -1 && mp_ret == -1)?-1:0;
 }
 
 /*
@@ -747,17 +754,23 @@ static int map_delete(struct ldb_module *module, const struct ldb_dn *dn)
 {
 	struct ldb_map_context *privdat = map_get_privdat(module);
 	struct ldb_dn *newdn;
-	int ret;
+	int fb_ret, mp_ret;
 
-	ret = ldb_next_delete_record(module, dn);
-	
 	newdn = map_local_dn(module, module, dn);
 
-	ldb_delete(privdat->mapped_ldb, newdn);
+	mp_ret = ldb_delete(privdat->mapped_ldb, newdn);
+	if (mp_ret != -1) {
+		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Mapped record deleted");
+	}
+
+	fb_ret = ldb_next_delete_record(module, dn);
+	if (fb_ret != -1) {
+		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Fallback record deleted");
+	}
 
 	talloc_free(newdn);
 
-	return ret;
+	return (fb_ret == -1 && mp_ret == -1)?-1:0;
 }
 
 /* search fallback database */

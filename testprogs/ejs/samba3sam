@@ -164,21 +164,18 @@ assert(msg.length >= 1);
 assert(msg[0].description == undefined);
 
 println("Renaming record...");
-ok = s4.rename("cn=Niemand,ou=Tests,dc=vernstok,dc=nl", "cn=Iemand,ou=Tests,dc=vernstok,dc=nl");
+ok = s4.rename("cn=Niemand,ou=Tests,dc=vernstok,dc=nl", "cn=Niemand,dc=vernstok,dc=nl");
 
-println("Checking whether old record is gone...");
+println("Checking whether DN has changed...");
 msg = s4.search("(cn=Niemand)");
-assert(msg.length == 0);
-
-println("Checking whether new record is there...");
-msg = s4.search("(cn=Iemand)");
 assert(msg.length == 1);
+assert(msg[0].dn == "cn=Niemand,dc=vernstok,dc=nl");
 
 println("Deleting record...");
-ok = s4.del("cn=Iemand,ou=Tests,dc=vernstok,dc=nl");
+ok = s4.del("cn=Niemand,dc=vernstok,dc=nl");
 assert(ok);
 
 println("Checking whether record is gone...");
-msg = s4.search("(cn=Iemand)");
+msg = s4.search("(cn=Niemand)");
 assert(msg.length == 0);
 
