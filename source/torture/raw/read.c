@@ -33,8 +33,8 @@
 
 #define CHECK_VALUE(v, correct) do { \
 	if ((v) != (correct)) { \
-		printf("(%s) Incorrect value %s=%d - should be %d\n", \
-		       __location__, #v, v, correct); \
+		printf("(%s) Incorrect value %s=%ld - should be %ld\n", \
+		       __location__, #v, (long)v, (long)correct); \
 		ret = False; \
 		goto done; \
 	}} while (0)
