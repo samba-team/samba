@@ -25,6 +25,7 @@
 
 extern struct pipe_id_info pipe_names[];
 
+#if 0
 /********************************************************************
  Map internal value to wire value.
  ********************************************************************/
@@ -57,6 +58,7 @@ int map_pipe_auth_type_to_rpc_auth_type(enum pipe_auth_type auth_type)
 	}
 	return -1;
 }
+#endif
 
 /********************************************************************
  Rpc pipe call id.
@@ -79,35 +81,36 @@ const char *cli_get_pipe_name(int pipe_idx)
 
 /*******************************************************************
  Use SMBreadX to get rest of one fragment's worth of rpc data.
+ Will expand the current_pdu struct to the correct size.
  ********************************************************************/
 
 static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
-			prs_struct *rdata,
+			prs_struct *current_pdu,
 			uint32 data_to_read,
-			uint32 *rdata_offset)
+			uint32 *current_pdu_offset)
 {
 	size_t size = (size_t)cli->max_recv_frag;
 	uint32 stream_offset = 0;
 	ssize_t num_read;
 	char *pdata;
-	ssize_t extra_data_size = ((ssize_t)*rdata_offset) + ((ssize_t)data_to_read) - (ssize_t)prs_data_size(rdata);
+	ssize_t extra_data_size = ((ssize_t)*current_pdu_offset) + ((ssize_t)data_to_read) - (ssize_t)prs_data_size(current_pdu);
 
-	DEBUG(5,("rpc_read: data_to_read: %u rdata offset: %u extra_data_size: %d\n",
-		(unsigned int)data_to_read, (unsigned int)*rdata_offset, (int)extra_data_size ));
+	DEBUG(5,("rpc_read: data_to_read: %u current_pdu offset: %u extra_data_size: %d\n",
+		(unsigned int)data_to_read, (unsigned int)*current_pdu_offset, (int)extra_data_size ));
 
 	/*
 	 * Grow the buffer if needed to accommodate the data to be read.
 	 */
 
 	if (extra_data_size > 0) {
-		if(!prs_force_grow(rdata, (uint32)extra_data_size)) {
+		if(!prs_force_grow(current_pdu, (uint32)extra_data_size)) {
 			DEBUG(0,("rpc_read: Failed to grow parse struct by %d bytes.\n", (int)extra_data_size ));
 			return NT_STATUS_NO_MEMORY;
 		}
-		DEBUG(5,("rpc_read: grew buffer by %d bytes to %u\n", (int)extra_data_size, prs_data_size(rdata) ));
+		DEBUG(5,("rpc_read: grew buffer by %d bytes to %u\n", (int)extra_data_size, prs_data_size(current_pdu) ));
 	}
 
-	pdata = prs_data_p(rdata) + *rdata_offset;
+	pdata = prs_data_p(current_pdu) + *current_pdu_offset;
 
 	do {
 		/* read data using SMBreadX */
@@ -163,9 +166,9 @@ static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
 	/* && err == (0x80000000 | STATUS_BUFFER_OVERFLOW)); */
 
 	/*
-	 * Update the current offset into rdata by the amount read.
+	 * Update the current offset into current_pdu by the amount read.
 	 */
-	*rdata_offset += stream_offset;
+	*current_pdu_offset += stream_offset;
 	return NT_STATUS_OK;
 }
 
@@ -177,11 +180,11 @@ static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
 static NTSTATUS cli_pipe_get_current_pdu(struct rpc_pipe_client *cli, RPC_HDR *prhdr, prs_struct *current_pdu)
 {
 	NTSTATUS ret = NT_STATUS_OK;
-	/* current_pdu_len is the amount of data we have in the prs_struct. */
 	uint32 current_pdu_len = prs_data_size(current_pdu);
 
 	/* Ensure we have at least RPC_HEADER_LEN worth of data to parse. */
 	if (current_pdu_len < RPC_HEADER_LEN) {
+		/* rpc_read expands the current_pdu struct as neccessary. */
 		ret = rpc_read(cli, current_pdu, RPC_HEADER_LEN - current_pdu_len, &current_pdu_len);
 		if (!NT_STATUS_IS_OK(ret)) {
 			return ret;
@@ -197,6 +200,7 @@ static NTSTATUS cli_pipe_get_current_pdu(struct rpc_pipe_client *cli, RPC_HDR *p
 
 	/* Ensure we have frag_len bytes of data. */
 	if (current_pdu_len < prhdr->frag_len) {
+		/* rpc_read expands the current_pdu struct as neccessary. */
 		ret = rpc_read(cli, current_pdu, (uint32)prhdr->frag_len - current_pdu_len, &current_pdu_len);
 		if (!NT_STATUS_IS_OK(ret)) {
 			return ret;
@@ -501,7 +505,8 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 			prs_struct *current_pdu,
 			uint8 expected_pkt_type,
 			char **ppdata,
-			uint32 *pdata_len)
+			uint32 *pdata_len,
+			prs_struct *return_data)
 {
 
 	NTSTATUS ret = NT_STATUS_OK;
@@ -552,6 +557,20 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 				return NT_STATUS_BUFFER_TOO_SMALL;
 			}
 			*pdata_len = current_pdu_len - RPC_HEADER_LEN - RPC_HDR_RESP_LEN - ss_padding_len;
+
+			/*
+			 * If this is the first reply, and the allocation hint is reasonably, try and
+			 * set up the return_data parse_struct to the correct size.
+			 */
+
+			if ((prs_data_size(return_data) == 0) && rhdr_resp.alloc_hint && (rhdr_resp.alloc_hint < 15*1024*1024)) {
+				if (!prs_set_buffer_size(return_data, rhdr_resp.alloc_hint)) {
+					DEBUG(0,("cli_pipe_validate_current_pdu: reply alloc hint %u "
+						"too large to allocate\n",
+						(unsigned int)rhdr_resp.alloc_hint ));
+					return NT_STATUS_NO_MEMORY;
+				}
+			}
 
 			break;
 		}
@@ -709,8 +728,8 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 	uint32 data_len = data ? prs_offset(data) : 0;
 	char *prdata = NULL;
 	uint32 rdata_len = 0;
-	uint32 current_rbuf_offset = 0;
 	uint32 max_data = cli->max_xmit_frag ? cli->max_xmit_frag : 1024;
+	uint32 current_rbuf_offset = 0;
 	prs_struct current_pdu;
 	
 #ifdef DEVELOPER
@@ -768,10 +787,17 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 	}
 
 	/*
-	 * Give this memory as dynamically allocated to the current pdu.
+	 * Give this memory as dynamic to the current pdu.
 	 */
 
 	prs_give_memory(&current_pdu, prdata, rdata_len, True);
+
+	/* Ensure we can mess with the return prs_struct. */
+	SMB_ASSERT(UNMARSHALLING(rbuf));
+	SMB_ASSERT(prs_data_size(rbuf) == 0);
+
+	/* Make rbuf dynamic with no memory. */
+	prs_give_memory(rbuf, 0, 0, True);
 
 	while(1) {
 		RPC_HDR rhdr;
@@ -784,8 +810,12 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 			goto err;
 		}
 
+		/* We pass in rbuf here so if the alloc hint is set correctly 
+		   we can set the output size and avoid reallocs. */
+
 		ret = cli_pipe_validate_current_pdu(cli, &rhdr, &current_pdu, expected_pkt_type,
-				&ret_data, &ret_data_len);
+				&ret_data, &ret_data_len, rbuf);
+
 		if (!NT_STATUS_IS_OK(ret)) {
 			goto err;
 		}
@@ -814,9 +844,9 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 
 		/* Now copy the data portion out of the pdu into rbuf. */
 		if (!prs_force_grow(rbuf, ret_data_len)) {
-			ret = NT_STATUS_NO_MEMORY;
-			goto err;
-		}
+                        ret = NT_STATUS_NO_MEMORY;
+                        goto err;
+                }
 		memcpy(prs_data_p(rbuf)+current_rbuf_offset, ret_data, (size_t)ret_data_len);
 		current_rbuf_offset += ret_data_len;
 
@@ -1535,7 +1565,7 @@ static NTSTATUS create_rpc_bind_auth3(struct rpc_pipe_client *cli,
 
 static NTSTATUS rpc_finish_auth3_bind(struct rpc_pipe_client *cli,
 				RPC_HDR *phdr,
-				prs_struct *rdata,
+				prs_struct *rbuf,
 				uint32 rpc_call_id,
 				enum pipe_auth_type auth_type,
 				enum pipe_auth_level auth_level)
@@ -1552,18 +1582,18 @@ static NTSTATUS rpc_finish_auth3_bind(struct rpc_pipe_client *cli,
 	}
 
 	/* Process the returned NTLMSSP blob first. */
-	if (!prs_set_offset(rdata, phdr->frag_len - phdr->auth_len - RPC_HDR_AUTH_LEN)) {
+	if (!prs_set_offset(rbuf, phdr->frag_len - phdr->auth_len - RPC_HDR_AUTH_LEN)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if(!smb_io_rpc_hdr_auth("hdr_auth", &hdr_auth, rdata, 0)) {
+	if(!smb_io_rpc_hdr_auth("hdr_auth", &hdr_auth, rbuf, 0)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* TODO - check auth_type/auth_level match. */
 
 	server_response = data_blob(NULL, phdr->auth_len);
-	prs_copy_data_out((char *)server_response.data, rdata, phdr->auth_len);
+	prs_copy_data_out((char *)server_response.data, rbuf, phdr->auth_len);
 	
 	nt_status = ntlmssp_update(cli->auth.a_u.ntlmssp_state,
 				   server_response,
@@ -1574,7 +1604,7 @@ static NTSTATUS rpc_finish_auth3_bind(struct rpc_pipe_client *cli,
 		return nt_status;
 	}
 
-	prs_init(&rpc_out, 0, prs_get_mem_context(rdata), MARSHALL);
+	prs_init(&rpc_out, 0, prs_get_mem_context(rbuf), MARSHALL);
 
 	nt_status = create_rpc_bind_auth3(cli, rpc_call_id,
 				auth_type, auth_level,
@@ -1607,7 +1637,7 @@ static NTSTATUS rpc_finish_auth3_bind(struct rpc_pipe_client *cli,
 
 static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
                                 RPC_HDR *phdr,
-                                prs_struct *rdata,
+                                prs_struct *rbuf,
                                 uint32 rpc_call_id,
                                 enum pipe_auth_type auth_type,
                                 enum pipe_auth_level auth_level)
@@ -1629,7 +1659,7 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 	RPC_IFACE abstract;
 	RPC_IFACE transfer;
 	prs_struct rpc_out;
-	prs_struct rdata;
+	prs_struct rbuf;
 	uint32 rpc_call_id;
 	NTSTATUS status;
 
@@ -1659,10 +1689,10 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 	}
 
 	/* Initialize the incoming data struct. */
-	prs_init(&rdata, 0, cli->cli->mem_ctx, UNMARSHALL);
+	prs_init(&rbuf, 0, cli->cli->mem_ctx, UNMARSHALL);
 
 	/* send data on \PIPE\.  receive a response */
-	status = rpc_api_pipe(cli, &rpc_out, &rdata, RPC_BINDACK);
+	status = rpc_api_pipe(cli, &rpc_out, &rbuf, RPC_BINDACK);
 	if (!NT_STATUS_IS_OK(status)) {
 		prs_mem_free(&rpc_out);
 		return status;
@@ -1677,21 +1707,21 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 		(unsigned int)cli->fnum));
 
 	/* Unmarshall the RPC header */
-	if(!smb_io_rpc_hdr("hdr"   , &hdr, &rdata, 0)) {
+	if(!smb_io_rpc_hdr("hdr"   , &hdr, &rbuf, 0)) {
 		DEBUG(0,("rpc_pipe_bind: failed to unmarshall RPC_HDR.\n"));
-		prs_mem_free(&rdata);
+		prs_mem_free(&rbuf);
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	if(!smb_io_rpc_hdr_ba("", &hdr_ba, &rdata, 0)) {
+	if(!smb_io_rpc_hdr_ba("", &hdr_ba, &rbuf, 0)) {
 		DEBUG(0,("rpc_pipe_bind: Failed to unmarshall RPC_HDR_BA.\n"));
-		prs_mem_free(&rdata);
+		prs_mem_free(&rbuf);
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
 	if(!check_bind_response(&hdr_ba, cli->pipe_idx, &transfer)) {
 		DEBUG(2,("rpc_pipe_bind: check_bind_response failed.\n"));
-		prs_mem_free(&rdata);
+		prs_mem_free(&rbuf);
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
@@ -1708,20 +1738,20 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 
 		case PIPE_AUTH_TYPE_NTLMSSP:
 			/* Need to send AUTH3 packet - no reply. */
-			status = rpc_finish_auth3_bind(cli, &hdr, &rdata, rpc_call_id,
+			status = rpc_finish_auth3_bind(cli, &hdr, &rbuf, rpc_call_id,
 						auth_type, auth_level);
 			if (!NT_STATUS_IS_OK(status)) {
-				prs_mem_free(&rdata);
+				prs_mem_free(&rbuf);
 				return status;
 			}
 			break;
 
 		case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
 			/* Need to send alter context request and reply. */
-			status = rpc_finish_spnego_ntlmssp_bind(cli, &hdr, &rdata, rpc_call_id,
+			status = rpc_finish_spnego_ntlmssp_bind(cli, &hdr, &rbuf, rpc_call_id,
 						auth_type, auth_level);
 			if (!NT_STATUS_IS_OK(status)) {
-				prs_mem_free(&rdata);
+				prs_mem_free(&rbuf);
 				return status;
 			}
 			break;
@@ -1729,7 +1759,7 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 		default:
 			DEBUG(0,("cli_finish_bind_auth: unknown auth type %u\n",
 				(unsigned int)auth_type ));
-			prs_mem_free(&rdata);
+			prs_mem_free(&rbuf);
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
@@ -1738,7 +1768,7 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 	cli->auth.auth_type = auth_type;
 	cli->auth.auth_level = auth_level;
 
-	prs_mem_free(&rdata);
+	prs_mem_free(&rbuf);
 	return NT_STATUS_OK;
 }
 
