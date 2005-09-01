@@ -45,7 +45,6 @@ struct samba3_samaccount {
 	char *profile_path;
 	char *acct_desc;
 	char *workstations;
-	uid_t uid;
 	uint32_t user_rid, group_rid, hours_len, unknown_6;
 	uint16_t acct_ctrl, logon_divs;
 	uint16_t bad_password_count, logon_count;

@@ -27,11 +27,15 @@
 #include "ldb/include/ldb_private.h"
 #include "ldb/modules/ldb_map.h"
 
-/* TODO:
- *  - objectclass hint in ldb_map_attribute 
- *     for use when multiple remote attributes (independant of each other)
- *     map to one local attribute. E.g.: (uid, gidNumber) -> unixName
- *     (use MAP_GENERATE instead ?) 
+/* 
+ *  - map_message_outgoing() should:
+ *   - modify: not worry about anything simply map and hope everything 
+ *     will be ok.
+ *   - make a list of remote objectclasses that will be used 
+ *     given the attributes that are available
+ *   - only add attribute to the remote message if 
+ *     it is allowed by the objectclass
+ *
  */
 
 /*
@@ -701,10 +705,6 @@ static int ldb_map_message_outgoing(struct ldb_module *module, const struct ldb_
 	}
 
 	if ((*fb)->num_elements == 0) {
-		/* No elements, discard.. */
-		talloc_free(*fb);
-		*fb = NULL;
-	} else {
 		ldb_msg_add_string(module->ldb, *fb, "isMapped", "TRUE");
 	}
 
@@ -727,8 +727,8 @@ static int map_rename(struct ldb_module *module, const struct ldb_dn *olddn, con
 	struct ldb_dn *n_olddn, *n_newdn;
 	int ret;
 
-	ret = ldb_next_rename_record(module, olddn, newdn);
-	
+	ret = ldb_next_rename_record(module, n_olddn, n_newdn);
+
 	n_olddn = map_local_dn(module, module, olddn);
 	n_newdn = map_local_dn(module, module, newdn);
 
@@ -753,7 +753,7 @@ static int map_delete(struct ldb_module *module, const struct ldb_dn *dn)
 	
 	newdn = map_local_dn(module, module, dn);
 
-	ret = ldb_delete(privdat->mapped_ldb, newdn);
+	ldb_delete(privdat->mapped_ldb, newdn);
 
 	talloc_free(newdn);
 
@@ -996,7 +996,6 @@ static int map_modify(struct ldb_module *module, const struct ldb_message *msg)
 
 	if (!map_is_mappable(privdat, msg))
 		return ldb_next_modify_record(module, msg);
-		
 
 	if (ldb_map_message_outgoing(module, msg, &fb, &mp) == -1)
 		return -1;

@@ -94,20 +94,40 @@ samba3RefuseMachinePwdChange: %d
 	samba3.policy.bad_lockout_minutes, samba3.policy.disconnect_time, 
 	samba3.policy.refuse_machine_password_change
 );
-
+	
 	return ldif;
 }
 
-function upgrade_sam_account(acc,domaindn)
+function upgrade_sam_account(ldb,acc,domaindn,domainsid)
 {
-	var ldb = ldb_init();
+	if (acc.nt_username == undefined) {
+		acc.nt_username = acc.username;
+	}	
+
+	if (acc.nt_username == "") {
+		acc.nt_username = acc.username;
+	}	
+
+	if (acc.fullname == undefined) {
+		var pw = nss.getpwnam(acc.fullname);
+		acc.fullname = pw.pw_gecos;
+	}
+
+	var pts = split(',', acc.fullname);
+	acc.fullname = pts[0];
+	
+	assert(acc.fullname != undefined);
+	assert(acc.nt_username != undefined);
+
 	var ldif = sprintf(
 "dn: cn=%s,%s
+objectClass: top
 objectClass: user
 lastLogon: %d
 lastLogoff: %d
 unixName: %s
 name: %s
+sAMAccountName: %s
 cn: %s
 description: %s
 primaryGroupID: %d
@@ -125,15 +145,16 @@ samba3BadPwdTime: %d
 samba3PassLastSetTime: %d
 samba3PassCanChangeTime: %d
 samba3PassMustChangeTime: %d
-samba3Rid: %d
+objectSid: %s-%d
 ntPwdHash:: %s
 lmPwdHash:: %s
 
-", acc.fullname, domaindn, acc.logon_time, acc.logoff_time, acc.username, acc.nt_username, 
+", acc.fullname, domaindn, acc.logon_time, acc.logoff_time, acc.username, acc.nt_username, acc.nt_username, 
+
 acc.fullname, acc.acct_desc, acc.group_rid, acc.bad_password_count, acc.logon_count,
 acc.domain, acc.dir_drive, acc.munged_dial, acc.homedir, acc.logon_script, 
 acc.profile_path, acc.workstations, acc.kickoff_time, acc.bad_password_time, 
-acc.pass_last_set_time, acc.pass_can_change_time, acc.pass_must_change_time, acc.user_rid,
+acc.pass_last_set_time, acc.pass_can_change_time, acc.pass_must_change_time, domainsid, acc.user_rid,
 	ldb.encode(acc.lm_pw), ldb.encode(acc.nt_pw)); 
 
 	return ldif;
@@ -141,6 +162,33 @@ acc.pass_last_set_time, acc.pass_can_change_time, acc.pass_must_change_time, acc
 
 function upgrade_sam_group(grp,domaindn)
 {
+	var nss = nss_init();
+
+	var gr;
+	if (grp.sid_name_use == 5) { // Well-known group
+		return undefined;
+	}
+
+	if (grp.nt_name == "Domain Guests" ||
+	    grp.nt_name == "Domain Users" ||
+	    grp.nt_name == "Domain Admins") {
+		return undefined;
+	}
+	
+	if (grp.gid == -1) {
+		gr = nss.getgrnam(grp.nt_name);
+	} else {
+		gr = nss.getgrgid(grp.gid);
+	}
+
+	if (gr == undefined) {
+		grp.unixname = "UNKNOWN";
+	} else {
+		grp.unixname = gr.gr_name;
+	}
+
+	assert(grp.unixname != undefined);
+	
 	var ldif = sprintf(
 "dn: cn=%s,%s
 objectClass: top
@@ -148,10 +196,10 @@ objectClass: group
 description: %s
 cn: %s
 objectSid: %s
-unixName: FIXME
+unixName: %s
 samba3SidNameUse: %d
 ", grp.nt_name, domaindn, 
-grp.comment, grp.nt_name, grp.sid, grp.sid_name_use);
+grp.comment, grp.nt_name, grp.sid, grp.unixname, grp.sid_name_use);
 
 	return ldif;
 }
@@ -421,9 +469,9 @@ function upgrade(subobj, samba3, message, paths)
 	message("Importing users\n");
 	for (var i in samba3.samaccounts) {
 		var msg = "... " + samba3.samaccounts[i].username;
-		var ldif = upgrade_sam_account(samba3.samaccounts[i],subobj.BASEDN);
+		var ldif = upgrade_sam_account(samdb,samba3.samaccounts[i],subobj.BASEDN,subobj.DOMAINSID);
 		ok = samdb.add(ldif);
-		if (!ok) { 
+		if (!ok && samdb.errstring() != "Record exists") { 
 			msg = msg + "... error: " + samdb.errstring();
 			ret = ret + 1; 
 		}
@@ -434,10 +482,12 @@ function upgrade(subobj, samba3, message, paths)
 	for (var i in samba3.groupmappings) {
 		var msg = "... " + samba3.groupmappings[i].nt_name;
 		var ldif = upgrade_sam_group(samba3.groupmappings[i],subobj.BASEDN);
-		ok = samdb.add(ldif);
-		if (!ok) { 
-			msg = msg + "... error: " + samdb.errstring();
-			ret = ret + 1; 
+		if (ldif != undefined) {
+			ok = samdb.add(ldif);
+			if (!ok && samdb.errstring() != "Record exists") { 
+				msg = msg + "... error: " + samdb.errstring();
+				ret = ret + 1; 
+			}
 		}
 		message(msg + "\n");
 	}
@@ -454,7 +504,7 @@ function upgrade(subobj, samba3, message, paths)
 		for (var j in ldif) {
 			var msg = "... ... " + j;
 			ok = regdb.add(ldif[j]);
-			if (!ok) { 
+			if (!ok && regdb.errstring() != "Record exists") { 
 				msg = msg + "... error: " + regdb.errstring();
 				ret = ret + 1; 
 			}
@@ -497,10 +547,16 @@ dn: @MAP=samba3sam
 		ok = samdb.add(ldif);
 		assert(ok);
 
-		ok = samdb.modify("dn: @MODULES
+		ok = samdb.modify("
+dn: @MODULES
+changetype: modify
 replace: @LIST
-@LIST: samldb,timestamps,objectguid,rdn_name,samba3sam");
-		assert(ok);
+@LIST: samldb,timestamps,objectguid,rdn_name,samba3sam
+");
+		if (!ok) {
+			message("Error enabling samba3sam module: " + samdb.errstring() + "\n");
+			ret = ret + 1;
+		}
 	}
 
 	return ret;
@@ -514,6 +570,11 @@ function upgrade_verify(subobj, samba3,paths,message)
 
 	var ok = samldb.connect(paths.samdb);
 	assert(ok);
+
+	for (var i in samba3.samaccounts) {
+		var msg = samldb.search("(&(sAMAccountName=" + samba3.samaccounts[i].nt_username + ")(objectclass=user))");
+		assert(msg.length >= 1);
+	}
 	
 	// FIXME
 }
