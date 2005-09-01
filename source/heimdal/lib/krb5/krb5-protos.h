@@ -2377,6 +2377,12 @@ krb5_parse_name (
 	const char */*name*/,
 	krb5_principal */*principal*/);
 
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_parse_name_norealm (
+	krb5_context /*context*/,
+	const char */*name*/,
+	krb5_principal */*principal*/);
+
 const char* KRB5_LIB_FUNCTION
 krb5_passwd_result_to_string (
 	krb5_context /*context*/,
@@ -3429,6 +3435,13 @@ krb5_write_safe_message (
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_xfree (void */*ptr*/);
+
+krb5_error_code
+parse_name (
+	krb5_context /*context*/,
+	const char */*name*/,
+	krb5_boolean /*short_form*/,
+	krb5_principal */*principal*/);
 
 #ifdef __cplusplus
 }
