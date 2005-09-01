@@ -228,6 +228,7 @@ NTSTATUS samba3_read_smbpasswd(const char *filename, TALLOC_CTX *ctx, struct sam
 
 	for (i = 0; i < numlines; i++) {
 		char *p = lines[i], *q;
+		uid_t uid;
 		struct samba3_samaccount *acc = &((*accounts)[*count]);
 
 		if (p[0] == '\0' || p[0] == '#')
@@ -244,7 +245,9 @@ NTSTATUS samba3_read_smbpasswd(const char *filename, TALLOC_CTX *ctx, struct sam
 		acc->username = talloc_strndup(ctx, p, PTR_DIFF(q, p));
 		p = q+1;
 
-		acc->uid = atoi(p);
+		uid = atoi(p);
+		
+		/* uid is ignored here.. */
 
 		q = strchr(p, ':');
 		if (!q) {
