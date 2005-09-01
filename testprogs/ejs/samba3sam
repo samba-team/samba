@@ -115,13 +115,14 @@ println("Adding record that will be mapped");
 ok = s4.add("
 dn: cn=Niemand,sambaDomainName=TESTS,dc=vernstok,dc=nl
 objectClass: user
-unixName: blah
+unixName: bin
+unicodePwd: geheim
 cn: Niemand
 ");
 assert(ok);
 
 println("Checking for existance of record (mapped)");
-msg = s4.search("(unixName=blah)", new Array('unixName','cn','dn'));
+msg = s4.search("(unixName=bin)", new Array('unixName','cn','dn'));
 assert(msg.length == 1);
 assert(msg[0].cn == "Niemand");
 

@@ -256,17 +256,23 @@ static int ejs_ldbErrstring(MprVarHandle eid, int argc, struct MprVar **argv)
 static int ejs_base64encode(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	char *ret;
-	DATA_BLOB *blob;
 
 	if (argc != 1) {
 		ejsSetErrorMsg(eid, "ldb.base64encode invalid argument count");
 		return -1;
 	}
 
-	blob = mprToDataBlob(argv[0]);
-	mprAssert(blob);
-	ret = ldb_base64_encode(mprMemCtx(), (char *)blob->data, blob->length);
+	if (argv[0]->type == MPR_TYPE_STRING) {
+		const char *orig = mprToString(argv[0]);
+		ret = ldb_base64_encode(mprMemCtx(), orig, strlen(orig));
+	} else {
+		DATA_BLOB *blob;
 
+		blob = mprToDataBlob(argv[0]);
+		mprAssert(blob);
+		ret = ldb_base64_encode(mprMemCtx(), (char *)blob->data, blob->length);
+	}
+		
 	if (!ret) {
 		mpr_Return(eid, mprCreateUndefinedVar());
 	} else {
