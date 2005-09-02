@@ -89,6 +89,7 @@ XSLTPROC=$config{XSLTPROC}
 
 LEX=$config{LEX}
 YACC=$config{YACC}
+YAPP=$config{YAPP}
 
 CPP=$config{CPP}
 
