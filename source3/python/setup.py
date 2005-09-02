@@ -56,6 +56,9 @@ for lib in string.split(samba_libs):
     if lib[0:2] == "-l":
         libraries.append(lib[2:])
         continue
+    if lib[0:8] == "-pthread":
+        libraries.append(lib[2:])
+        continue
     if lib[0:2] == "-L":
         library_dirs.append(lib[2:])
         continue
