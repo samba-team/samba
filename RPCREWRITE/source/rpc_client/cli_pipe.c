@@ -25,12 +25,11 @@
 
 extern struct pipe_id_info pipe_names[];
 
-#if 0
 /********************************************************************
  Map internal value to wire value.
  ********************************************************************/
 
-int map_pipe_auth_type_to_rpc_auth_type(enum pipe_auth_type auth_type)
+static int map_pipe_auth_type_to_rpc_auth_type(enum pipe_auth_type auth_type)
 {
 	switch (auth_type) {
 
@@ -58,7 +57,6 @@ int map_pipe_auth_type_to_rpc_auth_type(enum pipe_auth_type auth_type)
 	}
 	return -1;
 }
-#endif
 
 /********************************************************************
  Rpc pipe call id.
@@ -1553,7 +1551,9 @@ static NTSTATUS create_rpc_bind_auth3(struct rpc_pipe_client *cli,
 	}
 
 	/* Create the request RPC_HDR_AUTHA */
-	init_rpc_hdr_auth(&hdr_auth, auth_type, auth_level, 0, 1);
+	init_rpc_hdr_auth(&hdr_auth,
+			map_pipe_auth_type_to_rpc_auth_type(auth_type),
+			auth_level, 0, 1);
 
 	if(!smb_io_rpc_hdr_auth("hdr_auth", &hdr_auth, rpc_out, 0)) {
 		DEBUG(0,("create_rpc_bind_auth3: failed to marshall RPC_HDR_AUTHA.\n"));
@@ -1641,6 +1641,12 @@ static NTSTATUS rpc_finish_auth3_bind(struct rpc_pipe_client *cli,
 		data_blob_free(&server_response);
 		return cli_get_nt_error(cli->cli);
 	}
+
+	DEBUG(5,("rpc_send_auth_auth3: Remote machine %s pipe %s "
+		"fnum 0x%x sent auth3 response ok.\n",
+		cli->cli->desthost,
+		cli_get_pipe_name(cli->pipe_idx),
+		(unsigned int)cli->fnum));
 
 	prs_mem_free(&rpc_out);
 	data_blob_free(&client_reply);
