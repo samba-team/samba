@@ -85,14 +85,12 @@ samba3ResetCountMinutes: %d
 samba3UserMustLogonToChangePassword: %d
 samba3BadLockoutMinutes: %d
 samba3DisconnectTime: %d
-samba3RefuseMachinePwdChange: %d
 
 ", dn, samba3.policy.min_password_length, 
 	samba3.policy.password_history, samba3.policy.minimum_password_age,
 	samba3.policy.maximum_password_age, samba3.policy.lockout_duration,
 	samba3.policy.reset_count_minutes, samba3.policy.user_must_logon_to_change_password,
-	samba3.policy.bad_lockout_minutes, samba3.policy.disconnect_time, 
-	samba3.policy.refuse_machine_password_change
+	samba3.policy.bad_lockout_minutes, samba3.policy.disconnect_time
 );
 	
 	return ldif;
@@ -466,6 +464,18 @@ function upgrade(subobj, samba3, message, paths)
 	ok = samdb.modify(ldif);
 	assert(ok);
 
+	var regdb = ldb_init();
+	ok = regdb.connect(paths.hklm);
+	assert(ok);
+	ok = regdb.modify(sprintf("
+dn: value=RefusePasswordChange,key=Parameters,key=Netlogon,key=Services,key=CurrentControlSet,key=System,HIVE=NONE
+replace: type
+type: 4
+replace: data
+data: %d
+", samba3.policy.refuse_machine_password_change));
+	assert(ok);
+
 	message("Importing users\n");
 	for (var i in samba3.samaccounts) {
 		var msg = "... " + samba3.samaccounts[i].username;
@@ -497,7 +507,7 @@ function upgrade(subobj, samba3, message, paths)
 	for (var i in hives) {
 		var hn = hives[i];
 		message("... " + hn + "\n");
-		var regdb = ldb_init();
+		regdb = ldb_init();
 		ok = regdb.connect(paths[hn]);
 		assert(ok);
 		var ldif = upgrade_registry(samba3.registry, hn, regdb);
@@ -511,6 +521,7 @@ function upgrade(subobj, samba3, message, paths)
 			message(msg + "\n");
 		}
 	}
+
 
 	message("Importing WINS data\n");
 	var winsdb = ldb_init();
