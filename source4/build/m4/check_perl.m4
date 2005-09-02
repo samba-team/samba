@@ -14,5 +14,7 @@ if test x"$debug" = x"yes";then
 	PERL="$PERL -W"
 fi
 
+AC_PATH_PROG(YAPP, yapp, false)
+
 PIDL_ARGS=""
 AC_SUBST(PIDL_ARGS)
