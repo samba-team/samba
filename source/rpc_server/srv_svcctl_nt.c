@@ -142,10 +142,7 @@ static SEC_DESC* construct_service_sd( TALLOC_CTX *ctx )
  
 static void free_service_handle_info(void *ptr)
 {
-	SERVICE_INFO *info = (SERVICE_INFO*)ptr;
-	
-	SAFE_FREE(info->name);
-	SAFE_FREE(info);
+	TALLOC_FREE( ptr );
 }
 
 /******************************************************************
@@ -173,11 +170,9 @@ static WERROR create_open_service_handle( pipes_struct *p, POLICY_HND *handle,
 	SERVICE_INFO *info = NULL;
 	WERROR result = WERR_OK;
 	
-	if ( !(info = SMB_MALLOC_P( SERVICE_INFO )) )
+	if ( !(info = TALLOC_ZERO_P( NULL, SERVICE_INFO )) )
 		return WERR_NOMEM;
 
-	ZERO_STRUCTP( info );
-		
 	/* the Service Manager has a NULL name */
 	
 	if ( !service ) {
@@ -201,7 +196,7 @@ static WERROR create_open_service_handle( pipes_struct *p, POLICY_HND *handle,
 			goto done;
 		}
 
-		if ( !(info->name  = SMB_STRDUP( service )) ) {
+		if ( !(info->name  = talloc_strdup( info, service )) ) {
 			result = WERR_NOMEM;
 			goto done;
 		}
