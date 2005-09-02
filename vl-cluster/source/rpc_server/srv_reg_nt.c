@@ -33,56 +33,9 @@
 #define OUR_HANDLE(hnd) (((hnd)==NULL)?"NULL":(IVAL((hnd)->data5,4)==(uint32)sys_getpid()?"OURS":"OTHER")), \
 ((unsigned int)IVAL((hnd)->data5,4)),((unsigned int)sys_getpid())
 
+static struct generic_mapping reg_generic_map = 
+	{ REG_KEY_READ, REG_KEY_WRITE, REG_KEY_EXECUTE, REG_KEY_ALL };
 
-static struct generic_mapping reg_generic_map = { REG_KEY_READ, REG_KEY_WRITE, REG_KEY_EXECUTE, REG_KEY_ALL };
-
-/********************************************************************
-********************************************************************/
-
-NTSTATUS registry_access_check( SEC_DESC *sec_desc, NT_USER_TOKEN *token, 
-                                     uint32 access_desired, uint32 *access_granted )
-{
-	NTSTATUS result;
-		
-	se_map_generic( &access_desired, &reg_generic_map );
-	se_access_check( sec_desc, token, access_desired, access_granted, &result );
-	
-	return result;
-}
-
-/********************************************************************
-********************************************************************/
-
-SEC_DESC* construct_registry_sd( TALLOC_CTX *ctx )
-{
-	SEC_ACE ace[2];	
-	SEC_ACCESS mask;
-	size_t i = 0;
-	SEC_DESC *sd;
-	SEC_ACL *acl;
-	uint32 sd_size;
-
-	/* basic access for Everyone */
-	
-	init_sec_access(&mask, REG_KEY_READ );
-	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-	
-	/* Full Access 'BUILTIN\Administrators' */
-	
-	init_sec_access(&mask, REG_KEY_ALL );
-	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-	
-	
-	/* create the security descriptor */
-	
-	if ( !(acl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) )
-		return NULL;
-
-	if ( !(sd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, acl, &sd_size)) )
-		return NULL;
-
-	return sd;
-}
 
 /******************************************************************
  free() function for REGISTRY_KEY
@@ -90,9 +43,7 @@ SEC_DESC* construct_registry_sd( TALLOC_CTX *ctx )
  
 static void free_regkey_info(void *ptr)
 {
-	REGISTRY_KEY *info = (REGISTRY_KEY*)ptr;
-	
-	SAFE_FREE(info);
+	TALLOC_FREE( ptr );
 }
 
 /******************************************************************
@@ -120,98 +71,38 @@ static REGISTRY_KEY *find_regkey_index_by_hnd(pipes_struct *p, POLICY_HND *hnd)
  HK[LM|U]\<key>\<key>\...
  *******************************************************************/
  
-static WERROR open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY *parent,
-				const char *subkeyname, uint32 access_granted  )
+static WERROR open_registry_key( pipes_struct *p, POLICY_HND *hnd, 
+                                 REGISTRY_KEY **keyinfo, REGISTRY_KEY *parent,
+				 const char *subkeyname, uint32 access_desired  )
 {
-	REGISTRY_KEY 	*regkey = NULL;
+	pstring         keypath;
+	int		path_len;
 	WERROR     	result = WERR_OK;
-	REGSUBKEY_CTR	*subkeys = NULL;
-	pstring		subkeyname2;
-	int		subkey_len;
+
+	/* create a full registry path and strip any trailing '\' 
+	   characters */
+	   
+	pstr_sprintf( keypath, "%s%s%s", 
+		parent ? parent->name : "",
+		parent ? "\\" : "", 
+		subkeyname );
 	
-	DEBUG(7,("open_registry_key: name = [%s][%s]\n", 
-		parent ? parent->name : "NULL", subkeyname));
-
-	/* strip any trailing '\'s */
-
-	pstrcpy( subkeyname2, subkeyname );
-	subkey_len = strlen ( subkeyname2 );
-
-	if ( subkey_len && subkeyname2[subkey_len-1] == '\\' )
-		subkeyname2[subkey_len-1] = '\0';
-
-	if ( !(regkey=SMB_MALLOC_P(REGISTRY_KEY)) )
-		return WERR_NOMEM;
+	path_len = strlen( keypath );
+	if ( path_len && keypath[path_len-1] == '\\' )
+		keypath[path_len-1] = '\0';
+	
+	/* now do the internal open */
 		
-	ZERO_STRUCTP( regkey );
+	result = regkey_open_internal( keyinfo, keypath, p->pipe_user.nt_user_token, access_desired );
+	if ( !W_ERROR_IS_OK(result) )
+		return result;
 	
-	/* Tag this as a Performance Counter Key */
-
-	if( StrnCaseCmp(subkeyname, KEY_HKPD, strlen(KEY_HKPD)) == 0 )
-		regkey->type = REG_KEY_HKPD;
-	else
-		regkey->type = REG_KEY_GENERIC;
-
-	/* 
-	 * very crazy, but regedit.exe on Win2k will attempt to call 
-	 * REG_OPEN_ENTRY with a keyname of "".  We should return a new 
-	 * (second) handle here on the key->name.  regedt32.exe does 
-	 * not do this stupidity.   --jerry
-	 */
-	
-	if ( !subkey_len ) {
-		pstrcpy( regkey->name, parent->name );	
-	}
-	else {
-		pstrcpy( regkey->name, "" );
-		if ( parent ) {
-			pstrcat( regkey->name, parent->name );
-			pstrcat( regkey->name, "\\" );
-		}
-		pstrcat( regkey->name, subkeyname2 );
-	}
-	
-	/* Look up the table of registry I/O operations */
-
-	if ( !(regkey->hook = reghook_cache_find( regkey->name )) ) {
-		DEBUG(0,("open_registry_key: Failed to assigned a REGISTRY_HOOK to [%s]\n",
-			regkey->name ));
-		result = WERR_BADFILE;
-		goto done;
-	}
-	
-	/* check if the path really exists; failed is indicated by -1 */
-	/* if the subkey count failed, bail out */
-
-	if ( !(subkeys = TALLOC_ZERO_P( p->mem_ctx, REGSUBKEY_CTR )) ) {
-		result = WERR_NOMEM;
-		goto done;
-	}
-
-	if ( fetch_reg_keys( regkey, subkeys ) == -1 )  {
-		result = WERR_BADFILE;
-		goto done;
-	}
-		
-	if ( !create_policy_hnd( p, hnd, free_regkey_info, regkey ) ) {
+	if ( !create_policy_hnd( p, hnd, free_regkey_info, *keyinfo ) ) {
 		result = WERR_BADFILE; 
-		goto done;
+		TALLOC_FREE( *keyinfo );
 	}
 	
-	/* save the access mask */
-
-	regkey->access_granted = access_granted;
 	
-done:
-	/* clean up */
-
-	TALLOC_FREE( subkeys );
-	
-	if ( ! NT_STATUS_IS_OK(result) )
-		SAFE_FREE( regkey );
-	
-	DEBUG(7,("open_registry_key: exit\n"));
-
 	return result;
 }
 
@@ -335,21 +226,9 @@ WERROR _reg_close(pipes_struct *p, REG_Q_CLOSE *q_u, REG_R_CLOSE *r_u)
 
 WERROR _reg_open_hklm(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_u)
 {
-	SEC_DESC *sec_desc;
-	uint32 access_granted = 0;
-	NTSTATUS status;
+	REGISTRY_KEY *keyinfo;
 	
-	/* perform access checks */
-	/* top level keys are done here without passing through the REGISTRY_HOOK api */
-	
-	if ( !(sec_desc = construct_registry_sd( p->mem_ctx )) )
-		return WERR_NOMEM;
-		
-	status = registry_access_check( sec_desc, p->pipe_user.nt_user_token, q_u->access, &access_granted );
-	if ( !NT_STATUS_IS_OK(status) )
-		return ntstatus_to_werror( status );
-		
-	return open_registry_key( p, &r_u->pol, NULL, KEY_HKLM, access_granted );
+	return open_registry_key( p, &r_u->pol, &keyinfo, NULL, KEY_HKLM, q_u->access );
 }
 
 /*******************************************************************
@@ -357,7 +236,9 @@ WERROR _reg_open_hklm(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_
 
 WERROR _reg_open_hkpd(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_u)
 {
-    return open_registry_key( p, &r_u->pol, NULL, KEY_HKPD, 0x0 );
+	REGISTRY_KEY *keyinfo;
+	
+	return open_registry_key( p, &r_u->pol, &keyinfo, NULL, KEY_HKPD, q_u->access );
 }
 
 /*******************************************************************
@@ -365,7 +246,9 @@ WERROR _reg_open_hkpd(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_
 
 WERROR _reg_open_hkpt(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_u)
 {
-    return open_registry_key( p, &r_u->pol, NULL, KEY_HKPT, 0x0 );
+	REGISTRY_KEY *keyinfo;
+	
+	return open_registry_key( p, &r_u->pol, &keyinfo, NULL, KEY_HKPT, q_u->access );
 }
 
 /*******************************************************************
@@ -373,21 +256,9 @@ WERROR _reg_open_hkpt(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_
 
 WERROR _reg_open_hkcr(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_u)
 {
-	SEC_DESC *sec_desc;
-	uint32 access_granted = 0;
-	NTSTATUS status;
+	REGISTRY_KEY *keyinfo;
 	
-	/* perform access checks */
-	/* top level keys are done here without passing through the REGISTRY_HOOK api */
-	
-	if ( !(sec_desc = construct_registry_sd( p->mem_ctx )) )
-		return WERR_NOMEM;
-		
-	status = registry_access_check( sec_desc, p->pipe_user.nt_user_token, q_u->access, &access_granted );
-	if ( !NT_STATUS_IS_OK(status) )
-		return ntstatus_to_werror( status );
-		
-	return open_registry_key( p, &r_u->pol, NULL, KEY_HKCR, access_granted );
+	return open_registry_key( p, &r_u->pol, &keyinfo, NULL, KEY_HKCR, q_u->access );
 }
 
 /*******************************************************************
@@ -395,21 +266,9 @@ WERROR _reg_open_hkcr(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_
 
 WERROR _reg_open_hku(pipes_struct *p, REG_Q_OPEN_HIVE *q_u, REG_R_OPEN_HIVE *r_u)
 {
-	SEC_DESC *sec_desc;
-	uint32 access_granted = 0;
-	NTSTATUS status;
+	REGISTRY_KEY *keyinfo;
 	
-	/* perform access checks */
-	/* top level keys are done here without passing through the REGISTRY_HOOK api */
-	
-	if ( !(sec_desc = construct_registry_sd( p->mem_ctx )) )
-		return WERR_NOMEM;
-		
-	status = registry_access_check( sec_desc, p->pipe_user.nt_user_token, q_u->access, &access_granted );
-	if ( !NT_STATUS_IS_OK(status) )
-		return ntstatus_to_werror( status );
-		
-	return open_registry_key( p, &r_u->pol, NULL, KEY_HKU, access_granted );
+	return open_registry_key( p, &r_u->pol, &keyinfo, NULL, KEY_HKU, q_u->access );
 }
 
 /*******************************************************************
@@ -420,9 +279,8 @@ WERROR _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY 
 {
 	fstring name;
 	REGISTRY_KEY *parent = find_regkey_index_by_hnd(p, &q_u->pol);
-	REGISTRY_KEY *newkey;
-	uint32 access_granted;
-	WERROR result;
+	REGISTRY_KEY *newkey = NULL;
+	uint32 check_rights;
 
 	if ( !parent )
 		return WERR_BADFID;
@@ -431,29 +289,22 @@ WERROR _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY 
 	
 	/* check granted access first; what is the correct mask here? */
 
-	if ( !(parent->access_granted & (SEC_RIGHTS_ENUM_SUBKEYS|SEC_RIGHTS_CREATE_SUBKEY|SEC_RIGHTS_QUERY_VALUE|SEC_RIGHTS_SET_VALUE)) )
+	check_rights = ( SEC_RIGHTS_ENUM_SUBKEYS|
+                         SEC_RIGHTS_CREATE_SUBKEY|
+			 SEC_RIGHTS_QUERY_VALUE|
+			 SEC_RIGHTS_SET_VALUE);
+			 
+	if ( !(parent->access_granted & check_rights) )
 		return WERR_ACCESS_DENIED;
 	
-	/* open the key first to get the appropriate REGISTRY_HOOK 
-	   and then check the premissions */
-
-	if ( !W_ERROR_IS_OK(result = open_registry_key( p, &r_u->handle, parent, name, 0 )) )
-		return result;
-
-	newkey = find_regkey_index_by_hnd(p, &r_u->handle);
-
-	/* finally allow the backend to check the access for the requested key */
-
-	if ( !regkey_access_check( newkey, q_u->access, &access_granted, p->pipe_user.nt_user_token ) ) {
-		close_registry_key( p, &r_u->handle );
-		return WERR_ACCESS_DENIED;
-	}
-
-	/* if successful, save the granted access mask */
-
-	newkey->access_granted = access_granted;
-	
-	return WERR_OK;
+	/* 
+	 * very crazy, but regedit.exe on Win2k will attempt to call 
+	 * REG_OPEN_ENTRY with a keyname of "".  We should return a new 
+	 * (second) handle here on the key->name.  regedt32.exe does 
+	 * not do this stupidity.   --jerry
+	 */
+	 
+	return open_registry_key( p, &r_u->handle, &newkey, parent, name, q_u->access );
 }
 
 /*******************************************************************
@@ -1188,7 +1039,7 @@ WERROR _reg_save_key(pipes_struct *p, REG_Q_SAVE_KEY  *q_u, REG_R_SAVE_KEY *r_u)
 WERROR _reg_create_key_ex(pipes_struct *p, REG_Q_CREATE_KEY_EX *q_u, REG_R_CREATE_KEY_EX *r_u)
 {
 	REGISTRY_KEY *parent = find_regkey_index_by_hnd(p, &q_u->handle);
-	REGISTRY_KEY *newparent;
+	REGISTRY_KEY *newparentinfo, *keyinfo;
 	POLICY_HND newparent_handle;
 	REGSUBKEY_CTR *subkeys;
 	BOOL write_result;
@@ -1205,7 +1056,6 @@ WERROR _reg_create_key_ex(pipes_struct *p, REG_Q_CREATE_KEY_EX *q_u, REG_R_CREAT
 	if ( strrchr( name, '\\' ) ) {
 		pstring newkeyname;
 		char *ptr;
-		uint32 access_granted;
 		
 		/* (1) check for enumerate rights on the parent handle.  CLients can try 
 		       create things like 'SOFTWARE\Samba' on the HKLM handle. 
@@ -1218,19 +1068,11 @@ WERROR _reg_create_key_ex(pipes_struct *p, REG_Q_CREATE_KEY_EX *q_u, REG_R_CREAT
 		ptr = strrchr( newkeyname, '\\' );
 		*ptr = '\0';
 
-		result = open_registry_key( p, &newparent_handle, parent, newkeyname, 0 );
+		result = open_registry_key( p, &newparent_handle, &newparentinfo, 
+			parent, newkeyname, (REG_KEY_READ|REG_KEY_WRITE) );
+			
 		if ( !W_ERROR_IS_OK(result) )
 			return result;
-		
-		newparent = find_regkey_index_by_hnd(p, &newparent_handle);
-		SMB_ASSERT( newparent != NULL );
-			
-		if ( !regkey_access_check( newparent, REG_KEY_READ|REG_KEY_WRITE, &access_granted, p->pipe_user.nt_user_token ) ) {
-			result = WERR_ACCESS_DENIED;
-			goto done;
-		}
-
-		newparent->access_granted = access_granted;
 
 		/* copy the new key name (just the lower most keyname) */
 
@@ -1238,13 +1080,13 @@ WERROR _reg_create_key_ex(pipes_struct *p, REG_Q_CREATE_KEY_EX *q_u, REG_R_CREAT
 	}
 	else {
 		/* use the existing open key information */
-		newparent = parent;
+		newparentinfo = parent;
 		memcpy( &newparent_handle, &q_u->handle, sizeof(POLICY_HND) );
 	}
 	
 	/* (3) check for create subkey rights on the correct parent */
 	
-	if ( !(newparent->access_granted & SEC_RIGHTS_CREATE_SUBKEY) ) {
+	if ( !(newparentinfo->access_granted & SEC_RIGHTS_CREATE_SUBKEY) ) {
 		result = WERR_ACCESS_DENIED;
 		goto done;
 	}	
@@ -1256,12 +1098,12 @@ WERROR _reg_create_key_ex(pipes_struct *p, REG_Q_CREATE_KEY_EX *q_u, REG_R_CREAT
 
 	/* (4) lookup the current keys and add the new one */
 	
-	fetch_reg_keys( newparent, subkeys );
+	fetch_reg_keys( newparentinfo, subkeys );
 	regsubkey_ctr_addkey( subkeys, name );
 	
 	/* now write to the registry backend */
 	
-	write_result = store_reg_keys( newparent, subkeys );
+	write_result = store_reg_keys( newparentinfo, subkeys );
 	
 	TALLOC_FREE( subkeys );
 
@@ -1269,16 +1111,15 @@ WERROR _reg_create_key_ex(pipes_struct *p, REG_Q_CREATE_KEY_EX *q_u, REG_R_CREAT
 		return WERR_REG_IO_FAILURE;
 		
 	/* (5) open the new key and return the handle.  Note that it is probably 
-	   not correct to grant full access on this open handle.  We should pass
-	   the new open through the regkey_access_check() like we do for 
-	   _reg_open_entry() but this is ok for now. */
+	   not correct to grant full access on this open handle. */
 	
-	result = open_registry_key( p, &r_u->handle, newparent, name, REG_KEY_ALL );
+	result = open_registry_key( p, &r_u->handle, &keyinfo, newparentinfo, name, REG_KEY_READ );
+	keyinfo->access_granted = REG_KEY_ALL;
 
 done:
 	/* close any intermediate key handles */
 	
-	if ( newparent != parent )
+	if ( newparentinfo != parent )
 		close_registry_key( p, &newparent_handle );
 		
 	return result;
@@ -1339,7 +1180,7 @@ WERROR _reg_set_value(pipes_struct *p, REG_Q_SET_VALUE  *q_u, REG_R_SET_VALUE *r
 WERROR _reg_delete_key(pipes_struct *p, REG_Q_DELETE_KEY  *q_u, REG_R_DELETE_KEY *r_u)
 {
 	REGISTRY_KEY *parent = find_regkey_index_by_hnd(p, &q_u->handle);
-	REGISTRY_KEY *newparent;
+	REGISTRY_KEY *newparentinfo;
 	POLICY_HND newparent_handle;
 	REGSUBKEY_CTR *subkeys;
 	BOOL write_result;
@@ -1369,19 +1210,16 @@ WERROR _reg_delete_key(pipes_struct *p, REG_Q_DELETE_KEY  *q_u, REG_R_DELETE_KEY
 		ptr = strrchr( newkeyname, '\\' );
 		*ptr = '\0';
 
-		result = open_registry_key( p, &newparent_handle, parent, newkeyname, 0 );
+		result = open_registry_key( p, &newparent_handle, &newparentinfo, parent, newkeyname, 0 );
 		if ( !W_ERROR_IS_OK(result) )
 			return result;
 		
-		newparent = find_regkey_index_by_hnd(p, &newparent_handle);
-		SMB_ASSERT( newparent != NULL );
-			
-		if ( !regkey_access_check( newparent, REG_KEY_READ|REG_KEY_WRITE, &access_granted, p->pipe_user.nt_user_token ) ) {
+		if ( !regkey_access_check( newparentinfo, REG_KEY_READ|REG_KEY_WRITE, &access_granted, p->pipe_user.nt_user_token ) ) {
 			result = WERR_ACCESS_DENIED;
 			goto done;
 		}
 
-		newparent->access_granted = access_granted;
+		newparentinfo->access_granted = access_granted;
 
 		/* copy the new key name (just the lower most keyname) */
 
@@ -1389,13 +1227,13 @@ WERROR _reg_delete_key(pipes_struct *p, REG_Q_DELETE_KEY  *q_u, REG_R_DELETE_KEY
 	}
 	else {
 		/* use the existing open key information */
-		newparent = parent;
+		newparentinfo = parent;
 		memcpy( &newparent_handle, &q_u->handle, sizeof(POLICY_HND) );
 	}
 	
-	/* (3) check for create subkey rights on the correct parent */
+	/* (3) check for delete rights on the correct parent */
 	
-	if ( !(newparent->access_granted & STD_RIGHT_DELETE_ACCESS) ) {
+	if ( !(newparentinfo->access_granted & STD_RIGHT_DELETE_ACCESS) ) {
 		result = WERR_ACCESS_DENIED;
 		goto done;
 	}
@@ -1407,13 +1245,13 @@ WERROR _reg_delete_key(pipes_struct *p, REG_Q_DELETE_KEY  *q_u, REG_R_DELETE_KEY
 	
 	/* lookup the current keys and delete the new one */
 	
-	fetch_reg_keys( newparent, subkeys );
+	fetch_reg_keys( newparentinfo, subkeys );
 	
 	regsubkey_ctr_delkey( subkeys, name );
 	
 	/* now write to the registry backend */
 	
-	write_result = store_reg_keys( newparent, subkeys );
+	write_result = store_reg_keys( newparentinfo, subkeys );
 	
 	TALLOC_FREE( subkeys );
 
@@ -1422,7 +1260,7 @@ WERROR _reg_delete_key(pipes_struct *p, REG_Q_DELETE_KEY  *q_u, REG_R_DELETE_KEY
 done:
 	/* close any intermediate key handles */
 	
-	if ( newparent != parent )
+	if ( newparentinfo != parent )
 		close_registry_key( p, &newparent_handle );
 
 	return result;
