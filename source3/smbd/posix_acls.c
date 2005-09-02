@@ -3021,7 +3021,6 @@ static int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_
 
 	/* Case (2). */
 	if (lp_enable_privileges() &&
-			(uid == current_user.uid) &&
 			(user_has_privileges(current_user.nt_user_token,&se_take_ownership))) {
 		become_root();
 		/* Keep the current file gid the same - take ownership doesn't imply group change. */
