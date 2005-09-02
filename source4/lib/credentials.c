@@ -334,7 +334,7 @@ static int cli_credentials_set_ccache(struct cli_credentials *cred,
 	} else {
 		ret = krb5_cc_default(ccc->smb_krb5_context->krb5_context, &ccc->ccache);
 		if (ret) {
-			DEBUG(1,("failed to read default krb5 ccache: %s\n", 
+			DEBUG(3,("failed to read default krb5 ccache: %s\n", 
 				 smb_get_krb5_error_message(ccc->smb_krb5_context->krb5_context, ret, ccc)));
 			talloc_free(ccc);
 			return ret;
@@ -346,7 +346,7 @@ static int cli_credentials_set_ccache(struct cli_credentials *cred,
 	ret = krb5_cc_get_principal(ccc->smb_krb5_context->krb5_context, ccc->ccache, &princ);
 
 	if (ret) {
-		DEBUG(1,("failed to get principal from default ccache: %s\n", 
+		DEBUG(3,("failed to get principal from default ccache: %s\n", 
 			 smb_get_krb5_error_message(ccc->smb_krb5_context->krb5_context, ret, ccc)));
 		talloc_free(ccc);		
 		return ret;
