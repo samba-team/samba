@@ -46,7 +46,6 @@ AC_REQUIRE([AC_HEADER_TIME])
 
 AC_CHECK_HEADERS([\
 	arpa/inet.h				\
-	arpa/nameser.h				\
 	config.h				\
 	crypt.h					\
 	dirent.h				\
@@ -120,18 +119,6 @@ AC_CHECK_HEADERS(sys/proc.h, , , [AC_INCLUDES_DEFAULT
 #endif
 ])
 
-AC_CHECK_HEADERS(resolv.h, , , [AC_INCLUDES_DEFAULT
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#ifdef HAVE_ARPA_NAMESER_H
-#include <arpa/nameser.h>
-#endif
-])
-
 AC_REQUIRE([CHECK_NETINET_IP_AND_TCP])
 
 AM_CONDITIONAL(have_err_h, test "$ac_cv_header_err_h" = yes)
@@ -149,93 +136,7 @@ AC_KRB_IPV6
 
 AC_FIND_FUNC(gethostbyname2, inet6 ip6)
 
-AC_FIND_FUNC(res_search, resolv,
-[
-#include <stdio.h>
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#ifdef HAVE_ARPA_NAMESER_H
-#include <arpa/nameser.h>
-#endif
-#ifdef HAVE_RESOLV_H
-#include <resolv.h>
-#endif
-],
-[0,0,0,0,0])
-
-AC_FIND_FUNC(res_nsearch, resolv,
-[
-#include <stdio.h>
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#ifdef HAVE_ARPA_NAMESER_H
-#include <arpa/nameser.h>
-#endif
-#ifdef HAVE_RESOLV_H
-#include <resolv.h>
-#endif
-],
-[0,0,0,0,0,0])
-
-AC_FIND_FUNC(res_ndestroy, resolv,
-[
-#include <stdio.h>
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#ifdef HAVE_ARPA_NAMESER_H
-#include <arpa/nameser.h>
-#endif
-#ifdef HAVE_RESOLV_H
-#include <resolv.h>
-#endif
-],
-[0])
-
-AC_FIND_FUNC(dn_expand, resolv,
-[
-#include <stdio.h>
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#ifdef HAVE_ARPA_NAMESER_H
-#include <arpa/nameser.h>
-#endif
-#ifdef HAVE_RESOLV_H
-#include <resolv.h>
-#endif
-],
-[0,0,0,0,0])
-
-rk_CHECK_VAR(_res, 
-[#include <stdio.h>
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#ifdef HAVE_ARPA_NAMESER_H
-#include <arpa/nameser.h>
-#endif
-#ifdef HAVE_RESOLV_H
-#include <resolv.h>
-#endif])
-
+rk_RESOLV
 
 AC_BROKEN_SNPRINTF
 AC_BROKEN_VSNPRINTF
