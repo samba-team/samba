@@ -24,9 +24,9 @@
 #define DBGC_CLASS DBGC_RPC_SRV
 
 typedef struct {
-	fstring logname;
-	fstring servername;
-	fstring handle_string;
+	char *logname;
+	char *servername;
+	char *handle_string;
 	uint32 num_records;
 	uint32 oldest_entry;
 	uint32 flags;
@@ -86,10 +86,11 @@ static EventlogInfo *find_eventlog_info_by_hnd(pipes_struct *p, POLICY_HND *hand
 /********************************************************************
 ********************************************************************/
 
-void policy_handle_to_string(POLICY_HND *handle, fstring *dest)
+char* policy_handle_to_string( void *ctx, POLICY_HND *handle )
 {
-	memset(dest, 0, sizeof(*dest));
-	snprintf((char *)dest, sizeof(*dest), "%08X-%08X-%04X-%04X-%02X%02X%02X%02X%02X",
+	char *handle_string;
+	
+	handle_string = talloc_asprintf( ctx, "%08X-%08X-%04X-%04X-%02X%02X%02X%02X%02X",
 		 handle->data1,
 		 handle->data2,
 		 handle->data3,
@@ -98,7 +99,12 @@ void policy_handle_to_string(POLICY_HND *handle, fstring *dest)
 		 handle->data5[1],
 		 handle->data5[2],
 		 handle->data5[3],
-		 handle->data5[4]);
+		 handle->data5[4] );
+		 
+	if ( !handle_string )
+		DEBUG(0,("policy_handle_to_string: talloc_asprintf() failed!\n"));
+		
+	return handle_string;
 }
 
 /********************************************************************
@@ -845,22 +851,24 @@ static BOOL clear_eventlog_hook(EventlogInfo *info,
 WERROR _eventlog_open_eventlog(pipes_struct *p, EVENTLOG_Q_OPEN_EVENTLOG *q_u, EVENTLOG_R_OPEN_EVENTLOG *r_u)
 {
 	EventlogInfo *info = NULL;
+	fstring str;
     
-	if ( !(info = TALLOC_ZERO_P(p->mem_ctx, EventlogInfo)) ) 
+	if ( !(info = TALLOC_ZERO_P(NULL, EventlogInfo)) ) 
 		return WERR_NOMEM;
 
-	fstrcpy(info->servername, global_myname());
-	fstrcpy(info->logname, "Application");
-
+	fstrcpy( str, global_myname() );
 	if ( q_u->servername.string ) {
-		rpcstr_pull( info->servername, q_u->servername.string->buffer, 
-			sizeof(info->servername), q_u->servername.string->uni_str_len*2, 0 );
+		rpcstr_pull( str, q_u->servername.string->buffer, 
+			sizeof(str), q_u->servername.string->uni_str_len*2, 0 );
 	} 
+	info->servername = talloc_strdup( info, str );
 
+	fstrcpy( str, "Application" );
 	if ( q_u->logname.string ) {
-		rpcstr_pull( info->logname, q_u->logname.string->buffer, 
-			sizeof(info->logname), q_u->logname.string->uni_str_len*2, 0 );
+		rpcstr_pull( str, q_u->logname.string->buffer, 
+			sizeof(str), q_u->logname.string->uni_str_len*2, 0 );
 	} 
+	info->logname = talloc_strdup( info, str );
 
 	DEBUG(10, ("_eventlog_open_eventlog: Using [%s] as the server name.\n", info->servername));
 	DEBUG(10, ("_eventlog_open_eventlog: Using [%s] as the source log file.\n", info->logname));
@@ -870,7 +878,10 @@ WERROR _eventlog_open_eventlog(pipes_struct *p, EVENTLOG_Q_OPEN_EVENTLOG *q_u, E
 		return WERR_NOMEM;
 	}
 	
-	policy_handle_to_string(&r_u->handle, &info->handle_string);
+	if ( !(info->handle_string = policy_handle_to_string( info, &r_u->handle )) ) {
+		close_policy_hnd(p, &r_u->handle);
+		return WERR_BADFILE;	
+	}
 
 	if ( !(open_eventlog_hook(info)) ) {
 		close_policy_hnd(p, &r_u->handle);
