@@ -529,8 +529,10 @@ char *prs_mem_get(prs_struct *ps, uint32 extra_size)
 		 * If reading, ensure that we can read the requested size item.
 		 */
 		if (ps->data_offset + extra_size > ps->buffer_size) {
-			DEBUG(0,("prs_mem_get: reading data of size %u would overrun buffer.\n",
-					(unsigned int)extra_size ));
+			DEBUG(0,("prs_mem_get: reading data of size %u would overrun "
+				"buffer by %u bytes.\n",
+				(unsigned int)extra_size,
+				(unsigned int)(ps->data_offset + extra_size - ps->buffer_size) ));
 			return NULL;
 		}
 	} else {
