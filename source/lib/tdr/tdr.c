@@ -29,25 +29,24 @@
 #define TDR_PUSH_NEED_BYTES(tdr, n) TDR_CHECK(tdr_push_expand(tdr, tdr->offset+(n)))
 
 #define TDR_PULL_NEED_BYTES(tdr, n) do { \
-	if ((n) > tdr->length || tdr->offset + (n) > tdr->length) { \
+	if ((n) > tdr->data.length || tdr->offset + (n) > tdr->data.length) { \
 		return NT_STATUS_BUFFER_TOO_SMALL; \
 	} \
 } while(0)
 
 #define TDR_BE(tdr) ((tdr)->flags & TDR_BIG_ENDIAN)
 
-#define TDR_SVAL(tdr, ofs) (TDR_BE(tdr)?RSVAL(tdr->data,ofs):SVAL(tdr->data,ofs))
-#define TDR_IVAL(tdr, ofs) (TDR_BE(tdr)?RIVAL(tdr->data,ofs):IVAL(tdr->data,ofs))
-#define TDR_IVALS(tdr, ofs) (TDR_BE(tdr)?RIVALS(tdr->data,ofs):IVALS(tdr->data,ofs))
-#define TDR_SSVAL(tdr, ofs, v) do { if (TDR_BE(tdr))  { RSSVAL(tdr->data,ofs,v); } else SSVAL(tdr->data,ofs,v); } while (0)
-#define TDR_SIVAL(tdr, ofs, v) do { if (TDR_BE(tdr))  { RSIVAL(tdr->data,ofs,v); } else SIVAL(tdr->data,ofs,v); } while (0)
-#define TDR_SIVALS(tdr, ofs, v) do { if (TDR_BE(tdr))  { RSIVALS(tdr->data,ofs,v); } else SIVALS(tdr->data,ofs,v); } while (0)
+#define TDR_SVAL(tdr, ofs) (TDR_BE(tdr)?RSVAL(tdr->data.data,ofs):SVAL(tdr->data.data,ofs))
+#define TDR_IVAL(tdr, ofs) (TDR_BE(tdr)?RIVAL(tdr->data.data,ofs):IVAL(tdr->data.data,ofs))
+#define TDR_IVALS(tdr, ofs) (TDR_BE(tdr)?RIVALS(tdr->data.data,ofs):IVALS(tdr->data.data,ofs))
+#define TDR_SSVAL(tdr, ofs, v) do { if (TDR_BE(tdr))  { RSSVAL(tdr->data.data,ofs,v); } else SSVAL(tdr->data.data,ofs,v); } while (0)
+#define TDR_SIVAL(tdr, ofs, v) do { if (TDR_BE(tdr))  { RSIVAL(tdr->data.data,ofs,v); } else SIVAL(tdr->data.data,ofs,v); } while (0)
+#define TDR_SIVALS(tdr, ofs, v) do { if (TDR_BE(tdr))  { RSIVALS(tdr->data.data,ofs,v); } else SIVALS(tdr->data.data,ofs,v); } while (0)
 
-struct tdr_pull *tdr_pull_init(TALLOC_CTX *mem_ctx, DATA_BLOB *blob)
+struct tdr_pull *tdr_pull_init(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob)
 {
 	struct tdr_pull *tdr = talloc_zero(mem_ctx, struct tdr_pull);
-	tdr->data = blob->data;
-	tdr->length = blob->length;
+	tdr->data = *blob;
 	return tdr;
 }
 
@@ -66,15 +65,11 @@ struct tdr_print *tdr_print_init(TALLOC_CTX *mem_ctx)
 */
 NTSTATUS tdr_push_expand(struct tdr_push *tdr, uint32_t size)
 {
-	if (tdr->alloc_size >= size) {
+	if (talloc_get_size(tdr->data.data) >= size) {
 		return NT_STATUS_OK;
 	}
 
-	tdr->alloc_size += TDR_BASE_MARSHALL_SIZE;
-	if (size > tdr->alloc_size) {
-		tdr->length = size;
-	}
-	tdr->data = talloc_realloc(tdr, tdr->data, uint8_t, tdr->alloc_size);
+	tdr->data.data = talloc_realloc(tdr, tdr->data.data, uint8_t, tdr->data.length + TDR_BASE_MARSHALL_SIZE);
 	return NT_STATUS_NO_MEMORY;
 }
 
@@ -82,7 +77,7 @@ NTSTATUS tdr_push_expand(struct tdr_push *tdr, uint32_t size)
 NTSTATUS tdr_pull_uint8(struct tdr_pull *tdr, uint8_t *v)
 {
 	TDR_PULL_NEED_BYTES(tdr, 1);
-	SCVAL(tdr->data, tdr->offset, *v);
+	SCVAL(tdr->data.data, tdr->offset, *v);
 	tdr->offset += 1;
 	return NT_STATUS_OK;
 }
@@ -90,7 +85,7 @@ NTSTATUS tdr_pull_uint8(struct tdr_pull *tdr, uint8_t *v)
 NTSTATUS tdr_push_uint8(struct tdr_push *tdr, const uint8_t *v)
 {
 	TDR_PUSH_NEED_BYTES(tdr, 1);
-	SCVAL(tdr->data, tdr->offset, *v);
+	SCVAL(tdr->data.data, tdr->offset, *v);
 	tdr->offset += 1;
 	return NT_STATUS_OK;
 }
@@ -152,10 +147,10 @@ NTSTATUS tdr_pull_charset(struct tdr_pull *tdr, const char **v, uint32_t length,
 	if (length == -1) {
 		switch (chset) {
 			case CH_DOS:
-				length = ascii_len_n((const char*)tdr->data+tdr->offset, tdr->length-tdr->offset);
+				length = ascii_len_n((const char*)tdr->data.data+tdr->offset, tdr->data.length-tdr->offset);
 				break;
 			case CH_UTF16:
-				length = utf16_len_n(tdr->data+tdr->offset, tdr->length-tdr->offset);
+				length = utf16_len_n(tdr->data.data+tdr->offset, tdr->data.length-tdr->offset);
 				break;
 
 			default:
@@ -165,7 +160,7 @@ NTSTATUS tdr_pull_charset(struct tdr_pull *tdr, const char **v, uint32_t length,
 
 	TDR_PULL_NEED_BYTES(tdr, el_size*length);
 	
-	ret = convert_string_talloc(tdr, chset, CH_UNIX, tdr->data+tdr->offset, el_size*length, discard_const_p(void *, v));
+	ret = convert_string_talloc(tdr, chset, CH_UNIX, tdr->data.data+tdr->offset, el_size*length, discard_const_p(void *, v));
 
 	if (ret == -1) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -181,7 +176,7 @@ NTSTATUS tdr_push_charset(struct tdr_push *tdr, const char **v, uint32_t length,
 	required = el_size * length;
 	TDR_PUSH_NEED_BYTES(tdr, required);
 
-	ret = convert_string(CH_UNIX, chset, *v, strlen(*v), tdr->data+tdr->offset, required);
+	ret = convert_string(CH_UNIX, chset, *v, strlen(*v), tdr->data.data+tdr->offset, required);
 
 	if (ret == -1) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -189,7 +184,7 @@ NTSTATUS tdr_push_charset(struct tdr_push *tdr, const char **v, uint32_t length,
 
 	/* Make sure the remaining part of the string is filled with zeroes */
 	if (ret < required) {
-		memset(tdr->data+tdr->offset+ret, 0, required-ret);
+		memset(tdr->data.data+tdr->offset+ret, 0, required-ret);
 	}
 	
 	tdr->offset += required;
@@ -344,7 +339,7 @@ NTSTATUS tdr_push_DATA_BLOB(struct tdr_push *tdr, DATA_BLOB *blob)
 
 	TDR_PUSH_NEED_BYTES(tdr, blob->length);
 	
-	memcpy(tdr->data+tdr->offset, blob->data, blob->length);
+	memcpy(tdr->data.data+tdr->offset, blob->data, blob->length);
 	return NT_STATUS_OK;
 }
 
@@ -362,18 +357,18 @@ NTSTATUS tdr_pull_DATA_BLOB(struct tdr_pull *tdr, DATA_BLOB *blob)
 	} else if (tdr->flags & TDR_ALIGN8) {
 		length = TDR_ALIGN(tdr, 8);
 	} else if (tdr->flags & TDR_REMAINING) {
-		length = tdr->length - tdr->offset;
+		length = tdr->data.length - tdr->offset;
 	} else {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (tdr->length - tdr->offset < length) {
-		length = tdr->length - tdr->offset;
+	if (tdr->data.length - tdr->offset < length) {
+		length = tdr->data.length - tdr->offset;
 	}
 
 	TDR_PULL_NEED_BYTES(tdr, length);
 
-	*blob = data_blob_talloc(tdr, tdr->data+tdr->offset, length);
+	*blob = data_blob_talloc(tdr, tdr->data.data+tdr->offset, length);
 	tdr->offset += length;
 	return NT_STATUS_OK;
 }
