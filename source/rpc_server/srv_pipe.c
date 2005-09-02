@@ -410,7 +410,6 @@ static BOOL create_next_pdu_schannel(pipes_struct *p)
 
 		RPC_AUTH_SCHANNEL_CHK verf;
 		prs_struct rverf;
-		prs_struct rauth;
 
 		data = prs_data_p(&outgoing_pdu) + data_pos;
 		/* Check it's the type of reply we were expecting to decode */
@@ -428,7 +427,6 @@ static BOOL create_next_pdu_schannel(pipes_struct *p)
 		}
 
 		prs_init(&rverf, 0, p->mem_ctx, MARSHALL);
-		prs_init(&rauth, 0, p->mem_ctx, MARSHALL);
 
 		schannel_encode(p->auth.a_u.schannel_auth, 
 			      p->auth.auth_level,
