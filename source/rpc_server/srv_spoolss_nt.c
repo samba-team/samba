@@ -1594,7 +1594,7 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 
 		if (printer_default->access_required &
 		    ~(SERVER_ACCESS_ADMINISTER | SERVER_ACCESS_ENUMERATE)) {
-			DEBUG(3, ("access DENIED for non-printserver bits"));
+			DEBUG(3, ("access DENIED for non-printserver bits\n"));
 			close_printer_handle(p, handle);
 			return WERR_ACCESS_DENIED;
 		}
