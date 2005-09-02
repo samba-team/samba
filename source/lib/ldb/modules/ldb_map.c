@@ -483,7 +483,7 @@ static const char **ldb_map_attrs(struct ldb_module *module, const char *const a
 		enum ldb_map_attr_type map_type;
 
 		if (!attr) {
-			ldb_debug(module->ldb, LDB_DEBUG_WARNING, "Local attribute '%s' does not have a definition!\n", attrs[i]);
+			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "Local attribute '%s' does not have a definition!\n", attrs[i]);
 			map_type = MAP_IGNORE;
 		} else map_type = attr->type;
 
