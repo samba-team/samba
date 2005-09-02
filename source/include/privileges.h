@@ -70,6 +70,7 @@ extern const SE_PRIV se_add_users;
 extern const SE_PRIV se_disk_operators;
 extern const SE_PRIV se_remote_shutdown;
 extern const SE_PRIV se_restore;
+extern const SE_PRIV se_take_ownership;
 
 
 /*

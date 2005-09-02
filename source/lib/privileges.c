@@ -38,6 +38,7 @@ const SE_PRIV se_add_users       = SE_ADD_USERS;
 const SE_PRIV se_disk_operators  = SE_DISK_OPERATOR;
 const SE_PRIV se_remote_shutdown = SE_REMOTE_SHUTDOWN;
 const SE_PRIV se_restore         = SE_RESTORE;
+const SE_PRIV se_take_ownership  = SE_TAKE_OWNERSHIP;
 
 /********************************************************************
  This is a list of privileges reported by a WIndows 2000 SP4 AD DC
