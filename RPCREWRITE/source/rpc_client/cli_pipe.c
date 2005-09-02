@@ -402,10 +402,11 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *p
 	}
 
 	if (!schannel_decode(schannel_auth,
-				cli->auth.auth_level,
-				SENDER_IS_ACCEPTOR,
-				&schannel_chk,
-				prs_data_p(current_pdu)+RPC_HDR_RESP_LEN, data_len)) {
+			cli->auth.auth_level,
+			SENDER_IS_ACCEPTOR,
+			&schannel_chk,
+			prs_data_p(current_pdu)+RPC_HEADER_LEN+RPC_HDR_RESP_LEN,
+			data_len)) {
 		DEBUG(3,("cli_pipe_verify_schannel: failed to decode PDU "
 				"Connection to remote machine %s "
 				"pipe %s fnum 0x%x.\n",
@@ -1184,37 +1185,61 @@ static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
 static NTSTATUS add_schannel_auth_footer(struct rpc_pipe_client *cli,
 					RPC_HDR *phdr,
 					uint32 ss_padding_len,
-					prs_struct *p_outgoing_pdu)
+					prs_struct *outgoing_pdu)
 {
-#if 0
-			else if (cli->pipe_auth_flags & AUTH_PIPE_SCHANNEL) {	
-				size_t parse_offset_marker;
-				RPC_AUTH_SCHANNEL_CHK verf;
-				DEBUG(10,("SCHANNEL seq_num=%d\n", cli->auth_info.seq_num));
-				
-				schannel_encode(&cli->auth_info, 
-					      cli->pipe_auth_flags,
-					      SENDER_IS_INITIATOR,
-					      &verf,
-					      prs_data_p(&sec_blob),
-					      data_and_padding_size);
+	RPC_HDR_AUTH auth_info;
+	RPC_AUTH_SCHANNEL_CHK verf;
+	struct schannel_auth_struct *sas = cli->auth.a_u.schannel_auth;
+	char *data_p = prs_data_p(outgoing_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN;
+	size_t data_and_pad_len = prs_offset(outgoing_pdu) - RPC_HEADER_LEN - RPC_HDR_RESP_LEN;
 
-				cli->auth_info.seq_num++;
+	if (!sas) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
-				/* write auth footer onto the packet */
-				
-				parse_offset_marker = prs_offset(&sec_blob);
-				if (!smb_io_rpc_auth_schannel_chk("", RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN, 
-					&verf, &sec_blob, 0)) 
-				{
-					prs_mem_free(&sec_blob);
-					return False;
-				}
-				real_auth_len = prs_offset(&sec_blob) - parse_offset_marker;
-			}
-		}
-#endif
-	return NT_STATUS_NO_MEMORY;
+	/* Init and marshall the auth header. */
+	init_rpc_hdr_auth(&auth_info,
+			map_pipe_auth_type_to_rpc_auth_type(cli->auth.auth_type),
+			cli->auth.auth_level,
+			ss_padding_len,
+			1 /* context id. */);
+
+	if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, outgoing_pdu, 0)) {
+		DEBUG(0,("add_schannel_auth_footer: failed to marshall RPC_HDR_AUTH.\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	switch (cli->auth.auth_level) {
+		case PIPE_AUTH_LEVEL_PRIVACY:
+		case PIPE_AUTH_LEVEL_INTEGRITY:
+			DEBUG(10,("add_schannel_auth_footer: SCHANNEL seq_num=%d\n",
+				sas->seq_num));
+
+			schannel_encode(sas,
+					cli->auth.auth_level,
+					SENDER_IS_INITIATOR,
+					&verf,
+					data_p,
+					data_and_pad_len);
+
+			sas->seq_num++;
+			break;
+
+		default:
+			/* Can't happen. */
+			smb_panic("bad auth level");
+			/* Notreached. */
+			return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* Finally marshall the blob. */
+	smb_io_rpc_auth_schannel_chk("",
+			RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN,
+			&verf,
+			outgoing_pdu,
+			0);
+                                                                                               
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
