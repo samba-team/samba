@@ -44,7 +44,8 @@ REQUIRED_SUBSYSTEMS = \
 		LIBCMDLINE \
 		LIBBASIC \
 		RPC \
-		NDR_XATTR
+		NDR_XATTR \
+		EXT_LIB_XATTR
 # End BINARY getntacl
 #################################
 
