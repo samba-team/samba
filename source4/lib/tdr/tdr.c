@@ -43,23 +43,6 @@
 #define TDR_SIVAL(tdr, ofs, v) do { if (TDR_BE(tdr))  { RSIVAL(tdr->data.data,ofs,v); } else SIVAL(tdr->data.data,ofs,v); } while (0)
 #define TDR_SIVALS(tdr, ofs, v) do { if (TDR_BE(tdr))  { RSIVALS(tdr->data.data,ofs,v); } else SIVALS(tdr->data.data,ofs,v); } while (0)
 
-struct tdr_pull *tdr_pull_init(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob)
-{
-	struct tdr_pull *tdr = talloc_zero(mem_ctx, struct tdr_pull);
-	tdr->data = *blob;
-	return tdr;
-}
-
-struct tdr_push *tdr_push_init(TALLOC_CTX *mem_ctx)
-{
-	return talloc_zero(mem_ctx, struct tdr_push);
-}
-
-struct tdr_print *tdr_print_init(TALLOC_CTX *mem_ctx)
-{
-	return talloc_zero(mem_ctx, struct tdr_print);
-}
-
 /*
   expand the available space in the buffer to 'size'
 */
@@ -165,6 +148,8 @@ NTSTATUS tdr_pull_charset(struct tdr_pull *tdr, const char **v, uint32_t length,
 	if (ret == -1) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	tdr->offset += length * el_size;
 
 	return NT_STATUS_OK;
 }
