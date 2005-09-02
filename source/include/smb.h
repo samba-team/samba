@@ -653,7 +653,7 @@ struct pending_message_list {
 struct share_mode_lock;
 
 /* struct returned by get_share_modes */
-typedef struct share_mode_entry {
+struct share_mode_entry {
 	pid_t pid;
 	uint16 op_mid;
 	uint16 op_type;
@@ -667,14 +667,20 @@ typedef struct share_mode_entry {
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
 	unsigned long share_file_id;
-} share_mode_entry;
+};
+
+struct share_modes {
+	int num_share_modes;
+	struct share_mode_entry *share_modes;
+	BOOL delete_on_close;
+};
 
 
 #define SHAREMODE_FN_CAST() \
-	void (*)(share_mode_entry *, char*)
+	void (*)(struct share_mode_entry *, char*)
 
 #define SHAREMODE_FN(fn) \
-	void (*fn)(share_mode_entry *, char*)
+	void (*fn)(struct share_mode_entry *, char*)
 
 #define NT_HASH_LEN 16
 #define LM_HASH_LEN 16
@@ -733,12 +739,6 @@ struct connections_data {
 	uint32 bcast_msg_flags;
 };
 
-
-/* key and data records in the tdb locking database */
-struct locking_key {
-	SMB_DEV_T dev;
-	SMB_INO_T inode;
-};
 
 /* the following are used by loadparm for option lists */
 typedef enum {

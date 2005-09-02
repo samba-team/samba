@@ -98,7 +98,7 @@ static BOOL Ucrit_addPid( pid_t pid )
 	return True;
 }
 
-static void print_share_mode(share_mode_entry *e, char *fname)
+static void print_share_mode(struct share_mode_entry *e, char *fname)
 {
 	static int count;
 	if (count==0) {

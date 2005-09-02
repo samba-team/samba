@@ -145,13 +145,14 @@ static void notify_deferred_opens(files_struct *fsp)
 
 static int close_normal_file(files_struct *fsp, BOOL normal_close)
 {
-	share_mode_entry *share_entry = NULL;
+	struct share_mode_entry *share_entry = NULL;
 	size_t share_entry_count = 0;
 	BOOL delete_file = False;
 	connection_struct *conn = fsp->conn;
 	int saved_errno = 0;
 	int err = 0;
 	int err1 = 0;
+	struct share_mode_lock *lck;
 
 	remove_pending_lock_requests_by_fid(fsp);
 
@@ -191,9 +192,14 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	 * This prevents race conditions with the file being created. JRA.
 	 */
 
-	lock_share_entry_fsp(fsp);
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode);
 
-	share_entry_count = del_share_mode(fsp, &share_entry,
+	if (lck == NULL) {
+		DEBUG(0, ("Could not get share mode lock\n"));
+		return EINVAL;
+	}
+
+	share_entry_count = del_share_mode(lck, fsp, &share_entry,
 					   &delete_file);
 
 	DEBUG(10,("close_normal_file: share_entry_count = %lu for file %s\n",
@@ -203,8 +209,6 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 		/* We're not the last ones -- don't delete */
 		delete_file = False;
 	}
-
-	SAFE_FREE(share_entry);
 
 	/* Notify any deferred opens waiting on this close. */
 	notify_deferred_opens(fsp);
@@ -232,7 +236,7 @@ with error %s\n", fsp->fsp_name, strerror(errno) ));
 		process_pending_change_notify_queue((time_t)0);
 	}
 
-	unlock_share_entry_fsp(fsp);
+	talloc_free(lck);
 
 	if(fsp->oplock_type)
 		release_file_oplock(fsp);
