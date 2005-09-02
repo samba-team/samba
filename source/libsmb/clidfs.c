@@ -155,7 +155,7 @@ static struct cli_state *do_connect( const char *server, const char *share,
 	DEBUG(4,(" session setup ok\n"));
 
 	/* here's the fun part....to support 'msdfs proxy' shares
-	   (on Samba or windows) we have to issues a TRANS_GET_DFS_REFERRAL 
+	   (on Samba) we have to issues a TRANS_GET_DFS_REFERRAL 
 	   here before trying to connect to the original share.
 	   check_dfs_proxy() will fail if it is a normal share. */
 
