@@ -8,9 +8,6 @@ value: CASE_INSENSITIVE
 dn: key=control,key=currentcontrolset,key=system,hive=NONE
 key: control
 
-dn: key=services,key=control,key=currentcontrolset,key=system,hive=NONE
-key: services
-
 dn: value=ProductType,key=productoptions,key=control,key=currentcontrolset,key=system,hive=NONE
 value: ProductType
 data: LanmanNT
@@ -22,12 +19,6 @@ key: productoptions
 dn: key=system,hive=NONE
 key: system
 
-dn: key=netlogon,key=services,key=currentcontrolset,key=system,hive=NONE
-key: netlogon
-
-dn: key=services,key=currentcontrolset,key=system,hive=NONE
-key: services
-
 dn: key=print,key=control,key=currentcontrolset,key=system,hive=NONE
 key: print
 
@@ -37,3 +28,16 @@ key: currentcontrolset
 dn: key=Terminal Server,key=control,key=currentcontrolset,key=system,hive=NONE
 key: Terminal Server
 
+dn: key=Services,key=CurrentControlSet,key=System,hive=NONE
+key: Services
+
+dn: key=Netlogon,key=Services,key=CurrentControlSet,key=System,hive=NONE
+key: Netlogon
+
+dn: key=Parameters,key=Netlogon,key=Services,key=CurrentControlSet,key=System,hive=NONE
+key: Parameters
+
+dn: value=RefusePasswordChange,key=Parameters,key=Netlogon,key=Services,key=CurrentControlSet,key=System,hive=NONE
+value: RefusePasswordChange
+type: 4
+data: 0
