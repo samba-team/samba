@@ -85,7 +85,7 @@ static int read_block( REGF_FILE *file, prs_struct *ps, uint32 file_offset, uint
 	if ( (size_t)file_offset >= sbuf.st_size )
 		return -1;
 	
-	/* if block_size == 0, we are parsnig HBIN records and need 
+	/* if block_size == 0, we are parsing HBIN records and need 
 	   to read some of the header to get the block_size from there */
 	   
 	if ( block_size == 0 ) {
@@ -533,7 +533,7 @@ static REGF_HBIN* read_hbin_block( REGF_FILE *file, off_t offset )
 }
 
 /*******************************************************************
- Input a randon offset and receive the correpsonding HBIN 
+ Input a random offset and receive the corresponding HBIN 
  block for it
 *******************************************************************/
 
@@ -549,7 +549,7 @@ static BOOL hbin_contains_offset( REGF_HBIN *hbin, uint32 offset )
 }
 
 /*******************************************************************
- Input a randon offset and receive the correpsonding HBIN 
+ Input a random offset and receive the corresponding HBIN 
  block for it
 *******************************************************************/
 
@@ -1030,7 +1030,7 @@ static BOOL next_record( REGF_HBIN *hbin, const char *hdr, BOOL *eob )
 	if ( curr_off == 0 )
 		prs_set_offset( ps, HBIN_HEADER_REC_SIZE );
 
-	/* assume that the current offset is at the reacord header 
+	/* assume that the current offset is at the record header 
 	   and we need to backup to read the record size */
 
 	curr_off -= sizeof(uint32);
