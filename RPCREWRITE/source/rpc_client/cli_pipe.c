@@ -234,20 +234,20 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli, RPC_HDR *pr
 	NTSTATUS status;
 
 	if (cli->auth.auth_level == PIPE_AUTH_LEVEL_NONE || cli->auth.auth_level == PIPE_AUTH_LEVEL_CONNECT) {
-                return NT_STATUS_OK;
-        }
+		return NT_STATUS_OK;
+	}
 
-        if (!ntlmssp_state) {
-                return NT_STATUS_INVALID_PARAMETER;
-        }
+	if (!ntlmssp_state) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
-        /* Ensure there's enough data for an authenticated response. */
-        if ((auth_len > RPC_MAX_SIGN_SIZE) ||
-                        (RPC_HEADER_LEN + RPC_HDR_RESP_LEN + RPC_HDR_AUTH_LEN + auth_len > prhdr->frag_len)) {
-                DEBUG(0,("cli_pipe_verify_ntlmssp: auth_len %u is too large.\n",
-                        (unsigned int)auth_len ));
-                return NT_STATUS_BUFFER_TOO_SMALL;
-        }
+	/* Ensure there's enough data for an authenticated response. */
+	if ((auth_len > RPC_MAX_SIGN_SIZE) ||
+			(RPC_HEADER_LEN + RPC_HDR_RESP_LEN + RPC_HDR_AUTH_LEN + auth_len > prhdr->frag_len)) {
+		DEBUG(0,("cli_pipe_verify_ntlmssp: auth_len %u is too large.\n",
+			(unsigned int)auth_len ));
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
 
 	/*
 	 * We need the full packet data + length (minus auth stuff) as well as the packet data + length
@@ -256,16 +256,16 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli, RPC_HDR *pr
 	 * functions as NTLMv2 checks the rpc headers also.
 	 */
 
-	data = (unsigned char *)(prs_data_p(current_pdu) + RPC_HDR_RESP_LEN);
+	data = (unsigned char *)(prs_data_p(current_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN);
 	data_len = (size_t)(prhdr->frag_len - RPC_HEADER_LEN - RPC_HDR_RESP_LEN - RPC_HDR_AUTH_LEN - auth_len);
 
 	full_packet_data = prs_data_p(current_pdu);
 	full_packet_data_len = prhdr->frag_len - auth_len;
 
 	/* Pull the auth header and the following data into a blob. */
-	if(!prs_set_offset(current_pdu, RPC_HDR_RESP_LEN + data_len)) {
+	if(!prs_set_offset(current_pdu, RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len)) {
 		DEBUG(0,("cli_pipe_verify_ntlmssp: cannot move offset to %u.\n",
-			(unsigned int)RPC_HDR_RESP_LEN + data_len ));
+			(unsigned int)RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len ));
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
@@ -378,9 +378,9 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *p
 
 	data_len = prhdr->frag_len - RPC_HEADER_LEN - RPC_HDR_RESP_LEN - RPC_HDR_AUTH_LEN - auth_len;
 
-	if(!prs_set_offset(current_pdu, RPC_HDR_RESP_LEN + data_len)) {
+	if(!prs_set_offset(current_pdu, RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len)) {
 		DEBUG(0,("cli_pipe_verify_schannel: cannot move offset to %u.\n",
-			(unsigned int)RPC_HDR_RESP_LEN + data_len ));
+			(unsigned int)RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len ));
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
                                                                                                                              
@@ -1097,15 +1097,93 @@ static NTSTATUS create_rpc_bind_req(struct rpc_pipe_client *cli,
 }
 
 
+/*******************************************************************
+ Create and add the NTLMSSP sign/seal auth header and data.
+ ********************************************************************/
+
 static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
 					RPC_HDR *phdr,
-					prs_struct *p_outgoing_pdu)
+					uint32 ss_padding_len,
+					prs_struct *outgoing_pdu)
 {
-	return NT_STATUS_NO_MEMORY;
+	RPC_HDR_AUTH auth_info;
+	NTSTATUS status;
+	DATA_BLOB auth_blob = data_blob(NULL, 0);
+	uint16 data_and_pad_len = prs_offset(outgoing_pdu) - RPC_HEADER_LEN - RPC_HDR_RESP_LEN;
+
+	if (!cli->auth.a_u.ntlmssp_state) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* Init and marshall the auth header. */
+	init_rpc_hdr_auth(&auth_info,
+			map_pipe_auth_type_to_rpc_auth_type(cli->auth.auth_type),
+			cli->auth.auth_level,
+			ss_padding_len,
+			1 /* context id. */);
+
+	if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, outgoing_pdu, 0)) {
+		DEBUG(0,("add_ntlmssp_auth_footer: failed to marshall RPC_HDR_AUTH.\n"));
+		data_blob_free(&auth_blob);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	switch (cli->auth.auth_level) {
+		case PIPE_AUTH_LEVEL_PRIVACY:
+			/* Data portion is encrypted. */
+			status = ntlmssp_seal_packet(cli->auth.a_u.ntlmssp_state,
+					prs_data_p(outgoing_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
+					data_and_pad_len,
+					prs_data_p(outgoing_pdu),
+					(size_t)prs_offset(outgoing_pdu),
+					&auth_blob);
+			if (!NT_STATUS_IS_OK(status)) {
+				data_blob_free(&auth_blob);
+				return status;
+			}
+			break;
+
+		case PIPE_AUTH_LEVEL_INTEGRITY:
+			/* Data is signed. */
+			status = ntlmssp_sign_packet(cli->auth.a_u.ntlmssp_state,
+					prs_data_p(outgoing_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
+					data_and_pad_len,
+					prs_data_p(outgoing_pdu),
+					(size_t)prs_offset(outgoing_pdu),
+					&auth_blob);
+			if (!NT_STATUS_IS_OK(status)) {
+				data_blob_free(&auth_blob);
+				return status;
+			}
+			break;
+
+		default:
+			/* Can't happen. */
+			smb_panic("bad auth level");
+			/* Notreached. */
+			return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* Finally marshall the blob. */
+	                                                                                               
+	if (!prs_copy_data_in(outgoing_pdu, auth_blob.data, NTLMSSP_SIG_SIZE)) {
+		DEBUG(0,("add_ntlmssp_auth_footer: failed to add %u bytes auth blob.\n",
+			(unsigned int)NTLMSSP_SIG_SIZE));
+		data_blob_free(&auth_blob);
+		return NT_STATUS_NO_MEMORY;
+	}
+                                                                                                                                
+	data_blob_free(&auth_blob);
+	return NT_STATUS_OK;
 }
+
+/*******************************************************************
+ Create and add the schannel sign/seal auth header and data.
+ ********************************************************************/
 
 static NTSTATUS add_schannel_auth_footer(struct rpc_pipe_client *cli,
 					RPC_HDR *phdr,
+					uint32 ss_padding_len,
 					prs_struct *p_outgoing_pdu)
 {
 #if 0
@@ -1288,14 +1366,14 @@ NTSTATUS rpc_api_pipe_req(struct rpc_pipe_client *cli,
 					break;
 				case PIPE_AUTH_TYPE_NTLMSSP:
 				case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-					ret = add_ntlmssp_auth_footer(cli, &hdr, &outgoing_pdu);
+					ret = add_ntlmssp_auth_footer(cli, &hdr, ss_padding, &outgoing_pdu);
 					if (!NT_STATUS_IS_OK(ret)) {
 						prs_mem_free(&outgoing_pdu);
 						return ret;
 					}
 					break;
 				case PIPE_AUTH_TYPE_SCHANNEL:
-					ret = add_schannel_auth_footer(cli, &hdr, &outgoing_pdu);
+					ret = add_schannel_auth_footer(cli, &hdr, ss_padding, &outgoing_pdu);
 					if (!NT_STATUS_IS_OK(ret)) {
 						prs_mem_free(&outgoing_pdu);
 						return ret;

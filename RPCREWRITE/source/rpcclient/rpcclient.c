@@ -315,21 +315,22 @@ static NTSTATUS cmd_quit(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 static NTSTATUS cmd_set_ss_level(void)
 {
 	struct cmd_list *tmp;
-        struct cmd_set *tmp_set;
 
 	/* Close any existing connections not at this level. */
 
 	for (tmp = cmd_list; tmp; tmp = tmp->next) {
-		tmp_set = tmp->cmd_set;
+        	struct cmd_set *tmp_set;
 
-		if (tmp_set->rpc_pipe == NULL) {
-			continue;
-		}
+		for (tmp_set = tmp->cmd_set; tmp_set->name; tmp_set++) {
+			if (tmp_set->rpc_pipe == NULL) {
+				continue;
+			}
 
-		if (tmp_set->rpc_pipe->auth.auth_type != pipe_default_auth_type ||
-				tmp_set->rpc_pipe->auth.auth_level != pipe_default_auth_level) {
-			cli_rpc_pipe_close(tmp_set->rpc_pipe);
-			tmp_set->rpc_pipe = NULL;
+			if (tmp_set->rpc_pipe->auth.auth_type != pipe_default_auth_type ||
+					tmp_set->rpc_pipe->auth.auth_level != pipe_default_auth_level) {
+				cli_rpc_pipe_close(tmp_set->rpc_pipe);
+				tmp_set->rpc_pipe = NULL;
+			}
 		}
 	}
 	return NT_STATUS_OK;
