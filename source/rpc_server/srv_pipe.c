@@ -407,9 +407,7 @@ static BOOL create_next_pdu_schannel(pipes_struct *p)
 		 */
 		char *data;
 		RPC_HDR_AUTH auth_info;
-
 		RPC_AUTH_SCHANNEL_CHK verf;
-		prs_struct rverf;
 
 		data = prs_data_p(&outgoing_pdu) + data_pos;
 		/* Check it's the type of reply we were expecting to decode */
@@ -426,15 +424,16 @@ static BOOL create_next_pdu_schannel(pipes_struct *p)
 			return False;
 		}
 
-		prs_init(&rverf, 0, p->mem_ctx, MARSHALL);
-
 		schannel_encode(p->auth.a_u.schannel_auth, 
 			      p->auth.auth_level,
 			      SENDER_IS_ACCEPTOR,
 			      &verf, data, data_len + ss_padding_len);
 
-		smb_io_rpc_auth_schannel_chk("", RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN, 
-			&verf, &outgoing_pdu, 0);
+		if (!smb_io_rpc_auth_schannel_chk("", RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN, 
+				&verf, &outgoing_pdu, 0)) {
+			prs_mem_free(&outgoing_pdu);
+			return False;
+		}
 
 		p->auth.a_u.schannel_auth->seq_num++;
 	}
