@@ -1,6 +1,8 @@
 AC_CACHE_CHECK([for broken readdir],samba_cv_HAVE_BROKEN_READDIR,[
 	AC_TRY_RUN([#include "${srcdir-.}/build/tests/os2_delete.c"],
-        	   samba_cv_HAVE_BROKEN_READDIR=no,samba_cv_HAVE_BROKEN_READDIR=yes)])
+        	   [samba_cv_HAVE_BROKEN_READDIR=no],
+			   [samba_cv_HAVE_BROKEN_READDIR=yes],
+			   [samba_cv_HAVE_BROKEN_READDIR="assuming not"])])
 
 if test x"$samba_cv_HAVE_BROKEN_READDIR" = x"yes"; then
 AC_CACHE_CHECK([for replacing readdir],samba_cv_REPLACE_READDIR,[

@@ -140,7 +140,4 @@
 #undef SE_GROUP_ENABLED_BY_DEFAULT
 #undef SE_GROUP_ENABLED
 
-typedef uint32_t u_int32_t;
-typedef uint16_t u_int16_t;
-
 #endif /* _WIN32_REPLACE_H */
