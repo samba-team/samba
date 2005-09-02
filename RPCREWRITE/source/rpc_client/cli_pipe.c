@@ -988,6 +988,7 @@ static NTSTATUS create_rpc_bind_req(struct rpc_pipe_client *cli,
 	prs_struct auth_info;
 	uint8 auth_len = 0;
 	uint8 ss_padding_len = 0;
+	uint16 frag_len = 0;
 	NTSTATUS ret = NT_STATUS_OK;
 
 	ZERO_STRUCT(hdr_auth);
@@ -1034,6 +1035,9 @@ static NTSTATUS create_rpc_bind_req(struct rpc_pipe_client *cli,
 	/* create the bind request RPC_HDR_RB */
 	init_rpc_hdr_rb(&hdr_rb, RPC_MAX_PDU_FRAG_LEN, RPC_MAX_PDU_FRAG_LEN, 0x0, &rpc_ctx);
 
+	/* Start building the frag length. */
+	frag_len = RPC_HEADER_LEN + RPC_HDR_RB_LEN(&hdr_rb);
+
 	/* Do we need to pad ? */
 	if (auth_len) {
 		uint16 data_len = RPC_HEADER_LEN + RPC_HDR_RB_LEN(&hdr_rb);
@@ -1041,12 +1045,11 @@ static NTSTATUS create_rpc_bind_req(struct rpc_pipe_client *cli,
 			ss_padding_len = 8 - (data_len % 8);
 			hdr_auth.auth_pad_len = ss_padding_len;
 		}
+		frag_len += RPC_HDR_AUTH_LEN + auth_len + ss_padding_len;
 	}
 
 	/* Create the request RPC_HDR */
-	init_rpc_hdr(&hdr, RPC_BIND, RPC_FLG_FIRST|RPC_FLG_LAST, rpc_call_id, 
-		RPC_HEADER_LEN + RPC_HDR_RB_LEN(&hdr_rb) + prs_offset(&auth_info) + ss_padding_len,
-		auth_len);
+	init_rpc_hdr(&hdr, RPC_BIND, RPC_FLG_FIRST|RPC_FLG_LAST, rpc_call_id, frag_len, auth_len);
 
 	/* Marshall the RPC header */
 	if(!smb_io_rpc_hdr("hdr"   , &hdr, rpc_out, 0)) {
@@ -1145,6 +1148,7 @@ static NTSTATUS add_schannel_auth_footer(struct rpc_pipe_client *cli,
 
 static uint32 calculate_data_len_tosend(struct rpc_pipe_client *cli,
 					uint32 data_left,
+					uint16 *p_frag_len,
 					uint16 *p_auth_len,
 					uint32 *p_ss_padding)
 {
@@ -1157,6 +1161,7 @@ static uint32 calculate_data_len_tosend(struct rpc_pipe_client *cli,
 			data_len = MIN(data_space, data_left);
 			*p_ss_padding = 0;
 			*p_auth_len = 0;
+			*p_frag_len = RPC_HEADER_LEN + RPC_HDR_REQ_LEN + data_len;
 			return data_len;
 
 		case PIPE_AUTH_LEVEL_INTEGRITY:
@@ -1182,6 +1187,9 @@ static uint32 calculate_data_len_tosend(struct rpc_pipe_client *cli,
 			if (data_len % 8) {
 				*p_ss_padding = 8 - (data_len % 8);
 			}
+			*p_frag_len = RPC_HEADER_LEN + RPC_HDR_REQ_LEN + 		/* Normal headers. */
+					data_len + *p_ss_padding + 		/* data plus padding. */
+					RPC_HDR_AUTH_LEN + *p_auth_len;		/* Auth header and auth data. */
 			return data_len;
 
 		default:
@@ -1230,11 +1238,12 @@ NTSTATUS rpc_api_pipe_req(struct rpc_pipe_client *cli,
 		RPC_HDR hdr;
 		RPC_HDR_REQ hdr_req;
 		uint16 auth_len = 0;
+		uint16 frag_len = 0;
 		uint8 flags = 0;
 		uint32 ss_padding = 0;
 
 		data_sent_thistime = calculate_data_len_tosend(cli, data_left,
-						&auth_len, &ss_padding);
+						&frag_len, &auth_len, &ss_padding);
 
 		if (current_data_offset == 0) {
 			flags = RPC_FLG_FIRST;
@@ -1245,9 +1254,7 @@ NTSTATUS rpc_api_pipe_req(struct rpc_pipe_client *cli,
 		}
 
 		/* Create and marshall the header and request header. */
-		init_rpc_hdr(&hdr, RPC_REQUEST, flags, call_id,
-				RPC_HEADER_LEN + RPC_HDR_REQ_LEN + data_sent_thistime + ss_padding,
-				auth_len);
+		init_rpc_hdr(&hdr, RPC_REQUEST, flags, call_id, frag_len, auth_len);
 
 		if(!smb_io_rpc_hdr("hdr    ", &hdr, &outgoing_pdu, 0)) {
 			prs_mem_free(&outgoing_pdu);
