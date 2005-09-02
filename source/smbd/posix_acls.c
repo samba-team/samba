@@ -2998,7 +2998,8 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 
   1) If we have root privileges, then it will just work.
   2) If we have SeTakeOwnershipPrivilege we can change the user to the current user.
-  3) If we have write permission to the file and dos_filemodes is set
+  3) If we have SeRestorePrivilege we can change the user to any other user. 
+  4) If we have write permission to the file and dos_filemodes is set
      then allow chown to the currently authenticated user.
 ****************************************************************************/
 
@@ -3007,7 +3008,6 @@ static int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_
 	int ret;
 	files_struct *fsp;
 	SMB_STRUCT_STAT st;
-	SE_PRIV se_take_ownership = SE_TAKE_OWNERSHIP;
 
 	if(!CAN_WRITE(conn)) {
 		return -1;
@@ -3019,17 +3019,28 @@ static int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_
 	if (ret == 0)
 		return 0;
 
-	/* Case (2). */
-	if (lp_enable_privileges() &&
-			(user_has_privileges(current_user.nt_user_token,&se_take_ownership))) {
-		become_root();
-		/* Keep the current file gid the same - take ownership doesn't imply group change. */
-		ret = SMB_VFS_CHOWN(conn, fname, uid, (gid_t)-1);
-		unbecome_root();
-		return ret;
+	/* Case (2) / (3) */
+	if (lp_enable_privileges()) {
+
+		BOOL has_take_ownership_priv = user_has_privileges(current_user.nt_user_token,
+							      &se_take_ownership);
+		BOOL has_restore_priv = user_has_privileges(current_user.nt_user_token,
+						       &se_restore);
+
+		/* Case (2) */
+		if ( ( has_take_ownership_priv && ( uid == current_user.uid ) ) ||
+		/* Case (3) */
+		     ( has_restore_priv ) ) {
+
+			become_root();
+			/* Keep the current file gid the same - take ownership doesn't imply group change. */
+			ret = SMB_VFS_CHOWN(conn, fname, uid, (gid_t)-1);
+			unbecome_root();
+			return ret;
+		}
 	}
 
-	/* Case (3). */
+	/* Case (4). */
 	if (!lp_dos_filemode(SNUM(conn))) {
 		return -1;
 	}
