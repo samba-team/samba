@@ -43,7 +43,6 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 
 static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, struct ldb_context *ldb_ctx, 
 				   TALLOC_CTX *mem_ctx,
-				   const struct ldb_dn *base_dn,
 				   const char *alias_from,
 				   char **alias_to)
 {
@@ -51,7 +50,7 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 	int count;
 	struct ldb_message **msg;
 	struct ldb_message_element *spnmappings;
-	struct ldb_dn *service_dn = ldb_dn_string_compose(mem_ctx, base_dn,
+	struct ldb_dn *service_dn = ldb_dn_string_compose(mem_ctx, samdb_base_dn(mem_ctx),
 						"CN=Directory Service,CN=Windows NT"
 						",CN=Services,CN=Configuration");
 	char *service_dn_str = ldb_dn_linearize(mem_ctx, service_dn);
@@ -117,7 +116,6 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 static WERROR DsCrackNameSPNAlias(struct drsuapi_bind_state *b_state, TALLOC_CTX *mem_ctx,
 				  struct smb_krb5_context *smb_krb5_context,
 				  uint32_t format_flags, uint32_t format_offered, uint32_t format_desired,
-				  const struct ldb_dn *result_basedn,
 				  const char *name, struct drsuapi_DsNameInfo1 *info1)
 {
 	WERROR wret;
@@ -149,7 +147,6 @@ static WERROR DsCrackNameSPNAlias(struct drsuapi_bind_state *b_state, TALLOC_CTX
 	/* MAP it */
 	namestatus = LDB_lookup_spn_alias(smb_krb5_context->krb5_context, 
 					  b_state->sam_ctx, mem_ctx, 
-					  result_basedn, 
 					  service, &new_service);
 	
 	if (namestatus != DRSUAPI_DS_NAME_STATUS_OK) {
@@ -530,7 +527,7 @@ static WERROR DsCrackNameOneFilter(struct drsuapi_bind_state *b_state, TALLOC_CT
 			return DsCrackNameSPNAlias(b_state, mem_ctx, 
 						   smb_krb5_context, 
 						   format_flags, format_offered, format_desired,
-						   result_basedn, name, info1);
+						   name, info1);
 			
 		case DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL:
 			return DsCrackNameUPN(b_state, mem_ctx, smb_krb5_context, 
