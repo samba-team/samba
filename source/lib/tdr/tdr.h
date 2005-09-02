@@ -25,17 +25,14 @@
 #define TDR_REMAINING			0x10
 
 struct tdr_pull {
-	uint8_t *data;
+	DATA_BLOB data;
 	uint32_t offset;
-	uint32_t length;
 	int flags;
 };
 
 struct tdr_push {
-	uint8_t *data;
-	uint32_t alloc_size;
+	DATA_BLOB data;
 	uint32_t offset;
-	uint32_t length;
 	int flags;
 };
 
