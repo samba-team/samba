@@ -261,7 +261,7 @@ copy an IP address from one buffer to another
 #define dos_format(fname) string_replace(fname,'/','\\')
 
 /*****************************************************************************
- Check to see if we are a DO for this domain
+ Check to see if we are a DC for this domain
 *****************************************************************************/
 
 #define IS_DC  (lp_server_role()==ROLE_DOMAIN_PDC || lp_server_role()==ROLE_DOMAIN_BDC) 
