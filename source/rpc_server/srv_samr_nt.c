@@ -3924,6 +3924,8 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 	GROUP_MAP map;
 	GROUP_INFO_CTR *ctr;
 	uint32 acc_granted;
+	BOOL ret;
+	BOOL can_mod_accounts;
 
 	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid, &acc_granted))
 		return NT_STATUS_INVALID_HANDLE;
@@ -3948,11 +3950,21 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	if(!pdb_update_group_mapping_entry(&map)) {
-		return NT_STATUS_NO_SUCH_GROUP;
-	}
+	can_mod_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_add_users );
 
-	return NT_STATUS_OK;
+	/******** BEGIN SeAddUsers BLOCK *********/
+
+	if ( can_mod_accounts )
+		become_root();
+	  
+	ret = pdb_update_group_mapping_entry(&map);
+
+	if ( can_mod_accounts )
+		unbecome_root();
+
+	/******** End SeAddUsers BLOCK *********/
+
+	return ret ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
 }
 
 /*********************************************************************
@@ -3967,6 +3979,8 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 	struct acct_info info;
 	ALIAS_INFO_CTR *ctr;
 	uint32 acc_granted;
+	BOOL ret;
+	BOOL can_mod_accounts;
 
 	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &group_sid, &acc_granted))
 		return NT_STATUS_INVALID_HANDLE;
@@ -3989,11 +4003,21 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	if(!pdb_set_aliasinfo(&group_sid, &info)) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
+        can_mod_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_add_users );
 
-	return NT_STATUS_OK;
+        /******** BEGIN SeAddUsers BLOCK *********/
+
+        if ( can_mod_accounts )
+                become_root();
+
+        ret = pdb_set_aliasinfo( &group_sid, &info );
+
+        if ( can_mod_accounts )
+                unbecome_root();
+
+        /******** End SeAddUsers BLOCK *********/
+
+	return ret ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
 }
 
 /*********************************************************************
