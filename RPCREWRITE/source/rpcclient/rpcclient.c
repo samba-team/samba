@@ -519,23 +519,6 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 	/* Open pipe */
 
 	if (cmd_entry->pipe_idx != -1 && cmd_entry->rpc_pipe == NULL) {
-#if 0
-		if (lp_client_schannel() && (cmd_entry->pipe_idx == PI_NETLOGON) && !(cli->pipe_auth_flags & AUTH_PIPE_SCHANNEL)) {
-		uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
-		uint32 sec_channel_type;
-	uchar trust_password[16];
-	
-		if (!secrets_fetch_trust_account_password(lp_workgroup(),
-							  trust_password,
-							  NULL, &sec_channel_type)) {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-		
-		ntresult = cli_nt_setup_creds(cli, sec_channel_type, 
-					      trust_password,
-					      &neg_flags, 2);
-}
-#endif
 		switch (pipe_default_auth_type) {
 			case PIPE_AUTH_TYPE_NONE:
 				cmd_entry->rpc_pipe = cli_rpc_pipe_open_noauth(cli,
@@ -565,6 +548,32 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			DEBUG(0, ("Could not initialise %s.\n",
 				get_pipe_name_from_index(cmd_entry->pipe_idx)));
 			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		if (cmd_entry->pipe_idx == PI_NETLOGON) {
+			uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
+			uint32 sec_channel_type;
+			uchar trust_password[16];
+	
+			if (!secrets_fetch_trust_account_password(lp_workgroup(),
+							trust_password,
+							NULL, &sec_channel_type)) {
+				return NT_STATUS_UNSUCCESSFUL;
+			}
+		
+			ntresult = rpccli_netlogon_setup_creds(cmd_entry->rpc_pipe,
+						cli->desthost,
+						lp_workgroup(),
+						global_myname(),
+						trust_password,
+						sec_channel_type,
+						&neg_flags);
+
+			if (!NT_STATUS_IS_OK(ntresult)) {
+				DEBUG(0, ("Could not initialise credentials for %s.\n",
+					get_pipe_name_from_index(cmd_entry->pipe_idx)));
+				return ntresult;
+			}
 		}
 	}
 

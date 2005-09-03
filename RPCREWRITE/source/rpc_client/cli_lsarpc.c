@@ -178,7 +178,7 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 	LSA_R_LOOKUP_SIDS r;
 	DOM_R_REF ref;
 	LSA_TRANS_NAME_ENUM t_names;
-	NTSTATUS result;
+	NTSTATUS result = NT_STATUS_OK;
 	int i;
 
 	ZERO_STRUCT(q);
