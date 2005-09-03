@@ -225,7 +225,7 @@ static WERROR winreg_EnumValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	/* check the client has enough room for the value */
 	if (r->in.value != NULL &&
 	    r->in.size != NULL && 
-	    value->data_len > *r->in.size) {
+	    value->data.length > *r->in.size) {
 		return WERR_MORE_DATA;
 	}
 	
@@ -239,12 +239,12 @@ static WERROR winreg_EnumValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	r->out.name->size = 2*strlen_m_term(value->name);
 
 	if (r->in.value) {
-		r->out.value = value->data_blk;
+		r->out.value = value->data.data;
 	}
 
 	if (r->in.size) {
 		r->out.size = talloc(mem_ctx, uint32_t);
-		*r->out.size = value->data_len;
+		*r->out.size = value->data.length;
 		r->out.length = r->out.size;
 	}
 	
@@ -398,13 +398,13 @@ static WERROR winreg_QueryValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 
 	/* Just asking for the size of the buffer */
 	r->out.type = &val->data_type;
-	r->out.length = &val->data_len;
+	r->out.length = &val->data.length;
 	if (!r->in.data) {
 		r->out.size = talloc(mem_ctx, uint32_t);
-		*r->out.size = val->data_len;
+		*r->out.size = val->data.length;
 	} else {
 		r->out.size = r->in.size;
-		r->out.data = val->data_blk;
+		r->out.data = val->data.data;
 	}
 
 	return WERR_OK;
@@ -460,12 +460,15 @@ static WERROR winreg_SetValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	struct dcesrv_handle *h;
 	struct registry_key *key;
 	WERROR result;
+	DATA_BLOB data;
 
 	DCESRV_PULL_HANDLE_FAULT(h, r->in.handle, HTYPE_REGKEY);
 
 	key = h->data;
 	
-	result = reg_val_set(key, r->in.name.name, r->in.type, r->in.data, r->in.size);
+	data.data = r->in.data;
+	data.length = r->in.size;
+	result = reg_val_set(key, r->in.name.name, r->in.type, data);
 
 	if (!W_ERROR_IS_OK(result)) { 
 		return result;

@@ -64,8 +64,7 @@ struct registry_key {
 struct registry_value {
   char *name;
   unsigned int data_type;
-  int data_len;
-  void *data_blk;    /* Might want a separate block */
+  DATA_BLOB data;
 };
 
 /* FIXME */
@@ -94,9 +93,8 @@ struct hive_operations {
 	/* Or this one */
 	WERROR (*open_key) (TALLOC_CTX *, struct registry_key *, const char *name, struct registry_key **);
 
-	/* Either implement these */
-	WERROR (*num_subkeys) (struct registry_key *, int *count);
-	WERROR (*num_values) (struct registry_key *, int *count);
+	WERROR (*num_subkeys) (struct registry_key *, uint32_t *count);
+	WERROR (*num_values) (struct registry_key *, uint32_t *count);
 	WERROR (*get_subkey_by_index) (TALLOC_CTX *, struct registry_key *, int idx, struct registry_key **);
 
 	/* Can not contain more then one level */
@@ -120,7 +118,7 @@ struct hive_operations {
 	WERROR (*flush_key) (struct registry_key *);
 
 	/* Value management */
-	WERROR (*set_value)(struct registry_key *, const char *name, uint32_t type, void *data, int len); 
+	WERROR (*set_value)(struct registry_key *, const char *name, uint32_t type, DATA_BLOB data); 
 	WERROR (*del_value)(struct registry_key *, const char *valname);
 };
 
@@ -139,12 +137,8 @@ struct registry_context {
 };
 
 struct reg_init_function_entry {
-	/* Function to create a member of the pdb_methods list */
 	const struct hive_operations *hive_functions;
 	struct reg_init_function_entry *prev, *next;
 };
-
-/* Used internally */
-#define SMB_REG_ASSERT(a) { if(!(a)) { DEBUG(0,("%s failed! (%s:%d)", #a, __FILE__, __LINE__)); }}
 
 #endif /* _REGISTRY_H */

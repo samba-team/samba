@@ -72,7 +72,7 @@ static void writediff(struct registry_key *oldkey, struct registry_key *newkey, 
 
 	for(i = 0; W_ERROR_IS_OK(error1 = reg_key_get_value_by_index(mem_ctx, newkey, i, &v1)); i++) {
 		error2 = reg_key_get_value_by_name(mem_ctx, oldkey, v1->name, &v2);
-		if ((W_ERROR_IS_OK(error2) && (v2->data_len != v1->data_len || memcmp(v1->data_blk, v2->data_blk, v1->data_len))) 
+		if ((W_ERROR_IS_OK(error2) && data_blob_equal(&v1->data, &v2->data)) 
 			|| W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
 			fprintf(out, "\"%s\"=%s:%s\n", v1->name, str_regtype(v1->data_type), reg_val_data_string(mem_ctx, v1));
 		}
