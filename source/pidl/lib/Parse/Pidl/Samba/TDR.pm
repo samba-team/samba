@@ -167,7 +167,7 @@ sub ParserBitmap($$$$)
 sub ParserEnum($$$$)
 {
 	my ($e,$n,$t,$p) = @_;
-	my $bt = Parse::Pidl::Typelist::enum_type_fn($e);
+	my $bt = ($e->{PROPERTIES}->{base_type} or "uint8");
 	
 	pidl static($p)."NTSTATUS tdr_$t\_$n (struct tdr_$t *tdr".printarg($t).", enum $n *v)";
 	pidl "{";
@@ -189,6 +189,8 @@ sub ParserTypedef($$)
 	my ($e,$t) = @_;
 
 	return if (has_property($e, "no$t"));
+
+	$e->{DATA}->{PROPERTIES} = $e->{PROPERTIES};
 
 	{ STRUCT => \&ParserStruct, UNION => \&ParserUnion, 
 		ENUM => \&ParserEnum, BITMAP => \&ParserBitmap
