@@ -783,7 +783,6 @@ NTSTATUS libnet_rpc_usermod_recv(struct composite_context *c, TALLOC_CTX *mem_ct
 				 struct libnet_rpc_usermod *io)
 {
 	NTSTATUS status;
-	struct usermod_state *s;
 	
 	status = composite_wait(c);
 
