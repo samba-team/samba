@@ -177,14 +177,16 @@ BOOL remove_oplock(files_struct *fsp)
 	SMB_DEV_T dev = fsp->dev;
 	SMB_INO_T inode = fsp->inode;
 	BOOL ret;
+	struct share_mode_lock *lck;
 
 	/* Remove the oplock flag from the sharemode. */
-	if (!lock_share_entry_fsp(fsp)) {
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode);
+	if (lck == NULL) {
 		DEBUG(0,("remove_oplock: failed to lock share entry for "
 			 "file %s\n", fsp->fsp_name ));
 		return False;
 	}
-	ret = remove_share_oplock(fsp);
+	ret = remove_share_oplock(lck, fsp);
 	if (!ret) {
 		DEBUG(0,("remove_oplock: failed to remove share oplock for "
 			 "file %s fnum %d, dev = %x, inode = %.0f\n",
@@ -192,7 +194,7 @@ BOOL remove_oplock(files_struct *fsp)
 			 (double)inode));
 	}
 	release_file_oplock(fsp);
-	unlock_share_entry_fsp(fsp);
+	talloc_free(lck);
 	return ret;
 }
 
@@ -204,13 +206,15 @@ BOOL downgrade_oplock(files_struct *fsp)
 	SMB_DEV_T dev = fsp->dev;
 	SMB_INO_T inode = fsp->inode;
 	BOOL ret;
+	struct share_mode_lock *lck;
 
-	if (!lock_share_entry_fsp(fsp)) {
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode);
+	if (lck == NULL) {
 		DEBUG(0,("downgrade_oplock: failed to lock share entry for "
 			 "file %s\n", fsp->fsp_name ));
 		return False;
 	}
-	ret = downgrade_share_oplock(fsp);
+	ret = downgrade_share_oplock(lck, fsp);
 	if (!ret) {
 		DEBUG(0,("downgrade_oplock: failed to downgrade share oplock "
 			 "for file %s fnum %d, dev = %x, inode = %.0f\n",
@@ -219,7 +223,7 @@ BOOL downgrade_oplock(files_struct *fsp)
 	}
 		
 	downgrade_file_oplock(fsp);
-	unlock_share_entry_fsp(fsp);
+	talloc_free(lck);
 	return ret;
 }
 
@@ -364,7 +368,7 @@ static void oplock_timeout_handler(struct timed_event *te,
 static void process_oplock_break_message(int msg_type, struct process_id src,
 					 void *buf, size_t len)
 {
-	share_mode_entry *msg = buf;
+	struct share_mode_entry *msg = buf;
 	files_struct *fsp;
 	char *break_msg;
 	BOOL break_to_level2 = False;
@@ -540,7 +544,7 @@ void reply_to_oplock_break_requests(files_struct *fsp)
 	int i;
 
 	for (i=0; i<fsp->num_pending_break_messages; i++) {
-		share_mode_entry *msg = &fsp->pending_break_messages[i];
+		struct share_mode_entry *msg = &fsp->pending_break_messages[i];
 		message_send_pid(msg->pid, MSG_SMB_BREAK_RESPONSE,
 				 msg, sizeof(*msg), True);
 	}
@@ -557,7 +561,7 @@ void reply_to_oplock_break_requests(files_struct *fsp)
 static void process_oplock_break_response(int msg_type, struct process_id src,
 					  void *buf, size_t len)
 {
-	share_mode_entry *msg = buf;
+	struct share_mode_entry *msg = buf;
 
 	if (buf == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
@@ -607,10 +611,11 @@ static void process_open_retry_message(int msg_type, struct process_id src,
 
 void release_level_2_oplocks_on_change(files_struct *fsp)
 {
-	share_mode_entry *share_list = NULL;
+	struct share_mode_entry *share_list = NULL;
 	int num_share_modes = 0;
 	int i;
 	BOOL dummy;
+	struct share_mode_lock *lck;
 
 	/*
 	 * If this file is level II oplocked then we need
@@ -623,13 +628,13 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 	if (!LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
 		return;
 
-	if (lock_share_entry_fsp(fsp) == False) {
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode);
+	if (lck == NULL) {
 		DEBUG(0,("release_level_2_oplocks_on_change: failed to lock "
 			 "share mode entry for file %s.\n", fsp->fsp_name ));
 	}
 
-	num_share_modes = get_share_modes(fsp->dev, fsp->inode, &share_list,
-					  &dummy);
+	num_share_modes = get_share_modes(lck, &share_list, &dummy);
 
 	DEBUG(10,("release_level_2_oplocks_on_change: num_share_modes = %d\n", 
 			num_share_modes ));
@@ -645,15 +650,14 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 			    (procid_is_me(&share_list[i].pid))) {
 				/* We're done */
 				fsp->oplock_type = NO_OPLOCK;
-				SAFE_FREE(share_list);
-				unlock_share_entry_fsp(fsp);
+				talloc_free(lck);
 				return;
 			}
 		}
 	}
 
 	for(i = 0; i < num_share_modes; i++) {
-		share_mode_entry *share_entry = &share_list[i];
+		struct share_mode_entry *share_entry = &share_list[i];
 
 		/*
 		 * As there could have been multiple writes waiting at the
@@ -680,7 +684,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 			DEBUG(0,("release_level_2_oplocks_on_change: PANIC. "
 				 "share mode entry %d is an exlusive "
 				 "oplock !\n", i ));
-			unlock_share_entry(fsp->dev, fsp->inode);
+			talloc_free(lck);
 			abort();
 		}
 
@@ -688,9 +692,8 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 				 share_entry, sizeof(*share_entry), True);
 	}
 
-	SAFE_FREE(share_list);
-	remove_all_share_oplocks(fsp);
-	unlock_share_entry_fsp(fsp);
+	remove_all_share_oplocks(lck, fsp);
+	talloc_free(lck);
 }
 
 /****************************************************************************

@@ -92,17 +92,9 @@ static BOOL init_registry_data( void )
 	fstring keyname, subkeyname;
 	REGSUBKEY_CTR *subkeys;
 	REGVAL_CTR *values;
-	uint32 *ctx;
 	int i;
 	const char *p, *p2;
 	UNISTR2 data;
-	
-	/* create a new top level talloc ctx */
-
-	if ( !(ctx = TALLOC_P( NULL, uint32 )) ) {
-		DEBUG(0,("init_registry_data: top level talloc() failure!\n"));
-		return False;
-	}
 	
 	/* loop over all of the predefined paths and add each component */
 	
@@ -140,7 +132,7 @@ static BOOL init_registry_data( void )
 			   we are about to update the record.  We just want any 
 			   subkeys already present */
 			
-			if ( !(subkeys = TALLOC_ZERO_P( ctx, REGSUBKEY_CTR )) ) {
+			if ( !(subkeys = TALLOC_ZERO_P( NULL, REGSUBKEY_CTR )) ) {
 				DEBUG(0,("talloc() failure!\n"));
 				return False;
 			}
@@ -158,7 +150,7 @@ static BOOL init_registry_data( void )
 	/* loop over all of the predefined values and add each component */
 	
 	for ( i=0; builtin_registry_values[i].path != NULL; i++ ) {
-		if ( !(values = TALLOC_ZERO_P( ctx, REGVAL_CTR )) ) {
+		if ( !(values = TALLOC_ZERO_P( NULL, REGVAL_CTR )) ) {
 			DEBUG(0,("talloc() failure!\n"));
 			return False;
 		}

@@ -1,7 +1,8 @@
 /* 
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
- *  Copyright (C) Marcin Krzysztof Porwit    2005.
+ *  Copyright (C) Marcin Krzysztof Porwit    2005,
+ *  Copyright (C) Gerald (Jerry) Carter      2005.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,9 +25,8 @@
 #define DBGC_CLASS DBGC_RPC_SRV
 
 typedef struct {
-	fstring logname;
-	fstring servername;
-	fstring handle_string;
+	char *logname;
+	char *servername;
 	uint32 num_records;
 	uint32 oldest_entry;
 	uint32 flags;
@@ -81,24 +81,6 @@ static EventlogInfo *find_eventlog_info_by_hnd(pipes_struct *p, POLICY_HND *hand
 	}
 
 	return info;
-}
-
-/********************************************************************
-********************************************************************/
-
-void policy_handle_to_string(POLICY_HND *handle, fstring *dest)
-{
-	memset(dest, 0, sizeof(*dest));
-	snprintf((char *)dest, sizeof(*dest), "%08X-%08X-%04X-%04X-%02X%02X%02X%02X%02X",
-		 handle->data1,
-		 handle->data2,
-		 handle->data3,
-		 handle->data4,
-		 handle->data5[0],
-		 handle->data5[1],
-		 handle->data5[2],
-		 handle->data5[3],
-		 handle->data5[4]);
 }
 
 /********************************************************************
@@ -164,11 +146,7 @@ BOOL control_eventlog_hook(NT_USER_TOKEN *token, const char *elogname )
 	
 	/* now run the command */
 
-	pstr_sprintf(command, "%s \"%s\" %u %u",
-		 cmd,
-		 elogname,
-		 uiRetention,
-		 uiMaxSize );
+	pstr_sprintf(command, "%s \"%s\" %u %u", cmd, elogname, uiRetention, uiMaxSize );
 
 	DEBUG(10, ("control_eventlog_hook: Running [%s]\n", command));
 	ret = smbrun(command, &fd);
@@ -206,15 +184,12 @@ static BOOL open_eventlog_hook( EventlogInfo *info )
 	int ret;
 	int fd = -1;
 
-	if(cmd == NULL || strlen(cmd) == 0) {
+	if ( !cmd || !*cmd ) {
 		DEBUG(0, ("Must define an \"eventlog open command\" entry in the config.\n"));
 		return False;
 	}
 
-	pstr_sprintf(command, "%s \"%s\" \"%s\"",
-		 cmd,
-		 info->logname,
-		 info->handle_string);
+	pstr_sprintf(command, "%s \"%s\"", cmd, info->logname );
 
 	DEBUG(10, ("Running [%s]\n", command));
 	ret = smbrun(command, &fd);
@@ -265,16 +240,12 @@ static BOOL get_num_records_hook(EventlogInfo *info)
 	int ret;
 	int fd = -1;
 
-	if(cmd == NULL || strlen(cmd) == 0) {
+	if ( !cmd || !*cmd ) {
 		DEBUG(0, ("Must define an \"eventlog num records command\" entry in the config.\n"));
 		return False;
 	}
 
-	memset(command, 0, sizeof(command));
-	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"", 
-		 cmd,
-		 info->logname,
-		 info->handle_string);
+	pstr_sprintf( command, "%s \"%s\"", cmd, info->logname );
 
 	DEBUG(10, ("Running [%s]\n", command));
 	ret = smbrun(command, &fd);
@@ -324,16 +295,12 @@ static BOOL get_oldest_entry_hook(EventlogInfo *info)
 	int ret;
 	int fd = -1;
 
-	if(cmd == NULL || strlen(cmd) == 0) {
+	if ( !cmd || !*cmd ) {
 		DEBUG(0, ("Must define an \"eventlog oldest record command\" entry in the config.\n"));
 		return False;
 	}
 
-	memset(command, 0, sizeof(command));
-	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"", 
-		 cmd,
-		 info->logname,
-		 info->handle_string);
+	pstr_sprintf( command, "%s \"%s\"", cmd, info->logname );
 
 	DEBUG(10, ("Running [%s]\n", command));
 	ret = smbrun(command, &fd);
@@ -381,16 +348,12 @@ static BOOL close_eventlog_hook(EventlogInfo *info)
 	int ret;
 	int fd = -1;
 
-	if(cmd == NULL || strlen(cmd) == 0) {
+	if ( !cmd || !*cmd ) {
 		DEBUG(0, ("Must define an \"eventlog close command\" entry in the config.\n"));
 		return False;
 	}
 
-	memset(command, 0, sizeof(command));
-	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"", 
-		 cmd, 
-		 info->logname, 
-		 info->handle_string);
+	pstr_sprintf( command, "%s \"%s\"", cmd, info->logname );
 
 	DEBUG(10, ("Running [%s]\n", command));
 	ret = smbrun(command, &fd);
@@ -616,22 +579,16 @@ static BOOL read_eventlog_hook(EventlogInfo *info, Eventlog_entry *entry,
 	int ret;
 	int fd = -1;
 
-	if(info == NULL) {
+	if ( !info )
 		return False;
-	}
 
-	if(cmd == NULL || strlen(cmd) == 0) {
+	if ( !cmd || !*cmd ) {
 		DEBUG(0, ("Must define an \"eventlog read command\" entry in the config.\n"));
 		return False;
 	}
 
-	slprintf(command, sizeof(command)-1, "%s \"%s\" %s %d %d \"%s\"",
-		 cmd,
-		 info->logname,
-		 direction,
-		 starting_record,
-		 buffer_size,
-		 info->handle_string);
+	pstr_sprintf( command, "%s \"%s\" %s %d %d",
+		 cmd, info->logname, direction, starting_record, buffer_size );
 
 	*numlines = 0;
 
@@ -782,8 +739,7 @@ static BOOL add_record_to_resp(EVENTLOG_R_READ_EVENTLOG *r_u, Eventlog_entry *ee
  *               eventlog_io_q_clear_eventlog for info about odd file name behavior
  */
 
-static BOOL clear_eventlog_hook(EventlogInfo *info,
-					  pstring backup_file_name)
+static BOOL clear_eventlog_hook(EventlogInfo *info, pstring backup_file_name)
 {
 	char *cmd = lp_eventlog_clear_cmd();
 	char **qlines;
@@ -792,24 +748,15 @@ static BOOL clear_eventlog_hook(EventlogInfo *info,
 	int ret;
 	int fd = -1;
 
-	if(cmd == NULL || strlen(cmd) == 0) {
+	if ( !cmd || !*cmd ) {
 		DEBUG(0, ("Must define an \"eventlog clear command\" entry in the config.\n"));
 		return False;
 	}
 
-	memset(command, 0, sizeof(command));
-	if(strlen(backup_file_name) > 0) {
-		slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\"",
-			 cmd,
-			 info->logname,
-			 backup_file_name,
-			 info->handle_string);
-	} else {
-		slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"", 
-			 cmd, 
-			 info->logname, 
-			 info->handle_string);
-	}
+	if ( strlen(backup_file_name) ) 
+		pstr_sprintf( command, "%s \"%s\" \"%s\"", cmd, info->logname, backup_file_name );
+	else 
+		pstr_sprintf( command, "%s \"%s\"", cmd, info->logname );
 
 	DEBUG(10, ("Running [%s]\n", command));
 	ret = smbrun(command, &fd);
@@ -845,22 +792,24 @@ static BOOL clear_eventlog_hook(EventlogInfo *info,
 WERROR _eventlog_open_eventlog(pipes_struct *p, EVENTLOG_Q_OPEN_EVENTLOG *q_u, EVENTLOG_R_OPEN_EVENTLOG *r_u)
 {
 	EventlogInfo *info = NULL;
+	fstring str;
     
-	if ( !(info = TALLOC_ZERO_P(p->mem_ctx, EventlogInfo)) ) 
+	if ( !(info = TALLOC_ZERO_P(NULL, EventlogInfo)) ) 
 		return WERR_NOMEM;
 
-	fstrcpy(info->servername, global_myname());
-	fstrcpy(info->logname, "Application");
-
+	fstrcpy( str, global_myname() );
 	if ( q_u->servername.string ) {
-		rpcstr_pull( info->servername, q_u->servername.string->buffer, 
-			sizeof(info->servername), q_u->servername.string->uni_str_len*2, 0 );
+		rpcstr_pull( str, q_u->servername.string->buffer, 
+			sizeof(str), q_u->servername.string->uni_str_len*2, 0 );
 	} 
+	info->servername = talloc_strdup( info, str );
 
+	fstrcpy( str, "Application" );
 	if ( q_u->logname.string ) {
-		rpcstr_pull( info->logname, q_u->logname.string->buffer, 
-			sizeof(info->logname), q_u->logname.string->uni_str_len*2, 0 );
+		rpcstr_pull( str, q_u->logname.string->buffer, 
+			sizeof(str), q_u->logname.string->uni_str_len*2, 0 );
 	} 
+	info->logname = talloc_strdup( info, str );
 
 	DEBUG(10, ("_eventlog_open_eventlog: Using [%s] as the server name.\n", info->servername));
 	DEBUG(10, ("_eventlog_open_eventlog: Using [%s] as the source log file.\n", info->logname));
@@ -870,8 +819,6 @@ WERROR _eventlog_open_eventlog(pipes_struct *p, EVENTLOG_Q_OPEN_EVENTLOG *q_u, E
 		return WERR_NOMEM;
 	}
 	
-	policy_handle_to_string(&r_u->handle, &info->handle_string);
-
 	if ( !(open_eventlog_hook(info)) ) {
 		close_policy_hnd(p, &r_u->handle);
 		return WERR_BADFILE;
