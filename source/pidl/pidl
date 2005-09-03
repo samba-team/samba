@@ -326,8 +326,8 @@ $dcom
 	  $cnffile =~ s/\.idl$/\.cnf/;
 
 	  my ($dp, $dh) = Parse::Pidl::Ethereal::NDR::Parse($ndr, $idl_file, $eheader, $cnffile);
-	  FileSave($eparser, $dp);
-	  FileSave($eheader, $dh);
+	  FileSave($eparser, $dp) if defined($dp);
+	  FileSave($eheader, $dh) if defined($dh);
 	}
 
 	my $tdr_parser = ($opt_tdr_parser or "$outputdir/tdr_$basename.c");
