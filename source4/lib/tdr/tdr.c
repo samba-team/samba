@@ -143,6 +143,11 @@ NTSTATUS tdr_pull_charset(struct tdr_pull *tdr, const char **v, uint32_t length,
 		}
 	}
 
+	if (length == 0) {
+		*v = talloc_strdup(tdr, "");
+		return NT_STATUS_OK;
+	}
+
 	TDR_PULL_NEED_BYTES(tdr, el_size*length);
 	
 	ret = convert_string_talloc(tdr, chset, CH_UNIX, tdr->data.data+tdr->offset, el_size*length, discard_const_p(void *, v));
