@@ -425,7 +425,7 @@ p12_init(hx509_certs certs, void **data, int flags,
 
     free_PKCS12_AuthenticatedSafe(&as);
 
-    printf("found %d private keys\n", c.val.len);
+    printf("found %lu private keys\n", (unsigned long)c.val.len);
 
     for (i = 0; i < c.val.len; i++) {
 	hx509_cert cert;
@@ -504,9 +504,6 @@ p12_iter_end(hx509_certs certs,
     struct ks_pkcs12 *p12 = data;
     return hx509_certs_end_seq(p12->certs, cursor);
 }
-
-
-
 
 static struct hx509_keyset_ops keyset_pkcs12 = {
     "PKCS12",
