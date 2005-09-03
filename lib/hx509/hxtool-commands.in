@@ -49,6 +49,12 @@ command = {
 		help = "certificate to sign with"
 	}
 	option = {
+		long = "pass"
+		type = "strings"
+		argument = "password"
+		help = "password, prompter, or environment"
+	}
+	option = {
 		long = "content-info"
 		type = "flag"
 		help = "wrapped out-data in a ContentInfo"
@@ -74,6 +80,12 @@ command = {
 		help = "certificate store to pull certificates from"
 	}
 	option = {
+		long = "pass"
+		type = "strings"
+		argument = "password"
+		help = "password, prompter, or environment"
+	}
+	option = {
 		long = "content-info"
 		type = "flag"
 		help = "unwrap in-data that's in a ContentInfo"
@@ -91,6 +103,12 @@ command = {
 		type = "strings"
 		argument = "certificate-store"
 		help = "certificate used to decrypt the data"
+	}
+	option = {
+		long = "pass"
+		type = "strings"
+		argument = "password"
+		help = "password, prompter, or environment"
 	}
 	option = {
 		long = "content-info"
@@ -112,6 +130,12 @@ command = {
 		help = "certificate used to encrypt the data"
 	}
 	option = {
+		long = "pass"
+		type = "strings"
+		argument = "password"
+		help = "password, prompter, or environment"
+	}
+	option = {
 		long = "content-info"
 		type = "flag"
 		help = "wrapped out-data in a ContentInfo"
@@ -124,6 +148,12 @@ command = {
 	name = "verify"
 	function = "pcert_verify"
 	option = {
+		long = "pass"
+		type = "strings"
+		argument = "password"
+		help = "password, prompter, or environment"
+	}
+	option = {
 		long = "verbose"
 		short = "v"
 		type = "flag"
@@ -135,6 +165,12 @@ command = {
 command = {
 	name = "print"
 	function = "pcert_print"
+	option = {
+		long = "pass"
+		type = "strings"
+		argument = "password"
+		help = "password, prompter, or environment"
+	}
 	min_args="1"
 	argument="certificate ..."
 	help = "Print certificates"
@@ -142,6 +178,12 @@ command = {
 command = {
 	name = "validate"
 	function = "pcert_validate"
+	option = {
+		long = "pass"
+		type = "strings"
+		argument = "password"
+		help = "password, prompter, or environment"
+	}
 	min_args="1"
 	argument="certificate ..."
 	help = "Validate content of certificates"
@@ -170,6 +212,12 @@ command = {
 		type = "string"
 		argument = "name"
 		help = "match on friendly name"
+	}
+	option = {
+		long = "pass"
+		type = "strings"
+		argument = "password"
+		help = "password, prompter, or environment"
 	}
 	min_args="1"
 	argument="certificates ..."
