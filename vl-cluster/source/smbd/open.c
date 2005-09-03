@@ -1680,7 +1680,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		if (!NT_STATUS_IS_OK(result)) {
 			BOOL dummy_del_on_close;
 			/* Remember to delete the mode we just added. */
-			del_share_mode(lck, fsp, NULL, &dummy_del_on_close);
+			del_share_mode(lck, fsp, &dummy_del_on_close);
 			talloc_free(lck);
 			fd_close(conn,fsp);
 			file_free(fsp);
