@@ -26,6 +26,7 @@ error_code NAME_CONSTRAINT_ERROR, "Error while verifing name constraints"
 error_code PATH_TOO_LONG, "Path is too long, failed to find valid anchor"
 error_code KU_CERT_MISSING, "Required keyusage for this certificate is missing"
 error_code CERT_NOT_FOUND, "Certificate not found"
+error_code UNKNOWN_LOCK_COMMAND, "Unknown lock command"
 
 index 32
 prefix HX509_CMS
@@ -47,5 +48,6 @@ error_code BAD_SIGNATURE, "Signature is not valid"
 error_code SIG_NO_CONF, "Sigature doesn't provide confidentiality"
 error_code SIG_INVALID_FORMAT, "Invalid format on signature"
 error_code OID_MISMATCH, "Mismatch bewteen oids"
+error_code NO_PROMPTER, "No prompter function defined"
 
 end
