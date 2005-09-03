@@ -1,3 +1,29 @@
+2005-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_query.in: Pass in --pass to all commands.
+
+	* hxtool.c: Use option --pass.
+
+	* hxtool-commands.in: Add --pass to all commands.
+
+	* hx509_err.et: add UNKNOWN_LOCK_COMMAND and CRYPTO_NO_PROMPTER
+
+	* test_cms.in: pass in password to cms-create-sd
+
+	* crypto.c: Abstract out PBE_string2key so I can add PBE2 s2k
+	later.  Avoid signess warnings with OpenSSL.
+
+	* cms.c: Use void * instead of char * for to avoid signedness
+	issues
+
+	* cert.c (hx509_cert_get_attribute): remove const, its not
+
+	* ks_p12.c: Cast size_t to unsigned long when print.
+
+	* name.c: Fix signedness warning.
+
+	* test_query.in: Use echo, the function check isn't defined here.
+	
 2005-08-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* hxtool-commands.in: Add more options that was missing.
