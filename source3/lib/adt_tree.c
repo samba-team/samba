@@ -23,8 +23,6 @@
 
 
 /**************************************************************************
- Initialize the tree's root.  The cmp_fn is a callback function used
- for comparision of two children
  *************************************************************************/
 
 static BOOL trim_tree_keypath( char *path, char **base, char **new_path )
@@ -54,68 +52,25 @@ static BOOL trim_tree_keypath( char *path, char **base, char **new_path )
  for comparision of two children
  *************************************************************************/
 
- SORTED_TREE* pathtree_init( void *data_p,
-                               int (cmp_fn)(void*, void*),
-                               void (free_fn)(void*) )
+ SORTED_TREE* pathtree_init( void *data_p, int (cmp_fn)(void*, void*) )
 {
 	SORTED_TREE *tree = NULL;
 	
-	if ( !(tree = SMB_MALLOC_P(SORTED_TREE)) )
+	if ( !(tree = TALLOC_ZERO_P(NULL, SORTED_TREE)) )
 		return NULL;
 		
-	ZERO_STRUCTP( tree );
-	
 	tree->compare = cmp_fn;
-	tree->free_func    = free_fn;
 	
-	if ( !(tree->root = SMB_MALLOC_P(TREE_NODE)) ) {
-		SAFE_FREE( tree );
+	if ( !(tree->root = TALLOC_ZERO_P(tree, TREE_NODE)) ) {
+		TALLOC_FREE( tree );
 		return NULL;
 	}
 	
-	ZERO_STRUCTP( tree->root );
 	tree->root->data_p = data_p;
 	
 	return tree;
 }
 
-
-/**************************************************************************
- Delete a tree and free all allocated memory
- *************************************************************************/
-
-static void pathtree_destroy_children( TREE_NODE *root )
-{
-	int i;
-	
-	if ( !root )
-		return;
-	
-	for ( i=0; i<root->num_children; i++ )
-	{
-		pathtree_destroy_children( root->children[i] );	
-	}
-	
-	SAFE_FREE( root->children );
-	SAFE_FREE( root->key );
-	
-	return;
-}
-
-/**************************************************************************
- Delete a tree and free all allocated memory
- *************************************************************************/
-
- void pathtree_destroy( SORTED_TREE *tree )
-{
-	if ( tree->root )
-		pathtree_destroy_children( tree->root );	
-	
-	if ( tree->free_func )
-		tree->free_func( tree->root );
-	
-	SAFE_FREE( tree );
-}
 
 /**************************************************************************
  Find the next child given a key string
@@ -127,15 +82,13 @@ static TREE_NODE* pathtree_birth_child( TREE_NODE *node, char* key )
 	TREE_NODE **siblings;
 	int i;
 	
-	if ( !(infant = SMB_MALLOC_P(TREE_NODE)) )
+	if ( !(infant = TALLOC_ZERO_P( node, TREE_NODE)) )
 		return NULL;
 	
-	ZERO_STRUCTP( infant );
-		
-	infant->key = SMB_STRDUP( key );
+	infant->key = talloc_strdup( infant, key );
 	infant->parent = node;
 	
-	siblings = SMB_REALLOC_ARRAY( node->children, TREE_NODE *, node->num_children+1 );
+	siblings = TALLOC_REALLOC_ARRAY( node, node->children, TREE_NODE *, node->num_children+1 );
 	
 	if ( siblings )
 		node->children = siblings;
