@@ -285,7 +285,7 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 		v_blob = ndr_push_blob(ndr_v_push);
 
 		if (dumpdata) {
-			printf("%d bytes generated (validate)\n", v_blob.length);
+			printf("%ld bytes generated (validate)\n", (long)v_blob.length);
 			dump_data(0, v_blob.data, v_blob.length);
 		}
 
@@ -312,7 +312,7 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 		f->ndr_print(ndr_v_print, function, flags, v_st);
 
 		if (blob.length != v_blob.length) {
-			printf("WARNING! orig bytes:%d validated pushed bytes:%d\n", blob.length, v_blob.length);
+			printf("WARNING! orig bytes:%ld validated pushed bytes:%ld\n", (long)blob.length, (long)v_blob.length);
 		}
 
 		if (ndr_pull->offset != ndr_v_pull->offset) {
