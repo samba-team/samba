@@ -80,7 +80,7 @@ static struct registry_key *cmd_set(TALLOC_CTX *mem_ctx, struct registry_context
 	} else {
 		struct registry_value *val;
 		if (reg_string_to_val(mem_ctx, argv[2], argv[3], &val)) {
-			WERROR error = reg_val_set(cur, argv[1], val->data_type, val->data_blk, val->data_len);
+			WERROR error = reg_val_set(cur, argv[1], val->data_type, val->data);
 			if (!W_ERROR_IS_OK(error)) {
 				fprintf(stderr, "Error setting value: %s\n", win_errstr(error));
 				return NULL;

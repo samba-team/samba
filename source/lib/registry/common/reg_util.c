@@ -48,35 +48,25 @@ const char *str_regtype(int type)
 
 char *reg_val_data_string(TALLOC_CTX *mem_ctx, struct registry_value *v)
 { 
-  char *asciip;
   char *ret = NULL;
-  int i;
 
-  if(v->data_len == 0) return talloc_strdup(mem_ctx, "");
+  if(v->data.length == 0) return talloc_strdup(mem_ctx, "");
 
   switch (v->data_type) {
   case REG_EXPAND_SZ:
   case REG_SZ:
-      convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, v->data_blk, v->data_len, (void **)&ret);
+      convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, v->data.data, v->data.length, (void **)&ret);
 	  return ret;
 
   case REG_BINARY:
-	  ret = talloc_array_size(mem_ctx, 3, v->data_len+1);
-	  asciip = ret;
-	  for (i=0; i<v->data_len; i++) { 
-		  int str_rem = v->data_len * 3 - (asciip - ret);
-		  asciip += snprintf(asciip, str_rem, "%02x", *(uint8_t *)(((char *)v->data_blk)+i));
-		  if (i < v->data_len && str_rem > 0)
-			  *asciip = ' '; asciip++;	
-	  }
-	  *asciip = '\0';
+	  ret = data_blob_hex_string(mem_ctx, &v->data);
 	  return ret;
 
   case REG_DWORD:
-	  if (*(int *)v->data_blk == 0)
+	  if (*(int *)v->data.data == 0)
 		  return talloc_strdup(mem_ctx, "0");
 
-	  return talloc_asprintf(mem_ctx, "0x%x", *(int *)v->data_blk);
+	  return talloc_asprintf(mem_ctx, "0x%x", *(int *)v->data.data);
 
   case REG_MULTI_SZ:
 	/* FIXME */
@@ -117,17 +107,17 @@ BOOL reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str, const char *da
 	{
 		case REG_SZ:
 		case REG_EXPAND_SZ:
-      		(*value)->data_len = convert_string_talloc(mem_ctx, CH_UNIX, CH_UTF16, data_str, strlen(data_str), &(*value)->data_blk);
+      		(*value)->data.length = convert_string_talloc(mem_ctx, CH_UNIX, CH_UTF16, data_str, strlen(data_str), (void **)&(*value)->data.data);
 			break;
-		case REG_DWORD:
-			(*value)->data_len = sizeof(uint32_t);
-			(*value)->data_blk = talloc(mem_ctx, uint32_t);
-			*((uint32_t *)(*value)->data_blk) = strtol(data_str, NULL, 0);
+
+		case REG_DWORD: {
+			uint32_t tmp = strtol(data_str, NULL, 0);
+			(*value)->data = data_blob_talloc(mem_ctx, &tmp, 4);
+			}
 			break;
 
 		case REG_NONE:
-			(*value)->data_len = 0;
-			(*value)->data_blk = NULL;
+			ZERO_STRUCT((*value)->data);
 			break;
 	
 		default:

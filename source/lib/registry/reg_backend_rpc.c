@@ -204,8 +204,7 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx, struct registry_key *p
 		*value = talloc(mem_ctx, struct registry_value);
 		(*value)->name = talloc_strdup(mem_ctx, r.out.name->name);
 		(*value)->data_type = type;
-		(*value)->data_len = *r.out.length;
-		(*value)->data_blk = talloc_memdup(mem_ctx, r.out.value, *r.out.length);
+		(*value)->data = data_blob_talloc(mem_ctx, r.out.value, *r.out.length);
 		return WERR_OK;
 	}
 	
@@ -318,7 +317,8 @@ static WERROR rpc_del_key(struct registry_key *parent, const char *name)
 	return r.out.result;
 }
 
-static WERROR rpc_num_values(struct registry_key *key, int *count) {
+static WERROR rpc_num_values(struct registry_key *key, uint32_t *count) 
+{
 	struct rpc_key_data *mykeydata = key->backend_data;
 	WERROR error;
 		
@@ -331,7 +331,8 @@ static WERROR rpc_num_values(struct registry_key *key, int *count) {
 	return WERR_OK;
 }
 
-static WERROR rpc_num_subkeys(struct registry_key *key, int *count) {
+static WERROR rpc_num_subkeys(struct registry_key *key, uint32_t *count) 
+{
 	struct rpc_key_data *mykeydata = key->backend_data;
 	WERROR error;
 

@@ -252,7 +252,7 @@ WERROR reg_key_get_value_by_index(TALLOC_CTX *mem_ctx, struct registry_key *key,
 	return WERR_OK;
 }
 
-WERROR reg_key_num_subkeys(struct registry_key *key, int *count)
+WERROR reg_key_num_subkeys(struct registry_key *key, uint32_t *count)
 {
 	if(!key) return WERR_INVALID_PARAM;
 	
@@ -277,7 +277,7 @@ WERROR reg_key_num_subkeys(struct registry_key *key, int *count)
 	return WERR_NOT_SUPPORTED;
 }
 
-WERROR reg_key_num_values(struct registry_key *key, int *count)
+WERROR reg_key_num_values(struct registry_key *key, uint32_t *count)
 {
 	
 	if(!key) return WERR_INVALID_PARAM;
@@ -416,11 +416,11 @@ WERROR reg_key_add_name(TALLOC_CTX *mem_ctx, struct registry_key *parent, const 
 	return WERR_OK;
 }
 
-WERROR reg_val_set(struct registry_key *key, const char *value, uint32_t type, void *data, int len)
+WERROR reg_val_set(struct registry_key *key, const char *value, uint32_t type, DATA_BLOB data)
 {
 	/* A 'real' set function has preference */
 	if (key->hive->functions->set_value) 
-		return key->hive->functions->set_value(key, value, type, data, len);
+		return key->hive->functions->set_value(key, value, type, data);
 
 	DEBUG(1, ("Backend '%s' doesn't support method set_value\n", key->hive->functions->name));
 	return WERR_NOT_SUPPORTED;
@@ -501,7 +501,7 @@ WERROR reg_key_valuesizes(struct registry_key *key, uint32_t *max_valnamelen, ui
 			if (value->name) {
 				*max_valnamelen = MAX(*max_valnamelen, strlen(value->name));
 			}
-			*max_valbufsize = MAX(*max_valbufsize, value->data_len);
+			*max_valbufsize = MAX(*max_valbufsize, value->data.length);
 		}
 
 		i++;

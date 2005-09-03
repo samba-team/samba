@@ -704,9 +704,11 @@ static int nt_apply_reg_command_file(struct registry_context *r, const char *cmd
 					DEBUG(0, ("Error removing value '%s'\n", val->name));
 				  }
 				  modified = True;
-			  }
-			  else {
-				  if(!W_ERROR_IS_OK(reg_val_set(tmp, val->name, val->type, val->val, strlen(val->val)))) {
+			  } else {
+				  DATA_BLOB blob;
+				  blob.data = (uint8_t *)val->val;
+				  blob.length = strlen(val->val);
+				  if(!W_ERROR_IS_OK(reg_val_set(tmp, val->name, val->type, blob))) {
 					  DEBUG(0, ("Error adding new value '%s'\n", val->name));
 					  continue;
 				  }

@@ -624,7 +624,7 @@ static KEY_SEC_DESC *nt_create_init_sec(struct registry_hive *h)
 static REGF_HDR *nt_get_regf_hdr(struct registry_hive *h)
 {
 	REGF *regf = h->backend_data;
-	SMB_REG_ASSERT(regf);
+	SMB_ASSERT(regf);
 
 	if (!regf->base) { /* Try to mmap etc the file */
 
@@ -650,7 +650,7 @@ static REGF_HDR *nt_get_regf_hdr(struct registry_hive *h)
 	 * header 
 	 */
 
-	SMB_REG_ASSERT(regf->base != NULL);
+	SMB_ASSERT(regf->base != NULL);
 
 	return (REGF_HDR *)regf->base;
 }
@@ -828,7 +828,7 @@ static KEY_SEC_DESC *process_sk(struct registry_hive *regf, SK_HDR *sk_hdr, int 
 
 	/* Here, we have an item in the map that has been reserved, or tmp==NULL. */
 
-	SMB_REG_ASSERT(tmp == NULL || (tmp && tmp->state != SEC_DESC_NON));
+	SMB_ASSERT(tmp == NULL || (tmp && tmp->state != SEC_DESC_NON));
 
 	/*
 	 * Now, allocate a KEY_SEC_DESC, and parse the structure here, and add the
@@ -870,10 +870,10 @@ static KEY_SEC_DESC *process_sk(struct registry_hive *regf, SK_HDR *sk_hdr, int 
 
 	sk_prev_off = IVAL(&sk_hdr->prev_off,0);
 	tmp->prev = lookup_create_sec_key(regf, regf->sk_map, sk_prev_off);
-	SMB_REG_ASSERT(tmp->prev != NULL);
+	SMB_ASSERT(tmp->prev != NULL);
 	sk_next_off = IVAL(&sk_hdr->next_off,0);
 	tmp->next = lookup_create_sec_key(regf, regf->sk_map, sk_next_off);
-	SMB_REG_ASSERT(tmp->next != NULL);
+	SMB_ASSERT(tmp->next != NULL);
 
 	return tmp;
 }
@@ -934,9 +934,7 @@ static WERROR vk_to_val(TALLOC_CTX *mem_ctx, struct registry_key *parent, VK_HDR
 			memcpy(dtmp, &dat_off, dat_len);
 		}
 
-
-		tmp->data_blk = dtmp;
-		tmp->data_len = dat_len;
+		tmp->data = data_blob_talloc(mem_ctx, dtmp, dat_len);
 	}
 
 	*value = tmp;
@@ -968,14 +966,14 @@ static WERROR lf_verify(struct registry_hive *h, LF_HDR *lf_hdr, int size)
 	return WERR_OK;
 }
 
-static WERROR lf_num_entries(struct registry_hive *h, LF_HDR *lf_hdr, int size, int *count)
+static WERROR lf_num_entries(struct registry_hive *h, LF_HDR *lf_hdr, int size, uint32_t *count)
 {
 	WERROR error;
 
 	error = lf_verify(h, lf_hdr, size);
 	if(!W_ERROR_IS_OK(error)) return error;
 
-	SMB_REG_ASSERT(size < 0);
+	SMB_ASSERT(size < 0);
 
 	*count = SVAL(&lf_hdr->key_count,0);
 	DEBUG(2, ("Key Count: %u\n", *count));
@@ -1004,7 +1002,7 @@ static WERROR lf_get_entry(TALLOC_CTX *mem_ctx, struct registry_key *parent, LF_
 	error = lf_verify(parent->hive, lf_hdr, size);
 	if(!W_ERROR_IS_OK(error)) return error;
 
-	SMB_REG_ASSERT(size < 0);
+	SMB_ASSERT(size < 0);
 
 	count = SVAL(&lf_hdr->key_count,0);
 	DEBUG(2, ("Key Count: %u\n", count));
@@ -1035,7 +1033,7 @@ static WERROR nk_to_key(TALLOC_CTX *mem_ctx, struct registry_hive *h, NK_HDR *nk
 		return WERR_INVALID_PARAM;
 	}
 
-	SMB_REG_ASSERT(size < 0);
+	SMB_ASSERT(size < 0);
 
 	namlen = SVAL(&nk_hdr->nam_len,0);
 	clsname_len = SVAL(&nk_hdr->clsnam_len,0);
@@ -1059,7 +1057,7 @@ static WERROR nk_to_key(TALLOC_CTX *mem_ctx, struct registry_hive *h, NK_HDR *nk
 
 	/* Fish out the key name and process the LF list */
 
-	SMB_REG_ASSERT(namlen < sizeof(key_name));
+	SMB_ASSERT(namlen < sizeof(key_name));
 
 	strncpy(key_name, nk_hdr->key_nam, namlen);
 	key_name[namlen] = '\0';
@@ -1194,7 +1192,7 @@ static void *nt_alloc_regf_space(struct registry_hive *h, int size, uint_t *off)
 
 	if (!regf || !size || !off) return NULL;
 
-	SMB_REG_ASSERT(regf->blk_head != NULL);
+	SMB_ASSERT(regf->blk_head != NULL);
 
 	/*
 	 * round up size to include header and then to 8-byte boundary
@@ -1653,7 +1651,7 @@ static WERROR nt_open_hive (struct registry_hive *h, struct registry_key **key)
 }
 
 
-static WERROR nt_num_subkeys(struct registry_key *k, int *num) 
+static WERROR nt_num_subkeys(struct registry_key *k, uint32_t *num) 
 {
 	REGF *regf = k->hive->backend_data;
 	LF_HDR *lf_hdr;
@@ -1670,7 +1668,7 @@ static WERROR nt_num_subkeys(struct registry_key *k, int *num)
 	return lf_num_entries(k->hive, lf_hdr, BLK_SIZE(lf_hdr), num);
 }
 
-static WERROR nt_num_values(struct registry_key *k, int *count)
+static WERROR nt_num_values(struct registry_key *k, uint32_t *count)
 {
 	NK_HDR *nk_hdr = k->backend_data;
 	*count = IVAL(&nk_hdr->val_cnt,0);

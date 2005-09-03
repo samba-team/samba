@@ -269,7 +269,7 @@ static void expand_key(GtkTreeView *treeview, GtkTreeIter *parent, GtkTreePath *
 	g_assert(k);
 	
 	for(i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(mem_ctx, k, i, &sub)); i++) {
-		int count;
+		uint32_t count;
 		/* Replace the blank child with the first directory entry
            You may be tempted to remove the blank child node and then 
            append a new one.  Don't.  If you remove the blank child 
@@ -559,7 +559,7 @@ static void on_value_activate(GtkTreeView *treeview, GtkTreePath *arg1,
 		
 		reg_string_to_val(mem_ctx,str_regtype(gtk_combo_box_get_active(GTK_COMBO_BOX(entry_type))), gtk_entry_get_text(GTK_ENTRY(entry_value)), &val);
 		
-		error = reg_val_set(current_key, gtk_entry_get_text(GTK_ENTRY(entry_name)), val->data_type, val->data_blk, val->data_len);
+		error = reg_val_set(current_key, gtk_entry_get_text(GTK_ENTRY(entry_name)), val->data_type, val->data);
 
 		if (!W_ERROR_IS_OK(error)) {
 			gtk_show_werror(NULL, "Error while setting value", error);
@@ -580,7 +580,7 @@ static void on_set_value_activate(GtkMenuItem *menuitem, gpointer user_data)
 		
 		reg_string_to_val(mem_ctx,str_regtype(gtk_combo_box_get_active(GTK_COMBO_BOX(entry_type))), gtk_entry_get_text(GTK_ENTRY(entry_value)), &val);
 		
-		error = reg_val_set(current_key, gtk_entry_get_text(GTK_ENTRY(entry_name)), val->data_type, val->data_blk, val->data_len);
+		error = reg_val_set(current_key, gtk_entry_get_text(GTK_ENTRY(entry_name)), val->data_type, val->data);
 
 		if (!W_ERROR_IS_OK(error)) {
 			gtk_show_werror(NULL, "Error while setting value", error);

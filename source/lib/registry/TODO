@@ -31,3 +31,5 @@ gregedit.c:
  - support for editing values / adding values / deleting values
  - support for adding/deleting keys
  - support for security descriptors
+
+- pass parsed paths around rather then strings (i.e. just a list of strings)
