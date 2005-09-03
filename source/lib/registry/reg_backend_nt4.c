@@ -21,6 +21,7 @@
 #include "registry.h"
 #include "system/filesys.h"
 #include "lib/registry/tdr_regf.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 /*
  * Read HBIN blocks into memory
@@ -251,6 +252,51 @@ static WERROR regf_get_subkey (TALLOC_CTX *ctx, struct registry_key *key, int id
 	return WERR_OK;
 }
 
+static WERROR regf_get_sec_desc(TALLOC_CTX *ctx, struct registry_key *key, struct security_descriptor **sd)
+{
+	struct nk_block *nk = key->backend_data;
+	struct tdr_pull *tdr;
+	struct sk_block sk;
+	DATA_BLOB data;
+
+	data = regf_get_data(key->hive->backend_data, nk->sk_offset);
+	if (!data.data) {
+		DEBUG(0, ("Unable to find security descriptor\n"));
+		return WERR_GENERAL_FAILURE;
+	}
+
+	tdr = talloc_zero(ctx, struct tdr_pull);
+	if (!tdr)
+		return WERR_NOMEM;
+
+	tdr->data = data;
+
+	if (NT_STATUS_IS_ERR(tdr_pull_sk_block(tdr, &sk))) {
+		DEBUG(0, ("Error parsing SK block\n"));
+		return WERR_GENERAL_FAILURE;
+	}
+
+	if (strcmp(sk.header, "sk") != 0) {
+		DEBUG(0, ("Expected 'sk', got '%s'\n", sk.header));
+		return WERR_GENERAL_FAILURE;
+	}
+
+	*sd = talloc(ctx, struct security_descriptor);
+	if (!*sd)
+		return WERR_NOMEM;
+
+	data.data = sk.sec_desc;
+	data.length = sk.rec_size;
+	if (NT_STATUS_IS_ERR(ndr_pull_struct_blob(&data, ctx, *sd, (ndr_pull_flags_fn_t)ndr_pull_security_descriptor))) {
+		DEBUG(0, ("Error parsing security descriptor\n"));
+		return WERR_GENERAL_FAILURE;
+	}
+
+	talloc_free(tdr);
+
+	return WERR_OK;
+}
+
 static WERROR nt_open_hive (struct registry_hive *h, struct registry_key **key)
 {
 	struct regf_data *regf;
@@ -342,6 +388,7 @@ static struct hive_operations reg_backend_nt4 = {
 	.num_values = regf_num_values,
 	.get_subkey_by_index = regf_get_subkey,
 	.get_value_by_index = regf_get_value,
+	.key_get_sec_desc = regf_get_sec_desc,
 };
 
 NTSTATUS registry_nt4_init(void)
