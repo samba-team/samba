@@ -1,7 +1,7 @@
 /* 
  *  Unix SMB/CIFS implementation.
  *  Generic Abstract Data Types
- *  Copyright (C) Gerald Carter                     2002.
+ *  Copyright (C) Gerald Carter                     2002-2005.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -39,17 +39,18 @@ typedef struct _tree_node {
 
 typedef struct _tree_root {
 	TREE_NODE	*root;
+
+	/* not used currently (is it needed?) */
 	int 		(*compare)(void* x, void *y);
-	void		(*free_func)(void *p);
 } SORTED_TREE;
 
 /* 
  * API
  */
 
-/* initializer and desctrutor */
-SORTED_TREE*  pathtree_init( void *data_p, int (cmp_fn)(void*, void*), void (free_fn)(void*) );
-void          pathtree_destroy( SORTED_TREE *tree );
+/* create a new tree, talloc_free() to throw it away */
+
+SORTED_TREE*  pathtree_init( void *data_p, int (cmp_fn)(void*, void*) );
 
 /* add a new path component */
 
