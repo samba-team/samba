@@ -339,7 +339,7 @@ $dcom
 
 	if (defined($opt_tdr_header)) {
 		require Parse::Pidl::Samba::TDR;
-		FileSave($tdr_header, Parse::Pidl::Samba::TDR::Header($pidl, $outputdir));
+		FileSave($tdr_header, Parse::Pidl::Samba::TDR::Header($pidl, $outputdir,$basename));
 	}
 
 	if ($opt_template) {
