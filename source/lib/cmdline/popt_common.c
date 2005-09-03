@@ -221,7 +221,7 @@ static void popt_common_credentials_callback(poptContext con,
 
 			cli_credentials_parse_string(cmdline_credentials, arg, CRED_SPECIFIED);
 			/* This breaks the abstraction, including the const above */
-			if (lp=strchr_m(arg,'%')) {
+			if ((lp=strchr_m(arg,'%'))) {
 				lp[0]='\0';
 				lp++;
 				memset(lp,0,strlen(lp));
