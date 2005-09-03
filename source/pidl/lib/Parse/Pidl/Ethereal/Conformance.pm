@@ -68,9 +68,16 @@ sub handle_strip_prefix($$)
 
 sub handle_noemit($$)
 {
-	my ($data,$type) = @_;
+	my ($data) = shift;
+	my $type;
 
-	$data->{noemit}->{$type} = 1;
+	$type = shift if ($#_ == 1);
+
+	if (defined($type)) {
+	    $data->{noemit}->{$type} = 1;
+	} else {
+	    $data->{noemit_dissector} = 1;
+	}
 }
 
 sub handle_protocol($$$$$)
