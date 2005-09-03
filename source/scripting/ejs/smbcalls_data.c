@@ -191,7 +191,7 @@ static int ejs_regToVar(MprVarHandle eid, int argc, struct MprVar **argv)
 
 	case REG_DWORD: {
 		if (blob->length != 4) {
-			ejsSetErrorMsg(eid, "regToVar invalid REG_DWORD length %d", blob->length);
+			ejsSetErrorMsg(eid, "regToVar invalid REG_DWORD length %ld", (long)blob->length);
 			return -1;
 		}
 		v = mprCreateNumberVar(IVAL(blob->data, 0));
@@ -200,7 +200,7 @@ static int ejs_regToVar(MprVarHandle eid, int argc, struct MprVar **argv)
 
 	case REG_DWORD_BIG_ENDIAN: {
 		if (blob->length != 4) {
-			ejsSetErrorMsg(eid, "regToVar invalid REG_DWORD_BIG_ENDIAN length %d", blob->length);
+			ejsSetErrorMsg(eid, "regToVar invalid REG_DWORD_BIG_ENDIAN length %ld", (long)blob->length);
 			return -1;
 		}
 		v = mprCreateNumberVar(RIVAL(blob->data, 0));
@@ -209,7 +209,7 @@ static int ejs_regToVar(MprVarHandle eid, int argc, struct MprVar **argv)
 
 	case REG_QWORD: {
 		if (blob->length != 8) {
-			ejsSetErrorMsg(eid, "regToVar invalid REG_QWORD length %d", blob->length);
+			ejsSetErrorMsg(eid, "regToVar invalid REG_QWORD length %ld", (long)blob->length);
 			return -1;
 		}
 		v = mprCreateNumberVar(BVAL(blob->data, 0));
