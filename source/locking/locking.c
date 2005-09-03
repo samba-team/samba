@@ -618,14 +618,12 @@ BOOL share_modes_identical( struct share_mode_entry *e1, struct share_mode_entry
 }
 
 /*******************************************************************
- Delete a specific share mode. Return the number
- of entries left, and a memdup'ed copy of the entry deleted (if required).
+ Delete a specific share mode. Return the number of entries left.
  Ignore if no entry deleted.
 ********************************************************************/
 
 static ssize_t del_share_entry(struct share_mode_lock *lck,
 			       struct share_mode_entry *entry,
-			       struct share_mode_entry **ppse,
 			       BOOL *delete_on_close)
 {
 	TDB_DATA dbuf;
@@ -633,9 +631,6 @@ static ssize_t del_share_entry(struct share_mode_lock *lck,
 	int i, del_count=0;
 	struct share_mode_entry *shares;
 	ssize_t count = 0;
-
-	if (ppse)
-		*ppse = NULL;
 
 	/* read in the existing share modes */
 	dbuf = tdb_fetch(tdb, lck->tdbkey);
@@ -659,9 +654,6 @@ static ssize_t del_share_entry(struct share_mode_lock *lck,
 		if (share_modes_identical(&shares[i], entry)) {
 			DEBUG(10,("del_share_entry: deleted %s\n",
 				share_mode_str(i, &shares[i]) ));
-			if (ppse)
-				*ppse = talloc_memdup(lck, &shares[i],
-						      sizeof(*shares));
 			data->u.s.num_share_mode_entries--;
 			if ((dbuf.dsize - (sizeof(*data) + (i+1)*sizeof(*shares))) > 0) {
 				memmove(&shares[i], &shares[i+1], 
@@ -699,12 +691,11 @@ static ssize_t del_share_entry(struct share_mode_lock *lck,
 }
 
 /*******************************************************************
- Del the share mode of a file for this process. Return the number
- of entries left, and a memdup'ed copy of the entry deleted.
+ Del the share mode of a file for this process. Return the number of
+ entries left.
 ********************************************************************/
 
-ssize_t del_share_mode(struct share_mode_lock *lck,
-		       files_struct *fsp, struct share_mode_entry **ppse,
+ssize_t del_share_mode(struct share_mode_lock *lck, files_struct *fsp,
 		       BOOL *delete_on_close)
 {
 	struct share_mode_entry entry;
@@ -714,7 +705,7 @@ ssize_t del_share_mode(struct share_mode_lock *lck,
 	 */
 
 	fill_share_mode((char *)&entry, fsp, 0, 0);
-	return del_share_entry(lck, &entry, ppse, delete_on_close);
+	return del_share_entry(lck, &entry, delete_on_close);
 }
 
 /*******************************************************************

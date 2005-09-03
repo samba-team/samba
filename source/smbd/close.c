@@ -145,7 +145,6 @@ static void notify_deferred_opens(files_struct *fsp)
 
 static int close_normal_file(files_struct *fsp, BOOL normal_close)
 {
-	struct share_mode_entry *share_entry = NULL;
 	size_t share_entry_count = 0;
 	BOOL delete_file = False;
 	connection_struct *conn = fsp->conn;
@@ -199,8 +198,7 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 		return EINVAL;
 	}
 
-	share_entry_count = del_share_mode(lck, fsp, &share_entry,
-					   &delete_file);
+	share_entry_count = del_share_mode(lck, fsp, &delete_file);
 
 	DEBUG(10,("close_normal_file: share_entry_count = %lu for file %s\n",
 		(unsigned long)share_entry_count, fsp->fsp_name ));
