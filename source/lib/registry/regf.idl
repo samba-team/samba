@@ -13,13 +13,15 @@
 
 interface regf
 {
+	const int REGF_OFFSET_NONE = 0xffffffff;
+
 	/* 
 	 * Registry version number
 	 * 1.3.0.1 for WinNT 4
 	 * 1.5.0.1 for WinXP
 	 */
 	
-	typedef struct {
+	typedef [noprint] struct {
 		[value(1)] uint32 major; 
 		[value(3)] uint32 minor;
 		[value(0)] uint32 release;
@@ -33,7 +35,7 @@ interface regf
 		the first 0x200 bytes only!
 	 */
 	
-	typedef [public] struct {
+	typedef [public,noprint] struct {
 		[charset(DOS)] uint8 REGF_ID[4];     /* 'regf' */
 		uint32 update_counter1;
 		uint32 update_counter2;
@@ -53,23 +55,21 @@ interface regf
 		This block is always a multiple
 		of 4kb in size.
      */
-	typedef [public] struct {
+	typedef [public,noprint] struct {
 		[charset(DOS)] uint8 HBIN_ID[4]; /* hbin */
-		uint32 off_from_first; /* Offset from 1st hbin-Block */
-		uint32 off_to_next;	   /* Offset to the next hbin-Block */
+		uint32 offset_from_first; /* Offset from 1st hbin-Block */
+		uint32 offset_to_next;	  /* Offset to the next hbin-Block */
 		uint32 unknown[2];
 		NTTIME last_change;
-		uint32 block_size;	   /* Block size */
-		uint8 data[block_size]; /* Filled with hbin_data blocks */
+		uint32 block_size;	   /* Block size (including the header!) */
+		uint8 data[offset_to_next-0x20]; 
+		/* data is filled with:
+		 	uint32 length
+			uint8_t data[length]
+	     */
 	} hbin_block;
 
-	typedef struct {
-		uint32 length;
-		[charset(DOS)] uint8 header[2]; /* li, lh, ri, nk, vk, sk, lf or \0\0 */
-		uint8 data[length-2];
-	} hbin_data;
-
-	typedef enum { 
+	typedef [base_type(uint16),noprint] enum { 
 		REG_ROOT_KEY = 0x20, 
 		REG_SUB_KEY  = 0x2C, 
 		REG_SYM_LINK = 0x10 
@@ -79,7 +79,8 @@ interface regf
       The nk-record can be treated as a combination of tree-record and
       key-record of the win 95 registry.
 	*/
-	typedef struct {
+	typedef [public,noprint] struct {
+		[charset(DOS)] uint8 header[2];
 		reg_key_type type;
 		NTTIME last_change;
 		uint32 uk1;
@@ -87,19 +88,20 @@ interface regf
 		uint32 num_subkeys;
 		uint32 uk2;
 		uint32 subkeys_offset;
-		uint32 uk3;
+		uint32 unknown_offset;
 		uint32 num_values;
-		uint32 values_offset;
+		uint32 values_offset; /* Points to a list of offsets of vk-records */
 		uint32 sk_offset;
 		uint32 clsname_offset;
-		uint32 unk4[5];
+		uint32 unk3[5];
 		uint16 name_length;
 		uint16 clsname_length;
 		[charset(DOS)] uint8 key_name[name_length];  
 	} nk_block;
 
 	/* sk (? Security Key ?) is the ACL of the registry. */
-	typedef struct {
+	typedef [noprint,nopush,nopull] struct {
+		[charset(DOS)] uint8 header[2];
 		uint16 uk1;
 		uint32 prev_offset;
 		uint32 next_offset;
@@ -108,39 +110,43 @@ interface regf
 		uint8 sec_desc[rec_size]; 
 	} sk_block;
 
-	typedef struct {
+	typedef [noprint,nopush,nopull] struct {
 			uint32 offset_nk;
 			uint32 base37; /* base37 of key name */
 	} lh_hash;
 	
 	/* Subkey listing with hash of first 4 characters */
-	typedef struct {
+	typedef [noprint,nopush,nopull] struct {
+		[charset(DOS)] uint8 header[2];
 		uint16 key_count;
 		lh_hash hashes[key_count];
 	} lh_block;
 
-	typedef struct {
+	typedef [noprint,nopush,nopull] struct {
+		[charset(DOS)] uint8 header[2];
 		uint16 key_count;
 		uint32 offset_nk[key_count];
 	} li_block;
 
-	typedef struct {
+	typedef [noprint,nopush,nopull] struct {
+		[charset(DOS)] uint8 header[2];
 		uint16 key_count;
 		uint32 offset[key_count]; /* li/lh offset */
 	} ri_block;
 
 	/* The vk-record consists information to a single value (value key). */
-	typedef struct {
+	typedef [public,noprint] struct {
+		[charset(DOS)] uint8 header[2];
 		uint16 name_length;
 		uint32 data_length;    /* If top-bit set, offset contains the data */
 		uint32 data_offset;
 		uint32 data_type;
 		uint16 flag;        /* =1, has name, else no name (=Default). */
 		uint16 unk1;
-		[charset(DOS)] uint8 data_name[name_length]; 
+		[charset(DOS)] uint8 data_name[name_length];
 	} vk_block;
 
-	typedef struct {
+	typedef [noprint] struct {
 		uint32 nk_off;
 		uint8 hash[4];
 	} hash_record;
@@ -149,7 +155,8 @@ interface regf
       The lf-record is the counterpart to the RGKN-record (the
       hash-function)
 	*/
-	typedef struct {
+	typedef [public,noprint] struct {
+		[charset(DOS)] uint8 header[2];
 		uint16 key_count;
 		hash_record hr[key_count];  /* Array of hash records, depending on key_count */
 	} lf_block;

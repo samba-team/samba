@@ -35,15 +35,6 @@
 
 #define	REG_DELETE								   -1
 
-#if 0
-/* FIXME */
-typedef struct ace_struct_s {
-  uint8_t type, flags;
-  uint_t perms;   /* Perhaps a better def is in order */
-  DOM_SID *trustee;
-} ACE;
-#endif
-
 /*
  * The general idea here is that every backend provides a 'hive'. Combining
  * various hives gives you a complete registry like windows has

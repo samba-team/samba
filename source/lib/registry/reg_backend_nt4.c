@@ -1,7 +1,7 @@
 /*
-   Samba Unix/Linux SMB client utility libeditreg.c 
-   Copyright (C) 2002 Richard Sharpe, rsharpe@richardsharpe.com
-   Copyright (C) 2003-2005 Jelmer Vernooij, jelmer@samba.org
+   Samba CIFS implementation
+   Registry backend for REGF files
+   Copyright (C) 2005 Jelmer Vernooij, jelmer@samba.org
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,1720 +17,331 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
  
-/*************************************************************************
-                                                       
- A utility to edit a Windows NT/2K etc registry file.
-                                     
- Many of the ideas in here come from other people and software. 
- I first looked in Wine in misc/registry.c and was also influenced by
- http://www.wednesday.demon.co.uk/dosreg.html
-
- Which seems to contain comments from someone else. I reproduce them here
- incase the site above disappears. It actually comes from 
- http://home.eunet.no/~pnordahl/ntpasswd/WinReg.txt. 
-
- The goal here is to read the registry into memory, manipulate it, and then
- write it out if it was changed by any actions of the user.
-
-The windows NT registry has 2 different blocks, where one can occur many
-times...
-
-the "regf"-Block
-================
- 
-"regf" is obviously the abbreviation for "Registry file". "regf" is the
-signature of the header-block which is always 4kb in size, although only
-the first 64 bytes seem to be used and a checksum is calculated over
-the first 0x200 bytes only!
-
-Offset            Size      Contents
-0x00000000      D-Word      ID: ASCII-"regf" = 0x66676572
-0x00000004      D-Word      ???? //see struct REG_HANDLE
-0x00000008      D-Word      ???? Always the same value as at 0x00000004
-0x0000000C      Q-Word      last modify date in WinNT date-format
-0x00000014      D-Word      1
-0x00000018      D-Word      3
-0x0000001C      D-Word      0
-0x00000020      D-Word      1
-0x00000024      D-Word      Offset of 1st key record
-0x00000028      D-Word      Size of the data-blocks (Filesize-4kb)
-0x0000002C      D-Word      1
-0x000001FC      D-Word      Sum of all D-Words from 0x00000000 to
-0x000001FB  //XOR of all words. Nigel
-
-I have analyzed more registry files (from multiple machines running
-NT 4.0 german version) and could not find an explanation for the values
-marked with ???? the rest of the first 4kb page is not important...
-
-the "hbin"-Block
-================
-hbin probably means hive-bin (what bin stands for I don't know)
-This block is always a multiple
-of 4kb in size.
-
-Inside these hbin-blocks the different records are placed. The memory-
-management looks like a C-compiler heap management to me...
-
-hbin-Header
-===========
-Offset      Size      Contents
-0x0000      D-Word      ID: ASCII-"hbin" = 0x6E696268
-0x0004      D-Word      Offset from the 1st hbin-Block
-0x0008      D-Word      Offset to the next hbin-Block
-0x001C      D-Word      Block-size
-
-The values in 0x0008 and 0x001C should be the same, so I don't know
-if they are correct or swapped...
-
-From offset 0x0020 inside a hbin-block data is stored with the following
-format:
-
-Offset      Size      Contents
-0x0000      D-Word      Data-block size    //this size must be a
-multiple of 8. Nigel
-0x0004      ????      Data
- 
-If the size field is negative (bit 31 set), the corresponding block
-is free and has a size of -blocksize!
-
-That does not seem to be true. All block lengths seem to be negative! 
-(Richard Sharpe) 
-
-The data is stored as one record per block. Block size is a multiple
-of 4 and the last block reaches the next hbin-block, leaving no room.
-
-(That also seems incorrect, in that the block size if a multiple of 8.
-That is, the block, including the 4 byte header, is always a multiple of
-8 bytes. Richard Sharpe.)
-
-Records in the hbin-blocks
-==========================
-
-nk-Record
-
-      The nk-record can be treated as a combination of tree-record and
-      key-record of the win 95 registry.
-
-lf-Record
-
-      The lf-record is the counterpart to the RGKN-record (the
-      hash-function)
-
-vk-Record
-
-      The vk-record consists information to a single value (value key).
-
-sk-Record
-
-      sk (? Security Key ?) is the ACL of the registry.
-
-Value-Lists
-
-      The value-lists contain information about which values are inside a
-      sub-key and don't have a header.
-
-Datas
-
-      The datas of the registry are (like the value-list) stored without a
-      header.
-
-All offset-values are relative to the first hbin-block and point to the
-block-size field of the record-entry. to get the file offset, you have to add
-the header size (4kb) and the size field (4 bytes)...
-
-the nk-Record
-=============
-Offset      Size      Contents
-0x0000      Word      ID: ASCII-"nk" = 0x6B6E
-0x0002      Word      for the root-key: 0x2C, otherwise 0x20  //key symbolic links 0x10. Nigel
-0x0004      Q-Word      write-date/time in windows nt notation
-0x0010      D-Word      Offset of Owner/Parent key
-0x0014      D-Word      number of sub-Keys
-0x001C      D-Word      Offset of the sub-key lf-Records
-0x0024      D-Word      number of values
-0x0028      D-Word      Offset of the Value-List
-0x002C      D-Word      Offset of the sk-Record
-
-0x0030      D-Word      Offset of the Class-Name //see NK structure for the use of these fields. Nigel
-0x0044      D-Word      Unused (data-trash)  //some kind of run time index. Does not appear to be important. Nigel
-0x0048      Word      name-length
-0x004A      Word      class-name length
-0x004C      ????      key-name
-
-the Value-List
-==============
-Offset      Size      Contents
-0x0000      D-Word      Offset 1st Value
-0x0004      D-Word      Offset 2nd Value
-0x????      D-Word      Offset nth Value
-
-To determine the number of values, you have to look at the owner-nk-record!
-
-The vk-Record
-=============
-Offset      Size      Contents
-0x0000      Word      ID: ASCII-"vk" = 0x6B76
-0x0002      Word      name length
-0x0004      D-Word      length of the data   //if top bit is set when offset contains data. Nigel
-0x0008      D-Word      Offset of Data
-0x000C      D-Word      Type of value
-0x0010      Word      Flag
-0x0012      Word      Unused (data-trash)
-0x0014      ????      Name
-
-If bit 0 of the flag-word is set, a name is present, otherwise the value has no name (=default)
-
-If the data-size is lower 5, the data-offset value is used to store the data itself!
-
-The data-types
-==============
-Wert      Beteutung
-0x0001      RegSZ:             character string (in UNICODE!)
-0x0002      ExpandSZ:   string with "%var%" expanding (UNICODE!)
-0x0003      RegBin:           raw-binary value
-0x0004      RegDWord:   Dword
-0x0007      RegMultiSZ:      multiple strings, seperated with 0
-                  (UNICODE!)
-
-The "lf"-record
-===============
-Offset      Size      Contents
-0x0000      Word      ID: ASCII-"lf" = 0x666C
-0x0002      Word      number of keys
-0x0004      ????      Hash-Records
-
-Hash-Record
-===========
-Offset      Size      Contents
-0x0000      D-Word      Offset of corresponding "nk"-Record
-0x0004      D-Word      ASCII: the first 4 characters of the key-name, padded with 0's. Case sensitiv!
-
-Keep in mind, that the value at 0x0004 is used for checking the data-consistency! If you change the 
-key-name you have to change the hash-value too!
-
-//These hashrecords must be sorted low to high within the lf record. Nigel.
-
-The "sk"-block
-==============
-(due to the complexity of the SAM-info, not clear jet)
-(This is just a self-relative security descriptor in the data. R Sharpe.) 
-
-
-Offset      Size      Contents
-0x0000      Word      ID: ASCII-"sk" = 0x6B73
-0x0002      Word      Unused
-0x0004      D-Word      Offset of previous "sk"-Record
-0x0008      D-Word      Offset of next "sk"-Record
-0x000C      D-Word      usage-counter
-0x0010      D-Word      Size of "sk"-record in bytes
-????                                             //standard self
-relative security desciptor. Nigel
-????  ????      Security and auditing settings...
-????
-
-The usage counter counts the number of references to this
-"sk"-record. You can use one "sk"-record for the entire registry!
-
-Windows nt date/time format
-===========================
-The time-format is a 64-bit integer which is incremented every
-0,0000001 seconds by 1 (I don't know how accurate it realy is!)
-It starts with 0 at the 1st of january 1601 0:00! All values are
-stored in GMT time! The time-zone is important to get the real
-time!
-
-Common values for win95 and win-nt
-==================================
-Offset values marking an "end of list", are either 0 or -1 (0xFFFFFFFF).
-If a value has no name (length=0, flag(bit 0)=0), it is treated as the
-"Default" entry...
-If a value has no data (length=0), it is displayed as empty.
-
-simplyfied win-3.?? registry:
-=============================
-
-+-----------+
-| next rec. |---+                      +----->+------------+
-| first sub |   |                      |      | Usage cnt. |
-| name      |   |  +-->+------------+  |      | length     |
-| value     |   |  |   | next rec.  |  |      | text       |------->+-------+
-+-----------+   |  |   | name rec.  |--+      +------------+        | xxxxx |
-   +------------+  |   | value rec. |-------->+------------+        +-------+
-   v               |   +------------+         | Usage cnt. |
-+-----------+      |                          | length     |
-| next rec. |      |                          | text       |------->+-------+
-| first sub |------+                          +------------+        | xxxxx |
-| name      |                                                       +-------+
-| value     |
-+-----------+    
-
-Greatly simplyfied structure of the nt-registry:
-================================================
-   
-+---------------------------------------------------------------+
-|                                                               |
-v                                                               |
-+---------+     +---------->+-----------+  +----->+---------+   |
-| "nk"    |     |           | lf-rec.   |  |      | nk-rec. |   |
-| ID      |     |           | # of keys |  |      | parent  |---+
-| Date    |     |           | 1st key   |--+      | ....    |
-| parent  |     |           +-----------+         +---------+
-| suk-keys|-----+
-| values  |--------------------->+----------+
-| SK-rec. |---------------+      | 1. value |--> +----------+
-| class   |--+            |      +----------+    | vk-rec.  |
-+---------+  |            |                      | ....     |
-             v            |                      | data     |--> +-------+
-      +------------+      |                      +----------+    | xxxxx |
-      | Class name |      |                                      +-------+
-      +------------+      |
-                          v
-          +---------+    +---------+
-   +----->| next sk |--->| Next sk |--+
-   |  +---| prev sk |<---| prev sk |  |
-   |  |   | ....    |    | ...     |  |
-   |  |   +---------+    +---------+  |
-   |  |                    ^          |
-   |  |                    |          |
-   |  +--------------------+          |
-   +----------------------------------+
-
----------------------------------------------------------------------------
-
-Hope this helps....  (Although it was "fun" for me to uncover this things,
-                  it took me several sleepless nights ;)
-
-            B.D.
-
-*************************************************************************/
-
 #include "includes.h"
 #include "registry.h"
 #include "system/filesys.h"
-#include "system/shmem.h"
-
-#define REG_KEY_LIST_SIZE 10
-#define FLAG_HAS_NAME	  0x01
-/*FIXME*/
+#include "lib/registry/tdr_regf.h"
 
 /*
- * Structures for dealing with the on-disk format of the registry
+ * Read HBIN blocks into memory
  */
 
-const char *def_owner_sid_str = NULL;
-
-/* 
- * These definitions are for the in-memory registry structure.
- * It is a tree structure that mimics what you see with tools like regedit
- */
-
-
-/*
- * Definition of a Key. It has a name, classname, date/time last modified,
- * sub-keys, values, and a security descriptor
- */
-
-#define REG_ROOT_KEY 1
-#define REG_SUB_KEY  2
-#define REG_SYM_LINK 3
-
-/* 
- * All of the structures below actually have a four-byte length before them
- * which always seems to be negative. The following macro retrieves that
- * size as an integer
- */
-
-#define BLK_SIZE(b) ((int)*(int *)(((int *)b)-1))
-
-typedef struct sk_struct SK_HDR;
-/*
- * This structure keeps track of the output format of the registry
- */
-#define REG_OUTBLK_HDR 1
-#define REG_OUTBLK_HBIN 2
-
-typedef struct regf_block {
-	uint32_t REGF_ID;     /* regf */
-	uint32_t update_counter1;
-	uint32_t update_counter2;
-	uint32_t tim1, tim2;
-	uint32_t uk3;             /* 1 */
-	uint32_t uk4;             /* 3 */
-	uint32_t uk5;             /* 0 */
-	uint32_t uk6;             /* 1 */
-	uint32_t first_key;       /* offset */
-	uint32_t dblk_size;
-    uint32_t uk7;        /* 1 */
-	wchar_t filename[64];
-	uint32_t unused[83];
-    uint32_t chksum; 			/* Checksum of first 0x200 bytes */
-} REGF_HDR;
-
-typedef struct hbin_sub_struct {
-	uint32_t dblocksize;
-	char data[1];
-} HBIN_SUB_HDR;
-
-typedef struct hbin_struct {
-	uint32_t HBIN_ID; /* hbin */
-	uint32_t off_from_first;
-	uint32_t off_to_next;
-	uint32_t uk1;
-	uint32_t uk2;
-	uint32_t uk3;
-	uint32_t uk4;
-	uint32_t blk_size;
-	HBIN_SUB_HDR hbin_sub_hdr;
-} HBIN_HDR;
-
-typedef struct nk_struct {
-	uint16_t NK_ID;
-	uint16_t type;
-	uint32_t t1, t2;
-	uint32_t uk1;
-	uint32_t own_off;
-	uint32_t subk_num;
-	uint32_t uk2;
-	uint32_t lf_off;
-	uint32_t uk3;
-	uint32_t val_cnt;
-	uint32_t val_off;
-	uint32_t sk_off;
-	uint32_t clsnam_off;
-	uint32_t unk4[4];
-	uint32_t unk5;
-	uint16_t nam_len;
-	uint16_t clsnam_len;
-	char key_nam[1];  /* Actual length determined by nam_len */
-} NK_HDR;
-
-struct sk_struct {
-	uint16_t SK_ID;
-	uint16_t uk1;
-	uint32_t prev_off;
-	uint32_t next_off;
-	uint32_t ref_cnt;
-	uint32_t rec_size;
-	char sec_desc[1];
+struct regf_data {
+	DATA_BLOB data;
+	struct hbin_block **hbins;
 };
-
-typedef struct key_sec_desc_s {
-	struct key_sec_desc_s *prev, *next;
-	int ref_cnt;
-	int state;
-	int offset;
-	SK_HDR *sk_hdr;     /* This means we must keep the registry in memory */
-	struct security_descriptor *sec_desc;
-} KEY_SEC_DESC; 
-
-/* A map of sk offsets in the regf to KEY_SEC_DESCs for quick lookup etc */
-typedef struct sk_map_s {
-  int sk_off;
-  KEY_SEC_DESC *key_sec_desc;
-} SK_MAP;
-
-typedef struct vk_struct {
-  uint16_t VK_ID;
-  uint16_t nam_len;
-  uint32_t dat_len;    /* If top-bit set, offset contains the data */
-  uint32_t dat_off;
-  uint32_t dat_type;
-  uint16_t flag;        /* =1, has name, else no name (=Default). */
-  uint16_t unk1;
-  char dat_name[1]; /* Name starts here ... */
-} VK_HDR;
-
-typedef uint32_t VL_TYPE[1];  /* Value list is an array of vk rec offsets */
-                                                                                
-typedef struct hash_struct {
-  uint32_t nk_off;
-  char hash[4];
-} HASH_REC;
-
-
-typedef struct lf_struct {
-  uint16_t LF_ID;
-  uint16_t key_count;
-  struct hash_struct hr[1];  /* Array of hash records, depending on key_count */} LF_HDR;
-
-
-
-/*
- * This structure keeps track of the output format of the registry
- */
-#define REG_OUTBLK_HDR 1
-#define REG_OUTBLK_HBIN 2
-
-typedef struct hbin_blk_s {
-  int type, size;
-  struct hbin_blk_s *next;
-  char *data;                /* The data block                */
-  uint_t file_offset;  /* Offset in file                */
-  uint_t free_space;   /* Amount of free space in block */
-  uint_t fsp_off;      /* Start of free space in block  */
-  int complete, stored;
-} HBIN_BLK;
-
-typedef struct regf_struct_s {
-	int reg_type;
-	int fd;
-	struct stat sbuf;
-	char *base;
-	BOOL modified;
-	NTTIME last_mod_time;
-	NK_HDR *first_key;
-	int sk_count, sk_map_size;
-	SK_MAP *sk_map;
-	const char *owner_sid_str;
-	struct security_descriptor *def_sec_desc;
-	/*
-	 * These next pointers point to the blocks used to contain the 
-	 * keys when we are preparing to write them to a file
-	 */
-	HBIN_BLK *blk_head, *blk_tail, *free_space;
-} REGF;
-
-static uint32_t str_to_dword(const char *a) {
-	int i;
-	unsigned long ret = 0;
-	for(i = strlen(a)-1; i >= 0; i--) {
-		ret = ret * 0x100 + a[i];
-	}
-	return ret;
-}
-
-#if 0
-
-/*
- * Create an ACE
- */
-static BOOL nt_create_ace(SEC_ACE *ace, int type, int flags, uint32_t perms, const char *sid)
-{
-  DOM_SID s;
-  SEC_ACCESS access;
-  access.mask = perms;
-  if(!string_to_sid(&s, sid))return False;
-  init_sec_ace(ace, &s, type, access, flags);
-  return True;
-}
-
-/*
- * Create a default ACL
- */
-static SEC_ACL *nt_create_default_acl(struct registry_hive *regf)
-{
-  SEC_ACE aces[8];
-
-  if(!nt_create_ace(&aces[0], 0x00, 0x0, 0xF003F, regf->owner_sid_str)) return NULL;
-  if(!nt_create_ace(&aces[1], 0x00, 0x0, 0xF003F, "S-1-5-18")) return NULL;
-  if(!nt_create_ace(&aces[2], 0x00, 0x0, 0xF003F, "S-1-5-32-544")) return NULL;
-  if(!nt_create_ace(&aces[3], 0x00, 0x0, 0x20019, "S-1-5-12")) return NULL;
-  if(!nt_create_ace(&aces[4], 0x00, 0x0B, GENERIC_RIGHT_ALL_ACCESS, regf->owner_sid_str)) return NULL;
-  if(!nt_create_ace(&aces[5], 0x00, 0x0B, 0x10000000, "S-1-5-18")) return NULL;
-  if(!nt_create_ace(&aces[6], 0x00, 0x0B, 0x10000000, "S-1-5-32-544")) return NULL;
-  if(!nt_create_ace(&aces[7], 0x00, 0x0B, 0x80000000, "S-1-5-12")) return NULL;
-
-  return make_sec_acl(regf->mem_ctx, 2, 8, aces);
-}
-
-/*
- * Create a default security descriptor. We pull in things from env
- * if need be 
- */
-static SEC_DESC *nt_create_def_sec_desc(struct registry_hive *regf)
-{
-  SEC_DESC *tmp;
-
-  tmp = malloc_p(SEC_DESC);
-
-  tmp->revision = 1;
-  tmp->type = SEC_DESC_SELF_RELATIVE | SEC_DESC_DACL_PRESENT;
-  if (!string_to_sid(tmp->owner_sid, "S-1-5-32-544")) goto error;
-  if (!string_to_sid(tmp->grp_sid, "S-1-5-18")) goto error;
-  tmp->sacl = NULL;
-  tmp->dacl = nt_create_default_acl(regf);
-
-  return tmp;
-
- error:
-  if (tmp) nt_delete_sec_desc(tmp);
-  return NULL;
-}
-
-/*
- * We will implement inheritence that is based on what the parent's SEC_DESC
- * says, but the Owner and Group SIDs can be overwridden from the command line
- * and additional ACEs can be applied from the command line etc.
- */
-static KEY_SEC_DESC *nt_inherit_security(struct registry_key *key)
-{
-
-  if (!key) return NULL;
-  return key->security;
-}
-
-/*
- * Create an initial security descriptor and init other structures, if needed
- * We assume that the initial security stuff is empty ...
- */
-static KEY_SEC_DESC *nt_create_init_sec(struct registry_hive *h)
-{
-	REGF *regf = h->backend_data;
-	KEY_SEC_DESC *tsec = NULL;
-
-	tsec = malloc_p(KEY_SEC_DESC);
-
-	tsec->ref_cnt = 1;
-	tsec->state = SEC_DESC_NBK;
-	tsec->offset = 0;
-
-	tsec->sec_desc = regf->def_sec_desc;
-
-	return tsec;
-}
-#endif
-
-/*
- * Get the starting record for NT Registry file 
- */
-
-/* 
- * Where we keep all the regf stuff for one registry.
- * This is the structure that we use to tie the in memory tree etc 
- * together. By keeping separate structs, we can operate on different
- * registries at the same time.
- * Currently, the SK_MAP is an array of mapping structure.
- * Since we only need this on input and output, we fill in the structure
- * as we go on input. On output, we know how many SK items we have, so
- * we can allocate the structure as we need to.
- * If you add stuff here that is dynamically allocated, add the 
- * appropriate free statements below.
- */
-
-#define REG_HANDLE_REGTYPE_NONE 0
-#define REG_HANDLE_REGTYPE_NT   1
-#define REG_HANDLE_REGTYPE_W9X  2
-
-#define TTTONTTIME(r, t1, t2) (r)->last_mod_time = (t1) | (((uint64_t)(t2)) << 32)
-
-#define REGF_HDR_BLKSIZ 0x1000 
-
-#define OFF(f) ((f) + REGF_HDR_BLKSIZ + 4) 
-#define LOCN(base, f) ((base) + OFF(f))
-
-/* Get the header of the registry. Return a pointer to the structure 
- * If the mmap'd area has not been allocated, then mmap the input file
- */
-static REGF_HDR *nt_get_regf_hdr(struct registry_hive *h)
-{
-	REGF *regf = h->backend_data;
-	SMB_ASSERT(regf);
-
-	if (!regf->base) { /* Try to mmap etc the file */
-
-		if ((regf->fd = open(h->location, O_RDONLY, 0000)) <0) {
-			return NULL; /* What about errors? */
-		}
-
-		if (fstat(regf->fd, &regf->sbuf) < 0) {
-			return NULL;
-		}
-
-		regf->base = mmap(0, regf->sbuf.st_size, PROT_READ, MAP_SHARED, regf->fd, 0);
-
-		if ((int)regf->base == 1) {
-			DEBUG(0,("Could not mmap file: %s, %s\n", h->location,
-					 strerror(errno)));
-			return NULL;
-		}
-	}
-
-	/* 
-	 * At this point, regf->base != NULL, and we should be able to read the 
-	 * header 
-	 */
-
-	SMB_ASSERT(regf->base != NULL);
-
-	return (REGF_HDR *)regf->base;
-}
 
 /*
  * Validate a regf header
  * For now, do nothing, but we should check the checksum
  */
-static int valid_regf_hdr(REGF_HDR *regf_hdr)
+static uint32_t regf_hdr_checksum(const uint8_t *buffer)
 {
-	if (!regf_hdr) return 0;
+	uint32_t checksum = 0, x;
+	int i;
+	
+	for (i = 0; i < 0x01FB; i+= 4) {
+		x = IVAL(buffer, i);
+		checksum ^= x;
+	}
 
-	return 1;
+	return checksum;
 }
 
-#if 0
-
-/*
- * Process an SK header ...
- * Every time we see a new one, add it to the map. Otherwise, just look it up.
- * We will do a simple linear search for the moment, since many KEYs have the 
- * same security descriptor. 
- * We allocate the map in increments of 10 entries.
- */
-
-/*
- * Create a new entry in the map, and increase the size of the map if needed
- */
-static SK_MAP *alloc_sk_map_entry(struct registry_hive *h, KEY_SEC_DESC *tmp, int sk_off)
-{
-	REGF *regf = h->backend_data;
-	if (!regf->sk_map) { /* Allocate a block of 10 */
-		regf->sk_map = malloc_array_p(SK_MAP, 10);
-		regf->sk_map_size = 10;
-		regf->sk_count = 1;
-		(regf->sk_map)[0].sk_off = sk_off;
-		(regf->sk_map)[0].key_sec_desc = tmp;
-	}
-	else { /* Simply allocate a new slot, unless we have to expand the list */ 
-		int ndx = regf->sk_count;
-		if (regf->sk_count >= regf->sk_map_size) {
-			regf->sk_map = (SK_MAP *)realloc(regf->sk_map, 
-											 (regf->sk_map_size + 10)*sizeof(SK_MAP));
-			if (!regf->sk_map) {
-				free(tmp);
-				return NULL;
-			}
-			/*
-			 * ndx already points at the first entry of the new block
-			 */
-			regf->sk_map_size += 10;
-		}
-		(regf->sk_map)[ndx].sk_off = sk_off;
-		(regf->sk_map)[ndx].key_sec_desc = tmp;
-		regf->sk_count++;
-	}
-	return regf->sk_map;
-}
-
-/*
- * Search for a KEY_SEC_DESC in the sk_map, but don't create one if not
- * found
- */
-KEY_SEC_DESC *lookup_sec_key(SK_MAP *sk_map, int count, int sk_off)
+static DATA_BLOB regf_get_data(const struct regf_data *data, uint32_t offset)
 {
 	int i;
-
-	if (!sk_map) return NULL;
-
-	for (i = 0; i < count; i++) {
-
-		if (sk_map[i].sk_off == sk_off)
-			return sk_map[i].key_sec_desc;
-
+	DATA_BLOB ret;
+	ret.data = NULL;
+	ret.length = 0;
+	
+	for (i = 0; data->hbins[i]; i++) {
+		if (offset >= data->hbins[i]->offset_from_first && 
+			offset < data->hbins[i]->offset_from_first+
+					 data->hbins[i]->offset_to_next)
+			break;
 	}
 
-	return NULL;
+	if (data->hbins[i] == NULL) {
+		DEBUG(1, ("Can't find HBIN containing 0x%4x\n", offset));
+		return ret;
+	}
 
+	ret.length = IVAL(data->hbins[i]->data, 
+			offset - data->hbins[i]->offset_from_first - 0x20);
+	if (ret.length & 0x80000000) {
+		/* absolute value */
+		ret.length = (ret.length ^ 0xffffffff) + 1;
+	}
+	ret.data = data->hbins[i]->data + 
+		(offset - data->hbins[i]->offset_from_first - 0x20) + 4;
+	
+	return ret;
 }
 
-/*
- * Allocate a KEY_SEC_DESC if we can't find one in the map
- */
-static KEY_SEC_DESC *lookup_create_sec_key(struct registry_hive *h, SK_MAP *sk_map, int sk_off)
-{
-	REGF *regf = h->backend_data;
-	KEY_SEC_DESC *tmp = lookup_sec_key(regf->sk_map, regf->sk_count, sk_off);
 
-	if (tmp) {
-		return tmp;
-	}
-	else { /* Allocate a new one */
-		tmp = malloc_p(KEY_SEC_DESC);
-		memset(tmp, 0, sizeof(KEY_SEC_DESC)); /* Neatly sets offset to 0 */
-		tmp->state = SEC_DESC_RES;
-		if (!alloc_sk_map_entry(h, tmp, sk_off)) {
-			return NULL;
-		}
-		return tmp;
-	}
+static WERROR regf_num_subkeys (struct registry_key *key, uint32_t *count)
+{
+	struct nk_block *nk = key->backend_data;
+
+	*count = nk->num_subkeys;
+	
+	return WERR_OK;
 }
 
-static SEC_DESC *process_sec_desc(struct registry_hive *regf, SEC_DESC *sec_desc)
+static WERROR regf_num_values (struct registry_key *key, uint32_t *count)
 {
-	SEC_DESC *tmp = NULL;
+	struct nk_block *nk = key->backend_data;
 
-	tmp = malloc_p(SEC_DESC);
+	*count = nk->num_values;
 
-	tmp->revision = SVAL(&sec_desc->revision,0);
-	tmp->type = SVAL(&sec_desc->type,0);
-	DEBUG(2, ("SEC_DESC Rev: %0X, Type: %0X\n", tmp->revision, tmp->type));
-	DEBUGADD(2, ("SEC_DESC Owner Off: %0X\n", IVAL(&sec_desc->off_owner_sid,0)));
-	DEBUGADD(2, ("SEC_DESC Group Off: %0X\n", IVAL(&sec_desc->off_grp_sid,0)));
-	DEBUGADD(2, ("SEC_DESC DACL Off: %0X\n", IVAL(&sec_desc->off_dacl,0)));
-	tmp->owner_sid = sid_dup_talloc(regf->mem_ctx, (DOM_SID *)((char *)sec_desc + IVAL(&sec_desc->off_owner_sid,0)));
-	if (!tmp->owner_sid) {
-		free(tmp);
-		return NULL;
-	}
-	tmp->grp_sid = sid_dup_talloc(regf->mem_ctx, (DOM_SID *)((char *)sec_desc + IVAL(&sec_desc->off_grp_sid,0)));
-	if (!tmp->grp_sid) {
-		free(tmp);
-		return NULL;
-	}
-
-	/* Now pick up the SACL and DACL */
-
-	DEBUG(0, ("%d, %d\n", IVAL(&sec_desc->off_sacl,0), IVAL(&sec_desc->off_dacl,0)));
-
-	if (sec_desc->off_sacl)
-		tmp->sacl = dup_sec_acl(regf->mem_ctx, (SEC_ACL *)((char *)sec_desc + IVAL(&sec_desc->off_sacl,0)));
-	else
-		tmp->sacl = NULL;
-
-	if (sec_desc->off_dacl)
-		tmp->dacl = dup_sec_acl(regf->mem_ctx, (SEC_ACL *)((char *)sec_desc + IVAL(&sec_desc->off_dacl,0)));
-	else
-		tmp->dacl = NULL;
-
-	return tmp;
+	return WERR_OK;
 }
 
-static KEY_SEC_DESC *process_sk(struct registry_hive *regf, SK_HDR *sk_hdr, int sk_off, int size)
+static struct registry_key *regf_get_key (TALLOC_CTX *ctx, struct regf_data *regf, uint32_t offset)
 {
-	KEY_SEC_DESC *tmp = NULL;
-	int sk_next_off, sk_prev_off, sk_size;
-	SEC_DESC *sec_desc;
+	DATA_BLOB data = regf_get_data(regf, offset);
+	struct tdr_pull *pull;
+	struct registry_key *ret;
+	struct nk_block *nk;
 
-	if (!sk_hdr) return NULL;
-
-	if (SVAL(&sk_hdr->SK_ID,0) != str_to_dword("sk")) {
-		DEBUG(0, ("Unrecognized SK Header ID: %08X, %s\n", (int)sk_hdr,
-				  regf->regfile_name));
+	if (data.data == NULL) {
+		DEBUG(0, ("Unable to find HBIN data for offset %d\n", offset));
 		return NULL;
 	}
 
-	if (-size < (sk_size = IVAL(&sk_hdr->rec_size,0))) {
-		DEBUG(0, ("Incorrect SK record size: %d vs %d. %s\n",
-				  -size, sk_size, regf->regfile_name));
+	ret = talloc_zero(ctx, struct registry_key);
+	pull = talloc_zero(ret, struct tdr_pull);
+	pull->data = data;
+	nk = talloc(ret, struct nk_block);
+
+	if (NT_STATUS_IS_ERR(tdr_pull_nk_block(pull, nk))) {
+		DEBUG(1, ("Error parsing 'nk' record\n"));
+		talloc_free(ret);
 		return NULL;
 	}
 
-	/* 
-	 * Now, we need to look up the SK Record in the map, and return it
-	 * Since the map contains the SK_OFF mapped to KEY_SEC_DESC, we can
-	 * use that
-	 */
-
-	if (regf->sk_map &&
-		((tmp = lookup_sec_key(regf->sk_map, regf->sk_count, sk_off)) != NULL)
-		&& (tmp->state == SEC_DESC_OCU)) {
-		tmp->ref_cnt++;
-		return tmp;
+	if (strcmp(nk->header, "nk") != 0) {
+		DEBUG(0, ("Expected nk record, got %s\n", nk->header));
+		talloc_free(ret);
+		return NULL;
 	}
 
-	/* Here, we have an item in the map that has been reserved, or tmp==NULL. */
+	ret->name = talloc_steal(ret, nk->key_name);
+	ret->last_mod = nk->last_change;
+	ret->class_name = NULL; /* FIXME: get somehow using clsname_offset */
+	ret->backend_data = nk;
 
-	SMB_ASSERT(tmp == NULL || (tmp && tmp->state != SEC_DESC_NON));
-
-	/*
-	 * Now, allocate a KEY_SEC_DESC, and parse the structure here, and add the
-	 * new KEY_SEC_DESC to the mapping structure, since the offset supplied is 
-	 * the actual offset of structure. The same offset will be used by
-	 * all future references to this structure
-	 * We could put all this unpleasantness in a function.
-	 */
-
-	if (!tmp) {
-		tmp = malloc_p(KEY_SEC_DESC);
-		memset(tmp, 0, sizeof(KEY_SEC_DESC));
-
-		/*
-		 * Allocate an entry in the SK_MAP ...
-		 * We don't need to free tmp, because that is done for us if the
-		 * sm_map entry can't be expanded when we need more space in the map.
-		 */
-
-		if (!alloc_sk_map_entry(regf, tmp, sk_off)) {
-			return NULL;
-		}
-	}
-
-	tmp->ref_cnt++;
-	tmp->state = SEC_DESC_OCU;
-
-	/*
-	 * Now, process the actual sec desc and plug the values in
-	 */
-
-	sec_desc = (SEC_DESC *)&sk_hdr->sec_desc[0];
-	tmp->sec_desc = process_sec_desc(regf, sec_desc);
-
-	/*
-	 * Now forward and back links. Here we allocate an entry in the sk_map
-	 * if it does not exist, and mark it reserved
-	 */
-
-	sk_prev_off = IVAL(&sk_hdr->prev_off,0);
-	tmp->prev = lookup_create_sec_key(regf, regf->sk_map, sk_prev_off);
-	SMB_ASSERT(tmp->prev != NULL);
-	sk_next_off = IVAL(&sk_hdr->next_off,0);
-	tmp->next = lookup_create_sec_key(regf, regf->sk_map, sk_next_off);
-	SMB_ASSERT(tmp->next != NULL);
-
-	return tmp;
+	return ret;
 }
-#endif
 
-/*
- * Process a VK header and return a value
- */
-static WERROR vk_to_val(TALLOC_CTX *mem_ctx, struct registry_key *parent, VK_HDR *vk_hdr, int size, struct registry_value **value)
+static WERROR regf_get_value (TALLOC_CTX *ctx, struct registry_key *key, int idx, struct registry_value **ret)
 {
-	REGF *regf = parent->hive->backend_data;
-	int nam_len, dat_len, flag, dat_type, dat_off, vk_id;
-	struct registry_value *tmp = NULL; 
+	struct nk_block *nk = key->backend_data;
+	struct vk_block *vk;
+	struct tdr_pull *pull;
+	uint32_t vk_offset;
+	DATA_BLOB data;
 
-	if (!vk_hdr) return WERR_INVALID_PARAM;
+	if (idx >= nk->num_values)
+		return WERR_NO_MORE_ITEMS;
 
-	if ((vk_id = SVAL(&vk_hdr->VK_ID,0)) != str_to_dword("vk")) {
-		DEBUG(0, ("Unrecognized VK header ID: %0X, block: %0X, %s\n",
-				  vk_id, (int)vk_hdr, parent->hive->location));
+	data = regf_get_data(key->hive->backend_data, nk->values_offset);
+	if (!data.data) {
+		DEBUG(0, ("Unable to find value list\n"));
 		return WERR_GENERAL_FAILURE;
 	}
 
-	nam_len = SVAL(&vk_hdr->nam_len,0);
-	flag = SVAL(&vk_hdr->flag,0);
-	dat_type = IVAL(&vk_hdr->dat_type,0);
-	dat_len = IVAL(&vk_hdr->dat_len,0);  /* If top bit, offset contains data */
-	dat_off = IVAL(&vk_hdr->dat_off,0);
+	if (data.length < nk->num_values * 4) {
+		DEBUG(1, ("Value counts mismatch\n"));
+	}
 
-	tmp = talloc(mem_ctx, struct registry_value);
-	tmp->data_type = dat_type;
+	vk_offset = IVAL(data.data, idx * 4);
 
-	if (flag & FLAG_HAS_NAME) {
-		tmp->name = talloc_strndup(mem_ctx, vk_hdr->dat_name, nam_len);
+	data = regf_get_data(key->hive->backend_data, vk_offset);
+	if (!data.data) {
+		DEBUG(0, ("Unable to find value\n"));
+		return WERR_GENERAL_FAILURE;
+	}
+
+	*ret = talloc_zero(ctx, struct registry_value);
+	if (!(*ret)) 
+		return WERR_NOMEM;
+
+	vk = talloc(*ret, struct vk_block);
+	if (!vk)
+		return WERR_NOMEM;
+	
+	pull = talloc_zero(*ret, struct tdr_pull);
+	pull->data = data;
+
+	if (NT_STATUS_IS_ERR(tdr_pull_vk_block(pull, vk))) {
+		DEBUG(0, ("Error parsing vk block\n"));
+		return WERR_GENERAL_FAILURE;
+	}
+
+	(*ret)->name = talloc_steal(*ret, vk->data_name);
+	(*ret)->data_type = vk->data_type;
+	if (vk->data_length & 0x80000000) { 
+		vk->data_length &= ~0x80000000;
+		(*ret)->data.data = (uint8_t *)&vk->data_offset;
+		(*ret)->data.length = vk->data_length;
 	} else {
-		tmp->name = NULL;
+		(*ret)->data = regf_get_data(key->hive->backend_data, vk->data_offset);
 	}
 
-	/*
-	 * Allocate space and copy the data as a BLOB
-	 */
-
-	if (dat_len&0x7FFFFFFF) {
-
-		char *dtmp = talloc_size(mem_ctx, dat_len&0x7FFFFFFF);
-
-		if ((dat_len&0x80000000) == 0) { /* The data is pointed to by the offset */
-			char *dat_ptr = LOCN(regf->base, dat_off);
-			memcpy(dtmp, dat_ptr, dat_len);
-		}
-		else { /* The data is in the offset or type */
-			/*
-			 * FIXME.
-			 * Some registry files seem to have weird fields. If top bit is set,
-			 * but len is 0, the type seems to be the value ...
-			 * Not sure how to handle this last type for the moment ...
-			 */
-			dat_len = dat_len & 0x7FFFFFFF;
-			memcpy(dtmp, &dat_off, dat_len);
-		}
-
-		tmp->data = data_blob_talloc(mem_ctx, dtmp, dat_len);
+	if ((*ret)->data.length < vk->data_length) {
+		DEBUG(1, ("Read data less then indicated data length!\n"));
 	}
-
-	*value = tmp;
+	
 	return WERR_OK;
 }
 
-#if 0 /* unused */
-
-static BOOL vl_verify(VL_TYPE vl, int count, int size)
+static WERROR regf_get_subkey (TALLOC_CTX *ctx, struct registry_key *key, int idx, struct registry_key **ret)
 {
-	if(!vl) return False;
-	if (-size < (count+1)*sizeof(int)){
-		DEBUG(0, ("Error in VL header format. Size less than space required. %d\n", -size));
-		return False;
-	}
-	return True;
-}
+	DATA_BLOB data;
+	struct nk_block *nk = key->backend_data;
+	uint32_t key_off;
 
-#endif
+	if (idx >= nk->num_subkeys)
+		return WERR_NO_MORE_ITEMS;
 
-static WERROR lf_verify(struct registry_hive *h, LF_HDR *lf_hdr, int size)
-{
-	int lf_id;
-	if ((lf_id = SVAL(&lf_hdr->LF_ID,0)) != str_to_dword("lf")) {
-		DEBUG(0, ("Unrecognized LF Header format: %0X, Block: %0X, %s.\n",
-				  lf_id, (int)lf_hdr, h->location));
-		return WERR_INVALID_PARAM;
-	}
-	return WERR_OK;
-}
-
-static WERROR lf_num_entries(struct registry_hive *h, LF_HDR *lf_hdr, int size, uint32_t *count)
-{
-	WERROR error;
-
-	error = lf_verify(h, lf_hdr, size);
-	if(!W_ERROR_IS_OK(error)) return error;
-
-	SMB_ASSERT(size < 0);
-
-	*count = SVAL(&lf_hdr->key_count,0);
-	DEBUG(2, ("Key Count: %u\n", *count));
-	if (*count <= 0) return WERR_INVALID_PARAM;
-
-	return WERR_OK;
-}
-
-
-static WERROR nk_to_key(TALLOC_CTX *, struct registry_hive *regf, NK_HDR *nk_hdr, int size, struct registry_key *parent, struct registry_key **);
-
-
-
-/*
- * Process an LF Header and return a list of sub-keys
- */
-static WERROR lf_get_entry(TALLOC_CTX *mem_ctx, struct registry_key *parent, LF_HDR *lf_hdr, int size, int n, struct registry_key **key)
-{
-	REGF *regf = parent->hive->backend_data;
-	int count, nk_off;
-	NK_HDR *nk_hdr;
-	WERROR error;
-
-	if (!lf_hdr) return WERR_INVALID_PARAM;
-
-	error = lf_verify(parent->hive, lf_hdr, size);
-	if(!W_ERROR_IS_OK(error)) return error;
-
-	SMB_ASSERT(size < 0);
-
-	count = SVAL(&lf_hdr->key_count,0);
-	DEBUG(2, ("Key Count: %u\n", count));
-	if (count <= 0) return WERR_GENERAL_FAILURE;
-	if (n >= count) return WERR_NO_MORE_ITEMS;
-
-	nk_off = IVAL(&lf_hdr->hr[n].nk_off,0);
-	DEBUG(2, ("NK Offset: %0X\n", nk_off));
-	nk_hdr = (NK_HDR *)LOCN(regf->base, nk_off);
-	return nk_to_key(mem_ctx, parent->hive, nk_hdr, BLK_SIZE(nk_hdr), parent, key);
-}
-
-static WERROR nk_to_key(TALLOC_CTX *mem_ctx, struct registry_hive *h, NK_HDR *nk_hdr, int size, struct registry_key *parent, struct registry_key **key)
-{
-	REGF *regf = h->backend_data;
-	struct registry_key *tmp = NULL, *own;
-	int namlen, clsname_len, sk_off, own_off;
-	uint_t nk_id;
-	SK_HDR *sk_hdr;
-	int type;
-	char key_name[1024];
-
-	if (!nk_hdr) return WERR_INVALID_PARAM;
-
-	if ((nk_id = SVAL(&nk_hdr->NK_ID,0)) != str_to_dword("nk")) {
-		DEBUG(0, ("Unrecognized NK Header format: %08X, Block: %0X. %s\n", 
-				  nk_id, (int)nk_hdr, parent->hive->location));
-		return WERR_INVALID_PARAM;
-	}
-
-	SMB_ASSERT(size < 0);
-
-	namlen = SVAL(&nk_hdr->nam_len,0);
-	clsname_len = SVAL(&nk_hdr->clsnam_len,0);
-
-	/*
-	 * The value of -size should be ge 
-	 * (sizeof(NK_HDR) - 1 + namlen)
-	 * The -1 accounts for the fact that we included the first byte of 
-	 * the name in the structure. clsname_len is the length of the thing 
-	 * pointed to by clsnam_off
-	 */
-
-	if (-size < (sizeof(NK_HDR) - 1 + namlen)) {
-		DEBUG(0, ("Incorrect NK_HDR size: %d, %0X\n", -size, (int)nk_hdr));
-		DEBUG(0, ("Sizeof NK_HDR: %d, name_len %d, clsname_len %d\n",
-			  (int)sizeof(NK_HDR), namlen, clsname_len));
+	data = regf_get_data(key->hive->backend_data, nk->subkeys_offset);
+	if (!data.data) {
+		DEBUG(0, ("Unable to find subkey list\n"));
 		return WERR_GENERAL_FAILURE;
 	}
 
-	DEBUG(2, ("NK HDR: Name len: %d, class name len: %d\n", namlen, clsname_len));
+	if (!strncmp((char *)data.data, "li", 2)) {
+		DEBUG(4, ("Subkeys in LI list\n"));
+		SMB_ASSERT(0);
+	} else if (!strncmp((char *)data.data, "lf", 2)) {
+		struct lf_block lf;
+		struct tdr_pull *pull = talloc_zero(ctx, struct tdr_pull);
 
-	/* Fish out the key name and process the LF list */
+		DEBUG(10, ("Subkeys in LF list\n"));
+		pull->data = data;
 
-	SMB_ASSERT(namlen < sizeof(key_name));
+		if (NT_STATUS_IS_ERR(tdr_pull_lf_block(pull, &lf))) {
+			DEBUG(0, ("Error parsing LF list\n"));
+			return WERR_GENERAL_FAILURE;
+		}
 
-	strncpy(key_name, nk_hdr->key_nam, namlen);
-	key_name[namlen] = '\0';
+		if (lf.key_count != nk->num_subkeys) {
+			DEBUG(0, ("Subkey counts don't match\n"));
+			return WERR_GENERAL_FAILURE;
+		}
 
-	type = (SVAL(&nk_hdr->type,0)==0x2C?REG_ROOT_KEY:REG_SUB_KEY);
-	if(type == REG_ROOT_KEY && parent) {
-		DEBUG(0,("Root key encountered below root level!\n"));
+		key_off = lf.hr[idx].nk_off;
+		
+		talloc_free(pull);
+	} else if (!strncmp((char *)data.data, "ri", 2)) {
+		DEBUG(4, ("Subkeys in RI list\n"));
+		SMB_ASSERT(0);
+	} else if (!strncmp((char *)data.data, "lh", 2)) {
+		DEBUG(4, ("Subkeys in LH list\n"));
+		SMB_ASSERT(0);
+	} else {
+		DEBUG(0, ("Unknown type for subkey list (0x%04x): %c%c\n", nk->subkeys_offset, data.data[0], data.data[1]));
 		return WERR_GENERAL_FAILURE;
 	}
 
-	tmp = talloc(mem_ctx, struct registry_key);
-	tmp->name = talloc_strdup(mem_ctx, key_name);
-	tmp->backend_data = nk_hdr;
+	*ret = regf_get_key (ctx, key->hive->backend_data, key_off);
 
-	DEBUG(2, ("Key name: %s\n", key_name));
-
-	/*
-	 * Fish out the class name, it is in UNICODE, while the key name is 
-	 * ASCII :-)
-	 */
-
-	if (clsname_len) { /* Just print in Ascii for now */
-		void *clsnamep;
-		int clsnam_off;
-
-		clsnam_off = IVAL(&nk_hdr->clsnam_off,0);
-		clsnamep = LOCN(regf->base, clsnam_off);
-		DEBUG(2, ("Class Name Offset: %0X\n", clsnam_off));
-
-		pull_ucs2_talloc(mem_ctx, &tmp->class_name, clsnamep);
-
-		DEBUGADD(2,("  Class Name: %s\n", tmp->class_name));
-
-	}
-
-	/*
-	 * Process the owner offset ...
-	 */
-
-	own_off = IVAL(&nk_hdr->own_off,0);
-	own = (struct registry_key *)LOCN(regf->base, own_off);
-	DEBUG(2, ("Owner Offset: %0X\n", own_off));
-
-	DEBUGADD(2, ("  Owner locn: %0X, Our locn: %0X\n", 
-				 (uint_t)own, (uint_t)nk_hdr));
-
-	/* 
-	 * We should verify that the owner field is correct ...
-	 * for now, we don't worry ...
-	 */
-
-	/* 
-	 * Also handle the SK header ...
-	 */
-
-	sk_off = IVAL(&nk_hdr->sk_off,0);
-	sk_hdr = (SK_HDR *)LOCN(regf->base, sk_off);
-	DEBUG(2, ("SK Offset: %0X\n", sk_off));
-
-	if (sk_off != -1) {
-
-#if 0
-		tmp->security = process_sk(regf, sk_hdr, sk_off, BLK_SIZE(sk_hdr));
-#endif
-
-	} 
-
-	*key = tmp;
 	return WERR_OK;
 }
-
-#if 0 /* unused */
-
-/*
- * Allocate a new hbin block, set up the header for the block etc 
- */
-static HBIN_BLK *nt_create_hbin_blk(struct registry_hive *h, int size)
-{
-	REGF *regf = h->backend_data;
-	HBIN_BLK *tmp;
-	HBIN_HDR *hdr;
-
-	if (!regf || !size) return NULL;
-
-	/* Round size up to multiple of REGF_HDR_BLKSIZ */
-
-	size = (size + (REGF_HDR_BLKSIZ - 1)) & ~(REGF_HDR_BLKSIZ - 1);
-
-	tmp = malloc_p(HBIN_BLK);
-	memset(tmp, 0, sizeof(HBIN_BLK));
-
-	tmp->data = malloc(size);
-
-	memset(tmp->data, 0, size);  /* Make it pristine */
-
-	tmp->size = size;
-	/*FIXMEtmp->file_offset = regf->blk_tail->file_offset + regf->blk_tail->size;*/
-
-	tmp->free_space = size - (sizeof(HBIN_HDR) - sizeof(HBIN_SUB_HDR));
-	tmp->fsp_off = size - tmp->free_space;
-
-	/* 
-	 * Now, build the header in the data block 
-	 */
-	hdr = (HBIN_HDR *)tmp->data;
-	hdr->HBIN_ID = str_to_dword("hbin");
-	hdr->off_from_first = tmp->file_offset - REGF_HDR_BLKSIZ;
-	hdr->off_to_next = tmp->size;
-	hdr->blk_size = tmp->size;
-
-	/*
-	 * Now link it in
-	 */
-
-	regf->blk_tail->next = tmp;
-	regf->blk_tail = tmp;
-	if (!regf->free_space) regf->free_space = tmp;
-
-	return tmp;
-}
-
-/*
- * Allocate a unit of space ... and return a pointer as function param
- * and the block's offset as a side effect
- */
-static void *nt_alloc_regf_space(struct registry_hive *h, int size, uint_t *off)
-{
-	REGF *regf = h->backend_data;
-	int tmp = 0;
-	void *ret = NULL;
-	HBIN_BLK *blk;
-
-	if (!regf || !size || !off) return NULL;
-
-	SMB_ASSERT(regf->blk_head != NULL);
-
-	/*
-	 * round up size to include header and then to 8-byte boundary
-	 */
-	size = (size + 4 + 7) & ~7;
-
-	/*
-	 * Check if there is space, if none, grab a block
-	 */
-	if (!regf->free_space) {
-		if (!nt_create_hbin_blk(h, REGF_HDR_BLKSIZ))
-			return NULL;
-	}
-
-	/*
-	 * Now, chain down the list of blocks looking for free space
-	 */
-
-	for (blk = regf->free_space; blk != NULL; blk = blk->next) {
-		if (blk->free_space <= size) {
-			tmp = blk->file_offset + blk->fsp_off - REGF_HDR_BLKSIZ;
-			ret = blk->data + blk->fsp_off;
-			blk->free_space -= size;
-			blk->fsp_off += size;
-
-			/* Insert the header */
-			((HBIN_SUB_HDR *)ret)->dblocksize = -size;
-
-			/*
-			 * Fix up the free space ptr
-			 * If it is NULL, we fix it up next time
-			 */
-
-			if (!blk->free_space) 
-				regf->free_space = blk->next;
-
-			*off = tmp;
-			return (((char *)ret)+4);/* The pointer needs to be to the data struct */
-		}
-	}
-
-	/*
-	 * If we got here, we need to add another block, which might be 
-	 * larger than one block -- deal with that later
-	 */
-	if (nt_create_hbin_blk(h, REGF_HDR_BLKSIZ)) {
-		blk = regf->free_space;
-		tmp = blk->file_offset + blk->fsp_off - REGF_HDR_BLKSIZ;
-		ret = blk->data + blk->fsp_off;
-		blk->free_space -= size;
-		blk->fsp_off += size;
-
-		/* Insert the header */
-		((HBIN_SUB_HDR *)ret)->dblocksize = -size;
-
-		/*
-		 * Fix up the free space ptr
-		 * If it is NULL, we fix it up next time
-		 */
-
-		if (!blk->free_space) 
-			regf->free_space = blk->next;
-
-		*off = tmp;
-		return (((char *)ret) + 4);/* The pointer needs to be to the data struct */
-	}
-
-	return NULL;
-}
-
-/*
- * Store a SID at the location provided
- */
-static int nt_store_SID(struct registry_hive *regf, DOM_SID *sid, uint8_t *locn)
-{
-	int i;
-	uint8_t *p = locn;
-
-	if (!regf || !sid || !locn) return 0;
-
-	*p = sid->sid_rev_num; p++;
-	*p = sid->num_auths; p++;
-
-	for (i=0; i < 6; i++) {
-		*p = sid->id_auth[i]; p++;
-	}
-
-	for (i=0; i < sid->num_auths; i++) {
-		SIVAL(p, 0, sid->sub_auths[i]); p+=4;
-	}
-
-	return p - locn;
-
-}
-
-static int nt_store_ace(struct registry_hive *regf, SEC_ACE *ace, uint8_t *locn)
-{
-	int size = 0;
-	SEC_ACE *reg_ace = (SEC_ACE *)locn;
-	uint8_t *p;
-
-	if (!regf || !ace || !locn) return 0;
-
-	reg_ace->type = ace->type;
-	reg_ace->flags = ace->flags;
-
-	/* Deal with the length when we have stored the SID */
-
-	p = (uint8_t *)&reg_ace->info.mask;
-
-	SIVAL(p, 0, ace->info.mask); p += 4;
-
-	size = nt_store_SID(regf, &ace->trustee, p);
-
-	size += 8; /* Size of the fixed header */
-
-	p = (uint8_t *)&reg_ace->size;
-
-	SSVAL(p, 0, size);
-
-	return size;
-}
-
-/*
- * Store an ACL at the location provided
- */
-static int nt_store_acl(struct registry_hive *regf, SEC_ACL *acl, uint8_t *locn) {
-	int size = 0, i;
-	uint8_t *p = locn, *s;
-
-	if (!regf || !acl || !locn) return 0;
-
-	/*
-	 * Now store the header and then the ACEs ...
-	 */
-
-	SSVAL(p, 0, acl->revision);
-
-	p += 2; s = p; /* Save this for the size field */
-
-	p += 2;
-
-	SIVAL(p, 0, acl->num_aces);
-
-	p += 4;
-
-	for (i = 0; i < acl->num_aces; i++) {
-		size = nt_store_ace(regf, &acl->ace[i], p);
-		p += size;
-	}
-
-	size = s - locn;
-	SSVAL(s, 0, size);
-	return size;
-}
-
-/*
- * Flatten and store the Sec Desc 
- * Windows lays out the DACL first, but since there is no SACL, it might be
- * that first, then the owner, then the group SID. So, we do it that way
- * too.
- */
-static uint_t nt_store_sec_desc(struct registry_hive *regf, SEC_DESC *sd, char *locn)
-{
-	SEC_DESC *rsd = (SEC_DESC *)locn;
-	uint_t size = 0, off = 0;
-
-	if (!regf || !sd || !locn) return 0;
-
-	/* 
-	 * Now, fill in the first two fields, then lay out the various fields
-	 * as needed
-	 */
-
-	rsd->revision = SEC_DESC_REVISION;
-	rsd->type = SEC_DESC_DACL_PRESENT | SEC_DESC_SELF_RELATIVE;  
-
-	off = 4 * sizeof(uint32_t) + 4;
-
-	if (sd->sacl){
-		size = nt_store_acl(regf, sd->sacl, (char *)(locn + off));
-		rsd->off_sacl = off;
-	}
-	else
-		rsd->off_sacl = 0;
-
-	off += size;
-
-	if (sd->dacl) {
-		rsd->off_dacl = off;
-		size = nt_store_acl(regf, sd->dacl, (char *)(locn + off));
-	}
-	else {
-		rsd->off_dacl = 0;
-	}
-
-	off += size;
-
-	/* Now the owner and group SIDs */
-
-	if (sd->owner_sid) {
-		rsd->off_owner_sid = off;
-		size = nt_store_SID(regf, sd->owner_sid, (char *)(locn + off));
-	}
-	else {
-		rsd->off_owner_sid = 0;
-	}
-
-	off += size;
-
-	if (sd->grp_sid) {
-		rsd->off_grp_sid = off;
-		size = nt_store_SID(regf, sd->grp_sid, (char *)(locn + off));
-	}
-	else {
-		rsd->off_grp_sid = 0;
-	}
-
-	off += size;
-
-	return size;
-}
-
-/*
- * Store the security information
- *
- * If it has already been stored, just get its offset from record
- * otherwise, store it and record its offset
- */
-static uint_t nt_store_security(struct registry_hive *regf, KEY_SEC_DESC *sec)
-{
-	int size = 0;
-	uint_t sk_off;
-	SK_HDR *sk_hdr;
-
-	if (sec->offset) return sec->offset;
-
-	/*
-	 * OK, we don't have this one in the file yet. We must compute the 
-	 * size taken by the security descriptor as a self-relative SD, which
-	 * means making one pass over each structure and figuring it out
-	 */
-
-/* FIXME	size = sec_desc_size(sec->sec_desc); */
-
-	/* Allocate that much space */
-
-	sk_hdr = nt_alloc_regf_space(regf, size, &sk_off);
-	sec->sk_hdr = sk_hdr;
-
-	if (!sk_hdr) return 0;
-
-	/* Now, lay out the sec_desc in the space provided */
-
-	sk_hdr->SK_ID = str_to_dword("sk");
-
-	/* 
-	 * We can't deal with the next and prev offset in the SK_HDRs until the
-	 * whole tree has been stored, then we can go and deal with them
-	 */
-
-	sk_hdr->ref_cnt = sec->ref_cnt;
-	sk_hdr->rec_size = size;       /* Is this correct */
-
-	/* Now, lay out the sec_desc */
-
-	if (!nt_store_sec_desc(regf, sec->sec_desc, (char *)&sk_hdr->sec_desc))
-		return 0;
-
-	return sk_off;
-
-}
-
-/*
- * Store a KEY in the file ...
- *
- * We store this depth first, and defer storing the lf struct until
- * all the sub-keys have been stored.
- * 
- * We store the NK hdr, any SK header, class name, and VK structure, then
- * recurse down the LF structures ... 
- * 
- * We return the offset of the NK struct
- * FIXME, FIXME, FIXME: Convert to using SIVAL and SSVAL ...
- */
-static int nt_store_reg_key(struct registry_hive *regf, struct registry_key *key)
-{
-	NK_HDR *nk_hdr; 
-	uint_t nk_off, sk_off, size;
-
-	if (!regf || !key) return 0;
-
-	size = sizeof(NK_HDR) + strlen(key->name) - 1;
-	nk_hdr = nt_alloc_regf_space(regf, size, &nk_off);
-	if (!nk_hdr) goto error;
-
-	key->offset = nk_off;  /* We will need this later */
-
-	/*
-	 * Now fill in each field etc ...
-	 */
-
-	nk_hdr->NK_ID = str_to_dword("nk"); 
-	if (key->type == REG_ROOT_KEY)
-		nk_hdr->type = 0x2C;
-	else
-		nk_hdr->type = 0x20;
-
-	/* FIXME: Fill in the time of last update */
-
-	if (key->type != REG_ROOT_KEY)
-		nk_hdr->own_off = key->owner->offset;
-
-	if (key->sub_keys)
-		nk_hdr->subk_num = key->sub_keys->key_count;
-
-	/*
-	 * Now, process the Sec Desc and then store its offset
-	 */
-
-	sk_off = nt_store_security(regf, key->security);
-	nk_hdr->sk_off = sk_off;
-
-	/*
-	 * Then, store the val list and store its offset
-	 */
-	if (key->values) {
-		nk_hdr->val_cnt = key->values->val_count;
-		nk_hdr->val_off = nt_store_val_list(regf, key->values);
-	}
-	else {
-		nk_hdr->val_off = -1;
-		nk_hdr->val_cnt = 0;
-	}
-
-	/*
-	 * Finally, store the subkeys, and their offsets
-	 */
-
-error:
-	return 0;
-}
-
-/*
- * Store the registry header ...
- * We actually create the registry header block and link it to the chain
- * of output blocks.
- */
-static REGF_HDR *nt_get_reg_header(struct registry_hive *h) {
-	REGF *regf = h->backend_data;
-	HBIN_BLK *tmp = NULL;
-
-	tmp = malloc_p(HBIN_BLK);
-
-	memset(tmp, 0, sizeof(HBIN_BLK));
-	tmp->type = REG_OUTBLK_HDR;
-	tmp->size = REGF_HDR_BLKSIZ;
-	tmp->data = malloc(REGF_HDR_BLKSIZ);
-	if (!tmp->data) goto error;
-
-	memset(tmp->data, 0, REGF_HDR_BLKSIZ);  /* Make it pristine, unlike Windows */
-	regf->blk_head = regf->blk_tail = tmp;
-
-	return (REGF_HDR *)tmp->data;
-
-error:
-	if (tmp) free(tmp);
-	return NULL;
-}
-
-#endif
 
 static WERROR nt_open_hive (struct registry_hive *h, struct registry_key **key)
 {
-	REGF *regf;
-	REGF_HDR *regf_hdr;
-	uint_t regf_id, hbin_id;
-	HBIN_HDR *hbin_hdr;
+	struct regf_data *regf;
+	struct regf_hdr *regf_hdr;
+	struct tdr_pull *pull;
+	int i;
 
-	regf = (REGF *)talloc(h, REGF);
-	memset(regf, 0, sizeof(REGF));
-	regf->owner_sid_str = NULL; /* FIXME: Fill in */
+	regf = (struct regf_data *)talloc_zero(h, struct regf_data);
 	h->backend_data = regf;
 
 	DEBUG(5, ("Attempting to load registry file\n"));
 
 	/* Get the header */
 
-	if ((regf_hdr = nt_get_regf_hdr(h)) == NULL) {
-		DEBUG(0, ("Unable to get header\n"));
+	regf->data.data = (uint8_t *)file_load(h->location, &regf->data.length, regf);
+	if (regf->data.data == NULL) {
+		DEBUG(0,("Could not load file: %s, %s\n", h->location,
+				 strerror(errno)));
 		return WERR_GENERAL_FAILURE;
 	}
 
-	/* Now process that header and start to read the rest in */
+	pull = talloc_zero(regf, struct tdr_pull);
+	if (!pull)
+		return WERR_NOMEM;
 
-	if ((regf_id = IVAL(&regf_hdr->REGF_ID,0)) != str_to_dword("regf")) {
-		DEBUG(0, ("Unrecognized NT registry header id: %0X, %s\n",
-				  regf_id, h->location));
+	pull->data = regf->data;
+
+	regf_hdr = talloc(regf, struct regf_hdr);
+	if (NT_STATUS_IS_ERR(tdr_pull_regf_hdr(pull, regf_hdr))) {
 		return WERR_GENERAL_FAILURE;
 	}
+
+	if (strcmp(regf_hdr->REGF_ID, "regf") != 0) {
+		DEBUG(0, ("Unrecognized NT registry header id: %s, %s\n",
+				  regf_hdr->REGF_ID, h->location));
+	}
+
+	DEBUG(1, ("Registry '%s' read. Version %d.%d.%d.%d\n", 
+			  regf_hdr->description, regf_hdr->version.major,
+			  regf_hdr->version.minor, regf_hdr->version.release,
+			  regf_hdr->version.build));
 
 	/*
 	 * Validate the header ...
 	 */
-	if (!valid_regf_hdr(regf_hdr)) {
-		DEBUG(0, ("Registry file header does not validate: %s\n",
-				  h->location));
+	if (regf_hdr_checksum(regf->data.data) != regf_hdr->chksum) {
+		DEBUG(0, ("Registry file checksum error: %s: %d,%d\n",
+				  h->location, regf_hdr->chksum, regf_hdr_checksum(regf->data.data)));
 		return WERR_GENERAL_FAILURE;
 	}
 
-	/* Update the last mod date, and then go get the first NK record and on */
+	pull->offset = 0x1000;
 
-	TTTONTTIME(regf, IVAL(&regf_hdr->tim1,0), IVAL(&regf_hdr->tim2,0));
+	i = 0;
+	/* Read in all hbin blocks */
+	regf->hbins = talloc_array(regf, struct hbin_block *, 1);
+	regf->hbins[0] = NULL;
 
-	/* 
-	 * The hbin hdr seems to be just uninteresting garbage. Check that
-	 * it is there, but that is all.
-	 */
+	while (pull->offset < pull->data.length) {
+		struct hbin_block *hbin = talloc(regf->hbins, struct hbin_block);
 
-	hbin_hdr = (HBIN_HDR *)(regf->base + REGF_HDR_BLKSIZ);
+		if (NT_STATUS_IS_ERR(tdr_pull_hbin_block(pull, hbin))) {
+			DEBUG(0, ("[%d] Error parsing HBIN block\n", i));
+			return WERR_FOOBAR;
+		}
 
-	if ((hbin_id = IVAL(&hbin_hdr->HBIN_ID,0)) != str_to_dword("hbin")) {
-		DEBUG(0, ("Unrecognized registry hbin hdr ID: %0X, %s\n", 
-				  hbin_id, h->location));
-		return WERR_GENERAL_FAILURE;
+		if (strcmp(hbin->HBIN_ID, "hbin") != 0) {
+			DEBUG(0, ("[%d] Expected 'hbin', got '%s'\n", i, hbin->HBIN_ID));
+			return WERR_FOOBAR;
+		}
+
+		regf->hbins[i] = hbin;
+		i++;
+		regf->hbins = talloc_realloc(regf, regf->hbins, struct hbin_block *, i+2);
+		regf->hbins[i] = NULL;
 	} 
 
-	/*
-	 * Get a pointer to the first key from the hreg_hdr
-	 */
+	DEBUG(1, ("%d HBIN blocks read\n", i));
 
-	DEBUG(2, ("First Key: %0X\n",
-			  IVAL(&regf_hdr->first_key, 0)));
+	*key = regf_get_key(h, regf, 0x20);
 
-	regf->first_key = (NK_HDR *)LOCN(regf->base, IVAL(&regf_hdr->first_key,0));
-	DEBUGADD(2, ("First Key Offset: %0X\n", 
-				 IVAL(&regf_hdr->first_key, 0)));
-
-	DEBUGADD(2, ("Data Block Size: %d\n",
-				 IVAL(&regf_hdr->dblk_size, 0)));
-
-	DEBUGADD(2, ("Offset to next hbin block: %0X\n",
-				 IVAL(&hbin_hdr->off_to_next, 0)));
-
-	DEBUGADD(2, ("HBIN block size: %0X\n",
-				 IVAL(&hbin_hdr->blk_size, 0)));
-
-	/*
-	 * Unmap the registry file, as we might want to read in another
-	 * tree etc.
-	 */
-
-	h->backend_data = regf;
-
-	return nk_to_key(h, h, ((REGF *)h->backend_data)->first_key, BLK_SIZE(((REGF *)h->backend_data)->first_key), NULL, key);
-}
-
-
-static WERROR nt_num_subkeys(struct registry_key *k, uint32_t *num) 
-{
-	REGF *regf = k->hive->backend_data;
-	LF_HDR *lf_hdr;
-	int lf_off;
-	NK_HDR *nk_hdr = k->backend_data;
-	lf_off = IVAL(&nk_hdr->lf_off,0);
-	DEBUG(2, ("SubKey list offset: %0X\n", lf_off));
-	if(lf_off == -1) {
-		*num = 0;
-		return WERR_OK;
-	}
-	lf_hdr = (LF_HDR *)LOCN(regf->base, lf_off);
-
-	return lf_num_entries(k->hive, lf_hdr, BLK_SIZE(lf_hdr), num);
-}
-
-static WERROR nt_num_values(struct registry_key *k, uint32_t *count)
-{
-	NK_HDR *nk_hdr = k->backend_data;
-	*count = IVAL(&nk_hdr->val_cnt,0);
 	return WERR_OK;
-}
-
-static WERROR nt_value_by_index(TALLOC_CTX *mem_ctx, struct registry_key *k, int n, struct registry_value **value)
-{
-	VL_TYPE *vl;
-	int val_off, vk_off;
-	int val_count;
-	VK_HDR *vk_hdr;
-	REGF *regf = k->hive->backend_data;
-	NK_HDR *nk_hdr = k->backend_data;
-	val_count = IVAL(&nk_hdr->val_cnt,0);
-	val_off = IVAL(&nk_hdr->val_off,0);
-	vl = (VL_TYPE *)LOCN(regf->base, val_off);
-	DEBUG(2, ("Val List Offset: %0X\n", val_off));
-	if(n < 0) return WERR_INVALID_PARAM;
-	if(n >= val_count) return WERR_NO_MORE_ITEMS;
-
-	vk_off = IVAL(&vl[n],0);
-	vk_hdr = (VK_HDR *)LOCN(regf->base, vk_off);
-	return vk_to_val(mem_ctx, k, vk_hdr, BLK_SIZE(vk_hdr), value);
-}
-
-static WERROR nt_key_by_index(TALLOC_CTX *mem_ctx, struct registry_key *k, int n, struct registry_key **subkey)
-{
-	REGF *regf = k->hive->backend_data;
-	int lf_off;
-	NK_HDR *nk_hdr = k->backend_data;
-	LF_HDR *lf_hdr;
-	lf_off = IVAL(&nk_hdr->lf_off,0);
-	DEBUG(2, ("SubKey list offset: %0X\n", lf_off));
-
-	/*
-	 * No more subkeys if lf_off == -1
-	 */
-
-	if (lf_off != -1) {
-		lf_hdr = (LF_HDR *)LOCN(regf->base, lf_off);
-		return lf_get_entry(mem_ctx, k, lf_hdr, BLK_SIZE(lf_hdr), n, subkey);
-	}
-
-	return WERR_NO_MORE_ITEMS;
 }
 
 static struct hive_operations reg_backend_nt4 = {
 	.name = "nt4",
 	.open_hive = nt_open_hive,
-	.num_subkeys = nt_num_subkeys,
-	.num_values = nt_num_values,
-	.get_subkey_by_index = nt_key_by_index,
-	.get_value_by_index = nt_value_by_index,
-
-	/* TODO: 
-	.add_key
-	.add_value
-	.del_key
-	.del_value
-	.update_value
-	*/
+	.num_subkeys = regf_num_subkeys,
+	.num_values = regf_num_values,
+	.get_subkey_by_index = regf_get_subkey,
+	.get_value_by_index = regf_get_value,
 };
 
 NTSTATUS registry_nt4_init(void)
