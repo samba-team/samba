@@ -418,7 +418,7 @@ void file_sync_all(connection_struct *conn)
 	for (fsp=Files;fsp;fsp=next) {
 		next=fsp->next;
 		if ((conn == fsp->conn) && (fsp->fh->fd != -1)) {
-			sync_file(conn,fsp);
+			sync_file(conn, fsp, True /* write through */);
 		}
 	}
 }

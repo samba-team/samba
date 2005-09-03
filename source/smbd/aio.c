@@ -475,9 +475,7 @@ Wanted %u bytes but only wrote %d\n", fsp->fsp_name, (unsigned int)numtowrite, (
 		}
                                                                                                                                   
 		DEBUG(3,("handle_aio_write: fnum=%d num=%d wrote=%d\n", fsp->fnum, (int)numtowrite, (int)nwritten));
-		if (lp_syncalways(SNUM(fsp->conn)) || write_through) {
-			sync_file(fsp->conn,fsp);
-		}
+		sync_file(fsp->conn,fsp, write_through);
 	}
 
 	show_msg(outbuf);
