@@ -536,13 +536,8 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 				BOOL *file_existed)
 {
 	int i;
-	int num_share_modes;
-	struct share_mode_entry *old_shares = NULL;
-	BOOL delete_on_close;
 
-	num_share_modes = get_share_modes(lck, &old_shares, &delete_on_close);
-	
-	if(num_share_modes == 0) {
+	if(lck->num_share_modes == 0) {
 		return NT_STATUS_OK;
 	}
 
@@ -556,7 +551,7 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 
 	/* A delete on close prohibits everything */
 
-	if (delete_on_close) {
+	if (lck->delete_on_close) {
 		return NT_STATUS_DELETE_PENDING;
 	}
 
@@ -565,22 +560,22 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 	 */
 	
 #if defined(DEVELOPER)
-	for(i = 0; i < num_share_modes; i++) {
-		validate_my_share_entries(i, &old_shares[i]);
+	for(i = 0; i < lck->num_share_modes; i++) {
+		validate_my_share_entries(i, &lck->share_modes[i]);
 	}
 #endif
 
-	if (lp_share_modes(SNUM(conn))) {
-		/* Now we check the share modes, after any oplock breaks. */
-		for(i = 0; i < num_share_modes; i++) {
-			struct share_mode_entry *share_entry = &old_shares[i];
+	if (!lp_share_modes(SNUM(conn))) {
+		return NT_STATUS_OK;
+	}
 
-			/* someone else has a share lock on it, check to see
-			 * if we can too */
-			if (share_conflict(share_entry, access_mask,
-					   share_access)) {
-				return NT_STATUS_SHARING_VIOLATION;
-			}
+	/* Now we check the share modes, after any oplock breaks. */
+	for(i = 0; i < lck->num_share_modes; i++) {
+		/* someone else has a share lock on it, check to see if we can
+		 * too */
+		if (share_conflict(&lck->share_modes[i],
+				   access_mask, share_access)) {
+			return NT_STATUS_SHARING_VIOLATION;
 		}
 	}
 	
@@ -604,10 +599,8 @@ static BOOL is_delete_request(files_struct *fsp) {
 
 static BOOL delay_for_oplocks(struct share_mode_lock *lck, files_struct *fsp)
 {
-	int i, num_share_modes, num_level2;
-	struct share_mode_entry *share_modes;
+	int i, num_level2;
 	struct share_mode_entry *exclusive = NULL;
-	BOOL delete_on_close;
 	BOOL delay_it = False;
 	BOOL have_level2 = False;
 
@@ -618,9 +611,7 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck, files_struct *fsp)
 
 	num_level2 = 0;
 
-	num_share_modes = get_share_modes(lck, &share_modes, &delete_on_close);
-
-	if (num_share_modes == 0) {
+	if (lck->num_share_modes == 0) {
 		/* No files open at all: Directly grant whatever the client
 		 * wants. */
 
@@ -631,14 +622,14 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck, files_struct *fsp)
 		return False;
 	}
 
-	for (i=0; i<num_share_modes; i++) {
+	for (i=0; i<lck->num_share_modes; i++) {
 
-		if (EXCLUSIVE_OPLOCK_TYPE(share_modes[i].op_type)) {
+		if (EXCLUSIVE_OPLOCK_TYPE(lck->share_modes[i].op_type)) {
 			SMB_ASSERT(exclusive == NULL);			
-			exclusive = &share_modes[i];
+			exclusive = &lck->share_modes[i];
 		}
 
-		if (share_modes[i].op_type == LEVEL_II_OPLOCK) {
+		if (lck->share_modes[i].op_type == LEVEL_II_OPLOCK) {
 			have_level2 = True;
 		}
 	}
@@ -1682,7 +1673,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		if (!NT_STATUS_IS_OK(result)) {
 			BOOL dummy_del_on_close;
 			/* Remember to delete the mode we just added. */
-			del_share_mode(lck, fsp, NULL, &dummy_del_on_close);
+			del_share_mode(lck, fsp, &dummy_del_on_close);
 			talloc_free(lck);
 			fd_close(conn,fsp);
 			file_free(fsp);

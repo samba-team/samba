@@ -648,9 +648,6 @@ struct pending_message_list {
 	DATA_BLOB private_data;
 };
 
-/* incomplete structure declaration for a share mode lock */
-struct share_mode_lock;
-
 /* struct returned by get_share_modes */
 struct share_mode_entry {
 	pid_t pid;
@@ -668,12 +665,15 @@ struct share_mode_entry {
 	unsigned long share_file_id;
 };
 
-struct share_modes {
+struct share_mode_lock {
+	const char *filename;
+	SMB_DEV_T dev;
+	SMB_INO_T ino;
 	int num_share_modes;
 	struct share_mode_entry *share_modes;
 	BOOL delete_on_close;
+	BOOL modified;
 };
-
 
 #define SHAREMODE_FN_CAST() \
 	void (*)(struct share_mode_entry *, char*)
