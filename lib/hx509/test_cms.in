@@ -38,6 +38,7 @@ srcdir="@srcdir@"
 
 echo "create signed data"
 ./hxtool cms-create-sd \
+	--pass=PASS:foobar \
 	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
 	"$srcdir/test_chain.in" \
 	sd.data || exit 1
@@ -55,6 +56,7 @@ echo "verify signed data"
 
 echo "create signed data  (content info)"
 ./hxtool cms-create-sd \
+	--pass=PASS:foobar \
 	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
 	--content-info \
 	"$srcdir/test_chain.in" \
@@ -70,6 +72,7 @@ cmp "$srcdir/test_chain.in" sd.data.out || exit 1
 
 echo "create signed data"
 ./hxtool cms-create-sd \
+	--pass=PASS:foobar \
 	--certificate=PKCS12:$srcdir/data/test.p12 \
 	--signer=friendlyname-test \
 	"$srcdir/test_chain.in" \
