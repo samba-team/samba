@@ -379,18 +379,35 @@ struct locking_key {
 	SMB_INO_T ino;
 };
 
-struct share_mode_lock {
-	struct locking_key key;
-	TDB_DATA tdbkey;
-};
+/*******************************************************************
+ Form a static locking key for a dev/inode pair.
+******************************************************************/
+
+static TDB_DATA locking_key(SMB_DEV_T dev, SMB_INO_T inode)
+{
+	static struct locking_key key;
+	TDB_DATA kbuf;
+
+	memset(&key, '\0', sizeof(key));
+	key.dev = dev;
+	key.ino = inode;
+	kbuf.dptr = (char *)&key;
+	kbuf.dsize = sizeof(key);
+	return kbuf;
+}
 
 static int share_mode_lock_destructor(void *p)
 {
 	struct share_mode_lock *lck =
 		talloc_get_type_abort(p, struct share_mode_lock);
-	tdb_chainunlock(tdb, lck->tdbkey);
+	TDB_DATA key = locking_key(lck->dev, lck->ino);
+	tdb_chainunlock(tdb, key);
 	return 0;
 }
+
+static int get_share_modes(struct share_mode_lock *lck,
+			   struct share_mode_entry **pp_shares,
+			   BOOL *delete_on_close, const char **filename);
 
 struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 					    SMB_DEV_T dev, SMB_INO_T ino)
@@ -403,16 +420,19 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	lck->key.dev = dev;
-	lck->key.ino = ino;
-	lck->tdbkey.dptr = (char *)&(lck->key);
-	lck->tdbkey.dsize = sizeof(lck->key);
+	lck->dev = dev;
+	lck->ino = ino;
 
-	if (tdb_chainlock(tdb, lck->tdbkey) != 0) {
+	if (tdb_chainlock(tdb, locking_key(dev,ino)) != 0) {
 		DEBUG(3, ("Could not lock share entry\n"));
 		talloc_free(lck);
 		return NULL;
 	}
+
+	lck->num_share_modes = get_share_modes(lck, &lck->share_modes,
+					       &lck->delete_on_close,
+					       &lck->filename);
+	lck->modified = False;
 
 	talloc_set_destructor(lck, share_mode_lock_destructor);
 	return lck;
@@ -458,21 +478,22 @@ static void print_share_mode_table(struct locking_data *data)
  Get all share mode entries for a dev/inode pair.
 ********************************************************************/
 
-int get_share_modes(struct share_mode_lock *lck,
-		    struct share_mode_entry **pp_shares,
-		    BOOL *delete_on_close)
+static int get_share_modes(struct share_mode_lock *lck,
+			   struct share_mode_entry **pp_shares,
+			   BOOL *delete_on_close, const char **filename)
 {
 	TDB_DATA dbuf;
 	struct locking_data *data;
 	int num_share_modes;
 	struct share_mode_entry *shares = NULL;
+	TDB_DATA key = locking_key(lck->dev, lck->ino);
 	char *fname = NULL;
 	int i, del_count = 0;
 
 	*pp_shares = NULL;
 	*delete_on_close = False;
 
-	dbuf = tdb_fetch(tdb, lck->tdbkey);
+	dbuf = tdb_fetch(tdb, key);
 	if (!dbuf.dptr)
 		return 0;
 
@@ -496,8 +517,8 @@ int get_share_modes(struct share_mode_lock *lck,
 	}
 
 	/* Save off the associated filename. */
-	fname = SMB_STRDUP(dbuf.dptr + sizeof(*data) +
-			   num_share_modes * sizeof(struct share_mode_entry));
+	fname = talloc_strdup(lck, dbuf.dptr + sizeof(*data) +
+			      num_share_modes * sizeof(struct share_mode_entry));
 
 	/*
 	 * Ensure that each entry has a real process attached.
@@ -539,9 +560,9 @@ int get_share_modes(struct share_mode_lock *lck,
 		dbuf.dsize -= del_count * sizeof(struct share_mode_entry);
 
 		if (data->u.s.num_share_mode_entries == 0) {
-			tdb_result = tdb_delete(tdb, lck->tdbkey);
+			tdb_result = tdb_delete(tdb, key);
 		} else {
-			tdb_result = tdb_store(tdb, lck->tdbkey, dbuf,
+			tdb_result = tdb_store(tdb, key, dbuf,
 					       TDB_REPLACE);
 		}
 		if (tdb_result == -1) {
@@ -551,18 +572,21 @@ int get_share_modes(struct share_mode_lock *lck,
 
  done:
 
-	SAFE_FREE(fname);
 	SAFE_FREE(dbuf.dptr);
 	*pp_shares = shares;
+	if (filename != NULL) {
+		*filename = fname;
+	} else {
+		talloc_free(fname);
+	}
 	return num_share_modes;
 }
 
 BOOL get_delete_on_close_flag(SMB_DEV_T dev, SMB_INO_T inode)
 {
-	struct share_mode_entry *shares;
 	BOOL result;
 	struct share_mode_lock *lck = get_share_mode_lock(NULL, dev, inode);
-	get_share_modes(lck, &shares, &result);
+	result = lck->delete_on_close;
 	talloc_free(lck);
 	return result;
 }
@@ -631,9 +655,10 @@ static ssize_t del_share_entry(struct share_mode_lock *lck,
 	int i, del_count=0;
 	struct share_mode_entry *shares;
 	ssize_t count = 0;
+	TDB_DATA key = locking_key(lck->dev, lck->ino);
 
 	/* read in the existing share modes */
-	dbuf = tdb_fetch(tdb, lck->tdbkey);
+	dbuf = tdb_fetch(tdb, key);
 	if (!dbuf.dptr)
 		return -1;
 
@@ -676,10 +701,10 @@ static ssize_t del_share_entry(struct share_mode_lock *lck,
 
 		/* store it back in the database */
 		if (data->u.s.num_share_mode_entries == 0) {
-			if (tdb_delete(tdb, lck->tdbkey) == -1)
+			if (tdb_delete(tdb, key) == -1)
 				count = -1;
 		} else {
-			if (tdb_store(tdb, lck->tdbkey, dbuf,
+			if (tdb_store(tdb, key, dbuf,
 				      TDB_REPLACE) == -1)
 				count = -1;
 		}
@@ -719,10 +744,11 @@ BOOL set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
 	struct locking_data *data;
 	char *p=NULL;
 	int size;
+	TDB_DATA key = locking_key(lck->dev, lck->ino);
 	BOOL ret = True;
 		
 	/* read in the existing share modes if any */
-	dbuf = tdb_fetch(tdb, lck->tdbkey);
+	dbuf = tdb_fetch(tdb, key);
 	if (!dbuf.dptr) {
 		size_t offset;
 		/* we'll need to create a new record */
@@ -748,7 +774,7 @@ BOOL set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
 		fill_share_mode(p + sizeof(*data), fsp, mid, op_type);
 		dbuf.dptr = p;
 		dbuf.dsize = size;
-		if (tdb_store(tdb, lck->tdbkey, dbuf, TDB_REPLACE) == -1)
+		if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1)
 			ret = False;
 
 		print_share_mode_table((struct locking_data *)p);
@@ -778,7 +804,7 @@ BOOL set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
 	SAFE_FREE(dbuf.dptr);
 	dbuf.dptr = p;
 	dbuf.dsize = size;
-	if (tdb_store(tdb, lck->tdbkey, dbuf, TDB_REPLACE) == -1)
+	if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1)
 		ret = False;
 	print_share_mode_table((struct locking_data *)p);
 	SAFE_FREE(p);
@@ -801,9 +827,10 @@ static BOOL mod_share_mode(struct share_mode_lock *lck,
 	struct share_mode_entry *shares;
 	BOOL need_store=False;
 	BOOL ret = True;
+	TDB_DATA key = locking_key(lck->dev, lck->ino);
 
 	/* read in the existing share modes */
-	dbuf = tdb_fetch(tdb, lck->tdbkey);
+	dbuf = tdb_fetch(tdb, key);
 	if (!dbuf.dptr)
 		return False;
 
@@ -816,17 +843,17 @@ static BOOL mod_share_mode(struct share_mode_lock *lck,
 		    !share_modes_identical(entry, &shares[i])) {
 			continue;
 		}
-		mod_fn(&shares[i], lck->key.dev, lck->key.ino, param);
+		mod_fn(&shares[i], lck->dev, lck->ino, param);
 		need_store=True;
 	}
 
 	/* if the mod fn was called then store it back */
 	if (need_store) {
 		if (data->u.s.num_share_mode_entries == 0) {
-			if (tdb_delete(tdb, lck->tdbkey) == -1)
+			if (tdb_delete(tdb, key) == -1)
 				ret = False;
 		} else {
-			if (tdb_store(tdb, lck->tdbkey, dbuf,
+			if (tdb_store(tdb, key, dbuf,
 				      TDB_REPLACE) == -1)
 				ret = False;
 		}
@@ -914,9 +941,10 @@ BOOL modify_delete_flag(struct share_mode_lock *lck, BOOL delete_on_close)
 	TDB_DATA dbuf;
 	struct locking_data *data;
 	BOOL res;
+	TDB_DATA key = locking_key(lck->dev, lck->ino);
 
 	/* read in the existing share modes */
-	dbuf = tdb_fetch(tdb, lck->tdbkey);
+	dbuf = tdb_fetch(tdb, key);
 	if (!dbuf.dptr)
 		return False;
 
@@ -925,7 +953,7 @@ BOOL modify_delete_flag(struct share_mode_lock *lck, BOOL delete_on_close)
 	/* Set/Unset the delete on close element. */
 	data->u.s.delete_on_close = delete_on_close;
 
-	res = (tdb_store(tdb, lck->tdbkey, dbuf, TDB_REPLACE)!=-1);
+	res = (tdb_store(tdb, key, dbuf, TDB_REPLACE)!=-1);
 
 	SAFE_FREE(dbuf.dptr);
 	return res;
