@@ -7,8 +7,18 @@ INIT_FUNCTION = registry_nt4_init
 SUBSYSTEM = REGISTRY
 INIT_OBJ_FILES = \
 		lib/registry/reg_backend_nt4.o
+REQUIRED_SUBSYSTEMS = TDR_REGF
 # End MODULE registry_nt4
 ################################################
+
+[SUBSYSTEM::TDR_REGF]
+REQUIRED_SUBSYSTEMS = TDR 
+NOPROTO = YES
+INIT_OBJ_FILES = lib/registry/tdr_regf.o
+
+lib/registry/tdr_regf.c: lib/registry/regf.idl
+	@echo "Compiling lib/registry/regf.idl"
+	@./pidl/pidl --header --outputdir=lib/registry --parse --tdr-header --tdr-parser -- lib/registry/regf.idl
 
 ################################################
 # Start MODULE registry_w95
