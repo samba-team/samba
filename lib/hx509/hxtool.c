@@ -53,6 +53,19 @@ usage(int code)
     exit(code);
 }
 
+static void
+lock_strings(hx509_lock lock, getarg_strings *pass)
+{
+    int i;
+    for (i = 0; i < pass->num_strings; i++) {
+	int ret = hx509_lock_command_string(lock, pass->strings[i]);
+	if (ret)
+	    errx(1, "hx509_lock_command_string: %s: %d", 
+		 pass->strings[i], ret);
+    }
+}
+
+
 int
 cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 {
@@ -69,7 +82,7 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
     void *p;
 
     hx509_lock_init(&lock);
-    hx509_lock_add_password(lock, "foobar");
+    lock_strings(lock, &opt->pass_strings);
 
     ret = _hx509_map_file(argv[0], &p, &sz);
     if (ret)
@@ -169,7 +182,14 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 	errx(1, "argc < 2");
 
     hx509_lock_init(&lock);
-    hx509_lock_add_password(lock, "foobar");
+    lock_strings(lock, &opt->pass_strings);
+
+    for (i = 0; i < opt->pass_strings.num_strings; i++) {
+	ret = hx509_lock_command_string(lock, opt->pass_strings.strings[i]);
+	if (ret)
+	    errx(1, "hx509_lock_command_string: %s: %d", 
+		 opt->pass_strings.strings[i], ret);
+    }
 
     ret = hx509_certs_init("MEMORY:cert-store", 0, NULL, &store);
 
@@ -252,7 +272,7 @@ cms_unenvelope(struct cms_unenvelope_options *opt, int argc, char **argv)
     hx509_lock lock;
 
     hx509_lock_init(&lock);
-    hx509_lock_add_password(lock, "foobar");
+    lock_strings(lock, &opt->pass_strings);
 
     ret = _hx509_map_file(argv[0], &p, &sz);
     if (ret)
@@ -326,7 +346,7 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
     hx509_lock lock;
 
     hx509_lock_init(&lock);
-    hx509_lock_add_password(lock, "foobar");
+    lock_strings(lock, &opt->pass_strings);
 
     ret = _hx509_map_file(argv[0], &p, &sz);
     if (ret)
@@ -396,14 +416,14 @@ validate_print_f(void *ctx, hx509_cert c)
 }
 
 static int
-validate_print(int argc, char **argv, int flags)
+validate_print(getarg_strings *pass, int argc, char **argv, int flags)
 {
     hx509_validate_ctx ctx;
     hx509_certs certs;
     hx509_lock lock;
 
     hx509_lock_init(&lock);
-    hx509_lock_add_password(lock, "foobar");
+    lock_strings(lock, pass);
 
     hx509_validate_ctx_init(&ctx);
     hx509_validate_ctx_set_print(ctx, hx509_print_stdout, stdout);
@@ -426,15 +446,17 @@ validate_print(int argc, char **argv, int flags)
 }
 
 int
-pcert_print(void *opt, int argc, char **argv)
+pcert_print(struct print_options *opt, int argc, char **argv)
 {
-    return validate_print(argc, argv, HX509_VALIDATE_F_VERBOSE);
+    return validate_print(&opt->pass_strings, argc, argv, 
+			  HX509_VALIDATE_F_VERBOSE);
 }
 
 int
-pcert_validate(void *opt, int argc, char **argv)
+pcert_validate(struct validate_options *opt, int argc, char **argv)
 {
-    return validate_print(argc, argv, HX509_VALIDATE_F_VALIDATE);
+    return validate_print(&opt->pass_strings, argc, argv, 
+			  HX509_VALIDATE_F_VALIDATE);
 }
 
 struct verify {
@@ -542,7 +564,7 @@ query(struct query_options *opt, int argc, char **argv)
     _hx509_query_clear(&q);
 
     hx509_lock_init(&lock);
-    hx509_lock_add_password(lock, "foobar");
+    lock_strings(lock, &opt->pass_strings);
 
     ret = hx509_certs_init("MEMORY:cert-store", 0, NULL, &certs);
 
