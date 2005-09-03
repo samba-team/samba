@@ -234,10 +234,11 @@ rsa_create_signature(const struct signature_alg *sig_alg,
 		     AlgorithmIdentifier *signatureAlgorithm,
 		     heim_octet_string *sig)
 {
-    const EVP_MD *mdtype;
-    int len, ret;
     const heim_oid *digest_oid, *sig_oid;
+    const EVP_MD *mdtype;
     EVP_MD_CTX md;
+    unsigned len;
+    int ret;
     
     if (alg)
 	sig_oid = &alg->algorithm;
@@ -374,7 +375,7 @@ sha1_verify_signature(const struct signature_alg *sig_alg,
 		      const heim_octet_string *data,
 		      const heim_octet_string *sig)
 {
-    char digest[SHA_DIGEST_LENGTH];
+    unsigned char digest[SHA_DIGEST_LENGTH];
     SHA_CTX m;
     
     if (sig->length != SHA_DIGEST_LENGTH)
@@ -432,7 +433,7 @@ md5_verify_signature(const struct signature_alg *sig_alg,
 		     const heim_octet_string *data,
 		     const heim_octet_string *sig)
 {
-    char digest[MD5_DIGEST_LENGTH];
+    unsigned char digest[MD5_DIGEST_LENGTH];
     MD5_CTX m;
     
     if (sig->length != MD5_DIGEST_LENGTH)
@@ -455,7 +456,7 @@ md2_verify_signature(const struct signature_alg *sig_alg,
 		     const heim_octet_string *data,
 		     const heim_octet_string *sig)
 {
-    char digest[MD2_DIGEST_LENGTH];
+    unsigned char digest[MD2_DIGEST_LENGTH];
     MD2_CTX m;
     
     if (sig->length != MD2_DIGEST_LENGTH)
@@ -1187,27 +1188,114 @@ hx509_crypto_decrypt(hx509_crypto crypto,
     return ret;
 }
 
+typedef int (*PBE_string2key_func)(const char *,
+				   const heim_octet_string *,
+				   hx509_crypto *, heim_octet_string *, 
+				   heim_octet_string *,
+				   const heim_oid *, const EVP_MD *);
+
+static int
+PBE_string2key(const char *password,
+	       const heim_octet_string *parameters,
+	       hx509_crypto *crypto, 
+	       heim_octet_string *key, heim_octet_string *iv,
+	       const heim_oid *enc_oid,
+	       const EVP_MD *md)
+{
+    PKCS12_PBEParams p12params;
+    int passwordlen = strlen(password);
+    hx509_crypto c;
+    int iter, saltlen, ret;
+    unsigned char *salt;
+
+    if (parameters == NULL)
+ 	return HX509_ALG_NOT_SUPP;
+
+    ret = decode_PKCS12_PBEParams(parameters->data,
+				  parameters->length,
+				  &p12params, NULL);
+    if (ret)
+	goto out;
+
+    if (p12params.iterations)
+	iter = *p12params.iterations;
+    else
+	iter = 1;
+    salt = p12params.salt.data;
+    saltlen = p12params.salt.length;
+
+    if (!PKCS12_key_gen (password, passwordlen, salt, saltlen, 
+			 PKCS12_KEY_ID, iter, key->length, key->data, md)) {
+	ret = HX509_CRYPTO_INTERNAL_ERROR;
+	goto out;
+    }
+    
+    if (!PKCS12_key_gen (password, passwordlen, salt, saltlen, 
+			 PKCS12_IV_ID, iter, iv->length, iv->data, md)) {
+	ret = HX509_CRYPTO_INTERNAL_ERROR;
+	goto out;
+    }
+
+    ret = hx509_crypto_init(NULL, enc_oid, &c);
+    if (ret)
+	goto out;
+
+    ret = hx509_crypto_set_key_data(c, key->data, key->length);
+    if (ret) {
+	hx509_crypto_destroy(c);
+	goto out;
+    }
+
+    *crypto = c;
+out:
+    free_PKCS12_PBEParams(&p12params);
+    return ret;
+}
+
 static const heim_oid *
-find_string2key(const heim_oid *oid, const EVP_CIPHER **c)
+find_string2key(const heim_oid *oid, 
+		const EVP_CIPHER **c, 
+		const EVP_MD **md,
+		PBE_string2key_func *s2k)
 {
     if (heim_oid_cmp(oid, oid_id_pbewithSHAAnd40BitRC2_CBC()) == 0) {
 	*c = EVP_rc2_40_cbc();
+	*md = EVP_sha1();
+	*s2k = PBE_string2key;
 	return &private_rc2_40_oid;
     } else if (heim_oid_cmp(oid, oid_id_pbeWithSHAAnd128BitRC2_CBC()) == 0) {
 	*c = EVP_rc2_cbc();
+	*md = EVP_sha1();
+	*s2k = PBE_string2key;
 	return oid_id_pkcs3_rc2_cbc();
     } else if (heim_oid_cmp(oid, oid_id_pbeWithSHAAnd40BitRC4()) == 0) {
 	*c = EVP_rc4_40();
+	*md = EVP_sha1();
+	*s2k = PBE_string2key;
 	return NULL;
     } else if (heim_oid_cmp(oid, oid_id_pbeWithSHAAnd128BitRC4()) == 0) {
 	*c = EVP_rc4();
+	*md = EVP_sha1();
+	*s2k = PBE_string2key;
 	return oid_id_pkcs3_rc4();
     } else if (heim_oid_cmp(oid, oid_id_pbeWithSHAAnd3_KeyTripleDES_CBC()) == 0) {
 	*c = EVP_des_ede3_cbc();
+	*md = EVP_sha1();
+	*s2k = PBE_string2key;
 	return oid_id_pkcs3_des_ede3_cbc();
     }
 
     return NULL;
+}
+
+
+static void
+print_oid(const heim_oid *oid)
+{
+    int i;
+    for (i = 0; i < oid->length; i++)
+	printf("%d%s", oid->components[i], i < oid->length - 1 ? "." : "");
+    printf("\n");
 }
 
 
@@ -1220,71 +1308,39 @@ _hx509_pbe_decrypt(const char *password,
     heim_octet_string key, iv;
     const heim_oid *enc_oid;
     const EVP_CIPHER *c;
-    int ret;
-
-    PKCS12_PBEParams params;
-    int iter;
-    unsigned char *salt;
-    int saltlen;
-    int passlen = strlen(password);
+    const EVP_MD *md;
+    PBE_string2key_func s2k;
+    int ret = 0;
 
     memset(&key, 0, sizeof(key));
     memset(&iv, 0, sizeof(iv));
 
     memset(content, 0, sizeof(*content));
 
-    enc_oid = find_string2key(&ai->algorithm, &c);
+    print_oid(&ai->algorithm);
+
+    enc_oid = find_string2key(&ai->algorithm, &c, &md, &s2k);
     if (enc_oid == NULL) {
 	ret = HX509_ALG_NOT_SUPP;
 	goto out;
     }
 
-    ret = decode_PKCS12_PBEParams(ai->parameters->data, ai->parameters->length,
-				  &params, NULL);
-    if (ret) {
-	goto out;
-    }
-    if (params.iterations)
-	iter = *params.iterations;
-    else
-	iter = 1;
-    salt = params.salt.data;
-    saltlen = params.salt.length;
-    
     key.length = EVP_CIPHER_key_length(c);
     key.data = malloc(key.length);
+    if (key.data == NULL)
+	goto out;
 
     iv.length = EVP_CIPHER_iv_length(c);
     iv.data = malloc(iv.length);
+    if (iv.data == NULL)
+	goto out;
 
     {
-	const EVP_MD *md = EVP_sha1();
 	hx509_crypto crypto;
 
-	if (!PKCS12_key_gen (password, passlen, salt, saltlen, PKCS12_KEY_ID,
-			     iter, key.length, key.data, md)) {
-	    free_PKCS12_PBEParams(&params);
-	    ret = HX509_CRYPTO_INTERNAL_ERROR;
-	    goto out;
-	}
-	
-	if (!PKCS12_key_gen (password, passlen, salt, saltlen, PKCS12_IV_ID,
-			     iter, iv.length, iv.data, md)) {
-	    free_PKCS12_PBEParams(&params);
-	    ret = HX509_CRYPTO_INTERNAL_ERROR;
-	    goto out;
-	}
-	free_PKCS12_PBEParams(&params);
-
-	ret = hx509_crypto_init(NULL,
-				enc_oid,
-				&crypto);
-	if (ret)
-	    goto out;
-
-	ret = hx509_crypto_set_key_data(crypto, key.data, key.length);
+	ret = (*s2k)(password, ai->parameters, &crypto, 
+		     &key, &iv, enc_oid, md);
 	if (ret) {
-	    hx509_crypto_destroy(crypto);
 	    goto out;
 	}
 
@@ -1299,7 +1355,9 @@ _hx509_pbe_decrypt(const char *password,
 				   
     }
  out:
-    free_octet_string(&key);
-    free_octet_string(&iv);
+    if (key.data)
+	free_octet_string(&key);
+    if (iv.data)
+	free_octet_string(&iv);
     return ret;
 }
