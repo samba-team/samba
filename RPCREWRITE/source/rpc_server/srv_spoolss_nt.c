@@ -75,7 +75,7 @@ typedef struct _counter_printer_0 {
 
 static counter_printer_0 *counter_list;
 
-static struct cli_state notify_cli; /* print notify back-channel */
+static struct rpc_pipe_client *notify_cli_pipe; /* print notify back-channel pipe handle*/
 static uint32 smb_connections=0;
 
 
@@ -166,7 +166,7 @@ static void srv_spoolss_replycloseprinter(int snum, POLICY_HND *handle)
 		return;
 	}
 
-	result = cli_spoolss_reply_close_printer(&notify_cli, notify_cli.mem_ctx, handle);
+	result = rpccli_spoolss_reply_close_printer(notify_cli_pipe, notify_cli_pipe->cli->mem_ctx, handle);
 	
 	if (!W_ERROR_IS_OK(result))
 		DEBUG(0,("srv_spoolss_replycloseprinter: reply_close_printer failed [%s].\n",
@@ -174,9 +174,8 @@ static void srv_spoolss_replycloseprinter(int snum, POLICY_HND *handle)
 
 	/* if it's the last connection, deconnect the IPC$ share */
 	if (smb_connections==1) {
-		cli_nt_session_close(&notify_cli);
-		cli_ulogoff(&notify_cli);
-		cli_shutdown(&notify_cli);
+		cli_shutdown(notify_cli_pipe->cli);
+		notify_cli_pipe = NULL; /* The above call shuts downn the pipe also. */
 		message_deregister(MSG_PRINTER_NOTIFY2);
 
         	/* Tell the connections db we're no longer interested in
@@ -1021,7 +1020,7 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 		}
 
 		if ( sending_msg_count ) {
-			cli_spoolss_rrpcn( &notify_cli, mem_ctx, &p->notify.client_hnd, 
+			rpccli_spoolss_rrpcn( notify_cli_pipe, mem_ctx, &p->notify.client_hnd, 
 					data_len, data, p->notify.change, 0 );
 		}
 	}
@@ -2479,7 +2478,7 @@ done:
  Connect to the client machine.
 **********************************************************/
 
-static BOOL spoolss_connect_to_client(struct cli_state *the_cli, 
+static BOOL spoolss_connect_to_client(struct cli_state *the_cli, struct rpc_pipe_client **pp_pipe,
 			struct in_addr *client_ip, const char *remote_machine)
 {
 	ZERO_STRUCTP(the_cli);
@@ -2563,10 +2562,10 @@ static BOOL spoolss_connect_to_client(struct cli_state *the_cli,
 	 * Now start the NT Domain stuff :-).
 	 */
 
-	if(cli_nt_session_open(the_cli, PI_SPOOLSS) == False) {
-		DEBUG(0,("spoolss_connect_to_client: unable to open the domain client session to machine %s. Error was : %s.\n", remote_machine, cli_errstr(the_cli)));
-		cli_nt_session_close(the_cli);
-		cli_ulogoff(the_cli);
+	*pp_pipe = cli_rpc_pipe_open_noauth(the_cli, PI_SPOOLSS);
+	if(!*pp_pipe) {
+		DEBUG(0,("spoolss_connect_to_client: unable to open the spoolss pipe on machine %s. Error was : %s.\n",
+			remote_machine, cli_errstr(the_cli)));
 		cli_shutdown(the_cli);
 		return False;
 	} 
@@ -2589,13 +2588,14 @@ static BOOL srv_spoolss_replyopenprinter(int snum, const char *printer,
 	 * and connect to the IPC$ share anonymously
 	 */
 	if (smb_connections==0) {
+		struct cli_state notify_cli; /* print notify back-channel */
 		fstring unix_printer;
 
 		fstrcpy(unix_printer, printer+2); /* the +2 is to strip the leading 2 backslashs */
 
 		ZERO_STRUCT(notify_cli);
 
-		if(!spoolss_connect_to_client(&notify_cli, client_ip, unix_printer))
+		if(!spoolss_connect_to_client(&notify_cli, &notify_cli_pipe, client_ip, unix_printer))
 			return False;
 			
 		message_register(MSG_PRINTER_NOTIFY2, receive_notify2_message_list);
@@ -2614,7 +2614,7 @@ static BOOL srv_spoolss_replyopenprinter(int snum, const char *printer,
 
 	smb_connections++;
 
-	result = cli_spoolss_reply_open_printer(&notify_cli, notify_cli.mem_ctx, printer, localprinter, 
+	result = rpccli_spoolss_reply_open_printer(notify_cli_pipe, notify_cli_pipe->cli->mem_ctx, printer, localprinter, 
 			type, handle);
 			
 	if (!W_ERROR_IS_OK(result))
