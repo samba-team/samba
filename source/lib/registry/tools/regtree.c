@@ -28,6 +28,7 @@ static void print_tree(int l, struct registry_key *p, int fullpath, int novals)
 {
 	struct registry_key *subkey;
 	struct registry_value *value;
+	struct security_descriptor *sec_desc;
 	WERROR error;
 	int i;
 	TALLOC_CTX *mem_ctx;
@@ -68,9 +69,15 @@ static void print_tree(int l, struct registry_key *p, int fullpath, int novals)
 			DEBUG(0, ("Error occured while fetching values for '%s': %s\n", p->path, win_errstr(error)));
 		}
 	}
+
+	mem_ctx = talloc_init("sec_desc");
+	if (NT_STATUS_IS_ERR(reg_get_sec_desc(mem_ctx, p, &sec_desc))) {
+		DEBUG(0, ("Error getting security descriptor\n"));
+	}
+	talloc_free(mem_ctx);
 }
 
- int main(int argc, char **argv)
+int main(int argc, char **argv)
 {
 	int opt, i;
 	const char *backend = NULL;

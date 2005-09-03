@@ -100,9 +100,9 @@ interface regf
 	} nk_block;
 
 	/* sk (? Security Key ?) is the ACL of the registry. */
-	typedef [noprint,nopush,nopull] struct {
+	typedef [noprint,public] struct {
 		[charset(DOS)] uint8 header[2];
-		uint16 uk1;
+		uint16 tag;
 		uint32 prev_offset;
 		uint32 next_offset;
 		uint32 ref_cnt;

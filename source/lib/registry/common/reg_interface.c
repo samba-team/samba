@@ -427,6 +427,15 @@ WERROR reg_val_set(struct registry_key *key, const char *value, uint32_t type, D
 }
 
 
+WERROR reg_get_sec_desc(TALLOC_CTX *ctx, struct registry_key *key, struct security_descriptor **secdesc)
+{
+	/* A 'real' set function has preference */
+	if (key->hive->functions->key_get_sec_desc) 
+		return key->hive->functions->key_get_sec_desc(ctx, key, secdesc);
+
+	DEBUG(1, ("Backend '%s' doesn't support method get_sec_desc\n", key->hive->functions->name));
+	return WERR_NOT_SUPPORTED;
+}
 
 WERROR reg_del_value(struct registry_key *key, const char *valname)
 {
