@@ -137,7 +137,7 @@ BIN_PROGS = $(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3) @EXTRA_BIN_PROGS@
 EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ bin/talloctort@EXEEXT@ \
 	bin/log2pcap@EXEEXT@
 
-SHLIBS = @SHLIB_PROGS@ @LIBSMBCLIENT@
+SHLIBS = @SHLIB_PROGS@ @LIBSMBCLIENT@ 
 
 SCRIPTS = $(srcdir)/script/smbtar $(builddir)/script/findsmb
 
@@ -513,6 +513,11 @@ LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o libsmb/libsmb_compat.o \
 		   $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
 		   $(SECRETS_OBJ) $(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ)
 
+CAC_OBJ = $(LIBSMBCLIENT_OBJ) \
+          libmsrpc/libmsrpc.o libmsrpc/libmsrpc_internal.o \
+          libmsrpc/cac_lsarpc.o libmsrpc/cac_winreg.o libmsrpc/cac_samr.o \
+          libmsrpc/cac_svcctl.o
+
 # This shared library is intended for linking with unit test programs
 # to test Samba internals.  It's called libbigballofmud.so to
 # discourage casual usage.
@@ -637,6 +642,8 @@ WINBIND_WINS_NSS_PICOBJS = $(WINBIND_WINS_NSS_OBJ:.o=.@PICSUFFIX@)
 PICOBJS = $(SMBWRAPPER_OBJ:.o=.@PICSUFFIX@)
 LIBSMBCLIENT_PICOBJS = $(LIBSMBCLIENT_OBJ:.o=.@PICSUFFIX@)
 
+CAC_PICOBJS = $(CAC_OBJ:.o=.@PICSUFFIX@)
+
 PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
                pam_smbpass/pam_smb_acct.o pam_smbpass/support.o \
                $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
@@ -738,7 +745,9 @@ wins : SHOWFLAGS @WINBIND_WINS_NSS@
 
 modules: SHOWFLAGS proto_exists $(MODULES)
 
-everything: all libsmbclient debug2html smbfilter talloctort modules torture \
+cac: SHOWFLAGS bin/libmsrpc.@SHLIBEXT@ bin/libmsrpc.a
+
+everything: all libsmbclient debug2html smbfilter talloctort modules torture cac \
 	$(EVERYTHING_PROGS)
 
 .SUFFIXES:
@@ -1007,6 +1016,17 @@ bin/libsmbclient.a: $(LIBSMBCLIENT_PICOBJS)
 	@echo Linking libsmbclient non-shared library $@
 	@-$(AR) -rc $@ $(LIBSMBCLIENT_PICOBJS)
 
+
+bin/libmsrpc.@SHLIBEXT@: $(CAC_PICOBJS)
+	@echo Linking libmsrpc shared library $@
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(CAC_PICOBJS) $(LDFLAGS) $(LIBS) \
+	@SONAMEFLAG@`basename $@`
+
+bin/libmsrpc.a: $(CAC_PICOBJS)
+	@echo Linking libmsrpc non-shared library $@
+	@-$(AR) -rc $@ $(CAC_PICOBJS)
+
+
 # This is probably wrong for anything other than the GNU linker. 
 bin/libbigballofmud.@SHLIBEXT@: $(LIBBIGBALLOFMUD_PICOBJS)
 	@echo Linking bigballofmud shared library $@
@@ -1274,9 +1294,6 @@ bin/ntlm_auth@EXEEXT@: $(NTLM_AUTH_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_PICOOBJ)
 	@echo "Linking shared library $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_SMBPASS_PICOOBJ) -lpam $(DYNEXP) $(LIBS) -lc $(LDAP_LIBS) $(KRB5LIBS)
-
-bin/libmsrpc.a: $(LIBMSRPC_PICOBJ)
-	@-$(AR) -rc $@ $(LIBMSRPC_PICOBJ) 
 
 bin/tdbbackup@EXEEXT@: $(TDBBACKUP_OBJ) bin/.dummy
 	@echo Linking $@
