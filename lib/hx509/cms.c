@@ -398,7 +398,7 @@ find_attribute(const CMSAttributes *attr, const heim_oid *oid)
 
 int
 hx509_cms_verify_signed(hx509_verify_ctx ctx,
-			const char *data,
+			const void *data,
 			size_t length,
 			hx509_certs store,
 			heim_oid *contentType,
@@ -884,7 +884,7 @@ hx509_cms_create_signed_1(const heim_oid *eContentType,
 
 int
 hx509_cms_decrypt_encrypted(hx509_lock lock,
-			    const char *data,
+			    const void *data,
 			    size_t length,
 			    heim_oid *contentType,
 			    heim_octet_string *content)
