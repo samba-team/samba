@@ -71,7 +71,7 @@ static char *
 quote_string(const char *f, size_t len, size_t *rlen)
 {
     size_t i, j, tolen;
-    const unsigned char *from = f;
+    const unsigned char *from = (const unsigned char *)f;
     unsigned char *to;
 
     tolen = len * 3 + 1;
