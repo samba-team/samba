@@ -1183,7 +1183,7 @@ _hx509_set_cert_attribute(hx509_cert cert, const heim_oid *oid,
     return 0;
 }
 
-const hx509_cert_attribute
+hx509_cert_attribute
 hx509_cert_get_attribute(hx509_cert cert, const heim_oid *oid)
 {
     int i;
