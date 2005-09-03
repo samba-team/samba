@@ -117,7 +117,7 @@ sub Enum($$$)
 	my $valsstring = "$ifname\_$name\_vals";
 	my $dissectorname = "$ifname\_dissect\_enum\_".StripPrefixes($name);
 
-	return if (defined($conformance->{noemit}->{$dissectorname}));
+	return if (defined($conformance->{noemit}->{StripPrefixes($name)}));
 
     	foreach (@{$e->{ELEMENTS}}) {
 		if (/([^=]*)=(.*)/) {
@@ -319,7 +319,8 @@ sub Element($$$)
 
 	my $hf = register_hf_field("hf_$ifname\_$pn\_$e->{NAME}", field2name($e->{NAME}), "$ifname.$pn.$e->{NAME}", type2ft($e->{TYPE}), "BASE_HEX", "NULL", 0, "");
 
-	if (defined($conformance->{noemit}->{$dissectorname})) {
+	my $eltname = StripPrefixes($pn) . ".$e->{NAME}";
+	if (defined($conformance->{noemit}->{$eltname})) {
 		return $call_code;
 	}
 
@@ -404,7 +405,7 @@ sub Struct($$$)
 	my ($e,$name,$ifname) = @_;
 	my $dissectorname = "$ifname\_dissect\_struct\_".StripPrefixes($name);
 
-	return if (defined($conformance->{noemit}->{$dissectorname}));
+	return if (defined($conformance->{noemit}->{StripPrefixes($name)}));
 
 	register_ett("ett_$ifname\_$name");
 
@@ -451,7 +452,8 @@ sub Union($$$)
 	my ($e,$name,$ifname) = @_;
 
 	my $dissectorname = "$ifname\_dissect_".StripPrefixes($name);
-	return if (defined($conformance->{noemit}->{$dissectorname}));
+
+	return if (defined($conformance->{noemit}->{StripPrefixes($name)}));
 	
 	register_ett("ett_$ifname\_$name");
 
