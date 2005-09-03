@@ -38,7 +38,7 @@ static int ldb_free_hive (void *_hive)
 	return 0;
 }
 
-static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx, struct ldb_message *msg, char **name, uint32_t *type, void **data, int *len)
+static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx, struct ldb_message *msg, char **name, uint32_t *type, DATA_BLOB *data)
 {
 	const struct ldb_val *val;
 	*name = talloc_strdup(mem_ctx, ldb_msg_find_string(msg, "value", NULL));
@@ -49,23 +49,22 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx, struct ldb_message *msg, c
 	{
 	case REG_SZ:
 	case REG_EXPAND_SZ:
-		*len = convert_string_talloc(mem_ctx, CH_UTF8, CH_UTF16, val->data, val->length, data);
+		data->length = convert_string_talloc(mem_ctx, CH_UTF8, CH_UTF16, val->data, val->length, (void **)&data->data);
 		break;
 
-	case REG_DWORD:
-		*len = 4;
-		*data = talloc(mem_ctx, uint32_t);
-		SIVAL(*data, 0, strtol(val->data, NULL, 0));
+	case REG_DWORD: {
+		uint32_t tmp = strtoul((char *)val->data, NULL, 0);
+		*data = data_blob_talloc(mem_ctx, &tmp, 4);
+		}
 		break;
 
 	default:
-		*data = talloc_memdup(mem_ctx, val->data, val->length);
-		*len = val->length;
+		*data = data_blob_talloc(mem_ctx, val->data, val->length);
 		break;
 	}
 }
 
-static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx, TALLOC_CTX *mem_ctx, const char *name, uint32_t type, void *data, int len)
+static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx, TALLOC_CTX *mem_ctx, const char *name, uint32_t type, DATA_BLOB data)
 {
 	struct ldb_val val;
 	struct ldb_message *msg = talloc_zero(mem_ctx, struct ldb_message);
@@ -76,16 +75,15 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx, TALLOC_CT
 	switch (type) {
 	case REG_SZ:
 	case REG_EXPAND_SZ:
-		val.length = convert_string_talloc(mem_ctx, CH_UTF16, CH_UTF8, data, len, &val.data);
+		val.length = convert_string_talloc(mem_ctx, CH_UTF16, CH_UTF8, (void *)data.data, data.length, (void **)&val.data);
 		ldb_msg_add_value(ctx, msg, "data", &val);
 		break;
+
 	case REG_DWORD:
-		ldb_msg_add_string(ctx, msg, "data", talloc_asprintf(mem_ctx, "0x%x", IVAL(data, 0)));
+		ldb_msg_add_string(ctx, msg, "data", talloc_asprintf(mem_ctx, "0x%x", IVAL(data.data, 0)));
 		break;
 	default:
-		val.length = len;
-		val.data = data;
-		ldb_msg_add_value(ctx, msg, "data", &val);
+		ldb_msg_add_value(ctx, msg, "data", &data);
 	}
 
 
@@ -177,7 +175,7 @@ static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, 
 	
 	*subkey = talloc(mem_ctx, struct registry_key);
 	talloc_set_destructor(*subkey, reg_close_ldb_key);
-	(*subkey)->name = talloc_strdup(mem_ctx, el->values[0].data);
+	(*subkey)->name = talloc_strdup(mem_ctx, (char *)el->values[0].data);
 	(*subkey)->backend_data = newkd = talloc_zero(*subkey, struct ldb_key_data);
 	(*subkey)->last_mod = 0; /* TODO: we need to add this to the
 				    ldb backend properly */
@@ -205,7 +203,7 @@ static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, i
 
 	*value = talloc(mem_ctx, struct registry_value);
 
-	reg_ldb_unpack_value(mem_ctx, kd->values[idx], &(*value)->name, &(*value)->data_type, &(*value)->data_blk, &(*value)->data_len);
+	reg_ldb_unpack_value(mem_ctx, kd->values[idx], &(*value)->name, &(*value)->data_type, &(*value)->data);
 
 	return WERR_OK;
 }
@@ -333,7 +331,7 @@ static WERROR ldb_del_value (struct registry_key *key, const char *child)
 	return WERR_OK;
 }
 
-static WERROR ldb_set_value (struct registry_key *parent, const char *name, uint32_t type, void *data, int len)
+static WERROR ldb_set_value (struct registry_key *parent, const char *name, uint32_t type, DATA_BLOB data)
 {
 	struct ldb_context *ctx = parent->hive->backend_data;
 	struct ldb_message *msg;
@@ -341,7 +339,7 @@ static WERROR ldb_set_value (struct registry_key *parent, const char *name, uint
 	int ret;
 	TALLOC_CTX *mem_ctx = talloc_init("ldb_set_value");
 
-	msg = reg_ldb_pack_value(ctx, mem_ctx, name, type, data, len);
+	msg = reg_ldb_pack_value(ctx, mem_ctx, name, type, data);
 
 	msg->dn = ldb_dn_build_child(msg, "value", name, kd->dn);
 

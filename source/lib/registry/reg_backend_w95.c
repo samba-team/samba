@@ -303,7 +303,7 @@ static WERROR w95_get_subkey_by_index (TALLOC_CTX *mem_ctx, struct registry_key 
 	return WERR_NO_MORE_ITEMS;
 }
 
-static WERROR w95_num_values(struct registry_key *k, int *count)
+static WERROR w95_num_values(struct registry_key *k, uint32_t *count)
 {
 	RGKN_KEY *rgkn_key = k->backend_data;
 	RGDB_KEY *rgdb_key = LOCN_RGDB_KEY((CREG *)k->hive->backend_data, rgkn_key->id.rgdb, rgkn_key->id.id);
@@ -335,8 +335,7 @@ static WERROR w95_get_value_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, i
 	*value = talloc(mem_ctx, struct registry_value);
 	(*value)->name = talloc_strndup(mem_ctx, (char *)curval+sizeof(RGDB_VALUE), curval->name_len);
 		
-	(*value)->data_len = curval->data_len;
-	(*value)->data_blk = talloc_memdup(mem_ctx, (char *)curval+sizeof(RGDB_VALUE)+curval->name_len, curval->data_len);
+	(*value)->data = data_blob_talloc(mem_ctx, curval+sizeof(RGDB_VALUE)+curval->name_len, curval->data_len);
 	(*value)->data_type = curval->type;
 	
 	return WERR_OK;
