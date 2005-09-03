@@ -147,15 +147,9 @@ _hx509_lock_find_cert(hx509_lock lock, const hx509_query *q, hx509_cert *c)
 }
 
 int
-hx509_lock_set_prompter(hx509_lock lock, hx509_prompter_fct *prompt)
+hx509_lock_set_prompter(hx509_lock lock, hx509_prompter_fct *prompt, void *data)
 {
     lock->prompt = prompt;
-    return 0;
-}
-
-int
-hx509_lock_set_prompter_data(hx509_lock lock, void *data)
-{
     lock->prompt_data = data;
     return 0;
 }
@@ -167,13 +161,17 @@ hx509_lock_reset_promper(hx509_lock lock)
     lock->prompt_data = NULL;
 }
 
+static int 
+default_prompter(void *data, const hx509_prompt *prompter)
+{
+    return 1;
+}
+
 int
 hx509_lock_prompt(hx509_lock lock, hx509_prompt *prompt)
 {
-    if (lock->prompt == NULL) {
-	strlcpy(prompt->reply->data, "", prompt->reply->length);
-	return 0;
-    }
+    if (lock->prompt == NULL)
+	return HX509_CRYPTO_NO_PROMPTER;
     return (*lock->prompt)(lock->prompt_data, prompt);
 }
 
@@ -184,4 +182,16 @@ hx509_lock_free(hx509_lock lock)
     hx509_lock_reset_passwords(lock);
     memset(lock, 0, sizeof(*lock));
     free(lock);
+}
+
+int
+hx509_lock_command_string(hx509_lock lock, const char *string)
+{
+    if (strncasecmp(string, "PASS:", 5) == 0) {
+	hx509_lock_add_password(lock, string + 5);
+    } else if (strncasecmp(string, "PROMPT:", 8) == 0) {
+	hx509_lock_set_prompter(lock, default_prompter, NULL);
+    } else
+	return HX509_UNKNOWN_LOCK_COMMAND;
+    return 0;
 }
