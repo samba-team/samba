@@ -631,15 +631,6 @@ struct interface
 	struct in_addr nmask;
 };
 
-/* struct used by share mode violation error processing */
-typedef struct {
-	struct process_id pid;
-	uint16 mid;
-	struct timeval time;
-	SMB_DEV_T dev;
-	SMB_INO_T inode;
-} deferred_open_entry;
-
 /* Internal message queue for deferred opens. */
 struct pending_message_list {
 	struct pending_message_list *next, *prev;
@@ -673,14 +664,9 @@ struct share_mode_lock {
 	int num_share_modes;
 	struct share_mode_entry *share_modes;
 	BOOL delete_on_close;
+	BOOL fresh;
 	BOOL modified;
 };
-
-#define SHAREMODE_FN_CAST() \
-	void (*)(struct share_mode_entry *, char*)
-
-#define SHAREMODE_FN(fn) \
-	void (*fn)(struct share_mode_entry *, char*)
 
 #define NT_HASH_LEN 16
 #define LM_HASH_LEN 16
@@ -1480,6 +1466,8 @@ extern int chain_size;
 #define FAKE_LEVEL_II_OPLOCK 16	/* Client requested no_oplock, but we have to
 				 * inform potential level2 holders on
 				 * write. */
+#define DEFERRED_OPEN_ENTRY 32
+#define UNUSED_SHARE_MODE_ENTRY 64
 
 #define EXCLUSIVE_OPLOCK_TYPE(lck) ((lck) & ((unsigned int)EXCLUSIVE_OPLOCK|(unsigned int)BATCH_OPLOCK))
 #define BATCH_OPLOCK_TYPE(lck) ((lck) & (unsigned int)BATCH_OPLOCK)

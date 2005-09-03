@@ -110,27 +110,30 @@ static int close_filestruct(files_struct *fsp)
  If any deferred opens are waiting on this close, notify them.
 ****************************************************************************/
 
-static void notify_deferred_opens(files_struct *fsp)
+static void notify_deferred_opens(struct share_mode_lock *lck)
 {
-	deferred_open_entry *de_array = NULL;
-	int num_de_entries, i;
-
-	num_de_entries = get_deferred_opens(fsp->dev, fsp->inode, &de_array);
-	for (i = 0; i < num_de_entries; i++) {
-		deferred_open_entry *entry = &de_array[i];
-		if (procid_is_me(&entry->pid)) {
-			/*
-			 * We need to notify ourself to retry the open.
-			 * Do this by finding the queued SMB record, moving it
-			 * to the head of the queue and changing the wait time to zero.
-			 */
-			schedule_deferred_open_smb_message(entry->mid);
-		} else {
-			message_send_pid(entry->pid, MSG_SMB_OPEN_RETRY,
-					 entry, sizeof(*entry), True);
-		}
-	}
-	SAFE_FREE(de_array);
+ 	int i;
+ 
+ 	for (i=0; i<lck->num_share_modes; i++) {
+ 		struct share_mode_entry *e = &lck->share_modes[i];
+ 
+ 		if (!is_deferred_open_entry(e)) {
+ 			continue;
+ 		}
+ 
+ 		if (procid_is_me(&e->pid)) {
+ 			/*
+ 			 * We need to notify ourself to retry the open.  Do
+ 			 * this by finding the queued SMB record, moving it to
+ 			 * the head of the queue and changing the wait time to
+ 			 * zero.
+ 			 */
+ 			schedule_deferred_open_smb_message(e->op_mid);
+ 		} else {
+ 			message_send_pid(e->pid, MSG_SMB_OPEN_RETRY,
+ 					 e, sizeof(*e), True);
+ 		}
+ 	}
 }
 
 /****************************************************************************
@@ -190,25 +193,33 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	 * This prevents race conditions with the file being created. JRA.
 	 */
 
-	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode);
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL);
 
 	if (lck == NULL) {
 		DEBUG(0, ("Could not get share mode lock\n"));
 		return EINVAL;
 	}
 
-	share_entry_count = del_share_mode(lck, fsp, &delete_file);
+	del_share_mode(lck, fsp);
+	delete_file = lck->delete_on_close;
 
 	DEBUG(10,("close_normal_file: share_entry_count = %lu for file %s\n",
 		(unsigned long)share_entry_count, fsp->fsp_name ));
 
-	if (share_entry_count != 0) {
-		/* We're not the last ones -- don't delete */
-		delete_file = False;
+	if (delete_file) {
+		int i;
+		/* See if others still have the file open. If this is the
+		 * case, then don't delete */
+		for (i=0; i<lck->num_share_modes; i++) {
+			if (is_valid_share_mode_entry(&lck->share_modes[i])) {
+				delete_file = False;
+				break;
+			}
+		}
 	}
 
 	/* Notify any deferred opens waiting on this close. */
-	notify_deferred_opens(fsp);
+	notify_deferred_opens(lck);
 	reply_to_oplock_break_requests(fsp);
 
 	/*

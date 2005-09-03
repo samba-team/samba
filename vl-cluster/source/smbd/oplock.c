@@ -180,7 +180,7 @@ BOOL remove_oplock(files_struct *fsp)
 	struct share_mode_lock *lck;
 
 	/* Remove the oplock flag from the sharemode. */
-	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode);
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL);
 	if (lck == NULL) {
 		DEBUG(0,("remove_oplock: failed to lock share entry for "
 			 "file %s\n", fsp->fsp_name ));
@@ -208,7 +208,7 @@ BOOL downgrade_oplock(files_struct *fsp)
 	BOOL ret;
 	struct share_mode_lock *lck;
 
-	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode);
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL);
 	if (lck == NULL) {
 		DEBUG(0,("downgrade_oplock: failed to lock share entry for "
 			 "file %s\n", fsp->fsp_name ));
@@ -584,7 +584,7 @@ static void process_oplock_break_response(int msg_type, struct process_id src,
 static void process_open_retry_message(int msg_type, struct process_id src,
 				       void *buf, size_t len)
 {
-	deferred_open_entry *msg = buf;
+	struct share_mode_entry *msg = buf;
 	
 	if (buf == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
@@ -598,9 +598,9 @@ static void process_open_retry_message(int msg_type, struct process_id src,
 
 	DEBUG(10, ("Got open retry msg from pid %d: %d/%d mid %d\n",
 		   (int)procid_to_pid(&src), (int)msg->dev, (int)msg->inode,
-		   (int)msg->mid));
+		   (int)msg->op_mid));
 
-	schedule_deferred_open_smb_message(msg->mid);
+	schedule_deferred_open_smb_message(msg->op_mid);
 }
 
 /****************************************************************************
@@ -625,7 +625,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 	if (!LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
 		return;
 
-	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode);
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL);
 	if (lck == NULL) {
 		DEBUG(0,("release_level_2_oplocks_on_change: failed to lock "
 			 "share mode entry for file %s.\n", fsp->fsp_name ));
