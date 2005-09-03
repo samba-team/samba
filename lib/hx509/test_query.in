@@ -36,16 +36,16 @@
 
 srcdir="@srcdir@"
 
-check "try printing"
+echo "try printing"
 ./hxtool print \
 	PKCS12:$srcdir/data/test.p12 || exit 1
 
-check "make sure entry is found (friendlyname)"
+echo "make sure entry is found (friendlyname)"
 ./hxtool query \
 	--friendlyname=friendlyname-test  \
 	PKCS12:$srcdir/data/test.p12 || exit 1
 
-check "make sure entry is not found  (friendlyname)"
+echo "make sure entry is not found  (friendlyname)"
 ./hxtool query \
 	--friendlyname=friendlyname-test-not  \
 	PKCS12:$srcdir/data/test.p12 && exit 1
@@ -55,18 +55,18 @@ echo "check for ca cert (friendlyname)"
 	--friendlyname=ca  \
 	PKCS12:$srcdir/data/test.p12 || exit 1
 
-check "make sure entry is not found (friendlyname)"
+echo "make sure entry is not found (friendlyname)"
 ./hxtool query \
 	--friendlyname=friendlyname-test \
 	PKCS12:$srcdir/data/sub-cert.p12 && exit 1
 
-check "make sure entry is found (friendlyname|private key)"
+echo "make sure entry is found (friendlyname|private key)"
 ./hxtool query \
 	--friendlyname=friendlyname-test  \
 	--private-key \
 	PKCS12:$srcdir/data/test.p12 || exit 1
 
-check "make sure entry is not found (friendlyname|private key)"
+echo "make sure entry is not found (friendlyname|private key)"
 ./hxtool query \
 	--friendlyname=ca  \
 	--private-key \
