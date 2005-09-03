@@ -40,7 +40,7 @@ extern BOOL global_machine_password_needs_changing;
  *
  **/
 
-static NTSTATUS connect_to_domain_password_server(struct cli_state **cli, 
+static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 						const char *domain,
 						const char *dc_name,
 						struct in_addr dc_ip, 
@@ -104,11 +104,21 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	if(!netlogon_pipe) {
 		DEBUG(0,("connect_to_domain_password_server: unable to open the domain client session to \
 machine %s. Error was : %s.\n", dc_name, cli_errstr(*cli)));
-		cli_ulogoff(*cli);
 		cli_shutdown(*cli);
 		release_server_mutex();
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}
+
+#if 0
+	/* JRA TESTME - do we need to do this to get the netlogon request to succeed ? */
+	ntresult = rpccli_netlogon_setup_creds(cmd_entry->rpc_pipe,
+						dc_name,
+						lp_workgroup(),
+						global_myname(),
+						trust_password,
+						sec_channel_type,
+						&neg_flags);
+#endif
 
 	/* We exit here with the mutex *locked*. JRA */
 
@@ -124,11 +134,12 @@ machine %s. Error was : %s.\n", dc_name, cli_errstr(*cli)));
 ************************************************************************/
 
 static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
-				       const auth_usersupplied_info *user_info, 
-				       const char *domain,
-				       uchar chal[8],
-				       auth_serversupplied_info **server_info, 
-				       const char *dc_name, struct in_addr dc_ip)
+					const auth_usersupplied_info *user_info, 
+					const char *domain,
+					uchar chal[8],
+					auth_serversupplied_info **server_info, 
+					const char *dc_name,
+					struct in_addr dc_ip)
 
 {
 	NET_USER_INFO_3 info3;
@@ -149,8 +160,12 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	/* rety loop for robustness */
 	
 	for (i = 0; !NT_STATUS_IS_OK(nt_status) && retry && (i < 3); i++) {
-		nt_status = connect_to_domain_password_server(&cli, domain, dc_name,
-								dc_ip, &netlogon_pipe, &retry);
+		nt_status = connect_to_domain_password_server(&cli,
+							domain,
+							dc_name,
+							dc_ip,
+							&netlogon_pipe,
+							&retry);
 	}
 
 	if ( !NT_STATUS_IS_OK(nt_status) ) {
@@ -168,13 +183,19 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
          * in the info3 structure.  
          */
 
-	nt_status = cli_netlogon_sam_network_logon(cli, mem_ctx,
-		NULL, user_info->smb_name.str, user_info->domain.str, 
-		user_info->wksta_name.str, chal, user_info->lm_resp, 
-		user_info->nt_resp, &info3);
-        
-	/* let go as soon as possible so we avoid any potential deadlocks
-	   with winbind lookup up users or groups */
+	nt_status = rpccli_netlogon_sam_network_logon(netlogon_pipe,
+					mem_ctx,
+					dc_name,                   /* server name */
+					user_info->smb_name.str,   /* user name logging on. */
+					user_info->domain.str,     /* domain name */
+					user_info->wksta_name.str, /* workstation name */
+					chal,                      /* 8 byte challenge. */
+					user_info->lm_resp,        /* lanman 24 byte response */
+					user_info->nt_resp,        /* nt 24 byte response */
+					&info3);                   /* info3 out */
+
+	/* Let go as soon as possible so we avoid any potential deadlocks
+	   with winbind lookup up users or groups. */
 	   
 	release_server_mutex();
 
@@ -182,7 +203,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 		DEBUG(0,("domain_client_validate: unable to validate password "
                          "for user %s in domain %s to Domain controller %s. "
                          "Error was %s.\n", user_info->smb_name.str,
-                         user_info->domain.str, cli->srv_name_slash, 
+                         user_info->domain.str, dc_name, 
                          nt_errstr(nt_status)));
 
 		/* map to something more useful */
@@ -190,32 +211,17 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 			nt_status = NT_STATUS_NO_LOGON_SERVERS;
 		}
 	} else {
-		nt_status = make_server_info_info3(mem_ctx, user_info->internal_username.str, 
-						   user_info->smb_name.str, domain, server_info, &info3);
+		nt_status = make_server_info_info3(mem_ctx,
+						user_info->internal_username.str, 
+						user_info->smb_name.str,
+						domain, server_info,
+						&info3);
 	}
-
-#if 0
-	/* 
-	 * We don't actually need to do this - plus it fails currently with
-	 * NT_STATUS_INVALID_INFO_CLASS - we need to know *exactly* what to
-	 * send here. JRA.
-	 */
-
-	if (NT_STATUS_IS_OK(status)) {
-		if(cli_nt_logoff(&cli, &ctr) == False) {
-			DEBUG(0,("domain_client_validate: unable to log off user %s in domain \
-%s to Domain controller %s. Error was %s.\n", user, domain, dc_name, cli_errstr(&cli)));        
-			nt_status = NT_STATUS_LOGON_FAILURE;
-		}
-	}
-#endif /* 0 */
 
 	/* Note - once the cli stream is shutdown the mem_ctx used
 	   to allocate the other_sids and gids structures has been deleted - so
 	   these pointers are no longer valid..... */
 
-	cli_nt_session_close(cli);
-	cli_ulogoff(cli);
 	cli_shutdown(cli);
 	return nt_status;
 }
@@ -265,8 +271,13 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}
 	
-	nt_status = domain_client_validate(mem_ctx, user_info, domain,
-		(uchar *)auth_context->challenge.data, server_info, dc_name, dc_ip);
+	nt_status = domain_client_validate(mem_ctx,
+					user_info,
+					domain,
+					(uchar *)auth_context->challenge.data,
+					server_info,
+					dc_name,
+					dc_ip);
 		
 	return nt_status;
 }
@@ -359,9 +370,13 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}
 	
-	nt_status = domain_client_validate(mem_ctx, user_info, user_info->domain.str,
-		(uchar *)auth_context->challenge.data, server_info, dc_name, dc_ip,
-		lp_workgroup(), SEC_CHAN_DOMAIN, trust_md4_password, last_change_time);
+	nt_status = domain_client_validate(mem_ctx,
+					user_info,
+					user_info->domain.str,
+					(uchar *)auth_context->challenge.data,
+					server_info,
+					dc_name,
+					dc_ip);
 
 	return nt_status;
 }

@@ -623,7 +623,7 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 
 NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
-					   const char *server_name_slash,
+					   const char *server,
 					   const char *username,
 					   const char *domain,
 					   const char *workstation, 
@@ -638,7 +638,8 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	NET_ID_INFO_CTR ctr;
 	int validation_level = 3;
-	char *workstation_name_slash;
+	const char *workstation_name_slash;
+	const char *server_name_slash;
 	static uint8 zeros[16];
 	DOM_CRED clnt_creds;
 	DOM_CRED ret_creds;
@@ -650,8 +651,19 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 
 	creds_client_step(cli->dc, &clnt_creds);
 
-	workstation_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", workstation);
-	if (!workstation_name_slash) {
+	if (server[0] != '\\' && server[1] != '\\') {
+		server_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", server);
+	} else {
+		server_name_slash = server;
+	}
+
+	if (workstation[0] != '\\' && workstation[1] != '\\') {
+		workstation_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", workstation);
+	} else {
+		workstation_name_slash = workstation;
+	}
+
+	if (!workstation_name_slash || !server_name_slash) {
 		DEBUG(0, ("talloc_asprintf failed!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
