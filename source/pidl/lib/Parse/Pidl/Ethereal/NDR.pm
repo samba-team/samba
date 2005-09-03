@@ -707,6 +707,8 @@ sub Parse($$$$)
 	my($ndr,$idl_file,$h_filename,$cnf_file) = @_;
 	Initialize($cnf_file);
 
+	return (undef, undef) if defined($conformance->{noemit_dissector});
+
 	$tabs = "";
 
 	%res = (code=>"",def=>"",hdr=>"");
