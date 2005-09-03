@@ -243,7 +243,7 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 	krb5_error_code ret;
 	const char *domain_filter = NULL;
 	const char *result_filter = NULL;
-	struct ldb_dn *name_dn;
+	struct ldb_dn *name_dn = NULL;
 
 	struct smb_krb5_context *smb_krb5_context;
 	ret = smb_krb5_init_context(mem_ctx, &smb_krb5_context);
@@ -554,8 +554,7 @@ static WERROR DsCrackNameOneFilter(struct drsuapi_bind_state *b_state, TALLOC_CT
 	}
 	case DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT: {
 		const struct dom_sid *sid = samdb_result_dom_sid(mem_ctx, result_res[0], "objectSid");
-		const char *_dom;
-		const char *_acc = "";
+		const char *_acc = "", *_dom = "";
 		
 		if ((sid->num_auths < 4) || (sid->num_auths > 5)) {
 			info1->status = DRSUAPI_DS_NAME_STATUS_NO_MAPPING;
