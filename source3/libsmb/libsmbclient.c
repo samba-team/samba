@@ -835,26 +835,29 @@ SMBCSRV *smbc_attr_server(SMBCCTX *context,
                         return NULL;
                 }
 
-                if (!cli_nt_session_open(ipc_cli, PI_LSARPC)) {
-                        DEBUG(1, ("cli_nt_session_open fail!\n"));
-                        errno = ENOTSUP;
-                        cli_shutdown(ipc_cli);
-                        return NULL;
-                }
+                if(pol) {
 
-                /* Some systems don't support SEC_RIGHTS_MAXIMUM_ALLOWED,
-                   but NT sends 0x2000000 so we might as well do it too. */
-        
-                nt_status = cli_lsa_open_policy(ipc_cli,
-                                                ipc_cli->mem_ctx,
-                                                True, 
-                                                GENERIC_EXECUTE_ACCESS,
-                                                pol);
-        
-                if (!NT_STATUS_IS_OK(nt_status)) {
-                        errno = smbc_errno(context, ipc_cli);
-                        cli_shutdown(ipc_cli);
-                        return NULL;
+                       if (!cli_nt_session_open(ipc_cli, PI_LSARPC)) {
+                         DEBUG(1, ("cli_nt_session_open fail!\n"));
+                           errno = ENOTSUP;
+                         cli_shutdown(ipc_cli);
+                         return NULL;
+                      }
+   
+                        /* Some systems don't support SEC_RIGHTS_MAXIMUM_ALLOWED,
+                         but NT sends 0x2000000 so we might as well do it too. */
+
+                      nt_status = cli_lsa_open_policy(ipc_cli,
+                            ipc_cli->mem_ctx,
+                            True, 
+                            GENERIC_EXECUTE_ACCESS,
+                            pol);
+
+                        if (!NT_STATUS_IS_OK(nt_status)) {
+                         errno = smbc_errno(context, ipc_cli);
+                         cli_shutdown(ipc_cli);
+                         return NULL;
+                      }
                 }
 
                 ipc_srv = SMB_MALLOC_P(SMBCSRV);
