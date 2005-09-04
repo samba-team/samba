@@ -2788,7 +2788,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 
 			delete_pending =
 				get_delete_on_close_flag(sbuf.st_dev,
-							 sbuf.st_ino);
+							 sbuf.st_ino,
+							 fname);
 		} else {
 			/*
 			 * Original code - this is an open file.
@@ -2803,7 +2804,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			pos = fsp->fh->position_information;
 			delete_pending = 
 				get_delete_on_close_flag(sbuf.st_dev,
-							 sbuf.st_ino);
+							 sbuf.st_ino,
+							 fname);
 			access_mask = fsp->access_mask;
 		}
 	} else {
@@ -2846,7 +2848,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		}
 
 		delete_pending = get_delete_on_close_flag(sbuf.st_dev,
-							  sbuf.st_ino);
+							  sbuf.st_ino,
+							  fname);
 		if (delete_pending) {
 			return ERROR_NT(NT_STATUS_DELETE_PENDING);
 		}

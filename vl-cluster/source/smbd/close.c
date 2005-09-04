@@ -147,7 +147,6 @@ static void notify_deferred_opens(struct share_mode_lock *lck)
 
 static int close_normal_file(files_struct *fsp, BOOL normal_close)
 {
-	size_t share_entry_count = 0;
 	BOOL delete_file = False;
 	connection_struct *conn = fsp->conn;
 	int saved_errno = 0;
@@ -193,18 +192,18 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	 * This prevents race conditions with the file being created. JRA.
 	 */
 
-	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, NULL);
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, fsp->fsp_name);
 
 	if (lck == NULL) {
 		DEBUG(0, ("Could not get share mode lock\n"));
 		return EINVAL;
 	}
 
-	del_share_mode(lck, fsp);
-	delete_file = lck->delete_on_close;
+	if (!del_share_mode(lck, fsp)) {
+		DEBUG(0, ("Could not delete share entry\n"));
+	}
 
-	DEBUG(10,("close_normal_file: share_entry_count = %lu for file %s\n",
-		(unsigned long)share_entry_count, fsp->fsp_name ));
+	delete_file = lck->delete_on_close;
 
 	if (delete_file) {
 		int i;
@@ -306,7 +305,7 @@ static int close_directory(files_struct *fsp, BOOL normal_close)
 	 */
 
 	if (normal_close &&
-	    get_delete_on_close_flag(fsp->dev, fsp->inode)) {
+	    get_delete_on_close_flag(fsp->dev, fsp->inode, fsp->fsp_name)) {
 		BOOL ok = rmdir_internals(fsp->conn, fsp->fsp_name);
 		DEBUG(5,("close_directory: %s. Delete on close was set - deleting directory %s.\n",
 			fsp->fsp_name, ok ? "succeeded" : "failed" ));

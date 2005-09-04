@@ -666,6 +666,7 @@ struct share_mode_lock {
 	BOOL delete_on_close;
 	BOOL fresh;
 	BOOL modified;
+	void *private_data;
 };
 
 #define NT_HASH_LEN 16
