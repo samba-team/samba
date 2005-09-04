@@ -171,6 +171,11 @@ command = {
 		argument = "password"
 		help = "password, prompter, or environment"
 	}
+	option = {
+		long = "content"
+		type = "flag"
+		help = "print the content of the certificates"
+	}
 	min_args="1"
 	argument="certificate ..."
 	help = "Print certificates"
