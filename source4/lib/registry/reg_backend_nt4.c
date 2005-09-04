@@ -31,6 +31,7 @@
 struct regf_data {
 	DATA_BLOB data;
 	struct hbin_block **hbins;
+	struct regf_hdr *header;
 };
 
 static struct hbin_block *hbin_by_offset (const struct regf_data *data, uint32_t offset, uint32_t *rel_offset)
@@ -67,7 +68,7 @@ static uint32_t regf_hdr_checksum(const uint8_t *buffer)
 	return checksum;
 }
 
-static DATA_BLOB hbin_get_data(const struct regf_data *data, uint32_t offset)
+static DATA_BLOB hbin_get(const struct regf_data *data, uint32_t offset)
 {
 	DATA_BLOB ret;
 	struct hbin_block *hbin;
@@ -92,6 +93,31 @@ static DATA_BLOB hbin_get_data(const struct regf_data *data, uint32_t offset)
 		(offset - hbin->offset_from_first - 0x20) + 4;
 	
 	return ret;
+}
+
+static BOOL hbin_get_tdr (struct regf_data *regf, uint32_t offset, tdr_pull_fn_t pull_fn, void *p)
+{
+	DATA_BLOB data;
+	struct tdr_pull *pull;
+
+	data = hbin_get(regf, offset);
+	if (!data.data) {
+		DEBUG(1, ("Unable to get data at 0x%04x\n", offset));
+		return False;
+	}
+	
+	pull = talloc_zero(regf, struct tdr_pull);
+	pull->data = data;
+
+	if (NT_STATUS_IS_ERR(pull_fn(pull, p))) {
+		DEBUG(1, ("Error parsing record at 0x%04x using tdr\n", offset));
+		talloc_free(pull);
+		return False;
+	}
+
+	/* FIXME: Free pull ! */
+
+	return True;
 }
 
 /* Allocate some new data */
@@ -197,6 +223,23 @@ static uint32_t hbin_store (struct regf_data *data, DATA_BLOB blob)
 	return ret;
 }
 
+static uint32_t hbin_store_tdr (struct regf_data *data, tdr_push_fn_t push_fn, void *p)
+{
+	struct tdr_push *push = talloc_zero(data, struct tdr_push);
+	uint32_t ret;
+	
+	if (NT_STATUS_IS_ERR(push_fn(push, p))) {
+		DEBUG(0, ("Error during push\n"));
+		return -1;
+	}
+
+	ret = hbin_store(data, push->data);
+
+	talloc_free(push);
+
+	return ret;
+}
+
 
 /* Free existing data */
 static void hbin_free (struct regf_data *data, uint32_t offset)
@@ -278,6 +321,23 @@ static uint32_t hbin_store_resize (struct regf_data *data, uint32_t orig_offset,
 	return hbin_store(data, blob);
 }
 
+static uint32_t hbin_store_tdr_resize (struct regf_data *regf, tdr_push_fn_t push_fn, uint32_t orig_offset, void *p)
+{
+	struct tdr_push *push = talloc_zero(regf, struct tdr_push);
+	uint32_t ret;
+	
+	if (NT_STATUS_IS_ERR(push_fn(push, p))) {
+		DEBUG(0, ("Error during push\n"));
+		return -1;
+	}
+
+	ret = hbin_store_resize(regf, orig_offset, push->data);
+
+	talloc_free(push);
+
+	return ret;
+}
+
 static WERROR regf_num_subkeys (struct registry_key *key, uint32_t *count)
 {
 	struct nk_block *nk = key->backend_data;
@@ -298,24 +358,13 @@ static WERROR regf_num_values (struct registry_key *key, uint32_t *count)
 
 static struct registry_key *regf_get_key (TALLOC_CTX *ctx, struct regf_data *regf, uint32_t offset)
 {
-	DATA_BLOB data = hbin_get_data(regf, offset);
-	struct tdr_pull *pull;
 	struct registry_key *ret;
 	struct nk_block *nk;
 
-	if (data.data == NULL) {
-		DEBUG(0, ("Unable to find HBIN data for offset %d\n", offset));
-		return NULL;
-	}
-
 	ret = talloc_zero(ctx, struct registry_key);
-	pull = talloc_zero(ret, struct tdr_pull);
-	pull->data = data;
 	nk = talloc(ret, struct nk_block);
-
-	if (NT_STATUS_IS_ERR(tdr_pull_nk_block(pull, nk))) {
-		DEBUG(1, ("Error parsing 'nk' record\n"));
-		talloc_free(ret);
+	if (!hbin_get_tdr(regf, offset, (tdr_pull_fn_t)tdr_pull_nk_block, nk)) {
+		DEBUG(0, ("Unable to find HBIN data for offset %d\n", offset));
 		return NULL;
 	}
 
@@ -337,14 +386,14 @@ static WERROR regf_get_value (TALLOC_CTX *ctx, struct registry_key *key, int idx
 {
 	struct nk_block *nk = key->backend_data;
 	struct vk_block *vk;
-	struct tdr_pull *pull;
+	struct regf_data *regf = key->hive->backend_data;
 	uint32_t vk_offset;
 	DATA_BLOB data;
 
 	if (idx >= nk->num_values)
 		return WERR_NO_MORE_ITEMS;
 
-	data = hbin_get_data(key->hive->backend_data, nk->values_offset);
+	data = hbin_get(regf, nk->values_offset);
 	if (!data.data) {
 		DEBUG(0, ("Unable to find value list\n"));
 		return WERR_GENERAL_FAILURE;
@@ -356,12 +405,6 @@ static WERROR regf_get_value (TALLOC_CTX *ctx, struct registry_key *key, int idx
 
 	vk_offset = IVAL(data.data, idx * 4);
 
-	data = hbin_get_data(key->hive->backend_data, vk_offset);
-	if (!data.data) {
-		DEBUG(0, ("Unable to find value\n"));
-		return WERR_GENERAL_FAILURE;
-	}
-
 	*ret = talloc_zero(ctx, struct registry_value);
 	if (!(*ret)) 
 		return WERR_NOMEM;
@@ -370,11 +413,8 @@ static WERROR regf_get_value (TALLOC_CTX *ctx, struct registry_key *key, int idx
 	if (!vk)
 		return WERR_NOMEM;
 	
-	pull = talloc_zero(*ret, struct tdr_pull);
-	pull->data = data;
-
-	if (NT_STATUS_IS_ERR(tdr_pull_vk_block(pull, vk))) {
-		DEBUG(0, ("Error parsing vk block\n"));
+	if (!hbin_get_tdr(regf, vk_offset, (tdr_pull_fn_t)tdr_pull_vk_block, vk)) {
+		DEBUG(0, ("Unable to get VK block at %d\n", vk_offset));
 		return WERR_GENERAL_FAILURE;
 	}
 
@@ -385,7 +425,7 @@ static WERROR regf_get_value (TALLOC_CTX *ctx, struct registry_key *key, int idx
 		(*ret)->data.data = (uint8_t *)&vk->data_offset;
 		(*ret)->data.length = vk->data_length;
 	} else {
-		(*ret)->data = hbin_get_data(key->hive->backend_data, vk->data_offset);
+		(*ret)->data = hbin_get(regf, vk->data_offset);
 	}
 
 	if ((*ret)->data.length < vk->data_length) {
@@ -404,7 +444,7 @@ static WERROR regf_get_subkey (TALLOC_CTX *ctx, struct registry_key *key, int id
 	if (idx >= nk->num_subkeys)
 		return WERR_NO_MORE_ITEMS;
 
-	data = hbin_get_data(key->hive->backend_data, nk->subkeys_offset);
+	data = hbin_get(key->hive->backend_data, nk->subkeys_offset);
 	if (!data.data) {
 		DEBUG(0, ("Unable to find subkey list\n"));
 		return WERR_GENERAL_FAILURE;
@@ -452,27 +492,15 @@ static WERROR regf_get_subkey (TALLOC_CTX *ctx, struct registry_key *key, int id
 static WERROR regf_get_sec_desc(TALLOC_CTX *ctx, struct registry_key *key, struct security_descriptor **sd)
 {
 	struct nk_block *nk = key->backend_data;
-	struct tdr_pull *tdr;
 	struct sk_block sk;
+	struct regf_data *regf = key->hive->backend_data;
 	DATA_BLOB data;
 
-	data = hbin_get_data(key->hive->backend_data, nk->sk_offset);
-	if (!data.data) {
+	if (!hbin_get_tdr(regf, nk->sk_offset, (tdr_pull_fn_t) tdr_pull_sk_block, &sk)) {
 		DEBUG(0, ("Unable to find security descriptor\n"));
 		return WERR_GENERAL_FAILURE;
 	}
-
-	tdr = talloc_zero(ctx, struct tdr_pull);
-	if (!tdr)
-		return WERR_NOMEM;
-
-	tdr->data = data;
-
-	if (NT_STATUS_IS_ERR(tdr_pull_sk_block(tdr, &sk))) {
-		DEBUG(0, ("Error parsing SK block\n"));
-		return WERR_GENERAL_FAILURE;
-	}
-
+		
 	if (strcmp(sk.header, "sk") != 0) {
 		DEBUG(0, ("Expected 'sk', got '%s'\n", sk.header));
 		return WERR_GENERAL_FAILURE;
@@ -489,8 +517,6 @@ static WERROR regf_get_sec_desc(TALLOC_CTX *ctx, struct registry_key *key, struc
 		return WERR_GENERAL_FAILURE;
 	}
 
-	talloc_free(tdr);
-
 	return WERR_OK;
 }
 
@@ -498,8 +524,6 @@ static uint32_t lf_add_entry (struct regf_data *regf, uint32_t list_offset, cons
 {
 	uint32_t ret;
 	struct lf_block lf;
-	struct tdr_pull *pull = NULL;
-	struct tdr_push *push;
 
 	/* Add to subkeys list */
 	if (list_offset == -1) { /* Need to create subkeys list */
@@ -507,38 +531,17 @@ static uint32_t lf_add_entry (struct regf_data *regf, uint32_t list_offset, cons
 		lf.key_count = 0;
 		lf.hr = NULL;
 	} else {
-		DATA_BLOB data;
-		pull = talloc(regf, struct tdr_pull);
-
-		data = hbin_get_data(regf, list_offset);
-		if (!data.data) {
+		if (!hbin_get_tdr(regf, list_offset, (tdr_pull_fn_t)tdr_pull_lf_block, &lf)) {
 			DEBUG(0, ("Can't get subkeys list\n"));
-			talloc_free(pull);
-			return -1;
-		}
-
-		if (NT_STATUS_IS_ERR(tdr_pull_lf_block(pull, &lf))) {
-			DEBUG(0, ("Unable to parse lf list\n"));
-			talloc_free(pull);
 			return -1;
 		}
 	}
 
-	lf.hr = talloc_realloc(pull, lf.hr, struct hash_record, lf.key_count+1);
+	lf.hr = talloc_realloc(regf, lf.hr, struct hash_record, lf.key_count+1);
 	lf.hr[lf.key_count].nk_off = key_offset;
 	lf.hr[lf.key_count].hash = name;
 
-	push = talloc_zero(regf, struct tdr_push);
-
-	if (NT_STATUS_IS_ERR(tdr_push_lf_block(push, &lf))) {
-		DEBUG(0, ("Error storing lf block\n"));
-		return -1;
-	}
-
-	ret = hbin_store_resize (regf, list_offset, push->data);
-
-	talloc_free(push);
-	talloc_free(pull);
+	ret = hbin_store_tdr_resize(regf, (tdr_push_fn_t)tdr_push_lf_block, list_offset, &lf);
 	
 	return ret;
 }
@@ -546,8 +549,6 @@ static uint32_t lf_add_entry (struct regf_data *regf, uint32_t list_offset, cons
 static WERROR regf_add_key (TALLOC_CTX *ctx, struct registry_key *parent, const char *name, uint32_t access_mask, struct security_descriptor *sec_desc, struct registry_key **ret)
 {
 	struct nk_block *parent_nk = parent->backend_data, nk;
-	DATA_BLOB data;
-	struct tdr_push *push;
 	uint32_t offset;
 
 	nk.header = "nk";
@@ -566,29 +567,13 @@ static WERROR regf_add_key (TALLOC_CTX *ctx, struct registry_key *parent, const 
 	nk.clsname_length = 0;
 	nk.key_name = name;
 	
-	push = talloc_zero(ctx, struct tdr_push);
-	if (NT_STATUS_IS_ERR(tdr_push_nk_block(push, &nk))) {
-		DEBUG(0, ("Error storing 'nk' block\n"));
-		return WERR_GENERAL_FAILURE;
-	}
-
-	offset = hbin_store(parent->hive->backend_data, push->data);
+	offset = hbin_store_tdr(parent->hive->backend_data, (tdr_push_fn_t) tdr_push_nk_block, &nk);
 
 	parent_nk->subkeys_offset = lf_add_entry(parent->hive->backend_data, parent_nk->subkeys_offset, name, nk.parent_offset);
 
 	parent_nk->num_subkeys++;
 
-	ZERO_STRUCTP(push);
-
-	if (NT_STATUS_IS_ERR(tdr_push_nk_block(push, parent_nk))) {
-		DEBUG(0, ("Error storing parent 'nk' block\n"));
-		return WERR_GENERAL_FAILURE;
-	}
-
-	data = hbin_get_data(parent->hive->backend_data, nk.parent_offset);
-	memcpy(data.data, push->data.data, push->data.length);
-
-	talloc_free(push);
+	hbin_store_tdr_resize(parent->hive->backend_data, (tdr_push_fn_t) tdr_push_nk_block, nk.parent_offset, parent_nk);
 
 	/* FIXME: Set sec desc ! */
 
@@ -627,6 +612,8 @@ static WERROR nt_open_hive (struct registry_hive *h, struct registry_key **key)
 	if (NT_STATUS_IS_ERR(tdr_pull_regf_hdr(pull, regf_hdr))) {
 		return WERR_GENERAL_FAILURE;
 	}
+
+	regf->header = regf_hdr;
 
 	if (strcmp(regf_hdr->REGF_ID, "regf") != 0) {
 		DEBUG(0, ("Unrecognized NT registry header id: %s, %s\n",
