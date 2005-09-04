@@ -229,8 +229,9 @@ the kerberos libraries
 
  - DCE_STYLE
 
- - gsskrb5_get_initiator_subkey() (return the opposite key to what the
-   lucid context and get_subkey() calls return).
+ - gsskrb5_get_initiator_subkey() (return the exact key that Samba3
+   has always asked for.  gsskrb5_get_subkey() might do what we need
+   anyway)
 
  - gsskrb5_get_authz_data()
 
@@ -281,12 +282,28 @@ still wanted to supply a keytab to the GSSAPI code), a 'wildcard'
 keytab was devised.  MEMORY_WILDCARD: is much like MEMORY:, except it
 only matches on kvno, rather than on the principal name.
 
+Another way of handling this amy be to declare "" as a wildcard name,
+or perhaps allow principal names to be fnmatch() or regex expressions.
+
+Hmm, looking over the code again, I'm really not sure we need this...
+We should be able to just specify the same principal as a desired name
+(GSSAPI) and principal (keytab).
+
 Extra Heimdal functions used
 ----------------------------
 (an attempt to list some of the Heimdal-specific functions I know we use)
 
-krb5_make_principal()
 krb5_free_keyblock_contents()
+
+also a raft of prinicpal manipulation functions:
+
+Prncipal Manipulation
+---------------------
+
+Samba makes extensive use of the principal manipulation functions in
+Heimdal, including the known structure behind krb_principal and
+krb5_realm (a char *).
+
 
 KDC Extensions
 --------------
