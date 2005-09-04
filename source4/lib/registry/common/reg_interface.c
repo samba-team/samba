@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "dlinklist.h"
-#include "registry.h"
+#include "lib/registry/registry.h"
 
 /* List of available backends */
 static struct reg_init_function_entry *backends = NULL;
