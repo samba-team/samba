@@ -478,9 +478,20 @@ static void validate_my_share_entries(int num,
 				      struct share_mode_entry *share_entry)
 {
 	files_struct *fsp;
-	int num_props = 0;
 
 	if (!procid_is_me(&share_entry->pid)) {
+		return;
+	}
+
+	if (is_deferred_open_entry(share_entry) &&
+	    !open_was_deferred(share_entry->op_mid)) {
+		pstring str;
+		DEBUG(0, ("Got a deferred entry without a request: "
+			  "PANIC: %s\n", share_mode_str(num, share_entry)));
+		smb_panic(str);
+	}
+
+	if (!is_valid_share_mode_entry(share_entry)) {
 		return;
 	}
 
@@ -493,11 +504,8 @@ static void validate_my_share_entries(int num,
 			  "share entry with an open file\n");
 	}
 
-	num_props += is_valid_share_mode_entry(share_entry) ? 1 : 0;
-	num_props += is_deferred_open_entry(share_entry) ? 1 : 0;
-	num_props += is_unused_share_mode_entry(share_entry) ? 1 : 0;
-
-	if (num_props != 1) {
+	if (is_deferred_open_entry(share_entry) ||
+	    is_unused_share_mode_entry(share_entry)) {
 		goto panic;
 	}
 

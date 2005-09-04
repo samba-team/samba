@@ -495,6 +495,7 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 	}
 
 	data = (struct locking_data *)result.dptr;
+	ZERO_STRUCTP(data);
 	data->u.s.num_share_mode_entries = lck->num_share_modes;
 	data->u.s.delete_on_close = lck->delete_on_close;
 	memcpy(result.dptr + sizeof(*data), lck->share_modes,
@@ -560,7 +561,9 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	lck->delete_on_close = False;
 	lck->num_share_modes = 0;
+	lck->share_modes = NULL;
 	lck->modified = False;
 
 	data = tdb_fetch(tdb, key);
