@@ -17,9 +17,10 @@ sub deindent() { $tabs = substr($tabs, 1); }
 sub pidl($) { $ret .= $tabs.(shift)."\n"; }
 sub fatal($$) { my ($e,$s) = @_; die("$e->{FILE}:$e->{LINE}: $s\n"); }
 sub static($) { my $p = shift; return("static ") unless ($p); return ""; }
-sub printarg($) { 
+sub typearg($) { 
 	my $t = shift; 
 	return(", const char *name") if ($t eq "print");
+	return(", TALLOC_CTX *mem_ctx") if ($t eq "pull");
 	return("");
 }
 
@@ -41,6 +42,7 @@ sub ParserElement($$$)
 	my $switch = "";
 	my $array = "";
 	my $name = "";
+	my $mem_ctx = "mem_ctx";
 
 	fatal($e,"Pointers not supported in TDR") if ($e->{POINTERS} > 0);
 	fatal($e,"size_is() not supported in TDR") if (has_property($e, "size_is"));
@@ -62,10 +64,10 @@ sub ParserElement($$$)
 		
 		my $len = ParseExpr(@{$e->{ARRAY_LEN}}[0], $env);
 		if ($len eq "*") { $len = "-1"; }
+		$name = ", mem_ctx" if ($t eq "pull");
 		pidl "TDR_CHECK(tdr_$t\_charset(tdr$name, &v->$e->{NAME}, $len, sizeof($e->{TYPE}_t), CH_$e->{PROPERTIES}->{charset}));";
 		return;
 	}
-
 
 	if (has_property($e, "switch_is")) {
 		$switch = ", " . ParseExpr($e->{PROPERTIES}->{switch_is}, $env);
@@ -75,12 +77,17 @@ sub ParserElement($$$)
 		my $len = ParseExpr($e->{ARRAY_LEN}[0], $env);
 
 		if ($t eq "pull" and not is_constant($len)) {
-			pidl "TDR_ALLOC(tdr, v->$e->{NAME}, $len);"
+			pidl "TDR_ALLOC(mem_ctx, v->$e->{NAME}, $len);";
+			$mem_ctx = "v->$e->{NAME}";
 		}
 
 		pidl "for (i = 0; i < $len; i++) {";
 		indent;
 		$array = "[i]";
+	}
+
+	if ($t eq "pull") {
+		$name = ", $mem_ctx";
 	}
 
 	if (has_property($e, "value") && $t eq "push") {
@@ -102,7 +109,7 @@ sub ParserStruct($$$$)
 {
 	my ($e,$n,$t,$p) = @_;
 
-	pidl static($p)."NTSTATUS tdr_$t\_$n (struct tdr_$t *tdr".printarg($t).", struct $n *v)";
+	pidl static($p)."NTSTATUS tdr_$t\_$n (struct tdr_$t *tdr".typearg($t).", struct $n *v)";
 	pidl "{"; indent;
 	pidl "int i;" if (ContainsArray($e));
 
@@ -128,7 +135,7 @@ sub ParserUnion($$$$)
 {
 	my ($e,$n,$t,$p) = @_;
 
-	pidl static($p)."NTSTATUS tdr_$t\_$n(struct tdr_$t *tdr".printarg($t).", int level, union $n *v)";
+	pidl static($p)."NTSTATUS tdr_$t\_$n(struct tdr_$t *tdr".typearg($t).", int level, union $n *v)";
 	pidl "{"; indent;
 	pidl "int i;" if (ContainsArray($e));
 
@@ -169,11 +176,11 @@ sub ParserEnum($$$$)
 	my ($e,$n,$t,$p) = @_;
 	my $bt = ($e->{PROPERTIES}->{base_type} or "uint8");
 	
-	pidl static($p)."NTSTATUS tdr_$t\_$n (struct tdr_$t *tdr".printarg($t).", enum $n *v)";
+	pidl static($p)."NTSTATUS tdr_$t\_$n (struct tdr_$t *tdr".typearg($t).", enum $n *v)";
 	pidl "{";
 	if ($t eq "pull") {
 		pidl "\t$bt\_t r;";
-		pidl "\tTDR_CHECK(tdr_$t\_$bt(tdr, \&r));";
+		pidl "\tTDR_CHECK(tdr_$t\_$bt(tdr, mem_ctx, \&r));";
 		pidl "\t*v = r;";
 	} elsif ($t eq "push") {
 		pidl "\tTDR_CHECK(tdr_$t\_$bt(tdr, ($bt\_t *)v));";
@@ -242,7 +249,7 @@ sub HeaderInterface($$)
 			# FIXME
 		} else {
 			my ($n, $d) = ($e->{NAME}, lc($e->{DATA}->{TYPE}));
-			pidl "NTSTATUS tdr_pull\_$n(struct tdr_pull *tdr$switch, $d $n *v);";
+			pidl "NTSTATUS tdr_pull\_$n(struct tdr_pull *tdr, TALLOC_CTX *ctx$switch, $d $n *v);";
 			pidl "NTSTATUS tdr_print\_$n(struct tdr_print *tdr, const char *name$switch, $d $n *v);";
 			pidl "NTSTATUS tdr_push\_$n(struct tdr_push *tdr$switch, $d $n *v);";
 		}
