@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "registry.h"
+#include "lib/registry/registry.h"
 #include "librpc/gen_ndr/winreg.h"
 
 static const struct {

@@ -376,7 +376,11 @@ static struct registry_key *regf_get_key (TALLOC_CTX *ctx, struct regf_data *reg
 
 	ret->name = talloc_steal(ret, nk->key_name);
 	ret->last_mod = nk->last_change;
-	ret->class_name = NULL; /* FIXME: get somehow using clsname_offset */
+
+	if (nk->clsname_offset != -1) {
+		DATA_BLOB data = hbin_get(regf, nk->clsname_offset);
+		ret->class_name = talloc_strndup(ret, (char*)data.data, nk->clsname_length);
+	}
 	ret->backend_data = nk;
 
 	return ret;
@@ -581,6 +585,30 @@ static WERROR regf_add_key (TALLOC_CTX *ctx, struct registry_key *parent, const 
 	return WERR_OK;
 }
 
+static WERROR regf_set_value (struct registry_key *key, const char *name, uint32_t type, DATA_BLOB data)
+{
+	/* FIXME */
+
+	return WERR_NOT_SUPPORTED;
+}
+
+static WERROR regf_save(struct registry_hive *hive, const char *location)
+{
+	struct regf_data *regf = hive->backend_data;
+	struct tdr_push *push = talloc_zero(regf, struct tdr_push);
+	int i;
+
+	tdr_push_regf_hdr(push, regf->header);
+
+	for (i = 0; regf->hbins[i]; i++) {
+		tdr_push_hbin_block(push, regf->hbins[i]);
+	}
+
+	file_save(location, push->data.data, push->data.length);
+
+	return WERR_OK;
+}
+
 static WERROR nt_open_hive (struct registry_hive *h, struct registry_key **key)
 {
 	struct regf_data *regf;
@@ -676,6 +704,8 @@ static struct hive_operations reg_backend_nt4 = {
 	.get_value_by_index = regf_get_value,
 	.key_get_sec_desc = regf_get_sec_desc,
 	.add_key = regf_add_key,
+	.set_value = regf_set_value,
+	.save_hive = regf_save,
 };
 
 NTSTATUS registry_nt4_init(void)

@@ -80,6 +80,7 @@ struct hive_operations {
 
 	/* Implement this one */
 	WERROR (*open_hive) (struct registry_hive *, struct registry_key **);
+	WERROR (*save_hive) (struct registry_hive *, const char *location);
 
 	/* Or this one */
 	WERROR (*open_key) (TALLOC_CTX *, struct registry_key *, const char *name, struct registry_key **);
