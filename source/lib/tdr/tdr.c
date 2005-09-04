@@ -23,10 +23,11 @@
 
 #include "includes.h"
 #include "system/network.h"
+#include "system/filesys.h"
 
 #define TDR_BASE_MARSHALL_SIZE 1024
 
-#define TDR_PUSH_NEED_BYTES(tdr, n) TDR_CHECK(tdr_push_expand(tdr, tdr->offset+(n)))
+#define TDR_PUSH_NEED_BYTES(tdr, n) TDR_CHECK(tdr_push_expand(tdr, tdr->data.length+(n)))
 
 #define TDR_PULL_NEED_BYTES(tdr, n) do { \
 	if ((n) > tdr->data.length || tdr->offset + (n) > tdr->data.length) { \
@@ -74,8 +75,8 @@ NTSTATUS tdr_pull_uint8(struct tdr_pull *tdr, uint8_t *v)
 NTSTATUS tdr_push_uint8(struct tdr_push *tdr, const uint8_t *v)
 {
 	TDR_PUSH_NEED_BYTES(tdr, 1);
-	TDR_SCVAL(tdr, tdr->offset, *v);
-	tdr->offset += 1;
+	TDR_SCVAL(tdr, tdr->data.length, *v);
+	tdr->data.length += 1;
 	return NT_STATUS_OK;
 }
 
@@ -96,8 +97,8 @@ NTSTATUS tdr_pull_uint16(struct tdr_pull *tdr, uint16_t *v)
 NTSTATUS tdr_push_uint16(struct tdr_push *tdr, const uint16_t *v)
 {
 	TDR_PUSH_NEED_BYTES(tdr, 2);
-	TDR_SSVAL(tdr, tdr->offset, *v);
-	tdr->offset += 2;
+	TDR_SSVAL(tdr, tdr->data.length, *v);
+	tdr->data.length += 2;
 	return NT_STATUS_OK;
 }
 
@@ -118,8 +119,8 @@ NTSTATUS tdr_pull_uint32(struct tdr_pull *tdr, uint32_t *v)
 NTSTATUS tdr_push_uint32(struct tdr_push *tdr, const uint32_t *v)
 {
 	TDR_PUSH_NEED_BYTES(tdr, 4);
-	TDR_SIVAL(tdr, tdr->offset, *v);
-	tdr->offset += 4;
+	TDR_SIVAL(tdr, tdr->data.length, *v);
+	tdr->data.length += 4;
 	return NT_STATUS_OK;
 }
 
@@ -172,7 +173,7 @@ NTSTATUS tdr_push_charset(struct tdr_push *tdr, const char **v, uint32_t length,
 	required = el_size * length;
 	TDR_PUSH_NEED_BYTES(tdr, required);
 
-	ret = convert_string(CH_UNIX, chset, *v, strlen(*v), tdr->data.data+tdr->offset, required);
+	ret = convert_string(CH_UNIX, chset, *v, strlen(*v), tdr->data.data+tdr->data.length, required);
 
 	if (ret == -1) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -180,10 +181,10 @@ NTSTATUS tdr_push_charset(struct tdr_push *tdr, const char **v, uint32_t length,
 
 	/* Make sure the remaining part of the string is filled with zeroes */
 	if (ret < required) {
-		memset(tdr->data.data+tdr->offset+ret, 0, required-ret);
+		memset(tdr->data.data+tdr->data.length+ret, 0, required-ret);
 	}
 	
-	tdr->offset += required;
+	tdr->data.length += required;
 						 
 	return NT_STATUS_OK;
 }
@@ -245,9 +246,9 @@ NTSTATUS tdr_pull_hyper(struct tdr_pull *tdr, uint64_t *v)
 NTSTATUS tdr_push_hyper(struct tdr_push *tdr, uint64_t *v)
 {
 	TDR_PUSH_NEED_BYTES(tdr, 8);
-	TDR_SIVAL(tdr, tdr->offset, ((*v) & 0xFFFFFFFF));
-	TDR_SIVAL(tdr, tdr->offset+4, ((*v)>>32));
-	tdr->offset += 8;
+	TDR_SIVAL(tdr, tdr->data.length, ((*v) & 0xFFFFFFFF));
+	TDR_SIVAL(tdr, tdr->data.length+4, ((*v)>>32));
+	tdr->data.length += 8;
 	return NT_STATUS_OK;
 }
 
@@ -318,7 +319,7 @@ NTSTATUS tdr_print_DATA_BLOB(struct tdr_print *tdr, const char *name, DATA_BLOB 
 	return NT_STATUS_OK;
 }
 
-#define TDR_ALIGN(tdr,n) (((tdr)->offset & ((n)-1)) == 0?0:((n)-((tdr)->offset&((n)-1))))
+#define TDR_ALIGN(l,n) (((l) & ((n)-1)) == 0?0:((n)-((l)&((n)-1))))
 
 /*
   push a DATA_BLOB onto the wire. 
@@ -326,16 +327,16 @@ NTSTATUS tdr_print_DATA_BLOB(struct tdr_print *tdr, const char *name, DATA_BLOB 
 NTSTATUS tdr_push_DATA_BLOB(struct tdr_push *tdr, DATA_BLOB *blob)
 {
 	if (tdr->flags & TDR_ALIGN2) {
-		blob->length = TDR_ALIGN(tdr, 2);
+		blob->length = TDR_ALIGN(tdr->data.length, 2);
 	} else if (tdr->flags & TDR_ALIGN4) {
-		blob->length = TDR_ALIGN(tdr, 4);
+		blob->length = TDR_ALIGN(tdr->data.length, 4);
 	} else if (tdr->flags & TDR_ALIGN8) {
-		blob->length = TDR_ALIGN(tdr, 8);
+		blob->length = TDR_ALIGN(tdr->data.length, 8);
 	}
 
 	TDR_PUSH_NEED_BYTES(tdr, blob->length);
 	
-	memcpy(tdr->data.data+tdr->offset, blob->data, blob->length);
+	memcpy(tdr->data.data+tdr->data.length, blob->data, blob->length);
 	return NT_STATUS_OK;
 }
 
@@ -347,11 +348,11 @@ NTSTATUS tdr_pull_DATA_BLOB(struct tdr_pull *tdr, DATA_BLOB *blob)
 	uint32_t length;
 
 	if (tdr->flags & TDR_ALIGN2) {
-		length = TDR_ALIGN(tdr, 2);
+		length = TDR_ALIGN(tdr->offset, 2);
 	} else if (tdr->flags & TDR_ALIGN4) {
-		length = TDR_ALIGN(tdr, 4);
+		length = TDR_ALIGN(tdr->offset, 4);
 	} else if (tdr->flags & TDR_ALIGN8) {
-		length = TDR_ALIGN(tdr, 8);
+		length = TDR_ALIGN(tdr->offset, 8);
 	} else if (tdr->flags & TDR_REMAINING) {
 		length = tdr->data.length - tdr->offset;
 	} else {
@@ -366,5 +367,28 @@ NTSTATUS tdr_pull_DATA_BLOB(struct tdr_pull *tdr, DATA_BLOB *blob)
 
 	*blob = data_blob_talloc(tdr, tdr->data.data+tdr->offset, length);
 	tdr->offset += length;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS tdr_push_to_fd(int fd, tdr_push_fn_t push_fn, const void *p)
+{
+	struct tdr_push *push = talloc_zero(NULL, struct tdr_push);
+
+	if (push == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	if (NT_STATUS_IS_ERR(push_fn(push, p))) {
+		DEBUG(1, ("Error pushing data\n"));
+		talloc_free(push);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (write(fd, push->data.data, push->data.length) < push->data.length) {
+		DEBUG(1, ("Error writing all data\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	talloc_free(push);
+
 	return NT_STATUS_OK;
 }
