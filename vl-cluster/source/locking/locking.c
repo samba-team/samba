@@ -403,12 +403,14 @@ char *share_mode_str(int num, struct share_mode_entry *e)
 static void print_share_mode_table(struct locking_data *data)
 {
 	int num_share_modes = data->u.s.num_share_mode_entries;
-	struct share_mode_entry *shares = (struct share_mode_entry *)(data + 1);
+	struct share_mode_entry *shares =
+		(struct share_mode_entry *)(data + 1);
 	int i;
 
 	for (i = 0; i < num_share_modes; i++) {
 		struct share_mode_entry *entry_p = &shares[i];
-		DEBUG(10,("print_share_mode_table: %s\n", share_mode_str(i, entry_p)));
+		DEBUG(10,("print_share_mode_table: %s\n",
+			  share_mode_str(i, entry_p)));
 	}
 }
 
@@ -432,7 +434,7 @@ static void parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 		return;
 	}
 
-	lck->share_modes = talloc_memdup(lck, dbuf.dptr + sizeof(*data),	
+	lck->share_modes = talloc_memdup(lck, dbuf.dptr + sizeof(*data),
 					 lck->num_share_modes *
 					 sizeof(struct share_mode_entry));
 
@@ -500,8 +502,10 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 	data->u.s.delete_on_close = lck->delete_on_close;
 	memcpy(result.dptr + sizeof(*data), lck->share_modes,
 	       sizeof(struct share_mode_entry)*lck->num_share_modes);
-	offset = sizeof(*data) + sizeof(struct share_mode_entry)*lck->num_share_modes;
-	safe_strcpy(result.dptr + offset, lck->filename, result.dsize - offset - 1);
+	offset = sizeof(*data) +
+		sizeof(struct share_mode_entry)*lck->num_share_modes;
+	safe_strcpy(result.dptr + offset, lck->filename,
+		    result.dsize - offset - 1);
 	print_share_mode_table(data);
 	return result;
 }
@@ -618,7 +622,8 @@ BOOL is_unused_share_mode_entry(const struct share_mode_entry *e)
  Fill a share mode entry.
 ********************************************************************/
 
-static void fill_share_mode_entry(struct share_mode_entry *e, files_struct *fsp,
+static void fill_share_mode_entry(struct share_mode_entry *e,
+				  files_struct *fsp,
 				  uint16 mid, uint16 op_type)
 {
 	ZERO_STRUCTP(e);
