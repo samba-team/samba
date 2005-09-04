@@ -24,12 +24,17 @@
 #include "lib/registry/tdr_regf.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
+/* TODO:
+ *  - Return error codes that make more sense
+ *  - Locking
+ */
+
 /*
  * Read HBIN blocks into memory
  */
 
 struct regf_data {
-	DATA_BLOB data;
+	int fd;
 	struct hbin_block **hbins;
 	struct regf_hdr *header;
 };
@@ -79,15 +84,19 @@ static DATA_BLOB hbin_get(const struct regf_data *data, uint32_t offset)
 	hbin = hbin_by_offset(data, offset, &rel_offset);
 
 	if (hbin == NULL) {
-		DEBUG(1, ("Can't find HBIN containing 0x%4x\n", offset));
+		DEBUG(1, ("Can't find HBIN containing 0x%04x\n", offset));
 		return ret;
 	}
 
 	ret.length = IVAL(hbin->data, rel_offset);
-	if (ret.length & 0x80000000) {
-		/* absolute value */
-		ret.length = (ret.length ^ 0xffffffff) + 1;
+	if (!(ret.length & 0x80000000)) {
+		DEBUG(0, ("Trying to use dirty block at 0x%04x\n", offset));
+		return ret;
 	}
+
+	/* remove high bit */
+	ret.length = (ret.length ^ 0xffffffff) + 1;
+
 	ret.length -= 4; /* 4 bytes for the length... */
 	ret.data = hbin->data + 
 		(offset - hbin->offset_from_first - 0x20) + 4;
@@ -128,6 +137,9 @@ static DATA_BLOB hbin_alloc (struct regf_data *data, uint32_t size, uint32_t *of
 	struct hbin_block *hbin = NULL;
 	int i;
 
+	if (size == 0)
+		return ret;
+
 	size += 4; /* Need to include uint32 for the length */
 
 	/* Allocate as a multiple of 8 */
@@ -136,15 +148,17 @@ static DATA_BLOB hbin_alloc (struct regf_data *data, uint32_t size, uint32_t *of
 	ret.data = NULL;
 	ret.length = 0;
 
-	if (size == 0)
-		return ret;
-
 	for (i = 0; (hbin = data->hbins[i]); i++) {
 		int j;
 		uint32_t my_size;
 		for (j = 0; j < hbin->offset_to_next-0x20; j+= my_size) {
 			my_size = IVAL(hbin->data, j);
 			uint32_t header = IVAL(hbin->data, j + 4);
+
+			if (my_size == 0x0) {
+				DEBUG(0, ("Invalid zero-length block! File is corrupt.\n"));
+				return ret;
+			}
 
 			if (my_size % 8 != 0) {
 				DEBUG(0, ("Encountered non-aligned block!\n"));
@@ -154,16 +168,20 @@ static DATA_BLOB hbin_alloc (struct regf_data *data, uint32_t size, uint32_t *of
 				my_size = (my_size ^ 0xffffffff) + 1;
 			} else if (my_size == size) { /* exact match */
 				rel_offset = j;
+				DEBUG(4, ("Found free block of exact size %d in middle of HBIN\n", size));
 				break;
 			} else if (my_size > size) { /* data will remain */
 				rel_offset = j;
 				SIVAL(hbin->data, rel_offset+size, my_size-size); 
+				DEBUG(4, ("Found free block of size %d (needing %d) in middle of HBIN\n", my_size, size));
 				break;
 			}
 
 			if (header == 0xffffffff &&
 				hbin->offset_to_next-rel_offset >= size)  {
 				rel_offset = j;
+
+				DEBUG(4, ("Found free block of size %d at end of HBIN\n", size));
 				/* Mark new free block size */
 				SIVAL(hbin->data, rel_offset+size,hbin->offset_to_next - rel_offset - size - 0x20);
 				SIVAL(hbin->data, rel_offset+size+0x4, 0xffffffff);
@@ -182,6 +200,7 @@ static DATA_BLOB hbin_alloc (struct regf_data *data, uint32_t size, uint32_t *of
 	/* No space available in previous hbins, 
 	 * allocate new one */
 	if (data->hbins[i] == NULL) { 
+		DEBUG(4, ("No space available in other HBINs for block of size %d, allocating new HBIN\n", size));
 		data->hbins = talloc_realloc(data, data->hbins, struct hbin_block *, i+2);
 		hbin = talloc(data->hbins, struct hbin_block);
 		data->hbins[i] = hbin;
@@ -202,12 +221,16 @@ static DATA_BLOB hbin_alloc (struct regf_data *data, uint32_t size, uint32_t *of
 	}
 
 	/* Set size and mark as used */
-	SIVAL(hbin->data, rel_offset, size & 0x80000000);
+	SIVAL(hbin->data, rel_offset, size | 0x80000000);
 
 	ret.data = hbin->data + rel_offset + 0x4; /* Skip past length */
 	ret.length = size - 0x4;
-	if (offset)
+	if (offset) {
+		uint32_t new_rel_offset;
 		*offset = hbin->offset_from_first + rel_offset + 0x20;
+		SMB_ASSERT(hbin_by_offset(data, *offset, &new_rel_offset) == hbin);
+		SMB_ASSERT(new_rel_offset == rel_offset);
+	}
 
 	return ret;
 }
@@ -246,7 +269,11 @@ static void hbin_free (struct regf_data *data, uint32_t offset)
 {
 	uint32_t size;
 	uint32_t rel_offset;
-	struct hbin_block *hbin = hbin_by_offset(data, offset, &rel_offset);
+	struct hbin_block *hbin;
+
+	SMB_ASSERT (offset > 0);
+	
+	hbin = hbin_by_offset(data, offset, &rel_offset);
 
 	if (hbin == NULL)
 		return;
@@ -255,12 +282,12 @@ static void hbin_free (struct regf_data *data, uint32_t offset)
 	size = IVAL(hbin->data, rel_offset);
 
 	if (!(size & 0x80000000)) {
-		DEBUG(1, ("Trying to free already freed block\n"));
+		DEBUG(1, ("Trying to free already freed block at 0x%04x\n", offset));
 		return;
 	}
 
 	/* Mark block as free */
-	SIVAL(hbin->data, rel_offset, (size ^ 0xffffffff) + 1);
+	SIVAL(hbin->data, rel_offset, size &~ 0x80000000);
 }
 
 /* Store a data blob data was already stored, but hsa changed in size
@@ -270,10 +297,13 @@ static uint32_t hbin_store_resize (struct regf_data *data, uint32_t orig_offset,
 {
 	uint32_t rel_offset;
 	struct hbin_block *hbin = hbin_by_offset(data, orig_offset, &rel_offset);
+	uint32_t my_size;
 	uint32_t orig_size;
 	uint32_t needed_size;
 	uint32_t possible_size;
 	int i;
+
+	SMB_ASSERT(orig_offset > 0);
 
 	if (!hbin)
 		return hbin_store(data, blob);
@@ -281,30 +311,34 @@ static uint32_t hbin_store_resize (struct regf_data *data, uint32_t orig_offset,
 	/* Get original size */
 	orig_size = IVAL(hbin->data, rel_offset);
 
+	needed_size = blob.length + 4; /* Add uint32 containing length */
+	needed_size = (needed_size + 7) & ~7; /* Align */
+
 	/* Fits into current allocated block */
-	if (orig_size - 4 >= blob.length) {
+	if (orig_size >= needed_size) {
 		memcpy(hbin->data + rel_offset + 0x4, blob.data, blob.length);
 		return orig_offset;
 	}
-
-	needed_size = blob.length + 4; /* Add uint32 containing length */
-	needed_size = (needed_size + 7) & ~7; /* Align */
 
 	possible_size = orig_size;
 
 	/* Check if it can be combined with the next few free records */
 	for (i = rel_offset; 
 		 i < hbin->offset_to_next - 0x20; 
-		 i = rel_offset + possible_size) {
+		 i += my_size) {
 		uint32_t header;
 		if (IVAL(hbin->data, i) & 0x80000000) /* Used */
 			break;
 
+		my_size = IVAL(hbin->data, i);
 		header = IVAL(hbin->data, i + 4);
 		if (header == 0xffffffff) {
 			possible_size = hbin->offset_to_next - 0x20 - rel_offset;
+		} else if (my_size == 0x0) {
+			DEBUG(0, ("Invalid zero-length block! File is corrupt.\n"));
+			break;
 		} else {
-			possible_size += IVAL(hbin->data, i);
+			possible_size += my_size;
 		}
 
 		if (possible_size >= blob.length) {
@@ -425,7 +459,7 @@ static WERROR regf_get_value (TALLOC_CTX *ctx, struct registry_key *key, int idx
 	(*ret)->name = talloc_steal(*ret, vk->data_name);
 	(*ret)->data_type = vk->data_type;
 	if (vk->data_length & 0x80000000) { 
-		vk->data_length &= ~0x80000000;
+		vk->data_length &=~0x80000000;
 		(*ret)->data.data = (uint8_t *)&vk->data_offset;
 		(*ret)->data.length = vk->data_length;
 	} else {
@@ -493,6 +527,13 @@ static WERROR regf_get_subkey (TALLOC_CTX *ctx, struct registry_key *key, int id
 	return WERR_OK;
 }
 
+
+static WERROR regf_set_sec_desc (struct registry_key *key, struct security_descriptor *sec_desc)
+{
+	/* FIXME */
+	return WERR_NOT_SUPPORTED;
+}
+
 static WERROR regf_get_sec_desc(TALLOC_CTX *ctx, struct registry_key *key, struct security_descriptor **sd)
 {
 	struct nk_block *nk = key->backend_data;
@@ -543,16 +584,39 @@ static uint32_t lf_add_entry (struct regf_data *regf, uint32_t list_offset, cons
 
 	lf.hr = talloc_realloc(regf, lf.hr, struct hash_record, lf.key_count+1);
 	lf.hr[lf.key_count].nk_off = key_offset;
-	lf.hr[lf.key_count].hash = name;
+	lf.hr[lf.key_count].hash = talloc_strndup(regf, name, 4);
+	lf.key_count++;
 
 	ret = hbin_store_tdr_resize(regf, (tdr_push_fn_t)tdr_push_lf_block, list_offset, &lf);
 	
 	return ret;
 }
 
+static WERROR regf_del_value (struct registry_key *parent, const char *name)
+{
+	/* FIXME */
+	return WERR_NOT_SUPPORTED;
+}
+
+
+static WERROR regf_del_key (struct registry_key *parent, const char *name)
+{
+	struct nk_block *nk = parent->backend_data;
+
+	SMB_ASSERT(nk);
+	
+	if (nk->subkeys_offset == -1) 
+		return WERR_BADFILE;
+
+	/* FIXME */
+
+	return WERR_NOT_SUPPORTED;
+}
+
 static WERROR regf_add_key (TALLOC_CTX *ctx, struct registry_key *parent, const char *name, uint32_t access_mask, struct security_descriptor *sec_desc, struct registry_key **ret)
 {
 	struct nk_block *parent_nk = parent->backend_data, nk;
+	struct regf_data *regf = parent->hive->backend_data;
 	uint32_t offset;
 
 	nk.header = "nk";
@@ -571,17 +635,17 @@ static WERROR regf_add_key (TALLOC_CTX *ctx, struct registry_key *parent, const 
 	nk.clsname_length = 0;
 	nk.key_name = name;
 	
-	offset = hbin_store_tdr(parent->hive->backend_data, (tdr_push_fn_t) tdr_push_nk_block, &nk);
+	offset = hbin_store_tdr(regf, (tdr_push_fn_t) tdr_push_nk_block, &nk);
 
-	parent_nk->subkeys_offset = lf_add_entry(parent->hive->backend_data, parent_nk->subkeys_offset, name, nk.parent_offset);
+	parent_nk->subkeys_offset = lf_add_entry(regf, parent_nk->subkeys_offset, name, nk.parent_offset);
 
 	parent_nk->num_subkeys++;
 
-	hbin_store_tdr_resize(parent->hive->backend_data, (tdr_push_fn_t) tdr_push_nk_block, nk.parent_offset, parent_nk);
+	hbin_store_tdr_resize(regf, (tdr_push_fn_t) tdr_push_nk_block, nk.parent_offset, parent_nk);
+
+	*ret = regf_get_key(ctx, regf, offset);
 
 	/* FIXME: Set sec desc ! */
-
-	*ret = regf_get_key(ctx, parent->hive->backend_data, offset);
 	return WERR_OK;
 }
 
@@ -592,19 +656,20 @@ static WERROR regf_set_value (struct registry_key *key, const char *name, uint32
 	return WERR_NOT_SUPPORTED;
 }
 
-static WERROR regf_save(struct registry_hive *hive, const char *location)
+static WERROR regf_save_hbin(struct registry_hive *hive, struct hbin_block *hbin)
 {
 	struct regf_data *regf = hive->backend_data;
-	struct tdr_push *push = talloc_zero(regf, struct tdr_push);
-	int i;
 
-	tdr_push_regf_hdr(push, regf->header);
-
-	for (i = 0; regf->hbins[i]; i++) {
-		tdr_push_hbin_block(push, regf->hbins[i]);
+	/* go to right offset */
+	if (lseek(regf->fd, SEEK_SET, regf->header->data_offset + hbin->offset_from_first) == -1) {
+		DEBUG(0, ("Error lseeking in regf file\n"));
+		return WERR_GENERAL_FAILURE;
 	}
 
-	file_save(location, push->data.data, push->data.length);
+	if (NT_STATUS_IS_ERR(tdr_push_to_fd(regf->fd, (tdr_push_fn_t)tdr_push_hbin_block, hbin))) {
+		DEBUG(0, ("Error writing HBIN block\n"));	
+		return WERR_GENERAL_FAILURE;
+	}
 
 	return WERR_OK;
 }
@@ -622,9 +687,9 @@ static WERROR nt_open_hive (struct registry_hive *h, struct registry_key **key)
 	DEBUG(5, ("Attempting to load registry file\n"));
 
 	/* Get the header */
+	regf->fd = open(h->location, O_RDWR);
 
-	regf->data.data = (uint8_t *)file_load(h->location, &regf->data.length, regf);
-	if (regf->data.data == NULL) {
+	if (regf->fd == -1) {
 		DEBUG(0,("Could not load file: %s, %s\n", h->location,
 				 strerror(errno)));
 		return WERR_GENERAL_FAILURE;
@@ -634,7 +699,12 @@ static WERROR nt_open_hive (struct registry_hive *h, struct registry_key **key)
 	if (!pull)
 		return WERR_NOMEM;
 
-	pull->data = regf->data;
+	pull->data.data = (uint8_t*)fd_load(regf->fd, &pull->data.length, regf);
+
+	if (pull->data.data == NULL) {
+		DEBUG(0, ("Error reading data\n"));
+		return WERR_GENERAL_FAILURE;
+	}
 
 	regf_hdr = talloc(regf, struct regf_hdr);
 	if (NT_STATUS_IS_ERR(tdr_pull_regf_hdr(pull, regf_hdr))) {
@@ -656,9 +726,9 @@ static WERROR nt_open_hive (struct registry_hive *h, struct registry_key **key)
 	/*
 	 * Validate the header ...
 	 */
-	if (regf_hdr_checksum(regf->data.data) != regf_hdr->chksum) {
+	if (regf_hdr_checksum(pull->data.data) != regf_hdr->chksum) {
 		DEBUG(0, ("Registry file checksum error: %s: %d,%d\n",
-				  h->location, regf_hdr->chksum, regf_hdr_checksum(regf->data.data)));
+				  h->location, regf_hdr->chksum, regf_hdr_checksum(pull->data.data)));
 		return WERR_GENERAL_FAILURE;
 	}
 
@@ -703,9 +773,11 @@ static struct hive_operations reg_backend_nt4 = {
 	.get_subkey_by_index = regf_get_subkey,
 	.get_value_by_index = regf_get_value,
 	.key_get_sec_desc = regf_get_sec_desc,
+	.key_set_sec_desc = regf_set_sec_desc,
 	.add_key = regf_add_key,
 	.set_value = regf_set_value,
-	.save_hive = regf_save,
+	.del_key = regf_del_key,
+	.del_value = regf_del_value,
 };
 
 NTSTATUS registry_nt4_init(void)
