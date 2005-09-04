@@ -409,6 +409,11 @@ WERROR reg_key_add_name(TALLOC_CTX *mem_ctx, struct registry_key *parent, const 
 	error = parent->hive->functions->add_key(mem_ctx, parent, name, access_mask, desc, newkey);
 
 	if(!W_ERROR_IS_OK(error)) return error;
+
+	if (!*newkey) {
+		DEBUG(0, ("Backend returned WERR_OK, but didn't specify key!\n"));
+		return WERR_GENERAL_FAILURE;
+	}
 	
 	(*newkey)->hive = parent->hive;
 	(*newkey)->backend_data = talloc_asprintf(mem_ctx, "%s\\%s", parent->path, name);
