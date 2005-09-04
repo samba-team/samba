@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "dynconfig.h"
-#include "registry.h"
+#include "lib/registry/registry.h"
 #include "lib/cmdline/popt_common.h"
 
 static void writediff(struct registry_key *oldkey, struct registry_key *newkey, FILE *out)

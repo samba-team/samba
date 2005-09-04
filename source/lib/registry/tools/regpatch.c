@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "dynconfig.h"
-#include "registry.h"
+#include "lib/registry/registry.h"
 #include "lib/cmdline/popt_common.h"
 #include "system/filesys.h"
 #include "librpc/gen_ndr/winreg.h"

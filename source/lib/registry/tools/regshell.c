@@ -21,9 +21,10 @@
 
 #include "includes.h"
 #include "dynconfig.h"
-#include "registry.h"
+#include "lib/registry/registry.h"
 #include "lib/cmdline/popt_common.h"
 #include "system/time.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 /* 
  * ck/cd - change key
@@ -33,19 +34,30 @@
  * mkkey/mkdir - make key
  * ch - change hive
  * info - show key info
+ * save - save hive
  * help
  * exit
  */
 
 static struct registry_key *cmd_info(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *cur, int argc, char **argv)
 {
+	struct security_descriptor *sec_desc = NULL;
 	time_t last_mod;
+	WERROR error;
+	
 	printf("Name: %s\n", cur->name);
 	printf("Full path: %s\n", cur->path);
 	printf("Key Class: %s\n", cur->class_name);
 	last_mod = nt_time_to_unix(cur->last_mod);
 	printf("Time Last Modified: %s\n", ctime(&last_mod));
-	/* FIXME: Security info */
+
+	error = reg_get_sec_desc(mem_ctx, cur, &sec_desc);
+	if (!W_ERROR_IS_OK(error)) {
+		printf("Error getting security descriptor\n");
+	} else {
+		ndr_print_debug((ndr_print_fn_t)ndr_print_security_descriptor, "Security", sec_desc);
+	}
+	talloc_free(sec_desc);
 	return cur;
 }
 
