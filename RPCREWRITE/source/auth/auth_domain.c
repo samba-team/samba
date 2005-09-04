@@ -113,7 +113,7 @@ machine %s. Error was : %s.\n", dc_name, cli_errstr(*cli)));
 	/* JRA TESTME - do we need to do this to get the netlogon request to succeed ? */
 	ntresult = rpccli_netlogon_setup_creds(cmd_entry->rpc_pipe,
 						dc_name,
-						lp_workgroup(),
+						domain,
 						global_myname(),
 						trust_password,
 						sec_channel_type,
@@ -214,7 +214,8 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 		nt_status = make_server_info_info3(mem_ctx,
 						user_info->internal_username.str, 
 						user_info->smb_name.str,
-						domain, server_info,
+						domain,
+						server_info,
 						&info3);
 	}
 

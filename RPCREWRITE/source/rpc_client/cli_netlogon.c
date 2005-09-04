@@ -517,8 +517,11 @@ NTSTATUS rpccli_netlogon_sam_deltas(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 
 /* Logon domain user */
 
-NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                                const char *username, const char *password,
+NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
+				TALLOC_CTX *mem_ctx,
+				const char *domain,
+                                const char *username,
+				const char *password,
                                 int logon_type)
 {
 	prs_struct qbuf, rbuf;
@@ -552,7 +555,7 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 
                 nt_lm_owf_gen(password, nt_owf_user_pwd, lm_owf_user_pwd);
 
-                init_id_info1(&ctr.auth.id1, lp_workgroup(), 
+                init_id_info1(&ctr.auth.id1, domain, 
                               0, /* param_ctrl */
                               0xdead, 0xbeef, /* LUID? */
                               username, clnt_name_slash,
@@ -571,7 +574,7 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
                 SMBencrypt(password, chal, local_lm_response);
                 SMBNTencrypt(password, chal, local_nt_response);
 
-                init_id_info2(&ctr.auth.id2, lp_workgroup(), 
+                init_id_info2(&ctr.auth.id2, domain, 
                               0, /* param_ctrl */
                               0xdead, 0xbeef, /* LUID? */
                               username, clnt_name_slash, chal,
