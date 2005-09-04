@@ -32,7 +32,6 @@ struct tdr_pull {
 
 struct tdr_push {
 	DATA_BLOB data;
-	uint32_t offset;
 	int flags;
 };
 
@@ -53,5 +52,5 @@ struct tdr_print {
                            if ((n) && !(s)) return NT_STATUS_NO_MEMORY; \
                            } while (0)
 
-typedef NTSTATUS (*tdr_push_fn_t) (struct tdr_push *, void *);
+typedef NTSTATUS (*tdr_push_fn_t) (struct tdr_push *, const void *);
 typedef NTSTATUS (*tdr_pull_fn_t) (struct tdr_pull *, void *);
