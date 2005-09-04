@@ -408,33 +408,103 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
     return 0;
 }
 
+struct print_s {
+    int counter;
+    int verbose;
+};
+
 static int
-validate_print_f(void *ctx, hx509_cert c)
+print_f(void *ctx, hx509_cert cert)
 {
-    hx509_validate_cert(ctx, c);
+    struct print_s *s = ctx;
+    hx509_name name;
+    char *str;
+    int ret;
+    
+    printf("cert: %d\n", s->counter++);
+
+    ret = hx509_cert_issuer(cert, &name);
+    hx509_name_to_string(name, &str);
+    hx509_name_free(&name);
+    printf("    issuer:  \"%s\"\n", str);
+    free(str);
+
+    ret = hx509_cert_subject(cert, &name);
+    hx509_name_to_string(name, &str);
+    hx509_name_free(&name);
+    printf("    subject: \"%s\"\n", str);
+    free(str);
+
+    if (s->verbose) {
+	hx509_validate_ctx ctx;
+
+	hx509_validate_ctx_init(&ctx);
+	hx509_validate_ctx_set_print(ctx, hx509_print_stdout, stdout);
+	hx509_validate_ctx_add_flags(ctx, HX509_VALIDATE_F_VALIDATE);
+	hx509_validate_ctx_add_flags(ctx, HX509_VALIDATE_F_VERBOSE);
+	
+	hx509_validate_cert(ctx, cert);
+    }
+
     return 0;
 }
 
-static int
-validate_print(getarg_strings *pass, int argc, char **argv, int flags)
+int
+pcert_print(struct print_options *opt, int argc, char **argv)
 {
-    hx509_validate_ctx ctx;
     hx509_certs certs;
     hx509_lock lock;
+    struct print_s s;
+
+    s.counter = 0;
+    s.verbose = opt->content_flag;
 
     hx509_lock_init(&lock);
-    lock_strings(lock, pass);
-
-    hx509_validate_ctx_init(&ctx);
-    hx509_validate_ctx_set_print(ctx, hx509_print_stdout, stdout);
-    hx509_validate_ctx_add_flags(ctx, flags);
+    lock_strings(lock, &opt->pass_strings);
 
     while(argc--) {
 	int ret;
 	ret = hx509_certs_init(argv[0], 0, lock, &certs);
 	if (ret)
 	    errx(1, "hx509_certs_init");
-	hx509_certs_iter(certs, validate_print_f, ctx);
+	hx509_certs_iter(certs, print_f, &s);
+	hx509_certs_free(&certs);
+	argv++;
+    }
+
+    hx509_lock_free(lock);
+
+    return 0;
+}
+
+
+static int
+validate_f(void *ctx, hx509_cert c)
+{
+    hx509_validate_cert(ctx, c);
+    return 0;
+}
+
+int
+pcert_validate(struct validate_options *opt, int argc, char **argv)
+{
+    hx509_validate_ctx ctx;
+    hx509_certs certs;
+    hx509_lock lock;
+
+    hx509_lock_init(&lock);
+    lock_strings(lock, &opt->pass_strings);
+
+    hx509_validate_ctx_init(&ctx);
+    hx509_validate_ctx_set_print(ctx, hx509_print_stdout, stdout);
+    hx509_validate_ctx_add_flags(ctx, HX509_VALIDATE_F_VALIDATE);
+
+    while(argc--) {
+	int ret;
+	ret = hx509_certs_init(argv[0], 0, lock, &certs);
+	if (ret)
+	    errx(1, "hx509_certs_init");
+	hx509_certs_iter(certs, validate_f, ctx);
 	hx509_certs_free(&certs);
 	argv++;
     }
@@ -443,20 +513,6 @@ validate_print(getarg_strings *pass, int argc, char **argv, int flags)
     hx509_lock_free(lock);
 
     return 0;
-}
-
-int
-pcert_print(struct print_options *opt, int argc, char **argv)
-{
-    return validate_print(&opt->pass_strings, argc, argv, 
-			  HX509_VALIDATE_F_VERBOSE);
-}
-
-int
-pcert_validate(struct validate_options *opt, int argc, char **argv)
-{
-    return validate_print(&opt->pass_strings, argc, argv, 
-			  HX509_VALIDATE_F_VALIDATE);
 }
 
 struct verify {
