@@ -52,3 +52,6 @@ struct tdr_print {
 	                       (s) = talloc_array_size(tdr, sizeof(*(s)), n); \
                            if ((n) && !(s)) return NT_STATUS_NO_MEMORY; \
                            } while (0)
+
+typedef NTSTATUS (*tdr_push_fn_t) (struct tdr_push *, void *);
+typedef NTSTATUS (*tdr_pull_fn_t) (struct tdr_pull *, void *);
