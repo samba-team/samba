@@ -890,10 +890,9 @@ hx509_cms_decrypt_encrypted(hx509_lock lock,
 			    heim_octet_string *content)
 {
     heim_octet_string cont;
-    const struct _hx509_password *pw;
     CMSEncryptedData ed;
     AlgorithmIdentifier *ai;
-    int ret, i;
+    int ret;
 
     memset(content, 0, sizeof(*content));
     memset(&cont, 0, sizeof(cont));
@@ -917,17 +916,10 @@ hx509_cms_decrypt_encrypted(hx509_lock lock,
 	goto out;
     }
 
-    pw = _hx509_lock_get_passwords(lock);
-
-    ret = HX509_CRYPTO_INTERNAL_ERROR;
-    for (i = 0; i < pw->len; i++) {
-	ret = _hx509_pbe_decrypt(pw->val[i],
-				 ai,
-				 ed.encryptedContentInfo.encryptedContent,
-				 &cont);
-	if (ret == 0)
-	    break;
-    }
+    ret = _hx509_pbe_decrypt(lock,
+			     ai,
+			     ed.encryptedContentInfo.encryptedContent,
+			     &cont);
     if (ret)
 	goto out;
 

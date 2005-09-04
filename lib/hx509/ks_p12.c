@@ -88,8 +88,6 @@ ShroudedKeyBag_parser(struct collector *c, const void *data, size_t length,
     PKCS8EncryptedPrivateKeyInfo pk;
     PKCS8PrivateKeyInfo ki;
     heim_octet_string content;
-    const struct _hx509_password *pw;
-    int i;
     int ret;
     
     printf("pkcs8ShroudedKeyBag\n");
@@ -107,17 +105,10 @@ ShroudedKeyBag_parser(struct collector *c, const void *data, size_t length,
 	return ret;
     }
 
-    pw = _hx509_lock_get_passwords(c->lock);
-
-    ret = HX509_CRYPTO_INTERNAL_ERROR;
-    for (i = 0; i < pw->len; i++) {
-	ret = _hx509_pbe_decrypt(pw->val[i],
-				 &pk.encryptionAlgorithm,
-				 &pk.encryptedData,
-				 &content);
-	if (ret == 0)
-	    break;
-    }
+    ret = _hx509_pbe_decrypt(c->lock,
+			     &pk.encryptionAlgorithm,
+			     &pk.encryptedData,
+			     &content);
     free_PKCS8EncryptedPrivateKeyInfo(&pk);
     if (ret) {
 	printf("decrypt encryped failed %d\n", ret);
