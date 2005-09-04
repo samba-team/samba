@@ -47,10 +47,10 @@ struct tdr_print {
                                 return _status; \
                         } while (0)
 
-#define TDR_ALLOC(tdr, s, n) do { \
-	                       (s) = talloc_array_size(tdr, sizeof(*(s)), n); \
+#define TDR_ALLOC(ctx, s, n) do { \
+	                       (s) = talloc_array_size(ctx, sizeof(*(s)), n); \
                            if ((n) && !(s)) return NT_STATUS_NO_MEMORY; \
                            } while (0)
 
 typedef NTSTATUS (*tdr_push_fn_t) (struct tdr_push *, const void *);
-typedef NTSTATUS (*tdr_pull_fn_t) (struct tdr_pull *, void *);
+typedef NTSTATUS (*tdr_pull_fn_t) (struct tdr_pull *, TALLOC_CTX *, void *);

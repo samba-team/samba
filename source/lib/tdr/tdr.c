@@ -64,7 +64,7 @@ NTSTATUS tdr_push_expand(struct tdr_push *tdr, uint32_t size)
 }
 
 
-NTSTATUS tdr_pull_uint8(struct tdr_pull *tdr, uint8_t *v)
+NTSTATUS tdr_pull_uint8(struct tdr_pull *tdr, TALLOC_CTX *ctx, uint8_t *v)
 {
 	TDR_PULL_NEED_BYTES(tdr, 1);
 	*v = TDR_CVAL(tdr, tdr->offset);
@@ -86,7 +86,7 @@ NTSTATUS tdr_print_uint8(struct tdr_print *tdr, const char *name, uint8_t *v)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS tdr_pull_uint16(struct tdr_pull *tdr, uint16_t *v)
+NTSTATUS tdr_pull_uint16(struct tdr_pull *tdr, TALLOC_CTX *ctx, uint16_t *v)
 {
 	TDR_PULL_NEED_BYTES(tdr, 2);
 	*v = TDR_SVAL(tdr, tdr->offset);
@@ -108,7 +108,7 @@ NTSTATUS tdr_print_uint16(struct tdr_print *tdr, const char *name, uint16_t *v)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS tdr_pull_uint32(struct tdr_pull *tdr, uint32_t *v)
+NTSTATUS tdr_pull_uint32(struct tdr_pull *tdr, TALLOC_CTX *ctx, uint32_t *v)
 {
 	TDR_PULL_NEED_BYTES(tdr, 4);
 	*v = TDR_IVAL(tdr, tdr->offset);
@@ -130,7 +130,7 @@ NTSTATUS tdr_print_uint32(struct tdr_print *tdr, const char *name, uint32_t *v)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS tdr_pull_charset(struct tdr_pull *tdr, const char **v, uint32_t length, uint32_t el_size, int chset)
+NTSTATUS tdr_pull_charset(struct tdr_pull *tdr, TALLOC_CTX *ctx, const char **v, uint32_t length, uint32_t el_size, int chset)
 {
 	int ret;
 
@@ -149,13 +149,13 @@ NTSTATUS tdr_pull_charset(struct tdr_pull *tdr, const char **v, uint32_t length,
 	}
 
 	if (length == 0) {
-		*v = talloc_strdup(tdr, "");
+		*v = talloc_strdup(ctx, "");
 		return NT_STATUS_OK;
 	}
 
 	TDR_PULL_NEED_BYTES(tdr, el_size*length);
 	
-	ret = convert_string_talloc(tdr, chset, CH_UNIX, tdr->data.data+tdr->offset, el_size*length, discard_const_p(void *, v));
+	ret = convert_string_talloc(ctx, chset, CH_UNIX, tdr->data.data+tdr->offset, el_size*length, discard_const_p(void *, v));
 
 	if (ret == -1) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -198,10 +198,10 @@ NTSTATUS tdr_print_charset(struct tdr_print *tdr, const char *name, const char *
 /*
   pull a ipv4address
 */
-NTSTATUS tdr_pull_ipv4address(struct tdr_pull *tdr, const char **address)
+NTSTATUS tdr_pull_ipv4address(struct tdr_pull *tdr, TALLOC_CTX *ctx, const char **address)
 {
 	struct ipv4_addr in;
-	TDR_CHECK(tdr_pull_uint32(tdr, &in.addr));
+	TDR_CHECK(tdr_pull_uint32(tdr, ctx, &in.addr));
 	in.addr = htonl(in.addr);
 	*address = talloc_strdup(tdr, sys_inet_ntoa(in));
 	NT_STATUS_HAVE_NO_MEMORY(*address);
@@ -231,7 +231,7 @@ NTSTATUS tdr_print_ipv4address(struct tdr_print *tdr, const char *name,
 /*
   parse a hyper
 */
-NTSTATUS tdr_pull_hyper(struct tdr_pull *tdr, uint64_t *v)
+NTSTATUS tdr_pull_hyper(struct tdr_pull *tdr, TALLOC_CTX *ctx, uint64_t *v)
 {
 	TDR_PULL_NEED_BYTES(tdr, 8);
 	*v = TDR_IVAL(tdr, tdr->offset);
@@ -266,9 +266,9 @@ NTSTATUS tdr_push_NTTIME(struct tdr_push *tdr, NTTIME *t)
 /*
   pull a NTTIME
 */
-NTSTATUS tdr_pull_NTTIME(struct tdr_pull *tdr, NTTIME *t)
+NTSTATUS tdr_pull_NTTIME(struct tdr_pull *tdr, TALLOC_CTX *ctx, NTTIME *t)
 {
-	TDR_CHECK(tdr_pull_hyper(tdr, t));
+	TDR_CHECK(tdr_pull_hyper(tdr, ctx, t));
 	return NT_STATUS_OK;
 }
 
@@ -283,10 +283,10 @@ NTSTATUS tdr_push_time_t(struct tdr_push *tdr, time_t *t)
 /*
   pull a time_t
 */
-NTSTATUS tdr_pull_time_t(struct tdr_pull *tdr, time_t *t)
+NTSTATUS tdr_pull_time_t(struct tdr_pull *tdr, TALLOC_CTX *ctx, time_t *t)
 {
 	uint32_t tt;
-	TDR_CHECK(tdr_pull_uint32(tdr, &tt));
+	TDR_CHECK(tdr_pull_uint32(tdr, ctx, &tt));
 	*t = tt;
 	return NT_STATUS_OK;
 }
@@ -343,7 +343,7 @@ NTSTATUS tdr_push_DATA_BLOB(struct tdr_push *tdr, DATA_BLOB *blob)
 /*
   pull a DATA_BLOB from the wire. 
 */
-NTSTATUS tdr_pull_DATA_BLOB(struct tdr_pull *tdr, DATA_BLOB *blob)
+NTSTATUS tdr_pull_DATA_BLOB(struct tdr_pull *tdr, TALLOC_CTX *ctx, DATA_BLOB *blob)
 {
 	uint32_t length;
 
