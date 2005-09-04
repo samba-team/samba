@@ -33,11 +33,12 @@
 
 #include "hx_locl.h"
 RCSID("$Id$");
+#include <openssl/ui.h>
 
 struct hx509_lock_data {
     struct _hx509_password password;
     hx509_certs certs;
-    hx509_prompter_fct *prompt;
+    hx509_prompter_fct prompt;
     void *prompt_data;
 };
 
@@ -147,7 +148,7 @@ _hx509_lock_find_cert(hx509_lock lock, const hx509_query *q, hx509_cert *c)
 }
 
 int
-hx509_lock_set_prompter(hx509_lock lock, hx509_prompter_fct *prompt, void *data)
+hx509_lock_set_prompter(hx509_lock lock, hx509_prompter_fct prompt, void *data)
 {
     lock->prompt = prompt;
     lock->prompt_data = data;
@@ -164,7 +165,24 @@ hx509_lock_reset_promper(hx509_lock lock)
 static int 
 default_prompter(void *data, const hx509_prompt *prompter)
 {
-    return 1;
+    if (prompter->hidden) {
+	if(UI_UTIL_read_pw_string(prompter->reply->data,
+				  prompter->reply->length,
+				  prompter->prompt,
+				  0))
+	    return 1;
+    } else {
+	char *s = prompter->reply->data;
+
+	fputs (prompter->prompt, stdout);
+	fflush (stdout);
+	if(fgets(prompter->reply->data,
+		 prompter->reply->length,
+		 stdin) == NULL)
+	    return 1;
+	s[strcspn(s, "\n")] = '\0';
+    }
+    return 0;
 }
 
 int
@@ -189,7 +207,7 @@ hx509_lock_command_string(hx509_lock lock, const char *string)
 {
     if (strncasecmp(string, "PASS:", 5) == 0) {
 	hx509_lock_add_password(lock, string + 5);
-    } else if (strncasecmp(string, "PROMPT:", 8) == 0) {
+    } else if (strncasecmp(string, "PROMPT", 6) == 0) {
 	hx509_lock_set_prompter(lock, default_prompter, NULL);
     } else
 	return HX509_UNKNOWN_LOCK_COMMAND;
