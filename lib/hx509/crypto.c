@@ -1224,6 +1224,10 @@ PBE_string2key(const char *password,
     salt = p12params.salt.data;
     saltlen = p12params.salt.length;
 
+    /* XXX It needs to be here, but why ?  */
+    if (passwordlen == 0)
+	password = NULL;
+
     if (!PKCS12_key_gen (password, passwordlen, salt, saltlen, 
 			 PKCS12_KEY_ID, iter, key->length, key->data, md)) {
 	ret = HX509_CRYPTO_INTERNAL_ERROR;
@@ -1289,35 +1293,24 @@ find_string2key(const heim_oid *oid,
 }
 
 
-static void
-print_oid(const heim_oid *oid)
-{
-    int i;
-    for (i = 0; i < oid->length; i++)
-	printf("%d%s", oid->components[i], i < oid->length - 1 ? "." : "");
-    printf("\n");
-}
-
-
 int
-_hx509_pbe_decrypt(const char *password,
+_hx509_pbe_decrypt(hx509_lock lock,
 		   const AlgorithmIdentifier *ai,
 		   const heim_octet_string *econtent,
 		   heim_octet_string *content)
 {
+    const struct _hx509_password *pw;
     heim_octet_string key, iv;
     const heim_oid *enc_oid;
     const EVP_CIPHER *c;
     const EVP_MD *md;
     PBE_string2key_func s2k;
-    int ret = 0;
+    int i, ret = 0;
 
     memset(&key, 0, sizeof(key));
     memset(&iv, 0, sizeof(iv));
 
     memset(content, 0, sizeof(*content));
-
-    print_oid(&ai->algorithm);
 
     enc_oid = find_string2key(&ai->algorithm, &c, &md, &s2k);
     if (enc_oid == NULL) {
@@ -1335,10 +1328,13 @@ _hx509_pbe_decrypt(const char *password,
     if (iv.data == NULL)
 	goto out;
 
-    {
+    pw = _hx509_lock_get_passwords(lock);
+
+    ret = HX509_CRYPTO_INTERNAL_ERROR;
+    for (i = 0; i < pw->len; i++) {
 	hx509_crypto crypto;
 
-	ret = (*s2k)(password, ai->parameters, &crypto, 
+	ret = (*s2k)(pw->val[i], ai->parameters, &crypto, 
 		     &key, &iv, enc_oid, md);
 	if (ret) {
 	    goto out;
