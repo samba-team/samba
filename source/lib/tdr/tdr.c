@@ -55,7 +55,11 @@ NTSTATUS tdr_push_expand(struct tdr_push *tdr, uint32_t size)
 	}
 
 	tdr->data.data = talloc_realloc(tdr, tdr->data.data, uint8_t, tdr->data.length + TDR_BASE_MARSHALL_SIZE);
-	return NT_STATUS_NO_MEMORY;
+
+	if (tdr->data.data == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	return NT_STATUS_OK;
 }
 
 
