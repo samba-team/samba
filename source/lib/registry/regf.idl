@@ -64,8 +64,11 @@ interface regf
 		uint32 block_size;	   /* Block size (including the header!) */
 		uint8 data[offset_to_next-0x20]; 
 		/* data is filled with:
-		 	uint32 length
-			uint8_t data[length]
+		 	uint32 length; 			
+				Negative if in used, positive otherwise
+				Always a multiple of 8
+			uint8_t data[length];  
+				Free space marker if 0xffffffff
 	     */
 	} hbin_block;
 
@@ -94,7 +97,7 @@ interface regf
 		uint32 sk_offset;
 		uint32 clsname_offset;
 		uint32 unk3[5];
-		uint16 name_length;
+		[value(strlen(key_name))] uint16 name_length;
 		uint16 clsname_length;
 		[charset(DOS)] uint8 key_name[name_length];  
 	} nk_block;
@@ -137,7 +140,7 @@ interface regf
 	/* The vk-record consists information to a single value (value key). */
 	typedef [public,noprint] struct {
 		[charset(DOS)] uint8 header[2];
-		uint16 name_length;
+		[value(strlen(data_name))] uint16 name_length;
 		uint32 data_length;    /* If top-bit set, offset contains the data */
 		uint32 data_offset;
 		uint32 data_type;
@@ -148,7 +151,7 @@ interface regf
 
 	typedef [noprint] struct {
 		uint32 nk_off;
-		uint8 hash[4];
+		[charset(DOS)] uint8 hash[4];
 	} hash_record;
 
 	/*
