@@ -54,6 +54,8 @@ static unsigned email_num[] = { 1, 2, 840, 113549, 1, 9, 1 };
 static heim_oid email_oid = oid_enc(email_num);
 static unsigned uid_num[] = { 0, 9, 2342, 19200300, 100, 1, 1 };
 static heim_oid uid_oid = oid_enc(uid_num);
+static unsigned dc_num[] = { 0, 9, 2342, 19200300, 100, 1, 25 };
+static heim_oid dc_oid = oid_enc(dc_num);
 
 static const struct {
     char *n;
@@ -64,15 +66,16 @@ static const struct {
     { "O", &organizationName_oid },
     { "L", &localityName_oid },
     { "Email", &email_oid },
-    { "UID", &uid_oid }
+    { "UID", &uid_oid },
+    { "DC", &dc_oid }
 };
 
 static char *
 quote_string(const char *f, size_t len, size_t *rlen)
 {
     size_t i, j, tolen;
-    const unsigned char *from = (const unsigned char *)f;
-    unsigned char *to;
+    const char *from = f;
+    char *to;
 
     tolen = len * 3 + 1;
     to = malloc(tolen);
@@ -88,7 +91,7 @@ quote_string(const char *f, size_t len, size_t *rlen)
 	{
 	    to[j++] = '\\';
 	    to[j++] = from[i];
-	} else if (from[i] >= 32 && from[i] <= 127) {
+	} else if (((unsigned char)from[i]) >= 32 && ((unsigned char)from[i]) <= 127) {
 	    to[j++] = from[i];
 	} else {
 	    int l = snprintf(&to[j], tolen - j - 1,
@@ -148,20 +151,20 @@ int
 hx509_name_to_string(const hx509_name name, char **str)
 {
     const Name *n = &name->der_name;
-    ssize_t total_len = 0;
+    size_t total_len = 0;
     int i, j;
 
     *str = strdup("");
     if (*str == NULL)
 	return ENOMEM;
 
-    for (i = 0 ; i < n->u.rdnSequence.len; i++) {
-	char *ss;
+    for (i = n->u.rdnSequence.len - 1 ; i >= 0 ; i--) {
 	int len;
 
 	for (j = 0; j < n->u.rdnSequence.val[i].len; j++) {
 	    DirectoryString *ds = &n->u.rdnSequence.val[i].val[j].value;
 	    char *oidname;
+	    char *ss;
 	    
 	    oidname = oidtostring(&n->u.rdnSequence.val[i].val[j].type);
 
@@ -175,11 +178,26 @@ hx509_name_to_string(const hx509_name name, char **str)
 	    case choice_DirectoryString_utf8String:
 		ss = ds->u.ia5String;
 		break;
-#if 0
-	    case choice_DirectoryString_bmpstring:
-		ss = ds->u.bmpstring;
+	    case choice_DirectoryString_bmpString: {
+		u_int16_t *bmp = ds->u.bmpString.data;
+		size_t len = ds->u.bmpString.length / 2;
+		int k;
+
+		/* XXX */
+		ss = malloc(len + 1);
+		if (ss == NULL)
+		    abort();
+		for (k = 0; k < len + 1; k++)
+		    ss[k] = bmp[k] & 0xff;
+		ss[k] = '\0';
 		break;
-#endif
+	    }
+	    case choice_DirectoryString_teletexString:
+		ss = "teletex-string"; /* XXX */
+		break;
+	    case choice_DirectoryString_universalString:
+		ss = "universalString"; /* XXX */
+		break;
 	    default:
 		abort();
 	    }
@@ -188,11 +206,13 @@ hx509_name_to_string(const hx509_name name, char **str)
 	    append_string(str, &total_len, "=", 1, 0);
 	    len = strlen(ss);
 	    append_string(str, &total_len, ss, len, 1);
+	    if (ds->element == choice_DirectoryString_bmpString)
+		free(ss);
 	    if (j + 1 < n->u.rdnSequence.val[i].len)
 		append_string(str, &total_len, "+", 1, 0);
 	}
 
-	if (i + 1 < n->u.rdnSequence.len)
+	if (i > 0)
 	    append_string(str, &total_len, ", ", 2, 0);
     }
     return 0;
