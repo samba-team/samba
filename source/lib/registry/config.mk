@@ -16,6 +16,7 @@ REQUIRED_SUBSYSTEMS = TDR
 NOPROTO = YES
 INIT_OBJ_FILES = lib/registry/tdr_regf.o
 
+lib/registry/reg_backend_nt4.c: lib/registry/tdr_regf.c
 lib/registry/tdr_regf.c: lib/registry/regf.idl
 	@./pidl/pidl --header --outputdir=lib/registry --parse --tdr-header --tdr-parser -- lib/registry/regf.idl
 
