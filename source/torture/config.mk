@@ -281,3 +281,15 @@ REQUIRED_SUBSYSTEMS = \
 MANPAGE = torture/man/locktest.1
 # End BINARY locktest
 #################################
+
+GCOV_FLAGS = -ftest-coverage -fprofile-arcs
+GCOV_LIBS = -lgcov
+
+gcov: 
+	@$(MAKE) test \
+		CFLAGS="$(CFLAGS) $(GCOV_FLAGS)" \
+		LD_FLAGS="$(LD_FLAGS) $(GCOV_FLAGS)" \
+		LIBS="$(LIBS) $(GCOV_LIBS)"
+	for I in $(sort $(dir $(_ALL_OBJS_OBJS))); \
+		do $(GCOV) -p -o $$I $$I/*.c; \
+	done

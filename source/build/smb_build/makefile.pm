@@ -77,13 +77,14 @@ CC=$config{CC}
 CFLAGS=-I\$(srcdir)/include -I\$(srcdir) -D_SAMBA_BUILD_ -DHAVE_CONFIG_H -I\$(srcdir)/lib $config{CFLAGS} $config{CPPFLAGS}
 
 LD=$config{LD}
-LD_FLAGS=$config{LDFLAGS} -Lbin
+GCOV=$config{GCOV}
+LD_FLAGS=$config{LDFLAGS} 
 
 STLD=$config{AR}
 STLD_FLAGS=-rc
 
 SHLD=$config{CC}
-SHLD_FLAGS=$config{LDSHFLAGS} -Lbin
+SHLD_FLAGS=$config{LDSHFLAGS} 
 
 XSLTPROC=$config{XSLTPROC}
 
