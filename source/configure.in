@@ -219,6 +219,8 @@ AC_SUBST(INSTALLCLIENTCMD_SH)
 AC_SUBST(INSTALLCLIENTCMD_A)
 AC_SUBST(LIBSMBCLIENT_SHARED)
 AC_SUBST(LIBSMBCLIENT)
+AC_SUBST(LIBSMBSHAREMODES_SHARED)
+AC_SUBST(LIBSMBSHAREMODES)
 AC_SUBST(PRINT_LIBS)
 AC_SUBST(AUTH_LIBS)
 AC_SUBST(ACL_LIBS)
@@ -3867,6 +3869,56 @@ AC_ARG_WITH(libsmbclient,
    if test $enable_static = yes; then
      INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
      LIBSMBCLIENT=libsmbclient
+  fi]
+  INSTALLCLIENT=installclientlib
+)
+
+
+INSTALLCLIENTCMD_SH=:
+INSTALLCLIENTCMD_A=:
+INSTALLCLIENT=
+LIBSMBCLIENT_SHARED=
+LIBSMBCLIENT=
+AC_MSG_CHECKING(whether to build the libsmbsharemodes shared library)
+AC_ARG_WITH(libsmbsharemodes,
+[  --with-libsmbsharemodes     Build the libsmbsharemodes shared library (default=yes if shared libs supported)],
+[ case "$withval" in
+  no) 
+     AC_MSG_RESULT(no)
+     ;;
+  *)
+     if test $BLDSHARED = true; then
+        INSTALLCLIENTCMD_SH="\$(INSTALLCMD)"
+	## build the static version of libsmbsharemodes as well
+	INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
+        LIBSMBSHAREMODES_SHARED=bin/libsmbsharemodes.$SHLIBEXT
+        LIBSMBSHAREMODES=libsmbclient
+        AC_MSG_RESULT(yes)
+     else
+	enable_static=yes
+        AC_MSG_RESULT(no shared library support -- will supply static library)
+     fi
+     if test $enable_static = yes; then
+        INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
+        LIBSMBCLIENT=libsmbsharemodes
+     fi
+     INSTALLCLIENT=installclientlib
+     ;;
+  esac ],
+[
+# if unspecified, default is to built it iff possible.
+  if test $BLDSHARED = true; then
+     INSTALLCLIENTCMD_SH="\$(INSTALLCMD)"
+     LIBSMBSHAREMODES_SHARED=bin/libsmbsharemodes.$SHLIBEXT
+     LIBSMBSHAREMODES=libsmbsharemodes
+     AC_MSG_RESULT(yes)
+   else
+     enable_static=yes
+     AC_MSG_RESULT(no shared library support -- will supply static library)
+   fi
+   if test $enable_static = yes; then
+     INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
+     LIBSMBCLIENT=libsmbsharemodes
   fi]
   INSTALLCLIENT=installclientlib
 )
