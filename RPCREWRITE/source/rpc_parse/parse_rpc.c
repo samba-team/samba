@@ -226,6 +226,15 @@ const struct pipe_id_info pipe_names [] =
 	{ NULL         , SYNT_NONE_V0          , NULL          , SYNT_NONE_V0  }
 };
 
+/****************************************************************************
+ Return the pipe name from the index.
+ ****************************************************************************/
+
+const char *cli_get_pipe_name(int pipe_idx)
+{
+	return &pipe_names[pipe_idx].client_pipe[5];
+}
+
 /*******************************************************************
  Inits an RPC_HDR structure.
 ********************************************************************/

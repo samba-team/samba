@@ -75,6 +75,7 @@ struct rpc_pipe_client {
 	struct cli_state *cli;
 
 	int pipe_idx;
+	const char *pipe_name;
 	uint16 fnum;
 
 	const char *user_name;

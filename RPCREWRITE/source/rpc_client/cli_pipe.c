@@ -68,15 +68,6 @@ static uint32 get_rpc_call_id(void)
 	return ++call_id;
 }
 
-/****************************************************************************
- Return the pipe name from the index.
- ****************************************************************************/
-
-const char *cli_get_pipe_name(int pipe_idx)
-{
-	return &pipe_names[pipe_idx].client_pipe[5];
-}
-
 /*******************************************************************
  Use SMBreadX to get rest of one fragment's worth of rpc data.
  Will expand the current_pdu struct to the correct size.
@@ -133,7 +124,7 @@ static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
 				DEBUG(0,("rpc_read: DOS Error %d/%u (%s) in cli_read on pipe %s\n",
 					eclass, (unsigned int)ecode,
 					cli_errstr(cli->cli),
-					cli_get_pipe_name(cli->pipe_idx) ));
+					cli->pipe_name ));
 				return dos_to_ntstatus(eclass, ecode);
 			}
 		}
@@ -145,14 +136,14 @@ static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
 			if (!NT_STATUS_EQUAL(cli_nt_error(cli->cli), NT_STATUS_BUFFER_TOO_SMALL)) {
 				DEBUG(0,("rpc_read: Error (%s) in cli_read on pipe %s\n",
 					nt_errstr(cli_nt_error(cli->cli)),
-					cli_get_pipe_name(cli->pipe_idx) ));
+					cli->pipe_name ));
 				return cli_nt_error(cli->cli);
 			}
 		}
 
 		if (num_read == -1) {
 			DEBUG(0,("rpc_read: Error - cli_read on pipe %s returned -1\n",
-				cli_get_pipe_name(cli->pipe_idx) ));
+				cli->pipe_name ));
 			return cli_get_nt_error(cli->cli);
 		}
 
@@ -290,7 +281,7 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli, RPC_HDR *pr
 					"packet from remote machine %s on pipe %s "
 					"fnum 0x%x. Error was %s.\n",
 					cli->cli->desthost,
-					cli_get_pipe_name(cli->pipe_idx),
+					cli->pipe_name,
 					(unsigned int)cli->fnum,
 					nt_errstr(status) ));
 				return status;
@@ -308,7 +299,7 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli, RPC_HDR *pr
 					"packet from remote machine %s on pipe %s "
 					"fnum 0x%x. Error was %s.\n",
 					cli->cli->desthost,
-					cli_get_pipe_name(cli->pipe_idx),
+					cli->pipe_name,
 					(unsigned int)cli->fnum,
 					nt_errstr(status) ));
 				return status;
@@ -411,7 +402,7 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *p
 				"Connection to remote machine %s "
 				"pipe %s fnum 0x%x.\n",
 				cli->cli->desthost,
-				cli_get_pipe_name(cli->pipe_idx),
+				cli->pipe_name,
 				(unsigned int)cli->fnum ));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -459,7 +450,7 @@ static NTSTATUS cli_pipe_validate_rpc_response(struct rpc_pipe_client *cli, RPC_
 				DEBUG(3, ("cli_pipe_validate_rpc_response: Connection to remote machine %s "
 					"pipe %s fnum 0x%x - got non-zero auth len %u.\n",
 					cli->cli->desthost,
-					cli_get_pipe_name(cli->pipe_idx),
+					cli->pipe_name,
 					(unsigned int)cli->fnum,
 					(unsigned int)prhdr->auth_len ));
 				return NT_STATUS_INVALID_PARAMETER;
@@ -487,7 +478,7 @@ static NTSTATUS cli_pipe_validate_rpc_response(struct rpc_pipe_client *cli, RPC_
 			DEBUG(3, ("cli_pipe_validate_rpc_response: Connection to remote machine %s "
 				"pipe %s fnum %x - unknown internal auth type %u.\n",
 				cli->cli->desthost,
-				cli_get_pipe_name(cli->pipe_idx),
+				cli->pipe_name,
 				(unsigned int)cli->fnum,
 				cli->auth.auth_type ));
 			return NT_STATUS_INVALID_INFO_CLASS;
@@ -578,7 +569,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 			DEBUG(1, ("cli_pipe_validate_current_pdu: Bind NACK received from remote machine %s "
 				"pipe %s fnum 0x%x!\n",
 				cli->cli->desthost,
-				cli_get_pipe_name(cli->pipe_idx),
+				cli->pipe_name,
 				(unsigned int)cli->fnum));
 			/* Use this for now... */
 			return NT_STATUS_NETWORK_ACCESS_DENIED;
@@ -602,7 +593,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 				"pipe %s fnum 0x%x!\n",
 				nt_errstr(fault_resp.status),
 				cli->cli->desthost,
-				cli_get_pipe_name(cli->pipe_idx),
+				cli->pipe_name,
 				(unsigned int)cli->fnum));
 			if (NT_STATUS_IS_OK(fault_resp.status)) {
 				return NT_STATUS_UNSUCCESSFUL;
@@ -617,7 +608,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 				"from remote machine %s pipe %s fnum 0x%x!\n",
 				(unsigned int)prhdr->pkt_type,
 				cli->cli->desthost,
-				cli_get_pipe_name(cli->pipe_idx),
+				cli->pipe_name,
 				(unsigned int)cli->fnum));
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
@@ -627,7 +618,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 			"pipe %s fnum %x got an unexpected RPC packet "
 			"type - %u, not %u\n",
 			cli->cli->desthost,
-			cli_get_pipe_name(cli->pipe_idx),
+			cli->pipe_name,
 			(unsigned int)cli->fnum,
 			prhdr->pkt_type,
 			expected_pkt_type));
@@ -747,7 +738,7 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 
 	DEBUG(5,("rpc_api_pipe: Remote machine %s pipe %s fnum 0x%x\n",
 		cli->cli->desthost,
-		cli_get_pipe_name(cli->pipe_idx),
+		cli->pipe_name,
 		(unsigned int)cli->fnum ));
 
 	/*
@@ -766,7 +757,7 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 		DEBUG(0, ("rpc_api_pipe: Remote machine %s pipe %s fnum 0x%x"
 			"returned critical error. Error was %s\n",
 			cli->cli->desthost,
-			cli_get_pipe_name(cli->pipe_idx),
+			cli->pipe_name,
 			(unsigned int)cli->fnum,
 			cli_errstr(cli->cli)));
 		ret = cli_get_nt_error(cli->cli);
@@ -781,7 +772,7 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 		DEBUG(3,("rpc_api_pipe: Remote machine %s pipe %s "
 			"fnum 0x%x failed to return data.\n",
 			cli->cli->desthost,
-			cli_get_pipe_name(cli->pipe_idx),
+			cli->pipe_name,
 			(unsigned int)cli->fnum));
 		/* Yes - some calls can truely return no data... */
 		prs_mem_free(&current_pdu);
@@ -828,7 +819,7 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 				DEBUG(10,("rpc_api_pipe: On machine %s pipe %s fnum 0x%x "
 					"PDU data format is big-endian.\n",
 					cli->cli->desthost,
-					cli_get_pipe_name(cli->pipe_idx),
+					cli->pipe_name,
 					(unsigned int)cli->fnum));
 
 				prs_set_endian_data(rbuf, RPC_BIG_ENDIAN);
@@ -865,7 +856,7 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 
 	DEBUG(10,("rpc_api_pipe: Remote machine %s pipe %s fnum 0x%x returned %u bytes.\n",
 		cli->cli->desthost,
-		cli_get_pipe_name(cli->pipe_idx),
+		cli->pipe_name,
 		(unsigned int)cli->fnum,
 		(unsigned int)prs_data_size(rbuf) ));
 
@@ -1421,7 +1412,7 @@ NTSTATUS rpc_api_pipe_req(struct rpc_pipe_client *cli,
 				pstring dump_name;
 				/* Also capture received data */
 				slprintf(dump_name, sizeof(dump_name) - 1, "%s/reply_%s_%d",
-					dyn_LOGFILEBASE, cli_get_pipe_name(cli->pipe_idx), op_num);
+					dyn_LOGFILEBASE, cli->pipe_name, op_num);
 				prs_dump(dump_name, op_num, out_data);
 			}
 
@@ -1495,53 +1486,6 @@ static BOOL rpc_pipe_set_hnd_state(struct rpc_pipe_client *cli,
 	return state_set;
 }
 #endif
-
-/****************************************************************************
- check the rpc bind acknowledge response
-****************************************************************************/
-
-int get_pipe_index( const char *pipe_name )
-{
-	int pipe_idx = 0;
-
-	while (pipe_names[pipe_idx].client_pipe != NULL) {
-		if (strequal(pipe_name, pipe_names[pipe_idx].client_pipe )) {
-			return pipe_idx;
-		}
-		pipe_idx++;
-	};
-
-	return -1;
-}
-
-
-/****************************************************************************
- check the rpc bind acknowledge response
-****************************************************************************/
-
-const char* get_pipe_name_from_index( const int pipe_index )
-{
-	if ( (pipe_index < 0) || (pipe_index >= PI_MAX_PIPES) ) {
-		return NULL;
-	}
-
-	return pipe_names[pipe_index].client_pipe;		
-}
-
-/****************************************************************************
- Check to see if this pipe index points to one of 
- the pipes only supported by Win2k
- ****************************************************************************/
-
-BOOL is_win2k_pipe( const int pipe_idx )
-{
-	switch ( pipe_idx ) {
-		case PI_LSARPC_DS:
-			return True;
-	}
-	
-	return False;
-}
 
 /****************************************************************************
  Check the rpc bind acknowledge response.
@@ -1748,7 +1692,7 @@ static NTSTATUS rpc_finish_auth3_bind(struct rpc_pipe_client *cli,
 	DEBUG(5,("rpc_send_auth_auth3: Remote machine %s pipe %s "
 		"fnum 0x%x sent auth3 response ok.\n",
 		cli->cli->desthost,
-		cli_get_pipe_name(cli->pipe_idx),
+		cli->pipe_name,
 		(unsigned int)cli->fnum));
 
 	prs_mem_free(&rpc_out);
@@ -1787,7 +1731,7 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 
 	DEBUG(5,("Bind RPC Pipe[%x]: %s auth_type %u, auth_level %u\n",
 		(unsigned int)cli->fnum,
-		cli_get_pipe_name(cli->pipe_idx),
+		cli->pipe_name,
 		(unsigned int)auth_type,
 		(unsigned int)auth_level ));
 
@@ -1825,7 +1769,7 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 	DEBUG(0,("rpc_pipe_bind: Remote machine %s pipe %s "
 		"fnum 0x%x bind request returned ok.\n",
 		cli->cli->desthost,
-		cli_get_pipe_name(cli->pipe_idx),
+		cli->pipe_name,
 		(unsigned int)cli->fnum));
 
 	/* Unmarshall the RPC header */
@@ -1919,12 +1863,14 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 
 	result->mem_ctx = mem_ctx;
 
-	fnum = cli_nt_create(cli, cli_get_pipe_name(pipe_idx), DESIRED_ACCESS_PIPE);
+	result->pipe_name = cli_get_pipe_name(pipe_idx);
+
+	fnum = cli_nt_create(cli, result->pipe_name, DESIRED_ACCESS_PIPE);
 
 	if (fnum == -1) {
 		DEBUG(0,("cli_rpc_pipe_open: cli_nt_create failed on pipe %s "
 			 "to machine %s.  Error was %s\n",
-			 cli_get_pipe_name(pipe_idx), cli->desthost,
+			 result->pipe_name, cli->desthost,
 			 cli_errstr(cli)));
 		talloc_destroy(result->mem_ctx);
 		return NULL;
@@ -1973,7 +1919,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_noauth(struct cli_state *cli, int pipe
 	}
 
 	DEBUG(10,("cli_rpc_pipe_open_noauth: opened pipe %s to machine %s and bound anonymously.\n",
-			cli_get_pipe_name(pipe_idx), cli->desthost ));
+			result->pipe_name, cli->desthost ));
 
 	return result;
 }
@@ -2064,7 +2010,7 @@ static struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_internal(struct cli_sta
 
 	DEBUG(10,("cli_rpc_pipe_open_ntlmssp_internal: opened pipe %s to machine %s and"
 		"bound NTLMSSP as user %s\\%s.\n",
-		cli_get_pipe_name(pipe_idx), cli->desthost,
+		result->pipe_name, cli->desthost,
 		domain, username ));
 
 	return result;
@@ -2222,7 +2168,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cl
 	DEBUG(10,("cli_rpc_pipe_open_schannel_with_key: opened pipe %s to machine %s "
 		"for domain %s "
 		"and bound using schannel.\n",
-		cli_get_pipe_name(pipe_idx), cli->desthost, domain ));
+		result->pipe_name, cli->desthost, domain ));
 
 	return result;
 }
@@ -2259,6 +2205,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel(struct cli_state *cli,
 	return result;
 }
 
+#if 0 /* Moved to libsmb/clientgen.c */
 /****************************************************************************
  External interface.
  Close an open named pipe over SMB. Free any authentication data.
@@ -2269,7 +2216,7 @@ void cli_rpc_pipe_close(struct rpc_pipe_client *cli)
 	if (!cli_close(cli->cli, cli->fnum)) {
 		DEBUG(0,("cli_rpc_pipe_close: cli_close failed on pipe %s "
 			 "to machine %s.  Error was %s\n",
-			 cli_get_pipe_name(cli->pipe_idx),
+			 cli->pipe_name),
 			 cli->cli->desthost,
 			 cli_errstr(cli->cli)));
 	}
@@ -2278,8 +2225,9 @@ void cli_rpc_pipe_close(struct rpc_pipe_client *cli)
 		(*cli->auth.cli_auth_data_free_func)(&cli->auth);
 	}
 	DEBUG(10,("cli_rpc_pipe_close: closed pipe %s to machine %s\n",
-		cli_get_pipe_name(cli->pipe_idx), cli->cli->desthost ));
+		cli->pipe_name, cli->cli->desthost ));
 
 	DLIST_REMOVE(cli->cli->pipe_list, cli);
 	talloc_destroy(cli->mem_ctx);	
 }
+#endif

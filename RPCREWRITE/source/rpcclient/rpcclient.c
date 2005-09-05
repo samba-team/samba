@@ -540,13 +540,13 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				break;
 			default:
 				DEBUG(0, ("Could not initialise %s. Invalid auth type %u\n",
-					get_pipe_name_from_index(cmd_entry->pipe_idx),
+					get_pipe_name(cmd_entry->pipe_idx),
 					pipe_default_auth_type ));
 				return NT_STATUS_UNSUCCESSFUL;
 		}
 		if (!cmd_entry->rpc_pipe) {
 			DEBUG(0, ("Could not initialise %s.\n",
-				get_pipe_name_from_index(cmd_entry->pipe_idx)));
+				get_pipe_name(cmd_entry->pipe_idx)));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
@@ -571,7 +571,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
 			if (!NT_STATUS_IS_OK(ntresult)) {
 				DEBUG(0, ("Could not initialise credentials for %s.\n",
-					get_pipe_name_from_index(cmd_entry->pipe_idx)));
+					get_pipe_name(cmd_entry->pipe_idx)));
 				return ntresult;
 			}
 		}
