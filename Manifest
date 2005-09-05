@@ -15,7 +15,7 @@ docs		(Samba Documentation):
 
 	The Samba HOWTO Collection has undergone some rather large changes 
 	and covers all parts of configuration now. It is available 
-	as PDF (docs/Samba-HOWTO-Collection.pdf) or in HTML format (in 
+	as PDF (docs/Samba3-HOWTO.pdf) or in HTML format (in 
 	the docs/htmldocs directory). Those with the docbook utilities installed 
 	can generate PostScript and text versions of the HOWTO as well.
 
@@ -38,7 +38,7 @@ packaging	(Only for those wishing to build binary distributions):
 
 	Currently support is included for the following Linux Distributions :
 	
-		Pacfic HiTech, RedHat and SuSE.
+		RedHat and SuSE.
 
 	In addition, packaging support is available for SGI and Solaris systems.
 	We hope that other Unix OS vendors will contribute their binary
