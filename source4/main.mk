@@ -78,6 +78,7 @@ showflags:
 	@echo "  LD_FLAGS = $(LD_FLAGS)"
 	@echo "  STLD_FLAGS = $(STLD_FLAGS)"
 	@echo "  SHLD_FLAGS = $(SHLD_FLAGS)"
+	@echo "  LIBS = $(LIBS)"
 
 install: showlayout installbin installdat installswat installmisc
 
