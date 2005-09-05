@@ -365,7 +365,7 @@ sub _prepare_mergedobj_rule($)
 
 	my $output = "$ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST = $tmpdepend\n";
 
-	$output .= "$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_OBJS)\n";
+	$output .= "$ctx->{TARGET}: \$($ctx->{TYPE}_$ctx->{NAME}_OBJS)\n";
 
 	$output .= "\t\@echo \"Pre-Linking $ctx->{TYPE} $ctx->{NAME}\"\n";
 	$output .= "\t@\$(LD) -r \$($ctx->{TYPE}_$ctx->{NAME}_OBJS) -o $ctx->{TARGET}\n";
