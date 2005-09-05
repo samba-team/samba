@@ -127,3 +127,5 @@ fi
 # allow for --with-hostcc=gcc
 AC_ARG_WITH(hostcc,[  --with-hostcc=compiler    choose host compiler],[HOSTCC=$withval],[HOSTCC=$CC])
 AC_SUBST(HOSTCC)
+
+AC_PATH_PROG(GCOV,gcov)
