@@ -69,35 +69,27 @@ kerb_prompter(krb5_context ctx, void *data,
   original password.
 */
  int kerberos_kinit_keyblock_cc(krb5_context ctx, krb5_ccache cc, 
-				const char *principal, krb5_keyblock *keyblock,
+				krb5_principal principal, krb5_keyblock *keyblock,
 				time_t *expire_time, time_t *kdc_time)
 {
 	krb5_error_code code = 0;
-	krb5_principal me;
 	krb5_creds my_creds;
 	krb5_get_init_creds_opt options;
 
-	if ((code = krb5_parse_name(ctx, principal, &me))) {
-		return code;
-	}
-
 	krb5_get_init_creds_opt_init(&options);
 
-	if ((code = krb5_get_init_creds_keyblock(ctx, &my_creds, me, keyblock,
+	if ((code = krb5_get_init_creds_keyblock(ctx, &my_creds, principal, keyblock,
 						 0, NULL, &options))) {
-		krb5_free_principal(ctx, me);
 		return code;
 	}
 	
-	if ((code = krb5_cc_initialize(ctx, cc, me))) {
+	if ((code = krb5_cc_initialize(ctx, cc, principal))) {
 		krb5_free_cred_contents(ctx, &my_creds);
-		krb5_free_principal(ctx, me);
 		return code;
 	}
 	
 	if ((code = krb5_cc_store_cred(ctx, cc, &my_creds))) {
 		krb5_free_cred_contents(ctx, &my_creds);
-		krb5_free_principal(ctx, me);
 		return code;
 	}
 	
@@ -110,7 +102,6 @@ kerb_prompter(krb5_context ctx, void *data,
 	}
 
 	krb5_free_cred_contents(ctx, &my_creds);
-	krb5_free_principal(ctx, me);
 	
 	return 0;
 }
@@ -120,36 +111,28 @@ kerb_prompter(krb5_context ctx, void *data,
   Orignally by remus@snapserver.com
 */
  int kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc, 
-			       const char *principal, const char *password, 
-			       time_t *expire_time, time_t *kdc_time)
+				krb5_principal principal, const char *password, 
+				time_t *expire_time, time_t *kdc_time)
 {
 	krb5_error_code code = 0;
-	krb5_principal me;
 	krb5_creds my_creds;
 	krb5_get_init_creds_opt options;
 
-	if ((code = krb5_parse_name(ctx, principal, &me))) {
-		return code;
-	}
-
 	krb5_get_init_creds_opt_init(&options);
 
-	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, password, 
+	if ((code = krb5_get_init_creds_password(ctx, &my_creds, principal, password, 
 						 kerb_prompter, 
 						 NULL, 0, NULL, &options))) {
-		krb5_free_principal(ctx, me);
 		return code;
 	}
 	
-	if ((code = krb5_cc_initialize(ctx, cc, me))) {
+	if ((code = krb5_cc_initialize(ctx, cc, principal))) {
 		krb5_free_cred_contents(ctx, &my_creds);
-		krb5_free_principal(ctx, me);
 		return code;
 	}
 	
 	if ((code = krb5_cc_store_cred(ctx, cc, &my_creds))) {
 		krb5_free_cred_contents(ctx, &my_creds);
-		krb5_free_principal(ctx, me);
 		return code;
 	}
 	
@@ -162,7 +145,6 @@ kerb_prompter(krb5_context ctx, void *data,
 	}
 
 	krb5_free_cred_contents(ctx, &my_creds);
-	krb5_free_principal(ctx, me);
 	
 	return 0;
 }

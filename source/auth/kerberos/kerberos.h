@@ -102,10 +102,10 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 			   DATA_BLOB *ap_rep,
 			   krb5_keyblock **keyblock);
 int kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc, 
-			       const char *principal, const char *password, 
+			       krb5_principal principal, const char *password, 
 			       time_t *expire_time, time_t *kdc_time);
 int kerberos_kinit_keyblock_cc(krb5_context ctx, krb5_ccache cc, 
-			       const char *principal, krb5_keyblock *keyblock,
+			       krb5_principal principal, krb5_keyblock *keyblock,
 			       time_t *expire_time, time_t *kdc_time);
 krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
 							krb5_principal host_princ,

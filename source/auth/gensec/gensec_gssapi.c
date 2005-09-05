@@ -154,6 +154,7 @@ static NTSTATUS gensec_gssapi_server_start(struct gensec_security *gensec_securi
 {
 	NTSTATUS nt_status;
 	OM_uint32 maj_stat, min_stat;
+	gss_buffer_desc name_token;
 	struct gensec_gssapi_state *gensec_gssapi_state;
 	struct cli_credentials *machine_account;
 
@@ -177,7 +178,6 @@ static NTSTATUS gensec_gssapi_server_start(struct gensec_security *gensec_securi
 						 machine_account, 
 						 gensec_gssapi_state->smb_krb5_context,
 						 &gensec_gssapi_state->keytab);
-		talloc_free(machine_account);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(3, ("Could not create memory keytab!\n"));
 			talloc_free(machine_account);
@@ -185,9 +185,26 @@ static NTSTATUS gensec_gssapi_server_start(struct gensec_security *gensec_securi
 		}
 	}
 
+	name_token.value = cli_credentials_get_principal(machine_account, 
+							 machine_account);
+	name_token.length = strlen(name_token.value);
+
+	maj_stat = gss_import_name (&min_stat,
+				    &name_token,
+				    GSS_C_NT_USER_NAME,
+				    &gensec_gssapi_state->server_name);
+	talloc_free(machine_account);
+
+	if (maj_stat) {
+		DEBUG(2, ("GSS Import name of %s failed: %s\n",
+			  (char *)name_token.value,
+			  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	maj_stat = gsskrb5_acquire_cred(&min_stat, 
 					gensec_gssapi_state->keytab, NULL,
-					NULL,
+					gensec_gssapi_state->server_name,
 					GSS_C_INDEFINITE,
 					GSS_C_NULL_OID_SET,
 					GSS_C_ACCEPT,

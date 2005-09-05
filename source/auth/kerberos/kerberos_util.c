@@ -87,9 +87,39 @@ krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx,
 				  cli_credentials_get_realm(machine_account), 
 				  "host", salt_body, NULL);
 
-	if (ret != 0) {
+	if (ret == 0) {
 		mem_ctx->smb_krb5_context = talloc_reference(mem_ctx, smb_krb5_context);
 		mem_ctx->principal = *salt_princ;
+		talloc_set_destructor(mem_ctx, free_principal);
+	}
+	return ret;
+}
+
+krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx, 
+					   struct cli_credentials *credentials, 
+					   struct smb_krb5_context *smb_krb5_context,
+					   krb5_principal *princ)
+{
+	krb5_error_code ret;
+	const char *princ_string;
+	struct principal_container *mem_ctx = talloc(parent_ctx, struct principal_container);
+	if (!mem_ctx) {
+		return ENOMEM;
+	}
+	
+	princ_string = cli_credentials_get_principal(credentials, mem_ctx);
+
+	if (!princ_string) {
+		talloc_free(mem_ctx);
+		return ENOMEM;
+	}
+
+	ret = krb5_parse_name(smb_krb5_context->krb5_context,
+			      princ_string, princ);
+
+	if (ret == 0) {
+		mem_ctx->smb_krb5_context = talloc_reference(mem_ctx, smb_krb5_context);
+		mem_ctx->principal = *princ;
 		talloc_set_destructor(mem_ctx, free_principal);
 	}
 	return ret;
@@ -108,6 +138,7 @@ krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx,
 	krb5_error_code ret;
 	const char *password;
 	time_t kdc_time = 0;
+	krb5_principal princ;
 
 	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
 
@@ -115,11 +146,17 @@ krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx,
 		return ENOMEM;
 	}
 
+	ret = principal_from_credentials(mem_ctx, credentials, smb_krb5_context, &princ);
+	if (ret) {
+		talloc_free(mem_ctx);
+		return ret;
+	}
+
 	password = cli_credentials_get_password(credentials);
 	
 	if (password) {
 		ret = kerberos_kinit_password_cc(smb_krb5_context->krb5_context, ccache, 
-						 cli_credentials_get_principal(credentials, mem_ctx), 
+						 princ, 
 						 password, NULL, &kdc_time);
 	} else {
 		/* No password available, try to use a keyblock instead */
@@ -139,7 +176,7 @@ krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx,
 		
 		if (ret == 0) {
 			ret = kerberos_kinit_keyblock_cc(smb_krb5_context->krb5_context, ccache, 
-							 cli_credentials_get_principal(credentials, mem_ctx), 
+							 princ,
 							 &keyblock, NULL, &kdc_time);
 			krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &keyblock);
 		}
@@ -191,12 +228,13 @@ static int free_keytab(void *ptr) {
 	struct keytab_container *mem_ctx = talloc(parent_ctx, struct keytab_container);
 	krb5_enctype *enctypes;
 	krb5_principal salt_princ;
+	krb5_principal princ;
 	
 	if (!mem_ctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = krb5_kt_resolve(smb_krb5_context->krb5_context, "MEMORY_WILDCARD:", keytab);
+	ret = krb5_kt_resolve(smb_krb5_context->krb5_context, "MEMORY:", keytab);
 	if (ret) {
 		DEBUG(1,("failed to generate a new krb5 keytab: %s\n", 
 			 error_message(ret)));
@@ -214,7 +252,18 @@ static int free_keytab(void *ptr) {
 					      &salt_princ);
 	if (ret) {
 		DEBUG(1,("create_memory_keytab: maksing salt principal failed (%s)\n",
-			 error_message(ret)));
+			 smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
+						    ret, mem_ctx)));
+		talloc_free(mem_ctx);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	ret = principal_from_credentials(mem_ctx, machine_account, smb_krb5_context, &princ);
+	if (ret) {
+		DEBUG(1,("create_memory_keytab: maksing krb5 principal failed (%s)\n",
+			 smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
+						    ret, mem_ctx)));
+		talloc_free(mem_ctx);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -243,7 +292,7 @@ static int free_keytab(void *ptr) {
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 
-		entry.principal = salt_princ;
+		entry.principal = princ;
 		entry.vno       = cli_credentials_get_kvno(machine_account);
 		ret = krb5_kt_add_entry(smb_krb5_context->krb5_context, *keytab, &entry);
 		if (ret) {
@@ -283,7 +332,7 @@ static int free_keytab(void *ptr) {
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 
-                entry.principal = salt_princ;
+                entry.principal = princ;
                 entry.vno       = cli_credentials_get_kvno(machine_account);
 		ret = krb5_kt_add_entry(smb_krb5_context->krb5_context, *keytab, &entry);
 		if (ret) {
