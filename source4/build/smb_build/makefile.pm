@@ -499,7 +499,8 @@ clean: heimdal_clean
 	@echo Removing dummy targets
 	@-rm -f bin/.*_*
 	@echo Removing generated files
-	@-rm -rf librpc/gen_*
+	@-rm -rf librpc/gen_* 
+	@-rm -f lib/registry/regf.h lib/registry/tdr_regf*
 
 distclean: clean
 	-rm -f bin/.dummy
