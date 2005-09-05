@@ -1,5 +1,7 @@
-2005-09 -05  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-09-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/krb5_mk_req.3: Document krb5_rd_req.
+	
 	* lib/krb5/Makefile.am: MAN_mans+= krb5_mk_req.3
 	
 	* lib/krb5/krb5_mk_req.3: Document krb5_mk_req, krb5_mk_req_exact,
