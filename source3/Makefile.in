@@ -97,8 +97,12 @@ LIBSMBCLIENT=bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
 LIBSMBCLIENT_MAJOR=0
 LIBSMBCLIENT_MINOR=1
 
+LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
+LIBSMBSHAREMODES_MAJOR=0
+LIBSMBSHAREMODES_MINOR=1
 
-FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx @SMBWRAP_INC@ -I. $(CPPFLAGS) -I$(srcdir)
+
+FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx @SMBWRAP_INC@ -I. $(CPPFLAGS) -I$(srcdir) -I$(srcdir)/tdb
 FLAGS2 = 
 FLAGS3 = 
 FLAGS4 = 
@@ -137,7 +141,7 @@ BIN_PROGS = $(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3) @EXTRA_BIN_PROGS@
 EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ bin/talloctort@EXEEXT@ \
 	bin/log2pcap@EXEEXT@
 
-SHLIBS = @SHLIB_PROGS@ @LIBSMBCLIENT@ 
+SHLIBS = @SHLIB_PROGS@ @LIBSMBCLIENT@ @LIBSMBSHAREMODES@
 
 SCRIPTS = $(srcdir)/script/smbtar $(builddir)/script/findsmb
 
@@ -513,6 +517,8 @@ LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o libsmb/libsmb_compat.o \
 		   $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
 		   $(SECRETS_OBJ) $(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ)
 
+LIBSMBSHAREMODES_OBJ = libsmb/smb_share_modes.o tdb/tdb.o
+
 CAC_OBJ = $(LIBSMBCLIENT_OBJ) \
           libmsrpc/libmsrpc.o libmsrpc/libmsrpc_internal.o \
           libmsrpc/cac_lsarpc.o libmsrpc/cac_winreg.o libmsrpc/cac_samr.o \
@@ -641,6 +647,7 @@ WINBIND_WINS_NSS_PICOBJS = $(WINBIND_WINS_NSS_OBJ:.o=.@PICSUFFIX@)
 
 PICOBJS = $(SMBWRAPPER_OBJ:.o=.@PICSUFFIX@)
 LIBSMBCLIENT_PICOBJS = $(LIBSMBCLIENT_OBJ:.o=.@PICSUFFIX@)
+LIBSMBSHAREMODES_PICOBJS = $(LIBSMBSHAREMODES_OBJ:.o=.@PICSUFFIX@)
 
 CAC_PICOBJS = $(CAC_OBJ:.o=.@PICSUFFIX@)
 
@@ -1016,6 +1023,15 @@ bin/libsmbclient.a: $(LIBSMBCLIENT_PICOBJS)
 	@echo Linking libsmbclient non-shared library $@
 	@-$(AR) -rc $@ $(LIBSMBCLIENT_PICOBJS)
 
+bin/libsmbsharemodes.@SHLIBEXT@: $(LIBSMBSHAREMODES_PICOBS)
+	@echo Linking libsmbsharemodes shared library $@
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBSHAREMODES_PICOBS) $(LDFLAGS) $(LIBS) \
+		$(KRB5LIBS) $(LDAP_LIBS) \
+		@SONAMEFLAG@`basename $@`.$(LIBSMBSHAREMODES_MAJOR)
+
+bin/libsmbsharemodes.a: $(LIBSMBSHAREMODES_PICOBJS)
+	@echo Linking libsmbsharemodes non-shared library $@
+	@-$(AR) -rc $@ $(LIBSMBSHAREMODES_PICOBJS)
 
 bin/libmsrpc.@SHLIBEXT@: $(CAC_PICOBJS)
 	@echo Linking libmsrpc shared library $@
@@ -1041,6 +1057,7 @@ bin/libbigballofmud.@SHLIBEXT@: $(LIBBIGBALLOFMUD_PICOBJS)
 # library.
 
 libsmbclient: $(LIBSMBCLIENT)
+libsmbsharemodes: $(LIBSMBSHAREMODES)
 
 bin/librpc_lsarpc.@SHLIBEXT@: $(RPC_LSA_OBJ)
 	@echo "Linking $@"
@@ -1461,7 +1478,7 @@ TOPFILES=dynconfig.o dynconfig.@PICSUFFIX@
 clean: delheaders python_clean
 	-rm -f core */*~ *~ */*.o */*.@PICSUFFIX@ */*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(MODULES) $(TORTURE_PROGS) \
-		$(LIBSMBCLIENT) $(EVERYTHING_PROGS) .headers.stamp 
+		$(LIBSMBCLIENT) $(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) .headers.stamp 
 	-rm -rf t_dir
 
 # Making this target will just make sure that the prototype files
