@@ -211,6 +211,7 @@ man_MANS =					\
 	krb5_keytab.3				\
 	krb5_krbhst_init.3			\
 	krb5_kuserok.3				\
+	krb5_mk_req.3				\
 	krb5_openlog.3				\
 	krb5_parse_name.3			\
 	krb5_principal.3			\
