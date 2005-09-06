@@ -105,7 +105,7 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 			}
 			if (strcasecmp(str, alias_from) == 0) {
 				*alias_to = mapping;
-				return 0;
+				return DRSUAPI_DS_NAME_STATUS_OK;
 			}
 		} while (p);
 	}
