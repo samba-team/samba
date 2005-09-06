@@ -1023,9 +1023,9 @@ bin/libsmbclient.a: $(LIBSMBCLIENT_PICOBJS)
 	@echo Linking libsmbclient non-shared library $@
 	@-$(AR) -rc $@ $(LIBSMBCLIENT_PICOBJS)
 
-bin/libsmbsharemodes.@SHLIBEXT@: $(LIBSMBSHAREMODES_PICOBS)
+bin/libsmbsharemodes.@SHLIBEXT@: $(LIBSMBSHAREMODES_PICOBJS)
 	@echo Linking libsmbsharemodes shared library $@
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBSHAREMODES_PICOBS) $(LDFLAGS) $(LIBS) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBSHAREMODES_PICOBJS) $(LDFLAGS) $(LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) \
 		@SONAMEFLAG@`basename $@`.$(LIBSMBSHAREMODES_MAJOR)
 
