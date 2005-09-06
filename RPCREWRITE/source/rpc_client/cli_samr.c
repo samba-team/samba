@@ -3,10 +3,8 @@
    RPC pipe client
    Copyright (C) Tim Potter                        2000-2001,
    Copyright (C) Andrew Tridgell              1992-1997,2000,
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1997,2000,
-   Copyright (C) Paul Ashton                       1997,2000,
-   Copyright (C) Elrond                                 2000,
    Copyright (C) Rafal Szczesniak                       2002.
+   Copyright (C) Jeremy Allison                         2005.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1150,7 +1148,7 @@ NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
 
 	char *srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", cli->cli->desthost);
 
-	DEBUG(10,("cli_samr_query_dom_info\n"));
+	DEBUG(10,("rpccli_samr_chgpasswd_user\n"));
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);

@@ -78,8 +78,8 @@ struct rpc_pipe_client {
 	const char *pipe_name;
 	uint16 fnum;
 
-	const char *user_name;
 	const char *domain;
+	const char *user_name;
 	struct pwd_info pwd;
 
 	uint16 max_xmit_frag;
@@ -105,8 +105,11 @@ struct cli_state {
 	int privileges;
 
 	fstring desthost;
-	fstring user_name;
+
+	/* The credentials used to open the cli_state connection. */
 	fstring domain;
+	fstring user_name;
+	struct pwd_info pwd;
 
 	/*
 	 * The following strings are the
@@ -124,7 +127,6 @@ struct cli_state {
 	fstring full_dest_host_name;
 	struct in_addr dest_ip;
 
-	struct pwd_info pwd;
 	DATA_BLOB secblob; /* cryptkey or negTokenInit */
 	uint32 sesskey;
 	int serverzone;
@@ -150,27 +152,8 @@ struct cli_state {
 	   any per-pipe authenticaion */
 	DATA_BLOB user_session_key;
 
+	/* The list of pipes currently open on this connection. */
 	struct rpc_pipe_client *pipe_list;
-
-#if 0
-/*	struct rpc_pipe_client *pipes[PI_MAX_PIPES]; */
-
-	/* Secure pipe parameters */
-	int pipe_auth_flags;
-
-	struct rpc_pipe_client netlogon_pipe;  /* The "first" pipe to get
-						  the session key for the
-						  schannel. */
-
-	/* Name of the pipe we're talking to, if any */
-	fstring pipe_name;
-
-	unsigned char sess_key[16];        /* Current session key. */
-	DOM_CRED clnt_cred;                /* Client credential. */
-	fstring mach_acct;                 /* MYNAME$. */
-	fstring srv_name_slash;            /* \\remote server. */
-	fstring clnt_name_slash;           /* \\local client. */
-#endif
 
 	BOOL use_kerberos;
 	BOOL fallback_after_kerberos;

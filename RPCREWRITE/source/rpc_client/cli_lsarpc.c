@@ -3,10 +3,8 @@
    RPC pipe client
    Copyright (C) Tim Potter                        2000-2001,
    Copyright (C) Andrew Tridgell              1992-1997,2000,
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1997,2000,
-   Copyright (C) Paul Ashton                       1997,2000,
-   Copyright (C) Elrond                                 2000,
    Copyright (C) Rafal Szczesniak                       2002
+   Copyright (C) Jeremy Allison				2005.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

@@ -5,8 +5,8 @@
    Copyright (C) Gerald Carter                2001-2005,
    Copyright (C) Tim Potter                   2000-2002,
    Copyright (C) Andrew Tridgell              1994-2000,
-   Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
    Copyright (C) Jean-Francois Micouleau      1999-2000.
+   Copyright (C) Jeremy Allison                         2005.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

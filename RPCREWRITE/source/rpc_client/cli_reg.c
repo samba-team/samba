@@ -3,9 +3,7 @@
    RPC Pipe client
  
    Copyright (C) Andrew Tridgell              1992-2000,
-   Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
-   Copyright (C) Paul Ashton                  1997-2000.
-   Copyright (C) Jeremy Allison                    1999.
+   Copyright (C) Jeremy Allison                    1999 - 2005
    Copyright (C) Simo Sorce                        2001
    Copyright (C) Jeremy Cooper                     2004
    Copyright (C) Gerald (Jerry) Carter             2005
