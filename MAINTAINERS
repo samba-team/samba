@@ -24,6 +24,8 @@ samba-vscan		Rainer Link <rainer@openantivirus.org>
 pdb_mysql		Jelmer Vernooij <jelmer@samba.org>
 General Documentation	John Terpstra <jht@samba.org>
 
+Printing		Gerald (Jerry) Carter <jerry@samba.org>
+
 
 --
 Please report any errors in this file to <samba-technical@samba.org>
