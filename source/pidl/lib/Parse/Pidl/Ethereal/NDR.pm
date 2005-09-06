@@ -33,8 +33,12 @@ sub type2ft($)
  
     return "FT_UINT$1" if $t =~ /uint(8|16|32|64)/;
     return "FT_INT$1" if $t =~ /int(8|16|32|64)/;
-    return "FT_UINT64", if $t eq "HYPER_T" or $t eq "NTTIME"
-	or $t eq "NTTIME_1sec" or $t eq "NTTIME_hyper" or $t eq "hyper";
+    return "FT_UINT64", if $t eq "HYPER_T" or $t eq "NTTIME_hyper" 
+	or $t eq "hyper";
+
+    # TODO: should NTTIME_hyper be a FT_ABSOLUTE_TIME as well?
+
+    return "FT_ABSOLUTE_TIME" if $t eq "NTTIME" or $t eq "NTTIME_1sec";
 
     return "FT_STRING" if ($t eq "string");
    
