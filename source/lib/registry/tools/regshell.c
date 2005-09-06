@@ -35,6 +35,7 @@
  * ch - change hive
  * info - show key info
  * save - save hive
+ * print - print value
  * help
  * exit
  */
@@ -123,6 +124,26 @@ static struct registry_key *cmd_ck(TALLOC_CTX *mem_ctx, struct registry_context 
 	return new;
 }
 
+static struct registry_key *cmd_print(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *cur, int argc, char **argv)
+{
+	struct registry_value *value;
+	WERROR error;
+
+	if (argc != 2) {
+		fprintf(stderr, "Usage: print <valuename>");
+		return NULL;
+	}
+	
+	error = reg_key_get_value_by_name(mem_ctx, cur, argv[1], &value);
+	if (!W_ERROR_IS_OK(error)) {
+		fprintf(stderr, "No such value '%s'\n", argv[1]);
+		return NULL;
+	}
+
+	printf("%s\n%s\n", str_regtype(value->data_type), reg_val_data_string(mem_ctx, value));
+	return NULL;
+}
+
 static struct registry_key *cmd_ls(TALLOC_CTX *mem_ctx, struct registry_context *ctx,struct registry_key *cur, int argc, char **argv)
 {
 	int i;
@@ -208,6 +229,7 @@ static struct {
 	{"ck", "cd", "Change current key", cmd_ck },
 	{"info", "i", "Show detailed information of a key", cmd_info },
 	{"list", "ls", "List values/keys in current key", cmd_ls },
+	{"print", "p", "Print value", cmd_print },
 	{"mkkey", "mkdir", "Make new key", cmd_mkkey },
 	{"rmval", "rm", "Remove value", cmd_rmval },
 	{"rmkey", "rmdir", "Remove key", cmd_rmkey },
