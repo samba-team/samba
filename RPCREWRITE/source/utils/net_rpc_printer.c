@@ -49,9 +49,11 @@ static const struct table_node archi_table[]= {
  * possibly be removed later on
  *
  **/
+
 /****************************************************************************
-convert a security permissions into a string
+ Convert a security permissions into a string.
 ****************************************************************************/
+
 char *get_sec_mask_str(uint32 type)
 {
 	static fstring typestr="";
@@ -86,10 +88,10 @@ char *get_sec_mask_str(uint32 type)
 	return typestr;
 }
 
-
 /****************************************************************************
- display sec_ace structure
+ Display sec_ace structure.
  ****************************************************************************/
+
 void display_sec_ace(SEC_ACE *ace)
 {
 	fstring sid_str;
@@ -119,10 +121,10 @@ void display_sec_ace(SEC_ACE *ace)
 	printf("\t\tSID: %s\n\n", sid_str);
 }
 
-
 /****************************************************************************
- display sec_acl structure
+ Display sec_acl structure.
  ****************************************************************************/
+
 void display_sec_acl(SEC_ACL *sec_acl)
 {
 	int i;
@@ -138,8 +140,9 @@ void display_sec_acl(SEC_ACL *sec_acl)
 }
 
 /****************************************************************************
- display sec_desc structure
+ Display sec_desc structure.
  ****************************************************************************/
+
 void display_sec_desc(SEC_DESC *sec)
 {
 	fstring sid_str;
@@ -175,8 +178,9 @@ void display_sec_desc(SEC_DESC *sec)
  **/
 
 /****************************************************************************
-printer info level 3 display function
+ Printer info level 3 display function.
 ****************************************************************************/
+
 static void display_print_driver_3(DRIVER_INFO_3 *i1)
 {
 	fstring name = "";
@@ -233,7 +237,6 @@ static void display_print_driver_3(DRIVER_INFO_3 *i1)
 	return;	
 }
 
-
 static void display_reg_value(const char *subkey, REGISTRY_VALUE value)
 {
 	pstring text;
@@ -275,7 +278,6 @@ static void display_reg_value(const char *subkey, REGISTRY_VALUE value)
 	
 }
 
-
 /**
  * Copies ACLs, DOS-attributes and timestamps from one 
  * file or directory from one connected share to another connected share 
@@ -292,6 +294,7 @@ static void display_reg_value(const char *subkey, REGISTRY_VALUE value)
  *
  * @return Normal NTSTATUS return.
  **/ 
+
 NTSTATUS net_copy_fileattr(TALLOC_CTX *mem_ctx,
 		  struct cli_state *cli_share_src,
 		  struct cli_state *cli_share_dst, 
@@ -309,7 +312,6 @@ NTSTATUS net_copy_fileattr(TALLOC_CTX *mem_ctx,
 
 	if (!copy_timestamps && !copy_acls && !copy_attrs)
 		return NT_STATUS_OK;
-
 
 	/* open file/dir on the originating server */
 
@@ -429,7 +431,6 @@ out:
 	return nt_status;
 }
 
-
 /**
  * Copy a file or directory from a connected share to another connected share 
  *
@@ -445,6 +446,7 @@ out:
  *
  * @return Normal NTSTATUS return.
  **/ 
+
 NTSTATUS net_copy_file(TALLOC_CTX *mem_ctx,
 		       struct cli_state *cli_share_src,
 		       struct cli_state *cli_share_dst, 
@@ -605,7 +607,6 @@ out:
 	return nt_status;
 }
 
-
 /**
  * Copy a driverfile from on connected share to another connected share 
  * This silently assumes that a driver-file is picked up from 
@@ -625,6 +626,7 @@ out:
  *
  * @return Normal NTSTATUS return.
  **/ 
+
 static NTSTATUS net_copy_driverfile(TALLOC_CTX *mem_ctx,
 				    struct cli_state *cli_share_src,
 				    struct cli_state *cli_share_dst, 
@@ -673,7 +675,6 @@ out:
 	return nt_status;
 }
 
-
 /**
  * Check for existing Architecture directory on a given server
  *
@@ -682,8 +683,8 @@ out:
  *
  * @return Normal NTSTATUS return.
  **/
-static NTSTATUS 
-check_arch_dir(struct cli_state *cli_share, const char *short_archi)
+
+static NTSTATUS check_arch_dir(struct cli_state *cli_share, const char *short_archi)
 {
 
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
@@ -715,7 +716,6 @@ out:
 	return nt_status;
 }
 
-
 /**
  * Copy a print-driver (level 3) from one connected print$-share to another 
  * connected print$-share
@@ -728,8 +728,8 @@ out:
  *
  * @return Normal NTSTATUS return.
  **/
-static NTSTATUS 
-copy_print_driver_3(TALLOC_CTX *mem_ctx,
+
+static NTSTATUS copy_print_driver_3(TALLOC_CTX *mem_ctx,
 		    struct cli_state *cli_share_src, 
 		    struct cli_state *cli_share_dst, 
 		    const char *short_archi, DRIVER_INFO_3 *i1)
@@ -799,7 +799,6 @@ copy_print_driver_3(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-
 /**
  * net_spoolss-functions
  * =====================
@@ -812,16 +811,18 @@ copy_print_driver_3(TALLOC_CTX *mem_ctx,
  *
  **/
 
-static BOOL
-net_spoolss_enum_printers(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-			  char *name, uint32 flags, uint32 level, 
-			  uint32 *num_printers, PRINTER_INFO_CTR *ctr)
+static BOOL net_spoolss_enum_printers(struct rpc_pipe_client *pipe_hnd,
+					TALLOC_CTX *mem_ctx, 
+					char *name,
+					uint32 flags,
+					uint32 level, 
+					uint32 *num_printers,
+					PRINTER_INFO_CTR *ctr)
 {
-
 	WERROR result;
 
 	/* enum printers */
-	result = cli_spoolss_enum_printers(cli, mem_ctx, name, flags,
+	result = rpccli_spoolss_enum_printers(pipe_hnd, mem_ctx, name, flags,
 		level, num_printers, ctr);
 
 	if (!W_ERROR_IS_OK(result)) {
@@ -832,11 +833,12 @@ net_spoolss_enum_printers(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-
-static BOOL
-net_spoolss_open_printer_ex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			    const char *printername, uint32 access_required, 
-			    const char *username, POLICY_HND *hnd)
+static BOOL net_spoolss_open_printer_ex(struct rpc_pipe_client *pipe_hnd,
+					TALLOC_CTX *mem_ctx,
+					const char *printername,
+					uint32 access_required, 
+					const char *username,
+					POLICY_HND *hnd)
 {
 	WERROR result;
 	fstring servername, printername2;
@@ -851,7 +853,7 @@ net_spoolss_open_printer_ex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		servername, username, printername2, access_required));
 
 	/* open printer */
-	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername2,
+	result = rpccli_spoolss_open_printer_ex(pipe_hnd, mem_ctx, printername2,
 			"", access_required,
 			servername, username, hnd);
 
@@ -874,16 +876,16 @@ net_spoolss_open_printer_ex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-
-static BOOL
-net_spoolss_getprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-		       POLICY_HND *hnd, uint32 level, 
-		       PRINTER_INFO_CTR *ctr)
+static BOOL net_spoolss_getprinter(struct rpc_pipe_client *pipe_hnd,
+				TALLOC_CTX *mem_ctx,
+				POLICY_HND *hnd,
+				uint32 level, 
+				PRINTER_INFO_CTR *ctr)
 {
 	WERROR result;
 
 	/* getprinter call */
-	result = cli_spoolss_getprinter(cli, mem_ctx, hnd, level, ctr);
+	result = rpccli_spoolss_getprinter(pipe_hnd, mem_ctx, hnd, level, ctr);
 
 	if (!W_ERROR_IS_OK(result)) {
 		printf("cannot get printer-info: %s\n", dos_errstr(result));
@@ -893,16 +895,16 @@ net_spoolss_getprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-
-static BOOL
-net_spoolss_setprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-		       POLICY_HND *hnd, uint32 level, 
-		       PRINTER_INFO_CTR *ctr)
+static BOOL net_spoolss_setprinter(struct rpc_pipe_client *pipe_hnd,
+				TALLOC_CTX *mem_ctx,
+				POLICY_HND *hnd,
+				uint32 level, 
+				PRINTER_INFO_CTR *ctr)
 {
 	WERROR result;
 
 	/* setprinter call */
-	result = cli_spoolss_setprinter(cli, mem_ctx, hnd, level, ctr, 0);
+	result = rpccli_spoolss_setprinter(pipe_hnd, mem_ctx, hnd, level, ctr, 0);
 
 	if (!W_ERROR_IS_OK(result)) {
 		printf("cannot set printer-info: %s\n", dos_errstr(result));
@@ -913,14 +915,15 @@ net_spoolss_setprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 
-static BOOL
-net_spoolss_setprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			   POLICY_HND *hnd, REGISTRY_VALUE *value)
+static BOOL net_spoolss_setprinterdata(struct rpc_pipe_client *pipe_hnd,
+					TALLOC_CTX *mem_ctx,
+					POLICY_HND *hnd,
+					REGISTRY_VALUE *value)
 {
 	WERROR result;
 	
 	/* setprinterdata call */
-	result = cli_spoolss_setprinterdata(cli, mem_ctx, hnd, value);
+	result = rpccli_spoolss_setprinterdata(pipe_hnd, mem_ctx, hnd, value);
 
 	if (!W_ERROR_IS_OK(result)) {
 		printf ("unable to set printerdata: %s\n", dos_errstr(result));
@@ -931,15 +934,16 @@ net_spoolss_setprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 
-static BOOL
-net_spoolss_enumprinterkey(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			   POLICY_HND *hnd, const char *keyname,
-			   uint16 **keylist)
+static BOOL net_spoolss_enumprinterkey(struct rpc_pipe_client *pipe_hnd,
+					TALLOC_CTX *mem_ctx,
+					POLICY_HND *hnd,
+					const char *keyname,
+					uint16 **keylist)
 {
 	WERROR result;
 
 	/* enumprinterkey call */
-	result = cli_spoolss_enumprinterkey(cli, mem_ctx, hnd, keyname, keylist, NULL);
+	result = rpccli_spoolss_enumprinterkey(pipe_hnd, mem_ctx, hnd, keyname, keylist, NULL);
 		
 	if (!W_ERROR_IS_OK(result)) {
 		printf("enumprinterkey failed: %s\n", dos_errstr(result));
@@ -949,17 +953,17 @@ net_spoolss_enumprinterkey(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-
-static BOOL
-net_spoolss_enumprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			      uint32 offered, 
-			      POLICY_HND *hnd, const char *keyname, 
-			      REGVAL_CTR *ctr) 
+static BOOL net_spoolss_enumprinterdataex(struct rpc_pipe_client *pipe_hnd,
+					TALLOC_CTX *mem_ctx,
+					uint32 offered, 
+					POLICY_HND *hnd,
+					const char *keyname, 
+					REGVAL_CTR *ctr) 
 {
 	WERROR result;
 
 	/* enumprinterdataex call */
-	result = cli_spoolss_enumprinterdataex(cli, mem_ctx, hnd, keyname, ctr);
+	result = rpccli_spoolss_enumprinterdataex(pipe_hnd, mem_ctx, hnd, keyname, ctr);
 			
 	if (!W_ERROR_IS_OK(result)) {
 		printf("enumprinterdataex failed: %s\n", dos_errstr(result));
@@ -970,8 +974,7 @@ net_spoolss_enumprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 
-static BOOL 
-net_spoolss_setprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+static BOOL net_spoolss_setprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			     POLICY_HND *hnd, char *keyname, 
 			     REGISTRY_VALUE *value)
 {
@@ -990,8 +993,7 @@ net_spoolss_setprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 
-static BOOL
-net_spoolss_enumforms(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+static BOOL net_spoolss_enumforms(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		      POLICY_HND *hnd, int level, uint32 *num_forms,
 		      FORM_1 **forms)
 										       
@@ -1010,8 +1012,7 @@ net_spoolss_enumforms(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 
-static BOOL
-net_spoolss_enumprinterdrivers (struct cli_state *cli, TALLOC_CTX *mem_ctx,
+static BOOL net_spoolss_enumprinterdrivers (struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				uint32 level, const char *env,
 				uint32 *num_drivers,
 				PRINTER_DRIVER_CTR *ctr)
@@ -1032,8 +1033,7 @@ net_spoolss_enumprinterdrivers (struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 
-static BOOL
-net_spoolss_getprinterdriver(struct cli_state *cli, 
+static BOOL net_spoolss_getprinterdriver(struct cli_state *cli, 
 			     TALLOC_CTX *mem_ctx, 
 			     POLICY_HND *hnd, uint32 level, 
 			     const char *env, int version, 
@@ -1060,8 +1060,7 @@ net_spoolss_getprinterdriver(struct cli_state *cli,
 }
 
 
-static BOOL
-net_spoolss_addprinterdriver(struct cli_state *cli, 
+static BOOL net_spoolss_addprinterdriver(struct cli_state *cli, 
 			     TALLOC_CTX *mem_ctx, uint32 level,
 			     PRINTER_DRIVER_CTR *ctr)
 {
@@ -1087,8 +1086,8 @@ net_spoolss_addprinterdriver(struct cli_state *cli,
  * abstraction function to get uint32 num_printers and PRINTER_INFO_CTR ctr 
  * for a single printer or for all printers depending on argc/argv 
  **/
-static BOOL
-get_printer_info(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+
+static BOOL get_printer_info(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
 		 int level, int argc, const char **argv, 
 		 uint32 *num_printers, PRINTER_INFO_CTR *ctr)
 {
@@ -1128,7 +1127,6 @@ out:
 
 }
 
-
 /** 
  * List print-queues (including local printers that are not shared)
  *
@@ -1144,9 +1142,14 @@ out:
  *
  * @return Normal NTSTATUS return.
  **/
-NTSTATUS rpc_printer_list_internals(const DOM_SID *domain_sid, const char *domain_name, 
-				    struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-				    int argc, const char **argv)
+
+NTSTATUS rpc_printer_list_internals(const DOM_SID *domain_sid,
+					const char *domain_name, 
+					struct cli_state *cli,
+					struct rpc_pipe_client *pipe_hnd,
+					TALLOC_CTX *mem_ctx, 
+					int argc,
+					const char **argv)
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	uint32 i, num_printers; 
@@ -1156,7 +1159,7 @@ NTSTATUS rpc_printer_list_internals(const DOM_SID *domain_sid, const char *domai
 
 	printf("listing printers\n");
 
-	if (!get_printer_info(cli, mem_ctx, level, argc, argv, &num_printers, &ctr))
+	if (!get_printer_info(pipe_hnd, mem_ctx, level, argc, argv, &num_printers, &ctr))
 		return nt_status;
 
 	for (i = 0; i < num_printers; i++) {
@@ -1174,7 +1177,6 @@ NTSTATUS rpc_printer_list_internals(const DOM_SID *domain_sid, const char *domai
 	return NT_STATUS_OK;
 }
 
-
 /** 
  * List printer-drivers from a server 
  *
@@ -1190,9 +1192,14 @@ NTSTATUS rpc_printer_list_internals(const DOM_SID *domain_sid, const char *domai
  *
  * @return Normal NTSTATUS return.
  **/
-NTSTATUS rpc_printer_driver_list_internals(const DOM_SID *domain_sid, const char *domain_name, 
-					   struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-					   int argc, const char **argv)
+
+NTSTATUS rpc_printer_driver_list_internals(const DOM_SID *domain_sid,
+						const char *domain_name, 
+						struct cli_state *cli,
+						struct rpc_pipe_client *pipe_hnd,
+						TALLOC_CTX *mem_ctx, 
+						int argc,
+						const char **argv)
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	uint32 i;
@@ -1202,7 +1209,6 @@ NTSTATUS rpc_printer_driver_list_internals(const DOM_SID *domain_sid, const char
 	
 	ZERO_STRUCT(drv_ctr_enum);
 
-
 	printf("listing printer-drivers\n");
 
         for (i=0; archi_table[i].long_archi!=NULL; i++) {
@@ -1210,7 +1216,7 @@ NTSTATUS rpc_printer_driver_list_internals(const DOM_SID *domain_sid, const char
 		uint32 num_drivers;
 
 		/* enum remote drivers */
-		if (!net_spoolss_enumprinterdrivers(cli, mem_ctx, level,
+		if (!net_spoolss_enumprinterdrivers(pipe_hnd, mem_ctx, level,
 				archi_table[i].long_archi, 
 				&num_drivers, &drv_ctr_enum)) {
 										
@@ -1446,9 +1452,14 @@ done:
  *
  * @return Normal NTSTATUS return.
  **/
-NTSTATUS rpc_printer_migrate_security_internals(const DOM_SID *domain_sid, const char *domain_name, 
-						struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-						int argc, const char **argv)
+
+NTSTATUS rpc_printer_migrate_security_internals(const DOM_SID *domain_sid,
+						const char *domain_name, 
+						struct cli_state *cli,
+						struct rpc_pipe_client *pipe_hnd,
+						TALLOC_CTX *mem_ctx, 
+						int argc,
+						const char **argv)
 {
 	/* TODO: what now, info2 or info3 ? 
 	   convince jerry that we should add clientside setacls level 3 at least
@@ -1579,7 +1590,6 @@ done:
 	return nt_status;
 }
 
-
 /** 
  * Migrate printer-forms from a src server to the dst server
  *
@@ -1595,9 +1605,14 @@ done:
  *
  * @return Normal NTSTATUS return.
  **/
-NTSTATUS rpc_printer_migrate_forms_internals(const DOM_SID *domain_sid, const char *domain_name, 
-					     struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-					     int argc, const char **argv)
+
+NTSTATUS rpc_printer_migrate_forms_internals(const DOM_SID *domain_sid,
+						const char *domain_name, 
+						struct cli_state *cli,
+						struct rpc_pipe_client *pipe_hnd,
+						TALLOC_CTX *mem_ctx, 
+						int argc,
+						const char **argv)
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	WERROR result;
@@ -1750,9 +1765,7 @@ done:
 		cli_shutdown(cli_dst);
 	}
 	return nt_status;
-
 }
-
 
 /** 
  * Migrate printer-drivers from a src server to the dst server
@@ -1769,9 +1782,14 @@ done:
  *
  * @return Normal NTSTATUS return.
  **/
-NTSTATUS rpc_printer_migrate_drivers_internals(const DOM_SID *domain_sid, const char *domain_name, 
-					       struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-					       int argc, const char **argv)
+
+NTSTATUS rpc_printer_migrate_drivers_internals(const DOM_SID *domain_sid,
+						const char *domain_name, 
+						struct cli_state *cli,
+						struct rpc_pipe_client *pipe_hnd,
+						TALLOC_CTX *mem_ctx, 
+						int argc,
+						const char **argv)
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	uint32 i, p;
@@ -1968,7 +1986,6 @@ done:
 
 }
 
-
 /** 
  * Migrate printer-queues from a src to the dst server
  * (requires a working "addprinter command" to be installed for the local smbd)
@@ -1985,9 +2002,14 @@ done:
  *
  * @return Normal NTSTATUS return.
  **/
-NTSTATUS rpc_printer_migrate_printers_internals(const DOM_SID *domain_sid, const char *domain_name, 
-						struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-						int argc, const char **argv)
+
+NTSTATUS rpc_printer_migrate_printers_internals(const DOM_SID *domain_sid,
+						const char *domain_name, 
+						struct cli_state *cli,
+						struct rpc_pipe_client *pipe_hnd,
+						TALLOC_CTX *mem_ctx, 
+						int argc,
+						const char **argv)
 {
 	WERROR result;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
@@ -2124,7 +2146,6 @@ done:
 	return nt_status;
 }
 
-
 /** 
  * Migrate Printer-Settings from a src server to the dst server
  * (for this to work, printers and drivers already have to be migrated earlier)
@@ -2141,9 +2162,14 @@ done:
  *
  * @return Normal NTSTATUS return.
  **/
-NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const char *domain_name, 
-						struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-						int argc, const char **argv)
+
+NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid,
+						const char *domain_name, 
+						struct cli_state *cli,
+						struct rpc_pipe_client *pipe_hnd,
+						TALLOC_CTX *mem_ctx, 
+						int argc,
+						const char **argv)
 {
 
 	/* FIXME: Here the nightmare begins */

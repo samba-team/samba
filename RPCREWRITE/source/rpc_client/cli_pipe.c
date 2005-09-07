@@ -1912,8 +1912,8 @@ struct rpc_pipe_client *cli_rpc_pipe_open_noauth(struct cli_state *cli, int pipe
 
 	ret = rpc_pipe_bind(result, PIPE_AUTH_TYPE_NONE, PIPE_AUTH_LEVEL_NONE);
 	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(0, ("cli_rpc_pipe_open_noauth: rpc_pipe_bind failed with error %s\n",
-			nt_errstr(ret) ));
+		DEBUG(0, ("cli_rpc_pipe_open_noauth: rpc_pipe_bind for pipe %s failed with error %s\n",
+			cli_get_pipe_name(pipe_idx), nt_errstr(ret) ));
 		cli_rpc_pipe_close(result);
 		return NULL;
 	}
