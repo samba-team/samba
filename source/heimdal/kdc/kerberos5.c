@@ -208,7 +208,7 @@ log_timestamp(krb5_context context,
 	strlcpy(renewtime_str, "unset", sizeof(renewtime_str));
     
     kdc_log(context, config, 5,
-	    "%s authtime: %s starttime: %s endtype: %s renew till: %s",
+	    "%s authtime: %s starttime: %s endtime: %s renew till: %s",
 	    type, authtime_str, starttime_str, endtime_str, renewtime_str);
 }
 
@@ -329,8 +329,9 @@ make_etype_info_entry(krb5_context context, ETYPE_INFO_ENTRY *ent, Key *key)
 {
     ent->etype = key->key.keytype;
     if(key->salt){
-	ALLOC(ent->salttype);
 #if 0
+	ALLOC(ent->salttype);
+
 	if(key->salt->type == hdb_pw_salt)
 	    *ent->salttype = 0; /* or 1? or NULL? */
 	else if(key->salt->type == hdb_afs3_salt)
@@ -345,8 +346,17 @@ make_etype_info_entry(krb5_context context, ETYPE_INFO_ENTRY *ent, Key *key)
 	   *know* what cell you are using (e.g by assuming
 	   that the cell is the same as the realm in lower
 	   case) */
-#else
+#elif 0
+	ALLOC(ent->salttype);
 	*ent->salttype = key->salt->type;
+#else
+	/* 
+	 * We shouldn't sent salttype since its incompatible with the
+	 * specification and its break windows clients.  The afs
+	 * salting problem is solved by using KRB5-PADATA-AFS3-SALT
+	 * implemented in Heimdal 0.7 and later.
+	 */
+	ent->salttype = NULL;
 #endif
 	krb5_copy_data(context, &key->salt->salt,
 		       &ent->salt);
@@ -1508,7 +1518,20 @@ fix_transited_encoding(krb5_context context,
     int num_realms;
     int i;
 
-    if(tr->tr_type != DOMAIN_X500_COMPRESS) {
+    switch (tr->tr_type) {
+    case DOMAIN_X500_COMPRESS:
+	break;
+    case 0:
+	/*
+	 * Allow empty content of type 0 because that is was Microsoft
+	 * generates in their TGT.
+	 */
+	if (tr->contents.length == 0)
+	    break;
+	kdc_log(context, config, 0,
+		"Transited type 0 with non empty content");
+	return KRB5KDC_ERR_TRTYPE_NOSUPP;
+    default:
 	kdc_log(context, config, 0,
 		"Unknown transited type: %u", tr->tr_type);
 	return KRB5KDC_ERR_TRTYPE_NOSUPP;

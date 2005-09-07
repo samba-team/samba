@@ -118,7 +118,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	/* TODO: Fill in channel bindings */
 	gensec_gssapi_state->input_chan_bindings = GSS_C_NO_CHANNEL_BINDINGS;
 	
-	gensec_gssapi_state->want_flags = 0;
+	gensec_gssapi_state->want_flags = GSS_C_MUTUAL_FLAG;
 	gensec_gssapi_state->got_flags = 0;
 
 	gensec_gssapi_state->session_key = data_blob(NULL, 0);
@@ -388,12 +388,15 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 		
 	}
 
-	*out = data_blob_talloc(out_mem_ctx, output_token.value, output_token.length);
-	gss_release_buffer(&min_stat2, &output_token);
-
 	if (maj_stat == GSS_S_COMPLETE) {
+		*out = data_blob_talloc(out_mem_ctx, output_token.value, output_token.length);
+		gss_release_buffer(&min_stat2, &output_token);
+
 		return NT_STATUS_OK;
 	} else if (maj_stat == GSS_S_CONTINUE_NEEDED) {
+		*out = data_blob_talloc(out_mem_ctx, output_token.value, output_token.length);
+		gss_release_buffer(&min_stat2, &output_token);
+
 		return NT_STATUS_MORE_PROCESSING_REQUIRED;
 	} else {
 		if (maj_stat == GSS_S_FAILURE
@@ -427,12 +430,12 @@ static NTSTATUS gensec_gssapi_wrap(struct gensec_security *gensec_security,
 			    &conf_state,
 			    &output_token);
 	if (GSS_ERROR(maj_stat)) {
-		DEBUG(1, ("GSS Wrap failed: %s\n", 
+		DEBUG(1, ("gensec_gssapi_wrap: GSS Wrap failed: %s\n", 
 			  gssapi_error_string(mem_ctx, maj_stat, min_stat)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
-	*out = data_blob_talloc(mem_ctx, output_token.value, output_token.length);
 
+	*out = data_blob_talloc(mem_ctx, output_token.value, output_token.length);
 	gss_release_buffer(&min_stat, &output_token);
 
 	if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)
@@ -462,12 +465,12 @@ static NTSTATUS gensec_gssapi_unwrap(struct gensec_security *gensec_security,
 			      &conf_state,
 			      &qop_state);
 	if (GSS_ERROR(maj_stat)) {
-		DEBUG(1, ("GSS UnWrap failed: %s\n", 
+		DEBUG(1, ("gensec_gssapi_unwrap: GSS UnWrap failed: %s\n", 
 			  gssapi_error_string(mem_ctx, maj_stat, min_stat)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
-	*out = data_blob_talloc(mem_ctx, output_token.value, output_token.length);
 
+	*out = data_blob_talloc(mem_ctx, output_token.value, output_token.length);
 	gss_release_buffer(&min_stat, &output_token);
 	
 	if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)
@@ -506,7 +509,7 @@ static NTSTATUS gensec_gssapi_seal_packet(struct gensec_security *gensec_securit
 			    &conf_state,
 			    &output_token);
 	if (GSS_ERROR(maj_stat)) {
-		DEBUG(1, ("GSS Wrap failed: %s\n", 
+		DEBUG(1, ("gensec_gssapi_seal_packet: GSS Wrap failed: %s\n", 
 			  gssapi_error_string(mem_ctx, maj_stat, min_stat)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -546,7 +549,7 @@ static NTSTATUS gensec_gssapi_unseal_packet(struct gensec_security *gensec_secur
 	gss_qop_t qop_state;
 	DATA_BLOB in;
 
-	dump_data_pw("gensec_gssapi_seal_packet: sig\n", sig->data, sig->length);
+	dump_data_pw("gensec_gssapi_unseal_packet: sig\n", sig->data, sig->length);
 
 	in = data_blob_talloc(mem_ctx, NULL, sig->length + length);
 
@@ -563,7 +566,7 @@ static NTSTATUS gensec_gssapi_unseal_packet(struct gensec_security *gensec_secur
 			      &conf_state,
 			      &qop_state);
 	if (GSS_ERROR(maj_stat)) {
-		DEBUG(1, ("GSS UnWrap failed: %s\n", 
+		DEBUG(1, ("gensec_gssapi_unseal_packet: GSS UnWrap failed: %s\n", 
 			  gssapi_error_string(mem_ctx, maj_stat, min_stat)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -688,7 +691,7 @@ static BOOL gensec_gssapi_have_feature(struct gensec_security *gensec_security,
 		}
 	}
 	if (feature & GENSEC_FEATURE_DCE_STYLE) {
-		return True;
+		return gensec_gssapi_state->got_flags & GSS_C_DCE_STYLE;
 	}
 	if (feature & GENSEC_FEATURE_ASYNC_REPLIES) {
 		return True;
@@ -744,15 +747,21 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info = NULL;
 	struct PAC_LOGON_INFO *logon_info;
-	char *p;
-	char *principal;
-	const char *account_name;
-	const char *realm;
 	OM_uint32 maj_stat, min_stat;
 	gss_buffer_desc name_token;
 	gss_buffer_desc pac;
 	krb5_keyblock *keyblock;
+	time_t authtime;
+	krb5_principal principal;
+	char *principal_string;
 	
+	if ((gensec_gssapi_state->gss_oid->length != gss_mech_krb5->length)
+	    || (memcmp(gensec_gssapi_state->gss_oid->elements, gss_mech_krb5->elements, 
+		       gensec_gssapi_state->gss_oid->length) != 0)) {
+		DEBUG(1, ("NO session info available for this mech\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+		
 	mem_ctx = talloc_named(gensec_gssapi_state, 0, "gensec_gssapi_session_info context"); 
 	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
 
@@ -764,49 +773,56 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		return NT_STATUS_FOOBAR;
 	}
 
-	principal = talloc_strndup(mem_ctx, name_token.value, name_token.length);
+	principal_string = talloc_strndup(mem_ctx, name_token.value, name_token.length);
 
 	gss_release_buffer(&min_stat, &name_token);
 
-	if (!principal) {
+	if (!principal_string) {
 		talloc_free(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	p = strchr(principal, '@');
-	if (p) {
-		*p = '\0';
-		p++;
-		realm = p;
-	} else {
-		realm = lp_realm();
-	}
-	account_name = principal;
-	
 	maj_stat = gss_krb5_copy_service_keyblock(&min_stat, 
 						  gensec_gssapi_state->gssapi_context, 
 						  &keyblock);
 
-	maj_stat = gsskrb5_extract_authz_data_from_sec_context(&min_stat, 
-							       gensec_gssapi_state->gssapi_context, 
-							       KRB5_AUTHDATA_IF_RELEVANT,
-							       &pac);
+	if (maj_stat == 0) {
+		maj_stat = gsskrb5_extract_authtime_from_sec_context(&min_stat,
+								     gensec_gssapi_state->gssapi_context, 
+								     &authtime);
+	}
+
+	if (maj_stat == 0) {
+		maj_stat = gsskrb5_extract_authz_data_from_sec_context(&min_stat, 
+								       gensec_gssapi_state->gssapi_context, 
+								       KRB5_AUTHDATA_IF_RELEVANT,
+								       &pac);
+	}
 	
 	if (maj_stat == 0) {
+		krb5_error_code ret;
 		DATA_BLOB pac_blob = data_blob_talloc(mem_ctx, pac.value, pac.length);
 		pac_blob = unwrap_pac(mem_ctx, &pac_blob);
 		gss_release_buffer(&min_stat, &pac);
+
+		ret = krb5_parse_name(gensec_gssapi_state->smb_krb5_context->krb5_context,
+				      principal_string, &principal);
+		if (ret) {
+			talloc_free(mem_ctx);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 		
 		/* decode and verify the pac */
 		nt_status = kerberos_pac_logon_info(mem_ctx, &logon_info, pac_blob,
 						    gensec_gssapi_state->smb_krb5_context->krb5_context,
-						    NULL, keyblock);
+						    NULL, keyblock, principal, authtime);
+		krb5_free_principal(gensec_gssapi_state->smb_krb5_context->krb5_context, principal);
 
 		if (NT_STATUS_IS_OK(nt_status)) {
 			union netr_Validation validation;
 			validation.sam3 = &logon_info->info3;
 			nt_status = make_server_info_netlogon_validation(gensec_gssapi_state, 
-									 account_name,
+									 NULL,
 									 3, &validation,
 									 &server_info); 
 			if (!NT_STATUS_IS_OK(nt_status)) {
@@ -819,6 +835,9 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	}
 	
 	if (maj_stat) {
+		krb5_error_code ret;
+		DATA_BLOB user_sess_key = data_blob(NULL, 0);
+		DATA_BLOB lm_sess_key = data_blob(NULL, 0);
 		/* IF we have the PAC - otherwise we need to get this
 		 * data from elsewere - local ldb, or (TODO) lookup of some
 		 * kind... 
@@ -827,12 +846,32 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		 * no PAC present
 		 */
 
-		DATA_BLOB user_sess_key = data_blob(NULL, 0);
-		DATA_BLOB lm_sess_key = data_blob(NULL, 0);
-		/* TODO: should we pass the krb5 session key in here? */
+		char *account_name;
+		const char *realm;
+		ret = krb5_parse_name(gensec_gssapi_state->smb_krb5_context->krb5_context,
+				      principal_string, &principal);
+		if (ret) {
+			talloc_free(mem_ctx);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		
+		realm = krb5_principal_get_realm(gensec_gssapi_state->smb_krb5_context->krb5_context, 
+						 principal);
+		ret = krb5_unparse_name_norealm(gensec_gssapi_state->smb_krb5_context->krb5_context, 
+						principal, &account_name);
+		if (ret) {
+			krb5_free_principal(gensec_gssapi_state->smb_krb5_context->krb5_context, principal);
+			talloc_free(mem_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		DEBUG(1, ("Unable to use PAC, resorting to local user lookup!\n"));
 		nt_status = sam_get_server_info(mem_ctx, account_name, realm,
 						user_sess_key, lm_sess_key,
 						&server_info);
+		free(account_name);
+		krb5_free_principal(gensec_gssapi_state->smb_krb5_context->krb5_context, principal);
+
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(mem_ctx);
 			return nt_status;
@@ -841,6 +880,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 
 	/* references the server_info into the session_info */
 	nt_status = auth_generate_session_info(gensec_gssapi_state, server_info, &session_info);
+	talloc_free(mem_ctx);
 	talloc_free(server_info);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
