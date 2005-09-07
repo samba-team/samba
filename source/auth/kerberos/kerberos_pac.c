@@ -33,11 +33,11 @@
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "auth/auth.h"
 
-static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx, 
-				   DATA_BLOB pac_data,
-				   struct PAC_SIGNATURE_DATA *sig,
-				   krb5_context context,
-				   krb5_keyblock *keyblock)
+static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx, 
+					  DATA_BLOB pac_data,
+					  struct PAC_SIGNATURE_DATA *sig,
+					  krb5_context context,
+					  krb5_keyblock *keyblock)
 {
 	krb5_error_code ret;
 	krb5_crypto crypto;
@@ -55,7 +55,7 @@ static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx,
 	if (ret) {
 		DEBUG(0,("krb5_crypto_init() failed: %s\n", 
 			  smb_get_krb5_error_message(context, ret, mem_ctx)));
-		return NT_STATUS_FOOBAR;
+		return ret;
 	}
 	ret = krb5_verify_checksum(context,
 				   crypto,
@@ -63,18 +63,9 @@ static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx,
 				   pac_data.data,
 				   pac_data.length,
 				   &cksum);
-	if (ret) {
-		DEBUG(2, ("PAC Verification failed: %s\n", 
-			  smb_get_krb5_error_message(context, ret, mem_ctx)));
-	}
-
 	krb5_crypto_destroy(context, crypto);
 
-	if (ret) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	return NT_STATUS_OK;
+	return ret;
 }
 
  NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
@@ -82,17 +73,23 @@ static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx,
 			      DATA_BLOB blob,
 			      krb5_context context,
 			      krb5_keyblock *krbtgt_keyblock,
-			      krb5_keyblock *service_keyblock)
+			      krb5_keyblock *service_keyblock,
+			      krb5_const_principal client_principal,
+			      time_t tgs_authtime)
 {
+	krb5_error_code ret;
 	NTSTATUS status;
 	struct PAC_SIGNATURE_DATA srv_sig;
 	struct PAC_SIGNATURE_DATA *srv_sig_ptr = NULL;
 	struct PAC_SIGNATURE_DATA kdc_sig;
 	struct PAC_SIGNATURE_DATA *kdc_sig_ptr = NULL;
 	struct PAC_LOGON_INFO *logon_info = NULL;
+	struct PAC_LOGON_NAME *logon_name = NULL;
 	struct PAC_DATA *pac_data;
 
 	DATA_BLOB modified_pac_blob = data_blob_talloc(mem_ctx, blob.data, blob.length);
+	NTTIME tgs_authtime_nttime;
+	krb5_principal client_principal_pac;
 	int i;
 
 	pac_data = talloc(mem_ctx, struct PAC_DATA);
@@ -136,6 +133,7 @@ static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx,
 				kdc_sig = pac_data->buffers[i].info->kdc_cksum;
 				break;
 			case PAC_TYPE_LOGON_NAME:
+				logon_name = &pac_data->buffers[i].info->logon_name;
 				break;
 			default:
 				break;
@@ -163,28 +161,54 @@ static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx,
 	       '\0', 16);
 
 	/* verify by service_key */
-	status = check_pac_checksum(mem_ctx, 
+	ret = check_pac_checksum(mem_ctx, 
 				    modified_pac_blob, &srv_sig, 
 				    context, 
 				    service_keyblock);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("PAC Decode: Failed to verify the service signature\n"));
-		return status;
+	if (ret) {
+		DEBUG(1, ("PAC Decode: Failed to verify the service signature: %s\n",
+			  smb_get_krb5_error_message(context, ret, mem_ctx)));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (krbtgt_keyblock) {
 		DATA_BLOB service_checksum_blob
 			= data_blob_const(srv_sig_ptr->signature, sizeof(srv_sig_ptr->signature));
 
-		status = check_pac_checksum(mem_ctx, 
+		ret = check_pac_checksum(mem_ctx, 
 					    service_checksum_blob, &kdc_sig, 
 					    context, krbtgt_keyblock);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("PAC Decode: Failed to verify the krbtgt signature\n"));
-			return status;
+		if (ret) {
+			DEBUG(1, ("PAC Decode: Failed to verify the KDC signature: %s\n",
+				  smb_get_krb5_error_message(context, ret, mem_ctx)));
+			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
 
+	/* Convert to NT time, so as not to loose accuracy in comparison */
+	unix_to_nt_time(&tgs_authtime_nttime, tgs_authtime);
+
+	if (tgs_authtime_nttime != logon_name->logon_time) {
+		DEBUG(2, ("PAC Decode: Logon time mismatch between ticket and PAC!\n"));
+		DEBUG(2, ("PAC Decode: PAC: %s\n", nt_time_string(mem_ctx, logon_name->logon_time)));
+		DEBUG(2, ("PAC Decode: Ticket: %s\n", nt_time_string(mem_ctx, tgs_authtime_nttime)));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	ret = krb5_parse_name_norealm(context, logon_name->account_name, &client_principal_pac);
+	if (ret) {
+		DEBUG(2, ("Could not parse name from incoming PAC: [%s]: %s\n", 
+			  logon_name->account_name, 
+			  smb_get_krb5_error_message(context, ret, mem_ctx)));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!krb5_principal_compare_any_realm(context, client_principal, client_principal_pac)) {
+		DEBUG(2, ("Name in PAC [%s] does not match principal name in ticket\n", 
+			  logon_name->account_name));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+	
 #if 0
 	if (strcasecmp(logon_info->info3.base.account_name.string, 
 		       "Administrator")== 0) {
@@ -205,7 +229,9 @@ static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx,
 				  DATA_BLOB blob,
 				  krb5_context context,
 				  krb5_keyblock *krbtgt_keyblock,
-				  krb5_keyblock *service_keyblock)
+				  krb5_keyblock *service_keyblock,
+				  krb5_const_principal client_principal,
+				  time_t tgs_authtime)
 {
 	NTSTATUS nt_status;
 	struct PAC_DATA *pac_data;
@@ -215,7 +241,9 @@ static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx,
 					blob,
 					context,
 					krbtgt_keyblock,
-					service_keyblock);
+					service_keyblock,
+					client_principal, 
+					tgs_authtime);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
@@ -275,6 +303,7 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	if (cksum.checksum.length == sizeof(sig->signature)) {
 		memcpy(sig->signature, cksum.checksum.data, sizeof(sig->signature));
 	}
+	free_Checksum(&cksum);
 
 	return 0;
 }
@@ -385,6 +414,7 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 				     krb5_context context,
 				     krb5_keyblock *krbtgt_keyblock,
 				     krb5_keyblock *service_keyblock,
+				     krb5_principal client_principal,
 				     time_t tgs_authtime,
 				     DATA_BLOB *pac)
 {
@@ -400,6 +430,8 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	union PAC_INFO *u_KDC_CHECKSUM;
 	union PAC_INFO *u_SRV_CHECKSUM;
 
+	char *name;
+		
 	enum {
 		PAC_BUF_LOGON_INFO = 0,
 		PAC_BUF_LOGON_NAME = 1,
@@ -478,11 +510,15 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	LOGON_INFO->info3 = *sam3;
 	LOGON_INFO->info3.base.last_logon	= timeval_to_nttime(&tv);
 
-	LOGON_NAME->account_name	= server_info->account_name;
-
+	ret = krb5_unparse_name_norealm(context, client_principal, &name);
+	if (ret) {
+		return ret;
+	}
+	LOGON_NAME->account_name	= talloc_strdup(LOGON_NAME, name);
+	free(name);
 	/*
 	  this logon_time field is absolutely critical. This is what
-	  caused all our pac troubles :-)
+	  caused all our PAC troubles :-)
 	*/
 	unix_to_nt_time(&LOGON_NAME->logon_time, tgs_authtime);
 

@@ -147,6 +147,15 @@ _gsskrb5_create_ctx(
 		return GSS_S_BAD_BINDINGS;
 	}
 
+	/*
+	 * We need a sequence number
+	 */
+
+	krb5_auth_con_addflags(gssapi_krb5_context,
+			       (*context_handle)->auth_context,
+			       KRB5_AUTH_CONTEXT_DO_SEQUENCE,
+			       NULL);
+
 	return GSS_S_COMPLETE;
 }
 
@@ -387,15 +396,6 @@ gsskrb5_initiator_start
 	 */
 	ret = _gss_DES3_get_mic_compat(minor_status, *context_handle);
 	if (ret) return ret;
-
-	/*
-	 * We need a sequence number
-	 */
-
-	krb5_auth_con_addflags(gssapi_krb5_context,
-			       (*context_handle)->auth_context,
-			       KRB5_AUTH_CONTEXT_DO_SEQUENCE,
-			       NULL);
 
 	/* We need the key and a random local subkey */
 	{

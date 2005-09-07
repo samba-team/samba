@@ -92,13 +92,12 @@ krb5_error_code ads_krb5_mk_req(krb5_context context,
 				krb5_data *outbuf);
 DATA_BLOB get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, 
 				 krb5_ticket *tkt);
-
 NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx, 
 			   struct smb_krb5_context *smb_krb5_context,
-			   krb5_auth_context auth_context,
+			   krb5_auth_context *auth_context,
 			   const char *realm, const char *service, 
-			   const DATA_BLOB *ticket, 
-			   char **principal, DATA_BLOB *auth_data,
+			   const DATA_BLOB *enc_ticket, 
+			   krb5_ticket **tkt,
 			   DATA_BLOB *ap_rep,
 			   krb5_keyblock **keyblock);
 int kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc, 
@@ -125,6 +124,10 @@ krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx,
 						struct cli_credentials *machine_account, 
 						struct smb_krb5_context *smb_krb5_context,
 						krb5_principal *salt_princ);
+krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx, 
+					   struct cli_credentials *credentials, 
+					   struct smb_krb5_context *smb_krb5_context,
+					   krb5_principal *princ);
 NTSTATUS create_memory_keytab(TALLOC_CTX *parent_ctx,
 			      struct cli_credentials *machine_account,
 			      struct smb_krb5_context *smb_krb5_context,
@@ -134,26 +137,30 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 			     DATA_BLOB blob,
 			     krb5_context context,
 			     krb5_keyblock *krbtgt_keyblock,
-			     krb5_keyblock *service_keyblock);
-NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
-				 struct PAC_LOGON_INFO **logon_info,
-				 DATA_BLOB blob,
-				 krb5_context context,
-				 krb5_keyblock *krbtgt_keyblock,
-				 krb5_keyblock *service_keyblock);
-krb5_error_code kerberos_create_pac(TALLOC_CTX *mem_ctx,
-				    struct auth_serversupplied_info *server_info,
-				    krb5_context context,
-				    krb5_keyblock *krbtgt_keyblock,
-				    krb5_keyblock *server_keyblock,
-				    time_t tgs_authtime,
-				    DATA_BLOB *pac);
-
-krb5_error_code kerberos_encode_pac(TALLOC_CTX *mem_ctx,
+			     krb5_keyblock *service_keyblock,
+			     krb5_const_principal client_principal,
+			     time_t tgs_authtime);
+ NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
+				  struct PAC_LOGON_INFO **logon_info,
+				  DATA_BLOB blob,
+				  krb5_context context,
+				  krb5_keyblock *krbtgt_keyblock,
+				  krb5_keyblock *service_keyblock,
+				  krb5_const_principal client_principal,
+				  time_t tgs_authtime);
+ krb5_error_code kerberos_encode_pac(TALLOC_CTX *mem_ctx,
 				    struct PAC_DATA *pac_data,
 				    krb5_context context,
 				    krb5_keyblock *krbtgt_keyblock,
 				    krb5_keyblock *service_keyblock,
-				    DATA_BLOB *pac);
+				     DATA_BLOB *pac) ;
+ krb5_error_code kerberos_create_pac(TALLOC_CTX *mem_ctx,
+				     struct auth_serversupplied_info *server_info,
+				     krb5_context context,
+				     krb5_keyblock *krbtgt_keyblock,
+				     krb5_keyblock *service_keyblock,
+				     krb5_principal client_principal,
+				     time_t tgs_authtime,
+				     DATA_BLOB *pac);
 #endif /* HAVE_KRB5 */
 

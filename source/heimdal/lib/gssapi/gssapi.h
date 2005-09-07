@@ -809,6 +809,10 @@ gsskrb5_extract_authz_data_from_sec_context
 	 int /*ad_type*/,
 	 gss_buffer_t /*ad_data*/);
 OM_uint32
+gsskrb5_extract_authtime_from_sec_context(OM_uint32 *minor_status,
+					  gss_ctx_id_t context_handle,
+					  time_t *authtime);
+OM_uint32
 gsskrb5_get_initiator_subkey
         (OM_uint32 * /*minor_status*/,
 	 const gss_ctx_id_t context_handle,

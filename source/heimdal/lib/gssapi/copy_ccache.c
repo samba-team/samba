@@ -105,6 +105,25 @@ gsskrb5_extract_authz_data_from_sec_context(OM_uint32 *minor_status,
     return GSS_S_COMPLETE;
 }
 
+OM_uint32
+gsskrb5_extract_authtime_from_sec_context(OM_uint32 *minor_status,
+					  gss_ctx_id_t context_handle,
+					  time_t *authtime)
+{
+    HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
+    if (context_handle->ticket == NULL) {
+	HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+	*minor_status = EINVAL;
+	return GSS_S_FAILURE;
+    }
+
+    *authtime = context_handle->ticket->ticket.authtime;
+    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+    
+    *minor_status = 0;
+    return GSS_S_COMPLETE;
+}
+
 OM_uint32 gss_krb5_copy_service_keyblock
         (OM_uint32 *minor_status,
 	 gss_ctx_id_t context_handle,

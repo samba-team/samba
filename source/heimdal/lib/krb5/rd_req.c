@@ -33,7 +33,7 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id: rd_req.c,v 1.57 2005/01/08 20:41:17 lha Exp $");
+RCSID("$Id: rd_req.c,v 1.58 2005/08/27 05:48:57 lha Exp $");
 
 static krb5_error_code
 decrypt_tkt_enc_part (krb5_context context,
@@ -136,6 +136,10 @@ check_transited(krb5_context context, Ticket *ticket, EncTicketPart *enc)
     int num_realms;
     krb5_error_code ret;
 	    
+    /* Windows w2k and w2k3 uses this */
+    if(enc->transited.tr_type == 0 && enc->transited.contents.length == 0)
+	return 0;
+
     if(enc->transited.tr_type != DOMAIN_X500_COMPRESS)
 	return KRB5KDC_ERR_TRTYPE_NOSUPP;
 
@@ -561,6 +565,7 @@ krb5_rd_req_return_keyblock(krb5_context context,
     krb5_error_code ret;
     krb5_ap_req ap_req;
     krb5_principal service = NULL;
+    krb5_keyblock *local_keyblock;
 
     if (*auth_context == NULL) {
 	ret = krb5_auth_con_init(context, auth_context);
@@ -592,13 +597,13 @@ krb5_rd_req_return_keyblock(krb5_context context,
 				  &ap_req,
 				  server,
 				  keytab,
-				  keyblock);
+				  &local_keyblock);
 	if(ret)
 	    goto out;
     } else {
 	ret = krb5_copy_keyblock(context,
 				 (*auth_context)->keyblock,
-				 keyblock);
+				 &local_keyblock);
 	if (ret)
 	    goto out;
     }
@@ -607,17 +612,20 @@ krb5_rd_req_return_keyblock(krb5_context context,
 			     auth_context,
 			     &ap_req,
 			     server,
-			     *keyblock,
+			     local_keyblock,
 			     0,
 			     ap_req_options,
 			     ticket);
+    if (ret) {
+        krb5_free_keyblock(context, local_keyblock);
+    } else {
+	*keyblock = local_keyblock;
+    }
 
 out:
     free_AP_REQ(&ap_req);
     if(service)
 	krb5_free_principal(context, service);
-    if (ret) 
-        krb5_free_keyblock(context, *keyblock);
 	    
     return ret;
 }

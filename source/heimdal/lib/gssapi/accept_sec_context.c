@@ -274,215 +274,224 @@ gsskrb5_acceptor_ready(
 
 	return GSS_S_COMPLETE;
 }
-
 static OM_uint32
-gsskrb5_acceptor_start(
-	OM_uint32 * minor_status,
-	gss_ctx_id_t * context_handle,
-	const gss_cred_id_t acceptor_cred_handle,
-	const gss_buffer_t input_token,
-	const gss_channel_bindings_t input_chan_bindings,
-	gss_name_t * src_name,
-	gss_OID * mech_type,
-	gss_buffer_t output_token,
-	OM_uint32 * ret_flags,
-	OM_uint32 * time_rec,
-	gss_cred_id_t * delegated_cred_handle)
+gsskrb5_acceptor_start
+           (OM_uint32 * minor_status,
+            gss_ctx_id_t * context_handle,
+            const gss_cred_id_t acceptor_cred_handle,
+            const gss_buffer_t input_token_buffer,
+            const gss_channel_bindings_t input_chan_bindings,
+            gss_name_t * src_name,
+            gss_OID * mech_type,
+            gss_buffer_t output_token,
+            OM_uint32 * ret_flags,
+            OM_uint32 * time_rec,
+            gss_cred_id_t * delegated_cred_handle
+           )
 {
-	krb5_error_code kret;
-	OM_uint32 ret = GSS_S_COMPLETE;
-	krb5_data indata;
-	krb5_flags ap_options;
-	OM_uint32 flags;
-	krb5_ticket *ticket = NULL;
-	krb5_keytab keytab = NULL;
-	krb5_keyblock *keyblock = NULL;
-	int no_wrap = 0;
+    krb5_error_code kret;
+    OM_uint32 ret = GSS_S_COMPLETE;
+    krb5_data indata;
+    krb5_flags ap_options;
+    OM_uint32 flags;
+    krb5_ticket *ticket = NULL;
+    krb5_keytab keytab = NULL;
+    krb5_keyblock *keyblock = NULL;
+    krb5_data fwd_data;
+    int is_cfx = 0;
 
-	/*
-	 * TODO: check the channel_bindings
-	 */
+    krb5_data_zero (&fwd_data);
 
-	/*
-	 * We need a sequence number
-	 */
-	krb5_auth_con_addflags(gssapi_krb5_context,
-			       (*context_handle)->auth_context,
-			       KRB5_AUTH_CONTEXT_DO_SEQUENCE,
-			       NULL);
+    /*
+     * We may, or may not, have an escapsulation.
+     */
+    ret = gssapi_krb5_decapsulate (minor_status,
+				   input_token_buffer,
+				   &indata,
+				   "\x01\x00",
+				   GSS_KRB5_MECHANISM);
 
-	/*
-	 * We need remove the decapsulate only when GSS_C_DCE_STYLE isn't in use
-	 */
-	ret = gssapi_krb5_decapsulate(minor_status,
-				      input_token,&indata,
-				      "\x01\x00",
-				      GSS_KRB5_MECHANISM);
-	if (ret) {
-		/* No OID wrapping apparently available. */
-		no_wrap		= 1;
-		indata.length	= input_token->length;
-		indata.data	= input_token->value;
+    if (ret) {
+	/* No OID wrapping apparently available. */
+	indata.length	= input_token_buffer->length;
+	indata.data	= input_token_buffer->value;
+    }
+
+    /*
+     * We need to get our keytab
+     */
+    if (acceptor_cred_handle == GSS_C_NO_CREDENTIAL) {
+	if (gssapi_krb5_keytab != NULL) {
+	    keytab = gssapi_krb5_keytab;
 	}
+    } else if (acceptor_cred_handle->keytab != NULL) {
+	keytab = acceptor_cred_handle->keytab;
+    }
+    
+    /*
+     * We need to check the ticket and create the AP-REP packet
+     */
+    kret = krb5_rd_req_return_keyblock(gssapi_krb5_context,
+				       &(*context_handle)->auth_context,
+				       &indata,
+				       (acceptor_cred_handle == GSS_C_NO_CREDENTIAL) ? NULL : acceptor_cred_handle->principal,
+				       keytab,
+				       &ap_options,
+				       &ticket,
+				       &keyblock);
+    if (kret) {
+	ret = GSS_S_FAILURE;
+	*minor_status = kret;
+	gssapi_krb5_set_error_string ();
+	return ret;
+    }
+    
+    /*
+     * We need to remember some data on the context_handle
+     */
+    (*context_handle)->ticket = ticket;
+    (*context_handle)->service_keyblock = keyblock;
+    (*context_handle)->lifetime = ticket->ticket.endtime;
+    
+    /*
+     * We need to copy the principal names to the context and the calling layer
+     */
+    kret = krb5_copy_principal(gssapi_krb5_context,
+			       ticket->client,
+			       &(*context_handle)->source);
+    if (kret) {
+	ret = GSS_S_FAILURE;
+	*minor_status = kret;
+	gssapi_krb5_set_error_string ();
+    }
 
-	/*
-	 * We need to get our keytab
-	 */
-	if (acceptor_cred_handle == GSS_C_NO_CREDENTIAL) {
-		if (gssapi_krb5_keytab != NULL) {
-			keytab = gssapi_krb5_keytab;
-		}
-	} else {
-		keytab = acceptor_cred_handle->keytab;
-	}
+    kret = krb5_copy_principal (gssapi_krb5_context,
+				ticket->server,
+				&(*context_handle)->target);
+    if (kret) {
+	ret = GSS_S_FAILURE;
+	*minor_status = kret;
+	gssapi_krb5_set_error_string ();
+	return ret;
+    }
+    
+    /*
+     * We need to setup some compat stuff, this assumes that context_handle->target is already set
+     */
+    ret = _gss_DES3_get_mic_compat(minor_status, *context_handle);
+    if (ret) {
+	return ret;
+    }
 
-	/*
-	 * We need to check the ticket and create the AP-REP packet
-	 */
-	kret = krb5_rd_req_return_keyblock(gssapi_krb5_context,
-					   &(*context_handle)->auth_context,
-					   &indata,
-					   (acceptor_cred_handle == GSS_C_NO_CREDENTIAL) ? NULL : acceptor_cred_handle->principal,
-					   keytab,
-					   &ap_options,
-					   &ticket,
-					   &keyblock);
+    if (src_name != NULL) {
+	kret = krb5_copy_principal (gssapi_krb5_context,
+				    ticket->client,
+				    src_name);
 	if (kret) {
-		*minor_status = kret;
-		gssapi_krb5_set_error_string ();
-		return GSS_S_FAILURE;
+	    ret = GSS_S_FAILURE;
+	    *minor_status = kret;
+	    gssapi_krb5_set_error_string ();
+	    return ret;
 	}
+    }
 
-	/*
-	 * We need to remember some data on the context_handle
-	 */
-	(*context_handle)->ticket = ticket;
-	(*context_handle)->service_keyblock = keyblock;
-	(*context_handle)->lifetime = ticket->ticket.endtime;
-
-	/*
-	 * We need to copy the principal names to the context and the calling layer
-	 */
-	kret = krb5_copy_principal(gssapi_krb5_context,
-				   ticket->client,
-				   &(*context_handle)->source);
-	if (kret) {
-		*minor_status = kret;
-		gssapi_krb5_set_error_string ();
-		return GSS_S_FAILURE;
-	}
-
-	kret = krb5_copy_principal(gssapi_krb5_context,
-				   ticket->server,
-				   &(*context_handle)->target);
-	if (kret) {
-		*minor_status = kret;
-		gssapi_krb5_set_error_string ();
-		return GSS_S_FAILURE;
-	}
-
-	/*
-	 * We need to setup some compat stuff, this assumes that context_handle->target is already set
-	 */
-	ret = _gss_DES3_get_mic_compat(minor_status, *context_handle);
-	if (ret) return ret;
-
-	/*
-	 * We need to get the flags out of the 8003 checksum
-	 */
-	{
-		krb5_authenticator authenticator;
-
-		kret = krb5_auth_con_getauthenticator(gssapi_krb5_context,
+    /*
+     * We need to get the flags out of the 8003 checksum
+     */
+    {
+	krb5_authenticator authenticator;
+      
+	kret = krb5_auth_con_getauthenticator(gssapi_krb5_context,
 					      (*context_handle)->auth_context,
 					      &authenticator);
-		if (kret) {
-			*minor_status = kret;
-			gssapi_krb5_set_error_string ();
-			return GSS_S_FAILURE;
-		}
-
-		ret = gssapi_krb5_verify_8003_checksum(minor_status,
-						       input_chan_bindings,
-						       authenticator->cksum,
-						       &flags,
-						       &(*context_handle)->fwd_data);
-		krb5_free_authenticator(gssapi_krb5_context, &authenticator);
-		if (ret) return ret;
+	if(kret) {
+	    ret = GSS_S_FAILURE;
+	    *minor_status = kret;
+	    gssapi_krb5_set_error_string ();
+	    return ret;
 	}
 
-	/* And remember them for later */
-	(*context_handle)->flags = flags;
+	ret = gssapi_krb5_verify_8003_checksum(minor_status,
+					       input_chan_bindings,
+					       authenticator->cksum,
+					       &flags,
+					       &fwd_data);
+	krb5_free_authenticator(gssapi_krb5_context, &authenticator);
+	if (ret)
+	    if (ret) return ret;
+    }
+    
+    if(flags & GSS_C_MUTUAL_FLAG) {
+	    krb5_data outbuf;
+	    
+	    gsskrb5_is_cfx(*context_handle, &is_cfx);
+	    
+	    if (is_cfx != 0 
+		|| (ap_options & AP_OPTS_USE_SUBKEY)) {
+		    kret = krb5_auth_con_addflags(gssapi_krb5_context,
+						  (*context_handle)->auth_context,
+						  KRB5_AUTH_CONTEXT_USE_SUBKEY,
+						  NULL);
+		    (*context_handle)->more_flags |= ACCEPTOR_SUBKEY;
+	    }
+	    
+	    kret = krb5_mk_rep(gssapi_krb5_context,
+			       (*context_handle)->auth_context,
+			       &outbuf);
+	    if (kret) {
+		    *minor_status = kret;
+		    gssapi_krb5_set_error_string ();
+		    return GSS_S_FAILURE;
+	    }
+	    
+	    if (!(flags & GSS_C_DCE_STYLE)) {
+		    ret = gssapi_krb5_encapsulate(minor_status,
+						  &outbuf,
+						  output_token,
+						  "\x02\x00",
+						  GSS_KRB5_MECHANISM);
+		    krb5_data_free (&outbuf);
+		    if (ret) return ret;
+	    } else {
+		    output_token->length	= outbuf.length;
+		    output_token->value	= outbuf.data;
+	    }
+    }
+    
+    /*
+     * We need to send the flags back to the caller
+     */
+    flags |= GSS_C_TRANS_FLAG;
 
-	if(flags & GSS_C_MUTUAL_FLAG) {
-		int is_cfx = 0;
-		krb5_data outbuf;
+    if (ret_flags)
+	*ret_flags = flags;
+    
+    /* And remember them for later */
+    
+    (*context_handle)->lifetime = ticket->ticket.endtime;
+    (*context_handle)->flags = flags;
+    (*context_handle)->more_flags |= OPEN;
+    
+    if (mech_type)
+	*mech_type = GSS_KRB5_MECHANISM;
+    
+    if (time_rec) {
+	ret = gssapi_lifetime_left(minor_status,
+				   (*context_handle)->lifetime,
+				   time_rec);
+	if (ret)
+	    if (ret) return ret;
+    }
 
-		gsskrb5_is_cfx(*context_handle, &is_cfx);
+    /*
+     * When GSS_C_DCE_STYLE is in use, we need ask for a AP-REP from the client
+     */
+    if (flags & GSS_C_DCE_STYLE) {
+	    (*context_handle)->state = ACCEPTOR_WAIT_FOR_DCESTYLE;
+	    return GSS_S_CONTINUE_NEEDED;
+    }
 
-		if (is_cfx || (ap_options & AP_OPTS_USE_SUBKEY)) {
-			kret = krb5_auth_con_addflags(gssapi_krb5_context,
-					      (*context_handle)->auth_context,
-					      KRB5_AUTH_CONTEXT_USE_SUBKEY,
-					      NULL);
-			(*context_handle)->more_flags |= ACCEPTOR_SUBKEY;
-		}
-
-		kret = krb5_mk_rep(gssapi_krb5_context,
-				   (*context_handle)->auth_context,
-				   &outbuf);
-		if (kret) {
-			*minor_status = kret;
-			gssapi_krb5_set_error_string ();
-			return GSS_S_FAILURE;
-		}
-
-		if (!(flags & GSS_C_DCE_STYLE)) {
-			ret = gssapi_krb5_encapsulate(minor_status,
-						      &outbuf,
-						      output_token,
-						      "\x02\x00",
-						      GSS_KRB5_MECHANISM);
-			krb5_data_free (&outbuf);
-			if (ret) return ret;
-		} else {
-			output_token->length	= outbuf.length;
-			output_token->value	= outbuf.data;
-		}
-	}
-
-	/*
-	 * We need to set the return value for the calling layer
-	 */
-	if (ret_flags) *ret_flags = flags;
-
-	if (time_rec) {
-		ret = gssapi_lifetime_left(minor_status,
-					   (*context_handle)->lifetime,
-					   time_rec);
-		if (ret) return ret;
-	}
-
-	if (src_name) {
-		kret = krb5_copy_principal(gssapi_krb5_context,
-					   (*context_handle)->source,
-					   src_name);
-		if (kret) {
-			*minor_status = kret;
-			gssapi_krb5_set_error_string ();
-			return GSS_S_FAILURE;
-		}
-	}
-
-	/*
-	 * When GSS_C_DCE_STYLE is in use, we need ask for a AP-REP from the client
-	 */
-	if (flags & GSS_C_DCE_STYLE) {
-		(*context_handle)->state = ACCEPTOR_WAIT_FOR_DCESTYLE;
-		return GSS_S_CONTINUE_NEEDED;
-	}
-
-	return gsskrb5_acceptor_ready(minor_status, context_handle, delegated_cred_handle);
+    return gsskrb5_acceptor_ready(minor_status, context_handle, delegated_cred_handle);
 }
 
 static OM_uint32
@@ -490,7 +499,7 @@ gsskrb5_acceptor_wait_for_dcestyle(
 	OM_uint32 * minor_status,
 	gss_ctx_id_t * context_handle,
 	const gss_cred_id_t acceptor_cred_handle,
-	const gss_buffer_t input_token,
+	const gss_buffer_t input_token_buffer,
 	const gss_channel_bindings_t input_chan_bindings,
 	gss_name_t * src_name,
 	gss_OID * mech_type,
@@ -506,8 +515,8 @@ gsskrb5_acceptor_wait_for_dcestyle(
 	OM_uint32 l_seq_number;
 	
 	/* We know it's GSS_C_DCE_STYLE so we don't need to decapsulate the AP_REP */
-	inbuf.length	= input_token->length;
-	inbuf.data	= input_token->value;
+	inbuf.length	= input_token_buffer->length;
+	inbuf.data	= input_token_buffer->value;
 
 	/* 
 	 * We need to remeber the old remote seq_number, then check if the client has replied with our local seq_number,
@@ -547,18 +556,41 @@ gsskrb5_acceptor_wait_for_dcestyle(
 	*/ 
 	{
 		krb5_ap_rep_enc_part *repl;
+		int32_t auth_flags;
+		
+		kret = krb5_auth_con_removeflags(gssapi_krb5_context,
+						 (*context_handle)->auth_context,
+						 KRB5_AUTH_CONTEXT_DO_TIME, &auth_flags);
+		if (kret) { /* Can't happen */
+			gssapi_krb5_set_error_string ();
+			*minor_status = kret;
+			return GSS_S_FAILURE;
+		}
 
-		kret = _krb5_rd_rep_type(gssapi_krb5_context,
-					 (*context_handle)->auth_context,
-					 &inbuf,
-					 &repl,
-					 TRUE);
+		kret = krb5_rd_rep(gssapi_krb5_context,
+				   (*context_handle)->auth_context,
+				   &inbuf,
+				   &repl);
 		if (kret) {
 			gssapi_krb5_set_error_string ();
 			*minor_status = kret;
 			return GSS_S_FAILURE;
 		}
+		
+		/* Because the inbuf above is a final leg from client
+		 * to server, we don't have a use for a 'reply'
+		 * here */
 		krb5_free_ap_rep_enc_part(gssapi_krb5_context, repl);
+
+		/* Do no harm, put the flags back */
+		kret = krb5_auth_con_setflags(gssapi_krb5_context,
+					      (*context_handle)->auth_context,
+					      auth_flags);
+		if (kret) { /* Can't happen */
+			gssapi_krb5_set_error_string ();
+			*minor_status = kret;
+			return GSS_S_FAILURE;
+		}
 	}
 
 	/* We need to check the liftime */
@@ -598,7 +630,7 @@ gsskrb5_acceptor_wait_for_dcestyle(
 	 */
 	{
 		OM_uint32 tmp_r_seq_number;
-		OM_uint32 l_seq_number;
+		OM_uint32 tmp_l_seq_number;
 
 		kret = krb5_auth_getremoteseqnumber(gssapi_krb5_context,
 						    (*context_handle)->auth_context,
@@ -611,7 +643,7 @@ gsskrb5_acceptor_wait_for_dcestyle(
 
 		kret = krb5_auth_con_getlocalseqnumber(gssapi_krb5_context,
 						    (*context_handle)->auth_context,
-						    &l_seq_number);
+						    &tmp_l_seq_number);
 		if (kret) {
 			gssapi_krb5_set_error_string ();
 			*minor_status = kret;
@@ -621,7 +653,7 @@ gsskrb5_acceptor_wait_for_dcestyle(
 		/*
 		 * Here we check if the client has responsed with our local seq_number,
 		 */
-		if (tmp_r_seq_number != l_seq_number) {
+		if (tmp_r_seq_number != tmp_l_seq_number) {
 			return GSS_S_UNSEQ_TOKEN;
 		}
 	}
@@ -645,73 +677,102 @@ gsskrb5_acceptor_wait_for_dcestyle(
 }
 
 static OM_uint32
-gsskrb5_accept_sec_context(
-	OM_uint32 * minor_status,
-	gss_ctx_id_t * context_handle,
-	const gss_cred_id_t acceptor_cred_handle,
-	const gss_buffer_t input_token,
-	const gss_channel_bindings_t input_chan_bindings,
-	gss_name_t * src_name,
-	gss_OID * actual_mech_type,
-	gss_buffer_t output_token,
-	OM_uint32 * ret_flags,
-	OM_uint32 * time_rec,
-	gss_cred_id_t * delegated_cred_handle)
+gsskrb5_accept_sec_context
+           (OM_uint32 * minor_status,
+            gss_ctx_id_t * context_handle,
+            const gss_cred_id_t acceptor_cred_handle,
+            const gss_buffer_t input_token_buffer,
+            const gss_channel_bindings_t input_chan_bindings,
+            gss_name_t * src_name,
+            gss_OID * mech_type,
+            gss_buffer_t output_token,
+            OM_uint32 * ret_flags,
+            OM_uint32 * time_rec,
+            gss_cred_id_t * delegated_cred_handle
+           )
 {
-	OM_uint32 ret;
+    OM_uint32 ret = GSS_S_COMPLETE;
+    krb5_data fwd_data;
+    gss_ctx_id_t local_context;
 
-	if (*context_handle == GSS_C_NO_CONTEXT) {
-		ret = _gsskrb5_create_ctx(minor_status,
-					  context_handle,
-					  input_chan_bindings,
-					  ACCEPTOR_START);
-		if (ret) return ret;
+    GSSAPI_KRB5_INIT();
+
+    krb5_data_zero (&fwd_data);
+    output_token->length = 0;
+    output_token->value = NULL;
+
+    if (src_name != NULL)
+	*src_name = NULL;
+    if (mech_type)
+	*mech_type = GSS_KRB5_MECHANISM;
+
+    if (*context_handle == GSS_C_NO_CONTEXT) {
+	ret = _gsskrb5_create_ctx(minor_status,
+				  &local_context,
+				  input_chan_bindings,
+				  ACCEPTOR_START);
+	if (ret) return ret;
+    } else {
+	local_context = *context_handle;
+    }
+    
+    /*
+     * TODO: check the channel_bindings 
+     * (above just sets them to krb5 layer)
+     */
+
+    HEIMDAL_MUTEX_lock(&(local_context)->ctx_id_mutex);
+    
+    switch ((local_context)->state) {
+    case ACCEPTOR_START:
+	ret = gsskrb5_acceptor_start(minor_status,
+				     &local_context,
+				     acceptor_cred_handle,
+				     input_token_buffer,
+				     input_chan_bindings,
+				     src_name,
+				     mech_type,
+				     output_token,
+				     ret_flags,
+				     time_rec,
+				     delegated_cred_handle);
+	break;
+    case ACCEPTOR_WAIT_FOR_DCESTYLE:
+	ret = gsskrb5_acceptor_wait_for_dcestyle(minor_status,
+						 &local_context,
+						 acceptor_cred_handle,
+						 input_token_buffer,
+						 input_chan_bindings,
+						 src_name,
+						 mech_type,
+						 output_token,
+						 ret_flags,
+						 time_rec,
+						 delegated_cred_handle);
+	break;
+    case ACCEPTOR_READY:
+	/* this function should not be called after it has returned GSS_S_COMPLETE */
+	ret =  GSS_S_BAD_STATUS;
+	break;
+    default:
+	/* TODO: is this correct here? --metze */
+	ret =  GSS_S_BAD_STATUS;
+	break;
+    }
+    
+    HEIMDAL_MUTEX_unlock(&(local_context)->ctx_id_mutex);
+    
+    if (*context_handle == GSS_C_NO_CONTEXT) {
+	if (ret == GSS_S_COMPLETE || ret == GSS_S_CONTINUE_NEEDED) {
+	    *context_handle = local_context;
+	} else {
+	    gss_delete_sec_context(minor_status, 
+				   &local_context, 
+				   NULL);
 	}
+    }
 
-	if (actual_mech_type) *actual_mech_type = GSS_KRB5_MECHANISM;
-
-	HEIMDAL_MUTEX_lock(&(*context_handle)->ctx_id_mutex);
-
-	switch ((*context_handle)->state) {
-	case ACCEPTOR_START:
-		ret = gsskrb5_acceptor_start(minor_status,
-					     context_handle,
-					     acceptor_cred_handle,
-					     input_token,
-					     input_chan_bindings,
-					     src_name,
-					     actual_mech_type,
-					     output_token,
-					     ret_flags,
-					     time_rec,
-					     delegated_cred_handle);
-		break;
-	case ACCEPTOR_WAIT_FOR_DCESTYLE:
-		ret = gsskrb5_acceptor_wait_for_dcestyle(minor_status,
-							 context_handle,
-							 acceptor_cred_handle,
-							 input_token,
-							 input_chan_bindings,
-							 src_name,
-							 actual_mech_type,
-							 output_token,
-							 ret_flags,
-							 time_rec,
-							 delegated_cred_handle);
-		break;
-	case ACCEPTOR_READY:
-		/* this function should not be called after it has returned GSS_S_COMPLETE */
-		ret =  GSS_S_BAD_STATUS;
-		break;
-	default:
-		/* TODO: is this correct here? --metze */
-		ret =  GSS_S_BAD_STATUS;
-		break;
-	}
-
-	HEIMDAL_MUTEX_unlock(&(*context_handle)->ctx_id_mutex);
-
-	return ret;
+    return ret;
 }
 
 static OM_uint32
@@ -1065,53 +1126,45 @@ gss_accept_sec_context
             gss_cred_id_t * delegated_cred_handle
            )
 {
+    OM_uint32 ret;
     ssize_t mech_len;
     const u_char *p;
 
     *minor_status = 0;
 
-	if (src_name)			*src_name		= GSS_C_NO_NAME;
-    if (mech_type)		*mech_type	= GSS_C_NO_OID;
+    mech_len = gssapi_krb5_get_mech (input_token_buffer->value,
+				     input_token_buffer->length,
+				     &p);
 
-	output_token->length = 0;
-	output_token->value  = NULL;
-
-	if (ret_flags)			*ret_flags		= 0;
-	if (time_rec)			*time_rec		= 0;
-	if (delegated_cred_handle)	*delegated_cred_handle	= NULL;
-
-	mech_len = gssapi_krb5_get_mech(input_token_buffer->value,
-					input_token_buffer->length,
-					&p);
-
-	/* This could be 'dce style' kerberos, where the OID is missing :-( */
-	if ((mech_len < 0) || (mech_len == GSS_KRB5_MECHANISM->length 
-			       && memcmp(p, GSS_KRB5_MECHANISM->elements, mech_len) == 0)) {
-		return gsskrb5_accept_sec_context(minor_status,
-						  context_handle,
-						  acceptor_cred_handle,
-						  input_token_buffer,
-						  input_chan_bindings,
-						  src_name,
-						  mech_type,
-						  output_token,
-						  ret_flags,
-						  time_rec,
-						  delegated_cred_handle);
-	} else if (mech_len == GSS_SPNEGO_MECHANISM->length
-	     && memcmp(p, GSS_SPNEGO_MECHANISM->elements, mech_len) == 0) {
-		return spnego_accept_sec_context(minor_status,
-						 context_handle,
-						 acceptor_cred_handle,
-						 input_token_buffer,
-						 input_chan_bindings,
-						 src_name,
-						 mech_type,
-						 output_token,
-						 ret_flags,
-						 time_rec,
-						 delegated_cred_handle);
-	}
-
+    /* This could be 'dce style' kerberos, where the OID is missing :-( */
+    if ((mech_len < 0) || ((mech_len == GSS_KRB5_MECHANISM->length)
+			   && memcmp(p, GSS_KRB5_MECHANISM->elements, mech_len) == 0))
+	ret = gsskrb5_accept_sec_context(minor_status,
+					 context_handle,
+					 acceptor_cred_handle,
+					 input_token_buffer,
+					 input_chan_bindings,
+					 src_name,
+					 mech_type,
+					 output_token,
+					 ret_flags,
+					 time_rec,
+					 delegated_cred_handle);
+    else if (mech_len == GSS_SPNEGO_MECHANISM->length
+	     && memcmp(p, GSS_SPNEGO_MECHANISM->elements, mech_len) == 0)
+	ret = spnego_accept_sec_context(minor_status,
+					context_handle,
+					acceptor_cred_handle,
+					input_token_buffer,
+					input_chan_bindings,
+					src_name,
+					mech_type,
+					output_token,
+					ret_flags,
+					time_rec,
+					delegated_cred_handle);
+    else
 	return GSS_S_BAD_MECH;
+
+    return ret;
 }
