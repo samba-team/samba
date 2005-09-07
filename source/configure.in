@@ -958,7 +958,16 @@ AC_CACHE_CHECK([for struct timespec type],samba_cv_struct_timespec, [
 #include <stdlib.h>
 #include <stddef.h>
 #endif
-#include <time.h>
+#if TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  include <time.h>
+# endif
+#endif
 #if HAVE_AIO_H
 #include <aio.h>
 #endif
