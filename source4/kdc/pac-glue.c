@@ -36,7 +36,7 @@
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	struct auth_serversupplied_info *server_info;
-	char *username, *p;
+	char *username;
 	const char *realm;
 	DATA_BLOB tmp_blob;
 	TALLOC_CTX *mem_ctx = talloc_named(config, 0, "samba_get_pac context");
@@ -44,7 +44,7 @@
 		return ENOMEM;
 	}
 
-	ret = krb5_unparse_name(context, client, &username);
+	ret = krb5_unparse_name_norealm(context, client, &username);
 
 	if (ret != 0) {
 		krb5_set_error_string(context, "get pac: could not parse principal");
@@ -55,12 +55,6 @@
 
 	/* parse the principal name */
 	realm = krb5_principal_get_realm(context, client);
-	username = talloc_strdup(mem_ctx, username);
-	p = strchr(username, '@');
-	if (p) {
-		p[0] = '\0';
-	}
-
 
 	nt_status = sam_get_server_info(mem_ctx, username, realm, 
 					data_blob(NULL, 0), data_blob(NULL, 0),
@@ -75,6 +69,7 @@
 				  context, 
 				  krbtgt_keyblock,
 				  server_keyblock,
+				  client,
 				  tgs_authtime,
 				  &tmp_blob);
 

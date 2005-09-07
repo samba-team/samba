@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: roken-common.h,v 1.61 2005/07/07 05:03:30 lha Exp $ */
+/* $Id: roken-common.h,v 1.62 2005/09/01 18:47:35 lha Exp $ */
 
 #ifndef __ROKEN_COMMON_H__
 #define __ROKEN_COMMON_H__
@@ -312,43 +312,46 @@ ewrite (int fd, const void *buf, size_t nbytes);
 struct hostent;
 
 const char * ROKEN_LIB_FUNCTION
-hostent_find_fqdn (const struct hostent *he);
+hostent_find_fqdn (const struct hostent *);
 
 void ROKEN_LIB_FUNCTION
-esetenv(const char *var, const char *val, int rewrite);
+esetenv(const char *, const char *, int);
 
 void ROKEN_LIB_FUNCTION
-socket_set_address_and_port (struct sockaddr *sa, const void *ptr, int port);
+socket_set_address_and_port (struct sockaddr *, const void *, int);
 
 size_t ROKEN_LIB_FUNCTION
-socket_addr_size (const struct sockaddr *sa);
+socket_addr_size (const struct sockaddr *);
 
 void ROKEN_LIB_FUNCTION
-socket_set_any (struct sockaddr *sa, int af);
+socket_set_any (struct sockaddr *, int);
 
 size_t ROKEN_LIB_FUNCTION
-socket_sockaddr_size (const struct sockaddr *sa);
+socket_sockaddr_size (const struct sockaddr *);
 
 void * ROKEN_LIB_FUNCTION
-socket_get_address (struct sockaddr *sa);
+socket_get_address (struct sockaddr *);
 
 int ROKEN_LIB_FUNCTION
-socket_get_port (const struct sockaddr *sa);
+socket_get_port (const struct sockaddr *);
 
 void ROKEN_LIB_FUNCTION
-socket_set_port (struct sockaddr *sa, int port);
+socket_set_port (struct sockaddr *, int);
 
 void ROKEN_LIB_FUNCTION
-socket_set_portrange (int sock, int restr, int af);
+socket_set_portrange (int, int, int);
 
 void ROKEN_LIB_FUNCTION
-socket_set_debug (int sock);
+socket_set_debug (int);
 
 void ROKEN_LIB_FUNCTION
-socket_set_tos (int sock, int tos);
+socket_set_tos (int, int);
 
 void ROKEN_LIB_FUNCTION
-socket_set_reuseaddr (int sock, int val);
+socket_set_reuseaddr (int, int);
+
+void ROKEN_LIB_FUNCTION
+socket_set_ipv6only (int, int);
 
 char ** ROKEN_LIB_FUNCTION
 vstrcollect(va_list *ap);
