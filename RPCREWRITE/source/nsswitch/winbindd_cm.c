@@ -961,9 +961,9 @@ done:
 }
 
 #ifndef DISABLE_SCHANNEL_WIN2K3_SP1
-static BOOL cm_get_schannel_key(struct winbindd_domain *domain,
+static BOOL cm_get_schannel_dcinfo(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				unsigned char **session_key)
+				struct dcinfo **ppdc)
 {
 	NTSTATUS result;
 	struct rpc_pipe_client *netlogon_pipe;
@@ -977,10 +977,10 @@ static BOOL cm_get_schannel_key(struct winbindd_domain *domain,
 		return False;
 	}
 
-	/* Return a pointer to the session key from the
+	/* Return a pointer to the struct dcinfo from the
 	   netlogon pipe. */
 
-	*session_key = domain->conn.netlogon_pipe->dc->sess_key;
+	*ppdc = domain->conn.netlogon_pipe->dc;
 	return True;
 }
 #endif
@@ -999,14 +999,14 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
 	if (conn->samr_pipe == NULL) {
 #ifndef DISABLE_SCHANNEL_WIN2K3_SP1
-		unsigned char *session_key;
+		struct dcinfo *p_dcinfo;
 
-		if (cm_get_schannel_key(domain, mem_ctx, &session_key)) {
+		if (cm_get_schannel_dcinfo(domain, mem_ctx, &p_dcinfo)) {
 			conn->samr_pipe = cli_rpc_pipe_open_schannel_with_key(conn->cli,
 								PI_SAMR,
 								PIPE_AUTH_LEVEL_PRIVACY,
-								session_key,
-								domain->name);
+								domain->name,
+								p_dcinfo);
 		} else
 #endif	/* DISABLE_SCHANNEL_WIN2K3_SP1 */
 			conn->samr_pipe = cli_rpc_pipe_open_noauth(conn->cli, PI_SAMR);
@@ -1056,14 +1056,14 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
 	if (conn->lsa_pipe == NULL) {
 #ifndef DISABLE_SCHANNEL_WIN2K3_SP1
-		unsigned char *session_key;
+		struct dcinfo *p_dcinfo;
 
-		if (cm_get_schannel_key(domain, mem_ctx, &session_key)) {
+		if (cm_get_schannel_dcinfo(domain, mem_ctx, &p_dcinfo)) {
 			conn->lsa_pipe = cli_rpc_pipe_open_schannel_with_key(conn->cli,
 								PI_LSARPC,
 								PIPE_AUTH_LEVEL_PRIVACY,
-								session_key,
-								domain->name);
+								domain->name,
+								p_dcinfo);
 		} else
 #endif	/* DISABLE_SCHANNEL_WIN2K3_SP1 */
 			conn->lsa_pipe = cli_rpc_pipe_open_noauth(conn->cli,
@@ -1184,7 +1184,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx
 						PI_NETLOGON,
 						PIPE_AUTH_LEVEL_PRIVACY,
 						domain->name,
-						&netlogon_pipe->dc);
+						netlogon_pipe->dc);
 
 	/* We can now close the initial netlogon pipe. */
 	cli_rpc_pipe_close(netlogon_pipe);

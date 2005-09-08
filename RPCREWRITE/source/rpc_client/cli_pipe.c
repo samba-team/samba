@@ -2165,8 +2165,10 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cl
 		return NULL;
 	}
 
-	/* The credentials on the new pipe are the ones we are passed in - copy them over. */
-	*result->dc = *pdc;
+	/* The credentials on a new netlogon pipe are the ones we are passed in - copy them over. */
+	if (result->dc) {
+		*result->dc = *pdc;
+	}
 
 	DEBUG(10,("cli_rpc_pipe_open_schannel_with_key: opened pipe %s to machine %s "
 		"for domain %s "
