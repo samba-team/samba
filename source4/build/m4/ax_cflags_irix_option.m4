@@ -167,8 +167,8 @@ AS_VAR_POPDEF([VAR])dnl
 AS_VAR_POPDEF([FLAGS])dnl
 ])
 
-AC_DEFUN([AX_CFLAGS_IRIX_OPTION],[ifelse(m4_regexp([$2],[-]),-1,
+AC_DEFUN([AX_CFLAGS_IRIX_OPTION],[ifelse(m4_bregexp([$2],[-]),-1,
 [AX_CFLAGS_IRIX_OPTION_NEW($@)],[AX_CFLAGS_IRIX_OPTION_OLD($@)])])
 
-AC_DEFUN([AX_CXXFLAGS_IRIX_OPTION],[ifelse(m4_regexp([$2],[-]),-1,
+AC_DEFUN([AX_CXXFLAGS_IRIX_OPTION],[ifelse(m4_bregexp([$2],[-]),-1,
 [AX_CXXFLAGS_IRIX_OPTION_NEW($@)],[AX_CXXFLAGS_IRIX_OPTION_OLD($@)])])
