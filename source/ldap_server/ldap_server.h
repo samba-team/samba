@@ -35,10 +35,7 @@ struct ldapsrv_connection {
 	BOOL enable_wrap;
 
 	/* reply send queue */
-	struct ldapsrv_send {
-		struct ldapsrv_send *next, *prev;
-		DATA_BLOB data;
-	} *send_queue;
+	struct data_blob_list_item *send_queue;
 
 	BOOL processing;
 };

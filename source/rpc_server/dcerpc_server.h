@@ -102,10 +102,7 @@ struct dcesrv_call_state {
 
 	DATA_BLOB input;
 
-	struct dcesrv_call_reply {
-		struct dcesrv_call_reply *next, *prev;
-		DATA_BLOB data;
-	} *replies;
+	struct data_blob_list_item *replies;
 
 	/* this is used by the boilerplate code to generate DCERPC faults */
 	uint32_t fault_code;
