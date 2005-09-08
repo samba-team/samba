@@ -1,3 +1,13 @@
+2005-09-08 Love Hörnquist Åstrand <lha@it.su.se>
+
+	* Constify password.
+
+	* admin.h: Add KRB5_TL_PKINIT_ACL.
+	
+	* marshall.c (_kadm5_unmarshal_params): avoid signed-ness warnings
+	
+	* get_s.c (kadm5_s_get_principal): clear error string
+	
 2005-08-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* iprop-log.8: More text about iprop-log.
