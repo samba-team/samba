@@ -417,8 +417,9 @@ gsskrb5_acceptor_start
 					       &flags,
 					       &fwd_data);
 	krb5_free_authenticator(gssapi_krb5_context, &authenticator);
-	if (ret)
-	    if (ret) return ret;
+	if (ret) {
+	    return ret;
+	}
     }
     
     if(flags & GSS_C_MUTUAL_FLAG) {
@@ -451,7 +452,9 @@ gsskrb5_acceptor_start
 						  "\x02\x00",
 						  GSS_KRB5_MECHANISM);
 		    krb5_data_free (&outbuf);
-		    if (ret) return ret;
+		    if (ret) {
+			    return ret;
+		    }
 	    } else {
 		    output_token->length	= outbuf.length;
 		    output_token->value	= outbuf.data;
@@ -479,8 +482,9 @@ gsskrb5_acceptor_start
 	ret = gssapi_lifetime_left(minor_status,
 				   (*context_handle)->lifetime,
 				   time_rec);
-	if (ret)
-	    if (ret) return ret;
+	if (ret) {
+	    return ret;
+	}
     }
 
     /*
@@ -600,8 +604,9 @@ gsskrb5_acceptor_wait_for_dcestyle(
 		ret = gssapi_lifetime_left(minor_status,
 					   (*context_handle)->lifetime,
 					   &lifetime_rec);
-		if (ret) return ret;
-
+		if (ret) {
+			return ret;
+		}
 		if (lifetime_rec == 0) {
 			return GSS_S_CONTEXT_EXPIRED;
 		}
