@@ -16,10 +16,9 @@ use Parse::Pidl::Dump qw(DumpTypedef DumpFunction);
 use Parse::Pidl::Ethereal::Conformance qw(ReadConformance);
 
 my %types;
-my %hf;
 my @ett;
 
-my $conformance = {imports=>{}};
+my $conformance = undef;
 
 my %ptrtype_mappings = (
 	"unique" => "NDR_POINTER_UNIQUE",
@@ -671,7 +670,10 @@ sub Initialize($)
 {
 	my $cnf_file = shift;
 
-	$conformance = {};
+	$conformance = {
+		imports => {},
+		header_fields=> {} 
+	};
 
 	ReadConformance($cnf_file, $conformance) or print "Warning: No conformance file `$cnf_file'\n";
 	
@@ -716,7 +718,6 @@ sub Parse($$$$)
 	$tabs = "";
 
 	%res = (code=>"",def=>"",hdr=>"");
-	%hf = ();
 	@ett = ();
 
 	my $notice = 
@@ -814,13 +815,13 @@ sub register_hf_field($$$$$$$$)
 
 	return $conformance->{hf_renames}->{$index} if defined ($conformance->{hf_renames}->{$index});
 
-	$hf{$index} = {
+	$conformance->{header_fields}->{$index} = {
 		INDEX => $index,
 		NAME => $name,
 		FILTER => $filter_name,
 		FT_TYPE => $ft_type,
 		BASE_TYPE => $base_type,
-		VALS => $valsstring,
+		VALSSTRING => $valsstring,
 		MASK => $mask,
 		BLURB => $blurb
 	};
@@ -834,7 +835,7 @@ sub DumpHfDeclaration()
 
 	$res = "\n/* Header field declarations */\n";
 
-	foreach (keys %hf) 
+	foreach (keys %{$conformance->{header_fields}}) 
 	{
 		$res .= "static gint $_ = -1;\n";
 	}
@@ -846,10 +847,10 @@ sub DumpHfList()
 {
 	my $res = "\tstatic hf_register_info hf[] = {\n";
 
-	foreach (values %hf) 
+	foreach (values %{$conformance->{header_fields}}) 
 	{
 		$res .= "\t{ &$_->{INDEX}, 
-	  { \"$_->{NAME}\", \"$_->{FILTER}\", $_->{FT_TYPE}, $_->{BASE_TYPE}, $_->{VALS}, $_->{MASK}, \"$_->{BLURB}\", HFILL }},
+	  { \"$_->{NAME}\", \"$_->{FILTER}\", $_->{FT_TYPE}, $_->{BASE_TYPE}, $_->{VALSSTRING}, $_->{MASK}, \"$_->{BLURB}\", HFILL }},
 ";
 	}
 
