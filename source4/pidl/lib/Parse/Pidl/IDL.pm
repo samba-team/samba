@@ -2775,7 +2775,7 @@ sub parse_idl($$)
 	undef $/;
 	my $cpp = $ENV{CPP};
 	if (! defined $cpp) {
-		$cpp = "CPP";
+		$cpp = "cpp";
 	}
 	my $data = `$cpp -D__PIDL__ -xc $filename`;
 	$/ = $saved_delim;
