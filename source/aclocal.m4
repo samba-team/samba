@@ -317,3 +317,5 @@ fi
 sinclude(build/m4/public.m4)
 sinclude(build/m4/core.m4)
 sinclude(build/m4/ax_cflags_gcc_option.m4)
+sinclude(build/m4/ax_cflags_irix_option.m4)
+sinclude(build/m4/smb_cc_features.m4)

@@ -5,7 +5,17 @@ dnl  Released under the GNU GPL
 dnl -------------------------------------------------------
 dnl
 
-AC_PATH_PROG(PERL, perl)
+case "$host_os" in
+	*irix*)
+		# On IRIX, we prefer Freeware or Nekoware Perl, because the
+		# system perl so ancient.
+		AC_PATH_PROG(PERL, perl, "", "/usr/freeware/bin:/usr/nekoware/bin:$PATH")
+		;;
+	*)
+		AC_PATH_PROG(PERL, perl)
+		;;
+esac
+
 if test x"$PERL" = x""; then
 	AC_MSG_WARN([No version of perl was not found!])
 	AC_MSG_ERROR([Please install perl from http://www.perl.com/])

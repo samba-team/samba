@@ -5,6 +5,8 @@ dnl  Released under the GNU GPL
 dnl -------------------------------------------------------
 dnl
 
+AC_CANONICAL_HOST
+
 SMB_VERSION_STRING=`cat include/version.h | grep 'SAMBA_VERSION_OFFICIAL_STRING' | cut -d '"' -f2`
 echo "SAMBA VERSION: ${SMB_VERSION_STRING}"
 
