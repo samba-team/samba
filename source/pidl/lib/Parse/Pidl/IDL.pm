@@ -2672,7 +2672,6 @@ sub
 #line 320 "pidl/idl.yp"
 
 
-use config qw(%config);
 use Parse::Pidl::Util;
 
 #####################################################################
@@ -2776,7 +2775,7 @@ sub parse_idl($$)
 	undef $/;
 	my $cpp = $ENV{CPP};
 	if (! defined $cpp) {
-		$cpp = $config::config{'CPP'};
+		$cpp = "CPP";
 	}
 	my $data = `$cpp -D__PIDL__ -xc $filename`;
 	$/ = $saved_delim;
