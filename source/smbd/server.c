@@ -22,6 +22,10 @@
 
 #include "includes.h"
 
+#ifdef HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif
+
 static int am_parent = 1;
 
 /* the last message the was processed */
@@ -914,6 +918,14 @@ void build_options(BOOL screen);
 	/*
 	 * everything after this point is run after the fork()
 	 */ 
+
+#if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
+	/* On Linux we lose the ability to dump core when we change our user
+	 * ID. We know how to dump core safely, so let's make sure we have our
+	 * dumpable flag set.
+	 */
+	prctl(PR_SET_DUMPABLE, 1);
+#endif
 
 	/* Initialise the password backed before the global_sam_sid
 	   to ensure that we fetch from ldap before we make a domain sid up */
