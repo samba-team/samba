@@ -147,10 +147,11 @@ sub ReadConformance($$)
 			next;
 		}
 
-		my @fields = split(/ /);
+		my @fields = split(/([^ ]+|"[^"]+")/);
 
-		my $cmd = $fields[0];
+		my $cmd = $fields[1];
 
+		shift @fields;
 		shift @fields;
 
 		if (not defined($field_handlers{$cmd})) {
