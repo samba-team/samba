@@ -264,6 +264,9 @@ NTSTATUS rpc_samdump_internals(const DOM_SID *domain_sid,
 				int argc,
 				const char **argv) 
 {
+#if 0
+	/* net_rpc.c now always tries to create an schannel pipe.. */
+
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	uchar trust_password[16];
 	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
@@ -288,16 +291,13 @@ NTSTATUS rpc_samdump_internals(const DOM_SID *domain_sid,
 		DEBUG(0,("Error connecting to NETLOGON pipe\n"));
 		goto fail;
 	}
+#endif
 
 	dump_database(pipe_hnd, SAM_DATABASE_DOMAIN);
 	dump_database(pipe_hnd, SAM_DATABASE_BUILTIN);
 	dump_database(pipe_hnd, SAM_DATABASE_PRIVS);
 
-        nt_status = NT_STATUS_OK;
-
-fail:
-
-	return nt_status;
+	return NT_STATUS_OK;
 }
 
 /* Convert a SAM_ACCOUNT_DELTA to a SAM_ACCOUNT. */
@@ -2130,11 +2130,8 @@ NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
 				const char **argv) 
 {
         NTSTATUS result;
-	uchar trust_password[16];
 	fstring my_dom_sid_str;
 	fstring rem_dom_sid_str;
-	uint32 sec_channel_type = 0;
-	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
 
 	if (!sid_equal(domain_sid, get_global_sam_sid())) {
 		d_printf("Cannot import users from %s at this time, "
@@ -2149,34 +2146,11 @@ NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (!secrets_fetch_trust_account_password(domain_name,
-						  trust_password, NULL,
-						  &sec_channel_type)) {
-		result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-		d_printf("Could not retrieve domain trust secret\n");
-		goto fail;
-	}
-	
-	result = rpccli_netlogon_setup_creds(pipe_hnd,
-						cli->desthost,
-						domain_name,
-                                                global_myname(),
-                                                trust_password,
-                                                sec_channel_type,
-                                                &neg_flags);
-	result = cli_nt_establish_netlogon(cli, sec_channel, trust_password);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		d_printf("Failed to setup BDC creds\n");
-		goto fail;
-	}
-
         if (argc >= 1 && (strcmp(argv[0], "ldif") == 0)) {
-		result = fetch_database_to_ldif(cli, SAM_DATABASE_DOMAIN,
-					&ret_creds, *domain_sid, argv[1]);
+		result = fetch_database_to_ldif(pipe_hnd, SAM_DATABASE_DOMAIN,
+					*domain_sid, argv[1]);
         } else {
-		result = fetch_database(cli, SAM_DATABASE_DOMAIN, &ret_creds,
-					*domain_sid);
+		result = fetch_database(pipe_hnd, SAM_DATABASE_DOMAIN, *domain_sid);
         }
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -2189,12 +2163,10 @@ NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
 	}
 
         if (argc >= 1 && (strcmp(argv[0], "ldif") == 0)) {
-		result = fetch_database_to_ldif(cli, SAM_DATABASE_BUILTIN, 
-                                            &ret_creds, global_sid_Builtin,
-					    argv[1]);
+		result = fetch_database_to_ldif(pipe_hnd, SAM_DATABASE_BUILTIN, 
+					global_sid_Builtin, argv[1]);
         } else {
-		result = fetch_database(cli, SAM_DATABASE_BUILTIN, &ret_creds, 
-	      				    global_sid_Builtin);
+		result = fetch_database(pipe_hnd, SAM_DATABASE_BUILTIN, global_sid_Builtin);
         }
 
 	if (!NT_STATUS_IS_OK(result)) {

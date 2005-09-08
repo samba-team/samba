@@ -468,11 +468,11 @@ BOOL secrets_store_machine_password(const char *pass, const char *domain, uint32
 	return ret;
 }
 
-
 /************************************************************************
  Routine to fetch the plaintext machine account password for a realm
-the password is assumed to be a null terminated ascii string
+ the password is assumed to be a null terminated ascii string.
 ************************************************************************/
+
 char *secrets_fetch_machine_password(const char *domain, 
 				     time_t *pass_last_set_time,
 				     uint32 *channel)
@@ -576,7 +576,6 @@ BOOL trusted_domain_password_delete(const char *domain)
 	return secrets_delete(trustdom_keystr(domain));
 }
 
-
 BOOL secrets_store_ldap_pw(const char* dn, char* pw)
 {
 	char *key = NULL;
@@ -594,8 +593,9 @@ BOOL secrets_store_ldap_pw(const char* dn, char* pw)
 }
 
 /*******************************************************************
- find the ldap password
+ Find the ldap password.
 ******************************************************************/
+
 BOOL fetch_ldap_pw(char **dn, char** pw)
 {
 	char *key = NULL;
@@ -657,7 +657,6 @@ BOOL fetch_ldap_pw(char **dn, char** pw)
 	
 	return True;
 }
-
 
 /**
  * Get trusted domains info from secrets.tdb.

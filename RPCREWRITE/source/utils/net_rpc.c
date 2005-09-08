@@ -139,9 +139,23 @@ int run_rpc_command(struct cli_state *cli_arg,
 	domain_sid = net_get_remote_domain_sid(cli, mem_ctx, &domain_name);
 
 	if (!(conn_flags & NET_FLAGS_NO_PIPE)) {
-		pipe_hnd = cli_rpc_pipe_open_noauth(cli, pipe_idx);
-		if (!pipe_hnd) {
-			DEBUG(0, ("Could not initialise pipe %s\n", cli_get_pipe_name(pipe_idx)));
+		if (lp_client_schannel() && (pipe_idx == PI_NETLOGON)) {
+			/* Always try and create an schannel netlogon pipe. */
+			pipe_hnd = cli_rpc_pipe_open_schannel(cli, pipe_idx,
+							PIPE_AUTH_LEVEL_PRIVACY,
+							domain_name);
+			if (!pipe_hnd) {
+				DEBUG(0, ("Could not initialise schannel netlogon pipe\n"));
+				cli_shutdown(cli);
+				return -1;
+			}
+		} else {
+			pipe_hnd = cli_rpc_pipe_open_noauth(cli, pipe_idx);
+			if (!pipe_hnd) {
+				DEBUG(0, ("Could not initialise pipe %s\n", cli_get_pipe_name(pipe_idx)));
+				cli_shutdown(cli);
+				return -1;
+			}
 		}
 	}
 	

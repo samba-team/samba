@@ -36,23 +36,32 @@ static NTSTATUS just_change_the_password(struct rpc_pipe_client *cli, TALLOC_CTX
 					 uint32 sec_channel_type)
 {
 	NTSTATUS result;
-	uint32 flags_out;
 
-	/* ensure that schannel uses the right domain */
-	result = rpccli_netlogon_setup_creds(cli, 
+#if 0
+	We always open netlogon with schannel now...
+
+	/* Check if the netlogon pipe is open using schannel. If so we
+	   already have valid creds. If not we must set them up. */
+
+	if (cli->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) {
+		uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
+
+		result = rpccli_netlogon_setup_creds(cli, 
 					cli->cli->desthost,
 					lp_workgroup(),
 					global_myname(),
 					orig_trust_passwd_hash,
 					sec_channel_type,
-					&flags_out);
+					&neg_flags);
 
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(3,("just_change_the_password: unable to setup creds (%s)!\n",
-			 nt_errstr(result)));
-		return result;
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(3,("just_change_the_password: unable to setup creds (%s)!\n",
+				 nt_errstr(result)));
+			return result;
+		}
 	}
-	
+#endif
+
 	result = rpccli_net_srv_pwset(cli, mem_ctx, global_myname(), new_trust_passwd_hash);
 
 	if (!NT_STATUS_IS_OK(result)) {
