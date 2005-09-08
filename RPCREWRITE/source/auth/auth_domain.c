@@ -104,15 +104,44 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 		netlogon_pipe = cli_rpc_pipe_open_schannel(*cli, PI_NETLOGON, PIPE_AUTH_LEVEL_PRIVACY, domain);
 	} else {
 		netlogon_pipe = cli_rpc_pipe_open_noauth(*cli, PI_NETLOGON);
+	}
 
-		/* We need to set up a creds chain on an unauthenticated pipe. */
-		ntresult = rpccli_netlogon_setup_creds(netlogon_pipe,
-						dc_name,
-						domain,
-						global_myname(),
-						trust_password,
-						sec_channel_type,
-						&neg_flags);
+	if(!netlogon_pipe) {
+		DEBUG(0,("connect_to_domain_password_server: unable to open the domain client session to \
+machine %s. Error was : %s.\n", dc_name, cli_errstr(*cli)));
+		cli_shutdown(*cli);
+		release_server_mutex();
+		return NT_STATUS_NO_LOGON_SERVERS;
+	}
+
+	if (!lp_client_schannel()) {
+		/* We need to set up a creds chain on an unauthenticated netlogon pipe. */
+		uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
+		uint32 sec_chan_type = 0;
+		char machine_pwd[16];
+
+		if (!get_trust_pw(domain, machine_pwd, &sec_chan_type)) {
+			DEBUG(0, ("connect_to_domain_password_server: could not fetch "
+			"trust account password for domain '%s'\n",
+				domain));
+			cli_shutdown(*cli);
+			release_server_mutex();
+			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		}
+
+		result = rpccli_netlogon_setup_creds(netlogon_pipe,
+					dc_name,
+					domain,
+					global_myname(),
+					machine_pwd,
+					sec_chan_type,
+					&neg_flags);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			cli_shutdown(*cli);
+			release_server_mutex();
+			return result;
+		}
 	}
 
 	if(!netlogon_pipe) {
@@ -345,8 +374,8 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	 * No need to become_root() as secrets_init() is done at startup.
 	 */
 
-	if (!secrets_fetch_trusted_domain_password(user_info->domain.str, &trust_password, &sid, &last_change_time))
-	{
+	if (!secrets_fetch_trusted_domain_password(user_info->domain.str, &trust_password,
+				&sid, &last_change_time)) {
 		DEBUG(0, ("check_trustdomain_security: could not fetch trust account password for domain %s\n", user_info->domain.str));
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
