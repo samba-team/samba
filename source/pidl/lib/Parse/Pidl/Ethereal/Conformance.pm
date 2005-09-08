@@ -29,7 +29,6 @@ sub handle_type($$$$$$$$)
 	};
 }
 
-
 sub handle_hf_rename($$$)
 {
 	my ($data,$old,$new) = @_;
@@ -45,11 +44,11 @@ sub handle_param_value($$$)
 
 sub handle_hf_field($$$$$$$$$)
 {
-	my ($data,$hf,$title,$filter,$ft_type,$base_type,$valsstring,$mask,$blurb) = @_;
+	my ($data,$index,$name,$filter,$ft_type,$base_type,$valsstring,$mask,$blurb) = @_;
 
-	$data->{header_fields}->{$hf} = {
-		HF => $hf,
-		TITLE => $title,
+	$data->{header_fields}->{$index} = {
+		INDEX => $index,
+		NAME => $name,
 		FILTER => $filter,
 		FT_TYPE => $ft_type,
 		BASE_TYPE => $base_type,
