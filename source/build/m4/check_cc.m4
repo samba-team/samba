@@ -5,13 +5,23 @@ dnl  Released under the GNU GPL
 dnl -------------------------------------------------------
 dnl
 
+# don't let the AC_PROG_CC macro auto set the CFLAGS
+OLD_CFLAGS="${CFLAGS}"
 AC_PROG_CC
+CFLAGS="${OLD_CFLAGS}"
 if test x"$CC" = x""; then
 	AC_MSG_WARN([No c compiler was not found!])
 	AC_MSG_ERROR([Please Install gcc from http://gcc.gnu.org/])
 fi
 
-AC_C_INLINE
+#
+# Set the debug symbol option if we have
+# --enable-*developer or --enable-debug
+# and the compiler supports it
+#
+if test x$ac_cv_prog_cc_g = xyes -a x$debug = xyes; then
+	CFLAGS="${CFLAGS} -g"
+fi
 
 dnl needed before AC_TRY_COMPILE
 AC_ISC_POSIX
@@ -110,6 +120,27 @@ AC_TRY_RUN([#include "${srcdir-.}/build/tests/trivial.c"],
 # Check if the compiler can handle the options we selected by
 # --enable-*developer
 #
+DEVELOPER_CFLAGS=""
+if test x$developer = xyes; then
+	DEVELOPER_CFLAGS="-DDEBUG_PASSWORD -DDEVELOPER"
+	if test x"$GCC" = x"yes" ; then
+	    OLD_CFLAGS="${CFLAGS}"
+	    CFLAGS="${CFLAGS} -D_SAMBA_DEVELOPER_DONNOT_USE_O2_"
+	    AX_CFLAGS_GCC_OPTION(-Wall, DEVELOPER_CFLAGS)
+	    AX_CFLAGS_GCC_OPTION(-Wshadow, DEVELOPER_CFLAGS)
+	    AX_CFLAGS_GCC_OPTION(-Werror-implicit-function-declaration, DEVELOPER_CFLAGS)
+	    AX_CFLAGS_GCC_OPTION(-Wstrict-prototypes, DEVELOPER_CFLAGS)
+	    AX_CFLAGS_GCC_OPTION(-Wpointer-arith, DEVELOPER_CFLAGS)
+	    AX_CFLAGS_GCC_OPTION(-Wcast-qual, DEVELOPER_CFLAGS)
+	    AX_CFLAGS_GCC_OPTION(-Wcast-align, DEVELOPER_CFLAGS)
+	    AX_CFLAGS_GCC_OPTION(-Wwrite-strings, DEVELOPER_CFLAGS)
+	    AX_CFLAGS_GCC_OPTION(-Wmissing-format-attribute, DEVELOPER_CFLAGS)
+	    AX_CFLAGS_GCC_OPTION(-Wformat=2, DEVELOPER_CFLAGS)
+	    AX_CFLAGS_GCC_OPTION(-Wno-format-y2k, DEVELOPER_CFLAGS)
+	    AX_CFLAGS_GCC_OPTION(-Wno-declaration-after-statement, DEVELOPER_CFLAGS)
+	    CFLAGS="${OLD_CFLAGS}"
+	fi
+fi
 if test -n "$DEVELOPER_CFLAGS"; then
 	OLD_CFLAGS="${CFLAGS}"
 	CFLAGS="${CFLAGS} ${DEVELOPER_CFLAGS}"
