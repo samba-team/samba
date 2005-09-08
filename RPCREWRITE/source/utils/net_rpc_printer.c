@@ -1332,25 +1332,37 @@ done:
 	return nt_status;
 }
 
-NTSTATUS rpc_printer_publish_publish_internals(const DOM_SID *domain_sid, const char *domain_name, 
-					       struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-					       int argc, const char **argv)
+NTSTATUS rpc_printer_publish_publish_internals(const DOM_SID *domain_sid,
+						const char *domain_name, 
+						struct cli_state *cli,
+						struct rpc_pipe_client *pipe_hnd,
+						TALLOC_CTX *mem_ctx, 
+						int argc,
+						const char **argv)
 {
-	return rpc_printer_publish_internals_args(cli, mem_ctx, argc, argv, SPOOL_DS_PUBLISH);
+	return rpc_printer_publish_internals_args(pipe_hnd, mem_ctx, argc, argv, SPOOL_DS_PUBLISH);
 }
 
-NTSTATUS rpc_printer_publish_unpublish_internals(const DOM_SID *domain_sid, const char *domain_name, 
-						 struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-						 int argc, const char **argv)
+NTSTATUS rpc_printer_publish_unpublish_internals(const DOM_SID *domain_sid,
+						const char *domain_name, 
+						struct cli_state *cli,
+						struct rpc_pipe_client *pipe_hnd,
+						TALLOC_CTX *mem_ctx, 
+						int argc,
+						const char **argv)
 {
-	return rpc_printer_publish_internals_args(cli, mem_ctx, argc, argv, SPOOL_DS_UNPUBLISH);
+	return rpc_printer_publish_internals_args(pipe_hnd, mem_ctx, argc, argv, SPOOL_DS_UNPUBLISH);
 }
 
-NTSTATUS rpc_printer_publish_update_internals(const DOM_SID *domain_sid, const char *domain_name, 
-					      struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-					      int argc, const char **argv)
+NTSTATUS rpc_printer_publish_update_internals(const DOM_SID *domain_sid,
+						const char *domain_name, 
+						struct cli_state *cli,
+						struct rpc_pipe_client *pipe_hnd,
+						TALLOC_CTX *mem_ctx, 
+						int argc,
+						const char **argv)
 {
-	return rpc_printer_publish_internals_args(cli, mem_ctx, argc, argv, SPOOL_DS_UPDATE);
+	return rpc_printer_publish_internals_args(pipe_hnd, mem_ctx, argc, argv, SPOOL_DS_UPDATE);
 }
 
 /** 
@@ -1368,9 +1380,14 @@ NTSTATUS rpc_printer_publish_update_internals(const DOM_SID *domain_sid, const c
  *
  * @return Normal NTSTATUS return.
  **/
-NTSTATUS rpc_printer_publish_list_internals(const DOM_SID *domain_sid, const char *domain_name, 
-					    struct cli_state *cli, TALLOC_CTX *mem_ctx,
-					    int argc, const char **argv)
+
+NTSTATUS rpc_printer_publish_list_internals(const DOM_SID *domain_sid,
+						const char *domain_name, 
+						struct cli_state *cli,
+						struct rpc_pipe_client *pipe_hnd,
+						TALLOC_CTX *mem_ctx, 
+						int argc,
+						const char **argv)
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	uint32 i, num_printers; 
@@ -1382,7 +1399,7 @@ NTSTATUS rpc_printer_publish_list_internals(const DOM_SID *domain_sid, const cha
 	BOOL got_hnd = False;
 	int state;
 
-	if (!get_printer_info(cli, mem_ctx, 2, argc, argv, &num_printers, &ctr))
+	if (!get_printer_info(pipe_hnd, mem_ctx, 2, argc, argv, &num_printers, &ctr))
 		return nt_status;
 
 	for (i = 0; i < num_printers; i++) {

@@ -6,6 +6,7 @@
    Copyright (C) Tim Potter 2001,2002
    Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2005
    Modified by Volker Lendecke 2002
+   Copyright (C) Jeremy Allison 2005.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -40,7 +41,6 @@ static void display_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *g)
 	}
 	d_printf("\n");
 }
-
 
 static const char *display_time(NTTIME *nttime)
 {
@@ -210,10 +210,9 @@ static void display_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta)
 	}
 }
 
-
-static void dump_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds)
+static void dump_database(struct rpc_pipe_client *pipe_hnd, uint32 db_type)
 {
-	unsigned sync_context = 0;
+	uint32 sync_context = 0;
         NTSTATUS result;
 	int i;
         TALLOC_CTX *mem_ctx;
@@ -241,13 +240,12 @@ static void dump_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret
 	}
 
 	do {
-		result = cli_netlogon_sam_sync(cli, mem_ctx, ret_creds, db_type,
+		result = rpccli_netlogon_sam_sync(pipe_hnd, mem_ctx, db_type,
 					       sync_context,
 					       &num_deltas, &hdr_deltas, &deltas);
 		if (NT_STATUS_IS_ERR(result))
 			break;
 
-		clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), ret_creds);
                 for (i = 0; i < num_deltas; i++) {
 			display_sam_entry(&hdr_deltas[i], &deltas[i]);
                 }
@@ -268,34 +266,37 @@ NTSTATUS rpc_samdump_internals(const DOM_SID *domain_sid,
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	uchar trust_password[16];
-	DOM_CRED ret_creds;
-	uint32 sec_channel;
-
-	ZERO_STRUCT(ret_creds);
-
-	fstrcpy(cli->domain, domain_name);
+	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
+	uint32 sec_channel_type = 0;
 
 	if (!secrets_fetch_trust_account_password(domain_name,
 						  trust_password,
-						  NULL, &sec_channel)) {
+						  NULL, &sec_channel_type)) {
 		DEBUG(0,("Could not fetch trust account password\n"));
 		goto fail;
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status = cli_nt_establish_netlogon(cli, sec_channel,
-								   trust_password))) {
+	nt_status = rpccli_netlogon_setup_creds(pipe_hnd,
+						cli->desthost,
+						domain_name,
+                                                global_myname(),
+                                                trust_password,
+                                                sec_channel_type,
+                                                &neg_flags);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("Error connecting to NETLOGON pipe\n"));
 		goto fail;
 	}
 
-	dump_database(cli, SAM_DATABASE_DOMAIN, &ret_creds);
-	dump_database(cli, SAM_DATABASE_BUILTIN, &ret_creds);
-	dump_database(cli, SAM_DATABASE_PRIVS, &ret_creds);
+	dump_database(pipe_hnd, SAM_DATABASE_DOMAIN);
+	dump_database(pipe_hnd, SAM_DATABASE_BUILTIN);
+	dump_database(pipe_hnd, SAM_DATABASE_PRIVS);
 
         nt_status = NT_STATUS_OK;
 
 fail:
-	cli_nt_session_close(cli);
+
 	return nt_status;
 }
 
@@ -1096,10 +1097,9 @@ static void fetch_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta,
 	}
 }
 
-static NTSTATUS fetch_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds,
-	       DOM_SID dom_sid)
+static NTSTATUS fetch_database(struct rpc_pipe_client *pipe_hnd, uint32 db_type, DOM_SID dom_sid)
 {
-	unsigned sync_context = 0;
+	uint32 sync_context = 0;
         NTSTATUS result;
 	int i;
         TALLOC_CTX *mem_ctx;
@@ -1126,17 +1126,13 @@ static NTSTATUS fetch_database(struct cli_state *cli, unsigned db_type, DOM_CRED
 	}
 
 	do {
-		result = cli_netlogon_sam_sync(cli, mem_ctx, ret_creds,
+		result = rpccli_netlogon_sam_sync(pipe_hnd, mem_ctx,
 					       db_type, sync_context,
 					       &num_deltas,
 					       &hdr_deltas, &deltas);
 
 		if (NT_STATUS_IS_OK(result) ||
 		    NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
-
-			clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred),
-					     ret_creds);
-
 			for (i = 0; i < num_deltas; i++) {
 				fetch_sam_entry(&hdr_deltas[i], &deltas[i], dom_sid);
 			}
@@ -1832,15 +1828,16 @@ static NTSTATUS fetch_groupmem_info_to_ldif(SAM_DELTA_CTR *delta, SAM_DELTA_HDR 
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_database_to_ldif(struct cli_state *cli, unsigned db_type, 
-                       DOM_CRED *ret_creds, DOM_SID dom_sid,
-		       const char *user_file)
+static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
+					uint32 db_type,
+					DOM_SID dom_sid,
+					const char *user_file)
 {
 	char *suffix;
 	const char *builtin_sid = "S-1-5-32";
 	char *ldif_file;
 	fstring sid, domainname;
-	unsigned sync_context = 0;
+	uint32 sync_context = 0;
 	NTSTATUS result;
 	int k;
 	TALLOC_CTX *mem_ctx;
@@ -1946,7 +1943,7 @@ static NTSTATUS fetch_database_to_ldif(struct cli_state *cli, unsigned db_type,
 	}
 
 	do {
-		result = cli_netlogon_sam_sync(cli, mem_ctx, ret_creds,
+		result = rpccli_netlogon_sam_sync(pipe_hnd, mem_ctx,
 					       db_type, sync_context,
 					       &num_deltas, &hdr_deltas, 
 					       &deltas);
@@ -1954,9 +1951,6 @@ static NTSTATUS fetch_database_to_ldif(struct cli_state *cli, unsigned db_type,
 		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
 			return NT_STATUS_OK;
 		}
-
-		clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred),
-				     ret_creds);
 
 		/* Re-allocate memory for groupmap and accountmap arrays */
 		groupmap = SMB_REALLOC_ARRAY(groupmap, GROUPMAP,
@@ -2137,12 +2131,10 @@ NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
 {
         NTSTATUS result;
 	uchar trust_password[16];
-	DOM_CRED ret_creds;
 	fstring my_dom_sid_str;
 	fstring rem_dom_sid_str;
-	uint32 sec_channel;
-
-	ZERO_STRUCT(ret_creds);
+	uint32 sec_channel_type = 0;
+	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
 
 	if (!sid_equal(domain_sid, get_global_sam_sid())) {
 		d_printf("Cannot import users from %s at this time, "
@@ -2157,16 +2149,21 @@ NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	fstrcpy(cli->domain, domain_name);
-
 	if (!secrets_fetch_trust_account_password(domain_name,
 						  trust_password, NULL,
-						  &sec_channel)) {
+						  &sec_channel_type)) {
 		result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		d_printf("Could not retrieve domain trust secret\n");
 		goto fail;
 	}
 	
+	result = rpccli_netlogon_setup_creds(pipe_hnd,
+						cli->desthost,
+						domain_name,
+                                                global_myname(),
+                                                trust_password,
+                                                sec_channel_type,
+                                                &neg_flags);
 	result = cli_nt_establish_netlogon(cli, sec_channel, trust_password);
 
 	if (!NT_STATUS_IS_OK(result)) {

@@ -118,10 +118,11 @@ int run_rpc_command(struct cli_state *cli_arg,
 	char *domain_name;
 
 	/* make use of cli_state handed over as an argument, if possible */
-	if (!cli_arg)
+	if (!cli_arg) {
 		cli = net_make_ipc_connection(conn_flags);
-	else
+	} else {
 		cli = cli_arg;
+	}
 
 	if (!cli) {
 		return -1;

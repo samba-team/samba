@@ -2137,8 +2137,8 @@ static struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
 struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 					int pipe_idx,
 					enum pipe_auth_level auth_level,
-					const unsigned char schannel_session_key[16],
-					const char *domain)
+					const char *domain,
+					const struct dcinfo *pdc)
 {
 	struct rpc_pipe_client *result;
 	NTSTATUS ret;
@@ -2155,7 +2155,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cl
 	}
 
 	result->domain = domain;
-	memcpy(result->auth.a_u.schannel_auth->sess_key, schannel_session_key, 16);
+	memcpy(result->auth.a_u.schannel_auth->sess_key, pdc->sess_key, 16);
 
 	ret = rpc_pipe_bind(result, PIPE_AUTH_TYPE_SCHANNEL, auth_level);
 	if (!NT_STATUS_IS_OK(ret)) {
@@ -2164,6 +2164,9 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cl
 		cli_rpc_pipe_close(result);
 		return NULL;
 	}
+
+	/* The credentials on the new pipe are the ones we are passed in - copy them over. */
+	*result->dc = *pdc;
 
 	DEBUG(10,("cli_rpc_pipe_open_schannel_with_key: opened pipe %s to machine %s "
 		"for domain %s "
@@ -2196,8 +2199,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel(struct cli_state *cli,
 
 	result = cli_rpc_pipe_open_schannel_with_key(cli, pipe_idx,
 				auth_level,
-				netlogon_pipe->dc->sess_key,
-				domain);
+				domain, netlogon_pipe->dc);
 
 	/* Now we've bound using the session key we can close the netlog pipe. */
 	cli_rpc_pipe_close(netlogon_pipe);

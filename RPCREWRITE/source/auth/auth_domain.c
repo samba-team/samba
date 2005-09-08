@@ -99,7 +99,21 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	 */
 
 	/* open the netlogon pipe. */
-	netlogon_pipe = cli_rpc_pipe_open_schannel(*cli, PI_NETLOGON, PIPE_AUTH_LEVEL_PRIVACY, domain);
+	if (lp_client_schannel()) {
+		/* We also setup the creds chain in the open_schannel call. */
+		netlogon_pipe = cli_rpc_pipe_open_schannel(*cli, PI_NETLOGON, PIPE_AUTH_LEVEL_PRIVACY, domain);
+	} else {
+		netlogon_pipe = cli_rpc_pipe_open_noauth(*cli, PI_NETLOGON);
+
+		/* We need to set up a creds chain on an unauthenticated pipe. */
+		ntresult = rpccli_netlogon_setup_creds(netlogon_pipe,
+						dc_name,
+						domain,
+						global_myname(),
+						trust_password,
+						sec_channel_type,
+						&neg_flags);
+	}
 
 	if(!netlogon_pipe) {
 		DEBUG(0,("connect_to_domain_password_server: unable to open the domain client session to \
@@ -108,17 +122,6 @@ machine %s. Error was : %s.\n", dc_name, cli_errstr(*cli)));
 		release_server_mutex();
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}
-
-#if 0
-	/* JRA TESTME - do we need to do this to get the netlogon request to succeed ? */
-	ntresult = rpccli_netlogon_setup_creds(cmd_entry->rpc_pipe,
-						dc_name,
-						domain,
-						global_myname(),
-						trust_password,
-						sec_channel_type,
-						&neg_flags);
-#endif
 
 	/* We exit here with the mutex *locked*. JRA */
 
@@ -332,7 +335,7 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	/* No point is bothering if this is not a trusted domain.
 	   This return makes "map to guest = bad user" work again.
 	   The logic is that if we know nothing about the domain, that
-	   user is known to us and does not exist */
+	   user is not known to us and does not exist */
 	
 	if ( !is_trusted_domain( user_info->domain.str ) )
 		return NT_STATUS_NOT_IMPLEMENTED;

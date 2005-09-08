@@ -1183,8 +1183,8 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx
 	conn->netlogon_pipe = cli_rpc_pipe_open_schannel_with_key(conn->cli,
 						PI_NETLOGON,
 						PIPE_AUTH_LEVEL_PRIVACY,
-						netlogon_pipe->dc->sess_key,
-						domain->name);
+						domain->name,
+						&netlogon_pipe->dc);
 
 	/* We can now close the initial netlogon pipe. */
 	cli_rpc_pipe_close(netlogon_pipe);
