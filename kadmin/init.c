@@ -49,6 +49,11 @@ create_random_entry(krb5_principal princ,
     krb5_keyblock *keys;
     int n_keys, i;
     char *name;
+    const char *password;
+    char pwbuf[512];
+
+    random_password(pwbuf, sizeof(pwbuf));
+    password = pwbuf;
 
     ret = krb5_unparse_name(context, princ, &name);
     if (ret) {
@@ -70,12 +75,15 @@ create_random_entry(krb5_principal princ,
     ent.attributes |= attributes | KRB5_KDB_DISALLOW_ALL_TIX;
     mask |= KADM5_ATTRIBUTES;
 
-    ret = kadm5_create_principal(kadm_handle, &ent, mask, "hemlig");
+    /* Create the entry with a random password */
+    ret = kadm5_create_principal(kadm_handle, &ent, mask, password);
     if(ret) {
 	krb5_warn(context, ret, "create_random_entry(%s): randkey failed", 
 		  name);
 	goto out;
     }
+    
+    /* Replace the string2key based keys with real random bytes */
     ret = kadm5_randkey_principal(kadm_handle, princ, &keys, &n_keys);
     if(ret) {
 	krb5_warn(context, ret, "create_random_entry*%s): randkey failed",
