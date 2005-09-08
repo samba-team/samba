@@ -71,20 +71,34 @@ fi
 
 ############################################
 # check if the compiler handles c99 struct initialization
-AC_CACHE_CHECK([for c99 struct initialization],samba_cv_c99_struct_initialization, [
-    AC_TRY_COMPILE([
-#include <stdio.h>],
+AC_DEFUN([SMB_CC_SUPPORTS_C99_STRUCT_INIT],
 [
-   struct foo {
-       int x;
-       char y;
-   } ;
-   struct foo bar = {
-   	.y = 'X',
-	.x = 1
-   };	 
-],
-	samba_cv_c99_struct_initialization=yes,samba_cv_c99_struct_initialization=no)])
+AC_MSG_CHECKING(for c99 struct initialization)
+AC_TRY_COMPILE([
+    #include <stdio.h>],
+    [
+       struct foo {
+	   int x;
+	   char y;
+       } ;
+       struct foo bar = {
+	    .y = 'X',
+	    .x = 1
+       };	 
+    ],
+[AC_MSG_RESULT(yes); $1],[AC_MSG_RESULT(no); $2])
+])
+
+SMB_CC_SUPPORTS_C99_STRUCT_INIT(samba_cv_c99_struct_initialization=yes,
+		    samba_cv_c99_struct_initialization=no)
+
+if test x"$samba_cv_c99_struct_initialization" != x"yes"; then
+	# We might need to add some flags to CC to get c99 behaviour.
+	AX_CFLAGS_IRIX_OPTION(-c99, CFLAGS)
+	SMB_CC_SUPPORTS_C99_STRUCT_INIT(samba_cv_c99_struct_initialization=yes,
+			    samba_cv_c99_struct_initialization=no)
+fi
+
 if test x"$samba_cv_c99_struct_initialization" != x"yes"; then
 	AC_MSG_WARN([C compiler does not support c99 struct initialization!])
 	AC_MSG_ERROR([Please Install gcc from http://gcc.gnu.org/])
