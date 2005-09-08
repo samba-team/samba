@@ -319,8 +319,10 @@ _kadm5_unmarshal_params(krb5_context context,
 			kadm5_config_params *params)
 {
     krb5_storage *sp = krb5_storage_from_data(in);
+    int32_t mask;
     
-    krb5_ret_int32(sp, &params->mask);
+    krb5_ret_int32(sp, &mask);
+    params->mask = mask;
 	
     if(params->mask & KADM5_CONFIG_REALM)
 	krb5_ret_string(sp, &params->realm);
