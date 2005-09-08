@@ -39,11 +39,8 @@
   state of an open winbind connection
 */
 struct wbserver_connection {
-	DATA_BLOB blob;
-	struct send_queue {
-		struct send_queue *next, *prev;
-		DATA_BLOB blob;
-	} *queue;
+	DATA_BLOB input;
+	struct data_blob_list_item *send_queue;
 };
 
 
@@ -55,7 +52,7 @@ static void winbind_accept(struct stream_connection *conn)
 	struct wbserver_connection *wbconn;
 
 	wbconn = talloc_zero(conn, struct wbserver_connection);
-	wbconn->blob = data_blob_talloc(wbconn, NULL, 1024);
+	wbconn->input = data_blob_talloc(wbconn, NULL, 1024);
 	
 	conn->private = wbconn;
 }
@@ -68,9 +65,9 @@ static void winbind_recv(struct stream_connection *conn, uint16_t flags)
 	struct wbserver_connection *wbconn = talloc_get_type(conn->private, struct wbserver_connection);
 	NTSTATUS status;
 	size_t nread;
-	struct send_queue *q;
+	struct data_blob_list_item *q;
 
-	status = socket_recv(conn->socket, wbconn->blob.data, wbconn->blob.length, &nread, 0);
+	status = socket_recv(conn->socket, wbconn->input.data, wbconn->input.length, &nread, 0);
 	if (NT_STATUS_IS_ERR(status)) {
 		DEBUG(10,("socket_recv: %s\n",nt_errstr(status)));
 		stream_terminate_connection(conn, "socket_recv: failed\n");
@@ -78,19 +75,19 @@ static void winbind_recv(struct stream_connection *conn, uint16_t flags)
 	}
 
 	/* just reflect the data back down the socket */
-	q = talloc(wbconn, struct send_queue);
+	q = talloc(wbconn, struct data_blob_list_item);
 	if (q == NULL) {
 		stream_terminate_connection(conn, "winbind_recv: out of memory\n");
 		return;
 	}
 
-	q->blob = data_blob_talloc(q, wbconn->blob.data, nread);
+	q->blob = data_blob_talloc(q, wbconn->input.data, nread);
 	if (q->blob.data == NULL) {
 		stream_terminate_connection(conn, "winbind_recv: out of memory\n");
 		return;
 	}
 
-	DLIST_ADD_END(wbconn->queue, q, struct send_queue *);
+	DLIST_ADD_END(wbconn->send_queue, q, struct data_blob_list_item *);
 
 	EVENT_FD_WRITEABLE(conn->event.fde);
 }
@@ -102,8 +99,8 @@ static void winbind_send(struct stream_connection *conn, uint16_t flags)
 {
 	struct wbserver_connection *wbconn = talloc_get_type(conn->private, struct wbserver_connection);
 
-	while (wbconn->queue) {
-		struct send_queue *q = wbconn->queue;
+	while (wbconn->send_queue) {
+		struct data_blob_list_item *q = wbconn->send_queue;
 		NTSTATUS status;
 		size_t sendlen;
 
@@ -121,7 +118,7 @@ static void winbind_send(struct stream_connection *conn, uint16_t flags)
 		q->blob.data   += sendlen;
 
 		if (q->blob.length == 0) {
-			DLIST_REMOVE(wbconn->queue, q);
+			DLIST_REMOVE(wbconn->send_queue, q);
 			talloc_free(q);
 		}
 	}

@@ -40,8 +40,10 @@
 static void ldapsrv_terminate_connection(struct ldapsrv_connection *conn, 
 					 const char *reason)
 {
-	talloc_free(conn->tls);
-	conn->tls = NULL;
+	if (conn->tls) {
+		talloc_free(conn->tls);
+		conn->tls = NULL;
+	}
 	stream_terminate_connection(conn->connection, reason);
 }
 
@@ -54,7 +56,7 @@ static void ldapsrv_process_message(struct ldapsrv_connection *conn,
 	struct ldapsrv_call *call;
 	NTSTATUS status;
 	DATA_BLOB blob;
-	struct ldapsrv_send *q;
+	struct data_blob_list_item *q;
 	BOOL enable_wrap = conn->enable_wrap;
 
 	call = talloc(conn, struct ldapsrv_call);
@@ -114,16 +116,16 @@ static void ldapsrv_process_message(struct ldapsrv_connection *conn,
 		data_blob_free(&wrapped);
 	}
 
-	q = talloc(conn, struct ldapsrv_send);
+	q = talloc(conn, struct data_blob_list_item);
 	if (q == NULL) goto failed;
 
-	q->data = blob;
+	q->blob = blob;
 	talloc_steal(q, blob.data);
 	
 	if (conn->send_queue == NULL) {
 		EVENT_FD_WRITEABLE(conn->connection->event.fde);
 	}
-	DLIST_ADD_END(conn->send_queue, q, struct ldapsrv_send *);
+	DLIST_ADD_END(conn->send_queue, q, struct data_blob_list_item *);
 	talloc_free(call);
 	return;
 
@@ -305,11 +307,11 @@ static void ldapsrv_send(struct stream_connection *c, uint16_t flags)
 	struct ldapsrv_connection *conn = 
 		talloc_get_type(c->private, struct ldapsrv_connection);
 	while (conn->send_queue) {
-		struct ldapsrv_send *q = conn->send_queue;
+		struct data_blob_list_item *q = conn->send_queue;
 		size_t nsent;
 		NTSTATUS status;
 
-		status = tls_socket_send(conn->tls, &q->data, &nsent);
+		status = tls_socket_send(conn->tls, &q->blob, &nsent);
 		if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
 			break;
 		}
@@ -318,9 +320,9 @@ static void ldapsrv_send(struct stream_connection *c, uint16_t flags)
 			return;
 		}
 
-		q->data.data += nsent;
-		q->data.length -= nsent;
-		if (q->data.length == 0) {
+		q->blob.data += nsent;
+		q->blob.length -= nsent;
+		if (q->blob.length == 0) {
 			DLIST_REMOVE(conn->send_queue, q);
 		}
 	}
@@ -341,13 +343,16 @@ static void ldapsrv_accept(struct stream_connection *c)
 	int port;
 
 	conn = talloc_zero(c, struct ldapsrv_connection);
-	if (conn == NULL) goto failed;
+	if (!conn) {
+		stream_terminate_connection(c, "ldapsrv_accept: out of memory");
+		return;
+	}
 
 	conn->enable_wrap = False;
 	conn->partial     = data_blob(NULL, 0);
 	conn->send_queue  = NULL;
 	conn->connection  = c;
-	conn->service     = talloc_get_type(c->private, struct ldapsrv_service);
+	conn->service     = ldapsrv_service;
 	conn->processing  = False;
 	c->private        = conn;
 
@@ -357,14 +362,12 @@ static void ldapsrv_accept(struct stream_connection *c)
 	   any ldap connection */
 	conn->tls = tls_init_server(ldapsrv_service->tls_params, c->socket, 
 				    c->event.fde, NULL, port != 389);
-	if (conn->tls == NULL) goto failed;
+	if (!conn->tls) {
+		ldapsrv_terminate_connection(c, "ldapsrv_accept: tls_init_server() failed");
+		return;
+	}
 
 	irpc_add_name(c->msg_ctx, "ldap_server");
-
-	return;
-
-failed:
-	talloc_free(c);
 }
 
 static const struct stream_server_ops ldap_stream_ops = {
