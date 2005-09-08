@@ -1,15 +1,24 @@
 # NBTD server subsystem
 
 #######################
+# Start SUBSYSTEM WINSDB
+[SUBSYSTEM::WINSDB]
+ADD_OBJ_FILES = \
+		nbt_server/wins/winsdb.o
+REQUIRED_SUBSYSTEMS = \
+		LIBLDB
+# End SUBSYSTEM WINSDB
+#######################
+
+#######################
 # Start SUBSYSTEM NBTD_WINS
 [SUBSYSTEM::NBTD_WINS]
 ADD_OBJ_FILES = \
 		nbt_server/wins/winsserver.o \
 		nbt_server/wins/winsclient.o \
-		nbt_server/wins/winsdb.o \
 		nbt_server/wins/winswack.o
 REQUIRED_SUBSYSTEMS = \
-		LIBCLI_NBT LIBCLI_WINS
+		LIBCLI_NBT WINSDB
 # End SUBSYSTEM NBTD_WINS
 #######################
 
