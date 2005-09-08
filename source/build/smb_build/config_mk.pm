@@ -46,6 +46,7 @@ use vars qw(@parsed_files);
 #		which should be parsed
 sub run_config_mk($$)
 {
+	sub run_config_mk($$);
 	my ($input, $filename) = @_;
 	my $result;
 	my $linenum = -1;
