@@ -71,24 +71,6 @@ fi
 
 ############################################
 # check if the compiler handles c99 struct initialization
-AC_DEFUN([SMB_CC_SUPPORTS_C99_STRUCT_INIT],
-[
-AC_MSG_CHECKING(for c99 struct initialization)
-AC_TRY_COMPILE([
-    #include <stdio.h>],
-    [
-       struct foo {
-	   int x;
-	   char y;
-       } ;
-       struct foo bar = {
-	    .y = 'X',
-	    .x = 1
-       };	 
-    ],
-[AC_MSG_RESULT(yes); $1],[AC_MSG_RESULT(no); $2])
-])
-
 SMB_CC_SUPPORTS_C99_STRUCT_INIT(samba_cv_c99_struct_initialization=yes,
 		    samba_cv_c99_struct_initialization=no)
 
