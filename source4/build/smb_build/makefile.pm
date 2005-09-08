@@ -155,6 +155,8 @@ sub _prepare_binaries($)
 		next unless defined $_->{OUTPUT_TYPE};
 		next unless ($_->{OUTPUT_TYPE} eq "BINARY");
 
+		next unless defined($_->{INSTALLDIR});
+
 		push(@sbn_list, $_->{OUTPUT}) if ($_->{INSTALLDIR} eq "SBINDIR");
 		push(@bbn_list, $_->{OUTPUT}) if ($_->{INSTALLDIR} eq "BINDIR");
 	}
