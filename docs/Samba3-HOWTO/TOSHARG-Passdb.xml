@@ -1269,6 +1269,38 @@ frodo$:1008:15891DC6B843ECA41249940C814E316B:
 marvel$:1011:BF709959C3C94E0B3958B7B84A3BB6F3:
      C610EFE9A385A3E8AA46ADFD576E6881:[W          ]:LCT-40F07A4
 </screen>
+<indexterm><primary>login id</primary></indexterm>
+<indexterm><primary>UID</primary></indexterm>
+<indexterm><primary>LanManger password</primary></indexterm>
+<indexterm><primary>NT password</primary></indexterm>
+<indexterm><primary>Account Flags</primary></indexterm>
+<indexterm><primary>LCT</primary><see>last change time</see></indexterm>
+		The account information that was returned by this command in order from left to right 
+		consists of the following colon separated data:
+		</para>
+
+		<itemizedlist>
+			<listitem><para>Login ID.</para></listitem>
+			<listitem><para>UNIX UID.</para></listitem>
+			<listitem>
+				<para>Microsoft LanManager password hash (password converted to upper-case then hashed.</para>
+			</listitem>
+			<listitem><para>Microsoft NT password hash (hash of the case-preserved password).</para></listitem>
+			<listitem><para>Samba SAM Account Flags.</para></listitem>
+			<listitem><para>The LCT data (password last change time).</para></listitem>
+		</itemizedlist>
+
+		<para>
+<indexterm><primary>Account Flags</primary></indexterm>
+<indexterm><primary>pdbedit</primary></indexterm>
+		The Account Flags parameters are documented in the <command>pdbedit</command> man page, and are
+		briefly documented in <link linkend="TOSHARG-acctflags">the Account Flags Management section</link>.
+		</para>
+
+		<para>
+<indexterm><primary>last change time</primary></indexterm>
+		The LCT data consists of 8 hexadecimal characters representing the time since January 1, 1970, of
+		the time when the password was last changed.
 		</para>
 
 		</sect4>
@@ -1427,6 +1459,165 @@ Password must change: Fri, 01 Jan 2010 00:00:00 GMT
 		Please refer to the pdbedit man page for further information relating to SambaSAMAccount
 		management.
 		</para>
+
+		<sect5 id="TOSHARG-acctflags">
+		<title>Account Flags Management</title>
+
+		<para>
+<indexterm><primary>Samba SAM account flags</primary></indexterm>
+<indexterm><primary>account control block</primary><see>ACB</see></indexterm>
+<indexterm><primary>account encode_bits</primary></indexterm>
+<indexterm><primary>account control flags</primary></indexterm>
+		The Samba SAM account flags are properly called the ACB (account control block) within
+		the Samba source code. In some parts of the Samba source code they are referred to as the 
+		account encode_bits, and also as the account control flags.
+		</para>
+
+		<para>
+<indexterm><primary>pdbedit</primary></indexterm>
+<indexterm><primary>user account</primary></indexterm>
+<indexterm><primary>machine account</primary></indexterm>
+<indexterm><primary>trust account</primary></indexterm>
+<indexterm><primary>damaged data</primary></indexterm>
+		The manual adjustment of user, machine (workstation or server) or an inter-domain trust
+		account account flgas should not be necessary under normal conditions of use of Samba. On the other hand,
+		where this information becomes corrupted for some reason, the ability to correct the damaged data is certainly
+		useful. The tool of choice by which such correction can be affected is the <command>pdbedit</command> utility.
+		</para>
+
+		<para>
+<indexterm><primary>account flags</primary></indexterm>
+<indexterm><primary>LDAP directory</primary></indexterm>
+		There have been a few requests for information regarding the account flags from developers
+		who are creating their own Samba management tools. An example of a need for information regarding
+		the proper management of the account flags is evident when developing scripts that will be used
+		to manage an LDAP directory.
+		</para>
+
+		<para>
+<indexterm><primary>pdbedit</primary></indexterm>
+<indexterm><primary>account flag order</primary></indexterm>
+		The account flag field can contain up to 16 characters. Presently, only 11 are in use.
+		These are listed in <link linkend="accountflags">Samba SAM Account Control Block Flags</link>.
+		The order in which the flags are specified to the <command>pdbedit</command> command is not important.
+		In fact, they can be set without problem in any order in the SambaAcctFlags record in the LDAP directory.
+		</para>
+
+		<table frame="all" id="accountflags">
+		<title>Samba SAM Account Control Block Flags</title>
+        <tgroup cols="2" align="center">
+            <thead>
+            <row><entry align="center">Flag</entry><entry>Description</entry></row>
+            </thead>
+            <tbody>
+            <row>
+				<entry align="center">D</entry>
+				<entry align="left">Account is disabled.</entry>
+			</row>
+            <row>
+				<entry align="center">H</entry>
+				<entry align="left">A home directory is required.</entry>
+			</row>
+            <row>
+				<entry align="center">I</entry>
+				<entry align="left">An inter-domain trust account.</entry>
+			</row>
+            <row>
+				<entry align="center">L</entry>
+				<entry align="left">Account has been auto-locked.</entry>
+			</row>
+            <row>
+				<entry align="center">M</entry>
+				<entry align="left">An MNS (Microsoft network service) logon account.</entry>
+			</row>
+            <row>
+				<entry align="center">N</entry>
+				<entry align="left">Password not required.</entry>
+			</row>
+            <row>
+				<entry align="center">S</entry>
+				<entry align="left">A server trust account.</entry>
+			</row>
+            <row>
+				<entry align="center">T</entry>
+				<entry align="left">Temporary duplicate account entry.</entry>
+			</row>
+            <row>
+				<entry align="center">U</entry>
+				<entry align="left">A normal user account.</entry>
+			</row>
+            <row>
+				<entry align="center">W</entry>
+				<entry align="left">A workstation trust account.</entry>
+			</row>
+            <row>
+				<entry align="center">X</entry>
+				<entry align="left">Password does not expire.</entry>
+			</row>
+            </tbody>
+        </tgroup>
+        </table>
+
+		<para>
+<indexterm><primary>pdbedit</primary></indexterm>
+<indexterm><primary>account control flags</primary></indexterm>
+		An example of use of the <command>pdbedit</command> utility to set the account control flags
+		is shown here:
+<screen>
+&rootprompt; pdbedit -r -c "[DLX]" jra
+Unix username:        jht
+NT username:          jht
+Account Flags:        [DHULX      ]
+User SID:             S-1-5-21-729263-4123605-1186429-3000
+Primary Group SID:    S-1-5-21-729263-4123605-1186429-513
+Full Name:            John H Terpstra,Utah Office
+Home Directory:       \\aurora\jht
+HomeDir Drive:        H:
+Logon Script:         scripts\logon.bat
+Profile Path:         \\aurora\profiles\jht
+Domain:               MIDEARTH
+Account desc:         BluntObject
+Workstations:
+Logon time:           0
+Logoff time:          Mon, 18 Jan 2038 20:14:07 GMT
+Kickoff time:         0
+Password last set:    Sun, 03 Jul 2005 23:19:18 GMT
+Password can change:  Sun, 03 Jul 2005 23:19:18 GMT
+Password must change: Mon, 18 Jan 2038 20:14:07 GMT
+Last bad password   : 0
+Bad password count  : 0
+Logon hours         : FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+</screen>
+<indexterm><primary>default settings</primary></indexterm>
+	The flags can be reset to the default settings by executing:
+<screen>
+&rootprompt; pdbedit -r -c "[]" jra
+Unix username:        jht
+NT username:          jht
+Account Flags:        [U          ]
+User SID:             S-1-5-21-729263-4123605-1186429-3000
+Primary Group SID:    S-1-5-21-729263-4123605-1186429-513
+Full Name:            John H Terpstra,Utah Office
+Home Directory:       \\aurora\jht
+HomeDir Drive:        H:
+Logon Script:         scripts\logon.bat
+Profile Path:         \\aurora\profiles\jht
+Domain:               MIDEARTH
+Account desc:         BluntObject
+Workstations:
+Logon time:           0
+Logoff time:          Mon, 18 Jan 2038 20:14:07 GMT
+Kickoff time:         0
+Password last set:    Sun, 03 Jul 2005 23:19:18 GMT
+Password can change:  Sun, 03 Jul 2005 23:19:18 GMT
+Password must change: Mon, 18 Jan 2038 20:14:07 GMT
+Last bad password   : 0
+Bad password count  : 0
+Logon hours         : FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+</screen>
+		</para>
+
+		</sect5>
 
 		</sect4>
 
