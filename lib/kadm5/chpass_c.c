@@ -38,7 +38,7 @@ RCSID("$Id$");
 kadm5_ret_t
 kadm5_c_chpass_principal(void *server_handle, 
 			 krb5_principal princ,
-			 char *password)
+			 const char *password)
 {
     kadm5_client_context *context = server_handle;
     kadm5_ret_t ret;

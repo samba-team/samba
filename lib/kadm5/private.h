@@ -37,9 +37,9 @@
 #define __kadm5_privatex_h__
 
 struct kadm_func {
-    kadm5_ret_t (*chpass_principal) (void *, krb5_principal, char*);
+    kadm5_ret_t (*chpass_principal) (void *, krb5_principal, const char*);
     kadm5_ret_t (*create_principal) (void*, kadm5_principal_ent_t, 
-				     u_int32_t, char*);
+				     u_int32_t, const char*);
     kadm5_ret_t (*delete_principal) (void*, krb5_principal);
     kadm5_ret_t (*destroy) (void*);
     kadm5_ret_t (*flush) (void*);

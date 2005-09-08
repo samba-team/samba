@@ -40,7 +40,7 @@ RCSID("$Id$");
 kadm5_ret_t
 kadm5_chpass_principal(void *server_handle,
 		       krb5_principal princ,
-		       char *password)
+		       const char *password)
 {
     return __CALL(chpass_principal, (server_handle, princ, password));
 }
@@ -59,7 +59,7 @@ kadm5_ret_t
 kadm5_create_principal(void *server_handle,
 		       kadm5_principal_ent_t princ,
 		       u_int32_t mask,
-		       char *password)
+		       const char *password)
 {
     return __CALL(create_principal, (server_handle, princ, mask, password));
 }
