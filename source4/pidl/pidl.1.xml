@@ -350,29 +350,25 @@ embedded structures in security descriptors and spoolss.
 	<title>COMPATIBILITY WITH MIDL</title>
 
 	<refsect2>
-		<title>Asynchronous communication</title>
+		<title>Missing features in pidl</title>
+		<para>
+			The following MIDL features are not (yet) implemented in pidl 
+			or are implemented with an incompatible interface:
+		</para>
 
-		<!--FIXME-->
+		<simplelist>
+			<member>Asynchronous communication</member>
+			<member>Typelibs (.tlb files)</member>
+			<member>Datagram support (ncadg_*)</member>
+		</simplelist>
 	</refsect2>
 
 	<refsect2>
-		<title>Typelibs (.tlb files)</title>
+		<title>Supported properties (attributes is the MIDL term)</title>
 
-		<!-- FIXME -->
-	</refsect2>
-
-	<refsect2>
-		<title>Datagram support</title>
-
-		<para>ncadg is not supported yet.</para>
-	</refsect2>
-
-<refsect2>
-	<title>Supported properties (attributes is the MIDL term)</title>
-
-	<para>
-in, out, ref, length_is, switch_is, size_is, uuid, case, default, string, unique, ptr, pointer_default, v1_enum, object, helpstring, range, local, call_as, endpoint, switch_type, progid, coclass, iid_is.
-	</para>
+		<para>
+			in, out, ref, length_is, switch_is, size_is, uuid, case, default, string, unique, ptr, pointer_default, v1_enum, object, helpstring, range, local, call_as, endpoint, switch_type, progid, coclass, iid_is.
+		</para>
 
 </refsect2>
 
@@ -490,56 +486,87 @@ The following commands are currently supported:
 
 <varlistentry>
 	<term>TYPE name dissector ft_type base_type mask valsstring alignment</term>
-	<listitem><para>FIXME</para></listitem>
+	<listitem><para>Register new data type with specified name, what dissector function to call and what properties to give header fields for elements of this type.</para></listitem>
 </varlistentry>
 
 <varlistentry>
 	<term>NOEMIT type</term>
 	<listitem><para>
-			Suppress emitting a dissect_type function for the specified type
+	Suppress emitting a dissect_type function for the specified type
 	</para></listitem>
 </varlistentry>
 
 <varlistentry>
 	<term>PARAM_VALUE type param</term>
 	<listitem><para>
-		FIXME
+	Set parameter to specify to dissector function for given type.
 	</para></listitem>
 </varlistentry>
 
 <varlistentry>
-	<term>HF_FIELD hf title filter ft_type base_type valsstring mask blurb</term>
+	<term>HF_FIELD hf title filter ft_type base_type valsstring mask description</term>
 	<listitem><para>
-	FIXME
+	Generate a custom header field with specified properties.
 	</para></listitem>
 </varlistentry>
 
 <varlistentry>
 	<term>HF_RENAME old_hf_name new_hf_name</term>
-	<listitem><para>FIXME</para></listitem>
+	<listitem><para>
+	Force the use of new_hf_name when the parser generator was going to 
+	use old_hf_name.
+	</para>
+
+	<para>
+	This can be used in conjunction with HF_FIELD in order to make more then 
+	one element use the same filter name.
+	</para>
+	</listitem>
 </varlistentry>
 
 <varlistentry>
 	<term>STRIP_PREFIX prefix</term>
-	<listitem><para>	FIXME</para></listitem>
+	<listitem><para>
+	Remove the specified prefix from all function names (if present).
+	</para></listitem>
 </varlistentry>
 	
 <varlistentry>
 	<term>PROTOCOL longname shortname filtername</term>
-	<listitem><para>FIXME</para></listitem>
+	<listitem><para>
+	Change the short-, long- and filter-name for the current interface in
+	Ethereal.
+	</para></listitem>
 </varlistentry>
 
 <varlistentry>
 	<term>FIELD_DESCRIPTION field desc</term>
-	<listitem><para>FIXME</para></listitem>
+	<listitem><para>Change description for the specified header field. 
+	Not implemented yet.</para></listitem>
 </varlistentry>
 
 <varlistentry>
 	<term>IMPORT dissector code...</term>
-	<listitem><para>FIXME</para></listitem>
+	<listitem><para>
+	Code to insert when generating the specified dissector. @HF@ and 
+	@PARAM@ will be substituted.
+	</para></listitem>
 </varlistentry>
 
 </variablelist>
+
+</refsect1>
+
+<refsect1>
+	<title>EXAMPLES</title>
+
+	<programlisting>
+	# Generating an ethereal parser
+	$ ./pidl --eth-parser --parse -- atsvc.idl
+	
+	# Generating a TDR parser
+	$ ./pidl --tdr-parser --tdr-header --header --parse -- regf.idl
+	</programlisting>
 
 </refsect1>
 
@@ -558,8 +585,6 @@ The following commands are currently supported:
 
 <refsect1>
 	<title>AUTHOR</title>
-
-	&man.credits.samba;
 
 	<para>pidl was written by Andrew Tridgell, Stefan Metzmacher, Tim 
 		Potter and Jelmer Vernooij. </para>
