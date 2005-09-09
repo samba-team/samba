@@ -2481,6 +2481,7 @@ done:
 static BOOL spoolss_connect_to_client(struct cli_state *the_cli, struct rpc_pipe_client **pp_pipe,
 			struct in_addr *client_ip, const char *remote_machine)
 {
+	NTSTATUS ret;
 	ZERO_STRUCTP(the_cli);
 	
 	if(cli_initialise(the_cli) == NULL) {
@@ -2562,10 +2563,10 @@ static BOOL spoolss_connect_to_client(struct cli_state *the_cli, struct rpc_pipe
 	 * Now start the NT Domain stuff :-).
 	 */
 
-	*pp_pipe = cli_rpc_pipe_open_noauth(the_cli, PI_SPOOLSS);
+	*pp_pipe = cli_rpc_pipe_open_noauth(the_cli, PI_SPOOLSS, &ret);
 	if(!*pp_pipe) {
 		DEBUG(0,("spoolss_connect_to_client: unable to open the spoolss pipe on machine %s. Error was : %s.\n",
-			remote_machine, cli_errstr(the_cli)));
+			remote_machine, nt_errstr(ret)));
 		cli_shutdown(the_cli);
 		return False;
 	} 

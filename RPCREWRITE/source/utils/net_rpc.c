@@ -57,7 +57,7 @@ static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem
 	NTSTATUS result = NT_STATUS_OK;
 	uint32 info_class = 5;
 	
-	lsa_pipe = cli_rpc_pipe_open_noauth(cli, PI_LSARPC);
+	lsa_pipe = cli_rpc_pipe_open_noauth(cli, PI_LSARPC, &result);
 	if (!lsa_pipe) {
 		fprintf(stderr, "could not initialise lsa pipe\n");
 		goto error;
@@ -143,16 +143,20 @@ int run_rpc_command(struct cli_state *cli_arg,
 			/* Always try and create an schannel netlogon pipe. */
 			pipe_hnd = cli_rpc_pipe_open_schannel(cli, pipe_idx,
 							PIPE_AUTH_LEVEL_PRIVACY,
-							domain_name);
+							domain_name,
+							&nt_status);
 			if (!pipe_hnd) {
-				DEBUG(0, ("Could not initialise schannel netlogon pipe\n"));
+				DEBUG(0, ("Could not initialise schannel netlogon pipe. Error was %s\n",
+					nt_errstr(nt_status) ));
 				cli_shutdown(cli);
 				return -1;
 			}
 		} else {
-			pipe_hnd = cli_rpc_pipe_open_noauth(cli, pipe_idx);
+			pipe_hnd = cli_rpc_pipe_open_noauth(cli, pipe_idx, &nt_status);
 			if (!pipe_hnd) {
-				DEBUG(0, ("Could not initialise pipe %s\n", cli_get_pipe_name(pipe_idx)));
+				DEBUG(0, ("Could not initialise pipe %s. Error was %s\n",
+					cli_get_pipe_name(pipe_idx),
+					nt_errstr(nt_status) ));
 				cli_shutdown(cli);
 				return -1;
 			}
@@ -1554,7 +1558,7 @@ static NTSTATUS get_sid_from_name(struct cli_state *cli,
 	POLICY_HND lsa_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_LSARPC);
+	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_LSARPC, &result);
 	if (!pipe_hnd) {
 		goto done;
 	}
@@ -2276,9 +2280,10 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 		return NT_STATUS_OK;
 	}
 
-	lsa_pipe = cli_rpc_pipe_open_noauth(pipe_hnd->cli, PI_LSARPC);
+	lsa_pipe = cli_rpc_pipe_open_noauth(pipe_hnd->cli, PI_LSARPC, &result);
 	if (!lsa_pipe) {
-		d_printf("Couldn't open LSA pipe\n");
+		d_printf("Couldn't open LSA pipe. Error was %s\n",
+			nt_errstr(result) );
 		return result;
 	}
 
@@ -5073,9 +5078,9 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	 * Call LsaOpenPolicy and LsaQueryInfo
 	 */
 	 
-	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_LSARPC);
+	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_LSARPC, &nt_status);
 	if (!pipe_hnd) {
-		DEBUG(0, ("Could not initialise lsa pipe\n"));
+		DEBUG(0, ("Could not initialise lsa pipe. Error was %s\n", nt_errstr(nt_status) ));
 		cli_shutdown(cli);
 		return -1;
 	}
@@ -5330,9 +5335,10 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 		return -1;
 	};
 
-	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_LSARPC);
+	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_LSARPC, &nt_status);
 	if (!pipe_hnd) {
-		DEBUG(0, ("Could not initialise lsa pipe\n"));
+		DEBUG(0, ("Could not initialise lsa pipe. Error was %s\n",
+			nt_errstr(nt_status) ));
 		cli_shutdown(cli);
 		return -1;
 	};
@@ -5465,9 +5471,10 @@ static int rpc_trustdom_list(int argc, const char **argv)
 		return -1;
 	};
 
-	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_LSARPC);
+	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_LSARPC, &nt_status);
 	if (!pipe_hnd) {
-		DEBUG(0, ("Could not initialise lsa pipe\n"));
+		DEBUG(0, ("Could not initialise lsa pipe. Error was %s\n",
+			nt_errstr(nt_status) ));
 		return -1;
 	};
 
@@ -5539,9 +5546,9 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	/*
 	 * Open \PIPE\samr and get needed policy handles
 	 */
-	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SAMR);
+	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SAMR, &nt_status);
 	if (!pipe_hnd) {
-		DEBUG(0, ("Could not initialise samr pipe\n"));
+		DEBUG(0, ("Could not initialise samr pipe. Error was %s\n", nt_errstr(nt_status)));
 		return -1;
 	};
 	

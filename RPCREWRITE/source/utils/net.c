@@ -235,11 +235,11 @@ NTSTATUS connect_dst_pipe(struct cli_state **cli_dst, struct rpc_pipe_client **p
 		return nt_status;
 	}
 
-	pipe_hnd = cli_rpc_pipe_open_noauth(cli_tmp, pipe_num);
+	pipe_hnd = cli_rpc_pipe_open_noauth(cli_tmp, pipe_num, &nt_status);
 	if (!pipe_hnd) {
 		DEBUG(0, ("couldn't not initialize pipe\n"));
 		cli_shutdown(cli_tmp);
-		return NT_STATUS_UNSUCCESSFUL;
+		return nt_status;
 	}
 
 	*cli_dst = cli_tmp;

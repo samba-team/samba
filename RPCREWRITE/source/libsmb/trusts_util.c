@@ -37,9 +37,6 @@ static NTSTATUS just_change_the_password(struct rpc_pipe_client *cli, TALLOC_CTX
 {
 	NTSTATUS result;
 
-#if 0
-	We always open netlogon with schannel now...
-
 	/* Check if the netlogon pipe is open using schannel. If so we
 	   already have valid creds. If not we must set them up. */
 
@@ -60,7 +57,6 @@ static NTSTATUS just_change_the_password(struct rpc_pipe_client *cli, TALLOC_CTX
 			return result;
 		}
 	}
-#endif
 
 	result = rpccli_net_srv_pwset(cli, mem_ctx, global_myname(), new_trust_passwd_hash);
 
@@ -174,9 +170,8 @@ BOOL enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 
 	/* open the LSARPC_PIPE	*/
 
-	lsa_pipe = cli_rpc_pipe_open_noauth( cli, PI_LSARPC );
+	lsa_pipe = cli_rpc_pipe_open_noauth( cli, PI_LSARPC, &result );
 	if ( !lsa_pipe) {
-		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 

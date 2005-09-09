@@ -108,7 +108,8 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 						PIPE_AUTH_LEVEL_PRIVACY,
 						"", /* what domain... ? */
 						user_name,
-						old_passwd);
+						old_passwd,
+						&result);
 
 	if (!pipe_hnd) {
 		if (lp_client_lanman_auth()) {
@@ -120,8 +121,10 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 				return False;
 			}
 		} else {
-			slprintf(err_str, err_str_len-1, "machine %s does not support SAMR connections, but LANMAN password changed are disabled\n",
-				 remote_machine);
+			slprintf(err_str, err_str_len-1,
+				"SAMR connection to machine %s failed. Error was %s, "
+				"but LANMAN password changed are disabled\n",
+				nt_errstr(result), remote_machine);
 			cli_shutdown(&cli);
 			return False;
 		}
@@ -153,7 +156,7 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 	result = NT_STATUS_UNSUCCESSFUL;
 	
 	/* OK, this is ugly, but... try an anonymous pipe. */
-	pipe_hnd = cli_rpc_pipe_open_noauth(&cli, PI_SAMR);
+	pipe_hnd = cli_rpc_pipe_open_noauth(&cli, PI_SAMR, &result);
 
 	if ( pipe_hnd &&
 		(NT_STATUS_IS_OK(result = rpccli_samr_chgpasswd_user(pipe_hnd,
@@ -193,9 +196,10 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 			cli_shutdown(&cli);
 			return False;
 		} else {
-			slprintf(err_str, err_str_len-1, 
-				 "machine %s does not support SAMR connections, but LANMAN password changed are disabled\n",
-				 remote_machine);
+			slprintf(err_str, err_str_len-1,
+				"SAMR connection to machine %s failed. Error was %s, "
+				"but LANMAN password changed are disabled\n",
+				nt_errstr(result), remote_machine);
 			cli_shutdown(&cli);
 			return False;
 		}

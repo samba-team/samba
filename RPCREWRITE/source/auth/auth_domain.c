@@ -101,17 +101,18 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	/* open the netlogon pipe. */
 	if (lp_client_schannel()) {
 		/* We also setup the creds chain in the open_schannel call. */
-		netlogon_pipe = cli_rpc_pipe_open_schannel(*cli, PI_NETLOGON, PIPE_AUTH_LEVEL_PRIVACY, domain);
+		netlogon_pipe = cli_rpc_pipe_open_schannel(*cli, PI_NETLOGON,
+					PIPE_AUTH_LEVEL_PRIVACY, domain, &result);
 	} else {
-		netlogon_pipe = cli_rpc_pipe_open_noauth(*cli, PI_NETLOGON);
+		netlogon_pipe = cli_rpc_pipe_open_noauth(*cli, PI_NETLOGON, &result);
 	}
 
 	if(!netlogon_pipe) {
 		DEBUG(0,("connect_to_domain_password_server: unable to open the domain client session to \
-machine %s. Error was : %s.\n", dc_name, cli_errstr(*cli)));
+machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 		cli_shutdown(*cli);
 		release_server_mutex();
-		return NT_STATUS_NO_LOGON_SERVERS;
+		return result;
 	}
 
 	if (!lp_client_schannel()) {

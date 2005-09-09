@@ -1842,11 +1842,13 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
  Open a named pipe over SMB to a remote server.
  ****************************************************************************/
 
-static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe_idx)
+static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe_idx, NTSTATUS *perr)
 {
 	TALLOC_CTX *mem_ctx;
 	struct rpc_pipe_client *result;
 	int fnum;
+
+	*perr = NT_STATUS_NO_MEMORY;
 
 	/* The pipe name index must fall within our array */
 	SMB_ASSERT((pipe_idx >= 0) && (pipe_idx < PI_MAX_PIPES));
@@ -1872,6 +1874,7 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 			 "to machine %s.  Error was %s\n",
 			 result->pipe_name, cli->desthost,
 			 cli_errstr(cli)));
+		*perr = cli_get_nt_error(cli);
 		talloc_destroy(result->mem_ctx);
 		return NULL;
 	}
@@ -1892,6 +1895,7 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
 	}
 
 	DLIST_ADD(cli->pipe_list, result);
+	*perr = NT_STATUS_OK;
 
 	return result;
 }
@@ -1900,20 +1904,19 @@ static struct rpc_pipe_client *cli_rpc_pipe_open(struct cli_state *cli, int pipe
  Open a named pipe to an SMB server and bind anonymously.
  ****************************************************************************/
 
-struct rpc_pipe_client *cli_rpc_pipe_open_noauth(struct cli_state *cli, int pipe_idx)
+struct rpc_pipe_client *cli_rpc_pipe_open_noauth(struct cli_state *cli, int pipe_idx, NTSTATUS *perr)
 {
 	struct rpc_pipe_client *result;
-	NTSTATUS ret;
 
-	result = cli_rpc_pipe_open(cli, pipe_idx);
+	result = cli_rpc_pipe_open(cli, pipe_idx, perr);
 	if (result == NULL) {
 		return NULL;
 	}
 
-	ret = rpc_pipe_bind(result, PIPE_AUTH_TYPE_NONE, PIPE_AUTH_LEVEL_NONE);
-	if (!NT_STATUS_IS_OK(ret)) {
+	*perr = rpc_pipe_bind(result, PIPE_AUTH_TYPE_NONE, PIPE_AUTH_LEVEL_NONE);
+	if (!NT_STATUS_IS_OK(*perr)) {
 		DEBUG(0, ("cli_rpc_pipe_open_noauth: rpc_pipe_bind for pipe %s failed with error %s\n",
-			cli_get_pipe_name(pipe_idx), nt_errstr(ret) ));
+			cli_get_pipe_name(pipe_idx), nt_errstr(*perr) ));
 		cli_rpc_pipe_close(result);
 		return NULL;
 	}
@@ -1946,13 +1949,13 @@ static struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_internal(struct cli_sta
 						enum pipe_auth_level auth_level,
 						const char *domain,
 						const char *username,
-						const char *password)
+						const char *password,
+						NTSTATUS *perr)
 {
-	NTSTATUS nt_status;
 	struct rpc_pipe_client *result;
 	NTLMSSP_STATE *ntlmssp_state = NULL;
 
-	result = cli_rpc_pipe_open(cli, pipe_idx);
+	result = cli_rpc_pipe_open(cli, pipe_idx, perr);
 	if (result == NULL) {
 		return NULL;
 	}
@@ -1963,31 +1966,31 @@ static struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_internal(struct cli_sta
 	result->user_name = username;
 	pwd_set_cleartext(&result->pwd, password);
 
-	nt_status = ntlmssp_client_start(&ntlmssp_state);
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	*perr = ntlmssp_client_start(&ntlmssp_state);
+	if (!NT_STATUS_IS_OK(*perr)) {
 		goto err;
 	}
 
 	result->auth.a_u.ntlmssp_state = ntlmssp_state;
 
-	nt_status = ntlmssp_set_username(ntlmssp_state, cli->user_name);
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	*perr = ntlmssp_set_username(ntlmssp_state, cli->user_name);
+	if (!NT_STATUS_IS_OK(*perr)) {
 		goto err;
 	}
 
-	nt_status = ntlmssp_set_domain(ntlmssp_state, cli->domain);	
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	*perr = ntlmssp_set_domain(ntlmssp_state, cli->domain);	
+	if (!NT_STATUS_IS_OK(*perr)) {
 		goto err;
 	}
 
 	if (cli->pwd.null_pwd) {
-		nt_status = ntlmssp_set_password(ntlmssp_state, NULL);
-		if (!NT_STATUS_IS_OK(nt_status)) {
+		*perr = ntlmssp_set_password(ntlmssp_state, NULL);
+		if (!NT_STATUS_IS_OK(*perr)) {
 			goto err;
 		}
 	} else {
-		nt_status = ntlmssp_set_password(ntlmssp_state, password);
-		if (!NT_STATUS_IS_OK(nt_status)) {
+		*perr = ntlmssp_set_password(ntlmssp_state, password);
+		if (!NT_STATUS_IS_OK(*perr)) {
 			goto err;
 		}
 	}
@@ -2001,10 +2004,10 @@ static struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_internal(struct cli_sta
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL | NTLMSSP_NEGOTIATE_SIGN;
 	}
 	
-	nt_status = rpc_pipe_bind(result, auth_type, auth_level);
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	*perr = rpc_pipe_bind(result, auth_type, auth_level);
+	if (!NT_STATUS_IS_OK(*perr)) {
 		DEBUG(0, ("cli_rpc_pipe_open_ntlmssp_internal: cli_rpc_pipe_bind failed with error %s\n",
-			nt_errstr(nt_status) ));
+			nt_errstr(*perr) ));
 		goto err;
 	}
 
@@ -2031,7 +2034,8 @@ struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp(struct cli_state *cli,
 						enum pipe_auth_level auth_level,
 						const char *domain,
 						const char *username,
-						const char *password)
+						const char *password,
+						NTSTATUS *perr)
 {
 	return cli_rpc_pipe_open_ntlmssp_internal(cli,
 						pipe_idx,
@@ -2039,7 +2043,8 @@ struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp(struct cli_state *cli,
 						auth_level,
 						domain,
 						username,
-						password);
+						password,
+						perr);
 }
 
 /****************************************************************************
@@ -2052,7 +2057,8 @@ struct rpc_pipe_client *cli_rpc_pipe_open_spnego_ntlmssp(struct cli_state *cli,
 						enum pipe_auth_level auth_level,
 						const char *domain,
 						const char *username,
-						const char *password)
+						const char *password,
+						NTSTATUS *perr)
 {
 	return cli_rpc_pipe_open_ntlmssp_internal(cli,
 						pipe_idx,
@@ -2060,7 +2066,8 @@ struct rpc_pipe_client *cli_rpc_pipe_open_spnego_ntlmssp(struct cli_state *cli,
 						auth_level,
 						domain,
 						username,
-						password);
+						password,
+						perr);
 }
 
 /****************************************************************************
@@ -2068,16 +2075,16 @@ struct rpc_pipe_client *cli_rpc_pipe_open_spnego_ntlmssp(struct cli_state *cli,
  ****************************************************************************/
 
 static struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
-							const char *domain)
+							const char *domain,
+							NTSTATUS *perr)
 {
 	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	uint32 sec_chan_type = 0;
 	char machine_pwd[16];
 	fstring machine_account;
-	NTSTATUS result;
 
-	netlogon_pipe = cli_rpc_pipe_open_noauth(cli, PI_NETLOGON);
+	netlogon_pipe = cli_rpc_pipe_open_noauth(cli, PI_NETLOGON, perr);
 	if (!netlogon_pipe) {
 		return NULL;
 	}
@@ -2088,6 +2095,7 @@ static struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
 			"trust account password for domain '%s'\n",
 			domain));
 		cli_rpc_pipe_close(netlogon_pipe);
+		*perr = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		return NULL;
 	}
 
@@ -2102,7 +2110,7 @@ static struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
                 }
         }
 
-	result = rpccli_netlogon_setup_creds(netlogon_pipe,
+	*perr = rpccli_netlogon_setup_creds(netlogon_pipe,
 					cli->desthost,
 					domain,
 					machine_account,
@@ -2110,10 +2118,10 @@ static struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
 					sec_chan_type,
 					&neg_flags);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(*perr)) {
 		DEBUG(3,("get_schannel_session_key: rpccli_netlogon_setup_creds "
 			"failed with result %s\n",
-			nt_errstr(result) ));
+			nt_errstr(*perr) ));
 		cli_rpc_pipe_close(netlogon_pipe);
 		return NULL;
 	}
@@ -2122,6 +2130,7 @@ static struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
 		DEBUG(3, ("get_schannel_session_key: Server %s did not offer schannel\n",
 			cli->desthost));
 		cli_rpc_pipe_close(netlogon_pipe);
+		*perr = NT_STATUS_INVALID_NETWORK_RESPONSE;
 		return NULL;
 	}
 
@@ -2138,12 +2147,12 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cl
 					int pipe_idx,
 					enum pipe_auth_level auth_level,
 					const char *domain,
-					const struct dcinfo *pdc)
+					const struct dcinfo *pdc,
+					NTSTATUS *perr)
 {
 	struct rpc_pipe_client *result;
-	NTSTATUS ret;
 
-	result = cli_rpc_pipe_open(cli, pipe_idx);
+	result = cli_rpc_pipe_open(cli, pipe_idx, perr);
 	if (result == NULL) {
 		return NULL;
 	}
@@ -2151,16 +2160,17 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cl
 	result->auth.a_u.schannel_auth = TALLOC_ZERO_P(cli->mem_ctx, struct schannel_auth_struct);
 	if (!result->auth.a_u.schannel_auth) {
 		cli_rpc_pipe_close(result);
+		*perr = NT_STATUS_NO_MEMORY;
 		return NULL;
 	}
 
 	result->domain = domain;
 	memcpy(result->auth.a_u.schannel_auth->sess_key, pdc->sess_key, 16);
 
-	ret = rpc_pipe_bind(result, PIPE_AUTH_TYPE_SCHANNEL, auth_level);
-	if (!NT_STATUS_IS_OK(ret)) {
+	*perr = rpc_pipe_bind(result, PIPE_AUTH_TYPE_SCHANNEL, auth_level);
+	if (!NT_STATUS_IS_OK(*perr)) {
 		DEBUG(0, ("cli_rpc_pipe_open_schannel_with_key: cli_rpc_pipe_bind failed with error %s\n",
-			nt_errstr(ret) ));
+			nt_errstr(*perr) ));
 		cli_rpc_pipe_close(result);
 		return NULL;
 	}
@@ -2186,12 +2196,13 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cl
 struct rpc_pipe_client *cli_rpc_pipe_open_schannel(struct cli_state *cli,
                                                 int pipe_idx,
 						enum pipe_auth_level auth_level,
-                                                const char *domain)
+                                                const char *domain,
+						NTSTATUS *perr)
 {
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	struct rpc_pipe_client *result = NULL;
 
-	netlogon_pipe = get_schannel_session_key(cli, domain);
+	netlogon_pipe = get_schannel_session_key(cli, domain, perr);
 	if (!netlogon_pipe) {
 		DEBUG(0,("cli_rpc_pipe_open_schannel: failed to get schannel session "
 			"key from server %s for domain %s.\n",
@@ -2201,7 +2212,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel(struct cli_state *cli,
 
 	result = cli_rpc_pipe_open_schannel_with_key(cli, pipe_idx,
 				auth_level,
-				domain, netlogon_pipe->dc);
+				domain, netlogon_pipe->dc, perr);
 
 	/* Now we've bound using the session key we can close the netlog pipe. */
 	cli_rpc_pipe_close(netlogon_pipe);
