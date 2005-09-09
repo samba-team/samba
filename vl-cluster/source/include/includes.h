@@ -968,6 +968,8 @@ extern int errno;
 
 #include "spnego.h"
 
+#include "rpc_client.h"
+
 #include "dbwrap.h"
 
 /*
