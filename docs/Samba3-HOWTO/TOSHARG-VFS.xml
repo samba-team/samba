@@ -124,6 +124,100 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 	</sect2>
 
 	<sect2>
+	<title>default_quota</title>
+
+	<para>
+	This module allows the default quota values, in the windows explorer GUI, to be stored on a Samba-3 server.
+	The challenge is that linux filesystems only store quotas for users and groups, but no default quotas.
+	</para>
+
+	<para>
+	Samba returns NO_LIMIT as the default quotas by default and refuses to update them. With this module you 
+	can store the default quotas that are reported to a windows client, in the quota record of a user. By
+	default the root user is taken because quota limits for root are typically not enforced.
+	</para>
+
+	<para>
+	This module takes 2 parametric entries in the &mb.conf; file.  The default prefix for each is the
+	<quote>default_quota</quote>. This can be overwrittem when you load the module in the <emphasis>vfs
+	modules</emphasis> parameter like this:
+<screen>
+vfs modules = default_quota:myprefix)
+</screen>
+	</para>
+
+	<para>
+	The parametric entries that may be specified for the default_quotas module are:
+	</para>
+
+	<variablelist>
+		<varlistentry>
+            <term>prefix:uid</term>
+			<listitem><para>
+			This parameter takes a integer argument that specifies the uid of the quota record that will be 
+			used for storing the default user quotas.
+			</para>
+
+			<para>
+			The default value is 0 (for root user). An example of use is:
+<screen>
+default_quota:uid = 65534
+</screen>
+			</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+            <term>prefix:uid nolimit</term>
+			<listitem><para>
+			This parameter takes a boolean argument that specifies if the stored default quota values also be
+			reported for the user record, or if the value <constant>NO_LIMIT</constant> should be reported to 
+			the windows client for the user specified by the <parameter>prefix:uid</parameter> parameter.
+			</para>
+
+			<para>
+			The default value is <constant>yes</constant> (which means to report NO_LIMIT). An example of use
+			is shown here:
+<screen>
+default_quota:uid nolimit = no
+</screen>
+			</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+			<term>prefix>:gid</term>
+			<listitem><para>
+			This parameter takes an integer argument, it's just like the <parameter>prefix>:uid</parameter> but 
+			for group quotas.  NOTE: group quotas are not supported from the windows explorer.
+			</para>
+
+			<para>
+			The default value is 0 (for root group). An example of use is shown here:
+<screen>
+default_quota:gid = 65534
+</screen>
+			</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+			<term>prefix>:gid nolimit</term>
+			<listitem><para>
+			This parameter takes a boolean argument, just like the <parameter>prefix>:uid nolimit</parameter> 
+			but for group quotas.  NOTE: group quotas are not supported from the windows explorer.
+			</para>
+
+			<para>
+			The default value is <constant>yes</constant> (which means to report NO_LIMIT). An example of use
+			is shown here:
+<screen>
+default_quota:uid nolimit = no
+</screen>
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+
+	</sect2>
+
+	<sect2>
 	<title>extd_audit</title>
 
 		<para>
