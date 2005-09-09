@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "rpcclient.h"
 
-static NTSTATUS cmd_testme(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+static NTSTATUS cmd_testme(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			   int argc, const char **argv)
 {
 	struct rpc_pipe_client *lsa_pipe = NULL, *samr_pipe = NULL;
@@ -31,10 +31,10 @@ static NTSTATUS cmd_testme(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	d_printf("testme\n");
 
-	lsa_pipe = cli_rpc_open_noauth(cli, PI_LSARPC);
+	lsa_pipe = cli_rpc_pipe_open_noauth(cli->cli, PI_LSARPC, &status);
 	if (lsa_pipe == NULL) goto done;
 
-	samr_pipe = cli_rpc_open_noauth(cli, PI_SAMR);
+	samr_pipe = cli_rpc_pipe_open_noauth(cli->cli, PI_SAMR, &status);
 	if (samr_pipe == NULL) goto done;
 
 	status = rpccli_lsa_open_policy(lsa_pipe, mem_ctx, False,
@@ -49,8 +49,8 @@ static NTSTATUS cmd_testme(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 
  done:
-	if (lsa_pipe != NULL) cli_rpc_close(lsa_pipe);
-	if (samr_pipe != NULL) cli_rpc_close(samr_pipe);
+	if (lsa_pipe != NULL) cli_rpc_pipe_close(lsa_pipe);
+	if (samr_pipe != NULL) cli_rpc_pipe_close(samr_pipe);
 
 	return status;
 }
@@ -62,7 +62,7 @@ struct cmd_set test_commands[] = {
 	{ "TESTING" },
 
 	{ "testme", RPC_RTYPE_NTSTATUS, cmd_testme, NULL,
-	  -1, "Sample test", "testme" },
+	  -1, NULL, "Sample test", "testme" },
 
 	{ NULL }
 };

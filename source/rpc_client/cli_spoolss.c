@@ -5,8 +5,8 @@
    Copyright (C) Gerald Carter                2001-2005,
    Copyright (C) Tim Potter                   2000-2002,
    Copyright (C) Andrew Tridgell              1994-2000,
-   Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
    Copyright (C) Jean-Francois Micouleau      1999-2000.
+   Copyright (C) Jeremy Allison                         2005.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -301,7 +301,7 @@ static void decode_forms_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_open_printer_ex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_open_printer_ex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				const char *printername, const char *datatype, uint32 access_required,
 				const char *station, const char *username, POLICY_HND *pol)
 {
@@ -315,7 +315,7 @@ WERROR cli_spoolss_open_printer_ex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         make_spoolss_q_open_printer_ex( &in, printername, datatype,
 		access_required, station, username );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_OPENPRINTEREX,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_OPENPRINTEREX,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_open_printer_ex,
@@ -330,7 +330,7 @@ WERROR cli_spoolss_open_printer_ex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_close_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_close_printer(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				 POLICY_HND *pol)
 {
 	prs_struct qbuf, rbuf;
@@ -342,7 +342,7 @@ WERROR cli_spoolss_close_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
         make_spoolss_q_closeprinter( &in, pol );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_CLOSEPRINTER,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_CLOSEPRINTER,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_closeprinter,
@@ -355,7 +355,7 @@ WERROR cli_spoolss_close_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_enum_printers(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_enum_printers(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				 char *name, uint32 flags, uint32 level,
 				 uint32 *num_printers, PRINTER_INFO_CTR *ctr)
 {
@@ -372,7 +372,7 @@ WERROR cli_spoolss_enum_printers(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	rpcbuf_init(&buffer, offered, mem_ctx);
 	make_spoolss_q_enumprinters( &in, flags, name, level, &buffer, offered );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMPRINTERS,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMPRINTERS,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_enumprinters,
@@ -388,7 +388,7 @@ WERROR cli_spoolss_enum_printers(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		rpcbuf_init(&buffer, offered, mem_ctx);
 		make_spoolss_q_enumprinters( &in, flags, name, level, &buffer, offered );
 
-		CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMPRINTERS,
+		CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMPRINTERS,
 		            in, out, 
 		            qbuf, rbuf,
 		            spoolss_io_q_enumprinters,
@@ -422,7 +422,7 @@ WERROR cli_spoolss_enum_printers(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_enum_ports(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_enum_ports(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			      uint32 level, uint32 *num_ports, PORT_INFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
@@ -435,14 +435,14 @@ WERROR cli_spoolss_enum_ports(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(in);
 	ZERO_STRUCT(out);
 
-        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
         strupper_m(server);
 
 	offered = 0;
 	rpcbuf_init(&buffer, offered, mem_ctx);
 	make_spoolss_q_enumports( &in, server, level, &buffer, offered );
 	
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMPORTS,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMPORTS,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_enumports,
@@ -458,7 +458,7 @@ WERROR cli_spoolss_enum_ports(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		rpcbuf_init(&buffer, offered, mem_ctx);
 		make_spoolss_q_enumports( &in, server, level, &buffer, offered );
 
-		CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMPORTS,
+		CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMPORTS,
 		            in, out, 
 		            qbuf, rbuf,
 		            spoolss_io_q_enumports,
@@ -486,7 +486,7 @@ WERROR cli_spoolss_enum_ports(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_getprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_getprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			      POLICY_HND *pol, uint32 level, 
 			      PRINTER_INFO_CTR *ctr)
 {
@@ -505,7 +505,7 @@ WERROR cli_spoolss_getprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	rpcbuf_init(&buffer, offered, mem_ctx);
 	make_spoolss_q_getprinter( mem_ctx, &in, pol, level, &buffer, offered );
 	
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETPRINTER,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETPRINTER,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_getprinter,
@@ -521,7 +521,7 @@ WERROR cli_spoolss_getprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		rpcbuf_init(&buffer, offered, mem_ctx);
 		make_spoolss_q_getprinter( mem_ctx, &in, pol, level, &buffer, offered );
 
-		CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETPRINTER,
+		CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETPRINTER,
 		            in, out, 
 		            qbuf, rbuf,
 		            spoolss_io_q_getprinter,
@@ -556,7 +556,7 @@ WERROR cli_spoolss_getprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_setprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_setprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			      POLICY_HND *pol, uint32 level, 
 			      PRINTER_INFO_CTR *ctr, uint32 command)
 {
@@ -569,7 +569,7 @@ WERROR cli_spoolss_setprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	make_spoolss_q_setprinter( mem_ctx, &in, pol, level, ctr, command );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_SETPRINTER,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_SETPRINTER,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_setprinter,
@@ -582,7 +582,7 @@ WERROR cli_spoolss_setprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_getprinterdriver(struct cli_state *cli, 
+WERROR rpccli_spoolss_getprinterdriver(struct rpc_pipe_client *cli, 
 				    TALLOC_CTX *mem_ctx, 
 				    POLICY_HND *pol, uint32 level, 
 				    const char *env, int version, PRINTER_DRIVER_CTR *ctr)
@@ -597,7 +597,7 @@ WERROR cli_spoolss_getprinterdriver(struct cli_state *cli,
 	ZERO_STRUCT(in);
 	ZERO_STRUCT(out);
 
-	fstrcpy(server, cli->desthost);
+	fstrcpy(server, cli->cli->desthost);
 	strupper_m(server);
 
 	offered = 0;
@@ -605,7 +605,7 @@ WERROR cli_spoolss_getprinterdriver(struct cli_state *cli,
 	make_spoolss_q_getprinterdriver2( &in, pol, env, level, 
 		version, 2, &buffer, offered);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETPRINTERDRIVER2,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETPRINTERDRIVER2,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_getprinterdriver2,
@@ -622,7 +622,7 @@ WERROR cli_spoolss_getprinterdriver(struct cli_state *cli,
 		make_spoolss_q_getprinterdriver2( &in, pol, env, level, 
 			version, 2, &buffer, offered);
 
-		CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETPRINTERDRIVER2,
+		CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETPRINTERDRIVER2,
 		            in, out, 
 		            qbuf, rbuf,
 		            spoolss_io_q_getprinterdriver2,
@@ -651,7 +651,7 @@ WERROR cli_spoolss_getprinterdriver(struct cli_state *cli,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_enumprinterdrivers (struct cli_state *cli, 
+WERROR rpccli_spoolss_enumprinterdrivers (struct rpc_pipe_client *cli, 
 				       TALLOC_CTX *mem_ctx,
 				       uint32 level, const char *env,
 				       uint32 *num_drivers,
@@ -667,7 +667,7 @@ WERROR cli_spoolss_enumprinterdrivers (struct cli_state *cli,
 	ZERO_STRUCT(in);
 	ZERO_STRUCT(out);
 
-        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
         strupper_m(server);
 
 	offered = 0;
@@ -675,7 +675,7 @@ WERROR cli_spoolss_enumprinterdrivers (struct cli_state *cli,
 	make_spoolss_q_enumprinterdrivers( &in, server, env, level, 
 		&buffer, offered);
 	
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMPRINTERDRIVERS,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMPRINTERDRIVERS,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_enumprinterdrivers,
@@ -692,7 +692,7 @@ WERROR cli_spoolss_enumprinterdrivers (struct cli_state *cli,
 		make_spoolss_q_enumprinterdrivers( &in, server, env, level, 
 			&buffer, offered);
 	
-		CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMPRINTERDRIVERS,
+		CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMPRINTERDRIVERS,
 		            in, out, 
 		            qbuf, rbuf,
 		            spoolss_io_q_enumprinterdrivers,
@@ -727,7 +727,7 @@ WERROR cli_spoolss_enumprinterdrivers (struct cli_state *cli,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_getprinterdriverdir (struct cli_state *cli, 
+WERROR rpccli_spoolss_getprinterdriverdir (struct rpc_pipe_client *cli, 
 					TALLOC_CTX *mem_ctx,
 					uint32 level, char *env,
 					DRIVER_DIRECTORY_CTR *ctr)
@@ -742,7 +742,7 @@ WERROR cli_spoolss_getprinterdriverdir (struct cli_state *cli,
 	ZERO_STRUCT(in);
 	ZERO_STRUCT(out);
 
-        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
         strupper_m(server);
 
 	offered = 0;
@@ -750,7 +750,7 @@ WERROR cli_spoolss_getprinterdriverdir (struct cli_state *cli,
 	make_spoolss_q_getprinterdriverdir( &in, server, env, level, 
 		&buffer, offered );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETPRINTERDRIVERDIRECTORY,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETPRINTERDRIVERDIRECTORY,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_getprinterdriverdir,
@@ -767,7 +767,7 @@ WERROR cli_spoolss_getprinterdriverdir (struct cli_state *cli,
 		make_spoolss_q_getprinterdriverdir( &in, server, env, level, 
 			&buffer, offered );
 
-		CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETPRINTERDRIVERDIRECTORY,
+		CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETPRINTERDRIVERDIRECTORY,
 		            in, out, 
 		            qbuf, rbuf,
 		            spoolss_io_q_getprinterdriverdir,
@@ -786,7 +786,7 @@ WERROR cli_spoolss_getprinterdriverdir (struct cli_state *cli,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_addprinterdriver (struct cli_state *cli, 
+WERROR rpccli_spoolss_addprinterdriver (struct rpc_pipe_client *cli, 
 				     TALLOC_CTX *mem_ctx, uint32 level,
 				     PRINTER_DRIVER_CTR *ctr)
 {
@@ -798,12 +798,12 @@ WERROR cli_spoolss_addprinterdriver (struct cli_state *cli,
 	ZERO_STRUCT(in);
 	ZERO_STRUCT(out);
 	
-        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
         strupper_m(server);
 
 	make_spoolss_q_addprinterdriver( mem_ctx, &in, server, level, ctr );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ADDPRINTERDRIVER,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ADDPRINTERDRIVER,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_addprinterdriver,
@@ -816,7 +816,7 @@ WERROR cli_spoolss_addprinterdriver (struct cli_state *cli,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_addprinterex (struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_addprinterex (struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				 uint32 level, PRINTER_INFO_CTR*ctr)
 {
 	prs_struct qbuf, rbuf;
@@ -827,8 +827,8 @@ WERROR cli_spoolss_addprinterex (struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(in);
 	ZERO_STRUCT(out);
 	
-        slprintf(client, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        slprintf(client, sizeof(fstring)-1, "\\\\%s", global_myname());
+        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
 	
         strupper_m(client);
         strupper_m(server);
@@ -838,7 +838,7 @@ WERROR cli_spoolss_addprinterex (struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	make_spoolss_q_addprinterex( mem_ctx, &in, server, client, 
 		user, level, ctr);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ADDPRINTEREX,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ADDPRINTEREX,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_addprinterex,
@@ -851,7 +851,7 @@ WERROR cli_spoolss_addprinterex (struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_deleteprinterdriverex(struct cli_state *cli, 
+WERROR rpccli_spoolss_deleteprinterdriverex(struct rpc_pipe_client *cli, 
                                          TALLOC_CTX *mem_ctx, const char *arch,
                                          const char *driver, int version)
 {
@@ -863,12 +863,12 @@ WERROR cli_spoolss_deleteprinterdriverex(struct cli_state *cli,
 	ZERO_STRUCT(in);
 	ZERO_STRUCT(out);
 
-	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
 	strupper_m(server);
 
 	make_spoolss_q_deleteprinterdriverex( mem_ctx, &in, server, arch, driver, version );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_DELETEPRINTERDRIVEREX,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_DELETEPRINTERDRIVEREX,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_deleteprinterdriverex,
@@ -881,7 +881,7 @@ WERROR cli_spoolss_deleteprinterdriverex(struct cli_state *cli,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_deleteprinterdriver (struct cli_state *cli, 
+WERROR rpccli_spoolss_deleteprinterdriver (struct rpc_pipe_client *cli, 
 					TALLOC_CTX *mem_ctx, const char *arch,
 					const char *driver)
 {
@@ -893,12 +893,12 @@ WERROR cli_spoolss_deleteprinterdriver (struct cli_state *cli,
 	ZERO_STRUCT(in);
 	ZERO_STRUCT(out);
 
-        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
         strupper_m(server);
 
 	make_spoolss_q_deleteprinterdriver( mem_ctx, &in, server, arch, driver );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_DELETEPRINTERDRIVER,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_DELETEPRINTERDRIVER,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_deleteprinterdriver,
@@ -911,7 +911,7 @@ WERROR cli_spoolss_deleteprinterdriver (struct cli_state *cli,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_getprintprocessordirectory(struct cli_state *cli,
+WERROR rpccli_spoolss_getprintprocessordirectory(struct rpc_pipe_client *cli,
 					      TALLOC_CTX *mem_ctx,
 					      char *name, char *environment,
 					      fstring procdir)
@@ -931,7 +931,7 @@ WERROR cli_spoolss_getprintprocessordirectory(struct cli_state *cli,
 	make_spoolss_q_getprintprocessordirectory( &in, name, 
 		environment, level, &buffer, offered );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETPRINTPROCESSORDIRECTORY,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETPRINTPROCESSORDIRECTORY,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_getprintprocessordirectory,
@@ -948,7 +948,7 @@ WERROR cli_spoolss_getprintprocessordirectory(struct cli_state *cli,
 		make_spoolss_q_getprintprocessordirectory( &in, name, 
 			environment, level, &buffer, offered );
 
-		CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETPRINTPROCESSORDIRECTORY,
+		CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETPRINTPROCESSORDIRECTORY,
 		            in, out, 
 		            qbuf, rbuf,
 		            spoolss_io_q_getprintprocessordirectory,
@@ -967,7 +967,7 @@ WERROR cli_spoolss_getprintprocessordirectory(struct cli_state *cli,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_addform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			   POLICY_HND *handle, uint32 level, FORM *form)
 {
 	prs_struct qbuf, rbuf;
@@ -979,7 +979,7 @@ WERROR cli_spoolss_addform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
         make_spoolss_q_addform( &in, handle, level, form );
 	
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ADDFORM,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ADDFORM,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_addform,
@@ -992,7 +992,7 @@ WERROR cli_spoolss_addform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_setform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_setform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			   POLICY_HND *handle, uint32 level, 
 			   const char *form_name, FORM *form)
 {
@@ -1005,7 +1005,7 @@ WERROR cli_spoolss_setform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
         make_spoolss_q_setform( &in, handle, level, form_name, form );
 	
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_SETFORM,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_SETFORM,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_setform,
@@ -1018,7 +1018,7 @@ WERROR cli_spoolss_setform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_getform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			   POLICY_HND *handle, const char *formname, 
 			   uint32 level, FORM_1 *form)
 {
@@ -1035,7 +1035,7 @@ WERROR cli_spoolss_getform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	rpcbuf_init(&buffer, offered, mem_ctx);
 	make_spoolss_q_getform( &in, handle, formname, level, &buffer, offered );
 	
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETFORM,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETFORM,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_getform,
@@ -1051,7 +1051,7 @@ WERROR cli_spoolss_getform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		rpcbuf_init(&buffer, offered, mem_ctx);
 		make_spoolss_q_getform( &in, handle, formname, level, &buffer, offered );
 	
-		CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETFORM,
+		CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETFORM,
 		            in, out, 
 		            qbuf, rbuf,
 		            spoolss_io_q_getform,
@@ -1070,7 +1070,7 @@ WERROR cli_spoolss_getform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_deleteform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_deleteform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			      POLICY_HND *handle, const char *form_name)
 {
 	prs_struct qbuf, rbuf;
@@ -1082,7 +1082,7 @@ WERROR cli_spoolss_deleteform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
         make_spoolss_q_deleteform( &in, handle, form_name );
 	
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_DELETEFORM,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_DELETEFORM,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_deleteform,
@@ -1095,7 +1095,7 @@ WERROR cli_spoolss_deleteform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_enumforms(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_enumforms(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			     POLICY_HND *handle, int level, uint32 *num_forms,
 			     FORM_1 **forms)
 {
@@ -1112,7 +1112,7 @@ WERROR cli_spoolss_enumforms(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	rpcbuf_init(&buffer, offered, mem_ctx);
 	make_spoolss_q_enumforms( &in, handle, level, &buffer, offered );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMFORMS,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMFORMS,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_enumforms,
@@ -1128,7 +1128,7 @@ WERROR cli_spoolss_enumforms(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		rpcbuf_init(&buffer, offered, mem_ctx);
 		make_spoolss_q_enumforms( &in, handle, level, &buffer, offered );
 
-		CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMFORMS,
+		CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMFORMS,
 		            in, out, 
 		            qbuf, rbuf,
 		            spoolss_io_q_enumforms,
@@ -1149,7 +1149,7 @@ WERROR cli_spoolss_enumforms(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_enumjobs(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_enumjobs(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			    POLICY_HND *hnd, uint32 level, uint32 firstjob, 
 			    uint32 num_jobs, uint32 *returned, JOB_INFO_CTR *ctr)
 {
@@ -1167,7 +1167,7 @@ WERROR cli_spoolss_enumjobs(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	make_spoolss_q_enumjobs( &in, hnd, firstjob, num_jobs, level, 
 		&buffer, offered );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMJOBS,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMJOBS,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_enumjobs,
@@ -1184,7 +1184,7 @@ WERROR cli_spoolss_enumjobs(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		make_spoolss_q_enumjobs( &in, hnd, firstjob, num_jobs, level, 
 			&buffer, offered );
 
-		CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMJOBS,
+		CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMJOBS,
 		            in, out, 
 		            qbuf, rbuf,
 		            spoolss_io_q_enumjobs,
@@ -1215,7 +1215,7 @@ WERROR cli_spoolss_enumjobs(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_setjob(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_setjob(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			  POLICY_HND *hnd, uint32 jobid, uint32 level, 
 			  uint32 command)
 {
@@ -1228,7 +1228,7 @@ WERROR cli_spoolss_setjob(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
         make_spoolss_q_setjob( &in, hnd, jobid, level, command );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_SETJOB,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_SETJOB,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_setjob,
@@ -1241,7 +1241,7 @@ WERROR cli_spoolss_setjob(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_getjob(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_getjob(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			  POLICY_HND *hnd, uint32 jobid, uint32 level,
 			  JOB_INFO_CTR *ctr)
 {
@@ -1258,7 +1258,7 @@ WERROR cli_spoolss_getjob(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	rpcbuf_init(&buffer, offered, mem_ctx);
 	make_spoolss_q_getjob( &in, hnd, jobid, level, &buffer, offered );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETJOB,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETJOB,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_getjob,
@@ -1274,7 +1274,7 @@ WERROR cli_spoolss_getjob(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		rpcbuf_init(&buffer, offered, mem_ctx);
 		make_spoolss_q_getjob( &in, hnd, jobid, level, &buffer, offered );
 
-		CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETJOB,
+		CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETJOB,
 		            in, out, 
 		            qbuf, rbuf,
 		            spoolss_io_q_getjob,
@@ -1300,7 +1300,7 @@ WERROR cli_spoolss_getjob(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_startpageprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_startpageprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				    POLICY_HND *hnd)
 {
 	prs_struct qbuf, rbuf;
@@ -1312,7 +1312,7 @@ WERROR cli_spoolss_startpageprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
         make_spoolss_q_startpageprinter( &in, hnd );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_STARTPAGEPRINTER,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_STARTPAGEPRINTER,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_startpageprinter,
@@ -1325,7 +1325,7 @@ WERROR cli_spoolss_startpageprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_endpageprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_endpageprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				  POLICY_HND *hnd)
 {
 	prs_struct qbuf, rbuf;
@@ -1337,7 +1337,7 @@ WERROR cli_spoolss_endpageprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
         make_spoolss_q_endpageprinter( &in, hnd );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENDPAGEPRINTER,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENDPAGEPRINTER,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_endpageprinter,
@@ -1350,7 +1350,7 @@ WERROR cli_spoolss_endpageprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_startdocprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_startdocprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				   POLICY_HND *hnd, char *docname, 
 				   char *outputfile, char *datatype, 
 				   uint32 *jobid)
@@ -1366,7 +1366,7 @@ WERROR cli_spoolss_startdocprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         make_spoolss_q_startdocprinter( &in, hnd, level, docname, 
 		outputfile, datatype );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_STARTDOCPRINTER,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_STARTDOCPRINTER,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_startdocprinter,
@@ -1381,7 +1381,7 @@ WERROR cli_spoolss_startdocprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_enddocprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_enddocprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				  POLICY_HND *hnd)
 {
 	prs_struct qbuf, rbuf;
@@ -1393,7 +1393,7 @@ WERROR cli_spoolss_enddocprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
         make_spoolss_q_enddocprinter( &in, hnd );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENDDOCPRINTER,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENDDOCPRINTER,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_enddocprinter,
@@ -1406,7 +1406,7 @@ WERROR cli_spoolss_enddocprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_getprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_getprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				  POLICY_HND *hnd, const char *valuename, 
 				  REGISTRY_VALUE *value)
 {
@@ -1421,7 +1421,7 @@ WERROR cli_spoolss_getprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	offered = 0;
 	make_spoolss_q_getprinterdata( &in, hnd, valuename, offered );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETPRINTERDATA,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETPRINTERDATA,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_getprinterdata,
@@ -1436,7 +1436,7 @@ WERROR cli_spoolss_getprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		
 		make_spoolss_q_getprinterdata( &in, hnd, valuename, offered );
 
-		CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETPRINTERDATA,
+		CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETPRINTERDATA,
 		            in, out, 
 		            qbuf, rbuf,
 		            spoolss_io_q_getprinterdata,
@@ -1459,7 +1459,7 @@ WERROR cli_spoolss_getprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_getprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_getprinterdataex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				    POLICY_HND *hnd, const char *keyname, 
 				    const char *valuename, 
 				    REGISTRY_VALUE *value)
@@ -1474,7 +1474,7 @@ WERROR cli_spoolss_getprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	make_spoolss_q_getprinterdataex( &in, hnd, keyname, valuename, offered );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETPRINTERDATAEX,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETPRINTERDATAEX,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_getprinterdataex,
@@ -1489,7 +1489,7 @@ WERROR cli_spoolss_getprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		
 		make_spoolss_q_getprinterdataex( &in, hnd, keyname, valuename, offered );
 
-		CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETPRINTERDATAEX,
+		CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_GETPRINTERDATAEX,
 		            in, out, 
 		            qbuf, rbuf,
 		            spoolss_io_q_getprinterdataex,
@@ -1512,7 +1512,7 @@ WERROR cli_spoolss_getprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_setprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_setprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				  POLICY_HND *hnd, REGISTRY_VALUE *value)
 {
 	prs_struct qbuf, rbuf;
@@ -1525,7 +1525,7 @@ WERROR cli_spoolss_setprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         make_spoolss_q_setprinterdata( &in, hnd, value->valuename, 
 		value->type, (char *)value->data_p, value->size);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_SETPRINTERDATA,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_SETPRINTERDATA,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_setprinterdata,
@@ -1538,7 +1538,7 @@ WERROR cli_spoolss_setprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_setprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_setprinterdataex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				    POLICY_HND *hnd, char *keyname, 
 				    REGISTRY_VALUE *value)
 {
@@ -1552,7 +1552,7 @@ WERROR cli_spoolss_setprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         make_spoolss_q_setprinterdataex( &in, hnd, keyname, value->valuename, 
 		value->type, (char *)value->data_p, value->size);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_SETPRINTERDATAEX,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_SETPRINTERDATAEX,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_setprinterdataex,
@@ -1565,7 +1565,7 @@ WERROR cli_spoolss_setprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_enumprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_enumprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				   POLICY_HND *hnd, uint32 ndx,
 				   uint32 value_offered, uint32 data_offered,
 				   uint32 *value_needed, uint32 *data_needed,
@@ -1580,7 +1580,7 @@ WERROR cli_spoolss_enumprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
         make_spoolss_q_enumprinterdata( &in, hnd, ndx, value_offered, data_offered );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMPRINTERDATA,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMPRINTERDATA,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_enumprinterdata,
@@ -1609,7 +1609,7 @@ WERROR cli_spoolss_enumprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_enumprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_enumprinterdataex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				     POLICY_HND *hnd, const char *keyname, 
 				     REGVAL_CTR *ctr)
 {
@@ -1625,7 +1625,7 @@ WERROR cli_spoolss_enumprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	offered = 0;
 	make_spoolss_q_enumprinterdataex( &in, hnd, keyname, offered );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMPRINTERDATAEX,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMPRINTERDATAEX,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_enumprinterdataex,
@@ -1640,7 +1640,7 @@ WERROR cli_spoolss_enumprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		
 	        make_spoolss_q_enumprinterdataex( &in, hnd, keyname, offered );
 
-		CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMPRINTERDATAEX,
+		CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMPRINTERDATAEX,
 		            in, out, 
 		            qbuf, rbuf,
 		            spoolss_io_q_enumprinterdataex,
@@ -1666,7 +1666,7 @@ WERROR cli_spoolss_enumprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_writeprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_writeprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				POLICY_HND *hnd, uint32 data_size, char *data,
 				uint32 *num_written)
 {
@@ -1679,7 +1679,7 @@ WERROR cli_spoolss_writeprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
         make_spoolss_q_writeprinter( &in, hnd, data_size, data );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_WRITEPRINTER,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_WRITEPRINTER,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_writeprinter,
@@ -1695,7 +1695,7 @@ WERROR cli_spoolss_writeprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_deleteprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_deleteprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				     POLICY_HND *hnd, char *valuename)
 {
 	prs_struct qbuf, rbuf;
@@ -1707,7 +1707,7 @@ WERROR cli_spoolss_deleteprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
         make_spoolss_q_deleteprinterdata( &in, hnd, valuename );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_DELETEPRINTERDATA,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_DELETEPRINTERDATA,
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_deleteprinterdata,
@@ -1720,7 +1720,7 @@ WERROR cli_spoolss_deleteprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_deleteprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_deleteprinterdataex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				       POLICY_HND *hnd, char *keyname, 
 				       char *valuename)
 {
@@ -1733,7 +1733,7 @@ WERROR cli_spoolss_deleteprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ct
 
         make_spoolss_q_deleteprinterdataex( &in, hnd, keyname, valuename );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_DELETEPRINTERDATAEX, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_DELETEPRINTERDATAEX, 
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_deleteprinterdataex,
@@ -1746,7 +1746,7 @@ WERROR cli_spoolss_deleteprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ct
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_enumprinterkey(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_enumprinterkey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				  POLICY_HND *hnd, const char *keyname,
 				  uint16 **keylist, uint32 *len)
 {
@@ -1760,7 +1760,7 @@ WERROR cli_spoolss_enumprinterkey(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	make_spoolss_q_enumprinterkey( &in, hnd, keyname, offered );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMPRINTERKEY, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMPRINTERKEY, 
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_enumprinterkey,
@@ -1775,7 +1775,7 @@ WERROR cli_spoolss_enumprinterkey(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		
 		make_spoolss_q_enumprinterkey( &in, hnd, keyname, offered );
 
-		CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMPRINTERKEY, 
+		CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ENUMPRINTERKEY, 
 		            in, out, 
 		            qbuf, rbuf,
 		            spoolss_io_q_enumprinterkey,
@@ -1799,7 +1799,7 @@ WERROR cli_spoolss_enumprinterkey(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR cli_spoolss_deleteprinterkey(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_deleteprinterkey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				    POLICY_HND *hnd, char *keyname)
 {
 	prs_struct qbuf, rbuf;
@@ -1811,7 +1811,7 @@ WERROR cli_spoolss_deleteprinterkey(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
         make_spoolss_q_deleteprinterkey( &in, hnd, keyname );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_DELETEPRINTERKEY, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_DELETEPRINTERKEY, 
 	            in, out, 
 	            qbuf, rbuf,
 	            spoolss_io_q_deleteprinterkey,

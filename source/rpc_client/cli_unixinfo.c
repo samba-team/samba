@@ -33,16 +33,6 @@ NTSTATUS rpccli_unixinfo_uid2sid(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
-
-	if (!prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	if (!prs_init(&rbuf, 0, mem_ctx, UNMARSHALL)) {
-		prs_mem_free(&qbuf);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* Marshall data and send request */
 	{
 		UINT64_S uid64;
@@ -51,33 +41,19 @@ NTSTATUS rpccli_unixinfo_uid2sid(struct rpc_pipe_client *cli,
 		init_q_unixinfo_uid_to_sid(&q, uid64);
 	}
 
-	if (!unixinfo_io_q_unixinfo_uid_to_sid("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req_int(cli, UNIXINFO_UID_TO_SID, &qbuf, &rbuf))
-		goto done;
-
-	/* Unmarshall response */
-
-	if (!unixinfo_io_r_unixinfo_uid_to_sid("", &r, &rbuf, 0))
-		goto done;
+	CLI_DO_RPC(cli, mem_ctx, PI_UNIXINFO, UNIXINFO_UID_TO_SID,
+		q, r,
+		qbuf, rbuf,
+		unixinfo_io_q_unixinfo_uid_to_sid,
+		unixinfo_io_r_unixinfo_uid_to_sid,
+		NT_STATUS_NET_WRITE_FAULT);
 
 	if (NT_STATUS_IS_OK(r.status) && (sid != NULL)) {
 		sid_copy(sid, &r.sid);
 	}
 
 	result = r.status;
-
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;
-}
-
-NTSTATUS cli_unixinfo_uid2sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			      uid_t uid, DOM_SID *sid)
-{
-	return rpccli_unixinfo_uid2sid(&cli->pipes[PI_UNIXINFO], mem_ctx,
-				       uid, sid);
 }
 
 NTSTATUS rpccli_unixinfo_sid2uid(struct rpc_pipe_client *cli,
@@ -92,32 +68,20 @@ NTSTATUS rpccli_unixinfo_sid2uid(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
-
-	if (!prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	if (!prs_init(&rbuf, 0, mem_ctx, UNMARSHALL)) {
-		prs_mem_free(&qbuf);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* Marshall data and send request */
 	init_q_unixinfo_sid_to_uid(&q, sid);
 
-	if (!unixinfo_io_q_unixinfo_sid_to_uid("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req_int(cli, UNIXINFO_SID_TO_UID, &qbuf, &rbuf))
-		goto done;
-
-	/* Unmarshall response */
-
-	if (!unixinfo_io_r_unixinfo_sid_to_uid("", &r, &rbuf, 0))
-		goto done;
+	CLI_DO_RPC(cli, mem_ctx, PI_UNIXINFO, UNIXINFO_SID_TO_UID,
+		q, r,
+		qbuf, rbuf,
+		unixinfo_io_q_unixinfo_sid_to_uid,
+		unixinfo_io_r_unixinfo_sid_to_uid,
+		NT_STATUS_NET_WRITE_FAULT);
 
 	if (NT_STATUS_IS_OK(r.status)) {
 		if (r.uid.high != 0) {
 			/* 64-Bit uid's not yet handled */
-			goto done;
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 		if (uid != NULL) {
 			*uid = r.uid.low;
@@ -125,19 +89,7 @@ NTSTATUS rpccli_unixinfo_sid2uid(struct rpc_pipe_client *cli,
 	}
 
 	result = r.status;
-
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;
-}
-
-NTSTATUS cli_unixinfo_sid2uid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			      const DOM_SID *sid, uid_t *uid)
-{
-	return rpccli_unixinfo_sid2uid(&cli->pipes[PI_UNIXINFO], mem_ctx,
-				       sid, uid);
 }
 
 NTSTATUS rpccli_unixinfo_gid2sid(struct rpc_pipe_client *cli,
@@ -151,16 +103,6 @@ NTSTATUS rpccli_unixinfo_gid2sid(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
-
-	if (!prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	if (!prs_init(&rbuf, 0, mem_ctx, UNMARSHALL)) {
-		prs_mem_free(&qbuf);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* Marshall data and send request */
 	{
 		UINT64_S gid64;
@@ -169,33 +111,19 @@ NTSTATUS rpccli_unixinfo_gid2sid(struct rpc_pipe_client *cli,
 		init_q_unixinfo_gid_to_sid(&q, gid64);
 	}
 
-	if (!unixinfo_io_q_unixinfo_gid_to_sid("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req_int(cli, UNIXINFO_GID_TO_SID, &qbuf, &rbuf))
-		goto done;
-
-	/* Unmarshall response */
-
-	if (!unixinfo_io_r_unixinfo_gid_to_sid("", &r, &rbuf, 0))
-		goto done;
+	CLI_DO_RPC(cli, mem_ctx, PI_UNIXINFO, UNIXINFO_GID_TO_SID,
+		q, r,
+		qbuf, rbuf,
+		unixinfo_io_q_unixinfo_gid_to_sid,
+		unixinfo_io_r_unixinfo_gid_to_sid,
+		NT_STATUS_NET_WRITE_FAULT);
 
 	if (NT_STATUS_IS_OK(r.status) && (sid != NULL)) {
 		sid_copy(sid, &r.sid);
 	}
 
 	result = r.status;
-
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;
-}
-
-NTSTATUS cli_unixinfo_gid2sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			      gid_t gid, DOM_SID *sid)
-{
-	return rpccli_unixinfo_gid2sid(&cli->pipes[PI_UNIXINFO], mem_ctx, gid,
-				       sid);
 }
 
 NTSTATUS rpccli_unixinfo_sid2gid(struct rpc_pipe_client *cli,
@@ -210,32 +138,20 @@ NTSTATUS rpccli_unixinfo_sid2gid(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
-
-	if (!prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	if (!prs_init(&rbuf, 0, mem_ctx, UNMARSHALL)) {
-		prs_mem_free(&qbuf);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* Marshall data and send request */
 	init_q_unixinfo_sid_to_gid(&q, sid);
 
-	if (!unixinfo_io_q_unixinfo_sid_to_gid("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req_int(cli, UNIXINFO_SID_TO_GID, &qbuf, &rbuf))
-		goto done;
-
-	/* Unmarshall response */
-
-	if (!unixinfo_io_r_unixinfo_sid_to_gid("", &r, &rbuf, 0))
-		goto done;
+	CLI_DO_RPC(cli, mem_ctx, PI_UNIXINFO, UNIXINFO_SID_TO_GID,
+		q, r,
+		qbuf, rbuf,
+		unixinfo_io_q_unixinfo_sid_to_gid,
+		unixinfo_io_r_unixinfo_sid_to_gid,
+		NT_STATUS_NET_WRITE_FAULT);
 
 	if (NT_STATUS_IS_OK(r.status)) {
 		if (r.gid.high != 0) {
 			/* 64-Bit gid's not yet handled */
-			goto done;
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 		if (gid != NULL) {
 			*gid = r.gid.low;
@@ -243,19 +159,7 @@ NTSTATUS rpccli_unixinfo_sid2gid(struct rpc_pipe_client *cli,
 	}
 
 	result = r.status;
-
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;
-}
-
-NTSTATUS cli_unixinfo_sid2gid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			      const DOM_SID *sid, gid_t *gid)
-{
-	return rpccli_unixinfo_sid2gid(&cli->pipes[PI_UNIXINFO], mem_ctx, sid,
-				       gid);
 }
 
 NTSTATUS rpccli_unixinfo_getpwuid(struct rpc_pipe_client *cli,
@@ -273,22 +177,11 @@ NTSTATUS rpccli_unixinfo_getpwuid(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
-
-	if (!prs_init(&qbuf, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	if (!prs_init(&rbuf, 0, mem_ctx, UNMARSHALL)) {
-		prs_mem_free(&qbuf);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* Marshall data and send request */
 
-	uids64 = SMB_MALLOC_ARRAY(UINT64_S, count);
+	uids64 = TALLOC_ARRAY(mem_ctx, UINT64_S, count);
 	if (uids64 == NULL) {
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	for (i=0; i<count; i++) {
@@ -298,31 +191,28 @@ NTSTATUS rpccli_unixinfo_getpwuid(struct rpc_pipe_client *cli,
 
 	init_q_unixinfo_getpwuid(&q, count, uids64);
 
-	if (!unixinfo_io_q_unixinfo_getpwuid("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req_int(cli, UNIXINFO_GETPWUID, &qbuf, &rbuf))
-		goto done;
-
-	/* Unmarshall response */
-
-	if (!unixinfo_io_r_unixinfo_getpwuid("", &r, &rbuf, 0))
-		goto done;
+	CLI_DO_RPC(cli, mem_ctx, PI_UNIXINFO, UNIXINFO_GETPWUID,
+		q, r,
+		qbuf, rbuf,
+		unixinfo_io_q_unixinfo_getpwuid,
+		unixinfo_io_r_unixinfo_getpwuid,
+		NT_STATUS_NET_WRITE_FAULT);
 
 	if (!NT_STATUS_IS_OK(r.status)) {
 		result = r.status;
 		*info = NULL;
-		goto done;
+		return result;
 	}
 
 	if (r.count != count) {
 		DEBUG(0, ("Expected array size %d, got %d\n",
 			  count, r.count));
-		goto done;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	*info = TALLOC_ARRAY(mem_ctx, struct unixinfo_getpwuid, count);
 	if (*info == NULL) {
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	for (i=0; i<count; i++) {
@@ -332,19 +222,5 @@ NTSTATUS rpccli_unixinfo_getpwuid(struct rpc_pipe_client *cli,
 	}
 
 	result = r.status;
-
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;
 }
-
-NTSTATUS cli_unixinfo_getpwuid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			       int count, uid_t *uids,
-			       struct unixinfo_getpwuid **info)
-{
-	return rpccli_unixinfo_getpwuid(&cli->pipes[PI_UNIXINFO], mem_ctx,
-					count, uids, info);
-}
-

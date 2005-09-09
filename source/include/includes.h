@@ -968,6 +968,8 @@ extern int errno;
 
 #include "spnego.h"
 
+#include "rpc_client.h"
+
 /*
  * Type for wide character dirent structure.
  * Only d_name is defined by POSIX.

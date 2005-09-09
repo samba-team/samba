@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "rpcclient.h"
 
-static NTSTATUS cmd_unixinfo_uid2sid(struct cli_state *cli,
+static NTSTATUS cmd_unixinfo_uid2sid(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     int argc, const char **argv)
 {
@@ -37,7 +37,7 @@ static NTSTATUS cmd_unixinfo_uid2sid(struct cli_state *cli,
 
 	uid = atoi(argv[1]);
 
-	result = cli_unixinfo_uid2sid(cli, mem_ctx, uid, &sid);
+	result = rpccli_unixinfo_uid2sid(cli, mem_ctx, uid, &sid);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -48,7 +48,7 @@ done:
 	return result;
 }
 
-static NTSTATUS cmd_unixinfo_sid2uid(struct cli_state *cli,
+static NTSTATUS cmd_unixinfo_sid2uid(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     int argc, const char **argv)
 {
@@ -66,7 +66,7 @@ static NTSTATUS cmd_unixinfo_sid2uid(struct cli_state *cli,
 		goto done;
 	}
 
-	result = cli_unixinfo_sid2uid(cli, mem_ctx, &sid, &uid);
+	result = rpccli_unixinfo_sid2uid(cli, mem_ctx, &sid, &uid);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -77,7 +77,7 @@ done:
 	return result;
 }
 
-static NTSTATUS cmd_unixinfo_gid2sid(struct cli_state *cli,
+static NTSTATUS cmd_unixinfo_gid2sid(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     int argc, const char **argv)
 {
@@ -92,7 +92,7 @@ static NTSTATUS cmd_unixinfo_gid2sid(struct cli_state *cli,
 
 	gid = atoi(argv[1]);
 
-	result = cli_unixinfo_gid2sid(cli, mem_ctx, gid, &sid);
+	result = rpccli_unixinfo_gid2sid(cli, mem_ctx, gid, &sid);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -103,7 +103,7 @@ done:
 	return result;
 }
 
-static NTSTATUS cmd_unixinfo_sid2gid(struct cli_state *cli,
+static NTSTATUS cmd_unixinfo_sid2gid(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     int argc, const char **argv)
 {
@@ -121,7 +121,7 @@ static NTSTATUS cmd_unixinfo_sid2gid(struct cli_state *cli,
 		goto done;
 	}
 
-	result = cli_unixinfo_sid2gid(cli, mem_ctx, &sid, &gid);
+	result = rpccli_unixinfo_sid2gid(cli, mem_ctx, &sid, &gid);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -132,7 +132,7 @@ done:
 	return result;
 }
 
-static NTSTATUS cmd_unixinfo_getpwuid(struct cli_state *cli,
+static NTSTATUS cmd_unixinfo_getpwuid(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      int argc, const char **argv)
 {
@@ -157,7 +157,7 @@ static NTSTATUS cmd_unixinfo_getpwuid(struct cli_state *cli,
 		uids[i] = atoi(argv[i+1]);
 	}
 
-	result = cli_unixinfo_getpwuid(cli, mem_ctx, num_uids, uids, &info);
+	result = rpccli_unixinfo_getpwuid(cli, mem_ctx, num_uids, uids, &info);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
@@ -182,14 +182,14 @@ struct cmd_set unixinfo_commands[] = {
 	{ "UNIXINFO" },
 
 	{ "uid2sid", RPC_RTYPE_NTSTATUS, cmd_unixinfo_uid2sid, NULL,
-	  PI_UNIXINFO, "Convert a uid to a sid", "" },
+	  PI_UNIXINFO, NULL, "Convert a uid to a sid", "" },
 	{ "sid2uid", RPC_RTYPE_NTSTATUS, cmd_unixinfo_sid2uid, NULL,
-	  PI_UNIXINFO, "Convert a sid to a uid", "" },
+	  PI_UNIXINFO, NULL, "Convert a sid to a uid", "" },
 	{ "gid2sid", RPC_RTYPE_NTSTATUS, cmd_unixinfo_gid2sid, NULL,
-	  PI_UNIXINFO, "Convert a gid to a sid", "" },
+	  PI_UNIXINFO, NULL, "Convert a gid to a sid", "" },
 	{ "sid2gid", RPC_RTYPE_NTSTATUS, cmd_unixinfo_sid2gid, NULL,
-	  PI_UNIXINFO, "Convert a sid to a gid", "" },
+	  PI_UNIXINFO, NULL, "Convert a sid to a gid", "" },
 	{ "getpwuid", RPC_RTYPE_NTSTATUS, cmd_unixinfo_getpwuid, NULL,
-	  PI_UNIXINFO, "Get passwd info", "" },
+	  PI_UNIXINFO, NULL, "Get passwd info", "" },
 	{ NULL }
 };

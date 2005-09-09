@@ -704,7 +704,8 @@ static int rpc_lookup_size;
 
 BOOL api_pipe_bind_auth3(pipes_struct *p, prs_struct *rpc_in_p)
 {
-	RPC_HDR_AUTHA autha_info;
+	RPC_HDR_AUTH auth_info;
+	uint32 pad;
 	DATA_BLOB blob;
 
 	ZERO_STRUCT(blob);
@@ -716,18 +717,24 @@ BOOL api_pipe_bind_auth3(pipes_struct *p, prs_struct *rpc_in_p)
 		goto err;
 	}
 
+	/* 4 bytes padding. */
+	if (!prs_uint32("pad", rpc_in_p, 0, &pad)) {
+		DEBUG(0,("api_pipe_bind_auth3: unmarshall of 4 byte pad failed.\n"));
+		goto err;
+	}
+
 	/*
 	 * Decode the authentication verifier response.
 	 */
 
-	if(!smb_io_rpc_hdr_autha("", &autha_info, rpc_in_p, 0)) {
-		DEBUG(0,("api_pipe_bind_auth3: unmarshall of RPC_HDR_AUTHA failed.\n"));
+	if(!smb_io_rpc_hdr_auth("", &auth_info, rpc_in_p, 0)) {
+		DEBUG(0,("api_pipe_bind_auth3: unmarshall of RPC_HDR_AUTH failed.\n"));
 		goto err;
 	}
 
-	if (autha_info.auth.auth_type != RPC_NTLMSSP_AUTH_TYPE) {
+	if (auth_info.auth_type != RPC_NTLMSSP_AUTH_TYPE) {
 		DEBUG(0,("api_pipe_bind_auth3: incorrect auth type (%u).\n",
-			(unsigned int)autha_info.auth.auth_type ));
+			(unsigned int)auth_info.auth_type ));
 		return False;
 	}
 
@@ -1242,7 +1249,11 @@ static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	/* The client opens a second RPC NETLOGON pipe without
 		doing a auth2. The credentials for the schannel are
 		re-used from the auth2 the client did before. */
-	p->dc = last_dcinfo;
+	p->dc = TALLOC_ZERO_P(p->pipe_state_mem_ctx, struct dcinfo);
+	if (!p->dc) {
+		return False;
+	}
+	*p->dc = last_dcinfo;
 
 	init_rpc_hdr_auth(&auth_info, RPC_SCHANNEL_AUTH_TYPE, pauth_info->auth_level, RPC_HDR_AUTH_LEN, 1);
 	if(!smb_io_rpc_hdr_auth("", &auth_info, pout_auth, 0)) {

@@ -43,6 +43,7 @@ typedef struct _prs_struct {
 	uint32 grow_size; /* size requested via prs_grow() calls */
 	char *data_p; /* The buffer itself. */
 	TALLOC_CTX *mem_ctx; /* When unmarshalling, use this.... */
+	const char *sess_key; /* If we have to do encrypt/decrypt on the fly. */
 } prs_struct;
 
 /*
@@ -134,22 +135,22 @@ struct handle_list {
 
 /* Domain controller authentication protocol info */
 struct dcinfo {
-	DOM_CHAL clnt_chal; /* Initial challenge received from client */
-	DOM_CHAL srv_chal;  /* Initial server challenge */
-	DOM_CRED clnt_cred; /* Last client credential */
-	DOM_CRED srv_cred;  /* Last server credential */
+	uint32 sequence; /* "timestamp" from client. */
+	DOM_CHAL seed_chal; 
+	DOM_CHAL clnt_chal; /* Client credential */
+	DOM_CHAL srv_chal;  /* Server credential */
  
 	uchar  sess_key[8]; /* Session key */
-	uchar  md4pw[16];   /* md4(machine password) */
+	uchar  mach_pw[16];   /* md4(machine password) */
 
 	fstring mach_acct;  /* Machine name we've authenticated. */
 
 	fstring remote_machine;  /* Machine name we've authenticated. */
+	fstring domain;
 
 	BOOL challenge_sent;
 	BOOL got_session_key;
 	BOOL authenticated;
-
 };
 
 typedef struct pipe_rpc_fns {
@@ -164,15 +165,19 @@ typedef struct pipe_rpc_fns {
 	
 } PIPE_RPC_FNS;
 
-/* Different auth types we support. */
+/*
+ * Different auth types we support.
+ * Can't keep in sync with wire values as spnego wraps different auth methods.
+ */
+
 enum pipe_auth_type { PIPE_AUTH_TYPE_NONE = 0, PIPE_AUTH_TYPE_NTLMSSP, PIPE_AUTH_TYPE_SCHANNEL,
 			PIPE_AUTH_TYPE_SPNEGO_NTLMSSP, PIPE_AUTH_TYPE_KRB5, PIPE_AUTH_TYPE_SPNEGO_KRB5 };
 
-/* Possible auth levels. */
+/* Possible auth levels - keep these in sync with the wire values. */
 enum pipe_auth_level { PIPE_AUTH_LEVEL_NONE = 0,
 			PIPE_AUTH_LEVEL_CONNECT = 1,	/* We treat as NONE. */
-			PIPE_AUTH_LEVEL_INTEGRITY = 2,	/* Sign. */
-			PIPE_AUTH_LEVEL_PRIVACY = 3	/* Seal. */
+			PIPE_AUTH_LEVEL_INTEGRITY = 5,	/* Sign. */
+			PIPE_AUTH_LEVEL_PRIVACY = 6	/* Seal. */
 };
 
 /* auth state for schannel. */
@@ -220,7 +225,7 @@ typedef struct pipes_struct {
 
 	struct pipe_auth_data auth;
 
-	struct dcinfo dc; /* Keeps the creds data from netlogon. */
+	struct dcinfo *dc; /* Keeps the creds data from netlogon. */
 
 	/*
 	 * Windows user info.

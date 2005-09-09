@@ -34,7 +34,6 @@ void prs_dump(char *name, int v, prs_struct *ps)
 	prs_dump_region(name, v, ps, ps->data_offset, ps->buffer_size);
 }
 
-
 /**
  * Dump from the start of the prs to the current location.
  **/
@@ -42,7 +41,6 @@ void prs_dump_before(char *name, int v, prs_struct *ps)
 {
 	prs_dump_region(name, v, ps, 0, ps->data_offset);
 }
-
 
 /**
  * Dump everything from the start of the prs up to the current location.
@@ -69,19 +67,17 @@ void prs_dump_region(char *name, int v, prs_struct *ps,
 	}
 }
 
-
-
 /*******************************************************************
- debug output for parsing info.
+ Debug output for parsing info
 
- XXXX side-effect of this function is to increase the debug depth XXXX
+ XXXX side-effect of this function is to increase the debug depth XXXX.
 
- ********************************************************************/
+********************************************************************/
+
 void prs_debug(prs_struct *ps, int depth, const char *desc, const char *fn_name)
 {
 	DEBUG(5+depth, ("%s%06x %s %s\n", tab_depth(depth), ps->data_offset, fn_name, desc));
 }
-
 
 /**
  * Initialise an expandable parse structure.
@@ -91,6 +87,7 @@ void prs_debug(prs_struct *ps, int depth, const char *desc, const char *fn_name)
  *
  * @return False if allocation fails, otherwise True.
  **/
+
 BOOL prs_init(prs_struct *ps, uint32 size, TALLOC_CTX *ctx, BOOL io)
 {
 	ZERO_STRUCTP(ps);
@@ -111,6 +108,9 @@ BOOL prs_init(prs_struct *ps, uint32 size, TALLOC_CTX *ctx, BOOL io)
 		}
 		memset(ps->data_p, '\0', (size_t)size);
 		ps->is_dynamic = True; /* We own this memory. */
+	} else if (MARSHALLING(ps)) {
+		/* If size is zero and we're marshalling we should allocate memory on demand. */
+		ps->is_dynamic = True;
 	}
 
 	return True;
@@ -562,6 +562,15 @@ void prs_switch_type(prs_struct *ps, BOOL io)
 void prs_force_dynamic(prs_struct *ps)
 {
 	ps->is_dynamic=True;
+}
+
+/*******************************************************************
+ Associate a session key with a parse struct.
+ ********************************************************************/
+
+void prs_set_session_key(prs_struct *ps, const char sess_key[16])
+{
+	ps->sess_key = sess_key;
 }
 
 /*******************************************************************
@@ -1387,7 +1396,7 @@ int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps, TALLOC_CTX *me
  hash a stream.
  ********************************************************************/
 
-BOOL prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16], int len)
+BOOL prs_hash1(prs_struct *ps, uint32 offset, int len)
 {
 	char *q;
 
@@ -1396,10 +1405,10 @@ BOOL prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16], int len)
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("prs_hash1\n"));
-	dump_data(100, sess_key, 16);
+	dump_data(100, ps->sess_key, 16);
 	dump_data(100, q, len);
 #endif
-	SamOEMhash((uchar *) q, sess_key, len);
+	SamOEMhash((uchar *) q, ps->sess_key, len);
 
 #ifdef DEBUG_PASSWORD
 	dump_data(100, q, len);

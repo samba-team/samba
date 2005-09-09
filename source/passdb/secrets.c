@@ -30,6 +30,9 @@
 
 static TDB_CONTEXT *tdb;
 
+/* Urrrg. global.... */
+BOOL global_machine_password_needs_changing;
+
 /**
  * Use a TDB to store an incrementing random seed.
  *
@@ -294,12 +297,23 @@ BOOL secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
 		return False;
 	}
 
-	if (pass_last_set_time) *pass_last_set_time = pass->mod_time;
+	if (pass_last_set_time) {
+		*pass_last_set_time = pass->mod_time;
+	}
 	memcpy(ret_pwd, pass->hash, 16);
 	SAFE_FREE(pass);
 
-	if (channel) 
+	if (channel) {
 		*channel = get_default_sec_channel();
+	}
+
+	/* Test if machine password has expired and needs to be changed */
+	if (lp_machine_password_timeout()) {
+		if (pass->mod_time > 0 && time(NULL) > (pass->mod_time +
+				lp_machine_password_timeout())) {
+			global_machine_password_needs_changing = True;
+		}
+	}
 
 	return True;
 }
@@ -454,11 +468,11 @@ BOOL secrets_store_machine_password(const char *pass, const char *domain, uint32
 	return ret;
 }
 
-
 /************************************************************************
  Routine to fetch the plaintext machine account password for a realm
-the password is assumed to be a null terminated ascii string
+ the password is assumed to be a null terminated ascii string.
 ************************************************************************/
+
 char *secrets_fetch_machine_password(const char *domain, 
 				     time_t *pass_last_set_time,
 				     uint32 *channel)
@@ -503,7 +517,46 @@ char *secrets_fetch_machine_password(const char *domain,
 	return ret;
 }
 
+/*******************************************************************
+ Wrapper around retrieving the trust account password
+*******************************************************************/
+                                                                                                                     
+BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16], uint32 *channel)
+{
+	DOM_SID sid;
+	char *pwd;
+	time_t last_set_time;
+                                                                                                                     
+	/* if we are a DC and this is not our domain, then lookup an account
+		for the domain trust */
+                                                                                                                     
+	if ( IS_DC && !strequal(domain, lp_workgroup()) && lp_allow_trusted_domains() ) {
+		if (!secrets_fetch_trusted_domain_password(domain, &pwd, &sid,
+							&last_set_time)) {
+			DEBUG(0, ("get_trust_pw: could not fetch trust "
+				"account password for trusted domain %s\n",
+				domain));
+			return False;
+		}
+                                                                                                                     
+		*channel = SEC_CHAN_DOMAIN;
+		E_md4hash(pwd, ret_pwd);
+		SAFE_FREE(pwd);
 
+		return True;
+	}
+                                                                                                                     
+	/* Just get the account for the requested domain. In the future this
+	 * might also cover to be member of more than one domain. */
+                                                                                                                     
+	if (secrets_fetch_trust_account_password(domain, ret_pwd,
+						&last_set_time, channel))
+		return True;
+
+	DEBUG(5, ("get_trust_pw: could not fetch trust account "
+		"password for domain %s\n", domain));
+	return False;
+}
 
 /************************************************************************
  Routine to delete the machine trust account password file for a domain.
@@ -523,7 +576,6 @@ BOOL trusted_domain_password_delete(const char *domain)
 	return secrets_delete(trustdom_keystr(domain));
 }
 
-
 BOOL secrets_store_ldap_pw(const char* dn, char* pw)
 {
 	char *key = NULL;
@@ -541,8 +593,9 @@ BOOL secrets_store_ldap_pw(const char* dn, char* pw)
 }
 
 /*******************************************************************
- find the ldap password
+ Find the ldap password.
 ******************************************************************/
+
 BOOL fetch_ldap_pw(char **dn, char** pw)
 {
 	char *key = NULL;
@@ -604,7 +657,6 @@ BOOL fetch_ldap_pw(char **dn, char** pw)
 	
 	return True;
 }
-
 
 /**
  * Get trusted domains info from secrets.tdb.

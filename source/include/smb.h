@@ -211,10 +211,9 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 #define PI_MAX_PIPES		14
 
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
-typedef struct nttime_info
-{
-  uint32 low;
-  uint32 high;
+typedef struct nttime_info {
+	uint32 low;
+	uint32 high;
 } NTTIME;
 
 

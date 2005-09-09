@@ -60,4 +60,3 @@ void pwd_get_cleartext(struct pwd_info *pwd, fstring clr)
 		clr[0] = 0;
 
 }
-

@@ -50,6 +50,7 @@ enum RPC_PKT_TYPE {
 
 /* DCE RPC auth types - extended by Microsoft. */
 #define RPC_ANONYMOUS_AUTH_TYPE    0
+#define RPC_AUTH_TYPE_KRB5_1	   1
 #define RPC_SPNEGO_AUTH_TYPE       9 
 #define RPC_NTLMSSP_AUTH_TYPE     10
 #define RPC_KRB5_AUTH_TYPE        16 /* Not yet implemented. */ 
@@ -88,12 +89,6 @@ enum schannel_direction {
 	SENDER_IS_INITIATOR,
 	SENDER_IS_ACCEPTOR
 };
-
-/* Internal Flags to indicate what type of authentication on the pipe */
-#define AUTH_PIPE_SIGN      0x0001
-#define AUTH_PIPE_SEAL      0x0002
-#define AUTH_PIPE_NTLMSSP   0x0004
-#define AUTH_PIPE_SCHANNEL  0x0008
 
 /* Maximum size of the signing data in a fragment. */
 #define RPC_MAX_SIGN_SIZE 0x20 /* 32 */
@@ -174,7 +169,7 @@ typedef struct rpc_addr_info {
 	fstring str; /* the string above in single byte, null terminated form */
 } RPC_ADDR_STR;
 
-/* RPC_HDR_BBA */
+/* RPC_HDR_BBA - bind acknowledge, and alter context response. */
 typedef struct rpc_hdr_bba_info {
 	uint16 max_tsize;       /* maximum transmission fragment size (0x1630) */
 	uint16 max_rsize;       /* max receive fragment size (0x1630) */
@@ -193,15 +188,6 @@ typedef struct rpc_hdr_auth_info {
 } RPC_HDR_AUTH;
 
 #define RPC_HDR_AUTH_LEN 8
-
-/* RPC_HDR_AUTHA */
-typedef struct rpc_hdr_autha_info {
-	uint16 max_tsize;       /* maximum transmission fragment size (0x1630) */
-	uint16 max_rsize;       /* max receive fragment size (0x1630) */
-	RPC_HDR_AUTH auth;
-} RPC_HDR_AUTHA;
-
-#define RPC_HDR_AUTHA_LEN (RPC_HDR_AUTH_LEN+4)
 
 /* this is TEMPORARILY coded up as a specific structure */
 /* this structure comes after the bind request */
@@ -272,61 +258,5 @@ typedef struct rpc_auth_verif_info {
 	fstring signature; /* "NTLMSSP".. Ok, not quite anymore */
 	uint32  msg_type; /* NTLMSSP_MESSAGE_TYPE (1,2,3) and 5 for schannel */
 } RPC_AUTH_VERIFIER;
-
-/* this is TEMPORARILY coded up as a specific structure */
-/* this structure comes after the bind request */
-/* RPC_AUTH_NTLMSSP_NEG */
-
-typedef struct rpc_auth_ntlmssp_neg_info {
-	uint32  neg_flgs; /* 0x0000 b2b3 */
-
-	STRHDR hdr_myname; /* offset is against START of this structure */
-	STRHDR hdr_domain; /* offset is against START of this structure */
-
-	fstring myname; /* calling workstation's name */
-	fstring domain; /* calling workstations's domain */
-} RPC_AUTH_NTLMSSP_NEG;
-
-/* this is TEMPORARILY coded up as a specific structure */
-/* this structure comes after the bind acknowledgement */
-/* RPC_AUTH_NTLMSSP_CHAL */
-typedef struct rpc_auth_ntlmssp_chal_info {
-	uint32 unknown_1; /* 0x0000 0000 */
-	uint32 unknown_2; /* 0x0000 0028 */
-	uint32 neg_flags; /* 0x0000 82b1 */
-
-	uint8 challenge[8]; /* ntlm challenge */
-	uint8 reserved [8]; /* zeros */
-} RPC_AUTH_NTLMSSP_CHAL;
-
-
-/* RPC_AUTH_NTLMSSP_RESP */
-typedef struct rpc_auth_ntlmssp_resp_info {
-	STRHDR hdr_lm_resp; /* 24 byte response */
-	STRHDR hdr_nt_resp; /* 24 byte response */
-	STRHDR hdr_domain;
-	STRHDR hdr_usr;
-	STRHDR hdr_wks;
-	STRHDR hdr_sess_key; /* NULL unless negotiated */
-	uint32 neg_flags; /* 0x0000 82b1 */
-
-	fstring sess_key;
-	fstring wks;
-	fstring user;
-	fstring domain;
-	fstring nt_resp;
-	fstring lm_resp;
-} RPC_AUTH_NTLMSSP_RESP;
-
-/* attached to the end of encrypted rpc requests and responses */
-/* RPC_AUTH_NTLMSSP_CHK */
-typedef struct rpc_auth_ntlmssp_chk_info {
-	uint32 ver; /* 0x0000 0001 */
-	uint32 reserved;
-	uint32 crc32; /* checksum using 0xEDB8 8320 as a polynomial */
-	uint32 seq_num;
-} RPC_AUTH_NTLMSSP_CHK;
-
-#define RPC_AUTH_NTLMSSP_CHK_LEN 16
 
 #endif /* _DCE_RPC_H */

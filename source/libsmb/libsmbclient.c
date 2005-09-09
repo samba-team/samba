@@ -80,6 +80,23 @@ static int DLIST_CONTAINS(SMBCFILE * list, SMBCFILE *p) {
 	return False;
 }
 
+/*
+ * Find an lsa pipe handle associated with a cli struct.
+ */
+
+static struct rpc_pipe_client *find_lsa_pipe_hnd(struct cli_state *ipc_cli)
+{
+	struct rpc_pipe_client *pipe_hnd;
+
+	for (pipe_hnd = ipc_cli->pipe_list; pipe_hnd; pipe_hnd = pipe_hnd->next) {
+		if (pipe_hnd->pipe_idx == PI_LSARPC) {
+			return pipe_hnd;
+		}
+	}
+
+	return NULL;
+}
+
 static int smbc_close_ctx(SMBCCTX *context, SMBCFILE *file);
 static off_t smbc_lseek_ctx(SMBCCTX *context, SMBCFILE *file, off_t offset, int whence);
 
@@ -800,6 +817,7 @@ SMBCSRV *smbc_attr_server(SMBCCTX *context,
 {
         struct in_addr ip;
 	struct cli_state *ipc_cli;
+	struct rpc_pipe_client *pipe_hnd;
         NTSTATUS nt_status;
 	SMBCSRV *ipc_srv=NULL;
 
@@ -835,7 +853,8 @@ SMBCSRV *smbc_attr_server(SMBCCTX *context,
                         return NULL;
                 }
 
-                if (!cli_nt_session_open(ipc_cli, PI_LSARPC)) {
+		pipe_hnd = cli_rpc_pipe_open_noauth(ipc_cli, PI_LSARPC, &nt_status);
+                if (!pipe_hnd) {
                         DEBUG(1, ("cli_nt_session_open fail!\n"));
                         errno = ENOTSUP;
                         cli_shutdown(ipc_cli);
@@ -845,7 +864,7 @@ SMBCSRV *smbc_attr_server(SMBCCTX *context,
                 /* Some systems don't support SEC_RIGHTS_MAXIMUM_ALLOWED,
                    but NT sends 0x2000000 so we might as well do it too. */
         
-                nt_status = cli_lsa_open_policy(ipc_cli,
+                nt_status = rpccli_lsa_open_policy(pipe_hnd,
                                                 ipc_cli->mem_ctx,
                                                 True, 
                                                 GENERIC_EXECUTE_ACCESS,
@@ -3127,14 +3146,20 @@ static void convert_sid_to_string(struct cli_state *ipc_cli,
 	char **domains = NULL;
 	char **names = NULL;
 	uint32 *types = NULL;
-
+	struct rpc_pipe_client *pipe_hnd = find_lsa_pipe_hnd(ipc_cli);
 	sid_to_string(str, sid);
 
-        if (numeric) return;     /* no lookup desired */
-        
+	if (numeric) {
+		return;     /* no lookup desired */
+	}
+       
+	if (!pipe_hnd) {
+		return;
+	}
+ 
 	/* Ask LSA to convert the sid to a name */
 
-	if (!NT_STATUS_IS_OK(cli_lsa_lookup_sids(ipc_cli, ipc_cli->mem_ctx,  
+	if (!NT_STATUS_IS_OK(rpccli_lsa_lookup_sids(pipe_hnd, ipc_cli->mem_ctx,  
 						 pol, 1, sid, &domains, 
 						 &names, &types)) ||
 	    !domains || !domains[0] || !names || !names[0]) {
@@ -3158,6 +3183,11 @@ static BOOL convert_string_to_sid(struct cli_state *ipc_cli,
 	uint32 *types = NULL;
 	DOM_SID *sids = NULL;
 	BOOL result = True;
+	struct rpc_pipe_client *pipe_hnd = find_lsa_pipe_hnd(ipc_cli);
+
+	if (!pipe_hnd) {
+		return False;
+	}
 
         if (numeric) {
                 if (strncmp(str, "S-", 2) == 0) {
@@ -3168,7 +3198,7 @@ static BOOL convert_string_to_sid(struct cli_state *ipc_cli,
                 goto done;
         }
 
-	if (!NT_STATUS_IS_OK(cli_lsa_lookup_names(ipc_cli, ipc_cli->mem_ctx, 
+	if (!NT_STATUS_IS_OK(rpccli_lsa_lookup_names(pipe_hnd, ipc_cli->mem_ctx, 
 						  pol, 1, &str, &sids, 
 						  &types))) {
 		result = False;

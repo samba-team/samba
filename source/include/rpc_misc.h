@@ -299,8 +299,7 @@ typedef struct {
  **********************************************************************/
 
 /* DOM_CLNT_SRV - client / server names */
-typedef struct clnt_srv_info
-{
+typedef struct clnt_srv_info {
 	uint32  undoc_buffer; /* undocumented 32 bit buffer pointer */
 	UNISTR2 uni_logon_srv; /* logon server name */
 	uint32  undoc_buffer2; /* undocumented 32 bit buffer pointer */
@@ -308,8 +307,7 @@ typedef struct clnt_srv_info
 } DOM_CLNT_SRV;
 
 /* DOM_LOG_INFO - login info */
-typedef struct log_info
-{
+typedef struct log_info {
 	uint32  undoc_buffer; /* undocumented 32 bit buffer pointer */
 	UNISTR2 uni_logon_srv; /* logon server name */
 	UNISTR2 uni_acct_name; /* account name */
@@ -318,43 +316,37 @@ typedef struct log_info
 } DOM_LOG_INFO;
 
 /* DOM_CHAL - challenge info */
-typedef struct chal_info
-{
+typedef struct chal_info {
 	uchar data[8]; /* credentials */
 } DOM_CHAL;
  
 /* DOM_CREDs - timestamped client or server credentials */
-typedef struct cred_info
-{
+typedef struct cred_info {
 	DOM_CHAL challenge; /* credentials */
 	UTIME timestamp;    /* credential time-stamp */
 } DOM_CRED;
 
 /* DOM_CLNT_INFO - client info */
-typedef struct clnt_info
-{
+typedef struct clnt_info {
 	DOM_LOG_INFO login;
 	DOM_CRED     cred;
 } DOM_CLNT_INFO;
 
 /* DOM_CLNT_INFO2 - client info */
-typedef struct clnt_info2
-{
+typedef struct clnt_info2 {
 	DOM_CLNT_SRV login;
 	uint32        ptr_cred;
 	DOM_CRED      cred;
 } DOM_CLNT_INFO2;
 
 /* DOM_LOGON_ID - logon id */
-typedef struct logon_info
-{
+typedef struct logon_info {
 	uint32 low;
 	uint32 high;
 } DOM_LOGON_ID;
 
 /* OWF INFO */
-typedef struct owf_info
-{
+typedef struct owf_info {
 	uint8 data[16];
 } OWF_INFO;
 

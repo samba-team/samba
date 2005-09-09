@@ -33,7 +33,8 @@ NTSTATUS change_trust_account_password( const char *domain, const char *remote_m
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct in_addr pdc_ip;
 	fstring dc_name;
-	struct cli_state *cli;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *netlogon_pipe = NULL;
 
 	DEBUG(5,("change_trust_account_password: Attempting to change trust account password in domain %s....\n",
 		domain));
@@ -71,20 +72,18 @@ NTSTATUS change_trust_account_password( const char *domain, const char *remote_m
 	 * Now start the NT Domain stuff :-).
 	 */
 
-	if(cli_nt_session_open(cli, PI_NETLOGON) == False) {
+	/* Shouldn't we open this with schannel ? JRA. */
+
+	netlogon_pipe = cli_rpc_pipe_open_noauth(cli, PI_NETLOGON, &nt_status);
+	if (!netlogon_pipe) {
 		DEBUG(0,("modify_trust_password: unable to open the domain client session to machine %s. Error was : %s.\n", 
-			dc_name, cli_errstr(cli)));
-		cli_nt_session_close(cli);
-		cli_ulogoff(cli);
+			dc_name, nt_errstr(nt_status)));
 		cli_shutdown(cli);
-		nt_status = NT_STATUS_UNSUCCESSFUL;
 		goto failed;
 	}
 
-	nt_status = trust_pw_find_change_and_store_it(cli, cli->mem_ctx, domain);
+	nt_status = trust_pw_find_change_and_store_it(netlogon_pipe, cli->mem_ctx, domain);
   
-	cli_nt_session_close(cli);
-	cli_ulogoff(cli);
 	cli_shutdown(cli);
 	
 failed:

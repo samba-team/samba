@@ -49,7 +49,7 @@ extern userdom_struct current_user_info;
 extern int smb_read_error;
 SIG_ATOMIC_T reload_after_sighup = 0;
 SIG_ATOMIC_T got_sig_term = 0;
-BOOL global_machine_password_needs_changing = False;
+extern BOOL global_machine_password_needs_changing;
 extern int max_send;
 
 /****************************************************************************

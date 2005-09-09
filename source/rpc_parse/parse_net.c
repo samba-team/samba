@@ -671,7 +671,7 @@ BOOL net_io_q_trust_dom(const char *desc, NET_Q_TRUST_DOM_LIST *q_l, prs_struct 
 
 void init_q_req_chal(NET_Q_REQ_CHAL *q_c,
 		     const char *logon_srv, const char *logon_clnt,
-		     DOM_CHAL *clnt_chal)
+		     const DOM_CHAL *clnt_chal)
 {
 	DEBUG(5,("init_q_req_chal: %d\n", __LINE__));
 
@@ -860,7 +860,7 @@ BOOL net_io_r_auth_2(const char *desc, NET_R_AUTH_2 *r_a, prs_struct *ps, int de
 
 void init_q_auth_3(NET_Q_AUTH_3 *q_a,
 		const char *logon_srv, const char *acct_name, uint16 sec_chan, const char *comp_name,
-		DOM_CHAL *clnt_chal, uint32 clnt_flgs)
+		const DOM_CHAL *clnt_chal, uint32 clnt_flgs)
 {
 	DEBUG(5,("init_q_auth_3: %d\n", __LINE__));
 
@@ -2139,9 +2139,8 @@ BOOL make_sam_account_info(SAM_ACCOUNT_INFO * info,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_account_info(const char *desc, uint8 sess_key[16],
-				    SAM_ACCOUNT_INFO * info, prs_struct *ps,
-				    int depth)
+static BOOL net_io_sam_account_info(const char *desc, SAM_ACCOUNT_INFO *info,
+				prs_struct *ps, int depth)
 {
 	BUFHDR2 hdr_priv_data;
 	uint32 i;
@@ -2295,7 +2294,7 @@ static BOOL net_io_sam_account_info(const char *desc, uint8 sess_key[16],
 			if (ps->io)
 			{
 				/* reading */
-                                if (!prs_hash1(ps, ps->data_offset, sess_key, len))
+                                if (!prs_hash1(ps, ps->data_offset, len))
                                         return False;
 			}
 			if (!net_io_sam_passwd_info("pass", &info->pass, 
@@ -2305,7 +2304,7 @@ static BOOL net_io_sam_account_info(const char *desc, uint8 sess_key[16],
 			if (!ps->io)
 			{
 				/* writing */
-                                if (!prs_hash1(ps, old_offset, sess_key, len))
+                                if (!prs_hash1(ps, old_offset, len))
                                         return False;
 			}
 		}
@@ -2834,7 +2833,7 @@ static BOOL net_io_sam_privs_info(const char *desc, SAM_DELTA_PRIVS *info,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_delta_ctr(const char *desc, uint8 sess_key[16],
+static BOOL net_io_sam_delta_ctr(const char *desc,
 				 SAM_DELTA_CTR * delta, uint16 type,
 				 prs_struct *ps, int depth)
 {
@@ -2859,7 +2858,7 @@ static BOOL net_io_sam_delta_ctr(const char *desc, uint8 sess_key[16],
 			break;
 
 		case SAM_DELTA_ACCOUNT_INFO:
-			if (!net_io_sam_account_info("", sess_key, &delta->account_info, ps, depth))
+			if (!net_io_sam_account_info("", &delta->account_info, ps, depth))
                                 return False;
 			break;
 
@@ -2912,7 +2911,7 @@ static BOOL net_io_sam_delta_ctr(const char *desc, uint8 sess_key[16],
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL net_io_r_sam_sync(const char *desc, uint8 sess_key[16],
+BOOL net_io_r_sam_sync(const char *desc,
 		       NET_R_SAM_SYNC * r_s, prs_struct *ps, int depth)
 {
 	uint32 i;
@@ -2976,7 +2975,7 @@ BOOL net_io_r_sam_sync(const char *desc, uint8 sess_key[16],
 			for (i = 0; i < r_s->num_deltas2; i++)
 			{
 				if (!net_io_sam_delta_ctr(
-                                        "", sess_key, &r_s->deltas[i],
+                                        "", &r_s->deltas[i],
                                         r_s->hdr_deltas[i].type3,
                                         ps, depth)) {
                                         DEBUG(0, ("hmm, failed on i=%d\n", i));
@@ -3048,7 +3047,7 @@ BOOL net_io_q_sam_deltas(const char *desc, NET_Q_SAM_DELTAS *q_s, prs_struct *ps
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL net_io_r_sam_deltas(const char *desc, uint8 sess_key[16],
+BOOL net_io_r_sam_deltas(const char *desc,
                          NET_R_SAM_DELTAS *r_s, prs_struct *ps, int depth)
 {
         unsigned int i;
@@ -3104,7 +3103,7 @@ BOOL net_io_r_sam_deltas(const char *desc, uint8 sess_key[16],
 			for (i = 0; i < r_s->num_deltas; i++)
 			{
 				if (!net_io_sam_delta_ctr(
-                                        "", sess_key,
+                                        "",
                                         &r_s->deltas[i],
                                         r_s->hdr_deltas[i].type2,
                                         ps, depth))
