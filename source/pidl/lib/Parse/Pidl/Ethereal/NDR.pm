@@ -10,12 +10,11 @@ package Parse::Pidl::Ethereal::NDR;
 
 use strict;
 use Parse::Pidl::Typelist;
-use Parse::Pidl::Util qw(has_property ParseExpr property_matches);
+use Parse::Pidl::Util qw(has_property ParseExpr property_matches make_str);
 use Parse::Pidl::NDR;
 use Parse::Pidl::Dump qw(DumpTypedef DumpFunction);
 use Parse::Pidl::Ethereal::Conformance qw(ReadConformance);
 
-my %types;
 my @ett;
 
 my %hf_used = ();
@@ -238,7 +237,8 @@ sub ElementLevel($$$$$)
 	my $param = 0;
 
 	if (defined($conformance->{dissectorparams}->{$myname})) {
-		$param = $conformance->{dissectorparams}->{$myname};
+		$conformance->{dissectorparams}->{$myname}->{PARAM} = 1;
+		$param = $conformance->{dissectorparams}->{$myname}->{PARAM};
 	}
 
 	if ($l->{TYPE} eq "POINTER") {
@@ -285,10 +285,12 @@ sub ElementLevel($$$$$)
 		} else {
 			my $call;
 
-			if (defined($types{$l->{DATA_TYPE}})) {
-				$call= $types{$l->{DATA_TYPE}}->{CALL};
-			} elsif ($conformance->{imports}->{$l->{DATA_TYPE}}) {
-				$call = $conformance->{imports}->{$l->{DATA_TYPE}};	
+			if ($conformance->{imports}->{$l->{DATA_TYPE}}) {
+				$call = $conformance->{imports}->{$l->{DATA_TYPE}}->{DATA};	
+				$conformance->{imports}->{$l->{DATA_TYPE}}->{USED} = 1;
+			} elsif (defined($conformance->{types}->{$l->{DATA_TYPE}})) {
+				$call= $conformance->{types}->{$l->{DATA_TYPE}}->{DISSECTOR_NAME};
+				$conformance->{types}->{$l->{DATA_TYPE}}->{USED} = 1;
 			} else {
 				if ($l->{DATA_TYPE} =~ /^([a-z]+)\_(.*)$/)
 				{
@@ -557,7 +559,7 @@ sub RegisterInterface($)
 	    # These can be changed to non-pidl_code names if the old dissectors
 	    # in epan/dissctors are deleted.
     
-	    my $name = "\"" . uc($x->{NAME}) . " (pidl)\"";
+	    my $name = uc($x->{NAME}) . " (pidl)";
 	    my $short_name = uc($x->{NAME});
 	    my $filter_name = $x->{NAME};
 
@@ -571,7 +573,7 @@ sub RegisterInterface($)
 		$filter_name = $conformance->{protocols}->{$x->{NAME}}->{FILTERNAME};
 	    }
 
-	    pidl_code "proto_dcerpc_$x->{NAME} = proto_register_protocol($name, \"$short_name\", \"$filter_name\");";
+	    pidl_code "proto_dcerpc_$x->{NAME} = proto_register_protocol(".make_str($name).", ".make_str($short_name).", ".make_str($filter_name).");";
 	    
 	    pidl_code "proto_register_field_array(proto_dcerpc_$x->{NAME}, hf, array_length (hf));";
 	    pidl_code "proto_register_subtree_array(ett, array_length(ett));";
@@ -674,14 +676,14 @@ sub register_type($$$$$$$)
 {
 	my ($type,$call,$ft,$base,$mask,$vals,$length) = @_;
 
-	$types{$type} = {
-		TYPE => $type,
-		CALL => $call,
+	$conformance->{types}->{$type} = {
+		NAME => $type,
+		DISSECTOR_NAME => $call,
 		FT_TYPE => $ft,
-		BASE => $base,
+		BASE_TYPE => $base,
 		MASK => $mask,
 		VALSSTRING => $vals,
-		LENGTH => $length
+		ALIGNMENT => $length
 	};
 }
 
@@ -854,7 +856,8 @@ sub register_hf_field($$$$$$$$)
 	if ((not defined($blurb) or $blurb eq "") and 
 			defined($conformance->{fielddescription}->{$index})) {
 		$conformance->{header_fields}->{$index}->{BLURB} = 
-			$conformance->{fielddescription}->{$index};
+			$conformance->{fielddescription}->{$index}->{DESCRIPTION};
+		$conformance->{fielddescription}->{$index}->{USED} = 1;
 	}
 
 	return $index;
@@ -881,7 +884,7 @@ sub DumpHfList()
 	foreach (values %{$conformance->{header_fields}}) 
 	{
 		$res .= "\t{ &$_->{INDEX}, 
-	  { \"$_->{NAME}\", \"$_->{FILTER}\", $_->{FT_TYPE}, $_->{BASE_TYPE}, $_->{VALSSTRING}, $_->{MASK}, \"$_->{BLURB}\", HFILL }},
+	  { ".make_str($_->{NAME}).", ".make_str($_->{FILTER}).", $_->{FT_TYPE}, $_->{BASE_TYPE}, $_->{VALSSTRING}, $_->{MASK}, ".make_str($_->{BLURB}).", HFILL }},
 ";
 	}
 
@@ -925,12 +928,29 @@ sub CheckUsed($)
 		}
 	}
 
-	#FIXME: PARAM_VALUE's
-	#FIXME: TYPE
-	#FIXME: FIELDDESCRIPTION
-	#FIXME: Import
+	foreach (values %{$conformance->{dissectorparams}}) {
+		if (not $_->{USED}) {
+			print "$_->{POS}: warning: dissector param never used\n";
+		}
+	}
+
+	foreach (values %{$conformance->{imports}}) {
+		if (not $_->{USED}) {
+			print "$_->{POS}: warning: import never used\n";
+		}
+	}
+
+	foreach (values %{$conformance->{types}}) {
+		if (not $_->{USED} and defined($_->{POS})) {
+			print "$_->{POS}: warning: type never used\n";
+		}
+	}
+
+	foreach (values %{$conformance->{fielddescription}}) {
+		if (not $_->{USED}) {
+			print "$_->{POS}: warning: description never used\n";
+		}
+	}
 }
-
-
 
 1;
