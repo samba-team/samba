@@ -17,8 +17,8 @@
 		<command>pidl</command>
 		<arg choice="opt">--help</arg>
 		<arg choice="opt">--outputdir OUTNAME</arg>
-		<arg choice="opt">--parse</arg>
-		<arg choice="opt">--dump</arg>
+		<arg choice="opt">--parse-tree</arg>
+		<arg choice="opt">--dump-tree</arg>
 		<arg choice="opt">--ndr-header[=OUTPUT]</arg>
 		<arg choice="opt">--header[=OUTPUT]</arg>
 		<arg choice="opt">--ejs[=OUTPUT]</arg>
@@ -36,7 +36,7 @@
 		<arg choice="opt">--template</arg>
 		<arg choice="opt">--eth-parser[=OUTPUT]</arg>
 		<arg choice="opt">--diff</arg>
-		<arg choice="opt">--keep</arg>
+		<arg choice="opt">--dump-idl</arg>
 		<arg choice="req">idlfile</arg>
 		<arg choice="opt">idlfile2</arg>
 		<arg choice="opt">...</arg>
@@ -93,16 +93,17 @@
 		</varlistentry>
 		
 		<varlistentry>
-		<term>--parse</term>
+		<term>--parse-tree</term>
 		<listitem><para>
-				Tell pidl the files specified are (midl-style) IDL files.</para></listitem>
+				Read internal tree structure from input files rather 
+		then assuming they contain IDL.</para></listitem>
 		</varlistentry>
 
 
 		<varlistentry>
-		<term>--dump</term>
+		<term>--dump-idl</term>
 		<listitem><para>
-				Convert .pidl files to (midl-style) IDL files. FIle will be named OUTNAME.idl.</para></listitem>
+				Generate a new IDL file. File will be named OUTNAME.idl.</para></listitem>
 		</varlistentry>
 
 
@@ -162,17 +163,18 @@
 		<varlistentry>
 		<term>--diff</term>
 		<listitem><para>
-		Convert an IDL file to a pidl file and then back to a 
-		IDL file and see if there are any differences with the 
+				Parse an IDL file,  generate a new IDL file based 
+				on the internal data structures and see if there are 
+				any differences with the 
 		original IDL file. Useful for debugging pidl.</para></listitem>
 		</varlistentry>
 
 
 		<varlistentry>
-		<term>--keep</term>
+		<term>--dump-tree</term>
 		<listitem><para>
-		Tell pidl to keep the pidl files (used as intermediate files 
-		between the IDL files and the parser/server/etc code). Useful 
+		Tell pidl to dump the internal tree representation of an IDL 
+		file the to disk. Useful 
 		for debugging pidl.</para></listitem>
 		</varlistentry>
 	</variablelist>
@@ -562,10 +564,10 @@ The following commands are currently supported:
 
 	<programlisting>
 	# Generating an ethereal parser
-	$ ./pidl --eth-parser --parse -- atsvc.idl
+	$ ./pidl --eth-parser -- atsvc.idl
 	
 	# Generating a TDR parser
-	$ ./pidl --tdr-parser --tdr-header --header --parse -- regf.idl
+	$ ./pidl --tdr-parser --tdr-header --header -- regf.idl
 	</programlisting>
 
 </refsect1>
