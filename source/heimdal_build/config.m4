@@ -89,6 +89,9 @@ AC_CHECK_FUNCS([				\
 	flock					\
 	getaddrinfo				\
 	freeaddrinfo				\
+	getipnodebyname				\
+	getipnodebyaddr				\
+	freehostent				\
 	writev
 ])
 
