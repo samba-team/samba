@@ -92,7 +92,7 @@ test_integer (void)
 static int
 test_one_int(int val)
 {
-    int len, dval;
+    int ret, dval;
     unsigned char *buf;
     size_t len_len, len;
 
