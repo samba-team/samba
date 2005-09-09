@@ -92,8 +92,9 @@ test_integer (void)
 static int
 test_one_int(int val)
 {
-    int len, ret, len_len, dval;
+    int len, dval;
     unsigned char *buf;
+    size_t len_len, len;
 
     len = _heim_len_int(val);
 
