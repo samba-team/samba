@@ -138,11 +138,11 @@ shown in <link linkend="multimodule">the smb.conf with multiple VFS modules</lin
 	</para>
 
 	<para>
-	This module takes 2 parametric entries in the &mb.conf; file.  The default prefix for each is the
+	This module takes 2 parametric entries in the &smb.conf; file.  The default prefix for each is the
 	<quote>default_quota</quote>. This can be overwrittem when you load the module in the <emphasis>vfs
 	modules</emphasis> parameter like this:
 <screen>
-vfs modules = default_quota:myprefix)
+vfs objects = default_quota:myprefix
 </screen>
 	</para>
 
@@ -152,7 +152,7 @@ vfs modules = default_quota:myprefix)
 
 	<variablelist>
 		<varlistentry>
-            <term>prefix:uid</term>
+            <term>myprefix:uid</term>
 			<listitem><para>
 			This parameter takes a integer argument that specifies the uid of the quota record that will be 
 			used for storing the default user quotas.
@@ -161,13 +161,21 @@ vfs modules = default_quota:myprefix)
 			<para>
 			The default value is 0 (for root user). An example of use is:
 <screen>
-default_quota:uid = 65534
+vfs objects = default_quota
+default_quota:	uid = 65534
+</screen>
+			The above demonstrates the case where the <constant>myprefix</constant> was omitted, thus the
+			default prefix is the name of the module. When a <constant>myprefix</constant> parameter is
+			specified the above can be re-written like this:
+<screen>
+vfs objects = default_quota:myprefix
+myprefix:	uid = 65534
 </screen>
 			</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-            <term>prefix:uid nolimit</term>
+            <term>myprefix:uid nolimit</term>
 			<listitem><para>
 			This parameter takes a boolean argument that specifies if the stored default quota values also be
 			reported for the user record, or if the value <constant>NO_LIMIT</constant> should be reported to 
@@ -178,13 +186,14 @@ default_quota:uid = 65534
 			The default value is <constant>yes</constant> (which means to report NO_LIMIT). An example of use
 			is shown here:
 <screen>
-default_quota:uid nolimit = no
+vfs objects = default_quota:myprefix
+myprefix:	uid nolimit = no
 </screen>
 			</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-			<term>prefix>:gid</term>
+			<term>myprefix:gid</term>
 			<listitem><para>
 			This parameter takes an integer argument, it's just like the <parameter>prefix>:uid</parameter> but 
 			for group quotas.  NOTE: group quotas are not supported from the windows explorer.
@@ -193,13 +202,14 @@ default_quota:uid nolimit = no
 			<para>
 			The default value is 0 (for root group). An example of use is shown here:
 <screen>
-default_quota:gid = 65534
+vfs objects = default_quota
+default_quota:	gid = 65534
 </screen>
 			</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-			<term>prefix>:gid nolimit</term>
+			<term>myprefix:gid nolimit</term>
 			<listitem><para>
 			This parameter takes a boolean argument, just like the <parameter>prefix>:uid nolimit</parameter> 
 			but for group quotas.  NOTE: group quotas are not supported from the windows explorer.
@@ -209,11 +219,24 @@ default_quota:gid = 65534
 			The default value is <constant>yes</constant> (which means to report NO_LIMIT). An example of use
 			is shown here:
 <screen>
-default_quota:uid nolimit = no
+vfs objects = default_quota
+default_quota:	uid nolimit = no
 </screen>
 			</para></listitem>
 		</varlistentry>
 	</variablelist>
+
+	<para>
+	An example of use of multiple parametric specifications is shown here:
+<screen>
+...
+vfs objects = default_quota:quotasettings
+quotasettings:	uid nolimit = no
+quotasettings:	gid = 65534
+quotasettings:	gid nolimit = no
+...
+</screen>
+	</para>
 
 	</sect2>
 
