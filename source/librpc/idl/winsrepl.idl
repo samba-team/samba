@@ -27,11 +27,10 @@ interface wrepl
 	typedef [flag(NDR_LITTLE_ENDIAN)] struct {
 		uint32      num_ips;
 		wrepl_ip    ips[num_ips];
-		ipv4address unknown;
 	} wrepl_address_list;
 
 	typedef [nodiscriminant] union {
-		[case(0)] wrepl_ip           address;
+		[case(0)] ipv4address ip;
 		[case(2)] wrepl_address_list addresses;
 	} wrepl_addresses;
 
@@ -42,6 +41,7 @@ interface wrepl
 		[flag(NDR_LITTLE_ENDIAN)] uint32 group_flag;
 		udlongr   id;
 		[switch_is(flags & 2)] wrepl_addresses addresses;
+		ipv4address unknown;
 	} wrepl_wins_name;
 
 	typedef struct {

@@ -672,10 +672,9 @@ NTSTATUS wrepl_pull_names_recv(struct wrepl_request *req,
 			name->num_addresses = 1;
 			name->addresses = talloc(io->out.names, struct wrepl_address);
 			if (name->addresses == NULL) goto failed;
-			name->addresses[0].owner = talloc_steal(name->addresses, 
-								wname->addresses.address.owner);
+			name->addresses[0].owner = io->in.partner.address;
 			name->addresses[0].address = talloc_steal(name->addresses,
-								  wname->addresses.address.ip);
+								  wname->addresses.ip);
 		}
 	}
 
