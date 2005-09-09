@@ -34,17 +34,17 @@
  * This module takes 2 parametric parameters in smb.conf:
  * (the default prefix for them is 'default_quota',
  *  it can be overwrittem when you load the module in
- *  the 'vfs object' parameter like this:
- *  vfs object = default_quota:myprefix)
+ *  the 'vfs objects' parameter like this:
+ *  vfs objects = default_quota:myprefix)
  * 
- * "<prefix>:uid" parameter takes a integer argument,
+ * "<myprefix>:uid" parameter takes a integer argument,
  *     it specifies the uid of the quota record, that will be taken for
  *     storing the default USER-quotas.
  *
  *     - default value: '0' (for root user)
  *     - e.g.: default_quota:uid = 65534
  *
- * "<prefix>:uid nolimit" parameter takes a boolean argument,
+ * "<myprefix>:uid nolimit" parameter takes a boolean argument,
  *     it specifies if we should report the stored default quota values,
  *     also for the user record, or if you should just report NO_LIMIT
  *     to the windows client for the user specified by the "<prefix>:uid" parameter.
@@ -52,14 +52,14 @@
  *     - default value: yes (that means to report NO_LIMIT)
  *     - e.g.: default_quota:uid nolimit = no
  * 
- * "<prefix>:gid" parameter takes a integer argument,
+ * "<myprefix>:gid" parameter takes a integer argument,
  *     it's just like "<prefix>:uid" but for group quotas.
  *     (NOTE: group quotas are not supported from the windows explorer!)
  *
  *     - default value: '0' (for root group)
  *     - e.g.: default_quota:gid = 65534
  *
- * "<prefix>:gid nolimit" parameter takes a boolean argument,
+ * "<myprefix>:gid nolimit" parameter takes a boolean argument,
  *     it's just like "<prefix>:uid nolimit" but for group quotas.
  *     (NOTE: group quotas are not supported from the windows explorer!)
  *     
