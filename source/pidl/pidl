@@ -62,8 +62,9 @@ sub FileSave($$)
 }
 
 my($opt_help) = 0;
-my($opt_parse) = 0;
-my($opt_dump) = 0;
+my($opt_parse_tree) = 0;
+my($opt_dump_tree);
+my($opt_dump_idl) = 0;
 my($opt_uint_enums) = 0;
 my($opt_diff) = 0;
 my($opt_header);
@@ -75,7 +76,6 @@ my($opt_ndr_parser);
 my($opt_tdr_header);
 my($opt_tdr_parser);
 my($opt_eth_parser);
-my($opt_keep);
 my($opt_swig);
 my($opt_dcom_proxy);
 my($opt_com_header);
@@ -98,14 +98,16 @@ Usage: pidl [options] [--] <idlfile> [<idlfile>...]
 Generic Options:
  --help                  this help page
  --outputdir=OUTDIR      put output in OUTDIR/ [.]
- --parse                 parse a idl file to a .pidl file
- --dump                  dump a pidl file back to idl
- --diff                  run diff on the idl and dumped output
- --keep[=OUTFILE]        keep the .pidl file [BASENAME.pidl]
  --odl                   accept ODL input
  --warn-compat           warn about incompatibility with other compilers
  --quiet                 be quiet
  --verbose               be verbose
+
+Debugging:
+ --dump-tree[=OUTFILE]   dump internal representation to file [BASENAME.pidl]
+ --parse-tree            read internal representation instead of IDL
+ --dump-idl              regenerate IDL file
+ --diff                  run diff on original IDL and dumped output
 
 Samba 4 output:
  --header[=OUTFILE]      create generic header file [BASENAME.h]
@@ -132,8 +134,9 @@ Ethereal parsers:
 GetOptions (
 	    'help|h|?' => \$opt_help, 
 	    'outputdir=s' => \$opt_outputdir,
-	    'parse' => \$opt_parse,
-	    'dump' => \$opt_dump,
+	    'dump-idl' => \$opt_dump_idl,
+		'dump-tree:s' => \$opt_dump_tree,
+		'parse-tree' => \$opt_parse_tree,
 	    'uint-enums' => \$opt_uint_enums,
 	    'ndr-header:s' => \$opt_ndr_header,
 		'header:s' => \$opt_header,
@@ -147,7 +150,6 @@ GetOptions (
 	    'ejs' => \$opt_ejs,
 	    'diff' => \$opt_diff,
 	    'odl' => \$opt_odl,
-	    'keep:s' => \$opt_keep,
 	    'swig:s' => \$opt_swig,
 	    'dcom-proxy:s' => \$opt_dcom_proxy,
 	    'com-header:s' => \$opt_com_header,
@@ -170,11 +172,14 @@ sub process_file($)
 
 	my $basename = basename($idl_file, ".idl");
 
-	my($pidl_file) = ($opt_keep or "$outputdir/$basename.pidl");
+	my($pidl_file) = ($opt_dump_tree or "$outputdir/$basename.pidl");
 
 	unless ($opt_quiet) { print "Compiling $idl_file\n"; }
 
-	if ($opt_parse) {
+	if ($opt_parse_tree) {
+		$pidl = LoadStructure($pidl_file);
+		defined $pidl || die "Failed to load $pidl_file";
+	} else {
 		require Parse::Pidl::IDL;
 		my $idl_parser = new Parse::Pidl::IDL;
 
@@ -182,19 +187,17 @@ sub process_file($)
 		defined @$pidl || die "Failed to parse $idl_file";
 		require Parse::Pidl::Typelist;
 		Parse::Pidl::Typelist::LoadIdl($pidl);
-		if (defined($opt_keep) && !SaveStructure($pidl_file, $pidl)) {
-			    die "Failed to save $pidl_file\n";
-		}
-	} else {
-		$pidl = LoadStructure($pidl_file);
-		defined $pidl || die "Failed to load $pidl_file - maybe you need --parse\n";
+	}
+	
+	if (defined($opt_dump_tree) && !SaveStructure($pidl_file, $pidl)) {
+		    die "Failed to save $pidl_file\n";
 	}
 
 	if ($opt_uint_enums) {
 		Parse::Pidl::Util::setUseUintEnums(1);
 	}
 
-	if ($opt_dump) {
+	if ($opt_dump_idl) {
 		require Parse::Pidl::Dump;
 		print Parse::Pidl::Dump($pidl);
 	}
