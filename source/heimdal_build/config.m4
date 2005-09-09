@@ -53,7 +53,10 @@ AC_CHECK_HEADERS([				\
 	termcap.h				\
 	time.h					\
 	timezone.h				\
-	ttyname.h
+	ttyname.h				\
+	netinet/in.h				\
+	netinet/in6.h				\
+	netinet6/in6.h
 ])
 
 AC_CHECK_FUNCS([				\
