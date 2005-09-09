@@ -14,12 +14,31 @@ use strict;
 
 use Parse::Pidl::Util qw(has_property);
 
-sub handle_type($$$$$$$$)
+sub handle_type($$$$$$$$$$)
 {
-	my ($data,$name,$dissectorname,$ft_type,$base_type,$mask,$valsstring,$alignment) = @_;
+	my ($pos,$data,$name,$dissectorname,$ft_type,$base_type,$mask,$valsstring,$alignment) = @_;
+
+	unless(defined($alignment)) {
+		print "$pos: error incomplete TYPE command\n";
+		return;
+	}
+
+	unless ($dissectorname =~ /.*dissect_.*/) {
+		print "$pos: warning: dissector name does not contain `dissect'\n";
+	}
+
+	unless(valid_ft_type($ft_type)) {
+		print "$pos: warning: invalid FT_TYPE `$ft_type'\n";
+	}
+
+	unless(alid_base_type($base_type)) {
+		print "$pos: warning: invalid BASE_TYPE `$base_type'\n";
+	}
 
 	$data->{types}->{$name} = {
 		NAME => $name,
+		POS => $pos,
+		USED => 0,
 		DISSECTOR_NAME => $dissectorname,
 		FT_TYPE => $ft_type,
 		BASE_TYPE => $base_type,
@@ -29,25 +48,65 @@ sub handle_type($$$$$$$$)
 	};
 }
 
-sub handle_hf_rename($$$)
+sub handle_hf_rename($$$$)
 {
-	my ($data,$old,$new) = @_;
-	$data->{hf_renames}{$old} = $new;
+	my ($pos,$data,$old,$new) = @_;
+
+	unless(defined($new)) {
+		print "$pos: error incomplete HF_RENAME command\n";
+		return;
+	}
+
+	$data->{hf_renames}->{$old} = $new;
 }
 
-sub handle_param_value($$$)
+sub handle_param_value($$$$)
 {
-	my ($data,$dissector_name,$value) = @_;
+	my ($pos,$data,$dissector_name,$value) = @_;
+
+	unless(defined($value)) {
+		print "$pos: error: incomplete PARAM_VALUE command\n";
+		return;
+	}
 
 	$data->{dissectorparams}->{$dissector_name} = $value;
 }
 
-sub handle_hf_field($$$$$$$$$)
+sub valid_base_type($)
 {
-	my ($data,$index,$name,$filter,$ft_type,$base_type,$valsstring,$mask,$blurb) = @_;
+	my $t = shift;
+	return 0 unless($t =~ /^BASE_.*/);
+	return 1;
+}
+
+sub valid_ft_type($)
+{
+	my $t = shift;
+	return 0 unless($t =~ /^FT_.*/);
+	return 1;
+}
+
+sub handle_hf_field($$$$$$$$$$)
+{
+	my ($pos,$data,$index,$name,$filter,$ft_type,$base_type,$valsstring,$mask,$blurb) = @_;
+
+	unless(defined($blurb)) {
+		print "$pos: error: incomplete HF_FIELD command\n";
+		return;
+	}
+
+	unless(valid_ft_type($ft_type)) {
+		print "$pos: warning: invalid FT_TYPE `$ft_type'\n";
+	}
+
+	unless(valid_base_type($base_type)) {
+		print "$pos: warning: invalid BASE_TYPE `$base_type'\n";
+	}
 
 	$data->{header_fields}->{$index} = {
 		INDEX => $index,
+		POS => $pos,
+		USED => 0,
 		NAME => $name,
 		FILTER => $filter,
 		FT_TYPE => $ft_type,
@@ -58,16 +117,16 @@ sub handle_hf_field($$$$$$$$$)
 	};
 }
 
-sub handle_strip_prefix($$)
+sub handle_strip_prefix($$$)
 {
-	my ($data,$x) = @_;
+	my ($pos,$data,$x) = @_;
 
 	push (@{$data->{strip_prefixes}}, $x);
 }
 
-sub handle_noemit($$)
+sub handle_noemit($$$)
 {
-	my ($data) = shift;
+	my ($pos,$data) = @_;
 	my $type;
 
 	$type = shift if ($#_ == 1);
@@ -79,9 +138,9 @@ sub handle_noemit($$)
 	}
 }
 
-sub handle_protocol($$$$$)
+sub handle_protocol($$$$$$)
 {
-	my ($data, $name, $longname, $shortname, $filtername) = @_;
+	my ($pos, $data, $name, $longname, $shortname, $filtername) = @_;
 
 	$data->{protocols}->{$name} = {
 		LONGNAME => $longname,
@@ -90,17 +149,23 @@ sub handle_protocol($$$$$)
 	};
 }
 
-sub handle_fielddescription($$$)
+sub handle_fielddescription($$$$)
 {
-	my ($data,$field,$desc) = @_;
+	my ($pos,$data,$field,$desc) = @_;
 
 	$data->{fielddescription}->{$field} = $desc;
 }
 
 sub handle_import
 {
+	my $pos = shift @_;
 	my $data = shift @_;
 	my $dissectorname = shift @_;
+
+	unless(defined($dissectorname)) {
+		print "$pos: error: no dissectorname specified\n";
+		return;
+	}
 
 	$data->{imports}->{$dissectorname} = join(' ', @_);
 }
@@ -147,11 +212,10 @@ sub ReadConformance($$)
 			next;
 		}
 
-		my @fields = split(/([^ ]+|"[^"]+")/);
+		my @fields = /([^ "]+|"[^"]+")/g;
 
-		my $cmd = $fields[1];
+		my $cmd = $fields[0];
 
-		shift @fields;
 		shift @fields;
 
 		if (not defined($field_handlers{$cmd})) {
@@ -159,7 +223,7 @@ sub ReadConformance($$)
 			next;
 		}
 		
-		$field_handlers{$cmd}($data, @fields);
+		$field_handlers{$cmd}("$f:$ln", $data, @fields);
 	}
 
 	close(IN);
