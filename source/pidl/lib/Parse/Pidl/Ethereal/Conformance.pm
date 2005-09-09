@@ -31,7 +31,7 @@ sub handle_type($$$$$$$$$$)
 		print "$pos: warning: invalid FT_TYPE `$ft_type'\n";
 	}
 
-	unless(alid_base_type($base_type)) {
+	unless (valid_base_type($base_type)) {
 		print "$pos: warning: invalid BASE_TYPE `$base_type'\n";
 	}
 
@@ -74,7 +74,12 @@ sub handle_param_value($$$$)
 		return;
 	}
 
-	$data->{dissectorparams}->{$dissector_name} = $value;
+	$data->{dissectorparams}->{$dissector_name} = {
+		DISSECTOR => $dissector_name,
+		PARAM => $value,
+		POS => $pos,
+		USED => 0
+	};
 }
 
 sub valid_base_type($)
@@ -158,7 +163,11 @@ sub handle_fielddescription($$$$)
 {
 	my ($pos,$data,$field,$desc) = @_;
 
-	$data->{fielddescription}->{$field} = $desc;
+	$data->{fielddescription}->{$field} = {
+		DESCRIPTION => $desc,
+		POS => $pos,
+		USED => 0
+	};
 }
 
 sub handle_import
@@ -172,7 +181,12 @@ sub handle_import
 		return;
 	}
 
-	$data->{imports}->{$dissectorname} = join(' ', @_);
+	$data->{imports}->{$dissectorname} = {
+		NAME => $dissectorname,
+		DATA => join(' ', @_),
+		USED => 0,
+		POS => $pos
+	};
 }
 
 my %field_handlers = (
