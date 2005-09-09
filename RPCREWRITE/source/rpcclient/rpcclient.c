@@ -139,8 +139,8 @@ static void fetch_machine_sid(struct cli_state *cli)
 		goto error;
 	}
 
-	if ((lsapipe = cli_rpc_pipe_open_noauth(cli, PI_LSARPC)) == NULL) {
-		fprintf(stderr, "could not initialise lsa pipe\n");
+	if ((lsapipe = cli_rpc_pipe_open_noauth(cli, PI_LSARPC, &result)) == NULL) {
+		fprintf(stderr, "could not initialise lsa pipe. Error was %s\n", nt_errstr(result) );
 		goto error;
 	}
 	
@@ -522,7 +522,8 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 		switch (pipe_default_auth_type) {
 			case PIPE_AUTH_TYPE_NONE:
 				cmd_entry->rpc_pipe = cli_rpc_pipe_open_noauth(cli,
-								cmd_entry->pipe_idx);
+								cmd_entry->pipe_idx,
+								&ntresult);
 				break;
 			case PIPE_AUTH_TYPE_NTLMSSP:
 				cmd_entry->rpc_pipe = cli_rpc_pipe_open_ntlmssp(cli,
@@ -530,24 +531,27 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 								pipe_default_auth_level,
 								lp_workgroup(),
 								cmdline_auth_info.username,
-								cmdline_auth_info.password);
+								cmdline_auth_info.password,
+								&ntresult);
 				break;
 			case PIPE_AUTH_TYPE_SCHANNEL:
 				cmd_entry->rpc_pipe = cli_rpc_pipe_open_schannel(cli,
 								cmd_entry->pipe_idx,
 								pipe_default_auth_level,
-								lp_workgroup());
+								lp_workgroup(),
+								&ntresult);
 				break;
 			default:
 				DEBUG(0, ("Could not initialise %s. Invalid auth type %u\n",
-					get_pipe_name(cmd_entry->pipe_idx),
+					cli_get_pipe_name(cmd_entry->pipe_idx),
 					pipe_default_auth_type ));
 				return NT_STATUS_UNSUCCESSFUL;
 		}
 		if (!cmd_entry->rpc_pipe) {
-			DEBUG(0, ("Could not initialise %s.\n",
-				get_pipe_name(cmd_entry->pipe_idx)));
-			return NT_STATUS_UNSUCCESSFUL;
+			DEBUG(0, ("Could not initialise %s. Error was %s\n",
+				cli_get_pipe_name(cmd_entry->pipe_idx),
+				nt_errstr(ntresult) ));
+			return ntresult;
 		}
 
 		if (cmd_entry->pipe_idx == PI_NETLOGON) {
@@ -571,7 +575,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
 			if (!NT_STATUS_IS_OK(ntresult)) {
 				DEBUG(0, ("Could not initialise credentials for %s.\n",
-					get_pipe_name(cmd_entry->pipe_idx)));
+					cli_get_pipe_name(cmd_entry->pipe_idx)));
 				return ntresult;
 			}
 		}

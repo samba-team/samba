@@ -31,10 +31,10 @@ static NTSTATUS cmd_testme(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	d_printf("testme\n");
 
-	lsa_pipe = cli_rpc_pipe_open_noauth(cli->cli, PI_LSARPC);
+	lsa_pipe = cli_rpc_pipe_open_noauth(cli->cli, PI_LSARPC, &status);
 	if (lsa_pipe == NULL) goto done;
 
-	samr_pipe = cli_rpc_pipe_open_noauth(cli->cli, PI_SAMR);
+	samr_pipe = cli_rpc_pipe_open_noauth(cli->cli, PI_SAMR, &status);
 	if (samr_pipe == NULL) goto done;
 
 	status = rpccli_lsa_open_policy(lsa_pipe, mem_ctx, False,
