@@ -24,7 +24,7 @@
 #include "lib/events/events.h"
 #include "dlinklist.h"
 #include "lib/socket/socket.h"
-#include "libcli/wins/winsrepl.h"
+#include "libcli/wrepl/winsrepl.h"
 
 /*
   mark all pending requests as dead - called when a socket error happens
@@ -339,7 +339,7 @@ struct wrepl_request *wrepl_connect_send(struct wrepl_socket *wrepl_socket,
 
 	talloc_set_destructor(req, wrepl_request_destructor);
 	
-	status = socket_connect(wrepl_socket->sock, NULL, 0, address, 
+	status = socket_connect(wrepl_socket->sock, iface_best_ip(address), 0, address, 
 				WINS_REPLICATION_PORT, 0);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) goto failed;
 
@@ -672,9 +672,10 @@ NTSTATUS wrepl_pull_names_recv(struct wrepl_request *req,
 			name->num_addresses = 1;
 			name->addresses = talloc(io->out.names, struct wrepl_address);
 			if (name->addresses == NULL) goto failed;
-			name->addresses[0].owner = io->in.partner.address;
+			name->addresses[0].owner = talloc_steal(name->addresses, 
+								wname->addresses.address.owner);
 			name->addresses[0].address = talloc_steal(name->addresses,
-								  wname->addresses.ip);
+								  wname->addresses.address.ip);
 		}
 	}
 
