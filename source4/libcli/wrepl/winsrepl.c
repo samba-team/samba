@@ -24,7 +24,7 @@
 #include "lib/events/events.h"
 #include "dlinklist.h"
 #include "lib/socket/socket.h"
-#include "libcli/wins/winsrepl.h"
+#include "libcli/wrepl/winsrepl.h"
 
 /*
   mark all pending requests as dead - called when a socket error happens
