@@ -147,8 +147,8 @@ static DATA_BLOB hbin_alloc (struct regf_data *data, uint32_t size, uint32_t *of
 		int j;
 		uint32_t my_size;
 		for (j = 0; j < hbin->offset_to_next-0x20; j+= my_size) {
-			my_size = IVAL(hbin->data, j);
 			uint32_t header = IVAL(hbin->data, j + 4);
+			my_size = IVAL(hbin->data, j);
 
 			if (my_size == 0x0) {
 				DEBUG(0, ("Invalid zero-length block! File is corrupt.\n"));
