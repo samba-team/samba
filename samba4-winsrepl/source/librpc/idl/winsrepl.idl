@@ -78,7 +78,7 @@ interface wrepl
 		[case(WREPL_REPL_TABLE_REPLY)]  wrepl_table      table;
 		[case(WREPL_REPL_SEND_REQUEST)] wrepl_wins_owner owner;
 		[case(WREPL_REPL_SEND_REPLY)]   wrepl_send_reply reply;
-		[case(WREPL_REPL_UPDATE)] ;
+		[case(WREPL_REPL_UPDATE)]       wrepl_table      table;
 		[case(WREPL_REPL_5)]            wrepl_table      table;
 		[case(WREPL_REPL_INFORM)]       wrepl_table      table;
 		[case(WREPL_REPL_9)]            wrepl_table      table;
