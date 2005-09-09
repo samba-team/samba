@@ -24,8 +24,11 @@
 /********************************************************************
 ********************************************************************/
 
-static WERROR query_service_state( struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-                             POLICY_HND *hSCM, const char *service, uint32 *state )
+static WERROR query_service_state(struct rpc_pipe_client *pipe_hnd,
+				TALLOC_CTX *mem_ctx, 
+				POLICY_HND *hSCM,
+				const char *service,
+				uint32 *state )
 {
 	POLICY_HND hService;
 	SERVICE_STATUS service_status;
@@ -33,7 +36,7 @@ static WERROR query_service_state( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	/* now cycle until the status is actually 'watch_state' */
 	
-	result = cli_svcctl_open_service( cli, mem_ctx, hSCM, &hService, 
+	result = rpccli_svcctl_open_service(pipe_hnd, mem_ctx, hSCM, &hService, 
 		service, SC_RIGHT_SVC_QUERY_STATUS );
 
 	if ( !W_ERROR_IS_OK(result) ) {
@@ -41,12 +44,12 @@ static WERROR query_service_state( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		return result;
 	}
 
-	result = cli_svcctl_query_status( cli, mem_ctx, &hService, &service_status  );
+	result = rpccli_svcctl_query_status(pipe_hnd, mem_ctx, &hService, &service_status  );
 	if ( W_ERROR_IS_OK(result) ) {
 		*state = service_status.state;
 	}
 	
-	cli_svcctl_close_service( cli, mem_ctx, &hService );
+	rpccli_svcctl_close_service(pipe_hnd, mem_ctx, &hService );
 	
 	return result;
 }
@@ -54,9 +57,12 @@ static WERROR query_service_state( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /********************************************************************
 ********************************************************************/
 
-static WERROR watch_service_state( struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-                                   POLICY_HND *hSCM, const char *service, 
-				   uint32 watch_state, uint32 *final_state )
+static WERROR watch_service_state(struct rpc_pipe_client *pipe_hnd,
+				TALLOC_CTX *mem_ctx, 
+				POLICY_HND *hSCM,
+				const char *service, 
+				uint32 watch_state,
+				uint32 *final_state )
 {
 	uint32 i;
 	uint32 state = 0;
@@ -67,7 +73,7 @@ static WERROR watch_service_state( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	while ( (state != watch_state ) && i<30 ) {
 		/* get the status */
 
-		result = query_service_state( cli, mem_ctx, hSCM, service, &state  );
+		result = query_service_state(pipe_hnd, mem_ctx, hSCM, service, &state  );
 		if ( !W_ERROR_IS_OK(result) ) {
 			break;
 		}
@@ -86,9 +92,12 @@ static WERROR watch_service_state( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /********************************************************************
 ********************************************************************/
 
-static WERROR control_service( struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-                             POLICY_HND *hSCM, const char *service, 
-			     uint32 control, uint32 watch_state )
+static WERROR control_service(struct rpc_pipe_client *pipe_hnd,
+				TALLOC_CTX *mem_ctx, 
+				POLICY_HND *hSCM,
+				const char *service, 
+				uint32 control,
+				uint32 watch_state )
 {
 	POLICY_HND hService;
 	WERROR result = WERR_GENERAL_FAILURE;
@@ -97,7 +106,7 @@ static WERROR control_service( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	/* Open the Service */
 	
-	result = cli_svcctl_open_service( cli, mem_ctx, hSCM, &hService, 
+	result = rpccli_svcctl_open_service(pipe_hnd, mem_ctx, hSCM, &hService, 
 		service, (SC_RIGHT_SVC_STOP|SC_RIGHT_SVC_PAUSE_CONTINUE) );
 
 	if ( !W_ERROR_IS_OK(result) ) {
@@ -107,7 +116,7 @@ static WERROR control_service( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	/* get the status */
 
-	result = cli_svcctl_control_service( cli, mem_ctx, &hService, 
+	result = rpccli_svcctl_control_service(pipe_hnd, mem_ctx, &hService, 
 		control, &service_status  );
 		
 	if ( !W_ERROR_IS_OK(result) ) {
@@ -117,12 +126,12 @@ static WERROR control_service( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	/* loop -- checking the state until we are where we want to be */
 	
-	result = watch_service_state( cli, mem_ctx, hSCM, service, watch_state, &state );
+	result = watch_service_state(pipe_hnd, mem_ctx, hSCM, service, watch_state, &state );
 		
 	d_printf("%s service is %s.\n", service, svc_status_string(state));
 
 done:	
-	cli_svcctl_close_service( cli, mem_ctx, &hService  );
+	rpccli_svcctl_close_service(pipe_hnd, mem_ctx, &hService  );
 		
 	return result;
 }	
@@ -130,9 +139,13 @@ done:
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS rpc_service_list_internal( const DOM_SID *domain_sid, const char *domain_name, 
-                                           struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-                                           int argc, const char **argv )
+static NTSTATUS rpc_service_list_internal(const DOM_SID *domain_sid,
+					const char *domain_name, 
+					struct cli_state *cli,
+					struct rpc_pipe_client *pipe_hnd,
+					TALLOC_CTX *mem_ctx, 
+					int argc,
+					const char **argv )
 {
 	POLICY_HND hSCM;
 	ENUM_SERVICES_STATUS *services;
