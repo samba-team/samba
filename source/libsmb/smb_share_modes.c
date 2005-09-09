@@ -22,13 +22,18 @@
 #include "includes.h"
 #include "smb_share_modes.h"
 
+/* Remove the paranoid malloc checker. */
+#ifdef malloc
+#undef malloc
+#endif
+
 /*
  * open/close sharemode database.
  */
 
 struct smbdb_ctx *smb_share_mode_db_open(const char *db_path)
 {
-	struct smbdb_ctx *smb_db = SMB_MALLOC_P(struct smbdb_ctx);
+	struct smbdb_ctx *smb_db = (struct smbdb_ctx *)malloc(sizeof(struct smbdb_ctx));
 
 	if (!smb_db) {
 		return NULL;
@@ -36,11 +41,7 @@ struct smbdb_ctx *smb_share_mode_db_open(const char *db_path)
 
 	memset(smb_db, '\0', sizeof(struct smbdb_ctx));
 
-	if (!db_path) {
-		db_path = lock_path("locking.tdb");
-	}
-
-	smb_db->smb_tdb = tdb_open_log(db_path,
+	smb_db->smb_tdb = tdb_open(db_path,
 				0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST,
 				O_RDWR|O_CREAT,
 				0644);
@@ -184,7 +185,7 @@ int smb_get_share_mode_entries(struct smbdb_ctx *db_ctx,
 		return 0;
 	}
 
-	list = SMB_MALLOC_ARRAY(struct smb_share_mode_entry, num_share_modes);
+	list = (struct smb_share_mode_entry *)malloc(sizeof(struct smb_share_mode_entry)*num_share_modes);
 	if (!list) {
 		free(db_data.dptr);
 		return -1;
@@ -247,7 +248,7 @@ int smb_create_share_mode_entry(struct smbdb_ctx *db_ctx,
 	db_data = tdb_fetch(db_ctx->smb_tdb, locking_key);
 	if (!db_data.dptr) {
 		/* We must create the entry. */
-		db_data.dptr = SMB_MALLOC(sizeof(struct locking_data) + sizeof(share_mode_entry) + strlen(filename) + 1);
+		db_data.dptr = malloc(sizeof(struct locking_data) + sizeof(share_mode_entry) + strlen(filename) + 1);
 		if (!db_data.dptr) {
 			return -1;
 		}
@@ -270,7 +271,7 @@ int smb_create_share_mode_entry(struct smbdb_ctx *db_ctx,
 	}
 
 	/* Entry exists, we must add a new entry. */
-	new_data_p = SMB_MALLOC(db_data.dsize + sizeof(share_mode_entry));
+	new_data_p = malloc(db_data.dsize + sizeof(share_mode_entry));
 	if (!new_data_p) {
 		free(db_data.dptr);
 		return -1;
@@ -345,7 +346,7 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 	}
 
 	/* More than one - allocate a new record minus the one we'll delete. */
-	new_data_p = SMB_MALLOC(db_data.dsize - sizeof(share_mode_entry));
+	new_data_p = malloc(db_data.dsize - sizeof(share_mode_entry));
 	if (!new_data_p) {
 		free(db_data.dptr);
 		return -1;
