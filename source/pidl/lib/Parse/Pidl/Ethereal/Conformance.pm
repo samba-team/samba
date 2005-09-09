@@ -57,7 +57,12 @@ sub handle_hf_rename($$$$)
 		return;
 	}
 
-	$data->{hf_renames}->{$old} = $new;
+	$data->{hf_renames}->{$old} = {
+		OLDNAME => $old,
+		NEWNAME => $new,
+		POS => $pos,
+		USED => 0
+	};
 }
 
 sub handle_param_value($$$$)
