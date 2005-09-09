@@ -34,8 +34,8 @@
  * This module takes 2 parametric parameters in smb.conf:
  * (the default prefix for them is 'default_quota',
  *  it can be overwrittem when you load the module in
- *  the 'vfs modules' parameter like this:
- *  vfs modules = default_quota:myprefix)
+ *  the 'vfs object' parameter like this:
+ *  vfs object = default_quota:myprefix)
  * 
  * "<prefix>:uid" parameter takes a integer argument,
  *     it specifies the uid of the quota record, that will be taken for
