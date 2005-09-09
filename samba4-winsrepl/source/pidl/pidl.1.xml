@@ -541,8 +541,8 @@ The following commands are currently supported:
 
 <varlistentry>
 	<term>FIELD_DESCRIPTION field desc</term>
-	<listitem><para>Change description for the specified header field. 
-	Not implemented yet.</para></listitem>
+	<listitem><para>Change description for the specified header field. `field' is the hf name of the field.
+	</para></listitem>
 </varlistentry>
 
 <varlistentry>

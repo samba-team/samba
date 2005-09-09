@@ -826,6 +826,12 @@ sub register_hf_field($$$$$$$$)
 		BLURB => $blurb
 	};
 
+	if ((not defined($blurb) or $blurb eq "") and 
+			defined($conformance->{fielddescription}->{$index})) {
+		$conformance->{header_fields}->{$index}->{BLURB} = 
+			$conformance->{fielddescription}->{$index};
+	}
+
 	return $index;
 }
 
