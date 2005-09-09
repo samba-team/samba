@@ -265,6 +265,7 @@ static BOOL test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	union smb_open io;
 	union smb_fileinfo finfo;
 	const char *fname = BASEDIR "\\torture_openx.txt";
+	const char *fname_exe = BASEDIR "\\torture_openx.exe";
 	NTSTATUS status;
 	int fnum = -1, fnum2;
 	BOOL ret = True;
@@ -444,8 +445,33 @@ static BOOL test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
+	/* Check the mapping for open exec. */
+
+	/* First create an .exe file. */
+	smbcli_unlink(cli->tree, fname_exe);
+	fnum = create_complex_file(cli, mem_ctx, fname_exe);
+	smbcli_close(cli->tree, fnum);
+
+	io.openx.level = RAW_OPEN_OPENX;
+	io.openx.in.fname = fname_exe;
+	io.openx.in.flags = OPENX_FLAGS_ADDITIONAL_INFO;
+	io.openx.in.open_mode = OPENX_MODE_ACCESS_EXEC | OPENX_MODE_DENY_NONE;
+	io.openx.in.search_attrs = 0;
+	io.openx.in.file_attrs = 0;
+	io.openx.in.write_time = 0;
+	io.openx.in.size = 0;
+	io.openx.in.timeout = 0;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Can we read and write ? */
+	CHECK_RDWR(io.openx.out.fnum, RDWR_RDONLY);
+	smbcli_close(cli->tree, io.openx.out.fnum);
+	smbcli_unlink(cli->tree, fname);
+
 done:
 	smbcli_close(cli->tree, fnum);
+	smbcli_unlink(cli->tree, fname_exe);
 	smbcli_unlink(cli->tree, fname);
 
 	return ret;
