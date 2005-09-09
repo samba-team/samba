@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "libcli/nbt/libnbt.h"
-#include "libcli/wins/winsrepl.h"
+#include "libcli/wrepl/winsrepl.h"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
