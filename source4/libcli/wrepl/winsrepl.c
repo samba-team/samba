@@ -339,7 +339,7 @@ struct wrepl_request *wrepl_connect_send(struct wrepl_socket *wrepl_socket,
 
 	talloc_set_destructor(req, wrepl_request_destructor);
 	
-	status = socket_connect(wrepl_socket->sock, NULL, 0, address, 
+	status = socket_connect(wrepl_socket->sock, iface_best_ip(address), 0, address, 
 				WINS_REPLICATION_PORT, 0);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) goto failed;
 
