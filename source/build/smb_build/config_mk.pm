@@ -11,27 +11,72 @@ use smb_build::input;
 
 use strict;
 
-my %attribute_types = (
-	"NOPROTO" => "bool",
-   	"REQUIRED_SUBSYSTEMS" => "list",
-	"OUTPUT_TYPE" => "string",
-	"INIT_OBJ_FILES" => "list",
-	"ADD_OBJ_FILES" => "list",
-	"OBJ_FILES" => "list",
-	"SUBSYSTEM" => "string",
-	"CFLAGS" => "list",
-	"CPPFLAGS" => "list",
-	"LDFLAGS" => "list",
-	"INSTALLDIR" => "string",
-	"LIBS" => "list",
-	"INIT_FUNCTION" => "string",
-	"MAJOR_VERSION" => "string",
-	"MINOR_VERSION" => "string",
-	"RELEASE_VERSION" => "string",
-	"ENABLE" => "bool",
-	"CMD" => "string",
-	"MANPAGE" => "string"
-);
+my $section_types = {
+	"EXT_LIB" => {
+		"LIBS"			=> "list",
+		"CFLAGS"		=> "list",
+		"CPPFLAGS"		=> "list",
+		"LDFLAGS"		=> "list",
+		},
+	"SUBSYSTEM" => {
+		"INIT_FUNCTION"		=> "string",
+		"INIT_OBJ_FILES"	=> "list",
+		"ADD_OBJ_FILES"		=> "list",
+		"OBJ_FILES"		=> "list",
+
+		"REQUIRED_SUBSYSTEMS"	=> "list",
+		"TARGET_DEPS"		=> "list",
+
+		"ENABLE"		=> "bool",
+		"NOPROTO"		=> "bool",
+
+		"MANPAGE"		=> "string",
+		},
+	"MODULE" => {
+		"SUBSYSTEM"		=> "string",
+
+		"INIT_FUNCTION"		=> "string",
+		"INIT_OBJ_FILES"	=> "list",
+		"ADD_OBJ_FILES"		=> "list",
+		"OBJ_FILES"		=> "list",
+
+		"REQUIRED_SUBSYSTEMS"	=> "list",
+		"TARGET_DEPS"		=> "list",
+
+		"ENABLE"		=> "bool",
+		"NOPROTO"		=> "bool",
+
+		"MANPAGE"		=> "string",
+		},
+	"BINARY" => {
+		"OBJ_FILES"		=> "list",
+
+		"REQUIRED_SUBSYSTEMS"	=> "list",
+		"TARGET_DEPS"		=> "list",
+
+		"ENABLE"		=> "bool",
+		"NOPROTO"		=> "bool",
+
+		"MANPAGE"		=> "string",
+		"INSTALLDIR"		=> "string",
+		},
+	"LIBRARY" => {
+		"MAJOR_VERSION"		=> "string",
+		"MINOR_VERSION"		=> "string",
+		"RELEASE_VERSION"	=> "string",
+
+		"OBJ_FILES"		=> "list",
+
+		"REQUIRED_SUBSYSTEMS"	=> "list",
+		"TARGET_DEPS"		=> "list",
+
+		"ENABLE"		=> "bool",
+		"NOPROTO"		=> "bool",
+
+		"MANPAGE"		=> "string",
+		"INSTALLDIR"		=> "string",
+		}
+};
 
 use vars qw(@parsed_files);
 
@@ -118,15 +163,20 @@ sub run_config_mk($$)
 
 	foreach my $section (keys %{$result}) {
 		my ($type, $name) = split(/::/, $section, 2);
-		
+
+		my $sectype = $section_types->{$type};
+		if (not defined($sectype)) {
+			die($filename.":[".$section."] unknown section type \"".$type."\"!");
+		}
+
 		$input->{$name}{NAME} = $name;
 		$input->{$name}{TYPE} = $type;
 
 		foreach my $key (values %{$result->{$section}}) {
 			$key->{VAL} = smb_build::input::strtrim($key->{VAL});
-			my $vartype = $attribute_types{$key->{KEY}};
+			my $vartype = $sectype->{$key->{KEY}};
 			if (not defined($vartype)) {
-				die("$filename:Unknown attribute $key->{KEY} with value $key->{VAL} in section $section");
+				die($filename.":[".$section."]: unknown attribute type \"$key->{KEY}\"!");
 			}
 			if ($vartype eq "string") {
 				$input->{$name}{$key->{KEY}} = $key->{VAL};
