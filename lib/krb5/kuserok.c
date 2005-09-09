@@ -113,13 +113,13 @@ check_directory(krb5_context context,
 {
     DIR *d;
     struct dirent *dent;
-    char buf[BUFSIZ];
+    char filename[MAXPATHLEN];
     krb5_error_code ret = 0;
     struct stat st;
 
     *result = FALSE;
 
-    if(lstat(buf, &st) < 0)
+    if(lstat(dirname, &st) < 0)
 	return errno;
 
     if (!S_ISDIR(st.st_mode))
@@ -130,7 +130,7 @@ check_directory(krb5_context context,
     if ((st.st_mode & (S_IWGRP | S_IWOTH)) != 0)
 	return EACCES;
 
-    if((d = opendir(buf)) == NULL) 
+    if((d = opendir(dirname)) == NULL) 
 	return errno;
 
 #ifdef HAVE_DIRFD
@@ -156,8 +156,8 @@ check_directory(krb5_context context,
 	   dent->d_name[0] == '#' ||			  /* emacs autosave */
 	   dent->d_name[strlen(dent->d_name) - 1] == '~') /* emacs backup */
 	    continue;
-	snprintf(buf, sizeof(buf), "%s/%s", dirname, dent->d_name);
-	ret = check_one_file(context, buf, pwd, principal, result);
+	snprintf(filename, sizeof(filename), "%s/%s", dirname, dent->d_name);
+	ret = check_one_file(context, filename, pwd, principal, result);
 	if(ret == 0 && *result == TRUE)
 	    break;
 	ret = 0; /* don't propagate errors upstream */
