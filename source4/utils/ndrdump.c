@@ -262,8 +262,7 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 	ndr_print->depth = 1;
 	f->ndr_print(ndr_print, function, flags, st);
 
-	if (!NT_STATUS_IS_OK(status) ||
-	    ndr_pull->offset != ndr_pull->data_size) {
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("dump FAILED\n");
 		exit(1);
 	}
@@ -301,9 +300,8 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 		printf("pull returned %s\n", nt_errstr(status));
 
 		if (ndr_v_pull->offset != ndr_v_pull->data_size) {
-			printf("ERROR! %d unread bytes in validation\n", ndr_v_pull->data_size - ndr_v_pull->offset);
+			printf("WARNING! %d unread bytes in validation\n", ndr_v_pull->data_size - ndr_v_pull->offset);
 			dump_data(0, ndr_v_pull->data+ndr_v_pull->offset, ndr_v_pull->data_size - ndr_v_pull->offset);
-			exit(1);
 		}
 
 		ndr_v_print = talloc_zero(mem_ctx, struct ndr_print);
