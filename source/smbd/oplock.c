@@ -134,8 +134,11 @@ tv_sec = %x, tv_usec = %x\n",
 
 void release_file_oplock(files_struct *fsp)
 {
-	if ((fsp->oplock_type != NO_OPLOCK) && koplocks)
+	if ((fsp->oplock_type != NO_OPLOCK) &&
+	    (fsp->oplock_type != FAKE_LEVEL_II_OPLOCK) &&
+	    koplocks) {
 		koplocks->release_oplock(fsp);
+	}
 
 	if (fsp->oplock_type == LEVEL_II_OPLOCK)
 		level_II_oplocks_open--;
