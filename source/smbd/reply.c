@@ -1610,7 +1610,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		create_disposition = FILE_CREATE;
 	} else {
 		/* Create if file doesn't exist, truncate if it does. */
-		create_disposition = FILE_OPEN_IF;
+		create_disposition = FILE_OVERWRITE_IF;
 	}
 
 	/* Open file using ntcreate. */
