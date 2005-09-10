@@ -91,10 +91,16 @@ krb5_principal_get_comp_string(krb5_context context,
     return princ_ncomp(principal, component);
 }
 
-krb5_error_code 
+enum realm_presence {
+	MAY,
+	MUSTNOT,
+	MUST
+};
+
+static krb5_error_code 
 parse_name(krb5_context context,
 	   const char *name,
-	   krb5_boolean short_form,
+	   enum realm_presence realm_presence,
 	   krb5_principal *principal)
 {
     krb5_error_code ret;
@@ -186,7 +192,7 @@ parse_name(krb5_context context,
 	*q++ = c;
     }
     if (got_realm) {
-	if (short_form) {
+	if (realm_presence == MUSTNOT) {
 	    krb5_set_error_string (context, "realm found in 'short' principal expected to be without one!");
 	    ret = KRB5_PARSE_MALFORMED;
 	    goto exit;
@@ -201,12 +207,16 @@ parse_name(krb5_context context,
 	    realm[q - start] = 0;
 	}
     }else{
-	if (short_form) {
+	if (realm_presence == MAY) {
 	    ret = krb5_get_default_realm (context, &realm);
 	    if (ret)
 	        goto exit;
-	} else {
+	} else if (realm_presence == MUSTNOT) {
 	    realm = NULL;
+	} else if (realm_presence == MUST) {
+	    krb5_set_error_string (context, "realm NOT found in principal expected to be with one!");
+	    ret = KRB5_PARSE_MALFORMED;
+	    goto exit;
 	}
 
 	comp[n] = malloc(q - start + 1);
@@ -245,7 +255,7 @@ krb5_parse_name(krb5_context context,
 		const char *name,
 		krb5_principal *principal)
 {
-    return parse_name(context, name, FALSE, principal);
+    return parse_name(context, name, MAY, principal);
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -253,7 +263,15 @@ krb5_parse_name_norealm(krb5_context context,
 			const char *name,
 			krb5_principal *principal)
 {
-    return parse_name(context, name, TRUE, principal);
+    return parse_name(context, name, MUSTNOT, principal);
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_parse_name_mustrealm(krb5_context context,
+			  const char *name,
+			  krb5_principal *principal)
+{
+    return parse_name(context, name, MUST, principal);
 }
 static const char quotable_chars[] = " \n\t\b\\/@";
 static const char replace_chars[] = " ntb\\/@";
