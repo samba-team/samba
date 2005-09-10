@@ -100,8 +100,8 @@ static NTSTATUS sidmap_primary_domain_sid(struct sidmap_context *sidmap,
 	int ret;
 	struct ldb_message **res = NULL;
 
-	ret = gendb_search(sidmap->samctx, mem_ctx, NULL, &res, attrs, 
-			   "(&(objectClass=domain)(name=%s))", lp_workgroup());
+	ret = gendb_search_dn(sidmap->samctx, mem_ctx, samdb_base_dn(mem_ctx), 
+			      &res, attrs);
 	if (ret != 1) {
 		talloc_free(res);
 		return NT_STATUS_NO_SUCH_DOMAIN;
