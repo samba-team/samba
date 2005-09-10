@@ -259,6 +259,7 @@ static NTSTATUS map_openx_open(uint16_t flags, uint16_t open_mode,
 
 	switch (open_mode & OPENX_MODE_ACCESS_MASK) {
 	case OPENX_MODE_ACCESS_READ:
+	case OPENX_MODE_ACCESS_EXEC:
 		io2->generic.in.access_mask = SEC_RIGHTS_FILE_READ;
 		break;
 	case OPENX_MODE_ACCESS_WRITE:
@@ -266,7 +267,6 @@ static NTSTATUS map_openx_open(uint16_t flags, uint16_t open_mode,
 		break;
 	case OPENX_MODE_ACCESS_RDWR:
 	case OPENX_MODE_ACCESS_FCB:
-	case OPENX_MODE_ACCESS_EXEC:
 		io2->generic.in.access_mask = 
 			SEC_RIGHTS_FILE_READ | 
 			SEC_RIGHTS_FILE_WRITE;
