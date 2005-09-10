@@ -254,7 +254,7 @@ static char *stdin_load(TALLOC_CTX *mem_ctx, size_t *size)
 
 	if (dumpdata) {
 		printf("%d bytes consumed\n", ndr_pull->offset);
-		dump_data(0, ndr_pull->data, ndr_pull->offset);
+		dump_data(0, blob.data, blob.length);
 	}
 
 	ndr_print = talloc_zero(mem_ctx, struct ndr_print);
