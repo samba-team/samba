@@ -1660,7 +1660,6 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	 * file structs.
 	 */
 
-	set_share_mode(lck, fsp, 0, fsp->oplock_type);
 	if ((fsp->oplock_type != NO_OPLOCK) &&
 	    (fsp->oplock_type != FAKE_LEVEL_II_OPLOCK)) {
 		if (!set_file_oplock(fsp, fsp->oplock_type)) {
@@ -1668,6 +1667,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 			fsp->oplock_type = NO_OPLOCK;
 		}
 	}
+	set_share_mode(lck, fsp, 0, fsp->oplock_type);
 
 	if (create_options & FILE_DELETE_ON_CLOSE) {
 		uint32 dosattr= existing_dos_attributes;
