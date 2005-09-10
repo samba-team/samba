@@ -68,7 +68,7 @@ static BOOL torture_pac_self_check(void)
 				 server_bytes, sizeof(server_bytes),
 				 &server_keyblock);
 	if (ret) {
-		printf("Server Keyblock encoding failed: %s\n", 
+		printf("(self test) Server Keyblock encoding failed: %s\n", 
 		       smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
 						  ret, mem_ctx));
 		
@@ -81,7 +81,7 @@ static BOOL torture_pac_self_check(void)
 				 krbtgt_bytes, sizeof(krbtgt_bytes),
 				 &krbtgt_keyblock);
 	if (ret) {
-		printf("KRBTGT Keyblock encoding failed: %s\n", 
+		printf("(self test) KRBTGT Keyblock encoding failed: %s\n", 
 		       smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
 						  ret, mem_ctx));
 	
@@ -124,7 +124,7 @@ static BOOL torture_pac_self_check(void)
 				  &tmp_blob);
 	
 	if (ret) {
-		printf("PAC encoding failed: %s\n", 
+		printf("(self test) PAC encoding failed: %s\n", 
 		       smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
 						  ret, mem_ctx));
 
@@ -156,7 +156,7 @@ static BOOL torture_pac_self_check(void)
 					    &server_keyblock);
 		krb5_free_principal(smb_krb5_context->krb5_context, 
 				    client_principal);
-		DEBUG(1, ("PAC decoding failed: %s\n", 
+		DEBUG(1, ("(self test) PAC decoding failed: %s\n", 
 			  nt_errstr(nt_status)));
 
 		talloc_free(mem_ctx);
@@ -179,7 +179,7 @@ static BOOL torture_pac_self_check(void)
 					    &server_keyblock);
 		krb5_free_principal(smb_krb5_context->krb5_context, 
 				    client_principal);
-		printf("PAC decoding (for logon info) failed: %s\n", 
+		printf("(self test) PAC decoding (for logon info) failed: %s\n", 
 		       nt_errstr(nt_status));
 		
 		talloc_free(mem_ctx);
@@ -199,7 +199,7 @@ static BOOL torture_pac_self_check(void)
 							 3, &validation,
 							 &server_info_out); 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		printf("PAC decoding (make server info) failed: %s\n", 
+		printf("(self test) PAC decoding (make server info) failed: %s\n", 
 		       nt_errstr(nt_status));
 		
 		talloc_free(mem_ctx);
@@ -208,7 +208,7 @@ static BOOL torture_pac_self_check(void)
 	
 	if (!dom_sid_equal(server_info->account_sid, 
 			   server_info_out->account_sid)) {
-		printf("PAC Decode resulted in *different* domain SID: %s != %s\n",
+		printf("(self test) PAC Decode resulted in *different* domain SID: %s != %s\n",
 		       dom_sid_string(mem_ctx, server_info->account_sid), 
 		       dom_sid_string(mem_ctx, server_info_out->account_sid));
 		talloc_free(mem_ctx);
@@ -315,14 +315,14 @@ static BOOL torture_pac_saved_check(void)
 	 * samdump' tool. */
 	krbtgt_bytes = smbpasswd_gethexpwd(mem_ctx, pac_kdc_key);
 	if (!krbtgt_bytes) {
-		DEBUG(0, ("Could not interpret krbtgt key"));
+		DEBUG(0, ("(saved test) Could not interpret krbtgt key"));
 		talloc_free(mem_ctx);
 		return False;
 	}
 
 	krbsrv_bytes = smbpasswd_gethexpwd(mem_ctx, pac_member_key);
 	if (!krbsrv_bytes) {
-		DEBUG(0, ("Could not interpret krbsrv key"));
+		DEBUG(0, ("(saved test) Could not interpret krbsrv key"));
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -332,7 +332,7 @@ static BOOL torture_pac_saved_check(void)
 				 krbsrv_bytes->hash, sizeof(krbsrv_bytes->hash),
 				 &server_keyblock);
 	if (ret) {
-		DEBUG(1, ("Server Keyblock encoding failed: %s\n", 
+		DEBUG(1, ("(saved test) Server Keyblock encoding failed: %s\n", 
 			  smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
 						     ret, mem_ctx)));
 
@@ -345,7 +345,7 @@ static BOOL torture_pac_saved_check(void)
 				 krbtgt_bytes->hash, sizeof(krbtgt_bytes->hash),
 				 &krbtgt_keyblock);
 	if (ret) {
-		DEBUG(1, ("Server Keyblock encoding failed: %s\n", 
+		DEBUG(1, ("(saved test) Server Keyblock encoding failed: %s\n", 
 			  smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
 						     ret, mem_ctx)));
 
@@ -358,10 +358,9 @@ static BOOL torture_pac_saved_check(void)
 	pac_file = lp_parm_string(-1,"torture","pac_file");
 	if (pac_file) {
 		tmp_blob.data = file_load(pac_file, &tmp_blob.length, mem_ctx);
-		printf("Loaded pac of size %d from %s\n", tmp_blob.length, pac_file);
+		printf("(saved test) Loaded pac of size %d from %s\n", tmp_blob.length, pac_file);
 	} else {
 		tmp_blob = data_blob(saved_pac, sizeof(saved_pac));
-		file_save("x.dat", tmp_blob.data, tmp_blob.length);
 	}
 	
 	dump_data(10,tmp_blob.data,tmp_blob.length);
@@ -381,7 +380,7 @@ static BOOL torture_pac_saved_check(void)
 	ret = krb5_parse_name(smb_krb5_context->krb5_context, principal_string, 
 			      &client_principal);
 	if (ret) {
-		DEBUG(1, ("parsing of client principal [%s] failed: %s\n", 
+		DEBUG(1, ("(saved test) parsing of client principal [%s] failed: %s\n", 
 			  principal_string, 
 			  smb_get_krb5_error_message(smb_krb5_context->krb5_context, ret, mem_ctx)));
 
@@ -401,7 +400,7 @@ static BOOL torture_pac_saved_check(void)
 					&server_keyblock, 
 					client_principal, authtime);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(1, ("PAC decoding failed: %s\n", 
+		DEBUG(1, ("(saved test) PAC decoding failed: %s\n", 
 			  nt_errstr(nt_status)));
 
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
@@ -429,7 +428,7 @@ static BOOL torture_pac_saved_check(void)
 					    &server_keyblock);
 		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
 	
-		printf("PAC decoding (for logon info) failed: %s\n", 
+		printf("(saved test) PAC decoding (for logon info) failed: %s\n", 
 			  nt_errstr(nt_status));
 
 		talloc_free(mem_ctx);
@@ -448,7 +447,7 @@ static BOOL torture_pac_saved_check(void)
 				    &server_keyblock);
 		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
 
-		printf("PAC decoding (make server info) failed: %s\n", 
+		printf("(saved test) PAC decoding (make server info) failed: %s\n", 
 		       nt_errstr(nt_status));
 		
 		talloc_free(mem_ctx);
@@ -464,7 +463,7 @@ static BOOL torture_pac_saved_check(void)
 					    &server_keyblock);
 		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
 
-		printf("PAC Decode resulted in *different* domain SID: %s != %s\n",
+		printf("(saved test) PAC Decode resulted in *different* domain SID: %s != %s\n",
 		       "S-1-5-21-3048156945-3961193616-3706469200-1005", 
 		       dom_sid_string(mem_ctx, server_info_out->account_sid));
 		talloc_free(mem_ctx);
@@ -485,7 +484,7 @@ static BOOL torture_pac_saved_check(void)
 					    &server_keyblock);
 		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
 
-		DEBUG(0, ("PAC push failed\n"));
+		DEBUG(0, ("(saved test) PAC push failed\n"));
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -503,7 +502,7 @@ static BOOL torture_pac_saved_check(void)
 					    &server_keyblock);
 		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
 
-		DEBUG(0, ("PAC push failed: original buffer length[%u] != created buffer length[%u]\n",
+		DEBUG(0, ("(saved test) PAC push failed: original buffer length[%u] != created buffer length[%u]\n",
 				(unsigned)tmp_blob.length, (unsigned)validate_blob.length));
 		talloc_free(mem_ctx);
 		return False;
@@ -516,8 +515,13 @@ static BOOL torture_pac_saved_check(void)
 					    &server_keyblock);
 		krb5_free_principal(smb_krb5_context->krb5_context, client_principal);
 
-		DEBUG(0, ("PAC push failed: length[%u] matches, but data does not\n",
+		DEBUG(0, ("(saved test) PAC push failed: length[%u] matches, but data does not\n",
 			  (unsigned)tmp_blob.length));
+		DEBUG(0, ("tmp_data:\n"));
+		dump_data(0, tmp_blob.data, tmp_blob.length);
+		DEBUG(0, ("validate_blob:\n"));
+		dump_data(0, validate_blob.data, validate_blob.length);
+
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -531,7 +535,7 @@ static BOOL torture_pac_saved_check(void)
 					client_principal, 
 					authtime + 1);
 	if (NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(1, ("PAC decoding DID NOT fail on broken auth time (time + 1)\n"));
+		DEBUG(1, ("(saved test) PAC decoding DID NOT fail on broken auth time (time + 1)\n"));
 
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &krbtgt_keyblock);
@@ -548,7 +552,7 @@ static BOOL torture_pac_saved_check(void)
 	ret = krb5_parse_name(smb_krb5_context->krb5_context,
 			     "not the right principal", &client_principal);
 	if (ret) {
-		DEBUG(1, ("parsing of bogus client principal failed: %s\n", 
+		DEBUG(1, ("(saved test) parsing of bogus client principal failed: %s\n", 
 			  smb_get_krb5_error_message(smb_krb5_context->krb5_context, ret, mem_ctx)));
 
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
@@ -567,7 +571,7 @@ static BOOL torture_pac_saved_check(void)
 					client_principal, 
 					authtime);
 	if (NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(1, ("PAC decoding DID NOT fail on modified principal\n"));
+		DEBUG(1, ("(saved test) PAC decoding DID NOT fail on modified principal\n"));
 
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &krbtgt_keyblock);
@@ -588,7 +592,7 @@ static BOOL torture_pac_saved_check(void)
 					client_principal, 
 					authtime);
 	if (NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(1, ("PAC decoding DID NOT fail on broken checksum\n"));
+		DEBUG(1, ("(saved test) PAC decoding DID NOT fail on broken checksum\n"));
 
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &krbtgt_keyblock);
