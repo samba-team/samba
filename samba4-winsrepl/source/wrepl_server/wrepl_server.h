@@ -27,6 +27,9 @@ struct wreplsrv_partner;
 struct wreplsrv_pull_partner_item;
 struct wreplsrv_push_partner_item;
 
+#define WREPLSRV_VALID_ASSOC_CTX	0x12345678
+#define WREPLSRV_INVALID_ASSOC_CTX	0x0000000a
+
 /*
   state of an incoming wrepl call
 */
@@ -60,6 +63,13 @@ struct wreplsrv_in_connection {
 	 */
 	const char *our_ip;
 
+	/* keep track of the assoc_ctx's */
+	struct {
+		BOOL stopped;
+		uint32_t our_ctx;
+		uint32_t peer_ctx;
+	} assoc_ctx;
+
 	/* the partial input on the connection */
 	DATA_BLOB partial;
 	size_t partial_read;
@@ -69,6 +79,12 @@ struct wreplsrv_in_connection {
 	 * this prevents loops, with half async code
 	 */
 	BOOL processing;
+
+	/*
+	 * if this is set we no longer accept incoming packets
+	 * and terminate the connection after we have send all packets
+	 */
+	BOOL terminate;
 
 	/* the list of outgoing DATA_BLOB's that needs to be send */
 	struct data_blob_list_item *send_queue;
