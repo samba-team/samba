@@ -44,9 +44,8 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 	Checksum cksum;
 
 	cksum.cksumtype		= (CKSUMTYPE)sig->type;
-	cksum.checksum.length	= sizeof(sig->signature);
-	cksum.checksum.data	= sig->signature;
-
+	cksum.checksum.length	= sig->signature.length;
+	cksum.checksum.data	= sig->signature.data;
 
 	ret = krb5_crypto_init(context,
 			       keyblock,
@@ -172,11 +171,8 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 	}
 
 	if (krbtgt_keyblock) {
-		DATA_BLOB service_checksum_blob
-			= data_blob_const(srv_sig_ptr->signature, sizeof(srv_sig_ptr->signature));
-
 		ret = check_pac_checksum(mem_ctx, 
-					    service_checksum_blob, &kdc_sig, 
+					    srv_sig_ptr->signature, &kdc_sig, 
 					    context, krbtgt_keyblock);
 		if (ret) {
 			DEBUG(1, ("PAC Decode: Failed to verify the KDC signature: %s\n",
@@ -300,9 +296,7 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	}
 
 	sig->type = cksum.cksumtype;
-	if (cksum.checksum.length == sizeof(sig->signature)) {
-		memcpy(sig->signature, cksum.checksum.data, sizeof(sig->signature));
-	}
+	sig->signature = data_blob_talloc(mem_ctx, cksum.checksum.data, cksum.checksum.length);
 	free_Checksum(&cksum);
 
 	return 0;
@@ -319,7 +313,6 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	krb5_error_code ret;
 	DATA_BLOB zero_blob = data_blob(NULL, 0);
 	DATA_BLOB tmp_blob = data_blob(NULL, 0);
-	DATA_BLOB service_checksum_blob;
 	struct PAC_SIGNATURE_DATA *kdc_checksum = NULL;
 	struct PAC_SIGNATURE_DATA *srv_checksum = NULL;
 	int i;
@@ -367,8 +360,8 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	}
 
 	/* But wipe out the actual signatures */
-	ZERO_STRUCT(kdc_checksum->signature);
-	ZERO_STRUCT(srv_checksum->signature);
+	memset(kdc_checksum->signature.data, '\0', kdc_checksum->signature.length);
+	memset(srv_checksum->signature.data, '\0', srv_checksum->signature.length);
 
 	nt_status = ndr_push_struct_blob(&tmp_blob, mem_ctx, pac_data,
 					 (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
@@ -382,11 +375,8 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	ret = make_pac_checksum(mem_ctx, &tmp_blob, srv_checksum,
 				context, service_keyblock);
 
-	service_checksum_blob
-		= data_blob_const(srv_checksum->signature, sizeof(srv_checksum->signature));
-
 	/* Then sign Server checksum */
-	ret = make_pac_checksum(mem_ctx, &service_checksum_blob, kdc_checksum, context, krbtgt_keyblock);
+	ret = make_pac_checksum(mem_ctx, &srv_checksum->signature, kdc_checksum, context, krbtgt_keyblock);
 	if (ret) {
 		DEBUG(2, ("making krbtgt PAC checksum failed: %s\n", 
 			  smb_get_krb5_error_message(context, ret, mem_ctx)));

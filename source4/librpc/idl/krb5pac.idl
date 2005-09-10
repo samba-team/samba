@@ -20,7 +20,7 @@ interface krb5pac
 
 	typedef [flag(NDR_PAHEX)] struct {
 		uint32 type;
-		uint8 signature[16];
+		[flag(NDR_REMAINING)] DATA_BLOB signature;
 	} PAC_SIGNATURE_DATA;
 
 	typedef [gensize] struct {
