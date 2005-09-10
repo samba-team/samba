@@ -560,12 +560,15 @@ krb5_rd_req_return_keyblock(krb5_context context,
 			    krb5_keytab keytab,
 			    krb5_flags *ap_req_options,
 			    krb5_ticket **ticket, 
-			    krb5_keyblock **keyblock)
+			    krb5_keyblock **return_keyblock)
 {
     krb5_error_code ret;
     krb5_ap_req ap_req;
+    krb5_keyblock *keyblock = NULL;
     krb5_principal service = NULL;
-    krb5_keyblock *local_keyblock;
+
+    if (return_keyblock)
+	*return_keyblock = NULL;
 
     if (*auth_context == NULL) {
 	ret = krb5_auth_con_init(context, auth_context);
@@ -597,13 +600,13 @@ krb5_rd_req_return_keyblock(krb5_context context,
 				  &ap_req,
 				  server,
 				  keytab,
-				  &local_keyblock);
+				  &keyblock);
 	if(ret)
 	    goto out;
     } else {
 	ret = krb5_copy_keyblock(context,
 				 (*auth_context)->keyblock,
-				 &local_keyblock);
+				 &keyblock);
 	if (ret)
 	    goto out;
     }
@@ -612,21 +615,20 @@ krb5_rd_req_return_keyblock(krb5_context context,
 			     auth_context,
 			     &ap_req,
 			     server,
-			     local_keyblock,
+			     keyblock,
 			     0,
 			     ap_req_options,
 			     ticket);
-    if (ret) {
-        krb5_free_keyblock(context, local_keyblock);
-    } else {
-	*keyblock = local_keyblock;
-    }
+
+    if (ret == 0 && return_keyblock)
+	*return_keyblock = keyblock;
+    else
+        krb5_free_keyblock(context, keyblock);
 
 out:
     free_AP_REQ(&ap_req);
     if(service)
 	krb5_free_principal(context, service);
-	    
     return ret;
 }
 
@@ -639,19 +641,14 @@ krb5_rd_req(krb5_context context,
 	    krb5_flags *ap_req_options,
 	    krb5_ticket **ticket)
 {
-    krb5_error_code ret;
-    krb5_keyblock *keyblock;
+    return krb5_rd_req_return_keyblock(context,
+				       auth_context,
+				       inbuf,
+				       server,
+				       keytab,
+				       ap_req_options,
+				       ticket,
+				       NULL);
 
-    ret = krb5_rd_req_return_keyblock(context,
-				      auth_context,
-				      inbuf,
-				      server,
-				      keytab,
-				      ap_req_options,
-				      ticket,
-				      &keyblock);
-
-    krb5_free_keyblock(context, keyblock);
-    return ret;
 }
 
