@@ -72,19 +72,23 @@ sub _prepare_compiler_linker()
 {
 	return << "__EOD__";
 SHELL=$config{SHELL}
+
 PERL=$config{PERL}
+
 CC=$config{CC}
-CFLAGS=-I\$(srcdir)/include -I\$(srcdir) -D_SAMBA_BUILD_ -DHAVE_CONFIG_H -I\$(srcdir)/lib $config{CFLAGS} $config{CPPFLAGS}
+CFLAGS=-I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -D_SAMBA_BUILD_ -DHAVE_CONFIG_H $config{CFLAGS} $config{CPPFLAGS}
+
+CPP=$config{CPP}
+CPPFLAGS=$config{CPPFLAGS}
 
 LD=$config{LD}
-GCOV=$config{GCOV}
 LD_FLAGS=$config{LDFLAGS} 
 
 STLD=$config{AR}
 STLD_FLAGS=-rc
 
 SHLD=$config{CC}
-SHLD_FLAGS=$config{LDSHFLAGS} 
+SHLD_FLAGS=$config{LDSHFLAGS}
 
 XSLTPROC=$config{XSLTPROC}
 
@@ -92,7 +96,7 @@ LEX=$config{LEX}
 YACC=$config{YACC}
 YAPP=$config{YAPP}
 
-CPP=$config{CPP}
+GCOV=$config{GCOV}
 
 DEFAULT_TEST_TARGET=$config{DEFAULT_TEST_TARGET}
 
