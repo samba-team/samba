@@ -246,6 +246,12 @@ void ndr_set_flags(uint32_t *pflags, uint32_t new_flags)
 	if (new_flags & LIBNDR_FLAG_BIGENDIAN) {
 		(*pflags) &= ~LIBNDR_FLAG_LITTLE_ENDIAN;
 	}
+	if (new_flags & LIBNDR_FLAG_REMAINING) {
+		(*pflags) &= ~LIBNDR_ALIGN_FLAGS;
+	}
+	if (new_flags & LIBNDR_ALIGN_FLAGS) {
+		(*pflags) &= ~LIBNDR_FLAG_REMAINING;
+	}
 	(*pflags) |= new_flags;
 }
 
