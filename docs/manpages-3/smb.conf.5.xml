@@ -116,7 +116,7 @@
 <smbconfblock>
 	<smbconfsection name="[foo]"/>
 	<smbconfoption name="path">/home/bar</smbconfoption>
-	<smbconfoption name="read only">read only = no</smbconfoption>
+	<smbconfoption name="read only">no</smbconfoption>
 </smbconfblock>
 
 	<para>
