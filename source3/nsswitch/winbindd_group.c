@@ -1148,7 +1148,9 @@ enum winbindd_result winbindd_dual_getuserdomgroups(struct winbindd_domain *doma
 	DOM_SID user_sid;
 	NTSTATUS status;
 
-	int i, num_groups, len, bufsize;
+	int i, num_groups;
+	size_t bufsize;
+	ssize_t len;
 	DOM_SID *groups;
 
 	/* Ensure null termination */
