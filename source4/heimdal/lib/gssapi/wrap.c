@@ -120,7 +120,7 @@ gss_krb5_get_subkey(const gss_ctx_id_t context_handle,
 }
 
 static OM_uint32
-sub_wrap_size (
+sub_wrap_size_limit (
             OM_uint32 req_output_size,
             OM_uint32 * max_input_size,
 	    int blocksize,
@@ -156,6 +156,8 @@ gss_wrap_size_limit (
   krb5_keyblock *key;
   OM_uint32 ret;
   krb5_keytype keytype;
+  OM_uint32 output_size;
+  OM_uint32 blocksize;
 
   ret = gss_krb5_get_subkey(context_handle, &key);
   if (ret) {
@@ -167,17 +169,102 @@ gss_wrap_size_limit (
 
   switch (keytype) {
   case KEYTYPE_DES :
-  case KEYTYPE_ARCFOUR:
-  case KEYTYPE_ARCFOUR_56:
-      ret = sub_wrap_size(req_output_size, max_input_size, 8, 22);
+      ret = sub_wrap_size_limit(req_output_size, max_input_size, 8, 22);
       break;
   case KEYTYPE_DES3 :
-      ret = sub_wrap_size(req_output_size, max_input_size, 8, 34);
+      ret = sub_wrap_size_limit(req_output_size, max_input_size, 8, 34);
+      break;
+  case KEYTYPE_ARCFOUR:
+  case KEYTYPE_ARCFOUR_56:
+      ret = _gssapi_wrap_size_arcfour(minor_status, context_handle, 
+				      conf_req_flag, qop_req, 
+				      req_output_size, &output_size, 
+				      &blocksize, key);
+      
+      if (output_size > req_output_size) {
+	      *max_input_size = req_output_size - (output_size - req_output_size);
+	      (*max_input_size) &= (~(OM_uint32)(blocksize - 1));
+      } else {
+	      *max_input_size = 0;
+      }
       break;
   default :
       ret = _gssapi_wrap_size_cfx(minor_status, context_handle, 
 				  conf_req_flag, qop_req, 
-				  req_output_size, max_input_size, key);
+				  req_output_size, &output_size, 
+				  &blocksize, key);
+      if (output_size > req_output_size) {
+	      *max_input_size = req_output_size - (output_size - req_output_size);
+	      (*max_input_size) &= (~(OM_uint32)(blocksize - 1));
+      } else {
+	      *max_input_size = 0;
+      }
+      break;
+  }
+  krb5_free_keyblock (gssapi_krb5_context, key);
+  *minor_status = 0;
+  return ret;
+}
+
+static OM_uint32
+sub_wrap_size (
+            OM_uint32 req_input_size,
+            OM_uint32 * output_size,
+	    int blocksize,
+	    int extrasize
+           )
+{
+    size_t len, total_len, padlength, datalen;
+
+    padlength = blocksize - (req_input_size % blocksize);
+    datalen = req_input_size + padlength + 8;
+    len = datalen + extrasize;
+    gssapi_krb5_encap_length (len, &len, &total_len, GSS_KRB5_MECHANISM);
+    
+    *output_size = total_len;
+
+    return GSS_S_COMPLETE;
+}
+
+OM_uint32
+gsskrb5_wrap_size (
+            OM_uint32 * minor_status,
+            const gss_ctx_id_t context_handle,
+            int conf_req_flag,
+            gss_qop_t qop_req,
+            OM_uint32 req_input_size,
+            OM_uint32 * output_size
+           )
+{
+  krb5_keyblock *key;
+  OM_uint32 ret, padlen;
+  krb5_keytype keytype;
+
+  ret = gss_krb5_get_subkey(context_handle, &key);
+  if (ret) {
+      gssapi_krb5_set_error_string ();
+      *minor_status = ret;
+      return GSS_S_FAILURE;
+  }
+  krb5_enctype_to_keytype (gssapi_krb5_context, key->keytype, &keytype);
+
+  switch (keytype) {
+  case KEYTYPE_DES :
+      ret = sub_wrap_size(req_input_size, output_size, 8, 22);
+      break;
+  case KEYTYPE_DES3 :
+      ret = sub_wrap_size(req_input_size, output_size, 8, 34);
+      break;
+  case KEYTYPE_ARCFOUR:
+  case KEYTYPE_ARCFOUR_56:
+      ret = _gssapi_wrap_size_arcfour(minor_status, context_handle, 
+				      conf_req_flag, qop_req, 
+				      req_input_size, output_size, &padlen, key);
+      break;
+  default :
+      ret = _gssapi_wrap_size_cfx(minor_status, context_handle, 
+				  conf_req_flag, qop_req, 
+				  req_input_size, output_size, &padlen, key);
       break;
   }
   krb5_free_keyblock (gssapi_krb5_context, key);
