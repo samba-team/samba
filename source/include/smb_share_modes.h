@@ -25,7 +25,14 @@
 extern "C" {
 #endif
 
-#include <stdint.h>
+#if HAVE_INTTYPES_H
+# include <inttypes.h>
+#else
+# if HAVE_STDINT_H
+#  include <stdint.h>
+# endif
+#endif
+
 #include "tdb.h"
 
 /* Database context handle. */
