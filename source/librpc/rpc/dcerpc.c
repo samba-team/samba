@@ -369,6 +369,7 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 	NTSTATUS status;
 	struct ndr_push *ndr;
 	DATA_BLOB creds2;
+	size_t payload_length;
 
 	/* non-signed packets are simpler */
 	if (!c->security_state.auth_info || 
@@ -400,12 +401,16 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 		(16 - (pkt->u.request.stub_and_verifier.length & 15)) & 15;
 	ndr_push_zero(ndr, c->security_state.auth_info->auth_pad_length);
 
+	payload_length = pkt->u.request.stub_and_verifier.length + 
+		c->security_state.auth_info->auth_pad_length;
+
 	/* sign or seal the packet */
 	switch (c->security_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		c->security_state.auth_info->credentials
-			= data_blob_talloc(mem_ctx, NULL, gensec_sig_size(c->security_state.generic_state));
+			= data_blob_talloc(mem_ctx, NULL, gensec_sig_size(c->security_state.generic_state, 
+									  payload_length));
 		data_blob_clear(&c->security_state.auth_info->credentials);
 		break;
 
@@ -447,8 +452,7 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 		status = gensec_seal_packet(c->security_state.generic_state, 
 					    mem_ctx, 
 					    blob->data + DCERPC_REQUEST_LENGTH, 
-					    pkt->u.request.stub_and_verifier.length + 
-					    c->security_state.auth_info->auth_pad_length,
+					    payload_length,
 					    blob->data,
 					    blob->length - 
 					    c->security_state.auth_info->credentials.length,
@@ -463,8 +467,7 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 		status = gensec_sign_packet(c->security_state.generic_state, 
 					    mem_ctx, 
 					    blob->data + DCERPC_REQUEST_LENGTH, 
-					    pkt->u.request.stub_and_verifier.length + 
-					    c->security_state.auth_info->auth_pad_length,
+					    payload_length, 
 					    blob->data,
 					    blob->length - 
 					    c->security_state.auth_info->credentials.length,

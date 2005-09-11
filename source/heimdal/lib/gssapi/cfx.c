@@ -48,7 +48,8 @@ wrap_length_cfx(krb5_crypto crypto,
 		size_t input_length,
 		size_t *output_length,
 		size_t *cksumsize,
-		u_int16_t *padlength)
+		u_int16_t *padlength, 
+	        size_t *padsize)
 {
     krb5_error_code ret;
     krb5_cksumtype type;
@@ -68,18 +69,17 @@ wrap_length_cfx(krb5_crypto crypto,
     }
 
     if (conf_req_flag) {
-	size_t padsize;
 
 	/* Header is concatenated with data before encryption */
 	input_length += sizeof(gss_cfx_wrap_token_desc);
 
-	ret = krb5_crypto_getpadsize(gssapi_krb5_context, crypto, &padsize);
+	ret = krb5_crypto_getpadsize(gssapi_krb5_context, crypto, padsize);
 	if (ret) {
 	    return ret;
 	}
 	if (padsize > 1) {
 	    /* XXX check this */
-	    *padlength = padsize - (input_length % padsize);
+	    *padlength = *padsize - (input_length % *padsize);
 	}
 
 	/* We add the pad ourselves (noted here for completeness only) */
@@ -90,6 +90,7 @@ wrap_length_cfx(krb5_crypto crypto,
     } else {
 	/* Checksum is concatenated with data */
 	*output_length += input_length + *cksumsize;
+	*padsize = 0;
     }
 
     assert(*output_length > input_length);
@@ -101,13 +102,15 @@ OM_uint32 _gssapi_wrap_size_cfx(OM_uint32 *minor_status,
 				const gss_ctx_id_t context_handle,
 				int conf_req_flag,
 				gss_qop_t qop_req,
-				OM_uint32 req_output_size,
-				OM_uint32 *max_input_size,
+				OM_uint32 req_input_size,
+				OM_uint32 *output_len,
+				OM_uint32 *padsize,
 				krb5_keyblock *key)
 {
     krb5_error_code ret;
     krb5_crypto crypto;
-    u_int16_t padlength;
+    u_int16_t pad_length;
+    size_t pad_size;
     size_t output_length, cksumsize;
 
     ret = krb5_crypto_init(gssapi_krb5_context, key, 0, &crypto);
@@ -118,8 +121,8 @@ OM_uint32 _gssapi_wrap_size_cfx(OM_uint32 *minor_status,
     }
 
     ret = wrap_length_cfx(crypto, conf_req_flag, 
-			  req_output_size,
-			  &output_length, &cksumsize, &padlength);
+			  req_input_size,
+			  &output_length, &cksumsize, &pad_length, &pad_size);
     if (ret != 0) {
 	gssapi_krb5_set_error_string();
 	*minor_status = ret;
@@ -127,13 +130,8 @@ OM_uint32 _gssapi_wrap_size_cfx(OM_uint32 *minor_status,
 	return GSS_S_FAILURE;
     }
 
-    if (output_length < req_output_size) {
-	*max_input_size = (req_output_size - output_length);
-	*max_input_size -= padlength;
-    } else {
-	/* Should this return an error? */
-	*max_input_size = 0;
-    }
+    *output_len = output_length;
+    *padsize = pad_size;
 
     krb5_crypto_destroy(gssapi_krb5_context, crypto);
 
@@ -201,7 +199,7 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
     krb5_data cipher;
     size_t wrapped_len, cksumsize;
     u_int16_t padlength, rrc = 0;
-    OM_uint32 seq_number;
+    OM_uint32 seq_number, padsize;
     u_char *p;
 
     ret = krb5_crypto_init(gssapi_krb5_context, key, 0, &crypto);
@@ -213,7 +211,7 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 
     ret = wrap_length_cfx(crypto, conf_req_flag, 
 			  input_message_buffer->length,
-			  &wrapped_len, &cksumsize, &padlength);
+			  &wrapped_len, &cksumsize, &padlength, &padsize);
     if (ret != 0) {
 	gssapi_krb5_set_error_string();
 	*minor_status = ret;

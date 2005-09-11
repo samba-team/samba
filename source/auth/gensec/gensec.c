@@ -559,7 +559,7 @@ NTSTATUS gensec_sign_packet(struct gensec_security *gensec_security,
 	return gensec_security->ops->sign_packet(gensec_security, mem_ctx, data, length, whole_pdu, pdu_length, sig);
 }
 
-size_t gensec_sig_size(struct gensec_security *gensec_security) 
+size_t gensec_sig_size(struct gensec_security *gensec_security, size_t data_size) 
 {
 	if (!gensec_security->ops->sig_size) {
 		return 0;
@@ -568,7 +568,7 @@ size_t gensec_sig_size(struct gensec_security *gensec_security)
 		return 0;
 	}
 	
-	return gensec_security->ops->sig_size(gensec_security);
+	return gensec_security->ops->sig_size(gensec_security, data_size);
 }
 
 NTSTATUS gensec_wrap(struct gensec_security *gensec_security, 

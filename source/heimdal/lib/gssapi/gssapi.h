@@ -628,6 +628,15 @@ OM_uint32 gss_inquire_context (
             int * /*open_context*/
            );
 
+OM_uint32 gsskrb5_wrap_size (
+            OM_uint32 * /*minor_status*/,
+            const gss_ctx_id_t /*context_handle*/,
+            int /*conf_req_flag*/,
+            gss_qop_t /*qop_req*/,
+            OM_uint32 /*req_input_size*/,
+            OM_uint32 * /*output_size*/
+	);
+
 OM_uint32 gss_wrap_size_limit (
             OM_uint32 * /*minor_status*/,
             const gss_ctx_id_t /*context_handle*/,
