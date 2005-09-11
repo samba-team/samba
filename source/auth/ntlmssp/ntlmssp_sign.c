@@ -431,7 +431,7 @@ NTSTATUS ntlmssp_sign_init(struct gensec_ntlmssp_state *gensec_ntlmssp_state)
 	return NT_STATUS_OK;
 }
 
-size_t gensec_ntlmssp_sig_size(struct gensec_security *gensec_security) 
+size_t gensec_ntlmssp_sig_size(struct gensec_security *gensec_security, size_t data_size) 
 {
 	return NTLMSSP_SIG_SIZE;
 }

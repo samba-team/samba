@@ -66,8 +66,9 @@ OM_uint32 _gssapi_wrap_size_cfx(OM_uint32 *minor_status,
 				const gss_ctx_id_t context_handle,
 				int conf_req_flag,
 				gss_qop_t qop_req,
-				OM_uint32 req_output_size,
-				OM_uint32 *max_input_size,
+				OM_uint32 req_input_size,
+				OM_uint32 *output_len,
+				OM_uint32 *padlen,
 				krb5_keyblock *key);
 
 OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,

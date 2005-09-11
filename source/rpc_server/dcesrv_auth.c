@@ -394,8 +394,8 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 		return False;
 	}
 
-	/* pad to 8 byte multiple */
-	dce_conn->auth_state.auth_info->auth_pad_length = NDR_ALIGN(ndr, 8);
+	/* pad to 16 byte multiple, match win2k3 */
+	dce_conn->auth_state.auth_info->auth_pad_length = NDR_ALIGN(ndr, 16);
 	ndr_push_zero(ndr, dce_conn->auth_state.auth_info->auth_pad_length);
 
 	payload_length = ndr->offset - DCERPC_REQUEST_LENGTH;
@@ -409,7 +409,8 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 	} else {
 		dce_conn->auth_state.auth_info->credentials
 			= data_blob_talloc(call, NULL, 
-					   gensec_sig_size(dce_conn->auth_state.gensec_security));
+					   gensec_sig_size(dce_conn->auth_state.gensec_security, 
+							   payload_length));
 	}
 
 	/* add the auth verifier */

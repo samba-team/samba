@@ -326,6 +326,37 @@ _gssapi_verify_mic_arcfour(OM_uint32 * minor_status,
 }
 
 OM_uint32
+_gssapi_wrap_size_arcfour(OM_uint32 * minor_status,
+			  const gss_ctx_id_t context_handle,
+			  int conf_req_flag,
+			  gss_qop_t qop_req,
+			  OM_uint32 req_input_size,
+			  OM_uint32 * output_size,
+			  OM_uint32 * padlen,
+			  krb5_keyblock *key)
+{
+    size_t len, total_len, datalen;
+    *padlen = 0;
+    datalen = req_input_size;
+    len = GSS_ARCFOUR_WRAP_TOKEN_SIZE;
+    /* if GSS_C_DCE_STYLE is in use:
+     *  - we only need to encapsulate the WRAP token
+     *  - we should not add padding
+     */
+    if (!(context_handle->flags & GSS_C_DCE_STYLE)) {
+    	datalen += 1 /* padding */;
+    	len += datalen;
+    }
+    _gssapi_encap_length(len, &len, &total_len, GSS_KRB5_MECHANISM);
+    if (context_handle->flags & GSS_C_DCE_STYLE) {
+    	total_len += datalen;
+    }
+
+    *output_size = total_len;
+    return GSS_S_COMPLETE;
+}
+	
+OM_uint32
 _gssapi_wrap_arcfour(OM_uint32 * minor_status,
 		     const gss_ctx_id_t context_handle,
 		     int conf_req_flag,

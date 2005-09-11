@@ -198,7 +198,7 @@ static NTSTATUS gensec_spnego_unwrap(struct gensec_security *gensec_security,
 			     mem_ctx, in, out);
 }
 
-static size_t gensec_spnego_sig_size(struct gensec_security *gensec_security) 
+static size_t gensec_spnego_sig_size(struct gensec_security *gensec_security, size_t data_size) 
 {
 	struct spnego_state *spnego_state = gensec_security->private_data;
 
@@ -207,7 +207,7 @@ static size_t gensec_spnego_sig_size(struct gensec_security *gensec_security)
 		return 0;
 	}
 	
-	return gensec_sig_size(spnego_state->sub_sec_security);
+	return gensec_sig_size(spnego_state->sub_sec_security, data_size);
 }
 
 static NTSTATUS gensec_spnego_session_key(struct gensec_security *gensec_security, 

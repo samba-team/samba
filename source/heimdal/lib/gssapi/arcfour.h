@@ -70,5 +70,14 @@ OM_uint32 _gssapi_verify_mic_arcfour(OM_uint32 *minor_status,
 				     gss_qop_t *qop_state,
 				     krb5_keyblock *key,
 				     char *type);
+OM_uint32
+_gssapi_wrap_size_arcfour(OM_uint32 * minor_status,
+			  const gss_ctx_id_t context_handle,
+			  int conf_req_flag,
+			  gss_qop_t qop_req,
+			  OM_uint32 req_input_size,
+			  OM_uint32 * output_size,
+			  OM_uint32 * padlen,
+			  krb5_keyblock *key);
 
 #endif /* GSSAPI_ARCFOUR_H_ */
