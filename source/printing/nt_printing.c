@@ -342,7 +342,8 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 	SEC_DESC *sec, *new_sec;
 	TALLOC_CTX *ctx = state;
 	int result, i;
-	uint32 sd_size, size_new_sec;
+	uint32 sd_size;
+	size_t size_new_sec;
 	DOM_SID sid;
 
 	if (!data.dptr || data.dsize == 0)
