@@ -96,6 +96,50 @@ done:
 }
 
 /*
+  test if we always get back the same assoc_ctx
+*/
+static BOOL test_assoc_ctx2(TALLOC_CTX *mem_ctx, const char *address)
+{
+	BOOL ret = True;
+	struct wrepl_socket *wrepl_socket;
+	struct wrepl_associate associate;
+	uint32_t assoc_ctx1;
+	NTSTATUS status;
+
+	printf("Test if we always get back the same assoc_ctx\n");
+
+	wrepl_socket = wrepl_socket_init(mem_ctx, NULL);
+	
+	printf("Setup wrepl connections\n");
+	status = wrepl_connect(wrepl_socket, address);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+
+	printf("Send 1st start association request\n");
+	status = wrepl_associate(wrepl_socket, &associate);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	assoc_ctx1 = associate.out.assoc_ctx;
+	printf("1st association context: 0x%x\n", associate.out.assoc_ctx);
+
+	printf("Send 2nd start association request\n");
+	status = wrepl_associate(wrepl_socket, &associate);
+	CHECK_VALUE(associate.out.assoc_ctx, assoc_ctx1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	printf("2nd association context: 0x%x\n", associate.out.assoc_ctx);
+
+	printf("Send 3rd start association request\n");
+	status = wrepl_associate(wrepl_socket, &associate);
+	CHECK_VALUE(associate.out.assoc_ctx, assoc_ctx1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	printf("3rd association context: 0x%x\n", associate.out.assoc_ctx);
+
+done:
+	printf("Close wrepl connections\n");
+	talloc_free(wrepl_socket);
+	return ret;
+}
+
+/*
   display a replication entry
 */
 static void display_entry(TALLOC_CTX *mem_ctx, struct wrepl_name *name)
@@ -145,8 +189,6 @@ static BOOL test_wins_replication(TALLOC_CTX *mem_ctx, const char *address)
 		struct wrepl_packet packet;
 		struct wrepl_request *req;
 
-		printf("We are not a valid pull partner for the server\n");
-
 		ZERO_STRUCT(packet);
 		packet.opcode                      = WREPL_OPCODE_BITS;
 		packet.assoc_ctx                   = associate.out.assoc_ctx;
@@ -155,6 +197,8 @@ static BOOL test_wins_replication(TALLOC_CTX *mem_ctx, const char *address)
 
 		req = wrepl_request_send(wrepl_socket, &packet);
 		talloc_free(req);
+
+		printf("failed - We are not a valid pull partner for the server\n");
 		ret = False;
 		goto done;
 	}
@@ -212,6 +256,7 @@ BOOL torture_nbt_winsreplication(void)
 	}
 
 	ret &= test_assoc_ctx1(mem_ctx, address);
+	ret &= test_assoc_ctx2(mem_ctx, address);
 
 	ret &= test_wins_replication(mem_ctx, address);
 
