@@ -233,10 +233,15 @@ the kerberos libraries
    has always asked for.  gsskrb5_get_subkey() might do what we need
    anyway)
 
- - gsskrb5_get_authz_data()
-
  - gsskrb5_acquire_creds() (takes keytab and/or ccache as input
    parameters, see keytab and state machine discussion)
+
+ - gsskrb5_extract_authtime_from_sec_context (get authtime from
+   kerberos ticket)
+ - gsskrb5_extract_authz_data_from_sec_context (get authdata from
+   ticket, ie the PAC)
+ - gsskrb5_wrap_size (find out how big the wrapped packet will be,
+   given input length).
 
 Keytab requirements
 -------------------
