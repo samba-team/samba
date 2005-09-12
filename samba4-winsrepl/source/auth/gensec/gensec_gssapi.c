@@ -480,10 +480,38 @@ static NTSTATUS gensec_gssapi_unwrap(struct gensec_security *gensec_security,
 	return NT_STATUS_OK;
 }
 
-static size_t gensec_gssapi_sig_size(struct gensec_security *gensec_security) 
+static size_t gensec_gssapi_sig_size(struct gensec_security *gensec_security, size_t data_size) 
 {
-	/* not const but work for DCERPC packets and arcfour */
-	return 45;
+	struct gensec_gssapi_state *gensec_gssapi_state = gensec_security->private_data;
+	OM_uint32 maj_stat, min_stat;
+	OM_uint32 output_size;
+	if ((gensec_gssapi_state->gss_oid->length != gss_mech_krb5->length)
+	    || (memcmp(gensec_gssapi_state->gss_oid->elements, gss_mech_krb5->elements, 
+		       gensec_gssapi_state->gss_oid->length) != 0)) {
+		DEBUG(1, ("NO sig size available for this mech\n"));
+		return 0;
+	}
+		
+	maj_stat = gsskrb5_wrap_size(&min_stat, 
+				     gensec_gssapi_state->gssapi_context,
+				     gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL),
+				     GSS_C_QOP_DEFAULT,
+				     data_size, 
+				     &output_size);
+	if (GSS_ERROR(maj_stat)) {
+		TALLOC_CTX *mem_ctx = talloc_new(NULL); 
+		DEBUG(1, ("gensec_gssapi_seal_packet: determinaing signature size with gss_wrap_size_limit failed: %s\n", 
+			  gssapi_error_string(mem_ctx, maj_stat, min_stat)));
+		talloc_free(mem_ctx);
+		return 0;
+	}
+
+	if (output_size < data_size) {
+		return 0;
+	}
+
+	/* The difference between the max output and the max input must be the signature */
+	return output_size - data_size;
 }
 
 static NTSTATUS gensec_gssapi_seal_packet(struct gensec_security *gensec_security, 
@@ -496,7 +524,7 @@ static NTSTATUS gensec_gssapi_seal_packet(struct gensec_security *gensec_securit
 	OM_uint32 maj_stat, min_stat;
 	gss_buffer_desc input_token, output_token;
 	int conf_state;
-	ssize_t sig_length = 0;
+	ssize_t sig_length;
 
 	input_token.length = length;
 	input_token.value = data;
@@ -514,11 +542,14 @@ static NTSTATUS gensec_gssapi_seal_packet(struct gensec_security *gensec_securit
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (output_token.length < length) {
+	sig_length = gensec_gssapi_sig_size(gensec_security, length);
+
+	/* Caller must pad to right boundary */
+	if (output_token.length != (length + sig_length)) {
+		DEBUG(1, ("gensec_gssapi_seal_packet: GSS Wrap length [%d] does not match caller length [%d] plus sig size [%d] = [%d]\n", 
+			  output_token.length, length, sig_length, length + sig_length));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
-
-	sig_length = 45;
 
 	memcpy(data, ((uint8_t *)output_token.value) + sig_length, length);
 	*sig = data_blob_talloc(mem_ctx, (uint8_t *)output_token.value, sig_length);
@@ -618,9 +649,15 @@ static NTSTATUS gensec_gssapi_sign_packet(struct gensec_security *gensec_securit
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	sig_length = 45;
+	sig_length = gensec_gssapi_sig_size(gensec_security, length);
 
-	/*memcpy(data, ((uint8_t *)output_token.value) + sig_length, length);*/
+	/* Caller must pad to right boundary */
+	if (output_token.length != (length + sig_length)) {
+		DEBUG(1, ("gensec_gssapi_sign_packet: GSS Wrap length [%d] does not match caller length [%d] plus sig size [%d] = [%d]\n", 
+			  output_token.length, length, sig_length, length + sig_length));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	*sig = data_blob_talloc(mem_ctx, (uint8_t *)output_token.value, sig_length);
 
 	dump_data_pw("gensec_gssapi_seal_packet: sig\n", sig->data, sig->length);
