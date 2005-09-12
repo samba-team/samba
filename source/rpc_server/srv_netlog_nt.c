@@ -327,7 +327,11 @@ NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 	rpcstr_pull(remote_machine, q_u->clnt_id.uni_comp_name.buffer,sizeof(fstring),
 				q_u->clnt_id.uni_comp_name.uni_str_len*2,0);
 
-	if (get_md4pw((char *)p->dc->mach_pw, mach_acct)) {
+	if (!get_md4pw((char *)p->dc->mach_pw, mach_acct)) {
+		DEBUG(0,("_net_auth: creds_server_check failed. Failed to "
+			"get pasword for machine account %s "
+			"from client %s\n",
+			mach_acct, remote_machine ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -401,7 +405,7 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (get_md4pw((char *)p->dc->mach_pw, mach_acct)) {
+	if (!get_md4pw((char *)p->dc->mach_pw, mach_acct)) {
 		DEBUG(0,("_net_auth2: failed to get machine password for "
 			"account %s\n",
 			mach_acct ));
