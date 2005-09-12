@@ -1143,6 +1143,12 @@ NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
 			}
 			DEBUG(2,("Mapped to DCERPC endpoint %s\n", binding->endpoint));
 		}
+		break;
+
+		/* Fall through to next switch statement */
+
+	default:
+		break;
 	}
 
 	switch (binding->transport) {
