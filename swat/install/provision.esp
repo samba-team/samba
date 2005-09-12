@@ -58,6 +58,8 @@ if (form['submit'] == "Provision") {
 	} else if (subobj.ADMINPASS == "") {
 		write("<h3>You must choose an administrator password.  Please try again.</h3>");
 		f.display();
+	} else if (!provision_validate(subobj, writefln)) {
+		f.display();
 	} else {
 		provision(subobj, writefln, false, provision_default_paths(subobj));
 	}

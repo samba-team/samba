@@ -30,7 +30,6 @@
 		<arg choice="opt">--server</arg>
 		<arg choice="opt">--dcom-proxy</arg>
 		<arg choice="opt">--com-header</arg>
-		<arg choice="opt">--odl</arg>
 		<arg choice="opt">--warn-compat</arg>
 		<arg choice="opt">--quiet</arg>
 		<arg choice="opt">--verbose</arg>
