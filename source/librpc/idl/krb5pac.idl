@@ -64,8 +64,29 @@ interface krb5pac
 		PAC_BUFFER buffers[num_buffers];
 	} PAC_DATA;
 
+	typedef struct {
+		[flag(NDR_REMAINING)] DATA_BLOB remaining;
+	} DATA_BLOB_REM;
+
+	typedef [public] struct {
+		PAC_TYPE type;
+		uint32 ndr_size;
+		[relative,subcontext(0),subcontext_size(NDR_ROUND(r->ndr_size,8)),flag(NDR_ALIGN8)] DATA_BLOB_REM *info;
+		[value(0)] uint32 _pad; /* Top half of a 64 bit pointer? */
+	} PAC_BUFFER_RAW;
+
+	typedef [public] struct {
+		uint32 num_buffers;
+		uint32 version;
+		PAC_BUFFER_RAW buffers[num_buffers];
+	} PAC_DATA_RAW;
+
 	void decode_pac(
 		[in] PAC_DATA pac
+		);
+
+	void decode_pac_raw(
+		[in] PAC_DATA_RAW pac
 		);
 
 	void decode_login_info(
