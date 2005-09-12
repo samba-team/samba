@@ -233,7 +233,9 @@ function provision(subobj, message, blank, paths)
 	subobj.REALM       = strlower(subobj.REALM);
 	subobj.HOSTNAME    = strlower(subobj.HOSTNAME);
 	subobj.DOMAIN      = strupper(subobj.DOMAIN);
+	assert(valid_netbios_name(subobj.DOMAIN));
 	subobj.NETBIOSNAME = strupper(subobj.HOSTNAME);
+	assert(valid_netbios_name(subobj.NETBIOSNAME));
 	var rdns = split(",", subobj.BASEDN);
 	subobj.RDN_DC = substr(rdns[0], strlen("DC="));
 
@@ -429,6 +431,30 @@ member: %s
 	  modify the userAccountControl to remove the disabled bit
 	*/
 	return enable_account(ldb, user_dn);
+}
+
+// Check whether a name is valid as a NetBIOS name. 
+// FIXME: There are probably more constraints here
+function valid_netbios_name(name)
+{
+	if (strlen(name) > 13) return false;
+	if (strstr(name, ".")) return false;
+	return true;
+}
+
+function provision_validate(subobj, message)
+{
+	if (!valid_netbios_name(subobj.DOMAIN)) {
+		message("Invalid NetBIOS name for domain\n");
+		return false;
+	}
+
+	if (!valid_netbios_name(subobj.NETBIOSNAME)) {
+		message("Invalid NetBIOS name for host\n");
+		return false;
+	}
+
+	return true;
 }
 
 
