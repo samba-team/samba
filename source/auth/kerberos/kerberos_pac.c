@@ -78,38 +78,70 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 {
 	krb5_error_code ret;
 	NTSTATUS status;
-	struct PAC_SIGNATURE_DATA srv_sig;
 	struct PAC_SIGNATURE_DATA *srv_sig_ptr = NULL;
-	struct PAC_SIGNATURE_DATA kdc_sig;
 	struct PAC_SIGNATURE_DATA *kdc_sig_ptr = NULL;
+	struct PAC_SIGNATURE_DATA *srv_sig_wipe = NULL;
+	struct PAC_SIGNATURE_DATA *kdc_sig_wipe = NULL;
 	struct PAC_LOGON_INFO *logon_info = NULL;
 	struct PAC_LOGON_NAME *logon_name = NULL;
 	struct PAC_DATA *pac_data;
+	struct PAC_DATA_RAW *pac_data_raw;
 
-	DATA_BLOB modified_pac_blob = data_blob_talloc(mem_ctx, blob.data, blob.length);
+	DATA_BLOB *srv_sig_blob;
+	DATA_BLOB *kdc_sig_blob;
+
+	DATA_BLOB modified_pac_blob;
 	NTTIME tgs_authtime_nttime;
 	krb5_principal client_principal_pac;
 	int i;
 
 	pac_data = talloc(mem_ctx, struct PAC_DATA);
-	if (!pac_data) {
+	pac_data_raw = talloc(mem_ctx, struct PAC_DATA_RAW);
+	kdc_sig_wipe = talloc(mem_ctx, struct PAC_SIGNATURE_DATA);
+	srv_sig_wipe = talloc(mem_ctx, struct PAC_SIGNATURE_DATA);
+	if (!pac_data_raw || !pac_data || !kdc_sig_wipe || !srv_sig_wipe) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = ndr_pull_struct_blob(&blob, mem_ctx, pac_data,
+	status = ndr_pull_struct_blob(&blob, pac_data, pac_data,
 				      (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("can't parse the PAC\n"));
 		return status;
 	}
 
-	if (pac_data->num_buffers < 3) {
+	if (pac_data->num_buffers < 4) {
 		/* we need logon_ingo, service_key and kdc_key */
-		DEBUG(0,("less than 3 PAC buffers\n"));
-		return NT_STATUS_FOOBAR;
+		DEBUG(0,("less than 4 PAC buffers\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = ndr_pull_struct_blob(&blob, pac_data_raw, pac_data_raw,
+				      (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA_RAW);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("can't parse the PAC\n"));
+		return status;
+	}
+
+	if (pac_data_raw->num_buffers < 4) {
+		/* we need logon_ingo, service_key and kdc_key */
+		DEBUG(0,("less than 4 PAC buffers\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (pac_data->num_buffers != pac_data_raw->num_buffers) {
+		/* we need logon_ingo, service_key and kdc_key */
+		DEBUG(0,("misparse!  PAC_DATA has %d buffers while PAC_DATA_RAW has %d\n",
+			 pac_data->num_buffers, pac_data_raw->num_buffers));
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	for (i=0; i < pac_data->num_buffers; i++) {
+		if (pac_data->buffers[i].type != pac_data_raw->buffers[i].type) {
+			DEBUG(0,("misparse!  PAC_DATA buffer %d has type %d while PAC_DATA_RAW has %d\n",
+				 i, pac_data->buffers[i].type, pac_data->buffers[i].type));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 		switch (pac_data->buffers[i].type) {
 			case PAC_TYPE_LOGON_INFO:
 				if (!pac_data->buffers[i].info) {
@@ -122,14 +154,14 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 					break;
 				}
 				srv_sig_ptr = &pac_data->buffers[i].info->srv_cksum;
-				srv_sig = pac_data->buffers[i].info->srv_cksum;
+				srv_sig_blob = &pac_data_raw->buffers[i].info->remaining;
 				break;
 			case PAC_TYPE_KDC_CHECKSUM:
 				if (!pac_data->buffers[i].info) {
 					break;
 				}
 				kdc_sig_ptr = &pac_data->buffers[i].info->kdc_cksum;
-				kdc_sig = pac_data->buffers[i].info->kdc_cksum;
+				kdc_sig_blob = &pac_data_raw->buffers[i].info->remaining;
 				break;
 			case PAC_TYPE_LOGON_NAME:
 				logon_name = &pac_data->buffers[i].info->logon_name;
@@ -141,29 +173,72 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 
 	if (!logon_info) {
 		DEBUG(0,("PAC no logon_info\n"));
-		return NT_STATUS_FOOBAR;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!srv_sig_ptr) {
+	if (!logon_name) {
+		DEBUG(0,("PAC no logon_name\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!srv_sig_ptr || !srv_sig_blob) {
 		DEBUG(0,("PAC no srv_key\n"));
-		return NT_STATUS_FOOBAR;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!kdc_sig_ptr) {
+	if (!kdc_sig_ptr || !kdc_sig_blob) {
 		DEBUG(0,("PAC no kdc_key\n"));
-		return NT_STATUS_FOOBAR;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	memset(&modified_pac_blob.data[modified_pac_blob.length - 20],
-	       '\0', 16);
-	memset(&modified_pac_blob.data[modified_pac_blob.length - 44],
-	       '\0', 16);
+	/* Find and zero out the signatures, as required by the signing algorithm */
+
+	/* We find the data blobs above, now we parse them to get at the exact portion we should zero */
+	status = ndr_pull_struct_blob(kdc_sig_blob, kdc_sig_wipe, kdc_sig_wipe,
+				      (ndr_pull_flags_fn_t)ndr_pull_PAC_SIGNATURE_DATA);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("can't parse the KDC signature\n"));
+		return status;
+	}
+	
+	status = ndr_pull_struct_blob(srv_sig_blob, srv_sig_wipe, srv_sig_wipe,
+				      (ndr_pull_flags_fn_t)ndr_pull_PAC_SIGNATURE_DATA);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("can't parse the SRV signature\n"));
+		return status;
+	}
+	
+	/* Now zero the decoded structure */
+	memset(kdc_sig_wipe->signature.data, '\0', kdc_sig_wipe->signature.length);
+	memset(srv_sig_wipe->signature.data, '\0', srv_sig_wipe->signature.length);
+	
+	/* and reencode, back into the same place it came from */
+	status = ndr_push_struct_blob(kdc_sig_blob, pac_data_raw, kdc_sig_wipe,
+				      (ndr_push_flags_fn_t)ndr_push_PAC_SIGNATURE_DATA);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("can't repack the KDC signature\n"));
+		return status;
+	}	
+	status = ndr_push_struct_blob(srv_sig_blob, pac_data_raw, srv_sig_wipe,
+				      (ndr_push_flags_fn_t)ndr_push_PAC_SIGNATURE_DATA);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("can't repack the SRV signature\n"));
+		return status;
+	}
+
+	/* push out the whole structure, but now with zero'ed signatures */
+	status = ndr_push_struct_blob(&modified_pac_blob, pac_data_raw, pac_data_raw,
+					 (ndr_push_flags_fn_t)ndr_push_PAC_DATA_RAW);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("can't repack the RAW PAC\n"));
+		return status;
+	}
 
 	/* verify by service_key */
 	ret = check_pac_checksum(mem_ctx, 
-				    modified_pac_blob, &srv_sig, 
-				    context, 
-				    service_keyblock);
+				 modified_pac_blob, srv_sig_ptr, 
+				 context, 
+				 service_keyblock);
 	if (ret) {
 		DEBUG(1, ("PAC Decode: Failed to verify the service signature: %s\n",
 			  smb_get_krb5_error_message(context, ret, mem_ctx)));
@@ -172,7 +247,7 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 
 	if (krbtgt_keyblock) {
 		ret = check_pac_checksum(mem_ctx, 
-					    srv_sig_ptr->signature, &kdc_sig, 
+					    srv_sig_ptr->signature, kdc_sig_ptr, 
 					    context, krbtgt_keyblock);
 		if (ret) {
 			DEBUG(1, ("PAC Decode: Failed to verify the KDC signature: %s\n",
