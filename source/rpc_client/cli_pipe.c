@@ -1766,7 +1766,7 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 
 	prs_mem_free(&rpc_out);
 
-	DEBUG(0,("rpc_pipe_bind: Remote machine %s pipe %s "
+	DEBUG(3,("rpc_pipe_bind: Remote machine %s pipe %s "
 		"fnum 0x%x bind request returned ok.\n",
 		cli->cli->desthost,
 		cli->pipe_name,
