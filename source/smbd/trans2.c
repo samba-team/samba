@@ -135,7 +135,7 @@ static BOOL get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn, files_str
 		return False;
 	}
 
-	DEBUG(10,("get_ea_value: EA %s is of length %d: ", ea_name, sizeret));
+	DEBUG(10,("get_ea_value: EA %s is of length %u: ", ea_name, (unsigned int)sizeret));
 	dump_data(10, val, sizeret);
 
 	pea->flags = 0;
@@ -188,7 +188,7 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 	if (sizeret == -1)
 		return NULL;
 
-	DEBUG(10,("get_ea_list_from_file: ea_namelist size = %d\n", sizeret ));
+	DEBUG(10,("get_ea_list_from_file: ea_namelist size = %u\n", (unsigned int)sizeret ));
 
 	if (sizeret) {
 		for (p = ea_namelist; p - ea_namelist < sizeret; p += strlen(p) + 1) {
@@ -210,7 +210,7 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 				push_ascii_fstring(dos_ea_name, listp->ea.name);
 				*pea_total_len += 4 + strlen(dos_ea_name) + 1 + listp->ea.value.length;
 				DEBUG(10,("get_ea_list_from_file: total_len = %u, %s, val len = %u\n",
-					*pea_total_len, dos_ea_name,
+					(unsigned int)*pea_total_len, dos_ea_name,
 					(unsigned int)listp->ea.value.length ));
 			}
 			DLIST_ADD_END(ea_list_head, listp, tmp);
@@ -221,7 +221,7 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 		}
 	}
 
-	DEBUG(10,("get_ea_list_from_file: total_len = %u\n", *pea_total_len));
+	DEBUG(10,("get_ea_list_from_file: total_len = %u\n", (unsigned int)*pea_total_len));
 	return ea_list_head;
 }
 
@@ -329,7 +329,7 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp, const char *fname, s
 
 		canonicalize_ea_name(conn, fsp, fname, unix_ea_name);
 
-		DEBUG(10,("set_ea: ea_name %s ealen = %u\n", unix_ea_name, ea_list->ea.value.length));
+		DEBUG(10,("set_ea: ea_name %s ealen = %u\n", unix_ea_name, (unsigned int)ea_list->ea.value.length));
 
 		if (samba_private_attr_name(unix_ea_name)) {
 			DEBUG(10,("set_ea: ea name %s is a private Samba name.\n", unix_ea_name));
