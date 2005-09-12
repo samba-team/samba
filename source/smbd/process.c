@@ -238,7 +238,7 @@ struct timed_event {
 static int timed_event_destructor(void *p)
 {
 	struct timed_event *te = talloc_get_type_abort(p, struct timed_event);
-	DEBUG(10, ("Destroying timed event %x \"%s\"\n", (unsigned)te,
+	DEBUG(10, ("Destroying timed event %lx \"%s\"\n", (unsigned long)te,
 		   te->event_name));
 	DLIST_REMOVE(timed_events, te);
 	return 0;
@@ -285,8 +285,8 @@ struct timed_event *add_timed_event(TALLOC_CTX *mem_ctx,
 	DLIST_ADD_AFTER(timed_events, te, last_te);
 	talloc_set_destructor(te, timed_event_destructor);
 
-	DEBUG(10, ("Added timed event \"%s\": %x\n", event_name,
-		   (unsigned)te));
+	DEBUG(10, ("Added timed event \"%s\": %lx\n", event_name,
+		   (unsigned long)te));
 	return te;
 }
 
@@ -308,8 +308,8 @@ static void run_events(void)
 		return;
 	}
 
-	DEBUG(10, ("Running event \"%s\" %x\n", timed_events->event_name,
-		   (unsigned)timed_events));
+	DEBUG(10, ("Running event \"%s\" %lx\n", timed_events->event_name,
+		   (unsigned long)timed_events));
 
 	timed_events->handler(timed_events, &now, timed_events->private_data);
 	return;
@@ -990,7 +990,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 		uint16 session_tag = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : SVAL(inbuf,smb_uid);
 		connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
 
-		DEBUG(3,("switch message %s (pid %d) conn 0x%x\n",smb_fn_name(type),(int)pid,(unsigned int)conn));
+		DEBUG(3,("switch message %s (pid %d) conn 0x%lx\n",smb_fn_name(type),(int)pid,(unsigned long)conn));
 
 		smb_dump(smb_fn_name(type), 1, inbuf, size);
 
