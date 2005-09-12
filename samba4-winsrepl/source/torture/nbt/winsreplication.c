@@ -41,6 +41,61 @@
 	}} while (0)
 
 /*
+  test how assoc_ctx's are only usable on the connection
+  they are created on.
+*/
+static BOOL test_assoc_ctx1(TALLOC_CTX *mem_ctx, const char *address)
+{
+	BOOL ret = True;
+	struct wrepl_request *req;
+	struct wrepl_socket *wrepl_socket1;
+	struct wrepl_associate associate1;
+	struct wrepl_socket *wrepl_socket2;
+	struct wrepl_associate associate2;
+	struct wrepl_pull_table pull_table;
+	NTSTATUS status;
+
+	printf("Test if assoc_ctx is only valid on the conection it was created on\n");
+
+	wrepl_socket1 = wrepl_socket_init(mem_ctx, NULL);
+	wrepl_socket2 = wrepl_socket_init(mem_ctx, NULL);
+	
+	printf("Setup 2 wrepl connections\n");
+	status = wrepl_connect(wrepl_socket1, address);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = wrepl_connect(wrepl_socket2, address);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("Send a start association request (conn1)\n");
+	status = wrepl_associate(wrepl_socket1, &associate1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("association context (conn1): 0x%x\n", associate1.out.assoc_ctx);
+
+	printf("Send a start association request (conn2)\n");
+	status = wrepl_associate(wrepl_socket2, &associate2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("association context (conn2): 0x%x\n", associate2.out.assoc_ctx);
+
+	printf("Send a replication table query, with assoc 1 (conn2), should be ignored\n");
+	pull_table.in.assoc_ctx = associate1.out.assoc_ctx;
+	req = wrepl_pull_table_send(wrepl_socket2, &pull_table);
+	talloc_free(req);
+
+	printf("Send a association request (conn2), to make sure the last request was ignored\n");
+	status = wrepl_associate(wrepl_socket2, &associate2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+done:
+	printf("Close 2 wrepl connections\n");
+	talloc_free(wrepl_socket1);
+	talloc_free(wrepl_socket2);
+	return ret;
+}
+
+/*
   display a replication entry
 */
 static void display_entry(TALLOC_CTX *mem_ctx, struct wrepl_name *name)
@@ -57,7 +112,7 @@ static void display_entry(TALLOC_CTX *mem_ctx, struct wrepl_name *name)
 /*
   test a full replication dump from a WINS server
 */
-static BOOL nbt_test_wins_replication(TALLOC_CTX *mem_ctx, const char *address)
+static BOOL test_wins_replication(TALLOC_CTX *mem_ctx, const char *address)
 {
 	BOOL ret = True;
 	struct wrepl_socket *wrepl_socket;
@@ -67,8 +122,11 @@ static BOOL nbt_test_wins_replication(TALLOC_CTX *mem_ctx, const char *address)
 	struct wrepl_pull_table pull_table;
 	struct wrepl_pull_names pull_names;
 
+	printf("Test one pull replication cycle\n");
+
 	wrepl_socket = wrepl_socket_init(mem_ctx, NULL);
 	
+	printf("Setup wrepl connections\n");
 	status = wrepl_connect(wrepl_socket, address);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -83,6 +141,23 @@ static BOOL nbt_test_wins_replication(TALLOC_CTX *mem_ctx, const char *address)
 	pull_table.in.assoc_ctx = associate.out.assoc_ctx;
 
 	status = wrepl_pull_table(wrepl_socket, mem_ctx, &pull_table);
+	if (NT_STATUS_EQUAL(NT_STATUS_NETWORK_ACCESS_DENIED,status)) {
+		struct wrepl_packet packet;
+		struct wrepl_request *req;
+
+		printf("We are not a valid pull partner for the server\n");
+
+		ZERO_STRUCT(packet);
+		packet.opcode                      = WREPL_OPCODE_BITS;
+		packet.assoc_ctx                   = associate.out.assoc_ctx;
+		packet.mess_type                   = WREPL_STOP_ASSOCIATION;
+		packet.message.stop.reason         = 0;
+
+		req = wrepl_request_send(wrepl_socket, &packet);
+		talloc_free(req);
+		ret = False;
+		goto done;
+	}
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("Found %d replication partners\n", pull_table.out.num_partners);
@@ -109,6 +184,7 @@ static BOOL nbt_test_wins_replication(TALLOC_CTX *mem_ctx, const char *address)
 	}
 
 done:
+	printf("Close wrepl connections\n");
 	talloc_free(wrepl_socket);
 	return ret;
 }
@@ -135,7 +211,9 @@ BOOL torture_nbt_winsreplication(void)
 		return False;
 	}
 
-	ret &= nbt_test_wins_replication(mem_ctx, address);
+	ret &= test_assoc_ctx1(mem_ctx, address);
+
+	ret &= test_wins_replication(mem_ctx, address);
 
 	talloc_free(mem_ctx);
 
