@@ -275,7 +275,7 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 	/* Store the machine account password we're going to use. */
 	memcpy(dc->mach_pw, machine_pwd, 16);
 
-	fstrcpy(dc->remote_machine, "\\");
+	fstrcpy(dc->remote_machine, "\\\\");
 	fstrcat(dc->remote_machine, server_name);
 
 	fstrcpy(dc->domain, domain);
@@ -289,7 +289,7 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 	result = rpccli_net_req_chal(cli,
 				cli->mem_ctx,
 				dc->remote_machine,
-				global_myname(),
+				machine_account,
 				&clnt_chal_send,
 				&srv_chal_recv);
 
@@ -313,7 +313,7 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 			dc->remote_machine,
 			dc->mach_acct,
 			sec_chan_type,
-			global_myname(),
+			machine_account,
 			neg_flags_inout,
 			&clnt_chal_send, /* input. */
 			&srv_chal_recv); /* output */
