@@ -15,6 +15,7 @@ use Getopt::Long;
 use File::Basename;
 use Parse::Pidl;
 use Parse::Pidl::Util;
+use Parse::Pidl::ODL;
 
 #####################################################################
 # save a data structure into a file
@@ -62,8 +63,9 @@ sub FileSave($$)
 }
 
 my($opt_help) = 0;
-my($opt_parse_tree) = 0;
-my($opt_dump_tree);
+my($opt_parse_idl_tree) = 0;
+my($opt_dump_idl_tree);
+my($opt_dump_ndr_tree);
 my($opt_dump_idl) = 0;
 my($opt_uint_enums) = 0;
 my($opt_diff) = 0;
@@ -80,7 +82,6 @@ my($opt_swig);
 my($opt_dcom_proxy);
 my($opt_com_header);
 my($opt_ejs);
-my($opt_odl) = 0;
 my($opt_quiet) = 0;
 my($opt_outputdir) = '.';
 my($opt_verbose) = 0;
@@ -98,14 +99,14 @@ Usage: pidl [options] [--] <idlfile> [<idlfile>...]
 Generic Options:
  --help                  this help page
  --outputdir=OUTDIR      put output in OUTDIR/ [.]
- --odl                   accept ODL input
  --warn-compat           warn about incompatibility with other compilers
  --quiet                 be quiet
  --verbose               be verbose
 
 Debugging:
- --dump-tree[=OUTFILE]   dump internal representation to file [BASENAME.pidl]
- --parse-tree            read internal representation instead of IDL
+ --dump-idl-tree[=FILE]  dump internal representation to file [BASENAME.pidl]
+ --parse-idl-tree        read internal representation instead of IDL
+ --dump-ndr-tree[=FILE]  dump internal NDR data tree to file [BASENAME.ndr]
  --dump-idl              regenerate IDL file
  --diff                  run diff on original IDL and dumped output
 
@@ -121,8 +122,8 @@ Samba 4 output:
  --swig[=OUTFILE]        create swig wrapper file [BASENAME.i]
  --server[=OUTFILE]      create server boilerplate [ndr_BASENAME_s.c]
  --template              print a template for a pipe
- --dcom-proxy[=OUTFILE]  create DCOM proxy (implies --odl) [ndr_BASENAME_p.c]
- --com-header[=OUTFILE]  create header for COM (implies --odl) [com_BASENAME.h]
+ --dcom-proxy[=OUTFILE]  create DCOM proxy [ndr_BASENAME_p.c]
+ --com-header[=OUTFILE]  create header for COM [com_BASENAME.h]
 
 Ethereal parsers:
  --eth-parser[=OUTFILE]  create ethereal parser and header
@@ -135,8 +136,9 @@ GetOptions (
 	    'help|h|?' => \$opt_help, 
 	    'outputdir=s' => \$opt_outputdir,
 	    'dump-idl' => \$opt_dump_idl,
-		'dump-tree:s' => \$opt_dump_tree,
-		'parse-tree' => \$opt_parse_tree,
+		'dump-idl-tree:s' => \$opt_dump_idl_tree,
+		'parse-idl-tree' => \$opt_parse_idl_tree,
+		'dump-ndr-tree:s' => \$opt_dump_ndr_tree,
 	    'uint-enums' => \$opt_uint_enums,
 	    'ndr-header:s' => \$opt_ndr_header,
 		'header:s' => \$opt_header,
@@ -149,7 +151,6 @@ GetOptions (
 	    'eth-parser:s' => \$opt_eth_parser,
 	    'ejs' => \$opt_ejs,
 	    'diff' => \$opt_diff,
-	    'odl' => \$opt_odl,
 	    'swig:s' => \$opt_swig,
 	    'dcom-proxy:s' => \$opt_dcom_proxy,
 	    'com-header:s' => \$opt_com_header,
@@ -172,13 +173,11 @@ sub process_file($)
 
 	my $basename = basename($idl_file, ".idl");
 
-	my($pidl_file) = ($opt_dump_tree or "$outputdir/$basename.pidl");
-
 	unless ($opt_quiet) { print "Compiling $idl_file\n"; }
 
-	if ($opt_parse_tree) {
-		$pidl = LoadStructure($pidl_file);
-		defined $pidl || die "Failed to load $pidl_file";
+	if ($opt_parse_idl_tree) {
+		$pidl = LoadStructure($idl_file);
+		defined $pidl || die "Failed to load $idl_file";
 	} else {
 		require Parse::Pidl::IDL;
 		my $idl_parser = new Parse::Pidl::IDL;
@@ -189,8 +188,9 @@ sub process_file($)
 		Parse::Pidl::Typelist::LoadIdl($pidl);
 	}
 	
-	if (defined($opt_dump_tree) && !SaveStructure($pidl_file, $pidl)) {
-		    die "Failed to save $pidl_file\n";
+	if (defined($opt_dump_idl_tree)) {
+		my($pidl_file) = ($opt_dump_idl_tree or "$outputdir/$basename.pidl");
+		SaveStructure($pidl_file, $pidl) or die "Failed to save $pidl_file\n";
 	}
 
 	if ($opt_uint_enums) {
@@ -219,7 +219,6 @@ sub process_file($)
 			"#include \"$outputdir/ndr_$basename.h\"\n" . 
 			$res);
 		}
-		$opt_odl = 1;
 	}
 
 	if (defined($opt_dcom_proxy)) {
@@ -232,7 +231,6 @@ sub process_file($)
 			"#include \"$outputdir/com_$basename.h\"\n" . 
 			"#include \"lib/com/dcom/dcom.h\"\n" .$res);
 		}
-		$opt_odl = 1;
 	}
 
 	if ($opt_warn_compat) {
@@ -240,17 +238,20 @@ sub process_file($)
 		Parse::Pidl::Compat::Check($pidl);
 	}
 
-	if ($opt_odl) {
-		require Parse::Pidl::ODL;
-		$pidl = Parse::Pidl::ODL::ODL2IDL($pidl);
-	}
+	$pidl = Parse::Pidl::ODL::ODL2IDL($pidl);
 
 	if (defined($opt_ndr_header) or defined($opt_eth_parser) or 
 	    defined($opt_client) or defined($opt_server) or 
-	    defined($opt_ndr_parser) or defined($opt_ejs)) {
+	    defined($opt_ndr_parser) or defined($opt_ejs) or 
+		defined($opt_dump_ndr_tree)) {
 		require Parse::Pidl::NDR;
 		Parse::Pidl::NDR::Validate($pidl);
 		$ndr = Parse::Pidl::NDR::Parse($pidl);
+	}
+
+	if (defined($opt_dump_ndr_tree)) {
+		my($ndr_file) = ($opt_dump_ndr_tree or "$outputdir/$basename.ndr");
+		SaveStructure($ndr_file, $ndr) or die "Failed to save $ndr_file\n";
 	}
 
 	if (defined($opt_header)) {
