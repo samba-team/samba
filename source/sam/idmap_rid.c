@@ -159,11 +159,10 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 	char **trusted_domain_names;
 	DOM_SID *trusted_domain_sids;
 	uint32 enum_ctx = 0;
-	DOM_SID builtin_sid;
 	int own_domains = 2;
 
 	/* put the results together */
-	*num_domains = 1;
+	*num_domains = 2;
 	*domain_names = SMB_MALLOC_ARRAY(fstring, *num_domains);
 	*domain_sids = SMB_MALLOC_ARRAY(DOM_SID, *num_domains);
 
@@ -176,6 +175,10 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 			return status;
 		}
 		sid_copy(&(*domain_sids)[0], &sid);
+
+		/* add BUILTIN */
+		fstrcpy((*domain_names)[1], "BUILTIN");
+		sid_copy(&(*domain_sids)[1], &global_sid_Builtin);
 
 		return NT_STATUS_OK;
 	}
@@ -286,9 +289,8 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 	sid_copy(&(*domain_sids)[0], domain_sid);
 
 	/* then add BUILTIN */
-	string_to_sid(&builtin_sid, "S-1-5-32");
 	fstrcpy((*domain_names)[1], "BUILTIN");
-	sid_copy(&(*domain_sids)[1], &builtin_sid);
+	sid_copy(&(*domain_sids)[1], &global_sid_Builtin);
 
 	/* then add my local sid */
 	if (!sid_equal(domain_sid, get_global_sam_sid())) {
