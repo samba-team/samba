@@ -1063,7 +1063,7 @@ int vfswrap_aio_write(struct vfs_handle_struct *handle, struct files_struct *fsp
 	return sys_aio_write(aiocb);
 }
 
-int vfswrap_aio_return(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
+ssize_t vfswrap_aio_return(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
 {
 	return sys_aio_return(aiocb);
 }
