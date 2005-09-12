@@ -17,8 +17,9 @@
 		<command>pidl</command>
 		<arg choice="opt">--help</arg>
 		<arg choice="opt">--outputdir OUTNAME</arg>
-		<arg choice="opt">--parse-tree</arg>
-		<arg choice="opt">--dump-tree</arg>
+		<arg choice="opt">--parse-idl-tree</arg>
+		<arg choice="opt">--dump-idl-tree</arg>
+		<arg choice="opt">--dump-ndr-tree</arg>
 		<arg choice="opt">--ndr-header[=OUTPUT]</arg>
 		<arg choice="opt">--header[=OUTPUT]</arg>
 		<arg choice="opt">--ejs[=OUTPUT]</arg>
@@ -93,7 +94,7 @@
 		</varlistentry>
 		
 		<varlistentry>
-		<term>--parse-tree</term>
+		<term>--parse-idl-tree</term>
 		<listitem><para>
 				Read internal tree structure from input files rather 
 		then assuming they contain IDL.</para></listitem>
@@ -171,12 +172,20 @@
 
 
 		<varlistentry>
-		<term>--dump-tree</term>
+		<term>--dump-idl-tree</term>
 		<listitem><para>
 		Tell pidl to dump the internal tree representation of an IDL 
 		file the to disk. Useful 
 		for debugging pidl.</para></listitem>
 		</varlistentry>
+
+		<varlistentry>
+		<term>--dump-ndr-tree</term>
+		<listitem><para>
+				Tell pidl to dump the internal NDR information tree it generated 
+				from the IDL file to disk.  Useful for debugging pidl.</para></listitem>
+		</varlistentry>
+
 	</variablelist>
 </refsect1>
 
