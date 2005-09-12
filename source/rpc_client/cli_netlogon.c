@@ -318,6 +318,9 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 			&clnt_chal_send, /* input. */
 			&srv_chal_recv); /* output */
 
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
 
 	/*
 	 * Check the returned value using the initial
