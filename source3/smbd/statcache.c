@@ -136,8 +136,8 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 	if (tdb_store_bystring(tdb_stat_cache, original_path, data_val, TDB_REPLACE) != 0) {
 		DEBUG(0,("stat_cache_add: Error storing entry %s -> %s\n", original_path, translated_path));
 	} else {
-		DEBUG(5,("stat_cache_add: Added entry (%x:size%x) %s -> %s\n",
-			(unsigned int)data_val.dptr, data_val.dsize, original_path, translated_path));
+		DEBUG(5,("stat_cache_add: Added entry (%lx:size%x) %s -> %s\n",
+			(unsigned long)data_val.dptr, (unsigned int)data_val.dsize, original_path, translated_path));
 	}
 
 	SAFE_FREE(original_path);
