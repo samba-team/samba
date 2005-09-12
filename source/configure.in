@@ -3515,8 +3515,8 @@ samba_cv_WITH_QUOTAS=auto
 samba_cv_TRY_QUOTAS=no
 samba_cv_RUN_QUOTA_TESTS=auto
 samba_cv_WITH_SYS_QUOTAS=auto
-samba_cv_TRY_SYS_QUOTAS=no
-samba_cv_SYSQUOTA_FOUND=no;
+samba_cv_TRY_SYS_QUOTAS=auto
+samba_cv_SYSQUOTA_FOUND=no
 
 AC_MSG_CHECKING(whether to try disk-quotas support)
 AC_ARG_WITH(quotas,
@@ -3579,18 +3579,13 @@ AC_ARG_WITH(sys-quotas,
   AC_MSG_RESULT(${samba_cv_TRY_SYS_QUOTAS})
 )
 
-if test x"$samba_cv_TRY_SYS_QUOTAS" != x"no"; then
+if test x"$samba_cv_TRY_SYS_QUOTAS" = x"auto"; then
 AC_MSG_CHECKING(whether to try the lib/sysquotas.c interface on ${host_os})
   case "$host_os" in
 	*linux*)
 	    AC_MSG_RESULT(yes)
             samba_cv_TRY_SYS_QUOTAS=yes
             samba_cv_RUN_QUOTA_TESTS=yes
-            samba_cv_SYSQUOTA_FOUND=yes
-            AC_DEFINE(HAVE_QUOTACTL_LINUX,1,[Whether Linux quota support is available])
-            samba_cv_sysquotas_file="lib/sysquotas_linux.c"
-            AC_DEFINE(HAVE_LINUX_XFS_QUOTAS,1,[Whether Linux xfs quota support is available])
-            samba_cv_found_xfs_header=yes
 	    ;;
 	*)
 	    AC_MSG_RESULT(no)
@@ -3602,6 +3597,24 @@ fi
 #############################################
 # only check for quota stuff if --with-quotas
 if test x"$samba_cv_RUN_QUOTA_TESTS" != x"no"; then
+
+case "$host_os" in
+	# on linux we didn't need to test we have builtin support
+	*linux*)
+	    samba_cv_SYSQUOTA_FOUND=yes
+	    AC_DEFINE(HAVE_QUOTACTL_LINUX,1,[Whether Linux quota support is available])
+	    samba_cv_sysquotas_file="lib/sysquotas_linux.c"
+	    AC_MSG_CHECKING(whether to use the lib/sysquotas_linux.c builtin support)
+	    AC_MSG_RESULT(yes)
+
+	    AC_DEFINE(HAVE_LINUX_XFS_QUOTAS,1,[Whether Linux xfs quota support is available])
+	    samba_cv_found_xfs_header=yes
+	    AC_MSG_CHECKING(whether to use the lib/sysquotas_xfs.c builtin support)
+	    AC_MSG_RESULT(yes)
+	    ;;
+	*)
+	    ;;
+esac
 
 # some broken header files need this
 AC_CHECK_HEADER(asm/types.h,[
