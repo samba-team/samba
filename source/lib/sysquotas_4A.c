@@ -24,6 +24,12 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_QUOTA
 
+#ifndef HAVE_SYS_QUOTAS
+#ifdef HAVE_QUOTACTL_4A
+#undef HAVE_QUOTACTL_4A
+#endif
+#endif
+
 #ifdef HAVE_QUOTACTL_4A
 /* long quotactl(int cmd, char *special, qid_t id, caddr_t addr) */
 /* this is used by: HPUX,IRIX */
