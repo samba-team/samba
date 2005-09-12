@@ -437,6 +437,7 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	init_net_r_auth_2(r_u, &srv_chal_out, &srv_flgs, NT_STATUS_OK);
 
 	server_auth2_negotiated = True;
+	p->dc->authenticated = True;
 	last_dcinfo = *p->dc;
 
 	return r_u->status;
@@ -623,16 +624,17 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	if (!get_valid_user_struct(p->vuid))
 		return NT_STATUS_NO_SUCH_USER;
 
+	if (!p->dc || !p->dc->authenticated) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
 	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {
 		/* 'server schannel = yes' should enforce use of
 		   schannel, the client did offer it in auth2, but
 		   obviously did not use it. */
+		DEBUG(0,("_net_sam_logoff: client %s not using schannel for netlogon\n",
+			p->dc->remote_machine ));
 		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (!p->dc || !p->dc->authenticated) {
-		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	/* checks and updates credentials.  creates reply credentials */
