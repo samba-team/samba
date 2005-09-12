@@ -380,7 +380,14 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	fstring remote_machine;
 	DOM_CHAL srv_chal_out;
 
+	rpcstr_pull(mach_acct, q_u->clnt_id.uni_acct_name.buffer,sizeof(fstring),
+				q_u->clnt_id.uni_acct_name.uni_str_len*2,0);
+	rpcstr_pull(remote_machine, q_u->clnt_id.uni_comp_name.buffer,sizeof(fstring),
+				q_u->clnt_id.uni_comp_name.uni_str_len*2,0);
+
 	if (!p->dc || !p->dc->challenge_sent) {
+		DEBUG(0,("_net_auth2: no challenge sent to client %s\n",
+			remote_machine ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -388,15 +395,16 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	     ((q_u->clnt_flgs.neg_flags & NETLOGON_NEG_SCHANNEL) == 0) ) {
 
 		/* schannel must be used, but client did not offer it. */
+		DEBUG(0,("_net_auth2: schannel required but client failed "
+			"to offer it. Client was %s\n",
+			mach_acct ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	rpcstr_pull(mach_acct, q_u->clnt_id.uni_acct_name.buffer,sizeof(fstring),
-				q_u->clnt_id.uni_acct_name.uni_str_len*2,0);
-	rpcstr_pull(remote_machine, q_u->clnt_id.uni_comp_name.buffer,sizeof(fstring),
-				q_u->clnt_id.uni_comp_name.uni_str_len*2,0);
-
 	if (get_md4pw((char *)p->dc->mach_pw, mach_acct)) {
+		DEBUG(0,("_net_auth2: failed to get machine password for "
+			"account %s\n",
+			mach_acct ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
