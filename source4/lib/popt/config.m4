@@ -38,4 +38,4 @@ else
 	AC_MSG_RESULT(no)
 fi
 
-AC_CHECK_HEADERS([float.h])
+AC_CHECK_HEADERS([float.h alloca.h])
