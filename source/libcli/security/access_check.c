@@ -67,13 +67,15 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 		}
 
 		switch (ace->type) {
-			case SEC_ACE_TYPE_ACCESS_ALLOWED:
-				granted |= ace->access_mask;
-				break;
-			case SEC_ACE_TYPE_ACCESS_DENIED:
-			case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
-				denied |= ace->access_mask;
-				break;
+		case SEC_ACE_TYPE_ACCESS_ALLOWED:
+			granted |= ace->access_mask;
+			break;
+		case SEC_ACE_TYPE_ACCESS_DENIED:
+		case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
+			denied |= ace->access_mask;
+			break;
+		default:	/* Other ACE types not handled/supported */
+			break;
 		}
 	}
 
@@ -152,6 +154,8 @@ NTSTATUS sec_access_check(const struct security_descriptor *sd,
 			if (bits_remaining & ace->access_mask) {
 				return NT_STATUS_ACCESS_DENIED;
 			}
+			break;
+		default:	/* Other ACE types not handled/supported */
 			break;
 		}
 	}
