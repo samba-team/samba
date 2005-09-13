@@ -94,8 +94,8 @@ map_alloc(enum map_type type, const void *buf,
 
     (*map)->size = size + pagesize - (size % pagesize) + pagesize * 2;
 
-    p = (char *)mmap(0, (*map)->size, PROT_READ | PROT_WRITE,
-		      flags, fd, 0);
+    p = (unsigned char *)mmap(0, (*map)->size, PROT_READ | PROT_WRITE,
+			      flags, fd, 0);
     if (p == (unsigned char *)MAP_FAILED)
 	err (1, "mmap");
 
@@ -249,7 +249,7 @@ generic_test (const struct test_case *tests,
 	if (memcmp (buf, tests[i].bytes, tests[i].byte_len) != 0) {
 	    printf ("encoding of %s has bad bytes:\n"
 		    "correct: ", tests[i].name);
-	    print_bytes (tests[i].bytes, tests[i].byte_len);
+	    print_bytes ((unsigned char *)tests[i].bytes, tests[i].byte_len);
 	    printf ("\nactual:  ");
 	    print_bytes (buf, sz);
 	    printf ("\n");
