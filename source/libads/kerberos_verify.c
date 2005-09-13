@@ -128,7 +128,11 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 	ZERO_STRUCT(kt_cursor);
 
   out:
-
+	
+	for (i = 0; i < sizeof(valid_princ_formats) / sizeof(valid_princ_formats[0]); i++) {
+		SAFE_FREE(valid_princ_formats[i]);
+	}
+	
 	if (!auth_ok) {
 		if (!number_matched_principals) {
 			DEBUG(3, ("ads_keytab_verify_ticket: no keytab principals matched expected file service name.\n"));
