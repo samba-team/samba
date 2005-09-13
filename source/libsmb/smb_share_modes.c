@@ -429,7 +429,7 @@ int smb_change_share_mode_entry(struct smbdb_ctx *db_ctx,
 
 	ld = (struct locking_data *)db_data.dptr;
 	num_share_modes = ld->u.s.num_share_mode_entries;
-	shares = (share_mode_entry *)(db_data.dptr + sizeof(struct locking_data));
+	shares = (share_mode_entry *)(db_data.dptr + sizeof(share_mode_entry));
 
 	for (i = 0; i < num_share_modes; i++) {
 		share_mode_entry *share = &shares[i];
@@ -442,6 +442,7 @@ int smb_change_share_mode_entry(struct smbdb_ctx *db_ctx,
 
 		if (share_mode_entry_equal(set_entry, share)) {
 			create_share_mode_entry(share, new_entry);
+			found_entry = 1;
 			break;
 		}
 	}
