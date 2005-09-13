@@ -174,6 +174,45 @@ uint32 svcctl_sizeof_enum_services_status( ENUM_SERVICES_STATUS *status )
 	return size;
 }
 
+/********************************************************************
+********************************************************************/
+
+static uint32 sizeof_unistr2( UNISTR2 *string )
+{
+	uint32 size = 0;
+
+	if ( !string ) 
+		return 0;	
+
+	size  = sizeof(uint32) * 3;		/* length fields */
+	size += 2 * string->uni_max_len;	/* string data */
+	size += size % 4;			/* alignment */
+
+	return size;
+}
+
+/********************************************************************
+********************************************************************/
+
+uint32 svcctl_sizeof_service_config( SERVICE_CONFIG *config )
+{
+	uint32 size = 0;
+
+	size = sizeof(uint32) * 4;	/* static uint32 fields */
+
+	/* now add the UNISTR2 + pointer sizes */
+
+	size += sizeof(uint32) * sizeof_unistr2(config->executablepath);
+	size += sizeof(uint32) * sizeof_unistr2(config->loadordergroup);
+	size += sizeof(uint32) * sizeof_unistr2(config->dependencies);
+	size += sizeof(uint32) * sizeof_unistr2(config->startname);
+	size += sizeof(uint32) * sizeof_unistr2(config->displayname);
+	
+	return size;
+}
+
+
+
 /*******************************************************************
 ********************************************************************/
 

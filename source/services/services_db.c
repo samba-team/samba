@@ -297,30 +297,52 @@ static SEC_DESC* construct_service_sd( TALLOC_CTX *ctx )
 
 static void fill_service_values( const char *name, REGVAL_CTR *values )
 {
-	UNISTR2 data;
+	UNISTR2 data, dname, ipath;
+	uint32 dword;
+	pstring path;
 	
-	/* special considerations for internal services */
+	/* These values are hardcoded in all QueryServiceConfig() replies.
+	   I'm just storing them here for cosmetic purposes */
+	
+	dword = SVCCTL_DEMAND_START;
+	regval_ctr_addvalue( values, "Start", REG_DWORD, (char*)&dword, sizeof(uint32));
+	
+	dword = SVCCTL_WIN32_OWN_PROC;
+	regval_ctr_addvalue( values, "Type", REG_DWORD, (char*)&dword, sizeof(uint32));
+
+	dword = SVCCTL_SVC_ERROR_NORMAL;
+	regval_ctr_addvalue( values, "ErrorControl", REG_DWORD, (char*)&dword, sizeof(uint32));
+	
+	/* everything runs as LocalSystem */
+	
+	init_unistr2( &data, "LocalSystem", UNI_STR_TERMINATE );
+	regval_ctr_addvalue( values, "ObjectName", REG_SZ, (char*)data.buffer, data.uni_str_len*2);
+	
+	/* special considerations for internal services and the DisplayName value */
+	
 	if ( strequal(name, "Spooler") ) {
-		init_unistr2( &data, "Print Spooler", UNI_STR_TERMINATE );
-		regval_ctr_addvalue( values, "DisplayName", REG_SZ, (char*)data.buffer, data.uni_str_len*2);
-	
-		return;
+		pstr_sprintf( path, "%s/%s/smbd",dyn_LIBDIR, SVCCTL_SCRIPT_DIR );
+		init_unistr2( &ipath, path, UNI_STR_TERMINATE );
+		init_unistr2( &dname, "Print Spooler", UNI_STR_TERMINATE );
+	} 
+	else if ( strequal(name, "NETLOGON") ) {
+		pstr_sprintf( path, "%s/%s/smbd",dyn_LIBDIR, SVCCTL_SCRIPT_DIR );
+		init_unistr2( &ipath, path, UNI_STR_TERMINATE );
+		init_unistr2( &dname, "Net Logon", UNI_STR_TERMINATE );
+	} 
+	else if ( strequal(name, "RemoteRegistry") ) {
+		pstr_sprintf( path, "%s/%s/smbd",dyn_LIBDIR, SVCCTL_SCRIPT_DIR );
+		init_unistr2( &ipath, path, UNI_STR_TERMINATE );
+		init_unistr2( &dname, "Remote Registry Service", UNI_STR_TERMINATE );
+	} 
+	else {
+		pstr_sprintf( path, "%s/%s/%s",dyn_LIBDIR, SVCCTL_SCRIPT_DIR, name );
+		init_unistr2( &ipath, path, UNI_STR_TERMINATE );
+		init_unistr2( &dname, name, UNI_STR_TERMINATE );
 	}
+	regval_ctr_addvalue( values, "DisplayName", REG_SZ, (char*)dname.buffer, dname.uni_str_len*2);
+	regval_ctr_addvalue( values, "ImagePath", REG_SZ, (char*)ipath.buffer, ipath.uni_str_len*2);
 	
-	if ( strequal(name, "NETLOGON") ) {
-		init_unistr2( &data, "Net Logon", UNI_STR_TERMINATE );
-		regval_ctr_addvalue( values, "DisplayName", REG_SZ, (char*)data.buffer, data.uni_str_len*2);
-	
-		return;
-	}
-
-	if ( strequal(name, "RemoteRegistry") ) {
-		init_unistr2( &data, "Remote Registry Service", UNI_STR_TERMINATE );
-		regval_ctr_addvalue( values, "DisplayName", REG_SZ, (char*)data.buffer, data.uni_str_len*2);
-	
-		return;
-	}
-
 	return;
 }
 

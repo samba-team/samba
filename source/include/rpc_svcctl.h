@@ -114,7 +114,8 @@
 
 #define SVC_STATUS_PROCESS_INFO                 0x00000000
 
-#define SVCCTL_SCRIPT_DIR  "/svcctl/"
+/* where we assume the location of the service control scripts */
+#define SVCCTL_SCRIPT_DIR  "svcctl"
 
 /* utility structures for RPCs */
 

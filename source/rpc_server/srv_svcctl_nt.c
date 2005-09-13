@@ -1,8 +1,11 @@
 /* 
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
- *  Copyright (C) Gerald (Jerry) Carter             2005,
+ *
  *  Copyright (C) Marcin Krzysztof Porwit           2005.
+ * 
+ *  Largely Rewritten by:
+ *  Copyright (C) Gerald (Jerry) Carter             2005.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,24 +22,10 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/* TODO - Do the OpenService service name matching case-independently, or at least make it an option. */
-
-
 #include "includes.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
-
-#define SERVICEDB_VERSION_V1 1 /* Will there be more? */
-#define INTERNAL_SERVICES_LIST "NETLOGON Spooler"
-
-/*                                                                                                                     */
-/* scripts will execute from the following libdir, if they are in the enable svcctl=<list of scripts>                  */
-/* these should likely be symbolic links. Note that information about them will be extracted from the files themselves */
-/* using the LSB standard keynames for various information                                                             */
-
-#define SVCCTL_SCRIPT_DIR  "/svcctl/"
-
 
 struct service_control_op {
 	const char *name;
@@ -557,7 +546,7 @@ WERROR _svcctl_query_service_status_ex( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_
 /********************************************************************
 ********************************************************************/
 
-static WERROR fill_svc_config( const char *name, SERVICE_CONFIG *config, NT_USER_TOKEN *token )
+static WERROR fill_svc_config( TALLOC_CTX *ctx, const char *name, SERVICE_CONFIG *config, NT_USER_TOKEN *token )
 {
 	REGVAL_CTR *values;
 	REGISTRY_VALUE *val;
@@ -569,40 +558,33 @@ static WERROR fill_svc_config( const char *name, SERVICE_CONFIG *config, NT_USER
 	
 	/* now fill in the individual values */
 		
-	if ( (val = regval_ctr_getvalue( values, "Start" )) != NULL )
-		config->service_type = regval_dword( val );
-	if ( (val = regval_ctr_getvalue( values, "Type" )) != NULL )
-		config->start_type = regval_dword( val );
-	if ( (val = regval_ctr_getvalue( values, "ErrorControl" )) != NULL )
-		config->error_control = regval_dword( val );
-
+	config->displayname = TALLOC_ZERO_P( ctx, UNISTR2 );
 	if ( (val = regval_ctr_getvalue( values, "DisplayName" )) != NULL )
 		init_unistr2( config->displayname, regval_sz( val ), UNI_STR_TERMINATE );
 	else
 		init_unistr2( config->displayname, name, UNI_STR_TERMINATE );
 
-	if ( (val = regval_ctr_getvalue( values, "ObjectName" )) != NULL )
+	if ( (val = regval_ctr_getvalue( values, "ObjectName" )) != NULL ) {
+		config->startname = TALLOC_ZERO_P( ctx, UNISTR2 );		
 		init_unistr2( config->startname, regval_sz( val ), UNI_STR_TERMINATE );
+	}
 		
-	if ( (val = regval_ctr_getvalue( values, "ImagePath" )) != NULL )
+	if ( (val = regval_ctr_getvalue( values, "ImagePath" )) != NULL ) {
+		config->executablepath = TALLOC_ZERO_P( ctx, UNISTR2 );		
 		init_unistr2( config->executablepath, regval_sz( val ), UNI_STR_TERMINATE );
+	}
 
 	/* a few hard coded values */
 	/* loadordergroup and dependencies are empty */
 	
-	config->tag_id = 0x00000000;
+	config->tag_id           = 0x00000000;			/* unassigned loadorder group */
+	config->service_type     = SVCCTL_WIN32_OWN_PROC;
+	config->start_type       = SVCCTL_DEMAND_START;
+	config->error_control    = SVCCTL_SVC_ERROR_NORMAL;
 
 	TALLOC_FREE( values );
 
 	return WERR_OK;
-}
-
-/********************************************************************
-********************************************************************/
-
-static uint32 sizeof_service_config( SERVICE_CONFIG *config )
-{
-	return 0;
 }
 
 /********************************************************************
@@ -622,27 +604,22 @@ WERROR _svcctl_query_service_config( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CON
 	if ( !(info->access_granted & SC_RIGHT_SVC_QUERY_CONFIG) )
 		return WERR_ACCESS_DENIED;
 
-	r_u->config.executablepath = TALLOC_ZERO_P(p->mem_ctx,  UNISTR2);
-	r_u->config.loadordergroup = TALLOC_ZERO_P(p->mem_ctx,  UNISTR2);
-	r_u->config.dependencies = TALLOC_ZERO_P(p->mem_ctx,  UNISTR2);
-	r_u->config.startname = TALLOC_ZERO_P(p->mem_ctx,  UNISTR2);
-	r_u->config.displayname = TALLOC_ZERO_P(p->mem_ctx,  UNISTR2);
-	
 	/* we have to set the outgoing buffer size to the same as the 
 	   incoming buffer size (even in the case of failure */
 
 	r_u->needed      = q_u->buffer_size;
 	
-	wresult = fill_svc_config( info->name, &r_u->config, p->pipe_user.nt_user_token );
+	wresult = fill_svc_config( p->mem_ctx, info->name, &r_u->config, p->pipe_user.nt_user_token );
 	if ( !W_ERROR_IS_OK(wresult) )
 		return wresult;
 	
-	buffer_size = sizeof_service_config( &r_u->config );
-        buffer_size += buffer_size % 4;
+	buffer_size = svcctl_sizeof_service_config( &r_u->config );
 	r_u->needed = (buffer_size > q_u->buffer_size) ? buffer_size : q_u->buffer_size;
 
-        if (buffer_size > q_u->buffer_size ) 
+        if (buffer_size > q_u->buffer_size ) {
+		ZERO_STRUCTP( &r_u->config );
                 return WERR_INSUFFICIENT_BUFFER;
+	}
 		
 	return WERR_OK;
 }
