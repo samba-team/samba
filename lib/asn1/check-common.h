@@ -34,7 +34,7 @@
 struct test_case {
     void *val;
     int byte_len;
-    const unsigned char *bytes;
+    const char *bytes;
     char *name;
 };
 
