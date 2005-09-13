@@ -20,51 +20,36 @@
 
 #include "includes.h"
 
-/* Implementation for internal spoolss service */
+/* Implementation for internal netlogon service */
 
 /*********************************************************************
 *********************************************************************/
 
-static WERROR spoolss_stop( SERVICE_STATUS *service_status )
+static WERROR netlogon_stop( SERVICE_STATUS *service_status )
 {
-	ZERO_STRUCTP( service_status );
-	
-	lp_set_spoolss_state( SVCCTL_STOPPED );
-
-	service_status->type              = 0x110;
-	service_status->state             = SVCCTL_STOPPED;
-	service_status->controls_accepted = SVCCTL_ACCEPT_STOP;
-
-	DEBUG(6,("spoolss_stop: spooler stopped (not really)\n"));
-
-	return WERR_OK;
+	return WERR_ACCESS_DENIED;
 }
 
 /*********************************************************************
 *********************************************************************/
 
-static WERROR spoolss_start( void )
+static WERROR netlogon_start( void )
 {
-	/* see if the smb.conf will support this anyways */
-	
-	if ( _lp_disable_spoolss() )
-		return WERR_ACCESS_DENIED;
-	
-	lp_set_spoolss_state( SVCCTL_RUNNING );	
-	
-	return WERR_OK;
+	return WERR_ACCESS_DENIED;
 }
 
 /*********************************************************************
 *********************************************************************/
 
-static WERROR spoolss_status( SERVICE_STATUS *service_status )
+static WERROR netlogon_status( SERVICE_STATUS *service_status )
 {
 	ZERO_STRUCTP( service_status );
 
-	service_status->type              = 0x110;
-	service_status->state             = lp_get_spoolss_state();
-	service_status->controls_accepted = SVCCTL_ACCEPT_STOP;
+	service_status->type              = 0x20;
+	if ( lp_servicenumber("NETLOGON") != -1 ) 
+		service_status->state              = SVCCTL_RUNNING;
+	else
+		service_status->state              = SVCCTL_STOPPED;
 	
 	return WERR_OK;
 }
@@ -72,10 +57,10 @@ static WERROR spoolss_status( SERVICE_STATUS *service_status )
 /*********************************************************************
 *********************************************************************/
 
-/* struct for svcctl control to manipulate spoolss service */
+/* struct for svcctl control to manipulate netlogon service */
 
-SERVICE_CONTROL_OPS spoolss_svc_ops = {
-	spoolss_stop,
-	spoolss_start,
-	spoolss_status
+SERVICE_CONTROL_OPS netlogon_svc_ops = {
+	netlogon_stop,
+	netlogon_start,
+	netlogon_status
 };

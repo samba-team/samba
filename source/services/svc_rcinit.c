@@ -189,6 +189,12 @@ static WERROR rcinit_start( void )
 
 static WERROR rcinit_status( SERVICE_STATUS *service_status )
 {
+	ZERO_STRUCTP( service_status );
+
+	service_status->type = 0x0020;
+	service_status->state = 0x0004;
+	service_status->controls_accepted = 0x0005;
+
 	return WERR_OK;
 }
 

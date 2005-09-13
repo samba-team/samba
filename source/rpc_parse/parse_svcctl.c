@@ -140,6 +140,29 @@ BOOL svcctl_io_enum_services_status( const char *desc, ENUM_SERVICES_STATUS *enu
 /*******************************************************************
 ********************************************************************/
 
+BOOL svcctl_io_service_status_process( const char *desc, SERVICE_STATUS_PROCESS *status, RPC_BUFFER *buffer, int depth )
+{
+	prs_struct *ps=&buffer->prs;
+
+	prs_debug(ps, depth, desc, "svcctl_io_service_status_process");
+	depth++;
+
+	if ( !svcctl_io_service_status("status", &status->status, ps, depth) )
+		return False;
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("process_id", ps, depth, &status->process_id))
+		return False;
+	if(!prs_uint32("service_flags", ps, depth, &status->service_flags))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/
+
 uint32 svcctl_sizeof_enum_services_status( ENUM_SERVICES_STATUS *status )
 {
 	uint32 size = 0;
@@ -694,7 +717,7 @@ BOOL svcctl_io_q_query_service_config2(const char *desc, SVCCTL_Q_QUERY_SERVICE_
 	if(!smb_io_pol_hnd("service_pol", &q_u->handle, ps, depth))
 		return False;
 
-	if(!prs_uint32("info_level", ps, depth, &q_u->info_level))
+	if(!prs_uint32("level", ps, depth, &q_u->level))
 		return False;
 
 	if(!prs_uint32("buffer_size", ps, depth, &q_u->buffer_size))
@@ -738,6 +761,51 @@ void init_service_description_buffer(RPC_DATA_BLOB *str,  const char *service_de
 /*******************************************************************
 ********************************************************************/
 
+BOOL svcctl_io_r_query_service_config2(const char *desc, SVCCTL_R_QUERY_SERVICE_CONFIG2 *r_u, prs_struct *ps, int depth)
+{
+	if ( !r_u )
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_r_query_service_config2");
+	depth++;
+
+	if ( !prs_align(ps) )
+		return False;
+
+#if 0
+	if(!prs_uint32("returned", ps, depth, &r_u->returned))
+		return False;
+
+	if (r_u->returned > 4) {
+		if (!prs_uint32("offset", ps, depth, &r_u->offset))
+			return False;
+
+		if ( !prs_pointer( desc, ps, depth, (void**)&r_u->description, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2 ) )
+			return False;
+
+		if(!prs_align(ps))
+			return False;
+	} else {
+		/* offset does double duty here */
+		r_u->offset = 0;
+		if (!prs_uint32("offset", ps, depth, &r_u->offset))
+			return False;
+	}
+
+#endif
+	if (!prs_uint32("needed", ps, depth, &r_u->needed))
+		return False;
+
+	if(!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
+********************************************************************/
+
 BOOL svcctl_io_q_query_service_status_ex(const char *desc, SVCCTL_Q_QUERY_SERVICE_STATUSEX *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
@@ -752,7 +820,7 @@ BOOL svcctl_io_q_query_service_status_ex(const char *desc, SVCCTL_Q_QUERY_SERVIC
 	if(!smb_io_pol_hnd("service_pol", &q_u->handle, ps, depth))
 		return False;
 
-	if(!prs_uint32("info_level", ps, depth, &q_u->info_level))
+	if(!prs_uint32("level", ps, depth, &q_u->level))
 		return False;
 
 	if(!prs_uint32("buffer_size", ps, depth, &q_u->buffer_size))
@@ -788,46 +856,5 @@ BOOL svcctl_io_r_query_service_status_ex(const char *desc, SVCCTL_R_QUERY_SERVIC
 	return True;
 }
 
-/*******************************************************************
-********************************************************************/
-
-BOOL svcctl_io_r_query_service_config2(const char *desc, SVCCTL_R_QUERY_SERVICE_CONFIG2 *r_u, prs_struct *ps, int depth)
-{
-	if ( !r_u )
-		return False;
-
-	prs_debug(ps, depth, desc, "svcctl_io_r_query_service_config2");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("returned", ps, depth, &r_u->returned))
-		return False;
-
-	if (r_u->returned > 4) {
-		if (!prs_uint32("offset", ps, depth, &r_u->offset))
-			return False;
-
-		if ( !prs_pointer( desc, ps, depth, (void**)&r_u->description, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2 ) )
-			return False;
-
-		if(!prs_align(ps))
-			return False;
-	} else {
-		/* offset does double duty here */
-		r_u->offset = 0;
-		if (!prs_uint32("offset", ps, depth, &r_u->offset))
-			return False;
-	}
-
-	if (!prs_uint32("needed", ps, depth, &r_u->needed))
-		return False;
-
-	if(!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
 
 

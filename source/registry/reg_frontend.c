@@ -105,15 +105,12 @@ BOOL init_registry( void )
 {
 	int i;
 	
+	
 	if ( !init_registry_db() ) {
 		DEBUG(0,("init_registry: failed to initialize the registry tdb!\n"));
 		return False;
 	}
 
-	/* inform the external eventlog machinery of the change */
-
-	eventlog_refresh_external_parameters( get_root_nt_token() );
-		
 	/* build the cache tree of registry hooks */
 	
 	reghook_cache_init();
@@ -125,6 +122,14 @@ BOOL init_registry( void )
 
 	if ( DEBUGLEVEL >= 20 )
 		reghook_dump_cache(20);
+
+	/* inform the external eventlog machinery of the change */
+
+	eventlog_refresh_external_parameters( get_root_nt_token() );
+
+	/* add any services keys */
+
+	svcctl_init_keys();
 
 	return True;
 }

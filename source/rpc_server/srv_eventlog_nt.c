@@ -46,6 +46,9 @@ void eventlog_refresh_external_parameters( NT_USER_TOKEN *token )
 	if ( !elogs )
 		return ;
 
+	if ( !*lp_eventlog_control_cmd() )
+		return;
+
 	for ( i=0; elogs[i]; i++ ) {
 	
 		DEBUG(10,("eventlog_refresh_external_parameters: Refreshing =>[%s]\n", 
