@@ -334,7 +334,7 @@ strptime (const char *buf, const char *format, struct tm *timeptr)
 		timeptr->tm_min = ret;
 		break;
 	    case 'n' :
-		while (isspace (*buf))
+		while (isspace ((unsigned char)*buf))
 		    buf++;
 		break;
 	    case 'p' :
@@ -365,7 +365,7 @@ strptime (const char *buf, const char *format, struct tm *timeptr)
 		timeptr->tm_sec = ret;
 		break;
 	    case 't' :
-		while (isspace (*buf))
+		while (isspace ((unsigned char)*buf))
 		    buf++;
 		break;
 	    case 'T' :		/* %H:%M:%S */
