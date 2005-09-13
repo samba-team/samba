@@ -155,7 +155,8 @@ typedef struct {
 } SERVICE_CONFIG;
 
 typedef struct {
-        UNISTR2 *description;
+	uint32 unknown;	
+        UNISTR description;
 } SERVICE_DESCRIPTION;
 
 typedef struct {

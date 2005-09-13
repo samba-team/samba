@@ -45,7 +45,7 @@ struct service_control_op *svcctl_ops;
 
 BOOL init_service_op_table( void )
 {
-	const char **service_list = lp_enable_svcctl();
+	const char **service_list = lp_svcctl_list();
 	int num_services = 3 + str_list_count( service_list );
 	int i;
 	
@@ -630,6 +630,7 @@ WERROR _svcctl_query_service_config( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CON
 WERROR _svcctl_query_service_config2( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CONFIG2 *q_u, SVCCTL_R_QUERY_SERVICE_CONFIG2 *r_u )
 {
 	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
+	uint32 buffer_size;
 	
 	/* perform access checks */
 
@@ -642,16 +643,33 @@ WERROR _svcctl_query_service_config2( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CO
 	/* we have to set the outgoing buffer size to the same as the 
 	   incoming buffer size (even in the case of failure */
 
-	r_u->needed      = q_u->buffer_size;
+	rpcbuf_init( &r_u->buffer, q_u->buffer_size, p->mem_ctx );
+	r_u->needed = q_u->buffer_size;
 
 	switch ( q_u->level ) {
-
-		case SERVICE_CONFIG_DESCRIPTION:
+	case SERVICE_CONFIG_DESCRIPTION:
+		{
+			SERVICE_DESCRIPTION desc_buf;
+			const char *description;
+			
+			description = svcctl_lookup_description( info->name, p->pipe_user.nt_user_token );
+			
+			ZERO_STRUCTP( &desc_buf );
+			init_service_description_buffer( &desc_buf, description );
+			svcctl_io_service_description( "", &desc_buf, &r_u->buffer, 0 );
+	                buffer_size = svcctl_sizeof_service_description( &desc_buf );
 			break;
+		}
+		break;
 
-		default:
-			return WERR_UNKNOWN_LEVEL;
+	default:
+		return WERR_UNKNOWN_LEVEL;
 	}
+	
+	r_u->needed = (buffer_size > q_u->buffer_size) ? buffer_size : q_u->buffer_size;
+
+        if (buffer_size > q_u->buffer_size )
+                return WERR_INSUFFICIENT_BUFFER;
 
 	return WERR_OK;
 }

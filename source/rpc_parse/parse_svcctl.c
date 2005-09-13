@@ -100,21 +100,6 @@ static BOOL svcctl_io_service_config( const char *desc, SERVICE_CONFIG *config, 
 
 	return True;
 }
-/*******************************************************************
-********************************************************************/
-
-BOOL svcctl_io_service_description( const char *desc, UNISTR2 *svcdesc, prs_struct *ps, int depth )
-{
-
-	prs_debug(ps, depth, desc, "svcctl_io_service_description");
-	depth++;
-
-	if (!prs_io_unistr2("", ps, depth, svcdesc))
-		return False;
-
-	return True;
-}
-
 
 /*******************************************************************
 ********************************************************************/
@@ -767,34 +752,42 @@ BOOL svcctl_io_q_query_service_config2(const char *desc, SVCCTL_Q_QUERY_SERVICE_
 
 
 /*******************************************************************
- Creates a service description response buffer.
- The format seems to be DWORD:length of buffer
-                        DWORD:offset (fixed as four)
-                        UNISTR: unicode description in the rest of the buffer
 ********************************************************************/
 
-void init_service_description_buffer(RPC_DATA_BLOB *str,  const char *service_desc, int blob_length)
+void init_service_description_buffer(SERVICE_DESCRIPTION *desc, const char *service_desc )
 {
-	uint32 offset;
-	uint8 *bp;
+	desc->unknown = 0x04;	/* always 0x0000 0004 (no idea what this is) */
+	init_unistr( &desc->description, service_desc );
+}
 
-	ZERO_STRUCTP(str);
+/*******************************************************************
+********************************************************************/
 
-	offset = 4;
+BOOL svcctl_io_service_description( const char *desc, SERVICE_DESCRIPTION *description, RPC_BUFFER *buffer, int depth )
+{
+        prs_struct *ps = &buffer->prs;
 
-	/* set up string lengths. */
+        prs_debug(ps, depth, desc, "svcctl_io_service_description");
+        depth++;
 
-	str->buf_len = create_rpc_blob(str, blob_length);
-	DEBUG(10, ("init_service_description buffer: Allocated a blob of [%d] \n",str->buf_len));
+	if ( !prs_uint32("unknown", ps, depth, &description->unknown) )
+		return False;
+	if ( !prs_unistr("description", ps, depth, &description->description) )
+		return False;
 
-	if ( str && str->buffer && str->buf_len) {
-		memset(str->buffer,0,str->buf_len);
-		memcpy(str->buffer, &offset, sizeof(uint32));
-		bp = &str->buffer[4];
-		if (service_desc) {
-			rpcstr_push(bp, service_desc,str->buf_len-4,0);
-		}
-	}
+	return True;
+} 
+
+/*******************************************************************
+********************************************************************/
+
+uint32 svcctl_sizeof_service_description( SERVICE_DESCRIPTION *desc )
+{
+	if ( !desc )
+		return 0;
+
+	/* make sure to include the terminating NULL */
+	return ( sizeof(uint32) + (2*(str_len_uni(&desc->description)+1)) );
 }
 
 /*******************************************************************
@@ -811,27 +804,11 @@ BOOL svcctl_io_r_query_service_config2(const char *desc, SVCCTL_R_QUERY_SERVICE_
 	if ( !prs_align(ps) )
 		return False;
 
-#if 0
-	if(!prs_uint32("returned", ps, depth, &r_u->returned))
+	if (!prs_rpcbuffer("", ps, depth, &r_u->buffer))
+		return False;
+	if(!prs_align(ps))
 		return False;
 
-	if (r_u->returned > 4) {
-		if (!prs_uint32("offset", ps, depth, &r_u->offset))
-			return False;
-
-		if ( !prs_pointer( desc, ps, depth, (void**)&r_u->description, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2 ) )
-			return False;
-
-		if(!prs_align(ps))
-			return False;
-	} else {
-		/* offset does double duty here */
-		r_u->offset = 0;
-		if (!prs_uint32("offset", ps, depth, &r_u->offset))
-			return False;
-	}
-
-#endif
 	if (!prs_uint32("needed", ps, depth, &r_u->needed))
 		return False;
 
