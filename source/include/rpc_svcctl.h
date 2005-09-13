@@ -166,11 +166,10 @@ typedef struct {
 
 typedef struct {
         uint32 reset_period;
-        UNISTR2 *rebootmsg;
+        UNISTR2 *rebootmsg;	/* i have no idea if these are UNISTR2's.  I can't get a good trace */
         UNISTR2 *command;
-        uint32  nActions;
-        SC_ACTION *saActions;
-        UNISTR2 *description;
+        uint32  num_actions;
+        SC_ACTION *actions;
 } SERVICE_FAILURE_ACTIONS;
 
 typedef struct Service_info_struct {

@@ -793,6 +793,78 @@ uint32 svcctl_sizeof_service_description( SERVICE_DESCRIPTION *desc )
 /*******************************************************************
 ********************************************************************/
 
+static BOOL svcctl_io_action( const char *desc, SC_ACTION *action, prs_struct *ps, int depth )
+{
+
+	prs_debug(ps, depth, desc, "svcctl_io_action");
+	depth++;
+
+	if ( !prs_uint32("type", ps, depth, &action->type) )
+		return False;
+	if ( !prs_uint32("delay", ps, depth, &action->delay) )
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_service_fa( const char *desc, SERVICE_FAILURE_ACTIONS *fa, RPC_BUFFER *buffer, int depth )
+{
+        prs_struct *ps = &buffer->prs;
+	int i;
+
+        prs_debug(ps, depth, desc, "svcctl_io_service_description");
+        depth++;
+
+	if ( !prs_uint32("reset_period", ps, depth, &fa->reset_period) )
+		return False;
+
+	if ( !prs_pointer( desc, ps, depth, (void**)&fa->rebootmsg, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2 ) )
+		return False;
+	if ( !prs_pointer( desc, ps, depth, (void**)&fa->command, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2 ) )
+		return False;
+
+	if ( !prs_uint32("num_actions", ps, depth, &fa->num_actions) )
+		return False;
+
+	if ( UNMARSHALLING(ps) && fa->num_actions ) {
+		if ( !(fa->actions = TALLOC_ARRAY( get_talloc_ctx(), SC_ACTION, fa->num_actions )) ) {
+			DEBUG(0,("svcctl_io_service_fa: talloc() failure!\n"));
+			return False;
+		}
+	}
+
+	for ( i=0; i<fa->num_actions; i++ ) {
+		if ( !svcctl_io_action( "actions", &fa->actions[i], ps, depth ) )
+			return False;
+	}
+
+	return True;
+} 
+
+/*******************************************************************
+********************************************************************/
+
+uint32 svcctl_sizeof_service_fa( SERVICE_FAILURE_ACTIONS *fa)
+{
+	uint32 size = 0;
+
+	if ( !fa )
+		return 0;
+
+	size  = sizeof(uint32) * 2;
+	size += sizeof_unistr2( fa->rebootmsg );
+	size += sizeof_unistr2( fa->command );
+	size += sizeof(SC_ACTION) * fa->num_actions;
+
+	return size;
+}
+
+/*******************************************************************
+********************************************************************/
+
 BOOL svcctl_io_r_query_service_config2(const char *desc, SVCCTL_R_QUERY_SERVICE_CONFIG2 *r_u, prs_struct *ps, int depth)
 {
 	if ( !r_u )

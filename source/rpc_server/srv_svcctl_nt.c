@@ -655,9 +655,24 @@ WERROR _svcctl_query_service_config2( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CO
 			description = svcctl_lookup_description( info->name, p->pipe_user.nt_user_token );
 			
 			ZERO_STRUCTP( &desc_buf );
+
 			init_service_description_buffer( &desc_buf, description );
 			svcctl_io_service_description( "", &desc_buf, &r_u->buffer, 0 );
 	                buffer_size = svcctl_sizeof_service_description( &desc_buf );
+
+			break;
+		}
+		break;
+	case SERVICE_CONFIG_FAILURE_ACTIONS:
+		{
+			SERVICE_FAILURE_ACTIONS actions;
+
+			/* nothing to say...just service the request */
+
+			ZERO_STRUCTP( &actions );
+			svcctl_io_service_fa( "", &actions, &r_u->buffer, 0 );
+	                buffer_size = svcctl_sizeof_service_fa( &actions );
+
 			break;
 		}
 		break;
@@ -666,6 +681,7 @@ WERROR _svcctl_query_service_config2( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CO
 		return WERR_UNKNOWN_LEVEL;
 	}
 	
+	buffer_size += buffer_size % 4;
 	r_u->needed = (buffer_size > q_u->buffer_size) ? buffer_size : q_u->buffer_size;
 
         if (buffer_size > q_u->buffer_size )
