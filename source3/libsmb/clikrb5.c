@@ -119,8 +119,10 @@
 		DEBUG(1,("krb5_get_pw_salt failed (%s)\n", error_message(ret)));
 		return ret;
 	}
-	return krb5_string_to_key_salt(context, enctype, password->data,
-		salt, key);
+	
+	ret = krb5_string_to_key_salt(context, enctype, password->data, salt, key);
+	krb5_free_salt(context, salt);
+	return ret;
 }
 #else
 #error UNKNOWN_CREATE_KEY_FUNCTIONS
