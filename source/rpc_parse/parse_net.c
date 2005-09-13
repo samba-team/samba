@@ -1626,7 +1626,7 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 
 	if(!smb_io_unistr2("uni_logon_srv", &usr->uni_logon_srv, usr->hdr_logon_srv.buffer, ps, depth)) /* logon server unicode string */
 		return False;
-	if(!smb_io_unistr2("uni_logon_dom", &usr->uni_logon_dom, usr->hdr_logon_srv.buffer, ps, depth)) /* logon domain unicode string */
+	if(!smb_io_unistr2("uni_logon_dom", &usr->uni_logon_dom, usr->hdr_logon_dom.buffer, ps, depth)) /* logon domain unicode string */
 		return False;
 
 	if(!smb_io_dom_sid2("", &usr->dom_sid, ps, depth))           /* domain SID */
