@@ -110,8 +110,8 @@ test_one_int(int val)
 	return 1;
     }
     if (len != len_len) {
-	printf("integer %d encode fail with %d len %d, result len %d\n",
-	       val, ret, len, len_len);
+	printf("integer %d encode fail with %d len %lu, result len %lu\n",
+	       val, ret, (unsigned long)len, (unsigned long)len_len);
 	return 1;
     }
 
@@ -121,8 +121,8 @@ test_one_int(int val)
 	return 1;
     }
     if (len != len_len) {
-	printf("integer %d decoded diffrent len %d != %d",
-	       val, len, len_len);
+	printf("integer %d decoded diffrent len %lu != %lu",
+	       val, (unsigned long)len, (unsigned long)len_len);
 	return 1;
     }
     if (val != dval) {
@@ -286,8 +286,8 @@ test_bmp_string (void)
 static int
 cmp_general_string (void *a, void *b)
 {
-    unsigned char **sa = (unsigned char **)a;
-    unsigned char **sb = (unsigned char **)b;
+    char **sa = (char **)a;
+    char **sb = (char **)b;
 
     return strcmp (*sa, *sb);
 }
@@ -295,7 +295,7 @@ cmp_general_string (void *a, void *b)
 static int
 test_general_string (void)
 {
-    unsigned char *s1 = "Test User 1";
+    char *s1 = "Test User 1";
 
     struct test_case tests[] = {
 	{NULL, 11, "\x54\x65\x73\x74\x20\x55\x73\x65\x72\x20\x31"}
@@ -483,7 +483,6 @@ static int
 check_fail_general_string(void)
 {
     struct test_case tests[] = {
-	{NULL, -1, "", "over sized buffer"}
     };
     int ntests = sizeof(tests) / sizeof(*tests);
 
@@ -495,8 +494,7 @@ static int
 check_fail_bmp_string(void)
 {
     struct test_case tests[] = {
-	{NULL, 1, "\x00", "odd length bmpstring"},
-	{NULL, -1, "\x00", "over sized data"}
+	{NULL, 1, "\x00", "odd length bmpstring"}
     };
     int ntests = sizeof(tests) / sizeof(*tests);
 
@@ -513,8 +511,7 @@ check_fail_universal_string(void)
 	{NULL, 3, "\x00\x00\x00", "x & 3 == 3 universal string"},
 	{NULL, 5, "\x00\x00\x00\x00\x00", "x & 3 == 1 universal string"},
 	{NULL, 6, "\x00\x00\x00\x00\x00\x00", "x & 3 == 2 universal string"},
-	{NULL, 7, "\x00\x00\x00\x00\x00\x00\x00", "x & 3 == 3 universal string"},
-	{NULL, -1, "\x00", "over sized data"}
+	{NULL, 7, "\x00\x00\x00\x00\x00\x00\x00", "x & 3 == 3 universal string"}
     };
     int ntests = sizeof(tests) / sizeof(*tests);
 
@@ -526,7 +523,6 @@ static int
 check_fail_heim_integer(void)
 {
     struct test_case tests[] = {
-	{NULL, -1, "\x00", "over sized data"}
     };
     int ntests = sizeof(tests) / sizeof(*tests);
 
@@ -538,8 +534,7 @@ static int
 check_fail_generalized_time(void)
 {
     struct test_case tests[] = {
-	{NULL, 1, "\x00", "no time"},
-	{NULL, -1, "\x00", "over sized data"}
+	{NULL, 1, "\x00", "no time"}
     };
     int ntests = sizeof(tests) / sizeof(*tests);
 
@@ -554,8 +549,7 @@ check_fail_oid(void)
 	{NULL, 0, "", "empty input data"},
 	{NULL, 2, "\x00\x80", "last byte continuation" },
 	{NULL, 11, "\x00\x81\x80\x80\x80\x80\x80\x80\x80\x80\x00", 
-	"oid element overflow" },
-	{NULL, -1, "", "over sized buffer" }
+	"oid element overflow" }
     };
     int ntests = sizeof(tests) / sizeof(*tests);
 
@@ -570,7 +564,7 @@ check_fail_bitstring(void)
 	{NULL, 0, "", "empty input data"},
 	{NULL, 1, "\x08", "larger then 8 bits trailer"},
 	{NULL, 1, "\x01", "to few bytes for bits"},
-	{NULL, 0x3fffffff, "\x00", "length overrun"},
+	{NULL, -2, "\x00", "length overrun"},
 	{NULL, -1, "", "length to short"}
     };
     int ntests = sizeof(tests) / sizeof(*tests);
