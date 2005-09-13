@@ -144,6 +144,15 @@ struct composite_context *resolve_name_send(struct nbt_name *name, struct event_
 		c->event_ctx = talloc_reference(c, event_ctx);
 	}
 
+	if (is_ipaddress(state->name.name) || 
+	    strcasecmp(state->name.name, "localhost") == 0) {
+		struct ipv4_addr ip = interpret_addr2(state->name.name);
+		state->reply_addr = talloc_strdup(state, sys_inet_ntoa(ip));
+		if (!state->reply_addr) goto failed;
+		composite_trigger_done(c);
+		return c;
+	}
+
 	state->req = setup_next_method(c);
 	if (state->req == NULL) goto failed;
 	
