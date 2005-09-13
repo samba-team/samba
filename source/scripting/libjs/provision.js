@@ -122,6 +122,18 @@ function hostname()
 }
 
 
+/* the ldb is in bad shape, possibly due to being built from an
+   incompatible previous version of the code, so delete it
+   completely */
+function ldb_delete(ldb)
+{
+	println("Deleting " + ldb.filename);
+	sys.unlink(ldb.filename);
+	ldb.close();
+	var ok = ldb.connect(ldb.filename);
+	assert(ok);
+}
+
 /*
   erase an ldb, removing all records
 */
@@ -138,10 +150,18 @@ function ldb_erase(ldb)
 	/* and the rest */
 	var res = ldb.search("(|(objectclass=*)(dn=*))", attrs);
 	var i;
+	if (typeof(res) == "undefined") {
+		ldb_delete(ldb);
+		return;
+	}
 	for (i=0;i<res.length;i++) {
 		ldb.del(res[i].dn);
 	}
 	res = ldb.search("(objectclass=*)", attrs);
+	if (res.length != 0) {
+		ldb_delete(ldb);
+		return;
+	}
 	assert(res.length == 0);
 }
 
@@ -169,6 +189,8 @@ function setup_ldb(ldif, dbname, subobj)
 	var data = sys.file_load(src);
 	data = data + extra;
 	data = substitute_var(data, subobj);
+
+	ldb.filename = dbname;
 
 	var ok = ldb.connect(dbname);
 	assert(ok);
