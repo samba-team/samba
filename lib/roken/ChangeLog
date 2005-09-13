@@ -1,3 +1,8 @@
+2005-09-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* strptime.c: cast to unsigned char to make sure its not negative
+	when passing it to is* functions
+	
 2005-09-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* socket.c: Add socket_set_ipv6only.
