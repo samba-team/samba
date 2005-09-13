@@ -237,7 +237,7 @@ WERROR reg_open_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, const char
 	return WERR_OK;
 }
 
-WERROR reg_key_get_value_by_index(TALLOC_CTX *mem_ctx, struct registry_key *key, int idx, struct registry_value **val)
+WERROR reg_key_get_value_by_index(TALLOC_CTX *mem_ctx, const struct registry_key *key, int idx, struct registry_value **val)
 {
 	if(!key) return WERR_INVALID_PARAM;
 
@@ -252,7 +252,7 @@ WERROR reg_key_get_value_by_index(TALLOC_CTX *mem_ctx, struct registry_key *key,
 	return WERR_OK;
 }
 
-WERROR reg_key_num_subkeys(struct registry_key *key, uint32_t *count)
+WERROR reg_key_num_subkeys(const struct registry_key *key, uint32_t *count)
 {
 	if(!key) return WERR_INVALID_PARAM;
 	
@@ -277,7 +277,7 @@ WERROR reg_key_num_subkeys(struct registry_key *key, uint32_t *count)
 	return WERR_NOT_SUPPORTED;
 }
 
-WERROR reg_key_num_values(struct registry_key *key, uint32_t *count)
+WERROR reg_key_num_values(const struct registry_key *key, uint32_t *count)
 {
 	
 	if(!key) return WERR_INVALID_PARAM;
@@ -303,7 +303,7 @@ WERROR reg_key_num_values(struct registry_key *key, uint32_t *count)
 	return WERR_NOT_SUPPORTED;
 }
 
-WERROR reg_key_get_subkey_by_index(TALLOC_CTX *mem_ctx, struct registry_key *key, int idx, struct registry_key **subkey)
+WERROR reg_key_get_subkey_by_index(TALLOC_CTX *mem_ctx, const struct registry_key *key, int idx, struct registry_key **subkey)
 {
 	if(!key) return WERR_INVALID_PARAM;
 
@@ -323,7 +323,7 @@ WERROR reg_key_get_subkey_by_index(TALLOC_CTX *mem_ctx, struct registry_key *key
 	return WERR_OK;;
 }
 
-WERROR reg_key_get_subkey_by_name(TALLOC_CTX *mem_ctx, struct registry_key *key, const char *name, struct registry_key **subkey)
+WERROR reg_key_get_subkey_by_name(TALLOC_CTX *mem_ctx, const struct registry_key *key, const char *name, struct registry_key **subkey)
 {
 	int i;
 	WERROR error = WERR_OK;
@@ -356,7 +356,7 @@ WERROR reg_key_get_subkey_by_name(TALLOC_CTX *mem_ctx, struct registry_key *key,
 	return WERR_OK; 
 }
 
-WERROR reg_key_get_value_by_name(TALLOC_CTX *mem_ctx, struct registry_key *key, const char *name, struct registry_value **val)
+WERROR reg_key_get_value_by_name(TALLOC_CTX *mem_ctx, const struct registry_key *key, const char *name, struct registry_value **val)
 {
 	int i;
 	WERROR error = WERR_OK;
@@ -395,7 +395,7 @@ WERROR reg_key_del(struct registry_key *parent, const char *name)
 	return WERR_OK;
 }
 
-WERROR reg_key_add_name(TALLOC_CTX *mem_ctx, struct registry_key *parent, const char *name, uint32_t access_mask, struct security_descriptor *desc, struct registry_key **newkey)
+WERROR reg_key_add_name(TALLOC_CTX *mem_ctx, const struct registry_key *parent, const char *name, uint32_t access_mask, struct security_descriptor *desc, struct registry_key **newkey)
 {
 	WERROR error;
 	
@@ -432,7 +432,7 @@ WERROR reg_val_set(struct registry_key *key, const char *value, uint32_t type, D
 }
 
 
-WERROR reg_get_sec_desc(TALLOC_CTX *ctx, struct registry_key *key, struct security_descriptor **secdesc)
+WERROR reg_get_sec_desc(TALLOC_CTX *ctx, const struct registry_key *key, struct security_descriptor **secdesc)
 {
 	/* A 'real' set function has preference */
 	if (key->hive->functions->key_get_sec_desc) 
@@ -442,7 +442,7 @@ WERROR reg_get_sec_desc(TALLOC_CTX *ctx, struct registry_key *key, struct securi
 	return WERR_NOT_SUPPORTED;
 }
 
-WERROR reg_del_value(struct registry_key *key, const char *valname)
+WERROR reg_del_value(const struct registry_key *key, const char *valname)
 {
 	WERROR ret = WERR_OK;
 	if(!key->hive->functions->del_value)
@@ -455,12 +455,7 @@ WERROR reg_del_value(struct registry_key *key, const char *valname)
 	return ret;
 }
 
-WERROR reg_save (struct registry_context *ctx, const char *location)
-{
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR reg_key_flush(struct registry_key *key)
+WERROR reg_key_flush(const struct registry_key *key)
 {
 	if (!key) {
 		return WERR_INVALID_PARAM;
@@ -474,7 +469,7 @@ WERROR reg_key_flush(struct registry_key *key)
 	return WERR_OK;
 }
 
-WERROR reg_key_subkeysizes(struct registry_key *key, uint32_t *max_subkeylen, uint32_t *max_subkeysize)
+WERROR reg_key_subkeysizes(const struct registry_key *key, uint32_t *max_subkeylen, uint32_t *max_subkeysize)
 {
 	int i = 0; 
 	struct registry_key *subkey;
@@ -499,7 +494,7 @@ WERROR reg_key_subkeysizes(struct registry_key *key, uint32_t *max_subkeylen, ui
 	return WERR_OK;
 }
 
-WERROR reg_key_valuesizes(struct registry_key *key, uint32_t *max_valnamelen, uint32_t *max_valbufsize)
+WERROR reg_key_valuesizes(const struct registry_key *key, uint32_t *max_valnamelen, uint32_t *max_valbufsize)
 {
 	int i = 0; 
 	struct registry_value *value;

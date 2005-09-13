@@ -112,7 +112,7 @@ static int reg_close_ldb_key (void *data)
 	return 0;
 }
 
-static struct ldb_dn *reg_path_to_ldb(TALLOC_CTX *mem_ctx, struct registry_key *from, const char *path, const char *add)
+static struct ldb_dn *reg_path_to_ldb(TALLOC_CTX *mem_ctx, const struct registry_key *from, const char *path, const char *add)
 {
 	TALLOC_CTX *local_ctx;
 	struct ldb_dn *ret = ldb_dn_new(mem_ctx);
@@ -153,7 +153,7 @@ static struct ldb_dn *reg_path_to_ldb(TALLOC_CTX *mem_ctx, struct registry_key *
 }
 
 
-static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, int idx, struct registry_key **subkey)
+static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx, const struct registry_key *k, int idx, struct registry_key **subkey)
 {
 	struct ldb_context *c = k->hive->backend_data;
 	struct ldb_message_element *el;
@@ -184,7 +184,7 @@ static WERROR ldb_get_subkey_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, 
 	return WERR_OK;
 }
 
-static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, int idx, struct registry_value **value)
+static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, const struct registry_key *k, int idx, struct registry_value **value)
 {
 	struct ldb_context *c = k->hive->backend_data;
 	struct ldb_key_data *kd = k->backend_data;
@@ -208,7 +208,7 @@ static WERROR ldb_get_value_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, i
 	return WERR_OK;
 }
 
-static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, struct registry_key *h, const char *name, struct registry_key **key)
+static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct registry_key *h, const char *name, struct registry_key **key)
 {
 	struct ldb_context *c = h->hive->backend_data;
 	struct ldb_message **msg;
@@ -265,7 +265,7 @@ static WERROR ldb_open_hive(struct registry_hive *hive, struct registry_key **k)
 	return WERR_OK;
 }
 
-static WERROR ldb_add_key (TALLOC_CTX *mem_ctx, struct registry_key *parent, const char *name, uint32_t access_mask, struct security_descriptor *sd, struct registry_key **newkey)
+static WERROR ldb_add_key (TALLOC_CTX *mem_ctx, const struct registry_key *parent, const char *name, uint32_t access_mask, struct security_descriptor *sd, struct registry_key **newkey)
 {
 	struct ldb_context *ctx = parent->hive->backend_data;
 	struct ldb_message *msg;
@@ -293,7 +293,7 @@ static WERROR ldb_add_key (TALLOC_CTX *mem_ctx, struct registry_key *parent, con
 	return WERR_OK;
 }
 
-static WERROR ldb_del_key (struct registry_key *key, const char *child)
+static WERROR ldb_del_key (const struct registry_key *key, const char *child)
 {
 	int ret;
 	struct ldb_key_data *kd = key->backend_data;
@@ -312,7 +312,7 @@ static WERROR ldb_del_key (struct registry_key *key, const char *child)
 	return WERR_OK;
 }
 
-static WERROR ldb_del_value (struct registry_key *key, const char *child)
+static WERROR ldb_del_value (const struct registry_key *key, const char *child)
 {
 	int ret;
 	struct ldb_key_data *kd = key->backend_data;
@@ -331,7 +331,7 @@ static WERROR ldb_del_value (struct registry_key *key, const char *child)
 	return WERR_OK;
 }
 
-static WERROR ldb_set_value (struct registry_key *parent, const char *name, uint32_t type, DATA_BLOB data)
+static WERROR ldb_set_value (const struct registry_key *parent, const char *name, uint32_t type, DATA_BLOB data)
 {
 	struct ldb_context *ctx = parent->hive->backend_data;
 	struct ldb_message *msg;
