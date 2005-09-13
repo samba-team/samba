@@ -688,8 +688,7 @@ check_fail_largetag(void)
 	{NULL, 8, "\x30\x06\xbf\x64\x03\x02\x01\x01",
 	 "wrong tag"},
 	{NULL, 10, "\x30\x08\xbf\x9a\x9b\x38\x03\x02\x01\x01",
-	 "still wrong tag"},
-	{NULL, -1, NULL, "overlarger buffer"}
+	 "still wrong tag"}
     };
     int ntests = sizeof(tests) / sizeof(*tests);
 
@@ -714,8 +713,7 @@ check_fail_sequence(void)
 	{NULL, 24, 
 	 "\x30\x17\xa0\x03\x02\x01\x01\xa1\x08\x30\x06\xbf\x7f\x03\x02\x01"
 	 "\x01\x02\x01\x01\xa2\x03\x02\x01\x01",
-	 "correct buffer but missing one to short"},
-	{NULL, -1, NULL, "overlarger buffer"}
+	 "correct buffer but missing one too short"}
     };
     int ntests = sizeof(tests) / sizeof(*tests);
 
@@ -732,8 +730,7 @@ check_fail_choice(void)
 	 "one too short"},
 	{NULL, 6,
 	 "\xa1\x03\x02\x02\x01",
-	 "one too short inner"},
-	{NULL, -1, NULL, "overlarger buffer"}
+	 "one too short inner"}
     };
     int ntests = sizeof(tests) / sizeof(*tests);
 
