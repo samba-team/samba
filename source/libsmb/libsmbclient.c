@@ -1798,7 +1798,7 @@ static off_t smbc_lseek_ctx(SMBCCTX *context, SMBCFILE *file, off_t offset, int 
 		if (!cli_qfileinfo(targetcli, file->cli_fd, NULL, &size, NULL, NULL,
 				   NULL, NULL, NULL)) 
 		{
-		    SMB_BIG_UINT b_size = size;
+		    SMB_OFF_T b_size = size;
 			if (!cli_getattrE(targetcli, file->cli_fd, NULL, &b_size, NULL, NULL,
 				      NULL)) 
 		    {
@@ -3057,7 +3057,7 @@ static off_t smbc_telldir_ctx(SMBCCTX *context, SMBCFILE *dir)
 	/*
 	 * We return the pointer here as the offset
 	 */
-	ret_val = (int)dir->dir_next;
+	ret_val = (off_t)dir->dir_next;
 	return ret_val;
 
 }
@@ -5188,7 +5188,7 @@ static int smbc_print_file_ctx(SMBCCTX *c_file, const char *fname, SMBCCTX *c_pr
 
         /* Try to open the file for reading ... */
 
-        if ((int)(fid1 = c_file->open(c_file, fname, O_RDONLY, 0666)) < 0) {
+        if ((long)(fid1 = c_file->open(c_file, fname, O_RDONLY, 0666)) < 0) {
                 
                 DEBUG(3, ("Error, fname=%s, errno=%i\n", fname, errno));
                 return -1;  /* smbc_open sets errno */
@@ -5197,7 +5197,7 @@ static int smbc_print_file_ctx(SMBCCTX *c_file, const char *fname, SMBCCTX *c_pr
 
         /* Now, try to open the printer file for writing */
 
-        if ((int)(fid2 = c_print->open_print_job(c_print, printq)) < 0) {
+        if ((long)(fid2 = c_print->open_print_job(c_print, printq)) < 0) {
 
                 saverr = errno;  /* Save errno */
                 c_file->close_fn(c_file, fid1);

@@ -754,7 +754,7 @@ static void offer_gss_spnego_mechs(void) {
 
 	/* Server negTokenInit (mech offerings) */
 	spnego.type = SPNEGO_NEG_TOKEN_INIT;
-	spnego.negTokenInit.mechTypes = SMB_XMALLOC_ARRAY(const char *, 3);
+	spnego.negTokenInit.mechTypes = SMB_XMALLOC_ARRAY(char *, 2);
 #ifdef HAVE_KRB5
 	spnego.negTokenInit.mechTypes[0] = smb_xstrdup(OID_KERBEROS5_OLD);
 	spnego.negTokenInit.mechTypes[1] = smb_xstrdup(OID_NTLMSSP);
@@ -1023,7 +1023,7 @@ static BOOL manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 	DATA_BLOB null_blob = data_blob(NULL, 0);
 	DATA_BLOB to_server;
 	char *to_server_base64;
-	const char *my_mechs[] = {OID_NTLMSSP, NULL};
+	char *my_mechs[] = {OID_NTLMSSP, NULL};
 
 	DEBUG(10, ("Got spnego negTokenInit with NTLMSSP\n"));
 
@@ -1123,7 +1123,7 @@ static void manage_client_ntlmssp_targ(SPNEGO_DATA spnego)
 
 	spnego.type = SPNEGO_NEG_TOKEN_TARG;
 	spnego.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
-	spnego.negTokenTarg.supportedMech = OID_NTLMSSP;
+	spnego.negTokenTarg.supportedMech = (char *)OID_NTLMSSP;
 	spnego.negTokenTarg.responseToken = request;
 	spnego.negTokenTarg.mechListMIC = null_blob;
 	
@@ -1307,7 +1307,7 @@ static void manage_gss_spnego_client_request(enum stdio_helper_mode stdio_helper
 
 		/* The server offers a list of mechanisms */
 
-		const char **mechType = spnego.negTokenInit.mechTypes;
+		const char **mechType = (const char **)spnego.negTokenInit.mechTypes;
 
 		while (*mechType != NULL) {
 

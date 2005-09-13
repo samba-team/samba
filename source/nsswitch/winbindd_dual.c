@@ -48,7 +48,7 @@ static void child_read_request(struct winbindd_cli_state *state)
 			sizeof(state->request));
 
 	if (len != sizeof(state->request)) {
-		DEBUG(0, ("Got invalid request length: %d\n", len));
+		DEBUG(0, ("Got invalid request length: %d\n", (int)len));
 		state->finished = True;
 		return;
 	}
@@ -58,7 +58,7 @@ static void child_read_request(struct winbindd_cli_state *state)
 		return;
 	}
 
-	DEBUG(10, ("Need to read %d extra bytes\n", state->request.extra_len));
+	DEBUG(10, ("Need to read %d extra bytes\n", (int)state->request.extra_len));
 
 	state->request.extra_data =
 		SMB_MALLOC_ARRAY(char, state->request.extra_len + 1);

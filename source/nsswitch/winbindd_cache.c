@@ -1631,7 +1631,7 @@ void cache_store_response(pid_t pid, struct winbindd_response *response)
 	/* There's extra data */
 
 	DEBUG(10, ("Storing extra data: len=%d\n",
-		   response->length - sizeof(*response)));
+		   (int)(response->length - sizeof(*response))));
 
 	fstr_sprintf(key_str, "DE/%d", pid);
 	if (tdb_store(wcache->tdb, string_tdb_data(key_str),
@@ -1679,7 +1679,7 @@ BOOL cache_retrieve_response(pid_t pid, struct winbindd_response * response)
 	/* There's extra data */
 
 	DEBUG(10, ("Retrieving extra data length=%d\n",
-		   response->length - sizeof(*response)));
+		   (int)(response->length - sizeof(*response))));
 
 	fstr_sprintf(key_str, "DE/%d", pid);
 	data = tdb_fetch(wcache->tdb, string_tdb_data(key_str));
@@ -1690,7 +1690,7 @@ BOOL cache_retrieve_response(pid_t pid, struct winbindd_response * response)
 	}
 
 	if (data.dsize != (response->length - sizeof(*response))) {
-		DEBUG(0, ("Invalid extra data length: %d\n", data.dsize));
+		DEBUG(0, ("Invalid extra data length: %d\n", (int)data.dsize));
 		SAFE_FREE(data.dptr);
 		return False;
 	}
