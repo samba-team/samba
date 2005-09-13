@@ -87,12 +87,14 @@ static void ldapsrv_process_message(struct ldapsrv_connection *conn,
 		DATA_BLOB b;
 
 		msg = call->replies->msg;
-		if (!ldap_encode(msg, &b)) {
+		if (!ldap_encode(msg, &b, call)) {
 			DEBUG(0,("Failed to encode ldap reply of type %d\n", msg->type));
 			goto failed;
 		}
 
 		status = data_blob_append(call, &blob, b.data, b.length);
+		data_blob_free(&b);
+
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 
 		DLIST_REMOVE(call->replies, call->replies);

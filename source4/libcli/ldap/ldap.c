@@ -189,7 +189,7 @@ static void ldap_encode_response(struct asn1_data *data, struct ldap_Result *res
 	}
 }
 
-BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
+BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ctx)
 {
 	struct asn1_data data;
 	int i, j;
@@ -462,7 +462,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		return False;
 	}
 
-	*result = data_blob(data.data, data.length);
+	*result = data_blob_talloc(mem_ctx, data.data, data.length);
 	asn1_free(&data);
 	return True;
 }
