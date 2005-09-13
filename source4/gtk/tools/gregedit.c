@@ -433,15 +433,6 @@ static void on_open_remote_activate(GtkMenuItem *menuitem, gpointer user_data)
 }
 
 
-static void on_save_activate(GtkMenuItem *menuitem, gpointer user_data)
-{
-	WERROR error = reg_save(registry, NULL);
-	if(!W_ERROR_IS_OK(error)) {
-		gtk_show_werror(mainwin, "Error while saving", error);
-	}
-}
-
-
 static void on_save_as_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	gint result;
@@ -450,7 +441,7 @@ static void on_save_as_activate(GtkMenuItem *menuitem, gpointer user_data)
 	result = gtk_dialog_run(GTK_DIALOG(savefilewin));
 	switch(result) {
 	case GTK_RESPONSE_OK:
-		error = reg_save(registry, gtk_file_selection_get_filename(GTK_FILE_SELECTION(savefilewin)));
+	/* FIXME:		error = reg_dump(registry, gtk_file_selection_get_filename(GTK_FILE_SELECTION(savefilewin))); */
 		if(!W_ERROR_IS_OK(error)) {
 			gtk_show_werror(mainwin, "Error while saving as", error);
 		}
@@ -886,9 +877,6 @@ static GtkWidget* create_mainwindow(void)
 	gtk_box_pack_start (GTK_BOX (vbox1), statusbar, FALSE, FALSE, 0);
 	gtk_statusbar_set_has_resize_grip (GTK_STATUSBAR (statusbar), FALSE);
 
-	g_signal_connect ((gpointer) save, "activate",
-					  G_CALLBACK (on_save_activate),
-					  NULL);
 	g_signal_connect ((gpointer) save_as, "activate",
 					  G_CALLBACK (on_save_as_activate),
 					  NULL);

@@ -23,7 +23,7 @@
 #include "system/dir.h"
 #include "system/filesys.h"
 
-static WERROR reg_dir_add_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, const char *name, uint32_t access_mask, struct security_descriptor *desc, struct registry_key **result)
+static WERROR reg_dir_add_key(TALLOC_CTX *mem_ctx, const struct registry_key *parent, const char *name, uint32_t access_mask, struct security_descriptor *desc, struct registry_key **result)
 {
 	char *path;
 	int ret;
@@ -35,7 +35,7 @@ static WERROR reg_dir_add_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, 
 	return WERR_INVALID_PARAM;
 }
 
-static WERROR reg_dir_del_key(struct registry_key *k, const char *name)
+static WERROR reg_dir_del_key(const struct registry_key *k, const char *name)
 {
 	char *child = talloc_asprintf(NULL, "%s/%s", (char *)k->backend_data, name);
 	WERROR ret;
@@ -47,7 +47,7 @@ static WERROR reg_dir_del_key(struct registry_key *k, const char *name)
 	return ret;
 }
 
-static WERROR reg_dir_open_key(TALLOC_CTX *mem_ctx, struct registry_key *p, const char *name, struct registry_key **subkey)
+static WERROR reg_dir_open_key(TALLOC_CTX *mem_ctx, const struct registry_key *p, const char *name, struct registry_key **subkey)
 {
 	DIR *d;
 	char *fullpath, *unixpath;
@@ -76,7 +76,7 @@ static WERROR reg_dir_open_key(TALLOC_CTX *mem_ctx, struct registry_key *p, cons
 	return WERR_OK;
 }
 
-static WERROR reg_dir_key_by_index(TALLOC_CTX *mem_ctx, struct registry_key *k, int idx, struct registry_key **key)
+static WERROR reg_dir_key_by_index(TALLOC_CTX *mem_ctx, const struct registry_key *k, int idx, struct registry_key **key)
 {
 	struct dirent *e;
 	char *fullpath = k->backend_data;
