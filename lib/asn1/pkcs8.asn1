@@ -17,7 +17,7 @@ PKCS8PrivateKeyInfo ::= SEQUENCE {
   version INTEGER,
   privateKeyAlgorithm PKCS8PrivateKeyAlgorithmIdentifier,
   privateKey PKCS8PrivateKey,
-  attributes [0] IMPLICIT PKCS8Attributes OPTIONAL
+  attributes [0] IMPLICIT SET OF Attribute OPTIONAL
 }
 
 PKCS8EncryptedData ::= OCTET STRING
