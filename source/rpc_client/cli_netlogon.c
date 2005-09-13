@@ -193,6 +193,7 @@ static NTSTATUS rpccli_net_auth2(struct rpc_pipe_client *cli,
         return result;
 }
 
+#if 0	/* not currebntly used */
 /****************************************************************************
  LSA Authenticate 3
 
@@ -242,6 +243,7 @@ static NTSTATUS rpccli_net_auth3(struct rpc_pipe_client *cli,
 
         return result;
 }
+#endif 	/* not currebntly used */
 
 /****************************************************************************
  Wrapper function that uses the auth and auth2 calls to set up a NETLOGON
