@@ -255,7 +255,7 @@ int smb_create_share_mode_entry(struct smbdb_ctx *db_ctx,
 		ld = (struct locking_data *)db_data.dptr;
 		ld->u.s.num_share_mode_entries = 1;
 		ld->u.s.delete_on_close = 0;
-		shares = (share_mode_entry *)db_data.dptr + sizeof(struct locking_data);
+		shares = (share_mode_entry *)(db_data.dptr + sizeof(struct locking_data));
 		create_share_mode_entry(shares, new_entry);
 		memcpy(db_data.dptr + sizeof(struct locking_data) + sizeof(share_mode_entry),
 			filename,
