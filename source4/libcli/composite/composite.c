@@ -44,3 +44,27 @@ NTSTATUS composite_wait(struct composite_context *c)
 }
 
 
+/* 
+   callback from composite_trigger_done() 
+*/
+static void composite_trigger(struct event_context *ev, struct timed_event *te,
+			      struct timeval t, void *ptr)
+{
+	struct composite_context *c = talloc_get_type(ptr, struct composite_context);
+	c->state = SMBCLI_REQUEST_DONE;
+	if (c->async.fn) {
+		c->async.fn(c);
+	}
+}
+
+
+/*
+  trigger an immediate 'done' event on a composite context
+  this is used when the composite code works out that the call
+  can be completed without waiting for any external event
+*/
+void composite_trigger_done(struct composite_context *c)
+{
+	/* a zero timeout means immediate */
+	event_add_timed(c->event_ctx, c, timeval_zero(), composite_trigger, c);
+}

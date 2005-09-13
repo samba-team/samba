@@ -352,17 +352,9 @@ struct composite_context *smb_composite_connect_send(struct smb_composite_connec
 	c->event_ctx = talloc_reference(c, state->sock->event.ctx);
 	c->private = state;
 
-	/* if the destination is an IP address, then skip the name resolution part */
-	if (is_ipaddress(io->in.dest_host)) {
-		state->stage = CONNECT_SOCKET;
-		state->creq = smbcli_sock_connect_send(state->sock, io->in.dest_host, 
-						       state->io->in.port, 
-						       io->in.dest_host);
-	} else {
-		state->stage = CONNECT_RESOLVE;
-		make_nbt_name_server(&name, io->in.dest_host);
-		state->creq = resolve_name_send(&name, c->event_ctx, lp_name_resolve_order());
-	}
+	state->stage = CONNECT_RESOLVE;
+	make_nbt_name_server(&name, io->in.dest_host);
+	state->creq = resolve_name_send(&name, c->event_ctx, lp_name_resolve_order());
 
 	if (state->creq == NULL) goto failed;
 	state->creq->async.private = c;

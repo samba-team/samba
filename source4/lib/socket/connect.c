@@ -36,11 +36,6 @@ static NTSTATUS connect_resolve(TALLOC_CTX *mem_ctx, const char *address,
 {
 	struct nbt_name name;
 
-	if (is_ipaddress(address) || strcasecmp("localhost", address) == 0) {
-		*ret_address = address;
-		return NT_STATUS_OK;
-	}
-
 	name.name = address;
 	name.scope = NULL;
 	name.type = NBT_NAME_CLIENT;
