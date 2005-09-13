@@ -8,12 +8,6 @@
 
 // The global widget we attach everything to
 var w = new QxWidget();
-with(w) {
-	setTop(0);
-	setLeft(0);
-	setWidth(docX());
-	setHeight(docY());
-}
 
 /* Qooxdoo's browser sniffer doesn't distinguish IE version.
 We'll cover IE 6 for now, but these checks need to be
@@ -143,6 +137,13 @@ function contextMenu(e)
 
 window.application.main = function()
 {
+	with(w) {
+		setTop(0);
+		setLeft(0);
+		setWidth(docX());
+		setHeight(docY());
+	}
+
 	var doc = this.getClientWindow().getClientDocument();
 	doc.addEventListener("contextmenu", contextMenu);
 	doc.add(w);
