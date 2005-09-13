@@ -3057,7 +3057,7 @@ static off_t smbc_telldir_ctx(SMBCCTX *context, SMBCFILE *dir)
 	/*
 	 * We return the pointer here as the offset
 	 */
-	ret_val = (off_t)dir->dir_next;
+	ret_val = (off_t)(long)dir->dir_next;
 	return ret_val;
 
 }

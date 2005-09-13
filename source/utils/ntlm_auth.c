@@ -1023,7 +1023,7 @@ static BOOL manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 	DATA_BLOB null_blob = data_blob(NULL, 0);
 	DATA_BLOB to_server;
 	char *to_server_base64;
-	char *my_mechs[] = {OID_NTLMSSP, NULL};
+	const char *my_mechs[] = {OID_NTLMSSP, NULL};
 
 	DEBUG(10, ("Got spnego negTokenInit with NTLMSSP\n"));
 
@@ -1053,7 +1053,7 @@ static BOOL manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 	}
 
 	spnego.type = SPNEGO_NEG_TOKEN_INIT;
-	spnego.negTokenInit.mechTypes = my_mechs;
+	spnego.negTokenInit.mechTypes = CONST_DISCARD(char **,my_mechs);
 	spnego.negTokenInit.reqFlags = 0;
 	spnego.negTokenInit.mechListMIC = null_blob;
 
