@@ -497,7 +497,7 @@ struct ldap_request *ldap_request_send(struct ldap_connection *conn,
 
 	msg->messageid = req->messageid;
 
-	if (!ldap_encode(msg, &req->data)) {
+	if (!ldap_encode(msg, &req->data, req)) {
 		goto failed;		
 	}
 

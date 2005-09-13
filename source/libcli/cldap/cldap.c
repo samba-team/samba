@@ -337,12 +337,11 @@ struct cldap_request *cldap_search_send(struct cldap_socket *cldap,
 		goto failed;
 	}
 
-	if (!ldap_encode(msg, &req->encoded)) {
+	if (!ldap_encode(msg, &req->encoded, req)) {
 		DEBUG(0,("Failed to encode cldap message to %s:%d\n",
 			 req->dest_addr, req->dest_port));
 		goto failed;
 	}
-	talloc_steal(req, req->encoded.data);
 
 	DLIST_ADD_END(cldap->send_queue, req, struct cldap_request *);
 
@@ -389,13 +388,12 @@ NTSTATUS cldap_reply_send(struct cldap_socket *cldap, struct cldap_reply *io)
 		msg->type = LDAP_TAG_SearchResultEntry;
 		msg->r.SearchResultEntry = *io->response;
 
-		if (!ldap_encode(msg, &blob1)) {
+		if (!ldap_encode(msg, &blob1, req)) {
 			DEBUG(0,("Failed to encode cldap message to %s:%d\n",
 				 req->dest_addr, req->dest_port));
 			status = NT_STATUS_INVALID_PARAMETER;
 			goto failed;
 		}
-		talloc_steal(req, blob1.data);
 	} else {
 		blob1 = data_blob(NULL, 0);
 	}
@@ -403,13 +401,12 @@ NTSTATUS cldap_reply_send(struct cldap_socket *cldap, struct cldap_reply *io)
 	msg->type = LDAP_TAG_SearchResultDone;
 	msg->r.SearchResultDone = *io->result;
 
-	if (!ldap_encode(msg, &blob2)) {
+	if (!ldap_encode(msg, &blob2, req)) {
 		DEBUG(0,("Failed to encode cldap message to %s:%d\n",
 			 req->dest_addr, req->dest_port));
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto failed;
 	}
-	talloc_steal(req, blob2.data);
 
 	req->encoded = data_blob_talloc(req, NULL, blob1.length + blob2.length);
 	if (req->encoded.data == NULL) goto failed;
