@@ -482,12 +482,16 @@ check_fail_boolean(void)
 static int
 check_fail_general_string(void)
 {
+#if 0
     struct test_case tests[] = {
     };
     int ntests = sizeof(tests) / sizeof(*tests);
 
     return generic_decode_fail(tests, ntests, sizeof(heim_general_string),
 			       (generic_decode)der_get_general_string);
+#else
+    return 0;
+#endif
 }
 
 static int
@@ -522,12 +526,16 @@ check_fail_universal_string(void)
 static int
 check_fail_heim_integer(void)
 {
+#if 0
     struct test_case tests[] = {
     };
     int ntests = sizeof(tests) / sizeof(*tests);
 
     return generic_decode_fail(tests, ntests, sizeof(heim_integer),
 			       (generic_decode)der_get_heim_integer);
+#else
+    return 0;
+#endif
 }
 
 static int
