@@ -1,4 +1,30 @@
-2005-08-23 Love Hörnquist Åstrand <lha@it.su.se>
+2005-09-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* pkcs8.asn1 (PKCS8PrivateKeyInfo): Inline SET OF to avoid
+	compiler "feature"
+	
+	* check-common.c: Avoid signedness warnings.
+	
+	* check-common.h: Makes bytes native platform signed to avoid
+	casting everywhere
+	
+	* check-der.c: Don't depend on malloc(very-very-larger-value) will
+	fail.  Cast to unsigned long before printing size_t.
+	
+	* check-gen.c: Don't depend on malloc(very-very-larger-value) will
+	fail.
+	
+	* check-gen.c: Fix signedness warnings.
+	
+	* lex.l: unput() have to hanppen in actions for flex 2.5.31, can
+	do them in user code sesction, so move up handle_comment and
+	handle_string into action, not much sharing was done anyway.
+	
+2005-09-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* check-der.c (test_one_int): len and len_len is size_t
+
+2005-08-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gen_encode.c: Change name of oldret for each instance its used
 	to avoid shadow warning. From: Stefan Metzmacher
