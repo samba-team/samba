@@ -82,7 +82,7 @@ int num_external_services( void )
 		strncpy( external_services_string, data.dptr, data.dsize );
 		external_services_string[data.dsize] = 0;
 		DEBUG(8,("enum_external_services: services list is %s, size is %d\n",
-			external_services_string, data.dsize));
+			external_services_string, (int)data.dsize));
 	}
 	
 	SAFE_FREE( data.dptr );
@@ -136,7 +136,8 @@ WERROR enum_external_services(TALLOC_CTX *tcx,ENUM_SERVICES_STATUS **svc_ptr, in
 		if ((key_data.dptr != NULL) && (key_data.dsize != 0)) {
 			strncpy(external_services_string,key_data.dptr,key_data.dsize);
 			external_services_string[key_data.dsize] = 0;
-			DEBUG(8,("enum_external_services: services list is %s, size is %d\n",external_services_string,key_data.dsize));
+			DEBUG(8,("enum_external_services: services list is %s, size is %d\n",
+				external_services_string,(int)key_data.dsize));
 		}
 	} 
 	svc_list = str_list_make(external_services_string,NULL);
@@ -263,7 +264,8 @@ int num_internal_services(void)
 		if ((key_data.dptr != NULL) && (key_data.dsize != 0)) {
 			strncpy(internal_services_string,key_data.dptr,key_data.dsize);
 			internal_services_string[key_data.dsize] = 0;
-			DEBUG(8,("enum_internal_services: services list is %s, size is %d\n",internal_services_string,key_data.dsize));
+			DEBUG(8,("enum_internal_services: services list is %s, size is %d\n",
+				internal_services_string,(int)key_data.dsize));
 		}
 	} 
 	svc_list = str_list_make(internal_services_string,NULL);

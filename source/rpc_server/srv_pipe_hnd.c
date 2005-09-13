@@ -526,7 +526,7 @@ static void free_pipe_context(pipes_struct *p)
 {
 	if (p->mem_ctx) {
 		DEBUG(3,("free_pipe_context: destroying talloc pool of size "
-			 "%llu\n", talloc_total_size(p->mem_ctx) ));
+			 "%lu\n", (unsigned long)talloc_total_size(p->mem_ctx) ));
 		talloc_free_children(p->mem_ctx);
 	} else {
 		p->mem_ctx = talloc_init("pipe %s %p", p->name, p);

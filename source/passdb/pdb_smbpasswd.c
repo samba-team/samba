@@ -651,7 +651,7 @@ Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("add_smbfilepwd_entry(%d): new_entry_len %d made line |%s|", 
-			fd, new_entry_length, new_entry));
+			fd, (int)new_entry_length, new_entry));
 #endif
 
 	if ((wr_len = write(fd, new_entry, new_entry_length)) != new_entry_length) {

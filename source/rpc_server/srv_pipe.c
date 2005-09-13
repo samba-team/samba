@@ -1886,7 +1886,7 @@ BOOL api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in,
 	/* Pull the auth header and the following data into a blob. */
 	if(!prs_set_offset(rpc_in, RPC_HDR_REQ_LEN + data_len)) {
 		DEBUG(0,("api_pipe_ntlmssp_auth_process: cannot move offset to %u.\n",
-			(unsigned int)RPC_HDR_REQ_LEN + data_len ));
+			(unsigned int)RPC_HDR_REQ_LEN + (unsigned int)data_len ));
 		*pstatus = NT_STATUS_INVALID_PARAMETER;
 		return False;
 	}

@@ -1246,7 +1246,7 @@ packet sent to name %s from IP %s\n",
 packet sent to name %s from IP %s\n",
 			dgram->datasize,
 			len,
-			PTR_DIFF(buf2, dgram->data),
+			(int)PTR_DIFF(buf2, dgram->data),
 			nmb_namestr(&dgram->dest_name),
 			inet_ntoa(p->ip) ));
 		return;
@@ -1257,7 +1257,7 @@ packet sent to name %s from IP %s\n",
 packet sent to name %s from IP %s\n",
 			dgram->datasize,
 			len,
-			PTR_DIFF(buf2, dgram->data),
+			(int)PTR_DIFF(buf2, dgram->data),
 			nmb_namestr(&dgram->dest_name),
 			inet_ntoa(p->ip) ));
 		return;

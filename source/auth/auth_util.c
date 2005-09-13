@@ -372,7 +372,7 @@ BOOL make_user_info_for_reply(auth_usersupplied_info **user_info,
 		unsigned char local_lm_response[24];
 		
 #ifdef DEBUG_PASSWORD
-		DEBUG(10,("Unencrypted password (len %d):\n",plaintext_password.length));
+		DEBUG(10,("Unencrypted password (len %d):\n",(int)plaintext_password.length));
 		dump_data(100, plaintext_password.data, plaintext_password.length);
 #endif
 

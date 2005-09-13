@@ -945,7 +945,7 @@ static WERROR make_default_reg_sd( TALLOC_CTX *ctx, SEC_DESC **psd )
 	SEC_ACE ace[2];         /* at most 2 entries */
 	SEC_ACCESS mask;
 	SEC_ACL *psa = NULL;
-	uint32 sd_size;
+	size_t sd_size;
 
 	/* set the owner to BUILTIN\Administrator */
 

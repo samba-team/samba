@@ -77,7 +77,7 @@ static SEC_DESC* construct_scm_sd( TALLOC_CTX *ctx )
 	size_t i = 0;
 	SEC_DESC *sd;
 	SEC_ACL *acl;
-	uint32 sd_size;
+	size_t sd_size;
 
 	/* basic access for Everyone */
 	
@@ -111,7 +111,7 @@ static SEC_DESC* construct_service_sd( TALLOC_CTX *ctx )
 	size_t i = 0;
 	SEC_DESC *sd;
 	SEC_ACL *acl;
-	uint32 sd_size;
+	size_t sd_size;
 
 	/* basic access for Everyone */
 	
@@ -724,7 +724,7 @@ WERROR _svcctl_query_service_config( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CON
                       r_u->config.displayname->uni_str_len);
 	
        	DEBUG(10, ("_svcctl_query_service_config: ****** need to have a buffer of [%d], [%d] for struct \n",needed_size,
-		   sizeof(SERVICE_CONFIG)));
+		   (unsigned int)sizeof(SERVICE_CONFIG)));
 	DEBUG(10, ("\tsize of executable path : %d\n",r_u->config.executablepath->uni_str_len));
 	DEBUG(10, ("\tsize of loadordergroup  : %d\n", r_u->config.loadordergroup->uni_str_len)); 
 	DEBUG(10, ("\tsize of dependencies    : %d\n", r_u->config.dependencies->uni_str_len)); 

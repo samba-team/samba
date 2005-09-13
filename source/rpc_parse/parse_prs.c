@@ -605,9 +605,9 @@ BOOL prs_pointer( const char *name, prs_struct *ps, int depth,
 {
 	uint32 data_p;
 
-	/* caputure the pointer value to stream */
+	/* output f000baaa to stream if the pointer is non-zero. */
 
-	data_p = (uint32) *data;
+	data_p = *data ? 0xf000baaa : 0;
 
 	if ( !prs_uint32("ptr", ps, depth, &data_p ))
 		return False;

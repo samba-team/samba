@@ -382,7 +382,7 @@ static void process_oplock_break_message(int msg_type, pid_t src,
 	}
 
 	if (len != sizeof(*msg)) {
-		DEBUG(0, ("Got invalid msg len %d\n", len));
+		DEBUG(0, ("Got invalid msg len %d\n", (int)len));
 		return;
 	}
 
@@ -497,7 +497,7 @@ static void process_kernel_oplock_break(int msg_type, pid_t src,
 	}
 
 	if (len != sizeof(*msg)) {
-		DEBUG(0, ("Got invalid msg len %d\n", len));
+		DEBUG(0, ("Got invalid msg len %d\n", (int)len));
 		return;
 	}
 
@@ -571,7 +571,7 @@ static void process_oplock_break_response(int msg_type, pid_t src,
 	}
 
 	if (len != sizeof(*msg)) {
-		DEBUG(0, ("Got invalid msg len %d\n", len));
+		DEBUG(0, ("Got invalid msg len %d\n", (int)len));
 		return;
 	}
 
@@ -594,7 +594,7 @@ static void process_open_retry_message(int msg_type, pid_t src,
 	}
 
 	if (len != sizeof(*msg)) {
-		DEBUG(0, ("Got invalid msg len %d\n", len));
+		DEBUG(0, ("Got invalid msg len %d\n", (int)len));
 		return;
 	}
 

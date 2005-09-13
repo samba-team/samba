@@ -72,7 +72,7 @@ static SEC_DESC* construct_registry_sd( TALLOC_CTX *ctx )
 	size_t i = 0;
 	SEC_DESC *sd;
 	SEC_ACL *acl;
-	uint32 sd_size;
+	size_t sd_size;
 
 	/* basic access for Everyone */
 	

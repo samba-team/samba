@@ -73,8 +73,8 @@ static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_STATE *ntlmssp_state,
 			case NTLMSSP_SEND:
 	                        DEBUG(100,("ntlmssp_make_packet_signature: SEND seq = %u, len = %u, pdu_len = %u\n",
 					ntlmssp_state->ntlm2_send_seq_num,
-					length,
-					pdu_length));
+					(unsigned int)length,
+					(unsigned int)pdu_length));
 
 				SIVAL(seq_num, 0, ntlmssp_state->ntlm2_send_seq_num);
 				ntlmssp_state->ntlm2_send_seq_num++;
@@ -84,8 +84,8 @@ static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_STATE *ntlmssp_state,
 
 				DEBUG(100,("ntlmssp_make_packet_signature: RECV seq = %u, len = %u, pdu_len = %u\n",
 					ntlmssp_state->ntlm2_recv_seq_num,
-					length,
-					pdu_length));
+					(unsigned int)length,
+					(unsigned int)pdu_length));
 
 				SIVAL(seq_num, 0, ntlmssp_state->ntlm2_recv_seq_num);
 				ntlmssp_state->ntlm2_recv_seq_num++;
