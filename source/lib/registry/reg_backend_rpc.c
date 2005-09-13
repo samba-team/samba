@@ -81,7 +81,7 @@ static struct {
 { 0, NULL }
 };
 
-static WERROR rpc_query_key(struct registry_key *k);
+static WERROR rpc_query_key(const struct registry_key *k);
 
 static WERROR rpc_get_predefined_key (struct registry_context *ctx, uint32_t hkey_type, struct registry_key **k)
 {
@@ -137,7 +137,7 @@ static WERROR rpc_key_put_rpc_data(TALLOC_CTX *mem_ctx, struct registry_key *k)
 }
 #endif
 
-static WERROR rpc_open_key(TALLOC_CTX *mem_ctx, struct registry_key *h, const char *name, struct registry_key **key)
+static WERROR rpc_open_key(TALLOC_CTX *mem_ctx, const struct registry_key *h, const char *name, struct registry_key **key)
 {
 	struct rpc_key_data *mykeydata;
     struct winreg_OpenKey r;
@@ -163,7 +163,7 @@ static WERROR rpc_open_key(TALLOC_CTX *mem_ctx, struct registry_key *h, const ch
 	return r.out.result;
 }
 
-static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx, struct registry_key *parent, int n, struct registry_value **value)  
+static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx, const struct registry_key *parent, int n, struct registry_value **value)  
 {
 	struct rpc_key_data *mykeydata = parent->backend_data;
 	WERROR error;
@@ -211,7 +211,7 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx, struct registry_key *p
 	return r.out.result;
 }
 
-static WERROR rpc_get_subkey_by_index(TALLOC_CTX *mem_ctx, struct registry_key *parent, int n, struct registry_key **subkey) 
+static WERROR rpc_get_subkey_by_index(TALLOC_CTX *mem_ctx, const struct registry_key *parent, int n, struct registry_key **subkey) 
 {
 	struct winreg_EnumKey r;
 	struct rpc_key_data *mykeydata = parent->backend_data;
@@ -242,7 +242,7 @@ static WERROR rpc_get_subkey_by_index(TALLOC_CTX *mem_ctx, struct registry_key *
 	return r.out.result;
 }
 
-static WERROR rpc_add_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, const char *name, uint32_t access_mask, struct security_descriptor *sec, struct registry_key **key)
+static WERROR rpc_add_key(TALLOC_CTX *mem_ctx, const struct registry_key *parent, const char *name, uint32_t access_mask, struct security_descriptor *sec, struct registry_key **key)
 {
 	NTSTATUS status;
 	struct winreg_CreateKey r;
@@ -272,7 +272,7 @@ static WERROR rpc_add_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, cons
 	return r.out.result;
 }
 
-static WERROR rpc_query_key(struct registry_key *k)
+static WERROR rpc_query_key(const struct registry_key *k)
 {
     NTSTATUS status;
     struct winreg_QueryInfoKey r;
@@ -300,7 +300,7 @@ static WERROR rpc_query_key(struct registry_key *k)
 	return r.out.result;
 }
 
-static WERROR rpc_del_key(struct registry_key *parent, const char *name)
+static WERROR rpc_del_key(const struct registry_key *parent, const char *name)
 {
 	NTSTATUS status;
 	struct rpc_key_data *mykeydata = parent->backend_data;
@@ -317,7 +317,7 @@ static WERROR rpc_del_key(struct registry_key *parent, const char *name)
 	return r.out.result;
 }
 
-static WERROR rpc_num_values(struct registry_key *key, uint32_t *count) 
+static WERROR rpc_num_values(const struct registry_key *key, uint32_t *count) 
 {
 	struct rpc_key_data *mykeydata = key->backend_data;
 	WERROR error;
@@ -331,7 +331,7 @@ static WERROR rpc_num_values(struct registry_key *key, uint32_t *count)
 	return WERR_OK;
 }
 
-static WERROR rpc_num_subkeys(struct registry_key *key, uint32_t *count) 
+static WERROR rpc_num_subkeys(const struct registry_key *key, uint32_t *count) 
 {
 	struct rpc_key_data *mykeydata = key->backend_data;
 	WERROR error;

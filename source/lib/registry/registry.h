@@ -43,24 +43,26 @@
 #define REGISTRY_INTERFACE_VERSION 1
 
 /* structure to store the registry handles */
-struct registry_key {
-  char *name;         /* Name of the key                    */
-  const char *path;		  /* Full path to the key */
-  char *class_name; /* Name of key class */
-  NTTIME last_mod; /* Time last modified                 */
+struct registry_key 
+{
+  char *name;       
+  const char *path;	
+  char *class_name; 
+  NTTIME last_mod; 
   struct registry_hive *hive;
   void *backend_data;
 };
 
-struct registry_value {
+struct registry_value 
+{
   char *name;
   unsigned int data_type;
   DATA_BLOB data;
 };
 
 /* FIXME */
-typedef void (*key_notification_function) (void);
-typedef void (*value_notification_function) (void);
+typedef void (*reg_key_notification_function) (void);
+typedef void (*reg_value_notification_function) (void);
 
 /* 
  * Container for function pointers to enumeration routines
@@ -85,38 +87,39 @@ struct hive_operations {
 	WERROR (*open_hive) (struct registry_hive *, struct registry_key **);
 
 	/* Or this one */
-	WERROR (*open_key) (TALLOC_CTX *, struct registry_key *, const char *name, struct registry_key **);
+	WERROR (*open_key) (TALLOC_CTX *, const struct registry_key *, const char *name, struct registry_key **);
 
-	WERROR (*num_subkeys) (struct registry_key *, uint32_t *count);
-	WERROR (*num_values) (struct registry_key *, uint32_t *count);
-	WERROR (*get_subkey_by_index) (TALLOC_CTX *, struct registry_key *, int idx, struct registry_key **);
-
-	/* Can not contain more then one level */
-	WERROR (*get_subkey_by_name) (TALLOC_CTX *, struct registry_key *, const char *name, struct registry_key **);
-	WERROR (*get_value_by_index) (TALLOC_CTX *, struct registry_key *, int idx, struct registry_value **);
+	WERROR (*num_subkeys) (const struct registry_key *, uint32_t *count);
+	WERROR (*num_values) (const struct registry_key *, uint32_t *count);
+	WERROR (*get_subkey_by_index) (TALLOC_CTX *, const struct registry_key *, int idx, struct registry_key **);
 
 	/* Can not contain more then one level */
-	WERROR (*get_value_by_name) (TALLOC_CTX *, struct registry_key *, const char *name, struct registry_value **);
+	WERROR (*get_subkey_by_name) (TALLOC_CTX *, const struct registry_key *, const char *name, struct registry_key **);
+	WERROR (*get_value_by_index) (TALLOC_CTX *, const struct registry_key *, int idx, struct registry_value **);
+
+	/* Can not contain more then one level */
+	WERROR (*get_value_by_name) (TALLOC_CTX *, const struct registry_key *, const char *name, struct registry_value **);
 
 	/* Security control */
-	WERROR (*key_get_sec_desc) (TALLOC_CTX *, struct registry_key *, struct security_descriptor **);
-	WERROR (*key_set_sec_desc) (struct registry_key *, struct security_descriptor *);
+	WERROR (*key_get_sec_desc) (TALLOC_CTX *, const struct registry_key *, struct security_descriptor **);
+	WERROR (*key_set_sec_desc) (const struct registry_key *, const struct security_descriptor *);
 
 	/* Notification */
-	WERROR (*request_key_change_notify) (struct registry_key *, key_notification_function);
-	WERROR (*request_value_change_notify) (struct registry_value *, value_notification_function);
+	WERROR (*request_key_change_notify) (const struct registry_key *, reg_key_notification_function);
+	WERROR (*request_value_change_notify) (const struct registry_value *, reg_value_notification_function);
 
 	/* Key management */
-	WERROR (*add_key)(TALLOC_CTX *, struct registry_key *, const char *name, uint32_t access_mask, struct security_descriptor *, struct registry_key **);
-	WERROR (*del_key)(struct registry_key *, const char *name);
-	WERROR (*flush_key) (struct registry_key *);
+	WERROR (*add_key)(TALLOC_CTX *, const struct registry_key *, const char *name, uint32_t access_mask, struct security_descriptor *, struct registry_key **);
+	WERROR (*del_key)(const struct registry_key *, const char *name);
+	WERROR (*flush_key) (const struct registry_key *);
 
 	/* Value management */
-	WERROR (*set_value)(struct registry_key *, const char *name, uint32_t type, DATA_BLOB data); 
-	WERROR (*del_value)(struct registry_key *, const char *valname);
+	WERROR (*set_value)(const struct registry_key *, const char *name, uint32_t type, const DATA_BLOB data); 
+	WERROR (*del_value)(const struct registry_key *, const char *valname);
 };
 
-struct registry_hive {
+struct registry_hive
+{
 	const struct hive_operations *functions;
 	struct registry_key *root;
 	void *backend_data;

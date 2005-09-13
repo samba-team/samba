@@ -51,7 +51,7 @@ interface regf
 	} regf_hdr;
 
 	/* 
-		hbin probably means hive-bin (what bin stands for I don't know)
+		hbin probably means hive-bin (i.e. hive-container)
 		This block is always a multiple
 		of 4kb in size.
      */

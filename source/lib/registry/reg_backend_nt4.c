@@ -367,7 +367,7 @@ static uint32_t hbin_store_tdr_resize (struct regf_data *regf, tdr_push_fn_t pus
 	return ret;
 }
 
-static WERROR regf_num_subkeys (struct registry_key *key, uint32_t *count)
+static WERROR regf_num_subkeys (const struct registry_key *key, uint32_t *count)
 {
 	struct nk_block *nk = key->backend_data;
 
@@ -376,7 +376,7 @@ static WERROR regf_num_subkeys (struct registry_key *key, uint32_t *count)
 	return WERR_OK;
 }
 
-static WERROR regf_num_values (struct registry_key *key, uint32_t *count)
+static WERROR regf_num_values (const struct registry_key *key, uint32_t *count)
 {
 	struct nk_block *nk = key->backend_data;
 
@@ -415,7 +415,7 @@ static struct registry_key *regf_get_key (TALLOC_CTX *ctx, struct regf_data *reg
 	return ret;
 }
 
-static WERROR regf_get_value (TALLOC_CTX *ctx, struct registry_key *key, int idx, struct registry_value **ret)
+static WERROR regf_get_value (TALLOC_CTX *ctx, const struct registry_key *key, int idx, struct registry_value **ret)
 {
 	struct nk_block *nk = key->backend_data;
 	struct vk_block *vk;
@@ -468,7 +468,7 @@ static WERROR regf_get_value (TALLOC_CTX *ctx, struct registry_key *key, int idx
 	return WERR_OK;
 }
 
-static WERROR regf_get_subkey (TALLOC_CTX *ctx, struct registry_key *key, int idx, struct registry_key **ret)
+static WERROR regf_get_subkey (TALLOC_CTX *ctx, const struct registry_key *key, int idx, struct registry_key **ret)
 {
 	DATA_BLOB data;
 	struct nk_block *nk = key->backend_data;
@@ -522,13 +522,13 @@ static WERROR regf_get_subkey (TALLOC_CTX *ctx, struct registry_key *key, int id
 }
 
 
-static WERROR regf_set_sec_desc (struct registry_key *key, struct security_descriptor *sec_desc)
+static WERROR regf_set_sec_desc (const struct registry_key *key, const struct security_descriptor *sec_desc)
 {
 	/* FIXME */
 	return WERR_NOT_SUPPORTED;
 }
 
-static WERROR regf_get_sec_desc(TALLOC_CTX *ctx, struct registry_key *key, struct security_descriptor **sd)
+static WERROR regf_get_sec_desc(TALLOC_CTX *ctx, const struct registry_key *key, struct security_descriptor **sd)
 {
 	struct nk_block *nk = key->backend_data;
 	struct sk_block sk;
@@ -588,14 +588,14 @@ static uint32_t lf_add_entry (struct regf_data *regf, uint32_t list_offset, cons
 	return ret;
 }
 
-static WERROR regf_del_value (struct registry_key *parent, const char *name)
+static WERROR regf_del_value (const struct registry_key *parent, const char *name)
 {
 	/* FIXME */
 	return WERR_NOT_SUPPORTED;
 }
 
 
-static WERROR regf_del_key (struct registry_key *parent, const char *name)
+static WERROR regf_del_key (const struct registry_key *parent, const char *name)
 {
 	struct nk_block *nk = parent->backend_data;
 
@@ -609,7 +609,7 @@ static WERROR regf_del_key (struct registry_key *parent, const char *name)
 	return WERR_NOT_SUPPORTED;
 }
 
-static WERROR regf_add_key (TALLOC_CTX *ctx, struct registry_key *parent, const char *name, uint32_t access_mask, struct security_descriptor *sec_desc, struct registry_key **ret)
+static WERROR regf_add_key (TALLOC_CTX *ctx, const struct registry_key *parent, const char *name, uint32_t access_mask, struct security_descriptor *sec_desc, struct registry_key **ret)
 {
 	struct nk_block *parent_nk = parent->backend_data, nk;
 	struct regf_data *regf = parent->hive->backend_data;
@@ -645,7 +645,7 @@ static WERROR regf_add_key (TALLOC_CTX *ctx, struct registry_key *parent, const 
 	return WERR_OK;
 }
 
-static WERROR regf_set_value (struct registry_key *key, const char *name, uint32_t type, DATA_BLOB data)
+static WERROR regf_set_value (const struct registry_key *key, const char *name, uint32_t type, const DATA_BLOB data)
 {
 	/* FIXME */
 

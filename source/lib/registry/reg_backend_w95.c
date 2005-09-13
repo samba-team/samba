@@ -267,7 +267,7 @@ static WERROR w95_open_reg (struct registry_hive *h, struct registry_key **root)
 	return WERR_OK;
 }
 
-static WERROR w95_get_subkey_by_index (TALLOC_CTX *mem_ctx, struct registry_key *parent, int n, struct registry_key **key)
+static WERROR w95_get_subkey_by_index (TALLOC_CTX *mem_ctx, const struct registry_key *parent, int n, struct registry_key **key)
 {
 	CREG *creg = parent->hive->backend_data;
 	RGKN_KEY *rgkn_key = parent->backend_data;
@@ -303,7 +303,7 @@ static WERROR w95_get_subkey_by_index (TALLOC_CTX *mem_ctx, struct registry_key 
 	return WERR_NO_MORE_ITEMS;
 }
 
-static WERROR w95_num_values(struct registry_key *k, uint32_t *count)
+static WERROR w95_num_values(const struct registry_key *k, uint32_t *count)
 {
 	RGKN_KEY *rgkn_key = k->backend_data;
 	RGDB_KEY *rgdb_key = LOCN_RGDB_KEY((CREG *)k->hive->backend_data, rgkn_key->id.rgdb, rgkn_key->id.id);
@@ -315,7 +315,7 @@ static WERROR w95_num_values(struct registry_key *k, uint32_t *count)
 	return WERR_OK;
 }
 
-static WERROR w95_get_value_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, int idx, struct registry_value **value)
+static WERROR w95_get_value_by_id(TALLOC_CTX *mem_ctx, const struct registry_key *k, int idx, struct registry_value **value)
 {
 	RGKN_KEY *rgkn_key = k->backend_data;
 	DWORD i;
