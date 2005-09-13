@@ -70,7 +70,7 @@ static int		smb_print(struct cli_state *, char *, FILE *);
   FILE		*fp;		/* File to print */
   int		status=0;		/* Status of LPD job */
   struct cli_state *cli;	/* SMB interface */
-  char null_str[0];
+  char null_str[1];
 
   null_str[0] = '\0';
 
