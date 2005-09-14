@@ -292,7 +292,7 @@ p11_get_session(hx509_security_device module, const char *conf, int slot)
 	free(prompt);
 
 	ret = P11FUNC(module, Login,
-		      (P11SESSION(module), CKU_USER, "3962", 4));
+		      (P11SESSION(module), CKU_USER, (unsigned char*)"3962", 4));
 	if (ret != CKR_OK)
 	    printf("login failed\n");
 	else
