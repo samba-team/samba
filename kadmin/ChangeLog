@@ -1,3 +1,13 @@
+2005-09-14  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* dump-format.txt: Add extensions, fill in missing fields.
+
+2005-09-08  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* init.c (create_random_entry): create principal with random
+	password even though its disabled. From Andrew Bartlet
+	<abartlet@samba.org>
+	
 2005-09-01  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* kadm_conn.c: Use socket_set_reuseaddr and socket_set_ipv6only.
