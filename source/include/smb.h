@@ -208,7 +208,8 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 #define PI_SVCCTL		11
 #define PI_EVENTLOG 		12
 #define PI_UNIXINFO		13
-#define PI_MAX_PIPES		14
+#define PI_NTSVCS		14
+#define PI_MAX_PIPES		15
 
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
 typedef struct nttime_info {

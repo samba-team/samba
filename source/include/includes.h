@@ -927,6 +927,7 @@ extern int errno;
 #include "ntdomain.h"
 
 #include "rpc_svcctl.h"
+#include "rpc_ntsvcs.h"
 #include "rpc_lsa.h"
 #include "rpc_netlogon.h"
 #include "reg_objects.h"
