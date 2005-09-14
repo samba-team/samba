@@ -5,10 +5,6 @@
    released under the GNU GPL Version 2 or later
 */
 
-
-// The global widget we attach everything to
-var w = new QxWidget();
-
 /* Qooxdoo's browser sniffer doesn't distinguish IE version.
 We'll cover IE 6 for now, but these checks need to be
 revisited for fuller browser coverage. */
@@ -122,53 +118,4 @@ Window.small = SmallWindow;
 Window.standard = StandardWindow;
 Window.large = LargeWindow;
 
-function contextMenu(e)
-{	
-	var t = e.getTarget()
-	var tObj = t.getHtmlAttribute("class")
-
-	if (tObj == 'QxWidget') {
-		clientContextMenu(e);
-	} else if (tObj == 'QxWindowPane') {
-		windowContextMenu(t, e);
-	}
-}
-
-
-window.application.main = function()
-{
-	with(w) {
-		setTop(0);
-		setLeft(0);
-		setWidth(docX());
-		setHeight(docY());
-	}
-
-	var doc = this.getClientWindow().getClientDocument();
-	doc.addEventListener("contextmenu", contextMenu);
-	doc.add(w);
-
-	var bar = new QxMenuBar;
-	with (bar) {
-		setBottom(0);
-		setLeft(0);
-		setWidth("100%");
-		setHeight(25);
-		setBackgroundColor("ThreeDFace");
-	}
-
-	var start = new QxMenuButton("START");
-	start.addEventListener("click", function() {
-		startMenu();
-	});
-	bar.add(start);
-
-	w.add(bar);
-}
-
-window.onresize = function() 
-{
-	w.setWidth(docX());
-	w.setHeight(docY());
-}
 

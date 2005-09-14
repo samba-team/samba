@@ -17,15 +17,6 @@
 body {
   background-color:#3A6EA5;
 }
-#toolbar {
-  background-color:ThreeDFace;
-  position:fixed;
-  bottom:0;
-  height:25px;
-  width:100%;
-  line-height:25px;
-  border-top:1px outset #000;
-}
 </style>
 
 </head>
