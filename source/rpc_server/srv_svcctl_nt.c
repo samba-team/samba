@@ -39,6 +39,11 @@ extern SERVICE_CONTROL_OPS winreg_svc_ops;
 
 struct service_control_op *svcctl_ops;
 
+static struct generic_mapping scm_generic_map =
+	{ SC_MANAGER_READ_ACCESS, SC_MANAGER_WRITE_ACCESS, SC_MANAGER_EXECUTE_ACCESS, SC_MANAGER_ALL_ACCESS };
+static struct generic_mapping svc_generic_map =
+	{ SERVICE_READ_ACCESS, SERVICE_WRITE_ACCESS, SERVICE_EXECUTE_ACCESS, SERVICE_ALL_ACCESS };
+
 
 /********************************************************************
 ********************************************************************/
@@ -247,6 +252,7 @@ WERROR _svcctl_open_scmanager(pipes_struct *p, SVCCTL_Q_OPEN_SCMANAGER *q_u, SVC
 	if ( !(sec_desc = construct_scm_sd( p->mem_ctx )) )
 		return WERR_NOMEM;
 		
+	se_map_generic( &q_u->access, &scm_generic_map );
 	status = svcctl_access_check( sec_desc, p->pipe_user.nt_user_token, q_u->access, &access_granted );
 	if ( !NT_STATUS_IS_OK(status) )
 		return ntstatus_to_werror( status );
@@ -280,6 +286,7 @@ WERROR _svcctl_open_service(pipes_struct *p, SVCCTL_Q_OPEN_SERVICE *q_u, SVCCTL_
 	if ( !(sec_desc = svcctl_get_secdesc( p->mem_ctx, service, get_root_nt_token() )) )
 		return WERR_NOMEM;
 		
+	se_map_generic( &q_u->access, &svc_generic_map );
 	status = svcctl_access_check( sec_desc, p->pipe_user.nt_user_token, q_u->access, &access_granted );
 	if ( !NT_STATUS_IS_OK(status) )
 		return ntstatus_to_werror( status );
