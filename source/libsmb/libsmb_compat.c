@@ -420,7 +420,7 @@ int smbc_open_print_job(const char *fname)
 {
 	SMBCFILE * file = statcont->open_print_job(statcont, fname);
 	if (!file) return -1;
-	return (int) file;
+	return file->cli_fd;
 }
 
 int smbc_list_print_jobs(const char *purl, smbc_list_print_job_fn fn)
