@@ -1616,7 +1616,7 @@ static int initialize(struct lsqlite3_private *lsqlite3, const char *url)
                 /*
                  * Triggers
                  */
-                
+ 
                 "CREATE TRIGGER ldb_object_classes_insert_tr"
                 "  AFTER INSERT"
                 "  ON ldb_object_classes"
@@ -1637,7 +1637,7 @@ static int initialize(struct lsqlite3_private *lsqlite3, const char *url)
                 "        SET max_child_num = max_child_num + 1"
                 "        WHERE class_name = new.parent_class_name;"
                 "    END;"
-                
+
                 /*
                  * Table initialization
                  */
@@ -1666,6 +1666,12 @@ static int initialize(struct lsqlite3_private *lsqlite3, const char *url)
         if (query_norows(lsqlite3, "PRAGMA auto_vacuum=1;") != 0) {
                         return -1;
         }
+        
+	/* DANGEROUS
+        if (query_norows(lsqlite3, "PRAGMA synchronous = OFF;") != 0) {
+                        return -1;
+        }
+	*/
         
         /* Establish a busy timeout of 30 seconds */
         if ((ret = sqlite3_busy_timeout(lsqlite3->sqlite,
