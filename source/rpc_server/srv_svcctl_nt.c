@@ -4,7 +4,7 @@
  *
  *  Copyright (C) Marcin Krzysztof Porwit           2005.
  * 
- *  Largely Rewritten by:
+ *  Largely Rewritten (Again) by:
  *  Copyright (C) Gerald (Jerry) Carter             2005.
  *  
  *  This program is free software; you can redistribute it and/or modify
@@ -187,11 +187,12 @@ static SERVICE_INFO *find_service_info_by_hnd(pipes_struct *p, POLICY_HND *hnd)
 /******************************************************************
  *****************************************************************/
  
-static WERROR create_open_service_handle( pipes_struct *p, POLICY_HND *handle, 
+static WERROR create_open_service_handle( pipes_struct *p, POLICY_HND *handle, uint32 type,
                                           const char *service, uint32 access_granted )
 {
 	SERVICE_INFO *info = NULL;
 	WERROR result = WERR_OK;
+	struct service_control_op *s_op;
 	
 	if ( !(info = TALLOC_ZERO_P( NULL, SERVICE_INFO )) )
 		return WERR_NOMEM;
@@ -200,11 +201,16 @@ static WERROR create_open_service_handle( pipes_struct *p, POLICY_HND *handle,
 	
 	info->type = SVC_HANDLE_IS_SCM;
 	
-	
-	
-	if ( service ) {
-		struct service_control_op *s_op;
+	switch ( type ) {
+	case SVC_HANDLE_IS_SCM:
+		info->type = SVC_HANDLE_IS_SCM;
+		break;
+
+	case SVC_HANDLE_IS_DBLOCK:
+		info->type = SVC_HANDLE_IS_DBLOCK;
+		break;
 		
+	case SVC_HANDLE_IS_SERVICE:
 		info->type = SVC_HANDLE_IS_SERVICE;
 		
 		/* lookup the SERVICE_CONTROL_OPS */
@@ -220,6 +226,11 @@ static WERROR create_open_service_handle( pipes_struct *p, POLICY_HND *handle,
 			result = WERR_NOMEM;
 			goto done;
 		}
+		break;
+
+	default:
+		result = WERR_NO_SUCH_SERVICE;
+		goto done;
 	}
 
 	info->access_granted = access_granted;	
@@ -257,7 +268,7 @@ WERROR _svcctl_open_scmanager(pipes_struct *p, SVCCTL_Q_OPEN_SCMANAGER *q_u, SVC
 	if ( !NT_STATUS_IS_OK(status) )
 		return ntstatus_to_werror( status );
 		
-	return create_open_service_handle( p, &r_u->handle, NULL, access_granted );
+	return create_open_service_handle( p, &r_u->handle, SVC_HANDLE_IS_SCM, NULL, access_granted );
 }
 
 /********************************************************************
@@ -291,7 +302,7 @@ WERROR _svcctl_open_service(pipes_struct *p, SVCCTL_Q_OPEN_SERVICE *q_u, SVCCTL_
 	if ( !NT_STATUS_IS_OK(status) )
 		return ntstatus_to_werror( status );
 	
-	return create_open_service_handle( p, &r_u->handle, service, access_granted );
+	return create_open_service_handle( p, &r_u->handle, SVC_HANDLE_IS_SERVICE, service, access_granted );
 }
 
 /********************************************************************
@@ -703,4 +714,39 @@ WERROR _svcctl_query_service_config2( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CO
                 return WERR_INSUFFICIENT_BUFFER;
 
 	return WERR_OK;
+}
+
+/********************************************************************
+********************************************************************/
+
+WERROR _svcctl_lock_service_db( pipes_struct *p, SVCCTL_Q_LOCK_SERVICE_DB *q_u, SVCCTL_R_LOCK_SERVICE_DB *r_u )
+{
+	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
+	
+	/* perform access checks */
+
+	if ( !info || (info->type != SVC_HANDLE_IS_SCM) )
+		return WERR_BADFID;	
+	
+	if ( !(info->access_granted & SC_RIGHT_MGR_LOCK) )
+		return WERR_ACCESS_DENIED;
+
+	/* Just open a handle.  Doesn't actually lock anything */
+	
+	return create_open_service_handle( p, &r_u->h_lock, SVC_HANDLE_IS_DBLOCK, NULL, 0 );
+;
+}
+
+/********************************************************************
+********************************************************************/
+
+WERROR _svcctl_unlock_service_db( pipes_struct *p, SVCCTL_Q_UNLOCK_SERVICE_DB *q_u, SVCCTL_R_UNLOCK_SERVICE_DB *r_u )
+{
+	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->h_lock );
+
+
+	if ( !info || (info->type != SVC_HANDLE_IS_DBLOCK) )
+		return WERR_BADFID;	
+		
+	return close_policy_hnd( p, &q_u->h_lock) ? WERR_OK : WERR_BADFID;
 }

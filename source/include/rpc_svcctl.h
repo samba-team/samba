@@ -26,9 +26,11 @@
 
 #define SVCCTL_CLOSE_SERVICE			0x00
 #define SVCCTL_CONTROL_SERVICE			0x01
+#define SVCCTL_LOCK_SERVICE_DB			0x03
 #define SVCCTL_QUERY_SERVICE_SEC		0x04	/* not impmenented */
 #define SVCCTL_SET_SEVICE_SEC			0x05	/* not implemented */
 #define SVCCTL_QUERY_STATUS			0x06
+#define SVCCTL_UNLOCK_SERVICE_DB		0x08
 #define SVCCTL_ENUM_DEPENDENT_SERVICES_W	0x0d
 #define SVCCTL_ENUM_SERVICES_STATUS_W		0x0e
 #define SVCCTL_OPEN_SCMANAGER_W			0x0f
@@ -111,6 +113,7 @@
 
 #define SVC_HANDLE_IS_SCM			0x0000001
 #define SVC_HANDLE_IS_SERVICE			0x0000002
+#define SVC_HANDLE_IS_DBLOCK			0x0000003
 
 #define SVC_STATUS_PROCESS_INFO                 0x00000000
 
@@ -331,6 +334,7 @@ typedef struct {
 	WERROR status;
 } SVCCTL_R_ENUM_DEPENDENT_SERVICES;
 
+
 /**************************/
 
 typedef struct {
@@ -344,6 +348,9 @@ typedef struct {
 	WERROR status;
 } SVCCTL_R_QUERY_SERVICE_CONFIG;
 
+
+/**************************/
+
 typedef struct {
 	POLICY_HND handle;
 	uint32 level;
@@ -356,6 +363,9 @@ typedef struct {
 	WERROR status;
 } SVCCTL_R_QUERY_SERVICE_CONFIG2;
 
+
+/**************************/
+
 typedef struct {
 	POLICY_HND handle;
         uint32 level;
@@ -367,6 +377,29 @@ typedef struct {
 	uint32 needed;
 	WERROR status;
 } SVCCTL_R_QUERY_SERVICE_STATUSEX;
+
+
+/**************************/
+
+typedef struct {
+	POLICY_HND handle;
+} SVCCTL_Q_LOCK_SERVICE_DB;
+
+typedef struct {
+	POLICY_HND h_lock;
+	WERROR status;
+} SVCCTL_R_LOCK_SERVICE_DB;
+
+
+/**************************/
+
+typedef struct {
+	POLICY_HND h_lock;
+} SVCCTL_Q_UNLOCK_SERVICE_DB;
+
+typedef struct {
+	WERROR status;
+} SVCCTL_R_UNLOCK_SERVICE_DB;
 
 #endif /* _RPC_SVCCTL_H */
 

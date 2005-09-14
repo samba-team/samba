@@ -927,7 +927,7 @@ BOOL svcctl_io_r_query_service_status_ex(const char *desc, SVCCTL_R_QUERY_SERVIC
 		return False;
 
 	prs_debug(ps, depth, desc, "svcctl_io_r_query_service_status_ex");
-		depth++;
+	depth++;
 
 	if (!prs_rpcbuffer("", ps, depth, &r_u->buffer))
 		return False;
@@ -943,6 +943,92 @@ BOOL svcctl_io_r_query_service_status_ex(const char *desc, SVCCTL_R_QUERY_SERVIC
 
 	return True;
 }
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_q_lock_service_db(const char *desc, SVCCTL_Q_LOCK_SERVICE_DB *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_q_lock_service_db");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("scm_handle", &q_u->handle, ps, depth))
+		return False;
+
+	return True;
+
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_r_lock_service_db(const char *desc, SVCCTL_R_LOCK_SERVICE_DB *r_u, prs_struct *ps, int depth)
+{
+	if ( !r_u )
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_r_lock_service_db");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("lock_handle", &r_u->h_lock, ps, depth))
+		return False;
+
+	if(!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_q_unlock_service_db(const char *desc, SVCCTL_Q_UNLOCK_SERVICE_DB *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_q_unlock_service_db");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("h_lock", &q_u->h_lock, ps, depth))
+		return False;
+
+	return True;
+
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_r_unlock_service_db(const char *desc, SVCCTL_R_UNLOCK_SERVICE_DB *r_u, prs_struct *ps, int depth)
+{
+	if ( !r_u )
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_r_unlock_service_db");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
 
 
 
