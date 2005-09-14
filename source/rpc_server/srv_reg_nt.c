@@ -1189,6 +1189,15 @@ WERROR _reg_delete_key(pipes_struct *p, REG_Q_DELETE_KEY  *q_u, REG_R_DELETE_KEY
 
 	if ( !parent )
 		return WERR_BADFID;
+
+	/* MSDN says parent the handle must have been opened with DELETE access */
+
+	/* (1) check for delete rights on the parent */
+	
+	if ( !(parent->access_granted & STD_RIGHT_DELETE_ACCESS) ) {
+		result = WERR_ACCESS_DENIED;
+		goto done;
+	}
 		
 	rpcstr_pull( name, q_u->name.string->buffer, sizeof(name), q_u->name.string->uni_str_len*2, 0 );
 		
@@ -1197,47 +1206,24 @@ WERROR _reg_delete_key(pipes_struct *p, REG_Q_DELETE_KEY  *q_u, REG_R_DELETE_KEY
 	if ( strrchr( name, '\\' ) ) {
 		pstring newkeyname;
 		char *ptr;
-		uint32 access_granted;
 		
-		/* (1) check for enumerate rights on the parent handle.  CLients can try 
-		       create things like 'SOFTWARE\Samba' on the HKLM handle. 
-		   (2) open the path to the child parent key if necessary */
+		/* (2) open the path to the child parent key if necessary */
+		/* split the registry path and save the subkeyname */
 	
-		if ( !(parent->access_granted & SEC_RIGHTS_ENUM_SUBKEYS) )
-			return WERR_ACCESS_DENIED;
-		
 		pstrcpy( newkeyname, name );
 		ptr = strrchr( newkeyname, '\\' );
 		*ptr = '\0';
+		pstrcpy( name, ptr+1 );
 
-		result = open_registry_key( p, &newparent_handle, &newparentinfo, parent, newkeyname, 0 );
+		result = open_registry_key( p, &newparent_handle, &newparentinfo, parent, newkeyname, (REG_KEY_READ|REG_KEY_WRITE) );
 		if ( !W_ERROR_IS_OK(result) )
 			return result;
-		
-		if ( !regkey_access_check( newparentinfo, REG_KEY_READ|REG_KEY_WRITE, &access_granted, p->pipe_user.nt_user_token ) ) {
-			result = WERR_ACCESS_DENIED;
-			goto done;
-		}
-
-		newparentinfo->access_granted = access_granted;
-
-		/* copy the new key name (just the lower most keyname) */
-
-		pstrcpy( name, ptr+1 );
 	}
 	else {
 		/* use the existing open key information */
 		newparentinfo = parent;
-		memcpy( &newparent_handle, &q_u->handle, sizeof(POLICY_HND) );
 	}
 	
-	/* (3) check for delete rights on the correct parent */
-	
-	if ( !(newparentinfo->access_granted & STD_RIGHT_DELETE_ACCESS) ) {
-		result = WERR_ACCESS_DENIED;
-		goto done;
-	}
-
 	if ( !(subkeys = TALLOC_ZERO_P( p->mem_ctx, REGSUBKEY_CTR )) ) {
 		result = WERR_NOMEM;
 		goto done;
