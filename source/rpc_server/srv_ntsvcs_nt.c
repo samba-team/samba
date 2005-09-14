@@ -27,9 +27,62 @@
 /********************************************************************
 ********************************************************************/
 
-NTSTATUS _ntsvcs_get_version( pipes_struct *p, NTSVCS_Q_GET_VERSION *q_u, NTSVCS_R_GET_VERSION *r_u )
+static char* get_device_path( const char *device )
+{
+	static pstring path;
+
+	pstr_sprintf( path, "ROOT\\Legacy\\%s\\0000", device );
+
+	return path;
+}
+
+/********************************************************************
+********************************************************************/
+
+WERROR _ntsvcs_get_version( pipes_struct *p, NTSVCS_Q_GET_VERSION *q_u, NTSVCS_R_GET_VERSION *r_u )
 {
 	r_u->version = 0x00000400;	/* no idea what this means */
 		
-	return NT_STATUS_OK;
+	return WERR_OK;
 }
+
+/********************************************************************
+********************************************************************/
+
+WERROR _ntsvcs_get_device_list_size( pipes_struct *p, NTSVCS_Q_GET_DEVICE_LIST_SIZE *q_u, NTSVCS_R_GET_DEVICE_LIST_SIZE *r_u )
+{
+	fstring device;
+	const char *devicepath;
+
+	if ( !q_u->devicename )
+		return WERR_ACCESS_DENIED;
+
+	rpcstr_pull(device, q_u->devicename->buffer, sizeof(device), q_u->devicename->uni_str_len*2, 0);
+	devicepath = get_device_path( device );
+
+	r_u->size = strlen(devicepath) + 1;
+
+	return WERR_OK;
+}
+
+
+/********************************************************************
+********************************************************************/
+
+WERROR _ntsvcs_get_device_list( pipes_struct *p, NTSVCS_Q_GET_DEVICE_LIST *q_u, NTSVCS_R_GET_DEVICE_LIST *r_u )
+{
+	fstring device;
+	const char *devicepath;
+
+	if ( !q_u->devicename )
+		return WERR_ACCESS_DENIED;
+
+	rpcstr_pull(device, q_u->devicename->buffer, sizeof(device), q_u->devicename->uni_str_len*2, 0);
+	devicepath = get_device_path( device );
+
+	init_unistr2( &r_u->devicepath, devicepath, UNI_STR_TERMINATE );
+	r_u->needed = r_u->devicepath.uni_str_len;
+
+	return WERR_OK;
+}
+

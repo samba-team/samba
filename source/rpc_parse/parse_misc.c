@@ -1139,7 +1139,7 @@ BOOL prs_unistr4_str(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4)
 }
 
 /*******************************************************************
- Reads or writes a UNISTR2_ARRAY structure.
+ Reads or writes a UNISTR4_ARRAY structure.
 ********************************************************************/
 
 BOOL prs_unistr4_array(const char *desc, prs_struct *ps, int depth, UNISTR4_ARRAY *array )

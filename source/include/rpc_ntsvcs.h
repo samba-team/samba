@@ -24,6 +24,15 @@
 /* ntsvcs pipe */
 
 #define NTSVCS_GET_VERSION		0x02
+#define NTSVCS_VALIDATE_DEVICE_INSTANCE	0x06
+#define NTSVCS_GET_ROOT_DEVICE_INSTANCE	0x07
+#define NTSVCS_GET_DEVICE_LIST		0x0a
+#define NTSVCS_GET_DEVICE_LIST_SIZE	0x0b
+#define NTSVCS_GET_DEVICE_REG_PROPERTY	0x0d
+#define NTSVCS_HW_PROFILE_FLAGS		0x28
+#define NTSVCS_GET_HW_PROFILE_INFO	0x29
+#define NTSVCS_GET_VERSION_INTERNAL	0x3e
+
 
 /**************************/
 
@@ -34,7 +43,65 @@ typedef struct {
 
 typedef struct {
 	uint32 version;
-	NTSTATUS status;
+	WERROR status;
 } NTSVCS_R_GET_VERSION;
+
+
+/**************************/
+
+typedef struct {
+	UNISTR2 *devicename;
+	uint32 flags;
+} NTSVCS_Q_GET_DEVICE_LIST_SIZE;
+
+typedef struct {
+	uint32 size;
+	WERROR status;
+} NTSVCS_R_GET_DEVICE_LIST_SIZE;
+
+
+/**************************/
+
+typedef struct {
+	UNISTR2 *devicename;
+	uint32 buffer_size;
+	uint32 flags;
+} NTSVCS_Q_GET_DEVICE_LIST;
+
+typedef struct {
+	UNISTR2 devicepath;
+	uint32 needed;
+	WERROR status;
+} NTSVCS_R_GET_DEVICE_LIST;
+
+/**************************/
+
+typedef struct {
+	UNISTR2 *devicepath;
+	uint32 flags;
+} NTSVCS_Q_VALIDATE_DEVICE_INSTANCE;
+
+typedef struct {
+	WERROR status;
+} NTSVCS_R_VALIDATE_DEVICE_INSTANCE;
+
+/**************************/
+
+typedef struct {
+	UNISTR2 devicepath;
+	uint32 flags;
+	uint32 unknown2;
+	uint32 unknown3;
+	uint32 unknown4;
+	uint32 unknown5;
+} NTSVCS_Q_GET_DEVICE_REG_PROPERTY;
+
+typedef struct {
+	uint32 unknown1;
+	UNISTR2 property;
+	uint32 buffer_size1;
+	uint32 buffer_size2;
+	WERROR status;
+} NTSVCS_R_GET_DEVICE_REG_PROPERTY;
 
 #endif /* _RPC_NTSVCS_H */

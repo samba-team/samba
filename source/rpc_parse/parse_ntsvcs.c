@@ -57,12 +57,117 @@ BOOL ntsvcs_io_r_get_version(const char *desc, NTSVCS_R_GET_VERSION *r_u, prs_st
 	if(!prs_uint32("version", ps, depth, &r_u->version))
 		return False;
 		
-	if(!prs_ntstatus("status", ps, depth, &r_u->status))
+	if(!prs_werror("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
 }
 
+/*******************************************************************
+********************************************************************/
+
+BOOL ntsvcs_io_q_get_device_list_size(const char *desc, NTSVCS_Q_GET_DEVICE_LIST_SIZE *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "ntsvcs_io_q_get_device_list_size");
+	depth++;
+	
+	if(!prs_align(ps))
+		return False;
+
+	if ( !prs_pointer("devicename", ps, depth, (void**)&q_u->devicename, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2) )
+		return False;
+	if( !prs_align(ps) )
+		return False;
+		
+	if ( !prs_uint32("flags", ps, depth, &q_u->flags) )
+		return False;
+	
+	return True;
+
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL ntsvcs_io_r_get_device_list_size(const char *desc, NTSVCS_R_GET_DEVICE_LIST_SIZE *r_u, prs_struct *ps, int depth)
+{
+	if ( !r_u )
+		return False;
+
+	prs_debug(ps, depth, desc, "ntsvcs_io_r_get_device_list_size");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+		
+	if(!prs_uint32("size", ps, depth, &r_u->size))
+		return False;
+		
+	if(!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
+********************************************************************/
+
+BOOL ntsvcs_io_q_get_device_list(const char *desc, NTSVCS_Q_GET_DEVICE_LIST *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "ntsvcs_io_q_get_device_list");
+	depth++;
+	
+	if(!prs_align(ps))
+		return False;
+
+	if ( !prs_pointer("devicename", ps, depth, (void**)&q_u->devicename, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2) )
+		return False;
+	if( !prs_align(ps) )
+		return False;
+		
+	if ( !prs_uint32("buffer_size", ps, depth, &q_u->buffer_size) )
+		return False;
+	if ( !prs_uint32("flags", ps, depth, &q_u->flags) )
+		return False;
+	
+	return True;
+
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL ntsvcs_io_r_get_device_list(const char *desc, NTSVCS_R_GET_DEVICE_LIST *r_u, prs_struct *ps, int depth)
+{
+	if ( !r_u )
+		return False;
+
+	prs_debug(ps, depth, desc, "ntsvcs_io_r_get_device_list_size");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+		
+	if ( !prs_io_unistr2("devicepath", ps, depth, &r_u->devicepath) )
+		return False;
+	if(!prs_align(ps))
+		return False;
+		
+	if(!prs_uint32("needed", ps, depth, &r_u->needed))
+		return False;
+		
+	if(!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
 
 
 
