@@ -20,9 +20,10 @@ libhx509_la_SOURCES = \
 	hx509_err.c \
 	hx509_err.h \
 	keyset.c \
-	ks_mem.c \
 	ks_file.c \
+	ks_mem.c \
 	ks_null.c \
+	ks_p11.c \
 	ks_p12.c \
 	lock.c \
 	name.c \
@@ -41,7 +42,7 @@ include_HEADERS = hx509.h hx509-protos.h hx509_err.h
 
 SLC = $(top_builddir)/lib/sl/slc
 
-noinst_PROGRAMS = hxtool
+bin_PROGRAMS = hxtool
 
 hxtool-commands.c hxtool-commands.h: hxtool-commands.in $(SLC)
 	$(SLC) $(srcdir)/hxtool-commands.in
