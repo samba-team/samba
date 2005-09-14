@@ -31,7 +31,7 @@ static char* get_device_path( const char *device )
 {
 	static pstring path;
 
-	pstr_sprintf( path, "ROOT\\Legacy\\%s\\0000", device );
+	pstr_sprintf( path, "ROOT\\Legacy_%s\\0000", device );
 
 	return path;
 }
@@ -79,6 +79,10 @@ WERROR _ntsvcs_get_device_list( pipes_struct *p, NTSVCS_Q_GET_DEVICE_LIST *q_u, 
 
 	rpcstr_pull(device, q_u->devicename->buffer, sizeof(device), q_u->devicename->uni_str_len*2, 0);
 	devicepath = get_device_path( device );
+
+	/* From the packet traces I've see, I think this really should be an array
+	   of UNISTR2's.  But I've never seen more than one string in spite of the 
+	   fact that the string in dounel NULL terminated.  -- jerry */
 
 	init_unistr2( &r_u->devicepath, devicepath, UNI_STR_TERMINATE );
 	r_u->needed = r_u->devicepath.uni_str_len;
