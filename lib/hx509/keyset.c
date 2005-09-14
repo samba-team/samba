@@ -86,6 +86,7 @@ hx509_certs_init(const char *name, int flags,
 	_hx509_ks_mem_register();
 	_hx509_ks_file_register();
 	_hx509_ks_pkcs12_register();
+	_hx509_ks_pkcs11_register();
     }
 
     residue = strchr(name, ':');
