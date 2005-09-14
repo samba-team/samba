@@ -518,12 +518,12 @@ int ldb_dn_cmp(struct ldb_context *ldb, const char *dn0, const char *dn1)
 	if (dn0 == NULL || dn1 == NULL) return dn1 - dn0;
 
 	edn0 = ldb_dn_explode_casefold(ldb, dn0);
-	if (edn0 == NULL) return 0;
+	if (edn0 == NULL) return 1;
 
 	edn1 = ldb_dn_explode_casefold(ldb, dn1);
 	if (edn1 == NULL) {
 		talloc_free(edn0);
-		return 0;
+		return -1;
 	}
 
 	ret = ldb_dn_compare(ldb, edn0, edn1);
