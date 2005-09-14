@@ -55,7 +55,7 @@ run a command being careful about uid/gid handling and putting the output in
 outfd (or discard it if outfd is NULL).
 ****************************************************************************/
 
-int smbrun(char *cmd, int *outfd)
+int smbrun(const char *cmd, int *outfd)
 {
 	pid_t pid;
 	uid_t uid = current_user.uid;
@@ -186,7 +186,7 @@ outfd (or discard it if outfd is NULL).
 sends the provided secret to the child stdin.
 ****************************************************************************/
 
-int smbrunsecret(char *cmd, char *secret)
+int smbrunsecret(const char *cmd, const char *secret)
 {
 	pid_t pid;
 	uid_t uid = current_user.uid;
