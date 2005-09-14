@@ -82,7 +82,7 @@ static NTSTATUS parse_section(
 	pstring filter;
 	pstring option_name;
 	pstring option_value;
-	char **attr_list = NULL;
+	const char **attr_list = NULL;
 	int rc;
 	int count;
 

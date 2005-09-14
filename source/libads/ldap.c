@@ -2104,7 +2104,7 @@ char **ads_pull_strings_range(ADS_STRUCT *ads,
 	if ((*num_strings) != range_start) {
 		DEBUG(1, ("ads_pull_strings_range: Range attribute (%s) doesn't start at %u, but at %lu"
 			  " - aborting range retreival\n",
-			  range_attr, *num_strings + 1, range_start));
+			  range_attr, (unsigned int)(*num_strings) + 1, range_start));
 		ldap_memfree(range_attr);
 		*more_strings = False;
 		return NULL;
@@ -2140,7 +2140,7 @@ char **ads_pull_strings_range(ADS_STRUCT *ads,
 		*next_attribute = talloc_asprintf(mem_ctx,
 						  "%s;range=%d-*", 
 						  field,
-						  *num_strings);
+						  (int)*num_strings);
 		
 		if (!*next_attribute) {
 			DEBUG(1, ("talloc_asprintf for next attribute failed!\n"));
