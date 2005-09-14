@@ -368,6 +368,7 @@ AUTH_RHOSTS_OBJ = auth/auth_rhosts.o
 AUTH_SERVER_OBJ = auth/auth_server.o
 AUTH_UNIX_OBJ = auth/auth_unix.o
 AUTH_WINBIND_OBJ = auth/auth_winbind.o
+AUTH_SCRIPT_OBJ = auth/auth_script.o
 
 AUTH_OBJ = auth/auth.o @AUTH_STATIC@ auth/auth_util.o auth/auth_compat.o \
 	   auth/auth_ntlmssp.o \
@@ -1164,6 +1165,10 @@ bin/builtin.@SHLIBEXT@: $(AUTH_BUILTIN_OBJ:.o=.@PICSUFFIX@)
 bin/domain.@SHLIBEXT@: $(AUTH_DOMAIN_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_DOMAIN_OBJ:.o=.@PICSUFFIX@) @SONAMEFLAG@`basename $@`
+
+bin/script.@SHLIBEXT@: $(AUTH_SCRIPT_OBJ:.o=.@PICSUFFIX@)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_SCRIPT_OBJ:.o=.@PICSUFFIX@) @SONAMEFLAG@`basename $@`
 
 bin/smbserver.@SHLIBEXT@: $(AUTH_SERVER_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
