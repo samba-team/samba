@@ -77,7 +77,7 @@ typedef struct {
 /**************************/
 
 typedef struct {
-	UNISTR2 *devicepath;
+	UNISTR2 devicepath;
 	uint32 flags;
 } NTSVCS_Q_VALIDATE_DEVICE_INSTANCE;
 

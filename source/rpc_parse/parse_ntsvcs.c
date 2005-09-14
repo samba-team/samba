@@ -169,5 +169,49 @@ BOOL ntsvcs_io_r_get_device_list(const char *desc, NTSVCS_R_GET_DEVICE_LIST *r_u
 	return True;
 }
 
+/*******************************************************************
+********************************************************************/
+
+BOOL ntsvcs_io_q_validate_device_instance(const char *desc, NTSVCS_Q_VALIDATE_DEVICE_INSTANCE *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "ntsvcs_io_q_validate_device_instance");
+	depth++;
+	
+	if(!prs_align(ps))
+		return False;
+
+	if ( !prs_io_unistr2("devicepath", ps, depth, &q_u->devicepath) )
+		return False;
+	if( !prs_align(ps) )
+		return False;
+		
+	if ( !prs_uint32("flags", ps, depth, &q_u->flags) )
+		return False;
+	
+	return True;
+
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL ntsvcs_io_r_validate_device_instance(const char *desc, NTSVCS_R_VALIDATE_DEVICE_INSTANCE *r_u, prs_struct *ps, int depth)
+{
+	if ( !r_u )
+		return False;
+
+	prs_debug(ps, depth, desc, "ntsvcs_io_r_validate_device_instance");
+	depth++;
+
+	if(!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+
 
 

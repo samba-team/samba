@@ -90,3 +90,12 @@ WERROR _ntsvcs_get_device_list( pipes_struct *p, NTSVCS_Q_GET_DEVICE_LIST *q_u, 
 	return WERR_OK;
 }
 
+/********************************************************************
+********************************************************************/
+
+WERROR _ntsvcs_validate_device_instance( pipes_struct *p, NTSVCS_Q_VALIDATE_DEVICE_INSTANCE *q_u, NTSVCS_R_VALIDATE_DEVICE_INSTANCE *r_u )
+{
+	/* whatever dude */
+	return WERR_OK;
+}
+
