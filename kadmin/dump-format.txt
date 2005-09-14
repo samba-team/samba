@@ -12,14 +12,16 @@ Fields and their types are:
 
 	Quoted princial (quote character is \) [string]
 	Keys [keys]
-	Modification [event]
-	Valid start time [event optional]
+	Created by [event]
+	Modified by [event optional]
+	Valid start time [time optional]
 	Valid end time [time optional]
 	Password end valid time [time optional]
 	Max lifetime of ticket [time optional]
-	Max renew of ticket [integer optional]
+	Max renew time of ticket [integer optional]
 	Flags [hdb flags]
 	Generation number [generation optional]
+	Extensions [extentions optional]
 
 	Fields following these silently are ignored.
 
@@ -28,7 +30,7 @@ the optional field marker of "-", w/o quotes).
 
 Example:
 
-fred@EXAMPLE.COM 27:1:16:e8b4c8fc7e60b9e641dcf4cff3f08a701d982a2f89ba373733d26ca59ba6c789666f6b8bfcf169412bb1e5dceb9b33cda29f3412:-:1:3:4498a933881178c744f4232172dcd774c64e81fa6d05ecdf643a7e390624a0ebf3c7407a:-:1:2:b01934b13eb795d76f3a80717d469639b4da0cfb644161340ef44fdeb375e54d684dbb85:-:1:1:ea8e16d8078bf60c781da90f508d4deccba70595258b9d31888d33987cd31af0c9cced2e:- 20020415130120:admin@EXAMPLE.COM 20041221112428:fred@EXAMPLE.COM - - - 86400 604800 126 20020415130120:793707:28
+fred@EXAMPLE.COM 27:1:16:e8b4c8fc7e60b9e641dcf4cff3f08a701d982a2f89ba373733d26ca59ba6c789666f6b8bfcf169412bb1e5dceb9b33cda29f3412:-:1:3:4498a933881178c744f4232172dcd774c64e81fa6d05ecdf643a7e390624a0ebf3c7407a:-:1:2:b01934b13eb795d76f3a80717d469639b4da0cfb644161340ef44fdeb375e54d684dbb85:-:1:1:ea8e16d8078bf60c781da90f508d4deccba70595258b9d31888d33987cd31af0c9cced2e:- 20020415130120:admin@EXAMPLE.COM 20041221112428:fred@EXAMPLE.COM - - - 86400 604800 126 20020415130120:793707:28 -
 
 Encoding of types are as follows:
 
@@ -104,3 +106,14 @@ generation:
 
 	Example:
 		XXX
+
+extensions:
+
+	first-hex-encoded-HDB-Extension[:second-...]
+
+	HDB-extension is encoded the DER encoded HDB-Extension from
+	lib/hdb/hdb.asn1. Consumers HDB extensions should be aware
+	that unknown entires needs to be preserved even thought the
+	ASN.1 data content might be unknown. There is a critical flag
+	in the data to show to the KDC that the entry MUST be
+	understod if the entry is to be used.
