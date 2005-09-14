@@ -1,3 +1,29 @@
+2005-09-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* p11.c: Cast to unsigned char to avoid warning.
+
+	* keyset.c: Register pkcs11 module.
+
+	* Makefile.am: Add ks_p11.c, install hxtool.
+	
+	* ks_p11.c: Starting point of a pkcs11 module.
+	
+2005-09-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lock.c: Implement prompter.
+
+	* hxtool-commands.in: add --content to print
+
+	* hxtool.c: Split verify and print.
+
+	* cms.c: _hx509_pbe_decrypt now takes a hx509_lock.
+
+	* crypto.c: Make _hx509_pbe_decrypt take a hx509_lock, workaround
+	for empty password.
+
+	* name.c: Add DC, handle all Directory strings, fix signless
+	problems.
+	
 2005-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* test_query.in: Pass in --pass to all commands.
