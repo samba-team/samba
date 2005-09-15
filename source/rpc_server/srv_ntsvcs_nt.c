@@ -93,6 +93,52 @@ WERROR _ntsvcs_get_device_list( pipes_struct *p, NTSVCS_Q_GET_DEVICE_LIST *q_u, 
 /********************************************************************
 ********************************************************************/
 
+WERROR _ntsvcs_get_device_reg_property( pipes_struct *p, NTSVCS_Q_GET_DEVICE_REG_PROPERTY *q_u, NTSVCS_R_GET_DEVICE_REG_PROPERTY *r_u )
+{
+	fstring devicepath;
+	char *ptr;
+	REGVAL_CTR *values;
+	REGISTRY_VALUE *val;
+
+	rpcstr_pull(devicepath, q_u->devicepath.buffer, sizeof(devicepath), q_u->devicepath.uni_str_len*2, 0);
+
+	switch( q_u->property ) {
+	case DEVICE_REG_PROPERTY_DEVICENAME:
+		/* just parse the service name from the device path and then 
+		   lookup the display name */
+		if ( !(ptr = strrchr_m( devicepath, '\\' )) )
+			return WERR_GENERAL_FAILURE;	
+		*ptr = '\0';
+		
+		if ( !(ptr = strrchr_m( devicepath, '_' )) )
+			return WERR_GENERAL_FAILURE;	
+		ptr++;
+		
+		if ( !(values = svcctl_fetch_regvalues( ptr, p->pipe_user.nt_user_token )) )
+			return WERR_GENERAL_FAILURE;	
+		
+		if ( !(val = regval_ctr_getvalue( values, "DisplayName" )) ) {
+			TALLOC_FREE( values );
+			return WERR_GENERAL_FAILURE;
+		}
+		
+		r_u->type = REG_SZ;
+		r_u->size = reg_init_regval_buffer( &r_u->value, val );
+
+		TALLOC_FREE(values);
+
+		break;
+		
+	default:
+		return W_ERROR(37);	/* undocumented but this is what Windows 2000 returns */
+	}
+
+	return WERR_OK;
+}
+
+/********************************************************************
+********************************************************************/
+
 WERROR _ntsvcs_validate_device_instance( pipes_struct *p, NTSVCS_Q_VALIDATE_DEVICE_INSTANCE *q_u, NTSVCS_R_VALIDATE_DEVICE_INSTANCE *r_u )
 {
 	/* whatever dude */

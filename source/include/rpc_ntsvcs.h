@@ -87,9 +87,11 @@ typedef struct {
 
 /**************************/
 
+#define DEVICE_REG_PROPERTY_DEVICENAME	1
+
 typedef struct {
 	UNISTR2 devicepath;
-	uint32 flags;
+	uint32 property;
 	uint32 unknown2;
 	uint32 unknown3;
 	uint32 unknown4;
@@ -97,10 +99,9 @@ typedef struct {
 } NTSVCS_Q_GET_DEVICE_REG_PROPERTY;
 
 typedef struct {
-	uint32 unknown1;
-	UNISTR2 property;
-	uint32 buffer_size1;
-	uint32 buffer_size2;
+	uint32 type;
+	REGVAL_BUFFER value;
+	uint32 size;
 	WERROR status;
 } NTSVCS_R_GET_DEVICE_REG_PROPERTY;
 

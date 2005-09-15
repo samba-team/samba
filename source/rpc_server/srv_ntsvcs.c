@@ -119,6 +119,56 @@ static BOOL api_ntsvcs_validate_device_instance(pipes_struct *p)
 	return True;
 }
 
+/*******************************************************************
+ ********************************************************************/
+
+static BOOL api_ntsvcs_get_device_reg_property(pipes_struct *p)
+{
+	NTSVCS_Q_GET_DEVICE_REG_PROPERTY q_u;
+	NTSVCS_R_GET_DEVICE_REG_PROPERTY r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!ntsvcs_io_q_get_device_reg_property("", &q_u, data, 0))
+		return False;
+
+	r_u.status = _ntsvcs_get_device_reg_property(p, &q_u, &r_u);
+
+	if(!ntsvcs_io_r_get_device_reg_property("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+#if 0
+/*******************************************************************
+ ********************************************************************/
+
+static BOOL api_ntsvcs_get_hw_profile_info(pipes_struct *p)
+{
+	NTSVCS_Q_GET_HW_PROFILE_INFO q_u;
+	NTSVCS_R_GET_HW_PROFILE_INFO r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!ntsvcs_io_q_get_hw_profile_info("", &q_u, data, 0))
+		return False;
+
+	r_u.status = _ntsvcs_get_hw_profile_info(p, &q_u, &r_u);
+
+	if(!ntsvcs_io_r_get_hw_profile_info("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+#endif
 
 /*******************************************************************
  \PIPE\svcctl commands
@@ -129,7 +179,11 @@ static struct api_struct api_ntsvcs_cmds[] =
       { "NTSVCS_GET_VERSION"              , NTSVCS_GET_VERSION              , api_ntsvcs_get_version },
       { "NTSVCS_GET_DEVICE_LIST_SIZE"     , NTSVCS_GET_DEVICE_LIST_SIZE     , api_ntsvcs_get_device_list_size },
       { "NTSVCS_GET_DEVICE_LIST"          , NTSVCS_GET_DEVICE_LIST          , api_ntsvcs_get_device_list },
-      { "NTSVCS_VALIDATE_DEVICE_INSTANCE" , NTSVCS_VALIDATE_DEVICE_INSTANCE , api_ntsvcs_validate_device_instance }
+      { "NTSVCS_VALIDATE_DEVICE_INSTANCE" , NTSVCS_VALIDATE_DEVICE_INSTANCE , api_ntsvcs_validate_device_instance },
+      { "NTSVCS_GET_DEVICE_REG_PROPERTY"  , NTSVCS_GET_DEVICE_REG_PROPERTY  , api_ntsvcs_get_device_reg_property },
+#if 0
+      { "NTSVCS_GET_HW_PROFILE_INFO"      , NTSVCS_GET_HW_PROFILE_INFO      , api_ntsvcs_get_hw_profile_info }
+#endif
 };
 
 

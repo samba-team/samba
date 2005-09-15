@@ -212,6 +212,71 @@ BOOL ntsvcs_io_r_validate_device_instance(const char *desc, NTSVCS_R_VALIDATE_DE
 	return True;
 }
 
+/*******************************************************************
+********************************************************************/
 
+BOOL ntsvcs_io_q_get_device_reg_property(const char *desc, NTSVCS_Q_GET_DEVICE_REG_PROPERTY *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "ntsvcs_io_q_get_device_reg_property");
+	depth++;
+	
+	if(!prs_align(ps))
+		return False;
+
+	if ( !prs_io_unistr2("devicepath", ps, depth, &q_u->devicepath) )
+		return False;
+	if( !prs_align(ps) )
+		return False;
+
+	if ( !prs_uint32("property", ps, depth, &q_u->property) )
+		return False;
+	if ( !prs_uint32("unknown2", ps, depth, &q_u->unknown2) )
+		return False;
+	if ( !prs_uint32("unknown3", ps, depth, &q_u->unknown3) )
+		return False;
+	if ( !prs_uint32("unknown4", ps, depth, &q_u->unknown4) )
+		return False;
+	if ( !prs_uint32("unknown5", ps, depth, &q_u->unknown5) )
+		return False;
+	
+	return True;
+
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL ntsvcs_io_r_get_device_reg_property(const char *desc, NTSVCS_R_GET_DEVICE_REG_PROPERTY *r_u, prs_struct *ps, int depth)
+{
+	if ( !r_u )
+		return False;
+
+	prs_debug(ps, depth, desc, "ntsvcs_io_r_get_device_reg_property");
+	depth++;
+
+	if ( !prs_align(ps) )
+		return False;
+
+	if ( !prs_uint32("type", ps, depth, &r_u->type) )
+		return False;
+
+	if ( !smb_io_regval_buffer("value", ps, depth, &r_u->value) )
+		return False;
+	if ( !prs_align(ps) )
+		return False;
+
+	if ( !prs_uint32("size", ps, depth, &r_u->size) )
+		return False;
+	if ( !prs_uint32("size", ps, depth, &r_u->size) )
+		return False;
+
+	if(!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
 
 
