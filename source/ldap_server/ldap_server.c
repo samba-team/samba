@@ -365,7 +365,7 @@ static void ldapsrv_accept(struct stream_connection *c)
 	conn->tls = tls_init_server(ldapsrv_service->tls_params, c->socket, 
 				    c->event.fde, NULL, port != 389);
 	if (!conn->tls) {
-		ldapsrv_terminate_connection(c, "ldapsrv_accept: tls_init_server() failed");
+		ldapsrv_terminate_connection(conn, "ldapsrv_accept: tls_init_server() failed");
 		return;
 	}
 
