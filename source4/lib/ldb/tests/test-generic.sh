@@ -65,13 +65,13 @@ if [ $count != 3 ]; then
 fi
 
 echo "Testing compare"
-count=`$VALGRIND ldbsearch '(cn>=U)' cn | grep '^dn' | wc -l`
+count=`$VALGRIND ldbsearch '(cn>=t)' cn | grep '^dn' | wc -l`
 if [ $count != 2 ]; then
     echo returned $count records - expected 2
     exit 1
 fi
 
-count=`$VALGRIND ldbsearch '(cn<=U)' cn | grep '^dn' | wc -l`
+count=`$VALGRIND ldbsearch '(cn<=t)' cn | grep '^dn' | wc -l`
 if [ $count != 13 ]; then
     echo returned $count records - expected 13
     exit 1
@@ -79,3 +79,24 @@ fi
 
 echo "Testing binary file attribute value"
 $VALGRIND ldbmodify $LDBDIR/tests/photo.ldif || exit 1
+
+checkcount() {
+    count=$1
+    scope=$2
+    basedn=$3
+    expression="$4"
+    n=`bin/ldbsearch -s "$scope" -b "$basedn" "$expression" | grep '^dn' | wc -l`
+    if [ $n != $count ]; then
+	echo "Got $n but expected $count for $expression"
+	bin/ldbsearch "$expression"
+	exit 1
+    fi
+    echo "OK: $count $expression"
+}
+
+checkcount 0 'base' '' '(uid=uham)'
+checkcount 0 'one' '' '(uid=uham)'
+
+checkcount 1 'base' 'cn=Hampster Ursula,ou=Alumni Association,ou=People,o=University of Michigan,c=TEST' '(uid=uham)'
+checkcount 1 'one' 'ou=Alumni Association,ou=People,o=University of Michigan,c=TEST' '(uid=uham)'
+
