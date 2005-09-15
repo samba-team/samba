@@ -888,7 +888,7 @@ static long smb_full_audit_telldir(vfs_handle_struct *handle, connection_struct 
 
 	result = SMB_VFS_NEXT_TELLDIR(handle, conn, dirp);
 
-	do_log(SMB_VFS_OP_OPENDIR, True, handle, "");
+	do_log(SMB_VFS_OP_TELLDIR, True, handle, "");
 
 	return result;
 }
