@@ -611,8 +611,8 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 
 	result = r.status;
 
-	if (!NT_STATUS_IS_ERR(result)) {
-		/* Check returned credentials. */
+	if (r.buffer_creds) {
+		/* Check returned credentials if present. */
 		if (!creds_client_check(cli->dc, &r.srv_creds.challenge)) {
 			DEBUG(0,("rpccli_netlogon_sam_logon: credentials chain check failed\n"));
 			return NT_STATUS_ACCESS_DENIED;
@@ -724,8 +724,8 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 
 	result = r.status;
 
-	if (!NT_STATUS_IS_ERR(result)) {
-		/* Check returned credentials. */
+	if (r.buffer_creds) {
+		/* Check returned credentials if present. */
 		if (!creds_client_check(cli->dc, &r.srv_creds.challenge)) {
 			DEBUG(0,("rpccli_netlogon_sam_network_logon: credentials chain check failed\n"));
 			return NT_STATUS_ACCESS_DENIED;
@@ -774,12 +774,10 @@ NTSTATUS rpccli_net_srv_pwset(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		DEBUG(0,("cli_net_srv_pwset: %s\n", nt_errstr(result)));
 	}
 
-	if (!NT_STATUS_IS_ERR(result)) {
-		/* Check returned credentials. */
-		if (!creds_client_check(cli->dc, &r.srv_cred.challenge)) {
-			DEBUG(0,("rpccli_net_srv_pwset: credentials chain check failed\n"));
-			return NT_STATUS_ACCESS_DENIED;
-		}
+	/* Always check returned credentials. */
+	if (!creds_client_check(cli->dc, &r.srv_cred.challenge)) {
+		DEBUG(0,("rpccli_net_srv_pwset: credentials chain check failed\n"));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	return result;
