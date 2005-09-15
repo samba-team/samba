@@ -463,17 +463,13 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
+	/* Step the creds chain forward. */
 	if (!creds_server_step(p->dc, &q_u->clnt_id.cred, &cred_out)) {
 		DEBUG(0,("_net_srv_pwset: creds_server_step failed. Rejecting auth "
 			"request from client %s machine account %s\n",
 			p->dc->remote_machine, p->dc->mach_acct ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
-
-	/* Do the second part of the credentials chain. This is split out here
-	   so it can be optional for a failed logon. */
-
-	creds_reseed_server(p->dc);
 
 	DEBUG(5,("_net_srv_pwset: %d\n", __LINE__));
 
@@ -578,16 +574,7 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	/* Do the second part of the credentials chain. This is split out here
-	   so it can be optional for a failed logon. */
-
-	/* what happens if we get a logoff for an unknown user? */
-
-	/* XXXX maybe we want to say 'no', reject the client's credentials */
-	creds_reseed_server(p->dc);
-
 	r_u->status = NT_STATUS_OK;
-
 	return r_u->status;
 }
 
@@ -767,11 +754,6 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		return status;
 	}
 
-	/* moved from right after deal_with_creds above, since we weren't
-	   supposed to update unless logon was successful */
-
-	creds_reseed_server(p->dc);
-    
 	if (server_info->guest) {
 		/* We don't like guest domain logons... */
 		DEBUG(5,("_net_sam_logon: Attempted domain logon as GUEST denied.\n"));

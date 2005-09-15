@@ -164,24 +164,6 @@ BOOL creds_server_check(const struct dcinfo *dc, const DOM_CHAL *rcv_cli_chal_in
 }
 
 /****************************************************************************
- Step the server credential chain one forward. Don't replace current creds,
- leave that to reseed below.
-****************************************************************************/
-
-BOOL creds_server_step(struct dcinfo *dc, const DOM_CRED *received_cred, DOM_CRED *cred_out)
-{
-	dc->sequence = received_cred->timestamp.time;
-
-	creds_step(dc);
-
-	/* Create the outgoing credentials */
-	cred_out->timestamp.time = dc->sequence + 1;
-	cred_out->challenge = dc->srv_chal;
-
-	return creds_server_check(dc, &received_cred->challenge);
-}
-
-/****************************************************************************
  Replace current seed chal. Internal function - due to split server step below.
 ****************************************************************************/
 
@@ -197,19 +179,23 @@ static void creds_reseed(struct dcinfo *dc)
 	DEBUG(5,("cred_reseed: seed %s\n", credstr(dc->seed_chal.data) ));
 }
 
-/*
-  stores new seed in client credentials
-  jmcd - Bug #2953 - moved this functionality out of deal_with_creds, because we're
-  not supposed to move to the next step in the chain if a nonexistent user tries to logon
-*/
-
 /****************************************************************************
- Replace current seed chal.
+ Step the server credential chain one forward. 
 ****************************************************************************/
 
-void creds_reseed_server(struct dcinfo *dc)
+BOOL creds_server_step(struct dcinfo *dc, const DOM_CRED *received_cred, DOM_CRED *cred_out)
 {
+	dc->sequence = received_cred->timestamp.time;
+
+	creds_step(dc);
+
+	/* Create the outgoing credentials */
+	cred_out->timestamp.time = dc->sequence + 1;
+	cred_out->challenge = dc->srv_chal;
+
 	creds_reseed(dc);
+
+	return creds_server_check(dc, &received_cred->challenge);
 }
 
 /****************************************************************************
