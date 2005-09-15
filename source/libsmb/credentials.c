@@ -168,11 +168,16 @@ BOOL creds_server_check(const struct dcinfo *dc, const DOM_CHAL *rcv_cli_chal_in
  leave that to reseed below.
 ****************************************************************************/
 
-BOOL creds_server_step(struct dcinfo *dc, const DOM_CRED *received_cred)
+BOOL creds_server_step(struct dcinfo *dc, const DOM_CRED *received_cred, DOM_CRED *cred_out)
 {
 	dc->sequence = received_cred->timestamp.time;
 
 	creds_step(dc);
+
+	/* Create the outgoing credentials */
+	cred_out->timestamp.time = dc->sequence + 1;
+	cred_out->challenge = dc->srv_chal;
+
 	return creds_server_check(dc, &received_cred->challenge);
 }
 
@@ -199,15 +204,12 @@ static void creds_reseed(struct dcinfo *dc)
 */
 
 /****************************************************************************
- Replace current seed chal and return authenticator cred.
+ Replace current seed chal.
 ****************************************************************************/
 
-void creds_reseed_server(struct dcinfo *dc, DOM_CRED *cred_out)
+void creds_reseed_server(struct dcinfo *dc)
 {
 	creds_reseed(dc);
-
-	cred_out->timestamp.time = dc->sequence + 1;
-	cred_out->challenge = dc->srv_chal;
 }
 
 /****************************************************************************

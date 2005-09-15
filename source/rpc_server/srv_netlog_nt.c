@@ -463,7 +463,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (!creds_server_step(p->dc, &q_u->clnt_id.cred)) {
+	if (!creds_server_step(p->dc, &q_u->clnt_id.cred, &cred_out)) {
 		DEBUG(0,("_net_srv_pwset: creds_server_step failed. Rejecting auth "
 			"request from client %s machine account %s\n",
 			p->dc->remote_machine, p->dc->mach_acct ));
@@ -473,7 +473,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	/* Do the second part of the credentials chain. This is split out here
 	   so it can be optional for a failed logon. */
 
-	creds_reseed_server(p->dc, &cred_out);
+	creds_reseed_server(p->dc);
 
 	DEBUG(5,("_net_srv_pwset: %d\n", __LINE__));
 
@@ -568,8 +568,10 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
+	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
+
 	/* checks and updates credentials.  creates reply credentials */
-	if (!creds_server_step(p->dc, &q_u->sam_id.client.cred)) {
+	if (!creds_server_step(p->dc, &q_u->sam_id.client.cred, &r_u->srv_creds)) {
 		DEBUG(0,("_net_sam_logoff: creds_server_step failed. Rejecting auth "
 			"request from client %s machine account %s\n",
 			p->dc->remote_machine, p->dc->mach_acct ));
@@ -582,8 +584,7 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 	/* what happens if we get a logoff for an unknown user? */
 
 	/* XXXX maybe we want to say 'no', reject the client's credentials */
-	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
-	creds_reseed_server(p->dc, &r_u->srv_creds);
+	creds_reseed_server(p->dc);
 
 	r_u->status = NT_STATUS_OK;
 
@@ -620,6 +621,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	r_u->switch_value = 0; /* indicates no info */
 	r_u->auth_resp = 1; /* authoritative response */
 	r_u->switch_value = 3; /* indicates type of validation user info */
+	r_u->buffer_creds = 1; /* Ensure we always return server creds. */
  
 	if (!get_valid_user_struct(p->vuid))
 		return NT_STATUS_NO_SUCH_USER;
@@ -638,7 +640,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	}
 
 	/* checks and updates credentials.  creates reply credentials */
-	if (!creds_server_step(p->dc, &q_u->sam_id.client.cred)) {
+	if (!creds_server_step(p->dc, &q_u->sam_id.client.cred,  &r_u->srv_creds)) {
 		DEBUG(0,("_net_sam_logoff: creds_server_step failed. Rejecting auth "
 			"request from client %s machine account %s\n",
 			p->dc->remote_machine, p->dc->mach_acct ));
@@ -768,8 +770,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	/* moved from right after deal_with_creds above, since we weren't
 	   supposed to update unless logon was successful */
 
-	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
-	creds_reseed_server(p->dc, &r_u->srv_creds);
+	creds_reseed_server(p->dc);
     
 	if (server_info->guest) {
 		/* We don't like guest domain logons... */

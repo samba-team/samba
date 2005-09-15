@@ -1724,8 +1724,10 @@ BOOL net_io_r_sam_logon(const char *desc, NET_R_SAM_LOGON *r_l, prs_struct *ps, 
 
 	if(!prs_uint32("buffer_creds", ps, depth, &r_l->buffer_creds)) /* undocumented buffer pointer */
 		return False;
-	if(!smb_io_cred("", &r_l->srv_creds, ps, depth)) /* server credentials.  server time stamp appears to be ignored. */
-		return False;
+	if (&r_l->buffer_creds) {
+		if(!smb_io_cred("", &r_l->srv_creds, ps, depth)) /* server credentials.  server time stamp appears to be ignored. */
+			return False;
+	}
 
 	if(!prs_uint16("switch_value", ps, depth, &r_l->switch_value))
 		return False;
