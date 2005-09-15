@@ -58,6 +58,32 @@
 #define SCHEMA_SYNTAX 12
 #define SCHEMA_DESC 13
 
+struct syntax_map {
+	const char *Standard_OID;
+	const char *AD_OID;
+	const char *comment;
+} syntax_map[] = {
+	{ "1.3.6.1.4.1.1466.115.121.1.12", "2.5.5.1", "Object(DS-DN) == a DN" },
+	{ "1.3.6.1.4.1.1466.115.121.1.38", "2.5.5.2", "OID String" },
+	{ "1.2.840.113556.1.4.905", "2.5.5.4", "Case Insensitive String" },
+	{ "1.3.6.1.4.1.1466.115.121.1.44", "2.5.5.5", "Printable String" },
+	{ "1.3.6.1.4.1.1466.115.121.1.36", "2.5.5.6", "Numeric String" },
+	{ "1.2.840.113556.1.4.903", "2.5.5.7", "OctetString: Binary+DN" },
+	{ "1.3.6.1.4.1.1466.115.121.1.7", "2.5.5.8", "Boolean" },
+	{ "1.3.6.1.4.1.1466.115.121.1.27", "2.5.5.9", "Integer" },
+	{ "1.3.6.1.4.1.1466.115.121.1.40", "2.5.5.10", "Octet String" },
+	{ "1.3.6.1.4.1.1466.115.121.1.24", "2.5.5.11", "Generalized Time" },
+	{ "1.3.6.1.4.1.1466.115.121.1.53", "2.5.5.11", "UTC Time" },
+	{ "1.3.6.1.4.1.1466.115.121.1.15", "2.5.5.12", "Directory String" },
+	{ "1.3.6.1.4.1.1466.115.121.1.43", "2.5.5.13", "Presentation Address" },
+	{ "Not Found Yet", "2.5.5.14", "OctetString: String+DN" },
+	{ "1.2.840.113556.1.4.907", "2.5.5.15", "NT Security Descriptor" },
+	{ "1.2.840.113556.1.4.906", "2.5.5.16", "Interval" },
+	{ "1.3.6.1.4.1.1466.115.121.1.40", "2.5.5.17", "Octet String - Security Identifier (SID)" },
+	{ "1.3.6.1.4.1.1466.115.121.1.26", "2.5.5.5", "IA5 String" },
+	{ NULL, NULL }
+};
+
 
 struct schema_conv {
 	int count;
