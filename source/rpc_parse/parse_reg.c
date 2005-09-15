@@ -1484,8 +1484,10 @@ void init_reg_q_shutdown(REG_Q_SHUTDOWN *q_u, const char *msg,
 	q_u->server = TALLOC_P( get_talloc_ctx(), uint16 );
 	*q_u->server = 0x1;
 
-	q_u->message = TALLOC_P( get_talloc_ctx(), UNISTR4 );
-	init_unistr4( q_u->message, msg, UNI_FLAGS_NONE );
+	if ( msg && *msg ) { 
+		q_u->message = TALLOC_P( get_talloc_ctx(), UNISTR4 );
+		init_unistr4( q_u->message, msg, UNI_FLAGS_NONE );
+	}
 
 	q_u->timeout = timeout;
 
@@ -1534,6 +1536,8 @@ BOOL reg_io_q_shutdown(const char *desc, REG_Q_SHUTDOWN *q_u, prs_struct *ps,
 		return False;
 
 	if (!prs_pointer("server", ps, depth, (void**)&q_u->server, sizeof(uint16), (PRS_POINTER_CAST)prs_uint16))
+		return False;
+	if (!prs_align(ps))
 		return False;
 
 	if (!prs_pointer("message", ps, depth, (void**)&q_u->message, sizeof(UNISTR4), (PRS_POINTER_CAST)prs_unistr4))
@@ -1592,6 +1596,8 @@ BOOL reg_io_q_shutdown_ex(const char *desc, REG_Q_SHUTDOWN_EX *q_u, prs_struct *
 		return False;
 
 	if (!prs_pointer("server", ps, depth, (void**)&q_u->server, sizeof(uint16), (PRS_POINTER_CAST)prs_uint16))
+		return False;
+	if (!prs_align(ps))
 		return False;
 
 	if (!prs_pointer("message", ps, depth, (void**)&q_u->message, sizeof(UNISTR4), (PRS_POINTER_CAST)prs_unistr4))
@@ -1665,6 +1671,8 @@ BOOL reg_io_q_abort_shutdown(const char *desc, REG_Q_ABORT_SHUTDOWN *q_u,
 		return False;
 
 	if (!prs_pointer("server", ps, depth, (void**)&q_u->server, sizeof(uint16), (PRS_POINTER_CAST)prs_uint16))
+		return False;
+	if (!prs_align(ps))
 		return False;
 
 	return True;
