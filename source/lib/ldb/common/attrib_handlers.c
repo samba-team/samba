@@ -138,7 +138,7 @@ static int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 	}
 	while (*s1 == ' ') s1++;
 	while (*s2 == ' ') s2++;
-	return (int)(*s1) - (int)(*s2);
+	return (int)(toupper(*s1)) - (int)(toupper(*s2));
 }
 
 /*
