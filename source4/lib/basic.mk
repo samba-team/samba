@@ -35,9 +35,6 @@ INIT_OBJ_FILES = \
 # End SUBSYSTEM LIBCOMPRESION
 ################################################
 
-[SUBSYSTEM::PAM_ERRORS]
-OBJ_FILES = lib/pam_errors.o
-
 [SUBSYSTEM::GENCACHE]
 OBJ_FILES = \
 		lib/gencache.o \

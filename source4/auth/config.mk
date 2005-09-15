@@ -58,7 +58,7 @@ INIT_OBJ_FILES = \
 #######################
 
 #######################
-# Start MODULE auth_developer
+# Start MODULE auth_unix
 [MODULE::auth_unix]
 INIT_FUNCTION = auth_unix_init
 SUBSYSTEM = AUTH
@@ -66,8 +66,11 @@ INIT_OBJ_FILES = \
 		auth/auth_unix.o
 REQUIRED_SUBSYSTEMS = \
 		EXT_LIB_CRYPT EXT_LIB_PAM PAM_ERRORS
-# End MODULE auth_developer
+# End MODULE auth_unix
 #######################
+
+[SUBSYSTEM::PAM_ERRORS]
+OBJ_FILES = auth/pam_errors.o
 
 #######################
 # Start SUBSYSTEM AUTH
