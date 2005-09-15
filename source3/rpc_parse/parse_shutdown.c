@@ -34,8 +34,10 @@ void init_shutdown_q_init(SHUTDOWN_Q_INIT *q_s, const char *msg,
 	q_s->server = TALLOC_P( get_talloc_ctx(), uint16 );
 	*q_s->server = 0x1;
 
-	q_s->message = TALLOC_P( get_talloc_ctx(), UNISTR4 );
-	init_unistr4( q_s->message, msg, UNI_FLAGS_NONE );
+	if ( msg && *msg ) {
+		q_s->message = TALLOC_P( get_talloc_ctx(), UNISTR4 );
+		init_unistr4( q_s->message, msg, UNI_FLAGS_NONE );
+	}
 
 	q_s->timeout = timeout;
 
@@ -84,6 +86,8 @@ BOOL shutdown_io_q_init(const char *desc, SHUTDOWN_Q_INIT *q_s, prs_struct *ps,
 
 	if (!prs_pointer("server", ps, depth, (void**)&q_s->server, sizeof(uint16), (PRS_POINTER_CAST)prs_uint16))
 		return False;
+	if (!prs_align(ps))
+		return False;
 
 	if (!prs_pointer("message", ps, depth, (void**)&q_s->message, sizeof(UNISTR4), (PRS_POINTER_CAST)prs_unistr4))
 		return False;
@@ -98,7 +102,6 @@ BOOL shutdown_io_q_init(const char *desc, SHUTDOWN_Q_INIT *q_s, prs_struct *ps,
 		return False;
 	if (!prs_uint8("reboot ", ps, depth, &(q_s->reboot)))
 		return False;
-
 
 	return True;
 }
@@ -141,6 +144,8 @@ BOOL shutdown_io_q_init_ex(const char *desc, SHUTDOWN_Q_INIT_EX * q_s, prs_struc
 		return False;
 
 	if (!prs_pointer("server", ps, depth, (void**)&q_s->server, sizeof(uint16), (PRS_POINTER_CAST)prs_uint16))
+		return False;
+	if (!prs_align(ps))
 		return False;
 
 	if (!prs_pointer("message", ps, depth, (void**)&q_s->message, sizeof(UNISTR4), (PRS_POINTER_CAST)prs_unistr4))
@@ -213,6 +218,8 @@ BOOL shutdown_io_q_abort(const char *desc, SHUTDOWN_Q_ABORT *q_s,
 		return False;
 
 	if (!prs_pointer("server", ps, depth, (void**)&q_s->server, sizeof(uint16), (PRS_POINTER_CAST)prs_uint16))
+		return False;
+	if (!prs_align(ps))
 		return False;
 
 	return True;
