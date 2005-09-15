@@ -59,7 +59,7 @@ static char *smb_readline_replacement(const char *prompt, void (*callback)(void)
 	fd_set fds;
 	static pstring line;
 	struct timeval timeout;
-	int fd = x_fileno(x_stdin);
+	int fd = STDIN_FILENO;
 	char *ret;
 
 	do_debug("%s", prompt);
@@ -88,7 +88,7 @@ char *smb_readline(const char *prompt, void (*callback)(void),
 		   char **(completion_fn)(const char *text, int start, int end))
 {
 #if HAVE_LIBREADLINE
-	if (isatty(x_fileno(x_stdin))) {
+	if (isatty(STDIN_FILENO)) {
 		char *ret;
 
 		/* Aargh!  Readline does bizzare things with the terminal width

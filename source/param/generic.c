@@ -242,28 +242,28 @@ int param_read(struct param_context *ctx, const char *fn)
 
 int param_write(struct param_context *ctx, const char *fn)
 {
-	XFILE *file;
+	int file;
 	struct param_section *section;
 
 	if (fn == NULL || ctx == NULL)
 		return -1;
 
-	file = x_fopen(fn, O_WRONLY|O_CREAT, 0755);
+	file = open(fn, O_WRONLY|O_CREAT, 0755);
 
-	if (file == NULL)
+	if (file == -1)
 		return -1;
 	
 	for (section = ctx->sections; section; section = section->next) {
 		struct param *param;
 		
-		x_fprintf(file, "[%s]\n", section->name);
+		fdprintf(file, "[%s]\n", section->name);
 		for (param = section->parameters; param; param = param->next) {
-			x_fprintf(file, "\t%s = %s\n", param->name, param->value);
+			fdprintf(file, "\t%s = %s\n", param->name, param->value);
 		}
-		x_fprintf(file, "\n");
+		fdprintf(file, "\n");
 	}
 
-	x_fclose(file);
+	close(file);
 
 	return 0;
 }
