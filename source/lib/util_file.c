@@ -397,3 +397,29 @@ BOOL file_exists(const char *path)
 	struct stat st;
 	return (stat(path, &st) == 0);
 }
+
+int vfdprintf(int fd, const char *format, va_list ap) 
+{
+	char *p;
+	int len, ret;
+	va_list ap2;
+
+	VA_COPY(ap2, ap);
+
+	len = vasprintf(&p, format, ap2);
+	if (len <= 0) return len;
+	ret = write(fd, p, len);
+	SAFE_FREE(p);
+	return ret;
+}
+
+int fdprintf(int fd, const char *format, ...) _PRINTF_ATTRIBUTE(2,3)
+{
+	va_list ap;
+	int ret;
+
+	va_start(ap, format);
+	ret = vfdprintf(fd, format, ap);
+	va_end(ap);
+	return ret;
+}

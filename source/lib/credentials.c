@@ -671,37 +671,30 @@ BOOL cli_credentials_parse_password_file(struct cli_credentials *credentials, co
 
 BOOL cli_credentials_parse_file(struct cli_credentials *cred, const char *file, enum credentials_obtained obtained) 
 {
-	XFILE *auth;
-	char buf[128];
 	uint16_t len = 0;
 	char *ptr, *val, *param;
+	char **lines;
+	int i, numlines;
 
-	if ((auth=x_fopen(file, O_RDONLY, 0)) == NULL)
+	lines = file_lines_load(file, &numlines, NULL);
+
+	if (lines == NULL)
 	{
 		/* fail if we can't open the credentials file */
 		d_printf("ERROR: Unable to open credentials file!\n");
 		return False;
 	}
 
-	while (!x_feof(auth))
-	{
-		/* get a line from the file */
-		if (!x_fgets(buf, sizeof(buf), auth))
-			continue;
-		len = strlen(buf);
+	for (i = 0; i < numlines; i++) {
+		len = strlen(lines[i]);
 
-		if ((len) && (buf[len-1]=='\n'))
-		{
-			buf[len-1] = '\0';
-			len--;
-		}
 		if (len == 0)
 			continue;
 
 		/* break up the line into parameter & value.
 		 * will need to eat a little whitespace possibly */
-		param = buf;
-		if (!(ptr = strchr_m (buf, '=')))
+		param = lines[i];
+		if (!(ptr = strchr_m (lines[i], '=')))
 			continue;
 
 		val = ptr+1;
@@ -720,10 +713,11 @@ BOOL cli_credentials_parse_file(struct cli_credentials *cred, const char *file, 
 		} else if (strwicmp("realm", param) == 0) {
 			cli_credentials_set_realm(cred, val, obtained);
 		}
-		memset(buf, 0, sizeof(buf));
+		memset(lines[i], 0, len);
 	}
 
-	x_fclose(auth);
+	talloc_free(lines);
+
 	return True;
 }
 
