@@ -465,6 +465,9 @@ int ltdb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 	struct ltdb_private *ltdb = module->private_data;
 	int ret;
 
+	if ((base == NULL || base->comp_num == 0) &&
+	    (scope == LDB_SCOPE_BASE || scope == LDB_SCOPE_ONELEVEL)) return -1;
+
 	/* it is important that we handle dn queries this way, and not
 	   via a full db search, otherwise ldb is horribly slow */
 	if (tree->operation == LDB_OP_EQUALITY &&
@@ -515,6 +518,9 @@ int ltdb_search(struct ldb_module *module, const struct ldb_dn *base,
 	struct ltdb_private *ltdb = module->private_data;
 	struct ldb_parse_tree *tree;
 	int ret;
+
+	if ((base == NULL || base->comp_num == 0) &&
+	    (scope == LDB_SCOPE_BASE || scope == LDB_SCOPE_ONELEVEL)) return -1;
 
 	/* check if we are looking for a simple dn */
 	if (scope == LDB_SCOPE_BASE && (expression == NULL || expression[0] == '\0')) {

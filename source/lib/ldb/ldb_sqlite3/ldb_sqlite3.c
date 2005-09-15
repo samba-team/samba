@@ -237,6 +237,7 @@ static char *parsetree_to_sql(struct ldb_module *module,
 	char *wild_card_string;
 	char *child, *tmp;
 	char *ret = NULL;
+	char *attr;
 	int i;
 
 
@@ -251,7 +252,7 @@ static char *parsetree_to_sql(struct ldb_module *module,
 			child = parsetree_to_sql(module, mem_ctx, t->u.list.elements[i]);
 			if (child == NULL) return NULL;
 
-			tmp = talloc_asprintf_append(tmp, "INTERSECT %s ", child);
+			tmp = talloc_asprintf_append(tmp, " INTERSECT %s ", child);
 			if (tmp == NULL) return NULL;
 		}
 
@@ -269,11 +270,11 @@ static char *parsetree_to_sql(struct ldb_module *module,
 			child = parsetree_to_sql(module, mem_ctx, t->u.list.elements[i]);
 			if (child == NULL) return NULL;
 
-			tmp = talloc_asprintf_append(tmp, "UNION %s ", child);
+			tmp = talloc_asprintf_append(tmp, " UNION %s ", child);
 			if (tmp == NULL) return NULL;
 		}
 
-		return talloc_asprintf(mem_ctx, "SELECT * FROM ( %s )", tmp);
+		return talloc_asprintf(mem_ctx, "SELECT * FROM ( %s ) ", tmp);
 
 	case LDB_OP_NOT:
 
@@ -282,14 +283,16 @@ static char *parsetree_to_sql(struct ldb_module *module,
 
 		return talloc_asprintf(mem_ctx,
 					"SELECT eid FROM ldb_entry "
-					"WHERE eid NOT IN ( %s )", child);
+					"WHERE eid NOT IN ( %s ) ", child);
 
 	case LDB_OP_EQUALITY:
 		/*
 		 * For simple searches, we want to retrieve the list of EIDs that
 		 * match the criteria.
 		*/
-		h = ldb_attrib_handler(module->ldb, t->u.equality.attr);
+		attr = ldb_casefold(mem_ctx, t->u.equality.attr);
+		if (attr == NULL) return NULL;
+		h = ldb_attrib_handler(module->ldb, attr);
 
 		/* Get a canonicalised copy of the data */
 		h->canonicalise_fn(module->ldb, mem_ctx, &(t->u.equality.value), &value);
@@ -327,9 +330,9 @@ static char *parsetree_to_sql(struct ldb_module *module,
 			/* A normal query. */
 			return lsqlite3_tprintf(mem_ctx,
 						"SELECT eid FROM ldb_attribute_values "
-						"WHERE norm_attr_name = upper('%q') "
+						"WHERE norm_attr_name = '%q' "
 						"AND norm_attr_value = '%q'",
-						t->u.equality.attr,
+						attr,
 						value.data);
 
 		}
@@ -342,7 +345,7 @@ static char *parsetree_to_sql(struct ldb_module *module,
 
 		for (i = 0; t->u.substring.chunks[i]; i++) {
 			wild_card_string = talloc_asprintf_append(wild_card_string, "%s*",
-							t->u.substring.chunks[i]);
+							t->u.substring.chunks[i]->data);
 			if (wild_card_string == NULL) return NULL;
 		}
 
@@ -351,7 +354,9 @@ static char *parsetree_to_sql(struct ldb_module *module,
 			wild_card_string[strlen(wild_card_string) - 1] = '\0';
 		}
 
-		h = ldb_attrib_handler(module->ldb, t->u.substring.attr);
+		attr = ldb_casefold(mem_ctx, t->u.substring.attr);
+		if (attr == NULL) return NULL;
+		h = ldb_attrib_handler(module->ldb, attr);
 
 		subval.data = wild_card_string;
 		subval.length = strlen(wild_card_string) + 1;
@@ -364,13 +369,15 @@ static char *parsetree_to_sql(struct ldb_module *module,
 
 		return lsqlite3_tprintf(mem_ctx,
 					"SELECT eid FROM ldb_attribute_values "
-					"WHERE norm_attr_name = upper('%q') "
+					"WHERE norm_attr_name = '%q' "
 					"AND norm_attr_value GLOB '%q'",
-					t->u.substring.attr,
+					attr,
 					value.data);
 
 	case LDB_OP_GREATER:
-		h = ldb_attrib_handler(module->ldb, t->u.equality.attr);
+		attr = ldb_casefold(mem_ctx, t->u.equality.attr);
+		if (attr == NULL) return NULL;
+		h = ldb_attrib_handler(module->ldb, attr);
 
 		/* Get a canonicalised copy of the data */
 		h->canonicalise_fn(module->ldb, mem_ctx, &(t->u.equality.value), &value);
@@ -380,13 +387,16 @@ static char *parsetree_to_sql(struct ldb_module *module,
 
 		return lsqlite3_tprintf(mem_ctx,
 					"SELECT eid FROM ldb_attribute_values "
-					"WHERE norm_attr_name = upper('%q') "
-					"AND norm_attr_value >= '%q'",
-					t->u.equality.attr,
-					value.data);
+					"WHERE norm_attr_name = '%q' "
+					"AND norm_attr_value LIKE '>=%q' ESCAPE '%q' ",
+					attr,
+					value.data,
+					attr);
 
 	case LDB_OP_LESS:
-		h = ldb_attrib_handler(module->ldb, t->u.equality.attr);
+		attr = ldb_casefold(mem_ctx, t->u.equality.attr);
+		if (attr == NULL) return NULL;
+		h = ldb_attrib_handler(module->ldb, attr);
 
 		/* Get a canonicalised copy of the data */
 		h->canonicalise_fn(module->ldb, mem_ctx, &(t->u.equality.value), &value);
@@ -396,23 +406,29 @@ static char *parsetree_to_sql(struct ldb_module *module,
 
 		return lsqlite3_tprintf(mem_ctx,
 					"SELECT eid FROM ldb_attribute_values "
-					"WHERE norm_attr_name = upper('%q') "
-					"AND norm_attr_value <= '%q'",
-					t->u.equality.attr,
-					value.data);
+					"WHERE norm_attr_name = '%q' "
+					"AND norm_attr_value LIKE '<=%q' ESCAPE '%q' ",
+					attr,
+					value.data,
+					attr);
 
 	case LDB_OP_PRESENT:
-		if (strcasecmp(t->u.present.attr, "dn")) {
+		if (strcasecmp(t->u.present.attr, "dn") == 0) {
 			return talloc_strdup(mem_ctx, "SELECT eid FROM ldb_entry");
 		}
 
+		attr = ldb_casefold(mem_ctx, t->u.present.attr);
+		if (attr == NULL) return NULL;
+
 		return lsqlite3_tprintf(mem_ctx,
 					"SELECT eid FROM ldb_attribute_values "
-					"WHERE norm_attr_name = upper('%q')",
-					t->u.present.attr);
+					"WHERE norm_attr_name = '%q' ",
+					attr);
 
 	case LDB_OP_APPROX:
-		h = ldb_attrib_handler(module->ldb, t->u.equality.attr);
+		attr = ldb_casefold(mem_ctx, t->u.equality.attr);
+		if (attr == NULL) return NULL;
+		h = ldb_attrib_handler(module->ldb, attr);
 
 		/* Get a canonicalised copy of the data */
 		h->canonicalise_fn(module->ldb, mem_ctx, &(t->u.equality.value), &value);
@@ -422,10 +438,11 @@ static char *parsetree_to_sql(struct ldb_module *module,
 
 		return lsqlite3_tprintf(mem_ctx,
 					"SELECT eid FROM ldb_attribute_values "
-					"WHERE norm_attr_name = upper('%q') "
-					"AND norm_attr_value LIKE '%q'",
-					t->u.equality.attr,
-					value.data);
+					"WHERE norm_attr_name = '%q' "
+					"AND norm_attr_value LIKE '~%q' ESCAPE '%q' ",
+					attr,
+					value.data,
+					attr);
 		
 	case LDB_OP_EXTENDED:
 #warning  "work out how to handle bitops"
@@ -439,102 +456,6 @@ static char *parsetree_to_sql(struct ldb_module *module,
 	abort();
 	return NULL;
 }
-
-
-/*
- * query_norows()
- *
- * This function is used for queries that are not expected to return any rows,
- * e.g. BEGIN, COMMIT, ROLLBACK, CREATE TABLE, INSERT, UPDATE, DELETE, etc.
- * There are no provisions here for returning data from rows in a table, so do
- * not pass SELECT queries to this function.
- */
-static int
-query_norows(const struct lsqlite3_private *lsqlite3,
-             const char *pSql,
-             ...)
-{
-        int             ret;
-        int             bLoop;
-        char *          p;
-        sqlite3_stmt *  pStmt;
-        va_list         args;
- 
-        /* Begin access to variable argument list */
-        va_start(args, pSql);
-        
-        /* Format the query */
-        if ((p = sqlite3_vmprintf(pSql, args)) == NULL) {
-                return -1;
-        }
-        
-        /*
-         * Prepare and execute the SQL statement.  Loop allows retrying on
-         * certain errors, e.g. SQLITE_SCHEMA occurs if the schema changes,
-         * requiring retrying the operation.
-         */
-        for (bLoop = TRUE; bLoop; ) {
-                
-                /* Compile the SQL statement into sqlite virtual machine */
-                if ((ret = sqlite3_prepare(lsqlite3->sqlite,
-                                           p,
-                                           -1,
-                                           &pStmt,
-                                           NULL)) == SQLITE_SCHEMA) {
-                        if (stmtGetEID != NULL) {
-                                sqlite3_finalize(stmtGetEID);
-                                stmtGetEID = NULL;
-                        }
-                        continue;
-                } else if (ret != SQLITE_OK) {
-                        ret = -1;
-                        break;
-                }
-                
-                /* No rows expected, so just step through machine code once */
-                if ((ret = sqlite3_step(pStmt)) == SQLITE_SCHEMA) {
-                        if (stmtGetEID != NULL) {
-                                sqlite3_finalize(stmtGetEID);
-                                stmtGetEID = NULL;
-                        }
-                        (void) sqlite3_finalize(pStmt);
-                        continue;
-                } else if (ret != SQLITE_DONE) {
-                        (void) sqlite3_finalize(pStmt);
-                        ret = -1;
-                        break;
-                }
-                
-                /* Free the virtual machine */
-                if ((ret = sqlite3_finalize(pStmt)) == SQLITE_SCHEMA) {
-                        if (stmtGetEID != NULL) {
-                                sqlite3_finalize(stmtGetEID);
-                                stmtGetEID = NULL;
-                        }
-                        continue;
-                } else if (ret != SQLITE_OK) {
-                        (void) sqlite3_finalize(pStmt);
-                        ret = -1;
-                        break;
-                }
-                
-                /*
-                 * Normal condition is only one time through loop.  Loop is
-                 * rerun in error conditions, via "continue", above.
-                 */
-                ret = 0;
-                bLoop = FALSE;
-        }
-        
-        /* All done with variable argument list */
-        va_end(args);
-        
-        /* Free the memory we allocated for our query string */
-        sqlite3_free(p);
-        
-        return ret;
-}
-
 
 /* obtain a named lock */
 static int
@@ -683,6 +604,78 @@ query_int(const struct lsqlite3_private * lsqlite3,
         return ret;
 }
 
+/*
+ * This is a bad hack to support ldap style comparisons whithin sqlite.
+ * This function substitues the X LIKE Y ESCAPE Z expression
+ * X is an expression + value to compare against (eg: ">=test")
+ * Y is the attribute in the row currently under test
+ * Z is the attribute name the value of which we want to test
+ */
+
+static void lsqlite3_compare(sqlite3_context *ctx, int argc,
+					sqlite3_value **argv)
+{
+	struct ldb_context *ldb = (struct ldb_context *)sqlite3_user_data(ctx);
+	const unsigned char *X = sqlite3_value_text(argv[0]);
+	const unsigned char *Y = sqlite3_value_text(argv[1]);
+	const unsigned char *Z = sqlite3_value_text(argv[2]);
+	const unsigned char *p;
+	const struct ldb_attrib_handler *h;
+	struct ldb_val valX;
+	struct ldb_val valY;
+	int ret;
+
+	switch (X[0]) {
+	/* greater */
+	case '>': /* >= */
+		p = &(X[2]);
+		h = ldb_attrib_handler(ldb, Z);
+		valX.data = p;
+		valX.length = strlen(p);
+		valY.data = Y;
+		valY.length = strlen(Y);
+		ret = h->comparison_fn(ldb, ldb, &valY, &valX);
+		if (ret >= 0)
+			sqlite3_result_int(ctx, 1);
+		else
+			sqlite3_result_int(ctx, 0);
+		return;
+
+	/* lesser */
+	case '<': /* <= */
+		p = &(X[2]);
+		h = ldb_attrib_handler(ldb, Z);
+		valX.data = p;
+		valX.length = strlen(p);
+		valY.data = Y;
+		valY.length = strlen(Y);
+		ret = h->comparison_fn(ldb, ldb, &valY, &valX);
+		if (ret <= 0)
+			sqlite3_result_int(ctx, 1);
+		else
+			sqlite3_result_int(ctx, 0);
+		return;
+
+	/* approx */
+	case '~':
+		/* TODO */
+		sqlite3_result_int(ctx, 0);
+		return;
+
+	/* bitops */
+	case ':':
+		/* TODO */
+		sqlite3_result_int(ctx, 0);
+		return;
+
+	default:
+		break;
+	}
+
+	sqlite3_result_error(ctx, "Value must start with a special operation char (<>~:)!", -1);
+	return;
+}
+
 
 /* rename a record */
 static int lsqlite3_safe_rollback(sqlite3 *sqlite)
@@ -719,6 +712,7 @@ struct lsqlite3_msgs {
 	int count;
 	struct ldb_message **msgs;
 	long long current_eid;
+	const char * const * attrs;
 	TALLOC_CTX *mem_ctx;
 };
 
@@ -731,6 +725,7 @@ static int lsqlite3_search_callback(void *result, int col_num, char **cols, char
 	struct lsqlite3_msgs *msgs = (struct lsqlite3_msgs *)result;
 	struct ldb_message *msg;
 	long long eid;
+	int i;
 
 	/* eid, dn, attr_name, attr_value */
 	if (col_num != 4) return SQLITE_ABORT;
@@ -761,6 +756,17 @@ static int lsqlite3_search_callback(void *result, int col_num, char **cols, char
 	if (msg->dn == NULL) {
 		msg->dn = ldb_dn_explode(msg, cols[1]);
 		if (msg->dn == NULL) return SQLITE_ABORT;
+	}
+
+	if (msgs->attrs) {
+		int found = 0;
+		for (i = 0; msgs->attrs[i]; i++) {
+			if (strcasecmp(cols[2], msgs->attrs[i]) == 0) {
+				found = 1;
+				break;
+			}
+		}
+		if (!found) return 0;
 	}
 
 	msg->elements = talloc_realloc(msg,
@@ -862,7 +868,6 @@ static int lsqlite3_search_bytree(struct ldb_module * module, const struct ldb_d
 	struct lsqlite3_private *lsqlite3 = module->private_data;
 	struct lsqlite3_msgs msgs;
 	char *norm_basedn;
-        char *attr_list;
 	char *sqlfilter;
 	char *errmsg;
 	char *query;
@@ -886,39 +891,6 @@ static int lsqlite3_search_bytree(struct ldb_module * module, const struct ldb_d
         /* Convert filter into a series of SQL conditions (constraints) */
 	sqlfilter = parsetree_to_sql(module, local_ctx, tree);
         
-        /* Initially, we don't know what the requested attributes are */
-	if (attrs != NULL) {
-        	attr_list = talloc_strdup(local_ctx, "AND norm_attr_name IN (");
-		if (attr_list == NULL) goto failed;
-
-		for (i = 0; attrs[i]; i++) {
-			char *norm_attr_name;
-
-                	/* If any attribute in the list is "*" then... */
-			if (strcmp(attrs[i], "*") == 0) {
-                        	/* we want all attribute types */
-				attr_list = talloc_strdup(local_ctx, "");
-				if (attr_list == NULL) goto failed;
-				break;
-			}
-
-			norm_attr_name = ldb_casefold(local_ctx, attrs[i]);
-			if (norm_attr_name == NULL) goto failed;
-
-			attr_list = talloc_asprintf_append(attr_list, "'%q', ",
-							   norm_attr_name);
-			if (attr_list == NULL) goto failed;
-
-		}
-
-		/* substitute the last ',' with ')' */
-		attr_list[strlen(attr_list)-2] = ')';
-
-	} else {
-		attr_list = talloc_strdup(local_ctx, "");
-		if (attr_list == NULL) goto failed;
-	}
-
         switch(scope) {
         case LDB_SCOPE_DEFAULT:
         case LDB_SCOPE_SUBTREE:
@@ -942,13 +914,10 @@ static int lsqlite3_search_bytree(struct ldb_module * module, const struct ldb_d
 				"         (%s)\n"
 				"    )\n"
 
-				"    %s\n"
-
 				"  ORDER BY entry.eid ASC;",
 				norm_basedn,
 				norm_basedn,
-				sqlfilter,
-				attr_list);
+				sqlfilter);
 		} else {
 			query = lsqlite3_tprintf(local_ctx,
 				"SELECT entry.eid,\n"
@@ -967,11 +936,8 @@ static int lsqlite3_search_bytree(struct ldb_module * module, const struct ldb_d
 				"         (%s)\n"
 				"    )\n"
 
-				"    %s\n"
-
 				"  ORDER BY entry.eid ASC;",
-				sqlfilter,
-				attr_list);
+				sqlfilter);
 		}
 
 		break;
@@ -995,12 +961,9 @@ static int lsqlite3_search_bytree(struct ldb_module * module, const struct ldb_d
 			"           (%s)\n"
                         "    )\n"
 
-                        "    %s\n"
-
                         "  ORDER BY entry.eid ASC;",
 			norm_basedn,
-                        sqlfilter,
-			attr_list);
+                        sqlfilter);
                 break;
                 
         case LDB_SCOPE_ONELEVEL:
@@ -1022,13 +985,10 @@ static int lsqlite3_search_bytree(struct ldb_module * module, const struct ldb_d
                         "         AND ldb_entry.eid IN\n(%s)\n"
                         "    )\n"
 
-                        "    %s\n"
-
                         "  ORDER BY entry.eid ASC;",
                         norm_basedn,
                         norm_basedn,
-                        sqlfilter,
-			attr_list);
+                        sqlfilter);
                 break;
         }
 
@@ -1037,12 +997,15 @@ static int lsqlite3_search_bytree(struct ldb_module * module, const struct ldb_d
                 goto failed;
         }
 
-	/* printf ("%s\n", query); */
+	/* * /
+	printf ("%s\n", query);
+	/ * */
 
 	msgs.msgs = NULL;
 	msgs.count = 0;
 	msgs.current_eid = 0;
 	msgs.mem_ctx = local_ctx;
+	msgs.attrs = attrs;
 
 	ret = sqlite3_exec(lsqlite3->sqlite, query, lsqlite3_search_callback, &msgs, &errmsg);
 	if (ret != SQLITE_OK) {
@@ -1137,12 +1100,13 @@ static int lsqlite3_add(struct ldb_module *module, const struct ldb_message *msg
 			goto failed;
 		}
 
+/*
 		c = ldb_dn_explode(local_ctx, "@INDEXLIST");
 		if (ldb_dn_compare(module->ldb, msg->dn, c) == 0) {
 #warning "should we handle indexes somehow ?"
 			goto failed;
 		}
-
+*/
                 /* Others are implicitly ignored */
                 return 0;
 	}
@@ -1554,13 +1518,23 @@ lsqlite3_errstring(struct ldb_module *module)
  * Static functions
  */
 
-static int initialize(struct lsqlite3_private *lsqlite3, const char *url)
+static int initialize(struct lsqlite3_private *lsqlite3,
+			struct ldb_context *ldb, const char *url)
 {
-        int ret;
+	TALLOC_CTX *local_ctx;
         long long queryInt;
-        const char *pTail;
-        sqlite3_stmt *stmt;
-        const char *schema =       
+	int rollback = 0;
+	char *errmsg;
+        char *schema;
+        int ret;
+
+	/* create a local ctx */
+	local_ctx = talloc_named(lsqlite3, 0, "lsqlite3_rename local context");
+	if (local_ctx == NULL) {
+		return -1;
+	}
+
+	schema = lsqlite3_tprintf(local_ctx,
                 
                 
                 "CREATE TABLE ldb_info AS "
@@ -1646,9 +1620,7 @@ static int initialize(struct lsqlite3_private *lsqlite3, const char *url)
                 "INSERT INTO ldb_object_classes "
                 "    (class_name, tree_key) "
                 "  VALUES "
-                "    ('TOP', '0001');"
-
-                ;
+                "    ('TOP', '0001');");
         
         /* Skip protocol indicator of url  */
         if (strncmp(url, "sqlite://", 9) != 0) {
@@ -1664,15 +1636,26 @@ static int initialize(struct lsqlite3_private *lsqlite3, const char *url)
         }
         
         /* In case this is a new database, enable auto_vacuum */
-        if (query_norows(lsqlite3, "PRAGMA auto_vacuum=1;") != 0) {
-                        return -1;
-        }
+	ret = sqlite3_exec(lsqlite3->sqlite, "PRAGMA auto_vacuum = 1;", NULL, NULL, &errmsg);
+	if (ret != SQLITE_OK) {
+		if (errmsg) {
+			printf("lsqlite3 initializaion error: %s\n", errmsg);
+			free(errmsg);
+		}
+		goto failed;
+	}
         
-	/* DANGEROUS
-        if (query_norows(lsqlite3, "PRAGMA synchronous = OFF;") != 0) {
-                        return -1;
-        }
-	*/
+	/* DANGEROUS */
+	ret = sqlite3_exec(lsqlite3->sqlite, "PRAGMA synchronous = OFF;", NULL, NULL, &errmsg);
+	if (ret != SQLITE_OK) {
+		if (errmsg) {
+			printf("lsqlite3 initializaion error: %s\n", errmsg);
+			free(errmsg);
+		}
+		goto failed;
+	}
+        
+	/* */
         
         /* Establish a busy timeout of 30 seconds */
         if ((ret = sqlite3_busy_timeout(lsqlite3->sqlite,
@@ -1708,43 +1691,52 @@ static int initialize(struct lsqlite3_private *lsqlite3, const char *url)
                 return ret;
         }
 
-        /* Begin a transaction */
-        if ((ret = query_norows(lsqlite3, "BEGIN EXCLUSIVE;")) != 0) {
-                        return ret;
+        /* Create a function, callable from sql, to perform various comparisons */
+        if ((ret =
+             sqlite3_create_function(lsqlite3->sqlite, /* handle */
+                                     "like",           /* function name */
+                                     3,                /* number of args */
+                                     SQLITE_ANY,       /* preferred text type */
+                                     ldb  ,            /* user data */
+                                     lsqlite3_compare, /* called func */
+                                     NULL,             /* step func */
+                                     NULL              /* final func */
+                     )) != SQLITE_OK) {
+                return ret;
         }
-        
+
+        /* Begin a transaction */
+	ret = sqlite3_exec(lsqlite3->sqlite, "BEGIN EXCLUSIVE;", NULL, NULL, &errmsg);
+	if (ret != SQLITE_OK) {
+		if (errmsg) {
+			printf("lsqlite3: initialization error: %s\n", errmsg);
+			free(errmsg);
+		}
+		goto failed;
+	}
+	rollback = 1;
+ 
         /* Determine if this is a new database.  No tables means it is. */
         if (query_int(lsqlite3,
                       &queryInt,
                       "SELECT COUNT(*)\n"
                       "  FROM sqlite_master\n"
                       "  WHERE type = 'table';") != 0) {
-                query_norows(lsqlite3, "ROLLBACK;");
-                return -1;
+		goto failed;
         }
         
         if (queryInt == 0) {
                 /*
                  * Create the database schema
                  */
-                for (pTail = discard_const_p(char, schema);
-                     pTail != NULL && *pTail != '\0';
-                        ) {
-                        
-                        if ((ret = sqlite3_prepare(
-                                     lsqlite3->sqlite,
-                                     pTail,
-                                     -1,
-                                     &stmt,
-                                     &pTail)) != SQLITE_OK ||
-                            (ret = sqlite3_step(stmt)) != SQLITE_DONE ||
-                            (ret = sqlite3_finalize(stmt)) != SQLITE_OK) {
-                                
-                                query_norows(lsqlite3, "ROLLBACK;");
-                                (void) sqlite3_close(lsqlite3->sqlite);
-                                return ret;
-                        }
-                }
+		ret = sqlite3_exec(lsqlite3->sqlite, schema, NULL, NULL, &errmsg);
+		if (ret != SQLITE_OK) {
+			if (errmsg) {
+				printf("lsqlite3 initializaion error: %s\n", errmsg);
+				free(errmsg);
+			}
+			goto failed;
+		}
         } else {
                 /*
                  * Ensure that the database we opened is one of ours
@@ -1770,34 +1762,26 @@ static int initialize(struct lsqlite3_private *lsqlite3, const char *url)
                     queryInt != 1) {
                         
                         /* It's not one that we created.  See ya! */
-                        query_norows(lsqlite3, "ROLLBACK;");
-                        (void) sqlite3_close(lsqlite3->sqlite);
-                        return SQLITE_MISUSE;
+			goto failed;
                 }
         }
         
-        /*
-         * Create a temporary table to hold attributes requested in the result
-         * set of a search.
-         */
-        query_norows(lsqlite3, "DROP TABLE " RESULT_ATTR_TABLE ";\n");
-        if ((ret =
-             query_norows(lsqlite3,
-                          "CREATE " TEMPTAB " TABLE " RESULT_ATTR_TABLE "\n"
-                          " (\n"
-                          "  attr_name TEXT PRIMARY KEY\n"
-                          " );")) != 0) {
-                query_norows(lsqlite3, "ROLLBACK;");
-                return ret;
-        }
-
         /* Commit the transaction */
-        if ((ret = query_norows(lsqlite3, "COMMIT;")) != 0) {
-                query_norows(lsqlite3, "ROLLBACK;");
-                return ret;
-        }
-        
+	ret = sqlite3_exec(lsqlite3->sqlite, "COMMIT;", NULL, NULL, &errmsg);
+	if (ret != SQLITE_OK) {
+		if (errmsg) {
+			printf("lsqlite3: iniialization error: %s\n", errmsg);
+			free(errmsg);
+		}
+		goto failed;
+	}
+ 
         return SQLITE_OK;
+
+failed:
+	if (rollback) lsqlite3_safe_rollback(lsqlite3->sqlite); 
+	sqlite3_close(lsqlite3->sqlite);
+	return -1;
 }
 
 static int
@@ -1848,9 +1832,8 @@ int lsqlite3_connect(struct ldb_context *ldb,
         
 	lsqlite3->sqlite = NULL;
 	lsqlite3->options = NULL;
-        lsqlite3->lock_count = 0;
         
-	ret = initialize(lsqlite3, url);
+	ret = initialize(lsqlite3, ldb, url);
 	if (ret != SQLITE_OK) {
 		goto failed;
 	}
