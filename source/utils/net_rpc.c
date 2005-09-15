@@ -6121,7 +6121,7 @@ int net_rpc_usage(int argc, const char **argv)
 	d_printf("\t-r or --reboot\trequest remote server reboot on shutdown\n");
 	d_printf("\t-f or --force\trequest the remote server force its shutdown\n");
 	d_printf("\t-t or --timeout=<timeout>\tnumber of seconds before shutdown\n");
-	d_printf("\t-c or --comment=<message>\ttext message to display on impending shutdown\n");
+	d_printf("\t-C or --comment=<message>\ttext message to display on impending shutdown\n");
 	return -1;
 }
 
