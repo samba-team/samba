@@ -859,6 +859,7 @@ void fill_domain_username(fstring name, const char *domain, const char *user)
 	fstring tmp_user;
 
 	fstrcpy(tmp_user, user);
+	strlower_m(tmp_user);
 
 	if (assume_domain(domain)) {
 		strlcpy(name, user, sizeof(fstring));
