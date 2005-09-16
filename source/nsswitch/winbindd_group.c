@@ -520,7 +520,7 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 		&& domain->primary) || domain->internal )
 	{
 		DEBUG(4,("get_sam_group_entries: %s domain; enumerating local groups as well\n", 
-			domain->native ? "Native Mode 2k":"BUILTIN"));
+			domain->native_mode ? "Native Mode 2k":"BUILTIN or local"));
 		
 		status = domain->methods->enum_local_groups(domain, mem_ctx, &num_entries, &sam_grp_entries);
 		
