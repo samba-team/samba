@@ -3,9 +3,9 @@
 [SUBSYSTEM::LIBTDB]
 INIT_OBJ_FILES = \
 		lib/tdb/common/tdb.o
-ADD_OBJ_FILES = \
-		lib/tdb/common/tdbutil.o \
-		lib/tdb/common/spinlock.o
+ADD_OBJ_FILES = lib/tdb/common/dump.o lib/tdb/common/io.o lib/tdb/common/lock.o \
+	lib/tdb/common/open.o lib/tdb/common/traverse.o lib/tdb/common/freelist.o \
+	lib/tdb/common/error.o lib/tdb/common/tdbutil.o
 NOPROTO=YES
 REQUIRED_SUBSYSTEMS = \
 		LIBREPLACE

@@ -57,7 +57,7 @@ static void print_data(TDB_DATA d)
 	}
 }
 
-static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
+static int traverse_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
 	printf("{\n");
 	printf("key = \"");
@@ -72,7 +72,7 @@ static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *stat
 
 static int dump_tdb(const char *fname)
 {
-	TDB_CONTEXT *tdb;
+	struct tdb_context *tdb;
 	
 	tdb = tdb_open(fname, 0, 0, O_RDONLY, 0);
 	if (!tdb) {

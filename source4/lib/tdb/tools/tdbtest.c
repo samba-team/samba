@@ -28,7 +28,7 @@
 #define DELETE_PROB 7
 #define STORE_PROB 5
 
-static TDB_CONTEXT *db;
+static struct tdb_context *db;
 static GDBM_FILE gdbm;
 
 struct timeval tp1,tp2;
@@ -52,9 +52,9 @@ static void fatal(const char *why)
 }
 
 #ifdef PRINTF_ATTRIBUTE
-static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...) PRINTF_ATTRIBUTE(3,4);
+static void tdb_log(struct tdb_context *tdb, int level, const char *format, ...) PRINTF_ATTRIBUTE(3,4);
 #endif
-static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
+static void tdb_log(struct tdb_context *tdb, int level, const char *format, ...)
 {
 	va_list ap;
     
@@ -191,7 +191,7 @@ static void addrec_gdbm(void)
 	free(d);
 }
 
-static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
+static int traverse_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
 #if 0
 	printf("[%s] [%s]\n", key.dptr, dbuf.dptr);
