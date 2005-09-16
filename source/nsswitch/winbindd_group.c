@@ -259,9 +259,10 @@ void winbindd_getgrnam(struct winbindd_cli_state *state)
 
 	if ( !((name_type==SID_NAME_DOM_GRP) ||
 	       ((name_type==SID_NAME_ALIAS) && domain->primary) ||
-	       ((name_type==SID_NAME_ALIAS) && domain->internal)) )
+	       ((name_type==SID_NAME_ALIAS) && domain->internal) ||
+	       ((name_type==SID_NAME_WKN_GRP) && domain->internal)) )
 	{
-		DEBUG(1, ("name '%s' is not a local or domain group: %d\n", 
+		DEBUG(1, ("name '%s' is not a local, domain or builtin group: %d\n", 
 			  name_group, name_type));
 		request_error(state);
 		return;
@@ -518,7 +519,8 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 	if ( ( lp_security() != SEC_ADS && domain->native_mode 
 		&& domain->primary) || domain->internal )
 	{
-		DEBUG(4,("get_sam_group_entries: Native Mode 2k domain; enumerating local groups as well\n"));
+		DEBUG(4,("get_sam_group_entries: %s domain; enumerating local groups as well\n", 
+			domain->native ? "Native Mode 2k":"BUILTIN"));
 		
 		status = domain->methods->enum_local_groups(domain, mem_ctx, &num_entries, &sam_grp_entries);
 		
