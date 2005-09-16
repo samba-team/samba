@@ -404,12 +404,15 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 		
 	} while ( (attempts < 2) && retry );
 
-	if (NT_STATUS_IS_OK(result) &&
-	    (!clnt_deal_with_creds(session_key, credentials,
-				  &ret_creds))) {
-		DEBUG(3, ("DC %s sent wrong credentials\n",
-			  pipe_cli->cli->srv_name_slash));
-		result = NT_STATUS_ACCESS_DENIED;
+	/* Only check creds if we got a connection. */
+	if (contact_domain->conn.cli &&
+			!(NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) ||
+				NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL))) {
+		if (!clnt_deal_with_creds(session_key, credentials, &ret_creds)) {
+			DEBUG(3, ("DC %s sent wrong credentials\n",
+				pipe_cli->cli->srv_name_slash));
+			result = NT_STATUS_ACCESS_DENIED;
+		}
 	}
 
 	if (NT_STATUS_IS_OK(result)) {
@@ -709,12 +712,15 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 
 	} while ( (attempts < 2) && retry );
 
-	if (NT_STATUS_IS_OK(result) &&
-	    (!clnt_deal_with_creds(session_key, credentials,
-				  &ret_creds))) {
-		DEBUG(3, ("DC %s sent wrong credentials\n",
-			  pipe_cli->cli->srv_name_slash));
-		result = NT_STATUS_ACCESS_DENIED;
+	/* Only check creds if we got a connection. */
+	if (contact_domain->conn.cli &&
+			!(NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) ||
+					(NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)))) {
+		if (!clnt_deal_with_creds(session_key, credentials, &ret_creds)) {
+			DEBUG(3, ("DC %s sent wrong credentials\n",
+				pipe_cli->cli->srv_name_slash));
+			result = NT_STATUS_ACCESS_DENIED;
+		}
 	}
 
 	if (NT_STATUS_IS_OK(result)) {
