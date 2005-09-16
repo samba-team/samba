@@ -103,7 +103,7 @@ WERROR _ntsvcs_get_device_reg_property( pipes_struct *p, NTSVCS_Q_GET_DEVICE_REG
 	rpcstr_pull(devicepath, q_u->devicepath.buffer, sizeof(devicepath), q_u->devicepath.uni_str_len*2, 0);
 
 	switch( q_u->property ) {
-	case DEVICE_REG_PROPERTY_DEVICENAME:
+	case DEV_REGPROP_DESC:
 		/* just parse the service name from the device path and then 
 		   lookup the display name */
 		if ( !(ptr = strrchr_m( devicepath, '\\' )) )
@@ -122,15 +122,16 @@ WERROR _ntsvcs_get_device_reg_property( pipes_struct *p, NTSVCS_Q_GET_DEVICE_REG
 			return WERR_GENERAL_FAILURE;
 		}
 		
-		r_u->type = REG_SZ;
+		r_u->unknown1 = 0x1;	/* always 1...tested using a remove device manager connection */
 		r_u->size = reg_init_regval_buffer( &r_u->value, val );
+		r_u->needed = r_u->size;
 
 		TALLOC_FREE(values);
 
 		break;
 		
 	default:
-		return W_ERROR(37);	/* undocumented but this is what Windows 2000 returns */
+		return WERR_CM_NO_SUCH_VALUE;
 	}
 
 	return WERR_OK;
