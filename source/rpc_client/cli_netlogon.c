@@ -931,7 +931,6 @@ NTSTATUS cli_net_srv_pwset(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		{
 			/* report error code */
 			DEBUG(0,("cli_net_srv_pwset: %s\n", nt_errstr(nt_status)));
-			goto done;
 		}
 
 		/* Update the credentials. */

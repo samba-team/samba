@@ -208,36 +208,8 @@ BOOL deal_with_creds(uchar sess_key[8],
 	
 	DEBUG(5,("deal_with_creds: clnt_cred=%s\n", credstr(sto_clnt_cred->challenge.data)));
 
-	/* Bug #2953 - don't store new seed in client credentials 
-	   here, because we need to make sure we're moving forward first
-	 */
+	/* store new seed in client credentials */
+	SIVAL(sto_clnt_cred->challenge.data, 0, new_cred);
 
 	return True;
 }
-
-/*
-  stores new seed in client credentials
-  jmcd - Bug #2953 - moved this functionality out of deal_with_creds, because we're
-  not supposed to move to the next step in the chain if a nonexistent user tries to logon
-*/
-void reseed_client_creds(DOM_CRED *sto_clnt_cred, DOM_CRED *rcv_clnt_cred)
-{
-	UTIME new_clnt_time;
-	uint32 new_cred;
-
-	/* increment client time by one second */
-	new_clnt_time.time = rcv_clnt_cred->timestamp.time + 1;
-
-	/* first 4 bytes of the new seed is old client 4 bytes + clnt time + 1 */
-	new_cred = IVAL(sto_clnt_cred->challenge.data, 0);
-	new_cred += new_clnt_time.time;
-
-	DEBUG(5,("reseed_client_creds: new_cred[0]=%x\n", new_cred));
-	DEBUG(5,("reseed_client_creds: new_clnt_time=%x\n", 
-		 new_clnt_time.time));
-	DEBUG(5,("reseed_client_creds: clnt_cred=%s\n", 
-		 credstr(sto_clnt_cred->challenge.data)));
-
-	/* store new seed in client credentials */
-	SIVAL(sto_clnt_cred->challenge.data, 0, new_cred);
-}	
