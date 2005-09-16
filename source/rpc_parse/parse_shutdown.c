@@ -37,6 +37,12 @@ void init_shutdown_q_init(SHUTDOWN_Q_INIT *q_s, const char *msg,
 	if ( msg && *msg ) {
 		q_s->message = TALLOC_P( get_talloc_ctx(), UNISTR4 );
 		init_unistr4( q_s->message, msg, UNI_FLAGS_NONE );
+
+		/* Win2000 is apparently very sensitive to these lengths */
+		/* do a special case here */
+
+		q_s->message->string->uni_max_len++;
+		q_s->message->size += 2;
 	}
 
 	q_s->timeout = timeout;
