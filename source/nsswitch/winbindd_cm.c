@@ -137,7 +137,7 @@ static BOOL get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 		return False;
 	}
 
-	result = cm_connect_netlogon(our_domain, mem_ctx,&netlogon_pipe);
+	result = cm_connect_netlogon(our_domain, &netlogon_pipe);
 	if (!NT_STATUS_IS_OK(result)) {
 		return False;
 	}
@@ -962,9 +962,7 @@ done:
 }
 
 #ifndef DISABLE_SCHANNEL_WIN2K3_SP1
-static BOOL cm_get_schannel_dcinfo(struct winbindd_domain *domain,
-				TALLOC_CTX *mem_ctx,
-				struct dcinfo **ppdc)
+static BOOL cm_get_schannel_dcinfo(struct winbindd_domain *domain, struct dcinfo **ppdc)
 {
 	NTSTATUS result;
 	struct rpc_pipe_client *netlogon_pipe;
@@ -973,7 +971,7 @@ static BOOL cm_get_schannel_dcinfo(struct winbindd_domain *domain,
 		return False;
 	}
 
-	result = cm_connect_netlogon(domain, mem_ctx, &netlogon_pipe);
+	result = cm_connect_netlogon(domain, &netlogon_pipe);
 	if (!NT_STATUS_IS_OK(result)) {
 		return False;
 	}
@@ -1002,7 +1000,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 #ifndef DISABLE_SCHANNEL_WIN2K3_SP1
 		struct dcinfo *p_dcinfo;
 
-		if (cm_get_schannel_dcinfo(domain, mem_ctx, &p_dcinfo)) {
+		if (cm_get_schannel_dcinfo(domain, &p_dcinfo)) {
 			conn->samr_pipe = cli_rpc_pipe_open_schannel_with_key(conn->cli,
 								PI_SAMR,
 								PIPE_AUTH_LEVEL_PRIVACY,
@@ -1060,7 +1058,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 #ifndef DISABLE_SCHANNEL_WIN2K3_SP1
 		struct dcinfo *p_dcinfo;
 
-		if (cm_get_schannel_dcinfo(domain, mem_ctx, &p_dcinfo)) {
+		if (cm_get_schannel_dcinfo(domain, &p_dcinfo)) {
 			conn->lsa_pipe = cli_rpc_pipe_open_schannel_with_key(conn->cli,
 								PI_LSARPC,
 								PIPE_AUTH_LEVEL_PRIVACY,
@@ -1099,8 +1097,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
  session key stored in conn->netlogon_pipe->dc->sess_key.
 ****************************************************************************/
 
-NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
-				struct rpc_pipe_client **cli)
+NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain, struct rpc_pipe_client **cli)
 {
 	struct winbindd_cm_conn *conn;
 	NTSTATUS result;
@@ -1140,10 +1137,9 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx
 	   domain name in the net_req_auth2() request */
 
 	if ( IS_DC ) {
-		account_name = talloc_asprintf( mem_ctx, "%s$", lp_workgroup() );
+		account_name = lp_workgroup();
 	} else {
-		account_name = talloc_asprintf(mem_ctx, "%s$", 
-			domain->primary ?  global_myname() : domain->name);
+		account_name = domain->primary ? global_myname() : domain->name;
 	}
 
 	if (account_name == NULL) {
