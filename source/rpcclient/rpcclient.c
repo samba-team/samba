@@ -343,14 +343,14 @@ static NTSTATUS cmd_sign(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	pipe_default_auth_type = PIPE_AUTH_TYPE_NTLMSSP;
 
 	if (argc > 2) {
-		printf("Usage: %s [NTLMSSP|NTPLSSP_SPNEGO|SCHANNEL]\n", argv[0]);
+		printf("Usage: %s [NTLMSSP|NTLMSSP_SPNEGO|SCHANNEL]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
 	if (argc == 2) {
 		if (strequal(argv[1], "NTLMSSP")) {
 			pipe_default_auth_type = PIPE_AUTH_TYPE_NTLMSSP;
-		} else if (strequal(argv[1], "NTPLSSP_SPNEGO")) {
+		} else if (strequal(argv[1], "NTLMSSP_SPNEGO")) {
 			pipe_default_auth_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
 		} else if (strequal(argv[1], "SCHANNEL")) {
 			pipe_default_auth_type = PIPE_AUTH_TYPE_SCHANNEL;
@@ -371,14 +371,14 @@ static NTSTATUS cmd_seal(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	pipe_default_auth_type = PIPE_AUTH_TYPE_NTLMSSP;
 
 	if (argc > 2) {
-		printf("Usage: %s [NTLMSSP|NTPLSSP_SPNEGO|SCHANNEL]\n", argv[0]);
+		printf("Usage: %s [NTLMSSP|NTLMSSP_SPNEGO|SCHANNEL]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
 	if (argc == 2) {
 		if (strequal(argv[1], "NTLMSSP")) {
 			pipe_default_auth_type = PIPE_AUTH_TYPE_NTLMSSP;
-		} else if (strequal(argv[1], "NTPLSSP_SPNEGO")) {
+		} else if (strequal(argv[1], "NTLMSSP_SPNEGO")) {
 			pipe_default_auth_type = PIPE_AUTH_TYPE_SPNEGO_NTLMSSP;
 		} else if (strequal(argv[1], "SCHANNEL")) {
 			pipe_default_auth_type = PIPE_AUTH_TYPE_SCHANNEL;
