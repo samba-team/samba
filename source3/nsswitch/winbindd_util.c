@@ -805,7 +805,7 @@ static BOOL assume_domain(const char *domain) {
 	return False;
 }
 
-/* Parse a string of the form DOMAIN/user into a domain and a user */
+/* Parse a string of the form DOMAIN\user into a domain and a user */
 
 BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
 {
