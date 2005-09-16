@@ -87,12 +87,14 @@ static void ldapsrv_process_message(struct ldapsrv_connection *conn,
 		DATA_BLOB b;
 
 		msg = call->replies->msg;
-		if (!ldap_encode(msg, &b)) {
+		if (!ldap_encode(msg, &b, call)) {
 			DEBUG(0,("Failed to encode ldap reply of type %d\n", msg->type));
 			goto failed;
 		}
 
 		status = data_blob_append(call, &blob, b.data, b.length);
+		data_blob_free(&b);
+
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 
 		DLIST_REMOVE(call->replies, call->replies);
@@ -363,7 +365,7 @@ static void ldapsrv_accept(struct stream_connection *c)
 	conn->tls = tls_init_server(ldapsrv_service->tls_params, c->socket, 
 				    c->event.fde, NULL, port != 389);
 	if (!conn->tls) {
-		ldapsrv_terminate_connection(c, "ldapsrv_accept: tls_init_server() failed");
+		ldapsrv_terminate_connection(conn, "ldapsrv_accept: tls_init_server() failed");
 		return;
 	}
 

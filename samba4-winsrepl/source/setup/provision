@@ -1,0 +1,120 @@
+#!/bin/sh
+exec smbscript "$0" ${1+"$@"}
+/*
+	provision a Samba4 server
+	Copyright Andrew Tridgell 2005
+	Released under the GNU GPL v2 or later
+*/
+
+options = GetOptions(ARGV,
+		"POPT_AUTOHELP",
+		"POPT_COMMON_SAMBA",
+		"POPT_COMMON_VERSION",
+		'realm=s',
+		'domain=s',
+		'domain-guid=s',
+		'domain-sid=s',
+		'host-name=s',
+		'host-ip=s',
+		'host-guid=s',
+		'invocationid=s',
+		'adminpass=s',
+		'krbtgtpass=s',
+		'machinepass=s',
+		'root=s',
+		'nobody=s',
+		'nogroup=s',
+		'wheel=s',
+		'users=s',
+		'quiet',
+                'blank');
+
+if (options == undefined) {
+   println("Failed to parse options");
+   return -1;
+}
+
+libinclude("base.js");
+libinclude("provision.js");
+
+/*
+  print a message if quiet is not set
+*/
+function message() 
+{
+	if (options["quiet"] == undefined) {
+		print(vsprintf(arguments));
+	}
+}
+
+/*
+ show some help
+*/
+function ShowHelp()
+{
+	print("
+Samba4 provisioning
+
+provision [options]
+ --realm	REALM		set realm
+ --domain	DOMAIN		set domain
+ --domain-guid	GUID		set domainguid (otherwise random)
+ --domain-sid	SID		set domainsid (otherwise random)
+ --host-name	HOSTNAME	set hostname
+ --host-ip	IPADDRESS	set ipaddress
+ --host-guid	GUID		set hostguid (otherwise random)
+ --invocationid	GUID		set invocationid (otherwise random)
+ --adminpass	PASSWORD	choose admin password (otherwise random)
+ --krbtgtpass	PASSWORD	choose krbtgt password (otherwise random)
+ --machinepass	PASSWORD	choose machine password (otherwise random)
+ --root         USERNAME	choose 'root' unix username
+ --nobody	USERNAME	choose 'nobody' user
+ --nogroup	GROUPNAME	choose 'nogroup' group
+ --wheel	GROUPNAME	choose 'wheel' privileged group
+ --users	GROUPNAME	choose 'users' group
+ --quiet			Be quiet
+ --blank			do not add users or groups, just the structure
+
+You must provide at least a realm and domain
+
+");
+	exit(1);
+}
+
+if (options['host-name'] == undefined) {
+	options['host-name'] = hostname();
+}
+
+/*
+   main program
+*/
+if (options["realm"] == undefined ||
+    options["domain"] == undefined ||
+    options["host-name"] == undefined) {
+	ShowHelp();
+}
+
+/* cope with an initially blank smb.conf */
+var lp = loadparm_init();
+lp.set("realm", options.realm);
+lp.set("workgroup", options.domain);
+lp.reload();
+
+var subobj = provision_guess();
+for (r in options) {
+	var key = strupper(join("", split("-", r)));
+	subobj[key] = options[r];
+}
+
+var blank = (options["blank"] != undefined);
+
+if (!provision_validate(subobj, message)) {
+	return -1;
+}
+
+
+message("Provisioning for %s in realm %s\n", subobj.DOMAIN, subobj.REALM);
+message("Using administrator password: %s\n", subobj.ADMINPASS);
+provision(subobj, message, blank, provision_default_paths(subobj));
+message("All OK\n");
+return 0;

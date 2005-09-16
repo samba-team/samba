@@ -294,7 +294,7 @@ sub ElementLevel($$$$$)
 			} else {
 				if ($l->{DATA_TYPE} =~ /^([a-z]+)\_(.*)$/)
 				{
-					pidl_code "offset = $1_dissect_$2(tvb,offset,pinfo,tree,drep,$hf,$param);";
+					pidl_code "offset = $1_dissect_struct_$2(tvb,offset,pinfo,tree,drep,$hf,$param);";
 				}
 
 				return;

@@ -982,7 +982,7 @@ _kdc_as_rep(krb5_context context,
 	    }
 	    free_PA_ENC_TS_ENC(&p);
 	    if (abs(kdc_time - p.patimestamp) > context->max_skew) {
-		ret = KRB5KDC_ERR_PREAUTH_FAILED;
+		ret = KRB5KRB_AP_ERR_SKEW;
 		e_text = "Too large time skew";
 		kdc_log(context, config, 0,
 			"Too large time skew -- %s", client_name);
