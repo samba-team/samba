@@ -124,8 +124,6 @@ void *tdb_convert(void *buf, u32 size)
 /* read a lump of data at a specified offset, maybe convert */
 int tdb_read(struct tdb_context *tdb, tdb_off_t off, void *buf, tdb_len_t len, int cv)
 {
-	ssize_t ret;
-
 	if (tdb_oob(tdb, off + len, 0) != 0) {
 		return -1;
 	}
