@@ -506,7 +506,7 @@ void init_domain_list(void)
 		DOM_SID our_sid;
 
 		if (!secrets_fetch_domain_sid(lp_workgroup(), &our_sid)) {
-			DEBUG(0, ("Could not fetch our SID - did we join?\n"));
+			smb_panic("Could not fetch our SID - did we join?\n");
 		}
 	
 		domain = add_trusted_domain( lp_workgroup(), lp_realm(),
