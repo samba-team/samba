@@ -76,8 +76,8 @@ static BOOL check_stream(struct smbcli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	ret = smbcli_read(cli->tree, fnum, buf, 0, strlen(value)+11);
 	if (ret != strlen(value)) {
-		printf("Failed to read %d bytes from stream '%s' - got %d\n",
-		       strlen(value), full_name, (int)ret);
+		printf("Failed to read %lu bytes from stream '%s' - got %d\n",
+		       (long)strlen(value), full_name, (int)ret);
 		return False;
 	}
 
