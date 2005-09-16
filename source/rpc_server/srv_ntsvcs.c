@@ -143,7 +143,6 @@ static BOOL api_ntsvcs_get_device_reg_property(pipes_struct *p)
 	return True;
 }
 
-#if 0
 /*******************************************************************
  ********************************************************************/
 
@@ -168,7 +167,29 @@ static BOOL api_ntsvcs_get_hw_profile_info(pipes_struct *p)
 	return True;
 }
 
-#endif
+/*******************************************************************
+ ********************************************************************/
+
+static BOOL api_ntsvcs_hw_profile_flags(pipes_struct *p)
+{
+	NTSVCS_Q_HW_PROFILE_FLAGS q_u;
+	NTSVCS_R_HW_PROFILE_FLAGS r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!ntsvcs_io_q_hw_profile_flags("", &q_u, data, 0))
+		return False;
+
+	r_u.status = _ntsvcs_hw_profile_flags(p, &q_u, &r_u);
+
+	if(!ntsvcs_io_r_hw_profile_flags("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
 
 /*******************************************************************
  \PIPE\svcctl commands
@@ -181,9 +202,8 @@ static struct api_struct api_ntsvcs_cmds[] =
       { "NTSVCS_GET_DEVICE_LIST"          , NTSVCS_GET_DEVICE_LIST          , api_ntsvcs_get_device_list },
       { "NTSVCS_VALIDATE_DEVICE_INSTANCE" , NTSVCS_VALIDATE_DEVICE_INSTANCE , api_ntsvcs_validate_device_instance },
       { "NTSVCS_GET_DEVICE_REG_PROPERTY"  , NTSVCS_GET_DEVICE_REG_PROPERTY  , api_ntsvcs_get_device_reg_property },
-#if 0
-      { "NTSVCS_GET_HW_PROFILE_INFO"      , NTSVCS_GET_HW_PROFILE_INFO      , api_ntsvcs_get_hw_profile_info }
-#endif
+      { "NTSVCS_GET_HW_PROFILE_INFO"      , NTSVCS_GET_HW_PROFILE_INFO      , api_ntsvcs_get_hw_profile_info },
+      { "NTSVCS_HW_PROFILE_FLAGS"         , NTSVCS_HW_PROFILE_FLAGS         , api_ntsvcs_hw_profile_flags }
 };
 
 

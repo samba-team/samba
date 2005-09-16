@@ -232,6 +232,7 @@
 /* Configuration Manager Errors */
 /* Basically Win32 errors meanings are specific to the \ntsvcs pipe */
 
+#define WERR_CM_NO_MORE_HW_PROFILES W_ERROR(35)
 #define WERR_CM_NO_SUCH_VALUE W_ERROR(37)
 
 
