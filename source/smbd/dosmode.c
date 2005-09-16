@@ -451,6 +451,17 @@ int file_utime(connection_struct *conn, const char *fname, struct utimbuf *times
 	errno = 0;
 	ZERO_STRUCT(sbuf);
 
+	/* Don't update the time on read-only shares */
+	/* We need this as set_filetime (which can be called on
+	   close and other paths) can end up calling this function
+	   without the NEED_WRITE protection. Found by : 
+	   Leo Weppelman <leo@wau.mis.ah.nl>
+	*/
+
+	if (!CAN_WRITE(conn)) {
+		return 0;
+	}
+
 	if(SMB_VFS_UTIME(conn,fname, times) == 0)
 		return 0;
 
