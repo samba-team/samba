@@ -219,6 +219,8 @@ AC_SUBST(INSTALLCLIENTCMD_SH)
 AC_SUBST(INSTALLCLIENTCMD_A)
 AC_SUBST(LIBSMBCLIENT_SHARED)
 AC_SUBST(LIBSMBCLIENT)
+AC_SUBST(LIBSMBSHAREMODES_SHARED)
+AC_SUBST(LIBSMBSHAREMODES)
 AC_SUBST(PRINT_LIBS)
 AC_SUBST(AUTH_LIBS)
 AC_SUBST(ACL_LIBS)
@@ -456,10 +458,10 @@ DYNEXP=
 
 dnl Add modules that have to be built by default here
 dnl These have to be built static:
-default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_svcctl rpc_net rpc_dfs rpc_srv rpc_spoolss rpc_eventlog rpc_unixinfo auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
+default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_svcctl rpc_ntsvcs rpc_net rpc_dfs rpc_srv rpc_spoolss rpc_eventlog rpc_unixinfo auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
 
 dnl These are preferably build shared, and static if dlopen() is not available
-default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy charset_CP850 charset_CP437"
+default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy charset_CP850 charset_CP437 auth_script"
 
 if test "x$developer" = xyes; then
    default_static_modules="$default_static_modules rpc_echo"
@@ -3515,8 +3517,8 @@ samba_cv_WITH_QUOTAS=auto
 samba_cv_TRY_QUOTAS=no
 samba_cv_RUN_QUOTA_TESTS=auto
 samba_cv_WITH_SYS_QUOTAS=auto
-samba_cv_TRY_SYS_QUOTAS=no
-samba_cv_SYSQUOTA_FOUND=no;
+samba_cv_TRY_SYS_QUOTAS=auto
+samba_cv_SYSQUOTA_FOUND=no
 
 AC_MSG_CHECKING(whether to try disk-quotas support)
 AC_ARG_WITH(quotas,
@@ -3579,18 +3581,13 @@ AC_ARG_WITH(sys-quotas,
   AC_MSG_RESULT(${samba_cv_TRY_SYS_QUOTAS})
 )
 
-if test x"$samba_cv_TRY_SYS_QUOTAS" != x"no"; then
+if test x"$samba_cv_TRY_SYS_QUOTAS" = x"auto"; then
 AC_MSG_CHECKING(whether to try the lib/sysquotas.c interface on ${host_os})
   case "$host_os" in
 	*linux*)
 	    AC_MSG_RESULT(yes)
             samba_cv_TRY_SYS_QUOTAS=yes
             samba_cv_RUN_QUOTA_TESTS=yes
-            samba_cv_SYSQUOTA_FOUND=yes
-            AC_DEFINE(HAVE_QUOTACTL_LINUX,1,[Whether Linux quota support is available])
-            samba_cv_sysquotas_file="lib/sysquotas_linux.c"
-            AC_DEFINE(HAVE_LINUX_XFS_QUOTAS,1,[Whether Linux xfs quota support is available])
-            samba_cv_found_xfs_header=yes
 	    ;;
 	*)
 	    AC_MSG_RESULT(no)
@@ -3602,6 +3599,24 @@ fi
 #############################################
 # only check for quota stuff if --with-quotas
 if test x"$samba_cv_RUN_QUOTA_TESTS" != x"no"; then
+
+case "$host_os" in
+	# on linux we didn't need to test we have builtin support
+	*linux*)
+	    samba_cv_SYSQUOTA_FOUND=yes
+	    AC_DEFINE(HAVE_QUOTACTL_LINUX,1,[Whether Linux quota support is available])
+	    samba_cv_sysquotas_file="lib/sysquotas_linux.c"
+	    AC_MSG_CHECKING(whether to use the lib/sysquotas_linux.c builtin support)
+	    AC_MSG_RESULT(yes)
+
+	    AC_DEFINE(HAVE_LINUX_XFS_QUOTAS,1,[Whether Linux xfs quota support is available])
+	    samba_cv_found_xfs_header=yes
+	    AC_MSG_CHECKING(whether to use the lib/sysquotas_xfs.c builtin support)
+	    AC_MSG_RESULT(yes)
+	    ;;
+	*)
+	    ;;
+esac
 
 # some broken header files need this
 AC_CHECK_HEADER(asm/types.h,[
@@ -3891,6 +3906,54 @@ AC_ARG_WITH(libsmbclient,
   INSTALLCLIENT=installclientlib
 )
 
+INSTALLCLIENTCMD_SH=:
+INSTALLCLIENTCMD_A=:
+INSTALLCLIENT=
+LIBSMBSHAREMODES_SHARED=
+LIBSMBSHAREMODES=
+AC_MSG_CHECKING(whether to build the libsmbsharemodes shared library)
+AC_ARG_WITH(libsmbsharemodes,
+[  --with-libsmbsharemodes     Build the libsmbsharemodes shared library (default=yes if shared libs supported)],
+[ case "$withval" in
+  no)
+     AC_MSG_RESULT(no)
+     ;;
+  *)
+     if test $BLDSHARED = true; then
+        INSTALLCLIENTCMD_SH="\$(INSTALLCMD)"
+        ## build the static version of libsmbsharemodes as well
+        INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
+        LIBSMBSHAREMODES_SHARED=bin/libsmbsharemodes.$SHLIBEXT
+        LIBSMBSHAREMODES=libsmbsharemodes
+        AC_MSG_RESULT(yes)
+     else
+        enable_static=yes
+        AC_MSG_RESULT(no shared library support -- will supply static library)
+     fi
+     if test $enable_static = yes; then
+        INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
+        LIBSMBSHAREMODES=libsmbsharemodes
+     fi
+     INSTALLCLIENT=installclientlib
+     ;;
+  esac ],
+[
+# if unspecified, default is to built it iff possible.
+  if test $BLDSHARED = true; then
+     INSTALLCLIENTCMD_SH="\$(INSTALLCMD)"
+     LIBSMBSHAREMODES_SHARED=bin/libsmbsharemodes.$SHLIBEXT
+     LIBSMBSHAREMODES=libsmbsharemodes
+     AC_MSG_RESULT(yes)
+   else
+     enable_static=yes
+     AC_MSG_RESULT(no shared library support -- will supply static library)
+   fi
+   if test $enable_static = yes; then
+     INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
+     LIBSMBSHAREMODES=libsmbsharemodes
+  fi]
+  INSTALLCLIENT=installclientlib
+)
 
 #################################################
 # these tests are taken from the GNU fileutils package
@@ -4883,6 +4946,7 @@ SMB_MODULE(rpc_reg, \$(RPC_REG_OBJ), "bin/librpc_winreg.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_lsa_ds, \$(RPC_LSA_DS_OBJ), "bin/librpc_lsa_ds.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_wks, \$(RPC_WKS_OBJ), "bin/librpc_wkssvc.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_svcctl, \$(RPC_SVCCTL_OBJ), "bin/librpc_svcctl.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_ntsvcs, \$(RPC_NTSVCS_OBJ), "bin/librpc_ntsvcs.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_net, \$(RPC_NETLOG_OBJ), "bin/librpc_NETLOGON.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_dfs, \$(RPC_DFS_OBJ), "bin/librpc_netdfs.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_srv, \$(RPC_SVC_OBJ), "bin/librpc_srvsvc.$SHLIBEXT", RPC)
@@ -4912,6 +4976,7 @@ SMB_MODULE(auth_winbind, \$(AUTH_WINBIND_OBJ), "bin/winbind.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_server, \$(AUTH_SERVER_OBJ), "bin/smbserver.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_domain, \$(AUTH_DOMAIN_OBJ), "bin/domain.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_builtin, \$(AUTH_BUILTIN_OBJ), "bin/builtin.$SHLIBEXT", AUTH)
+SMB_MODULE(auth_script, \$(AUTH_SCRIPT_OBJ), "bin/script.$SHLIBEXT", AUTH)
 SMB_SUBSYSTEM(AUTH,auth/auth.o)
 
 SMB_MODULE(vfs_recycle, \$(VFS_RECYCLE_OBJ), "bin/recycle.$SHLIBEXT", VFS)

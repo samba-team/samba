@@ -41,7 +41,7 @@ void msg_pool_usage(int msg_type, struct process_id src_pid,
 	DEBUG(2,("Got POOL_USAGE\n"));
 
 	reply = talloc_total_size(NULL);
-	fstr_sprintf(reply_str, "%lld", reply);
+	fstr_sprintf(reply_str, "%ld", (long)reply);
 	
 	message_send_pid(src_pid, MSG_POOL_USAGE,
 			 reply_str, strlen(reply_str)+1, True);

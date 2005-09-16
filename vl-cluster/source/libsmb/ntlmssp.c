@@ -758,11 +758,11 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 		if (!encrypted_session_key.data || encrypted_session_key.length != 16) {
 			data_blob_free(&encrypted_session_key);
 			DEBUG(1, ("Client-supplied KEY_EXCH session key was of invalid length (%u)!\n", 
-				  encrypted_session_key.length));
+				  (unsigned int)encrypted_session_key.length));
 			return NT_STATUS_INVALID_PARAMETER;
 		} else if (!session_key.data || session_key.length != 16) {
 			DEBUG(5, ("server session key is invalid (len == %u), cannot do KEY_EXCH!\n", 
-				  session_key.length));
+				  (unsigned int)session_key.length));
 			ntlmssp_state->session_key = session_key;
 		} else {
 			dump_data_pw("KEY_EXCH session key (enc):\n", encrypted_session_key.data, encrypted_session_key.length);

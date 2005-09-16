@@ -834,7 +834,7 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 
 	if (ldap_state->is_nds_ldap) {
 		char *user_dn;
-		int pwd_len;
+		size_t pwd_len;
 		char clear_text_pw[512];
    
 		/* Make call to Novell eDirectory ldap extension to get clear text password.

@@ -588,7 +588,7 @@ static void request_main_recv(void *private_data, BOOL success)
 	if ((!state->privileged) &&
 	    (state->request.extra_len > WINBINDD_MAX_EXTRA_DATA)) {
 		DEBUG(3, ("Got request with %d bytes extra data on "
-			  "unprivileged socket\n", state->request.extra_len));
+			  "unprivileged socket\n", (int)state->request.extra_len));
 		state->request.extra_data = NULL;
 		state->finished = True;
 		return;

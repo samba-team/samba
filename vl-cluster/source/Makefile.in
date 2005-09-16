@@ -98,8 +98,11 @@ LIBSMBCLIENT=bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
 LIBSMBCLIENT_MAJOR=0
 LIBSMBCLIENT_MINOR=1
 
+LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
+LIBSMBSHAREMODES_MAJOR=0
+LIBSMBSHAREMODES_MINOR=1
 
-FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx @SMBWRAP_INC@ -I. $(CPPFLAGS) -I$(srcdir)
+FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/tdb @SMBWRAP_INC@ -I. $(CPPFLAGS) -I$(srcdir)
 FLAGS2 = 
 FLAGS3 = 
 FLAGS4 = 
@@ -138,7 +141,7 @@ BIN_PROGS = $(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3) @EXTRA_BIN_PROGS@
 EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ bin/talloctort@EXEEXT@ \
 	bin/log2pcap@EXEEXT@
 
-SHLIBS = @SHLIB_PROGS@ @LIBSMBCLIENT@
+SHLIBS = @SHLIB_PROGS@ @LIBSMBCLIENT@ @LIBSMBSHAREMODES@
 
 SCRIPTS = $(srcdir)/script/smbtar $(builddir)/script/findsmb
 
@@ -283,7 +286,10 @@ RPC_SVC_OBJ = rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o
 RPC_WKS_OBJ =  rpc_server/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o
 
 RPC_SVCCTL_OBJ =  rpc_server/srv_svcctl.o rpc_server/srv_svcctl_nt.o \
-                  services/svc_spoolss.o services/svc_rcinit.o services/services_db.o
+                  services/svc_spoolss.o services/svc_rcinit.o services/services_db.o \
+                  services/svc_netlogon.o services/svc_winreg.o
+
+RPC_NTSVCS_OBJ = rpc_server/srv_ntsvcs.o rpc_server/srv_ntsvcs_nt.o
 
 RPC_DFS_OBJ =  rpc_server/srv_dfs.o rpc_server/srv_dfs_nt.o
 
@@ -309,7 +315,8 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
 		rpc_parse/parse_spoolss.o rpc_parse/parse_dfs.o \
 		rpc_parse/parse_echo.o rpc_parse/parse_shutdown.o \
 		rpc_parse/parse_svcctl.o rpc_parse/parse_unixinfo.o \
-		rpc_parse/parse_eventlog.o rpc_parse/parse_buffer.o $(REGOBJS_OBJ)
+		rpc_parse/parse_eventlog.o rpc_parse/parse_buffer.o \
+                rpc_parse/parse_ntsvcs.o $(REGOBJS_OBJ)
 
 RPC_CLIENT_OBJ = rpc_client/cli_pipe.o
 
@@ -369,6 +376,7 @@ AUTH_RHOSTS_OBJ = auth/auth_rhosts.o
 AUTH_SERVER_OBJ = auth/auth_server.o
 AUTH_UNIX_OBJ = auth/auth_unix.o
 AUTH_WINBIND_OBJ = auth/auth_winbind.o
+AUTH_SCRIPT_OBJ = auth/auth_script.o
 
 AUTH_OBJ = auth/auth.o @AUTH_STATIC@ auth/auth_util.o auth/auth_compat.o \
 	   auth/auth_ntlmssp.o \
@@ -520,6 +528,8 @@ LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o libsmb/libsmb_compat.o \
 		   $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
 		   $(SECRETS_OBJ) $(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ)
 
+LIBSMBSHAREMODES_OBJ = libsmb/smb_share_modes.o tdb/tdb.o tdb/spinlock.o
+
 # This shared library is intended for linking with unit test programs
 # to test Samba internals.  It's called libbigballofmud.so to
 # discourage casual usage.
@@ -535,6 +545,10 @@ LIBBIGBALLOFMUD_PICOBJS = $(LIBBIGBALLOFMUD_OBJ:.o=.@PICSUFFIX@)
 CLIENT_OBJ1 = client/client.o client/clitar.o 
 
 CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
+	     $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
+             $(READLINE_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ)
+
+TOOL_OBJ = client/smbctool.o client/clitar.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	     $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
              $(READLINE_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ)
 
@@ -634,7 +648,8 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) \
 	    $(RPC_LSA_OBJ) $(RPC_NETLOG_OBJ) $(RPC_SAMR_OBJ) $(RPC_REG_OBJ) $(RPC_LSA_DS_OBJ) \
 	    $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) $(RPC_SPOOLSS_OBJ) \
 	    $(RPC_ECHO_OBJ) $(RPC_SVCCTL_OBJ) $(RPC_EVENTLOG_OBJ) $(SMBLDAP_OBJ) \
-            $(IDMAP_OBJ) libsmb/spnego.o $(PASSCHANGE_OBJ) $(RPC_UNIXINFO_OBJ)
+            $(IDMAP_OBJ) libsmb/spnego.o $(PASSCHANGE_OBJ) $(RPC_UNIXINFO_OBJ) \
+            $(RPC_NTSVCS_OBJ)
 
 WINBIND_WINS_NSS_OBJ = nsswitch/wins.o $(PARAM_OBJ) \
 	$(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(NSSWINS_OBJ) $(KRBCLIENT_OBJ)
@@ -643,6 +658,7 @@ WINBIND_WINS_NSS_PICOBJS = $(WINBIND_WINS_NSS_OBJ:.o=.@PICSUFFIX@)
 
 PICOBJS = $(SMBWRAPPER_OBJ:.o=.@PICSUFFIX@)
 LIBSMBCLIENT_PICOBJS = $(LIBSMBCLIENT_OBJ:.o=.@PICSUFFIX@)
+LIBSMBSHAREMODES_PICOBJS = $(LIBSMBSHAREMODES_OBJ:.o=.@PICSUFFIX@)
 
 PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
                pam_smbpass/pam_smb_acct.o pam_smbpass/support.o \
@@ -729,6 +745,8 @@ locktest : SHOWFLAGS bin/locktest@EXEEXT@
 smbcacls : SHOWFLAGS bin/smbcacls@EXEEXT@
 
 smbcquotas : SHOWFLAGS bin/smbcquotas@EXEEXT@
+
+smbctool: SHOWFLAGS bin/smbctool@EXEEXT@
 
 locktest2 : SHOWFLAGS bin/locktest2@EXEEXT@
 
@@ -867,6 +885,10 @@ bin/rpcclient@EXEEXT@: $(RPCCLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 bin/smbclient@EXEEXT@: $(CLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS)
+
+bin/smbctool@EXEEXT@: $(TOOL_OBJ) @BUILD_POPT@ bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(TOOL_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) -Lbin -lsmbclient
 
 bin/net@EXEEXT@: $(NET_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -1016,6 +1038,16 @@ bin/libsmbclient.a: $(LIBSMBCLIENT_PICOBJS)
 	@echo Linking libsmbclient non-shared library $@
 	@-$(AR) -rc $@ $(LIBSMBCLIENT_PICOBJS)
 
+bin/libsmbsharemodes.@SHLIBEXT@: $(LIBSMBSHAREMODES_PICOBJS)
+	@echo Linking libsmbsharemodes shared library $@
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBSHAREMODES_PICOBJS) $(LDFLAGS) $(LIBS) \
+		$(KRB5LIBS) $(LDAP_LIBS) \
+		@SONAMEFLAG@`basename $@`.$(LIBSMBSHAREMODES_MAJOR)
+
+bin/libsmbsharemodes.a: $(LIBSMBSHAREMODES_PICOBJS)
+	@echo Linking libsmbsharemodes non-shared library $@
+	@-$(AR) -rc $@ $(LIBSMBSHAREMODES_PICOBJS)
+
 # This is probably wrong for anything other than the GNU linker. 
 bin/libbigballofmud.@SHLIBEXT@: $(LIBBIGBALLOFMUD_PICOBJS)
 	@echo Linking bigballofmud shared library $@
@@ -1030,6 +1062,7 @@ bin/libbigballofmud.@SHLIBEXT@: $(LIBBIGBALLOFMUD_PICOBJS)
 # library.
 
 libsmbclient: $(LIBSMBCLIENT)
+libsmbsharemodes: $(LIBSMBSHAREMODES)
 
 bin/librpc_lsarpc.@SHLIBEXT@: $(RPC_LSA_OBJ)
 	@echo "Linking $@"
@@ -1054,6 +1087,11 @@ bin/librpc_srvsvc.@SHLIBEXT@: $(RPC_SVC_OBJ)
 bin/librpc_svcctl.@SHLIBEXT@: $(RPC_SVCCTL_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_SVCCTL_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
+
+bin/librpc_ntsvcs.@SHLIBEXT@: $(RPC_NTSVCS_OBJ)
+	@echo "Linking $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_NTSVCS_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
 bin/librpc_wkssvc.@SHLIBEXT@: $(RPC_WKS_OBJ)
@@ -1131,6 +1169,10 @@ bin/builtin.@SHLIBEXT@: $(AUTH_BUILTIN_OBJ:.o=.@PICSUFFIX@)
 bin/domain.@SHLIBEXT@: $(AUTH_DOMAIN_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_DOMAIN_OBJ:.o=.@PICSUFFIX@) @SONAMEFLAG@`basename $@`
+
+bin/script.@SHLIBEXT@: $(AUTH_SCRIPT_OBJ:.o=.@PICSUFFIX@)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(AUTH_SCRIPT_OBJ:.o=.@PICSUFFIX@) @SONAMEFLAG@`basename $@`
 
 bin/smbserver.@SHLIBEXT@: $(AUTH_SERVER_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
@@ -1466,7 +1508,7 @@ TOPFILES=dynconfig.o dynconfig.@PICSUFFIX@
 clean: delheaders python_clean
 	-rm -f core */*~ *~ */*.o */*.@PICSUFFIX@ */*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(MODULES) $(TORTURE_PROGS) \
-		$(LIBSMBCLIENT) $(EVERYTHING_PROGS) .headers.stamp 
+		$(LIBSMBCLIENT) $(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) .headers.stamp 
 	-rm -rf t_dir
 
 # Making this target will just make sure that the prototype files

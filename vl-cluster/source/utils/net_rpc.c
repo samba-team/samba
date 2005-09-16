@@ -265,6 +265,15 @@ static NTSTATUS rpc_oldjoin_internals(const DOM_SID *domain_sid,
 	NTSTATUS result;
 	uint32 sec_channel_type;
 
+	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_NETLOGON, &result);
+	if (!pipe_hnd) {
+		DEBUG(0,("rpc_oldjoin_internals: netlogon pipe open to machine %s failed. "
+			"error was %s\n",
+			cli->desthost,
+			nt_errstr(result) ));
+		return result;
+	}
+
 	/* 
 	   check what type of join - if the user want's to join as
 	   a BDC, the server must agree that we are a BDC.
@@ -316,7 +325,7 @@ static NTSTATUS rpc_oldjoin_internals(const DOM_SID *domain_sid,
 static int net_rpc_perform_oldjoin(int argc, const char **argv)
 {
 	return run_rpc_command(NULL, PI_NETLOGON, 
-			       NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, 
+			       NET_FLAGS_NO_PIPE | NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, 
 			       rpc_oldjoin_internals,
 			       argc, argv);
 }
@@ -6112,7 +6121,7 @@ int net_rpc_usage(int argc, const char **argv)
 	d_printf("\t-r or --reboot\trequest remote server reboot on shutdown\n");
 	d_printf("\t-f or --force\trequest the remote server force its shutdown\n");
 	d_printf("\t-t or --timeout=<timeout>\tnumber of seconds before shutdown\n");
-	d_printf("\t-c or --comment=<message>\ttext message to display on impending shutdown\n");
+	d_printf("\t-C or --comment=<message>\ttext message to display on impending shutdown\n");
 	return -1;
 }
 

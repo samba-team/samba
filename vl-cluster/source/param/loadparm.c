@@ -970,7 +970,7 @@ static struct parm_struct parm_table[] = {
 	{"client use spnego", P_BOOL, P_GLOBAL, &Globals.bClientUseSpnego, NULL, NULL, FLAG_ADVANCED}, 
 
 	{"enable asu support", P_BOOL, P_GLOBAL, &Globals.bASUSupport, NULL, NULL, FLAG_ADVANCED}, 
-	{"enable svcctl", P_LIST, P_GLOBAL, &Globals.szServicesList, NULL, NULL, FLAG_ADVANCED},
+	{"svcctl list", P_LIST, P_GLOBAL, &Globals.szServicesList, NULL, NULL, FLAG_ADVANCED},
 
 	{N_("Tuning Options"), P_SEP, P_SEPARATOR}, 
 
@@ -1918,7 +1918,7 @@ FN_LOCAL_STRING(lp_username, szUsername)
 FN_LOCAL_LIST(lp_invalid_users, szInvalidUsers)
 FN_LOCAL_LIST(lp_valid_users, szValidUsers)
 FN_LOCAL_LIST(lp_admin_users, szAdminUsers)
-FN_GLOBAL_LIST(lp_enable_svcctl, &Globals.szServicesList)
+FN_GLOBAL_LIST(lp_svcctl_list, &Globals.szServicesList)
 FN_LOCAL_STRING(lp_cups_options, szCupsOptions)
 FN_GLOBAL_STRING(lp_cups_server, &Globals.szCupsServer)
 FN_LOCAL_STRING(lp_printcommand, szPrintcommand)

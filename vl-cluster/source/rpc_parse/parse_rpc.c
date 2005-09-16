@@ -191,7 +191,7 @@ interface/version dce/rpc pipe identification
 	}, 0x00				    \
 }
 
-#define SYNT_UNIXINFO_V0                      \
+#define SYNT_UNIXINFO_V0                    \
 {                                           \
 	{                                   \
 		0x9c54e310, 0xa955, 0x4885, \
@@ -199,6 +199,16 @@ interface/version dce/rpc pipe identification
                 { 0x78, 0x78,               \
                   0x71, 0x47, 0xdf, 0xa6 }  \
 	}, 0x00                             \
+}
+
+#define SYNT_NTSVCS_V1                      \
+{                                           \
+	{                                   \
+		0x8d9f4e40, 0xa03d, 0x11ce, \
+		{ 0x8f, 0x69},		    \
+                { 0x08, 0x00,               \
+                  0x3e, 0x30, 0x05, 0x1b }  \
+	}, 0x01                             \
 }
 
 /*
@@ -223,6 +233,7 @@ const struct pipe_id_info pipe_names [] =
 	{ PIPE_SVCCTL  , SYNT_SVCCTL_V2        , PIPE_NTSVCS   , TRANS_SYNT_V2 },
 	{ PIPE_EVENTLOG, SYNT_EVENTLOG_V0      , PIPE_EVENTLOG , TRANS_SYNT_V2 },
 	{ PIPE_UNIXINFO, SYNT_UNIXINFO_V0      , PIPE_UNIXINFO , TRANS_SYNT_V2 },
+	{ PIPE_NTSVCS  , SYNT_NTSVCS_V1        , PIPE_NTSVCS   , TRANS_SYNT_V2 },
 	{ NULL         , SYNT_NONE_V0          , NULL          , SYNT_NONE_V0  }
 };
 

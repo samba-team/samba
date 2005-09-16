@@ -58,6 +58,15 @@ static NTSTATUS registry_access_check( SEC_DESC *sec_desc, NT_USER_TOKEN *token,
 
 	se_map_generic( &access_desired, &reg_generic_map );
 	se_access_check( sec_desc, token, access_desired, access_granted, &result );
+
+	if ( !NT_STATUS_IS_OK(result) ) {
+		if ( geteuid() == sec_initial_uid() ) {
+			DEBUG(5,("registry_access_check: access check bypassed for 'root'\n"));
+			*access_granted = access_desired;
+			return NT_STATUS_OK;
+		}
+	}
+
 	
 	return result;
 }
@@ -72,7 +81,7 @@ static SEC_DESC* construct_registry_sd( TALLOC_CTX *ctx )
 	size_t i = 0;
 	SEC_DESC *sd;
 	SEC_ACL *acl;
-	uint32 sd_size;
+	size_t sd_size;
 
 	/* basic access for Everyone */
 	
@@ -105,15 +114,12 @@ BOOL init_registry( void )
 {
 	int i;
 	
+	
 	if ( !init_registry_db() ) {
 		DEBUG(0,("init_registry: failed to initialize the registry tdb!\n"));
 		return False;
 	}
 
-	/* inform the external eventlog machinery of the change */
-
-	eventlog_refresh_external_parameters( get_root_nt_token() );
-		
 	/* build the cache tree of registry hooks */
 	
 	reghook_cache_init();
@@ -125,6 +131,14 @@ BOOL init_registry( void )
 
 	if ( DEBUGLEVEL >= 20 )
 		reghook_dump_cache(20);
+
+	/* inform the external eventlog machinery of the change */
+
+	eventlog_refresh_external_parameters( get_root_nt_token() );
+
+	/* add any services keys */
+
+	svcctl_init_keys();
 
 	return True;
 }

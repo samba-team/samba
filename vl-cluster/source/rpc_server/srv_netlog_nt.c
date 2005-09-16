@@ -327,7 +327,11 @@ NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 	rpcstr_pull(remote_machine, q_u->clnt_id.uni_comp_name.buffer,sizeof(fstring),
 				q_u->clnt_id.uni_comp_name.uni_str_len*2,0);
 
-	if (get_md4pw((char *)p->dc->mach_pw, mach_acct)) {
+	if (!get_md4pw((char *)p->dc->mach_pw, mach_acct)) {
+		DEBUG(0,("_net_auth: creds_server_check failed. Failed to "
+			"get pasword for machine account %s "
+			"from client %s\n",
+			mach_acct, remote_machine ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -380,7 +384,14 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	fstring remote_machine;
 	DOM_CHAL srv_chal_out;
 
+	rpcstr_pull(mach_acct, q_u->clnt_id.uni_acct_name.buffer,sizeof(fstring),
+				q_u->clnt_id.uni_acct_name.uni_str_len*2,0);
+	rpcstr_pull(remote_machine, q_u->clnt_id.uni_comp_name.buffer,sizeof(fstring),
+				q_u->clnt_id.uni_comp_name.uni_str_len*2,0);
+
 	if (!p->dc || !p->dc->challenge_sent) {
+		DEBUG(0,("_net_auth2: no challenge sent to client %s\n",
+			remote_machine ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -388,15 +399,16 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	     ((q_u->clnt_flgs.neg_flags & NETLOGON_NEG_SCHANNEL) == 0) ) {
 
 		/* schannel must be used, but client did not offer it. */
+		DEBUG(0,("_net_auth2: schannel required but client failed "
+			"to offer it. Client was %s\n",
+			mach_acct ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	rpcstr_pull(mach_acct, q_u->clnt_id.uni_acct_name.buffer,sizeof(fstring),
-				q_u->clnt_id.uni_acct_name.uni_str_len*2,0);
-	rpcstr_pull(remote_machine, q_u->clnt_id.uni_comp_name.buffer,sizeof(fstring),
-				q_u->clnt_id.uni_comp_name.uni_str_len*2,0);
-
-	if (get_md4pw((char *)p->dc->mach_pw, mach_acct)) {
+	if (!get_md4pw((char *)p->dc->mach_pw, mach_acct)) {
+		DEBUG(0,("_net_auth2: failed to get machine password for "
+			"account %s\n",
+			mach_acct ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -425,6 +437,7 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	init_net_r_auth_2(r_u, &srv_chal_out, &srv_flgs, NT_STATUS_OK);
 
 	server_auth2_negotiated = True;
+	p->dc->authenticated = True;
 	last_dcinfo = *p->dc;
 
 	return r_u->status;
@@ -450,17 +463,13 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (!creds_server_step(p->dc, &q_u->clnt_id.cred)) {
+	/* Step the creds chain forward. */
+	if (!creds_server_step(p->dc, &q_u->clnt_id.cred, &cred_out)) {
 		DEBUG(0,("_net_srv_pwset: creds_server_step failed. Rejecting auth "
 			"request from client %s machine account %s\n",
 			p->dc->remote_machine, p->dc->mach_acct ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
-
-	/* Do the second part of the credentials chain. This is split out here
-	   so it can be optional for a failed logon. */
-
-	creds_reseed_server(p->dc, &cred_out);
 
 	DEBUG(5,("_net_srv_pwset: %d\n", __LINE__));
 
@@ -555,25 +564,17 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
+	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
+
 	/* checks and updates credentials.  creates reply credentials */
-	if (!creds_server_step(p->dc, &q_u->sam_id.client.cred)) {
+	if (!creds_server_step(p->dc, &q_u->sam_id.client.cred, &r_u->srv_creds)) {
 		DEBUG(0,("_net_sam_logoff: creds_server_step failed. Rejecting auth "
 			"request from client %s machine account %s\n",
 			p->dc->remote_machine, p->dc->mach_acct ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	/* Do the second part of the credentials chain. This is split out here
-	   so it can be optional for a failed logon. */
-
-	/* what happens if we get a logoff for an unknown user? */
-
-	/* XXXX maybe we want to say 'no', reject the client's credentials */
-	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
-	creds_reseed_server(p->dc, &r_u->srv_creds);
-
 	r_u->status = NT_STATUS_OK;
-
 	return r_u->status;
 }
 
@@ -607,24 +608,26 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	r_u->switch_value = 0; /* indicates no info */
 	r_u->auth_resp = 1; /* authoritative response */
 	r_u->switch_value = 3; /* indicates type of validation user info */
+	r_u->buffer_creds = 1; /* Ensure we always return server creds. */
  
 	if (!get_valid_user_struct(p->vuid))
 		return NT_STATUS_NO_SUCH_USER;
-
-
-	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {
-		/* 'server schannel = yes' should enforce use of
-		   schannel, the client did offer it in auth2, but
-		   obviously did not use it. */
-		return NT_STATUS_ACCESS_DENIED;
-	}
 
 	if (!p->dc || !p->dc->authenticated) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
+	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {
+		/* 'server schannel = yes' should enforce use of
+		   schannel, the client did offer it in auth2, but
+		   obviously did not use it. */
+		DEBUG(0,("_net_sam_logoff: client %s not using schannel for netlogon\n",
+			p->dc->remote_machine ));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	/* checks and updates credentials.  creates reply credentials */
-	if (!creds_server_step(p->dc, &q_u->sam_id.client.cred)) {
+	if (!creds_server_step(p->dc, &q_u->sam_id.client.cred,  &r_u->srv_creds)) {
 		DEBUG(0,("_net_sam_logoff: creds_server_step failed. Rejecting auth "
 			"request from client %s machine account %s\n",
 			p->dc->remote_machine, p->dc->mach_acct ));
@@ -751,12 +754,6 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		return status;
 	}
 
-	/* moved from right after deal_with_creds above, since we weren't
-	   supposed to update unless logon was successful */
-
-	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
-	creds_reseed_server(p->dc, &r_u->srv_creds);
-    
 	if (server_info->guest) {
 		/* We don't like guest domain logons... */
 		DEBUG(5,("_net_sam_logon: Attempted domain logon as GUEST denied.\n"));

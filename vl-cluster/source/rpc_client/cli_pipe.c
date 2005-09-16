@@ -256,7 +256,7 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli, RPC_HDR *pr
 	/* Pull the auth header and the following data into a blob. */
 	if(!prs_set_offset(current_pdu, RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len)) {
 		DEBUG(0,("cli_pipe_verify_ntlmssp: cannot move offset to %u.\n",
-			(unsigned int)RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len ));
+			(unsigned int)RPC_HEADER_LEN + (unsigned int)RPC_HDR_RESP_LEN + (unsigned int)data_len ));
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
@@ -1766,7 +1766,7 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 
 	prs_mem_free(&rpc_out);
 
-	DEBUG(0,("rpc_pipe_bind: Remote machine %s pipe %s "
+	DEBUG(3,("rpc_pipe_bind: Remote machine %s pipe %s "
 		"fnum 0x%x bind request returned ok.\n",
 		cli->cli->desthost,
 		cli->pipe_name,
