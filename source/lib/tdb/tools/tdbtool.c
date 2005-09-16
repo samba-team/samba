@@ -59,9 +59,9 @@ typedef struct connections_data {
 	time_t start;
 } connections_data;
 
-static TDB_CONTEXT *tdb;
+static struct tdb_context *tdb;
 
-static int print_rec(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state);
+static int print_rec(struct tdb_context *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state);
 
 static void print_asc(unsigned char *buf,int len)
 {
@@ -207,9 +207,9 @@ static void insert_tdb(void)
 		return;
 	}
 
-	key.dptr = k;
+	key.dptr = (unsigned char *)k;
 	key.dsize = strlen(k)+1;
-	dbuf.dptr = d;
+	dbuf.dptr = (unsigned char *)d;
 	dbuf.dsize = strlen(d)+1;
 
 	if (tdb_store(tdb, key, dbuf, TDB_INSERT) == -1) {
@@ -228,9 +228,9 @@ static void store_tdb(void)
 		return;
 	}
 
-	key.dptr = k;
+	key.dptr = (unsigned char *)k;
 	key.dsize = strlen(k)+1;
-	dbuf.dptr = d;
+	dbuf.dptr = (unsigned char *)d;
 	dbuf.dsize = strlen(d)+1;
 
 	printf("Storing key:\n");
@@ -251,7 +251,7 @@ static void show_tdb(void)
 		return;
 	}
 
-	key.dptr = k;
+	key.dptr = (unsigned char *)k;
 	key.dsize = strlen(k)+1;
 
 	dbuf = tdb_fetch(tdb, key);
@@ -284,7 +284,7 @@ static void delete_tdb(void)
 		return;
 	}
 
-	key.dptr = k;
+	key.dptr = (unsigned char *)k;
 	key.dsize = strlen(k)+1;
 
 	if (tdb_delete(tdb, key) != 0) {
@@ -297,7 +297,7 @@ static void move_rec(void)
 	char *k = get_token(1);
 	char *file = get_token(0);	
 	TDB_DATA key, dbuf;
-	TDB_CONTEXT *dst_tdb;
+	struct tdb_context *dst_tdb;
 
 	if (!k) {
 		help();
@@ -309,7 +309,7 @@ static void move_rec(void)
 		return;
 	}
 
-	key.dptr = k;
+	key.dptr = (unsigned char *)k;
 	key.dsize = strlen(k)+1;
 
 	dbuf = tdb_fetch(tdb, key);
@@ -343,7 +343,7 @@ static void move_rec(void)
 	return;
 }
 
-static int print_rec(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
+static int print_rec(struct tdb_context *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
 	printf("\nkey %d bytes\n", key.dsize);
 	print_asc(key.dptr, key.dsize);
@@ -352,7 +352,7 @@ static int print_rec(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *st
 	return 0;
 }
 
-static int print_key(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
+static int print_key(struct tdb_context *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
 	print_asc(key.dptr, key.dsize);
 	printf("\n");
@@ -361,7 +361,7 @@ static int print_key(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *st
 
 static int total_bytes;
 
-static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
+static int traverse_fn(struct tdb_context *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
 	total_bytes += dbuf.dsize;
 	return 0;
@@ -389,13 +389,13 @@ static char *tdb_getline(char *prompt)
 	return p?line:NULL;
 }
 
-static int do_delete_fn(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf,
+static int do_delete_fn(struct tdb_context *the_tdb, TDB_DATA key, TDB_DATA dbuf,
                      void *state)
 {
     return tdb_delete(the_tdb, key);
 }
 
-static void first_record(TDB_CONTEXT *the_tdb, TDB_DATA *pkey)
+static void first_record(struct tdb_context *the_tdb, TDB_DATA *pkey)
 {
 	TDB_DATA dbuf;
 	*pkey = tdb_firstkey(the_tdb);
@@ -408,7 +408,7 @@ static void first_record(TDB_CONTEXT *the_tdb, TDB_DATA *pkey)
 	}
 }
 
-static void next_record(TDB_CONTEXT *the_tdb, TDB_DATA *pkey)
+static void next_record(struct tdb_context *the_tdb, TDB_DATA *pkey)
 {
 	TDB_DATA dbuf;
 	*pkey = tdb_nextkey(the_tdb, *pkey);

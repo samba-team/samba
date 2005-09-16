@@ -122,7 +122,8 @@ static void tdb_wrap_log(TDB_CONTEXT *tdb, int level,
 	va_end(ap);
 	
 	if (ptr != NULL) {
-		DEBUG(level, ("tdb(%s): %s", tdb->name ? tdb->name : "unnamed", ptr));
+		const char *name = tdb_name(tdb);
+		DEBUG(level, ("tdb(%s): %s", name ? name : "unnamed", ptr));
 		free(ptr);
 	}
 }

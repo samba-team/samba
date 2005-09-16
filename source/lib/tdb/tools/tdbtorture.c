@@ -39,12 +39,12 @@
 #define DATALEN 100
 #define LOCKLEN 20
 
-static TDB_CONTEXT *db;
+static struct tdb_context *db;
 
 #ifdef PRINTF_ATTRIBUTE
-static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...) PRINTF_ATTRIBUTE(3,4);
+static void tdb_log(struct tdb_context *tdb, int level, const char *format, ...) PRINTF_ATTRIBUTE(3,4);
 #endif
-static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
+static void tdb_log(struct tdb_context *tdb, int level, const char *format, ...)
 {
 	va_list ap;
     
@@ -81,7 +81,7 @@ static char *randbuf(int len)
 	return buf;
 }
 
-static int cull_traverse(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf,
+static int cull_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf,
 			 void *state)
 {
 	if (random() % CULL_PROB == 0) {
@@ -104,13 +104,13 @@ static void addrec_db(void)
 	d = randbuf(dlen);
 	s = randbuf(slen);
 
-	key.dptr = k;
+	key.dptr = (unsigned char *)k;
 	key.dsize = klen+1;
 
-	data.dptr = d;
+	data.dptr = (unsigned char *)d;
 	data.dsize = dlen+1;
 
-	lockkey.dptr = s;
+	lockkey.dptr = (unsigned char *)s;
 	lockkey.dsize = slen+1;
 
 #if REOPEN_PROB
@@ -174,7 +174,7 @@ next:
 	free(s);
 }
 
-static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf,
+static int traverse_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf,
                        void *state)
 {
 	tdb_delete(tdb, key);

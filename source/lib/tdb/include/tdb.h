@@ -53,106 +53,63 @@ enum TDB_ERROR {TDB_SUCCESS=0, TDB_ERR_CORRUPT, TDB_ERR_IO, TDB_ERR_LOCK,
 		TDB_ERR_OOM, TDB_ERR_EXISTS, TDB_ERR_NOLOCK, TDB_ERR_LOCK_TIMEOUT,
 		TDB_ERR_NOEXIST};
 
-#ifndef u32
-#define u32 unsigned
-#endif
-
 typedef struct TDB_DATA {
-	char *dptr;
+	unsigned char *dptr;
 	size_t dsize;
 } TDB_DATA;
-
-typedef u32 tdb_len;
-typedef u32 tdb_off;
-
-/* this is stored at the front of every database */
-struct tdb_header {
-	char magic_food[32]; /* for /etc/magic */
-	u32 version; /* version of the code */
-	u32 hash_size; /* number of hash entries */
-	tdb_off rwlocks;
-	tdb_off reserved[31];
-};
-
-struct tdb_lock_type {
-	u32 count;
-	u32 ltype;
-};
-
-struct tdb_traverse_lock {
-	struct tdb_traverse_lock *next;
-	u32 off;
-	u32 hash;
-};
 
 #ifndef PRINTF_ATTRIBUTE
 #define PRINTF_ATTRIBUTE(a,b)
 #endif
 
 /* this is the context structure that is returned from a db open */
-typedef struct tdb_context {
-	char *name; /* the name of the database */
-	void *map_ptr; /* where it is currently mapped */
-	int fd; /* open file descriptor for the database */
-	tdb_len map_size; /* how much space has been mapped */
-	int read_only; /* opened read-only */
-	struct tdb_lock_type *locked; /* array of chain locks */
-	enum TDB_ERROR ecode; /* error code for last tdb error */
-	struct tdb_header header; /* a cached copy of the header */
-	u32 flags; /* the flags passed to tdb_open */
-	struct tdb_traverse_lock travlocks; /* current traversal locks */
-	struct tdb_context *next; /* all tdbs to avoid multiple opens */
-	dev_t device;	/* uniquely identifies this tdb */
-	ino_t inode;	/* uniquely identifies this tdb */
-	void (*log_fn)(struct tdb_context *tdb, int level, const char *, ...) PRINTF_ATTRIBUTE(3,4); /* logging function */
-	u32 (*hash_fn)(TDB_DATA *key);
-	int open_flags; /* flags used in the open - needed by reopen */
-} TDB_CONTEXT;
+typedef struct tdb_context TDB_CONTEXT;
 
-typedef int (*tdb_traverse_func)(TDB_CONTEXT *, TDB_DATA, TDB_DATA, void *);
-typedef void (*tdb_log_func)(TDB_CONTEXT *, int , const char *, ...);
-typedef u32 (*tdb_hash_func)(TDB_DATA *key);
+typedef int (*tdb_traverse_func)(struct tdb_context *, TDB_DATA, TDB_DATA, void *);
+typedef void (*tdb_log_func)(struct tdb_context *, int , const char *, ...);
+typedef unsigned int (*tdb_hash_func)(TDB_DATA *key);
 
-TDB_CONTEXT *tdb_open(const char *name, int hash_size, int tdb_flags,
+struct tdb_context *tdb_open(const char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode);
-TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
+struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 			 int open_flags, mode_t mode,
 			 tdb_log_func log_fn,
 			 tdb_hash_func hash_fn);
 
-int tdb_reopen(TDB_CONTEXT *tdb);
+int tdb_reopen(struct tdb_context *tdb);
 int tdb_reopen_all(void);
-void tdb_logging_function(TDB_CONTEXT *tdb, tdb_log_func);
-enum TDB_ERROR tdb_error(TDB_CONTEXT *tdb);
-const char *tdb_errorstr(TDB_CONTEXT *tdb);
-TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key);
-int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key);
-int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag);
-int tdb_append(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA new_dbuf);
-int tdb_close(TDB_CONTEXT *tdb);
-TDB_DATA tdb_firstkey(TDB_CONTEXT *tdb);
-TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key);
-int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *);
-int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key);
-int tdb_lockall(TDB_CONTEXT *tdb);
-void tdb_unlockall(TDB_CONTEXT *tdb);
+void tdb_logging_function(struct tdb_context *tdb, tdb_log_func);
+enum TDB_ERROR tdb_error(struct tdb_context *tdb);
+const char *tdb_errorstr(struct tdb_context *tdb);
+TDB_DATA tdb_fetch(struct tdb_context *tdb, TDB_DATA key);
+int tdb_delete(struct tdb_context *tdb, TDB_DATA key);
+int tdb_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, int flag);
+int tdb_append(struct tdb_context *tdb, TDB_DATA key, TDB_DATA new_dbuf);
+int tdb_close(struct tdb_context *tdb);
+TDB_DATA tdb_firstkey(struct tdb_context *tdb);
+TDB_DATA tdb_nextkey(struct tdb_context *tdb, TDB_DATA key);
+int tdb_traverse(struct tdb_context *tdb, tdb_traverse_func fn, void *);
+int tdb_exists(struct tdb_context *tdb, TDB_DATA key);
+int tdb_lockall(struct tdb_context *tdb);
+void tdb_unlockall(struct tdb_context *tdb);
+const char *tdb_name(struct tdb_context *tdb);
+int tdb_fd(struct tdb_context *tdb);
+tdb_log_func tdb_log_fn(struct tdb_context *tdb);
 
 /* Low level locking functions: use with care */
-int tdb_chainlock(TDB_CONTEXT *tdb, TDB_DATA key);
-int tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key);
-int tdb_chainlock_read(TDB_CONTEXT *tdb, TDB_DATA key);
-int tdb_chainunlock_read(TDB_CONTEXT *tdb, TDB_DATA key);
+int tdb_chainlock(struct tdb_context *tdb, TDB_DATA key);
+int tdb_chainunlock(struct tdb_context *tdb, TDB_DATA key);
+int tdb_chainlock_read(struct tdb_context *tdb, TDB_DATA key);
+int tdb_chainunlock_read(struct tdb_context *tdb, TDB_DATA key);
 
 /* Debug functions. Not used in production. */
-void tdb_dump_all(TDB_CONTEXT *tdb);
-int tdb_printfreelist(TDB_CONTEXT *tdb);
+void tdb_dump_all(struct tdb_context *tdb);
+int tdb_printfreelist(struct tdb_context *tdb);
 
 extern TDB_DATA tdb_null;
 
 #ifdef  __cplusplus
 }
 #endif
-
-#include "spinlock.h"
 
 #endif /* tdb.h */

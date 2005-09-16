@@ -1,7 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
+
    tdb utility functions
-   Copyright (C) Andrew Tridgell 1992-1998
+
+   Copyright (C) Andrew Tridgell 1992-2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -16,6 +18,10 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+/*
+  NOTE: these utility functions are specific to Samba, and are not part
+  of the core tdb code
 */
 
 #include "includes.h"
@@ -36,7 +42,7 @@
 static TDB_DATA make_tdb_data(const char *dptr, size_t dsize)
 {
 	TDB_DATA ret;
-	ret.dptr = discard_const_p(char, dptr);
+	ret.dptr = discard_const_p(unsigned char, dptr);
 	ret.dsize = dsize;
 	return ret;
 }
@@ -45,7 +51,7 @@ static TDB_DATA make_tdb_data(const char *dptr, size_t dsize)
  Lock a chain by string. Return -1 if lock failed.
 ****************************************************************************/
 
-int tdb_lock_bystring(TDB_CONTEXT *tdb, const char *keyval)
+int tdb_lock_bystring(struct tdb_context *tdb, const char *keyval)
 {
 	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
 	
@@ -56,7 +62,7 @@ int tdb_lock_bystring(TDB_CONTEXT *tdb, const char *keyval)
  Unlock a chain by string.
 ****************************************************************************/
 
-void tdb_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval)
+void tdb_unlock_bystring(struct tdb_context *tdb, const char *keyval)
 {
 	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
 
@@ -67,7 +73,7 @@ void tdb_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval)
  Read lock a chain by string. Return -1 if lock failed.
 ****************************************************************************/
 
-int tdb_read_lock_bystring(TDB_CONTEXT *tdb, const char *keyval)
+int tdb_read_lock_bystring(struct tdb_context *tdb, const char *keyval)
 {
 	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
 	
@@ -78,7 +84,7 @@ int tdb_read_lock_bystring(TDB_CONTEXT *tdb, const char *keyval)
  Read unlock a chain by string.
 ****************************************************************************/
 
-void tdb_read_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval)
+void tdb_read_unlock_bystring(struct tdb_context *tdb, const char *keyval)
 {
 	TDB_DATA key = make_tdb_data(keyval, strlen(keyval)+1);
 	
@@ -91,7 +97,7 @@ void tdb_read_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval)
  Output is int32_t in native byte order.
 ****************************************************************************/
 
-int32_t tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, const char *keyval, size_t len)
+int32_t tdb_fetch_int32_byblob(struct tdb_context *tdb, const char *keyval, size_t len)
 {
 	TDB_DATA key = make_tdb_data(keyval, len);
 	TDB_DATA data;
@@ -113,7 +119,7 @@ int32_t tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, const char *keyval, size_t len)
  Output is int32_t in native byte order.
 ****************************************************************************/
 
-int32_t tdb_fetch_int32(TDB_CONTEXT *tdb, const char *keystr)
+int32_t tdb_fetch_int32(struct tdb_context *tdb, const char *keystr)
 {
 	return tdb_fetch_int32_byblob(tdb, keystr, strlen(keystr) + 1);
 }
@@ -123,7 +129,7 @@ int32_t tdb_fetch_int32(TDB_CONTEXT *tdb, const char *keystr)
  Input is int32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
-int tdb_store_int32_byblob(TDB_CONTEXT *tdb, const char *keystr, size_t len, int32_t v)
+int tdb_store_int32_byblob(struct tdb_context *tdb, const char *keystr, size_t len, int32_t v)
 {
 	TDB_DATA key = make_tdb_data(keystr, len);
 	TDB_DATA data;
@@ -141,7 +147,7 @@ int tdb_store_int32_byblob(TDB_CONTEXT *tdb, const char *keystr, size_t len, int
  Input is int32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
-int tdb_store_int32(TDB_CONTEXT *tdb, const char *keystr, int32_t v)
+int tdb_store_int32(struct tdb_context *tdb, const char *keystr, int32_t v)
 {
 	return tdb_store_int32_byblob(tdb, keystr, strlen(keystr) + 1, v);
 }
@@ -151,7 +157,7 @@ int tdb_store_int32(TDB_CONTEXT *tdb, const char *keystr, int32_t v)
  Output is uint32_t in native byte order.
 ****************************************************************************/
 
-BOOL tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, const char *keyval, size_t len, uint32_t *value)
+BOOL tdb_fetch_uint32_byblob(struct tdb_context *tdb, const char *keyval, size_t len, uint32_t *value)
 {
 	TDB_DATA key = make_tdb_data(keyval, len);
 	TDB_DATA data;
@@ -172,7 +178,7 @@ BOOL tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, const char *keyval, size_t len, u
  Output is uint32_t in native byte order.
 ****************************************************************************/
 
-BOOL tdb_fetch_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32_t *value)
+BOOL tdb_fetch_uint32(struct tdb_context *tdb, const char *keystr, uint32_t *value)
 {
 	return tdb_fetch_uint32_byblob(tdb, keystr, strlen(keystr) + 1, value);
 }
@@ -182,7 +188,7 @@ BOOL tdb_fetch_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32_t *value)
  Input is uint32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
-BOOL tdb_store_uint32_byblob(TDB_CONTEXT *tdb, const char *keystr, size_t len, uint32_t value)
+BOOL tdb_store_uint32_byblob(struct tdb_context *tdb, const char *keystr, size_t len, uint32_t value)
 {
 	TDB_DATA key = make_tdb_data(keystr, len);
 	TDB_DATA data;
@@ -204,7 +210,7 @@ BOOL tdb_store_uint32_byblob(TDB_CONTEXT *tdb, const char *keystr, size_t len, u
  Input is uint32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
-BOOL tdb_store_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32_t value)
+BOOL tdb_store_uint32(struct tdb_context *tdb, const char *keystr, uint32_t value)
 {
 	return tdb_store_uint32_byblob(tdb, keystr, strlen(keystr) + 1, value);
 }
@@ -213,7 +219,7 @@ BOOL tdb_store_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32_t value)
  on failure.
 ****************************************************************************/
 
-int tdb_store_bystring(TDB_CONTEXT *tdb, const char *keystr, TDB_DATA data, int flags)
+int tdb_store_bystring(struct tdb_context *tdb, const char *keystr, TDB_DATA data, int flags)
 {
 	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
 	
@@ -225,7 +231,7 @@ int tdb_store_bystring(TDB_CONTEXT *tdb, const char *keystr, TDB_DATA data, int 
  free() on the result dptr.
 ****************************************************************************/
 
-TDB_DATA tdb_fetch_bystring(TDB_CONTEXT *tdb, const char *keystr)
+TDB_DATA tdb_fetch_bystring(struct tdb_context *tdb, const char *keystr)
 {
 	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
 
@@ -236,7 +242,7 @@ TDB_DATA tdb_fetch_bystring(TDB_CONTEXT *tdb, const char *keystr)
  Delete an entry using a null terminated string key. 
 ****************************************************************************/
 
-int tdb_delete_bystring(TDB_CONTEXT *tdb, const char *keystr)
+int tdb_delete_bystring(struct tdb_context *tdb, const char *keystr)
 {
 	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
 
@@ -247,7 +253,7 @@ int tdb_delete_bystring(TDB_CONTEXT *tdb, const char *keystr)
  Atomic integer change. Returns old value. To create, set initial value in *oldval. 
 ****************************************************************************/
 
-int32_t tdb_change_int32_atomic(TDB_CONTEXT *tdb, const char *keystr, int32_t *oldval, int32_t change_val)
+int32_t tdb_change_int32_atomic(struct tdb_context *tdb, const char *keystr, int32_t *oldval, int32_t change_val)
 {
 	int32_t val;
 	int32_t ret = -1;
@@ -288,7 +294,7 @@ int32_t tdb_change_int32_atomic(TDB_CONTEXT *tdb, const char *keystr, int32_t *o
  Atomic unsigned integer change. Returns old value. To create, set initial value in *oldval. 
 ****************************************************************************/
 
-BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr, uint32_t *oldval, uint32_t change_val)
+BOOL tdb_change_uint32_atomic(struct tdb_context *tdb, const char *keystr, uint32_t *oldval, uint32_t change_val)
 {
 	uint32_t val;
 	BOOL ret = False;
@@ -327,6 +333,18 @@ BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr, uint32_t *ol
 }
 
 /****************************************************************************
+ Allow tdb_delete to be used as a tdb_traversal_fn.
+****************************************************************************/
+
+int tdb_traverse_delete_fn(struct tdb_context *the_tdb, TDB_DATA key, TDB_DATA dbuf,
+                     void *state)
+{
+    return tdb_delete(the_tdb, key);
+}
+
+
+
+/****************************************************************************
  Useful pair of routines for packing/unpacking data consisting of
  integers and strings.
 ****************************************************************************/
@@ -345,6 +363,7 @@ size_t tdb_pack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 	char *buf0 = buf;
 	const char *fmt0 = fmt;
 	int bufsize0 = bufsize;
+	tdb_log_func log_fn = tdb_log_fn(tdb);
 
 	va_start(ap, fmt);
 
@@ -399,8 +418,8 @@ size_t tdb_pack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 			}
 			break;
 		default:
-			tdb->log_fn(tdb, 0,"Unknown tdb_pack format %c in %s\n", 
-				    c, fmt);
+			log_fn(tdb, 0,"Unknown tdb_pack format %c in %s\n", 
+			       c, fmt);
 			len = 0;
 			break;
 		}
@@ -414,8 +433,8 @@ size_t tdb_pack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 
 	va_end(ap);
 
-	tdb->log_fn(tdb, 18,"tdb_pack(%s, %d) -> %d\n", 
-		    fmt0, bufsize0, (int)PTR_DIFF(buf, buf0));
+	log_fn(tdb, 18,"tdb_pack(%s, %d) -> %d\n", 
+	       fmt0, bufsize0, (int)PTR_DIFF(buf, buf0));
 	
 	return PTR_DIFF(buf, buf0);
 }
@@ -439,6 +458,7 @@ int tdb_unpack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 	char *buf0 = buf;
 	const char *fmt0 = fmt;
 	int bufsize0 = bufsize;
+	tdb_log_func log_fn = tdb_log_fn(tdb);
 
 	va_start(ap, fmt);
 	
@@ -506,8 +526,8 @@ int tdb_unpack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 			memcpy(*b, buf+4, *i);
 			break;
 		default:
-			tdb->log_fn(tdb, 0, "Unknown tdb_unpack format %c in %s\n", 
-				 c, fmt);
+			log_fn(tdb, 0, "Unknown tdb_unpack format %c in %s\n", 
+			       c, fmt);
 
 			len = 0;
 			break;
@@ -519,91 +539,11 @@ int tdb_unpack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 
 	va_end(ap);
 
-	tdb->log_fn(tdb, 18, "tdb_unpack(%s, %d) -> %d\n", 
-		    fmt0, bufsize0, (int)PTR_DIFF(buf, buf0));
+	log_fn(tdb, 18, "tdb_unpack(%s, %d) -> %d\n", 
+	       fmt0, bufsize0, (int)PTR_DIFF(buf, buf0));
 
 	return PTR_DIFF(buf, buf0);
 
  no_space:
 	return -1;
-}
-
-/****************************************************************************
- Allow tdb_delete to be used as a tdb_traversal_fn.
-****************************************************************************/
-
-int tdb_traverse_delete_fn(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf,
-                     void *state)
-{
-    return tdb_delete(the_tdb, key);
-}
-
-
-
-/**
- * Search across the whole tdb for keys that match the given pattern
- * return the result as a list of keys
- *
- * @param tdb pointer to opened tdb file context
- * @param pattern searching pattern used by fnmatch(3) functions
- *
- * @return list of keys found by looking up with given pattern
- **/
-TDB_LIST_NODE *tdb_search_keys(TDB_CONTEXT *tdb, const char* pattern)
-{
-	TDB_DATA key, next;
-	TDB_LIST_NODE *list = NULL;
-	TDB_LIST_NODE *rec = NULL;
-	
-	for (key = tdb_firstkey(tdb); key.dptr; key = next) {
-		/* duplicate key string to ensure null-termination */
-		char *key_str = (char*) strndup(key.dptr, key.dsize);
-#if 0
-		if (!key_str) {
-			tdb->log_fn(tdb, 0, "tdb_search_keys: strndup() failed!\n");
-			smb_panic("strndup failed!\n");
-		}
-#endif
-		tdb->log_fn(tdb, 18, "checking %s for match to pattern %s\n", key_str, pattern);
-		
-		next = tdb_nextkey(tdb, key);
-
-		/* do the pattern checking */
-		if (fnmatch(pattern, key_str, 0) == 0) {
-			rec = (TDB_LIST_NODE*) malloc(sizeof(*rec));
-			ZERO_STRUCTP(rec);
-
-			rec->node_key = key;
-	
-			DLIST_ADD_END(list, rec, TDB_LIST_NODE *);
-		
-			tdb->log_fn(tdb, 18, "checking %s matched pattern %s\n", key_str, pattern);
-		} else {
-			free(key.dptr);
-		}
-		
-		/* free duplicated key string */
-		free(key_str);
-	}
-	
-	return list;
-
-}
-
-
-/**
- * Free the list returned by tdb_search_keys
- *
- * @param node list of results found by tdb_search_keys
- **/
-void tdb_search_list_free(TDB_LIST_NODE* node)
-{
-	TDB_LIST_NODE *next_node;
-	
-	while (node) {
-		next_node = node->next;
-		SAFE_FREE(node->node_key.dptr);
-		SAFE_FREE(node);
-		node = next_node;
-	}
 }
