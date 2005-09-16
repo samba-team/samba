@@ -1487,6 +1487,13 @@ void init_reg_q_shutdown(REG_Q_SHUTDOWN *q_u, const char *msg,
 	if ( msg && *msg ) { 
 		q_u->message = TALLOC_P( get_talloc_ctx(), UNISTR4 );
 		init_unistr4( q_u->message, msg, UNI_FLAGS_NONE );
+
+		/* Win2000 is apparently very sensitive to these lengths */
+		/* do a special case here */
+
+		q_u->message->string->uni_max_len++;
+		q_u->message->size += 2;
+
 	}
 
 	q_u->timeout = timeout;
