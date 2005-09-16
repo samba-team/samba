@@ -698,7 +698,6 @@ static BOOL run_netbench(int client)
 {
 	struct cli_state *cli;
 	int i;
-	fstring fname;
 	pstring line;
 	char cname[20];
 	FILE *f;
