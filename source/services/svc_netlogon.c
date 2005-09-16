@@ -25,7 +25,7 @@
 /*********************************************************************
 *********************************************************************/
 
-static WERROR netlogon_stop( SERVICE_STATUS *service_status )
+static WERROR netlogon_stop( const char *service, SERVICE_STATUS *service_status )
 {
 	return WERR_ACCESS_DENIED;
 }
@@ -33,7 +33,7 @@ static WERROR netlogon_stop( SERVICE_STATUS *service_status )
 /*********************************************************************
 *********************************************************************/
 
-static WERROR netlogon_start( void )
+static WERROR netlogon_start( const char *service )
 {
 	return WERR_ACCESS_DENIED;
 }
@@ -41,7 +41,7 @@ static WERROR netlogon_start( void )
 /*********************************************************************
 *********************************************************************/
 
-static WERROR netlogon_status( SERVICE_STATUS *service_status )
+static WERROR netlogon_status( const char *service, SERVICE_STATUS *service_status )
 {
 	ZERO_STRUCTP( service_status );
 

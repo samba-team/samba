@@ -348,7 +348,7 @@ WERROR _svcctl_query_status(pipes_struct *p, SVCCTL_Q_QUERY_STATUS *q_u, SVCCTL_
 		
 	/* try the service specific status call */
 
-	return info->ops->service_status( &r_u->svc_status );
+	return info->ops->service_status( info->name, &r_u->svc_status );
 }
 
 /********************************************************************
@@ -376,7 +376,7 @@ static int enumerate_status( TALLOC_CTX *ctx, ENUM_SERVICES_STATUS **status, NT_
 		display_name = svcctl_lookup_dispname( svcctl_ops[i].name, token );
 		init_unistr( &st[i].displayname, display_name );
 		
-		svcctl_ops[i].ops->service_status( &st[i].status );
+		svcctl_ops[i].ops->service_status( svcctl_ops[i].name, &st[i].status );
 	}
 	
 	*status = st;
@@ -452,7 +452,7 @@ WERROR _svcctl_start_service(pipes_struct *p, SVCCTL_Q_START_SERVICE *q_u, SVCCT
 	if ( !(info->access_granted & SC_RIGHT_SVC_START) )
 		return WERR_ACCESS_DENIED;
 		
-	return info->ops->start_service();
+	return info->ops->start_service( info->name );
 }
 
 /********************************************************************
@@ -472,13 +472,13 @@ WERROR _svcctl_control_service(pipes_struct *p, SVCCTL_Q_CONTROL_SERVICE *q_u, S
 		if ( !(info->access_granted & SC_RIGHT_SVC_STOP) )
 			return WERR_ACCESS_DENIED;
 			
-		return info->ops->stop_service( &r_u->svc_status );
+		return info->ops->stop_service( info->name, &r_u->svc_status );
 		
 	case SVCCTL_CONTROL_INTERROGATE:
 		if ( !(info->access_granted & SC_RIGHT_SVC_QUERY_STATUS) )
 			return WERR_ACCESS_DENIED;
 			
-		return info->ops->service_status( &r_u->svc_status );
+		return info->ops->service_status( info->name, &r_u->svc_status );
 	}
 	
 	/* default control action */
@@ -542,7 +542,7 @@ WERROR _svcctl_query_service_status_ex( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_
 			SERVICE_STATUS_PROCESS svc_stat_proc;
 
 			/* Get the status of the service.. */
-			info->ops->service_status( &svc_stat_proc.status );
+			info->ops->service_status( info->name, &svc_stat_proc.status );
 			svc_stat_proc.process_id     = sys_getpid();
 			svc_stat_proc.service_flags  = 0x0;
 

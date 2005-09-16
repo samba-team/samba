@@ -198,9 +198,9 @@ typedef struct Service_info_struct {
  
 typedef struct {
 	/* functions for enumerating subkeys and values */	
-	WERROR 	(*stop_service)( SERVICE_STATUS *status );
-	WERROR 	(*start_service) ( void );
-	WERROR 	(*service_status)( SERVICE_STATUS *status );
+	WERROR 	(*stop_service)( const char *service, SERVICE_STATUS *status );
+	WERROR 	(*start_service) ( const char *service );
+	WERROR 	(*service_status)( const char *service, SERVICE_STATUS *status );
 } SERVICE_CONTROL_OPS;
 
 /* structure to store the service handle information  */
