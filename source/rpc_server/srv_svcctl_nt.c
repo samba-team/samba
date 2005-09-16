@@ -60,18 +60,14 @@ static NTSTATUS svcctl_access_check( SEC_DESC *sec_desc, NT_USER_TOKEN *token,
 {
 	NTSTATUS result;
 
-	/* maybe add privilege checks in here later */
+	if ( geteuid() == sec_initial_uid() ) {
+		DEBUG(5,("svcctl_access_check: access check bypassed for 'root'\n"));
+		*access_granted = access_desired;
+		return NT_STATUS_OK;
+	}
 	
 	se_access_check( sec_desc, token, access_desired, access_granted, &result );
 
-	if ( !NT_STATUS_IS_OK(result) ) {
-		if ( geteuid() == sec_initial_uid() ) {
-			DEBUG(5,("svcctl_access_check: access check bypassed for 'root'\n"));
-			*access_granted = access_desired;
-			return NT_STATUS_OK;
-		}
-	}
-	
 	return result;
 }
 
