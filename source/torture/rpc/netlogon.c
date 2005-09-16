@@ -614,7 +614,7 @@ static BOOL test_DatabaseSync(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 					r.out.delta_enum_array->delta_enum[0].delta_union.domain->sequence_num;
 				printf("\tsequence_nums[%d]=%llu\n",
 				       r.in.database_id, 
-				       sequence_nums[r.in.database_id]);
+				       (unsigned long long)sequence_nums[r.in.database_id]);
 			}
 		} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
 	}
@@ -654,7 +654,7 @@ static BOOL test_DatabaseDeltas(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 
 		printf("Testing DatabaseDeltas of id %d at %llu\n", 
-		       r.in.database_id, r.in.sequence_num);
+		       r.in.database_id, (unsigned long long)r.in.sequence_num);
 
 		do {
 			creds_client_authenticator(creds, &r.in.credential);
