@@ -92,7 +92,7 @@ struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (fstat(w->tdb->fd, &st) != 0) {
+	if (fstat(tdb_fd(w->tdb), &st) != 0) {
 		tdb_close(w->tdb);
 		talloc_free(w);
 		return NULL;
