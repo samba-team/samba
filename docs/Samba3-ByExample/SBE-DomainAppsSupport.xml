@@ -597,7 +597,7 @@ password: XXXXXXXX
 
 <smbconfcomment>use UIDs from 10000 to 20000 for domain users</smbconfcomment>
 <smbconfoption name="idmap uid">10000-20000</smbconfoption>
-# use GIDs from 10000 to 20000 for domain groups
+<smbconfcomment>use GIDs from 10000 to 20000 for domain groups</smbconfcomment>
 <smbconfoption name="idmap gid">10000-20000</smbconfoption>
 
 <smbconfcomment>allow enumeration of winbind users and groups</smbconfcomment>
