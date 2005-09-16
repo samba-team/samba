@@ -388,7 +388,7 @@ static char *parsetree_to_sql(struct ldb_module *module,
 		return lsqlite3_tprintf(mem_ctx,
 					"SELECT eid FROM ldb_attribute_values "
 					"WHERE norm_attr_name = '%q' "
-					"AND norm_attr_value LIKE '>=%q' ESCAPE '%q' ",
+					"AND ldap_compare(norm_attr_value, '>=', '%q', '%q') ",
 					attr,
 					value.data,
 					attr);
@@ -407,7 +407,7 @@ static char *parsetree_to_sql(struct ldb_module *module,
 		return lsqlite3_tprintf(mem_ctx,
 					"SELECT eid FROM ldb_attribute_values "
 					"WHERE norm_attr_name = '%q' "
-					"AND norm_attr_value LIKE '<=%q' ESCAPE '%q' ",
+					"AND ldap_compare(norm_attr_value, '<=', '%q', '%q') ",
 					attr,
 					value.data,
 					attr);
@@ -439,7 +439,7 @@ static char *parsetree_to_sql(struct ldb_module *module,
 		return lsqlite3_tprintf(mem_ctx,
 					"SELECT eid FROM ldb_attribute_values "
 					"WHERE norm_attr_name = '%q' "
-					"AND norm_attr_value LIKE '~%q' ESCAPE '%q' ",
+					"AND ldap_compare(norm_attr_value, '~%', 'q', '%q') ",
 					attr,
 					value.data,
 					attr);
@@ -606,34 +606,33 @@ query_int(const struct lsqlite3_private * lsqlite3,
 
 /*
  * This is a bad hack to support ldap style comparisons whithin sqlite.
- * This function substitues the X LIKE Y ESCAPE Z expression
- * X is an expression + value to compare against (eg: ">=test")
- * Y is the attribute in the row currently under test
- * Z is the attribute name the value of which we want to test
+ * val is the attribute in the row currently under test
+ * func is the desired test "<=" ">=" "~" ":"
+ * cmp is the value to compare against (eg: "test")
+ * attr is the attribute name the value of which we want to test
  */
 
 static void lsqlite3_compare(sqlite3_context *ctx, int argc,
 					sqlite3_value **argv)
 {
 	struct ldb_context *ldb = (struct ldb_context *)sqlite3_user_data(ctx);
-	const unsigned char *X = sqlite3_value_text(argv[0]);
-	const unsigned char *Y = sqlite3_value_text(argv[1]);
-	const unsigned char *Z = sqlite3_value_text(argv[2]);
-	const unsigned char *p;
+	const unsigned char *val = sqlite3_value_text(argv[0]);
+	const unsigned char *func = sqlite3_value_text(argv[1]);
+	const unsigned char *cmp = sqlite3_value_text(argv[2]);
+	const unsigned char *attr = sqlite3_value_text(argv[3]);
 	const struct ldb_attrib_handler *h;
 	struct ldb_val valX;
 	struct ldb_val valY;
 	int ret;
 
-	switch (X[0]) {
+	switch (func[0]) {
 	/* greater */
 	case '>': /* >= */
-		p = &(X[2]);
-		h = ldb_attrib_handler(ldb, Z);
-		valX.data = p;
-		valX.length = strlen(p);
-		valY.data = Y;
-		valY.length = strlen(Y);
+		h = ldb_attrib_handler(ldb, attr);
+		valX.data = cmp;
+		valX.length = strlen(cmp);
+		valY.data = val;
+		valY.length = strlen(val);
 		ret = h->comparison_fn(ldb, ldb, &valY, &valX);
 		if (ret >= 0)
 			sqlite3_result_int(ctx, 1);
@@ -643,12 +642,11 @@ static void lsqlite3_compare(sqlite3_context *ctx, int argc,
 
 	/* lesser */
 	case '<': /* <= */
-		p = &(X[2]);
-		h = ldb_attrib_handler(ldb, Z);
-		valX.data = p;
-		valX.length = strlen(p);
-		valY.data = Y;
-		valY.length = strlen(Y);
+		h = ldb_attrib_handler(ldb, attr);
+		valX.data = cmp;
+		valX.length = strlen(cmp);
+		valY.data = val;
+		valY.length = strlen(val);
 		ret = h->comparison_fn(ldb, ldb, &valY, &valX);
 		if (ret <= 0)
 			sqlite3_result_int(ctx, 1);
@@ -1694,8 +1692,8 @@ static int initialize(struct lsqlite3_private *lsqlite3,
         /* Create a function, callable from sql, to perform various comparisons */
         if ((ret =
              sqlite3_create_function(lsqlite3->sqlite, /* handle */
-                                     "like",           /* function name */
-                                     3,                /* number of args */
+                                     "ldap_compare",   /* function name */
+                                     4,                /* number of args */
                                      SQLITE_ANY,       /* preferred text type */
                                      ldb  ,            /* user data */
                                      lsqlite3_compare, /* called func */
