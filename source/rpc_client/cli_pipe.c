@@ -879,8 +879,42 @@ static NTSTATUS create_spnego_ntlmssp_auth_rpc_bind_req( struct rpc_pipe_client 
 						RPC_HDR_AUTH *pauth_out,
 						prs_struct *auth_data)
 {
-	/* Placeholder for now until I finish this... JRA. */
-	return NT_STATUS_NO_MEMORY;
+	NTSTATUS nt_status;
+	DATA_BLOB null_blob = data_blob(NULL, 0);
+	DATA_BLOB request = data_blob(NULL, 0);
+	DATA_BLOB spnego_msg = data_blob(NULL, 0);
+
+	/* We may change the pad length before marshalling. */
+	init_rpc_hdr_auth(pauth_out, RPC_SPNEGO_AUTH_TYPE, (int)auth_level, 0, 1);
+
+	DEBUG(5, ("create_spnego_ntlmssp_auth_rpc_bind_req: Processing NTLMSSP Negotiate\n"));
+	nt_status = ntlmssp_update(cli->auth.a_u.ntlmssp_state,
+					null_blob,
+					&request);
+
+	if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		data_blob_free(&request);
+		prs_mem_free(auth_data);
+		return nt_status;
+	}
+
+	/* Wrap this in SPNEGO. */
+	spnego_msg = gen_negTokenInit(OID_NTLMSSP, request);
+
+	data_blob_free(&request);
+
+	/* Auth len in the rpc header doesn't include auth_header. */
+	if (!prs_copy_data_in(auth_data, (char *)spnego_msg.data, spnego_msg.length)) {
+		data_blob_free(&spnego_msg);
+		prs_mem_free(auth_data);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	DEBUG(5, ("create_spnego_ntlmssp_auth_rpc_bind_req: NTLMSSP Negotiate:\n"));
+	dump_data(5, (const char *)spnego_msg.data, spnego_msg.length);
+
+	data_blob_free(&spnego_msg);
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
