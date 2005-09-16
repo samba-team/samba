@@ -740,6 +740,10 @@ static NTSTATUS trans2_fileinfo_fill(struct smbsrv_request *req, struct smb_tran
 			}
 		}
 		return NT_STATUS_OK;
+		
+	case RAW_FILEINFO_UNIX_BASIC:
+	case RAW_FILEINFO_UNIX_LINK:
+		return NT_STATUS_INVALID_LEVEL;
 	}
 
 	return NT_STATUS_INVALID_LEVEL;
@@ -919,6 +923,17 @@ static NTSTATUS trans2_parse_sfileinfo(struct smbsrv_request *req,
 		CHECK_MIN_BLOB_SIZE(blob, 4);
 		st->mode_information.in.mode = IVAL(blob->data, 0);
 		return NT_STATUS_OK;
+
+	case RAW_SFILEINFO_UNIX_BASIC:
+	case RAW_SFILEINFO_UNIX_LINK:
+	case RAW_SFILEINFO_UNIX_HLINK:
+	case RAW_SFILEINFO_1023:
+	case RAW_SFILEINFO_1025:
+	case RAW_SFILEINFO_1029:
+	case RAW_SFILEINFO_1032:
+	case RAW_SFILEINFO_1039:
+	case RAW_SFILEINFO_1040:
+		return NT_STATUS_INVALID_LEVEL;
 	}
 
 	return NT_STATUS_INVALID_LEVEL;
