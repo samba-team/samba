@@ -294,7 +294,8 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 		attrs[j] = NULL;
 	}
 
-	count = ldb_search(ldb, NULL, 0, "dn=cn=rootDSE", attrs, &res);
+	count = ldb_search(ldb, ldb_dn_explode(local_ctx, "cn=rootDSE"), 0, 
+			   NULL, attrs, &res);
 	talloc_steal(local_ctx, res);
 
 	if (count == 1) {
