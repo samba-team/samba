@@ -103,7 +103,7 @@ WERROR _ntsvcs_get_device_reg_property( pipes_struct *p, NTSVCS_Q_GET_DEVICE_REG
 	rpcstr_pull(devicepath, q_u->devicepath.buffer, sizeof(devicepath), q_u->devicepath.uni_str_len*2, 0);
 
 	switch( q_u->property ) {
-	case DEVICE_REG_PROPERTY_DEVICENAME:
+	case DEV_REGPROP_DESC:
 		/* just parse the service name from the device path and then 
 		   lookup the display name */
 		if ( !(ptr = strrchr_m( devicepath, '\\' )) )
@@ -122,15 +122,16 @@ WERROR _ntsvcs_get_device_reg_property( pipes_struct *p, NTSVCS_Q_GET_DEVICE_REG
 			return WERR_GENERAL_FAILURE;
 		}
 		
-		r_u->type = REG_SZ;
+		r_u->unknown1 = 0x1;	/* always 1...tested using a remove device manager connection */
 		r_u->size = reg_init_regval_buffer( &r_u->value, val );
+		r_u->needed = r_u->size;
 
 		TALLOC_FREE(values);
 
 		break;
 		
 	default:
-		return W_ERROR(37);	/* undocumented but this is what Windows 2000 returns */
+		return WERR_CM_NO_SUCH_VALUE;
 	}
 
 	return WERR_OK;
@@ -142,6 +143,31 @@ WERROR _ntsvcs_get_device_reg_property( pipes_struct *p, NTSVCS_Q_GET_DEVICE_REG
 WERROR _ntsvcs_validate_device_instance( pipes_struct *p, NTSVCS_Q_VALIDATE_DEVICE_INSTANCE *q_u, NTSVCS_R_VALIDATE_DEVICE_INSTANCE *r_u )
 {
 	/* whatever dude */
+	return WERR_OK;
+}
+
+/********************************************************************
+********************************************************************/
+
+WERROR _ntsvcs_get_hw_profile_info( pipes_struct *p, NTSVCS_Q_GET_HW_PROFILE_INFO *q_u, NTSVCS_R_GET_HW_PROFILE_INFO *r_u )
+{
+	/* steal the incoming buffer */
+
+	r_u->buffer_size = q_u->buffer_size;
+	r_u->buffer = q_u->buffer;
+
+	/* Take the 5th Ammentment */
+
+	return WERR_CM_NO_MORE_HW_PROFILES;
+}
+
+/********************************************************************
+********************************************************************/
+
+WERROR _ntsvcs_hw_profile_flags( pipes_struct *p, NTSVCS_Q_HW_PROFILE_FLAGS *q_u, NTSVCS_R_HW_PROFILE_FLAGS *r_u )
+{	
+	/* whatever dude....no flags*/
+	
 	return WERR_OK;
 }
 

@@ -32,6 +32,10 @@ struct db_context {
 	struct db_record *(*fetch_locked)(struct db_context *db,
 					  TALLOC_CTX *mem_ctx,
 					  DATA_BLOB key);
+	int (*traverse)(struct db_context *db,
+			int (*f)(DATA_BLOB key, DATA_BLOB data,
+				 void *private_data),
+			void *private_data);
 	void *private_data;
 };
 

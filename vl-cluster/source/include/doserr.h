@@ -5,6 +5,7 @@
    Copyright (C) John H Terpstra              1996-2000
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    Copyright (C) Paul Ashton                  1998-2000
+   Copyright (C) Gerald (Jerry) Carter        2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -227,6 +228,12 @@
 #define WERR_INVALID_PRINT_MONITOR W_ERROR(ERRinvalidprintmonitor)
 #define WERR_PRINT_MONITOR_IN_USE W_ERROR(ERRprintmonitorinuse)
 #define WERR_PRINTER_HAS_JOBS_QUEUED W_ERROR(ERRprinterhasjobsqueued)
+
+/* Configuration Manager Errors */
+/* Basically Win32 errors meanings are specific to the \ntsvcs pipe */
+
+#define WERR_CM_NO_MORE_HW_PROFILES W_ERROR(35)
+#define WERR_CM_NO_SUCH_VALUE W_ERROR(37)
 
 
 /* DFS errors */

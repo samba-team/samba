@@ -32,6 +32,14 @@ static TDB_DATA blob2tdb(DATA_BLOB blob)
 	return result;
 }
 
+static DATA_BLOB tdb2blob(TDB_DATA data)
+{
+	DATA_BLOB result;
+	result.data = data.dptr;
+	result.length = data.dsize;
+	return result;
+}
+
 static int db_tdb_store(struct db_record *rec, DATA_BLOB data, int flag);
 static int db_tdb_delete(struct db_record *rec);
 
@@ -133,6 +141,34 @@ static int db_tdb_delete(struct db_record *rec)
 	return tdb_delete(ctx->tdb, blob2tdb(rec->key));
 }
 
+struct db_tdb_traverse_ctx {
+	struct db_context *db;
+	int (*f)(DATA_BLOB key, DATA_BLOB data, void *private_data);
+	void *private_data;
+};
+
+static int db_tdb_traverse_func(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
+				void *private_data)
+{
+	struct db_tdb_traverse_ctx *ctx = private_data;
+	return ctx->f(tdb2blob(kbuf), tdb2blob(dbuf), ctx->private_data);
+}
+
+static int db_tdb_traverse(struct db_context *db,
+			   int (*f)(DATA_BLOB key, DATA_BLOB data,
+				    void *private_data),
+			   void *private_data)
+{
+	struct db_tdb_ctx *db_ctx =
+		talloc_get_type_abort(db->private_data, struct db_tdb_ctx);
+	struct db_tdb_traverse_ctx ctx;
+
+	ctx.db = db;
+	ctx.f = f;
+	ctx.private_data = private_data;
+	return tdb_traverse(db_ctx->tdb, db_tdb_traverse_func, &ctx);
+}
+
 static int db_tdb_ctx_destr(void *p)
 {
 	struct db_tdb_ctx *ctx =
@@ -174,6 +210,7 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx, const char *name,
 
 	talloc_set_destructor(db_tdb, db_tdb_ctx_destr);
 	result->fetch_locked = db_tdb_fetch_locked;
+	result->traverse = db_tdb_traverse;
 	return result;
 
  fail:

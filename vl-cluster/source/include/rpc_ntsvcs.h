@@ -87,22 +87,61 @@ typedef struct {
 
 /**************************/
 
-#define DEVICE_REG_PROPERTY_DEVICENAME	1
+#define DEV_REGPROP_DESC	1
 
 typedef struct {
 	UNISTR2 devicepath;
 	uint32 property;
 	uint32 unknown2;
-	uint32 unknown3;
-	uint32 unknown4;
+	uint32 buffer_size1;
+	uint32 buffer_size2;
 	uint32 unknown5;
 } NTSVCS_Q_GET_DEVICE_REG_PROPERTY;
 
 typedef struct {
-	uint32 type;
+	uint32 unknown1;
 	REGVAL_BUFFER value;
 	uint32 size;
+	uint32 needed;
 	WERROR status;
 } NTSVCS_R_GET_DEVICE_REG_PROPERTY;
+
+
+/**************************/
+
+typedef struct {
+	uint32 index;
+	uint8 *buffer;
+	uint32 buffer_size;
+	uint32 unknown1;
+} NTSVCS_Q_GET_HW_PROFILE_INFO;
+
+typedef struct {
+	uint32 buffer_size;	/* the size (not included in the reply) 
+				   if just matched from the request */
+	uint8 *buffer;
+	WERROR status;
+} NTSVCS_R_GET_HW_PROFILE_INFO;
+
+
+/**************************/
+
+typedef struct {
+	uint32 unknown1;
+	UNISTR2 devicepath;
+	uint32 unknown2;
+	uint32 unknown3;
+	uint32 unknown4;
+	uint32 unknown5;
+	uint32 unknown6;
+	uint32 unknown7;
+} NTSVCS_Q_HW_PROFILE_FLAGS;
+
+typedef struct {
+	uint32 unknown1;
+	uint32 unknown2;
+	uint32 unknown3;
+	WERROR status;
+} NTSVCS_R_HW_PROFILE_FLAGS;
 
 #endif /* _RPC_NTSVCS_H */

@@ -22,6 +22,10 @@
 
 struct db_file_ctx {
 	const char *dirname;
+
+	/* We only support one locked record at a time -- everything else
+	 * would lead to a potential deadlock anyway! */
+	struct db_record *locked_record;
 };
 
 struct db_locked_file {
@@ -29,6 +33,7 @@ struct db_locked_file {
 	uint8 hash;
 	const char *name;
 	const char *path;
+	struct db_file_ctx *parent;
 };
 
 /* Copy from statcache.c... */
@@ -47,6 +52,8 @@ static int db_locked_file_destr(void *p)
 {
 	struct db_locked_file *data =
 		talloc_get_type_abort(p, struct db_locked_file);
+
+	data->parent->locked_record = NULL;
 
 	if (close(data->fd) != 0) {
 		DEBUG(3, ("close failed: %s\n", strerror(errno)));
@@ -72,6 +79,8 @@ static struct db_record *db_file_fetch_locked(struct db_context *db,
 	ssize_t nread;
 	int ret;
 
+	SMB_ASSERT(ctx->locked_record == NULL);
+
  again:
 	result = TALLOC_P(mem_ctx, struct db_record);
 	if (result == NULL) {
@@ -96,6 +105,7 @@ static struct db_record *db_file_fetch_locked(struct db_context *db,
 		return NULL;
 	}
 
+	/* Cut to 8 bits */
 	file->hash = fsh(key.data, key.length);
 	file->name = hex_encode(file, key.data, key.length);
 	if (file->name == NULL) {
@@ -104,7 +114,6 @@ static struct db_record *db_file_fetch_locked(struct db_context *db,
 		return NULL;
 	}
 
-	/* Cut to 8 bits */
 	file->path = talloc_asprintf(file, "%s/%2.2X/%s", ctx->dirname,
 				     file->hash, file->name);
 	if (file->path == NULL) {
@@ -175,6 +184,9 @@ static struct db_record *db_file_fetch_locked(struct db_context *db,
 		}
 	}
 
+	ctx->locked_record = result;
+	file->parent = talloc_reference(file, ctx);
+
 	return result;
 }
 
@@ -208,17 +220,106 @@ static int db_file_delete(struct db_record *rec)
 		talloc_get_type_abort(rec->private_data,
 				      struct db_locked_file);
 
-#if 0
 	if (unlink(file->path) != 0) {
-#else
-	if (sys_ftruncate(file->fd, 0) != 0) {
-#endif
 		DEBUG(3, ("unlink(%s) failed: %s\n", file->path,
 			  strerror(errno)));
 		return -1;
 	}
 
 	return 0;
+}
+
+static int db_file_traverse(struct db_context *db,
+			    int (*fn)(DATA_BLOB key, DATA_BLOB value,
+				      void *private_data),
+			    void *private_data)
+{
+	struct db_file_ctx *ctx = talloc_get_type_abort(db->private_data,
+							struct db_file_ctx);
+	TALLOC_CTX *mem_ctx = talloc_init("traversal %s\n", ctx->dirname);
+	
+	int i;
+	int count = 0;
+
+	for (i=0; i<256; i++) {
+		const char *dirname = talloc_asprintf(mem_ctx, "%s/%2.2X",
+						      ctx->dirname, i);
+		DIR *dir;
+		struct dirent *dirent;
+
+		if (dirname == NULL) {
+			DEBUG(0, ("talloc failed\n"));
+			talloc_free(mem_ctx);
+			return -1;
+		}
+
+		dir = opendir(dirname);
+		if (dir == NULL) {
+			DEBUG(3, ("Could not open dir %s: %s\n", dirname,
+				  strerror(errno)));
+			talloc_free(mem_ctx);
+			return -1;
+		}
+
+		while ((dirent = readdir(dir)) != NULL) {
+			DATA_BLOB key, data;
+			struct db_record *rec;
+
+			if ((dirent->d_name[0] == '.') &&
+			    ((dirent->d_name[1] == '\0') ||
+			     ((dirent->d_name[1] == '.') &&
+			      (dirent->d_name[2] == '\0')))) {
+				continue;
+			}
+
+			key = strhex_to_data_blob(mem_ctx, dirent->d_name);
+
+			if (key.data == NULL) {
+				DEBUG(5, ("strhex_to_data_blob failed\n"));
+				continue;
+			}
+
+			if ((ctx->locked_record != NULL) &&
+			    (key.length == ctx->locked_record->key.length) &&
+			    (memcmp(key.data, ctx->locked_record->key.data,
+				    key.length) == 0)) {
+				count += 1;
+				if (fn(key, ctx->locked_record->value,
+				       private_data) != 0) {
+					talloc_free(mem_ctx);
+					closedir(dir);
+					return count;
+				}
+			}
+
+			rec = db_file_fetch_locked(db, mem_ctx, key);
+			if (rec == NULL) {
+				/* Someone might have deleted it */
+				continue;
+			}
+
+			if (rec->value.data == NULL) {
+				talloc_free(rec);
+				continue;
+			}
+
+			data.length = rec->value.length;
+			data.data = talloc_steal(mem_ctx, rec->value.data);
+			talloc_free(rec);
+			count += 1;
+
+			if (fn(key, data, private_data) != 0) {
+				talloc_free(mem_ctx);
+				closedir(dir);
+				return count;
+			}
+		}
+
+		closedir(dir);
+	}
+
+	talloc_free(mem_ctx);
+	return count;
 }
 
 struct db_context *db_open_file(TALLOC_CTX *mem_ctx, const char *name,
@@ -235,6 +336,7 @@ struct db_context *db_open_file(TALLOC_CTX *mem_ctx, const char *name,
 	}
 
 	result->fetch_locked = db_file_fetch_locked;
+	result->traverse = db_file_traverse;
 
 	result->private_data = ctx = TALLOC_P(result, struct db_file_ctx);
 	if (ctx == NULL) {
@@ -242,6 +344,7 @@ struct db_context *db_open_file(TALLOC_CTX *mem_ctx, const char *name,
 		goto fail;
 	}
 
+	ctx->locked_record = NULL;
 	ctx->dirname = talloc_strdup(ctx, name);
 	if (ctx->dirname == NULL) {
 		DEBUG(0, ("talloc failed\n"));
@@ -251,9 +354,9 @@ struct db_context *db_open_file(TALLOC_CTX *mem_ctx, const char *name,
 	if (open_flags & O_CREAT) {
 		int ret, i;
 
-		mode |= (mode & S_IRUSR) ? 0 : S_IXUSR;
-		mode |= (mode & S_IRGRP) ? 0 : S_IXGRP;
-		mode |= (mode & S_IROTH) ? 0 : S_IXOTH;
+		mode |= (mode & S_IRUSR) ? S_IXUSR : 0;
+		mode |= (mode & S_IRGRP) ? S_IXGRP : 0;
+		mode |= (mode & S_IROTH) ? S_IXOTH : 0;
 
 		ret = mkdir(name, mode);
 		if ((ret != 0) && (errno != EEXIST)) {

@@ -4651,6 +4651,11 @@ static BOOL run_error_map_extract(int dummy) {
 	return True;
 }
 
+static BOOL run_dbwrap(int dummy)
+{
+	return True;
+}
+
 static double create_procs(BOOL (*fn)(int), BOOL *result)
 {
 	int i, status;
@@ -4781,6 +4786,7 @@ static struct {
 	{"RW2",  run_readwritemulti, FLAG_MULTIPROC},
 	{"RW3",  run_readwritelarge, 0},
 	{"OPEN", run_opentest, 0},
+	{"DBWRAP", run_dbwrap, FLAG_MULTIPROC},
 #if 1
 	{"OPENATTR", run_openattrtest, 0},
 #endif

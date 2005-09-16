@@ -990,8 +990,7 @@ BOOL set_delete_on_close(files_struct *fsp, BOOL delete_on_close)
 	return True;
 }
 
-static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, 
-                       void *state)
+static int traverse_fn(DATA_BLOB key, DATA_BLOB dbuf, void *state)
 {
 	struct locking_data *data;
 	struct share_mode_entry *shares;
@@ -1000,12 +999,12 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	void (*traverse_callback)(struct share_mode_entry *, char *) = state;
 
 	/* Ensure this is a locking_key record. */
-	if (kbuf.dsize != sizeof(struct locking_key))
+	if (key.length != sizeof(struct locking_key))
 		return 0;
 
-	data = (struct locking_data *)dbuf.dptr;
-	shares = (struct share_mode_entry *)(dbuf.dptr + sizeof(*data));
-	name = dbuf.dptr + sizeof(*data) +
+	data = (struct locking_data *)dbuf.data;
+	shares = (struct share_mode_entry *)(dbuf.data + sizeof(*data));
+	name = dbuf.data + sizeof(*data) +
 		data->u.s.num_share_mode_entries*sizeof(*shares);
 
 	for (i=0;i<data->u.s.num_share_mode_entries;i++) {
@@ -1019,12 +1018,9 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf,
  share mode system.
 ********************************************************************/
 
-int share_mode_forall(void (*fn)(struct share_mode_entry *, char *))
+int share_mode_forall(void (*fn)(const struct share_mode_entry *, char *))
 {
-	return 0;
-#if 0
-	if (!tdb)
+	if (db == NULL)
 		return 0;
-	return tdb_traverse(tdb, traverse_fn, fn);
-#endif
+	return db->traverse(db, traverse_fn, fn);
 }

@@ -235,9 +235,9 @@ BOOL ntsvcs_io_q_get_device_reg_property(const char *desc, NTSVCS_Q_GET_DEVICE_R
 		return False;
 	if ( !prs_uint32("unknown2", ps, depth, &q_u->unknown2) )
 		return False;
-	if ( !prs_uint32("unknown3", ps, depth, &q_u->unknown3) )
+	if ( !prs_uint32("buffer_size1", ps, depth, &q_u->buffer_size1) )
 		return False;
-	if ( !prs_uint32("unknown4", ps, depth, &q_u->unknown4) )
+	if ( !prs_uint32("buffer_size2", ps, depth, &q_u->buffer_size2) )
 		return False;
 	if ( !prs_uint32("unknown5", ps, depth, &q_u->unknown5) )
 		return False;
@@ -260,7 +260,7 @@ BOOL ntsvcs_io_r_get_device_reg_property(const char *desc, NTSVCS_R_GET_DEVICE_R
 	if ( !prs_align(ps) )
 		return False;
 
-	if ( !prs_uint32("type", ps, depth, &r_u->type) )
+	if ( !prs_uint32("unknown1", ps, depth, &r_u->unknown1) )
 		return False;
 
 	if ( !smb_io_regval_buffer("value", ps, depth, &r_u->value) )
@@ -270,7 +270,8 @@ BOOL ntsvcs_io_r_get_device_reg_property(const char *desc, NTSVCS_R_GET_DEVICE_R
 
 	if ( !prs_uint32("size", ps, depth, &r_u->size) )
 		return False;
-	if ( !prs_uint32("size", ps, depth, &r_u->size) )
+
+	if ( !prs_uint32("needed", ps, depth, &r_u->needed) )
 		return False;
 
 	if(!prs_werror("status", ps, depth, &r_u->status))
@@ -278,5 +279,137 @@ BOOL ntsvcs_io_r_get_device_reg_property(const char *desc, NTSVCS_R_GET_DEVICE_R
 
 	return True;
 }
+
+/*******************************************************************
+********************************************************************/
+
+BOOL ntsvcs_io_q_get_hw_profile_info(const char *desc, NTSVCS_Q_GET_HW_PROFILE_INFO *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "ntsvcs_io_q_get_hw_profile_info");
+	depth++;
+	
+	if(!prs_align(ps))
+		return False;
+
+	if ( !prs_uint32("index", ps, depth, &q_u->index) )
+		return False;
+
+	q_u->buffer_size = 0x000000a8;
+
+	if ( UNMARSHALLING(ps) )
+		q_u->buffer = TALLOC_ARRAY(get_talloc_ctx(), uint8, q_u->buffer_size );
+
+	if ( !prs_uint8s(True, "buffer", ps, depth, q_u->buffer, q_u->buffer_size) )
+		return False;
+
+	if ( !prs_uint32("buffer_size", ps, depth, &q_u->buffer_size) )
+		return False;
+
+	if ( !prs_uint32("unknown1", ps, depth, &q_u->unknown1) )
+		return False;
+	
+	return True;
+
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL ntsvcs_io_r_get_hw_profile_info(const char *desc, NTSVCS_R_GET_HW_PROFILE_INFO *r_u, prs_struct *ps, int depth)
+{
+	if ( !r_u )
+		return False;
+
+	prs_debug(ps, depth, desc, "ntsvcs_io_r_get_device_reg_property");
+	depth++;
+
+	if ( !prs_align(ps) )
+		return False;
+
+	if ( UNMARSHALLING(ps) )
+		r_u->buffer = TALLOC_ARRAY(get_talloc_ctx(), uint8, r_u->buffer_size );
+
+	if ( !prs_uint8s(True, "buffer", ps, depth, r_u->buffer, r_u->buffer_size) )
+		return False;
+
+	if(!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL ntsvcs_io_q_hw_profile_flags(const char *desc, NTSVCS_Q_HW_PROFILE_FLAGS *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "ntsvcs_io_q_hw_profile_flags");
+	depth++;
+	
+	if(!prs_align(ps))
+		return False;
+
+	if ( !prs_uint32("unknown1", ps, depth, &q_u->unknown1) )
+		return False;
+		
+
+	if ( !prs_io_unistr2("devicepath", ps, depth, &q_u->devicepath) )
+		return False;
+	if( !prs_align(ps) )
+		return False;
+
+	if ( !prs_uint32("unknown2", ps, depth, &q_u->unknown2) )
+		return False;
+	if ( !prs_uint32("unknown3", ps, depth, &q_u->unknown3) )
+		return False;
+	if ( !prs_uint32("unknown4", ps, depth, &q_u->unknown4) )
+		return False;
+	if ( !prs_uint32("unknown5", ps, depth, &q_u->unknown5) )
+		return False;
+	if ( !prs_uint32("unknown6", ps, depth, &q_u->unknown6) )
+		return False;
+	if ( !prs_uint32("unknown7", ps, depth, &q_u->unknown7) )
+		return False;
+
+	if ( !prs_uint32("unknown1", ps, depth, &q_u->unknown1) )
+		return False;
+	
+	return True;
+
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL ntsvcs_io_r_hw_profile_flags(const char *desc, NTSVCS_R_HW_PROFILE_FLAGS *r_u, prs_struct *ps, int depth)
+{
+	if ( !r_u )
+		return False;
+
+	prs_debug(ps, depth, desc, "ntsvcs_io_r_hw_profile_flags");
+	depth++;
+
+	if ( !prs_align(ps) )
+		return False;
+
+	if ( !prs_uint32("unknown1", ps, depth, &r_u->unknown1) )
+		return False;
+	if ( !prs_uint32("unknown2", ps, depth, &r_u->unknown2) )
+		return False;
+	if ( !prs_uint32("unknown3", ps, depth, &r_u->unknown3) )
+		return False;
+	if(!prs_werror("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+
 
 
