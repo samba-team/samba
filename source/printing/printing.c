@@ -731,7 +731,7 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 		/* if a job is not spooled and the process doesn't
                    exist then kill it. This cleans up after smbd
                    deaths */
-		if (!process_exists(pjob.pid)) {
+		if (!process_exists_by_pid(pjob.pid)) {
 			DEBUG(10,("traverse_fn_delete: pjob %u deleted due to !process_exists (%u)\n",
 						(unsigned int)jobid, (unsigned int)pjob.pid ));
 			pjob_delete(ts->sharename, jobid);
@@ -834,7 +834,7 @@ static pid_t get_updating_pid(const char *sharename)
 	updating_pid = IVAL(data.dptr, 0);
 	SAFE_FREE(data.dptr);
 
-	if (process_exists(updating_pid))
+	if (process_exists_by_pid(updating_pid))
 		return updating_pid;
 
 	return (pid_t)-1;
@@ -1287,7 +1287,8 @@ static void print_queue_update_with_lock( const char *sharename,
 /****************************************************************************
 this is the receive function of the background lpq updater
 ****************************************************************************/
-static void print_queue_receive(int msg_type, pid_t src, void *buf, size_t msglen)
+static void print_queue_receive(int msg_type, struct process_id src,
+				void *buf, size_t msglen)
 {
 	fstring sharename;
 	pstring lpqcommand;
@@ -1451,7 +1452,7 @@ static void print_queue_update(int snum, BOOL force)
 	/* finally send the message */
 	
 	become_root();
-	message_send_pid(background_lpq_updater_pid,
+	message_send_pid(pid_to_procid(background_lpq_updater_pid),
 		 MSG_PRINTER_UPDATE, buffer, len, False);
 	unbecome_root();
 

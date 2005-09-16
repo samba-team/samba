@@ -55,7 +55,7 @@ struct smb_share_mode_entry {
 	uint32_t access_mask;
 	struct timeval open_time;
 	uint32_t file_id;
-	pid_t pid;
+	struct process_id pid;
 };
 
 /*

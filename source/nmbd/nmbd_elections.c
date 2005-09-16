@@ -374,7 +374,8 @@ yet registered on subnet %s\n", nmb_namestr(&nmbname), subrec->subnet_name ));
  Process a internal Samba message forcing an election.
 ***************************************************************************/
 
-void nmbd_message_election(int msg_type, pid_t src, void *buf, size_t len)
+void nmbd_message_election(int msg_type, struct process_id src,
+			   void *buf, size_t len)
 {
 	struct subnet_record *subrec;
 

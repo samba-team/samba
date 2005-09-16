@@ -82,4 +82,8 @@
 #define FLAG_MSG_PRINT_NOTIFY	0x0008
 #define FLAG_MSG_PRINT_GENERAL	0x0010
 
+struct process_id {
+	pid_t pid;
+};
+
 #endif

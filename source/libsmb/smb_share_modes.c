@@ -122,7 +122,7 @@ struct locking_data {
 
 static int share_mode_entry_equal(const struct smb_share_mode_entry *e_entry, const struct share_mode_entry *entry)
 {
-	return (e_entry->pid == entry->pid &&
+	return (procid_equal(&e_entry->pid, &entry->pid) &&
 		e_entry->file_id == (uint32_t)entry->share_file_id &&
 		e_entry->open_time.tv_sec == entry->time.tv_sec &&
 		e_entry->open_time.tv_usec == entry->time.tv_usec &&
@@ -199,10 +199,10 @@ int smb_get_share_mode_entries(struct smbdb_ctx *db_ctx,
 	for (i = 0; i < num_share_modes; i++) {
 		struct share_mode_entry *share = &shares[i];
 		struct smb_share_mode_entry *sme = &list[list_num];
-		pid_t pid = share->pid;
+		struct process_id pid = share->pid;
 
 		/* Check this process really exists. */
-		if (kill(pid, 0) == -1 && (errno == ESRCH)) {
+		if (kill(procid_to_pid(&pid), 0) == -1 && (errno == ESRCH)) {
 			continue; /* No longer exists. */
 		}
 
@@ -364,10 +364,10 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 	num_share_modes = 0;
 	for (i = 0; i < orig_num_share_modes; i++) {
 		struct share_mode_entry *share = &shares[i];
-		pid_t pid = share->pid;
+		struct process_id pid = share->pid;
 
 		/* Check this process really exists. */
-		if (kill(pid, 0) == -1 && (errno == ESRCH)) {
+		if (kill(procid_to_pid(&pid), 0) == -1 && (errno == ESRCH)) {
 			continue; /* No longer exists. */
 		}
 
@@ -439,10 +439,10 @@ int smb_change_share_mode_entry(struct smbdb_ctx *db_ctx,
 
 	for (i = 0; i < num_share_modes; i++) {
 		struct share_mode_entry *share = &shares[i];
-		pid_t pid = share->pid;
+		struct process_id pid = share->pid;
 
 		/* Check this process really exists. */
-		if (kill(pid, 0) == -1 && (errno == ESRCH)) {
+		if (kill(pid.pid, 0) == -1 && (errno == ESRCH)) {
 			continue; /* No longer exists. */
 		}
 

@@ -204,7 +204,7 @@ static void sigchld_handler(int signum)
 }
 
 /* React on 'smbcontrol winbindd reload-config' in the same way as on SIGHUP*/
-static void msg_reload_services(int msg_type, pid_t src, void *buf, size_t len)
+static void msg_reload_services(int msg_type, struct process_id src, void *buf, size_t len)
 {
         /* Flush various caches */
 	flush_caches();
@@ -212,7 +212,7 @@ static void msg_reload_services(int msg_type, pid_t src, void *buf, size_t len)
 }
 
 /* React on 'smbcontrol winbindd shutdown' in the same way as on SIGTERM*/
-static void msg_shutdown(int msg_type, pid_t src, void *buf, size_t len)
+static void msg_shutdown(int msg_type, struct process_id src, void *buf, size_t len)
 {
 	terminate();
 }
@@ -890,7 +890,7 @@ static void process_loop(void)
 
 		DEBUG(3, ("got SIGHUP\n"));
 
-		msg_reload_services(MSG_SMB_CONF_UPDATED, (pid_t) 0, NULL, 0);
+		msg_reload_services(MSG_SMB_CONF_UPDATED, pid_to_procid(0), NULL, 0);
 		do_sighup = False;
 	}
 

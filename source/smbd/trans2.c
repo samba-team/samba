@@ -2788,7 +2788,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 
 			delete_pending =
 				get_delete_on_close_flag(sbuf.st_dev,
-							 sbuf.st_ino);
+							 sbuf.st_ino,
+							 fname);
 		} else {
 			/*
 			 * Original code - this is an open file.
@@ -2803,7 +2804,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			pos = fsp->fh->position_information;
 			delete_pending = 
 				get_delete_on_close_flag(sbuf.st_dev,
-							 sbuf.st_ino);
+							 sbuf.st_ino,
+							 fname);
 			access_mask = fsp->access_mask;
 		}
 	} else {
@@ -2846,7 +2848,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		}
 
 		delete_pending = get_delete_on_close_flag(sbuf.st_dev,
-							  sbuf.st_ino);
+							  sbuf.st_ino,
+							  fname);
 		if (delete_pending) {
 			return ERROR_NT(NT_STATUS_DELETE_PENDING);
 		}
@@ -3454,95 +3457,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 }
 
 /****************************************************************************
- Deal with the internal needs of setting the delete on close flag. Note that
- as the tdb locking is recursive, it is safe to call this from within 
- open_file_shared. JRA.
-****************************************************************************/
-
-NTSTATUS can_set_delete_on_close(files_struct *fsp, BOOL delete_on_close,
-				 uint32 dosmode)
-{
-	if (!delete_on_close) {
-		return NT_STATUS_OK;
-	}
-
-	/*
-	 * Only allow delete on close for writable files.
-	 */
-
-	if ((dosmode & aRONLY) &&
-	    !lp_delete_readonly(SNUM(fsp->conn))) {
-		DEBUG(10,("can_set_delete_on_close: file %s delete on close "
-			  "flag set but file attribute is readonly.\n",
-			  fsp->fsp_name ));
-		return NT_STATUS_CANNOT_DELETE;
-	}
-
-	/*
-	 * Only allow delete on close for writable shares.
-	 */
-
-	if (!CAN_WRITE(fsp->conn)) {
-		DEBUG(10,("can_set_delete_on_close: file %s delete on "
-			  "close flag set but write access denied on share.\n",
-			  fsp->fsp_name ));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	/*
-	 * Only allow delete on close for files/directories opened with delete
-	 * intent.
-	 */
-
-	if (!(fsp->access_mask & DELETE_ACCESS)) {
-		DEBUG(10,("can_set_delete_on_close: file %s delete on "
-			  "close flag set but delete access denied.\n",
-			  fsp->fsp_name ));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	return NT_STATUS_OK;
-}
-
-/****************************************************************************
- Sets the delete on close flag over all share modes on this file.
- Modify the share mode entry for all files open
- on this device and inode to tell other smbds we have
- changed the delete on close flag. This will be noticed
- in the close code, the last closer will delete the file
- if flag is set.
-****************************************************************************/
-
-NTSTATUS set_delete_on_close(files_struct *fsp, BOOL delete_on_close)
-{
-	struct share_mode_lock *lck;
-	NTSTATUS result = NT_STATUS_OK;
-
-	DEBUG(10,("set_delete_on_close: %s delete on close flag for "
-		  "fnum = %d, file %s\n",
-		  delete_on_close ? "Adding" : "Removing", fsp->fnum,
-		  fsp->fsp_name ));
-
-	if (fsp->is_directory || fsp->is_stat)
-		return NT_STATUS_OK;
-
-	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode);
-	if (lck == NULL) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (!modify_delete_flag(lck, delete_on_close)) {
-		DEBUG(0,("set_delete_on_close: failed to change delete "
-			 "on close flag for file %s\n",
-			 fsp->fsp_name ));
-		result = NT_STATUS_ACCESS_DENIED;
-	}
-
-	talloc_free(lck);
-	return result;
-}
-
-/****************************************************************************
  Set a hard link (called by UNIX extensions and by NT rename with HARD link
  code.
 ****************************************************************************/
@@ -3996,9 +3910,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			}
 
 			/* The set is across all open files on this dev/inode pair. */
-			status =set_delete_on_close(fsp, delete_on_close);
-			if (!NT_STATUS_IS_OK(status)) {
-				return ERROR_NT(status);
+			if (!set_delete_on_close(fsp, delete_on_close)) {
+				return ERROR_NT(NT_STATUS_ACCESS_DENIED);
 			}
 
 			SSVAL(params,0,0);

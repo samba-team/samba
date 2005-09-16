@@ -969,7 +969,8 @@ static int net_ads_printer_info(int argc, const char **argv)
 	return 0;
 }
 
-void do_drv_upgrade_printer(int msg_type, pid_t src, void *buf, size_t len)
+void do_drv_upgrade_printer(int msg_type, struct process_id src,
+			    void *buf, size_t len)
 {
 	return;
 }

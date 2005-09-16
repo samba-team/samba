@@ -1074,7 +1074,8 @@ static BOOL notify2_unpack_msg( SPOOLSS_NOTIFY_MSG *msg, struct timeval *tv, voi
  Receive a notify2 message list
  ********************************************************************/
 
-static void receive_notify2_message_list(int msg_type, pid_t src, void *msg, size_t len)
+static void receive_notify2_message_list(int msg_type, struct process_id src,
+					 void *msg, size_t len)
 {
 	size_t 			msg_count, i;
 	char 			*buf = (char *)msg;
@@ -1175,7 +1176,8 @@ static BOOL srv_spoolss_drv_upgrade_printer(char* drivername)
 	DEBUG(10,("srv_spoolss_drv_upgrade_printer: Sending message about driver upgrade [%s]\n",
 		drivername));
 		
-	message_send_pid(sys_getpid(), MSG_PRINTER_DRVUPGRADE, drivername, len+1, False);
+	message_send_pid(pid_to_procid(sys_getpid()),
+			 MSG_PRINTER_DRVUPGRADE, drivername, len+1, False);
 
 	return True;
 }
@@ -1185,7 +1187,7 @@ static BOOL srv_spoolss_drv_upgrade_printer(char* drivername)
  over all printers, upgrading ones as necessary 
  **********************************************************************/
  
-void do_drv_upgrade_printer(int msg_type, pid_t src, void *buf, size_t len)
+void do_drv_upgrade_printer(int msg_type, struct process_id src, void *buf, size_t len)
 {
 	fstring drivername;
 	int snum;
@@ -1271,7 +1273,8 @@ static BOOL srv_spoolss_reset_printerdata(char* drivername)
 	DEBUG(10,("srv_spoolss_reset_printerdata: Sending message about resetting printerdata [%s]\n",
 		drivername));
 		
-	message_send_pid(sys_getpid(), MSG_PRINTERDATA_INIT_RESET, drivername, len+1, False);
+	message_send_pid(pid_to_procid(sys_getpid()),
+			 MSG_PRINTERDATA_INIT_RESET, drivername, len+1, False);
 
 	return True;
 }
@@ -1281,7 +1284,8 @@ static BOOL srv_spoolss_reset_printerdata(char* drivername)
  over all printers, resetting printer data as neessary 
  **********************************************************************/
  
-void reset_all_printerdata(int msg_type, pid_t src, void *buf, size_t len)
+void reset_all_printerdata(int msg_type, struct process_id src,
+			   void *buf, size_t len)
 {
 	fstring drivername;
 	int snum;
