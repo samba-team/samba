@@ -21,7 +21,7 @@ my $INPUT = {};
 my $mkfile = smb_build::config_mk::run_config_mk($INPUT, "main.mk");
 my $DEPEND = smb_build::input::check($INPUT, \%config::enabled);
 my $OUTPUT = output::create_output($DEPEND);
-makefile::create_makefile_in($OUTPUT, $mkfile, "Makefile.in");
+makefile::create_makefile($OUTPUT, $mkfile, "Makefile");
 smb_build_h::create_smb_build_h($OUTPUT, "include/smb_build.h");
 
 open DOTTY, ">samba4-deps.dot";

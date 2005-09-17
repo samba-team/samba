@@ -37,7 +37,7 @@ sub generate_shared_library($)
 		$lib->{LIBRARY_SONAME} = $lib->{LIBRARY_NAME}.".$lib->{MAJOR_VERSION}";
 		$lib->{LIBRARY_REALNAME} = $lib->{LIBRARY_SONAME}.".$lib->{MINOR_VERSION}.$lib->{RELEASE_VERSION}";
 		$lib->{TARGET} = "bin/lib$lib->{LIBRARY_REALNAME}";
-		@{$lib->{LINK_FLAGS}} = ("\@SONAMEFLAG\@$lib->{LIBRARY_SONAME}");
+		@{$lib->{LINK_FLAGS}} = ("\$(SONAMEFLAG)$lib->{LIBRARY_SONAME}");
 	}
 	$lib->{OUTPUT} = "-l".lc($lib->{NAME});
 }
