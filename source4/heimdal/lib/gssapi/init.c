@@ -35,6 +35,10 @@
 
 RCSID("$Id: init.c,v 1.7 2003/07/22 19:50:11 lha Exp $");
 
+#ifdef _SAMBA_BUILD_
+#include "auth/kerberos/krb5_init_context.h"
+#endif
+
 static HEIMDAL_MUTEX gssapi_krb5_context_mutex = HEIMDAL_MUTEX_INITIALIZER;
 static int created_key;
 static HEIMDAL_thread_key gssapi_context_key;
@@ -89,11 +93,35 @@ krb5_error_code
 gssapi_krb5_init (void)
 {
     krb5_error_code ret = 0;
+#ifdef _SAMBA_BUILD_
+    static struct smb_krb5_context *smb_krb5_context;
 
     HEIMDAL_MUTEX_lock(&gssapi_krb5_context_mutex);
 
-    if(gssapi_krb5_context == NULL)
+    if(smb_krb5_context == NULL) {
+	ret = smb_krb5_init_context(NULL, &smb_krb5_context);
+    }
+    if (ret == 0 && !created_key) {
+	HEIMDAL_key_create(&gssapi_context_key, 
+			   gssapi_destroy_thread_context,
+			   ret);
+	if (ret) {
+	    smb_krb5_free_context(smb_krb5_context);
+	    smb_krb5_context = NULL;
+	} else
+	    created_key = 1;
+    }
+    if (ret == 0) {
+	gssapi_krb5_context = smb_krb5_context->krb5_context;
+    }
+
+    HEIMDAL_MUTEX_unlock(&gssapi_krb5_context_mutex);
+#else 
+    HEIMDAL_MUTEX_lock(&gssapi_krb5_context_mutex);
+
+    if(gssapi_krb5_context == NULL) {
 	ret = krb5_init_context (&gssapi_krb5_context);
+    }
     if (ret == 0 && !created_key) {
 	HEIMDAL_key_create(&gssapi_context_key, 
 			   gssapi_destroy_thread_context,
@@ -106,6 +134,6 @@ gssapi_krb5_init (void)
     }
 
     HEIMDAL_MUTEX_unlock(&gssapi_krb5_context_mutex);
-
+#endif
     return ret;
 }
