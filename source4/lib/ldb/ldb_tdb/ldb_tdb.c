@@ -825,6 +825,19 @@ failed:
 	return -1;
 }
 
+static int ltdb_start_trans(struct ldb_module *module)
+{
+	/* TODO: implement transactions */
+
+	return 0;
+}
+
+static int ltdb_end_trans(struct ldb_module *module, int status)
+{
+	/* TODO: implement transactions */
+
+	return status;
+}
 
 /*
   return extended error information
@@ -840,16 +853,16 @@ static const char *ltdb_errstring(struct ldb_module *module)
 
 
 static const struct ldb_module_ops ltdb_ops = {
-	.name          = "tdb",
-	.search        = ltdb_search,
-	.search_bytree = ltdb_search_bytree,
-	.add_record    = ltdb_add,
-	.modify_record = ltdb_modify,
-	.delete_record = ltdb_delete,
-	.rename_record = ltdb_rename,
-	.named_lock    = ltdb_lock,
-	.named_unlock  = ltdb_unlock,
-	.errstring     = ltdb_errstring
+	.name              = "tdb",
+	.search            = ltdb_search,
+	.search_bytree     = ltdb_search_bytree,
+	.add_record        = ltdb_add,
+	.modify_record     = ltdb_modify,
+	.delete_record     = ltdb_delete,
+	.rename_record     = ltdb_rename,
+	.start_transaction = ltdb_start_trans,
+	.end_transaction   = ltdb_end_trans,
+	.errstring         = ltdb_errstring
 };
 
 
