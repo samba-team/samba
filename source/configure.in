@@ -84,6 +84,8 @@ dnl Remove -I/usr/include/? from CFLAGS and CPPFLAGS
 CFLAGS_REMOVE_USR_INCLUDE(CFLAGS)
 CFLAGS_REMOVE_USR_INCLUDE(CPPFLAGS)
 
+AC_SUBST(ac_default_prefix)
+
 echo "configure: creating config.pm"
 cat >config.pm<<CEOF
 # config.pm - Autogenerate by configure. DO NOT EDIT!
@@ -112,4 +114,5 @@ $SMB_INFO_SUBSYSTEMS
 $SMB_INFO_LIBRARIES
 CEOF
 
-AC_OUTPUT(Makefile,,[$PERL -Ibuild build/smb_build/main.pl])
+AC_OUTPUT_COMMANDS([$PERL -Ibuild build/smb_build/main.pl],[PERL="$PERL"])
+AC_OUTPUT

@@ -129,10 +129,10 @@ ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
 
 idl_full: pidl/lib/Parse/Pidl/IDL.pm
-	@CPP="$(CPP)" PERL="$(PERL)" script/build_idl.sh FULL @PIDL_ARGS@
+	@CPP="$(CPP)" PERL="$(PERL)" script/build_idl.sh FULL $(PIDL_ARGS)
 
 idl: pidl/lib/Parse/Pidl/IDL.pm
-	@CPP="$(CPP)" PERL="$(PERL)" script/build_idl.sh PARTIAL @PIDL_ARGS@
+	@CPP="$(CPP)" PERL="$(PERL)" script/build_idl.sh PARTIAL $(PIDL_ARGS)
 
 pidl/lib/Parse/Pidl/IDL.pm: pidl/idl.yp
 	-$(YAPP) -s -m 'Parse::Pidl::IDL' -o pidl/lib/Parse/Pidl/IDL.pm pidl/idl.yp 
