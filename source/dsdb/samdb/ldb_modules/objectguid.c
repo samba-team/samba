@@ -143,16 +143,16 @@ static int objectguid_rename_record(struct ldb_module *module, const struct ldb_
 	return ldb_next_rename_record(module, olddn, newdn);
 }
 
-static int objectguid_lock(struct ldb_module *module, const char *lockname)
+static int objectguid_start_trans(struct ldb_module *module)
 {
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectguid_lock\n");
-	return ldb_next_named_lock(module, lockname);
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectguid_start_trans\n");
+	return ldb_next_start_trans(module);
 }
 
-static int objectguid_unlock(struct ldb_module *module, const char *lockname)
+static int objectguid_end_trans(struct ldb_module *module, int status)
 {
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectguid_unlock\n");
-	return ldb_next_named_unlock(module, lockname);
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectguid_end_trans\n");
+	return ldb_next_end_trans(module, status);
 }
 
 /* return extended error information */
@@ -187,8 +187,8 @@ static const struct ldb_module_ops objectguid_ops = {
 	.modify_record = objectguid_modify_record,
 	.delete_record = objectguid_delete_record,
 	.rename_record = objectguid_rename_record,
-	.named_lock    = objectguid_lock,
-	.named_unlock  = objectguid_unlock,
+	.start_transaction = objectguid_start_trans,
+	.end_transaction = objectguid_end_trans,
 	.errstring     = objectguid_errstring
 };
 
