@@ -5,7 +5,6 @@
 
 package Parse::Pidl::Samba::TDR;
 use Parse::Pidl::Util qw(has_property ParseExpr is_constant);
-use Data::Dumper;
 
 use strict;
 
