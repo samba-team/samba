@@ -22,8 +22,8 @@
 #define __FILEDB_H__
 
 struct db_record {
-	DATA_BLOB key, value;
-	int (*store)(struct db_record *rec, DATA_BLOB data, int flag);
+	TDB_DATA key, value;
+	int (*store)(struct db_record *rec, TDB_DATA data, int flag);
 	int (*delete_rec)(struct db_record *rec);
 	void *private_data;
 };
@@ -31,9 +31,9 @@ struct db_record {
 struct db_context {
 	struct db_record *(*fetch_locked)(struct db_context *db,
 					  TALLOC_CTX *mem_ctx,
-					  DATA_BLOB key);
+					  TDB_DATA key);
 	int (*traverse)(struct db_context *db,
-			int (*f)(DATA_BLOB key, DATA_BLOB data,
+			int (*f)(TDB_DATA key, TDB_DATA data,
 				 void *private_data),
 			void *private_data);
 	void *private_data;

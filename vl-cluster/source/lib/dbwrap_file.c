@@ -63,12 +63,12 @@ static int db_locked_file_destr(void *p)
 	return 0;
 }
 
-static int db_file_store(struct db_record *rec, DATA_BLOB data, int flag);
+static int db_file_store(struct db_record *rec, TDB_DATA data, int flag);
 static int db_file_delete(struct db_record *rec);
 
 static struct db_record *db_file_fetch_locked(struct db_context *db,
 					      TALLOC_CTX *mem_ctx,
-					      DATA_BLOB key)
+					      TDB_DATA key)
 {
 	struct db_file_ctx *ctx = talloc_get_type_abort(db->private_data,
 							struct db_file_ctx);
@@ -98,16 +98,17 @@ static struct db_record *db_file_fetch_locked(struct db_context *db,
 		return NULL;
 	}
 
-	result->key = data_blob_talloc(result, key.data, key.length);
-	if (result->key.data == NULL) {
+	result->key.dsize = key.dsize;
+	result->key.dptr = talloc_memdup(result, key.dptr, key.dsize);
+	if (result->key.dptr == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		talloc_free(result);
 		return NULL;
 	}
 
 	/* Cut to 8 bits */
-	file->hash = fsh(key.data, key.length);
-	file->name = hex_encode(file, key.data, key.length);
+	file->hash = fsh(key.dptr, key.dsize);
+	file->name = hex_encode(file, key.dptr, key.dsize);
 	if (file->name == NULL) {
 		DEBUG(0, ("hex_encode failed\n"));
 		talloc_free(result);
@@ -162,22 +163,22 @@ static struct db_record *db_file_fetch_locked(struct db_context *db,
 		goto again;
 	}
 
-	result->value.length = 0;
-	result->value.data = NULL;
+	result->value.dsize = 0;
+	result->value.dptr = NULL;
 
 	if (statbuf.st_size != 0) {
-		result->value.length = statbuf.st_size;
-		result->value.data = TALLOC_ARRAY(result, char,
+		result->value.dsize = statbuf.st_size;
+		result->value.dptr = TALLOC_ARRAY(result, char,
 						  statbuf.st_size);
-		if (result->value.data == NULL) {
+		if (result->value.dptr == NULL) {
 			DEBUG(1, ("talloc failed\n"));
 			talloc_free(result);
 			return NULL;
 		}
 
-		nread = read_data(file->fd, result->value.data,
-				  result->value.length);
-		if (nread != result->value.length) {
+		nread = read_data(file->fd, result->value.dptr,
+				  result->value.dsize);
+		if (nread != result->value.dsize) {
 			DEBUG(3, ("read_data failed: %s\n", strerror(errno)));
 			talloc_free(result);
 			return NULL;
@@ -190,7 +191,7 @@ static struct db_record *db_file_fetch_locked(struct db_context *db,
 	return result;
 }
 
-static int db_file_store(struct db_record *rec, DATA_BLOB data, int flag)
+static int db_file_store(struct db_record *rec, TDB_DATA data, int flag)
 {
 	struct db_locked_file *file =
 		talloc_get_type_abort(rec->private_data,
@@ -201,12 +202,12 @@ static int db_file_store(struct db_record *rec, DATA_BLOB data, int flag)
 		return -1;
 	}
 
-	if (write_data(file->fd, data.data, data.length) != data.length) {
+	if (write_data(file->fd, data.dptr, data.dsize) != data.dsize) {
 		DEBUG(3, ("write_data failed: %s\n", strerror(errno)));
 		return -1;
 	}
 
-	if (sys_ftruncate(file->fd, data.length) != 0) {
+	if (sys_ftruncate(file->fd, data.dsize) != 0) {
 		DEBUG(3, ("sys_ftruncate failed: %s\n", strerror(errno)));
 		return -1;
 	}
@@ -230,7 +231,7 @@ static int db_file_delete(struct db_record *rec)
 }
 
 static int db_file_traverse(struct db_context *db,
-			    int (*fn)(DATA_BLOB key, DATA_BLOB value,
+			    int (*fn)(TDB_DATA key, TDB_DATA value,
 				      void *private_data),
 			    void *private_data)
 {
@@ -262,7 +263,8 @@ static int db_file_traverse(struct db_context *db,
 		}
 
 		while ((dirent = readdir(dir)) != NULL) {
-			DATA_BLOB key, data;
+			DATA_BLOB keyblob;
+			TDB_DATA key, data;
 			struct db_record *rec;
 
 			if ((dirent->d_name[0] == '.') &&
@@ -272,17 +274,19 @@ static int db_file_traverse(struct db_context *db,
 				continue;
 			}
 
-			key = strhex_to_data_blob(mem_ctx, dirent->d_name);
-
-			if (key.data == NULL) {
+			keyblob = strhex_to_data_blob(mem_ctx, dirent->d_name);
+			if (keyblob.data == NULL) {
 				DEBUG(5, ("strhex_to_data_blob failed\n"));
 				continue;
 			}
 
+			key.dptr = keyblob.data;
+			key.dsize = keyblob.length;
+
 			if ((ctx->locked_record != NULL) &&
-			    (key.length == ctx->locked_record->key.length) &&
-			    (memcmp(key.data, ctx->locked_record->key.data,
-				    key.length) == 0)) {
+			    (key.dsize == ctx->locked_record->key.dsize) &&
+			    (memcmp(key.dptr, ctx->locked_record->key.dptr,
+				    key.dsize) == 0)) {
 				count += 1;
 				if (fn(key, ctx->locked_record->value,
 				       private_data) != 0) {
@@ -298,13 +302,13 @@ static int db_file_traverse(struct db_context *db,
 				continue;
 			}
 
-			if (rec->value.data == NULL) {
+			if (rec->value.dptr == NULL) {
 				talloc_free(rec);
 				continue;
 			}
 
-			data.length = rec->value.length;
-			data.data = talloc_steal(mem_ctx, rec->value.data);
+			data.dsize = rec->value.dsize;
+			data.dptr = talloc_steal(mem_ctx, rec->value.dptr);
 			talloc_free(rec);
 			count += 1;
 

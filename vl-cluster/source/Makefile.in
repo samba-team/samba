@@ -160,7 +160,8 @@ MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(IDMAP_MODULES) $(CHARSE
 
 TDBBASE_OBJ = tdb/tdb.o tdb/spinlock.o
 
-TDB_OBJ = $(TDBBASE_OBJ) tdb/tdbutil.o tdb/tdbback.o
+TDB_OBJ = $(TDBBASE_OBJ) tdb/tdbutil.o tdb/tdbback.o \
+	lib/dbwrap_tdb.o lib/dbwrap_file.o
 
 SMBLDAP_OBJ = @SMBLDAP@ @SMBLDAPUTIL@
 

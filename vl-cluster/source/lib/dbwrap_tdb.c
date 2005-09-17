@@ -24,23 +24,7 @@ struct db_tdb_ctx {
 	TDB_CONTEXT *tdb;
 };
 
-static TDB_DATA blob2tdb(DATA_BLOB blob)
-{
-	TDB_DATA result;
-	result.dptr = blob.data;
-	result.dsize = blob.length;
-	return result;
-}
-
-static DATA_BLOB tdb2blob(TDB_DATA data)
-{
-	DATA_BLOB result;
-	result.data = data.dptr;
-	result.length = data.dsize;
-	return result;
-}
-
-static int db_tdb_store(struct db_record *rec, DATA_BLOB data, int flag);
+static int db_tdb_store(struct db_record *rec, TDB_DATA data, int flag);
 static int db_tdb_delete(struct db_record *rec);
 
 static int db_tdb_record_destr(void *p)
@@ -48,15 +32,11 @@ static int db_tdb_record_destr(void *p)
 	struct db_record *data = talloc_get_type_abort(p, struct db_record);
 	struct db_tdb_ctx *ctx =
 		talloc_get_type_abort(data->private_data, struct db_tdb_ctx);
-	TDB_DATA key;
 
 	DEBUG(10, ("Unlocking key %s\n",
-		   hex_encode(data, data->key.data, data->key.length)));
+		   hex_encode(data, data->key.dptr, data->key.dsize)));
 
-	key.dptr = data->key.data;
-	key.dsize = data->key.length;
-
-	if (tdb_chainunlock(ctx->tdb, key) != 0) {
+	if (tdb_chainunlock(ctx->tdb, data->key) != 0) {
 		DEBUG(0, ("tdb_chainunlock failed\n"));
 		return -1;
 	}
@@ -64,7 +44,7 @@ static int db_tdb_record_destr(void *p)
 }
 
 static struct db_record *db_tdb_fetch_locked(struct db_context *db,
-				     TALLOC_CTX *mem_ctx, DATA_BLOB key)
+				     TALLOC_CTX *mem_ctx, TDB_DATA key)
 {
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(db->private_data,
 						       struct db_tdb_ctx);
@@ -77,26 +57,27 @@ static struct db_record *db_tdb_fetch_locked(struct db_context *db,
 		return NULL;
 	}
 
-	result->key = data_blob_talloc(result, key.data, key.length);
-	if (result->key.data == NULL) {
+	result->key.dsize = key.dsize;
+	result->key.dptr = talloc_memdup(result, key.dptr, key.dsize);
+	if (result->key.dptr == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		talloc_free(result);
 		return NULL;
 	}
 
-	result->value.data = NULL;
-	result->value.length = 0;
+	result->value.dptr = NULL;
+	result->value.dsize = 0;
 	result->private_data = talloc_reference(result, ctx);
 	result->store = db_tdb_store;
 	result->delete_rec = db_tdb_delete;
 
 	{
-		char *keystr = hex_encode(NULL, key.data, key.length);
+		char *keystr = hex_encode(NULL, key.dptr, key.dsize);
 		DEBUG(10, ("Locking key %s\n", keystr));
 		talloc_free(keystr);
 	}
 
-	if (tdb_chainlock(ctx->tdb, blob2tdb(key)) != 0) {
+	if (tdb_chainlock(ctx->tdb, key) != 0) {
 		DEBUG(3, ("tdb_chainlock failed\n"));
 		talloc_free(result);
 		return NULL;
@@ -104,15 +85,15 @@ static struct db_record *db_tdb_fetch_locked(struct db_context *db,
 
 	talloc_set_destructor(result, db_tdb_record_destr);
 
-	value = tdb_fetch(ctx->tdb, blob2tdb(key));
+	value = tdb_fetch(ctx->tdb, key);
 
 	if (value.dptr == NULL) {
 		return result;
 	}
 
-	result->value.length = value.dsize;
-	result->value.data = talloc_memdup(result, value.dptr, value.dsize);
-	if (result->value.data == NULL) {
+	result->value.dsize = value.dsize;
+	result->value.dptr = talloc_memdup(result, value.dptr, value.dsize);
+	if (result->value.dptr == NULL) {
 		DEBUG(3, ("talloc failed\n"));
 		talloc_free(result);
 		return NULL;
@@ -125,12 +106,12 @@ static struct db_record *db_tdb_fetch_locked(struct db_context *db,
 	return result;
 }
 
-static int db_tdb_store(struct db_record *rec, DATA_BLOB data, int flag)
+static int db_tdb_store(struct db_record *rec, TDB_DATA data, int flag)
 {
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(rec->private_data,
 						       struct db_tdb_ctx);
 
-	return tdb_store(ctx->tdb, blob2tdb(rec->key), blob2tdb(data), flag);
+	return tdb_store(ctx->tdb, rec->key, data, flag);
 }
 
 static int db_tdb_delete(struct db_record *rec)
@@ -138,12 +119,12 @@ static int db_tdb_delete(struct db_record *rec)
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(rec->private_data,
 						       struct db_tdb_ctx);
 
-	return tdb_delete(ctx->tdb, blob2tdb(rec->key));
+	return tdb_delete(ctx->tdb, rec->key);
 }
 
 struct db_tdb_traverse_ctx {
 	struct db_context *db;
-	int (*f)(DATA_BLOB key, DATA_BLOB data, void *private_data);
+	int (*f)(TDB_DATA key, TDB_DATA data, void *private_data);
 	void *private_data;
 };
 
@@ -151,11 +132,11 @@ static int db_tdb_traverse_func(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 				void *private_data)
 {
 	struct db_tdb_traverse_ctx *ctx = private_data;
-	return ctx->f(tdb2blob(kbuf), tdb2blob(dbuf), ctx->private_data);
+	return ctx->f(kbuf, dbuf, ctx->private_data);
 }
 
 static int db_tdb_traverse(struct db_context *db,
-			   int (*f)(DATA_BLOB key, DATA_BLOB data,
+			   int (*f)(TDB_DATA key, TDB_DATA data,
 				    void *private_data),
 			   void *private_data)
 {
