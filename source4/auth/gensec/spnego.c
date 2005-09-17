@@ -636,7 +636,8 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		}
 
 		if (spnego.negTokenInit.targetPrincipal) {
-			DEBUG(5, ("Server claims it's principal name is %s (ignored)\n", spnego.negTokenInit.targetPrincipal));
+			DEBUG(5, ("Server claims it's principal name is %s\n", spnego.negTokenInit.targetPrincipal));
+			gensec_set_target_principal(gensec_security, spnego.negTokenInit.targetPrincipal);
 		}
 
 		nt_status = gensec_spnego_parse_negTokenInit(gensec_security,
