@@ -356,62 +356,53 @@ NOPROTO = YES
 #######################
 
 #######################
-# Start SUBSYSTEM ASN1_COMPILER
-[SUBSYSTEM::ASN1_COMPILER]
-ADD_OBJ_FILES = \
-	heimdal/lib/asn1/main.o \
-	heimdal/lib/asn1/gen.o \
-	heimdal/lib/asn1/gen_copy.o \
-	heimdal/lib/asn1/gen_decode.o \
-	heimdal/lib/asn1/gen_encode.o \
-	heimdal/lib/asn1/gen_free.o \
-	heimdal/lib/asn1/gen_glue.o \
-	heimdal/lib/asn1/gen_length.o \
-	heimdal/lib/asn1/hash.o \
-	heimdal/lib/asn1/lex.o \
-	heimdal/lib/asn1/parse.o \
-	heimdal/lib/roken/emalloc.o \
-	heimdal/lib/roken/getarg.o \
-	heimdal/lib/roken/setprogname.o \
-	heimdal/lib/roken/strupr.o \
-	heimdal/lib/roken/getprogname.o \
-	heimdal/lib/roken/get_window_size.o \
-	heimdal/lib/roken/estrdup.o \
-	heimdal/lib/roken/ecalloc.o \
-	heimdal/lib/asn1/symbol.o \
-	heimdal_build/replace.o
-NOPROTO = YES
-# End SUBSYSTEM ASN1_COMPILER
-#######################
-
-#######################
 # Start BINARY asn1_compile
 [BINARY::asn1_compile]
-REQUIRED_SUBSYSTEMS = ASN1_COMPILER LIBREPLACE HEIMDAL_VERS
-# End BINARY asn1_compile
-#######################
-
-#######################
-# Start SUBSYSTEM COMPILE_ET
-[SUBSYSTEM::COMPILE_ET]
-ADD_OBJ_FILES = \
-	heimdal/lib/com_err/lex.o \
-	heimdal/lib/com_err/parse.o \
-	heimdal/lib/com_err/compile_et.o \
-	heimdal/lib/roken/getarg.o \
-	heimdal/lib/roken/get_window_size.o \
-	heimdal/lib/roken/getprogname.o \
-	heimdal/lib/roken/strupr.o \
-	heimdal/lib/roken/setprogname.o \
-	heimdal_build/replace.o
 NOPROTO = YES
-# End SUBSYSTEM COMPILE_ET
+OBJ_FILES = \
+	heimdal/lib/asn1/main.ho \
+	heimdal/lib/asn1/gen.ho \
+	heimdal/lib/asn1/gen_copy.ho \
+	heimdal/lib/asn1/gen_decode.ho \
+	heimdal/lib/asn1/gen_encode.ho \
+	heimdal/lib/asn1/gen_free.ho \
+	heimdal/lib/asn1/gen_glue.ho \
+	heimdal/lib/asn1/gen_length.ho \
+	heimdal/lib/asn1/hash.ho \
+	heimdal/lib/asn1/lex.ho \
+	heimdal/lib/asn1/parse.ho \
+	heimdal/lib/roken/emalloc.ho \
+	heimdal/lib/roken/getarg.ho \
+	heimdal/lib/roken/setprogname.ho \
+	heimdal/lib/roken/strupr.ho \
+	heimdal/lib/roken/getprogname.ho \
+	heimdal/lib/roken/get_window_size.ho \
+	heimdal/lib/roken/estrdup.ho \
+	heimdal/lib/roken/ecalloc.ho \
+	heimdal/lib/asn1/symbol.ho \
+	heimdal_build/replace.ho \
+	heimdal/lib/vers/print_version.ho \
+	lib/replace/snprintf.ho \
+	lib/replace/replace.ho
+# End BINARY asn1_compile
 #######################
 
 #######################
 # Start BINARY compile_et
 [BINARY::compile_et]
-REQUIRED_SUBSYSTEMS = COMPILE_ET LIBREPLACE HEIMDAL_VERS
+NOPROTO = YES
+OBJ_FILES = heimdal/lib/vers/print_version.ho \
+	heimdal/lib/com_err/lex.ho \
+	heimdal/lib/com_err/parse.ho \
+	heimdal/lib/com_err/compile_et.ho \
+	heimdal/lib/roken/getarg.ho \
+	heimdal/lib/roken/get_window_size.ho \
+	heimdal/lib/roken/getprogname.ho \
+	heimdal/lib/roken/strupr.ho \
+	heimdal/lib/roken/setprogname.ho \
+	heimdal_build/replace.ho \
+	lib/replace/snprintf.ho \
+	lib/replace/replace.ho
 # End BINARY compile_et
 #######################
 
