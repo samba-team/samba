@@ -587,16 +587,16 @@ static int samldb_rename_record(struct ldb_module *module, const struct ldb_dn *
 	return ldb_next_rename_record(module, olddn, newdn);
 }
 
-static int samldb_lock(struct ldb_module *module, const char *lockname)
+static int samldb_start_trans(struct ldb_module *module)
 {
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_lock\n");
-	return ldb_next_named_lock(module, lockname);
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_start_trans\n");
+	return ldb_next_start_trans(module);
 }
 
-static int samldb_unlock(struct ldb_module *module, const char *lockname)
+static int samldb_end_trans(struct ldb_module *module, int status)
 {
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_unlock\n");
-	return ldb_next_named_unlock(module, lockname);
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_end_trans\n");
+	return ldb_next_end_trans(module, status);
 }
 
 /* return extended error information */
@@ -631,8 +631,8 @@ static const struct ldb_module_ops samldb_ops = {
 	.modify_record = samldb_modify_record,
 	.delete_record = samldb_delete_record,
 	.rename_record = samldb_rename_record,
-	.named_lock    = samldb_lock,
-	.named_unlock  = samldb_unlock,
+	.start_transaction = samldb_start_trans,
+	.end_transaction = samldb_end_trans,
 	.errstring     = samldb_errstring
 };
 
