@@ -59,7 +59,7 @@ enum winbindd_result winbindd_dual_check_machine_acct(struct winbindd_domain *do
 
 	{
 		struct rpc_pipe_client *netlogon_pipe;
-		result = cm_connect_netlogon(contact_domain, state->mem_ctx, &netlogon_pipe);
+		result = cm_connect_netlogon(contact_domain, &netlogon_pipe);
 	}
 
         if (!NT_STATUS_IS_OK(result)) {
@@ -174,7 +174,7 @@ enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
 	DEBUG(3, ("[%5lu]: Get DC name for %s\n", (unsigned long)state->pid,
 		  state->request.domain_name));
 
-	result = cm_connect_netlogon(domain, state->mem_ctx, &netlogon_pipe);
+	result = cm_connect_netlogon(domain, &netlogon_pipe);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1, ("Can't contact our the NETLOGON pipe\n"));

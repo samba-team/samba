@@ -60,7 +60,7 @@ WERROR _ntsvcs_get_device_list_size( pipes_struct *p, NTSVCS_Q_GET_DEVICE_LIST_S
 	rpcstr_pull(device, q_u->devicename->buffer, sizeof(device), q_u->devicename->uni_str_len*2, 0);
 	devicepath = get_device_path( device );
 
-	r_u->size = strlen(devicepath) + 1;
+	r_u->size = strlen(devicepath) + 2;
 
 	return WERR_OK;
 }
@@ -82,7 +82,7 @@ WERROR _ntsvcs_get_device_list( pipes_struct *p, NTSVCS_Q_GET_DEVICE_LIST *q_u, 
 
 	/* From the packet traces I've see, I think this really should be an array
 	   of UNISTR2's.  But I've never seen more than one string in spite of the 
-	   fact that the string in dounel NULL terminated.  -- jerry */
+	   fact that the string in double NULL terminated.  -- jerry */
 
 	init_unistr2( &r_u->devicepath, devicepath, UNI_STR_TERMINATE );
 	r_u->needed = r_u->devicepath.uni_str_len;
@@ -131,6 +131,7 @@ WERROR _ntsvcs_get_device_reg_property( pipes_struct *p, NTSVCS_Q_GET_DEVICE_REG
 		break;
 		
 	default:
+		r_u->unknown1 = 0x00437c98;
 		return WERR_CM_NO_SUCH_VALUE;
 	}
 
@@ -166,7 +167,7 @@ WERROR _ntsvcs_get_hw_profile_info( pipes_struct *p, NTSVCS_Q_GET_HW_PROFILE_INF
 
 WERROR _ntsvcs_hw_profile_flags( pipes_struct *p, NTSVCS_Q_HW_PROFILE_FLAGS *q_u, NTSVCS_R_HW_PROFILE_FLAGS *r_u )
 {	
-	/* whatever dude....no flags*/
+	/* just nod your head */
 	
 	return WERR_OK;
 }

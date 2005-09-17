@@ -335,7 +335,7 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 		ZERO_STRUCT(info3);
 		retry = False;
 
-		result = cm_connect_netlogon(contact_domain, state->mem_ctx, &netlogon_pipe);
+		result = cm_connect_netlogon(contact_domain, &netlogon_pipe);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
@@ -615,7 +615,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 		ZERO_STRUCT(info3);
 		retry = False;
 
-		result = cm_connect_netlogon(contact_domain, state->mem_ctx, &netlogon_pipe);
+		result = cm_connect_netlogon(contact_domain, &netlogon_pipe);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(3, ("could not open handle to NETLOGON pipe (error: %s)\n",

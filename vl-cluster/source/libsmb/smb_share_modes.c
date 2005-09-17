@@ -202,7 +202,7 @@ int smb_get_share_mode_entries(struct smbdb_ctx *db_ctx,
 		struct process_id pid = share->pid;
 
 		/* Check this process really exists. */
-		if (kill(pid.pid, 0) == -1 && (errno == ESRCH)) {
+		if (kill(procid_to_pid(&pid), 0) == -1 && (errno == ESRCH)) {
 			continue; /* No longer exists. */
 		}
 
@@ -367,7 +367,7 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 		struct process_id pid = share->pid;
 
 		/* Check this process really exists. */
-		if (kill(pid.pid, 0) == -1 && (errno == ESRCH)) {
+		if (kill(procid_to_pid(&pid), 0) == -1 && (errno == ESRCH)) {
 			continue; /* No longer exists. */
 		}
 
@@ -442,7 +442,7 @@ int smb_change_share_mode_entry(struct smbdb_ctx *db_ctx,
 		struct process_id pid = share->pid;
 
 		/* Check this process really exists. */
-		if (kill(pid.pid, 0) == -1 && (errno == ESRCH)) {
+		if (kill(procid_to_pid(&pid), 0) == -1 && (errno == ESRCH)) {
 			continue; /* No longer exists. */
 		}
 

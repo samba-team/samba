@@ -298,11 +298,30 @@ WERROR rpccli_svcctl_query_config(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	config->startname      = TALLOC_ZERO_P( mem_ctx, UNISTR2 );
 	config->displayname    = TALLOC_ZERO_P( mem_ctx, UNISTR2 );
 	
-	copy_unistr2( config->executablepath, out.config.executablepath );
-	copy_unistr2( config->loadordergroup, out.config.loadordergroup );
-	copy_unistr2( config->dependencies, out.config.dependencies );
-	copy_unistr2( config->startname, out.config.startname );
-	copy_unistr2( config->displayname, out.config.displayname );
+	if ( out.config.executablepath ) {
+		config->executablepath = TALLOC_ZERO_P( mem_ctx, UNISTR2 );
+		copy_unistr2( config->executablepath, out.config.executablepath );
+	}
+
+	if ( out.config.loadordergroup ) {
+		config->loadordergroup = TALLOC_ZERO_P( mem_ctx, UNISTR2 );
+		copy_unistr2( config->loadordergroup, out.config.loadordergroup );
+	}
+
+	if ( out.config.dependencies ) {
+		config->dependencies = TALLOC_ZERO_P( mem_ctx, UNISTR2 );
+		copy_unistr2( config->dependencies, out.config.dependencies );
+	}
+
+	if ( out.config.startname ) {
+		config->startname = TALLOC_ZERO_P( mem_ctx, UNISTR2 );
+		copy_unistr2( config->startname, out.config.startname );
+	}
+
+	if ( out.config.displayname ) {
+		config->displayname = TALLOC_ZERO_P( mem_ctx, UNISTR2 );
+		copy_unistr2( config->displayname, out.config.displayname );
+	}
 	
 	return out.status;
 }

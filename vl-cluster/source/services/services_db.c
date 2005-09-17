@@ -72,7 +72,7 @@ static void fill_service_values( const char *name, REGVAL_CTR *values )
 	/* These values are hardcoded in all QueryServiceConfig() replies.
 	   I'm just storing them here for cosmetic purposes */
 	
-	dword = SVCCTL_DEMAND_START;
+	dword = SVCCTL_AUTO_START;
 	regval_ctr_addvalue( values, "Start", REG_DWORD, (char*)&dword, sizeof(uint32));
 	
 	dword = SVCCTL_WIN32_OWN_PROC;

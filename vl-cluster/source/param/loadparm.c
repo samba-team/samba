@@ -310,7 +310,6 @@ typedef struct
 	int name_cache_timeout;
 	int client_signing;
 	int server_signing;
-	char **szClusterNodes;
 	param_opt_struct *param_opt;
 }
 global;
@@ -1248,8 +1247,7 @@ static struct parm_struct parm_table[] = {
 	{"winbind nested groups", P_BOOL, P_GLOBAL, &Globals.bWinbindNestedGroups, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind max idle children", P_INTEGER, P_GLOBAL, &Globals.winbind_max_idle_children, NULL, NULL, FLAG_ADVANCED}, 
 	{"winbind nss info", P_LIST, P_GLOBAL, &Globals.szWinbindNssInfo, NULL, NULL, FLAG_ADVANCED}, 
-	{"cluster nodes", P_LIST, P_GLOBAL, &Globals.szClusterNodes,
-	 NULL, NULL, FLAG_ADVANCED},
+
 	{NULL,  P_BOOL,  P_NONE,  NULL,  NULL,  NULL,  0}
 };
 
@@ -1621,8 +1619,6 @@ static void init_globals(void)
 	Globals.bASUSupport       = True;
 	
 	Globals.szServicesList = str_list_make( "Spooler NETLOGON", NULL );
-
-	Globals.szClusterNodes = NULL;
 }
 
 static TALLOC_CTX *lp_talloc;
@@ -2034,7 +2030,6 @@ FN_GLOBAL_INTEGER(lp_algorithmic_rid_base, &Globals.AlgorithmicRidBase)
 FN_GLOBAL_INTEGER(lp_name_cache_timeout, &Globals.name_cache_timeout)
 FN_GLOBAL_INTEGER(lp_client_signing, &Globals.client_signing)
 FN_GLOBAL_INTEGER(lp_server_signing, &Globals.server_signing)
-FN_GLOBAL_LIST(lp_cluster_nodes, &Globals.szClusterNodes)
 
 /* local prototypes */
 

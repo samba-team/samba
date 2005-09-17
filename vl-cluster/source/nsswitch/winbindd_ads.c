@@ -823,7 +823,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	*names       = NULL;
 	*dom_sids    = NULL;
 
-	result = cm_connect_netlogon(domain, mem_ctx, &cli);
+	result = cm_connect_netlogon(domain, &cli);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(5, ("trusted_domains: Could not open a connection to %s "

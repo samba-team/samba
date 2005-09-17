@@ -394,7 +394,7 @@ static BOOL is_executable(const char *fname)
  Returns True if conflict, False if not.
 ****************************************************************************/
 
-static BOOL share_conflict(const struct share_mode_entry *entry,
+static BOOL share_conflict(struct share_mode_entry *entry,
 			   uint32 access_mask,
 			   uint32 share_access)
 {
@@ -596,15 +596,14 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 	/* Now we check the share modes, after any oplock breaks. */
 	for(i = 0; i < lck->num_share_modes; i++) {
 
-		struct share_mode_entry *e = &lck->share_modes[i];
-
-		if (!is_valid_share_mode_entry(e)) {
+		if (!is_valid_share_mode_entry(&lck->share_modes[i])) {
 			continue;
 		}
 
 		/* someone else has a share lock on it, check to see if we can
 		 * too */
-		if (share_conflict(e, access_mask, share_access)) {
+		if (share_conflict(&lck->share_modes[i],
+				   access_mask, share_access)) {
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 	}
@@ -654,18 +653,16 @@ static BOOL delay_for_oplocks(struct share_mode_lock *lck, files_struct *fsp)
 
 	for (i=0; i<lck->num_share_modes; i++) {
 
-		struct share_mode_entry *e = &lck->share_modes[i];
-
-		if (!is_valid_share_mode_entry(e)) {
+		if (!is_valid_share_mode_entry(&lck->share_modes[i])) {
 			continue;
 		}
 
-		if (EXCLUSIVE_OPLOCK_TYPE(e->op_type)) {
+		if (EXCLUSIVE_OPLOCK_TYPE(lck->share_modes[i].op_type)) {
 			SMB_ASSERT(exclusive == NULL);			
-			exclusive = e;
+			exclusive = &lck->share_modes[i];
 		}
 
-		if (e->op_type == LEVEL_II_OPLOCK) {
+		if (lck->share_modes[i].op_type == LEVEL_II_OPLOCK) {
 			have_level2 = True;
 		}
 	}

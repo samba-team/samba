@@ -42,7 +42,7 @@ uint16 global_smbpid;
 #define DBGC_CLASS DBGC_LOCKING
 
 /* the locking database handle */
-static struct db_context *db;
+static TDB_CONTEXT *tdb;
 
 struct locking_data {
         union {
@@ -309,37 +309,23 @@ static int open_read_only;
 
 BOOL locking_init(int read_only)
 {
-	int i;
-
 	brl_init(read_only);
 
-	if (db)
+	if (tdb)
 		return True;
 
-#if 0
-	db = db_open(NULL, lock_path("locking.tdb"), 
-#else
-		     db = db_open_file(NULL, lock_path("locking.d"),
-#endif
-			  0, TDB_DEFAULT|(read_only?0x0:TDB_CLEAR_IF_FIRST), 
-			  read_only?O_RDONLY:O_RDWR|O_CREAT,
-			  0644);
+	tdb = tdb_open_log(lock_path("locking.tdb"), 
+		       0, TDB_DEFAULT|(read_only?0x0:TDB_CLEAR_IF_FIRST), 
+		       read_only?O_RDONLY:O_RDWR|O_CREAT,
+		       0644);
 
-	if (!db) {
+	if (!tdb) {
 		DEBUG(0,("ERROR: Failed to initialise locking database\n"));
 		return False;
 	}
 
 	if (!posix_locking_init(read_only))
 		return False;
-
-	mkdir(lock_path("locking.d"), 0755);
-	for (i=0; i<256; i++) {
-		char *directory;
-		asprintf(&directory, "%s/%2.2X", lock_path("locking.d"), i);
-		mkdir(directory, 0755);
-		SAFE_FREE(directory);
-	}
 
 	open_read_only = read_only;
 
@@ -350,21 +336,15 @@ BOOL locking_init(int read_only)
  Deinitialize the share_mode management.
 ******************************************************************/
 
-static int smf_cache_queries = 0;
-static int smf_cache_hits = 0;
-
 BOOL locking_end(void)
 {
 	BOOL ret = True;
 
 	brl_shutdown(open_read_only);
-	if (db) {
-		if (talloc_free(db) < 0) {
+	if (tdb) {
+		if (tdb_close(tdb) != 0)
 			ret = False;
-		}
 	}
-
-	DEBUG(0, ("q: %d, h: %d\n", smf_cache_queries, smf_cache_hits));
 
 	return ret;
 }
@@ -375,24 +355,24 @@ BOOL locking_end(void)
 
 /* key and data records in the tdb locking database */
 struct locking_key {
-	SMB_INO_T ino;
 	SMB_DEV_T dev;
+	SMB_INO_T ino;
 };
 
 /*******************************************************************
  Form a static locking key for a dev/inode pair.
 ******************************************************************/
 
-static DATA_BLOB locking_key(SMB_DEV_T dev, SMB_INO_T inode)
+static TDB_DATA locking_key(SMB_DEV_T dev, SMB_INO_T inode)
 {
 	static struct locking_key key;
-	DATA_BLOB kbuf;
+	TDB_DATA kbuf;
 
 	memset(&key, '\0', sizeof(key));
 	key.dev = dev;
 	key.ino = inode;
-	kbuf.data = (char *)&key;
-	kbuf.length = sizeof(key);
+	kbuf.dptr = (char *)&key;
+	kbuf.dsize = sizeof(key);
 	return kbuf;
 }
 
@@ -438,17 +418,17 @@ static void print_share_mode_table(struct locking_data *data)
  Get all share mode entries for a dev/inode pair.
 ********************************************************************/
 
-static BOOL parse_share_modes(DATA_BLOB *dbuf, struct share_mode_lock *lck)
+static BOOL parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 {
 	struct locking_data *data;
 	int i;
 
-	if (dbuf->length < sizeof(struct locking_data)) {
+	if (dbuf.dsize < sizeof(struct locking_data)) {
 		DEBUG(0, ("parse_share_modes: buffer too short\n"));
 		return False;
 	}
 
-	data = (struct locking_data *)dbuf->data;
+	data = (struct locking_data *)dbuf.dptr;
 
 	lck->delete_on_close = data->u.s.delete_on_close;
 	lck->num_share_modes = data->u.s.num_share_mode_entries;
@@ -467,15 +447,14 @@ static BOOL parse_share_modes(DATA_BLOB *dbuf, struct share_mode_lock *lck)
 
 	if (lck->num_share_modes != 0) {
 
-		if (dbuf->length < (sizeof(struct locking_data) +
+		if (dbuf.dsize < (sizeof(struct locking_data) +
 				  (lck->num_share_modes *
 				   sizeof(struct share_mode_entry)))) {
 			DEBUG(0, ("parse_share_modes: buffer too short\n"));
 			return False;
 		}
 				  
-		lck->share_modes = talloc_memdup(lck,
-						 dbuf->data + sizeof(*data),
+		lck->share_modes = talloc_memdup(lck, dbuf.dptr+sizeof(*data),
 						 lck->num_share_modes *
 						 sizeof(struct share_mode_entry));
 
@@ -486,7 +465,7 @@ static BOOL parse_share_modes(DATA_BLOB *dbuf, struct share_mode_lock *lck)
 	}
 
 	/* Save off the associated filename. */
-	lck->filename = talloc_strdup(lck, dbuf->data + sizeof(*data) +
+	lck->filename = talloc_strdup(lck, dbuf.dptr + sizeof(*data) +
 				      lck->num_share_modes *
 				      sizeof(struct share_mode_entry));
 
@@ -509,16 +488,16 @@ static BOOL parse_share_modes(DATA_BLOB *dbuf, struct share_mode_lock *lck)
 	return True;
 }
 
-static DATA_BLOB unparse_share_modes(struct share_mode_lock *lck)
+static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 {
-	DATA_BLOB result;
+	TDB_DATA result;
 	int num_valid = 0;
 	int i;
 	struct locking_data *data;
 	ssize_t offset;
 
-	result.data = NULL;
-	result.length = 0;
+	result.dptr = NULL;
+	result.dsize = 0;
 
 	for (i=0; i<lck->num_share_modes; i++) {
 		if (!is_unused_share_mode_entry(&lck->share_modes[i])) {
@@ -530,28 +509,28 @@ static DATA_BLOB unparse_share_modes(struct share_mode_lock *lck)
 		return result;
 	}
 
-	result.length = sizeof(*data) +
+	result.dsize = sizeof(*data) +
 		lck->num_share_modes * sizeof(struct share_mode_entry) +
 		strlen(lck->filename) + 1;
-	result.data = talloc_size(lck, result.length);
+	result.dptr = talloc_size(lck, result.dsize);
 
-	if (result.data == NULL) {
+	if (result.dptr == NULL) {
 		smb_panic("talloc failed\n");
 	}
 
-	data = (struct locking_data *)result.data;
+	data = (struct locking_data *)result.dptr;
 	ZERO_STRUCTP(data);
 	data->u.s.num_share_mode_entries = lck->num_share_modes;
 	data->u.s.delete_on_close = lck->delete_on_close;
 	DEBUG(10, ("unparse_share_modes: del: %d, num: %d\n",
 		   data->u.s.delete_on_close,
 		   data->u.s.num_share_mode_entries));
-	memcpy(result.data + sizeof(*data), lck->share_modes,
+	memcpy(result.dptr + sizeof(*data), lck->share_modes,
 	       sizeof(struct share_mode_entry)*lck->num_share_modes);
 	offset = sizeof(*data) +
 		sizeof(struct share_mode_entry)*lck->num_share_modes;
-	safe_strcpy(result.data + offset, lck->filename,
-		    result.length - offset - 1);
+	safe_strcpy(result.dptr + offset, lck->filename,
+		    result.dsize - offset - 1);
 	print_share_mode_table(data);
 	return result;
 }
@@ -560,27 +539,31 @@ static int share_mode_lock_destructor(void *p)
 {
 	struct share_mode_lock *lck =
 		talloc_get_type_abort(p, struct share_mode_lock);
-	DATA_BLOB data;
+	TDB_DATA key = locking_key(lck->dev, lck->ino);
+	TDB_DATA data;
 
 	if (!lck->modified) {
-		return 0;
+		goto done;
 	}
 
 	data = unparse_share_modes(lck);
 
-	if (data.data == NULL) {
+	if (data.dptr == NULL) {
 		if (!lck->fresh) {
 			/* There has been an entry before, delete it */
-			if (lck->db_rec->delete_rec(lck->db_rec) == -1) {
-				DEBUG(0, ("Could not delete share entry\n"));
+			if (tdb_delete(tdb, key) == -1) {
+				smb_panic("Could not delete share entry\n");
 			}
 		}
-		return 0;
+		goto done;
 	}
 
-	if (lck->db_rec->store(lck->db_rec, data, TDB_REPLACE) == -1) {
+	if (tdb_store(tdb, key, data, TDB_REPLACE) == -1) {
 		smb_panic("Could not store share mode entry\n");
 	}
+
+ done:
+	tdb_chainunlock(tdb, key);
 
 	return 0;
 }
@@ -590,7 +573,8 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 					    const char *fname)
 {
 	struct share_mode_lock *lck;
-	DATA_BLOB key = locking_key(dev, ino);
+	TDB_DATA key = locking_key(dev, ino);
+	TDB_DATA data;
 
 	lck = TALLOC_P(mem_ctx, struct share_mode_lock);
 	if (lck == NULL) {
@@ -605,14 +589,14 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 	lck->share_modes = NULL;
 	lck->modified = False;
 
-	lck->db_rec = db->fetch_locked(db, lck, key);
-	if (lck->db_rec == NULL) {
+	if (tdb_chainlock(tdb, key) != 0) {
 		DEBUG(3, ("Could not lock share entry\n"));
 		talloc_free(lck);
 		return NULL;
 	}
 
-	lck->fresh = (lck->db_rec->value.data == NULL);
+	data = tdb_fetch(tdb, key);
+	lck->fresh = (data.dptr == NULL);
 
 	if (lck->fresh) {
 		if (fname == NULL) {
@@ -627,14 +611,16 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 			return NULL;
 		}
 	} else {
-		if (!parse_share_modes(&lck->db_rec->value, lck)) {
+		if (!parse_share_modes(data, lck)) {
 			DEBUG(0, ("Could not parse share modes\n"));
 			talloc_free(lck);
+			SAFE_FREE(data.dptr);
 			return NULL;
 		}
 	}
 
 	talloc_set_destructor(lck, share_mode_lock_destructor);
+	SAFE_FREE(data.dptr);
 
 	return lck;
 }
@@ -990,7 +976,8 @@ BOOL set_delete_on_close(files_struct *fsp, BOOL delete_on_close)
 	return True;
 }
 
-static int traverse_fn(DATA_BLOB key, DATA_BLOB dbuf, void *state)
+static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, 
+                       void *state)
 {
 	struct locking_data *data;
 	struct share_mode_entry *shares;
@@ -999,12 +986,12 @@ static int traverse_fn(DATA_BLOB key, DATA_BLOB dbuf, void *state)
 	void (*traverse_callback)(struct share_mode_entry *, char *) = state;
 
 	/* Ensure this is a locking_key record. */
-	if (key.length != sizeof(struct locking_key))
+	if (kbuf.dsize != sizeof(struct locking_key))
 		return 0;
 
-	data = (struct locking_data *)dbuf.data;
-	shares = (struct share_mode_entry *)(dbuf.data + sizeof(*data));
-	name = dbuf.data + sizeof(*data) +
+	data = (struct locking_data *)dbuf.dptr;
+	shares = (struct share_mode_entry *)(dbuf.dptr + sizeof(*data));
+	name = dbuf.dptr + sizeof(*data) +
 		data->u.s.num_share_mode_entries*sizeof(*shares);
 
 	for (i=0;i<data->u.s.num_share_mode_entries;i++) {
@@ -1020,7 +1007,7 @@ static int traverse_fn(DATA_BLOB key, DATA_BLOB dbuf, void *state)
 
 int share_mode_forall(void (*fn)(const struct share_mode_entry *, char *))
 {
-	if (db == NULL)
+	if (tdb == NULL)
 		return 0;
-	return db->traverse(db, traverse_fn, fn);
+	return tdb_traverse(tdb, traverse_fn, fn);
 }
