@@ -249,7 +249,7 @@ sub _prepare_std_CC_rule($$$$$)
 	\@\$(CC) `script/cflags.sh \$\@` \$(CFLAGS) $flags -c \$< -o \$\@
 __EOD__
 	if ($config{BROKEN_CC} eq "yes") {
-		$ret.= '	-mv `echo \$\@ | sed \'s%^.*/%%g\'` \$\@
+		$ret.= '	-mv `echo $@ | sed \'s%^.*/%%g\'` $@
 ';
 	}
 	return $ret."\n";
@@ -263,7 +263,7 @@ sub _prepare_hostcc_rule()
 	\@\$(HOSTCC) `script/cflags.sh \$\@` \$(CFLAGS) -c \$< -o \$\@
 __EOD__
 	if ($config{BROKEN_CC} eq "yes") {
-		$ret .= '	-mv `echo \$\@ | sed \'s%^.*/%%g\'` \$\@
+		$ret .= '	-mv `echo $@ | sed \'s%^.*/%%g\' -e \'s%\.ho$$%.o%\'` $@
 ';
 	}
 
