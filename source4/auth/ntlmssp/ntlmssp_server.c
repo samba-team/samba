@@ -772,7 +772,6 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	gensec_ntlmssp_state->server_name = lp_netbios_name();
 
 	gensec_ntlmssp_state->get_domain = lp_workgroup;
-	gensec_ntlmssp_state->server_role = ROLE_DOMAIN_MEMBER; /* a good default */
 
 	gensec_ntlmssp_state->expected_state = NTLMSSP_NEGOTIATE;
 
