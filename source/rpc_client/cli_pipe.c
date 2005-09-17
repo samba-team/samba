@@ -1812,7 +1812,6 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
 	RPC_HDR_AUTH hdr_auth;
 	NTSTATUS nt_status;
 	prs_struct rpc_out;
-	ssize_t ret;
 
 	if (!phdr->auth_len || (phdr->frag_len < phdr->auth_len + RPC_HDR_AUTH_LEN)) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -1877,15 +1876,20 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
 		return nt_status;
 	}
 
-	/* 8 here is named pipe message mode. */
-	ret = cli_write(cli->cli, cli->fnum, 0x8, prs_data_p(&rpc_out), 0,
-				(size_t)prs_offset(&rpc_out));
+	/* Initialize the returning data struct. */
+	prs_mem_free(rbuf);
+	prs_init(rbuf, 0, cli->cli->mem_ctx, UNMARSHALL);
 
-	if (ret != (ssize_t)prs_offset(&rpc_out)) {
-		DEBUG(0,("rpc_finish_spnego_ntlmssp_bind: cli_write failed. Return was %d\n", (int)ret));
+	nt_status = rpc_api_pipe(cli, &rpc_out, rbuf, RPC_ALTCONTRESP);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		prs_mem_free(&rpc_out);
-		return cli_get_nt_error(cli->cli);
+		prs_mem_free(rbuf);
+		return nt_status;
 	}
+
+	prs_mem_free(&rpc_out);
+
+	/* TODO - finish the ntlmssp bind... */
 
 	DEBUG(5,("rpc_finish_spnego_ntlmssp_bind:: Sent alter context request to "
 		"remote machine %s pipe %s fnum 0x%x.\n",
@@ -1893,7 +1897,6 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
 		cli->pipe_name,
 		(unsigned int)cli->fnum));
 
-	prs_mem_free(&rpc_out);
 	return NT_STATUS_OK;
 }
 
