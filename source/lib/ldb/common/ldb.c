@@ -106,6 +106,22 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
 }
 
 /*
+  start a transaction
+*/
+static int ldb_start_trans(struct ldb_context *ldb)
+{
+        return ldb->modules->ops->start_transaction(ldb->modules);
+}
+
+/*
+  end a transaction
+*/
+static int ldb_end_trans(struct ldb_context *ldb, int status)
+{
+        return ldb->modules->ops->end_transaction(ldb->modules, status);
+}
+
+/*
   search the database given a LDAP-like search expression
 
   return the number of records found, or -1 on error
@@ -146,7 +162,11 @@ int ldb_search_bytree(struct ldb_context *ldb,
 int ldb_add(struct ldb_context *ldb, 
 	    const struct ldb_message *message)
 {
-	return ldb->modules->ops->add_record(ldb->modules, message);
+	int status = ldb_start_trans(ldb);
+	if (status != 0) return status;
+
+	status = ldb->modules->ops->add_record(ldb->modules, message);
+	return ldb_end_trans(ldb, status);
 }
 
 /*
@@ -155,7 +175,11 @@ int ldb_add(struct ldb_context *ldb,
 int ldb_modify(struct ldb_context *ldb, 
 	       const struct ldb_message *message)
 {
-	return ldb->modules->ops->modify_record(ldb->modules, message);
+	int status = ldb_start_trans(ldb);
+	if (status != 0) return status;
+
+	status = ldb->modules->ops->modify_record(ldb->modules, message);
+	return ldb_end_trans(ldb, status);
 }
 
 
@@ -164,7 +188,11 @@ int ldb_modify(struct ldb_context *ldb,
 */
 int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
 {
-	return ldb->modules->ops->delete_record(ldb->modules, dn);
+	int status = ldb_start_trans(ldb);
+	if (status != 0) return status;
+
+	status = ldb->modules->ops->delete_record(ldb->modules, dn);
+	return ldb_end_trans(ldb, status);
 }
 
 /*
@@ -172,23 +200,11 @@ int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
 */
 int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
 {
-	return ldb->modules->ops->rename_record(ldb->modules, olddn, newdn);
-}
+	int status = ldb_start_trans(ldb);
+	if (status != 0) return status;
 
-/*
-  create a named lock
-*/
-int ldb_lock(struct ldb_context *ldb, const char *lockname)
-{
-        return ldb->modules->ops->named_lock(ldb->modules, lockname);
-}
-
-/*
-  release a named lock
-*/
-int ldb_unlock(struct ldb_context *ldb, const char *lockname)
-{
-        return ldb->modules->ops->named_unlock(ldb->modules, lockname);
+	status = ldb->modules->ops->rename_record(ldb->modules, olddn, newdn);
+	return ldb_end_trans(ldb, status);
 }
 
 /*

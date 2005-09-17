@@ -457,57 +457,6 @@ static char *parsetree_to_sql(struct ldb_module *module,
 	return NULL;
 }
 
-/* obtain a named lock */
-static int
-lsqlite3_lock(struct ldb_module * module,
-              const char * lockname)
-{
-	struct lsqlite3_private *   lsqlite3 = module->private_data;
-
-/* FIXME
-	if (lockname == NULL) {
-		return -1;
-	}
-        
-        if (strcmp(lockname, "transaction") == 0) {
-                if (lsqlite3->lock_count == 0) {
-                        if (query_norows(lsqlite3, "BEGIN EXCLUSIVE;") != 0) {
-                                return -1;
-                        }
-                }
-                ++lsqlite3->lock_count;
-        }
-*/
-	return 0;
-}
-
-/* release a named lock */
-static int
-lsqlite3_unlock(struct ldb_module *module,
-                const char *lockname)
-{
-	struct lsqlite3_private *   lsqlite3 = module->private_data;
-
-/* FIXME
-	if (lockname == NULL) {
-		return -1;
-	}
-        
-        if (strcmp(lockname, "transaction") == 0) {
-                if (lsqlite3->lock_count == 1) {
-                        if (query_norows(lsqlite3, "COMMIT;") != 0) {
-                                query_norows(lsqlite3, "ROLLBACK;");
-                        }
-                } else if (lsqlite3->lock_count > 0) {
-                        --lsqlite3->lock_count;
-                }
-        } else if (strcmp(lockname, "rollback") == 0) {
-                query_norows(lsqlite3, "ROLLBACK;");
-        }
-*/
-        return 0;
-}
-
 /*
  * query_int()
  *
@@ -685,7 +634,7 @@ static int lsqlite3_safe_rollback(sqlite3 *sqlite)
 	ret = sqlite3_exec(sqlite, "ROLLBACK;", NULL, NULL, &errmsg);
 	if (ret != SQLITE_OK) {
 		if (errmsg) {
-			printf("lsqlite3_safe_rollback: Serious Error: %s\n", errmsg);
+			printf("lsqlite3_safe_rollback: Error: %s\n", errmsg);
 			free(errmsg);
 		}
 		return -1;
@@ -1078,7 +1027,6 @@ static int lsqlite3_add(struct ldb_module *module, const struct ldb_message *msg
 	char *dn, *ndn;
 	char *errmsg;
 	char *query;
-	int rollback = 0;
 	int ret;
 	int i;
         
@@ -1115,8 +1063,6 @@ static int lsqlite3_add(struct ldb_module *module, const struct ldb_message *msg
 	if (dn == NULL || ndn == NULL) goto failed;
 
 	query = lsqlite3_tprintf(local_ctx,
-        			   /* Begin the transaction */
-				   "BEGIN EXCLUSIVE; "
 				   /* Add new entry */
 				   "INSERT OR ABORT INTO ldb_entry "
 				   "('dn', 'norm_dn') "
@@ -1130,10 +1076,8 @@ static int lsqlite3_add(struct ldb_module *module, const struct ldb_message *msg
 			printf("lsqlite3_add: exec error: %s\n", errmsg);
 			free(errmsg);
 		}
-		lsqlite3_safe_rollback(lsqlite3->sqlite); 
 		goto failed;
 	}
-	rollback = 1;
 
 	eid = lsqlite3_get_eid_ndn(lsqlite3->sqlite, local_ctx, ndn);
 	if (eid == -1) goto failed;
@@ -1179,20 +1123,10 @@ static int lsqlite3_add(struct ldb_module *module, const struct ldb_message *msg
 		}
 	}
 
-	ret = sqlite3_exec(lsqlite3->sqlite, "COMMIT;", NULL, NULL, &errmsg);
-	if (ret != SQLITE_OK) {
-		if (errmsg) {
-			printf("lsqlite3_add: commit error: %s\n", errmsg);
-			free(errmsg);
-		}
-		goto failed;
-	}
-
 	talloc_free(local_ctx);
         return 0;
 
 failed:
-	if (rollback) lsqlite3_safe_rollback(lsqlite3->sqlite); 
 	talloc_free(local_ctx);
 	return -1;
 }
@@ -1205,7 +1139,6 @@ static int lsqlite3_modify(struct ldb_module *module, const struct ldb_message *
 	struct lsqlite3_private *lsqlite3 = module->private_data;
         long long eid;
 	char *errmsg;
-	int rollback = 0;
 	int ret;
 	int i;
         
@@ -1234,16 +1167,6 @@ static int lsqlite3_modify(struct ldb_module *module, const struct ldb_message *
                 /* Others are implicitly ignored */
                 return 0;
 	}
-
-	ret = sqlite3_exec(lsqlite3->sqlite, "BEGIN EXCLUSIVE;", NULL, NULL, &errmsg);
-	if (ret != SQLITE_OK) {
-		if (errmsg) {
-			printf("lsqlite3_modify: error: %s\n", errmsg);
-			free(errmsg);
-		}
-		goto failed;
-	}
-	rollback = 1;
 
 	eid = lsqlite3_get_eid(module, msg->dn);
 	if (eid == -1) {
@@ -1376,20 +1299,10 @@ static int lsqlite3_modify(struct ldb_module *module, const struct ldb_message *
 		}
 	}
 
-	ret = sqlite3_exec(lsqlite3->sqlite, "COMMIT;", NULL, NULL, &errmsg);
-	if (ret != SQLITE_OK) {
-		if (errmsg) {
-			printf("lsqlite3_modify: error: %s\n", errmsg);
-			free(errmsg);
-		}
-		goto failed;
-	}
-
 	talloc_free(local_ctx);
         return 0;
 
 failed:
-	if (rollback) lsqlite3_safe_rollback(lsqlite3->sqlite); 
 	talloc_free(local_ctx);
 	return -1;
 }
@@ -1419,14 +1332,10 @@ static int lsqlite3_delete(struct ldb_module *module, const struct ldb_dn *dn)
 	if (eid == -1) goto failed;
 
 	query = lsqlite3_tprintf(local_ctx,
-        			   /* Begin the transaction */
-				   "BEGIN EXCLUSIVE; "
 				   /* Delete entry */
 				   "DELETE FROM ldb_entry WHERE eid = %lld; "
 				   /* Delete attributes */
-				   "DELETE FROM ldb_attribute_values WHERE eid = %lld; "
-				   /* Commit */
-				   "COMMIT;",
+				   "DELETE FROM ldb_attribute_values WHERE eid = %lld; ",
 				eid, eid);
 	if (query == NULL) goto failed;
 
@@ -1436,7 +1345,6 @@ static int lsqlite3_delete(struct ldb_module *module, const struct ldb_dn *dn)
 			printf("lsqlite3_delete: error getting eid: %s\n", errmsg);
 			free(errmsg);
 		}
-		lsqlite3_safe_rollback(lsqlite3->sqlite);
 		goto failed;
 	}
 
@@ -1500,6 +1408,49 @@ failed:
 	talloc_free(local_ctx);
 	return -1;
 }
+
+static int lsqlite3_start_trans(struct ldb_module * module)
+{
+	int ret;
+	char *errmsg;
+	struct lsqlite3_private *   lsqlite3 = module->private_data;
+
+	ret = sqlite3_exec(lsqlite3->sqlite, "BEGIN IMMEDIATE;", NULL, NULL, &errmsg);
+	if (ret != SQLITE_OK) {
+		if (errmsg) {
+			printf("lsqlite3_start_trans: error: %s\n", errmsg);
+			free(errmsg);
+		}
+		return -1;
+	}
+
+	return 0;
+}
+
+static int lsqlite3_end_trans(struct ldb_module *module, int status)
+{
+	int ret;
+	char *errmsg;
+	struct lsqlite3_private *lsqlite3 = module->private_data;
+
+	if (status == 0) {
+		ret = sqlite3_exec(lsqlite3->sqlite, "COMMIT;", NULL, NULL, &errmsg);
+		if (ret != SQLITE_OK) {
+			if (errmsg) {
+				printf("lsqlite3_end_trans: error: %s\n", errmsg);
+				free(errmsg);
+			}
+			return -1;
+		}
+	} else {
+		return lsqlite3_safe_rollback(lsqlite3->sqlite);
+	}
+
+        return 0;
+}
+
+
+
 /* return extended error information */
 static const char *
 lsqlite3_errstring(struct ldb_module *module)
@@ -1799,16 +1750,16 @@ destructor(void *p)
  * Table of operations for the sqlite3 backend
  */
 static const struct ldb_module_ops lsqlite3_ops = {
-	.name          = "sqlite",
-	.search        = lsqlite3_search,
-	.search_bytree = lsqlite3_search_bytree,
-	.add_record    = lsqlite3_add,
-	.modify_record = lsqlite3_modify,
-	.delete_record = lsqlite3_delete,
-	.rename_record = lsqlite3_rename,
-	.named_lock    = lsqlite3_lock,
-	.named_unlock  = lsqlite3_unlock,
-	.errstring     = lsqlite3_errstring
+	.name              = "sqlite",
+	.search            = lsqlite3_search,
+	.search_bytree     = lsqlite3_search_bytree,
+	.add_record        = lsqlite3_add,
+	.modify_record     = lsqlite3_modify,
+	.delete_record     = lsqlite3_delete,
+	.rename_record     = lsqlite3_rename,
+	.start_transaction = lsqlite3_start_trans,
+	.end_transaction   = lsqlite3_end_trans,
+	.errstring         = lsqlite3_errstring
 };
 
 /*

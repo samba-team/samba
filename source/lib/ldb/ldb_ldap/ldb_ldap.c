@@ -450,30 +450,18 @@ static int lldb_modify(struct ldb_module *module, const struct ldb_message *msg)
 	return ret;
 }
 
-static int lldb_lock(struct ldb_module *module, const char *lockname)
+static int lldb_start_trans(struct ldb_module *module)
 {
-	int ret = 0;
+	/* TODO implement a local transaction mechanism here */
 
-	if (lockname == NULL) {
-		return -1;
-	}
-
-	/* TODO implement a local locking mechanism here */
-
-	return ret;
+	return 0;
 }
 
-static int lldb_unlock(struct ldb_module *module, const char *lockname)
+static int lldb_end_trans(struct ldb_module *module, int status)
 {
-	int ret = 0;
+	/* TODO implement a local transaction mechanism here */
 
-	if (lockname == NULL) {
-		return -1;
-	}
-
-	/* TODO implement a local unlocking mechanism here */
-
-	return ret;
+	return status;
 }
 
 /*
@@ -487,16 +475,16 @@ static const char *lldb_errstring(struct ldb_module *module)
 
 
 static const struct ldb_module_ops lldb_ops = {
-	.name          = "ldap",
-	.search        = lldb_search,
-	.search_bytree = lldb_search_bytree,
-	.add_record    = lldb_add,
-	.modify_record = lldb_modify,
-	.delete_record = lldb_delete,
-	.rename_record = lldb_rename,
-	.named_lock    = lldb_lock,
-	.named_unlock  = lldb_unlock,
-	.errstring     = lldb_errstring
+	.name              = "ldap",
+	.search            = lldb_search,
+	.search_bytree     = lldb_search_bytree,
+	.add_record        = lldb_add,
+	.modify_record     = lldb_modify,
+	.delete_record     = lldb_delete,
+	.rename_record     = lldb_rename,
+	.start_transaction = lldb_start_trans,
+	.end_transaction   = lldb_end_trans,
+	.errstring         = lldb_errstring
 };
 
 

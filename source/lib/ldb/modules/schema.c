@@ -501,12 +501,12 @@ static int schema_rename_record(struct ldb_module *module, const struct ldb_dn *
 	return ldb_next_rename_record(module, olddn, newdn);
 }
 
-static int schema_named_lock(struct ldb_module *module, const char *name) {
-	return ldb_next_named_lock(module, name);
+static int schema_start_trans(struct ldb_module *module) {
+	return ldb_next_start_trans(module);
 }
 
-static int schema_named_unlock(struct ldb_module *module, const char *name) {
-	return ldb_next_named_unlock(module, name);
+static int schema_end_trans(struct ldb_module *module, int status) {
+	return ldb_next_end_trans(module, status);
 }
 
 /* return extended error information */
@@ -533,16 +533,16 @@ static int schema_destructor(void *module_ctx)
 }
 
 static const struct ldb_module_ops schema_ops = {
-	.name          = "schema",
-	.search        = schema_search,
-	.search_bytree = schema_search_bytree,
-	.add_record    = schema_add_record,
-	.modify_record = schema_modify_record,
-	.delete_record = schema_delete_record,
-	.rename_record = schema_rename_record,
-	.named_lock    = schema_named_lock,
-	.named_unlock  = schema_named_unlock,
-	.errstring     = schema_errstring,
+	.name              = "schema",
+	.search            = schema_search,
+	.search_bytree     = schema_search_bytree,
+	.add_record        = schema_add_record,
+	.modify_record     = schema_modify_record,
+	.delete_record     = schema_delete_record,
+	.rename_record     = schema_rename_record,
+	.start_transaction = schema_start_trans,
+	.end_transaction   = schema_end_trans,
+	.errstring         = schema_errstring,
 };
 
 #ifdef HAVE_DLOPEN_DISABLED
