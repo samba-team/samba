@@ -525,6 +525,15 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 								cmd_entry->pipe_idx,
 								&ntresult);
 				break;
+			case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
+				cmd_entry->rpc_pipe = cli_rpc_pipe_open_spnego_ntlmssp(cli,
+								cmd_entry->pipe_idx,
+								pipe_default_auth_level,
+								lp_workgroup(),
+								cmdline_auth_info.username,
+								cmdline_auth_info.password,
+								&ntresult);
+				break;
 			case PIPE_AUTH_TYPE_NTLMSSP:
 				cmd_entry->rpc_pipe = cli_rpc_pipe_open_ntlmssp(cli,
 								cmd_entry->pipe_idx,
