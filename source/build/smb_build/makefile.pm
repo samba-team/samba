@@ -15,23 +15,43 @@ sub _prepare_path_vars()
 {
 	my $output;
 
-	$output = << '__EOD__';
-prefix = @prefix@
-exec_prefix = @exec_prefix@
-selftest_prefix = @selftest_prefix@
-VPATH = @srcdir@
-srcdir = @srcdir@
-builddir = @builddir@
+	$config{srcdir} = '.';
+	$config{builddir} = '.';
 
-BASEDIR = @prefix@
-BINDIR = @bindir@
-SBINDIR = @sbindir@
-datadir = @datadir@
-LIBDIR = @libdir@
-CONFIGDIR = @configdir@
-localstatedir = @localstatedir@
-SWATDIR = @swatdir@
-VARDIR = @localstatedir@
+	if ($config{prefix} eq "NONE") {
+		$config{prefix} = $config{ac_default_prefix};
+	}
+
+	if ($config{exec_prefix} eq "NONE") {
+		$config{exec_prefix} = $config{prefix};
+	}
+
+	$output = << "__EOD__";
+prefix = $config{prefix}
+exec_prefix = $config{exec_prefix}
+selftest_prefix = $config{selftest_prefix}
+VPATH = $config{srcdir}
+srcdir = $config{srcdir}
+builddir = $config{builddir}
+
+BINDIR = $config{bindir}
+SBINDIR = $config{sbindir}
+datadir = $config{datadir}
+LIBDIR = $config{libdir}
+CONFIGDIR = $config{configdir}
+localstatedir = $config{localstatedir}
+SWATDIR = $config{swatdir}
+VARDIR = $config{localstatedir}
+LOGFILEBASE = $config{logfilebase}
+NCALRPCDIR = $config{localstatedir}/ncalrpc
+LOCKDIR = $config{lockdir}
+PIDDIR = $config{piddir}
+MANDIR = $config{mandir}
+PRIVATEDIR = $config{privatedir}
+
+__EOD__
+	
+	$output.= << '__EOD__';
 
 # The permissions to give the executables
 INSTALLPERMS = 0755
@@ -39,27 +59,16 @@ INSTALLPERMS = 0755
 # set these to where to find various files
 # These can be overridden by command line switches (see smbd(8))
 # or in smb.conf (see smb.conf(5))
-LOGFILEBASE = @logfilebase@
 CONFIGFILE = $(CONFIGDIR)/smb.conf
 LMHOSTSFILE = $(CONFIGDIR)/lmhosts
-NCALRPCDIR = @localstatedir@/ncalrpc
 
 # This is where smbpasswd et al go
-PRIVATEDIR = @privatedir@
 SMB_PASSWD_FILE = $(PRIVATEDIR)/smbpasswd
-
-# the directory where lock files go
-LOCKDIR = @lockdir@
-
-# the directory where pid files go
-PIDDIR = @piddir@
-
-MANDIR = @mandir@
 
 PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\" \
 	 -DBINDIR=\"$(BINDIR)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" \
 	 -DLOCKDIR=\"$(LOCKDIR)\" -DPIDDIR=\"$(PIDDIR)\" -DLIBDIR=\"$(LIBDIR)\" \
-	 -DLOGFILEBASE=\"$(LOGFILEBASE)\" -DSHLIBEXT=\"@SHLIBEXT@\" \
+	 -DLOGFILEBASE=\"$(LOGFILEBASE)\" -DSHLIBEXT=\"$(SHLIBEXT)\" \
 	 -DCONFIGDIR=\"$(CONFIGDIR)\" -DNCALRPCDIR=\"$(NCALRPCDIR)\" \
 	 -DSWATDIR=\"$(SWATDIR)\" -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
 	 -DPRIVATE_DIR=\"$(PRIVATEDIR)\"
@@ -91,12 +100,15 @@ STLD_FLAGS=-rc
 
 SHLD=$config{CC}
 SHLD_FLAGS=$config{LDSHFLAGS}
+SONAMEFLAG=$config{SONAMEFLAG}
+SHLIBEXT=$config{SHLIBEXT}
 
 XSLTPROC=$config{XSLTPROC}
 
 LEX=$config{LEX}
 YACC=$config{YACC}
 YAPP=$config{YAPP}
+PIDL_ARGS=$config{PIDL_ARGS}
 
 GCOV=$config{GCOV}
 
@@ -537,7 +549,7 @@ clean: heimdal_clean
 distclean: clean
 	-rm -f bin/.dummy
 	-rm -f include/config.h include/smb_build.h
-	-rm -f Makefile Makefile.in
+	-rm -f Makefile 
 	-rm -f config.status
 	-rm -f config.log config.cache
 	-rm -f samba4-deps.dot
@@ -616,12 +628,12 @@ sub _prepare_rule_lists($)
 ###########################################################
 # This function prepares the output for Makefile
 #
-# $output = _prepare_makefile_in($OUTPUT)
+# $output = _prepare_makefile($OUTPUT)
 #
 # $OUTPUT -	the global OUTPUT context
 #
 # $output -		the resulting output buffer
-sub _prepare_makefile_in($)
+sub _prepare_makefile($)
 {
 	my ($CTX) = @_;
 	my $output;
@@ -666,21 +678,21 @@ __EOD__
 }
 
 ###########################################################
-# This function creates Makefile.in from the OUTPUT 
+# This function creates Makefile from the OUTPUT 
 # context
 #
-# create_makefile_in($OUTPUT)
+# create_makefile($OUTPUT)
 #
 # $OUTPUT	-	the global OUTPUT context
 #
 # $output -		the resulting output buffer
-sub create_makefile_in($$$)
+sub create_makefile($$$)
 {
 	my ($CTX, $mk, $file) = @_;
 
-	open(MAKEFILE_IN,">$file") || die ("Can't open $file\n");
-	print MAKEFILE_IN _prepare_makefile_in($CTX) . $mk;
-	close(MAKEFILE_IN);
+	open(MAKEFILE,">$file") || die ("Can't open $file\n");
+	print MAKEFILE _prepare_makefile($CTX) . $mk;
+	close(MAKEFILE);
 
 	print "build/smb_build/main.pl: creating $file\n";
 	return;	
