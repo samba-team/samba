@@ -64,8 +64,8 @@ struct ldb_module_ops {
 	int (*modify_record)(struct ldb_module *, const struct ldb_message *);
 	int (*delete_record)(struct ldb_module *, const struct ldb_dn *);
 	int (*rename_record)(struct ldb_module *, const struct ldb_dn *, const struct ldb_dn *);
-	int (*named_lock)(struct ldb_module *, const char *);
-	int (*named_unlock)(struct ldb_module *, const char *);
+	int (*start_transaction)(struct ldb_module *);
+	int (*end_transaction)(struct ldb_module *, int);
 	const char * (*errstring)(struct ldb_module *);
 };
 
@@ -135,8 +135,8 @@ int ldb_next_add_record(struct ldb_module *module, const struct ldb_message *mes
 int ldb_next_modify_record(struct ldb_module *module, const struct ldb_message *message);
 int ldb_next_delete_record(struct ldb_module *module, const struct ldb_dn *dn);
 int ldb_next_rename_record(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn);
-int ldb_next_named_lock(struct ldb_module *module, const char *lockname);
-int ldb_next_named_unlock(struct ldb_module *module, const char *lockname);
+int ldb_next_start_trans(struct ldb_module *module);
+int ldb_next_end_trans(struct ldb_module *module, int status);
 const char *ldb_next_errstring(struct ldb_module *module);
 
 /* The following definitions come from lib/ldb/common/ldb_debug.c  */

@@ -217,16 +217,16 @@ static int rdn_name_rename_record(struct ldb_module *module, const struct ldb_dn
 	return ldb_next_rename_record(module, olddn, newdn);
 }
 
-static int rdn_name_lock(struct ldb_module *module, const char *lockname)
+static int rdn_start_trans(struct ldb_module *module)
 {
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_name_lock\n");
-	return ldb_next_named_lock(module, lockname);
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_start_trans\n");
+	return ldb_next_start_trans(module);
 }
 
-static int rdn_name_unlock(struct ldb_module *module, const char *lockname)
+static int rdn_end_trans(struct ldb_module *module, int status)
 {
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_name_unlock\n");
-	return ldb_next_named_unlock(module, lockname);
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_end_trans\n");
+	return ldb_next_end_trans(module, status);
 }
 
 /* return extended error information */
@@ -254,16 +254,16 @@ static int rdn_name_destructor(void *module_ctx)
 }
 
 static const struct ldb_module_ops rdn_name_ops = {
-	.name          = "rdn_name",
-	.search        = rdn_name_search,
-	.search_bytree = rdn_name_search_bytree,
-	.add_record    = rdn_name_add_record,
-	.modify_record = rdn_name_modify_record,
-	.delete_record = rdn_name_delete_record,
-	.rename_record = rdn_name_rename_record,
-	.named_lock    = rdn_name_lock,
-	.named_unlock  = rdn_name_unlock,
-	.errstring     = rdn_name_errstring
+	.name              = "rdn_name",
+	.search            = rdn_name_search,
+	.search_bytree     = rdn_name_search_bytree,
+	.add_record        = rdn_name_add_record,
+	.modify_record     = rdn_name_modify_record,
+	.delete_record     = rdn_name_delete_record,
+	.rename_record     = rdn_name_rename_record,
+	.start_transaction = rdn_start_trans,
+	.end_transaction   = rdn_end_trans,
+	.errstring         = rdn_name_errstring
 };
 
 

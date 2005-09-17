@@ -215,16 +215,16 @@ static int timestamps_rename_record(struct ldb_module *module, const struct ldb_
 	return ldb_next_rename_record(module, olddn, newdn);
 }
 
-static int timestamps_lock(struct ldb_module *module, const char *lockname)
+static int timestamps_start_trans(struct ldb_module *module)
 {
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_lock\n");
-	return ldb_next_named_lock(module, lockname);
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_start_trans\n");
+	return ldb_next_start_trans(module);
 }
 
-static int timestamps_unlock(struct ldb_module *module, const char *lockname)
+static int timestamps_end_trans(struct ldb_module *module, int status)
 {
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_unlock\n");
-	return ldb_next_named_unlock(module, lockname);
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_end_trans\n");
+	return ldb_next_end_trans(module, status);
 }
 
 /* return extended error information */
@@ -252,16 +252,16 @@ static int timestamps_destructor(void *module_ctx)
 }
 
 static const struct ldb_module_ops timestamps_ops = {
-	.name          = "timestamps",
-	.search        = timestamps_search,
-	.search_bytree = timestamps_search_bytree,
-	.add_record    = timestamps_add_record,
-	.modify_record = timestamps_modify_record,
-	.delete_record = timestamps_delete_record,
-	.rename_record = timestamps_rename_record,
-	.named_lock    = timestamps_lock,
-	.named_unlock  = timestamps_unlock,
-	.errstring     = timestamps_errstring
+	.name              = "timestamps",
+	.search            = timestamps_search,
+	.search_bytree     = timestamps_search_bytree,
+	.add_record        = timestamps_add_record,
+	.modify_record     = timestamps_modify_record,
+	.delete_record     = timestamps_delete_record,
+	.rename_record     = timestamps_rename_record,
+	.start_transaction = timestamps_start_trans,
+	.end_transaction   = timestamps_end_trans,
+	.errstring         = timestamps_errstring
 };
 
 

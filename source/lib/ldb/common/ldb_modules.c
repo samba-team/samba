@@ -306,20 +306,20 @@ int ldb_next_rename_record(struct ldb_module *module, const struct ldb_dn *olddn
 	return module->next->ops->rename_record(module->next, olddn, newdn);
 }
 
-int ldb_next_named_lock(struct ldb_module *module, const char *lockname)
+int ldb_next_start_trans(struct ldb_module *module)
 {
 	if (!module->next) {
 		return -1;
 	}
-	return module->next->ops->named_lock(module->next, lockname);
+	return module->next->ops->start_transaction(module->next);
 }
 
-int ldb_next_named_unlock(struct ldb_module *module, const char *lockname)
+int ldb_next_end_trans(struct ldb_module *module, int status)
 {
 	if (!module->next) {
 		return -1;
 	}
-	return module->next->ops->named_unlock(module->next, lockname);
+	return module->next->ops->end_transaction(module->next, status);
 }
 
 const char *ldb_next_errstring(struct ldb_module *module)

@@ -1256,14 +1256,14 @@ static int map_modify(struct ldb_module *module, const struct ldb_message *msg)
 	return (mp_ret == -1 || fb_ret == -1)?-1:0;
 }
 
-static int map_lock(struct ldb_module *module, const char *lockname)
+static int map_start_trans(struct ldb_module *module)
 {
-	return ldb_next_named_lock(module, lockname);
+	return ldb_next_start_trans(module);
 }
 
-static int map_unlock(struct ldb_module *module, const char *lockname)
+static int map_end_trans(struct ldb_module *module, int status)
 {
-	return ldb_next_named_unlock(module, lockname);
+	return ldb_next_end_trans(module, status);
 }
 
 /*
@@ -1280,16 +1280,16 @@ static const char *map_errstring(struct ldb_module *module)
 }
 
 static const struct ldb_module_ops map_ops = {
-	.name          = "map",
-	.search        = map_search,
-	.search_bytree = map_search_bytree,
-	.add_record    = map_add,
-	.modify_record = map_modify,
-	.delete_record = map_delete,
-	.rename_record = map_rename,
-	.named_lock    = map_lock,
-	.named_unlock  = map_unlock,
-	.errstring     = map_errstring
+	.name              = "map",
+	.search            = map_search,
+	.search_bytree     = map_search_bytree,
+	.add_record        = map_add,
+	.modify_record     = map_modify,
+	.delete_record     = map_delete,
+	.rename_record     = map_rename,
+	.start_transaction = map_start_trans,
+	.end_transaction   = map_end_trans,
+	.errstring         = map_errstring
 };
 
 static char *map_find_url(struct ldb_context *ldb, const char *name)

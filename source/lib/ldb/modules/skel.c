@@ -73,16 +73,16 @@ static int skel_rename_record(struct ldb_module *module, const struct ldb_dn *ol
 	return ldb_next_rename_record(module, olddn, newdn);
 }
 
-/* named_lock */
-static int skel_named_lock(struct ldb_module *module, const char *lockname)
+/* start a transaction */
+static int skel_start_trans(struct ldb_module *module)
 {
-	return ldb_next_named_lock(module, lockname);
+	return ldb_next_start_trans(module);
 }
 
-/* named_unlock */
-static int skel_named_unlock(struct ldb_module *module, const char *lockname)
+/* end a transaction */
+static int skel_end_trans(struct ldb_module *module, int status)
 {
-	return ldb_next_named_unlock(module, lockname);
+	return ldb_next_end_trans(module, status);
 }
 
 /* return extended error information */
@@ -101,16 +101,16 @@ static int skel_destructor(void *module_ctx)
 }
 
 static const struct ldb_module_ops skel_ops = {
-	.name		= "skel",
-	.search		= skel_search,
-	.search_bytree	= skel_search_bytree,
-	.add_record	= skel_add_record,
-	.modify_record	= skel_modify_record,
-	.delete_record	= skel_delete_record,
-	.rename_record	= skel_rename_record,
-	.named_lock	= skel_named_lock,
-	.named_unlock	= skel_named_unlock,
-	.errstring	= skel_errstring
+	.name		   = "skel",
+	.search		   = skel_search,
+	.search_bytree	   = skel_search_bytree,
+	.add_record	   = skel_add_record,
+	.modify_record	   = skel_modify_record,
+	.delete_record	   = skel_delete_record,
+	.rename_record	   = skel_rename_record,
+	.start_transaction = skel_start_trans,
+	.end_transaction   = skel_end_trans,
+	.errstring	   = skel_errstring
 };
 
 #ifdef HAVE_DLOPEN_DISABLED
