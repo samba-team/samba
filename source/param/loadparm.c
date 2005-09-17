@@ -184,6 +184,7 @@ typedef struct
 	BOOL bClientPlaintextAuth;
 	BOOL bClientLanManAuth;
 	BOOL bClientNTLMv2Auth;
+	BOOL client_use_spnego_principal;
 	BOOL bHostMSDfs;
 	BOOL bUnicode;
 	BOOL bUnixExtensions;
@@ -422,6 +423,7 @@ static struct parm_struct parm_table[] = {
 	{"client NTLMv2 auth", P_BOOL, P_GLOBAL, &Globals.bClientNTLMv2Auth, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"client lanman auth", P_BOOL, P_GLOBAL, &Globals.bClientLanManAuth, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"client plaintext auth", P_BOOL, P_GLOBAL, &Globals.bClientPlaintextAuth, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"client use spnego principal", P_BOOL, P_GLOBAL, &Globals.client_use_spnego_principal, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	
 	{"read only", P_BOOL, P_LOCAL, &sDefault.bRead_only, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE},
 
@@ -659,6 +661,7 @@ static void init_globals(void)
 	do_parameter("ClientLanManAuth", "True", NULL);
 	do_parameter("LanmanAuth", "True", NULL);
 	do_parameter("NTLMAuth", "True", NULL);
+	do_parameter("client use spnego principal", "False", NULL);
 	
 	do_parameter("UnixExtensions", "False", NULL);
 
@@ -853,6 +856,7 @@ FN_GLOBAL_BOOL(lp_ntlm_auth, &Globals.bNTLMAuth)
 FN_GLOBAL_BOOL(lp_client_plaintext_auth, &Globals.bClientPlaintextAuth)
 FN_GLOBAL_BOOL(lp_client_lanman_auth, &Globals.bClientLanManAuth)
 FN_GLOBAL_BOOL(lp_client_ntlmv2_auth, &Globals.bClientNTLMv2Auth)
+FN_GLOBAL_BOOL(lp_client_use_spnego_principal, &Globals.client_use_spnego_principal)
 FN_GLOBAL_BOOL(lp_host_msdfs, &Globals.bHostMSDfs)
 FN_GLOBAL_BOOL(lp_unix_extensions, &Globals.bUnixExtensions)
 FN_GLOBAL_BOOL(lp_use_spnego, &Globals.bUseSpnego)
