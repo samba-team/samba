@@ -29,9 +29,9 @@ AC_ISC_POSIX
 dnl Check if C compiler understands -c and -o at the same time
 AC_PROG_CC_C_O
 if eval "test \"`echo '$ac_cv_prog_cc_'${ac_cc}_c_o`\" = no"; then
-	BROKEN_CC=no
-else
 	BROKEN_CC=yes
+else
+	BROKEN_CC=no
 fi
 AC_SUBST(BROKEN_CC)
 
@@ -152,7 +152,15 @@ if test -n "$DEVELOPER_CFLAGS"; then
 fi
 
 # allow for --with-hostcc=gcc
-AC_ARG_WITH(hostcc,[  --with-hostcc=compiler    choose host compiler],[HOSTCC=$withval],[HOSTCC=$CC])
+AC_ARG_WITH(hostcc,[  --with-hostcc=compiler    choose host compiler],
+[HOSTCC=$withval],
+[
+if test z"$cross_compiling" = "yes"; then 
+	HOSTCC=cc
+else 
+	HOSTCC=$CC
+fi
+])
 AC_SUBST(HOSTCC)
 
 AC_PATH_PROG(GCOV,gcov)
