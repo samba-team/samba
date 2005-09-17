@@ -77,6 +77,8 @@ PERL=$config{PERL}
 
 CC=$config{CC}
 CFLAGS=-I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -D_SAMBA_BUILD_ -DHAVE_CONFIG_H $config{CFLAGS} $config{CPPFLAGS}
+PICFLAG=$config{PICFLAG}
+HOSTCC=$config{HOSTCC}
 
 CPP=$config{CPP}
 CPPFLAGS=$config{CPPFLAGS}
@@ -114,7 +116,7 @@ __EOD__
 sub _prepare_SUFFIXES()
 {
 	return << '__EOD__';
-.SUFFIXES: .x .c .et .y .l .d .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml
+.SUFFIXES: .x .c .et .y .l .d .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml .ho
 
 __EOD__
 }
@@ -194,16 +196,19 @@ sub _prepare_dummy_MAKEDIR()
 {
 	my $ctx = shift;
 
-	return  << '__EOD__';
+	my $ret = << '__EOD__';
 bin/.dummy:
 	@: >> $@ || : > $@
 
 dynconfig.o: dynconfig.c Makefile
 	@echo Compiling $*.c
-	@$(CC) $(CFLAGS) @PICFLAG@ $(PATH_FLAGS) -c $< -o $@
-@BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
-
+	@$(CC) $(CFLAGS) $(PICFLAG) $(PATH_FLAGS) -c $< -o $@
 __EOD__
+	if ($config{BROKEN_CC} eq "yes") {
+		$ret .= '	-mv `echo $@ | sed \'s%^.*/%%g\'` $@
+';
+	}
+	return $ret."\n";
 }
 
 sub _prepare_depend_CC_rule()
@@ -237,15 +242,35 @@ sub _prepare_std_CC_rule($$$$$)
 {
 	my ($src,$dst,$flags,$message,$comment) = @_;
 
-	return << "__EOD__";
+	my $ret = << "__EOD__";
 # $comment
 .$src.$dst:
 	\@echo $message \$\*.$src
 	\@\$(CC) `script/cflags.sh \$\@` \$(CFLAGS) $flags -c \$< -o \$\@
-\@BROKEN_CC\@	-mv `echo \$\@ | sed 's%^.*/%%g'` \$\@
-
 __EOD__
+	if ($config{BROKEN_CC} eq "yes") {
+		$ret.= '	-mv `echo \$\@ | sed \'s%^.*/%%g\'` \$\@
+';
+	}
+	return $ret."\n";
 }
+
+sub _prepare_hostcc_rule()
+{
+	my $ret = << "__EOD__";
+.c.ho:
+	\@echo Compiling \$\*.c with host compiler
+	\@\$(HOSTCC) `script/cflags.sh \$\@` \$(CFLAGS) -c \$< -o \$\@
+__EOD__
+	if ($config{BROKEN_CC} eq "yes") {
+		$ret .= '	-mv `echo \$\@ | sed \'s%^.*/%%g\'` \$\@
+';
+	}
+
+	return $ret."\n";
+}
+
+
 
 sub array2oneperline($)
 {
@@ -611,8 +636,9 @@ sub _prepare_makefile_in($)
 	$output .= _prepare_default_rule();
 	$output .= _prepare_SUFFIXES();
 	$output .= _prepare_dummy_MAKEDIR();
-	$output .= _prepare_std_CC_rule("c","o",$config{PICFLAG},"Compiling","Rule for std objectfiles");
-	$output .= _prepare_std_CC_rule("h","h.gch",$config{PICFLAG},"Precompiling","Rule for precompiled headerfiles");
+	$output .= _prepare_hostcc_rule();
+	$output .= _prepare_std_CC_rule("c","o",'$(PICFLAG)',"Compiling","Rule for std objectfiles");
+	$output .= _prepare_std_CC_rule("h","h.gch",'$(PICFLAG)',"Precompiling","Rule for precompiled headerfiles");
 
 	$output .= _prepare_depend_CC_rule();
 	
