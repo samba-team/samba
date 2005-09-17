@@ -29,9 +29,9 @@ AC_ISC_POSIX
 dnl Check if C compiler understands -c and -o at the same time
 AC_PROG_CC_C_O
 if eval "test \"`echo '$ac_cv_prog_cc_'${ac_cc}_c_o`\" = no"; then
-	BROKEN_CC=
+	BROKEN_CC=no
 else
-	BROKEN_CC=#
+	BROKEN_CC=yes
 fi
 AC_SUBST(BROKEN_CC)
 
