@@ -239,7 +239,7 @@ static WERROR DRSUAPI_REMOVE_DS_DOMAIN(struct dcesrv_call_state *dce_call, TALLO
   drsuapi_DsGetDomainControllerInfo 
 */
 static WERROR drsuapi_DsGetDomainControllerInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct drsuapi_DsGetDomainControllerInfo *r)
+						struct drsuapi_DsGetDomainControllerInfo *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

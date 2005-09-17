@@ -7,7 +7,8 @@ ADD_OBJ_FILES = \
 		auth/kerberos/kerberos_verify.o \
 		auth/kerberos/kerberos_util.o \
 		auth/kerberos/kerberos_pac.o \
-		auth/kerberos/gssapi_parse.o
+		auth/kerberos/gssapi_parse.o \
+		auth/kerberos/krb5_init_context.o
 REQUIRED_SUBSYSTEMS = KERBEROS_LIB NDR_KRB5PAC 
 # End SUBSYSTEM KERBEROS
 #################################
