@@ -995,7 +995,89 @@ static NTSTATUS create_schannel_auth_rpc_bind_req( struct rpc_pipe_client *cli,
 }
 
 /*******************************************************************
- Creates a DCE/RPC bind request
+ Creates the internals of a DCE/RPC bind request or alter context PDU.
+ ********************************************************************/
+
+static NTSTATUS create_bind_or_alt_ctx_internal(uint8 pkt_type,
+						prs_struct *rpc_out, 
+						uint32 rpc_call_id,
+						RPC_IFACE *abstract,
+						RPC_IFACE *transfer,
+						RPC_HDR_AUTH *phdr_auth,
+						prs_struct *pauth_info)
+{
+	RPC_HDR hdr;
+	RPC_HDR_RB hdr_rb;
+	RPC_CONTEXT rpc_ctx;
+	uint16 auth_len = prs_offset(pauth_info);
+	uint8 ss_padding_len = 0;
+	uint16 frag_len = 0;
+
+	/* create the RPC context. */
+	init_rpc_context(&rpc_ctx, 0 /* context id */, abstract, transfer);
+
+	/* create the bind request RPC_HDR_RB */
+	init_rpc_hdr_rb(&hdr_rb, RPC_MAX_PDU_FRAG_LEN, RPC_MAX_PDU_FRAG_LEN, 0x0, &rpc_ctx);
+
+	/* Start building the frag length. */
+	frag_len = RPC_HEADER_LEN + RPC_HDR_RB_LEN(&hdr_rb);
+
+	/* Do we need to pad ? */
+	if (auth_len) {
+		uint16 data_len = RPC_HEADER_LEN + RPC_HDR_RB_LEN(&hdr_rb);
+		if (data_len % 8) {
+			ss_padding_len = 8 - (data_len % 8);
+			phdr_auth->auth_pad_len = ss_padding_len;
+		}
+		frag_len += RPC_HDR_AUTH_LEN + auth_len + ss_padding_len;
+	}
+
+	/* Create the request RPC_HDR */
+	init_rpc_hdr(&hdr, pkt_type, RPC_FLG_FIRST|RPC_FLG_LAST, rpc_call_id, frag_len, auth_len);
+
+	/* Marshall the RPC header */
+	if(!smb_io_rpc_hdr("hdr"   , &hdr, rpc_out, 0)) {
+		DEBUG(0,("create_bind_or_alt_ctx_internal: failed to marshall RPC_HDR.\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Marshall the bind request data */
+	if(!smb_io_rpc_hdr_rb("", &hdr_rb, rpc_out, 0)) {
+		DEBUG(0,("create_bind_or_alt_ctx_internal: failed to marshall RPC_HDR_RB.\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/*
+	 * Grow the outgoing buffer to store any auth info.
+	 */
+
+	if(auth_len != 0) {
+		if (ss_padding_len) {
+			unsigned char pad[8];
+			memset(pad, '\0', 8);
+			if (!prs_copy_data_in(rpc_out, pad, ss_padding_len)) {
+				DEBUG(0,("create_bind_or_alt_ctx_internal: failed to marshall padding.\n"));
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+
+		if(!smb_io_rpc_hdr_auth("hdr_auth", phdr_auth, rpc_out, 0)) {
+			DEBUG(0,("create_bind_or_alt_ctx_internal: failed to marshall RPC_HDR_AUTH.\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+
+
+		if(!prs_append_prs_data( rpc_out, pauth_info)) {
+			DEBUG(0,("create_bind_or_alt_ctx_internal: failed to grow parse struct to add auth.\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+ Creates a DCE/RPC bind request.
  ********************************************************************/
 
 static NTSTATUS create_rpc_bind_req(struct rpc_pipe_client *cli,
@@ -1005,14 +1087,8 @@ static NTSTATUS create_rpc_bind_req(struct rpc_pipe_client *cli,
 				enum pipe_auth_type auth_type,
 				enum pipe_auth_level auth_level)
 {
-	RPC_HDR hdr;
-	RPC_HDR_RB hdr_rb;
-	RPC_CONTEXT rpc_ctx;
 	RPC_HDR_AUTH hdr_auth;
 	prs_struct auth_info;
-	uint8 auth_len = 0;
-	uint8 ss_padding_len = 0;
-	uint16 frag_len = 0;
 	NTSTATUS ret = NT_STATUS_OK;
 
 	ZERO_STRUCT(hdr_auth);
@@ -1051,77 +1127,17 @@ static NTSTATUS create_rpc_bind_req(struct rpc_pipe_client *cli,
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	auth_len = prs_offset(&auth_info);
-
-	/* create the RPC context. */
-	init_rpc_context(&rpc_ctx, 0 /* context id */, abstract, transfer);
-
-	/* create the bind request RPC_HDR_RB */
-	init_rpc_hdr_rb(&hdr_rb, RPC_MAX_PDU_FRAG_LEN, RPC_MAX_PDU_FRAG_LEN, 0x0, &rpc_ctx);
-
-	/* Start building the frag length. */
-	frag_len = RPC_HEADER_LEN + RPC_HDR_RB_LEN(&hdr_rb);
-
-	/* Do we need to pad ? */
-	if (auth_len) {
-		uint16 data_len = RPC_HEADER_LEN + RPC_HDR_RB_LEN(&hdr_rb);
-		if (data_len % 8) {
-			ss_padding_len = 8 - (data_len % 8);
-			hdr_auth.auth_pad_len = ss_padding_len;
-		}
-		frag_len += RPC_HDR_AUTH_LEN + auth_len + ss_padding_len;
-	}
-
-	/* Create the request RPC_HDR */
-	init_rpc_hdr(&hdr, RPC_BIND, RPC_FLG_FIRST|RPC_FLG_LAST, rpc_call_id, frag_len, auth_len);
-
-	/* Marshall the RPC header */
-	if(!smb_io_rpc_hdr("hdr"   , &hdr, rpc_out, 0)) {
-		DEBUG(0,("create_rpc_bind_req: failed to marshall RPC_HDR.\n"));
-		prs_mem_free(&auth_info);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* Marshall the bind request data */
-	if(!smb_io_rpc_hdr_rb("", &hdr_rb, rpc_out, 0)) {
-		DEBUG(0,("create_rpc_bind_req: failed to marshall RPC_HDR_RB.\n"));
-		prs_mem_free(&auth_info);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/*
-	 * Grow the outgoing buffer to store any auth info.
-	 */
-
-	if(auth_len != 0) {
-		if (ss_padding_len) {
-			unsigned char pad[8];
-			memset(pad, '\0', 8);
-			if (!prs_copy_data_in(rpc_out, pad, ss_padding_len)) {
-				DEBUG(0,("create_rpc_bind_req: failed to marshall padding.\n"));
-				prs_mem_free(&auth_info);
-				return NT_STATUS_NO_MEMORY;
-			}
-		}
-
-		if(!smb_io_rpc_hdr_auth("hdr_auth", &hdr_auth, rpc_out, 0)) {
-			DEBUG(0,("create_rpc_bind_req: failed to marshall RPC_HDR_AUTH.\n"));
-			prs_mem_free(&auth_info);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-
-		if(!prs_append_prs_data( rpc_out, &auth_info)) {
-			DEBUG(0,("create_rpc_bind_req: failed to grow parse struct to add auth.\n"));
-			prs_mem_free(&auth_info);
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
+	ret = create_bind_or_alt_ctx_internal(RPC_BIND,
+						rpc_out, 
+						rpc_call_id,
+						abstract,
+						transfer,
+						&hdr_auth,
+						&auth_info);
 
 	prs_mem_free(&auth_info);
-	return NT_STATUS_OK;
+	return ret;
 }
-
 
 /*******************************************************************
  Create and add the NTLMSSP sign/seal auth header and data.
@@ -1735,15 +1751,150 @@ static NTSTATUS rpc_finish_auth3_bind(struct rpc_pipe_client *cli,
 	return NT_STATUS_OK;
 }
 
+/*******************************************************************
+ Creates a DCE/RPC bind alter context authentication request which
+ may contain a spnego auth blobl
+ ********************************************************************/
+
+static NTSTATUS create_rpc_alter_context(uint32 rpc_call_id,
+					RPC_IFACE *abstract,
+					RPC_IFACE *transfer,
+					enum pipe_auth_level auth_level,
+					DATA_BLOB *pauth_blob, /* spnego auth blob already created. */
+					prs_struct *rpc_out)
+{
+	RPC_HDR_AUTH hdr_auth;
+	prs_struct auth_info;
+	NTSTATUS ret = NT_STATUS_OK;
+
+	ZERO_STRUCT(hdr_auth);
+	prs_init(&auth_info, RPC_HDR_AUTH_LEN, prs_get_mem_context(rpc_out), MARSHALL);
+
+	/* We may change the pad length before marshalling. */
+	init_rpc_hdr_auth(&hdr_auth, RPC_SPNEGO_AUTH_TYPE, (int)auth_level, 0, 1);
+
+	if (pauth_blob->length) {
+		if (!prs_copy_data_in(&auth_info, (char *)pauth_blob->data, pauth_blob->length)) {
+			prs_mem_free(&auth_info);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	ret = create_bind_or_alt_ctx_internal(RPC_ALTCONT,
+						rpc_out, 
+						rpc_call_id,
+						abstract,
+						transfer,
+						&hdr_auth,
+						&auth_info);
+	prs_mem_free(&auth_info);
+	return ret;
+}
+
+/*******************************************************************
+ Third leg of the SPNEGO bind mechanism - sends alter context PDU
+ and gets a response.
+ ********************************************************************/
+
 static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
                                 RPC_HDR *phdr,
                                 prs_struct *rbuf,
                                 uint32 rpc_call_id,
+				RPC_IFACE *abstract,
+				RPC_IFACE *transfer,
                                 enum pipe_auth_type auth_type,
                                 enum pipe_auth_level auth_level)
 {
-	/* Placeholder until I finish. */
-	return NT_STATUS_NO_MEMORY;
+	DATA_BLOB server_spnego_response = data_blob(NULL,0);
+	DATA_BLOB server_ntlm_response = data_blob(NULL,0);
+	DATA_BLOB client_reply = data_blob(NULL,0);
+	DATA_BLOB tmp_blob = data_blob(NULL, 0);
+	RPC_HDR_AUTH hdr_auth;
+	NTSTATUS nt_status;
+	prs_struct rpc_out;
+	ssize_t ret;
+
+	if (!phdr->auth_len || (phdr->frag_len < phdr->auth_len + RPC_HDR_AUTH_LEN)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* Process the returned NTLMSSP blob first. */
+	if (!prs_set_offset(rbuf, phdr->frag_len - phdr->auth_len - RPC_HDR_AUTH_LEN)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if(!smb_io_rpc_hdr_auth("hdr_auth", &hdr_auth, rbuf, 0)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	server_spnego_response = data_blob(NULL, phdr->auth_len);
+	prs_copy_data_out((char *)server_spnego_response.data, rbuf, phdr->auth_len);
+	
+	/* The server might give us back two challenges - tmp_blob is for the second. */
+	if (!spnego_parse_challenge(server_spnego_response, &server_ntlm_response, &tmp_blob)) {
+		data_blob_free(&server_spnego_response);
+		data_blob_free(&server_ntlm_response);
+		data_blob_free(&tmp_blob);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* We're finished with the server spnego response and the tmp_blob. */
+	data_blob_free(&server_spnego_response);
+	data_blob_free(&tmp_blob);
+
+	nt_status = ntlmssp_update(cli->auth.a_u.ntlmssp_state,
+				   server_ntlm_response,
+				   &client_reply);
+	
+	/* Finished with the server_ntlm response */
+	data_blob_free(&server_ntlm_response);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0,("rpc_finish_spnego_ntlmssp_bind: NTLMSSP update using server blob failed.\n"));
+		data_blob_free(&client_reply);
+		return nt_status;
+	}
+
+	/* SPNEGO wrap the client reply. */
+	tmp_blob = spnego_gen_auth(client_reply);
+	data_blob_free(&client_reply);
+	client_reply = tmp_blob;
+
+	/* Now prepare the alter context pdu. */
+	prs_init(&rpc_out, 0, prs_get_mem_context(rbuf), MARSHALL);
+
+	nt_status = create_rpc_alter_context(rpc_call_id,
+						abstract,
+						transfer,
+						auth_level,
+						&client_reply,
+						&rpc_out);
+
+	data_blob_free(&client_reply);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		prs_mem_free(&rpc_out);
+		return nt_status;
+	}
+
+	/* 8 here is named pipe message mode. */
+	ret = cli_write(cli->cli, cli->fnum, 0x8, prs_data_p(&rpc_out), 0,
+				(size_t)prs_offset(&rpc_out));
+
+	if (ret != (ssize_t)prs_offset(&rpc_out)) {
+		DEBUG(0,("rpc_finish_spnego_ntlmssp_bind: cli_write failed. Return was %d\n", (int)ret));
+		prs_mem_free(&rpc_out);
+		return cli_get_nt_error(cli->cli);
+	}
+
+	DEBUG(5,("rpc_finish_spnego_ntlmssp_bind:: Sent alter context request to "
+		"remote machine %s pipe %s fnum 0x%x.\n",
+		cli->cli->desthost,
+		cli->pipe_name,
+		(unsigned int)cli->fnum));
+
+	prs_mem_free(&rpc_out);
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -1849,6 +2000,7 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 		case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
 			/* Need to send alter context request and reply. */
 			status = rpc_finish_spnego_ntlmssp_bind(cli, &hdr, &rbuf, rpc_call_id,
+						&abstract, &transfer,
 						auth_type, auth_level);
 			if (!NT_STATUS_IS_OK(status)) {
 				prs_mem_free(&rbuf);
