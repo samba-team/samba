@@ -1883,15 +1883,39 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
 	nt_status = rpc_api_pipe(cli, &rpc_out, rbuf, RPC_ALTCONTRESP);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		prs_mem_free(&rpc_out);
-		prs_mem_free(rbuf);
 		return nt_status;
 	}
 
 	prs_mem_free(&rpc_out);
 
-	/* TODO - finish the ntlmssp bind... */
+	/* Get the auth blob from the reply. */
+	if(!smb_io_rpc_hdr("rpc_hdr   ", phdr, rbuf, 0)) {
+		DEBUG(0,("rpc_finish_spnego_ntlmssp_bind: Failed to unmarshall RPC_HDR.\n"));
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
 
-	DEBUG(5,("rpc_finish_spnego_ntlmssp_bind:: Sent alter context request to "
+	if (!prs_set_offset(rbuf, phdr->frag_len - phdr->auth_len - RPC_HDR_AUTH_LEN)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if(!smb_io_rpc_hdr_auth("hdr_auth", &hdr_auth, rbuf, 0)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	server_spnego_response = data_blob(NULL, phdr->auth_len);
+	prs_copy_data_out((char *)server_spnego_response.data, rbuf, phdr->auth_len);
+
+	/* Check we got a valid auth response. */
+	if (!spnego_parse_auth_response(server_spnego_response, NT_STATUS_OK, &tmp_blob)) {
+		data_blob_free(&server_spnego_response);
+		data_blob_free(&tmp_blob);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	data_blob_free(&server_spnego_response);
+	data_blob_free(&tmp_blob);
+
+	DEBUG(5,("rpc_finish_spnego_ntlmssp_bind: alter context request to "
 		"remote machine %s pipe %s fnum 0x%x.\n",
 		cli->cli->desthost,
 		cli->pipe_name,
