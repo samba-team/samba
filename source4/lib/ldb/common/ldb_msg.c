@@ -34,6 +34,7 @@
 
 #include "includes.h"
 #include "ldb/include/ldb.h"
+#include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_private.h"
 
 /*
@@ -498,4 +499,33 @@ struct ldb_message *ldb_msg_diff(struct ldb_context *ldb,
 	}
 
 	return mod;
+}
+
+int ldb_msg_sanity_check(const struct ldb_message *msg)
+{
+	int i, j;
+
+	/* basic check on DN */
+	if (msg->dn == NULL) {
+		/* TODO: return also an error string */
+		return LDB_ERR_INVALID_DN_SYNTAX;
+	}
+	if (msg->dn->comp_num == 0) {
+		/* root dse has empty dn */
+		/* TODO: return also an error string */
+		return LDB_ERR_ENTRY_ALREADY_EXISTS;
+	}
+
+	/* basic syntax checks */
+	for (i = 0; i < msg->num_elements; i++) {
+		for (j = 0; j < msg->elements[i].num_values; j++) {
+			if (msg->elements[i].values[j].length == 0) {
+				/* an attribute cannot be empty */
+				/* TODO: return also an error string */
+				return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+			}
+		}
+	}
+
+	return LDB_ERR_SUCCESS;
 }

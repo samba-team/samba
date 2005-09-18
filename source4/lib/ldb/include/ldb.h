@@ -3,6 +3,7 @@
 
    Copyright (C) Andrew Tridgell  2004
    Copyright (C) Stefan Metzmacher  2004
+   Copyright (C) Simo Sorce  2005
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -450,6 +451,8 @@ struct ldb_message *ldb_msg_canonicalize(struct ldb_context *ldb,
 struct ldb_message *ldb_msg_diff(struct ldb_context *ldb, 
 				 struct ldb_message *msg1,
 				 struct ldb_message *msg2);
+
+int ldb_msg_sanity_check(const struct ldb_message *msg);
 
 struct ldb_val ldb_val_dup(void *mem_ctx, const struct ldb_val *v);
 
