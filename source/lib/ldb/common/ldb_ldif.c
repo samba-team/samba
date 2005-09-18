@@ -658,6 +658,11 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 			if (ret != 0) {
 				goto failed;
 			}
+			if (value.length == 0) {
+				ldb_debug(ldb, LDB_DEBUG_ERROR,
+					  "Error: Attribute value cannot be empty for attribute '%s'\n", el->name);
+				goto failed;
+			}
 			if (value.data != el->values[el->num_values].data) {
 				talloc_steal(el->values, el->values[el->num_values].data);
 			}
