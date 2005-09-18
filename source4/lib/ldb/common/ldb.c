@@ -106,6 +106,14 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
 	return LDB_ERR_SUCCESS;
 }
 
+static void ldb_reset_err_string(struct ldb_context *ldb)
+{
+	if (ldb->err_string) {
+		talloc_free(ldb->err_string);
+		ldb->err_string = NULL;
+	}
+}
+
 /*
   start a transaction
 */
@@ -136,6 +144,8 @@ int ldb_search(struct ldb_context *ldb,
 	       const char *expression,
 	       const char * const *attrs, struct ldb_message ***res)
 {
+	ldb_reset_err_string(ldb);
+
 	return ldb->modules->ops->search(ldb->modules, base, scope, expression, attrs, res);
 }
 
@@ -153,6 +163,8 @@ int ldb_search_bytree(struct ldb_context *ldb,
 		      struct ldb_parse_tree *tree,
 		      const char * const *attrs, struct ldb_message ***res)
 {
+	ldb_reset_err_string(ldb);
+
 	return ldb->modules->ops->search_bytree(ldb->modules, base, scope, tree, attrs, res);
 }
 
@@ -165,6 +177,7 @@ int ldb_add(struct ldb_context *ldb,
 {
 	int status;
 
+	ldb_reset_err_string(ldb);
 
 	status = ldb_msg_sanity_check(message);
 	if (status != LDB_ERR_SUCCESS) return status;
@@ -184,6 +197,8 @@ int ldb_modify(struct ldb_context *ldb,
 {
 	int status;
 
+	ldb_reset_err_string(ldb);
+
 	status = ldb_msg_sanity_check(message);
 	if (status != LDB_ERR_SUCCESS) return status;
 
@@ -200,7 +215,11 @@ int ldb_modify(struct ldb_context *ldb,
 */
 int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
 {
-	int status = ldb_start_trans(ldb);
+	int status;
+
+	ldb_reset_err_string(ldb);
+
+	status = ldb_start_trans(ldb);
 	if (status != LDB_ERR_SUCCESS) return status;
 
 	status = ldb->modules->ops->delete_record(ldb->modules, dn);
@@ -212,7 +231,11 @@ int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
 */
 int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
 {
-	int status = ldb_start_trans(ldb);
+	int status;
+
+	ldb_reset_err_string(ldb);
+
+	status = ldb_start_trans(ldb);
 	if (status != LDB_ERR_SUCCESS) return status;
 
 	status = ldb->modules->ops->rename_record(ldb->modules, olddn, newdn);
@@ -224,10 +247,11 @@ int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct
 */
 const char *ldb_errstring(struct ldb_context *ldb)
 {
-	if (ldb->modules == NULL) {
-		return "ldb not connected";
+	if (ldb->err_string) {
+		return ldb->err_string;
 	}
-	return ldb->modules->ops->errstring(ldb->modules);
+
+	return NULL;
 }
 
 

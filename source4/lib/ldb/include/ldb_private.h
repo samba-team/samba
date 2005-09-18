@@ -66,7 +66,6 @@ struct ldb_module_ops {
 	int (*rename_record)(struct ldb_module *, const struct ldb_dn *, const struct ldb_dn *);
 	int (*start_transaction)(struct ldb_module *);
 	int (*end_transaction)(struct ldb_module *, int);
-	const char * (*errstring)(struct ldb_module *);
 };
 
 
@@ -104,6 +103,8 @@ struct ldb_context {
 	} *opaque;
 
 	struct ldb_schema schema;
+
+	char *err_string;
 };
 
 /* the modules init function */
@@ -137,7 +138,8 @@ int ldb_next_delete_record(struct ldb_module *module, const struct ldb_dn *dn);
 int ldb_next_rename_record(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn);
 int ldb_next_start_trans(struct ldb_module *module);
 int ldb_next_end_trans(struct ldb_module *module, int status);
-const char *ldb_next_errstring(struct ldb_module *module);
+
+void ldb_set_errstring(struct ldb_module *module, char *err_string);
 
 /* The following definitions come from lib/ldb/common/ldb_debug.c  */
 void ldb_debug(struct ldb_context *ldb, enum ldb_debug_level level, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
