@@ -38,10 +38,6 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include <time.h>
 
-struct private_data {
-	const char *error_string;
-};
-
 static int objectguid_search(struct ldb_module *module, const struct ldb_dn *base,
 				  enum ldb_scope scope, const char *expression,
 				  const char * const *attrs, struct ldb_message ***res)
@@ -155,23 +151,6 @@ static int objectguid_end_trans(struct ldb_module *module, int status)
 	return ldb_next_end_trans(module, status);
 }
 
-/* return extended error information */
-static const char *objectguid_errstring(struct ldb_module *module)
-{
-	struct private_data *data = (struct private_data *)module->private_data;
-
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectguid_errstring\n");
-	if (data->error_string) {
-		const char *error;
-
-		error = data->error_string;
-		data->error_string = NULL;
-		return error;
-	}
-
-	return ldb_next_errstring(module);
-}
-
 static int objectguid_destructor(void *module_ctx)
 {
 	/* struct ldb_module *ctx = module_ctx; */
@@ -188,8 +167,7 @@ static const struct ldb_module_ops objectguid_ops = {
 	.delete_record = objectguid_delete_record,
 	.rename_record = objectguid_rename_record,
 	.start_transaction = objectguid_start_trans,
-	.end_transaction = objectguid_end_trans,
-	.errstring     = objectguid_errstring
+	.end_transaction = objectguid_end_trans
 };
 
 
@@ -201,20 +179,12 @@ struct ldb_module *objectguid_module_init(struct ldb_context *ldb, const char *o
 #endif
 {
 	struct ldb_module *ctx;
-	struct private_data *data;
 
 	ctx = talloc(ldb, struct ldb_module);
 	if (!ctx)
 		return NULL;
 
-	data = talloc(ctx, struct private_data);
-	if (!data) {
-		talloc_free(ctx);
-		return NULL;
-	}
-
-	data->error_string = NULL;
-	ctx->private_data = data;
+	ctx->private_data = NULL;
 	ctx->ldb = ldb;
 	ctx->prev = ctx->next = NULL;
 	ctx->ops = &objectguid_ops;
