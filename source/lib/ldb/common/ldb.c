@@ -34,6 +34,7 @@
 
 #include "includes.h"
 #include "ldb/include/ldb.h"
+#include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_private.h"
 
 /* 
@@ -89,20 +90,20 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
 #endif
 	else {
 		ldb_debug(ldb, LDB_DEBUG_FATAL, "Unable to find backend for '%s'\n", url);
-		return -1;
+		return LDB_ERR_OTHER;
 	}
 
-	if (ret != 0) {
+	if (ret != LDB_ERR_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to connect to '%s'\n", url);
 		return ret;
 	}
 
-	if (ldb_load_modules(ldb, options) != 0) {
+	if (ldb_load_modules(ldb, options) != LDB_ERR_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_FATAL, "Unable to load modules for '%s'\n", url);
-		return -1;
+		return LDB_ERR_OTHER;
 	}
 
-	return 0;
+	return LDB_ERR_SUCCESS;
 }
 
 /*
@@ -162,8 +163,14 @@ int ldb_search_bytree(struct ldb_context *ldb,
 int ldb_add(struct ldb_context *ldb, 
 	    const struct ldb_message *message)
 {
-	int status = ldb_start_trans(ldb);
-	if (status != 0) return status;
+	int status;
+
+
+	status = ldb_msg_sanity_check(message);
+	if (status != LDB_ERR_SUCCESS) return status;
+
+	status = ldb_start_trans(ldb);
+	if (status != LDB_ERR_SUCCESS) return status;
 
 	status = ldb->modules->ops->add_record(ldb->modules, message);
 	return ldb_end_trans(ldb, status);
@@ -175,8 +182,13 @@ int ldb_add(struct ldb_context *ldb,
 int ldb_modify(struct ldb_context *ldb, 
 	       const struct ldb_message *message)
 {
-	int status = ldb_start_trans(ldb);
-	if (status != 0) return status;
+	int status;
+
+	status = ldb_msg_sanity_check(message);
+	if (status != LDB_ERR_SUCCESS) return status;
+
+	status = ldb_start_trans(ldb);
+	if (status != LDB_ERR_SUCCESS) return status;
 
 	status = ldb->modules->ops->modify_record(ldb->modules, message);
 	return ldb_end_trans(ldb, status);
@@ -189,7 +201,7 @@ int ldb_modify(struct ldb_context *ldb,
 int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
 {
 	int status = ldb_start_trans(ldb);
-	if (status != 0) return status;
+	if (status != LDB_ERR_SUCCESS) return status;
 
 	status = ldb->modules->ops->delete_record(ldb->modules, dn);
 	return ldb_end_trans(ldb, status);
@@ -201,7 +213,7 @@ int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
 int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
 {
 	int status = ldb_start_trans(ldb);
-	if (status != 0) return status;
+	if (status != LDB_ERR_SUCCESS) return status;
 
 	status = ldb->modules->ops->rename_record(ldb->modules, olddn, newdn);
 	return ldb_end_trans(ldb, status);
@@ -227,13 +239,13 @@ int ldb_set_opaque(struct ldb_context *ldb, const char *name, void *value)
 	struct ldb_opaque *o = talloc(ldb, struct ldb_opaque);
 	if (o == NULL) {
 		ldb_oom(ldb);
-		return -1;
+		return LDB_ERR_OTHER;
 	}
 	o->next = ldb->opaque;
 	o->name = name;
 	o->value = value;
 	ldb->opaque = o;
-	return 0;
+	return LDB_ERR_SUCCESS;
 }
 
 /*
