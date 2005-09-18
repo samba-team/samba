@@ -78,6 +78,7 @@ static int lldb_rename(struct ldb_module *module, const struct ldb_dn *olddn, co
 
 	lldb->last_rc = ldap_rename_s(lldb->ldap, old_dn, newrdn, parentdn, 1, NULL, NULL);
 	if (lldb->last_rc != LDAP_SUCCESS) {
+		ldb_set_errstring(module, talloc_strdup(module, ldap_err2string(lldb->last_rc)));
 		ret = -1;
 	}
 
@@ -107,6 +108,7 @@ static int lldb_delete(struct ldb_module *module, const struct ldb_dn *edn)
 
 	lldb->last_rc = ldap_delete_s(lldb->ldap, dn);
 	if (lldb->last_rc != LDAP_SUCCESS) {
+		ldb_set_errstring(module, talloc_strdup(module, ldap_err2string(lldb->last_rc)));
 		ret = -1;
 	}
 
@@ -200,6 +202,7 @@ static int lldb_search(struct ldb_module *module, const struct ldb_dn *base,
 				      0, &ldapres);
 	talloc_free(search_base);
 	if (lldb->last_rc != LDAP_SUCCESS) {
+		ldb_set_errstring(module, talloc_strdup(module, ldap_err2string(lldb->last_rc)));
 		return -1;
 	}
 
@@ -404,6 +407,7 @@ static int lldb_add(struct ldb_module *module, const struct ldb_message *msg)
 
 	lldb->last_rc = ldap_add_s(lldb->ldap, dn, mods);
 	if (lldb->last_rc != LDAP_SUCCESS) {
+		ldb_set_errstring(module, talloc_strdup(module, ldap_err2string(lldb->last_rc)));
 		ret = -1;
 	}
 
@@ -442,6 +446,7 @@ static int lldb_modify(struct ldb_module *module, const struct ldb_message *msg)
 
 	lldb->last_rc = ldap_modify_s(lldb->ldap, dn, mods);
 	if (lldb->last_rc != LDAP_SUCCESS) {
+		ldb_set_errstring(module, talloc_strdup(module, ldap_err2string(lldb->last_rc)));
 		ret = -1;
 	}
 
@@ -464,16 +469,6 @@ static int lldb_end_trans(struct ldb_module *module, int status)
 	return status;
 }
 
-/*
-  return extended error information
-*/
-static const char *lldb_errstring(struct ldb_module *module)
-{
-	struct lldb_private *lldb = module->private_data;
-	return ldap_err2string(lldb->last_rc);
-}
-
-
 static const struct ldb_module_ops lldb_ops = {
 	.name              = "ldap",
 	.search            = lldb_search,
@@ -483,8 +478,7 @@ static const struct ldb_module_ops lldb_ops = {
 	.delete_record     = lldb_delete,
 	.rename_record     = lldb_rename,
 	.start_transaction = lldb_start_trans,
-	.end_transaction   = lldb_end_trans,
-	.errstring         = lldb_errstring
+	.end_transaction   = lldb_end_trans
 };
 
 

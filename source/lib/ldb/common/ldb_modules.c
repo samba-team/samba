@@ -322,11 +322,12 @@ int ldb_next_end_trans(struct ldb_module *module, int status)
 	return module->next->ops->end_transaction(module->next, status);
 }
 
-const char *ldb_next_errstring(struct ldb_module *module)
+void ldb_set_errstring(struct ldb_module *module, char *err_string)
 {
-	if (!module->next) {
-		return NULL;
+	if (module->ldb->err_string) {
+		talloc_free(module->ldb->err_string);
 	}
-	return module->next->ops->errstring(module->next);
+
+	module->ldb->err_string = err_string;
 }
 

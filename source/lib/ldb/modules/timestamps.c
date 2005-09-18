@@ -37,10 +37,6 @@
 #include "ldb/include/ldb_private.h"
 #include <time.h>
 
-struct private_data {
-	const char *error_string;
-};
-
 static int timestamps_search(struct ldb_module *module, const struct ldb_dn *base,
 				  enum ldb_scope scope, const char *expression,
 				  const char * const *attrs, struct ldb_message ***res)
@@ -227,23 +223,6 @@ static int timestamps_end_trans(struct ldb_module *module, int status)
 	return ldb_next_end_trans(module, status);
 }
 
-/* return extended error information */
-static const char *timestamps_errstring(struct ldb_module *module)
-{
-	struct private_data *data = (struct private_data *)module->private_data;
-
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_errstring\n");
-	if (data->error_string) {
-		const char *error;
-
-		error = data->error_string;
-		data->error_string = NULL;
-		return error;
-	}
-
-	return ldb_next_errstring(module);
-}
-
 static int timestamps_destructor(void *module_ctx)
 {
 	/* struct ldb_module *ctx = module_ctx; */
@@ -260,8 +239,7 @@ static const struct ldb_module_ops timestamps_ops = {
 	.delete_record     = timestamps_delete_record,
 	.rename_record     = timestamps_rename_record,
 	.start_transaction = timestamps_start_trans,
-	.end_transaction   = timestamps_end_trans,
-	.errstring         = timestamps_errstring
+	.end_transaction   = timestamps_end_trans
 };
 
 
@@ -273,20 +251,12 @@ struct ldb_module *timestamps_module_init(struct ldb_context *ldb, const char *o
 #endif
 {
 	struct ldb_module *ctx;
-	struct private_data *data;
 
 	ctx = talloc(ldb, struct ldb_module);
 	if (!ctx)
 		return NULL;
 
-	data = talloc(ctx, struct private_data);
-	if (!data) {
-		talloc_free(ctx);
-		return NULL;
-	}
-
-	data->error_string = NULL;
-	ctx->private_data = data;
+	ctx->private_data = NULL;
 	ctx->ldb = ldb;
 	ctx->prev = ctx->next = NULL;
 	ctx->ops = &timestamps_ops;

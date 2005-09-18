@@ -37,6 +37,7 @@
 
 #include "includes.h"
 #include "ldb/include/ldb.h"
+#include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_private.h"
 #include "ldb/ldb_tdb/ldb_tdb.h"
 
@@ -235,7 +236,6 @@ int ltdb_unlock_read(struct ldb_module *module)
 */
 int ltdb_check_special_dn(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct ltdb_private *ltdb = module->private_data;
 	int i, j;
  
 	if (! ldb_dn_is_special(msg->dn) ||
@@ -248,8 +248,11 @@ int ltdb_check_special_dn(struct ldb_module *module, const struct ldb_message *m
 	for (i = 0; i < msg->num_elements; i++) {
 		for (j = 0; j < msg->elements[i].num_values; j++) {
 			if (ltdb_check_at_attributes_values(&msg->elements[i].values[j]) != 0) {
-				ltdb->last_err_string = "Invalid attribute value in an @ATTRIBUTES entry";
-				return -1;
+				char *err_string = talloc_strdup(module, "Invalid attribute value in an @ATTRIBUTES entry");
+				if (err_string) {
+					ldb_set_errstring(module, err_string);
+				}
+				return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 			}
 		}
 	}
@@ -292,17 +295,18 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 
 	tdb_key = ltdb_key(module, msg->dn);
 	if (!tdb_key.dptr) {
-		return -1;
+		return LDB_ERR_OTHER;
 	}
 
 	ret = ltdb_pack_data(module, msg, &tdb_data);
 	if (ret == -1) {
 		talloc_free(tdb_key.dptr);
-		return -1;
+		return LDB_ERR_OTHER;
 	}
 
 	ret = tdb_store(ltdb->tdb, tdb_key, tdb_data, flgs);
 	if (ret == -1) {
+		ret = LDB_ERR_OTHER;
 		goto done;
 	}
 	
@@ -324,28 +328,25 @@ done:
 */
 static int ltdb_add(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct ltdb_private *ltdb = module->private_data;
 	int ret;
 
-	ltdb->last_err_string = NULL;
-
 	ret = ltdb_check_special_dn(module, msg);
-	if (ret != 0) {
+	if (ret != LDB_ERR_SUCCESS) {
 		return ret;
 	}
 	
 	if (ltdb_lock(module, LDBLOCK) != 0) {
-		return -1;
+		return LDB_ERR_OTHER;
 	}
 
 	if (ltdb_cache_load(module) != 0) {
 		ltdb_unlock(module, LDBLOCK);
-		return -1;
+		return LDB_ERR_OTHER;
 	}
 
 	ret = ltdb_store(module, msg, TDB_INSERT);
 
-	if (ret == 0) {
+	if (ret == LDB_ERR_SUCCESS) {
 		ltdb_modified(module, msg->dn);
 	}
 
@@ -366,11 +367,13 @@ int ltdb_delete_noindex(struct ldb_module *module, const struct ldb_dn *dn)
 
 	tdb_key = ltdb_key(module, dn);
 	if (!tdb_key.dptr) {
-		return -1;
+		return LDB_ERR_OTHER;
 	}
 
 	ret = tdb_delete(ltdb->tdb, tdb_key);
 	talloc_free(tdb_key.dptr);
+
+	if (ret != 0) ret = LDB_ERR_OTHER;
 
 	return ret;
 }
@@ -380,14 +383,11 @@ int ltdb_delete_noindex(struct ldb_module *module, const struct ldb_dn *dn)
 */
 static int ltdb_delete(struct ldb_module *module, const struct ldb_dn *dn)
 {
-	struct ltdb_private *ltdb = module->private_data;
-	int ret;
 	struct ldb_message *msg = NULL;
-
-	ltdb->last_err_string = NULL;
+	int ret = LDB_ERR_OTHER;
 
 	if (ltdb_lock(module, LDBLOCK) != 0) {
-		return -1;
+		return ret;
 	}
 
 	if (ltdb_cache_load(module) != 0) {
@@ -404,20 +404,21 @@ static int ltdb_delete(struct ldb_module *module, const struct ldb_dn *dn)
 	ret = ltdb_search_dn1(module, dn, msg);
 	if (ret != 1) {
 		/* not finding the old record is an error */
+		ret = LDB_ERR_NO_SUCH_OBJECT;
 		goto failed;
 	}
 
 	ret = ltdb_delete_noindex(module, dn);
-	if (ret == -1) {
+	if (ret != LDB_ERR_SUCCESS) {
 		goto failed;
 	}
 
 	/* remove any indexed attributes */
 	ret = ltdb_index_del(module, msg);
-
-	if (ret == 0) {
+	if (ret == LDB_ERR_SUCCESS) {
 		ltdb_modified(module, dn);
-	}
+	} else
+		ret = LDB_ERR_OTHER;
 
 	talloc_free(msg);
 	ltdb_unlock(module, LDBLOCK);
@@ -426,7 +427,7 @@ static int ltdb_delete(struct ldb_module *module, const struct ldb_dn *dn)
 failed:
 	talloc_free(msg);
 	ltdb_unlock(module, LDBLOCK);
-	return -1;
+	return ret;
 }
 
 
@@ -593,26 +594,26 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 
 	tdb_key = ltdb_key(module, msg->dn);
 	if (!tdb_key.dptr) {
-		return -1;
+		return LDB_ERR_OTHER;
 	}
 
 	tdb_data = tdb_fetch(ltdb->tdb, tdb_key);
 	if (!tdb_data.dptr) {
 		talloc_free(tdb_key.dptr);
-		return -1;
+		return LDB_ERR_OTHER;
 	}
 
 	msg2 = talloc(tdb_key.dptr, struct ldb_message);
 	if (msg2 == NULL) {
 		talloc_free(tdb_key.dptr);
-		return -1;
+		return LDB_ERR_OTHER;
 	}
 
 	ret = ltdb_unpack_data(module, &tdb_data, msg2);
 	if (ret == -1) {
 		talloc_free(tdb_key.dptr);
 		free(tdb_data.dptr);
-		return -1;
+		return LDB_ERR_OTHER;
 	}
 
 	if (!msg2->dn) {
@@ -623,6 +624,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 		struct ldb_message_element *el = &msg->elements[i];
 		struct ldb_message_element *el2;
 		struct ldb_val *vals;
+		char *err_string;
 		char *dn;
 
 		switch (msg->elements[i].flags & LDB_FLAG_MOD_MASK) {
@@ -634,6 +636,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 
 			if (ret == -1) {
 				if (msg_add_element(ldb, msg2, el) != 0) {
+					ret = LDB_ERR_OTHER;
 					goto failed;
 				}
 				continue;
@@ -646,8 +649,9 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 
 			for (j=0;j<el->num_values;j++) {
 				if (ldb_msg_find_val(el2, &el->values[j])) {
-					ltdb->last_err_string =
-						"Type or value exists";
+					err_string = talloc_strdup(module, "Type or value exists");
+					if (err_string) ldb_set_errstring(module, err_string);
+					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 					goto failed;
 				}
 			}
@@ -690,7 +694,9 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 			if (msg->elements[i].num_values == 0) {
 				if (msg_delete_attribute(module, ldb, msg2, 
 							 msg->elements[i].name) != 0) {
-					ltdb->last_err_string = "No such attribute";
+					err_string = talloc_strdup(module, "No such attribute");
+					if (err_string) ldb_set_errstring(module, err_string);
+					ret = LDB_ERR_NO_SUCH_ATTRIBUTE;
 					goto failed;
 				}
 				break;
@@ -700,7 +706,9 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 						       msg2, 
 						       msg->elements[i].name,
 						       &msg->elements[i].values[j]) != 0) {
-					ltdb->last_err_string = "No such attribute";
+					err_string = talloc_strdup(module, "No such attribute");
+					if (err_string) ldb_set_errstring(module, err_string);
+					ret = LDB_ERR_NO_SUCH_ATTRIBUTE;
 					goto failed;
 				}
 				if (ltdb_index_del_value(module, dn, &msg->elements[i], j) != 0) {
@@ -709,7 +717,9 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 			}
 			break;
 		default:
-			ltdb->last_err_string = "Invalid ldb_modify flags";
+			err_string = talloc_strdup(module, "Invalid ldb_modify flags");
+			if (err_string) ldb_set_errstring(module, err_string);
+			ret = LDB_ERR_PROTOCOL_ERROR;
 			goto failed;
 		}
 	}
@@ -724,7 +734,7 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 failed:
 	talloc_free(tdb_key.dptr);
 	free(tdb_data.dptr);
-	return -1;
+	return ret;
 }
 
 /*
@@ -732,10 +742,7 @@ failed:
 */
 static int ltdb_modify(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct ltdb_private *ltdb = module->private_data;
 	int ret;
-
-	ltdb->last_err_string = NULL;
 
 	ret = ltdb_check_special_dn(module, msg);
 	if (ret != 0) {
@@ -753,7 +760,7 @@ static int ltdb_modify(struct ldb_module *module, const struct ldb_message *msg)
 
 	ret = ltdb_modify_internal(module, msg);
 
-	if (ret == 0) {
+	if (ret == LDB_ERR_SUCCESS) {
 		ltdb_modified(module, msg->dn);
 	}
 
@@ -767,20 +774,17 @@ static int ltdb_modify(struct ldb_module *module, const struct ldb_message *msg)
 */
 static int ltdb_rename(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
 {
-	struct ltdb_private *ltdb = module->private_data;
-	int ret;
 	struct ldb_message *msg;
-	const char *error_str;
-
-	ltdb->last_err_string = NULL;
+	char *error_str;
+	int ret = LDB_ERR_OTHER;
 
 	if (ltdb_lock(module, LDBLOCK) != 0) {
-		return -1;
+		return ret;
 	}
 
 	if (ltdb_cache_load(module) != 0) {
 		ltdb_unlock(module, LDBLOCK);
-		return -1;
+		return ret;
 	}
 
 	msg = talloc(module, struct ldb_message);
@@ -793,26 +797,28 @@ static int ltdb_rename(struct ldb_module *module, const struct ldb_dn *olddn, co
 	ret = ltdb_search_dn1(module, olddn, msg);
 	if (ret != 1) {
 		/* not finding the old record is an error */
+		ret = LDB_ERR_NO_SUCH_OBJECT;
 		goto failed;
 	}
 
 	msg->dn = ldb_dn_copy(msg, newdn);
 	if (!msg->dn) {
+		ret = LDB_ERR_OTHER;
 		goto failed;
 	}
 
 	ret = ltdb_add(module, msg);
-	if (ret == -1) {
+	if (ret != LDB_ERR_SUCCESS) {
 		goto failed;
 	}
 
 	ret = ltdb_delete(module, olddn);
-	error_str = ltdb->last_err_string;
-	if (ret == -1) {
+	error_str = talloc_strdup(module, ldb_errstring(module->ldb));
+	if (ret != LDB_ERR_SUCCESS) {
 		ltdb_delete(module, newdn);
 	}
 
-	ltdb->last_err_string = error_str;
+	ldb_set_errstring(module, error_str);
 
 	talloc_free(msg);
 	ltdb_unlock(module, LDBLOCK);
@@ -822,14 +828,14 @@ static int ltdb_rename(struct ldb_module *module, const struct ldb_dn *olddn, co
 failed:
 	talloc_free(msg);
 	ltdb_unlock(module, LDBLOCK);
-	return -1;
+	return ret;
 }
 
 static int ltdb_start_trans(struct ldb_module *module)
 {
 	/* TODO: implement transactions */
 
-	return 0;
+	return LDB_ERR_SUCCESS;
 }
 
 static int ltdb_end_trans(struct ldb_module *module, int status)
@@ -838,19 +844,6 @@ static int ltdb_end_trans(struct ldb_module *module, int status)
 
 	return status;
 }
-
-/*
-  return extended error information
-*/
-static const char *ltdb_errstring(struct ldb_module *module)
-{
-	struct ltdb_private *ltdb = module->private_data;
-	if (ltdb->last_err_string) {
-		return ltdb->last_err_string;
-	}
-	return tdb_errorstr(ltdb->tdb);
-}
-
 
 static const struct ldb_module_ops ltdb_ops = {
 	.name              = "tdb",
@@ -861,8 +854,7 @@ static const struct ldb_module_ops ltdb_ops = {
 	.delete_record     = ltdb_delete,
 	.rename_record     = ltdb_rename,
 	.start_transaction = ltdb_start_trans,
-	.end_transaction   = ltdb_end_trans,
-	.errstring         = ltdb_errstring
+	.end_transaction   = ltdb_end_trans
 };
 
 

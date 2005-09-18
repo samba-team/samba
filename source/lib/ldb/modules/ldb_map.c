@@ -97,7 +97,6 @@ static const struct ldb_map_objectclass *map_find_objectclass_remote(struct ldb_
 
 struct map_private {
 	struct ldb_map_context context;
-	const char *last_err_string;
 };
 
 static struct ldb_map_context *map_get_privdat(struct ldb_module *module)
@@ -807,8 +806,7 @@ static int map_search_bytree_mp(struct ldb_module *module, const struct ldb_dn *
 	talloc_free(newattrs);
 
 	if (mpret == -1) {
-		struct map_private *map_private = module->private_data;
-		map_private->last_err_string = ldb_errstring(privdat->mapped_ldb);
+		ldb_set_errstring(module, talloc_strdup(module, ldb_errstring(privdat->mapped_ldb)));
 		return -1;
 	}
 
@@ -910,13 +908,12 @@ static int map_search(struct ldb_module *module, const struct ldb_dn *base,
 		       enum ldb_scope scope, const char *expression,
 		       const char * const *attrs, struct ldb_message ***res)
 {
-	struct map_private *map = module->private_data;
 	struct ldb_parse_tree *tree;
 	int ret;
 
 	tree = ldb_parse_tree(NULL, expression);
 	if (tree == NULL) {
-		map->last_err_string = "expression parse failed";
+		ldb_set_errstring(module, talloc_strdup(module, "expression parse failed"));
 		return -1;
 	}
 
@@ -1121,7 +1118,7 @@ static int map_add(struct ldb_module *module, const struct ldb_message *msg)
 	ldb_msg_add_string(module->ldb, fb, "isMapped", "TRUE");
 	ret = ldb_next_add_record(module, fb);
 	if (ret == -1) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "Adding fallback record failed: %s", ldb_next_errstring(module));
+		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "Adding fallback record failed: %s", ldb_errstring(module->ldb));
 		return -1;
 	}
 
@@ -1266,19 +1263,6 @@ static int map_end_trans(struct ldb_module *module, int status)
 	return ldb_next_end_trans(module, status);
 }
 
-/*
-  return extended error information
-*/
-static const char *map_errstring(struct ldb_module *module)
-{
-	struct map_private *map = module->private_data;
-	
-	if (map->last_err_string)
-		return map->last_err_string;
-
-	return ldb_next_errstring(module);
-}
-
 static const struct ldb_module_ops map_ops = {
 	.name              = "map",
 	.search            = map_search,
@@ -1288,8 +1272,7 @@ static const struct ldb_module_ops map_ops = {
 	.delete_record     = map_delete,
 	.rename_record     = map_rename,
 	.start_transaction = map_start_trans,
-	.end_transaction   = map_end_trans,
-	.errstring         = map_errstring
+	.end_transaction   = map_end_trans
 };
 
 static char *map_find_url(struct ldb_context *ldb, const char *name)
@@ -1353,8 +1336,6 @@ struct ldb_module *ldb_map_init(struct ldb_context *ldb, const struct ldb_map_at
 	}
 
 	talloc_free(url);
-
-	data->last_err_string = NULL;
 
 	/* Get list of attribute maps */
 	j = 0;
