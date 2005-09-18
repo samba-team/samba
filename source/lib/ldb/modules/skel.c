@@ -38,7 +38,7 @@
 
 struct private_data {
 
-	char *errstring;
+	char *some_private_data;
 };
 
 /* search */
@@ -85,18 +85,12 @@ static int skel_end_trans(struct ldb_module *module, int status)
 	return ldb_next_end_trans(module, status);
 }
 
-/* return extended error information */
-static const char *skel_errstring(struct ldb_module *module)
-{
-	return ldb_next_errstring(module);
-}
-
 static int skel_destructor(void *module_ctx)
 {
 	struct ldb_module *ctx = talloc_get_type(module_ctx, struct ldb_module);
 	struct private_data *data = talloc_get_type(ctx->private_data, struct private_data);
 	/* put your clean-up functions here */
-	if (data->errstring) talloc_free(data->errstring);
+	if (data->some_private_data) talloc_free(data->some_private_data);
 	return 0;
 }
 
@@ -110,7 +104,6 @@ static const struct ldb_module_ops skel_ops = {
 	.rename_record	   = skel_rename_record,
 	.start_transaction = skel_start_trans,
 	.end_transaction   = skel_end_trans,
-	.errstring	   = skel_errstring
 };
 
 #ifdef HAVE_DLOPEN_DISABLED
@@ -132,7 +125,7 @@ struct ldb_module *skel_module_init(struct ldb_context *ldb, const char *options
 		return NULL;
 	}
 
-	data->errstring = NULL;
+	data->some_private_data = NULL;
 	ctx->private_data = data;
 
 	ctx->ldb = ldb;

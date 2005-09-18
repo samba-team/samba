@@ -37,10 +37,6 @@
 #include "ldb/include/ldb_private.h"
 #include <time.h>
 
-struct private_data {
-	const char *error_string;
-};
-
 static int rdn_name_search(struct ldb_module *module, const struct ldb_dn *base,
 				  enum ldb_scope scope, const char *expression,
 				  const char * const *attrs, struct ldb_message ***res)
@@ -73,8 +69,6 @@ static struct ldb_message_element *rdn_name_find_attribute(const struct ldb_mess
 /* add_record: add crateTimestamp/modifyTimestamp attributes */
 static int rdn_name_add_record(struct ldb_module *module, const struct ldb_message *msg)
 {
-	struct private_data *data = (struct private_data *)module->private_data;
-
 	struct ldb_message *msg2;
 	struct ldb_message_element *attribute;
 	struct ldb_dn_component *rdn;
@@ -134,8 +128,11 @@ static int rdn_name_add_record(struct ldb_module *module, const struct ldb_messa
 			}
 		}
 		if (i == attribute->num_values) {
-			data->error_string = talloc_asprintf(data, "RDN mismatch on %s: %s", ldb_dn_linearize(msg2, msg2->dn), rdn->name);
-			ldb_debug(module->ldb, LDB_DEBUG_FATAL, "%s\n", data->error_string);
+			char *error_string = talloc_asprintf(module, "RDN mismatch on %s: %s", ldb_dn_linearize(msg2, msg2->dn), rdn->name);
+			if (error_string) {
+				ldb_set_errstring(module, error_string);
+				ldb_debug(module->ldb, LDB_DEBUG_FATAL, "%s\n", error_string);
+			}
 			talloc_free(msg2);
 			return -1;
 		}
@@ -229,23 +226,6 @@ static int rdn_end_trans(struct ldb_module *module, int status)
 	return ldb_next_end_trans(module, status);
 }
 
-/* return extended error information */
-static const char *rdn_name_errstring(struct ldb_module *module)
-{
-	struct private_data *data = (struct private_data *)module->private_data;
-
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_name_errstring\n");
-	if (data->error_string) {
-		const char *error;
-
-		error = data->error_string;
-		data->error_string = NULL;
-		return error;
-	}
-
-	return ldb_next_errstring(module);
-}
-
 static int rdn_name_destructor(void *module_ctx)
 {
 	/* struct ldb_module *ctx = module_ctx; */
@@ -262,8 +242,7 @@ static const struct ldb_module_ops rdn_name_ops = {
 	.delete_record     = rdn_name_delete_record,
 	.rename_record     = rdn_name_rename_record,
 	.start_transaction = rdn_start_trans,
-	.end_transaction   = rdn_end_trans,
-	.errstring         = rdn_name_errstring
+	.end_transaction   = rdn_end_trans
 };
 
 
@@ -275,20 +254,12 @@ struct ldb_module *rdn_name_module_init(struct ldb_context *ldb, const char *opt
 #endif
 {
 	struct ldb_module *ctx;
-	struct private_data *data;
 
 	ctx = talloc(ldb, struct ldb_module);
 	if (!ctx)
 		return NULL;
 
-	data = talloc(ctx, struct private_data);
-	if (!data) {
-		talloc_free(ctx);
-		return NULL;
-	}
-
-	data->error_string = NULL;
-	ctx->private_data = data;
+	ctx->private_data = NULL;
 	ctx->ldb = ldb;
 	ctx->prev = ctx->next = NULL;
 	ctx->ops = &rdn_name_ops;

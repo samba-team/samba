@@ -82,6 +82,7 @@ static int ildb_rename(struct ldb_module *module, const struct ldb_dn *olddn, co
 
 	ildb->last_rc = ildap_rename(ildb->ldap, old_dn, newrdn, parentdn, True);
 	if (!NT_STATUS_IS_OK(ildb->last_rc)) {
+		ldb_set_errstring(module, talloc_strdup(module, ldap_errstr(ildb->ldap, ildb->last_rc)));
 		ret = -1;
 	}
 
@@ -111,6 +112,7 @@ static int ildb_delete(struct ldb_module *module, const struct ldb_dn *dn)
 
 	ildb->last_rc = ildap_delete(ildb->ldap, del_dn);
 	if (!NT_STATUS_IS_OK(ildb->last_rc)) {
+		ldb_set_errstring(module, talloc_strdup(module, ldap_errstr(ildb->ldap, ildb->last_rc)));
 		ret = -1;
 	}
 
@@ -316,6 +318,7 @@ static int ildb_add(struct ldb_module *module, const struct ldb_message *msg)
 
 	ildb->last_rc = ildap_add(ildb->ldap, dn, mods);
 	if (!NT_STATUS_IS_OK(ildb->last_rc)) {
+		ldb_set_errstring(module, talloc_strdup(module, ldap_errstr(ildb->ldap, ildb->last_rc)));
 		ret = -1;
 	}
 
@@ -354,6 +357,7 @@ static int ildb_modify(struct ldb_module *module, const struct ldb_message *msg)
 
 	ildb->last_rc = ildap_modify(ildb->ldap, dn, mods);
 	if (!NT_STATUS_IS_OK(ildb->last_rc)) {
+		ldb_set_errstring(module, talloc_strdup(module, ldap_errstr(ildb->ldap, ildb->last_rc)));
 		ret = -1;
 	}
 
@@ -376,20 +380,6 @@ static int ildb_end_trans(struct ldb_module *module, int status)
 	return status;
 }
 
-/*
-  return extended error information
-*/
-static const char *ildb_errstring(struct ldb_module *module)
-{
-	struct ildb_private *ildb = talloc_get_type(module->private_data, 
-						    struct ildb_private);
-	if (ildb == NULL) {
-		return "ildap not connected";
-	}
-	return ldap_errstr(ildb->ldap, ildb->last_rc);
-}
-
-
 static const struct ldb_module_ops ildb_ops = {
 	.name              = "ldap",
 	.search            = ildb_search,
@@ -399,8 +389,7 @@ static const struct ldb_module_ops ildb_ops = {
 	.delete_record     = ildb_delete,
 	.rename_record     = ildb_rename,
 	.start_transaction = ildb_start_trans,
-	.end_transaction   = ildb_end_trans,
-	.errstring         = ildb_errstring
+	.end_transaction   = ildb_end_trans
 };
 
 

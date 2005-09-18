@@ -36,6 +36,7 @@
 #include <stdarg.h>
 #include "includes.h"
 #include "ldb/include/ldb.h"
+#include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_private.h"
 #include "ldb/ldb_sqlite3/ldb_sqlite3.h"
 
@@ -828,12 +829,17 @@ static int lsqlite3_search_bytree(struct ldb_module * module, const struct ldb_d
 
 	if (basedn) {
 		norm_basedn = ldb_dn_linearize(local_ctx, ldb_dn_casefold(module->ldb, basedn));
-		if (norm_basedn == NULL) goto failed;
+		if (norm_basedn == NULL) {
+			ret = LDB_ERR_INVALID_DN_SYNTAX;
+			goto failed;
+		}
 	} else norm_basedn = talloc_strdup(local_ctx, "");
 
 	if (*norm_basedn == '\0' &&
-		(scope == LDB_SCOPE_BASE || scope == LDB_SCOPE_ONELEVEL))
+		(scope == LDB_SCOPE_BASE || scope == LDB_SCOPE_ONELEVEL)) {
+			ret = LDB_ERR_UNWILLING_TO_PERFORM;
 			goto failed;
+		}
 
         /* Convert filter into a series of SQL conditions (constraints) */
 	sqlfilter = parsetree_to_sql(module, local_ctx, tree);
@@ -940,7 +946,7 @@ static int lsqlite3_search_bytree(struct ldb_module * module, const struct ldb_d
         }
 
         if (query == NULL) {
-                ret = -1;
+                ret = LDB_ERR_OTHER;
                 goto failed;
         }
 
@@ -957,15 +963,19 @@ static int lsqlite3_search_bytree(struct ldb_module * module, const struct ldb_d
 	ret = sqlite3_exec(lsqlite3->sqlite, query, lsqlite3_search_callback, &msgs, &errmsg);
 	if (ret != SQLITE_OK) {
 		if (errmsg) {
-			printf("lsqlite3_search_bytree: Fatal Error: %s\n", errmsg);
+			ldb_set_errstring(module, talloc_strdup(module, errmsg));
 			free(errmsg);
 		}
+		ret = LDB_ERR_OTHER;
 		goto failed;
 	}
 
 	for (i = 0; i < msgs.count; i++) {
 		msgs.msgs[i] = ldb_msg_canonicalize(module->ldb, msgs.msgs[i]);
-		if (msgs.msgs[i] ==  NULL) goto failed;
+		if (msgs.msgs[i] ==  NULL) {
+			ret = LDB_ERR_OTHER;
+			goto failed;
+		}
 	}
 
 	*res = talloc_steal(module, msgs.msgs);
@@ -1033,7 +1043,7 @@ static int lsqlite3_add(struct ldb_module *module, const struct ldb_message *msg
 	/* create a local ctx */
 	local_ctx = talloc_named(lsqlite3, 0, "lsqlite3_add local context");
 	if (local_ctx == NULL) {
-		return -1;
+		return LDB_ERR_OTHER;
 	}
 
         /* See if this is an ltdb special */
@@ -1043,6 +1053,7 @@ static int lsqlite3_add(struct ldb_module *module, const struct ldb_message *msg
 		c = ldb_dn_explode(local_ctx, "@SUBCLASSES");
 		if (ldb_dn_compare(module->ldb, msg->dn, c) == 0) {
 #warning "insert subclasses into object class tree"
+			ret = LDB_ERR_UNWILLING_TO_PERFORM;
 			goto failed;
 		}
 
@@ -1054,13 +1065,16 @@ static int lsqlite3_add(struct ldb_module *module, const struct ldb_message *msg
 		}
 */
                 /* Others are implicitly ignored */
-                return 0;
+                return LDB_ERR_SUCCESS;
 	}
 
 	/* create linearized and normalized dns */
 	dn = ldb_dn_linearize(local_ctx, msg->dn);
 	ndn = ldb_dn_linearize(local_ctx, ldb_dn_casefold(module->ldb, msg->dn));
-	if (dn == NULL || ndn == NULL) goto failed;
+	if (dn == NULL || ndn == NULL) {
+		ret = LDB_ERR_OTHER;
+		goto failed;
+	}
 
 	query = lsqlite3_tprintf(local_ctx,
 				   /* Add new entry */
@@ -1068,19 +1082,26 @@ static int lsqlite3_add(struct ldb_module *module, const struct ldb_message *msg
 				   "('dn', 'norm_dn') "
 				   "VALUES ('%q', '%q');",
 				dn, ndn);
-	if (query == NULL) goto failed;
+	if (query == NULL) {
+		ret = LDB_ERR_OTHER;
+		goto failed;
+	}
 
 	ret = sqlite3_exec(lsqlite3->sqlite, query, NULL, NULL, &errmsg);
 	if (ret != SQLITE_OK) {
 		if (errmsg) {
-			printf("lsqlite3_add: exec error: %s\n", errmsg);
+			ldb_set_errstring(module, talloc_strdup(module, errmsg));
 			free(errmsg);
 		}
+		ret = LDB_ERR_OTHER;
 		goto failed;
 	}
 
 	eid = lsqlite3_get_eid_ndn(lsqlite3->sqlite, local_ctx, ndn);
-	if (eid == -1) goto failed;
+	if (eid == -1) {
+		ret = LDB_ERR_OTHER;
+		goto failed;
+	}
 
 	for (i = 0; i < msg->num_elements; i++) {
 		const struct ldb_message_element *el = &msg->elements[i];
@@ -1090,7 +1111,10 @@ static int lsqlite3_add(struct ldb_module *module, const struct ldb_message *msg
 
 		/* Get a case-folded copy of the attribute name */
 		attr = ldb_casefold(local_ctx, el->name);
-		if (attr == NULL) goto failed;
+		if (attr == NULL) {
+			ret = LDB_ERR_OTHER;
+			goto failed;
+		}
 
 		h = ldb_attrib_handler(module->ldb, el->name);
 
@@ -1101,7 +1125,10 @@ static int lsqlite3_add(struct ldb_module *module, const struct ldb_message *msg
 
 			/* Get a canonicalised copy of the data */
 			h->canonicalise_fn(module->ldb, local_ctx, &(el->values[j]), &value);
-			if (value.data == NULL) goto failed;
+			if (value.data == NULL) {
+				ret = LDB_ERR_OTHER;
+				goto failed;
+			}
 
 			insert = lsqlite3_tprintf(local_ctx,
 					"INSERT OR ROLLBACK INTO ldb_attribute_values "
@@ -1110,25 +1137,29 @@ static int lsqlite3_add(struct ldb_module *module, const struct ldb_message *msg
 					"VALUES ('%lld', '%q', '%q', '%q', '%q');",
 					eid, el->name, attr,
 					el->values[j].data, value.data);
-			if (insert == NULL) goto failed;
+			if (insert == NULL) {
+				ret = LDB_ERR_OTHER;
+				goto failed;
+			}
 
 			ret = sqlite3_exec(lsqlite3->sqlite, insert, NULL, NULL, &errmsg);
 			if (ret != SQLITE_OK) {
 				if (errmsg) {
-					printf("lsqlite3_add: insert error: %s\n", errmsg);
+					ldb_set_errstring(module, talloc_strdup(module, errmsg));
 					free(errmsg);
 				}
+				ret = LDB_ERR_OTHER;
 				goto failed;
 			}
 		}
 	}
 
 	talloc_free(local_ctx);
-        return 0;
+        return LDB_ERR_SUCCESS;
 
 failed:
 	talloc_free(local_ctx);
-	return -1;
+	return ret;
 }
 
 
@@ -1145,7 +1176,7 @@ static int lsqlite3_modify(struct ldb_module *module, const struct ldb_message *
 	/* create a local ctx */
 	local_ctx = talloc_named(lsqlite3, 0, "lsqlite3_modify local context");
 	if (local_ctx == NULL) {
-		return -1;
+		return LDB_ERR_OTHER;
 	}
 
         /* See if this is an ltdb special */
@@ -1155,21 +1186,17 @@ static int lsqlite3_modify(struct ldb_module *module, const struct ldb_message *
 		c = ldb_dn_explode(local_ctx, "@SUBCLASSES");
 		if (ldb_dn_compare(module->ldb, msg->dn, c) == 0) {
 #warning "modify subclasses into object class tree"
-			goto failed;
-		}
-
-		c = ldb_dn_explode(local_ctx, "@INDEXLIST");
-		if (ldb_dn_compare(module->ldb, msg->dn, c) == 0) {
-#warning "should we handle indexes somehow ?"
+			ret = LDB_ERR_UNWILLING_TO_PERFORM;
 			goto failed;
 		}
 
                 /* Others are implicitly ignored */
-                return 0;
+                return LDB_ERR_SUCCESS;
 	}
 
 	eid = lsqlite3_get_eid(module, msg->dn);
 	if (eid == -1) {
+		ret = LDB_ERR_OTHER;
 		goto failed;
 	}
 
@@ -1184,6 +1211,7 @@ static int lsqlite3_modify(struct ldb_module *module, const struct ldb_message *
 		/* Get a case-folded copy of the attribute name */
 		attr = ldb_casefold(local_ctx, el->name);
 		if (attr == NULL) {
+			ret = LDB_ERR_OTHER;
 			goto failed;
 		}
 
@@ -1199,14 +1227,18 @@ static int lsqlite3_modify(struct ldb_module *module, const struct ldb_message *
 						"WHERE eid = '%lld' "
 						"AND norm_attr_name = '%q';",
 						eid, attr);
-			if (mod == NULL) goto failed;
+			if (mod == NULL) {
+				ret = LDB_ERR_OTHER;
+				goto failed;
+			}
 
 			ret = sqlite3_exec(lsqlite3->sqlite, mod, NULL, NULL, &errmsg);
 			if (ret != SQLITE_OK) {
 				if (errmsg) {
-					printf("lsqlite3_modify: error: %s\n", errmsg);
+					ldb_set_errstring(module, talloc_strdup(module, errmsg));
 					free(errmsg);
 				}
+				ret = LDB_ERR_OTHER;
 				goto failed;
                         }
 
@@ -1221,6 +1253,7 @@ static int lsqlite3_modify(struct ldb_module *module, const struct ldb_message *
 				/* Get a canonicalised copy of the data */
 				h->canonicalise_fn(module->ldb, local_ctx, &(el->values[j]), &value);
 				if (value.data == NULL) {
+					ret = LDB_ERR_OTHER;
 					goto failed;
 				}
 
@@ -1232,14 +1265,18 @@ static int lsqlite3_modify(struct ldb_module *module, const struct ldb_message *
 					eid, el->name, attr,
 					el->values[j].data, value.data);
 
-				if (mod == NULL) goto failed;
+				if (mod == NULL) {
+					ret = LDB_ERR_OTHER;
+					goto failed;
+				}
 
 				ret = sqlite3_exec(lsqlite3->sqlite, mod, NULL, NULL, &errmsg);
 				if (ret != SQLITE_OK) {
 					if (errmsg) {
-						printf("lsqlite3_modify: error: %s\n", errmsg);
+						ldb_set_errstring(module, talloc_strdup(module, errmsg));
 						free(errmsg);
 					}
+					ret = LDB_ERR_OTHER;
 					goto failed;
 				}
 			}
@@ -1254,14 +1291,18 @@ static int lsqlite3_modify(struct ldb_module *module, const struct ldb_message *
 							"WHERE eid = '%lld' "
 							"AND norm_attr_name = '%q';",
 							eid, attr);
-				if (mod == NULL) goto failed;
+				if (mod == NULL) {
+					ret = LDB_ERR_OTHER;
+					goto failed;
+				}
 
 				ret = sqlite3_exec(lsqlite3->sqlite, mod, NULL, NULL, &errmsg);
 				if (ret != SQLITE_OK) {
 					if (errmsg) {
-						printf("lsqlite3_modify: error: %s\n", errmsg);
+						ldb_set_errstring(module, talloc_strdup(module, errmsg));
 						free(errmsg);
 					}
+					ret = LDB_ERR_OTHER;
 					goto failed;
                         	}
 			}
@@ -1273,6 +1314,7 @@ static int lsqlite3_modify(struct ldb_module *module, const struct ldb_message *
 				/* Get a canonicalised copy of the data */
 				h->canonicalise_fn(module->ldb, local_ctx, &(el->values[j]), &value);
 				if (value.data == NULL) {
+					ret = LDB_ERR_OTHER;
 					goto failed;
 				}
 
@@ -1283,14 +1325,18 @@ static int lsqlite3_modify(struct ldb_module *module, const struct ldb_message *
 					"AND norm_attr_value = '%q';",
 					eid, attr, value.data);
 
-				if (mod == NULL) goto failed;
+				if (mod == NULL) {
+					ret = LDB_ERR_OTHER;
+					goto failed;
+				}
 
 				ret = sqlite3_exec(lsqlite3->sqlite, mod, NULL, NULL, &errmsg);
 				if (ret != SQLITE_OK) {
 					if (errmsg) {
-						printf("lsqlite3_modify: error: %s\n", errmsg);
+						ldb_set_errstring(module, talloc_strdup(module, errmsg));
 						free(errmsg);
 					}
+					ret = LDB_ERR_OTHER;
 					goto failed;
 				}
 			}
@@ -1300,11 +1346,11 @@ static int lsqlite3_modify(struct ldb_module *module, const struct ldb_message *
 	}
 
 	talloc_free(local_ctx);
-        return 0;
+        return LDB_ERR_SUCCESS;
 
 failed:
 	talloc_free(local_ctx);
-	return -1;
+	return ret;
 }
 
 /* delete a record */
@@ -1319,17 +1365,20 @@ static int lsqlite3_delete(struct ldb_module *module, const struct ldb_dn *dn)
 
 	/* ignore ltdb specials */
 	if (ldb_dn_is_special(dn)) {
-		return 0;
+		return LDB_ERR_SUCCESS;
 	}
 
 	/* create a local ctx */
 	local_ctx = talloc_named(lsqlite3, 0, "lsqlite3_delete local context");
 	if (local_ctx == NULL) {
-		return -1;
+		return LDB_ERR_OTHER;
 	}
 
 	eid = lsqlite3_get_eid(module, dn);
-	if (eid == -1) goto failed;
+	if (eid == -1) {
+		ret = LDB_ERR_OTHER;
+		goto failed;
+	}
 
 	query = lsqlite3_tprintf(local_ctx,
 				   /* Delete entry */
@@ -1337,23 +1386,27 @@ static int lsqlite3_delete(struct ldb_module *module, const struct ldb_dn *dn)
 				   /* Delete attributes */
 				   "DELETE FROM ldb_attribute_values WHERE eid = %lld; ",
 				eid, eid);
-	if (query == NULL) goto failed;
+	if (query == NULL) {
+		ret = LDB_ERR_OTHER;
+		goto failed;
+	}
 
 	ret = sqlite3_exec(lsqlite3->sqlite, query, NULL, NULL, &errmsg);
 	if (ret != SQLITE_OK) {
 		if (errmsg) {
-			printf("lsqlite3_delete: error getting eid: %s\n", errmsg);
+			ldb_set_errstring(module, talloc_strdup(module, errmsg));
 			free(errmsg);
 		}
+		ret = LDB_ERR_OTHER;
 		goto failed;
 	}
 
 	talloc_free(local_ctx);
-        return 0;
+        return LDB_ERR_SUCCESS;
 
 failed:
 	talloc_free(local_ctx);
-	return -1;
+	return ret;
 }
 
 /* rename a record */
@@ -1368,45 +1421,52 @@ static int lsqlite3_rename(struct ldb_module *module, const struct ldb_dn *olddn
 
 	/* ignore ltdb specials */
 	if (ldb_dn_is_special(olddn) || ldb_dn_is_special(newdn)) {
-		return 0;
+		return LDB_ERR_SUCCESS;
 	}
 
 	/* create a local ctx */
 	local_ctx = talloc_named(lsqlite3, 0, "lsqlite3_rename local context");
 	if (local_ctx == NULL) {
-		return -1;
+		return LDB_ERR_OTHER;
 	}
 
 	/* create linearized and normalized dns */
 	old_cdn = ldb_dn_linearize(local_ctx, ldb_dn_casefold(module->ldb, olddn));
 	new_cdn = ldb_dn_linearize(local_ctx, ldb_dn_casefold(module->ldb, newdn));
 	new_dn = ldb_dn_linearize(local_ctx, newdn);
-	if (old_cdn == NULL || new_cdn == NULL || new_dn == NULL) goto failed;
+	if (old_cdn == NULL || new_cdn == NULL || new_dn == NULL) {
+		ret = LDB_ERR_OTHER;
+		goto failed;
+	}
 
 	/* build the SQL query */
 	query = lsqlite3_tprintf(local_ctx,
 				 "UPDATE ldb_entry SET dn = '%q', norm_dn = '%q' "
 				 "WHERE norm_dn = '%q';",
 				 new_dn, new_cdn, old_cdn);
-	if (query == NULL) goto failed;
+	if (query == NULL) {
+		ret = LDB_ERR_OTHER;
+		goto failed;
+	}
 
 	/* execute */
 	ret = sqlite3_exec(lsqlite3->sqlite, query, NULL, NULL, &errmsg);
 	if (ret != SQLITE_OK) {
 		if (errmsg) {
-			printf("lsqlite3_rename: sqlite3_exec error: %s\n", errmsg);
+			ldb_set_errstring(module, talloc_strdup(module, errmsg));
 			free(errmsg);
 		}
+		ret = LDB_ERR_OTHER;
 		goto failed;
 	}
 
 	/* clean up and exit */
 	talloc_free(local_ctx);
-        return 0;
+        return LDB_ERR_SUCCESS;
 
 failed:
 	talloc_free(local_ctx);
-	return -1;
+	return ret;
 }
 
 static int lsqlite3_start_trans(struct ldb_module * module)
@@ -1415,14 +1475,18 @@ static int lsqlite3_start_trans(struct ldb_module * module)
 	char *errmsg;
 	struct lsqlite3_private *   lsqlite3 = module->private_data;
 
-	ret = sqlite3_exec(lsqlite3->sqlite, "BEGIN IMMEDIATE;", NULL, NULL, &errmsg);
-	if (ret != SQLITE_OK) {
-		if (errmsg) {
-			printf("lsqlite3_start_trans: error: %s\n", errmsg);
-			free(errmsg);
+	if (lsqlite3->trans_count == 0) {
+		ret = sqlite3_exec(lsqlite3->sqlite, "BEGIN IMMEDIATE;", NULL, NULL, &errmsg);
+		if (ret != SQLITE_OK) {
+			if (errmsg) {
+				printf("lsqlite3_start_trans: error: %s\n", errmsg);
+				free(errmsg);
+			}
+			return -1;
 		}
-		return -1;
-	}
+	};
+
+	lsqlite3->trans_count++;
 
 	return 0;
 }
@@ -1433,35 +1497,25 @@ static int lsqlite3_end_trans(struct ldb_module *module, int status)
 	char *errmsg;
 	struct lsqlite3_private *lsqlite3 = module->private_data;
 
-	if (status == 0) {
-		ret = sqlite3_exec(lsqlite3->sqlite, "COMMIT;", NULL, NULL, &errmsg);
-		if (ret != SQLITE_OK) {
-			if (errmsg) {
-				printf("lsqlite3_end_trans: error: %s\n", errmsg);
-				free(errmsg);
+	lsqlite3->trans_count--;
+
+	if (lsqlite3->trans_count == 0) {
+		if (status == 0) {
+			ret = sqlite3_exec(lsqlite3->sqlite, "COMMIT;", NULL, NULL, &errmsg);
+			if (ret != SQLITE_OK) {
+				if (errmsg) {
+					printf("lsqlite3_end_trans: error: %s\n", errmsg);
+					free(errmsg);
+				}
+				return -1;
 			}
-			return -1;
+		} else {
+			return lsqlite3_safe_rollback(lsqlite3->sqlite);
 		}
-	} else {
-		return lsqlite3_safe_rollback(lsqlite3->sqlite);
 	}
 
         return 0;
 }
-
-
-
-/* return extended error information */
-static const char *
-lsqlite3_errstring(struct ldb_module *module)
-{
-	struct lsqlite3_private *   lsqlite3 = module->private_data;
-        
-	return sqlite3_errmsg(lsqlite3->sqlite);
-}
-
-
-
 
 /*
  * Static functions
@@ -1758,8 +1812,7 @@ static const struct ldb_module_ops lsqlite3_ops = {
 	.delete_record     = lsqlite3_delete,
 	.rename_record     = lsqlite3_rename,
 	.start_transaction = lsqlite3_start_trans,
-	.end_transaction   = lsqlite3_end_trans,
-	.errstring         = lsqlite3_errstring
+	.end_transaction   = lsqlite3_end_trans
 };
 
 /*
@@ -1781,6 +1834,7 @@ int lsqlite3_connect(struct ldb_context *ldb,
         
 	lsqlite3->sqlite = NULL;
 	lsqlite3->options = NULL;
+	lsqlite3->trans_count = 0;
         
 	ret = initialize(lsqlite3, ldb, url);
 	if (ret != SQLITE_OK) {
