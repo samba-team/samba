@@ -3,7 +3,7 @@
 
    Copyright (C) Andrew Tridgell    2004
    Copyright (C) Stefan Metzmacher  2004
-   Copyright (C) Simo Sorce         2004
+   Copyright (C) Simo Sorce         2004-2005
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
