@@ -20,8 +20,6 @@ hostenv.StaticLibrary('gencache',['gencache.c'])
 hostenv.StaticLibrary('pidfile',['pidfile.c'])
 hostenv.StaticLibrary('unix_privs',['unix_privs.c'])
 
-SConscript('popt/SConscript','hostenv')
-SConscript('cmdline/SConscript','hostenv')
-SConscript('talloc/SConscript','hostenv')
-SConscript('registry/SConscript','hostenv')
-SConscript('charset/SConscript', 'hostenv')
+SConscript(dirs=['tdb','popt','cmdline','talloc','registry','charset',
+		   'ldb'],
+		   exports='hostenv')

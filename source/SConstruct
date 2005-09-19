@@ -1,11 +1,19 @@
+#!/usr/bin/env python
 #            tastes like -*- python -*-
 
 # This is the experimental scons build script for Samba 4. For a proper 
 # build use the old build system (configure + make). scons may
 # eventually replace this system.
+#
+# Copyright (C) 2005 Jelmer Vernooij <jelmer@samba.org>
+# Published under the GNU GPL
 
-hostenv = Environment(CPPPATH = ['#', '#include', '#lib'])
-
+hostenv = Environment(
+		toolpath=['build/scons','.'],
+		tools=['default'],
+		CPPPATH=['#include','#','#lib'], 
+		CCFLAGS='-D_SAMBA_BUILD_'
+		)
 hostenv.Append(CPPPATH = ['#heimdal_build', '#heimdal/lib/krb5',
 			  '#heimdal/lib/hdb', '#heimdal/lib/gssapi',
 			  '#heimdal/lib/asn1', '#heimdal/lib/des',
@@ -14,23 +22,22 @@ hostenv.Append(CPPPATH = ['#heimdal_build', '#heimdal/lib/krb5',
 
 buildenv = hostenv.Copy()
 
-SConscript('param/SConscript','hostenv')
-SConscript('lib/SConscript','hostenv')
-
 dynenv = hostenv.Copy()
 
+bindir = "bindir"
+
 paths = { 
-	'BINDIR': 'bin',
-	'SBINDIR': 'sbin',
-	'CONFIGFILE': 'cfg',
-	'LOGFILEBASE': 'lfb',
-	'NCALRPCDIR': 'ncalrpc',
-	'LMHOSTSFILE': 'lmhosts',
-	'LIBDIR': 'libdir',
-	'SHLIBEXT': 'ext',
-	'LOCKDIR': 'lockdir',
-	'PIDDIR': 'piddir',
-	'SMB_PASSWD_FILE': 'smbpasswd',
+	'BINDIR': bindir,
+	'SBINDIR': "sbin",
+	'CONFIGFILE': "cfg",
+	'LOGFILEBASE': "lfb",
+	'NCALRPCDIR': "ncalrpc",
+	'LMHOSTSFILE': "lmhosts",
+	'LIBDIR': "libdir",
+	'SHLIBEXT': "ext",
+	'LOCKDIR': "lockdir",
+	'PIDDIR': "piddir",
+	'SMB_PASSWD_FILE': "smbpasswd",
 	'PRIVATE_DIR': 'private',
 	'SWATDIR': 'swat'
 }
@@ -39,3 +46,6 @@ paths = {
 	
 dynconfig = dynenv.Object('dynconfig.c')
 Export('dynconfig')
+
+SConscript(dirs=['param','lib'],exports='hostenv')
+
