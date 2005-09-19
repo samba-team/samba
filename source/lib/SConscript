@@ -1,3 +1,5 @@
+#            tastes like -*- python -*-
+
 Import('hostenv')
 basic = hostenv.StaticLibrary('basic', 
 	['version.c', 'xfile.c', 'debug.c', 'fault.c', 'pidfile.c',
