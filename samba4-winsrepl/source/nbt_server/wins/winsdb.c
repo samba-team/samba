@@ -96,6 +96,24 @@ static struct ldb_dn *winsdb_dn(TALLOC_CTX *mem_ctx, struct nbt_name *name)
 	return dn;
 }
 
+static const char *winsdb_addr_decode(TALLOC_CTX *mem_ctx, struct ldb_val *val)
+{
+	const char *addr;
+	addr = talloc_steal(mem_ctx, val->data);
+	return addr;
+}
+
+static int ldb_msg_add_winsdb_addr(struct ldb_context *ldb, struct ldb_message *msg, 
+				   const char *attr_name, const char *addr)
+{
+	struct ldb_val val;
+
+	val.data = discard_const_p(uint8_t, addr);
+	val.length = strlen(addr);
+
+	return ldb_msg_add_value(ldb, msg, attr_name, &val);
+}
+
 /*
   load a WINS entry from the database
 */
@@ -136,7 +154,8 @@ struct winsdb_record *winsdb_load(struct wins_server *winssrv,
 	if (rec->addresses == NULL) goto failed;
 
 	for (i=0;i<el->num_values;i++) {
-		rec->addresses[i] = talloc_steal(rec->addresses, el->values[i].data);
+		rec->addresses[i] = winsdb_addr_decode(rec->addresses, &el->values[i]);
+		if (rec->addresses[i] == NULL) goto failed;
 	}
 	rec->addresses[i] = NULL;
 
@@ -179,7 +198,7 @@ static struct ldb_message *winsdb_message(struct wins_server *winssrv,
 				  ldap_timestring(msg, rec->expire_time));
 	ret |= ldb_msg_add_fmt(ldb, msg, "version", "%llu", rec->version);
 	for (i=0;rec->addresses[i];i++) {
-		ret |= ldb_msg_add_string(ldb, msg, "address", rec->addresses[i]);
+		ret |= ldb_msg_add_winsdb_addr(ldb, msg, "address", rec->addresses[i]);
 	}
 	if (ret != 0) goto failed;
 	return msg;
