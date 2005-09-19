@@ -274,15 +274,18 @@ NTSTATUS nbtd_winsserver_init(struct nbtd_server *nbtsrv)
 		return NT_STATUS_OK;
 	}
 
-	nbtsrv->winssrv = talloc(nbtsrv, struct wins_server);
+	nbtsrv->winssrv = talloc_zero(nbtsrv, struct wins_server);
 	NT_STATUS_HAVE_NO_MEMORY(nbtsrv->winssrv);
 
 	nbtsrv->winssrv->max_ttl     = lp_max_wins_ttl();
 	nbtsrv->winssrv->min_ttl     = lp_min_wins_ttl();
-	nbtsrv->winssrv->min_version = 0;
-	nbtsrv->winssrv->max_version = 0;
+
+	nbtsrv->winssrv->wins_db     = winsdb_connect(nbtsrv->winssrv);
+	if (!nbtsrv->winssrv->wins_db) {
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
 
 	irpc_add_name(nbtsrv->task->msg_ctx, "wins_server");
 
-	return winsdb_init(nbtsrv->winssrv);
+	return NT_STATUS_OK;
 }
