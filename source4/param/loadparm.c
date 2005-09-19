@@ -101,6 +101,8 @@ struct param_opt {
  */
 typedef struct
 {
+	int server_role;
+
 	char **smb_ports;
 	char *dos_charset;
 	char *unix_charset;
@@ -164,8 +166,6 @@ typedef struct
 	BOOL bWINSsupport;
 	BOOL bLocalMaster;
 	BOOL bPreferredMaster;
-	BOOL bDomainMaster;
-	BOOL bDomainLogons;
 	BOOL bEncryptPasswords;
 	BOOL bNullPasswords;
 	BOOL bObeyPamRestrictions;
@@ -274,7 +274,6 @@ static service **ServicePtrs = NULL;
 static int iNumServices = 0;
 static int iServiceIndex = 0;
 static BOOL bInGlobalSection = True;
-static int server_role;
 static int default_server_announce;
 
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
@@ -283,7 +282,6 @@ static int default_server_announce;
 static BOOL handle_include(const char *pszParmValue, char **ptr);
 static BOOL handle_copy(const char *pszParmValue, char **ptr);
 
-static void set_server_role(void);
 static void set_default_server_announce_type(void);
 
 static const struct enum_list enum_protocol[] = {
@@ -368,6 +366,14 @@ static const struct enum_list enum_smb_signing_vals[] = {
 	{-1, NULL}
 };
 
+static const struct enum_list enum_server_role[] = {
+	{ROLE_STANDALONE, "standalone"},
+	{ROLE_DOMAIN_MEMBER, "member server"},
+	{ROLE_DOMAIN_BDC, "bdc"},
+	{ROLE_DOMAIN_PDC, "pdc"},
+	{-1, NULL}
+};
+
 
 /* Note: We do not initialise the defaults union - it is not allowed in ANSI C
  *
@@ -381,6 +387,8 @@ static const struct enum_list enum_smb_signing_vals[] = {
  */
 static struct parm_struct parm_table[] = {
 	{"Base Options", P_SEP, P_SEPARATOR},
+
+	{"server role", P_ENUM, P_GLOBAL, &Globals.server_role, NULL, enum_server_role, FLAG_BASIC},
 
 	{"dos charset", P_STRING, P_GLOBAL, &Globals.dos_charset, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"unix charset", P_STRING, P_GLOBAL, &Globals.unix_charset, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -503,14 +511,12 @@ static struct parm_struct parm_table[] = {
 	
 	{"Logon Options", P_SEP, P_SEPARATOR},
 
-	{"domain logons", P_BOOL, P_GLOBAL, &Globals.bDomainLogons, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 
 	{"Browse Options", P_SEP, P_SEPARATOR},
 	
 	{"preferred master", P_ENUM, P_GLOBAL, &Globals.bPreferredMaster, NULL, enum_bool_auto, FLAG_BASIC | FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"prefered master", P_ENUM, P_GLOBAL, &Globals.bPreferredMaster, NULL, enum_bool_auto, FLAG_HIDE},
 	{"local master", P_BOOL, P_GLOBAL, &Globals.bLocalMaster, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"domain master", P_ENUM, P_GLOBAL, &Globals.bDomainMaster, NULL, enum_bool_auto, FLAG_BASIC | FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"browseable", P_BOOL, P_LOCAL, &sDefault.bBrowseable, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
 	{"browsable", P_BOOL, P_LOCAL, &sDefault.bBrowseable, NULL, NULL, FLAG_HIDE},
 
@@ -584,6 +590,8 @@ static void init_globals(void)
 	}
 
 	do_parameter("config file", dyn_CONFIGFILE, NULL);
+
+	do_parameter("server role", "standalone", NULL);
 
 	/* options that can be set on the command line must be initialised via
 	   the slower do_parameter() to ensure that FLAG_CMDLINE is obeyed */
@@ -667,8 +675,7 @@ static void init_globals(void)
 
 	do_parameter("PreferredMaster", "Auto", NULL);
 	do_parameter("LocalMaster", "True", NULL);
-	do_parameter("DomainMaster", "Auto", NULL);	/* depending on bDomainLogons */
-	do_parameter("DomainLogons", "False", NULL);
+
 	do_parameter("WINSsupport", "False", NULL);
 
 	do_parameter("winbind separator", "\\", NULL);
@@ -791,6 +798,7 @@ static const char *lp_string(const char *s)
 #define FN_LOCAL_INTEGER(fn_name,val) \
  int fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 
+FN_GLOBAL_INTEGER(lp_server_role, &Globals.server_role)
 FN_GLOBAL_LIST(lp_smb_ports, &Globals.smb_ports)
 FN_GLOBAL_INTEGER(lp_nbt_port, &Globals.nbt_port)
 FN_GLOBAL_INTEGER(lp_dgram_port, &Globals.dgram_port)
@@ -840,7 +848,6 @@ FN_GLOBAL_STRING(lp_panic_action, &Globals.szPanicAction)
 FN_GLOBAL_BOOL(lp_disable_netbios, &Globals.bDisableNetbios)
 FN_GLOBAL_BOOL(lp_wins_support, &Globals.bWINSsupport)
 FN_GLOBAL_BOOL(lp_local_master, &Globals.bLocalMaster)
-FN_GLOBAL_BOOL(lp_domain_logons, &Globals.bDomainLogons)
 FN_GLOBAL_BOOL(lp_readraw, &Globals.bReadRaw)
 FN_GLOBAL_BOOL(lp_large_readwrite, &Globals.bLargeReadwrite)
 FN_GLOBAL_BOOL(lp_writeraw, &Globals.bWriteRaw)
@@ -2333,63 +2340,6 @@ void lp_killservice(int iServiceIn)
 	}
 }
 
-/*******************************************************************
- Set the server type we will announce as via nmbd.
-********************************************************************/
-
-static void set_server_role(void)
-{
-	server_role = ROLE_STANDALONE;
-
-	switch (lp_security()) {
-		case SEC_SHARE:
-			if (lp_domain_logons())
-				DEBUG(0, ("Server's Role (logon server) conflicts with share-level security\n"));
-			break;
-		case SEC_SERVER:
-		case SEC_DOMAIN:
-		case SEC_ADS:
-			if (lp_domain_logons()) {
-				if (Globals.bDomainMaster) /* auto or yes */ 
-					server_role = ROLE_DOMAIN_PDC;
-				else
-					server_role = ROLE_DOMAIN_BDC;
-				break;
-			}
-			server_role = ROLE_DOMAIN_MEMBER;
-			break;
-		case SEC_USER:
-			if (lp_domain_logons()) {
-
-				if (Globals.bDomainMaster) /* auto or yes */ 
-					server_role = ROLE_DOMAIN_PDC;
-				else
-					server_role = ROLE_DOMAIN_BDC;
-			}
-			break;
-		default:
-			DEBUG(0, ("Server's Role undefined due to unknown security mode\n"));
-			break;
-	}
-
-	DEBUG(10, ("set_server_role: role = "));
-
-	switch(server_role) {
-	case ROLE_STANDALONE:
-		DEBUGADD(10, ("ROLE_STANDALONE\n"));
-		break;
-	case ROLE_DOMAIN_MEMBER:
-		DEBUGADD(10, ("ROLE_DOMAIN_MEMBER\n"));
-		break;
-	case ROLE_DOMAIN_BDC:
-		DEBUGADD(10, ("ROLE_DOMAIN_BDC\n"));
-		break;
-	case ROLE_DOMAIN_PDC:
-		DEBUGADD(10, ("ROLE_DOMAIN_PDC\n"));
-		break;
-	}
-}
-
 /***************************************************************************
  Load the services array from the services file. Return True on success, 
  False on failure.
@@ -2440,7 +2390,6 @@ BOOL lp_load(void)
 	lp_add_hidden("IPC$", "IPC");
 	lp_add_hidden("ADMIN$", "DISK");
 
-	set_server_role();
 	set_default_server_announce_type();
 
 	bLoaded = True;
@@ -2601,24 +2550,21 @@ static void set_default_server_announce_type(void)
 }
 
 /***********************************************************
- returns role of Samba server
+ If we are PDC then prefer us as DMB
 ************************************************************/
 
-int lp_server_role(void)
+BOOL lp_domain_master(void)
 {
-	return server_role;
+	return (lp_server_role() == ROLE_DOMAIN_PDC);
 }
 
 /***********************************************************
  If we are PDC then prefer us as DMB
 ************************************************************/
 
-BOOL lp_domain_master(void)
+BOOL lp_domain_logons(void)
 {
-	if (Globals.bDomainMaster == Auto)
-		return (lp_server_role() == ROLE_DOMAIN_PDC);
-
-	return Globals.bDomainMaster;
+	return (lp_server_role() == ROLE_DOMAIN_PDC) || (lp_server_role() == ROLE_DOMAIN_BDC);
 }
 
 /***********************************************************
@@ -2627,10 +2573,7 @@ BOOL lp_domain_master(void)
 
 BOOL lp_preferred_master(void)
 {
-	if (Globals.bPreferredMaster == Auto)
-		return (lp_local_master() && lp_domain_master());
-
-	return Globals.bPreferredMaster;
+	return (lp_local_master() && lp_domain_master());
 }
 
 /*******************************************************************

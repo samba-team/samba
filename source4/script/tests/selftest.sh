@@ -94,8 +94,7 @@ cat >$CONFFILE<<EOF
 	tls enabled = $TLS_ENABLED
 	panic action = $SRCDIR/script/gdb_backtrace %PID% %PROG%
 	wins support = yes
-	domain master = yes
-	domain logons = yes
+	server role = pdc
 
 [tmp]
 	path = $TMPDIR
@@ -133,7 +132,7 @@ START=`date`
  # give time for nbt server to register its names
  echo delaying for nbt name registration
  sleep 4
- bin/nmblookup -U localhost localhost 
+ bin/nmblookup $CONFIGURATION -U localhost localhost 
 
  failed=0
 
