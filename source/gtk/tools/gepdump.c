@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "dynconfig.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_mgmt.h"
 #include "gtk/common/select.h"

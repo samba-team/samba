@@ -24,7 +24,6 @@
 #include "scripting/ejs/smbcalls.h"
 #include "lib/appweb/ejs/ejs.h"
 #include "param/loadparm.h"
-#include "dynconfig.h"
 
 /*
   return a list of defined services
