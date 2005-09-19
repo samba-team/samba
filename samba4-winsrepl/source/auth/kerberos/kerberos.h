@@ -21,19 +21,8 @@
 
 #if defined(HAVE_KRB5)
 
-#if defined(HAVE_KRB5_INITLOG) && defined(HAVE_KRB5_ADDLOG_FUNC) && defined (HAVE_KRB5_SET_WARN_DEST) && defined(HAVE_KRB5_LOG_FACILITY)
-#define HAVE_KRB5_LOG_CONTROL
-#else
-#undef HAVE_KRB5_LOG_CONTROL
-#endif
+#include "auth/kerberos/krb5_init_context.h"
 
-struct smb_krb5_context {
-	krb5_context krb5_context;
-#ifdef HAVE_KRB5_LOG_CONTROL
-	krb5_log_facility *logf;
-#endif
-};
-	
 struct ccache_container {
 	struct smb_krb5_context *smb_krb5_context;
 	krb5_ccache ccache;
@@ -118,8 +107,6 @@ char *smb_get_krb5_error_message(krb5_context context, krb5_error_code code, TAL
 			  struct cli_credentials *credentials,
 			  struct smb_krb5_context *smb_krb5_context,
 				 krb5_ccache ccache);
-krb5_error_code smb_krb5_init_context(TALLOC_CTX *parent_ctx, 
-				      struct smb_krb5_context **smb_krb5_context); 
 krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx, 
 						struct cli_credentials *machine_account, 
 						struct smb_krb5_context *smb_krb5_context,

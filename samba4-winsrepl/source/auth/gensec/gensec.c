@@ -707,6 +707,15 @@ NTSTATUS gensec_set_target_service(struct gensec_security *gensec_security, cons
 	return NT_STATUS_OK;
 }
 
+const char *gensec_get_target_service(struct gensec_security *gensec_security) 
+{
+	if (gensec_security->target.service) {
+		return gensec_security->target.service;
+	}
+
+	return "host";
+}
+
 /** 
  * Set the target hostname (suitable for kerberos resolutation) on a GENSEC context - ensures it is talloc()ed 
  *
@@ -731,13 +740,28 @@ const char *gensec_get_target_hostname(struct gensec_security *gensec_security)
 	return NULL;
 }
 
-const char *gensec_get_target_service(struct gensec_security *gensec_security) 
+/** 
+ * Set the target principal (assuming it it known, say from the SPNEGO reply)
+ *  - ensures it is talloc()ed 
+ *
+ */
+
+NTSTATUS gensec_set_target_principal(struct gensec_security *gensec_security, const char *principal) 
 {
-	if (gensec_security->target.service) {
-		return gensec_security->target.service;
+	gensec_security->target.principal = talloc_strdup(gensec_security, principal);
+	if (!gensec_security->target.principal) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
+
+const char *gensec_get_target_principal(struct gensec_security *gensec_security) 
+{
+	if (gensec_security->target.principal) {
+		return gensec_security->target.principal;
 	}
 
-	return "host";
+	return NULL;
 }
 
 /*

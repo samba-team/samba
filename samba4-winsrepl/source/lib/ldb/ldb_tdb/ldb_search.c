@@ -34,6 +34,7 @@
 
 #include "includes.h"
 #include "ldb/include/ldb.h"
+#include "ldb/include/ldb_errors.h"
 #include "ldb/include/ldb_private.h"
 #include "ldb/ldb_tdb/ldb_tdb.h"
 
@@ -249,7 +250,6 @@ static int ltdb_search_dn(struct ldb_module *module, const struct ldb_dn *dn,
 			  const char * const attrs[], struct ldb_message ***res)
 {
 	struct ldb_context *ldb = module->ldb;
-	struct ltdb_private *ltdb = module->private_data;
 	int ret;
 	struct ldb_message *msg, *msg2;
 
@@ -258,8 +258,6 @@ static int ltdb_search_dn(struct ldb_module *module, const struct ldb_dn *dn,
 	if (ltdb_lock_read(module) != 0) {
 		return -1;
 	}
-
-	ltdb->last_err_string = NULL;
 
 	if (ltdb_cache_load(module) != 0) {
 		ltdb_unlock_read(module);
@@ -462,7 +460,6 @@ int ltdb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 		       enum ldb_scope scope, struct ldb_parse_tree *tree,
 		       const char * const attrs[], struct ldb_message ***res)
 {
-	struct ltdb_private *ltdb = module->private_data;
 	int ret;
 
 	if ((base == NULL || base->comp_num == 0) &&
@@ -476,7 +473,7 @@ int ltdb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 		struct ldb_dn *dn;
 		dn = ldb_dn_explode(module->ldb, tree->u.equality.value.data);
 		if (dn == NULL) {
-			return -1;
+			return LDB_ERR_INVALID_DN_SYNTAX;
 		}
 		ret = ltdb_search_dn(module, dn, attrs, res);
 		talloc_free(dn);
@@ -486,8 +483,6 @@ int ltdb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 	if (ltdb_lock_read(module) != 0) {
 		return -1;
 	}
-
-	ltdb->last_err_string = NULL;
 
 	if (ltdb_cache_load(module) != 0) {
 		ltdb_unlock_read(module);
@@ -530,7 +525,8 @@ int ltdb_search(struct ldb_module *module, const struct ldb_dn *base,
 
 	tree = ldb_parse_tree(ltdb, expression);
 	if (tree == NULL) {
-		ltdb->last_err_string = "expression parse failed";
+		char *err_string = talloc_strdup(module, "expression parse failed");
+		if (err_string) ldb_set_errstring(module, err_string);
 		return -1;
 	}
 

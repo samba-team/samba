@@ -229,8 +229,10 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	gss_buffer_desc name_token;
+	gss_OID name_type;
 	OM_uint32 maj_stat, min_stat;
 	const char *hostname = gensec_get_target_hostname(gensec_security);
+	const char *principal;
 
 	if (!hostname) {
 		DEBUG(1, ("Could not determine hostname for target computer, cannot use kerberos\n"));
@@ -248,14 +250,22 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 
 	gensec_gssapi_state = gensec_security->private_data;
 
-	name_token.value = talloc_asprintf(gensec_gssapi_state, "%s@%s", 
-					   gensec_get_target_service(gensec_security), 
-					   hostname);
-	name_token.length = strlen(name_token.value);
+	principal = gensec_get_target_principal(gensec_security);
+	if (principal && lp_client_use_spnego_principal()) {
+		name_token.value = gensec_get_target_principal(gensec_security);
+		name_token.length = strlen(name_token.value);
+		name_type = GSS_C_NULL_OID;
+	} else {
+		name_token.value = talloc_asprintf(gensec_gssapi_state, "%s@%s", 
+						   gensec_get_target_service(gensec_security), 
+						   hostname);
+		name_token.length = strlen(name_token.value);
+		name_type = GSS_C_NT_HOSTBASED_SERVICE;
+	}		
 
 	maj_stat = gss_import_name (&min_stat,
 				    &name_token,
-				    GSS_C_NT_HOSTBASED_SERVICE,
+				    name_type,
 				    &gensec_gssapi_state->server_name);
 	if (maj_stat) {
 		DEBUG(2, ("GSS Import name of %s failed: %s\n",

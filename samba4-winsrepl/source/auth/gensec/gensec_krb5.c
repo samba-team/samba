@@ -50,10 +50,14 @@ struct gensec_krb5_state {
 	krb5_ticket *ticket;
 };
 
-static int gensec_krb5_destory(void *ptr) 
+static int gensec_krb5_destroy(void *ptr) 
 {
 	struct gensec_krb5_state *gensec_krb5_state = ptr;
 
+	if (!gensec_krb5_state->smb_krb5_context) {
+		/* We can't clean anything else up unless we started up this far */
+		return 0;
+	}
 	if (gensec_krb5_state->enc_ticket.length) { 
 		kerberos_free_data_contents(gensec_krb5_state->smb_krb5_context->krb5_context, 
 					    &gensec_krb5_state->enc_ticket); 
@@ -88,6 +92,7 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 
 	gensec_security->private_data = gensec_krb5_state;
 
+	gensec_krb5_state->smb_krb5_context = NULL;
 	gensec_krb5_state->auth_context = NULL;
 	gensec_krb5_state->ticket = NULL;
 	ZERO_STRUCT(gensec_krb5_state->enc_ticket);
@@ -95,7 +100,7 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 	gensec_krb5_state->session_key = data_blob(NULL, 0);
 	gensec_krb5_state->pac = data_blob(NULL, 0);
 
-	talloc_set_destructor(gensec_krb5_state, gensec_krb5_destory); 
+	talloc_set_destructor(gensec_krb5_state, gensec_krb5_destroy); 
 
 	return NT_STATUS_OK;
 }
@@ -141,8 +146,10 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	struct ccache_container *ccache_container;
+	const char *hostname;
+	krb5_flags ap_req_options = AP_OPTS_USE_SUBKEY | AP_OPTS_MUTUAL_REQUIRED;
 
-	const char *hostname = gensec_get_target_hostname(gensec_security);
+	hostname = gensec_get_target_hostname(gensec_security);
 	if (!hostname) {
 		DEBUG(1, ("Could not determine hostname for target computer, cannot use kerberos\n"));
 		return NT_STATUS_INVALID_PARAMETER;
@@ -178,18 +185,35 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	if (!ret) {
+	if (ret == 0) {
+		char *principal;
 		krb5_data in_data;
 		in_data.length = 0;
 		
-		ret = krb5_mk_req(gensec_krb5_state->smb_krb5_context->krb5_context, 
-				  &gensec_krb5_state->auth_context,
-				  AP_OPTS_USE_SUBKEY | AP_OPTS_MUTUAL_REQUIRED,
-				  gensec_get_target_service(gensec_security),
-				  hostname,
-				  &in_data, ccache_container->ccache, 
-				  &gensec_krb5_state->enc_ticket);
-		
+		principal = gensec_get_target_principal(gensec_security);
+		if (principal && lp_client_use_spnego_principal()) {
+			krb5_principal target_principal;
+			ret = krb5_parse_name(gensec_krb5_state->smb_krb5_context->krb5_context, principal,
+					      &target_principal);
+			if (ret == 0) {
+				ret = krb5_mk_req_exact(gensec_krb5_state->smb_krb5_context->krb5_context, 
+							&gensec_krb5_state->auth_context,
+							ap_req_options, 
+							target_principal,
+							&in_data, ccache_container->ccache, 
+							&gensec_krb5_state->enc_ticket);
+				krb5_free_principal(gensec_krb5_state->smb_krb5_context->krb5_context, 
+						    target_principal);
+			}
+		} else {
+			ret = krb5_mk_req(gensec_krb5_state->smb_krb5_context->krb5_context, 
+					  &gensec_krb5_state->auth_context,
+					  ap_req_options,
+					  gensec_get_target_service(gensec_security),
+					  hostname,
+					  &in_data, ccache_container->ccache, 
+					  &gensec_krb5_state->enc_ticket);
+		}
 	}
 	switch (ret) {
 	case 0:

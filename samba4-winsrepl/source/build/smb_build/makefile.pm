@@ -15,23 +15,43 @@ sub _prepare_path_vars()
 {
 	my $output;
 
-	$output = << '__EOD__';
-prefix = @prefix@
-exec_prefix = @exec_prefix@
-selftest_prefix = @selftest_prefix@
-VPATH = @srcdir@
-srcdir = @srcdir@
-builddir = @builddir@
+	$config{srcdir} = '.';
+	$config{builddir} = '.';
 
-BASEDIR = @prefix@
-BINDIR = @bindir@
-SBINDIR = @sbindir@
-datadir = @datadir@
-LIBDIR = @libdir@
-CONFIGDIR = @configdir@
-localstatedir = @localstatedir@
-SWATDIR = @swatdir@
-VARDIR = @localstatedir@
+	if ($config{prefix} eq "NONE") {
+		$config{prefix} = $config{ac_default_prefix};
+	}
+
+	if ($config{exec_prefix} eq "NONE") {
+		$config{exec_prefix} = $config{prefix};
+	}
+
+	$output = << "__EOD__";
+prefix = $config{prefix}
+exec_prefix = $config{exec_prefix}
+selftest_prefix = $config{selftest_prefix}
+VPATH = $config{srcdir}
+srcdir = $config{srcdir}
+builddir = $config{builddir}
+
+BINDIR = $config{bindir}
+SBINDIR = $config{sbindir}
+datadir = $config{datadir}
+LIBDIR = $config{libdir}
+CONFIGDIR = $config{configdir}
+localstatedir = $config{localstatedir}
+SWATDIR = $config{swatdir}
+VARDIR = $config{localstatedir}
+LOGFILEBASE = $config{logfilebase}
+NCALRPCDIR = $config{localstatedir}/ncalrpc
+LOCKDIR = $config{lockdir}
+PIDDIR = $config{piddir}
+MANDIR = $config{mandir}
+PRIVATEDIR = $config{privatedir}
+
+__EOD__
+	
+	$output.= << '__EOD__';
 
 # The permissions to give the executables
 INSTALLPERMS = 0755
@@ -39,27 +59,16 @@ INSTALLPERMS = 0755
 # set these to where to find various files
 # These can be overridden by command line switches (see smbd(8))
 # or in smb.conf (see smb.conf(5))
-LOGFILEBASE = @logfilebase@
 CONFIGFILE = $(CONFIGDIR)/smb.conf
 LMHOSTSFILE = $(CONFIGDIR)/lmhosts
-NCALRPCDIR = @localstatedir@/ncalrpc
 
 # This is where smbpasswd et al go
-PRIVATEDIR = @privatedir@
 SMB_PASSWD_FILE = $(PRIVATEDIR)/smbpasswd
-
-# the directory where lock files go
-LOCKDIR = @lockdir@
-
-# the directory where pid files go
-PIDDIR = @piddir@
-
-MANDIR = @mandir@
 
 PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\" \
 	 -DBINDIR=\"$(BINDIR)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" \
 	 -DLOCKDIR=\"$(LOCKDIR)\" -DPIDDIR=\"$(PIDDIR)\" -DLIBDIR=\"$(LIBDIR)\" \
-	 -DLOGFILEBASE=\"$(LOGFILEBASE)\" -DSHLIBEXT=\"@SHLIBEXT@\" \
+	 -DLOGFILEBASE=\"$(LOGFILEBASE)\" -DSHLIBEXT=\"$(SHLIBEXT)\" \
 	 -DCONFIGDIR=\"$(CONFIGDIR)\" -DNCALRPCDIR=\"$(NCALRPCDIR)\" \
 	 -DSWATDIR=\"$(SWATDIR)\" -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
 	 -DPRIVATE_DIR=\"$(PRIVATEDIR)\"
@@ -77,6 +86,8 @@ PERL=$config{PERL}
 
 CC=$config{CC}
 CFLAGS=-I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -D_SAMBA_BUILD_ -DHAVE_CONFIG_H $config{CFLAGS} $config{CPPFLAGS}
+PICFLAG=$config{PICFLAG}
+HOSTCC=$config{HOSTCC}
 
 CPP=$config{CPP}
 CPPFLAGS=$config{CPPFLAGS}
@@ -89,12 +100,15 @@ STLD_FLAGS=-rc
 
 SHLD=$config{CC}
 SHLD_FLAGS=$config{LDSHFLAGS}
+SONAMEFLAG=$config{SONAMEFLAG}
+SHLIBEXT=$config{SHLIBEXT}
 
 XSLTPROC=$config{XSLTPROC}
 
 LEX=$config{LEX}
 YACC=$config{YACC}
 YAPP=$config{YAPP}
+PIDL_ARGS=$config{PIDL_ARGS}
 
 GCOV=$config{GCOV}
 
@@ -114,7 +128,7 @@ __EOD__
 sub _prepare_SUFFIXES()
 {
 	return << '__EOD__';
-.SUFFIXES: .x .c .et .y .l .d .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml
+.SUFFIXES: .x .c .et .y .l .d .o .h .h.gch .a .so .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml .ho
 
 __EOD__
 }
@@ -194,16 +208,19 @@ sub _prepare_dummy_MAKEDIR()
 {
 	my $ctx = shift;
 
-	return  << '__EOD__';
+	my $ret = << '__EOD__';
 bin/.dummy:
 	@: >> $@ || : > $@
 
 dynconfig.o: dynconfig.c Makefile
 	@echo Compiling $*.c
-	@$(CC) $(CFLAGS) @PICFLAG@ $(PATH_FLAGS) -c $< -o $@
-@BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
-
+	@$(CC) $(CFLAGS) $(PICFLAG) $(PATH_FLAGS) -c $< -o $@
 __EOD__
+	if ($config{BROKEN_CC} eq "yes") {
+		$ret .= '	-mv `echo $@ | sed \'s%^.*/%%g\'` $@
+';
+	}
+	return $ret."\n";
 }
 
 sub _prepare_depend_CC_rule()
@@ -237,15 +254,35 @@ sub _prepare_std_CC_rule($$$$$)
 {
 	my ($src,$dst,$flags,$message,$comment) = @_;
 
-	return << "__EOD__";
+	my $ret = << "__EOD__";
 # $comment
 .$src.$dst:
 	\@echo $message \$\*.$src
 	\@\$(CC) `script/cflags.sh \$\@` \$(CFLAGS) $flags -c \$< -o \$\@
-\@BROKEN_CC\@	-mv `echo \$\@ | sed 's%^.*/%%g'` \$\@
-
 __EOD__
+	if ($config{BROKEN_CC} eq "yes") {
+		$ret.= '	-mv `echo $@ | sed \'s%^.*/%%g\'` $@
+';
+	}
+	return $ret."\n";
 }
+
+sub _prepare_hostcc_rule()
+{
+	my $ret = << "__EOD__";
+.c.ho:
+	\@echo Compiling \$\*.c with host compiler
+	\@\$(HOSTCC) `script/cflags.sh \$\@` \$(CFLAGS) -c \$< -o \$\@
+__EOD__
+	if ($config{BROKEN_CC} eq "yes") {
+		$ret .= '	-mv `echo $@ | sed \'s%^.*/%%g\' -e \'s%\.ho$$%.o%\'` $@
+';
+	}
+
+	return $ret."\n";
+}
+
+
 
 sub array2oneperline($)
 {
@@ -512,7 +549,7 @@ clean: heimdal_clean
 distclean: clean
 	-rm -f bin/.dummy
 	-rm -f include/config.h include/smb_build.h
-	-rm -f Makefile Makefile.in
+	-rm -f Makefile 
 	-rm -f config.status
 	-rm -f config.log config.cache
 	-rm -f samba4-deps.dot
@@ -591,12 +628,12 @@ sub _prepare_rule_lists($)
 ###########################################################
 # This function prepares the output for Makefile
 #
-# $output = _prepare_makefile_in($OUTPUT)
+# $output = _prepare_makefile($OUTPUT)
 #
 # $OUTPUT -	the global OUTPUT context
 #
 # $output -		the resulting output buffer
-sub _prepare_makefile_in($)
+sub _prepare_makefile($)
 {
 	my ($CTX) = @_;
 	my $output;
@@ -611,8 +648,9 @@ sub _prepare_makefile_in($)
 	$output .= _prepare_default_rule();
 	$output .= _prepare_SUFFIXES();
 	$output .= _prepare_dummy_MAKEDIR();
-	$output .= _prepare_std_CC_rule("c","o",$config{PICFLAG},"Compiling","Rule for std objectfiles");
-	$output .= _prepare_std_CC_rule("h","h.gch",$config{PICFLAG},"Precompiling","Rule for precompiled headerfiles");
+	$output .= _prepare_hostcc_rule();
+	$output .= _prepare_std_CC_rule("c","o",'$(PICFLAG)',"Compiling","Rule for std objectfiles");
+	$output .= _prepare_std_CC_rule("h","h.gch",'$(PICFLAG)',"Precompiling","Rule for precompiled headerfiles");
 
 	$output .= _prepare_depend_CC_rule();
 	
@@ -640,21 +678,21 @@ __EOD__
 }
 
 ###########################################################
-# This function creates Makefile.in from the OUTPUT 
+# This function creates Makefile from the OUTPUT 
 # context
 #
-# create_makefile_in($OUTPUT)
+# create_makefile($OUTPUT)
 #
 # $OUTPUT	-	the global OUTPUT context
 #
 # $output -		the resulting output buffer
-sub create_makefile_in($$$)
+sub create_makefile($$$)
 {
 	my ($CTX, $mk, $file) = @_;
 
-	open(MAKEFILE_IN,">$file") || die ("Can't open $file\n");
-	print MAKEFILE_IN _prepare_makefile_in($CTX) . $mk;
-	close(MAKEFILE_IN);
+	open(MAKEFILE,">$file") || die ("Can't open $file\n");
+	print MAKEFILE _prepare_makefile($CTX) . $mk;
+	close(MAKEFILE);
 
 	print "build/smb_build/main.pl: creating $file\n";
 	return;	
