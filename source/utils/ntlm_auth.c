@@ -23,7 +23,6 @@
 */
 
 #include "includes.h"
-#include "dynconfig.h"
 #include "system/filesys.h"
 #include "system/passwd.h"
 #include "lib/cmdline/popt_common.h"

@@ -23,7 +23,6 @@
 
 #include "includes.h"
 #include "version.h"
-#include "dynconfig.h"
 #include "clilist.h"
 #include "lib/cmdline/popt_common.h"
 #include "librpc/gen_ndr/ndr_srvsvc.h"

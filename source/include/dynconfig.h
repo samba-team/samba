@@ -25,19 +25,15 @@
  * @brief Exported global configurations.
  **/
 
-#include "pstring.h"
-
-extern char const *dyn_SBINDIR,
-	*dyn_BINDIR;
-
-extern pstring dyn_CONFIGFILE;
+extern const char *dyn_SBINDIR, *dyn_BINDIR;
+extern const char *dyn_CONFIGFILE;
 extern const char *dyn_NCALRPCDIR;
 extern const char *dyn_LOGFILEBASE;
-extern pstring dyn_LMHOSTSFILE;
-extern pstring dyn_LIBDIR;
-extern const fstring dyn_SHLIBEXT;
-extern const pstring dyn_LOCKDIR; 
-extern const pstring dyn_PIDDIR;
-extern const pstring dyn_SMB_PASSWD_FILE;
-extern const pstring dyn_PRIVATE_DIR;
-extern const pstring dyn_SWATDIR;
+extern const char *dyn_LMHOSTSFILE;
+extern const char *dyn_LIBDIR;
+extern const char *dyn_SHLIBEXT;
+extern const char *dyn_LOCKDIR; 
+extern const char *dyn_PIDDIR;
+extern const char *dyn_SMB_PASSWD_FILE;
+extern const char *dyn_PRIVATE_DIR;
+extern const char *dyn_SWATDIR;

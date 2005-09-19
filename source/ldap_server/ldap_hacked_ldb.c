@@ -22,7 +22,6 @@
 */
 
 #include "includes.h"
-#include "dynconfig.h"
 #include "ldap_server/ldap_server.h"
 #include "lib/ldb/include/ldb.h"
 #include "librpc/gen_ndr/ndr_security.h"

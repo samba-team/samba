@@ -703,18 +703,6 @@ char *smbd_tmp_path(TALLOC_CTX *mem_ctx, const char *name)
 	return fname;
 }
 
-/**
- * @brief Returns the platform specific shared library extension.
- *
- * @retval Pointer to a static #fstring containing the extension.
- **/
-
-const char *shlib_ext(void)
-{
-  return dyn_SHLIBEXT;
-}
-
-
 void dump_data_pw(const char *msg, const uint8_t * data, size_t len)
 {
 #ifdef DEBUG_PASSWORD
