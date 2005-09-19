@@ -106,7 +106,7 @@ static int pam_winbind_request(enum winbindd_cmd req_type,
 	/* Fill in request and send down pipe */
 	init_request(request, req_type);
 	
-	if (write_sock(request, sizeof(*request)) == -1) {
+	if (write_sock(request, sizeof(*request), 0) == -1) {
 		_pam_log(LOG_ERR, "write to socket failed!");
 		close_sock();
 		return PAM_SERVICE_ERR;
