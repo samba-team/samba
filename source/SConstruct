@@ -1,7 +1,7 @@
 #            tastes like -*- python -*-
 
 # This is the experimental scons build script for Samba 4. For a proper 
-# build use the old build system (configure + make). scons will 
+# build use the old build system (configure + make). scons may
 # eventually replace this system.
 
 hostenv = Environment(CPPPATH = ['#', '#include', '#lib'])
