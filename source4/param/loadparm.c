@@ -55,6 +55,7 @@
 #include "includes.h"
 #include "version.h"
 #include "dynconfig.h"
+#include "pstring.h"
 #include "system/time.h"
 #include "system/iconv.h"
 #include "system/network.h"
