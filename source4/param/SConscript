@@ -1,7 +1,8 @@
 #            tastes like -*- python -*-
 
 Import('hostenv')
-param = hostenv.StaticLibrary('loadparm',['loadparm.c','params.c'])
+Import('dynconfig')
+param = hostenv.StaticLibrary('loadparm',['loadparm.c','params.c',dynconfig])
 Export('param')
 generic = hostenv.StaticLibrary('generic',['generic.c'])
 Export('generic')

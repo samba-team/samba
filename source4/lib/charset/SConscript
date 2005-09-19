@@ -1,5 +1,15 @@
+SConscript('../../build/scons/iconv.py')
 #            tastes like -*- python -*-
-
 Import('hostenv')
-charset = hostenv.StaticLibrary('charset',['iconv.c','charcnv.c'])
+
+#conf = Configure(hostenv, custom_tests = { 'CheckIconv' : CheckIconv })
+#(have_iconv,iconv) = conf.CheckIconv()
+#conf.Finish()
+
+#if not have_iconv:
+#	print "Install iconv for better charset compatibility"
+
+iconv = []
+
+charset = hostenv.StaticLibrary('charset',['iconv.c','charcnv.c',iconv])
 Export('charset')

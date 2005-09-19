@@ -47,7 +47,6 @@ ADD_OBJ_FILES = \
 		lib/xfile.o \
 		lib/debug.o \
 		lib/fault.o \
-		lib/pidfile.o \
 		lib/signal.o \
 		lib/system.o \
 		lib/time.o \
@@ -66,7 +65,6 @@ ADD_OBJ_FILES = \
 		lib/select.o \
 		lib/mutex.o \
 		lib/idtree.o \
-		lib/unix_privs.o \
 		lib/db_wrap.o \
 		lib/gendb.o \
 		lib/credentials.o
@@ -76,3 +74,8 @@ REQUIRED_SUBSYSTEMS = \
 # End SUBSYSTEM LIBBASIC
 ##############################
 
+[SUBSYSTEM::PIDFILE]
+OBJ_FILES = lib/pidfile.o
+
+[SUBSYSTEM::UNIX_PRIVS]
+OBJ_FILES = lib/unix_privs.o

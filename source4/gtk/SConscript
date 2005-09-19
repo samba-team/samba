@@ -1,0 +1,10 @@
+Import('hostenv')
+
+gtksmb = hostenv.StaticLibrary('gtksmb',
+		['common/gtk-smb.c','common/select.c',
+		'common/gtk_events.c','common/credentials.c'])
+
+hostenv.Program('gregedit', [gtksmb,'tools/gregedit.c'])
+hostenv.Program('gepdump', [gtksmb,'tools/gepdump.c'])
+hostenv.Program('gwcrontab', [gtksmb,'tools/gwcrontab.c'])
+hostenv.Program('gwsam', [gtksmb,'tools/gwsam.c','tools/gwsam_user.c'])
