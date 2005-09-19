@@ -19,7 +19,6 @@
 */
 
 #include "includes.h"
-#include "dynconfig.h"
 #include "ldap_server/ldap_server.h"
 #include "system/time.h"
 #include "lib/ldb/include/ldb.h"
