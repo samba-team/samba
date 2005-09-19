@@ -1,0 +1,3 @@
+Import('hostenv')
+charset = hostenv.StaticLibrary('charset',['iconv.c','charcnv.c'])
+Export('charset')
