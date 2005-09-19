@@ -63,6 +63,7 @@ struct cli_pipe_auth_data {
 	union {
 		struct schannel_auth_struct *schannel_auth;
 		NTLMSSP_STATE *ntlmssp_state;
+		struct kerberos_auth_struct *kerberos_auth;
 	} a_u;
 	void (*cli_auth_data_free_func)(struct cli_pipe_auth_data *);
 };

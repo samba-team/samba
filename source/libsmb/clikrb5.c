@@ -435,7 +435,7 @@ cleanup_princ:
   get a kerberos5 ticket for the given service 
 */
 int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
-			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5)
+			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, uint32 extra_ap_opts)
 {
 	krb5_error_code retval;
 	krb5_data packet;
@@ -475,7 +475,7 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 
 	if ((retval = ads_krb5_mk_req(context, 
 					&auth_context, 
-					AP_OPTS_USE_SUBKEY, 
+					AP_OPTS_USE_SUBKEY | (krb5_flags)extra_ap_opts,
 					principal,
 					ccdef, &packet))) {
 		goto failed;
@@ -553,7 +553,7 @@ failed:
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
 int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
-			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5) 
+			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, uint32 extra_ap_opts) 
 {
 	 DEBUG(0,("NO KERBEROS SUPPORT\n"));
 	 return 1;

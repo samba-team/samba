@@ -871,6 +871,65 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 }
 
 /*******************************************************************
+ Creates krb5 auth bind.
+ ********************************************************************/
+
+static NTSTATUS create_krb5_auth_bind_req( struct rpc_pipe_client *cli,
+						enum pipe_auth_level auth_level,
+						RPC_HDR_AUTH *pauth_out,
+						prs_struct *auth_data)
+{
+#ifdef HAVE_KRB5
+	int ret;
+	struct kerberos_auth_struct *a = cli->auth.a_u.kerberos_auth;
+	DATA_BLOB tkt = data_blob(NULL, 0);
+	DATA_BLOB tkt_wrapped = data_blob(NULL, 0);
+
+	/* We may change the pad length before marshalling. */
+	init_rpc_hdr_auth(pauth_out, RPC_KRB5_AUTH_TYPE, (int)auth_level, 0, 1);
+
+	DEBUG(5, ("create_krb5_auth_bind_req: creating a service ticket for principal %s\n",
+		a->service_principal ));
+
+	/* Create the ticket for the service principal and return it in a gss-api wrapped blob. */
+
+	ret = cli_krb5_get_ticket(a->service_principal, 0, &tkt,
+			&a->session_key, (uint32)AP_OPTS_MUTUAL_REQUIRED);
+
+	if (ret) {
+		DEBUG(1,("create_krb5_auth_bind_req: cli_krb5_get_ticket for principal %s "
+			"failed with %s\n",
+			a->service_principal,
+			error_message(ret) ));
+
+		data_blob_free(&tkt);
+		prs_mem_free(auth_data);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* wrap that up in a nice GSS-API wrapping */
+	tkt_wrapped = spnego_gen_krb5_wrap(tkt, TOK_ID_KRB_AP_REQ);
+
+	data_blob_free(&tkt);
+
+	/* Auth len in the rpc header doesn't include auth_header. */
+	if (!prs_copy_data_in(auth_data, (char *)tkt_wrapped.data, tkt_wrapped.length)) {
+		data_blob_free(&tkt_wrapped);
+		prs_mem_free(auth_data);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	DEBUG(5, ("create_krb5_auth_bind_req: Created krb5 GSS blob :\n"));
+	dump_data(5, (const char *)tkt_wrapped.data, tkt_wrapped.length);
+
+	data_blob_free(&tkt_wrapped);
+	return NT_STATUS_OK;
+#else
+	return NT_STATUS_INVALID_PARAMETER;
+#endif
+}
+
+/*******************************************************************
  Creates SPNEGO NTLMSSP auth bind.
  ********************************************************************/
 
@@ -1113,6 +1172,14 @@ static NTSTATUS create_rpc_bind_req(struct rpc_pipe_client *cli,
 
 		case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
 			ret = create_spnego_ntlmssp_auth_rpc_bind_req(cli, auth_level, &hdr_auth, &auth_info);
+			if (!NT_STATUS_IS_OK(ret)) {
+				prs_mem_free(&auth_info);
+				return ret;
+			}
+			break;
+
+		case PIPE_AUTH_TYPE_KRB5:
+			ret = create_krb5_auth_bind_req(cli, auth_level, &hdr_auth, &auth_info);
 			if (!NT_STATUS_IS_OK(ret)) {
 				prs_mem_free(&auth_info);
 				return ret;
@@ -2035,6 +2102,9 @@ static NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 			}
 			break;
 
+		case PIPE_AUTH_TYPE_KRB5:
+			/* */
+
 		default:
 			DEBUG(0,("cli_finish_bind_auth: unknown auth type %u\n",
 				(unsigned int)auth_type ));
@@ -2370,7 +2440,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cl
 		return NULL;
 	}
 
-	result->auth.a_u.schannel_auth = TALLOC_ZERO_P(cli->mem_ctx, struct schannel_auth_struct);
+	result->auth.a_u.schannel_auth = TALLOC_ZERO_P(result->mem_ctx, struct schannel_auth_struct);
 	if (!result->auth.a_u.schannel_auth) {
 		cli_rpc_pipe_close(result);
 		*perr = NT_STATUS_NO_MEMORY;
@@ -2431,6 +2501,79 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel(struct cli_state *cli,
 	cli_rpc_pipe_close(netlogon_pipe);
 
 	return result;
+}
+
+/****************************************************************************
+ Free function for the kerberos spcific data.
+ ****************************************************************************/
+
+static void kerberos_auth_struct_free(struct cli_pipe_auth_data *a)
+{
+	data_blob_free(&a->a_u.kerberos_auth->session_key);
+}
+
+/****************************************************************************
+ Open a named pipe to an SMB server and bind using krb5 (bind type 16).
+ ****************************************************************************/
+
+struct rpc_pipe_client *cli_rpc_pipe_open_krb5(struct cli_state *cli,
+						int pipe_idx,
+						enum pipe_auth_level auth_level,
+						const char *service_princ,
+						const char *username,
+						const char *password,
+						NTSTATUS *perr)
+{
+#ifdef HAVE_KRB5
+	struct rpc_pipe_client *result;
+
+	result = cli_rpc_pipe_open(cli, pipe_idx, perr);
+	if (result == NULL) {
+		return NULL;
+	}
+
+	/* Default service principal is "host/server@realm" */
+	if (!service_princ) {
+		service_princ = talloc_asprintf(result->mem_ctx, "host/%s@%s",
+			cli->desthost, lp_realm() );
+		if (!service_princ) {
+			cli_rpc_pipe_close(result);
+			return NULL;
+		}
+	}
+
+	/* Only get a new TGT if username/password are given. */
+	if (username && password) {
+		int ret = kerberos_kinit_password(username, password, 0, NULL, NULL);
+		if (ret) {
+			cli_rpc_pipe_close(result);
+			return NULL;
+		}
+	}
+
+	result->auth.a_u.kerberos_auth = TALLOC_ZERO_P(cli->mem_ctx, struct kerberos_auth_struct);
+	if (!result->auth.a_u.kerberos_auth) {
+		cli_rpc_pipe_close(result);
+		*perr = NT_STATUS_NO_MEMORY;
+		return NULL;
+	}
+
+	result->auth.a_u.kerberos_auth->service_principal = service_princ;
+	result->auth.cli_auth_data_free_func = kerberos_auth_struct_free;
+
+	*perr = rpc_pipe_bind(result, PIPE_AUTH_TYPE_KRB5, auth_level);
+	if (!NT_STATUS_IS_OK(*perr)) {
+		DEBUG(0, ("cli_rpc_pipe_open_krb5: cli_rpc_pipe_bind failed with error %s\n",
+			nt_errstr(*perr) ));
+		cli_rpc_pipe_close(result);
+		return NULL;
+	}
+
+	return result;
+#else
+	DEBUG(0,("cli_rpc_pipe_open_krb5: kerberos not found at compile time.\n"));
+	return NULL;
+#endif
 }
 
 #if 0 /* Moved to libsmb/clientgen.c */
