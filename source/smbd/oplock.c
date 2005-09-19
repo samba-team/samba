@@ -29,7 +29,6 @@ BOOL global_client_failed_oplock_break = False;
 
 extern struct timeval smb_last_time;
 extern uint32 global_client_caps;
-extern struct current_user current_user;
 extern int smb_read_error;
 
 static struct kernel_oplocks *koplocks;
