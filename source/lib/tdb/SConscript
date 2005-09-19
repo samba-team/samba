@@ -6,8 +6,9 @@ tdb = tdbenv.StaticLibrary('tdb',
 	 'common/open.c','common/traverse.c','common/freelist.c',
 	 'common/error.c','common/tdbutil.c'])
 
-tdbtool = tdbenv.Program('tdbtool', ['tools/tdbtool.c',tdb])
-tdbtorture = tdbenv.Program('tdbtorture', ['tools/tdbtorture.c',tdb])
-tdbdump = tdbenv.Program('tdbdump', ['tools/tdbdump.c',tdb])
-tdbbackup = tdbenv.Program('tdbbackup', ['tools/tdbbackup.c',tdb])
+tdbtool = tdbenv.Program('bin/tdbtool', ['tools/tdbtool.c',tdb])
+tdbtorture = tdbenv.Program('bin/tdbtorture', ['tools/tdbtorture.c',tdb])
+tdbdump = tdbenv.Program('bin/tdbdump', ['tools/tdbdump.c',tdb])
+tdbbackup = tdbenv.Program('bin/tdbbackup', ['tools/tdbbackup.c',tdb])
+
 Default(tdbtool,tdbtorture,tdbdump,tdbbackup)
