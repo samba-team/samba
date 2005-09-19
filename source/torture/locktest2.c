@@ -138,7 +138,7 @@ static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid,
 		      br_off start, br_off size)
 {
 	printf("%6d   %05x:%05x    %s  %.0f:%.0f(%.0f)\n", 
-	       (int)procid_to_pid(pid), (int)dev, (int)ino, 
+	       (int)procid_to_pid(&pid), (int)dev, (int)ino, 
 	       lock_type==READ_LOCK?"R":"W",
 	       (double)start, (double)start+size-1,(double)size);
 
