@@ -172,6 +172,8 @@ typedef struct winbindd_gr {
 
 /* This is a flag that can only be sent from parent to child */
 #define WBFLAG_IS_PRIVILEGED            0x0400
+/* Flag to say this is a winbindd internal send - don't recurse. */
+#define WBFLAG_RECURSE			0x0800
 
 /* Winbind request structure */
 
