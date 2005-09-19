@@ -284,7 +284,7 @@ static int winbind_named_pipe_sock(const char *dir)
 
 /* Connect to winbindd socket */
 
-int winbind_open_pipe_sock(void)
+static int winbind_open_pipe_sock(int recursing)
 {
 #ifdef HAVE_UNIXSOCKET
 	static pid_t our_pid;
@@ -302,12 +302,17 @@ int winbind_open_pipe_sock(void)
 		return winbindd_fd;
 	}
 
+	if (recursing) {
+		return -1;
+	}
+
 	if ((winbindd_fd = winbind_named_pipe_sock(WINBINDD_SOCKET_DIR)) == -1) {
 		return -1;
 	}
 
 	/* version-check the socket */
 
+	request.flags = WBFLAG_RECURSE;
 	if ((winbindd_request_response(WINBINDD_INTERFACE_VERSION, &request, &response) != NSS_STATUS_SUCCESS) || (response.data.interface_version != WINBIND_INTERFACE_VERSION)) {
 		close_sock();
 		return -1;
@@ -315,6 +320,7 @@ int winbind_open_pipe_sock(void)
 
 	/* try and get priv pipe */
 
+	request.flags = WBFLAG_RECURSE;
 	if (winbindd_request_response(WINBINDD_PRIV_PIPE_DIR, &request, &response) == NSS_STATUS_SUCCESS) {
 		int fd;
 		if ((fd = winbind_named_pipe_sock(response.extra_data)) != -1) {
@@ -333,7 +339,7 @@ int winbind_open_pipe_sock(void)
 
 /* Write data to winbindd socket */
 
-int write_sock(void *buffer, int count)
+int write_sock(void *buffer, int count, int recursing)
 {
 	int result, nwritten;
 	
@@ -341,7 +347,7 @@ int write_sock(void *buffer, int count)
 	
  restart:
 	
-	if (winbind_open_pipe_sock() == -1) {
+	if (winbind_open_pipe_sock(recursing) == -1) {
 		return -1;
 	}
 	
@@ -534,7 +540,7 @@ NSS_STATUS winbindd_send_request(int req_type, struct winbindd_request *request)
 
 	init_request(request, req_type);
 	
-	if (write_sock(request, sizeof(*request)) == -1) {
+	if (write_sock(request, sizeof(*request), request->flags & WBFLAG_RECURSE) == -1) {
 		return NSS_STATUS_UNAVAIL;
 	}
 	
