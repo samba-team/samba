@@ -44,7 +44,7 @@
 const char *dyn_SBINDIR = SBINDIR,
 	*dyn_BINDIR = BINDIR;
 
-pstring dyn_CONFIGFILE = CONFIGFILE; /**< Location of smb.conf file. **/
+const char *dyn_CONFIGFILE = CONFIGFILE; /**< Location of smb.conf file. **/
 
 /** Log file directory. **/
 const char *dyn_LOGFILEBASE = LOGFILEBASE;
@@ -52,24 +52,24 @@ const char *dyn_LOGFILEBASE = LOGFILEBASE;
 const char *dyn_NCALRPCDIR = NCALRPCDIR;
 
 /** Statically configured LanMan hosts. **/
-pstring dyn_LMHOSTSFILE = LMHOSTSFILE;
+const char *dyn_LMHOSTSFILE = LMHOSTSFILE;
 
 /**
  * @brief Samba library directory.
  *
  * @sa lib_path() to get the path to a file inside the LIBDIR.
  **/
-pstring dyn_LIBDIR = LIBDIR;
-const fstring dyn_SHLIBEXT = SHLIBEXT;
+const char *dyn_LIBDIR = LIBDIR;
+const char *dyn_SHLIBEXT = SHLIBEXT;
 
 /**
  * @brief Directory holding lock files.
  *
  * Not writable, but used to set a default in the parameter table.
  **/
-const pstring dyn_LOCKDIR = LOCKDIR;
-const pstring dyn_PIDDIR  = PIDDIR;
+const char *dyn_LOCKDIR = LOCKDIR;
+const char *dyn_PIDDIR  = PIDDIR;
 
-const pstring dyn_SMB_PASSWD_FILE = SMB_PASSWD_FILE;
-const pstring dyn_PRIVATE_DIR = PRIVATE_DIR;
-const pstring dyn_SWATDIR = SWATDIR;
+const char *dyn_SMB_PASSWD_FILE = SMB_PASSWD_FILE;
+const char *dyn_PRIVATE_DIR = PRIVATE_DIR;
+const char *dyn_SWATDIR = SWATDIR;

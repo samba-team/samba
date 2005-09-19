@@ -19,7 +19,6 @@
 */
 
 #include "includes.h"
-#include "dynconfig.h"
 #include "system/time.h"
 #include "system/filesys.h"
 #include "request.h"

@@ -20,8 +20,8 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "dynconfig.h"
 #include "system/time.h"
+#include "pstring.h"
 
 static int numops = 1000;
 static BOOL showall;

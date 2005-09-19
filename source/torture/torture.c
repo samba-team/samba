@@ -19,7 +19,6 @@
 */
 
 #include "includes.h"
-#include "dynconfig.h"
 #include "clilist.h"
 #include "lib/cmdline/popt_common.h"
 #include "libcli/raw/libcliraw.h"
