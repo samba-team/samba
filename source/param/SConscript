@@ -1,3 +1,5 @@
+#            tastes like -*- python -*-
+
 Import('hostenv')
 param = hostenv.StaticLibrary('loadparm',['loadparm.c','params.c'])
 Export('param')

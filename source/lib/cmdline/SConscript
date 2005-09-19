@@ -1,3 +1,5 @@
+#            tastes like -*- python -*-
+
 Import('hostenv')
 Import('basic param')
 popt_common = hostenv.StaticLibrary('popt_common',['popt_common.c',basic,param])
