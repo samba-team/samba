@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "dynconfig.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "gtk/common/select.h"
 #include "gtk/common/gtk-smb.h"

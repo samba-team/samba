@@ -22,7 +22,6 @@
 */
 
 #include "includes.h"
-#include "dynconfig.h"
 #include "lib/appweb/ejs/ejs.h"
 #include "lib/appweb/ejs/ejsInternal.h"
 #include "scripting/ejs/smbcalls.h"
