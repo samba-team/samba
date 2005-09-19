@@ -1,0 +1,3 @@
+Import('hostenv')
+popt = hostenv.StaticLibrary('popt', ['findme.c','popt.c','poptconfig.c','popthelp.c','poptparse.c'])
+Export('popt')
