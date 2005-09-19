@@ -104,6 +104,9 @@ struct wreplsrv_service {
 	/* the whole wrepl service is in one task */
 	struct task_server *task;
 
+	/* the winsdb handle */
+	struct ldb_context *wins_db;
+
 	/* all incoming connections */
 	struct wreplsrv_in_connection *in_connections;
 
