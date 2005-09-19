@@ -63,11 +63,11 @@
 #else
 
 #include "includes.h"
+#include "system/filesys.h"
 
 #endif
 
 #include "tdb.h"
-#include "tdbback.h"
 
 /*
   see if one file is newer than another
