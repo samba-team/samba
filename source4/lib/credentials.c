@@ -121,9 +121,13 @@ const char *cli_credentials_get_principal(struct cli_credentials *cred, TALLOC_C
 	}
 
 	if (cred->principal_obtained < cred->username_obtained) {
-		return talloc_asprintf(mem_ctx, "%s@%s", 
-				       cli_credentials_get_username(cred, mem_ctx),
-				       cli_credentials_get_realm(cred));
+		if (cred->domain_obtained > cred->realm_obtained) {
+			return NULL;
+		} else {
+			return talloc_asprintf(mem_ctx, "%s@%s", 
+					       cli_credentials_get_username(cred, mem_ctx),
+					       cli_credentials_get_realm(cred));
+		}
 	}
 	return talloc_reference(mem_ctx, cred->principal);
 }

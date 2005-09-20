@@ -241,17 +241,7 @@ static void popt_common_credentials_callback(poptContext con,
 		cli_credentials_set_machine_account_pending(cmdline_credentials);
 		
 		/* machine accounts only work with kerberos (fall though)*/
-
-	case 'k':
-#ifndef HAVE_KRB5
-		d_printf("No kerberos support compiled in\n");
-		exit(1);
-#else
-		lp_set_cmdline("gensec:krb5", "True");
-#endif
 		break;
-
-
 	}
 }
 
@@ -261,7 +251,6 @@ struct poptOption popt_common_credentials[] = {
 	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST, popt_common_credentials_callback },
 	{ "user", 'U', POPT_ARG_STRING, NULL, 'U', "Set the network username", "[DOMAIN\\]USERNAME[%PASSWORD]" },
 	{ "no-pass", 'N', POPT_ARG_NONE, &dont_ask, True, "Don't ask for a password" },
-	{ "kerberos", 'k', POPT_ARG_NONE, NULL, 'k', "Use kerberos (active directory) authentication" },
 	{ "authentication-file", 'A', POPT_ARG_STRING, NULL, 'A', "Get the credentials from a file", "FILE" },
 	{ "signing", 'S', POPT_ARG_STRING, NULL, 'S', "Set the client signing state", "on|off|required" },
 	{ "machine-pass", 'P', POPT_ARG_NONE, NULL, 'P', "Use stored machine account password (implies -k)" },
