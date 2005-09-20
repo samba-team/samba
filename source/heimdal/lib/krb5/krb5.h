@@ -443,6 +443,7 @@ typedef struct krb5_context_data {
     int pkinit_flags;
     void *mutex;			/* protects error_string/error_buf */
     int large_msg_size;
+    krb5_boolean fdns;                  /* Lookup hostnames to find full name, or send as-is */
 } krb5_context_data;
 
 enum {
