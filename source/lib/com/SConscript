@@ -1,0 +1,4 @@
+Import('hostenv')
+hostenv.StaticLibrary('com', [ 'tables.c','rot.c','main.c'])
+hostenv.StaticLibrary('dcom', [ 'dcom/tables.c','dcom/main.c'])
+hostenv.StaticLibrary('com_simple', ['classes/simple.c'])

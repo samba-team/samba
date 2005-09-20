@@ -1,5 +1,4 @@
 Import('hostenv')
-
 hostenv.StaticLibrary('ldap_server', 
 		['ldap_server.c','ldap_backend.c','ldap_bind.c','ldap_rootdse.c',
 	 	 'ldap_simple_ldb.c','ldap_hacked_ldb.c'])

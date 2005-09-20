@@ -1,6 +1,5 @@
 Import('hostenv')
 
-
 hostenv.StaticLibrary('winsdb',['wins/winsdb.c'])
 hostenv.StaticLibrary('nbtd_wins',['wins/winsserver.c','wins/winsclient.c','wins/winswack.c'])
 hostenv.StaticLibrary('nbtd_dgram',['dgram/request.c','dgram/netlogon.c','dgram/ntlogon.c','dgram/browse.c'])

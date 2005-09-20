@@ -1,5 +1,4 @@
 Import('hostenv')
-
 gtksmb = hostenv.StaticLibrary('gtksmb',
 		['common/gtk-smb.c','common/select.c',
 		'common/gtk_events.c','common/credentials.c'])

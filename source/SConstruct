@@ -20,7 +20,13 @@ hostenv.Append(CPPPATH = ['#heimdal_build', '#heimdal/lib/krb5',
 			  '#heimdal/kdc', '#heimdal/lib/roken',
 			  '#heimdal/lib/com_err'])
 
-buildenv = hostenv.Copy()
+buildenv = hostenv
+
+cross_compiling = 0
+
+if cross_compiling:
+	buildenv = hostenv.Copy()
+	buildenv.BuildDir('build-env','.')
 
 dynenv = hostenv.Copy()
 
@@ -50,5 +56,6 @@ Export('dynconfig')
 SConscript(
 		dirs=['param','lib','torture','rpc_server','cldap_server','libcli',
 		'nbt_server','client','ldap_server','libnet','nsswitch','web_server',
-		'smbd','dsdb'],
-		exports='hostenv')
+		'smbd','dsdb','heimdal_build','ntptr','kdc','smb_server','ntvfs',
+		'winbind','scripting','auth'],
+		exports='buildenv hostenv')

@@ -1,6 +1,6 @@
+Import('hostenv')
 #            tastes like -*- python -*-
 
-Import('hostenv')
 Import('talloc basic popt_common popt param')
 registry = hostenv.StaticLibrary('registry',
 			[basic,talloc,'common/reg_interface.c','common/reg_util.c'])
