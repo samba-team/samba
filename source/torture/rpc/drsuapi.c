@@ -318,6 +318,30 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	priv->domain_guid_str = r.out.ctr.ctr1->array[0].result_name;
 	GUID_from_string(priv->domain_guid_str, &priv->domain_guid);
 
+	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
+
+	printf("testing DsCrackNames with name '%s' desired format:%d\n",
+			names[0].str, r.in.req.req1.format_desired);
+
+	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
+		ret = False;
+	} else if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
+		printf("DsCrackNames failed on name - %d\n", r.out.ctr.ctr1->array[0].status);
+		ret = False;
+	}
+
+	if (!ret) {
+		return ret;
+	}
 
 	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_GUID;
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
@@ -500,6 +524,33 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	if (strcmp(r.out.ctr.ctr1->array[0].result_name, FQDN_1779_name) != 0) {
 		printf("DsCrackNames failed - %s != %s\n", r.out.ctr.ctr1->array[0].result_name, FQDN_1779_name);
 		return False;
+	}
+
+	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL;
+	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
+	names[0].str = talloc_asprintf(mem_ctx, "krbtgt/%s", dns_domain);
+
+	printf("testing DsCrackNames with name '%s' desired format:%d\n",
+			names[0].str, r.in.req.req1.format_desired);
+
+	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
+		ret = False;
+	} else if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY) {
+		printf("DsCrackNames failed on name - %d\n", r.out.ctr.ctr1->array[0].status);
+		ret = False;
+	}
+
+	if (!ret) {
+		return ret;
 	}
 
 	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
@@ -713,6 +764,62 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
+
+	/* NEGATIVE tests.  This should parse, but not succeed */
+	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL;
+	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
+	names[0].str = talloc_asprintf(mem_ctx, "krbtgt/%s", dns_domain);
+
+	printf("testing DsCrackNames with name '%s' desired format:%d\n",
+			names[0].str, r.in.req.req1.format_desired);
+
+	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
+		ret = False;
+	} else if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY) {
+		printf("DsCrackNames incorrect error on name - %d\n", r.out.ctr.ctr1->array[0].status);
+		ret = False;
+	}
+
+	if (!ret) {
+		return ret;
+	}
+
+	/* NEGATIVE tests.  This should parse, but not succeed */
+	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL;
+	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
+	names[0].str = talloc_asprintf(mem_ctx, "krbtgt");
+
+	printf("testing DsCrackNames with name '%s' desired format:%d\n",
+			names[0].str, r.in.req.req1.format_desired);
+
+	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
+		ret = False;
+	} else if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_NOT_FOUND) {
+		printf("DsCrackNames incorrect error on name - %d\n", r.out.ctr.ctr1->array[0].status);
+		ret = False;
+	}
+
+	if (!ret) {
+		return ret;
+	}
 
 	/* NEGATIVE tests.  This should parse, but not succeed */
 	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL;
