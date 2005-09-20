@@ -1,13 +1,13 @@
 Import('hostenv')
 #            tastes like -*- python -*-
 
-basic = hostenv.StaticLibrary('basic', 
-	['version.c', 'xfile.c', 'debug.c', 'fault.c', 
+basic_files = ['version.c', 'xfile.c', 'debug.c', 'fault.c', 
 	 'signal.c', 'system.c', 'time.c', 'genrand.c', 'dprintf.c',
 	 'util_str.c', 'util_strlist.c', 'util_unistr.c', 'util_file.c',
 	 'data_blob.c', 'util.c', 'util_sock.c', 'substitute.c', 
 	 'fsusage.c', 'ms_fnmatch.c', 'select.c', 'mutex.c', 'idtree.c',
-	 'unix_privs.c', 'db_wrap.c', 'gendb.c', 'credentials.c'])
+	 'db_wrap.c', 'gendb.c', 'credentials.c']
+basic = hostenv.StaticLibrary('basic', basic_files)
 Export('basic')
 
 hostenv.StaticLibrary('netif', ['netif/interface.c', 'netif/netif.c'])
