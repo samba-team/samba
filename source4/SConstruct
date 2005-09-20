@@ -22,18 +22,18 @@ hostenv = Environment(
 		)
 
 if hostenv['developer']:
-	hostenv.Append(CCFLAGS=' -Wall')
-	hostenv.Append(CCFLAGS=' -Wshadow')
-	hostenv.Append(CCFLAGS=' -Werror-implicit-function-declaration')
-	hostenv.Append(CCFLAGS=' -Wstrict-prototypes')
-	hostenv.Append(CCFLAGS=' -Wpointer-arith')
-	hostenv.Append(CCFLAGS=' -Wcast-qual')
-	hostenv.Append(CCFLAGS=' -Wcast-align')
-	hostenv.Append(CCFLAGS=' -Wwrite-strings')
-	hostenv.Append(CCFLAGS=' -Wmissing-format-attribute')
-	hostenv.Append(CCFLAGS=' -Wformat=2')
-	hostenv.Append(CCFLAGS=' -Wno-format-y2k')
-	hostenv.Append(CCFLAGS=' -Wno-declaration-after-statement')
+	hostenv.Append(CCFLAGS='-Wall')
+	hostenv.Append(CCFLAGS='-Wshadow')
+	hostenv.Append(CCFLAGS='-Werror-implicit-function-declaration')
+	hostenv.Append(CCFLAGS='-Wstrict-prototypes')
+	hostenv.Append(CCFLAGS='-Wpointer-arith')
+	hostenv.Append(CCFLAGS='-Wcast-qual')
+	hostenv.Append(CCFLAGS='-Wcast-align')
+	hostenv.Append(CCFLAGS='-Wwrite-strings')
+	hostenv.Append(CCFLAGS='-Wmissing-format-attribute')
+	hostenv.Append(CCFLAGS='-Wformat=2')
+	hostenv.Append(CCFLAGS='-Wno-format-y2k')
+	hostenv.Append(CCFLAGS='-Wno-declaration-after-statement')
 
 
 
@@ -58,16 +58,16 @@ if cross_compiling:
 dynenv = hostenv.Copy()
 
 paths = { 
-	'BINDIR': "bin",
-	'SBINDIR': "sbin",
-	'CONFIGFILE': "cfg",
-	'LOGFILEBASE': "lfb",
-	'NCALRPCDIR': "ncalrpc",
-	'LMHOSTSFILE': "lmhosts",
-	'LIBDIR': "libdir",
-	'SHLIBEXT': "ext",
-	'LOCKDIR': "lockdir",
-	'PIDDIR': "piddir",
+	'BINDIR': 'bin',
+	'SBINDIR': 'sbin',
+	'CONFIGFILE': 'cfg',
+	'LOGFILEBASE': 'lfb',
+	'NCALRPCDIR': 'ncalrpc',
+	'LMHOSTSFILE': 'lmhosts',
+	'LIBDIR': 'libdir',
+	'SHLIBEXT': 'ext',
+	'LOCKDIR': 'lockdir',
+	'PIDDIR': 'piddir',
 	'PRIVATE_DIR': 'private',
 	'SWATDIR': 'swat'
 }
