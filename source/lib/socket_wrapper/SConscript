@@ -1,0 +1,3 @@
+Import('hostenv')
+
+hostenv.StaticLibrary('socket_wrapper',['socket_wrapper.c'])

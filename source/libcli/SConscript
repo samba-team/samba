@@ -1,0 +1,40 @@
+Import('hostenv')
+
+hostenv.StaticLibrary('cli_utils',
+		['util/asn1.c', 'util/doserr.c','util/errormap.c','util/clierror.c',
+		'util/nterr.c','util/smbdes.c'])
+
+hostenv.StaticLibrary('cli_lsa', ['util/clilsa.c'])
+hostenv.StaticLibrary('cli_composite_base', ['composite/composite.c'])
+hostenv.StaticLibrary('cli_composite', 
+	['composite/loadfile.c','composite/savefile.c','composite/connect.c',
+	 'composite/sesssetup.c','composite/fetchfile.c','composite/appendacl.c',
+	 'composite/fsinfo.c'])
+
+hostenv.StaticLibrary('cli_nbt',
+	['nbt/nbtname.c','nbt/nbtsocket.c','nbt/namequery.c','nbt/nameregister.c',
+	'nbt/namerefresh.c','nbt/namerelease.c'])
+
+hostenv.StaticLibrary('cli_dgram',
+	[ 'dgram/dgramsocket.c','dgram/mailslot.c','dgram/netlogon.c',
+	 'dgram/ntlogon.c','dgram/browse.c'])
+
+hostenv.StaticLibrary('cli_cldap', ['cldap/cldap.c'])
+hostenv.StaticLibrary('cli_wrepl', ['wrepl/winsrepl.c'])
+hostenv.StaticLibrary('cli_resolve', 
+	['resolve/resolve.c','resolve/nbtlist.c','resolve/bcast.c','resolve/wins.c',
+	'resolve/host.c'])
+
+
+hostenv.StaticLibrary('smb', 
+		['clireadwrite.c', 'cliconnect.c','clifile.c','clilist.c','clitrans2.c',
+		'climessage.c','clideltree.c'])
+
+hostenv.StaticLibrary('cli_raw',
+		['raw/rawfile.c','raw/smb_signing.c','raw/clisocket.c',
+		'raw/clitransport.c','raw/clisession.c','raw/clitree.c',
+		'raw/rawrequest.c','raw/rawreadwrite.c','raw/rawsearch.c',
+		'raw/rawsetfileinfo.c','raw/raweas.c','raw/rawtrans.c',
+		'raw/clioplock.c','raw/rawnegotiate.c','raw/rawfsinfo.c',
+		'raw/rawfileinfo.c','raw/rawnotify.c','raw/rawioctl.c',
+		'raw/rawacl.c','raw/rawdate.c','raw/rawlpq.c'])

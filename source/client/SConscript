@@ -1,0 +1,3 @@
+Import('hostenv')
+
+hostenv.Program('smbclient', ['client.c'])

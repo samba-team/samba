@@ -1,0 +1,5 @@
+Import('hostenv')
+
+hostenv.StaticLibrary('samba3',
+		['smbpasswd.c','tdbsam.c','policy.c','idmap.c','winsdb.c','samba3.c',
+		'group.c','registry.c','secrets.c','share_info.c'])

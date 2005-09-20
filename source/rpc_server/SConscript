@@ -1,0 +1,21 @@
+Import('hostenv')
+
+hostenv.StaticLibrary('rpcserver_common', 
+		[ 'common/server_info.c', 'common/share_info.c'])
+
+#hostenv.StaticLibrary('rpcserver_dcom', [ 'dcom/oxidresolver.c','dcom/rot.c','dcom/rodb.c','dcom/remact.c', '../librpc/gen_ndr/ndr_dcom_d.c'])
+
+hostenv.StaticLibrary('rpcserver_echo', ['echo/rpc_echo.c'])
+hostenv.StaticLibrary('rpcserver_epmapper', ['epmapper/rpc_epmapper.c'])
+hostenv.StaticLibrary('rpcserver_remote', ['remote/dcesrv_remote.c'])
+hostenv.StaticLibrary('rpcserver_srvsvc', ['srvsvc/dcesrv_srvsvc.c'])
+hostenv.StaticLibrary('rpcserver_wkssvc', ['wkssvc/dcesrv_wkssvc.c'])
+hostenv.StaticLibrary('rpcserver_unixinfo', ['unixinfo/dcesrv_unixinfo.c'])
+hostenv.StaticLibrary('rpcserver_samr', ['samr/dcesrv_samr.c','samr/samr_password.c'])
+hostenv.StaticLibrary('rpcserver_winreg', [ 'winreg/rpc_winreg.c'])
+hostenv.StaticLibrary('rpcserver_netlogon', [ 'netlogon/dcerpc_netlogon.c'])
+hostenv.StaticLibrary('rpcserver_lsa', ['lsa/dcesrv_lsa.c'])
+hostenv.StaticLibrary('rpcserver_spoolss', ['spoolss/dcesrv_spoolss.c'])
+hostenv.StaticLibrary('rpcserver_drsuapi', ['drsuapi/dcesrv_drsuapi.c','drsuapi/drsuapi_cracknames.c'])
+hostenv.StaticLibrary('rpcserver_dssetup', ['dssetup/dcesrv_dssetup.c'])
+hostenv.StaticLibrary('rpcserver', ['dcerpc_server.c', 'dcerpc_sock.c', 'dcesrv_auth.c', 'handles.c'])
