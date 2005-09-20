@@ -20,6 +20,6 @@ hostenv.StaticLibrary('gencache',['gencache.c'])
 hostenv.StaticLibrary('pidfile',['pidfile.c'])
 hostenv.StaticLibrary('unix_privs',['unix_privs.c'])
 
-SConscript(dirs=['tdb','popt','cmdline','talloc','registry','charset',
-		   'ldb'],
+SConscript(dirs=['replace','tdb','popt','cmdline','talloc','registry','charset',
+		   'ldb','tls','samba3','socket','socket_wrapper','messaging'],
 		   exports='hostenv')

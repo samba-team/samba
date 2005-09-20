@@ -11,4 +11,3 @@ tdbtorture = tdbenv.Program('bin/tdbtorture', ['tools/tdbtorture.c',tdb])
 tdbdump = tdbenv.Program('bin/tdbdump', ['tools/tdbdump.c',tdb])
 tdbbackup = tdbenv.Program('bin/tdbbackup', ['tools/tdbbackup.c',tdb])
 
-Default(tdbtool,tdbtorture,tdbdump,tdbbackup)

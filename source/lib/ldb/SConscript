@@ -1,29 +1,37 @@
 Import('hostenv')
-
+Import('talloc')
 
 hostenv.StaticLibrary('modules/timestamps.c')
 hostenv.StaticLibrary('modules/rdn_name.c')
 hostenv.StaticLibrary('modules/schema.c')
 hostenv.StaticLibrary('ldb_ildap/ldb_ildap.c')
 hostenv.StaticLibrary('modules/ldb_map.c')
-hostenv.StaticLibrary('ldb_sqlite3/ldb_sqlite3.c')
+
+conf = Configure(hostenv)
+have_sqlite3 = conf.CheckLibWithHeader("sqlite3","sqlite3.h",'c',"sqlite3_open()")
+conf.Finish()
+
+if have_sqlite3:
+	hostenv.StaticLibrary('ldb_sqlite3/ldb_sqlite3.c')
+
 hostenv.StaticLibrary('ldb_tdb',
 	['ldb_tdb/ldb_tdb.c','ldb_tdb/ldb_search.c','ldb_tdb/ldb_pack.c',
 	 'ldb_tdb/ldb_index.c','ldb_tdb/ldb_cache.c','ldb_tdb/ldb_tdb_wrap.c'])
 
-hostenv.StaticLibrary('ldb', 
-	['common/ldb.c','common/ldb_ldif.c','common/ldb_parse.c',
+ldb = hostenv.StaticLibrary('ldb', 
+	[talloc,'common/ldb.c','common/ldb_ldif.c','common/ldb_parse.c',
 	 'common/ldb_parse.c','common/ldb_msg.c','common/ldb_utf8.c',
 	 'common/ldb_debug.c','common/ldb_modules.c','common/ldb_match.c',
 	 'common/attrib_handlers.c','common/ldb_dn.c'])
+Export('ldb')
 
 hostenv.StaticLibrary('samba/ldif_handlers.c')
-hostenv.StaticLibrary('ldb_cmdline', 'tools/cmdline.c')
+ldb_cmdline = hostenv.StaticLibrary('ldb_cmdline', 'tools/cmdline.c')
 
-hostenv.Program('ldbadd',['tools/ldbadd.c'])
-hostenv.Program('ldbdel',['tools/ldbdel.c'])
-hostenv.Program('ldbmodify',['tools/ldbmodify.c'])
-hostenv.Program('ldbsearch',['tools/ldbsearch.c'])
-hostenv.Program('ldbrename',['tools/ldbrename.c'])
-hostenv.Program('ldbtest',['tools/ldbtest.c'])
-hostenv.Program('oLschema2ldif',['tools/oLschema2ldif.c'])
+hostenv.Program('ldbadd',['tools/ldbadd.c',ldb,talloc,ldb_cmdline])
+hostenv.Program('ldbdel',['tools/ldbdel.c',ldb,ldb_cmdline])
+hostenv.Program('ldbmodify',['tools/ldbmodify.c',ldb,ldb_cmdline])
+hostenv.Program('ldbsearch',['tools/ldbsearch.c',ldb,ldb_cmdline])
+hostenv.Program('ldbrename',['tools/ldbrename.c',ldb,ldb_cmdline])
+hostenv.Program('ldbtest',['tools/ldbtest.c',ldb,ldb_cmdline])
+hostenv.Program('oLschema2ldif',['tools/oLschema2ldif.c',ldb])
