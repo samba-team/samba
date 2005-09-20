@@ -244,6 +244,12 @@ static struct printif *get_printer_fns_from_type( int type )
 	}
 #endif /* HAVE_CUPS */
 
+#ifdef HAVE_IPRINT
+	if ( type == PRINT_IPRINT ) {
+		printer_fns = &iprint_printif;
+	}
+#endif /* HAVE_IPRINT */
+
 	printer_fns->type = type;
 	
 	return printer_fns;

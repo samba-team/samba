@@ -862,6 +862,17 @@ if test x$enable_cups != xno; then
         fi
 fi
 
+AC_ARG_ENABLE(iprint,
+[  --enable-iprint         Turn on iPrint support (default=yes if cups is yes)])
+
+if test x$enable_iprint != xno; then
+	if test "x$CUPS_CONFIG" != x; then
+                AC_DEFINE(HAVE_IPRINT,1,[Whether we have iPrint])
+	elif test x"$enable_iprint" = x"yes"; then
+		AC_MSG_ERROR(iPrint support required but cups not enabled.  Make sure cups-devel related files are installed and that cups is enabled.)
+        fi
+fi
+
 ############################################
 # we need dlopen/dlclose/dlsym/dlerror for PAM, the password database plugins and the plugin loading code
 AC_SEARCH_LIBS(dlopen, [dl])
