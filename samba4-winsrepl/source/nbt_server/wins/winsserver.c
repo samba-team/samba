@@ -110,6 +110,7 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 				     struct nbt_name_packet *packet, 
 				     const struct nbt_peer_socket *src)
 {
+	NTSTATUS status;
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
 						       struct nbtd_interface);
 	struct wins_server *winssrv = iface->nbtsrv->winssrv;
@@ -125,9 +126,12 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 		goto done;
 	}
 
-	rec = winsdb_load(winssrv, name, packet);
-	if (rec == NULL) {
+	status = winsdb_lookup(winssrv->wins_db, name, packet, &rec);
+	if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)) {
 		rcode = wins_register_new(nbtsock, packet, src);
+		goto done;
+	} else if (!NT_STATUS_IS_OK(status)) {
+		rcode = NBT_RCODE_SVR;
 		goto done;
 	} else if (rec->state != WINS_REC_ACTIVE) {
 		winsdb_delete(winssrv, rec);
@@ -182,6 +186,7 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 				  struct nbt_name_packet *packet, 
 				  const struct nbt_peer_socket *src)
 {
+	NTSTATUS status;
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
 						       struct nbtd_interface);
 	struct wins_server *winssrv = iface->nbtsrv->winssrv;
@@ -189,8 +194,8 @@ static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock,
 	struct winsdb_record *rec;
 	const char **addresses;
 
-	rec = winsdb_load(winssrv, name, packet);
-	if (rec == NULL || rec->state != WINS_REC_ACTIVE) {
+	status = winsdb_lookup(winssrv->wins_db, name, packet, &rec);
+	if (!NT_STATUS_IS_OK(status) || rec->state != WINS_REC_ACTIVE) {
 		nbtd_negative_name_query_reply(nbtsock, packet, src);
 		return;
 	}
@@ -212,14 +217,15 @@ static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock,
 				    struct nbt_name_packet *packet, 
 				    const struct nbt_peer_socket *src)
 {
+	NTSTATUS status;
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
 						       struct nbtd_interface);
 	struct wins_server *winssrv = iface->nbtsrv->winssrv;
 	struct nbt_name *name = &packet->questions[0].name;
 	struct winsdb_record *rec;
 
-	rec = winsdb_load(winssrv, name, packet);
-	if (rec == NULL || 
+	status = winsdb_lookup(winssrv->wins_db, name, packet, &rec);
+	if (!NT_STATUS_IS_OK(status) || 
 	    rec->state != WINS_REC_ACTIVE || 
 	    IS_GROUP_NAME(name, rec->nb_flags)) {
 		goto done;

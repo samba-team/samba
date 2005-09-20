@@ -263,8 +263,8 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 		return NT_STATUS_OK;
 	}
 
-	filter = talloc_asprintf(call, "(&(winsOwner=%s)(objectClass=wins)(active=1)(version>=%llu)(version<=%llu))",
-				 owner->owner.address, owner_in->min_version, owner_in->max_version);
+	filter = talloc_asprintf(call, "(&(winsOwner=%s)(objectClass=winsRecord)(state>=%u)(versionID>=%llu)(versionID<=%llu))",
+				 owner->owner.address, WINS_REC_ACTIVE, owner_in->min_version, owner_in->max_version);
 	NT_STATUS_HAVE_NO_MEMORY(filter);
 	ret = ldb_search(service->wins_db, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &res);
 	if (res != NULL) {
@@ -277,13 +277,8 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 	NT_STATUS_HAVE_NO_MEMORY(names);
 
 	for (i=0; i < ret; i++) {
-		rec = winsdb_record(res[i], call);
-		NT_STATUS_HAVE_NO_MEMORY(rec);
-
-		rec->name	= winsdb_nbt_name(names, res[i]->dn);
-		if (!rec->name) {
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
+		status = winsdb_record(res[i], NULL, call, &rec);
+		NT_STATUS_NOT_OK_RETURN(status);
 
 		status = wreplsrv_record2wins_name(names, &names[i], rec);
 		NT_STATUS_NOT_OK_RETURN(status);

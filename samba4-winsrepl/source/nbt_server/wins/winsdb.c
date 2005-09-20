@@ -86,7 +86,7 @@ static struct ldb_dn *winsdb_dn(TALLOC_CTX *mem_ctx, struct nbt_name *name)
 {
 	struct ldb_dn *dn;
 
-	dn = ldb_dn_string_compose(mem_ctx, NULL, "type=%02x", name->type);
+	dn = ldb_dn_string_compose(mem_ctx, NULL, "type=0x%02X", name->type);
 	if (dn && name->name && *name->name) {
 		dn = ldb_dn_string_compose(mem_ctx, dn, "name=%s", name->name);
 	}
@@ -96,15 +96,20 @@ static struct ldb_dn *winsdb_dn(TALLOC_CTX *mem_ctx, struct nbt_name *name)
 	return dn;
 }
 
-struct nbt_name *winsdb_nbt_name(TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
+static NTSTATUS winsdb_nbt_name(TALLOC_CTX *mem_ctx, struct ldb_dn *dn, struct nbt_name **_name)
 {
+	NTSTATUS status;
 	struct nbt_name *name;
 	uint32_t cur = 0;
 
 	name = talloc(mem_ctx, struct nbt_name);
-	if (!name) goto failed;
+	if (!name) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
 
 	if (dn->comp_num > 3) {
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto failed;
 	}
 
@@ -120,30 +125,37 @@ struct nbt_name *winsdb_nbt_name(TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
 		cur++;
 	} else {
 		name->name	= talloc_strdup(name, "");
-		if (!name->name) goto failed;
+		if (!name->name) {
+			status = NT_STATUS_NO_MEMORY;
+			goto failed;
+		}
 	}
 
 	if (dn->comp_num > cur && strcasecmp("type", dn->components[cur].name) == 0) {
-		name->type	= strtoul((char *)dn->components[cur].value.data, NULL, 16);
+		name->type	= strtoul((char *)dn->components[cur].value.data, NULL, 0);
 		cur++;
 	} else {
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto failed;
 	}
 
-	return name;
+	*_name = name;
+	return NT_STATUS_OK;
 failed:
 	talloc_free(name);
-	return NULL;
+	return status;
 }
 
 /*
  decode the winsdb_addr("address") attribute:
  "172.31.1.1" or 
- "172.31.1.1;winsOwner:172.31.9.202;expireTime:20050923032330.0Z"
+ "172.31.1.1;winsOwner:172.31.9.202;expireTime:20050923032330.0Z;"
  are valid records
 */
-static struct winsdb_addr *winsdb_addr_decode(struct winsdb_record *rec, TALLOC_CTX *mem_ctx, struct ldb_val *val)
+static NTSTATUS winsdb_addr_decode(struct winsdb_record *rec, struct ldb_val *val,
+				   TALLOC_CTX *mem_ctx, struct winsdb_addr **_addr)
 {
+	NTSTATUS status;
 	struct winsdb_addr *addr;
 	char *address;
 	char *wins_owner;
@@ -151,7 +163,10 @@ static struct winsdb_addr *winsdb_addr_decode(struct winsdb_record *rec, TALLOC_
 	char *p;
 
 	addr = talloc(mem_ctx, struct winsdb_addr);
-	if (!addr) return NULL;
+	if (!addr) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
 
 	address = (char *)val->data;
 
@@ -161,52 +176,60 @@ static struct winsdb_addr *winsdb_addr_decode(struct winsdb_record *rec, TALLOC_
 		addr->address		= talloc_steal(addr, val->data);
 		addr->wins_owner	= rec->wins_owner;
 		addr->expire_time	= rec->expire_time;
-		return addr;
+		*_addr = addr;
+		return NT_STATUS_OK;
 	}
 
 	*p = '\0';p++;
 	addr->address = talloc_strdup(addr, address);
 	if (!addr->address) {
-		talloc_free(addr);
-		return NULL;
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
 	}
 
 	if (strncmp("winsOwner:", p, 10) != 0) {
-		/* invalid record */
-		talloc_free(addr);
-		return NULL;
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto failed;
 	}
 	wins_owner = p + 10;
 	p = strchr(wins_owner, ';');
 	if (!p) {
-		/* invalid record */
-		talloc_free(addr);
-		return NULL;
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto failed;
 	}
 
 	*p = '\0';p++;
 	addr->wins_owner = talloc_strdup(addr, wins_owner);
 	if (!addr->wins_owner) {
-		talloc_free(addr);
-		return NULL;
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
 	}
 
 	if (strncmp("expireTime:", p, 11) != 0) {
-		/* invalid record */
-		talloc_free(addr);
-		return NULL;
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto failed;
 	}
 
 	expire_time = p + 11;
+	p = strchr(expire_time, ';');
+	if (!p) {
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto failed;
+	}
 
+	*p = '\0';p++;
 	addr->expire_time = ldap_string_to_time(expire_time);
 
-	return addr;
+	*_addr = addr;
+	return NT_STATUS_OK;
+failed:
+	talloc_free(addr);
+	return status;
 }
 
 /*
  encode the winsdb_addr("address") attribute like this:
- "172.31.1.1;winsOwner:172.31.9.202;expireTime:20050923032330.0Z"
+ "172.31.1.1;winsOwner:172.31.9.202;expireTime:20050923032330.0Z;"
 */
 static int ldb_msg_add_winsdb_addr(struct ldb_context *ldb, struct ldb_message *msg, 
 				   const char *attr_name, struct winsdb_addr *addr)
@@ -214,7 +237,7 @@ static int ldb_msg_add_winsdb_addr(struct ldb_context *ldb, struct ldb_message *
 	struct ldb_val val;
 	const char *str;
 
-	str = talloc_asprintf(msg, "%s;winsOwner:%s;expireTime:%s",
+	str = talloc_asprintf(msg, "%s;winsOwner:%s;expireTime:%s;",
 			      addr->address, addr->wins_owner,
 			      ldap_timestring(msg, addr->expire_time));
 	if (!str) return -1;
@@ -332,25 +355,33 @@ const char **winsdb_addr_string_list(TALLOC_CTX *mem_ctx, struct winsdb_addr **a
 /*
   load a WINS entry from the database
 */
-struct winsdb_record *winsdb_load(struct wins_server *winssrv, 
-				  struct nbt_name *name, TALLOC_CTX *mem_ctx)
+NTSTATUS winsdb_lookup(struct ldb_context *wins_db, 
+		       struct nbt_name *name,
+		       TALLOC_CTX *mem_ctx,
+		       struct winsdb_record **_rec)
 {
+	NTSTATUS status;
 	struct ldb_message **res = NULL;
 	int ret;
 	struct winsdb_record *rec;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
 	/* find the record in the WINS database */
-	ret = ldb_search(winssrv->wins_db, winsdb_dn(tmp_ctx, name), LDB_SCOPE_BASE, 
+	ret = ldb_search(wins_db, winsdb_dn(tmp_ctx, name), LDB_SCOPE_BASE, 
 			 NULL, NULL, &res);
 	if (res != NULL) {
 		talloc_steal(tmp_ctx, res);
 	}
-	if (ret != 1) goto failed;
+	if (ret == 0) {
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		goto failed;
+	} else if (ret != 1) {
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto failed;
+	}
 
-	rec = winsdb_record(res[0], tmp_ctx);
-	if (rec == NULL) goto failed;
-	rec->name           = name;
+	status = winsdb_record(res[0], name, tmp_ctx, &rec);
+	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	/* see if it has already expired */
 	if (rec->state == WINS_REC_ACTIVE &&
@@ -362,51 +393,71 @@ struct winsdb_record *winsdb_load(struct wins_server *winssrv,
 
 	talloc_steal(mem_ctx, rec);
 	talloc_free(tmp_ctx);
-	return rec;
+	*_rec = rec;
+	return NT_STATUS_OK;
 
 failed:
 	talloc_free(tmp_ctx);
-	return NULL;
+	return status;
 }
 
-struct winsdb_record *winsdb_record(struct ldb_message *msg, TALLOC_CTX *mem_ctx)
+NTSTATUS winsdb_record(struct ldb_message *msg, struct nbt_name *name, TALLOC_CTX *mem_ctx, struct winsdb_record **_rec)
 {
+	NTSTATUS status;
 	struct winsdb_record *rec;
 	struct ldb_message_element *el;
 	uint32_t i;
 
 	rec = talloc(mem_ctx, struct winsdb_record);
-	if (rec == NULL) goto failed;
+	if (rec == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	if (!name) {
+		status = winsdb_nbt_name(rec, msg->dn, &name);
+		if (!NT_STATUS_IS_OK(status)) goto failed;
+	}
 
 	/* parse it into a more convenient winsdb_record structure */
-	rec->name           = NULL;
-	rec->state          = ldb_msg_find_int(msg, "active", WINS_REC_RELEASED);
+	rec->name           = name;
+	rec->state          = ldb_msg_find_int(msg, "state", WINS_REC_RELEASED);
 	rec->nb_flags       = ldb_msg_find_int(msg, "nbFlags", 0);
 	rec->wins_owner     = ldb_msg_find_string(msg, "winsOwner", NULL);
-	rec->expire_time    = ldap_string_to_time(ldb_msg_find_string(msg, "expires", NULL));
+	rec->expire_time    = ldap_string_to_time(ldb_msg_find_string(msg, "expireTime", NULL));
 	rec->registered_by  = ldb_msg_find_string(msg, "registeredBy", NULL);
-	rec->version        = ldb_msg_find_uint64(msg, "version", 0);
+	rec->version        = ldb_msg_find_uint64(msg, "versionID", 0);
 	talloc_steal(rec, rec->wins_owner);
 	talloc_steal(rec, rec->registered_by);
 
 	if (!rec->wins_owner) rec->wins_owner = WINSDB_OWNER_LOCAL;
 
 	el = ldb_msg_find_element(msg, "address");
-	if (el == NULL) goto failed;
+	if (el == NULL) {
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto failed;
+	}
 
 	rec->addresses     = talloc_array(rec, struct winsdb_addr *, el->num_values+1);
-	if (rec->addresses == NULL) goto failed;
+	if (rec->addresses == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
 
 	for (i=0;i<el->num_values;i++) {
-		rec->addresses[i] = winsdb_addr_decode(rec, rec->addresses, &el->values[i]);
-		if (rec->addresses[i] == NULL) goto failed;
+		status = winsdb_addr_decode(rec, &el->values[i], rec->addresses, &rec->addresses[i]);
+		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
 	rec->addresses[i] = NULL;
 
-	return rec;
+	*_rec = rec;
+	return NT_STATUS_OK;
 failed:
+	if (NT_STATUS_EQUAL(NT_STATUS_INTERNAL_DB_CORRUPTION, status)) {
+		DEBUG(1,("winsdb_record: corrupted record: %s\n", ldb_dn_linearize(rec, msg->dn)));
+	}
 	talloc_free(rec);
-	return NULL;
+	return status;
 }
 
 /*
@@ -421,14 +472,14 @@ struct ldb_message *winsdb_message(struct ldb_context *ldb,
 
 	msg->dn = winsdb_dn(msg, rec->name);
 	if (msg->dn == NULL) goto failed;
-	ret |= ldb_msg_add_fmt(ldb, msg, "objectClass", "wins");
-	ret |= ldb_msg_add_fmt(ldb, msg, "active", "%u", rec->state);
+	ret |= ldb_msg_add_fmt(ldb, msg, "objectClass", "winsRecord");
+	ret |= ldb_msg_add_fmt(ldb, msg, "state", "%u", rec->state);
 	ret |= ldb_msg_add_fmt(ldb, msg, "nbFlags", "0x%04x", rec->nb_flags);
 	ret |= ldb_msg_add_string(ldb, msg, "registeredBy", rec->registered_by);
 	ret |= ldb_msg_add_string(ldb, msg, "winsOwner", rec->wins_owner);
-	ret |= ldb_msg_add_string(ldb, msg, "expires", 
+	ret |= ldb_msg_add_string(ldb, msg, "expireTime", 
 				  ldap_timestring(msg, rec->expire_time));
-	ret |= ldb_msg_add_fmt(ldb, msg, "version", "%llu", rec->version);
+	ret |= ldb_msg_add_fmt(ldb, msg, "versionID", "%llu", rec->version);
 	for (i=0;rec->addresses[i];i++) {
 		ret |= ldb_msg_add_winsdb_addr(ldb, msg, "address", rec->addresses[i]);
 	}
