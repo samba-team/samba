@@ -1,5 +1,4 @@
 Import('hostenv')
-
 hostenv.StaticLibrary('torture_basic',
 	['basic/scanner.c','basic/utable.c','basic/charset.c',
 	 'basic/mangle_test.c','basic/denytest.c','basic/aliases.c',

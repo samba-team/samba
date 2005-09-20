@@ -1,0 +1,5 @@
+Import('hostenv')
+
+hostenv.StaticLibrary('gensec_ntlmssp',
+		['ntlmssp_parse.c','ntlmssp.c','ntlmssp_sign.c','ntlmssp_client.c',
+		'ntlmssp_server.c'])

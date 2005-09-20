@@ -1,0 +1,11 @@
+Import('hostenv')
+
+hostenv.StaticLibrary('ntvfs_cifs',['cifs/vfs_cifs.c'])
+hostenv.StaticLibrary('ntvfs_simple',['simple/vfs_simple.c','simple/svfs_util.c'])
+hostenv.StaticLibrary('ntvfs_print',['print/vfs_print.c'])
+hostenv.StaticLibrary('ntvfs_ipc',['ipc/vfs_ipc.c','ipc/ipc_rap.c','ipc/rap_server.c'])
+hostenv.StaticLibrary('ntvfs_nbench',['nbench/vfs_nbench.c'])
+hostenv.StaticLibrary('ntvfs_common',['common/brlock.c','common/opendb.c','common/sidmap.c'])
+hostenv.StaticLibrary('ntvfs',['ntvfs_base.c','ntvfs_generic.c','ntvfs_interface.c','ntvfs_util.c'])
+
+SConscript(dirs=['unixuid','posix'],exports='hostenv')

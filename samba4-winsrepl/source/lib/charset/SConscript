@@ -1,8 +1,8 @@
+Import('hostenv')
 SConscript('../../build/scons/iconv.py')
 #            tastes like -*- python -*-
-Import('hostenv')
 
-#conf = Configure(hostenv, custom_tests = { 'CheckIconv' : CheckIconv })
+#conf = Configure( custom_tests = { 'CheckIconv' : CheckIconv })
 #(have_iconv,iconv) = conf.CheckIconv()
 #conf.Finish()
 

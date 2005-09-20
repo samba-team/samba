@@ -1,8 +1,8 @@
+Import('hostenv')
 #            tastes like -*- python -*-
 
-Import('hostenv')
 basic = hostenv.StaticLibrary('basic', 
-	['version.c', 'xfile.c', 'debug.c', 'fault.c', 'pidfile.c',
+	['version.c', 'xfile.c', 'debug.c', 'fault.c', 
 	 'signal.c', 'system.c', 'time.c', 'genrand.c', 'dprintf.c',
 	 'util_str.c', 'util_strlist.c', 'util_unistr.c', 'util_file.c',
 	 'data_blob.c', 'util.c', 'util_sock.c', 'substitute.c', 
@@ -20,6 +20,6 @@ hostenv.StaticLibrary('gencache',['gencache.c'])
 hostenv.StaticLibrary('pidfile',['pidfile.c'])
 hostenv.StaticLibrary('unix_privs',['unix_privs.c'])
 
-SConscript(dirs=['replace','tdb','popt','cmdline','talloc','registry','charset',
-		   'ldb','tls','samba3','socket','socket_wrapper','messaging'],
+SConscript(dirs=['replace','tdb','popt','cmdline','talloc','registry','charset', 'ldb','tls','samba3','socket','socket_wrapper','messaging','com','events',
+		   'appweb'],
 		   exports='hostenv')

@@ -1,0 +1,3 @@
+Import('hostenv')
+
+hostenv.StaticLibrary('ntvfs_unixuid',['vfs_unixuid.c'])

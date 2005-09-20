@@ -1,5 +1,4 @@
 Import('hostenv')
-
 hostenv.StaticLibrary('ldb_objectguid',['samdb/ldb_modules/objectguid.c'])
 hostenv.StaticLibrary('ldb_samldb',['samdb/ldb_modules/samldb.c'])
 hostenv.StaticLibrary('ldb_samba3sam',['samdb/ldb_modules/samba3sam.c'])
