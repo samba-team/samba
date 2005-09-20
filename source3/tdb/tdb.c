@@ -2071,6 +2071,11 @@ int tdb_reopen(TDB_CONTEXT *tdb)
 		TDB_LOG((tdb, 0, "tdb_reopen: open failed (%s)\n", strerror(errno)));
 		goto fail;
 	}
+	if ((tdb->flags & TDB_CLEAR_IF_FIRST) &&
+			(tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1)) {
+		TDB_LOG((tdb, 0, "tdb_reopen: failed to obtain active lock\n"));
+		goto fail;
+	}
 	if (fstat(tdb->fd, &st) != 0) {
 		TDB_LOG((tdb, 0, "tdb_reopen: fstat failed (%s)\n", strerror(errno)));
 		goto fail;
@@ -2080,10 +2085,6 @@ int tdb_reopen(TDB_CONTEXT *tdb)
 		goto fail;
 	}
 	tdb_mmap(tdb);
-	if ((tdb->flags & TDB_CLEAR_IF_FIRST) && (tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1)) {
-		TDB_LOG((tdb, 0, "tdb_reopen: failed to obtain active lock\n"));
-		goto fail;
-	}
 
 	return 0;
 
@@ -2098,8 +2099,6 @@ int tdb_reopen_all(void)
 	TDB_CONTEXT *tdb;
 
 	for (tdb=tdbs; tdb; tdb = tdb->next) {
-		/* Ensure no clear-if-first. */
-		tdb->flags &= ~TDB_CLEAR_IF_FIRST;
 		if (tdb_reopen(tdb) != 0)
 			return -1;
 	}
