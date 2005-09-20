@@ -113,6 +113,7 @@ REQUIRED_SUBSYSTEMS = \
 		SERVER_SERVICE \
 		CONFIG \
 		LIBCMDLINE \
-		LIBBASIC
+		LIBBASIC \
+		PIDFILE
 # End BINARY smbd
 #################################

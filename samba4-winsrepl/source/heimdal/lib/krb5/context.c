@@ -182,6 +182,7 @@ init_context_from_config_file(krb5_context context)
     INIT_FIELD(context, bool, srv_lookup, context->srv_lookup, "dns_lookup_kdc");
     INIT_FIELD(context, int, large_msg_size, 6000, "large_message_size");
     context->default_cc_name = NULL;
+    INIT_FIELD(context, bool, fdns, TRUE, "fdns");
     return 0;
 }
 
