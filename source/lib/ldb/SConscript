@@ -9,6 +9,7 @@ hostenv.StaticLibrary('modules/ldb_map.c')
 
 conf = Configure(hostenv)
 have_sqlite3 = conf.CheckLibWithHeader("sqlite3","sqlite3.h",'c',"sqlite3_open()")
+have_popt = conf.CheckLibWithHeader("popt","popt.h",'c',"poptGetArgs(NULL);")
 conf.Finish()
 
 if have_sqlite3:

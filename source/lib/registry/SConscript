@@ -1,7 +1,12 @@
-Import('hostenv')
+Import('hostenv paths')
 #            tastes like -*- python -*-
 
 Import('talloc basic popt_common popt param')
 registry = hostenv.StaticLibrary('registry',
 			[basic,talloc,'common/reg_interface.c','common/reg_util.c'])
-hostenv.Program('regtree', ['tools/regtree.c',registry,talloc,basic,popt_common,popt,param])
+regtree = hostenv.Program('regtree', ['tools/regtree.c',registry,talloc,basic,popt_common,popt,param])
+regshell = hostenv.Program('regshell', ['tools/regshell.c',registry,talloc,basic,popt_common,popt,param])
+regpatch = hostenv.Program('regpatch', ['tools/regpatch.c',registry,talloc,basic,popt_common,popt,param])
+regdiff = hostenv.Program('regdiff', ['tools/regdiff.c',registry,talloc,basic,popt_common,popt,param])
+
+hostenv.Install(paths['BINDIR'], [regtree,regshell,regpatch,regdiff])

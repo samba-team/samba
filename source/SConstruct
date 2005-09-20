@@ -7,12 +7,35 @@
 # Copyright (C) 2005 Jelmer Vernooij <jelmer@samba.org>
 # Published under the GNU GPL
 
+opts = Options(None, ARGUMENTS)
+opts.AddOptions(
+		BoolOption('developer','enable developer flags', 0),
+		PathOption('prefix','installation prefix','/usr/local/samba')
+)
+
 hostenv = Environment(
 		toolpath=['build/scons','.'],
-		tools=['default','pidl','proto','et'],
+		tools=['default','pidl','proto','et','asn1'],
+		options=opts,
 		CPPPATH=['#include','#','#lib'], 
                 CPPDEFINES={'_SAMBA_BUILD_': None},
 		)
+
+if hostenv['developer']:
+	hostenv.Append(CCFLAGS=' -Wall')
+	hostenv.Append(CCFLAGS=' -Wshadow')
+	hostenv.Append(CCFLAGS=' -Werror-implicit-function-declaration')
+	hostenv.Append(CCFLAGS=' -Wstrict-prototypes')
+	hostenv.Append(CCFLAGS=' -Wpointer-arith')
+	hostenv.Append(CCFLAGS=' -Wcast-qual')
+	hostenv.Append(CCFLAGS=' -Wcast-align')
+	hostenv.Append(CCFLAGS=' -Wwrite-strings')
+	hostenv.Append(CCFLAGS=' -Wmissing-format-attribute')
+	hostenv.Append(CCFLAGS=' -Wformat=2')
+	hostenv.Append(CCFLAGS=' -Wno-format-y2k')
+	hostenv.Append(CCFLAGS=' -Wno-declaration-after-statement')
+
+
 
 hostenv.Append(CPPPATH = ['#heimdal_build', '#heimdal/lib/krb5',
 			  '#heimdal/lib/hdb', '#heimdal/lib/gssapi',
@@ -20,7 +43,11 @@ hostenv.Append(CPPPATH = ['#heimdal_build', '#heimdal/lib/krb5',
 			  '#heimdal/kdc', '#heimdal/lib/roken',
 			  '#heimdal/lib/com_err'])
 
+Export('hostenv')
+
 buildenv = hostenv
+
+Export('buildenv')
 
 cross_compiling = 0
 
@@ -30,10 +57,8 @@ if cross_compiling:
 
 dynenv = hostenv.Copy()
 
-bindir = "bindir"
-
 paths = { 
-	'BINDIR': bindir,
+	'BINDIR': "bin",
 	'SBINDIR': "sbin",
 	'CONFIGFILE': "cfg",
 	'LOGFILEBASE': "lfb",
@@ -43,10 +68,40 @@ paths = {
 	'SHLIBEXT': "ext",
 	'LOCKDIR': "lockdir",
 	'PIDDIR': "piddir",
-	'SMB_PASSWD_FILE': "smbpasswd",
 	'PRIVATE_DIR': 'private',
 	'SWATDIR': 'swat'
 }
+
+Export('paths')
+
+conf = hostenv.Configure()
+for h in ['sys/select.h','fcntl.h','sys/fcntl.h','sys/time.h'] + \
+	['utime.h','grp.h','sys/id.h','limits.h','memory.h'] + \
+	['compat.h','math.h','sys/param.h','ctype.h','sys/wait.h'] + \
+	['sys/resource.h','sys/ioctl.h','sys/ipc.h','sys/mode.h'] + \
+	['sys/mman.h','sys/filio.h','sys/priv.h','sys/shm.h','string.h'] + \
+	['strings.h','stdlib.h','sys/vfs.h','sys/fs/s5param.h','sys/filsys.h'] + \
+	['termios.h','termio.h','fnmatch.h','pwd.h','sys/termio.h'] + \
+	['sys/time.h','sys/statfs.h','sys/statvfs.h','stdarg.h'] + \
+	['security/pam_modules.h','security/_pam_macros.h','dlfcn.h'] + \
+	['sys/syslog.h','syslog.h','stdint.h','inttypes.h','locale.h'] + \
+	['shadow.h','nss.h','nss_common.h','ns_api.h','sys/security.h'] + \
+	['security/pam_appl.h','sys/capability.h','syscall.h','sys/syscall.h'] + \
+	['sys/acl.h']:
+	conf.CheckCHeader(h)
+
+for f in ['dlopen','dlsym','dlerror','waitpid','getcwd','strdup'] + \
+	['strndup','strnlen','strerror','chroot','bzero','memset','strlcpy'] + \
+	['strlcat','memmove','vsnprintf','snprintf','asprintf','vasprintf'] + \
+	['setsid','pipe','crypt16','getauthuid','strftime','sigprocmask'] + \
+	['sigblock','sigaction','innetgr','setnetgrent','getnetgrent'] + \
+	['endnetgrent','initgroups','setgroups','sysconf','mktime','rename'] + \
+	['ftruncate','chsize','getpwanam','setlinebuf','srandom','random'] + \
+	['srand','rand','setenv','usleep','syslog','vsyslog','timegm'] + \
+	['backtrace','setbuffer','pread','pwrite']:
+	conf.CheckFunc(f)
+
+conf.Finish()
 
 [dynenv.Append(CPPDEFINES = {p: '\\"%s\\"' % paths[p]}) for p in paths]
 	
@@ -54,12 +109,12 @@ dynconfig = dynenv.Object('dynconfig.c')
 Export('dynconfig')
 
 proto_files = []
+Export('proto_files')
 
 SConscript(
 		dirs=['param','lib','torture','rpc_server','cldap_server','libcli',
 		'nbt_server','client','ldap_server','libnet','nsswitch','web_server',
 		'smbd','dsdb','heimdal_build','ntptr','kdc','smb_server','ntvfs',
-		'winbind','scripting','auth'],
-		exports='buildenv hostenv proto_files')
+		'winbind','scripting','auth'])
 
-hostenv.CProtoHeader(target='include/proto.h',source = proto_files)
+hostenv.CProtoHeader(target='include/proto.h',source=proto_files)

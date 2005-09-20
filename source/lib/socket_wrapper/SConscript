@@ -1,2 +1,7 @@
 Import('hostenv')
 hostenv.StaticLibrary('socket_wrapper',['socket_wrapper.c'])
+
+opts = Options(None, ARGUMENTS)
+opts.AddOptions(
+	BoolOption('socket-wrapper','enable socket wrapper',0)
+)
