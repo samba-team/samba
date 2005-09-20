@@ -111,7 +111,7 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 
 	if (!princ_string) {
 		talloc_free(mem_ctx);
-		return ENOMEM;
+		return EINVAL;
 	}
 
 	ret = krb5_parse_name(smb_krb5_context->krb5_context,

@@ -250,6 +250,28 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 
 	gensec_gssapi_state = gensec_security->private_data;
 
+	ret = cli_credentials_get_ccache(creds, 
+					 &ccache);
+	if (ret) {
+		DEBUG(1, ("Failed to get CCACHE for gensec_gssapi: %s\n", error_message(ret)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	name_token.value = cli_credentials_get_principal(creds, 
+							 gensec_gssapi_state);
+	name_token.length = strlen(name_token.value);
+
+	maj_stat = gss_import_name (&min_stat,
+				    &name_token,
+				    GSS_C_NT_USER_NAME,
+				    &gensec_gssapi_state->client_name);
+	if (maj_stat) {
+		DEBUG(2, ("GSS Import name of %s failed: %s\n",
+			  (char *)name_token.value,
+			  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	principal = gensec_get_target_principal(gensec_security);
 	if (principal && lp_client_use_spnego_principal()) {
 		name_token.value = gensec_get_target_principal(gensec_security);
@@ -272,28 +294,6 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 			  (char *)name_token.value,
 			  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
 		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	ret = cli_credentials_get_ccache(creds, 
-					 &ccache);
-	if (ret) {
-		DEBUG(1, ("Failed to get CCACHE for gensec_gssapi: %s\n", error_message(ret)));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	name_token.value = cli_credentials_get_principal(creds, 
-							 gensec_gssapi_state);
-	name_token.length = strlen(name_token.value);
-
-	maj_stat = gss_import_name (&min_stat,
-				    &name_token,
-				    GSS_C_NT_USER_NAME,
-				    &gensec_gssapi_state->client_name);
-	if (maj_stat) {
-		DEBUG(2, ("GSS Import name of %s failed: %s\n",
-			  (char *)name_token.value,
-			  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
-		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	maj_stat = gsskrb5_acquire_cred(&min_stat, 
@@ -964,7 +964,7 @@ static const struct gensec_security_ops gensec_gssapi_krb5_security_ops = {
 	.wrap           = gensec_gssapi_wrap,
 	.unwrap         = gensec_gssapi_unwrap,
 	.have_feature   = gensec_gssapi_have_feature,
-	.enabled        = False
+	.enabled        = True
 };
 
 NTSTATUS gensec_gssapi_init(void)
