@@ -28,8 +28,10 @@
 #include "smbd/service_stream.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_winsrepl.h"
+#include "librpc/gen_ndr/ndr_nbt.h"
 #include "wrepl_server/wrepl_server.h"
 #include "nbt_server/wins/winsdb.h"
+#include "lib/ldb/include/ldb.h"
 
 static NTSTATUS wreplsrv_in_start_association(struct wreplsrv_in_call *call)
 {
@@ -147,15 +149,147 @@ static NTSTATUS wreplsrv_in_table_query(struct wreplsrv_in_call *call)
 	return NT_STATUS_OK;
 }
 
+static int wreplsrv_in_sort_wins_name(struct wrepl_wins_name *n1,
+				      struct wrepl_wins_name *n2)
+{
+	if (n1->id < n2->id) return -1;
+	if (n1->id > n2->id) return 1;
+	return 0;
+}
+
+static NTSTATUS wreplsrv_record2wins_name(TALLOC_CTX *mem_ctx, struct wrepl_wins_name *name, struct winsdb_record *rec)
+{
+	uint8_t *namebuf;
+	uint32_t namebuf_len;
+	uint32_t name_len;
+
+	name_len = strlen(rec->name->name);
+	if (name_len > 15) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	namebuf = (uint8_t *)talloc_asprintf(mem_ctx, "%-15s%c%s",
+					    rec->name->name, rec->name->type,
+					    (rec->name->scope?rec->name->scope:""));
+	NT_STATUS_HAVE_NO_MEMORY(namebuf);
+	namebuf_len = strlen((char *)namebuf) + 1;
+
+	/* oh wow, what a nasty bug in windows ... */
+	if (namebuf[15] == 0x1b && namebuf_len >= 16) {
+		namebuf[15] = namebuf[0];
+		namebuf[0] = 0x1b;
+	}
+
+	name->name_len		= namebuf_len;
+	name->name		= namebuf;
+	name->id		= rec->version;
+	name->unknown		= WINSDB_GROUP_ADDRESS;
+
+	name->flags		= rec->nb_flags;
+	name->group_flag	= 0;
+
+	switch (name->flags & 2) {
+	case 0:
+		name->addresses.ip			= rec->addresses[0]->address;
+		talloc_steal(mem_ctx, rec->addresses[0]->address);
+		break;
+	case 2:
+		name->addresses.addresses.num_ips	= 0;
+		name->addresses.addresses.ips		= NULL;
+		break;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 {
+	struct wreplsrv_service *service = call->wreplconn->service;
+	struct wrepl_wins_owner *owner_in = &call->req_packet.message.replication.info.owner;
 	struct wrepl_replication *repl_out = &call->rep_packet.message.replication;
 	struct wrepl_send_reply *reply_out = &call->rep_packet.message.replication.info.reply;
+	struct wreplsrv_owner local_owner;
+	struct wreplsrv_owner *owner;
+	const char *filter;
+	struct ldb_message **res = NULL;
+	int ret;
+	struct wrepl_wins_name *names;
+	struct winsdb_record *rec;
+	NTSTATUS status;
+	uint32_t i;
 
-	repl_out->command = WREPL_REPL_SEND_REPLY;
+	if (strcmp(call->wreplconn->our_ip, owner_in->address) == 0) {
+		ZERO_STRUCT(local_owner);
+		local_owner.owner.address	= WINSDB_OWNER_LOCAL;
+		local_owner.owner.min_version	= 0;
+		local_owner.owner.max_version	= wreplsrv_local_max_version(service);
+		local_owner.owner.type		= 1;
+		owner = &local_owner;
+	} else {
+		owner = wreplsrv_find_owner(service->table, owner_in->address);
+	}
 
+	repl_out->command	= WREPL_REPL_SEND_REPLY;
 	reply_out->num_names	= 0;
 	reply_out->names	= NULL;
+
+	/*
+	 * if we didn't know this owner, must be a bug in the partners client code...
+	 * return an empty list.
+	 */
+	if (!owner) {
+		return NT_STATUS_OK;
+	}
+
+	/*
+	 * if the partner ask for nothing, or give invalid ranges,
+	 * return an empty list.
+	 */
+	if (owner_in->min_version >= owner_in->max_version) {
+		return NT_STATUS_OK;
+	}
+
+	/*
+	 * if the partner has already all records for nothing, or give invalid ranges,
+	 * return an empty list.
+	 */
+	if (owner_in->min_version >= owner->owner.max_version) {
+		return NT_STATUS_OK;
+	}
+
+	filter = talloc_asprintf(call, "(&(winsOwner=%s)(objectClass=wins)(active=1)(version>=%llu)(version<=%llu))",
+				 owner->owner.address, owner_in->min_version, owner_in->max_version);
+	NT_STATUS_HAVE_NO_MEMORY(filter);
+	ret = ldb_search(service->wins_db, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &res);
+	if (res != NULL) {
+		talloc_steal(call, res);
+	}
+	if (ret < 0) return  NT_STATUS_INTERNAL_DB_CORRUPTION;
+	if (ret == 0) return NT_STATUS_OK;
+
+	names = talloc_array(call, struct wrepl_wins_name, ret);
+	NT_STATUS_HAVE_NO_MEMORY(names);
+
+	for (i=0; i < ret; i++) {
+		rec = winsdb_record(res[i], call);
+		NT_STATUS_HAVE_NO_MEMORY(rec);
+
+		rec->name	= winsdb_nbt_name(names, res[i]->dn);
+		if (!rec->name) {
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		status = wreplsrv_record2wins_name(names, &names[i], rec);
+		NT_STATUS_NOT_OK_RETURN(status);
+		talloc_free(rec);
+		talloc_free(res[i]);
+	}
+
+	/* sort the names before we send them */
+	qsort(names, ret, sizeof(struct wrepl_wins_name), (comparison_fn_t)wreplsrv_in_sort_wins_name);
+
+	reply_out->num_names	= ret;
+	reply_out->names	= names;
 
 	return NT_STATUS_OK;
 }
