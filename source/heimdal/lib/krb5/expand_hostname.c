@@ -65,6 +65,10 @@ krb5_expand_hostname (krb5_context context,
     memset (&hints, 0, sizeof(hints));
     hints.ai_flags = AI_CANONNAME;
 
+    if (!context->fdns) {
+	return copy_hostname (context, orig_hostname, new_hostname);
+    }
+
     error = getaddrinfo (orig_hostname, NULL, &hints, &ai);
     if (error)
 	return copy_hostname (context, orig_hostname, new_hostname);
@@ -123,6 +127,11 @@ krb5_expand_hostname_realms (krb5_context context,
     struct addrinfo *ai, *a, hints;
     int error;
     krb5_error_code ret = 0;
+
+    if (!context->fdns) {
+	return vanilla_hostname (context, orig_hostname, new_hostname,
+				 realms);
+    }
 
     memset (&hints, 0, sizeof(hints));
     hints.ai_flags = AI_CANONNAME;

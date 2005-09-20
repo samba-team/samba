@@ -117,6 +117,11 @@ static void smb_krb5_debug_wrapper(const char *timestr, const char *msg, void *p
 
 	talloc_steal(parent_ctx, *smb_krb5_context);
 	talloc_free(tmp_ctx);
+
+	/* Set options in kerberos */
+
+	(*smb_krb5_context)->krb5_context->fdns = FALSE;
+	
 	return 0;
 }
 
