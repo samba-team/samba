@@ -1187,7 +1187,6 @@ _krb5_pk_verify_sign(krb5_context context,
 	set.len = sd.certificates->len;
 
 	ret = cert_to_X509(context, &set, &certificates);
-	free_CertificateSet(&set);
     }
     if (ret) {
 	krb5_set_error_string(context,
