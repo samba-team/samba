@@ -352,8 +352,8 @@ NTSTATUS ndr_push_udlongr(struct ndr_push *ndr, int ndr_flags, uint64_t v)
 {
 	NDR_PUSH_ALIGN(ndr, 4);
 	NDR_PUSH_NEED_BYTES(ndr, 8);
-	NDR_SIVAL(ndr, ndr->offset+4, (v>>32));
-	NDR_SIVAL(ndr, ndr->offset, (v & 0xFFFFFFFF));
+	NDR_SIVAL(ndr, ndr->offset, (v>>32));
+	NDR_SIVAL(ndr, ndr->offset+4, (v & 0xFFFFFFFF));
 	ndr->offset += 8;
 	return NT_STATUS_OK;
 }
