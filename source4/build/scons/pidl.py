@@ -16,17 +16,10 @@ pidl_builder = SCons.Builder.Builder(action='$PIDLCOM',
                                      scanner = idl_scanner)
 
 def generate(env):
-    env['PIDL']          = 'pidl'
-	env['PIDLCPP']		 = env['CPP']
-    env['PIDLFLAGS']     = []
-    env['PIDLCOM']       = 'CPP=$PIDLCPP $PIDL $PIDLFLAGS -- $SOURCE'
-    env['BUILDERS']['NdrMarshaller'] = pidl_builder
+	env['PIDL']          = env.Detect('pidl') or './pidl/pidl'
+	env['PIDLFLAGS']     = []
+	env['PIDLCOM']       = 'CPP=$CPP $PIDL $PIDLFLAGS -- $SOURCE'
+	env['BUILDERS']['NdrMarshaller'] = pidl_builder
 
 def exists(env):
-	if (env.Detect('./pidl/pidl')):
-		return 1
-
-	if (env.Detect('pidl')):
-		return 1
-
-	return 0
+	return env.Detect(['./pidl/pidl','pidl'])

@@ -5,22 +5,29 @@ Tool-specific initialization for et
 """
 
 import SCons.Defaults
-import SCons.Scanner.ET
 import SCons.Util
-
-et_scanner = SCons.Scanner.ET.ETScan()
+import SCons.Tool
 
 et_builder = SCons.Builder.Builder(action='$ETCOM',
                                      src_suffix = '.et',
-                                     suffix='.c',
-                                     scanner = et_scanner)
+                                     suffix='.c')
 
 def generate(env):
-    env['ET']          = 'FIXME'
-    env['PROTOCOM']       = '$ET $SOURCE'
+    env['ET']          = env.Detect('et_compile')
+    env['ETCOM']       = '$ET $SOURCE'
     env['BUILDERS']['ET'] = et_builder
 
 def exists(env):
-	return env.Detect('FIXME')
+	return env.Detect(['et_compile'])
 
+def generate(env):
+    """Add Builders and construction variables for lex to an Environment."""
+    c_file, cxx_file = SCons.Tool.createCFileBuilders(env)
 
+    c_file.add_action('.l', SCons.Defaults.LexAction)
+    cxx_file.add_action('.ll', SCons.Defaults.LexAction)
+
+    env['LEX']      = env.Detect('flex') or 'lex'
+    env['LEXFLAGS'] = SCons.Util.CLVar('')
+    env['LEXCOM']   = '$LEX $LEXFLAGS -t $SOURCES > $TARGET'
+    
