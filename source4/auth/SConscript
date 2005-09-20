@@ -1,1 +1,12 @@
 Import('hostenv')
+
+hostenv.StaticLibrary('auth_sam.c')
+hostenv.StaticLibrary('auth_anonymous.c')
+hostenv.StaticLibrary('auth_winbind.c')
+hostenv.StaticLibrary('auth_domain.c')
+hostenv.StaticLibrary('auth_developer.c')
+hostenv.StaticLibrary('auth_unix.c')
+hostenv.StaticLibrary('pam_errors.c')
+hostenv.StaticLibrary('auth',['auth.c','auth_util.c','auth_sam_reply.c','ntlm_check.c'])
+
+SConscript(dirs=['ntlmssp','kerberos','gensec'],exports='hostenv')

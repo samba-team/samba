@@ -1,5 +1,4 @@
 Import('hostenv')
-
 hostenv.StaticLibrary('cli_utils',
 		['util/asn1.c', 'util/doserr.c','util/errormap.c','util/clierror.c',
 		'util/nterr.c','util/smbdes.c'])
@@ -38,3 +37,5 @@ hostenv.StaticLibrary('cli_raw',
 		'raw/clioplock.c','raw/rawnegotiate.c','raw/rawfsinfo.c',
 		'raw/rawfileinfo.c','raw/rawnotify.c','raw/rawioctl.c',
 		'raw/rawacl.c','raw/rawdate.c','raw/rawlpq.c'])
+
+SConscript(dirs=['auth','ldap','security'],exports='hostenv')

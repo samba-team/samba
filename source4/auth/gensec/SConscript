@@ -1,0 +1,8 @@
+Import('hostenv')
+
+hostenv.StaticLibrary('gensec',['gensec.c'])
+hostenv.StaticLibrary('gensec_krb5',['gensec_krb5.c'])
+hostenv.StaticLibrary('gensec_gssapi',['gensec_gssapi.c'])
+hostenv.StaticLibrary('gensec_spnego',['spnego.c'])
+hostenv.StaticLibrary('gensec_schannel',['schannel.c','schannel_sign.c'])
+hostenv.StaticLibrary('schanneldb',['schannel_state.c'])

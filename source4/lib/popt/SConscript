@@ -1,8 +1,7 @@
+Import('hostenv')
 #            tastes like -*- python -*-
 
-Import('hostenv')
-
-conf = Configure(hostenv)
+conf = hostenv.Configure()
 conf.env['HAVE_EXTERNAL_POPT'] = conf.CheckLibWithHeader('popt', 'popt.h', 'c', 'poptGetArgs(NULL);')
 conf.Finish()
 

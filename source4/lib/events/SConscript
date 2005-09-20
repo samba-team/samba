@@ -1,0 +1,3 @@
+Import('hostenv')
+
+hostenv.StaticLibrary('events',['events.c','events_standard.c'])

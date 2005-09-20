@@ -1,0 +1,10 @@
+Import('hostenv')
+
+hostenv.StaticLibrary('ntvfs_posix',
+		['vfs_posix.c', 'pvfs_util.c', 'pvfs_search.c', 'pvfs_dirlist.c',
+		'pvfs_fileinfo.c', 'pvfs_unlink.c', 'pvfs_mkdir.c', 'pvfs_open.c',
+		'pvfs_read.c', 'pvfs_flush.c', 'pvfs_write.c', 'pvfs_fsinfo.c',
+		'pvfs_qfileinfo.c', 'pvfs_setfileinfo.c', 'pvfs_rename.c',
+		'pvfs_resolve.c', 'pvfs_shortname.c', 'pvfs_lock.c', 'pvfs_wait.c',
+		'pvfs_seek.c', 'pvfs_ioctl.c', 'pvfs_xattr.c', 'pvfs_streams.c',
+		'pvfs_acl.c', 'xattr_system.c', 'xattr_tdb.c'])
