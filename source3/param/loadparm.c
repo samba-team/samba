@@ -241,6 +241,7 @@ typedef struct
 	char *szLdapAdminDn;
 	char *szAclCompat;
 	char *szCupsServer;
+	char *szIPrintServer;
 	int ldap_passwd_sync; 
 	int ldap_replication_sleep;
 	int ldap_timeout; /* This is initialised in init_globals */
@@ -641,6 +642,7 @@ static const struct enum_list enum_printing[] = {
 	{PRINT_PLP, "plp"},
 	{PRINT_LPRNG, "lprng"},
 	{PRINT_CUPS, "cups"},
+	{PRINT_IPRINT, "iprint"},
 	{PRINT_LPRNT, "nt"},
 	{PRINT_LPROS2, "os2"},
 #ifdef DEVELOPER
@@ -1007,6 +1009,7 @@ static struct parm_struct parm_table[] = {
 	{"printing", P_ENUM, P_LOCAL, &sDefault.iPrinting, handle_printing, enum_printing, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"cups options", P_STRING, P_LOCAL, &sDefault.szCupsOptions, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"cups server", P_STRING, P_GLOBAL, &Globals.szCupsServer, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
+	{"iprint server", P_STRING, P_GLOBAL, &Globals.szIPrintServer, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"print command", P_STRING, P_LOCAL, &sDefault.szPrintcommand, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"disable spoolss", P_BOOL, P_GLOBAL, &Globals.bDisableSpoolss, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"enable spoolss", P_BOOLREV, P_GLOBAL, &Globals.bDisableSpoolss, NULL, NULL, FLAG_HIDE}, 
@@ -1273,6 +1276,7 @@ static void init_printer_values(service *pService)
 			break;
 
 		case PRINT_CUPS:
+		case PRINT_IPRINT:
 #ifdef HAVE_CUPS
 			/* set the lpq command to contain the destination printer
 			   name only.  This is used by cups_queue_get() */
@@ -1570,6 +1574,7 @@ static void init_globals(void)
 	string_set(&Globals.szWinbindSeparator, "\\");
 	string_set(&Globals.szAclCompat, "");
 	string_set(&Globals.szCupsServer, "");
+	string_set(&Globals.szIPrintServer, "");
 
 	string_set(&Globals.szEventLogOpenCommand, "");
 	string_set(&Globals.szEventLogReadCommand, "");
@@ -1902,6 +1907,7 @@ FN_LOCAL_LIST(lp_admin_users, szAdminUsers)
 FN_GLOBAL_LIST(lp_enable_svcctl, &Globals.szServicesList)
 FN_LOCAL_STRING(lp_cups_options, szCupsOptions)
 FN_GLOBAL_STRING(lp_cups_server, &Globals.szCupsServer)
+FN_GLOBAL_STRING(lp_iprint_server, &Globals.szIPrintServer)
 FN_LOCAL_STRING(lp_printcommand, szPrintcommand)
 FN_LOCAL_STRING(lp_lpqcommand, szLpqcommand)
 FN_LOCAL_STRING(lp_lprmcommand, szLprmcommand)
