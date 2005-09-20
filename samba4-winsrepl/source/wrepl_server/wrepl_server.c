@@ -368,7 +368,7 @@ failed:
 	return maxVersion;
 }
 
-static struct wreplsrv_owner *wreplsrv_find_owner(struct wreplsrv_owner *table, const char *wins_owner)
+struct wreplsrv_owner *wreplsrv_find_owner(struct wreplsrv_owner *table, const char *wins_owner)
 {
 	struct wreplsrv_owner *cur;
 
