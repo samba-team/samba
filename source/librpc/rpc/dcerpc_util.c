@@ -798,7 +798,18 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 	
 	/* The 5th contains the network address */
 	if (num_protocols >= 3 && binding->host) {
-		status = dcerpc_floor_set_rhs_data(mem_ctx, &tower->floors[4], binding->host);
+		if (is_ipaddress(binding->host)) {
+			status = dcerpc_floor_set_rhs_data(mem_ctx, &tower->floors[4], 
+							   binding->host);
+		} else {
+			/* note that we don't attempt to resolve the
+			   name here - when we get a hostname here we
+			   are in the client code, and want to put in
+			   a wildcard all-zeros IP for the server to
+			   fill in */
+			status = dcerpc_floor_set_rhs_data(mem_ctx, &tower->floors[4], 
+							   "0.0.0.0");
+		}
 		if (NT_STATUS_IS_ERR(status)) {
 			return status;
 		}
