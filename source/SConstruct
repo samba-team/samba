@@ -9,7 +9,7 @@
 
 hostenv = Environment(
 		toolpath=['build/scons','.'],
-		tools=['default'],
+		tools=['default','pidl','proto','et'],
 		CPPPATH=['#include','#','#lib'], 
                 CPPDEFINES={'_SAMBA_BUILD_': None},
 		)
@@ -53,9 +53,13 @@ paths = {
 dynconfig = dynenv.Object('dynconfig.c')
 Export('dynconfig')
 
+proto_files = []
+
 SConscript(
 		dirs=['param','lib','torture','rpc_server','cldap_server','libcli',
 		'nbt_server','client','ldap_server','libnet','nsswitch','web_server',
 		'smbd','dsdb','heimdal_build','ntptr','kdc','smb_server','ntvfs',
 		'winbind','scripting','auth'],
-		exports='buildenv hostenv')
+		exports='buildenv hostenv proto_files')
+
+hostenv.CProtoHeader(target='include/proto.h',source = proto_files)
