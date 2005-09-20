@@ -82,7 +82,7 @@ static BOOL test_BindingString(TALLOC_CTX *mem_ctx, const char *binding)
 		return False;
 	}
 
-	if (strcasecmp(s, s2) != 0) {
+	if (is_ipaddress(b->host) && strcasecmp(s, s2) != 0) {
 		DEBUG(0, ("Mismatch while comparing original and from protocol tower generated binding strings: '%s' <> '%s'\n", s, s2));
 		return False;
 	}
