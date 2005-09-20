@@ -298,9 +298,7 @@ struct winsdb_record *winsdb_load(struct wins_server *winssrv,
 	struct ldb_message **res = NULL;
 	int ret;
 	struct winsdb_record *rec;
-	struct ldb_message_element *el;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-	int i;
 
 	/* find the record in the WINS database */
 	ret = ldb_search(winssrv->wins_db, winsdb_dn(tmp_ctx, name), LDB_SCOPE_BASE, 
@@ -310,33 +308,9 @@ struct winsdb_record *winsdb_load(struct wins_server *winssrv,
 	}
 	if (ret != 1) goto failed;
 
-	rec = talloc(tmp_ctx, struct winsdb_record);
+	rec = winsdb_record(res[0], tmp_ctx);
 	if (rec == NULL) goto failed;
-
-	/* parse it into a more convenient winsdb_record structure */
 	rec->name           = name;
-	rec->state          = ldb_msg_find_int(res[0], "active", WINS_REC_RELEASED);
-	rec->nb_flags       = ldb_msg_find_int(res[0], "nbFlags", 0);
-	rec->wins_owner     = ldb_msg_find_string(res[0], "winsOwner", NULL);
-	rec->expire_time    = ldap_string_to_time(ldb_msg_find_string(res[0], "expires", NULL));
-	rec->registered_by  = ldb_msg_find_string(res[0], "registeredBy", NULL);
-	rec->version        = ldb_msg_find_uint64(res[0], "version", 0);
-	talloc_steal(rec, rec->wins_owner);
-	talloc_steal(rec, rec->registered_by);
-
-	if (!rec->wins_owner) rec->wins_owner = WINSDB_OWNER_LOCAL;
-
-	el = ldb_msg_find_element(res[0], "address");
-	if (el == NULL) goto failed;
-
-	rec->addresses     = talloc_array(rec, struct winsdb_addr *, el->num_values+1);
-	if (rec->addresses == NULL) goto failed;
-
-	for (i=0;i<el->num_values;i++) {
-		rec->addresses[i] = winsdb_addr_decode(rec, rec->addresses, &el->values[i]);
-		if (rec->addresses[i] == NULL) goto failed;
-	}
-	rec->addresses[i] = NULL;
 
 	/* see if it has already expired */
 	if (rec->state == WINS_REC_ACTIVE &&
@@ -355,15 +329,53 @@ failed:
 	return NULL;
 }
 
+struct winsdb_record *winsdb_record(struct ldb_message *msg, TALLOC_CTX *mem_ctx)
+{
+	struct winsdb_record *rec;
+	struct ldb_message_element *el;
+	uint32_t i;
+
+	rec = talloc(mem_ctx, struct winsdb_record);
+	if (rec == NULL) goto failed;
+
+	/* parse it into a more convenient winsdb_record structure */
+	rec->name           = NULL;
+	rec->state          = ldb_msg_find_int(msg, "active", WINS_REC_RELEASED);
+	rec->nb_flags       = ldb_msg_find_int(msg, "nbFlags", 0);
+	rec->wins_owner     = ldb_msg_find_string(msg, "winsOwner", NULL);
+	rec->expire_time    = ldap_string_to_time(ldb_msg_find_string(msg, "expires", NULL));
+	rec->registered_by  = ldb_msg_find_string(msg, "registeredBy", NULL);
+	rec->version        = ldb_msg_find_uint64(msg, "version", 0);
+	talloc_steal(rec, rec->wins_owner);
+	talloc_steal(rec, rec->registered_by);
+
+	if (!rec->wins_owner) rec->wins_owner = WINSDB_OWNER_LOCAL;
+
+	el = ldb_msg_find_element(msg, "address");
+	if (el == NULL) goto failed;
+
+	rec->addresses     = talloc_array(rec, struct winsdb_addr *, el->num_values+1);
+	if (rec->addresses == NULL) goto failed;
+
+	for (i=0;i<el->num_values;i++) {
+		rec->addresses[i] = winsdb_addr_decode(rec, rec->addresses, &el->values[i]);
+		if (rec->addresses[i] == NULL) goto failed;
+	}
+	rec->addresses[i] = NULL;
+
+	return rec;
+failed:
+	talloc_free(rec);
+	return NULL;
+}
 
 /*
   form a ldb_message from a winsdb_record
 */
-static struct ldb_message *winsdb_message(struct wins_server *winssrv, 
-					  struct winsdb_record *rec, TALLOC_CTX *mem_ctx)
+struct ldb_message *winsdb_message(struct ldb_context *ldb, 
+				   struct winsdb_record *rec, TALLOC_CTX *mem_ctx)
 {
 	int i, ret=0;
-	struct ldb_context *ldb = winssrv->wins_db;
 	struct ldb_message *msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) goto failed;
 
@@ -401,7 +413,7 @@ uint8_t winsdb_add(struct wins_server *winssrv, struct winsdb_record *rec)
 	rec->version = winsdb_allocate_version(winssrv);
 	if (rec->version == 0) goto failed;
 
-	msg = winsdb_message(winssrv, rec, tmp_ctx);
+	msg = winsdb_message(winssrv->wins_db, rec, tmp_ctx);
 	if (msg == NULL) goto failed;
 	ret = ldb_add(ldb, msg);
 	if (ret != 0) goto failed;
@@ -430,7 +442,7 @@ uint8_t winsdb_modify(struct wins_server *winssrv, struct winsdb_record *rec)
 	if (rec->version == 0) goto failed;
 	rec->wins_owner = WINSDB_OWNER_LOCAL;
 
-	msg = winsdb_message(winssrv, rec, tmp_ctx);
+	msg = winsdb_message(winssrv->wins_db, rec, tmp_ctx);
 	if (msg == NULL) goto failed;
 
 	for (i=0;i<msg->num_elements;i++) {
