@@ -47,4 +47,8 @@ paths = {
 dynconfig = dynenv.Object('dynconfig.c')
 Export('dynconfig')
 
-SConscript(dirs=['param','lib'],exports='hostenv')
+SConscript(
+		dirs=['param','lib','torture','rpc_server','cldap_server','libcli',
+		'nbt_server','client','ldap_server','libnet','nsswitch','web_server',
+		'smbd','dsdb'],
+		exports='hostenv')

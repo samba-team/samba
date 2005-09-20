@@ -1,0 +1,5 @@
+Import('hostenv')
+
+hostenv.StaticLibrary('server_service',
+		['service.c','service_stream.c','service_task.c'])
+hostenv.Program('smbd',['server.c'])
