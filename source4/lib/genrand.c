@@ -167,7 +167,6 @@ static int do_reseed(BOOL use_fd, int fd)
 	/* Add in some secret file contents */
 
 	do_filehash("/etc/shadow", &seed_inbuf[0]);
-	do_filehash(lp_smb_passwd_file(), &seed_inbuf[16]);
 
 	/*
 	 * Add the counter, time of day, and pid.

@@ -117,7 +117,6 @@ typedef struct
 	char *szPasswdChat;
 	char *szLogFile;
 	char *szConfigFile;
-	char *szSMBPasswdFile;
 	char *szSAM_URL;
 	char *szSPOOLSS_URL;
 	char *szWINS_URL;
@@ -419,12 +418,10 @@ static struct parm_struct parm_table[] = {
 	{"null passwords", P_BOOL, P_GLOBAL, &Globals.bNullPasswords, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"obey pam restrictions", P_BOOL, P_GLOBAL, &Globals.bObeyPamRestrictions, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"password server", P_LIST, P_GLOBAL, &Globals.szPasswordServers, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
-	{"smb passwd file", P_STRING, P_GLOBAL, &Globals.szSMBPasswdFile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"sam database", P_STRING, P_GLOBAL, &Globals.szSAM_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"spoolss database", P_STRING, P_GLOBAL, &Globals.szSPOOLSS_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"wins database", P_STRING, P_GLOBAL, &Globals.szWINS_URL, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"private dir", P_STRING, P_GLOBAL, &Globals.szPrivateDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	
 	{"passwd chat", P_STRING, P_GLOBAL, &Globals.szPasswdChat, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"password level", P_INTEGER, P_GLOBAL, &Globals.pwordlevel, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"lanman auth", P_BOOL, P_GLOBAL, &Globals.bLanmanAuth, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -614,7 +611,6 @@ static void init_globals(void)
 	do_parameter("server services", "smb rpc nbt ldap cldap web kdc", NULL);
 	do_parameter("ntptr providor", "simple_ldb", NULL);
 	do_parameter("auth methods", "anonymous sam_ignoredomain", NULL);
-	do_parameter("smb passwd file", dyn_SMB_PASSWD_FILE, NULL);
 	do_parameter("private dir", dyn_PRIVATE_DIR, NULL);
 	do_parameter("sam database", "sam.ldb", NULL);
 	do_parameter("spoolss database", "spoolss.ldb", NULL);
@@ -817,7 +813,6 @@ FN_GLOBAL_STRING(lp_unix_charset, &Globals.unix_charset)
 FN_GLOBAL_STRING(lp_display_charset, &Globals.display_charset)
 FN_GLOBAL_STRING(lp_logfile, &Globals.szLogFile)
 FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
-FN_GLOBAL_STRING(lp_smb_passwd_file, &Globals.szSMBPasswdFile)
 FN_GLOBAL_STRING(lp_sam_url, &Globals.szSAM_URL)
 FN_GLOBAL_STRING(lp_spoolss_url, &Globals.szSPOOLSS_URL)
 FN_GLOBAL_STRING(lp_wins_url, &Globals.szWINS_URL)
