@@ -1143,7 +1143,7 @@ _krb5_pk_verify_sign(krb5_context context,
     EVP_PKEY *public_key;
     krb5_error_code ret;
     EVP_MD_CTX md;
-    X509 *cert;
+    X509 *cert = NULL;
     SignedData sd;
     size_t size;
     
