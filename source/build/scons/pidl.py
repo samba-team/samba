@@ -5,10 +5,10 @@ Tool-specific initialization for pidl (Perl-based IDL compiler)
 """
 
 import SCons.Defaults
-import SCons.Scanner.IDL
 import SCons.Util
+import SCons.Scanner
 
-idl_scanner = SCons.Scanner.IDL.IDLScan()
+idl_scanner = SCons.Scanner.ClassicCPP("PIDLScan", '.idl', 'CPPPATH', r'depends\(([^,]+),+\)', SCons.Node.FS.default_fs)
 
 pidl_builder = SCons.Builder.Builder(action='$PIDLCOM',
                                      src_suffix = '.idl',
