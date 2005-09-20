@@ -1,0 +1,8 @@
+Import('hostenv')
+
+hostenv.Program('ndrdump', ['utils/ndrdump.c'])
+hostenv.Program('ntlm_auth',['utils/ntlm_auth.c'])
+hostenv.Program('getntacl',['utils/getntacl.c'])
+hostenv.Program('setntacl',['utils/setntacl.c'])
+hostenv.Program('setnttoken',['utils/setnttoken.c'])
+hostenv.Program('nmblookup',['utils/nmblookup.c'])
