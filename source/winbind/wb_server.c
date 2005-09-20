@@ -28,7 +28,8 @@
 #include "lib/events/events.h"
 #include "smbd/service_task.h"
 #include "smbd/service_stream.h"
-#include "winbind/winbindd_nss.h"
+#include "nsswitch/winbind_nss_config.h"
+#include "nsswitch/winbindd_nss.h"
 
 #define WINBINDD_DIR "/tmp/.winbindd/"
 #define WINBINDD_ECHO_SOCKET  WINBINDD_DIR"echo"

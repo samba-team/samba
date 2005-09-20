@@ -5,24 +5,22 @@
 
    Copyright (C) Tim Potter 2000
    
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Library General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
-   
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
-   
-   You should have received a copy of the GNU Library General Public
-   License along with this library; if not, write to the
-   Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-   Boston, MA  02111-1307, USA.   
+   You are free to use this interface definition in any way you see
+   fit, including without restriction, using this header in your own
+   products. You do not need to give any attribution.  
 */
 
+
+#ifndef CONST_DISCARD
+#define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
+#endif
+
+#ifndef CONST_ADD
+#define CONST_ADD(type, ptr)          ((type) ((const void *) (ptr)))
+#endif
+
 #ifndef SAFE_FREE
-#define SAFE_FREE(x) do { if(x) {free(discard_const_p(void *, (x)); x=NULL;} } while(0)
+#define SAFE_FREE(x) do { if(x) {free(x); x=NULL;} } while(0)
 #endif
 
 #ifndef _WINBINDD_NTDOM_H
@@ -36,7 +34,7 @@
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 10
+#define WINBIND_INTERFACE_VERSION 11
 
 /* Socket commands */
 
@@ -85,6 +83,7 @@ enum winbindd_cmd {
 	WINBINDD_UID_TO_SID,
 	WINBINDD_GID_TO_SID,
 	WINBINDD_ALLOCATE_RID,
+	WINBINDD_ALLOCATE_RID_AND_GID,
 
 	/* Miscellaneous other stuff */
 
@@ -95,6 +94,7 @@ enum winbindd_cmd {
 
 	WINBINDD_DOMAIN_INFO,	/* Most of what we know from
 				   struct winbindd_domain */
+	WINBINDD_GETDCNAME,	/* Issue a GetDCName Request */
 
 	WINBINDD_SHOW_SEQUENCE, /* display sequence numbers of domains */
 
@@ -103,16 +103,6 @@ enum winbindd_cmd {
 	WINBINDD_WINS_BYIP,
 	WINBINDD_WINS_BYNAME,
 
-	/* account management commands */
-
-	WINBINDD_CREATE_USER,
-	WINBINDD_CREATE_GROUP,
-	WINBINDD_ADD_USER_TO_GROUP,
-	WINBINDD_REMOVE_USER_FROM_GROUP,
-	WINBINDD_SET_USER_PRIMARY_GROUP,
-	WINBINDD_DELETE_USER,
-	WINBINDD_DELETE_GROUP,
-	
 	/* this is like GETGRENT but gives an empty group list */
 	WINBINDD_GETGRLST,
 
@@ -122,9 +112,29 @@ enum winbindd_cmd {
 	WINBINDD_PRIV_PIPE_DIR,
 
 	/* return a list of group sids for a user sid */
-	WINBINDD_GETUSERSIDS,	
+	WINBINDD_GETUSERSIDS,
 
-	/* Placeholder for end of cmd list */
+	/* Return the domain groups a user is in */
+	WINBINDD_GETUSERDOMGROUPS,
+
+	/* Initialize connection in a child */
+	WINBINDD_INIT_CONNECTION,
+
+	/* Blocking calls that are not allowed on the main winbind pipe, only
+	 * between parent and children */
+	WINBINDD_DUAL_SID2UID,
+	WINBINDD_DUAL_SID2GID,
+	WINBINDD_DUAL_IDMAPSET,
+
+	/* Wrapper around possibly blocking unix nss calls */
+	WINBINDD_DUAL_UID2NAME,
+	WINBINDD_DUAL_NAME2UID,
+	WINBINDD_DUAL_GID2NAME,
+	WINBINDD_DUAL_NAME2GID,
+
+	WINBINDD_DUAL_USERINFO,
+	WINBINDD_DUAL_GETSIDALIASES,
+
 	WINBINDD_NUM_CMDS
 };
 
@@ -160,6 +170,11 @@ typedef struct winbindd_gr {
 #define WBFLAG_PAM_AFS_TOKEN            0x0100
 #define WBFLAG_PAM_NT_STATUS_SQUASH     0x0200
 
+/* This is a flag that can only be sent from parent to child */
+#define WBFLAG_IS_PRIVILEGED            0x0400
+/* Flag to say this is a winbindd internal send - don't recurse. */
+#define WBFLAG_RECURSE			0x0800
+
 /* Winbind request structure */
 
 struct winbindd_request {
@@ -168,6 +183,7 @@ struct winbindd_request {
 	pid_t pid;               /* pid of calling process */
 	uint32 flags;            /* flags relavant to a given request */
 	fstring domain_name;	/* name of domain for which the request applies */
+	int msgid;
 
 	union {
 		fstring winsreq;     /* WINS request */
@@ -209,6 +225,24 @@ struct winbindd_request {
 			fstring username;
 			fstring groupname;
 		} acct_mgt;
+		struct {
+			BOOL is_primary;
+			fstring dcname;
+		} init_conn;
+		struct {
+			fstring sid;
+			fstring name;
+			BOOL alloc;
+		} dual_sid2id;
+		struct {
+			int type;
+			uid_t uid;
+			gid_t gid;
+			fstring sid;
+		} dual_idmapset;
+		struct {
+			fstring cache_key;
+		} dual_sidaliases;
 	} data;
 	char null_term;
 };
@@ -217,6 +251,7 @@ struct winbindd_request {
 
 enum winbindd_result {
 	WINBINDD_ERROR,
+	WINBINDD_PENDING,
 	WINBINDD_OK
 };
 
@@ -262,6 +297,7 @@ struct winbindd_response {
 		} info;
 		fstring domain_name;
 		fstring netbios_name;
+		fstring dc_name;
 
 		struct auth_reply {
 			uint32 nt_status;
@@ -273,6 +309,10 @@ struct winbindd_response {
 		} auth;
 		uint32 rid;	/* create user or group or allocate rid */
 		struct {
+			uint32 rid;
+			gid_t gid;
+		} rid_and_gid;
+		struct {
 			fstring name;
 			fstring alt_name;
 			fstring sid;
@@ -281,6 +321,13 @@ struct winbindd_response {
 			BOOL primary;
 			uint32 sequence_number;
 		} domain_info;
+		struct {
+			fstring acct_name;
+			fstring full_name;
+			fstring homedir;
+			fstring shell;
+			uint32 group_rid;
+		} user_info;
 	} data;
 
 	/* Variable length return data */
