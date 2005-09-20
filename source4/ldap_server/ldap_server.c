@@ -258,7 +258,7 @@ static void ldapsrv_recv(struct stream_connection *c, uint16_t flags)
 	/* work out how much data is pending */
 	status = tls_socket_pending(conn->tls, &npending);
 	if (!NT_STATUS_IS_OK(status)) {
-		ldapsrv_terminate_connection(conn, "socket_pening() failed");
+		ldapsrv_terminate_connection(conn, "socket_pending() failed");
 		return;
 	}
 	if (npending == 0) {
