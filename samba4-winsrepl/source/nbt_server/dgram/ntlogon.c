@@ -1,0 +1,117 @@
+/* 
+   Unix SMB/CIFS implementation.
+
+   NBT datagram ntlogon server
+
+   Copyright (C) Andrew Tridgell	2005
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+#include "includes.h"
+#include "dlinklist.h"
+#include "nbt_server/nbt_server.h"
+#include "smbd/service_task.h"
+#include "lib/socket/socket.h"
+
+
+/*
+  reply to a SAM LOGON request
+ */
+static void nbtd_ntlogon_sam_logon(struct dgram_mailslot_handler *dgmslot, 
+				   struct nbt_dgram_packet *packet,
+				   const struct nbt_peer_socket *src,
+				   struct nbt_ntlogon_packet *ntlogon)
+{
+	struct nbt_name *name = &packet->data.msg.dest_name;
+	struct nbt_ntlogon_packet reply;
+	struct nbt_ntlogon_sam_logon_reply *logon;
+
+	/* only answer sam logon requests on the PDC or LOGON names */
+	if (name->type != NBT_NAME_PDC && name->type != NBT_NAME_LOGON) {
+		return;
+	}
+
+	/* setup a SAM LOGON reply */
+	ZERO_STRUCT(reply);
+	reply.command = NTLOGON_SAM_LOGON_REPLY;
+	logon = &reply.req.reply;
+
+	logon->server           = talloc_asprintf(packet, "\\\\%s", lp_netbios_name());
+	logon->user_name        = ntlogon->req.logon.user_name;
+	logon->domain           = lp_workgroup();
+	logon->nt_version       = 1;
+	logon->lmnt_token       = 0xFFFF;
+	logon->lm20_token       = 0xFFFF;
+
+	packet->data.msg.dest_name.type = 0;
+
+	dgram_mailslot_ntlogon_reply(dgmslot->dgmsock, 
+				     packet, 
+				     ntlogon->req.logon.mailslot_name,
+				     &reply);
+}
+
+/*
+  handle incoming ntlogon mailslot requests
+*/
+void nbtd_mailslot_ntlogon_handler(struct dgram_mailslot_handler *dgmslot, 
+				   struct nbt_dgram_packet *packet, 
+				   const struct nbt_peer_socket *src)
+{
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	struct nbtd_interface *iface = 
+		talloc_get_type(dgmslot->private, struct nbtd_interface);
+	struct nbt_ntlogon_packet *ntlogon = 
+		talloc(dgmslot, struct nbt_ntlogon_packet);
+	struct nbtd_iface_name *iname;
+	struct nbt_name *name = &packet->data.msg.dest_name;
+
+	if (ntlogon == NULL) goto failed;
+
+	/*
+	  see if the we are listening on the destination netbios name
+	*/
+	iname = nbtd_find_iname(iface, name, 0);
+	if (iname == NULL) {
+		status = NT_STATUS_BAD_NETWORK_NAME;
+		goto failed;
+	}
+
+	DEBUG(2,("ntlogon request to %s from %s:%d\n", 
+		 nbt_name_string(ntlogon, name), src->addr, src->port));
+	status = dgram_mailslot_ntlogon_parse(dgmslot, ntlogon, packet, ntlogon);
+	if (!NT_STATUS_IS_OK(status)) goto failed;
+
+	NDR_PRINT_DEBUG(nbt_ntlogon_packet, ntlogon);
+
+	switch (ntlogon->command) {
+	case NTLOGON_SAM_LOGON:
+		nbtd_ntlogon_sam_logon(dgmslot, packet, src, ntlogon);
+		break;
+	default:
+		DEBUG(2,("unknown ntlogon op %d from %s:%d\n", 
+			 ntlogon->command, src->addr, src->port));
+		break;
+	}
+
+	talloc_free(ntlogon);
+	return;
+
+failed:
+	DEBUG(2,("nbtd ntlogon handler failed from %s:%d - %s\n",
+		 src->addr, src->port, nt_errstr(status)));
+	talloc_free(ntlogon);
+}
