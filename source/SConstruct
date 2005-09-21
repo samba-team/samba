@@ -15,7 +15,6 @@ opts = Options(None, ARGUMENTS)
 opts.AddOptions(
 		BoolOption('developer','enable developer flags', 0),
 		PathOption('prefix','installation prefix','/usr/local/samba'),
-		BoolOption('configh','use config.h file', 0),
 		BoolOption('configure','run configure checks', False),
 )
 
@@ -156,10 +155,16 @@ hostenv.CProtoHeader(target='include/proto.h',source=proto_files)
 if hostenv['configure']:
 	saveconfig(defines)
 
-if hostenv['configh']:
-	def create_config_h(env,target,source):
-		pass #FIXME
-	hostenv.Command('include/config.h',[],create_config_h)
-	hostenv.Append(CPPDEFINES = {'HAVE_CONFIG_H': 1})
-else:
-	[hostenv.Append(CPPDEFINES = {p: defines[p]}) for p in defines]
+# How to create config.h file
+
+def create_config_h(env, target, source):
+	fd = open(str(target[0]), 'w')
+	[fd.write('#define %s\n' % x) for x in defines]
+	fd.close()
+
+def create_config_h_print(*args, **kwargs):
+	print 'Building config.h'
+
+hostenv.Command('include/config.h', [],
+		Action(create_config_h, create_config_h_print))
+hostenv.Append(CPPDEFINES = {'HAVE_CONFIG_H': 1})
