@@ -763,11 +763,10 @@ _kdc_pk_rd_padata(krb5_context context,
 	client_params->nonce = ap.pkAuthenticator.nonce;
 
 	if (ap.clientPublicValue) {
-	    ret = get_dh_param(context, ap.clientPublicValue, client_params);
-	    if (ret) {
-		free_AuthPack_19(&ap);
-		goto out;
-	    }
+	    krb5_set_error_string(context, "PK-INIT, no support for DH");
+	    ret = KRB5KDC_ERR_PADATA_TYPE_NOSUPP;
+	    free_AuthPack_19(&ap);
+	    goto out;
 	}
 	free_AuthPack_19(&ap);
     } else if (pa->padata_type == KRB5_PADATA_PK_AS_REQ) {
@@ -795,10 +794,11 @@ _kdc_pk_rd_padata(krb5_context context,
 	client_params->nonce = ap.pkAuthenticator.nonce;
 
 	if (ap.clientPublicValue) {
-	    krb5_set_error_string(context, "PK-INIT, no support for DH");
-	    ret = KRB5KDC_ERR_PADATA_TYPE_NOSUPP;
-	    free_AuthPack(&ap);
-	    goto out;
+	    ret = get_dh_param(context, ap.clientPublicValue, client_params);
+	    if (ret) {
+		free_AuthPack(&ap);
+		goto out;
+	    }
 	}
 	free_AuthPack(&ap);
     } else
