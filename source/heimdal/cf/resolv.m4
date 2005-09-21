@@ -1,10 +1,13 @@
-dnl stuff used by DNS resolv code
+dnl stuff used by DNS resolv code in roken
+dnl
+dnl $Id: resolv.m4,v 1.1 2005/09/02 10:17:38 lha Exp $
+dnl
 
-AC_DEFUN([rk_RESOLV], [
+AC_DEFUN([rk_RESOLV],[
 
-	AC_CHECK_HEADERS(arpa/nameser.h)
+AC_CHECK_HEADERS([arpa/nameser.h])
 
-	AC_CHECK_HEADERS(resolv.h, , , [AC_INCLUDES_DEFAULT
+AC_CHECK_HEADERS(resolv.h, , , [AC_INCLUDES_DEFAULT
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -16,7 +19,7 @@ AC_DEFUN([rk_RESOLV], [
 #endif
 ])
 
-	AC_FIND_FUNC(res_search, resolv,
+AC_FIND_FUNC(res_search, resolv,
 [
 #include <stdio.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -34,7 +37,7 @@ AC_DEFUN([rk_RESOLV], [
 ],
 [0,0,0,0,0])
 
-	AC_FIND_FUNC(res_nsearch, resolv,
+AC_FIND_FUNC(res_nsearch, resolv,
 [
 #include <stdio.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -52,7 +55,7 @@ AC_DEFUN([rk_RESOLV], [
 ],
 [0,0,0,0,0,0])
 
-	AC_FIND_FUNC(res_ndestroy, resolv,
+AC_FIND_FUNC(res_ndestroy, resolv,
 [
 #include <stdio.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -70,7 +73,7 @@ AC_DEFUN([rk_RESOLV], [
 ],
 [0])
 
-	AC_FIND_FUNC(dn_expand, resolv,
+AC_FIND_FUNC(dn_expand, resolv,
 [
 #include <stdio.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -88,7 +91,7 @@ AC_DEFUN([rk_RESOLV], [
 ],
 [0,0,0,0,0])
 
-	rk_CHECK_VAR(_res, 
+rk_CHECK_VAR(_res, 
 [#include <stdio.h>
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>

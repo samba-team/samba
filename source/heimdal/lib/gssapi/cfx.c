@@ -77,7 +77,7 @@ wrap_length_cfx(krb5_crypto crypto,
 	if (ret) {
 	    return ret;
 	}
-	if (*padsize > 1) {
+	if (padsize > 1) {
 	    /* XXX check this */
 	    *padlength = *padsize - (input_length % *padsize);
 	}

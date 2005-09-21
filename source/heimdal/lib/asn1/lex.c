@@ -736,7 +736,7 @@ char *yytext;
  * SUCH DAMAGE. 
  */
 
-/* $Id: lex.l,v 1.26 2005/07/12 06:27:33 lha Exp $ */
+/* $Id: lex.l,v 1.27 2005/09/13 18:17:16 lha Exp $ */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -758,8 +758,8 @@ static unsigned lineno = 1;
 
 #undef ECHO
 
-static void handle_comment(int type);
-static char *handle_string(void);
+static void unterminated(const char *, unsigned);
+
 #line 764 "lex.c"
 
 /* Macros after this point can all be overridden by user definitions in
@@ -1419,21 +1419,121 @@ YY_RULE_SETUP
 case 85:
 YY_RULE_SETUP
 #line 147 "lex.l"
-{ handle_comment(0); }
+{ 
+			    int c, start_lineno = lineno;
+			    int f = 0;
+			    while((c = input()) != EOF) {
+				if(f && c == '-')
+				    break;
+				if(c == '-') {
+				    f = 1;
+				    continue;
+				}
+				if(c == '\n') {
+				    lineno++;
+				    break;
+				}
+				f = 0;
+			    }
+			    if(c == EOF)
+				unterminated("comment", start_lineno);
+			}
 	YY_BREAK
 case 86:
 YY_RULE_SETUP
-#line 148 "lex.l"
-{ handle_comment(1); }
+#line 166 "lex.l"
+{ 
+			    int c, start_lineno = lineno;
+			    int level = 1;
+			    int seen_star = 0;
+			    int seen_slash = 0;
+			    while((c = input()) != EOF) {
+				if(c == '/') {
+				    if(seen_star) {
+					if(--level == 0)
+					    break;
+					seen_star = 0;
+					continue;
+				    }
+				    seen_slash = 1;
+				    continue;
+				}
+				if(seen_star && c == '/') {
+				    if(--level == 0)
+					break;
+				    seen_star = 0;
+				    continue;
+				}
+				if(c == '*') {
+				    if(seen_slash) {
+					level++;
+					seen_star = seen_slash = 0;
+					continue;
+				    } 
+				    seen_star = 1;
+				    continue;
+				}
+				seen_star = seen_slash = 0;
+				if(c == '\n') {
+				    lineno++;
+				    continue;
+				}
+			    }
+			    if(c == EOF)
+				unterminated("comment", start_lineno);
+			}
 	YY_BREAK
 case 87:
 YY_RULE_SETUP
-#line 149 "lex.l"
-{ yylval.name = handle_string(); return STRING; }
+#line 206 "lex.l"
+{ 
+			    int start_lineno = lineno;
+			    int c;
+			    char buf[1024];
+			    char *p = buf;
+			    int f = 0;
+			    int skip_ws = 0;
+			    
+			    while((c = input()) != EOF) {
+				if(isspace(c) && skip_ws) {
+				    if(c == '\n')
+					lineno++;
+				    continue;
+				}
+				skip_ws = 0;
+				
+				if(c == '"') {
+				    if(f) {
+					*p++ = '"';
+					f = 0;
+				    } else
+					f = 1;
+				    continue;
+				}
+				if(f == 1) {
+				    unput(c);
+				    break;
+				}
+				if(c == '\n') {
+				    lineno++;
+				    while(p > buf && isspace((unsigned char)p[-1]))
+					p--;
+				    skip_ws = 1;
+				    continue;
+				}
+				*p++ = c;
+			    }
+			    if(c == EOF)
+				unterminated("string", start_lineno);
+			    *p++ = '\0';
+			    fprintf(stderr, "string -- %s\n", buf);
+			    yylval.name = estrdup(buf);
+			    return STRING; 
+			}
 	YY_BREAK
 case 88:
 YY_RULE_SETUP
-#line 151 "lex.l"
+#line 251 "lex.l"
 { char *e, *y = yytext;
 			  yylval.constant = strtol((const char *)yytext,
 						   &e, 0);
@@ -1445,7 +1545,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 89:
 YY_RULE_SETUP
-#line 159 "lex.l"
+#line 259 "lex.l"
 {
 			  yylval.name =  estrdup ((const char *)yytext);
 			  return IDENTIFIER;
@@ -1453,35 +1553,35 @@ YY_RULE_SETUP
 	YY_BREAK
 case 90:
 YY_RULE_SETUP
-#line 163 "lex.l"
+#line 263 "lex.l"
 ;
 	YY_BREAK
 case 91:
 YY_RULE_SETUP
-#line 164 "lex.l"
+#line 264 "lex.l"
 { ++lineno; }
 	YY_BREAK
 case 92:
 YY_RULE_SETUP
-#line 165 "lex.l"
+#line 265 "lex.l"
 { return ELLIPSIS; }
 	YY_BREAK
 case 93:
 YY_RULE_SETUP
-#line 166 "lex.l"
+#line 266 "lex.l"
 { return RANGE; }
 	YY_BREAK
 case 94:
 YY_RULE_SETUP
-#line 167 "lex.l"
+#line 267 "lex.l"
 { error_message("Ignoring char(%c)\n", *yytext); }
 	YY_BREAK
 case 95:
 YY_RULE_SETUP
-#line 168 "lex.l"
+#line 268 "lex.l"
 ECHO;
 	YY_BREAK
-#line 1485 "lex.c"
+#line 1585 "lex.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2363,7 +2463,7 @@ int main()
 	return 0;
 	}
 #endif
-#line 168 "lex.l"
+#line 268 "lex.l"
 
 
 #ifndef yywrap /* XXX */
@@ -2377,119 +2477,17 @@ yywrap ()
 void
 error_message (const char *format, ...)
 {
-     va_list args;
+    va_list args;
 
-     va_start (args, format);
-     fprintf (stderr, "%s:%d: ", get_filename(), lineno);
-     vfprintf (stderr, format, args);
-     va_end (args);
-     error_flag++;
+    va_start (args, format);
+    fprintf (stderr, "%s:%d: ", get_filename(), lineno);
+    vfprintf (stderr, format, args);
+    va_end (args);
+    error_flag++;
 }
 
 static void
-handle_comment(int type)
+unterminated(const char *type, unsigned start_lineno)
 {
-    int c;
-    int start_lineno = lineno;
-    if(type == 0) {
-	int f = 0;
-	while((c = input()) != EOF) {
-	    if(f && c == '-')
-		return;
-	    if(c == '-') {
-		f = 1;
-		continue;
-	    }
-	    if(c == '\n') {
-		lineno++;
-		return;
-	    }
-	    f = 0;
-	}
-    } else {
-	int level = 1;
-	int seen_star = 0;
-	int seen_slash = 0;
-	while((c = input()) != EOF) {
-	    if(c == '/') {
-		if(seen_star) {
-		    if(--level == 0)
-			return;
-		    seen_star = 0;
-		    continue;
-		}
-		seen_slash = 1;
-		continue;
-	    }
-	    if(seen_star && c == '/') {
-		if(--level == 0)
-		    return;
-		seen_star = 0;
-		continue;
-	    }
-	    if(c == '*') {
-		if(seen_slash) {
-		    level++;
-		    seen_star = seen_slash = 0;
-		    continue;
-		} 
-		seen_star = 1;
-		continue;
-	    }
-	    seen_star = seen_slash = 0;
-	    if(c == '\n') {
-		lineno++;
-		continue;
-	    }
-	}
-    }
-    if(c == EOF)
-	error_message("unterminated comment, possibly started on line %d\n", start_lineno);
+    error_message("unterminated %s, possibly started on line %d\n", type, start_lineno);
 }
-
-static char *
-handle_string(void)
-{
-    int start_lineno = lineno;
-    int c;
-    char buf[1024];
-    char *p = buf;
-    int f = 0;
-    int skip_ws = 0;
-
-    while((c = input()) != EOF) {
-	if(isspace(c) && skip_ws) {
-	    if(c == '\n')
-		lineno++;
-	    continue;
-	}
-	skip_ws = 0;
-
-	if(c == '"') {
-	    if(f) {
-		*p++ = '"';
-		f = 0;
-	    } else
-		f = 1;
-	    continue;
-	}
-	if(f == 1) {
-	    unput(c);
-	    break;
-	}
-	if(c == '\n') {
-	    lineno++;
-	    while(p > buf && isspace((unsigned char)p[-1]))
-		p--;
-	    skip_ws = 1;
-	    continue;
-	}
-	*p++ = c;
-    }
-    if(c == EOF)
-	error_message("unterminated string, possibly started on line %d\n", start_lineno);
-    *p++ = '\0';
-    fprintf(stderr, "string -- %s\n", buf);
-    return estrdup(buf);
-}
-    

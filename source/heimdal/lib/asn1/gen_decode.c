@@ -34,7 +34,7 @@
 #include "gen_locl.h"
 #include "lex.h"
 
-RCSID("$Id: gen_decode.c,v 1.28 2005/08/23 11:51:25 lha Exp $");
+RCSID("$Id: gen_decode.c,v 1.29 2005/09/21 00:30:37 lha Exp $");
 
 static void
 decode_primitive (const char *typename, const char *name, const char *forwstr)
@@ -396,17 +396,15 @@ decode_type (const char *name, const Type *t, int optional,
 		 "%s_tmp = realloc((%s)->val, "
 		 "    sizeof(*((%s)->val)) * ((%s)->len + 1));\n"
 		 "if (%s_tmp == NULL) { %s; }\n"
-		 "(%s)->len++;\n"
 		 "(%s)->val = %s_tmp;\n",
 		 tmpstr, tmpstr, tmpstr,
 		 name, name,
 		 tmpstr, tmpstr,
 		 name, name, name,
-		 tmpstr,
-		 forwstr, name, name,
-		 tmpstr);
+		 tmpstr, forwstr, 
+		 name, tmpstr);
 
-	asprintf (&n, "&(%s)->val[(%s)->len-1]", name, name);
+	asprintf (&n, "&(%s)->val[(%s)->len]", name, name);
 	if (n == NULL)
 	    errx(1, "malloc");
 	asprintf (&sname, "%s_s_of", tmpstr);
@@ -414,10 +412,12 @@ decode_type (const char *name, const Type *t, int optional,
 	    errx(1, "malloc");
 	decode_type (n, t->subtype, 0, forwstr, sname);
 	fprintf (codefile, 
+		 "(%s)->len++;\n"
 		 "len = %s_origlen - ret;\n"
 		 "}\n"
 		 "ret += %s_oldret;\n"
 		 "}\n",
+		 name,
 		 tmpstr, tmpstr);
 	free (n);
 	free (sname);

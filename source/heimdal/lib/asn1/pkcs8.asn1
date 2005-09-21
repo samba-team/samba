@@ -1,4 +1,4 @@
--- $Id: pkcs8.asn1,v 1.2 2005/07/12 06:27:36 lha Exp $ --
+-- $Id: pkcs8.asn1,v 1.3 2005/09/13 19:41:29 lha Exp $ --
 
 PKCS8 DEFINITIONS ::=
 
@@ -17,7 +17,7 @@ PKCS8PrivateKeyInfo ::= SEQUENCE {
   version INTEGER,
   privateKeyAlgorithm PKCS8PrivateKeyAlgorithmIdentifier,
   privateKey PKCS8PrivateKey,
-  attributes [0] IMPLICIT PKCS8Attributes OPTIONAL
+  attributes [0] IMPLICIT SET OF Attribute OPTIONAL
 }
 
 PKCS8EncryptedData ::= OCTET STRING

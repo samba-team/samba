@@ -340,14 +340,6 @@ _krb5_put_int (
 	unsigned long /*value*/,
 	size_t /*size*/);
 
-krb5_error_code KRB5_LIB_FUNCTION
-_krb5_rd_rep_type (
-	krb5_context /*context*/,
-	krb5_auth_context /*auth_context*/,
-	const krb5_data */*inbuf*/,
-	krb5_ap_rep_enc_part **/*repl*/,
-	krb5_boolean /*dce_style_response*/);
-
 int
 _krb5_send_and_recv_tcp (
 	int /*fd*/,
