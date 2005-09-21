@@ -84,7 +84,7 @@ static void smb_krb5_debug_wrapper(const char *timestr, const char *msg, void *p
 			talloc_free(tmp_ctx);
 			return ENOMEM;
 		}
-		ret = krb5_set_default_realm((*smb_krb5_context)->krb5_context, lp_realm());
+		ret = krb5_set_default_realm((*smb_krb5_context)->krb5_context, upper_realm);
 		if (ret) {
 			DEBUG(1,("krb5_set_default_realm failed (%s)\n", 
 				 smb_get_krb5_error_message((*smb_krb5_context)->krb5_context, ret, tmp_ctx)));
