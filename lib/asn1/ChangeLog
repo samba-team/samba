@@ -1,5 +1,13 @@
+2005-09-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gen_decode.c: TSequenceOf/TSetOf: Increase the length of the
+	array after successful decoding the next element, so that the
+	array don't contain heap-data.
+	
 2005-09-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* check-der.c: Avoid empty array initiators.
+	
 	* pkcs8.asn1 (PKCS8PrivateKeyInfo): Inline SET OF to avoid
 	compiler "feature"
 	
