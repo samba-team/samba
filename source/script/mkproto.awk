@@ -136,7 +136,7 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^NODE_STATUS_STRUCT/ ) {
+  if( $0 ~ /^NODE_STATUS_STRUCT|SMB_STRUCT_DIR/ ) {
     gotstart = 1;
   }
 

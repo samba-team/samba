@@ -1089,8 +1089,9 @@ AC_CHECK_FUNCS(memmove vsnprintf snprintf asprintf vasprintf setsid glob strpbrk
 AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction sigset innetgr setnetgrent getnetgrent endnetgrent)
 AC_CHECK_FUNCS(initgroups select poll rdchk getgrnam getgrent pathconf realpath)
 AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf mktime rename ftruncate chsize stat64 fstat64)
-AC_CHECK_FUNCS(lstat64 fopen64 atexit grantpt dup2 lseek64 ftruncate64 readdir64)
+AC_CHECK_FUNCS(lstat64 fopen64 atexit grantpt dup2 lseek64 ftruncate64)
 AC_CHECK_FUNCS(fseek64 fseeko64 ftell64 ftello64 setluid getpwanam setlinebuf)
+AC_CHECK_FUNCS(opendir64 readdir64 seekdir64 telldir64 rewinddir64 closedir64)
 AC_CHECK_FUNCS(srandom random srand rand setenv usleep strcasecmp fcvt fcvtl symlink readlink)
 AC_CHECK_FUNCS(syslog vsyslog timegm)
 AC_CHECK_FUNCS(setlocale nl_langinfo)
@@ -1592,6 +1593,19 @@ main() { struct stat64 st; dev64_t s; if (sizeof(dev_t) == sizeof(dev64_t)) exit
 samba_cv_HAVE_DEV64_T=yes,samba_cv_HAVE_DEV64_T=no,samba_cv_HAVE_DEV64_T=cross)])
 if test x"$samba_cv_HAVE_DEV64_T" = x"yes"; then
     AC_DEFINE(HAVE_DEV64_T,1,[Whether the 'dev64_t' type is available])
+fi
+
+AC_CACHE_CHECK([for struct dirent64],samba_cv_HAVE_STRUCT_DIR64,[
+AC_TRY_COMPILE([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <sys/types.h>
+#include <dirent.h>],
+[DIR64 de;],
+samba_cv_HAVE_STRUCT_DIR64=yes,samba_cv_HAVE_STRUCT_DIR64=no)])
+if test x"$samba_cv_HAVE_STRUCT_DIR64" = x"yes" && test x"$ac_cv_func_readdir64" = x"yes"; then
+    AC_DEFINE(HAVE_STRUCT_DIR64,1,[Whether the 'DIR64' abstract data type is available])
 fi
 
 AC_CACHE_CHECK([for struct dirent64],samba_cv_HAVE_STRUCT_DIRENT64,[

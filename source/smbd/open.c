@@ -1046,13 +1046,13 @@ BOOL map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func
 
 	/* Create the NT compatible access_mask. */
 	switch (GET_OPENX_MODE(deny_mode)) {
+		case DOS_OPEN_EXEC: /* Implies read-only - used to be FILE_READ_DATA */
 		case DOS_OPEN_RDONLY:
 			access_mask = FILE_GENERIC_READ;
 			break;
 		case DOS_OPEN_WRONLY:
 			access_mask = FILE_GENERIC_WRITE;
 			break;
-		case DOS_OPEN_EXEC: /* This used to be FILE_READ_DATA... */
 		case DOS_OPEN_RDWR:
 		case DOS_OPEN_FCB:
 			access_mask = FILE_GENERIC_READ|FILE_GENERIC_WRITE;

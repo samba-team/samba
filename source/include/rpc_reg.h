@@ -217,14 +217,17 @@ typedef struct {
 	POLICY_HND handle;
 	UNISTR4 name;
 	UNISTR4 key_class;
-	uint32 reserved;
+	uint32 options;
 	uint32 access;
+	
+	/* FIXME!  collapse all this into one structure */
 	uint32 *sec_info;
 	uint32 ptr2;
 	BUFHDR hdr_sec;
 	uint32 ptr3;
 	SEC_DESC_BUF *data;
-	uint32 unknown_2; /* 0x0000 0000 */
+
+	uint32 *disposition; 
 } REG_Q_CREATE_KEY_EX;
 
 typedef struct {
