@@ -1245,6 +1245,7 @@ static NTSTATUS lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	r3.in.unknown1 = 0;
 	r3.in.unknown2 = 0;
 	r3.out.count   = r->out.count;
+	r3.out.names   = NULL;
 
 	status = lsa_LookupSids3(dce_call, mem_ctx, &r3);
 	if (dce_call->fault_code != 0) {
@@ -1252,6 +1253,11 @@ static NTSTATUS lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	}
 
 	r->out.domains = r3.out.domains;
+	if (!r3.out.names) {
+		r->out.names = NULL;
+		return status;
+	}
+
 	r->out.names = talloc(mem_ctx, struct lsa_TransNameArray);
 	if (r->out.names == NULL) {
 		return NT_STATUS_NO_MEMORY;
