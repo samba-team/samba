@@ -187,15 +187,18 @@ _krb5_get_host_realm_int (krb5_context context,
 		return 0;
 	}
     }
+
+    *realms = malloc(2 * sizeof(krb5_realm));
+    if (*realms == NULL) {
+	    krb5_set_error_string(context, "malloc: out of memory");
+	    return ENOMEM;
+    }
+    
+    (*realms)[1] = NULL;
+
     p = strchr(host, '.');
     if(p != NULL) {
 	p++;
-	*realms = malloc(2 * sizeof(krb5_realm));
-	if (*realms == NULL) {
-	    krb5_set_error_string(context, "malloc: out of memory");
-	    return ENOMEM;
-	}
-
 	(*realms)[0] = strdup(p);
 	if((*realms)[0] == NULL) {
 	    free(*realms);
@@ -203,11 +206,21 @@ _krb5_get_host_realm_int (krb5_context context,
 	    return ENOMEM;
 	}
 	strupr((*realms)[0]);
-	(*realms)[1] = NULL;
-	return 0;
+    } else {
+	krb5_error_code ret;
+	ret = krb5_get_default_realm(context, &(*realms)[0]);
+	if(ret) {
+	    free(*realms);
+	    krb5_set_error_string(context, "malloc: out of memory");
+	    return ENOMEM;
+	}
+	if((*realms)[0] == NULL) {
+	    free(*realms);
+	    krb5_set_error_string(context, "unable to find realm of host %s", host);
+	    return KRB5_ERR_HOST_REALM_UNKNOWN;
+	}
     }
-    krb5_set_error_string(context, "unable to find realm of host %s", host);
-    return KRB5_ERR_HOST_REALM_UNKNOWN;
+    return 0;
 }
 
 /*
