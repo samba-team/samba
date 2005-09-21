@@ -13,7 +13,7 @@ import cPickle
 
 opts = Options(None, ARGUMENTS)
 opts.AddOptions(
-		BoolOption('developer','enable developer flags', 0),
+		BoolOption('developer','enable developer flags', False),
 		PathOption('prefix','installation prefix','/usr/local/samba'),
 		BoolOption('configure','run configure checks', False),
 )
@@ -41,6 +41,9 @@ if hostenv['developer']:
 	hostenv.Append(CCFLAGS='-Wformat=2')
 	hostenv.Append(CCFLAGS='-Wno-format-y2k')
 	hostenv.Append(CCFLAGS='-Wno-declaration-after-statement')
+
+# Pull in GNU extensions
+hostenv.Append(CPPDEFINES = {'_GNU_SOURCE': 1})
 
 # Store configuration data in a dictionary.
 
@@ -116,7 +119,7 @@ if hostenv['configure']:
 		['sys/syslog.h','syslog.h','stdint.h','inttypes.h','locale.h'] + \
 		['shadow.h','nss.h','nss_common.h','ns_api.h','sys/security.h'] + \
 		['security/pam_appl.h','sys/capability.h','syscall.h','sys/syscall.h'] + \
-		['sys/acl.h']:
+		['sys/acl.h','stdbool.h']:
 		if conf.CheckCHeader(h):
 			defines['HAVE_' + h.upper().replace('.','_').replace('/','_')] = 1
 
@@ -132,6 +135,54 @@ if hostenv['configure']:
 		if conf.CheckFunc(f):
 			defines['HAVE_' + f.upper()] = 1
 
+	needed_types = { 
+		'uint_t': 'unsigned int',
+		'int8_t': 'signed char',
+		'uint8_t': 'unsigned char',
+		'int16_t': 'short',
+		'uint16_t': 'unsigned short',
+		'int32_t': 'long',
+		'uint32_t': 'unsigned long',
+		'int64_t': 'long long',
+		'uint64_t': 'unsigned long long'
+	}
+
+	type_headers = """
+#include <stdint.h>
+"""	
+	for t in needed_types:
+		if not conf.CheckType(t,type_headers):
+			defines[t] = needed_types[t]
+
+	if conf.TryCompile("""
+#include <sys/types.h>
+
+int main() 
+{
+	volatile int i = 0;
+	return 0;
+}""", '.c'):
+		defines['HAVE_VOLATILE'] = 1
+
+	if conf.TryCompile("""
+#include <stdio.h>
+
+int main() 
+{
+   typedef struct {unsigned x;} FOOBAR;
+   #define X_FOOBAR(x) ((FOOBAR) { x })
+   #define FOO_ONE X_FOOBAR(1)
+   FOOBAR f = FOO_ONE;   
+   static struct {
+	FOOBAR y; 
+	} f2[] = {
+		{FOO_ONE}
+	};   
+	return 0;
+}""", '.c'):
+		defines['HAVE_IMMEDIATE_STRUCTURES'] = 1
+
+	hostenv.AlwaysBuild('include/config.h')
 	conf.Finish()
 
 [dynenv.Append(CPPDEFINES = {p: '\\"%s\\"' % paths[p]}) for p in paths]
@@ -156,10 +207,9 @@ if hostenv['configure']:
 	saveconfig(defines)
 
 # How to create config.h file
-
 def create_config_h(env, target, source):
 	fd = open(str(target[0]), 'w')
-	[fd.write('#define %s\n' % x) for x in defines]
+	[fd.write('#define %s %s\n' % (x, defines[x])) for x in defines]
 	fd.close()
 
 def create_config_h_print(*args, **kwargs):
