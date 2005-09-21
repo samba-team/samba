@@ -1,13 +1,16 @@
 Import('hostenv')
 #            tastes like -*- python -*-
 
+SConscript(dirs=['talloc','charset'])
+Import('talloc dynconfig charset')
+
 basic_files = ['version.c', 'xfile.c', 'debug.c', 'fault.c', 
 	 'signal.c', 'system.c', 'time.c', 'genrand.c', 'dprintf.c',
 	 'util_str.c', 'util_strlist.c', 'util_unistr.c', 'util_file.c',
 	 'data_blob.c', 'util.c', 'util_sock.c', 'substitute.c', 
 	 'fsusage.c', 'ms_fnmatch.c', 'select.c', 'mutex.c', 'idtree.c',
-	 'db_wrap.c', 'gendb.c', 'credentials.c']
-basic = hostenv.StaticLibrary('basic', basic_files)
+	 'db_wrap.c']
+basic = hostenv.StaticLibrary('basic', [dynconfig,charset,talloc,basic_files])
 Export('basic')
 
 hostenv.StaticLibrary('netif', ['netif/interface.c', 'netif/netif.c'])
@@ -20,5 +23,14 @@ hostenv.StaticLibrary('gencache',['gencache.c'])
 hostenv.StaticLibrary('pidfile',['pidfile.c'])
 hostenv.StaticLibrary('unix_privs',['unix_privs.c'])
 
-SConscript(dirs=['replace','tdb','popt','cmdline','talloc','registry','charset', 'ldb','tls','samba3','socket','socket_wrapper','messaging','com','events',
-		   'appweb'])
+SConscript(dirs=['ldb'])
+
+Import('ldb')
+gendb = hostenv.StaticLibrary('gendb', ['gendb.c',ldb])
+Export('gendb')
+
+credentials = hostenv.StaticLibrary('credentials',['credentials.c',basic,gendb])
+Export('credentials')
+
+SConscript(dirs=['../param/','replace','tdb','popt','cmdline','registry', 'tls','samba3','socket','socket_wrapper','messaging','com','events', 'appweb'])
+

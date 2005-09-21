@@ -1,2 +1,2 @@
-Import('hostenv')
-hostenv.Program('smbclient', ['client.c'])
+Import('hostenv popt_common basic talloc param')
+hostenv.Program('smbclient', ['client.c',popt_common,talloc,basic,param])
