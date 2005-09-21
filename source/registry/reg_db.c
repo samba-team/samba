@@ -486,7 +486,6 @@ int regdb_fetch_values( const char* key, REGVAL_CTR *values )
 {
 	TDB_DATA data;
 	pstring keystr;
-	int len;
 
 	DEBUG(10,("regdb_fetch_values: Looking for value of key [%s] \n", key));
 	
@@ -500,7 +499,7 @@ int regdb_fetch_values( const char* key, REGVAL_CTR *values )
 		return 0;
 	}
 	
-	len = regdb_unpack_values( values, data.dptr, data.dsize );
+	regdb_unpack_values( values, data.dptr, data.dsize );
 	
 	SAFE_FREE( data.dptr );
 	

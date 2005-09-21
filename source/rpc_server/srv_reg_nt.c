@@ -798,7 +798,7 @@ static WERROR reg_load_tree( REGF_FILE *regfile, const char *topkeypath,
 	
 	for ( i=0; i<key->num_values; i++ ) {
 		regval_ctr_addvalue( &values, key->values[i].valuename, key->values[i].type,
-			key->values[i].data, (key->values[i].data_size & ~VK_DATA_IN_OFFSET) );
+			(char*)key->values[i].data, (key->values[i].data_size & ~VK_DATA_IN_OFFSET) );
 	}
 
 	/* copy subkeys into the REGSUBKEY_CTR */
@@ -1067,8 +1067,6 @@ WERROR _reg_save_key(pipes_struct *p, REG_Q_SAVE_KEY  *q_u, REG_R_SAVE_KEY *r_u)
 	DEBUG(2,("_reg_save_key: Saving [%s] to %s in share %s\n", regkey->name, filename, lp_servicename(snum) ));
 		
 	return backup_registry_key( regkey, filename );
-
-	return WERR_OK;
 }
 
 /*******************************************************************
@@ -1204,7 +1202,7 @@ WERROR _reg_set_value(pipes_struct *p, REG_Q_SET_VALUE  *q_u, REG_R_SET_VALUE *r
 	
 	fetch_reg_values( key, &values );
 	
-	regval_ctr_addvalue( &values, valuename, q_u->type, q_u->value.buffer, q_u->value.buf_len );
+	regval_ctr_addvalue( &values, valuename, q_u->type, (char*)q_u->value.buffer, q_u->value.buf_len );
 	
 	/* now write to the registry backend */
 	

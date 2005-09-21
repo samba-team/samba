@@ -268,10 +268,10 @@ BOOL reg_io_q_create_key_ex(const char *desc,  REG_Q_CREATE_KEY_EX *q_u,
 		return False;
 
 	if ( q_u->sec_info ) {
-	if(!prs_uint32("ptr2", ps, depth, &q_u->ptr2))
-		return False;
+		if(!prs_uint32("ptr2", ps, depth, &q_u->ptr2))
+			return False;
 		if(!reg_io_hdrbuf_sec(q_u->ptr2, &q_u->ptr3, &q_u->hdr_sec, q_u->data, ps, depth))
-		return False;
+			return False;
 	}
 
 	if(!prs_pointer("disposition", ps, depth, (void**)&q_u->disposition, sizeof(uint32), (PRS_POINTER_CAST)prs_uint32))

@@ -280,14 +280,6 @@ static int winbind_named_pipe_sock(const char *dir)
 
 	close(fd);
 	return -1;
-
-	if (connect(fd, (struct sockaddr *)&sunaddr, 
-		    sizeof(sunaddr)) == -1) {
-		close(fd);
-		return -1;
-	}
-        
-	return fd;
 }
 
 /* Connect to winbindd socket */

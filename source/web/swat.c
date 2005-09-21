@@ -1331,13 +1331,12 @@ static void printers_page(void)
  **/
  int main(int argc, char *argv[])
 {
-	int opt;
 	const char *page;
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{ "disable-authentication", 'a', POPT_ARG_VAL, &demo_mode, True, "Disable authentication (demo mode)" },
-        { "password-menu-only", 'P', POPT_ARG_VAL, &passwd_only, True, "Show only change password menu" }, 
+        	{ "password-menu-only", 'P', POPT_ARG_VAL, &passwd_only, True, "Show only change password menu" }, 
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
@@ -1368,7 +1367,7 @@ static void printers_page(void)
 
 	/* Parse command line options */
 
-	while((opt = poptGetNextOpt(pc)) != -1) { }
+	while(poptGetNextOpt(pc) != -1) { }
 
 	poptFreeContext(pc);
 

@@ -499,7 +499,7 @@ static int net_help_service( int argc, const char **argv )
 	d_printf("net rpc service start <service>    Start a service\n");
 	d_printf("net rpc service stop <service>     Stop a service\n");
 	d_printf("net rpc service pause <service>    Pause a service\n");
-	d_printf("net rpc service resume <service>   Resume a paused a service\n");
+	d_printf("net rpc service resume <service>   Resume a paused service\n");
 	d_printf("net rpc service status <service>   View the current status of a service\n");
 	
 	return -1;

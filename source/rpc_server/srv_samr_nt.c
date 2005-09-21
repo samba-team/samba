@@ -804,7 +804,6 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 	uint32 num_account = 0;
 	enum remote_arch_types ra_type = get_remote_arch();
 	int max_sam_entries = (ra_type == RA_WIN95) ? MAX_SAM_ENTRIES_W95 : MAX_SAM_ENTRIES_W2K;
-	DOM_SID domain_sid;
 	struct samr_displayentry *entries = NULL;
 
 	DEBUG(5, ("samr_reply_query_dispinfo: %d\n", __LINE__));
@@ -813,8 +812,6 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 	/* find the policy handle.  open a policy on it. */
 	if (!find_policy_by_hnd(p, &q_u->domain_pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
-
-	domain_sid = info->sid;
 
 	/*
 	 * calculate how many entries we will return.

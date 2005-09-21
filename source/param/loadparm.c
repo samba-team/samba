@@ -2004,9 +2004,9 @@ FN_LOCAL_INTEGER(lp_oplock_contention_limit, iOplockContentionLimit)
 FN_LOCAL_INTEGER(lp_csc_policy, iCSCPolicy)
 FN_LOCAL_INTEGER(lp_write_cache_size, iWriteCacheSize)
 FN_LOCAL_INTEGER(lp_block_size, iBlock_size)
-FN_LOCAL_INTEGER(lp_allocation_roundup_size, iallocation_roundup_size);
-FN_LOCAL_INTEGER(lp_aio_read_size, iAioReadSize);
-FN_LOCAL_INTEGER(lp_aio_write_size, iAioWriteSize);
+FN_LOCAL_INTEGER(lp_allocation_roundup_size, iallocation_roundup_size)
+FN_LOCAL_INTEGER(lp_aio_read_size, iAioReadSize)
+FN_LOCAL_INTEGER(lp_aio_write_size, iAioWriteSize)
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 FN_GLOBAL_INTEGER(lp_winbind_max_idle_children, &Globals.winbind_max_idle_children)

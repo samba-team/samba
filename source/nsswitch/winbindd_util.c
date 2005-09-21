@@ -98,7 +98,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 {
 	struct winbindd_domain *domain;
 	const char *alternative_name = NULL;
-	static const DOM_SID null_sid;
+	static const DOM_SID null_sid = {0};
 	
 	/* ignore alt_name if we are not in an AD domain */
 	
@@ -445,7 +445,7 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 		[sizeof(state->request.data.init_conn.dcname)-1]='\0';
 
 	if (strlen(state->request.data.init_conn.dcname) > 0) {
-	fstrcpy(domain->dcname, state->request.data.init_conn.dcname);
+		fstrcpy(domain->dcname, state->request.data.init_conn.dcname);
 	}
 
 	if (strlen(domain->dcname) > 0) {
