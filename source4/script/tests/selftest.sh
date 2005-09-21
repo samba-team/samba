@@ -3,7 +3,7 @@
 
 DOMAIN=SAMBADOMAIN
 USERNAME=administrator
-REALM=$DOMAIN
+REALM=SAMBA.EXAMPLE.COM
 PASSWORD=penguin
 SRCDIR=`pwd`
 ROOT=$USER
@@ -45,6 +45,7 @@ TMPDIR=$PREFIX_ABS/tmp
 LIBDIR=$PREFIX_ABS/lib
 PIDDIR=$PREFIX_ABS/pid
 CONFFILE=$LIBDIR/smb.conf
+KRB5_CONFIG=$LIBDIR/krb5.conf
 PRIVATEDIR=$PREFIX_ABS/private
 NCALRPCDIR=$PREFIX_ABS/ncalrpc
 LOCKDIR=$PREFIX_ABS/lockdir
@@ -112,6 +113,26 @@ cat >$CONFFILE<<EOF
 	cifs:domain = $DOMAIN
 	cifs:share = tmp
 EOF
+
+cat >$KRB5_CONFIG<<EOF
+[libdefaults]
+ default_realm = SAMBA.EXAMPLE.COM
+ dns_lookup_realm = false
+ dns_lookup_kdc = false
+ ticket_lifetime = 24h
+ forwardable = yes
+
+[realms]
+ SAMBA.EXAMPLE.COM = {
+  kdc = 127.0.0.1
+  admin_server = 127.0.0.1
+  default_domain = samba.example.com
+ }
+[domain_realm]
+ .samba.example.com = SAMBA.EXAMPLE.COM
+EOF
+
+export KRB5_CONFIG
 
 ./setup/provision $CONFIGURATION --quiet --domain $DOMAIN --realm $REALM \
     --adminpass $PASSWORD --root=$ROOT || exit 1
