@@ -1,5 +1,6 @@
 Import('hostenv')
 Import('talloc')
+Import('defines')
 
 hostenv.StaticLibrary('modules/timestamps.c')
 hostenv.StaticLibrary('modules/rdn_name.c')
@@ -7,12 +8,14 @@ hostenv.StaticLibrary('modules/schema.c')
 hostenv.StaticLibrary('ldb_ildap/ldb_ildap.c')
 hostenv.StaticLibrary('modules/ldb_map.c')
 
-conf = Configure(hostenv)
-have_sqlite3 = conf.CheckLibWithHeader("sqlite3","sqlite3.h",'c',"sqlite3_open()")
-have_popt = conf.CheckLibWithHeader("popt","popt.h",'c',"poptGetArgs(NULL);")
-conf.Finish()
+if hostenv['configure']:
+	conf = Configure(hostenv)
+	if conf.CheckLibWithHeader("sqlite3","sqlite3.h",'c',"sqlite3_open()"):
+		defines['HAVE_SQLITE3'] = 1
+	conf.CheckLibWithHeader("popt","popt.h",'c',"poptGetArgs(NULL);")
+	conf.Finish()
 
-if have_sqlite3:
+if defines.has_key('HAVE_SQLITE3'):
 	hostenv.StaticLibrary('ldb_sqlite3/ldb_sqlite3.c')
 
 hostenv.StaticLibrary('ldb_tdb',

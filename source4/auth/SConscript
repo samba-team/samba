@@ -7,9 +7,10 @@ hostenv.StaticLibrary('auth_domain.c')
 hostenv.StaticLibrary('auth_developer.c')
 hostenv.StaticLibrary('auth_unix.c')
 
-conf = hostenv.Configure()
-have_pam = conf.CheckLibWithHeader('pam', 'security/pam_appl.h', 'c', 'pam_start')
-conf.Finish()
+if hostenv['configure']:
+    conf = hostenv.Configure()
+    have_pam = conf.CheckLibWithHeader('pam', 'security/pam_appl.h', 'c', 'pam_start')
+    conf.Finish()
 
 hostenv.StaticLibrary('pam_errors.c')
 hostenv.StaticLibrary('auth',['auth.c','auth_util.c','auth_sam_reply.c','ntlm_check.c'])

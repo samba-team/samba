@@ -1,9 +1,11 @@
-Import('hostenv')
 #            tastes like -*- python -*-
+Import('hostenv')
 
-conf = hostenv.Configure()
-conf.env['HAVE_EXTERNAL_POPT'] = conf.CheckLibWithHeader('popt', 'popt.h', 'c', 'poptGetArgs(NULL);')
-conf.Finish()
+
+if hostenv['configure']:
+    conf = hostenv.Configure()
+    conf.env['HAVE_EXTERNAL_POPT'] = conf.CheckLibWithHeader('popt', 'popt.h', 'c', 'poptGetArgs(NULL);')
+    conf.Finish()
 
 popt = hostenv.StaticLibrary('popt', ['findme.c','popt.c','poptconfig.c','popthelp.c','poptparse.c'])
 Export('popt')

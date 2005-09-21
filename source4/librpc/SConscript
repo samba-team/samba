@@ -12,7 +12,7 @@ hostenv.StaticLibrary('rpc_base',
 		'rpc/dcerpc_sock.c'])
 
 
-
+'''
 [SUBSYSTEM::NDR_AUDIOSRV]
 INIT_FUNCTION = dcerpc_audiosrv_init
 INIT_OBJ_FILES = librpc/gen_ndr/ndr_audiosrv.o
@@ -631,3 +631,4 @@ REQUIRED_SUBSYSTEMS = RPC_EJS_ECHO RPC_EJS_MISC RPC_EJS_SAMR RPC_EJS_SECURITY \
 	RPC_EJS_INITSHUTDOWN
 # End SUBSYSTEM RPC_EJS
 ################################################
+'''
