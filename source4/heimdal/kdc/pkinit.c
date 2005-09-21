@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id: pkinit.c,v 1.41 2005/08/12 09:21:40 lha Exp $");
+RCSID("$Id: pkinit.c,v 1.43 2005/09/21 00:40:32 lha Exp $");
 
 #ifdef PKINIT
 
@@ -333,16 +333,11 @@ generate_dh_keyblock(krb5_context context, pk_client_params *client_params,
 	goto out;
     }
 
-    ret = krb5_random_to_key(context, enctype, 
-			     dh_gen_key, dh_gen_keylen, &key);
-
-    if (ret) {
-	krb5_set_error_string(context, 
-			      "pkinit - can't create key from DH key");
-	ret = KRB5KRB_ERR_GENERIC;
-	goto out;
-    }
-    ret = krb5_copy_keyblock_contents(context, &key, reply_key);
+    ret = _krb5_pk_octetstring2key(context,
+				   enctype,
+				   dh_gen_key, dh_gen_keylen,
+				   NULL, NULL,
+				   reply_key);
 
  out:
     if (dh_gen_key)
@@ -768,11 +763,10 @@ _kdc_pk_rd_padata(krb5_context context,
 	client_params->nonce = ap.pkAuthenticator.nonce;
 
 	if (ap.clientPublicValue) {
-	    ret = get_dh_param(context, ap.clientPublicValue, client_params);
-	    if (ret) {
-		free_AuthPack_19(&ap);
-		goto out;
-	    }
+	    krb5_set_error_string(context, "PK-INIT, no support for DH");
+	    ret = KRB5KDC_ERR_PADATA_TYPE_NOSUPP;
+	    free_AuthPack_19(&ap);
+	    goto out;
 	}
 	free_AuthPack_19(&ap);
     } else if (pa->padata_type == KRB5_PADATA_PK_AS_REQ) {
@@ -800,10 +794,11 @@ _kdc_pk_rd_padata(krb5_context context,
 	client_params->nonce = ap.pkAuthenticator.nonce;
 
 	if (ap.clientPublicValue) {
-	    krb5_set_error_string(context, "PK-INIT, no support for DH");
-	    ret = KRB5KDC_ERR_PADATA_TYPE_NOSUPP;
-	    free_AuthPack(&ap);
-	    goto out;
+	    ret = get_dh_param(context, ap.clientPublicValue, client_params);
+	    if (ret) {
+		free_AuthPack(&ap);
+		goto out;
+	    }
 	}
 	free_AuthPack(&ap);
     } else
@@ -1139,16 +1134,18 @@ pk_mk_pa_reply_dh(krb5_context context,
 		  ContentInfo *content_info)
 {
     ASN1_INTEGER *dh_pub_key = NULL;
+    ContentInfo contentinfo;
     KDCDHKeyInfo dh_info;
     krb5_error_code ret;
     SignedData sd;
-    krb5_data buf, sd_buf;
+    krb5_data buf, signed_data;
     size_t size;
 
+    memset(&contentinfo, 0, sizeof(contentinfo));
     memset(&dh_info, 0, sizeof(dh_info));
     memset(&sd, 0, sizeof(sd));
     krb5_data_zero(&buf);
-    krb5_data_zero(&sd_buf);
+    krb5_data_zero(&signed_data);
 
     dh_pub_key = BN_to_ASN1_INTEGER(kdc_dh->pub_key, NULL);
     if (dh_pub_key == NULL) {
@@ -1190,17 +1187,21 @@ pk_mk_pa_reply_dh(krb5_context context,
     ret = _krb5_pk_create_sign(context, 
 			       oid_id_pkdhkeydata(),
 			       &buf,
-			       kdc_identity, 
-			       &sd_buf);
+			       kdc_identity,
+			       &signed_data);
     krb5_data_free(&buf);
     if (ret)
 	goto out;
 
-    ret = _krb5_pk_mk_ContentInfo(context, &sd_buf, oid_id_pkcs7_signedData(),
+    ret = _krb5_pk_mk_ContentInfo(context,
+				  &signed_data,
+				  oid_id_pkcs7_signedData(),
 				  content_info);
-    krb5_data_free(&sd_buf);
+    if (ret)
+	goto out;
 
  out:
+    krb5_data_free(&signed_data);
     free_KDCDHKeyInfo(&dh_info);
 
     return ret;
@@ -1249,13 +1250,14 @@ _kdc_pk_mk_pa_reply(krb5_context context,
     if (client_params->type == PKINIT_COMPAT_27) {
 	PA_PK_AS_REP rep;
 
-	pa_type = KRB5_PADATA_PK_AS_REP;
-
 	memset(&rep, 0, sizeof(rep));
 
+	pa_type = KRB5_PADATA_PK_AS_REP;
+
 	if (client_params->dh == NULL) {
-	    rep.element = choice_PA_PK_AS_REP_encKeyPack;
 	    ContentInfo info;
+
+	    rep.element = choice_PA_PK_AS_REP_encKeyPack;
 
 	    krb5_generate_random_keyblock(context, enctype, 
 					  &client_params->reply_key);
@@ -1283,8 +1285,37 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 		krb5_abortx(context, "Internal ASN.1 encoder error");
 
 	} else {
-	    krb5_set_error_string(context, "DH -27 not implemented");
-	    ret = KRB5KRB_ERR_GENERIC;
+	    ContentInfo info;
+
+	    rep.element = choice_PA_PK_AS_REP_dhInfo;
+
+	    ret = check_dh_params(client_params->dh);
+	    if (ret)
+		return ret;
+
+	    ret = generate_dh_keyblock(context, client_params, enctype,
+				       &client_params->reply_key);
+	    if (ret)
+		return ret;
+
+	    ret = pk_mk_pa_reply_dh(context, client_params->dh,
+				    client_params, 
+				    &client_params->reply_key,
+				    &info);
+
+	    ASN1_MALLOC_ENCODE(ContentInfo, rep.u.dhInfo.dhSignedData.data,
+			       rep.u.dhInfo.dhSignedData.length, &info, &size,
+			       ret);
+	    free_ContentInfo(&info);
+	    if (ret) {
+		krb5_set_error_string(context, "encoding of Key ContentInfo "
+				      "failed %d", ret);
+		free_PA_PK_AS_REP(&rep);
+		goto out;
+	    }
+	    if (rep.u.encKeyPack.length != size)
+		krb5_abortx(context, "Internal ASN.1 encoder error");
+
 	}
 	if (ret) {
 	    free_PA_PK_AS_REP(&rep);
@@ -1319,21 +1350,8 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 					&client_params->reply_key,
 					&rep.u.encKeyPack);
 	} else {
-	    rep.element = choice_PA_PK_AS_REP_19_dhSignedData;
-
-	    ret = check_dh_params(client_params->dh);
-	    if (ret)
-		return ret;
-
-	    ret = generate_dh_keyblock(context, client_params, enctype,
-				       &client_params->reply_key);
-	    if (ret)
-		return ret;
-
-	    ret = pk_mk_pa_reply_dh(context, client_params->dh,
-				    client_params, 
-				    &client_params->reply_key,
-				    &rep.u.dhSignedData);
+	    krb5_set_error_string(context, "DH -19 not implemented");
+	    ret = KRB5KRB_ERR_GENERIC;
 	}
 	if (ret) {
 	    free_PA_PK_AS_REP_19(&rep);
