@@ -71,12 +71,12 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 	request.flags = WBFLAG_PAM_INFO3_NDR;
-	fstrcpy(request.data.auth_crap.user, 
-		user_info->client.account_name);
-	fstrcpy(request.data.auth_crap.domain, 
-		user_info->client.domain_name);
-	fstrcpy(request.data.auth_crap.workstation, 
-		user_info->workstation_name);
+	winbind_strcpy(request.data.auth_crap.user, 
+		       user_info->client.account_name);
+	winbind_strcpy(request.data.auth_crap.domain, 
+		       user_info->client.domain_name);
+	winbind_strcpy(request.data.auth_crap.workstation, 
+		       user_info->workstation_name);
 
 	memcpy(request.data.auth_crap.chal, ctx->auth_ctx->challenge.data.data, sizeof(request.data.auth_crap.chal));
 

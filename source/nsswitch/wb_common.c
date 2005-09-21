@@ -172,7 +172,7 @@ static int winbind_named_pipe_sock(const char *dir)
 {
 	struct sockaddr_un sunaddr;
 	struct stat st;
-	pstring path;
+	char *path;
 	int fd;
 	int wait_time;
 	int slept;
@@ -190,8 +190,7 @@ static int winbind_named_pipe_sock(const char *dir)
 	
 	/* Connect to socket */
 
-	snprintf(path, sizeof(path), "%s%s", dir, "/" WINBINDD_SOCKET_NAME);
-	
+	asprintf(&path, "%s%s", dir, "/" WINBINDD_SOCKET_NAME);
 	ZERO_STRUCT(sunaddr);
 	sunaddr.sun_family = AF_UNIX;
 	strncpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path) - 1);
@@ -201,8 +200,11 @@ static int winbind_named_pipe_sock(const char *dir)
 	   the winbindd daemon is not running. */
 
 	if (lstat(path, &st) == -1) {
+		SAFE_FREE(path);
 		return -1;
 	}
+
+	SAFE_FREE(path);
 	
 	/* Check permissions on unix socket file */
 	
