@@ -1,6 +1,6 @@
-Import('hostenv')
-Import('talloc')
-Import('defines')
+#            tastes like -*- python -*-
+
+Import('hostenv', 'talloc', 'defines', 'proto_files')
 
 hostenv.StaticLibrary('modules/timestamps.c')
 hostenv.StaticLibrary('modules/rdn_name.c')
@@ -18,15 +18,21 @@ if hostenv['configure']:
 if defines.has_key('HAVE_SQLITE3'):
 	hostenv.StaticLibrary('ldb_sqlite3/ldb_sqlite3.c')
 
-hostenv.StaticLibrary('ldb_tdb',
-	['ldb_tdb/ldb_tdb.c','ldb_tdb/ldb_search.c','ldb_tdb/ldb_pack.c',
-	 'ldb_tdb/ldb_index.c','ldb_tdb/ldb_cache.c','ldb_tdb/ldb_tdb_wrap.c'])
+ldb_tdb_source = ['ldb_tdb/ldb_tdb.c', 'ldb_tdb/ldb_search.c',
+		  'ldb_tdb/ldb_pack.c', 'ldb_tdb/ldb_index.c',
+		  'ldb_tdb/ldb_cache.c', 'ldb_tdb/ldb_tdb_wrap.c']
 
-ldb = hostenv.StaticLibrary('ldb', 
-	[talloc,'common/ldb.c','common/ldb_ldif.c','common/ldb_parse.c',
-	 'common/ldb_parse.c','common/ldb_msg.c','common/ldb_utf8.c',
-	 'common/ldb_debug.c','common/ldb_modules.c','common/ldb_match.c',
-	 'common/attrib_handlers.c','common/ldb_dn.c'])
+hostenv.StaticLibrary('ldb_tdb', ldb_tdb_source)
+proto_files += [File(x) for x in ldb_tdb_source]
+
+ldb_source = ['common/ldb.c','common/ldb_ldif.c','common/ldb_parse.c',
+	      'common/ldb_parse.c','common/ldb_msg.c','common/ldb_utf8.c',
+	      'common/ldb_debug.c','common/ldb_modules.c','common/ldb_match.c',
+	      'common/attrib_handlers.c','common/ldb_dn.c']
+
+ldb = hostenv.StaticLibrary('ldb', ldb_source + talloc)
+proto_files += [File(x) for x in ldb_source]
+
 Export('ldb')
 
 hostenv.StaticLibrary('samba/ldif_handlers.c')
