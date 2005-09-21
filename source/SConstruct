@@ -7,13 +7,16 @@
 # Copyright (C) 2005 Jelmer Vernooij <jelmer@samba.org>
 # Published under the GNU GPL
 
+import cPickle
+
 # We don't care about NFS builds...
 
 opts = Options(None, ARGUMENTS)
 opts.AddOptions(
 		BoolOption('developer','enable developer flags', 0),
 		PathOption('prefix','installation prefix','/usr/local/samba'),
-		BoolOption('configh','use config.h file', 0)
+		BoolOption('configh','use config.h file', 0),
+		BoolOption('configure','run configure checks', False),
 )
 
 hostenv = Environment(
@@ -40,7 +43,25 @@ if hostenv['developer']:
 	hostenv.Append(CCFLAGS='-Wno-format-y2k')
 	hostenv.Append(CCFLAGS='-Wno-declaration-after-statement')
 
-defines = {}
+# Store configuration data in a dictionary.
+
+def saveconfig(data):
+	"""Save configuration dict to a file."""
+	cached = cPickle.dump(data, open('sconf.cache', 'w'))
+
+def loadconfig():
+	"""Load configuration dict from a file."""
+	try:
+		return cPickle.load(open('sconf.cache', 'r'))
+	except IOError:
+		return None
+
+defines = loadconfig()
+
+if defines == None:
+	hostenv['configure'] = 1
+	defines = {}
+
 Export('defines')
 
 hostenv.Append(CPPPATH = ['#heimdal_build', '#heimdal/lib/krb5',
@@ -80,36 +101,39 @@ paths = {
 
 Export('paths')
 
-conf = hostenv.Configure()
-for h in ['sys/select.h','fcntl.h','sys/fcntl.h','sys/time.h'] + \
-	['utime.h','grp.h','sys/id.h','limits.h','memory.h'] + \
-	['compat.h','math.h','sys/param.h','ctype.h','sys/wait.h'] + \
-	['sys/resource.h','sys/ioctl.h','sys/ipc.h','sys/mode.h'] + \
-	['sys/mman.h','sys/filio.h','sys/priv.h','sys/shm.h','string.h'] + \
-	['strings.h','stdlib.h','sys/vfs.h','sys/fs/s5param.h','sys/filsys.h'] + \
-	['termios.h','termio.h','fnmatch.h','pwd.h','sys/termio.h'] + \
-	['sys/time.h','sys/statfs.h','sys/statvfs.h','stdarg.h'] + \
-	['security/pam_modules.h','security/_pam_macros.h','dlfcn.h'] + \
-	['sys/syslog.h','syslog.h','stdint.h','inttypes.h','locale.h'] + \
-	['shadow.h','nss.h','nss_common.h','ns_api.h','sys/security.h'] + \
-	['security/pam_appl.h','sys/capability.h','syscall.h','sys/syscall.h'] + \
-	['sys/acl.h']:
-	if conf.CheckCHeader(h):
-		defines['HAVE_' + h.upper().replace('.','_').replace('/','_')] = 1
+if hostenv['configure']:
+	
+	conf = hostenv.Configure()
 
-for f in ['dlopen','dlsym','dlerror','waitpid','getcwd','strdup'] + \
-	['strndup','strnlen','strerror','chroot','bzero','memset','strlcpy'] + \
-	['strlcat','memmove','vsnprintf','snprintf','asprintf','vasprintf'] + \
-	['setsid','pipe','crypt16','getauthuid','strftime','sigprocmask'] + \
-	['sigblock','sigaction','innetgr','setnetgrent','getnetgrent'] + \
-	['endnetgrent','initgroups','setgroups','sysconf','mktime','rename'] + \
-	['ftruncate','chsize','getpwanam','setlinebuf','srandom','random'] + \
-	['srand','rand','setenv','usleep','syslog','vsyslog','timegm'] + \
-	['backtrace','setbuffer','pread','pwrite']:
-	if conf.CheckFunc(f):
-		defines['HAVE_' + f.upper()] = 1
+	for h in ['sys/select.h','fcntl.h','sys/fcntl.h','sys/time.h'] + \
+		['utime.h','grp.h','sys/id.h','limits.h','memory.h'] + \
+		['compat.h','math.h','sys/param.h','ctype.h','sys/wait.h'] + \
+		['sys/resource.h','sys/ioctl.h','sys/ipc.h','sys/mode.h'] + \
+		['sys/mman.h','sys/filio.h','sys/priv.h','sys/shm.h','string.h'] + \
+		['strings.h','stdlib.h','sys/vfs.h','sys/fs/s5param.h','sys/filsys.h'] + \
+		['termios.h','termio.h','fnmatch.h','pwd.h','sys/termio.h'] + \
+		['sys/time.h','sys/statfs.h','sys/statvfs.h','stdarg.h'] + \
+		['security/pam_modules.h','security/_pam_macros.h','dlfcn.h'] + \
+		['sys/syslog.h','syslog.h','stdint.h','inttypes.h','locale.h'] + \
+		['shadow.h','nss.h','nss_common.h','ns_api.h','sys/security.h'] + \
+		['security/pam_appl.h','sys/capability.h','syscall.h','sys/syscall.h'] + \
+		['sys/acl.h']:
+		if conf.CheckCHeader(h):
+			defines['HAVE_' + h.upper().replace('.','_').replace('/','_')] = 1
 
-conf.Finish()
+	for f in ['dlopen','dlsym','dlerror','waitpid','getcwd','strdup'] + \
+		['strndup','strnlen','strerror','chroot','bzero','memset','strlcpy'] + \
+		['strlcat','memmove','vsnprintf','snprintf','asprintf','vasprintf'] + \
+		['setsid','pipe','crypt16','getauthuid','strftime','sigprocmask'] + \
+		['sigblock','sigaction','innetgr','setnetgrent','getnetgrent'] + \
+		['endnetgrent','initgroups','setgroups','sysconf','mktime','rename'] + \
+		['ftruncate','chsize','getpwanam','setlinebuf','srandom','random'] + \
+		['srand','rand','setenv','usleep','syslog','vsyslog','timegm'] + \
+		['backtrace','setbuffer','pread','pwrite']:
+		if conf.CheckFunc(f):
+			defines['HAVE_' + f.upper()] = 1
+
+	conf.Finish()
 
 [dynenv.Append(CPPDEFINES = {p: '\\"%s\\"' % paths[p]}) for p in paths]
 	
@@ -126,6 +150,11 @@ SConscript(
 		'winbind','scripting','auth'])
 
 hostenv.CProtoHeader(target='include/proto.h',source=proto_files)
+
+# Save configuration
+
+if hostenv['configure']:
+	saveconfig(defines)
 
 if hostenv['configh']:
 	def create_config_h(env,target,source):
