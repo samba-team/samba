@@ -33,7 +33,7 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id: pkinit.c,v 1.59 2005/08/12 08:53:00 lha Exp $");
+RCSID("$Id: pkinit.c,v 1.62 2005/09/20 23:21:36 lha Exp $");
 
 #ifdef PKINIT
 
@@ -867,10 +867,11 @@ _krb5_pk_mk_padata(krb5_context context,
 	if (ret)
 	    goto out;
     } else {
+#if 0
 	ret = pk_mk_padata(context, COMPAT_19, ctx, req_body, nonce, md);
 	if (ret)
 	    goto out;
-
+#endif
 	ret = pk_mk_padata(context, COMPAT_27, ctx, req_body, nonce, md);
 	if (ret)
 	    goto out;
@@ -1143,7 +1144,7 @@ _krb5_pk_verify_sign(krb5_context context,
     EVP_PKEY *public_key;
     krb5_error_code ret;
     EVP_MD_CTX md;
-    X509 *cert;
+    X509 *cert = NULL;
     SignedData sd;
     size_t size;
     
@@ -1187,7 +1188,6 @@ _krb5_pk_verify_sign(krb5_context context,
 	set.len = sd.certificates->len;
 
 	ret = cert_to_X509(context, &set, &certificates);
-	free_CertificateSet(&set);
     }
     if (ret) {
 	krb5_set_error_string(context,
@@ -1860,10 +1860,13 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 	    return ret;
 	default:
 	    free_PA_PK_AS_REP(&rep);
-	    krb5_set_error_string(context, "PKINIT: -25 reply "
+	    krb5_set_error_string(context, "PKINIT: -27 reply "
 				  "invalid content type");
+	    ret = EINVAL;
 	    break;
 	}
+	if (ret == 0)
+	    return ret;
     }
 
     /* Check for PK-INIT -19 */
@@ -1911,7 +1914,7 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 					&w2krep,
 					&size);
 	if (ret) {
-	    krb5_set_error_string(context, "PKINIT: Failed decoding windows"
+	    krb5_set_error_string(context, "PKINIT: Failed decoding windows "
 				  "pkinit reply %d", ret);
 	    return ret;
 	}

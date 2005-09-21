@@ -43,7 +43,7 @@
 
 #include "kcm.h"
 
-RCSID("$Id: kcm.c,v 1.7 2005/06/17 04:20:11 lha Exp $");
+RCSID("$Id: kcm.c,v 1.8 2005/09/19 20:23:05 lha Exp $");
 
 typedef struct krb5_kcmcache {
     char *name;
@@ -246,7 +246,8 @@ kcm_call(krb5_context context,
 	 krb5_data *response_data_p)
 {
     krb5_data response_data;
-    krb5_error_code ret, status;
+    krb5_error_code ret;
+    int32_t status;
     krb5_storage *response;
 
     if (response_p != NULL)
@@ -605,7 +606,7 @@ kcm_get_first (krb5_context context,
     krb5_kcmcache *k = KCMCACHE(id);
     krb5_storage *request, *response;
     krb5_data response_data;
-    u_int32_t tmp;
+    int32_t tmp;
 
     ret = kcm_storage_request(context, KCM_OP_GET_FIRST, &request);
     if (ret)
@@ -624,7 +625,7 @@ kcm_get_first (krb5_context context,
     }
 
     ret = krb5_ret_int32(response, &tmp);
-    if (ret)
+    if (ret || tmp < 0)
 	ret = KRB5_CC_IO;
 
     krb5_storage_free(request);

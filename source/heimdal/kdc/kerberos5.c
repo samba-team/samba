@@ -483,8 +483,8 @@ make_etype_info2_entry(ETYPE_INFO2_ENTRY *ent, Key *key)
     ent->s2kparams = NULL;
 
     switch (key->key.keytype) {
-    case KEYTYPE_AES128:
-    case KEYTYPE_AES256:
+    case ETYPE_AES128_CTS_HMAC_SHA1_96:
+    case ETYPE_AES256_CTS_HMAC_SHA1_96:
 	ALLOC(ent->s2kparams);
 	if (ent->s2kparams == NULL)
 	    return ENOMEM;
@@ -498,6 +498,26 @@ make_etype_info2_entry(ETYPE_INFO2_ENTRY *ent, Key *key)
 	_krb5_put_int(ent->s2kparams->data, 
 		      _krb5_AES_string_to_default_iterator, 
 		      ent->s2kparams->length);
+	break;
+    case ETYPE_DES_CBC_CRC:
+    case ETYPE_DES_CBC_MD4:
+    case ETYPE_DES_CBC_MD5:
+	/* Check if this was a AFS3 salted key */
+	if(key->salt && key->salt->type == hdb_afs3_salt){
+	    ALLOC(ent->s2kparams);
+	    if (ent->s2kparams == NULL)
+		return ENOMEM;
+	    ent->s2kparams->length = 1;
+	    ent->s2kparams->data = malloc(ent->s2kparams->length);
+	    if (ent->s2kparams->data == NULL) {
+		free(ent->s2kparams);
+		ent->s2kparams = NULL;
+		return ENOMEM;
+	    }
+	    _krb5_put_int(ent->s2kparams->data, 
+			  1,
+			  ent->s2kparams->length);
+	}
 	break;
     default:
 	break;
