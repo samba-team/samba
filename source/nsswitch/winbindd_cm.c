@@ -73,7 +73,7 @@
    SAMR pipe as well for now.   --jerry
 ******************************************************************/
 
-//#define DISABLE_SCHANNEL_WIN2K3_SP1	1
+/* #define DISABLE_SCHANNEL_WIN2K3_SP1	1 */
 
 
 /* Choose between anonymous or authenticated connections.  We need to use
@@ -179,7 +179,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 				      struct cli_state **cli,
 				      BOOL *retry)
 {
-	char *machine_password, *machine_krb5_principal;
+	char *machine_password, *machine_krb5_principal, *machine_account;
 	char *ipc_username, *ipc_domain, *ipc_password;
 
 	BOOL got_mutex;
@@ -195,8 +195,14 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	machine_password = secrets_fetch_machine_password(lp_workgroup(), NULL,
 							  NULL);
 	
+	if (asprintf(&machine_account, "%s$", global_myname()) == -1) {
+		SAFE_FREE(machine_password);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	if (asprintf(&machine_krb5_principal, "%s$@%s", global_myname(),
 		     lp_realm()) == -1) {
+		SAFE_FREE(machine_account);
 		SAFE_FREE(machine_password);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -258,32 +264,60 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		goto done;
 	}
 
-	/* Krb5 session */
 			
-	if ((lp_security() == SEC_ADS) 
-	    && ((*cli)->protocol >= PROTOCOL_NT1 &&
-		(*cli)->capabilities & CAP_EXTENDED_SECURITY)) {
-
+	if ((*cli)->protocol >= PROTOCOL_NT1 && (*cli)->capabilities & CAP_EXTENDED_SECURITY) {
 		ADS_STATUS ads_status;
-		(*cli)->use_kerberos = True;
-		DEBUG(5, ("connecting to %s from %s with kerberos principal "
-			  "[%s]\n", controller, global_myname(),
-			  machine_krb5_principal));
+
+		if (lp_security() == SEC_ADS) {
+
+			/* Try a krb5 session */
+
+			(*cli)->use_kerberos = True;
+			DEBUG(5, ("connecting to %s from %s with kerberos principal "
+				  "[%s]\n", controller, global_myname(),
+				  machine_krb5_principal));
+
+			ads_status = cli_session_setup_spnego(*cli,
+							      machine_krb5_principal, 
+							      machine_password, 
+							      lp_workgroup());
+
+			if (!ADS_ERR_OK(ads_status)) {
+				DEBUG(4,("failed kerberos session setup with %s\n",
+					 ads_errstr(ads_status)));
+			}
+
+			result = ads_ntstatus(ads_status);
+			if (NT_STATUS_IS_OK(result)) {
+				/* Ensure creds are stored for NTLMSSP authenticated pipe access. */
+				cli_init_creds(*cli, machine_account, lp_workgroup(), machine_password);
+				goto session_setup_done;
+			}
+		}
+
+		/* Fall back to non-kerberos session setup using NTLMSSP SPNEGO with the machine account. */
+		(*cli)->use_kerberos = False;
+
+		DEBUG(5, ("connecting to %s from %s with username "
+			  "[%s]\\[%s]\n",  controller, global_myname(),
+			  machine_account, machine_password));
 
 		ads_status = cli_session_setup_spnego(*cli,
-						      machine_krb5_principal, 
+						      machine_account, 
 						      machine_password, 
 						      lp_workgroup());
-
-		if (!ADS_ERR_OK(ads_status))
-			DEBUG(4,("failed kerberos session setup with %s\n",
-				 ads_errstr(ads_status)));
+		if (!ADS_ERR_OK(ads_status)) {
+			DEBUG(4, ("authenticated session setup failed with %s\n",
+				ads_errstr(ads_status)));
+		}
 
 		result = ads_ntstatus(ads_status);
+		if (NT_STATUS_IS_OK(result)) {
+			/* Ensure creds are stored for NTLMSSP authenticated pipe access. */
+			cli_init_creds(*cli, machine_account, lp_workgroup(), machine_password);
+			goto session_setup_done;
+		}
 	}
-
-	if (NT_STATUS_IS_OK(result))
-		goto session_setup_done;
 
 	/* Fall back to non-kerberos session setup */
 
@@ -311,6 +345,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 	if (cli_session_setup(*cli, "", NULL, 0, NULL, 0, "")) {
 		DEBUG(5, ("Connected anonymously\n"));
+		cli_init_creds(*cli, "", "", "");
 		goto session_setup_done;
 	}
 
@@ -343,24 +378,28 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	*retry = False;
 
 	/* set the domain if empty; needed for schannel connections */
-	if ( !*(*cli)->domain )
+	if ( !*(*cli)->domain ) {
 		fstrcpy( (*cli)->domain, domain->name );
+	}
 
 	result = NT_STATUS_OK;
 	add_failed_connection = False;
 
  done:
-	if (got_mutex)
+	if (got_mutex) {
 		secrets_named_mutex_release(controller);
+	}
 
+	SAFE_FREE(machine_account);
 	SAFE_FREE(machine_password);
 	SAFE_FREE(machine_krb5_principal);
 	SAFE_FREE(ipc_username);
 	SAFE_FREE(ipc_domain);
 	SAFE_FREE(ipc_password);
 
-	if (add_failed_connection)
+	if (add_failed_connection) {
 		add_failed_connection_entry(domain->name, controller, result);
+	}
 
 	return result;
 }

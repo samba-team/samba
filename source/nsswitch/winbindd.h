@@ -131,13 +131,6 @@ struct winbindd_cm_conn {
 	POLICY_HND lsa_policy;
 
 	struct rpc_pipe_client *netlogon_pipe;
-
-#if 0 /* I don't think this is the case. JRA. */
-	/* Auth2 pipe is the pipe used to setup the netlogon schannel key
-	 * using rpccli_net_auth2. It needs to be kept open. */
-
-	struct rpc_pipe_client *netlogon_auth2_pipe;
-#endif
 };
 
 struct winbindd_async_request;
