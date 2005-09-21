@@ -15,7 +15,6 @@ Compilation
 -----------
 
 add HAVE_MMAP=1 to use mmap instead of read/write
-add TDB_DEBUG=1 for verbose debug info
 add NOLOCK=1 to disable locking code
 
 Testing
