@@ -398,7 +398,7 @@ BOOL prs_append_some_prs_data(prs_struct *dst, prs_struct *src, int32 start, uin
  Append the data from a buffer into a parse_struct.
  ********************************************************************/
 
-BOOL prs_copy_data_in(prs_struct *dst, char *src, uint32 len)
+BOOL prs_copy_data_in(prs_struct *dst, const char *src, uint32 len)
 {
 	if (len == 0)
 		return True;

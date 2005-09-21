@@ -1827,7 +1827,7 @@ static NTSTATUS create_rpc_alter_context(uint32 rpc_call_id,
 					RPC_IFACE *abstract,
 					RPC_IFACE *transfer,
 					enum pipe_auth_level auth_level,
-					DATA_BLOB *pauth_blob, /* spnego auth blob already created. */
+					const DATA_BLOB *pauth_blob, /* spnego auth blob already created. */
 					prs_struct *rpc_out)
 {
 	RPC_HDR_AUTH hdr_auth;
@@ -1841,7 +1841,7 @@ static NTSTATUS create_rpc_alter_context(uint32 rpc_call_id,
 	init_rpc_hdr_auth(&hdr_auth, RPC_SPNEGO_AUTH_TYPE, (int)auth_level, 0, 1);
 
 	if (pauth_blob->length) {
-		if (!prs_copy_data_in(&auth_info, (char *)pauth_blob->data, pauth_blob->length)) {
+		if (!prs_copy_data_in(&auth_info, (const char *)pauth_blob->data, pauth_blob->length)) {
 			prs_mem_free(&auth_info);
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -1925,6 +1925,7 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
 	tmp_blob = spnego_gen_auth(client_reply);
 	data_blob_free(&client_reply);
 	client_reply = tmp_blob;
+	tmp_blob = data_blob(NULL,0); /* Ensure it's safe to free this just in case. */
 
 	/* Now prepare the alter context pdu. */
 	prs_init(&rpc_out, 0, prs_get_mem_context(rbuf), MARSHALL);
