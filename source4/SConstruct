@@ -131,6 +131,6 @@ if hostenv['configh']:
 	def create_config_h(env,target,source):
 		pass #FIXME
 	hostenv.Command('include/config.h',[],create_config_h)
-	hostenv.Append(CPPDEFINES = {HAVE_CONFIG_H: 1})
+	hostenv.Append(CPPDEFINES = {'HAVE_CONFIG_H': 1})
 else:
 	[hostenv.Append(CPPDEFINES = {p: defines[p]}) for p in defines]
