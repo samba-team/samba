@@ -7,6 +7,7 @@
 # Copyright jelmer@samba.org 2005
 # released under the GNU GPL
 
+=pod
 =head1 NAME
 
 pidl - IDL Compiler written in Perl
@@ -48,7 +49,7 @@ both marshalling/unmarshalling and debugging purposes).
 
 =item I<--help>
 
-Show list of available options.</para></listitem>
+Show list of available options.
 		
 =item I<--outputdir OUTNAME>
 
@@ -62,7 +63,7 @@ then assuming they contain IDL.
 
 =item I<--dump-idl>
 
-Generate a new IDL file. File will be named OUTNAME.idl.</para></listitem>
+Generate a new IDL file. File will be named OUTNAME.idl.
 
 =item I<--header>
 
@@ -132,12 +133,9 @@ C-style comments can be used.
 =head2 CONFORMANT ARRAYS
 
 A conformant array is one with that ends in [*] or []. The strange
-things about conformant arrays are:
-
-=over 1
-=item they can only appear as the last element of a structure
-=item the array size appears before the structure itself on the wire. 
-=back
+things about conformant arrays are that they can only appear as the last 
+element of a structure (unless there is a pointer to the conformant array, 
+of course) and the array size appears before the structure itself on the wire. 
 
 So, in this example:
 
@@ -231,9 +229,19 @@ The following MIDL features are not (yet) implemented in pidl
 or are implemented with an incompatible interface:
 
 =over
-=item Asynchronous communication
-=item Typelibs (.tlb files)
-=item Datagram support (ncadg_*)
+
+=item *
+
+Asynchronous communication
+
+=item * 
+
+Typelibs (.tlb files)
+
+=item *
+
+Datagram support (ncadg_*)
+
 =back
 
 =head2 Supported attributes
@@ -407,6 +415,7 @@ This manpage was written by Jelmer Vernooij, partially based on the original
 pidl README by Andrew Tridgell. 
 	
 =cut
+
 
 use strict;
 use FindBin qw($RealBin);
