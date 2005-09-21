@@ -7,10 +7,13 @@
 # Copyright (C) 2005 Jelmer Vernooij <jelmer@samba.org>
 # Published under the GNU GPL
 
+# We don't care about NFS builds...
+
 opts = Options(None, ARGUMENTS)
 opts.AddOptions(
 		BoolOption('developer','enable developer flags', 0),
-		PathOption('prefix','installation prefix','/usr/local/samba')
+		PathOption('prefix','installation prefix','/usr/local/samba'),
+		BoolOption('configh','use config.h file', 0)
 )
 
 hostenv = Environment(
@@ -20,6 +23,8 @@ hostenv = Environment(
 		CPPPATH=['#include','#','#lib'], 
                 CPPDEFINES={'_SAMBA_BUILD_': None},
 		)
+
+hostenv.SetOption('max_drift', 1)
 
 if hostenv['developer']:
 	hostenv.Append(CCFLAGS='-Wall')
@@ -35,7 +40,8 @@ if hostenv['developer']:
 	hostenv.Append(CCFLAGS='-Wno-format-y2k')
 	hostenv.Append(CCFLAGS='-Wno-declaration-after-statement')
 
-
+defines = {}
+Export('defines')
 
 hostenv.Append(CPPPATH = ['#heimdal_build', '#heimdal/lib/krb5',
 			  '#heimdal/lib/hdb', '#heimdal/lib/gssapi',
@@ -88,7 +94,8 @@ for h in ['sys/select.h','fcntl.h','sys/fcntl.h','sys/time.h'] + \
 	['shadow.h','nss.h','nss_common.h','ns_api.h','sys/security.h'] + \
 	['security/pam_appl.h','sys/capability.h','syscall.h','sys/syscall.h'] + \
 	['sys/acl.h']:
-	conf.CheckCHeader(h)
+	if conf.CheckCHeader(h):
+		defines['HAVE_' + h.upper().replace('.','_').replace('/','_')] = 1
 
 for f in ['dlopen','dlsym','dlerror','waitpid','getcwd','strdup'] + \
 	['strndup','strnlen','strerror','chroot','bzero','memset','strlcpy'] + \
@@ -99,7 +106,8 @@ for f in ['dlopen','dlsym','dlerror','waitpid','getcwd','strdup'] + \
 	['ftruncate','chsize','getpwanam','setlinebuf','srandom','random'] + \
 	['srand','rand','setenv','usleep','syslog','vsyslog','timegm'] + \
 	['backtrace','setbuffer','pread','pwrite']:
-	conf.CheckFunc(f)
+	if conf.CheckFunc(f):
+		defines['HAVE_' + f.upper()] = 1
 
 conf.Finish()
 
@@ -112,9 +120,17 @@ proto_files = []
 Export('proto_files')
 
 SConscript(
-		dirs=['param','lib','torture','rpc_server','cldap_server','libcli',
+		dirs=['lib','torture','rpc_server','cldap_server','libcli',
 		'nbt_server','client','ldap_server','libnet','nsswitch','web_server',
 		'smbd','dsdb','heimdal_build','ntptr','kdc','smb_server','ntvfs',
 		'winbind','scripting','auth'])
 
 hostenv.CProtoHeader(target='include/proto.h',source=proto_files)
+
+if hostenv['configh']:
+	def create_config_h(env,target,source):
+		pass #FIXME
+	hostenv.Command('include/config.h',[],create_config_h)
+	hostenv.Append(CPPDEFINES = {HAVE_CONFIG_H: 1})
+else:
+	[hostenv.Append(CPPDEFINES = {p: defines[p]}) for p in defines]
