@@ -32,6 +32,9 @@
 #define WINBINDD_DOMAIN_ENV  "WINBINDD_DOMAIN" /* Environment variables */
 #define WINBINDD_DONT_ENV    "_NO_WINBINDD"
 
+typedef char winbind_string[256];
+#define winbind_strcpy(d,s) safe_strcpy((d),(s),sizeof(winbind_string));
+
 /* Update this when you change the interface.  */
 
 #define WINBIND_INTERFACE_VERSION 11
@@ -139,19 +142,19 @@ enum winbindd_cmd {
 };
 
 typedef struct winbindd_pw {
-	fstring pw_name;
-	fstring pw_passwd;
+	winbind_string pw_name;
+	winbind_string pw_passwd;
 	uid_t pw_uid;
 	gid_t pw_gid;
-	fstring pw_gecos;
-	fstring pw_dir;
-	fstring pw_shell;
+	winbind_string pw_gecos;
+	winbind_string pw_dir;
+	winbind_string pw_shell;
 } WINBINDD_PW;
 
 
 typedef struct winbindd_gr {
-	fstring gr_name;
-	fstring gr_passwd;
+	winbind_string gr_name;
+	winbind_string gr_passwd;
 	gid_t gr_gid;
 	int num_gr_mem;
 	int gr_mem_ofs;   /* offset to group membership */
@@ -178,70 +181,70 @@ typedef struct winbindd_gr {
 /* Winbind request structure */
 
 struct winbindd_request {
-	uint32 length;
+	uint32_t length;
 	enum winbindd_cmd cmd;   /* Winbindd command to execute */
 	pid_t pid;               /* pid of calling process */
-	uint32 flags;            /* flags relavant to a given request */
-	fstring domain_name;	/* name of domain for which the request applies */
+	uint32_t flags;            /* flags relavant to a given request */
+	winbind_string domain_name;	/* name of domain for which the request applies */
 	int msgid;
 
 	union {
-		fstring winsreq;     /* WINS request */
-		fstring username;    /* getpwnam */
-		fstring groupname;   /* getgrnam */
+		winbind_string winsreq;     /* WINS request */
+		winbind_string username;    /* getpwnam */
+		winbind_string groupname;   /* getgrnam */
 		uid_t uid;           /* getpwuid, uid_to_sid */
 		gid_t gid;           /* getgrgid, gid_to_sid */
 		struct {
 			/* We deliberatedly don't split into domain/user to
                            avoid having the client know what the separator
                            character is. */	
-			fstring user;
-			fstring pass;
-		        fstring require_membership_of_sid;
+			winbind_string user;
+			winbind_string pass;
+		        winbind_string require_membership_of_sid;
 		} auth;              /* pam_winbind auth module */
                 struct {
                         unsigned char chal[8];
-                        fstring user;
-                        fstring domain;
-                        fstring lm_resp;
-                        uint16 lm_resp_len;
-                        fstring nt_resp;
-                        uint16 nt_resp_len;
-			fstring workstation;
-		        fstring require_membership_of_sid;
+                        winbind_string user;
+                        winbind_string domain;
+                        winbind_string lm_resp;
+                        uint16_t lm_resp_len;
+                        winbind_string nt_resp;
+                        uint16_t nt_resp_len;
+			winbind_string workstation;
+		        winbind_string require_membership_of_sid;
                 } auth_crap;
                 struct {
-                    fstring user;
-                    fstring oldpass;
-                    fstring newpass;
+                    winbind_string user;
+                    winbind_string oldpass;
+                    winbind_string newpass;
                 } chauthtok;         /* pam_winbind passwd module */
-		fstring sid;         /* lookupsid, sid_to_[ug]id */
+		winbind_string sid;         /* lookupsid, sid_to_[ug]id */
 		struct {
-			fstring dom_name;       /* lookupname */
-			fstring name;       
+			winbind_string dom_name;       /* lookupname */
+			winbind_string name;       
 		} name;
-		uint32 num_entries;  /* getpwent, getgrent */
+		uint32_t num_entries;  /* getpwent, getgrent */
 		struct {
-			fstring username;
-			fstring groupname;
+			winbind_string username;
+			winbind_string groupname;
 		} acct_mgt;
 		struct {
 			BOOL is_primary;
-			fstring dcname;
+			winbind_string dcname;
 		} init_conn;
 		struct {
-			fstring sid;
-			fstring name;
+			winbind_string sid;
+			winbind_string name;
 			BOOL alloc;
 		} dual_sid2id;
 		struct {
 			int type;
 			uid_t uid;
 			gid_t gid;
-			fstring sid;
+			winbind_string sid;
 		} dual_idmapset;
 		struct {
-			fstring cache_key;
+			winbind_string cache_key;
 		} dual_sidaliases;
 	} data;
 	char null_term;
@@ -261,7 +264,7 @@ struct winbindd_response {
     
 	/* Header information */
 
-	uint32 length;                        /* Length of response */
+	uint32_t length;                        /* Length of response */
 	enum winbindd_result result;          /* Result code */
 
 	/* Fixed length return data */
@@ -269,7 +272,7 @@ struct winbindd_response {
 	union {
 		int interface_version;  /* Try to ensure this is always in the same spot... */
 		
-		fstring winsresp;		/* WINS response */
+		winbind_string winsresp;		/* WINS response */
 
 		/* getpwnam, getpwuid */
 		
@@ -279,54 +282,54 @@ struct winbindd_response {
 
 		struct winbindd_gr gr;
 
-		uint32 num_entries; /* getpwent, getgrent */
+		uint32_t num_entries; /* getpwent, getgrent */
 		struct winbindd_sid {
-			fstring sid;        /* lookupname, [ug]id_to_sid */
+			winbind_string sid;        /* lookupname, [ug]id_to_sid */
 			int type;
 		} sid;
 		struct winbindd_name {
-			fstring dom_name;       /* lookupsid */
-			fstring name;       
+			winbind_string dom_name;       /* lookupsid */
+			winbind_string name;       
 			int type;
 		} name;
 		uid_t uid;          /* sid_to_uid */
 		gid_t gid;          /* sid_to_gid */
 		struct winbindd_info {
 			char winbind_separator;
-			fstring samba_version;
+			winbind_string samba_version;
 		} info;
-		fstring domain_name;
-		fstring netbios_name;
-		fstring dc_name;
+		winbind_string domain_name;
+		winbind_string netbios_name;
+		winbind_string dc_name;
 
 		struct auth_reply {
-			uint32 nt_status;
-			fstring nt_status_string;
-			fstring error_string;
+			uint32_t nt_status;
+			winbind_string nt_status_string;
+			winbind_string error_string;
 			int pam_error;
 			char user_session_key[16];
 			char first_8_lm_hash[8];
 		} auth;
-		uint32 rid;	/* create user or group or allocate rid */
+		uint32_t rid;	/* create user or group or allocate rid */
 		struct {
-			uint32 rid;
+			uint32_t rid;
 			gid_t gid;
 		} rid_and_gid;
 		struct {
-			fstring name;
-			fstring alt_name;
-			fstring sid;
+			winbind_string name;
+			winbind_string alt_name;
+			winbind_string sid;
 			BOOL native_mode;
 			BOOL active_directory;
 			BOOL primary;
-			uint32 sequence_number;
+			uint32_t sequence_number;
 		} domain_info;
 		struct {
-			fstring acct_name;
-			fstring full_name;
-			fstring homedir;
-			fstring shell;
-			uint32 group_rid;
+			winbind_string acct_name;
+			winbind_string full_name;
+			winbind_string homedir;
+			winbind_string shell;
+			uint32_t group_rid;
 		} user_info;
 	} data;
 

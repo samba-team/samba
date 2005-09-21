@@ -81,44 +81,11 @@
 #endif
 #include "nsswitch/winbind_nss.h"
 
-/* I'm trying really hard not to include anything from smb.h with the
-   result of some silly looking redeclaration of structures. */
-
-#ifndef _PSTRING
-#define _PSTRING
-#define PSTRING_LEN 1024
-#define FSTRING_LEN 256
-typedef char pstring[PSTRING_LEN];
-typedef char fstring[FSTRING_LEN];
-#endif
-
 #ifndef Auto
 #define False (0)
 #define True (1)
 #define Auto (2)
 typedef int BOOL;
-#endif
-
-#if !defined(uint32)
-#if (SIZEOF_INT == 4)
-#define uint32 unsigned int
-#elif (SIZEOF_LONG == 4)
-#define uint32 unsigned long
-#elif (SIZEOF_SHORT == 4)
-#define uint32 unsigned short
-#endif
-#endif
-
-#if !defined(uint16)
-#if (SIZEOF_SHORT == 4)
-#define uint16 __ERROR___CANNOT_DETERMINE_TYPE_FOR_INT16;
-#else /* SIZEOF_SHORT != 4 */
-#define uint16 unsigned short
-#endif /* SIZEOF_SHORT != 4 */
-#endif
-
-#ifndef uint8
-#define uint8 unsigned char
 #endif
 
 /* zero a structure */
