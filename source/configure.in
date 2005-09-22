@@ -3050,9 +3050,77 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_krbhst_get_addrinfo, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_c_enctype_compare, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_enctypes_compatible_keys, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_crypto_init, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_crypto_destroy, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_decode_ap_req, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(decode_krb5_ap_req, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_free_ap_req, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(free_AP_REQ, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_c_verify_checksum, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_principal_compare_any_realm, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_parse_name_norealm, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_princ_size, $KRB5_LIBS)
 
   LIBS="$KRB5_LIBS $LIBS"
-  
+
+  AC_CACHE_CHECK(whether krb5_verify_checksum takes 7 arguments, smb_krb5_verify_checksum, [
+    AC_TRY_COMPILE([
+	#include <krb5.h>], 
+	[krb5_verify_checksum(0, 0, 0, 0, 0, 0, 0);], 
+	[smb_krb5_verify_checksum=7], 
+	[smb_krb5_verify_checksum=6], 
+    ) 
+  ])
+  AC_DEFINE_UNQUOTED(KRB5_VERIFY_CHECKSUM_ARGS, $smb_krb5_verify_checksum, [Number of arguments to krb5_verify_checksum])
+
+  AC_CACHE_CHECK([for checksum in krb5_checksum],
+                samba_cv_HAVE_CHECKSUM_IN_KRB5_CHECKSUM,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_checksum cksum; cksum.checksum.length = 0;],
+      samba_cv_HAVE_CHECKSUM_IN_KRB5_CHECKSUM=yes,
+      samba_cv_HAVE_CHECKSUM_IN_KRB5_CHECKSUM=no)])
+
+  if test x"$samba_cv_HAVE_CHECKSUM_IN_KRB5_CHECKSUM" = x"yes"; then
+    AC_DEFINE(HAVE_CHECKSUM_IN_KRB5_CHECKSUM,1,
+               [Whether the krb5_checksum struct has a checksum property])
+  fi
+
+  AC_CACHE_CHECK([for etype in EncryptedData],
+                samba_cv_HAVE_ETYPE_IN_ENCRYPTEDDATA,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [EncryptedData edata; edata.etype = 0;],
+      samba_cv_HAVE_ETYPE_IN_ENCRYPTEDDATA=yes,
+      samba_cv_HAVE_ETYPE_IN_ENCRYPTEDDATA=no)])
+
+  if test x"$samba_cv_HAVE_ETYPE_IN_ENCRYPTEDDATA" = x"yes"; then
+    AC_DEFINE(HAVE_ETYPE_IN_ENCRYPTEDDATA,1,
+               [Whether the EncryptedData struct has a etype property])
+  fi
+
+  AC_CACHE_CHECK([for ticket pointer in krb5_ap_req],
+                samba_cv_HAVE_TICKET_POINTER_IN_KRB5_AP_REQ,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_ap_req *ap_req; ap_req->ticket = NULL;],
+      samba_cv_HAVE_TICKET_POINTER_IN_KRB5_AP_REQ=yes,
+      samba_cv_HAVE_TICKET_POINTER_IN_KRB5_AP_REQ=no)])
+
+  if test x"$samba_cv_HAVE_TICKET_POINTER_IN_KRB5_AP_REQ" = x"yes"; then
+    AC_DEFINE(HAVE_TICKET_POINTER_IN_KRB5_AP_REQ,1,
+               [Whether the krb5_ap_req struct has a ticket pointer])
+  fi
+
+  AC_CACHE_CHECK([for krb5_crypto type],
+                samba_cv_HAVE_KRB5_CRYPTO,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_crypto crypto;],
+      samba_cv_HAVE_KRB5_CRYPTO=yes,
+      samba_cv_HAVE_KRB5_CRYPTO=no)])
+
+  if test x"$samba_cv_HAVE_KRB5_CRYPTO" = x"yes"; then
+    AC_DEFINE(HAVE_KRB5_CRYPTO,1,
+               [Whether the type krb5_crypto exists])
+  fi
+
   AC_CACHE_CHECK([for krb5_encrypt_block type],
                 samba_cv_HAVE_KRB5_ENCRYPT_BLOCK,[
     AC_TRY_COMPILE([#include <krb5.h>],
@@ -3178,6 +3246,30 @@ if test x"$with_ads_support" != x"no"; then
   if test x"$samba_cv_HAVE_KV5M_KEYTAB" = x"yes"; then
       AC_DEFINE(HAVE_KV5M_KEYTAB,1,
              [Whether the KV5M_KEYTAB option is available])
+  fi
+
+  AC_CACHE_CHECK([for KRB5_KU_OTHER_CKSUM],
+                 samba_cv_HAVE_KRB5_KU_OTHER_CKSUM,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_keyusage usage = KRB5_KU_OTHER_CKSUM;],
+      samba_cv_HAVE_KRB5_KU_OTHER_CKSUM=yes,
+      samba_cv_HAVE_KRB5_KU_OTHER_CKSUM=no)])
+
+  if test x"$samba_cv_HAVE_KRB5_KU_OTHER_CKSUM" = x"yes"; then
+    AC_DEFINE(HAVE_KRB5_KU_OTHER_CKSUM,1,
+              [Whether KRB5_KU_OTHER_CKSUM is available])
+  fi
+  
+  AC_CACHE_CHECK([for KRB5_KEYUSAGE_APP_DATA_CKSUM],
+                 samba_cv_HAVE_KRB5_KEYUSAGE_APP_DATA_CKSUM,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_keyusage usage = KRB5_KEYUSAGE_APP_DATA_CKSUM;],
+      samba_cv_HAVE_KRB5_KEYUSAGE_APP_DATA_CKSUM=yes,
+      samba_cv_HAVE_KRB5_KEYUSAGE_APP_DATA_CKSUM=no)])
+
+  if test x"$samba_cv_HAVE_KRB5_KEYUSAGE_APP_DATA_CKSUM" = x"yes"; then
+    AC_DEFINE(HAVE_KRB5_KEYUSAGE_APP_DATA_CKSUM,1,
+              [Whether KRB5_KEYUSAGE_APP_DATA_CKSUM is available])
   fi
 
   AC_CACHE_CHECK([for the krb5_princ_component macro],

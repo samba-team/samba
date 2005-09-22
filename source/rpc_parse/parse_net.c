@@ -1496,7 +1496,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 ********************************************************************/
 
 BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps, 
-		       int depth, uint16 validation_level)
+		       int depth, uint16 validation_level, BOOL kerb_validation_level)
 {
 	unsigned int i;
 
@@ -1595,6 +1595,18 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 		}
 	}
 		
+	/* get kerb validation info (not really part of user_info_3) - Guenther */
+
+	if (kerb_validation_level) {
+
+		if(!prs_uint32("ptr_res_group_dom_sid", ps, depth, &usr->ptr_res_group_dom_sid))
+			return False;
+		if(!prs_uint32("res_group_count", ps, depth, &usr->res_group_count))
+			return False;
+		if(!prs_uint32("ptr_res_groups", ps, depth, &usr->ptr_res_groups))
+			return False;
+	}
+
 	if(!smb_io_unistr2("uni_user_name", &usr->uni_user_name, usr->hdr_user_name.buffer, ps, depth)) /* username unicode string */
 		return False;
 	if(!smb_io_unistr2("uni_full_name", &usr->uni_full_name, usr->hdr_full_name.buffer, ps, depth)) /* user's full name unicode string */
@@ -1635,6 +1647,11 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 	if (usr->buffer_other_sids) {
 
 		uint32 num_other_sids = usr->num_other_sids;
+
+		if (!(usr->user_flgs & LOGON_EXTRA_SIDS)) {
+			DEBUG(10,("net_io_user_info3: user_flgs attribute does not have LOGON_EXTRA_SIDS\n"));
+			/* return False; */
+		}
 
 		if (!prs_uint32("num_other_sids", ps, depth,
 				&num_other_sids))
@@ -1735,11 +1752,11 @@ BOOL net_io_r_sam_logon(const char *desc, NET_R_SAM_LOGON *r_l, prs_struct *ps, 
 		return False;
 
 #if 1 /* W2k always needs this - even for bad passwd. JRA */
-	if(!net_io_user_info3("", r_l->user, ps, depth, r_l->switch_value))
+	if(!net_io_user_info3("", r_l->user, ps, depth, r_l->switch_value, False))
 		return False;
 #else
 	if (r_l->switch_value != 0) {
-		if(!net_io_user_info3("", r_l->user, ps, depth, r_l->switch_value))
+		if(!net_io_user_info3("", r_l->user, ps, depth, r_l->switch_value, False))
 			return False;
 	}
 #endif

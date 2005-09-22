@@ -794,6 +794,7 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 	DATA_BLOB token;
 	NTSTATUS status;
 	ssize_t len;
+	TALLOC_CTX *mem_ctx = talloc_init("manage_gss_spnego_request");
 
 	char *user = NULL;
 	char *domain = NULL;
@@ -896,7 +897,6 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 		if (strcmp(request.negTokenInit.mechTypes[0], OID_KERBEROS5_OLD) == 0) {
 
 			char *principal;
-			DATA_BLOB auth_data;
 			DATA_BLOB ap_rep;
 			DATA_BLOB session_key;
 
@@ -911,10 +911,12 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 			response.negTokenTarg.mechListMIC = data_blob(NULL, 0);
 			response.negTokenTarg.responseToken = data_blob(NULL, 0);
 
-			status = ads_verify_ticket(lp_realm(),
+			status = ads_verify_ticket(mem_ctx, lp_realm(),
 						   &request.negTokenInit.mechToken,
-						   &principal, &auth_data, &ap_rep,
+						   &principal, NULL, &ap_rep,
 						   &session_key);
+
+			talloc_destroy(mem_ctx);
 
 			/* Now in "principal" we have the name we are
                            authenticated as. */
@@ -935,7 +937,6 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 				user = SMB_STRDUP(principal);
 
 				data_blob_free(&ap_rep);
-				data_blob_free(&auth_data);
 
 				SAFE_FREE(principal);
 			}
