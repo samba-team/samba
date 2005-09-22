@@ -41,9 +41,6 @@
 #include "ldb/include/ldb_private.h"
 #include "ldb/ldb_tdb/ldb_tdb.h"
 
-#define LDBLOCK	"@INT_LDBLOCK"
-
-
 /*
   form a TDB_DATA for a record key
   caller frees
@@ -93,141 +90,6 @@ failed:
 	key.dptr = NULL;
 	key.dsize = 0;
 	return key;
-}
-
-/*
-  lock the database for write - currently a single lock is used
-*/
-static int ltdb_lock(struct ldb_module *module, const char *lockname)
-{
-	struct ltdb_private *ltdb = module->private_data;
-	struct ldb_dn *lock_dn;
-	char *ldn;
-	TDB_DATA key;
-	int ret;
-
-	if (lockname == NULL) {
-		return -1;
-	}
-
-	ldn = talloc_asprintf(module->ldb, "%s_%s", LDBLOCK, lockname);	
-	if (ldn == NULL) {
-		return -1;
-	}
-
-	lock_dn = ldb_dn_explode(module->ldb, ldn);
-	if (lock_dn == NULL) {
-		talloc_free(ldn);
-		return -1;
-	}
-	talloc_free(ldn);
-
-	key = ltdb_key(module, lock_dn);
-	if (!key.dptr) {
-		talloc_free(lock_dn);
-		return -1;
-	}
-
-	ret = tdb_chainlock(ltdb->tdb, key);
-
-	talloc_free(key.dptr);
-	talloc_free(lock_dn);
-
-	return ret;
-}
-
-/*
-  unlock the database after a ltdb_lock()
-*/
-static int ltdb_unlock(struct ldb_module *module, const char *lockname)
-{
-	struct ltdb_private *ltdb = module->private_data;
-	struct ldb_dn *lock_dn;
-	char *ldn;
-	TDB_DATA key;
-
-	if (lockname == NULL) {
-		return -1;
-	}
-
-	ldn = talloc_asprintf(module->ldb, "%s_%s", LDBLOCK, lockname);	
-	if (ldn == NULL) {
-		return -1;
-	}
-
-	lock_dn = ldb_dn_explode(module->ldb, ldn);
-	if (lock_dn == NULL) {
-		talloc_free(ldn);
-		return -1;
-	}
-	talloc_free(ldn);
-
-	key = ltdb_key(module, lock_dn);
-	if (!key.dptr) {
-		talloc_free(lock_dn);
-		return -1;
-	}
-
-	tdb_chainunlock(ltdb->tdb, key);
-
-	talloc_free(key.dptr);
-	talloc_free(lock_dn);
-
-	return 0;
-}
-
-
-/*
-  lock the database for read - use by ltdb_search
-*/
-int ltdb_lock_read(struct ldb_module *module)
-{
-	struct ltdb_private *ltdb = module->private_data;
-	TDB_DATA key;
-	struct ldb_dn *lock_dn;
-	int ret;
-
-	lock_dn = ldb_dn_explode(module, LDBLOCK);
-	if (lock_dn == NULL) {
-		return -1;
-	}
-
-	key = ltdb_key(module, lock_dn);
-	if (!key.dptr) {
-		talloc_free(lock_dn);
-		return -1;
-	}
-	talloc_free(lock_dn);
-
-	ret = tdb_chainlock_read(ltdb->tdb, key);
-	talloc_free(key.dptr);
-	return ret;
-}
-
-/*
-  unlock the database after a ltdb_lock_read()
-*/
-int ltdb_unlock_read(struct ldb_module *module)
-{
-	struct ltdb_private *ltdb = module->private_data;
-	struct ldb_dn *lock_dn;
-	TDB_DATA key;
-
-	lock_dn = ldb_dn_explode(module, LDBLOCK);
-	if (lock_dn == NULL) {
-		return -1;
-	}
-
-	key = ltdb_key(module, lock_dn);
-	if (!key.dptr) {
-		talloc_free(lock_dn);
-		return -1;
-	}
-	talloc_free(lock_dn);
-
-	tdb_chainunlock_read(ltdb->tdb, key);
-	talloc_free(key.dptr);
-	return 0;
 }
 
 /*
@@ -335,12 +197,7 @@ static int ltdb_add(struct ldb_module *module, const struct ldb_message *msg)
 		return ret;
 	}
 	
-	if (ltdb_lock(module, LDBLOCK) != 0) {
-		return LDB_ERR_OTHER;
-	}
-
 	if (ltdb_cache_load(module) != 0) {
-		ltdb_unlock(module, LDBLOCK);
 		return LDB_ERR_OTHER;
 	}
 
@@ -350,7 +207,6 @@ static int ltdb_add(struct ldb_module *module, const struct ldb_message *msg)
 		ltdb_modified(module, msg->dn);
 	}
 
-	ltdb_unlock(module, LDBLOCK);
 	return ret;
 }
 
@@ -386,10 +242,6 @@ static int ltdb_delete(struct ldb_module *module, const struct ldb_dn *dn)
 	struct ldb_message *msg = NULL;
 	int ret = LDB_ERR_OTHER;
 
-	if (ltdb_lock(module, LDBLOCK) != 0) {
-		return ret;
-	}
-
 	if (ltdb_cache_load(module) != 0) {
 		goto failed;
 	}
@@ -421,12 +273,10 @@ static int ltdb_delete(struct ldb_module *module, const struct ldb_dn *dn)
 		ret = LDB_ERR_OTHER;
 
 	talloc_free(msg);
-	ltdb_unlock(module, LDBLOCK);
 	return ret;
 
 failed:
 	talloc_free(msg);
-	ltdb_unlock(module, LDBLOCK);
 	return ret;
 }
 
@@ -749,12 +599,7 @@ static int ltdb_modify(struct ldb_module *module, const struct ldb_message *msg)
 		return ret;
 	}
 	
-	if (ltdb_lock(module, LDBLOCK) != 0) {
-		return -1;
-	}
-
 	if (ltdb_cache_load(module) != 0) {
-		ltdb_unlock(module, LDBLOCK);
 		return -1;
 	}
 
@@ -763,8 +608,6 @@ static int ltdb_modify(struct ldb_module *module, const struct ldb_message *msg)
 	if (ret == LDB_ERR_SUCCESS) {
 		ltdb_modified(module, msg->dn);
 	}
-
-	ltdb_unlock(module, LDBLOCK);
 
 	return ret;
 }
@@ -778,12 +621,7 @@ static int ltdb_rename(struct ldb_module *module, const struct ldb_dn *olddn, co
 	char *error_str;
 	int ret = LDB_ERR_OTHER;
 
-	if (ltdb_lock(module, LDBLOCK) != 0) {
-		return ret;
-	}
-
 	if (ltdb_cache_load(module) != 0) {
-		ltdb_unlock(module, LDBLOCK);
 		return ret;
 	}
 
@@ -821,13 +659,11 @@ static int ltdb_rename(struct ldb_module *module, const struct ldb_dn *olddn, co
 	ldb_set_errstring(module, error_str);
 
 	talloc_free(msg);
-	ltdb_unlock(module, LDBLOCK);
 
 	return ret;
 
 failed:
 	talloc_free(msg);
-	ltdb_unlock(module, LDBLOCK);
 	return ret;
 }
 
