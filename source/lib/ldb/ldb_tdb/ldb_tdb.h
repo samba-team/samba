@@ -96,8 +96,6 @@ struct TDB_DATA ltdb_key(struct ldb_module *module, const struct ldb_dn *dn);
 int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flgs);
 int ltdb_delete_noindex(struct ldb_module *module, const struct ldb_dn *dn);
 int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *msg);
-int ltdb_lock_read(struct ldb_module *module);
-int ltdb_unlock_read(struct ldb_module *module);
 
 int ltdb_index_del_value(struct ldb_module *module, const char *dn, 
 			 struct ldb_message_element *el, int v_idx);
