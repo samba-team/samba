@@ -298,17 +298,10 @@ generate_dh_keyblock(krb5_context context, pk_client_params *client_params,
 {
     unsigned char *dh_gen_key = NULL;
     krb5_keyblock key;
-    int dh_gen_keylen;
     krb5_error_code ret;
+    size_t dh_gen_keylen, size;
 
     memset(&key, 0, sizeof(key));
-
-    dh_gen_key = malloc(DH_size(client_params->dh));
-    if (dh_gen_key == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
-	ret = ENOMEM;
-	goto out;
-    }
 
     if (!DH_generate_key(client_params->dh)) {
 	krb5_set_error_string(context, "Can't generate Diffie-Hellman "
@@ -323,7 +316,20 @@ generate_dh_keyblock(krb5_context context, pk_client_params *client_params,
 	goto out;
     }
 
-    dh_gen_keylen = DH_compute_key(dh_gen_key, 
+    dh_gen_keylen = DH_size(client_params->dh);
+    size = BN_num_bytes(client_params->dh->p);
+    if (size < dh_gen_keylen)
+	size = dh_gen_keylen;
+
+    dh_gen_key = malloc(size);
+    if (dh_gen_key == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	ret = ENOMEM;
+	goto out;
+    }
+    memset(dh_gen_key, 0, size - dh_gen_keylen);
+
+    dh_gen_keylen = DH_compute_key(dh_gen_key + (size - dh_gen_keylen),
 				   client_params->dh_public_key,
 				   client_params->dh);
     if (dh_gen_keylen == -1) {
@@ -415,8 +421,16 @@ get_dh_param(krb5_context context, SubjectPublicKeyInfo *dh_key_info,
 
     {
 	heim_integer glue;
-	glue.data = dh_key_info->subjectPublicKey.data;
-	glue.length = dh_key_info->subjectPublicKey.length;
+	size_t size;
+
+	ret = der_get_heim_integer(dh_key_info->subjectPublicKey.data,
+				   dh_key_info->subjectPublicKey.length / 8,
+				   &glue,
+				   &size);
+	if (ret) {
+	    krb5_clear_error_string(context);
+	    return ret;
+	}
 
 	client_params->dh_public_key = integer_to_BN(context,
 						     "subjectPublicKey",
