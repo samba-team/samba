@@ -54,6 +54,6 @@ testit "ldb tests" $LDBDIR/tests/test-tdb.sh
 
 SCRIPTDIR=../testprogs/ejs
 
-testit "ejs ldap test" $SCRIPTDIR/ldap.js $SERVER -U$USERNAME%$PASSWORD || failed=`expr $failed + 1`
+testit "ejs ldap test" $SCRIPTDIR/ldap.js $CONFIGURATION $SERVER -U$USERNAME%$PASSWORD || failed=`expr $failed + 1`
 
 testok $0 $failed
