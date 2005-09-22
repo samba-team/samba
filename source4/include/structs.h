@@ -282,6 +282,13 @@ struct samba3_secrets;
 struct samba3_share_info;
 struct samba3;
 
+struct wbsrv_service;
+struct wbsrv_protocol_ops;
+struct wbsrv_listen_socket;
+struct wbsrv_connection;
+struct wbsrv_call;
+struct wbsrv_samba3_call;
+
 struct ldb_map_attribute;
 struct ldb_map_objectclass;
 

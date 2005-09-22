@@ -1,3 +1,7 @@
 Import('hostenv')
 
-hostenv.StaticLibrary('winbind',['wb_server.c'])
+hostenv.StaticLibrary('winbind',[
+			'wb_server.c',
+			'wb_samba3_protocol.c'
+			'wb_samba3_cmd.c'
+			])
