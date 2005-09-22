@@ -49,6 +49,7 @@
   major restrictions as compared to tdb:
 
      - no explicit locking calls
+     UPDATE: we have transactions now, better than locking --SSS.
 
 */
 
@@ -301,16 +302,6 @@ int ldb_modify(struct ldb_context *ldb,
   rename a record in the database
 */
 int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct ldb_dn *newdn);
-
-/*
-  create a named lock
-*/
-int ldb_lock(struct ldb_context *ldb, const char *lockname);
-
-/*
-  release a named lock
-*/
-int ldb_unlock(struct ldb_context *ldb, const char *lockname);
 
 /*
   delete a record from the database
