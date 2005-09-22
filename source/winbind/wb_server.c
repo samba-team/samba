@@ -30,92 +30,187 @@
 #include "smbd/service_stream.h"
 #include "nsswitch/winbind_nss_config.h"
 #include "nsswitch/winbindd_nss.h"
+#include "winbind/wb_server.h"
 
-#define WINBINDD_DIR "/tmp/.winbindd/"
-#define WINBINDD_ECHO_SOCKET  WINBINDD_DIR"echo"
-#define WINBINDD_ADDR_PREFIX "127.0.255."
-#define WINBINDD_ECHO_ADDR WINBINDD_ADDR_PREFIX"1"
-#define WINBINDD_ECHO_PORT 55555
-#define WINBINDD_SAMBA3_SOCKET WINBINDD_DIR"pipe"
-
-/*
-  state of an open winbind connection
-*/
-struct wbserver_connection {
-	DATA_BLOB input;
-	struct data_blob_list_item *send_queue;
-};
-
+void wbsrv_terminate_connection(struct wbsrv_connection *wbconn, const char *reason)
+{
+	stream_terminate_connection(wbconn->conn, reason);
+}
 
 /*
   called when we get a new connection
 */
-static void winbind_accept(struct stream_connection *conn)
+static void wbsrv_accept(struct stream_connection *conn)
 {
-	struct wbserver_connection *wbconn;
+	struct wbsrv_listen_socket *listen_socket = talloc_get_type(conn->private,
+								    struct wbsrv_listen_socket);
+	struct wbsrv_connection *wbconn;
 
-	wbconn = talloc_zero(conn, struct wbserver_connection);
-	wbconn->input = data_blob_talloc(wbconn, NULL, 1024);
-	
+	wbconn = talloc_zero(conn, struct wbsrv_connection);
+	if (!wbconn) {
+		stream_terminate_connection(conn, "wbsrv_accept: out of memory");
+		return;
+	}
+	wbconn->conn		= conn;
+	wbconn->listen_socket	= listen_socket;
 	conn->private = wbconn;
 }
 
 /*
   receive some data on a winbind connection
 */
-static void winbind_recv(struct stream_connection *conn, uint16_t flags)
+static void wbsrv_recv(struct stream_connection *conn, uint16_t flags)
 {
-	struct wbserver_connection *wbconn = talloc_get_type(conn->private, struct wbserver_connection);
-	NTSTATUS status;
+	struct wbsrv_connection *wbconn = talloc_get_type(conn->private, struct wbsrv_connection);
+	const struct wbsrv_protocol_ops *ops = wbconn->listen_socket->ops;
+	struct wbsrv_call *call;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	size_t nread;
-	struct data_blob_list_item *q;
 
-	status = socket_recv(conn->socket, wbconn->input.data, wbconn->input.length, &nread, 0);
-	if (NT_STATUS_IS_ERR(status)) {
-		DEBUG(10,("socket_recv: %s\n",nt_errstr(status)));
-		stream_terminate_connection(conn, "socket_recv: failed\n");
+	/* avoid recursion, because of half async code */
+	if (wbconn->processing) {
+		EVENT_FD_NOT_READABLE(conn->event.fde);
 		return;
 	}
 
-	/* just reflect the data back down the socket */
-	q = talloc(wbconn, struct data_blob_list_item);
-	if (q == NULL) {
-		stream_terminate_connection(conn, "winbind_recv: out of memory\n");
+	/* if the used protocol doesn't support pending requests disallow them */
+	if (wbconn->pending_calls && !ops->allow_pending_calls) {
+		EVENT_FD_NOT_READABLE(conn->event.fde);
 		return;
 	}
 
-	q->blob = data_blob_talloc(q, wbconn->input.data, nread);
-	if (q->blob.data == NULL) {
-		stream_terminate_connection(conn, "winbind_recv: out of memory\n");
+	if (wbconn->partial.length == 0) {
+		wbconn->partial = data_blob_talloc(wbconn, NULL, 4);
+		if (!wbconn->partial.data) goto nomem;
+
+		wbconn->partial_read = 0;
+	}
+
+	/* read in the packet length */
+	if (wbconn->partial_read < 4) {
+		uint32_t packet_length;
+
+		status = socket_recv(conn->socket, 
+				     wbconn->partial.data + wbconn->partial_read,
+				     4 - wbconn->partial_read,
+				     &nread, 0);
+		if (NT_STATUS_IS_ERR(status)) goto failed;
+		if (!NT_STATUS_IS_OK(status)) return;
+
+		wbconn->partial_read += nread;
+		if (wbconn->partial_read != 4) return;
+
+		packet_length = ops->packet_length(wbconn->partial);
+
+		wbconn->partial.data = talloc_realloc(wbconn, wbconn->partial.data, 
+						      uint8_t, packet_length);
+		if (!wbconn->partial.data) goto nomem;
+
+		wbconn->partial.length = packet_length;
+	}
+
+	/* read in the body */
+	status = socket_recv(conn->socket, 
+			     wbconn->partial.data + wbconn->partial_read,
+			     wbconn->partial.length - wbconn->partial_read,
+			     &nread, 0);
+	if (NT_STATUS_IS_ERR(status)) goto failed;
+	if (!NT_STATUS_IS_OK(status)) return;
+
+	wbconn->partial_read += nread;
+	if (wbconn->partial_read != wbconn->partial.length) return;
+
+	/* we have a full request - parse it */
+	status = ops->pull_request(wbconn->partial, wbconn, &call);
+	if (!NT_STATUS_IS_OK(status)) goto failed;
+	call->wbconn = wbconn;
+
+	/*
+	 * we have parsed the request, so we can reset the wbconn->partial_read,
+	 * maybe we could also free wbconn->partial, but for now we keep it,
+	 * and overwrite it the next time
+	 */
+	wbconn->partial_read = 0;
+
+	/* actually process the request */
+	wbconn->pending_calls++;
+	wbconn->processing = True;
+	status = ops->handle_call(call);
+	wbconn->processing = False;
+	if (!NT_STATUS_IS_OK(status)) goto failed;
+
+	/* if the backend want to reply later just return here */
+	if (call->flags & WBSRV_CALL_FLAGS_REPLY_ASYNC) {
 		return;
 	}
 
-	DLIST_ADD_END(wbconn->send_queue, q, struct data_blob_list_item *);
+	/*
+	 * and queue the reply, this implies talloc_free(call),
+	 * and set the socket to readable again
+	 */
+	status = wbsrv_queue_reply(call);
+	if (!NT_STATUS_IS_OK(status)) goto failed;
 
-	EVENT_FD_WRITEABLE(conn->event.fde);
+	return;
+nomem:
+	status = NT_STATUS_NO_MEMORY;
+failed:
+	wbsrv_terminate_connection(wbconn, nt_errstr(status));
+}
+
+/*
+ * queue a wbsrv_call reply on a wbsrv_connection
+ * NOTE: that this implies talloc_free(call),
+ *       use talloc_reference(call) if you need it after
+ *       calling wbsrv_queue_reply
+ * NOTE: if this function desn't return NT_STATUS_OK,
+ *       the caller needs to call
+ *           wbsrv_terminate_connection(call->wbconn, "reason...");
+ *           return;
+ *       to drop the connection
+ */
+NTSTATUS wbsrv_queue_reply(struct wbsrv_call *call)
+{
+	struct wbsrv_connection *wbconn = call->wbconn;
+	const struct wbsrv_protocol_ops *ops = wbconn->listen_socket->ops;
+	struct data_blob_list_item *rep;
+	NTSTATUS status;
+
+	/* and now encode the reply */
+	rep = talloc(wbconn, struct data_blob_list_item);
+	NT_STATUS_HAVE_NO_MEMORY(rep);
+
+	status = ops->push_reply(call, rep, &rep->blob);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	if (!wbconn->send_queue) {
+		EVENT_FD_WRITEABLE(wbconn->conn->event.fde);
+	}
+	DLIST_ADD_END(wbconn->send_queue, rep, struct data_blob_list_item *);
+
+	EVENT_FD_READABLE(wbconn->conn->event.fde);
+
+	/* the call isn't needed any more */
+	wbconn->pending_calls--;
+	talloc_free(call);
+	return NT_STATUS_OK;
 }
 
 /*
   called when we can write to a connection
 */
-static void winbind_send(struct stream_connection *conn, uint16_t flags)
+static void wbsrv_send(struct stream_connection *conn, uint16_t flags)
 {
-	struct wbserver_connection *wbconn = talloc_get_type(conn->private, struct wbserver_connection);
+	struct wbsrv_connection *wbconn = talloc_get_type(conn->private, struct wbsrv_connection);
+	NTSTATUS status;
 
 	while (wbconn->send_queue) {
 		struct data_blob_list_item *q = wbconn->send_queue;
-		NTSTATUS status;
 		size_t sendlen;
 
 		status = socket_send(conn->socket, &q->blob, &sendlen, 0);
-		if (NT_STATUS_IS_ERR(status)) {
-			DEBUG(10,("socket_send() %s\n",nt_errstr(status)));
-			stream_terminate_connection(conn, "socket_send: failed\n");
-			return;
-		}
-		if (!NT_STATUS_IS_OK(status)) {
-			return;
-		}
+		if (NT_STATUS_IS_ERR(status)) goto failed;
+		if (!NT_STATUS_IS_OK(status)) return;
 
 		q->blob.length -= sendlen;
 		q->blob.data   += sendlen;
@@ -127,184 +222,25 @@ static void winbind_send(struct stream_connection *conn, uint16_t flags)
 	}
 
 	EVENT_FD_NOT_WRITEABLE(conn->event.fde);
+	return;
+failed:
+	wbsrv_terminate_connection(wbconn, nt_errstr(status));
 }
 
-static const struct stream_server_ops winbind_echo_ops = {
-	.name			= "winbind_echo",
-	.accept_connection	= winbind_accept,
-	.recv_handler		= winbind_recv,
-	.send_handler		= winbind_send,
+static const struct stream_server_ops wbsrv_ops = {
+	.name			= "winbind",
+	.accept_connection	= wbsrv_accept,
+	.recv_handler		= wbsrv_recv,
+	.send_handler		= wbsrv_send
 };
 
-struct winbind3_connection {
-	struct winbindd_request *request;
-	struct winbindd_response *response;
-	DATA_BLOB partial;
-	size_t nsent;
-};
-
-static void winbind_samba3_accept(struct stream_connection *conn)
-{
-	struct winbind3_connection *wbconn;
-
-	wbconn = talloc(conn, struct winbind3_connection);
-	if (wbconn == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		stream_terminate_connection(conn, "talloc failed");
-		return;
-	}
-
-	wbconn->request = NULL;
-	wbconn->response = NULL;
-	ZERO_STRUCT(wbconn->partial);
-	conn->private = wbconn;
-}
-
-static void winbind_samba3_recv(struct stream_connection *conn, uint16_t flags)
-{
-	struct winbind3_connection *wbconn =
-		talloc_get_type(conn->private, struct winbind3_connection);
-	size_t npending, received;
-	NTSTATUS res;
-
-	if (!NT_STATUS_IS_OK(socket_pending(conn->socket, &npending))) {
-		stream_terminate_connection(conn, "socket_pending() failed");
-		return;
-	}
-
-	if (npending == 0) {
-		stream_terminate_connection(conn, "EOF from client");
-		return;
-	}
-
-	if (wbconn->partial.length + npending >
-	    sizeof(struct winbindd_request)) {
-		npending = sizeof(struct winbindd_request) -
-			wbconn->partial.length;
-	}
-
-	wbconn->partial.data =
-		talloc_realloc_size(wbconn, wbconn->partial.data,
-				    wbconn->partial.length + npending);
-	if (wbconn->partial.data == NULL) {
-		stream_terminate_connection(conn, "talloc_realloc failed");
-		return;
-	}
-
-	res = socket_recv(conn->socket,
-			  &wbconn->partial.data[wbconn->partial.length],
-			  npending, &received, 0);
-
-	if (!NT_STATUS_IS_OK(res)) {
-		DEBUG(5, ("sock_recv failed: %s\n", nt_errstr(res)));
-		stream_terminate_connection(conn, "talloc_realloc failed");
-		return;
-	}
-
-	wbconn->partial.length += received;
-
-	if (wbconn->partial.length < sizeof(struct winbindd_request)) {
-		return;
-	}
-
-	wbconn->request = (struct winbindd_request *)wbconn->partial.data;
-
-	SMB_ASSERT(wbconn->response == NULL);
-
-	wbconn->response = talloc_zero(wbconn, struct winbindd_response);
-	if (wbconn->response == NULL) {
-		stream_terminate_connection(conn, "talloc_zero failed");
-		return;
-	}
-
-	wbconn->response->length = sizeof(struct winbindd_response);
-	wbconn->response->result = WINBINDD_ERROR;
-
-	if (wbconn->request->length != sizeof(struct winbindd_request)) {
-		DEBUG(10, ("Got invalid request length %d\n",
-			   wbconn->request->length));
-		goto done;
-	}
-
-	DEBUG(10, ("Got winbind request %d\n", wbconn->request->cmd));
-
-	switch(wbconn->request->cmd) {
-	case WINBINDD_INTERFACE_VERSION:
-		wbconn->response->result = WINBINDD_OK;
-		wbconn->response->data.interface_version =
-			WINBIND_INTERFACE_VERSION;
-		break;
-	case WINBINDD_PRIV_PIPE_DIR:
-		wbconn->response->result = WINBINDD_OK;
-		wbconn->response->extra_data =
-			smbd_tmp_path(wbconn->response, "winbind_priv/pipe");
-		if (wbconn->response->extra_data == NULL) {
-			stream_terminate_connection(conn,
-						    "smbd_tmp_path failed");
-			return;
-		}
-		wbconn->response->length +=
-			strlen(wbconn->response->extra_data) + 1;
-		break;
-	case WINBINDD_PING:
-		wbconn->response->result = WINBINDD_OK;
-		break;
-	default:
-		break;
-	}
-
- done:
-	talloc_free(wbconn->partial.data);
-	wbconn->partial.data = NULL;
-	wbconn->nsent = 0;
-
-	wbconn->partial.data = (char *)wbconn->response;
-	wbconn->partial.length = sizeof(struct winbindd_response);
-
-	EVENT_FD_NOT_READABLE(conn->event.fde);
-	EVENT_FD_WRITEABLE(conn->event.fde);
-}
-
-static void winbind_samba3_send(struct stream_connection *conn, uint16_t flags)
-{
-	struct winbind3_connection *wbconn =
-		talloc_get_type(conn->private, struct winbind3_connection);
-	size_t nsent;
-	NTSTATUS res;
-
-	res = socket_send(conn->socket, &wbconn->partial, &nsent, 0);
-	if (!NT_STATUS_IS_OK(res)) {
-		stream_terminate_connection(conn, "socket_send() failed");
-		return;
-	}
-
-	wbconn->partial.data += nsent;
-	wbconn->partial.length -= nsent;
-
-	if (wbconn->partial.length != 0) {
-		return;
-	}
-
-	if (wbconn->response->extra_data != NULL) {
-		wbconn->partial.data = wbconn->response->extra_data;
-		wbconn->partial.length = wbconn->response->length -
-			sizeof(struct winbindd_response);
-		wbconn->response->extra_data = NULL;
-		return;
-	}
-
-	talloc_free(wbconn->response);
-	wbconn->response = NULL;
-	wbconn->partial.data = NULL;
-	EVENT_FD_NOT_WRITEABLE(conn->event.fde);
-	EVENT_FD_READABLE(conn->event.fde);
-}
-
-static const struct stream_server_ops winbind_samba3_ops = {
-	.name			= "winbind_samba3",
-	.accept_connection	= winbind_samba3_accept,
-	.recv_handler		= winbind_samba3_recv,
-	.send_handler		= winbind_samba3_send,
+static const struct wbsrv_protocol_ops wbsrv_samba3_protocol_ops = {
+	.name			= "winbind samba3 protocol",
+	.allow_pending_calls	= False,
+	.packet_length		= wbsrv_samba3_packet_length,
+	.pull_request		= wbsrv_samba3_pull_request,
+	.handle_call		= wbsrv_samba3_handle_call,
+	.push_reply		= wbsrv_samba3_push_reply
 };
 
 /*
@@ -315,6 +251,8 @@ static void winbind_task_init(struct task_server *task)
 	uint16_t port = 1;
 	const struct model_ops *model_ops;
 	NTSTATUS status;
+	struct wbsrv_service *service;
+	struct wbsrv_listen_socket *listen_socket;
 
 	/* within the winbind task we want to be a single process, so
 	   ask for the single process model ops and pass these to the
@@ -330,36 +268,46 @@ static void winbind_task_init(struct task_server *task)
 		mkdir(WINBINDD_DIR, 0755);
 	}
 
-	status = stream_setup_socket(task->event_ctx, model_ops, &winbind_echo_ops, 
-				     "unix", WINBINDD_ECHO_SOCKET, &port, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("service_setup_stream_socket(path=%s) failed - %s\n",
-			 WINBINDD_ECHO_SOCKET, nt_errstr(status)));
-		task_server_terminate(task, "winbind Failed to find to ECHO unix socket");
-		return;
-	}
+	service = talloc_zero(task, struct wbsrv_service);
+	if (!service) goto nomem;
+	service->task	= task;
 
+	/* setup the unprivileged samba3 socket */
+	listen_socket = talloc(service, struct wbsrv_listen_socket);
+	if (!listen_socket) goto nomem;
+	listen_socket->socket_path	= WINBINDD_SAMBA3_SOCKET;
+	if (!listen_socket->socket_path) goto nomem;
+	listen_socket->service		= service;
+	listen_socket->privileged	= False;
+	listen_socket->ops		= &wbsrv_samba3_protocol_ops;
 	status = stream_setup_socket(task->event_ctx, model_ops,
-				     &winbind_samba3_ops, "unix",
-				     WINBINDD_SAMBA3_SOCKET, &port, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("service_setup_stream_socket(path=%s) failed - %s\n",
-			 WINBINDD_ECHO_SOCKET, nt_errstr(status)));
-		task_server_terminate(task, "winbind Failed to find to "
-				      "SAMBA3 unix socket");
-		return;
-	}
+				     &wbsrv_ops, "unix",
+				     listen_socket->socket_path, &port, listen_socket);
+	if (!NT_STATUS_IS_OK(status)) goto listen_failed;
 
-	port = WINBINDD_ECHO_PORT;
+	/* setup the privileged samba3 socket */
+	listen_socket = talloc(service, struct wbsrv_listen_socket);
+	if (!listen_socket) goto nomem;
+	listen_socket->socket_path	= smbd_tmp_path(listen_socket, WINBINDD_SAMBA3_PRIVILEGED_SOCKET);
+	if (!listen_socket->socket_path) goto nomem;
+	listen_socket->service		= service;
+	listen_socket->privileged	= True;
+	listen_socket->ops		= &wbsrv_samba3_protocol_ops;
+	status = stream_setup_socket(task->event_ctx, model_ops,
+				     &wbsrv_ops, "unix",
+				     listen_socket->socket_path, &port, listen_socket);
+	if (!NT_STATUS_IS_OK(status)) goto listen_failed;
 
-	status = stream_setup_socket(task->event_ctx, model_ops, &winbind_echo_ops,
-				     "ipv4", WINBINDD_ECHO_ADDR, &port, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("service_setup_stream_socket(address=%s,port=%u) failed - %s\n",
-			 WINBINDD_ECHO_ADDR, port, nt_errstr(status)));
-		task_server_terminate(task, "winbind Failed to find to ECHO tcp socket");
-		return;
-	}
+	return;
+
+listen_failed:
+	DEBUG(0,("stream_setup_socket(path=%s) failed - %s\n",
+		 listen_socket->socket_path, nt_errstr(status)));
+	task_server_terminate(task, nt_errstr(status));
+	return;
+nomem:
+	task_server_terminate(task, nt_errstr(NT_STATUS_NO_MEMORY));
+	return;
 }
 
 /*
