@@ -105,15 +105,15 @@ struct smbc_dirent
 	/** Length of this smbc_dirent in bytes
 	 */
 	unsigned int dirlen;
-	/** The length of the comment string in bytes (includes null 
-	 *  terminator)
+	/** The length of the comment string in bytes (does not include
+	 *  null terminator)
 	 */
 	unsigned int commentlen;
 	/** Points to the null terminated comment string 
 	 */
 	char *comment;
-	/** The length of the name string in bytes (includes null 
-	 *  terminator)
+	/** The length of the name string in bytes (does not include
+	 *  null terminator)
 	 */
 	unsigned int namelen;
 	/** Points to the null terminated name string 

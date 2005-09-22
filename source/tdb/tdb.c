@@ -1248,6 +1248,54 @@ static int tdb_next_lock(TDB_CONTEXT *tdb, struct tdb_traverse_lock *tlock,
 
 	/* Lock each chain from the start one. */
 	for (; tlock->hash < tdb->header.hash_size; tlock->hash++) {
+
+		/* this is an optimisation for the common case where
+		   the hash chain is empty, which is particularly
+		   common for the use of tdb with ldb, where large
+		   hashes are used. In that case we spend most of our
+		   time in tdb_brlock(), locking empty hash chains.
+
+		   To avoid this, we do an unlocked pre-check to see
+		   if the hash chain is empty before starting to look
+		   inside it. If it is empty then we can avoid that
+		   hash chain. If it isn't empty then we can't believe
+		   the value we get back, as we read it without a
+		   lock, so instead we get the lock and re-fetch the
+		   value below.
+
+		   Notice that not doing this optimisation on the
+		   first hash chain is critical. We must guarantee
+		   that we have done at least one fcntl lock at the
+		   start of a search to guarantee that memory is
+		   coherent on SMP systems. If records are added by
+		   others during the search then thats OK, and we
+		   could possibly miss those with this trick, but we
+		   could miss them anyway without this trick, so the
+		   semantics don't change.
+
+		   With a non-indexed ldb search this trick gains us a
+		   factor of around 80 in speed on a linux 2.6.x
+		   system (testing using ldbtest).
+		 */
+		if (!tlock->off && tlock->hash != 0) {
+			u32 off;
+			if (tdb->map_ptr) {
+				for (;tlock->hash < tdb->header.hash_size;tlock->hash++) {
+					if (0 != *(u32 *)(TDB_HASH_TOP(tlock->hash) + (unsigned char *)tdb->map_ptr)) {
+						break;
+					}
+				}
+				if (tlock->hash == tdb->header.hash_size) {
+					continue;
+				}
+			} else {
+				if (ofs_read(tdb, TDB_HASH_TOP(tlock->hash), &off) == 0 &&
+				    off == 0) {
+					continue;
+				}
+			}
+		}
+
 		if (tdb_lock(tdb, tlock->hash, F_WRLCK) == -1)
 			return -1;
 
@@ -2023,6 +2071,11 @@ int tdb_reopen(TDB_CONTEXT *tdb)
 		TDB_LOG((tdb, 0, "tdb_reopen: open failed (%s)\n", strerror(errno)));
 		goto fail;
 	}
+	if ((tdb->flags & TDB_CLEAR_IF_FIRST) &&
+			(tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1)) {
+		TDB_LOG((tdb, 0, "tdb_reopen: failed to obtain active lock\n"));
+		goto fail;
+	}
 	if (fstat(tdb->fd, &st) != 0) {
 		TDB_LOG((tdb, 0, "tdb_reopen: fstat failed (%s)\n", strerror(errno)));
 		goto fail;
@@ -2032,10 +2085,6 @@ int tdb_reopen(TDB_CONTEXT *tdb)
 		goto fail;
 	}
 	tdb_mmap(tdb);
-	if ((tdb->flags & TDB_CLEAR_IF_FIRST) && (tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1)) {
-		TDB_LOG((tdb, 0, "tdb_reopen: failed to obtain active lock\n"));
-		goto fail;
-	}
 
 	return 0;
 
@@ -2050,8 +2099,6 @@ int tdb_reopen_all(void)
 	TDB_CONTEXT *tdb;
 
 	for (tdb=tdbs; tdb; tdb = tdb->next) {
-		/* Ensure no clear-if-first. */
-		tdb->flags &= ~TDB_CLEAR_IF_FIRST;
 		if (tdb_reopen(tdb) != 0)
 			return -1;
 	}

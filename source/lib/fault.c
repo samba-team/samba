@@ -35,7 +35,8 @@ static void fault_report(int sig)
 
 	DEBUG(0,("===============================================================\n"));
 	DEBUG(0,("INTERNAL ERROR: Signal %d in pid %d (%s)",sig,(int)sys_getpid(),SAMBA_VERSION_STRING));
-	DEBUG(0,("\nPlease read the appendix Bugs of the Samba HOWTO collection\n"));
+	DEBUG(0,("\nPlease read the Trouble-Shooting section of the Samba3-HOWTO\n"));
+	DEBUG(0,("\nFrom: http://www.samba.org/samba/docs/Samba3-HOWTO.pdf\n"));
 	DEBUG(0,("===============================================================\n"));
   
 	smb_panic("internal error");

@@ -86,7 +86,6 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 		goto out;
 	}
   
-	ret = krb5_kt_start_seq_get(context, keytab, &kt_cursor);
 	if (ret != KRB5_KT_END && ret != ENOENT ) {
 		while (!auth_ok && (krb5_kt_next_entry(context, keytab, &kt_entry, &kt_cursor) == 0)) {
 			ret = krb5_unparse_name(context, kt_entry.principal, &entry_princ_s);
@@ -128,7 +127,11 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 	ZERO_STRUCT(kt_cursor);
 
   out:
-
+	
+	for (i = 0; i < sizeof(valid_princ_formats) / sizeof(valid_princ_formats[0]); i++) {
+		SAFE_FREE(valid_princ_formats[i]);
+	}
+	
 	if (!auth_ok) {
 		if (!number_matched_principals) {
 			DEBUG(3, ("ads_keytab_verify_ticket: no keytab principals matched expected file service name.\n"));

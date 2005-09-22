@@ -378,6 +378,7 @@ static void dptr_close_oldest(BOOL old)
  one byte long. If old_handle is false we allocate from the range
  256 - MAX_DIRECTORY_HANDLES. We bias the number we return by 1 to ensure
  a directory handle is never zero.
+ wcard must not be zero.
 ****************************************************************************/
 
 int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL expect_close,uint16 spid,
@@ -388,6 +389,10 @@ int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL exp
         const char *dir2;
 
 	DEBUG(5,("dptr_create dir=%s\n", path));
+
+	if (!wcard) {
+		return -1;
+	}
 
 	if (!check_name(path,conn))
 		return(-2); /* Code to say use a unix error return code. */
@@ -485,23 +490,20 @@ int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL exp
 	dptr->dir_hnd = dir_hnd;
 	dptr->spid = spid;
 	dptr->expect_close = expect_close;
-	if (wcard) {
-		dptr->wcard = SMB_STRDUP(wcard);
-		if (!dptr->wcard) {
-			bitmap_clear(dptr_bmap, dptr->dnum - 1);
-			SAFE_FREE(dptr);
-			CloseDir(dir_hnd);
-			return -1;
-		}
-	} else {
-		dptr->wcard = NULL;
+	dptr->wcard = SMB_STRDUP(wcard);
+	if (!dptr->wcard) {
+		bitmap_clear(dptr_bmap, dptr->dnum - 1);
+		SAFE_FREE(dptr);
+		CloseDir(dir_hnd);
+		return -1;
 	}
-	dptr->attr = attr;
-	if (lp_posix_pathnames() || (wcard && (wcard[0] == '.' && wcard[1] == 0))) {
+	if (lp_posix_pathnames() || (wcard[0] == '.' && wcard[1] == 0)) {
 		dptr->has_wild = True;
 	} else {
 		dptr->has_wild = ms_has_wild(wcard);
 	}
+
+	dptr->attr = attr;
 
 	DLIST_ADD(dirptrs, dptr);
 

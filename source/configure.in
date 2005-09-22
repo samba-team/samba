@@ -219,6 +219,8 @@ AC_SUBST(INSTALLCLIENTCMD_SH)
 AC_SUBST(INSTALLCLIENTCMD_A)
 AC_SUBST(LIBSMBCLIENT_SHARED)
 AC_SUBST(LIBSMBCLIENT)
+AC_SUBST(LIBSMBSHAREMODES_SHARED)
+AC_SUBST(LIBSMBSHAREMODES)
 AC_SUBST(PRINT_LIBS)
 AC_SUBST(AUTH_LIBS)
 AC_SUBST(ACL_LIBS)
@@ -729,9 +731,9 @@ AC_HEADER_DIRENT
 AC_HEADER_TIME
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(aio.h arpa/inet.h sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h rpc/nettype.h)
-AC_CHECK_HEADERS(unistd.h utime.h grp.h sys/id.h limits.h memory.h)
+AC_CHECK_HEADERS(unistd.h utime.h grp.h sys/id.h limits.h memory.h alloca.h)
 AC_CHECK_HEADERS(rpc/rpc.h rpcsvc/nis.h rpcsvc/ypclnt.h)
-AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h)
+AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h sys/prctl.h)
 AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h sys/socket.h)
 AC_CHECK_HEADERS(sys/un.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
@@ -1158,6 +1160,15 @@ AC_CHECK_FUNCS(__sys_llseek llseek _llseek __llseek readdir64 _readdir64 __readd
 AC_CHECK_FUNCS(pread _pread __pread pread64 _pread64 __pread64)
 AC_CHECK_FUNCS(pwrite _pwrite __pwrite pwrite64 _pwrite64 __pwrite64)
 AC_CHECK_FUNCS(open64 _open64 __open64 creat64)
+AC_CHECK_FUNCS(prctl)
+
+AC_TRY_COMPILE([
+#ifdef HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif
+],
+[int i; i = prtcl(0); ],
+AC_DEFINE(HAVE_PRCTL, 1, [Whether prctl is available]),[])
 
 #
 # 
@@ -3504,8 +3515,8 @@ samba_cv_WITH_QUOTAS=auto
 samba_cv_TRY_QUOTAS=no
 samba_cv_RUN_QUOTA_TESTS=auto
 samba_cv_WITH_SYS_QUOTAS=auto
-samba_cv_TRY_SYS_QUOTAS=no
-samba_cv_SYSQUOTA_FOUND=no;
+samba_cv_TRY_SYS_QUOTAS=auto
+samba_cv_SYSQUOTA_FOUND=no
 
 AC_MSG_CHECKING(whether to try disk-quotas support)
 AC_ARG_WITH(quotas,
@@ -3568,18 +3579,13 @@ AC_ARG_WITH(sys-quotas,
   AC_MSG_RESULT(${samba_cv_TRY_SYS_QUOTAS})
 )
 
-if test x"$samba_cv_TRY_SYS_QUOTAS" != x"no"; then
+if test x"$samba_cv_TRY_SYS_QUOTAS" = x"auto"; then
 AC_MSG_CHECKING(whether to try the lib/sysquotas.c interface on ${host_os})
   case "$host_os" in
 	*linux*)
 	    AC_MSG_RESULT(yes)
             samba_cv_TRY_SYS_QUOTAS=yes
             samba_cv_RUN_QUOTA_TESTS=yes
-            samba_cv_SYSQUOTA_FOUND=yes
-            AC_DEFINE(HAVE_QUOTACTL_LINUX,1,[Whether Linux quota support is available])
-            samba_cv_sysquotas_file="lib/sysquotas_linux.c"
-            AC_DEFINE(HAVE_LINUX_XFS_QUOTAS,1,[Whether Linux xfs quota support is available])
-            samba_cv_found_xfs_header=yes
 	    ;;
 	*)
 	    AC_MSG_RESULT(no)
@@ -3591,6 +3597,24 @@ fi
 #############################################
 # only check for quota stuff if --with-quotas
 if test x"$samba_cv_RUN_QUOTA_TESTS" != x"no"; then
+
+case "$host_os" in
+	# on linux we didn't need to test we have builtin support
+	*linux*)
+	    samba_cv_SYSQUOTA_FOUND=yes
+	    AC_DEFINE(HAVE_QUOTACTL_LINUX,1,[Whether Linux quota support is available])
+	    samba_cv_sysquotas_file="lib/sysquotas_linux.c"
+	    AC_MSG_CHECKING(whether to use the lib/sysquotas_linux.c builtin support)
+	    AC_MSG_RESULT(yes)
+
+	    AC_DEFINE(HAVE_LINUX_XFS_QUOTAS,1,[Whether Linux xfs quota support is available])
+	    samba_cv_found_xfs_header=yes
+	    AC_MSG_CHECKING(whether to use the lib/sysquotas_xfs.c builtin support)
+	    AC_MSG_RESULT(yes)
+	    ;;
+	*)
+	    ;;
+esac
 
 # some broken header files need this
 AC_CHECK_HEADER(asm/types.h,[
@@ -3876,6 +3900,56 @@ AC_ARG_WITH(libsmbclient,
    if test $enable_static = yes; then
      INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
      LIBSMBCLIENT=libsmbclient
+  fi]
+  INSTALLCLIENT=installclientlib
+)
+
+
+INSTALLCLIENTCMD_SH=:
+INSTALLCLIENTCMD_A=:
+INSTALLCLIENT=
+LIBSMBSHAREMODES_SHARED=
+LIBSMBSHAREMODES=
+AC_MSG_CHECKING(whether to build the libsmbsharemodes shared library)
+AC_ARG_WITH(libsmbsharemodes,
+[  --with-libsmbsharemodes     Build the libsmbsharemodes shared library (default=yes if shared libs supported)],
+[ case "$withval" in
+  no) 
+     AC_MSG_RESULT(no)
+     ;;
+  *)
+     if test $BLDSHARED = true; then
+        INSTALLCLIENTCMD_SH="\$(INSTALLCMD)"
+	## build the static version of libsmbsharemodes as well
+	INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
+        LIBSMBSHAREMODES_SHARED=bin/libsmbsharemodes.$SHLIBEXT
+        LIBSMBSHAREMODES=libsmbsharemodes
+        AC_MSG_RESULT(yes)
+     else
+	enable_static=yes
+        AC_MSG_RESULT(no shared library support -- will supply static library)
+     fi
+     if test $enable_static = yes; then
+        INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
+        LIBSMBSHAREMODES=libsmbsharemodes
+     fi
+     INSTALLCLIENT=installclientlib
+     ;;
+  esac ],
+[
+# if unspecified, default is to built it iff possible.
+  if test $BLDSHARED = true; then
+     INSTALLCLIENTCMD_SH="\$(INSTALLCMD)"
+     LIBSMBSHAREMODES_SHARED=bin/libsmbsharemodes.$SHLIBEXT
+     LIBSMBSHAREMODES=libsmbsharemodes
+     AC_MSG_RESULT(yes)
+   else
+     enable_static=yes
+     AC_MSG_RESULT(no shared library support -- will supply static library)
+   fi
+   if test $enable_static = yes; then
+     INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
+     LIBSMBSHAREMODES=libsmbsharemodes
   fi]
   INSTALLCLIENT=installclientlib
 )

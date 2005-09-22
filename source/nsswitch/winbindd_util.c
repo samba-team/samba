@@ -506,7 +506,7 @@ void init_domain_list(void)
 		DOM_SID our_sid;
 
 		if (!secrets_fetch_domain_sid(lp_workgroup(), &our_sid)) {
-			DEBUG(0, ("Could not fetch our SID - did we join?\n"));
+			smb_panic("Could not fetch our SID - did we join?\n");
 		}
 	
 		domain = add_trusted_domain( lp_workgroup(), lp_realm(),
@@ -805,7 +805,7 @@ static BOOL assume_domain(const char *domain) {
 	return False;
 }
 
-/* Parse a string of the form DOMAIN/user into a domain and a user */
+/* Parse a string of the form DOMAIN\user into a domain and a user */
 
 BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
 {
@@ -859,6 +859,7 @@ void fill_domain_username(fstring name, const char *domain, const char *user)
 	fstring tmp_user;
 
 	fstrcpy(tmp_user, user);
+	strlower_m(tmp_user);
 
 	if (assume_domain(domain)) {
 		strlcpy(name, user, sizeof(fstring));

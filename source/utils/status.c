@@ -128,7 +128,8 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 			}
 		}
 		d_printf("0x%-8x  ",(unsigned int)e->access_mask);
-		if (e->access_mask & (FILE_READ_DATA|FILE_WRITE_DATA)) {
+		if ((e->access_mask & (FILE_READ_DATA|FILE_WRITE_DATA))==
+				(FILE_READ_DATA|FILE_WRITE_DATA)) {
 			d_printf("RDWR       ");
 		} else if (e->access_mask & FILE_WRITE_DATA) {
 			d_printf("WRONLY     ");

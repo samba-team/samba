@@ -282,6 +282,9 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 			continue;
 		}
 
+		if (sid_check_is_in_builtin(&sid))
+			continue;
+
 		if (!sid_peek_check_rid(&domain->sid, &sid, &rid)) {
 			DEBUG(1,("No rid for %s !?\n", name));
 			continue;
