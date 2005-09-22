@@ -440,6 +440,19 @@ static NTSTATUS cli_pipe_validate_rpc_response(struct rpc_pipe_client *cli, RPC_
 {
 	NTSTATUS ret = NT_STATUS_OK;
 
+	/* Paranioa checks for auth_len. */
+	if (prhdr->auth_len) {
+		if (prhdr->auth_len > prhdr->frag_len) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		if (prhdr->auth_len + RPC_HDR_AUTH_LEN < prhdr->auth_len ||
+				prhdr->auth_len + RPC_HDR_AUTH_LEN < RPC_HDR_AUTH_LEN) {
+			/* Integer wrap attempt. */
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	}
+
 	/*
 	 * Now we have a complete RPC request PDU fragment, try and verify any auth data.
 	 */
@@ -543,10 +556,25 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 
 			/* Point the return values at the NDR data. Remember to remove any ss padding. */
 			*ppdata = prs_data_p(current_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN;
+
 			if (current_pdu_len < RPC_HEADER_LEN + RPC_HDR_RESP_LEN + ss_padding_len) {
 				return NT_STATUS_BUFFER_TOO_SMALL;
 			}
+
 			*pdata_len = current_pdu_len - RPC_HEADER_LEN - RPC_HDR_RESP_LEN - ss_padding_len;
+
+			/* Remember to remove the auth footer. */
+			if (prhdr->auth_len) {
+				/* We've already done integer wrap tests on auth_len in
+					cli_pipe_validate_rpc_response(). */
+				if (*pdata_len < RPC_HDR_AUTH_LEN + prhdr->auth_len) {
+					return NT_STATUS_BUFFER_TOO_SMALL;
+				}
+				*pdata_len -= (RPC_HDR_AUTH_LEN + prhdr->auth_len);
+			}
+
+			DEBUG(10,("cli_pipe_validate_current_pdu: got pdu len %u, data_len %u, ss_len %u\n",
+				current_pdu_len, *pdata_len, ss_padding_len ));
 
 			/*
 			 * If this is the first reply, and the allocation hint is reasonably, try and
@@ -808,6 +836,9 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 
 		ret = cli_pipe_validate_current_pdu(cli, &rhdr, &current_pdu, expected_pkt_type,
 				&ret_data, &ret_data_len, rbuf);
+
+		DEBUG(10,("rpc_api_pipe: got PDU len of %u at offset %u\n",
+			prs_data_size(&current_pdu), current_rbuf_offset ));
 
 		if (!NT_STATUS_IS_OK(ret)) {
 			goto err;
