@@ -1481,13 +1481,13 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	goto out;
 
   
-    /* verify content type */
-    if (type == COMPAT_WIN2K) {
-	if (heim_oid_cmp(&ed.encryptedContentInfo.contentType, oid_id_pkcs7_data())) {
-	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
-	    goto out;
-	}
-    } else {
+    /* 
+     * Try to verify content type. We can't do this for W2K case
+     * because W2K/W2K3 sends id-pkcs7-data, but Windows Vista sends
+     * id-pkcs7-signedData to all versions, even W2K clients.
+     */
+
+    if (type != COMPAT_WIN2K) {
 	if (heim_oid_cmp(&ed.encryptedContentInfo.contentType, oid_id_pkcs7_signedData())) {
 	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	    goto out;
@@ -1563,7 +1563,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	}
 	p = ci.content->data;
 	length = ci.content->length;
-    } 
+    }
 
     ret = _krb5_pk_verify_sign(context, 
 			       p,
@@ -1582,6 +1582,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	goto out;
     }
 
+#if 0
     if (type == COMPAT_WIN2K) {
 	if (heim_oid_cmp(&contentType, oid_id_pkcs7_data()) != 0) {
 	    krb5_set_error_string(context, "PKINIT: reply key, wrong oid");
@@ -1595,6 +1596,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	    goto out;
 	}
     }
+#endif
 
     switch(type) {
     case COMPAT_WIN2K:
@@ -1880,6 +1882,7 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 				     &rep19,
 				     &size);
 	if (ret == 0) {
+	    krb5_clear_error_string(context);
 	    switch(rep19.element) {
 	    case choice_PA_PK_AS_REP_19_dhSignedData:
 		ret = pk_rd_pa_reply_dh(context, &rep19.u.dhSignedData, ctx,
@@ -1918,6 +1921,8 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 				  "pkinit reply %d", ret);
 	    return ret;
 	}
+
+	krb5_clear_error_string(context);
 	
 	switch (w2krep.element) {
 	case choice_PA_PK_AS_REP_Win2k_encKeyPack:
