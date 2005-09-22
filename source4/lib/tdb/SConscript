@@ -4,7 +4,7 @@ tdbenv.Append(CPPPATH=['include'])
 
 tdb_files = ['common/tdb.c','common/dump.c','common/io.c','common/lock.c',
              'common/open.c','common/traverse.c','common/freelist.c',
-             'common/error.c','common/tdbutil.c']
+             'common/error.c','common/transaction.c', 'common/tdbutil.c']
 
 tdb = tdbenv.StaticLibrary('tdb', tdb_files)
 
