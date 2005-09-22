@@ -895,11 +895,10 @@ int ltdb_connect(struct ldb_context *ldb, const char *url,
 
 	tdb_flags = TDB_DEFAULT;
 
-#if 0
-	/* set this to run tdb without disk sync, but still with
-	   transactions */
-	tdb_flags |= TDB_NOSYNC;
-#endif
+	/* check for the 'nosync' option */
+	if (flags & LDB_FLG_NOSYNC) {
+		tdb_flags |= TDB_NOSYNC;
+	}
 
 	if (flags & LDB_FLG_RDONLY) {
 		open_flags = O_RDONLY;
