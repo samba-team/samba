@@ -42,9 +42,6 @@ if hostenv['developer']:
 	hostenv.Append(CCFLAGS='-Wno-format-y2k')
 	hostenv.Append(CCFLAGS='-Wno-declaration-after-statement')
 
-# Pull in GNU extensions
-hostenv.Append(CPPDEFINES = {'_GNU_SOURCE': 1})
-
 # Some tools get confused if $HOME isn't defined
 hostenv.Append(ENV={'HOME': os.environ['HOME']})
 
@@ -137,6 +134,9 @@ if hostenv['configure']:
 		['backtrace','setbuffer','pread','pwrite']:
 		if conf.CheckFunc(f):
 			defines['HAVE_' + f.upper()] = 1
+
+	# Pull in GNU extensions
+	defines['_GNU_SOURCE'] = 1
 
 	needed_types = { 
 		'uint_t': 'unsigned int',
