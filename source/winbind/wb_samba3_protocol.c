@@ -50,6 +50,7 @@ NTSTATUS wbsrv_samba3_pull_request(DATA_BLOB blob, TALLOC_CTX *mem_ctx, struct w
 
 	s3_call = talloc_zero(call, struct wbsrv_samba3_call);
 	NT_STATUS_HAVE_NO_MEMORY(s3_call);
+	s3call->call = call;
 
 	/* the packet layout is the same as the in memory layout of the request, so just copy it */
 	memcpy(&s3_call->request, blob.data, sizeof(s3_call->request));
