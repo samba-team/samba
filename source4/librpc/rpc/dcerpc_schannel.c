@@ -110,7 +110,7 @@ static NTSTATUS dcerpc_schannel_key(TALLOC_CTX *tmp_ctx,
 			  negotiate_flags);
 
 	a.in.server_name = r.in.server_name;
-	a.in.account_name = cli_credentials_get_username(credentials, tmp_ctx);
+	a.in.account_name = cli_credentials_get_username(credentials);
 	a.in.secure_channel_type = 
 		cli_credentials_get_secure_channel_type(credentials);
 	a.in.computer_name = cli_credentials_get_workstation(credentials);
@@ -153,7 +153,7 @@ NTSTATUS dcerpc_bind_auth_schannel(TALLOC_CTX *tmp_ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to setup credentials for account %s: %s\n",
-			  cli_credentials_get_username(credentials, tmp_ctx), 
+			  cli_credentials_get_username(credentials), 
 			  nt_errstr(status)));
 		return status;
 	}
