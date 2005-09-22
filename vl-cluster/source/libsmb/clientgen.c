@@ -221,15 +221,16 @@ void cli_setup_bcc(struct cli_state *cli, void *p)
  Initialise credentials of a client structure.
 ****************************************************************************/
 
-void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr)
+void cli_init_creds(struct cli_state *cli, const char *username, const char *domain, const char *password)
 {
-        /* copy_nt_creds(&cli->usr, usr); */
-	fstrcpy(cli->domain   , usr->domain);
-	fstrcpy(cli->user_name, usr->user_name);
-	memcpy(&cli->pwd, &usr->pwd, sizeof(usr->pwd));
+	fstrcpy(cli->domain, domain);
+	fstrcpy(cli->user_name, username);
+	pwd_set_cleartext(&cli->pwd, password);
+	if (!*username) {
+		cli->pwd.null_pwd = True;
+	}
 
-        DEBUG(10,("cli_init_creds: user %s domain %s\n",
-               cli->user_name, cli->domain));
+        DEBUG(10,("cli_init_creds: user %s domain %s\n", cli->user_name, cli->domain));
 }
 
 /****************************************************************************

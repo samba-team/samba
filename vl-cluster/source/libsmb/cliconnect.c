@@ -532,7 +532,7 @@ static ADS_STATUS cli_session_setup_kerberos(struct cli_state *cli, const char *
 	DEBUG(2,("Doing kerberos session setup\n"));
 
 	/* generate the encapsulated kerberos5 ticket */
-	rc = spnego_gen_negTokenTarg(principal, 0, &negTokenTarg, &session_key_krb5);
+	rc = spnego_gen_negTokenTarg(principal, 0, &negTokenTarg, &session_key_krb5, 0);
 
 	if (rc) {
 		DEBUG(1, ("spnego_gen_negTokenTarg failed: %s\n", error_message(rc)));
@@ -1337,25 +1337,6 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 	return True;
 }
 
-/****************************************************************************
- Initialise client credentials for authenticated pipe access.
-****************************************************************************/
-
-void init_creds(struct ntuser_creds *creds, const char* username,
-		       const char* domain, const char* password)
-{
-	ZERO_STRUCTP(creds);
-
-	pwd_set_cleartext(&creds->pwd, password);
-
-	fstrcpy(creds->user_name, username);
-	fstrcpy(creds->domain, domain);
-
-	if (!*username) {
-		creds->pwd.null_pwd = True;
-	}
-}
-
 /**
    establishes a connection to after the negprot. 
    @param output_cli A fully initialised cli structure, non-null only on success
@@ -1474,7 +1455,6 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 			     int signing_state,
 			     BOOL *retry) 
 {
-	struct ntuser_creds creds;
 	NTSTATUS nt_status;
 	struct cli_state *cli = NULL;
 
@@ -1513,8 +1493,7 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 		}
 	}
 
-	init_creds(&creds, user, domain, password);
-	cli_init_creds(cli, &creds);
+	cli_init_creds(cli, user, domain, password);
 
 	*output_cli = cli;
 	return NT_STATUS_OK;

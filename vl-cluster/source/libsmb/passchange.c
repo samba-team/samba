@@ -32,7 +32,6 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 	struct cli_state cli;
 	struct rpc_pipe_client *pipe_hnd;
 	struct in_addr ip;
-	struct ntuser_creds creds;
 
 	NTSTATUS result;
 
@@ -87,11 +86,9 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 			return False;
 		}
 
-		init_creds(&creds, "", "", NULL);
-		cli_init_creds(&cli, &creds);
+		cli_init_creds(&cli, "", "", NULL);
 	} else {
-		init_creds(&creds, user_name, "", old_passwd);
-		cli_init_creds(&cli, &creds);
+		cli_init_creds(&cli, user_name, "", old_passwd);
 	}
 
 	if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
@@ -150,8 +147,7 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 	cli_rpc_pipe_close(pipe_hnd);
 	
 	/* Try anonymous NTLMSSP... */
-	init_creds(&creds, "", "", NULL);
-	cli_init_creds(&cli, &creds);
+	cli_init_creds(&cli, "", "", NULL);
 	
 	result = NT_STATUS_UNSUCCESSFUL;
 	

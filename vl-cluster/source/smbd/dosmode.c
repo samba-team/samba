@@ -297,27 +297,28 @@ uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
 		return 0;
 	}
 
-	/* Get the DOS attributes from an EA by preference. */
-	if (get_ea_dos_attribute(conn, path, sbuf, &result)) {
-		result |= set_sparse_flag(sbuf);
-		return result;
-	}
-
-	result = dos_mode_from_sbuf(conn, path, sbuf);
-
-	/* Now do any modifications that depend on the path name. */
+	/* First do any modifications that depend on the path name. */
 	/* hide files with a name starting with a . */
 	if (lp_hide_dot_files(SNUM(conn))) {
 		const char *p = strrchr_m(path,'/');
-		if (p)
+		if (p) {
 			p++;
-		else
+		} else {
 			p = path;
+		}
 		
-		if (p[0] == '.' && p[1] != '.' && p[1] != 0)
+		if (p[0] == '.' && p[1] != '.' && p[1] != 0) {
 			result |= aHIDDEN;
+		}
 	}
 	
+	/* Get the DOS attributes from an EA by preference. */
+	if (get_ea_dos_attribute(conn, path, sbuf, &result)) {
+		result |= set_sparse_flag(sbuf);
+	} else {
+		result |= dos_mode_from_sbuf(conn, path, sbuf);
+	}
+
 	/* Optimization : Only call is_hidden_path if it's not already
 	   hidden. */
 	if (!(result & aHIDDEN) && IS_HIDDEN_PATH(conn,path)) {

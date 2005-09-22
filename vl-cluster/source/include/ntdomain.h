@@ -180,6 +180,12 @@ enum pipe_auth_level { PIPE_AUTH_LEVEL_NONE = 0,
 			PIPE_AUTH_LEVEL_PRIVACY = 6	/* Seal. */
 };
 
+/* auth state for krb5. */
+struct kerberos_auth_struct {
+	const char *service_principal;
+	DATA_BLOB session_key;
+};
+
 /* auth state for schannel. */
 struct schannel_auth_struct {
 	uchar sess_key[16];
@@ -194,6 +200,7 @@ struct pipe_auth_data {
 	union {
 		struct schannel_auth_struct *schannel_auth;
 		AUTH_NTLMSSP_STATE *auth_ntlmssp_state;
+/*		struct kerberos_auth_struct *kerberos_auth; TO BE ADDED... */
 	} a_u;
 	void (*auth_data_free_func)(struct pipe_auth_data *);
 };

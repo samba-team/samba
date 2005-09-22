@@ -897,8 +897,6 @@ extern int errno;
 
 #include "privileges.h"
 
-#include "rpc_creds.h"
-
 #include "rpc_misc.h"
 
 #include "rpc_dce.h"

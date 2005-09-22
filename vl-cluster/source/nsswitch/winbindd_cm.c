@@ -73,7 +73,7 @@
    SAMR pipe as well for now.   --jerry
 ******************************************************************/
 
-//#define DISABLE_SCHANNEL_WIN2K3_SP1	1
+/* #define DISABLE_SCHANNEL_WIN2K3_SP1	1 */
 
 
 /* Choose between anonymous or authenticated connections.  We need to use
@@ -179,7 +179,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 				      struct cli_state **cli,
 				      BOOL *retry)
 {
-	char *machine_password, *machine_krb5_principal;
+	char *machine_password, *machine_krb5_principal, *machine_account;
 	char *ipc_username, *ipc_domain, *ipc_password;
 
 	BOOL got_mutex;
@@ -195,8 +195,14 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	machine_password = secrets_fetch_machine_password(lp_workgroup(), NULL,
 							  NULL);
 	
+	if (asprintf(&machine_account, "%s$", global_myname()) == -1) {
+		SAFE_FREE(machine_password);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	if (asprintf(&machine_krb5_principal, "%s$@%s", global_myname(),
 		     lp_realm()) == -1) {
+		SAFE_FREE(machine_account);
 		SAFE_FREE(machine_password);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -258,32 +264,60 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		goto done;
 	}
 
-	/* Krb5 session */
 			
-	if ((lp_security() == SEC_ADS) 
-	    && ((*cli)->protocol >= PROTOCOL_NT1 &&
-		(*cli)->capabilities & CAP_EXTENDED_SECURITY)) {
-
+	if ((*cli)->protocol >= PROTOCOL_NT1 && (*cli)->capabilities & CAP_EXTENDED_SECURITY) {
 		ADS_STATUS ads_status;
-		(*cli)->use_kerberos = True;
-		DEBUG(5, ("connecting to %s from %s with kerberos principal "
-			  "[%s]\n", controller, global_myname(),
-			  machine_krb5_principal));
+
+		if (lp_security() == SEC_ADS) {
+
+			/* Try a krb5 session */
+
+			(*cli)->use_kerberos = True;
+			DEBUG(5, ("connecting to %s from %s with kerberos principal "
+				  "[%s]\n", controller, global_myname(),
+				  machine_krb5_principal));
+
+			ads_status = cli_session_setup_spnego(*cli,
+							      machine_krb5_principal, 
+							      machine_password, 
+							      lp_workgroup());
+
+			if (!ADS_ERR_OK(ads_status)) {
+				DEBUG(4,("failed kerberos session setup with %s\n",
+					 ads_errstr(ads_status)));
+			}
+
+			result = ads_ntstatus(ads_status);
+			if (NT_STATUS_IS_OK(result)) {
+				/* Ensure creds are stored for NTLMSSP authenticated pipe access. */
+				cli_init_creds(*cli, machine_account, lp_workgroup(), machine_password);
+				goto session_setup_done;
+			}
+		}
+
+		/* Fall back to non-kerberos session setup using NTLMSSP SPNEGO with the machine account. */
+		(*cli)->use_kerberos = False;
+
+		DEBUG(5, ("connecting to %s from %s with username "
+			  "[%s]\\[%s]\n",  controller, global_myname(),
+			  machine_account, machine_password));
 
 		ads_status = cli_session_setup_spnego(*cli,
-						      machine_krb5_principal, 
+						      machine_account, 
 						      machine_password, 
 						      lp_workgroup());
-
-		if (!ADS_ERR_OK(ads_status))
-			DEBUG(4,("failed kerberos session setup with %s\n",
-				 ads_errstr(ads_status)));
+		if (!ADS_ERR_OK(ads_status)) {
+			DEBUG(4, ("authenticated session setup failed with %s\n",
+				ads_errstr(ads_status)));
+		}
 
 		result = ads_ntstatus(ads_status);
+		if (NT_STATUS_IS_OK(result)) {
+			/* Ensure creds are stored for NTLMSSP authenticated pipe access. */
+			cli_init_creds(*cli, machine_account, lp_workgroup(), machine_password);
+			goto session_setup_done;
+		}
 	}
-
-	if (NT_STATUS_IS_OK(result))
-		goto session_setup_done;
 
 	/* Fall back to non-kerberos session setup */
 
@@ -302,8 +336,12 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 				      ipc_password, strlen(ipc_password)+1,
 				      ipc_password, strlen(ipc_password)+1,
 				      ipc_domain)) {
-			DEBUG(5, ("authenticated session setup failed\n"));
+			/* Successful logon with given username. */
+			cli_init_creds(*cli, ipc_username, ipc_domain, ipc_password);
 			goto session_setup_done;
+		} else {
+			DEBUG(4, ("authenticated session setup with user %s\\%s failed.\n",
+				ipc_domain, ipc_username ));
 		}
 	}
 
@@ -311,6 +349,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 	if (cli_session_setup(*cli, "", NULL, 0, NULL, 0, "")) {
 		DEBUG(5, ("Connected anonymously\n"));
+		cli_init_creds(*cli, "", "", "");
 		goto session_setup_done;
 	}
 
@@ -343,24 +382,28 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	*retry = False;
 
 	/* set the domain if empty; needed for schannel connections */
-	if ( !*(*cli)->domain )
+	if ( !*(*cli)->domain ) {
 		fstrcpy( (*cli)->domain, domain->name );
+	}
 
 	result = NT_STATUS_OK;
 	add_failed_connection = False;
 
  done:
-	if (got_mutex)
+	if (got_mutex) {
 		secrets_named_mutex_release(controller);
+	}
 
+	SAFE_FREE(machine_account);
 	SAFE_FREE(machine_password);
 	SAFE_FREE(machine_krb5_principal);
 	SAFE_FREE(ipc_username);
 	SAFE_FREE(ipc_domain);
 	SAFE_FREE(ipc_password);
 
-	if (add_failed_connection)
+	if (add_failed_connection) {
 		add_failed_connection_entry(domain->name, controller, result);
+	}
 
 	return result;
 }
@@ -991,25 +1034,85 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	NTSTATUS result;
 
 	result = init_dc_connection(domain);
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result)) {
 		return result;
+	}
 
 	conn = &domain->conn;
 
 	if (conn->samr_pipe == NULL) {
-#ifndef DISABLE_SCHANNEL_WIN2K3_SP1
-		struct dcinfo *p_dcinfo;
+		/*
+		 * No SAMR pipe yet. Attempt to get an NTLMSSP SPNEGO
+		 * authenticated sign and sealed pipe using the machine
+		 * account password by preference. If we can't - try schannel,
+		 * if that fails, try anonymous.
+		 */
 
-		if (cm_get_schannel_dcinfo(domain, &p_dcinfo)) {
-			conn->samr_pipe = cli_rpc_pipe_open_schannel_with_key(conn->cli,
-								PI_SAMR,
-								PIPE_AUTH_LEVEL_PRIVACY,
-								domain->name,
-								p_dcinfo,
-								&result);
-		} else
+		fstring conn_pwd;
+		pwd_get_cleartext(&conn->cli->pwd, conn_pwd);
+		if (conn->cli->user_name[0] && conn->cli->domain[0] &&
+		    conn_pwd[0]) {
+			/* We have an authenticated connection. Use
+			   a NTLMSSP SPNEGO authenticated SAMR pipe with
+			   sign & seal. */
+			conn->samr_pipe =
+				cli_rpc_pipe_open_spnego_ntlmssp(conn->cli,
+								 PI_SAMR,
+								 PIPE_AUTH_LEVEL_PRIVACY,
+								 conn->cli->domain,
+								 conn->cli->user_name,
+								 conn_pwd,
+								 &result);
+			if (conn->samr_pipe == NULL) {
+				DEBUG(10,("cm_connect_sam: failed to connect "
+					  "to SAMR pipe for domain %s using "
+					  "NTLMSSP authenticated pipe: user "
+					  "%s\\%s. Error was %s\n",
+					  domain->name, conn->cli->domain,
+					  conn->cli->user_name,
+					  nt_errstr(result)));
+			} else {
+				DEBUG(10,("cm_connect_sam: connected to SAMR "
+					  "pipe for domain %s using NTLMSSP "
+					  "authenticated pipe: user %s\\%s\n",
+					  domain->name, conn->cli->domain,
+					  conn->cli->user_name ));
+			}
+		}
+
+#ifndef DISABLE_SCHANNEL_WIN2K3_SP1
+		/* Fall back to schannel if it's a W2K pre-SP1 box. */
+		if (conn->samr_pipe == NULL) {
+			struct dcinfo *p_dcinfo;
+
+			if (cm_get_schannel_dcinfo(domain, &p_dcinfo)) {
+				conn->samr_pipe =
+					cli_rpc_pipe_open_schannel_with_key(conn->cli,
+									    PI_SAMR,
+									    PIPE_AUTH_LEVEL_PRIVACY,
+									    domain->name,
+									    p_dcinfo,
+									    &result);
+			}
+			if (conn->samr_pipe == NULL) {
+				DEBUG(10,("cm_connect_sam: failed to connect "
+					  "to SAMR pipe for domain %s using "
+					  "schannel authenticated. Error "
+					  "was %s\n", domain->name,
+					  nt_errstr(result) ));
+			} else {
+				DEBUG(10,("cm_connect_sam: connected to SAMR "
+					  "pipe for domain %s using schannel.\n",
+					  domain->name ));
+			}
+		}
 #endif	/* DISABLE_SCHANNEL_WIN2K3_SP1 */
-			conn->samr_pipe = cli_rpc_pipe_open_noauth(conn->cli, PI_SAMR, &result);
+
+		/* Finally fall back to anonymous. */
+		if (conn->samr_pipe == NULL) {
+			conn->samr_pipe =
+				cli_rpc_pipe_open_noauth(conn->cli, PI_SAMR, &result);
+		}
 
 		if (conn->samr_pipe == NULL) {
 			result = NT_STATUS_PIPE_NOT_AVAILABLE;
@@ -1019,8 +1122,12 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		result = rpccli_samr_connect(conn->samr_pipe, mem_ctx,
 					     SEC_RIGHTS_MAXIMUM_ALLOWED,
 					     &conn->sam_connect_handle);
-		if (!NT_STATUS_IS_OK(result))
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(10,("cm_connect_sam: rpccli_samr_connect failed "
+				  "for domain %s Error was %s\n",
+				  domain->name, nt_errstr(result) ));
 			goto done;
+		}
 
 		result = rpccli_samr_open_domain(conn->samr_pipe,
 						 mem_ctx,
@@ -1034,7 +1141,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(result)) {
 		invalidate_cm_connection(conn);
-		return NT_STATUS_UNSUCCESSFUL;
+		return result;
 	}
 
 	*cli = conn->samr_pipe;
@@ -1059,12 +1166,13 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		struct dcinfo *p_dcinfo;
 
 		if (cm_get_schannel_dcinfo(domain, &p_dcinfo)) {
-			conn->lsa_pipe = cli_rpc_pipe_open_schannel_with_key(conn->cli,
-								PI_LSARPC,
-								PIPE_AUTH_LEVEL_PRIVACY,
-								domain->name,
-								p_dcinfo,
-								&result);
+			conn->lsa_pipe =
+				cli_rpc_pipe_open_schannel_with_key(conn->cli,
+								    PI_LSARPC,
+								    PIPE_AUTH_LEVEL_PRIVACY,
+								    domain->name,
+								    p_dcinfo,
+								    &result);
 		} else
 #endif	/* DISABLE_SCHANNEL_WIN2K3_SP1 */
 			conn->lsa_pipe = cli_rpc_pipe_open_noauth(conn->cli,
