@@ -220,6 +220,10 @@ int tdb_traverse(struct tdb_context *tdb,
 {
 	struct tdb_traverse_lock tl = { NULL, 0, 0, F_WRLCK };
 	int ret;
+
+	if (tdb->read_only) {
+		return tdb_traverse_read(tdb, fn, private);
+	}
 	
 	if (tdb->methods->tdb_brlock(tdb, TRANSACTION_LOCK, F_WRLCK, F_SETLKW, 0) == -1) {
 		TDB_LOG((tdb, 0, "tdb_traverse: failed to get transaction lock\n"));
