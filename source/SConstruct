@@ -7,7 +7,7 @@
 # Copyright (C) 2005 Jelmer Vernooij <jelmer@samba.org>
 # Published under the GNU GPL
 
-import cPickle
+import cPickle, string
 
 # We don't care about NFS builds...
 
@@ -149,10 +149,21 @@ if hostenv['configure']:
 
 	type_headers = """
 #include <stdint.h>
+#include <sys/types.h>
 """	
 	for t in needed_types:
 		if not conf.CheckType(t,type_headers):
 			defines[t] = needed_types[t]
+
+	for t in ['u_int32_t', 'u_int16_t', 'u_int8_t']:
+		if conf.CheckType(t, type_headers):
+			defines['HAVE_%s' % string.upper(t)] = 1
+
+	if conf.CheckType('comparison_fn_t', type_headers):
+		defines['HAVE_COMPARISON_FN_T'] = 1
+
+	if conf.CheckType('sig_atomic_t', '#include <signal.h>'):
+		defines['HAVE_SIG_ATOMIC_T_TYPE'] = 1
 
 	if conf.TryCompile("""
 #include <sys/types.h>
