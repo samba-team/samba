@@ -383,10 +383,13 @@ static void usage(void)
 	talloc_steal(mem_ctx, options);
 
 	if (options->basedn == NULL) {
-		options->basedn = "ou=Ldb Test,ou=People,o=University of Michigan,c=US";
+		options->basedn = "ou=Ldb Test,ou=People,o=University of Michigan,c=TEST";
 	}
 
 	srandom(1);
+
+	printf("Testing with num-records=%d and num-searches=%d\n", 
+	       options->num_records, options->num_searches);
 
 	start_test(ldb, options->num_records, options->num_searches);
 
