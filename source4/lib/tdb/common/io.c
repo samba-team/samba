@@ -56,7 +56,7 @@
    if necessary 
    note that "len" is the minimum length needed for the db
 */
-int tdb_oob(struct tdb_context *tdb, tdb_off_t len, int probe)
+static int tdb_oob(struct tdb_context *tdb, tdb_off_t len, int probe)
 {
 	struct stat st;
 	if (len <= tdb->map_size)
@@ -94,9 +94,10 @@ int tdb_oob(struct tdb_context *tdb, tdb_off_t len, int probe)
 }
 
 /* write a lump of data at a specified offset */
-int tdb_write(struct tdb_context *tdb, tdb_off_t off, void *buf, tdb_len_t len)
+static int tdb_write(struct tdb_context *tdb, tdb_off_t off, 
+		     const void *buf, tdb_len_t len)
 {
-	if (tdb_oob(tdb, off + len, 0) != 0)
+	if (tdb->methods->tdb_oob(tdb, off + len, 0) != 0)
 		return -1;
 
 	if (tdb->map_ptr) {
@@ -122,9 +123,10 @@ void *tdb_convert(void *buf, u32 size)
 
 
 /* read a lump of data at a specified offset, maybe convert */
-int tdb_read(struct tdb_context *tdb, tdb_off_t off, void *buf, tdb_len_t len, int cv)
+static int tdb_read(struct tdb_context *tdb, tdb_off_t off, void *buf, 
+		    tdb_len_t len, int cv)
 {
-	if (tdb_oob(tdb, off + len, 0) != 0) {
+	if (tdb->methods->tdb_oob(tdb, off + len, 0) != 0) {
 		return -1;
 	}
 
@@ -140,8 +142,9 @@ int tdb_read(struct tdb_context *tdb, tdb_off_t off, void *buf, tdb_len_t len, i
 			return TDB_ERRCODE(TDB_ERR_IO, -1);
 		}
 	}
-	if (cv)
+	if (cv) {
 		tdb_convert(buf, len);
+	}
 	return 0;
 }
 
@@ -151,7 +154,7 @@ int tdb_read(struct tdb_context *tdb, tdb_off_t off, void *buf, tdb_len_t len, i
   do an unlocked scan of the hash table heads to find the next non-zero head. The value
   will then be confirmed with the lock held
 */		
-void tdb_next_hash_chain(struct tdb_context *tdb, u32 *chain)
+static void tdb_next_hash_chain(struct tdb_context *tdb, u32 *chain)
 {
 	u32 h = *chain;
 	if (tdb->map_ptr) {
@@ -230,9 +233,10 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 		}
 	}
 
-	/* now fill the file with something. This ensures that the file isn't sparse, which would be
-	   very bad if we ran out of disk. This must be done with write, not via mmap */
-	memset(buf, 0x42, sizeof(buf));
+	/* now fill the file with something. This ensures that the
+	   file isn't sparse, which would be very bad if we ran out of
+	   disk. This must be done with write, not via mmap */
+	memset(buf, TDB_PAD_BYTE, sizeof(buf));
 	while (addition) {
 		int n = addition>sizeof(buf)?sizeof(buf):addition;
 		int ret = pwrite(tdb->fd, buf, n, size);
@@ -261,11 +265,11 @@ int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
 	}
 
 	/* must know about any previous expansions by another process */
-	tdb_oob(tdb, tdb->map_size + 1, 1);
+	tdb->methods->tdb_oob(tdb, tdb->map_size + 1, 1);
 
 	/* always make room for at least 10 more records, and round
-           the database up to a multiple of TDB_PAGE_SIZE */
-	size = TDB_ALIGN(tdb->map_size + size*10, TDB_PAGE_SIZE) - tdb->map_size;
+           the database up to a multiple of the page size */
+	size = TDB_ALIGN(tdb->map_size + size*10, tdb->page_size) - tdb->map_size;
 
 	if (!(tdb->flags & TDB_INTERNAL))
 		tdb_munmap(tdb);
@@ -278,7 +282,7 @@ int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
 
 	/* expand the file itself */
 	if (!(tdb->flags & TDB_INTERNAL)) {
-		if (tdb_expand_file(tdb, tdb->map_size, size) != 0)
+		if (tdb->methods->tdb_expand_file(tdb, tdb->map_size, size) != 0)
 			goto fail;
 	}
 
@@ -321,13 +325,13 @@ int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
 /* read/write a tdb_off_t */
 int tdb_ofs_read(struct tdb_context *tdb, tdb_off_t offset, tdb_off_t *d)
 {
-	return tdb_read(tdb, offset, (char*)d, sizeof(*d), DOCONV());
+	return tdb->methods->tdb_read(tdb, offset, (char*)d, sizeof(*d), DOCONV());
 }
 
 int tdb_ofs_write(struct tdb_context *tdb, tdb_off_t offset, tdb_off_t *d)
 {
 	tdb_off_t off = *d;
-	return tdb_write(tdb, offset, CONVERT(off), sizeof(*d));
+	return tdb->methods->tdb_write(tdb, offset, CONVERT(off), sizeof(*d));
 }
 
 
@@ -343,7 +347,7 @@ unsigned char *tdb_alloc_read(struct tdb_context *tdb, tdb_off_t offset, tdb_len
 			   len, strerror(errno)));
 		return TDB_ERRCODE(TDB_ERR_OOM, buf);
 	}
-	if (tdb_read(tdb, offset, buf, len, 0) == -1) {
+	if (tdb->methods->tdb_read(tdb, offset, buf, len, 0) == -1) {
 		SAFE_FREE(buf);
 		return NULL;
 	}
@@ -353,7 +357,7 @@ unsigned char *tdb_alloc_read(struct tdb_context *tdb, tdb_off_t offset, tdb_len
 /* read/write a record */
 int tdb_rec_read(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *rec)
 {
-	if (tdb_read(tdb, offset, rec, sizeof(*rec),DOCONV()) == -1)
+	if (tdb->methods->tdb_read(tdb, offset, rec, sizeof(*rec),DOCONV()) == -1)
 		return -1;
 	if (TDB_BAD_MAGIC(rec)) {
 		/* Ensure ecode is set for log fn. */
@@ -361,12 +365,28 @@ int tdb_rec_read(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *
 		TDB_LOG((tdb, 0,"tdb_rec_read bad magic 0x%x at offset=%d\n", rec->magic, offset));
 		return TDB_ERRCODE(TDB_ERR_CORRUPT, -1);
 	}
-	return tdb_oob(tdb, rec->next+sizeof(*rec), 0);
+	return tdb->methods->tdb_oob(tdb, rec->next+sizeof(*rec), 0);
 }
 
 int tdb_rec_write(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *rec)
 {
 	struct list_struct r = *rec;
-	return tdb_write(tdb, offset, CONVERT(r), sizeof(r));
+	return tdb->methods->tdb_write(tdb, offset, CONVERT(r), sizeof(r));
 }
 
+static const struct tdb_methods io_methods = {
+	.tdb_read        = tdb_read,
+	.tdb_write       = tdb_write,
+	.next_hash_chain = tdb_next_hash_chain,
+	.tdb_oob         = tdb_oob,
+	.tdb_expand_file = tdb_expand_file,
+	.tdb_brlock      = tdb_brlock
+};
+
+/*
+  initialise the default methods table
+*/
+void tdb_io_init(struct tdb_context *tdb)
+{
+	tdb->methods = &io_methods;
+}

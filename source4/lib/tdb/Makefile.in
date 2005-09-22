@@ -2,7 +2,7 @@
 # Makefile for tdb directory
 #
 
-CFLAGS = -DTDB_DEBUG -g -Iinclude
+CFLAGS = -Iinclude @CFLAGS@
 CC = @CC@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
@@ -12,7 +12,8 @@ libdir = @libdir@
 
 PROGS = bin/tdbtool bin/tdbtorture
 TDB_OBJ = common/tdb.o common/dump.o common/io.o common/lock.o \
-	common/open.o common/traverse.o common/freelist.o common/error.o
+	common/open.o common/traverse.o common/freelist.o common/error.o \
+	common/transaction.o
 
 all: $(PROGS)
 

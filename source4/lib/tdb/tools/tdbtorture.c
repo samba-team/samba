@@ -1,6 +1,8 @@
 /* this tests tdb by doing lots of ops from several simultaneous
-   writers - that stresses the locking code. Build with TDB_DEBUG=1
-   for best effect */
+   writers - that stresses the locking code. 
+*/
+
+#define _GNU_SOURCE
 
 #ifndef _SAMBA_BUILD_
 #include <stdlib.h>
@@ -28,11 +30,14 @@
 
 #endif
 
+#include <getopt.h>
+
 #define REOPEN_PROB 30
 #define DELETE_PROB 8
 #define STORE_PROB 4
 #define APPEND_PROB 6
-#define LOCKSTORE_PROB 0
+#define TRANSACTION_PROB 10
+#define LOCKSTORE_PROB 5
 #define TRAVERSE_PROB 20
 #define CULL_PROB 100
 #define KEYLEN 3
@@ -40,6 +45,7 @@
 #define LOCKLEN 20
 
 static struct tdb_context *db;
+static int in_transaction;
 
 #ifdef PRINTF_ATTRIBUTE
 static void tdb_log(struct tdb_context *tdb, int level, const char *format, ...) PRINTF_ATTRIBUTE(3,4);
@@ -84,25 +90,25 @@ static char *randbuf(int len)
 static int cull_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf,
 			 void *state)
 {
+#if CULL_PROB
 	if (random() % CULL_PROB == 0) {
 		tdb_delete(tdb, key);
 	}
+#endif
 	return 0;
 }
 
 static void addrec_db(void)
 {
-	int klen, dlen, slen;
-	char *k, *d, *s;
-	TDB_DATA key, data, lockkey;
+	int klen, dlen;
+	char *k, *d;
+	TDB_DATA key, data;
 
 	klen = 1 + (rand() % KEYLEN);
 	dlen = 1 + (rand() % DATALEN);
-	slen = 1 + (rand() % LOCKLEN);
 
 	k = randbuf(klen);
 	d = randbuf(dlen);
-	s = randbuf(slen);
 
 	key.dptr = (unsigned char *)k;
 	key.dsize = klen+1;
@@ -110,11 +116,32 @@ static void addrec_db(void)
 	data.dptr = (unsigned char *)d;
 	data.dsize = dlen+1;
 
-	lockkey.dptr = (unsigned char *)s;
-	lockkey.dsize = slen+1;
+#if TRANSACTION_PROB
+	if (in_transaction == 0 && random() % TRANSACTION_PROB == 0) {
+		if (tdb_transaction_start(db) != 0) {
+			fatal("tdb_transaction_start failed");
+		}
+		in_transaction++;
+		goto next;
+	}
+	if (in_transaction && random() % TRANSACTION_PROB == 0) {
+		if (tdb_transaction_commit(db) != 0) {
+			fatal("tdb_transaction_commit failed");
+		}
+		in_transaction--;
+		goto next;
+	}
+	if (in_transaction && random() % TRANSACTION_PROB == 0) {
+		if (tdb_transaction_cancel(db) != 0) {
+			fatal("tdb_transaction_cancel failed");
+		}
+		in_transaction--;
+		goto next;
+	}
+#endif
 
 #if REOPEN_PROB
-	if (random() % REOPEN_PROB == 0) {
+	if (in_transaction == 0 && random() % REOPEN_PROB == 0) {
 		tdb_reopen_all();
 		goto next;
 	} 
@@ -147,13 +174,13 @@ static void addrec_db(void)
 
 #if LOCKSTORE_PROB
 	if (random() % LOCKSTORE_PROB == 0) {
-		tdb_chainlock(db, lockkey);
+		tdb_chainlock(db, key);
 		data = tdb_fetch(db, key);
 		if (tdb_store(db, key, data, TDB_REPLACE) != 0) {
 			fatal("tdb_store failed");
 		}
 		if (data.dptr) free(data.dptr);
-		tdb_chainunlock(db, lockkey);
+		tdb_chainunlock(db, key);
 		goto next;
 	} 
 #endif
@@ -171,7 +198,6 @@ static void addrec_db(void)
 next:
 	free(k);
 	free(d);
-	free(s);
 }
 
 static int traverse_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf,
@@ -181,38 +207,71 @@ static int traverse_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf,
 	return 0;
 }
 
-#ifndef NPROC
-#define NPROC 2
-#endif
-
-#ifndef NLOOPS
-#define NLOOPS 5000
-#endif
-
- int main(int argc, const char *argv[])
+static void usage(void)
 {
-	int i, seed=0;
-	int loops = NLOOPS;
-	pid_t pids[NPROC];
+	printf("Usage: tdbtorture [-n NUM_PROCS] [-l NUM_LOOPS] [-s SEED] [-H HASH_SIZE]\n");
+	exit(0);
+}
 
-	pids[0] = getpid();
+ int main(int argc, char * const *argv)
+{
+	int i, seed = -1;
+	int num_procs = 2;
+	int num_loops = 5000;
+	int hash_size = 2;
+	int c;
+	extern char *optarg;
+	pid_t *pids;
+
+	while ((c = getopt(argc, argv, "n:l:s:H:h")) != -1) {
+		switch (c) {
+		case 'n':
+			num_procs = strtol(optarg, NULL, 0);
+			break;
+		case 'l':
+			num_loops = strtol(optarg, NULL, 0);
+			break;
+		case 'H':
+			hash_size = strtol(optarg, NULL, 0);
+			break;
+		case 's':
+			seed = strtol(optarg, NULL, 0);
+			break;
+		default:
+			usage();
+		}
+	}
 
 	unlink("torture.tdb");
 
-	for (i=0;i<NPROC-1;i++) {
+	pids = calloc(sizeof(pid_t), num_procs);
+	pids[0] = getpid();
+
+	for (i=0;i<num_procs-1;i++) {
 		if ((pids[i+1]=fork()) == 0) break;
 	}
 
-	db = tdb_open("torture.tdb", 2, TDB_CLEAR_IF_FIRST, 
-		      O_RDWR | O_CREAT, 0600);
+	db = tdb_open_ex("torture.tdb", hash_size, TDB_CLEAR_IF_FIRST, 
+			 O_RDWR | O_CREAT, 0600, tdb_log, NULL);
 	if (!db) {
 		fatal("db open failed");
 	}
-	tdb_logging_function(db, tdb_log);
 
-	srand(seed + getpid());
-	srandom(seed + getpid() + time(NULL));
-	for (i=0;i<loops;i++) addrec_db();
+	if (seed == -1) {
+		seed = (getpid() + time(NULL)) & 0x7FFFFFFF;
+	}
+
+	if (i == 0) {
+		printf("testing with %d processes, %d loops, %d hash_size, seed=%d\n", 
+		       num_procs, num_loops, hash_size, seed);
+	}
+
+	srand(seed + i);
+	srandom(seed + i);
+
+	for (i=0;i<num_loops;i++) {
+		addrec_db();
+	}
 
 	tdb_traverse(db, NULL, NULL);
 	tdb_traverse(db, traverse_fn, NULL);
@@ -221,7 +280,7 @@ static int traverse_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf,
 	tdb_close(db);
 
 	if (getpid() == pids[0]) {
-		for (i=0;i<NPROC-1;i++) {
+		for (i=0;i<num_procs-1;i++) {
 			int status;
 			if (waitpid(pids[i+1], &status, 0) != pids[i+1]) {
 				printf("failed to wait for %d\n",
