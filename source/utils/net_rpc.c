@@ -131,6 +131,8 @@ int run_rpc_command(struct cli_state *cli_arg, const int pipe_idx, int conn_flag
 	if (!(conn_flags & NET_FLAGS_NO_PIPE)) {
 		if (!cli_nt_session_open(cli, pipe_idx)) {
 			DEBUG(0, ("Could not initialise pipe\n"));
+			cli_shutdown(cli);
+			return -1;
 		}
 	}
 	
