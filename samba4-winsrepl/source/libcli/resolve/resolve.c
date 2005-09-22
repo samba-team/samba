@@ -133,7 +133,8 @@ struct composite_context *resolve_name_send(struct nbt_name *name, struct event_
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	if (methods == NULL) goto failed;
-	state->methods = methods;
+	state->methods = str_list_copy(state, methods);
+	if (state->methods == NULL) goto failed;
 
 	c->state = SMBCLI_REQUEST_SEND;
 	c->private = state;

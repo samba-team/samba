@@ -1,6 +1,12 @@
 # Based on the M4 macro by Bruno Haible.
 
-def _CheckIconvPath(path):
+def exists(env):
+	return True
+
+def generate(env):
+	env['custom_tests']['CheckIconv'] = CheckIconv
+
+def _CheckIconvPath(context,path):
 	# Some systems have iconv in libc, some have it in libiconv (OSF/1 and
   	# those with the standalone portable libiconv installed).
 	context.Message("checking for iconv in " + path)
@@ -58,7 +64,7 @@ def CheckIconv(context):
 	look_dirs = ['/usr','/usr/local','/sw']
 
 	for p in look_dirs:
-		_CheckIconvPath(p) #FIXME: Handle return value
+		_CheckIconvPath(context,p) #FIXME: Handle return value
 
 	if context.TryRun("""
 #include <iconv.h>

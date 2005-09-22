@@ -31,7 +31,7 @@
 /* read a freelist record and check for simple errors */
 static int rec_free_read(struct tdb_context *tdb, tdb_off_t off, struct list_struct *rec)
 {
-	if (tdb_read(tdb, off, rec, sizeof(*rec),DOCONV()) == -1)
+	if (tdb->methods->tdb_read(tdb, off, rec, sizeof(*rec),DOCONV()) == -1)
 		return -1;
 
 	if (rec->magic == TDB_MAGIC) {
@@ -40,7 +40,7 @@ static int rec_free_read(struct tdb_context *tdb, tdb_off_t off, struct list_str
 		TDB_LOG((tdb, 0,"rec_free_read non-free magic 0x%x at offset=%d - fixing\n", 
 			 rec->magic, off));
 		rec->magic = TDB_FREE_MAGIC;
-		if (tdb_write(tdb, off, rec, sizeof(*rec)) == -1)
+		if (tdb->methods->tdb_write(tdb, off, rec, sizeof(*rec)) == -1)
 			return -1;
 	}
 
@@ -51,7 +51,7 @@ static int rec_free_read(struct tdb_context *tdb, tdb_off_t off, struct list_str
 			   rec->magic, off));
 		return TDB_ERRCODE(TDB_ERR_CORRUPT, -1);
 	}
-	if (tdb_oob(tdb, rec->next+sizeof(*rec), 0) != 0)
+	if (tdb->methods->tdb_oob(tdb, rec->next+sizeof(*rec), 0) != 0)
 		return -1;
 	return 0;
 }
@@ -111,7 +111,7 @@ int tdb_free(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *rec)
 	if (right + sizeof(*rec) <= tdb->map_size) {
 		struct list_struct r;
 
-		if (tdb_read(tdb, right, &r, sizeof(r), DOCONV()) == -1) {
+		if (tdb->methods->tdb_read(tdb, right, &r, sizeof(r), DOCONV()) == -1) {
 			TDB_LOG((tdb, 0, "tdb_free: right read failed at %u\n", right));
 			goto left;
 		}
@@ -138,10 +138,16 @@ left:
 			TDB_LOG((tdb, 0, "tdb_free: left offset read failed at %u\n", left));
 			goto update;
 		}
+
+		/* it could be uninitialised data */
+		if (leftsize == 0 || leftsize == TDB_PAD_U32) {
+			goto update;
+		}
+
 		left = offset - leftsize;
 
 		/* Now read in record */
-		if (tdb_read(tdb, left, &l, sizeof(l), DOCONV()) == -1) {
+		if (tdb->methods->tdb_read(tdb, left, &l, sizeof(l), DOCONV()) == -1) {
 			TDB_LOG((tdb, 0, "tdb_free: left read failed at %u (%u)\n", left, leftsize));
 			goto update;
 		}

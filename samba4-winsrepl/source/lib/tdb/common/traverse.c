@@ -65,7 +65,7 @@ static int tdb_next_lock(struct tdb_context *tdb, struct tdb_traverse_lock *tloc
 			   factor of around 80 in speed on a linux 2.6.x
 			   system (testing using ldbtest).
 			*/
-			tdb_next_hash_chain(tdb, &tlock->hash);
+			tdb->methods->next_hash_chain(tdb, &tlock->hash);
 			if (tlock->hash == tdb->header.hash_size) {
 				continue;
 			}

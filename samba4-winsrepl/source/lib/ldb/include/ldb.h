@@ -158,6 +158,7 @@ struct ldb_debug_ops {
 };
 
 #define LDB_FLG_RDONLY 1
+#define LDB_FLG_NOSYNC 2
 
 #ifndef PRINTF_ATTRIBUTE
 #define PRINTF_ATTRIBUTE(a,b)

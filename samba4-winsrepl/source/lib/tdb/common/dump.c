@@ -33,7 +33,8 @@ static tdb_off_t tdb_dump_record(struct tdb_context *tdb, tdb_off_t offset)
 	struct list_struct rec;
 	tdb_off_t tailer_ofs, tailer;
 
-	if (tdb_read(tdb, offset, (char *)&rec, sizeof(rec), DOCONV()) == -1) {
+	if (tdb->methods->tdb_read(tdb, offset, (char *)&rec, 
+				   sizeof(rec), DOCONV()) == -1) {
 		printf("ERROR: failed to read record at %u\n", offset);
 		return 0;
 	}
@@ -107,7 +108,8 @@ int tdb_printfreelist(struct tdb_context *tdb)
 
 	printf("freelist top=[0x%08x]\n", rec_ptr );
 	while (rec_ptr) {
-		if (tdb_read(tdb, rec_ptr, (char *)&rec, sizeof(rec), DOCONV()) == -1) {
+		if (tdb->methods->tdb_read(tdb, rec_ptr, (char *)&rec, 
+					   sizeof(rec), DOCONV()) == -1) {
 			tdb_unlock(tdb, -1, F_WRLCK);
 			return -1;
 		}

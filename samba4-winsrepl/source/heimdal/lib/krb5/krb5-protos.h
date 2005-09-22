@@ -20,15 +20,6 @@ extern "C" {
 #endif
 #endif
 
-void
-initialize_heim_error_table_r (struct et_list **/*list*/);
-
-void
-initialize_k524_error_table_r (struct et_list **/*list*/);
-
-void
-initialize_krb5_error_table_r (struct et_list **/*list*/);
-
 krb5_error_code KRB5_LIB_FUNCTION
 krb524_convert_creds_kdc (
 	krb5_context /*context*/,
@@ -706,7 +697,7 @@ krb5_error_code KRB5_LIB_FUNCTION
 krb5_change_password (
 	krb5_context /*context*/,
 	krb5_creds */*creds*/,
-	char */*newpw*/,
+	const char */*newpw*/,
 	int */*result_code*/,
 	krb5_data */*result_code_string*/,
 	krb5_data */*result_string*/);
@@ -2629,7 +2620,7 @@ krb5_rd_req_return_keyblock (
 	krb5_keytab /*keytab*/,
 	krb5_flags */*ap_req_options*/,
 	krb5_ticket **/*ticket*/,
-	krb5_keyblock **/*keyblock*/);
+	krb5_keyblock **/*return_keyblock*/);
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_rd_req_with_keyblock (
@@ -2854,7 +2845,7 @@ krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_password (
 	krb5_context /*context*/,
 	krb5_creds */*creds*/,
-	char */*newpw*/,
+	const char */*newpw*/,
 	krb5_principal /*targprinc*/,
 	int */*result_code*/,
 	krb5_data */*result_code_string*/,
@@ -2864,7 +2855,7 @@ krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_password_using_ccache (
 	krb5_context /*context*/,
 	krb5_ccache /*ccache*/,
-	char */*newpw*/,
+	const char */*newpw*/,
 	krb5_principal /*targprinc*/,
 	int */*result_code*/,
 	krb5_data */*result_code_string*/,

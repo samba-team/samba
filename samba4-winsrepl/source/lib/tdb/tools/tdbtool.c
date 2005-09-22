@@ -34,6 +34,7 @@
 #include <sys/time.h>
 #include <ctype.h>
 #include <signal.h>
+#include <stdarg.h>
 #include "tdb.h"
 
 /* a tdb tool for manipulating a tdb database */
@@ -75,6 +76,19 @@ static void print_asc(unsigned char *buf,int len)
 
 	for (i=0;i<len;i++)
 		printf("%c",isprint(buf[i])?buf[i]:'.');
+}
+
+#ifdef PRINTF_ATTRIBUTE
+static void tdb_log(struct tdb_context *t, int level, const char *format, ...) PRINTF_ATTRIBUTE(3,4);
+#endif
+static void tdb_log(struct tdb_context *t, int level, const char *format, ...)
+{
+	va_list ap;
+    
+	va_start(ap, format);
+	vfprintf(stdout, format, ap);
+	va_end(ap);
+	fflush(stdout);
 }
 
 static void print_data(unsigned char *buf,int len)
@@ -131,7 +145,7 @@ static void help(void)
 "\n");
 }
 
-static void terror(char *why)
+static void terror(const char *why)
 {
 	printf("%s\n", why);
 }
@@ -175,8 +189,8 @@ static void create_tdb(void)
 		return;
 	}
 	if (tdb) tdb_close(tdb);
-	tdb = tdb_open(tok, 0, TDB_CLEAR_IF_FIRST,
-		       O_RDWR | O_CREAT | O_TRUNC, 0600);
+	tdb = tdb_open_ex(tok, 0, TDB_CLEAR_IF_FIRST,
+			  O_RDWR | O_CREAT | O_TRUNC, 0600, tdb_log, NULL);
 	if (!tdb) {
 		printf("Could not create %s: %s\n", tok, strerror(errno));
 	}
@@ -190,7 +204,7 @@ static void open_tdb(void)
 		return;
 	}
 	if (tdb) tdb_close(tdb);
-	tdb = tdb_open(tok, 0, 0, O_RDWR, 0600);
+	tdb = tdb_open_ex(tok, 0, 0, O_RDWR, 0600, tdb_log, NULL);
 	if (!tdb) {
 		printf("Could not open %s: %s\n", tok, strerror(errno));
 	}
@@ -326,7 +340,7 @@ static void move_rec(void)
 	
 	print_rec(tdb, key, dbuf, NULL);
 	
-	dst_tdb = tdb_open(file, 0, 0, O_RDWR, 0600);
+	dst_tdb = tdb_open_ex(file, 0, 0, O_RDWR, 0600, tdb_log, NULL);
 	if ( !dst_tdb ) {
 		terror("unable to open destination tdb");
 		return;
@@ -377,7 +391,7 @@ static void info_tdb(void)
 		printf("%d records totalling %d bytes\n", count, total_bytes);
 }
 
-static char *tdb_getline(char *prompt)
+static char *tdb_getline(const char *prompt)
 {
 	static char line[1024];
 	char *p;

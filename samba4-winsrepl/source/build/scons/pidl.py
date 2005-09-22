@@ -5,10 +5,10 @@ Tool-specific initialization for pidl (Perl-based IDL compiler)
 """
 
 import SCons.Defaults
-import SCons.Scanner.IDL
 import SCons.Util
+import SCons.Scanner
 
-idl_scanner = SCons.Scanner.IDL.IDLScan()
+idl_scanner = SCons.Scanner.ClassicCPP("PIDLScan", '.idl', 'CPPPATH', r'depends\(([^,]+),+\)', SCons.Node.FS.default_fs)
 
 pidl_builder = SCons.Builder.Builder(action='$PIDLCOM',
                                      src_suffix = '.idl',
@@ -16,17 +16,10 @@ pidl_builder = SCons.Builder.Builder(action='$PIDLCOM',
                                      scanner = idl_scanner)
 
 def generate(env):
-    env['PIDL']          = 'pidl'
-	env['PIDLCPP']		 = env['CPP']
-    env['PIDLFLAGS']     = []
-    env['PIDLCOM']       = 'CPP=$PIDLCPP $PIDL $PIDLFLAGS -- $SOURCE'
-    env['BUILDERS']['NdrMarshaller'] = pidl_builder
+	env['PIDL']          = env.Detect('pidl') or './pidl/pidl'
+	env['PIDLFLAGS']     = []
+	env['PIDLCOM']       = 'CPP=$CPP $PIDL $PIDLFLAGS -- $SOURCE'
+	env['BUILDERS']['NdrMarshaller'] = pidl_builder
 
 def exists(env):
-	if (env.Detect('./pidl/pidl')):
-		return 1
-
-	if (env.Detect('pidl')):
-		return 1
-
-	return 0
+	return env.Detect(['./pidl/pidl','pidl'])

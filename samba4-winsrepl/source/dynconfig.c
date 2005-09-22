@@ -70,6 +70,5 @@ const char *dyn_SHLIBEXT = SHLIBEXT;
 const char *dyn_LOCKDIR = LOCKDIR;
 const char *dyn_PIDDIR  = PIDDIR;
 
-const char *dyn_SMB_PASSWD_FILE = SMB_PASSWD_FILE;
 const char *dyn_PRIVATE_DIR = PRIVATE_DIR;
 const char *dyn_SWATDIR = SWATDIR;

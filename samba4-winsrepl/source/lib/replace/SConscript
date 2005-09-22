@@ -1,11 +1,12 @@
 Import('hostenv')
-conf = Configure(hostenv)
 
-#FIXME: conf.CheckBrokenInetNtoa() 
-for f in ['strtoull','__strtoull','strtouq','strtoll','__strtoll','strtoq',
-		  'seteuid','setresuid','setegid','setresgid']:
-	conf.CheckFunc(f,'c')
-conf.Finish()
+if hostenv['configure']:
+	conf = Configure(hostenv)
+	#FIXME: conf.CheckBrokenInetNtoa() 
+	for f in ['strtoull','__strtoull','strtouq','strtoll','__strtoll','strtoq',
+			  'seteuid','setresuid','setegid','setresgid']:
+		conf.CheckFunc(f,'c')
+	conf.Finish()
 
 hostenv.StaticLibrary('repdir', ['repdir/repdir.c'])
 hostenv.StaticLibrary('replace', ['replace.c', 'snprintf.c'])

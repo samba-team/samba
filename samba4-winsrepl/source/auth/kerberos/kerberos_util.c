@@ -60,7 +60,7 @@ krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx,
 		return ENOMEM;
 	}
 	
-	machine_username = talloc_strdup(mem_ctx, cli_credentials_get_username(machine_account, mem_ctx));
+	machine_username = talloc_strdup(mem_ctx, cli_credentials_get_username(machine_account));
 
 	if (!machine_username) {
 		talloc_free(mem_ctx);
@@ -111,7 +111,7 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 
 	if (!princ_string) {
 		talloc_free(mem_ctx);
-		return ENOMEM;
+		return EINVAL;
 	}
 
 	ret = krb5_parse_name(smb_krb5_context->krb5_context,

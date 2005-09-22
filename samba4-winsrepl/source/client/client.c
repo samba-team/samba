@@ -197,7 +197,7 @@ static void send_message(void)
 	int total_len = 0;
 	int grp_id;
 
-	if (!smbcli_message_start(cli->tree, desthost, cli_credentials_get_username(cmdline_credentials, cmdline_credentials), &grp_id)) {
+	if (!smbcli_message_start(cli->tree, desthost, cli_credentials_get_username(cmdline_credentials), &grp_id)) {
 		d_printf("message start: %s\n", smbcli_errstr(cli->tree));
 		return;
 	}

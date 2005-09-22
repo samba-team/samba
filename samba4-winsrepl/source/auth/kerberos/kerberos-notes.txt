@@ -365,4 +365,12 @@ by providing specific, english text-string error messages instead of
 just error code translations.
 
 
+Short name rules
+----------------
+
+Samba is highly likely to be misconfigured, in many weird and
+interesting ways.  As such, we have a patch for Heimdal that avoids
+DNS lookups on names without a . in them.  This should avoid some
+delay and root server load.
+
 

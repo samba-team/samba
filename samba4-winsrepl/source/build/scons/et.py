@@ -5,22 +5,17 @@ Tool-specific initialization for et
 """
 
 import SCons.Defaults
-import SCons.Scanner.ET
 import SCons.Util
-
-et_scanner = SCons.Scanner.ET.ETScan()
+import SCons.Tool
 
 et_builder = SCons.Builder.Builder(action='$ETCOM',
                                      src_suffix = '.et',
-                                     suffix='.c',
-                                     scanner = et_scanner)
+                                     suffix='.c')
 
 def generate(env):
-    env['ET']          = 'FIXME'
-    env['PROTOCOM']       = '$ET $SOURCE'
-    env['BUILDERS']['ET'] = et_builder
+    env['ET']          = './bin/compile_et'
+    env['ETCOM']       = '$ET $SOURCE'
+    env['BUILDERS']['ErrorTable'] = et_builder
 
 def exists(env):
-	return env.Detect('FIXME')
-
-
+	return env.Detect(['./bin/compile_et'])

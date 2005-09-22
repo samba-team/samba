@@ -32,8 +32,7 @@ static const char *cmdline_get_userpassword(struct cli_credentials *credentials)
 	const char *username;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
-	domain = cli_credentials_get_domain(credentials);
-	username = cli_credentials_get_username(credentials, mem_ctx);
+	cli_credentials_get_ntlm_username_domain(credentials, mem_ctx, &username, &domain);
 	if (domain && domain[0]) {
 		prompt = talloc_asprintf(mem_ctx, "Password for [%s\\%s]:", 
 					 domain, username);
