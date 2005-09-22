@@ -1484,8 +1484,9 @@ void init_reg_q_shutdown(REG_Q_SHUTDOWN *q_u, const char *msg,
 	q_u->server = TALLOC_P( get_talloc_ctx(), uint16 );
 	*q_u->server = 0x1;
 
+	q_u->message = TALLOC_ZERO_P( get_talloc_ctx(), UNISTR4 );
+
 	if ( msg && *msg ) { 
-		q_u->message = TALLOC_P( get_talloc_ctx(), UNISTR4 );
 		init_unistr4( q_u->message, msg, UNI_FLAGS_NONE );
 
 		/* Win2000 is apparently very sensitive to these lengths */
