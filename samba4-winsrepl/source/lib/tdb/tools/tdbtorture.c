@@ -39,6 +39,7 @@
 #define TRANSACTION_PROB 10
 #define LOCKSTORE_PROB 5
 #define TRAVERSE_PROB 20
+#define TRAVERSE_READ_PROB 20
 #define CULL_PROB 100
 #define KEYLEN 3
 #define DATALEN 100
@@ -192,6 +193,13 @@ static void addrec_db(void)
 	}
 #endif
 
+#if TRAVERSE_READ_PROB
+	if (random() % TRAVERSE_READ_PROB == 0) {
+		tdb_traverse_read(db, NULL, NULL);
+		goto next;
+	}
+#endif
+
 	data = tdb_fetch(db, key);
 	if (data.dptr) free(data.dptr);
 
@@ -273,7 +281,7 @@ static void usage(void)
 		addrec_db();
 	}
 
-	tdb_traverse(db, NULL, NULL);
+	tdb_traverse_read(db, NULL, NULL);
 	tdb_traverse(db, traverse_fn, NULL);
 	tdb_traverse(db, traverse_fn, NULL);
 

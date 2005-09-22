@@ -472,7 +472,7 @@ static int ltdb_search_full(struct ldb_module *module,
 	sinfo->count = 0;
 	sinfo->failures = 0;
 
-	ret = tdb_traverse(ltdb->tdb, search_func, sinfo);
+	ret = tdb_traverse_read(ltdb->tdb, search_func, sinfo);
 
 	if (ret == -1) {
 		talloc_free(sinfo);

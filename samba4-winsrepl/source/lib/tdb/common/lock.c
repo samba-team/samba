@@ -42,10 +42,12 @@ int tdb_brlock_len(struct tdb_context *tdb, tdb_off_t offset,
 	struct flock fl;
 	int ret;
 
-	if (tdb->flags & TDB_NOLOCK)
+	if (tdb->flags & TDB_NOLOCK) {
 		return 0;
+	}
+
 	if ((rw_type == F_WRLCK) && (tdb->read_only)) {
-		errno = EACCES;
+		tdb->ecode = TDB_ERR_RDONLY;
 		return -1;
 	}
 
@@ -64,8 +66,8 @@ int tdb_brlock_len(struct tdb_context *tdb, tdb_off_t offset,
 		 * EAGAIN is an expected return from non-blocking
 		 * locks. */
 		if (errno != EAGAIN) {
-			TDB_LOG((tdb, 5, "tdb_brlock failed (fd=%d) at offset %d rw_type=%d lck_type=%d: %s\n", 
-				 tdb->fd, offset, rw_type, lck_type, 
+			TDB_LOG((tdb, 5, "tdb_brlock failed (fd=%d) at offset %d rw_type=%d lck_type=%d len=%d: %s\n", 
+				 tdb->fd, offset, rw_type, lck_type, len,
 				 strerror(errno)));
 		} else if (!probe && lck_type != F_SETLK) {
 			/* Ensure error code is set for log fun to examine. */

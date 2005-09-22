@@ -43,7 +43,8 @@ static struct tdb_errname {
 	     {TDB_ERR_EXISTS, "Record exists"},
 	     {TDB_ERR_NOLOCK, "Lock exists on other keys"},
 	     {TDB_ERR_EINVAL, "Invalid parameter"},
-	     {TDB_ERR_NOEXIST, "Record does not exist"} };
+	     {TDB_ERR_NOEXIST, "Record does not exist"},
+	     {TDB_ERR_RDONLY, "write not permitted"} };
 
 /* Error string for the last tdb error */
 const char *tdb_errorstr(struct tdb_context *tdb)
