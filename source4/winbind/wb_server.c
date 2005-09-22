@@ -123,7 +123,8 @@ static void wbsrv_recv(struct stream_connection *conn, uint16_t flags)
 	/* we have a full request - parse it */
 	status = ops->pull_request(wbconn->partial, wbconn, &call);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
-	call->wbconn = wbconn;
+	call->wbconn	= wbconn;
+	call->event_ctx	= conn->event.ctx;
 
 	/*
 	 * we have parsed the request, so we can reset the wbconn->partial_read,

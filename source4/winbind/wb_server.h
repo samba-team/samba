@@ -107,6 +107,9 @@ struct wbsrv_call {
 #define WBSRV_CALL_FLAGS_REPLY_ASYNC 0x00000001
 	uint32_t flags;
 
+	/* the backend should use this event context */
+	struct event_context *event_ctx;
+
 	/* the connection the call belongs to */
 	struct wbsrv_connection *wbconn;
 
