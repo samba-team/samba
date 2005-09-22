@@ -58,15 +58,10 @@ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
  * @retval The username set on this context.
  * @note Return value will never be NULL except by programmer error.
  */
-const char *cli_credentials_get_username(struct cli_credentials *cred, TALLOC_CTX *mem_ctx)
+const char *cli_credentials_get_username(struct cli_credentials *cred)
 {
 	if (cred->machine_account_pending) {
 		cli_credentials_set_machine_account(cred);
-	}
-
-	/* If we have a principal set on this, we want to login with "" domain and user@realm */
-	if (cred->username_obtained < cred->principal_obtained) {
-		return cli_credentials_get_principal(cred, mem_ctx);
 	}
 
 	if (cred->username_obtained == CRED_CALLBACK) {
@@ -74,7 +69,7 @@ const char *cli_credentials_get_username(struct cli_credentials *cred, TALLOC_CT
 		cred->username_obtained = CRED_SPECIFIED;
 	}
 
-	return talloc_reference(mem_ctx, cred->username);
+	return cred->username;
 }
 
 BOOL cli_credentials_set_username(struct cli_credentials *cred, 
@@ -122,10 +117,12 @@ const char *cli_credentials_get_principal(struct cli_credentials *cred, TALLOC_C
 
 	if (cred->principal_obtained < cred->username_obtained) {
 		if (cred->domain_obtained > cred->realm_obtained) {
-			return NULL;
+			return talloc_asprintf(mem_ctx, "%s@%s", 
+					       cli_credentials_get_username(cred),
+					       cli_credentials_get_domain(cred));
 		} else {
 			return talloc_asprintf(mem_ctx, "%s@%s", 
-					       cli_credentials_get_username(cred, mem_ctx),
+					       cli_credentials_get_username(cred),
 					       cli_credentials_get_realm(cred));
 		}
 	}
@@ -283,7 +280,6 @@ int cli_credentials_set_from_ccache(struct cli_credentials *cred,
 
 	realm = krb5_princ_realm(cred->ccache->smb_krb5_context->krb5_context, princ);
 
-	cli_credentials_set_realm(cred, *realm, obtained);
 	cli_credentials_set_principal(cred, name, obtained);
 
 	free(name);
@@ -466,11 +462,6 @@ const char *cli_credentials_get_domain(struct cli_credentials *cred)
 		cli_credentials_set_machine_account(cred);
 	}
 
-	/* If we have a principal set on this, we want to login with "" domain and user@realm */
-	if (cred->domain_obtained < cred->principal_obtained) {
-		return "";
-	}
-
 	if (cred->domain_obtained == CRED_CALLBACK) {
 		cred->domain = cred->domain_cb(cred);
 		cred->domain_obtained = CRED_SPECIFIED;
@@ -503,6 +494,19 @@ BOOL cli_credentials_set_domain_callback(struct cli_credentials *cred,
 	}
 
 	return False;
+}
+
+void cli_credentials_get_ntlm_username_domain(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, 
+					      const char **username, 
+					      const char **domain) 
+{
+	if (cred->principal_obtained > cred->username_obtained) {
+		*domain = talloc_strdup(mem_ctx, "");
+		*username = cli_credentials_get_principal(cred, mem_ctx);
+	} else {
+		*domain = cli_credentials_get_domain(cred);
+		*username = cli_credentials_get_username(cred);
+	}
 }
 
 /**
@@ -1028,7 +1032,7 @@ void cli_credentials_set_anonymous(struct cli_credentials *cred)
 BOOL cli_credentials_is_anonymous(struct cli_credentials *cred)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(cred);
-	const char *username = cli_credentials_get_username(cred, tmp_ctx);
+	const char *username = cli_credentials_get_username(cred);
 	
 	/* Yes, it is deliberate that we die if we have a NULL pointer
 	 * here - anonymous is "", not NULL, which is 'never specified,

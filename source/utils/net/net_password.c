@@ -49,7 +49,7 @@ static int net_password_change(struct net_context *ctx, int argc, const char **a
 	} else {
 		password_prompt = talloc_asprintf(ctx->mem_ctx, "Enter new password for account [%s\\%s]:", 
 							cli_credentials_get_domain(ctx->credentials), 
-							cli_credentials_get_username(ctx->credentials, ctx->mem_ctx));
+							cli_credentials_get_username(ctx->credentials));
 		new_password = getpass(password_prompt);
 	}
 
@@ -61,7 +61,7 @@ static int net_password_change(struct net_context *ctx, int argc, const char **a
 
 	/* prepare password change */
 	r.generic.level			= LIBNET_CHANGE_PASSWORD_GENERIC;
-	r.generic.in.account_name	= cli_credentials_get_username(ctx->credentials, ctx->mem_ctx);
+	r.generic.in.account_name	= cli_credentials_get_username(ctx->credentials);
 	r.generic.in.domain_name	= cli_credentials_get_domain(ctx->credentials);
 	r.generic.in.oldpassword	= cli_credentials_get_password(ctx->credentials);
 	r.generic.in.newpassword	= new_password;

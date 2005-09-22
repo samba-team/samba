@@ -122,7 +122,7 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 
  	tmp_ctx = talloc_new(mprMemCtx());	
 	
-	username    = cli_credentials_get_username(creds, tmp_ctx);
+	username    = cli_credentials_get_username(creds);
 	password    = cli_credentials_get_password(creds);
 	domain      = cli_credentials_get_domain(creds);
 	remote_host = cli_credentials_get_workstation(creds);

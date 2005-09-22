@@ -164,8 +164,8 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	user = cli_credentials_get_username(gensec_security->credentials, out_mem_ctx);
-	domain = cli_credentials_get_domain(gensec_security->credentials);
+	cli_credentials_get_ntlm_username_domain(gensec_security->credentials, out_mem_ctx, 
+						 &user, &domain);
 
 	nt_hash = cli_credentials_get_nt_hash(gensec_security->credentials, out_mem_ctx);
 
