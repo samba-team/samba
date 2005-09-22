@@ -97,6 +97,11 @@ static int tdb_oob(struct tdb_context *tdb, tdb_off_t len, int probe)
 static int tdb_write(struct tdb_context *tdb, tdb_off_t off, 
 		     const void *buf, tdb_len_t len)
 {
+	if (tdb->read_only) {
+		tdb->ecode = TDB_ERR_RDONLY;
+		return -1;
+	}
+
 	if (tdb->methods->tdb_oob(tdb, off + len, 0) != 0)
 		return -1;
 
@@ -224,6 +229,12 @@ void tdb_mmap(struct tdb_context *tdb)
 static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t addition)
 {
 	char buf[1024];
+
+	if (tdb->read_only) {
+		tdb->ecode = TDB_ERR_RDONLY;
+		return -1;
+	}
+
 	if (ftruncate(tdb->fd, size+addition) == -1) {
 		char b = 0;
 		if (pwrite(tdb->fd,  &b, 1, (size+addition) - 1) != 1) {

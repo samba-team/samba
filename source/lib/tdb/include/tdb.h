@@ -52,7 +52,7 @@ extern "C" {
 /* error codes */
 enum TDB_ERROR {TDB_SUCCESS=0, TDB_ERR_CORRUPT, TDB_ERR_IO, TDB_ERR_LOCK, 
 		TDB_ERR_OOM, TDB_ERR_EXISTS, TDB_ERR_NOLOCK, TDB_ERR_LOCK_TIMEOUT,
-		TDB_ERR_NOEXIST, TDB_ERR_EINVAL};
+		TDB_ERR_NOEXIST, TDB_ERR_EINVAL, TDB_ERR_RDONLY};
 
 typedef struct TDB_DATA {
 	unsigned char *dptr;
@@ -98,6 +98,7 @@ int tdb_close(struct tdb_context *tdb);
 TDB_DATA tdb_firstkey(struct tdb_context *tdb);
 TDB_DATA tdb_nextkey(struct tdb_context *tdb, TDB_DATA key);
 int tdb_traverse(struct tdb_context *tdb, tdb_traverse_func fn, void *);
+int tdb_traverse_read(struct tdb_context *tdb, tdb_traverse_func fn, void *);
 int tdb_exists(struct tdb_context *tdb, TDB_DATA key);
 int tdb_lockall(struct tdb_context *tdb);
 void tdb_unlockall(struct tdb_context *tdb);
