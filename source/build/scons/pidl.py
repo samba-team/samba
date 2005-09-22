@@ -10,7 +10,13 @@ import SCons.Scanner
 
 idl_scanner = SCons.Scanner.ClassicCPP("PIDLScan", '.idl', 'CPPPATH', r'depends\(([^,]+),+\)', SCons.Node.FS.default_fs)
 
+def idl_emitter(target, source, env):
+	base, ext = SCons.Util.splitext(str(source[0]))
+	result = ['gen_ndr/%s.c' % base, 'gen_ndr/%s.h' % base]
+	return result
+
 pidl_builder = SCons.Builder.Builder(action='$PIDLCOM',
+				     emitter = idl_emitter,
                                      src_suffix = '.idl',
                                      suffix='.c',
                                      scanner = idl_scanner)
@@ -18,7 +24,7 @@ pidl_builder = SCons.Builder.Builder(action='$PIDLCOM',
 def generate(env):
 	env['PIDL']          = env.Detect('pidl') or './pidl/pidl'
 	env['PIDLFLAGS']     = []
-	env['PIDLCOM']       = 'CPP=$CPP $PIDL $PIDLFLAGS -- $SOURCE'
+	env['PIDLCOM']       = '$PIDL $PIDLFLAGS -- $SOURCE'
 	env['BUILDERS']['NdrMarshaller'] = pidl_builder
 
 def exists(env):
