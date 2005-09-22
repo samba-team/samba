@@ -396,6 +396,8 @@ rk_strpoolprintf(struct rk_strpool *, const char *, ...)
 void ROKEN_LIB_FUNCTION
 rk_strpoolfree(struct rk_strpool *);
 
+void ROKEN_LIB_FUNCTION
+rk_dumpdata (const char *, const void *, size_t);
 
 ROKEN_CPP_END
 
