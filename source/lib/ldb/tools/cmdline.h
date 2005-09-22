@@ -34,6 +34,7 @@ struct ldb_cmdline {
 	int verbose;
 	int recursive;
 	int all_records;
+	int nosync;
 	const char **options;
 	int argc;
 	const char **argv;

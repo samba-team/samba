@@ -55,6 +55,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 		{ "num-searches", 0, POPT_ARG_INT, &options.num_searches, 0, "number of test searches", NULL },
 		{ "num-records", 0, POPT_ARG_INT, &options.num_records, 0, "number of test records", NULL },
 		{ "all", 'a',    POPT_ARG_NONE, &options.all_records, 0, "dn=*", NULL },
+		{ "nosync", 0,   POPT_ARG_NONE, &options.nosync, 0, "non-synchronous transactions", NULL },
 		{ "sorted", 'S', POPT_ARG_NONE, &options.sorted, 0, "sort attributes", NULL },
 		{ "sasl-mechanism", 0, POPT_ARG_STRING, &options.sasl_mechanism, 0, "choose SASL mechanism", "MECHANISM" },
 		{ "input", 'I', POPT_ARG_STRING, &options.input, 0, "Input File", "Input" },
@@ -159,7 +160,11 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 	}
 
 	if (strcmp(ret->url, "NONE") != 0) {
-		if (ldb_connect(ldb, ret->url, 0, ret->options) != 0) {
+		int flags = 0;
+		if (options.nosync) {
+			flags |= LDB_FLG_NOSYNC;
+		}
+		if (ldb_connect(ldb, ret->url, flags, ret->options) != 0) {
 			fprintf(stderr, "Failed to connect to %s - %s\n", 
 				ret->url, ldb_errstring(ldb));
 			goto failed;
