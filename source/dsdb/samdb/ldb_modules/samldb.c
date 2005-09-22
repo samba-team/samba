@@ -179,7 +179,7 @@ static struct dom_sid *samldb_get_new_sid(struct ldb_module *module,
 	struct ldb_message **res = NULL;
 	const struct ldb_dn *dom_dn;
 	uint32_t rid;
-	int ret, tries = 10;
+	int ret;
 	struct dom_sid *dom_sid, *obj_sid;
 
 	/* get the domain component part of the provided dn */
@@ -213,15 +213,7 @@ static struct dom_sid *samldb_get_new_sid(struct ldb_module *module,
 	}
 
 	/* allocate a new Rid for the domain */
-
-	/* we need to try multiple times to cope with two account
-	   creations at the same time */
-	while (tries--) {
-		ret = samldb_allocate_next_rid(module->ldb, mem_ctx, dom_dn, &rid);
-		if (ret != 1) {
-			break;
-		}
-	}
+	ret = samldb_allocate_next_rid(module->ldb, mem_ctx, dom_dn, &rid);
 	if (ret != 0) {
 		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Failed to increment nextRid of %s\n", ldb_dn_linearize(mem_ctx, dom_dn));
 		talloc_free(res);
