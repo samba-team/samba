@@ -299,6 +299,11 @@ static void start_test_index(struct ldb_context **ldb)
 	struct ldb_dn *indexlist;
 	struct ldb_dn *basedn;
 	int ret;
+	int flags = 0;
+
+	if (options->nosync) {
+		flags |= LDB_FLG_NOSYNC;
+	}
 
 	printf("Starting index test\n");
 
@@ -337,7 +342,7 @@ static void start_test_index(struct ldb_context **ldb)
 
 	(*ldb) = ldb_init(options);
 	
-	ret = ldb_connect(*ldb, options->url, 0, NULL);
+	ret = ldb_connect(*ldb, options->url, flags, NULL);
 	if (ret != 0) {
 		printf("failed to connect to %s\n", options->url);
 		exit(1);

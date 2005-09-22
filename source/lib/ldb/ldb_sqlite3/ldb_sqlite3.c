@@ -1522,7 +1522,7 @@ static int lsqlite3_end_trans(struct ldb_module *module, int status)
  */
 
 static int initialize(struct lsqlite3_private *lsqlite3,
-			struct ldb_context *ldb, const char *url)
+		      struct ldb_context *ldb, const char *url, int flags)
 {
 	TALLOC_CTX *local_ctx;
         long long queryInt;
@@ -1648,14 +1648,16 @@ static int initialize(struct lsqlite3_private *lsqlite3,
 		goto failed;
 	}
         
-	/* DANGEROUS */
-	ret = sqlite3_exec(lsqlite3->sqlite, "PRAGMA synchronous = OFF;", NULL, NULL, &errmsg);
-	if (ret != SQLITE_OK) {
-		if (errmsg) {
-			printf("lsqlite3 initializaion error: %s\n", errmsg);
-			free(errmsg);
+	if (flags & LDB_FLG_NOSYNC) {
+		/* DANGEROUS */
+		ret = sqlite3_exec(lsqlite3->sqlite, "PRAGMA synchronous = OFF;", NULL, NULL, &errmsg);
+		if (ret != SQLITE_OK) {
+			if (errmsg) {
+				printf("lsqlite3 initializaion error: %s\n", errmsg);
+				free(errmsg);
+			}
+			goto failed;
 		}
-		goto failed;
 	}
         
 	/* */
@@ -1836,7 +1838,7 @@ int lsqlite3_connect(struct ldb_context *ldb,
 	lsqlite3->options = NULL;
 	lsqlite3->trans_count = 0;
         
-	ret = initialize(lsqlite3, ldb, url);
+	ret = initialize(lsqlite3, ldb, url, flags);
 	if (ret != SQLITE_OK) {
 		goto failed;
 	}
