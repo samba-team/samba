@@ -1,10 +1,3 @@
-dn: ou=People,o=University of Michigan,c=TEST
-objectclass: organizationalUnit
-objectclass: extensibleObject
-ou: People
-uidNumber: 0
-gidNumber: 0
-
 dn: ou=Groups,o=University of Michigan,c=TEST
 objectclass: organizationalUnit
 ou: Groups

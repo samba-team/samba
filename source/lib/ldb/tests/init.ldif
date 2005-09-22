@@ -14,3 +14,18 @@ postaladdress: University of Michigan $ 535 W. William St. $ Ann Arbor, MI 481
  09 $ US
 telephonenumber: +1 313 764-1817
 associateddomain: example.com
+
+dn: ou=People,o=University of Michigan,c=TEST
+objectclass: organizationalUnit
+objectclass: extensibleObject
+ou: People
+uidNumber: 0
+gidNumber: 0
+
+dn: ou=Ldb Test,ou=People,o=University of Michigan,c=TEST
+objectclass: organizationalUnit
+objectclass: extensibleObject
+ou: People
+ou: Ldb Test
+uidNumber: 0
+gidNumber: 0
