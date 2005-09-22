@@ -46,7 +46,7 @@ static struct ldb_context *schannel_db_connect(TALLOC_CTX *mem_ctx)
 
 	existed = file_exists(path);
 	
-	ldb = ldb_wrap_connect(mem_ctx, path, 0, NULL);
+	ldb = ldb_wrap_connect(mem_ctx, path, LDB_FLG_NOSYNC, NULL);
 	talloc_free(path);
 	if (!ldb) {
 		return NULL;
