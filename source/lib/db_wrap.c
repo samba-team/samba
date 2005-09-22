@@ -90,6 +90,11 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 		talloc_free(ldb);
 		return NULL;
 	}
+
+	/* allow admins to force non-sync ldb for all databases */
+	if (lp_parm_bool(-1, "ldb", "nosync", False)) {
+		flags |= LDB_FLG_NOSYNC;
+	}
 	
 	ret = ldb_connect(ldb, real_url, flags, options);
 	if (ret == -1) {
