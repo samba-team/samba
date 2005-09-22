@@ -7,7 +7,7 @@
 # Copyright (C) 2005 Jelmer Vernooij <jelmer@samba.org>
 # Published under the GNU GPL
 
-import cPickle, string
+import cPickle, string, os
 
 # We don't care about NFS builds...
 
@@ -44,6 +44,9 @@ if hostenv['developer']:
 
 # Pull in GNU extensions
 hostenv.Append(CPPDEFINES = {'_GNU_SOURCE': 1})
+
+# Some tools get confused if $HOME isn't defined
+hostenv.Append(ENV={'HOME': os.environ['HOME']})
 
 # Store configuration data in a dictionary.
 
@@ -159,7 +162,7 @@ if hostenv['configure']:
 		if conf.CheckType(t, type_headers):
 			defines['HAVE_%s' % string.upper(t)] = 1
 
-	if conf.CheckType('comparison_fn_t', type_headers):
+	if conf.CheckType('comparison_fn_t', '#include <stdlib.h>'):
 		defines['HAVE_COMPARISON_FN_T'] = 1
 
 	if conf.CheckType('sig_atomic_t', '#include <signal.h>'):
