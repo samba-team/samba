@@ -144,6 +144,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 		errno = ENOMEM;
 		goto fail;
 	}
+	tdb_io_init(tdb);
 	tdb->fd = -1;
 	tdb->name = NULL;
 	tdb->map_ptr = NULL;
@@ -151,6 +152,12 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	tdb->open_flags = open_flags;
 	tdb->log_fn = log_fn?log_fn:null_log_fn;
 	tdb->hash_fn = hash_fn ? hash_fn : default_tdb_hash;
+
+	/* cache the page size */
+	tdb->page_size = getpagesize();
+	if (tdb->page_size <= 0) {
+		tdb->page_size = 0x2000;
+	}
 
 	if ((open_flags & O_ACCMODE) == O_WRONLY) {
 		TDB_LOG((tdb, 0, "tdb_open_ex: can't open tdb %s write-only\n",
@@ -186,7 +193,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	}
 
 	/* ensure there is only one process initialising at once */
-	if (tdb_brlock(tdb, GLOBAL_LOCK, F_WRLCK, F_SETLKW, 0) == -1) {
+	if (tdb->methods->tdb_brlock(tdb, GLOBAL_LOCK, F_WRLCK, F_SETLKW, 0) == -1) {
 		TDB_LOG((tdb, 0, "tdb_open_ex: failed to get global lock on %s: %s\n",
 			 name, strerror(errno)));
 		goto fail;	/* errno set by tdb_brlock */
@@ -194,7 +201,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 
 	/* we need to zero database if we are the only one with it open */
 	if ((tdb_flags & TDB_CLEAR_IF_FIRST) &&
-	    (locked = (tdb_brlock(tdb, ACTIVE_LOCK, F_WRLCK, F_SETLK, 0) == 0))) {
+	    (locked = (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_WRLCK, F_SETLK, 0) == 0))) {
 		open_flags |= O_CREAT;
 		if (ftruncate(tdb->fd, 0) == -1) {
 			TDB_LOG((tdb, 0, "tdb_open_ex: "
@@ -260,7 +267,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	}
 	tdb_mmap(tdb);
 	if (locked) {
-		if (tdb_brlock(tdb, ACTIVE_LOCK, F_UNLCK, F_SETLK, 0) == -1) {
+		if (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_UNLCK, F_SETLK, 0) == -1) {
 			TDB_LOG((tdb, 0, "tdb_open_ex: "
 				 "failed to take ACTIVE_LOCK on %s: %s\n",
 				 name, strerror(errno)));
@@ -275,15 +282,20 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 
 	if (tdb_flags & TDB_CLEAR_IF_FIRST) {
 		/* leave this lock in place to indicate it's in use */
-		if (tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1)
+		if (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1)
 			goto fail;
+	}
+
+	/* if needed, run recovery */
+	if (tdb_transaction_recover(tdb) == -1) {
+		goto fail;
 	}
 
  internal:
 	/* Internal (memory-only) databases skip all the code above to
 	 * do with disk files, and resume here by releasing their
 	 * global lock and hooking into the active list. */
-	if (tdb_brlock(tdb, GLOBAL_LOCK, F_UNLCK, F_SETLKW, 0) == -1)
+	if (tdb->methods->tdb_brlock(tdb, GLOBAL_LOCK, F_UNLCK, F_SETLKW, 0) == -1)
 		goto fail;
 	tdb->next = tdbs;
 	tdbs = tdb;
@@ -321,6 +333,10 @@ int tdb_close(struct tdb_context *tdb)
 {
 	struct tdb_context **i;
 	int ret = 0;
+
+	if (tdb->transaction) {
+		tdb_transaction_cancel(tdb);
+	}
 
 	if (tdb->map_ptr) {
 		if (tdb->flags & TDB_INTERNAL)
@@ -360,8 +376,20 @@ int tdb_reopen(struct tdb_context *tdb)
 {
 	struct stat st;
 
-	if (tdb->flags & TDB_INTERNAL)
+	if (tdb->flags & TDB_INTERNAL) {
 		return 0; /* Nothing to do. */
+	}
+
+	if (tdb->num_locks != 0) {
+		TDB_LOG((tdb, 0, "tdb_reopen: reopen not allowed with locks held\n"));
+		goto fail;
+	}
+
+	if (tdb->transaction != 0) {
+		TDB_LOG((tdb, 0, "tdb_reopen: reopen not allowed inside a transaction\n"));
+		goto fail;
+	}
+
 	if (tdb_munmap(tdb) != 0) {
 		TDB_LOG((tdb, 0, "tdb_reopen: munmap failed (%s)\n", strerror(errno)));
 		goto fail;
@@ -374,7 +402,7 @@ int tdb_reopen(struct tdb_context *tdb)
 		goto fail;
 	}
 	if ((tdb->flags & TDB_CLEAR_IF_FIRST) && 
-	    (tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1)) {
+	    (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1)) {
 		TDB_LOG((tdb, 0, "tdb_reopen: failed to obtain active lock\n"));
 		goto fail;
 	}

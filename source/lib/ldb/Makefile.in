@@ -44,7 +44,8 @@ LIB_FLAGS=-Llib -lldb $(LDAP_LIBS) $(SQLITE3_LIBS) $(GCOV_LIBS) @LIBS@
 TDB_OBJ=$(TDBDIR)/common/tdb.o $(TDBDIR)/common/dump.o \
 	$(TDBDIR)/common/io.o $(TDBDIR)/common/lock.o \
 	$(TDBDIR)/common/open.o $(TDBDIR)/common/traverse.o \
-	$(TDBDIR)/common/freelist.o $(TDBDIR)/common/error.o 
+	$(TDBDIR)/common/freelist.o $(TDBDIR)/common/error.o \
+	$(TDBDIR)/common/transaction.o 
 TALLOC_OBJ=$(TALLOCDIR)/talloc.o
 
 LDB_TDB_OBJ=ldb_tdb/ldb_tdb.o \
