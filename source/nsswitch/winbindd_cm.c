@@ -1162,22 +1162,72 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	conn = &domain->conn;
 
 	if (conn->lsa_pipe == NULL) {
+		fstring conn_pwd;
+		pwd_get_cleartext(&conn->cli->pwd, conn_pwd);
+		if (conn->cli->user_name[0] && conn->cli->domain[0] &&
+		    conn_pwd[0]) {
+			/* We have an authenticated connection. Use
+			   a NTLMSSP SPNEGO authenticated LSA pipe with
+			   sign & seal. */
+			conn->lsa_pipe = 
+				cli_rpc_pipe_open_spnego_ntlmssp(conn->cli,
+								 PI_LSARPC,
+								 PIPE_AUTH_LEVEL_PRIVACY,
+								 conn->cli->domain,
+								 conn->cli->user_name,
+								 conn_pwd,
+								 &result);
+			if (conn->lsa_pipe == NULL) {
+				DEBUG(10,("cm_connect_lsa: failed to connect "
+					  "to LSA pipe for domain %s using "
+					  "NTLMSSP authenticated pipe: user "
+					  "%s\\%s. Error was %s\n",
+					  domain->name, conn->cli->domain,
+					  conn->cli->user_name,
+					  nt_errstr(result)));
+			} else {
+				DEBUG(10,("cm_connect_lsa: connected to LSA "
+					  "pipe for domain %s using NTLMSSP "
+					  "authenticated pipe: user %s\\%s\n",
+					  domain->name, conn->cli->domain,
+					  conn->cli->user_name ));
+			}
+		}
+		
 #ifndef DISABLE_SCHANNEL_WIN2K3_SP1
-		struct dcinfo *p_dcinfo;
+		/* Fall back to schannel if it's a W2K pre-SP1 box. */
+		if (conn->lsa_pipe == NULL) {
+			struct dcinfo *p_dcinfo;
 
-		if (cm_get_schannel_dcinfo(domain, &p_dcinfo)) {
-			conn->lsa_pipe =
-				cli_rpc_pipe_open_schannel_with_key(conn->cli,
-								    PI_LSARPC,
-								    PIPE_AUTH_LEVEL_PRIVACY,
-								    domain->name,
-								    p_dcinfo,
-								    &result);
-		} else
+			if (cm_get_schannel_dcinfo(domain, &p_dcinfo)) {
+				conn->lsa_pipe =
+					cli_rpc_pipe_open_schannel_with_key(conn->cli,
+									    PI_LSARPC,
+									    PIPE_AUTH_LEVEL_PRIVACY,
+									    domain->name,
+									    p_dcinfo,
+									    &result);
+			}
+			if (conn->lsa_pipe == NULL) {
+				DEBUG(10,("cm_connect_lsa: failed to connect "
+					  "to LSA pipe for domain %s using "
+					  "schannel authenticated. Error "
+					  "was %s\n", domain->name,
+					  nt_errstr(result) ));
+			} else {
+				DEBUG(10,("cm_connect_lsa: connected to LSA "
+					  "pipe for domain %s using schannel.\n",
+					  domain->name ));
+			}
+		}
 #endif	/* DISABLE_SCHANNEL_WIN2K3_SP1 */
+
+		/* Finally fall back to anonymous. */
+		if (conn->lsa_pipe == NULL) {
 			conn->lsa_pipe = cli_rpc_pipe_open_noauth(conn->cli,
 								PI_LSARPC,
 								&result);
+		}
 
 		if (conn->lsa_pipe == NULL) {
 			result = NT_STATUS_PIPE_NOT_AVAILABLE;
