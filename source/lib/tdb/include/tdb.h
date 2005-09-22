@@ -45,13 +45,14 @@ extern "C" {
 #define TDB_NOMMAP   8 /* don't use mmap */
 #define TDB_CONVERT 16 /* convert endian (internal use) */
 #define TDB_BIGENDIAN 32 /* header is big-endian (internal use) */
+#define TDB_NOSYNC   64 /* don't use synchronous transactions */
 
 #define TDB_ERRCODE(code, ret) ((tdb->ecode = (code)), ret)
 
 /* error codes */
 enum TDB_ERROR {TDB_SUCCESS=0, TDB_ERR_CORRUPT, TDB_ERR_IO, TDB_ERR_LOCK, 
 		TDB_ERR_OOM, TDB_ERR_EXISTS, TDB_ERR_NOLOCK, TDB_ERR_LOCK_TIMEOUT,
-		TDB_ERR_NOEXIST};
+		TDB_ERR_NOEXIST, TDB_ERR_EINVAL};
 
 typedef struct TDB_DATA {
 	unsigned char *dptr;
@@ -59,7 +60,15 @@ typedef struct TDB_DATA {
 } TDB_DATA;
 
 #ifndef PRINTF_ATTRIBUTE
-#define PRINTF_ATTRIBUTE(a,b)
+#if (__GNUC__ >= 3)
+/** Use gcc attribute to check printf fns.  a1 is the 1-based index of
+ * the parameter containing the format, and a2 the index of the first
+ * argument. Note that some gcc 2.x versions don't handle this
+ * properly **/
+#define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
+#else
+#define PRINTF_ATTRIBUTE(a1, a2)
+#endif
 #endif
 
 /* this is the context structure that is returned from a db open */
@@ -95,6 +104,10 @@ void tdb_unlockall(struct tdb_context *tdb);
 const char *tdb_name(struct tdb_context *tdb);
 int tdb_fd(struct tdb_context *tdb);
 tdb_log_func tdb_log_fn(struct tdb_context *tdb);
+int tdb_transaction_start(struct tdb_context *tdb);
+int tdb_transaction_commit(struct tdb_context *tdb);
+int tdb_transaction_cancel(struct tdb_context *tdb);
+int tdb_transaction_recover(struct tdb_context *tdb);
 
 /* Low level locking functions: use with care */
 int tdb_chainlock(struct tdb_context *tdb, TDB_DATA key);

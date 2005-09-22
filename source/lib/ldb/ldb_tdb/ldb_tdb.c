@@ -833,14 +833,28 @@ failed:
 
 static int ltdb_start_trans(struct ldb_module *module)
 {
-	/* TODO: implement transactions */
+	struct ltdb_private *ltdb = module->private_data;
+
+	if (tdb_transaction_start(ltdb->tdb) != 0) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	return LDB_ERR_SUCCESS;
 }
 
 static int ltdb_end_trans(struct ldb_module *module, int status)
 {
-	/* TODO: implement transactions */
+	struct ltdb_private *ltdb = module->private_data;
+
+	if (status != LDB_ERR_SUCCESS) {
+		if (tdb_transaction_cancel(ltdb->tdb) != 0) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	} else {
+		if (tdb_transaction_commit(ltdb->tdb) != 0) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	}
 
 	return status;
 }
@@ -880,6 +894,12 @@ int ltdb_connect(struct ldb_context *ldb, const char *url,
 	}
 
 	tdb_flags = TDB_DEFAULT;
+
+#if 0
+	/* set this to run tdb without disk sync, but still with
+	   transactions */
+	tdb_flags |= TDB_NOSYNC;
+#endif
 
 	if (flags & LDB_FLG_RDONLY) {
 		open_flags = O_RDONLY;

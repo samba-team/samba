@@ -42,6 +42,7 @@ static struct tdb_errname {
 	     {TDB_ERR_OOM, "Out of memory"},
 	     {TDB_ERR_EXISTS, "Record exists"},
 	     {TDB_ERR_NOLOCK, "Lock exists on other keys"},
+	     {TDB_ERR_EINVAL, "Invalid parameter"},
 	     {TDB_ERR_NOEXIST, "Record does not exist"} };
 
 /* Error string for the last tdb error */
