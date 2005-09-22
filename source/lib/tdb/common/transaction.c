@@ -372,6 +372,15 @@ int tdb_transaction_start(struct tdb_context *tdb)
 		return -1;
 	}
 
+	if (tdb->travlocks.next != NULL) {
+		/* you cannot use transactions inside a traverse (although you can use
+		   traverse inside a transaction) as otherwise you can end up with
+		   deadlock */
+		TDB_LOG((tdb, 0, "tdb_transaction_start: cannot start a transaction within a traverse\n"));
+		tdb->ecode = TDB_ERR_LOCK;
+		return -1;
+	}
+
 	tdb->transaction = calloc(sizeof(struct tdb_transaction), 1);
 	if (tdb->transaction == NULL) {
 		tdb->ecode = TDB_ERR_OOM;
@@ -388,15 +397,9 @@ int tdb_transaction_start(struct tdb_context *tdb)
 		return -1;
 	}
 	
-	/* get a write lock from the freelist to the end of file. It
-	   would be much better to make this a read lock as it would
-	   increase parallelism, but it could lead to deadlocks on
-	   commit when a write lock needs to be taken. 
-
-	   TODO: look at alternative locking strategies to allow this
-	   to be a read lock 
-	*/
-	if (tdb_brlock_len(tdb, FREELIST_TOP, F_WRLCK, F_SETLKW, 0, 0) == -1) {
+	/* get a read lock from the freelist to the end of file. This
+	   is upgraded to a write lock during the commit */
+	if (tdb_brlock_len(tdb, FREELIST_TOP, F_RDLCK, F_SETLKW, 0, 0) == -1) {
 		TDB_LOG((tdb, 0, "tdb_transaction_start: failed to get hash locks\n"));
 		tdb->ecode = TDB_ERR_LOCK;
 		goto fail;
@@ -759,6 +762,14 @@ int tdb_transaction_commit(struct tdb_context *tdb)
 	if (tdb->num_locks) {
 		tdb->ecode = TDB_ERR_LOCK;
 		TDB_LOG((tdb, 0, "tdb_transaction_commit: locks pending on commit\n"));
+		tdb_transaction_cancel(tdb);
+		return -1;
+	}
+
+	/* upgrade the main transaction lock region to a write lock */
+	if (tdb_brlock_len(tdb, FREELIST_TOP, F_WRLCK, F_SETLKW, 0, 0) == -1) {
+		TDB_LOG((tdb, 0, "tdb_transaction_start: failed to upgrade hash locks\n"));
+		tdb->ecode = TDB_ERR_LOCK;
 		tdb_transaction_cancel(tdb);
 		return -1;
 	}

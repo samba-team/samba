@@ -227,6 +227,11 @@ int tdb_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	char *p = NULL;
 	int ret = 0;
 
+	if (tdb->read_only) {
+		tdb->ecode = TDB_ERR_RDONLY;
+		return -1;
+	}
+
 	/* find which hash bucket it is in */
 	hash = tdb->hash_fn(&key);
 	if (tdb_lock(tdb, BUCKET(hash), F_WRLCK) == -1)

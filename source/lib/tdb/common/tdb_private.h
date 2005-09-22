@@ -162,6 +162,7 @@ struct tdb_traverse_lock {
 	struct tdb_traverse_lock *next;
 	u32 off;
 	u32 hash;
+	int lock_rw;
 };
 
 

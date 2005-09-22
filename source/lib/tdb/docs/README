@@ -127,7 +127,25 @@ int tdb_traverse(TDB_CONTEXT *tdb, int (*fn)(TDB_CONTEXT *tdb,
 
    if fn is NULL then it is not called
 
-   a non-zero return value from fn() indicates that the traversal should stop
+   a non-zero return value from fn() indicates that the traversal
+   should stop. Traversal callbacks may not start transactions.
+
+----------------------------------------------------------------------
+int tdb_traverse_read(TDB_CONTEXT *tdb, int (*fn)(TDB_CONTEXT *tdb,
+                     TDB_DATA key, TDB_DATA dbuf, void *state), void *state);
+
+   traverse the entire database - calling fn(tdb, key, data, state) on
+   each element, but marking the database read only during the
+   traversal, so any write operations will fail. This allows tdb to
+   use read locks, which increases the parallelism possible during the
+   traversal.
+
+   return -1 on error or the record count traversed
+
+   if fn is NULL then it is not called
+
+   a non-zero return value from fn() indicates that the traversal
+   should stop. Traversal callbacks may not start transactions.
 
 ----------------------------------------------------------------------
 TDB_DATA tdb_firstkey(TDB_CONTEXT *tdb);

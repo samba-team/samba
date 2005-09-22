@@ -71,7 +71,7 @@ static int tdb_next_lock(struct tdb_context *tdb, struct tdb_traverse_lock *tloc
 			}
 		}
 
-		if (tdb_lock(tdb, tlock->hash, F_WRLCK) == -1)
+		if (tdb_lock(tdb, tlock->hash, tlock->lock_rw) == -1)
 			return -1;
 
 		/* No previous record?  Start at top of chain. */
@@ -118,7 +118,7 @@ static int tdb_next_lock(struct tdb_context *tdb, struct tdb_traverse_lock *tloc
 			    tdb_do_delete(tdb, current, rec) != 0)
 				goto fail;
 		}
-		tdb_unlock(tdb, tlock->hash, F_WRLCK);
+		tdb_unlock(tdb, tlock->hash, tlock->lock_rw);
 		want_next = 0;
 	}
 	/* We finished iteration without finding anything */
@@ -126,7 +126,7 @@ static int tdb_next_lock(struct tdb_context *tdb, struct tdb_traverse_lock *tloc
 
  fail:
 	tlock->off = 0;
-	if (tdb_unlock(tdb, tlock->hash, F_WRLCK) != 0)
+	if (tdb_unlock(tdb, tlock->hash, tlock->lock_rw) != 0)
 		TDB_LOG((tdb, 0, "tdb_next_lock: On error unlock failed!\n"));
 	return -1;
 }
@@ -136,32 +136,33 @@ static int tdb_next_lock(struct tdb_context *tdb, struct tdb_traverse_lock *tloc
    if fn is NULL then it is not called
    a non-zero return value from fn() indicates that the traversal should stop
   */
-int tdb_traverse(struct tdb_context *tdb, tdb_traverse_func fn, void *private)
+static int tdb_traverse_internal(struct tdb_context *tdb, 
+				 tdb_traverse_func fn, void *private,
+				 struct tdb_traverse_lock *tl)
 {
 	TDB_DATA key, dbuf;
 	struct list_struct rec;
-	struct tdb_traverse_lock tl = { NULL, 0, 0 };
 	int ret, count = 0;
 
 	/* This was in the initializaton, above, but the IRIX compiler
 	 * did not like it.  crh
 	 */
-	tl.next = tdb->travlocks.next;
+	tl->next = tdb->travlocks.next;
 
 	/* fcntl locks don't stack: beware traverse inside traverse */
-	tdb->travlocks.next = &tl;
+	tdb->travlocks.next = tl;
 
 	/* tdb_next_lock places locks on the record returned, and its chain */
-	while ((ret = tdb_next_lock(tdb, &tl, &rec)) > 0) {
+	while ((ret = tdb_next_lock(tdb, tl, &rec)) > 0) {
 		count++;
 		/* now read the full record */
-		key.dptr = tdb_alloc_read(tdb, tl.off + sizeof(rec), 
+		key.dptr = tdb_alloc_read(tdb, tl->off + sizeof(rec), 
 					  rec.key_len + rec.data_len);
 		if (!key.dptr) {
 			ret = -1;
-			if (tdb_unlock(tdb, tl.hash, F_WRLCK) != 0)
+			if (tdb_unlock(tdb, tl->hash, tl->lock_rw) != 0)
 				goto out;
-			if (tdb_unlock_record(tdb, tl.off) != 0)
+			if (tdb_unlock_record(tdb, tl->off) != 0)
 				TDB_LOG((tdb, 0, "tdb_traverse: key.dptr == NULL and unlock_record failed!\n"));
 			goto out;
 		}
@@ -170,30 +171,69 @@ int tdb_traverse(struct tdb_context *tdb, tdb_traverse_func fn, void *private)
 		dbuf.dsize = rec.data_len;
 
 		/* Drop chain lock, call out */
-		if (tdb_unlock(tdb, tl.hash, F_WRLCK) != 0) {
+		if (tdb_unlock(tdb, tl->hash, tl->lock_rw) != 0) {
 			ret = -1;
 			goto out;
 		}
 		if (fn && fn(tdb, key, dbuf, private)) {
 			/* They want us to terminate traversal */
 			ret = count;
-			if (tdb_unlock_record(tdb, tl.off) != 0) {
+			if (tdb_unlock_record(tdb, tl->off) != 0) {
 				TDB_LOG((tdb, 0, "tdb_traverse: unlock_record failed!\n"));;
 				ret = -1;
 			}
-			tdb->travlocks.next = tl.next;
+			tdb->travlocks.next = tl->next;
 			SAFE_FREE(key.dptr);
 			return count;
 		}
 		SAFE_FREE(key.dptr);
 	}
 out:
-	tdb->travlocks.next = tl.next;
+	tdb->travlocks.next = tl->next;
 	if (ret < 0)
 		return -1;
 	else
 		return count;
 }
+
+
+/*
+  a write style traverse - temporarily marks the db read only
+*/
+int tdb_traverse_read(struct tdb_context *tdb, 
+		      tdb_traverse_func fn, void *private)
+{
+	struct tdb_traverse_lock tl = { NULL, 0, 0, F_RDLCK };
+	int ret, read_only = tdb->read_only;
+	tdb->read_only = 1;
+	ret = tdb_traverse_internal(tdb, fn, private, &tl);
+	tdb->read_only = read_only;
+	return ret;
+}
+
+/*
+  a write style traverse - needs to get the transaction lock to
+  prevent deadlocks
+*/
+int tdb_traverse(struct tdb_context *tdb, 
+		 tdb_traverse_func fn, void *private)
+{
+	struct tdb_traverse_lock tl = { NULL, 0, 0, F_WRLCK };
+	int ret;
+	
+	if (tdb->methods->tdb_brlock(tdb, TRANSACTION_LOCK, F_WRLCK, F_SETLKW, 0) == -1) {
+		TDB_LOG((tdb, 0, "tdb_traverse: failed to get transaction lock\n"));
+		tdb->ecode = TDB_ERR_LOCK;
+		return -1;
+	}
+
+	ret = tdb_traverse_internal(tdb, fn, private, &tl);
+
+	tdb->methods->tdb_brlock(tdb, TRANSACTION_LOCK, F_UNLCK, F_SETLKW, 0);
+
+	return ret;
+}
+
 
 /* find the first entry in the database and return its key */
 TDB_DATA tdb_firstkey(struct tdb_context *tdb)
