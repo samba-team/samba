@@ -52,7 +52,7 @@ struct samlogon_state {
 	struct netr_LogonSamLogonWithFlags r_flags;
 	struct netr_Authenticator auth, auth2;
 	struct creds_CredentialState *creds;
-
+	NTSTATUS expected_error;
 	DATA_BLOB chall;
 };
 
@@ -335,12 +335,18 @@ static BOOL test_lm_ntlm_broken(struct samlogon_state *samlogon_state, enum ntlm
 		return ((break_which == BREAK_NT) || (break_which == BREAK_BOTH));
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
+		SAFE_FREE(*error_string);
+		asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
+		return False;
+	} else if (NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status) && !NT_STATUS_IS_OK(nt_status)) {
+		return True;
+	} else if (!NT_STATUS_IS_OK(nt_status)) {
 		return False;
 	}
 
 	if (break_which == NO_NT && !lm_good) {
-		printf("LM password is 'long' (> 14 chars and therefore invalid) but login did not fail!");
+	        *error_string = strdup("LM password is 'long' (> 14 chars and therefore invalid) but login did not fail!");
 		return False;
 	}
 
@@ -362,7 +368,7 @@ static BOOL test_lm_ntlm_broken(struct samlogon_state *samlogon_state, enum ntlm
 		memset(lm_key_expected+8, '\0', 8);
 		if (memcmp(lm_key_expected, user_session_key, 
 			   16) != 0) {
-			printf("NT Session Key does not match expectations (should be first-8 LM hash)!\n");
+			*error_string = strdup("NT Session Key does not match expectations (should be first-8 LM hash)!\n");
 			printf("user_session_key:\n");
 			dump_data(1, user_session_key, sizeof(user_session_key));
 			printf("expected:\n");
@@ -374,7 +380,7 @@ static BOOL test_lm_ntlm_broken(struct samlogon_state *samlogon_state, enum ntlm
 	default:
 		if (memcmp(session_key.data, user_session_key, 
 			   sizeof(user_session_key)) != 0) {
-			printf("NT Session Key does not match expectations!\n");
+			*error_string = strdup("NT Session Key does not match expectations!\n");
 			printf("user_session_key:\n");
 			dump_data(1, user_session_key, 16);
 			printf("expected:\n");
@@ -433,7 +439,13 @@ static BOOL test_ntlm_in_lm(struct samlogon_state *samlogon_state, char **error_
 				   user_session_key,
 				   error_string);
 	
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
+		SAFE_FREE(*error_string);
+		asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
+		return False;
+	} else if (NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status) && !NT_STATUS_IS_OK(nt_status)) {
+		return True;
+	} else if (!NT_STATUS_IS_OK(nt_status)) {
 		return False;
 	}
 
@@ -503,6 +515,16 @@ static BOOL test_ntlm_in_both(struct samlogon_state *samlogon_state, char **erro
 				   user_session_key,
 				   error_string);
 	
+	if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
+		SAFE_FREE(*error_string);
+		asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
+		return False;
+	} else if (NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status) && !NT_STATUS_IS_OK(nt_status)) {
+		return True;
+	} else if (!NT_STATUS_IS_OK(nt_status)) {
+		return False;
+	}
+
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return False;
 	}
@@ -601,9 +623,16 @@ static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state,
 		return break_which == BREAK_BOTH;
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
+		SAFE_FREE(*error_string);
+		asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
+		return False;
+	} else if (NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status) && !NT_STATUS_IS_OK(nt_status)) {
+		return True;
+	} else if (!NT_STATUS_IS_OK(nt_status)) {
 		return False;
 	}
+
 
 	switch (break_which) {
 	case NO_NT:
@@ -752,7 +781,13 @@ static BOOL test_lmv2_ntlm_broken(struct samlogon_state *samlogon_state,
 		return ((break_which == BREAK_NT) || (break_which == BREAK_BOTH));
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
+		SAFE_FREE(*error_string);
+		asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
+		return False;
+	} else if (NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status) && !NT_STATUS_IS_OK(nt_status)) {
+		return True;
+	} else if (!NT_STATUS_IS_OK(nt_status)) {
 		return False;
 	}
 
@@ -1006,7 +1041,13 @@ static BOOL test_ntlm2(struct samlogon_state *samlogon_state, char **error_strin
 				   user_session_key,
 				   error_string);
 	
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
+		SAFE_FREE(*error_string);
+		asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
+		return False;
+	} else if (NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status) && !NT_STATUS_IS_OK(nt_status)) {
+		return True;
+	} else if (!NT_STATUS_IS_OK(nt_status)) {
 		return False;
 	}
 
@@ -1175,7 +1216,7 @@ static const struct ntlm_tests {
 static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			  struct creds_CredentialState *creds, 
 			  const char *account_domain, const char *account_name, 
-			  const char *plain_pass,
+			  const char *plain_pass, NTSTATUS expected_error,
 			  int n_subtests)
 {
 	TALLOC_CTX *fn_ctx = talloc_named(mem_ctx, 0, "test_SamLogon function-level context");
@@ -1196,7 +1237,7 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	samlogon_state.password = plain_pass;
 	samlogon_state.p = p;
 	samlogon_state.creds = creds;
-
+	samlogon_state.expected_error = expected_error;
 	samlogon_state.chall = data_blob_talloc(fn_ctx, NULL, 8);
 
 	generate_random_buffer(samlogon_state.chall.data, 8);
@@ -1263,7 +1304,7 @@ BOOL test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			   struct creds_CredentialState *creds, 
 			   const char *workstation_name,
 			   const char *account_domain, const char *account_name,
-			   const char *plain_pass)
+			   const char *plain_pass, NTSTATUS expected_error)
 {
 	NTSTATUS status;
 	TALLOC_CTX *fn_ctx = talloc_named(mem_ctx, 0, "test_InteractiveLogon function-level context");
@@ -1318,9 +1359,9 @@ BOOL test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	talloc_free(fn_ctx);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("[%s]\\[%s] netr_LogonSamLogonWithFlags - %s\n", 
-		       account_name, account_domain, nt_errstr(status));
+	if (!NT_STATUS_EQUAL(expected_error, status)) {
+		printf("[%s]\\[%s] netr_LogonSamLogonWithFlags - expected %s got %s\n", 
+		       account_domain, account_name, nt_errstr(expected_error), nt_errstr(status));
 		return False;
 	}
 
@@ -1334,7 +1375,7 @@ BOOL torture_rpc_samlogon(void)
         NTSTATUS status;
         struct dcerpc_pipe *p;
 	struct dcerpc_binding *b;
-	struct cli_credentials *credentials;
+	struct cli_credentials *machine_credentials;
 	TALLOC_CTX *mem_ctx = talloc_init("torture_rpc_netlogon");
 	BOOL ret = True;
 	struct test_join *join_ctx;
@@ -1358,73 +1399,7 @@ BOOL torture_rpc_samlogon(void)
 
 	struct creds_CredentialState *creds;
 
-	struct {
-		const char *domain;
-		const char *username;
-		const char *password;
-		BOOL network_login;
-	} usercreds[] = {
-		{
-			cli_credentials_get_domain(cmdline_credentials),
-			cli_credentials_get_username(cmdline_credentials, mem_ctx),
-			cli_credentials_get_password(cmdline_credentials),
-			True
-		},
-		{
-			cli_credentials_get_realm(cmdline_credentials),
-			cli_credentials_get_username(cmdline_credentials, mem_ctx),
-			cli_credentials_get_password(cmdline_credentials),
-			True
-		},
-		{
-			NULL,
-			talloc_asprintf(mem_ctx, 
-					"%s@%s", 
-					cli_credentials_get_username(cmdline_credentials, mem_ctx),
-					cli_credentials_get_domain(cmdline_credentials)
-				),
-			cli_credentials_get_password(cmdline_credentials),
-			False
-		},
-		{
-			NULL,
-			talloc_asprintf(mem_ctx, 
-					"%s@%s", 
-					cli_credentials_get_username(cmdline_credentials, mem_ctx),
-					cli_credentials_get_realm(cmdline_credentials)
-				),
-			cli_credentials_get_password(cmdline_credentials),
-			True
-		},
-#if 0
-		{	
-			lp_parm_string(-1, "torture", "userdomain"),
-			TEST_USER_NAME,
-			NULL,
-			True
-		},
-		{
-			NULL,
-			talloc_asprintf(mem_ctx, 
-					"%s@%s", 
-					TEST_USER_NAME,
-					lp_realm()),
-			NULL,
-			True
-		},
-		{
-			NULL,
-			talloc_asprintf(mem_ctx, 
-					"%s@%s", 
-					TEST_USER_NAME,
-					lp_parm_string(-1, "torture", "userdomain")),
-			NULL,
-			False
-		}
-#endif
-	};
-		
-	credentials = cli_credentials_init(mem_ctx);
+	machine_credentials = cli_credentials_init(mem_ctx);
 
 	test_machine_account = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
 	/* We only need to join as a workstation here, and in future,
@@ -1446,9 +1421,6 @@ BOOL torture_rpc_samlogon(void)
 		return False;
 	}
 
-	usercreds[3].password = user_password;
-	usercreds[4].password = user_password;
-	usercreds[5].password = user_password;
 #endif
 
 	status = dcerpc_parse_binding(mem_ctx, binding, &b);
@@ -1464,17 +1436,18 @@ BOOL torture_rpc_samlogon(void)
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
 	b->flags |= DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_128;
 
-	cli_credentials_set_workstation(credentials, TEST_MACHINE_NAME, CRED_SPECIFIED);
-	cli_credentials_set_domain(credentials, lp_workgroup(), CRED_SPECIFIED);
-	cli_credentials_set_username(credentials, test_machine_account, CRED_SPECIFIED);
-	cli_credentials_set_password(credentials, machine_password, CRED_SPECIFIED);
-	cli_credentials_set_secure_channel_type(credentials,
+	cli_credentials_set_workstation(machine_credentials, TEST_MACHINE_NAME, CRED_SPECIFIED);
+	cli_credentials_set_domain(machine_credentials, lp_workgroup(), CRED_SPECIFIED);
+	cli_credentials_set_realm(machine_credentials, lp_realm(), CRED_SPECIFIED);
+	cli_credentials_set_username(machine_credentials, test_machine_account, CRED_SPECIFIED);
+	cli_credentials_set_password(machine_credentials, machine_password, CRED_SPECIFIED);
+	cli_credentials_set_secure_channel_type(machine_credentials,
 						SEC_CHAN_WKSTA);
 
 	status = dcerpc_pipe_connect_b(mem_ctx, &p, b, 
 				       DCERPC_NETLOGON_UUID,
 				       DCERPC_NETLOGON_VERSION,
-				       credentials, NULL);
+				       machine_credentials, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("RPC pipe connect as domain member failed: %s\n", nt_errstr(status));
@@ -1488,52 +1461,181 @@ BOOL torture_rpc_samlogon(void)
 		goto failed;
 	}
 
-	/* Try all the tests for different username forms */
-	for (ci = 0; ci < ARRAY_SIZE(usercreds); ci++) {
+	{
 		
-		if (!test_InteractiveLogon(p, mem_ctx, creds,
-					   TEST_MACHINE_NAME,
-					   usercreds[ci].domain,
-					   usercreds[ci].username,
-					   usercreds[ci].password)) {
-			ret = False;
-		}
+		struct {
+			const char *domain;
+			const char *username;
+			const char *password;
+			BOOL network_login;
+			NTSTATUS expected_interactive_error;
+			NTSTATUS expected_network_error;
+		} usercreds[] = {
+			{
+				cli_credentials_get_domain(cmdline_credentials),
+				cli_credentials_get_username(cmdline_credentials),
+				cli_credentials_get_password(cmdline_credentials),
+				True,
+				NT_STATUS_OK,
+				NT_STATUS_OK
+			},
+			{
+				cli_credentials_get_realm(cmdline_credentials),
+				cli_credentials_get_username(cmdline_credentials),
+				cli_credentials_get_password(cmdline_credentials),
+				True,
+				NT_STATUS_OK,
+				NT_STATUS_OK
+			},
+			{
+				NULL,
+				talloc_asprintf(mem_ctx, 
+						"%s@%s", 
+						cli_credentials_get_username(cmdline_credentials),
+						cli_credentials_get_domain(cmdline_credentials)
+					),
+				cli_credentials_get_password(cmdline_credentials),
+				False,
+				NT_STATUS_OK,
+				NT_STATUS_OK
+			},
+			{
+				NULL,
+				talloc_asprintf(mem_ctx, 
+						"%s@%s", 
+						cli_credentials_get_username(cmdline_credentials),
+						cli_credentials_get_realm(cmdline_credentials)
+					),
+				cli_credentials_get_password(cmdline_credentials),
+				True,
+				NT_STATUS_OK,
+				NT_STATUS_OK
+			},
+			{
+				cli_credentials_get_domain(machine_credentials),
+				cli_credentials_get_username(machine_credentials),
+				cli_credentials_get_password(machine_credentials),
+				True,
+				NT_STATUS_NO_SUCH_USER,
+				NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT
+			},
+			{
+				cli_credentials_get_realm(machine_credentials),
+				cli_credentials_get_username(machine_credentials),
+				cli_credentials_get_password(machine_credentials),
+				True,
+				NT_STATUS_NO_SUCH_USER,
+				NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT
+			},
+			{
+				NULL,
+				talloc_asprintf(mem_ctx, 
+						"%s@%s", 
+						cli_credentials_get_username(machine_credentials),
+						cli_credentials_get_domain(machine_credentials)
+					),
+				cli_credentials_get_password(machine_credentials),
+				False,
+				NT_STATUS_NO_SUCH_USER,
+				NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT
+			},
+			{
+				NULL,
+				talloc_asprintf(mem_ctx, 
+						"%s@%s", 
+						cli_credentials_get_username(machine_credentials),
+						cli_credentials_get_realm(machine_credentials)
+					),
+				cli_credentials_get_password(machine_credentials),
+				True,
+				NT_STATUS_NO_SUCH_USER,
+				NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT
+			},
+#if 0
+			{	
+				lp_parm_string(-1, "torture", "userdomain"),
+				TEST_USER_NAME,
+				user_password,
+				True,
+				NT_STATUS_OK,
+				NT_STATUS_OK
+			},
+			{
+				NULL,
+				talloc_asprintf(mem_ctx, 
+						"%s@%s", 
+						TEST_USER_NAME,
+						lp_realm()),
+				user_password,
+				True,
+				NT_STATUS_OK,
+				NT_STATUS_OK
+			},
+			{
+				NULL,
+				talloc_asprintf(mem_ctx, 
+						"%s@%s", 
+						TEST_USER_NAME,
+						lp_parm_string(-1, "torture", "userdomain")),
+				user_password,
+				False,
+				NT_STATUS_OK,
+				NT_STATUS_OK
+			}
+#endif
+		};
 		
-		if (usercreds[ci].network_login) {
-			if (!test_SamLogon(p, mem_ctx, creds, 
-					   usercreds[ci].domain,
-					   usercreds[ci].username,
-					   usercreds[ci].password,
-					   0)) {
+		/* Try all the tests for different username forms */
+		for (ci = 0; ci < ARRAY_SIZE(usercreds); ci++) {
+		
+			if (!test_InteractiveLogon(p, mem_ctx, creds,
+						   TEST_MACHINE_NAME,
+						   usercreds[ci].domain,
+						   usercreds[ci].username,
+						   usercreds[ci].password,
+						   usercreds[ci].expected_interactive_error)) {
 				ret = False;
 			}
-		}
-	}
-
-	/* Using the first username form, try the different
-	 * credentials flag setups, on only one of the tests (checks
-	 * session key encryption) */
-
-	for (i=0; i < ARRAY_SIZE(credential_flags); i++) {
-		if (!test_InteractiveLogon(p, mem_ctx, creds,
-					   TEST_MACHINE_NAME,
-					   usercreds[0].domain,
-					   usercreds[0].username,
-					   usercreds[0].password)) {
-			ret = False;
-		}
 		
-		if (usercreds[ci].network_login) {
-			if (!test_SamLogon(p, mem_ctx, creds, 
-					   usercreds[0].domain,
-					   usercreds[0].username,
-					   usercreds[0].password,
-					   1)) {
-				ret = False;
+			if (usercreds[ci].network_login) {
+				if (!test_SamLogon(p, mem_ctx, creds, 
+						   usercreds[ci].domain,
+						   usercreds[ci].username,
+						   usercreds[ci].password,
+						   usercreds[ci].expected_network_error,
+						   0)) {
+					ret = False;
+				}
 			}
 		}
-	}
 
+		/* Using the first username form, try the different
+		 * credentials flag setups, on only one of the tests (checks
+		 * session key encryption) */
+
+		for (i=0; i < ARRAY_SIZE(credential_flags); i++) {
+			if (!test_InteractiveLogon(p, mem_ctx, creds,
+						   TEST_MACHINE_NAME,
+						   usercreds[0].domain,
+						   usercreds[0].username,
+						   usercreds[0].password,
+						   usercreds[0].expected_interactive_error)) {
+				ret = False;
+			}
+		
+			if (usercreds[ci].network_login) {
+				if (!test_SamLogon(p, mem_ctx, creds, 
+						   usercreds[0].domain,
+						   usercreds[0].username,
+						   usercreds[0].password,
+						   usercreds[0].expected_network_error,
+						   1)) {
+					ret = False;
+				}
+			}
+		}
+
+	}
 failed:
 	talloc_free(mem_ctx);
 

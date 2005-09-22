@@ -73,7 +73,7 @@ static int ejs_creds_get_username(MprVarHandle eid, int argc, struct MprVar **ar
 {
 	struct cli_credentials *creds = ejs_creds_get_credentials(eid);
 
-	mpr_Return(eid, mprString(cli_credentials_get_username(creds, mprMemCtx())));
+	mpr_Return(eid, mprString(cli_credentials_get_username(creds)));
 	return 0;
 }
 
