@@ -4984,12 +4984,12 @@ AC_ARG_WITH(python,
   esac ])
 AC_SUBST(PYTHON)
 
-for i in `echo $default_static_modules | sed -e's/,/ /g'`
+for i in `echo $default_static_modules | sed -e 's/,/ /g'`
 do
 	eval MODULE_DEFAULT_$i=STATIC
 done
 
-for i in `echo $default_shared_modules | sed -e's/,/ /g'`
+for i in `echo $default_shared_modules | sed -e 's/,/ /g'`
 do
 	dnl Fall back to static if we cannot build shared libraries
 	eval MODULE_DEFAULT_$i=STATIC
@@ -5008,7 +5008,7 @@ MODULE_idmap_tdb=STATIC
 AC_ARG_WITH(static-modules,
 [  --with-static-modules=MODULES  Comma-seperated list of names of modules to statically link in],
 [ if test $withval; then
-	for i in `echo $withval | sed -e's/,/ /g'`
+	for i in `echo $withval | sed -e 's/,/ /g'`
 	do
 		eval MODULE_$i=STATIC
 	done
@@ -5017,7 +5017,7 @@ fi ])
 AC_ARG_WITH(shared-modules,
 [  --with-shared-modules=MODULES  Comma-seperated list of names of modules to build shared],
 [ if test $withval; then
-	for i in `echo $withval | sed -e's/,/ /g'`
+	for i in `echo $withval | sed -e 's/,/ /g'`
 	do
 			eval MODULE_$i=SHARED
 	done
