@@ -46,6 +46,8 @@ bzero
 strerror
 errno
 mkstemp (a secure one!)
+pread
+pwrite
 
 Types:
 socklen_t

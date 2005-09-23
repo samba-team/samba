@@ -102,7 +102,7 @@ AC_FUNC_MEMCMP
 AC_CHECK_FUNCS(setsid pipe crypt16 getauthuid)
 AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction)
 AC_CHECK_FUNCS(setgroups sysconf getpwanam srandom random srand rand usleep)
-AC_CHECK_FUNCS(backtrace setbuffer pread pwrite)
+AC_CHECK_FUNCS(backtrace setbuffer)
 
 # Assume non-shared by default and override below
 BLDSHARED="false"
@@ -392,9 +392,6 @@ samba_cv_HAVE_KERNEL_SHARE_MODES=yes,samba_cv_HAVE_KERNEL_SHARE_MODES=no,samba_c
 if test x"$samba_cv_HAVE_KERNEL_SHARE_MODES" = x"yes"; then
     AC_DEFINE(HAVE_KERNEL_SHARE_MODES,1,[Whether the kernel supports share modes])
 fi
-
-
-
 
 AC_CACHE_CHECK([for IRIX kernel oplock type definitions],samba_cv_HAVE_KERNEL_OPLOCKS_IRIX,[
 AC_TRY_COMPILE([#include <sys/types.h>

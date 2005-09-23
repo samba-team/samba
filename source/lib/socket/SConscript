@@ -1,5 +1,64 @@
+#!/usr/bin/env python
 Import('hostenv')
+
+if hostenv['configure']:
+	conf = hostenv.Configure()
+	conf.CheckCHeader('sys/socket.h')
+	conf.CheckCHeader('sys/sockio.h')
+	conf.CheckCHeader('sys/un.h')
+	#HAVE_SOCK_SIN_LEN
+	conf.TryCompile("""
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+
+int main(void)
+{
+	struct sockaddr_in sock; sock.sin_len = sizeof(sock);
+	return 0;
+}""", '.c')
+
+	#HAVE_UNIXSOCKET
+	conf.TryCompile("""
+#include <sys/types.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <sys/socket.h>
+#include <sys/un.h>],
+
+int main(void)
+{
+  struct sockaddr_un sunaddr; 
+  sunaddr.sun_family = AF_UNIX;
+  return 0;
+}""", '.c')
+
+	# HAVE_IPV6
+	conf.CheckFunc('gethostbyname2')
+
+	# The following test taken from the cvs sources
+	# If we can't find connect, try looking in -lsocket, -lnsl, and -linet.
+	# The Irix 5 libc.so has connect and gethostbyname, but Irix 5 also has
+	# libsocket.so which has a bad implementation of gethostbyname (it
+	# only looks in /etc/hosts), so we only look for -lsocket if we need
+	# it.
+	
+	connect_libs = []
+
+	if not conf.CheckFunc('connect'):
+		for l in ['nsl_s','nsl','socket','inet']:
+			if conf.CheckLib(l, 'connect'):
+				connect_libs.append(l)
+				break
+
+	# HAVE_WORKING_AF_LOCAL
+	# FIXME: Try compiling build/tests/unixsock.c
+
+
+	conf.Finish()
+
 hostenv.StaticLibrary('socket_ipv4.c')
 hostenv.StaticLibrary('socket_ipv6.c')
 hostenv.StaticLibrary('socket_unix.c')
 hostenv.StaticLibrary('socket', ['socket.c','access.c','connect.c'])
+
