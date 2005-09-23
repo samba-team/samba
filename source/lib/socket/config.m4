@@ -1,18 +1,5 @@
 AC_CHECK_HEADERS(sys/socket.h sys/sockio.h sys/un.h)
 
-AC_CACHE_CHECK([for socklen_t type],samba_cv_socklen_t, [
-    AC_TRY_COMPILE([
-#include <sys/types.h>
-#if STDC_HEADERS
-#include <stdlib.h>
-#include <stddef.h>
-#endif
-#include <sys/socket.h>],[socklen_t i = 0],
-	samba_cv_socklen_t=yes,samba_cv_socklen_t=no)])
-if test x"$samba_cv_socklen_t" = x"yes"; then
-   AC_DEFINE(HAVE_SOCKLEN_T_TYPE,1,[Whether we have the variable type socklen_t])
-fi
-
 AC_CACHE_CHECK([for sin_len in sock],samba_cv_HAVE_SOCK_SIN_LEN,[
 AC_TRY_COMPILE([#include <sys/types.h>
 #include <sys/socket.h>
