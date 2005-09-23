@@ -1,18 +1,24 @@
-Import('hostenv')
-hostenv.StaticLibrary('ndr_base', 
-		['ndr/ndr.c','ndr/ndr_basic.c','ndr/ndr_string.c','ndr/ndr_obfuscate.c',
-		'ndr/ndr_misc.c'])
+Import('hostenv', 'proto_files')
+
+ndr_base_files = ['ndr/ndr.c', 'ndr/ndr_basic.c', 'ndr/ndr_string.c',
+		  'ndr/ndr_obfuscate.c', 'ndr/ndr_misc.c'] 
+
+hostenv.StaticLibrary('ndr_base', ndr_base_files)
+proto_files += [File(x) for x in ndr_base_files]
 
 hostenv.StaticLibrary('ndr_compression',
 		['ndr/ndr_compression.c'])
 
-hostenv.StaticLibrary('rpc_base', 
-		[ 'rpc/dcerpc.c','rpc/dcerpc_auth.c','rpc/dcerpc_schannel.c',
-		'rpc/dcerpc_util.c','rpc/dcerpc_error.c','rpc/dcerpc_smb.c',
-		'rpc/dcerpc_sock.c'])
+rpc_base_files = ['rpc/dcerpc.c', 'rpc/dcerpc_auth.c', 'rpc/dcerpc_schannel.c',
+		  'rpc/dcerpc_util.c', 'rpc/dcerpc_error.c',
+		  'rpc/dcerpc_smb.c', 'rpc/dcerpc_sock.c'] 
 
-ndr_misc = hostenv.NdrMarshaller('idl/misc.idl')
-hostenv.StaticLibrary('ndr_misc', ndr_misc)
+hostenv.StaticLibrary('rpc_base', rpc_base_files)
+proto_files += [File(x) for x in rpc_base_files]
+
+from glob import glob
+for idl in glob('idl/*.idl'):
+	hostenv.NdrMarshaller(idl)
 
 '''
 [SUBSYSTEM::NDR_AUDIOSRV]
