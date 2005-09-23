@@ -204,7 +204,7 @@
 			if (tkt->enc_part2->authorization_data[i]->ad_type != 
 			    KRB5_AUTHDATA_IF_RELEVANT) {
 				DEBUG(10,("get_auth_data_from_tkt: ad_type is %d\n", 
-					kt->enc_part2->authorization_data[i]->ad_type));
+					tkt->enc_part2->authorization_data[i]->ad_type));
 				continue;
 			}
 
