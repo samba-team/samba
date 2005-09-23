@@ -13,7 +13,8 @@ proto_builder = SCons.Builder.Builder(action='$PROTOCOM',
 
 def generate(env):
 	env['MKPROTO']          = './script/mkproto.sh'
-	env['PROTOCOM']       = '$MKPROTO "$PERL" -h _PROTO_H_ ${TARGETS[0]} $SOURCES'
+	env['PROTO_DEFINE']		= '_PROTO_H_'
+	env['PROTOCOM']       = '$MKPROTO "$PERL" -h $PROTO_DEFINE ${TARGETS[0]} $SOURCES'
 	env['BUILDERS']['CProtoHeader'] = proto_builder
 
 def exists(env):
