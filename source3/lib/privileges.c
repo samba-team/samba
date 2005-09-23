@@ -286,6 +286,11 @@ static BOOL set_privileges( const DOM_SID *sid, SE_PRIV *mask )
 	if ( !tdb )
 		return False;
 
+	if ( !sid || (sid->num_auths == 0) ) {
+		DEBUG(0,("set_privileges: Refusing to store empty SID!\n"));
+		return False;
+	}
+
 	/* PRIV_<SID> (NULL terminated) as the key */
 	
 	fstr_sprintf( keystr, "%s%s", PRIVPREFIX, sid_string_static(sid) );
@@ -497,6 +502,12 @@ static int priv_traverse_fn(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *s
 	}
 		
 	fstrcpy( sid_string, &key.dptr[strlen(PRIVPREFIX)] );
+
+	/* this is a last ditch safety check to preventing returning
+	   and invalid SID (i've somehow run into this on development branches) */
+
+	if ( strcmp( "S-0-0", sid_string ) == 0 )
+		return 0;
 
 	if ( !string_to_sid(&sid, sid_string) ) {
 		DEBUG(0,("travsersal_fn_enum__acct: Could not convert SID [%s]\n",
@@ -812,10 +823,27 @@ BOOL se_priv_to_privilege_set( PRIVILEGE_SET *set, SE_PRIV *mask )
 /*******************************************************************
 *******************************************************************/
 
-BOOL privilege_set_to_se_priv( SE_PRIV *mask, PRIVILEGE_SET *privset )
+static BOOL luid_to_se_priv( LUID *luid, SE_PRIV *mask )
 {
 	int i;
 	uint32 num_privs = count_all_privileges();
+	
+	for ( i=0; i<num_privs; i++ ) {
+		if ( luid->low == privs[i].luid.low ) {
+			se_priv_copy( mask, &privs[i].se_priv );
+			return True;
+		}
+	}
+
+	return False;
+}
+
+/*******************************************************************
+*******************************************************************/
+
+BOOL privilege_set_to_se_priv( SE_PRIV *mask, PRIVILEGE_SET *privset )
+{
+	int i;
 	
 	ZERO_STRUCTP( mask );
 	
@@ -828,12 +856,8 @@ BOOL privilege_set_to_se_priv( SE_PRIV *mask, PRIVILEGE_SET *privset )
 		if ( privset->set[i].luid.high != 0 )
 			return False;
 		
-		/* make sure :LUID.low is in range */	
-		if ( privset->set[i].luid.low == 0 || privset->set[i].luid.low > num_privs )
-			return False;
-		
-		r = privs[privset->set[i].luid.low - 1].se_priv;
-		se_priv_add( mask, &r );
+		if ( luid_to_se_priv( &privset->set[i].luid, &r ) )		
+			se_priv_add( mask, &r );
 	}
 
 	return True;
