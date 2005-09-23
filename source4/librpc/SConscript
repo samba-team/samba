@@ -11,6 +11,8 @@ hostenv.StaticLibrary('rpc_base',
 		'rpc/dcerpc_util.c','rpc/dcerpc_error.c','rpc/dcerpc_smb.c',
 		'rpc/dcerpc_sock.c'])
 
+ndr_misc = hostenv.NdrMarshaller('idl/misc.idl')
+hostenv.StaticLibrary('ndr_misc', ndr_misc)
 
 '''
 [SUBSYSTEM::NDR_AUDIOSRV]
