@@ -53,6 +53,7 @@ libroken_la_SOURCES =		\
 	base64.c		\
 	bswap.c			\
 	concat.c		\
+	dumpdata.c		\
 	environment.c		\
 	eread.c			\
 	esetenv.c		\
