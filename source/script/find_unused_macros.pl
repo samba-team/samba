@@ -1,6 +1,6 @@
 #!/usr/bin/perl
-# Script that reads in configure and outputs the names of all the defines 
-# it defines that are used nowhere in the code
+# Script that reads in C files and prints defines that are used nowhere in the 
+# code
 
 # Arguments: C and H files
 # Copyright Jelmer Vernooij <jelmer@samba.org>, GPL

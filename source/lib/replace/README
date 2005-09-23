@@ -47,6 +47,9 @@ strerror
 errno
 mkstemp (a secure one!)
 
+Types:
+socklen_t
+
 Prerequisites:
 memset (for bzero)
 syslog (for vsyslog)
