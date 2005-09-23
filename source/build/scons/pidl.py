@@ -11,7 +11,7 @@ import SCons.Scanner
 idl_scanner = SCons.Scanner.ClassicCPP("PIDLScan", '.idl', 'CPPPATH', r'depends\(([^,]+),+\)', SCons.Node.FS.default_fs)
 
 def idl_emitter(target, source, env):
-	base, ext = SCons.Util.splitext(str(source[0]))
+	base, ext = SCons.Util.splitext(str(source[0]).split('/')[-1])
 	result = ['gen_ndr/ndr_%s.c' % base, 'gen_ndr/ndr_%s.h' % base]
 	return result, source
 
