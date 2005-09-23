@@ -18,9 +18,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-#include "pstring.h"
-
 /**
  * @file dynconfig.c
  *
@@ -41,25 +38,28 @@
  * table?  There's kind of a chicken-and-egg situation there...
  **/
 
-const char *dyn_SBINDIR = SBINDIR,
-	*dyn_BINDIR = BINDIR;
+/** Directory with super-user binaries */
+const char *dyn_SBINDIR = SBINDIR;
 
-const char *dyn_CONFIGFILE = CONFIGFILE; /**< Location of smb.conf file. **/
+/** Directory with generic binaries */
+const char *dyn_BINDIR = BINDIR;
+
+/**< Location of smb.conf file. **/
+const char *dyn_CONFIGFILE = CONFIGFILE; 
 
 /** Log file directory. **/
-const char *dyn_LOGFILEBASE = LOGFILEBASE;
+const char *dyn_LOGFILEBASE = LOGFILEBASE; 
 
+/** Directory for local RPC (ncalrpc: transport) */
 const char *dyn_NCALRPCDIR = NCALRPCDIR;
 
 /** Statically configured LanMan hosts. **/
-const char *dyn_LMHOSTSFILE = LMHOSTSFILE;
+const char *dyn_LMHOSTSFILE = LMHOSTSFILE; 
 
-/**
- * @brief Samba library directory.
- *
- * @sa lib_path() to get the path to a file inside the LIBDIR.
- **/
+/** Samba library directory. */
 const char *dyn_LIBDIR = LIBDIR;
+
+/** Shared library extension */
 const char *dyn_SHLIBEXT = SHLIBEXT;
 
 /**
@@ -68,7 +68,12 @@ const char *dyn_SHLIBEXT = SHLIBEXT;
  * Not writable, but used to set a default in the parameter table.
  **/
 const char *dyn_LOCKDIR = LOCKDIR;
+
+/** pid file directory */
 const char *dyn_PIDDIR  = PIDDIR;
 
+/** Private data directory; holds ldb files and the like */
 const char *dyn_PRIVATE_DIR = PRIVATE_DIR;
+
+/** SWAT data file (images, etc) directory */
 const char *dyn_SWATDIR = SWATDIR;

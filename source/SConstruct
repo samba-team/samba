@@ -9,8 +9,6 @@
 
 import cPickle, string, os
 
-# We don't care about NFS builds...
-
 opts = Options(None, ARGUMENTS)
 opts.AddOptions(
 		BoolOption('developer','enable developer flags', False),
@@ -26,6 +24,7 @@ hostenv = Environment(
                 CPPDEFINES={'_SAMBA_BUILD_': None},
 		)
 
+# We don't care about NFS builds...
 hostenv.SetOption('max_drift', 1)
 
 if hostenv['developer']:

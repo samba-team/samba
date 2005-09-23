@@ -347,7 +347,7 @@ uint32_t interpret_addr(const char *str)
 
 	/* if it's in the form of an IP address then get the lib to interpret it */
 	if (is_ipaddress(str)) {
-		res = sys_inet_addr(str);
+		res = inet_addr(str);
 	} else {
 		/* otherwise assume it's a network name of some sort and use 
 			sys_gethostbyname */
@@ -516,24 +516,6 @@ void dump_data(int level, const uint8_t *buf,int len)
 		if (n>0) print_asc(level,&buf[i-n],n); 
 		DEBUGADD(level,("\n"));    
 	}	
-}
-
-/*****************************************************************
- Possibly replace mkstemp if it is broken.
-*****************************************************************/  
-
-int smb_mkstemp(char *template)
-{
-#if HAVE_SECURE_MKSTEMP
-	return mkstemp(template);
-#else
-	/* have a reasonable go at emulating it. Hope that
-	   the system mktemp() isn't completly hopeless */
-	char *p = mktemp(template);
-	if (!p)
-		return -1;
-	return open(p, O_CREAT|O_EXCL|O_RDWR, 0600);
-#endif
 }
 
 /*****************************************************************

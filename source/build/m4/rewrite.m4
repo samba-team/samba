@@ -53,19 +53,14 @@ AC_HEADER_DIRENT
 AC_HEADER_TIME
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(sys/select.h fcntl.h sys/fcntl.h sys/time.h)
-AC_CHECK_HEADERS(utime.h grp.h sys/id.h limits.h memory.h)
-AC_CHECK_HEADERS(compat.h math.h)
+AC_CHECK_HEADERS(utime.h grp.h sys/id.h limits.h memory.h compat.h math.h)
 AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h sys/mode.h)
 AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h)
 AC_CHECK_HEADERS(sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
 AC_CHECK_HEADERS(fnmatch.h pwd.h sys/termio.h sys/time.h sys/statfs.h sys/statvfs.h stdarg.h)
-AC_CHECK_HEADERS(security/pam_modules.h security/_pam_macros.h dlfcn.h)
-AC_CHECK_HEADERS(sys/syslog.h syslog.h)
-AC_CHECK_HEADERS(stdint.h inttypes.h locale.h)
-AC_CHECK_HEADERS(shadow.h)
+AC_CHECK_HEADERS(stdint.h inttypes.h locale.h shadow.h)
 AC_CHECK_HEADERS(nss.h nss_common.h ns_api.h sys/security.h security/pam_appl.h)
-AC_CHECK_HEADERS(sys/capability.h syscall.h sys/syscall.h)
-AC_CHECK_HEADERS(sys/acl.h)
+AC_CHECK_HEADERS(sys/capability.h sys/acl.h)
 
 AC_CHECK_HEADERS(sys/mount.h, , , [AC_INCLUDES_DEFAULT
 #ifdef HAVE_SYS_PARAM_H
@@ -89,12 +84,6 @@ AC_CHECK_TYPES(intptr_t)
 AC_CHECK_TYPES(long long)
 
 
-############################################
-# we need dlopen/dlclose/dlsym/dlerror for PAM, the password database plugins and the plugin loading code
-AC_SEARCH_LIBS_EXT(dlopen, [dl], DL_LIBS)
-SMB_EXT_LIB(DL,[${DL_LIBS}],[${DL_CFLAGS}],[${DL_CPPFLAGS}],[${DL_LDFLAGS}])
-# dlopen/dlclose/dlsym/dlerror will be checked again later and defines will be set then
-
 AC_CACHE_CHECK([for sig_atomic_t type],samba_cv_sig_atomic_t, [
     AC_TRY_COMPILE([
 #include <sys/types.h>
@@ -108,29 +97,12 @@ if test x"$samba_cv_sig_atomic_t" = x"yes"; then
    AC_DEFINE(HAVE_SIG_ATOMIC_T_TYPE,1,[Whether we have the atomic_t variable type])
 fi
 
-# stupid headers have the functions but no declaration. grrrr.
-AC_HAVE_DECL(errno, [#include <errno.h>])
-AC_HAVE_DECL(setresuid, [#include <unistd.h>])
-AC_HAVE_DECL(setresgid, [#include <unistd.h>])
-AC_HAVE_DECL(asprintf, [#include <stdio.h>])
-AC_HAVE_DECL(vasprintf, [#include <stdio.h>])
-AC_HAVE_DECL(vsnprintf, [#include <stdio.h>])
-AC_HAVE_DECL(snprintf, [#include <stdio.h>])
-
 AC_FUNC_MEMCMP
 
-AC_CHECK_FUNCS(dlopen dlsym dlerror waitpid getcwd strdup strndup strnlen strerror chroot)
-AC_CHECK_FUNCS(bzero memset strlcpy strlcat)
-AC_CHECK_FUNCS(memmove vsnprintf snprintf asprintf vasprintf setsid pipe crypt16 getauthuid)
-AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction innetgr setnetgrent getnetgrent endnetgrent)
-AC_CHECK_FUNCS(initgroups)
-AC_CHECK_FUNCS(setgroups sysconf mktime rename ftruncate chsize)
-AC_CHECK_FUNCS(getpwanam setlinebuf)
-AC_CHECK_FUNCS(srandom random srand rand setenv usleep)
-AC_CHECK_FUNCS(syslog vsyslog timegm backtrace)
-AC_CHECK_FUNCS(setbuffer)
-
-AC_CHECK_FUNCS(pread pwrite)
+AC_CHECK_FUNCS(setsid pipe crypt16 getauthuid)
+AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction)
+AC_CHECK_FUNCS(setgroups sysconf getpwanam srandom random srand rand usleep)
+AC_CHECK_FUNCS(backtrace setbuffer pread pwrite)
 
 # Assume non-shared by default and override below
 BLDSHARED="false"
@@ -358,39 +330,6 @@ if test x"$samba_cv_HAVE___VA_COPY" = x"yes"; then
 fi
 fi
 
-AC_CACHE_CHECK([for C99 vsnprintf],samba_cv_HAVE_C99_VSNPRINTF,[
-AC_TRY_RUN([
-#include <sys/types.h>
-#include <stdarg.h>
-void foo(const char *format, ...) { 
-       va_list ap;
-       int len;
-       char buf[20];
-       long long l = 1234567890;
-       l *= 100;
-
-       va_start(ap, format);
-       len = vsnprintf(buf, 0, format, ap);
-       va_end(ap);
-       if (len != 5) exit(1);
-
-       va_start(ap, format);
-       len = vsnprintf(0, 0, format, ap);
-       va_end(ap);
-       if (len != 5) exit(1);
-
-       if (snprintf(buf, 3, "hello") != 5 || strcmp(buf, "he") != 0) exit(1);
-
-       if (snprintf(buf, 20, "%lld", l) != 12 || strcmp(buf, "123456789000") != 0) exit(1);
-
-       exit(0);
-}
-main() { foo("hello"); }
-],
-samba_cv_HAVE_C99_VSNPRINTF=yes,samba_cv_HAVE_C99_VSNPRINTF=no,samba_cv_HAVE_C99_VSNPRINTF=cross)])
-if test x"$samba_cv_HAVE_C99_VSNPRINTF" = x"yes"; then
-    AC_DEFINE(HAVE_C99_VSNPRINTF,1,[Whether there is a C99 compliant vsnprintf])
-fi
 
 AC_CACHE_CHECK([for utimbuf],samba_cv_HAVE_UTIMBUF,[
 AC_TRY_COMPILE([#include <sys/types.h>
@@ -499,28 +438,6 @@ if test x"$samba_cv_HAVE_BROKEN_GETGROUPS" = x"yes"; then
     AC_DEFINE(HAVE_BROKEN_GETGROUPS,1,[Whether getgroups is broken])
 fi
 
-AC_CACHE_CHECK([for secure mkstemp],samba_cv_HAVE_SECURE_MKSTEMP,[
-AC_TRY_RUN([#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-main() { 
-  struct stat st;
-  char tpl[20]="/tmp/test.XXXXXX"; 
-  int fd = mkstemp(tpl); 
-  if (fd == -1) exit(1);
-  unlink(tpl);
-  if (fstat(fd, &st) != 0) exit(1);
-  if ((st.st_mode & 0777) != 0600) exit(1);
-  exit(0);
-}],
-samba_cv_HAVE_SECURE_MKSTEMP=yes,
-samba_cv_HAVE_SECURE_MKSTEMP=no,
-samba_cv_HAVE_SECURE_MKSTEMP=cross)])
-if test x"$samba_cv_HAVE_SECURE_MKSTEMP" = x"yes"; then
-    AC_DEFINE(HAVE_SECURE_MKSTEMP,1,[Whether mkstemp is secure])
-fi
-
 AC_CACHE_CHECK([for sysconf(_SC_NGROUPS_MAX)],samba_cv_SYSCONF_SC_NGROUPS_MAX,[
 AC_TRY_RUN([#include <unistd.h>
 main() { exit(sysconf(_SC_NGROUPS_MAX) == -1 ? 1 : 0); }],
@@ -580,9 +497,6 @@ if test x"$samba_cv_BROKEN_REDHAT_7_SYSTEM_HEADERS" = x"yes"; then
 fi
 ;;
 esac
-
-AC_SUBST(SMBD_EXTRA_OBJS)
-AC_SUBST(SMBD_EXTRA_LIBS)
 
 ###############################################
 # test for where we get crypt() from

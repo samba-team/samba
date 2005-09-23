@@ -43,7 +43,7 @@ krb5_error_code KRB5_LIB_FUNCTION krb5_get_all_client_addrs(krb5_context context
 		if (res->val[i].address.data == NULL) {
 			return ENOMEM;
 		}
-		((struct in_addr *)res->val[i].address.data)->s_addr = sys_inet_addr(ip);
+		((struct in_addr *)res->val[i].address.data)->s_addr = inet_addr(ip);
 	}
 
 	return 0;

@@ -2168,7 +2168,7 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 
 	for (i=0;i<torture_nprocs;i++) {
 		int ret;
-		while ((ret=sys_waitpid(0, &status, 0)) == -1 && errno == EINTR) /* noop */ ;
+		while ((ret=waitpid(0, &status, 0)) == -1 && errno == EINTR) /* noop */ ;
 		if (ret == -1 || WEXITSTATUS(status) != 0) {
 			*result = False;
 		}
