@@ -23,12 +23,25 @@
 #ifndef _replace_h
 #define _replace_h
 
+#if defined(_MSC_VER) || defined(__MINGW32__)
+#include "lib/replace/win32/replace.h"
+#endif
+
 #ifdef __COMPAR_FN_T
 #define QSORT_CAST (__compar_fn_t)
 #endif
 
 #ifndef QSORT_CAST
 #define QSORT_CAST (int (*)(const void *, const void *))
+#endif
+
+#ifndef HAVE_STRERROR
+extern char *sys_errlist[];
+#define strerror(i) sys_errlist[i]
+#endif
+
+#ifndef HAVE_ERRNO_DECL
+extern int errno;
 #endif
 
 #ifndef HAVE_STRDUP
@@ -134,6 +147,15 @@ typedef unsigned char u_int8_t;
 #ifndef HAVE_SOCKLEN_T
 #define socklen_t int
 #define HAVE_SOCKLEN_T 1
+#endif
+
+#ifdef HAVE_DLFCN_H
+#include <dlfcn.h>
+#endif
+
+#ifndef HAVE_SECURE_MKSTEMP
+#define mkstemp(path) rep_mkstemp(path)
+int rep_mkstemp(char *temp);
 #endif
 
 #endif

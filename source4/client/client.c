@@ -960,7 +960,7 @@ static int cmd_more(const char **cmd_ptr)
 	fstrcat(rname,"\\");
 	
 	slprintf(lname,sizeof(lname)-1, "%s/smbmore.XXXXXX",tmpdir());
-	fd = smb_mkstemp(lname);
+	fd = mkstemp(lname);
 	if (fd == -1) {
 		d_printf("failed to create temporary file for more\n");
 		return 1;
@@ -2601,11 +2601,11 @@ static int cmd_printmode(const char **cmd_ptr)
 static int cmd_lcd(const char **cmd_ptr)
 {
 	fstring buf;
-	pstring d;
+	char d[PATH_MAX];
 	
 	if (next_token(cmd_ptr,buf,NULL,sizeof(buf)))
 		chdir(buf);
-	DEBUG(2,("the local directory is now %s\n",sys_getwd(d)));
+	DEBUG(2,("the local directory is now %s\n",getcwd(d, PATH_MAX)));
 
 	return 0;
 }

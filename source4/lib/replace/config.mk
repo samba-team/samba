@@ -13,7 +13,9 @@ NOPROTO = YES
 [SUBSYSTEM::LIBREPLACE]
 INIT_OBJ_FILES = lib/replace/replace.o
 ADD_OBJ_FILES = \
-		lib/replace/snprintf.o
+		lib/replace/snprintf.o \
+		lib/replace/dlfcn.o
+NOPROTO = YES
 REQUIRED_SUBSYSTEMS = REPLACE_READDIR
 # End SUBSYSTEM LIBREPLACE
 ##############################
