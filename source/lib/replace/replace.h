@@ -144,11 +144,6 @@ typedef unsigned short u_int16_t;
 typedef unsigned char u_int8_t;
 #endif
 
-#ifndef HAVE_SOCKLEN_T
-#define socklen_t int
-#define HAVE_SOCKLEN_T 1
-#endif
-
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif
