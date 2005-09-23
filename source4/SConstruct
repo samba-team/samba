@@ -6,6 +6,11 @@
 #
 # Copyright (C) 2005 Jelmer Vernooij <jelmer@samba.org>
 # Published under the GNU GPL
+#
+# TODO:
+# - finish fallback code
+# - finish proto code
+# - support for init functions
 
 import cPickle, string, os
 
@@ -21,7 +26,7 @@ hostenv = Environment(
 		tools=['default','pidl','proto','et','asn1'],
 		options=opts,
 		CPPPATH=['#include','#','#lib'], 
-                CPPDEFINES={'_SAMBA_BUILD_': None},
+        CPPDEFINES={'_SAMBA_BUILD_': None},
 		)
 
 # We don't care about NFS builds...
@@ -114,23 +119,17 @@ if hostenv['configure']:
 		['strings.h','stdlib.h','sys/vfs.h','sys/fs/s5param.h','sys/filsys.h'] + \
 		['termios.h','termio.h','fnmatch.h','pwd.h','sys/termio.h'] + \
 		['sys/time.h','sys/statfs.h','sys/statvfs.h','stdarg.h'] + \
-		['security/pam_modules.h','security/_pam_macros.h','dlfcn.h'] + \
 		['sys/syslog.h','syslog.h','stdint.h','inttypes.h','locale.h'] + \
 		['shadow.h','nss.h','nss_common.h','ns_api.h','sys/security.h'] + \
-		['security/pam_appl.h','sys/capability.h','syscall.h','sys/syscall.h'] + \
+		['security/pam_appl.h','sys/capability.h'] + \
 		['sys/acl.h','stdbool.h']:
 		if conf.CheckCHeader(h):
 			defines['HAVE_' + h.upper().replace('.','_').replace('/','_')] = 1
 
-	for f in ['dlopen','dlsym','dlerror','waitpid','getcwd','strdup'] + \
-		['strndup','strnlen','strerror','chroot','bzero','memset','strlcpy'] + \
-		['strlcat','memmove','vsnprintf','snprintf','asprintf','vasprintf'] + \
-		['setsid','pipe','crypt16','getauthuid','strftime','sigprocmask'] + \
-		['sigblock','sigaction','innetgr','setnetgrent','getnetgrent'] + \
-		['endnetgrent','initgroups','setgroups','sysconf','mktime','rename'] + \
-		['ftruncate','chsize','getpwanam','setlinebuf','srandom','random'] + \
-		['srand','rand','setenv','usleep','syslog','vsyslog','timegm'] + \
-		['backtrace','setbuffer','pread','pwrite']:
+	for f in ['setsid','pipe','crypt16','getauthuid','strftime','sigprocmask',
+		'sigblock','sigaction','initgroups','setgroups','sysconf', 'getpwanam',
+		'setlinebuf','srandom','random','srand','rand','usleep','timegm',
+		'backtrace','setbuffer']:
 		if conf.CheckFunc(f):
 			defines['HAVE_' + f.upper()] = 1
 
@@ -210,7 +209,7 @@ SConscript(
 		dirs=['lib','torture','rpc_server','cldap_server','libcli',
 		'nbt_server','client','ldap_server','libnet','nsswitch','web_server',
 		'smbd','dsdb','heimdal_build','ntptr','kdc','smb_server','ntvfs',
-		'winbind','scripting','auth', 'librpc'])
+		'winbind','scripting','auth', 'librpc','script/tests'])
 
 hostenv.CProtoHeader(target='include/proto.h',source=proto_files)
 
