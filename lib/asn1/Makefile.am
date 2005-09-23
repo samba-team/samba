@@ -187,6 +187,7 @@ gen_files_rfc2459 =					\
 	asn1_Certificates.x				\
 	asn1_ValidationParms.x				\
 	asn1_DomainParameters.x				\
+	asn1_DHPublicKey.x				\
 	asn1_OtherName.x				\
 	asn1_GeneralName.x				\
 	asn1_GeneralNames.x				\
