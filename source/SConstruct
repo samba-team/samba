@@ -210,7 +210,7 @@ SConscript(
 		dirs=['lib','torture','rpc_server','cldap_server','libcli',
 		'nbt_server','client','ldap_server','libnet','nsswitch','web_server',
 		'smbd','dsdb','heimdal_build','ntptr','kdc','smb_server','ntvfs',
-		'winbind','scripting','auth'])
+		'winbind','scripting','auth', 'librpc'])
 
 hostenv.CProtoHeader(target='include/proto.h',source=proto_files)
 
