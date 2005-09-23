@@ -5,9 +5,9 @@ hostenv.StaticLibrary('heimdal_kdc',
 	 '../kdc/log.c','../kdc/misc.c','../kdc/524.c','../kdc/kerberos4.c',
 	 '../kdc/kaserver.c','../kdc/process.c'])
 
-hdb_asn1 = hostenv.ASN1('../heimdal/lib/hdb/hdb.asn1')
-gssapi_asn1 = hostenv.ASN1('../heimdal/lib/gssapi/spnego.asn1')
-k5_asn1 = hostenv.ASN1('../heimdal/lib/asn1/k5.asn1')
+hdb_asn1 = hostenv.ASN1('../heimdal/lib/hdb/hdb.asn1',ASN1PREFIX='hdb_asn1')
+gssapi_asn1 = hostenv.ASN1('../heimdal/lib/gssapi/spnego.asn1',ASN1PREFIX='spnego_asn1')
+k5_asn1 = hostenv.ASN1('../heimdal/lib/asn1/k5.asn1',ASN1PREFIX='k5_asn1')
 
 hostenv.StaticLibrary('heimdal_hdb',
 	['../heimdal/lib/hdb/db.c','../heimdal/lib/hdb/hdb.c','../heimdal/lib/hdb/ext.c','../heimdal/lib/hdb/keys.c',

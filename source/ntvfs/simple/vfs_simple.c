@@ -40,26 +40,6 @@
 
 #define CHECK_READ_ONLY(req) do { if (lp_readonly(req->tcon->service)) return NT_STATUS_ACCESS_DENIED; } while (0)
 
-#ifndef HAVE_PREAD
-static ssize_t pread(int __fd, void *__buf, size_t __nbytes, off_t __offset)
-{
-	if (lseek(__fd, __offset, SEEK_SET) != __offset) {
-		return -1;
-	}
-	return read(__fd, __buf, __nbytes);
-}
-#endif
-
-#ifndef HAVE_PWRITE
-static ssize_t pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset)
-{
-	if (lseek(__fd, __offset, SEEK_SET) != __offset) {
-		return -1;
-	}
-	return write(__fd, __buf, __nbytes);
-}
-#endif
-
 /*
   connect to a share - used when a tree_connect operation comes
   in. For a disk based backend we needs to ensure that the base

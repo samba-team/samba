@@ -523,3 +523,25 @@ int rep_mkstemp(char *template)
 	return open(p, O_CREAT|O_EXCL|O_RDWR, 0600);
 }
 #endif
+
+#ifndef HAVE_PREAD
+static ssize_t pread(int __fd, void *__buf, size_t __nbytes, off_t __offset)
+{
+	if (lseek(__fd, __offset, SEEK_SET) != __offset) {
+		return -1;
+	}
+	return read(__fd, __buf, __nbytes);
+}
+#endif
+
+#ifndef HAVE_PWRITE
+static ssize_t pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset)
+{
+	if (lseek(__fd, __offset, SEEK_SET) != __offset) {
+		return -1;
+	}
+	return write(__fd, __buf, __nbytes);
+}
+#endif
+
+

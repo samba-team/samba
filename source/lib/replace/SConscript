@@ -1,11 +1,31 @@
-Import('hostenv')
+#!/usr/bin/env python
+Import('hostenv defines')
 
 if hostenv['configure']:
 	conf = Configure(hostenv)
-	#FIXME: conf.CheckBrokenInetNtoa() 
+	for f in ['memset','syslog','setnetgrent','getnetgrent','endnetgrent', \
+			'mktemp']:
+		if not conf.CheckFunc(f,'c'):
+			print "Required function `%s' not found" % f
+			exit(1)
+	
 	for f in ['strtoull','__strtoull','strtouq','strtoll','__strtoll','strtoq',
-			  'seteuid','setresuid','setegid','setresgid']:
-		conf.CheckFunc(f,'c')
+			  'seteuid','setresuid','setegid','setresgid','dlsym','dlopen',
+			  'dlerror','dlclose','waitpid','getcwd','strdup','strndup',
+			  'strnlen','strerror','bzero','chroot','strlcpy','strlcat',
+			  'memmove','vsnprintf','asprintf','snprintf','vasprintf',
+			  'innetgr','mktime','rename','ftruncate','chsize','setlinebuf',
+			  'setenv','vsyslog','pread','pwrite']:
+		if conf.CheckFunc(f,'c'):
+			defines['HAVE_' + f.upper()] = 1
+
+	for h in ['dlfcn.h']:
+		if conf.CheckCHeader('dlfcn.h'):
+			defines['HAVE_' + h.upper().replace('.','_').replace('/','_')] = 1
+
+	if not conf.CheckType('socklen_t'):
+		defines['socklen_t'] = 'int'
+
 	conf.Finish()
 
 hostenv.StaticLibrary('repdir', ['repdir/repdir.c'])
