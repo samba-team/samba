@@ -1,4 +1,12 @@
-2005-09-20  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-09-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am (gen_files_rfc2459) += asn1_DHPublicKey.x
+	
+	* rfc2459.asn1: Add DHPublicKey, and INTEGER to for storing the DH
+	public key in the SubjectPublicKeyInfo.subjectPublicKey BIT
+	STRING.
+	
+2005-09-20 Love Hörnquist Åstrand <lha@it.su.se>
 
 	* gen_decode.c: TSequenceOf/TSetOf: Increase the length of the
 	array after successful decoding the next element, so that the
