@@ -606,20 +606,11 @@ build_auth_pack(krb5_context context,
 	if (ret)
 	    return ret;
 
-	dhbuf.length = length_heim_integer(&dh_pub_key);
-	dhbuf.data = malloc(dhbuf.length);
-	if (dhbuf.data == NULL) {
-	    free_heim_integer(&dh_pub_key);
-	    krb5_set_error_string(context, "malloc: out of memory");
-	    return ret;
-	}
-	ret = der_put_heim_integer((char *)dhbuf.data + dhbuf.length - 1,
-				   dhbuf.length, &dh_pub_key, &size);
+	ASN1_MALLOC_ENCODE(DHPublicKey, dhbuf.data, dhbuf.length,
+			   &dh_pub_key, &size, ret);
 	free_heim_integer(&dh_pub_key);
-	if (ret) {
-	    free(dhbuf.data);
+	if (ret)
 	    return ret;
-	}
 	if (size != dhbuf.length)
 	    krb5_abortx(context, "asn1 internal error");
 
