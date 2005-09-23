@@ -58,13 +58,13 @@ static struct IUnknown *get_com_class_so(TALLOC_CTX *mem_ctx, const struct GUID 
 	mod_name = talloc_asprintf(mem_ctx, "%s.so", clsid_str);
 	talloc_free(clsid_str);
 
-	mod = sys_dlopen(mod_name, 0);
+	mod = dlopen(mod_name, 0);
 
 	if (!mod) {
 		return NULL;
 	}
 	
-	f = sys_dlsym(mod, "get_class_object");
+	f = dlsym(mod, "get_class_object");
 
 	if (!f) {
 		return NULL;

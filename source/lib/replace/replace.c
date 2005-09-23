@@ -361,39 +361,6 @@ duplicate a string
 #endif /* HAVE_SYSLOG */
 #endif /* HAVE_VSYSLOG */
 
-/*******************************************************************
-yield the difference between *A and *B, in seconds, ignoring leap seconds
-********************************************************************/
-static int tm_diff(struct tm *a, struct tm *b)
-{
-	int ay = a->tm_year + (1900 - 1);
-	int by = b->tm_year + (1900 - 1);
-	int intervening_leap_days =
-		(ay/4 - by/4) - (ay/100 - by/100) + (ay/400 - by/400);
-	int years = ay - by;
-	int days = 365*years + intervening_leap_days + (a->tm_yday - b->tm_yday);
-	int hours = 24*days + (a->tm_hour - b->tm_hour);
-	int minutes = 60*hours + (a->tm_min - b->tm_min);
-	int seconds = 60*minutes + (a->tm_sec - b->tm_sec);
-
-	return seconds;
-}
-
-/*******************************************************************
-  return the UTC offset in seconds west of UTC, or 0 if it cannot be determined
-  ******************************************************************/
-int get_time_zone(time_t t)
-{
-	struct tm *tm = gmtime(&t);
-	struct tm tm_utc;
-	if (!tm)
-		return 0;
-	tm_utc = *tm;
-	tm = localtime(&t);
-	if (!tm)
-		return 0;
-	return tm_diff(&tm_utc,tm);
-}
 
 #ifndef HAVE_TIMEGM
 /*
@@ -496,14 +463,12 @@ int get_time_zone(time_t t)
 }
 #endif
 
-int sys_waitpid(pid_t pid,int *status,int options)
+#ifndef HAVE_WAITPID
+int waitpid(pid_t pid,int *status,int options)
 {
-#ifdef HAVE_WAITPID
-  return waitpid(pid,status,options);
-#else /* USE_WAITPID */
   return wait4(pid, status, options, NULL);
-#endif /* USE_WAITPID */
 }
+#endif
 
 #ifndef HAVE_SETEUID
  int seteuid(uid_t euid)
@@ -524,5 +489,37 @@ int sys_waitpid(pid_t pid,int *status,int options)
 #else
 #  error "You need a setegid function"
 #endif
+}
+#endif
+
+/*******************************************************************
+os/2 also doesn't have chroot
+********************************************************************/
+#ifndef HAVE_CHROOT
+int chroot(const char *dname)
+{
+	static int done;
+	if (!done) {
+		DEBUG(1,("WARNING: no chroot!\n"));
+		done=1;
+	}
+	errno = ENOSYS;
+	return -1;
+}
+#endif
+
+/*****************************************************************
+ Possibly replace mkstemp if it is broken.
+*****************************************************************/  
+
+#ifndef HAVE_SECURE_MKSTEMP
+int rep_mkstemp(char *template)
+{
+	/* have a reasonable go at emulating it. Hope that
+	   the system mktemp() isn't completly hopeless */
+	char *p = mktemp(template);
+	if (!p)
+		return -1;
+	return open(p, O_CREAT|O_EXCL|O_RDWR, 0600);
 }
 #endif

@@ -15,5 +15,87 @@ if test x"$samba_cv_REPLACE_INET_NTOA" = x"yes"; then
     AC_DEFINE(REPLACE_INET_NTOA,1,[Whether inet_ntoa should be replaced])
 fi
 
+dnl Provided by replace.c:
+AC_CHECK_HEADERS(sys/syslog.h syslog.h)
 AC_CHECK_FUNCS(strtoull __strtoull strtouq strtoll __strtoll strtoq)
-AC_CHECK_FUNCS(seteuid setresuid setegid setresgid)
+AC_CHECK_FUNCS(seteuid setresuid setegid setresgid chroot bzero strerror)
+AC_CHECK_FUNCS(timegm setenv vsyslog setlinebuf mktime ftruncate chsize rename)
+AC_CHECK_FUNCS(waitpid strnlen strlcpy strlcat innetgr initgroups memmove strdup)
+AC_HAVE_DECL(setresuid, [#include <unistd.h>])
+AC_HAVE_DECL(setresgid, [#include <unistd.h>])
+AC_HAVE_DECL(errno, [#include <errno.h>])
+
+AC_CACHE_CHECK([for secure mkstemp],samba_cv_HAVE_SECURE_MKSTEMP,[
+AC_TRY_RUN([#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+main() { 
+  struct stat st;
+  char tpl[20]="/tmp/test.XXXXXX"; 
+  int fd = mkstemp(tpl); 
+  if (fd == -1) exit(1);
+  unlink(tpl);
+  if (fstat(fd, &st) != 0) exit(1);
+  if ((st.st_mode & 0777) != 0600) exit(1);
+  exit(0);
+}],
+samba_cv_HAVE_SECURE_MKSTEMP=yes,
+samba_cv_HAVE_SECURE_MKSTEMP=no,
+samba_cv_HAVE_SECURE_MKSTEMP=cross)])
+if test x"$samba_cv_HAVE_SECURE_MKSTEMP" = x"yes"; then
+    AC_DEFINE(HAVE_SECURE_MKSTEMP,1,[Whether mkstemp is secure])
+fi
+
+dnl Provided by snprintf.c:
+AC_HAVE_DECL(asprintf, [#include <stdio.h>])
+AC_HAVE_DECL(vasprintf, [#include <stdio.h>])
+AC_HAVE_DECL(vsnprintf, [#include <stdio.h>])
+AC_HAVE_DECL(snprintf, [#include <stdio.h>])
+AC_CHECK_FUNCS(snprintf vsnprintf asprintf vasprintf)
+
+AC_CACHE_CHECK([for C99 vsnprintf],samba_cv_HAVE_C99_VSNPRINTF,[
+AC_TRY_RUN([
+#include <sys/types.h>
+#include <stdarg.h>
+void foo(const char *format, ...) { 
+       va_list ap;
+       int len;
+       char buf[20];
+       long long l = 1234567890;
+       l *= 100;
+
+       va_start(ap, format);
+       len = vsnprintf(buf, 0, format, ap);
+       va_end(ap);
+       if (len != 5) exit(1);
+
+       va_start(ap, format);
+       len = vsnprintf(0, 0, format, ap);
+       va_end(ap);
+       if (len != 5) exit(1);
+
+       if (snprintf(buf, 3, "hello") != 5 || strcmp(buf, "he") != 0) exit(1);
+
+       if (snprintf(buf, 20, "%lld", l) != 12 || strcmp(buf, "123456789000") != 0) exit(1);
+
+       exit(0);
+}
+main() { foo("hello"); }
+],
+samba_cv_HAVE_C99_VSNPRINTF=yes,samba_cv_HAVE_C99_VSNPRINTF=no,samba_cv_HAVE_C99_VSNPRINTF=cross)])
+if test x"$samba_cv_HAVE_C99_VSNPRINTF" = x"yes"; then
+    AC_DEFINE(HAVE_C99_VSNPRINTF,1,[Whether there is a C99 compliant vsnprintf])
+fi
+
+dnl Provided by dlfcn.c:
+AC_SEARCH_LIBS_EXT(dlopen, [dl], DL_LIBS)
+SMB_EXT_LIB(DL,[${DL_LIBS}],[${DL_CFLAGS}],[${DL_CPPFLAGS}],[${DL_LDFLAGS}])
+SAVE_LIBS="$LIBS"
+LIBS="$LIBS $DL_LIBS"
+AC_CHECK_HEADERS(dlfcn.h)
+AC_CHECK_FUNCS(dlopen dlsym dlerror dlclose)
+LIBS="$SAVE_LIBS"
+
+AC_CHECK_FUNCS([syslog memset setnetgrent getnetgrent endnetgrent],,
+			   [AC_MSG_ERROR([Need syslog and memset])])

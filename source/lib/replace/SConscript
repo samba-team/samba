@@ -9,4 +9,4 @@ if hostenv['configure']:
 	conf.Finish()
 
 hostenv.StaticLibrary('repdir', ['repdir/repdir.c'])
-hostenv.StaticLibrary('replace', ['replace.c', 'snprintf.c'])
+hostenv.StaticLibrary('replace', ['replace.c', 'snprintf.c','dlfcn.c'])

@@ -76,10 +76,6 @@
 #include <windows.h>
 #endif
 
-#if defined(_MSC_VER) || defined(__MINGW32__)
-#include "lib/replace/win32/replace.h"
-#endif
-
 /* we support ADS if we want it and have krb5 and ldap libs */
 #if defined(WITH_ADS) && defined(HAVE_KRB5) && defined(HAVE_LDAP)
 #define HAVE_ADS
@@ -105,15 +101,6 @@ typedef int BOOL;
 struct ipv4_addr {
 	uint32_t addr;
 };
-
-#ifndef HAVE_STRERROR
-extern char *sys_errlist[];
-#define strerror(i) sys_errlist[i]
-#endif
-
-#ifndef HAVE_ERRNO_DECL
-extern int errno;
-#endif
 
 
 #include "lib/replace/replace.h"

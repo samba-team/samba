@@ -105,7 +105,7 @@ static void pipe_handler(struct event_context *ev, struct fd_event *fde,
 	/* enusre the address looks good */
 	address[ret] = 0;
 	if (strcmp(address, "0.0.0.0") == 0 ||
-	    sys_inet_addr(address) == INADDR_NONE) {
+	    inet_addr(address) == INADDR_NONE) {
 		goto failed;
 	}
 

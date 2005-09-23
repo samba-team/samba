@@ -23,7 +23,6 @@
 #include "system/network.h"
 #include "system/wait.h"
 #include "system/filesys.h"
-#include "pstring.h"
 
 /*
    The idea is that this file will eventually have wrappers around all
@@ -78,20 +77,6 @@ int sys_usleep(long usecs)
 
 
 /*******************************************************************
- System wrapper for getwd
-********************************************************************/
-char *sys_getwd(char *s)
-{
-	char *wd;
-#ifdef HAVE_GETCWD
-	wd = (char *)getcwd(s, sizeof (pstring));
-#else
-	wd = (char *)getwd(s);
-#endif
-	return wd;
-}
-
-/*******************************************************************
 A read wrapper that will deal with EINTR.
 ********************************************************************/
 
@@ -120,24 +105,6 @@ ssize_t sys_write(int fd, const void *buf, size_t count)
 }
 
 
-
-/*******************************************************************
-os/2 also doesn't have chroot
-********************************************************************/
-int sys_chroot(const char *dname)
-{
-#ifndef HAVE_CHROOT
-	static int done;
-	if (!done) {
-		DEBUG(1,("WARNING: no chroot!\n"));
-		done=1;
-	}
-	errno = ENOSYS;
-	return -1;
-#else
-	return(chroot(dname));
-#endif
-}
 
 /**************************************************************************
 A wrapper for gethostbyname() that tries avoids looking up hostnames 
@@ -181,49 +148,11 @@ struct hostent *sys_gethostbyname(const char *name)
 #endif /* REDUCE_ROOT_DNS_LOOKUPS */
 }
 
-
-
-/**************************************************************************
- Wrappers for dlopen, dlsym, dlclose.
-****************************************************************************/
-
-void *sys_dlopen(const char *name, int flags)
-{
-#if defined(HAVE_DLOPEN)
-	return dlopen(name, flags);
-#else
-	return NULL;
-#endif
-}
-
-void *sys_dlsym(void *handle, const char *symbol)
-{
-#if defined(HAVE_DLSYM)
-    return dlsym(handle, symbol);
-#else
-    return NULL;
-#endif
-}
-
-const char *sys_dlerror(void)
-{
-#if defined(HAVE_DLERROR)
-	return dlerror();
-#else
-	return NULL;
-#endif
-}
-
 const char *sys_inet_ntoa(struct ipv4_addr in)
 {
 	struct in_addr in2;
 	in2.s_addr = in.addr;
 	return inet_ntoa(in2);
-}
-
-uint32_t sys_inet_addr(const char *s)
-{
-	return inet_addr(s);
 }
 
 struct ipv4_addr sys_inet_makeaddr(int net, int host)
