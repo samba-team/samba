@@ -156,6 +156,8 @@ DomainParameters ::= SEQUENCE {
 	validationParms	ValidationParms OPTIONAL -- ValidationParms
 }
 
+DHPublicKey ::= INTEGER
+
 OtherName ::= SEQUENCE {
 	type-id    OBJECT IDENTIFIER,
 	value      [0] EXPLICIT heim_any
