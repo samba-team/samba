@@ -183,6 +183,7 @@ struct tdb_context {
 	int fd; /* open file descriptor for the database */
 	tdb_len_t map_size; /* how much space has been mapped */
 	int read_only; /* opened read-only */
+	int traverse_read; /* read-only traversal */
 	struct tdb_lock_type *locked; /* array of chain locks */
 	enum TDB_ERROR ecode; /* error code for last tdb error */
 	struct tdb_header header; /* a cached copy of the header */
