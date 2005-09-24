@@ -185,9 +185,11 @@ DATA_BLOB data_blob_const(const void *p, size_t length)
 /*
   append some data to a data blob
 */
-NTSTATUS data_blob_append(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, void *p, size_t length)
+NTSTATUS data_blob_append(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
+			  const void *p, size_t length)
 {
-	blob->data = talloc_realloc_size(mem_ctx, blob->data, blob->length + length);
+	blob->data = talloc_realloc_size(mem_ctx, blob->data,
+					 blob->length + length);
 	NT_STATUS_HAVE_NO_MEMORY(blob->data);	
 	memcpy(blob->data + blob->length, p, length);
 	blob->length += length;
