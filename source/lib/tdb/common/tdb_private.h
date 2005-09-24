@@ -45,6 +45,14 @@
 #include <sys/stat.h>
 #include "config.h"
 #include "tdb.h"
+
+#ifndef HAVE_PREAD_DECL
+ssize_t pread(int fd, void *buf, size_t count, off_t offset);
+#endif
+#ifndef HAVE_PWRITE_DECL
+ssize_t pwrite(int fd, const void *buf, size_t count, off_t offset);
+#endif
+
 #else
 #include "includes.h"
 #include "lib/tdb/include/tdb.h"
