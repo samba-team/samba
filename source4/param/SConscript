@@ -2,7 +2,9 @@ Import('hostenv')
 #            tastes like -*- python -*-
 
 Import('dynconfig basic')
-param = hostenv.StaticLibrary('loadparm',['loadparm.c','params.c',dynconfig,basic])
+param_files = ['loadparm.c','params.c']
+param = hostenv.StaticLibrary('loadparm',[param_files,dynconfig,basic])
+hostenv.proto_headers += hostenv.CProtoHeader('proto.h', param_files)
 Export('param')
 generic = hostenv.StaticLibrary('generic',['generic.c'])
 Export('generic')

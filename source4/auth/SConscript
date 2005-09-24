@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 Import('hostenv')
 
 hostenv.StaticLibrary('auth_sam.c')
@@ -12,7 +13,18 @@ if hostenv['configure']:
     have_pam = conf.CheckLibWithHeader('pam', 'security/pam_appl.h', 'c', 'pam_start')
     conf.Finish()
 
+proto_files = []
 hostenv.StaticLibrary('pam_errors.c')
-hostenv.StaticLibrary('auth',['auth.c','auth_util.c','auth_sam_reply.c','ntlm_check.c'])
+proto_files += ['pam_errors.c']
+auth_files = ['auth.c','auth_util.c','auth_sam_reply.c','ntlm_check.c']
+proto_files += auth_files
+hostenv.StaticLibrary('auth',auth_files)
 
-SConscript(dirs=['ntlmssp','kerberos','gensec'])
+hostenv.proto_headers += hostenv.CProtoHeader('proto.h', proto_files)
+
+hostenv.StaticLibrary('gensec_ntlmssp',
+		['ntlmssp/ntlmssp_parse.c', 'ntlmssp/ntlmssp.c',
+		'ntlmssp/ntlmssp_sign.c','ntlmssp/ntlmssp_client.c',
+		'ntlmssp/ntlmssp_server.c'])
+
+SConscript(dirs=['kerberos','gensec'])
