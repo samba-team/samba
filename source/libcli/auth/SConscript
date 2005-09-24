@@ -1,3 +1,0 @@
-Import('hostenv')
-
-hostenv.StaticLibrary('cli_auth',['credentials.c','session.c','smbencrypt.c'])

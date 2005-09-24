@@ -19,6 +19,16 @@ if hostenv['configure']:
 		if conf.CheckFunc(f,'c'):
 			defines['HAVE_' + f.upper()] = 1
 
+	# Check for errno declaration
+	if conf.TryCompile("""
+#include <errno.h>
+
+int main() {
+	int i = (int)errno;
+	return 0;
+}""", '.c'):
+		defines['HAVE_ERRNO_DECL'] = 1
+
 	for h in ['dlfcn.h']:
 		if conf.CheckCHeader('dlfcn.h'):
 			defines['HAVE_' + h.upper().replace('.','_').replace('/','_')] = 1
