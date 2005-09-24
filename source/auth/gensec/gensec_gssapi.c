@@ -239,7 +239,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	if (is_ipaddress(hostname)) {
-		DEBUG(2, ("Cannot do GSSAPI to a IP address"));
+		DEBUG(2, ("Cannot do GSSAPI to an IP address"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -939,7 +939,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	return NT_STATUS_OK;
 }
 
-static const char *gensec_krb5_oids[] = { 
+static const char *gensec_gssapi_krb5_oids[] = { 
 	GENSEC_OID_KERBEROS5,
 	GENSEC_OID_KERBEROS5_OLD,
 	NULL 
@@ -949,7 +949,7 @@ static const char *gensec_krb5_oids[] = {
 static const struct gensec_security_ops gensec_gssapi_krb5_security_ops = {
 	.name		= "gssapi_krb5",
 	.auth_type	= DCERPC_AUTH_TYPE_KRB5,
-	.oid            = gensec_krb5_oids,
+	.oid            = gensec_gssapi_krb5_oids,
 	.client_start   = gensec_gssapi_client_start,
 	.server_start   = gensec_gssapi_server_start,
 	.magic  	= gensec_gssapi_magic,
