@@ -30,7 +30,10 @@
 
 #endif
 
+#ifdef HAVE_GETOPT_H
 #include <getopt.h>
+#endif
+
 
 #define REOPEN_PROB 30
 #define DELETE_PROB 8
