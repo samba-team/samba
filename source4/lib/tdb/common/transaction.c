@@ -734,7 +734,7 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 int tdb_transaction_commit(struct tdb_context *tdb)
 {	
 	const struct tdb_methods *methods;
-	tdb_off_t magic_offset;
+	tdb_off_t magic_offset = 0;
 	u32 zero = 0;
 
 	if (tdb->transaction == NULL) {
