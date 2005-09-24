@@ -351,6 +351,11 @@ unsigned char *tdb_alloc_read(struct tdb_context *tdb, tdb_off_t offset, tdb_len
 {
 	unsigned char *buf;
 
+	/* some systems don't like zero length malloc */
+	if (len == 0) {
+		len = 1;
+	}
+
 	if (!(buf = malloc(len))) {
 		/* Ensure ecode is set for log fn. */
 		tdb->ecode = TDB_ERR_OOM;
