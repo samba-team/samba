@@ -2,7 +2,7 @@ Import('hostenv')
 #            tastes like -*- python -*-
 
 SConscript(dirs=['talloc','charset'])
-Import('talloc', 'dynconfig', 'charset', 'proto_files')
+Import('talloc', 'dynconfig', 'charset')
 
 basic_files = ['version.c', 'xfile.c', 'debug.c', 'fault.c', 
 	 'signal.c', 'system.c', 'time.c', 'genrand.c', 'dprintf.c',
@@ -11,7 +11,7 @@ basic_files = ['version.c', 'xfile.c', 'debug.c', 'fault.c',
 	 'fsusage.c', 'ms_fnmatch.c', 'select.c', 'mutex.c', 'idtree.c',
 	 'db_wrap.c']
 
-proto_files += [File(x) for x in basic_files]
+proto_files = basic_files
 
 basic = hostenv.StaticLibrary('basic', [dynconfig,charset,talloc,basic_files])
 Export('basic')
@@ -29,11 +29,17 @@ hostenv.StaticLibrary('unix_privs',['unix_privs.c'])
 SConscript(dirs=['ldb'])
 
 Import('ldb')
-gendb = hostenv.StaticLibrary('gendb', ['gendb.c',ldb])
+gendb_files = ['gendb.c']
+proto_files += gendb_files
+gendb = hostenv.StaticLibrary('gendb', [gendb_files,ldb])
 Export('gendb')
 
-credentials = hostenv.StaticLibrary('credentials',['credentials.c',basic,gendb])
+credentials_files = ['credentials.c']
+proto_files += credentials_files
+credentials = hostenv.StaticLibrary('credentials',[credentials_files,basic,gendb])
 Export('credentials')
+
+hostenv.proto_headers += hostenv.CProtoHeader('proto.h', proto_files)
 
 SConscript(dirs=['../param/','replace','tdb','popt','cmdline','registry', 'tls','samba3','socket','socket_wrapper','messaging','com','events', 'appweb'])
 

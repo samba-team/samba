@@ -2,4 +2,6 @@ Import('hostenv')
 hostenv.StaticLibrary('ldb_objectguid',['samdb/ldb_modules/objectguid.c'])
 hostenv.StaticLibrary('ldb_samldb',['samdb/ldb_modules/samldb.c'])
 hostenv.StaticLibrary('ldb_samba3sam',['samdb/ldb_modules/samba3sam.c'])
-hostenv.StaticLibrary('samdb',['samdb/samdb.c','samdb/samdb_privilege.c','common/flag_mapping.c'])
+samdb_files = ['samdb/samdb.c','samdb/samdb_privilege.c','common/flag_mapping.c']
+hostenv.StaticLibrary('samdb',samdb_files)
+hostenv.proto_headers += hostenv.CProtoHeader(samdb_files)

@@ -18,7 +18,7 @@ then
   headeropt="-h $2"
   shift; shift;
 else
-  headeropt=""
+  headeropt="-h _`echo $1 | tr ./ __`_"
 fi
 
 header="$1"

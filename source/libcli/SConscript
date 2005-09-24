@@ -1,7 +1,8 @@
 Import('hostenv')
-hostenv.StaticLibrary('cli_utils',
-		['util/asn1.c', 'util/doserr.c','util/errormap.c','util/clierror.c',
-		'util/nterr.c','util/smbdes.c'])
+proto_files = []
+cli_utils_files = ['util/asn1.c', 'util/doserr.c','util/errormap.c','util/clierror.c', 'util/nterr.c','util/smbdes.c']
+proto_files += cli_utils_files
+hostenv.StaticLibrary('cli_utils', cli_utils_files)
 
 hostenv.StaticLibrary('cli_lsa', ['util/clilsa.c'])
 hostenv.StaticLibrary('cli_composite_base', ['composite/composite.c'])
@@ -38,4 +39,19 @@ hostenv.StaticLibrary('cli_raw',
 		'raw/rawfileinfo.c','raw/rawnotify.c','raw/rawioctl.c',
 		'raw/rawacl.c','raw/rawdate.c','raw/rawlpq.c'])
 
-SConscript(dirs=['auth','ldap','security'],exports='hostenv')
+security_files = ['security/security_token.c','security/security_descriptor.c',
+			   'security/dom_sid.c', 'security/access_check.c',
+			   'security/privilege.c', '../librpc/ndr/ndr_sec_helper.c']
+proto_files += security_files
+hostenv.StaticLibrary('cli_security', security_files)
+
+auth_files = ['auth/credentials.c','auth/session.c','auth/smbencrypt.c']
+proto_files += auth_files
+hostenv.StaticLibrary('cli_auth',auth_files)
+
+ldap_files = ['ldap/ldap.c','ldap/ldap_client.c','ldap/ldap_bind.c',
+		   'ldap/ldap_msg.c','ldap/ldap_ndr.c','ldap/ldap_ildap.c']
+proto_files += ldap_files
+hostenv.StaticLibrary('cli_ldap',ldap_files)
+
+hostenv.proto_headers += hostenv.CProtoHeader('proto.h', proto_files)

@@ -11,6 +11,7 @@
 # - finish fallback code
 # - finish proto code
 # - support for init functions
+# - separate config file for lib/replace/
 
 import cPickle, string, os
 
@@ -111,7 +112,7 @@ if hostenv['configure']:
 	
 	conf = hostenv.Configure()
 
-	for h in ['sys/select.h','fcntl.h','sys/fcntl.h','sys/time.h'] + \
+	for h in ['sys/select.h','fcntl.h','sys/fcntl.h'] + \
 		['utime.h','grp.h','sys/id.h','limits.h','memory.h'] + \
 		['compat.h','math.h','sys/param.h','ctype.h','sys/wait.h'] + \
 		['sys/resource.h','sys/ioctl.h','sys/ipc.h','sys/mode.h'] + \
@@ -171,6 +172,22 @@ int main()
 		defines['HAVE_IMMEDIATE_STRUCTURES'] = 1
 
 	hostenv.AlwaysBuild('include/config.h')
+
+	if conf.TryCompile("""
+#include <sys/types.h>
+#include <sys/time.h>
+#include <time.h>
+
+int
+main ()
+{
+if ((struct tm *) 0)
+return 0;
+  return 0;
+}
+""", '.c'):
+		defines['TIME_WITH_SYS_TIME'] = 1
+
 	conf.Finish()
 
 [dynenv.Append(CPPDEFINES = {p: '\\"%s\\"' % paths[p]}) for p in paths]
@@ -178,8 +195,7 @@ int main()
 dynconfig = dynenv.Object('dynconfig.c')
 Export('dynconfig')
 
-proto_files = []
-Export('proto_files')
+hostenv.proto_headers = []
 
 SConscript(
 		dirs=['lib','torture','rpc_server','cldap_server','libcli',
@@ -187,7 +203,18 @@ SConscript(
 		'smbd','dsdb','heimdal_build','ntptr','kdc','smb_server','ntvfs',
 		'winbind','scripting','auth', 'librpc','script/tests'])
 
-hostenv.CProtoHeader(target='include/proto.h',source=proto_files)
+# proto.h
+
+def create_global_proto(env, target, source):
+	fd = open(str(target[0]), 'w')
+	[fd.write('#include "%s"\n' % x) for x in source]
+	fd.close()
+
+def create_global_proto_print(*args, **kwargs):
+	print 'Building global proto.h'
+
+hostenv.Command('include/proto.h', hostenv.proto_headers,
+	Action(create_global_proto, create_global_proto_print))
 
 # Save configuration
 
