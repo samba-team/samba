@@ -4,7 +4,7 @@ Import('hostenv defines')
 if hostenv['configure']:
 	conf = Configure(hostenv)
 	for f in ['memset','syslog','setnetgrent','getnetgrent','endnetgrent', \
-			'mktemp']:
+			'mktemp', 'memcpy']:
 		if not conf.CheckFunc(f,'c'):
 			print "Required function `%s' not found" % f
 			exit(1)
@@ -25,6 +25,29 @@ if hostenv['configure']:
 
 	if not conf.CheckType('socklen_t'):
 		defines['socklen_t'] = 'int'
+
+	needed_types = { 
+		'uint_t': 'unsigned int',
+		'int8_t': 'signed char',
+		'uint8_t': 'unsigned char',
+		'u_int8_t': 'unsigned char',
+		'int16_t': 'short',
+		'uint16_t': 'unsigned short',
+		'u_int16_t': 'unsigned short',
+		'int32_t': 'long',
+		'uint32_t': 'unsigned long',
+		'u_int32_t': 'unsigned long',
+		'int64_t': 'long long',
+		'uint64_t': 'unsigned long long',
+	}
+
+	type_headers = """
+#include <stdint.h>
+#include <sys/types.h>
+"""	
+	for t in needed_types:
+		if not conf.CheckType(t,type_headers):
+			defines[t] = needed_types[t]
 
 	conf.Finish()
 

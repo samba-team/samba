@@ -136,30 +136,6 @@ if hostenv['configure']:
 	# Pull in GNU extensions
 	defines['_GNU_SOURCE'] = 1
 
-	needed_types = { 
-		'uint_t': 'unsigned int',
-		'int8_t': 'signed char',
-		'uint8_t': 'unsigned char',
-		'int16_t': 'short',
-		'uint16_t': 'unsigned short',
-		'int32_t': 'long',
-		'uint32_t': 'unsigned long',
-		'int64_t': 'long long',
-		'uint64_t': 'unsigned long long'
-	}
-
-	type_headers = """
-#include <stdint.h>
-#include <sys/types.h>
-"""	
-	for t in needed_types:
-		if not conf.CheckType(t,type_headers):
-			defines[t] = needed_types[t]
-
-	for t in ['u_int32_t', 'u_int16_t', 'u_int8_t']:
-		if conf.CheckType(t, type_headers):
-			defines['HAVE_%s' % string.upper(t)] = 1
-
 	if conf.CheckType('comparison_fn_t', '#include <stdlib.h>'):
 		defines['HAVE_COMPARISON_FN_T'] = 1
 

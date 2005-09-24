@@ -51,6 +51,10 @@ pwrite
 
 Types:
 socklen_t
+u_int{8,16,32}_t
+uint_t
+uint{8,16,32,64}_t
+int{8,16,32,64}_t
 
 Prerequisites:
 memset (for bzero)
