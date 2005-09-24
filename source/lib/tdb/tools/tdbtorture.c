@@ -230,7 +230,7 @@ static void usage(void)
  int main(int argc, char * const *argv)
 {
 	int i, seed = -1;
-	int num_procs = 2;
+	int num_procs = 3;
 	int num_loops = 5000;
 	int hash_size = 2;
 	int c;
