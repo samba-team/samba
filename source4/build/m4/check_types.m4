@@ -28,12 +28,4 @@ if test $ac_cv_sizeof_long_long -lt 8;then
 	AC_MSG_ERROR([Sorry we need sizeof(long long) >= 8])
 fi
 AC_CHECK_TYPE(_Bool)
-AC_CHECK_TYPE(uint_t, unsigned int)
-AC_CHECK_TYPE(int8_t, signed char)
-AC_CHECK_TYPE(uint8_t, unsigned char)
-AC_CHECK_TYPE(int16_t, short)
-AC_CHECK_TYPE(uint16_t, unsigned short)
-AC_CHECK_TYPE(int32_t, long)
-AC_CHECK_TYPE(uint32_t, unsigned long)
-AC_CHECK_TYPE(int64_t, long long)
-AC_CHECK_TYPE(uint64_t, unsigned long long)
+

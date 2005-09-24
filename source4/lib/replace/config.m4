@@ -1,3 +1,16 @@
+AC_CHECK_TYPE(uint_t, unsigned int)
+AC_CHECK_TYPE(int8_t, signed char)
+AC_CHECK_TYPE(uint8_t, unsigned char)
+AC_CHECK_TYPE(int16_t, short)
+AC_CHECK_TYPE(uint16_t, unsigned short)
+AC_CHECK_TYPE(int32_t, long)
+AC_CHECK_TYPE(uint32_t, unsigned long)
+AC_CHECK_TYPE(int64_t, long long)
+AC_CHECK_TYPE(uint64_t, unsigned long long)
+AC_CHECK_TYPE(u_int32_t, unsigned long)
+AC_CHECK_TYPE(u_int16_t, unsigned short)
+AC_CHECK_TYPE(u_int8_t, unsigned char)
+
 AC_CACHE_CHECK([for broken inet_ntoa],samba_cv_REPLACE_INET_NTOA,[
 AC_TRY_RUN([
 #include <stdio.h>
@@ -99,5 +112,5 @@ AC_CHECK_HEADERS(dlfcn.h)
 AC_CHECK_FUNCS(dlopen dlsym dlerror dlclose)
 LIBS="$SAVE_LIBS"
 
-AC_CHECK_FUNCS([syslog memset setnetgrent getnetgrent endnetgrent],,
-			   [AC_MSG_ERROR([Need syslog and memset])])
+AC_CHECK_FUNCS([syslog memset setnetgrent getnetgrent endnetgrent memcpy],,
+			   [AC_MSG_ERROR([Required function not found])])
