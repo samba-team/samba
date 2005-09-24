@@ -50,7 +50,7 @@
 
 static struct tdb_context *db;
 static int in_transaction;
-static int log_count;
+static int error_count;
 
 #ifdef PRINTF_ATTRIBUTE
 static void tdb_log(struct tdb_context *tdb, int level, const char *format, ...) PRINTF_ATTRIBUTE(3,4);
@@ -59,7 +59,7 @@ static void tdb_log(struct tdb_context *tdb, int level, const char *format, ...)
 {
 	va_list ap;
     
-	log_count++;
+	error_count++;
 
 	va_start(ap, format);
 	vfprintf(stdout, format, ap);
@@ -78,7 +78,7 @@ static void tdb_log(struct tdb_context *tdb, int level, const char *format, ...)
 static void fatal(const char *why)
 {
 	perror(why);
-	exit(1);
+	error_count++;
 }
 
 static char *randbuf(int len)
@@ -283,37 +283,55 @@ static void usage(void)
 	srand(seed + i);
 	srandom(seed + i);
 
-	for (i=0;i<num_loops;i++) {
+	for (i=0;i<num_loops && error_count == 0;i++) {
 		addrec_db();
 	}
 
-	tdb_traverse_read(db, NULL, NULL);
-	tdb_traverse(db, traverse_fn, NULL);
-	tdb_traverse(db, traverse_fn, NULL);
+	if (error_count == 0) {
+		tdb_traverse_read(db, NULL, NULL);
+		tdb_traverse(db, traverse_fn, NULL);
+		tdb_traverse(db, traverse_fn, NULL);
+	}
 
 	tdb_close(db);
 
-	if (getpid() == pids[0]) {
-		for (i=0;i<num_procs-1;i++) {
-			int status;
-			if (waitpid(pids[i+1], &status, 0) != pids[i+1]) {
-				printf("failed to wait for %d\n",
-				       (int)pids[i+1]);
-				exit(1);
-			}
-			if (WEXITSTATUS(status) != 0) {
-				printf("child %d exited with status %d\n",
-				       (int)pids[i+1], WEXITSTATUS(status));
-				exit(1);
-			}
-		}
-		if (log_count == 0) {
-			printf("OK\n");
-		}
+	if (getpid() != pids[0]) {
+		return error_count;
 	}
 
-	if (log_count != 0) {
-		exit(1);
+	for (i=1;i<num_procs;i++) {
+		int status, j;
+		pid_t pid;
+		if (error_count != 0) {
+			/* try and stop the test on any failure */
+			for (j=1;j<num_procs;j++) {
+				if (pids[j] != 0) {
+					kill(pids[j], SIGTERM);
+				}
+			}
+		}
+		pid = waitpid(-1, &status, 0);
+		if (pid == -1) {
+			perror("failed to wait for child\n");
+			exit(1);
+		}
+		for (j=1;j<num_procs;j++) {
+			if (pids[j] == pid) break;
+		}
+		if (j == num_procs) {
+			printf("unknown child %d exited!?\n", pid);
+			exit(1);
+		}
+		if (WEXITSTATUS(status) != 0) {
+			printf("child %d exited with status %d\n",
+			       (int)pid, WEXITSTATUS(status));
+			error_count++;
+		}
+		pids[j] = 0;
+	}
+
+	if (error_count == 0) {
+		printf("OK\n");
 	}
 
 	return 0;
