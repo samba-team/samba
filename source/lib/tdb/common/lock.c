@@ -46,7 +46,7 @@ int tdb_brlock_len(struct tdb_context *tdb, tdb_off_t offset,
 		return 0;
 	}
 
-	if ((rw_type == F_WRLCK) && (tdb->read_only)) {
+	if ((rw_type == F_WRLCK) && (tdb->read_only || tdb->traverse_read)) {
 		tdb->ecode = TDB_ERR_RDONLY;
 		return -1;
 	}
@@ -161,7 +161,7 @@ int tdb_lockall(struct tdb_context *tdb)
 	u32 i;
 
 	/* There are no locks on read-only dbs */
-	if (tdb->read_only)
+	if (tdb->read_only || tdb->traverse_read)
 		return TDB_ERRCODE(TDB_ERR_LOCK, -1);
 	for (i = 0; i < tdb->header.hash_size; i++) 
 		if (tdb_lock(tdb, i, F_WRLCK))

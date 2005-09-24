@@ -164,7 +164,7 @@ int tdb_do_delete(struct tdb_context *tdb, tdb_off_t rec_ptr, struct list_struct
 	tdb_off_t last_ptr, i;
 	struct list_struct lastrec;
 
-	if (tdb->read_only) return -1;
+	if (tdb->read_only || tdb->traverse_read) return -1;
 
 	if (tdb_write_lock_record(tdb, rec_ptr) == -1) {
 		/* Someone traversing here: mark it as dead */
@@ -227,7 +227,7 @@ int tdb_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	char *p = NULL;
 	int ret = 0;
 
-	if (tdb->read_only) {
+	if (tdb->read_only || tdb->traverse_read) {
 		tdb->ecode = TDB_ERR_RDONLY;
 		return -1;
 	}
