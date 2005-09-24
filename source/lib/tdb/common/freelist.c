@@ -277,6 +277,8 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct list_st
 		goto fail;
 
 	bestfit.rec_ptr = 0;
+	bestfit.last_ptr = 0;
+	bestfit.rec_len = 0;
 
 	/* 
 	   this is a best fit allocation strategy. Originally we used
