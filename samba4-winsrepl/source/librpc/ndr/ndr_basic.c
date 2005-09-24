@@ -571,7 +571,7 @@ NTSTATUS ndr_push_ipv4address(struct ndr_push *ndr, int ndr_flags, const char *a
 {
 	uint32_t addr;
 	if (!is_ipaddress(address)) return NT_STATUS_INVALID_PARAMETER_MIX;
-	addr = sys_inet_addr(address);
+	addr = inet_addr(address);
 	NDR_CHECK(ndr_push_uint32(ndr, ndr_flags, htonl(addr)));
 	return NT_STATUS_OK;
 }

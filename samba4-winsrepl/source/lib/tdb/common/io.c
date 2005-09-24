@@ -97,7 +97,11 @@ static int tdb_oob(struct tdb_context *tdb, tdb_off_t len, int probe)
 static int tdb_write(struct tdb_context *tdb, tdb_off_t off, 
 		     const void *buf, tdb_len_t len)
 {
-	if (tdb->read_only) {
+	if (len == 0) {
+		return 0;
+	}
+
+	if (tdb->read_only || tdb->traverse_read) {
 		tdb->ecode = TDB_ERR_RDONLY;
 		return -1;
 	}
@@ -230,7 +234,7 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 {
 	char buf[1024];
 
-	if (tdb->read_only) {
+	if (tdb->read_only || tdb->traverse_read) {
 		tdb->ecode = TDB_ERR_RDONLY;
 		return -1;
 	}
@@ -351,6 +355,11 @@ unsigned char *tdb_alloc_read(struct tdb_context *tdb, tdb_off_t offset, tdb_len
 {
 	unsigned char *buf;
 
+	/* some systems don't like zero length malloc */
+	if (len == 0) {
+		len = 1;
+	}
+
 	if (!(buf = malloc(len))) {
 		/* Ensure ecode is set for log fn. */
 		tdb->ecode = TDB_ERR_OOM;
@@ -386,12 +395,12 @@ int tdb_rec_write(struct tdb_context *tdb, tdb_off_t offset, struct list_struct 
 }
 
 static const struct tdb_methods io_methods = {
-	.tdb_read        = tdb_read,
-	.tdb_write       = tdb_write,
-	.next_hash_chain = tdb_next_hash_chain,
-	.tdb_oob         = tdb_oob,
-	.tdb_expand_file = tdb_expand_file,
-	.tdb_brlock      = tdb_brlock
+	tdb_read,
+	tdb_write,
+	tdb_next_hash_chain,
+	tdb_oob,
+	tdb_expand_file,
+	tdb_brlock
 };
 
 /*

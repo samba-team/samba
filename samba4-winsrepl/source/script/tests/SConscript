@@ -1,0 +1,2 @@
+Alias('quicktest', '#selftest.sh st quick SOCKET_WRAPPER')
+Alias('test', '#selftest.sh st all SOCKET_WRAPPER')

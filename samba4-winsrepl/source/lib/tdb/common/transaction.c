@@ -196,6 +196,10 @@ static int transaction_write(struct tdb_context *tdb, tdb_off_t off,
 			     const void *buf, tdb_len_t len)
 {
 	struct tdb_transaction_el *el;
+
+	if (len == 0) {
+		return 0;
+	}
 	
 	/* if the write is to a hash head, then update the transaction
 	   hash heads */
@@ -333,12 +337,12 @@ int transaction_brlock(struct tdb_context *tdb, tdb_off_t offset,
 }
 
 static const struct tdb_methods transaction_methods = {
-	.tdb_read        = transaction_read,
-	.tdb_write       = transaction_write,
-	.next_hash_chain = transaction_next_hash_chain,
-	.tdb_oob         = transaction_oob,
-	.tdb_expand_file = transaction_expand_file,
-	.tdb_brlock      = transaction_brlock
+	transaction_read,
+	transaction_write,
+	transaction_next_hash_chain,
+	transaction_oob,
+	transaction_expand_file,
+	transaction_brlock
 };
 
 
@@ -349,7 +353,7 @@ static const struct tdb_methods transaction_methods = {
 int tdb_transaction_start(struct tdb_context *tdb)
 {
 	/* some sanity checks */
-	if (tdb->read_only || (tdb->flags & TDB_INTERNAL)) {
+	if (tdb->read_only || (tdb->flags & TDB_INTERNAL) || tdb->traverse_read) {
 		TDB_LOG((tdb, 0, "tdb_transaction_start: cannot start a transaction on a read-only or internal db\n"));
 		tdb->ecode = TDB_ERR_EINVAL;
 		return -1;
@@ -628,7 +632,7 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 	struct list_struct *rec;
 	tdb_off_t recovery_offset, recovery_max_size;
 	tdb_off_t old_map_size = tdb->transaction->old_map_size;
-	u32 magic;
+	u32 magic, tailer;
 
 	/*
 	  check that the recovery area has enough space
@@ -666,8 +670,8 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 			tdb->ecode = TDB_ERR_CORRUPT;
 			return -1;
 		}
-		((u32 *)p)[0] = el->offset;
-		((u32 *)p)[1] = el->length;
+		memcpy(p, &el->offset, 4);
+		memcpy(p+4, &el->length, 4);
 		if (DOCONV()) {
 			tdb_convert(p, 8);
 		}
@@ -683,7 +687,8 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 	}
 
 	/* and the tailer */
-	*(u32 *)p = sizeof(*rec) + recovery_max_size;
+	tailer = sizeof(*rec) + recovery_max_size;
+	memcpy(p, &tailer, 4);
 	CONVERT(p);
 
 	/* write the recovery data to the recovery area */
@@ -926,8 +931,8 @@ int tdb_transaction_recover(struct tdb_context *tdb)
 		if (DOCONV()) {
 			tdb_convert(p, 8);
 		}
-		ofs = ((u32 *)p)[0];
-		len = ((u32 *)p)[1];
+		memcpy(&ofs, p, 4);
+		memcpy(&len, p+4, 4);
 
 		if (tdb->methods->tdb_write(tdb, ofs, p+8, len) == -1) {
 			free(data);

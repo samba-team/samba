@@ -542,7 +542,7 @@ Ethereal parsers:
 }
 
 # main program
-GetOptions (
+my $result = GetOptions (
 	    'help|h|?' => \$opt_help, 
 	    'outputdir=s' => \$opt_outputdir,
 	    'dump-idl' => \$opt_dump_idl,
@@ -568,6 +568,10 @@ GetOptions (
 		'verbose' => \$opt_verbose,
 	    'warn-compat' => \$opt_warn_compat
 	    );
+
+if (not $result) {
+	exit(1);
+}
 
 if ($opt_help) {
     ShowHelp();
@@ -764,7 +768,7 @@ $dcom
 
 if (scalar(@ARGV) == 0) {
 	print "pidl: no input files\n";
-	exit(0);
+	exit(1);
 }
 
 process_file($_) foreach (@ARGV);

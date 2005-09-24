@@ -33,7 +33,9 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#ifdef HAVE_STDINT_H
 #include <stdint.h>
+#endif
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
@@ -43,6 +45,14 @@
 #include <sys/stat.h>
 #include "config.h"
 #include "tdb.h"
+
+#ifndef HAVE_PREAD_DECL
+ssize_t pread(int fd, void *buf, size_t count, off_t offset);
+#endif
+#ifndef HAVE_PWRITE_DECL
+ssize_t pwrite(int fd, const void *buf, size_t count, off_t offset);
+#endif
+
 #else
 #include "includes.h"
 #include "lib/tdb/include/tdb.h"
@@ -53,6 +63,10 @@
 
 #ifndef u32
 #define u32 unsigned
+#endif
+
+#ifndef HAVE_GETPAGESIZE
+#define getpagesize() 0x2000
 #endif
 
 typedef u32 tdb_len_t;
@@ -181,6 +195,7 @@ struct tdb_context {
 	int fd; /* open file descriptor for the database */
 	tdb_len_t map_size; /* how much space has been mapped */
 	int read_only; /* opened read-only */
+	int traverse_read; /* read-only traversal */
 	struct tdb_lock_type *locked; /* array of chain locks */
 	enum TDB_ERROR ecode; /* error code for last tdb error */
 	struct tdb_header header; /* a cached copy of the header */

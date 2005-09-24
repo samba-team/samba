@@ -572,7 +572,7 @@ static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state,
 	DATA_BLOB lmv2_response = data_blob(NULL, 0);
 	DATA_BLOB lmv2_session_key = data_blob(NULL, 0);
 	DATA_BLOB ntlmv2_session_key = data_blob(NULL, 0);
-	DATA_BLOB names_blob = NTLMv2_generate_names_blob(samlogon_state->mem_ctx, lp_netbios_name(), lp_workgroup());
+	DATA_BLOB names_blob = NTLMv2_generate_names_blob(samlogon_state->mem_ctx, TEST_MACHINE_NAME, lp_workgroup());
 
 	uint8_t lm_session_key[8];
 	uint8_t user_session_key[16];
