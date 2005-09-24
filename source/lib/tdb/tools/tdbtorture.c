@@ -50,6 +50,7 @@
 
 static struct tdb_context *db;
 static int in_transaction;
+static int log_count;
 
 #ifdef PRINTF_ATTRIBUTE
 static void tdb_log(struct tdb_context *tdb, int level, const char *format, ...) PRINTF_ATTRIBUTE(3,4);
@@ -58,6 +59,8 @@ static void tdb_log(struct tdb_context *tdb, int level, const char *format, ...)
 {
 	va_list ap;
     
+	log_count++;
+
 	va_start(ap, format);
 	vfprintf(stdout, format, ap);
 	va_end(ap);
@@ -304,7 +307,13 @@ static void usage(void)
 				exit(1);
 			}
 		}
-		printf("OK\n");
+		if (log_count == 0) {
+			printf("OK\n");
+		}
+	}
+
+	if (log_count != 0) {
+		exit(1);
 	}
 
 	return 0;
