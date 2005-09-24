@@ -17,6 +17,10 @@ TDB_OBJ = common/tdb.o common/dump.o common/io.o common/lock.o \
 
 all: $(PROGS)
 
+.c.o:
+	@echo Compiling $*.c
+	@$(CC) $(CFLAGS) -c $< -o $@
+
 install: all
 	mkdir -p $(bindir)
 	mkdir -p $(includedir)
