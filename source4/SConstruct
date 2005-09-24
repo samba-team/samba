@@ -137,7 +137,7 @@ if hostenv['configure']:
 	# Pull in GNU extensions
 	defines['_GNU_SOURCE'] = 1
 
-	if conf.CheckType('comparison_fn_t', '#include <stdlib.h>'):
+	if conf.CheckType('comparison_fn_t', '#define _GNU_SOURCE\n#include <stdlib.h>'):
 		defines['HAVE_COMPARISON_FN_T'] = 1
 
 	if conf.CheckType('sig_atomic_t', '#include <signal.h>'):
