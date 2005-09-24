@@ -40,7 +40,7 @@ tdr_builder = SCons.Builder.Builder(action='$TDRCOM',
                      scanner = idl_scanner)
 
 def generate(env):
-	env['PIDL']          = env.Detect(['./pidl/pidl', 'pidl'])
+	env['PIDL']          = env.WhereIs('pidl', ['pidl'])
 	env['NDRFLAGS']     = ['--outputdir', 'librpc/gen_ndr','--ndr-header', '--ndr-parser','--header']
 	env['TDRFLAGS']     = ['--tdr-parser', '--tdr-header','--header']
 	env['NDRCOM']       = '$PIDL $NDRFLAGS -- $SOURCES'
@@ -49,4 +49,4 @@ def generate(env):
 	env['BUILDERS']['TdrMarshaller'] = tdr_builder
 
 def exists(env):
-	return env.Detect(['./pidl/pidl','pidl'])
+	return env.WhereIs('pidl', ['pidl'])
