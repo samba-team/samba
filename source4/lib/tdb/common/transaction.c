@@ -628,7 +628,7 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 	struct list_struct *rec;
 	tdb_off_t recovery_offset, recovery_max_size;
 	tdb_off_t old_map_size = tdb->transaction->old_map_size;
-	u32 magic;
+	u32 magic, tailer;
 
 	/*
 	  check that the recovery area has enough space
@@ -666,8 +666,8 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 			tdb->ecode = TDB_ERR_CORRUPT;
 			return -1;
 		}
-		((u32 *)p)[0] = el->offset;
-		((u32 *)p)[1] = el->length;
+		memcpy(p, &el->offset, 4);
+		memcpy(p+4, &el->length, 4);
 		if (DOCONV()) {
 			tdb_convert(p, 8);
 		}
@@ -683,7 +683,8 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 	}
 
 	/* and the tailer */
-	*(u32 *)p = sizeof(*rec) + recovery_max_size;
+	tailer = sizeof(*rec) + recovery_max_size;
+	memcpy(p, &tailer, 4);
 	CONVERT(p);
 
 	/* write the recovery data to the recovery area */
@@ -926,8 +927,8 @@ int tdb_transaction_recover(struct tdb_context *tdb)
 		if (DOCONV()) {
 			tdb_convert(p, 8);
 		}
-		ofs = ((u32 *)p)[0];
-		len = ((u32 *)p)[1];
+		memcpy(&ofs, p, 4);
+		memcpy(&len, p+4, 4);
 
 		if (tdb->methods->tdb_write(tdb, ofs, p+8, len) == -1) {
 			free(data);
