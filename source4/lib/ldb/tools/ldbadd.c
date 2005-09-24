@@ -75,7 +75,7 @@ static int process_file(struct ldb_context *ldb, FILE *f)
 		ldif->msg = ldb_msg_canonicalize(ldb, ldif->msg);
 
 		ret = ldb_add(ldb, ldif->msg);
-		if (ret != LDB_ERR_SUCCESS) {
+		if (ret != LDB_SUCCESS) {
 			fprintf(stderr, "ERR: \"%s\" on DN %s\n", 
 				ldb_errstring(ldb), ldb_dn_linearize(ldb, ldif->msg->dn));
 			failures++;

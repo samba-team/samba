@@ -24,6 +24,7 @@
 #include "nbt_server/nbt_server.h"
 #include "nbt_server/wins/winsdb.h"
 #include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
 #include "db_wrap.h"
 #include "system/time.h"
 
@@ -75,12 +76,14 @@ static uint64_t winsdb_allocate_version(struct wins_server *winssrv)
 /*
   remove a version id
 */
-static void winsdb_remove_version(struct wins_server *winssrv, uint64_t version)
+static BOOL winsdb_remove_version(struct wins_server *winssrv, uint64_t version)
 {
 	if (version == winssrv->min_version) {
 		winssrv->min_version++;
-		winsdb_save_version(winssrv);
+		return winsdb_save_version(winssrv);
 	}
+
+	return True;
 }
 
 
@@ -205,7 +208,12 @@ uint8_t winsdb_add(struct wins_server *winssrv, struct winsdb_record *rec)
 	struct ldb_context *ldb = winssrv->wins_db;
 	struct ldb_message *msg;
 	TALLOC_CTX *tmp_ctx = talloc_new(winssrv);
-	int ret;
+	int trans = -1;
+	int ret = 0;
+
+
+	trans = ldb_transaction_start(ldb);
+	if (trans != LDB_SUCCESS) goto failed;
 
 	rec->version = winsdb_allocate_version(winssrv);
 	if (rec->version == 0) goto failed;
@@ -215,10 +223,14 @@ uint8_t winsdb_add(struct wins_server *winssrv, struct winsdb_record *rec)
 	ret = ldb_add(ldb, msg);
 	if (ret != 0) goto failed;
 
+	trans = ldb_transaction_commit(ldb);
+	if (trans != LDB_SUCCESS) goto failed;
+
 	talloc_free(tmp_ctx);
 	return NBT_RCODE_OK;
 
 failed:
+	if (trans == LDB_SUCCESS) ldb_transaction_cancel(ldb);
 	talloc_free(tmp_ctx);
 	return NBT_RCODE_SVR;
 }
@@ -232,8 +244,12 @@ uint8_t winsdb_modify(struct wins_server *winssrv, struct winsdb_record *rec)
 	struct ldb_context *ldb = winssrv->wins_db;
 	struct ldb_message *msg;
 	TALLOC_CTX *tmp_ctx = talloc_new(winssrv);
+	int trans;
 	int ret;
 	int i;
+
+	trans = ldb_transaction_start(ldb);
+	if (trans != LDB_SUCCESS) goto failed;
 
 	rec->version = winsdb_allocate_version(winssrv);
 	if (rec->version == 0) goto failed;
@@ -248,10 +264,14 @@ uint8_t winsdb_modify(struct wins_server *winssrv, struct winsdb_record *rec)
 	ret = ldb_modify(ldb, msg);
 	if (ret != 0) goto failed;
 
+	trans = ldb_transaction_commit(ldb);
+	if (trans != LDB_SUCCESS) goto failed;
+
 	talloc_free(tmp_ctx);
 	return NBT_RCODE_OK;
 
 failed:
+	if (trans == LDB_SUCCESS) ldb_transaction_cancel(ldb);
 	talloc_free(tmp_ctx);
 	return NBT_RCODE_SVR;
 }
@@ -264,10 +284,15 @@ uint8_t winsdb_delete(struct wins_server *winssrv, struct winsdb_record *rec)
 {
 	struct ldb_context *ldb = winssrv->wins_db;
 	TALLOC_CTX *tmp_ctx = talloc_new(winssrv);
-	int ret;
 	const struct ldb_dn *dn;
+	int trans;
+	int ret;
 
-	winsdb_remove_version(winssrv, rec->version);
+	trans = ldb_transaction_start(ldb);
+	if (trans != LDB_SUCCESS) goto failed;
+
+	if(!winsdb_remove_version(winssrv, rec->version))
+		goto failed;
 
 	dn = winsdb_dn(tmp_ctx, rec->name);
 	if (dn == NULL) goto failed;
@@ -275,10 +300,14 @@ uint8_t winsdb_delete(struct wins_server *winssrv, struct winsdb_record *rec)
 	ret = ldb_delete(ldb, dn);
 	if (ret != 0) goto failed;
 
+	trans = ldb_transaction_commit(ldb);
+	if (trans != LDB_SUCCESS) goto failed;
+
 	talloc_free(tmp_ctx);
 	return NBT_RCODE_OK;
 
 failed:
+	if (trans == LDB_SUCCESS) ldb_transaction_cancel(ldb);
 	talloc_free(tmp_ctx);
 	return NBT_RCODE_SVR;
 }

@@ -145,10 +145,16 @@ static int objectguid_start_trans(struct ldb_module *module)
 	return ldb_next_start_trans(module);
 }
 
-static int objectguid_end_trans(struct ldb_module *module, int status)
+static int objectguid_end_trans(struct ldb_module *module)
 {
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectguid_end_trans\n");
-	return ldb_next_end_trans(module, status);
+	return ldb_next_end_trans(module);
+}
+
+static int objectguid_del_trans(struct ldb_module *module)
+{
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectguid_del_trans\n");
+	return ldb_next_del_trans(module);
 }
 
 static int objectguid_destructor(void *module_ctx)
@@ -167,7 +173,8 @@ static const struct ldb_module_ops objectguid_ops = {
 	.delete_record = objectguid_delete_record,
 	.rename_record = objectguid_rename_record,
 	.start_transaction = objectguid_start_trans,
-	.end_transaction = objectguid_end_trans
+	.end_transaction = objectguid_end_trans,
+	.del_transaction = objectguid_del_trans
 };
 
 

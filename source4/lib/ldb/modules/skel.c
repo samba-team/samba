@@ -80,9 +80,15 @@ static int skel_start_trans(struct ldb_module *module)
 }
 
 /* end a transaction */
-static int skel_end_trans(struct ldb_module *module, int status)
+static int skel_end_trans(struct ldb_module *module)
 {
-	return ldb_next_end_trans(module, status);
+	return ldb_next_end_trans(module);
+}
+
+/* delete a transaction */
+static int skel_del_trans(struct ldb_module *module)
+{
+	return ldb_next_del_trans(module);
 }
 
 static int skel_destructor(void *module_ctx)
@@ -104,6 +110,7 @@ static const struct ldb_module_ops skel_ops = {
 	.rename_record	   = skel_rename_record,
 	.start_transaction = skel_start_trans,
 	.end_transaction   = skel_end_trans,
+	.del_transaction   = skel_del_trans,
 };
 
 #ifdef HAVE_DLOPEN_DISABLED

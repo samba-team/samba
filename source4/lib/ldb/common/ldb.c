@@ -93,17 +93,17 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
 		return LDB_ERR_OTHER;
 	}
 
-	if (ret != LDB_ERR_SUCCESS) {
+	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to connect to '%s'\n", url);
 		return ret;
 	}
 
-	if (ldb_load_modules(ldb, options) != LDB_ERR_SUCCESS) {
+	if (ldb_load_modules(ldb, options) != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_FATAL, "Unable to load modules for '%s'\n", url);
 		return LDB_ERR_OTHER;
 	}
 
-	return LDB_ERR_SUCCESS;
+	return LDB_SUCCESS;
 }
 
 static void ldb_reset_err_string(struct ldb_context *ldb)
@@ -117,17 +117,45 @@ static void ldb_reset_err_string(struct ldb_context *ldb)
 /*
   start a transaction
 */
-static int ldb_start_trans(struct ldb_context *ldb)
+int ldb_transaction_start(struct ldb_context *ldb)
 {
-        return ldb->modules->ops->start_transaction(ldb->modules);
+	ldb->transaction_active++;
+
+	ldb_reset_err_string(ldb);
+
+	return ldb->modules->ops->start_transaction(ldb->modules);
 }
 
 /*
-  end a transaction
+  commit a transaction
 */
-static int ldb_end_trans(struct ldb_context *ldb, int status)
+int ldb_transaction_commit(struct ldb_context *ldb)
 {
-        return ldb->modules->ops->end_transaction(ldb->modules, status);
+	if (ldb->transaction_active > 0) {
+		ldb->transaction_active--;
+	} else {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ldb_reset_err_string(ldb);
+
+	return ldb->modules->ops->end_transaction(ldb->modules);
+}
+
+/*
+  cancel a transaction
+*/
+int ldb_transaction_cancel(struct ldb_context *ldb)
+{
+	if (ldb->transaction_active > 0) {
+		ldb->transaction_active--;
+	} else {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ldb_reset_err_string(ldb);
+
+	return ldb->modules->ops->del_transaction(ldb->modules);
 }
 
 /*
@@ -180,13 +208,18 @@ int ldb_add(struct ldb_context *ldb,
 	ldb_reset_err_string(ldb);
 
 	status = ldb_msg_sanity_check(message);
-	if (status != LDB_ERR_SUCCESS) return status;
+	if (status != LDB_SUCCESS) return status;
 
-	status = ldb_start_trans(ldb);
-	if (status != LDB_ERR_SUCCESS) return status;
+	if (! ldb->transaction_active) {
+		status = ldb_transaction_start(ldb);
+		if (status != LDB_SUCCESS) return status;
 
-	status = ldb->modules->ops->add_record(ldb->modules, message);
-	return ldb_end_trans(ldb, status);
+		status = ldb->modules->ops->add_record(ldb->modules, message);
+		if (status != LDB_SUCCESS) return ldb_transaction_cancel(ldb);
+		return ldb_transaction_commit(ldb);
+	}
+
+	return ldb->modules->ops->add_record(ldb->modules, message);
 }
 
 /*
@@ -200,13 +233,18 @@ int ldb_modify(struct ldb_context *ldb,
 	ldb_reset_err_string(ldb);
 
 	status = ldb_msg_sanity_check(message);
-	if (status != LDB_ERR_SUCCESS) return status;
+	if (status != LDB_SUCCESS) return status;
 
-	status = ldb_start_trans(ldb);
-	if (status != LDB_ERR_SUCCESS) return status;
+	if (! ldb->transaction_active) {
+		status = ldb_transaction_start(ldb);
+		if (status != LDB_SUCCESS) return status;
 
-	status = ldb->modules->ops->modify_record(ldb->modules, message);
-	return ldb_end_trans(ldb, status);
+		status = ldb->modules->ops->modify_record(ldb->modules, message);
+		if (status != LDB_SUCCESS) return ldb_transaction_cancel(ldb);
+		return ldb_transaction_commit(ldb);
+	}
+
+	return ldb->modules->ops->modify_record(ldb->modules, message);
 }
 
 
@@ -219,11 +257,16 @@ int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
 
 	ldb_reset_err_string(ldb);
 
-	status = ldb_start_trans(ldb);
-	if (status != LDB_ERR_SUCCESS) return status;
+	if (! ldb->transaction_active) {
+		status = ldb_transaction_start(ldb);
+		if (status != LDB_SUCCESS) return status;
 
-	status = ldb->modules->ops->delete_record(ldb->modules, dn);
-	return ldb_end_trans(ldb, status);
+		status = ldb->modules->ops->delete_record(ldb->modules, dn);
+		if (status != LDB_SUCCESS) return ldb_transaction_cancel(ldb);
+		return ldb_transaction_commit(ldb);
+	}
+
+	return ldb->modules->ops->delete_record(ldb->modules, dn);
 }
 
 /*
@@ -235,12 +278,19 @@ int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct
 
 	ldb_reset_err_string(ldb);
 
-	status = ldb_start_trans(ldb);
-	if (status != LDB_ERR_SUCCESS) return status;
+	if (! ldb->transaction_active) {
+		status = ldb_transaction_start(ldb);
+		if (status != LDB_SUCCESS) return status;
 
-	status = ldb->modules->ops->rename_record(ldb->modules, olddn, newdn);
-	return ldb_end_trans(ldb, status);
+		status = ldb->modules->ops->rename_record(ldb->modules, olddn, newdn);
+		if (status != LDB_SUCCESS) return ldb_transaction_cancel(ldb);
+		return ldb_transaction_commit(ldb);
+	}
+
+	return ldb->modules->ops->rename_record(ldb->modules, olddn, newdn);
 }
+
+
 
 /*
   return extended error information 
@@ -269,7 +319,7 @@ int ldb_set_opaque(struct ldb_context *ldb, const char *name, void *value)
 	o->name = name;
 	o->value = value;
 	ldb->opaque = o;
-	return LDB_ERR_SUCCESS;
+	return LDB_SUCCESS;
 }
 
 /*
