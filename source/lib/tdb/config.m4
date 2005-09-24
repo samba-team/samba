@@ -1,4 +1,4 @@
-AC_CHECK_FUNCS(mmap pread pwrite)
+AC_CHECK_FUNCS(mmap pread pwrite getpagesize)
 AC_CHECK_HEADERS(getopt.h)
 
 AC_HAVE_DECL(pread, [#include <unistd.h>])
