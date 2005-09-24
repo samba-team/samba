@@ -196,6 +196,10 @@ static int transaction_write(struct tdb_context *tdb, tdb_off_t off,
 			     const void *buf, tdb_len_t len)
 {
 	struct tdb_transaction_el *el;
+
+	if (len == 0) {
+		return 0;
+	}
 	
 	/* if the write is to a hash head, then update the transaction
 	   hash heads */

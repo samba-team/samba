@@ -97,6 +97,10 @@ static int tdb_oob(struct tdb_context *tdb, tdb_off_t len, int probe)
 static int tdb_write(struct tdb_context *tdb, tdb_off_t off, 
 		     const void *buf, tdb_len_t len)
 {
+	if (len == 0) {
+		return 0;
+	}
+
 	if (tdb->read_only || tdb->traverse_read) {
 		tdb->ecode = TDB_ERR_RDONLY;
 		return -1;
