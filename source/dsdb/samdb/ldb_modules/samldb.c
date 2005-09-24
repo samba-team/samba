@@ -581,10 +581,16 @@ static int samldb_start_trans(struct ldb_module *module)
 	return ldb_next_start_trans(module);
 }
 
-static int samldb_end_trans(struct ldb_module *module, int status)
+static int samldb_end_trans(struct ldb_module *module)
 {
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_end_trans\n");
-	return ldb_next_end_trans(module, status);
+	return ldb_next_end_trans(module);
+}
+
+static int samldb_del_trans(struct ldb_module *module)
+{
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_del_trans\n");
+	return ldb_next_del_trans(module);
 }
 
 static int samldb_destructor(void *module_ctx)
@@ -603,7 +609,8 @@ static const struct ldb_module_ops samldb_ops = {
 	.delete_record = samldb_delete_record,
 	.rename_record = samldb_rename_record,
 	.start_transaction = samldb_start_trans,
-	.end_transaction = samldb_end_trans
+	.end_transaction = samldb_end_trans,
+	.del_transaction = samldb_del_trans
 };
 
 

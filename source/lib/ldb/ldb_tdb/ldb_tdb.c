@@ -193,7 +193,7 @@ static int ltdb_add(struct ldb_module *module, const struct ldb_message *msg)
 	int ret;
 
 	ret = ltdb_check_special_dn(module, msg);
-	if (ret != LDB_ERR_SUCCESS) {
+	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 	
@@ -203,7 +203,7 @@ static int ltdb_add(struct ldb_module *module, const struct ldb_message *msg)
 
 	ret = ltdb_store(module, msg, TDB_INSERT);
 
-	if (ret == LDB_ERR_SUCCESS) {
+	if (ret == LDB_SUCCESS) {
 		ltdb_modified(module, msg->dn);
 	}
 
@@ -261,13 +261,13 @@ static int ltdb_delete(struct ldb_module *module, const struct ldb_dn *dn)
 	}
 
 	ret = ltdb_delete_noindex(module, dn);
-	if (ret != LDB_ERR_SUCCESS) {
+	if (ret != LDB_SUCCESS) {
 		goto failed;
 	}
 
 	/* remove any indexed attributes */
 	ret = ltdb_index_del(module, msg);
-	if (ret == LDB_ERR_SUCCESS) {
+	if (ret == LDB_SUCCESS) {
 		ltdb_modified(module, dn);
 	} else
 		ret = LDB_ERR_OTHER;
@@ -605,7 +605,7 @@ static int ltdb_modify(struct ldb_module *module, const struct ldb_message *msg)
 
 	ret = ltdb_modify_internal(module, msg);
 
-	if (ret == LDB_ERR_SUCCESS) {
+	if (ret == LDB_SUCCESS) {
 		ltdb_modified(module, msg->dn);
 	}
 
@@ -646,13 +646,13 @@ static int ltdb_rename(struct ldb_module *module, const struct ldb_dn *olddn, co
 	}
 
 	ret = ltdb_add(module, msg);
-	if (ret != LDB_ERR_SUCCESS) {
+	if (ret != LDB_SUCCESS) {
 		goto failed;
 	}
 
 	ret = ltdb_delete(module, olddn);
 	error_str = talloc_strdup(module, ldb_errstring(module->ldb));
-	if (ret != LDB_ERR_SUCCESS) {
+	if (ret != LDB_SUCCESS) {
 		ltdb_delete(module, newdn);
 	}
 
@@ -675,24 +675,29 @@ static int ltdb_start_trans(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	return LDB_ERR_SUCCESS;
+	return LDB_SUCCESS;
 }
 
-static int ltdb_end_trans(struct ldb_module *module, int status)
+static int ltdb_end_trans(struct ldb_module *module)
 {
 	struct ltdb_private *ltdb = module->private_data;
 
-	if (status != LDB_ERR_SUCCESS) {
-		if (tdb_transaction_cancel(ltdb->tdb) != 0) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-	} else {
-		if (tdb_transaction_commit(ltdb->tdb) != 0) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
+	if (tdb_transaction_commit(ltdb->tdb) != 0) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	return status;
+	return LDB_SUCCESS;
+}
+
+static int ltdb_del_trans(struct ldb_module *module)
+{
+	struct ltdb_private *ltdb = module->private_data;
+
+	if (tdb_transaction_cancel(ltdb->tdb) != 0) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	return LDB_SUCCESS;
 }
 
 static const struct ldb_module_ops ltdb_ops = {
@@ -704,7 +709,8 @@ static const struct ldb_module_ops ltdb_ops = {
 	.delete_record     = ltdb_delete,
 	.rename_record     = ltdb_rename,
 	.start_transaction = ltdb_start_trans,
-	.end_transaction   = ltdb_end_trans
+	.end_transaction   = ltdb_end_trans,
+	.del_transaction   = ltdb_del_trans
 };
 
 
