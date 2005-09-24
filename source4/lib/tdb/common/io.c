@@ -97,7 +97,7 @@ static int tdb_oob(struct tdb_context *tdb, tdb_off_t len, int probe)
 static int tdb_write(struct tdb_context *tdb, tdb_off_t off, 
 		     const void *buf, tdb_len_t len)
 {
-	if (tdb->read_only) {
+	if (tdb->read_only || tdb->traverse_read) {
 		tdb->ecode = TDB_ERR_RDONLY;
 		return -1;
 	}
@@ -230,7 +230,7 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 {
 	char buf[1024];
 
-	if (tdb->read_only) {
+	if (tdb->read_only || tdb->traverse_read) {
 		tdb->ecode = TDB_ERR_RDONLY;
 		return -1;
 	}

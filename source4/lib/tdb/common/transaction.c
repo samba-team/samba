@@ -349,7 +349,7 @@ static const struct tdb_methods transaction_methods = {
 int tdb_transaction_start(struct tdb_context *tdb)
 {
 	/* some sanity checks */
-	if (tdb->read_only || (tdb->flags & TDB_INTERNAL)) {
+	if (tdb->read_only || (tdb->flags & TDB_INTERNAL) || tdb->traverse_read) {
 		TDB_LOG((tdb, 0, "tdb_transaction_start: cannot start a transaction on a read-only or internal db\n"));
 		tdb->ecode = TDB_ERR_EINVAL;
 		return -1;
