@@ -65,6 +65,10 @@ ssize_t pwrite(int fd, const void *buf, size_t count, off_t offset);
 #define u32 unsigned
 #endif
 
+#ifndef HAVE_GETPAGESIZE
+#define getpagesize() 0x2000
+#endif
+
 typedef u32 tdb_len_t;
 typedef u32 tdb_off_t;
 

@@ -319,7 +319,7 @@ static void usage(void)
 			if (pids[j] == pid) break;
 		}
 		if (j == num_procs) {
-			printf("unknown child %d exited!?\n", pid);
+			printf("unknown child %d exited!?\n", (int)pid);
 			exit(1);
 		}
 		if (WEXITSTATUS(status) != 0) {
