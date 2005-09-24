@@ -314,12 +314,20 @@ int ldb_next_start_trans(struct ldb_module *module)
 	return module->next->ops->start_transaction(module->next);
 }
 
-int ldb_next_end_trans(struct ldb_module *module, int status)
+int ldb_next_end_trans(struct ldb_module *module)
 {
 	if (!module->next) {
 		return -1;
 	}
-	return module->next->ops->end_transaction(module->next, status);
+	return module->next->ops->end_transaction(module->next);
+}
+
+int ldb_next_del_trans(struct ldb_module *module)
+{
+	if (!module->next) {
+		return -1;
+	}
+	return module->next->ops->del_transaction(module->next);
 }
 
 void ldb_set_errstring(struct ldb_module *module, char *err_string)

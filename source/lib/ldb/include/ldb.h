@@ -308,6 +308,21 @@ int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct
 */
 int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn);
 
+/*
+  start a transaction
+*/
+int ldb_transaction_start(struct ldb_context *ldb);
+
+/*
+  commit a transaction
+*/
+int ldb_transaction_commit(struct ldb_context *ldb);
+
+/*
+  cancel a transaction
+*/
+int ldb_transaction_cancel(struct ldb_context *ldb);
+
 
 /*
   return extended error information from the last call

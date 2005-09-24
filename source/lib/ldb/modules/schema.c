@@ -520,8 +520,12 @@ static int schema_start_trans(struct ldb_module *module) {
 	return ldb_next_start_trans(module);
 }
 
-static int schema_end_trans(struct ldb_module *module, int status) {
-	return ldb_next_end_trans(module, status);
+static int schema_end_trans(struct ldb_module *module) {
+	return ldb_next_end_trans(module);
+}
+
+static int schema_del_trans(struct ldb_module *module) {
+	return ldb_next_del_trans(module);
 }
 
 static int schema_destructor(void *module_ctx)
@@ -540,7 +544,8 @@ static const struct ldb_module_ops schema_ops = {
 	.delete_record     = schema_delete_record,
 	.rename_record     = schema_rename_record,
 	.start_transaction = schema_start_trans,
-	.end_transaction   = schema_end_trans
+	.end_transaction   = schema_end_trans,
+	.del_transaction   = schema_del_trans
 };
 
 #ifdef HAVE_DLOPEN_DISABLED

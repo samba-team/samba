@@ -462,11 +462,18 @@ static int lldb_start_trans(struct ldb_module *module)
 	return 0;
 }
 
-static int lldb_end_trans(struct ldb_module *module, int status)
+static int lldb_end_trans(struct ldb_module *module)
 {
 	/* TODO implement a local transaction mechanism here */
 
-	return status;
+	return 0;
+}
+
+static int lldb_del_trans(struct ldb_module *module)
+{
+	/* TODO implement a local transaction mechanism here */
+
+	return 0;
 }
 
 static const struct ldb_module_ops lldb_ops = {
@@ -478,7 +485,8 @@ static const struct ldb_module_ops lldb_ops = {
 	.delete_record     = lldb_delete,
 	.rename_record     = lldb_rename,
 	.start_transaction = lldb_start_trans,
-	.end_transaction   = lldb_end_trans
+	.end_transaction   = lldb_end_trans,
+	.del_transaction   = lldb_del_trans
 };
 
 

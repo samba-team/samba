@@ -217,10 +217,16 @@ static int timestamps_start_trans(struct ldb_module *module)
 	return ldb_next_start_trans(module);
 }
 
-static int timestamps_end_trans(struct ldb_module *module, int status)
+static int timestamps_end_trans(struct ldb_module *module)
 {
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_end_trans\n");
-	return ldb_next_end_trans(module, status);
+	return ldb_next_end_trans(module);
+}
+
+static int timestamps_del_trans(struct ldb_module *module)
+{
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_del_trans\n");
+	return ldb_next_del_trans(module);
 }
 
 static int timestamps_destructor(void *module_ctx)
@@ -239,7 +245,8 @@ static const struct ldb_module_ops timestamps_ops = {
 	.delete_record     = timestamps_delete_record,
 	.rename_record     = timestamps_rename_record,
 	.start_transaction = timestamps_start_trans,
-	.end_transaction   = timestamps_end_trans
+	.end_transaction   = timestamps_end_trans,
+	.del_transaction   = timestamps_del_trans
 };
 
 
