@@ -77,6 +77,9 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_call *call)
 
 	case WINBINDD_PING:
 		return wbsrv_samba3_ping(s3call);
+
+	case WINBINDD_CHECK_MACHACC:
+		return wbsrv_samba3_check_machacc(s3call);
 	}
 
 	s3call->response.result = WINBINDD_ERROR;

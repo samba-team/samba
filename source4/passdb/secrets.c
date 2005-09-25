@@ -28,6 +28,7 @@
 #include "system/filesys.h"
 #include "pstring.h"
 #include "db_wrap.h"
+#include "lib/ldb/include/ldb.h"
 
 static struct tdb_wrap *tdb;
 
@@ -153,3 +154,45 @@ struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx)
 	return ldb;
 }
 
+struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
+				       const char *domain)
+{
+	struct ldb_context *ldb;
+	struct ldb_message **msgs;
+	int ldb_ret;
+	const char *attrs[] = { "objectSid", NULL };
+	struct dom_sid *result = NULL;
+
+	ldb = secrets_db_connect(mem_ctx);
+	if (ldb == NULL) {
+		DEBUG(5, ("secrets_db_connect failed\n"));
+		goto done;
+	}
+
+	ldb_ret = gendb_search(ldb, ldb,
+			       ldb_dn_explode(mem_ctx, SECRETS_PRIMARY_DOMAIN_DN), 
+			       &msgs, attrs,
+			       SECRETS_PRIMARY_DOMAIN_FILTER, domain);
+
+	if (ldb_ret == 0) {
+		DEBUG(5, ("Did not find domain record for %s\n", domain));
+		goto done;
+	}
+
+	if (ldb_ret > 1) {
+		DEBUG(5, ("Found more than one (%d) domain records for %s\n",
+			  ldb_ret, domain));
+		goto done;
+	}
+
+	result = samdb_result_dom_sid(mem_ctx, msgs[0], "objectSid");
+	if (result == NULL) {
+		DEBUG(0, ("Domain object for %s does not contain a SID!\n",
+			  domain));
+		goto done;
+	}
+
+ done:
+	talloc_free(ldb);
+	return result;
+}
