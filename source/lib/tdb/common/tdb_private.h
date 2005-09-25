@@ -25,12 +25,7 @@
 */
 
 #ifndef _SAMBA_BUILD_
-#if HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#define _XOPEN_SOURCE 500
-
+#include "config.h"
 #include <stdlib.h>
 #include <stdio.h>
 #ifdef HAVE_STDINT_H
@@ -43,7 +38,6 @@
 #include <errno.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include "config.h"
 #include "tdb.h"
 
 #ifndef HAVE_PREAD_DECL
