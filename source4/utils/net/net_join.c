@@ -29,7 +29,7 @@ int net_join(struct net_context *ctx, int argc, const char **argv)
 {
 	NTSTATUS status;
 	struct libnet_context *libnetctx;
-	struct libnet_Join r;
+	struct libnet_Join *r;
 	char *tmp;
 	const char *domain_name;
 	enum netr_SchannelType secure_channel_type = SEC_CHAN_WKSTA;
@@ -62,23 +62,29 @@ int net_join(struct net_context *ctx, int argc, const char **argv)
 		return -1;	
 	}
 	libnetctx->cred = ctx->credentials;
-
+	r = talloc(ctx->mem_ctx, struct libnet_Join);
+	if (!r) {
+		return -1;
+	}
 	/* prepare password change */
-	r.in.domain_name	 = domain_name;
-	r.in.secure_channel_type = secure_channel_type;
-	r.out.error_string       = NULL;
+	r->in.netbios_name		= lp_netbios_name();
+	r->in.domain_name		= domain_name;
+	r->in.secure_channel_type	= secure_channel_type;
+	r->in.level			= LIBNET_JOIN_AUTOMATIC;
+	r->out.error_string		= NULL;
 
 	/* do the domain join */
-	status = libnet_Join(libnetctx, ctx->mem_ctx, &r);
+	status = libnet_Join(libnetctx, r, r);
+	
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("libnet_Join returned %s: %s\n",
 			 nt_errstr(status),
-			 r.out.error_string));
+			 r->out.error_string));
+		talloc_free(r);
+		talloc_free(libnetctx);
 		return -1;
 	}
-
 	talloc_free(libnetctx);
-
 	return 0;
 }
 
