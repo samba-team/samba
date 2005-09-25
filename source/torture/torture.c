@@ -2312,6 +2312,7 @@ static struct {
 	{"RPC-ROT", torture_rpc_rot, 0},
 	{"RPC-DSSETUP", torture_rpc_dssetup, 0},
         {"RPC-ALTERCONTEXT", torture_rpc_alter_context, 0},
+        {"RPC-JOIN", torture_rpc_join, 0},
 
 	/* local (no server) testers */
 	{"LOCAL-NTLMSSP", torture_ntlmssp_self_check, 0},

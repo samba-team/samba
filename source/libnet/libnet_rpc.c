@@ -36,8 +36,14 @@ static NTSTATUS libnet_RpcConnectSrv(struct libnet_context *ctx, TALLOC_CTX *mem
 {
 	NTSTATUS status;
 	const char *binding = NULL;
-
-	binding = talloc_asprintf(mem_ctx, "ncacn_np:%s", r->in.domain_name);
+	switch (r->level) {
+	case LIBNET_RPC_CONNECT_SERVER:
+		binding = talloc_asprintf(mem_ctx, "ncacn_np:%s", r->in.domain_name);
+		break;
+	case LIBNET_RPC_CONNECT_BINDING:
+		binding = r->in.binding;
+		break;
+	}
 
 	status = dcerpc_pipe_connect(mem_ctx, &r->out.dcerpc_pipe,
 				     binding, r->in.dcerpc_iface_uuid,r->in.dcerpc_iface_version,
@@ -114,6 +120,8 @@ NTSTATUS libnet_RpcConnect(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 {
 	switch (r->level) {
 		case LIBNET_RPC_CONNECT_SERVER:
+			return libnet_RpcConnectSrv(ctx, mem_ctx, r);
+		case LIBNET_RPC_CONNECT_BINDING:
 			return libnet_RpcConnectSrv(ctx, mem_ctx, r);
 		case LIBNET_RPC_CONNECT_PDC:
 			return libnet_RpcConnectPdc(ctx, mem_ctx, r);

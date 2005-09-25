@@ -3,6 +3,7 @@
    
    Copyright (C) Stefan Metzmacher	2004
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
+   Copyright (C) Brad Henry 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,10 +22,23 @@
 
 #include "librpc/gen_ndr/ndr_netlogon.h"
 
+enum libnet_Join_level {
+	LIBNET_JOIN_AUTOMATIC,
+	LIBNET_JOIN_SPECIFIED,
+};
+
+enum libnet_JoinDomain_level {
+	LIBNET_JOINDOMAIN_AUTOMATIC,
+	LIBNET_JOINDOMAIN_SPECIFIED,
+};
+
 struct libnet_JoinDomain {
 	struct {
 		const char *domain_name;
 		const char *account_name;
+		const char *netbios_name;
+		const char *binding;
+		enum libnet_JoinDomain_level level;
 		uint32_t  acct_type;
 	} in;
 
@@ -34,18 +48,30 @@ struct libnet_JoinDomain {
 		struct dom_sid *domain_sid;
 		const char *domain_name;
 		const char *realm;
-		unsigned int kvno;
+		const char *domain_dn_str;
+		const char *account_dn_str;
+		const char *server_dn_str;
+		uint32_t kvno; /* msDS-KeyVersionNumber */
+		struct dcerpc_pipe *lsa_pipe;
+		struct dcerpc_pipe *samr_pipe;
+		struct dcerpc_binding *samr_binding;
+		struct policy_handle *user_handle;
+		struct dom_sid *account_sid;
 	} out;
 };
 
 struct libnet_Join {
 	struct {
 		const char *domain_name;
+		const char *netbios_name;
 		enum netr_SchannelType secure_channel_type;
+		enum libnet_Join_level level;
 	} in;
 	
 	struct {
 		const char *error_string;
+		const char *join_password;
+		struct dom_sid *domain_sid;
 	} out;
 };
 

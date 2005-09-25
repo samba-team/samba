@@ -29,10 +29,15 @@
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "system/time.h"
 #include "lib/crypto/crypto.h"
+#include "libnet/libnet.h"
+#include "lib/cmdline/popt_common.h"
+#include "lib/ldb/include/ldb.h"
+
 
 struct test_join {
 	struct dcerpc_pipe *p;
 	struct policy_handle user_handle;
+	struct libnet_JoinDomain *libnet_r;
 	const char *dom_sid;
 };
 
@@ -272,13 +277,59 @@ failed:
 
 
 struct test_join *torture_join_domain(const char *machine_name, 
-				      const char *domain,
-				      uint16_t acct_flags,
+				      uint32_t acct_flags,
 				      const char **machine_password)
 {
-	char *username = talloc_asprintf(NULL, "%s$", machine_name);
-	struct test_join *tj = torture_create_testuser(username, domain, acct_flags, machine_password);
-	talloc_free(username);
+	NTSTATUS status;
+	struct libnet_context *libnet_ctx;
+	struct libnet_JoinDomain *libnet_r;
+	struct test_join *tj;
+	
+	tj = talloc(NULL, struct test_join);
+	if (!tj) return NULL;
+
+	libnet_r = talloc(tj, struct libnet_JoinDomain);
+	if (!libnet_r) {
+		talloc_free(tj);
+		return NULL;
+	}
+	
+	libnet_ctx = libnet_context_init(NULL);	
+	if (!libnet_ctx) {
+		talloc_free(tj);
+		return NULL;
+	}
+	
+	tj->libnet_r = libnet_r;
+		
+	libnet_ctx->cred = cmdline_credentials;
+	libnet_r->in.binding = lp_parm_string(-1, "torture", "binding");
+	libnet_r->in.level = LIBNET_JOINDOMAIN_SPECIFIED;
+	libnet_r->in.netbios_name = machine_name;
+	libnet_r->in.account_name = talloc_asprintf(libnet_r, "%s$", machine_name);
+	if (!libnet_r->in.account_name) {
+		talloc_free(tj);
+		return NULL;
+	}
+	
+	libnet_r->in.acct_type = acct_flags;
+
+	status = libnet_JoinDomain(libnet_ctx, libnet_r, libnet_r);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Domain join failed - %s.\n", nt_errstr(status)));
+		talloc_free(tj);
+                return NULL;
+	}
+	tj->p = libnet_r->out.samr_pipe;
+	tj->user_handle = *libnet_r->out.user_handle;
+	tj->dom_sid = dom_sid_string(tj, libnet_r->out.domain_sid);
+	*machine_password = libnet_r->out.join_password;
+
+	DEBUG(0, ("%s joined domain %s (%s).\n", 
+		  libnet_r->in.netbios_name, 
+		  libnet_r->out.domain_name, 
+		  tj->dom_sid));
+
 	return tj;
 }
 
@@ -292,24 +343,94 @@ struct policy_handle *torture_join_samr_user_policy(struct test_join *join)
 	return &join->user_handle;
 }
 
+NTSTATUS torture_leave_ads_domain(TALLOC_CTX *mem_ctx, struct libnet_JoinDomain *libnet_r)
+{
+	NTSTATUS status;
+	int rtn;
+	TALLOC_CTX *tmp_ctx;
+
+	struct ldb_dn *server_dn;
+	struct ldb_context *ldb_ctx;
+
+	char *remote_ldb_url; 
+	 
+	/* Check if we are a domain controller. If not, exit. */
+	if (!libnet_r->out.server_dn_str) {
+		return NT_STATUS_OK;
+	}
+
+	tmp_ctx = talloc_named(mem_ctx, 0, "torture_leave temporary context");
+	if (!tmp_ctx) {
+		libnet_r->out.error_string = NULL;
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ldb_ctx = ldb_init(tmp_ctx);
+	if (!ldb_ctx) {
+		libnet_r->out.error_string = NULL;
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Remove CN=Servers,... entry from the AD. */ 
+	server_dn = ldb_dn_explode(tmp_ctx, libnet_r->out.server_dn_str);
+	if (!server_dn) {
+		libnet_r->out.error_string = NULL;
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	remote_ldb_url = talloc_asprintf(tmp_ctx, "ldap://%s", libnet_r->out.samr_binding->host);
+	if (!remote_ldb_url) {
+		libnet_r->out.error_string = NULL;
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rtn = ldb_connect(ldb_ctx, remote_ldb_url, 0, NULL);
+	if (rtn != 0) {
+		libnet_r->out.error_string = NULL;
+		talloc_free(tmp_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	rtn = ldb_delete(ldb_ctx, server_dn);
+	if (rtn != 0) {
+		libnet_r->out.error_string = NULL;
+		talloc_free(tmp_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	DEBUG(0, ("%s removed successfully.\n", libnet_r->out.server_dn_str));
+
+	talloc_free(tmp_ctx); 
+	return status;
+}
+
 /*
   leave the domain, deleting the machine acct
 */
+
 void torture_leave_domain(struct test_join *join)
 {
 	struct samr_DeleteUser d;
 	NTSTATUS status;
 
-	if (!GUID_all_zero(&join->user_handle.uuid)) {
-		d.in.user_handle = &join->user_handle;
-		d.out.user_handle = &join->user_handle;
-		
-		status = dcerpc_samr_DeleteUser(join->p, join, &d);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("Delete of machine account failed\n");
-		}
+	d.in.user_handle = &join->user_handle;
+	d.out.user_handle = &join->user_handle;
+					
+	/* Delete machine account */	                                                                                                                                                                                                                                                                                                                
+	status = dcerpc_samr_DeleteUser(join->p, join, &d);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Delete of machine account failed\n");
+	} else {
+		printf("Delete of machine account was successful.\n");
 	}
 
+	if (join->libnet_r) {
+		status = torture_leave_ads_domain(join, join->libnet_r);
+	}
+	
 	talloc_free(join);
 }
 
@@ -337,7 +458,7 @@ struct test_join_ads_dc *torture_join_domain_ads_dc(const char *machine_name,
 		return NULL;
 	}
 
-	join->join = torture_join_domain(machine_name, domain,
+	join->join = torture_join_domain(machine_name, 
 					ACB_SVRTRUST,
 					machine_password);
 

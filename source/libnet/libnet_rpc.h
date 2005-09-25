@@ -25,7 +25,8 @@
 
 enum libnet_RpcConnect_level {
 	LIBNET_RPC_CONNECT_SERVER,      /* connect to a standalone rpc server */
-	LIBNET_RPC_CONNECT_PDC          /* connect to a domain pdc */
+	LIBNET_RPC_CONNECT_PDC,          /* connect to a domain pdc */
+	LIBNET_RPC_CONNECT_BINDING      /* specified binding string */
 };
 
 struct libnet_RpcConnect {
@@ -33,6 +34,7 @@ struct libnet_RpcConnect {
 
 	struct {
 		const char *domain_name;
+		const char *binding;
 		const char *dcerpc_iface_name;
 		const char *dcerpc_iface_uuid;
 		uint32_t dcerpc_iface_version;

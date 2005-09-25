@@ -217,7 +217,7 @@ static BOOL nbt_test_ntlogon(TALLOC_CTX *mem_ctx,
 	const char *password;
 	const char *dom_sid;
 
-	join_ctx = torture_join_domain(TEST_NAME, lp_workgroup(), 
+	join_ctx = torture_join_domain(TEST_NAME, 
 				       ACB_WSTRUST, &password);
 	if (join_ctx == NULL) {
 		printf("Failed to join domain %s as %s\n", lp_workgroup(), TEST_NAME);

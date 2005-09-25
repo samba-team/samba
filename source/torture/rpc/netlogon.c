@@ -1361,7 +1361,7 @@ BOOL torture_rpc_netlogon(void)
 
 	mem_ctx = talloc_init("torture_rpc_netlogon");
 
-	join_ctx = torture_join_domain(TEST_MACHINE_NAME, lp_workgroup(), ACB_SVRTRUST, 
+	join_ctx = torture_join_domain(TEST_MACHINE_NAME, ACB_SVRTRUST, 
 				       &machine_password);
 	if (!join_ctx) {
 		talloc_free(mem_ctx);
