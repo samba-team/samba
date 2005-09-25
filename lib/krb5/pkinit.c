@@ -110,6 +110,7 @@ struct krb5_pk_cert {
 struct krb5_pk_init_ctx_data {
     struct krb5_pk_identity *id;
     DH *dh;
+    krb5_data *clientDHNonce;
 };
 
 
@@ -512,6 +513,7 @@ build_auth_pack_19(krb5_context context,
 static krb5_error_code
 build_auth_pack(krb5_context context,
 		unsigned nonce,
+		krb5_pk_init_ctx ctx,
 		DH *dh,
 		const KDC_REQ_BODY *body,
 		AuthPack *a)
@@ -556,6 +558,24 @@ build_auth_pack(krb5_context context,
 	heim_integer dh_pub_key;
 	krb5_data dhbuf;
 	size_t size;
+
+	if (1 /* support_cached_dh */) {
+	    ALLOC(a->clientDHNonce, 1);
+	    if (a->clientDHNonce == NULL) {
+		krb5_clear_error_string(context);
+		return ENOMEM;
+	    }
+	    ret = krb5_data_alloc(a->clientDHNonce, 40);
+	    if (a->clientDHNonce == NULL) {
+		krb5_clear_error_string(context);
+		return ENOMEM;
+	    }
+	    memset(a->clientDHNonce->data, 0, a->clientDHNonce->length);
+	    ret = krb5_copy_data(context, a->clientDHNonce, 
+				 &ctx->clientDHNonce);
+	    if (ret)
+		return ret;
+	}
 
 	ALLOC(a->clientPublicValue, 1);
 	if (a->clientPublicValue == NULL)
@@ -712,7 +732,7 @@ pk_mk_padata(krb5_context context,
 	
 	memset(&ap, 0, sizeof(ap));
 
-	ret = build_auth_pack(context, nonce, ctx->dh, req_body, &ap);
+	ret = build_auth_pack(context, nonce, ctx, ctx->dh, req_body, &ap);
 	if (ret) {
 	    free_AuthPack(&ap);
 	    goto out;
@@ -1666,10 +1686,12 @@ pk_rd_pa_reply_dh(krb5_context context,
     if (ret)
 	goto out;
 
+#if 0
     if (heim_oid_cmp(&contentType, oid_id_pkdhkeydata())) {
 	ret = KRB5KRB_AP_ERR_MSG_TYPE; /* XXX */
 	goto out;
     }
+#endif
 
     ret = decode_KDCDHKeyInfo(content.data,
 			      content.length,
@@ -1829,8 +1851,10 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 		free_PA_PK_AS_REP(&rep);
 		break;
 	    }
-	    ret = pk_rd_pa_reply_dh(context, &ci, ctx,
-				    etype, NULL, NULL, nonce, pa, key);
+	    ret = pk_rd_pa_reply_dh(context, &ci, ctx, etype, 
+				    ctx->clientDHNonce,
+				    rep.u.dhInfo.serverDHNonce,
+				    nonce, pa, key);
 	    free_ContentInfo(&ci);
 	    free_PA_PK_AS_REP(&rep);
 
@@ -2568,6 +2592,10 @@ _krb5_get_init_creds_opt_free_pkinit(krb5_get_init_creds_opt *opt)
 	    ENGINE_free(ctx->id->engine);
 		ctx->id->engine = NULL;
 	}
+	if (ctx->clientDHNonce) {
+	    krb5_free_data(NULL, ctx->clientDHNonce);
+	    ctx->clientDHNonce = NULL;
+	}
 	free(ctx->id);
 	ctx->id = NULL;
     }
@@ -2601,6 +2629,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
     }
     opt->private->pk_init_ctx->dh = NULL;
     opt->private->pk_init_ctx->id = NULL;
+    opt->private->pk_init_ctx->clientDHNonce = NULL;
     ret = _krb5_pk_load_openssl_id(context,
 				   &opt->private->pk_init_ctx->id,
 				   user_id,
