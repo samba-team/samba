@@ -6,7 +6,8 @@
 [ uuid("e770c620-0b06-4b5e-8d87-a26e20f28340"),
   version(1.0),
   pointer_default(unique),
-  pointer_default_top(unique)
+  pointer_default_top(unique),
+  depends(security)
 ] interface irpc
 {
 	typedef bitmap {
@@ -51,6 +52,15 @@
 		[out,switch_is(level)] nbtd_info info
 		);
 
+	void nbtd_getdcname(
+		[in] astring domainname,
+		[in] astring ip_address,
+		[in] astring my_computername,
+		[in] astring my_accountname,
+		[in] uint32 account_control,
+		[in,ref] dom_sid *domain_sid,
+		[out] astring dcname
+		);
 
 	/******************************************************
          management calls for the smb server

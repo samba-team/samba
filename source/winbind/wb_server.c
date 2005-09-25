@@ -149,7 +149,7 @@ static void wbsrv_recv(struct stream_connection *conn, uint16_t flags)
 	 * and queue the reply, this implies talloc_free(call),
 	 * and set the socket to readable again
 	 */
-	status = wbsrv_queue_reply(call);
+	status = wbsrv_send_reply(call);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	return;
@@ -170,7 +170,7 @@ failed:
  *           return;
  *       to drop the connection
  */
-NTSTATUS wbsrv_queue_reply(struct wbsrv_call *call)
+NTSTATUS wbsrv_send_reply(struct wbsrv_call *call)
 {
 	struct wbsrv_connection *wbconn = call->wbconn;
 	const struct wbsrv_protocol_ops *ops = wbconn->listen_socket->ops;

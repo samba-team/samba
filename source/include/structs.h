@@ -252,6 +252,8 @@ struct nbtd_server;
 struct nbtd_interface;
 struct wins_server;
 
+struct wb_finddcs;
+
 struct cldap_socket;
 struct cldapd_server;
 
