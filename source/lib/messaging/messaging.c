@@ -488,21 +488,20 @@ NTSTATUS irpc_register(struct messaging_context *msg_ctx,
 /*
   handle an incoming irpc reply message
 */
-static void irpc_handler_reply(struct messaging_context *msg_ctx, 
-			       struct ndr_pull *ndr, struct irpc_header *header)
+static void irpc_handler_reply(struct messaging_context *msg_ctx, struct irpc_message *m)
 {
 	struct irpc_request *irpc;
 
-	irpc = idr_find(msg_ctx->idr, header->callid);
+	irpc = idr_find(msg_ctx->idr, m->header.callid);
 	if (irpc == NULL) return;
 
 	/* parse the reply data */
-	irpc->status = irpc->table->calls[irpc->callnum].ndr_pull(ndr, NDR_OUT, irpc->r);
+	irpc->status = irpc->table->calls[irpc->callnum].ndr_pull(m->ndr, NDR_OUT, irpc->r);
 	if (NT_STATUS_IS_OK(irpc->status)) {
-		irpc->status = header->status;
-		talloc_steal(irpc->mem_ctx, ndr);
+		irpc->status = m->header.status;
+		talloc_steal(irpc->mem_ctx, m);
 	} else {
-		talloc_steal(irpc, ndr);
+		talloc_steal(irpc, m);
 	}
 	irpc->done = True;
 	if (irpc->async.fn) {
@@ -510,68 +509,93 @@ static void irpc_handler_reply(struct messaging_context *msg_ctx,
 	}
 }
 
+/*
+  send a irpc reply
+*/
+NTSTATUS irpc_send_reply(struct irpc_message *m)
+{
+	struct ndr_push *push;
+	NTSTATUS status;
+	DATA_BLOB packet;
+
+	/* setup the reply */
+	push = ndr_push_init_ctx(m->ndr);
+	if (push == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	m->header.flags |= IRPC_FLAG_REPLY;
+
+	/* construct the packet */
+	status = ndr_push_irpc_header(push, NDR_SCALARS|NDR_BUFFERS, &m->header);
+	if (!NT_STATUS_IS_OK(status)) goto failed;
+
+	status = m->irpc->table->calls[m->irpc->callnum].ndr_push(push, NDR_OUT, m->data);
+	if (!NT_STATUS_IS_OK(status)) goto failed;
+
+	/* send the reply message */
+	packet = ndr_push_blob(push);
+	status = messaging_send(m->msg_ctx, m->from, MSG_IRPC, &packet);
+	if (!NT_STATUS_IS_OK(status)) goto failed;
+
+failed:
+	talloc_free(m);
+	return status;
+}
 
 /*
   handle an incoming irpc request message
 */
 static void irpc_handler_request(struct messaging_context *msg_ctx, 
-				 struct ndr_pull *ndr, struct irpc_header *header,
-				 uint32_t src)
+				 struct irpc_message *m)
 {
 	struct irpc_list *i;
 	void *r;
 	NTSTATUS status;
-	struct irpc_message m;
-	struct ndr_push *push;
-	DATA_BLOB packet;
 
 	for (i=msg_ctx->irpc; i; i=i->next) {
-		if (GUID_equal(&i->uuid, &header->uuid) &&
-		    i->table->if_version == header->if_version &&
-		    i->callnum == header->callnum) {
+		if (GUID_equal(&i->uuid, &m->header.uuid) &&
+		    i->table->if_version == m->header.if_version &&
+		    i->callnum == m->header.callnum) {
 			break;
 		}
 	}
 
 	if (i == NULL) {
 		/* no registered handler for this message */
+		talloc_free(m);
 		return;
 	}
 
 	/* allocate space for the structure */
-	r = talloc_zero_size(ndr, i->table->calls[header->callnum].struct_size);
+	r = talloc_zero_size(m->ndr, i->table->calls[m->header.callnum].struct_size);
 	if (r == NULL) goto failed;
 
 	/* parse the request data */
-	status = i->table->calls[i->callnum].ndr_pull(ndr, NDR_IN, r);
+	status = i->table->calls[i->callnum].ndr_pull(m->ndr, NDR_IN, r);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	/* make the call */
-	m.from    = src;
-	m.private = i->private;
-	header->status = i->fn(&m, r);
+	m->private     = i->private;
+	m->defer_reply = False;
+	m->msg_ctx     = msg_ctx;
+	m->irpc        = i;
+	m->data        = r;
 
-	/* setup the reply */
-	push = ndr_push_init_ctx(ndr);
-	if (push == NULL) goto failed;
+	m->header.status = i->fn(m, r);
 
-	header->flags |= IRPC_FLAG_REPLY;
+	if (m->defer_reply) {
+		/* the server function has asked to defer the reply to later */
+		talloc_steal(msg_ctx, m);
+		return;
+	}
 
-	/* construct the packet */
-	status = ndr_push_irpc_header(push, NDR_SCALARS|NDR_BUFFERS, header);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
-
-	status = i->table->calls[i->callnum].ndr_push(push, NDR_OUT, r);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
-
-	/* send the reply message */
-	packet = ndr_push_blob(push);
-	status = messaging_send(msg_ctx, src, MSG_IRPC, &packet);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
+	irpc_send_reply(m);
+	return;
 
 failed:
-	/* nothing to clean up */
-	return;
+	talloc_free(m);
 }
 
 /*
@@ -580,28 +604,31 @@ failed:
 static void irpc_handler(struct messaging_context *msg_ctx, void *private, 
 			 uint32_t msg_type, uint32_t src, DATA_BLOB *packet)
 {
-	struct irpc_header header;
-	struct ndr_pull *ndr;
+	struct irpc_message *m;
 	NTSTATUS status;
 
-	ndr = ndr_pull_init_blob(packet, msg_ctx);
-	if (ndr == NULL) goto failed;
+	m = talloc(msg_ctx, struct irpc_message);
+	if (m == NULL) goto failed;
 
-	ndr->flags |= LIBNDR_FLAG_REF_ALLOC;
+	m->from = src;
 
-	status = ndr_pull_irpc_header(ndr, NDR_BUFFERS|NDR_SCALARS, &header);
+	m->ndr = ndr_pull_init_blob(packet, m);
+	if (m->ndr == NULL) goto failed;
+
+	m->ndr->flags |= LIBNDR_FLAG_REF_ALLOC;
+
+	status = ndr_pull_irpc_header(m->ndr, NDR_BUFFERS|NDR_SCALARS, &m->header);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
-	if (header.flags & IRPC_FLAG_REPLY) {
-		irpc_handler_reply(msg_ctx, ndr, &header);
+	if (m->header.flags & IRPC_FLAG_REPLY) {
+		irpc_handler_reply(msg_ctx, m);
 	} else {
-		irpc_handler_request(msg_ctx, ndr, &header, src);
-		talloc_free(ndr);
+		irpc_handler_request(msg_ctx, m);
 	}
 	return;
 
 failed:
-	talloc_free(ndr);
+	talloc_free(m);
 }
 
 
@@ -761,7 +788,7 @@ NTSTATUS irpc_add_name(struct messaging_context *msg_ctx, const char *name)
 	}
 	rec = tdb_fetch_bystring(t->tdb, name);
 	count = rec.dsize / sizeof(uint32_t);
-	rec.dptr = (char *)realloc_p(rec.dptr, uint32_t, count+1);
+	rec.dptr = (unsigned char *)realloc_p(rec.dptr, uint32_t, count+1);
 	rec.dsize += sizeof(uint32_t);
 	if (rec.dptr == NULL) {
 		tdb_unlock_bystring(t->tdb, name);
