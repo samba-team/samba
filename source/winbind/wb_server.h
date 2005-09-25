@@ -91,16 +91,17 @@ struct wbsrv_connection {
 
   NOTE about async replies:
    if the backend wants to reply later:
-   - it should set the WBSRV_CALL_FLAGS_REPLY_ASYNC flag, and may set a talloc_destructor
-     on the this structure or on the private_data (if it's a talloc child of this structure),
-     so that wbsrv_terminate_connection called by another call clean up the whole connection
-     correct.
-   - When the backend is ready to reply it should call wbsrv_queue_reply(call),
-     wbsrv_queue_reply implies talloc_free(call), so the backend should use talloc_reference(call),
-     if it needs it later. 
-   - If wbsrv_queue_reply doesn't return NT_STATUS_OK, the backend function should call,
-       wbsrv_terminate_connection(call->wbconn, nt_errstr(status));
-       return;
+
+   - it should set the WBSRV_CALL_FLAGS_REPLY_ASYNC flag, and may set a 
+     talloc_destructor on the this structure or on the private_data (if it's a
+     talloc child of this structure), so that wbsrv_terminate_connection
+     called by another call clean up the whole connection correct.
+   - When the backend is ready to reply it should call wbsrv_send_reply(call),
+     wbsrv_send_reply implies talloc_free(call), so the backend should use 
+     talloc_reference(call), if it needs it later. 
+   - If wbsrv_send_reply doesn't return NT_STATUS_OK, the backend function 
+     should call, wbsrv_terminate_connection(call->wbconn, nt_errstr(status));
+     return;
 
 */
 struct wbsrv_call {
