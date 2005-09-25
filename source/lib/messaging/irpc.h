@@ -34,6 +34,7 @@ struct irpc_message {
 	struct messaging_context *msg_ctx;
 	struct irpc_list *irpc;
 	void *data;
+	struct event_context *ev;
 };
 
 /* don't allow calls to take too long */
@@ -108,6 +109,6 @@ NTSTATUS irpc_call(struct messaging_context *msg_ctx,
 NTSTATUS irpc_add_name(struct messaging_context *msg_ctx, const char *name);
 uint32_t *irpc_servers_byname(struct messaging_context *msg_ctx, const char *name);
 void irpc_remove_name(struct messaging_context *msg_ctx, const char *name);
-NTSTATUS irpc_send_reply(struct irpc_message *m);
+NTSTATUS irpc_send_reply(struct irpc_message *m, NTSTATUS status);
 
 
