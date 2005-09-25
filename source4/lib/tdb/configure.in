@@ -4,6 +4,5 @@ AC_INIT(include/tdb.h)
 AC_CONFIG_HEADER(include/config.h)
 AC_PROG_CC
 AC_FUNC_MMAP
-AC_DEFINE([_GNU_SOURCE],[],[Pull in GNU extensions])
 sinclude(config.m4)
 AC_OUTPUT(Makefile tdb.pc)
