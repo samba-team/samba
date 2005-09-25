@@ -884,12 +884,14 @@ _kdc_as_rep(krb5_context context,
 		e_text = "PKINIT certificate not allowed to "
 		    "impersonate principal";
 		_kdc_pk_free_client_param(context, pkp);
+
+		kdc_log(context, config, 0, "%s", e_text);
 		pkp = NULL;
 		goto ts_enc;
 	    }
 	    found_pa = 1;
 	    et.flags.pre_authent = 1;
-	    kdc_log(context, config, 2,
+	    kdc_log(context, config, 0,
 		    "PKINIT pre-authentication succeeded -- %s using %s", 
 		    client_name, client_cert);
 	    free(client_cert);
