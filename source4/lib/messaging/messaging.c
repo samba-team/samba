@@ -512,11 +512,12 @@ static void irpc_handler_reply(struct messaging_context *msg_ctx, struct irpc_me
 /*
   send a irpc reply
 */
-NTSTATUS irpc_send_reply(struct irpc_message *m)
+NTSTATUS irpc_send_reply(struct irpc_message *m, NTSTATUS status)
 {
 	struct ndr_push *push;
-	NTSTATUS status;
 	DATA_BLOB packet;
+
+	m->header.status = status;
 
 	/* setup the reply */
 	push = ndr_push_init_ctx(m->ndr);
@@ -582,6 +583,7 @@ static void irpc_handler_request(struct messaging_context *msg_ctx,
 	m->msg_ctx     = msg_ctx;
 	m->irpc        = i;
 	m->data        = r;
+	m->ev          = msg_ctx->event.ev;
 
 	m->header.status = i->fn(m, r);
 
@@ -591,7 +593,7 @@ static void irpc_handler_request(struct messaging_context *msg_ctx,
 		return;
 	}
 
-	irpc_send_reply(m);
+	irpc_send_reply(m, m->header.status);
 	return;
 
 failed:

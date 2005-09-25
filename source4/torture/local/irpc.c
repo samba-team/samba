@@ -43,12 +43,29 @@ static NTSTATUS irpc_AddOne(struct irpc_message *irpc, struct echo_AddOne *r)
 }
 
 /*
+  a deferred reply to echodata
+*/
+static void deferred_echodata(struct event_context *ev, struct timed_event *te, 
+			      struct timeval t, void *private)
+{
+	struct irpc_message *irpc = talloc_get_type(private, struct irpc_message);
+	struct echo_EchoData *r = irpc->data;
+	r->out.out_data = talloc_memdup(r, r->in.in_data, r->in.len);
+	if (r->out.out_data == NULL) {
+		irpc_send_reply(irpc, NT_STATUS_NO_MEMORY);
+	}
+	printf("sending deferred reply\n");
+	irpc_send_reply(irpc, NT_STATUS_OK);
+}
+
+
+/*
   serve up EchoData over the irpc system
 */
 static NTSTATUS irpc_EchoData(struct irpc_message *irpc, struct echo_EchoData *r)
 {
-	r->out.out_data = talloc_memdup(r, r->in.in_data, r->in.len);
-	NT_STATUS_HAVE_NO_MEMORY(r->out.out_data);
+	irpc->defer_reply = True;
+	event_add_timed(irpc->ev, irpc, timeval_zero(), deferred_echodata, irpc);
 	return NT_STATUS_OK;
 }
 
@@ -98,8 +115,8 @@ static BOOL test_echodata(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	/* make the call */
-	r.in.in_data = talloc_strdup(mem_ctx, "0123456789");
-	r.in.len = strlen(r.in.in_data);
+	r.in.in_data = (unsigned char *)talloc_strdup(mem_ctx, "0123456789");
+	r.in.len = strlen((char *)r.in.in_data);
 
 	status = IRPC_CALL(msg_ctx1, MSG_ID2, rpcecho, ECHO_ECHODATA, &r, mem_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
