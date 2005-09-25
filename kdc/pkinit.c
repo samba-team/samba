@@ -401,6 +401,13 @@ get_dh_param(krb5_context context, SubjectPublicKeyInfo *dh_key_info,
 	goto out;
     }
 
+    if ((dh_key_info->subjectPublicKey.length % 8) != 0) {
+	ret = KRB5_BADMSGTYPE;
+	krb5_set_error_string(context, "PKINIT: subjectPublicKey not aligned "
+			      "to 8 bit boundary");
+	goto out;
+    }
+
     dh = DH_new();
     if (dh == NULL) {
 	krb5_set_error_string(context, "Cannot create DH structure (%s)",
@@ -423,10 +430,10 @@ get_dh_param(krb5_context context, SubjectPublicKeyInfo *dh_key_info,
 	heim_integer glue;
 	size_t size;
 
-	ret = der_get_heim_integer(dh_key_info->subjectPublicKey.data,
-				   dh_key_info->subjectPublicKey.length / 8,
-				   &glue,
-				   &size);
+	ret = decode_DHPublicKey(dh_key_info->subjectPublicKey.data,
+				 dh_key_info->subjectPublicKey.length / 8,
+				 &glue,
+				 &size);
 	if (ret) {
 	    krb5_clear_error_string(context);
 	    return ret;
@@ -435,10 +442,9 @@ get_dh_param(krb5_context context, SubjectPublicKeyInfo *dh_key_info,
 	client_params->dh_public_key = integer_to_BN(context,
 						     "subjectPublicKey",
 						     &glue);
-	if (client_params->dh_public_key == NULL) {
-	    krb5_clear_error_string(context);
+	free_heim_integer(&glue);
+	if (client_params->dh_public_key == NULL)
 	    goto out;
-	}
     }
 
     if (DH_check(dh, &dhret) != 1) {
@@ -715,12 +721,14 @@ _kdc_pk_rd_padata(krb5_context context,
     if (ret)
 	goto out;
 
+#if 0
     /* Signature is correct, now verify the signed message */
     if (heim_oid_cmp(&eContentType, pa_contentType)) {
 	krb5_set_error_string(context, "got wrong oid for pkauthdata");
 	ret = KRB5_BADMSGTYPE;
 	goto out;
     }
+#endif
 
     if (pa->padata_type == KRB5_PADATA_PK_AS_REQ_WIN) {
 	AuthPack_Win2k ap;
