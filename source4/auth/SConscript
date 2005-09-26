@@ -15,16 +15,26 @@ if hostenv['configure']:
 
 proto_files = []
 hostenv.StaticLibrary('pam_errors.c')
-proto_files += ['pam_errors.c']
+proto_files += ['pam_errors.c', 'auth_sam.c']
 auth_files = ['auth.c','auth_util.c','auth_sam_reply.c','ntlm_check.c']
 proto_files += auth_files
 hostenv.StaticLibrary('auth',auth_files)
 
+ntlmssp_files = ['ntlmssp/ntlmssp_parse.c', 'ntlmssp/ntlmssp.c',
+		'ntlmssp/ntlmssp_sign.c','ntlmssp/ntlmssp_client.c',
+		'ntlmssp/ntlmssp_server.c'] 
+proto_files += ntlmssp_files
+hostenv.StaticLibrary('gensec_ntlmssp', ntlmssp_files)
+
+kerberos_files = ['kerberos/kerberos.c','kerberos/clikrb5.c',
+	'kerberos/kerberos_verify.c','kerberos/kerberos_util.c',
+	'kerberos/kerberos_pac.c','kerberos/gssapi_parse.c',
+	'kerberos/krb5_init_context.c']
+
+proto_files += kerberos_files
+
+hostenv.StaticLibrary('kerberos', kerberos_files)
+
 hostenv.proto_headers += hostenv.CProtoHeader('proto.h', proto_files)
 
-hostenv.StaticLibrary('gensec_ntlmssp',
-		['ntlmssp/ntlmssp_parse.c', 'ntlmssp/ntlmssp.c',
-		'ntlmssp/ntlmssp_sign.c','ntlmssp/ntlmssp_client.c',
-		'ntlmssp/ntlmssp_server.c'])
-
-SConscript(dirs=['kerberos','gensec'])
+SConscript(dirs=['gensec'])

@@ -1,4 +1,7 @@
-Import('buildenv hostenv')
+Import('buildenv hostenv defines')
+
+if hostenv['configure']:
+	defines['HAVE_KRB5'] = 1
 
 hostenv.StaticLibrary('heimdal_kdc',
 	['../kdc/default_config.c','../kdc/kerberos5.c','../kdc/pkinit.c',
