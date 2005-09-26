@@ -38,9 +38,9 @@ static BOOL test_lists_shell(TALLOC_CTX *mem_ctx)
 		const char **ret1, **ret2, *tmp;
 		BOOL match = True;
 
-		ret1 = str_list_make_shell(mem_ctx, test_lists_shell_strings[i]);
-		tmp = str_list_join_shell(mem_ctx, ret1);
-		ret2 = str_list_make_shell(mem_ctx, tmp);
+		ret1 = str_list_make_shell(mem_ctx, test_lists_shell_strings[i], " ");
+		tmp = str_list_join_shell(mem_ctx, ret1, ' ');
+		ret2 = str_list_make_shell(mem_ctx, tmp, " ");
 		
 		if ((ret1 == NULL || ret2 == NULL) && ret2 != ret1) {
 			match = False;
