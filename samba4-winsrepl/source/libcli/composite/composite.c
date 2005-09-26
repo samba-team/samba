@@ -34,7 +34,7 @@ NTSTATUS composite_wait(struct composite_context *c)
 {
 	if (c == NULL) return NT_STATUS_NO_MEMORY;
 
-	while (c->state < SMBCLI_REQUEST_DONE) {
+	while (c->state < COMPOSITE_STATE_DONE) {
 		if (event_loop_once(c->event_ctx) != 0) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
@@ -51,7 +51,6 @@ static void composite_trigger(struct event_context *ev, struct timed_event *te,
 			      struct timeval t, void *ptr)
 {
 	struct composite_context *c = talloc_get_type(ptr, struct composite_context);
-	c->state = SMBCLI_REQUEST_DONE;
 	if (c->async.fn) {
 		c->async.fn(c);
 	}
@@ -65,6 +64,7 @@ static void composite_trigger(struct event_context *ev, struct timed_event *te,
 */
 void composite_trigger_done(struct composite_context *c)
 {
+	c->state = COMPOSITE_STATE_DONE;
 	/* a zero timeout means immediate */
 	event_add_timed(c->event_ctx, c, timeval_zero(), composite_trigger, c);
 }

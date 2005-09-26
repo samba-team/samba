@@ -66,7 +66,7 @@ static int host_destructor(void *ptr)
 */
 static void run_child(struct composite_context *c, int fd)
 {
-	struct host_state *state = talloc_get_type(c->private, struct host_state);
+	struct host_state *state = talloc_get_type(c->private_data, struct host_state);
 	struct ipv4_addr ip;
 	const char *address;
 
@@ -84,10 +84,10 @@ static void run_child(struct composite_context *c, int fd)
   handle a read event on the pipe
 */
 static void pipe_handler(struct event_context *ev, struct fd_event *fde, 
-			 uint16_t flags, void *private)
+			 uint16_t flags, void *private_data)
 {
-	struct composite_context *c = talloc_get_type(private, struct composite_context);
-	struct host_state *state = talloc_get_type(c->private, struct host_state);
+	struct composite_context *c = talloc_get_type(private_data, struct composite_context);
+	struct host_state *state = talloc_get_type(c->private_data, struct host_state);
 	char address[128];
 	int ret;
 
@@ -113,7 +113,7 @@ static void pipe_handler(struct event_context *ev, struct fd_event *fde,
 	if (state->reply_addr == NULL) goto failed;
 
 	c->status = NT_STATUS_OK;
-	c->state = SMBCLI_REQUEST_DONE;
+	c->state = COMPOSITE_STATE_DONE;
 	if (c->async.fn) {
 		c->async.fn(c);
 	}
@@ -121,7 +121,7 @@ static void pipe_handler(struct event_context *ev, struct fd_event *fde,
 
 failed:
 	c->status = NT_STATUS_BAD_NETWORK_NAME;
-	c->state = SMBCLI_REQUEST_ERROR;
+	c->state = COMPOSITE_STATE_ERROR;
 	if (c->async.fn) {
 		c->async.fn(c);
 	}
@@ -148,8 +148,8 @@ struct composite_context *resolve_name_host_send(struct nbt_name *name,
 	status = nbt_name_dup(state, name, &state->name);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
-	c->state = SMBCLI_REQUEST_SEND;
-	c->private = state;
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = state;
 	c->event_ctx = talloc_reference(c, event_ctx);
 
 	/* setup a pipe to chat to our child */
@@ -206,7 +206,7 @@ NTSTATUS resolve_name_host_recv(struct composite_context *c,
 	status = composite_wait(c);
 
 	if (NT_STATUS_IS_OK(status)) {
-		struct host_state *state = talloc_get_type(c->private, struct host_state);
+		struct host_state *state = talloc_get_type(c->private_data, struct host_state);
 		*reply_addr = talloc_steal(mem_ctx, state->reply_addr);
 	}
 
