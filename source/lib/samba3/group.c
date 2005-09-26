@@ -24,7 +24,6 @@
 #include "lib/samba3/samba3.h"
 #include "lib/tdb/include/tdbutil.h"
 #include "system/filesys.h"
-#include "pstring.h"
 
 #define DATABASE_VERSION_V1 1 /* native byte format. */
 #define DATABASE_VERSION_V2 2 /* le format. */
@@ -108,8 +107,8 @@ NTSTATUS samba3_read_grouptdb(const char *file, TALLOC_CTX *ctx, struct samba3_g
 		} else if (strncmp(kbuf.dptr, MEMBEROF_PREFIX, strlen(MEMBEROF_PREFIX)) == 0)
 		{
 			struct samba3_alias alias;
-			pstring alias_string;
-			const char *p;
+			char **member_strlist;
+			int i;
 
 			dbuf = tdb_fetch(tdb, kbuf);
 			if (!dbuf.dptr)
@@ -119,14 +118,15 @@ NTSTATUS samba3_read_grouptdb(const char *file, TALLOC_CTX *ctx, struct samba3_g
 			alias.member_count = 0;
 			alias.members = NULL;
 
-			p = dbuf.dptr;
-			while (next_token(&p, alias_string, " ", sizeof(alias_string))) {
+			member_strlist = str_list_make_shell(ctx, dbuf.dptr, " ");
 
+			for (i = 0; member_strlist[i]; i++) {
 				alias.members = talloc_realloc(ctx, alias.members, struct dom_sid *, alias.member_count+1);
-				alias.members[alias.member_count] = dom_sid_parse_talloc(ctx, alias_string);
+				alias.members[alias.member_count] = dom_sid_parse_talloc(ctx, member_strlist[i]);
 				alias.member_count++;
-
 			}
+
+			talloc_free(member_strlist);
 
 			db->aliases = talloc_realloc(ctx, db->aliases, struct samba3_alias, db->alias_count+1);
 			db->aliases[db->alias_count] = alias;
