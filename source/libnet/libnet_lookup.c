@@ -27,7 +27,6 @@
 #include "lib/events/events.h"
 #include "libnet/libnet.h"
 #include "libcli/composite/composite.h"
-#include "libcli/composite/monitor.h"
 #include "libnet/composite.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 
@@ -78,8 +77,8 @@ struct composite_context *libnet_Lookup_send(struct libnet_context *ctx,
 		methods = (const char**)ctx->name_res_methods;
 	}
 
-	c->private  = s;
-	c->state    = SMBCLI_REQUEST_SEND;
+	c->private_data	= s;
+	c->state	= COMPOSITE_STATE_IN_PROGRESS;
 
 	/* send resolve request */
 	s->resolve_ctx = resolve_name_send(&s->hostname, c->event_ctx, methods);
@@ -107,7 +106,7 @@ NTSTATUS libnet_Lookup_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct lookup_state *s;
 
-	s = talloc_get_type(c->private, struct lookup_state);
+	s = talloc_get_type(c->private_data, struct lookup_state);
 
 	status = resolve_name_recv(s->resolve_ctx, mem_ctx, s->address);
 	return status;

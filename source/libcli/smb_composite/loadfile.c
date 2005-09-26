@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
+#include "libcli/smb_composite/smb_composite.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
 /* the stages of this call */
@@ -46,7 +47,7 @@ struct loadfile_state {
 static NTSTATUS setup_close(struct composite_context *c, 
 			    struct smbcli_tree *tree, uint16_t fnum)
 {
-	struct loadfile_state *state = talloc_get_type(c->private, struct loadfile_state);
+	struct loadfile_state *state = talloc_get_type(c->private_data, struct loadfile_state);
 	union smb_close *io_close;
 
 	/* nothing to read, setup the close */
@@ -75,7 +76,7 @@ static NTSTATUS setup_close(struct composite_context *c,
 static NTSTATUS loadfile_open(struct composite_context *c, 
 			      struct smb_composite_loadfile *io)
 {
-	struct loadfile_state *state = talloc_get_type(c->private, struct loadfile_state);
+	struct loadfile_state *state = talloc_get_type(c->private_data, struct loadfile_state);
 	struct smbcli_tree *tree = state->req->tree;
 	NTSTATUS status;
 
@@ -129,7 +130,7 @@ static NTSTATUS loadfile_open(struct composite_context *c,
 static NTSTATUS loadfile_read(struct composite_context *c, 
 			      struct smb_composite_loadfile *io)
 {
-	struct loadfile_state *state = talloc_get_type(c->private, struct loadfile_state);
+	struct loadfile_state *state = talloc_get_type(c->private_data, struct loadfile_state);
 	struct smbcli_tree *tree = state->req->tree;
 	NTSTATUS status;
 
@@ -163,13 +164,13 @@ static NTSTATUS loadfile_read(struct composite_context *c,
 static NTSTATUS loadfile_close(struct composite_context *c, 
 			       struct smb_composite_loadfile *io)
 {
-	struct loadfile_state *state = talloc_get_type(c->private, struct loadfile_state);
+	struct loadfile_state *state = talloc_get_type(c->private_data, struct loadfile_state);
 	NTSTATUS status;
 
 	status = smbcli_request_simple_recv(state->req);
 	NT_STATUS_NOT_OK_RETURN(status);
 	
-	c->state = SMBCLI_REQUEST_DONE;
+	c->state = COMPOSITE_STATE_DONE;
 
 	return NT_STATUS_OK;
 }
@@ -181,7 +182,7 @@ static NTSTATUS loadfile_close(struct composite_context *c,
 static void loadfile_handler(struct smbcli_request *req)
 {
 	struct composite_context *c = req->async.private;
-	struct loadfile_state *state = talloc_get_type(c->private, struct loadfile_state);
+	struct loadfile_state *state = talloc_get_type(c->private_data, struct loadfile_state);
 
 	/* when this handler is called, the stage indicates what
 	   call has just finished */
@@ -200,10 +201,10 @@ static void loadfile_handler(struct smbcli_request *req)
 	}
 
 	if (!NT_STATUS_IS_OK(c->status)) {
-		c->state = SMBCLI_REQUEST_ERROR;
+		c->state = COMPOSITE_STATE_ERROR;
 	}
 
-	if (c->state >= SMBCLI_REQUEST_DONE &&
+	if (c->state >= COMPOSITE_STATE_DONE &&
 	    c->async.fn) {
 		c->async.fn(c);
 	}
@@ -227,8 +228,8 @@ struct composite_context *smb_composite_loadfile_send(struct smbcli_tree *tree,
 
 	state->io = io;
 
-	c->private = state;
-	c->state = SMBCLI_REQUEST_SEND;
+	c->private_data = state;
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->event_ctx = tree->session->transport->socket->event.ctx;
 
 	/* setup for the open */
@@ -271,7 +272,7 @@ NTSTATUS smb_composite_loadfile_recv(struct composite_context *c, TALLOC_CTX *me
 	status = composite_wait(c);
 
 	if (NT_STATUS_IS_OK(status)) {
-		struct loadfile_state *state = talloc_get_type(c->private, struct loadfile_state);
+		struct loadfile_state *state = talloc_get_type(c->private_data, struct loadfile_state);
 		talloc_steal(mem_ctx, state->io->out.data);
 	}
 

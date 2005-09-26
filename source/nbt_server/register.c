@@ -25,7 +25,6 @@
 #include "dlinklist.h"
 #include "nbt_server/nbt_server.h"
 #include "smbd/service_task.h"
-#include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 
@@ -77,9 +76,9 @@ static void refresh_completion_handler(struct nbt_name_request *req)
   handle name refresh timer events
 */
 static void name_refresh_handler(struct event_context *ev, struct timed_event *te, 
-				 struct timeval t, void *private)
+				 struct timeval t, void *private_data)
 {
-	struct nbtd_iface_name *iname = talloc_get_type(private, struct nbtd_iface_name);
+	struct nbtd_iface_name *iname = talloc_get_type(private_data, struct nbtd_iface_name);
 	struct nbtd_interface *iface = iname->iface;
 	struct nbt_name_register io;
 	struct nbt_name_request *req;
@@ -130,14 +129,14 @@ static void nbtd_start_refresh_timer(struct nbtd_iface_name *iname)
 /*
   a name registration has completed
 */
-static void nbtd_register_handler(struct composite_context *req)
+static void nbtd_register_handler(struct composite_context *creq)
 {
-	struct nbtd_iface_name *iname = talloc_get_type(req->async.private, 
+	struct nbtd_iface_name *iname = talloc_get_type(creq->async.private_data, 
 							struct nbtd_iface_name);
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(iname);
 
-	status = nbt_name_register_bcast_recv(req);
+	status = nbt_name_register_bcast_recv(creq);
 	if (NT_STATUS_IS_OK(status)) {
 		/* good - nobody complained about our registration */
 		iname->nb_flags |= NBT_NM_ACTIVE;
@@ -170,7 +169,7 @@ static void nbtd_register_name_iface(struct nbtd_interface *iface,
 	struct nbtd_iface_name *iname;
 	const char *scope = lp_netbios_scope();
 	struct nbt_name_register_bcast io;
-	struct composite_context *req;
+	struct composite_context *creq;
 	struct nbtd_server *nbtsrv = iface->nbtsrv;
 
 	iname = talloc(iface, struct nbtd_iface_name);
@@ -213,11 +212,11 @@ static void nbtd_register_name_iface(struct nbtd_interface *iface,
 	io.in.ttl             = iname->ttl;
 
 	nbtsrv->stats.total_sent++;
-	req = nbt_name_register_bcast_send(iface->nbtsock, &io);
-	if (req == NULL) return;
+	creq = nbt_name_register_bcast_send(iface->nbtsock, &io);
+	if (creq == NULL) return;
 
-	req->async.fn = nbtd_register_handler;
-	req->async.private = iname;
+	creq->async.fn = nbtd_register_handler;
+	creq->async.private_data = iname;
 }
 
 

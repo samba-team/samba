@@ -23,9 +23,7 @@
 */
 
 #include "includes.h"
-#include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
-#include "libcli/composite/monitor.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "libnet/composite.h"
 #include "libnet/userman.h"
@@ -47,6 +45,8 @@ struct useradd_state {
 	struct samr_CreateUser   createuser;
 	struct policy_handle     user_handle;
 	uint32_t                 user_rid;
+	/* information about the progress */
+	void (*monitor_fn)(struct monitor_msg *);
 };
 
 
@@ -59,7 +59,7 @@ static NTSTATUS useradd_create(struct composite_context *c,
 	c->status = dcerpc_ndr_request_recv(s->req);
 	NT_STATUS_NOT_OK_RETURN(c->status);
 	
-	c->state = SMBCLI_REQUEST_DONE;
+	c->state = COMPOSITE_STATE_DONE;
 	return NT_STATUS_OK;
 }
 
@@ -73,7 +73,7 @@ static NTSTATUS useradd_create(struct composite_context *c,
 static void useradd_handler(struct rpc_request *req)
 {
 	struct composite_context *c = req->async.private;
-	struct useradd_state *s = talloc_get_type(c->private, struct useradd_state);
+	struct useradd_state *s = talloc_get_type(c->private_data, struct useradd_state);
 	struct monitor_msg msg;
 	struct msg_rpc_create_user *rpc_create;
 	
@@ -90,14 +90,14 @@ static void useradd_handler(struct rpc_request *req)
 	}
 
 	if (!NT_STATUS_IS_OK(c->status)) {
-		c->state = SMBCLI_REQUEST_ERROR;
+		c->state = COMPOSITE_STATE_ERROR;
 	}
 
-	if (c->monitor_fn) {
-		c->monitor_fn(&msg);
+	if (s->monitor_fn) {
+		s->monitor_fn(&msg);
 	}
 
-	if (c->state >= SMBCLI_REQUEST_DONE &&
+	if (c->state >= COMPOSITE_STATE_DONE &&
 	    c->async.fn) {
 		c->async.fn(c);
 	}
@@ -126,11 +126,11 @@ struct composite_context *libnet_rpc_useradd_send(struct dcerpc_pipe *p,
 	
 	s->domain_handle = io->in.domain_handle;
 	s->pipe          = p;
+	s->monitor_fn    = monitor;
 	
-	c->state       = SMBCLI_REQUEST_SEND;
-	c->private     = s;
+	c->state       = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data= s;
 	c->event_ctx   = dcerpc_event_context(p);
-	c->monitor_fn  = monitor;
 
 	/* preparing parameters to send rpc request */
 	s->createuser.in.domain_handle         = &io->in.domain_handle;
@@ -174,7 +174,7 @@ NTSTATUS libnet_rpc_useradd_recv(struct composite_context *c, TALLOC_CTX *mem_ct
 	
 	if (NT_STATUS_IS_OK(status) && io) {
 		/* get and return result of the call */
-		s = talloc_get_type(c->private, struct useradd_state);
+		s = talloc_get_type(c->private_data, struct useradd_state);
 		io->out.user_handle = s->user_handle;
 	}
 
@@ -218,6 +218,8 @@ struct userdel_state {
 	struct samr_LookupNames   lookupname;
 	struct samr_OpenUser      openuser;
 	struct samr_DeleteUser    deleteuser;
+	/* information about the progress */
+	void (*monitor_fn)(struct monitor_msg *);
 };
 
 
@@ -287,7 +289,7 @@ static NTSTATUS userdel_delete(struct composite_context *c,
 	c->status = dcerpc_ndr_request_recv(s->req);
 	NT_STATUS_NOT_OK_RETURN(c->status);
 	
-	c->state = SMBCLI_REQUEST_DONE;
+	c->state = COMPOSITE_STATE_DONE;
 
 	return NT_STATUS_OK;
 }
@@ -302,7 +304,7 @@ static NTSTATUS userdel_delete(struct composite_context *c,
 static void userdel_handler(struct rpc_request *req)
 {
 	struct composite_context *c = req->async.private;
-	struct userdel_state *s = talloc_get_type(c->private, struct userdel_state);
+	struct userdel_state *s = talloc_get_type(c->private_data, struct userdel_state);
 	struct monitor_msg msg;
 	struct msg_rpc_lookup_name *msg_lookup;
 	struct msg_rpc_open_user *msg_open;
@@ -340,14 +342,14 @@ static void userdel_handler(struct rpc_request *req)
 	}
 
 	if (!NT_STATUS_IS_OK(c->status)) {
-		c->state = SMBCLI_REQUEST_ERROR;
+		c->state = COMPOSITE_STATE_ERROR;
 	}
 
-	if (c->monitor_fn) {
-		c->monitor_fn(&msg);
+	if (s->monitor_fn) {
+		s->monitor_fn(&msg);
 	}
 
-	if (c->state >= SMBCLI_REQUEST_DONE &&
+	if (c->state >= COMPOSITE_STATE_DONE &&
 	    c->async.fn) {
 		c->async.fn(c);
 	}
@@ -373,9 +375,9 @@ struct composite_context *libnet_rpc_userdel_send(struct dcerpc_pipe *p,
 	s = talloc_zero(c, struct userdel_state);
 	if (s == NULL) goto failure;
 
-	c->state      = SMBCLI_REQUEST_SEND;
-	c->private    = s;
-	c->event_ctx  = dcerpc_event_context(p);
+	c->state       = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data= s;
+	c->event_ctx   = dcerpc_event_context(p);
 
 	s->pipe          = p;
 	s->domain_handle = io->in.domain_handle;
@@ -403,7 +405,7 @@ failure:
 
 
 /**
- * Waits for and receives results of asynchronous userdel call
+1 * Waits for and receives results of asynchronous userdel call
  *
  * @param c composite context returned by asynchronous userdel call
  * @param mem_ctx memory context of the call
@@ -420,7 +422,7 @@ NTSTATUS libnet_rpc_userdel_recv(struct composite_context *c, TALLOC_CTX *mem_ct
 	status = composite_wait(c);
 
 	if (NT_STATUS_IS_OK(status) && io) {
-		s  = talloc_get_type(c->private, struct userdel_state);
+		s  = talloc_get_type(c->private_data, struct userdel_state);
 		io->out.user_handle = s->user_handle;
 	}
 
@@ -672,7 +674,7 @@ static NTSTATUS usermod_modify(struct composite_context *c,
 	c->status = dcerpc_ndr_request_recv(s->req);
 	NT_STATUS_NOT_OK_RETURN(c->status);
 
-	c->state = SMBCLI_REQUEST_DONE;
+	c->state = COMPOSITE_STATE_DONE;
 
 	return NT_STATUS_OK;
 }
@@ -688,8 +690,7 @@ static NTSTATUS usermod_modify(struct composite_context *c,
 static void usermod_handler(struct rpc_request *req)
 {
 	struct composite_context *c = req->async.private;
-	struct usermod_state *s = talloc_get_type(c->private, struct usermod_state);
-	struct monitor_msg msg;
+	struct usermod_state *s = talloc_get_type(c->private_data, struct usermod_state);
 
 	switch (s->stage) {
 	case USERMOD_LOOKUP:
@@ -710,14 +711,10 @@ static void usermod_handler(struct rpc_request *req)
 	}
 
 	if (!NT_STATUS_IS_OK(c->status)) {
-		c->state = SMBCLI_REQUEST_ERROR;
+		c->state = COMPOSITE_STATE_ERROR;
 	}
 
-	if (c->monitor_fn) {
-		c->monitor_fn(&msg);
-	}
-
-	if (c->state >= SMBCLI_REQUEST_DONE &&
+	if (c->state >= COMPOSITE_STATE_DONE &&
 	    c->async.fn) {
 		c->async.fn(c);
 	}
@@ -743,9 +740,9 @@ struct composite_context *libnet_rpc_usermod_send(struct dcerpc_pipe *p,
 	s = talloc_zero(c, struct usermod_state);
 	if (s == NULL) goto failure;
 
-	c->state      = SMBCLI_REQUEST_SEND;
-	c->private    = s;
-	c->event_ctx  = dcerpc_event_context(p);
+	c->state        = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = s;
+	c->event_ctx    = dcerpc_event_context(p);
 
 	s->pipe          = p;
 	s->domain_handle = io->in.domain_handle;

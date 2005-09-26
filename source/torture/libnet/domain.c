@@ -22,7 +22,6 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "libnet/composite.h"
-#include "libcli/composite/monitor.h"
 
 static BOOL test_domainopen(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			    struct lsa_String *domname,

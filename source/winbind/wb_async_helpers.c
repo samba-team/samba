@@ -22,7 +22,6 @@
 */
 
 #include "includes.h"
-#include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
 #include "winbind/wb_async_helpers.h"
 
@@ -40,14 +39,14 @@ struct finddcs_state {
 	struct irpc_request *ireq;
 };
 
-static void finddcs_getdc(struct irpc_request *req)
+static void finddcs_getdc(struct irpc_request *ireq)
 {
-	struct composite_context *c = talloc_get_type(req->async.private,
+	struct composite_context *c = talloc_get_type(ireq->async.private,
 						      struct composite_context);
-	struct finddcs_state *state =
-		talloc_get_type(c->private, struct finddcs_state);
+	struct finddcs_state *state = talloc_get_type(c->private_data,
+						      struct finddcs_state);
 
-	c->status = irpc_call_recv(req);
+	c->status = irpc_call_recv(ireq);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		goto done;
 	}
@@ -56,14 +55,14 @@ static void finddcs_getdc(struct irpc_request *req)
 						  state->r->out.dcname);
 
 	c->status = NT_STATUS_OK;
-	c->state = SMBCLI_REQUEST_DONE;
+	c->state = COMPOSITE_STATE_DONE;
 
  done:
 	if (!NT_STATUS_IS_OK(c->status)) {
-		c->state = SMBCLI_REQUEST_ERROR;
+		c->state = COMPOSITE_STATE_ERROR;
 	}
 		
-	if (c->state >= SMBCLI_REQUEST_DONE &&
+	if (c->state >= COMPOSITE_STATE_DONE &&
 	    c->async.fn) {
 		c->async.fn(c);
 	}
@@ -74,10 +73,10 @@ static void finddcs_getdc(struct irpc_request *req)
 */
 static void finddcs_resolve(struct composite_context *res_ctx)
 {
-	struct composite_context *c = talloc_get_type(res_ctx->async.private,
+	struct composite_context *c = talloc_get_type(res_ctx->async.private_data,
 						      struct composite_context);
-	struct finddcs_state *state =
-		talloc_get_type(c->private, struct finddcs_state);
+	struct finddcs_state *state = talloc_get_type(c->private_data,
+						      struct finddcs_state);
 	uint32_t *nbt_servers;
 
 	state->io->out.num_dcs = 1;
@@ -141,10 +140,10 @@ static void finddcs_resolve(struct composite_context *res_ctx)
 
  done:
 	if (!NT_STATUS_IS_OK(c->status)) {
-		c->state = SMBCLI_REQUEST_ERROR;
+		c->state = COMPOSITE_STATE_ERROR;
 	}
 		
-	if (c->state >= SMBCLI_REQUEST_DONE &&
+	if (c->state >= COMPOSITE_STATE_DONE &&
 	    c->async.fn) {
 		c->async.fn(c);
 	}
@@ -159,7 +158,7 @@ struct composite_context *wb_finddcs_send(struct wb_finddcs *io,
 
 	c = talloc_zero(NULL, struct composite_context);
 	if (c == NULL) goto failed;
-	c->state = SMBCLI_REQUEST_SEND;
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->event_ctx = event_ctx;
 
 	state = talloc(c, struct finddcs_state);
@@ -172,9 +171,9 @@ struct composite_context *wb_finddcs_send(struct wb_finddcs *io,
 					lp_name_resolve_order());
 
 	if (state->creq == NULL) goto failed;
-	state->creq->async.private = c;
+	state->creq->async.private_data = c;
 	state->creq->async.fn = finddcs_resolve;
-	c->private = state;
+	c->private_data = state;
 
 	return c;
 failed:
@@ -189,8 +188,8 @@ NTSTATUS wb_finddcs_recv(struct composite_context *c, TALLOC_CTX *mem_ctx)
 	status = composite_wait(c);
 
 	if (NT_STATUS_IS_OK(status)) {
-		struct finddcs_state *state =
-			talloc_get_type(c->private, struct finddcs_state);
+		struct finddcs_state *state = talloc_get_type(c->private_data,
+							      struct finddcs_state);
 		talloc_steal(mem_ctx, state->io->out.dcs);
 	}
 

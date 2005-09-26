@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
+#include "libcli/smb_composite/smb_composite.h"
 #include "auth/auth.h"
 #include "version.h"
 
@@ -74,7 +75,7 @@ static void set_user_session_key(struct smbcli_session *session,
 static void request_handler(struct smbcli_request *req)
 {
 	struct composite_context *c = req->async.private;
-	struct sesssetup_state *state = talloc_get_type(c->private, struct sesssetup_state);
+	struct sesssetup_state *state = talloc_get_type(c->private_data, struct sesssetup_state);
 	struct smbcli_session *session = req->session;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	DATA_BLOB null_data_blob = data_blob(NULL, 0);
@@ -144,9 +145,9 @@ static void request_handler(struct smbcli_request *req)
 	}
 
 	if (NT_STATUS_IS_OK(c->status)) {
-		c->state = SMBCLI_REQUEST_DONE;
+		c->state = COMPOSITE_STATE_DONE;
 	} else {
-		c->state = SMBCLI_REQUEST_ERROR;
+		c->state = COMPOSITE_STATE_ERROR;
 	}
 	if (c->async.fn) {
 		c->async.fn(c);
@@ -162,7 +163,7 @@ static NTSTATUS session_setup_nt1(struct composite_context *c,
 				  struct smb_composite_sesssetup *io,
 				  struct smbcli_request **req) 
 {
-	struct sesssetup_state *state = talloc_get_type(c->private, struct sesssetup_state);
+	struct sesssetup_state *state = talloc_get_type(c->private_data, struct sesssetup_state);
 	const struct samr_Password *nt_hash = cli_credentials_get_nt_hash(io->in.credentials, state);
 	const char *password = cli_credentials_get_password(io->in.credentials);
 
@@ -252,7 +253,7 @@ static NTSTATUS session_setup_old(struct composite_context *c,
 				  struct smb_composite_sesssetup *io,
 				  struct smbcli_request **req) 
 {
-	struct sesssetup_state *state = talloc_get_type(c->private, struct sesssetup_state);
+	struct sesssetup_state *state = talloc_get_type(c->private_data, struct sesssetup_state);
 	const char *password = cli_credentials_get_password(io->in.credentials);
 
 	state->setup.old.level      = RAW_SESSSETUP_OLD;
@@ -293,7 +294,7 @@ static NTSTATUS session_setup_spnego(struct composite_context *c,
 				     struct smb_composite_sesssetup *io,
 				     struct smbcli_request **req) 
 {
-	struct sesssetup_state *state = talloc_get_type(c->private, struct sesssetup_state);
+	struct sesssetup_state *state = talloc_get_type(c->private_data, struct sesssetup_state);
 	NTSTATUS status, session_key_err;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	DATA_BLOB null_data_blob = data_blob(NULL, 0);
@@ -397,20 +398,20 @@ struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *se
 
 	state = talloc(c, struct sesssetup_state);
 	if (state == NULL) {
-		c->state = SMBCLI_REQUEST_ERROR;
+		c->state = COMPOSITE_STATE_ERROR;
 		c->status = NT_STATUS_NO_MEMORY;
 	}
 
 	state->io = io;
 
-	c->state = SMBCLI_REQUEST_SEND;
-	c->private = state;
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = state;
 	c->event_ctx = session->transport->socket->event.ctx;
 
 	/* no session setup at all in earliest protocol varients */
 	if (session->transport->negotiate.protocol < PROTOCOL_LANMAN1) {
 		ZERO_STRUCT(io->out);
-		c->state = SMBCLI_REQUEST_DONE;
+		c->state = COMPOSITE_STATE_DONE;
 		return c;
 	}
 
@@ -431,7 +432,7 @@ struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *se
 		return c;
 	}
 
-	c->state = SMBCLI_REQUEST_ERROR;
+	c->state = COMPOSITE_STATE_ERROR;
 	c->status = status;
 	return c;
 }

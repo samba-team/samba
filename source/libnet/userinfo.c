@@ -23,9 +23,7 @@
 */
 
 #include "includes.h"
-#include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
-#include "libcli/composite/monitor.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "libnet/composite.h"
 #include "libnet/userinfo.h"
@@ -44,6 +42,8 @@ struct userinfo_state {
 	struct samr_QueryUserInfo queryuserinfo;
 	struct samr_Close         samrclose;	
 	union  samr_UserInfo      *info;
+	/* information about the progress */
+	void (*monitor_fn)(struct monitor_msg *);
 };
 
 
@@ -113,7 +113,7 @@ static NTSTATUS userinfo_closeuser(struct composite_context *c,
 	c->status = dcerpc_ndr_request_recv(s->req);
 	NT_STATUS_NOT_OK_RETURN(c->status);
 
-	c->state = SMBCLI_REQUEST_DONE;
+	c->state = COMPOSITE_STATE_DONE;
 
 	return NT_STATUS_OK;
 }
@@ -128,7 +128,7 @@ static NTSTATUS userinfo_closeuser(struct composite_context *c,
 static void userinfo_handler(struct rpc_request *req)
 {
 	struct composite_context *c = req->async.private;
-	struct userinfo_state *s = talloc_get_type(c->private, struct userinfo_state);
+	struct userinfo_state *s = talloc_get_type(c->private_data, struct userinfo_state);
 	struct monitor_msg msg;
 	struct msg_rpc_open_user *msg_open;
 	struct msg_rpc_query_user *msg_query;
@@ -169,14 +169,14 @@ static void userinfo_handler(struct rpc_request *req)
 	}
 
 	if (!NT_STATUS_IS_OK(c->status)) {
-		c->state = SMBCLI_REQUEST_ERROR;
+		c->state = COMPOSITE_STATE_ERROR;
 	}
 	
-	if (c->monitor_fn) {
-		c->monitor_fn(&msg);
+	if (s->monitor_fn) {
+		s->monitor_fn(&msg);
 	}
 
-	if (c->state >= SMBCLI_REQUEST_DONE &&
+	if (c->state >= COMPOSITE_STATE_DONE &&
 	    c->async.fn) {
 		c->async.fn(c);
 	}
@@ -207,13 +207,13 @@ struct composite_context *libnet_rpc_userinfo_send(struct dcerpc_pipe *p,
 
 	s->level = io->in.level;
 	s->pipe  = p;
+	s->monitor_fn  = monitor;
 	
 	sid = dom_sid_parse_talloc(s, io->in.sid);
 	if (sid == NULL) goto failure;	
-	c->state       = SMBCLI_REQUEST_SEND;
-	c->private     = s;
+	c->state       = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data= s;
 	c->event_ctx   = dcerpc_event_context(p);
-	c->monitor_fn  = monitor;
 
 	/* preparing parameters to send rpc request */
 	s->openuser.in.domain_handle  = &io->in.domain_handle;
@@ -256,7 +256,7 @@ NTSTATUS libnet_rpc_userinfo_recv(struct composite_context *c, TALLOC_CTX *mem_c
 	status = composite_wait(c);
 	
 	if (NT_STATUS_IS_OK(status) && io) {
-		s = talloc_get_type(c->private, struct userinfo_state);
+		s = talloc_get_type(c->private_data, struct userinfo_state);
 		talloc_steal(mem_ctx, s->info);
 		io->out.info = *s->info;
 	}
