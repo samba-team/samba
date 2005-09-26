@@ -123,7 +123,7 @@ if hostenv['configure']:
 		['sys/syslog.h','syslog.h','stdint.h','inttypes.h','locale.h'] + \
 		['shadow.h','nss.h','nss_common.h','ns_api.h','sys/security.h'] + \
 		['security/pam_appl.h','sys/capability.h'] + \
-		['sys/acl.h','stdbool.h']:
+		['sys/acl.h','stdbool.h', 'netinet/in.h', 'sys/socket.h', 'arpa/inet.h', 'netdb.h']:
 		if conf.CheckCHeader(h):
 			defines['HAVE_' + h.upper().replace('.','_').replace('/','_')] = 1
 
@@ -137,6 +137,9 @@ if hostenv['configure']:
 	# Pull in GNU extensions
 	defines['_GNU_SOURCE'] = 1
 
+	# Hardcode signal return type for now
+	defines['RETSIGTYPE'] = 'void'
+	
 	if conf.CheckType('comparison_fn_t', '#define _GNU_SOURCE\n#include <stdlib.h>'):
 		defines['HAVE_COMPARISON_FN_T'] = 1
 
@@ -188,6 +191,13 @@ return 0;
 """, '.c'):
 		defines['TIME_WITH_SYS_TIME'] = 1
 
+        if conf.TryCompile("""
+#include <sys/time.h>
+#include <unistd.h>
+main() { struct timeval tv; exit(gettimeofday(&tv, NULL));}
+""", '.c'):
+		defines['HAVE_GETTIMEOFDAY_TZ'] = 1
+
 	conf.Finish()
 
 [dynenv.Append(CPPDEFINES = {p: '\\"%s\\"' % paths[p]}) for p in paths]
@@ -198,7 +208,7 @@ Export('dynconfig')
 hostenv.proto_headers = []
 
 SConscript(
-		dirs=['lib','torture','rpc_server','cldap_server','libcli',
+		dirs=['dsdb', 'libcli', 'lib','torture','rpc_server','cldap_server',
 		'nbt_server','client','ldap_server','libnet','nsswitch','web_server',
 		'smbd','dsdb','heimdal_build','ntptr','kdc','smb_server','ntvfs',
 		'winbind','scripting','auth', 'librpc','script/tests'])
