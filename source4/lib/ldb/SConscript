@@ -1,43 +1,63 @@
-Import('hostenv', 'talloc', 'defines')
+#            tastes like -*- python -*-
 
-hostenv.StaticLibrary('modules/timestamps.c')
-hostenv.StaticLibrary('modules/rdn_name.c')
-hostenv.StaticLibrary('modules/schema.c')
-hostenv.StaticLibrary('ldb_ildap/ldb_ildap.c')
-hostenv.StaticLibrary('modules/ldb_map.c')
+Import('hostenv', 'talloc', 'defines', 'basic', 'cli_ldap')
+
+# Configure stuff
 
 if hostenv['configure']:
-	conf = Configure(hostenv)
-	if conf.CheckLibWithHeader("sqlite3","sqlite3.h",'c',"sqlite3_open()"):
-		defines['HAVE_SQLITE3'] = 1
-	conf.CheckLibWithHeader("popt","popt.h",'c',"poptGetArgs(NULL);")
-	conf.Finish()
+    conf = Configure(hostenv)
+    if conf.CheckLibWithHeader('sqlite3','sqlite3.h','c','sqlite3_open()'):
+        defines['HAVE_SQLITE3'] = 1
+    conf.CheckLibWithHeader('popt','popt.h','c','poptGetArgs(NULL);')
+    conf.Finish()
 
 if defines.has_key('HAVE_SQLITE3'):
-	hostenv.StaticLibrary('ldb_sqlite3/ldb_sqlite3.c')
+    hostenv.StaticLibrary('ldb_sqlite3/ldb_sqlite3.c')
 
-ldb_tdb_source = ['ldb_tdb/ldb_tdb.c', 'ldb_tdb/ldb_search.c',
-		  'ldb_tdb/ldb_pack.c', 'ldb_tdb/ldb_index.c',
-		  'ldb_tdb/ldb_cache.c', 'ldb_tdb/ldb_tdb_wrap.c']
+# LDB modules
 
-hostenv.StaticLibrary('ldb_tdb', ldb_tdb_source)
+modules = []
 
-ldb_source = ['common/ldb.c','common/ldb_ldif.c','common/ldb_parse.c',
-	      'common/ldb_parse.c','common/ldb_msg.c','common/ldb_utf8.c',
-	      'common/ldb_debug.c','common/ldb_modules.c','common/ldb_match.c',
-	      'common/attrib_handlers.c','common/ldb_dn.c']
+modules.append(hostenv.StaticLibrary('modules/timestamps.c'))
+modules.append(hostenv.StaticLibrary('modules/rdn_name.c'))
+modules.append(hostenv.StaticLibrary('modules/schema.c'))
+modules.append(hostenv.StaticLibrary('ldb_ildap/ldb_ildap.c'))
+#modules.append(hostenv.StaticLibrary('modules/ldb_map.c'))
 
-ldb = hostenv.StaticLibrary('ldb', ldb_source + talloc)
+Import('dsdb_ldb_modules')
+modules += dsdb_ldb_modules
+
+modules.append(hostenv.StaticLibrary(
+    'ldb_tdb',
+    ['ldb_tdb/ldb_tdb.c', 'ldb_tdb/ldb_search.c', 'ldb_tdb/ldb_pack.c',
+     'ldb_tdb/ldb_index.c', 'ldb_tdb/ldb_cache.c', 'ldb_tdb/ldb_tdb_wrap.c']))
+	       
+#modules.append(hostenv.StaticLibrary('ldb_ildap', ['ldb_ildap/ldb_ildap.c']))
+
+# Export the ldb base plus modules for other parts of the build system
+# to enjoy.
+
+ldb = hostenv.StaticLibrary(
+    'ldb',
+    ['common/ldb.c', 'common/ldb_ldif.c', 'common/ldb_parse.c',
+     'common/ldb_parse.c', 'common/ldb_msg.c', 'common/ldb_utf8.c',
+     'common/ldb_debug.c', 'common/ldb_modules.c', 'common/ldb_match.c',
+     'common/ldb_attributes.c', 'common/attrib_handlers.c', 'common/ldb_dn.c'])
 
 Export('ldb')
 
 hostenv.StaticLibrary('samba/ldif_handlers.c')
 ldb_cmdline = hostenv.StaticLibrary('ldb_cmdline', 'tools/cmdline.c')
 
-hostenv.Program('ldbadd',['tools/ldbadd.c',ldb,talloc,ldb_cmdline])
-hostenv.Program('ldbdel',['tools/ldbdel.c',ldb,ldb_cmdline])
-hostenv.Program('ldbmodify',['tools/ldbmodify.c',ldb,ldb_cmdline])
-hostenv.Program('ldbsearch',['tools/ldbsearch.c',ldb,ldb_cmdline])
-hostenv.Program('ldbrename',['tools/ldbrename.c',ldb,ldb_cmdline])
-hostenv.Program('ldbtest',['tools/ldbtest.c',ldb,ldb_cmdline])
-hostenv.Program('oLschema2ldif',['tools/oLschema2ldif.c',ldb])
+# Tools
+
+ldbenv = hostenv.Copy()
+ldbenv.Append(LIBS = ['popt'])
+
+ldbenv.Program('ldbadd',['tools/ldbadd.c',ldb,modules,ldb_cmdline,cli_ldap,talloc,basic])
+ldbenv.Program('ldbdel',['tools/ldbdel.c',ldb,ldb_cmdline,basic])
+ldbenv.Program('ldbmodify',['tools/ldbmodify.c',ldb,ldb_cmdline])
+ldbenv.Program('ldbsearch',['tools/ldbsearch.c',ldb,ldb_cmdline])
+ldbenv.Program('ldbrename',['tools/ldbrename.c',ldb,ldb_cmdline])
+ldbenv.Program('ldbtest',['tools/ldbtest.c',ldb,ldb_cmdline])
+ldbenv.Program('oLschema2ldif',['tools/oLschema2ldif.c',ldb])
