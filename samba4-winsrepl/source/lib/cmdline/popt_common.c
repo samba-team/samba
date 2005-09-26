@@ -25,6 +25,7 @@
 #include "system/filesys.h"
 #include "system/passwd.h"
 #include "lib/cmdline/popt_common.h"
+#include "credentials.h"
 
 /* Handle command line options:
  *		-d,--debuglevel 

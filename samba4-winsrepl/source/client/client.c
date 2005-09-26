@@ -32,6 +32,8 @@
 #include "system/dir.h"
 #include "system/filesys.h"
 #include "dlinklist.h"
+#include "credentials.h"
+#include "system/readline.h"
 
 #ifndef REGISTER
 #define REGISTER 0
@@ -2606,6 +2608,27 @@ static int cmd_lcd(const char **cmd_ptr)
 	if (next_token(cmd_ptr,buf,NULL,sizeof(buf)))
 		chdir(buf);
 	DEBUG(2,("the local directory is now %s\n",getcwd(d, PATH_MAX)));
+
+	return 0;
+}
+
+/****************************************************************************
+history
+****************************************************************************/
+static int cmd_history(const char **cmd_ptr)
+{
+#if defined(HAVE_LIBREADLINE)
+	HIST_ENTRY **hlist;
+	int i;
+
+	hlist = history_list();
+	
+	for (i = 0; hlist && hlist[i]; i++) {
+		DEBUG(0, ("%d: %s\n", i, hlist[i]->line));
+	}
+#else
+	DEBUG(0,("no history without readline support\n"));
+#endif
 
 	return 0;
 }

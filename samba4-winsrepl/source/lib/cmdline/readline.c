@@ -23,31 +23,7 @@
 #include "pstring.h"
 
 #include <unistd.h>
-
-#ifdef HAVE_LIBREADLINE
-#  ifdef HAVE_READLINE_READLINE_H
-#    include <readline/readline.h>
-#    ifdef HAVE_READLINE_HISTORY_H
-#      include <readline/history.h>
-#    endif
-#  else
-#    ifdef HAVE_READLINE_H
-#      include <readline.h>
-#      ifdef HAVE_HISTORY_H
-#        include <history.h>
-#      endif
-#    else
-#      undef HAVE_LIBREADLINE
-#    endif
-#  endif
-#endif
-
-#ifdef HAVE_NEW_LIBREADLINE
-#  define RL_COMPLETION_CAST (rl_completion_func_t *)
-#else
-/* This type is missing from libreadline<4.0  (approximately) */
-#  define RL_COMPLETION_CAST
-#endif /* HAVE_NEW_LIBREADLINE */
+#include "system/readline.h"
 
 /****************************************************************************
  Display the prompt and wait for input. Call callback() regularly
@@ -140,23 +116,4 @@ void smb_readline_ca_char(char c)
 }
 
 
-/****************************************************************************
-history
-****************************************************************************/
-int cmd_history(const char **cmd_ptr)
-{
-#if defined(HAVE_LIBREADLINE)
-	HIST_ENTRY **hlist;
-	int i;
 
-	hlist = history_list();
-	
-	for (i = 0; hlist && hlist[i]; i++) {
-		DEBUG(0, ("%d: %s\n", i, hlist[i]->line));
-	}
-#else
-	DEBUG(0,("no history without readline support\n"));
-#endif
-
-	return 0;
-}
