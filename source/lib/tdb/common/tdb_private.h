@@ -216,6 +216,7 @@ void tdb_mmap(struct tdb_context *tdb);
 int tdb_lock(struct tdb_context *tdb, int list, int ltype);
 int tdb_unlock(struct tdb_context *tdb, int list, int ltype);
 int tdb_brlock(struct tdb_context *tdb, tdb_off_t offset, int rw_type, int lck_type, int probe);
+int tdb_brlock_upgrade(struct tdb_context *tdb, tdb_off_t offset, size_t len);
 int tdb_brlock_len(struct tdb_context *tdb, tdb_off_t offset, 
 		   int rw_type, int lck_type, int probe, size_t len);
 int tdb_write_lock_record(struct tdb_context *tdb, tdb_off_t off);
