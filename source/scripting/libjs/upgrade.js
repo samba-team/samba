@@ -387,11 +387,9 @@ smbconf_keep = new Array(
 	"map system",
 	"map hidden",
 	"map archive",
-	"domain logons",
 	"preferred master",
 	"prefered master",
 	"local master",
-	"domain master",
 	"browseable",
 	"browsable",
 	"wins server",
@@ -441,6 +439,20 @@ function upgrade_smbconf(oldconf,mark)
 			} else if (mark) {
 				newconf.set(s, "samba3:"+p, oldconf.get(s,p));
 			}
+		}
+	}
+
+	if (oldconf.get("domain logons") == "True") {
+		if (oldconf.get("domain master") == "True") {
+			newconf.set("role", "pdc");
+		} else {
+			newconf.set("role", "bdc");
+		}
+	} else {
+		if (oldconf.get("domain master") == "True") {
+			newconf.set("role", "standalone");
+		} else {
+			newconf.set("role", "member server");
 		}
 	}
 
