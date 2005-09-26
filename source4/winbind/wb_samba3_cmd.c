@@ -30,11 +30,34 @@
 #include "librpc/gen_ndr/nbt.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
+#include "include/version.h"
 
 NTSTATUS wbsrv_samba3_interface_version(struct wbsrv_samba3_call *s3call)
 {
 	s3call->response.result			= WINBINDD_OK;
 	s3call->response.data.interface_version	= WINBIND_INTERFACE_VERSION;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS wbsrv_samba3_info(struct wbsrv_samba3_call *s3call)
+{
+	s3call->response.result			= WINBINDD_OK;
+	s3call->response.data.info.winbind_separator = *lp_winbind_separator();
+	WBSRV_SAMBA3_SET_STRING(s3call->response.data.info.samba_version, SAMBA_VERSION_STRING);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS wbsrv_samba3_domain_name(struct wbsrv_samba3_call *s3call)
+{
+	s3call->response.result			= WINBINDD_OK;
+	WBSRV_SAMBA3_SET_STRING(s3call->response.data.domain_name, lp_workgroup());
+	return NT_STATUS_OK;
+}
+
+NTSTATUS wbsrv_samba3_netbios_name(struct wbsrv_samba3_call *s3call)
+{
+	s3call->response.result			= WINBINDD_OK;
+	WBSRV_SAMBA3_SET_STRING(s3call->response.data.netbios_name, lp_netbios_name());
 	return NT_STATUS_OK;
 }
 
@@ -70,10 +93,8 @@ static void wbsrv_samba3_check_machacc_reply(struct composite_context *action)
 	status = wb_finddcs_recv(action, s3call);
 
 	s3call->response.data.auth.nt_status = NT_STATUS_V(status);
-	strncpy(s3call->response.data.auth.nt_status_string, nt_errstr(status),
-		sizeof(s3call->response.data.auth.nt_status_string)-1);
-	strncpy(s3call->response.data.auth.error_string, nt_errstr(status),
-		sizeof(s3call->response.data.auth.error_string)-1);
+	WBSRV_SAMBA3_SET_STRING(s3call->response.data.auth.nt_status_string, nt_errstr(status));
+	WBSRV_SAMBA3_SET_STRING(s3call->response.data.auth.error_string, nt_errstr(status));
 	s3call->response.data.auth.pam_error = nt_status_to_pam(status);
 
 	if (NT_STATUS_IS_OK(status)) {

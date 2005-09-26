@@ -72,14 +72,23 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_call *call)
 	case WINBINDD_INTERFACE_VERSION:
 		return wbsrv_samba3_interface_version(s3call);
 
-	case WINBINDD_PRIV_PIPE_DIR:
-		return wbsrv_samba3_priv_pipe_dir(s3call);
+	case WINBINDD_CHECK_MACHACC:
+		return wbsrv_samba3_check_machacc(s3call);
 
 	case WINBINDD_PING:
 		return wbsrv_samba3_ping(s3call);
 
-	case WINBINDD_CHECK_MACHACC:
-		return wbsrv_samba3_check_machacc(s3call);
+	case WINBINDD_INFO:
+		return wbsrv_samba3_domain_name(s3call);
+
+	case WINBINDD_DOMAIN_NAME:
+		return wbsrv_samba3_domain_name(s3call);
+
+	case WINBINDD_NETBIOS_NAME:
+		return wbsrv_samba3_netbios_name(s3call);
+
+	case WINBINDD_PRIV_PIPE_DIR:
+		return wbsrv_samba3_priv_pipe_dir(s3call);
 	}
 
 	s3call->response.result = WINBINDD_ERROR;
