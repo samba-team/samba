@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "nbt_server/nbt_server.h"
-#include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
 #include "lib/events/events.h"
 #include "smbd/service_task.h"
@@ -38,15 +37,15 @@ static struct nbt_name_socket *wins_socket(struct nbtd_interface *iface)
 
 
 static void nbtd_wins_refresh(struct event_context *ev, struct timed_event *te,
-			      struct timeval t, void *private);
+			      struct timeval t, void *private_data);
 
 /*
   retry a WINS name registration
 */
 static void nbtd_wins_register_retry(struct event_context *ev, struct timed_event *te,
-				     struct timeval t, void *private)
+				     struct timeval t, void *private_data)
 {
-	struct nbtd_iface_name *iname = talloc_get_type(private, struct nbtd_iface_name);
+	struct nbtd_iface_name *iname = talloc_get_type(private_data, struct nbtd_iface_name);
 	nbtd_winsclient_register(iname);
 }
 
@@ -58,7 +57,7 @@ static void nbtd_wins_refresh_handler(struct composite_context *c)
 {
 	NTSTATUS status;
 	struct nbt_name_refresh_wins io;
-	struct nbtd_iface_name *iname = talloc_get_type(c->async.private, 
+	struct nbtd_iface_name *iname = talloc_get_type(c->async.private_data, 
 							struct nbtd_iface_name);
 	TALLOC_CTX *tmp_ctx = talloc_new(iname);
 
@@ -78,7 +77,7 @@ static void nbtd_wins_refresh_handler(struct composite_context *c)
 			 nbt_name_string(tmp_ctx, &iname->name), nt_errstr(status)));
 		talloc_free(tmp_ctx);
 		return;
-	}	
+	}
 
 	if (io.out.rcode != 0) {
 		DEBUG(1,("WINS server %s rejected name refresh of %s - %s\n", 
@@ -113,9 +112,9 @@ static void nbtd_wins_refresh_handler(struct composite_context *c)
   refresh a WINS name registration
 */
 static void nbtd_wins_refresh(struct event_context *ev, struct timed_event *te,
-			      struct timeval t, void *private)
+			      struct timeval t, void *private_data)
 {
-	struct nbtd_iface_name *iname = talloc_get_type(private, struct nbtd_iface_name);
+	struct nbtd_iface_name *iname = talloc_get_type(private_data, struct nbtd_iface_name);
 	struct nbtd_interface *iface = iname->iface;
 	struct nbt_name_refresh_wins io;
 	struct composite_context *c;
@@ -136,7 +135,7 @@ static void nbtd_wins_refresh(struct event_context *ev, struct timed_event *te,
 	talloc_steal(c, io.in.addresses);
 
 	c->async.fn = nbtd_wins_refresh_handler;
-	c->async.private = iname;
+	c->async.private_data = iname;
 
 	talloc_free(tmp_ctx);
 }
@@ -149,7 +148,7 @@ static void nbtd_wins_register_handler(struct composite_context *c)
 {
 	NTSTATUS status;
 	struct nbt_name_register_wins io;
-	struct nbtd_iface_name *iname = talloc_get_type(c->async.private, 
+	struct nbtd_iface_name *iname = talloc_get_type(c->async.private_data, 
 							struct nbtd_iface_name);
 	TALLOC_CTX *tmp_ctx = talloc_new(iname);
 
@@ -227,5 +226,5 @@ void nbtd_winsclient_register(struct nbtd_iface_name *iname)
 	talloc_steal(c, io.in.addresses);
 
 	c->async.fn = nbtd_wins_register_handler;
-	c->async.private = iname;
+	c->async.private_data = iname;
 }

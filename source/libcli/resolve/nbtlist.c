@@ -44,8 +44,8 @@ struct nbtlist_state {
 static void nbtlist_handler(struct nbt_name_request *req)
 {
 	struct composite_context *c = talloc_get_type(req->async.private, 
-						     struct composite_context);
-	struct nbtlist_state *state = talloc_get_type(c->private, struct nbtlist_state);
+						      struct composite_context);
+	struct nbtlist_state *state = talloc_get_type(c->private_data, struct nbtlist_state);
 	int i;
 
 	for (i=0;i<state->num_queries;i++) {
@@ -54,20 +54,20 @@ static void nbtlist_handler(struct nbt_name_request *req)
 	if (i == state->num_queries) {
 		/* not for us?! */
 		c->status = NT_STATUS_INTERNAL_ERROR;
-		c->state = SMBCLI_REQUEST_ERROR;		
+		c->state = COMPOSITE_STATE_ERROR;		
 		goto done;
-	} 
+	}
 
 	c->status = nbt_name_query_recv(req, state, &state->io_queries[i]);
 	if (!NT_STATUS_IS_OK(c->status)) {
-		c->state = SMBCLI_REQUEST_ERROR;
+		c->state = COMPOSITE_STATE_ERROR;
 	} else {
 		if (state->io_queries[i].out.num_addrs < 1) {
-			c->state = SMBCLI_REQUEST_ERROR;
+			c->state = COMPOSITE_STATE_ERROR;
 			c->status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 		} else {
 			struct nbt_name_query *q = &state->io_queries[i];
-			c->state = SMBCLI_REQUEST_DONE;
+			c->state = COMPOSITE_STATE_DONE;
 			/* favor a local address if possible */
 			state->reply_addr = NULL;
 			for (i=0;i<q->out.num_addrs;i++) {
@@ -150,8 +150,8 @@ struct composite_context *resolve_name_nbtlist_send(struct nbt_name *name,
 		state->queries[i]->async.private = c;
 	}
 
-	c->state = SMBCLI_REQUEST_SEND;
-	c->private = state;
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = state;
 	c->event_ctx = talloc_reference(c, state->nbtsock->event_ctx);
 
 	return c;
@@ -172,7 +172,7 @@ NTSTATUS resolve_name_nbtlist_recv(struct composite_context *c,
 	status = composite_wait(c);
 
 	if (NT_STATUS_IS_OK(status)) {
-		struct nbtlist_state *state = talloc_get_type(c->private, struct nbtlist_state);
+		struct nbtlist_state *state = talloc_get_type(c->private_data, struct nbtlist_state);
 		*reply_addr = talloc_steal(mem_ctx, state->reply_addr);
 	}
 

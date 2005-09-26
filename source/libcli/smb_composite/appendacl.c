@@ -1,6 +1,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
+#include "libcli/smb_composite/smb_composite.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
 /* the stages of this call */
@@ -24,7 +25,7 @@ struct appendacl_state {
 static NTSTATUS appendacl_open(struct composite_context *c, 
 			      struct smb_composite_appendacl *io)
 {
-	struct appendacl_state *state = talloc_get_type(c->private, struct appendacl_state);
+	struct appendacl_state *state = talloc_get_type(c->private_data, struct appendacl_state);
 	struct smbcli_tree *tree = state->req->tree;
 	NTSTATUS status;
 
@@ -55,7 +56,7 @@ static NTSTATUS appendacl_open(struct composite_context *c,
 static NTSTATUS appendacl_get(struct composite_context *c, 
 			       struct smb_composite_appendacl *io)
 {
-	struct appendacl_state *state = talloc_get_type(c->private, struct appendacl_state);
+	struct appendacl_state *state = talloc_get_type(c->private_data, struct appendacl_state);
 	struct smbcli_tree *tree = state->req->tree;
 	int i;
 	NTSTATUS status;
@@ -101,7 +102,7 @@ static NTSTATUS appendacl_get(struct composite_context *c,
 static NTSTATUS appendacl_set(struct composite_context *c, 
 			      struct smb_composite_appendacl *io)
 {
-	struct appendacl_state *state = talloc_get_type(c->private, struct appendacl_state);
+	struct appendacl_state *state = talloc_get_type(c->private_data, struct appendacl_state);
 	struct smbcli_tree *tree = state->req->tree;
 	NTSTATUS status;
 
@@ -134,7 +135,7 @@ static NTSTATUS appendacl_set(struct composite_context *c,
 static NTSTATUS appendacl_getagain(struct composite_context *c, 
 				   struct smb_composite_appendacl *io)
 {
-	struct appendacl_state *state = talloc_get_type(c->private, struct appendacl_state);
+	struct appendacl_state *state = talloc_get_type(c->private_data, struct appendacl_state);
 	struct smbcli_tree *tree = state->req->tree;
 	union smb_close *io_close;
 	NTSTATUS status;
@@ -170,13 +171,13 @@ static NTSTATUS appendacl_getagain(struct composite_context *c,
 static NTSTATUS appendacl_close(struct composite_context *c, 
 				struct smb_composite_appendacl *io)
 {
-	struct appendacl_state *state = talloc_get_type(c->private, struct appendacl_state);
+	struct appendacl_state *state = talloc_get_type(c->private_data, struct appendacl_state);
 	NTSTATUS status;
 
 	status = smbcli_request_simple_recv(state->req);
 	NT_STATUS_NOT_OK_RETURN(status);
 	
-	c->state = SMBCLI_REQUEST_DONE;
+	c->state = COMPOSITE_STATE_DONE;
 
 	return NT_STATUS_OK;
 }
@@ -187,7 +188,7 @@ static NTSTATUS appendacl_close(struct composite_context *c,
 static void appendacl_handler(struct smbcli_request *req)
 {
 	struct composite_context *c = req->async.private;
-	struct appendacl_state *state = talloc_get_type(c->private, struct appendacl_state);
+	struct appendacl_state *state = talloc_get_type(c->private_data, struct appendacl_state);
 
 	/* when this handler is called, the stage indicates what
 	   call has just finished */
@@ -215,10 +216,10 @@ static void appendacl_handler(struct smbcli_request *req)
 
 	/* We should get here if c->state >= SMBCLI_REQUEST_DONE */
 	if (!NT_STATUS_IS_OK(c->status)) {
-		c->state = SMBCLI_REQUEST_ERROR;
+		c->state = COMPOSITE_STATE_ERROR;
 	}
 
-	if (c->state >= SMBCLI_REQUEST_DONE &&
+	if (c->state >= COMPOSITE_STATE_DONE &&
 	    c->async.fn) {
 		c->async.fn(c);
 	}
@@ -243,8 +244,8 @@ struct composite_context *smb_composite_appendacl_send(struct smbcli_tree *tree,
 
 	state->io = io;
 
-	c->private = state;
-	c->state = SMBCLI_REQUEST_SEND;
+	c->private_data = state;
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->event_ctx = tree->session->transport->socket->event.ctx;
 
 	/* setup structures for opening file */
@@ -289,7 +290,7 @@ NTSTATUS smb_composite_appendacl_recv(struct composite_context *c, TALLOC_CTX *m
 	status = composite_wait(c);
 
 	if (NT_STATUS_IS_OK(status)) {
-		struct appendacl_state *state = talloc_get_type(c->private, struct appendacl_state);
+		struct appendacl_state *state = talloc_get_type(c->private_data, struct appendacl_state);
 		state->io->out.sd = security_descriptor_copy (mem_ctx, state->io->out.sd);
 	}
 

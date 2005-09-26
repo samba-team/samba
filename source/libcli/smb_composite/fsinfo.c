@@ -5,6 +5,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
+#include "libcli/smb_composite/smb_composite.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
 /* the stages of this call */
@@ -30,7 +31,7 @@ static NTSTATUS fsinfo_connect(struct composite_context *c,
 {
 	NTSTATUS status;
 	struct fsinfo_state *state;
-	state = talloc_get_type(c->private, struct fsinfo_state);
+	state = talloc_get_type(c->private_data, struct fsinfo_state);
 
 	status = smb_composite_connect_recv(state->creq, c);
 	NT_STATUS_NOT_OK_RETURN(status);
@@ -59,14 +60,14 @@ static NTSTATUS fsinfo_query(struct composite_context *c,
 {
 	NTSTATUS status;
 	struct fsinfo_state *state;
-	state = talloc_get_type(c->private, struct fsinfo_state);
+	state = talloc_get_type(c->private_data, struct fsinfo_state);
 
 	status = smb_raw_fsinfo_recv(state->req, state, state->fsinfo);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	state->io->out.fsinfo = state->fsinfo;
 
-	c->state = SMBCLI_REQUEST_DONE;
+	c->state = COMPOSITE_STATE_DONE;
 
 	if (c->async.fn)
 		c->async.fn(c);
@@ -78,28 +79,28 @@ static NTSTATUS fsinfo_query(struct composite_context *c,
 /*
   handler for completion of a sub-request in fsinfo
 */
-static void fsinfo_state_handler(struct composite_context *req)
+static void fsinfo_state_handler(struct composite_context *creq)
 {
-	struct fsinfo_state *state = talloc_get_type(req->private, struct fsinfo_state);
+	struct fsinfo_state *state = talloc_get_type(creq->private_data, struct fsinfo_state);
 
 	/* when this handler is called, the stage indicates what
 	   call has just finished */
 	switch (state->stage) {
 	case FSINFO_CONNECT:
-		req->status = fsinfo_connect(req, state->io);
+		creq->status = fsinfo_connect(creq, state->io);
 		break;
 
 	case FSINFO_QUERY:
-		req->status = fsinfo_query(req, state->io);
+		creq->status = fsinfo_query(creq, state->io);
 		break;
 	}
 
-	if (!NT_STATUS_IS_OK(req->status)) {
-		req->state = SMBCLI_REQUEST_ERROR;
+	if (!NT_STATUS_IS_OK(creq->status)) {
+		creq->state = COMPOSITE_STATE_ERROR;
 	}
 
-	if (req->state >= SMBCLI_REQUEST_DONE && req->async.fn) {
-		req->async.fn(req);
+	if (creq->state >= COMPOSITE_STATE_DONE && creq->async.fn) {
+		creq->async.fn(creq);
 	}
 }
 
@@ -114,9 +115,9 @@ static void fsinfo_raw_handler(struct smbcli_request *req)
 	fsinfo_state_handler(c);
 }
 
-static void fsinfo_composite_handler(struct composite_context *req)
+static void fsinfo_composite_handler(struct composite_context *creq)
 {
-	struct composite_context *c = talloc_get_type(req->async.private, 
+	struct composite_context *c = talloc_get_type(creq->async.private_data, 
 						      struct composite_context);
 	fsinfo_state_handler(c);
 }
@@ -150,16 +151,16 @@ struct composite_context *smb_composite_fsinfo_send(struct smbcli_tree *tree,
 	state->connect->in.credentials  = io->in.credentials;
 	state->connect->in.workgroup    = io->in.workgroup;
 
-	c->state = SMBCLI_REQUEST_SEND;
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	state->stage = FSINFO_CONNECT;
 	c->event_ctx = talloc_reference(c,  tree->session->transport->socket->event.ctx);
-	c->private = state;
+	c->private_data = state;
 
 	state->creq = smb_composite_connect_send(state->connect, c->event_ctx);
 
 	if (state->creq == NULL) goto failed;
   
-	state->creq->async.private = c;
+	state->creq->async.private_data = c;
 	state->creq->async.fn = fsinfo_composite_handler;
   
 	return c;
@@ -178,7 +179,7 @@ NTSTATUS smb_composite_fsinfo_recv(struct composite_context *c, TALLOC_CTX *mem_
 	status = composite_wait(c);
 
 	if (NT_STATUS_IS_OK(status)) {
-		struct fsinfo_state *state = talloc_get_type(c->private, struct fsinfo_state);
+		struct fsinfo_state *state = talloc_get_type(c->private_data, struct fsinfo_state);
 		talloc_steal(mem_ctx, state->io->out.fsinfo);
 	}
 

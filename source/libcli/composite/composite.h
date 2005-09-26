@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   SMB composite request interfaces
+   composite request interfaces
 
    Copyright (C) Andrew Tridgell 2005
    
@@ -23,19 +23,28 @@
 /*
   this defines the structures associated with "composite"
   requests. Composite requests are libcli requests that are internally
-  implemented as multiple libcli/raw/ calls, but can be treated as a
+  implemented as multiple async calls, but can be treated as a
   single call via these composite calls. The composite calls are
-  particularly designed to be used in async applications
+  particularly designed to be used in async applications.
+  you can also stack multiple level of composite call
 */
 
+/*
+  a composite call moves between the following 3 states.
+*/
+enum composite_state {COMPOSITE_STATE_INIT, /* we are creating the request */
+		      COMPOSITE_STATE_IN_PROGRESS, /* the request is in the outgoing socket Q */
+		      COMPOSITE_STATE_DONE, /* the request is received by the caller finished */
+		      COMPOSITE_STATE_ERROR}; /* a packet or transport level error has occurred */
 
+/* the context of one "composite" call */
 struct composite_context {
 	/* the external state - will be queried by the caller */
-	enum smbcli_request_state state;
+	enum composite_state state;
 
 	/* a private pointer for use by the composite function
 	   implementation */
-	void *private;
+	void *private_data;
 
 	/* status code when finished */
 	NTSTATUS status;
@@ -46,132 +55,6 @@ struct composite_context {
 	/* information on what to do on completion */
 	struct {
 		void (*fn)(struct composite_context *);
-		void *private;
+		void *private_data;
 	} async;
-
-	/* information about the progress */
-	void (*monitor_fn)(struct monitor_msg *);
-};
-
-
-/*
-  a composite open/read(s)/close request that loads a whole file
-  into memory. Used as a demo of the composite system.
-*/
-struct smb_composite_loadfile {
-	struct {
-		const char *fname;
-	} in;
-	struct {
-		uint8_t *data;
-		uint32_t size;
-	} out;
-};
-
-struct smb_composite_fetchfile {
-	struct {
-		const char *dest_host;
-		int port;
-		const char *called_name;
-		const char *service;
-		const char *service_type;
-		struct cli_credentials *credentials;
-		const char *workgroup;
-		const char *filename;
-	} in;
-	struct {
-		uint8_t *data;
-		uint32_t size;
-	} out;
-};
-
-/*
-  a composite open/write(s)/close request that saves a whole file from
-  memory. Used as a demo of the composite system.
-*/
-struct smb_composite_savefile {
-	struct {
-		const char *fname;
-		uint8_t *data;
-		uint32_t size;
-	} in;
-};
-
-
-/*
-  a composite request for a full connection to a remote server. Includes
-
-    - socket establishment
-    - session request
-    - negprot
-    - session setup
-    - tree connect
-*/
-struct smb_composite_connect {
-	struct {
-		const char *dest_host;
-		int port;
-		const char *called_name;
-		const char *service;
-		const char *service_type;
-		struct cli_credentials *credentials;
-		const char *workgroup;
-	} in;
-	struct {
-		struct smbcli_tree *tree;
-	} out;
-};
-
-
-/*
-  generic session setup interface that takes care of which
-  session setup varient to use
-*/
-struct smb_composite_sesssetup {
-	struct {
-		uint32_t sesskey;
-		uint32_t capabilities;
-		struct cli_credentials *credentials;
-		const char *workgroup;
-	} in;
-	struct {
-		uint16_t vuid;
-	} out;		
-};
-
-/*
-  query file system info
-*/
-struct smb_composite_fsinfo {
-	struct {
-		const char *dest_host;
-		int port;
-		const char *called_name;
-		const char *service;
-		const char *service_type;
-		struct cli_credentials *credentials;
-		const char *workgroup;
-		enum smb_fsinfo_level level;
-	} in;
-	
-	struct {
-		union smb_fsinfo *fsinfo;
-	} out;
-};
-
-/*
-  composite call for appending new acl to the file's security descriptor and get 
-  new full acl
-*/
-
-struct smb_composite_appendacl {
-	struct {
-		const char *fname;
-
-		const struct security_descriptor *sd;
-	} in;
-	
-	struct {
-		struct security_descriptor *sd;
-	} out;
 };

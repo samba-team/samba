@@ -23,7 +23,6 @@
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "libnet/composite.h"
 #include "libnet/userman.h"
-#include "libcli/composite/monitor.h"
 
 #define TEST_USERNAME  "libnetusermantest"
 
@@ -412,7 +411,7 @@ BOOL torture_usermod(void)
 	struct dcerpc_pipe *p;
 	struct policy_handle h;
 	struct lsa_String domain_name;
-	char *name = TEST_USERNAME;
+	const char *name = TEST_USERNAME;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	int i;

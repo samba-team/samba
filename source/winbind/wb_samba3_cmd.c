@@ -60,7 +60,7 @@ struct check_machacc_state {
 static void wbsrv_samba3_check_machacc_reply(struct composite_context *action)
 {
 	struct wbsrv_samba3_call *s3call =
-		talloc_get_type(action->async.private,
+		talloc_get_type(action->async.private_data,
 				struct wbsrv_samba3_call);
 	struct check_machacc_state *state =
 		talloc_get_type(s3call->private_data,
@@ -106,7 +106,7 @@ NTSTATUS wbsrv_samba3_check_machacc(struct wbsrv_samba3_call *s3call)
 
 	/* setup the callbacks */
 	resolve_req->async.fn		= wbsrv_samba3_check_machacc_reply;
-	resolve_req->async.private	= s3call;
+	resolve_req->async.private_data	= s3call;
 
 	/* tell the caller we reply later */
 	s3call->call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;

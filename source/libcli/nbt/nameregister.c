@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "libcli/nbt/libnbt.h"
-#include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
 
 /*
@@ -156,14 +155,14 @@ struct register_bcast_state {
 static void name_register_bcast_handler(struct nbt_name_request *req)
 {
 	struct composite_context *c = talloc_get_type(req->async.private, struct composite_context);
-	struct register_bcast_state *state = talloc_get_type(c->private, struct register_bcast_state);
+	struct register_bcast_state *state = talloc_get_type(c->private_data, struct register_bcast_state);
 	NTSTATUS status;
 
 	status = nbt_name_register_recv(state->req, state, state->io);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
 		if (state->io->in.register_demand == True) {
 			/* all done */
-			c->state = SMBCLI_REQUEST_DONE;
+			c->state = COMPOSITE_STATE_DONE;
 			c->status = NT_STATUS_OK;
 			goto done;
 		}
@@ -173,17 +172,17 @@ static void name_register_bcast_handler(struct nbt_name_request *req)
 		state->io->in.retries         = 0;
 		state->req = nbt_name_register_send(state->nbtsock, state->io);
 		if (state->req == NULL) {
-			c->state = SMBCLI_REQUEST_ERROR;
+			c->state = COMPOSITE_STATE_ERROR;
 			c->status = NT_STATUS_NO_MEMORY;
 		} else {
 			state->req->async.fn      = name_register_bcast_handler;
 			state->req->async.private = c;
 		}
 	} else if (!NT_STATUS_IS_OK(status)) {
-		c->state = SMBCLI_REQUEST_ERROR;
+		c->state = COMPOSITE_STATE_ERROR;
 		c->status = status;
 	} else {
-		c->state = SMBCLI_REQUEST_ERROR;
+		c->state = COMPOSITE_STATE_ERROR;
 		c->status = NT_STATUS_CONFLICTING_ADDRESSES;
 		DEBUG(3,("Name registration conflict from %s for %s with ip %s - rcode %d\n",
 			 state->io->out.reply_from, 
@@ -193,7 +192,7 @@ static void name_register_bcast_handler(struct nbt_name_request *req)
 	}
 
 done:
-	if (c->state >= SMBCLI_REQUEST_DONE &&
+	if (c->state >= COMPOSITE_STATE_DONE &&
 	    c->async.fn) {
 		c->async.fn(c);
 	}
@@ -203,7 +202,7 @@ done:
   the async send call for a 4 stage name registration
 */
 struct composite_context *nbt_name_register_bcast_send(struct nbt_name_socket *nbtsock,
-						      struct nbt_name_register_bcast *io)
+						       struct nbt_name_register_bcast *io)
 {
 	struct composite_context *c;
 	struct register_bcast_state *state;
@@ -236,9 +235,9 @@ struct composite_context *nbt_name_register_bcast_send(struct nbt_name_socket *n
 	state->req->async.fn      = name_register_bcast_handler;
 	state->req->async.private = c;
 
-	c->private   = state;
-	c->state     = SMBCLI_REQUEST_SEND;
-	c->event_ctx = nbtsock->event_ctx;
+	c->private_data	= state;
+	c->state	= COMPOSITE_STATE_IN_PROGRESS;
+	c->event_ctx	= nbtsock->event_ctx;
 
 	return c;
 
@@ -291,7 +290,7 @@ static void name_register_wins_handler(struct nbt_name_request *req)
 {
 	struct composite_context *c = talloc_get_type(req->async.private, 
 						      struct composite_context);
-	struct register_wins_state *state = talloc_get_type(c->private, 
+	struct register_wins_state *state = talloc_get_type(c->private_data, 
 							    struct register_wins_state);
 	NTSTATUS status;
 
@@ -301,7 +300,7 @@ static void name_register_wins_handler(struct nbt_name_request *req)
 		state->wins_servers++;
 		state->address_idx = 0;
 		if (state->wins_servers[0] == NULL) {
-			c->state = SMBCLI_REQUEST_ERROR;
+			c->state = COMPOSITE_STATE_ERROR;
 			c->status = status;
 			goto done;
 		}
@@ -309,14 +308,14 @@ static void name_register_wins_handler(struct nbt_name_request *req)
 		state->io->in.address   = state->addresses[0];
 		state->req = nbt_name_register_send(state->nbtsock, state->io);
 		if (state->req == NULL) {
-			c->state = SMBCLI_REQUEST_ERROR;
+			c->state = COMPOSITE_STATE_ERROR;
 			c->status = NT_STATUS_NO_MEMORY;
 		} else {
 			state->req->async.fn      = name_register_wins_handler;
 			state->req->async.private = c;
 		}
 	} else if (!NT_STATUS_IS_OK(status)) {
-		c->state = SMBCLI_REQUEST_ERROR;
+		c->state = COMPOSITE_STATE_ERROR;
 		c->status = status;
 	} else {
 		if (state->io->out.rcode == 0 &&
@@ -325,20 +324,20 @@ static void name_register_wins_handler(struct nbt_name_request *req)
 			state->io->in.address = state->addresses[++(state->address_idx)];
 			state->req = nbt_name_register_send(state->nbtsock, state->io);
 			if (state->req == NULL) {
-				c->state = SMBCLI_REQUEST_ERROR;
+				c->state = COMPOSITE_STATE_ERROR;
 				c->status = NT_STATUS_NO_MEMORY;
 			} else {
 				state->req->async.fn      = name_register_wins_handler;
 				state->req->async.private = c;
 			}
 		} else {
-			c->state = SMBCLI_REQUEST_DONE;
+			c->state = COMPOSITE_STATE_DONE;
 			c->status = NT_STATUS_OK;
 		}
 	}
 
 done:
-	if (c->state >= SMBCLI_REQUEST_DONE &&
+	if (c->state >= COMPOSITE_STATE_DONE &&
 	    c->async.fn) {
 		c->async.fn(c);
 	}
@@ -390,9 +389,9 @@ struct composite_context *nbt_name_register_wins_send(struct nbt_name_socket *nb
 	state->req->async.fn      = name_register_wins_handler;
 	state->req->async.private = c;
 
-	c->private   = state;
-	c->state     = SMBCLI_REQUEST_SEND;
-	c->event_ctx = nbtsock->event_ctx;
+	c->private_data	= state;
+	c->state	= COMPOSITE_STATE_IN_PROGRESS;
+	c->event_ctx	= nbtsock->event_ctx;
 
 	return c;
 
@@ -411,7 +410,7 @@ NTSTATUS nbt_name_register_wins_recv(struct composite_context *c, TALLOC_CTX *me
 	status = composite_wait(c);
 	if (NT_STATUS_IS_OK(status)) {
 		struct register_wins_state *state = 
-			talloc_get_type(c->private, struct register_wins_state);
+			talloc_get_type(c->private_data, struct register_wins_state);
 		io->out.wins_server = talloc_steal(mem_ctx, state->wins_servers[0]);
 		io->out.rcode = state->io->out.rcode;
 	}

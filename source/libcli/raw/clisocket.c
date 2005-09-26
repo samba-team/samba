@@ -78,17 +78,17 @@ static NTSTATUS smbcli_sock_connect_one(struct smbcli_socket *sock,
   has either completed the connect() or has returned an error
 */
 static void smbcli_sock_connect_handler(struct event_context *ev, struct fd_event *fde, 
-					uint16_t flags, void *private)
+					uint16_t flags, void *private_data)
 {
-	struct composite_context *c = talloc_get_type(private, struct composite_context);
-	struct clisocket_connect *conn = talloc_get_type(c->private, struct clisocket_connect);
+	struct composite_context *c = talloc_get_type(private_data, struct composite_context);
+	struct clisocket_connect *conn = talloc_get_type(c->private_data, struct clisocket_connect);
 	int i;
 	
 	c->status = socket_connect_complete(conn->sock->sock, 0);
 	if (NT_STATUS_IS_OK(c->status)) {
 		socket_set_option(conn->sock->sock, lp_socket_options(), NULL);
 		conn->sock->hostname = talloc_strdup(conn->sock, conn->dest_hostname);
-		c->state = SMBCLI_REQUEST_DONE;
+		c->state = COMPOSITE_STATE_DONE;
 		if (c->async.fn) {
 			c->async.fn(c);
 		}
@@ -107,7 +107,7 @@ static void smbcli_sock_connect_handler(struct event_context *ev, struct fd_even
 		}
 	}
 
-	c->state = SMBCLI_REQUEST_ERROR;
+	c->state = COMPOSITE_STATE_ERROR;
 	if (c->async.fn) {
 		c->async.fn(c);
 	}
@@ -195,8 +195,8 @@ struct composite_context *smbcli_sock_connect_send(struct smbcli_socket *sock,
 	conn->dest_hostname = talloc_strdup(c, host_name);
 	if (conn->dest_hostname == NULL) goto failed;
 
-	c->private = conn;
-	c->state = SMBCLI_REQUEST_SEND;
+	c->private_data	= conn;
+	c->state	= COMPOSITE_STATE_IN_PROGRESS;
 
 	/* startup the connect process for each port in turn until one
 	   succeeds or tells us that it is pending */
@@ -212,7 +212,7 @@ struct composite_context *smbcli_sock_connect_send(struct smbcli_socket *sock,
 		}
 	}
 
-	c->state = SMBCLI_REQUEST_ERROR;
+	c->state = COMPOSITE_STATE_ERROR;
 	return c;
 	
 failed:

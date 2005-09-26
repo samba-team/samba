@@ -23,7 +23,6 @@
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "libnet/composite.h"
 #include "libnet/userinfo.h"
-#include "libcli/composite/monitor.h"
 
 #define TEST_USERNAME  "libnetuserinfotest"
 

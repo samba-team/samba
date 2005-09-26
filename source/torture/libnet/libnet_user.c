@@ -24,7 +24,6 @@
 #include "lib/cmdline/popt_common.h"
 #include "libnet/libnet.h"
 #include "libnet/composite.h"
-#include "libcli/composite/monitor.h"
 
 
 #define TEST_USERNAME  "libnetusertest"

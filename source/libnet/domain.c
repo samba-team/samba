@@ -23,9 +23,7 @@
 */
 
 #include "includes.h"
-#include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
-#include "libcli/composite/monitor.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "libnet/composite.h"
 
@@ -119,7 +117,7 @@ static NTSTATUS domain_open_open(struct composite_context *c,
 	c->status = dcerpc_ndr_request_recv(s->req);
 	NT_STATUS_NOT_OK_RETURN(c->status);
 
-	c->state = SMBCLI_REQUEST_DONE;
+	c->state = COMPOSITE_STATE_DONE;
 	
 	return NT_STATUS_OK;
 }
@@ -134,8 +132,7 @@ static NTSTATUS domain_open_open(struct composite_context *c,
 static void domain_open_handler(struct rpc_request *req)
 {
 	struct composite_context *c = req->async.private;
-	struct domain_open_state *s = talloc_get_type(c->private, struct domain_open_state);
-	struct monitor_msg msg;
+	struct domain_open_state *s = talloc_get_type(c->private_data, struct domain_open_state);
 
 	/* Stages of the call */
 	switch (s->stage) {
@@ -151,11 +148,7 @@ static void domain_open_handler(struct rpc_request *req)
 	}
 
 	if (!NT_STATUS_IS_OK(c->status)) {
-		c->state = SMBCLI_REQUEST_ERROR;
-	}
-
-	if (c->monitor_fn) {
-		c->monitor_fn(&msg);
+		c->state = COMPOSITE_STATE_ERROR;
 	}
 }
 
@@ -179,10 +172,9 @@ struct composite_context *libnet_rpc_domain_open_send(struct dcerpc_pipe *p,
 	s = talloc_zero(c, struct domain_open_state);
 	if (s == NULL) goto failure;
 
-	c->state       = SMBCLI_REQUEST_SEND;
-	c->private     = s;
+	c->state       = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data= s;
 	c->event_ctx   = dcerpc_event_context(p);
-	c->monitor_fn  = monitor;
 
 	s->pipe                = p;
 	s->access_mask         = io->in.access_mask;
@@ -227,7 +219,7 @@ NTSTATUS libnet_rpc_domain_open_recv(struct composite_context *c, TALLOC_CTX *me
 	status = composite_wait(c);
 	
 	if (NT_STATUS_IS_OK(status) && io) {
-		s = talloc_get_type(c->private, struct domain_open_state);
+		s = talloc_get_type(c->private_data, struct domain_open_state);
 		io->out.domain_handle = s->domain_handle;
 	}
 

@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
+#include "libcli/smb_composite/smb_composite.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
 /* the stages of this call */
@@ -47,7 +48,7 @@ struct savefile_state {
 static NTSTATUS setup_close(struct composite_context *c, 
 			    struct smbcli_tree *tree, uint16_t fnum)
 {
-	struct savefile_state *state = talloc_get_type(c->private, struct savefile_state);
+	struct savefile_state *state = talloc_get_type(c->private_data, struct savefile_state);
 	union smb_close *io_close;
 
 	/* nothing to write, setup the close */
@@ -76,7 +77,7 @@ static NTSTATUS setup_close(struct composite_context *c,
 static NTSTATUS savefile_open(struct composite_context *c, 
 			      struct smb_composite_savefile *io)
 {
-	struct savefile_state *state = talloc_get_type(c->private, struct savefile_state);
+	struct savefile_state *state = talloc_get_type(c->private_data, struct savefile_state);
 	union smb_write *io_write;
 	struct smbcli_tree *tree = state->req->tree;
 	NTSTATUS status;
@@ -122,7 +123,7 @@ static NTSTATUS savefile_open(struct composite_context *c,
 static NTSTATUS savefile_write(struct composite_context *c, 
 			      struct smb_composite_savefile *io)
 {
-	struct savefile_state *state = talloc_get_type(c->private, struct savefile_state);
+	struct savefile_state *state = talloc_get_type(c->private_data, struct savefile_state);
 	struct smbcli_tree *tree = state->req->tree;
 	NTSTATUS status;
 	uint32_t max_xmit = tree->session->transport->negotiate.max_xmit;
@@ -160,7 +161,7 @@ static NTSTATUS savefile_write(struct composite_context *c,
 static NTSTATUS savefile_close(struct composite_context *c, 
 			       struct smb_composite_savefile *io)
 {
-	struct savefile_state *state = talloc_get_type(c->private, struct savefile_state);
+	struct savefile_state *state = talloc_get_type(c->private_data, struct savefile_state);
 	NTSTATUS status;
 
 	status = smbcli_request_simple_recv(state->req);
@@ -170,7 +171,7 @@ static NTSTATUS savefile_close(struct composite_context *c,
 		return NT_STATUS_DISK_FULL;
 	}
 	
-	c->state = SMBCLI_REQUEST_DONE;
+	c->state = COMPOSITE_STATE_DONE;
 
 	return NT_STATUS_OK;
 }
@@ -182,7 +183,7 @@ static NTSTATUS savefile_close(struct composite_context *c,
 static void savefile_handler(struct smbcli_request *req)
 {
 	struct composite_context *c = req->async.private;
-	struct savefile_state *state = talloc_get_type(c->private, struct savefile_state);
+	struct savefile_state *state = talloc_get_type(c->private_data, struct savefile_state);
 
 	/* when this handler is called, the stage indicates what
 	   call has just finished */
@@ -201,10 +202,10 @@ static void savefile_handler(struct smbcli_request *req)
 	}
 
 	if (!NT_STATUS_IS_OK(c->status)) {
-		c->state = SMBCLI_REQUEST_ERROR;
+		c->state = COMPOSITE_STATE_ERROR;
 	}
 
-	if (c->state >= SMBCLI_REQUEST_DONE &&
+	if (c->state >= COMPOSITE_STATE_DONE &&
 	    c->async.fn) {
 		c->async.fn(c);
 	}
@@ -215,7 +216,7 @@ static void savefile_handler(struct smbcli_request *req)
   followed by a close
 */
 struct composite_context *smb_composite_savefile_send(struct smbcli_tree *tree, 
-						     struct smb_composite_savefile *io)
+						      struct smb_composite_savefile *io)
 {
 	struct composite_context *c;
 	struct savefile_state *state;
@@ -224,7 +225,7 @@ struct composite_context *smb_composite_savefile_send(struct smbcli_tree *tree,
 	c = talloc_zero(tree, struct composite_context);
 	if (c == NULL) goto failed;
 
-	c->state = SMBCLI_REQUEST_SEND;
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->event_ctx = tree->session->transport->socket->event.ctx;
 
 	state = talloc(c, struct savefile_state);
@@ -255,7 +256,7 @@ struct composite_context *smb_composite_savefile_send(struct smbcli_tree *tree,
 	/* setup the callback handler */
 	state->req->async.fn = savefile_handler;
 	state->req->async.private = c;
-	c->private = state;
+	c->private_data = state;
 
 	return c;
 

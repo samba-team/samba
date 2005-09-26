@@ -24,6 +24,7 @@
 #include "lib/events/events.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
+#include "libcli/smb_composite/smb_composite.h"
 #include "lib/cmdline/popt_common.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
@@ -31,7 +32,7 @@
 
 static void loadfile_complete(struct composite_context *c)
 {
-	int *count = talloc_get_type(c->async.private, int);
+	int *count = talloc_get_type(c->async.private_data, int);
 	(*count)++;
 }
 
@@ -76,7 +77,7 @@ static BOOL test_loadfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	for (i=0;i<num_ops;i++) {
 		c[i] = smb_composite_loadfile_send(cli->tree, &io2);
 		c[i]->async.fn = loadfile_complete;
-		c[i]->async.private = count;
+		c[i]->async.private_data = count;
 	}
 
 	printf("waiting for completion\n");
@@ -163,7 +164,7 @@ static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	for (i=0; i<torture_numops; i++) {
 		c[i] = smb_composite_fetchfile_send(&io2, event_ctx);
 		c[i]->async.fn = loadfile_complete;
-		c[i]->async.private = count;
+		c[i]->async.private_data = count;
 	}
 
 	printf("waiting for completion\n");
@@ -281,7 +282,7 @@ static BOOL test_appendacl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 		c[i] = smb_composite_appendacl_send(cli->tree, io[i]);
 		c[i]->async.fn = loadfile_complete;
-		c[i]->async.private = count;
+		c[i]->async.private_data = count;
 	}
 
 	event_ctx = talloc_reference(mem_ctx, cli->tree->session->transport->socket->event.ctx);
@@ -346,7 +347,7 @@ static BOOL test_fsinfo(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	for (i=0; i<torture_numops; i++) {
 		c[i] = smb_composite_fsinfo_send(cli->tree,&io1);
 		c[i]->async.fn = loadfile_complete;
-		c[i]->async.private = count;
+		c[i]->async.private_data = count;
 	}
 
 	printf("waiting for completion\n");
