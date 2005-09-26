@@ -835,7 +835,7 @@ const char *get_nt_error_c_code(NTSTATUS nt_code)
 /*****************************************************************************
  returns the NT_STATUS constant matching the string supplied (as an NTSTATUS)
  *****************************************************************************/
-NTSTATUS nt_status_string_to_code(char *nt_status_str)
+NTSTATUS nt_status_string_to_code(const char *nt_status_str)
 {
         int idx = 0;
 

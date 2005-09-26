@@ -34,6 +34,7 @@
 #include "dlinklist.h"
 #include "credentials.h"
 #include "system/readline.h"
+#include "pstring.h"
 
 #ifndef REGISTER
 #define REGISTER 0
