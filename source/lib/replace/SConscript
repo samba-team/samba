@@ -51,6 +51,7 @@ int main() {
 		'u_int32_t': 'unsigned long',
 		'int64_t': 'long long',
 		'uint64_t': 'unsigned long long',
+		'ssize_t': 'int'
 	}
 
 	type_headers = """

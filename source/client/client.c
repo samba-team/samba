@@ -32,6 +32,8 @@
 #include "system/dir.h"
 #include "system/filesys.h"
 #include "dlinklist.h"
+#include "credentials.h"
+#include "system/readline.h"
 
 #ifndef REGISTER
 #define REGISTER 0

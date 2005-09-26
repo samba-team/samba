@@ -9,9 +9,9 @@
 #
 # TODO:
 # - finish fallback code
-# - finish proto code
 # - support for init functions
 # - separate config file for lib/replace/
+# - Subsystem() ?
 
 import cPickle, string, os
 
@@ -29,6 +29,8 @@ hostenv = Environment(
 		CPPPATH=['#include','#','#lib'], 
         CPPDEFINES={'_SAMBA_BUILD_': None},
 		)
+
+hostenv.Help(opts.GenerateHelpText(hostenv))
 
 # We don't care about NFS builds...
 hostenv.SetOption('max_drift', 1)
