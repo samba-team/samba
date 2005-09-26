@@ -55,6 +55,10 @@ static /**/const char *const rcsid[] = { (const char *)rcsid, "\100(#)" msg }
 #define OPENLOG_PROTO_COMPATIBLE
 #define GETSOCKNAME_PROTO_COMPATIBLE
 
+#ifndef HAVE_SOCKLEN_T
+#define HAVE_SOCKLEN_T
+#endif
+
 #ifndef HAVE_STRNDUP
 #define HAVE_STRNDUP
 #endif
