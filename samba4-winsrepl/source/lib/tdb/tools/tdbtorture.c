@@ -334,5 +334,5 @@ static void usage(void)
 		printf("OK\n");
 	}
 
-	return 0;
+	return error_count;
 }

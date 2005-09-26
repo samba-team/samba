@@ -40,7 +40,7 @@
  * but they are keept here for reference anyway
  */
 
-#define LDB_ERR_SUCCESS				0
+#define LDB_SUCCESS				0
 #define LDB_ERR_OPERATIONS_ERROR		1
 #define LDB_ERR_PROTOCOL_ERROR			2
 #define LDB_ERR_TIME_LIMIT_EXCEEDED		3

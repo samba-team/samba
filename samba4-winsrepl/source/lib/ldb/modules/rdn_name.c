@@ -220,10 +220,16 @@ static int rdn_start_trans(struct ldb_module *module)
 	return ldb_next_start_trans(module);
 }
 
-static int rdn_end_trans(struct ldb_module *module, int status)
+static int rdn_end_trans(struct ldb_module *module)
 {
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_end_trans\n");
-	return ldb_next_end_trans(module, status);
+	return ldb_next_end_trans(module);
+}
+
+static int rdn_del_trans(struct ldb_module *module)
+{
+	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_del_trans\n");
+	return ldb_next_del_trans(module);
 }
 
 static int rdn_name_destructor(void *module_ctx)
@@ -242,7 +248,8 @@ static const struct ldb_module_ops rdn_name_ops = {
 	.delete_record     = rdn_name_delete_record,
 	.rename_record     = rdn_name_rename_record,
 	.start_transaction = rdn_start_trans,
-	.end_transaction   = rdn_end_trans
+	.end_transaction   = rdn_end_trans,
+	.del_transaction   = rdn_del_trans
 };
 
 

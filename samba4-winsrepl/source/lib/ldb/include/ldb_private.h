@@ -65,7 +65,8 @@ struct ldb_module_ops {
 	int (*delete_record)(struct ldb_module *, const struct ldb_dn *);
 	int (*rename_record)(struct ldb_module *, const struct ldb_dn *, const struct ldb_dn *);
 	int (*start_transaction)(struct ldb_module *);
-	int (*end_transaction)(struct ldb_module *, int);
+	int (*end_transaction)(struct ldb_module *);
+	int (*del_transaction)(struct ldb_module *);
 };
 
 
@@ -105,6 +106,8 @@ struct ldb_context {
 	struct ldb_schema schema;
 
 	char *err_string;
+
+	int transaction_active;
 };
 
 /* the modules init function */
@@ -137,7 +140,8 @@ int ldb_next_modify_record(struct ldb_module *module, const struct ldb_message *
 int ldb_next_delete_record(struct ldb_module *module, const struct ldb_dn *dn);
 int ldb_next_rename_record(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn);
 int ldb_next_start_trans(struct ldb_module *module);
-int ldb_next_end_trans(struct ldb_module *module, int status);
+int ldb_next_end_trans(struct ldb_module *module);
+int ldb_next_del_trans(struct ldb_module *module);
 
 void ldb_set_errstring(struct ldb_module *module, char *err_string);
 

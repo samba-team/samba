@@ -1258,9 +1258,14 @@ static int map_start_trans(struct ldb_module *module)
 	return ldb_next_start_trans(module);
 }
 
-static int map_end_trans(struct ldb_module *module, int status)
+static int map_end_trans(struct ldb_module *module)
 {
-	return ldb_next_end_trans(module, status);
+	return ldb_next_end_trans(module);
+}
+
+static int map_del_trans(struct ldb_module *module)
+{
+	return ldb_next_del_trans(module);
 }
 
 static const struct ldb_module_ops map_ops = {
@@ -1272,7 +1277,8 @@ static const struct ldb_module_ops map_ops = {
 	.delete_record     = map_delete,
 	.rename_record     = map_rename,
 	.start_transaction = map_start_trans,
-	.end_transaction   = map_end_trans
+	.end_transaction   = map_end_trans,
+	.del_transaction   = map_del_trans
 };
 
 static char *map_find_url(struct ldb_context *ldb, const char *name)

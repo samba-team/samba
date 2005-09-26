@@ -32,6 +32,7 @@
    send a ntlogon mailslot request 
 */
 NTSTATUS dgram_mailslot_ntlogon_send(struct nbt_dgram_socket *dgmsock,
+				     enum dgram_msg_type msg_type,
 				     struct nbt_name *dest_name,
 				     const struct nbt_peer_socket *dest,
 				     struct nbt_name *src_name,
@@ -49,7 +50,7 @@ NTSTATUS dgram_mailslot_ntlogon_send(struct nbt_dgram_socket *dgmsock,
 	}
 
 
-	status = dgram_mailslot_send(dgmsock, DGRAM_DIRECT_UNIQUE, 
+	status = dgram_mailslot_send(dgmsock, msg_type,
 				     NBT_MAILSLOT_NTLOGON,
 				     dest_name, dest, 
 				     src_name, &blob);

@@ -25,12 +25,7 @@
 */
 
 #ifndef _SAMBA_BUILD_
-#if HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#define _XOPEN_SOURCE 500
-
+#include "config.h"
 #include <stdlib.h>
 #include <stdio.h>
 #ifdef HAVE_STDINT_H
@@ -43,7 +38,12 @@
 #include <errno.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include "config.h"
+#ifdef HAVE_SYS_SELECT_H
+#include <sys/select.h>
+#endif
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
 #include "tdb.h"
 
 #ifndef HAVE_PREAD_DECL
@@ -222,6 +222,7 @@ void tdb_mmap(struct tdb_context *tdb);
 int tdb_lock(struct tdb_context *tdb, int list, int ltype);
 int tdb_unlock(struct tdb_context *tdb, int list, int ltype);
 int tdb_brlock(struct tdb_context *tdb, tdb_off_t offset, int rw_type, int lck_type, int probe);
+int tdb_brlock_upgrade(struct tdb_context *tdb, tdb_off_t offset, size_t len);
 int tdb_brlock_len(struct tdb_context *tdb, tdb_off_t offset, 
 		   int rw_type, int lck_type, int probe, size_t len);
 int tdb_write_lock_record(struct tdb_context *tdb, tdb_off_t off);

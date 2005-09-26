@@ -65,19 +65,42 @@ int tdb_brlock_len(struct tdb_context *tdb, tdb_off_t offset,
 		/* Generic lock error. errno set by fcntl.
 		 * EAGAIN is an expected return from non-blocking
 		 * locks. */
-		if (errno != EAGAIN) {
-			TDB_LOG((tdb, 5, "tdb_brlock failed (fd=%d) at offset %d rw_type=%d lck_type=%d len=%d: %s\n", 
-				 tdb->fd, offset, rw_type, lck_type, len,
-				 strerror(errno)));
-		} else if (!probe && lck_type != F_SETLK) {
+		if (!probe && lck_type != F_SETLK) {
 			/* Ensure error code is set for log fun to examine. */
 			tdb->ecode = TDB_ERR_LOCK;
-			TDB_LOG((tdb, 5,"tdb_brlock failed (fd=%d) at offset %d rw_type=%d lck_type=%d\n", 
-				 tdb->fd, offset, rw_type, lck_type));
+			TDB_LOG((tdb, 5,"tdb_brlock failed (fd=%d) at offset %d rw_type=%d lck_type=%d len=%d\n", 
+				 tdb->fd, offset, rw_type, lck_type, len));
 		}
 		return TDB_ERRCODE(TDB_ERR_LOCK, -1);
 	}
 	return 0;
+}
+
+
+/*
+  upgrade a read lock to a write lock. This needs to be handled in a
+  special way as some OSes (such as solaris) have too conservative
+  deadlock detection and claim a deadlock when progress can be
+  made. For those OSes we may loop for a while.  
+*/
+int tdb_brlock_upgrade(struct tdb_context *tdb, tdb_off_t offset, size_t len)
+{
+	int count = 1000;
+	while (count--) {
+		struct timeval tv;
+		if (tdb_brlock_len(tdb, offset, F_WRLCK, F_SETLKW, 1, len) == 0) {
+			return 0;
+		}
+		if (errno != EDEADLK) {
+			break;
+		}
+		/* sleep for as short a time as we can - more portable than usleep() */
+		tv.tv_sec = 0;
+		tv.tv_usec = 1;
+		select(0, NULL, NULL, NULL, &tv);
+	}
+	TDB_LOG((tdb, 5,"tdb_brlock_upgrade failed at offset %d\n", offset));
+	return -1;
 }
 
 

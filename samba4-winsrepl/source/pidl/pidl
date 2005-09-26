@@ -15,12 +15,12 @@ pidl - IDL Compiler written in Perl
 =head1 SYNOPSIS
 
 pidl --help
-pidl [--outputdir[=OUTNAME]] [--parse-idl-tree] [--dump-idl-tree] [--dump-ndr-tree] [--ndr-header[=OUTPUT]] [--header[=OUTPUT]] [--ejs[=OUTPUT]] [--swig[=OUTPUT]] [--uint-enums] [--ndr-parser[=OUTPUT]] [--client] [--server] [--dcom-proxy] [--com-header] [--warn-compat] [--quiet] [--verbose] [--template] [--eth-parser[=OUTPUT]] [--diff] [--dump-idl] [<idlfile>.idl]...
+pidl [--outputdir[=OUTNAME]] [--parse-idl-tree] [--dump-idl-tree] [--dump-ndr-tree] [--ndr-header[=OUTPUT]] [--header[=OUTPUT]] [--ejs[=OUTPUT]] [--swig[=OUTPUT]] [--uint-enums] [--ndr-parser[=OUTPUT]] [--client] [--server] [--dcom-proxy] [--com-header] [--warn-compat] [--quiet] [--verbose] [--template] [--eth-parser[=OUTPUT]] [--diff] [--dump-idl] [--tdr-header=[OUTPUT]] [--tdr-parser[=OUTPUT]] [<idlfile>.idl]...
 
 =head1 DESCRIPTION
 
 pidl is an IDL compiler written in Perl that aims to be somewhat 
-compatible with the midl compiler. IDL stands for 
+compatible with the midl compiler. IDL is short for 
 "Interface Definition Language".
 
 pidl can generate stubs for DCE/RPC server code, DCE/RPC 
@@ -89,8 +89,9 @@ be written to stdout.
 
 =item I<--eth-parser>
 
-Generate an Ethereal dissector (in C) for the interface. Filename
-defaults to packet-dcerpc-OUTNAME.c. 
+Generate an Ethereal dissector (in C) and header file. The dissector filename
+defaults to packet-dcerpc-OUTNAME.c while the header filename defaults to 
+packet-dcerpc-OUTNAME.h.
 	
 Pidl will read additional data from an ethereal conformance file if present. 
 Such a file should have the same location as the IDL file but with the 
@@ -343,24 +344,24 @@ The following commands are currently supported:
 
 =over 4
 
-=item TYPE name dissector ft_type base_type mask valsstring alignment
+=item I<TYPE> name dissector ft_type base_type mask valsstring alignment
 
 Register new data type with specified name, what dissector function to call 
 and what properties to give header fields for elements of this type.
 
-=item NOEMIT type
+=item I<NOEMIT> type
 
 Suppress emitting a dissect_type function for the specified type
 
-=item PARAM_VALUE type param
+=item I<PARAM_VALUE> type param
 
 Set parameter to specify to dissector function for given type.
 
-=item HF_FIELD hf title filter ft_type base_type valsstring mask description
+=item I<HF_FIELD> hf title filter ft_type base_type valsstring mask description
 
 Generate a custom header field with specified properties.
 
-=item HF_RENAME old_hf_name new_hf_name
+=item I<HF_RENAME> old_hf_name new_hf_name
 
 Force the use of new_hf_name when the parser generator was going to 
 use old_hf_name.
@@ -368,20 +369,20 @@ use old_hf_name.
 This can be used in conjunction with HF_FIELD in order to make more then 
 one element use the same filter name.
 
-=item STRIP_PREFIX prefix
+=item I<STRIP_PREFIX> prefix
 
 Remove the specified prefix from all function names (if present).
 	
-=item PROTOCOL longname shortname filtername
+=item I<PROTOCOL> longname shortname filtername
 
 Change the short-, long- and filter-name for the current interface in
 Ethereal.
 
-=item FIELD_DESCRIPTION field desc
+=item I<FIELD_DESCRIPTION> field desc
 
 Change description for the specified header field. `field' is the hf name of the field.
 
-=item IMPORT dissector code...
+=item I<IMPORT> dissector code...
 
 Code to insert when generating the specified dissector. @HF@ and 
 @PARAM@ will be substituted.
@@ -402,9 +403,13 @@ This man page is correct for version 4.0 of the Samba suite. L<http://www.samba.
 
 =head1 SEE ALSO
 
-L<http://msdn.microsoft.com/library/en-us/rpc/rpc/field_attributes.asp>
-L<http://wiki.ethereal.com/DCE/RPC>
+L<http://msdn.microsoft.com/library/en-us/rpc/rpc/field_attributes.asp>,
+L<http://wiki.ethereal.com/DCE/RPC>, 
 yapp(1)
+
+=head1 LICENSE
+
+pidl is licensed under the GNU General Public License L<http://www.gnu.org/licenses/gpl.html>.
 
 =head1 AUTHOR
 

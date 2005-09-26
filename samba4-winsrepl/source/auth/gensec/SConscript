@@ -1,9 +1,9 @@
-Import('hostenv', 'proto_files')
+Import('hostenv')
 
 gensec_files = ['gensec.c', 'gensec_krb5.c', 'gensec_gssapi.c', 'spnego.c',
                 'schannel.c', 'schannel_sign.c', 'schannel_state.c']
 
-proto_files += [File(x) for x in gensec_files]
+hostenv.proto_headers += hostenv.CProtoHeader('proto.h', gensec_files)
 
 hostenv.StaticLibrary('gensec',['gensec.c'])
 hostenv.StaticLibrary('gensec_krb5',['gensec_krb5.c'])

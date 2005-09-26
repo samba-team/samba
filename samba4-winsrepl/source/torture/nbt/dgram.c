@@ -222,7 +222,7 @@ static BOOL nbt_test_ntlogon(TALLOC_CTX *mem_ctx,
 	const char *password;
 	const char *dom_sid;
 
-	join_ctx = torture_join_domain(TEST_NAME, lp_workgroup(), 
+	join_ctx = torture_join_domain(TEST_NAME, 
 				       ACB_WSTRUST, &password);
 	if (join_ctx == NULL) {
 		printf("Failed to join domain %s as %s\n", lp_workgroup(), TEST_NAME);
@@ -260,10 +260,9 @@ static BOOL nbt_test_ntlogon(TALLOC_CTX *mem_ctx,
 
 	make_nbt_name_client(&myname, TEST_NAME);
 
-	dest.port = 0;
-	dest.addr = address;
-	status = dgram_mailslot_ntlogon_send(dgmsock, &name, &dest, 
-					     &myname, &logon);
+	status = dgram_mailslot_ntlogon_send(dgmsock, DGRAM_DIRECT_UNIQUE,
+					     &name, address, 
+					      0, &myname, &logon);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to send ntlogon request - %s\n", nt_errstr(status));
 		goto failed;

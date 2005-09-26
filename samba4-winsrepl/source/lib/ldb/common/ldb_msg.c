@@ -527,5 +527,5 @@ int ldb_msg_sanity_check(const struct ldb_message *msg)
 		}
 	}
 
-	return LDB_ERR_SUCCESS;
+	return LDB_SUCCESS;
 }
