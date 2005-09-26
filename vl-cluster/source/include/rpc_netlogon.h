@@ -84,6 +84,18 @@
 #define NL_CTRL_REPL_IN_PROGRESS 0x0002
 #define NL_CTRL_FULL_SYNC        0x0004
 
+#define LOGON_EXTRA_SIDS             0x0020
+#define LOGON_RESOURCE_GROUPS        0x0200 
+
+#define SE_GROUP_MANDATORY		0x00000001
+#define SE_GROUP_ENABLED_BY_DEFAULT	0x00000002
+#define SE_GROUP_ENABLED		0x00000004
+#define SE_GROUP_OWNER 			0x00000008
+#define SE_GROUP_USE_FOR_DENY_ONLY 	0x00000010
+#define SE_GROUP_LOGON_ID 		0xC0000000
+#define SE_GROUP_RESOURCE 		0x20000000
+
+
 #if 0
 /* I think this is correct - it's what gets parsed on the wire. JRA. */
 /* NET_USER_INFO_2 */
@@ -184,6 +196,13 @@ typedef struct net_user_info_3 {
 	uint32 num_other_sids; /* number of foreign/trusted domain sids */
 	uint32 buffer_other_sids;
 	
+	/* The next three uint32 are not really part of user_info_3 but here
+	 * for parsing convenience.  They are only valid in Kerberos PAC
+	 * parsing - Guenther */
+	uint32 ptr_res_group_dom_sid;
+	uint32 res_group_count;
+	uint32 ptr_res_groups;
+
 	UNISTR2 uni_user_name;    /* username unicode string */
 	UNISTR2 uni_full_name;    /* user's full name unicode string */
 	UNISTR2 uni_logon_script; /* logon script unicode string */

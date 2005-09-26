@@ -37,7 +37,7 @@ static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx,
 	if (!prs_init(&ps, 256 /* Random, non-zero number */, mem_ctx, MARSHALL)) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	if (!net_io_user_info3("", info3, &ps, 1, 3)) {
+	if (!net_io_user_info3("", info3, &ps, 1, 3, False)) {
 		prs_mem_free(&ps);
 		return NT_STATUS_UNSUCCESSFUL;
 	}

@@ -27,7 +27,8 @@
 
 #ifndef __cplusplus
 #define class #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
-#define private #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+/* allow to build with newer heimdal releases */
+/* #define private #error DONT_USE_CPLUSPLUS_RESERVED_NAMES */
 #define public #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
 #define protected #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
 #define template #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
@@ -1443,7 +1444,7 @@ void krb5_free_unparsed_name(krb5_context ctx, char *val);
 void setup_kaddr( krb5_address *pkaddr, struct sockaddr *paddr);
 int create_kerberos_key_from_string(krb5_context context, krb5_principal host_princ, krb5_data *password, krb5_keyblock *key, krb5_enctype enctype);
 int create_kerberos_key_from_string_direct(krb5_context context, krb5_principal host_princ, krb5_data *password, krb5_keyblock *key, krb5_enctype enctype);
-void get_auth_data_from_tkt(DATA_BLOB *auth_data, krb5_ticket *tkt);
+BOOL get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, krb5_ticket *tkt);
 krb5_const_principal get_principal_from_tkt(krb5_ticket *tkt);
 krb5_error_code krb5_locate_kdc(krb5_context ctx, const krb5_data *realm, struct sockaddr **addr_pp, int *naddrs, int get_masters);
 krb5_error_code get_kerberos_allowed_etypes(krb5_context context, krb5_enctype **enctypes);
