@@ -65,11 +65,7 @@ int tdb_brlock_len(struct tdb_context *tdb, tdb_off_t offset,
 		/* Generic lock error. errno set by fcntl.
 		 * EAGAIN is an expected return from non-blocking
 		 * locks. */
-		if (errno != EAGAIN) {
-			TDB_LOG((tdb, 5, "tdb_brlock failed (fd=%d) at offset %d rw_type=%d lck_type=%d len=%d: %s\n", 
-				 tdb->fd, offset, rw_type, lck_type, len,
-				 strerror(errno)));
-		} else if (!probe && lck_type != F_SETLK) {
+		if (!probe && lck_type != F_SETLK) {
 			/* Ensure error code is set for log fun to examine. */
 			tdb->ecode = TDB_ERR_LOCK;
 			TDB_LOG((tdb, 5,"tdb_brlock failed (fd=%d) at offset %d rw_type=%d lck_type=%d\n", 
@@ -103,6 +99,7 @@ int tdb_brlock_upgrade(struct tdb_context *tdb, tdb_off_t offset, size_t len)
 		tv.tv_usec = 1;
 		select(0, NULL, NULL, NULL, &tv);
 	}
+	TDB_LOG((tdb, 5,"tdb_brlock_upgrade failed at offset %d\n", offset));
 	return -1;
 }
 
