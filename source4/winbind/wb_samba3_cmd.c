@@ -68,6 +68,14 @@ static void wbsrv_samba3_check_machacc_reply(struct composite_context *action)
 	NTSTATUS status;
 
 	status = wb_finddcs_recv(action, s3call);
+
+	s3call->response.data.auth.nt_status = NT_STATUS_V(status);
+	strncpy(s3call->response.data.auth.nt_status_string, nt_errstr(status),
+		sizeof(s3call->response.data.auth.nt_status_string)-1);
+	strncpy(s3call->response.data.auth.error_string, nt_errstr(status),
+		sizeof(s3call->response.data.auth.error_string)-1);
+	s3call->response.data.auth.pam_error = nt_status_to_pam(status);
+
 	if (NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("Got name %s\n", state->io->out.dcs[0].name));
 		s3call->response.result = WINBINDD_OK;
