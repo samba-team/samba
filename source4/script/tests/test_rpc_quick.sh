@@ -2,9 +2,9 @@
 
 # add tests to this list as they start passing, so we test
 # that they stay passing
-ncacn_np_tests="RPC-ECHO RPC-ALTERCONTEXT"
-ncalrpc_tests="RPC-ECHO RPC-ALTERCONTEXT"
-ncacn_ip_tcp_tests="RPC-ECHO RPC-ALTERCONTEXT"
+ncacn_np_tests="RPC-ECHO RPC-ALTERCONTEXT RPC-JOIN"
+ncalrpc_tests="RPC-ECHO RPC-ALTERCONTEXT RPC-JOIN"
+ncacn_ip_tcp_tests="RPC-ECHO RPC-ALTERCONTEXT RPC-JOIN"
 
 if [ $# -lt 4 ]; then
 cat <<EOF
