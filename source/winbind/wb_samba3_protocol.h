@@ -33,3 +33,7 @@ struct wbsrv_samba3_call {
 	/* the response structure of the samba3 protocol*/
 	struct winbindd_response response;
 };
+
+#define WBSRV_SAMBA3_SET_STRING(dest, src) do { \
+	strncpy(dest, src, sizeof(dest)-1);\
+} while(0)
