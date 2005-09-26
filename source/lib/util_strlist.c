@@ -75,7 +75,7 @@ const char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *
    Entries are seperated by spaces and can be enclosed by quotes. 
    Does NOT support escaping
  */
-const char **str_list_make_shell(TALLOC_CTX *mem_ctx, const char *string)
+const char **str_list_make_shell(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
 {
 	int num_elements = 0;
 	const char **ret = NULL;
@@ -85,13 +85,16 @@ const char **str_list_make_shell(TALLOC_CTX *mem_ctx, const char *string)
 		return NULL;
 	}
 
+	if (sep == NULL)
+		sep = " \t\n\r";
+
 	while (string && *string) {
-		size_t len = strcspn(string, " ");
+		size_t len = strcspn(string, sep);
 		char *element;
 		const char **ret2;
 		
 		if (len == 0) {
-			string += strspn(string, " ");
+			string += strspn(string, sep);
 			continue;
 		}
 
@@ -148,7 +151,7 @@ char *str_list_join(TALLOC_CTX *mem_ctx, const char **list, char seperator)
 
 /* join a list back to one (shell-like) string; entries 
  * seperated by spaces, using quotes where necessary */
-char *str_list_join_shell(TALLOC_CTX *mem_ctx, const char **list)
+char *str_list_join_shell(TALLOC_CTX *mem_ctx, const char **list, char sep)
 {
 	char *ret = NULL;
 	int i;
@@ -163,9 +166,9 @@ char *str_list_join_shell(TALLOC_CTX *mem_ctx, const char **list)
 
 	for (i = 1; list[i]; i++) {
 		if (strchr(list[i], ' ') || strlen(list[i]) == 0) 
-			ret = talloc_asprintf_append(ret, " \"%s\"", list[i]);
+			ret = talloc_asprintf_append(ret, "%c\"%s\"", sep, list[i]);
 		else 
-			ret = talloc_asprintf_append(ret, " %s", list[i]);
+			ret = talloc_asprintf_append(ret, "%c%s", sep, list[i]);
 	}
 
 	return ret;
