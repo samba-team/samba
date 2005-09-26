@@ -21,7 +21,6 @@
 */
 
 #include "includes.h"
-#include "pstring.h"
 #include "system/filesys.h"
 
 #ifndef O_NONBLOCK
@@ -35,11 +34,13 @@ pid_t pidfile_pid(const char *name)
 	int fd;
 	char pidstr[20];
 	uint_t ret;
-	pstring pidFile;
+	char *pidFile;
 
-	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_piddir(), name);
+	asprintf(&pidFile, "%s/%s.pid", lp_piddir(), name);
 
 	fd = open(pidFile, O_NONBLOCK | O_RDONLY, 0644);
+	SAFE_FREE(pidFile);
+
 	if (fd == -1) {
 		return 0;
 	}
@@ -75,10 +76,10 @@ void pidfile_create(const char *name)
 {
 	int     fd;
 	char    buf[20];
-	pstring pidFile;
+	char *pidFile;
 	pid_t pid;
 
-	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_piddir(), name);
+	asprintf(&pidFile, "%s/%s.pid", lp_piddir(), name);
 
 	pid = pidfile_pid(name);
 	if (pid != 0) {
@@ -107,5 +108,7 @@ void pidfile_create(const char *name)
 			 pidFile, strerror(errno)));
 		exit(1);
 	}
+
 	/* Leave pid file open & locked for the duration... */
+	SAFE_FREE(pidFile);
 }

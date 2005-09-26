@@ -64,11 +64,6 @@
 #include <varargs.h>
 #endif
 
-/* we support ADS if we want it and have krb5 and ldap libs */
-#if defined(WITH_ADS) && defined(HAVE_KRB5) && defined(HAVE_LDAP)
-#define HAVE_ADS
-#endif
-
 /* tell ldb we have the internal ldap code */
 #define HAVE_ILDAP 1
 
