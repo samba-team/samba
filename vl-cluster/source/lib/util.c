@@ -2798,7 +2798,7 @@ BOOL procid_is_me(const struct process_id *pid)
 
 struct process_id interpret_pid(const char *pid_string)
 {
-	char *p, *tmp;
+	char *p, *tmp, *pid;
 	struct process_id result;
 
 	ZERO_STRUCT(result);
@@ -2814,25 +2814,22 @@ struct process_id interpret_pid(const char *pid_string)
 		return result;
 	}
 
+	result = procid_self();
+
+	pid = tmp;
+
 	p = strchr(tmp, ':');
-	if (p == NULL) {
-		DEBUG(10, ("Could not find ':' in string %s\n", pid_string));
-		SAFE_FREE(tmp);
-		return result;
+	if (p != NULL) {
+		*p = '\0';
+		pid = p+1;
+		result.ip = *interpret_addr2(tmp);
 	}
 
-	*p = '\0';
-	p += 1;
-
-	result.pid = strtoull(p, NULL, 10);
+	result.pid = strtoull(pid, NULL, 10);
 	if (result.pid < 0) {
 		DEBUG(10, ("Invalid pid: %s\n", p));
-		SAFE_FREE(tmp);
-		return result;
 	}
 
-
-	result.ip = *interpret_addr2(tmp);
 	SAFE_FREE(tmp);
 	return result;
 }
