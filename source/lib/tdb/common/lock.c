@@ -81,6 +81,32 @@ int tdb_brlock_len(struct tdb_context *tdb, tdb_off_t offset,
 }
 
 
+/*
+  upgrade a read lock to a write lock. This needs to be handled in a
+  special way as some OSes (such as solaris) have too conservative
+  deadlock detection and claim a deadlock when progress can be
+  made. For those OSes we may loop for a while.  
+*/
+int tdb_brlock_upgrade(struct tdb_context *tdb, tdb_off_t offset, size_t len)
+{
+	int count = 1000;
+	while (count--) {
+		struct timeval tv;
+		if (tdb_brlock_len(tdb, offset, F_WRLCK, F_SETLKW, 1, len) == 0) {
+			return 0;
+		}
+		if (errno != EDEADLK) {
+			break;
+		}
+		/* sleep for as short a time as we can - more portable than usleep() */
+		tv.tv_sec = 0;
+		tv.tv_usec = 1;
+		select(0, NULL, NULL, NULL, &tv);
+	}
+	return -1;
+}
+
+
 /* a byte range locking function - return 0 on success
    this functions locks/unlocks 1 byte at the specified offset.
 
