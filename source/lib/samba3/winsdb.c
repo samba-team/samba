@@ -23,7 +23,6 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "pstring.h"
 #include "lib/samba3/samba3.h"
 
 #define WINS_VERSION 1
@@ -44,11 +43,9 @@ NTSTATUS samba3_read_winsdb( const char *fn, TALLOC_CTX *ctx, struct samba3_wins
 
 	while (!x_feof(fp)) {
 		struct samba3_winsdb_entry entry;
-		pstring name_str, ip_str, ttl_str, nb_flags_str;
-		const char *ptr;
+		const char *name_str, *ttl_str, *nb_flags_str;
+		const char **args;
 		char *p;
-		BOOL got_token;
-		BOOL was_ip;
 		int i;
 		unsigned int hash;
 		int version;
@@ -77,7 +74,7 @@ NTSTATUS samba3_read_winsdb( const char *fn, TALLOC_CTX *ctx, struct samba3_wins
 			continue;
 		}
 
-		ptr = line;
+		args = str_list_make_shell(ctx, line, NULL);
 
 		/* 
 		 * Now we handle multiple IP addresses per name we need
@@ -86,13 +83,15 @@ NTSTATUS samba3_read_winsdb( const char *fn, TALLOC_CTX *ctx, struct samba3_wins
 		 * time to actually parse them into the ip_list array.
 		 */
 
-		if (!next_token(&ptr,name_str,NULL,sizeof(name_str))) {
+		name_str = args[0];
+		if (!name_str) {
 			DEBUG(0,("initialise_wins: Failed to parse name when parsing line %s\n", line ));
 			SAFE_FREE(line);
 			continue;
 		}
 
-		if (!next_token(&ptr,ttl_str,NULL,sizeof(ttl_str))) {
+		ttl_str = args[1];
+		if (!ttl_str) {
 			DEBUG(0,("initialise_wins: Failed to parse time to live when parsing line %s\n", line ));
 			SAFE_FREE(line);
 			continue;
@@ -102,24 +101,10 @@ NTSTATUS samba3_read_winsdb( const char *fn, TALLOC_CTX *ctx, struct samba3_wins
 		 * Determine the number of IP addresses per line.
 		 */
 		entry.ip_count = 0;
-		do {
-			got_token = next_token(&ptr,ip_str,NULL,sizeof(ip_str));
-			was_ip = False;
-
-			if(got_token && strchr(ip_str, '.')) {
-				entry.ip_count++;
-				was_ip = True;
-			}
-		} while( got_token && was_ip);
+		for (i = 2; args[i] && strchr(args[i], '.'); i++) entry.ip_count++;
 
 		if(entry.ip_count == 0) {
 			DEBUG(0,("initialise_wins: Missing IP address when parsing line %s\n", line ));
-			SAFE_FREE(line);
-			continue;
-		}
-
-		if(!got_token) {
-			DEBUG(0,("initialise_wins: Missing nb_flags when parsing line %s\n", line ));
 			SAFE_FREE(line);
 			continue;
 		}
@@ -132,14 +117,12 @@ NTSTATUS samba3_read_winsdb( const char *fn, TALLOC_CTX *ctx, struct samba3_wins
 		}
  
 		/* Reset and re-parse the line. */
-		ptr = line;
-		next_token(&ptr,name_str,NULL,sizeof(name_str)); 
-		next_token(&ptr,ttl_str,NULL,sizeof(ttl_str));
 		for(i = 0; i < entry.ip_count; i++) {
-			next_token(&ptr, ip_str, NULL, sizeof(ip_str));
-			entry.ips[i] = interpret_addr2(ip_str);
+			entry.ips[i] = interpret_addr2(args[i+2]);
 		}
-		next_token(&ptr,nb_flags_str,NULL, sizeof(nb_flags_str));
+		nb_flags_str = args[2 + entry.ip_count];
+
+		SMB_ASSERT(nb_flags_str);
 
 		/* 
 		 * Deal with SELF or REGISTER name encoding. Default is REGISTER
@@ -152,9 +135,6 @@ NTSTATUS samba3_read_winsdb( const char *fn, TALLOC_CTX *ctx, struct samba3_wins
 			SAFE_FREE(line);
 			continue;
 		}
-      
-		if(nb_flags_str[strlen(nb_flags_str)-1] == 'R')
-			nb_flags_str[strlen(nb_flags_str)-1] = '\0';
       
 		/* Netbios name. # divides the name from the type (hex): netbios#xx */
 		entry.name = talloc_strdup(ctx, name_str);
