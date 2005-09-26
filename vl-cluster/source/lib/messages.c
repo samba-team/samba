@@ -49,7 +49,10 @@
 
 /* the locking database handle */
 static TDB_CONTEXT *tdb;
-static int received_signal;
+
+static char *socket_path;
+static int socket_fd;
+static struct process_id socket_pid;
 
 /* change the message version with any incompatible changes in the protocol */
 #define MESSAGE_VERSION 1
@@ -70,16 +73,6 @@ static struct dispatch_fns {
 } *dispatch_fns;
 
 /****************************************************************************
- Notifications come in as signals.
-****************************************************************************/
-
-static void sig_usr1(void)
-{
-	received_signal = 1;
-	sys_select_signal(SIGUSR1);
-}
-
-/****************************************************************************
  A useful function for testing the message system.
 ****************************************************************************/
 
@@ -96,6 +89,24 @@ static void ping_message(int msg_type, struct process_id src,
  Initialise the messaging functions. 
 ****************************************************************************/
 
+BOOL message_init_socket(void)
+{
+	socket_pid = procid_self();
+	asprintf(&socket_path, "%s/%s", lock_path("messaging"),
+		 procid_str_static(&socket_pid));
+
+	DEBUG(10, ("creating socket %s\n", socket_path));
+
+	socket_fd = create_dgram_sock(lock_path("messaging"),
+				      procid_str_static(&socket_pid),
+				      0700);
+	if (socket_fd < 0) {
+		DEBUG(0, ("Could not create socket\n"));
+		return False;
+	}
+	return True;
+}
+
 BOOL message_init(void)
 {
 	if (tdb) return True;
@@ -109,7 +120,10 @@ BOOL message_init(void)
 		return False;
 	}
 
-	CatchSignal(SIGUSR1, SIGNAL_CAST sig_usr1);
+	if (!message_init_socket()) {
+		DEBUG(0, ("Failed to init messaging socket\n"));
+		return False;
+	}
 
 	message_register(MSG_PING, ping_message);
 
@@ -119,6 +133,11 @@ BOOL message_init(void)
 	register_dmalloc_msgs();
 
 	return True;
+}
+
+int message_socket(void)
+{
+	return socket_fd;
 }
 
 /*******************************************************************
@@ -139,6 +158,57 @@ static TDB_DATA message_key_pid(struct process_id pid)
 	return kbuf;
 }
 
+static const char *message_path(TALLOC_CTX *mem_ctx,
+				const struct process_id *pid)
+{
+	return talloc_asprintf(mem_ctx, "%s/%s", lock_path("messaging"),
+			       procid_str_static(pid));
+}
+
+static BOOL message_send_via_socket(struct process_id pid, int msg_type,
+				    const void *buf, size_t len)
+{
+	DATA_BLOB packet;
+	struct message_rec *hdr;
+	size_t packet_len = sizeof(struct message_rec) + len;
+	struct sockaddr_un sunaddr;
+	ssize_t sent;
+
+	packet = data_blob_talloc(NULL, NULL, packet_len);
+	if (packet.data == NULL) {
+		DEBUG(0, ("malloc failed\n"));
+		return False;
+	}
+
+	hdr = (struct message_rec *)packet.data;
+	hdr->msg_version = MESSAGE_VERSION;
+	hdr->msg_type = msg_type;
+	hdr->len = len;
+	hdr->src = procid_self();
+	hdr->dest = pid;
+	if (len > 0) {
+		memcpy(packet.data + sizeof(struct message_rec), buf, len);
+	}
+
+	ZERO_STRUCT(sunaddr);
+	sunaddr.sun_family = AF_UNIX;
+	strncpy(sunaddr.sun_path, message_path(packet.data, &pid),
+		sizeof(sunaddr.sun_path)-1);
+
+	sent = sendto(socket_fd, packet.data, packet.length, 0,
+		      (struct sockaddr *)&sunaddr, sizeof(sunaddr));
+	if (sent != packet.length) {
+		DEBUG(3, ("Could not send %d bytes to Unix domain socket %s: "
+			  "%s\n", packet.length, sunaddr.sun_path,
+			  strerror(errno)));
+		talloc_free(packet.data);
+		return False;
+	}
+
+	talloc_free(packet.data);
+	return True;
+}
+
 /****************************************************************************
  Notify a process that it has a message. If the process doesn't exist 
  then delete its record in the database.
@@ -146,69 +216,16 @@ static TDB_DATA message_key_pid(struct process_id pid)
 
 static BOOL message_notify(struct process_id pid)
 {
-	/*
-	 * Doing kill with a non-positive pid causes messages to be
-	 * sent to places we don't want.
-	 */
-
-	SMB_ASSERT(procid_to_pid(&pid) > 0);
-
-	if (!procid_is_local(&pid)) {
-		int fd;
-		char pid_str[20];
-		ssize_t sent;
-		struct sockaddr_in sock_out;
-
-		slprintf(pid_str, sizeof(pid_str)-1, "%d", pid.pid);
-
-		fd = open_socket_in(SOCK_DGRAM, 0, 0, 0, False);
-		if (fd < 0) {
-			DEBUG(0, ("Could not open socket: %s\n",
-				  strerror(errno)));
-			return False;
-		}
-		set_blocking(fd, False);
-
-		ZERO_STRUCT(sock_out);
-		sock_out.sin_family = AF_INET;
-		putip((char *)&sock_out.sin_addr, (char *)&pid.ip);
-		sock_out.sin_port = htons(MESSAGING_PORT);
-
-		sent = sendto(fd, pid_str, strlen(pid_str), 0,
-			      (struct sockaddr *)&sock_out,
-			      sizeof(sock_out));
-		close(fd);
-		
-		if (sent < 0) {
-			DEBUG(0, ("Could not send UDP packet: %s\n",
-				  strerror(errno)));
-			return False;
-		}
-		return True;
-	}
-
-	if (kill(procid_to_pid(&pid), SIGUSR1) == -1) {
-		if (errno == ESRCH) {
-			DEBUG(2,("pid %d doesn't exist - deleting messages "
-				 "record\n", (int)procid_to_pid(&pid)));
-			tdb_delete(tdb, message_key_pid(pid));
-		} else {
-			DEBUG(2,("message to process %d failed - %s\n",
-				 (int)procid_to_pid(&pid), strerror(errno)));
-		}
-		return False;
-	}
-	return True;
+	return message_send_via_socket(pid, MSG_NOTIFICATION, NULL, 0);
 }
 
 /****************************************************************************
  Send a message to a particular pid.
 ****************************************************************************/
 
-static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
-				      const void *buf, size_t len,
-				      BOOL duplicates_allowed,
-				      unsigned int timeout)
+BOOL message_send_pid(struct process_id pid, int msg_type,
+		      const void *buf, size_t len,
+		      BOOL duplicates_allowed)
 {
 	TDB_DATA kbuf;
 	TDB_DATA dbuf;
@@ -217,12 +234,9 @@ static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
 	char *ptr;
 	struct message_rec prec;
 
-	/*
-	 * Doing kill with a non-positive pid causes messages to be
-	 * sent to places we don't want.
-	 */
-
-	SMB_ASSERT(procid_to_pid(&pid) > 0);
+	if (duplicates_allowed && (len < 512)) {
+		return message_send_via_socket(pid, msg_type, buf, len);
+	}
 
 	rec.msg_version = MESSAGE_VERSION;
 	rec.msg_type = msg_type;
@@ -247,17 +261,11 @@ static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
 		/* If duplicates are allowed we can just append the message and return. */
 
 		/* lock the record for the destination */
-		if (timeout) {
-			if (tdb_chainlock_with_timeout(tdb, kbuf, timeout) == -1) {
-				DEBUG(0,("message_send_pid_internal: failed to get chainlock with timeout %ul.\n", timeout));
-				return False;
-			}
-		} else {
-			if (tdb_chainlock(tdb, kbuf) == -1) {
-				DEBUG(0,("message_send_pid_internal: failed to get chainlock.\n"));
-				return False;
-			}
-		}	
+		if (tdb_chainlock(tdb, kbuf) == -1) {
+			DEBUG(0,("message_send_pid_internal: failed to get "
+				 "chainlock.\n"));
+			return False;
+		}
 		tdb_append(tdb, kbuf, dbuf);
 		tdb_chainunlock(tdb, kbuf);
 
@@ -267,17 +275,11 @@ static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
 	}
 
 	/* lock the record for the destination */
-	if (timeout) {
-		if (tdb_chainlock_with_timeout(tdb, kbuf, timeout) == -1) {
-			DEBUG(0,("message_send_pid_internal: failed to get chainlock with timeout %ul.\n", timeout));
-			return False;
-		}
-	} else {
-		if (tdb_chainlock(tdb, kbuf) == -1) {
-			DEBUG(0,("message_send_pid_internal: failed to get chainlock.\n"));
-			return False;
-		}
-	}	
+	if (tdb_chainlock(tdb, kbuf) == -1) {
+		DEBUG(0,("message_send_pid_internal: failed to get "
+			 "chainlock.\n"));
+		return False;
+	}
 
 	old_dbuf = tdb_fetch(tdb, kbuf);
 
@@ -327,30 +329,6 @@ static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
 }
 
 /****************************************************************************
- Send a message to a particular pid - no timeout.
-****************************************************************************/
-
-BOOL message_send_pid(struct process_id pid, int msg_type,
-		      const void *buf, size_t len, BOOL duplicates_allowed)
-{
-	return message_send_pid_internal(pid, msg_type, buf, len,
-					 duplicates_allowed, 0);
-}
-
-/****************************************************************************
- Send a message to a particular pid, with timeout in seconds.
-****************************************************************************/
-
-BOOL message_send_pid_with_timeout(struct process_id pid, int msg_type,
-				   const void *buf, size_t len,
-				   BOOL duplicates_allowed,
-				   unsigned int timeout)
-{
-	return message_send_pid_internal(pid, msg_type, buf, len,
-					 duplicates_allowed, timeout);
-}
-
-/****************************************************************************
  Count the messages pending for a particular pid. Expensive....
 ****************************************************************************/
 
@@ -385,7 +363,8 @@ unsigned int messages_pending_for_pid(struct process_id pid)
  Retrieve all messages for the current process.
 ****************************************************************************/
 
-static BOOL retrieve_all_messages(char **msgs_buf, size_t *total_len)
+static BOOL retrieve_all_messages(TALLOC_CTX *mem_ctx, char **msgs_buf,
+				  size_t *total_len)
 {
 	TDB_DATA kbuf;
 	TDB_DATA dbuf;
@@ -414,8 +393,9 @@ static BOOL retrieve_all_messages(char **msgs_buf, size_t *total_len)
 		return False;
 	}
 
-	*msgs_buf = dbuf.dptr;
+	*msgs_buf = talloc_memdup(mem_ctx, dbuf.dptr, dbuf.dsize);
 	*total_len = dbuf.dsize;
+	SAFE_FREE(dbuf.dptr);
 
 	return True;
 }
@@ -457,6 +437,91 @@ static BOOL message_recv(char *msgs_buf, size_t total_len, int *msg_type,
 	return True;
 }
 
+static BOOL fetch_socket_message(TALLOC_CTX *mem_ctx,
+				 int *msg_type, struct process_id *src,
+				 char **buf, size_t *len)
+{
+	int msglength;
+	ssize_t received;
+	char *raw_buf;
+	struct message_rec *msg;
+
+	if (ioctl(socket_fd, FIONREAD, &msglength) < 0) {
+		DEBUG(5, ("Could not get the message length\n"));
+		msglength = 65536;
+	}
+
+	raw_buf = talloc_size(mem_ctx, msglength);
+	if (raw_buf == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return False;
+	}
+
+	received = recv(socket_fd, raw_buf, msglength, MSG_DONTWAIT);
+	if (received != msglength) {
+		DEBUG(0, ("Received different length (%d) than announced "
+			  "(%d)\n", received, msglength));
+		return False;
+	}
+
+	if (received < sizeof(struct message_rec)) {
+		DEBUG(5, ("Message too short\n"));
+		return False;
+	}
+
+	msg = (struct message_rec *)raw_buf;
+
+	if (msg->msg_version != MESSAGE_VERSION) {
+		DEBUG(0,("message version %d received (expected %d)\n",
+			 msg->msg_version, MESSAGE_VERSION));
+		return False;
+	}
+
+	if (received != (msg->len + sizeof(struct message_rec))) {
+		DEBUG(5, ("Invalid message length received, got %d, "
+			  "expected %d\n", received,
+			  msg->len + sizeof(struct message_rec)));
+		return False;
+	}
+
+	if (!procid_is_me(&msg->dest)) {
+		DEBUG(5, ("Received message for invalid process: %s\n",
+			  procid_str_static(&msg->dest)));
+		return False;
+	}
+
+	*msg_type = msg->msg_type;
+	*src = msg->src;
+	*buf = raw_buf + sizeof(struct message_rec);
+	*len = msg->len;
+	return True;
+}
+
+static int dispatch_message(int msg_type, struct process_id src,
+			    char *buf, size_t len)
+{
+	struct dispatch_fns *dfn;
+	int n_handled = 0;
+
+	for (dfn = dispatch_fns; dfn; dfn = dfn->next) {
+		if (dfn->msg_type != msg_type) {
+			continue;
+		}
+		DEBUG(10,("message_dispatch: processing message of "
+			  "type %d.\n", msg_type));
+		dfn->fn(msg_type, src, len ? (void *)buf : NULL, len);
+		n_handled++;
+	}
+
+	if (n_handled == 0) {
+		DEBUG(5,("message_dispatch: warning: no handlers registed for "
+			 "msg_type %d in pid %u\n", msg_type,
+			 (unsigned int)sys_getpid()));
+	}
+
+	return n_handled;
+}
+
 /****************************************************************************
  Receive and dispatch any messages pending for this process.
  Notice that all dispatch handlers for a particular msg_type get called,
@@ -472,38 +537,35 @@ void message_dispatch(void)
 	char *buf;
 	char *msgs_buf;
 	size_t len, total_len;
-	struct dispatch_fns *dfn;
 	int n_handled;
+	TALLOC_CTX *mem_ctx;
 
-	if (!received_signal)
-		return;
-
-	DEBUG(10,("message_dispatch: received_signal = %d\n", received_signal));
-
-	received_signal = 0;
-
-	if (!retrieve_all_messages(&msgs_buf, &total_len))
-		return;
-
-	for (buf = msgs_buf; message_recv(msgs_buf, total_len, &msg_type, &src, &buf, &len); buf += len) {
-		DEBUG(10,("message_dispatch: received msg_type=%d "
-			  "src_pid=%u\n", msg_type,
-			  (unsigned int) procid_to_pid(&src)));
-		n_handled = 0;
-		for (dfn = dispatch_fns; dfn; dfn = dfn->next) {
-			if (dfn->msg_type == msg_type) {
-				DEBUG(10,("message_dispatch: processing message of type %d.\n", msg_type));
-				dfn->fn(msg_type, src, len ? (void *)buf : NULL, len);
-				n_handled++;
-			}
-		}
-		if (!n_handled) {
-			DEBUG(5,("message_dispatch: warning: no handlers registed for "
-				 "msg_type %d in pid %u\n",
-				 msg_type, (unsigned int)sys_getpid()));
-		}
+	mem_ctx = talloc_init("message_dispatch");
+	if (mem_ctx == NULL) {
+		smb_panic("talloc_init failed\n");
 	}
-	SAFE_FREE(msgs_buf);
+
+	if (!fetch_socket_message(mem_ctx, &msg_type, &src, &buf, &len)) {
+		talloc_free(mem_ctx);
+		return;
+	}
+
+	if (msg_type != MSG_NOTIFICATION) {
+		dispatch_message(msg_type, src, buf, len);
+		talloc_free(mem_ctx);
+		return;
+	}
+
+	if (!retrieve_all_messages(mem_ctx, &msgs_buf, &total_len)) {
+		talloc_free(mem_ctx);
+		return;
+	}
+
+	for (buf = msgs_buf;
+	     message_recv(msgs_buf, total_len, &msg_type, &src, &buf, &len);
+	     buf += len) {
+		n_handled += dispatch_message(msg_type, src, buf, len);
+	}
 }
 
 /****************************************************************************

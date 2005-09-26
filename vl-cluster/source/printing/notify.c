@@ -182,9 +182,9 @@ static void print_notify_send_messages_to_printer(const char *printer, unsigned 
 				printer, q_len ));
 			continue;
 		}
-		message_send_pid_with_timeout(pid_to_procid(pid_list[i]),
-					      MSG_PRINTER_NOTIFY2,
-					      buf, offset, True, timeout);
+		message_send_pid(pid_to_procid(pid_list[i]),
+				 MSG_PRINTER_NOTIFY2,
+				 buf, offset, True);
 	}
 }
 

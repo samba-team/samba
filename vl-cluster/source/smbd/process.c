@@ -465,13 +465,6 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	}
 
 	/*
-	 * Note that this call must be before processing any SMB
-	 * messages as we need to synchronously process any messages
-	 * we may have sent to ourselves from the previous SMB.
-	 */
-	message_dispatch();
-
-	/*
 	 * Check to see if we already have a message on the deferred open queue
 	 * and it's time to schedule.
 	 */
@@ -544,10 +537,15 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 		}
 	}
 	
-	FD_SET(smbd_server_fd(),&fds);
 	maxfd = setup_oplock_select_set(&fds);
 
-	selrtn = sys_select(MAX(maxfd,smbd_server_fd())+1,&fds,NULL,NULL,&to);
+	FD_SET(smbd_server_fd(),&fds);
+	maxfd = MAX(maxfd, smbd_server_fd());
+
+	FD_SET(message_socket(), &fds);
+	maxfd = MAX(maxfd, message_socket());
+
+	selrtn = sys_select(maxfd+1,&fds,NULL,NULL,&to);
 
 	/* if we get EINTR then maybe we have received an oplock
 	   signal - treat this as select returning 1. This is ugly, but
@@ -574,6 +572,16 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	if (selrtn == 0) {
 		smb_read_error = READ_TIMEOUT;
 		return False;
+	}
+
+	if (FD_ISSET(message_socket(), &fds)) {
+		/*
+		 * Note that this call must be before processing any SMB
+		 * messages as we need to synchronously process any messages
+		 * we may have sent to ourselves from the previous SMB.
+		 */
+		message_dispatch();
+		goto again;
 	}
 
 	/*
