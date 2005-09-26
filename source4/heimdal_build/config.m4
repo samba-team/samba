@@ -135,7 +135,6 @@ fi
 ])
 
 AC_HAVE_TYPE([sa_family_t],[#include <sys/socket.h>])
-AC_HAVE_TYPE([socklen_t],[#include <sys/socket.h>])
 AC_HAVE_TYPE([struct sockaddr], [#include <sys/socket.h>])
 AC_HAVE_TYPE([struct sockaddr_storage], [#include <sys/socket.h>])
 AC_HAVE_TYPE([struct addrinfo], [#include <netdb.h>])
