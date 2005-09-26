@@ -23,31 +23,7 @@
 #include "pstring.h"
 
 #include <unistd.h>
-
-#ifdef HAVE_LIBREADLINE
-#  ifdef HAVE_READLINE_READLINE_H
-#    include <readline/readline.h>
-#    ifdef HAVE_READLINE_HISTORY_H
-#      include <readline/history.h>
-#    endif
-#  else
-#    ifdef HAVE_READLINE_H
-#      include <readline.h>
-#      ifdef HAVE_HISTORY_H
-#        include <history.h>
-#      endif
-#    else
-#      undef HAVE_LIBREADLINE
-#    endif
-#  endif
-#endif
-
-#ifdef HAVE_NEW_LIBREADLINE
-#  define RL_COMPLETION_CAST (rl_completion_func_t *)
-#else
-/* This type is missing from libreadline<4.0  (approximately) */
-#  define RL_COMPLETION_CAST
-#endif /* HAVE_NEW_LIBREADLINE */
+#include "system/readline.h"
 
 /****************************************************************************
  Display the prompt and wait for input. Call callback() regularly

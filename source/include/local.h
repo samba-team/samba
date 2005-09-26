@@ -109,9 +109,6 @@
 /* the default netbios keepalive timeout */
 #define DEFAULT_KEEPALIVE 300
 
-/* the directory to sit in when idle */
-/* #define IDLE_DIR "/" */
-
 /* Timout (in seconds) to wait for an oplock break
    message to return from the client. */
 

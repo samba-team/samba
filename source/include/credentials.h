@@ -21,6 +21,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+struct ccache_container;
+
 /* In order of priority */
 enum credentials_obtained { 
 	CRED_UNINITIALISED = 0,  /* We don't even have a guess yet */

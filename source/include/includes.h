@@ -64,18 +64,6 @@
 #include <varargs.h>
 #endif
 
-#ifdef HAVE_WINSOCK2_H
-#include <winsock2.h>
-#endif
-
-#ifdef HAVE_WS2TCPIP_H
-#include <ws2tcpip.h>
-#endif
-
-#ifdef HAVE_WINDOWS_H
-#include <windows.h>
-#endif
-
 /* we support ADS if we want it and have krb5 and ldap libs */
 #if defined(WITH_ADS) && defined(HAVE_KRB5) && defined(HAVE_LDAP)
 #define HAVE_ADS
@@ -131,9 +119,6 @@ struct ipv4_addr {
 #include "ntvfs/ntvfs.h"
 #include "cli_context.h"
 #include "lib/com/com.h"
-#include "credentials.h"
-
-
 
 #define malloc_p(type) (type *)malloc(sizeof(type))
 #define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)
@@ -189,10 +174,6 @@ extern int DEBUGLEVEL;
 #endif
 #define discard_const_p(type, ptr) ((type *)discard_const(ptr))
 
-#ifndef HAVE_SSIZE_T
-#define ssize_t int
-#endif
-
 #ifndef UINT16_MAX
 #define UINT16_MAX 65535
 #endif
@@ -203,4 +184,3 @@ extern int DEBUGLEVEL;
 #define smb_xmalloc_p(type) (type *)smb_xmalloc(sizeof(type))
 
 #endif /* _INCLUDES_H */
-

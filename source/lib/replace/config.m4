@@ -10,6 +10,7 @@ AC_CHECK_TYPE(uint64_t, unsigned long long)
 AC_CHECK_TYPE(u_int32_t, unsigned long)
 AC_CHECK_TYPE(u_int16_t, unsigned short)
 AC_CHECK_TYPE(u_int8_t, unsigned char)
+AC_CHECK_TYPE(ssize_t, int)
 
 AC_CACHE_CHECK([for broken inet_ntoa],samba_cv_REPLACE_INET_NTOA,[
 AC_TRY_RUN([
