@@ -34,7 +34,7 @@ hostenv.StaticLibrary('torture_auth', [ 'auth/ntlmssp.c', 'auth/pac.c' ])
 hostenv.StaticLibrary('torture_local', 
 	['local/iconv.c', 'lib/talloc/testsuite.c', 'local/messaging.c',
 	'local/binding_string.c', 'local/idtree.c', 'local/socket.c',
-	'local/irpc.c', 'local/resolve.c'])
+	'local/irpc.c', 'local/resolve.c', 'local/util_strlist.c'])
 
 hostenv.StaticLibrary('torture_nbench', [ 'nbench/nbio.c', 'nbench/nbench.c' ])
 

@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    
    Copyright (C) Andrew Tridgell 2005
+   Copyright (C) Jelmer Vernooij 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -70,6 +71,63 @@ const char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *
 	return ret;
 }
 
+/* build a null terminated list of strings from an argv-like input string 
+   Entries are seperated by spaces and can be enclosed by quotes. 
+   Does NOT support escaping
+ */
+const char **str_list_make_shell(TALLOC_CTX *mem_ctx, const char *string)
+{
+	int num_elements = 0;
+	const char **ret = NULL;
+
+	ret = talloc_array(mem_ctx, const char *, 1);
+	if (ret == NULL) {
+		return NULL;
+	}
+
+	while (string && *string) {
+		size_t len = strcspn(string, " ");
+		char *element;
+		const char **ret2;
+		
+		if (len == 0) {
+			string += strspn(string, " ");
+			continue;
+		}
+
+		if (*string == '\"') {
+			string++;
+			len = strcspn(string, "\"");
+			element = talloc_strndup(ret, string, len);
+			string += len + 1;
+		} else {
+			element = talloc_strndup(ret, string, len);
+			string += len;
+		}
+
+		if (element == NULL) {
+			talloc_free(ret);
+			return NULL;
+		}
+
+		ret2 = talloc_realloc(mem_ctx, ret, const char *, num_elements+2);
+		if (ret2 == NULL) {
+			talloc_free(ret);
+			return NULL;
+		}
+		ret = ret2;
+
+		ret[num_elements] = element;	
+
+		num_elements++;
+	}
+
+	ret[num_elements] = NULL;
+
+	return ret;
+
+}
+
 /* join a list back to one string */
 char *str_list_join(TALLOC_CTX *mem_ctx, const char **list, char seperator)
 {
@@ -88,6 +146,30 @@ char *str_list_join(TALLOC_CTX *mem_ctx, const char **list, char seperator)
 	return ret;
 }
 
+/* join a list back to one (shell-like) string; entries 
+ * seperated by spaces, using quotes where necessary */
+char *str_list_join_shell(TALLOC_CTX *mem_ctx, const char **list)
+{
+	char *ret = NULL;
+	int i;
+	
+	if (list[0] == NULL)
+		return talloc_strdup(mem_ctx, "");
+
+	if (strchr(list[0], ' ') || strlen(list[0]) == 0) 
+		ret = talloc_asprintf(mem_ctx, "\"%s\"", list[0]);
+	else 
+		ret = talloc_strdup(mem_ctx, list[0]);
+
+	for (i = 1; list[i]; i++) {
+		if (strchr(list[i], ' ') || strlen(list[i]) == 0) 
+			ret = talloc_asprintf_append(ret, " \"%s\"", list[i]);
+		else 
+			ret = talloc_asprintf_append(ret, " %s", list[i]);
+	}
+
+	return ret;
+}
 
 /*
   return the number of elements in a string list
