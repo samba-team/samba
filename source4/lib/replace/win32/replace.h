@@ -1,6 +1,18 @@
 #ifndef _WIN32_REPLACE_H
 #define _WIN32_REPLACE_H
 
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#endif
+
+#ifdef HAVE_WS2TCPIP_H
+#include <ws2tcpip.h>
+#endif
+
+#ifdef HAVE_WINDOWS_H
+#include <windows.h>
+#endif
+
 /* Map BSD Socket errorcodes to the WSA errorcodes (if possible) */ 
 
 #define EAFNOSUPPORT	WSAEAFNOSUPPORT

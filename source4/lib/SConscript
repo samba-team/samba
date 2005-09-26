@@ -13,7 +13,7 @@ basic_files = ['version.c', 'xfile.c', 'debug.c', 'fault.c',
 
 proto_files = basic_files
 
-basic = hostenv.StaticLibrary('basic', [dynconfig,charset,talloc,basic_files])
+basic = hostenv.StaticLibrary('basic', [dynconfig,charset,talloc,basic_files,charset])
 Export('basic')
 
 hostenv.StaticLibrary('tdr', ['tdr/tdr.c'])

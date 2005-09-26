@@ -27,6 +27,7 @@
 #include "librpc/gen_ndr/ndr_samr.h" /* for struct samrPassword */
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
+#include "include/credentials.h"
 
 
 /**
