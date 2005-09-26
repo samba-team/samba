@@ -24,6 +24,25 @@
 
 #include "librpc/gen_ndr/ndr_samr.h"
 
+/*
+ * Monitor structure and message types definitions. Composite function monitoring
+ * allows client application to be notified on function progress. This enables
+ * eg. gui client to display progress bars, status messages, etc.
+ */
+
+
+#define  rpc_create_user        (0x00000001)        /* userman.h */
+#define  rpc_open_user          (0x00000002)        /* userinfo.h */
+#define  rpc_query_user         (0x00000003)        /* userinfo.h */
+#define  rpc_close_user         (0x00000004)        /* userinfo.h */
+#define  rpc_lookup_name        (0x00000005)        /* userman.h */
+#define  rpc_delete_user        (0x00000006)        /* userman.h */
+
+struct monitor_msg {
+	uint32_t   type;
+	void       *data;
+	size_t     data_size;
+};
 
 struct libnet_rpc_userinfo {
 	struct {

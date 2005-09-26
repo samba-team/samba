@@ -28,7 +28,7 @@
 struct resolve_state {
 	struct nbt_name name;
 	const char **methods;
-	struct composite_context *req;
+	struct composite_context *creq;
 	const char *reply_addr;
 };
 
@@ -65,26 +65,26 @@ static const struct resolve_method *find_method(const char *name)
 /*
   handle completion of one name resolve method
 */
-static void resolve_handler(struct composite_context *req)
+static void resolve_handler(struct composite_context *creq)
 {
-	struct composite_context *c = req->async.private;
-	struct resolve_state *state = talloc_get_type(c->private, struct resolve_state);
+	struct composite_context *c = creq->async.private_data;
+	struct resolve_state *state = talloc_get_type(c->private_data, struct resolve_state);
 	const struct resolve_method *method = find_method(state->methods[0]);
 
-	c->status = method->recv_fn(req, state, &state->reply_addr);
+	c->status = method->recv_fn(creq, state, &state->reply_addr);
 	
 	if (!NT_STATUS_IS_OK(c->status)) {
 		state->methods++;
-		state->req = setup_next_method(c);
-		if (state->req != NULL) {
+		state->creq = setup_next_method(c);
+		if (state->creq != NULL) {
 			return;
 		}
 	}
 
 	if (!NT_STATUS_IS_OK(c->status)) {
-		c->state = SMBCLI_REQUEST_ERROR;
+		c->state = COMPOSITE_STATE_ERROR;
 	} else {
-		c->state = SMBCLI_REQUEST_DONE;
+		c->state = COMPOSITE_STATE_DONE;
 	}
 	if (c->async.fn) {
 		c->async.fn(c);
@@ -94,23 +94,23 @@ static void resolve_handler(struct composite_context *req)
 
 static struct composite_context *setup_next_method(struct composite_context *c)
 {
-	struct resolve_state *state = talloc_get_type(c->private, struct resolve_state);
-	struct composite_context *req = NULL;
+	struct resolve_state *state = talloc_get_type(c->private_data, struct resolve_state);
+	struct composite_context *creq = NULL;
 
 	do {
 		const struct resolve_method *method = find_method(state->methods[0]);
 		if (method) {
-			req = method->send_fn(&state->name, c->event_ctx);
+			creq = method->send_fn(&state->name, c->event_ctx);
 		}
-		if (req == NULL && state->methods[0]) state->methods++;
-	} while (!req && state->methods[0]);
+		if (creq == NULL && state->methods[0]) state->methods++;
+	} while (!creq && state->methods[0]);
 
-	if (req) {
-		req->async.fn = resolve_handler;
-		req->async.private = c;
+	if (creq) {
+		creq->async.fn = resolve_handler;
+		creq->async.private_data = c;
 	}
 
-	return req;
+	return creq;
 }
 
 /*
@@ -136,8 +136,8 @@ struct composite_context *resolve_name_send(struct nbt_name *name, struct event_
 	state->methods = str_list_copy(state, methods);
 	if (state->methods == NULL) goto failed;
 
-	c->state = SMBCLI_REQUEST_SEND;
-	c->private = state;
+	c->state = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = state;
 	if (event_ctx == NULL) {
 		c->event_ctx = event_context_init(c);
 		if (c->event_ctx == NULL) goto failed;
@@ -154,8 +154,8 @@ struct composite_context *resolve_name_send(struct nbt_name *name, struct event_
 		return c;
 	}
 
-	state->req = setup_next_method(c);
-	if (state->req == NULL) goto failed;
+	state->creq = setup_next_method(c);
+	if (state->creq == NULL) goto failed;
 	
 	return c;
 
@@ -175,7 +175,7 @@ NTSTATUS resolve_name_recv(struct composite_context *c,
 	status = composite_wait(c);
 
 	if (NT_STATUS_IS_OK(status)) {
-		struct resolve_state *state = talloc_get_type(c->private, struct resolve_state);
+		struct resolve_state *state = talloc_get_type(c->private_data, struct resolve_state);
 		*reply_addr = talloc_steal(mem_ctx, state->reply_addr);
 	}
 

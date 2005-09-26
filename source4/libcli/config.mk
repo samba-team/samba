@@ -10,21 +10,21 @@ ADD_OBJ_FILES = libcli/util/asn1.o \
 ADD_OBJ_FILES = libcli/util/clilsa.o
 REQUIRED_SUBSYSTEMS = RPC_NDR_LSA
 
-[SUBSYSTEM::LIBCLI_COMPOSITE_BASE]
+[SUBSYSTEM::LIBCLI_COMPOSITE]
 ADD_OBJ_FILES = \
 	libcli/composite/composite.o
 REQUIRED_SUBSYSTEMS = LIBEVENTS
 
-[SUBSYSTEM::LIBCLI_COMPOSITE]
+[SUBSYSTEM::LIBCLI_SMB_COMPOSITE]
 ADD_OBJ_FILES = \
-	libcli/composite/loadfile.o \
-	libcli/composite/savefile.o \
-	libcli/composite/connect.o \
-	libcli/composite/sesssetup.o \
-	libcli/composite/fetchfile.o \
-	libcli/composite/appendacl.o \
-	libcli/composite/fsinfo.o 
-REQUIRED_SUBSYSTEMS = LIBCLI_COMPOSITE_BASE
+	libcli/smb_composite/loadfile.o \
+	libcli/smb_composite/savefile.o \
+	libcli/smb_composite/connect.o \
+	libcli/smb_composite/sesssetup.o \
+	libcli/smb_composite/fetchfile.o \
+	libcli/smb_composite/appendacl.o \
+	libcli/smb_composite/fsinfo.o 
+REQUIRED_SUBSYSTEMS = LIBCLI_COMPOSITE
 
 [SUBSYSTEM::LIBCLI_NBT]
 ADD_OBJ_FILES = \
@@ -34,7 +34,7 @@ ADD_OBJ_FILES = \
 	libcli/nbt/nameregister.o \
 	libcli/nbt/namerefresh.o \
 	libcli/nbt/namerelease.o
-REQUIRED_SUBSYSTEMS = NDR_RAW NDR_NBT SOCKET LIBCLI_COMPOSITE_BASE LIBEVENTS \
+REQUIRED_SUBSYSTEMS = NDR_RAW NDR_NBT SOCKET LIBCLI_COMPOSITE LIBEVENTS \
 	LIB_SECURITY_NDR
 
 [SUBSYSTEM::LIBCLI_DGRAM]
@@ -69,7 +69,7 @@ REQUIRED_SUBSYSTEMS = LIBCLI_NBT
 
 [SUBSYSTEM::LIBCLI]
 REQUIRED_SUBSYSTEMS = LIBCLI_RAW LIBCLI_UTILS LIBCLI_AUTH \
-	LIBCLI_COMPOSITE LIBCLI_NBT LIB_SECURITY LIBCLI_RESOLVE \
+	LIBCLI_SMB_COMPOSITE LIBCLI_NBT LIB_SECURITY LIBCLI_RESOLVE \
 	LIBCLI_DGRAM
 
 [SUBSYSTEM::LIBSMB]
