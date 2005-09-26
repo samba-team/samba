@@ -152,6 +152,9 @@ struct substitute_context {
 	char *user_name;
 };
 
+/* Remote architectures we know about. */
+enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT, RA_WIN2K, RA_WINXP, RA_SAMBA};
+
 /* smb server context structure. This should contain all the state
  * information associated with a SMB server connection 
  */

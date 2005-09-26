@@ -28,7 +28,6 @@
 #include "system/time.h"
 #include "auth/kerberos/kerberos.h"
 #include "secrets.h"
-#include "pstring.h"
 #include "ads.h"
 
 #ifdef HAVE_KRB5
