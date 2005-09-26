@@ -63,6 +63,8 @@ hostenv.StaticLibrary('cli_auth',auth_files)
 ldap_files = ['ldap/ldap.c','ldap/ldap_client.c','ldap/ldap_bind.c',
 		   'ldap/ldap_msg.c','ldap/ldap_ndr.c','ldap/ldap_ildap.c']
 proto_files += ldap_files
-hostenv.StaticLibrary('cli_ldap',ldap_files)
+cli_ldap = hostenv.StaticLibrary('cli_ldap',ldap_files)
+
+Export('cli_ldap')
 
 hostenv.proto_headers += hostenv.CProtoHeader('proto.h', proto_files)
