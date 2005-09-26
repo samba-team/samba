@@ -38,6 +38,9 @@
 #include <errno.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#ifdef HAVE_SYS_SELECT_H
+#include <sys/select.h>
+#endif
 #include "tdb.h"
 
 #ifndef HAVE_PREAD_DECL
