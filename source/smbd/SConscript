@@ -1,5 +1,6 @@
 Import('hostenv')
 
-hostenv.StaticLibrary('server_service',
-		['service.c','service_stream.c','service_task.c'])
+service_files = ['service.c','service_stream.c','service_task.c']
+hostenv.StaticLibrary('server_service', service_files)
+hostenv.proto_headers += hostenv.CProtoHeader('proto.h', service_files)
 hostenv.Program('smbd',['server.c'])

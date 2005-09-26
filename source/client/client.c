@@ -2611,6 +2611,27 @@ static int cmd_lcd(const char **cmd_ptr)
 }
 
 /****************************************************************************
+history
+****************************************************************************/
+static int cmd_history(const char **cmd_ptr)
+{
+#if defined(HAVE_LIBREADLINE)
+	HIST_ENTRY **hlist;
+	int i;
+
+	hlist = history_list();
+	
+	for (i = 0; hlist && hlist[i]; i++) {
+		DEBUG(0, ("%d: %s\n", i, hlist[i]->line));
+	}
+#else
+	DEBUG(0,("no history without readline support\n"));
+#endif
+
+	return 0;
+}
+
+/****************************************************************************
  get a file restarting at end of local file
  ****************************************************************************/
 static int cmd_reget(const char **cmd_ptr)

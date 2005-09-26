@@ -1,0 +1,22 @@
+Import('hostenv defines')
+
+if hostenv['configure']:
+	conf = Configure(hostenv)
+	for h in ['direct.h','windows.h','winsock2.h','ws2tcpip.h']:
+		if conf.CheckCHeader(h):
+			defines['HAVE_' + h.upper().replace('.','_')] = 1
+	conf.TryCompile("""
+#include <stdio.h>
+#ifdef HAVE_DIRECT_H
+#include <direct.h>
+#endif
+
+int main()
+{
+	mkdir("foo",0777);
+	return 0;
+}
+""", '.c')
+	
+	conf.Finish()
+

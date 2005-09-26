@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 Import('hostenv defines')
 
+rep_files = ['replace.c', 'snprintf.c','dlfcn.c']
+
 if hostenv['configure']:
 	conf = Configure(hostenv)
 	for f in ['memset','syslog','setnetgrent','getnetgrent','endnetgrent', \
@@ -33,7 +35,7 @@ int main() {
 		if conf.CheckCHeader('dlfcn.h'):
 			defines['HAVE_' + h.upper().replace('.','_').replace('/','_')] = 1
 
-	if not conf.CheckType('socklen_t'):
+	if not conf.CheckType('socklen_t', "#include <sys/socket.h>"):
 		defines['socklen_t'] = 'int'
 
 	needed_types = { 
@@ -59,7 +61,10 @@ int main() {
 		if not conf.CheckType(t,type_headers):
 			defines[t] = needed_types[t]
 
+	if not conf.TryRun(open("../../build/tests/os2_delete.c").read(), '.c'):
+		rep_files += ['repdir/repdir.c']
+
 	conf.Finish()
 
-hostenv.StaticLibrary('repdir', ['repdir/repdir.c'])
-hostenv.StaticLibrary('replace', ['replace.c', 'snprintf.c','dlfcn.c'])
+hostenv.StaticLibrary('replace', rep_files)
+SConscript(dirs=['win32'])

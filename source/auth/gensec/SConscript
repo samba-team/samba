@@ -1,13 +1,14 @@
 Import('hostenv')
 
 gensec_files = ['gensec.c', 'gensec_krb5.c', 'gensec_gssapi.c', 'spnego.c',
-                'schannel.c', 'schannel_sign.c', 'schannel_state.c']
+			    'spnego_parse.c', 'schannel.c', 'schannel_sign.c', 
+				'schannel_state.c']
 
 hostenv.proto_headers += hostenv.CProtoHeader('proto.h', gensec_files)
 
 hostenv.StaticLibrary('gensec',['gensec.c'])
 hostenv.StaticLibrary('gensec_krb5',['gensec_krb5.c'])
 hostenv.StaticLibrary('gensec_gssapi',['gensec_gssapi.c'])
-hostenv.StaticLibrary('gensec_spnego',['spnego.c'])
+hostenv.StaticLibrary('gensec_spnego',['spnego.c','spnego_parse.c'])
 hostenv.StaticLibrary('gensec_schannel',['schannel.c','schannel_sign.c'])
 hostenv.StaticLibrary('schanneldb',['schannel_state.c'])
