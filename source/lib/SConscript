@@ -16,7 +16,6 @@ proto_files = basic_files
 basic = hostenv.StaticLibrary('basic', [dynconfig,charset,talloc,basic_files])
 Export('basic')
 
-hostenv.StaticLibrary('netif', ['netif/interface.c', 'netif/netif.c'])
 hostenv.StaticLibrary('tdr', ['tdr/tdr.c'])
 hostenv.StaticLibrary('crypto', 
 		['crypto/crc32.c','crypto/md5.c','crypto/hmacmd5.c',
@@ -41,5 +40,5 @@ Export('credentials')
 
 hostenv.proto_headers += hostenv.CProtoHeader('proto.h', proto_files)
 
-SConscript(dirs=['../param/','replace','tdb','popt','cmdline','registry', 'tls','samba3','socket','socket_wrapper','messaging','com','events', 'appweb'])
+SConscript(dirs=['../param/','replace','tdb','popt','cmdline','registry', 'tls','samba3','socket','socket_wrapper','messaging','com','events', 'appweb', 'netif'])
 

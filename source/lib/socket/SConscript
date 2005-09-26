@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-Import('hostenv')
+Import('hostenv defines')
 
 if hostenv['configure']:
 	conf = hostenv.Configure()
-	conf.CheckCHeader('sys/socket.h')
-	conf.CheckCHeader('sys/sockio.h')
-	conf.CheckCHeader('sys/un.h')
+	for h in ['sys/socket.h','sys/sockio.h','sys/un.h']:
+		if conf.CheckCHeader(h):
+			defines['HAVE_' + h.upper().replace('/','_').replace('.','_')] = 1
 	#HAVE_SOCK_SIN_LEN
 	conf.TryCompile("""
 #include <sys/types.h>

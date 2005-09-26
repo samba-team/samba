@@ -67,6 +67,8 @@ defines = loadconfig()
 
 if defines == None:
 	hostenv['configure'] = 1
+
+if hostenv['configure']:
 	defines = {}
 
 Export('defines')
@@ -191,12 +193,21 @@ return 0;
 """, '.c'):
 		defines['TIME_WITH_SYS_TIME'] = 1
 
-        if conf.TryCompile("""
+	if conf.TryCompile("""
 #include <sys/time.h>
 #include <unistd.h>
 main() { struct timeval tv; exit(gettimeofday(&tv, NULL));}
 """, '.c'):
 		defines['HAVE_GETTIMEOFDAY_TZ'] = 1
+
+	# Check for header that defines "DIR"
+	for h in ['dirent.h','sys/ndir.h','sys/dir.h','ndir.h']:
+		if conf.TryCompile("""
+#include <%s>
+
+int main() { DIR *x; return 0; }""" % h, '.c'):
+			defines['HAVE_' + h.upper().replace('.','_').replace('/','_')] = 1
+			break
 
 	conf.Finish()
 
