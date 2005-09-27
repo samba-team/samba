@@ -6122,17 +6122,12 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 			|| !strequal(printer->info_2->portname, old_printer->info_2->portname)
 			|| !strequal(printer->info_2->location, old_printer->info_2->location)) )
 	{
+		/* add_printer_hook() will call reload_services() */
+
 		if ( !add_printer_hook(p->pipe_user.nt_user_token, printer) ) {
 			result = WERR_ACCESS_DENIED;
 			goto done;
 		}
-
-		/* 
-		 * make sure we actually reload the services after 
-		 * this as smb.conf could have a new section in it 
-		 * .... shouldn't .... but could
-		 */
-		reload_services(False);	
 	}
 	
 	/*
