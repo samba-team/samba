@@ -1,5 +1,10 @@
 #!/bin/sh
 
+if [ -n "$VALGRIND" -o -n "$SMBD_VALGRIND" ]; then
+    echo "Not running gdb under valgrind"
+    exit 1
+fi
+
 # we want everything on stderr, so the program is not disturbed
 exec 1>&2
 
