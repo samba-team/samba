@@ -1148,8 +1148,23 @@ void RewindDir(struct smb_Dir *dirp, long *poffset)
 void SeekDir(struct smb_Dir *dirp, long offset)
 {
 	if (offset != dirp->offset) {
-		if (offset == START_OF_DIRECTORY_OFFSET || offset == DOT_DOT_DIRECTORY_OFFSET) {
+		if (offset == START_OF_DIRECTORY_OFFSET) {
 			RewindDir(dirp, &offset);
+			/* 
+			 * Ok we should really set the file number here
+			 * to 1 to enable ".." to be returned next. Trouble
+			 * is I'm worried about callers using SeekDir(dirp,0)
+			 * as equivalent to RewindDir(). So leave this alone
+			 * for now.
+			 */
+		} else if  (offset == DOT_DOT_DIRECTORY_OFFSET) {
+			RewindDir(dirp, &offset);
+			/*
+			 * Set the file number to 2 - we want to get the first
+			 * real file entry (the one we return after "..")
+			 * on the next ReadDir.
+			 */
+			dirp->file_number = 2;
 		} else if (offset == END_OF_DIRECTORY_OFFSET) {
 			; /* Don't seek in this case. */
 		} else {
