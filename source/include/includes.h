@@ -114,6 +114,7 @@ struct ipv4_addr {
 #include "ntvfs/ntvfs.h"
 #include "cli_context.h"
 #include "lib/com/com.h"
+#include "credentials.h"
 
 #define malloc_p(type) (type *)malloc(sizeof(type))
 #define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)

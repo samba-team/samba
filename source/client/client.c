@@ -32,7 +32,6 @@
 #include "system/dir.h"
 #include "system/filesys.h"
 #include "dlinklist.h"
-#include "credentials.h"
 #include "system/readline.h"
 #include "pstring.h"
 
