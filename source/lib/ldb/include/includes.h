@@ -26,9 +26,5 @@
 #include "ldb_private.h"
 #include "talloc.h"
 
-#if defined(__intptr_t_defined) || defined(HAVE_INTPTR_T)
 #define discard_const(ptr) ((void *)((intptr_t)(ptr)))
-#else
-#define discard_const(ptr) ((void *)(ptr))
-#endif
 #define discard_const_p(type, ptr) ((type *)discard_const(ptr))
