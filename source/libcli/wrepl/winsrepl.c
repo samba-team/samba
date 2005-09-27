@@ -385,12 +385,6 @@ static void wrepl_request_trigger_handler(struct event_context *ev, struct timed
 {
 	struct wrepl_request *req = talloc_get_type(ptr, struct wrepl_request);
 	if (req->async.fn) {
-		/*
-		 * the event is a child of req,
-		 * and req will be free'ed by the callback fn
-		 * but the events code wants to free the event itself
-		 */
-		talloc_steal(ev, te);
 		req->async.fn(req);
 	}
 }

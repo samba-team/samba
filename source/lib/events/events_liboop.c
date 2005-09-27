@@ -172,11 +172,22 @@ static void oop_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
 	fde->flags = flags;
 }
 
+static int oop_event_timed_destructor(void *ptr);
+static int oop_event_timed_deny_destructor(void *ptr)
+{
+	return -1;
+}
+
 static void *oop_event_timed_handler(oop_source *oop, struct timeval t, void *ptr)
 {
 	struct timed_event *te = ptr;
 
+	/* deny the handler to free the event */
+	talloc_set_destructor(te, oop_event_timed_deny_destructor);
 	te->handler(te->event_ctx, te, t, te->private_data);
+
+	talloc_set_destructor(te, oop_event_timed_destructor);
+	talloc_free(te);
 
 	return OOP_CONTINUE;
 }
@@ -218,7 +229,7 @@ static struct timed_event *oop_event_add_timed(struct event_context *ev, TALLOC_
 	te->private_data	= private_data;
 	te->additional_data	= NULL;
 
-	oop->cancel_time(oop, te->next_event, oop_event_timed_handler, te);
+	oop->on_time(oop, te->next_event, oop_event_timed_handler, te);
 
 	talloc_set_destructor(te, oop_event_timed_destructor);
 

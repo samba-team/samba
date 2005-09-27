@@ -284,6 +284,11 @@ static int std_event_timed_destructor(void *ptr)
 	return 0;
 }
 
+static int std_event_timed_deny_destructor(void *ptr)
+{
+	return -1;
+}
+
 /*
   add a timed event
   return NULL on failure (memory allocation error)
@@ -340,17 +345,12 @@ static void std_event_loop_timer(struct event_context *ev)
 		return;
 	}
 
-	te->next_event = timeval_zero();
-
+	/* deny the handler to free the event */
+	talloc_set_destructor(te, std_event_timed_deny_destructor);
 	te->handler(ev, te, t, te->private_data);
 
-	/* note the care taken to prevent referencing a event
-	   that could have been freed by the handler */
-	if (std_ev->timed_events) {
-		if (timeval_is_zero(&std_ev->timed_events->next_event)) {
-			talloc_free(te);
-		}
-	}
+	talloc_set_destructor(te, std_event_timed_destructor);
+	talloc_free(te);
 }
 
 #if WITH_EPOLL

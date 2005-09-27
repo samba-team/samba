@@ -209,26 +209,8 @@ static void gtk_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
 }
 
 struct gtk_timed_event {
-	BOOL running;
 	guint te_id;
 };
-
-static gboolean gtk_event_timed_handler(gpointer data)
-{
-	struct timed_event *te = talloc_get_type(data, struct timed_event);
-	struct gtk_timed_event *gtk_te = talloc_get_type(te->additional_data,
-							 struct gtk_timed_event);
-	struct timeval t = timeval_current();
-
-	gtk_te->running = True;
-	te->handler(te->event_ctx, te, t, te->private_data);
-	gtk_te->running = False;
-
-	talloc_free(te);
-
-	/* return FALSE mean this event should be removed */
-	return gtk_false();
-}
 
 /*
   destroy a timed event
@@ -239,16 +221,32 @@ static int gtk_event_timed_destructor(void *ptr)
 	struct gtk_timed_event *gtk_te = talloc_get_type(te->additional_data,
 							 struct gtk_timed_event);
 
-	if (gtk_te->running) {
-		/* the event is running reject the talloc_free()
-		   as it's done by the gtk_event_timed_handler()
-		 */
-		return -1;
-	}
-
 	g_source_remove(gtk_te->te_id);
 
 	return 0;
+}
+
+static int gtk_event_timed_deny_destructor(void *ptr)
+{
+	return -1;
+}
+
+static gboolean gtk_event_timed_handler(gpointer data)
+{
+	struct timed_event *te = talloc_get_type(data, struct timed_event);
+	struct gtk_timed_event *gtk_te = talloc_get_type(te->additional_data,
+							 struct gtk_timed_event);
+	struct timeval t = timeval_current();
+
+	/* deny the handler to free the event */
+	talloc_set_destructor(te, gtk_event_timed_deny_destructor);
+	te->handler(te->event_ctx, te, t, te->private_data);
+
+	talloc_set_destructor(te, gtk_event_timed_destructor);
+	talloc_free(te);
+
+	/* return FALSE mean this event should be removed */
+	return gtk_false();
 }
 
 /*
@@ -285,7 +283,6 @@ static struct timed_event *gtk_event_add_timed(struct event_context *ev, TALLOC_
 	timeout			= ((diff_tv.tv_usec+999)/1000)+(diff_tv.tv_sec*1000);
 
 	gtk_te->te_id		= g_timeout_add(timeout, gtk_event_timed_handler, te);
-	gtk_te->running		= False;
 
 	talloc_set_destructor(te, gtk_event_timed_destructor);
 
