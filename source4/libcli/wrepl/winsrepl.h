@@ -39,6 +39,13 @@ struct wrepl_socket {
 	/* the fd event */
 	struct fd_event *fde;
 
+	/* the default timeout for requests, 0 means no timeout */
+#define WREPL_SOCKET_REQUEST_TIMEOUT	(60)
+	uint32_t request_timeout;
+
+	/* counter for request timeouts, after 2 timeouts the socket is marked as dead */
+	uint32_t timeout_count;
+
 	/* remember is the socket is dead */
 	BOOL dead;
 };
@@ -63,6 +70,8 @@ struct wrepl_request {
 	DATA_BLOB buffer;
 
 	size_t num_read;
+
+	struct timed_event *te;
 
 	struct wrepl_packet *packet;
 
