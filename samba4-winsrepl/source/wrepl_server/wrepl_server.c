@@ -80,14 +80,17 @@ static NTSTATUS wreplsrv_load_partners(struct wreplsrv_service *service)
 	for (i=0; i < ret; i++) {
 		struct wreplsrv_partner *partner;
 
-		partner = talloc(service, struct wreplsrv_partner);
+		partner = talloc_zero(service, struct wreplsrv_partner);
 		if (partner == NULL) goto failed;
+		partner->service	= service;
 
 		partner->address	= ldb_msg_find_string(res[i], "address", NULL);
 		if (!partner->address) goto failed;
 		partner->name		= ldb_msg_find_string(res[i], "name", partner->address);
 		partner->type		= ldb_msg_find_int(res[i], "type", WINSREPL_PARTNER_BOTH);
 		partner->pull.interval	= ldb_msg_find_int(res[i], "pullInterval", WINSREPL_DEFAULT_PULL_INTERVAL);
+		partner->pull.retry_interval = ldb_msg_find_int(res[i], "pullRetryInterval",
+								WINSREPL_DEFAULT_PULL_RETRY_INTERVAL);
 		partner->our_address	= ldb_msg_find_string(res[i], "ourAddress", NULL);
 
 		talloc_steal(partner, partner->address);
@@ -102,6 +105,12 @@ done:
 failed:
 	talloc_free(tmp_ctx);
 	return NT_STATUS_FOOBAR;
+}
+
+BOOL wreplsrv_is_our_address(struct wreplsrv_service *service, const char *address)
+{
+	/* TODO: ! */
+	return False;
 }
 
 uint64_t wreplsrv_local_max_version(struct wreplsrv_service *service)
@@ -151,9 +160,9 @@ struct wreplsrv_owner *wreplsrv_find_owner(struct wreplsrv_owner *table, const c
  update the wins_owner_table max_version, if the given version is the highest version
  if no entry for the wins_owner exists yet, create one
 */
-static NTSTATUS wreplsrv_add_table(struct wreplsrv_service *service,
-				   TALLOC_CTX *mem_ctx, struct wreplsrv_owner **_table,
-				   const char *wins_owner, uint64_t version)
+NTSTATUS wreplsrv_add_table(struct wreplsrv_service *service,
+			    TALLOC_CTX *mem_ctx, struct wreplsrv_owner **_table,
+			    const char *wins_owner, uint64_t version)
 {
 	struct wreplsrv_owner *table = *_table;
 	struct wreplsrv_owner *cur;
