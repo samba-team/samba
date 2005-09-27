@@ -1386,10 +1386,17 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 	*perr = WERR_INVALID_PARAM;
 
 	/* If architecture is Windows 95/98/ME, the version is always 0. */
-	if (strcmp(architecture, "WIN40") == 0) {
+	if (strcmp(architecture, SPL_ARCH_WIN40) == 0) {
 		DEBUG(10,("get_correct_cversion: Driver is Win9x, cversion = 0\n"));
 		*perr = WERR_OK;
 		return 0;
+	}
+
+	/* If architecture is Windows x64, the version is always 3. */
+	if (strcmp(architecture, SPL_ARCH_X64) == 0) {
+		DEBUG(10,("get_correct_cversion: Driver is x64, cversion = 3\n"));
+		*perr = WERR_OK;
+		return 3;
 	}
 
 	/*
