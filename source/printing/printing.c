@@ -752,11 +752,12 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 	
 	if ( pjob.smbjob ) {
 		for (i=0;i<ts->qcount;i++) {
+			uint32 curr_jobid;
 
 			if ( pjob.status == LPQ_DELETED )
 				continue;
 
-			uint32 curr_jobid = print_parse_jobid(ts->queue[i].fs_file);
+			curr_jobid = print_parse_jobid(ts->queue[i].fs_file);
 
 			if (jobid == curr_jobid) {
 
