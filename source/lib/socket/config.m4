@@ -18,32 +18,17 @@ fi
 # it.
 AC_CHECK_FUNCS(connect)
 if test x"$ac_cv_func_connect" = x"no"; then
-    case "$LIBS $SOCKET_LIBS" in
-    *-lnsl*) ;;
-    *) AC_CHECK_LIB_EXT(nsl_s, SOCKET_LIBS, printf) ;;
-    esac
-    case "$LIBS $SOCKET_LIBS" in
-    *-lnsl*) ;;
-    *) AC_CHECK_LIB_EXT(nsl, SOCKET_LIBS, printf) ;;
-    esac
-    case "$LIBS $SOCKET_LIBS" in
-    *-lsocket*) ;;
-    *) AC_CHECK_LIB_EXT(socket,  SOCKET_LIBS, connect) ;;
-    esac
-    case "$LIBS $SOCKET_LIBS" in
-    *-linet*) ;;
-    *) AC_CHECK_LIB_EXT(inet, SOCKET_LIBS, connect) ;;
-    esac
+    AC_CHECK_LIB(nsl_s, printf)
+    AC_CHECK_LIB(nsl, printf)
+    AC_CHECK_LIB(socket, connect)
+    AC_CHECK_LIB_EXT(inet, connect)
     dnl We can't just call AC_CHECK_FUNCS(connect) here, because the value
     dnl has been cached.
     if test x"$ac_cv_lib_ext_socket_connect" = x"yes" ||
        test x"$ac_cv_lib_ext_inet_connect" = x"yes"; then
-        # ac_cv_func_connect=yes
-        # don't!  it would cause AC_CHECK_FUNC to succeed next time configure is run
         AC_DEFINE(HAVE_CONNECT,1,[Whether the system has connect()])
     fi
 fi
-SMB_EXT_LIB(SOCKET,[${SOCKET_LIBS}],[${SOCKET_CFLAGS}],[${SOCKET_CPPFLAGS}],[${SOCKET_LDFLAGS}])
 
 ############################################
 # check for unix domain sockets
