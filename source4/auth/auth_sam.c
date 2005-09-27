@@ -25,7 +25,6 @@
 #include "system/time.h"
 #include "auth/auth.h"
 #include "lib/ldb/include/ldb.h"
-#include "pstring.h"
 
 /****************************************************************************
  Do a specific test for an smb password being correct, given a smb_password and
@@ -161,20 +160,20 @@ static NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 	/* Test workstation. Workstation list is comma separated. */
 	if (workstation_list && *workstation_list) {
 		BOOL invalid_ws = True;
-		const char *s = workstation_list;
-			
-		fstring tok;
-			
-		while (next_token(&s, tok, ",", sizeof(tok))) {
+		int i;
+		const char **workstations = str_list_make(mem_ctx, workstation_list, ",");
+		
+		for (i = 0; workstations[i]; i++) {
 			DEBUG(10,("sam_account_ok: checking for workstation match '%s' and '%s'\n",
-				  tok, user_info->workstation_name));
+				  workstations[i], user_info->workstation_name));
 
-			if (strequal(tok, user_info->workstation_name)) {
+			if (strequal(workstations[i], user_info->workstation_name)) {
 				invalid_ws = False;
-
 				break;
 			}
 		}
+
+		talloc_free(workstations);
 
 		if (invalid_ws) {
 			return NT_STATUS_INVALID_WORKSTATION;
