@@ -91,7 +91,7 @@ uint16 pjobid_to_rap(const char* sharename, uint32 jobid)
 	if (rap_jobid == 0)
 		rap_jobid = ++next_rap_jobid;
 	SSVAL(buf,0,rap_jobid);
-	data.dptr = buf;
+	data.dptr = (char*)buf;
 	data.dsize = sizeof(rap_jobid);
 	tdb_store(rap_tdb, key, data, TDB_REPLACE);
 	tdb_store(rap_tdb, data, key, TDB_REPLACE);
@@ -112,7 +112,7 @@ BOOL rap_to_pjobid(uint16 rap_jobid, fstring sharename, uint32 *pjobid)
 		return False;
 
 	SSVAL(buf,0,rap_jobid);
-	key.dptr = buf;
+	key.dptr = (char*)buf;
 	key.dsize = sizeof(rap_jobid);
 	data = tdb_fetch(rap_tdb, key);
 	if ( data.dptr && data.dsize == sizeof(struct rap_jobid_key) ) 
@@ -164,7 +164,7 @@ static void rap_jobid_delete(const char* sharename, uint32 jobid)
 	rap_jobid = SVAL(data.dptr, 0);
 	SAFE_FREE(data.dptr);
 	SSVAL(buf,0,rap_jobid);
-	data.dptr=buf;
+	data.dptr = (char*)buf;
 	data.dsize = sizeof(rap_jobid);
 	tdb_delete(rap_tdb, key);
 	tdb_delete(rap_tdb, data);
