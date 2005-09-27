@@ -24,7 +24,6 @@
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "lib/cmdline/popt_common.h"
-#include "credentials.h"
 
 #define TEST_MACHINE_NAME "schanneltest"
 

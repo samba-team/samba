@@ -20,7 +20,6 @@
 
 #include "includes.h"
 #include "gtk/common/gtk-smb.h"
-#include "include/credentials.h"
 
 static void gtk_get_credentials(struct cli_credentials *credentials)
 {

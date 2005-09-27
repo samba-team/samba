@@ -27,7 +27,6 @@
 #include "auth/auth.h"
 #include "lib/crypto/crypto.h"
 #include "lib/cmdline/popt_common.h"
-#include "credentials.h"
 
 #define TEST_MACHINE_NAME "samlogontest"
 #define TEST_USER_NAME "samlogontestuser"

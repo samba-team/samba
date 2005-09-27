@@ -26,7 +26,6 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
 #include "clilist.h"
-#include "credentials.h"
 
 #if 0
 
