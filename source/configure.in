@@ -2821,7 +2821,7 @@ if test x"$with_ldap_support" != x"no"; then
   if test x"$ac_cv_lib_ext_ldap_ldap_init" = x"yes" -a x"$ac_cv_func_ext_ldap_domain2hostlist" = x"yes"; then
     AC_DEFINE(HAVE_LDAP,1,[Whether ldap is available])
     default_static_modules="$default_static_modules pdb_ldap idmap_ldap";
-    default_shared_modules="$default_shared_modules config_ldap";
+    default_shared_modules="$default_shared_modules";
     SMBLDAP="lib/smbldap.o"
     SMBLDAPUTIL="lib/smbldap_util.o"
     with_ldap_support=yes
@@ -5096,9 +5096,6 @@ SMB_MODULE(vfs_shadow_copy, \$(VFS_SHADOW_COPY_OBJ), "bin/shadow_copy.$SHLIBEXT"
 SMB_MODULE(vfs_afsacl, \$(VFS_AFSACL_OBJ), "bin/afsacl.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_catia, \$(VFS_AFSACL_OBJ), "bin/catia.$SHLIBEXT", VFS)
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)
-
-SMB_MODULE(config_ldap, param/config_ldap.o, "bin/config_ldap.$SHLIBEXT", CONFIG, [ CONFIG_LIBS="$CONFIG_LIBS $LDAP_LIBS" "$SMBLDAP" ])
-SMB_SUBSYSTEM(CONFIG, param/modconf.o)
 
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
 
