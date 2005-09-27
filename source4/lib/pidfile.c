@@ -39,9 +39,9 @@ pid_t pidfile_pid(const char *name)
 	asprintf(&pidFile, "%s/%s.pid", lp_piddir(), name);
 
 	fd = open(pidFile, O_NONBLOCK | O_RDONLY, 0644);
-	SAFE_FREE(pidFile);
 
 	if (fd == -1) {
+		SAFE_FREE(pidFile);
 		return 0;
 	}
 
@@ -63,11 +63,13 @@ pid_t pidfile_pid(const char *name)
 	}
 
 	close(fd);
+	SAFE_FREE(pidFile);
 	return (pid_t)ret;
 
  noproc:
 	close(fd);
 	unlink(pidFile);
+	SAFE_FREE(pidFile);
 	return 0;
 }
 
