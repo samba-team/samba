@@ -162,11 +162,7 @@ extern int DEBUGLEVEL;
   Also, please call this via the discard_const_p() macro interface, as that
   makes the return type safe.
 */
-#ifdef HAVE_INTPTR_T
 #define discard_const(ptr) ((void *)((intptr_t)(ptr)))
-#else
-#define discard_const(ptr) ((void *)(ptr))
-#endif
 #define discard_const_p(type, ptr) ((type *)discard_const(ptr))
 
 #ifndef UINT16_MAX
