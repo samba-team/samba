@@ -38,6 +38,9 @@ struct wrepl_socket {
 
 	/* the fd event */
 	struct fd_event *fde;
+
+	/* remember is the socket is dead */
+	BOOL dead;
 };
 
 enum wrepl_request_state {

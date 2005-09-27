@@ -31,6 +31,8 @@
 */
 static void wrepl_socket_dead(struct wrepl_socket *wrepl_socket)
 {
+	wrepl_socket->dead = True;
+
 	event_set_fd_flags(wrepl_socket->fde, 0);
 
 	while (wrepl_socket->send_queue) {
@@ -118,7 +120,10 @@ static void wrepl_handler_recv(struct wrepl_socket *wrepl_socket)
 					  req->buffer.data + req->num_read,
 					  4 - req->num_read,
 					  &nread, 0);
-		if (NT_STATUS_IS_ERR(req->status)) goto failed;
+		if (NT_STATUS_IS_ERR(req->status)) {
+			wrepl_socket_dead(wrepl_socket);
+			return;
+		}
 		if (!NT_STATUS_IS_OK(req->status)) return;
 
 		req->num_read += nread;
@@ -140,7 +145,10 @@ static void wrepl_handler_recv(struct wrepl_socket *wrepl_socket)
 				  req->buffer.data + req->num_read,
 				  req->buffer.length - req->num_read,
 				  &nread, 0);
-	if (NT_STATUS_IS_ERR(req->status)) goto failed;
+	if (NT_STATUS_IS_ERR(req->status)) {
+		wrepl_socket_dead(wrepl_socket);
+		return;
+	}
 	if (!NT_STATUS_IS_OK(req->status)) return;
 
 	req->num_read += nread;
@@ -275,6 +283,7 @@ struct wrepl_socket *wrepl_socket_init(TALLOC_CTX *mem_ctx,
 
 	wrepl_socket->send_queue = NULL;
 	wrepl_socket->recv_queue = NULL;
+	wrepl_socket->dead       = False;
 
 	wrepl_socket->fde = event_add_fd(wrepl_socket->event_ctx, wrepl_socket, 
 					 socket_get_fd(wrepl_socket->sock), 
@@ -368,6 +377,35 @@ NTSTATUS wrepl_connect(struct wrepl_socket *wrepl_socket, const char *address)
 	return wrepl_connect_recv(req);
 }
 
+/* 
+   callback from wrepl_request_trigger() 
+*/
+static void wrepl_request_trigger_handler(struct event_context *ev, struct timed_event *te,
+					  struct timeval t, void *ptr)
+{
+	struct wrepl_request *req = talloc_get_type(ptr, struct wrepl_request);
+	if (req->async.fn) {
+		/*
+		 * the event is a child of req,
+		 * and req will be free'ed by the callback fn
+		 * but the events code wants to free the event itself
+		 */
+		talloc_steal(ev, te);
+		req->async.fn(req);
+	}
+}
+
+/*
+  trigger an immediate event on a wrepl_request
+*/
+static void wrepl_request_trigger(struct wrepl_request *req)
+{
+	/* a zero timeout means immediate */
+	event_add_timed(req->wrepl_socket->event_ctx,
+			req, timeval_zero(),
+			wrepl_request_trigger_handler, req);
+}
+
 
 /*
   send a generic wins replication request
@@ -381,12 +419,20 @@ struct wrepl_request *wrepl_request_send(struct wrepl_socket *wrepl_socket,
 	req = talloc_zero(wrepl_socket, struct wrepl_request);
 	if (req == NULL) goto failed;
 
+	if (wrepl_socket->dead) {
+		req->wrepl_socket = wrepl_socket;
+		req->state        = WREPL_REQUEST_ERROR;
+		req->status       = NT_STATUS_INVALID_CONNECTION;
+		wrepl_request_trigger(req);
+		return req;
+	}
+
 	req->wrepl_socket = wrepl_socket;
 	req->state        = WREPL_REQUEST_SEND;
 
 	wrap.packet = *packet;
 	req->status = ndr_push_struct_blob(&req->buffer, req, &wrap,
-					   (ndr_push_flags_fn_t)ndr_push_wrepl_wrap);	
+					   (ndr_push_flags_fn_t)ndr_push_wrepl_wrap);
 	if (!NT_STATUS_IS_OK(req->status)) goto failed;
 
 	if (DEBUGLVL(10)) {
@@ -468,6 +514,7 @@ NTSTATUS wrepl_associate_recv(struct wrepl_request *req,
 	struct wrepl_packet *packet=NULL;
 	NTSTATUS status;
 	status = wrepl_request_recv(req, req->wrepl_socket, &packet);
+	NT_STATUS_NOT_OK_RETURN(status);
 	if (packet->mess_type != WREPL_START_ASSOCIATION_REPLY) {
 		status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 	}
@@ -527,6 +574,7 @@ NTSTATUS wrepl_pull_table_recv(struct wrepl_request *req,
 	int i;
 
 	status = wrepl_request_recv(req, req->wrepl_socket, &packet);
+	NT_STATUS_NOT_OK_RETURN(status);
 	if (packet->mess_type != WREPL_REPLICATION) {
 		status = NT_STATUS_NETWORK_ACCESS_DENIED;
 	} else if (packet->message.replication.command != WREPL_REPL_TABLE_REPLY) {
@@ -630,6 +678,7 @@ NTSTATUS wrepl_pull_names_recv(struct wrepl_request *req,
 	int i;
 
 	status = wrepl_request_recv(req, req->wrepl_socket, &packet);
+	NT_STATUS_NOT_OK_RETURN(status);
 	if (packet->mess_type != WREPL_REPLICATION ||
 	    packet->message.replication.command != WREPL_REPL_SEND_REPLY) {
 		status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
