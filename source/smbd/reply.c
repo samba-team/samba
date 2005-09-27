@@ -4076,6 +4076,35 @@ static void rename_open_files(connection_struct *conn, SMB_DEV_T dev, SMB_INO_T 
 }
 
 /****************************************************************************
+ We need to check if the source path is a parent directory of the destination
+ (ie. a rename of /foo/bar/baz -> /foo/bar/baz/bibble/bobble. If so we must
+ refuse the rename with a sharing violation. Under UNIX the above call can
+ *succeed* if /foo/bar/baz is a symlink to another area in the share. We
+ probably need to check that the client is a Windows one before disallowing
+ this as a UNIX client (one with UNIX extensions) can know the source is a
+ symlink and make this decision intelligently. Found by an excellent bug
+ report from <AndyLiebman@aol.com>.
+****************************************************************************/
+
+static BOOL rename_path_prefix_equal(const char *src, const char *dest)
+{
+	const char *psrc = src;
+	const char *pdst = dest;
+	size_t slen;
+
+	if (psrc[0] == '.' && psrc[1] == '/') {
+		psrc += 2;
+	}
+	if (pdst[0] == '.' && pdst[1] == '/') {
+		pdst += 2;
+	}
+	if ((slen = strlen(psrc)) > strlen(pdst)) {
+		return False;
+	}
+	return ((memcmp(psrc, pdst, slen) == 0) && pdst[slen] == '/');
+}
+
+/****************************************************************************
  Rename an open file - given an fsp.
 ****************************************************************************/
 
@@ -4168,6 +4197,10 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, char *
 		if (NT_STATUS_EQUAL(error,NT_STATUS_SHARING_VIOLATION))
 			error = NT_STATUS_ACCESS_DENIED;
 		return error;
+	}
+
+	if (rename_path_prefix_equal(fsp->fsp_name, newname)) {
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if(SMB_VFS_RENAME(conn,fsp->fsp_name, newname) == 0) {
@@ -4391,6 +4424,10 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 			return NT_STATUS_OBJECT_NAME_COLLISION;
 		}
 
+		if (rename_path_prefix_equal(directory, newname)) {
+			return NT_STATUS_SHARING_VIOLATION;
+		}
+
 		if(SMB_VFS_RENAME(conn,directory, newname) == 0) {
 			DEBUG(3,("rename_internals: succeeded doing rename on %s -> %s\n",
 				directory,newname));
@@ -4489,6 +4526,10 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 					continue;
 				}
 				
+				if (rename_path_prefix_equal(fname, destname)) {
+					return NT_STATUS_SHARING_VIOLATION;
+				}
+
 				if (!SMB_VFS_RENAME(conn,fname,destname)) {
 					rename_open_files(conn, sbuf1.st_dev, sbuf1.st_ino, newname);
 					count++;
