@@ -297,11 +297,6 @@ static const struct enum_list enum_protocol[] = {
 static const struct enum_list enum_security[] = {
 	{SEC_SHARE, "SHARE"},
 	{SEC_USER, "USER"},
-	{SEC_SERVER, "SERVER"},
-	{SEC_DOMAIN, "DOMAIN"},
-#ifdef HAVE_ADS
-	{SEC_ADS, "ADS"},
-#endif
 	{-1, NULL}
 };
 

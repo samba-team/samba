@@ -1,0 +1,33 @@
+#!/bin/sh
+
+if [ -n "$VALGRIND" -o -n "$SMBD_VALGRIND" ]; then
+    echo "Not running gdb under valgrind"
+    exit 1
+fi
+
+# we want everything on stderr, so the program is not disturbed
+exec 1>&2
+
+PID=$1
+PROG=$2
+
+TMPFILE=/tmp/gdb.$$
+cat << EOF  > $TMPFILE
+set height 1000
+bt full
+quit
+EOF
+
+if [ ! -f $PROG ]; then
+    PROG=`which $PROG`
+fi
+if [ ! -f $PROG ]; then
+    PROG=/proc/$PID/exe
+fi
+if [ ! -f $PROG ]; then
+    echo "Unable to find binary"
+    exit 1
+fi
+
+gdb -batch -x $TMPFILE $PROG $PID < /dev/null 
+/bin/rm -f $TMPFILE

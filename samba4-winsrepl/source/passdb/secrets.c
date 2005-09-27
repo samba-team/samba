@@ -26,7 +26,6 @@
 #include "lib/tdb/include/tdbutil.h"
 #include "secrets.h"
 #include "system/filesys.h"
-#include "pstring.h"
 #include "db_wrap.h"
 #include "lib/ldb/include/ldb.h"
 
@@ -57,21 +56,22 @@ void secrets_shutdown(void)
 /* open up the secrets database */
 BOOL secrets_init(void)
 {
-	pstring fname;
+	char *fname;
 	uint8_t dummy;
 
 	if (tdb)
 		return True;
 
-	pstrcpy(fname, lp_private_dir());
-	pstrcat(fname,"/secrets.tdb");
+	asprintf(&fname, "%s/secrets.tdb", lp_private_dir());
 
 	tdb = tdb_wrap_open(talloc_autofree_context(), fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 
 	if (!tdb) {
 		DEBUG(0,("Failed to open %s\n", fname));
+		SAFE_FREE(fname);
 		return False;
 	}
+	SAFE_FREE(fname);
 
 	/**
 	 * Set a reseed function for the crypto random generator 
@@ -96,7 +96,7 @@ static void *secrets_fetch(const char *key, size_t *size)
 	secrets_init();
 	if (!tdb)
 		return NULL;
-	kbuf.dptr = strdup(key);
+	kbuf.dptr = (uint8_t *)strdup(key);
 	kbuf.dsize = strlen(key);
 	dbuf = tdb_fetch(tdb->tdb, kbuf);
 	if (size)

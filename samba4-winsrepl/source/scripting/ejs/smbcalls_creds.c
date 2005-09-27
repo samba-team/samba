@@ -24,7 +24,6 @@
 #include "scripting/ejs/smbcalls.h"
 #include "lib/appweb/ejs/ejs.h"
 #include "lib/cmdline/popt_common.h"
-#include "credentials.h"
 
 /*
   helper function to get the local objects credentials ptr

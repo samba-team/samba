@@ -30,7 +30,16 @@ if test x"$samba_cv_REPLACE_INET_NTOA" = x"yes"; then
 fi
 
 dnl Provided by replace.c:
-AC_CHECK_TYPE([socklen_t], int)
+AC_TRY_COMPILE([
+#include <sys/types.h>
+#if STDC_HEADERS
+#include <stdlib.h>
+#include <stddef.h>
+#endif
+#include <sys/socket.h>], 
+[socklen_t foo;],,
+[AC_DEFINE(socklen_t, int,[Socket length type])])
+
 AC_CHECK_HEADERS(sys/syslog.h syslog.h)
 AC_CHECK_FUNCS(strtoull __strtoull strtouq strtoll __strtoll strtoq)
 AC_CHECK_FUNCS(seteuid setresuid setegid setresgid chroot bzero strerror)

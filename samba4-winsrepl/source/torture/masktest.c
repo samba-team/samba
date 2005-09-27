@@ -23,7 +23,6 @@
 #include "clilist.h"
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
-#include "credentials.h"
 #include "pstring.h"
 
 static struct cli_credentials *credentials;
