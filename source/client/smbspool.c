@@ -457,15 +457,15 @@ smb_connect(const char *workgroup,    /* I - Workgroup */
 
   get_myname(myname);  
 
-  if ( (username) && ( *username ) && (password) && (*password) ) 
+  /* See if we have a username first.  This is for backwards compatible 
+     behavior with 3.0.14a */
+
+  if ( username &&  *username )
   {
-      /* 
-       * User/password specified in the DEVICE_URI, use those credentials 
-       * to connect to the server 
-       */
       cli = smb_complete_connection(myname, server, port, username, 
                                     password, workgroup, share, 0 );
-      if (cli ) { return cli; }
+      if (cli) 
+        return cli;
   }
   
   /* 
