@@ -21,7 +21,6 @@
 
 #include "includes.h"
 #include "rpc_server/dcerpc_server.h"
-#include "credentials.h"
 
 struct dcesrv_remote_private {
 	struct dcerpc_pipe *c_pipe;

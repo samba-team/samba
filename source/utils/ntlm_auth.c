@@ -28,7 +28,6 @@
 #include "lib/cmdline/popt_common.h"
 #include "auth/auth.h"
 #include "librpc/gen_ndr/ndr_security.h"
-#include "credentials.h"
 #include "pstring.h"
 
 #define SQUID_BUFFER_SIZE 2010

@@ -297,7 +297,3 @@ struct ldb_map_objectclass;
 struct param_context;
 struct param_section;
 struct param;
-
-enum credentials_obtained;
-struct cli_credentials;
-struct ccache_container;
