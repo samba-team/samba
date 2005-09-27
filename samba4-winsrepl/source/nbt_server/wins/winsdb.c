@@ -509,6 +509,7 @@ uint8_t winsdb_add(struct wins_server *winssrv, struct winsdb_record *rec)
 
 	rec->version = winsdb_allocate_version(winssrv);
 	if (rec->version == 0) goto failed;
+	rec->wins_owner = WINSDB_OWNER_LOCAL;
 
 	msg = winsdb_message(winssrv->wins_db, rec, tmp_ctx);
 	if (msg == NULL) goto failed;
@@ -581,8 +582,8 @@ uint8_t winsdb_delete(struct wins_server *winssrv, struct winsdb_record *rec)
 	int trans;
 	int ret;
 
-	if(!winsdb_remove_version(winssrv, rec->version))
-		goto failed;
+	trans = ldb_transaction_start(ldb);
+	if (trans != LDB_SUCCESS) goto failed;
 
 	dn = winsdb_dn(tmp_ctx, rec->name);
 	if (dn == NULL) goto failed;

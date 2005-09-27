@@ -50,7 +50,7 @@ struct getdc_state {
 
 static void getdc_recv_ntlogon_reply(struct dgram_mailslot_handler *dgmslot, 
 				     struct nbt_dgram_packet *packet, 
-				     const char *src_address, int src_port)
+				     const struct nbt_peer_socket *src)
 {
 	struct getdc_state *s =
 		talloc_get_type(dgmslot->private, struct getdc_state);
@@ -108,6 +108,7 @@ static NTSTATUS nbtd_getdcname(struct irpc_message *msg,
 	struct nbt_ntlogon_sam_logon *r;
 	struct nbt_dgram_socket *sock;
 	struct nbt_name src, dst;
+	struct nbt_peer_socket dest;
 	struct dgram_mailslot_handler *handler;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
@@ -141,8 +142,10 @@ static NTSTATUS nbtd_getdcname(struct irpc_message *msg,
 	make_nbt_name_client(&src, req->in.my_computername);
 	make_nbt_name(&dst, req->in.domainname, 0x1c);
 
+	dest.addr = req->in.ip_address;
+	dest.port = 138;
 	status = dgram_mailslot_ntlogon_send(sock, DGRAM_DIRECT_GROUP,
-					     &dst, req->in.ip_address, 138,
+					     &dst, &dest,
 					     &src, &p);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("dgram_mailslot_ntlogon_send failed: %s\n",
