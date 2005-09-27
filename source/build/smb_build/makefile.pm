@@ -34,6 +34,7 @@ VPATH = $config{srcdir}
 srcdir = $config{srcdir}
 builddir = $config{builddir}
 
+BASEDIR = $config{prefix}
 BINDIR = $config{bindir}
 SBINDIR = $config{sbindir}
 datadir = $config{datadir}
