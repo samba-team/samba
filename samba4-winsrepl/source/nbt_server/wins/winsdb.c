@@ -33,6 +33,7 @@
 */
 static uint64_t winsdb_allocate_version(struct wins_server *winssrv)
 {
+	int trans;
 	int ret;
 	struct ldb_context *ldb = winssrv->wins_db;
 	struct ldb_dn *dn;
@@ -40,6 +41,9 @@ static uint64_t winsdb_allocate_version(struct wins_server *winssrv)
 	struct ldb_message *msg = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(winssrv);
 	uint64_t maxVersion = 0;
+
+	trans = ldb_transaction_start(ldb);
+	if (trans != LDB_SUCCESS) goto failed;
 
 	dn = ldb_dn_explode(tmp_ctx, "CN=VERSION");
 	if (!dn) goto failed;
@@ -72,10 +76,14 @@ static uint64_t winsdb_allocate_version(struct wins_server *winssrv)
 	if (ret != 0) ret = ldb_add(ldb, msg);
 	if (ret != 0) goto failed;
 
+	trans = ldb_transaction_commit(ldb);
+	if (trans != LDB_SUCCESS) goto failed;
+
 	talloc_free(tmp_ctx);
 	return maxVersion;
 
 failed:
+	if (trans == LDB_SUCCESS) ldb_transaction_cancel(ldb);
 	talloc_free(tmp_ctx);
 	return 0;
 }
