@@ -52,6 +52,12 @@ static void composite_trigger(struct event_context *ev, struct timed_event *te,
 {
 	struct composite_context *c = talloc_get_type(ptr, struct composite_context);
 	if (c->async.fn) {
+		/*
+		 * the event is a child of req,
+		 * and req will be free'ed by the callback fn
+		 * but the events code wants to free the event itself
+		 */
+		talloc_steal(ev, te);	
 		c->async.fn(c);
 	}
 }
