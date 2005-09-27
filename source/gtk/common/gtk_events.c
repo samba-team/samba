@@ -234,8 +234,6 @@ static int gtk_event_timed_deny_destructor(void *ptr)
 static gboolean gtk_event_timed_handler(gpointer data)
 {
 	struct timed_event *te = talloc_get_type(data, struct timed_event);
-	struct gtk_timed_event *gtk_te = talloc_get_type(te->additional_data,
-							 struct gtk_timed_event);
 	struct timeval t = timeval_current();
 
 	/* deny the handler to free the event */
