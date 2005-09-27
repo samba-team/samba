@@ -21,20 +21,16 @@
 
 #include "includes.h"
 #include "system/network.h"
-#include "pstring.h"
-
 
 enum SOCK_OPT_TYPES {OPT_BOOL,OPT_INT,OPT_ON};
 
-typedef struct smb_socket_option {
+static const struct {
 	const char *name;
 	int level;
 	int option;
 	int value;
 	int opttype;
-} smb_socket_option;
-
-static const smb_socket_option socket_options[] = {
+} socket_options[] = {
   {"SO_KEEPALIVE",      SOL_SOCKET,    SO_KEEPALIVE,    0,                 OPT_BOOL},
   {"SO_REUSEADDR",      SOL_SOCKET,    SO_REUSEADDR,    0,                 OPT_BOOL},
   {"SO_BROADCAST",      SOL_SOCKET,    SO_BROADCAST,    0,                 OPT_BOOL},
@@ -76,9 +72,11 @@ static const smb_socket_option socket_options[] = {
 ****************************************************************************/
 void set_socket_options(int fd, const char *options)
 {
-	fstring tok;
+	const char **options_list = str_list_make(NULL, options, " \t,");
+	int j;
 
-	while (next_token(&options,tok," \t,", sizeof(tok))) {
+	for (j = 0; options_list[j]; j++) {
+		const char *tok = options_list[j];
 		int ret=0,i;
 		int value = 1;
 		char *p;
@@ -121,5 +119,7 @@ void set_socket_options(int fd, const char *options)
 		if (ret != 0)
 			DEBUG(0,("Failed to set socket option %s (Error %s)\n",tok, strerror(errno) ));
 	}
+
+	talloc_free(options_list);
 }
 
