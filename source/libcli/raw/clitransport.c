@@ -353,6 +353,7 @@ static void smbcli_transport_process_send(struct smbcli_transport *transport)
 					   req->out.size, &nwritten);
 		if (NT_STATUS_IS_ERR(status)) {
 			smbcli_transport_dead(transport);
+			return;
 		}
 		if (!NT_STATUS_IS_OK(status)) {
 			return;
@@ -540,6 +541,7 @@ static void smbcli_transport_process_recv(struct smbcli_transport *transport)
 					  &nread);
 		if (NT_STATUS_IS_ERR(status)) {
 			smbcli_transport_dead(transport);
+			return;
 		}
 		if (!NT_STATUS_IS_OK(status)) {
 			return;
@@ -571,6 +573,7 @@ static void smbcli_transport_process_recv(struct smbcli_transport *transport)
 					  &nread);
 		if (NT_STATUS_IS_ERR(status)) {
 			smbcli_transport_dead(transport);
+			return;
 		}
 		if (!NT_STATUS_IS_OK(status)) {
 			return;
