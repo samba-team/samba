@@ -29,17 +29,28 @@
 /*
   mark all pending requests as dead - called when a socket error happens
 */
-static void wrepl_socket_dead(struct wrepl_socket *wrepl_socket)
+static void wrepl_socket_dead(struct wrepl_socket *wrepl_socket, NTSTATUS status)
 {
 	wrepl_socket->dead = True;
 
-	event_set_fd_flags(wrepl_socket->fde, 0);
+	if (wrepl_socket->fde) {
+		talloc_free(wrepl_socket->fde);
+		wrepl_socket->fde = NULL;
+	}
 
+	if (wrepl_socket->sock) {
+		talloc_free(wrepl_socket->sock);
+		wrepl_socket->sock = NULL;
+	}
+
+	if (NT_STATUS_EQUAL(NT_STATUS_UNSUCCESSFUL, status)) {
+		status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+	}
 	while (wrepl_socket->send_queue) {
 		struct wrepl_request *req = wrepl_socket->send_queue;
 		DLIST_REMOVE(wrepl_socket->send_queue, req);
 		req->state = WREPL_REQUEST_ERROR;
-		req->status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+		req->status = status;
 		if (req->async.fn) {
 			req->async.fn(req);
 		}
@@ -48,11 +59,18 @@ static void wrepl_socket_dead(struct wrepl_socket *wrepl_socket)
 		struct wrepl_request *req = wrepl_socket->recv_queue;
 		DLIST_REMOVE(wrepl_socket->recv_queue, req);
 		req->state = WREPL_REQUEST_ERROR;
-		req->status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+		req->status = status;
 		if (req->async.fn) {
 			req->async.fn(req);
 		}
 	}
+}
+
+static void wrepl_request_timeout_handler(struct event_context *ev, struct timed_event *te,
+					  struct timeval t, void *ptr)
+{
+	struct wrepl_request *req = talloc_get_type(ptr, struct wrepl_request);
+	wrepl_socket_dead(req->wrepl_socket, NT_STATUS_IO_TIMEOUT);
 }
 
 /*
@@ -67,7 +85,7 @@ static void wrepl_handler_send(struct wrepl_socket *wrepl_socket)
 
 		status = socket_send(wrepl_socket->sock, &req->buffer, &nsent, 0);
 		if (NT_STATUS_IS_ERR(status)) {
-			wrepl_socket_dead(wrepl_socket);
+			wrepl_socket_dead(wrepl_socket, status);
 			return;
 		}
 		if (!NT_STATUS_IS_OK(status) || nsent == 0) return;
@@ -99,7 +117,16 @@ static void wrepl_handler_recv(struct wrepl_socket *wrepl_socket)
 	DATA_BLOB blob;
 
 	if (req == NULL) {
+		NTSTATUS status;
+
 		EVENT_FD_NOT_READABLE(wrepl_socket->fde);
+
+		status = socket_recv(wrepl_socket->sock, NULL, 0, &nread, 0);
+		if (NT_STATUS_EQUAL(NT_STATUS_END_OF_FILE,status)) return;
+		if (NT_STATUS_IS_ERR(status)) {
+			wrepl_socket_dead(wrepl_socket, status);
+			return;
+		}
 		return;
 	}
 
@@ -121,7 +148,7 @@ static void wrepl_handler_recv(struct wrepl_socket *wrepl_socket)
 					  4 - req->num_read,
 					  &nread, 0);
 		if (NT_STATUS_IS_ERR(req->status)) {
-			wrepl_socket_dead(wrepl_socket);
+			wrepl_socket_dead(wrepl_socket, req->status);
 			return;
 		}
 		if (!NT_STATUS_IS_OK(req->status)) return;
@@ -146,7 +173,7 @@ static void wrepl_handler_recv(struct wrepl_socket *wrepl_socket)
 				  req->buffer.length - req->num_read,
 				  &nread, 0);
 	if (NT_STATUS_IS_ERR(req->status)) {
-		wrepl_socket_dead(wrepl_socket);
+		wrepl_socket_dead(wrepl_socket, req->status);
 		return;
 	}
 	if (!NT_STATUS_IS_OK(req->status)) return;
@@ -225,7 +252,8 @@ static void wrepl_connect_handler(struct event_context *ev, struct fd_event *fde
 							    struct wrepl_socket);
 	struct wrepl_request *req = wrepl_socket->recv_queue;
 
-	talloc_free(fde);
+	talloc_free(wrepl_socket->fde);
+	wrepl_socket->fde = NULL;
 
 	if (req == NULL) return;
 
@@ -255,6 +283,15 @@ failed:
 	}
 }
 
+/*
+  destroy a wrepl_socket destructor
+*/
+static int wrepl_socket_destructor(void *ptr)
+{
+	struct wrepl_socket *sock = talloc_get_type(ptr, struct wrepl_socket);
+	wrepl_socket_dead(sock, NT_STATUS_CONNECTION_DISCONNECTED);
+	return 0;
+}
 
 /*
   initialise a wrepl_socket. The event_ctx is optional, if provided then
@@ -281,9 +318,10 @@ struct wrepl_socket *wrepl_socket_init(TALLOC_CTX *mem_ctx,
 
 	talloc_steal(wrepl_socket, wrepl_socket->sock);
 
-	wrepl_socket->send_queue = NULL;
-	wrepl_socket->recv_queue = NULL;
-	wrepl_socket->dead       = False;
+	wrepl_socket->send_queue	= NULL;
+	wrepl_socket->recv_queue	= NULL;
+	wrepl_socket->request_timeout	= WREPL_SOCKET_REQUEST_TIMEOUT;
+	wrepl_socket->dead		= False;
 
 	wrepl_socket->fde = event_add_fd(wrepl_socket->event_ctx, wrepl_socket, 
 					 socket_get_fd(wrepl_socket->sock), 
@@ -291,6 +329,8 @@ struct wrepl_socket *wrepl_socket_init(TALLOC_CTX *mem_ctx,
 					 wrepl_connect_handler, wrepl_socket);
 
 	set_blocking(socket_get_fd(wrepl_socket->sock), False);
+
+	talloc_set_destructor(wrepl_socket, wrepl_socket_destructor);
 	
 	return wrepl_socket;
 
@@ -298,7 +338,6 @@ failed:
 	talloc_free(wrepl_socket);
 	return NULL;
 }
-
 
 /*
   destroy a wrepl_request
@@ -437,6 +476,12 @@ struct wrepl_request *wrepl_request_send(struct wrepl_socket *wrepl_socket,
 	DLIST_ADD(wrepl_socket->send_queue, req);
 
 	talloc_set_destructor(req, wrepl_request_destructor);
+
+	if (wrepl_socket->request_timeout > 0) {
+		req->te = event_add_timed(wrepl_socket->event_ctx, req, 
+					  timeval_current_ofs(wrepl_socket->request_timeout, 0), 
+					  wrepl_request_timeout_handler, req);
+	}
 
 	EVENT_FD_WRITEABLE(wrepl_socket->fde);
 	
@@ -643,16 +688,16 @@ static NTSTATUS wrepl_extract_name(struct nbt_name *name,
 	}
 
 	if (len < 17) {
-		make_nbt_name_client(name, talloc_strndup(mem_ctx, namebuf, len));
+		make_nbt_name_client(name, talloc_strndup(mem_ctx, (char *)namebuf, len));
 		return NT_STATUS_OK;
 	}
 
-	s = talloc_strndup(mem_ctx, namebuf, 15);
+	s = talloc_strndup(mem_ctx, (char *)namebuf, 15);
 	trim_string(s, NULL, " ");
 	name->name = s;
 	name->type = namebuf[15];
 	if (len > 18) {
-		name->scope = talloc_strndup(mem_ctx, namebuf+17, len-17);
+		name->scope = talloc_strndup(mem_ctx, (char *)(namebuf+17), len-17);
 	} else {
 		name->scope = NULL;
 	}
