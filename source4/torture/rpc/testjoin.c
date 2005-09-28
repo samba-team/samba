@@ -134,7 +134,7 @@ struct test_join *torture_create_testuser(const char *username,
 					DCERPC_SAMR_UUID,
 					DCERPC_SAMR_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
+		return NULL;
 	}
 
 	c.in.system_name = NULL;
@@ -148,7 +148,7 @@ struct test_join *torture_create_testuser(const char *username,
 			errstr = dcerpc_errstr(join, join->p->last_fault_code);
 		}
 		printf("samr_Connect failed - %s\n", errstr);
-		goto failed;
+		return NULL;
 	}
 
 	printf("Opening domain %s\n", domain);
@@ -284,6 +284,10 @@ struct test_join *torture_join_domain(const char *machine_name,
 	struct libnet_context *libnet_ctx;
 	struct libnet_JoinDomain *libnet_r;
 	struct test_join *tj;
+	struct samr_SetUserInfo s;
+	union samr_UserInfo u;
+	struct lsa_String comment;
+	struct lsa_String full_name;
 	
 	tj = talloc(NULL, struct test_join);
 	if (!tj) return NULL;
@@ -324,6 +328,30 @@ struct test_join *torture_join_domain(const char *machine_name,
 	tj->user_handle = *libnet_r->out.user_handle;
 	tj->dom_sid = dom_sid_string(tj, libnet_r->out.domain_sid);
 	*machine_password = libnet_r->out.join_password;
+
+	ZERO_STRUCT(u);
+	s.in.user_handle = &tj->user_handle;
+	s.in.info = &u;
+	s.in.level = 21;
+
+	u.info21.fields_present = SAMR_FIELD_DESCRIPTION | SAMR_FIELD_COMMENT | SAMR_FIELD_FULL_NAME;
+	comment.string = talloc_asprintf(tj, 
+					 "Tortured by Samba4: %s", 
+					 timestring(tj, time(NULL)));
+	u.info21.comment = comment;
+	full_name.string = talloc_asprintf(tj, 
+					 "Torture account for Samba4: %s", 
+					 timestring(tj, time(NULL)));
+	u.info21.full_name = full_name;
+
+	u.info21.description.string = talloc_asprintf(tj, 
+						      "Samba4 torture account created by host %s: %s", 
+						      lp_netbios_name(), timestring(tj, time(NULL)));
+
+	status = dcerpc_samr_SetUserInfo(tj->p, tj, &s);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetUserInfo (non-critical) failed - %s\n", nt_errstr(status));
+	}
 
 	DEBUG(0, ("%s joined domain %s (%s).\n", 
 		  libnet_r->in.netbios_name, 
