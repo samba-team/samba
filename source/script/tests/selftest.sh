@@ -7,6 +7,7 @@ REALM=SAMBA.EXAMPLE.COM
 PASSWORD=penguin
 SRCDIR=`pwd`
 ROOT=$USER
+SERVER=localtest
 if test -z "$ROOT"; then
     ROOT=$LOGNAME
 fi
@@ -81,7 +82,7 @@ mkdir -p $PRIVATEDIR $LIBDIR $PIDDIR $NCALRPCDIR $LOCKDIR $TMPDIR $TLSDIR
 
 cat >$CONFFILE<<EOF
 [global]
-	netbios name = LOCALHOST
+	netbios name = $SERVER
 	workgroup = $DOMAIN
 	realm = $REALM
 	private dir = $PRIVATEDIR
@@ -107,7 +108,7 @@ cat >$CONFFILE<<EOF
 [cifs]
 	read only = no
 	ntvfs handler = cifs
-	cifs:server = localhost
+	cifs:server = $SERVER
 	cifs:user = $USERNAME
 	cifs:password = $PASSWORD
 	cifs:domain = $DOMAIN
@@ -134,7 +135,8 @@ EOF
 
 export KRB5_CONFIG
 
-./setup/provision $CONFIGURATION --quiet --domain $DOMAIN --realm $REALM \
+./setup/provision $CONFIGURATION --host-name=$SERVER --host-ip=127.0.0.1 \
+    --quiet --domain $DOMAIN --realm $REALM \
     --adminpass $PASSWORD --root=$ROOT || exit 1
 
 if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
@@ -153,7 +155,7 @@ START=`date`
  # give time for nbt server to register its names
  echo delaying for nbt name registration
  sleep 4
- bin/nmblookup $CONFIGURATION -U localhost localhost 
+ bin/nmblookup $CONFIGURATION -U $SERVER $SERVER
 
  failed=0
 
