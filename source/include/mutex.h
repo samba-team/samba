@@ -66,4 +66,4 @@ struct mutex_ops {
 	int (*rwlock_destroy)(smb_rwlock_t *rwlock, const char *name);
 };
 
-#endif /* ndef _MUTEX_H_ */
+#endif /* endif _MUTEX_H_ */

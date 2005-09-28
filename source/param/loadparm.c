@@ -1485,7 +1485,9 @@ static void copy_service(service * pserviceDest, service * pserviceSource, BOOL 
 			pdata = pdata->next;
 		}
 		if (not_added) {
-			paramo = smb_xmalloc_p(struct param_opt);
+			paramo = malloc_p(struct param_opt);
+			if (!paramo)
+				smb_panic("OOM");
 			paramo->key = strdup(data->key);
 			paramo->value = strdup(data->value);
 			DLIST_ADD(pserviceDest->param_opt, paramo);
@@ -1742,7 +1744,9 @@ static BOOL lp_do_parameter_parametric(int snum, const char *pszParmName, const 
 		}
 	}
 
-	paramo = smb_xmalloc_p(struct param_opt);
+	paramo = malloc_p(struct param_opt);
+	if (!paramo)
+		smb_panic("OOM");
 	paramo->key = strdup(name);
 	paramo->value = strdup(pszParmValue);
 	paramo->flags = flags;
