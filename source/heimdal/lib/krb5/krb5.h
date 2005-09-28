@@ -444,6 +444,7 @@ typedef struct krb5_context_data {
     void *mutex;			/* protects error_string/error_buf */
     int large_msg_size;
     krb5_boolean fdns;                  /* Lookup hostnames to find full name, or send as-is */
+    struct send_and_recv *send_and_recv; /* Alternate functions for KDC communication */
 } krb5_context_data;
 
 enum {
@@ -743,6 +744,13 @@ enum {
     KRB5_KRBHST_FLAGS_MASTER      = 1,
     KRB5_KRBHST_FLAGS_LARGE_MSG	  = 2
 };
+
+typedef int (*krb5_send_and_recv_func_t)(krb5_context,
+					 void *,
+					 krb5_krbhst_info *,
+					 const krb5_data *,
+					 krb5_data *);
+typedef void (*krb5_send_and_recv_close_func_t)(krb5_context, void*);
 
 struct credentials; /* this is to keep the compiler happy */
 struct getargs;
