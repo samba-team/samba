@@ -613,9 +613,16 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 	add_sid_to_array(mem_ctx, &primary_group, user_sids, num_groups);
 	
-	for (i=0;i<count;i++)
+	for (i=0;i<count;i++) {
+
+		/* ignore Builtin groups from ADS - Guenther */
+		if (sid_check_is_in_builtin(&sids[i])) {
+			continue;
+		}
+			       
 		add_sid_to_array_unique(mem_ctx, &sids[i],
 					user_sids, num_groups);
+	}
 
 	status = (user_sids != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 

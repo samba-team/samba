@@ -1175,7 +1175,10 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	/* if we are a DC and this is a trusted domain, then we need to use our
 	   domain name in the net_req_auth2() request */
 
-	if ( IS_DC ) {
+	if ( IS_DC 
+		&& !strequal(domain->name, lp_workgroup())
+		&& lp_allow_trusted_domains() ) 
+	{
 		account_name = talloc_asprintf( mem_ctx, "%s$", lp_workgroup() );
 	}
 	else {

@@ -110,7 +110,6 @@ BOOL shutdown_io_q_init(const char *desc, SHUTDOWN_Q_INIT *q_s, prs_struct *ps,
 	if (!prs_uint8("reboot ", ps, depth, &(q_s->reboot)))
 		return False;
 
-
 	return True;
 }
 
