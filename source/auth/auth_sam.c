@@ -163,7 +163,7 @@ static NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 		int i;
 		const char **workstations = str_list_make(mem_ctx, workstation_list, ",");
 		
-		for (i = 0; workstations[i]; i++) {
+		for (i = 0; workstations && workstations[i]; i++) {
 			DEBUG(10,("sam_account_ok: checking for workstation match '%s' and '%s'\n",
 				  workstations[i], user_info->workstation_name));
 
