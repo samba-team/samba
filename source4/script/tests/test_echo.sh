@@ -20,6 +20,9 @@ transports="ncacn_np ncacn_ip_tcp"
 if [ $server = "localhost" ]; then 
     transports="ncalrpc $transports"
 fi
+if [ $server = "localtest" ]; then 
+    transports="ncalrpc $transports"
+fi
 
 failed=0
 for transport in $transports; do
