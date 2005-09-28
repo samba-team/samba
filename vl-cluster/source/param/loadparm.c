@@ -96,7 +96,6 @@ struct _param_opt_struct {
  */
 typedef struct
 {
-	char *szConfigBackend;
 	char *smb_ports;
 	char *dos_charset;
 	char *unix_charset;
@@ -803,7 +802,6 @@ static const struct enum_list enum_map_to_guest[] = {
 static struct parm_struct parm_table[] = {
 	{N_("Base Options"), P_SEP, P_SEPARATOR}, 
 
-	{"config backend", P_STRING, P_GLOBAL, &Globals.szConfigBackend, NULL, NULL, FLAG_ADVANCED},
 	{"dos charset", P_STRING, P_GLOBAL, &Globals.dos_charset, handle_charset, NULL, FLAG_ADVANCED}, 
 	{"unix charset", P_STRING, P_GLOBAL, &Globals.unix_charset, handle_charset, NULL, FLAG_ADVANCED}, 
 	{"display charset", P_STRING, P_GLOBAL, &Globals.display_charset, handle_charset, NULL, FLAG_ADVANCED}, 
@@ -1376,8 +1374,6 @@ static void init_globals(void)
 
 	DEBUG(3, ("Initialising global parameters\n"));
 
-	string_set(&Globals.szConfigBackend, NULL);
-
 	string_set(&Globals.szSMBPasswdFile, dyn_SMB_PASSWD_FILE);
 	string_set(&Globals.szPrivateDir, dyn_PRIVATE_DIR);
 
@@ -1706,7 +1702,6 @@ static char *lp_string(const char *s)
 #define FN_LOCAL_INTEGER(fn_name,val) \
  int fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 
-FN_GLOBAL_STRING(lp_config_backend, &Globals.szConfigBackend)
 FN_GLOBAL_STRING(lp_smb_ports, &Globals.smb_ports)
 FN_GLOBAL_STRING(lp_dos_charset, &Globals.dos_charset)
 FN_GLOBAL_STRING(lp_unix_charset, &Globals.unix_charset)
@@ -4135,11 +4130,6 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	if (bRetval)
 		if (iServiceIndex >= 0)
 			bRetval = service_ok(iServiceIndex);
-
-	if (*(lp_config_backend())) {
-		modconf_init(lp_config_backend());
-		modconf_load(do_section, do_parameter);
-	}	
 
 	lp_add_auto_services(lp_auto_services());
 

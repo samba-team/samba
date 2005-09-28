@@ -423,7 +423,7 @@ BOOL iprint_cache_reload(void)
  * 'iprint_job_delete()' - Delete a job.
  */
 
-static int iprint_job_delete(int snum, struct printjob *pjob)
+static int iprint_job_delete(const char *sharename, const char *lprm_command, struct printjob *pjob)
 {
 	int		ret = 1;		/* Return value */
 	http_t		*http = NULL;		/* HTTP connection to server */
@@ -434,7 +434,7 @@ static int iprint_job_delete(int snum, struct printjob *pjob)
 	char		httpPath[HTTP_MAX_URI];	/* path portion of the printer-uri */
 
 
-	DEBUG(5,("iprint_job_delete(%d, %p (%d))\n", snum, pjob, pjob->sysjob));
+	DEBUG(5,("iprint_job_delete(%s, %p (%d))\n", sharename, pjob, pjob->sysjob));
 
        /*
 	* Make sure we don't ask for passwords...
@@ -476,7 +476,7 @@ static int iprint_job_delete(int snum, struct printjob *pjob)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE,
 	             "attributes-natural-language", NULL, language->language);
 
-	slprintf(uri, sizeof(uri) - 1, "ipp://%s/ipp/%s", iprint_server(), PRINTERNAME(snum));
+	slprintf(uri, sizeof(uri) - 1, "ipp://%s/ipp/%s", iprint_server(), sharename);
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "printer-uri", NULL, uri);
 
@@ -489,7 +489,7 @@ static int iprint_job_delete(int snum, struct printjob *pjob)
 	* Do the request and get back a response...
 	*/
 
-	slprintf(httpPath, sizeof(httpPath) - 1, "/ipp/%s", PRINTERNAME(snum));
+	slprintf(httpPath, sizeof(httpPath) - 1, "/ipp/%s", sharename);
 
 	if ((response = cupsDoRequest(http, request, httpPath)) != NULL) {
 		if (response->request.status.status_code >= IPP_OK_CONFLICT) {

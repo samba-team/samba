@@ -1568,7 +1568,6 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 		if (!NT_STATUS_IS_OK(status)) {
 			struct deferred_open_record state;
 
-			talloc_free(lck);
 			fd_close(conn, fsp);
 			file_free(fsp);
 
@@ -1585,6 +1584,7 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 
 			defer_open(lck, request_time, timeval_zero(),
 				   &state);
+			talloc_free(lck);
 			return NULL;
 		}
 

@@ -38,6 +38,7 @@ void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
 	pid_t pid;
 	int i, n;
 	char buf[12];
+	int maxfd;
 
 	setup_logging(argv[0],True);
 	
@@ -53,11 +54,29 @@ void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
 	pid = atoi(argv[1]);
 	n = atoi(argv[2]);
 
+	printf("%d\n", getpid());
+
 	message_register(MSG_PONG, pong_message);
+	maxfd = message_socket();
 
 	for (i=0;i<n;i++) {
+		fd_set read_fds;
+		struct timeval one_second;
+
 		message_send_pid(pid_to_procid(pid), MSG_PING, NULL, 0, True);
+		one_second = timeval_set(1,0);
+
+		FD_ZERO(&read_fds);
+		FD_SET(maxfd, &read_fds);
+		if (select(maxfd+1, &read_fds, NULL, NULL, &one_second) != 1) {
+			DEBUG(0, ("select failed\n"));
+			exit(1);
+		}
+		message_dispatch();
+		lp_talloc_free();
 	}
+
+	exit(0);
 
 	while (pong_count < i) {
 		message_dispatch();

@@ -151,8 +151,7 @@ RPC_MODULES = @RPC_MODULES@
 IDMAP_MODULES = @IDMAP_MODULES@
 CHARSET_MODULES = @CHARSET_MODULES@
 AUTH_MODULES = @AUTH_MODULES@
-CONFIG_MODULES = @CONFIG_MODULES@
-MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(IDMAP_MODULES) $(CHARSET_MODULES) $(AUTH_MODULES) $(CONFIG_MODULES)
+MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(IDMAP_MODULES) $(CHARSET_MODULES) $(AUTH_MODULES)
 
 ######################################################################
 # object file lists
@@ -220,7 +219,7 @@ POPT_LIB_OBJ = lib/popt_common.o
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
             ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o 
 
-PARAM_OBJ = dynconfig.o param/loadparm.o param/params.o param/modconf.o
+PARAM_OBJ = dynconfig.o param/loadparm.o param/params.o
 
 KRBCLIENT_OBJ = libads/kerberos.o libads/ads_status.o 
 
@@ -383,8 +382,6 @@ AUTH_OBJ = auth/auth.o @AUTH_STATIC@ auth/auth_util.o auth/auth_compat.o \
 	   $(PLAINTEXT_AUTH_OBJ) $(DCUTIL_OBJ)
 
 MANGLE_OBJ = smbd/mangle.o smbd/mangle_hash.o smbd/mangle_map.o smbd/mangle_hash2.o
-
-CONFIG_LDAP_OBJ = param/config_ldap.o
 
 SMBD_OBJ_MAIN = smbd/server.o
 
@@ -1305,11 +1302,6 @@ bin/expand_msdfs.@SHLIBEXT@: $(VFS_EXPAND_MSDFS_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_EXPAND_MSDFS_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
-
-bin/config_ldap.@SHLIBEXT@: $(CONFIG_LDAP_OBJ:.o=.@PICSUFFIX@)
-	@echo "Building plugin $@"
-	 @$(SHLD) $(LDSHFLAGS) -o $@ $(CONFIG_LDAP_OBJ:.o=.@PICSUFFIX@) \
-		@SMBLDAP@ @LDAP_LIBS@ @SONAMEFLAG@`basename $@`
 
 bin/afsacl.@SHLIBEXT@: $(VFS_AFSACL_OBJ:.o=.po)
 	@echo "Building plugin $@"
