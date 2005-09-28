@@ -35,6 +35,30 @@
 
 RCSID("$Id: send_to_kdc.c,v 1.56 2005/06/17 04:33:11 lha Exp $");
 
+struct send_and_recv {
+	krb5_send_and_recv_func_t func;
+	krb5_send_and_recv_close_func_t close;
+	void *data;
+};
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_set_send_recv_func(krb5_context context,
+			krb5_send_and_recv_func_t func,
+			krb5_send_and_recv_close_func_t close_fn,
+			void *data)
+{
+	free(context->send_and_recv);
+	context->send_and_recv = malloc(sizeof(*context->send_and_recv));
+	if (!context->send_and_recv) {
+		return ENOMEM;
+	}
+	context->send_and_recv->func = func;
+	context->send_and_recv->close = close_fn;
+	context->send_and_recv->data = data;
+	return 0;
+}
+
+
 /*
  * send the data in `req' on the socket `fd' (which is datagram iff udp)
  * waiting `tmout' for a reply and returning the reply in `rep'.
@@ -329,11 +353,27 @@ krb5_sendto (krb5_context context,
 	 while (krb5_krbhst_next(context, handle, &hi) == 0) {
 	     struct addrinfo *ai, *a;
 
-	     if(hi->proto == KRB5_KRBHST_HTTP && context->http_proxy) {
-		 if (send_via_proxy (context, hi, send_data, receive))
+	     if (context->send_and_recv) {
+		 ret = context->send_and_recv->func(context, 
+						    context->send_and_recv->data, 
+						    hi, send_data, receive);
+		 if (ret) {
 		     continue;
-		 else
-		     goto out;
+		 } else if (receive->length != 0) {
+		     return 0;
+		 } else {
+		     continue;
+		 }
+	     }
+
+	     if(hi->proto == KRB5_KRBHST_HTTP && context->http_proxy) {
+		 if (send_via_proxy (context, hi, send_data, receive)) {
+		     /* Try again, with next host */
+		     continue;
+		 } else {
+		     /* Success */
+		     return 0;
+		 }
 	     }
 
 	     ret = krb5_krbhst_get_addrinfo(context, hi, &ai);
@@ -363,16 +403,15 @@ krb5_sendto (krb5_context context,
 		     break;
 		 }
 		 close (fd);
-		 if(ret == 0 && receive->length != 0)
-		     goto out;
+		 if(ret == 0 && receive->length != 0) {
+		     return 0;
+		 }
 	     }
 	 }
 	 krb5_krbhst_reset(context, handle);
      }
      krb5_clear_error_string (context);
-     ret = KRB5_KDC_UNREACH;
-out:
-     return ret;
+     return KRB5_KDC_UNREACH;
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
