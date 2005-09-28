@@ -159,8 +159,8 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *test_ctx = talloc_named(mem_ctx, 0, "test_schannel context");
 	char *test_machine_account = talloc_asprintf(NULL, "%s$", TEST_MACHINE_NAME);
 
-	join_ctx = torture_create_testuser(test_machine_account, lp_workgroup(), 
-					   acct_flags, &machine_password);
+	join_ctx = torture_join_domain(TEST_MACHINE_NAME, 
+				       acct_flags, &machine_password);
 	if (!join_ctx) {
 		printf("Failed to join domain with acct_flags=0x%x\n", acct_flags);
 		talloc_free(test_ctx);
