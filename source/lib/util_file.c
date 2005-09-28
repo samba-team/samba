@@ -2,6 +2,8 @@
  * Unix SMB/CIFS implementation.
  * SMB parameters and setup
  * Copyright (C) Andrew Tridgell 1992-1998 Modified by Jeremy Allison 1995.
+ *
+ * Added afdgets() Jelmer Vernooij 2005
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -96,6 +98,52 @@ char *fgets_slash(char *s2,int maxlen,XFILE *f)
   return(s);
 }
 
+/* Read one line (data until next newline or eof) and allocate it */
+char *afdgets(int fd, TALLOC_CTX *mem_ctx, size_t hint)
+{
+	char *data = NULL;
+	ssize_t alloc_size = 0, offset = 0, ret;
+	int p;
+
+	if (hint <= 0) hint = 0x100;
+
+	do {
+		alloc_size += hint;
+
+		data = talloc_realloc(mem_ctx, data, char, alloc_size);
+
+		if (!data)
+			return NULL;
+
+		ret = read(fd, data + offset, hint);
+
+		if (ret == -1) {
+			talloc_free(data);
+			return NULL;
+		}
+
+		/* Find newline */
+		for (p = 0; p < ret; p++) {
+			if (data[offset + p] == '\n')
+				break;
+		}
+
+		if (p < ret) {
+			data[offset + p] = '\0';
+
+			/* Go back to position of newline */
+			lseek(fd, p - ret + 1, SEEK_CUR);
+			return data;
+		}
+
+		offset += ret;
+
+	} while (ret == hint);
+
+	data[offset] = '\0';
+
+	return data;
+}
 
 
 /****************************************************************************
@@ -287,7 +335,7 @@ void file_lines_slashcont(char **lines)
 /*
   save a lump of data into a file. Mostly used for debugging 
 */
-BOOL file_save(const char *fname, void *packet, size_t length)
+BOOL file_save(const char *fname, const void *packet, size_t length)
 {
 	int fd;
 	fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC, 0644);
