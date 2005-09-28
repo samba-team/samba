@@ -64,6 +64,7 @@ AC_CHECK_HEADERS([\
 	pwd.h					\
 	rpcsvc/ypclnt.h				\
 	shadow.h				\
+	stdint.h				\
 	sys/bswap.h				\
 	sys/ioctl.h				\
 	sys/mman.h				\
@@ -85,6 +86,10 @@ AC_CHECK_HEADERS([\
 	usersec.h				\
 	util.h					\
 ])
+
+AC_HAVE_TYPE([uintptr_t],[#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif])
 
 dnl Sunpro 5.2 has a vis.h which is something different.
 AC_CHECK_HEADERS(vis.h, , , [
