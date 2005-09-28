@@ -24,6 +24,7 @@
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 #include "heimdal/kdc/kdc.h"
+#include "heimdal/lib/hdb/hdb.h"
 #include "kdc/pac-glue.h"
 
 krb5_error_code hdb_ldb_create(TALLOC_CTX *mem_ctx, 

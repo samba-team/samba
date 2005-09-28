@@ -271,6 +271,8 @@ static void kdc_task_init(struct task_server *task)
 		return; 
 	}
 
+	krb5_add_et_list(kdc->smb_krb5_context->krb5_context, initialize_hdb_error_table_r);
+
 	kdc->config->logf = kdc->smb_krb5_context->logf;
 	kdc->config->db = talloc(kdc->config, struct HDB *);
 	if (!kdc->config->db) {
