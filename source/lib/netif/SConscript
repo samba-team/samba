@@ -19,4 +19,4 @@ if hostenv['configure']:
 
 	conf.Finish()
 
-hostenv.StaticLibrary('netif', ['interface.c', 'netif.c'])
+hostenv.Library('netif', ['interface.c', 'netif.c'])

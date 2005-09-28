@@ -1,2 +1,2 @@
 Import('hostenv')
-hostenv.StaticLibrary('cldap_server',['cldap_server.c','netlogon.c'])
+hostenv.Library('cldap_server',['cldap_server.c','netlogon.c'])

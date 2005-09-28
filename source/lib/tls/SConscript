@@ -1,5 +1,5 @@
 Import('hostenv')
-hostenv.StaticLibrary('tls', ['tls.c', 'tlscert.c'])
+hostenv.Library('tls', ['tls.c', 'tlscert.c'])
 
 if hostenv['configure']:
     conf = hostenv.Configure()

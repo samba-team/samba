@@ -24,7 +24,7 @@ opts.AddOptions(
 
 hostenv = Environment(
 		toolpath=['build/scons','.'],
-		tools=['default','pidl','proto','et','asn1'],
+		tools=['default','pidl','proto','et','asn1','samba'],
 		options=opts,
 		CPPPATH=['#include','#','#lib'], 
         CPPDEFINES={'_SAMBA_BUILD_': None},

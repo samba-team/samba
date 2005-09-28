@@ -1,6 +1,6 @@
 Import('hostenv')
 
-hostenv.StaticLibrary('ntvfs_posix',
+hostenv.Library('ntvfs_posix',
 		['vfs_posix.c', 'pvfs_util.c', 'pvfs_search.c', 'pvfs_dirlist.c',
 		'pvfs_fileinfo.c', 'pvfs_unlink.c', 'pvfs_mkdir.c', 'pvfs_open.c',
 		'pvfs_read.c', 'pvfs_flush.c', 'pvfs_write.c', 'pvfs_fsinfo.c',

@@ -67,5 +67,5 @@ int main() {
 
 	conf.Finish()
 
-hostenv.StaticLibrary('replace', rep_files)
+hostenv.Library('replace', rep_files)
 SConscript(dirs=['win32'])

@@ -1,2 +1,2 @@
 Import('hostenv')
-hostenv.StaticLibrary('messaging','messaging.c')
+hostenv.Library('messaging','messaging.c')

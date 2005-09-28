@@ -2,5 +2,5 @@ Import('hostenv')
 #            tastes like -*- python -*-
 
 Import('basic param credentials')
-popt_common = hostenv.StaticLibrary('popt_common',['popt_common.c',basic,param,credentials])
+popt_common = hostenv.Library('popt_common',['popt_common.c',basic,param,credentials])
 Export('popt_common')

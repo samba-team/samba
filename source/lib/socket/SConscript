@@ -57,8 +57,8 @@ int main(void)
 
 	conf.Finish()
 
-hostenv.StaticLibrary('socket_ipv4.c')
-hostenv.StaticLibrary('socket_ipv6.c')
-hostenv.StaticLibrary('socket_unix.c')
-hostenv.StaticLibrary('socket', ['socket.c','access.c','connect.c'])
+hostenv.Library('socket_ipv4.c')
+hostenv.Library('socket_ipv6.c')
+hostenv.Library('socket_unix.c')
+hostenv.Library('socket', ['socket.c','access.c','connect.c'])
 
