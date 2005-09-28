@@ -2,19 +2,19 @@ Import('hostenv paths')
 #            tastes like -*- python -*-
 
 Import('talloc basic popt_common popt param')
-registry = hostenv.StaticLibrary('registry',
+registry = hostenv.Library('registry',
 			[basic,talloc,'common/reg_interface.c','common/reg_util.c'])
 regtree = hostenv.Program('regtree', ['tools/regtree.c',registry,talloc,basic,popt_common,popt,param])
 regshell = hostenv.Program('regshell', ['tools/regshell.c',registry,talloc,basic,popt_common,popt,param])
 regpatch = hostenv.Program('regpatch', ['tools/regpatch.c',registry,talloc,basic,popt_common,popt,param])
 regdiff = hostenv.Program('regdiff', ['tools/regdiff.c',registry,talloc,basic,popt_common,popt,param])
 
-hostenv.StaticLibrary('reg_backend_dir.c')
-hostenv.StaticLibrary('reg_backend_gconf.c')
-hostenv.StaticLibrary('reg_backend_ldb.c')
-hostenv.StaticLibrary('reg_backend_nt4', ['reg_backend_nt4.c',hostenv.TdrMarshaller('regf.idl')])
-hostenv.StaticLibrary('reg_backend_rpc.c')
-hostenv.StaticLibrary('reg_backend_w95.c')
-hostenv.StaticLibrary('reg_backend_wine.c')
+hostenv.Library('reg_backend_dir.c')
+hostenv.Library('reg_backend_gconf.c')
+hostenv.Library('reg_backend_ldb.c')
+hostenv.Library('reg_backend_nt4', ['reg_backend_nt4.c',hostenv.TdrMarshaller('regf.idl')])
+hostenv.Library('reg_backend_rpc.c')
+hostenv.Library('reg_backend_w95.c')
+hostenv.Library('reg_backend_wine.c')
 
 hostenv.Install(paths['BINDIR'], [regtree,regshell,regpatch,regdiff])

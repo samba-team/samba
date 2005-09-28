@@ -1,22 +1,22 @@
 Import('hostenv')
-hostenv.StaticLibrary('torture_basic',
+hostenv.Library('torture_basic',
 	['basic/scanner.c','basic/utable.c','basic/charset.c',
 	 'basic/mangle_test.c','basic/denytest.c','basic/aliases.c',
 	 'basic/locking.c','basic/secleak.c','basic/rename.c','basic/dir.c',
 	 'basic/delete.c','basic/unlink.c','basic/disconnect.c',
 	 'basic/delaywrite.c','basic/attr.c','basic/properties.c'])
 
-hostenv.StaticLibrary('torture_raw',
+hostenv.Library('torture_raw',
 	[ 'raw/qfsinfo.c', 'raw/qfileinfo.c', 'raw/setfileinfo.c', 'raw/search.c',
 	'raw/close.c', 'raw/open.c', 'raw/mkdir.c', 'raw/oplock.c', 'raw/notify.c',
 	'raw/mux.c', 'raw/ioctl.c', 'raw/chkpath.c', 'raw/unlink.c', 'raw/read.c',
 	'raw/context.c', 'raw/write.c', 'raw/lock.c', 'raw/rename.c', 'raw/eas.c',
 	'raw/streams.c', 'raw/acls.c', 'raw/seek.c', 'raw/composite.c'])
 
-hostenv.StaticLibrary('torture_com',
+hostenv.Library('torture_com',
 	[ 'com/simple.c'])
 
-hostenv.StaticLibrary('torture_rpc',
+hostenv.Library('torture_rpc',
 	[ 'rpc/lsa.c', 'rpc/session_key.c', 'rpc/echo.c', 'rpc/dcom.c',
 	'rpc/dfs.c', 'rpc/drsuapi.c', 'rpc/spoolss.c', 'rpc/unixinfo.c',
 	'rpc/samr.c', 'rpc/wkssvc.c', 'rpc/srvsvc.c', 'rpc/svcctl.c', 'rpc/atsvc.c',
@@ -27,25 +27,25 @@ hostenv.StaticLibrary('torture_rpc',
 	'rpc/rot.c', 'rpc/bind.c', 'rpc/dssetup.c', 'rpc/alter_context.c',
 	'rpc/bench.c'])
 
-hostenv.StaticLibrary('torture_rap', [ 'rap/rap.c'] )
+hostenv.Library('torture_rap', [ 'rap/rap.c'] )
 
-hostenv.StaticLibrary('torture_auth', [ 'auth/ntlmssp.c', 'auth/pac.c' ])
+hostenv.Library('torture_auth', [ 'auth/ntlmssp.c', 'auth/pac.c' ])
 
-hostenv.StaticLibrary('torture_local', 
+hostenv.Library('torture_local', 
 	['local/iconv.c', 'lib/talloc/testsuite.c', 'local/messaging.c',
 	'local/binding_string.c', 'local/idtree.c', 'local/socket.c',
 	'local/irpc.c', 'local/resolve.c', 'local/util_strlist.c'])
 
-hostenv.StaticLibrary('torture_nbench', [ 'nbench/nbio.c', 'nbench/nbench.c' ])
+hostenv.Library('torture_nbench', [ 'nbench/nbio.c', 'nbench/nbench.c' ])
 
-hostenv.StaticLibrary('torture_ldap',
+hostenv.Library('torture_ldap',
 	[ 'ldap/common.c', 'ldap/basic.c', 'ldap/cldap.c', 'ldap/cldapbench.c' ])
 
-hostenv.StaticLibrary('torture_nbt',
+hostenv.Library('torture_nbt',
 	[ 'nbt/query.c', 'nbt/register.c', 'nbt/wins.c', 'nbt/winsbench.c',
 	'nbt/winsreplication.c', 'nbt/dgram.c'])
 
-hostenv.StaticLibrary('torture_net', 
+hostenv.Library('torture_net', 
 	[ 'libnet/userinfo.c', 'libnet/userman.c', 'libnet/domain.c',
 	'libnet/libnet_lookup.c', 'libnet/libnet_user.c', 'libnet/libnet_share.c',
 	'libnet/libnet_rpc.c'])

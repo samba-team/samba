@@ -3,7 +3,7 @@ Import('buildenv hostenv defines')
 if hostenv['configure']:
 	defines['HAVE_KRB5'] = 1
 
-hostenv.StaticLibrary('heimdal_kdc',
+hostenv.Library('heimdal_kdc',
 	['../kdc/default_config.c','../kdc/kerberos5.c','../kdc/pkinit.c',
 	 '../kdc/log.c','../kdc/misc.c','../kdc/524.c','../kdc/kerberos4.c',
 	 '../kdc/kaserver.c','../kdc/process.c'])
@@ -12,12 +12,12 @@ hdb_asn1 = hostenv.ASN1('../heimdal/lib/hdb/hdb.asn1',ASN1PREFIX='hdb_asn1')
 gssapi_asn1 = hostenv.ASN1('../heimdal/lib/gssapi/spnego.asn1',ASN1PREFIX='spnego_asn1')
 k5_asn1 = hostenv.ASN1('../heimdal/lib/asn1/k5.asn1',ASN1PREFIX='k5_asn1')
 
-hostenv.StaticLibrary('heimdal_hdb',
+hostenv.Library('heimdal_hdb',
 	['../heimdal/lib/hdb/db.c','../heimdal/lib/hdb/hdb.c','../heimdal/lib/hdb/ext.c','../heimdal/lib/hdb/keys.c',
 	'../heimdal/lib/hdb/mkey.c','../heimdal/lib/hdb/ndbm.c',hdb_asn1,
 	hostenv.ErrorTable('../heimdal/lib/hdb/hdb_err.et')])
 
-hostenv.StaticLibrary('heimdal_gssapi',
+hostenv.Library('heimdal_gssapi',
 	['../heimdal/lib/gssapi/init_sec_context.c','../heimdal/lib/gssapi/inquire_cred.c',
 	'../heimdal/lib/gssapi/release_buffer.c','../heimdal/lib/gssapi/release_cred.c',
 	'../heimdal/lib/gssapi/release_name.c','../heimdal/lib/gssapi/release_oid_set.c',
@@ -35,7 +35,7 @@ hostenv.StaticLibrary('heimdal_gssapi',
 	'../heimdal/lib/gssapi/encapsulate.c','../heimdal/lib/gssapi/external.c',
 	'../heimdal/lib/gssapi/get_mic.c','../heimdal/lib/gssapi/import_name.c','../heimdal/lib/gssapi/init.c'])
 
-hostenv.StaticLibrary('heimdal_krb5',
+hostenv.Library('heimdal_krb5',
 	['../heimdal/lib/krb5/acache.c','../heimdal/lib/krb5/add_et_list.c','../heimdal/lib/krb5/addr_families.c',
 	'../heimdal/lib/krb5/appdefault.c','../heimdal/lib/krb5/asn1_glue.c','../heimdal/lib/krb5/auth_context.c',
 	'../heimdal/lib/krb5/build_ap_req.c','../heimdal/lib/krb5/build_auth.c','../heimdal/lib/krb5/cache.c',
@@ -70,22 +70,22 @@ hostenv.StaticLibrary('heimdal_krb5',
 	hostenv.ErrorTable('../heimdal/lib/krb5/heim_err.et'),
 	hostenv.ErrorTable('../heimdal/lib/krb5/k524_err.et')])
 
-hostenv.StaticLibrary('heimdal_asn1', k5_asn1)
+hostenv.Library('heimdal_asn1', k5_asn1)
 
-hostenv.StaticLibrary('heimdal_des',
+hostenv.Library('heimdal_des',
 	['../heimdal/lib/des/aes.c','../heimdal/lib/des/des.c','../heimdal/lib/des/md4.c','../heimdal/lib/des/md5.c',
 	'../heimdal/lib/des/rc2.c','../heimdal/lib/des/rc4.c','../heimdal/lib/des/rijndael-alg-fst.c',
 	'../heimdal/lib/des/rnd_keys.c','../heimdal/lib/des/sha.c','../heimdal/lib/des/ui.c'])
 
-hostenv.StaticLibrary('roken_gai_strerror', ['../heimdal/lib/roken/gai_strerror.c'])
-hostenv.StaticLibrary('roken_inet_aton', ['../heimdal/lib/roken/inet_aton.c'])
-hostenv.StaticLibrary('roken_addrinfo', 
+hostenv.Library('roken_gai_strerror', ['../heimdal/lib/roken/gai_strerror.c'])
+hostenv.Library('roken_inet_aton', ['../heimdal/lib/roken/inet_aton.c'])
+hostenv.Library('roken_addrinfo', 
 	['../heimdal/lib/roken/getaddrinfo.c','../heimdal/lib/roken/freeaddrinfo.c',
 	 '../heimdal/lib/roken/getipnodebyaddr.c','../heimdal/lib/roken/getipnodebyname.c',
 	 '../heimdal/lib/roken/freehostent.c', '../heimdal/lib/roken/copyhostent.c',
 	 '../heimdal/lib/roken/hostent_find_fqdn.c'])
 
-hostenv.StaticLibrary('roken',
+hostenv.Library('roken',
 	['../heimdal/lib/roken/base64.c','../heimdal/lib/roken/bswap.c','../heimdal/lib/roken/get_window_size.c',
 	'../heimdal/lib/roken/getprogname.c','../heimdal/lib/roken/h_errno.c','../heimdal/lib/roken/issuid.c',
 	'../heimdal/lib/roken/net_read.c','../heimdal/lib/roken/net_write.c','../heimdal/lib/roken/parse_time.c',
@@ -94,9 +94,9 @@ hostenv.StaticLibrary('roken',
 	'../heimdal/lib/roken/strlwr.c','../heimdal/lib/roken/strsep_copy.c','../heimdal/lib/roken/strupr.c',
 	'../heimdal/lib/roken/strpool.c','heimdal_build/replace.c'])
 
-hostenv.StaticLibrary('heimdal_vers',['../heimdal/lib/version/print_version.c'])
-hostenv.StaticLibrary('heimdal_glue',['heimdal_build/glue.c'])
-hostenv.StaticLibrary('heimdal_com_err',
+hostenv.Library('heimdal_vers',['../heimdal/lib/version/print_version.c'])
+hostenv.Library('heimdal_glue',['heimdal_build/glue.c'])
+hostenv.Library('heimdal_com_err',
 	['../heimdal/lib/com_err/com_err.c','../heimdal/lib/com_err/error.c'])
 
 buildenv.Program('asn1_compile',

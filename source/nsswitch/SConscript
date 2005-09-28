@@ -1,2 +1,2 @@
 Import('hostenv')
-hostenv.StaticLibrary('cli_winbind',['wb_common.c'])
+hostenv.Library('cli_winbind',['wb_common.c'])

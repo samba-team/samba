@@ -6,9 +6,9 @@ gensec_files = ['gensec.c', 'gensec_krb5.c', 'gensec_gssapi.c', 'spnego.c',
 
 hostenv.proto_headers += hostenv.CProtoHeader('proto.h', gensec_files)
 
-hostenv.StaticLibrary('gensec',['gensec.c'])
-hostenv.StaticLibrary('gensec_krb5',['gensec_krb5.c'])
-hostenv.StaticLibrary('gensec_gssapi',['gensec_gssapi.c'])
-hostenv.StaticLibrary('gensec_spnego',['spnego.c','spnego_parse.c'])
-hostenv.StaticLibrary('gensec_schannel',['schannel.c','schannel_sign.c'])
-hostenv.StaticLibrary('schanneldb',['schannel_state.c'])
+hostenv.Library('gensec',['gensec.c'])
+hostenv.Library('gensec_krb5',['gensec_krb5.c'])
+hostenv.Library('gensec_gssapi',['gensec_gssapi.c'])
+hostenv.Library('gensec_spnego',['spnego.c','spnego_parse.c'])
+hostenv.Library('gensec_schannel',['schannel.c','schannel_sign.c'])
+hostenv.Library('schanneldb',['schannel_state.c'])

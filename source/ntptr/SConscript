@@ -1,5 +1,5 @@
 Import('hostenv')
-hostenv.StaticLibrary('ntptr_simple_ldb',
+hostenv.Library('ntptr_simple_ldb',
 		['simple_ldb/ntptr_simple_ldb.c'])
-hostenv.StaticLibrary('ntptr',
+hostenv.Library('ntptr',
 		['ntptr_base.c','ntptr_interface.c'])

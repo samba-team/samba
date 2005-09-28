@@ -1,2 +1,2 @@
 Import('hostenv')
-hostenv.StaticLibrary('kdc',['kdc.c','pac-glue.c','hdb-ldb.c'])
+hostenv.Library('kdc',['kdc.c','pac-glue.c','hdb-ldb.c'])
