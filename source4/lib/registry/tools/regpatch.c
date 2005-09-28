@@ -156,9 +156,12 @@ static void print_line(struct cmd_line *cl)
  */
 static struct cmd_line *get_cmd_line(int fd)
 {
-  CMD_LINE *cl = smb_xmalloc_p(CMD_LINE);
+  CMD_LINE *cl = malloc_p(CMD_LINE);
   int i = 0, rc;
   uint8_t ch;
+
+  if (!cl)
+	  return NULL;
 
   cl->len = INIT_ALLOC;
 
@@ -447,7 +450,9 @@ static CMD *regedit4_get_cmd(int fd)
   struct cmd_line *cl = NULL;
   struct val_spec_list *vl = NULL;
 
-  cmd = smb_xmalloc_p(struct command_s);
+  cmd = malloc_p(struct command_s);
+  if (!cmd)
+	  return NULL;
 
   cmd->cmd = CMD_NONE;
   cmd->key = NULL;
@@ -490,7 +495,9 @@ static CMD *regedit4_get_cmd(int fd)
 	 * There could be a \ on the end which we need to 
 	 * handle at some time
 	 */
-	vl = smb_xmalloc_p(struct val_spec_list);
+	vl = malloc_p(struct val_spec_list);
+	if (!vl)
+		return NULL;
 	vl->next = NULL;
 	vl->val = NULL;
 	vl->name = parse_value(cl, &vl->type, &vl->val);
@@ -609,7 +616,9 @@ static CMD_FILE *cmd_file_create(const char *file)
     return NULL;
   }
 
-  tmp = smb_xmalloc_p(CMD_FILE); 
+  tmp = malloc_p(CMD_FILE); 
+  if (!tmp)
+	  return NULL;
 
   /*
    * Let's fill in some of the fields;

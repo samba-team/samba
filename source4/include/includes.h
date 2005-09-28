@@ -102,7 +102,6 @@ struct ipv4_addr {
 #include "smb_macros.h"
 #include "smb.h"
 #include "byteorder.h"
-#include "module.h"
 #include "lib/tdr/tdr.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/misc.h"
@@ -115,10 +114,6 @@ struct ipv4_addr {
 #include "cli_context.h"
 #include "lib/com/com.h"
 #include "credentials.h"
-
-#define malloc_p(type) (type *)malloc(sizeof(type))
-#define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)
-#define realloc_p(p, type, count) (type *)realloc_array(p, sizeof(type), count)
 
 /***** automatically generated prototypes *****/
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
@@ -169,10 +164,5 @@ extern int DEBUGLEVEL;
 #ifndef UINT16_MAX
 #define UINT16_MAX 65535
 #endif
-
-/*
-  type safe varient of smb_xmalloc()
-*/
-#define smb_xmalloc_p(type) (type *)smb_xmalloc(sizeof(type))
 
 #endif /* _INCLUDES_H */
