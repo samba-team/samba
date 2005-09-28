@@ -1795,7 +1795,6 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 	time_t u_lock_duration, u_reset_time;
 	NTTIME nt_lock_duration, nt_reset_time;
 	uint32 lockout;
-	
 	time_t u_logout;
 	NTTIME nt_logout;
 

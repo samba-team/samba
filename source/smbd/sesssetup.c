@@ -704,7 +704,7 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 		return ret;
 	}
 
-	if (strncmp(blob1.data, "NTLMSSP", 7) == 0) {
+	if (strncmp((char *)(blob1.data), "NTLMSSP", 7) == 0) {
 		DATA_BLOB chal;
 		NTSTATUS nt_status;
 		if (!vuser->auth_ntlmssp_state) {

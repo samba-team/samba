@@ -690,7 +690,7 @@ static char * parse_server(char ** punc_name)
 	int length = strnlen(unc_name,1024);
 	char * share;
 	char * ipaddress_string = NULL;
-	struct hostent * host_entry;
+	struct hostent * host_entry = NULL;
 	struct in_addr server_ipaddr;
 	int rc;
 

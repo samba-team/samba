@@ -465,6 +465,7 @@ static NTSTATUS ntlm_auth_start_ntlmssp_client(NTLMSSP_STATE **client_ntlmssp_st
 {
 	NTSTATUS status;
 	if ( (opt_username == NULL) || (opt_domain == NULL) ) {
+		status = NT_STATUS_UNSUCCESSFUL;
 		DEBUG(1, ("Need username and domain for NTLMSSP\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -859,6 +860,7 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 			return;
 		}
 
+		status = NT_STATUS_UNSUCCESSFUL;
 		if (strcmp(request.negTokenInit.mechTypes[0], OID_NTLMSSP) == 0) {
 
 			if ( request.negTokenInit.mechToken.data == NULL ) {

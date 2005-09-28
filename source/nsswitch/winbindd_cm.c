@@ -763,7 +763,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 	for (retries = 0; retries < 3; retries++) {
 
 		int fd = -1;
-		BOOL retry;
+		BOOL retry = False;
 
 		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 

@@ -50,6 +50,7 @@ void prs_dump_region(char *name, int v, prs_struct *ps,
 {
 	int fd, i;
 	pstring fname;
+	ssize_t sz;
 	if (DEBUGLEVEL < 50) return;
 	for (i=1;i<100;i++) {
 		if (v != -1) {
@@ -61,9 +62,13 @@ void prs_dump_region(char *name, int v, prs_struct *ps,
 		if (fd != -1 || errno != EEXIST) break;
 	}
 	if (fd != -1) {
-		write(fd, ps->data_p + from_off, to_off - from_off);
-		close(fd);
-		DEBUG(0,("created %s\n", fname));
+		sz = write(fd, ps->data_p + from_off, to_off - from_off);
+		i = close(fd);
+		if ( (sz != to_off-from_off) || (i != 0) ) {
+			DEBUG(0,("Error writing/closing %s: %ld!=%ld %d\n", fname, (unsigned long)sz, (unsigned long)to_off-from_off, i ));
+		} else {
+			DEBUG(0,("created %s\n", fname));
+		}
 	}
 }
 

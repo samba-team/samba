@@ -2004,7 +2004,10 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 		
 			/* this should not have failed---if it did, report to client */
 			if ( !W_ERROR_IS_OK(status_win2k) )
+			{
+				status = status_win2k;
 				goto done;
+			}
 		}
 	}
 	

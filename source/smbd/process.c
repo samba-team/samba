@@ -1383,7 +1383,7 @@ static int setup_select_timeout(void)
  Check if services need reloading.
 ****************************************************************************/
 
-void check_reload(int t)
+void check_reload(time_t t)
 {
 	static pid_t mypid = 0;
 	static time_t last_smb_conf_reload_time = 0;

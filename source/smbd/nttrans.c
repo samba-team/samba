@@ -1989,7 +1989,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn, char *i
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
 	}
 
-	DEBUG(3,("call_nt_transact_query_security_desc: sd_size = %d.\n",(int)sd_size));
+	DEBUG(3,("call_nt_transact_query_security_desc: sd_size = %lu.\n",(unsigned long)sd_size));
 
 	SIVAL(params,0,(uint32)sd_size);
 

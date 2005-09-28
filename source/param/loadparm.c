@@ -3354,7 +3354,10 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			break;
 
 		case P_OCTAL:
-			sscanf(pszParmValue, "%o", (int *)parm_ptr);
+			i = sscanf(pszParmValue, "%o", (int *)parm_ptr);
+			if ( i != 1 ) {
+			    DEBUG ( 0, ("Invalid octal number %s\n", pszParmName ));
+			}
 			break;
 
 		case P_LIST:

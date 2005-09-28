@@ -1064,6 +1064,7 @@ static BOOL print_cache_expired(const char *sharename, BOOL check_pending)
 		|| (time_now - last_qscan_time) >= lp_lpqcachetime() 
 		|| last_qscan_time > (time_now + MAX_CACHE_VALID_TIME)) 
 	{
+		uint32 u;
 		time_t msg_pending_time;
 
 		DEBUG(4, ("print_cache_expired: cache expired for queue %s " 
@@ -1079,8 +1080,8 @@ static BOOL print_cache_expired(const char *sharename, BOOL check_pending)
 		snprintf(key, sizeof(key), "MSG_PENDING/%s", sharename);
 
 		if ( check_pending 
-			&& tdb_fetch_uint32( pdb->tdb, key, (uint32*)&msg_pending_time ) 
-			&& msg_pending_time > 0
+			&& tdb_fetch_uint32( pdb->tdb, key, &u ) 
+			&& (msg_pending_time=u) > 0
 			&& msg_pending_time <= time_now 
 			&& (time_now - msg_pending_time) < 60 ) 
 		{
