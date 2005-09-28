@@ -172,7 +172,10 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 		DEBUG(2, ("Cannot do krb5 to an IP address"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-
+	if (strequal(hostname, "localhost")) {
+		DEBUG(2, ("krb5 to 'localhost' does not make sense"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 			
 	nt_status = gensec_krb5_start(gensec_security);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -235,7 +238,7 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 	case KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN:
 		DEBUG(3, ("Server [%s] is not registered with our KDC: %s\n", 
 			  hostname, smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, ret, gensec_krb5_state)));
-		return NT_STATUS_ACCESS_DENIED;
+		return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
 	case KRB5KDC_ERR_PREAUTH_FAILED:
 	case KRB5KRB_AP_ERR_TKT_EXPIRED:
 	case KRB5_CC_END:
