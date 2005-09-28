@@ -148,12 +148,14 @@ ADD_OBJ_FILES = \
 		torture/local/idtree.o \
 		torture/local/socket.o \
 		torture/local/irpc.o \
+		torture/local/registry.o \
 		torture/local/resolve.o \
 		torture/local/util_strlist.o \
 		torture/local/util_file.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB \
-		MESSAGING
+		MESSAGING \
+		REGISTRY
 # End SUBSYSTEM TORTURE_LOCAL
 #################################
 
