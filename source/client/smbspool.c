@@ -335,8 +335,10 @@ char * get_ticket_cache( uid_t uid )
 
   if ( ticket_file == NULL )
   {
+#ifdef DEVELOPER
     /* no ticket cache found */
     fprintf(stderr, "ERROR: No ticket cache found for userid=%d\n", uid);
+#endif
     return NULL;
   }
 
