@@ -410,8 +410,6 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 			if (allowable_number_of_smbd_processes() && smbd_server_fd() != -1 && sys_fork()==0) {
 				/* Child code ... */
 
-				message_init_socket();
-				
 				/* close the listening socket(s) */
 				for(i = 0; i < num_sockets; i++)
 					close(fd_listenset[i]);
@@ -658,6 +656,7 @@ void exit_server(const char *reason)
 
 	locking_end();
 	printing_end();
+	message_end();
 
 	DEBUG(3,("Server exit (%s)\n", (reason ? reason : "")));
 	exit(0);
@@ -879,6 +878,8 @@ void build_options(BOOL screen);
 	/* Setup all the TDB's - including CLEAR_IF_FIRST tdb's. */
 	if (!message_init())
 		exit(1);
+
+	message_dispatch_daemon();
 
 	if (!session_init())
 		exit(1);

@@ -51,15 +51,18 @@
 static TDB_CONTEXT *tdb;
 
 static char *socket_path;
-static int socket_fd;
+static int socket_fd = -1;
 static struct process_id socket_pid;
 
 /* change the message version with any incompatible changes in the protocol */
 #define MESSAGE_VERSION 1
 
+static const char *dispatch_socket_name(void);
+
 struct message_rec {
 	int msg_version;
 	int msg_type;
+	BOOL duplicates;
 	struct process_id dest;
 	struct process_id src;
 	size_t len;
@@ -89,22 +92,35 @@ static void ping_message(int msg_type, struct process_id src,
  Initialise the messaging functions. 
 ****************************************************************************/
 
-BOOL message_init_socket(void)
+static BOOL message_init_socket(void)
 {
 	socket_pid = procid_self();
+
+	SAFE_FREE(socket_path);
 	asprintf(&socket_path, "%s/%s", lock_path("messaging"),
 		 procid_str_static(&socket_pid));
 
-	DEBUG(10, ("creating socket %s\n", socket_path));
-
+	DEBUG(10, ("creating dgram socket %s\n", socket_path));
 	socket_fd = create_dgram_sock(lock_path("messaging"),
 				      procid_str_static(&socket_pid),
 				      0700);
 	if (socket_fd < 0) {
-		DEBUG(0, ("Could not create socket\n"));
+		DEBUG(0, ("Could not dgram create socket: %s\n",
+			  strerror(errno)));
 		return False;
 	}
+
 	return True;
+}
+
+void message_reinit(void)
+{
+	if (socket_fd < 0) {
+		/* Never initialized messaging */
+		return;
+	}
+
+	message_init_socket();
 }
 
 BOOL message_init(void)
@@ -135,6 +151,20 @@ BOOL message_init(void)
 	return True;
 }
 
+void message_end(void)
+{
+	if (socket_fd < 0) {
+		return;
+	}
+	close(socket_fd);
+	socket_fd = -1;
+
+	if (!procid_is_me(&socket_pid)) {
+		return;
+	}
+	unlink(socket_path);
+}
+
 int message_socket(void)
 {
 	return socket_fd;
@@ -158,15 +188,17 @@ static TDB_DATA message_key_pid(struct process_id pid)
 	return kbuf;
 }
 
-static const char *message_path(TALLOC_CTX *mem_ctx,
-				const struct process_id *pid)
+static const char *message_path(const struct process_id *pid)
 {
-	return talloc_asprintf(mem_ctx, "%s/%s", lock_path("messaging"),
-			       procid_str_static(pid));
+	static pstring path;
+	pstr_sprintf(path, "%s/%s", lock_path("messaging"),
+		     procid_str_static(pid));
+	return path;
 }
 
 static BOOL message_send_via_socket(struct process_id pid, int msg_type,
-				    const void *buf, size_t len)
+				    const void *buf, size_t len,
+				    BOOL duplicates_allowed)
 {
 	DATA_BLOB packet;
 	struct message_rec *hdr;
@@ -174,7 +206,7 @@ static BOOL message_send_via_socket(struct process_id pid, int msg_type,
 	struct sockaddr_un sunaddr;
 	ssize_t sent;
 
-	packet = data_blob_talloc(NULL, NULL, packet_len);
+	packet = data_blob(NULL, packet_len);
 	if (packet.data == NULL) {
 		DEBUG(0, ("malloc failed\n"));
 		return False;
@@ -183,6 +215,7 @@ static BOOL message_send_via_socket(struct process_id pid, int msg_type,
 	hdr = (struct message_rec *)packet.data;
 	hdr->msg_version = MESSAGE_VERSION;
 	hdr->msg_type = msg_type;
+	hdr->duplicates = duplicates_allowed;
 	hdr->len = len;
 	hdr->src = procid_self();
 	hdr->dest = pid;
@@ -192,20 +225,34 @@ static BOOL message_send_via_socket(struct process_id pid, int msg_type,
 
 	ZERO_STRUCT(sunaddr);
 	sunaddr.sun_family = AF_UNIX;
-	strncpy(sunaddr.sun_path, message_path(packet.data, &pid),
-		sizeof(sunaddr.sun_path)-1);
 
+#if 0
+	strncpy(sunaddr.sun_path, message_path(&pid),
+		sizeof(sunaddr.sun_path)-1);
 	sent = sendto(socket_fd, packet.data, packet.length, 0,
 		      (struct sockaddr *)&sunaddr, sizeof(sunaddr));
 	if (sent != packet.length) {
 		DEBUG(3, ("Could not send %d bytes to Unix domain socket %s: "
 			  "%s\n", packet.length, sunaddr.sun_path,
 			  strerror(errno)));
-		talloc_free(packet.data);
+		SAFE_FREE(packet.data);
+		return False;
+	}
+#endif
+
+	strncpy(sunaddr.sun_path, dispatch_socket_name(),
+		sizeof(sunaddr.sun_path)-1);
+	sent = sendto(socket_fd, packet.data, packet.length, 0,
+		      (struct sockaddr *)&sunaddr, sizeof(sunaddr));
+	if (sent != packet.length) {
+		DEBUG(3, ("Could not send %d bytes to dispatch socket %s: "
+			  "%s\n", packet.length, sunaddr.sun_path,
+			  strerror(errno)));
+		SAFE_FREE(packet.data);
 		return False;
 	}
 
-	talloc_free(packet.data);
+	SAFE_FREE(packet.data);
 	return True;
 }
 
@@ -216,7 +263,7 @@ static BOOL message_send_via_socket(struct process_id pid, int msg_type,
 
 static BOOL message_notify(struct process_id pid)
 {
-	return message_send_via_socket(pid, MSG_NOTIFICATION, NULL, 0);
+	return message_send_via_socket(pid, MSG_NOTIFICATION, NULL, 0, True);
 }
 
 /****************************************************************************
@@ -235,7 +282,8 @@ BOOL message_send_pid(struct process_id pid, int msg_type,
 	struct message_rec prec;
 
 	if (duplicates_allowed && (len < 512)) {
-		return message_send_via_socket(pid, msg_type, buf, len);
+		return message_send_via_socket(pid, msg_type, buf, len,
+					       duplicates_allowed);
 	}
 
 	rec.msg_version = MESSAGE_VERSION;
@@ -363,8 +411,7 @@ unsigned int messages_pending_for_pid(struct process_id pid)
  Retrieve all messages for the current process.
 ****************************************************************************/
 
-static BOOL retrieve_all_messages(TALLOC_CTX *mem_ctx, char **msgs_buf,
-				  size_t *total_len)
+static BOOL retrieve_all_messages(char **msgs_buf, size_t *total_len)
 {
 	TDB_DATA kbuf;
 	TDB_DATA dbuf;
@@ -393,9 +440,8 @@ static BOOL retrieve_all_messages(TALLOC_CTX *mem_ctx, char **msgs_buf,
 		return False;
 	}
 
-	*msgs_buf = talloc_memdup(mem_ctx, dbuf.dptr, dbuf.dsize);
+	*msgs_buf = dbuf.dptr;
 	*total_len = dbuf.dsize;
-	SAFE_FREE(dbuf.dptr);
 
 	return True;
 }
@@ -420,7 +466,8 @@ static BOOL message_recv(char *msgs_buf, size_t total_len, int *msg_type,
 	ret_buf += sizeof(rec);
 
 	if (rec.msg_version != MESSAGE_VERSION) {
-		DEBUG(0,("message version %d received (expected %d)\n", rec.msg_version, MESSAGE_VERSION));
+		DEBUG(0,("message version %d received (expected %d)\n",
+			 rec.msg_version, MESSAGE_VERSION));
 		return False;
 	}
 
@@ -437,43 +484,44 @@ static BOOL message_recv(char *msgs_buf, size_t total_len, int *msg_type,
 	return True;
 }
 
-static BOOL fetch_socket_message(TALLOC_CTX *mem_ctx,
-				 int *msg_type, struct process_id *src,
-				 char **buf, size_t *len)
+static struct message_rec *fetch_socket_message(int fd)
 {
 	int msglength;
 	ssize_t received;
-	char *raw_buf;
 	struct message_rec *msg;
+	char *buf;
 
-	if (ioctl(socket_fd, FIONREAD, &msglength) < 0) {
+	if (ioctl(fd, FIONREAD, &msglength) < 0) {
 		DEBUG(5, ("Could not get the message length\n"));
 		msglength = 65536;
 	}
 
-	raw_buf = talloc_size(mem_ctx, msglength);
-	if (raw_buf == NULL) {
-		DEBUG(0, ("talloc failed\n"));
+	buf = SMB_MALLOC(msglength);
+	if (buf == NULL) {
+		DEBUG(0, ("malloc failed\n"));
 		return False;
 	}
 
-	received = recv(socket_fd, raw_buf, msglength, MSG_DONTWAIT);
+	received = recv(fd, buf, msglength, MSG_DONTWAIT);
 	if (received != msglength) {
 		DEBUG(0, ("Received different length (%d) than announced "
 			  "(%d)\n", received, msglength));
+		SAFE_FREE(buf);
 		return False;
 	}
 
 	if (received < sizeof(struct message_rec)) {
 		DEBUG(5, ("Message too short\n"));
+		SAFE_FREE(buf);
 		return False;
 	}
 
-	msg = (struct message_rec *)raw_buf;
+	msg = (struct message_rec *)buf;
 
 	if (msg->msg_version != MESSAGE_VERSION) {
 		DEBUG(0,("message version %d received (expected %d)\n",
 			 msg->msg_version, MESSAGE_VERSION));
+		SAFE_FREE(buf);
 		return False;
 	}
 
@@ -481,20 +529,11 @@ static BOOL fetch_socket_message(TALLOC_CTX *mem_ctx,
 		DEBUG(5, ("Invalid message length received, got %d, "
 			  "expected %d\n", received,
 			  msg->len + sizeof(struct message_rec)));
+		SAFE_FREE(buf);
 		return False;
 	}
 
-	if (!procid_is_me(&msg->dest)) {
-		DEBUG(5, ("Received message for invalid process: %s\n",
-			  procid_str_static(&msg->dest)));
-		return False;
-	}
-
-	*msg_type = msg->msg_type;
-	*src = msg->src;
-	*buf = raw_buf + sizeof(struct message_rec);
-	*len = msg->len;
-	return True;
+	return msg;
 }
 
 static int dispatch_message(int msg_type, struct process_id src,
@@ -532,32 +571,36 @@ static int dispatch_message(int msg_type, struct process_id src,
 
 void message_dispatch(void)
 {
-	int msg_type;
+	struct message_rec *msg;
 	struct process_id src;
 	char *buf;
 	char *msgs_buf;
 	size_t len, total_len;
 	int n_handled;
-	TALLOC_CTX *mem_ctx;
+	int msg_type;
 
-	mem_ctx = talloc_init("message_dispatch");
-	if (mem_ctx == NULL) {
-		smb_panic("talloc_init failed\n");
-	}
-
-	if (!fetch_socket_message(mem_ctx, &msg_type, &src, &buf, &len)) {
-		talloc_free(mem_ctx);
+	msg = fetch_socket_message(socket_fd);
+	if (msg == NULL) {
 		return;
 	}
 
-	if (msg_type != MSG_NOTIFICATION) {
-		dispatch_message(msg_type, src, buf, len);
-		talloc_free(mem_ctx);
+	if (!procid_is_me(&msg->dest)) {
+		DEBUG(5, ("Received message for invalid process: %s\n",
+			  procid_str_static(&msg->dest)));
+		SAFE_FREE(msg);
 		return;
 	}
 
-	if (!retrieve_all_messages(mem_ctx, &msgs_buf, &total_len)) {
-		talloc_free(mem_ctx);
+	if (msg->msg_type != MSG_NOTIFICATION) {
+		buf = (((char *)msg) + sizeof(struct message_rec));
+		dispatch_message(msg->msg_type, msg->src, buf, msg->len);
+		SAFE_FREE(msg);
+		return;
+	}
+
+	SAFE_FREE(msg);
+
+	if (!retrieve_all_messages(&msgs_buf, &total_len)) {
 		return;
 	}
 
@@ -566,6 +609,7 @@ void message_dispatch(void)
 	     buf += len) {
 		n_handled += dispatch_message(msg_type, src, buf, len);
 	}
+	SAFE_FREE(msgs_buf);
 }
 
 /****************************************************************************
@@ -710,3 +754,259 @@ BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type,
 	return True;
 }
 /** @} **/
+
+static const char *dispatch_socket_name(void)
+{
+	static char *name = NULL;
+	if (name == NULL) {
+		asprintf(&name, "%s/%s", lock_path("messaging"), "dispatch");
+		SMB_ASSERT(name != NULL);
+	}
+	return name;
+}
+
+struct message {
+	struct message *next, *prev;
+	DATA_BLOB data;
+};
+
+struct messaging_client {
+	struct messaging_client *next, *prev;
+	struct process_id pid;
+	int fd;
+	struct message *messages;
+};
+
+struct messaging_client *clients = NULL;
+
+static struct messaging_client *find_client(struct messaging_client *c,
+					    const struct process_id *pid)
+{
+	while (c != NULL) {
+		if (procid_equal(&c->pid, pid))
+			break;
+		c = c->next;
+	}
+	return c;
+}
+
+static int messaging_client_destr(void *p)
+{
+	struct messaging_client *c =
+		talloc_get_type_abort(p, struct messaging_client);
+
+	if (close(c->fd) < 0) {
+		DEBUG(0, ("close failed: %s\n", strerror(errno)));
+		return -1;
+	}
+	return 0;
+}
+
+static struct messaging_client *new_client(const struct process_id *pid)
+{
+	struct messaging_client *result;
+	struct sockaddr_un sunaddr;
+
+	result = TALLOC_P(NULL, struct messaging_client);
+	if (result == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return NULL;
+	}
+
+	result->pid = *pid;
+	result->messages = NULL;
+	result->fd = socket(PF_UNIX, SOCK_DGRAM, 0);
+	if (result->fd < 0) {
+		DEBUG(5, ("socket() failed: %s\n", strerror(errno)));
+		talloc_free(result);
+		return NULL;
+	}
+
+	talloc_set_destructor(result, messaging_client_destr);
+
+	if (set_blocking(result->fd, False) < 0) {
+		DEBUG(5, ("set_blocking() failed: %s\n", strerror(errno)));
+		talloc_free(result);
+		return NULL;
+	}
+
+	sunaddr.sun_family = AF_UNIX;
+	strncpy(sunaddr.sun_path, message_path(pid),
+		sizeof(sunaddr.sun_path)-1);
+	if (connect(result->fd, (struct sockaddr *)&sunaddr,
+		    sizeof(sunaddr)) < 0) {
+		DEBUG(5, ("connect() failed: %s\n", strerror(errno)));
+		talloc_free(result);
+		return NULL;
+	}
+	return result;
+}
+
+static int msg_destr(void *p)
+{
+	struct message *msg = talloc_get_type_abort(p, struct message);
+	SAFE_FREE(msg->data.data);
+	return 0;
+}
+
+static void receive_message(int receive_fd)
+{
+	struct messaging_client *client;
+	struct message_rec *msg_rec;
+	struct message *msg, *tmp;
+
+	msg_rec = fetch_socket_message(receive_fd);
+	if (msg_rec == NULL) {
+		DEBUG(10, ("did not receive a message\n"));
+		return;
+	}
+
+	DEBUG(5, ("Received message type %d for PID %s\n", msg_rec->msg_type,
+		  procid_str_static(&msg_rec->dest)));
+
+	client = find_client(clients, &msg_rec->dest);
+	if (client == NULL) {
+		client = new_client(&msg_rec->dest);
+		if (client == NULL) {
+			DEBUG(0, ("Could not add new client for %s\n",
+				  procid_str_static(&msg_rec->dest)));
+			SAFE_FREE(msg_rec);
+			return;
+		}
+		DLIST_ADD(clients, client);
+	}
+
+	msg = talloc(client, struct message);
+	if (msg == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		SAFE_FREE(msg_rec);
+		return;
+	}
+	msg->data.data = (char *)msg_rec;
+	msg->data.length = msg_rec->len + sizeof(struct message_rec);
+	talloc_set_destructor(msg, msg_destr);
+
+	DLIST_ADD_END(client->messages, msg, tmp);
+}
+
+static void dispatch_once(int parent_pipe, int receive_fd)
+{
+	fd_set rfds, wfds, efds;
+	int maxfd = 0;
+	struct messaging_client *client;
+	int selret;
+
+	FD_ZERO(&rfds);
+	FD_ZERO(&wfds);
+	FD_ZERO(&efds);
+
+	FD_SET(parent_pipe, &efds);
+	FD_SET(parent_pipe, &rfds);
+	maxfd = MAX(maxfd, parent_pipe);
+
+	FD_SET(receive_fd, &rfds);
+	maxfd = MAX(maxfd, receive_fd);
+
+	for (client = clients; client != NULL; client = client->next) {
+		FD_SET(client->fd, &wfds);
+		maxfd = MAX(maxfd, client->fd);
+	}
+
+	selret = sys_select(maxfd+1, &rfds, &wfds, &efds, NULL);
+
+	if (selret <= 0) {
+		return;
+	}
+
+	if (FD_ISSET(parent_pipe, &efds) || FD_ISSET(parent_pipe, &rfds)) {
+		/* Parent died */
+		exit(0);
+	}
+
+	if (FD_ISSET(receive_fd, &rfds)) {
+		receive_message(receive_fd);
+	}
+
+	client = clients;
+	while (client != NULL) {
+		struct messaging_client *victim;
+		struct message *msg;
+		ssize_t sent;
+
+		if (!FD_ISSET(client->fd, &wfds)) {
+			client = client->next;
+			continue;
+		}
+
+		msg = client->messages;
+		if (msg == NULL) {
+			goto remove_client;
+		}
+
+		DEBUG(10, ("dispatching to client %s\n",
+			   procid_str_static(&client->pid)));
+
+		sent = send(client->fd, msg->data.data, msg->data.length, 0);
+
+		if (sent < 0) {
+			if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
+				/* Buffer full */
+				client = client->next;
+				continue;
+			}
+			DEBUG(5, ("sending data failed, killing client: %s\n",
+				  strerror(errno)));
+			goto remove_client;
+		}
+
+		if (sent != msg->data.length) {
+			DEBUG(0, ("tried to send %d bytes, send returned %d: "
+				  "Killing client\n", msg->data.length, sent));
+			goto remove_client;
+		}
+
+		/* Everything worked fine */
+		DLIST_REMOVE(client->messages, msg);
+		talloc_free(msg);
+
+		if (client->messages != NULL) {
+			/* Try again same client */
+			continue;
+		}
+
+	remove_client:
+
+		victim = client;
+		client = client->next;
+		DLIST_REMOVE(clients, victim);
+		talloc_free(victim);
+	}
+}
+
+void message_dispatch_daemon(void)
+{
+	int parent_pipe[2];
+	int fd;
+
+	if (pipe(parent_pipe) < 0) {
+		return;
+	}
+
+	if (sys_fork() != 0) {
+		close(parent_pipe[0]);
+		/* Leave the writing end around, it is implicitly closed if
+		 * the parent dies */
+		return;
+	}
+
+	close(parent_pipe[1]);
+
+	fd = create_dgram_sock(lock_path("messaging"), "dispatch", 0700);
+	if (fd < 0) {
+		smb_panic("Could not create dispatch socket\n");
+	}
+
+	while (1) {
+		dispatch_once(parent_pipe[0], fd);
+	}
+}

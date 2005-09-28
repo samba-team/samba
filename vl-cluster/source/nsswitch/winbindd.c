@@ -167,6 +167,7 @@ static void terminate(void)
 		talloc_destroy(mem_ctx);
 	}
 #endif
+	message_end();
 
 	exit(0);
 }
