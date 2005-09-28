@@ -116,6 +116,10 @@ struct wrepl_pull_names {
 		uint32_t num_names;
 		struct wrepl_name {
 			struct nbt_name name;
+			uint32_t flags;
+			uint32_t group_flag;
+			uint64_t version_id;
+			const char *owner;
 			uint32_t num_addresses;
 			struct wrepl_address {
 				const char *owner;

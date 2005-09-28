@@ -729,7 +729,7 @@ NTSTATUS wrepl_pull_names_recv(struct wrepl_request *req,
 	status = NT_STATUS_NO_MEMORY;
 
 	io->out.names = talloc_array(packet, struct wrepl_name, io->out.num_names);
-	if (io->out.names == NULL) goto failed;
+	if (io->out.names == NULL) goto nomem;
 
 	/* convert the list of names and addresses to a sane format */
 	for (i=0;i<io->out.num_names;i++) {
@@ -739,6 +739,12 @@ NTSTATUS wrepl_pull_names_recv(struct wrepl_request *req,
 					    wname->name, wname->name_len);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 
+		name->flags	= wname->flags;
+		name->group_flag= wname->group_flag;
+		name->version_id= wname->id;
+		name->owner	= talloc_strdup(io->out.names, io->in.partner.address);
+		if (name->owner == NULL) goto nomem;
+
 		/* trying to save 1 or 2 bytes on the wire isn't a good idea */
 		if (wname->flags & 2) {
 			int j;
@@ -747,7 +753,7 @@ NTSTATUS wrepl_pull_names_recv(struct wrepl_request *req,
 			name->addresses = talloc_array(io->out.names, 
 						       struct wrepl_address, 
 						       name->num_addresses);
-			if (name->addresses == NULL) goto failed;
+			if (name->addresses == NULL) goto nomem;
 			for (j=0;j<name->num_addresses;j++) {
 				name->addresses[j].owner = 
 					talloc_steal(name->addresses, 
@@ -759,16 +765,19 @@ NTSTATUS wrepl_pull_names_recv(struct wrepl_request *req,
 		} else {
 			name->num_addresses = 1;
 			name->addresses = talloc(io->out.names, struct wrepl_address);
-			if (name->addresses == NULL) goto failed;
-			name->addresses[0].owner = io->in.partner.address;
+			if (name->addresses == NULL) goto nomem;
+			name->addresses[0].owner = talloc_strdup(name->addresses,io->in.partner.address);
+			if (name->addresses[0].owner == NULL) goto nomem;
 			name->addresses[0].address = talloc_steal(name->addresses,
 								  wname->addresses.ip);
 		}
 	}
 
 	talloc_steal(mem_ctx, io->out.names);
-	status = NT_STATUS_OK;
-
+	talloc_free(packet);
+	return NT_STATUS_OK;
+nomem:
+	status = NT_STATUS_NO_MEMORY;
 failed:
 	talloc_free(packet);
 	return status;
