@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
 {
 	HANDLE h;
 	DWORD numread = 0;
-	char outbuffer[512];
+	char *outbuffer = malloc(strlen(ECHODATA));
 
 	if (argc == 1) {
 		printf("Usage: %s pipename\n", argv[0]);
@@ -27,12 +27,12 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	if (!WriteFile(h, ECHODATA, strlen(ECHODATA), NULL, NULL)) {
+	if (!WriteFile(h, ECHODATA, strlen(ECHODATA), &numread, NULL)) {
 		printf("Error writing: %d\n", GetLastError());
 		return -1;
 	}
 
-	if (!ReadFile(h, outbuffer, strlen(ECHODATA), NULL, NULL)) {
+	if (!ReadFile(h, outbuffer, strlen(ECHODATA), &numread, NULL)) {
 		printf("Error reading: %d\n", GetLastError());
 		return -1;
 	}
