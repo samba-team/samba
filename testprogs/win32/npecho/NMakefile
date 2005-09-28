@@ -1,0 +1,13 @@
+INCLUDES=-I 
+CFLAGS=$(INCLUDES) -Zi -nologo
+
+all: npecho_client.exe npecho_server.exe
+
+clean:
+	del *~ *.obj *.exe 
+
+npecho_client.exe: npecho_client.obj 
+	$(CC) $(CFLAGS) -o npecho_client.exe npecho_client.obj $(LIBS)
+
+npecho_server.exe: npecho_server.obj 
+	$(CC) $(CFLAGS) -o npecho_server.exe npecho_server.obj $(LIBS)
