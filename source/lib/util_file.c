@@ -358,7 +358,7 @@ BOOL file_exists(const char *path)
 	return (stat(path, &st) == 0);
 }
 
-int vfdprintf(int fd, const char *format, va_list ap) 
+int vfdprintf(int fd, const char *format, va_list ap) _PRINTF_ATTRIBUTE(2,0)
 {
 	char *p;
 	int len, ret;
