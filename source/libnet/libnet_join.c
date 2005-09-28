@@ -613,9 +613,15 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 
 	status = libnet_RpcConnect(ctx, c, c);
 	if (!NT_STATUS_IS_OK(status)) {
-		r->out.error_string = talloc_asprintf(mem_ctx,
-						"Connection to LSA pipe of PDC of domain '%s' failed: %s",
-						r->in.domain_name, nt_errstr(status));
+		if (r->in.level == LIBNET_JOINDOMAIN_AUTOMATIC) {
+			r->out.error_string = talloc_asprintf(mem_ctx,
+							      "Connection to LSA pipe of PDC of domain '%s' failed: %s",
+							      r->in.domain_name, nt_errstr(status));
+		} else {
+			r->out.error_string = talloc_asprintf(mem_ctx,
+							      "Connection to LSA pipe with binding '%s' failed: %s",
+							      r->in.binding, nt_errstr(status));
+		}
 		talloc_free(tmp_ctx);
 		return status;
 	}			
@@ -835,9 +841,8 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 			r->out.error_string = talloc_asprintf(mem_ctx,
 							      "samr_LookupNames for [%s] returns %d RIDs\n",
 							      r->in.account_name, ln.out.rids.count);
-			status = NT_STATUS_INVALID_PARAMETER;
 			talloc_free(tmp_ctx);
-			return status;	
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 		
 		/* prepare samr_OpenUser */
