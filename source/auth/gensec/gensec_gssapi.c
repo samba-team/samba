@@ -239,7 +239,11 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	if (is_ipaddress(hostname)) {
-		DEBUG(2, ("Cannot do GSSAPI to an IP address"));
+		DEBUG(2, ("Cannot do GSSAPI to an IP address\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	if (strequal(hostname, "localhost")) {
+		DEBUG(2, ("GSSAPI to 'localhost' does not make sense\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -269,7 +273,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 		DEBUG(2, ("GSS Import name of %s failed: %s\n",
 			  (char *)name_token.value,
 			  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	principal = gensec_get_target_principal(gensec_security);
@@ -306,9 +310,16 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 					NULL, 
 					NULL);
 	if (maj_stat) {
-		DEBUG(1, ("Aquiring initiator credentails failed: %s\n", 
-			  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
-		return NT_STATUS_UNSUCCESSFUL;
+		switch (min_stat) {
+		case KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN:
+			DEBUG(3, ("Server [%s] is not registered with our KDC: %s\n", 
+				  hostname, gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
+			return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
+		default:
+			DEBUG(1, ("Aquiring initiator credentails failed: %s\n", 
+				  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
 	}
 
 	return NT_STATUS_OK;
@@ -408,12 +419,23 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 		gss_release_buffer(&min_stat2, &output_token);
 
 		return NT_STATUS_MORE_PROCESSING_REQUIRED;
-	} else {
-		if (maj_stat == GSS_S_FAILURE
-		    && (min_stat == KRB5KRB_AP_ERR_BADVERSION || min_stat == KRB5KRB_AP_ERR_MSG_TYPE)) {
+	} else if ((gensec_gssapi_state->gss_oid->length == gss_mech_krb5->length)
+	    && (memcmp(gensec_gssapi_state->gss_oid->elements, gss_mech_krb5->elements, 
+		       gensec_gssapi_state->gss_oid->length) == 0)) {
+		switch (min_stat) {
+		case KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN:
+			DEBUG(3, ("Server is not registered with our KDC: %s\n", 
+				  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat)));
+			return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
+		case KRB5KRB_AP_ERR_MSG_TYPE:
 			/* garbage input, possibly from the auto-mech detection */
 			return NT_STATUS_INVALID_PARAMETER;
+		default:
+			DEBUG(1, ("GSS(krb5) Update failed: %s\n", 
+				  gssapi_error_string(out_mem_ctx, maj_stat, min_stat)));
+			return nt_status;
 		}
+	} else {
 		DEBUG(1, ("GSS Update failed: %s\n", 
 			  gssapi_error_string(out_mem_ctx, maj_stat, min_stat)));
 		return nt_status;
