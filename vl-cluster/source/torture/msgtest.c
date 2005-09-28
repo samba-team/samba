@@ -43,15 +43,27 @@ void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
 	
 	lp_load(dyn_CONFIGFILE,False,False,False);
 
-	message_init();
-
-	if (argc != 3) {
-		fprintf(stderr, "%s: Usage - %s pid count\n", argv[0], argv[0]);
+	if ((argc < 3) || (argc > 4)) {
+		fprintf(stderr, "%s: Usage - %s pid count [conffile]\n",
+			argv[0], argv[0]);
 		exit(1);
 	}
 
-	pid = atoi(argv[1]);
+	if (strcmp(argv[1], "self") == 0) {
+		pid = getpid();
+	} else {
+		pid = atoi(argv[1]);
+	}
 	n = atoi(argv[2]);
+
+	if (argc == 4) {
+		lp_load(argv[3],False,False,False);
+	}
+
+	sec_init();
+	if (!message_init()) {
+		exit(1);
+	}
 
 	message_register(MSG_PONG, pong_message);
 
@@ -59,11 +71,18 @@ void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
 		message_send_pid(pid_to_procid(pid), MSG_PING, NULL, 0, True);
 	}
 
+	system("/bin/sleep 60");
+
 	while (pong_count < i) {
+		fd_set rfds;
+		struct timeval tv = timeval_set(1,0);
+		FD_ZERO(&rfds);
+		FD_SET(message_socket(), &rfds);
+		select(message_socket()+1, &rfds, NULL, NULL, &tv);
 		message_dispatch();
-		smb_msleep(1);
 	}
 
+#if 0
 	/* Now test that the duplicate filtering code works. */
 	pong_count = 0;
 
@@ -85,6 +104,7 @@ void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
 		fprintf(stderr, "Duplicate filter failed (%d).\n", pong_count);
 		exit(1);
 	}
+#endif
 
 	return (0);
 }

@@ -110,6 +110,13 @@ static BOOL message_init_socket(void)
 		return False;
 	}
 
+	if (set_blocking(socket_fd, False) < 0) {
+		DEBUG(0, ("set_blocking failed: %s\n", strerror(errno)));
+		close(socket_fd);
+		socket_fd = -1;
+		return False;
+	}
+
 	return True;
 }
 
@@ -205,11 +212,13 @@ static BOOL message_send_via_socket(struct process_id pid, int msg_type,
 	size_t packet_len = sizeof(struct message_rec) + len;
 	struct sockaddr_un sunaddr;
 	ssize_t sent;
+	int attempts;
+	BOOL result = False;
 
 	packet = data_blob(NULL, packet_len);
 	if (packet.data == NULL) {
 		DEBUG(0, ("malloc failed\n"));
-		return False;
+		goto done;
 	}
 
 	hdr = (struct message_rec *)packet.data;
@@ -226,31 +235,70 @@ static BOOL message_send_via_socket(struct process_id pid, int msg_type,
 	ZERO_STRUCT(sunaddr);
 	sunaddr.sun_family = AF_UNIX;
 
-#if 0
 	strncpy(sunaddr.sun_path, message_path(&pid),
 		sizeof(sunaddr.sun_path)-1);
-	sent = sendto(socket_fd, packet.data, packet.length, 0,
-		      (struct sockaddr *)&sunaddr, sizeof(sunaddr));
-	if (sent != packet.length) {
-		DEBUG(3, ("Could not send %d bytes to Unix domain socket %s: "
-			  "%s\n", packet.length, sunaddr.sun_path,
-			  strerror(errno)));
-		SAFE_FREE(packet.data);
-		return False;
-	}
-#endif
 
+	for (attempts = 0; attempts < 10; attempts++) {
+		sent = sendto(socket_fd, packet.data, packet.length, 0,
+			      (struct sockaddr *)&sunaddr, sizeof(sunaddr));
+		if ((sent < 0) && (errno == EINTR)) {
+			continue;
+		}
+		break;
+	}
+
+	if (sent == packet.length) {
+		result = True;
+		goto done;
+	}
+
+	if (sent > 0) {
+		DEBUG(0, ("tried to send %d bytes, send returned %d ?? \n",
+			  packet.length, sent));
+		goto done;
+	}
+
+	if ((errno != EAGAIN) && (errno != EWOULDBLOCK)) {
+		DEBUG(3, ("Could not send %d bytes to Unix domain "
+			  "socket %s: %s\n", packet.length,
+			  sunaddr.sun_path, strerror(errno)));
+		goto done;
+	}
+
+	DEBUG(10, ("sending directly would block -- sending to dispatcher in "
+		   "blocking mode\n"));
+
+	if (set_blocking(socket_fd, True) < 0) {
+		DEBUG(3, ("Could not set socket to blocking mode: %s\n",
+			  strerror(errno)));
+		goto done;
+	}
+	
 	strncpy(sunaddr.sun_path, dispatch_socket_name(),
 		sizeof(sunaddr.sun_path)-1);
-	sent = sendto(socket_fd, packet.data, packet.length, 0,
-		      (struct sockaddr *)&sunaddr, sizeof(sunaddr));
+
+	for (attempts = 0; attempts < 10; attempts++) {
+		sent = sendto(socket_fd, packet.data, packet.length, 0,
+			      (struct sockaddr *)&sunaddr, sizeof(sunaddr));
+		if ((sent < 0) && (errno == EINTR)) {
+			continue;
+		}
+		break;
+	}
 	if (sent != packet.length) {
 		DEBUG(3, ("Could not send %d bytes to dispatch socket %s: "
 			  "%s\n", packet.length, sunaddr.sun_path,
 			  strerror(errno)));
-		SAFE_FREE(packet.data);
-		return False;
 	}
+
+	if (set_blocking(socket_fd, False) < 0) {
+		DEBUG(3, ("Could not set socket to non-blocking mode: %s\n",
+			  strerror(errno)));
+	}
+
+	result = True;
+
+ done:
 
 	SAFE_FREE(packet.data);
 	return True;
@@ -824,11 +872,13 @@ static struct messaging_client *new_client(const struct process_id *pid)
 
 	talloc_set_destructor(result, messaging_client_destr);
 
+#if 0
 	if (set_blocking(result->fd, False) < 0) {
 		DEBUG(5, ("set_blocking() failed: %s\n", strerror(errno)));
 		talloc_free(result);
 		return NULL;
 	}
+#endif
 
 	sunaddr.sun_family = AF_UNIX;
 	strncpy(sunaddr.sun_path, message_path(pid),
@@ -946,7 +996,7 @@ static void dispatch_once(int parent_pipe, int receive_fd)
 		DEBUG(10, ("dispatching to client %s\n",
 			   procid_str_static(&client->pid)));
 
-		sent = send(client->fd, msg->data.data, msg->data.length, 0);
+		sent = write(client->fd, msg->data.data, msg->data.length);
 
 		if (sent < 0) {
 			if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
