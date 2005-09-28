@@ -12,8 +12,10 @@ do
 	then
 		mkdir "$DIR"
 	fi
+
+	BASE=`basename $I`
 	
-	echo "Installing manpage \"$I\" in $DIR"
+	echo "Installing manpage \"$BASE\" in $DIR"
 	cp $I $DIR
 done
 
