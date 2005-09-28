@@ -1,5 +1,5 @@
 Import('hostenv')
 #            tastes like -*- python -*-
 
-talloc = hostenv.StaticLibrary('talloc',['talloc.c'])
+talloc = hostenv.Library('talloc',['talloc.c'])
 Export('talloc')

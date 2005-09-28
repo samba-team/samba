@@ -9,6 +9,6 @@ opts.Update(hostenv)
 
 if hostenv['socket_wrapper']:
 	hostenv.Append(CPPDEFINES = {'HAVE_SOCKET_WRAPPER': 1})
-	socket_wrapper = hostenv.StaticLibrary('socket_wrapper',['socket_wrapper.c'])
+	socket_wrapper = hostenv.Library('socket_wrapper',['socket_wrapper.c'])
 else:
 	socket_wrapper = []
