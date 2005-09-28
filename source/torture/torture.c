@@ -2326,6 +2326,7 @@ static struct {
 	{"LOCAL-IDTREE", torture_local_idtree, 0},
 	{"LOCAL-SOCKET", torture_local_socket, 0},
 	{"LOCAL-PAC", torture_pac, 0},
+	{"LOCAL-REGISTRY", torture_registry, 0},
 	{"LOCAL-RESOLVE", torture_local_resolve, 0},
 
 	/* COM (Component Object Model) testers */
