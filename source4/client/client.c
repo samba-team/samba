@@ -35,10 +35,6 @@
 #include "system/readline.h"
 #include "pstring.h"
 
-#ifndef REGISTER
-#define REGISTER 0
-#endif
-
 static struct smbcli_state *cli;
 static int port = 0;
 static pstring cur_dir = "\\";
@@ -54,50 +50,32 @@ static int name_type = 0x20;
 static int process_tok(fstring tok);
 static int cmd_help(const char **cmd_ptr);
 
-/* 30 second timeout on most commands */
-#define CLIENT_TIMEOUT (30*1000)
-#define SHORT_TIMEOUT (5*1000)
-
-/* value for unused fid field in trans2 secondary request */
-#define FID_UNUSED (0xFFFF)
-
-time_t newer_than = 0;
+static time_t newer_than = 0;
 static int archive_level = 0;
 
 static BOOL translation = False;
-
-/* clitar bits insert */
-extern int blocksize;
-extern BOOL tar_inc;
-extern BOOL tar_reset;
-/* clitar bits end */
- 
 
 static BOOL prompt = True;
 
 static int printmode = 1;
 
 static BOOL recurse = False;
-BOOL lowercase = False;
+static BOOL lowercase = False;
 
 static const char *dest_ip;
-
-#define SEPARATORS " \t\n\r"
 
 static BOOL abort_mget = True;
 
 static pstring fileselection = "";
 
 /* timing globals */
-uint64_t get_total_size = 0;
-uint_t get_total_time_ms = 0;
+static uint64_t get_total_size = 0;
+static uint_t get_total_time_ms = 0;
 static uint64_t put_total_size = 0;
 static uint_t put_total_time_ms = 0;
 
 /* totals globals */
 static double dir_total;
-
-#define USENMB
 
 /* some forward declarations */
 static struct smbcli_state *do_connect(const char *server, const char *share, struct cli_credentials *cred);
