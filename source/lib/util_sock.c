@@ -75,6 +75,9 @@ void set_socket_options(int fd, const char *options)
 	const char **options_list = str_list_make(NULL, options, " \t,");
 	int j;
 
+	if (!options_list)
+		return;
+
 	for (j = 0; options_list[j]; j++) {
 		const char *tok = options_list[j];
 		int ret=0,i;
