@@ -26,8 +26,6 @@
 #include "smb_server/smb_server.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 
-
-
 #define CHECK_MIN_BLOB_SIZE(blob, size) do { \
 	if ((blob)->length < (size)) { \
 		return NT_STATUS_INFO_LENGTH_MISMATCH; \

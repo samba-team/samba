@@ -70,4 +70,8 @@
 #define SAFE_FREE(x) do { if ((x) != NULL) {free(discard_const_p(void *, (x))); (x)=NULL;} } while(0)
 #endif
 
+#define malloc_p(type) (type *)malloc(sizeof(type))
+#define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)
+#define realloc_p(p, type, count) (type *)realloc_array(p, sizeof(type), count)
+
 #endif /* _SMB_MACROS_H */
