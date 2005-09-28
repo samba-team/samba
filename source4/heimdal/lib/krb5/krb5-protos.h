@@ -3432,6 +3432,11 @@ krb5_write_safe_message (
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_xfree (void */*ptr*/);
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_set_send_recv_func(krb5_context context,
+			krb5_send_and_recv_func_t func,
+			krb5_send_and_recv_close_func_t close_fn,
+			void *data);
 
 #ifdef __cplusplus
 }
