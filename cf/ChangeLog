@@ -1,3 +1,7 @@
+2005-09-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* roken-frag.m4: Check for <stdint.h> and uintptr_t
+	
 2005-09-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* roken-frag.m4: Resolver check moved to rk_RESOLV, from Andrew

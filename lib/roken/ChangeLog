@@ -1,3 +1,18 @@
+2005-09-28  Love  <lha@kth.se>
+
+	* roken-common.h: Move rk_UNCONST to roken.h.in since it might use
+	uintptr_t depending on avaibility.
+
+	* roken.h.in: Include <stdint.h> if it exists.  If avaiable, use
+	uintptr_t to define rk_UNCONST.
+	
+2005-09-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* roken-common.h: Add rk_dumpdata.
+	
+	* dumpdata.c: Add rk_dumpdata() that write a chunk of data into a
+	file for later processing by some other tool (like asn1_print).
+	
 2005-09-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* strptime.c: cast to unsigned char to make sure its not negative
