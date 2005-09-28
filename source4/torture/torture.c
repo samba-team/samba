@@ -2322,6 +2322,7 @@ static struct {
 	{"LOCAL-IRPC",  torture_local_irpc, 0},
 	{"LOCAL-BINDING", torture_local_binding_string, 0},
 	{"LOCAL-STRLIST", torture_local_util_strlist, 0},
+	{"LOCAL-FILE", torture_local_util_file, 0},
 	{"LOCAL-IDTREE", torture_local_idtree, 0},
 	{"LOCAL-SOCKET", torture_local_socket, 0},
 	{"LOCAL-PAC", torture_pac, 0},
