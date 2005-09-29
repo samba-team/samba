@@ -34,6 +34,7 @@ include cldap_server/config.mk
 include auth/gensec/config.mk
 include auth/kerberos/config.mk
 include auth/ntlmssp/config.mk
+include auth/credentials/config.mk
 include libcli/auth/config.mk
 include libcli/ldap/config.mk
 include libcli/config.mk
