@@ -103,6 +103,7 @@ static struct composite_context *setup_next_method(struct composite_context *c)
 			creq = method->send_fn(&state->name, c->event_ctx);
 		}
 		if (creq == NULL && state->methods[0]) state->methods++;
+
 	} while (!creq && state->methods[0]);
 
 	if (creq) {
@@ -138,9 +139,11 @@ struct composite_context *resolve_name_send(struct nbt_name *name, struct event_
 
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	c->private_data = state;
+
 	if (event_ctx == NULL) {
 		c->event_ctx = event_context_init(c);
 		if (c->event_ctx == NULL) goto failed;
+
 	} else {
 		c->event_ctx = talloc_reference(c, event_ctx);
 	}
