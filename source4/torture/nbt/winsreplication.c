@@ -147,9 +147,10 @@ static void display_entry(TALLOC_CTX *mem_ctx, struct wrepl_name *name)
 	int i;
 
 	printf("%s\n", nbt_name_string(mem_ctx, &name->name));
-	printf("\tFLAGS: 0x%08X G_FLAG: 0x%08X VERSION_ID: %llu\n",
-		name->flags, name->group_flag, name->version_id);
-	printf("\tOWNER: %-15s\n", name->owner);
+	printf("\tTYPE:%u STATE:%u NODE:0x%04X STATIC:%u VERSION_ID: %llu\n",
+		name->type, name->state, name->node, name->is_static, name->version_id);
+	printf("\tRAW_FLAGS:0x%08X OWNER: %-15s\n",
+		name->raw_flags, name->owner);
 	for (i=0;i<name->num_addresses;i++) {
 		printf("\tADDR: %-15s OWNER: %-15s\n", 
 			name->addresses[i].address, name->addresses[i].owner);

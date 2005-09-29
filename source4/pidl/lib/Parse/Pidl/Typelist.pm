@@ -140,9 +140,9 @@ my $scalars = {
 				NDR_ALIGN	=> 4
 			},
 	"COMRESULT" => { 
-				"C_TYPE"	=> "COMRESULT",
-				IS_REFERENCE => 0,
-				NDR_ALIGN => 4
+				C_TYPE		=> "COMRESULT",
+				IS_REFERENCE	=> 0,
+				NDR_ALIGN	=> 4
 			},
 
 	# special types
@@ -150,6 +150,11 @@ my $scalars = {
 				C_TYPE		=> "const char *",
 				IS_REFERENCE	=> 1,
 				NDR_ALIGN	=> 4 #???
+			},
+	"wrepl_nbt_name"=> {
+				C_TYPE		=> "struct nbt_name",
+				IS_REFERENCE	=> 0,
+				NDR_ALIGN	=> 4
 			},
 	"ipv4address"	=> {
 				C_TYPE		=> "const char *",
