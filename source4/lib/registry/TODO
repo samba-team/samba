@@ -24,12 +24,11 @@ reg_backend_wine.c:
 regshell:
  - support for security descriptors
 
- regdiff:
-  - fix
- 
 gregedit.c:
  - support for editing values / adding values / deleting values
  - support for adding/deleting keys
  - support for security descriptors
 
 - pass parsed paths around rather then strings (i.e. just a list of strings)
+- integrate various registry tools ?
+- finish new patchfile code
