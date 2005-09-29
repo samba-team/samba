@@ -109,7 +109,24 @@ failed:
 
 BOOL wreplsrv_is_our_address(struct wreplsrv_service *service, const char *address)
 {
-	/* TODO: ! */
+	const char *our_address;
+
+	if (lp_interfaces() && lp_bind_interfaces_only()) {
+		int num_interfaces = iface_count();
+		int i;
+		for(i = 0; i < num_interfaces; i++) {
+			our_address = iface_n_ip(i);
+			if (strcasecmp(our_address, address) == 0) {
+				return True;
+			}
+		}
+	} else {
+		our_address = lp_socket_address();
+		if (strcasecmp(our_address, address) == 0) {
+			return True;
+		}
+	}
+
 	return False;
 }
 
