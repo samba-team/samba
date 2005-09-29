@@ -21,19 +21,20 @@ Common bugs fixed in 3.0.20a include:
 Winbind, security = domain, and Active Directory
 ================================================
 
-Recent security updates for Windows 2000 and Windows 2003
-have changed the fashion in which user and group list can 
-be obtained from domain controllers.  In short, the rpc 
-mechanisms used by "security = domain" to retrieve users 
-and groups is not compatible with these changes.   The 
-"security = ads" configuration is not affected by the
-Windows protocol changes.
+Recent security updates for Windows 2000 and Windows 2003 have 
+changed the fashion in which user and group lists can be obtained 
+from domain controllers.  In short, the RPC mechanisms used by 
+"security = domain" to retrieve users and groups is not compatible 
+with these changes.   The "security = ads" configuration is not 
+affected by the Windows protocol changes.
 
-Samba developers are actively working to correct this
-problem in the version 3.0.21.  Administrators who are 
-unable to migrate to "security = ads", can define credentials
-to be used by winbindd when enumerating users by executing
-"wbinfo --set-auth-user='DOMAIN\username%password'"
+Samba developers are actively working to correct this problem in 
+the 3.0.21 release.  In the meantime, Administrators who are unable 
+to migrate to "security = ads" and must continue using "security = 
+domain", can define credentials to be used by winbindd for account
+enumeration by executing the following command as root.
+
+	wbinfo --set-auth-user='DOMAIN\username%password'
 
 
 
