@@ -1,13 +1,22 @@
                    ===============================
                    Release Notes for Samba 3.0.20a
-                             Sept XX, 2005
+                             Sept 30, 2005
                    ===============================
 
 This is the latest stable release of Samba. This is the version
 that production Samba servers should be running for all current
-bug-fixes.  This is a substantial upgrade from previous Samba 
-3.0.x releases.  Please read the section "What happened to 3.0.15 - 
-3.0.19?" and the other major change descriptions.
+bug-fixes.  Please read the following important changes in this
+release.
+
+Common bugs fixed in 3.0.20a include:
+
+  o Stability problems with winbindd.
+  o Crash bugs caused by incompatibilities on 64-bit systems.
+  o Missing files from directory listings on AIX servers
+  o User Manager interoperability problems.
+  o Minor build difficulties on various platforms such as 
+    Solaris and OpenBSD, 
+
 
 ######################################################################
 Changes
@@ -20,7 +29,107 @@ Changes since 3.0.20
 commits
 -------
 
+o   Jeremy Allison <jra@samba.org>
+    * BUG 3065: Fix for legacy clients retrieving a listing of 
+      an empty directory.
+    * Added external library for accessing Samba's share mode 
+      database.
+    * Fix winbindd credentials chain which caused logon failures 
+      after attempting to authenticate an unknown user.
+    * Fix recursive looping bug in winbindd.
+    * Fix build errors on 64-bit systems.
+    * Posix ACL memory leak and crash bug fixes.
+    * BUG 3044: Ensure OPEN-EXEC is honored as read-only.
+    * BUG 3060: Ensure SMBcreate truncates the file if it exists.
+    * Hide dot files and directory logic fixes.
+    * Correct display of open file modes by smbstatus.
+    * BUG 3010: Fix missing files bug on AIX systems.
 
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Allow the root user to automatically pass se_access_checks()
+      in the registry and service control server code.
+    * Ensure that winbindd uses the correct name in the net_auth2()
+      request when running on a Samba PDC.
+    * Fix linking problem with tdb utilities.
+    * BUG 3080: Fix regression in 'net rpc shutdown' command.
+    * Fix segv in 'net rpc' when the pipe open fails.
+    * Fix upload bug when installing 64-bit Windows printer drivers.
+    * Fix regression in the smburi syntax used by smbspool.
+    * Fix sorting of subkey hash records in registry files.
+    * Correct REG_CREATE_KEY_EX parsing error.
+    * Interoperability issues with usrmgr.exe and Samba groups.
+    * Use the display names and not the Unix names when enumerating
+      groups in the ldapsam passdb backend.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Prevent BUILTIN sids returned in the user's token from 
+      a Windows DC from being applied to any local group mappings
+      on the Samba host.
+    * Plug memory leaks in the kerberos keytab code.
+    * Ensure BUILTIN groups are returned from winbindd's idmap_rid
+      backend when 'winbind nested groups' is enabled.
+    * Fix crash bug in winbindd caused by 64-bit build issues.
+    * Imporve debug messages in smbspool.
+    * Give better error-message when "NDS Universal Password" change fails.
+    * Fix password history error in the eDirectory schema file.
+
+
+o   Steve French <sfrench@us.ibm.com>
+    * Allow disabling mandatory byte range lock mount flag, and fix 
+      corresponding entry in mtab.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Fix race condition in the NTcreate&X open code when the 
+      disposition is NTCREATEX_DISP_CREATE.
+    * Correct logic error when checking the pid for pending print 
+      change notify messages.
+    * Ensure that winbindd child process complete startup even when
+      the parent is receiving authentication requests.
+    * Return the full NTSTATUS code to ntlm_auth and pam_winbindd
+      when authentication fails.
+
+
+o   Jason Mader <jason@ncac.gwu.edu>
+    * Compile warning fixes.
+
+
+o   Uli Meis <a.sporto@gmail.com>
+    * Patches for pdb_*sql.c
+
+
+o   Luke Mewburn <lukem@NetBSD.org>
+    * Autoconf syntax fixes.
+
+
+o   James Peach <jpeach@sgi.com>
+    * Correct problem with creating a core file in Linux.
+
+
+o   Stefan Metzmacher <metze@samba.org>    
+    * Quota fixes in smbd.
+
+
+o   Peter Rindfuss <rindfuss@wz-berlin.de>
+    * Patches for pdb_*sql.c
+
+
+o   Jiri Sasek <Jiri.Sasek@Sun.COM>
+    * Solaris toolchain patches for autoconf scripts.
+
+
+o   Andrew Tridgell <tridge@samba.org>
+    * Fix for tdb clear-if-first race condition.
+
+
+o   Leo Weppelman <leo@wau.mis.ah.nl>
+    * BUG 3104: Don't allow time updates to files on read-only shares.
+
+
+o   Steve Williams <steve@celineandsteve.com>
+    * BUG 3052: Fix compile issues on OpenBSD.
 
 
 Release Notes for older release follow:
@@ -855,8 +964,8 @@ Changes since 3.0.14
 
 commits
 -------
-o    Jeremy Allison <jra@samba.org>
-     * Fixed invalid SMB_ASSERT() triggered by checking access on
+o   Jeremy Allison <jra@samba.org>
+    * Fixed invalid SMB_ASSERT() triggered by checking access on
        ACL'd files.
 
 

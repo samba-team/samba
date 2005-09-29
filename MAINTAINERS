@@ -26,8 +26,15 @@ Feature/Function	Developer
 ----------------	---------
 
 samba-vscan		Rainer Link <rainer@openantivirus.org>
-pdb_mysql		Jelmer Vernooij <jelmer@samba.org>
+
+pdb_mysql		Peter Rindfuss <rindfuss@wz-berlin.de>
+			Darrell McGuire <dmcguire@pegasys.cc>
+
+pdb_psql		Ulrich Meis <kenobi@halifax.rwth-aachen.de>
+			Filip Jirsák <filip@jirsak.org>
+
 General Documentation	John Terpstra <jht@samba.org>
+
 Printing		Gerald (Jerry) Carter <jerry@samba.org>
 
 
