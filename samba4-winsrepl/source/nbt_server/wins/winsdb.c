@@ -183,7 +183,11 @@ static NTSTATUS winsdb_addr_decode(struct winsdb_record *rec, struct ldb_val *va
 	if (!p) {
 		/* support old entries, with only the address */
 		addr->address		= talloc_steal(addr, val->data);
-		addr->wins_owner	= rec->wins_owner;
+		addr->wins_owner	= talloc_reference(addr, rec->wins_owner);
+		if (!addr->wins_owner) {
+			status = NT_STATUS_NO_MEMORY;
+			goto failed;
+		}
 		addr->expire_time	= rec->expire_time;
 		*_addr = addr;
 		return NT_STATUS_OK;
@@ -439,12 +443,25 @@ NTSTATUS winsdb_record(struct ldb_message *msg, struct nbt_name *name, TALLOC_CT
 	talloc_steal(rec, rec->wins_owner);
 	talloc_steal(rec, rec->registered_by);
 
-	if (!rec->wins_owner) rec->wins_owner = WINSDB_OWNER_LOCAL;
+	if (!rec->wins_owner) {
+		rec->wins_owner = talloc_strdup(rec, WINSDB_OWNER_LOCAL);
+		if (rec->wins_owner == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto failed;
+		}
+	}
 
 	el = ldb_msg_find_element(msg, "address");
 	if (el == NULL) {
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto failed;
+	}
+
+	if (!(rec->nb_flags & 2)) {
+		if (el->num_values != 1) {
+			status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+			goto failed;
+		}
 	}
 
 	rec->addresses     = talloc_array(rec, struct winsdb_addr *, el->num_values+1);

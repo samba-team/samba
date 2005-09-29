@@ -157,8 +157,14 @@ static int wreplsrv_in_sort_wins_name(struct wrepl_wins_name *n1,
 	return 0;
 }
 
-static NTSTATUS wreplsrv_record2wins_name(TALLOC_CTX *mem_ctx, struct wrepl_wins_name *name, struct winsdb_record *rec)
+static NTSTATUS wreplsrv_record2wins_name(TALLOC_CTX *mem_ctx,
+					  const char *our_address,
+					  struct wrepl_wins_name *name,
+					  struct winsdb_record *rec)
 {
+	uint32_t num_ips, i;
+	struct wrepl_ip *ips;
+
 	name->name		= *rec->name;
 	talloc_steal(mem_ctx, rec->name->name);
 	talloc_steal(mem_ctx, rec->name->scope);
@@ -174,8 +180,24 @@ static NTSTATUS wreplsrv_record2wins_name(TALLOC_CTX *mem_ctx, struct wrepl_wins
 		talloc_steal(mem_ctx, rec->addresses[0]->address);
 		break;
 	case 2:
-		name->addresses.addresses.num_ips	= 0;
-		name->addresses.addresses.ips		= NULL;
+		num_ips	= winsdb_addr_list_length(rec->addresses);
+		ips	= talloc_array(mem_ctx, struct wrepl_ip, num_ips);
+		NT_STATUS_HAVE_NO_MEMORY(ips);
+
+		for (i = 0; i < num_ips; i++) {
+			if (strcasecmp(WINSDB_OWNER_LOCAL, rec->addresses[i]->wins_owner) == 0) {
+				ips[i].owner	= talloc_strdup(ips, our_address);
+				NT_STATUS_HAVE_NO_MEMORY(ips[i].owner);
+			} else {
+				ips[i].owner	= rec->addresses[i]->wins_owner;
+				talloc_steal(ips, rec->addresses[i]->wins_owner);
+			}
+			ips[i].ip	= rec->addresses[i]->address;
+			talloc_steal(ips, rec->addresses[i]->address);
+		}
+
+		name->addresses.addresses.num_ips	= num_ips;
+		name->addresses.addresses.ips		= ips;
 		break;
 	}
 
@@ -254,7 +276,7 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 		status = winsdb_record(res[i], NULL, call, &rec);
 		NT_STATUS_NOT_OK_RETURN(status);
 
-		status = wreplsrv_record2wins_name(names, &names[i], rec);
+		status = wreplsrv_record2wins_name(names, call->wreplconn->our_ip, &names[i], rec);
 		NT_STATUS_NOT_OK_RETURN(status);
 		talloc_free(rec);
 		talloc_free(res[i]);
@@ -262,6 +284,10 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 
 	/* sort the names before we send them */
 	qsort(names, ret, sizeof(struct wrepl_wins_name), (comparison_fn_t)wreplsrv_in_sort_wins_name);
+
+	DEBUG(0,("WINSREPL:reply [%u] records owner[%s] min[%llu] max[%llu] to partner[%s]\n",
+		ret, owner_in->address, owner_in->min_version, owner_in->max_version,
+		call->wreplconn->partner->address));
 
 	reply_out->num_names	= ret;
 	reply_out->names	= names;
