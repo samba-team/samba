@@ -158,6 +158,7 @@ static NTSTATUS mangle_get_prefix(const smb_ucs2_t *ucs2_string, smb_ucs2_t **pr
 static NTSTATUS is_valid_name(const smb_ucs2_t *fname, BOOL allow_wildcards, BOOL only_8_3)
 {
 	smb_ucs2_t *str, *p;
+	size_t num_ucs2_chars;
 	NTSTATUS ret = NT_STATUS_OK;
 
 	if (!fname || !*fname)
@@ -177,17 +178,22 @@ static NTSTATUS is_valid_name(const smb_ucs2_t *fname, BOOL allow_wildcards, BOO
 	if (!NT_STATUS_IS_OK(ret))
 		return ret;
 
-	str = strdup_w(fname);
-	p = strchr_w(str, UCS2_CHAR('.'));
-	if (p && p[1] == UCS2_CHAR(0)) {
-		/* Name cannot end in '.' */
-		SAFE_FREE(str);
+	/* Name can't end in '.' or ' ' */
+	num_ucs2_chars = strlen_w(fname);
+	if (fname[num_ucs2_chars-1] == UCS2_CHAR('.') || fname[num_ucs2_chars-1] == UCS2_CHAR(' ')) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	if (p)
+
+	str = strdup_w(fname);
+
+	/* Truncate copy after the first dot. */
+	p = strchr_w(str, UCS2_CHAR('.'));
+	if (p) {
 		*p = 0;
+	}
+
 	strupper_w(str);
-	p = &(str[1]);
+	p = &str[1];
 
 	switch(str[0])
 	{
