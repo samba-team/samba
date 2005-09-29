@@ -159,40 +159,14 @@ static int wreplsrv_in_sort_wins_name(struct wrepl_wins_name *n1,
 
 static NTSTATUS wreplsrv_record2wins_name(TALLOC_CTX *mem_ctx, struct wrepl_wins_name *name, struct winsdb_record *rec)
 {
-	uint8_t *namebuf;
-	uint32_t namebuf_len;
-	uint32_t name_len;
+	name->name		= *rec->name;
+	talloc_steal(mem_ctx, rec->name->name);
+	talloc_steal(mem_ctx, rec->name->scope);
 
-	name_len = strlen(rec->name->name);
-	if (name_len > 15) {
-		return NT_STATUS_INVALID_PARAMETER_MIX;
-	}
-
-	namebuf = (uint8_t *)talloc_asprintf(mem_ctx, "%-15s%c%s",
-					    rec->name->name, 'X',
-					    (rec->name->scope?rec->name->scope:""));
-	NT_STATUS_HAVE_NO_MEMORY(namebuf);
-	namebuf_len = strlen((char *)namebuf) + 1;
-
-	/*
-	 * we need to set the type here, and use a place-holder in the talloc_asprintf()
-	 * as the type can be 0x00, and then the namebuf_len = strlen(namebuf); would give wrong results
-	 */
-	namebuf[15] = rec->name->type;
-
-	/* oh wow, what a nasty bug in windows ... */
-	if (rec->name->type == 0x1b) {
-		namebuf[15] = namebuf[0];
-		namebuf[0] = 0x1b;
-	}
-
-	name->name_len		= namebuf_len;
-	name->name		= namebuf;
 	name->id		= rec->version;
 	name->unknown		= WINSDB_GROUP_ADDRESS;
 
 	name->flags		= rec->nb_flags;
-	name->group_flag	= 0;
 
 	switch (name->flags & 2) {
 	case 0:
