@@ -61,6 +61,7 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * Interoperability issues with usrmgr.exe and Samba groups.
     * Use the display names and not the Unix names when enumerating
       groups in the ldapsam passdb backend.
+    * Ensure that Windows domain user names are converted to lower case.
 
 
 o   Guenther Deschner <gd@samba.org>
@@ -74,6 +75,7 @@ o   Guenther Deschner <gd@samba.org>
     * Improve debug messages in smbspool.
     * Give better error-message when "NDS Universal Password" change fails.
     * Fix password history error in the eDirectory schema file.
+    * Ensure that Windows domain group names are converted to lower case.
 
 
 o   Steve French <sfrench@us.ibm.com>
