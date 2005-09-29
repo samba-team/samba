@@ -247,7 +247,7 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 	 * if the partner ask for nothing, or give invalid ranges,
 	 * return an empty list.
 	 */
-	if (owner_in->min_version >= owner_in->max_version) {
+	if (owner_in->min_version > owner_in->max_version) {
 		return NT_STATUS_OK;
 	}
 
@@ -255,7 +255,7 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 	 * if the partner has already all records for nothing, or give invalid ranges,
 	 * return an empty list.
 	 */
-	if (owner_in->min_version >= owner->owner.max_version) {
+	if (owner_in->min_version > owner->owner.max_version) {
 		return NT_STATUS_OK;
 	}
 
@@ -267,7 +267,12 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 		talloc_steal(call, res);
 	}
 	if (ret < 0) return  NT_STATUS_INTERNAL_DB_CORRUPTION;
-	if (ret == 0) return NT_STATUS_OK;
+	if (ret == 0) {
+		DEBUG(2,("WINSREPL:reply [%u] records owner[%s] min[%llu] max[%llu] to partner[%s]\n",
+			ret, owner_in->address, owner_in->min_version, owner_in->max_version,
+			call->wreplconn->partner->address));
+		return NT_STATUS_OK;
+	}
 
 	names = talloc_array(call, struct wrepl_wins_name, ret);
 	NT_STATUS_HAVE_NO_MEMORY(names);
