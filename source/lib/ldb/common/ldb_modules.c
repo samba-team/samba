@@ -122,6 +122,20 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 {
 	char **modules = NULL;
 	int i;
+	struct {
+		const char *name;
+		ldb_module_init_t init;
+	} well_known_modules[] = {
+		{ "schema", schema_module_init },
+		{ "timestamps", timestamps_module_init },
+		{ "rdn_name", rdn_name_module_init },
+#ifdef _SAMBA_BUILD_
+		{ "objectguid", objectguid_module_init },
+		{ "samldb", samldb_module_init },
+		{ "samba3sam", ldb_samba3sam_module_init },
+#endif
+		{ NULL, NULL }
+	};
 
 	/* find out which modules we are requested to activate */
 
@@ -161,7 +175,8 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 				return -1;
 			}
 
-			modules = ldb_modules_list_from_string(ldb, msg[0]->elements[0].values[0].data);
+			modules = ldb_modules_list_from_string(ldb, 
+							       (const char *)msg[0]->elements[0].values[0].data);
 
 		}
 
@@ -175,71 +190,22 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 
 	for (i = 0; modules[i] != NULL; i++) {
 		struct ldb_module *current;
-
-		if (strcmp(modules[i], "schema") == 0) {
-			current = schema_module_init(ldb, options);
-			if (!current) {
-				ldb_debug(ldb, LDB_DEBUG_FATAL, "function 'init_module' in %s fails\n", modules[i]);
-				return -1;
+		int m;
+		for (m=0;well_known_modules[m].name;m++) {
+			if (strcmp(modules[i], well_known_modules[m].name) == 0) {
+				current = well_known_modules[m].init(ldb, options);
+				if (current == NULL) {
+					ldb_debug(ldb, LDB_DEBUG_FATAL, "function 'init_module' in %s fails\n", modules[i]);
+					return -1;
+				}
+				DLIST_ADD(ldb->modules, current);
+				break;
 			}
-			DLIST_ADD(ldb->modules, current);
-			continue;
 		}
-
-		if (strcmp(modules[i], "timestamps") == 0) {
-			current = timestamps_module_init(ldb, options);
-			if (!current) {
-				ldb_debug(ldb, LDB_DEBUG_FATAL, "function 'init_module' in %s fails\n", modules[i]);
-				return -1;
-			}
-			DLIST_ADD(ldb->modules, current);
-			continue;
+		if (well_known_modules[m].name == NULL) {
+			ldb_debug(ldb, LDB_DEBUG_WARNING, "WARNING: Module [%s] not found\n", 
+				  modules[i]);
 		}
-
-		if (strcmp(modules[i], "rdn_name") == 0) {
-			current = rdn_name_module_init(ldb, options);
-			if (!current) {
-				ldb_debug(ldb, LDB_DEBUG_FATAL, "function 'init_module' in %s fails\n", modules[i]);
-				return -1;
-			}
-			DLIST_ADD(ldb->modules, current);
-			continue;
-		}
-
-#ifdef _SAMBA_BUILD_
-		if (strcmp(modules[i], "objectguid") == 0) {
-			current = objectguid_module_init(ldb, options);
-			if (!current) {
-				ldb_debug(ldb, LDB_DEBUG_FATAL, "function 'init_module' in %s fails\n", modules[i]);
-				return -1;
-			}
-			DLIST_ADD(ldb->modules, current);
-			continue;
-		}
-
-		if (strcmp(modules[i], "samldb") == 0) {
-			current = samldb_module_init(ldb, options);
-			if (!current) {
-				ldb_debug(ldb, LDB_DEBUG_FATAL, "function 'init_module' in %s fails\n", modules[i]);
-				return -1;
-			}
-			DLIST_ADD(ldb->modules, current);
-			continue;
-		}
-
-		if (strcmp(modules[i], "samba3sam") == 0) {
-			current = ldb_samba3sam_module_init(ldb, options);
-			if (!current) {
-				ldb_debug(ldb, LDB_DEBUG_FATAL, "function 'init_module' in %s fails\n", modules[i]);
-				return -1;
-			}
-			DLIST_ADD(ldb->modules, current);
-			continue;
-		}
-
-#endif
-
-		ldb_debug(ldb, LDB_DEBUG_WARNING, "WARNING: Module [%s] not found\n", modules[i]);
 	}
 
 	talloc_free(modules);
