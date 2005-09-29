@@ -135,6 +135,7 @@ struct rw_buffer;
 struct registry_context;
 struct registry_key;
 struct registry_value;
+struct reg_diff_file;
 
 struct rap_NetShareEnum;
 struct rap_NetServerEnum2;

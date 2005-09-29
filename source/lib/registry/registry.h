@@ -138,4 +138,27 @@ struct reg_init_function_entry {
 	struct reg_init_function_entry *prev, *next;
 };
 
+struct reg_diff_value
+{
+	char *name;
+	enum { REG_DIFF_DEL_VAL, REG_DIFF_SET_VAL } changetype;
+	uint32_t type;
+	DATA_BLOB data;
+};
+
+struct reg_diff_key
+{
+	char *name;
+	enum { REG_DIFF_CHANGE_KEY, REG_DIFF_DEL_KEY } changetype;
+	uint32_t numvalues;
+	struct reg_diff_value *values;
+};
+
+struct reg_diff
+{
+	char *format;
+	uint32_t numkeys;
+	struct reg_diff_key *keys;
+};
+
 #endif /* _REGISTRY_H */

@@ -538,7 +538,7 @@ static void on_value_activate(GtkTreeView *treeview, GtkTreePath *arg1,
 
 	gtk_widget_set_sensitive(entry_name, FALSE);
 	gtk_entry_set_text(GTK_ENTRY(entry_name), value->name);
-	gtk_entry_set_text(GTK_ENTRY(entry_value), reg_val_data_string(mem_ctx, value));
+	gtk_entry_set_text(GTK_ENTRY(entry_value), reg_val_data_string(mem_ctx, value->data_type, &value->data));
 	gtk_combo_box_set_active(GTK_COMBO_BOX(entry_type), value->data_type);
 	
 	result = gtk_dialog_run(addwin);
@@ -547,7 +547,7 @@ static void on_value_activate(GtkTreeView *treeview, GtkTreePath *arg1,
 		WERROR error;
 		struct registry_value *val;
 		
-		reg_string_to_val(mem_ctx,str_regtype(gtk_combo_box_get_active(GTK_COMBO_BOX(entry_type))), gtk_entry_get_text(GTK_ENTRY(entry_value)), &val);
+		reg_string_to_val(mem_ctx,str_regtype(gtk_combo_box_get_active(GTK_COMBO_BOX(entry_type))), gtk_entry_get_text(GTK_ENTRY(entry_value)), &val->data_type, &val->data);
 		
 		error = reg_val_set(current_key, gtk_entry_get_text(GTK_ENTRY(entry_name)), val->data_type, val->data);
 
@@ -568,7 +568,7 @@ static void on_set_value_activate(GtkMenuItem *menuitem, gpointer user_data)
 		WERROR error;
 		struct registry_value *val;
 		
-		reg_string_to_val(mem_ctx,str_regtype(gtk_combo_box_get_active(GTK_COMBO_BOX(entry_type))), gtk_entry_get_text(GTK_ENTRY(entry_value)), &val);
+		reg_string_to_val(mem_ctx,str_regtype(gtk_combo_box_get_active(GTK_COMBO_BOX(entry_type))), gtk_entry_get_text(GTK_ENTRY(entry_value)), &val->data_type, &val->data);
 		
 		error = reg_val_set(current_key, gtk_entry_get_text(GTK_ENTRY(entry_name)), val->data_type, val->data);
 
@@ -636,7 +636,7 @@ static gboolean on_key_activate(GtkTreeSelection *selection,
 						1,
 						str_regtype(val->data_type),
 						2,
-						reg_val_data_string(mem_ctx, val),
+						reg_val_data_string(mem_ctx, val->data_type, &val->data),
 						3, 
 						val,
 						-1);
