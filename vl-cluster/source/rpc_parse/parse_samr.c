@@ -7036,9 +7036,9 @@ inits a SAMR_R_GET_DOM_PWINFO structure.
 
 void init_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER * q_u,
 				const char *dest_host, const char *user_name,
-				const char nt_newpass[516],
+				const uchar nt_newpass[516],
 				const uchar nt_oldhash[16],
-				const char lm_newpass[516],
+				const uchar lm_newpass[516],
 				const uchar lm_oldhash[16])
 {
 	DEBUG(5, ("init_samr_q_chgpasswd_user\n"));

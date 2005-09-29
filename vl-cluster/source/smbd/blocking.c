@@ -352,8 +352,8 @@ static BOOL process_lockread(blocking_lock_record *blr)
 	SSVAL(p,0,nread); p += 2;
 	set_message_end(outbuf, p+nread);
 	
-	DEBUG(3, ( "process_lockread file = %s, fnum=%d num=%d nread=%d\n",
-		   fsp->fsp_name, fsp->fnum, (int)numtoread, (int)nread ) );
+	DEBUG(3, ( "process_lockread file = %s, fnum=%d num=%lu nread=%ld\n",
+		   fsp->fsp_name, fsp->fnum, (unsigned long)numtoread, (long)nread ) );
 	
 	send_blocking_reply(outbuf,outsize);
 	return True;

@@ -27,7 +27,8 @@ run a given print command
 a null terminated list of value/substitute pairs is provided
 for local substitution strings
 ****************************************************************************/
-static int print_run_command(int snum, const char* printername, BOOL do_sub, char *command, int *outfd, ...)
+static int print_run_command(int snum, const char* printername, BOOL do_sub,
+			     const char *command, int *outfd, ...)
 {
 
 	pstring syscmd;

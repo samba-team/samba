@@ -3141,7 +3141,7 @@ BOOL sync_files(struct copy_clistate *cp_clistate, pstring mask)
 BOOL copy_top_level_perms(struct copy_clistate *cp_clistate, 
 				const char *sharename)
 {
-	NTSTATUS nt_status;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 
 	switch (net_mode_share) {
 	case NET_MODE_SHARE_MIGRATE:

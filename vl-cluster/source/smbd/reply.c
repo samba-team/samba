@@ -2288,8 +2288,8 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 		nread = 0;
 #endif
   
-	DEBUG( 3, ( "readbraw fnum=%d start=%.0f max=%d min=%d nread=%d\n", fsp->fnum, (double)startpos,
-				(int)maxcount, (int)mincount, (int)nread ) );
+	DEBUG( 3, ( "readbraw fnum=%d start=%.0f max=%lu min=%lu nread=%lu\n", fsp->fnum, (double)startpos,
+				(unsigned long)maxcount, (unsigned long)mincount, (unsigned long)nread ) );
   
 	send_file_readbraw(conn, fsp, startpos, nread, mincount, outbuf, out_buffsize);
 
