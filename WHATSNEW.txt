@@ -1,13 +1,35 @@
-                   ==============================
-                   Release Notes for Samba 3.0.20
-                             Aug 19, 2005
-                   ==============================
+                   ===============================
+                   Release Notes for Samba 3.0.20a
+                             Sept XX, 2005
+                   ===============================
 
 This is the latest stable release of Samba. This is the version
 that production Samba servers should be running for all current
 bug-fixes.  This is a substantial upgrade from previous Samba 
 3.0.x releases.  Please read the section "What happened to 3.0.15 - 
 3.0.19?" and the other major change descriptions.
+
+######################################################################
+Changes
+#######
+
+
+Changes since 3.0.20
+--------------------
+
+commits
+-------
+
+
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
+                   ==============================
+                   Release Notes for Samba 3.0.20
+                             Aug 19, 2005
+                   ==============================
 
 Additional features introduced in Samba 3.0.20 include:
 
@@ -81,8 +103,6 @@ values.  See the smb.conf(5) man page for more details on these
 settings.
 
 
-
-
 ######################################################################
 Changes
 #######
@@ -107,66 +127,6 @@ smb.conf changes
     username map script			New
     winbind enable local accounts	Removed
     winbindd nss info			New
-
-
-Changes since 3.0.20rc2
-------------------------
-
-commits
--------
-
-o   Jeremy Allison <jra@samba.org>
-    * Fix minor compiler warnings in printing/printing.c.
-    * Merge new DOS error code from SAMBA_4.
-    * Fix issue when non-English characters in filenames and 
-      directories.
-    * Fix bogus error message in smbstatus about unknown share modes.
-
-
-o   Gerald (Jerry) Carter <jerry@samba.org>
-    * Fix error in EnumPrinterData() reported by valgrind.
-    * Fix broken help links in SWAT editor caused by new doc layout.
-    * Ensure that a domain structure in winbind is initialized prior
-      to assigning the methods for communicating to a DC.
-    * BUG 3000: Remove background updates of winbind cache and allow
-      child processes to immediately update and expired cache entry.
-
-
-o   Guenther Deschner <gd@samba.org>
-    * Allow admins to uncheck the "User must change Password at 
-      next Logon" checkbox in User manager (merge from trunk).
-
-
-o   Steve French <sfrench@us.ibm.com>
-    * Fix minor compiler warnings in the mount.cifs helper.
-
-
-o   John Janosik <jpjanosi@us.ibm.com>
-    * BUG 2976: Mark logons for unknown domains with a 
-      non-authoritative response.
-
-
-o   Marcel <samba.10.maazl@spamgourmet.com>
-    * Fix regression in OS/2 trans2 open code.
-
-
-o   Jim McDonough <jmcd@us.ibm.com>
-    * BUG 2953: Additional fixes for domain trusts.  Also clears
-      up the "bad stub" error when attempting to logon to a Samba
-      domain with a bad username.
-
-
-o   Luke Mewburn <lukem@NetBSD.org>
-    * Compiler warning fixes.
-
-
-o   James Peach <jpeach@sgi.com>
-    * BUG 2314: Fix const compiler warnings in the quota code.
-
-
-o   Ed Plese <ed@edplese.com>
-    * Fix faulty logic which caused winbindd to return failure 
-      when a user possessed no supplementary groups.
 
 
 Changes since 3.0.14a
@@ -301,6 +261,11 @@ o   Jeremy Allison <jra@samba.org>
       in corrupted tdb files.
     * Allow someone with SeTakeOwnershipPrivilege to chown the 
       user of a file to herself.
+    * Fix minor compiler warnings in printing/printing.c.
+    * Merge new DOS error code from SAMBA_4.
+    * Fix issue when non-English characters in filenames and 
+      directories.
+    * Fix bogus error message in smbstatus about unknown share modes.
 
 
 o   Andrew Bartlett <abartlet@samba.org>
@@ -445,6 +410,12 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
       modified now.
     * Remove over-paranoid assert() call when checking spoolss 
       buffer pointers
+    * Fix error in EnumPrinterData() reported by valgrind.
+    * Fix broken help links in SWAT editor caused by new doc layout.
+    * Ensure that a domain structure in winbind is initialized prior
+      to assigning the methods for communicating to a DC.
+    * BUG 3000: Remove background updates of winbind cache and allow
+      child processes to immediately update and expired cache entry.
 
 
 o   David.Collier-Brown  <David.Collier-Brown@sun.com>
@@ -514,6 +485,8 @@ o   Guenther Deschner <gd@samba.org>
     * Cleanup "net share migrate" code. 
     * Allow to touch mtime in vfs-recycle with "recycle:touch_mtime 
       = true".
+    * Allow admins to uncheck the "User must change Password at 
+      next Logon" checkbox in User manager (merge from trunk).
 
 
 o   Renaud Duhaut <rd@duhaut.com> 
@@ -549,6 +522,7 @@ o   Steve French <sfrench@us.ibm.com>
       mount.
     * Lock mtab when updating it during umount.cifs, also delete
       only one matching entry at a time.
+    * Fix minor compiler warnings in the mount.cifs helper.
 
 
 o   Deryck Hodge <deryck@samba.org>
@@ -573,6 +547,8 @@ o   Kevin Jamieson <bugzilla@kevinjamieson.com>
 o   John Janosik <jpjanosi@us.ibm.com>
     * BUG 2077: Correctly fill in the correct server name when 
       processing trusted domain logins.
+    * BUG 2976: Mark logons for unknown domains with a 
+      non-authoritative response.
 
 
 o   William Jojo <jojowil@hvcc.edu>
@@ -683,6 +659,10 @@ o   Jason Mader <jason@ncac.gwu.edu>
     * BUG 2527, 2538: Removed unused variables.
 
 
+o   Marcel <samba.10.maazl@spamgourmet.com>
+    * Fix regression in OS/2 trans2 open code.
+
+
 o   Jim McDonough <jmcd@us.ibm.com>
     * Fixes for samr_lookup_rids() when using ldapsam:trusted=yes
       (in conjunction with Volker).
@@ -693,6 +673,13 @@ o   Jim McDonough <jmcd@us.ibm.com>
       ldif file instead of actually writing to the passdb.  
     * BUG 2736: Add retries to workaround winbind race condition 
       with detecting idle clients.
+    * BUG 2953: Additional fixes for domain trusts.  Also clears
+      up the "bad stub" error when attempting to logon to a Samba
+      domain with a bad username.
+
+
+o   Luke Mewburn <lukem@NetBSD.org>
+    * Compiler warning fixes.
 
 
 o   Kalim Moghul <kalim@samba.org>
@@ -738,6 +725,12 @@ o   James Peach <jpeach@sgi.com>
     * BUG 2596: Fix become_root link issues and one IRIX stack 
       backtrace bug.
     * Fix for null pointer ACL free.
+    * BUG 2314: Fix const compiler warnings in the quota code.
+
+
+o   Ed Plese <ed@edplese.com>
+    * Fix faulty logic which caused winbindd to return failure 
+      when a user possessed no supplementary groups.
 
 
 o   Marcin Porwit <mporwit@centeris.com>
