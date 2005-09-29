@@ -294,7 +294,7 @@ NTSTATUS ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name 
 	scope = strchr(s, '.');
 	if (scope) {
 		*scope = 0;
-		r->scope = talloc_strdup(ndr, scope+1);
+		r->scope = talloc_strdup(ndr->current_mem_ctx, scope+1);
 		NT_STATUS_HAVE_NO_MEMORY(r->scope);
 	} else {
 		r->scope = NULL;
@@ -312,7 +312,7 @@ NTSTATUS ndr_pull_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name 
 	status = decompress_name(cname, &r->type);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	r->name = talloc_strdup(ndr, cname);
+	r->name = talloc_strdup(ndr->current_mem_ctx, cname);
 	NT_STATUS_HAVE_NO_MEMORY(r->name);
 
 	talloc_free(cname);
@@ -344,12 +344,7 @@ NTSTATUS ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags, const struct nbt
 	}
 	
 	status = ndr_push_nbt_string(ndr, ndr_flags, fullname);
-#if 0
-	/* this free conflicts with the use of pointers into strings
-	   in the ndr_token_store() calls above. Metze, can you look
-	   at this? */
-	talloc_free(fullname);
-#endif
+
 	return status;
 }
 
@@ -476,3 +471,118 @@ char *nbt_name_string(TALLOC_CTX *mem_ctx, const struct nbt_name *name)
 	return ret;
 }
 
+/*
+  pull a nbt name, WINS Replication uses another on wire format for nbt name
+*/
+NTSTATUS ndr_pull_wrepl_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name *r)
+{
+	uint8_t *namebuf;
+	uint32_t namebuf_len;
+
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NT_STATUS_OK;
+	}
+
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &namebuf_len));
+	if (namebuf_len < 1 || namebuf_len > 255) {
+		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "value out of range");
+	}
+	NDR_PULL_ALLOC_N(ndr, namebuf, namebuf_len);
+	NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, namebuf, namebuf_len));
+
+	/* oh wow, what a nasty bug in windows ... */
+	if (namebuf[0] == 0x1b && namebuf_len >= 16) {
+		namebuf[0] = namebuf[15];
+		namebuf[15] = 0x1b;
+	}
+
+	if (namebuf_len < 17) {
+		r->type	= 0x00;
+
+		r->name	= talloc_strndup(ndr->current_mem_ctx, (char *)namebuf, namebuf_len);
+		if (!r->name) return ndr_pull_error(ndr, NDR_ERR_ALLOC, "out of memory");
+
+		r->scope= NULL;
+
+		talloc_free(namebuf);
+		return NT_STATUS_OK;
+	}
+
+	r->type = namebuf[15];
+
+	namebuf[15] = '\0';
+	trim_string((char *)namebuf, NULL, " ");
+	r->name = talloc_strdup(ndr->current_mem_ctx, (char *)namebuf);
+	if (!r->name) return ndr_pull_error(ndr, NDR_ERR_ALLOC, "out of memory");
+
+	if (namebuf_len > 18) {
+		r->scope = talloc_strndup(ndr->current_mem_ctx, (char *)(namebuf+17), namebuf_len-17);
+		if (!r->scope) return ndr_pull_error(ndr, NDR_ERR_ALLOC, "out of memory");
+	} else {
+		r->scope = NULL;
+	}
+
+	talloc_free(namebuf);
+	return NT_STATUS_OK;
+}
+
+/*
+  push a nbt name, WINS Replication uses another on wire format for nbt name
+*/
+NTSTATUS ndr_push_wrepl_nbt_name(struct ndr_push *ndr, int ndr_flags, const struct nbt_name r)
+{
+	uint8_t *namebuf;
+	uint32_t namebuf_len;
+	uint32_t name_len;
+	uint32_t scope_len = 0;
+
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NT_STATUS_OK;
+	}
+
+	name_len = strlen(r.name);
+	if (name_len > 15) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	if (r.scope) {
+		scope_len = strlen(r.scope);
+	}
+	if (scope_len > 238) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	namebuf = (uint8_t *)talloc_asprintf(ndr, "%-15s%c%s",
+					     r.name, 'X',
+					     (r.scope?r.scope:""));
+	if (!namebuf) return ndr_push_error(ndr, NDR_ERR_ALLOC, "out of memory");
+
+	namebuf_len = strlen((char *)namebuf) + 1;
+
+	/*
+	 * we need to set the type here, and use a place-holder in the talloc_asprintf()
+	 * as the type can be 0x00, and then the namebuf_len = strlen(namebuf); would give wrong results
+	 */
+	namebuf[15] = r.type;
+
+	/* oh wow, what a nasty bug in windows ... */
+	if (r.type == 0x1b) {
+		namebuf[15] = namebuf[0];
+		namebuf[0] = 0x1b;
+	}
+
+	NDR_CHECK(ndr_push_align(ndr, 4));
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, namebuf_len));
+	NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, namebuf, namebuf_len));
+
+	talloc_free(namebuf);
+	return NT_STATUS_OK;
+}
+
+void ndr_print_wrepl_nbt_name(struct ndr_print *ndr, const char *name, const struct nbt_name r)
+{
+	char *s = nbt_name_string(ndr, &r);
+	ndr_print_string(ndr, name, s);
+	talloc_free(s);
+}
