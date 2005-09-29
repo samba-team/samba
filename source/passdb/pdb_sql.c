@@ -318,7 +318,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 										 CONFIG_TABLE_DEFAULT));
 	}
 
-	if (IS_SAM_CHANGED(newpwd, PDB_ACCTCTRL)) {
+	if (!isupdate || IS_SAM_CHANGED(newpwd, PDB_ACCTCTRL)) {
  		some_field_affected = 1;
 		pdb_sql_int_field(query,
 						config_value_write(location, "acct ctrl column",
@@ -326,7 +326,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 						pdb_get_acct_ctrl(newpwd));
 	}
 
-	if (IS_SAM_CHANGED(newpwd, PDB_LOGONTIME)) {
+	if (!isupdate || IS_SAM_CHANGED(newpwd, PDB_LOGONTIME)) {
  		some_field_affected = 1;
 		pdb_sql_int_field(query,
 							config_value_write(location,
@@ -335,7 +335,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 							pdb_get_logon_time(newpwd));
 	}
 
-	if (IS_SAM_CHANGED(newpwd, PDB_LOGOFFTIME)) {
+	if (!isupdate || IS_SAM_CHANGED(newpwd, PDB_LOGOFFTIME)) {
  		some_field_affected = 1;
 		pdb_sql_int_field(query,
 							config_value_write(location,
@@ -344,7 +344,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 							pdb_get_logoff_time(newpwd));
 	}
 
-	if (IS_SAM_CHANGED(newpwd, PDB_KICKOFFTIME)) {
+	if (!isupdate || IS_SAM_CHANGED(newpwd, PDB_KICKOFFTIME)) {
  		some_field_affected = 1;
 		pdb_sql_int_field(query,
 							config_value_write(location,
@@ -353,7 +353,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 							pdb_get_kickoff_time(newpwd));
 	}
 
-	if (IS_SAM_CHANGED(newpwd, PDB_CANCHANGETIME)) {
+	if (!isupdate || IS_SAM_CHANGED(newpwd, PDB_CANCHANGETIME)) {
  		some_field_affected = 1;
 		pdb_sql_int_field(query,
 							config_value_write(location,
@@ -362,7 +362,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 							pdb_get_pass_can_change_time(newpwd));
 	}
 
-	if (IS_SAM_CHANGED(newpwd, PDB_MUSTCHANGETIME)) {
+	if (!isupdate || IS_SAM_CHANGED(newpwd, PDB_MUSTCHANGETIME)) {
  		some_field_affected = 1;
 		pdb_sql_int_field(query,
 							config_value_write(location,
@@ -371,7 +371,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 							pdb_get_pass_must_change_time(newpwd));
 	}
 
-	if (IS_SAM_CHANGED(newpwd, PDB_PASSLASTSET)) {
+	if (!isupdate || IS_SAM_CHANGED(newpwd, PDB_PASSLASTSET)) {
  		some_field_affected = 1;
 		pdb_sql_int_field(query,
 							config_value_write(location,
@@ -380,7 +380,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 							pdb_get_pass_last_set_time(newpwd));
 	}
 
-	if (IS_SAM_CHANGED(newpwd, PDB_HOURSLEN)) {
+	if (!isupdate || IS_SAM_CHANGED(newpwd, PDB_HOURSLEN)) {
  		some_field_affected = 1;
 		pdb_sql_int_field(query,
 							config_value_write(location,
@@ -389,7 +389,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 							pdb_get_hours_len(newpwd));
 	}
 
-	if (IS_SAM_CHANGED(newpwd, PDB_LOGONDIVS)) {
+	if (!isupdate || IS_SAM_CHANGED(newpwd, PDB_LOGONDIVS)) {
  		some_field_affected = 1;
 		pdb_sql_int_field(query,
 							config_value_write(location,
@@ -398,7 +398,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 							pdb_get_logon_divs(newpwd));
 	}
 
-	if (IS_SAM_CHANGED(newpwd, PDB_USERSID)) {
+	if (!isupdate || IS_SAM_CHANGED(newpwd, PDB_USERSID)) {
  		some_field_affected = 1;
 		pdb_sql_string_field(query,
 						   config_value_write(location, "user sid column",
@@ -407,7 +407,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 										 pdb_get_user_sid(newpwd)));
 	}
 
-	if (IS_SAM_CHANGED(newpwd, PDB_GROUPSID)) {
+	if (!isupdate || IS_SAM_CHANGED(newpwd, PDB_GROUPSID)) {
  		some_field_affected = 1;
 		pdb_sql_string_field(query,
 						   config_value_write(location, "group sid column",
@@ -416,7 +416,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 										 pdb_get_group_sid(newpwd)));
 	}
 
-	if (IS_SAM_CHANGED(newpwd, PDB_USERNAME)) {
+	if (!isupdate || IS_SAM_CHANGED(newpwd, PDB_USERNAME)) {
  		some_field_affected = 1;
 		pdb_sql_string_field(query,
 						   config_value_write(location, "username column",
@@ -424,7 +424,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 						   pdb_get_username(newpwd));
 	}
 
-	if (IS_SAM_CHANGED(newpwd, PDB_DOMAIN)) {
+	if (!isupdate || IS_SAM_CHANGED(newpwd, PDB_DOMAIN)) {
  		some_field_affected = 1;
 		pdb_sql_string_field(query,
 						   config_value_write(location, "domain column",
@@ -432,7 +432,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 						   pdb_get_domain(newpwd));
 	}
 
-	if (IS_SAM_CHANGED(newpwd, PDB_USERNAME)) {
+	if (!isupdate || IS_SAM_CHANGED(newpwd, PDB_USERNAME)) {
  		some_field_affected = 1;
 		pdb_sql_string_field(query,
 						   config_value_write(location,
@@ -441,7 +441,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 						   pdb_get_nt_username(newpwd));
 	}
 
-	if (IS_SAM_CHANGED(newpwd, PDB_FULLNAME)) {
+	if (!isupdate || IS_SAM_CHANGED(newpwd, PDB_FULLNAME)) {
  		some_field_affected = 1;
 		pdb_sql_string_field(query,
 						   config_value_write(location, "fullname column",
@@ -449,7 +449,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 						   pdb_get_fullname(newpwd));
 	}
 
-	if (IS_SAM_CHANGED(newpwd, PDB_LOGONSCRIPT)) {
+	if (!isupdate || IS_SAM_CHANGED(newpwd, PDB_LOGONSCRIPT)) {
  		some_field_affected = 1;
 		pdb_sql_string_field(query,
 						   config_value_write(location,
@@ -458,7 +458,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 						   pdb_get_logon_script(newpwd));
 	}
 
-	if (IS_SAM_CHANGED(newpwd, PDB_PROFILE)) {
+	if (!isupdate || IS_SAM_CHANGED(newpwd, PDB_PROFILE)) {
  		some_field_affected = 1;
 		pdb_sql_string_field(query,
 						   config_value_write(location,
@@ -467,7 +467,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 						   pdb_get_profile_path(newpwd));
 	}
 
-	if (IS_SAM_CHANGED(newpwd, PDB_DRIVE)) {
+	if (!isupdate || IS_SAM_CHANGED(newpwd, PDB_DRIVE)) {
  		some_field_affected = 1;
 		pdb_sql_string_field(query,
 						   config_value_write(location, "dir drive column",
@@ -475,7 +475,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 						   pdb_get_dir_drive(newpwd));
 	}
 
-	if (IS_SAM_CHANGED(newpwd, PDB_SMBHOME)) {
+	if (!isupdate || IS_SAM_CHANGED(newpwd, PDB_SMBHOME)) {
  		some_field_affected = 1;
 		pdb_sql_string_field(query,
 						   config_value_write(location, "home dir column",
@@ -483,7 +483,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 						   pdb_get_homedir(newpwd));
 	}
 
-	if (IS_SAM_CHANGED(newpwd, PDB_WORKSTATIONS)) {
+	if (!isupdate || IS_SAM_CHANGED(newpwd, PDB_WORKSTATIONS)) {
  		some_field_affected = 1;
 		pdb_sql_string_field(query,
 						   config_value_write(location,
@@ -492,7 +492,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 						   pdb_get_workstations(newpwd));
 	}
 
-	if (IS_SAM_CHANGED(newpwd, PDB_UNKNOWNSTR)) {
+	if (!isupdate || IS_SAM_CHANGED(newpwd, PDB_UNKNOWNSTR)) {
  		some_field_affected = 1;
 		pdb_sql_string_field(query,
 						   config_value_write(location,
@@ -501,7 +501,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 						   pdb_get_workstations(newpwd));
 	}
 
-	if (IS_SAM_CHANGED(newpwd, PDB_LMPASSWD)) {
+	if (!isupdate || IS_SAM_CHANGED(newpwd, PDB_LMPASSWD)) {
 		some_field_affected = 1;
 		pdb_sethexpwd(temp, pdb_get_lanman_passwd(newpwd),
 					  pdb_get_acct_ctrl(newpwd));
@@ -511,7 +511,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 											  CONFIG_LM_PW_DEFAULT), temp);
 	}
 
-	if (IS_SAM_CHANGED(newpwd, PDB_NTPASSWD)) {
+	if (!isupdate || IS_SAM_CHANGED(newpwd, PDB_NTPASSWD)) {
 		some_field_affected = 1;
 		pdb_sethexpwd(temp, pdb_get_nt_passwd(newpwd),
 					  pdb_get_acct_ctrl(newpwd));
@@ -520,7 +520,7 @@ char *sql_account_query_update(TALLOC_CTX *mem_ctx, const char *location, const 
 											  CONFIG_NT_PW_DEFAULT), temp);
 	}
 
- 	if (IS_SAM_CHANGED(newpwd, PDB_HOURS)) {
+ 	if (!isupdate || IS_SAM_CHANGED(newpwd, PDB_HOURS)) {
  		some_field_affected = 1;
  		pdb_sql_string_field(query,
  							config_value_write(location,
