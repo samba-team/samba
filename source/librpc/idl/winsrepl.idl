@@ -49,10 +49,17 @@ interface wrepl
 		WREPL_STATE_RESERVED	= 0x3
 	} wrepl_name_state;
 
+	typedef [enum8bit] enum {
+		WREPL_NODE_B	= 0x0,
+		WREPL_NODE_P	= 0x1,
+		WREPL_NODE_M	= 0x2,
+		WREPL_NODE_H	= 0x3
+	} wrepl_name_node;
+
 	typedef [bitmap32bit] bitmap {
 		WREPL_FLAGS_RECORD_TYPE		= 0x00000003,
 		WREPL_FLAGS_RECORD_STATE	= 0x0000000C,
-		WREPL_FLAGS_0x00000010		= 0x00000010,
+		WREPL_FLAGS_REGISTERED_LOCAL	= 0x00000010,
 		WREPL_FLAGS_NODE_TYPE		= 0x00000060,
 		WREPL_FLAGS_IS_STATIC		= 0x00000080
 	} wrepl_flags;
