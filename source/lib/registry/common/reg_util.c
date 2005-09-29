@@ -46,27 +46,27 @@ const char *str_regtype(int type)
 	return "Unknown";
 }
 
-char *reg_val_data_string(TALLOC_CTX *mem_ctx, struct registry_value *v)
+char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type, DATA_BLOB *data)
 { 
   char *ret = NULL;
 
-  if(v->data.length == 0) return talloc_strdup(mem_ctx, "");
+  if(data->length == 0) return talloc_strdup(mem_ctx, "");
 
-  switch (v->data_type) {
+  switch (type) {
   case REG_EXPAND_SZ:
   case REG_SZ:
-      convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, v->data.data, v->data.length, (void **)&ret);
+      convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, data->data, data->length, (void **)&ret);
 	  return ret;
 
   case REG_BINARY:
-	  ret = data_blob_hex_string(mem_ctx, &v->data);
+	  ret = data_blob_hex_string(mem_ctx, data);
 	  return ret;
 
   case REG_DWORD:
-	  if (*(int *)v->data.data == 0)
+	  if (*(int *)data->data == 0)
 		  return talloc_strdup(mem_ctx, "0");
 
-	  return talloc_asprintf(mem_ctx, "0x%x", *(int *)v->data.data);
+	  return talloc_asprintf(mem_ctx, "0x%x", *(int *)data->data);
 
   case REG_MULTI_SZ:
 	/* FIXME */
@@ -81,47 +81,51 @@ char *reg_val_data_string(TALLOC_CTX *mem_ctx, struct registry_value *v)
 
 char *reg_val_description(TALLOC_CTX *mem_ctx, struct registry_value *val) 
 {
-	return talloc_asprintf(mem_ctx, "%s = %s : %s", val->name?val->name:"<No Name>", str_regtype(val->data_type), reg_val_data_string(mem_ctx, val));
+	return talloc_asprintf(mem_ctx, "%s = %s : %s", val->name?val->name:"<No Name>", str_regtype(val->data_type), reg_val_data_string(mem_ctx, val->data_type, &val->data));
 }
 
-BOOL reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str, const char *data_str, struct registry_value **value)
+BOOL reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str, const char *data_str, uint32_t *type, DATA_BLOB *data)
 {
 	int i;
-	*value = talloc(mem_ctx, struct registry_value);
-	(*value)->data_type = -1;
+	*type = -1;
 
 	/* Find the correct type */
 	for (i = 0; reg_value_types[i].name; i++) {
 		if (!strcmp(reg_value_types[i].name, type_str)) {
-			(*value)->data_type = reg_value_types[i].id;
+			*type = reg_value_types[i].id;
 			break;
 		}
 	}
 
-	if ((*value)->data_type == -1) 
+	if (*type == -1) 
 		return False;
 
 	/* Convert data appropriately */
 
-	switch ((*value)->data_type) 
+	switch (*type) 
 	{
 		case REG_SZ:
 		case REG_EXPAND_SZ:
-      		(*value)->data.length = convert_string_talloc(mem_ctx, CH_UNIX, CH_UTF16, data_str, strlen(data_str), (void **)&(*value)->data.data);
+      		data->length = convert_string_talloc(mem_ctx, CH_UNIX, CH_UTF16, data_str, strlen(data_str), (void **)&data->data);
 			break;
 
 		case REG_DWORD: {
 			uint32_t tmp = strtol(data_str, NULL, 0);
-			(*value)->data = data_blob_talloc(mem_ctx, &tmp, 4);
+			*data = data_blob_talloc(mem_ctx, &tmp, 4);
 			}
 			break;
 
 		case REG_NONE:
-			ZERO_STRUCT((*value)->data);
+			ZERO_STRUCT(data);
 			break;
 	
+		case REG_BINARY: 
+			*data = strhex_to_data_blob(data_str);
+			talloc_steal(mem_ctx, data->data);
+			break;
+			
 		default:
-		case REG_BINARY: /* FIXME */
+			/* FIXME */
 			return False;
 	}
 	return True;

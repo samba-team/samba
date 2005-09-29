@@ -92,7 +92,7 @@ static struct registry_key *cmd_set(TALLOC_CTX *mem_ctx, struct registry_context
 		fprintf(stderr, "Usage: set value-name type value\n");
 	} else {
 		struct registry_value *val;
-		if (reg_string_to_val(mem_ctx, argv[2], argv[3], &val)) {
+		if (reg_string_to_val(mem_ctx, argv[2], argv[3], &val->data_type, &val->data)) {
 			WERROR error = reg_val_set(cur, argv[1], val->data_type, val->data);
 			if (!W_ERROR_IS_OK(error)) {
 				fprintf(stderr, "Error setting value: %s\n", win_errstr(error));
@@ -140,7 +140,7 @@ static struct registry_key *cmd_print(TALLOC_CTX *mem_ctx, struct registry_conte
 		return NULL;
 	}
 
-	printf("%s\n%s\n", str_regtype(value->data_type), reg_val_data_string(mem_ctx, value));
+	printf("%s\n%s\n", str_regtype(value->data_type), reg_val_data_string(mem_ctx, value->data_type, &value->data));
 	return NULL;
 }
 
@@ -159,7 +159,7 @@ static struct registry_key *cmd_ls(TALLOC_CTX *mem_ctx, struct registry_context 
 	}
 
 	for(i = 0; W_ERROR_IS_OK(error = reg_key_get_value_by_index(mem_ctx, cur, i, &value)); i++) {
-		printf("V \"%s\" %s %s\n", value->name, str_regtype(value->data_type), reg_val_data_string(mem_ctx, value));
+		printf("V \"%s\" %s %s\n", value->name, str_regtype(value->data_type), reg_val_data_string(mem_ctx, value->data_type, &value->data));
 	}
 	
 	return NULL; 

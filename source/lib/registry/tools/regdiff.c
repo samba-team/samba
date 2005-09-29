@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    simple registry frontend
    
-   Copyright (C) Jelmer Vernooij 2004
+   Copyright (C) Jelmer Vernooij 2004-2005
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,101 +24,15 @@
 #include "lib/registry/registry.h"
 #include "lib/cmdline/popt_common.h"
 
-static void writediff(struct registry_key *oldkey, struct registry_key *newkey, FILE *out)
-{
-	int i;
-	struct registry_key *t1, *t2;
-	struct registry_value *v1, *v2;
-	WERROR error1, error2;
-	TALLOC_CTX *mem_ctx = talloc_init("writediff");
-
-	for(i = 0; W_ERROR_IS_OK(error1 = reg_key_get_subkey_by_index(mem_ctx, oldkey, i, &t1)); i++) {
-		error2 = reg_key_get_subkey_by_name(mem_ctx, newkey, t1->name, &t2);
-		if(W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
-			fprintf(out, "-%s\n", t1->path+1);
-		} else if(!W_ERROR_IS_OK(error2)) {
-			DEBUG(0, ("Error occured while getting subkey by name: %d\n", W_ERROR_V(error2)));
-		}
-	}
-
-	talloc_free(mem_ctx);
-
-	if(!W_ERROR_EQUAL(error1, WERR_NO_MORE_ITEMS)) {
-		DEBUG(0, ("Error occured while getting subkey by index: %d\n", W_ERROR_V(error1)));
-		return;
-	}
-
-	mem_ctx = talloc_init("writediff");
-
-	for(i = 0; W_ERROR_IS_OK(error1 = reg_key_get_subkey_by_index(mem_ctx, newkey, i, &t1)); i++) {
-		error2 = reg_key_get_subkey_by_name(mem_ctx, oldkey, t1->name, &t2);
-		if(W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
-			fprintf(out, "\n[%s]\n", t1->path+1);
-		} else if(!W_ERROR_IS_OK(error2)) {
-			DEBUG(0, ("Error occured while getting subkey by name: %d\n", W_ERROR_V(error2)));
-		}
-		writediff(t2, t1, out);
-	}
-
-	talloc_free(mem_ctx);
-
-	if(!W_ERROR_EQUAL(error1, WERR_NO_MORE_ITEMS)) {
-		DEBUG(0, ("Error occured while getting subkey by index: %d\n", W_ERROR_V(error1)));
-		return;
-	}
-
-
-	mem_ctx = talloc_init("writediff");
-
-	for(i = 0; W_ERROR_IS_OK(error1 = reg_key_get_value_by_index(mem_ctx, newkey, i, &v1)); i++) {
-		error2 = reg_key_get_value_by_name(mem_ctx, oldkey, v1->name, &v2);
-		if ((W_ERROR_IS_OK(error2) && data_blob_equal(&v1->data, &v2->data)) 
-			|| W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
-			fprintf(out, "\"%s\"=%s:%s\n", v1->name, str_regtype(v1->data_type), reg_val_data_string(mem_ctx, v1));
-		}
-
-		if(!W_ERROR_IS_OK(error2) && !W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
-			DEBUG(0, ("Error occured while getting value by name: %d\n", W_ERROR_V(error2)));
-		}
-	}
-
-	talloc_free(mem_ctx);
-
-	if(!W_ERROR_EQUAL(error1, WERR_NO_MORE_ITEMS)) {
-		DEBUG(0, ("Error occured while getting value by index: %d\n", W_ERROR_V(error1)));
-		return;
-	}
-
-	mem_ctx = talloc_init("writediff");
-
-	for(i = 0; W_ERROR_IS_OK(error1 = reg_key_get_value_by_index(mem_ctx, oldkey, i, &v1)); i++) {
-		error2 = reg_key_get_value_by_name(mem_ctx, newkey, v1->name, &v2);
-		if(W_ERROR_IS_OK(error2)) {
-		} else if(W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
-			fprintf(out, "\"%s\"=-\n", v1->name);
-		} else {
-			DEBUG(0, ("Error occured while getting value by name: %d\n", W_ERROR_V(error2)));
-		}
-	}
-
-	talloc_free(mem_ctx);
-
-	if(!W_ERROR_EQUAL(error1, WERR_NO_MORE_ITEMS)) {
-		DEBUG(0, ("Error occured while getting value by index: %d\n", W_ERROR_V(error1)));
-		return;
-	}
-}
-
- int main(int argc, char **argv)
+int main(int argc, char **argv)
 {
 	int opt;
 	poptContext pc;
 	char *outputfile = NULL;
-	FILE *fd = stdout;
 	struct registry_context *h1 = NULL, *h2 = NULL;
 	int from_null = 0;
-	int i;
-	WERROR error, error2;
+	WERROR error;
+	struct reg_diff *diff;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"output", 'o', POPT_ARG_STRING, &outputfile, 'o', "output file to use", NULL },
@@ -159,37 +73,13 @@ static void writediff(struct registry_key *oldkey, struct registry_key *newkey, 
 
 	poptFreeContext(pc);
 
-	if(outputfile) {
-		fd = fopen(outputfile, "w+");
-		if(!fd) {
-			fprintf(stderr, "Unable to open '%s'\n", outputfile);
-			return 1;
-		}
+	diff = reg_generate_diff(NULL, h1, h2);
+	if (!diff) {
+		fprintf(stderr, "Unable to generate diff between keys\n");
+		return -1;
 	}
 
-	fprintf(fd, "REGEDIT4\n\n");
-	fprintf(fd, "; Generated using regdiff, part of Samba\n");
-
-	error2 = error = WERR_OK; 
-
-	for(i = HKEY_CLASSES_ROOT; i <= HKEY_PERFORMANCE_NLSTEXT; i++) {
-		struct registry_key *r1, *r2;
-		error = reg_get_predefined_key(h1, i, &r1);
-		if (!W_ERROR_IS_OK(error)) {
-			DEBUG(0, ("Unable to open hive %s for backend 1\n", reg_get_predef_name(i)));
-			continue;
-		}
-		
-		error = reg_get_predefined_key(h2, i, &r2);
-		if (!W_ERROR_IS_OK(error)) {
-			DEBUG(0, ("Unable to open hive %s for backend 2\n", reg_get_predef_name(i)));
-			continue;
-		}
-
-		writediff(r1, r2, fd); 
-	}
-
-	fclose(fd);
+	reg_diff_save(diff, outputfile);
 
 	return 0;
 }
