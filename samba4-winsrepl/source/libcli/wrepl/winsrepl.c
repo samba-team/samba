@@ -671,40 +671,6 @@ struct wrepl_request *wrepl_pull_names_send(struct wrepl_socket *wrepl_socket,
 	return req;	
 }
 
-
-/*
-  extract a nbt_name from a WINS name buffer
-*/
-static NTSTATUS wrepl_extract_name(struct nbt_name *name,
-				   TALLOC_CTX *mem_ctx,
-				   uint8_t *namebuf, uint32_t len)
-{
-	char *s;
-
-	/* oh wow, what a nasty bug in windows ... */
-	if (namebuf[0] == 0x1b && len >= 16) {
-		namebuf[0] = namebuf[15];
-		namebuf[15] = 0x1b;
-	}
-
-	if (len < 17) {
-		make_nbt_name_client(name, talloc_strndup(mem_ctx, (char *)namebuf, len));
-		return NT_STATUS_OK;
-	}
-
-	s = talloc_strndup(mem_ctx, (char *)namebuf, 15);
-	trim_string(s, NULL, " ");
-	name->name = s;
-	name->type = namebuf[15];
-	if (len > 18) {
-		name->scope = talloc_strndup(mem_ctx, (char *)(namebuf+17), len-17);
-	} else {
-		name->scope = NULL;
-	}
-
-	return NT_STATUS_OK;
-}
-
 /*
   fetch the names for a WINS partner - recv
 */
@@ -735,12 +701,15 @@ NTSTATUS wrepl_pull_names_recv(struct wrepl_request *req,
 	for (i=0;i<io->out.num_names;i++) {
 		struct wrepl_wins_name *wname = &packet->message.replication.info.reply.names[i];
 		struct wrepl_name *name = &io->out.names[i];
-		status = wrepl_extract_name(&name->name, io->out.names, 
-					    wname->name, wname->name_len);
-		if (!NT_STATUS_IS_OK(status)) goto failed;
 
-		name->flags	= wname->flags;
-		name->group_flag= wname->group_flag;
+		name->name	= wname->name;
+		talloc_steal(io->out.names, wname->name.name);
+		talloc_steal(io->out.names, wname->name.scope);
+		name->type	= WREPL_NAME_TYPE(wname->flags);
+		name->state	= WREPL_NAME_STATE(wname->flags);
+		name->node	= WREPL_NBT_NODE(wname->flags);
+		name->is_static	= WREPL_NAME_IS_STATIC(wname->flags);
+		name->raw_flags	= wname->flags;
 		name->version_id= wname->id;
 		name->owner	= talloc_strdup(io->out.names, io->in.partner.address);
 		if (name->owner == NULL) goto nomem;

@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    simple registry frontend
    
-   Copyright (C) 2004-2005 Jelmer Vernooij, jelmer@samba.org
+   Copyright (C) Jelmer Vernooij 2004-2005
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,54 +23,63 @@
 #include "dynconfig.h"
 #include "lib/registry/registry.h"
 #include "lib/cmdline/popt_common.h"
-#include "system/filesys.h"
-#include "librpc/gen_ndr/winreg.h"
 
 int main(int argc, char **argv)
 {
-  	int opt;
+	int opt;
 	poptContext pc;
-	const char *patch;
-	struct registry_context *h;
-	const char *remote = NULL;
-	struct reg_diff *diff;
+	char *outputfile = NULL;
+	struct registry_context *h1 = NULL, *h2 = NULL;
+	int from_null = 0;
 	WERROR error;
+	struct reg_diff *diff;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"remote", 'R', POPT_ARG_STRING, &remote, 0, "connect to specified remote server", NULL},
+		{"output", 'o', POPT_ARG_STRING, &outputfile, 'o', "output file to use", NULL },
+		{"null", 'n', POPT_ARG_NONE, &from_null, 'n', "Diff from NULL", NULL },
+		{"remote", 'R', POPT_ARG_STRING, NULL, 0, "Connect to remote server" , NULL },
+		{"local", 'L', POPT_ARG_NONE, NULL, 0, "Open local registry", NULL },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CREDENTIALS
+		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
 
-	regpatch_init_subsystems;
+	regdiff_init_subsystems;
 
 	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
+		error = WERR_OK;
+		switch(opt)	{
+		case 'L':
+			if (!h1 && !from_null) error = reg_open_local(&h1);
+			else if (!h2) error = reg_open_local(&h2);
+			break;
+		case 'R':
+			if (!h1 && !from_null) 
+				error = reg_open_remote(&h1, cmdline_credentials, 
+							poptGetOptArg(pc), NULL);
+			else if (!h2) error = reg_open_remote(&h2, cmdline_credentials, 
+							      poptGetOptArg(pc), NULL);
+			break;
+		}
+
+		if (!W_ERROR_IS_OK(error)) {
+			fprintf(stderr, "Error: %s\n", win_errstr(error));
+			return 1;
+		}
 	}
 
-	if (remote) {
-		error = reg_open_remote (&h, cmdline_credentials, remote, NULL);
-	} else {
-		error = reg_open_local (&h);
-	}
-
-	if (W_ERROR_IS_OK(error)) {
-		fprintf(stderr, "Error: %s\n", win_errstr(error));
-		return 1;
-	}
-		
-	patch = poptGetArg(pc);
 	poptFreeContext(pc);
 
-	diff = reg_diff_load(NULL, patch);
+	diff = reg_generate_diff(NULL, h1, h2);
 	if (!diff) {
-		fprintf(stderr, "Unable to load registry patch from `%s'\n", patch);
-		return 1;
+		fprintf(stderr, "Unable to generate diff between keys\n");
+		return -1;
 	}
 
-	reg_diff_apply(diff, h);
+	reg_diff_save(diff, outputfile);
 
 	return 0;
 }
