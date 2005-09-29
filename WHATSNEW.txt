@@ -71,7 +71,7 @@ o   Guenther Deschner <gd@samba.org>
     * Ensure BUILTIN groups are returned from winbindd's idmap_rid
       backend when 'winbind nested groups' is enabled.
     * Fix crash bug in winbindd caused by 64-bit build issues.
-    * Imporve debug messages in smbspool.
+    * Improve debug messages in smbspool.
     * Give better error-message when "NDS Universal Password" change fails.
     * Fix password history error in the eDirectory schema file.
 
