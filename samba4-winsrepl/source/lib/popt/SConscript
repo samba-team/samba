@@ -7,5 +7,5 @@ if hostenv['configure']:
     conf.env['HAVE_EXTERNAL_POPT'] = conf.CheckLibWithHeader('popt', 'popt.h', 'c', 'poptGetArgs(NULL);')
     conf.Finish()
 
-popt = hostenv.StaticLibrary('popt', ['findme.c','popt.c','poptconfig.c','popthelp.c','poptparse.c'])
+popt = hostenv.Library('popt', ['findme.c','popt.c','poptconfig.c','popthelp.c','poptparse.c'])
 Export('popt')

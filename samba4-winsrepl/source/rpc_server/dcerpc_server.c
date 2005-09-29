@@ -30,6 +30,7 @@
 #include "rpc_server/dcerpc_server.h"
 #include "lib/events/events.h"
 #include "smbd/service_stream.h"
+#include "system/filesys.h"
 
 /*
   see if two endpoints match
@@ -1286,12 +1287,13 @@ const struct dcesrv_critical_sizes *dcerpc_module_version(void)
 }
 
 /*
-  initialise the dcerpc server context for socket based services
+  initialise the dcerpc server context 
 */
 static NTSTATUS dcesrv_init(struct event_context *event_context, const struct model_ops *model_ops)
 {
 	NTSTATUS status;
 	struct dcesrv_context *dce_ctx;
+	struct dcesrv_endpoint *e;
 
 	status = dcesrv_init_context(event_context,
 				     lp_dcerpc_endpoint_servers(),
@@ -1299,9 +1301,40 @@ static NTSTATUS dcesrv_init(struct event_context *event_context, const struct mo
 				     &dce_ctx);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	return dcesrv_sock_init(dce_ctx, event_context, model_ops);
-}
+	/* Make sure the directory for NCALRPC exists */
+	if (!directory_exist(lp_ncalrpc_dir())) {
+		mkdir(lp_ncalrpc_dir(), 0755);
+	}
 
+	for (e=dce_ctx->endpoint_list;e;e=e->next) {
+		switch (e->ep_description->transport) {
+		case NCACN_UNIX_STREAM:
+			status = dcesrv_add_ep_unix(dce_ctx, e, event_context, model_ops);
+			NT_STATUS_NOT_OK_RETURN(status);
+			break;
+		
+		case NCALRPC:
+			status = dcesrv_add_ep_ncalrpc(dce_ctx, e, event_context, model_ops);
+			NT_STATUS_NOT_OK_RETURN(status);
+			break;
+
+		case NCACN_IP_TCP:
+			status = dcesrv_add_ep_tcp(dce_ctx, e, event_context, model_ops);
+			NT_STATUS_NOT_OK_RETURN(status);
+			break;
+			
+		case NCACN_NP:
+/*			FIXME: status = dcesrv_add_ep_np(dce_ctx, e, event_context, model_ops);
+			NT_STATUS_NOT_OK_RETURN(status); */
+			break;
+
+		default:
+			return NT_STATUS_NOT_SUPPORTED;
+		}
+	}
+
+	return NT_STATUS_OK;	
+}
 
 NTSTATUS server_service_rpc_init(void)
 {

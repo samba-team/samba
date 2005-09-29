@@ -7,7 +7,7 @@ tdb_source = ['common/tdb.c','common/dump.c','common/io.c','common/lock.c',
              'common/open.c','common/traverse.c','common/freelist.c',
              'common/error.c','common/transaction.c', 'common/tdbutil.c']
 
-tdb = tdbenv.StaticLibrary('tdb', tdb_source)
+tdb = tdbenv.Library('tdb', tdb_source)
 
 tdbtool = tdbenv.Program('bin/tdbtool', ['tools/tdbtool.c',tdb])
 tdbtorture = tdbenv.Program('bin/tdbtorture', ['tools/tdbtorture.c',tdb])

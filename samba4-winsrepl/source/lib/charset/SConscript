@@ -62,5 +62,5 @@ if hostenv['configure']:
 else:
 	iconv = [] # FIXME
 
-charset = hostenv.StaticLibrary('charset',['iconv.c','charcnv.c',iconv])
+charset = hostenv.Library('charset',['iconv.c','charcnv.c',iconv])
 Export('charset')

@@ -157,7 +157,7 @@ static const struct stream_server_ops dcesrv_stream_ops = {
 
 
 
-static NTSTATUS add_socket_rpc_unix(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
+NTSTATUS dcesrv_add_ep_unix(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
 				    struct event_context *event_ctx, const struct model_ops *model_ops)
 {
 	struct dcesrv_socket_context *dcesrv_sock;
@@ -182,7 +182,7 @@ static NTSTATUS add_socket_rpc_unix(struct dcesrv_context *dce_ctx, struct dcesr
 	return status;
 }
 
-static NTSTATUS add_socket_rpc_ncalrpc(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
+NTSTATUS dcesrv_add_ep_ncalrpc(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
 				       struct event_context *event_ctx, const struct model_ops *model_ops)
 {
 	struct dcesrv_socket_context *dcesrv_sock;
@@ -251,7 +251,7 @@ static NTSTATUS add_socket_rpc_tcp_iface(struct dcesrv_context *dce_ctx, struct 
 	return status;
 }
 
-static NTSTATUS add_socket_rpc_tcp(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
+NTSTATUS dcesrv_add_ep_tcp(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
 				   struct event_context *event_ctx, const struct model_ops *model_ops)
 {
 	NTSTATUS status;
@@ -273,42 +273,4 @@ static NTSTATUS add_socket_rpc_tcp(struct dcesrv_context *dce_ctx, struct dcesrv
 	return NT_STATUS_OK;
 }
 
-/****************************************************************************
- Open the listening sockets for RPC over NCACN_IP_TCP/NCALRPC/NCACN_UNIX_STREAM
-****************************************************************************/
-NTSTATUS dcesrv_sock_init(struct dcesrv_context *dce_ctx, 
-			  struct event_context *event_ctx, const struct model_ops *model_ops)
-{
-	struct dcesrv_endpoint *e;
-	NTSTATUS status;
-
-	/* Make sure the directory for NCALRPC exists */
-	if (!directory_exist(lp_ncalrpc_dir())) {
-		mkdir(lp_ncalrpc_dir(), 0755);
-	}
-
-	for (e=dce_ctx->endpoint_list;e;e=e->next) {
-		switch (e->ep_description->transport) {
-		case NCACN_UNIX_STREAM:
-			status = add_socket_rpc_unix(dce_ctx, e, event_ctx, model_ops);
-			NT_STATUS_NOT_OK_RETURN(status);
-			break;
-		
-		case NCALRPC:
-			status = add_socket_rpc_ncalrpc(dce_ctx, e, event_ctx, model_ops);
-			NT_STATUS_NOT_OK_RETURN(status);
-			break;
-
-		case NCACN_IP_TCP:
-			status = add_socket_rpc_tcp(dce_ctx, e, event_ctx, model_ops);
-			NT_STATUS_NOT_OK_RETURN(status);
-			break;
-
-		default:
-			break;
-		}
-	}
-
-	return NT_STATUS_OK;	
-}
 

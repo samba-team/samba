@@ -12,32 +12,32 @@ if hostenv['configure']:
     conf.Finish()
 
 if defines.has_key('HAVE_SQLITE3'):
-    hostenv.StaticLibrary('ldb_sqlite3/ldb_sqlite3.c')
+    hostenv.Library('ldb_sqlite3/ldb_sqlite3.c')
 
 # LDB modules
 
 modules = []
 
-modules.append(hostenv.StaticLibrary('modules/timestamps.c'))
-modules.append(hostenv.StaticLibrary('modules/rdn_name.c'))
-modules.append(hostenv.StaticLibrary('modules/schema.c'))
-modules.append(hostenv.StaticLibrary('ldb_ildap/ldb_ildap.c'))
-#modules.append(hostenv.StaticLibrary('modules/ldb_map.c'))
+modules.append(hostenv.Library('modules/timestamps.c'))
+modules.append(hostenv.Library('modules/rdn_name.c'))
+modules.append(hostenv.Library('modules/schema.c'))
+modules.append(hostenv.Library('ldb_ildap/ldb_ildap.c'))
+#modules.append(hostenv.Library('modules/ldb_map.c'))
 
 Import('dsdb_ldb_modules')
 modules += dsdb_ldb_modules
 
-modules.append(hostenv.StaticLibrary(
+modules.append(hostenv.Library(
     'ldb_tdb',
     ['ldb_tdb/ldb_tdb.c', 'ldb_tdb/ldb_search.c', 'ldb_tdb/ldb_pack.c',
      'ldb_tdb/ldb_index.c', 'ldb_tdb/ldb_cache.c', 'ldb_tdb/ldb_tdb_wrap.c']))
 	       
-#modules.append(hostenv.StaticLibrary('ldb_ildap', ['ldb_ildap/ldb_ildap.c']))
+#modules.append(hostenv.Library('ldb_ildap', ['ldb_ildap/ldb_ildap.c']))
 
 # Export the ldb base plus modules for other parts of the build system
 # to enjoy.
 
-ldb = hostenv.StaticLibrary(
+ldb = hostenv.Library(
     'ldb',
     ['common/ldb.c', 'common/ldb_ldif.c', 'common/ldb_parse.c',
      'common/ldb_parse.c', 'common/ldb_msg.c', 'common/ldb_utf8.c',
@@ -46,8 +46,8 @@ ldb = hostenv.StaticLibrary(
 
 Export('ldb')
 
-hostenv.StaticLibrary('samba/ldif_handlers.c')
-ldb_cmdline = hostenv.StaticLibrary('ldb_cmdline', 'tools/cmdline.c')
+hostenv.Library('samba/ldif_handlers.c')
+ldb_cmdline = hostenv.Library('ldb_cmdline', 'tools/cmdline.c')
 
 # Tools
 

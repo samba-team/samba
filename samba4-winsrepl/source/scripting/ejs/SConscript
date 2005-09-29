@@ -1,7 +1,7 @@
 Import('hostenv')
 
-hostenv.StaticLibrary('ejsrpc',['ejsrpc.c'])
-hostenv.StaticLibrary('ejs_smbcalls',
+hostenv.Library('ejsrpc',['ejsrpc.c'])
+hostenv.Library('ejs_smbcalls',
 		['smbcalls.c','smbcalls_config.c','smbcalls_ldb.c',
 		 'smbcalls_nbt.c','smbcalls_cli.c','smbcalls_rpc.c',
 		 'smbcalls_auth.c','smbcalls_options.c','smbcalls_nss.c',
