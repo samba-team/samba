@@ -143,6 +143,10 @@ typedef int (*ldb_traverse_fn)(struct ldb_context *, const struct ldb_message *)
 
 struct ldb_module;
 
+/* module initialisation function */
+typedef struct ldb_module *(*ldb_module_init_t)(struct ldb_context *, const char **);
+
+
 /* debugging uses one of the following levels */
 enum ldb_debug_level {LDB_DEBUG_FATAL, LDB_DEBUG_ERROR, 
 		      LDB_DEBUG_WARNING, LDB_DEBUG_TRACE};
