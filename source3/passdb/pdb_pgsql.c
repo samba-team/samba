@@ -231,8 +231,6 @@ static NTSTATUS pgsqlsam_setsampwent(struct pdb_methods *methods, BOOL update, u
   }
 
   talloc_free(query);
-  if ( data->pwent != NULL )
-    PQclear( data->pwent ) ;
   return retval ;
 }
 

@@ -989,7 +989,6 @@ static char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap) PRINT
 
 static char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap)
 {	
-	struct talloc_chunk *tc;
 	int len, s_len;
 	va_list ap2;
 
@@ -997,11 +996,9 @@ static char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap)
 		return talloc_vasprintf(NULL, fmt, ap);
 	}
 
-	tc = talloc_chunk_from_ptr(s);
-
 	VA_COPY(ap2, ap);
 
-	s_len = tc->size - 1;
+	s_len = strlen(s);
 	len = vsnprintf(NULL, 0, fmt, ap2);
 
 	s = talloc_realloc(NULL, s, char, s_len + len+1);
