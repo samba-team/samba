@@ -7,7 +7,7 @@ REALM=SAMBA.EXAMPLE.COM
 PASSWORD=penguin
 SRCDIR=`pwd`
 ROOT=$USER
-SERVER=localtest
+SERVER=localhost
 if test -z "$ROOT"; then
     ROOT=$LOGNAME
 fi
