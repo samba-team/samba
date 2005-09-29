@@ -29,6 +29,7 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_winsrepl.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "libcli/wrepl/winsrepl.h"
 #include "wrepl_server/wrepl_server.h"
 #include "nbt_server/wins/winsdb.h"
 #include "lib/ldb/include/ldb.h"
@@ -172,7 +173,7 @@ static NTSTATUS wreplsrv_record2wins_name(TALLOC_CTX *mem_ctx,
 	name->id		= rec->version;
 	name->unknown		= WINSDB_GROUP_ADDRESS;
 
-	name->flags		= rec->nb_flags;
+	name->flags		= WREPL_NAME_FLAGS(rec->type, rec->state, rec->node, rec->is_static);
 
 	switch (name->flags & 2) {
 	case 0:
@@ -259,8 +260,13 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 		return NT_STATUS_OK;
 	}
 
-	filter = talloc_asprintf(call, "(&(winsOwner=%s)(objectClass=winsRecord)(state>=%u)(versionID>=%llu)(versionID<=%llu))",
-				 owner->owner.address, WINS_REC_ACTIVE, owner_in->min_version, owner_in->max_version);
+	filter = talloc_asprintf(call,
+				 "(&(winsOwner=%s)(objectClass=winsRecord)"
+				 "(|(recordState=%u)(recordState=%u))"
+				 "(versionID>=%llu)(versionID<=%llu))",
+				 owner->owner.address,
+				 WREPL_STATE_ACTIVE, WREPL_STATE_TOMBSTONE,
+				 owner_in->min_version, owner_in->max_version);
 	NT_STATUS_HAVE_NO_MEMORY(filter);
 	ret = ldb_search(service->wins_db, NULL, LDB_SCOPE_SUBTREE, filter, NULL, &res);
 	if (res != NULL) {
