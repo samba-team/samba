@@ -1751,6 +1751,8 @@ BOOL listen_for_packets(BOOL run_election)
 	}
 #endif
 
+	message_select_setup(&maxfd, &fds);
+
 	/* 
 	 * During elections and when expecting a netbios response packet we
 	 * need to send election packets at tighter intervals.

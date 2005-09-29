@@ -749,10 +749,6 @@ static void process_loop(void)
 
 	/* We'll be doing this a lot */
 
-	/* Handle messages */
-
-	message_dispatch();
-
 	/* refresh the trusted domain cache */
 		   
 	rescan_trusted_domains();
@@ -779,8 +775,7 @@ static void process_loop(void)
 	FD_SET(listen_sock, &r_fds);
 	FD_SET(listen_priv_sock, &r_fds);
 
-	FD_SET(message_socket(), &r_fds);
-	maxfd = MAX(message_socket(), maxfd);
+	message_select_setup(&maxfd, &r_fds);
 
 	timeout.tv_sec = WINBINDD_ESTABLISH_LOOP;
 	timeout.tv_usec = 0;
@@ -828,9 +823,7 @@ static void process_loop(void)
 		exit(1);
 	}
 
-	if (FD_ISSET(message_socket(), &r_fds)) {
-		message_dispatch();
-	}
+	message_dispatch(&r_fds);
 
 	ev = fd_events;
 	while (ev != NULL) {

@@ -229,15 +229,12 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 		ports = smb_xstrdup(smb_ports);
 	}
 
-	FD_SET(message_socket(), &listen_set);
-	maxfd = MAX(maxfd, message_socket());
-
 	if (lp_interfaces() && lp_bind_interfaces_only()) {
 		/* We have been given an interfaces line, and been 
 		   told to only bind to those interfaces. Create a
 		   socket per interface and bind to only these.
 		*/
-		
+
 		/* Now open a listen socket for each of the
 		   interfaces. */
 		for(i = 0; i < num_interfaces; i++) {
@@ -346,7 +343,9 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 
 		memcpy((char *)&lfds, (char *)&listen_set, 
 		       sizeof(listen_set));
-		
+
+		message_select_setup(&maxfd, &listen_set);
+
 		num = sys_select(maxfd+1,&lfds,NULL,NULL,NULL);
 		
 		if (num == -1 && errno == EINTR) {
@@ -365,8 +364,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 			continue;
 		}
 
-		if (FD_ISSET(message_socket(), &lfds)) {
-			message_dispatch();
+		if (message_dispatch(&lfds)) {
 			continue;
 		}
 

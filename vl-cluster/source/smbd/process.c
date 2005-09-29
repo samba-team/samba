@@ -541,9 +541,7 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 
 	FD_SET(smbd_server_fd(),&fds);
 	maxfd = MAX(maxfd, smbd_server_fd());
-
-	FD_SET(message_socket(), &fds);
-	maxfd = MAX(maxfd, message_socket());
+	message_select_setup(&maxfd, &fds);
 
 	selrtn = sys_select(maxfd+1,&fds,NULL,NULL,&to);
 
@@ -574,13 +572,7 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 		return False;
 	}
 
-	if (FD_ISSET(message_socket(), &fds)) {
-		/*
-		 * Note that this call must be before processing any SMB
-		 * messages as we need to synchronously process any messages
-		 * we may have sent to ourselves from the previous SMB.
-		 */
-		message_dispatch();
+	if (message_dispatch(&fds)) {
 		goto again;
 	}
 

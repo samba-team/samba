@@ -1398,7 +1398,12 @@ void start_background_queue(void)
 		
 		DEBUG(5,("start_background_queue: background LPQ thread waiting for messages\n"));
 		while (1) {
-			pause();
+			fd_set rfds;
+			int maxfd = 0;
+
+			FD_ZERO(&rfds);
+			message_select_setup(&maxfd, &rfds);
+			sys_select(maxfd+1, &rfds, NULL, NULL, NULL);
 			
 			/* check for some essential signals first */
 			
@@ -1416,7 +1421,7 @@ void start_background_queue(void)
 			/* now check for messages */
 			
 			DEBUG(10,("start_background_queue: background LPQ thread got a message\n"));
-			message_dispatch();
+			message_dispatch(&rfds);
 
 			/* process any pending print change notify messages */
 

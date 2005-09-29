@@ -22,6 +22,8 @@
 #ifndef _MESSAGES_H_
 #define _MESSAGES_H_
 
+#define MSG_MAXLEN (1024*1024)
+
 /* general messages */
 #define MSG_DEBUG		1
 #define MSG_PING		2
@@ -43,7 +45,7 @@
 
 #define MSG_SHUTDOWN		13
 
-#define MSG_NOTIFICATION	14
+#define MSG_HELLO		14
 
 /* nmbd messages */
 #define MSG_FORCE_ELECTION 1001

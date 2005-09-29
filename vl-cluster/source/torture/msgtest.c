@@ -37,7 +37,7 @@ void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
 {
 	pid_t pid;
 	int i, n;
-	char buf[12];
+	char *buf;
 
 	setup_logging(argv[0],True);
 	
@@ -68,18 +68,18 @@ void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
 	message_register(MSG_PONG, pong_message);
 
 	for (i=0;i<n;i++) {
-		message_send_pid(pid_to_procid(pid), MSG_PING, NULL, 0, True);
+		int size = i*1000+100000;
+		buf = SMB_MALLOC(size);
+		memset(buf, 0, size);
+		message_send_pid(pid_to_procid(pid), MSG_PING, buf, size,
+				 True);
+		SAFE_FREE(buf);
 	}
 
-	system("/bin/sleep 60");
+	system("/bin/sleep 10");
 
 	while (pong_count < i) {
-		fd_set rfds;
-		struct timeval tv = timeval_set(1,0);
-		FD_ZERO(&rfds);
-		FD_SET(message_socket(), &rfds);
-		select(message_socket()+1, &rfds, NULL, NULL, &tv);
-		message_dispatch();
+		message_select_dispatch();
 	}
 
 #if 0

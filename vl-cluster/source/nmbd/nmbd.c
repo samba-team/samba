@@ -392,7 +392,7 @@ static void process(void)
 
 		/* Check for internal messages */
 
-		message_dispatch();
+		message_select_dispatch();
 
 		/*
 		 * Check all broadcast subnets to see if
