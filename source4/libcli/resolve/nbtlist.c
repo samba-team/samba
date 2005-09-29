@@ -51,6 +51,7 @@ static void nbtlist_handler(struct nbt_name_request *req)
 	for (i=0;i<state->num_queries;i++) {
 		if (req == state->queries[i]) break;
 	}
+
 	if (i == state->num_queries) {
 		/* not for us?! */
 		c->status = NT_STATUS_INTERNAL_ERROR;
@@ -61,15 +62,18 @@ static void nbtlist_handler(struct nbt_name_request *req)
 	c->status = nbt_name_query_recv(req, state, &state->io_queries[i]);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		c->state = COMPOSITE_STATE_ERROR;
+
 	} else {
 		if (state->io_queries[i].out.num_addrs < 1) {
 			c->state = COMPOSITE_STATE_ERROR;
 			c->status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+
 		} else {
 			struct nbt_name_query *q = &state->io_queries[i];
 			c->state = COMPOSITE_STATE_DONE;
 			/* favor a local address if possible */
 			state->reply_addr = NULL;
+
 			for (i=0;i<q->out.num_addrs;i++) {
 				if (iface_is_local(q->out.reply_addrs[i])) {
 					state->reply_addr = talloc_steal(state, 
@@ -77,6 +81,7 @@ static void nbtlist_handler(struct nbt_name_request *req)
 					break;
 				}
 			}
+
 			if (state->reply_addr == NULL) {
 				state->reply_addr = talloc_steal(state, 
 								 q->out.reply_addrs[0]);
@@ -135,18 +140,19 @@ struct composite_context *resolve_name_nbtlist_send(struct nbt_name *name,
 	if (!state->queries) goto failed;
 
 	for (i=0;i<state->num_queries;i++) {
-		state->io_queries[i].in.name = state->name;
-		state->io_queries[i].in.dest_addr = talloc_strdup(state->io_queries, address_list[i]);
+		state->io_queries[i].in.name        = state->name;
+		state->io_queries[i].in.dest_addr   = talloc_strdup(state->io_queries, address_list[i]);
 		if (!state->io_queries[i].in.dest_addr) goto failed;
-		state->io_queries[i].in.broadcast = broadcast;
-		state->io_queries[i].in.wins_lookup = wins_lookup;
-		state->io_queries[i].in.timeout = lp_parm_int(-1, "nbt", "timeout", 1);
 
-		state->io_queries[i].in.retries = 2;
+		state->io_queries[i].in.broadcast   = broadcast;
+		state->io_queries[i].in.wins_lookup = wins_lookup;
+		state->io_queries[i].in.timeout     = lp_parm_int(-1, "nbt", "timeout", 1);
+		state->io_queries[i].in.retries     = 2;
+
 		state->queries[i] = nbt_name_query_send(state->nbtsock, &state->io_queries[i]);
 		if (!state->queries[i]) goto failed;
 
-		state->queries[i]->async.fn = nbtlist_handler;
+		state->queries[i]->async.fn      = nbtlist_handler;
 		state->queries[i]->async.private = c;
 	}
 
