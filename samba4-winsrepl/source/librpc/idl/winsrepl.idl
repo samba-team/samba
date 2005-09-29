@@ -13,7 +13,8 @@
   uuid("0-1-2-3-4"),
   version(0.0),
   pointer_default(unique),
-  pointer_default_top(unique)
+  pointer_default_top(unique),
+  depends(nbt)
 ]
 interface wrepl
 {
@@ -34,11 +35,42 @@ interface wrepl
 		[case(2)] wrepl_address_list addresses;
 	} wrepl_addresses;
 
+	typedef [enum8bit] enum {
+		WREPL_TYPE_UNIQUE	= 0x0,
+		WREPL_TYPE_GROUP	= 0x1,
+		WREPL_TYPE_SGROUP	= 0x2,
+		WREPL_TYPE_MHOMED	= 0x3
+	} wrepl_name_type;
+
+	typedef [enum8bit] enum {
+		WREPL_STATE_ACTIVE	= 0x0,
+		WREPL_STATE_RELEASED	= 0x1,
+		WREPL_STATE_TOMBSTONE	= 0x2,
+		WREPL_STATE_RESERVED	= 0x3
+	} wrepl_name_state;
+
+	typedef [bitmap32bit] bitmap {
+		WREPL_FLAGS_RECORD_TYPE		= 0x00000003,
+		WREPL_FLAGS_RECORD_STATE	= 0x0000000C,
+		WREPL_FLAGS_0x00000010		= 0x00000010,
+		WREPL_FLAGS_NODE_TYPE		= 0x00000060,
+		WREPL_FLAGS_IS_STATIC		= 0x00000080
+	} wrepl_flags;
+
+	typedef [v1_enum] enum {
+		WREPL_GROUP_FLAG_NO_GROUP	= 0x00000000,
+		WREPL_GROUP_FLAG_IS_GROUP	= 0x00000001
+	} wrepl_group_flag;
+
+#define WREPL_IS_GROUP(flags) (\
+	((((flags) & WREPL_FLAGS_RECORD_TYPE) == WREPL_TYPE_GROUP)|| \
+	(((flags) & WREPL_FLAGS_RECORD_TYPE) == WREPL_TYPE_SGROUP))\
+	? WREPL_GROUP_FLAG_IS_GROUP : WREPL_GROUP_FLAG_NO_GROUP)
+
 	typedef struct {
-		uint32    name_len;
-		uint8     name[name_len];
-		uint32    flags;
-		[flag(NDR_LITTLE_ENDIAN)] uint32 group_flag;
+		wrepl_nbt_name name;
+		wrepl_flags flags;
+		[flag(NDR_LITTLE_ENDIAN),value(WREPL_IS_GROUP(flags))] wrepl_group_flag is_group;
 		udlongr   id;
 		[switch_is(flags & 2)] wrepl_addresses addresses;
 		ipv4address unknown;
