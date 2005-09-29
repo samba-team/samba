@@ -199,15 +199,10 @@ static NTSTATUS session_setup_nt1(struct composite_context *c,
 				return NT_STATUS_NO_MEMORY;
 			}
 			data_blob_free(&names_blob);
+			data_blob_free(&lmv2_session_key);
 			state->setup.nt1.in.password1 = lmv2_response;
 			state->setup.nt1.in.password2 = ntlmv2_response;
 			
-			smbcli_transport_simple_set_signing(session->transport, session_key, 
-							    state->setup.nt1.in.password2);
-			set_user_session_key(session, &session_key);
-			
-			data_blob_free(&lmv2_session_key);
-			data_blob_free(&session_key);
 		} else {
 
 			state->setup.nt1.in.password2 = nt_blob(state, nt_hash,
@@ -222,12 +217,13 @@ static NTSTATUS session_setup_nt1(struct composite_context *c,
 
 			session_key = data_blob_talloc(session, NULL, 16);
 			SMBsesskeygen_ntv1(nt_hash->hash, session_key.data);
-			smbcli_transport_simple_set_signing(session->transport, session_key, 
-							    state->setup.nt1.in.password2);
-			set_user_session_key(session, &session_key);
-			
-			data_blob_free(&session_key);
 		}
+
+		smbcli_transport_simple_set_signing(session->transport, session_key, 
+						    state->setup.nt1.in.password2);
+		set_user_session_key(session, &session_key);
+		
+		data_blob_free(&session_key);
 
 	} else if (lp_client_plaintext_auth()) {
 		state->setup.nt1.in.password1 = data_blob_talloc(state, password, strlen(password));
