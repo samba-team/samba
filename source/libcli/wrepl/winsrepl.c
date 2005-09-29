@@ -707,7 +707,7 @@ NTSTATUS wrepl_pull_names_recv(struct wrepl_request *req,
 		talloc_steal(io->out.names, wname->name.scope);
 		name->type	= WREPL_NAME_TYPE(wname->flags);
 		name->state	= WREPL_NAME_STATE(wname->flags);
-		name->node	= WREPL_NBT_NODE(wname->flags);
+		name->node	= WREPL_NAME_NODE(wname->flags);
 		name->is_static	= WREPL_NAME_IS_STATIC(wname->flags);
 		name->raw_flags	= wname->flags;
 		name->version_id= wname->id;
