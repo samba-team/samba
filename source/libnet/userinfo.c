@@ -42,6 +42,7 @@ struct userinfo_state {
 	struct samr_QueryUserInfo queryuserinfo;
 	struct samr_Close         samrclose;	
 	union  samr_UserInfo      *info;
+
 	/* information about the progress */
 	void (*monitor_fn)(struct monitor_msg *);
 };
@@ -211,9 +212,9 @@ struct composite_context *libnet_rpc_userinfo_send(struct dcerpc_pipe *p,
 	
 	sid = dom_sid_parse_talloc(s, io->in.sid);
 	if (sid == NULL) goto failure;	
-	c->state       = COMPOSITE_STATE_IN_PROGRESS;
-	c->private_data= s;
-	c->event_ctx   = dcerpc_event_context(p);
+	c->state        = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data = s;
+	c->event_ctx    = dcerpc_event_context(p);
 
 	/* preparing parameters to send rpc request */
 	s->openuser.in.domain_handle  = &io->in.domain_handle;
