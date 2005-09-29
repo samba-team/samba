@@ -32,10 +32,10 @@
 /*
   a composite call moves between the following 3 states.
 */
-enum composite_state {COMPOSITE_STATE_INIT, /* we are creating the request */
-		      COMPOSITE_STATE_IN_PROGRESS, /* the request is in the outgoing socket Q */
-		      COMPOSITE_STATE_DONE, /* the request is received by the caller finished */
-		      COMPOSITE_STATE_ERROR}; /* a packet or transport level error has occurred */
+enum composite_state { COMPOSITE_STATE_INIT,         /* we are creating the request */
+		       COMPOSITE_STATE_IN_PROGRESS,  /* the request is in the outgoing socket Q */
+		       COMPOSITE_STATE_DONE,         /* the request is received by the caller finished */
+		       COMPOSITE_STATE_ERROR };      /* a packet or transport level error has occurred */
 
 /* the context of one "composite" call */
 struct composite_context {
