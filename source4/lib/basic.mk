@@ -66,8 +66,7 @@ ADD_OBJ_FILES = \
 		lib/mutex.o \
 		lib/idtree.o \
 		lib/db_wrap.o \
-		lib/gendb.o \
-		lib/credentials.o
+		lib/gendb.o
 REQUIRED_SUBSYSTEMS = \
 		LIBLDB CHARSET LIBREPLACE LIBNETIF LIBCRYPTO EXT_LIB_DL LIBTALLOC \
 		SOCKET_WRAPPER CONFIG
