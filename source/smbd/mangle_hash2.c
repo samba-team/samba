@@ -445,6 +445,7 @@ static BOOL is_reserved_name(const char *name)
 /*
  See if a filename is a legal long filename.
  A filename ending in a '.' is not legal unless it's "." or "..". JRA.
+ A filename ending in ' ' is not legal either. See bug id #2769.
 */
 
 static BOOL is_legal_name(const char *name)
@@ -480,6 +481,10 @@ static BOOL is_legal_name(const char *name)
 		} else {
 			alldots = False;
 		}
+		if ((name[0] == ' ') && (name[1] == '\0')) {
+			/* Can't end in ' ' */
+			return False;
+		}
 		name++;
 	}
 
@@ -491,7 +496,6 @@ static BOOL is_legal_name(const char *name)
 		if (dot_pos[1] == '\0')
 			return False;
 	}
-
 	return True;
 }
 
