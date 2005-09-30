@@ -68,19 +68,27 @@ void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
 	message_register(MSG_PONG, pong_message);
 
 	for (i=0;i<n;i++) {
-		int size = i*1000+100000;
-		buf = SMB_MALLOC(size);
-		memset(buf, 0, size);
-		message_send_pid(pid_to_procid(pid), MSG_PING, buf, size,
+		fd_set rfds;
+		int maxfd;
+		FD_ZERO(&rfds);
+		message_send_pid(pid_to_procid(pid), MSG_PING, NULL, 0,
 				 True);
-		SAFE_FREE(buf);
+		message_select_setup(&maxfd, &rfds);
+		if (select(maxfd+1, &rfds, NULL, NULL, NULL) <= 0)
+			break;
+		message_dispatch(&rfds);
 	}
 
-	system("/bin/sleep 10");
-
-	while (pong_count < i) {
-		message_select_dispatch();
-	}
+	while (pong_count < n) {
+		fd_set rfds;
+		int maxfd;
+		FD_ZERO(&rfds);
+		message_select_setup(&maxfd, &rfds);
+		if (select(maxfd+1, &rfds, NULL, NULL, NULL) <= 0)
+			break;
+		message_dispatch(&rfds);
+	}		
+	DEBUG(0, ("expected %d, got back %d\n", n, pong_count));
 
 #if 0
 	/* Now test that the duplicate filtering code works. */
@@ -106,6 +114,7 @@ void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
 	}
 #endif
 
+	message_end();
 	return (0);
 }
 

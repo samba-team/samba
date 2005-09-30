@@ -344,7 +344,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 		memcpy((char *)&lfds, (char *)&listen_set, 
 		       sizeof(listen_set));
 
-		message_select_setup(&maxfd, &listen_set);
+		message_select_setup(&maxfd, &lfds);
 
 		num = sys_select(maxfd+1,&lfds,NULL,NULL,NULL);
 		

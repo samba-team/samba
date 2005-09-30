@@ -74,6 +74,30 @@ int sys_usleep(long usecs)
 }
 
 /*******************************************************************
+An accept wrapper that will deal with EINTR.
+********************************************************************/
+
+int sys_accept(int fd, struct sockaddr *addr, socklen_t *addrlen)
+{
+	int ret;
+
+	do {
+		ret = accept(fd, addr, addrlen);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+int sys_connect(int fd, struct sockaddr *addr, socklen_t addrlen)
+{
+	int ret;
+
+	do {
+		ret = connect(fd, addr, addrlen);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+/*******************************************************************
 A read wrapper that will deal with EINTR.
 ********************************************************************/
 
