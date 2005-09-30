@@ -633,8 +633,10 @@ acc_get_first (krb5_context context,
     int32_t error;
     
     error = (*a->ccache->func->new_credentials_iterator)(a->ccache, &iter);
-    if (error)
+    if (error) {
+	krb5_clear_error_string(context);
 	return ENOENT;
+    }
     *cursor = iter;
     return 0;
 }
@@ -761,6 +763,93 @@ acc_get_version(krb5_context context,
     return 0;
 }
 		    
+struct cache_iter {
+    cc_context_t context;
+    cc_ccache_iterator_t iter;
+};
+
+static krb5_error_code
+acc_get_cache_first(krb5_context context, krb5_cc_cursor *cursor)
+{
+    struct cache_iter *iter;
+    krb5_error_code ret;
+    cc_int32 error;
+
+    ret = init_ccapi(context);
+    if (ret)
+	return ret;
+
+    iter = calloc(1, sizeof(*iter));
+    if (iter == NULL)
+	abort();
+
+    error = (*init_func)(&iter->context, ccapi_version_3, NULL, NULL);
+    if (error) {
+	free(iter);
+	return translate_cc_error(context, error);
+    }
+
+    error = (*iter->context->func->new_ccache_iterator)(iter->context, &iter->iter);
+    if (error) {
+	krb5_clear_error_string(context);
+	return ENOENT;
+    }
+    *cursor = iter;
+    return 0;
+}
+
+static krb5_error_code
+acc_get_cache_next(krb5_context context, krb5_cc_cursor cursor, krb5_ccache *id)
+{
+    struct cache_iter *iter = cursor;
+    cc_ccache_t cache;
+    krb5_acc *a;
+    krb5_error_code ret;
+    int32_t error;
+
+    error = (*iter->iter->func->next)(iter->iter, &cache);
+    if (error)
+	return translate_cc_error(context, error);
+
+    ret = _krb5_cc_allocate(context, &krb5_acc_ops, id);
+    if (ret) {
+	(*cache->func->release)(cache);
+	return ret;
+    }
+
+    ret = acc_alloc(context, id);
+    if (ret) {
+	(*cache->func->release)(cache);
+	free(*id);
+	return ret;
+    }
+
+    a = ACACHE(*id);
+    a->ccache = cache;
+
+    a->cache_name = get_cc_name(a->ccache);
+    if (a->cache_name == NULL) {
+	acc_close(context, *id);
+	*id = NULL;
+	krb5_set_error_string(context, "malloc: out of memory");
+	return ENOMEM;
+    }	
+    return 0;
+}
+
+static krb5_error_code
+acc_end_cache_get(krb5_context context, krb5_cc_cursor cursor)
+{
+    struct cache_iter *iter = cursor;
+
+    (*iter->iter->func->release)(iter->iter);
+    iter->iter = NULL;
+    (*iter->context->func->release)(iter->context);
+    iter->context = NULL;
+    free(iter);
+    return 0;
+}
+
 const krb5_cc_ops krb5_acc_ops = {
     "API",
     acc_get_name,
@@ -777,5 +866,8 @@ const krb5_cc_ops krb5_acc_ops = {
     acc_end_get,
     acc_remove_cred,
     acc_set_flags,
-    acc_get_version
+    acc_get_version,
+    acc_get_cache_first,
+    acc_get_cache_next,
+    acc_end_cache_get
 };
