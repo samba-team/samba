@@ -23,6 +23,8 @@
 struct wreplsrv_pull_table_io {
 	struct {
 		struct wreplsrv_partner *partner;
+		uint32_t num_owners;
+		struct wrepl_wins_owner *owners;
 	} in;
 	struct {
 		uint32_t num_owners;
@@ -33,10 +35,20 @@ struct wreplsrv_pull_table_io {
 struct wreplsrv_pull_names_io {
 	struct {
 		struct wreplsrv_partner *partner;
+		struct wreplsrv_out_connection *wreplconn;
 		struct wrepl_wins_owner owner;
 	} in;
 	struct {
 		uint32_t num_names;
 		struct wrepl_name *names;
 	} out;
+};
+
+struct wreplsrv_pull_cycle_io {
+	struct {
+		struct wreplsrv_partner *partner;
+		uint32_t num_owners;
+		struct wrepl_wins_owner *owners;
+		struct wreplsrv_out_connection *wreplconn;
+	} in;
 };
