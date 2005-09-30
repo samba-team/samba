@@ -245,7 +245,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 				continue;
 			}
 
-			for (ptr=ports; next_token(&ptr, tok, NULL, sizeof(tok)); ) {
+			for (ptr=ports; next_token(&ptr, tok, " \t,", sizeof(tok)); ) {
 				unsigned port = atoi(tok);
 				if (port == 0) {
 					continue;
@@ -285,7 +285,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 
 		num_interfaces = 1;
 		
-		for (ptr=ports; next_token(&ptr, tok, NULL, sizeof(tok)); ) {
+		for (ptr=ports; next_token(&ptr, tok, " \t,", sizeof(tok)); ) {
 			unsigned port = atoi(tok);
 			if (port == 0) continue;
 			/* open an incoming socket */
