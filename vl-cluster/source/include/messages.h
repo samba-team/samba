@@ -86,6 +86,7 @@
 #define FLAG_MSG_PRINT_GENERAL	0x0010
 
 #define MESSAGING_PORT 55064
+#define MESSAGING_DISPATCHER_PID -2
 
 struct process_id {
 	struct in_addr ip;
