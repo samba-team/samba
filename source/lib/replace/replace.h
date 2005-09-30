@@ -80,6 +80,14 @@ unsigned long strtoul(const char *nptr, char **endptr, int base);
 int setenv(const char *name, const char *value, int overwrite); 
 #endif
 
+#ifndef HAVE_RENAME
+int rename(const char *zfrom, const char *zto);
+#endif
+
+#ifndef HAVE_FTRUNCATE
+int ftruncate(int f,long l);
+#endif
+
 #ifndef HAVE_VASPRINTF_DECL
 int vasprintf(char **ptr, const char *format, va_list ap);
 #endif
@@ -132,13 +140,26 @@ int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 typedef int (*comparison_fn_t)(const void *, const void *);
 #endif
 
+/* Load header file for dynamic linking stuff */
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
+#endif
+
+#ifndef RTLD_LAZY
+#define RTLD_LAZY 0
 #endif
 
 #ifndef HAVE_SECURE_MKSTEMP
 #define mkstemp(path) rep_mkstemp(path)
 int rep_mkstemp(char *temp);
+#endif
+
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
+#endif
+
+#ifndef HOST_NAME_MAX
+#define HOST_NAME_MAX 64
 #endif
 
 #endif

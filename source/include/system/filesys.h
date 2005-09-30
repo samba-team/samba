@@ -103,24 +103,10 @@
 #include <sys/xattr.h>
 #endif
 
-/* Load header file for dynamic linking stuff */
-#ifdef HAVE_DLFCN_H
-#include <dlfcn.h>
-#endif
 
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif
-
-#ifdef HAVE_LIMITS_H
-#include <limits.h>
-#endif
-
-
-#ifndef RTLD_LAZY
-#define RTLD_LAZY 0
-#endif
-
 
 /* Some POSIX definitions for those without */
  
@@ -169,14 +155,6 @@
 
 #ifndef O_ACCMODE
 #define O_ACCMODE (O_RDONLY | O_WRONLY | O_RDWR)
-#endif
-
-#ifndef HAVE_RENAME
-int rename(const char *zfrom, const char *zto);
-#endif
-
-#ifndef HAVE_FTRUNCATE
-int ftruncate(int f,long l);
 #endif
 
 #ifndef MAXPATHLEN
