@@ -310,3 +310,5 @@ struct ldb_map_objectclass;
 struct param_context;
 struct param_section;
 struct param;
+
+struct socket_context;

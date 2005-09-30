@@ -165,7 +165,7 @@ failure:
  */
 
 NTSTATUS libnet_rpc_useradd_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
-				    struct libnet_rpc_useradd *io)
+				 struct libnet_rpc_useradd *io)
 {
 	NTSTATUS status;
 	struct useradd_state *s;
@@ -193,8 +193,8 @@ NTSTATUS libnet_rpc_useradd_recv(struct composite_context *c, TALLOC_CTX *mem_ct
  */
 
 NTSTATUS libnet_rpc_useradd(struct dcerpc_pipe *pipe,
-			       TALLOC_CTX *mem_ctx,
-			       struct libnet_rpc_useradd *io)
+			    TALLOC_CTX *mem_ctx,
+			    struct libnet_rpc_useradd *io)
 {
 	struct composite_context *c = libnet_rpc_useradd_send(pipe, io, NULL);
 	return libnet_rpc_useradd_recv(c, mem_ctx, io);

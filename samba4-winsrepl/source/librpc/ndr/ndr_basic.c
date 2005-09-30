@@ -559,7 +559,7 @@ NTSTATUS ndr_pull_ipv4address(struct ndr_pull *ndr, int ndr_flags, const char **
 	struct ipv4_addr in;
 	NDR_CHECK(ndr_pull_uint32(ndr, ndr_flags, &in.addr));
 	in.addr = htonl(in.addr);
-	*address = talloc_strdup(ndr, sys_inet_ntoa(in));
+	*address = talloc_strdup(ndr->current_mem_ctx, sys_inet_ntoa(in));
 	NT_STATUS_HAVE_NO_MEMORY(*address);
 	return NT_STATUS_OK;
 }
@@ -802,7 +802,7 @@ NTSTATUS ndr_pull_DATA_BLOB(struct ndr_pull *ndr, int ndr_flags, DATA_BLOB *blob
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &length));
 	}
 	NDR_PULL_NEED_BYTES(ndr, length);
-	*blob = data_blob_talloc(ndr, ndr->data+ndr->offset, length);
+	*blob = data_blob_talloc(ndr->current_mem_ctx, ndr->data+ndr->offset, length);
 	ndr->offset += length;
 	return NT_STATUS_OK;
 }
