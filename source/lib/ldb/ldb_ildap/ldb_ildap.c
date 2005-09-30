@@ -166,6 +166,7 @@ static int ildb_search(struct ldb_module *module, const struct ldb_dn *base,
 				     0, &ldapres);
 	talloc_free(search_base);
 	if (!NT_STATUS_IS_OK(ildb->last_rc)) {
+		ldb_set_errstring(module, talloc_strdup(module, ldap_errstr(ildb->ldap, ildb->last_rc)));
 		return -1;
 	}
 
