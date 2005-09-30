@@ -76,10 +76,11 @@ static void wait_replies(BOOL multiple_replies)
            busy-wait here as there is no nicer way to do it. */
 
 	do {
-		message_select_dispatch();
-		if (num_replies > 0 && !multiple_replies)
-			break;
-		sleep(1);
+		struct timeval tmo;
+		tmo = timeval_set(timeout - (time(NULL) - start_time), 0);
+		message_select_dispatch(&tmo);
+                if (num_replies > 0 && !multiple_replies)
+                        break;
 	} while (timeout - (time(NULL) - start_time) > 0);
 }
 

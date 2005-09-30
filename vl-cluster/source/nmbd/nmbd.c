@@ -392,7 +392,10 @@ static void process(void)
 
 		/* Check for internal messages */
 
-		message_select_dispatch();
+		{
+			struct timeval null = timeval_zero();
+			message_select_dispatch(&null);
+		}
 
 		/*
 		 * Check all broadcast subnets to see if

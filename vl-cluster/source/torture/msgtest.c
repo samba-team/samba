@@ -35,7 +35,7 @@ void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
 
  int main(int argc, char *argv[])
 {
-	pid_t pid;
+	struct process_id pid;
 	int i, n;
 	char *buf;
 
@@ -50,9 +50,9 @@ void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
 	}
 
 	if (strcmp(argv[1], "self") == 0) {
-		pid = getpid();
+		pid = procid_self();
 	} else {
-		pid = atoi(argv[1]);
+		pid = interpret_pid(argv[1]);
 	}
 	n = atoi(argv[2]);
 
@@ -70,9 +70,11 @@ void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
 	for (i=0;i<n;i++) {
 		fd_set rfds;
 		int maxfd;
+		size_t size = 1024*512;
 		FD_ZERO(&rfds);
-		message_send_pid(pid_to_procid(pid), MSG_PING, NULL, 0,
-				 True);
+		buf=SMB_MALLOC(size);
+		memset(buf, 0, size);
+		message_send_pid(pid, MSG_PING, buf, size, True);
 		message_select_setup(&maxfd, &rfds);
 		if (select(maxfd+1, &rfds, NULL, NULL, NULL) <= 0)
 			break;
@@ -80,13 +82,8 @@ void pong_message(int msg_type, struct process_id src, void *buf, size_t len)
 	}
 
 	while (pong_count < n) {
-		fd_set rfds;
-		int maxfd;
-		FD_ZERO(&rfds);
-		message_select_setup(&maxfd, &rfds);
-		if (select(maxfd+1, &rfds, NULL, NULL, NULL) <= 0)
-			break;
-		message_dispatch(&rfds);
+		struct timeval tv = timeval_set(5, 0);
+		message_select_dispatch(&tv);
 	}		
 	DEBUG(0, ("expected %d, got back %d\n", n, pong_count));
 

@@ -315,6 +315,10 @@ BOOL message_send_pid(struct process_id pid, int msg_type,
 		memcpy(packet.data + sizeof(struct message_rec), buf, len);
 	}
 
+	if (!procid_is_local(&hdr->dest)) {
+		goto via_stream;
+	}
+
 	ZERO_STRUCT(sunaddr);
 	sunaddr.sun_family = AF_UNIX;
 	strncpy(sunaddr.sun_path, message_path(&pid),
@@ -350,6 +354,7 @@ BOOL message_send_pid(struct process_id pid, int msg_type,
 			   "dispatcher in blocking mode\n"));
 	}
 
+ via_stream:
 	if ((stream_fd < 0) && !init_stream_socket()) {
 		DEBUG(5, ("No stream socket\n"));
 		goto done;
@@ -618,15 +623,14 @@ BOOL message_dispatch(fd_set *rfds)
 	return result;
 }
 
-void message_select_dispatch(void)
+void message_select_dispatch(struct timeval *tv)
 {
 	fd_set rfds;
 	int maxfd = 0;
-	struct timeval tv = timeval_zero();
 
 	FD_ZERO(&rfds);
 	message_select_setup(&maxfd, &rfds);
-	if (sys_select(maxfd+1, &rfds, NULL, NULL, &tv) > 0) {
+	if (sys_select(maxfd+1, &rfds, NULL, NULL, tv) > 0) {
 		message_dispatch(&rfds);
 	}
 }
