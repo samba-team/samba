@@ -58,12 +58,8 @@ enum winbindd_result winbindd_dual_check_machine_acct(struct winbindd_domain *do
 	invalidate_cm_connection(&contact_domain->conn);
 
 	{
-		struct rpc_pipe_client *cli;
-		unsigned char *session_key;
-		DOM_CRED *creds;
-
-		result = cm_connect_netlogon(contact_domain, state->mem_ctx,
-					     &cli, &session_key, &creds);
+		struct rpc_pipe_client *netlogon_pipe;
+		result = cm_connect_netlogon(contact_domain, &netlogon_pipe);
 	}
 
         if (!NT_STATUS_IS_OK(result)) {
@@ -169,7 +165,7 @@ enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
 {
 	fstring dcname_slash;
 	char *p;
-	struct rpc_pipe_client *cli;
+	struct rpc_pipe_client *netlogon_pipe;
 	NTSTATUS result;
 
 	state->request.domain_name
@@ -178,21 +174,14 @@ enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
 	DEBUG(3, ("[%5lu]: Get DC name for %s\n", (unsigned long)state->pid,
 		  state->request.domain_name));
 
-	{
-		/* These var's can be ignored -- we're not requesting
-		   anything in the credential chain here */
-		unsigned char *session_key;
-		DOM_CRED *creds;
-		result = cm_connect_netlogon(domain, state->mem_ctx, &cli,
-					     &session_key, &creds);
-	}
+	result = cm_connect_netlogon(domain, &netlogon_pipe);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1, ("Can't contact our the NETLOGON pipe\n"));
 		return WINBINDD_ERROR;
 	}
 
-	result = rpccli_netlogon_getdcname(cli, state->mem_ctx, domain->dcname,
+	result = rpccli_netlogon_getdcname(netlogon_pipe, state->mem_ctx, domain->dcname,
 					   state->request.domain_name,
 					   dcname_slash);
 
@@ -202,11 +191,14 @@ enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
 	}
 
 	p = dcname_slash;
-	if (*p == '\\') p+=1;
-	if (*p == '\\') p+=1;
+	if (*p == '\\') {
+		p+=1;
+	}
+	if (*p == '\\') {
+		p+=1;
+	}
 
 	fstrcpy(state->response.data.dc_name, p);
-
 	return WINBINDD_OK;
 }
 

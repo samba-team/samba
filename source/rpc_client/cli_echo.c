@@ -4,6 +4,7 @@
    RPC pipe client
 
    Copyright (C) Tim Potter 2003
+   Copyright (C) Jeremy Allison 2005.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,7 +23,7 @@
 
 #include "includes.h"
 
-NTSTATUS cli_echo_add_one(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+NTSTATUS rpccli_echo_add_one(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			  uint32 request, uint32 *response)
 {
 	prs_struct qbuf, rbuf;
@@ -33,42 +34,26 @@ NTSTATUS cli_echo_add_one(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
-
-	if (!prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	if (!prs_init(&rbuf, 0, mem_ctx, UNMARSHALL)) {
-		prs_mem_free(&qbuf);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* Marshall data and send request */
 
         init_echo_q_add_one(&q, request);
 
-	if (!echo_io_q_add_one("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_ECHO, ECHO_ADD_ONE, &qbuf, &rbuf))
-		goto done;
-
-	/* Unmarshall response */
-
-	if (!echo_io_r_add_one("", &r, &rbuf, 0))
-		goto done;
+	CLI_DO_RPC( cli, mem_ctx, PI_ECHO, ECHO_ADD_ONE,
+			q, r,
+			qbuf, rbuf,
+			echo_io_q_add_one,
+			echo_io_r_add_one,
+			NT_STATUS_UNSUCCESSFUL);
 
 	if (response)
 		*response = r.response;
 
 	result = True;
 
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
-NTSTATUS cli_echo_data(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+NTSTATUS rpccli_echo_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		       uint32 size, char *in_data, char **out_data)
 {
 	prs_struct qbuf, rbuf;
@@ -79,28 +64,16 @@ NTSTATUS cli_echo_data(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
-
-	if (!prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	if (!prs_init(&rbuf, 0, mem_ctx, UNMARSHALL)) {
-		prs_mem_free(&qbuf);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* Marshall data and send request */
 
         init_echo_q_echo_data(&q, size, in_data);
 
-	if (!echo_io_q_echo_data("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_ECHO, ECHO_DATA, &qbuf, &rbuf))
-		goto done;
-
-	/* Unmarshall response */
-
-	if (!echo_io_r_echo_data("", &r, &rbuf, 0))
-		goto done;
+	CLI_DO_RPC( cli, mem_ctx, PI_ECHO, ECHO_DATA,
+			q, r,
+			qbuf, rbuf,
+			echo_io_q_echo_data,
+			echo_io_r_echo_data,
+			NT_STATUS_UNSUCCESSFUL);
 
 	result = True;
 
@@ -109,14 +82,10 @@ NTSTATUS cli_echo_data(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		memcpy(*out_data, r.data, size);
 	}
 
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
-NTSTATUS cli_echo_sink_data(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+NTSTATUS rpccli_echo_sink_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			    uint32 size, char *in_data)
 {
 	prs_struct qbuf, rbuf;
@@ -127,41 +96,23 @@ NTSTATUS cli_echo_sink_data(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
-
-	if (!prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	if (!prs_init(&rbuf, 0, mem_ctx, UNMARSHALL)) {
-		prs_mem_free(&qbuf);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* Marshall data and send request */
 
         init_echo_q_sink_data(&q, size, in_data);
 
-	if (!echo_io_q_sink_data("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_ECHO, ECHO_SINK_DATA, &qbuf, &rbuf)) {
-		goto done;
-	}
-
-	/* Unmarshall response */
-
-	if (!echo_io_r_sink_data("", &r, &rbuf, 0)) {
-		goto done;
-	}
+	CLI_DO_RPC( cli, mem_ctx, PI_ECHO, ECHO_SINK_DATA,
+			q, r,
+			qbuf, rbuf,
+			echo_io_q_sink_data,
+			echo_io_r_sink_data,
+			NT_STATUS_UNSUCCESSFUL);
 
 	result = True;
-
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
 
 	return result ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
-NTSTATUS cli_echo_source_data(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+NTSTATUS rpccli_echo_source_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			      uint32 size, char **out_data)
 {
 	prs_struct qbuf, rbuf;
@@ -172,36 +123,18 @@ NTSTATUS cli_echo_source_data(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
-
-	if (!prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	if (!prs_init(&rbuf, 0, mem_ctx, UNMARSHALL)) {
-		prs_mem_free(&qbuf);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* Marshall data and send request */
 
         init_echo_q_source_data(&q, size);
 
-	if (!echo_io_q_source_data("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_ECHO, ECHO_SOURCE_DATA, &qbuf, &rbuf)) {
-		goto done;
-	}
-
-	/* Unmarshall response */
-
-	if (!echo_io_r_source_data("", &r, &rbuf, 0)) {
-		goto done;
-	}
+	CLI_DO_RPC( cli, mem_ctx, PI_ECHO, ECHO_SOURCE_DATA,
+			q, r,
+			qbuf, rbuf,
+			echo_io_q_source_data,
+			echo_io_r_source_data,
+			NT_STATUS_UNSUCCESSFUL);
 
 	result = True;
-
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
 
 	return result ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }

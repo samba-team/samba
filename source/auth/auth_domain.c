@@ -40,15 +40,17 @@ extern BOOL global_machine_password_needs_changing;
  *
  **/
 
-static NTSTATUS connect_to_domain_password_server(struct cli_state **cli, 
-						  const char *domain, const char *dc_name,
-						  struct in_addr dc_ip, 
-						  const char *setup_creds_as,
-						  uint16 sec_chan,
-						  const unsigned char *trust_passwd,
-						  BOOL *retry)
+static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
+						const char *domain,
+						const char *dc_name,
+						struct in_addr dc_ip, 
+						struct rpc_pipe_client **pipe_ret,
+						BOOL *retry)
 {
         NTSTATUS result;
+	struct rpc_pipe_client *netlogon_pipe = NULL;
+
+	*pipe_ret = NULL;
 
 	/* TODO: Send a SAMLOGON request to determine whether this is a valid
 	   logonserver.  We can avoid a 30-second timeout if the DC is down
@@ -64,8 +66,9 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	 * ACCESS_DENIED errors if 2 auths are done from the same machine. JRA.
 	 */
 
-	if (!grab_server_mutex(dc_name))
+	if (!grab_server_mutex(dc_name)) {
 		return NT_STATUS_NO_LOGON_SERVERS;
+	}
 	
 	/* Attempt connection */
 	*retry = True;
@@ -95,35 +98,64 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	 * into account also. This patch from "Bjart Kvarme" <bjart.kvarme@usit.uio.no>.
 	 */
 
-	if(cli_nt_session_open(*cli, PI_NETLOGON) == False) {
-		DEBUG(0,("connect_to_domain_password_server: unable to open the domain client session to \
-machine %s. Error was : %s.\n", dc_name, cli_errstr(*cli)));
-		cli_nt_session_close(*cli);
-		cli_ulogoff(*cli);
-		cli_shutdown(*cli);
-		release_server_mutex();
-		return NT_STATUS_NO_LOGON_SERVERS;
+	/* open the netlogon pipe. */
+	if (lp_client_schannel()) {
+		/* We also setup the creds chain in the open_schannel call. */
+		netlogon_pipe = cli_rpc_pipe_open_schannel(*cli, PI_NETLOGON,
+					PIPE_AUTH_LEVEL_PRIVACY, domain, &result);
+	} else {
+		netlogon_pipe = cli_rpc_pipe_open_noauth(*cli, PI_NETLOGON, &result);
 	}
 
-	fstr_sprintf((*cli)->mach_acct, "%s$", setup_creds_as);
-
-	/* This must be the remote domain (not ours) for schannel */
-
-	fstrcpy( (*cli)->domain, domain ); 
-
-	result = cli_nt_establish_netlogon(*cli, sec_chan, trust_passwd);
-
-        if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(0,("connect_to_domain_password_server: unable to setup the NETLOGON credentials to machine \
-%s. Error was : %s.\n", dc_name, nt_errstr(result)));
-		cli_nt_session_close(*cli);
-		cli_ulogoff(*cli);
+	if(!netlogon_pipe) {
+		DEBUG(0,("connect_to_domain_password_server: unable to open the domain client session to \
+machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 		cli_shutdown(*cli);
 		release_server_mutex();
 		return result;
 	}
 
+	if (!lp_client_schannel()) {
+		/* We need to set up a creds chain on an unauthenticated netlogon pipe. */
+		uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
+		uint32 sec_chan_type = 0;
+		char machine_pwd[16];
+
+		if (!get_trust_pw(domain, machine_pwd, &sec_chan_type)) {
+			DEBUG(0, ("connect_to_domain_password_server: could not fetch "
+			"trust account password for domain '%s'\n",
+				domain));
+			cli_shutdown(*cli);
+			release_server_mutex();
+			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		}
+
+		result = rpccli_netlogon_setup_creds(netlogon_pipe,
+					dc_name,
+					domain,
+					global_myname(),
+					machine_pwd,
+					sec_chan_type,
+					&neg_flags);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			cli_shutdown(*cli);
+			release_server_mutex();
+			return result;
+		}
+	}
+
+	if(!netlogon_pipe) {
+		DEBUG(0,("connect_to_domain_password_server: unable to open the domain client session to \
+machine %s. Error was : %s.\n", dc_name, cli_errstr(*cli)));
+		cli_shutdown(*cli);
+		release_server_mutex();
+		return NT_STATUS_NO_LOGON_SERVERS;
+	}
+
 	/* We exit here with the mutex *locked*. JRA */
+
+	*pipe_ret = netlogon_pipe;
 
 	return NT_STATUS_OK;
 }
@@ -135,18 +167,17 @@ machine %s. Error was : %s.\n", dc_name, cli_errstr(*cli)));
 ************************************************************************/
 
 static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
-				       const auth_usersupplied_info *user_info, 
-				       const char *domain,
-				       uchar chal[8],
-				       auth_serversupplied_info **server_info, 
-				       const char *dc_name, struct in_addr dc_ip,
-				       const char *setup_creds_as,
-				       uint16 sec_chan,
-				       unsigned char trust_passwd[16],
-				       time_t last_change_time)
+					const auth_usersupplied_info *user_info, 
+					const char *domain,
+					uchar chal[8],
+					auth_serversupplied_info **server_info, 
+					const char *dc_name,
+					struct in_addr dc_ip)
+
 {
 	NET_USER_INFO_3 info3;
 	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *netlogon_pipe = NULL;
 	NTSTATUS nt_status = NT_STATUS_NO_LOGON_SERVERS;
 	int i;
 	BOOL retry = True;
@@ -162,8 +193,12 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	/* rety loop for robustness */
 	
 	for (i = 0; !NT_STATUS_IS_OK(nt_status) && retry && (i < 3); i++) {
-		nt_status = connect_to_domain_password_server(&cli, domain, dc_name, 
-			dc_ip, setup_creds_as, sec_chan, trust_passwd, &retry);
+		nt_status = connect_to_domain_password_server(&cli,
+							domain,
+							dc_name,
+							dc_ip,
+							&netlogon_pipe,
+							&retry);
 	}
 
 	if ( !NT_STATUS_IS_OK(nt_status) ) {
@@ -181,13 +216,19 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
          * in the info3 structure.  
          */
 
-	nt_status = cli_netlogon_sam_network_logon(cli, mem_ctx,
-		NULL, user_info->smb_name.str, user_info->domain.str, 
-		user_info->wksta_name.str, chal, user_info->lm_resp, 
-		user_info->nt_resp, &info3);
-        
-	/* let go as soon as possible so we avoid any potential deadlocks
-	   with winbind lookup up users or groups */
+	nt_status = rpccli_netlogon_sam_network_logon(netlogon_pipe,
+					mem_ctx,
+					dc_name,                   /* server name */
+					user_info->smb_name.str,   /* user name logging on. */
+					user_info->domain.str,     /* domain name */
+					user_info->wksta_name.str, /* workstation name */
+					chal,                      /* 8 byte challenge. */
+					user_info->lm_resp,        /* lanman 24 byte response */
+					user_info->nt_resp,        /* nt 24 byte response */
+					&info3);                   /* info3 out */
+
+	/* Let go as soon as possible so we avoid any potential deadlocks
+	   with winbind lookup up users or groups. */
 	   
 	release_server_mutex();
 
@@ -195,7 +236,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 		DEBUG(0,("domain_client_validate: unable to validate password "
                          "for user %s in domain %s to Domain controller %s. "
                          "Error was %s.\n", user_info->smb_name.str,
-                         user_info->domain.str, cli->srv_name_slash, 
+                         user_info->domain.str, dc_name, 
                          nt_errstr(nt_status)));
 
 		/* map to something more useful */
@@ -203,32 +244,18 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 			nt_status = NT_STATUS_NO_LOGON_SERVERS;
 		}
 	} else {
-		nt_status = make_server_info_info3(mem_ctx, user_info->internal_username.str, 
-						   user_info->smb_name.str, domain, server_info, &info3);
+		nt_status = make_server_info_info3(mem_ctx,
+						user_info->internal_username.str, 
+						user_info->smb_name.str,
+						domain,
+						server_info,
+						&info3);
 	}
-
-#if 0
-	/* 
-	 * We don't actually need to do this - plus it fails currently with
-	 * NT_STATUS_INVALID_INFO_CLASS - we need to know *exactly* what to
-	 * send here. JRA.
-	 */
-
-	if (NT_STATUS_IS_OK(status)) {
-		if(cli_nt_logoff(&cli, &ctr) == False) {
-			DEBUG(0,("domain_client_validate: unable to log off user %s in domain \
-%s to Domain controller %s. Error was %s.\n", user, domain, dc_name, cli_errstr(&cli)));        
-			nt_status = NT_STATUS_LOGON_FAILURE;
-		}
-	}
-#endif /* 0 */
 
 	/* Note - once the cli stream is shutdown the mem_ctx used
 	   to allocate the other_sids and gids structures has been deleted - so
 	   these pointers are no longer valid..... */
 
-	cli_nt_session_close(cli);
-	cli_ulogoff(cli);
 	cli_shutdown(cli);
 	return nt_status;
 }
@@ -244,10 +271,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 					auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
-	unsigned char trust_passwd[16];
-	time_t last_change_time;
 	const char *domain = lp_workgroup();
-	uint32 sec_channel_type = 0;
 	fstring dc_name;
 	struct in_addr dc_ip;
 
@@ -273,26 +297,6 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	/*
-	 * Get the machine account password for our primary domain
-	 * No need to become_root() as secrets_init() is done at startup.
-	 */
-
-	if (!secrets_fetch_trust_account_password(domain, trust_passwd, &last_change_time, &sec_channel_type))
-	{
-		DEBUG(0, ("check_ntdomain_security: could not fetch trust account password for domain '%s'\n", domain));
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-	}
-
-	/* Test if machine password has expired and needs to be changed */
-	if (lp_machine_password_timeout()) {
-		if (last_change_time > 0 && 
-		    time(NULL) > (last_change_time + 
-				  lp_machine_password_timeout())) {
-			global_machine_password_needs_changing = True;
-		}
-	}
-
 	/* we need our DC to send the net_sam_logon() request to */
 
 	if ( !get_dc_name(domain, NULL, dc_name, &dc_ip) ) {
@@ -301,9 +305,13 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}
 	
-	nt_status = domain_client_validate(mem_ctx, user_info, domain,
-		(uchar *)auth_context->challenge.data, server_info, dc_name, dc_ip,
-		global_myname(), sec_channel_type,trust_passwd, last_change_time);
+	nt_status = domain_client_validate(mem_ctx,
+					user_info,
+					domain,
+					(uchar *)auth_context->challenge.data,
+					server_info,
+					dc_name,
+					dc_ip);
 		
 	return nt_status;
 }
@@ -357,7 +365,7 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	/* No point is bothering if this is not a trusted domain.
 	   This return makes "map to guest = bad user" work again.
 	   The logic is that if we know nothing about the domain, that
-	   user is known to us and does not exist */
+	   user is not known to us and does not exist */
 	
 	if ( !is_trusted_domain( user_info->domain.str ) )
 		return NT_STATUS_NOT_IMPLEMENTED;
@@ -367,8 +375,8 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	 * No need to become_root() as secrets_init() is done at startup.
 	 */
 
-	if (!secrets_fetch_trusted_domain_password(user_info->domain.str, &trust_password, &sid, &last_change_time))
-	{
+	if (!secrets_fetch_trusted_domain_password(user_info->domain.str, &trust_password,
+				&sid, &last_change_time)) {
 		DEBUG(0, ("check_trustdomain_security: could not fetch trust account password for domain %s\n", user_info->domain.str));
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
@@ -396,9 +404,13 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 		return NT_STATUS_NO_LOGON_SERVERS;
 	}
 	
-	nt_status = domain_client_validate(mem_ctx, user_info, user_info->domain.str,
-		(uchar *)auth_context->challenge.data, server_info, dc_name, dc_ip,
-		lp_workgroup(), SEC_CHAN_DOMAIN, trust_md4_password, last_change_time);
+	nt_status = domain_client_validate(mem_ctx,
+					user_info,
+					user_info->domain.str,
+					(uchar *)auth_context->challenge.data,
+					server_info,
+					dc_name,
+					dc_ip);
 
 	return nt_status;
 }

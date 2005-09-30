@@ -27,7 +27,8 @@
 
 #ifndef __cplusplus
 #define class #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
-#define private #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+/* allow to build with newer heimdal releases */
+/* #define private #error DONT_USE_CPLUSPLUS_RESERVED_NAMES */
 #define public #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
 #define protected #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
 #define template #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
@@ -287,6 +288,7 @@
 #ifdef HAVE_NET_IF_H
 #include <net/if.h>
 #endif
+
 
 #ifdef HAVE_SYS_MOUNT_H
 #include <sys/mount.h>
@@ -896,19 +898,17 @@ extern int errno;
 
 #include "privileges.h"
 
-#include "rpc_creds.h"
+#include "rpc_misc.h"
+
+#include "rpc_dce.h"
 
 #include "mapping.h"
 
 #include "passdb.h"
 
-#include "ntdomain.h"
-
-#include "rpc_misc.h"
-
 #include "rpc_secdes.h"
 
-#include "nt_printing.h"
+#include "authdata.h"
 
 #include "msdfs.h"
 
@@ -922,6 +922,29 @@ extern int errno;
 #include "ntlmssp.h"
 
 #include "auth.h"
+
+#include "ntdomain.h"
+
+#include "rpc_svcctl.h"
+#include "rpc_ntsvcs.h"
+#include "rpc_lsa.h"
+#include "rpc_netlogon.h"
+#include "reg_objects.h"
+#include "rpc_reg.h"
+#include "rpc_samr.h"
+#include "rpc_srvsvc.h"
+#include "rpc_wkssvc.h"
+#include "rpc_spoolss.h"
+#include "rpc_eventlog.h"
+#include "rpc_dfs.h"
+#include "rpc_ds.h"
+#include "rpc_echo.h"
+#include "rpc_shutdown.h"
+#include "rpc_unixinfo.h"
+#include "rpc_perfcount.h"
+#include "rpc_perfcount_defs.h"
+
+#include "nt_printing.h"
 
 #include "idmap.h"
 
@@ -944,6 +967,8 @@ extern int errno;
 #include "nsswitch/winbind_client.h"
 
 #include "spnego.h"
+
+#include "rpc_client.h"
 
 /*
  * Type for wide character dirent structure.
@@ -994,6 +1019,8 @@ struct smb_ldap_privates;
 /* forward declarations from smbldap.c */
 
 #include "smbldap.h"
+
+#include "smb_ldap.h"
 
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H
@@ -1414,7 +1441,7 @@ void krb5_free_unparsed_name(krb5_context ctx, char *val);
 void setup_kaddr( krb5_address *pkaddr, struct sockaddr *paddr);
 int create_kerberos_key_from_string(krb5_context context, krb5_principal host_princ, krb5_data *password, krb5_keyblock *key, krb5_enctype enctype);
 int create_kerberos_key_from_string_direct(krb5_context context, krb5_principal host_princ, krb5_data *password, krb5_keyblock *key, krb5_enctype enctype);
-void get_auth_data_from_tkt(DATA_BLOB *auth_data, krb5_ticket *tkt);
+BOOL get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, krb5_ticket *tkt);
 krb5_const_principal get_principal_from_tkt(krb5_ticket *tkt);
 krb5_error_code krb5_locate_kdc(krb5_context ctx, const krb5_data *realm, struct sockaddr **addr_pp, int *naddrs, int get_masters);
 krb5_error_code get_kerberos_allowed_etypes(krb5_context context, krb5_enctype **enctypes);

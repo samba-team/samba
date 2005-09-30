@@ -41,23 +41,22 @@ void set_saved_error_triple(int eclass, int ecode, NTSTATUS status)
 	override_ERR_ntstatus = status;
 }
 
+void set_saved_ntstatus(NTSTATUS status)
+{
+	uint8 tmp_eclass;	/* Hmmm. override_ERR_class is not uint8... */
+	override_ERR_ntstatus = status;
+	ntstatus_to_dos(status, &tmp_eclass, &override_ERR_code);
+	override_ERR_class = tmp_eclass;
+	
+}
+
 /****************************************************************************
  Return the current settings of the error triple. Return True if any are set.
 ****************************************************************************/
 
-BOOL get_saved_error_triple(int *peclass, int *pecode, NTSTATUS *pstatus)
+NTSTATUS get_saved_ntstatus(void)
 {
-	if (peclass) {
-		*peclass = override_ERR_class;
-	}
-	if (pecode) {
-		*pecode = override_ERR_code;
-	}
-	if (pstatus) {
-		*pstatus = override_ERR_ntstatus;
-	}
-
-	return (override_ERR_class || !NT_STATUS_IS_OK(override_ERR_ntstatus));
+	return override_ERR_ntstatus;
 }
 
 /****************************************************************************

@@ -27,6 +27,65 @@
 #include "smbldap.h"
 
 /**********************************************************************
+ Add the account-policies below the sambaDomain object to LDAP, 
+*********************************************************************/
+static NTSTATUS add_new_domain_account_policies(struct smbldap_state *ldap_state,
+					 	const char *domain_name)
+{
+	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
+	int i, rc;
+	uint32 policy_default;
+	const char *policy_attr = NULL;
+	pstring dn;
+	LDAPMod **mods = NULL;
+
+	DEBUG(3,("Adding new account policies for domain\n"));
+	
+	pstr_sprintf(dn, "%s=%s,%s", 
+		get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN),
+		domain_name, lp_ldap_suffix());
+
+	for (i=1; decode_account_policy_name(i) != NULL; i++) {
+
+		pstring val;
+
+		policy_attr = get_account_policy_attr(i);
+		if (!policy_attr) {
+			DEBUG(0,("add_new_domain_account_policies: ops. no policy!\n"));
+			continue;
+		}
+
+		if (!account_policy_get_default(i, &policy_default)) {
+			DEBUG(0,("add_new_domain_account_policies: failed to get default account policy\n"));
+			return ntstatus;
+		}
+
+		DEBUG(10,("add_new_domain_account_policies: adding \"%s\" with value: %d\n", policy_attr, policy_default));
+
+		pstr_sprintf(val, "%d", policy_default); 
+
+		smbldap_set_mod( &mods, LDAP_MOD_REPLACE, policy_attr, val);
+
+		rc = smbldap_modify(ldap_state, dn, mods);
+
+		if (rc!=LDAP_SUCCESS) {
+			char *ld_error = NULL;
+			ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_ERROR_STRING, &ld_error);
+			DEBUG(1,("failed to add account policies to dn= %s with: %s\n\t%s\n",
+				dn, ldap_err2string(rc),
+				ld_error ? ld_error : "unknown"));
+			SAFE_FREE(ld_error);
+			ldap_mods_free(mods, True);
+			return ntstatus;
+		}
+	}
+
+	ldap_mods_free(mods, True);
+
+	return NT_STATUS_OK;
+}
+
+/**********************************************************************
  Add the sambaDomain to LDAP, so we don't have to search for this stuff
  again.  This is a once-add operation for now.
 
@@ -200,6 +259,13 @@ NTSTATUS smbldap_search_domain_info(struct smbldap_state *ldap_state,
 			goto failed;
 		}
 			
+		status = add_new_domain_account_policies(ldap_state, domain_name);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Adding domain account policies for %s failed with %s\n", 
+				domain_name, nt_errstr(status)));
+			goto failed;
+		}
+
 		return smbldap_search_domain_info(ldap_state, result, domain_name, False);
 		
 	} 

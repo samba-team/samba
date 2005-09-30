@@ -219,36 +219,39 @@ NTSTATUS connect_to_ipc_anonymous(struct cli_state **c,
  *
  * @return Normal NTSTATUS return.
  **/
-NTSTATUS connect_dst_pipe(struct cli_state **cli_dst, int pipe_num, BOOL *got_pipe)
+NTSTATUS connect_dst_pipe(struct cli_state **cli_dst, struct rpc_pipe_client **pp_pipe_hnd, int pipe_num)
 {
 	NTSTATUS nt_status;
 	char *server_name = SMB_STRDUP("127.0.0.1");
 	struct cli_state *cli_tmp = NULL;
+	struct rpc_pipe_client *pipe_hnd = NULL;
 
 	if (opt_destination)
 		server_name = SMB_STRDUP(opt_destination);
 
 	/* make a connection to a named pipe */
 	nt_status = connect_to_ipc(&cli_tmp, NULL, server_name);
-	if (!NT_STATUS_IS_OK(nt_status)) 
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
+	}
 
-	if (!cli_nt_session_open(cli_tmp, pipe_num)) {
+	pipe_hnd = cli_rpc_pipe_open_noauth(cli_tmp, pipe_num, &nt_status);
+	if (!pipe_hnd) {
 		DEBUG(0, ("couldn't not initialize pipe\n"));
 		cli_shutdown(cli_tmp);
-		return NT_STATUS_UNSUCCESSFUL;
+		return nt_status;
 	}
 
 	*cli_dst = cli_tmp;
-	*got_pipe = True;
+	*pp_pipe_hnd = pipe_hnd;
 
 	return nt_status;
 }
 
-
 /****************************************************************************
- Use the local machine's password for this session
+ Use the local machine's password for this session.
 ****************************************************************************/
+
 int net_use_machine_password(void) 
 {
 	char *user_name = NULL;

@@ -2,10 +2,10 @@
    Unix SMB/CIFS implementation.
    NT Domain Authentication SMB / MSRPC client
    Copyright (C) Andrew Tridgell 1994-2000
-   Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    Copyright (C) Tim Potter 2001
-   Copytight (C) Rafal Szczesniak 2002
-   
+   Copyright (C) Rafal Szczesniak 2002
+   Copyright (C) Jeremy Allison 2005.
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -33,61 +33,36 @@
  * @return NTSTATUS of rpc call
  */
  
-NTSTATUS cli_wks_query_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+NTSTATUS rpccli_wks_query_info(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			    WKS_INFO_100 *wks100)
 {
-	prs_struct buf;
+	prs_struct qbuf;
 	prs_struct rbuf;
-	WKS_Q_QUERY_INFO q_o;
-	WKS_R_QUERY_INFO r_o;
+	WKS_Q_QUERY_INFO q;
+	WKS_R_QUERY_INFO r;
 
 	if (cli == NULL || wks100 == NULL)
 		return NT_STATUS_UNSUCCESSFUL;
 
-	/* init rpc parse structures */
-	prs_init(&buf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
 	DEBUG(4, ("WksQueryInfo\n"));
 	
 	/* init query structure with rpc call arguments */
-	init_wks_q_query_info(&q_o, cli->desthost, 100);
-	
-	/* marshall data */
-	if (!wks_io_q_query_info("", &q_o, &buf, 0)) {
-		prs_mem_free(&buf);
-		prs_mem_free(&rbuf);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-	/* actual rpc call over \PIPE\wkssvc */
-	if (!rpc_api_pipe_req(cli, PI_WKSSVC, WKS_QUERY_INFO, &buf, &rbuf)) {
-		prs_mem_free(&buf);
-		prs_mem_free(&rbuf);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-	prs_mem_free(&buf);
+	init_wks_q_query_info(&q, cli->cli->desthost, 100);
+	r.wks100 = wks100;
 
-	r_o.wks100 = wks100;
-
-	/* get call results from response buffer */
-	if (!wks_io_r_query_info("", &r_o, &rbuf, 0)) {
-		prs_mem_free(&rbuf);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
+	CLI_DO_RPC(cli, mem_ctx, PI_WKSSVC, WKS_QUERY_INFO,
+		q, r,
+		qbuf, rbuf,
+		wks_io_q_query_info,
+		wks_io_r_query_info,
+		NT_STATUS_UNSUCCESSFUL);
+		
 	/* check returnet status code */
-	if (NT_STATUS_IS_ERR(r_o.status)) {
+	if (NT_STATUS_IS_ERR(r.status)) {
 		/* report the error */
-		DEBUG(0,("WKS_R_QUERY_INFO: %s\n", nt_errstr(r_o.status)));
-		prs_mem_free(&rbuf);
-		return r_o.status;
+		DEBUG(0,("WKS_R_QUERY_INFO: %s\n", nt_errstr(r.status)));
+		return r.status;
 	}
-	
-	/* do clean up */
-	prs_mem_free(&rbuf);
 	
 	return NT_STATUS_OK;
 }
-

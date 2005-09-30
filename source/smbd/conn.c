@@ -287,7 +287,7 @@ the message contains just a share name and all instances of that
 share are unmounted
 the special sharename '*' forces unmount of all shares
 ****************************************************************************/
-void msg_force_tdis(int msg_type, pid_t pid, void *buf, size_t len)
+void msg_force_tdis(int msg_type, struct process_id pid, void *buf, size_t len)
 {
 	connection_struct *conn, *next;
 	fstring sharename;

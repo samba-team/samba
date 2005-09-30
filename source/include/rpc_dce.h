@@ -23,9 +23,6 @@
 #ifndef _DCE_RPC_H /* _DCE_RPC_H */
 #define _DCE_RPC_H 
 
-#include "rpc_misc.h"  /* this only pulls in STRHDR */
-
-
 /* DCE/RPC packet types */
 
 enum RPC_PKT_TYPE {
@@ -37,7 +34,7 @@ enum RPC_PKT_TYPE {
 	RPC_BINDNACK = 0x0D,
 	RPC_ALTCONT  = 0x0E,
 	RPC_ALTCONTRESP = 0x0F,
-	RPC_BINDRESP = 0x10 /* not the real name!  this is undocumented! */
+	RPC_AUTH3 = 0x10 /* not the real name!  this is undocumented! */
 };
 
 /* DCE/RPC flags */
@@ -45,29 +42,41 @@ enum RPC_PKT_TYPE {
 #define RPC_FLG_LAST  0x02
 #define RPC_FLG_NOCALL 0x20
 
+
 #define SMBD_NTLMSSP_NEG_FLAGS 0x000082b1 /* ALWAYS_SIGN|NEG_NTLM|NEG_LM|NEG_SEAL|NEG_SIGN|NEG_UNICODE */
 
 /* NTLMSSP signature version */
 #define NTLMSSP_SIGN_VERSION 0x01
 
-/* NTLMSSP auth type */
-#define NTLMSSP_AUTH_TYPE 0xa
+/* DCE RPC auth types - extended by Microsoft. */
+#define RPC_ANONYMOUS_AUTH_TYPE    0
+#define RPC_AUTH_TYPE_KRB5_1	   1
+#define RPC_SPNEGO_AUTH_TYPE       9 
+#define RPC_NTLMSSP_AUTH_TYPE     10
+#define RPC_KRB5_AUTH_TYPE        16 /* Not yet implemented. */ 
+#define RPC_SCHANNEL_AUTH_TYPE    68 /* 0x44 */
 
 /* DCE-RPC standard identifiers to indicate 
    signing or sealing of an RPC pipe */
+#define RPC_AUTH_LEVEL_NONE      1
+#define RPC_AUTH_LEVEL_CONNECT   2
+#define RPC_AUTH_LEVEL_CALL      3
+#define RPC_AUTH_LEVEL_PACKET    4
+#define RPC_AUTH_LEVEL_INTEGRITY 5
+#define RPC_AUTH_LEVEL_PRIVACY   6
+
+#if 0
 #define RPC_PIPE_AUTH_SIGN_LEVEL 0x5
 #define RPC_PIPE_AUTH_SEAL_LEVEL 0x6
+#endif
 
 /* Netlogon schannel auth type and level */
-#define NETSEC_AUTH_TYPE 0x44
-#define NETSEC_SIGN_SIGNATURE { 0x77, 0x00, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00 }
-#define NETSEC_SEAL_SIGNATURE { 0x77, 0x00, 0x7a, 0x00, 0xff, 0xff, 0x00, 0x00 }
+#define SCHANNEL_SIGN_SIGNATURE { 0x77, 0x00, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00 }
+#define SCHANNEL_SEAL_SIGNATURE { 0x77, 0x00, 0x7a, 0x00, 0xff, 0xff, 0x00, 0x00 }
 
-#define RPC_AUTH_NETSEC_SIGN_OR_SEAL_CHK_LEN 	0x20
-#define RPC_AUTH_NETSEC_SIGN_ONLY_CHK_LEN 	0x18
+#define RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN 	0x20
+#define RPC_AUTH_SCHANNEL_SIGN_ONLY_CHK_LEN 	0x18
 
-/* SPNEGO auth type. */
-#define SPNEGO_AUTH_TYPE 0x9
 
 /* The 7 here seems to be required to get Win2k not to downgrade us
    to NT4.  Actually, anything other than 1ff would seem to do... */
@@ -76,20 +85,17 @@ enum RPC_PKT_TYPE {
 #define NETLOGON_NEG_SCHANNEL    		0x40000000
 #define NETLOGON_NEG_DOMAIN_TRUST_ACCOUNT	0x2010b000
 
-enum netsec_direction {
+enum schannel_direction {
 	SENDER_IS_INITIATOR,
 	SENDER_IS_ACCEPTOR
 };
 
-/* Internal Flags to indicate what type of authentication on the pipe */
-#define AUTH_PIPE_SIGN    0x0001
-#define AUTH_PIPE_SEAL    0x0002
-#define AUTH_PIPE_NTLMSSP 0x0004
-#define AUTH_PIPE_NETSEC  0x0008
+/* Maximum size of the signing data in a fragment. */
+#define RPC_MAX_SIGN_SIZE 0x20 /* 32 */
 
 /* Maximum PDU fragment size. */
 /* #define MAX_PDU_FRAG_LEN 0x1630		this is what wnt sets */
-#define MAX_PDU_FRAG_LEN 0x10b8			/* this is what w2k sets */
+#define RPC_MAX_PDU_FRAG_LEN 0x10b8			/* this is what w2k sets */
 
 /* RPC_IFACE */
 typedef struct rpc_iface_info {
@@ -163,7 +169,7 @@ typedef struct rpc_addr_info {
 	fstring str; /* the string above in single byte, null terminated form */
 } RPC_ADDR_STR;
 
-/* RPC_HDR_BBA */
+/* RPC_HDR_BBA - bind acknowledge, and alter context response. */
 typedef struct rpc_hdr_bba_info {
 	uint16 max_tsize;       /* maximum transmission fragment size (0x1630) */
 	uint16 max_rsize;       /* max receive fragment size (0x1630) */
@@ -183,39 +189,24 @@ typedef struct rpc_hdr_auth_info {
 
 #define RPC_HDR_AUTH_LEN 8
 
-/* RPC_HDR_AUTHA */
-typedef struct rpc_hdr_autha_info {
-	uint16 max_tsize;       /* maximum transmission fragment size (0x1630) */
-	uint16 max_rsize;       /* max receive fragment size (0x1630) */
-	RPC_HDR_AUTH auth;
-} RPC_HDR_AUTHA;
-
-#define RPC_HDR_AUTHA_LEN (RPC_HDR_AUTH_LEN+4)
-
 /* this is TEMPORARILY coded up as a specific structure */
 /* this structure comes after the bind request */
-/* RPC_AUTH_NETSEC_NEG */
-typedef struct rpc_auth_netsec_neg_info {
+/* RPC_AUTH_SCHANNEL_NEG */
+typedef struct rpc_auth_schannel_neg_info {
 	uint32 type1; 	/* Always zero ? */
 	uint32 type2;	/* Types 0x3 and 0x13 seen. Check AcquireSecurityContext() docs.... */
 	fstring domain; /* calling workstations's domain */
 	fstring myname; /* calling workstation's name */
-} RPC_AUTH_NETSEC_NEG;
+} RPC_AUTH_SCHANNEL_NEG;
 
 /* attached to the end of encrypted rpc requests and responses */
-/* RPC_AUTH_NETSEC_CHK */
-typedef struct rpc_auth_netsec_chk_info {
+/* RPC_AUTH_SCHANNEL_CHK */
+typedef struct rpc_auth_schannel_chk_info {
 	uint8 sig  [8]; /* 77 00 7a 00 ff ff 00 00 */
 	uint8 packet_digest[8]; /* checksum over the packet, MD5'ed with session key */
 	uint8 seq_num[8]; /* verifier, seq num */
 	uint8 confounder[8]; /* random 8-byte nonce */
-} RPC_AUTH_NETSEC_CHK;
-
-struct netsec_auth_struct {
-	uchar sess_key[16];
-	uint32 seq_num;
-	int auth_flags;
-};
+} RPC_AUTH_SCHANNEL_CHK;
 
 typedef struct rpc_context {
 	uint16 context_id;		/* presentation context identifier. */
@@ -267,61 +258,5 @@ typedef struct rpc_auth_verif_info {
 	fstring signature; /* "NTLMSSP".. Ok, not quite anymore */
 	uint32  msg_type; /* NTLMSSP_MESSAGE_TYPE (1,2,3) and 5 for schannel */
 } RPC_AUTH_VERIFIER;
-
-/* this is TEMPORARILY coded up as a specific structure */
-/* this structure comes after the bind request */
-/* RPC_AUTH_NTLMSSP_NEG */
-
-typedef struct rpc_auth_ntlmssp_neg_info {
-	uint32  neg_flgs; /* 0x0000 b2b3 */
-
-	STRHDR hdr_myname; /* offset is against START of this structure */
-	STRHDR hdr_domain; /* offset is against START of this structure */
-
-	fstring myname; /* calling workstation's name */
-	fstring domain; /* calling workstations's domain */
-} RPC_AUTH_NTLMSSP_NEG;
-
-/* this is TEMPORARILY coded up as a specific structure */
-/* this structure comes after the bind acknowledgement */
-/* RPC_AUTH_NTLMSSP_CHAL */
-typedef struct rpc_auth_ntlmssp_chal_info {
-	uint32 unknown_1; /* 0x0000 0000 */
-	uint32 unknown_2; /* 0x0000 0028 */
-	uint32 neg_flags; /* 0x0000 82b1 */
-
-	uint8 challenge[8]; /* ntlm challenge */
-	uint8 reserved [8]; /* zeros */
-} RPC_AUTH_NTLMSSP_CHAL;
-
-
-/* RPC_AUTH_NTLMSSP_RESP */
-typedef struct rpc_auth_ntlmssp_resp_info {
-	STRHDR hdr_lm_resp; /* 24 byte response */
-	STRHDR hdr_nt_resp; /* 24 byte response */
-	STRHDR hdr_domain;
-	STRHDR hdr_usr;
-	STRHDR hdr_wks;
-	STRHDR hdr_sess_key; /* NULL unless negotiated */
-	uint32 neg_flags; /* 0x0000 82b1 */
-
-	fstring sess_key;
-	fstring wks;
-	fstring user;
-	fstring domain;
-	fstring nt_resp;
-	fstring lm_resp;
-} RPC_AUTH_NTLMSSP_RESP;
-
-/* attached to the end of encrypted rpc requests and responses */
-/* RPC_AUTH_NTLMSSP_CHK */
-typedef struct rpc_auth_ntlmssp_chk_info {
-	uint32 ver; /* 0x0000 0001 */
-	uint32 reserved;
-	uint32 crc32; /* checksum using 0xEDB8 8320 as a polynomial */
-	uint32 seq_num;
-} RPC_AUTH_NTLMSSP_CHK;
-
-#define RPC_AUTH_NTLMSSP_CHK_LEN 16
 
 #endif /* _DCE_RPC_H */

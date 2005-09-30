@@ -19,6 +19,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+THIS IS NO LONGER USED - NEEDS REMOVAL.
+
 #include "includes.h"
 
 #define DEBUG_TESTING

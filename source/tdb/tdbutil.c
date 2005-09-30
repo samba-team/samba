@@ -566,7 +566,12 @@ int tdb_unpack(char *buf, int bufsize, const char *fmt, ...)
 			p = va_arg(ap, void **);
 			if (bufsize < len)
 				goto no_space;
-			*p = (void *)IVAL(buf, 0);
+			/* 
+			 * This isn't a real pointer - only a token (1 or 0)
+			 * to mark the fact a pointer is present.
+			 */
+
+			*p = (void *)(IVAL(buf, 0) ? (void *)1 : NULL);
 			break;
 		case 'P':
 			s = va_arg(ap,char *);

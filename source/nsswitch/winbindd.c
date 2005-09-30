@@ -204,7 +204,7 @@ static void sigchld_handler(int signum)
 }
 
 /* React on 'smbcontrol winbindd reload-config' in the same way as on SIGHUP*/
-static void msg_reload_services(int msg_type, pid_t src, void *buf, size_t len)
+static void msg_reload_services(int msg_type, struct process_id src, void *buf, size_t len)
 {
         /* Flush various caches */
 	flush_caches();
@@ -212,7 +212,7 @@ static void msg_reload_services(int msg_type, pid_t src, void *buf, size_t len)
 }
 
 /* React on 'smbcontrol winbindd shutdown' in the same way as on SIGTERM*/
-static void msg_shutdown(int msg_type, pid_t src, void *buf, size_t len)
+static void msg_shutdown(int msg_type, struct process_id src, void *buf, size_t len)
 {
 	terminate();
 }
@@ -455,6 +455,7 @@ void setup_async_write(struct fd_event *event, void *data, size_t length,
 
 static void request_len_recv(void *private_data, BOOL success);
 static void request_recv(void *private_data, BOOL success);
+static void request_main_recv(void *private_data, BOOL success);
 static void request_finished(struct winbindd_cli_state *state);
 void request_finished_cont(void *private_data, BOOL success);
 static void response_main_sent(void *private_data, BOOL success);
@@ -475,6 +476,7 @@ static void response_extra_sent(void *private_data, BOOL success)
 		return;
 	}
 
+	SAFE_FREE(state->request.extra_data);
 	SAFE_FREE(state->response.extra_data);
 
 	setup_async_read(&state->fd_event, &state->request, sizeof(uint32),
@@ -538,19 +540,6 @@ void request_finished_cont(void *private_data, BOOL success)
 		request_error(state);
 }
 
-static void request_recv(void *private_data, BOOL success)
-{
-	struct winbindd_cli_state *state =
-		talloc_get_type_abort(private_data, struct winbindd_cli_state);
-
-	if (!success) {
-		state->finished = True;
-		return;
-	}
-
-	process_request(state);
-}
-
 static void request_len_recv(void *private_data, BOOL success)
 {
 	struct winbindd_cli_state *state =
@@ -570,7 +559,61 @@ static void request_len_recv(void *private_data, BOOL success)
 
 	setup_async_read(&state->fd_event, (uint32 *)(&state->request)+1,
 			 sizeof(state->request) - sizeof(uint32),
-			 request_recv, state);
+			 request_main_recv, state);
+}
+
+static void request_main_recv(void *private_data, BOOL success)
+{
+	struct winbindd_cli_state *state =
+		talloc_get_type_abort(private_data, struct winbindd_cli_state);
+
+	if (!success) {
+		state->finished = True;
+		return;
+	}
+
+	if (state->request.extra_len == 0) {
+		state->request.extra_data = NULL;
+		request_recv(state, True);
+		return;
+	}
+
+	if ((!state->privileged) &&
+	    (state->request.extra_len > WINBINDD_MAX_EXTRA_DATA)) {
+		DEBUG(3, ("Got request with %d bytes extra data on "
+			  "unprivileged socket\n", (int)state->request.extra_len));
+		state->request.extra_data = NULL;
+		state->finished = True;
+		return;
+	}
+
+	state->request.extra_data =
+		SMB_MALLOC_ARRAY(char, state->request.extra_len + 1);
+
+	if (state->request.extra_data == NULL) {
+		DEBUG(0, ("malloc failed\n"));
+		state->finished = True;
+		return;
+	}
+
+	/* Ensure null termination */
+	state->request.extra_data[state->request.extra_len] = '\0';
+
+	setup_async_read(&state->fd_event, state->request.extra_data,
+			 state->request.extra_len, request_recv, state);
+}
+
+static void request_recv(void *private_data, BOOL success)
+{
+	struct winbindd_cli_state *state =
+		talloc_get_type_abort(private_data, struct winbindd_cli_state);
+
+	if (!success) {
+		state->finished = True;
+		return;
+	}
+
+	process_request(state);
 }
 
 /* Process a new connection by adding it to the client connection list */
@@ -842,7 +885,7 @@ static void process_loop(void)
 
 		DEBUG(3, ("got SIGHUP\n"));
 
-		msg_reload_services(MSG_SMB_CONF_UPDATED, (pid_t) 0, NULL, 0);
+		msg_reload_services(MSG_SMB_CONF_UPDATED, pid_to_procid(0), NULL, 0);
 		do_sighup = False;
 	}
 

@@ -97,19 +97,27 @@ BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAM
 		}
 	}
 
-	if (!winbind_lookup_sid(sid, dom_name, name, name_type)) {
-		fstring sid_str;
-		DOM_SID tmp_sid;
-		uint32 rid;
-
-		DEBUG(10,("lookup_sid: winbind lookup for SID %s failed - trying local.\n", sid_to_string(sid_str, sid) ));
-
-		sid_copy(&tmp_sid, sid);
-		sid_split_rid(&tmp_sid, &rid);
-		return map_domain_sid_to_name(&tmp_sid, dom_name) &&
-			lookup_known_rid(&tmp_sid, rid, name, name_type);
+	if (winbind_lookup_sid(sid, dom_name, name, name_type)) {
+		return True;
 	}
-	return True;
+
+	DEBUG(10,("lookup_sid: winbind lookup for SID %s failed - trying "
+		  "special SIDs.\n", sid_string_static(sid)));
+
+	{
+		const char *dom, *obj_name;
+		
+		if (lookup_special_sid(sid, &dom, &obj_name, name_type)) {
+			DEBUG(10, ("found %s\\%s\n", dom, obj_name));
+			fstrcpy(dom_name, dom);
+			fstrcpy(name, obj_name);
+			return True;
+		}
+	}
+
+	DEBUG(10, ("lookup_sid failed\n"));
+
+	return False;
 }
 
 /*****************************************************************

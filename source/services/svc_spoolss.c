@@ -25,7 +25,7 @@
 /*********************************************************************
 *********************************************************************/
 
-static WERROR spoolss_stop( SERVICE_STATUS *service_status )
+static WERROR spoolss_stop( const char *service, SERVICE_STATUS *service_status )
 {
 	ZERO_STRUCTP( service_status );
 	
@@ -43,7 +43,7 @@ static WERROR spoolss_stop( SERVICE_STATUS *service_status )
 /*********************************************************************
 *********************************************************************/
 
-static WERROR spoolss_start( void )
+static WERROR spoolss_start( const char *service )
 {
 	/* see if the smb.conf will support this anyways */
 	
@@ -58,8 +58,10 @@ static WERROR spoolss_start( void )
 /*********************************************************************
 *********************************************************************/
 
-static WERROR spoolss_status( SERVICE_STATUS *service_status )
+static WERROR spoolss_status( const char *service, SERVICE_STATUS *service_status )
 {
+	ZERO_STRUCTP( service_status );
+
 	service_status->type              = 0x110;
 	service_status->state             = lp_get_spoolss_state();
 	service_status->controls_accepted = SVCCTL_ACCEPT_STOP;

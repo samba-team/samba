@@ -30,15 +30,12 @@ typedef struct _known_sid_users {
 	const char *known_user_name;
 } known_sid_users;
 
-static struct sid_name_map_info
+struct sid_name_map_info
 {
 	const DOM_SID *sid;
 	const char *name;
 	const known_sid_users *known_users;
-} sid_name_map[MAX_SID_NAMES];
-
-static BOOL sid_name_map_initialized = False;
-/* static known_sid_users no_users[] = {{0, 0, NULL}}; */
+};
 
 static const known_sid_users everyone_users[] = {
 	{ 0, SID_NAME_WKN_GRP, "Everyone" },
@@ -83,64 +80,12 @@ static const known_sid_users builtin_groups[] = {
 	{ BUILTIN_ALIAS_RID_PRE_2K_ACCESS, SID_NAME_ALIAS, "Pre-Windows 2000 Compatible Access" },
 	{  0, (enum SID_NAME_USE)0, NULL}};
 
-/**************************************************************************
- Quick init function.
-*************************************************************************/
-
-static void init_sid_name_map (void)
-{
-	int i = 0;
-	
-	if (sid_name_map_initialized) return;
-
-	if ((lp_security() == SEC_USER) && lp_domain_logons()) {
-		sid_name_map[i].sid = get_global_sam_sid();
-		/* This is not lp_workgroup() for good reason:
-		   it must stay around longer than the lp_*() 
-		   strings do */
-		sid_name_map[i].name = SMB_STRDUP(lp_workgroup());
-		sid_name_map[i].known_users = NULL;
-		i++;
-		sid_name_map[i].sid = get_global_sam_sid();
-		sid_name_map[i].name = SMB_STRDUP(global_myname());
-		sid_name_map[i].known_users = NULL;
-		i++;
-	} else {
-		sid_name_map[i].sid = get_global_sam_sid();
-		sid_name_map[i].name = SMB_STRDUP(global_myname());
-		sid_name_map[i].known_users = NULL;
-		i++;
-	}
-
-	sid_name_map[i].sid = &global_sid_Builtin;
-	sid_name_map[i].name = "BUILTIN";
-	sid_name_map[i].known_users = &builtin_groups[0];
-	i++;
-	
-	sid_name_map[i].sid = &global_sid_World_Domain;
-	sid_name_map[i].name = "";
-	sid_name_map[i].known_users = &everyone_users[0];
-	i++;
-
-	sid_name_map[i].sid = &global_sid_Creator_Owner_Domain;
-	sid_name_map[i].name = "";
-	sid_name_map[i].known_users = &creator_owner_users[0];
-	i++;
-		
-	sid_name_map[i].sid = &global_sid_NT_Authority;
-	sid_name_map[i].name = "NT Authority";
-	sid_name_map[i].known_users = &nt_authority_users[0];
-	i++;
-		
-	/* End of array. */
-	sid_name_map[i].sid = NULL;
-	sid_name_map[i].name = NULL;
-	sid_name_map[i].known_users = NULL;
-	
-	sid_name_map_initialized = True;
-		
-	return;
-}
+static struct sid_name_map_info special_domains[] = {
+	{ &global_sid_Builtin, "BUILTIN", builtin_groups },
+	{ &global_sid_World_Domain, "", everyone_users },
+	{ &global_sid_Creator_Owner_Domain, "", creator_owner_users },
+	{ &global_sid_NT_Authority, "NT Authority", nt_authority_users },
+	{ NULL, NULL, NULL }};
 
 /**************************************************************************
  Turns a domain SID into a name, returned in the nt_domain argument.
@@ -153,101 +98,74 @@ BOOL map_domain_sid_to_name(DOM_SID *sid, fstring nt_domain)
 	
 	sid_to_string(sid_str, sid);
 
-	if (!sid_name_map_initialized) 
-		init_sid_name_map();
-
 	DEBUG(5,("map_domain_sid_to_name: %s\n", sid_str));
 
-	if (nt_domain == NULL)
-		return False;
+	if (sid_check_is_domain(sid)) {
+		fstrcpy(nt_domain, get_global_sam_name());
+		return True;
+	}
 
-	while (sid_name_map[i].sid != NULL) {
-		sid_to_string(sid_str, sid_name_map[i].sid);
-		DEBUG(5,("map_domain_sid_to_name: compare: %s\n", sid_str));
-		if (sid_equal(sid_name_map[i].sid, sid)) {		
-			fstrcpy(nt_domain, sid_name_map[i].name);
-			DEBUG(5,("map_domain_sid_to_name: found '%s'\n", nt_domain));
+	while (special_domains[i].sid != NULL) {
+		DEBUG(5,("map_domain_sid_to_name: compare: %s\n",
+			 sid_string_static(special_domains[i].sid)));
+		if (sid_equal(special_domains[i].sid, sid)) {		
+			fstrcpy(nt_domain, special_domains[i].name);
+			DEBUG(5,("map_domain_sid_to_name: found '%s'\n",
+				 nt_domain));
 			return True;
 		}
 		i++;
 	}
 
-	DEBUG(5,("map_domain_sid_to_name: mapping for %s not found\n", sid_str));
+	DEBUG(5,("map_domain_sid_to_name: mapping for %s not found\n",
+		 sid_string_static(sid)));
 
-    return False;
+	return False;
 }
 
 /**************************************************************************
  Looks up a known username from one of the known domains.
 ***************************************************************************/
 
-BOOL lookup_known_rid(DOM_SID *sid, uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
+BOOL lookup_special_sid(const DOM_SID *sid, const char **domain,
+			const char **name, enum SID_NAME_USE *type)
 {
-	int i = 0;
-	struct sid_name_map_info *psnm;
+	int i;
+	DOM_SID dom_sid;
+	uint32 rid;
+	const known_sid_users *users = NULL;
 
-	if (!sid_name_map_initialized) 
-		init_sid_name_map();
+	sid_copy(&dom_sid, sid);
+	if (!sid_split_rid(&dom_sid, &rid)) {
+		DEBUG(2, ("Could not split rid from SID\n"));
+		return False;
+	}
 
-	for(i = 0; sid_name_map[i].sid != NULL; i++) {
-		psnm = &sid_name_map[i];
-		if(sid_equal(psnm->sid, sid)) {
-			int j;
-			for(j = 0; psnm->known_users && psnm->known_users[j].known_user_name != NULL; j++) {
-				if(rid == psnm->known_users[j].rid) {
-					DEBUG(5,("lookup_builtin_rid: rid = %u, domain = '%s', user = '%s'\n",
-						(unsigned int)rid, psnm->name, psnm->known_users[j].known_user_name ));
-					fstrcpy( name, psnm->known_users[j].known_user_name);
-					*psid_name_use = psnm->known_users[j].sid_name_use;
-					return True;
-				}
-			}
+	for (i=0; special_domains[i].sid != NULL; i++) {
+		if (sid_equal(&dom_sid, special_domains[i].sid)) {
+			*domain = special_domains[i].name;
+			users = special_domains[i].known_users;
+			break;
 		}
 	}
 
-	return False;
-}
-
-/**************************************************************************
- Turns a domain name into a SID.
- *** side-effect: if the domain name is NULL, it is set to our domain ***
-***************************************************************************/
-
-BOOL map_domain_name_to_sid(DOM_SID *sid, char *nt_domain)
-{
-	int i = 0;
-
-	if (nt_domain == NULL) {
-		DEBUG(5,("map_domain_name_to_sid: mapping NULL domain to our SID.\n"));
-		sid_copy(sid, get_global_sam_sid());
-		return True;
+	if (users == NULL) {
+		DEBUG(10, ("SID %s is no special sid\n",
+			   sid_string_static(sid)));
+		return False;
 	}
 
-	if (nt_domain[0] == 0) {
-		fstrcpy(nt_domain, global_myname());
-		DEBUG(5,("map_domain_name_to_sid: overriding blank name to %s\n", nt_domain));
-		sid_copy(sid, get_global_sam_sid());
-		return True;
-	}
-
-	DEBUG(5,("map_domain_name_to_sid: %s\n", nt_domain));
-
-	if (!sid_name_map_initialized) 
-		init_sid_name_map();
-
-	while (sid_name_map[i].name != NULL) {
-		DEBUG(5,("map_domain_name_to_sid: compare: %s\n", sid_name_map[i].name));
-		if (strequal(sid_name_map[i].name, nt_domain)) {
-			fstring sid_str;
-			sid_copy(sid, sid_name_map[i].sid);
-			sid_to_string(sid_str, sid_name_map[i].sid);
-			DEBUG(5,("map_domain_name_to_sid: found %s\n", sid_str));
+	for (i=0; users[i].known_user_name != NULL; i++) {
+		if (rid == users[i].rid) {
+			*name = users[i].known_user_name;
+			*type = users[i].sid_name_use;
 			return True;
 		}
-		i++;
 	}
 
-	DEBUG(0,("map_domain_name_to_sid: mapping to %s not found.\n", nt_domain));
+	DEBUG(10, ("RID of special SID %s not found\n",
+		   sid_string_static(sid)));
+
 	return False;
 }
 
@@ -283,20 +201,17 @@ BOOL map_name_to_wellknown_sid(DOM_SID *sid, enum SID_NAME_USE *use, const char 
 {
 	int i, j;
 
-	if (!sid_name_map_initialized)
-		init_sid_name_map();
-
 	DEBUG(10,("map_name_to_wellknown_sid: looking up %s\n", name));
 
-	for (i=0; sid_name_map[i].sid != NULL; i++) {
-		const known_sid_users *users = sid_name_map[i].known_users;
+	for (i=0; special_domains[i].sid != NULL; i++) {
+		const known_sid_users *users = special_domains[i].known_users;
 
 		if (users == NULL)
 			continue;
 
 		for (j=0; users[j].known_user_name != NULL; j++) {
 			if ( strequal(users[j].known_user_name, name) ) {
-				sid_copy(sid, sid_name_map[i].sid);
+				sid_copy(sid, special_domains[i].sid);
 				sid_append_rid(sid, users[j].rid);
 				*use = users[j].sid_name_use;
 				return True;

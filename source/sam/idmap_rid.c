@@ -142,6 +142,7 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 {
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct cli_state *cli;
+	struct rpc_pipe_client *pipe_hnd;
 	TALLOC_CTX *mem_ctx;
 	POLICY_HND pol;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
@@ -233,18 +234,22 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 	}	
 
 	/* query the lsa-pipe */
-	if (!cli_nt_session_open (cli, PI_LSARPC)) {
+	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_LSARPC, &status);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("rid_idmap_get_domains: could not setup connection to dc\n"));
 		goto out;
 	}
 
 	/* query policies */
-	status = cli_lsa_open_policy(cli, mem_ctx, False, des_access, &pol);
+	status = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, False, des_access,
+					&pol);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
-	status = cli_lsa_query_info_policy(cli, mem_ctx, &pol, info_class, &domain_name, &domain_sid);
+	status = rpccli_lsa_query_info_policy(pipe_hnd, mem_ctx, &pol,
+					      info_class, &domain_name,
+					      &domain_sid);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("rid_idmap_get_domains: cannot retrieve domain-info\n"));
 		goto out;
@@ -255,10 +260,10 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 
 	/* scan trusted domains */
 	DEBUG(10, ("rid_idmap_get_domains: enumerating trusted domains\n"));
-	status = cli_lsa_enum_trust_dom(cli, mem_ctx, &pol, &enum_ctx,
-			&trusted_num_domains,
-			&trusted_domain_names, 
-			&trusted_domain_sids);
+	status = rpccli_lsa_enum_trust_dom(pipe_hnd, mem_ctx, &pol, &enum_ctx,
+					   &trusted_num_domains,
+					   &trusted_domain_names, 
+					   &trusted_domain_sids);
 
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES) &&
@@ -315,8 +320,8 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 	status = NT_STATUS_OK;
 
 out:
-	cli_lsa_close(cli, mem_ctx, &pol);
-	cli_nt_session_close(cli);
+	rpccli_lsa_close(pipe_hnd, mem_ctx, &pol);
+	cli_rpc_pipe_close(pipe_hnd);
 	talloc_destroy(mem_ctx);
 	cli_shutdown(cli);
 

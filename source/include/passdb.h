@@ -233,6 +233,7 @@ struct acct_info
 };
 
 struct samr_displayentry {
+	uint32 idx;
 	uint32 rid;
 	uint16 acct_flags;
 	const char *account_name;
@@ -268,7 +269,7 @@ struct pdb_search {
  * this SAMBA will load. Increment this if *ANY* changes are made to the interface. 
  */
 
-#define PASSDB_INTERFACE_VERSION 8
+#define PASSDB_INTERFACE_VERSION 9
 
 typedef struct pdb_context 
 {
@@ -372,6 +373,14 @@ typedef struct pdb_context
 				    uint32 *rids,
 				    const char ***names,
 				    uint32 **attrs);
+
+	NTSTATUS (*pdb_get_account_policy)(struct pdb_context *context,
+					   int policy_index, uint32 *value);
+
+	NTSTATUS (*pdb_set_account_policy)(struct pdb_context *context,
+					   int policy_index, uint32 value);
+
+	NTSTATUS (*pdb_get_seq_num)(struct pdb_context *context, time_t *seq_num);
 
 	BOOL (*pdb_search_users)(struct pdb_context *context,
 				 struct pdb_search *search,
@@ -478,6 +487,7 @@ typedef struct pdb_methods
 					   int num_members,
 					   uint32 **alias_rids,
 					   int *num_alias_rids);
+
 	NTSTATUS (*lookup_rids)(struct pdb_methods *methods,
 				TALLOC_CTX *mem_ctx,
 				const DOM_SID *domain_sid,
@@ -485,6 +495,14 @@ typedef struct pdb_methods
 				uint32 *rids,
 				const char ***names,
 				uint32 **attrs);
+
+	NTSTATUS (*get_account_policy)(struct pdb_methods *methods,
+				       int policy_index, uint32 *value);
+
+	NTSTATUS (*set_account_policy)(struct pdb_methods *methods,
+				       int policy_index, uint32 value);
+
+	NTSTATUS (*get_seq_num)(struct pdb_methods *methods, time_t *seq_num);
 
 	BOOL (*search_users)(struct pdb_methods *methods,
 			     struct pdb_search *search,

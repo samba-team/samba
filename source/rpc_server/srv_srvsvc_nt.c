@@ -113,7 +113,8 @@ static void init_srv_share_info_2(pipes_struct *p, SRV_SHARE_INFO_2 *sh2, int sn
  What to do when smb.conf is updated.
  ********************************************************************/
 
-static void smb_conf_updated(int msg_type, pid_t src, void *buf, size_t len)
+static void smb_conf_updated(int msg_type, struct process_id src,
+			     void *buf, size_t len)
 {
 	DEBUG(10,("smb_conf_updated: Got message saying smb.conf was updated. Reloading.\n"));
 	reload_services(False);
@@ -1394,7 +1395,7 @@ WERROR _srv_net_sess_del(pipes_struct *p, SRV_Q_NET_SESS_DEL *q_u, SRV_R_NET_SES
 				become_root();
 			}
 
-			if (message_send_pid(session_list[snum].pid, MSG_SHUTDOWN, NULL, 0, False))
+			if (message_send_pid(pid_to_procid(session_list[snum].pid), MSG_SHUTDOWN, NULL, 0, False))
 				r_u->status = WERR_OK;
 
 			if (not_root) 

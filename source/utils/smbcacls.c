@@ -64,6 +64,7 @@ static const struct perm_value standard_values[] = {
 };
 
 static struct cli_state *global_hack_cli;
+static struct rpc_pipe_client *global_pipe_hnd;
 static POLICY_HND pol;
 static BOOL got_policy_hnd;
 
@@ -76,8 +77,10 @@ static BOOL cacls_open_policy_hnd(void)
 	/* Initialise cli LSA connection */
 
 	if (!global_hack_cli) {
+		NTSTATUS ret;
 		global_hack_cli = connect_one("IPC$");
-		if (!cli_nt_session_open (global_hack_cli, PI_LSARPC)) {
+		global_pipe_hnd = cli_rpc_pipe_open_noauth(global_hack_cli, PI_LSARPC, &ret);
+		if (!global_pipe_hnd) {
 				return False;
 		}
 	}
@@ -89,7 +92,7 @@ static BOOL cacls_open_policy_hnd(void)
 		/* Some systems don't support SEC_RIGHTS_MAXIMUM_ALLOWED,
 		   but NT sends 0x2000000 so we might as well do it too. */
 
-		if (!NT_STATUS_IS_OK(cli_lsa_open_policy(global_hack_cli, global_hack_cli->mem_ctx, True, 
+		if (!NT_STATUS_IS_OK(rpccli_lsa_open_policy(global_pipe_hnd, global_hack_cli->mem_ctx, True, 
 							 GENERIC_EXECUTE_ACCESS, &pol))) {
 			return False;
 		}
@@ -114,7 +117,7 @@ static void SidToString(fstring str, DOM_SID *sid)
 	/* Ask LSA to convert the sid to a name */
 
 	if (!cacls_open_policy_hnd() ||
-	    !NT_STATUS_IS_OK(cli_lsa_lookup_sids(global_hack_cli, global_hack_cli->mem_ctx,  
+	    !NT_STATUS_IS_OK(rpccli_lsa_lookup_sids(global_pipe_hnd, global_hack_cli->mem_ctx,  
 						 &pol, 1, sid, &domains, 
 						 &names, &types)) ||
 	    !domains || !domains[0] || !names || !names[0]) {
@@ -141,7 +144,7 @@ static BOOL StringToSid(DOM_SID *sid, const char *str)
 	}
 
 	if (!cacls_open_policy_hnd() ||
-	    !NT_STATUS_IS_OK(cli_lsa_lookup_names(global_hack_cli, global_hack_cli->mem_ctx, 
+	    !NT_STATUS_IS_OK(rpccli_lsa_lookup_names(global_pipe_hnd, global_hack_cli->mem_ctx, 
 						  &pol, 1, &str, &sids, 
 						  &types))) {
 		result = False;

@@ -464,8 +464,8 @@ BOOL cli_send_nt_trans(struct cli_state *cli,
 }
 
 /****************************************************************************
-  receive a SMB nttrans response allocating the necessary memory
-  ****************************************************************************/
+ Receive a SMB nttrans response allocating the necessary memory.
+****************************************************************************/
 
 BOOL cli_receive_nt_trans(struct cli_state *cli,
 			  char **param, unsigned int *param_len,
@@ -503,7 +503,7 @@ BOOL cli_receive_nt_trans(struct cli_state *cli,
 	 */
 	if (cli_is_dos_error(cli)) {
                 cli_dos_error(cli, &eclass, &ecode);
-		if (cli->pipes[cli->pipe_idx].fnum == 0 || !(eclass == ERRDOS && ecode == ERRmoredata)) {
+		if (!(eclass == ERRDOS && ecode == ERRmoredata)) {
 			cli_signing_trans_stop(cli);
 			return(False);
 		}
@@ -637,11 +637,22 @@ BOOL cli_receive_nt_trans(struct cli_state *cli,
 		}
 		if (cli_is_dos_error(cli)) {
                         cli_dos_error(cli, &eclass, &ecode);
-			if(cli->pipes[cli->pipe_idx].fnum == 0 || !(eclass == ERRDOS && ecode == ERRmoredata)) {
+			if(!(eclass == ERRDOS && ecode == ERRmoredata)) {
 				cli_signing_trans_stop(cli);
 				return(False);
 			}
 		}
+		/*
+		 * Likewise for NT_STATUS_BUFFER_TOO_SMALL
+		 */
+		if (cli_is_nt_error(cli)) {
+			if (!NT_STATUS_EQUAL(cli_nt_error(cli),
+					     NT_STATUS_BUFFER_TOO_SMALL)) {
+				cli_signing_trans_stop(cli);
+				return(False);
+			}
+		}
+
 		/* parse out the total lengths again - they can shrink! */
 		if (SVAL(cli->inbuf,smb_ntr_TotalDataCount) < total_data)
 			total_data = SVAL(cli->inbuf,smb_ntr_TotalDataCount);

@@ -206,13 +206,13 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 #define PI_SHUTDOWN		10
 #define PI_SVCCTL		11
 #define PI_EVENTLOG 		12
-#define PI_MAX_PIPES		13
+#define PI_NTSVCS		13
+#define PI_MAX_PIPES		14
 
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
-typedef struct nttime_info
-{
-  uint32 low;
-  uint32 high;
+typedef struct nttime_info {
+	uint32 low;
+	uint32 high;
 } NTTIME;
 
 
@@ -414,6 +414,10 @@ struct fd_handle {
 				 */
 };
 
+struct timed_event;
+struct idle_event;
+struct share_mode_entry;
+
 typedef struct files_struct {
 	struct files_struct *next, *prev;
 	int fnum;
@@ -437,6 +441,11 @@ typedef struct files_struct {
 	time_t last_write_time;
 	int oplock_type;
 	int sent_oplock_break;
+	struct timed_event *oplock_timeout;
+
+	struct share_mode_entry *pending_break_messages;
+	int num_pending_break_messages;
+
 	unsigned long file_id;
 	BOOL can_lock;
 	BOOL can_read;
@@ -564,6 +573,7 @@ struct current_user
 #define NO_BREAK_SENT 0
 #define BREAK_TO_NONE_SENT 1
 #define LEVEL_II_BREAK_SENT 2
+#define ASYNC_LEVEL_II_BREAK_SENT 3
 
 typedef struct {
 	fstring smb_name; /* user name from the client */
@@ -619,28 +629,19 @@ struct interface
 	struct in_addr nmask;
 };
 
-/* struct used by share mode violation error processing */
-typedef struct {
-	pid_t pid;
-	uint16 mid;
-	struct timeval time;
-	SMB_DEV_T dev;
-	SMB_INO_T inode;
-	uint16 port;
-} deferred_open_entry;
-
 /* Internal message queue for deferred opens. */
 struct pending_message_list {
 	struct pending_message_list *next, *prev;
-	struct timeval msg_time; /* The timeout time */
+	struct timeval request_time; /* When was this first issued? */
+	struct timeval end_time; /* When does this time out? */
 	DATA_BLOB buf;
 	DATA_BLOB private_data;
 };
 
 /* struct returned by get_share_modes */
-typedef struct {
-	pid_t pid;
-	uint16 op_port;
+struct share_mode_entry {
+	struct process_id pid;
+	uint16 op_mid;
 	uint16 op_type;
 	uint32 access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
 	uint32 share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */
@@ -652,14 +653,18 @@ typedef struct {
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
 	unsigned long share_file_id;
-} share_mode_entry;
+};
 
-
-#define SHAREMODE_FN_CAST() \
-	void (*)(share_mode_entry *, char*)
-
-#define SHAREMODE_FN(fn) \
-	void (*fn)(share_mode_entry *, char*)
+struct share_mode_lock {
+	const char *filename;
+	SMB_DEV_T dev;
+	SMB_INO_T ino;
+	int num_share_modes;
+	struct share_mode_entry *share_modes;
+	BOOL delete_on_close;
+	BOOL fresh;
+	BOOL modified;
+};
 
 #define NT_HASH_LEN 16
 #define LM_HASH_LEN 16
@@ -700,14 +705,14 @@ typedef struct {
 
 /* key and data in the connections database - used in smbstatus and smbd */
 struct connections_key {
-	pid_t pid;
+	struct process_id pid;
 	int cnum;
 	fstring name;
 };
 
 struct connections_data {
 	int magic;
-	pid_t pid;
+	struct process_id pid;
 	int cnum;
 	uid_t uid;
 	gid_t gid;
@@ -718,12 +723,6 @@ struct connections_data {
 	uint32 bcast_msg_flags;
 };
 
-
-/* key and data records in the tdb locking database */
-struct locking_key {
-	SMB_DEV_T dev;
-	SMB_INO_T inode;
-};
 
 /* the following are used by loadparm for option lists */
 typedef enum {
@@ -744,11 +743,11 @@ struct enum_list {
 };
 
 #define BRLOCK_FN_CAST() \
-	void (*)(SMB_DEV_T dev, SMB_INO_T ino, int pid, \
+	void (*)(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, \
 				 enum brl_type lock_type, \
 				 br_off start, br_off size)
 #define BRLOCK_FN(fn) \
-	void (*fn)(SMB_DEV_T dev, SMB_INO_T ino, int pid, \
+	void (*fn)(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, \
 				 enum brl_type lock_type, \
 				 br_off start, br_off size)
 struct parm_struct
@@ -1462,10 +1461,29 @@ extern int chain_size;
 #define BATCH_OPLOCK 2
 #define LEVEL_II_OPLOCK 4
 #define INTERNAL_OPEN_ONLY 8
+#define FAKE_LEVEL_II_OPLOCK 16	/* Client requested no_oplock, but we have to
+				 * inform potential level2 holders on
+				 * write. */
+#define DEFERRED_OPEN_ENTRY 32
+#define UNUSED_SHARE_MODE_ENTRY 64
 
 #define EXCLUSIVE_OPLOCK_TYPE(lck) ((lck) & ((unsigned int)EXCLUSIVE_OPLOCK|(unsigned int)BATCH_OPLOCK))
 #define BATCH_OPLOCK_TYPE(lck) ((lck) & (unsigned int)BATCH_OPLOCK)
-#define LEVEL_II_OPLOCK_TYPE(lck) ((lck) & (unsigned int)LEVEL_II_OPLOCK)
+#define LEVEL_II_OPLOCK_TYPE(lck) ((lck) & ((unsigned int)LEVEL_II_OPLOCK|(unsigned int)FAKE_LEVEL_II_OPLOCK))
+
+struct inform_level2_message {
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
+	uint16 mid;
+	unsigned long target_file_id;
+	unsigned long source_file_id;
+};
+
+struct kernel_oplock_message {
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
+	unsigned long file_id;
+};
 
 /*
  * On the wire return values for oplock types.
@@ -1484,93 +1502,21 @@ extern int chain_size;
 #define OPLOCKLEVEL_II 1
 
 /*
- * Loopback command offsets.
- */
-
-#define OPBRK_CMD_LEN_OFFSET 0
-#define OPBRK_CMD_PORT_OFFSET 4
-#define OPBRK_CMD_HEADER_LEN 6
-
-#define OPBRK_MESSAGE_CMD_OFFSET 0
-
-/*
- * Oplock break command code to send over the udp socket.
- * The same message is sent for both exlusive and level II breaks. 
- * 
- * The form of this is :
- *
- *  0     2       2+pid   2+pid+dev 2+pid+dev+ino
- *  +----+--------+-------+--------+---------+
- *  | cmd| pid    | dev   |  inode | fileid  |
- *  +----+--------+-------+--------+---------+
- */
-
-#define OPLOCK_BREAK_PID_OFFSET 2
-#define OPLOCK_BREAK_DEV_OFFSET (OPLOCK_BREAK_PID_OFFSET + sizeof(pid_t))
-#define OPLOCK_BREAK_INODE_OFFSET (OPLOCK_BREAK_DEV_OFFSET + sizeof(SMB_DEV_T))
-#define OPLOCK_BREAK_FILEID_OFFSET (OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
-#define OPLOCK_BREAK_MSG_LEN (OPLOCK_BREAK_FILEID_OFFSET + sizeof(unsigned long))
-
-/* Message types */
-#define OPLOCK_BREAK_CMD 0x1
-#define KERNEL_OPLOCK_BREAK_CMD 0x2
-#define LEVEL_II_OPLOCK_BREAK_CMD 0x3
-#define ASYNC_LEVEL_II_OPLOCK_BREAK_CMD 0x4
-
-/* Add the "deferred open" message. */
-#define RETRY_DEFERRED_OPEN_CMD 0x5
-
-/*
- * And the message format for it. Keep the same message length.
- *
- *  0     2       2+pid   2+pid+dev 2+pid+dev+ino
- *  +----+--------+-------+--------+---------+
- *  | cmd| pid    | dev   |  inode | mid     |
- *  +----+--------+-------+--------+---------+
- */
-
-#define DEFERRED_OPEN_CMD_OFFSET 0
-#define DEFERRED_OPEN_PID_OFFSET 2 /* pid we're *sending* from. */
-#define DEFERRED_OPEN_DEV_OFFSET (DEFERRED_OPEN_PID_OFFSET + sizeof(pid_t))
-#define DEFERRED_OPEN_INODE_OFFSET (DEFERRED_OPEN_DEV_OFFSET + sizeof(SMB_DEV_T))
-#define DEFERRED_OPEN_MID_OFFSET (DEFERRED_OPEN_INODE_OFFSET + sizeof(SMB_INO_T))
-#define DEFERRED_OPEN_MSG_LEN OPLOCK_BREAK_MSG_LEN
-
-/*
  * Capabilities abstracted for different systems.
  */
 
 #define KERNEL_OPLOCK_CAPABILITY 0x1
 
-/*
- * Oplock break command code sent via the kernel interface (if it exists).
- *
- * Form of this is :
- *
- *  0     2       2+devsize 2+devsize+inodesize
- *  +----+--------+--------+----------+
- *  | cmd| dev    |  inode |  fileid  |
- *  +----+--------+--------+----------+
- */
-#define KERNEL_OPLOCK_BREAK_DEV_OFFSET 2
-#define KERNEL_OPLOCK_BREAK_INODE_OFFSET (KERNEL_OPLOCK_BREAK_DEV_OFFSET + sizeof(SMB_DEV_T))
-#define KERNEL_OPLOCK_BREAK_FILEID_OFFSET (KERNEL_OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
-#define KERNEL_OPLOCK_BREAK_MSG_LEN (KERNEL_OPLOCK_BREAK_FILEID_OFFSET + sizeof(unsigned long))
-
-
 /* if a kernel does support oplocks then a structure of the following
    typee is used to describe how to interact with the kernel */
 struct kernel_oplocks {
-	BOOL (*receive_message)(fd_set *fds, char *buffer, int buffer_len);
+	files_struct * (*receive_message)(fd_set *fds);
 	BOOL (*set_oplock)(files_struct *fsp, int oplock_type);
 	void (*release_oplock)(files_struct *fsp);
-	BOOL (*parse_message)(char *msg_start, int msg_len, SMB_INO_T *inode, SMB_DEV_T *dev, unsigned long *file_id);
 	BOOL (*msg_waiting)(fd_set *fds);
 	int notification_fd;
 };
 
-
-#define CMD_REPLY 0x8000
 
 /* this structure defines the functions for doing change notify in
    various implementations */
@@ -1758,5 +1704,19 @@ struct ea_list {
 #define SAMBA_POSIX_INHERITANCE_EA_NAME "user.SAMBA_PAI"
 /* EA to use for DOS attributes */
 #define SAMBA_XATTR_DOS_ATTRIB "user.DOSATTRIB"
+
+struct uuid {
+	uint32 time_low;
+	uint16 time_mid;
+	uint16 time_hi_and_version;
+	uint8  clock_seq[2];
+	uint8  node[6];
+};
+#define UUID_SIZE 16
+
+#define UUID_FLAT_SIZE 16
+typedef struct uuid_flat {
+	uint8 info[UUID_FLAT_SIZE];
+} UUID_FLAT;
 
 #endif /* _SMB_H */

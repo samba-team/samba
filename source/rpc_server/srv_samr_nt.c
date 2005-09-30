@@ -6,7 +6,7 @@
  *  Copyright (C) Paul Ashton                       1997,
  *  Copyright (C) Marc Jacobsen			    1999,
  *  Copyright (C) Jeremy Allison                    2001-2002,
- *  Copyright (C) Jean François Micouleau          1998-2001,
+ *  Copyright (C) Jean François Micouleau           1998-2001,
  *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2002,
  *  Copyright (C) Gerald (Jerry) Carter             2003-2004,
  *  Copyright (C) Simo Sorce                        2003.
@@ -88,17 +88,17 @@ static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
 	SEC_ACL *psa = NULL;
 
 	/* basic access for Everyone */
-	
+
 	init_sec_access(&mask, map->generic_execute | map->generic_read );
 	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-	
+
 	/* add Full Access 'BUILTIN\Administrators' and 'BUILTIN\Account Operators */
-	
+
 	init_sec_access(&mask, map->generic_all);
 	
 	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 	init_sec_ace(&ace[i++], &global_sid_Builtin_Account_Operators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-	
+
 	/* Add Full Access for Domain Admins if we are a DC */
 	
 	if ( IS_DC ) {
@@ -108,14 +108,14 @@ static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
 	}
 
 	/* if we have a sid, give it some special access */
-	
+
 	if ( sid ) {
 		init_sec_access( &mask, sid_access );
 		init_sec_ace(&ace[i++], sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-	}
-	
+}
+
 	/* create the security descriptor */
-	
+
 	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
@@ -347,7 +347,7 @@ NTSTATUS _samr_open_domain(pipes_struct *p, SAMR_Q_OPEN_DOMAIN *q_u, SAMR_R_OPEN
 	uint32    acc_granted;
 	uint32    des_access = q_u->flags;
 	NTSTATUS  status;
-	size_t sd_size;
+	size_t    sd_size;
 	SE_PRIV se_rights;
 
 	r_u->status = NT_STATUS_OK;
@@ -420,7 +420,6 @@ NTSTATUS _samr_get_usrdom_pwinfo(pipes_struct *p, SAMR_Q_GET_USRDOM_PWINFO *q_u,
 
 	return r_u->status;
 }
-
 
 /*******************************************************************
  _samr_set_sec_obj
@@ -1456,11 +1455,13 @@ static NTSTATUS get_user_info_18(pipes_struct *p, TALLOC_CTX *mem_ctx, SAM_USER_
 	BOOL ret;
 	NTSTATUS nt_status;
 
-	if (!p->ntlmssp_auth_validated)
+	if (p->auth.auth_type != PIPE_AUTH_TYPE_NTLMSSP || p->auth.auth_type != PIPE_AUTH_TYPE_SPNEGO_NTLMSSP) {
 		return NT_STATUS_ACCESS_DENIED;
+	}
 
-	if (!(p->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SIGN) || !(p->ntlmssp_chal_flags & NTLMSSP_NEGOTIATE_SEAL))
+	if (p->auth.auth_level != PIPE_AUTH_LEVEL_PRIVACY) {
 		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	/*
 	 * Do *NOT* do become_root()/unbecome_root() here ! JRA.
@@ -1794,11 +1795,12 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 	time_t u_lock_duration, u_reset_time;
 	NTTIME nt_lock_duration, nt_reset_time;
 	uint32 lockout;
-	
 	time_t u_logout;
 	NTTIME nt_logout;
 
 	uint32 account_policy_temp;
+
+	time_t seq_num;
 	uint32 server_role;
 
 	uint32 num_users=0, num_groups=0, num_aliases=0;
@@ -1819,19 +1821,19 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 	switch (q_u->switch_value) {
 		case 0x01:
 			
-			account_policy_get(AP_MIN_PASSWORD_LEN, &account_policy_temp);
+			pdb_get_account_policy(AP_MIN_PASSWORD_LEN, &account_policy_temp);
 			min_pass_len = account_policy_temp;
 
-			account_policy_get(AP_PASSWORD_HISTORY, &account_policy_temp);
+			pdb_get_account_policy(AP_PASSWORD_HISTORY, &account_policy_temp);
 			pass_hist = account_policy_temp;
 
-			account_policy_get(AP_USER_MUST_LOGON_TO_CHG_PASS, &account_policy_temp);
+			pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS, &account_policy_temp);
 			flag = account_policy_temp;
 
-			account_policy_get(AP_MAX_PASSWORD_AGE, &account_policy_temp);
+			pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &account_policy_temp);
 			u_expire = account_policy_temp;
 
-			account_policy_get(AP_MIN_PASSWORD_AGE, &account_policy_temp);
+			pdb_get_account_policy(AP_MIN_PASSWORD_AGE, &account_policy_temp);
 			u_min_age = account_policy_temp;
 			
 			unix_to_nt_time_abs(&nt_expire, u_expire);
@@ -1847,21 +1849,23 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			num_groups=count_sam_groups(&info->disp_info);
 			unbecome_root();
 
-			account_policy_get(AP_TIME_TO_LOGOUT, &account_policy_temp);
+			pdb_get_account_policy(AP_TIME_TO_LOGOUT, &account_policy_temp);
 			u_logout = account_policy_temp;
 
 			unix_to_nt_time_abs(&nt_logout, u_logout);
+
+			if (!pdb_get_seq_num(&seq_num))
+				seq_num = time(NULL);
 
 			server_role = ROLE_DOMAIN_PDC;
 			if (lp_server_role() == ROLE_DOMAIN_BDC)
 				server_role = ROLE_DOMAIN_BDC;
 
-			/* The time call below is to get a sequence number for the sam. FIXME !!! JRA. */
-			init_unk_info2(&ctr->info.inf2, lp_serverstring(), lp_workgroup(), global_myname(), time(NULL), 
+			init_unk_info2(&ctr->info.inf2, lp_serverstring(), lp_workgroup(), global_myname(), seq_num, 
 				       num_users, num_groups, num_aliases, nt_logout, server_role);
 			break;
 		case 0x03:
-			account_policy_get(AP_TIME_TO_LOGOUT, (unsigned int *)&u_logout);
+			pdb_get_account_policy(AP_TIME_TO_LOGOUT, (unsigned int *)&u_logout);
 			unix_to_nt_time_abs(&nt_logout, u_logout);
 			
 			init_unk_info3(&ctr->info.inf3, nt_logout);
@@ -1880,18 +1884,21 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			init_unk_info7(&ctr->info.inf7, server_role);
 			break;
 		case 0x08:
-			init_unk_info8(&ctr->info.inf8, (uint32) time(NULL));
+			if (!pdb_get_seq_num(&seq_num))
+				seq_num = time(NULL);
+
+			init_unk_info8(&ctr->info.inf8, (uint32) seq_num);
 			break;
 		case 0x0c:
-			account_policy_get(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
+			pdb_get_account_policy(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
 			u_lock_duration = account_policy_temp;
 			if (u_lock_duration != -1)
 				u_lock_duration *= 60;
 
-			account_policy_get(AP_RESET_COUNT_TIME, &account_policy_temp);
+			pdb_get_account_policy(AP_RESET_COUNT_TIME, &account_policy_temp);
 			u_reset_time = account_policy_temp * 60;
 
-			account_policy_get(AP_BAD_ATTEMPT_LOCKOUT, &account_policy_temp);
+			pdb_get_account_policy(AP_BAD_ATTEMPT_LOCKOUT, &account_policy_temp);
 			lockout = account_policy_temp;
 
 			unix_to_nt_time_abs(&nt_lock_duration, u_lock_duration);
@@ -1955,7 +1962,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 
 	rpcstr_pull(account, user_account.buffer, sizeof(account), user_account.uni_str_len*2, 0);
 	strlower_m(account);
-		
+
 	pdb_init_sam(&sam_pass);
 
 	become_root();
@@ -1968,7 +1975,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	}
 
 	pdb_free_sam(&sam_pass);
-	
+
 	/*********************************************************************
 	 * HEADS UP!  If we have to create a new user account, we have to get 
 	 * a new RID from somewhere.  This used to be done by the passdb 
@@ -1979,7 +1986,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	 * of what ever passdb backend people may use.
 	 *                                             --jerry (2003-07-10)
 	 *********************************************************************/
-	
+
 	pw = Get_Pwnam(account);
 
 	/* determine which user right we need to check based on the acb_info */
@@ -2005,27 +2012,27 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 			/* only Domain Admins can add a BDC or domain trust */
 			se_priv_copy( &se_rights, &se_priv_none );
 			can_add_account = nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS );
-		}
 	}
-	
+	}
+		
 	DEBUG(5, ("_samr_create_user: %s can add this account : %s\n",
 		p->pipe_user_name, can_add_account ? "True":"False" ));
 		
 	/********** BEGIN Admin BLOCK **********/
-	
+
 	if ( can_add_account )
 		become_root();
-				
+
 	if ( !pw ) {
 		if (*add_script) {
-  			int add_ret;
-			
-  			all_string_sub(add_script, "%u", account, sizeof(add_script));
-  			add_ret = smbrun(add_script,NULL);
- 			DEBUG(add_ret ? 0 : 3,("_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
-  		}
+			int add_ret;
+
+			all_string_sub(add_script, "%u", account, sizeof(add_script));
+			add_ret = smbrun(add_script,NULL);
+			DEBUG(add_ret ? 0 : 3,("_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
+		}
 	}
-	
+
 	/* implicit call to getpwnam() next.  we have a valid SID coming out of this call */
 
 	flush_pwnam_cache();
@@ -2147,7 +2154,7 @@ NTSTATUS _samr_connect(pipes_struct *p, SAMR_Q_CONNECT *q_u, SAMR_R_CONNECT *r_u
 	uint32    acc_granted;
 	uint32    des_access = q_u->access_mask;
 	NTSTATUS  nt_status;
-	size_t sd_size;
+	size_t    sd_size;
 
 
 	DEBUG(5,("_samr_connect: %d\n", __LINE__));
@@ -2198,7 +2205,7 @@ NTSTATUS _samr_connect4(pipes_struct *p, SAMR_Q_CONNECT4 *q_u, SAMR_R_CONNECT4 *
 	uint32    acc_granted;
 	uint32    des_access = q_u->access_mask;
 	NTSTATUS  nt_status;
-	size_t sd_size;
+	size_t    sd_size;
 
 
 	DEBUG(5,("_samr_connect4: %d\n", __LINE__));
@@ -2734,7 +2741,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, acc_required, "_samr_set_userinfo"))) {
 		return r_u->status;
 	}
-		
+
 	DEBUG(5, ("_samr_set_userinfo: sid:%s, level:%d\n", sid_string_static(&sid), switch_value));
 
 	if (ctr == NULL) {
@@ -2765,7 +2772,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 		if ( lp_enable_privileges() )
 			has_enough_rights = nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS );
 	}
-		
+	
 	DEBUG(5, ("_samr_set_userinfo: %s does%s possess sufficient rights\n",
 		p->pipe_user_name, has_enough_rights ? "" : " not"));
 
@@ -2905,7 +2912,7 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 		if ( lp_enable_privileges() )
 			has_enough_rights = nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS );
 	}
-		
+	
 	DEBUG(5, ("_samr_set_userinfo: %s does%s possess sufficient rights\n",
 		p->pipe_user_name, has_enough_rights ? "" : " not"));
 
@@ -3597,7 +3604,7 @@ NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, S
 	gid=map.gid;
 
 	/* check if group really exists */
-	if ( (grp=getgrgid(gid)) == NULL)
+	if ( (grp=getgrgid(gid)) == NULL) 
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	se_priv_copy( &se_rights, &se_add_users );
@@ -4195,6 +4202,8 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 	uint32 num_users=0, num_groups=0, num_aliases=0;
 
 	uint32 account_policy_temp;
+
+	time_t seq_num;
 	uint32 server_role;
 
 	if ((ctr = TALLOC_ZERO_P(p->mem_ctx, SAM_UNK_CTR)) == NULL)
@@ -4212,19 +4221,19 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 
 	switch (q_u->switch_value) {
 		case 0x01:
-			account_policy_get(AP_MIN_PASSWORD_LEN, &account_policy_temp);
+			pdb_get_account_policy(AP_MIN_PASSWORD_LEN, &account_policy_temp);
 			min_pass_len = account_policy_temp;
 
-			account_policy_get(AP_PASSWORD_HISTORY, &account_policy_temp);
+			pdb_get_account_policy(AP_PASSWORD_HISTORY, &account_policy_temp);
 			pass_hist = account_policy_temp;
 
-			account_policy_get(AP_USER_MUST_LOGON_TO_CHG_PASS, &account_policy_temp);
+			pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS, &account_policy_temp);
 			flag = account_policy_temp;
 
-			account_policy_get(AP_MAX_PASSWORD_AGE, &account_policy_temp);
+			pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &account_policy_temp);
 			u_expire = account_policy_temp;
 
-			account_policy_get(AP_MIN_PASSWORD_AGE, &account_policy_temp);
+			pdb_get_account_policy(AP_MIN_PASSWORD_AGE, &account_policy_temp);
 			u_min_age = account_policy_temp;
 
 			unix_to_nt_time_abs(&nt_expire, u_expire);
@@ -4242,21 +4251,23 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 
 			free_samr_db(info);
 
-			account_policy_get(AP_TIME_TO_LOGOUT, &account_policy_temp);
+			pdb_get_account_policy(AP_TIME_TO_LOGOUT, &account_policy_temp);
 			u_logout = account_policy_temp;
 
 			unix_to_nt_time_abs(&nt_logout, u_logout);
+
+			if (!pdb_get_seq_num(&seq_num))
+				seq_num = time(NULL);
 
 			server_role = ROLE_DOMAIN_PDC;
 			if (lp_server_role() == ROLE_DOMAIN_BDC)
 				server_role = ROLE_DOMAIN_BDC;
 
-			/* The time call below is to get a sequence number for the sam. FIXME !!! JRA. */
-			init_unk_info2(&ctr->info.inf2, lp_serverstring(), lp_workgroup(), global_myname(), time(NULL), 
+			init_unk_info2(&ctr->info.inf2, lp_serverstring(), lp_workgroup(), global_myname(), seq_num, 
 				       num_users, num_groups, num_aliases, nt_logout, server_role);
 			break;
 		case 0x03:
-			account_policy_get(AP_TIME_TO_LOGOUT, &account_policy_temp);
+			pdb_get_account_policy(AP_TIME_TO_LOGOUT, &account_policy_temp);
 			u_logout = account_policy_temp;
 
 			unix_to_nt_time_abs(&nt_logout, u_logout);
@@ -4273,21 +4284,25 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 			server_role = ROLE_DOMAIN_PDC;
 			if (lp_server_role() == ROLE_DOMAIN_BDC)
 				server_role = ROLE_DOMAIN_BDC;
+
 			init_unk_info7(&ctr->info.inf7, server_role);
 			break;
 		case 0x08:
-			init_unk_info8(&ctr->info.inf8, (uint32) time(NULL));
+			if (!pdb_get_seq_num(&seq_num))
+				seq_num = time(NULL);
+
+			init_unk_info8(&ctr->info.inf8, (uint32) seq_num);
 			break;
 		case 0x0c:
-			account_policy_get(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
+			pdb_get_account_policy(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
 			u_lock_duration = account_policy_temp;
 			if (u_lock_duration != -1)
 				u_lock_duration *= 60;
 
-			account_policy_get(AP_RESET_COUNT_TIME, &account_policy_temp);
+			pdb_get_account_policy(AP_RESET_COUNT_TIME, &account_policy_temp);
 			u_reset_time = account_policy_temp * 60;
 
-			account_policy_get(AP_BAD_ATTEMPT_LOCKOUT, &account_policy_temp);
+			pdb_get_account_policy(AP_BAD_ATTEMPT_LOCKOUT, &account_policy_temp);
 			lockout = account_policy_temp;
 	
 			unix_to_nt_time_abs(&nt_lock_duration, u_lock_duration);
@@ -4331,17 +4346,17 @@ NTSTATUS _samr_set_dom_info(pipes_struct *p, SAMR_Q_SET_DOMAIN_INFO *q_u, SAMR_R
 			u_expire=nt_time_to_unix_abs(&q_u->ctr->info.inf1.expire);
 			u_min_age=nt_time_to_unix_abs(&q_u->ctr->info.inf1.min_passwordage);
 			
-			account_policy_set(AP_MIN_PASSWORD_LEN, (uint32)q_u->ctr->info.inf1.min_length_password);
-			account_policy_set(AP_PASSWORD_HISTORY, (uint32)q_u->ctr->info.inf1.password_history);
-			account_policy_set(AP_USER_MUST_LOGON_TO_CHG_PASS, (uint32)q_u->ctr->info.inf1.flag);
-			account_policy_set(AP_MAX_PASSWORD_AGE, (int)u_expire);
-			account_policy_set(AP_MIN_PASSWORD_AGE, (int)u_min_age);
+			pdb_set_account_policy(AP_MIN_PASSWORD_LEN, (uint32)q_u->ctr->info.inf1.min_length_password);
+			pdb_set_account_policy(AP_PASSWORD_HISTORY, (uint32)q_u->ctr->info.inf1.password_history);
+			pdb_set_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS, (uint32)q_u->ctr->info.inf1.flag);
+			pdb_set_account_policy(AP_MAX_PASSWORD_AGE, (int)u_expire);
+			pdb_set_account_policy(AP_MIN_PASSWORD_AGE, (int)u_min_age);
             		break;
         	case 0x02:
 			break;
 		case 0x03:
 			u_logout=nt_time_to_unix_abs(&q_u->ctr->info.inf3.logout);
-			account_policy_set(AP_TIME_TO_LOGOUT, (int)u_logout);
+			pdb_set_account_policy(AP_TIME_TO_LOGOUT, (int)u_logout);
 			break;
 		case 0x05:
 			break;
@@ -4356,9 +4371,9 @@ NTSTATUS _samr_set_dom_info(pipes_struct *p, SAMR_Q_SET_DOMAIN_INFO *q_u, SAMR_R
 
 			u_reset_time=nt_time_to_unix_abs(&q_u->ctr->info.inf12.reset_count)/60;
 			
-			account_policy_set(AP_LOCK_ACCOUNT_DURATION, (int)u_lock_duration);
-			account_policy_set(AP_RESET_COUNT_TIME, (int)u_reset_time);
-			account_policy_set(AP_BAD_ATTEMPT_LOCKOUT, (uint32)q_u->ctr->info.inf12.bad_attempt_lockout);
+			pdb_set_account_policy(AP_LOCK_ACCOUNT_DURATION, (int)u_lock_duration);
+			pdb_set_account_policy(AP_RESET_COUNT_TIME, (int)u_reset_time);
+			pdb_set_account_policy(AP_BAD_ATTEMPT_LOCKOUT, (uint32)q_u->ctr->info.inf12.bad_attempt_lockout);
 			break;
 		default:
 			return NT_STATUS_INVALID_INFO_CLASS;

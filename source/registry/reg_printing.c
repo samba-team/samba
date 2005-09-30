@@ -55,34 +55,6 @@ struct reg_dyn_tree {
  *********************************************************************
  *********************************************************************/
 
-/**********************************************************************
- move to next non-delimter character
-*********************************************************************/
-
-static char* remaining_path( const char *key )
-{
-	static pstring new_path;
-	char *p;
-	
-	if ( !key || !*key )
-		return NULL;
-
-	pstrcpy( new_path, key );
-	/* normalize_reg_path( new_path ); */
-	
-	if ( !(p = strchr( new_path, '\\' )) ) 
-	{
-		if ( !(p = strchr( new_path, '/' )) )
-			p = new_path;
-		else 
-			p++;
-	}
-	else
-		p++;
-		
-	return p;
-}
-
 /***********************************************************************
  simple function to prune a pathname down to the basename of a file 
  **********************************************************************/
@@ -107,7 +79,7 @@ static char* dos_basename ( char *path )
 
 static int key_forms_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 {
-	char *p = remaining_path( key + strlen(KEY_FORMS) );
+	char *p = reg_remaining_path( key + strlen(KEY_FORMS) );
 	
 	/* no keys below Forms */
 	
@@ -204,9 +176,9 @@ static char* strip_printers_prefix( const char *key )
 	/* normalizing the path does not change length, just key delimiters and case */
 
 	if ( strncmp( path, KEY_WINNT_PRINTERS, strlen(KEY_WINNT_PRINTERS) ) == 0 )
-		subkeypath = remaining_path( key + strlen(KEY_WINNT_PRINTERS) );
+		subkeypath = reg_remaining_path( key + strlen(KEY_WINNT_PRINTERS) );
 	else
-		subkeypath = remaining_path( key + strlen(KEY_CONTROL_PRINTERS) );
+		subkeypath = reg_remaining_path( key + strlen(KEY_CONTROL_PRINTERS) );
 		
 	return subkeypath;
 }
@@ -445,7 +417,7 @@ static void fill_in_printer_values( NT_PRINTER_INFO_LEVEL_2 *info2, REGVAL_CTR *
 	/* use a prs_struct for converting the devmode and security 
 	   descriptor to REG_BINARY */
 	
-	prs_init( &prs, MAX_PDU_FRAG_LEN, values, MARSHALL);
+	prs_init( &prs, RPC_MAX_PDU_FRAG_LEN, values, MARSHALL);
 
 	/* stream the device mode */
 		
@@ -754,7 +726,7 @@ static int key_driver_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
 
 	DEBUG(10,("key_driver_fetch_keys key=>[%s]\n", key ? key : "NULL" ));
 	
-	keystr = remaining_path( key + strlen(KEY_ENVIRONMENTS) );	
+	keystr = reg_remaining_path( key + strlen(KEY_ENVIRONMENTS) );	
 	
 	/* list all possible architectures */
 	
@@ -1044,7 +1016,7 @@ static int key_driver_fetch_values( const char *key, REGVAL_CTR *values )
 
 	/* no values in the Environments key */
 	
-	if ( !(keystr = remaining_path( key + strlen(KEY_ENVIRONMENTS) )) )
+	if ( !(keystr = reg_remaining_path( key + strlen(KEY_ENVIRONMENTS) )) )
 		return 0;
 	
 	pstrcpy( subkey, keystr);

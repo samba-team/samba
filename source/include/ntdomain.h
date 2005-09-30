@@ -24,30 +24,6 @@
 #ifndef _NT_DOMAIN_H /* _NT_DOMAIN_H */
 #define _NT_DOMAIN_H 
 
-struct uuid {
-	uint32 time_low;
-	uint16 time_mid;
-	uint16 time_hi_and_version;
-	uint8  clock_seq[2];
-	uint8  node[6];
-};
-#define UUID_SIZE 16
-
-#define UUID_FLAT_SIZE 16
-typedef struct uuid_flat {
-	uint8 info[UUID_FLAT_SIZE];
-} UUID_FLAT;
-
-/* dce/rpc support */
-#include "rpc_dce.h"
-
-/* miscellaneous structures / defines */
-#include "rpc_misc.h"
-
-#include "rpc_creds.h"
-
-#include "talloc.h"
-
 /*
  * A bunch of stuff that was put into smb.h
  * in the NTDOM branch - it didn't belong there.
@@ -67,6 +43,7 @@ typedef struct _prs_struct {
 	uint32 grow_size; /* size requested via prs_grow() calls */
 	char *data_p; /* The buffer itself. */
 	TALLOC_CTX *mem_ctx; /* When unmarshalling, use this.... */
+	const char *sess_key; /* If we have to do encrypt/decrypt on the fly. */
 } prs_struct;
 
 /*
@@ -97,7 +74,7 @@ typedef struct _output_data {
 	 * The current PDU being returned. This inclues
 	 * headers, data and authentication footer.
 	 */
-	unsigned char current_pdu[MAX_PDU_FRAG_LEN];
+	unsigned char current_pdu[RPC_MAX_PDU_FRAG_LEN];
 
 	/* The amount of data in the current_pdu buffer. */
 	uint32 current_pdu_len;
@@ -111,9 +88,9 @@ typedef struct _input_data {
 	 * This is the current incoming pdu. The data here
 	 * is collected via multiple writes until a complete
 	 * pdu is seen, then the data is copied into the in_data
-	 * structure. The maximum size of this is 0x1630 (MAX_PDU_FRAG_LEN).
+	 * structure. The maximum size of this is 0x1630 (RPC_MAX_PDU_FRAG_LEN).
 	 */
-	unsigned char current_in_pdu[MAX_PDU_FRAG_LEN];
+	unsigned char current_in_pdu[RPC_MAX_PDU_FRAG_LEN];
 
 	/*
 	 * The amount of data needed to complete the in_pdu.
@@ -158,22 +135,22 @@ struct handle_list {
 
 /* Domain controller authentication protocol info */
 struct dcinfo {
-	DOM_CHAL clnt_chal; /* Initial challenge received from client */
-	DOM_CHAL srv_chal;  /* Initial server challenge */
-	DOM_CRED clnt_cred; /* Last client credential */
-	DOM_CRED srv_cred;  /* Last server credential */
+	uint32 sequence; /* "timestamp" from client. */
+	DOM_CHAL seed_chal; 
+	DOM_CHAL clnt_chal; /* Client credential */
+	DOM_CHAL srv_chal;  /* Server credential */
  
 	uchar  sess_key[8]; /* Session key */
-	uchar  md4pw[16];   /* md4(machine password) */
+	uchar  mach_pw[16];   /* md4(machine password) */
 
 	fstring mach_acct;  /* Machine name we've authenticated. */
 
 	fstring remote_machine;  /* Machine name we've authenticated. */
+	fstring domain;
 
 	BOOL challenge_sent;
 	BOOL got_session_key;
 	BOOL authenticated;
-
 };
 
 typedef struct pipe_rpc_fns {
@@ -187,6 +164,46 @@ typedef struct pipe_rpc_fns {
 	uint32 context_id;
 	
 } PIPE_RPC_FNS;
+
+/*
+ * Different auth types we support.
+ * Can't keep in sync with wire values as spnego wraps different auth methods.
+ */
+
+enum pipe_auth_type { PIPE_AUTH_TYPE_NONE = 0, PIPE_AUTH_TYPE_NTLMSSP, PIPE_AUTH_TYPE_SCHANNEL,
+			PIPE_AUTH_TYPE_SPNEGO_NTLMSSP, PIPE_AUTH_TYPE_KRB5, PIPE_AUTH_TYPE_SPNEGO_KRB5 };
+
+/* Possible auth levels - keep these in sync with the wire values. */
+enum pipe_auth_level { PIPE_AUTH_LEVEL_NONE = 0,
+			PIPE_AUTH_LEVEL_CONNECT = 1,	/* We treat as NONE. */
+			PIPE_AUTH_LEVEL_INTEGRITY = 5,	/* Sign. */
+			PIPE_AUTH_LEVEL_PRIVACY = 6	/* Seal. */
+};
+
+/* auth state for krb5. */
+struct kerberos_auth_struct {
+	const char *service_principal;
+	DATA_BLOB session_key;
+};
+
+/* auth state for schannel. */
+struct schannel_auth_struct {
+	uchar sess_key[16];
+	uint32 seq_num;
+};
+
+/* auth state for all bind types. */
+
+struct pipe_auth_data {
+	enum pipe_auth_type auth_type; /* switch for union below. */
+	enum pipe_auth_level auth_level;
+	union {
+		struct schannel_auth_struct *schannel_auth;
+		AUTH_NTLMSSP_STATE *auth_ntlmssp_state;
+/*		struct kerberos_auth_struct *kerberos_auth; TO BE ADDED... */
+	} a_u;
+	void (*auth_data_free_func)(struct pipe_auth_data *);
+};
 
 /*
  * DCE/RPC-specific samba-internal-specific handling of data on
@@ -210,20 +227,12 @@ typedef struct pipes_struct {
 	RPC_HDR hdr; /* Incoming RPC header. */
 	RPC_HDR_REQ hdr_req; /* Incoming request header. */
 
-	uint32 ntlmssp_chal_flags; /* Client challenge flags. */
-	BOOL ntlmssp_auth_requested; /* If the client wanted authenticated rpc. */
-	BOOL ntlmssp_auth_validated; /* If the client *got* authenticated rpc. */
-	unsigned char challenge[8];
-	unsigned char ntlmssp_hash[258];
-	uint32 ntlmssp_seq_num;
-	struct dcinfo dc; /* Keeps the creds data. */
+	/* This context is used for pipe state storage and is freed when the pipe is closed. */
+	TALLOC_CTX *pipe_state_mem_ctx;
 
-	 /* Hmm. In my understanding the authentication happens
-	    implicitly later, so there are no two stages for
-	    schannel. */
+	struct pipe_auth_data auth;
 
-	BOOL netsec_auth_validated;
-	struct netsec_auth_struct netsec_auth;
+	struct dcinfo *dc; /* Keeps the creds data from netlogon. */
 
 	/*
 	 * Windows user info.
@@ -233,14 +242,13 @@ typedef struct pipes_struct {
 	fstring wks;
 
 	/*
-	 * Unix user name and credentials.
+	 * Unix user name and credentials used when a pipe is authenticated.
 	 */
 
 	fstring pipe_user_name;
 	struct current_user pipe_user;
-
 	DATA_BLOB session_key;
-
+ 
 	/*
 	 * Set to true when an RPC bind has been done on this pipe.
 	 */
@@ -277,7 +285,8 @@ typedef struct pipes_struct {
 
 	output_data out_data;
 
-	/* talloc context to use when allocating memory on this pipe. */
+	/* This context is used for PUD data and is freed between each pdu.
+		Don't use for pipe state storage. */
 	TALLOC_CTX *mem_ctx;
 
 	/* handle database to use on this pipe. */
@@ -383,27 +392,11 @@ typedef struct {
 
 /* end higher order functions */
 
-
-/* security descriptor structures */
-#include "rpc_secdes.h"
-
-/* pac */
-#include "authdata.h"
-
-/* different dce/rpc pipes */
-#include "rpc_buffer.h"
-#include "rpc_lsa.h"
-#include "rpc_netlogon.h"
-#include "rpc_reg.h"
-#include "rpc_samr.h"
-#include "rpc_srvsvc.h"
-#include "rpc_wkssvc.h"
-#include "rpc_svcctl.h"
-#include "rpc_spoolss.h"
-#include "rpc_eventlog.h"
-#include "rpc_dfs.h"
-#include "rpc_ds.h"
-#include "rpc_echo.h"
-#include "rpc_shutdown.h"
+typedef struct {
+	uint32 size;
+	prs_struct prs;
+	uint32 struct_start;
+	uint32 string_at_end;
+} RPC_BUFFER;
 
 #endif /* _NT_DOMAIN_H */

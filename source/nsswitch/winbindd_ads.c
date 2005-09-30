@@ -830,13 +830,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	*names       = NULL;
 	*dom_sids    = NULL;
 
-	{
-		unsigned char *session_key;
-		DOM_CRED *creds;
-
-		result = cm_connect_netlogon(domain, mem_ctx, &cli,
-					     &session_key, &creds);
-	}
+	result = cm_connect_netlogon(domain, &cli);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(5, ("trusted_domains: Could not open a connection to %s "
@@ -845,11 +839,12 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
-	if ( NT_STATUS_IS_OK(result) )
+	if ( NT_STATUS_IS_OK(result) ) {
 		result = rpccli_ds_enum_domain_trusts(cli, mem_ctx,
 						      cli->cli->desthost, 
 						      flags, &domains,
 						      (unsigned int *)&count);
+	}
 	
 	if ( NT_STATUS_IS_OK(result) && count) {
 	

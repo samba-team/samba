@@ -235,7 +235,7 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("user_info has passwords of length %d and %d\n", 
-		    user_info->lm_resp.length, user_info->nt_resp.length));
+		    (int)user_info->lm_resp.length, (int)user_info->nt_resp.length));
 	DEBUG(100, ("lm:\n"));
 	dump_data(100, user_info->lm_resp.data, user_info->lm_resp.length);
 	DEBUG(100, ("nt:\n"));

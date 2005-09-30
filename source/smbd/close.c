@@ -110,31 +110,30 @@ static int close_filestruct(files_struct *fsp)
  If any deferred opens are waiting on this close, notify them.
 ****************************************************************************/
 
-static void notify_deferred_opens(files_struct *fsp)
+static void notify_deferred_opens(struct share_mode_lock *lck)
 {
-	deferred_open_entry *de_array = NULL;
-	int num_de_entries, i;
-	pid_t mypid = sys_getpid();
-
-	if (!lp_defer_sharing_violations()) {
-		return;
-	}
-
-	num_de_entries = get_deferred_opens(fsp->conn, fsp->dev, fsp->inode, &de_array);
-	for (i = 0; i < num_de_entries; i++) {
-		deferred_open_entry *entry = &de_array[i];
-		if (entry->pid == mypid) {
-			/*
-			 * We need to notify ourself to retry the open.
-			 * Do this by finding the queued SMB record, moving it
-			 * to the head of the queue and changing the wait time to zero.
-			 */
-			schedule_sharing_violation_open_smb_message(entry->mid);
-		} else {
-			send_deferred_open_retry_message(entry);
-		}
-	}
-	SAFE_FREE(de_array);
+ 	int i;
+ 
+ 	for (i=0; i<lck->num_share_modes; i++) {
+ 		struct share_mode_entry *e = &lck->share_modes[i];
+ 
+ 		if (!is_deferred_open_entry(e)) {
+ 			continue;
+ 		}
+ 
+ 		if (procid_is_me(&e->pid)) {
+ 			/*
+ 			 * We need to notify ourself to retry the open.  Do
+ 			 * this by finding the queued SMB record, moving it to
+ 			 * the head of the queue and changing the wait time to
+ 			 * zero.
+ 			 */
+ 			schedule_deferred_open_smb_message(e->op_mid);
+ 		} else {
+ 			message_send_pid(e->pid, MSG_SMB_OPEN_RETRY,
+ 					 e, sizeof(*e), True);
+ 		}
+ 	}
 }
 
 /****************************************************************************
@@ -148,13 +147,12 @@ static void notify_deferred_opens(files_struct *fsp)
 
 static int close_normal_file(files_struct *fsp, BOOL normal_close)
 {
-	share_mode_entry *share_entry = NULL;
-	size_t share_entry_count = 0;
 	BOOL delete_file = False;
 	connection_struct *conn = fsp->conn;
 	int saved_errno = 0;
 	int err = 0;
 	int err1 = 0;
+	struct share_mode_lock *lck;
 
 	remove_pending_lock_requests_by_fid(fsp);
 
@@ -194,23 +192,34 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	 * This prevents race conditions with the file being created. JRA.
 	 */
 
-	lock_share_entry_fsp(fsp);
+	lck = get_share_mode_lock(NULL, fsp->dev, fsp->inode, fsp->fsp_name);
 
-	share_entry_count = del_share_mode(fsp, &share_entry,
-					   &delete_file);
-
-	DEBUG(10,("close_normal_file: share_entry_count = %lu for file %s\n",
-		(unsigned long)share_entry_count, fsp->fsp_name ));
-
-	if (share_entry_count != 0) {
-		/* We're not the last ones -- don't delete */
-		delete_file = False;
+	if (lck == NULL) {
+		DEBUG(0, ("Could not get share mode lock\n"));
+		return EINVAL;
 	}
 
-	SAFE_FREE(share_entry);
+	if (!del_share_mode(lck, fsp)) {
+		DEBUG(0, ("Could not delete share entry\n"));
+	}
+
+	delete_file = lck->delete_on_close;
+
+	if (delete_file) {
+		int i;
+		/* See if others still have the file open. If this is the
+		 * case, then don't delete */
+		for (i=0; i<lck->num_share_modes; i++) {
+			if (is_valid_share_mode_entry(&lck->share_modes[i])) {
+				delete_file = False;
+				break;
+			}
+		}
+	}
 
 	/* Notify any deferred opens waiting on this close. */
-	notify_deferred_opens(fsp);
+	notify_deferred_opens(lck);
+	reply_to_oplock_break_requests(fsp);
 
 	/*
 	 * NT can set delete_on_close of the last open
@@ -234,7 +243,7 @@ with error %s\n", fsp->fsp_name, strerror(errno) ));
 		process_pending_change_notify_queue((time_t)0);
 	}
 
-	unlock_share_entry_fsp(fsp);
+	talloc_free(lck);
 
 	if(fsp->oplock_type)
 		release_file_oplock(fsp);
@@ -296,7 +305,7 @@ static int close_directory(files_struct *fsp, BOOL normal_close)
 	 */
 
 	if (normal_close &&
-	    get_delete_on_close_flag(fsp->dev, fsp->inode)) {
+	    get_delete_on_close_flag(fsp->dev, fsp->inode, fsp->fsp_name)) {
 		BOOL ok = rmdir_internals(fsp->conn, fsp->fsp_name);
 		DEBUG(5,("close_directory: %s. Delete on close was set - deleting directory %s.\n",
 			fsp->fsp_name, ok ? "succeeded" : "failed" ));

@@ -192,7 +192,6 @@ static BOOL wbinfo_get_userdomgroups(const char *user_sid)
 	return True;
 }
 
-
 /* Convert NetBIOS name to IP */
 
 static BOOL wbinfo_wins_byname(char *name)

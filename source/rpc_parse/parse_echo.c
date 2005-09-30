@@ -21,8 +21,6 @@
  */
 
 #include "includes.h"
-#include "nterr.h"
-#include "rpc_parse.h"   
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_PARSE

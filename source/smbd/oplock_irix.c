@@ -86,7 +86,7 @@ Disabling kernel oplock support.\n", strerror(errno) ));
  * oplock break protocol.
 ****************************************************************************/
 
-static BOOL irix_oplock_receive_message(fd_set *fds, char *buffer, int buffer_len)
+static files_struct *irix_oplock_receive_message(fd_set *fds)
 {
 	extern int smb_read_error;
 	oplock_stat_t os;
@@ -102,7 +102,7 @@ static BOOL irix_oplock_receive_message(fd_set *fds, char *buffer, int buffer_le
 		DEBUG(0,("irix_oplock_receive_message: read of kernel notification failed. \
 Error was %s.\n", strerror(errno) ));
 		smb_read_error = READ_ERROR;
-		return False;
+		return NULL;
 	}
 
 	/*
@@ -122,7 +122,7 @@ Error was %s.\n", strerror(errno) ));
 			return True;
 		}
 		smb_read_error = READ_ERROR;
-		return False;
+		return NULL;
 	}
 
 	/*
@@ -138,24 +138,8 @@ Error was %s.\n", strerror(errno) ));
      
 	DEBUG(5,("irix_oplock_receive_message: kernel oplock break request received for \
 dev = %x, inode = %.0f\n, file_id = %ul", (unsigned int)fsp->dev, (double)fsp->inode, fsp->file_id ));
-     
-	/*
-	 * Create a kernel oplock break message.
-	 */
-    
-	/* Setup the message header */
-	SIVAL(buffer,OPBRK_CMD_LEN_OFFSET,KERNEL_OPLOCK_BREAK_MSG_LEN);
-	SSVAL(buffer,OPBRK_CMD_PORT_OFFSET,0);
-   
-	buffer += OPBRK_CMD_HEADER_LEN;
-     
-	SSVAL(buffer,OPBRK_MESSAGE_CMD_OFFSET,KERNEL_OPLOCK_BREAK_CMD);
-   
-	memcpy(buffer + KERNEL_OPLOCK_BREAK_DEV_OFFSET, (char *)&fsp->dev, sizeof(fsp->dev));
-	memcpy(buffer + KERNEL_OPLOCK_BREAK_INODE_OFFSET, (char *)&fsp->inode, sizeof(fsp->inode));	
-	memcpy(buffer + KERNEL_OPLOCK_BREAK_FILEID_OFFSET, (char *)&fsp->file_id, sizeof(fsp->file_id));	
-   
-	return True;
+
+	return fsp;
 }
 
 /****************************************************************************
@@ -215,30 +199,6 @@ oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
 }
 
 /****************************************************************************
- Parse a kernel oplock message.
-****************************************************************************/
-
-static BOOL irix_kernel_oplock_parse(char *msg_start, int msg_len,
-		SMB_INO_T *inode, SMB_DEV_T *dev, unsigned long *file_id)
-{
-	/* Ensure that the msg length is correct. */
-	if(msg_len != KERNEL_OPLOCK_BREAK_MSG_LEN) {
-		DEBUG(0,("incorrect length for KERNEL_OPLOCK_BREAK_CMD (was %d, should be %d).\n", 
-			 msg_len, KERNEL_OPLOCK_BREAK_MSG_LEN));
-		return False;
-	}
-
-	memcpy((char *)inode, msg_start+KERNEL_OPLOCK_BREAK_INODE_OFFSET, sizeof(*inode));
-	memcpy((char *)dev, msg_start+KERNEL_OPLOCK_BREAK_DEV_OFFSET, sizeof(*dev));
-	memcpy((char *)file_id, msg_start+KERNEL_OPLOCK_BREAK_FILEID_OFFSET, sizeof(*file_id));
-
-	DEBUG(5,("kernel oplock break request for file dev = %x, inode = %.0f, file_id = %ul\n", 
-		(unsigned int)*dev, (double)*inode, *file_id));
-
-	return True;
-}
-
-/****************************************************************************
  Set *maxfd to include oplock read pipe.
 ****************************************************************************/
 
@@ -274,7 +234,6 @@ struct kernel_oplocks *irix_init_kernel_oplocks(void)
 	koplocks.receive_message = irix_oplock_receive_message;
 	koplocks.set_oplock = irix_set_kernel_oplock;
 	koplocks.release_oplock = irix_release_kernel_oplock;
-	koplocks.parse_message = irix_kernel_oplock_parse;
 	koplocks.msg_waiting = irix_oplock_msg_waiting;
 	koplocks.notification_fd = oplock_pipe_read;
 

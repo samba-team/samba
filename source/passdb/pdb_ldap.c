@@ -178,6 +178,146 @@ static const char* get_objclass_filter( int schema_ver )
 	return objclass_filter;	
 }
 
+/*****************************************************************
+ Scan a sequence number off OpenLDAP's syncrepl contextCSN
+******************************************************************/
+
+static NTSTATUS ldapsam_get_seq_num(struct pdb_methods *my_methods, time_t *seq_num)
+{
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
+	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
+	LDAPMessage *msg = NULL;
+	LDAPMessage *entry = NULL;
+	TALLOC_CTX *mem_ctx;
+	char **values = NULL;
+	int rc, num_result, num_values, rid;
+	pstring suffix;
+	fstring tok;
+	const char *p;
+	const char **attrs;
+
+	/* Unfortunatly there is no proper way to detect syncrepl-support in
+	 * smbldap_connect_system(). The syncrepl OIDs are submitted for publication
+	 * but do not show up in the root-DSE yet. Neither we can query the
+	 * subschema-context for the syncProviderSubentry or syncConsumerSubentry
+	 * objectclass. Currently we require lp_ldap_suffix() to show up as
+	 * namingContext.  -  Guenther
+	 */
+
+	if (!lp_parm_bool(-1, "ldapsam", "syncrepl_seqnum", False)) {
+		return ntstatus;
+	}
+
+	if (!seq_num) {
+		DEBUG(3,("ldapsam_get_seq_num: no sequence_number\n"));
+		return ntstatus;
+	}
+
+	if (!smbldap_has_naming_context(ldap_state->smbldap_state, lp_ldap_suffix())) {
+		DEBUG(3,("ldapsam_get_seq_num: DIT not configured to hold %s "
+			 "as top-level namingContext\n", lp_ldap_suffix()));
+		return ntstatus;
+	}
+
+	mem_ctx = talloc_init("ldapsam_get_seq_num");
+
+	if (mem_ctx == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	attrs = TALLOC_ARRAY(mem_ctx, const char *, 2);
+
+	/* if we got a syncrepl-rid (up to three digits long) we speak with a consumer */
+	rid = lp_parm_int(-1, "ldapsam", "syncrepl_rid", -1);
+	if (rid > 0) {
+
+		/* consumer syncreplCookie: */
+		/* csn=20050126161620Z#0000001#00#00000 */
+		attrs[0] = talloc_strdup(mem_ctx, "syncreplCookie");
+		attrs[1] = NULL;
+		pstr_sprintf( suffix, "cn=syncrepl%d,%s", rid, lp_ldap_suffix());
+
+	} else {
+
+		/* provider contextCSN */
+		/* 20050126161620Z#000009#00#000000 */
+		attrs[0] = talloc_strdup(mem_ctx, "contextCSN");
+		attrs[1] = NULL;
+		pstr_sprintf( suffix, "cn=ldapsync,%s", lp_ldap_suffix());
+
+	}
+
+	rc = smbldap_search(ldap_state->smbldap_state, suffix,
+			    LDAP_SCOPE_BASE, "(objectclass=*)", attrs, 0, &msg);
+
+	if (rc != LDAP_SUCCESS) {
+
+		char *ld_error = NULL;
+		ldap_get_option(ldap_state->smbldap_state->ldap_struct,
+				LDAP_OPT_ERROR_STRING, &ld_error);
+		DEBUG(0,("ldapsam_get_seq_num: Failed search for suffix: %s, error: %s (%s)\n", 
+			suffix,ldap_err2string(rc), ld_error?ld_error:"unknown"));
+		SAFE_FREE(ld_error);
+		goto done;
+	}
+
+	num_result = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, msg);
+	if (num_result != 1) {
+		DEBUG(3,("ldapsam_get_seq_num: Expected one entry, got %d\n", num_result));
+		goto done;
+	}
+
+	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, msg);
+	if (entry == NULL) {
+		DEBUG(3,("ldapsam_get_seq_num: Could not retrieve entry\n"));
+		goto done;
+	}
+
+	values = ldap_get_values(ldap_state->smbldap_state->ldap_struct, entry, attrs[0]);
+	if (values == NULL) {
+		DEBUG(3,("ldapsam_get_seq_num: no values\n"));
+		goto done;
+	}
+
+	num_values = ldap_count_values(values);
+	if (num_values == 0) {
+		DEBUG(3,("ldapsam_get_seq_num: not a single value\n"));
+		goto done;
+	}
+
+	p = values[0];
+	if (!next_token(&p, tok, "#", sizeof(tok))) {
+		DEBUG(0,("ldapsam_get_seq_num: failed to parse sequence number\n"));
+		goto done;
+	}
+
+	p = tok;
+	if (!strncmp(p, "csn=", strlen("csn=")))
+		p += strlen("csn=");
+
+	DEBUG(10,("ldapsam_get_seq_num: got %s: %s\n", attrs[0], p));
+
+	*seq_num = generalized_to_unix_time(p);
+
+	/* very basic sanity check */
+	if (*seq_num <= 0) {
+		DEBUG(3,("ldapsam_get_seq_num: invalid sequence number: %d\n", 
+			(int)*seq_num));
+		goto done;
+	}
+
+	ntstatus = NT_STATUS_OK;
+
+ done:
+	if (values != NULL)
+		ldap_value_free(values);
+	if (msg != NULL)
+		ldap_msgfree(msg);
+	if (mem_ctx)
+		talloc_destroy(mem_ctx);
+
+	return ntstatus;
+}
+
 /*******************************************************************
  Run the search by name.
 ******************************************************************/
@@ -694,9 +834,9 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 
 	if (ldap_state->is_nds_ldap) {
 		char *user_dn;
-		int pwd_len;
+		size_t pwd_len;
 		char clear_text_pw[512];
-
+   
 		/* Make call to Novell eDirectory ldap extension to get clear text password.
 			NOTE: This will only work if we have an SSL connection to eDirectory. */
 		user_dn = smbldap_get_dn(ldap_state->smbldap_state->ldap_struct, entry);
@@ -717,7 +857,7 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 		} else {
 			DEBUG(0, ("init_sam_from_ldap: failed to get user_dn for '%s'\n", username));
 		}
- 	}
+	}
 
 	if (use_samba_attrs) {
 		if (!smbldap_get_single_pstring (ldap_state->smbldap_state->ldap_struct, entry, 
@@ -741,9 +881,11 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 				return False;
 			ZERO_STRUCT(smbntpwd);
 		}
- 	}
+	}
 
-	account_policy_get(AP_PASSWORD_HISTORY, &pwHistLen);
+	pwHistLen = 0;
+
+	pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHistLen);
 	if (pwHistLen > 0){
 		uint8 *pwhist = NULL;
 		int i;
@@ -1087,7 +1229,7 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 
 		if (need_update(sampass, PDB_PWHISTORY)) {
 			uint32 pwHistLen = 0;
-			account_policy_get(AP_PASSWORD_HISTORY, &pwHistLen);
+			pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHistLen);
 			if (pwHistLen == 0) {
 				/* Remove any password history from the LDAP store. */
 				memset(temp, '0', 64); /* NOTE !!!! '0' *NOT '\0' */
@@ -1153,7 +1295,7 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 		uint16 badcount = pdb_get_bad_password_count(sampass);
 		time_t badtime = pdb_get_bad_password_time(sampass);
 		uint32 pol;
-		account_policy_get(AP_BAD_ATTEMPT_LOCKOUT, &pol);
+		pdb_get_account_policy(AP_BAD_ATTEMPT_LOCKOUT, &pol);
 
 		DEBUG(3, ("updating bad password fields, policy=%u, count=%u, time=%u\n",
 			(unsigned int)pol, (unsigned int)badcount, (unsigned int)badtime));
@@ -2158,10 +2300,10 @@ static NTSTATUS ldapsam_getgrgid(struct pdb_methods *methods, GROUP_MAP *map,
 {
 	pstring filter;
 
-	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%d))",
+	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%lu))",
 		LDAP_OBJ_GROUPMAP,
 		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_GIDNUMBER),
-		gid);
+		(unsigned long)gid);
 
 	return ldapsam_getgroup(methods, filter, map);
 }
@@ -2312,7 +2454,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 
 	{
 		const char *attrs[] = { "memberUid", NULL };
-		rc = smbldap_search(conn, lp_ldap_group_suffix(),
+		rc = smbldap_search(conn, lp_ldap_user_suffix(),
 				    LDAP_SCOPE_SUBTREE, filter, attrs, 0,
 				    &msg);
 	}
@@ -2536,10 +2678,10 @@ static int ldapsam_search_one_group_by_gid(struct ldapsam_privates *ldap_state,
 {
 	pstring filter;
 
-	pstr_sprintf(filter, "(&(|(objectClass=%s)(objectclass=%s))(%s=%d))", 
+	pstr_sprintf(filter, "(&(|(objectClass=%s)(objectclass=%s))(%s=%lu))", 
 		LDAP_OBJ_POSIXGROUP, LDAP_OBJ_IDMAP_ENTRY,
 		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_GIDNUMBER),
-		gid);
+		(unsigned long)gid);
 
 	return ldapsam_search_one_group(ldap_state, filter, result);
 }
@@ -2589,7 +2731,7 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 		ldap_msgfree(result);
 
 		pstrcpy( suffix, lp_ldap_idmap_suffix() );
-		pstr_sprintf(filter, "(&(objectClass=%s)(%s=%d))",
+		pstr_sprintf(filter, "(&(objectClass=%s)(%s=%u))",
 			     LDAP_OBJ_IDMAP_ENTRY, LDAP_ATTRIBUTE_GIDNUMBER,
 			     map->gid);
 		
@@ -3128,6 +3270,187 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 	}
 
 	ldap_msgfree(result);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods, int policy_index, uint32 value)
+{
+	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
+	int rc;
+	LDAPMod **mods = NULL;
+	fstring value_string;
+	const char *policy_attr = NULL;
+
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)methods->private_data;
+
+	const char *attrs[2];
+
+	DEBUG(10,("ldapsam_set_account_policy\n"));
+
+	if (!ldap_state->domain_dn) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	policy_attr = get_account_policy_attr(policy_index);
+	if (policy_attr == NULL) {
+		DEBUG(0,("ldapsam_set_account_policy: invalid policy\n"));
+		return ntstatus;
+	}
+
+	attrs[0] = policy_attr;
+	attrs[1] = NULL;
+
+	slprintf(value_string, sizeof(value_string) - 1, "%i", value);
+
+	smbldap_set_mod(&mods, LDAP_MOD_REPLACE, policy_attr, value_string);
+
+	rc = smbldap_modify(ldap_state->smbldap_state, ldap_state->domain_dn, mods);
+
+	ldap_mods_free(mods, True);
+
+	if (rc != LDAP_SUCCESS) {
+		char *ld_error = NULL;
+		ldap_get_option(ldap_state->smbldap_state->ldap_struct,
+				LDAP_OPT_ERROR_STRING,&ld_error);
+		
+		DEBUG(0, ("ldapsam_set_account_policy: Could not set account policy "
+			  "for %s, error: %s (%s)\n", ldap_state->domain_dn, ldap_err2string(rc),
+			  ld_error?ld_error:"unknown"));
+		SAFE_FREE(ld_error);
+		return ntstatus;
+	}
+
+	if (!cache_account_policy_set(policy_index, value)) {
+		DEBUG(0,("ldapsam_set_account_policy: failed to update local tdb cache\n"));
+		return ntstatus;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ldapsam_get_account_policy_from_ldap(struct pdb_methods *methods, int policy_index, uint32 *value)
+{
+	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
+	LDAPMessage *result = NULL;
+	LDAPMessage *entry = NULL;
+	int count;
+	int rc;
+	char **vals = NULL;
+	const char *policy_attr = NULL;
+
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)methods->private_data;
+
+	const char *attrs[2];
+
+	DEBUG(10,("ldapsam_get_account_policy_from_ldap\n"));
+
+	if (!ldap_state->domain_dn) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	policy_attr = get_account_policy_attr(policy_index);
+	if (!policy_attr) {
+		DEBUG(0,("ldapsam_get_account_policy_from_ldap: invalid policy index: %d\n", policy_index));
+		return ntstatus;
+	}
+
+	attrs[0] = policy_attr;
+	attrs[1] = NULL;
+
+	rc = smbldap_search(ldap_state->smbldap_state, ldap_state->domain_dn,
+			    LDAP_SCOPE_BASE, "(objectclass=*)", attrs, 0, &result);
+
+	if (rc != LDAP_SUCCESS) {
+		char *ld_error = NULL;
+		ldap_get_option(ldap_state->smbldap_state->ldap_struct,
+				LDAP_OPT_ERROR_STRING,&ld_error);
+		
+		DEBUG(0, ("ldapsam_get_account_policy_from_ldap: Could not set account policy "
+			  "for %s, error: %s (%s)\n", ldap_state->domain_dn, ldap_err2string(rc),
+			  ld_error?ld_error:"unknown"));
+		SAFE_FREE(ld_error);
+		return ntstatus;
+	}
+
+	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result);
+	if (count < 1) {
+		goto out;
+	}
+
+	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, result);
+	if (entry == NULL) {
+		goto out;
+	}
+
+	vals = ldap_get_values(ldap_state->smbldap_state->ldap_struct, entry, policy_attr);
+	if (vals == NULL) {
+		goto out;
+	}
+
+	*value = (uint32)atol(vals[0]);
+	
+	ntstatus = NT_STATUS_OK;
+
+out:
+	if (vals)
+		ldap_value_free(vals);
+	ldap_msgfree(result);
+
+	return ntstatus;
+}
+
+/* wrapper around ldapsam_get_account_policy_from_ldap(), handles tdb as cache 
+
+   - if there is a valid cache entry, return that
+   - if there is an LDAP entry, update cache and return 
+   - otherwise set to default, update cache and return
+
+   Guenther
+*/
+static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods, int policy_index, uint32 *value)
+{
+	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
+
+	if (cache_account_policy_get(policy_index, value)) {
+		DEBUG(11,("ldapsam_get_account_policy: got valid value from cache\n"));
+		return NT_STATUS_OK;
+	}
+
+	ntstatus = ldapsam_get_account_policy_from_ldap(methods, policy_index, value);
+	if (NT_STATUS_IS_OK(ntstatus)) {
+		goto update_cache;
+	}
+
+	DEBUG(10,("ldapsam_get_account_policy: failed to retrieve from ldap, returning default.\n"));
+
+#if 0
+	/* should we automagically migrate old tdb value here ? */
+	if (account_policy_get(policy_index, value))
+		goto update_ldap;
+
+	DEBUG(10,("ldapsam_get_account_policy: no tdb for %d, trying default\n", policy_index));
+#endif
+
+	if (!account_policy_get_default(policy_index, value)) {
+		return ntstatus;
+	}
+	
+/* update_ldap: */
+ 
+ 	ntstatus = ldapsam_set_account_policy(methods, policy_index, *value);
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		return ntstatus;
+	}
+		
+ update_cache:
+ 
+	if (!cache_account_policy_set(policy_index, *value)) {
+		DEBUG(0,("ldapsam_get_account_policy: failed to update local tdb as a cache\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	return NT_STATUS_OK;
 }
 
@@ -3889,6 +4212,11 @@ static NTSTATUS pdb_init_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **
 	(*pdb_method)->enum_group_members = ldapsam_enum_group_members;
 	(*pdb_method)->enum_group_memberships = ldapsam_enum_group_memberships;
 	(*pdb_method)->lookup_rids = ldapsam_lookup_rids;
+
+	(*pdb_method)->get_account_policy = ldapsam_get_account_policy;
+	(*pdb_method)->set_account_policy = ldapsam_set_account_policy;
+
+	(*pdb_method)->get_seq_num = ldapsam_get_seq_num;
 
 	/* TODO: Setup private data and free */
 

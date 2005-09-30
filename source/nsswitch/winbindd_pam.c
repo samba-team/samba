@@ -37,7 +37,7 @@ static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx,
 	if (!prs_init(&ps, 256 /* Random, non-zero number */, mem_ctx, MARSHALL)) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	if (!net_io_user_info3("", info3, &ps, 1, 3)) {
+	if (!net_io_user_info3("", info3, &ps, 1, 3, False)) {
 		prs_mem_free(&ps);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -227,15 +227,11 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 {
 	NTSTATUS result;
 	fstring name_domain, name_user;
-	const char *srv_name_slash;
         NET_USER_INFO_3 info3;
-	unsigned char *session_key;
-	struct rpc_pipe_client *pipe_cli;
+	struct rpc_pipe_client *netlogon_pipe;
 	uchar chal[8];
 	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
-	DOM_CRED ret_creds;
-	DOM_CRED *credentials;
 	int attempts = 0;
 	unsigned char local_lm_response[24];
 	unsigned char local_nt_response[24];
@@ -311,7 +307,6 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 					   local_nt_response, 
 					   sizeof(local_nt_response));
 	}
-
 	
 	/* what domain should we contact? */
 	
@@ -333,49 +328,30 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 		contact_domain = find_our_domain();
 	}
 
-	srv_name_slash = talloc_asprintf(state->mem_ctx, "\\\\%s",
-					 contact_domain->dcname);
-	if (srv_name_slash == NULL) {
-		DEBUG(0, ("talloc_asprintf failed\n"));
-		return WINBINDD_ERROR;
-	}
-		
 	/* check authentication loop */
 
 	do {
-		DOM_CRED clnt_creds;
 
 		ZERO_STRUCT(info3);
-		ZERO_STRUCT(ret_creds);
 		retry = False;
 
-		result = cm_connect_netlogon(contact_domain, state->mem_ctx,
-					     &pipe_cli, &session_key,
-					     &credentials);
+		result = cm_connect_netlogon(contact_domain, &netlogon_pipe);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
 			goto done;
 		}
 
-		credentials->timestamp.time = time(NULL);
-		memcpy(&clnt_creds, credentials, sizeof(clnt_creds));
-
-		/* Calculate the new credentials. */
-		cred_create(session_key, &credentials->challenge,
-			    clnt_creds.timestamp, &(clnt_creds.challenge));
-
-		result = rpccli_netlogon_sam_network_logon(pipe_cli,
-							   state->mem_ctx,
-							   srv_name_slash,
-							   &clnt_creds,
-							   &ret_creds,
-							   name_user,
-							   name_domain, 
-							   global_myname(),
-							   chal, lm_resp,
-							   nt_resp, &info3,
-							   session_key);
+		result = rpccli_netlogon_sam_network_logon(netlogon_pipe,
+							state->mem_ctx,
+							contact_domain->dcname, /* server name */
+							name_user,              /* user name */
+							name_domain,            /* target domain */
+							global_myname(),        /* workstation */
+							chal,
+							lm_resp,
+							nt_resp,
+							&info3);
 		attempts += 1;
 
 		/* We have to try a second time as cm_connect_netlogon
@@ -404,21 +380,11 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 		
 	} while ( (attempts < 2) && retry );
 
-	/* Only check creds if we got a connection. */
-	if (contact_domain->conn.cli &&
-			!(NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) ||
-				NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL))) {
-		if (!clnt_deal_with_creds(session_key, credentials, &ret_creds)) {
-			DEBUG(3, ("DC %s sent wrong credentials\n",
-				pipe_cli->cli->srv_name_slash));
-			result = NT_STATUS_ACCESS_DENIED;
-		}
-	}
-
 	if (NT_STATUS_IS_OK(result)) {
 		/* Check if the user is in the right group */
 
-		if (!NT_STATUS_IS_OK(result = check_info3_in_group(state->mem_ctx, &info3, state->request.data.auth.require_membership_of_sid))) {
+		if (!NT_STATUS_IS_OK(result = check_info3_in_group(state->mem_ctx, &info3,
+					state->request.data.auth.require_membership_of_sid))) {
 			DEBUG(3, ("User %s is not in the required group (%s), so plaintext authentication is rejected\n",
 				  state->request.data.auth.user, 
 				  state->request.data.auth.require_membership_of_sid));
@@ -426,8 +392,10 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 	}
 
 done:
+
 	/* give us a more useful (more correct?) error code */
-	if ((NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) || (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)))) {
+	if ((NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) ||
+				(NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)))) {
 		result = NT_STATUS_NO_LOGON_SERVERS;
 	}
 	
@@ -450,7 +418,9 @@ done:
 		char *afsname = SMB_STRDUP(lp_afs_username_map());
 		char *cell;
 
-		if (afsname == NULL) goto no_token;
+		if (afsname == NULL) {
+			goto no_token;
+		}
 
 		afsname = realloc_string_sub(afsname, "%D", name_domain);
 		afsname = realloc_string_sub(afsname, "%u", name_user);
@@ -466,7 +436,9 @@ done:
 			afsname = realloc_string_sub(afsname, "%s", sidstr);
 		}
 
-		if (afsname == NULL) goto no_token;
+		if (afsname == NULL) {
+			goto no_token;
+		}
 
 		strlower_m(afsname);
 
@@ -474,7 +446,9 @@ done:
 
 		cell = strchr(afsname, '@');
 
-		if (cell == NULL) goto no_token;
+		if (cell == NULL) {
+			goto no_token;
+		}
 
 		*cell = '\0';
 		cell += 1;
@@ -565,16 +539,12 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 						 struct winbindd_cli_state *state) 
 {
 	NTSTATUS result;
-	const char *srv_name_slash;
         NET_USER_INFO_3 info3;
-	unsigned char *session_key;
-	struct rpc_pipe_client *pipe_cli;
-	DOM_CRED *credentials;
+	struct rpc_pipe_client *netlogon_pipe;
 	const char *name_user = NULL;
 	const char *name_domain = NULL;
 	const char *workstation;
 	struct winbindd_domain *contact_domain;
-	DOM_CRED ret_creds;
 	int attempts = 0;
 	BOOL retry;
 
@@ -618,9 +588,10 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	lm_resp = data_blob_talloc(state->mem_ctx, state->request.data.auth_crap.lm_resp, state->request.data.auth_crap.lm_resp_len);
-	nt_resp = data_blob_talloc(state->mem_ctx, state->request.data.auth_crap.nt_resp, state->request.data.auth_crap.nt_resp_len);
-	
+	lm_resp = data_blob_talloc(state->mem_ctx, state->request.data.auth_crap.lm_resp,
+					state->request.data.auth_crap.lm_resp_len);
+	nt_resp = data_blob_talloc(state->mem_ctx, state->request.data.auth_crap.nt_resp,
+					state->request.data.auth_crap.nt_resp_len);
 
 	/* what domain should we contact? */
 	
@@ -631,33 +602,20 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 			result = NT_STATUS_NO_SUCH_USER;
 			goto done;
 		}
-		
 	} else {
 		if (is_myname(name_domain)) {
 			DEBUG(3, ("Authentication for domain %s (local domain to this server) not supported at this stage\n", name_domain));
 			result =  NT_STATUS_NO_SUCH_USER;
 			goto done;
 		}
-
 		contact_domain = find_our_domain();
 	}
 
-	srv_name_slash = talloc_asprintf(state->mem_ctx, "\\\\%s",
-					 contact_domain->dcname);
-	if (srv_name_slash == NULL) {
-		DEBUG(0, ("talloc_asprintf failed\n"));
-		return WINBINDD_ERROR;
-	}
-		
 	do {
-		DOM_CRED clnt_creds;
 		ZERO_STRUCT(info3);
-		ZERO_STRUCT(ret_creds);
 		retry = False;
 
-		result = cm_connect_netlogon(contact_domain, state->mem_ctx,
-					     &pipe_cli, &session_key,
-					     &credentials);
+		result = cm_connect_netlogon(contact_domain, &netlogon_pipe);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(3, ("could not open handle to NETLOGON pipe (error: %s)\n",
@@ -665,25 +623,16 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 			goto done;
 		}
 
-		credentials->timestamp.time = time(NULL);
-		memcpy(&clnt_creds, credentials, sizeof(clnt_creds));
-
-		/* Calculate the new credentials. */
-		cred_create(session_key, &credentials->challenge,
-			    clnt_creds.timestamp, &(clnt_creds.challenge));
-
-		result = rpccli_netlogon_sam_network_logon(pipe_cli,
-							   state->mem_ctx,
-							   srv_name_slash,
-							   &clnt_creds,
-							   &ret_creds,
-							   name_user,
-							   name_domain, 
-							   global_myname(),
-							   state->request.data.auth_crap.chal,
-							   lm_resp,
-							   nt_resp, &info3,
-							   session_key);
+		result = rpccli_netlogon_sam_network_logon(netlogon_pipe,
+							state->mem_ctx,
+							contact_domain->dcname,
+							name_user,
+							name_domain, 
+							global_myname(),
+							state->request.data.auth_crap.chal,
+							lm_resp,
+							nt_resp,
+							&info3);
 
 		attempts += 1;
 
@@ -712,19 +661,9 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 
 	} while ( (attempts < 2) && retry );
 
-	/* Only check creds if we got a connection. */
-	if (contact_domain->conn.cli &&
-			!(NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) ||
-					(NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)))) {
-		if (!clnt_deal_with_creds(session_key, credentials, &ret_creds)) {
-			DEBUG(3, ("DC %s sent wrong credentials\n",
-				pipe_cli->cli->srv_name_slash));
-			result = NT_STATUS_ACCESS_DENIED;
-		}
-	}
-
 	if (NT_STATUS_IS_OK(result)) {
-		if (!NT_STATUS_IS_OK(result = check_info3_in_group(state->mem_ctx, &info3, state->request.data.auth_crap.require_membership_of_sid))) {
+		if (!NT_STATUS_IS_OK(result = check_info3_in_group(state->mem_ctx, &info3,
+							state->request.data.auth_crap.require_membership_of_sid))) {
 			DEBUG(3, ("User %s is not in the required group (%s), so plaintext authentication is rejected\n",
 				  state->request.data.auth_crap.user, 
 				  state->request.data.auth_crap.require_membership_of_sid));
@@ -736,14 +675,14 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 		} else if (state->request.flags & WBFLAG_PAM_UNIX_NAME) {
 			/* ntlm_auth should return the unix username, per 
 			   'winbind use default domain' settings and the like */
-			
+
 			fstring username_out;
 			const char *nt_username, *nt_domain;
 			if (!(nt_username = unistr2_tdup(state->mem_ctx, &(info3.uni_user_name)))) {
 				/* If the server didn't give us one, just use the one we sent them */
 				nt_username = name_user;
 			}
-			
+
 			if (!(nt_domain = unistr2_tdup(state->mem_ctx, &(info3.uni_logon_dom)))) {
 				/* If the server didn't give us one, just use the one we sent them */
 				nt_domain = name_domain;
@@ -762,29 +701,34 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 		}
 		
 		if (state->request.flags & WBFLAG_PAM_USER_SESSION_KEY) {
-			memcpy(state->response.data.auth.user_session_key, info3.user_sess_key, sizeof(state->response.data.auth.user_session_key) /* 16 */);
+			memcpy(state->response.data.auth.user_session_key, info3.user_sess_key,
+					sizeof(state->response.data.auth.user_session_key) /* 16 */);
 		}
 		if (state->request.flags & WBFLAG_PAM_LMKEY) {
-			memcpy(state->response.data.auth.first_8_lm_hash, info3.lm_sess_key, sizeof(state->response.data.auth.first_8_lm_hash) /* 8 */);
+			memcpy(state->response.data.auth.first_8_lm_hash, info3.lm_sess_key,
+					sizeof(state->response.data.auth.first_8_lm_hash) /* 8 */);
 		}
 	}
 
 done:
+
 	/* give us a more useful (more correct?) error code */
-	if ((NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) || (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)))) {
+	if ((NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) ||
+				(NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)))) {
 		result = NT_STATUS_NO_LOGON_SERVERS;
 	}
 
 	if (state->request.flags & WBFLAG_PAM_NT_STATUS_SQUASH) {
 		result = nt_status_squash(result);
 	}
-	
+
 	state->response.data.auth.nt_status = NT_STATUS_V(result);
 	fstrcpy(state->response.data.auth.nt_status_string, nt_errstr(result));
-	
+
 	/* we might have given a more useful error above */
-	if (!*state->response.data.auth.error_string) 
+	if (!*state->response.data.auth.error_string) {
 		fstrcpy(state->response.data.auth.error_string, get_friendly_nt_error_msg(result));
+	}
 	state->response.data.auth.pam_error = nt_status_to_pam(result);
 
 	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, 

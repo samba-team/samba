@@ -75,7 +75,7 @@ typedef struct _counter_printer_0 {
 
 static counter_printer_0 *counter_list;
 
-static struct cli_state notify_cli; /* print notify back-channel */
+static struct rpc_pipe_client *notify_cli_pipe; /* print notify back-channel pipe handle*/
 static uint32 smb_connections=0;
 
 
@@ -166,7 +166,7 @@ static void srv_spoolss_replycloseprinter(int snum, POLICY_HND *handle)
 		return;
 	}
 
-	result = cli_spoolss_reply_close_printer(&notify_cli, notify_cli.mem_ctx, handle);
+	result = rpccli_spoolss_reply_close_printer(notify_cli_pipe, notify_cli_pipe->cli->mem_ctx, handle);
 	
 	if (!W_ERROR_IS_OK(result))
 		DEBUG(0,("srv_spoolss_replycloseprinter: reply_close_printer failed [%s].\n",
@@ -174,9 +174,8 @@ static void srv_spoolss_replycloseprinter(int snum, POLICY_HND *handle)
 
 	/* if it's the last connection, deconnect the IPC$ share */
 	if (smb_connections==1) {
-		cli_nt_session_close(&notify_cli);
-		cli_ulogoff(&notify_cli);
-		cli_shutdown(&notify_cli);
+		cli_shutdown(notify_cli_pipe->cli);
+		notify_cli_pipe = NULL; /* The above call shuts downn the pipe also. */
 		message_deregister(MSG_PRINTER_NOTIFY2);
 
         	/* Tell the connections db we're no longer interested in
@@ -688,7 +687,7 @@ static void notify_system_time(struct spoolss_notify_msg *msg,
 		return;
 	}
 
-	if (!prs_init(&ps, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
+	if (!prs_init(&ps, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
 		DEBUG(5, ("notify_system_time: prs_init() failed\n"));
 		return;
 	}
@@ -1021,7 +1020,7 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 		}
 
 		if ( sending_msg_count ) {
-			cli_spoolss_rrpcn( &notify_cli, mem_ctx, &p->notify.client_hnd, 
+			rpccli_spoolss_rrpcn( notify_cli_pipe, mem_ctx, &p->notify.client_hnd, 
 					data_len, data, p->notify.change, 0 );
 		}
 	}
@@ -1075,7 +1074,8 @@ static BOOL notify2_unpack_msg( SPOOLSS_NOTIFY_MSG *msg, struct timeval *tv, voi
  Receive a notify2 message list
  ********************************************************************/
 
-static void receive_notify2_message_list(int msg_type, pid_t src, void *msg, size_t len)
+static void receive_notify2_message_list(int msg_type, struct process_id src,
+					 void *msg, size_t len)
 {
 	size_t 			msg_count, i;
 	char 			*buf = (char *)msg;
@@ -1176,7 +1176,8 @@ static BOOL srv_spoolss_drv_upgrade_printer(char* drivername)
 	DEBUG(10,("srv_spoolss_drv_upgrade_printer: Sending message about driver upgrade [%s]\n",
 		drivername));
 		
-	message_send_pid(sys_getpid(), MSG_PRINTER_DRVUPGRADE, drivername, len+1, False);
+	message_send_pid(pid_to_procid(sys_getpid()),
+			 MSG_PRINTER_DRVUPGRADE, drivername, len+1, False);
 
 	return True;
 }
@@ -1186,7 +1187,7 @@ static BOOL srv_spoolss_drv_upgrade_printer(char* drivername)
  over all printers, upgrading ones as necessary 
  **********************************************************************/
  
-void do_drv_upgrade_printer(int msg_type, pid_t src, void *buf, size_t len)
+void do_drv_upgrade_printer(int msg_type, struct process_id src, void *buf, size_t len)
 {
 	fstring drivername;
 	int snum;
@@ -1272,7 +1273,8 @@ static BOOL srv_spoolss_reset_printerdata(char* drivername)
 	DEBUG(10,("srv_spoolss_reset_printerdata: Sending message about resetting printerdata [%s]\n",
 		drivername));
 		
-	message_send_pid(sys_getpid(), MSG_PRINTERDATA_INIT_RESET, drivername, len+1, False);
+	message_send_pid(pid_to_procid(sys_getpid()),
+			 MSG_PRINTERDATA_INIT_RESET, drivername, len+1, False);
 
 	return True;
 }
@@ -1282,7 +1284,8 @@ static BOOL srv_spoolss_reset_printerdata(char* drivername)
  over all printers, resetting printer data as neessary 
  **********************************************************************/
  
-void reset_all_printerdata(int msg_type, pid_t src, void *buf, size_t len)
+void reset_all_printerdata(int msg_type, struct process_id src,
+			   void *buf, size_t len)
 {
 	fstring drivername;
 	int snum;
@@ -2001,7 +2004,10 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 		
 			/* this should not have failed---if it did, report to client */
 			if ( !W_ERROR_IS_OK(status_win2k) )
+			{
+				status = status_win2k;
 				goto done;
+			}
 		}
 	}
 	
@@ -2479,9 +2485,10 @@ done:
  Connect to the client machine.
 **********************************************************/
 
-static BOOL spoolss_connect_to_client(struct cli_state *the_cli, 
+static BOOL spoolss_connect_to_client(struct cli_state *the_cli, struct rpc_pipe_client **pp_pipe,
 			struct in_addr *client_ip, const char *remote_machine)
 {
+	NTSTATUS ret;
 	ZERO_STRUCTP(the_cli);
 	
 	if(cli_initialise(the_cli) == NULL) {
@@ -2563,10 +2570,10 @@ static BOOL spoolss_connect_to_client(struct cli_state *the_cli,
 	 * Now start the NT Domain stuff :-).
 	 */
 
-	if(cli_nt_session_open(the_cli, PI_SPOOLSS) == False) {
-		DEBUG(0,("spoolss_connect_to_client: unable to open the domain client session to machine %s. Error was : %s.\n", remote_machine, cli_errstr(the_cli)));
-		cli_nt_session_close(the_cli);
-		cli_ulogoff(the_cli);
+	*pp_pipe = cli_rpc_pipe_open_noauth(the_cli, PI_SPOOLSS, &ret);
+	if(!*pp_pipe) {
+		DEBUG(0,("spoolss_connect_to_client: unable to open the spoolss pipe on machine %s. Error was : %s.\n",
+			remote_machine, nt_errstr(ret)));
 		cli_shutdown(the_cli);
 		return False;
 	} 
@@ -2589,13 +2596,14 @@ static BOOL srv_spoolss_replyopenprinter(int snum, const char *printer,
 	 * and connect to the IPC$ share anonymously
 	 */
 	if (smb_connections==0) {
+		struct cli_state notify_cli; /* print notify back-channel */
 		fstring unix_printer;
 
 		fstrcpy(unix_printer, printer+2); /* the +2 is to strip the leading 2 backslashs */
 
 		ZERO_STRUCT(notify_cli);
 
-		if(!spoolss_connect_to_client(&notify_cli, client_ip, unix_printer))
+		if(!spoolss_connect_to_client(&notify_cli, &notify_cli_pipe, client_ip, unix_printer))
 			return False;
 			
 		message_register(MSG_PRINTER_NOTIFY2, receive_notify2_message_list);
@@ -2614,7 +2622,7 @@ static BOOL srv_spoolss_replyopenprinter(int snum, const char *printer,
 
 	smb_connections++;
 
-	result = cli_spoolss_reply_open_printer(&notify_cli, notify_cli.mem_ctx, printer, localprinter, 
+	result = rpccli_spoolss_reply_open_printer(notify_cli_pipe, notify_cli_pipe->cli->mem_ctx, printer, localprinter, 
 			type, handle);
 			
 	if (!W_ERROR_IS_OK(result))
@@ -6117,17 +6125,12 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 			|| !strequal(printer->info_2->portname, old_printer->info_2->portname)
 			|| !strequal(printer->info_2->location, old_printer->info_2->location)) )
 	{
+		/* add_printer_hook() will call reload_services() */
+
 		if ( !add_printer_hook(p->pipe_user.nt_user_token, printer) ) {
 			result = WERR_ACCESS_DENIED;
 			goto done;
 		}
-
-		/* 
-		 * make sure we actually reload the services after 
-		 * this as smb.conf could have a new section in it 
-		 * .... shouldn't .... but could
-		 */
-		reload_services(False);	
 	}
 	
 	/*

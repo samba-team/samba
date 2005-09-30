@@ -80,6 +80,23 @@ static int DLIST_CONTAINS(SMBCFILE * list, SMBCFILE *p) {
 	return False;
 }
 
+/*
+ * Find an lsa pipe handle associated with a cli struct.
+ */
+
+static struct rpc_pipe_client *find_lsa_pipe_hnd(struct cli_state *ipc_cli)
+{
+	struct rpc_pipe_client *pipe_hnd;
+
+	for (pipe_hnd = ipc_cli->pipe_list; pipe_hnd; pipe_hnd = pipe_hnd->next) {
+		if (pipe_hnd->pipe_idx == PI_LSARPC) {
+			return pipe_hnd;
+		}
+	}
+
+	return NULL;
+}
+
 static int smbc_close_ctx(SMBCCTX *context, SMBCFILE *file);
 static off_t smbc_lseek_ctx(SMBCCTX *context, SMBCFILE *file, off_t offset, int whence);
 
@@ -800,6 +817,7 @@ SMBCSRV *smbc_attr_server(SMBCCTX *context,
 {
         struct in_addr ip;
 	struct cli_state *ipc_cli;
+	struct rpc_pipe_client *pipe_hnd;
         NTSTATUS nt_status;
 	SMBCSRV *ipc_srv=NULL;
 
@@ -835,29 +853,27 @@ SMBCSRV *smbc_attr_server(SMBCCTX *context,
                         return NULL;
                 }
 
-                if(pol) {
+		pipe_hnd = cli_rpc_pipe_open_noauth(ipc_cli, PI_LSARPC, &nt_status);
+                if (!pipe_hnd) {
+                        DEBUG(1, ("cli_nt_session_open fail!\n"));
+                        errno = ENOTSUP;
+                        cli_shutdown(ipc_cli);
+                        return NULL;
+                }
 
-                       if (!cli_nt_session_open(ipc_cli, PI_LSARPC)) {
-                         DEBUG(1, ("cli_nt_session_open fail!\n"));
-                           errno = ENOTSUP;
-                         cli_shutdown(ipc_cli);
-                         return NULL;
-                      }
-   
-                        /* Some systems don't support SEC_RIGHTS_MAXIMUM_ALLOWED,
-                         but NT sends 0x2000000 so we might as well do it too. */
-
-                      nt_status = cli_lsa_open_policy(ipc_cli,
-                            ipc_cli->mem_ctx,
-                            True, 
-                            GENERIC_EXECUTE_ACCESS,
-                            pol);
-
-                        if (!NT_STATUS_IS_OK(nt_status)) {
-                         errno = smbc_errno(context, ipc_cli);
-                         cli_shutdown(ipc_cli);
-                         return NULL;
-                      }
+                /* Some systems don't support SEC_RIGHTS_MAXIMUM_ALLOWED,
+                   but NT sends 0x2000000 so we might as well do it too. */
+        
+                nt_status = rpccli_lsa_open_policy(pipe_hnd,
+                                                ipc_cli->mem_ctx,
+                                                True, 
+                                                GENERIC_EXECUTE_ACCESS,
+                                                pol);
+        
+                if (!NT_STATUS_IS_OK(nt_status)) {
+                        errno = smbc_errno(context, ipc_cli);
+                        cli_shutdown(ipc_cli);
+                        return NULL;
                 }
 
                 ipc_srv = SMB_MALLOC_P(SMBCSRV);
@@ -1782,7 +1798,7 @@ static off_t smbc_lseek_ctx(SMBCCTX *context, SMBCFILE *file, off_t offset, int 
 		if (!cli_qfileinfo(targetcli, file->cli_fd, NULL, &size, NULL, NULL,
 				   NULL, NULL, NULL)) 
 		{
-		    SMB_BIG_UINT b_size = size;
+		    SMB_OFF_T b_size = size;
 			if (!cli_getattrE(targetcli, file->cli_fd, NULL, &b_size, NULL, NULL,
 				      NULL)) 
 		    {
@@ -3041,7 +3057,7 @@ static off_t smbc_telldir_ctx(SMBCCTX *context, SMBCFILE *dir)
 	/*
 	 * We return the pointer here as the offset
 	 */
-	ret_val = (int)dir->dir_next;
+	ret_val = (off_t)(long)dir->dir_next;
 	return ret_val;
 
 }
@@ -3347,14 +3363,20 @@ static void convert_sid_to_string(struct cli_state *ipc_cli,
 	char **domains = NULL;
 	char **names = NULL;
 	uint32 *types = NULL;
-
+	struct rpc_pipe_client *pipe_hnd = find_lsa_pipe_hnd(ipc_cli);
 	sid_to_string(str, sid);
 
-        if (numeric) return;     /* no lookup desired */
-        
+	if (numeric) {
+		return;     /* no lookup desired */
+	}
+       
+	if (!pipe_hnd) {
+		return;
+	}
+ 
 	/* Ask LSA to convert the sid to a name */
 
-	if (!NT_STATUS_IS_OK(cli_lsa_lookup_sids(ipc_cli, ipc_cli->mem_ctx,  
+	if (!NT_STATUS_IS_OK(rpccli_lsa_lookup_sids(pipe_hnd, ipc_cli->mem_ctx,  
 						 pol, 1, sid, &domains, 
 						 &names, &types)) ||
 	    !domains || !domains[0] || !names || !names[0]) {
@@ -3378,6 +3400,11 @@ static BOOL convert_string_to_sid(struct cli_state *ipc_cli,
 	uint32 *types = NULL;
 	DOM_SID *sids = NULL;
 	BOOL result = True;
+	struct rpc_pipe_client *pipe_hnd = find_lsa_pipe_hnd(ipc_cli);
+
+	if (!pipe_hnd) {
+		return False;
+	}
 
         if (numeric) {
                 if (strncmp(str, "S-", 2) == 0) {
@@ -3388,7 +3415,7 @@ static BOOL convert_string_to_sid(struct cli_state *ipc_cli,
                 goto done;
         }
 
-	if (!NT_STATUS_IS_OK(cli_lsa_lookup_names(ipc_cli, ipc_cli->mem_ctx, 
+	if (!NT_STATUS_IS_OK(rpccli_lsa_lookup_names(pipe_hnd, ipc_cli->mem_ctx, 
 						  pol, 1, &str, &sids, 
 						  &types))) {
 		result = False;
@@ -5161,7 +5188,7 @@ static int smbc_print_file_ctx(SMBCCTX *c_file, const char *fname, SMBCCTX *c_pr
 
         /* Try to open the file for reading ... */
 
-        if ((int)(fid1 = c_file->open(c_file, fname, O_RDONLY, 0666)) < 0) {
+        if ((long)(fid1 = c_file->open(c_file, fname, O_RDONLY, 0666)) < 0) {
                 
                 DEBUG(3, ("Error, fname=%s, errno=%i\n", fname, errno));
                 return -1;  /* smbc_open sets errno */
@@ -5170,7 +5197,7 @@ static int smbc_print_file_ctx(SMBCCTX *c_file, const char *fname, SMBCCTX *c_pr
 
         /* Now, try to open the printer file for writing */
 
-        if ((int)(fid2 = c_print->open_print_job(c_print, printq)) < 0) {
+        if ((long)(fid2 = c_print->open_print_job(c_print, printq)) < 0) {
 
                 saverr = errno;  /* Save errno */
                 c_file->close_fn(c_file, fid1);

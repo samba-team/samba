@@ -128,10 +128,10 @@ static int linux_setlease(int fd, int leasetype)
  * oplock break protocol.
 ****************************************************************************/
 
-static BOOL linux_oplock_receive_message(fd_set *fds, char *buffer, int buffer_len)
+static files_struct *linux_oplock_receive_message(fd_set *fds)
 {
 	int fd;
-	struct files_struct *fsp;
+	files_struct *fsp;
 
 	BlockSignals(True, RT_SIGNAL_LEASE);
 	fd = fd_pending_array[0];
@@ -145,32 +145,7 @@ static BOOL linux_oplock_receive_message(fd_set *fds, char *buffer, int buffer_l
 	/* now we can receive more signals */
 	BlockSignals(False, RT_SIGNAL_LEASE);
 
-	if (fsp == NULL) {
-		DEBUG(0,("Invalid file descriptor %d in kernel oplock break!\n", (int)fd));
-		return False;
-	}
-
-	DEBUG(3,("linux_oplock_receive_message: kernel oplock break request received for \
-dev = %x, inode = %.0f fd = %d, fileid = %lu \n", (unsigned int)fsp->dev, (double)fsp->inode,
-			fd, fsp->file_id));
-     
-	/*
-	 * Create a kernel oplock break message.
-	 */
-     
-	/* Setup the message header */
-	SIVAL(buffer,OPBRK_CMD_LEN_OFFSET,KERNEL_OPLOCK_BREAK_MSG_LEN);
-	SSVAL(buffer,OPBRK_CMD_PORT_OFFSET,0);
-     
-	buffer += OPBRK_CMD_HEADER_LEN;
-     
-	SSVAL(buffer,OPBRK_MESSAGE_CMD_OFFSET,KERNEL_OPLOCK_BREAK_CMD);
-     
-	memcpy(buffer + KERNEL_OPLOCK_BREAK_DEV_OFFSET, (char *)&fsp->dev, sizeof(fsp->dev));
-	memcpy(buffer + KERNEL_OPLOCK_BREAK_INODE_OFFSET, (char *)&fsp->inode, sizeof(fsp->inode));	
-	memcpy(buffer + KERNEL_OPLOCK_BREAK_FILEID_OFFSET, (char *)&fsp->file_id, sizeof(fsp->file_id));	
-
-	return True;
+	return fsp;
 }
 
 /****************************************************************************
@@ -221,30 +196,6 @@ oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
 				(double)fsp->inode, fsp->file_id, strerror(errno) );
 		}
 	}
-}
-
-/****************************************************************************
- Parse a kernel oplock message.
-****************************************************************************/
-
-static BOOL linux_kernel_oplock_parse(char *msg_start, int msg_len, SMB_INO_T *inode,
-		SMB_DEV_T *dev, unsigned long *file_id)
-{
-	/* Ensure that the msg length is correct. */
-	if (msg_len != KERNEL_OPLOCK_BREAK_MSG_LEN) {
-		DEBUG(0,("incorrect length for KERNEL_OPLOCK_BREAK_CMD (was %d, should be %lu).\n", 
-			 msg_len, (unsigned long)KERNEL_OPLOCK_BREAK_MSG_LEN));
-		return False;
-	}
-
-	memcpy((char *)inode, msg_start+KERNEL_OPLOCK_BREAK_INODE_OFFSET, sizeof(*inode));
-	memcpy((char *)dev, msg_start+KERNEL_OPLOCK_BREAK_DEV_OFFSET, sizeof(*dev));
-	memcpy((char *)file_id, msg_start+KERNEL_OPLOCK_BREAK_FILEID_OFFSET, sizeof(*file_id));
-
-	DEBUG(3,("kernel oplock break request for file dev = %x, inode = %.0f, file_id = %lu\n", 
-		(unsigned int)*dev, (double)*inode, *file_id));
-
-	return True;
 }
 
 /****************************************************************************
@@ -299,7 +250,6 @@ struct kernel_oplocks *linux_init_kernel_oplocks(void)
 	koplocks.receive_message = linux_oplock_receive_message;
 	koplocks.set_oplock = linux_set_kernel_oplock;
 	koplocks.release_oplock = linux_release_kernel_oplock;
-	koplocks.parse_message = linux_kernel_oplock_parse;
 	koplocks.msg_waiting = linux_oplock_msg_waiting;
 	koplocks.notification_fd = -1;
 

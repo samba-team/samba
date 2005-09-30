@@ -267,7 +267,11 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 		return; 
 
 	while ( list[i] ) {
-		SAFE_FREE( list[i] );
+		/* SAFE_FREE generates a warning here that can't be gotten rid
+		 * of with CONST_DISCARD */
+		if (list[i] != NULL) {
+			free(CONST_DISCARD(char *, list[i]));
+		}
 		i+=1;
 	}
 

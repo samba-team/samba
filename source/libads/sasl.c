@@ -142,7 +142,7 @@ static ADS_STATUS ads_sasl_spnego_krb5_bind(ADS_STRUCT *ads, const char *princip
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	int rc;
 
-	rc = spnego_gen_negTokenTarg(principal, ads->auth.time_offset, &blob, &session_key);
+	rc = spnego_gen_negTokenTarg(principal, ads->auth.time_offset, &blob, &session_key, 0);
 
 	if (rc) {
 		return ADS_ERROR_KRB5(rc);

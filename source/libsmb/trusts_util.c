@@ -29,22 +29,36 @@
  Caller must have the cli connected to the netlogon pipe
  already.
 **********************************************************/
-static NTSTATUS just_change_the_password(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+
+static NTSTATUS just_change_the_password(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 					 unsigned char orig_trust_passwd_hash[16],
 					 unsigned char new_trust_passwd_hash[16],
 					 uint32 sec_channel_type)
 {
 	NTSTATUS result;
 
-	/* ensure that schannel uses the right domain */
-	fstrcpy(cli->domain, lp_workgroup());
-	if (! NT_STATUS_IS_OK(result = cli_nt_establish_netlogon(cli, sec_channel_type, orig_trust_passwd_hash))) {
-		DEBUG(3,("just_change_the_password: unable to setup creds (%s)!\n",
-			 nt_errstr(result)));
-		return result;
+	/* Check if the netlogon pipe is open using schannel. If so we
+	   already have valid creds. If not we must set them up. */
+
+	if (cli->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) {
+		uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
+
+		result = rpccli_netlogon_setup_creds(cli, 
+					cli->cli->desthost,
+					lp_workgroup(),
+					global_myname(),
+					orig_trust_passwd_hash,
+					sec_channel_type,
+					&neg_flags);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(3,("just_change_the_password: unable to setup creds (%s)!\n",
+				 nt_errstr(result)));
+			return result;
+		}
 	}
-	
-	result = cli_net_srv_pwset(cli, mem_ctx, global_myname(), new_trust_passwd_hash);
+
+	result = rpccli_net_srv_pwset(cli, mem_ctx, global_myname(), new_trust_passwd_hash);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("just_change_the_password: unable to change password (%s)!\n",
@@ -59,7 +73,7 @@ static NTSTATUS just_change_the_password(struct cli_state *cli, TALLOC_CTX *mem_
  Caller must have already setup the connection to the NETLOGON pipe
 **********************************************************/
 
-NTSTATUS trust_pw_change_and_store_it(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+NTSTATUS trust_pw_change_and_store_it(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 				      const char *domain,
 				      unsigned char orig_trust_passwd_hash[16],
 				      uint32 sec_channel_type)
@@ -99,7 +113,7 @@ NTSTATUS trust_pw_change_and_store_it(struct cli_state *cli, TALLOC_CTX *mem_ctx
  already setup the connection to the NETLOGON pipe
 **********************************************************/
 
-NTSTATUS trust_pw_find_change_and_store_it(struct cli_state *cli, 
+NTSTATUS trust_pw_find_change_and_store_it(struct rpc_pipe_client *cli, 
 					   TALLOC_CTX *mem_ctx, 
 					   const char *domain) 
 {
@@ -116,7 +130,6 @@ NTSTATUS trust_pw_find_change_and_store_it(struct cli_state *cli,
 	return trust_pw_change_and_store_it(cli, mem_ctx, domain,
 					    old_trust_passwd_hash,
 					    sec_channel_type);
-	
 }
 
 /*********************************************************************
@@ -133,6 +146,7 @@ BOOL enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 	struct in_addr 	dc_ip;
 	uint32 		enum_ctx = 0;
 	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *lsa_pipe;
 	BOOL 		retry;
 
 	*domain_names = NULL;
@@ -156,21 +170,21 @@ BOOL enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 
 	/* open the LSARPC_PIPE	*/
 
-	if ( !cli_nt_session_open( cli, PI_LSARPC ) ) {
-		result = NT_STATUS_UNSUCCESSFUL;
+	lsa_pipe = cli_rpc_pipe_open_noauth( cli, PI_LSARPC, &result );
+	if ( !lsa_pipe) {
 		goto done;
 	}
 
 	/* get a handle */
 
-	result = cli_lsa_open_policy(cli, mem_ctx, True,
+	result = rpccli_lsa_open_policy(lsa_pipe, mem_ctx, True,
 		POLICY_VIEW_LOCAL_INFORMATION, &pol);
 	if ( !NT_STATUS_IS_OK(result) )
 		goto done;
 
 	/* Lookup list of trusted domains */
 
-	result = cli_lsa_enum_trust_dom(cli, mem_ctx, &pol, &enum_ctx,
+	result = rpccli_lsa_enum_trust_dom(lsa_pipe, mem_ctx, &pol, &enum_ctx,
 		num_domains, domain_names, sids);
 	if ( !NT_STATUS_IS_OK(result) )
 		goto done;
@@ -184,4 +198,3 @@ done:
 
 	return NT_STATUS_IS_OK(result);
 }
-

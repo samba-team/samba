@@ -74,6 +74,7 @@ NTSTATUS _net_logon_ctrl(pipes_struct *p, NET_Q_LOGON_CTRL *q_u,
 /****************************************************************************
 Send a message to smbd to do a sam synchronisation
 **************************************************************************/
+
 static void send_sync_message(void)
 {
         TDB_CONTEXT *tdb;
@@ -268,26 +269,33 @@ static BOOL get_md4pw(char *md4pw, char *mach_acct)
 
 NTSTATUS _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u)
 {
-	NTSTATUS status = NT_STATUS_OK;
+	if (!p->dc) {
+		p->dc = TALLOC_ZERO_P(p->pipe_state_mem_ctx, struct dcinfo);
+		if (!p->dc) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		DEBUG(10,("_net_req_chal: new challenge requested. Clearing old state.\n"));
+		ZERO_STRUCTP(p->dc);
+	}
 
-	rpcstr_pull(p->dc.remote_machine,q_u->uni_logon_clnt.buffer,sizeof(fstring),q_u->uni_logon_clnt.uni_str_len*2,0);
+	rpcstr_pull(p->dc->remote_machine,
+			q_u->uni_logon_clnt.buffer,
+			sizeof(fstring),q_u->uni_logon_clnt.uni_str_len*2,0);
 
-	/* create a server challenge for the client */
-	/* Set these to random values. */
-	generate_random_buffer(p->dc.srv_chal.data, 8);
+	/* Save the client challenge to the server. */
+	memcpy(p->dc->clnt_chal.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
+
+	/* Create a server challenge for the client */
+	/* Set this to a random value. */
+	generate_random_buffer(p->dc->srv_chal.data, 8);
 	
-	memcpy(p->dc.srv_cred.challenge.data, p->dc.srv_chal.data, 8);
-
-	memcpy(p->dc.clnt_chal.data          , q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
-	memcpy(p->dc.clnt_cred.challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
-
-	memset((char *)p->dc.sess_key, '\0', sizeof(p->dc.sess_key));
-
-	p->dc.challenge_sent = True;
 	/* set up the LSA REQUEST CHALLENGE response */
-	init_net_r_req_chal(r_u, &p->dc.srv_chal, status);
+	init_net_r_req_chal(r_u, &p->dc->srv_chal, NT_STATUS_OK);
 	
-	return status;
+	p->dc->challenge_sent = True;
+
+	return NT_STATUS_OK;
 }
 
 /*************************************************************************
@@ -301,50 +309,54 @@ static void init_net_r_auth(NET_R_AUTH *r_a, DOM_CHAL *resp_cred, NTSTATUS statu
 }
 
 /*************************************************************************
- _net_auth
+ _net_auth. Create the initial credentials.
  *************************************************************************/
 
 NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 {
-	NTSTATUS status = NT_STATUS_OK;
-	DOM_CHAL srv_cred;
-	UTIME srv_time;
 	fstring mach_acct;
+	fstring remote_machine;
+	DOM_CHAL srv_chal_out;
 
-	srv_time.time = 0;
-
-	rpcstr_pull(mach_acct, q_u->clnt_id.uni_acct_name.buffer,sizeof(fstring),q_u->clnt_id.uni_acct_name.uni_str_len*2,0);
-
-	if (p->dc.challenge_sent && get_md4pw((char *)p->dc.md4pw, mach_acct)) {
-
-		/* from client / server challenges and md4 password, generate sess key */
-		cred_session_key(&p->dc.clnt_chal, &p->dc.srv_chal,
-				 p->dc.md4pw, p->dc.sess_key);
-		
-		/* check that the client credentials are valid */
-		if (cred_assert(&q_u->clnt_chal, p->dc.sess_key, &p->dc.clnt_cred.challenge, srv_time)) {
-			
-			/* create server challenge for inclusion in the reply */
-			cred_create(p->dc.sess_key, &p->dc.srv_cred.challenge, srv_time, &srv_cred);
-		
-			/* copy the received client credentials for use next time */
-			memcpy(p->dc.clnt_cred.challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
-			memcpy(p->dc.srv_cred .challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
-			
-			/* Save the machine account name. */
-			fstrcpy(p->dc.mach_acct, mach_acct);
-		
-			p->dc.authenticated = True;
-
-		} else {
-			status = NT_STATUS_ACCESS_DENIED;
-		}
-	} else {
-		status = NT_STATUS_ACCESS_DENIED;
+	if (!p->dc || !p->dc->challenge_sent) {
+		return NT_STATUS_ACCESS_DENIED;
 	}
-	
+
+	rpcstr_pull(mach_acct, q_u->clnt_id.uni_acct_name.buffer,sizeof(fstring),
+				q_u->clnt_id.uni_acct_name.uni_str_len*2,0);
+	rpcstr_pull(remote_machine, q_u->clnt_id.uni_comp_name.buffer,sizeof(fstring),
+				q_u->clnt_id.uni_comp_name.uni_str_len*2,0);
+
+	if (!get_md4pw((char *)p->dc->mach_pw, mach_acct)) {
+		DEBUG(0,("_net_auth: creds_server_check failed. Failed to "
+			"get pasword for machine account %s "
+			"from client %s\n",
+			mach_acct, remote_machine ));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* From the client / server challenges and md4 password, generate sess key */
+	creds_server_init(p->dc,
+			&p->dc->clnt_chal,	/* Stored client chal. */
+			&p->dc->srv_chal,	/* Stored server chal. */
+			p->dc->mach_pw,
+			&srv_chal_out);	
+
+	/* Check client credentials are valid. */
+	if (!creds_server_check(p->dc, &q_u->clnt_chal)) {
+		DEBUG(0,("_net_auth: creds_server_check failed. Rejecting auth "
+			"request from client %s machine account %s\n",
+			remote_machine, mach_acct ));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	fstrcpy(p->dc->mach_acct, mach_acct);
+	fstrcpy(p->dc->remote_machine, remote_machine);
+	p->dc->authenticated = True;
+
 	/* set up the LSA AUTH response */
-	init_net_r_auth(r_u, &srv_cred, status);
+	/* Return the server credentials. */
+	init_net_r_auth(r_u, &srv_chal_out, NT_STATUS_OK);
 
 	return r_u->status;
 }
@@ -367,51 +379,54 @@ static void init_net_r_auth_2(NET_R_AUTH_2 *r_a,
 
 NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 {
-	NTSTATUS status = NT_STATUS_OK;
-	DOM_CHAL srv_cred;
-	UTIME srv_time;
 	NEG_FLAGS srv_flgs;
 	fstring mach_acct;
+	fstring remote_machine;
+	DOM_CHAL srv_chal_out;
 
-	srv_time.time = 0;
+	rpcstr_pull(mach_acct, q_u->clnt_id.uni_acct_name.buffer,sizeof(fstring),
+				q_u->clnt_id.uni_acct_name.uni_str_len*2,0);
+	rpcstr_pull(remote_machine, q_u->clnt_id.uni_comp_name.buffer,sizeof(fstring),
+				q_u->clnt_id.uni_comp_name.uni_str_len*2,0);
+
+	if (!p->dc || !p->dc->challenge_sent) {
+		DEBUG(0,("_net_auth2: no challenge sent to client %s\n",
+			remote_machine ));
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	if ( (lp_server_schannel() == True) &&
 	     ((q_u->clnt_flgs.neg_flags & NETLOGON_NEG_SCHANNEL) == 0) ) {
 
 		/* schannel must be used, but client did not offer it. */
-		status = NT_STATUS_ACCESS_DENIED;
+		DEBUG(0,("_net_auth2: schannel required but client failed "
+			"to offer it. Client was %s\n",
+			mach_acct ));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	rpcstr_pull(mach_acct, q_u->clnt_id.uni_acct_name.buffer,sizeof(fstring),q_u->clnt_id.uni_acct_name.uni_str_len*2,0);
-
-	if (p->dc.challenge_sent && get_md4pw((char *)p->dc.md4pw, mach_acct)) {
-		
-		/* from client / server challenges and md4 password, generate sess key */
-		cred_session_key(&p->dc.clnt_chal, &p->dc.srv_chal,
-				 p->dc.md4pw, p->dc.sess_key);
-		
-		/* check that the client credentials are valid */
-		if (cred_assert(&q_u->clnt_chal, p->dc.sess_key, &p->dc.clnt_cred.challenge, srv_time)) {
-			
-			/* create server challenge for inclusion in the reply */
-			cred_create(p->dc.sess_key, &p->dc.srv_cred.challenge, srv_time, &srv_cred);
-			
-			/* copy the received client credentials for use next time */
-			memcpy(p->dc.clnt_cred.challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
-			memcpy(p->dc.srv_cred .challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
-			
-			/* Save the machine account name. */
-			fstrcpy(p->dc.mach_acct, mach_acct);
-			
-			p->dc.authenticated = True;
-
-		} else {
-			status = NT_STATUS_ACCESS_DENIED;
-		}
-	} else {
-		status = NT_STATUS_ACCESS_DENIED;
+	if (!get_md4pw((char *)p->dc->mach_pw, mach_acct)) {
+		DEBUG(0,("_net_auth2: failed to get machine password for "
+			"account %s\n",
+			mach_acct ));
+		return NT_STATUS_ACCESS_DENIED;
 	}
-	
+
+	/* From the client / server challenges and md4 password, generate sess key */
+	creds_server_init(p->dc,
+			&p->dc->clnt_chal,	/* Stored client chal. */
+			&p->dc->srv_chal,	/* Stored server chal. */
+			p->dc->mach_pw,
+			&srv_chal_out);	
+
+	/* Check client credentials are valid. */
+	if (!creds_server_check(p->dc, &q_u->clnt_chal)) {
+		DEBUG(0,("_net_auth2: creds_server_check failed. Rejecting auth "
+			"request from client %s machine account %s\n",
+			remote_machine, mach_acct ));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	srv_flgs.neg_flags = 0x000001ff;
 
 	if (lp_server_schannel() != False) {
@@ -419,12 +434,11 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	}
 
 	/* set up the LSA AUTH 2 response */
-	init_net_r_auth_2(r_u, &srv_cred, &srv_flgs, status);
+	init_net_r_auth_2(r_u, &srv_chal_out, &srv_flgs, NT_STATUS_OK);
 
-	if (NT_STATUS_IS_OK(status)) {
-		server_auth2_negotiated = True;
-		last_dcinfo = p->dc;
-	}
+	server_auth2_negotiated = True;
+	p->dc->authenticated = True;
+	last_dcinfo = *p->dc;
 
 	return r_u->status;
 }
@@ -436,32 +450,39 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_u)
 {
 	NTSTATUS status = NT_STATUS_ACCESS_DENIED;
-	DOM_CRED srv_cred;
-	pstring workstation;
+	fstring workstation;
 	SAM_ACCOUNT *sampass=NULL;
 	BOOL ret = False;
 	unsigned char pwd[16];
 	int i;
 	uint32 acct_ctrl;
+	DOM_CRED cred_out;
 	const uchar *old_pw;
 
-	/* checks and updates credentials.  creates reply credentials */
-	if (!(p->dc.authenticated && deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, &q_u->clnt_id.cred, &srv_cred)))
+	if (!p->dc || !p->dc->authenticated) {
 		return NT_STATUS_INVALID_HANDLE;
+	}
 
-	memcpy(&p->dc.srv_cred, &p->dc.clnt_cred, sizeof(p->dc.clnt_cred));
+	/* Step the creds chain forward. */
+	if (!creds_server_step(p->dc, &q_u->clnt_id.cred, &cred_out)) {
+		DEBUG(0,("_net_srv_pwset: creds_server_step failed. Rejecting auth "
+			"request from client %s machine account %s\n",
+			p->dc->remote_machine, p->dc->mach_acct ));
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	DEBUG(5,("_net_srv_pwset: %d\n", __LINE__));
 
 	rpcstr_pull(workstation,q_u->clnt_id.login.uni_comp_name.buffer,
 		    sizeof(workstation),q_u->clnt_id.login.uni_comp_name.uni_str_len*2,0);
 
-	DEBUG(3,("Server Password Set by Wksta:[%s] on account [%s]\n", workstation, p->dc.mach_acct));
+	DEBUG(3,("_net_srv_pwset: Server Password Set by Wksta:[%s] on account [%s]\n",
+			workstation, p->dc->mach_acct));
 	
 	pdb_init_sam(&sampass);
 
 	become_root();
-	ret=pdb_getsampwnam(sampass, p->dc.mach_acct);
+	ret=pdb_getsampwnam(sampass, p->dc->mach_acct);
 	unbecome_root();
 
 	/* Ensure the account exists and is a machine account. */
@@ -481,7 +502,8 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 		return NT_STATUS_ACCOUNT_DISABLED;
 	}
 
-	cred_hash3( pwd, q_u->pwd, p->dc.sess_key, 0);
+	/* Woah - what does this to to the credential chain ? JRA */
+	cred_hash3( pwd, q_u->pwd, p->dc->sess_key, 0);
 
 	DEBUG(100,("Server password set : new given value was :\n"));
 	for(i = 0; i < sizeof(pwd); i++)
@@ -498,17 +520,17 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	} else {
 
 		/* LM password should be NULL for machines */
-		if (!pdb_set_lanman_passwd (sampass, NULL, PDB_CHANGED)) {
+		if (!pdb_set_lanman_passwd(sampass, NULL, PDB_CHANGED)) {
 			pdb_free_sam(&sampass);
 			return NT_STATUS_NO_MEMORY;
 		}
 		
-		if (!pdb_set_nt_passwd     (sampass, pwd, PDB_CHANGED)) {
+		if (!pdb_set_nt_passwd(sampass, pwd, PDB_CHANGED)) {
 			pdb_free_sam(&sampass);
 			return NT_STATUS_NO_MEMORY;
 		}
 		
-		if (!pdb_set_pass_changed_now     (sampass)) {
+		if (!pdb_set_pass_changed_now(sampass)) {
 			pdb_free_sam(&sampass);
 			/* Not quite sure what this one qualifies as, but this will do */
 			return NT_STATUS_UNSUCCESSFUL; 
@@ -518,16 +540,16 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 		ret = pdb_update_sam_account (sampass);
 		unbecome_root();
 	}
-	if (ret)
+	if (ret) {
 		status = NT_STATUS_OK;
+	}
 
 	/* set up the LSA Server Password Set response */
-	init_net_r_srv_pwset(r_u, &srv_cred, status);
+	init_net_r_srv_pwset(r_u, &cred_out, status);
 
 	pdb_free_sam(&sampass);
 	return r_u->status;
 }
-
 
 /*************************************************************************
  _net_sam_logoff:
@@ -535,25 +557,24 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 
 NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOFF *r_u)
 {
-	DOM_CRED srv_cred;
-
 	if (!get_valid_user_struct(p->vuid))
 		return NT_STATUS_NO_SUCH_USER;
 
-	/* checks and updates credentials.  creates reply credentials */
-	if (!(p->dc.authenticated && deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, 
-						     &q_u->sam_id.client.cred, &srv_cred)))
+	if (!p->dc || !p->dc->authenticated) {
 		return NT_STATUS_INVALID_HANDLE;
+	}
 
-	/* what happens if we get a logoff for an unknown user? */
-	memcpy(&p->dc.srv_cred, &p->dc.clnt_cred, sizeof(p->dc.clnt_cred));
-
-	/* XXXX maybe we want to say 'no', reject the client's credentials */
 	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
-	memcpy(&r_u->srv_creds, &srv_cred, sizeof(r_u->srv_creds));
+
+	/* checks and updates credentials.  creates reply credentials */
+	if (!creds_server_step(p->dc, &q_u->sam_id.client.cred, &r_u->srv_creds)) {
+		DEBUG(0,("_net_sam_logoff: creds_server_step failed. Rejecting auth "
+			"request from client %s machine account %s\n",
+			p->dc->remote_machine, p->dc->mach_acct ));
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	r_u->status = NT_STATUS_OK;
-
 	return r_u->status;
 }
 
@@ -567,7 +588,6 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	NTSTATUS status = NT_STATUS_OK;
 	NET_USER_INFO_3 *usr_info = NULL;
 	NET_ID_INFO_CTR *ctr = q_u->sam_id.ctr;
-	DOM_CRED srv_cred;
 	UNISTR2 *uni_samlogon_user = NULL;
 	UNISTR2 *uni_samlogon_domain = NULL;
 	UNISTR2 *uni_samlogon_workstation = NULL;
@@ -588,26 +608,31 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	r_u->switch_value = 0; /* indicates no info */
 	r_u->auth_resp = 1; /* authoritative response */
 	r_u->switch_value = 3; /* indicates type of validation user info */
+	r_u->buffer_creds = 1; /* Ensure we always return server creds. */
  
 	if (!get_valid_user_struct(p->vuid))
 		return NT_STATUS_NO_SUCH_USER;
 
+	if (!p->dc || !p->dc->authenticated) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
-	if ( (lp_server_schannel() == True) && (!p->netsec_auth_validated) ) {
+	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {
 		/* 'server schannel = yes' should enforce use of
 		   schannel, the client did offer it in auth2, but
 		   obviously did not use it. */
+		DEBUG(0,("_net_sam_logoff: client %s not using schannel for netlogon\n",
+			p->dc->remote_machine ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* checks and updates credentials.  creates reply credentials */
-	if (!(p->dc.authenticated && deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, &q_u->sam_id.client.cred, &srv_cred)))
-		return NT_STATUS_INVALID_HANDLE;
-
-	memcpy(&p->dc.srv_cred, &p->dc.clnt_cred, sizeof(p->dc.clnt_cred));
-
-	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
-	memcpy(&r_u->srv_creds, &srv_cred, sizeof(r_u->srv_creds));
+	if (!creds_server_step(p->dc, &q_u->sam_id.client.cred,  &r_u->srv_creds)) {
+		DEBUG(0,("_net_sam_logoff: creds_server_step failed. Rejecting auth "
+			"request from client %s machine account %s\n",
+			p->dc->remote_machine, p->dc->mach_acct ));
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	/* find the username */
     
@@ -692,7 +717,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 							 nt_workstation, chal,
 							 ctr->auth.id1.lm_owf.data, 
 							 ctr->auth.id1.nt_owf.data, 
-							 p->dc.sess_key)) {
+							 p->dc->sess_key)) {
 			status = NT_STATUS_NO_MEMORY;
 		}
 		break;
@@ -791,7 +816,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		}
 
 		ZERO_STRUCT(netlogon_sess_key);
-		memcpy(netlogon_sess_key, p->dc.sess_key, 8);
+		memcpy(netlogon_sess_key, p->dc->sess_key, 8);
 		if (server_info->user_session_key.length) {
 			memcpy(user_session_key, server_info->user_session_key.data, 
 			       MIN(sizeof(user_session_key), server_info->user_session_key.length));

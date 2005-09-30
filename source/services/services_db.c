@@ -1,8 +1,10 @@
 /* 
  *  Unix SMB/CIFS implementation.
  *  Service Control API Implementation
- *  Copyright (C) Gerald Carter                   2005.
+ * 
  *  Copyright (C) Marcin Krzysztof Porwit         2005.
+ *  Largely Rewritten by:
+ *  Copyright (C) Gerald (Jerry) Carter           2005.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,544 +23,431 @@
 
 #include "includes.h"
 
-#if 0
-
-/* backend database routines for services.tdb */
-
-#define SERVICEDB_VERSION_V1 1 /* Will there be more? */
-#define INTERNAL_SERVICES_LIST "NETLOGON Spooler"
-
-/*                                                                                                                     */
-/* scripts will execute from the following libdir, if they are in the enable svcctl=<list of scripts>                  */
-/* these should likely be symbolic links. Note that information about them will be extracted from the files themselves */
-/* using the LSB standard keynames for various information                                                             */
-
-#define SCVCTL_DATABASE_VERSION_V1 1
-static TDB_CONTEXT *service_tdb; /* used for services tdb file */
-
-/* there are two types of services -- internal, and external.
-   Internal services are "built-in" to samba -- there may be 
-   functions that exist to provide the control and enumeration 
-   functions.  There certainly is information returned to be 
-   displayed in the typical management console.
-
-   External services are those that can be specified in the smb.conf 
-   file -- and they conform to the LSB specification as to having 
-   particular keywords in the scripts. Note that these "scripts" are 
-   located in the lib directory, and are likely links to LSB-compliant 
-   init.d scripts, such as those that might come with Suse. Note 
-   that the spec is located  http://www.linuxbase.org/spec/ */
-
-
-
-/* Expand this to include what can and can't be done 
-   with a particular internal service. Expand as necessary 
-   to add other infromation like what can be controlled, 
-   etc. */
-
-typedef struct Internal_service_struct
-{
-	const char *filename;		/* internal name "index" */
-	const char *displayname;
-	const char *description;
-	const uint32 statustype;
-	void *status_fn; 
-	void *control_fn;
-} Internal_service_description;
-
-
-static const Internal_service_description ISD[] = {
-	{ "NETLOGON",	"Net Logon",	"Provides logon and authentication service to the network", 	0x110,	NULL, NULL},
-	{ "Spooler",	"Spooler",	"Printing Services", 						0x0020, NULL, NULL},
-	{ NULL, NULL, NULL, 0, NULL, NULL}
-};
-
-
-/********************************************************************
- allocate an array of external services and return them. Null return 
- is okay, make sure &added is also zero! 
-********************************************************************/
-
-int num_external_services(void)
-{
-	int num_services;
-	char **svc_list;
-	pstring keystring, external_services_string;
-	TDB_DATA key_data;
-
-
-	if (!service_tdb) {
-		DEBUG(8,("enum_external_services: service database is not open!!!\n"));
-		num_services = 0;
-	} else {
-		pstrcpy(keystring,"EXTERNAL_SERVICES");
-		key_data = tdb_fetch_bystring(service_tdb, keystring);
-
-		if ((key_data.dptr != NULL) && (key_data.dsize != 0)) {
-			strncpy(external_services_string,key_data.dptr,key_data.dsize);
-			external_services_string[key_data.dsize] = 0;
-			DEBUG(8,("enum_external_services: services list is %s, size is %d\n",external_services_string,key_data.dsize));
-		}
-	} 
-	svc_list = str_list_make(external_services_string,NULL);
- 
-	num_services = str_list_count( (const char **)svc_list);
-
-	return num_services;
-}
-
-
-
-/********************************************************************
-  Gather information on the "external services". These are services 
-  listed in the smb.conf file, and found to exist through checks in 
-  this code. Note that added will be incremented on the basis of the 
-  number of services added.  svc_ptr should have enough memory allocated 
-  to accommodate all of the services that exist. 
-
-  Typically num_external_services is used to "size" the amount of
-  memory allocated, but does little/no work. 
-
-  enum_external_services() actually examines each of the specified 
-  external services, populates the memory structures, and returns.
-
-  ** note that 'added' may end up with less than the number of services 
-  found in _num_external_services, such as the case when a service is
-  called out, but the actual service doesn't exist or the file can't be 
-  read for the service information.
-********************************************************************/
-
-WERROR enum_external_services(TALLOC_CTX *tcx,ENUM_SERVICES_STATUS **svc_ptr, int existing_services,int *added) 
-{
-	/* *svc_ptr must have pre-allocated memory */
-	int num_services = 0;
-	int i = 0;
-	ENUM_SERVICES_STATUS *services=NULL;
-	char **svc_list,**svcname;
-	pstring command, keystring, external_services_string;
-	int ret;
-	int fd = -1;
-	Service_info *si;
-	TDB_DATA key_data;
-
-	*added = num_services;
-
-	if (!service_tdb) {
-		DEBUG(8,("enum_external_services: service database is not open!!!\n"));
-	} else {
-		pstrcpy(keystring,"EXTERNAL_SERVICES");
-		key_data = tdb_fetch_bystring(service_tdb, keystring);
-		if ((key_data.dptr != NULL) && (key_data.dsize != 0)) {
-			strncpy(external_services_string,key_data.dptr,key_data.dsize);
-			external_services_string[key_data.dsize] = 0;
-			DEBUG(8,("enum_external_services: services list is %s, size is %d\n",external_services_string,key_data.dsize));
-		}
-	} 
-	svc_list = str_list_make(external_services_string,NULL);
- 
-	num_services = str_list_count( (const char **)svc_list);
-
-	if (0 == num_services) {
-		DEBUG(8,("enum_external_services: there are no external services\n"));
-		*added = num_services;
-		return WERR_OK;
-	}
-	DEBUG(8,("enum_external_services: there are [%d] external services\n",num_services));
-	si=TALLOC_ARRAY( tcx, Service_info, 1 );
-	if (si == NULL) { 
-		DEBUG(8,("enum_external_services: Failed to alloc si\n"));
-		return WERR_NOMEM;
-	}
-
-#if 0
-/* *svc_ptr has the pointer to the array if there is one already. NULL if not. */
-	if ((existing_services>0) && svc_ptr && *svc_ptr) { /* reallocate vs. allocate */
-		DEBUG(8,("enum_external_services: REALLOCing %x to %d services\n", *svc_ptr, existing_services+num_services));
-
-		services=TALLOC_REALLOC_ARRAY(tcx,*svc_ptr,ENUM_SERVICES_STATUS,existing_services+num_services);
-		DEBUG(8,("enum_external_services: REALLOCed to %x services\n", services));
-
-		if (!services) return WERR_NOMEM;
-			*svc_ptr = services;
-	} else {
-		if ( !(services = TALLOC_ARRAY( tcx, ENUM_SERVICES_STATUS, num_services )) )
-			return WERR_NOMEM;
-	}
-#endif
-
-	if (!svc_ptr || !(*svc_ptr)) 
-		return WERR_NOMEM;
-	services = *svc_ptr;
-	if (existing_services > 0) {
-		i+=existing_services;
-	}
-
-	svcname = svc_list;
-	DEBUG(8,("enum_external_services: enumerating %d external services starting at index %d\n", num_services,existing_services));
-
-	while (*svcname) {
-		DEBUG(10,("enum_external_services: Reading information on service %s, index %d\n",*svcname,i));
-		/* get_LSB_data(*svcname,si);  */
-		if (!get_service_info(service_tdb,*svcname, si)) {
-			DEBUG(1,("enum_external_services: CAN'T FIND INFO FOR SERVICE %s in the services DB\n",*svcname));
-		}
-
-		if ((si->filename == NULL) || (*si->filename == 0)) {
-			init_unistr(&services[i].servicename, *svcname );
-		} else {
-			init_unistr( &services[i].servicename, si->filename );    
-			/* init_unistr( &services[i].servicename, si->servicename ); */
-		}
-
-		if ((si->provides == NULL) || (*si->provides == 0)) {
-			init_unistr(&services[i].displayname, *svcname );
-		} else {
-			init_unistr( &services[i].displayname, si->provides );
-		}
-
-		/* TODO - we could keep the following info in the DB, too... */
-
-		DEBUG(8,("enum_external_services: Service name [%s] displayname [%s]\n",
-		si->filename, si->provides)); 
-		services[i].status.type               = SVCCTL_WIN32_OWN_PROC; 
-		services[i].status.win32_exit_code    = 0x0;
-		services[i].status.service_exit_code  = 0x0;
-		services[i].status.check_point        = 0x0;
-		services[i].status.wait_hint          = 0x0;
-
-		/* TODO - do callout here to get the status */
-
-		memset(command, 0, sizeof(command));
-		slprintf(command, sizeof(command)-1, "%s%s%s %s", dyn_LIBDIR, SVCCTL_SCRIPT_DIR, *svcname, "status");
-
-		DEBUG(10, ("enum_external_services: status command is [%s]\n", command));
-
-		/* TODO  - wrap in privilege check */
-
-		ret = smbrun(command, &fd);
-		DEBUGADD(10, ("returned [%d]\n", ret));
-		close(fd);
-		if(ret != 0)
-			DEBUG(10, ("enum_external_services: Command returned  [%d]\n", ret));
-		services[i].status.state              = SVCCTL_STOPPED;
-		if (ret == 0) {
-			services[i].status.state              = SVCCTL_RUNNING;
-			services[i].status.controls_accepted  = SVCCTL_CONTROL_SHUTDOWN | SVCCTL_CONTROL_STOP;
-		} else {
-			services[i].status.state              = SVCCTL_STOPPED;
-			services[i].status.controls_accepted  = 0;
-		}
-		svcname++; 
-		i++;
-	} 
-
-	DEBUG(10,("enum_external_services: Read services %d\n",num_services));
-	*added = num_services;
-
-	return WERR_OK;
-}
-
 /********************************************************************
 ********************************************************************/
 
-int num_internal_services(void)
+static SEC_DESC* construct_service_sd( TALLOC_CTX *ctx )
 {
-	int num_services;
-	char **svc_list;
-	pstring keystring, internal_services_string;
-	TDB_DATA key_data;
-
-	if (!service_tdb) {
-		DEBUG(8,("enum_internal_services: service database is not open!!!\n"));
-		num_services = 0;
-	} else {
-		pstrcpy(keystring,"INTERNAL_SERVICES");
-		key_data = tdb_fetch_bystring(service_tdb, keystring);
-
-		if ((key_data.dptr != NULL) && (key_data.dsize != 0)) {
-			strncpy(internal_services_string,key_data.dptr,key_data.dsize);
-			internal_services_string[key_data.dsize] = 0;
-			DEBUG(8,("enum_internal_services: services list is %s, size is %d\n",internal_services_string,key_data.dsize));
-		}
-	} 
-	svc_list = str_list_make(internal_services_string,NULL);
- 
-	num_services = str_list_count( (const char **)svc_list);
-
-	return num_services;
-}
-
-#if 0 
-/*********************************************************************
- given a service nice name, find the underlying service name
-*********************************************************************/
-
-static BOOL convert_service_displayname(TDB_CONTEXT *stdb,pstring service_nicename, pstring servicename,int szsvcname) 
-{
-	pstring keystring;
-	TDB_DATA key_data;
-
-	if ((stdb == NULL) || (service_nicename==NULL) || (servicename == NULL)) 
-		return False;
-
-	pstr_sprintf(keystring,"SERVICE_NICENAME/%s", servicename);
-
-	DEBUG(5, ("convert_service_displayname: Looking for service name [%s], key [%s]\n", 
-		service_nicename, keystring));
-
-	key_data = tdb_fetch_bystring(stdb,keystring);
-
-	if (key_data.dsize == 0) {
-		DEBUG(5, ("convert_service_displayname: [%s] Not found, tried key [%s]\n",service_nicename,keystring));
-		return False; 
-	}
-
-	strncpy(servicename,key_data.dptr,szsvcname);
-	servicename[(key_data.dsize > szsvcname ? szsvcname : key_data.dsize)] = 0;
-	DEBUG(5, ("convert_service_displayname: Found service name [%s], name is  [%s]\n",
-		service_nicename,servicename));
-
-	return True;
-}
-#endif
-
-/*******************************************************************************
- Get the INTERNAL services information for the given service name. 
-*******************************************************************************/
-
-static BOOL get_internal_service_data(const Internal_service_description *isd, Service_info *si)
-{
-	ZERO_STRUCTP( si );
-#if 0
+	SEC_ACE ace[4];	
+	SEC_ACCESS mask;
+	size_t i = 0;
+	SEC_DESC *sd;
+	SEC_ACL *acl;
+	size_t sd_size;
 	
-	pstrcpy( si->servicename, isd->displayname);
-	pstrcpy( si->servicetype, "INTERNAL");
-	pstrcpy( si->filename, isd->filename);
-	pstrcpy( si->provides, isd->displayname);
-	pstrcpy( si->description, isd->description);
-	pstrcpy( si->shortdescription, isd->description);
-#endif
+	/* basic access for Everyone */
 	
-	return True;
+	init_sec_access(&mask, SERVICE_READ_ACCESS );
+	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+		
+	init_sec_access(&mask,SERVICE_EXECUTE_ACCESS );
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Power_Users, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	
+	init_sec_access(&mask,SERVICE_ALL_ACCESS );
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Server_Operators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	
+	/* create the security descriptor */
+	
+	if ( !(acl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) )
+		return NULL;
+
+	if ( !(sd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, acl, &sd_size)) )
+		return NULL;
+
+	return sd;
+}
+
+/********************************************************************
+ This is where we do the dirty work of filling in things like the
+ Display name, Description, etc...
+********************************************************************/
+
+static void fill_service_values( const char *name, REGVAL_CTR *values )
+{
+	UNISTR2 data, dname, ipath, description;
+	uint32 dword;
+	pstring pstr;
+	
+	/* These values are hardcoded in all QueryServiceConfig() replies.
+	   I'm just storing them here for cosmetic purposes */
+	
+	dword = SVCCTL_AUTO_START;
+	regval_ctr_addvalue( values, "Start", REG_DWORD, (char*)&dword, sizeof(uint32));
+	
+	dword = SVCCTL_WIN32_OWN_PROC;
+	regval_ctr_addvalue( values, "Type", REG_DWORD, (char*)&dword, sizeof(uint32));
+
+	dword = SVCCTL_SVC_ERROR_NORMAL;
+	regval_ctr_addvalue( values, "ErrorControl", REG_DWORD, (char*)&dword, sizeof(uint32));
+	
+	/* everything runs as LocalSystem */
+	
+	init_unistr2( &data, "LocalSystem", UNI_STR_TERMINATE );
+	regval_ctr_addvalue( values, "ObjectName", REG_SZ, (char*)data.buffer, data.uni_str_len*2);
+	
+	/* special considerations for internal services and the DisplayName value */
+	
+	if ( strequal(name, "Spooler") ) {
+		pstr_sprintf( pstr, "%s/%s/smbd",dyn_LIBDIR, SVCCTL_SCRIPT_DIR );
+		init_unistr2( &ipath, pstr, UNI_STR_TERMINATE );
+		init_unistr2( &description, "Internal service for spooling files to print devices", UNI_STR_TERMINATE );
+		init_unistr2( &dname, "Print Spooler", UNI_STR_TERMINATE );
+	} 
+	else if ( strequal(name, "NETLOGON") ) {
+		pstr_sprintf( pstr, "%s/%s/smbd",dyn_LIBDIR, SVCCTL_SCRIPT_DIR );
+		init_unistr2( &ipath, pstr, UNI_STR_TERMINATE );
+		init_unistr2( &description, "File service providing access to policy and profile data", UNI_STR_TERMINATE );
+		init_unistr2( &dname, "Net Logon", UNI_STR_TERMINATE );
+	} 
+	else if ( strequal(name, "RemoteRegistry") ) {
+		pstr_sprintf( pstr, "%s/%s/smbd",dyn_LIBDIR, SVCCTL_SCRIPT_DIR );
+		init_unistr2( &ipath, pstr, UNI_STR_TERMINATE );
+		init_unistr2( &description, "Internal service providing remote access to the Samba registry", UNI_STR_TERMINATE );
+		init_unistr2( &dname, "Remote Registry Service", UNI_STR_TERMINATE );
+	} 
+	else {
+		pstr_sprintf( pstr, "%s/%s/%s",dyn_LIBDIR, SVCCTL_SCRIPT_DIR, name );
+		init_unistr2( &ipath, pstr, UNI_STR_TERMINATE );
+		init_unistr2( &description, "External Unix Service", UNI_STR_TERMINATE );
+		init_unistr2( &dname, name, UNI_STR_TERMINATE );
+	}
+	regval_ctr_addvalue( values, "DisplayName", REG_SZ, (char*)dname.buffer, dname.uni_str_len*2);
+	regval_ctr_addvalue( values, "ImagePath", REG_SZ, (char*)ipath.buffer, ipath.uni_str_len*2);
+	regval_ctr_addvalue( values, "Description", REG_SZ, (char*)description.buffer, description.uni_str_len*2);
+	
+	return;
 }
 
 /********************************************************************
 ********************************************************************/
 
-BOOL get_service_info(TDB_CONTEXT *stdb,char *service_name, Service_info *si) 
+static void add_new_svc_name( REGISTRY_KEY *key_parent, REGSUBKEY_CTR *subkeys, 
+                              const char *name )
 {
+	REGISTRY_KEY *key_service, *key_secdesc;
+	WERROR wresult;
+	pstring path;
+	REGVAL_CTR *values;
+	REGSUBKEY_CTR *svc_subkeys;
+	SEC_DESC *sd;
+	prs_struct ps;
 
-	pstring keystring;
-	TDB_DATA  key_data;
+	/* add to the list and create the subkey path */
 
-	if ((stdb == NULL) || (si == NULL) || (service_name==NULL) || (*service_name == 0)) 
-		return False;
+	regsubkey_ctr_addkey( subkeys, name );
+	store_reg_keys( key_parent, subkeys );
 
-	/* TODO  - error handling -- what if the service isn't in the DB? */
-    
-	pstr_sprintf(keystring,"SERVICE/%s/TYPE", service_name);
-	key_data = tdb_fetch_bystring(stdb,keystring);
-	strncpy(si->servicetype,key_data.dptr,key_data.dsize);
-	si->servicetype[key_data.dsize] = 0;
+	/* open the new service key */
 
-	/* crude check to see if the service exists... */
-  	DEBUG(3,("Size of the TYPE field is %d\n",key_data.dsize));
-	if (key_data.dsize == 0) 
-		return False;
+	pstr_sprintf( path, "%s\\%s", KEY_SERVICES, name );
+	wresult = regkey_open_internal( &key_service, path, get_root_nt_token(), 
+		REG_KEY_ALL );
+	if ( !W_ERROR_IS_OK(wresult) ) {
+		DEBUG(0,("add_new_svc_name: key lookup failed! [%s] (%s)\n", 
+			path, dos_errstr(wresult)));
+		return;
+	}
+	
+	/* add the 'Security' key */
 
-	pstr_sprintf(keystring,"SERVICE/%s/FILENAME", service_name);
-	key_data = tdb_fetch_bystring(stdb,keystring);
-	strncpy(si->filename,key_data.dptr,key_data.dsize);
-	si->filename[key_data.dsize] = 0;
+	if ( !(svc_subkeys = TALLOC_ZERO_P( key_service, REGSUBKEY_CTR )) ) {
+		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
+		return;
+	}
+	
+	fetch_reg_keys( key_service, svc_subkeys );
+	regsubkey_ctr_addkey( svc_subkeys, "Security" );
+	store_reg_keys( key_service, svc_subkeys );
 
-	pstr_sprintf(keystring,"SERVICE/%s/PROVIDES", service_name);
-	key_data = tdb_fetch_bystring(stdb,keystring);
-	strncpy(si->provides,key_data.dptr,key_data.dsize);
-	si->provides[key_data.dsize] = 0;
-	strncpy(si->servicename,key_data.dptr,key_data.dsize);
-	si->servicename[key_data.dsize] = 0;
+	/* now for the service values */
+	
+	if ( !(values = TALLOC_ZERO_P( key_service, REGVAL_CTR )) ) {
+		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
+		return;
+	}
 
-	    
-	pstr_sprintf(keystring,"SERVICE/%s/DEPENDENCIES", service_name);
-	key_data = tdb_fetch_bystring(stdb,keystring);
-	strncpy(si->dependencies,key_data.dptr,key_data.dsize);
-	si->dependencies[key_data.dsize] = 0;
+	fill_service_values( name, values );
+	store_reg_values( key_service, values );
 
-	pstr_sprintf(keystring,"SERVICE/%s/SHOULDSTART", service_name);
-	key_data = tdb_fetch_bystring(stdb,keystring);
-	strncpy(si->shouldstart,key_data.dptr,key_data.dsize);
-	si->shouldstart[key_data.dsize] = 0;
+	/* cleanup the service key*/
 
-	pstr_sprintf(keystring,"SERVICE/%s/SHOULD_STOP", service_name);
-	key_data = tdb_fetch_bystring(stdb,keystring);
-	strncpy(si->shouldstop,key_data.dptr,key_data.dsize);
-	si->shouldstop[key_data.dsize] = 0;
+	TALLOC_FREE( key_service );
 
-	pstr_sprintf(keystring,"SERVICE/%s/REQUIREDSTART", service_name);
-	key_data = tdb_fetch_bystring(stdb,keystring);
-	strncpy(si->requiredstart,key_data.dptr,key_data.dsize);
-	si->requiredstart[key_data.dsize] = 0;
+	/* now add the security descriptor */
 
-	pstr_sprintf(keystring,"SERVICE/%s/REQUIREDSTOP", service_name);
-	key_data = tdb_fetch_bystring(stdb,keystring);
-	strncpy(si->requiredstop,key_data.dptr,key_data.dsize);
-	si->requiredstop[key_data.dsize] = 0;
+	pstr_sprintf( path, "%s\\%s\\%s", KEY_SERVICES, name, "Security" );
+	wresult = regkey_open_internal( &key_secdesc, path, get_root_nt_token(), 
+		REG_KEY_ALL );
+	if ( !W_ERROR_IS_OK(wresult) ) {
+		DEBUG(0,("add_new_svc_name: key lookup failed! [%s] (%s)\n", 
+			path, dos_errstr(wresult)));
+		return;
+	}
 
-	pstr_sprintf(keystring,"SERVICE/%s/DESCRIPTION", service_name);
-	key_data = tdb_fetch_bystring(stdb,keystring);
-	strncpy(si->description,key_data.dptr,key_data.dsize);
-	si->description[key_data.dsize] = 0;
+	if ( !(values = TALLOC_ZERO_P( key_secdesc, REGVAL_CTR )) ) {
+		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
+		return;
+	}
 
-	pstr_sprintf(keystring,"SERVICE/%s/SHORTDESC", service_name);
-	key_data = tdb_fetch_bystring(stdb,keystring);
-	strncpy(si->shortdescription,key_data.dptr,key_data.dsize);
-	si->shortdescription[key_data.dsize] = 0;
+	if ( !(sd = construct_service_sd(key_secdesc)) ) {
+		DEBUG(0,("add_new_svc_name: Failed to create default sec_desc!\n"));
+		TALLOC_FREE( key_secdesc );
+		return;
+	}
+	
+	/* stream the printer security descriptor */
+	
+	prs_init( &ps, RPC_MAX_PDU_FRAG_LEN, key_secdesc, MARSHALL);
+	
+	if ( sec_io_desc("sec_desc", &sd, &ps, 0 ) ) {
+		uint32 offset = prs_offset( &ps );
+		regval_ctr_addvalue( values, "Security", REG_BINARY, prs_data_p(&ps), offset );
+		store_reg_values( key_secdesc, values );
+	}
+	
+	/* finally cleanup the Security key */
+	
+	prs_mem_free( &ps );
+	TALLOC_FREE( key_secdesc );
 
-	return True;
+	return;
 }
 
-/*********************************************************************
-*********************************************************************/
+/********************************************************************
+********************************************************************/
 
-BOOL store_service_info(TDB_CONTEXT *stdb,char *service_name, Service_info *si) 
+void svcctl_init_keys( void )
 {
-	pstring keystring;
+	const char **service_list = lp_svcctl_list();
+	int i;
+	REGSUBKEY_CTR *subkeys;
+	REGISTRY_KEY *key = NULL;
+	WERROR wresult;
+	BOOL new_services = False;
+	
+	/* bad mojo here if the lookup failed.  Should not happen */
+	
+	wresult = regkey_open_internal( &key, KEY_SERVICES, get_root_nt_token(), 
+		REG_KEY_ALL );
 
-	/* Note -- when we write to the tdb, we "index" on the filename 
-	   field, not the nice name. when a service is "opened", it is 
-	   opened by the nice (SERVICENAME) name, not the file name. 
-	   So there needs to be a mapping from nice name back to the file name. */
+	if ( !W_ERROR_IS_OK(wresult) ) {
+		DEBUG(0,("init_services_keys: key lookup failed! (%s)\n", 
+			dos_errstr(wresult)));
+		return;
+	}
+	
+	/* lookup the available subkeys */	
+	
+	if ( !(subkeys = TALLOC_ZERO_P( key, REGSUBKEY_CTR )) ) {
+		DEBUG(0,("init_services_keys: talloc() failed!\n"));
+		return;
+	}
+	
+	fetch_reg_keys( key, subkeys );
+	
+	/* the builting services exist */
+	
+	add_new_svc_name( key, subkeys, "Spooler" );
+	add_new_svc_name( key, subkeys, "NETLOGON" );
+	add_new_svc_name( key, subkeys, "RemoteRegistry" );
+		
+	for ( i=0; service_list[i]; i++ ) {
+	
+		/* only add new services */
+		if ( regsubkey_ctr_key_exists( subkeys, service_list[i] ) )
+			continue;
 
-	if ((stdb == NULL) || (si == NULL) || (service_name==NULL) || (*service_name == 0)) 
-		return False;
+		/* Add the new service key and initialize the appropriate values */
 
+		add_new_svc_name( key, subkeys, service_list[i] );
 
-	/* Store the nicename */
+		new_services = True;
+	}
 
-	pstr_sprintf(keystring,"SERVICE_NICENAME/%s", si->servicename);
-	tdb_store_bystring(stdb,keystring,string_tdb_data(service_name),TDB_REPLACE);
+	TALLOC_FREE( key );
 
-	pstr_sprintf(keystring,"SERVICE/%s/TYPE", service_name);
-	tdb_store_bystring(stdb,keystring,string_tdb_data(si->servicetype),TDB_REPLACE);
+	/* initialize the control hooks */
 
-	pstr_sprintf(keystring,"SERVICE/%s/FILENAME", service_name);
-	tdb_store_bystring(stdb,keystring,string_tdb_data(si->filename),TDB_REPLACE);
+	init_service_op_table();
 
-	pstr_sprintf(keystring,"SERVICE/%s/PROVIDES", service_name);
-	tdb_store_bystring(stdb,keystring,string_tdb_data(si->provides),TDB_REPLACE);
+	return;
+}
 
-	pstr_sprintf(keystring,"SERVICE/%s/SERVICENAME", service_name);
-	tdb_store_bystring(stdb,keystring,string_tdb_data(si->servicename),TDB_REPLACE);
+/********************************************************************
+ This is where we do the dirty work of filling in things like the
+ Display name, Description, etc...Always return a default secdesc 
+ in case of any failure.
+********************************************************************/
 
-	pstr_sprintf(keystring,"SERVICE/%s/DEPENDENCIES", service_name);
-	tdb_store_bystring(stdb,keystring,string_tdb_data(si->dependencies),TDB_REPLACE);
+SEC_DESC* svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token )
+{
+	REGISTRY_KEY *key;
+	prs_struct ps;
+	REGVAL_CTR *values;
+	REGISTRY_VALUE *val;
+	SEC_DESC *sd = NULL;
+	SEC_DESC *ret_sd = NULL;
+	pstring path;
+	WERROR wresult;
+	
+	/* now add the security descriptor */
 
-	pstr_sprintf(keystring,"SERVICE/%s/SHOULDSTART", service_name);
-	tdb_store_bystring(stdb,keystring,string_tdb_data(si->shouldstart),TDB_REPLACE);
+	pstr_sprintf( path, "%s\\%s\\%s", KEY_SERVICES, name, "Security" );
+	wresult = regkey_open_internal( &key, path, token, REG_KEY_ALL );
+	if ( !W_ERROR_IS_OK(wresult) ) {
+		DEBUG(0,("svcctl_get_secdesc: key lookup failed! [%s] (%s)\n", 
+			path, dos_errstr(wresult)));
+		return NULL;
+	}
 
-	pstr_sprintf(keystring,"SERVICE/%s/SHOULDSTOP", service_name);
-	tdb_store_bystring(stdb,keystring,string_tdb_data(si->shouldstop),TDB_REPLACE);
+	if ( !(values = TALLOC_ZERO_P( key, REGVAL_CTR )) ) {
+		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
+		TALLOC_FREE( key );
+		return NULL;
+	}
 
-	pstr_sprintf(keystring,"SERVICE/%s/REQUIREDSTART", service_name);
-	tdb_store_bystring(stdb,keystring,string_tdb_data(si->requiredstart),TDB_REPLACE);
+	fetch_reg_values( key, values );
+	
+	if ( !(val = regval_ctr_getvalue( values, "Security" )) ) {
+		DEBUG(6,("svcctl_get_secdesc: constructing default secdesc for service [%s]\n", 
+			name));
+		TALLOC_FREE( key );
+		return construct_service_sd( ctx );
+	}
+	
 
-	pstr_sprintf(keystring,"SERVICE/%s/REQUIREDSTOP", service_name);
-	tdb_store_bystring(stdb,keystring,string_tdb_data(si->requiredstop),TDB_REPLACE);
+	/* stream the printer security descriptor */
+	
+	prs_init( &ps, 0, key, UNMARSHALL);
+	prs_give_memory( &ps, regval_data_p(val), regval_size(val), False );
+	
+	if ( !sec_io_desc("sec_desc", &sd, &ps, 0 ) ) {
+		TALLOC_FREE( key );
+		return construct_service_sd( ctx );
+	}
+	
+	ret_sd = dup_sec_desc( ctx, sd );
+	
+	/* finally cleanup the Security key */
+	
+	prs_mem_free( &ps );
+	TALLOC_FREE( key );
 
-	pstr_sprintf(keystring,"SERVICE/%s/DESCRIPTION", service_name);
-	tdb_store_bystring(stdb,keystring,string_tdb_data(si->description),TDB_REPLACE);
+	return ret_sd;
+}
 
-	pstr_sprintf(keystring,"SERVICE/%s/SHORTDESC", service_name);
-	if (si->shortdescription && *si->shortdescription) 
-		tdb_store_bystring(stdb,keystring,string_tdb_data(si->shortdescription),TDB_REPLACE);
+/********************************************************************
+********************************************************************/
+
+char* svcctl_lookup_dispname( const char *name, NT_USER_TOKEN *token )
+{
+	static fstring display_name;
+	REGISTRY_KEY *key;
+	REGVAL_CTR *values;
+	REGISTRY_VALUE *val;
+	pstring path;
+	WERROR wresult;
+	
+	/* now add the security descriptor */
+
+	pstr_sprintf( path, "%s\\%s", KEY_SERVICES, name );
+	wresult = regkey_open_internal( &key, path, token, REG_KEY_ALL );
+	if ( !W_ERROR_IS_OK(wresult) ) {
+		DEBUG(0,("svcctl_lookup_dispname: key lookup failed! [%s] (%s)\n", 
+			path, dos_errstr(wresult)));
+		return NULL;
+	}
+
+	if ( !(values = TALLOC_ZERO_P( key, REGVAL_CTR )) ) {
+		DEBUG(0,("svcctl_lookup_dispname: talloc() failed!\n"));
+		TALLOC_FREE( key );
+		return NULL;
+	}
+
+	fetch_reg_values( key, values );
+	
+	if ( !(val = regval_ctr_getvalue( values, "DisplayName" )) )
+		fstrcpy( display_name, name );
 	else
-	      	tdb_store_bystring(stdb,keystring,string_tdb_data(si->description),TDB_REPLACE);
+		rpcstr_pull( display_name, regval_data_p(val), sizeof(display_name), regval_size(val), 0 );
 
-	return True;
+	TALLOC_FREE( key );
+	
+	return display_name;
 }
 
-/****************************************************************************
- Create/Open the service control manager tdb. This code a clone of init_group_mapping.
-****************************************************************************/
+/********************************************************************
+********************************************************************/
 
-BOOL init_svcctl_db(void)
+char* svcctl_lookup_description( const char *name, NT_USER_TOKEN *token )
 {
-	const char *vstring = "INFO/version";
-	uint32 vers_id;
-	char **svc_list;
-	char **svcname;
-	pstring keystring;
-	pstring external_service_list;
-	pstring internal_service_list;
-	Service_info si;
-	const Internal_service_description *isd_ptr;
-	/* svc_list = str_list_make( "etc/init.d/skeleton  etc/init.d/syslog", NULL ); */
-	svc_list=(char **)lp_enable_svcctl(); 
-
-	if (service_tdb)
-		return True;
-
-	pstrcpy(external_service_list,"");
-
-	service_tdb = tdb_open_log(lock_path("services.tdb"), 0, TDB_DEFAULT, O_RDWR, 0600);
-	if (!service_tdb) {
-		DEBUG(0,("Failed to open service db\n"));
-		service_tdb = tdb_open_log(lock_path("services.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
-		if (!service_tdb) return False;
-		DEBUG(0,("Created new services db\n"));
-	}
-
-	if ((-1 == tdb_fetch_uint32(service_tdb, vstring,&vers_id)) || (vers_id != SERVICEDB_VERSION_V1)) {
-	  /* wrong version of DB, or db was just created */
-	  tdb_traverse(service_tdb, tdb_traverse_delete_fn, NULL);
-	  tdb_store_uint32(service_tdb, vstring, SERVICEDB_VERSION_V1);
-	}
-	tdb_unlock_bystring(service_tdb, vstring);
-
-	DEBUG(0,("Initializing services db\n"));
+	static fstring description;
+	REGISTRY_KEY *key;
+	REGVAL_CTR *values;
+	REGISTRY_VALUE *val;
+	pstring path;
+	WERROR wresult;
 	
-	svcname = svc_list;
+	/* now add the security descriptor */
 
-	/* Get the EXTERNAL services as mentioned by line in smb.conf */
-
-	while (*svcname) {
-		DEBUG(10,("Reading information on service %s\n",*svcname));
-		if (get_LSB_data(*svcname,&si));{
-			/* write the information to the TDB */
-			store_service_info(service_tdb,*svcname,&si);
-			/* definitely not efficient to do it this way. */
-			pstrcat(external_service_list,"\"");
-			pstrcat(external_service_list,*svcname);
-			pstrcat(external_service_list,"\" ");
-		}
-		svcname++;
+	pstr_sprintf( path, "%s\\%s", KEY_SERVICES, name );
+	wresult = regkey_open_internal( &key, path, token, REG_KEY_ALL );
+	if ( !W_ERROR_IS_OK(wresult) ) {
+		DEBUG(0,("svcctl_lookup_dispname: key lookup failed! [%s] (%s)\n", 
+			path, dos_errstr(wresult)));
+		return NULL;
 	}
-	pstrcpy(keystring,"EXTERNAL_SERVICES");
-	DEBUG(8,("Storing external service list [%s]\n",external_service_list));
-        tdb_store_bystring(service_tdb,keystring,string_tdb_data(external_service_list),TDB_REPLACE);
 
-	/* Get the INTERNAL services */
+	if ( !(values = TALLOC_ZERO_P( key, REGVAL_CTR )) ) {
+		DEBUG(0,("svcctl_lookup_dispname: talloc() failed!\n"));
+		TALLOC_FREE( key );
+		return NULL;
+	}
+
+	fetch_reg_values( key, values );
 	
-	pstrcpy(internal_service_list,"");
-	isd_ptr = ISD; 
+	if ( !(val = regval_ctr_getvalue( values, "Description" )) )
+		fstrcpy( description, "Unix Service");
+	else
+		rpcstr_pull( description, regval_data_p(val), sizeof(description), regval_size(val), 0 );
 
-	while (isd_ptr && (isd_ptr->filename)) {
-		DEBUG(10,("Reading information on service %s\n",isd_ptr->filename));
-		if (get_internal_service_data(isd_ptr,&si)){
-			/* write the information to the TDB */
-			store_service_info(service_tdb,(char *)isd_ptr->filename,&si);
-			/* definitely not efficient to do it this way. */
-			pstrcat(internal_service_list,"\"");
-			pstrcat(internal_service_list,isd_ptr->filename);
-			pstrcat(internal_service_list,"\" ");
-
-		}
-		isd_ptr++;
-	}
-	pstrcpy(keystring,"INTERNAL_SERVICES");
-	DEBUG(8,("Storing internal service list [%s]\n",internal_service_list));
-        tdb_store_bystring(service_tdb,keystring,string_tdb_data(internal_service_list),TDB_REPLACE);
-
-	return True;
+	TALLOC_FREE( key );
+	
+	return description;
 }
-#endif
+
+
+/********************************************************************
+********************************************************************/
+
+REGVAL_CTR* svcctl_fetch_regvalues( const char *name, NT_USER_TOKEN *token )
+{
+	REGISTRY_KEY *key;
+	REGVAL_CTR *values;
+	pstring path;
+	WERROR wresult;
+	
+	/* now add the security descriptor */
+
+	pstr_sprintf( path, "%s\\%s", KEY_SERVICES, name );
+	wresult = regkey_open_internal( &key, path, token, REG_KEY_ALL );
+	if ( !W_ERROR_IS_OK(wresult) ) {
+		DEBUG(0,("svcctl_fetch_regvalues: key lookup failed! [%s] (%s)\n", 
+			path, dos_errstr(wresult)));
+		return NULL;
+	}
+
+	if ( !(values = TALLOC_ZERO_P( NULL, REGVAL_CTR )) ) {
+		DEBUG(0,("svcctl_fetch_regvalues: talloc() failed!\n"));
+		TALLOC_FREE( key );
+		return NULL;
+	}
+	
+	fetch_reg_values( key, values );
+
+	TALLOC_FREE( key );
+	
+	return values;
+}
+
