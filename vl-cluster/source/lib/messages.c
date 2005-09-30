@@ -50,6 +50,8 @@
 
 #define CLUSTER_EXTENSION 1
 
+static int connect_dispatch_daemon(void);
+
 static struct process_id socket_pid;
 
 struct data_container {
@@ -57,17 +59,13 @@ struct data_container {
 	size_t filled;
 };
 static int dgram_fd = -1;
-static int listen_fd = -1;
 static int stream_fd = -1;
 static struct data_container *stream_container;
-
-
 
 /* change the message version with any incompatible changes in the protocol */
 #define MESSAGE_VERSION 1
 
 static const char *dispatch_path(void);
-static BOOL init_stream_socket(void);
 
 struct message_rec {
 	size_t len;
@@ -109,10 +107,6 @@ static void shutdown_sockets(void)
 		close(dgram_fd);
 		dgram_fd = -1;
 	}
-	if (listen_fd >= 0) {
-		close(listen_fd);
-		listen_fd = -1;
-	}
 	if (stream_fd >= 0) {
 		close(stream_fd);
 		stream_fd = -1;
@@ -125,21 +119,15 @@ static void shutdown_sockets(void)
 			unlink(path);
 			free(path);
 		}
-		asprintf(&path, "%s/%ss", lock_path("messaging"),
-			 procid_str_static(&socket_pid));
-		if (path != NULL) {
-			unlink(path);
-			free(path);
-		}
 	}
 }
 
 static BOOL message_init_socket(void)
 {
+	struct message_rec hello;
 	socket_pid = procid_self();
 
-	SMB_ASSERT((dgram_fd == -1) && (listen_fd == -1) &&
-		   (stream_fd == -1));
+	SMB_ASSERT((dgram_fd == -1) && (stream_fd == -1));
 
 	dgram_fd = create_dgram_sock(lock_path("messaging"),
 				     procid_str_static(&socket_pid),
@@ -155,21 +143,25 @@ static BOOL message_init_socket(void)
 		goto fail;
 	}
 
-	{
-		char *stream_name;
-		asprintf(&stream_name, "%ss", procid_str_static(&socket_pid));
-		if (stream_name == NULL) {
-			DEBUG(0, ("asprintf failed\n"));
-			goto fail;
-		}
-		listen_fd = create_pipe_sock(lock_path("messaging"),
-					     stream_name, 0700);
-		if (listen_fd < 0) {
-			DEBUG(0, ("Could not create pipe sock: %s\n",
-				  strerror(errno)));
-			goto fail;
-		}
-		SAFE_FREE(stream_name);
+	stream_fd = connect_dispatch_daemon();
+	if (stream_fd < 0) {
+		DEBUG(5, ("Could not connect to dispatch daemon: %s\n",
+			  strerror(errno)));
+		goto fail;
+	}
+
+	hello.len = sizeof(hello);
+	hello.msg_version = MESSAGE_VERSION;
+	hello.msg_type = MSG_HELLO;
+	hello.duplicates = False;
+	hello.dest = procid_self();
+	hello.src = hello.dest;
+
+	if (write_data(stream_fd, (char *)&hello, sizeof(hello))
+	    != sizeof(hello)) {
+		DEBUG(0, ("Could not send hello message: %s\n",
+			  strerror(errno)));
+		goto fail;
 	}
 
 	return True;
@@ -212,73 +204,15 @@ void message_end(void)
 	shutdown_sockets();
 }
 
-static BOOL init_stream_socket(void)
-{
-	struct sockaddr_un sunaddr;
-	socklen_t addrlen = sizeof(sunaddr);
-	struct message_rec msg;
-	ssize_t ret;
-
-	SMB_ASSERT(stream_fd < 0);
-
-	msg.len = sizeof(struct message_rec);
-	msg.msg_version = MESSAGE_VERSION;
-	msg.msg_type = MSG_CALLME;
-	msg.duplicates = False;
-	msg.src = procid_self();
-	msg.dest = procid_self();
-
-	ZERO_STRUCT(sunaddr);
-	sunaddr.sun_family = AF_UNIX;
-	strncpy(sunaddr.sun_path, dispatch_path(), sizeof(sunaddr.sun_path)-1);
-
-	if (set_blocking(dgram_fd, True) < 0) {
-		DEBUG(5, ("Failed to set dgram socket to blocking: %s\n",
-			  strerror(errno)));
-		return False;
-	}
-
-	ret = sys_sendto(dgram_fd, &msg, sizeof(msg), 0,
-			 (struct sockaddr *)&sunaddr, sizeof(sunaddr));
-
-	set_blocking(dgram_fd, False);
-
-	if (ret != sizeof(msg)) {
-		DEBUG(5, ("Failed to send CALLME msg: %s\n", strerror(errno)));
-		return False;
-	}
-
-	/* A deliberately blocking accept, we're waiting for the dispatch
-	 * daemon to connect to us */
-
-	stream_fd = accept(listen_fd, (struct sockaddr *)&sunaddr, &addrlen);
-	if (stream_fd < 0) {
-		DEBUG(0, ("Accept failed: %s\n", strerror(errno)));
-		set_blocking(dgram_fd, True);
-		return False;
-	}
-
-	talloc_free(stream_container);
-	stream_container = NULL;
-
-	return True;
-}
-
 void message_select_setup(int *maxfd, fd_set *rfds)
 {
 	if (dgram_fd < 0) {
 		return;
 	}
-
 	FD_SET(dgram_fd, rfds);
 	*maxfd = MAX(*maxfd, dgram_fd);
-	FD_SET(listen_fd, rfds);
-	*maxfd = MAX(*maxfd, listen_fd);
-
-	if (stream_fd >= 0) {
-		FD_SET(stream_fd, rfds);
-		*maxfd = MAX(*maxfd, stream_fd);
-	}
+	FD_SET(stream_fd, rfds);
+	*maxfd = MAX(*maxfd, stream_fd);
 }
 
 static const char *message_path(const struct process_id *pid)
@@ -315,6 +249,7 @@ BOOL message_send_pid(struct process_id pid, int msg_type,
 		memcpy(packet.data + sizeof(struct message_rec), buf, len);
 	}
 
+	goto via_stream;
 	if (!procid_is_local(&hdr->dest)) {
 		goto via_stream;
 	}
@@ -355,10 +290,6 @@ BOOL message_send_pid(struct process_id pid, int msg_type,
 	}
 
  via_stream:
-	if ((stream_fd < 0) && !init_stream_socket()) {
-		DEBUG(5, ("No stream socket\n"));
-		goto done;
-	}
 
 	sent = write_data(stream_fd, packet.data, packet.length);
 
@@ -377,10 +308,10 @@ BOOL message_send_pid(struct process_id pid, int msg_type,
 	return True;
 }
 
-static DATA_BLOB *read_from_dgram_socket(TALLOC_CTX *mem_ctx, int fd)
+static DATA_BLOB read_from_dgram_socket(int fd)
 {
 	int msglength;
-	DATA_BLOB *result;
+	DATA_BLOB result;
 	ssize_t received;
 
 	if (ioctl(fd, FIONREAD, &msglength) < 0) {
@@ -388,25 +319,29 @@ static DATA_BLOB *read_from_dgram_socket(TALLOC_CTX *mem_ctx, int fd)
 		msglength = 65536;
 	}
 
-	result = data_blob_talloc_p(mem_ctx, NULL, msglength);
-	if (result == NULL) {
-		return NULL;
+	result = data_blob(NULL, msglength);
+	if (result.data == NULL) {
+		DEBUG(0, ("data_blob failed\n"));
+		goto fail;
 	}
 
-	received = recv(fd, result->data, result->length, MSG_DONTWAIT);
+	received = recv(fd, result.data, result.length, MSG_DONTWAIT);
 	if (received != msglength) {
 		DEBUG(0, ("Received different length (%d) than announced "
 			  "(%d)\n", received, msglength));
-		talloc_free(result);
-		return NULL;
+		goto fail;
 	}
 
 	if (received < sizeof(struct message_rec)) {
 		DEBUG(5, ("Message too short\n"));
-		talloc_free(result);
-		return NULL;
+		goto fail;
 	}
 
+	return result;
+
+ fail:
+	SAFE_FREE(result.data);
+	result.length = 0;
 	return result;
 }
 
@@ -499,7 +434,7 @@ static struct data_container *read_from_stream_socket(int fd,
 	return cnt;
 }
 
-static struct message_rec *parse_message(DATA_BLOB *blob)
+static struct message_rec *parse_message(const DATA_BLOB *blob)
 {
 	struct message_rec *result;
 
@@ -557,53 +492,30 @@ static int dispatch_one_message(struct message_rec *msg)
 
 BOOL message_dispatch(fd_set *rfds)
 {
-	DATA_BLOB *blob = NULL;
+	DATA_BLOB dgram;
 	struct message_rec *msg = NULL;
 	BOOL result = False;
-	TALLOC_CTX *mem_ctx = talloc_init("message_dispatch");
 
-	if (mem_ctx == NULL) {
-		DEBUG(0, ("talloc_init failed\n"));
-		return False;
-	}
-
-	if (FD_ISSET(listen_fd, rfds)) {
-		int new_fd;
-		struct sockaddr addr;
-		socklen_t addrlen = sizeof(addr);
-		new_fd = sys_accept(listen_fd, &addr, &addrlen);
-		if (new_fd < 0) {
-			DEBUG(5, ("accept failed: %s\n", strerror(errno)));
-		}
-		if (stream_fd >= 0) {
-			DEBUG(5, ("Already got a stream fd, closing new\n"));
-			close(new_fd);
-		} else {
-			stream_fd = new_fd;
-		}
-	}
+	ZERO_STRUCT(dgram);
 
 	if (FD_ISSET(dgram_fd, rfds)) {
-		blob = read_from_dgram_socket(mem_ctx, dgram_fd);
+		dgram = read_from_dgram_socket(dgram_fd);
 	}
 
-	if (blob != NULL) {
-		msg = parse_message(blob);
+	if (dgram.data != NULL) {
+		msg = parse_message(&dgram);
 	}
 
 	if (msg != NULL) {
 		dispatch_one_message(msg);
+		SAFE_FREE(dgram.data);
 		result = True;
 	}
 
-	if (stream_fd < 0) {
-		goto done;
-	}
-
 	if (FD_ISSET(stream_fd, rfds)) {
-		stream_container = read_from_stream_socket(stream_fd,
-							   NULL,
-							   stream_container);
+		stream_container =
+			read_from_stream_socket(stream_fd, NULL,
+						stream_container);
 	}
 
 	if ((stream_container == NULL) ||
@@ -619,7 +531,6 @@ BOOL message_dispatch(fd_set *rfds)
 	}
 
  done:
-	talloc_free(mem_ctx);
 	return result;
 }
 
@@ -648,20 +559,16 @@ void message_register(int msg_type,
 	struct dispatch_fns *dfn;
 
 	dfn = SMB_MALLOC_P(struct dispatch_fns);
-
-	if (dfn != NULL) {
-
-		ZERO_STRUCTPN(dfn);
-
-		dfn->msg_type = msg_type;
-		dfn->fn = fn;
-
-		DLIST_ADD(dispatch_fns, dfn);
+	if (dfn == NULL) {
+		DEBUG(0, ("malloc failed\n"));
+		return;
 	}
-	else {
-	
-		DEBUG(0,("message_register: Not enough memory. malloc failed!\n"));
-	}
+
+	ZERO_STRUCTPN(dfn);
+	dfn->msg_type = msg_type;
+	dfn->fn = fn;
+
+	DLIST_ADD(dispatch_fns, dfn);
 }
 
 /****************************************************************************
@@ -871,12 +778,50 @@ static void accept_tcp(int tcp_listener)
 	DLIST_ADD(clients, c);
 }
 
-static struct messaging_client *new_client(const struct process_id *pid)
+static void accept_unix(int unix_listener)
+{
+	struct messaging_client *c;
+	int fd;
+	struct sockaddr_un addr;
+	socklen_t addrlen = sizeof(addr);
+
+	fd = accept(unix_listener, (struct sockaddr *)&addr, &addrlen);
+	if (fd < 0) {
+		DEBUG(5, ("accept failed: %s\n", strerror(errno)));
+		return;
+	}
+
+	if (addr.sun_family != AF_UNIX) {
+		DEBUG(5, ("Expected AF_UNIX(%d) in accept, got %d\n",
+			  AF_UNIX, addr.sun_family));
+		close(fd);
+		return;
+	}
+
+	c = TALLOC_P(NULL, struct messaging_client);
+	if (c == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		close(fd);
+		return;
+	}
+
+	c->pid = procid_self();
+	c->pid.pid = -1;
+	c->fd = fd;
+	c->connected = True;
+	c->incoming = NULL;
+	c->messages = NULL;
+	c->last_msg = NULL;
+	talloc_set_destructor(c, messaging_client_destr);
+
+	DEBUG(10, ("Adding remote client %s\n", procid_str_static(&c->pid)));
+
+	DLIST_ADD(clients, c);
+}
+
+static struct messaging_client *remote_connect(const struct process_id *pid)
 {
 	struct messaging_client *result;
-	struct sockaddr *addr;
-	socklen_t addrlen;
-	struct sockaddr_un sunaddr;
 	struct sockaddr_in sinaddr;
 
 	result = TALLOC_P(NULL, struct messaging_client);
@@ -891,8 +836,7 @@ static struct messaging_client *new_client(const struct process_id *pid)
 	result->last_msg = NULL;
 	result->connected = False;
 	
-	result->fd = socket(procid_is_local(pid) ? PF_UNIX: PF_INET,
-			    SOCK_STREAM, 0);
+	result->fd = socket(PF_INET, SOCK_STREAM, 0);
 	if (result->fd < 0) {
 		DEBUG(5, ("Could not create socket: %s\n", strerror(errno)));
 		talloc_free(result);
@@ -907,36 +851,13 @@ static struct messaging_client *new_client(const struct process_id *pid)
 		return NULL;
 	}
 
-	if (procid_is_local(pid)) {
-		char *path;
-		asprintf(&path, "%s/%ss", lock_path("messaging"),
-			 procid_str_static(pid));
-		if (path == NULL) {
-			DEBUG(0, ("asprintf failed\n"));
-			return False;
-		}
-		DEBUG(10, ("Connecting to client %s, path %s\n",
-			   procid_str_static(pid), path));
+	ZERO_STRUCT(sinaddr);
+	sinaddr.sin_family = AF_INET;
+	sinaddr.sin_addr = pid->ip;
+	sinaddr.sin_port = htons(MESSAGING_PORT);
 
-		ZERO_STRUCT(sunaddr);
-		sunaddr.sun_family = AF_UNIX;
-		strncpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path)-1);
-		SAFE_FREE(path);
-
-		addr = (struct sockaddr *)&sunaddr;
-		addrlen = sizeof(sunaddr);
-
-	} else {
-		ZERO_STRUCT(sinaddr);
-		sinaddr.sin_family = AF_INET;
-		sinaddr.sin_addr = pid->ip;
-		sinaddr.sin_port = htons(MESSAGING_PORT);
-
-		addr = (struct sockaddr *)&sinaddr;
-		addrlen = sizeof(sinaddr);
-	}
-
-	if (sys_connect(result->fd, addr, addrlen) == 0) {
+	if (sys_connect(result->fd, (struct sockaddr *)&sinaddr,
+			sizeof(sinaddr)) == 0) {
 		result->connected = True;
 		goto done;
 	}
@@ -979,11 +900,23 @@ static BOOL client_readable(struct messaging_client *c)
 		return False;
 	}
 
+	if (!procid_valid(&c->pid)) {
+		if (msg_rec->msg_type != MSG_HELLO) {
+			DEBUG(0, ("Client did not say hello\n"));
+			return False;
+		}
+		DEBUG(10, ("Got hello from %s\n",
+			   procid_str_static(&msg_rec->src)));
+		c->pid = msg_rec->src;
+		return True;
+	}
+
+	DEBUG(10, ("got message for %s\n", procid_str_static(&msg_rec->dest)));
+
 	dst = find_client(clients, &msg_rec->dest);
-	if (dst == NULL) {
-		DEBUG(10, ("Connecting to pid %s\n",
-			   procid_str_static(&msg_rec->dest)));
-		dst = new_client(&msg_rec->dest);
+	if ((dst == NULL) && (!procid_is_local(&msg_rec->dest))) {
+		dst = remote_connect(&msg_rec->dest);
+		return True;
 	}
 
 	if (dst == NULL) {
@@ -1057,7 +990,7 @@ static BOOL client_writeable(struct messaging_client *c)
 	return True;
 }
 
-static void dispatch_once(int parent_pipe, int receive_fd, int tcp_listener)
+static void dispatch_loop(int *parent, int unix_listener, int tcp_listener)
 {
 	fd_set rfds, wfds;
 	int maxfd = 0;
@@ -1067,11 +1000,13 @@ static void dispatch_once(int parent_pipe, int receive_fd, int tcp_listener)
 	FD_ZERO(&rfds);
 	FD_ZERO(&wfds);
 
-	FD_SET(parent_pipe, &rfds);
-	maxfd = MAX(maxfd, parent_pipe);
+	if (*parent >= 0) {
+		FD_SET(*parent, &rfds);
+		maxfd = MAX(maxfd, *parent);
+	}
 
-	FD_SET(receive_fd, &rfds);
-	maxfd = MAX(maxfd, receive_fd);
+	FD_SET(unix_listener, &rfds);
+	maxfd = MAX(maxfd, unix_listener);
 
 	FD_SET(tcp_listener, &rfds);
 	maxfd = MAX(maxfd, tcp_listener);
@@ -1090,37 +1025,19 @@ static void dispatch_once(int parent_pipe, int receive_fd, int tcp_listener)
 		return;
 	}
 
-	if (FD_ISSET(parent_pipe, &rfds)) {
+	if ((*parent > 0) && (FD_ISSET(*parent, &rfds))) {
 		/* Parent died */
-		exit(0);
+		close(*parent);
+		*parent = -1;
 	}
 
 	if (FD_ISSET(tcp_listener, &rfds)) {
 		accept_tcp(tcp_listener);
 	}
 
-	if (FD_ISSET(receive_fd, &rfds)) {
-		DATA_BLOB *blob;
-		struct message_rec *msg;
-		blob = read_from_dgram_socket(NULL, receive_fd);
-		if (blob == NULL) {
-			DEBUG(5, ("read from dgram socket failed\n"));
-			return;
-		}
-		msg = parse_message(blob);
-		if (msg == NULL) {
-			DEBUG(5, ("Got invalid message\n"));
-			return;
-		}
-		if (msg->msg_type != MSG_CALLME) {
-			DEBUG(5, ("Only expecting CALLME, got %d\n",
-				  msg->msg_type));
-			talloc_free(blob);
-			return;
-		}
-		new_client(&msg->src);
-		talloc_free(blob);
-	}			
+	if (FD_ISSET(unix_listener, &rfds)) {
+		accept_unix(unix_listener);
+	}
 
 	client = clients;
 	while (client != NULL) {
@@ -1178,38 +1095,173 @@ static int open_remote_listener(void)
 }
 #endif
 
-void message_dispatch_daemon(void)
+static int dispatch_pidfile(void)
 {
-	int parent_pipe[2];
+	char *path;
+	int fd, ret;
+	struct flock fl;
+
+	asprintf(&path, "%s/%s", lock_path("messaging"), "dispatch.pid");
+	if (path == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	fd = open(path, O_RDWR|O_CREAT, 0644);
+	SAFE_FREE(path);
+
+	if (fd < 0) {
+		return -1;
+	}
+
+	fl.l_type = F_WRLCK;
+	fl.l_whence = SEEK_SET;
+	fl.l_start = 0;
+	fl.l_len = 1;
+	fl.l_pid = 0;
+
+	do {
+		ret = fcntl(fd, F_SETLKW, &fl);
+	} while (ret == -1 && errno == EINTR);
+
+	return fd;
+}
+
+static int dispatcher_child(int parent_pipe)
+{
 	int fd, tcp_fd;
 	char *name;
-
-	if (pipe(parent_pipe) < 0) {
-		return;
-	}
-
-	if (sys_fork() != 0) {
-		close(parent_pipe[0]);
-		/* Leave the writing end around, it is implicitly closed if
-		 * the parent dies */
-		return;
-	}
-
-	close(parent_pipe[1]);
+	BOOL ok;
 
 	asprintf(&name, "%s:dispatch", lp_socket_address());
 	if (name == NULL) {
 		smb_panic("asprintf failed\n");
 	}
-	fd = create_dgram_sock(lock_path("messaging"), name, 0700);
+	fd = create_pipe_sock(lock_path("messaging"), name, 0700);
 	SAFE_FREE(name);
 	if (fd < 0) {
 		smb_panic("Could not create dispatch socket\n");
 	}
-
 	tcp_fd = open_remote_listener();
 
-	while (1) {
-		dispatch_once(parent_pipe[0], fd, tcp_fd);
+	ok = True;
+	write(parent_pipe, &ok, sizeof(ok));
+	close(parent_pipe);
+
+	while ((parent_pipe >= 0) || (clients != NULL)) {
+		dispatch_loop(&parent_pipe, fd, tcp_fd);
 	}
+	exit(0);
+}
+
+static int connect_dispatch_daemon(void)
+{
+	int info_pipe[2];
+	int sock, pidfile;
+	pid_t child_pid;
+	struct sockaddr_un sunaddr;
+	BOOL ok;
+
+	ZERO_STRUCT(sunaddr);
+	sunaddr.sun_family = AF_UNIX;
+	strncpy(sunaddr.sun_path, dispatch_path(), sizeof(sunaddr.sun_path)-1);
+
+	sock = socket(PF_UNIX, SOCK_STREAM, 0);
+	if (sock < 0) {
+		DEBUG(5, ("Could not create socket: %s\n", strerror(errno)));
+		return -1;
+	}
+
+	if (connect(sock, (struct sockaddr *)&sunaddr,
+		    sizeof(sunaddr)) == 0) {
+		return sock;
+	}
+
+	close(sock);
+
+	pidfile = dispatch_pidfile();
+	if (pidfile < 0) {
+		DEBUG(5, ("Could not open pidfile: %s\n", strerror(errno)));
+		return -1;
+	}
+
+	/* The pidfile is locked, because we can not atomically create a unix
+	 * domain socket. Someone else might have found that no locking daemon
+	 * is around and has created the socket for us. This second attempt to
+	 * connect works around this race condition. */
+
+	sock = socket(PF_UNIX, SOCK_STREAM, 0);
+	if (sock < 0) {
+		DEBUG(5, ("Could not create socket: %s\n", strerror(errno)));
+		close(pidfile);
+		return -1;
+	}
+
+	if (connect(sock, (struct sockaddr *)&sunaddr,
+		    sizeof(sunaddr)) == 0) {
+		close(pidfile); /* Implictly release the lock */
+		return sock;
+	}
+
+	close(sock);
+
+	if (socketpair(PF_UNIX, SOCK_STREAM, 0, info_pipe) != 0) {
+		DEBUG(0, ("Could not create pipe: %s\n", strerror(errno)));
+		close(pidfile);
+		return -1;
+	}
+
+	child_pid = fork();
+	if (child_pid < 0) {
+		DEBUG(0, ("fork() failed: %s\n", strerror(errno)));
+		close(pidfile);
+		return -1;
+	}
+
+	if (child_pid == 0) {
+		DEBUG(10, ("running message dispatcher child\n"));
+		close(info_pipe[0]);
+		dispatcher_child(info_pipe[1]); /* never returns */
+	}
+
+	close(info_pipe[1]);
+
+	if (read(info_pipe[0], &ok, sizeof(ok)) != sizeof(ok)) {
+		DEBUG(5, ("Reading from child failed: %s\n", strerror(errno)));
+		close(pidfile);
+		return -1;
+	}
+
+	if (!ok) {
+		DEBUG(5, ("Child did not give ok to go\n"));
+		close(pidfile);
+		return -1;
+	}
+
+	/* info_pipe[0] is left open as an indication to the child that we're
+	 * still around. */
+
+	sock = socket(PF_UNIX, SOCK_STREAM, 0);
+	if (sock < 0) {
+		DEBUG(5, ("Could not create socket: %s\n", strerror(errno)));
+		close(pidfile);
+		return -1;
+	}
+
+	if (connect(sock, (struct sockaddr *)&sunaddr,
+		    sizeof(sunaddr)) == 0) {
+		fstring pidstr;
+		fstr_sprintf(pidstr, "%d\n", child_pid);
+		sys_ftruncate(pidfile, 0);
+		write(pidfile, pidstr, strlen(pidstr));
+		close(pidfile); /* Implictly release the lock */
+		return sock;
+	}
+
+	/* Ok, here we're really screwed. The child told us it's waiting for
+	 * us, but apparently it isn't. */
+
+	DEBUG(2, ("Starting dispatcher child failed\n"));
+	close(pidfile);
+	return -1;
 }

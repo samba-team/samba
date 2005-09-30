@@ -877,8 +877,6 @@ void build_options(BOOL screen);
 	if (!message_init())
 		exit(1);
 
-	message_dispatch_daemon();
-
 	if (!session_init())
 		exit(1);
 

@@ -2854,5 +2854,5 @@ BOOL procid_valid(const struct process_id *pid)
 BOOL procid_is_local(const struct process_id *pid)
 {
 	struct in_addr ip = *interpret_addr2(lp_socket_address());
-	return (memcmp(&ip, &pid->ip, sizeof(pid)) == 0);
+	return (memcmp(&ip, &pid->ip, sizeof(ip)) == 0);
 }
