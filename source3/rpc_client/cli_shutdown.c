@@ -3,10 +3,7 @@
    RPC Pipe client
  
    Copyright (C) Andrew Tridgell              1992-1998,
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1998,
-   Copyright (C) Paul Ashton                  1997-1998.
-   Copyright (C) Jeremy Allison                    1999,
-   Copyright (C) Simo Sorce                        2001,
+   Largely rewritten by Jeremy Allison (C)	   2005.
    Copyright (C) Jim McDonough (jmcd@us.ibm.com)   2003.
    
    This program is free software; you can redistribute it and/or modify
@@ -28,119 +25,95 @@
 
 /* Shutdown a server */
 
-NTSTATUS cli_shutdown_init(struct cli_state * cli, TALLOC_CTX *mem_ctx,
+NTSTATUS rpccli_shutdown_init(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			   const char *msg, uint32 timeout, BOOL do_reboot,
 			   BOOL force)
 {
 	prs_struct qbuf;
 	prs_struct rbuf; 
-	SHUTDOWN_Q_INIT q_s;
-	SHUTDOWN_R_INIT r_s;
+	SHUTDOWN_Q_INIT q;
+	SHUTDOWN_R_INIT r;
 	WERROR result = WERR_GENERAL_FAILURE;
 
 	if (msg == NULL) 
 		return NT_STATUS_INVALID_PARAMETER;
 
-	ZERO_STRUCT (q_s);
-	ZERO_STRUCT (r_s);
-
-	prs_init(&qbuf , MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+	ZERO_STRUCT (q);
+	ZERO_STRUCT (r);
 
 	/* Marshall data and send request */
 
-	init_shutdown_q_init(&q_s, msg, timeout, do_reboot, force);
+	init_shutdown_q_init(&q, msg, timeout, do_reboot, force);
 
-	if (!shutdown_io_q_init("", &q_s, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_SHUTDOWN, SHUTDOWN_INIT, &qbuf, &rbuf))
-		goto done;
-	
-	/* Unmarshall response */
-	
-	if(shutdown_io_r_init("", &r_s, &rbuf, 0))
-		result = r_s.status;
+	CLI_DO_RPC(cli, mem_ctx, PI_SHUTDOWN, SHUTDOWN_INIT,
+		q, r,
+		qbuf, rbuf,
+		shutdown_io_q_init,
+		shutdown_io_r_init,
+		NT_STATUS_UNSUCCESSFUL);
 
-done:
-	prs_mem_free(&rbuf);
-	prs_mem_free(&qbuf);
-
+	result = r.status;
 	return werror_to_ntstatus(result);
 }
 
 /* Shutdown a server */
 
-NTSTATUS cli_shutdown_init_ex(struct cli_state * cli, TALLOC_CTX *mem_ctx,
+NTSTATUS rpccli_shutdown_init_ex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			   const char *msg, uint32 timeout, BOOL do_reboot,
 			   BOOL force, uint32 reason)
 {
 	prs_struct qbuf;
 	prs_struct rbuf; 
-	SHUTDOWN_Q_INIT_EX q_s;
-	SHUTDOWN_R_INIT_EX r_s;
+	SHUTDOWN_Q_INIT_EX q;
+	SHUTDOWN_R_INIT_EX r;
 	WERROR result = WERR_GENERAL_FAILURE;
 
 	if (msg == NULL) 
 		return NT_STATUS_INVALID_PARAMETER;
 
-	ZERO_STRUCT (q_s);
-	ZERO_STRUCT (r_s);
-
-	prs_init(&qbuf , MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+	ZERO_STRUCT (q);
+	ZERO_STRUCT (r);
 
 	/* Marshall data and send request */
 
-	init_shutdown_q_init_ex(&q_s, msg, timeout, do_reboot, force, reason);
+	init_shutdown_q_init_ex(&q, msg, timeout, do_reboot, force, reason);
 
-	if (!shutdown_io_q_init_ex("", &q_s, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_SHUTDOWN, SHUTDOWN_INIT_EX, &qbuf, &rbuf))
-		goto done;
-	
-	/* Unmarshall response */
-	
-	if(shutdown_io_r_init_ex("", &r_s, &rbuf, 0))
-		result = r_s.status;
+	CLI_DO_RPC(cli, mem_ctx, PI_SHUTDOWN, SHUTDOWN_INIT_EX,
+		q, r,
+		qbuf, rbuf,
+		shutdown_io_q_init_ex,
+		shutdown_io_r_init_ex,
+		NT_STATUS_UNSUCCESSFUL);
 
-done:
-	prs_mem_free(&rbuf);
-	prs_mem_free(&qbuf);
-
+	result = r.status;
 	return werror_to_ntstatus(result);
 }
 
 
 /* Abort a server shutdown */
 
-NTSTATUS cli_shutdown_abort(struct cli_state * cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_shutdown_abort(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
 {
 	prs_struct rbuf;
 	prs_struct qbuf; 
-	SHUTDOWN_Q_ABORT q_s;
-	SHUTDOWN_R_ABORT r_s;
+	SHUTDOWN_Q_ABORT q;
+	SHUTDOWN_R_ABORT r;
 	WERROR result = WERR_GENERAL_FAILURE;
 
-	ZERO_STRUCT (q_s);
-	ZERO_STRUCT (r_s);
+	ZERO_STRUCT (q);
+	ZERO_STRUCT (r);
 
-	prs_init(&qbuf , MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-	
 	/* Marshall data and send request */
 
-	init_shutdown_q_abort(&q_s);
+	init_shutdown_q_abort(&q);
 
-	if (!shutdown_io_q_abort("", &q_s, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_SHUTDOWN, SHUTDOWN_ABORT, &qbuf, &rbuf))
-	    	goto done;
-	
-		/* Unmarshall response */
-	
-	if (shutdown_io_r_abort("", &r_s, &rbuf, 0))
-		result = r_s.status;
+	CLI_DO_RPC(cli, mem_ctx, PI_SHUTDOWN, SHUTDOWN_ABORT,
+		q, r,
+		qbuf, rbuf,
+		shutdown_io_q_abort,
+		shutdown_io_r_abort,
+		NT_STATUS_UNSUCCESSFUL);
 
-done:
-	prs_mem_free(&rbuf);
-	prs_mem_free(&qbuf );
-
+	result = r.status;
 	return werror_to_ntstatus(result);
 }

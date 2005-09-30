@@ -33,6 +33,4 @@ typedef int smb_event_id_t;
 
 typedef void (smb_idle_event_fn)(void **data,time_t *interval,time_t now);
 
-typedef void (smb_exit_event_fn)(void **data);
-
 #endif /* _MODULE_H */

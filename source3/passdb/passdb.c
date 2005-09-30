@@ -1875,7 +1875,7 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	}
 
 	/* Change from V1 is addition of password history field. */
-	account_policy_get(AP_PASSWORD_HISTORY, &pwHistLen);
+	pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHistLen);
 	if (pwHistLen) {
 		uint8 *pw_hist = SMB_MALLOC(pwHistLen * PW_HISTORY_ENTRY_LEN);
 		if (!pw_hist) {
@@ -2083,7 +2083,7 @@ uint32 init_buffer_from_sam_v2 (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL si
 		nt_pw_len = 0;
 	}
 
-	account_policy_get(AP_PASSWORD_HISTORY, &pwHistLen);
+	pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHistLen);
 	nt_pw_hist =  pdb_get_pw_history(sampass, &nt_pw_hist_len);
 	if (pwHistLen && nt_pw_hist && nt_pw_hist_len) {
 		nt_pw_hist_len *= PW_HISTORY_ENTRY_LEN;
@@ -2292,8 +2292,8 @@ BOOL pdb_update_bad_password_count(SAM_ACCOUNT *sampass, BOOL *updated)
 		return True;
 	}
 
-	if (!account_policy_get(AP_RESET_COUNT_TIME, &resettime)) {
-		DEBUG(0, ("pdb_update_bad_password_count: account_policy_get failed.\n"));
+	if (!pdb_get_account_policy(AP_RESET_COUNT_TIME, &resettime)) {
+		DEBUG(0, ("pdb_update_bad_password_count: pdb_get_account_policy failed.\n"));
 		return False;
 	}
 
@@ -2334,8 +2334,8 @@ BOOL pdb_update_autolock_flag(SAM_ACCOUNT *sampass, BOOL *updated)
 		return True;
 	}
 
-	if (!account_policy_get(AP_LOCK_ACCOUNT_DURATION, &duration)) {
-		DEBUG(0, ("pdb_update_autolock_flag: account_policy_get failed.\n"));
+	if (!pdb_get_account_policy(AP_LOCK_ACCOUNT_DURATION, &duration)) {
+		DEBUG(0, ("pdb_update_autolock_flag: pdb_get_account_policy failed.\n"));
 		return False;
 	}
 
@@ -2383,9 +2383,9 @@ BOOL pdb_increment_bad_password_count(SAM_ACCOUNT *sampass)
 		return False;
 
 	/* Retrieve the account lockout policy */
-	if (!account_policy_get(AP_BAD_ATTEMPT_LOCKOUT,
+	if (!pdb_get_account_policy(AP_BAD_ATTEMPT_LOCKOUT,
 				&account_policy_lockout)) {
-		DEBUG(0, ("pdb_increment_bad_password_count: account_policy_get failed.\n"));
+		DEBUG(0, ("pdb_increment_bad_password_count: pdb_get_account_policy failed.\n"));
 		return False;
 	}
 

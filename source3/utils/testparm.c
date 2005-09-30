@@ -206,7 +206,7 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 	poptContext pc;
 	static const char *term_code = "";
 	static char *parameter_name = NULL;
-	static char *section_name = NULL;
+	static const char *section_name = NULL;
 	static char *new_local_machine = NULL;
 	const char *cname;
 	const char *caddr;

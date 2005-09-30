@@ -57,8 +57,8 @@ static int received_signal;
 struct message_rec {
 	int msg_version;
 	int msg_type;
-	pid_t dest;
-	pid_t src;
+	struct process_id dest;
+	struct process_id src;
 	size_t len;
 };
 
@@ -66,7 +66,7 @@ struct message_rec {
 static struct dispatch_fns {
 	struct dispatch_fns *next, *prev;
 	int msg_type;
-	void (*fn)(int msg_type, pid_t pid, void *buf, size_t len);
+	void (*fn)(int msg_type, struct process_id pid, void *buf, size_t len);
 } *dispatch_fns;
 
 /****************************************************************************
@@ -83,10 +83,12 @@ static void sig_usr1(void)
  A useful function for testing the message system.
 ****************************************************************************/
 
-static void ping_message(int msg_type, pid_t src, void *buf, size_t len)
+static void ping_message(int msg_type, struct process_id src,
+			 void *buf, size_t len)
 {
 	const char *msg = buf ? buf : "none";
-	DEBUG(1,("INFO: Received PING message from PID %u [%s]\n",(unsigned int)src, msg));
+	DEBUG(1,("INFO: Received PING message from PID %s [%s]\n",
+		 procid_str_static(&src), msg));
 	message_send_pid(src, MSG_PONG, buf, len, True);
 }
 
@@ -123,12 +125,12 @@ BOOL message_init(void)
  Form a static tdb key from a pid.
 ******************************************************************/
 
-static TDB_DATA message_key_pid(pid_t pid)
+static TDB_DATA message_key_pid(struct process_id pid)
 {
 	static char key[20];
 	TDB_DATA kbuf;
 
-	slprintf(key, sizeof(key)-1, "PID/%d", (int)pid);
+	slprintf(key, sizeof(key)-1, "PID/%s", procid_str_static(&pid));
 	
 	kbuf.dptr = (char *)key;
 	kbuf.dsize = strlen(key)+1;
@@ -140,8 +142,9 @@ static TDB_DATA message_key_pid(pid_t pid)
  then delete its record in the database.
 ****************************************************************************/
 
-static BOOL message_notify(pid_t pid)
+static BOOL message_notify(struct process_id procid)
 {
+	pid_t pid = procid.pid;
 	/*
 	 * Doing kill with a non-positive pid causes messages to be
 	 * sent to places we don't want.
@@ -152,7 +155,7 @@ static BOOL message_notify(pid_t pid)
 	if (kill(pid, SIGUSR1) == -1) {
 		if (errno == ESRCH) {
 			DEBUG(2,("pid %d doesn't exist - deleting messages record\n", (int)pid));
-			tdb_delete(tdb, message_key_pid(pid));
+			tdb_delete(tdb, message_key_pid(procid));
 		} else {
 			DEBUG(2,("message to process %d failed - %s\n", (int)pid, strerror(errno)));
 		}
@@ -165,8 +168,10 @@ static BOOL message_notify(pid_t pid)
  Send a message to a particular pid.
 ****************************************************************************/
 
-static BOOL message_send_pid_internal(pid_t pid, int msg_type, const void *buf, size_t len,
-		      BOOL duplicates_allowed, unsigned int timeout)
+static BOOL message_send_pid_internal(struct process_id pid, int msg_type,
+				      const void *buf, size_t len,
+				      BOOL duplicates_allowed,
+				      unsigned int timeout)
 {
 	TDB_DATA kbuf;
 	TDB_DATA dbuf;
@@ -180,12 +185,12 @@ static BOOL message_send_pid_internal(pid_t pid, int msg_type, const void *buf, 
 	 * sent to places we don't want.
 	 */
 
-	SMB_ASSERT(pid > 0);
+	SMB_ASSERT(procid_to_pid(&pid) > 0);
 
 	rec.msg_version = MESSAGE_VERSION;
 	rec.msg_type = msg_type;
 	rec.dest = pid;
-	rec.src = sys_getpid();
+	rec.src = procid_self();
 	rec.len = len;
 
 	kbuf = message_key_pid(pid);
@@ -288,7 +293,7 @@ static BOOL message_send_pid_internal(pid_t pid, int msg_type, const void *buf, 
  Send a message to a particular pid - no timeout.
 ****************************************************************************/
 
-BOOL message_send_pid(pid_t pid, int msg_type, const void *buf, size_t len, BOOL duplicates_allowed)
+BOOL message_send_pid(struct process_id pid, int msg_type, const void *buf, size_t len, BOOL duplicates_allowed)
 {
 	return message_send_pid_internal(pid, msg_type, buf, len, duplicates_allowed, 0);
 }
@@ -297,7 +302,7 @@ BOOL message_send_pid(pid_t pid, int msg_type, const void *buf, size_t len, BOOL
  Send a message to a particular pid, with timeout in seconds.
 ****************************************************************************/
 
-BOOL message_send_pid_with_timeout(pid_t pid, int msg_type, const void *buf, size_t len,
+BOOL message_send_pid_with_timeout(struct process_id pid, int msg_type, const void *buf, size_t len,
 		BOOL duplicates_allowed, unsigned int timeout)
 {
 	return message_send_pid_internal(pid, msg_type, buf, len, duplicates_allowed, timeout);
@@ -307,7 +312,7 @@ BOOL message_send_pid_with_timeout(pid_t pid, int msg_type, const void *buf, siz
  Count the messages pending for a particular pid. Expensive....
 ****************************************************************************/
 
-unsigned int messages_pending_for_pid(pid_t pid)
+unsigned int messages_pending_for_pid(struct process_id pid)
 {
 	TDB_DATA kbuf;
 	TDB_DATA dbuf;
@@ -349,7 +354,7 @@ static BOOL retrieve_all_messages(char **msgs_buf, size_t *total_len)
 	*msgs_buf = NULL;
 	*total_len = 0;
 
-	kbuf = message_key_pid(sys_getpid());
+	kbuf = message_key_pid(pid_to_procid(sys_getpid()));
 
 	if (tdb_chainlock(tdb, kbuf) == -1)
 		return False;
@@ -377,7 +382,8 @@ static BOOL retrieve_all_messages(char **msgs_buf, size_t *total_len)
  Parse out the next message for the current process.
 ****************************************************************************/
 
-static BOOL message_recv(char *msgs_buf, size_t total_len, int *msg_type, pid_t *src, char **buf, size_t *len)
+static BOOL message_recv(char *msgs_buf, size_t total_len, int *msg_type,
+			 struct process_id *src, char **buf, size_t *len)
 {
 	struct message_rec rec;
 	char *ret_buf = *buf;
@@ -420,7 +426,7 @@ static BOOL message_recv(char *msgs_buf, size_t total_len, int *msg_type, pid_t 
 void message_dispatch(void)
 {
 	int msg_type;
-	pid_t src;
+	struct process_id src;
 	char *buf;
 	char *msgs_buf;
 	size_t len, total_len;
@@ -438,8 +444,9 @@ void message_dispatch(void)
 		return;
 
 	for (buf = msgs_buf; message_recv(msgs_buf, total_len, &msg_type, &src, &buf, &len); buf += len) {
-		DEBUG(10,("message_dispatch: received msg_type=%d src_pid=%u\n",
-			  msg_type, (unsigned int) src));
+		DEBUG(10,("message_dispatch: received msg_type=%d "
+			  "src_pid=%u\n", msg_type,
+			  (unsigned int) procid_to_pid(&src)));
 		n_handled = 0;
 		for (dfn = dispatch_fns; dfn; dfn = dfn->next) {
 			if (dfn->msg_type == msg_type) {
@@ -464,7 +471,8 @@ void message_dispatch(void)
 ****************************************************************************/
 
 void message_register(int msg_type, 
-		      void (*fn)(int msg_type, pid_t pid, void *buf, size_t len))
+		      void (*fn)(int msg_type, struct process_id pid,
+				 void *buf, size_t len))
 {
 	struct dispatch_fns *dfn;
 
@@ -543,8 +551,9 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 		/* If the pid was not found delete the entry from connections.tdb */
 
 		if (errno == ESRCH) {
-			DEBUG(2,("pid %u doesn't exist - deleting connections %d [%s]\n",
-					(unsigned int)crec.pid, crec.cnum, crec.name));
+			DEBUG(2,("pid %s doesn't exist - deleting connections %d [%s]\n",
+				 procid_str_static(&crec.pid),
+				 crec.cnum, crec.name));
 			tdb_delete(the_tdb, kbuf);
 		}
 	}

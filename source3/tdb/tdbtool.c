@@ -331,7 +331,7 @@ static void move_rec(char *keyname, size_t keylen, char* tdbname)
 
 static int print_conn_key(TDB_DATA key)
 {
-	printf( "\nkey %d bytes\n", key.dsize);
+	printf( "\nkey %d bytes\n", (int)key.dsize);
 	printf( "pid    =%5d   ", ((connections_key*)key.dptr)->pid);
 	printf( "cnum   =%10d  ", ((connections_key*)key.dptr)->cnum);
 	printf( "name   =[%s]\n", ((connections_key*)key.dptr)->name);
@@ -340,7 +340,7 @@ static int print_conn_key(TDB_DATA key)
 
 static int print_conn_data(TDB_DATA dbuf)
 {
-	printf( "\ndata %d bytes\n", dbuf.dsize);
+	printf( "\ndata %d bytes\n", (int)dbuf.dsize);
 	printf( "pid    =%5d   ", ((connections_data*)dbuf.dptr)->pid);
 	printf( "cnum   =%10d  ", ((connections_data*)dbuf.dptr)->cnum);
 	printf( "name   =[%s]\n", ((connections_data*)dbuf.dptr)->name);
@@ -373,16 +373,16 @@ static int print_crec(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *s
 
 static int print_arec(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
-	printf("\nkey %d bytes\n", key.dsize);
+	printf("\nkey %d bytes\n", (int)key.dsize);
 	print_asc(key.dptr, key.dsize);
-	printf("\ndata %d bytes\n", dbuf.dsize);
+	printf("\ndata %d bytes\n", (int)dbuf.dsize);
 	print_data(dbuf.dptr, dbuf.dsize);
 	return 0;
 }
 
 static int print_key(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
-	printf("key %d bytes: ", key.dsize);
+	printf("key %d bytes: ", (int)key.dsize);
 	print_asc(key.dptr, key.dsize);
 	printf("\n");
 	return 0;
@@ -390,7 +390,7 @@ static int print_key(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *st
 
 static int print_hexkey(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
-	printf("key %d bytes\n", key.dsize);
+	printf("key %d bytes\n", (int)key.dsize);
 	print_data(key.dptr, key.dsize);
 	printf("\n");
 	return 0;

@@ -23,9 +23,24 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_PARSE
 
-/*
- * called from eventlog_q_open_eventlog (srv_eventlog.c)
- */
+/********************************************************************
+********************************************************************/
+
+BOOL prs_ev_open_unknown0( const char *desc, prs_struct *ps, int depth, EVENTLOG_OPEN_UNKNOWN0 *u )
+{
+	if ( !u )
+		return False;
+	
+	if ( !prs_uint16("", ps, depth, &u->unknown1) )
+		return False;
+	if ( !prs_uint16("", ps, depth, &u->unknown2) )
+		return False;
+
+	return True;
+}
+
+/********************************************************************
+********************************************************************/
 
 BOOL eventlog_io_q_open_eventlog(const char *desc, EVENTLOG_Q_OPEN_EVENTLOG *q_u,
 				 prs_struct *ps, int depth)
@@ -33,62 +48,28 @@ BOOL eventlog_io_q_open_eventlog(const char *desc, EVENTLOG_Q_OPEN_EVENTLOG *q_u
 	if(q_u == NULL)
 		return False;
     
-    /** Data format seems to be:
-       UNKNOWN structure
-         uint32            unknown
-         uint16            unknown
-         uint16            unknown
-       Eventlog name
-         uint16            eventlog name length
-         uint16            eventlog name size
-         Character Array
-	   uint32          unknown
-	   uint32          max count
-           uint32          offset
-           uint32          actual count
-	   UNISTR2         log file name
-       Server Name
-         uint16            server name length
-         uint16            server name size
-	 Character Array
-	   UNISTR2         server name
-    */
-
 	prs_debug(ps, depth, desc, "eventlog_io_q_open_eventlog");
 	depth++;
 
 	if(!prs_align(ps))
 		return False;
 
-	/* Munch unknown bits */
-
-	if(!prs_uint32("", ps, depth, &q_u->unknown1))
-		return False;
-	if(!prs_uint16("", ps, depth, &q_u->unknown2))
-		return False;
-	if(!prs_uint16("", ps, depth, &q_u->unknown3))
-		return False;
-	if(!prs_align(ps))
+	if ( !prs_pointer("", ps, depth, (void**)&q_u->unknown0, sizeof(EVENTLOG_OPEN_UNKNOWN0), (PRS_POINTER_CAST)prs_ev_open_unknown0))
 		return False;
 
-	/* Get name of log source */
-
-	if(!prs_uint16("sourcename_length", ps, depth, &q_u->sourcename_length))
+	if ( !prs_unistr4("logname", ps, depth, &q_u->logname) )
 		return False;
-	if(!prs_uint16("sourcename_size", ps, depth, &q_u->sourcename_size))
-		return False;
-	if(!prs_uint32("sourcename_ptr", ps, depth, &q_u->sourcename_ptr))
-		return False;
-	if(!smb_io_unistr2("", &q_u->sourcename, q_u->sourcename_ptr, ps, depth))
-		return False;
-	if(!prs_align(ps))
+	if ( !prs_align(ps) )
 		return False;
 
-	/* Get server name */
-
-	if(!prs_uint32("servername_ptr", ps, depth, &q_u->servername_ptr))
+	if ( !prs_unistr4("servername", ps, depth, &q_u->servername) )
 		return False;
-	if(!smb_io_unistr2("", &q_u->servername, q_u->servername_ptr, ps, depth))
+	if ( !prs_align(ps) )
+		return False;
+
+	if ( !prs_uint32("unknown1", ps, depth, &q_u->unknown1) )
+		return False;
+	if ( !prs_uint32("unknown2", ps, depth, &q_u->unknown2) )
 		return False;
 
 	return True;
@@ -424,17 +405,8 @@ BOOL eventlog_io_q_clear_eventlog(const char *desc, EVENTLOG_Q_CLEAR_EVENTLOG *q
 		return False;
 	if(!(smb_io_pol_hnd("log handle", &(q_u->handle), ps, depth)))
 		return False;
-	if(!prs_align(ps))
-		return False;
-	if(!(prs_uint32("unknown1", ps, depth, &q_u->unknown1)))
-		return False;
-	if(!(prs_uint16("backup_file_length", ps, depth, &q_u->backup_file_length)))
-		return False;
-	if(!(prs_uint16("backup_file_size", ps, depth, &q_u->backup_file_size)))
-		return False;
-	if(!prs_uint32("backup_file_ptr", ps, depth, &q_u->backup_file_ptr))
-		return False;
-	if(!smb_io_unistr2("backup file", &q_u->backup_file, q_u->backup_file_ptr, ps, depth))
+
+	if ( !prs_unistr4("backupfile", ps, depth, &q_u->backupfile) )
 		return False;
 
 	return True;

@@ -22,8 +22,9 @@
 #include "includes.h"
 
 /*******************************************************************
- free() a data blob
+ Free() a data blob.
 *******************************************************************/
+
 static void free_data_blob(DATA_BLOB *d)
 {
 	if ((d) && (d->free)) {
@@ -32,8 +33,8 @@ static void free_data_blob(DATA_BLOB *d)
 }
 
 /*******************************************************************
- construct a data blob, must be freed with data_blob_free()
- you can pass NULL for p and get a blank data blob
+ Construct a data blob, must be freed with data_blob_free().
+ You can pass NULL for p and get a blank data blob
 *******************************************************************/
 
 DATA_BLOB data_blob(const void *p, size_t length)
@@ -56,8 +57,9 @@ DATA_BLOB data_blob(const void *p, size_t length)
 }
 
 /*******************************************************************
- construct a data blob, using supplied TALLOC_CTX
+ Construct a data blob, using supplied TALLOC_CTX.
 *******************************************************************/
+
 DATA_BLOB data_blob_talloc(TALLOC_CTX *mem_ctx, const void *p, size_t length)
 {
 	DATA_BLOB ret;
@@ -83,8 +85,9 @@ DATA_BLOB data_blob_talloc(TALLOC_CTX *mem_ctx, const void *p, size_t length)
 }
 
 /*******************************************************************
-free a data blob
+ Free a data blob.
 *******************************************************************/
+
 void data_blob_free(DATA_BLOB *d)
 {
 	if (d) {
@@ -96,8 +99,9 @@ void data_blob_free(DATA_BLOB *d)
 }
 
 /*******************************************************************
-clear a DATA_BLOB's contents
+ Clear a DATA_BLOB's contents
 *******************************************************************/
+
 static void data_blob_clear(DATA_BLOB *d)
 {
 	if (d->data) {
@@ -106,11 +110,11 @@ static void data_blob_clear(DATA_BLOB *d)
 }
 
 /*******************************************************************
-free a data blob and clear its contents
+ Free a data blob and clear its contents
 *******************************************************************/
+
 void data_blob_clear_free(DATA_BLOB *d)
 {
 	data_blob_clear(d);
 	data_blob_free(d);
 }
-

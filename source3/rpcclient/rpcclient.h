@@ -30,11 +30,12 @@ typedef enum {
 
 struct cmd_set {
 	const char *name;
-        RPC_RETURN_TYPE returntype;
-	NTSTATUS (*ntfn)(struct cli_state *cli, TALLOC_CTX *mem_ctx, int argc, 
-                       const char **argv);
-        WERROR (*wfn)(struct cli_state *cli, TALLOC_CTX *mem_ctx, int argc, const char **argv);
-        int pipe_idx;
+	RPC_RETURN_TYPE returntype;
+	NTSTATUS (*ntfn)(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, int argc, 
+			const char **argv);
+	WERROR (*wfn)(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, int argc, const char **argv);
+	int pipe_idx;
+	struct rpc_pipe_client *rpc_pipe;
 	const char *description;
 	const char *usage;
 };

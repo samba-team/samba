@@ -561,7 +561,7 @@ static REGF_HBIN* lookup_hbin_block( REGF_FILE *file, uint32 offset )
 	/* start with the open list */
 
 	for ( hbin=file->block_list; hbin; hbin=hbin->next ) {
-		DEBUG(10,("lookup_hbin_block: address = 0x%x [0x%x]\n", hbin->file_off, (uint32)hbin ));
+		DEBUG(10,("lookup_hbin_block: address = 0x%x [0x%lx]\n", hbin->file_off, (unsigned long)hbin ));
 		if ( hbin_contains_offset( hbin, offset ) )
 			return hbin;
 	}

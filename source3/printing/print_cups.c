@@ -265,7 +265,7 @@ BOOL cups_cache_reload(void)
  * 'cups_job_delete()' - Delete a job.
  */
 
-static int cups_job_delete(int snum, struct printjob *pjob)
+static int cups_job_delete(const char *sharename, const char *lprm_command, struct printjob *pjob)
 {
 	int		ret = 1;		/* Return value */
 	http_t		*http = NULL;		/* HTTP connection to server */
@@ -275,7 +275,7 @@ static int cups_job_delete(int snum, struct printjob *pjob)
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
 
 
-	DEBUG(5,("cups_job_delete(%d, %p (%d))\n", snum, pjob, pjob->sysjob));
+	DEBUG(5,("cups_job_delete(%s, %p (%d))\n", sharename, pjob, pjob->sysjob));
 
        /*
         * Make sure we don't ask for passwords...
@@ -712,7 +712,7 @@ static int cups_queue_get(const char *sharename,
 
 	*q = NULL;
 
-	/* HACK ALERT!!!  The porblem with support the 'printer name' 
+	/* HACK ALERT!!!  The problem with support the 'printer name' 
 	   option is that we key the tdb off the sharename.  So we will 
 	   overload the lpq_command string to pass in the printername 
 	   (which is basically what we do for non-cups printers ... using 

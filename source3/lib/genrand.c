@@ -22,7 +22,7 @@
 
 #include "includes.h"
 
-static unsigned char hash[258];
+static unsigned char smb_arc4_state[258];
 static uint32 counter;
 
 static BOOL done_reseed = False;
@@ -50,61 +50,6 @@ static void get_rand_reseed_data(int *reseed_data)
 	} else {
 		*reseed_data = 0;
 	}
-}
-
-/**************************************************************** 
- Setup the seed.
-*****************************************************************/
-
-static void seed_random_stream(unsigned char *seedval, size_t seedlen)
-{
-	unsigned char j = 0;
-	size_t ind;
-
-	for (ind = 0; ind < 256; ind++)
-		hash[ind] = (unsigned char)ind;
-
-	for( ind = 0; ind < 256; ind++) {
-		unsigned char tc;
-
-		j += (hash[ind] + seedval[ind%seedlen]);
-
-		tc = hash[ind];
-		hash[ind] = hash[j];
-		hash[j] = tc;
-	}
-
-	hash[256] = 0;
-	hash[257] = 0;
-}
-
-/**************************************************************** 
- Get datasize bytes worth of random data.
-*****************************************************************/
-
-static void get_random_stream(unsigned char *data, size_t datasize)
-{
-	unsigned char index_i = hash[256];
-	unsigned char index_j = hash[257];
-	size_t ind;
-
-	for( ind = 0; ind < datasize; ind++) {
-		unsigned char tc;
-		unsigned char t;
-
-		index_i++;
-		index_j += hash[index_i];
-
-		tc = hash[index_i];
-		hash[index_i] = hash[index_j];
-		hash[index_j] = tc;
-
-		t = hash[index_i] + hash[index_j];
-		data[ind] = hash[t];
-	}
-
-	hash[256] = index_i;
-	hash[257] = index_j;
 }
 
 /****************************************************************
@@ -202,7 +147,7 @@ static int do_reseed(BOOL use_fd, int fd)
 			seed_inbuf[i] ^= ((char *)(&reseed_data))[i % sizeof(reseed_data)];
 	}
 
-	seed_random_stream(seed_inbuf, sizeof(seed_inbuf));
+	smb_arc4_init(smb_arc4_state, seed_inbuf, sizeof(seed_inbuf));
 
 	return -1;
 }
@@ -246,7 +191,7 @@ void generate_random_buffer( unsigned char *out, int len)
 	while(len > 0) {
 		int copy_len = len > 16 ? 16 : len;
 
-		get_random_stream(md4_buf, sizeof(md4_buf));
+		smb_arc4_crypt(smb_arc4_state, md4_buf, sizeof(md4_buf));
 		mdfour(tmp_buf, md4_buf, sizeof(md4_buf));
 		memcpy(p, tmp_buf, copy_len);
 		p += copy_len;

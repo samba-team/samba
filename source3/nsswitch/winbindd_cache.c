@@ -469,6 +469,7 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 	centry->sequence_number = centry_uint32(centry);
 
 	if (centry_expired(domain, kstr, centry)) {
+
 		DEBUG(10,("wcache_fetch: entry %s expired for domain %s\n",
 			 kstr, domain->name ));
 
@@ -1048,7 +1049,6 @@ do_query:
 	return status;
 }
 
-
 /* Lookup user information from a rid */
 static NTSTATUS query_user(struct winbindd_domain *domain, 
 			   TALLOC_CTX *mem_ctx, 
@@ -1466,7 +1466,7 @@ void cache_store_response(pid_t pid, struct winbindd_response *response)
 	/* There's extra data */
 
 	DEBUG(10, ("Storing extra data: len=%d\n",
-		   response->length - sizeof(*response)));
+		   (int)(response->length - sizeof(*response))));
 
 	fstr_sprintf(key_str, "DE/%d", pid);
 	if (tdb_store(wcache->tdb, string_tdb_data(key_str),
@@ -1514,7 +1514,7 @@ BOOL cache_retrieve_response(pid_t pid, struct winbindd_response * response)
 	/* There's extra data */
 
 	DEBUG(10, ("Retrieving extra data length=%d\n",
-		   response->length - sizeof(*response)));
+		   (int)(response->length - sizeof(*response))));
 
 	fstr_sprintf(key_str, "DE/%d", pid);
 	data = tdb_fetch(wcache->tdb, string_tdb_data(key_str));
@@ -1525,63 +1525,57 @@ BOOL cache_retrieve_response(pid_t pid, struct winbindd_response * response)
 	}
 
 	if (data.dsize != (response->length - sizeof(*response))) {
-		DEBUG(0, ("Invalid extra data length: %d\n", data.dsize));
+		DEBUG(0, ("Invalid extra data length: %d\n", (int)data.dsize));
 		SAFE_FREE(data.dptr);
 		return False;
 	}
+
+	dump_data(11, data.dptr, data.dsize);
 
 	response->extra_data = data.dptr;
 	return True;
 }
 
-char *cache_store_request_data(TALLOC_CTX *mem_ctx, char *request_string)
+BOOL lookup_cached_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+		       const char **domain_name, const char **name,
+		       enum SID_NAME_USE *type)
 {
-	int i;
+	struct winbindd_domain *domain;
+	struct winbind_cache *cache;
+	struct cache_entry *centry = NULL;
+	NTSTATUS status;
 
-	if (!init_wcache())
-		return NULL;
-
-	for (i=0; i<2; i++) {
-		char *key = talloc_strdup(mem_ctx, generate_random_str(16));
-		if (key == NULL)
-			return NULL;
-		DEBUG(10, ("Storing request key %s\n", key));
-		if (tdb_store_bystring(wcache->tdb, key,
-			      	       string_tdb_data(request_string),
-			      	       TDB_INSERT) == 0)
-			return key;
+	domain = find_lookup_domain_from_sid(sid);
+	if (domain == NULL) {
+		return False;
 	}
-	return NULL;
+
+	cache = get_cache(domain);
+
+	if (cache->tdb == NULL) {
+		return False;
+	}
+
+	centry = wcache_fetch(cache, domain, "SN/%s", sid_string_static(sid));
+	if (centry == NULL) {
+		return False;
+	}
+
+	if (NT_STATUS_IS_OK(centry->status)) {
+		*type = (enum SID_NAME_USE)centry_uint32(centry);
+		*domain_name = centry_string(centry, mem_ctx);
+		*name = centry_string(centry, mem_ctx);
+	}
+
+	status = centry->status;
+	centry_free(centry);
+	return NT_STATUS_IS_OK(status);
 }
 
-char *cache_retrieve_request_data(TALLOC_CTX *mem_ctx, char *key)
+void cache_sid2name(struct winbindd_domain *domain, const DOM_SID *sid,
+		    const char *domain_name, const char *name,
+		    enum SID_NAME_USE type)
 {
-	TDB_DATA data;
-	char *result = NULL;
-
-	if (!init_wcache())
-		return NULL;
-
-	DEBUG(10, ("Retrieving key %s\n", key));
-
-	data = tdb_fetch_bystring(wcache->tdb, key);
-	if (data.dptr == NULL)
-		return NULL;
-
-	if (strnlen(data.dptr, data.dsize) != (data.dsize)) {
-		DEBUG(0, ("Received invalid request string\n"));
-		goto done;
-	}
-	result = TALLOC_ARRAY(mem_ctx, char, data.dsize+1);
-	if (result != NULL) {
-		memcpy(result, data.dptr, data.dsize);
-		result[data.dsize] = '\0';
-	}
-	if (tdb_delete_bystring(wcache->tdb, key) != 0) {
-		DEBUG(0, ("Could not delete key %s\n", key));
-		result = NULL;
-	}
-  done:
-	SAFE_FREE(data.dptr);
-	return result;
+	wcache_save_sid_to_name(domain, NT_STATUS_OK, sid, domain_name,
+				name, type);
 }

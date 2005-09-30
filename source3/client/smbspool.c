@@ -70,6 +70,9 @@ static int		smb_print(struct cli_state *, char *, FILE *);
   FILE		*fp;		/* File to print */
   int		status=0;		/* Status of LPD job */
   struct cli_state *cli;	/* SMB interface */
+  char null_str[1];
+
+  null_str[0] = '\0';
 
   /* we expect the URI in argv[0]. Detect the case where it is in argv[1] and cope */
   if (argc > 2 && strncmp(argv[0],"smb://", 6) && !strncmp(argv[1],"smb://", 6)) {
@@ -158,12 +161,12 @@ static int		smb_print(struct cli_state *, char *, FILE *);
     if ((password = strchr_m(username, ':')) != NULL)
       *password++ = '\0';
     else
-      password = "";
+      password = null_str;
   }
   else
   {
-    username = "";
-    password = "";
+    username = null_str;
+    password = null_str;
     server   = uri + 6;
   }
 
@@ -335,10 +338,8 @@ char * get_ticket_cache( uid_t uid )
 
   if ( ticket_file == NULL )
   {
-#ifdef DEVELOPER
     /* no ticket cache found */
     fprintf(stderr, "ERROR: No ticket cache found for userid=%d\n", uid);
-#endif
     return NULL;
   }
 

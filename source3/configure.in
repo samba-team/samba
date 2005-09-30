@@ -235,6 +235,7 @@ AC_SUBST(SMBWRAP_INC)
 AC_SUBST(EXTRA_BIN_PROGS)
 AC_SUBST(EXTRA_SBIN_PROGS)
 AC_SUBST(EXTRA_ALL_TARGETS)
+AC_SUBST(CONFIG_LIBS)
 
 # Set defaults
 PIE_CFLAGS=""
@@ -359,9 +360,9 @@ if test "$ac_cv_prog_gnu_ld" = "yes"; then
 	changequote([,])dnl
 	AC_MSG_RESULT(${ac_cv_gnu_ld_date})
         if test -n "$ac_cv_gnu_ld_date"; then
-           if test "$ac_cv_gnu_ld_date" -lt 20030217; then
-              ac_cv_gnu_ld_no_default_allow_shlib_undefined=yes
-           fi
+ 	if test "$ac_cv_gnu_ld_date" -lt 20030217; then
+ 		ac_cv_gnu_ld_no_default_allow_shlib_undefined=yes
+ 	fi
         else
            AC_MSG_CHECKING(GNU ld release version)
            changequote(,)dnl
@@ -457,10 +458,10 @@ DYNEXP=
 
 dnl Add modules that have to be built by default here
 dnl These have to be built static:
-default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_svcctl rpc_net rpc_dfs rpc_srv rpc_spoolss rpc_eventlog auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin printerdb_file"
+default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_svcctl rpc_ntsvcs rpc_net rpc_dfs rpc_srv rpc_spoolss rpc_eventlog auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin"
 
 dnl These are preferably build shared, and static if dlopen() is not available
-default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy charset_CP850 charset_CP437 auth_script"
+default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy charset_CP850 charset_CP437 auth_script"
 
 if test "x$developer" = xyes; then
    default_static_modules="$default_static_modules rpc_echo"
@@ -1990,14 +1991,14 @@ dnl For IA64 HPUX systems, the libs are located in lib/hpux32 instead of lib.
     for l in "lib32" "lib" "lib/hpux32"; do
         if test -d "$i/$l" ; then
                 LDFLAGS="$save_LDFLAGS -L$i/$l"
-                LIBS=
-                export LDFLAGS LIBS CPPFLAGS
+        LIBS=
+        export LDFLAGS LIBS CPPFLAGS
 dnl Try to find iconv(3)
                 jm_ICONV($i/$l)
                 if test x"$ICONV_FOUND" = "xyes" ; then
-                    libext="$l"
-                    break;
-                fi
+            libext="$l"
+            break;
+        fi
         fi
     done
 
@@ -2005,7 +2006,7 @@ dnl Try to find iconv(3)
 	LDFLAGS=$save_LDFLAGS
         LIB_ADD_DIR(LDFLAGS, "$i/$libext")
         CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
-        LIBS="$save_LIBS"
+	LIBS="$save_LIBS"
         ICONV_LOCATION=$i
         export LDFLAGS LIBS CPPFLAGS
 dnl Now, check for a working iconv ... we want to do it here because
@@ -2820,6 +2821,7 @@ if test x"$with_ldap_support" != x"no"; then
   if test x"$ac_cv_lib_ext_ldap_ldap_init" = x"yes" -a x"$ac_cv_func_ext_ldap_domain2hostlist" = x"yes"; then
     AC_DEFINE(HAVE_LDAP,1,[Whether ldap is available])
     default_static_modules="$default_static_modules pdb_ldap idmap_ldap";
+    default_shared_modules="$default_shared_modules";
     SMBLDAP="lib/smbldap.o"
     SMBLDAPUTIL="lib/smbldap_util.o"
     with_ldap_support=yes
@@ -3048,9 +3050,77 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_krbhst_get_addrinfo, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_c_enctype_compare, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_enctypes_compatible_keys, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_crypto_init, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_crypto_destroy, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_decode_ap_req, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(decode_krb5_ap_req, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_free_ap_req, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(free_AP_REQ, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_c_verify_checksum, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_principal_compare_any_realm, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_parse_name_norealm, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_princ_size, $KRB5_LIBS)
 
   LIBS="$KRB5_LIBS $LIBS"
-  
+
+  AC_CACHE_CHECK(whether krb5_verify_checksum takes 7 arguments, smb_krb5_verify_checksum, [
+    AC_TRY_COMPILE([
+	#include <krb5.h>], 
+	[krb5_verify_checksum(0, 0, 0, 0, 0, 0, 0);], 
+	[smb_krb5_verify_checksum=7], 
+	[smb_krb5_verify_checksum=6], 
+    ) 
+  ])
+  AC_DEFINE_UNQUOTED(KRB5_VERIFY_CHECKSUM_ARGS, $smb_krb5_verify_checksum, [Number of arguments to krb5_verify_checksum])
+
+  AC_CACHE_CHECK([for checksum in krb5_checksum],
+                samba_cv_HAVE_CHECKSUM_IN_KRB5_CHECKSUM,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_checksum cksum; cksum.checksum.length = 0;],
+      samba_cv_HAVE_CHECKSUM_IN_KRB5_CHECKSUM=yes,
+      samba_cv_HAVE_CHECKSUM_IN_KRB5_CHECKSUM=no)])
+
+  if test x"$samba_cv_HAVE_CHECKSUM_IN_KRB5_CHECKSUM" = x"yes"; then
+    AC_DEFINE(HAVE_CHECKSUM_IN_KRB5_CHECKSUM,1,
+               [Whether the krb5_checksum struct has a checksum property])
+  fi
+
+  AC_CACHE_CHECK([for etype in EncryptedData],
+                samba_cv_HAVE_ETYPE_IN_ENCRYPTEDDATA,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [EncryptedData edata; edata.etype = 0;],
+      samba_cv_HAVE_ETYPE_IN_ENCRYPTEDDATA=yes,
+      samba_cv_HAVE_ETYPE_IN_ENCRYPTEDDATA=no)])
+
+  if test x"$samba_cv_HAVE_ETYPE_IN_ENCRYPTEDDATA" = x"yes"; then
+    AC_DEFINE(HAVE_ETYPE_IN_ENCRYPTEDDATA,1,
+               [Whether the EncryptedData struct has a etype property])
+  fi
+
+  AC_CACHE_CHECK([for ticket pointer in krb5_ap_req],
+                samba_cv_HAVE_TICKET_POINTER_IN_KRB5_AP_REQ,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_ap_req *ap_req; ap_req->ticket = NULL;],
+      samba_cv_HAVE_TICKET_POINTER_IN_KRB5_AP_REQ=yes,
+      samba_cv_HAVE_TICKET_POINTER_IN_KRB5_AP_REQ=no)])
+
+  if test x"$samba_cv_HAVE_TICKET_POINTER_IN_KRB5_AP_REQ" = x"yes"; then
+    AC_DEFINE(HAVE_TICKET_POINTER_IN_KRB5_AP_REQ,1,
+               [Whether the krb5_ap_req struct has a ticket pointer])
+  fi
+
+  AC_CACHE_CHECK([for krb5_crypto type],
+                samba_cv_HAVE_KRB5_CRYPTO,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_crypto crypto;],
+      samba_cv_HAVE_KRB5_CRYPTO=yes,
+      samba_cv_HAVE_KRB5_CRYPTO=no)])
+
+  if test x"$samba_cv_HAVE_KRB5_CRYPTO" = x"yes"; then
+    AC_DEFINE(HAVE_KRB5_CRYPTO,1,
+               [Whether the type krb5_crypto exists])
+  fi
+
   AC_CACHE_CHECK([for krb5_encrypt_block type],
                 samba_cv_HAVE_KRB5_ENCRYPT_BLOCK,[
     AC_TRY_COMPILE([#include <krb5.h>],
@@ -3176,6 +3246,30 @@ if test x"$with_ads_support" != x"no"; then
   if test x"$samba_cv_HAVE_KV5M_KEYTAB" = x"yes"; then
       AC_DEFINE(HAVE_KV5M_KEYTAB,1,
              [Whether the KV5M_KEYTAB option is available])
+  fi
+
+  AC_CACHE_CHECK([for KRB5_KU_OTHER_CKSUM],
+                 samba_cv_HAVE_KRB5_KU_OTHER_CKSUM,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_keyusage usage = KRB5_KU_OTHER_CKSUM;],
+      samba_cv_HAVE_KRB5_KU_OTHER_CKSUM=yes,
+      samba_cv_HAVE_KRB5_KU_OTHER_CKSUM=no)])
+
+  if test x"$samba_cv_HAVE_KRB5_KU_OTHER_CKSUM" = x"yes"; then
+    AC_DEFINE(HAVE_KRB5_KU_OTHER_CKSUM,1,
+              [Whether KRB5_KU_OTHER_CKSUM is available])
+  fi
+  
+  AC_CACHE_CHECK([for KRB5_KEYUSAGE_APP_DATA_CKSUM],
+                 samba_cv_HAVE_KRB5_KEYUSAGE_APP_DATA_CKSUM,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_keyusage usage = KRB5_KEYUSAGE_APP_DATA_CKSUM;],
+      samba_cv_HAVE_KRB5_KEYUSAGE_APP_DATA_CKSUM=yes,
+      samba_cv_HAVE_KRB5_KEYUSAGE_APP_DATA_CKSUM=no)])
+
+  if test x"$samba_cv_HAVE_KRB5_KEYUSAGE_APP_DATA_CKSUM" = x"yes"; then
+    AC_DEFINE(HAVE_KRB5_KEYUSAGE_APP_DATA_CKSUM,1,
+              [Whether KRB5_KEYUSAGE_APP_DATA_CKSUM is available])
   fi
 
   AC_CACHE_CHECK([for the krb5_princ_component macro],
@@ -3915,7 +4009,6 @@ AC_ARG_WITH(libsmbclient,
   INSTALLCLIENT=installclientlib
 )
 
-
 INSTALLCLIENTCMD_SH=:
 INSTALLCLIENTCMD_A=:
 INSTALLCLIENT=
@@ -3925,19 +4018,19 @@ AC_MSG_CHECKING(whether to build the libsmbsharemodes shared library)
 AC_ARG_WITH(libsmbsharemodes,
 [  --with-libsmbsharemodes     Build the libsmbsharemodes shared library (default=yes if shared libs supported)],
 [ case "$withval" in
-  no) 
+  no)
      AC_MSG_RESULT(no)
      ;;
   *)
      if test $BLDSHARED = true; then
         INSTALLCLIENTCMD_SH="\$(INSTALLCMD)"
-	## build the static version of libsmbsharemodes as well
-	INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
+        ## build the static version of libsmbsharemodes as well
+        INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
         LIBSMBSHAREMODES_SHARED=bin/libsmbsharemodes.$SHLIBEXT
         LIBSMBSHAREMODES=libsmbsharemodes
         AC_MSG_RESULT(yes)
      else
-	enable_static=yes
+        enable_static=yes
         AC_MSG_RESULT(no shared library support -- will supply static library)
      fi
      if test $enable_static = yes; then
@@ -3964,7 +4057,6 @@ AC_ARG_WITH(libsmbsharemodes,
   fi]
   INSTALLCLIENT=installclientlib
 )
-
 
 #################################################
 # these tests are taken from the GNU fileutils package
@@ -4951,11 +5043,13 @@ SMB_MODULE(pdb_tdbsam, passdb/pdb_tdb.o, "bin/tdbsam.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_guest, passdb/pdb_guest.o, "bin/guest.$SHLIBEXT", PDB)
 SMB_SUBSYSTEM(PDB,passdb/pdb_interface.o)
 
+
 SMB_MODULE(rpc_lsa, \$(RPC_LSA_OBJ), "bin/librpc_lsarpc.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_reg, \$(RPC_REG_OBJ), "bin/librpc_winreg.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_lsa_ds, \$(RPC_LSA_DS_OBJ), "bin/librpc_lsa_ds.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_wks, \$(RPC_WKS_OBJ), "bin/librpc_wkssvc.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_svcctl, \$(RPC_SVCCTL_OBJ), "bin/librpc_svcctl.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_ntsvcs, \$(RPC_NTSVCS_OBJ), "bin/librpc_ntsvcs.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_net, \$(RPC_NETLOG_OBJ), "bin/librpc_NETLOGON.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_dfs, \$(RPC_DFS_OBJ), "bin/librpc_netdfs.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_srv, \$(RPC_SVC_OBJ), "bin/librpc_srvsvc.$SHLIBEXT", RPC)

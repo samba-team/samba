@@ -200,7 +200,7 @@ void read_log_msg(FILE *in, unsigned char **_buffer, long *buffersize, long *dat
 long read_log_data(FILE *in, unsigned char *buffer, long data_length)
 {
 	long i, addr; char real[2][16]; int ret;
-	unsigned char tmp;
+	unsigned int tmp;
 	for(i = 0; i < data_length; i++) {
 		if(i % 16 == 0){
 			if(i != 0) { /* Read data after each line */
@@ -213,7 +213,7 @@ long read_log_data(FILE *in, unsigned char *buffer, long data_length)
 			}
 			assert(addr == i);
 		}
-		if(!fscanf(in, "%02lX", &tmp)) {
+		if(!fscanf(in, "%02X", &tmp)) {
 			if(!quiet)fprintf(stderr, "Only first %ld bytes are logged, packet trace will be incomplete\nTry a higher log level\n", i-1);
 			return i-1;
 		}
@@ -230,7 +230,7 @@ int main (int argc, char **argv)
 	poptContext pc;
 	char buffer[4096];
 	long data_offset, data_length;
-	long data_bytes_read;
+	long data_bytes_read = 0;
 	int in_packet = 0;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP

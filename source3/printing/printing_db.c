@@ -188,7 +188,7 @@ TDB_DATA get_printer_notify_pid_list(TDB_CONTEXT *tdb, const char *printer_name,
 
 		/* Entry is dead if process doesn't exist or refcount is zero. */
 
-		while ((i < data.dsize) && ((IVAL(data.dptr, i + 4) == 0) || !process_exists(pid))) {
+		while ((i < data.dsize) && ((IVAL(data.dptr, i + 4) == 0) || !process_exists_by_pid(pid))) {
 
 			/* Refcount == zero is a logic error and should never happen. */
 			if (IVAL(data.dptr, i + 4) == 0) {

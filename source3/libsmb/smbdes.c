@@ -357,78 +357,24 @@ void cred_hash3(unsigned char *out, unsigned char *in, const unsigned char *key,
         des_crypt56(out + 8, in + 8, key2, forw);
 }
 
-void SamOEMhash( unsigned char *data, const unsigned char *key, int val)
+/*****************************************************************
+ arc4 crypt/decrypt with a 16 byte key.
+*****************************************************************/
+
+void SamOEMhash( unsigned char *data, const unsigned char key[16], size_t len)
 {
-	unsigned char s_box[256];
-	unsigned char index_i = 0;
-	unsigned char index_j = 0;
-	unsigned char j = 0;
-	int ind;
+	unsigned char arc4_state[258];
 
-	for (ind = 0; ind < 256; ind++) {
-		s_box[ind] = (unsigned char)ind;
-	}
-
-	for( ind = 0; ind < 256; ind++) {
-		unsigned char tc;
-
-		j += (s_box[ind] + key[ind%16]);
-
-		tc = s_box[ind];
-		s_box[ind] = s_box[j];
-		s_box[j] = tc;
-	}
-	for( ind = 0; ind < val; ind++) {
-		unsigned char tc;
-		unsigned char t;
-
-		index_i++;
-		index_j += s_box[index_i];
-
-		tc = s_box[index_i];
-		s_box[index_i] = s_box[index_j];
-		s_box[index_j] = tc;
-
-		t = s_box[index_i] + s_box[index_j];
-		data[ind] = data[ind] ^ s_box[t];
-	}
+	smb_arc4_init(arc4_state, key, 16);
+	smb_arc4_crypt(arc4_state, data, len);
 }
 
-void SamOEMhashBlob( unsigned char *data, int len, DATA_BLOB *key)
+void SamOEMhashBlob( unsigned char *data, size_t len, DATA_BLOB *key)
 {
-	unsigned char s_box[256];
-	unsigned char index_i = 0;
-	unsigned char index_j = 0;
-	unsigned char j = 0;
-	int ind;
+	unsigned char arc4_state[258];
 
-	for (ind = 0; ind < 256; ind++) {
-		s_box[ind] = (unsigned char)ind;
-	}
-
-	for( ind = 0; ind < 256; ind++) {
-		unsigned char tc;
-
-		j += (s_box[ind] + key->data[ind%key->length]);
-
-		tc = s_box[ind];
-		s_box[ind] = s_box[j];
-		s_box[j] = tc;
-	}
-	for( ind = 0; ind < len; ind++) {
-		unsigned char tc;
-		unsigned char t;
-
-		index_i++;
-		index_j += s_box[index_i];
-
-		tc = s_box[index_i];
-		s_box[index_i] = s_box[index_j];
-		s_box[index_j] = tc;
-
-		t = s_box[index_i] + s_box[index_j];
-		data[ind] = data[ind] ^ s_box[t];
-	}
+	smb_arc4_init(arc4_state, key->data, key->length);
+	smb_arc4_crypt(arc4_state, data, len);
 }
 
 /* Decode a sam password hash into a password.  The password hash is the

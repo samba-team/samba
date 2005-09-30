@@ -98,7 +98,7 @@ static BOOL test_one(struct cli_state *cli, const char *name)
 	} else {
 		TDB_DATA namedata;
 		/* store it for later */
-		namedata.dptr = name;
+		namedata.dptr = CONST_DISCARD(char *, name);
 		namedata.dsize = strlen(name)+1;
 		tdb_store_bystring(tdb, shortname, namedata, TDB_REPLACE);
 	}

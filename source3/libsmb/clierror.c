@@ -404,3 +404,20 @@ BOOL cli_is_dos_error(struct cli_state *cli)
 
         return cli_is_error(cli) && !(flgs2 & FLAGS2_32_BIT_ERROR_CODES);
 }
+
+/* Return the last error always as an NTSTATUS. */
+
+NTSTATUS cli_get_nt_error(struct cli_state *cli)
+{
+	if (cli_is_nt_error(cli)) {
+		return cli_nt_error(cli);
+	} else if (cli_is_dos_error(cli)) {
+		uint32 ecode;
+		uint8 eclass;
+		cli_dos_error(cli, &eclass, &ecode);
+		return dos_to_ntstatus(eclass, ecode);
+	} else {
+		/* Something went wrong, we don't know what. */
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+}

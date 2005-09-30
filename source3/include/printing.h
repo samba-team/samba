@@ -57,7 +57,7 @@ struct printif
                    print_status_struct *status);
   int (*queue_pause)(int snum);
   int (*queue_resume)(int snum);
-  int (*job_delete)(int snum, struct printjob *pjob);
+  int (*job_delete)(const char *sharename, const char *lprm_command, struct printjob *pjob);
   int (*job_pause)(int snum, struct printjob *pjob);
   int (*job_resume)(int snum, struct printjob *pjob);
   int (*job_submit)(int snum, struct printjob *pjob);

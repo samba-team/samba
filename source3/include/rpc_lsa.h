@@ -24,8 +24,6 @@
 #ifndef _RPC_LSA_H /* _RPC_LSA_H */
 #define _RPC_LSA_H 
 
-#include "rpc_misc.h"
-
 /* Opcodes available on PIPE_LSARPC */
 
 #if 0	/* UNIMPLEMENTED */

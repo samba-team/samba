@@ -22,12 +22,15 @@
 #ifndef _RPC_SVCCTL_H /* _RPC_SVCCTL_H */
 #define _RPC_SVCCTL_H 
 
-
 /* svcctl pipe */
 
 #define SVCCTL_CLOSE_SERVICE			0x00
 #define SVCCTL_CONTROL_SERVICE			0x01
+#define SVCCTL_LOCK_SERVICE_DB			0x03
+#define SVCCTL_QUERY_SERVICE_SEC		0x04	/* not impmenented */
+#define SVCCTL_SET_SEVICE_SEC			0x05	/* not implemented */
 #define SVCCTL_QUERY_STATUS			0x06
+#define SVCCTL_UNLOCK_SERVICE_DB		0x08
 #define SVCCTL_ENUM_DEPENDENT_SERVICES_W	0x0d
 #define SVCCTL_ENUM_SERVICES_STATUS_W		0x0e
 #define SVCCTL_OPEN_SCMANAGER_W			0x0f
@@ -105,14 +108,17 @@
 #define SVCCTL_CONTROL_STOP			0x00000001
 #define SVCCTL_CONTROL_PAUSE			0x00000002
 #define SVCCTL_CONTROL_CONTINUE			0x00000003
-#define SVCCTL_CONTROL_SHUTDOWN                 0x00000004
+#define SVCCTL_CONTROL_INTERROGATE		0x00000004
+#define SVCCTL_CONTROL_SHUTDOWN                 0x00000005
 
 #define SVC_HANDLE_IS_SCM			0x0000001
 #define SVC_HANDLE_IS_SERVICE			0x0000002
+#define SVC_HANDLE_IS_DBLOCK			0x0000003
 
-#define SVC_STATUS_PROCESS_INFO                 0x00000001
+#define SVC_STATUS_PROCESS_INFO                 0x00000000
 
-#define SVCCTL_SCRIPT_DIR  "/svcctl/"
+/* where we assume the location of the service control scripts */
+#define SVCCTL_SCRIPT_DIR  "svcctl"
 
 /* utility structures for RPCs */
 
@@ -127,13 +133,7 @@ typedef struct {
 } SERVICE_STATUS;
 
 typedef struct {
-	uint32 type;
-	uint32 state;
-	uint32 controls_accepted;
-	uint32 win32_exit_code;
-	uint32 service_exit_code;
-	uint32 check_point;
-	uint32 wait_hint;
+	SERVICE_STATUS status;
 	uint32 process_id;
 	uint32 service_flags;
 } SERVICE_STATUS_PROCESS;
@@ -158,7 +158,8 @@ typedef struct {
 } SERVICE_CONFIG;
 
 typedef struct {
-        UNISTR2 *description;
+	uint32 unknown;	
+        UNISTR description;
 } SERVICE_DESCRIPTION;
 
 typedef struct {
@@ -168,19 +169,11 @@ typedef struct {
 
 typedef struct {
         uint32 reset_period;
-        UNISTR2 *rebootmsg;
+        UNISTR2 *rebootmsg;	/* i have no idea if these are UNISTR2's.  I can't get a good trace */
         UNISTR2 *command;
-        uint32  nActions;
-        SC_ACTION *saActions;
-        UNISTR2 *description;
+        uint32  num_actions;
+        SC_ACTION *actions;
 } SERVICE_FAILURE_ACTIONS;
-
-
-typedef struct SCM_info_struct {
-	uint32  type;                    /* should be SVC_HANDLE_IS_SCM */
-	pstring target_server_name;      /* name of the server on which the operation is taking place */
-	pstring target_db_name;          /* name of the database that we're opening */
-} SCM_info;
 
 typedef struct Service_info_struct {
 	uint32  type;		/* should be SVC_HANDLE_IS_SERVICE */
@@ -205,9 +198,9 @@ typedef struct Service_info_struct {
  
 typedef struct {
 	/* functions for enumerating subkeys and values */	
-	WERROR 	(*stop_service)( SERVICE_STATUS *status );
-	WERROR 	(*start_service) ( void );
-	WERROR 	(*service_status)( SERVICE_STATUS *status );
+	WERROR 	(*stop_service)( const char *service, SERVICE_STATUS *status );
+	WERROR 	(*start_service) ( const char *service );
+	WERROR 	(*service_status)( const char *service, SERVICE_STATUS *status );
 } SERVICE_CONTROL_OPS;
 
 /* structure to store the service handle information  */
@@ -341,6 +334,7 @@ typedef struct {
 	WERROR status;
 } SVCCTL_R_ENUM_DEPENDENT_SERVICES;
 
+
 /**************************/
 
 typedef struct {
@@ -354,32 +348,58 @@ typedef struct {
 	WERROR status;
 } SVCCTL_R_QUERY_SERVICE_CONFIG;
 
+
+/**************************/
+
 typedef struct {
 	POLICY_HND handle;
-        uint32 info_level;
+	uint32 level;
 	uint32 buffer_size;
 } SVCCTL_Q_QUERY_SERVICE_CONFIG2;
 
 typedef struct {
-	UNISTR2 *description;
-        uint32 returned;
+	RPC_BUFFER buffer;
 	uint32 needed;
-        uint32 offset;
 	WERROR status;
 } SVCCTL_R_QUERY_SERVICE_CONFIG2;
 
+
+/**************************/
+
 typedef struct {
 	POLICY_HND handle;
-        uint32 info_level;
+        uint32 level;
 	uint32 buffer_size;
 } SVCCTL_Q_QUERY_SERVICE_STATUSEX;
 
 typedef struct {
 	RPC_BUFFER buffer;
-        uint32 returned;
 	uint32 needed;
 	WERROR status;
 } SVCCTL_R_QUERY_SERVICE_STATUSEX;
+
+
+/**************************/
+
+typedef struct {
+	POLICY_HND handle;
+} SVCCTL_Q_LOCK_SERVICE_DB;
+
+typedef struct {
+	POLICY_HND h_lock;
+	WERROR status;
+} SVCCTL_R_LOCK_SERVICE_DB;
+
+
+/**************************/
+
+typedef struct {
+	POLICY_HND h_lock;
+} SVCCTL_Q_UNLOCK_SERVICE_DB;
+
+typedef struct {
+	WERROR status;
+} SVCCTL_R_UNLOCK_SERVICE_DB;
 
 #endif /* _RPC_SVCCTL_H */
 

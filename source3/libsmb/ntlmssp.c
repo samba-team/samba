@@ -5,6 +5,7 @@
 
    Copyright (C) Andrew Tridgell      2001
    Copyright (C) Andrew Bartlett 2001-2003
+   Copyright (C) Andrew Bartlett 2005 (Updated from gensec).
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -217,6 +218,12 @@ NTSTATUS ntlmssp_update(NTLMSSP_STATE *ntlmssp_state,
 	uint32 ntlmssp_command;
 	int i;
 
+	if (ntlmssp_state->expected_state == NTLMSSP_DONE) {
+		/* Called update after negotiations finished. */
+		DEBUG(1, ("Called NTLMSSP after state machine was 'done'\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	*out = data_blob(NULL, 0);
 
 	if (!in.length && ntlmssp_state->stored_response.length) {
@@ -348,6 +355,13 @@ static void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_128)) {
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_128;
+		if (neg_flags & NTLMSSP_NEGOTIATE_56) {
+			ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_56;
+		}
+	}
+
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_56)) {
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_56;
 	}
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH)) {
@@ -360,6 +374,34 @@ static void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 	
 }
 
+/**
+ Weaken NTLMSSP keys to cope with down-level clients and servers.
+
+ We probably should have some parameters to control this, but as
+ it only occours for LM_KEY connections, and this is controlled
+ by the client lanman auth/lanman auth parameters, it isn't too bad.
+*/
+
+void ntlmssp_weaken_keys(NTLMSSP_STATE *ntlmssp_state)
+{
+	/* Key weakening not performed on the master key for NTLM2
+	   and does not occour for NTLM1.  Therefore we only need
+	   to do this for the LM_KEY.
+	*/
+
+	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) {
+		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_128) {
+			;
+		} else if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_56) {
+			ntlmssp_state->session_key.data[7] = 0xa0;
+		} else { /* forty bits */
+			ntlmssp_state->session_key.data[5] = 0xe5;
+			ntlmssp_state->session_key.data[6] = 0x38;
+			ntlmssp_state->session_key.data[7] = 0xb0;
+		}
+		ntlmssp_state->session_key.length = 8;
+	}
+}
 
 /**
  * Next state function for the Negotiate packet
@@ -398,6 +440,9 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		
+		DEBUG(10, ("ntlmssp_server_negotiate: client = %s, domain = %s\n",
+				cliname ? cliname : "", domname ? domname : ""));
+
 		SAFE_FREE(cliname);
 		SAFE_FREE(domname);
 		
@@ -495,7 +540,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 	DATA_BLOB lm_session_key = data_blob(NULL, 0);
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	uint32 ntlmssp_command, auth_flags;
-	NTSTATUS nt_status;
+	NTSTATUS nt_status = NT_STATUS_OK;
 
 	/* used by NTLM2 */
 	BOOL doing_ntlm2 = False;
@@ -639,6 +684,9 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 				data_blob_free(&encrypted_session_key);
 				return nt_status;
 			}
+
+			/* LM Key is incompatible. */
+			ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 		}
 	}
 
@@ -710,11 +758,11 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 		if (!encrypted_session_key.data || encrypted_session_key.length != 16) {
 			data_blob_free(&encrypted_session_key);
 			DEBUG(1, ("Client-supplied KEY_EXCH session key was of invalid length (%u)!\n", 
-				  encrypted_session_key.length));
+				  (unsigned int)encrypted_session_key.length));
 			return NT_STATUS_INVALID_PARAMETER;
 		} else if (!session_key.data || session_key.length != 16) {
 			DEBUG(5, ("server session key is invalid (len == %u), cannot do KEY_EXCH!\n", 
-				  session_key.length));
+				  (unsigned int)session_key.length));
 			ntlmssp_state->session_key = session_key;
 		} else {
 			dump_data_pw("KEY_EXCH session key (enc):\n", encrypted_session_key.data, encrypted_session_key.length);
@@ -731,6 +779,9 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 		ntlmssp_state->session_key = session_key;
 	}
 
+	/* The client might need us to use a partial-strength session key */
+	ntlmssp_weaken_keys(ntlmssp_state);
+
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		ntlmssp_state->session_key = data_blob(NULL, 0);
 	} else if (ntlmssp_state->session_key.length) {
@@ -739,8 +790,8 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 
 	data_blob_free(&encrypted_session_key);
 	
-	/* allow arbitarily many authentications */
-	ntlmssp_state->expected_state = NTLMSSP_AUTH;
+	/* Only one authentication allowed per server state. */
+	ntlmssp_state->expected_state = NTLMSSP_DONE;
 
 	return nt_status;
 }
@@ -784,7 +835,8 @@ NTSTATUS ntlmssp_server_start(NTLMSSP_STATE **ntlmssp_state)
 		NTLMSSP_NEGOTIATE_NTLM |
 		NTLMSSP_NEGOTIATE_NTLM2 |
 		NTLMSSP_NEGOTIATE_KEY_EXCH |
-		NTLMSSP_NEGOTIATE_SIGN;
+		NTLMSSP_NEGOTIATE_SIGN |
+		NTLMSSP_NEGOTIATE_SEAL;
 
 	return NT_STATUS_OK;
 }
@@ -851,7 +903,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	DATA_BLOB nt_response = data_blob(NULL, 0);
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	DATA_BLOB encrypted_session_key = data_blob(NULL, 0);
-	NTSTATUS nt_status;
+	NTSTATUS nt_status = NT_STATUS_OK;
 
 	if (!msrpc_parse(&reply, "CdBd",
 			 "NTLMSSP",
@@ -977,8 +1029,6 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 		hmac_md5(user_session_key, session_nonce, sizeof(session_nonce), session_key.data);
 		dump_data_pw("NTLM2 session key:\n", session_key.data, session_key.length);
 	} else {
-		
-		
 		uchar lm_hash[16];
 		uchar nt_hash[16];
 		E_deshash(ntlmssp_state->password, lm_hash);
@@ -998,8 +1048,8 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 		session_key = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 16);
 		if ((ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) 
 		    && lp_client_lanman_auth()) {
-			SMBsesskeygen_lmv1(lm_hash, lm_response.data, 
-					   session_key.data);
+			SMBsesskeygen_lm_sess_key(lm_hash, lm_response.data,
+					session_key.data);
 			dump_data_pw("LM session key\n", session_key.data, session_key.length);
 		} else {
 			SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
@@ -1045,19 +1095,22 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 
 	data_blob_free(&ntlmssp_state->chal);
 
+	ntlmssp_state->session_key = session_key;
+
+	/* The client might be using 56 or 40 bit weakened keys */
+	ntlmssp_weaken_keys(ntlmssp_state);
+
 	ntlmssp_state->chal = challenge_blob;
 	ntlmssp_state->lm_resp = lm_response;
 	ntlmssp_state->nt_resp = nt_response;
-	ntlmssp_state->session_key = session_key;
 
-	ntlmssp_state->expected_state = NTLMSSP_UNKNOWN;
+	ntlmssp_state->expected_state = NTLMSSP_DONE;
 
 	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_sign_init(ntlmssp_state))) {
 		DEBUG(1, ("Could not setup NTLMSSP signing/sealing system (error was: %s)\n", nt_errstr(nt_status)));
-		return nt_status;
 	}
 
-	return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	return nt_status;
 }
 
 NTSTATUS ntlmssp_client_start(NTLMSSP_STATE **ntlmssp_state)
@@ -1103,4 +1156,3 @@ NTSTATUS ntlmssp_client_start(NTLMSSP_STATE **ntlmssp_state)
 
 	return NT_STATUS_OK;
 }
-

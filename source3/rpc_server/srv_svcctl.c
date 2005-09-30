@@ -310,23 +310,75 @@ static BOOL api_svcctl_query_service_config2(pipes_struct *p)
 }
 
 /*******************************************************************
+ ********************************************************************/
+
+static BOOL api_svcctl_lock_service_db(pipes_struct *p)
+{
+	SVCCTL_Q_LOCK_SERVICE_DB q_u;
+	SVCCTL_R_LOCK_SERVICE_DB r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!svcctl_io_q_lock_service_db("", &q_u, data, 0))
+		return False;
+
+	r_u.status = _svcctl_lock_service_db(p, &q_u, &r_u);
+
+	if(!svcctl_io_r_lock_service_db("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
+ ********************************************************************/
+
+static BOOL api_svcctl_unlock_service_db(pipes_struct *p)
+{
+	SVCCTL_Q_UNLOCK_SERVICE_DB q_u;
+	SVCCTL_R_UNLOCK_SERVICE_DB r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!svcctl_io_q_unlock_service_db("", &q_u, data, 0))
+		return False;
+
+	r_u.status = _svcctl_unlock_service_db(p, &q_u, &r_u);
+
+	if(!svcctl_io_r_unlock_service_db("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
  \PIPE\svcctl commands
  ********************************************************************/
 
 static struct api_struct api_svcctl_cmds[] =
 {
-      { "SVCCTL_CLOSE_SERVICE"         , SVCCTL_CLOSE_SERVICE         , api_svcctl_close_service },
-      { "SVCCTL_OPEN_SCMANAGER_W"      , SVCCTL_OPEN_SCMANAGER_W      , api_svcctl_open_scmanager },
-      { "SVCCTL_OPEN_SERVICE_W"        , SVCCTL_OPEN_SERVICE_W        , api_svcctl_open_service },
-      { "SVCCTL_GET_DISPLAY_NAME"      , SVCCTL_GET_DISPLAY_NAME      , api_svcctl_get_display_name },
-      { "SVCCTL_QUERY_STATUS"          , SVCCTL_QUERY_STATUS          , api_svcctl_query_status },
-      { "SVCCTL_QUERY_SERVICE_CONFIG_W", SVCCTL_QUERY_SERVICE_CONFIG_W, api_svcctl_query_service_config },
-      { "SVCCTL_QUERY_SERVICE_CONFIG2_W", SVCCTL_QUERY_SERVICE_CONFIG2_W, api_svcctl_query_service_config2 },
-      { "SVCCTL_ENUM_SERVICES_STATUS_W", SVCCTL_ENUM_SERVICES_STATUS_W, api_svcctl_enum_services_status },
-      { "SVCCTL_ENUM_DEPENDENT_SERVICES_W", SVCCTL_ENUM_DEPENDENT_SERVICES_W, api_svcctl_enum_dependent_services },
-      { "SVCCTL_START_SERVICE_W"       , SVCCTL_START_SERVICE_W       , api_svcctl_start_service },
-      { "SVCCTL_CONTROL_SERVICE"       , SVCCTL_CONTROL_SERVICE       , api_svcctl_control_service },
-      { "SVCCTL_QUERY_SERVICE_STATUSEX_W", SVCCTL_QUERY_SERVICE_STATUSEX_W, api_svcctl_query_service_status_ex }
+      { "SVCCTL_CLOSE_SERVICE"              , SVCCTL_CLOSE_SERVICE              , api_svcctl_close_service },
+      { "SVCCTL_OPEN_SCMANAGER_W"           , SVCCTL_OPEN_SCMANAGER_W           , api_svcctl_open_scmanager },
+      { "SVCCTL_OPEN_SERVICE_W"             , SVCCTL_OPEN_SERVICE_W             , api_svcctl_open_service },
+      { "SVCCTL_GET_DISPLAY_NAME"           , SVCCTL_GET_DISPLAY_NAME           , api_svcctl_get_display_name },
+      { "SVCCTL_QUERY_STATUS"               , SVCCTL_QUERY_STATUS               , api_svcctl_query_status },
+      { "SVCCTL_QUERY_SERVICE_CONFIG_W"     , SVCCTL_QUERY_SERVICE_CONFIG_W     , api_svcctl_query_service_config },
+      { "SVCCTL_QUERY_SERVICE_CONFIG2_W"    , SVCCTL_QUERY_SERVICE_CONFIG2_W    , api_svcctl_query_service_config2 },
+      { "SVCCTL_ENUM_SERVICES_STATUS_W"     , SVCCTL_ENUM_SERVICES_STATUS_W     , api_svcctl_enum_services_status },
+      { "SVCCTL_ENUM_DEPENDENT_SERVICES_W"  , SVCCTL_ENUM_DEPENDENT_SERVICES_W  , api_svcctl_enum_dependent_services },
+      { "SVCCTL_START_SERVICE_W"            , SVCCTL_START_SERVICE_W            , api_svcctl_start_service },
+      { "SVCCTL_CONTROL_SERVICE"            , SVCCTL_CONTROL_SERVICE            , api_svcctl_control_service },
+      { "SVCCTL_QUERY_SERVICE_STATUSEX_W"   , SVCCTL_QUERY_SERVICE_STATUSEX_W   , api_svcctl_query_service_status_ex },
+      { "SVCCTL_LOCK_SERVICE_DB"            , SVCCTL_LOCK_SERVICE_DB            , api_svcctl_lock_service_db },
+      { "SVCCTL_UNLOCK_SERVICE_DB"          , SVCCTL_UNLOCK_SERVICE_DB          , api_svcctl_unlock_service_db }
 };
 
 

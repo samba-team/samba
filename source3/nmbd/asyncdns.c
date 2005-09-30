@@ -201,7 +201,7 @@ void run_dns_queue(void)
         /* Allow SIGTERM to kill us. */
         BlockSignals(False, SIGTERM);
 
-	if (!process_exists(child_pid)) {
+	if (!process_exists_by_pid(child_pid)) {
 		close(fd_in);
 		start_async_dns();
 	}

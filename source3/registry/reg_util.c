@@ -97,3 +97,31 @@ void normalize_reg_path( pstring keyname )
 	strupper_m( keyname  );
 }
 
+/**********************************************************************
+ move to next non-delimter character
+*********************************************************************/
+
+char* reg_remaining_path( const char *key )
+{
+	static pstring new_path;
+	char *p;
+	
+	if ( !key || !*key )
+		return NULL;
+
+	pstrcpy( new_path, key );
+	/* normalize_reg_path( new_path ); */
+	
+	if ( !(p = strchr( new_path, '\\' )) ) 
+	{
+		if ( !(p = strchr( new_path, '/' )) )
+			p = new_path;
+		else 
+			p++;
+	}
+	else
+		p++;
+		
+	return p;
+}
+

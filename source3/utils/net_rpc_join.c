@@ -35,7 +35,6 @@
                 goto done; \
         }
 
-
 /**
  * confirm that a domain join is still valid
  *
@@ -44,44 +43,30 @@
  **/
 static int net_rpc_join_ok(const char *domain)
 {
-	struct cli_state *cli;
-	uchar stored_md4_trust_password[16];
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_hnd = NULL;
 	int retval = 1;
-	uint32 channel;
+	NTSTATUS ret;
 
 	/* Connect to remote machine */
 	if (!(cli = net_make_ipc_connection(NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC))) {
 		return 1;
 	}
 
-	if (!cli_nt_session_open(cli, PI_NETLOGON)) {
-		DEBUG(0,("Error connecting to NETLOGON pipe\n"));
+	pipe_hnd = cli_rpc_pipe_open_schannel(cli, PI_NETLOGON,
+						PIPE_AUTH_LEVEL_PRIVACY,
+						domain, &ret);
+
+	if (!pipe_hnd) {
+		DEBUG(0,("Error connecting to NETLOGON pipe. Error was %s\n", nt_errstr(ret) ));
 		goto done;
 	}
 
-	if (!secrets_fetch_trust_account_password(domain,
-						  stored_md4_trust_password, 
-						  NULL, &channel)) {
-		DEBUG(0,("Could not retreive domain trust secret"));
-		goto done;
-	}
-	
-	/* ensure that schannel uses the right domain */
-	fstrcpy(cli->domain, domain);
-	if (! NT_STATUS_IS_OK(cli_nt_establish_netlogon(cli, channel, stored_md4_trust_password))) {
-		DEBUG(0,("Error in domain join verfication (fresh connection)\n"));
-		goto done;
-	}
-	
 	retval = 0;		/* Success! */
 	
 done:
-	/* Close down pipe - this will clean up open policy handles */
-	if (cli->pipes[cli->pipe_idx].fnum)
-		cli_nt_session_close(cli);
 
 	cli_shutdown(cli);
-
 	return retval;
 }
 
@@ -103,7 +88,10 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	struct cli_state *cli;
 	TALLOC_CTX *mem_ctx;
         uint32 acb_info = ACB_WSTRUST;
+	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
 	uint32 sec_channel_type;
+	struct rpc_pipe_client *pipe_hnd = NULL;
+	struct rpc_pipe_client *netlogon_schannel_pipe = NULL;
 
 	/* rpc variables */
 
@@ -151,7 +139,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 #endif
 	}
 
-	/* Connect to remote machine */
+	/* Make authenticated connection to remote machine */
 
 	if (!(cli = net_make_ipc_connection(NET_FLAGS_PDC))) 
 		return 1;
@@ -163,38 +151,41 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	/* Fetch domain sid */
 
-	if (!cli_nt_session_open(cli, PI_LSARPC)) {
-		DEBUG(0, ("Error connecting to LSA pipe\n"));
+	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_LSARPC, &result);
+	if (!pipe_hnd) {
+		DEBUG(0, ("Error connecting to LSA pipe. Error was %s\n",
+			nt_errstr(result) ));
 		goto done;
 	}
 
 
-	CHECK_RPC_ERR(cli_lsa_open_policy(cli, mem_ctx, True,
+	CHECK_RPC_ERR(rpccli_lsa_open_policy(pipe_hnd, mem_ctx, True,
 					  SEC_RIGHTS_MAXIMUM_ALLOWED,
 					  &lsa_pol),
 		      "error opening lsa policy handle");
 
-	CHECK_RPC_ERR(cli_lsa_query_info_policy(cli, mem_ctx, &lsa_pol,
+	CHECK_RPC_ERR(rpccli_lsa_query_info_policy(pipe_hnd, mem_ctx, &lsa_pol,
 						5, &domain, &domain_sid),
 		      "error querying info policy");
 
-	cli_lsa_close(cli, mem_ctx, &lsa_pol);
-
-	cli_nt_session_close(cli); /* Done with this pipe */
+	rpccli_lsa_close(pipe_hnd, mem_ctx, &lsa_pol);
+	cli_rpc_pipe_close(pipe_hnd); /* Done with this pipe */
 
 	/* Create domain user */
-	if (!cli_nt_session_open(cli, PI_SAMR)) {
-		DEBUG(0, ("Error connecting to SAM pipe\n"));
+	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SAMR, &result);
+	if (!pipe_hnd) {
+		DEBUG(0, ("Error connecting to SAM pipe. Error was %s\n",
+			nt_errstr(result) ));
 		goto done;
 	}
 
-	CHECK_RPC_ERR(cli_samr_connect(cli, mem_ctx, 
+	CHECK_RPC_ERR(rpccli_samr_connect(pipe_hnd, mem_ctx, 
 				       SEC_RIGHTS_MAXIMUM_ALLOWED,
 				       &sam_pol),
 		      "could not connect to SAM database");
 
 	
-	CHECK_RPC_ERR(cli_samr_open_domain(cli, mem_ctx, &sam_pol,
+	CHECK_RPC_ERR(rpccli_samr_open_domain(pipe_hnd, mem_ctx, &sam_pol,
 					   SEC_RIGHTS_MAXIMUM_ALLOWED,
 					   domain_sid, &domain_pol),
 		      "could not open domain");
@@ -204,7 +195,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	strlower_m(acct_name);
 	const_acct_name = acct_name;
 
-	result = cli_samr_create_dom_user(cli, mem_ctx, &domain_pol,
+	result = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx, &domain_pol,
 					  acct_name, acb_info,
 					  0xe005000b, &user_pol, 
 					  &user_rid);
@@ -225,10 +216,11 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	/* We *must* do this.... don't ask... */
 
-	if (NT_STATUS_IS_OK(result))
-		cli_samr_close(cli, mem_ctx, &user_pol);
+	if (NT_STATUS_IS_OK(result)) {
+		rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+	}
 
-	CHECK_RPC_ERR_DEBUG(cli_samr_lookup_names(cli, mem_ctx,
+	CHECK_RPC_ERR_DEBUG(rpccli_samr_lookup_names(pipe_hnd, mem_ctx,
 						  &domain_pol, flags,
 						  1, &const_acct_name, 
 						  &num_rids,
@@ -246,7 +238,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	/* Open handle on user */
 
 	CHECK_RPC_ERR_DEBUG(
-		cli_samr_open_user(cli, mem_ctx, &domain_pol,
+		rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
 				   SEC_RIGHTS_MAXIMUM_ALLOWED,
 				   user_rid, &user_pol),
 		("could not re-open existing user %s: %s\n",
@@ -273,7 +265,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	ctr.switch_value = 24;
 	ctr.info.id24 = &p24;
 
-	CHECK_RPC_ERR(cli_samr_set_userinfo(cli, mem_ctx, &user_pol, 24, 
+	CHECK_RPC_ERR(rpccli_samr_set_userinfo(pipe_hnd, mem_ctx, &user_pol, 24, 
 					    &cli->user_session_key, &ctr),
 		      "error setting trust account password");
 
@@ -295,26 +287,31 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	/* Ignoring the return value is necessary for joining a domain
 	   as a normal user with "Add workstation to domain" privilege. */
 
-	result = cli_samr_set_userinfo2(cli, mem_ctx, &user_pol, 16, 
+	result = rpccli_samr_set_userinfo2(pipe_hnd, mem_ctx, &user_pol, 16, 
 					&cli->user_session_key, &ctr);
 
-	/* Now check the whole process from top-to-bottom */
-	cli_samr_close(cli, mem_ctx, &user_pol);
-	cli_nt_session_close(cli); /* Done with this pipe */
+	rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+	cli_rpc_pipe_close(pipe_hnd); /* Done with this pipe */
 
-	if (!cli_nt_session_open(cli, PI_NETLOGON)) {
-		DEBUG(0,("Error connecting to NETLOGON pipe\n"));
+	/* Now check the whole process from top-to-bottom */
+
+	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_NETLOGON, &result);
+	if (!pipe_hnd) {
+		DEBUG(0,("Error connecting to NETLOGON pipe. Error was %s\n",
+			nt_errstr(result) ));
 		goto done;
 	}
 
-	/* ensure that schannel uses the right domain */
-	fstrcpy(cli->domain, domain);
-
-	result = cli_nt_establish_netlogon(cli, sec_channel_type, 
-					   md4_trust_password);
+	result = rpccli_netlogon_setup_creds(pipe_hnd,
+					cli->desthost,
+					domain,
+					global_myname(),
+                                        md4_trust_password,
+                                        sec_channel_type,
+                                        &neg_flags);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(0, ("Error domain join verification (reused connection): %s\n\n",
+		DEBUG(0, ("Error in domain join verification (credential setup failed): %s\n\n",
 			  nt_errstr(result)));
 
 		if ( NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) &&
@@ -326,6 +323,30 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 		goto done;
 	}
+
+	netlogon_schannel_pipe = cli_rpc_pipe_open_schannel_with_key(cli,
+							PI_NETLOGON,
+							PIPE_AUTH_LEVEL_PRIVACY,
+							domain,
+							pipe_hnd->dc,
+							&result);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("Error in domain join verification (schannel setup failed): %s\n\n",
+			  nt_errstr(result)));
+
+		if ( NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) &&
+		     (sec_channel_type == SEC_CHAN_BDC) ) {
+			d_printf("Please make sure that no computer account\n"
+				 "named like this machine (%s) exists in the domain\n",
+				 global_myname());
+		}
+
+		goto done;
+	}
+
+	cli_rpc_pipe_close(pipe_hnd);
+	cli_rpc_pipe_close(netlogon_schannel_pipe);
 
 	/* Now store the secret in the secrets database */
 
@@ -344,10 +365,6 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	retval = net_rpc_join_ok(domain);
 	
 done:
-	/* Close down pipe - this will clean up open policy handles */
-
-	if (cli->pipes[cli->pipe_idx].fnum)
-		cli_nt_session_close(cli);
 
 	/* Display success or failure */
 
@@ -363,7 +380,6 @@ done:
 
 	return retval;
 }
-
 
 /**
  * check that a join is OK

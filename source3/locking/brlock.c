@@ -39,7 +39,7 @@
 struct lock_context {
 	uint16 smbpid;
 	uint16 tid;
-	pid_t pid;
+	struct process_id pid;
 };
 
 /* The data in brlock records is an unsorted linear array of these
@@ -89,9 +89,9 @@ static TDB_DATA locking_key(SMB_DEV_T dev, SMB_INO_T inode)
 static BOOL brl_same_context(struct lock_context *ctx1, 
 			     struct lock_context *ctx2)
 {
-	return (ctx1->pid == ctx2->pid) &&
+	return (procid_equal(&ctx1->pid, &ctx2->pid) &&
 		(ctx1->smbpid == ctx2->smbpid) &&
-		(ctx1->tid == ctx2->tid);
+		(ctx1->tid == ctx2->tid));
 }
 
 /****************************************************************************
@@ -252,7 +252,7 @@ static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *stat
 			DEBUG(0,("brlock : delete_fn. LOGIC ERROR ! Shutting down and a record for my pid (%u) exists !\n",
 					(unsigned int)lock->context.pid ));
 
-		} else if (process_exists(lock->context.pid)) {
+		} else if (process_exists(&lock->context.pid)) {
 
 			DEBUG(10,("brlock : delete_fn. pid %u exists.\n", (unsigned int)lock->context.pid ));
 			continue;
@@ -347,7 +347,7 @@ static int lock_compare(struct lock_struct *lck1,
 ****************************************************************************/
 
 NTSTATUS brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
-		  uint16 smbpid, pid_t pid, uint16 tid,
+		  uint16 smbpid, struct process_id pid, uint16 tid,
 		  br_off start, br_off size, 
 		  enum brl_type lock_type, BOOL *my_lock_ctx)
 {
@@ -450,7 +450,7 @@ static BOOL brl_pending_overlap(struct lock_struct *lock, struct lock_struct *pe
 ****************************************************************************/
 
 BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
-		uint16 smbpid, pid_t pid, uint16 tid,
+		uint16 smbpid, struct process_id pid, uint16 tid,
 		br_off start, br_off size,
 		BOOL remove_pending_locks_only,
 		void (*pre_unlock_fn)(void *),
@@ -542,8 +542,8 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 
 					/* We could send specific lock info here... */
 					if (brl_pending_overlap(lock, pend_lock)) {
-						DEBUG(10,("brl_unlock: sending unlock message to pid %u\n",
-									(unsigned int)pend_lock->context.pid ));
+						DEBUG(10,("brl_unlock: sending unlock message to pid %s\n",
+									procid_str_static(&pend_lock->context.pid )));
 
 						message_send_pid(pend_lock->context.pid,
 								MSG_SMB_UNLOCK,
@@ -584,7 +584,7 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 ****************************************************************************/
 
 BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
-		  uint16 smbpid, pid_t pid, uint16 tid,
+		  uint16 smbpid, struct process_id pid, uint16 tid,
 		  br_off start, br_off size, 
 		  enum brl_type lock_type)
 {
@@ -632,7 +632,7 @@ BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
  Remove any locks associated with a open file.
 ****************************************************************************/
 
-void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum)
+void brl_close(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, int tid, int fnum)
 {
 	TDB_DATA kbuf, dbuf;
 	int count, i, j, dcount=0;
@@ -655,7 +655,7 @@ void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum)
 		struct lock_struct *lock = &locks[i];
 
 		if (lock->context.tid == tid &&
-		    lock->context.pid == pid &&
+		    procid_equal(&lock->context.pid, &pid) &&
 		    lock->fnum == fnum) {
 
 			/* Send unlock messages to any pending waiters that overlap. */
@@ -667,7 +667,7 @@ void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum)
 					continue;
 
 				if (pend_lock->context.tid == tid &&
-				    pend_lock->context.pid == pid &&
+				    procid_equal(&pend_lock->context.pid, &pid) &&
 				    pend_lock->fnum == fnum)
 					continue;
 

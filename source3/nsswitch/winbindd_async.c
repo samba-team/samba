@@ -84,12 +84,12 @@ static void do_async(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 		      &state->response, do_async_recv, state);
 }
 
-static void do_async_domain(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
-			    const struct winbindd_request *request,
-			    void (*cont)(TALLOC_CTX *mem_ctx, BOOL success,
-					 struct winbindd_response *response,
-					 void *c, void *private_data),
-			    void *c, void *private_data)
+void do_async_domain(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
+		     const struct winbindd_request *request,
+		     void (*cont)(TALLOC_CTX *mem_ctx, BOOL success,
+				  struct winbindd_response *response,
+				  void *c, void *private_data),
+		     void *c, void *private_data)
 {
 	struct do_async_state *state;
 
@@ -706,16 +706,16 @@ enum winbindd_result winbindd_dual_lookupname(struct winbindd_domain *domain,
 	return WINBINDD_OK;
 }
 
-static BOOL print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
-			  int num_sids, char **result)
+BOOL print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
+		   int num_sids, char **result, ssize_t *len)
 {
 	int i;
 	size_t buflen = 0;
-	ssize_t len = 0;
 
+	*len = 0;
 	*result = NULL;
 	for (i=0; i<num_sids; i++) {
-		sprintf_append(mem_ctx, result, &len, &buflen,
+		sprintf_append(mem_ctx, result, len, &buflen,
 			       "%s\n", sid_string_static(&sids[i]));
 	}
 
@@ -726,14 +726,14 @@ static BOOL print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
 	return True;
 }
 
-static BOOL parse_sidlist(TALLOC_CTX *mem_ctx, char *sidstr,
-			  DOM_SID **sids, int *num_sids)
+BOOL parse_sidlist(TALLOC_CTX *mem_ctx, char *sidstr,
+		   DOM_SID **sids, int *num_sids)
 {
 	char *p, *q;
 
 	p = sidstr;
 	if (p == NULL)
-		return True;
+		return False;
 
 	while (p[0] != '\0') {
 		DOM_SID sid;
@@ -750,6 +750,49 @@ static BOOL parse_sidlist(TALLOC_CTX *mem_ctx, char *sidstr,
 		}
 		add_sid_to_array(mem_ctx, &sid, sids, num_sids);
 		p = q;
+	}
+	return True;
+}
+
+BOOL print_ridlist(TALLOC_CTX *mem_ctx, uint32 *rids, int num_rids,
+		   char **result, ssize_t *len)
+{
+	int i;
+	size_t buflen = 0;
+
+	*len = 0;
+	*result = NULL;
+	for (i=0; i<num_rids; i++) {
+		sprintf_append(mem_ctx, result, len, &buflen,
+			       "%ld\n", rids[i]);
+	}
+
+	if ((num_rids != 0) && (*result == NULL)) {
+		return False;
+	}
+
+	return True;
+}
+
+BOOL parse_ridlist(TALLOC_CTX *mem_ctx, char *ridstr,
+		   uint32 **sids, int *num_rids)
+{
+	char *p;
+
+	p = ridstr;
+	if (p == NULL)
+		return False;
+
+	while (p[0] != '\0') {
+		uint32 rid;
+		char *q;
+		rid = strtoul(p, &q, 10);
+		if (*q != '\n') {
+			DEBUG(0, ("Got invalid ridstr: %s\n", p));
+			return False;
+		}
+		p = q+1;
+		ADD_TO_ARRAY(mem_ctx, uint32, rid, sids, num_rids);
 	}
 	return True;
 }
@@ -806,28 +849,22 @@ void winbindd_getsidaliases_async(struct winbindd_domain *domain,
 {
 	struct winbindd_request request;
 	char *sidstr = NULL;
-	char *keystr;
+	ssize_t len;
 
 	if (num_sids == 0) {
 		cont(private_data, True, NULL, 0);
 		return;
 	}
 
-	if (!print_sidlist(mem_ctx, sids, num_sids, &sidstr)) {
-		cont(private_data, False, NULL, 0);
-		return;
-	}
-
-	keystr = cache_store_request_data(mem_ctx, sidstr);
-	if (keystr == NULL) {
+	if (!print_sidlist(mem_ctx, sids, num_sids, &sidstr, &len)) {
 		cont(private_data, False, NULL, 0);
 		return;
 	}
 
 	ZERO_STRUCT(request);
 	request.cmd = WINBINDD_DUAL_GETSIDALIASES;
-	fstrcpy(request.domain_name, domain->name);
-	fstrcpy(request.data.dual_sidaliases.cache_key, keystr);
+	request.extra_len = len;
+	request.extra_data = sidstr;
 
 	do_async_domain(mem_ctx, domain, &request, getsidaliases_recv,
 			cont, private_data);
@@ -838,20 +875,15 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 {
 	DOM_SID *sids = NULL;
 	int num_sids = 0;
-	char *key = state->request.data.dual_sidaliases.cache_key;
 	char *sidstr;
+	size_t len;
 	int i, num_aliases;
 	uint32 *alias_rids;
 	NTSTATUS result;
 
 	DEBUG(3, ("[%5lu]: getsidaliases\n", (unsigned long)state->pid));
 
-	/* Ensure null termination */
-        state->request.domain_name[sizeof(state->request.domain_name)-1]='\0';
-        state->request.data.dual_sidaliases.cache_key
-		[sizeof(state->request.data.dual_sidaliases.cache_key)-1]='\0';
-
-	sidstr = cache_retrieve_request_data(state->mem_ctx, key);
+	sidstr = state->request.extra_data;
 	if (sidstr == NULL)
 		sidstr = talloc_strdup(state->mem_ctx, "\n"); /* No SID */
 
@@ -891,7 +923,7 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 	}
 
 	if (!print_sidlist(NULL, sids, num_sids,
-			   (char **)&state->response.extra_data)) {
+			   (char **)&state->response.extra_data, &len)) {
 		DEBUG(0, ("Could not print_sidlist\n"));
 		return WINBINDD_ERROR;
 	}
@@ -899,7 +931,7 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 	if (state->response.extra_data != NULL) {
 		DEBUG(10, ("aliases_list: %s\n",
 			   (char *)state->response.extra_data));
-		state->response.length += strlen(state->response.extra_data)+1;
+		state->response.length += len+1;
 	}
 	
 	return WINBINDD_OK;
@@ -1405,3 +1437,4 @@ void query_user_async(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 	do_async_domain(mem_ctx, domain, &request, query_user_recv,
 			cont, private_data);
 }
+

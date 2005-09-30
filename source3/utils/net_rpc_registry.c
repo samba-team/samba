@@ -22,7 +22,6 @@
 #include "regfio.h"
 #include "reg_objects.h"
 
-
 /********************************************************************
 ********************************************************************/
 
@@ -85,9 +84,13 @@ void dump_regval_buffer( uint32 type, REGVAL_BUFFER *buffer )
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS rpc_registry_enumerate_internal( const DOM_SID *domain_sid, const char *domain_name, 
-                                           struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-                                           int argc, const char **argv )
+static NTSTATUS rpc_registry_enumerate_internal(const DOM_SID *domain_sid,
+						const char *domain_name, 
+						struct cli_state *cli,
+						struct rpc_pipe_client *pipe_hnd,
+						TALLOC_CTX *mem_ctx, 
+						int argc,
+						const char **argv )
 {
 	WERROR result = WERR_GENERAL_FAILURE;
 	uint32 hive;
@@ -108,13 +111,13 @@ static NTSTATUS rpc_registry_enumerate_internal( const DOM_SID *domain_sid, cons
 	
 	/* open the top level hive and then the registry key */
 	
-	result = cli_reg_connect( cli, mem_ctx, hive, MAXIMUM_ALLOWED_ACCESS, &pol_hive );
+	result = rpccli_reg_connect(pipe_hnd, mem_ctx, hive, MAXIMUM_ALLOWED_ACCESS, &pol_hive );
 	if ( !W_ERROR_IS_OK(result) ) {
 		d_printf("Unable to connect to remote registry\n");
 		return werror_to_ntstatus(result);
 	}
 	
-	result = cli_reg_open_entry( cli, mem_ctx, &pol_hive, subpath, MAXIMUM_ALLOWED_ACCESS, &pol_key );
+	result = rpccli_reg_open_entry(pipe_hnd, mem_ctx, &pol_hive, subpath, MAXIMUM_ALLOWED_ACCESS, &pol_key );
 	if ( !W_ERROR_IS_OK(result) ) {
 		d_printf("Unable to open [%s]\n", argv[0]);
 		return werror_to_ntstatus(result);
@@ -128,7 +131,7 @@ static NTSTATUS rpc_registry_enumerate_internal( const DOM_SID *domain_sid, cons
 		time_t modtime;
 		fstring keyname, classname;
 		
-		result = cli_reg_enum_key( cli, mem_ctx, &pol_key, idx, 
+		result = rpccli_reg_enum_key(pipe_hnd, mem_ctx, &pol_key, idx, 
 			keyname, classname, &modtime );
 			
 		if ( W_ERROR_EQUAL(result, WERR_NO_MORE_ITEMS) ) {
@@ -159,7 +162,7 @@ static NTSTATUS rpc_registry_enumerate_internal( const DOM_SID *domain_sid, cons
 		fstrcpy( name, "" );
 		ZERO_STRUCT( value );
 		
-		result = cli_reg_enum_val( cli, mem_ctx, &pol_key, idx, 
+		result = rpccli_reg_enum_val(pipe_hnd, mem_ctx, &pol_key, idx, 
 			name, &type, &value );
 			
 		if ( W_ERROR_EQUAL(result, WERR_NO_MORE_ITEMS) ) {
@@ -180,8 +183,8 @@ static NTSTATUS rpc_registry_enumerate_internal( const DOM_SID *domain_sid, cons
 out:
 	/* cleanup */
 	
-	cli_reg_close( cli, mem_ctx, &pol_key );
-	cli_reg_close( cli, mem_ctx, &pol_hive );
+	rpccli_reg_close(pipe_hnd, mem_ctx, &pol_key );
+	rpccli_reg_close(pipe_hnd, mem_ctx, &pol_hive );
 
 	return werror_to_ntstatus(result);
 }
@@ -198,9 +201,13 @@ static int rpc_registry_enumerate( int argc, const char **argv )
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS rpc_registry_save_internal( const DOM_SID *domain_sid, const char *domain_name, 
-                                           struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-                                           int argc, const char **argv )
+static NTSTATUS rpc_registry_save_internal(const DOM_SID *domain_sid,
+					const char *domain_name, 
+					struct cli_state *cli,
+					struct rpc_pipe_client *pipe_hnd,
+					TALLOC_CTX *mem_ctx, 
+					int argc,
+					const char **argv )
 {
 	WERROR result = WERR_GENERAL_FAILURE;
 	uint32 hive;
@@ -219,19 +226,19 @@ static NTSTATUS rpc_registry_save_internal( const DOM_SID *domain_sid, const cha
 	
 	/* open the top level hive and then the registry key */
 	
-	result = cli_reg_connect( cli, mem_ctx, hive, MAXIMUM_ALLOWED_ACCESS, &pol_hive );
+	result = rpccli_reg_connect(pipe_hnd, mem_ctx, hive, MAXIMUM_ALLOWED_ACCESS, &pol_hive );
 	if ( !W_ERROR_IS_OK(result) ) {
 		d_printf("Unable to connect to remote registry\n");
 		return werror_to_ntstatus(result);
 	}
 	
-	result = cli_reg_open_entry( cli, mem_ctx, &pol_hive, subpath, MAXIMUM_ALLOWED_ACCESS, &pol_key );
+	result = rpccli_reg_open_entry(pipe_hnd, mem_ctx, &pol_hive, subpath, MAXIMUM_ALLOWED_ACCESS, &pol_key );
 	if ( !W_ERROR_IS_OK(result) ) {
 		d_printf("Unable to open [%s]\n", argv[0]);
 		return werror_to_ntstatus(result);
 	}
 	
-	result = cli_reg_save_key( cli, mem_ctx, &pol_key, argv[1] );
+	result = rpccli_reg_save_key(pipe_hnd, mem_ctx, &pol_key, argv[1] );
 	if ( !W_ERROR_IS_OK(result) ) {
 		d_printf("Unable to save [%s] to %s:%s\n", argv[0], cli->desthost, argv[1]);
 	}
@@ -239,8 +246,8 @@ static NTSTATUS rpc_registry_save_internal( const DOM_SID *domain_sid, const cha
 	
 	/* cleanup */
 	
-	cli_reg_close( cli, mem_ctx, &pol_key );
-	cli_reg_close( cli, mem_ctx, &pol_hive );
+	rpccli_reg_close(pipe_hnd, mem_ctx, &pol_key );
+	rpccli_reg_close(pipe_hnd, mem_ctx, &pol_hive );
 
 	return werror_to_ntstatus(result);
 }
@@ -490,5 +497,3 @@ int net_rpc_registry(int argc, const char **argv)
 		
 	return net_help_registry( argc, argv );
 }
-
-

@@ -38,13 +38,68 @@ REGISTRY_HOOK reg_hooks[] = {
   { KEY_PRINTING,    		&printing_ops },
   { KEY_PRINTING_2K, 		&printing_ops },
   { KEY_PRINTING_PORTS, 	&printing_ops },
-#if 0
   { KEY_EVENTLOG,        	&eventlog_ops }, 
-#endif
   { KEY_SHARES,      		&shares_reg_ops },
 #endif
   { NULL, NULL }
 };
+
+
+static struct generic_mapping reg_generic_map = 
+	{ REG_KEY_READ, REG_KEY_WRITE, REG_KEY_EXECUTE, REG_KEY_ALL };
+
+/********************************************************************
+********************************************************************/
+
+static NTSTATUS registry_access_check( SEC_DESC *sec_desc, NT_USER_TOKEN *token, 
+                                     uint32 access_desired, uint32 *access_granted )
+{
+	NTSTATUS result;
+
+	if ( geteuid() == sec_initial_uid() ) {
+		DEBUG(5,("registry_access_check: using root's token\n"));
+		token = get_root_nt_token();
+	}
+
+	se_map_generic( &access_desired, &reg_generic_map );
+	se_access_check( sec_desc, token, access_desired, access_granted, &result );
+
+	return result;
+}
+
+/********************************************************************
+********************************************************************/
+
+static SEC_DESC* construct_registry_sd( TALLOC_CTX *ctx )
+{
+	SEC_ACE ace[2];	
+	SEC_ACCESS mask;
+	size_t i = 0;
+	SEC_DESC *sd;
+	SEC_ACL *acl;
+	size_t sd_size;
+
+	/* basic access for Everyone */
+	
+	init_sec_access(&mask, REG_KEY_READ );
+	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	
+	/* Full Access 'BUILTIN\Administrators' */
+	
+	init_sec_access(&mask, REG_KEY_ALL );
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	
+	
+	/* create the security descriptor */
+	
+	if ( !(acl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) )
+		return NULL;
+
+	if ( !(sd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, acl, &sd_size)) )
+		return NULL;
+
+	return sd;
+}
 
 
 /***********************************************************************
@@ -55,11 +110,12 @@ BOOL init_registry( void )
 {
 	int i;
 	
+	
 	if ( !init_registry_db() ) {
 		DEBUG(0,("init_registry: failed to initialize the registry tdb!\n"));
 		return False;
 	}
-		
+
 	/* build the cache tree of registry hooks */
 	
 	reghook_cache_init();
@@ -71,6 +127,14 @@ BOOL init_registry( void )
 
 	if ( DEBUGLEVEL >= 20 )
 		reghook_dump_cache(20);
+
+	/* inform the external eventlog machinery of the change */
+
+	eventlog_refresh_external_parameters( get_root_nt_token() );
+
+	/* add any services keys */
+
+	svcctl_init_keys();
 
 	return True;
 }
@@ -277,4 +341,70 @@ BOOL regkey_access_check( REGISTRY_KEY *key, uint32 requested, uint32 *granted, 
 	return key->hook->ops->reg_access_check( key->name, requested, granted, token );
 }
 
+/***********************************************************************
+***********************************************************************/
 
+WERROR regkey_open_internal( REGISTRY_KEY **regkey, const char *path, 
+                             NT_USER_TOKEN *token, uint32 access_desired )
+{
+	WERROR     	result = WERR_OK;
+	REGISTRY_KEY    *keyinfo;
+	REGSUBKEY_CTR	*subkeys = NULL;
+	uint32 access_granted;
+	
+	DEBUG(7,("regkey_open_internal: name = [%s]\n", path));
+
+	if ( !(*regkey = TALLOC_ZERO_P(NULL, REGISTRY_KEY)) )
+		return WERR_NOMEM;
+		
+	keyinfo = *regkey;
+		
+	/* initialization */
+	
+	keyinfo->type = REG_KEY_GENERIC;
+	keyinfo->name = talloc_strdup( keyinfo, path );
+	
+	
+	/* Tag this as a Performance Counter Key */
+
+	if( StrnCaseCmp(path, KEY_HKPD, strlen(KEY_HKPD)) == 0 )
+		keyinfo->type = REG_KEY_HKPD;
+	
+	/* Look up the table of registry I/O operations */
+
+	if ( !(keyinfo->hook = reghook_cache_find( keyinfo->name )) ) {
+		DEBUG(0,("open_registry_key: Failed to assigned a REGISTRY_HOOK to [%s]\n",
+			keyinfo->name ));
+		result = WERR_BADFILE;
+		goto done;
+	}
+	
+	/* check if the path really exists; failed is indicated by -1 */
+	/* if the subkey count failed, bail out */
+
+	if ( !(subkeys = TALLOC_ZERO_P( keyinfo, REGSUBKEY_CTR )) ) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+
+	if ( fetch_reg_keys( keyinfo, subkeys ) == -1 )  {
+		result = WERR_BADFILE;
+		goto done;
+	}
+	
+	TALLOC_FREE( subkeys );
+
+	if ( !regkey_access_check( keyinfo, access_desired, &access_granted, token ) ) {
+		result = WERR_ACCESS_DENIED;
+		goto done;
+	}
+	
+	keyinfo->access_granted = access_granted;
+
+done:
+	if ( !W_ERROR_IS_OK(result) ) {
+		TALLOC_FREE( *regkey );
+	}
+
+	return result;
+}

@@ -80,7 +80,8 @@ static BOOL in_chained_smb(void)
 	return (chain_size != 0);
 }
 
-static void received_unlock_msg(int msg_type, pid_t src, void *buf, size_t len);
+static void received_unlock_msg(int msg_type, struct process_id src,
+				void *buf, size_t len);
 
 /****************************************************************************
  Function to push a blocking lock request onto the lock queue.
@@ -127,7 +128,7 @@ BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout,
 
 	/* Add a pending lock record for this. */
 	status = brl_lock(blr->fsp->dev, blr->fsp->inode, blr->fsp->fnum,
-			lock_pid, sys_getpid(), blr->fsp->conn->cnum,
+			lock_pid, procid_self(), blr->fsp->conn->cnum,
 			offset, count, PENDING_LOCK, &my_lock_ctx);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -351,8 +352,8 @@ static BOOL process_lockread(blocking_lock_record *blr)
 	SSVAL(p,0,nread); p += 2;
 	set_message_end(outbuf, p+nread);
 	
-	DEBUG(3, ( "process_lockread file = %s, fnum=%d num=%d nread=%d\n",
-		   fsp->fsp_name, fsp->fnum, (int)numtoread, (int)nread ) );
+	DEBUG(3, ( "process_lockread file = %s, fnum=%d num=%lu nread=%ld\n",
+		   fsp->fsp_name, fsp->fnum, (unsigned long)numtoread, (long)nread ) );
 	
 	send_blocking_reply(outbuf,outsize);
 	return True;
@@ -526,7 +527,7 @@ void remove_pending_lock_requests_by_fid(files_struct *fsp)
 file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 
 			brl_unlock(blr->fsp->dev, blr->fsp->inode, blr->fsp->fnum,
-				blr->lock_pid, sys_getpid(), blr->fsp->conn->cnum,
+				blr->lock_pid, procid_self(), blr->fsp->conn->cnum,
 				blr->offset, blr->count, True, NULL, NULL);
 
 			free_blocking_lock_record(blr);
@@ -552,7 +553,7 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 
 			blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
 			brl_unlock(blr->fsp->dev, blr->fsp->inode, blr->fsp->fnum,
-				blr->lock_pid, sys_getpid(), blr->fsp->conn->cnum,
+				blr->lock_pid, procid_self(), blr->fsp->conn->cnum,
 				blr->offset, blr->count, True, NULL, NULL);
 			free_blocking_lock_record(blr);
 		}
@@ -563,7 +564,8 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
   Set a flag as an unlock request affects one of our pending locks.
 *****************************************************************************/
 
-static void received_unlock_msg(int msg_type, pid_t src, void *buf, size_t len)
+static void received_unlock_msg(int msg_type, struct process_id src,
+				void *buf, size_t len)
 {
 	DEBUG(10,("received_unlock_msg\n"));
 	process_blocking_lock_queue(time(NULL));
@@ -641,7 +643,7 @@ void process_blocking_lock_queue(time_t t)
 				fsp->fnum, fsp->fsp_name ));
 
 			brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-				blr->lock_pid, sys_getpid(), conn->cnum,
+				blr->lock_pid, procid_self(), conn->cnum,
 				blr->offset, blr->count, True, NULL, NULL);
 
 			blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
@@ -658,7 +660,7 @@ void process_blocking_lock_queue(time_t t)
 			blocking_lock_reply_error(blr,NT_STATUS_ACCESS_DENIED);
 
 			brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-					blr->lock_pid, sys_getpid(), conn->cnum,
+					blr->lock_pid, procid_self(), conn->cnum,
 					blr->offset, blr->count, True, NULL, NULL);
 
 			free_blocking_lock_record(blr);
@@ -673,7 +675,7 @@ void process_blocking_lock_queue(time_t t)
 			blocking_lock_reply_error(blr,NT_STATUS_ACCESS_DENIED);
 
 			brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-					blr->lock_pid, sys_getpid(), conn->cnum,
+					blr->lock_pid, procid_self(), conn->cnum,
 					blr->offset, blr->count, True, NULL, NULL);
 
 			free_blocking_lock_record(blr);
@@ -690,7 +692,7 @@ void process_blocking_lock_queue(time_t t)
 		if(blocking_lock_record_process(blr)) {
 
 			brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-					blr->lock_pid, sys_getpid(), conn->cnum,
+					blr->lock_pid, procid_self(), conn->cnum,
 					blr->offset, blr->count, True, NULL, NULL);
 
 			free_blocking_lock_record(blr);

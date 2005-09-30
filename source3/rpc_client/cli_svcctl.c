@@ -61,7 +61,7 @@ const char* svc_status_string( uint32 state )
 /********************************************************************
 ********************************************************************/
 
-WERROR cli_svcctl_open_scm( struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+WERROR rpccli_svcctl_open_scm(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
                               POLICY_HND *hSCM, uint32 access_desired )
 {
 	SVCCTL_Q_OPEN_SCMANAGER in;
@@ -80,12 +80,12 @@ WERROR cli_svcctl_open_scm( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	if ( !(in.servername = TALLOC_P( mem_ctx, UNISTR2 )) )
 		return WERR_NOMEM;
-	fstr_sprintf( server, "\\\\%s", cli->desthost );
+	fstr_sprintf( server, "\\\\%s", cli->cli->desthost );
 	init_unistr2( in.servername, server, UNI_STR_TERMINATE );
 
 	in.access = access_desired;
 	
-	CLI_DO_RPC( cli, mem_ctx, PI_SVCCTL, SVCCTL_OPEN_SCMANAGER_W, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SVCCTL, SVCCTL_OPEN_SCMANAGER_W, 
 	            in, out, 
 	            qbuf, rbuf,
 	            svcctl_io_q_open_scmanager,
@@ -103,7 +103,7 @@ WERROR cli_svcctl_open_scm( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /********************************************************************
 ********************************************************************/
 
-WERROR cli_svcctl_open_service( struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+WERROR rpccli_svcctl_open_service( struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
                                 POLICY_HND *hSCM, POLICY_HND *hService, 
 				const char *servicename, uint32 access_desired )
 {
@@ -118,7 +118,7 @@ WERROR cli_svcctl_open_service( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_unistr2( &in.servicename, servicename, UNI_STR_TERMINATE );
 	in.access = access_desired;
 	
-	CLI_DO_RPC( cli, mem_ctx, PI_SVCCTL, SVCCTL_OPEN_SERVICE_W, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SVCCTL, SVCCTL_OPEN_SERVICE_W, 
 	            in, out, 
 	            qbuf, rbuf,
 	            svcctl_io_q_open_service,
@@ -136,7 +136,7 @@ WERROR cli_svcctl_open_service( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /********************************************************************
 ********************************************************************/
 
-WERROR cli_svcctl_close_service( struct cli_state *cli, TALLOC_CTX *mem_ctx, POLICY_HND *hService )
+WERROR rpccli_svcctl_close_service(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, POLICY_HND *hService )
 {
 	SVCCTL_Q_CLOSE_SERVICE in;
 	SVCCTL_R_CLOSE_SERVICE out;
@@ -147,7 +147,7 @@ WERROR cli_svcctl_close_service( struct cli_state *cli, TALLOC_CTX *mem_ctx, POL
 	
 	memcpy( &in.handle, hService, sizeof(POLICY_HND) );
 	
-	CLI_DO_RPC( cli, mem_ctx, PI_SVCCTL, SVCCTL_CLOSE_SERVICE, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SVCCTL, SVCCTL_CLOSE_SERVICE, 
 	            in, out, 
 	            qbuf, rbuf,
 	            svcctl_io_q_close_service,
@@ -160,7 +160,7 @@ WERROR cli_svcctl_close_service( struct cli_state *cli, TALLOC_CTX *mem_ctx, POL
 /*******************************************************************
 *******************************************************************/
 
-WERROR cli_svcctl_enumerate_services( struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_svcctl_enumerate_services( struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                                       POLICY_HND *hSCM, uint32 type, uint32 state, 
 				      uint32 *returned, ENUM_SERVICES_STATUS **service_array  )
 {
@@ -185,7 +185,7 @@ WERROR cli_svcctl_enumerate_services( struct cli_state *cli, TALLOC_CTX *mem_ctx
 	/* first time is to get the buffer size */
 	in.buffer_size = 0;
 
-	CLI_DO_RPC( cli, mem_ctx, PI_SVCCTL, SVCCTL_ENUM_SERVICES_STATUS_W, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SVCCTL, SVCCTL_ENUM_SERVICES_STATUS_W, 
 	            in, out, 
 	            qbuf, rbuf,
 	            svcctl_io_q_enum_services_status,
@@ -197,7 +197,7 @@ WERROR cli_svcctl_enumerate_services( struct cli_state *cli, TALLOC_CTX *mem_ctx
 	if ( W_ERROR_EQUAL( out.status, WERR_MORE_DATA ) ) {
 		in.buffer_size = out.needed;
 
-		CLI_DO_RPC( cli, mem_ctx, PI_SVCCTL, SVCCTL_ENUM_SERVICES_STATUS_W, 
+		CLI_DO_RPC_WERR( cli, mem_ctx, PI_SVCCTL, SVCCTL_ENUM_SERVICES_STATUS_W, 
 		            in, out, 
 		            qbuf, rbuf,
 		            svcctl_io_q_enum_services_status,
@@ -225,7 +225,7 @@ WERROR cli_svcctl_enumerate_services( struct cli_state *cli, TALLOC_CTX *mem_ctx
 /*******************************************************************
 *******************************************************************/
 
-WERROR cli_svcctl_query_status( struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_svcctl_query_status( struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                                 POLICY_HND *hService, SERVICE_STATUS *status )
 {
 	SVCCTL_Q_QUERY_STATUS in;
@@ -237,7 +237,7 @@ WERROR cli_svcctl_query_status( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	memcpy( &in.handle, hService, sizeof(POLICY_HND) );
 	
-	CLI_DO_RPC( cli, mem_ctx, PI_SVCCTL, SVCCTL_QUERY_STATUS, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SVCCTL, SVCCTL_QUERY_STATUS, 
 	            in, out, 
 	            qbuf, rbuf,
 	            svcctl_io_q_query_status,
@@ -255,7 +255,7 @@ WERROR cli_svcctl_query_status( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /*******************************************************************
 *******************************************************************/
 
-WERROR cli_svcctl_query_config(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_svcctl_query_config(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                                 POLICY_HND *hService, SERVICE_CONFIG *config )
 {
 	SVCCTL_Q_QUERY_SERVICE_CONFIG in;
@@ -269,7 +269,7 @@ WERROR cli_svcctl_query_config(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	in.buffer_size = 0;
 	
 	
-	CLI_DO_RPC( cli, mem_ctx, PI_SVCCTL, SVCCTL_QUERY_SERVICE_CONFIG_W, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SVCCTL, SVCCTL_QUERY_SERVICE_CONFIG_W, 
 	            in, out, 
 	            qbuf, rbuf,
 	            svcctl_io_q_query_service_config,
@@ -279,7 +279,7 @@ WERROR cli_svcctl_query_config(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if ( W_ERROR_EQUAL( out.status, WERR_INSUFFICIENT_BUFFER ) ) {
 		in.buffer_size = out.needed;
 
-		CLI_DO_RPC( cli, mem_ctx, PI_SVCCTL, SVCCTL_QUERY_SERVICE_CONFIG_W,
+		CLI_DO_RPC_WERR( cli, mem_ctx, PI_SVCCTL, SVCCTL_QUERY_SERVICE_CONFIG_W,
 		            in, out, 
 		            qbuf, rbuf,
 		            svcctl_io_q_query_service_config,
@@ -298,11 +298,30 @@ WERROR cli_svcctl_query_config(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	config->startname      = TALLOC_ZERO_P( mem_ctx, UNISTR2 );
 	config->displayname    = TALLOC_ZERO_P( mem_ctx, UNISTR2 );
 	
-	copy_unistr2( config->executablepath, out.config.executablepath );
-	copy_unistr2( config->loadordergroup, out.config.loadordergroup );
-	copy_unistr2( config->dependencies, out.config.dependencies );
-	copy_unistr2( config->startname, out.config.startname );
-	copy_unistr2( config->displayname, out.config.displayname );
+	if ( out.config.executablepath ) {
+		config->executablepath = TALLOC_ZERO_P( mem_ctx, UNISTR2 );
+		copy_unistr2( config->executablepath, out.config.executablepath );
+	}
+
+	if ( out.config.loadordergroup ) {
+		config->loadordergroup = TALLOC_ZERO_P( mem_ctx, UNISTR2 );
+		copy_unistr2( config->loadordergroup, out.config.loadordergroup );
+	}
+
+	if ( out.config.dependencies ) {
+		config->dependencies = TALLOC_ZERO_P( mem_ctx, UNISTR2 );
+		copy_unistr2( config->dependencies, out.config.dependencies );
+	}
+
+	if ( out.config.startname ) {
+		config->startname = TALLOC_ZERO_P( mem_ctx, UNISTR2 );
+		copy_unistr2( config->startname, out.config.startname );
+	}
+
+	if ( out.config.displayname ) {
+		config->displayname = TALLOC_ZERO_P( mem_ctx, UNISTR2 );
+		copy_unistr2( config->displayname, out.config.displayname );
+	}
 	
 	return out.status;
 }
@@ -310,7 +329,7 @@ WERROR cli_svcctl_query_config(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /*******************************************************************
 *******************************************************************/
 
-WERROR cli_svcctl_start_service( struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_svcctl_start_service( struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                                  POLICY_HND *hService,
                                  const char **parm_array, uint32 parmcount )
 {
@@ -326,7 +345,7 @@ WERROR cli_svcctl_start_service( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	in.parmcount  = 0;
 	in.parameters = NULL;
 	
-	CLI_DO_RPC( cli, mem_ctx, PI_SVCCTL, SVCCTL_START_SERVICE_W,
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SVCCTL, SVCCTL_START_SERVICE_W,
 	            in, out, 
 	            qbuf, rbuf,
 	            svcctl_io_q_start_service,
@@ -339,7 +358,7 @@ WERROR cli_svcctl_start_service( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /*******************************************************************
 *******************************************************************/
 
-WERROR cli_svcctl_control_service( struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_svcctl_control_service( struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                                    POLICY_HND *hService, uint32 control,
 				   SERVICE_STATUS *status )
 {
@@ -353,7 +372,7 @@ WERROR cli_svcctl_control_service( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	memcpy( &in.handle, hService, sizeof(POLICY_HND) );
 	in.control = control;
 	
-	CLI_DO_RPC( cli, mem_ctx, PI_SVCCTL, SVCCTL_CONTROL_SERVICE, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SVCCTL, SVCCTL_CONTROL_SERVICE, 
 	            in, out, 
 	            qbuf, rbuf,
 	            svcctl_io_q_control_service,
@@ -372,7 +391,7 @@ WERROR cli_svcctl_control_service( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /*******************************************************************
 *******************************************************************/
 
-WERROR cli_svcctl_get_dispname( struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+WERROR rpccli_svcctl_get_dispname( struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
                                 POLICY_HND *hService, fstring displayname )
 {
 	SVCCTL_Q_GET_DISPLAY_NAME in;
@@ -385,7 +404,7 @@ WERROR cli_svcctl_get_dispname( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	memcpy( &in.handle, hService, sizeof(POLICY_HND) );
 	in.display_name_len = 0;
 	
-	CLI_DO_RPC( cli, mem_ctx, PI_SVCCTL, SVCCTL_GET_DISPLAY_NAME, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SVCCTL, SVCCTL_GET_DISPLAY_NAME, 
 	            in, out, 
 	            qbuf, rbuf,
 	            svcctl_io_q_get_display_name,
@@ -397,7 +416,7 @@ WERROR cli_svcctl_get_dispname( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if ( W_ERROR_EQUAL( out.status, WERR_INSUFFICIENT_BUFFER ) ) {
 		in.display_name_len = out.display_name_len;
 
-		CLI_DO_RPC( cli, mem_ctx, PI_SVCCTL, SVCCTL_GET_DISPLAY_NAME, 
+		CLI_DO_RPC_WERR( cli, mem_ctx, PI_SVCCTL, SVCCTL_GET_DISPLAY_NAME, 
 		            in, out, 
 		            qbuf, rbuf,
 		            svcctl_io_q_get_display_name,
@@ -412,4 +431,3 @@ WERROR cli_svcctl_get_dispname( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	return out.status;
 }
-

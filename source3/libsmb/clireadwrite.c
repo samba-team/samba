@@ -323,13 +323,13 @@ static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset,
               0x0008 start of message mode named pipe protocol
 ****************************************************************************/
 
-size_t cli_write(struct cli_state *cli,
+ssize_t cli_write(struct cli_state *cli,
     	         int fnum, uint16 write_mode,
 		 const char *buf, off_t offset, size_t size)
 {
-	int bwritten = 0;
-	int issued = 0;
-	int received = 0;
+	ssize_t bwritten = 0;
+	unsigned int issued = 0;
+	unsigned int received = 0;
 	int mpx = 1;
 	int block = cli->max_xmit - (smb_size+32);
 	int blocks = (size + (block-1)) / block;
@@ -343,8 +343,8 @@ size_t cli_write(struct cli_state *cli,
 	while (received < blocks) {
 
 		while ((issued - received < mpx) && (issued < blocks)) {
-			int bsent = issued * block;
-			int size1 = MIN(block, size - bsent);
+			ssize_t bsent = issued * block;
+			ssize_t size1 = MIN(block, size - bsent);
 
 			if (!cli_issue_write(cli, fnum, offset + bsent,
 			                write_mode,
