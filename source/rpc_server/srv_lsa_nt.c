@@ -805,16 +805,11 @@ NTSTATUS _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIV
 	struct lsa_info *handle;
 	uint32 i;
 	uint32 enum_context = q_u->enum_context;
-	int num_privs = 0;
+	int num_privs = count_all_privileges();
 	LSA_PRIV_ENTRY *entries = NULL;
 	LUID_ATTR luid;
 
 	/* remember that the enum_context starts at 0 and not 1 */
-
-	if ( lp_enable_privileges() )
-		num_privs = count_all_privileges();
-	else
-		DEBUG(2,("_lsa_enum_privs: client trying to enumerate privileges by not enabled in smb.conf!\n"));
 
 	if ( enum_context >= num_privs )
 		return NT_STATUS_NO_MORE_ENTRIES;

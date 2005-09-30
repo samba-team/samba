@@ -63,6 +63,7 @@ RPCLIBDIR = $(LIBDIR)/rpc
 IDMAPLIBDIR = $(LIBDIR)/idmap
 CHARSETLIBDIR = $(LIBDIR)/charset
 AUTHLIBDIR = $(LIBDIR)/auth
+CONFIGLIBDIR = $(LIBDIR)/config
 CONFIGDIR = @configdir@
 VARDIR = @localstatedir@
 MANDIR = @mandir@
@@ -101,8 +102,7 @@ LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
 LIBSMBSHAREMODES_MAJOR=0
 LIBSMBSHAREMODES_MINOR=1
 
-
-FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx @SMBWRAP_INC@ -I. $(CPPFLAGS) -I$(srcdir) -I$(srcdir)/tdb
+FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/tdb @SMBWRAP_INC@ -I. $(CPPFLAGS) -I$(srcdir)
 FLAGS2 = 
 FLAGS3 = 
 FLAGS4 = 
@@ -199,12 +199,12 @@ LIB_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/talloc.o lib/substitute.o lib/fsusage.o \
 	  lib/ms_fnmatch.o lib/select.o lib/messages.o \
 	  lib/tallocmsg.o lib/dmallocmsg.o libsmb/smb_signing.o \
-	  lib/md5.o lib/hmacmd5.o lib/iconv.o \
+	  lib/md5.o lib/hmacmd5.o lib/arc4.o lib/iconv.o \
 	  nsswitch/wb_client.o $(WBCOMMON_OBJ) \
-	  lib/pam_errors.o intl/lang_tdb.o lib/account_pol.o \
+	  lib/pam_errors.o intl/lang_tdb.o \
 	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
 	  lib/module.o lib/ldap_escape.o @CHARSET_STATIC@ \
-	  lib/privileges.o lib/secdesc.o lib/secace.o lib/secacl.o @SOCKWRAP@
+	  lib/secdesc.o lib/secace.o lib/secacl.o @SOCKWRAP@
 
 LIB_DUMMY_OBJ = lib/dummysmbd.o lib/dummyroot.o
 LIB_NONSMBD_OBJ = $(LIB_OBJ) $(LIB_DUMMY_OBJ)
@@ -256,13 +256,13 @@ LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       rpc_client/cli_reg.o $(RPC_CLIENT_OBJ) \
 	       rpc_client/cli_spoolss.o rpc_client/cli_spoolss_notify.o  \
 	       rpc_client/cli_ds.o rpc_client/cli_echo.o \
-	       rpc_client/cli_shutdown.o rpc_client/cli_svcctl.o
+	       rpc_client/cli_shutdown.o rpc_client/cli_svcctl.o 
 
 REGOBJS_OBJ = registry/reg_objects.o
 
 REGISTRY_OBJ = registry/reg_frontend.o registry/reg_cachehook.o registry/reg_printing.o \
                registry/reg_db.o registry/reg_eventlog.o registry/reg_shares.o \
-               registry/reg_util.o registry/reg_dynamic.o
+               registry/reg_util.o registry/reg_dynamic.o registry/reg_perfcount.o
 
 RPC_LSA_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o
 
@@ -282,7 +282,10 @@ RPC_SVC_OBJ = rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o
 RPC_WKS_OBJ =  rpc_server/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o
 
 RPC_SVCCTL_OBJ =  rpc_server/srv_svcctl.o rpc_server/srv_svcctl_nt.o \
-                  services/svc_spoolss.o services/svc_rcinit.o services/services_db.o
+                  services/svc_spoolss.o services/svc_rcinit.o services/services_db.o \
+                  services/svc_netlogon.o services/svc_winreg.o
+
+RPC_NTSVCS_OBJ = rpc_server/srv_ntsvcs.o rpc_server/srv_ntsvcs_nt.o
 
 RPC_DFS_OBJ =  rpc_server/srv_dfs.o rpc_server/srv_dfs_nt.o
 
@@ -308,7 +311,8 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
 		rpc_parse/parse_spoolss.o rpc_parse/parse_dfs.o \
 		rpc_parse/parse_echo.o rpc_parse/parse_shutdown.o \
 		rpc_parse/parse_svcctl.o \
-		rpc_parse/parse_eventlog.o rpc_parse/parse_buffer.o $(REGOBJS_OBJ)
+		rpc_parse/parse_eventlog.o rpc_parse/parse_buffer.o \
+                rpc_parse/parse_ntsvcs.o $(REGOBJS_OBJ)
 
 RPC_CLIENT_OBJ = rpc_client/cli_pipe.o
 
@@ -320,7 +324,7 @@ PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/util_sam_sid.o passdb/pdb_compat.o \
 		passdb/lookup_sid.o \
 		passdb/login_cache.o @PDB_STATIC@ passdb/pdb_sql.o \
-		lib/system_smbd.o
+		lib/system_smbd.o lib/account_pol.o lib/privileges.o
 
 XML_OBJ = passdb/pdb_xml.o
 MYSQL_OBJ = passdb/pdb_mysql.o
@@ -414,8 +418,7 @@ PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/print_aix.o \
                printing/print_iprint.o
 
 PRINTBASE_OBJ = printing/notify.o printing/printing_db.o
-
-PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o $(PRINTBASE_OBJ)
+PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o $(PRINTBASE_OBJ) 
 
 SMBD_OBJ = $(SMBD_OBJ_BASE) $(SMBD_OBJ_MAIN)
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
@@ -432,7 +435,7 @@ NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
             nmbd/nmbd_workgroupdb.o nmbd/nmbd_synclists.o
 
 NMBD_OBJ = $(NMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(UBIQX_OBJ) \
-           $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ) 
+           $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ)
 
 WREPL_OBJ1 = wrepld/server.o wrepld/process.o wrepld/parser.o wrepld/socket.o \
              wrepld/partners.o
@@ -487,7 +490,8 @@ RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_lsarpc.o \
 		 rpcclient/cmd_netlogon.o rpcclient/cmd_srvsvc.o \
 		 rpcclient/cmd_dfs.o rpcclient/cmd_reg.o \
 		 rpcclient/display_sec.o rpcclient/cmd_ds.o \
-		 rpcclient/cmd_echo.o rpcclient/cmd_shutdown.o
+		 rpcclient/cmd_echo.o rpcclient/cmd_shutdown.o \
+		 rpcclient/cmd_test.o 
 
 RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) \
@@ -520,11 +524,6 @@ LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o libsmb/libsmb_compat.o \
 		   $(SECRETS_OBJ) $(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ)
 
 LIBSMBSHAREMODES_OBJ = libsmb/smb_share_modes.o tdb/tdb.o tdb/spinlock.o
-
-CAC_OBJ = $(LIBSMBCLIENT_OBJ) \
-          libmsrpc/libmsrpc.o libmsrpc/libmsrpc_internal.o \
-          libmsrpc/cac_lsarpc.o libmsrpc/cac_winreg.o libmsrpc/cac_samr.o \
-          libmsrpc/cac_svcctl.o
 
 # This shared library is intended for linking with unit test programs
 # to test Samba internals.  It's called libbigballofmud.so to
@@ -561,7 +560,7 @@ NET_OBJ = $(NET_OBJ1) $(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(LIBMSRPC_OBJ) $(IDMAP_OBJ) \
 	  $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) $(POPT_LIB_OBJ) \
 	  $(SMBLDAP_OBJ) $(DCUTIL_OBJ) $(SERVER_MUTEX_OBJ) \
-	  $(AFS_OBJ) $(AFS_SETTOKEN_OBJ) $(PRINTERDB_OBJ) $(REGFIO_OBJ)
+	  $(AFS_OBJ) $(AFS_SETTOKEN_OBJ) $(REGFIO_OBJ)
 
 CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) $(SECRETS_OBJ)
@@ -644,7 +643,8 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) \
 	    $(RPC_LSA_OBJ) $(RPC_NETLOG_OBJ) $(RPC_SAMR_OBJ) $(RPC_REG_OBJ) $(RPC_LSA_DS_OBJ) \
 	    $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) $(RPC_SPOOLSS_OBJ) \
 	    $(RPC_ECHO_OBJ) $(RPC_SVCCTL_OBJ) $(RPC_EVENTLOG_OBJ) $(SMBLDAP_OBJ) \
-            $(IDMAP_OBJ) libsmb/spnego.o $(PASSCHANGE_OBJ)
+            $(IDMAP_OBJ) libsmb/spnego.o $(PASSCHANGE_OBJ) \
+            $(RPC_NTSVCS_OBJ)
 
 WINBIND_WINS_NSS_OBJ = nsswitch/wins.o $(PARAM_OBJ) \
 	$(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(NSSWINS_OBJ) $(KRBCLIENT_OBJ)
@@ -654,8 +654,6 @@ WINBIND_WINS_NSS_PICOBJS = $(WINBIND_WINS_NSS_OBJ:.o=.@PICSUFFIX@)
 PICOBJS = $(SMBWRAPPER_OBJ:.o=.@PICSUFFIX@)
 LIBSMBCLIENT_PICOBJS = $(LIBSMBCLIENT_OBJ:.o=.@PICSUFFIX@)
 LIBSMBSHAREMODES_PICOBJS = $(LIBSMBSHAREMODES_OBJ:.o=.@PICSUFFIX@)
-
-CAC_PICOBJS = $(CAC_OBJ:.o=.@PICSUFFIX@)
 
 PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
                pam_smbpass/pam_smb_acct.o pam_smbpass/support.o \
@@ -715,7 +713,7 @@ NTLM_AUTH_OBJ = ${NTLM_AUTH_OBJ1} $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
 		libsmb/asn1.o libsmb/spnego.o libsmb/clikrb5.o libads/kerberos.o \
 		libads/kerberos_verify.o $(SECRETS_OBJ) $(SERVER_MUTEX_OBJ) \
 		libads/authdata.o $(RPC_PARSE_OBJ0) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-		$(SMBLDAP_OBJ) $(DOSERR_OBJ)
+		$(SMBLDAP_OBJ) $(DOSERR_OBJ) rpc_parse/parse_net.o
 
 ######################################################################
 # now the rules...
@@ -760,9 +758,7 @@ wins : SHOWFLAGS @WINBIND_WINS_NSS@
 
 modules: SHOWFLAGS proto_exists $(MODULES)
 
-cac: SHOWFLAGS bin/libmsrpc.@SHLIBEXT@ bin/libmsrpc.a
-
-everything: all libsmbclient debug2html smbfilter talloctort modules torture cac \
+everything: all libsmbclient debug2html smbfilter talloctort modules torture \
 	$(EVERYTHING_PROGS)
 
 .SUFFIXES:
@@ -1045,16 +1041,6 @@ bin/libsmbsharemodes.a: $(LIBSMBSHAREMODES_PICOBJS)
 	@echo Linking libsmbsharemodes non-shared library $@
 	@-$(AR) -rc $@ $(LIBSMBSHAREMODES_PICOBJS)
 
-bin/libmsrpc.@SHLIBEXT@: $(CAC_PICOBJS)
-	@echo Linking libmsrpc shared library $@
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(CAC_PICOBJS) $(LDFLAGS) $(LIBS) \
-	@SONAMEFLAG@`basename $@`
-
-bin/libmsrpc.a: $(CAC_PICOBJS)
-	@echo Linking libmsrpc non-shared library $@
-	@-$(AR) -rc $@ $(CAC_PICOBJS)
-
-
 # This is probably wrong for anything other than the GNU linker. 
 bin/libbigballofmud.@SHLIBEXT@: $(LIBBIGBALLOFMUD_PICOBJS)
 	@echo Linking bigballofmud shared library $@
@@ -1089,6 +1075,11 @@ bin/librpc_srvsvc.@SHLIBEXT@: $(RPC_SVC_OBJ)
 bin/librpc_svcctl.@SHLIBEXT@: $(RPC_SVCCTL_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_SVCCTL_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
+
+bin/librpc_ntsvcs.@SHLIBEXT@: $(RPC_NTSVCS_OBJ)
+	@echo "Linking $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_NTSVCS_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
 bin/librpc_wkssvc.@SHLIBEXT@: $(RPC_WKS_OBJ)
@@ -1328,6 +1319,9 @@ bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_PICOOBJ)
 	@echo "Linking shared library $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_SMBPASS_PICOOBJ) -lpam $(DYNEXP) $(LIBS) -lc $(LDAP_LIBS) $(KRB5LIBS)
 
+bin/libmsrpc.a: $(LIBMSRPC_PICOBJ)
+	@-$(AR) -rc $@ $(LIBMSRPC_PICOBJ) 
+
 bin/tdbbackup@EXEEXT@: $(TDBBACKUP_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(LDFLAGS) $(DYNEXP) $(LIBS) $(TDBBACKUP_OBJ) @SOCKWRAP@
@@ -1345,6 +1339,9 @@ bin/t_strcmp@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_strcmp.o
 
 bin/t_strstr@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_strstr.o
 	$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(DYNEXP) $(LIBS) torture/t_strstr.o -L ./bin -lbigballofmud
+
+bin/t_strappend@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_strappend.o
+	$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(DYNEXP) $(LIBS) torture/t_strappend.o -L ./bin -lbigballofmud
 
 bin/t_stringoverflow@EXEEXT@: bin/libbigballofmud.@SHLIBEXT@ torture/t_stringoverflow.o
 	$(CC) $(FLAGS) @PIE_LDFLAGS@ -o $@ $(DYNEXP) torture/t_stringoverflow.o -L./bin -lbigballofmud
@@ -1634,7 +1631,7 @@ Makefile: $(srcdir)/Makefile.in config.status
 # These are called by the test suite and need to be built before
 # running it.  For the time being we don't build all of BIN_PROGS,
 # because they're not all needed.
-check-programs: bin/t_strcmp bin/t_strstr bin/t_push_ucs2 bin/smbcontrol bin/t_snprintf
+# check-programs: bin/t_strcmp bin/t_strstr bin/t_push_ucs2 bin/smbcontrol bin/t_snprintf bin/t_asn1
 
 #test: all
 #	@if test -z "$(SMB4TORTURE)"; then \

@@ -24,7 +24,6 @@
 extern int max_send;
 extern enum protocol_types Protocol;
 extern int smb_read_error;
-extern int global_oplock_break;
 extern struct current_user current_user;
 
 static const char *known_nt_pipes[] = {
@@ -43,6 +42,7 @@ static const char *known_nt_pipes[] = {
 	"\\rpcecho",
         "\\svcctl",
 	"\\eventlog",
+	"\\unixinfo",
 	NULL
 };
 
@@ -861,7 +861,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n",
 		} else {
 			SCVAL(p,0, EXCLUSIVE_OPLOCK_RETURN);
 		}
-	} else if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type)) {
+	} else if (fsp->oplock_type == LEVEL_II_OPLOCK) {
 		SCVAL(p,0, LEVEL_II_OPLOCK_RETURN);
 	} else {
 		SCVAL(p,0,NO_OPLOCK_RETURN);
@@ -1666,11 +1666,11 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 			&info);
 
 	if (!fsp1) {
-		get_saved_error_triple(NULL, NULL, &status);
+		status = get_saved_ntstatus();
 		if (NT_STATUS_IS_OK(status)) {
 			status = NT_STATUS_ACCESS_DENIED;
 		}
-		set_saved_error_triple(0, 0, NT_STATUS_OK);
+		set_saved_ntstatus(NT_STATUS_OK);
 		return status;
 	}
 
@@ -1684,11 +1684,11 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 			&info);
 
 	if (!fsp2) {
-		get_saved_error_triple(NULL, NULL, &status);
+		status = get_saved_ntstatus();
 		if (NT_STATUS_IS_OK(status)) {
 			status = NT_STATUS_ACCESS_DENIED;
 		}
-		set_saved_error_triple(0, 0, NT_STATUS_OK);
+		set_saved_ntstatus(NT_STATUS_OK);
 		close_file(fsp1,False);
 		return status;
 	}
@@ -1989,7 +1989,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn, char *i
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
 	}
 
-	DEBUG(3,("call_nt_transact_query_security_desc: sd_size = %d.\n",(int)sd_size));
+	DEBUG(3,("call_nt_transact_query_security_desc: sd_size = %lu.\n",(unsigned long)sd_size));
 
 	SIVAL(params,0,(uint32)sd_size);
 
@@ -2742,21 +2742,6 @@ int reply_nttrans(connection_struct *conn,
 	char *params = NULL, *data = NULL, *setup = NULL;
 	uint32 num_params_sofar, num_data_sofar;
 	START_PROFILE(SMBnttrans);
-
-	if(global_oplock_break &&
-			((function_code == NT_TRANSACT_CREATE) ||
-			 (function_code == NT_TRANSACT_RENAME))) {
-		/*
-		 * Queue this open message as we are the process of an oplock break.
-		 */
-
-		DEBUG(2,("reply_nttrans: queueing message code 0x%x \
-due to being in oplock break state.\n", (unsigned int)function_code ));
-
-		push_oplock_pending_smb_message( inbuf, length);
-		END_PROFILE(SMBnttrans);
-		return -1;
-	}
 
 	if (IS_IPC(conn) && (function_code != NT_TRANSACT_CREATE)) {
 		END_PROFILE(SMBnttrans);

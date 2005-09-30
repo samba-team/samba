@@ -308,32 +308,6 @@ void SMBsesskeygen_ntv1(const uchar kr[16],
 #endif
 }
 
-void SMBsesskeygen_lmv1(const uchar lm_hash[16],
-			const uchar lm_resp[24], /* only uses 8 */ 
-			uint8 sess_key[16])
-{
-	/* Calculate the LM session key (effective length 40 bits,
-	   but changes with each session) */
-
-	uchar p24[24];
-	uchar partial_lm_hash[16];
-	
-	memcpy(partial_lm_hash, lm_hash, 8);
-	memset(partial_lm_hash + 8, 0xbd, 8);    
-
-	SMBOWFencrypt(lm_hash, lm_resp, p24);
-	
-	memcpy(sess_key, p24, 16);
-	sess_key[5] = 0xe5;
-	sess_key[6] = 0x38;
-	sess_key[7] = 0xb0;
-
-#ifdef DEBUG_PASSWORD
-	DEBUG(100, ("SMBsesskeygen_lmv1:\n"));
-	dump_data(100, sess_key, 16);
-#endif
-}
-
 void SMBsesskeygen_lm_sess_key(const uchar lm_hash[16],
 			const uchar lm_resp[24], /* only uses 8 */ 
 			uint8 sess_key[16])
@@ -485,7 +459,7 @@ BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password
  encode a password buffer with a unicode password.  The buffer
  is filled with random data to make it harder to attack.
 ************************************************************/
-BOOL encode_pw_buffer(char buffer[516], const char *password, int string_flags)
+BOOL encode_pw_buffer(uint8 buffer[516], const char *password, int string_flags)
 {
 	uchar new_pw[512];
 	size_t new_pw_len;
@@ -496,7 +470,7 @@ BOOL encode_pw_buffer(char buffer[516], const char *password, int string_flags)
 	
 	memcpy(&buffer[512 - new_pw_len], new_pw, new_pw_len);
 
-	generate_random_buffer((unsigned char *)buffer, 512 - new_pw_len);
+	generate_random_buffer(buffer, 512 - new_pw_len);
 
 	/* 
 	 * The length of the new password is in the last 4 bytes of

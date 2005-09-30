@@ -372,7 +372,7 @@ BOOL make_user_info_for_reply(auth_usersupplied_info **user_info,
 		unsigned char local_lm_response[24];
 		
 #ifdef DEBUG_PASSWORD
-		DEBUG(10,("Unencrypted password (len %d):\n",plaintext_password.length));
+		DEBUG(10,("Unencrypted password (len %d):\n",(int)plaintext_password.length));
 		dump_data(100, plaintext_password.data, plaintext_password.length);
 #endif
 
@@ -641,6 +641,44 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups,
 }
 
 /******************************************************************************
+ Create a token for the root user to be used internally by smbd.
+ This is similar to running under the context of the LOCAL_SYSTEM account
+ in Windows.  This is a read-only token.  Do not modify it or free() it.
+ Create a copy if your need to change it.
+******************************************************************************/
+
+NT_USER_TOKEN *get_root_nt_token( void )
+{
+	static NT_USER_TOKEN *token = NULL;
+	DOM_SID u_sid, g_sid;
+	DOM_SID g_sids[1];
+	struct passwd *pw;
+	NTSTATUS result;
+	
+	if ( token )
+		return token;
+		
+	if ( !(pw = getpwnam( "root" )) ) {
+		DEBUG(0,("create_root_nt_token: getpwnam\"root\") failed!\n"));
+		return NULL;
+	}
+	
+	/* get the user and primary group SIDs; although the 
+	   BUILTIN\Administrators SId is really the one that matters here */
+	   
+	if ( !NT_STATUS_IS_OK(uid_to_sid(&u_sid, pw->pw_uid)) )
+		return NULL;
+	if ( !NT_STATUS_IS_OK(gid_to_sid(&g_sid, pw->pw_gid)) )
+		return NULL;
+		
+	sid_copy( &g_sids[0], &global_sid_Builtin_Administrators );
+	
+	result = create_nt_user_token( &u_sid, &g_sid, 1, g_sids, False, &token);
+	
+	return NT_STATUS_IS_OK(result) ? token : NULL;
+}
+
+/******************************************************************************
  * this function returns the groups (SIDs) of the local SAM the user is in.
  * If this samba server is a DC of the domain the user belongs to, it returns 
  * both domain groups and local / builtin groups. If the user is in a trusted
@@ -830,6 +868,61 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 
 	return nt_status;
 }
+
+/***************************************************************************
+ Make (and fill) a user_info struct from a Kerberos PAC logon_info by conversion 
+ to a SAM_ACCOUNT
+***************************************************************************/
+
+NTSTATUS make_server_info_pac(auth_serversupplied_info **server_info, 
+			      char *unix_username,
+			      struct passwd *pwd,
+			      PAC_LOGON_INFO *logon_info)
+{
+	NTSTATUS nt_status;
+	SAM_ACCOUNT *sampass = NULL;
+	DOM_SID user_sid, group_sid;
+	fstring dom_name;
+
+	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam_pw(&sampass, pwd))) {		
+		return nt_status;
+	}
+	if (!NT_STATUS_IS_OK(nt_status = make_server_info(server_info))) {
+		return nt_status;
+	}
+
+	/* only copy user_sid, group_sid and domain name out of the PAC for
+	 * now, we will benefit from more later - Guenther */
+
+	sid_copy(&user_sid, &logon_info->info3.dom_sid.sid);
+	sid_append_rid(&user_sid, logon_info->info3.user_rid);
+	pdb_set_user_sid(sampass, &user_sid, PDB_SET);
+	
+	sid_copy(&group_sid, &logon_info->info3.dom_sid.sid);
+	sid_append_rid(&group_sid, logon_info->info3.group_rid);
+	pdb_set_group_sid(sampass, &group_sid, PDB_SET);
+
+	unistr2_to_ascii(dom_name, &logon_info->info3.uni_logon_dom, -1);
+	pdb_set_domain(sampass, dom_name, PDB_SET);
+
+	pdb_set_logon_count(sampass, logon_info->info3.logon_count, PDB_SET);
+
+	(*server_info)->sam_account    = sampass;
+
+	if (!NT_STATUS_IS_OK(nt_status = add_user_groups(server_info, unix_username,
+		sampass, pwd->pw_uid, pwd->pw_gid))) 
+	{
+		return nt_status;
+	}
+
+	(*server_info)->unix_name = smb_xstrdup(unix_username);
+
+	(*server_info)->sam_fill_level = SAM_FILL_ALL;
+	(*server_info)->uid = pwd->pw_uid;
+	(*server_info)->gid = pwd->pw_gid;
+	return nt_status;
+}
+
 
 /***************************************************************************
  Make (and fill) a user_info struct from a 'struct passwd' by conversion 

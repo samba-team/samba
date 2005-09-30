@@ -179,7 +179,7 @@ static void display_srv_info_102(SRV_INFO_102 *sv102)
 }
 
 /* Server query info */
-static WERROR cmd_srvsvc_srv_query_info(struct cli_state *cli, 
+static WERROR cmd_srvsvc_srv_query_info(struct rpc_pipe_client *cli, 
                                           TALLOC_CTX *mem_ctx,
                                           int argc, const char **argv)
 {
@@ -195,7 +195,7 @@ static WERROR cmd_srvsvc_srv_query_info(struct cli_state *cli,
 	if (argc == 2)
 		info_level = atoi(argv[1]);
 
-	result = cli_srvsvc_net_srv_get_info(cli, mem_ctx, info_level,
+	result = rpccli_srvsvc_net_srv_get_info(cli, mem_ctx, info_level,
 					     &ctr);
 
 	if (!W_ERROR_IS_OK(result)) {
@@ -270,7 +270,7 @@ static void display_share_info_502(SRV_SHARE_INFO_502 *info502)
 
 }
 
-static WERROR cmd_srvsvc_net_share_enum(struct cli_state *cli, 
+static WERROR cmd_srvsvc_net_share_enum(struct rpc_pipe_client *cli, 
                                           TALLOC_CTX *mem_ctx,
                                           int argc, const char **argv)
 {
@@ -290,7 +290,7 @@ static WERROR cmd_srvsvc_net_share_enum(struct cli_state *cli,
 
 	init_enum_hnd(&hnd, 0);
 
-	result = cli_srvsvc_net_share_enum(
+	result = rpccli_srvsvc_net_share_enum(
 		cli, mem_ctx, info_level, &ctr, preferred_len, &hnd);
 
 	if (!W_ERROR_IS_OK(result) || !ctr.num_entries)
@@ -320,7 +320,7 @@ static WERROR cmd_srvsvc_net_share_enum(struct cli_state *cli,
 	return result;
 }
 
-static WERROR cmd_srvsvc_net_share_get_info(struct cli_state *cli, 
+static WERROR cmd_srvsvc_net_share_get_info(struct rpc_pipe_client *cli, 
 					    TALLOC_CTX *mem_ctx,
 					    int argc, const char **argv)
 {
@@ -336,7 +336,7 @@ static WERROR cmd_srvsvc_net_share_get_info(struct cli_state *cli,
 	if (argc == 3)
 		info_level = atoi(argv[2]);
 
-	result = cli_srvsvc_net_share_get_info(cli, mem_ctx, argv[1], info_level, &info);
+	result = rpccli_srvsvc_net_share_get_info(cli, mem_ctx, argv[1], info_level, &info);
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
@@ -362,7 +362,7 @@ static WERROR cmd_srvsvc_net_share_get_info(struct cli_state *cli,
 	return result;
 }
 
-static WERROR cmd_srvsvc_net_share_set_info(struct cli_state *cli, 
+static WERROR cmd_srvsvc_net_share_set_info(struct rpc_pipe_client *cli, 
 					    TALLOC_CTX *mem_ctx,
 					    int argc, const char **argv)
 {
@@ -376,7 +376,7 @@ static WERROR cmd_srvsvc_net_share_set_info(struct cli_state *cli,
 	}
 
 	/* retrieve share info */
-	result = cli_srvsvc_net_share_get_info(cli, mem_ctx, argv[1], info_level, &info_get);
+	result = rpccli_srvsvc_net_share_get_info(cli, mem_ctx, argv[1], info_level, &info_get);
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
@@ -385,13 +385,13 @@ static WERROR cmd_srvsvc_net_share_set_info(struct cli_state *cli,
 	init_unistr2(&(info_get.share.info502.info_502_str.uni_remark), argv[2], UNI_STR_TERMINATE);
 	
 	/* set share info */
-	result = cli_srvsvc_net_share_set_info(cli, mem_ctx, argv[1], info_level, &info_get);
+	result = rpccli_srvsvc_net_share_set_info(cli, mem_ctx, argv[1], info_level, &info_get);
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
 	/* re-retrieve share info and display */
-	result = cli_srvsvc_net_share_get_info(cli, mem_ctx, argv[1], info_level, &info_get);
+	result = rpccli_srvsvc_net_share_get_info(cli, mem_ctx, argv[1], info_level, &info_get);
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
@@ -401,11 +401,12 @@ static WERROR cmd_srvsvc_net_share_set_info(struct cli_state *cli,
 	return result;
 }
 
-static WERROR cmd_srvsvc_net_remote_tod(struct cli_state *cli, 
+static WERROR cmd_srvsvc_net_remote_tod(struct rpc_pipe_client *cli, 
                                           TALLOC_CTX *mem_ctx,
                                           int argc, const char **argv)
 {
 	TIME_OF_DAY_INFO tod;
+	fstring srv_name_slash;
 	WERROR result;
 
 	if (argc > 1) {
@@ -413,8 +414,9 @@ static WERROR cmd_srvsvc_net_remote_tod(struct cli_state *cli,
 		return WERR_OK;
 	}
 
-	result = cli_srvsvc_net_remote_tod(
-		cli, mem_ctx, cli->srv_name_slash, &tod);
+	fstr_sprintf(srv_name_slash, "\\\\%s", cli->cli->desthost);
+	result = rpccli_srvsvc_net_remote_tod(
+		cli, mem_ctx, srv_name_slash, &tod);
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
@@ -423,7 +425,7 @@ static WERROR cmd_srvsvc_net_remote_tod(struct cli_state *cli,
 	return result;
 }
 
-static WERROR cmd_srvsvc_net_file_enum(struct cli_state *cli, 
+static WERROR cmd_srvsvc_net_file_enum(struct rpc_pipe_client *cli, 
 					 TALLOC_CTX *mem_ctx,
 					 int argc, const char **argv)
 {
@@ -445,7 +447,7 @@ static WERROR cmd_srvsvc_net_file_enum(struct cli_state *cli,
 
 	ZERO_STRUCT(ctr);
 
-	result = cli_srvsvc_net_file_enum(
+	result = rpccli_srvsvc_net_file_enum(
 		cli, mem_ctx, info_level, NULL, &ctr, preferred_len, &hnd);
 
 	if (!W_ERROR_IS_OK(result))
@@ -461,12 +463,12 @@ struct cmd_set srvsvc_commands[] = {
 
 	{ "SRVSVC" },
 
-	{ "srvinfo",     RPC_RTYPE_WERROR, NULL, cmd_srvsvc_srv_query_info, PI_SRVSVC, "Server query info", "" },
-	{ "netshareenum",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_enum, PI_SRVSVC, "Enumerate shares", "" },
-	{ "netsharegetinfo",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_get_info, PI_SRVSVC, "Get Share Info", "" },
-	{ "netsharesetinfo",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_set_info, PI_SRVSVC, "Set Share Info", "" },
-	{ "netfileenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_file_enum,  PI_SRVSVC, "Enumerate open files", "" },
-	{ "netremotetod",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_remote_tod, PI_SRVSVC, "Fetch remote time of day", "" },
+	{ "srvinfo",     RPC_RTYPE_WERROR, NULL, cmd_srvsvc_srv_query_info, PI_SRVSVC, NULL, "Server query info", "" },
+	{ "netshareenum",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_enum, PI_SRVSVC, NULL, "Enumerate shares", "" },
+	{ "netsharegetinfo",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_get_info, PI_SRVSVC, NULL, "Get Share Info", "" },
+	{ "netsharesetinfo",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_set_info, PI_SRVSVC, NULL, "Set Share Info", "" },
+	{ "netfileenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_file_enum,  PI_SRVSVC, NULL, "Enumerate open files", "" },
+	{ "netremotetod",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_remote_tod, PI_SRVSVC, NULL, "Fetch remote time of day", "" },
 
 	{ NULL }
 };

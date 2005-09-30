@@ -212,7 +212,7 @@ static BOOL is_mangled_component(const char *name, size_t len)
 {
 	unsigned int i;
 
-	M_DEBUG(10,("is_mangled_component %s (len %u) ?\n", name, (unsigned int)len));
+	M_DEBUG(10,("is_mangled_component %s (len %lu) ?\n", name, (unsigned long)len));
 
 	/* check the length */
 	if (len > 12 || len < 8)
@@ -250,7 +250,7 @@ static BOOL is_mangled_component(const char *name, size_t len)
 		}
 	}
 
-	M_DEBUG(10,("is_mangled_component %s (len %u) -> yes\n", name, (unsigned int)len));
+	M_DEBUG(10,("is_mangled_component %s (len %lu) -> yes\n", name, (unsigned long)len));
 
 	return True;
 }

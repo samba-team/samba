@@ -5,8 +5,8 @@
    Copyright (C) Gerald Carter                2001-2002,
    Copyright (C) Tim Potter                   2000-2002,
    Copyright (C) Andrew Tridgell              1994-2000,
-   Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
    Copyright (C) Jean-Francois Micouleau      1999-2000.
+   Copyright (C) Jeremy Allison                    2005.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@
    value) and this rpc establishes a back-channel over which printer
    notifications are performed. */
 
-WERROR cli_spoolss_reply_open_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+WERROR rpccli_spoolss_reply_open_printer(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 				      const char *printer, uint32 printerlocal, uint32 type, 
 				      POLICY_HND *handle)
 {
@@ -47,37 +47,28 @@ WERROR cli_spoolss_reply_open_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx
 	
 	/* Initialise input parameters */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
 	make_spoolss_q_replyopenprinter(&q, printer, printerlocal, type);
 
 	/* Marshall data and send request */
 
-	if (!spoolss_io_q_replyopenprinter("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req (cli, PI_SPOOLSS, SPOOLSS_REPLYOPENPRINTER, &qbuf, &rbuf)) 
-		goto done;
-	
-	/* Unmarshall response */
-	
-	if (!spoolss_io_r_replyopenprinter("", &r, &rbuf, 0))
-		goto done;
-		
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_REPLYOPENPRINTER,
+		q, r,
+		qbuf, rbuf,
+		spoolss_io_q_replyopenprinter,
+		spoolss_io_r_replyopenprinter,
+		WERR_GENERAL_FAILURE );
+
 	/* Return result */
 
 	memcpy(handle, &r.handle, sizeof(r.handle));
 	result = r.status;
-
-done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
 
 	return result;
 }
 
 /* Close a back-channel notification connection */
 
-WERROR cli_spoolss_reply_close_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+WERROR rpccli_spoolss_reply_close_printer(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 				       POLICY_HND *handle)
 {
 	prs_struct qbuf, rbuf;
@@ -87,30 +78,20 @@ WERROR cli_spoolss_reply_close_printer(struct cli_state *cli, TALLOC_CTX *mem_ct
 
 	/* Initialise input parameters */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
 	make_spoolss_q_reply_closeprinter(&q, handle);
 
 	/* Marshall data and send request */
 
-	if (!spoolss_io_q_replycloseprinter("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req (cli, PI_SPOOLSS, SPOOLSS_REPLYCLOSEPRINTER, &qbuf, &rbuf)) 
-		goto done;
-	
-	/* Unmarshall response */
-	
-	if (!spoolss_io_r_replycloseprinter("", &r, &rbuf, 0))
-		goto done;
-		
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_REPLYCLOSEPRINTER,
+		q, r,
+		qbuf, rbuf,
+		spoolss_io_q_replycloseprinter,
+		spoolss_io_r_replycloseprinter,
+		WERR_GENERAL_FAILURE );
+
 	/* Return result */
 
 	result = r.status;
-	
-done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;
 }
 
@@ -121,7 +102,7 @@ done:
  Also see cli_spolss_reply_rrpcn()
  *********************************************************************/
  
-WERROR cli_spoolss_routerreplyprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_routerreplyprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				      POLICY_HND *pol, uint32 condition, uint32 change_id)
 {
 	prs_struct qbuf, rbuf;
@@ -131,30 +112,20 @@ WERROR cli_spoolss_routerreplyprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx
 
 	/* Initialise input parameters */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
 	make_spoolss_q_routerreplyprinter(&q, pol, condition, change_id);
 
 	/* Marshall data and send request */
 
-	if (!spoolss_io_q_routerreplyprinter("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req (cli, PI_SPOOLSS, SPOOLSS_ROUTERREPLYPRINTER, &qbuf, &rbuf)) 
-		goto done;
-	
-	/* Unmarshall response */
-	
-	if (!spoolss_io_r_routerreplyprinter("", &r, &rbuf, 0))
-		goto done;
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_ROUTERREPLYPRINTER,
+		q, r,
+		qbuf, rbuf,
+		spoolss_io_q_routerreplyprinter,
+		spoolss_io_r_routerreplyprinter,
+		WERR_GENERAL_FAILURE );
 
 	/* Return output parameters */
 
 	result = r.status;
-
-done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;	
 }
 
@@ -165,7 +136,7 @@ done:
  Also see cli_spoolss_routereplyprinter()
  *********************************************************************/
 
-WERROR cli_spoolss_rrpcn(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+WERROR rpccli_spoolss_rrpcn(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			 POLICY_HND *pol, uint32 notify_data_len,
 			 SPOOL_NOTIFY_INFO_DATA *notify_data,
 			 uint32 change_low, uint32 change_high)
@@ -178,11 +149,6 @@ WERROR cli_spoolss_rrpcn(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
-
-	/* Initialise parse structures */
-
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	ZERO_STRUCT(notify_info);
 
@@ -201,14 +167,12 @@ WERROR cli_spoolss_rrpcn(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Marshall data and send request */
 
-	if(!spoolss_io_q_reply_rrpcn("", &q,  &qbuf, 0) ||
-	   !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_RRPCN, &qbuf, &rbuf)) 
-		goto done;
-
-	/* Unmarshall response */
-	
-	if(!spoolss_io_r_reply_rrpcn("", &r, &rbuf, 0))
-		goto done;
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_RRPCN,
+		q, r,
+		qbuf, rbuf,
+		spoolss_io_q_reply_rrpcn,
+		spoolss_io_r_reply_rrpcn,
+		WERR_GENERAL_FAILURE );
 
 	if (r.unknown0 == 0x00080000)
 		DEBUG(8,("cli_spoolss_reply_rrpcn: I think the spooler resonded that the notification was ignored.\n"));
@@ -216,18 +180,13 @@ WERROR cli_spoolss_rrpcn(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		DEBUG(8,("cli_spoolss_reply_rrpcn: unknown0 is non-zero [0x%x]\n", r.unknown0));
 	
 	result = r.status;
-
-done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;
 }
 
 /*********************************************************************
  *********************************************************************/
  
-WERROR cli_spoolss_rffpcnex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_spoolss_rffpcnex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			    POLICY_HND *pol, uint32 flags, uint32 options,
 			    const char *localmachine, uint32 printerlocal,
 			    SPOOL_NOTIFY_OPTION *option)
@@ -240,11 +199,6 @@ WERROR cli_spoolss_rffpcnex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
-
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
 	/* Initialise input parameters */
 
 	make_spoolss_q_rffpcnex(
@@ -253,20 +207,13 @@ WERROR cli_spoolss_rffpcnex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Marshall data and send request */
 
-	if(!spoolss_io_q_rffpcnex("", &q,  &qbuf, 0) ||
-	   !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_RFFPCNEX, &qbuf, &rbuf)) 
-		goto done;
-
-	/* Unmarshall response */
-	
-	if(!spoolss_io_r_rffpcnex("", &r, &rbuf, 0))
-		goto done;
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SPOOLSS, SPOOLSS_RFFPCNEX,
+		q, r,
+		qbuf, rbuf,
+		spoolss_io_q_rffpcnex,
+		spoolss_io_r_rffpcnex,
+		WERR_GENERAL_FAILURE );
 
 	result = r.status;
-
-done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;
 }

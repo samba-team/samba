@@ -251,11 +251,17 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 		char* entry_buf = SMB_STRNDUP(databuf.dptr, databuf.dsize);
 		char *v;
 		time_t t;
+		unsigned u;
+		int status;
 
 		v = SMB_MALLOC(databuf.dsize - TIMEOUT_LEN);
 				
 		SAFE_FREE(databuf.dptr);
-		sscanf(entry_buf, CACHE_DATA_FMT, (int*)&t, v);
+		status = sscanf(entry_buf, CACHE_DATA_FMT, &u, v);
+		if ( status != 2 ) {
+		    DEBUG(0, ("gencache_get: Invalid return %d from sscanf\n", status ));
+		}
+		t = u;
 		SAFE_FREE(entry_buf);
 
 		DEBUG(10, ("Returning %s cache entry: key = %s, value = %s, "
@@ -307,6 +313,8 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 	TDB_DATA databuf;
 	char *keystr = NULL, *valstr = NULL, *entry = NULL;
 	time_t timeout = 0;
+	int status;
+	unsigned u;
 
 	/* fail completely if get null pointers passed */
 	SMB_ASSERT(fn && keystr_pattern);
@@ -335,7 +343,11 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 		entry = SMB_STRNDUP(databuf.dptr, databuf.dsize);
 		SAFE_FREE(databuf.dptr);
 		valstr = SMB_MALLOC(databuf.dsize - TIMEOUT_LEN);
-		sscanf(entry, CACHE_DATA_FMT, (int*)(&timeout), valstr);
+		status = sscanf(entry, CACHE_DATA_FMT, &u, valstr);
+		if ( status != 2 ) {
+		    DEBUG(0,("gencache_iterate: invalid return from sscanf %d\n",status));
+		}
+		timeout = u;
 		
 		DEBUG(10, ("Calling function with arguments (key = %s, value = %s, timeout = %s)\n",
 		           keystr, valstr, ctime(&timeout)));

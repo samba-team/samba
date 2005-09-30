@@ -84,11 +84,22 @@
 #define NL_CTRL_REPL_IN_PROGRESS 0x0002
 #define NL_CTRL_FULL_SYNC        0x0004
 
+#define LOGON_EXTRA_SIDS             0x0020
+#define LOGON_RESOURCE_GROUPS        0x0200 
+
+#define SE_GROUP_MANDATORY		0x00000001
+#define SE_GROUP_ENABLED_BY_DEFAULT	0x00000002
+#define SE_GROUP_ENABLED		0x00000004
+#define SE_GROUP_OWNER 			0x00000008
+#define SE_GROUP_USE_FOR_DENY_ONLY 	0x00000010
+#define SE_GROUP_LOGON_ID 		0xC0000000
+#define SE_GROUP_RESOURCE 		0x20000000
+
+
 #if 0
 /* I think this is correct - it's what gets parsed on the wire. JRA. */
 /* NET_USER_INFO_2 */
-typedef struct net_user_info_2
-{
+typedef struct net_user_info_2 {
 	uint32 ptr_user_info;
 
 	NTTIME logon_time;            /* logon time */
@@ -145,8 +156,7 @@ typedef struct net_user_info_2
 #endif
 
 /* NET_USER_INFO_3 */
-typedef struct net_user_info_3
-{
+typedef struct net_user_info_3 {
 	uint32 ptr_user_info;
 
 	NTTIME logon_time;            /* logon time */
@@ -186,6 +196,13 @@ typedef struct net_user_info_3
 	uint32 num_other_sids; /* number of foreign/trusted domain sids */
 	uint32 buffer_other_sids;
 	
+	/* The next three uint32 are not really part of user_info_3 but here
+	 * for parsing convenience.  They are only valid in Kerberos PAC
+	 * parsing - Guenther */
+	uint32 ptr_res_group_dom_sid;
+	uint32 res_group_count;
+	uint32 ptr_res_groups;
+
 	UNISTR2 uni_user_name;    /* username unicode string */
 	UNISTR2 uni_full_name;    /* user's full name unicode string */
 	UNISTR2 uni_logon_script; /* logon script unicode string */
@@ -203,32 +220,26 @@ typedef struct net_user_info_3
 
 	DOM_SID2 *other_sids; /* foreign/trusted domain SIDs */
 	uint32 *other_sids_attrib;
-
 } NET_USER_INFO_3;
 
 
 /* NETLOGON_INFO_1 - pdc status info, i presume */
-typedef struct netlogon_1_info
-{
+typedef struct netlogon_1_info {
 	uint32 flags;            /* 0x0 - undocumented */
 	uint32 pdc_status;       /* 0x0 - undocumented */
-
 } NETLOGON_INFO_1;
 
 /* NETLOGON_INFO_2 - pdc status info, plus trusted domain info */
-typedef struct netlogon_2_info
-{
+typedef struct netlogon_2_info {
 	uint32  flags;            /* 0x0 - undocumented */
 	uint32  pdc_status;       /* 0x0 - undocumented */
 	uint32  ptr_trusted_dc_name; /* pointer to trusted domain controller name */
 	uint32  tc_status;           
 	UNISTR2 uni_trusted_dc_name; /* unicode string - trusted dc name */
-
 } NETLOGON_INFO_2;
 
 /* NETLOGON_INFO_3 - logon status info, i presume */
-typedef struct netlogon_3_info
-{
+typedef struct netlogon_3_info {
 	uint32 flags;            /* 0x0 - undocumented */
 	uint32 logon_attempts;   /* number of logon attempts */
 	uint32 reserved_1;       /* 0x0 - undocumented */
@@ -236,7 +247,6 @@ typedef struct netlogon_3_info
 	uint32 reserved_3;       /* 0x0 - undocumented */
 	uint32 reserved_4;       /* 0x0 - undocumented */
 	uint32 reserved_5;       /* 0x0 - undocumented */
-
 } NETLOGON_INFO_3;
 
 /********************************************************
@@ -250,8 +260,7 @@ typedef struct netlogon_3_info
 
 /* NET_Q_LOGON_CTRL - LSA Netr Logon Control */
 
-typedef struct net_q_logon_ctrl_info
-{
+typedef struct net_q_logon_ctrl_info {
 	uint32 ptr;
 	UNISTR2 uni_server_name;
 	uint32 function_code;
@@ -260,8 +269,7 @@ typedef struct net_q_logon_ctrl_info
 
 /* NET_R_LOGON_CTRL - LSA Netr Logon Control */
 
-typedef struct net_r_logon_ctrl_info
-{
+typedef struct net_r_logon_ctrl_info {
 	uint32 switch_value;
 	uint32 ptr;
 
@@ -273,22 +281,18 @@ typedef struct net_r_logon_ctrl_info
 } NET_R_LOGON_CTRL;
 
 
-typedef struct ctrl_data_info_5
-{
+typedef struct ctrl_data_info_5 {
 	uint32 		function_code;
 	
 	uint32		ptr_domain;
 	UNISTR2		domain;
-	
 } CTRL_DATA_INFO_5;
 
-typedef struct ctrl_data_info_6
-{
+typedef struct ctrl_data_info_6 {
 	uint32 		function_code;
 	
 	uint32		ptr_domain;
 	UNISTR2		domain;
-	
 } CTRL_DATA_INFO_6;
 
 
@@ -301,8 +305,7 @@ typedef struct ctrl_data_info_6
  ********************************************************/
 
 /* NET_Q_LOGON_CTRL2 - LSA Netr Logon Control 2 */
-typedef struct net_q_logon_ctrl2_info
-{
+typedef struct net_q_logon_ctrl2_info {
 	uint32       	ptr;             /* undocumented buffer pointer */
 	UNISTR2      	uni_server_name; /* server name, starting with two '\'s */
 	
@@ -312,7 +315,6 @@ typedef struct net_q_logon_ctrl2_info
 		CTRL_DATA_INFO_5 info5;
 		CTRL_DATA_INFO_6 info6;
 	} info;
-	
 } NET_Q_LOGON_CTRL2;
 
 /*******************************************************
@@ -322,8 +324,7 @@ typedef struct net_q_logon_ctrl2_info
  *******************************************************/
 
 /* NET_R_LOGON_CTRL2 - response to LSA Logon Control2 */
-typedef struct net_r_logon_ctrl2_info
-{
+typedef struct net_r_logon_ctrl2_info {
 	uint32       switch_value;  /* 0x1, 0x3 */
 	uint32       ptr;
 
@@ -336,13 +337,11 @@ typedef struct net_r_logon_ctrl2_info
 	} logon;
 
 	NTSTATUS status; /* return code */
-
 } NET_R_LOGON_CTRL2;
 
 /* NET_Q_GETDCNAME - Ask a DC for a trusted DC name */
 
-typedef struct net_q_getdcname
-{
+typedef struct net_q_getdcname {
 	uint32  ptr_logon_server;
 	UNISTR2 uni_logon_server;
 	uint32  ptr_domainname;
@@ -351,103 +350,86 @@ typedef struct net_q_getdcname
 
 /* NET_R_GETDCNAME - Ask a DC for a trusted DC name */
 
-typedef struct net_r_getdcname
-{
+typedef struct net_r_getdcname {
 	uint32  ptr_dcname;
 	UNISTR2 uni_dcname;
 	NTSTATUS status;
 } NET_R_GETDCNAME;
 
 /* NET_Q_TRUST_DOM_LIST - LSA Query Trusted Domains */
-typedef struct net_q_trust_dom_info
-{
+typedef struct net_q_trust_dom_info {
 	uint32       ptr;             /* undocumented buffer pointer */
 	UNISTR2      uni_server_name; /* server name, starting with two '\'s */
-
 } NET_Q_TRUST_DOM_LIST;
 
 #define MAX_TRUST_DOMS 1
 
 /* NET_R_TRUST_DOM_LIST - response to LSA Trusted Domains */
-typedef struct net_r_trust_dom_info
-{
+typedef struct net_r_trust_dom_info {
 	UNISTR2 uni_trust_dom_name[MAX_TRUST_DOMS];
 
 	NTSTATUS status; /* return code */
-
 } NET_R_TRUST_DOM_LIST;
 
 
 /* NEG_FLAGS */
-typedef struct neg_flags_info
-{
-    uint32 neg_flags; /* negotiated flags */
-
+typedef struct neg_flags_info {
+	uint32 neg_flags; /* negotiated flags */
 } NEG_FLAGS;
 
 
 /* NET_Q_REQ_CHAL */
-typedef struct net_q_req_chal_info
-{
-    uint32  undoc_buffer; /* undocumented buffer pointer */
-    UNISTR2 uni_logon_srv; /* logon server unicode string */
-    UNISTR2 uni_logon_clnt; /* logon client unicode string */
-    DOM_CHAL clnt_chal; /* client challenge */
-
+typedef struct net_q_req_chal_info {
+	uint32  undoc_buffer; /* undocumented buffer pointer */
+	UNISTR2 uni_logon_srv; /* logon server unicode string */
+	UNISTR2 uni_logon_clnt; /* logon client unicode string */
+	DOM_CHAL clnt_chal; /* client challenge */
 } NET_Q_REQ_CHAL;
 
 
 /* NET_R_REQ_CHAL */
-typedef struct net_r_req_chal_info
-{
+typedef struct net_r_req_chal_info {
 	DOM_CHAL srv_chal; /* server challenge */
 	NTSTATUS status; /* return code */
 } NET_R_REQ_CHAL;
 
 /* NET_Q_AUTH */
-typedef struct net_q_auth_info
-{
+typedef struct net_q_auth_info {
 	DOM_LOG_INFO clnt_id; /* client identification info */
 	DOM_CHAL clnt_chal;     /* client-calculated credentials */
 } NET_Q_AUTH;
 
 /* NET_R_AUTH */
-typedef struct net_r_auth_info
-{
+typedef struct net_r_auth_info {
 	DOM_CHAL srv_chal;     /* server-calculated credentials */
 	NTSTATUS status; /* return code */
 } NET_R_AUTH;
 
 /* NET_Q_AUTH_2 */
-typedef struct net_q_auth2_info
-{
-    DOM_LOG_INFO clnt_id; /* client identification info */
-    DOM_CHAL clnt_chal;     /* client-calculated credentials */
+typedef struct net_q_auth2_info {
+	DOM_LOG_INFO clnt_id; /* client identification info */
+	DOM_CHAL clnt_chal;     /* client-calculated credentials */
 
-    NEG_FLAGS clnt_flgs; /* usually 0x0000 01ff */
-
+	NEG_FLAGS clnt_flgs; /* usually 0x0000 01ff */
 } NET_Q_AUTH_2;
 
 
 /* NET_R_AUTH_2 */
-typedef struct net_r_auth2_info
-{
+typedef struct net_r_auth2_info {
 	DOM_CHAL srv_chal;     /* server-calculated credentials */
 	NEG_FLAGS srv_flgs; /* usually 0x0000 01ff */
 	NTSTATUS status; /* return code */
 } NET_R_AUTH_2;
 
 /* NET_Q_AUTH_3 */
-typedef struct net_q_auth3_info
-{
-    DOM_LOG_INFO clnt_id;	/* client identification info */
-    DOM_CHAL clnt_chal;		/* client-calculated credentials */
-    NEG_FLAGS clnt_flgs;	/* usually 0x6007 ffff */
+typedef struct net_q_auth3_info {
+	DOM_LOG_INFO clnt_id;	/* client identification info */
+	DOM_CHAL clnt_chal;		/* client-calculated credentials */
+	NEG_FLAGS clnt_flgs;	/* usually 0x6007 ffff */
 } NET_Q_AUTH_3;
 
 /* NET_R_AUTH_3 */
-typedef struct net_r_auth3_info
-{
+typedef struct net_r_auth3_info {
 	DOM_CHAL srv_chal;	/* server-calculated credentials */
 	NEG_FLAGS srv_flgs;	/* usually 0x6007 ffff */
 	uint32 unknown;		/* 0x0000045b */
@@ -456,25 +438,20 @@ typedef struct net_r_auth3_info
 
 
 /* NET_Q_SRV_PWSET */
-typedef struct net_q_srv_pwset_info
-{
-    DOM_CLNT_INFO clnt_id; /* client identification/authentication info */
-    uint8 pwd[16]; /* new password - undocumented. */
-
+typedef struct net_q_srv_pwset_info {
+	DOM_CLNT_INFO clnt_id; /* client identification/authentication info */
+	uint8 pwd[16]; /* new password - undocumented. */
 } NET_Q_SRV_PWSET;
     
 /* NET_R_SRV_PWSET */
-typedef struct net_r_srv_pwset_info
-{
-    DOM_CRED srv_cred;     /* server-calculated credentials */
+typedef struct net_r_srv_pwset_info {
+	DOM_CRED srv_cred;     /* server-calculated credentials */
 
-  NTSTATUS status; /* return code */
-
+	NTSTATUS status; /* return code */
 } NET_R_SRV_PWSET;
 
 /* NET_ID_INFO_2 */
-typedef struct net_network_info_2
-{
+typedef struct net_network_info_2 {
 	uint32            ptr_id_info2;        /* pointer to id_info_2 */
 	UNIHDR            hdr_domain_name;     /* domain name unicode header */
 	uint32            param_ctrl;          /* param control (0x2) */
@@ -490,12 +467,10 @@ typedef struct net_network_info_2
 	UNISTR2           uni_wksta_name;      /* workgroup name unicode string */
 	STRING2           nt_chal_resp;        /* nt challenge response */
 	STRING2           lm_chal_resp;        /* lm challenge response */
-
 } NET_ID_INFO_2;
 
 /* NET_ID_INFO_1 */
-typedef struct id_info_1
-{
+typedef struct id_info_1 {
 	uint32            ptr_id_info1;        /* pointer to id_info_1 */
 	UNIHDR            hdr_domain_name;     /* domain name unicode header */
 	uint32            param_ctrl;          /* param control */
@@ -507,81 +482,64 @@ typedef struct id_info_1
 	UNISTR2           uni_domain_name;     /* domain name unicode string */
 	UNISTR2           uni_user_name;       /* user name unicode string */
 	UNISTR2           uni_wksta_name;      /* workgroup name unicode string */
-
 } NET_ID_INFO_1;
 
 #define INTERACTIVE_LOGON_TYPE 1
 #define NET_LOGON_TYPE 2
 
 /* NET_ID_INFO_CTR */
-typedef struct net_id_info_ctr_info
-{
-  uint16         switch_value;
+typedef struct net_id_info_ctr_info {
+	uint16         switch_value;
   
-  union
-  {
-    NET_ID_INFO_1 id1; /* auth-level 1 - interactive user login */
-    NET_ID_INFO_2 id2; /* auth-level 2 - workstation referred login */
-
-  } auth;
-  
+	union {
+		NET_ID_INFO_1 id1; /* auth-level 1 - interactive user login */
+		NET_ID_INFO_2 id2; /* auth-level 2 - workstation referred login */
+	} auth;
 } NET_ID_INFO_CTR;
 
 /* SAM_INFO - sam logon/off id structure */
-typedef struct sam_info
-{
-  DOM_CLNT_INFO2  client;
-  uint32          ptr_rtn_cred; /* pointer to return credentials */
-  DOM_CRED        rtn_cred; /* return credentials */
-  uint16          logon_level;
-  NET_ID_INFO_CTR *ctr;
-
+typedef struct sam_info {
+	DOM_CLNT_INFO2  client;
+	uint32          ptr_rtn_cred; /* pointer to return credentials */
+	DOM_CRED        rtn_cred; /* return credentials */
+	uint16          logon_level;
+	NET_ID_INFO_CTR *ctr;
 } DOM_SAM_INFO;
 
 /* NET_Q_SAM_LOGON */
-typedef struct net_q_sam_logon_info
-{
-    DOM_SAM_INFO sam_id;
+typedef struct net_q_sam_logon_info {
+	DOM_SAM_INFO sam_id;
 	uint16          validation_level;
-
 } NET_Q_SAM_LOGON;
 
 /* NET_R_SAM_LOGON */
-typedef struct net_r_sam_logon_info
-{
-    uint32 buffer_creds; /* undocumented buffer pointer */
-    DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
+typedef struct net_r_sam_logon_info {
+	uint32 buffer_creds; /* undocumented buffer pointer */
+	DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
     
 	uint16 switch_value; /* 3 - indicates type of USER INFO */
-    NET_USER_INFO_3 *user;
+	NET_USER_INFO_3 *user;
 
-    uint32 auth_resp; /* 1 - Authoritative response; 0 - Non-Auth? */
+	uint32 auth_resp; /* 1 - Authoritative response; 0 - Non-Auth? */
 
-  NTSTATUS status; /* return code */
-
+	NTSTATUS status; /* return code */
 } NET_R_SAM_LOGON;
 
 
 /* NET_Q_SAM_LOGOFF */
-typedef struct net_q_sam_logoff_info
-{
-    DOM_SAM_INFO sam_id;
-
+typedef struct net_q_sam_logoff_info {
+	DOM_SAM_INFO sam_id;
 } NET_Q_SAM_LOGOFF;
 
 /* NET_R_SAM_LOGOFF */
-typedef struct net_r_sam_logoff_info
-{
-    uint32 buffer_creds; /* undocumented buffer pointer */
-    DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
-    
-  NTSTATUS status; /* return code */
-
+typedef struct net_r_sam_logoff_info {
+	uint32 buffer_creds; /* undocumented buffer pointer */
+	DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
+	NTSTATUS status; /* return code */
 } NET_R_SAM_LOGOFF;
 
 /* NET_Q_SAM_SYNC */
-typedef struct net_q_sam_sync_info
-{
+typedef struct net_q_sam_sync_info {
 	UNISTR2 uni_srv_name; /* \\PDC */
 	UNISTR2 uni_cli_name; /* BDC */
 	DOM_CRED cli_creds;
@@ -592,19 +550,16 @@ typedef struct net_q_sam_sync_info
 	uint32 sync_context;
 
 	uint32 max_size;       /* preferred maximum length */
-
 } NET_Q_SAM_SYNC;
 
 /* SAM_DELTA_HDR */
-typedef struct sam_delta_hdr_info
-{
+typedef struct sam_delta_hdr_info {
 	uint16 type;  /* type of structure attached */
 	uint16 type2;
 	uint32 target_rid;
 
 	uint32 type3;
 	uint32 ptr_delta;
-
 } SAM_DELTA_HDR;
 
 /* LOCKOUT_STRING */
@@ -617,7 +572,6 @@ typedef struct account_lockout_string {
 	UINT64_S reset_count;
 	uint32 bad_attempt_lockout;
 	uint32 dummy;
-
 } LOCKOUT_STRING;
 
 /* HDR_LOCKOUT_STRING */
@@ -625,12 +579,10 @@ typedef struct hdr_account_lockout_string {
 	uint16 size;
 	uint16 length;
 	uint32 buffer;
-
 } HDR_LOCKOUT_STRING;
 
 /* SAM_DOMAIN_INFO (0x1) */
-typedef struct sam_domain_info_info
-{
+typedef struct sam_domain_info_info {
 	UNIHDR hdr_dom_name;
 	UNIHDR hdr_oem_info;
 
@@ -666,13 +618,10 @@ typedef struct sam_domain_info_info
 	uint32 unknown6;
 	uint32 unknown7;
 	uint32 unknown8;
-
-
 } SAM_DOMAIN_INFO;
 
 /* SAM_GROUP_INFO (0x2) */
-typedef struct sam_group_info_info
-{
+typedef struct sam_group_info_info {
 	UNIHDR hdr_grp_name;
 	DOM_GID gid;
 	UNIHDR hdr_grp_desc;
@@ -682,12 +631,10 @@ typedef struct sam_group_info_info
 	UNISTR2 uni_grp_name;
 	UNISTR2 uni_grp_desc;
 	RPC_DATA_BLOB buf_sec_desc;
-
 } SAM_GROUP_INFO;
 
 /* SAM_PWD */
-typedef struct sam_passwd_info
-{
+typedef struct sam_passwd_info {
 	/* this structure probably contains password history */
 	/* this is probably a count of lm/nt pairs */
 	uint32 unk_0; /* 0x0000 0002 */
@@ -700,12 +647,10 @@ typedef struct sam_passwd_info
 
 	UNIHDR hdr_empty_lm;
 	UNIHDR hdr_empty_nt;
-
 } SAM_PWD;
 
 /* SAM_ACCOUNT_INFO (0x5) */
-typedef struct sam_account_info_info
-{
+typedef struct sam_account_info_info {
 	UNIHDR hdr_acct_name;
 	UNIHDR hdr_full_name;
 
@@ -765,12 +710,10 @@ typedef struct sam_account_info_info
 	SAM_PWD pass;
 	RPC_DATA_BLOB buf_sec_desc;
 	UNISTR2 uni_profile;
-
 } SAM_ACCOUNT_INFO;
 
 /* SAM_GROUP_MEM_INFO (0x8) */
-typedef struct sam_group_mem_info_info
-{
+typedef struct sam_group_mem_info_info {
 	uint32 ptr_rids;
 	uint32 ptr_attribs;
 	uint32 num_members;
@@ -785,8 +728,7 @@ typedef struct sam_group_mem_info_info
 } SAM_GROUP_MEM_INFO;
 
 /* SAM_ALIAS_INFO (0x9) */
-typedef struct sam_alias_info_info
-{
+typedef struct sam_alias_info_info {
 	UNIHDR hdr_als_name;
 	uint32 als_rid;
 	BUFHDR2 hdr_sec_desc;  /* security descriptor */
@@ -796,12 +738,10 @@ typedef struct sam_alias_info_info
 	UNISTR2 uni_als_name;
 	RPC_DATA_BLOB buf_sec_desc;
 	UNISTR2 uni_als_desc;
-
 } SAM_ALIAS_INFO;
 
 /* SAM_ALIAS_MEM_INFO (0xC) */
-typedef struct sam_alias_mem_info_info
-{
+typedef struct sam_alias_mem_info_info {
 	uint32 num_members;
 	uint32 ptr_members;
 	uint8 unknown[16];
@@ -809,13 +749,11 @@ typedef struct sam_alias_mem_info_info
 	uint32 num_sids;
 	uint32 *ptr_sids;
 	DOM_SID2 *sids;
-
 } SAM_ALIAS_MEM_INFO;
 
 
 /* SAM_DELTA_POLICY (0x0D) */
-typedef struct
-{
+typedef struct {
 	uint32   max_log_size; /* 0x5000 */
 	UINT64_S audit_retention_period; /* 0 */
 	uint32   auditing_mode; /* 0 */
@@ -844,8 +782,7 @@ typedef struct
 } SAM_DELTA_POLICY;
 
 /* SAM_DELTA_TRUST_DOMS */
-typedef struct
-{
+typedef struct {
 	uint32 buf_size;
 	SEC_DESC *sec_desc;
 	DOM_SID2 sid;
@@ -860,12 +797,10 @@ typedef struct
 
 	uint32 unknown3;
 	UNISTR2 domain;
-
 } SAM_DELTA_TRUSTDOMS;
 
 /* SAM_DELTA_PRIVS (0x10) */
-typedef struct
-{
+typedef struct {
 	DOM_SID2 sid;
 
 	uint32 priv_count;
@@ -896,8 +831,7 @@ typedef struct
 } SAM_DELTA_PRIVS;
 
 /* SAM_DELTA_SECRET */
-typedef struct
-{
+typedef struct {
 	uint32 buf_size;
 	SEC_DESC *sec_desc;
 	UNISTR2 secret;
@@ -928,19 +862,16 @@ typedef struct
 
 	uint32 buf_size3;
 	SEC_DESC *sec_desc2;
-
 } SAM_DELTA_SECRET;
 
 /* SAM_DELTA_MOD_COUNT (0x16) */
-typedef struct
-{
+typedef struct {
         uint32 seqnum;
         uint32 dom_mod_count_ptr;
 	UINT64_S dom_mod_count;  /* domain mod count at last sync */
 } SAM_DELTA_MOD_COUNT;
 
-typedef union sam_delta_ctr_info
-{
+typedef union sam_delta_ctr_info {
 	SAM_DOMAIN_INFO    domain_info ;
 	SAM_GROUP_INFO     group_info  ;
 	SAM_ACCOUNT_INFO   account_info;
@@ -955,8 +886,7 @@ typedef union sam_delta_ctr_info
 } SAM_DELTA_CTR;
 
 /* NET_R_SAM_SYNC */
-typedef struct net_r_sam_sync_info
-{
+typedef struct net_r_sam_sync_info {
 	DOM_CRED srv_creds;
 
 	uint32 sync_context;
@@ -973,8 +903,7 @@ typedef struct net_r_sam_sync_info
 } NET_R_SAM_SYNC;
 
 /* NET_Q_SAM_DELTAS */
-typedef struct net_q_sam_deltas_info
-{
+typedef struct net_q_sam_deltas_info {
 	UNISTR2 uni_srv_name;
 	UNISTR2 uni_cli_name;
 	DOM_CRED cli_creds;
@@ -984,12 +913,10 @@ typedef struct net_q_sam_deltas_info
 	UINT64_S dom_mod_count;  /* domain mod count at last sync */
 
 	uint32 max_size;       /* preferred maximum length */
-
 } NET_Q_SAM_DELTAS;
 
 /* NET_R_SAM_DELTAS */
-typedef struct net_r_sam_deltas_info
-{
+typedef struct net_r_sam_deltas_info {
 	DOM_CRED srv_creds;
 
 	UINT64_S dom_mod_count;   /* new domain mod count */

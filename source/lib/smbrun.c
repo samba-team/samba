@@ -225,10 +225,16 @@ int smbrunsecret(const char *cmd, const char *secret)
 		 */
 		int status = 0;
 		pid_t wpid;
+		size_t towrite;
+		ssize_t wrote;
 		
 		close(ifd[0]);
 		/* send the secret */
-		write(ifd[1], secret, strlen(secret));
+		towrite = strlen(secret);
+		wrote = write(ifd[1], secret, towrite);
+		if ( wrote != towrite ) {
+		    DEBUG(0,("smbrunsecret: wrote %ld of %lu bytes\n",(long)wrote,(unsigned long)towrite));
+		}
 		fsync(ifd[1]);
 		close(ifd[1]);
 

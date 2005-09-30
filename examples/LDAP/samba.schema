@@ -389,15 +389,67 @@ attributetype ( 1.3.6.1.4.1.7165.2.1.53 NAME 'sambaTrustFlags'
 	EQUALITY caseIgnoreIA5Match
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 )
 
-attributetype ( 1.3.6.1.4.1.7165.2.1.56 NAME 'sambaAccountPolicyName'
-	DESC 'Account Policy Name'
-	EQUALITY caseIgnoreMatch
-	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{255} SINGLE-VALUE )
-
-attributetype ( 1.3.6.1.4.1.7165.2.1.57 NAME 'sambaAccountPolicyValue'
-	DESC 'Account Policy Value'
+# "min password length"
+attributetype ( 1.3.6.1.4.1.7165.2.1.58 NAME 'sambaMinPwdLength'
+	DESC 'Minimal password length (default: 5)'
 	EQUALITY integerMatch
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+# "password history"
+attributetype ( 1.3.6.1.4.1.7165.2.1.59 NAME 'sambaPwdHistoryLength'
+	DESC 'Length of Password History Entries (default: 0 => off)'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+# "user must logon to change password"
+attributetype ( 1.3.6.1.4.1.7165.2.1.60 NAME 'sambaLogonToChgPwd'
+	DESC 'Force Users to logon for password change (default: 0 => off, 2 => on)'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+# "maximum password age"
+attributetype ( 1.3.6.1.4.1.7165.2.1.61 NAME 'sambaMaxPwdAge'
+	DESC 'Maximum password age, in seconds (default: -1 => never expire passwords)'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+# "minimum password age"
+attributetype ( 1.3.6.1.4.1.7165.2.1.62 NAME 'sambaMinPwdAge'
+	DESC 'Minimum password age, in seconds (default: 0 => allow immediate password change)'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+# "lockout duration"
+attributetype ( 1.3.6.1.4.1.7165.2.1.63 NAME 'sambaLockoutDuration'
+	DESC 'Lockout duration in minutes (default: 30, -1 => forever)'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+# "reset count minutes"
+attributetype ( 1.3.6.1.4.1.7165.2.1.64 NAME 'sambaLockoutObservationWindow'
+	DESC 'Reset time after lockout in minutes (default: 30)'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+# "bad lockout attempt"
+attributetype ( 1.3.6.1.4.1.7165.2.1.65 NAME 'sambaLockoutThreshold'
+	DESC 'Lockout users after bad logon attempts (default: 0 => off)'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+# "disconnect time"
+attributetype ( 1.3.6.1.4.1.7165.2.1.66 NAME 'sambaForceLogoff'
+	DESC 'Disconnect Users outside logon hours (default: -1 => off, 0 => on)'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+# "refuse machine password change"
+attributetype ( 1.3.6.1.4.1.7165.2.1.67 NAME 'sambaRefuseMachinePwdChange'
+	DESC 'Allow Machine Password changes (default: 0 => off)'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+
 
 
 #######################################################################
@@ -448,7 +500,11 @@ objectclass ( 1.3.6.1.4.1.7165.2.2.5 NAME 'sambaDomain' SUP top STRUCTURAL
 	MUST ( sambaDomainName $ 
 	       sambaSID ) 
 	MAY ( sambaNextRid $ sambaNextGroupRid $ sambaNextUserRid $
-	      sambaAlgorithmicRidBase ) )
+	      sambaAlgorithmicRidBase $ 
+	      sambaMinPwdLength $ sambaPwdHistoryLength $ sambaLogonToChgPwd $
+	      sambaMaxPwdAge $ sambaMinPwdAge $
+	      sambaLockoutDuration $ sambaLockoutObservationWindow $ sambaLockoutThreshold $
+	      sambaForceLogoff $ sambaRefuseMachinePwdChange ))
 
 ##
 ## used for idmap_ldap module
@@ -488,9 +544,3 @@ objectclass ( 1.3.6.1.4.1.7165.2.2.12 NAME 'sambaConfigOption' SUP top STRUCTURA
 ##	DESC 'Samba Privilege'
 ##	MUST ( sambaSID )
 ##	MAY ( sambaPrivilegeList ) )
-
-objectclass ( 1.3.6.1.4.1.7165.2.2.15 NAME 'sambaAccountPolicy' SUP top STRUCTURAL
-	DESC 'Samba Account Policy'
-	MUST ( sambaAccountPolicyName $ sambaAccountPolicyValue )
-	MAY ( description ) )
-

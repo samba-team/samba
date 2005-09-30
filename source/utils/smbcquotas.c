@@ -34,7 +34,8 @@ static BOOL verbose;
 enum todo_values {NOOP_QUOTA=0,FS_QUOTA,USER_QUOTA,LIST_QUOTA,SET_QUOTA};
 enum exit_values {EXIT_OK, EXIT_FAILED, EXIT_PARSE_ERROR};
 
-static struct cli_state *cli_ipc = NULL;
+static struct cli_state *cli_ipc;
+static struct rpc_pipe_client *global_pipe_hnd;
 static POLICY_HND pol;
 static BOOL got_policy_hnd;
 
@@ -47,8 +48,10 @@ static BOOL cli_open_policy_hnd(void)
 	/* Initialise cli LSA connection */
 
 	if (!cli_ipc) {
+		NTSTATUS ret;
 		cli_ipc = connect_one("IPC$");
-		if (!cli_nt_session_open (cli_ipc, PI_LSARPC)) {
+		global_pipe_hnd = cli_rpc_pipe_open_noauth(cli_ipc, PI_LSARPC, &ret);
+		if (!global_pipe_hnd) {
 				return False;
 		}
 	}
@@ -60,7 +63,7 @@ static BOOL cli_open_policy_hnd(void)
 		/* Some systems don't support SEC_RIGHTS_MAXIMUM_ALLOWED,
 		   but NT sends 0x2000000 so we might as well do it too. */
 
-		if (!NT_STATUS_IS_OK(cli_lsa_open_policy(cli_ipc, cli_ipc->mem_ctx, True, 
+		if (!NT_STATUS_IS_OK(rpccli_lsa_open_policy(global_pipe_hnd, cli_ipc->mem_ctx, True, 
 							 GENERIC_EXECUTE_ACCESS, &pol))) {
 			return False;
 		}
@@ -85,7 +88,7 @@ static void SidToString(fstring str, DOM_SID *sid, BOOL _numeric)
 	/* Ask LSA to convert the sid to a name */
 
 	if (!cli_open_policy_hnd() ||
-	    !NT_STATUS_IS_OK(cli_lsa_lookup_sids(cli_ipc, cli_ipc->mem_ctx,  
+	    !NT_STATUS_IS_OK(rpccli_lsa_lookup_sids(global_pipe_hnd, cli_ipc->mem_ctx,  
 						 &pol, 1, sid, &domains, 
 						 &names, &types)) ||
 	    !domains || !domains[0] || !names || !names[0]) {
@@ -112,7 +115,7 @@ static BOOL StringToSid(DOM_SID *sid, const char *str)
 	}
 
 	if (!cli_open_policy_hnd() ||
-	    !NT_STATUS_IS_OK(cli_lsa_lookup_names(cli_ipc, cli_ipc->mem_ctx, 
+	    !NT_STATUS_IS_OK(rpccli_lsa_lookup_names(global_pipe_hnd, cli_ipc->mem_ctx, 
 						  &pol, 1, &str, &sids, 
 						  &types))) {
 		result = False;

@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    RPC pipe client
    Copyright (C) Tim Potter                        2000-2001,
+   Copyright (C) Jeremy Allison				2005.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,7 +23,7 @@
 
 /* Query DFS support */
 
-NTSTATUS cli_dfs_exist(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+NTSTATUS rpccli_dfs_exist(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                        BOOL *dfs_exists)
 {
 	prs_struct qbuf, rbuf;
@@ -33,25 +34,16 @@ NTSTATUS cli_dfs_exist(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
-
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
 	/* Marshall data and send request */
 
         init_dfs_q_dfs_exist(&q);
 
-	if (!dfs_io_q_dfs_exist("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_NETDFS, DFS_EXIST, &qbuf, &rbuf)) {
-		goto done;
-	}
-
-	/* Unmarshall response */
-
-	if (!dfs_io_r_dfs_exist("", &r, &rbuf, 0)) {
-		goto done;
-	}
+	CLI_DO_RPC( cli, mem_ctx, PI_NETDFS, DFS_EXIST,
+		q, r,
+		qbuf, rbuf,
+		dfs_io_q_dfs_exist,
+		dfs_io_r_dfs_exist,
+		NT_STATUS_UNSUCCESSFUL);
 
 	/* Return result */
 
@@ -59,14 +51,10 @@ NTSTATUS cli_dfs_exist(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	result = NT_STATUS_OK;
 
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;
 }
 
-NTSTATUS cli_dfs_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+NTSTATUS rpccli_dfs_add(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                      const char *entrypath, const char *servername, 
 		     const char *sharename, const char *comment, uint32 flags)
 {
@@ -78,39 +66,26 @@ NTSTATUS cli_dfs_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
-
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
 	/* Marshall data and send request */
 
         init_dfs_q_dfs_add(&q, entrypath, servername, sharename, comment,
 			   flags);
 
-	if (!dfs_io_q_dfs_add("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_NETDFS, DFS_ADD, &qbuf, &rbuf)) {
-		goto done;
-	}
-
-	/* Unmarshall response */
-
-	if (!dfs_io_r_dfs_add("", &r, &rbuf, 0)) {
-		goto done;
-	}
+	CLI_DO_RPC( cli, mem_ctx, PI_NETDFS, DFS_ADD,
+		q, r,
+		qbuf, rbuf,
+		dfs_io_q_dfs_add,
+		dfs_io_r_dfs_add,
+		NT_STATUS_UNSUCCESSFUL);
 
 	/* Return result */
 
         result = werror_to_ntstatus(r.status);
 
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;
 }
 
-NTSTATUS cli_dfs_remove(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+NTSTATUS rpccli_dfs_remove(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                         const char *entrypath, const char *servername, 
 			const char *sharename)
 {
@@ -122,38 +97,25 @@ NTSTATUS cli_dfs_remove(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
-
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
 	/* Marshall data and send request */
 
         init_dfs_q_dfs_remove(&q, entrypath, servername, sharename);
 
-	if (!dfs_io_q_dfs_remove("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_NETDFS, DFS_REMOVE, &qbuf, &rbuf)) {
-		goto done;
-	}
-
-	/* Unmarshall response */
-
-	if (!dfs_io_r_dfs_remove("", &r, &rbuf, 0)) {
-		goto done;
-	}
+	CLI_DO_RPC( cli, mem_ctx, PI_NETDFS, DFS_REMOVE,
+		q, r,
+		qbuf, rbuf,
+		dfs_io_q_dfs_remove,
+		dfs_io_r_dfs_remove,
+		NT_STATUS_UNSUCCESSFUL);
 
 	/* Return result */
 
 	result = werror_to_ntstatus(r.status);
 
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;
 }
 
-NTSTATUS cli_dfs_get_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+NTSTATUS rpccli_dfs_get_info(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                           const char *entrypath, const char *servername, 
 			  const char *sharename, uint32 info_level, 
 			  DFS_INFO_CTR *ctr)
@@ -167,42 +129,29 @@ NTSTATUS cli_dfs_get_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
-
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
 	/* Marshall data and send request */
 
         init_dfs_q_dfs_get_info(&q, entrypath, servername, sharename,
 				info_level);
 
-	if (!dfs_io_q_dfs_get_info("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_NETDFS, DFS_GET_INFO, &qbuf, &rbuf)) {
-		goto done;
-	}
-
-	/* Unmarshall response */
-
-	if (!dfs_io_r_dfs_get_info("", &r, &rbuf, 0)) {
-		goto done;
-	}
+	CLI_DO_RPC( cli, mem_ctx, PI_NETDFS, DFS_GET_INFO,
+		q, r,
+		qbuf, rbuf,
+		dfs_io_q_dfs_get_info,
+		dfs_io_r_dfs_get_info,
+		NT_STATUS_UNSUCCESSFUL);
 
 	/* Return result */
 
 	result = werror_to_ntstatus(r.status);
 	*ctr = r.ctr;
 	
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;
 }
 
 /* Enumerate dfs shares */
 
-NTSTATUS cli_dfs_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+NTSTATUS rpccli_dfs_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                       uint32 info_level, DFS_INFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
@@ -213,35 +162,22 @@ NTSTATUS cli_dfs_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
-
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
 	/* Marshall data and send request */
 
         init_dfs_q_dfs_enum(&q, info_level, ctr);
 
-	if (!dfs_io_q_dfs_enum("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_NETDFS, DFS_ENUM, &qbuf, &rbuf)) {
-		goto done;
-	}
-
-	/* Unmarshall response */
-	
 	r.ctr = ctr;
 
-	if (!dfs_io_r_dfs_enum("", &r, &rbuf, 0)) {
-		goto done;
-	}
+	CLI_DO_RPC( cli, mem_ctx, PI_NETDFS, DFS_ENUM,
+		q, r,
+		qbuf, rbuf,
+		dfs_io_q_dfs_enum,
+		dfs_io_r_dfs_enum,
+		NT_STATUS_UNSUCCESSFUL);
 
 	/* Return result */
 
 	result = werror_to_ntstatus(r.status);
-
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
 
 	return result;
 }

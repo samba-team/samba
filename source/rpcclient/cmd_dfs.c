@@ -24,7 +24,7 @@
 
 /* Check DFS is supported by the remote server */
 
-static NTSTATUS cmd_dfs_exist(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+static NTSTATUS cmd_dfs_exist(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                               int argc, const char **argv)
 {
 	BOOL dfs_exists;
@@ -35,7 +35,7 @@ static NTSTATUS cmd_dfs_exist(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	result = cli_dfs_exist(cli, mem_ctx, &dfs_exists);
+	result = rpccli_dfs_exist(cli, mem_ctx, &dfs_exists);
 
 	if (NT_STATUS_IS_OK(result))
 		printf("dfs is %spresent\n", dfs_exists ? "" : "not ");
@@ -43,7 +43,7 @@ static NTSTATUS cmd_dfs_exist(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-static NTSTATUS cmd_dfs_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+static NTSTATUS cmd_dfs_add(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                             int argc, const char **argv)
 {
 	NTSTATUS result;
@@ -61,13 +61,13 @@ static NTSTATUS cmd_dfs_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	sharename = argv[3];
 	comment = argv[4];
 
-	result = cli_dfs_add(cli, mem_ctx, entrypath, servername, 
+	result = rpccli_dfs_add(cli, mem_ctx, entrypath, servername, 
 			     sharename, comment, flags);
 
 	return result;
 }
 
-static NTSTATUS cmd_dfs_remove(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+static NTSTATUS cmd_dfs_remove(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                                int argc, const char **argv)
 {
 	NTSTATUS result;
@@ -82,7 +82,7 @@ static NTSTATUS cmd_dfs_remove(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	servername = argv[2];
 	sharename = argv[3];
 
-	result = cli_dfs_remove(cli, mem_ctx, entrypath, servername, 
+	result = rpccli_dfs_remove(cli, mem_ctx, entrypath, servername, 
 				sharename);
 
 	return result;
@@ -168,7 +168,7 @@ static void display_dfs_info_ctr(DFS_INFO_CTR *ctr)
 
 /* Enumerate dfs shares */
 
-static NTSTATUS cmd_dfs_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+static NTSTATUS cmd_dfs_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                              int argc, const char **argv)
 {
 	DFS_INFO_CTR ctr;
@@ -183,7 +183,7 @@ static NTSTATUS cmd_dfs_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if (argc == 2)
 		info_level = atoi(argv[1]);
 
-	result = cli_dfs_enum(cli, mem_ctx, info_level, &ctr);
+	result = rpccli_dfs_enum(cli, mem_ctx, info_level, &ctr);
 
 	if (NT_STATUS_IS_OK(result))
 		display_dfs_info_ctr(&ctr);
@@ -191,7 +191,7 @@ static NTSTATUS cmd_dfs_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-static NTSTATUS cmd_dfs_getinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+static NTSTATUS cmd_dfs_getinfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                                 int argc, const char **argv)
 {
 	NTSTATUS result;
@@ -212,7 +212,7 @@ static NTSTATUS cmd_dfs_getinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if (argc == 5)
 		info_level = atoi(argv[4]);
 
-	result = cli_dfs_get_info(cli, mem_ctx, entrypath, servername, 
+	result = rpccli_dfs_get_info(cli, mem_ctx, entrypath, servername, 
 				  sharename, info_level, &ctr);
 
 	if (NT_STATUS_IS_OK(result))
@@ -227,11 +227,11 @@ struct cmd_set dfs_commands[] = {
 
 	{ "DFS" },
 
-	{ "dfsexist",  RPC_RTYPE_NTSTATUS, cmd_dfs_exist,   NULL, PI_NETDFS, "Query DFS support",    "" },
-	{ "dfsadd",    RPC_RTYPE_NTSTATUS, cmd_dfs_add,     NULL, PI_NETDFS, "Add a DFS share",      "" },
-	{ "dfsremove", RPC_RTYPE_NTSTATUS, cmd_dfs_remove,  NULL, PI_NETDFS, "Remove a DFS share",   "" },
-	{ "dfsgetinfo",RPC_RTYPE_NTSTATUS, cmd_dfs_getinfo, NULL, PI_NETDFS, "Query DFS share info", "" },
-	{ "dfsenum",   RPC_RTYPE_NTSTATUS, cmd_dfs_enum,    NULL, PI_NETDFS, "Enumerate dfs shares", "" },
+	{ "dfsexist",  RPC_RTYPE_NTSTATUS, cmd_dfs_exist,   NULL, PI_NETDFS, NULL, "Query DFS support",    "" },
+	{ "dfsadd",    RPC_RTYPE_NTSTATUS, cmd_dfs_add,     NULL, PI_NETDFS, NULL, "Add a DFS share",      "" },
+	{ "dfsremove", RPC_RTYPE_NTSTATUS, cmd_dfs_remove,  NULL, PI_NETDFS, NULL, "Remove a DFS share",   "" },
+	{ "dfsgetinfo",RPC_RTYPE_NTSTATUS, cmd_dfs_getinfo, NULL, PI_NETDFS, NULL, "Query DFS share info", "" },
+	{ "dfsenum",   RPC_RTYPE_NTSTATUS, cmd_dfs_enum,    NULL, PI_NETDFS, NULL, "Enumerate dfs shares", "" },
 
 	{ NULL }
 };

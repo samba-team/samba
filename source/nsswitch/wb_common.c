@@ -543,6 +543,11 @@ NSS_STATUS winbindd_send_request(int req_type, struct winbindd_request *request)
 	if (write_sock(request, sizeof(*request), request->flags & WBFLAG_RECURSE) == -1) {
 		return NSS_STATUS_UNAVAIL;
 	}
+
+	if ((request->extra_len != 0) &&
+	    (write_sock(request->extra_data, request->extra_len, request->flags & WBFLAG_RECURSE) == -1)) {
+		return NSS_STATUS_UNAVAIL;
+	}
 	
 	return NSS_STATUS_SUCCESS;
 }

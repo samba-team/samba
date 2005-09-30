@@ -27,7 +27,6 @@
 extern int max_send;
 extern enum protocol_types Protocol;
 extern int smb_read_error;
-extern int global_oplock_break;
 extern uint32 global_client_caps;
 extern struct current_user current_user;
 
@@ -2789,7 +2788,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 
 			delete_pending =
 				get_delete_on_close_flag(sbuf.st_dev,
-							 sbuf.st_ino);
+							 sbuf.st_ino,
+							 fname);
 		} else {
 			/*
 			 * Original code - this is an open file.
@@ -2804,7 +2804,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			pos = fsp->fh->position_information;
 			delete_pending = 
 				get_delete_on_close_flag(sbuf.st_dev,
-							 sbuf.st_ino);
+							 sbuf.st_ino,
+							 fname);
 			access_mask = fsp->access_mask;
 		}
 	} else {
@@ -2847,7 +2848,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		}
 
 		delete_pending = get_delete_on_close_flag(sbuf.st_dev,
-							  sbuf.st_ino);
+							  sbuf.st_ino,
+							  fname);
 		if (delete_pending) {
 			return ERROR_NT(NT_STATUS_DELETE_PENDING);
 		}
@@ -3455,91 +3457,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 }
 
 /****************************************************************************
- Deal with the internal needs of setting the delete on close flag. Note that
- as the tdb locking is recursive, it is safe to call this from within 
- open_file_shared. JRA.
-****************************************************************************/
-
-NTSTATUS can_set_delete_on_close(files_struct *fsp, BOOL delete_on_close,
-				 uint32 dosmode)
-{
-	if (!delete_on_close) {
-		return NT_STATUS_OK;
-	}
-
-	/*
-	 * Only allow delete on close for writable files.
-	 */
-
-	if ((dosmode & aRONLY) &&
-	    !lp_delete_readonly(SNUM(fsp->conn))) {
-		DEBUG(10,("can_set_delete_on_close: file %s delete on close "
-			  "flag set but file attribute is readonly.\n",
-			  fsp->fsp_name ));
-		return NT_STATUS_CANNOT_DELETE;
-	}
-
-	/*
-	 * Only allow delete on close for writable shares.
-	 */
-
-	if (!CAN_WRITE(fsp->conn)) {
-		DEBUG(10,("can_set_delete_on_close: file %s delete on "
-			  "close flag set but write access denied on share.\n",
-			  fsp->fsp_name ));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	/*
-	 * Only allow delete on close for files/directories opened with delete
-	 * intent.
-	 */
-
-	if (!(fsp->access_mask & DELETE_ACCESS)) {
-		DEBUG(10,("can_set_delete_on_close: file %s delete on "
-			  "close flag set but delete access denied.\n",
-			  fsp->fsp_name ));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	return NT_STATUS_OK;
-}
-
-/****************************************************************************
- Sets the delete on close flag over all share modes on this file.
- Modify the share mode entry for all files open
- on this device and inode to tell other smbds we have
- changed the delete on close flag. This will be noticed
- in the close code, the last closer will delete the file
- if flag is set.
-****************************************************************************/
-
-NTSTATUS set_delete_on_close(files_struct *fsp, BOOL delete_on_close)
-{
-	DEBUG(10,("set_delete_on_close: %s delete on close flag for "
-		  "fnum = %d, file %s\n",
-		  delete_on_close ? "Adding" : "Removing", fsp->fnum,
-		  fsp->fsp_name ));
-
-	if (fsp->is_directory || fsp->is_stat)
-		return NT_STATUS_OK;
-
-	if (lock_share_entry_fsp(fsp) == False)
-		return NT_STATUS_ACCESS_DENIED;
-
-	if (!modify_delete_flag(fsp->dev, fsp->inode, delete_on_close)) {
-		DEBUG(0,("set_delete_on_close: failed to change delete "
-			 "on close flag for file %s\n",
-			 fsp->fsp_name ));
-		unlock_share_entry_fsp(fsp);
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	unlock_share_entry_fsp(fsp);
-	return NT_STATUS_OK;
-}
-
-/****************************************************************************
  Set a hard link (called by UNIX extensions and by NT rename with HARD link
  code.
 ****************************************************************************/
@@ -3912,16 +3829,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 				if (fd == -1) {
 					files_struct *new_fsp = NULL;
  
-					if(global_oplock_break) {
-						/* Queue this file modify as we are the process of an oplock break.  */
- 
-						DEBUG(2,("call_trans2setfilepathinfo: queueing message due to being "));
-						DEBUGADD(2,( "in oplock break state.\n"));
- 
-						push_oplock_pending_smb_message(inbuf, length);
-						return -1;
-					}
- 
 					new_fsp = open_file_ntcreate(conn, fname, &sbuf,
 									FILE_WRITE_DATA,
 									FILE_SHARE_READ|FILE_SHARE_WRITE,
@@ -4003,9 +3910,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			}
 
 			/* The set is across all open files on this dev/inode pair. */
-			status =set_delete_on_close(fsp, delete_on_close);
-			if (!NT_STATUS_IS_OK(status)) {
-				return ERROR_NT(status);
+			if (!set_delete_on_close(fsp, delete_on_close)) {
+				return ERROR_NT(NT_STATUS_ACCESS_DENIED);
 			}
 
 			SSVAL(params,0,0);
@@ -4456,16 +4362,6 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		if (fd == -1) {
 			files_struct *new_fsp = NULL;
 
-			if(global_oplock_break) {
-				/* Queue this file modify as we are the process of an oplock break.  */
-
-				DEBUG(2,("call_trans2setfilepathinfo: queueing message due to being "));
-				DEBUGADD(2,( "in oplock break state.\n"));
-
-				push_oplock_pending_smb_message(inbuf, length);
-				return -1;
-			}
-
 			new_fsp = open_file_ntcreate(conn, fname, &sbuf,
 						FILE_WRITE_DATA,
 						FILE_SHARE_READ|FILE_SHARE_WRITE,
@@ -4859,18 +4755,6 @@ int reply_trans2(connection_struct *conn,
 	unsigned int num_params, num_params_sofar, num_data, num_data_sofar;
 	START_PROFILE(SMBtrans2);
 
-	if(global_oplock_break && (tran_call == TRANSACT2_OPEN)) {
-		/* Queue this open message as we are the process of an
-		 * oplock break.  */
-
-		DEBUG(2,("reply_trans2: queueing message trans2open due to being "));
-		DEBUGADD(2,( "in oplock break state.\n"));
-
-		push_oplock_pending_smb_message(inbuf, length);
-		END_PROFILE(SMBtrans2);
-		return -1;
-	}
-	
 	if (IS_IPC(conn) && (tran_call != TRANSACT2_OPEN)
             && (tran_call != TRANSACT2_GET_DFS_REFERRAL)) {
 		END_PROFILE(SMBtrans2);

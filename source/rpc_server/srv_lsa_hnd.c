@@ -253,16 +253,18 @@ BOOL pipe_access_check(pipes_struct *p)
 		user_struct *user = get_valid_user_struct(p->vuid);
 
 		/* schannel, so we must be ok */
-		if (p->netsec_auth_validated)
+		if (p->pipe_bound && (p->auth.auth_type == PIPE_AUTH_TYPE_SCHANNEL)) {
 			return True;
+		}
 
 		if (!user) {
 			DEBUG(3, ("invalid vuid %d\n", p->vuid));
 			return False;
 		}
 
-		if (user->guest)
+		if (user->guest) {
 			return False;
+		}
 	}
 
 	return True;

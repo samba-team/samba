@@ -221,15 +221,16 @@ void cli_setup_bcc(struct cli_state *cli, void *p)
  Initialise credentials of a client structure.
 ****************************************************************************/
 
-void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr)
+void cli_init_creds(struct cli_state *cli, const char *username, const char *domain, const char *password)
 {
-        /* copy_nt_creds(&cli->usr, usr); */
-	fstrcpy(cli->domain   , usr->domain);
-	fstrcpy(cli->user_name, usr->user_name);
-	memcpy(&cli->pwd, &usr->pwd, sizeof(usr->pwd));
+	fstrcpy(cli->domain, domain);
+	fstrcpy(cli->user_name, username);
+	pwd_set_cleartext(&cli->pwd, password);
+	if (!*username) {
+		cli->pwd.null_pwd = True;
+	}
 
-        DEBUG(10,("cli_init_creds: user %s domain %s\n",
-               cli->user_name, cli->domain));
+        DEBUG(10,("cli_init_creds: user %s domain %s\n", cli->user_name, cli->domain));
 }
 
 /****************************************************************************
@@ -260,7 +261,6 @@ void cli_setup_signing_state(struct cli_state *cli, int signing_state)
 struct cli_state *cli_initialise(struct cli_state *cli)
 {
         BOOL alloced_cli = False;
-	int i;
 
 	/* Check the effective uid - make sure we are not setuid */
 	if (is_setuid_root()) {
@@ -332,15 +332,8 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	/* initialise signing */
 	cli_null_set_signing(cli);
 
-	for (i=0; i<PI_MAX_PIPES; i++)
-		cli->pipes[i].fnum = 0;
-
-	cli->netlogon_pipe.fnum = 0;
-
 	cli->initialised = 1;
 	cli->allocated = alloced_cli;
-
-	cli->pipe_idx = -1;
 
 	return cli;
 
@@ -358,34 +351,42 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 }
 
 /****************************************************************************
-close the session
-****************************************************************************/
+ External interface.
+ Close an open named pipe over SMB. Free any authentication data.
+ ****************************************************************************/
 
-void cli_nt_session_close(struct cli_state *cli)
+void cli_rpc_pipe_close(struct rpc_pipe_client *cli)
 {
-	int i;
-
-	for (i=0; i<PI_MAX_PIPES; i++) {
-		if (cli->pipes[i].pipe_auth_flags & AUTH_PIPE_NTLMSSP) {
-			ntlmssp_end(&cli->pipes[i].ntlmssp_pipe_state);
-		}
-
-		if (cli->pipes[i].fnum != 0)
-			cli_close(cli, cli->pipes[i].fnum);
-		cli->pipes[i].fnum = 0;
+	if (!cli_close(cli->cli, cli->fnum)) {
+		DEBUG(0,("cli_rpc_pipe_close: cli_close failed on pipe %s "
+			"to machine %s.  Error was %s\n",
+			cli->pipe_name,
+			cli->cli->desthost,
+			cli_errstr(cli->cli)));
 	}
-	cli->pipe_idx = -1;
+
+	if (cli->auth.cli_auth_data_free_func) {
+		(*cli->auth.cli_auth_data_free_func)(&cli->auth);
+	}
+
+	DEBUG(10,("cli_rpc_pipe_close: closed pipe %s to machine %s\n",
+		cli->pipe_name, cli->cli->desthost ));
+
+	DLIST_REMOVE(cli->cli->pipe_list, cli);
+	talloc_destroy(cli->mem_ctx);
 }
 
 /****************************************************************************
-close the NETLOGON session holding the session key for NETSEC
+ Close all pipes open on this session.
 ****************************************************************************/
 
-void cli_nt_netlogon_netsec_session_close(struct cli_state *cli)
+void cli_nt_pipes_close(struct cli_state *cli)
 {
-	if (cli->netlogon_pipe.fnum != 0) {
-		cli_close(cli, cli->netlogon_pipe.fnum);
-		cli->netlogon_pipe.fnum = 0;
+	struct rpc_pipe_client *cp, *next;
+
+	for (cp = cli->pipe_list; cp; cp = next) {
+		next = cp->next;
+		cli_rpc_pipe_close(cp);
 	}
 }
 
@@ -395,8 +396,7 @@ void cli_nt_netlogon_netsec_session_close(struct cli_state *cli)
 
 void cli_close_connection(struct cli_state *cli)
 {
-	cli_nt_session_close(cli);
-	cli_nt_netlogon_netsec_session_close(cli);
+	cli_nt_pipes_close(cli);
 
 	/*
 	 * tell our peer to free his resources.  Wihtout this, when an
@@ -410,8 +410,9 @@ void cli_close_connection(struct cli_state *cli)
 	 * the only user for this so far is smbmount which passes opened connection
 	 * down to kernel's smbfs module.
 	 */
-	if ( (cli->cnum != (uint16)-1) && (cli->smb_rw_error != DO_NOT_DO_TDIS ) )
+	if ( (cli->cnum != (uint16)-1) && (cli->smb_rw_error != DO_NOT_DO_TDIS ) ) {
 		cli_tdis(cli);
+	}
         
 	SAFE_FREE(cli->outbuf);
 	SAFE_FREE(cli->inbuf);
@@ -420,19 +421,16 @@ void cli_close_connection(struct cli_state *cli)
 	data_blob_free(&cli->secblob);
 	data_blob_free(&cli->user_session_key);
 
-	if (cli->pipes[cli->pipe_idx].pipe_auth_flags & AUTH_PIPE_NTLMSSP) 
-		ntlmssp_end(&cli->pipes[cli->pipe_idx].ntlmssp_pipe_state);
-
 	if (cli->mem_ctx) {
 		talloc_destroy(cli->mem_ctx);
 		cli->mem_ctx = NULL;
 	}
 
-	if (cli->fd != -1) 
+	if (cli->fd != -1) {
 		close(cli->fd);
+	}
 	cli->fd = -1;
 	cli->smb_rw_error = 0;
-
 }
 
 /****************************************************************************
@@ -444,8 +442,9 @@ void cli_shutdown(struct cli_state *cli)
 	BOOL allocated = cli->allocated;
 	cli_close_connection(cli);
 	ZERO_STRUCTP(cli);
-	if (allocated)
+	if (allocated) {
 		free(cli);
+	}
 }
 
 /****************************************************************************

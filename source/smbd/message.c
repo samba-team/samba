@@ -43,6 +43,7 @@ static void msg_deliver(void)
   int fd;
   char *msg;
   int len;
+  ssize_t sz;
 
   if (! (*lp_msg_command()))
     {
@@ -70,14 +71,20 @@ static void msg_deliver(void)
       if (msgbuf[i] == '\r' && i < (msgpos-1) && msgbuf[i+1] == '\n') {
 	i++; continue;
       }
-      write(fd, &msgbuf[i++], 1);
+      sz = write(fd, &msgbuf[i++], 1);
+      if ( sz != 1 ) {
+	DEBUG(0,("Write error to fd %d: %ld(%d)\n",fd, (long)sz, errno ));
+      }
     }
   } else {
     for (i = 0; i < len;) {
       if (msg[i] == '\r' && i < (len-1) && msg[i+1] == '\n') {
 	i++; continue;
       }
-      write(fd, &msg[i++],1);
+      sz = write(fd, &msg[i++],1);
+      if ( sz != 1 ) {
+	DEBUG(0,("Write error to fd %d: %ld(%d)\n",fd, (long)sz, errno ));
+      }
     }
     SAFE_FREE(msg);
   }

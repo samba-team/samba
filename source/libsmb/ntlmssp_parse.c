@@ -216,7 +216,7 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 					/* if odd length and unicode */
 					return False;
 				}
-				if (blob->data + ptr < (uint8 *)ptr || blob->data + ptr < blob->data)
+				if (blob->data + ptr < (uint8 *)(unsigned long)ptr || blob->data + ptr < blob->data)
 					return False;
 
 				if (0 < len1) {
@@ -244,7 +244,7 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 					return False;
 				}
 
-				if (blob->data + ptr < (uint8 *)ptr || blob->data + ptr < blob->data)
+				if (blob->data + ptr < (uint8 *)(unsigned long)ptr || blob->data + ptr < blob->data)
 					return False;	
 
 				if (0 < len1) {
@@ -272,7 +272,7 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 					return False;
 				}
 
-				if (blob->data + ptr < (uint8 *)ptr || blob->data + ptr < blob->data)
+				if (blob->data + ptr < (uint8 *)(unsigned long)ptr || blob->data + ptr < blob->data)
 					return False;	
 			
 				*b = data_blob(blob->data + ptr, len1);

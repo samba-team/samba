@@ -236,7 +236,7 @@ uint32 regval_type( REGISTRY_VALUE *val )
 
 /***********************************************************************
  Retreive a pointer to a specific value.  Caller shoud dup the structure
- since this memory may go away with a regval_ctr_destroy()
+ since this memory will go away when the ctr is free()'d
  **********************************************************************/
 
 REGISTRY_VALUE* regval_ctr_specific_value( REGVAL_CTR *ctr, uint32 idx )
@@ -383,5 +383,31 @@ REGISTRY_VALUE* regval_ctr_getvalue( REGVAL_CTR *ctr, const char *name )
 	}
 	
 	return NULL;
+}
+
+/***********************************************************************
+ return the data_p as a uint32
+ **********************************************************************/
+
+uint32 regval_dword( REGISTRY_VALUE *val )
+{
+	uint32 data;
+	
+	data = IVAL( regval_data_p(val), 0 );
+	
+	return data;
+}
+
+/***********************************************************************
+ return the data_p as a character string
+ **********************************************************************/
+
+char* regval_sz( REGISTRY_VALUE *val )
+{
+	static pstring data;
+
+	rpcstr_pull( data, regval_data_p(val), sizeof(data), regval_size(val), 0 );
+	
+	return data;
 }
 

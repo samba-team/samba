@@ -76,7 +76,8 @@ static void terminate(void)
  Handle a SHUTDOWN message from smbcontrol.
  **************************************************************************** */
 
-static void nmbd_terminate(int msg_type, pid_t src, void *buf, size_t len)
+static void nmbd_terminate(int msg_type, struct process_id src,
+			   void *buf, size_t len)
 {
 	terminate();
 }
@@ -307,7 +308,8 @@ static BOOL reload_nmbd_services(BOOL test)
  * detects that there are no subnets.
  **************************************************************************** */
 
-static void msg_reload_nmbd_services(int msg_type, pid_t src, void *buf, size_t len)
+static void msg_reload_nmbd_services(int msg_type, struct process_id src,
+				     void *buf, size_t len)
 {
 	write_browse_list( 0, True );
 	dump_all_namelists();
@@ -323,31 +325,33 @@ static void msg_reload_nmbd_services(int msg_type, pid_t src, void *buf, size_t 
 	}
 }
 
-static void msg_nmbd_send_packet(int msg_type, pid_t src,
+static void msg_nmbd_send_packet(int msg_type, struct process_id src,
 				 void *buf, size_t len)
 {
 	struct packet_struct *p = (struct packet_struct *)buf;
 	struct subnet_record *subrec;
 	struct in_addr *local_ip;
 
-	DEBUG(10, ("Received send_packet from %d\n", src));
+	DEBUG(10, ("Received send_packet from %d\n", procid_to_pid(&src)));
 
 	if (len != sizeof(struct packet_struct)) {
-		DEBUG(2, ("Discarding invalid packet length from %d\n", src));
+		DEBUG(2, ("Discarding invalid packet length from %d\n",
+			  procid_to_pid(&src)));
 		return;
 	}
 
 	if ((p->packet_type != NMB_PACKET) &&
 	    (p->packet_type != DGRAM_PACKET)) {
 		DEBUG(2, ("Discarding invalid packet type from %d: %d\n",
-			  src, p->packet_type));
+			  procid_to_pid(&src), p->packet_type));
 		return;
 	}
 
 	local_ip = iface_ip(p->ip);
 
 	if (local_ip == NULL) {
-		DEBUG(2, ("Could not find ip for packet from %d\n", src));
+		DEBUG(2, ("Could not find ip for packet from %d\n",
+			  procid_to_pid(&src)));
 		return;
 	}
 
@@ -590,7 +594,8 @@ static void process(void)
 
 		if(reload_after_sighup) {
 			DEBUG( 0, ( "Got SIGHUP dumping debug info.\n" ) );
-			msg_reload_nmbd_services(MSG_SMB_CONF_UPDATED, (pid_t) 0, (void*) &no_subnets, 0);
+			msg_reload_nmbd_services(MSG_SMB_CONF_UPDATED,
+						 pid_to_procid(0), (void*) &no_subnets, 0);
 			if(no_subnets)
 				return;
 			reload_after_sighup = 0;

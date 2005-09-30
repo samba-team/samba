@@ -24,14 +24,14 @@
 
 /* Look up domain related information on a remote host */
 
-static NTSTATUS cmd_ds_dsrole_getprimarydominfo(struct cli_state *cli, 
+static NTSTATUS cmd_ds_dsrole_getprimarydominfo(struct rpc_pipe_client *cli, 
 				     TALLOC_CTX *mem_ctx, int argc, 
 				     const char **argv) 
 {
 	NTSTATUS result;
 	DS_DOMINFO_CTR	ctr;
 	
-	result = cli_ds_getprimarydominfo( cli, mem_ctx, DsRolePrimaryDomainInfoBasic, &ctr );
+	result = rpccli_ds_getprimarydominfo( cli, mem_ctx, DsRolePrimaryDomainInfoBasic, &ctr );
 	if ( NT_STATUS_IS_OK(result) )
 	{
 		printf ("Machine Role = [%d]\n", ctr.basic->machine_role);
@@ -47,7 +47,7 @@ static NTSTATUS cmd_ds_dsrole_getprimarydominfo(struct cli_state *cli,
 	return result;
 }
 
-static NTSTATUS cmd_ds_enum_domain_trusts(struct cli_state *cli, 
+static NTSTATUS cmd_ds_enum_domain_trusts(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx, int argc, 
 				     const char **argv) 
 {
@@ -57,7 +57,7 @@ static NTSTATUS cmd_ds_enum_domain_trusts(struct cli_state *cli,
 	unsigned int 			num_domains = 0;
 	int i;
 	
-	result = cli_ds_enum_domain_trusts( cli, mem_ctx, cli->desthost, flags, 
+	result = rpccli_ds_enum_domain_trusts( cli, mem_ctx, cli->cli->desthost, flags, 
 		&trusts, &num_domains );
 	
 	printf( "%d domains returned\n", num_domains );
@@ -74,8 +74,8 @@ struct cmd_set ds_commands[] = {
 
 	{ "LSARPC-DS" },
 
-	{ "dsroledominfo",   RPC_RTYPE_NTSTATUS, cmd_ds_dsrole_getprimarydominfo, NULL, PI_LSARPC_DS, "Get Primary Domain Information", "" },
-	{ "dsenumdomtrusts", RPC_RTYPE_NTSTATUS, cmd_ds_enum_domain_trusts,       NULL, PI_NETLOGON,  "Enumerate all trusted domains in an AD forest", "" },
+	{ "dsroledominfo",   RPC_RTYPE_NTSTATUS, cmd_ds_dsrole_getprimarydominfo, NULL, PI_LSARPC_DS, NULL, "Get Primary Domain Information", "" },
+	{ "dsenumdomtrusts", RPC_RTYPE_NTSTATUS, cmd_ds_enum_domain_trusts,       NULL, PI_NETLOGON,  NULL, "Enumerate all trusted domains in an AD forest", "" },
 
-	{ NULL }
+{ NULL }
 };

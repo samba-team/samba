@@ -1404,12 +1404,22 @@ BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask)
  Check if a process exists. Does this work on all unixes?
 ****************************************************************************/
 
-BOOL process_exists(pid_t pid)
+BOOL process_exists(const struct process_id pid)
 {
+	if (!procid_is_local(&pid)) {
+		/* This *SEVERELY* needs fixing. */
+		return True;
+	}
+
 	/* Doing kill with a non-positive pid causes messages to be
 	 * sent to places we don't want. */
-	SMB_ASSERT(pid > 0);
-	return(kill(pid,0) == 0 || errno != ESRCH);
+	SMB_ASSERT(pid.pid > 0);
+	return(kill(pid.pid,0) == 0 || errno != ESRCH);
+}
+
+BOOL process_exists_by_pid(pid_t pid)
+{
+	return process_exists(pid_to_procid(pid));
 }
 
 /*******************************************************************
@@ -2755,4 +2765,58 @@ uint32 map_share_mode_to_deny_mode(uint32 share_access, uint32 private_options)
 	}
 
 	return (uint32)-1;
+}
+
+pid_t procid_to_pid(const struct process_id *proc)
+{
+	return proc->pid;
+}
+
+struct process_id pid_to_procid(pid_t pid)
+{
+	struct process_id result;
+	result.pid = pid;
+	return result;
+}
+
+struct process_id procid_self(void)
+{
+	return pid_to_procid(sys_getpid());
+}
+
+BOOL procid_equal(const struct process_id *p1, const struct process_id *p2)
+{
+	return (p1->pid == p2->pid);
+}
+
+BOOL procid_is_me(const struct process_id *pid)
+{
+	return (pid->pid == sys_getpid());
+}
+
+struct process_id interpret_pid(const char *pid_string)
+{
+	return pid_to_procid(atoi(pid_string));
+}
+
+char *procid_str_static(const struct process_id *pid)
+{
+	static fstring str;
+	fstr_sprintf(str, "%d", pid->pid);
+	return str;
+}
+
+char *procid_str(TALLOC_CTX *mem_ctx, const struct process_id *pid)
+{
+	return talloc_strdup(mem_ctx, procid_str_static(pid));
+}
+
+BOOL procid_valid(const struct process_id *pid)
+{
+	return (pid->pid != -1);
+}
+
+BOOL procid_is_local(const struct process_id *pid)
+{
+	return True;
 }

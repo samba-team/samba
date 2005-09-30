@@ -23,7 +23,7 @@
 
 static struct {
 	char from;
-	char *to;
+	const char *to;
 	int len;
 } weird_table[] = {
 	{'q', "^q^", 3},

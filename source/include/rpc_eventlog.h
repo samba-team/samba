@@ -47,77 +47,74 @@
 #define EVENTLOG_AUDIT_FAILURE        0x0010
 
 
-typedef struct eventlog_q_open_eventlog
-{
-	uint32 unknown1;
+/***********************************/
+
+typedef struct {
+	uint16 unknown1;
 	uint16 unknown2;
-	uint16 unknown3;
-	uint16 sourcename_length;
-	uint16 sourcename_size;
-	uint32 sourcename_ptr;
-	UNISTR2 sourcename;
-	uint32 servername_ptr;
-	UNISTR2 servername;
-}
-EVENTLOG_Q_OPEN_EVENTLOG;
+} EVENTLOG_OPEN_UNKNOWN0;
 
-typedef struct eventlog_r_open_eventlog
-{
+typedef struct {
+	EVENTLOG_OPEN_UNKNOWN0 *unknown0;
+	UNISTR4 logname;
+	UNISTR4 servername;
+	uint32 unknown1;
+	uint32 unknown2;
+} EVENTLOG_Q_OPEN_EVENTLOG;
+
+typedef struct {
 	POLICY_HND handle;
 	WERROR status;
-}
-EVENTLOG_R_OPEN_EVENTLOG;
+} EVENTLOG_R_OPEN_EVENTLOG;
 
-typedef struct eventlog_q_close_eventlog
-{
+
+/***********************************/
+
+typedef struct {
 	POLICY_HND handle;
-}
-EVENTLOG_Q_CLOSE_EVENTLOG;
+} EVENTLOG_Q_CLOSE_EVENTLOG;
 
-typedef struct eventlog_r_close_eventlog
-{
+typedef struct {
 	POLICY_HND handle;
 	WERROR status;
-} 
-EVENTLOG_R_CLOSE_EVENTLOG;
+} EVENTLOG_R_CLOSE_EVENTLOG;
 
-typedef struct eventlog_q_get_num_records
-{
+
+/***********************************/
+
+typedef struct {
 	POLICY_HND handle;
-} 
-EVENTLOG_Q_GET_NUM_RECORDS;
+} EVENTLOG_Q_GET_NUM_RECORDS;
 
-typedef struct eventlog_r_get_num_records
-{
+typedef struct {
 	uint32 num_records;
 	WERROR status;
-}
-EVENTLOG_R_GET_NUM_RECORDS;
+} EVENTLOG_R_GET_NUM_RECORDS;
 
-typedef struct eventlog_q_get_oldest_entry
-{
+
+/***********************************/
+
+typedef struct {
 	POLICY_HND handle;
-}
-EVENTLOG_Q_GET_OLDEST_ENTRY;
+} EVENTLOG_Q_GET_OLDEST_ENTRY;
 
-typedef struct eventlog_r_get_oldest_entry
-{
+typedef struct {
 	uint32 oldest_entry;
 	WERROR status;
-}
-EVENTLOG_R_GET_OLDEST_ENTRY;
+} EVENTLOG_R_GET_OLDEST_ENTRY;
 
-typedef struct eventlog_q_read_eventlog
+
+/***********************************/
+
+typedef struct 
 {
 	POLICY_HND handle;
 	uint32 flags;
 	uint32 offset;
 	uint32 max_read_size;
-}
-EVENTLOG_Q_READ_EVENTLOG;
+} EVENTLOG_Q_READ_EVENTLOG;
 
-typedef struct eventlog_record
-{
+typedef struct {
 	uint32 length;
 	uint32 reserved1;
 	uint32 record_number;
@@ -136,8 +133,7 @@ typedef struct eventlog_record
 	uint32 data_offset;
 } Eventlog_record;
 
-typedef struct eventlog_data_record
-{
+typedef struct {
 	uint32 source_name_len;
 	wpstring source_name;
 	uint32 computer_name_len;
@@ -151,8 +147,7 @@ typedef struct eventlog_data_record
 	uint32 data_padding;
 } Eventlog_data_record;
 
-typedef struct eventlog_entry
-{
+typedef struct eventlog_entry {
 	Eventlog_record record;
 	Eventlog_data_record data_record;
 	uint8 *data;
@@ -160,8 +155,7 @@ typedef struct eventlog_entry
 	struct eventlog_entry *next;
 } Eventlog_entry;
  
-typedef struct eventlog_r_read_eventlog
-{
+typedef struct {
 	uint32 num_bytes_in_resp;
 	uint32 bytes_in_next_record;
 	uint32 num_records;
@@ -170,24 +164,18 @@ typedef struct eventlog_r_read_eventlog
 	uint32 sent_size;
 	uint32 real_size;
 	WERROR status;
-}
-EVENTLOG_R_READ_EVENTLOG;
+} EVENTLOG_R_READ_EVENTLOG;
 
-typedef struct eventlog_q_clear_eventlog
-{
+
+/***********************************/
+
+typedef struct {
 	POLICY_HND handle;
-	uint32 unknown1;
-	uint16 backup_file_length;
-	uint16 backup_file_size;
-	uint32 backup_file_ptr;
-	UNISTR2 backup_file;
-}
-EVENTLOG_Q_CLEAR_EVENTLOG;
+	UNISTR4 backupfile;
+} EVENTLOG_Q_CLEAR_EVENTLOG;
 
-typedef struct eventlog_r_clear_eventlog
-{
+typedef struct {
 	WERROR status;
-}
-EVENTLOG_R_CLEAR_EVENTLOG;
+} EVENTLOG_R_CLEAR_EVENTLOG;
 
 #endif /* _RPC_EVENTLOG_H */

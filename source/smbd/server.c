@@ -96,7 +96,7 @@ static void  killkids(void)
  somewhere else.
 ****************************************************************************/
 
-static void msg_sam_sync(int UNUSED(msg_type), pid_t UNUSED(pid),
+static void msg_sam_sync(int UNUSED(msg_type), struct process_id UNUSED(pid),
 			 void *UNUSED(buf), size_t UNUSED(len))
 {
         DEBUG(10, ("** sam sync message received, ignoring\n"));
@@ -107,7 +107,8 @@ static void msg_sam_sync(int UNUSED(msg_type), pid_t UNUSED(pid),
  somewhere else.
 ****************************************************************************/
 
-static void msg_sam_repl(int msg_type, pid_t pid, void *buf, size_t len)
+static void msg_sam_repl(int msg_type, struct process_id pid,
+			 void *buf, size_t len)
 {
         uint32 low_serial;
 
@@ -140,7 +141,8 @@ static BOOL open_sockets_inetd(void)
 	return True;
 }
 
-static void msg_exit_server(int msg_type, pid_t src, void *buf, size_t len)
+static void msg_exit_server(int msg_type, struct process_id src,
+			    void *buf, size_t len)
 {
 	exit_server("Got a SHUTDOWN message");
 }
@@ -620,9 +622,6 @@ void exit_server(const char *reason)
 	invalidate_all_vuids();
 
 	print_notify_send_messages(3); /* 3 second timeout. */
-
-	/* run all registered exit events */
-	smb_run_exit_events();
 
 	/* delete our entry in the connections database. */
 	yield_connection(NULL,"");

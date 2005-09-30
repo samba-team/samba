@@ -25,8 +25,6 @@
 #ifndef _RPC_REG_H /* _RPC_REG_H */
 #define _RPC_REG_H 
 
-#include "reg_objects.h"
-
 /* RPC opnum */
 
 #define REG_OPEN_HKCR		0x00
@@ -50,6 +48,7 @@
 #define REG_SET_VALUE		0x16
 #define REG_SHUTDOWN		0x18
 #define REG_ABORT_SHUTDOWN	0x19
+#define REG_OPEN_HKPT		0x20
 #define REG_GETVERSION		0x1a
 #define REG_SHUTDOWN_EX		0x1e
 
@@ -63,6 +62,9 @@
 #define KEY_HKLM		"HKLM"
 #define KEY_HKU			"HKU"
 #define KEY_HKCR		"HKCR"
+#define KEY_HKPD		"HKPD"
+#define KEY_HKPT		"HKPT"
+#define KEY_SERVICES		"HKLM\\SYSTEM\\CurrentControlSet\\Services"
 #define KEY_PRINTING 		"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print"
 #define KEY_PRINTING_2K		"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Printers"
 #define KEY_PRINTING_PORTS	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Ports"
@@ -84,6 +86,16 @@
 #define REG_RESOURCE_LIST              8
 #define REG_FULL_RESOURCE_DESCRIPTOR   9
 #define REG_RESOURCE_REQUIREMENTS_LIST 10
+
+/*
+ * Registry key types
+ *	Most keys are going to be GENERIC -- may need a better name?
+ *	HKPD and HKPT are used by reg_perfcount.c
+ *		they are special keys that congtain performance data
+ */
+#define REG_KEY_GENERIC		0
+#define REG_KEY_HKPD		1
+#define REG_KEY_HKPT		2
 
 /* 
  * container for function pointers to enumeration routines
@@ -108,9 +120,8 @@ typedef struct {
 /* structure to store the registry handles */
 
 typedef struct _RegistryKey {
-	struct _RegistryKey *prev, *next;
-
-	pstring 	name; 		/* full name of registry key */
+	uint32		type;
+	char		*name; 		/* full name of registry key */
 	uint32 		access_granted;
 	REGISTRY_HOOK	*hook;	
 } REGISTRY_KEY;

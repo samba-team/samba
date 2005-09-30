@@ -38,7 +38,7 @@ TDB_CONTEXT *conn_tdb_ctx(void)
 static void make_conn_key(connection_struct *conn, const char *name, TDB_DATA *pkbuf, struct connections_key *pkey)
 {
 	ZERO_STRUCTP(pkey);
-	pkey->pid = sys_getpid();
+	pkey->pid = procid_self();
 	pkey->cnum = conn?conn->cnum:-1;
 	fstrcpy(pkey->name, name);
 #ifdef DEVELOPER
@@ -107,8 +107,8 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
 	/* If the pid was not found delete the entry from connections.tdb */
 
 	if (cs->Clear && !process_exists(crec.pid) && (errno == ESRCH)) {
-		DEBUG(2,("pid %u doesn't exist - deleting connections %d [%s]\n",
-			(unsigned int)crec.pid, crec.cnum, crec.name));
+		DEBUG(2,("pid %s doesn't exist - deleting connections %d [%s]\n",
+			procid_str_static(&crec.pid), crec.cnum, crec.name));
 		if (tdb_delete(the_tdb, kbuf) != 0)
 			DEBUG(0,("count_fn: tdb_delete failed with error %s\n", tdb_errorstr(tdb) ));
 		return 0;
@@ -174,7 +174,7 @@ BOOL claim_connection(connection_struct *conn, const char *name,int max_connecti
 	/* fill in the crec */
 	ZERO_STRUCT(crec);
 	crec.magic = 0x280267;
-	crec.pid = sys_getpid();
+	crec.pid = procid_self();
 	crec.cnum = conn?conn->cnum:-1;
 	if (conn) {
 		crec.uid = conn->uid;

@@ -3,6 +3,8 @@
    simple kerberos5 routines for active directory
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Luke Howard 2002-2003
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
+   Copyright (C) Guenther Deschner 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -186,17 +188,107 @@
 }
 #endif
 
- void get_auth_data_from_tkt(DATA_BLOB *auth_data, krb5_ticket *tkt)
+BOOL unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_pac_data)
 {
+	DATA_BLOB pac_contents;
+	ASN1_DATA data;
+	int data_type;
+
+	if (!auth_data->length) {
+		return False;
+	}
+
+	asn1_load(&data, *auth_data);
+	asn1_start_tag(&data, ASN1_SEQUENCE(0));
+	asn1_start_tag(&data, ASN1_SEQUENCE(0));
+	asn1_start_tag(&data, ASN1_CONTEXT(0));
+	asn1_read_Integer(&data, &data_type);
+	
+	if (data_type != KRB5_AUTHDATA_WIN2K_PAC ) {
+		DEBUG(10,("authorization data is not a Windows PAC (type: %d)\n", data_type));
+		asn1_free(&data);
+		return False;
+	}
+	
+	asn1_end_tag(&data);
+	asn1_start_tag(&data, ASN1_CONTEXT(1));
+	asn1_read_OctetString(&data, &pac_contents);
+	asn1_end_tag(&data);
+	asn1_end_tag(&data);
+	asn1_end_tag(&data);
+	asn1_free(&data);
+
+	*unwrapped_pac_data = data_blob_talloc(mem_ctx, pac_contents.data, pac_contents.length);
+
+	data_blob_free(&pac_contents);
+
+	return True;
+}
+
+ BOOL get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, krb5_ticket *tkt)
+{
+	DATA_BLOB auth_data_wrapped;
+	BOOL got_auth_data_pac = False;
+	int i;
+	
 #if defined(HAVE_KRB5_TKT_ENC_PART2)
-	if (tkt->enc_part2 && tkt->enc_part2->authorization_data && tkt->enc_part2->authorization_data[0] && tkt->enc_part2->authorization_data[0]->length)
-		*auth_data = data_blob(tkt->enc_part2->authorization_data[0]->contents,
-			tkt->enc_part2->authorization_data[0]->length);
+	if (tkt->enc_part2 && tkt->enc_part2->authorization_data && 
+	    tkt->enc_part2->authorization_data[0] && 
+	    tkt->enc_part2->authorization_data[0]->length)
+	{
+		for (i = 0; tkt->enc_part2->authorization_data[i] != NULL; i++) {
+		
+			if (tkt->enc_part2->authorization_data[i]->ad_type != 
+			    KRB5_AUTHDATA_IF_RELEVANT) {
+				DEBUG(10,("get_auth_data_from_tkt: ad_type is %d\n", 
+					tkt->enc_part2->authorization_data[i]->ad_type));
+				continue;
+			}
+
+			auth_data_wrapped = data_blob(tkt->enc_part2->authorization_data[i]->contents,
+						      tkt->enc_part2->authorization_data[i]->length);
+
+			/* check if it is a PAC */
+			got_auth_data_pac = unwrap_pac(mem_ctx, &auth_data_wrapped, auth_data);
+			data_blob_free(&auth_data_wrapped);
+			
+			if (!got_auth_data_pac) {
+				continue;
+			}
+		}
+
+		return got_auth_data_pac;
+	}
+		
 #else
-	if (tkt->ticket.authorization_data && tkt->ticket.authorization_data->len)
-		*auth_data = data_blob(tkt->ticket.authorization_data->val->ad_data.data,
-			tkt->ticket.authorization_data->val->ad_data.length);
+	if (tkt->ticket.authorization_data && 
+	    tkt->ticket.authorization_data->len)
+	{
+		for (i = 0; i < tkt->ticket.authorization_data->len; i++) {
+			
+			if (tkt->ticket.authorization_data->val[i].ad_type != 
+			    KRB5_AUTHDATA_IF_RELEVANT) {
+				DEBUG(10,("get_auth_data_from_tkt: ad_type is %d\n", 
+					tkt->ticket.authorization_data->val[i].ad_type));
+				continue;
+			}
+
+			auth_data_wrapped = data_blob(tkt->ticket.authorization_data->val[i].ad_data.data,
+						      tkt->ticket.authorization_data->val[i].ad_data.length);
+
+			/* check if it is a PAC */
+			got_auth_data_pac = unwrap_pac(mem_ctx, &auth_data_wrapped, auth_data);
+			data_blob_free(&auth_data_wrapped);
+			
+			if (!got_auth_data_pac) {
+				continue;
+			}
+		}
+
+		return got_auth_data_pac;
+	}
 #endif
+	return False;
 }
 
  krb5_const_principal get_principal_from_tkt(krb5_ticket *tkt)
@@ -435,7 +527,7 @@ cleanup_princ:
   get a kerberos5 ticket for the given service 
 */
 int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
-			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5)
+			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, uint32 extra_ap_opts)
 {
 	krb5_error_code retval;
 	krb5_data packet;
@@ -475,7 +567,7 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 
 	if ((retval = ads_krb5_mk_req(context, 
 					&auth_context, 
-					AP_OPTS_USE_SUBKEY, 
+					AP_OPTS_USE_SUBKEY | (krb5_flags)extra_ap_opts,
 					principal,
 					ccdef, &packet))) {
 		goto failed;
@@ -550,10 +642,349 @@ failed:
 #endif
 }
 
+void smb_krb5_checksum_from_pac_sig(krb5_checksum *cksum, 
+				    PAC_SIGNATURE_DATA *sig)
+{
+#ifdef HAVE_CHECKSUM_IN_KRB5_CHECKSUM
+	cksum->cksumtype	= (krb5_cksumtype)sig->type;
+	cksum->checksum.length	= sig->signature.buf_len;
+	cksum->checksum.data	= sig->signature.buffer;
+#else
+	cksum->checksum_type	= (krb5_cksumtype)sig->type;
+	cksum->length		= sig->signature.buf_len;
+	cksum->contents		= sig->signature.buffer;
+#endif
+}
+
+krb5_error_code smb_krb5_verify_checksum(krb5_context context,
+					 krb5_keyblock *keyblock,
+					 krb5_keyusage usage,
+					 krb5_checksum *cksum,
+					 uint8 *data,
+					 size_t length)
+{
+	krb5_error_code ret;
+
+	/* verify the checksum */
+
+	/* welcome to the wonderful world of samba's kerberos abstraction layer:
+	 * 
+	 * function			heimdal 0.6.1rc3	heimdal 0.7	MIT krb 1.4.2
+	 * -----------------------------------------------------------------------------
+	 * krb5_c_verify_checksum	-			works		works
+	 * krb5_verify_checksum		works (6 args)		works (6 args)	broken (7 args) 
+	 */
+
+#if defined(HAVE_KRB5_C_VERIFY_CHECKSUM)
+	{
+		krb5_boolean checksum_valid = False;
+		krb5_data input;
+
+		input.data = (char *)data;
+		input.length = length;
+
+		ret = krb5_c_verify_checksum(context, 
+					     keyblock, 
+					     usage,
+					     &input, 
+					     cksum,
+					     &checksum_valid);
+		if (!checksum_valid)
+			ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
+	}
+
+#elif KRB5_VERIFY_CHECKSUM_ARGS == 6 && defined(HAVE_KRB5_CRYPTO_INIT) && defined(HAVE_KRB5_CRYPTO) && defined(HAVE_KRB5_CRYPTO_DESTROY)
+
+	/* Warning: MIT's krb5_verify_checksum cannot be used as it will use a key
+	 * without enctype and it ignores any key_usage types - Guenther */
+
+	{
+
+		krb5_crypto crypto;
+		ret = krb5_crypto_init(context,
+				       keyblock,
+				       0,
+				       &crypto);
+		if (ret) {
+			DEBUG(0,("smb_krb5_verify_checksum: krb5_crypto_init() failed: %s\n", 
+				error_message(ret)));
+			return ret;
+		}
+
+		ret = krb5_verify_checksum(context,
+					   crypto,
+					   usage,
+					   data,
+					   length,
+					   cksum);
+
+		krb5_crypto_destroy(context, crypto);
+	}
+
+#else
+#error UNKNOWN_KRB5_VERIFY_CHECKSUM_FUNCTION
+#endif
+
+	return ret;
+}
+
+time_t get_authtime_from_tkt(krb5_ticket *tkt)
+{
+#if defined(HAVE_KRB5_TKT_ENC_PART2)
+	return tkt->enc_part2->times.authtime;
+#else
+	return tkt->ticket.authtime;
+#endif
+}
+
+static int get_kvno_from_ap_req(krb5_ap_req *ap_req)
+{
+#ifdef HAVE_TICKET_POINTER_IN_KRB5_AP_REQ /* MIT */
+	if (ap_req->ticket->enc_part.kvno)
+		return ap_req->ticket->enc_part.kvno;
+#else /* Heimdal */
+	if (ap_req->ticket.enc_part.kvno) 
+		return *ap_req->ticket.enc_part.kvno;
+#endif
+	return 0;
+}
+
+static krb5_enctype get_enctype_from_ap_req(krb5_ap_req *ap_req)
+{
+#ifdef HAVE_ETYPE_IN_ENCRYPTEDDATA /* Heimdal */
+	return ap_req->ticket.enc_part.etype;
+#else /* MIT */
+	return ap_req->ticket->enc_part.enctype;
+#endif
+}
+
+static krb5_error_code
+get_key_from_keytab(krb5_context context,
+		    krb5_keytab keytab,
+		    krb5_const_principal server,
+		    krb5_enctype enctype,
+		    krb5_kvno kvno,
+		    krb5_keyblock **out_key)
+{
+	krb5_keytab_entry entry;
+	krb5_error_code ret;
+	krb5_keytab real_keytab;
+	char *name = NULL;
+
+	if (keytab == NULL) {
+		krb5_kt_default(context, &real_keytab);
+	} else {
+		real_keytab = keytab;
+	}
+
+	if ( DEBUGLEVEL >= 10 ) {
+		krb5_unparse_name(context, server, &name);
+		DEBUG(10,("get_key_from_keytab: will look for kvno %d, enctype %d and name: %s\n", 
+			kvno, enctype, name));
+		krb5_free_unparsed_name(context, name);
+	}
+
+	ret = krb5_kt_get_entry(context,
+				real_keytab,
+				server,
+				kvno,
+				enctype,
+				&entry);
+
+	if (ret) {
+		DEBUG(0,("get_key_from_keytab: failed to retrieve key: %s\n", error_message(ret)));
+		goto out;
+	}
+
+#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK /* Heimdal */
+	ret = krb5_copy_keyblock(context, &entry.keyblock, out_key);
+#elif defined(HAVE_KRB5_KEYTAB_ENTRY_KEY) /* MIT */
+	ret = krb5_copy_keyblock(context, &entry.key, out_key);
+#else
+#error UNKNOWN_KRB5_KEYTAB_ENTRY_FORMAT
+#endif
+
+	if (ret) {
+		DEBUG(0,("get_key_from_keytab: failed to copy key: %s\n", error_message(ret)));
+		goto out;
+	}
+		
+	smb_krb5_kt_free_entry(context, &entry);
+	
+out:    
+	if (keytab == NULL) {
+		krb5_kt_close(context, real_keytab);
+	}
+		
+	return ret;
+}
+
+void smb_krb5_free_ap_req(krb5_context context, 
+			  krb5_ap_req *ap_req)
+{
+#ifdef HAVE_KRB5_FREE_AP_REQ /* MIT */
+	krb5_free_ap_req(context, ap_req);
+#elif defined(HAVE_FREE_AP_REQ) /* Heimdal */
+	free_AP_REQ(ap_req);
+#else
+#error UNKNOWN_KRB5_AP_REQ_FREE_FUNCTION
+#endif
+}
+
+/* Prototypes */
+#if defined(HAVE_DECODE_KRB5_AP_REQ) /* MIT */
+krb5_error_code decode_krb5_ap_req(const krb5_data *code, krb5_ap_req **rep);
+#endif
+
+krb5_error_code smb_krb5_get_keyinfo_from_ap_req(krb5_context context, 
+						 const krb5_data *inbuf, 
+						 krb5_kvno *kvno, 
+						 krb5_enctype *enctype)
+{
+	krb5_error_code ret;
+#ifdef HAVE_KRB5_DECODE_AP_REQ /* Heimdal */
+	{
+		krb5_ap_req ap_req;
+		
+		ret = krb5_decode_ap_req(context, inbuf, &ap_req);
+		if (ret)
+			return ret;
+
+		*kvno = get_kvno_from_ap_req(&ap_req);
+		*enctype = get_enctype_from_ap_req(&ap_req);
+
+		smb_krb5_free_ap_req(context, &ap_req);
+	}
+#elif defined(HAVE_DECODE_KRB5_AP_REQ) /* MIT */
+	{
+		krb5_ap_req *ap_req = NULL;
+
+		ret = decode_krb5_ap_req(inbuf, &ap_req);
+		if (ret)
+			return ret;
+		
+		*kvno = get_kvno_from_ap_req(ap_req);
+		*enctype = get_enctype_from_ap_req(ap_req);
+
+		smb_krb5_free_ap_req(context, ap_req);
+	}
+#else
+#error UNKOWN_KRB5_AP_REQ_DECODING_FUNCTION
+#endif
+	return ret;
+}
+
+krb5_error_code krb5_rd_req_return_keyblock_from_keytab(krb5_context context,
+							krb5_auth_context *auth_context,
+							const krb5_data *inbuf,
+							krb5_const_principal server,
+							krb5_keytab keytab,
+							krb5_flags *ap_req_options,
+							krb5_ticket **ticket, 
+							krb5_keyblock **keyblock)
+{
+	krb5_error_code ret;
+	krb5_ap_req *ap_req = NULL;
+	krb5_kvno kvno;
+	krb5_enctype enctype;
+	krb5_keyblock *local_keyblock;
+
+	ret = krb5_rd_req(context, 
+			  auth_context, 
+			  inbuf, 
+			  server, 
+			  keytab, 
+			  ap_req_options, 
+			  ticket);
+	if (ret) {
+		return ret;
+	}
+	
+	ret = smb_krb5_get_keyinfo_from_ap_req(context, inbuf, &kvno, &enctype);
+	if (ret) {
+		return ret;
+	}
+
+	ret = get_key_from_keytab(context, 
+				  keytab,
+				  server,
+				  enctype,
+				  kvno,
+				  &local_keyblock);
+	if (ret) {
+		DEBUG(0,("krb5_rd_req_return_keyblock_from_keytab: failed to call get_key_from_keytab\n"));
+		goto out;
+	}
+
+out:
+	if (ap_req) {
+		smb_krb5_free_ap_req(context, ap_req);
+	}
+
+	if (ret && local_keyblock != NULL) {
+	        krb5_free_keyblock(context, local_keyblock);
+	} else {
+		*keyblock = local_keyblock;
+	}
+
+	return ret;
+}
+
+krb5_error_code smb_krb5_parse_name_norealm(krb5_context context, 
+					    const char *name, 
+					    krb5_principal *principal)
+{
+#ifdef HAVE_KRB5_PARSE_NAME_NOREALM
+	return krb5_parse_name_norealm(context, name, principal);
+#endif
+
+	/* we are cheating here because parse_name will in fact set the realm.
+	 * We don't care as the only caller of smb_krb5_parse_name_norealm
+	 * ignores the realm anyway when calling
+	 * smb_krb5_principal_compare_any_realm later - Guenther */
+
+	return krb5_parse_name(context, name, principal);
+}
+
+BOOL smb_krb5_principal_compare_any_realm(krb5_context context, 
+					  krb5_const_principal princ1, 
+					  krb5_const_principal princ2)
+{
+#ifdef HAVE_KRB5_PRINCIPAL_COMPARE_ANY_REALM
+
+	return krb5_principal_compare_any_realm(context, princ1, princ2);
+
+/* krb5_princ_size is a macro in MIT */
+#elif defined(HAVE_KRB5_PRINC_SIZE) || defined(krb5_princ_size)
+
+	int i, len1, len2;
+	const krb5_data *p1, *p2;
+
+	len1 = krb5_princ_size(context, princ1);
+	len2 = krb5_princ_size(context, princ2);
+
+	if (len1 != len2)
+		return False;
+
+	for (i = 0; i < len1; i++) {
+
+		p1 = krb5_princ_component(context, CONST_DISCARD(krb5_principal, princ1), i);
+		p2 = krb5_princ_component(context, CONST_DISCARD(krb5_principal, princ2), i);
+
+		if (p1->length != p2->length ||	memcmp(p1->data, p2->data, p1->length))
+			return False;
+	}
+
+	return True;
+#else
+#error NO_SUITABLE_PRINCIPAL_COMPARE_FUNCTION
+#endif
+}
+
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
 int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
-			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5) 
+			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, uint32 extra_ap_opts) 
 {
 	 DEBUG(0,("NO KERBEROS SUPPORT\n"));
 	 return 1;

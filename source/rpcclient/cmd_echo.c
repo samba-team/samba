@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "rpcclient.h"
 
-static NTSTATUS cmd_echo_add_one(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+static NTSTATUS cmd_echo_add_one(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				 int argc, const char **argv)
 {
 	uint32 request = 1, response;
@@ -36,7 +36,7 @@ static NTSTATUS cmd_echo_add_one(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if (argc == 2)
 		request = atoi(argv[1]);
 
-	result = cli_echo_add_one(cli, mem_ctx, request, &response);
+	result = rpccli_echo_add_one(cli, mem_ctx, request, &response);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -47,7 +47,7 @@ done:
 	return result;
 }
 
-static NTSTATUS cmd_echo_data(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+static NTSTATUS cmd_echo_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			      int argc, const char **argv)
 {
 	uint32 size, i;
@@ -65,7 +65,7 @@ static NTSTATUS cmd_echo_data(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	for (i = 0; i < size; i++)
 		in_data[i] = i & 0xff;
 
-	result = cli_echo_data(cli, mem_ctx, size, in_data, &out_data);
+	result = rpccli_echo_data(cli, mem_ctx, size, in_data, &out_data);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -84,7 +84,7 @@ done:
 	return result;
 }
 
-static NTSTATUS cmd_echo_source_data(struct cli_state *cli, 
+static NTSTATUS cmd_echo_source_data(struct rpc_pipe_client *cli, 
 				     TALLOC_CTX *mem_ctx, int argc, 
 				     const char **argv)
 {
@@ -99,7 +99,7 @@ static NTSTATUS cmd_echo_source_data(struct cli_state *cli,
 
 	size = atoi(argv[1]);
 
-	result = cli_echo_source_data(cli, mem_ctx, size, &out_data);
+	result = rpccli_echo_source_data(cli, mem_ctx, size, &out_data);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -116,7 +116,7 @@ done:
 	return result;
 }
 
-static NTSTATUS cmd_echo_sink_data(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+static NTSTATUS cmd_echo_sink_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				   int argc, const char **argv)
 {
 	uint32 size, i;
@@ -134,7 +134,7 @@ static NTSTATUS cmd_echo_sink_data(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	for (i = 0; i < size; i++)
 		in_data[i] = i & 0xff;
 
-	result = cli_echo_sink_data(cli, mem_ctx, size, in_data);
+	result = rpccli_echo_sink_data(cli, mem_ctx, size, in_data);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -151,9 +151,9 @@ struct cmd_set echo_commands[] = {
 
 	{ "ECHO" },
 
-	{ "echoaddone", RPC_RTYPE_NTSTATUS, cmd_echo_add_one,     NULL, PI_ECHO, "Add one to a number", "" },
-	{ "echodata",   RPC_RTYPE_NTSTATUS, cmd_echo_data,        NULL, PI_ECHO, "Echo data",           "" },
-	{ "sinkdata",   RPC_RTYPE_NTSTATUS, cmd_echo_sink_data,   NULL, PI_ECHO, "Sink data",           "" },
-	{ "sourcedata", RPC_RTYPE_NTSTATUS, cmd_echo_source_data, NULL, PI_ECHO, "Source data",         "" },
+	{ "echoaddone", RPC_RTYPE_NTSTATUS, cmd_echo_add_one,     NULL, PI_ECHO, NULL, "Add one to a number", "" },
+	{ "echodata",   RPC_RTYPE_NTSTATUS, cmd_echo_data,        NULL, PI_ECHO, NULL, "Echo data",           "" },
+	{ "sinkdata",   RPC_RTYPE_NTSTATUS, cmd_echo_sink_data,   NULL, PI_ECHO, NULL, "Sink data",           "" },
+	{ "sourcedata", RPC_RTYPE_NTSTATUS, cmd_echo_source_data, NULL, PI_ECHO, NULL, "Source data",         "" },
 	{ NULL }
 };

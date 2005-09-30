@@ -21,8 +21,6 @@
 #include "includes.h"
 #include "web/swat_proto.h"
 
-extern struct in_addr loopback_ip;
-
 #ifdef WITH_WINBIND
 
 /* check to see if winbind is running by pinging it */
@@ -37,6 +35,7 @@ BOOL winbindd_running(void)
    response */
 BOOL nmbd_running(void)
 {
+	extern struct in_addr loopback_ip;
 	int fd, count, flags;
 	struct in_addr *ip_list;
 
@@ -61,6 +60,7 @@ BOOL nmbd_running(void)
 BOOL smbd_running(void)
 {
 	static struct cli_state cli;
+	extern struct in_addr loopback_ip;
 
 	if (!cli_initialise(&cli))
 		return False;

@@ -106,7 +106,7 @@ BOOL prs_rpcbuffer_p(const char *desc, prs_struct *ps, int depth, RPC_BUFFER **b
 
 	/* caputure the pointer value to stream */
 
-	data_p = (uint32) *buffer;
+	data_p = *buffer ? 0xf000baaa : 0;
 
 	if ( !prs_uint32("ptr", ps, depth, &data_p ))
 		return False;

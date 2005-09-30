@@ -969,7 +969,8 @@ static int net_ads_printer_info(int argc, const char **argv)
 	return 0;
 }
 
-void do_drv_upgrade_printer(int msg_type, pid_t src, void *buf, size_t len)
+void do_drv_upgrade_printer(int msg_type, struct process_id src,
+			    void *buf, size_t len)
 {
 	return;
 }
@@ -980,6 +981,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
         ADS_STATUS rc;
 	const char *servername, *printername;
 	struct cli_state *cli;
+	struct rpc_pipe_client *pipe_hnd;
 	struct in_addr 		server_ip;
 	NTSTATUS nt_status;
 	TALLOC_CTX *mem_ctx = talloc_init("net_ads_printer_publish");
@@ -1038,8 +1040,9 @@ static int net_ads_printer_publish(int argc, const char **argv)
 
 	asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn[0], printername, srv_dn);
 
-	cli_nt_session_open(cli, PI_SPOOLSS);
-	get_remote_printer_publishing_data(cli, mem_ctx, &mods, printername);
+	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SPOOLSS, &nt_status);
+	get_remote_printer_publishing_data(pipe_hnd, mem_ctx, &mods,
+					   printername);
 
         rc = ads_add_printer_entry(ads, prt_dn, mem_ctx, &mods);
         if (!ADS_ERR_OK(rc)) {

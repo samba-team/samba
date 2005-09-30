@@ -39,7 +39,7 @@
 #include <fcntl.h>
 
 #define MOUNT_CIFS_VERSION_MAJOR "1"
-#define MOUNT_CIFS_VERSION_MINOR "9"
+#define MOUNT_CIFS_VERSION_MINOR "8"
 
 #ifndef MOUNT_CIFS_VENDOR_SUFFIX
 #define MOUNT_CIFS_VENDOR_SUFFIX ""
@@ -127,10 +127,8 @@ static int open_cred_file(char * file_name)
 	if(fs == NULL)
 		return errno;
 	line_buf = malloc(4096);
-	if(line_buf == NULL) {
-		fclose(fs);
+	if(line_buf == NULL)
 		return -ENOMEM;
-	}
 
 	while(fgets(line_buf,4096,fs)) {
 		/* parse line from credential file */
@@ -506,8 +504,6 @@ static int parse_options(char * options, int * filesys_flags)
 			*filesys_flags &= ~MS_NOSUID;
 		} else if (strncmp(data, "nodev", 5) == 0) {
 			*filesys_flags |= MS_NODEV;
-		} else if (strncmp(data, "nobrl", 5) == 0) {
-			*filesys_flags &= ~MS_MANDLOCK;
 		} else if (strncmp(data, "dev", 3) == 0) {
 			*filesys_flags &= ~MS_NODEV;
 		} else if (strncmp(data, "noexec", 6) == 0) {
@@ -574,14 +570,12 @@ static void check_for_comma(char ** ppasswrd)
 	char *pass;
 	int i,j;
 	int number_of_commas = 0;
-	int len;
+	int len = strlen(*ppasswrd);
 
 	if(ppasswrd == NULL)
 		return;
 	else 
 		(pass = *ppasswrd);
-
-	len = strlen(pass);
 
 	for(i=0;i<len;i++)  {
 		if(pass[i] == ',')
@@ -696,8 +690,9 @@ static char * parse_server(char ** punc_name)
 	int length = strnlen(unc_name,1024);
 	char * share;
 	char * ipaddress_string = NULL;
-	struct hostent * host_entry;
+	struct hostent * host_entry = NULL;
 	struct in_addr server_ipaddr;
+	int rc;
 
 	if(length > 1023) {
 		printf("mount error: UNC name too long");
@@ -720,13 +715,6 @@ static char * parse_server(char ** punc_name)
 			if(share) {
 				free_share_name = 1;
 				*punc_name = malloc(length+3);
-				if(*punc_name == NULL) {
-					/* put the original string back  if 
-					   no memory left */
-					*punc_name = unc_name;
-					return NULL;
-				}
-					
 				*share = '/';
 				strncpy((*punc_name)+2,unc_name,length);
 				unc_name = *punc_name;
@@ -756,7 +744,8 @@ continue_unc_parsing:
 					return NULL;
 				}
 				if(host_entry == NULL) {
-					printf("mount error: could not find target server. TCP name %s not found\n", unc_name);
+					printf("mount error: could not find target server. TCP name %s not found ", unc_name);
+					printf(" rc = %d\n",rc);
 					return NULL;
 				} else {
 					/* BB should we pass an alternate version of the share name as Unicode */
@@ -1029,9 +1018,6 @@ mount_retry:
 		optlen = 0;
 	if(share_name)
 		optlen += strlen(share_name) + 4;
-	else {
-		printf("No server share name specified\n");
-	}
 	if(user_name)
 		optlen += strlen(user_name) + 6;
 	if(ipaddr)
@@ -1140,6 +1126,8 @@ mount_retry:
 					strcat(mountent.mnt_opts,"rw");
 				if(flags & MS_MANDLOCK)
 					strcat(mountent.mnt_opts,",mand");
+				else
+					strcat(mountent.mnt_opts,",nomand");
 				if(flags & MS_NOEXEC)
 					strcat(mountent.mnt_opts,",noexec");
 				if(flags & MS_NOSUID)

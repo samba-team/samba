@@ -33,7 +33,7 @@
  Fill in a REGVAL_BUFFER for the data given a REGISTRY_VALUE
  *******************************************************************/
 
-static uint32 reg_init_regval_buffer( REGVAL_BUFFER *buf2, REGISTRY_VALUE *val )
+uint32 reg_init_regval_buffer( REGVAL_BUFFER *buf2, REGISTRY_VALUE *val )
 {
 	uint32		real_size = 0;
 	

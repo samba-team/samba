@@ -79,7 +79,8 @@ void profile_message(int msg_type, pid_t src, void *buf, size_t len)
 /****************************************************************************
 receive a request profile level message
 ****************************************************************************/
-void reqprofile_message(int msg_type, pid_t src, void *buf, size_t len)
+void reqprofile_message(int msg_type, struct process_id src,
+			void *buf, size_t len)
 {
         int level;
 
@@ -88,7 +89,8 @@ void reqprofile_message(int msg_type, pid_t src, void *buf, size_t len)
 #else
 	level = 0;
 #endif
-	DEBUG(1,("INFO: Received REQ_PROFILELEVEL message from PID %u\n",(unsigned int)src));
+	DEBUG(1,("INFO: Received REQ_PROFILELEVEL message from PID %u\n",
+		 (unsigned int)procid_to_pid(&src)));
 	message_send_pid(src, MSG_PROFILELEVEL, &level, sizeof(int), True);
 }
 

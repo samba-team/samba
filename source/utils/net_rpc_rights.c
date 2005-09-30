@@ -23,22 +23,23 @@
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS sid_to_name(struct cli_state *cli, 
-			    TALLOC_CTX *mem_ctx,
-			    DOM_SID *sid, fstring name)
+static NTSTATUS sid_to_name(struct rpc_pipe_client *pipe_hnd,
+				TALLOC_CTX *mem_ctx,
+				DOM_SID *sid,
+				fstring name)
 {
 	POLICY_HND pol;
 	uint32 *sid_types;
 	NTSTATUS result;
 	char **domains, **names;
 
-	result = cli_lsa_open_policy(cli, mem_ctx, True, 
+	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, True, 
 		SEC_RIGHTS_MAXIMUM_ALLOWED, &pol);
 		
 	if ( !NT_STATUS_IS_OK(result) )
 		return result;
 
-	result = cli_lsa_lookup_sids(cli, mem_ctx, &pol, 1, sid, &domains, &names, &sid_types);
+	result = rpccli_lsa_lookup_sids(pipe_hnd, mem_ctx, &pol, 1, sid, &domains, &names, &sid_types);
 	
 	if ( NT_STATUS_IS_OK(result) ) {
 		if ( *domains[0] )
@@ -47,14 +48,14 @@ static NTSTATUS sid_to_name(struct cli_state *cli,
 			fstrcpy( name, names[0] );
 	}
 
-	cli_lsa_close(cli, mem_ctx, &pol);
+	rpccli_lsa_close(pipe_hnd, mem_ctx, &pol);
 	return result;
 }
 
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS name_to_sid(struct cli_state *cli, 
+static NTSTATUS name_to_sid(struct rpc_pipe_client *pipe_hnd,
 			    TALLOC_CTX *mem_ctx,
 			    DOM_SID *sid, const char *name)
 {
@@ -64,31 +65,31 @@ static NTSTATUS name_to_sid(struct cli_state *cli,
 	DOM_SID *sids;
 
 	/* maybe its a raw SID */
-	if ( strncmp(name, "S-", 2) == 0 && string_to_sid(sid, name) ) 
-	{
+	if ( strncmp(name, "S-", 2) == 0 && string_to_sid(sid, name) ) {
 		return NT_STATUS_OK;
 	}
 
-	result = cli_lsa_open_policy(cli, mem_ctx, True, 
+	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, True, 
 		SEC_RIGHTS_MAXIMUM_ALLOWED, &pol);
 		
 	if ( !NT_STATUS_IS_OK(result) )
 		return result;
 
-	result = cli_lsa_lookup_names(cli, mem_ctx, &pol, 1, &name, &sids, &sid_types);
+	result = rpccli_lsa_lookup_names(pipe_hnd, mem_ctx, &pol, 1, &name, &sids, &sid_types);
 	
 	if ( NT_STATUS_IS_OK(result) )
 		sid_copy( sid, &sids[0] );
 
-	cli_lsa_close(cli, mem_ctx, &pol);
+	rpccli_lsa_close(pipe_hnd, mem_ctx, &pol);
 	return result;
 }
 
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS enum_privileges( TALLOC_CTX *ctx, struct cli_state *cli, 
-                                 POLICY_HND *pol )
+static NTSTATUS enum_privileges(struct rpc_pipe_client *pipe_hnd,
+				TALLOC_CTX *ctx,
+				POLICY_HND *pol )
 {
 	NTSTATUS result;
 	uint32 enum_context = 0;
@@ -103,7 +104,7 @@ static NTSTATUS enum_privileges( TALLOC_CTX *ctx, struct cli_state *cli,
 	uint16 lang_id_desc;
 	fstring description;
 
-	result = cli_lsa_enum_privilege(cli, ctx, pol, &enum_context, 
+	result = rpccli_lsa_enum_privilege(pipe_hnd, ctx, pol, &enum_context, 
 		pref_max_length, &count, &privs_name, &privs_high, &privs_low);
 
 	if ( !NT_STATUS_IS_OK(result) )
@@ -116,7 +117,7 @@ static NTSTATUS enum_privileges( TALLOC_CTX *ctx, struct cli_state *cli,
 		
 		/* try to get the description */
 		
-		if ( !NT_STATUS_IS_OK(cli_lsa_get_dispname(cli, ctx, pol, 
+		if ( !NT_STATUS_IS_OK(rpccli_lsa_get_dispname(pipe_hnd, ctx, pol, 
 			privs_name[i], lang_id, lang_id_sys, description, &lang_id_desc)) )
 		{
 			d_printf("??????\n");
@@ -127,21 +128,23 @@ static NTSTATUS enum_privileges( TALLOC_CTX *ctx, struct cli_state *cli,
 	}
 
 	return NT_STATUS_OK;
-
 }
 
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS check_privilege_for_user( TALLOC_CTX *ctx, struct cli_state *cli,
-                                          POLICY_HND *pol, DOM_SID *sid, const char *right)
+static NTSTATUS check_privilege_for_user(struct rpc_pipe_client *pipe_hnd,
+					TALLOC_CTX *ctx,
+					POLICY_HND *pol,
+					DOM_SID *sid,
+					const char *right)
 {
 	NTSTATUS result;
 	uint32 count;
 	char **rights;
 	int i;
 
-	result = cli_lsa_enum_account_rights(cli, ctx, pol, sid, &count, &rights);
+	result = rpccli_lsa_enum_account_rights(pipe_hnd, ctx, pol, sid, &count, &rights);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
@@ -163,15 +166,17 @@ static NTSTATUS check_privilege_for_user( TALLOC_CTX *ctx, struct cli_state *cli
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS enum_privileges_for_user( TALLOC_CTX *ctx, struct cli_state *cli,
-                                          POLICY_HND *pol, DOM_SID *sid )
+static NTSTATUS enum_privileges_for_user(struct rpc_pipe_client *pipe_hnd,
+					TALLOC_CTX *ctx,
+					POLICY_HND *pol,
+					DOM_SID *sid )
 {
 	NTSTATUS result;
 	uint32 count;
 	char **rights;
 	int i;
 
-	result = cli_lsa_enum_account_rights(cli, ctx, pol, sid, &count, &rights);
+	result = rpccli_lsa_enum_account_rights(pipe_hnd, ctx, pol, sid, &count, &rights);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -189,8 +194,10 @@ static NTSTATUS enum_privileges_for_user( TALLOC_CTX *ctx, struct cli_state *cli
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS enum_accounts_for_privilege(TALLOC_CTX *ctx, struct cli_state *cli,
-					    POLICY_HND *pol, const char *privilege)
+static NTSTATUS enum_accounts_for_privilege(struct rpc_pipe_client *pipe_hnd,
+						TALLOC_CTX *ctx,
+						POLICY_HND *pol,
+						const char *privilege)
 {
 	NTSTATUS result;
 	uint32 enum_context=0;
@@ -200,7 +207,7 @@ static NTSTATUS enum_accounts_for_privilege(TALLOC_CTX *ctx, struct cli_state *c
 	int i;
 	fstring name;
 
-	result = cli_lsa_enum_sids(cli, ctx, pol, &enum_context, 
+	result = rpccli_lsa_enum_sids(pipe_hnd, ctx, pol, &enum_context, 
 		pref_max_length, &count, &sids);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -211,7 +218,7 @@ static NTSTATUS enum_accounts_for_privilege(TALLOC_CTX *ctx, struct cli_state *c
 	for ( i=0; i<count; i++ ) {
 	
 		   
-		result = check_privilege_for_user( ctx, cli, pol, &sids[i], privilege);
+		result = check_privilege_for_user( pipe_hnd, ctx, pol, &sids[i], privilege);
 		
 		if ( ! NT_STATUS_IS_OK(result)) {
 			if ( ! NT_STATUS_EQUAL(result, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
@@ -222,7 +229,7 @@ static NTSTATUS enum_accounts_for_privilege(TALLOC_CTX *ctx, struct cli_state *c
 
 		/* try to convert the SID to a name.  Fall back to 
 		   printing the raw SID if necessary */
-		result = sid_to_name( cli, ctx, &sids[i], name );
+		result = sid_to_name( pipe_hnd, ctx, &sids[i], name );
 		if ( !NT_STATUS_IS_OK (result) )
 			fstrcpy( name, sid_string_static(&sids[i]) );
 			
@@ -235,8 +242,9 @@ static NTSTATUS enum_accounts_for_privilege(TALLOC_CTX *ctx, struct cli_state *c
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS enum_privileges_for_accounts( TALLOC_CTX *ctx, struct cli_state *cli,
-                                              POLICY_HND *pol )
+static NTSTATUS enum_privileges_for_accounts(struct rpc_pipe_client *pipe_hnd,
+						TALLOC_CTX *ctx,
+						POLICY_HND *pol)
 {
 	NTSTATUS result;
 	uint32 enum_context=0;
@@ -246,7 +254,7 @@ static NTSTATUS enum_privileges_for_accounts( TALLOC_CTX *ctx, struct cli_state 
 	int i;
 	fstring name;
 
-	result = cli_lsa_enum_sids(cli, ctx, pol, &enum_context, 
+	result = rpccli_lsa_enum_sids(pipe_hnd, ctx, pol, &enum_context, 
 		pref_max_length, &count, &sids);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -257,13 +265,13 @@ static NTSTATUS enum_privileges_for_accounts( TALLOC_CTX *ctx, struct cli_state 
 		/* try to convert the SID to a name.  Fall back to 
 		   printing the raw SID if necessary */
 		   
-		result = sid_to_name( cli, ctx, &sids[i], name );
+		result = sid_to_name(pipe_hnd, ctx, &sids[i], name );
 		if ( !NT_STATUS_IS_OK (result) )
 			fstrcpy( name, sid_string_static(&sids[i]) );
 			
 		d_printf("%s\n", name);
 		
-		result = enum_privileges_for_user( ctx, cli, pol, &sids[i] );
+		result = enum_privileges_for_user(pipe_hnd, ctx, pol, &sids[i] );
 		
 		if ( !NT_STATUS_IS_OK(result) )
 			return result;
@@ -277,9 +285,13 @@ static NTSTATUS enum_privileges_for_accounts( TALLOC_CTX *ctx, struct cli_state 
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS rpc_rights_list_internal( const DOM_SID *domain_sid, const char *domain_name, 
-                            struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-                            int argc, const char **argv )
+static NTSTATUS rpc_rights_list_internal(const DOM_SID *domain_sid,
+					const char *domain_name, 
+					struct cli_state *cli,
+					struct rpc_pipe_client *pipe_hnd,
+					TALLOC_CTX *mem_ctx, 
+					int argc,
+					const char **argv )
 {
 	POLICY_HND pol;
 	NTSTATUS result;
@@ -291,7 +303,7 @@ static NTSTATUS rpc_rights_list_internal( const DOM_SID *domain_sid, const char 
 	uint16 lang_id_desc;
 	
 	
-	result = cli_lsa_open_policy(cli, mem_ctx, True, 
+	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, True, 
 		SEC_RIGHTS_MAXIMUM_ALLOWED, &pol);
 
 	if ( !NT_STATUS_IS_OK(result) )
@@ -300,7 +312,7 @@ static NTSTATUS rpc_rights_list_internal( const DOM_SID *domain_sid, const char 
 	/* backwards compatibility; just list available privileges if no arguement */
 	   
 	if (argc == 0) {
-		result = enum_privileges( mem_ctx, cli, &pol );
+		result = enum_privileges(pipe_hnd, mem_ctx, &pol );
 		goto done;
 	}
 
@@ -308,18 +320,17 @@ static NTSTATUS rpc_rights_list_internal( const DOM_SID *domain_sid, const char 
 		int i = 1;
 
 		if (argv[1] == NULL) {
-			result = enum_privileges( mem_ctx, cli, &pol );
+			result = enum_privileges(pipe_hnd, mem_ctx, &pol );
 			goto done;
 		}
 
-		while ( argv[i] != NULL ) 
-		{
+		while ( argv[i] != NULL ) {
 			fstrcpy( privname, argv[i] );
 			i++;
 		
 			/* verify that this is a valid privilege for error reporting */
 			
-			result = cli_lsa_get_dispname(cli, mem_ctx, &pol, privname, lang_id, 
+			result = rpccli_lsa_get_dispname(pipe_hnd, mem_ctx, &pol, privname, lang_id, 
 				lang_id_sys, description, &lang_id_desc);
 			
 			if ( !NT_STATUS_IS_OK(result) ) {
@@ -330,7 +341,7 @@ static NTSTATUS rpc_rights_list_internal( const DOM_SID *domain_sid, const char 
 				continue;
 			}
 			
-			result = enum_accounts_for_privilege(mem_ctx, cli, &pol, privname);
+			result = enum_accounts_for_privilege(pipe_hnd, mem_ctx, &pol, privname);
 			if (!NT_STATUS_IS_OK(result)) {
 				d_printf("Error enumerating accounts for privilege %s [%s].\n", 
 					privname, nt_errstr(result));
@@ -346,16 +357,16 @@ static NTSTATUS rpc_rights_list_internal( const DOM_SID *domain_sid, const char 
 		int i = 1;
 
 		if (argv[1] == NULL) {
-			result = enum_privileges_for_accounts(mem_ctx, cli, &pol);
+			result = enum_privileges_for_accounts(pipe_hnd, mem_ctx, &pol);
 			goto done;
 		}
 
 		while (argv[i] != NULL) {
-			result = name_to_sid(cli, mem_ctx, &sid, argv[i]);
+			result = name_to_sid(pipe_hnd, mem_ctx, &sid, argv[i]);
 			if (!NT_STATUS_IS_OK(result)) {
 				goto done;
 			}
-			result = enum_privileges_for_user(mem_ctx, cli, &pol, &sid);
+			result = enum_privileges_for_user(pipe_hnd, mem_ctx, &pol, &sid);
 			if (!NT_STATUS_IS_OK(result)) {
 				goto done;
 			}
@@ -372,14 +383,14 @@ static NTSTATUS rpc_rights_list_internal( const DOM_SID *domain_sid, const char 
 		goto done;
 	}
 
-	result = name_to_sid(cli, mem_ctx, &sid, argv[0]);
+	result = name_to_sid(pipe_hnd, mem_ctx, &sid, argv[0]);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
-	result = enum_privileges_for_user( mem_ctx, cli, &pol, &sid );
+	result = enum_privileges_for_user(pipe_hnd, mem_ctx, &pol, &sid );
 
 done:
-	cli_lsa_close(cli, mem_ctx, &pol);
+	rpccli_lsa_close(pipe_hnd, mem_ctx, &pol);
 
 	return result;
 }
@@ -387,9 +398,13 @@ done:
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS rpc_rights_grant_internal( const DOM_SID *domain_sid, const char *domain_name, 
-                            struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-                            int argc, const char **argv )
+static NTSTATUS rpc_rights_grant_internal(const DOM_SID *domain_sid,
+					const char *domain_name, 
+					struct cli_state *cli,
+					struct rpc_pipe_client *pipe_hnd,
+					TALLOC_CTX *mem_ctx, 
+					int argc,
+					const char **argv )
 {
 	POLICY_HND dom_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -401,18 +416,18 @@ static NTSTATUS rpc_rights_grant_internal( const DOM_SID *domain_sid, const char
 		return NT_STATUS_OK;
 	}
 
-	result = name_to_sid(cli, mem_ctx, &sid, argv[0]);
+	result = name_to_sid(pipe_hnd, mem_ctx, &sid, argv[0]);
 	if (!NT_STATUS_IS_OK(result))
 		return result;	
 
-	result = cli_lsa_open_policy2(cli, mem_ctx, True, 
+	result = rpccli_lsa_open_policy2(pipe_hnd, mem_ctx, True, 
 				     SEC_RIGHTS_MAXIMUM_ALLOWED,
 				     &dom_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;	
 
-	result = cli_lsa_add_account_rights(cli, mem_ctx, &dom_pol, sid, 
+	result = rpccli_lsa_add_account_rights(pipe_hnd, mem_ctx, &dom_pol, sid, 
 					    argc-1, argv+1);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -426,7 +441,7 @@ static NTSTATUS rpc_rights_grant_internal( const DOM_SID *domain_sid, const char
 			argv[0], nt_errstr(result));
 	}
 		
- 	cli_lsa_close(cli, mem_ctx, &dom_pol);
+ 	rpccli_lsa_close(pipe_hnd, mem_ctx, &dom_pol);
 	
 	return result;
 }
@@ -434,9 +449,13 @@ static NTSTATUS rpc_rights_grant_internal( const DOM_SID *domain_sid, const char
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS rpc_rights_revoke_internal( const DOM_SID *domain_sid, const char *domain_name, 
-                              struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-                              int argc, const char **argv )
+static NTSTATUS rpc_rights_revoke_internal(const DOM_SID *domain_sid,
+					const char *domain_name, 
+					struct cli_state *cli,
+					struct rpc_pipe_client *pipe_hnd,
+					TALLOC_CTX *mem_ctx, 
+					int argc,
+					const char **argv )
 {
 	POLICY_HND dom_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -448,18 +467,18 @@ static NTSTATUS rpc_rights_revoke_internal( const DOM_SID *domain_sid, const cha
 		return NT_STATUS_OK;
 	}
 
-	result = name_to_sid(cli, mem_ctx, &sid, argv[0]);
+	result = name_to_sid(pipe_hnd, mem_ctx, &sid, argv[0]);
 	if (!NT_STATUS_IS_OK(result))
 		return result;	
 
-	result = cli_lsa_open_policy2(cli, mem_ctx, True, 
+	result = rpccli_lsa_open_policy2(pipe_hnd, mem_ctx, True, 
 				     SEC_RIGHTS_MAXIMUM_ALLOWED,
 				     &dom_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;	
 
-	result = cli_lsa_remove_account_rights(cli, mem_ctx, &dom_pol, sid, 
+	result = rpccli_lsa_remove_account_rights(pipe_hnd, mem_ctx, &dom_pol, sid, 
 					       False, argc-1, argv+1);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -473,7 +492,7 @@ done:
 			argv[0], nt_errstr(result));
 	}
 	
-	cli_lsa_close(cli, mem_ctx, &dom_pol);
+	rpccli_lsa_close(pipe_hnd, mem_ctx, &dom_pol);
 
 	return result;
 }	
@@ -541,5 +560,3 @@ int net_rpc_rights(int argc, const char **argv)
 		
 	return net_help_rights( argc, argv );
 }
-
-

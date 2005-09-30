@@ -34,7 +34,8 @@ static int num_replies;		/* Used by message callback fns */
 
 /* Send a message to a destination pid.  Zero means broadcast smbd. */
 
-static BOOL send_message(pid_t pid, int msg_type, const void *buf, int len,
+static BOOL send_message(struct process_id pid, int msg_type,
+			 const void *buf, int len,
 			 BOOL duplicates)
 {
 	TDB_CONTEXT *tdb;
@@ -44,7 +45,7 @@ static BOOL send_message(pid_t pid, int msg_type, const void *buf, int len,
 	if (!message_init())
 		return False;
 
-	if (pid != 0)
+	if (procid_to_pid(&pid) != 0)
 		return message_send_pid(pid, msg_type, buf, len, duplicates);
 
 	tdb = tdb_open_log(lock_path("connections.tdb"), 0, 
@@ -84,15 +85,17 @@ static void wait_replies(BOOL multiple_replies)
 
 /* Message handler callback that displays the PID and a string on stdout */
 
-static void print_pid_string_cb(int msg_type, pid_t pid, void *buf, size_t len)
+static void print_pid_string_cb(int msg_type, struct process_id pid, void *buf, size_t len)
 {
-	printf("PID %u: %.*s", (unsigned int)pid, (int)len, (const char *)buf);
+	printf("PID %u: %.*s", (unsigned int)procid_to_pid(&pid),
+	       (int)len, (const char *)buf);
 	num_replies++;
 }
 
 /* Message handler callback that displays a string on stdout */
 
-static void print_string_cb(int msg_type, pid_t pid, void *buf, size_t len)
+static void print_string_cb(int msg_type, struct process_id pid,
+			    void *buf, size_t len)
 {
 	printf("%.*s", (int)len, (const char *)buf);
 	num_replies++;
@@ -100,7 +103,8 @@ static void print_string_cb(int msg_type, pid_t pid, void *buf, size_t len)
 
 /* Send no message.  Useful for testing. */
 
-static BOOL do_noop(const pid_t pid, const int argc, const char **argv)
+static BOOL do_noop(const struct process_id pid,
+		    const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> noop\n");
@@ -114,7 +118,8 @@ static BOOL do_noop(const pid_t pid, const int argc, const char **argv)
 
 /* Send a debug string */
 
-static BOOL do_debug(const pid_t pid, const int argc, const char **argv)
+static BOOL do_debug(const struct process_id pid,
+		     const int argc, const char **argv)
 {
 	if (argc != 2) {
 		fprintf(stderr, "Usage: smbcontrol <dest> debug "
@@ -128,7 +133,8 @@ static BOOL do_debug(const pid_t pid, const int argc, const char **argv)
 
 /* Force a browser election */
 
-static BOOL do_election(const pid_t pid, const int argc, const char **argv)
+static BOOL do_election(const struct process_id pid,
+			const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> force-election\n");
@@ -141,13 +147,15 @@ static BOOL do_election(const pid_t pid, const int argc, const char **argv)
 
 /* Ping a samba daemon process */
 
-static void pong_cb(int msg_type, pid_t pid, void *buf, size_t len)
+static void pong_cb(int msg_type, struct process_id pid, void *buf, size_t len)
 {
-	printf("PONG from pid %u\n", (unsigned int)pid);
+	char *src_string = procid_str(NULL, &pid);
+	printf("PONG from pid %s\n", src_string);
+	talloc_free(src_string);
 	num_replies++;
 }
 
-static BOOL do_ping(const pid_t pid, const int argc, const char **argv)
+static BOOL do_ping(const struct process_id pid, const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> ping\n");
@@ -161,7 +169,7 @@ static BOOL do_ping(const pid_t pid, const int argc, const char **argv)
 
 	message_register(MSG_PONG, pong_cb);
 
-	wait_replies(pid == 0);
+	wait_replies(procid_to_pid(&pid) == 0);
 
 	/* No replies were received within the timeout period */
 
@@ -175,7 +183,8 @@ static BOOL do_ping(const pid_t pid, const int argc, const char **argv)
 
 /* Set profiling options */
 
-static BOOL do_profile(const pid_t pid, const int argc, const char **argv)
+static BOOL do_profile(const struct process_id pid,
+		       const int argc, const char **argv)
 {
 	int v;
 
@@ -203,7 +212,7 @@ static BOOL do_profile(const pid_t pid, const int argc, const char **argv)
 
 /* Return the profiling level */
 
-static void profilelevel_cb(int msg_type, pid_t pid, void *buf, size_t len)
+static void profilelevel_cb(int msg_type, struct process_id pid, void *buf, size_t len)
 {
 	int level;
 	const char *s;
@@ -236,10 +245,11 @@ static void profilelevel_cb(int msg_type, pid_t pid, void *buf, size_t len)
 		break;
 	}
 	
-	printf("Profiling %s on pid %u\n",s,(unsigned int)pid);
+	printf("Profiling %s on pid %u\n",s,(unsigned int)procid_to_pid(&pid));
 }
 
-static void profilelevel_rqst(int msg_type, pid_t pid, void *buf, size_t len)
+static void profilelevel_rqst(int msg_type, struct process_id pid,
+			      void *buf, size_t len)
 {
 	int v = 0;
 
@@ -248,7 +258,8 @@ static void profilelevel_rqst(int msg_type, pid_t pid, void *buf, size_t len)
 	send_message(pid, MSG_PROFILELEVEL, &v, sizeof(int), False);
 }
 
-static BOOL do_profilelevel(const pid_t pid, const int argc, const char **argv)
+static BOOL do_profilelevel(const struct process_id pid,
+			    const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> profilelevel\n");
@@ -263,7 +274,7 @@ static BOOL do_profilelevel(const pid_t pid, const int argc, const char **argv)
 	message_register(MSG_PROFILELEVEL, profilelevel_cb);
 	message_register(MSG_REQ_PROFILELEVEL, profilelevel_rqst);
 
-	wait_replies(pid == 0);
+	wait_replies(procid_to_pid(&pid) == 0);
 
 	/* No replies were received within the timeout period */
 
@@ -277,7 +288,8 @@ static BOOL do_profilelevel(const pid_t pid, const int argc, const char **argv)
 
 /* Display debug level settings */
 
-static BOOL do_debuglevel(const pid_t pid, const int argc, const char **argv)
+static BOOL do_debuglevel(const struct process_id pid,
+			  const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> debuglevel\n");
@@ -291,7 +303,7 @@ static BOOL do_debuglevel(const pid_t pid, const int argc, const char **argv)
 
 	message_register(MSG_DEBUGLEVEL, print_pid_string_cb);
 
-	wait_replies(pid == 0);
+	wait_replies(procid_to_pid(&pid) == 0);
 
 	/* No replies were received within the timeout period */
 
@@ -305,7 +317,8 @@ static BOOL do_debuglevel(const pid_t pid, const int argc, const char **argv)
 
 /* Send a print notify message */
 
-static BOOL do_printnotify(const pid_t pid, const int argc, const char **argv)
+static BOOL do_printnotify(const struct process_id pid,
+			   const int argc, const char **argv)
 {
 	const char *cmd;
 
@@ -428,7 +441,8 @@ static BOOL do_printnotify(const pid_t pid, const int argc, const char **argv)
 			return False;
 		}
 
-		notify_printer_byname(argv[2], attribute, argv[4]);
+		notify_printer_byname(argv[2], attribute,
+				      CONST_DISCARD(char *, argv[4]));
 
 		goto send;
 	}
@@ -443,7 +457,8 @@ send:
 
 /* Close a share */
 
-static BOOL do_closeshare(const pid_t pid, const int argc, const char **argv)
+static BOOL do_closeshare(const struct process_id pid,
+			  const int argc, const char **argv)
 {
 	if (argc != 2) {
 		fprintf(stderr, "Usage: smbcontrol <dest> close-share "
@@ -457,7 +472,8 @@ static BOOL do_closeshare(const pid_t pid, const int argc, const char **argv)
 
 /* Force a SAM synchronisation */
 
-static BOOL do_samsync(const pid_t pid, const int argc, const char **argv)
+static BOOL do_samsync(const struct process_id pid,
+		       const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> samsync\n");
@@ -470,7 +486,8 @@ static BOOL do_samsync(const pid_t pid, const int argc, const char **argv)
 
 /* Force a SAM replication */
 
-static BOOL do_samrepl(const pid_t pid, const int argc, const char **argv)
+static BOOL do_samrepl(const struct process_id pid,
+		       const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> samrepl\n");
@@ -483,7 +500,8 @@ static BOOL do_samrepl(const pid_t pid, const int argc, const char **argv)
 
 /* Display talloc pool usage */
 
-static BOOL do_poolusage(const pid_t pid, const int argc, const char **argv)
+static BOOL do_poolusage(const struct process_id pid,
+			 const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> pool-usage\n");
@@ -497,7 +515,7 @@ static BOOL do_poolusage(const pid_t pid, const int argc, const char **argv)
 
 	message_register(MSG_POOL_USAGE, print_string_cb);
 
-	wait_replies(pid == 0);
+	wait_replies(procid_to_pid(&pid) == 0);
 
 	/* No replies were received within the timeout period */
 
@@ -511,7 +529,8 @@ static BOOL do_poolusage(const pid_t pid, const int argc, const char **argv)
 
 /* Perform a dmalloc mark */
 
-static BOOL do_dmalloc_mark(const pid_t pid, const int argc, const char **argv)
+static BOOL do_dmalloc_mark(const struct process_id pid,
+			    const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> dmalloc-mark\n");
@@ -524,7 +543,8 @@ static BOOL do_dmalloc_mark(const pid_t pid, const int argc, const char **argv)
 
 /* Perform a dmalloc changed */
 
-static BOOL do_dmalloc_changed(const pid_t pid, const int argc, const char **argv)
+static BOOL do_dmalloc_changed(const struct process_id pid,
+			       const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> "
@@ -538,7 +558,8 @@ static BOOL do_dmalloc_changed(const pid_t pid, const int argc, const char **arg
 
 /* Shutdown a server process */
 
-static BOOL do_shutdown(const pid_t pid, const int argc, const char **argv)
+static BOOL do_shutdown(const struct process_id pid,
+			const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> shutdown\n");
@@ -550,7 +571,8 @@ static BOOL do_shutdown(const pid_t pid, const int argc, const char **argv)
 
 /* Notify a driver upgrade */
 
-static BOOL do_drvupgrade(const pid_t pid, const int argc, const char **argv)
+static BOOL do_drvupgrade(const struct process_id pid,
+			  const int argc, const char **argv)
 {
 	if (argc != 2) {
 		fprintf(stderr, "Usage: smbcontrol <dest> drvupgrade "
@@ -562,7 +584,8 @@ static BOOL do_drvupgrade(const pid_t pid, const int argc, const char **argv)
 		pid, MSG_DEBUG, argv[1], strlen(argv[1]) + 1, False);
 }
 
-static BOOL do_reload_config(const pid_t pid, const int argc, const char **argv)
+static BOOL do_reload_config(const struct process_id pid,
+			     const int argc, const char **argv)
 {
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> reload-config\n");
@@ -583,8 +606,8 @@ static void my_make_nmb_name( struct nmb_name *n, const char *name, int type)
 	push_ascii(n->scope,  global_scope(), 64, STR_TERMINATE);
 }
 
-static BOOL do_nodestatus(const pid_t pid, const int argc,
-			  const char **argv)
+static BOOL do_nodestatus(const struct process_id pid,
+			  const int argc, const char **argv)
 {
 	struct packet_struct p;
 
@@ -623,7 +646,8 @@ static BOOL do_nodestatus(const pid_t pid, const int argc,
 
 static const struct {
 	const char *name;	/* Option name */
-	BOOL (*fn)(const pid_t pid, const int argc, const char **argv);
+	BOOL (*fn)(const struct process_id pid,
+		   const int argc, const char **argv);
 	const char *help;	/* Short help text */
 } msg_types[] = {
 	{ "debug", do_debug, "Set debuglevel"  },
@@ -674,33 +698,39 @@ static void usage(poptContext *pc)
 
 /* Return the pid number for a string destination */
 
-static pid_t parse_dest(const char *dest)
+static struct process_id parse_dest(const char *dest)
 {
+	struct process_id result;
 	pid_t pid;
 
 	/* Zero is a special return value for broadcast smbd */
 
-	if (strequal(dest, "smbd"))
-		return 0;
+	if (strequal(dest, "smbd")) {
+		return interpret_pid("0");
+	}
 
 	/* Try self - useful for testing */
 
-	if (strequal(dest, "self"))
-		return sys_getpid();
+	if (strequal(dest, "self")) {
+		return pid_to_procid(sys_getpid());
+	}
 
 	/* Check for numeric pid number */
 
-	if ((pid = atoi(dest)) != 0)
-		return pid;
+	result = interpret_pid(dest);
+	if (procid_valid(&result)) {
+		return result;
+	}
 
 	/* Look up other destinations in pidfile directory */
 
-	if ((pid = pidfile_pid(dest)) != 0)
-		return pid;
+	if ((pid = pidfile_pid(dest)) != 0) {
+		return pid_to_procid(pid);
+	}
 
 	fprintf(stderr,"Can't find pid for destination '%s'\n", dest);
 
-	return -1;
+	return result;
 }	
 
 /* Execute smbcontrol command */
@@ -708,13 +738,15 @@ static pid_t parse_dest(const char *dest)
 static BOOL do_command(int argc, const char **argv)
 {
 	const char *dest = argv[0], *command = argv[1];
-	pid_t pid;
+	struct process_id pid;
 	int i;
 
 	/* Check destination */
 
-	if ((pid = parse_dest(dest)) == -1)
+	pid = parse_dest(dest);
+	if (!procid_valid(&pid)) {
 		return False;
+	}
 
 	/* Check command */
 

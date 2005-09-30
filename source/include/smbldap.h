@@ -1,5 +1,5 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/CIFS mplementation.
    LDAP protocol helper functions for SAMBA
    Copyright (C) Gerald Carter			2001-2003
     
@@ -40,6 +40,7 @@ struct smbldap_state;
 #define LDAP_OBJ_IDPOOL			"sambaUnixIdPool"
 #define LDAP_OBJ_IDMAP_ENTRY		"sambaIdmapEntry"
 #define LDAP_OBJ_SID_ENTRY		"sambaSidEntry"
+#define LDAP_OBJ_TRUST_PASSWORD         "sambaTrustPassword"
 
 #define LDAP_OBJ_ACCOUNT		"account"
 #define LDAP_OBJ_POSIXACCOUNT		"posixAccount"
@@ -95,10 +96,12 @@ struct smbldap_state;
 #define LDAP_ATTR_LOGON_COUNT		36
 #define LDAP_ATTR_MUNGED_DIAL		37
 #define LDAP_ATTR_BAD_PASSWORD_TIME	38
-#define LDAP_ATTR_PWD_HISTORY		39
+#define LDAP_ATTR_PWD_HISTORY           39
 #define LDAP_ATTR_SID_LIST		40
-#define LDAP_ATTR_MOD_TIMESTAMP		41
-#define LDAP_ATTR_LOGON_HOURS		42
+#define LDAP_ATTR_MOD_TIMESTAMP         41
+#define LDAP_ATTR_LOGON_HOURS		42 
+#define LDAP_ATTR_TRUST_PASSWD_FLAGS    43
+
 
 typedef struct _attrib_map_entry {
 	int		attrib;
@@ -117,6 +120,8 @@ extern ATTRIB_MAP_ENTRY groupmap_attr_list[];
 extern ATTRIB_MAP_ENTRY groupmap_attr_list_to_delete[];
 extern ATTRIB_MAP_ENTRY idpool_attr_list[];
 extern ATTRIB_MAP_ENTRY sidmap_attr_list[];
+extern ATTRIB_MAP_ENTRY trustpw_attr_list[];
+
 
 /* Function declarations -- not included in proto.h so we don't
    have to worry about LDAP structure types */

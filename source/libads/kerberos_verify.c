@@ -4,8 +4,9 @@
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Remus Koos 2001
    Copyright (C) Luke Howard 2003   
-   Copyright (C) Guenther Deschner 2003
+   Copyright (C) Guenther Deschner 2003, 2005
    Copyright (C) Jim McDonough (jmcd@us.ibm.com) 2003
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -37,7 +38,8 @@ const krb5_data *krb5_princ_component(krb5_context, krb5_principal, int );
 ***********************************************************************************/
 
 static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context auth_context,
-			const DATA_BLOB *ticket, krb5_data *p_packet, krb5_ticket **pp_tkt)
+			const DATA_BLOB *ticket, krb5_data *p_packet, krb5_ticket **pp_tkt, 
+			krb5_keyblock **keyblock)
 {
 	krb5_error_code ret = 0;
 	BOOL auth_ok = False;
@@ -100,12 +102,18 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 					p_packet->length = ticket->length;
 					p_packet->data = (krb5_pointer)ticket->data;
 					*pp_tkt = NULL;
-					ret = krb5_rd_req(context, &auth_context, p_packet, kt_entry.principal, keytab, NULL, pp_tkt);
+
+					ret = krb5_rd_req_return_keyblock_from_keytab(context, &auth_context, p_packet,
+									  	      kt_entry.principal, keytab,
+										      NULL, pp_tkt, keyblock);
+
 					if (ret) {
-						DEBUG(10, ("ads_keytab_verify_ticket: krb5_rd_req(%s) failed: %s\n",
+						DEBUG(10,("ads_keytab_verify_ticket: "
+							"krb5_rd_req_return_keyblock_from_keytab(%s) failed: %s\n",
 							entry_princ_s, error_message(ret)));
 					} else {
-						DEBUG(3,("ads_keytab_verify_ticket: krb5_rd_req succeeded for principal %s\n",
+						DEBUG(3,("ads_keytab_verify_ticket: "
+							"krb5_rd_req_return_keyblock_from_keytab succeeded for principal %s\n",
 							entry_princ_s));
 						auth_ok = True;
 						break;
@@ -172,8 +180,9 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 ***********************************************************************************/
 
 static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context auth_context,
-			krb5_principal host_princ,
-			const DATA_BLOB *ticket, krb5_data *p_packet, krb5_ticket **pp_tkt)
+				      krb5_principal host_princ,
+				      const DATA_BLOB *ticket, krb5_data *p_packet, krb5_ticket **pp_tkt,
+				      krb5_keyblock **keyblock)
 {
 	krb5_error_code ret = 0;
 	BOOL auth_ok = False;
@@ -181,6 +190,8 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 	krb5_data password;
 	krb5_enctype *enctypes = NULL;
 	int i;
+
+	ZERO_STRUCTP(keyblock);
 
 	if (!secrets_init()) {
 		DEBUG(1,("ads_secrets_verify_ticket: secrets_init failed\n"));
@@ -222,20 +233,23 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 
 		krb5_auth_con_setuseruserkey(context, auth_context, key);
 
-		krb5_free_keyblock(context, key);
-
 		if (!(ret = krb5_rd_req(context, &auth_context, p_packet, 
 					NULL,
 					NULL, NULL, pp_tkt))) {
 			DEBUG(10,("ads_secrets_verify_ticket: enc type [%u] decrypted message !\n",
 				(unsigned int)enctypes[i] ));
 			auth_ok = True;
+			krb5_copy_keyblock(context, key, keyblock);
+			krb5_free_keyblock(context, key);
 			break;
 		}
 	
 		DEBUG((ret != KRB5_BAD_ENCTYPE) ? 3 : 10,
 				("ads_secrets_verify_ticket: enc type [%u] failed to decrypt with error %s\n",
 				(unsigned int)enctypes[i], error_message(ret)));
+
+		krb5_free_keyblock(context, key);
+
 	}
 
  out:
@@ -251,27 +265,33 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
  authorization_data if available.
 ***********************************************************************************/
 
-NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket, 
-			   char **principal, DATA_BLOB *auth_data,
+NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
+			   const char *realm, const DATA_BLOB *ticket, 
+			   char **principal, PAC_DATA **pac_data,
 			   DATA_BLOB *ap_rep,
 			   DATA_BLOB *session_key)
 {
 	NTSTATUS sret = NT_STATUS_LOGON_FAILURE;
+	DATA_BLOB auth_data;
 	krb5_context context = NULL;
 	krb5_auth_context auth_context = NULL;
 	krb5_data packet;
 	krb5_ticket *tkt = NULL;
 	krb5_rcache rcache = NULL;
+	krb5_keyblock *keyblock = NULL;
+	time_t authtime;
 	int ret;
 
 	krb5_principal host_princ = NULL;
+	krb5_const_principal client_principal = NULL;
 	char *host_princ_s = NULL;
 	BOOL got_replay_mutex = False;
 
 	BOOL auth_ok = False;
+	BOOL got_auth_data = False;
 
 	ZERO_STRUCT(packet);
-	ZERO_STRUCTP(auth_data);
+	ZERO_STRUCT(auth_data);
 	ZERO_STRUCTP(ap_rep);
 	ZERO_STRUCTP(session_key);
 
@@ -335,20 +355,30 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 	}
 
 	if (lp_use_kerberos_keytab()) {
-		auth_ok = ads_keytab_verify_ticket(context, auth_context, ticket, &packet, &tkt);
+		auth_ok = ads_keytab_verify_ticket(context, auth_context, ticket, &packet, &tkt, &keyblock);
 	}
 	if (!auth_ok) {
 		auth_ok = ads_secrets_verify_ticket(context, auth_context, host_princ,
-							ticket, &packet, &tkt);
+						    ticket, &packet, &tkt, &keyblock);
 	}
 
 	release_server_mutex();
 	got_replay_mutex = False;
 
+#if 0
+	/* Heimdal leaks here, if we fix the leak, MIT crashes */
+	if (rcache) {
+		krb5_rc_close(context, rcache);
+	}
+#endif
+
 	if (!auth_ok) {
 		DEBUG(3,("ads_verify_ticket: krb5_rd_req with auth failed (%s)\n", 
 			 error_message(ret)));
 		goto out;
+	} else {
+		authtime = get_authtime_from_tkt(tkt);
+		client_principal = get_principal_from_tkt(tkt);
 	}
 
 	ret = krb5_mk_rep(context, auth_context, &packet);
@@ -369,20 +399,40 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 	file_save("/tmp/ticket.dat", ticket->data, ticket->length);
 #endif
 
-	get_auth_data_from_tkt(auth_data, tkt);
+	/* continue when no PAC is retrieved 
+	   (like accounts that have the UF_NO_AUTH_DATA_REQUIRED flag set) */
 
-	{
-		TALLOC_CTX *ctx = talloc_init("pac data");
-		decode_pac_data(auth_data, ctx);
-		talloc_destroy(ctx);
+	got_auth_data = get_auth_data_from_tkt(mem_ctx, &auth_data, tkt);
+	if (!got_auth_data) {
+		DEBUG(3,("ads_verify_ticket: did not retrieve auth data. continuing without PAC\n"));
+	}
+
+	if (got_auth_data && pac_data != NULL) {
+
+		sret = decode_pac_data(mem_ctx, &auth_data, context, keyblock, client_principal, authtime, pac_data);
+		if (!NT_STATUS_IS_OK(sret)) {
+			DEBUG(0,("ads_verify_ticket: failed to decode PAC_DATA: %s\n", nt_errstr(sret)));
+			goto out;
+		}
+		data_blob_free(&auth_data);
 	}
 
 #if 0
+#if defined(HAVE_KRB5_TKT_ENC_PART2)
+	/* MIT */
 	if (tkt->enc_part2) {
 		file_save("/tmp/authdata.dat",
 			  tkt->enc_part2->authorization_data[0]->contents,
 			  tkt->enc_part2->authorization_data[0]->length);
 	}
+#else
+	/* Heimdal */
+	if (tkt->ticket.authorization_data) {
+		file_save("/tmp/authdata.dat",
+			  tkt->ticket.authorization_data->val->ad_data.data,
+			  tkt->ticket.authorization_data->val->ad_data.length);
+	}
+#endif
 #endif
 
 	if ((ret = krb5_unparse_name(context, get_principal_from_tkt(tkt),
@@ -402,7 +452,7 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 	}
 
 	if (!NT_STATUS_IS_OK(sret)) {
-		data_blob_free(auth_data);
+		data_blob_free(&auth_data);
 	}
 
 	if (!NT_STATUS_IS_OK(sret)) {
@@ -411,6 +461,10 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 
 	if (host_princ) {
 		krb5_free_principal(context, host_princ);
+	}
+
+	if (keyblock) {
+		krb5_free_keyblock(context, keyblock);
 	}
 
 	if (tkt != NULL) {

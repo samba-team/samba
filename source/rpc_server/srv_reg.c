@@ -383,7 +383,7 @@ static BOOL api_reg_restore_key(pipes_struct *p)
 
 	if(!reg_io_q_restore_key("", &q_u, data, 0))
 		return False;
-		
+
 	r_u.status = _reg_restore_key(p, &q_u, &r_u);
 
 	if(!reg_io_r_restore_key("", &r_u, rdata, 0))
@@ -393,7 +393,7 @@ static BOOL api_reg_restore_key(pipes_struct *p)
 }
 
 /*******************************************************************
- ******************************************************************/
+ ********************************************************************/
 
 static BOOL api_reg_save_key(pipes_struct *p)
 {
@@ -411,6 +411,57 @@ static BOOL api_reg_save_key(pipes_struct *p)
 	r_u.status = _reg_save_key(p, &q_u, &r_u);
 
 	if(!reg_io_r_save_key("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ api_reg_open_hkpd
+ ********************************************************************/
+
+static BOOL api_reg_open_hkpd(pipes_struct *p)
+{
+	REG_Q_OPEN_HIVE q_u;
+	REG_R_OPEN_HIVE r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* grab the reg open */
+	if(!reg_io_q_open_hive("", &q_u, data, 0))
+		return False;
+
+	r_u.status = _reg_open_hkpd(p, &q_u, &r_u);
+
+	if(!reg_io_r_open_hive("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ api_reg_open_hkpd
+ ********************************************************************/
+static BOOL api_reg_open_hkpt(pipes_struct *p)
+{
+	REG_Q_OPEN_HIVE q_u;
+	REG_R_OPEN_HIVE r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* grab the reg open */
+	if(!reg_io_q_open_hive("", &q_u, data, 0))
+		return False;
+
+	r_u.status = _reg_open_hkpt(p, &q_u, &r_u);
+
+	if(!reg_io_r_open_hive("", &r_u, rdata, 0))
 		return False;
 
 	return True;
@@ -573,6 +624,8 @@ static struct api_struct api_reg_cmds[] =
       { "REG_OPEN_ENTRY"         , REG_OPEN_ENTRY         , api_reg_open_entry       },
       { "REG_OPEN_HKCR"          , REG_OPEN_HKCR          , api_reg_open_hkcr        },
       { "REG_OPEN_HKLM"          , REG_OPEN_HKLM          , api_reg_open_hklm        },
+      { "REG_OPEN_HKPD"          , REG_OPEN_HKPD          , api_reg_open_hkpd        },
+      { "REG_OPEN_HKPT"          , REG_OPEN_HKPT          , api_reg_open_hkpt        },
       { "REG_OPEN_HKU"           , REG_OPEN_HKU           , api_reg_open_hku         },
       { "REG_ENUM_KEY"           , REG_ENUM_KEY           , api_reg_enum_key         },
       { "REG_ENUM_VALUE"         , REG_ENUM_VALUE         , api_reg_enum_value       },

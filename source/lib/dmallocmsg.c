@@ -35,7 +35,7 @@ static unsigned long our_dm_mark = 0;
  * Respond to a POOL_USAGE message by sending back string form of memory
  * usage stats.
  **/
-static void msg_req_dmalloc_mark(int UNUSED(msg_type), pid_t UNUSED(src_pid),
+static void msg_req_dmalloc_mark(int UNUSED(msg_type), struct process_id UNUSED(src_pid),
 			  void *UNUSED(buf), size_t UNUSED(len))
 {
 #ifdef ENABLE_DMALLOC
@@ -49,7 +49,7 @@ static void msg_req_dmalloc_mark(int UNUSED(msg_type), pid_t UNUSED(src_pid),
 
 
 static void msg_req_dmalloc_log_changed(int UNUSED(msg_type),
-					pid_t UNUSED(src_pid),
+					struct process_id UNUSED(src_pid),
 					void *UNUSED(buf), size_t UNUSED(len))
 {
 #ifdef ENABLE_DMALLOC
