@@ -37,8 +37,7 @@ static BOOL run_netbench(struct smbcli_state *cli, int client)
 	pstring line;
 	char *cname;
 	FILE *f;
-	fstring params[20];
-	const char *p;
+	const char **params;
 	BOOL correct = True;
 
 	if (torture_nprocs == 1) {
@@ -68,12 +67,8 @@ again:
 
 		all_string_sub(line,"client1", cname, sizeof(line));
 		
-		p = line;
-		for (i=0; 
-		     i<19 && next_token(&p, params[i], " ", sizeof(fstring));
-		     i++) ;
-
-		params[i][0] = 0;
+		params = str_list_make_shell(NULL, line, " ");
+		i = str_list_length(params);
 
 		if (i < 2 || params[0][0] == '#') continue;
 
@@ -84,6 +79,7 @@ again:
 
 		if (strncmp(params[i-1], "NT_STATUS_", 10) != 0) {
 			printf("Badly formed status at line %d\n", nbench_line_count);
+			talloc_free(params);
 			continue;
 		}
 
@@ -142,6 +138,8 @@ again:
 		} else {
 			printf("[%d] Unknown operation %s\n", nbench_line_count, params[0]);
 		}
+
+		talloc_free(params);
 		
 		if (nb_tick()) goto done;
 	}
