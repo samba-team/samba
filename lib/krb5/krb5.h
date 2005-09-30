@@ -368,6 +368,8 @@ typedef struct krb5_creds {
     krb5_ticket_flags flags;
 } krb5_creds;
 
+typedef struct krb5_cc_cache_cursor_data *krb5_cc_cache_cursor;
+
 typedef struct krb5_cc_ops {
     const char *prefix;
     const char* (*get_name)(krb5_context, krb5_ccache);
@@ -388,6 +390,9 @@ typedef struct krb5_cc_ops {
 				   krb5_flags, krb5_creds*);
     krb5_error_code (*set_flags)(krb5_context, krb5_ccache, krb5_flags);
     int (*get_version)(krb5_context, krb5_ccache);
+    krb5_error_code (*get_cache_first)(krb5_context, krb5_cc_cursor *);
+    krb5_error_code (*get_cache_next)(krb5_context, krb5_cc_cursor, krb5_ccache *);
+    krb5_error_code (*end_cache_get)(krb5_context, krb5_cc_cursor);
 } krb5_cc_ops;
 
 struct krb5_log_facility;
