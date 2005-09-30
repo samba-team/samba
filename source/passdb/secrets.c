@@ -803,7 +803,7 @@ BOOL secrets_named_mutex(const char *name, unsigned int timeout)
 {
 	int ret = 0;
 
-	if (!message_init())
+	if (!secrets_init())
 		return False;
 
 	ret = tdb_lock_bystring(tdb, name, timeout);
