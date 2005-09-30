@@ -327,8 +327,51 @@ struct wrepl_socket *wrepl_socket_init(TALLOC_CTX *mem_ctx,
 					 socket_get_fd(wrepl_socket->sock), 
 					 EVENT_FD_WRITE,
 					 wrepl_connect_handler, wrepl_socket);
+	if (wrepl_socket->fde == NULL) {
+		goto failed;
+	}
 
 	set_blocking(socket_get_fd(wrepl_socket->sock), False);
+
+	talloc_set_destructor(wrepl_socket, wrepl_socket_destructor);
+
+	return wrepl_socket;
+
+failed:
+	talloc_free(wrepl_socket);
+	return NULL;
+}
+
+/*
+  initialise a wrepl_socket from an already existing connection
+*/
+struct wrepl_socket *wrepl_socket_merge(TALLOC_CTX *mem_ctx, 
+				        struct event_context *event_ctx,
+					struct socket_context *socket)
+{
+	struct wrepl_socket *wrepl_socket;
+
+	wrepl_socket = talloc(mem_ctx, struct wrepl_socket);
+	if (wrepl_socket == NULL) goto failed;
+
+	wrepl_socket->event_ctx = talloc_reference(wrepl_socket, event_ctx);
+	if (wrepl_socket->event_ctx == NULL) goto failed;
+
+	wrepl_socket->sock = socket;
+	talloc_steal(wrepl_socket, wrepl_socket->sock);
+
+	wrepl_socket->send_queue	= NULL;
+	wrepl_socket->recv_queue	= NULL;
+	wrepl_socket->request_timeout	= WREPL_SOCKET_REQUEST_TIMEOUT;
+	wrepl_socket->dead		= False;
+
+	wrepl_socket->fde = event_add_fd(wrepl_socket->event_ctx, wrepl_socket,
+					 socket_get_fd(wrepl_socket->sock), 
+					 0,
+					 wrepl_handler, wrepl_socket);
+	if (wrepl_socket->fde == NULL) {
+		goto failed;
+	}
 
 	talloc_set_destructor(wrepl_socket, wrepl_socket_destructor);
 	
