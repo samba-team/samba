@@ -354,6 +354,11 @@ static struct ldb_parse_tree *ldb_parse_simple(void *mem_ctx, const char **s)
 
 	switch (filtertype) {
 
+		case LDB_OP_PRESENT:
+			ret->operation = LDB_OP_PRESENT;
+			ret->u.present.attr = attr;
+			break;
+
 		case LDB_OP_EQUALITY:
 
 			if (strcmp(value, "*") == 0) {
@@ -615,6 +620,11 @@ static struct ldb_parse_tree *ldb_parse_filter(void *mem_ctx, const char **s)
 */
 struct ldb_parse_tree *ldb_parse_tree(void *mem_ctx, const char *s)
 {
+	/* allowing NULL makes the _bytree() searches easier */
+	if (s == NULL) {
+		return NULL;
+	}
+
 	while (isspace((unsigned char)*s)) s++;
 
 	if (*s == '(') {
@@ -633,10 +643,14 @@ char *ldb_filter_from_tree(void *mem_ctx, struct ldb_parse_tree *tree)
 	char *s, *s2, *ret;
 	int i;
 
+	if (tree == NULL) {
+		return NULL;
+	}
+
 	switch (tree->operation) {
 	case LDB_OP_AND:
 	case LDB_OP_OR:
-		ret = talloc_asprintf(mem_ctx, "(%c", (char)tree->operation);
+		ret = talloc_asprintf(mem_ctx, "(%c", tree->operation==LDB_OP_AND?'&':'|');
 		if (ret == NULL) return NULL;
 		for (i=0;i<tree->u.list.num_elements;i++) {
 			s = ldb_filter_from_tree(mem_ctx, tree->u.list.elements[i]);
@@ -707,8 +721,7 @@ char *ldb_filter_from_tree(void *mem_ctx, struct ldb_parse_tree *tree)
 		talloc_free(s);
 		return ret;
 	case LDB_OP_PRESENT:
-		ret = talloc_strdup(mem_ctx, "*");
-		if (ret == NULL) return NULL;
+		ret = talloc_asprintf(mem_ctx, "(%s=*)", tree->u.present.attr);
 		return ret;
 	case LDB_OP_APPROX:
 		s = ldb_binary_encode(mem_ctx, tree->u.equality.value);
