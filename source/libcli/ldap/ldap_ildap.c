@@ -154,10 +154,10 @@ int ildap_count_entries(struct ldap_connection *conn, struct ldap_message **res)
 /*
   perform a ldap search
 */
-NTSTATUS ildap_search(struct ldap_connection *conn, const char *basedn, 
-		      int scope, const char *expression, 
-		      const char * const *attrs, BOOL attributesonly, 
-		      struct ldap_message ***results)
+NTSTATUS ildap_search_bytree(struct ldap_connection *conn, const char *basedn, 
+			     int scope, struct ldb_parse_tree *tree,
+			     const char * const *attrs, BOOL attributesonly, 
+			     struct ldap_message ***results)
 {
 	struct ldap_message *msg;
 	int n, i;
@@ -178,7 +178,7 @@ NTSTATUS ildap_search(struct ldap_connection *conn, const char *basedn,
 	msg->r.SearchRequest.timelimit = 0;
 	msg->r.SearchRequest.sizelimit = 0;
 	msg->r.SearchRequest.attributesonly = attributesonly;
-	msg->r.SearchRequest.tree = ldb_parse_tree(msg, expression);
+	msg->r.SearchRequest.tree = tree;
 	msg->r.SearchRequest.num_attributes = n;
 	msg->r.SearchRequest.attributes = attrs;
 
@@ -211,5 +211,20 @@ NTSTATUS ildap_search(struct ldap_connection *conn, const char *basedn,
 		status = NT_STATUS_OK;
 	}
 
+	return status;
+}
+
+/*
+  perform a ldap search
+*/
+NTSTATUS ildap_search(struct ldap_connection *conn, const char *basedn, 
+		      int scope, const char *expression, 
+		      const char * const *attrs, BOOL attributesonly, 
+		      struct ldap_message ***results)
+{
+	struct ldb_parse_tree *tree = ldb_parse_tree(conn, expression);
+	NTSTATUS status;
+	status = ildap_search(conn, basedn, scope, tree, attrs, attributesonly, results);
+	talloc_free(tree);
 	return status;
 }
