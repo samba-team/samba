@@ -778,7 +778,8 @@ static const char *dispatch_path(void)
 {
 	static char *name = NULL;
 	if (name == NULL) {
-		asprintf(&name, "%s/%s", lock_path("messaging"), "dispatch");
+		asprintf(&name, "%s/%s:%s", lock_path("messaging"),
+			 lp_socket_address(), "dispatch");
 		SMB_ASSERT(name != NULL);
 	}
 	return name;
@@ -925,7 +926,7 @@ static struct messaging_client *new_client(const struct process_id *pid)
 		ZERO_STRUCT(sinaddr);
 		sinaddr.sin_family = AF_INET;
 		sinaddr.sin_addr = pid->ip;
-		sinaddr.sin_port = MESSAGING_PORT;
+		sinaddr.sin_port = htons(MESSAGING_PORT);
 
 		addr = (struct sockaddr *)&sinaddr;
 		addrlen = sizeof(sinaddr);
@@ -1177,6 +1178,7 @@ void message_dispatch_daemon(void)
 {
 	int parent_pipe[2];
 	int fd, tcp_fd;
+	char *name;
 
 	if (pipe(parent_pipe) < 0) {
 		return;
@@ -1191,7 +1193,12 @@ void message_dispatch_daemon(void)
 
 	close(parent_pipe[1]);
 
-	fd = create_dgram_sock(lock_path("messaging"), "dispatch", 0700);
+	asprintf(&name, "%s:dispatch", lp_socket_address());
+	if (name == NULL) {
+		smb_panic("asprintf failed\n");
+	}
+	fd = create_dgram_sock(lock_path("messaging"), name, 0700);
+	SAFE_FREE(name);
 	if (fd < 0) {
 		smb_panic("Could not create dispatch socket\n");
 	}
