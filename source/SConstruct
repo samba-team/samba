@@ -5,6 +5,8 @@
 # eventually replace this system.
 #
 # Copyright (C) 2005 Jelmer Vernooij <jelmer@samba.org>
+# Copyright (C) 2005 Tim Potter <tpot@samba.org>
+#
 # Published under the GNU GPL
 #
 # TODO:
@@ -22,7 +24,34 @@ opts.AddOptions(
 		BoolOption('configure','run configure checks', False),
 )
 
-hostenv = Environment(
+class SambaEnvironment(Environment):
+    def Subsystem(self, target, source, **kwargs):
+        """Create a Samba subsystem, basically a static library.
+
+	By default a prototype file for the subsystem is created,
+	unless the keyword argument 'noproto' is present.  A variable
+	corresponding to the target name is exported, unless the
+	keyword argument 'noexport' is present."""
+
+	# Generate prototype file for subsystem
+
+	if not kwargs.has_key('noproto'):
+	    self.proto_headers += self.CProtoHeader(
+		'%s_proto.h' % target, [str(x) for x in source])
+
+	# Maketh the library
+
+	result = self.Library(target, source, **kwargs)
+
+	# Export library symbol
+
+	if not kwargs.has_key('noexport'):
+	    locals()[target] = result	# Eww
+	    Export(target)
+
+	return result
+
+hostenv = SambaEnvironment(
 		toolpath=['build/scons','.'],
 		tools=['default','pidl','proto','et','asn1','samba'],
 		options=opts,
