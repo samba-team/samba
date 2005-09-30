@@ -501,6 +501,17 @@ int ltdb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 	if ((base == NULL || base->comp_num == 0) &&
 	    (scope == LDB_SCOPE_BASE || scope == LDB_SCOPE_ONELEVEL)) return -1;
 
+	/* check if we are looking for a simple dn */
+	if (scope == LDB_SCOPE_BASE && tree == NULL) {
+		return ltdb_search_dn(module, base, attrs, res);
+	}
+
+	if (tree == NULL) {
+		char *err_string = talloc_strdup(module, "expression parse failed");
+		if (err_string) ldb_set_errstring(module, err_string);
+		return -1;
+	}
+
 	/* it is important that we handle dn queries this way, and not
 	   via a full db search, otherwise ldb is horribly slow */
 	if (tree->operation == LDB_OP_EQUALITY &&
@@ -553,18 +564,7 @@ int ltdb_search(struct ldb_module *module, const struct ldb_dn *base,
 	if ((base == NULL || base->comp_num == 0) &&
 	    (scope == LDB_SCOPE_BASE || scope == LDB_SCOPE_ONELEVEL)) return -1;
 
-	/* check if we are looking for a simple dn */
-	if (scope == LDB_SCOPE_BASE && (expression == NULL || expression[0] == '\0')) {
-		ret = ltdb_search_dn(module, base, attrs, res);
-		return ret;
-	}
-
 	tree = ldb_parse_tree(ltdb, expression);
-	if (tree == NULL) {
-		char *err_string = talloc_strdup(module, "expression parse failed");
-		if (err_string) ldb_set_errstring(module, err_string);
-		return -1;
-	}
 
 	ret = ltdb_search_bytree(module, base, scope, tree, attrs, res);
 	talloc_free(tree);
