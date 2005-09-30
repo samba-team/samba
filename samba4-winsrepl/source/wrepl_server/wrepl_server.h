@@ -108,11 +108,6 @@ struct wreplsrv_out_connection {
 		uint32_t peer_ctx;
 	} assoc_ctx;
 
-	/*
-	 * are we currently doing something on the connection?
-	 */
-	BOOL processing;
-
 	/* 
 	 * the client socket to the partner,
 	 * NULL if not yet connected
@@ -175,6 +170,9 @@ struct wreplsrv_partner {
 
 		/* the current pending pull cycle request */
 		struct composite_context *creq;
+
+		/* the pull cycle io params */
+		struct wreplsrv_pull_cycle_io *cycle_io;
 
 		/* the current timed_event to the next pull cycle */
 		struct timed_event *te;

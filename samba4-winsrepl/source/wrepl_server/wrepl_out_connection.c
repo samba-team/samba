@@ -46,6 +46,9 @@ static void wreplsrv_pull_handler_creq(struct composite_context *creq)
 
 	partner->pull.last_status = wreplsrv_pull_cycle_recv(partner->pull.creq);
 	partner->pull.creq = NULL;
+	talloc_free(partner->pull.cycle_io);
+	partner->pull.cycle_io = NULL;
+
 	if (!NT_STATUS_IS_OK(partner->pull.last_status)) {
 		interval = partner->pull.error_count * partner->pull.retry_interval;
 		interval = MIN(interval, partner->pull.interval);
@@ -76,7 +79,17 @@ static void wreplsrv_pull_handler_te(struct event_context *ev, struct timed_even
 {
 	struct wreplsrv_partner *partner = talloc_get_type(ptr, struct wreplsrv_partner);
 
-	partner->pull.creq = wreplsrv_pull_cycle_send(partner);
+	partner->pull.cycle_io = talloc(partner, struct wreplsrv_pull_cycle_io);
+	if (!partner->pull.cycle_io) {
+		goto requeue;
+	}
+
+	
+	partner->pull.cycle_io->in.partner	= partner;
+	partner->pull.cycle_io->in.num_owners	= 0;
+	partner->pull.cycle_io->in.owners	= NULL;
+	partner->pull.cycle_io->in.wreplconn	= NULL;
+	partner->pull.creq = wreplsrv_pull_cycle_send(partner, partner->pull.cycle_io);
 	if (!partner->pull.creq) {
 		DEBUG(1,("wreplsrv_pull_cycle_send(%s) failed\n",
 			 partner->address));

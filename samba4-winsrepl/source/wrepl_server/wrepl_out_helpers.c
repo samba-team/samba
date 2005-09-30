@@ -113,12 +113,12 @@ static void wreplsrv_out_connect_handler(struct wrepl_request *req)
 	}
 }
 
-static struct composite_context *wreplsrv_out_connect_send(struct wreplsrv_partner *partner)
+static struct composite_context *wreplsrv_out_connect_send(struct wreplsrv_partner *partner,
+							   struct wreplsrv_out_connection *wreplconn)
 {
 	struct composite_context *c = NULL;
 	struct wreplsrv_service *service = partner->service;
 	struct wreplsrv_out_connect_state *state = NULL;
-	struct wreplsrv_out_connection *wreplconn;
 
 	c = talloc_zero(partner, struct composite_context);
 	if (!c) goto failed;
@@ -130,6 +130,17 @@ static struct composite_context *wreplsrv_out_connect_send(struct wreplsrv_partn
 	c->state	= COMPOSITE_STATE_IN_PROGRESS;
 	c->event_ctx	= service->task->event_ctx;
 	c->private_data	= state;
+
+	/* we have a connection given, so use it */
+	if (wreplconn) {
+		if (wreplconn->sock->dead) {
+			goto failed;
+		}
+		state->stage	= WREPLSRV_OUT_CONNECT_STAGE_DONE;
+		state->wreplconn= wreplconn;
+		composite_trigger_done(c);
+		return c;
+	}
 
 	/* we have a connection already, so use it */
 	if (partner->pull.wreplconn) {
@@ -295,8 +306,16 @@ struct composite_context *wreplsrv_pull_table_send(TALLOC_CTX *mem_ctx, struct w
 	c->event_ctx	= service->task->event_ctx;
 	c->private_data	= state;
 
-	state->stage	= WREPLSRV_PULL_TABLE_STAGE_WAIT_CONNECTION;
-	state->creq	= wreplsrv_out_connect_send(io->in.partner);
+	if (io->in.num_owners) {
+		state->table_io.out.num_partners	= io->in.num_owners;
+		state->table_io.out.partners		= io->in.owners;
+		state->stage				= WREPLSRV_PULL_TABLE_STAGE_DONE;
+		composite_trigger_done(c);
+		return c;
+	}
+
+	state->stage    = WREPLSRV_PULL_TABLE_STAGE_WAIT_CONNECTION;
+	state->creq	= wreplsrv_out_connect_send(io->in.partner, NULL);
 	if (!state->creq) goto failed;
 
 	state->creq->async.fn		= wreplsrv_pull_table_handler_creq;
@@ -437,7 +456,7 @@ struct composite_context *wreplsrv_pull_names_send(TALLOC_CTX *mem_ctx, struct w
 	c->private_data	= state;
 
 	state->stage	= WREPLSRV_PULL_NAMES_STAGE_WAIT_CONNECTION;
-	state->creq	= wreplsrv_out_connect_send(io->in.partner);
+	state->creq	= wreplsrv_out_connect_send(io->in.partner, io->in.wreplconn);
 	if (!state->creq) goto failed;
 
 	state->creq->async.fn		= wreplsrv_pull_names_handler_creq;
@@ -478,7 +497,7 @@ enum wreplsrv_pull_cycle_stage {
 struct wreplsrv_pull_cycle_state {
 	enum wreplsrv_pull_cycle_stage stage;
 	struct composite_context *c;
-	struct wreplsrv_partner *partner;
+	struct wreplsrv_pull_cycle_io *io;
 	struct wreplsrv_pull_table_io table_io;
 	uint32_t current;
 	struct wreplsrv_pull_names_io names_io;
@@ -496,10 +515,10 @@ static NTSTATUS wreplsrv_pull_cycle_next_owner(struct wreplsrv_pull_cycle_state 
 	BOOL do_pull = False;
 
 	for (i=state->current; i < state->table_io.out.num_owners; i++) {
-		current_owner = wreplsrv_find_owner(state->partner->pull.table,
+		current_owner = wreplsrv_find_owner(state->io->in.partner->pull.table,
 						    state->table_io.out.owners[i].address);
 
-		local_owner = wreplsrv_find_owner(state->partner->service->table,
+		local_owner = wreplsrv_find_owner(state->io->in.partner->service->table,
 						  state->table_io.out.owners[i].address);
 		/*
 		 * this means we are ourself the current owner,
@@ -530,7 +549,8 @@ static NTSTATUS wreplsrv_pull_cycle_next_owner(struct wreplsrv_pull_cycle_state 
 	state->current = i;
 
 	if (do_pull) {
-		state->names_io.in.partner		= state->partner;
+		state->names_io.in.partner		= state->io->in.partner;
+		state->names_io.in.wreplconn		= state->io->in.wreplconn;
 		state->names_io.in.owner		= current_owner->owner;
 		state->names_io.in.owner.min_version	= old_max_version;
 		state->creq = wreplsrv_pull_names_send(state, &state->names_io);
@@ -557,13 +577,13 @@ static NTSTATUS wreplsrv_pull_cycle_wait_table_reply(struct wreplsrv_pull_cycle_
 	for (i=0; i < state->table_io.out.num_owners; i++) {
 		BOOL is_our_addr;
 
-		is_our_addr = wreplsrv_is_our_address(state->partner->service,
+		is_our_addr = wreplsrv_is_our_address(state->io->in.partner->service,
 						      state->table_io.out.owners[i].address);
 		if (is_our_addr) continue;
 
-		status = wreplsrv_add_table(state->partner->service,
-					    state->partner, 
-					    &state->partner->pull.table,
+		status = wreplsrv_add_table(state->io->in.partner->service,
+					    state->io->in.partner, 
+					    &state->io->in.partner->pull.table,
 					    state->table_io.out.owners[i].address,
 					    state->table_io.out.owners[i].max_version);
 		NT_STATUS_NOT_OK_RETURN(status);
@@ -584,7 +604,7 @@ static NTSTATUS wreplsrv_pull_cycle_apply_records(struct wreplsrv_pull_cycle_sta
 {
 	NTSTATUS status;
 
-	status = wreplsrv_apply_records(state->partner, &state->names_io);
+	status = wreplsrv_apply_records(state->io->in.partner, &state->names_io);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	talloc_free(state->names_io.out.names);
@@ -654,26 +674,28 @@ static void wreplsrv_pull_cycle_handler_creq(struct composite_context *creq)
 	return;
 }
 
-struct composite_context *wreplsrv_pull_cycle_send(struct wreplsrv_partner *partner)
+struct composite_context *wreplsrv_pull_cycle_send(TALLOC_CTX *mem_ctx, struct wreplsrv_pull_cycle_io *io)
 {
 	struct composite_context *c = NULL;
-	struct wreplsrv_service *service = partner->service;
+	struct wreplsrv_service *service = io->in.partner->service;
 	struct wreplsrv_pull_cycle_state *state = NULL;
 
-	c = talloc_zero(partner, struct composite_context);
+	c = talloc_zero(mem_ctx, struct composite_context);
 	if (!c) goto failed;
 
 	state = talloc_zero(c, struct wreplsrv_pull_cycle_state);
 	if (!state) goto failed;
 	state->c	= c;
-	state->partner	= partner;
+	state->io	= io;
 
 	c->state	= COMPOSITE_STATE_IN_PROGRESS;
 	c->event_ctx	= service->task->event_ctx;
 	c->private_data	= state;
 
 	state->stage	= WREPLSRV_PULL_CYCLE_STAGE_WAIT_TABLE_REPLY;
-	state->table_io.in.partner	= partner;
+	state->table_io.in.partner	= io->in.partner;
+	state->table_io.in.num_owners	= io->in.num_owners;
+	state->table_io.in.owners	= io->in.owners;
 	state->creq = wreplsrv_pull_table_send(state, &state->table_io);
 	if (!state->creq) goto failed;
 
