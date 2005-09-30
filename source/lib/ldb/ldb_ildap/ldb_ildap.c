@@ -125,11 +125,11 @@ static int ildb_delete(struct ldb_module *module, const struct ldb_dn *dn)
 static void ildb_rootdse(struct ldb_module *module);
 
 /*
-  search for matching records
+  search for matching records using a ldb_parse_tree
 */
-static int ildb_search(struct ldb_module *module, const struct ldb_dn *base,
-		       enum ldb_scope scope, const char *expression,
-		       const char * const *attrs, struct ldb_message ***res)
+static int ildb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
+			      enum ldb_scope scope, struct ldb_parse_tree *tree,
+			      const char * const *attrs, struct ldb_message ***res)
 {
 	struct ildb_private *ildb = module->private_data;
 	int count, i;
@@ -158,12 +158,8 @@ static int ildb_search(struct ldb_module *module, const struct ldb_dn *base,
 		return -1;
 	}
 
-	if (expression == NULL || expression[0] == '\0') {
-		expression = "objectClass=*";
-	}
-
-	ildb->last_rc = ildap_search(ildb->ldap, search_base, scope, expression, attrs, 
-				     0, &ldapres);
+	ildb->last_rc = ildap_search_bytree(ildb->ldap, search_base, scope, tree, attrs, 
+					    0, &ldapres);
 	talloc_free(search_base);
 	if (!NT_STATUS_IS_OK(ildb->last_rc)) {
 		ldb_set_errstring(module, talloc_strdup(module, ldap_errstr(ildb->ldap, ildb->last_rc)));
@@ -217,22 +213,25 @@ failed:
 
 
 /*
-  search for matching records using a ldb_parse_tree
+  search for matching records
 */
-static int ildb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
-			      enum ldb_scope scope, struct ldb_parse_tree *tree,
-			      const char * const *attrs, struct ldb_message ***res)
+static int ildb_search(struct ldb_module *module, const struct ldb_dn *base,
+		       enum ldb_scope scope, const char *expression,
+		       const char * const *attrs, struct ldb_message ***res)
 {
 	struct ildb_private *ildb = module->private_data;
-	char *expression;
 	int ret;
+	struct ldb_parse_tree *tree;
 
-	expression = ldb_filter_from_tree(ildb, tree);
-	if (expression == NULL) {
-		return -1;
+	if (expression == NULL || expression[0] == '\0') {
+		expression = "objectClass=*";
 	}
-	ret = ildb_search(module, base, scope, expression, attrs, res);
-	talloc_free(expression);
+
+	tree = ldb_parse_tree(ildb, expression);
+
+	ret = ildb_search_bytree(module, base, scope, tree, attrs, res);
+
+	talloc_free(tree);
 	return ret;
 }
 
@@ -428,6 +427,7 @@ int ildb_connect(struct ldb_context *ldb, const char *url,
 {
 	struct ildb_private *ildb = NULL;
 	NTSTATUS status;
+	struct cli_credentials *creds;
 
 	ildb = talloc(ldb, struct ildb_private);
 	if (!ildb) {
@@ -460,8 +460,14 @@ int ildb_connect(struct ldb_context *ldb, const char *url,
 	ldb->modules->private_data = ildb;
 	ldb->modules->ops = &ildb_ops;
 
-	if (cmdline_credentials != NULL && cli_credentials_authentication_requested(cmdline_credentials)) {
-		status = ldap_bind_sasl(ildb->ldap, cmdline_credentials);
+	/* caller can optionally setup credentials using the opaque token 'credentials' */
+	creds = ldb_get_opaque(ldb, "credentials");
+	if (creds == NULL) {
+		creds = cmdline_credentials;
+	}
+
+	if (creds != NULL && cli_credentials_authentication_requested(creds)) {
+		status = ldap_bind_sasl(ildb->ldap, creds);
 		if (!NT_STATUS_IS_OK(status)) {
 			ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to bind - %s\n",
 				  ldap_errstr(ildb->ldap, status));
