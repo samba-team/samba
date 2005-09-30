@@ -107,9 +107,9 @@ interface wrepl
 		WREPL_REPL_SEND_REQUEST = 2,
 		WREPL_REPL_SEND_REPLY   = 3,
 		WREPL_REPL_UPDATE       = 4,
-		WREPL_REPL_5            = 5,
+		WREPL_REPL_UPDATE2      = 5,
 		WREPL_REPL_INFORM       = 8,
-		WREPL_REPL_9            = 9
+		WREPL_REPL_INFORM2      = 9
 	} wrepl_replication_cmd;
 
 	typedef [nodiscriminant] union {
@@ -118,9 +118,9 @@ interface wrepl
 		[case(WREPL_REPL_SEND_REQUEST)] wrepl_wins_owner owner;
 		[case(WREPL_REPL_SEND_REPLY)]   wrepl_send_reply reply;
 		[case(WREPL_REPL_UPDATE)]       wrepl_table      table;
-		[case(WREPL_REPL_5)]            wrepl_table      table;
+		[case(WREPL_REPL_UPDATE2)]      wrepl_table      table;
 		[case(WREPL_REPL_INFORM)]       wrepl_table      table;
-		[case(WREPL_REPL_9)]            wrepl_table      table;
+		[case(WREPL_REPL_INFORM2)]      wrepl_table      table;
 	} wrepl_replication_info;
 
 	typedef struct {
