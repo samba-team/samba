@@ -280,6 +280,7 @@ struct wrepl_packet;
 struct wrepl_associate;
 struct wrepl_pull_table;
 struct wrepl_pull_names;
+struct wrepl_table;
 
 struct arcfour_state;
 

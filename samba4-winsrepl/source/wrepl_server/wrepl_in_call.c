@@ -31,6 +31,8 @@
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "libcli/wrepl/winsrepl.h"
 #include "wrepl_server/wrepl_server.h"
+#include "wrepl_server/wrepl_out_helpers.h"
+#include "libcli/composite/composite.h"
 #include "nbt_server/wins/winsdb.h"
 #include "lib/ldb/include/ldb.h"
 
@@ -306,6 +308,103 @@ static NTSTATUS wreplsrv_in_send_request(struct wreplsrv_in_call *call)
 	return NT_STATUS_OK;
 }
 
+struct wreplsrv_in_update_state {
+	struct wreplsrv_in_connection *wrepl_in;
+	struct wreplsrv_out_connection *wrepl_out;
+	struct composite_context *creq;
+	struct wreplsrv_pull_cycle_io cycle_io;
+};
+
+static void wreplsrv_in_update_handler(struct composite_context *creq)
+{
+	struct wreplsrv_in_update_state *state= talloc_get_type(creq->async.private_data,
+								struct wreplsrv_in_update_state);
+	NTSTATUS status;
+
+	status = wreplsrv_pull_cycle_recv(creq);
+
+	talloc_free(state->wrepl_out);
+
+	wreplsrv_terminate_in_connection(state->wrepl_in, nt_errstr(status));
+}
+
+static NTSTATUS wreplsrv_in_update(struct wreplsrv_in_call *call)
+{
+	struct wreplsrv_in_connection *wrepl_in = call->wreplconn;
+	struct wreplsrv_out_connection *wrepl_out;
+	struct wrepl_table *update_in = &call->req_packet.message.replication.info.table;
+	struct wreplsrv_in_update_state *update_state;
+
+	DEBUG(2,("WREPL_REPL_UPDATE: partner[%s] initiator[%s] num_owners[%u]\n",
+		call->wreplconn->partner->address,
+		update_in->initiator, update_in->partner_count));
+
+	/* 
+	 * we need to flip the connection into a client connection
+	 * and do a WREPL_REPL_SEND_REQUEST's on the that connection
+	 * and then stop this connection
+	 */
+	talloc_free(wrepl_in->conn->event.fde);
+	wrepl_in->conn->event.fde = NULL;
+
+	update_state = talloc(wrepl_in, struct wreplsrv_in_update_state);
+	NT_STATUS_HAVE_NO_MEMORY(update_state);
+
+	wrepl_out = talloc(update_state, struct wreplsrv_out_connection);
+	NT_STATUS_HAVE_NO_MEMORY(wrepl_out);
+	wrepl_out->service		= wrepl_in->service;
+	wrepl_out->partner		= wrepl_in->partner;
+	wrepl_out->assoc_ctx.our_ctx	= wrepl_in->assoc_ctx.our_ctx;
+	wrepl_out->assoc_ctx.peer_ctx	= wrepl_in->assoc_ctx.peer_ctx;
+	wrepl_out->sock			= wrepl_socket_merge(wrepl_out,
+							     wrepl_in->conn->event.ctx,
+							     wrepl_in->conn->socket);
+	NT_STATUS_HAVE_NO_MEMORY(wrepl_out->sock);
+
+	update_state->wrepl_in			= wrepl_in;
+	update_state->wrepl_out			= wrepl_out;
+	update_state->cycle_io.in.partner	= wrepl_out->partner;
+	update_state->cycle_io.in.num_owners	= update_in->partner_count;
+	update_state->cycle_io.in.owners	= update_in->partners;
+	talloc_steal(update_state, update_in->partners);
+	update_state->cycle_io.in.wreplconn	= wrepl_out;
+	update_state->creq = wreplsrv_pull_cycle_send(update_state, &update_state->cycle_io);
+	if (!update_state->creq) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	update_state->creq->async.fn		= wreplsrv_in_update_handler;
+	update_state->creq->async.private_data	= update_state;
+
+	return ERROR_INVALID_PARAMETER;
+}
+
+static NTSTATUS wreplsrv_in_update2(struct wreplsrv_in_call *call)
+{
+	return wreplsrv_in_update(call);
+}
+
+static NTSTATUS wreplsrv_in_inform(struct wreplsrv_in_call *call)
+{
+	struct wrepl_table *inform_in = &call->req_packet.message.replication.info.table;
+	NTSTATUS status;
+
+	DEBUG(2,("WREPL_REPL_INFORM: partner[%s] initiator[%s] num_owners[%u]\n",
+		call->wreplconn->partner->address,
+		inform_in->initiator, inform_in->partner_count));
+
+	status = wreplsrv_sched_inform_action(call->wreplconn->partner, inform_in);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	/* we don't reply to WREPL_REPL_INFORM messages */
+	return ERROR_INVALID_PARAMETER;
+}
+
+static NTSTATUS wreplsrv_in_inform2(struct wreplsrv_in_call *call)
+{
+	return wreplsrv_in_inform(call);
+}
+
 static NTSTATUS wreplsrv_in_replication(struct wreplsrv_in_call *call)
 {
 	struct wrepl_replication *repl_in = &call->req_packet.message.replication;
@@ -329,6 +428,9 @@ static NTSTATUS wreplsrv_in_replication(struct wreplsrv_in_call *call)
 
 	switch (repl_in->command) {
 		case WREPL_REPL_TABLE_QUERY:
+			if (!(call->wreplconn->partner->type & WINSREPL_PARTNER_PUSH)) {
+				return wreplsrv_in_stop_assoc_ctx(call);
+			}
 			status = wreplsrv_in_table_query(call);
 			break;
 
@@ -336,6 +438,9 @@ static NTSTATUS wreplsrv_in_replication(struct wreplsrv_in_call *call)
 			return ERROR_INVALID_PARAMETER;
 
 		case WREPL_REPL_SEND_REQUEST:
+			if (!(call->wreplconn->partner->type & WINSREPL_PARTNER_PUSH)) {
+				return wreplsrv_in_stop_assoc_ctx(call);
+			}
 			status = wreplsrv_in_send_request(call);
 			break;
 
@@ -343,16 +448,32 @@ static NTSTATUS wreplsrv_in_replication(struct wreplsrv_in_call *call)
 			return ERROR_INVALID_PARAMETER;
 	
 		case WREPL_REPL_UPDATE:
-			return ERROR_INVALID_PARAMETER;
+			if (!(call->wreplconn->partner->type & WINSREPL_PARTNER_PULL)) {
+				return wreplsrv_in_stop_assoc_ctx(call);
+			}
+			status = wreplsrv_in_update(call);
+			break;
 
-		case WREPL_REPL_5:
-			return ERROR_INVALID_PARAMETER;
+		case WREPL_REPL_UPDATE2:
+			if (!(call->wreplconn->partner->type & WINSREPL_PARTNER_PULL)) {
+				return wreplsrv_in_stop_assoc_ctx(call);
+			}
+			status = wreplsrv_in_update2(call);
+			break;
 
 		case WREPL_REPL_INFORM:
-			return ERROR_INVALID_PARAMETER;
+			if (!(call->wreplconn->partner->type & WINSREPL_PARTNER_PULL)) {
+				return wreplsrv_in_stop_assoc_ctx(call);
+			}
+			status = wreplsrv_in_inform(call);
+			break;
 
-		case WREPL_REPL_9:
-			return ERROR_INVALID_PARAMETER;
+		case WREPL_REPL_INFORM2:
+			if (!(call->wreplconn->partner->type & WINSREPL_PARTNER_PULL)) {
+				return wreplsrv_in_stop_assoc_ctx(call);
+			}
+			status = wreplsrv_in_inform2(call);
+			break;
 
 		default:
 			return ERROR_INVALID_PARAMETER;
@@ -417,7 +538,8 @@ NTSTATUS wreplsrv_in_call(struct wreplsrv_in_call *call)
 	}
 
 	if (NT_STATUS_IS_OK(status)) {
-		call->rep_packet.opcode		= WREPL_OPCODE_BITS;
+		/* let the backend to set some of the opcode bits, but always add the standards */
+		call->rep_packet.opcode		|= WREPL_OPCODE_BITS;
 		call->rep_packet.assoc_ctx	= call->wreplconn->assoc_ctx.peer_ctx;
 	}
 

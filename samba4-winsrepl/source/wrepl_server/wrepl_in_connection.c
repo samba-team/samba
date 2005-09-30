@@ -32,7 +32,7 @@
 #include "nbt_server/wins/winsdb.h"
 #include "ldb/include/ldb.h"
 
-static void wreplsrv_terminate_in_connection(struct wreplsrv_in_connection *wreplconn, const char *reason)
+void wreplsrv_terminate_in_connection(struct wreplsrv_in_connection *wreplconn, const char *reason)
 {
 	stream_terminate_connection(wreplconn->conn, reason);
 }
