@@ -19,7 +19,11 @@ smbd_check_or_start() {
 
 		echo -n "STARTING SMBD..."
 		((
-			$SMBD_VALGRIND $SRCDIR/bin/smbd --maximum-runtime=2700 -d1 -s $CONFFILE -M single -i < $SMBD_TEST_FIFO > $SMBD_TEST_LOG 2>&1;
+			runtime=2700
+			if [ -n "$SMBD_VALGRIND" ]; then
+			    runtime=7200
+			fi
+			$SMBD_VALGRIND $SRCDIR/bin/smbd --maximum-runtime=$runtime -d1 -s $CONFFILE -M single -i < $SMBD_TEST_FIFO > $SMBD_TEST_LOG 2>&1;
 			ret=$?;
 			rm -f $SMBD_TEST_FIFO;
 			if [ -n "$SOCKET_WRAPPER_DIR" -a -d "$SOCKET_WRAPPER_DIR" ]; then
