@@ -31,9 +31,14 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 #include "krb5_locl.h"
+#include <getarg.h>
 #include <err.h>
 
 RCSID("$Id$");
+
+static int debug_flag	= 0;
+static int version_flag = 0;
+static int help_flag	= 0;
 
 static void
 test_default_name(krb5_context context)
@@ -300,12 +305,66 @@ test_def_cc_name(krb5_context context)
 	    if (cc_names[i].res && strcmp(cc_names[i].res, str) != 0)
 		krb5_errx(context, 1, "test %d %s != %s", 
 			  i, cc_names[i].res, str);
-#if 0
-	    printf("%s => %s\n", cc_names[i].str, str);
-#endif
+	    if (debug_flag)
+		printf("%s => %s\n", cc_names[i].str, str);
 	    free(str);
 	}
     }
+}
+
+static void
+test_cache_iter(krb5_context context, const char *type, int destroy)
+{
+    krb5_cc_cache_cursor cursor;
+    krb5_error_code ret;
+    krb5_ccache id;
+    
+    ret = krb5_cc_cache_get_first (context, type, &cursor);
+    if (ret == KRB5_CC_NOSUPP)
+	return;
+    else if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_cache_get_first");
+
+
+    while ((ret = krb5_cc_cache_next (context, cursor, &id)) == 0) {
+	krb5_principal principal;
+	char *name;
+
+	if (debug_flag)
+	    printf("name: %s\n", krb5_cc_get_name(context, id));
+	ret = krb5_cc_get_principal(context, id, &principal);
+	if (ret == 0) {
+	    ret = krb5_unparse_name(context, principal, &name);
+	    if (ret == 0) {
+		if (debug_flag)
+		    printf("\tprincipal: %s\n", name);
+		free(name);
+	    }
+	    krb5_free_principal(context, principal);
+	}
+	if (destroy)
+	    krb5_cc_destroy(context, id);
+	else
+	    krb5_cc_close(context, id);
+    }
+
+    krb5_cc_cache_end_seq_get(context, cursor);
+}
+
+static struct getargs args[] = {
+    {"debug",	'd',	arg_flag,	&debug_flag,
+     "turn on debuggin", NULL },
+    {"version",	0,	arg_flag,	&version_flag,
+     "print version", NULL },
+    {"help",	0,	arg_flag,	&help_flag,
+     NULL, NULL }
+};
+
+static void
+usage (int ret)
+{
+    arg_printusage (args, sizeof(args)/sizeof(*args), NULL, "hostname ...");
+    exit (ret);
 }
 
 int
@@ -313,8 +372,23 @@ main(int argc, char **argv)
 {
     krb5_context context;
     krb5_error_code ret;
+    int optidx = 0;
 
     setprogname(argv[0]);
+
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optidx))
+	usage(1);
+    
+    if (help_flag)
+	usage (0);
+
+    if(version_flag){
+	print_version(NULL);
+	exit(0);
+    }
+
+    argc -= optidx;
+    argv += optidx;
 
     ret = krb5_init_context(&context);
     if (ret)
@@ -327,6 +401,17 @@ main(int argc, char **argv)
     test_init_vs_destroy(context, &krb5_fcc_ops);
     test_mcc_default();
     test_def_cc_name(context);
+    test_cache_iter(context, "MEMORY", 0);
+    {
+	krb5_ccache id;
+	krb5_cc_new_unique(context, "MEMORY", "bar", &id);
+	krb5_cc_new_unique(context, "MEMORY", "baz", &id);
+    }
+    test_cache_iter(context, "MEMORY", 0);
+    test_cache_iter(context, "MEMORY", 1);
+    test_cache_iter(context, "MEMORY", 0);
+    test_cache_iter(context, "FILE", 0);
+    test_cache_iter(context, "API", 0);
 
     krb5_free_context(context);
 
