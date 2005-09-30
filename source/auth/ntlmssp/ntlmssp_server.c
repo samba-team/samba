@@ -26,7 +26,6 @@
 #include "auth/auth.h"
 #include "auth/ntlmssp/ntlmssp.h"
 #include "lib/crypto/crypto.h"
-#include "pstring.h"
 #include "system/filesys.h"
 
 /** 
@@ -107,7 +106,7 @@ static const char *ntlmssp_target_name(struct gensec_ntlmssp_state *gensec_ntlms
 */
 static BOOL get_myfullname(char *my_name)
 {
-	pstring hostname;
+	char hostname[HOST_NAME_MAX];
 
 	*hostname = 0;
 
@@ -121,13 +120,13 @@ static BOOL get_myfullname(char *my_name)
 	hostname[sizeof(hostname)-1] = '\0';
 
 	if (my_name)
-		fstrcpy(my_name, hostname);
+		strncpy(my_name, hostname, sizeof(hostname));
 	return True;
 }
 
 static BOOL get_mydomname(char *my_domname)
 {
-	pstring hostname;
+	char hostname[HOST_NAME_MAX];
 	char *p;
 
 	/* arrgh! relies on full name in system */
@@ -150,7 +149,7 @@ static BOOL get_mydomname(char *my_domname)
 	p++;
 	
 	if (my_domname)
-		fstrcpy(my_domname, p);
+		strncpy(my_domname, p, sizeof(hostname));
 
 	return True;
 }
@@ -173,7 +172,7 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
 	DATA_BLOB struct_blob;
-	fstring dnsname, dnsdomname;
+	char dnsname[HOST_NAME_MAX], dnsdomname[HOST_NAME_MAX];
 	uint32_t neg_flags = 0;
 	uint32_t ntlmssp_command, chal_flags;
 	char *cliname=NULL, *domname=NULL;
