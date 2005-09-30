@@ -77,6 +77,29 @@ krb5_cc_register(krb5_context context,
 }
 
 /*
+ * Allocate the memory for a `id' and the that function table to
+ * `ops'. Returns 0 or and error code.
+ */
+
+krb5_error_code
+_krb5_cc_allocate(krb5_context context, 
+		  const krb5_cc_ops *ops,
+		  krb5_ccache *id)
+{
+    krb5_ccache p;
+
+    p = malloc (sizeof(*p));
+    if(p == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	return KRB5_CC_NOMEM;
+    }
+    p->ops = ops;
+    *id = p;
+
+    return 0;
+}
+
+/*
  * Allocate memory for a new ccache in `id' with operations `ops'
  * and name `residual'.
  * Return 0 or an error code.
@@ -89,18 +112,13 @@ allocate_ccache (krb5_context context,
 		 krb5_ccache *id)
 {
     krb5_error_code ret;
-    krb5_ccache p;
 
-    p = malloc(sizeof(*p));
-    if(p == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
-	return KRB5_CC_NOMEM;
-    }
-    p->ops = ops;
-    *id = p;
-    ret = p->ops->resolve(context, id, residual);
+    ret = _krb5_cc_allocate(context, ops, id);
+    if (ret)
+	return ret;
+    ret = (*id)->ops->resolve(context, id, residual);
     if(ret)
-	free(p);
+	free(*id);
     return ret;
 }
 
@@ -145,16 +163,12 @@ krb5_cc_gen_new(krb5_context context,
 		const krb5_cc_ops *ops,
 		krb5_ccache *id)
 {
-    krb5_ccache p;
+    krb5_error_code ret;
 
-    p = malloc (sizeof(*p));
-    if (p == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
-	return KRB5_CC_NOMEM;
-    }
-    p->ops = ops;
-    *id = p;
-    return p->ops->gen_new(context, id);
+    ret = _krb5_cc_allocate(context, ops, id);
+    if (ret)
+	return ret;
+    return (*id)->ops->gen_new(context, id);
 }
 
 /*
@@ -641,17 +655,113 @@ krb5_cc_clear_mcred(krb5_creds *mcred)
 
 /*
  * Get the cc ops that is registered in `context' to handle the
- * `prefix'. Returns NULL if ops not found.
+ * `prefix'. `prefix' can be a complete credential cache name or a
+ * prefix, the function will only use part up to the first colon (:)
+ * if there is one.  Returns NULL if ops not found.
  */
 
 const krb5_cc_ops *
 krb5_cc_get_prefix_ops(krb5_context context, const char *prefix)
 {
+    char *p, *p1;
     int i;
+    
+    p = strdup(prefix);
+    if (p == NULL) {
+	krb5_set_error_string(context, "malloc - out of memory");
+	return NULL;
+    }
+    p1 = strchr(p, ':');
+    if (p1)
+	*p1 = '\0';
 
     for(i = 0; i < context->num_cc_ops && context->cc_ops[i].prefix; i++) {
-	if(strcmp(context->cc_ops[i].prefix, prefix) == 0)
+	if(strcmp(context->cc_ops[i].prefix, p) == 0) {
+	    free(p);
 	    return &context->cc_ops[i];
+	}
     }
+    free(p);
     return NULL;
 }
+
+struct krb5_cc_cache_cursor_data {
+    const krb5_cc_ops *ops;
+    krb5_cc_cursor cursor;
+};
+
+/*
+ * Start iterating over all caches of `type'. If `type' is NULL, the
+ * default type is * used. `cursor' is initialized to the beginning.
+ * Return 0 or an error code.
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_cache_get_first (krb5_context context,
+			 const char *type,
+			 krb5_cc_cache_cursor *cursor)
+{
+    const krb5_cc_ops *ops;
+    krb5_error_code ret;
+
+    if (type == NULL)
+	type = krb5_cc_default_name(context);
+
+    ops = krb5_cc_get_prefix_ops(context, type);
+    if (ops == NULL) {
+	krb5_set_error_string(context, "Unknown type \"%s\" when iterating "
+			      "trying to iterate the credential caches", type);
+	return KRB5_CC_UNKNOWN_TYPE;
+    }
+
+    if (ops->get_cache_first == NULL) {
+	krb5_set_error_string(context, "Credential cache type %s doesn't support "
+			      "iterations over caches", ops->prefix);
+	return KRB5_CC_NOSUPP;
+    }
+
+    *cursor = calloc(1, sizeof(**cursor));
+    if (*cursor == NULL) {
+	krb5_set_error_string(context, "malloc - out of memory");
+	return ENOMEM;
+    }
+
+    (*cursor)->ops = ops;
+
+    ret = ops->get_cache_first(context, &(*cursor)->cursor);
+    if (ret) {
+	free(*cursor);
+	*cursor = NULL;
+    }
+    return ret;
+}
+
+/*
+ * Retrieve the next cache pointed to by (`cursor') in `id'
+ * and advance `cursor'.
+ * Return 0 or an error code.
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_cache_next (krb5_context context,
+		   krb5_cc_cache_cursor cursor,
+		   krb5_ccache *id)
+{
+    return cursor->ops->get_cache_next(context, cursor->cursor, id);
+}
+
+/*
+ * Destroy the cursor `cursor'.
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_cache_end_seq_get (krb5_context context,
+			   krb5_cc_cache_cursor cursor)
+{
+    krb5_error_code ret;
+    ret = cursor->ops->end_cache_get(context, cursor->cursor);
+    cursor->ops = NULL;
+    free(cursor);
+    return ret;
+}
+
