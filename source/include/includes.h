@@ -940,7 +940,6 @@ extern int errno;
 #include "rpc_ds.h"
 #include "rpc_echo.h"
 #include "rpc_shutdown.h"
-#include "rpc_unixinfo.h"
 #include "rpc_perfcount.h"
 #include "rpc_perfcount_defs.h"
 
