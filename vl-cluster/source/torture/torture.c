@@ -4651,8 +4651,63 @@ static BOOL run_error_map_extract(int dummy) {
 	return True;
 }
 
+#define KEYLEN 5
+#define DATALEN 100
+
+static char *randbuf(int len)
+{
+	char *buf;
+	int i;
+	buf = (char *)SMB_MALLOC(len+1);
+
+	for (i=0;i<len;i++) {
+		buf[i] = 'a' + (rand() % 26);
+	}
+	buf[i] = 0;
+	return buf;
+}
+
 static BOOL run_dbwrap(int dummy)
 {
+	TALLOC_CTX *mem_ctx;
+	struct db_context *db;
+	int i;
+
+	mem_ctx = talloc_init("dbwrap %i", dummy);
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("talloc_init failed\n"));
+		return False;
+	}
+
+	db = db_open_file(mem_ctx, "torture.tdb", 0, 0, O_RDWR|O_CREAT, 0644);
+	if (db == NULL) {
+		DEBUG(0, ("db_open_file failed: %s\n", strerror(errno)));
+		talloc_free(mem_ctx);
+		return False;
+	}
+
+	for (i=0; i<torture_numops; i++) {
+		TDB_DATA key, data;
+		struct db_record *rec;
+
+		key.dsize = 1 + (rand() % KEYLEN);
+		key.dptr = randbuf(key.dsize);
+		data.dsize = 1 + (rand() % DATALEN);
+		data.dptr = randbuf(data.dsize);
+
+		rec = db->fetch_locked(db, mem_ctx, key);
+		if (rec == NULL) {
+			DEBUG(0, ("could not fetch %s\n", key.dptr));
+			return False;
+		}
+		rec->store(rec, data, 0);
+		talloc_free(rec);
+
+		free(key.dptr);
+		free(data.dptr);
+	}
+
+	talloc_free(mem_ctx);
 	return True;
 }
 
