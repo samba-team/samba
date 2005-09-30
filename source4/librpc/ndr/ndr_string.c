@@ -81,9 +81,10 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		}
 		NDR_PULL_NEED_BYTES(ndr, (len2 + c_len_term)*byte_mul);
 		if (len2 == 0) {
-			as = talloc_strdup(ndr, "");
+			as = talloc_strdup(ndr->current_mem_ctx, "");
 		} else {
-			ret = convert_string_talloc(ndr, chset, CH_UNIX, 
+			ret = convert_string_talloc(ndr->current_mem_ctx,
+						    chset, CH_UNIX, 
 						    ndr->data+ndr->offset, 
 						    (len2 + c_len_term)*byte_mul,
 						    (void **)&as);
@@ -125,9 +126,10 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &len1));
 		NDR_PULL_NEED_BYTES(ndr, (len1 + c_len_term)*byte_mul);
 		if (len1 == 0) {
-			as = talloc_strdup(ndr, "");
+			as = talloc_strdup(ndr->current_mem_ctx, "");
 		} else {
-			ret = convert_string_talloc(ndr, chset, CH_UNIX, 
+			ret = convert_string_talloc(ndr->current_mem_ctx,
+						    chset, CH_UNIX, 
 						    ndr->data+ndr->offset, 
 						    (len1 + c_len_term)*byte_mul,
 						    (void **)&as);
@@ -162,9 +164,10 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &len1));
 		NDR_PULL_NEED_BYTES(ndr, (len1 + c_len_term)*byte_mul);
 		if (len1 == 0) {
-			as = talloc_strdup(ndr, "");
+			as = talloc_strdup(ndr->current_mem_ctx, "");
 		} else {
-			ret = convert_string_talloc(ndr, chset, CH_UNIX, 
+			ret = convert_string_talloc(ndr->current_mem_ctx,
+						    chset, CH_UNIX, 
 						    ndr->data+ndr->offset, 
 						    (len1 + c_len_term)*byte_mul,
 						    (void **)&as);
@@ -195,9 +198,10 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &len3));
 		NDR_PULL_NEED_BYTES(ndr, (len3 + c_len_term)*byte_mul);
 		if (len3 == 0) {
-			as = talloc_strdup(ndr, "");
+			as = talloc_strdup(ndr->current_mem_ctx, "");
 		} else {
-			ret = convert_string_talloc(ndr, chset, CH_UNIX, 
+			ret = convert_string_talloc(ndr->current_mem_ctx,
+						    chset, CH_UNIX, 
 						    ndr->data+ndr->offset, 
 						    (len3 + c_len_term)*byte_mul,
 						    (void **)&as);
@@ -226,9 +230,10 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &len3));
 		NDR_PULL_NEED_BYTES(ndr, len3);
 		if (len3 == 0) {
-			as = talloc_strdup(ndr, "");
+			as = talloc_strdup(ndr->current_mem_ctx, "");
 		} else {
-			ret = convert_string_talloc(ndr, chset, CH_UNIX, 
+			ret = convert_string_talloc(ndr->current_mem_ctx,
+						    chset, CH_UNIX, 
 						    ndr->data+ndr->offset, 
 						    len3,
 						    (void **)&as);
@@ -247,7 +252,8 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		} else {
 			len1 = utf16_len_n(ndr->data+ndr->offset, ndr->data_size - ndr->offset);
 		}
-		ret = convert_string_talloc(ndr, chset, CH_UNIX, 
+		ret = convert_string_talloc(ndr->current_mem_ctx,
+					    chset, CH_UNIX, 
 					    ndr->data+ndr->offset, 
 					    len1,
 					    (void **)&as);
@@ -263,7 +269,8 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 	case LIBNDR_FLAG_STR_FIXLEN32:
 		len1 = (flags & LIBNDR_FLAG_STR_FIXLEN32)?32:15;
 		NDR_PULL_NEED_BYTES(ndr, len1*byte_mul);
-		ret = convert_string_talloc(ndr, chset, CH_UNIX, 
+		ret = convert_string_talloc(ndr->current_mem_ctx,
+					    chset, CH_UNIX, 
 					    ndr->data+ndr->offset, 
 					    len1*byte_mul,
 					    (void **)&as);
@@ -530,13 +537,17 @@ NTSTATUS ndr_pull_string_array(struct ndr_pull *ndr, int ndr_flags, const char *
 	}
 
 	for (count = 0;; count++) {
+		TALLOC_CTX *tmp_ctx;
 		const char *s = NULL;
-		a = talloc_realloc(ndr, a, const char *, count + 2);
+		a = talloc_realloc(ndr->current_mem_ctx, a, const char *, count + 2);
 		NT_STATUS_HAVE_NO_MEMORY(a);
 		a[count]   = NULL;
 		a[count+1]   = NULL;
 
+		tmp_ctx = ndr->current_mem_ctx;
+		ndr->current_mem_ctx = a;
 		NDR_CHECK(ndr_pull_string(ndr, ndr_flags, &s));
+		ndr->current_mem_ctx = tmp_ctx;
 		if (strcmp("", s)==0) {
 			a[count] = NULL;
 			break;
@@ -622,11 +633,12 @@ NTSTATUS ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var,
 {
 	int ret;
 	if (length == 0) {
-		*var = talloc_strdup(ndr, "");
+		*var = talloc_strdup(ndr->current_mem_ctx, "");
 		return NT_STATUS_OK;
 	}
 	NDR_PULL_NEED_BYTES(ndr, length*byte_mul);
-	ret = convert_string_talloc(ndr, chset, CH_UNIX, 
+	ret = convert_string_talloc(ndr->current_mem_ctx,
+				    chset, CH_UNIX, 
 				    ndr->data+ndr->offset, 
 				    length*byte_mul,
 				    discard_const_p(void *, var));
