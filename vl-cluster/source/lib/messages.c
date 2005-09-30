@@ -48,6 +48,8 @@
 
 #include "includes.h"
 
+#define CLUSTER_EXTENSION 1
+
 static struct process_id socket_pid;
 
 struct data_container {
@@ -560,6 +562,22 @@ BOOL message_dispatch(fd_set *rfds)
 		return False;
 	}
 
+	if (FD_ISSET(listen_fd, rfds)) {
+		int new_fd;
+		struct sockaddr addr;
+		socklen_t addrlen = sizeof(addr);
+		new_fd = sys_accept(listen_fd, &addr, &addrlen);
+		if (new_fd < 0) {
+			DEBUG(5, ("accept failed: %s\n", strerror(errno)));
+		}
+		if (stream_fd >= 0) {
+			DEBUG(5, ("Already got a stream fd, closing new\n"));
+			close(new_fd);
+		} else {
+			stream_fd = new_fd;
+		}
+	}
+
 	if (FD_ISSET(dgram_fd, rfds)) {
 		blob = read_from_dgram_socket(mem_ctx, dgram_fd);
 	}
@@ -806,29 +824,74 @@ static int messaging_client_destr(void *p)
 	return 0;
 }
 
-static void new_client(struct process_id pid)
+static void accept_tcp(int tcp_listener)
+{
+	struct messaging_client *c;
+	int fd;
+	struct sockaddr addr;
+	struct sockaddr_in *in_addr = (struct sockaddr_in *)&addr;
+	socklen_t addrlen = sizeof(addr);
+
+	fd = sys_accept(tcp_listener, &addr, &addrlen);
+	if (fd < 0) {
+		DEBUG(5, ("accept failed: %s\n", strerror(errno)));
+		return;
+	}
+
+	if (addr.sa_family != AF_INET) {
+		DEBUG(5, ("Expected AF_INET(%d) in accept, got %d\n",
+			  AF_INET, addr.sa_family));
+		close(fd);
+		return;
+	}
+
+	c = TALLOC_P(NULL, struct messaging_client);
+	if (c == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		close(fd);
+		return;
+	}
+
+	c->pid.ip = in_addr->sin_addr;
+	c->pid.pid = MESSAGING_DISPATCHER_PID;
+	c->fd = fd;
+	c->connected = True;
+	c->incoming = NULL;
+	c->messages = NULL;
+	c->last_msg = NULL;
+	talloc_set_destructor(c, messaging_client_destr);
+
+	DEBUG(10, ("Adding remote client %s\n", procid_str_static(&c->pid)));
+
+	DLIST_ADD(clients, c);
+}
+
+static struct messaging_client *new_client(const struct process_id *pid)
 {
 	struct messaging_client *result;
+	struct sockaddr *addr;
+	socklen_t addrlen;
 	struct sockaddr_un sunaddr;
-	char *path;
+	struct sockaddr_in sinaddr;
 
 	result = TALLOC_P(NULL, struct messaging_client);
 	if (result == NULL) {
 		DEBUG(0, ("talloc failed\n"));
-		return;
+		return NULL;
 	}
 
-	result->pid = pid;
+	result->pid = *pid;
 	ZERO_STRUCT(result->incoming);
 	result->messages = NULL;
 	result->last_msg = NULL;
 	result->connected = False;
 	
-	result->fd = socket(PF_UNIX, SOCK_STREAM, 0);
+	result->fd = socket(procid_is_local(pid) ? PF_UNIX: PF_INET,
+			    SOCK_STREAM, 0);
 	if (result->fd < 0) {
 		DEBUG(5, ("Could not create socket: %s\n", strerror(errno)));
 		talloc_free(result);
-		return;
+		return NULL;
 	}
 
 	talloc_set_destructor(result, messaging_client_destr);
@@ -836,26 +899,39 @@ static void new_client(struct process_id pid)
 	if (set_blocking(result->fd, False) < 0) {
 		DEBUG(1, ("set_blocking failed: %s\n", strerror(errno)));
 		talloc_free(result);
-		return;
+		return NULL;
 	}
 
-	asprintf(&path, "%s/%ss", lock_path("messaging"),
-		 procid_str_static(&pid));
-	if (path == NULL) {
-		DEBUG(0, ("asprintf failed\n"));
-		talloc_free(result);
-		return;
+	if (procid_is_local(pid)) {
+		char *path;
+		asprintf(&path, "%s/%ss", lock_path("messaging"),
+			 procid_str_static(pid));
+		if (path == NULL) {
+			DEBUG(0, ("asprintf failed\n"));
+			return False;
+		}
+		DEBUG(10, ("Connecting to client %s, path %s\n",
+			   procid_str_static(pid), path));
+
+		ZERO_STRUCT(sunaddr);
+		sunaddr.sun_family = AF_UNIX;
+		strncpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path)-1);
+		SAFE_FREE(path);
+
+		addr = (struct sockaddr *)&sunaddr;
+		addrlen = sizeof(sunaddr);
+
+	} else {
+		ZERO_STRUCT(sinaddr);
+		sinaddr.sin_family = AF_INET;
+		sinaddr.sin_addr = pid->ip;
+		sinaddr.sin_port = MESSAGING_PORT;
+
+		addr = (struct sockaddr *)&sinaddr;
+		addrlen = sizeof(sinaddr);
 	}
-	DEBUG(10, ("Connecting to client %s, path %s\n",
-		   procid_str_static(&pid), path));
 
-	ZERO_STRUCT(sunaddr);
-	sunaddr.sun_family = AF_UNIX;
-	strncpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path)-1);
-	SAFE_FREE(path);
-
-	if (sys_connect(result->fd, (struct sockaddr *)&sunaddr,
-			sizeof(sunaddr)) == 0) {
+	if (sys_connect(result->fd, addr, addrlen) == 0) {
 		result->connected = True;
 		goto done;
 	}
@@ -869,11 +945,12 @@ static void new_client(struct process_id pid)
 	if (errno != 0) {
 		DEBUG(0, ("connect failed: %s\n", strerror(errno)));
 		talloc_free(result);
-		return;
+		return NULL;
 	}
 
  done:
 	DLIST_ADD(clients, result);
+	return result;
 }
 
 static BOOL client_readable(struct messaging_client *c)
@@ -899,7 +976,13 @@ static BOOL client_readable(struct messaging_client *c)
 
 	dst = find_client(clients, &msg_rec->dest);
 	if (dst == NULL) {
-		DEBUG(10, ("Did not find target %s\n",
+		DEBUG(10, ("Connecting to pid %s\n",
+			   procid_str_static(&msg_rec->dest)));
+		dst = new_client(&msg_rec->dest);
+	}
+
+	if (dst == NULL) {
+		DEBUG(10, ("Could not connect to pid %s, dropping message\n",
 			   procid_str_static(&msg_rec->dest)));
 		return True;
 	}
@@ -969,7 +1052,7 @@ static BOOL client_writeable(struct messaging_client *c)
 	return True;
 }
 
-static void dispatch_once(int parent_pipe, int receive_fd)
+static void dispatch_once(int parent_pipe, int receive_fd, int tcp_listener)
 {
 	fd_set rfds, wfds;
 	int maxfd = 0;
@@ -984,6 +1067,9 @@ static void dispatch_once(int parent_pipe, int receive_fd)
 
 	FD_SET(receive_fd, &rfds);
 	maxfd = MAX(maxfd, receive_fd);
+
+	FD_SET(tcp_listener, &rfds);
+	maxfd = MAX(maxfd, tcp_listener);
 
 	for (client = clients; client != NULL; client = client->next) {
 		FD_SET(client->fd, &rfds);
@@ -1002,6 +1088,10 @@ static void dispatch_once(int parent_pipe, int receive_fd)
 	if (FD_ISSET(parent_pipe, &rfds)) {
 		/* Parent died */
 		exit(0);
+	}
+
+	if (FD_ISSET(tcp_listener, &rfds)) {
+		accept_tcp(tcp_listener);
 	}
 
 	if (FD_ISSET(receive_fd, &rfds)) {
@@ -1023,7 +1113,7 @@ static void dispatch_once(int parent_pipe, int receive_fd)
 			talloc_free(blob);
 			return;
 		}
-		new_client(msg->src);
+		new_client(&msg->src);
 		talloc_free(blob);
 	}			
 
@@ -1056,10 +1146,37 @@ static void dispatch_once(int parent_pipe, int receive_fd)
 	}
 }
 
+#ifdef CLUSTER_EXTENSION
+static int open_remote_listener(void)
+{
+	int result;
+
+	result = open_socket_in(SOCK_STREAM, MESSAGING_PORT, 0,
+				interpret_addr(lp_socket_address()), True);
+
+	if (result < 0) {
+		DEBUG(5, ("open_socket_in failed: %s\n", strerror(errno)));
+		return result;
+	}
+
+	if (listen(result, 5) < 0) {
+		DEBUG(0, ("listen() failed: %s\n", strerror(errno)));
+		close(result);
+		return -1;
+	}
+	return result;
+}
+#else
+static int open_remote_listener(void)
+{
+	return -1;
+}
+#endif
+
 void message_dispatch_daemon(void)
 {
 	int parent_pipe[2];
-	int fd;
+	int fd, tcp_fd;
 
 	if (pipe(parent_pipe) < 0) {
 		return;
@@ -1079,7 +1196,9 @@ void message_dispatch_daemon(void)
 		smb_panic("Could not create dispatch socket\n");
 	}
 
+	tcp_fd = open_remote_listener();
+
 	while (1) {
-		dispatch_once(parent_pipe[0], fd);
+		dispatch_once(parent_pipe[0], fd, tcp_fd);
 	}
 }
