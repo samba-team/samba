@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "pstring.h"
 
 /*
   this is a tiny msrpc packet generator. I am only using this to
@@ -209,7 +210,7 @@ BOOL msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 	uint16_t len1, len2;
 	uint32_t ptr;
 	uint32_t *v;
-	char *p;
+	pstring p;
 
 	va_start(ap, format);
 	for (i=0; format[i]; i++) {
@@ -236,10 +237,13 @@ BOOL msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 					return False;
 
 				if (0 < len1) {
-					if (convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, blob->data + ptr, len1, (void **)&p) < 0) {
+					pull_string(p, blob->data + ptr, sizeof(p), 
+						    len1, 
+						    STR_UNICODE|STR_NOALIGN);
+					(*ps) = talloc_strdup(mem_ctx, p);
+					if (!(*ps)) {
 						return False;
 					}
-					(*ps) = p;
 				} else {
 					(*ps) = "";
 				}
