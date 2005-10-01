@@ -642,7 +642,7 @@ failed:
 #endif
 }
 
-void smb_krb5_checksum_from_pac_sig(krb5_checksum *cksum, 
+ void smb_krb5_checksum_from_pac_sig(krb5_checksum *cksum, 
 				    PAC_SIGNATURE_DATA *sig)
 {
 #ifdef HAVE_CHECKSUM_IN_KRB5_CHECKSUM
@@ -656,7 +656,7 @@ void smb_krb5_checksum_from_pac_sig(krb5_checksum *cksum,
 #endif
 }
 
-krb5_error_code smb_krb5_verify_checksum(krb5_context context,
+ krb5_error_code smb_krb5_verify_checksum(krb5_context context,
 					 krb5_keyblock *keyblock,
 					 krb5_keyusage usage,
 					 krb5_checksum *cksum,
@@ -728,7 +728,7 @@ krb5_error_code smb_krb5_verify_checksum(krb5_context context,
 	return ret;
 }
 
-time_t get_authtime_from_tkt(krb5_ticket *tkt)
+ time_t get_authtime_from_tkt(krb5_ticket *tkt)
 {
 #if defined(HAVE_KRB5_TKT_ENC_PART2)
 	return tkt->enc_part2->times.authtime;
@@ -819,7 +819,7 @@ out:
 	return ret;
 }
 
-void smb_krb5_free_ap_req(krb5_context context, 
+ void smb_krb5_free_ap_req(krb5_context context, 
 			  krb5_ap_req *ap_req)
 {
 #ifdef HAVE_KRB5_FREE_AP_REQ /* MIT */
@@ -836,7 +836,7 @@ void smb_krb5_free_ap_req(krb5_context context,
 krb5_error_code decode_krb5_ap_req(const krb5_data *code, krb5_ap_req **rep);
 #endif
 
-krb5_error_code smb_krb5_get_keyinfo_from_ap_req(krb5_context context, 
+ krb5_error_code smb_krb5_get_keyinfo_from_ap_req(krb5_context context, 
 						 const krb5_data *inbuf, 
 						 krb5_kvno *kvno, 
 						 krb5_enctype *enctype)
@@ -874,7 +874,7 @@ krb5_error_code smb_krb5_get_keyinfo_from_ap_req(krb5_context context,
 	return ret;
 }
 
-krb5_error_code krb5_rd_req_return_keyblock_from_keytab(krb5_context context,
+ krb5_error_code krb5_rd_req_return_keyblock_from_keytab(krb5_context context,
 							krb5_auth_context *auth_context,
 							const krb5_data *inbuf,
 							krb5_const_principal server,
@@ -930,7 +930,7 @@ out:
 	return ret;
 }
 
-krb5_error_code smb_krb5_parse_name_norealm(krb5_context context, 
+ krb5_error_code smb_krb5_parse_name_norealm(krb5_context context, 
 					    const char *name, 
 					    krb5_principal *principal)
 {
@@ -946,7 +946,7 @@ krb5_error_code smb_krb5_parse_name_norealm(krb5_context context,
 	return krb5_parse_name(context, name, principal);
 }
 
-BOOL smb_krb5_principal_compare_any_realm(krb5_context context, 
+ BOOL smb_krb5_principal_compare_any_realm(krb5_context context, 
 					  krb5_const_principal princ1, 
 					  krb5_const_principal princ2)
 {
@@ -983,7 +983,7 @@ BOOL smb_krb5_principal_compare_any_realm(krb5_context context,
 
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
-int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
+ int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
 			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, uint32 extra_ap_opts) 
 {
 	 DEBUG(0,("NO KERBEROS SUPPORT\n"));
