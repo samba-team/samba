@@ -763,7 +763,7 @@ static void dump_pac_logon_info(PAC_LOGON_INFO *logon_info) {
 	}
 }
 
-NTSTATUS decode_pac_data(TALLOC_CTX *mem_ctx,
+ NTSTATUS decode_pac_data(TALLOC_CTX *mem_ctx,
 			 DATA_BLOB *pac_data_blob,
 			 krb5_context context, 
 			 krb5_keyblock *service_keyblock,
