@@ -40,13 +40,6 @@ typedef enum {False=0,True=1} BOOL;
 /* Samba3 does not define the timeval functions below */
 #if !defined(_SAMBA_BUILD_) || ((SAMBA_VERSION_MAJOR==3)&&(SAMBA_VERSION_MINOR<9))
 
-static struct timeval timeval_current(void)
-{
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
-	return tv;
-}
-
 static double timeval_elapsed(struct timeval *tv)
 {
 	struct timeval tv2 = timeval_current();
