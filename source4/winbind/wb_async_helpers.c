@@ -66,6 +66,7 @@ static void finddcs_getdc(struct irpc_request *ireq)
 	    c->async.fn) {
 		c->async.fn(c);
 	}
+	talloc_free(ireq);
 }
 
 /*
