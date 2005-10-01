@@ -1451,6 +1451,44 @@ krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context, kr
 void kerberos_set_creds_enctype(krb5_creds *pcreds, int enctype);
 BOOL kerberos_compatible_enctypes(krb5_context context, krb5_enctype enctype1, krb5_enctype enctype2);
 void kerberos_free_data_contents(krb5_context context, krb5_data *pdata);
+NTSTATUS decode_pac_data(TALLOC_CTX *mem_ctx,
+			 DATA_BLOB *pac_data_blob,
+			 krb5_context context, 
+			 krb5_keyblock *service_keyblock,
+			 krb5_const_principal client_principal,
+			 time_t tgs_authtime,
+			 PAC_DATA **pac_data);
+void smb_krb5_checksum_from_pac_sig(krb5_checksum *cksum, 
+				    PAC_SIGNATURE_DATA *sig);
+krb5_error_code smb_krb5_verify_checksum(krb5_context context,
+					 krb5_keyblock *keyblock,
+					 krb5_keyusage usage,
+					 krb5_checksum *cksum,
+					 uint8 *data,
+					 size_t length);
+time_t get_authtime_from_tkt(krb5_ticket *tkt);
+void smb_krb5_free_ap_req(krb5_context context, 
+			  krb5_ap_req *ap_req);
+krb5_error_code smb_krb5_get_keyinfo_from_ap_req(krb5_context context, 
+						 const krb5_data *inbuf, 
+						 krb5_kvno *kvno, 
+						 krb5_enctype *enctype);
+krb5_error_code krb5_rd_req_return_keyblock_from_keytab(krb5_context context,
+							krb5_auth_context *auth_context,
+							const krb5_data *inbuf,
+							krb5_const_principal server,
+							krb5_keytab keytab,
+							krb5_flags *ap_req_options,
+							krb5_ticket **ticket, 
+							krb5_keyblock **keyblock);
+krb5_error_code smb_krb5_parse_name_norealm(krb5_context context, 
+					    const char *name, 
+					    krb5_principal *principal);
+BOOL smb_krb5_principal_compare_any_realm(krb5_context context, 
+					  krb5_const_principal princ1, 
+					  krb5_const_principal princ2);
+int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
+			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, uint32 extra_ap_opts);
 #endif /* HAVE_KRB5 */
 
 
