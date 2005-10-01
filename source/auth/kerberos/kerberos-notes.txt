@@ -374,3 +374,49 @@ DNS lookups on names without a . in them.  This should avoid some
 delay and root server load.
 
 
+Kerberos TODO
+=============
+
+(Feel free to contribute to any of these tasks, or ask
+abartlet@samba.org about them).
+
+Gssmonger
+---------
+
+Microsoft has released a testsuite called gssmonger, which tests
+interop.  We should compile it against lorikeet-heimdal, MIT and see
+if we can build a 'Samba4' server for it.
+
+PAC Correctness
+---------------
+
+We need to put the PAC into the TGT, not just the service ticket.  
+
+Authz data extraction
+---------------------
+
+We need to parse the authz data field correctly, and have a generic
+rouitine to get at particular types of data, no matter their inclusion
+in 'if relevent' or other stuctures.  This should be a utlity function
+we can use in both the client libs and KDC.
+
+Forwarded tickets
+-----------------
+
+We need to extract forwarded tickets from the GSSAPI layer, and put
+them into the credentials.  We can then use them for proxy work.
+
+Access Control
+--------------
+
+We need to get (either if PADL publishes their patch, or write our
+own) access control hooks in the Heimdal KDC.  We need to lockout
+accounts, and perform other controls.
+
+Kpasswd server
+--------------
+
+I have a partial kpasswd server which needs finishing, and a client
+testsuite written, either via the krb5 API or directly against GENSEC
+and the ASN.1 routines.
+
