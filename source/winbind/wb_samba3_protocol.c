@@ -33,7 +33,8 @@ uint32_t wbsrv_samba3_packet_length(DATA_BLOB blob)
 	return *len;
 }
 
-NTSTATUS wbsrv_samba3_pull_request(DATA_BLOB blob, TALLOC_CTX *mem_ctx, struct wbsrv_call **_call)
+NTSTATUS wbsrv_samba3_pull_request(DATA_BLOB blob, TALLOC_CTX *mem_ctx,
+				   struct wbsrv_call **_call)
 {
 	struct wbsrv_call *call;
 	struct wbsrv_samba3_call *s3_call;

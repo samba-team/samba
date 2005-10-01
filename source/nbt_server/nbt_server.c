@@ -74,13 +74,17 @@ static void getdc_recv_ntlogon_reply(struct dgram_mailslot_handler *dgmslot,
 	case NTLOGON_SAM_LOGON:
 		DEBUG(0, ("Huh -- got NTLOGON_SAM_LOGON as reply\n"));
 		break;
-	case NTLOGON_SAM_LOGON_REPLY:
+	case NTLOGON_SAM_LOGON_REPLY: {
+		const char *p = ntlogon.req.reply.server;
+
 		DEBUG(10, ("NTLOGON_SAM_LOGON_REPLY: server: %s, user: %s, "
-			   "domain: %s\n", ntlogon.req.reply.server,
-			   ntlogon.req.reply.user_name,
+			   "domain: %s\n", p, ntlogon.req.reply.user_name,
 			   ntlogon.req.reply.domain));
-		s->req->out.dcname =
-			talloc_strdup(s->req, ntlogon.req.reply.server);
+
+		if (*p == '\\') p += 1;
+		if (*p == '\\') p += 1;
+
+		s->req->out.dcname = talloc_strdup(s->req, p);
 		if (s->req->out.dcname == NULL) {
 			DEBUG(0, ("talloc failed\n"));
 			status = NT_STATUS_NO_MEMORY;
@@ -88,6 +92,7 @@ static void getdc_recv_ntlogon_reply(struct dgram_mailslot_handler *dgmslot,
 		}
 		status = NT_STATUS_OK;
 		break;
+	}
 	default:
 		DEBUG(0, ("Got unknown packet: %d\n", ntlogon.command));
 		break;
