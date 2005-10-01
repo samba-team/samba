@@ -1,3 +1,76 @@
+2005-10-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kuser/klist.c: Add option --list-caches that lists the avaible
+	caches and their status.
+
+	$ klist --list-caches
+	  Principal        Cache name               Status
+	lha@E.KTH.SE     2                        Valid
+	lha@SU.SE        1                        Expired
+	lha/root@SU.SE   0                        Expired
+	lha@N.L.NXS.SE   Initial default ccache   Expired
+	
+2005-09-30  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* lib/krb5/keytab_keyfile.c: Use all DES keys, not just
+	des-cbc-md5, verify that they all are the same.
+
+	* lib/krb5/mcache.c Implement the cache iteration functions.
+
+	* lib/krb5/acache.c: Implement the cache iteration functions.
+
+	* lib/krb5/test_cc.c: Test the new cache iteration functions.
+
+	* lib/krb5/cache.c: Add cache iteration funcations. Add internal
+	allocation function for the memory of a krb5_ccache, and use it.
+
+	* lib/krb5/krb5.h (krb5_cc_ops): add cache iteration functions
+	
+2005-09-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5_mk_req.3: Remove leftovers, remove extra space.
+
+	* kdc/kerberos5.c: More verbose PK-INIT logging.
+
+	* kdc/pkinit.c: The public DH key is encoded as an INTEGER in
+	subjectPublicKey.  Don't verify OID's for now.
+	
+	* lib/krb5/pkinit.c: Support cached DH variable (still need to
+	store it though), don't check the oid of the DH signedData for
+	now.
+	
+2005-09-22 Love Hörnquist Åstrand <lha@it.su.se>
+
+	* lib/krb5/rd_cred.c (krb5_rd_cred): try both the session key and
+	the sender subkey. Both RFC1510 and RFC4120 say that you have to
+	use the session key, Heimdal uses subkey.
+	
+2005-09-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/pkinit.c: Don't check oid's too closely, they change in
+	Windows Vista.
+	
+2005-09-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/pkinit.c: Disable sending -19, fix parsing -27 of the
+	protocol.
+
+	* kdc/pkinit.c: Support PK-INIT-27 DH (and remove -19)
+
+	* lib/krb5/pkinit.c (pk_verify_chain_standard): set cert to NULL
+	to make sure its not freed.
+	
+2005-09-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/crypto.c (krb5_DES_string_to_key): If the opaque length
+	it set to 1, and content is 0x01, use the afs3 string-to-key.
+
+	* kdc/kerberos5.c (make_etype_info2_entry): When its a afs3-salted
+	key, use send the opaque, length 1 (with content set to 0x01) in
+	ETYPE-INFO2-ENTRY.
+
+	* lib/krb5/kcm.c: Remove signedness warnings.
+	
 2005-09-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* configure.in: Use libtool's default values for building
