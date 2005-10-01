@@ -99,8 +99,9 @@ static files_struct *irix_oplock_receive_message(fd_set *fds)
 	 */
 
 	if(read(oplock_pipe_read, &dummy, 1) != 1) {
-		DEBUG(0,("irix_oplock_receive_message: read of kernel notification failed. \
-Error was %s.\n", strerror(errno) ));
+		DEBUG(0,("irix_oplock_receive_message: read of kernel "
+			 "notification failed. Error was %s.\n",
+			 strerror(errno) ));
 		smb_read_error = READ_ERROR;
 		return NULL;
 	}
@@ -112,14 +113,14 @@ Error was %s.\n", strerror(errno) ));
 	 */
 
 	if(sys_fcntl_ptr(oplock_pipe_read, F_OPLKSTAT, &os) < 0) {
-		DEBUG(0,("irix_oplock_receive_message: fcntl of kernel notification failed. \
-Error was %s.\n", strerror(errno) ));
+		DEBUG(0,("irix_oplock_receive_message: fcntl of kernel "
+			 "notification failed. Error was %s.\n",
+			 strerror(errno) ));
 		if(errno == EAGAIN) {
 			/*
 			 * Duplicate kernel break message - ignore.
 			 */
-			memset(buffer, '\0', KERNEL_OPLOCK_BREAK_MSG_LEN);
-			return True;
+			return NULL;
 		}
 		smb_read_error = READ_ERROR;
 		return NULL;
@@ -130,14 +131,17 @@ Error was %s.\n", strerror(errno) ));
 	 * is the first fsp open with this dev,ino pair.
 	 */
 
-	if ((fsp = file_find_di_first((SMB_DEV_T)os.os_dev, (SMB_INO_T)os.os_ino)) == NULL) {
-		DEBUG(0,("irix_oplock_receive_message: unable to find open file with dev = %x, inode = %.0f\n",
-			(unsigned int)os.os_dev, (double)os.os_ino ));
-		return False;
+	if ((fsp = file_find_di_first((SMB_DEV_T)os.os_dev,
+				      (SMB_INO_T)os.os_ino)) == NULL) {
+		DEBUG(0,("irix_oplock_receive_message: unable to find open "
+			 "file with dev = %x, inode = %.0f\n",
+			 (unsigned int)os.os_dev, (double)os.os_ino ));
+		return NULL;
 	}
      
-	DEBUG(5,("irix_oplock_receive_message: kernel oplock break request received for \
-dev = %x, inode = %.0f\n, file_id = %ul", (unsigned int)fsp->dev, (double)fsp->inode, fsp->file_id ));
+	DEBUG(5,("irix_oplock_receive_message: kernel oplock break request "
+		 "received for dev = %x, inode = %.0f\n, file_id = %ul",
+		 (unsigned int)fsp->dev, (double)fsp->inode, fsp->file_id ));
 
 	return fsp;
 }
