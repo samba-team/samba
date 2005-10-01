@@ -59,6 +59,8 @@ printable_time_long(time_t t)
 #define COL_FLAGS		"Flags"
 #define COL_PRINCIPAL		"  Principal"
 #define COL_PRINCIPAL_KVNO	"  Principal (kvno)"
+#define COL_CACHENAME		"  Cache name"
+#define COL_STATUS		"  Status"
 
 static void
 print_cred(krb5_context context, krb5_creds *cred, rtbl_t ct, int do_flags)
@@ -596,17 +598,82 @@ display_v5_ccache (const char *cred_cache, int do_test, int do_verbose,
     return exit_status;
 }
 
-static int version_flag = 0;
-static int help_flag	= 0;
-static int do_verbose	= 0;
-static int do_test	= 0;
+/*
+ *
+ */
+
+static int
+list_caches(void)
+{
+    krb5_cc_cache_cursor cursor;
+    krb5_context context;
+    krb5_error_code ret;
+    krb5_ccache id;
+    rtbl_t ct;
+    
+    ret = krb5_init_context (&context);
+    if (ret)
+	errx (1, "krb5_init_context failed: %d", ret);
+
+    ret = krb5_cc_cache_get_first (context, NULL, &cursor);
+    if (ret == KRB5_CC_NOSUPP)
+	return 0;
+    else if (ret)
+	krb5_err (context, 1, ret, "krb5_cc_cache_get_first");
+
+    ct = rtbl_create();
+    rtbl_add_column(ct, COL_PRINCIPAL, 0);
+    rtbl_add_column(ct, COL_CACHENAME, 0);
+    rtbl_add_column(ct, COL_STATUS, 0);
+    rtbl_set_prefix(ct, "   ");
+    rtbl_set_column_prefix(ct, COL_PRINCIPAL, "");
+
+    while ((ret = krb5_cc_cache_next (context, cursor, &id)) == 0) {
+	krb5_principal principal;
+	char *name;
+
+	ret = krb5_cc_get_principal(context, id, &principal);
+	if (ret == 0) {
+	    int expired = check_for_tgt (context, id, principal);
+
+	    ret = krb5_unparse_name(context, principal, &name);
+	    if (ret == 0) {
+		rtbl_add_column_entry(ct, COL_PRINCIPAL, name);
+		rtbl_add_column_entry(ct, COL_CACHENAME,
+				      krb5_cc_get_name(context, id));
+		rtbl_add_column_entry(ct, COL_STATUS,
+				      expired ? "Expired" : "Valid");
+		free(name);
+		krb5_free_principal(context, principal);
+	    }
+	}
+	krb5_cc_close(context, id);
+    }
+
+    krb5_cc_cache_end_seq_get(context, cursor);
+
+    rtbl_format(ct, stdout);
+    rtbl_destroy(ct);
+    
+    return 0;
+}
+
+/*
+ *
+ */
+
+static int version_flag		= 0;
+static int help_flag		= 0;
+static int do_verbose		= 0;
+static int do_list_caches	= 0;
+static int do_test		= 0;
 #ifdef KRB4
-static int do_v4	= 1;
+static int do_v4		= 1;
 #endif
-static int do_tokens	= 0;
-static int do_v5	= 1;
+static int do_tokens		= 0;
+static int do_v5		= 1;
 static char *cred_cache;
-static int do_flags = 0;
+static int do_flags	 	= 0;
 
 static struct getargs args[] = {
     { NULL, 'f', arg_flag, &do_flags },
@@ -623,6 +690,8 @@ static struct getargs args[] = {
       "display AFS tokens", NULL },
     { "v5",			'5',	arg_flag, &do_v5,
       "display v5 cred cache", NULL},
+    { "list-caches",		'v', arg_flag, &do_list_caches,
+      "verbose output", NULL },
     { "verbose",		'v', arg_flag, &do_verbose,
       "verbose output", NULL },
     { NULL,			'a', arg_flag, &do_verbose },
@@ -667,6 +736,11 @@ main (int argc, char **argv)
 
     if (argc != 0)
 	usage (1);
+
+    if (do_list_caches) {
+	exit_status = list_caches();
+	return exit_status;
+    }
 
     if (do_v5)
 	exit_status = display_v5_ccache (cred_cache, do_test, 
