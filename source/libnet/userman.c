@@ -30,7 +30,7 @@
 #include "libnet/userinfo.h"
 
 /*
- * Composite user add function
+ * Composite USER ADD functionality
  */
 
 static void useradd_handler(struct rpc_request*);
@@ -45,6 +45,7 @@ struct useradd_state {
 	struct samr_CreateUser   createuser;
 	struct policy_handle     user_handle;
 	uint32_t                 user_rid;
+
 	/* information about the progress */
 	void (*monitor_fn)(struct monitor_msg *);
 };
@@ -201,8 +202,9 @@ NTSTATUS libnet_rpc_useradd(struct dcerpc_pipe *pipe,
 }
 
 
+
 /*
- * Composite user delete function
+ * Composite USER DELETE functionality
  */
 
 static void userdel_handler(struct rpc_request*);
@@ -218,6 +220,7 @@ struct userdel_state {
 	struct samr_LookupNames   lookupname;
 	struct samr_OpenUser      openuser;
 	struct samr_DeleteUser    deleteuser;
+
 	/* information about the progress */
 	void (*monitor_fn)(struct monitor_msg *);
 };
@@ -315,7 +318,8 @@ static void userdel_handler(struct rpc_request *req)
 
 		msg.type = rpc_lookup_name;
 		msg_lookup = talloc(s, struct msg_rpc_lookup_name);
-		msg_lookup->rid = s->lookupname.out.rids.ids;
+
+		msg_lookup->rid   = s->lookupname.out.rids.ids;
 		msg_lookup->count = s->lookupname.out.rids.count;
 		msg.data = (void*)msg_lookup;
 		msg.data_size = sizeof(*msg_lookup);
@@ -326,7 +330,8 @@ static void userdel_handler(struct rpc_request *req)
 
 		msg.type = rpc_open_user;
 		msg_open = talloc(s, struct msg_rpc_open_user);
-		msg_open->rid = s->openuser.in.rid;
+
+		msg_open->rid         = s->openuser.in.rid;
 		msg_open->access_mask = s->openuser.in.rid;
 		msg.data = (void*)msg_open;
 		msg.data_size = sizeof(*msg_open);
@@ -375,9 +380,9 @@ struct composite_context *libnet_rpc_userdel_send(struct dcerpc_pipe *p,
 	s = talloc_zero(c, struct userdel_state);
 	if (s == NULL) goto failure;
 
-	c->state       = COMPOSITE_STATE_IN_PROGRESS;
-	c->private_data= s;
-	c->event_ctx   = dcerpc_event_context(p);
+	c->state         = COMPOSITE_STATE_IN_PROGRESS;
+	c->private_data  = s;
+	c->event_ctx     = dcerpc_event_context(p);
 
 	s->pipe          = p;
 	s->domain_handle = io->in.domain_handle;
@@ -405,7 +410,7 @@ failure:
 
 
 /**
-1 * Waits for and receives results of asynchronous userdel call
+ * Waits for and receives results of asynchronous userdel call
  *
  * @param c composite context returned by asynchronous userdel call
  * @param mem_ctx memory context of the call
@@ -449,6 +454,10 @@ NTSTATUS libnet_rpc_userdel(struct dcerpc_pipe *pipe,
 }
 
 
+/*
+ * USER MODIFY functionality
+ */
+
 static void usermod_handler(struct rpc_request*);
 
 enum usermod_stage { USERMOD_LOOKUP, USERMOD_OPEN, USERMOD_QUERY, USERMOD_MODIFY };
@@ -465,6 +474,9 @@ struct usermod_state {
 	struct samr_OpenUser       openuser;
 	struct samr_SetUserInfo    setuser;
 	struct samr_QueryUserInfo  queryuser;
+
+	/* information about the progress */
+	void (*monitor_fn)(struct monitor_msg *);
 };
 
 
@@ -691,27 +703,58 @@ static void usermod_handler(struct rpc_request *req)
 {
 	struct composite_context *c = req->async.private;
 	struct usermod_state *s = talloc_get_type(c->private_data, struct usermod_state);
+	struct monitor_msg msg;
+	struct msg_rpc_lookup_name *msg_lookup;
+	struct msg_rpc_open_user *msg_open;
 
 	switch (s->stage) {
 	case USERMOD_LOOKUP:
 		c->status = usermod_lookup(c, s);
+
+		msg.type = rpc_lookup_name;
+		msg_lookup = talloc(s, struct msg_rpc_lookup_name);
+
+		msg_lookup->rid   = s->lookupname.out.rids.ids;
+		msg_lookup->count = s->lookupname.out.rids.count;
+		msg.data = (void*)msg_lookup;
+		msg.data_size = sizeof(*msg_lookup);
 		break;
 
 	case USERMOD_OPEN:
 		c->status = usermod_open(c, s);
+
+		msg.type = rpc_open_user;
+		msg_open = talloc(s, struct msg_rpc_open_user);
+
+		msg_open->rid         = s->openuser.in.rid;
+		msg_open->access_mask = s->openuser.in.rid;
+		msg.data = (void*)msg_open;
+		msg.data_size = sizeof(*msg_open);
 		break;
 
 	case USERMOD_QUERY:
 		c->status = usermod_query(c, s);
+
+		msg.type = rpc_query_user;
+		msg.data = NULL;
+		msg.data_size = 0;
 		break;
 
 	case USERMOD_MODIFY:
 		c->status = usermod_modify(c, s);
+
+		msg.type = rpc_set_user;
+		msg.data = NULL;
+		msg.data_size = 0;
 		break;
 	}
 
 	if (!NT_STATUS_IS_OK(c->status)) {
 		c->state = COMPOSITE_STATE_ERROR;
+	}
+
+	if (s->monitor_fn) {
+		s->monitor_fn(&msg);
 	}
 
 	if (c->state >= COMPOSITE_STATE_DONE &&
