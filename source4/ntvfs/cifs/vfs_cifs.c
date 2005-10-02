@@ -134,7 +134,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	io.in.service = remote_share;
 	io.in.service_type = "?????";
 	
-	creq = smb_composite_connect_send(&io, tcon->smb_conn->connection->event.ctx);
+	creq = smb_composite_connect_send(&io, private, tcon->smb_conn->connection->event.ctx);
 	status = smb_composite_connect_recv(creq, private);
 	NT_STATUS_NOT_OK_RETURN(status);
 

@@ -217,6 +217,7 @@ struct monitor_msg;
 struct smb_composite_loadfile;
 struct smb_composite_savefile;
 struct smb_composite_connect;
+struct smb_composite_connectmulti;
 struct smb_composite_sesssetup;
 struct smb_composite_fetchfile;
 struct smb_composite_appendacl;
