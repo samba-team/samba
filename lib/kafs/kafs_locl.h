@@ -59,6 +59,9 @@
 #ifdef HAVE_SYS_FILIO_H
 #include <sys/filio.h>
 #endif
+#ifdef HAVE_SYS_SYSCTL_H
+#include <sys/sysctl.h>
+#endif
 
 #ifdef HAVE_SYS_SYSCALL_H
 #include <sys/syscall.h>
