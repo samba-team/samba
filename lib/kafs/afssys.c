@@ -410,6 +410,38 @@ k_hasafs(void)
 	    goto done;
     }
 
+#ifdef __APPLE__
+    /*
+     * Darwin needs runtime check if we want to use the syscall
+     */
+    do {
+	int version;
+	int mib[2];
+	size_t len;
+	char *kernelVersion;
+
+	mib[0] = CTL_KERN;
+	mib[1] = KERN_OSRELEASE;
+
+	if (sysctl(mib, 2, NULL, &len, NULL, 0))
+	    break;
+	kernelVersion = malloc(len);
+	if (kernelVersion == NULL)
+	    break;
+	if (sysctl(mib, 2, kernelVersion, &len, NULL, 0)) {
+	    free(kernelVersion);
+	    break;
+	}
+
+	version = atoi(kernelVersion);
+	free(kernelVersion);
+	if (version >= 8)
+	    goto skip_syscall;
+
+    } while(0);
+#endif
+
+
 #if defined(AFS_SYSCALL) || defined(AFS_SYSCALL2) || defined(AFS_SYSCALL3)
     {
 	int tmp;
@@ -489,6 +521,10 @@ k_hasafs(void)
 
     if(try_aix() == 0)
 	goto done;
+#endif
+
+#ifdef __APPLE__
+ skip_syscall:
 #endif
 
     if (try_ioctlpath("/proc/fs/openafs/afs_ioctl", LINUX_PROC_POINT) == 0)
