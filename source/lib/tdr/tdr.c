@@ -170,6 +170,10 @@ NTSTATUS tdr_push_charset(struct tdr_push *tdr, const char **v, uint32_t length,
 {
 	ssize_t ret, required;
 
+	if (length == -1) {
+		length = strlen(*v) + 1; /* Extra element for null character */
+	}
+
 	required = el_size * length;
 	TDR_PUSH_NEED_BYTES(tdr, required);
 
@@ -391,4 +395,22 @@ NTSTATUS tdr_push_to_fd(int fd, tdr_push_fn_t push_fn, const void *p)
 	talloc_free(push);
 
 	return NT_STATUS_OK;
+}
+
+void tdr_print_debug_helper(struct tdr_print *tdr, const char *format, ...) _PRINTF_ATTRIBUTE(2,3)
+{
+	va_list ap;
+	char *s = NULL;
+	int i;
+
+	va_start(ap, format);
+	vasprintf(&s, format, ap);
+	va_end(ap);
+
+	for (i=0;i<tdr->level;i++) {
+		DEBUG(0,("    "));
+	}
+
+	DEBUG(0,("%s\n", s));
+	free(s);
 }
