@@ -150,3 +150,21 @@ struct smb_composite_appendacl {
 		struct security_descriptor *sd;
 	} out;
 };
+
+/*
+  a composite API to fire connect() calls to multiple targets, picking the
+  first one.
+*/
+
+struct smb_composite_connectmulti {
+	struct {
+		int num_dests;
+		const char **hostnames;
+		const char **addresses;
+		int *ports; 	/* Either NULL for lp_smb_ports() per
+				 * destination or a list of explicit ports */
+	} in;
+	struct {
+		struct smbcli_socket *socket;
+	} out;
+};

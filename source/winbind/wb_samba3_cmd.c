@@ -164,7 +164,8 @@ static void wbsrv_samba3_check_machacc_receive_dcs(struct composite_context *act
 	cli_credentials_set_conf(state->conn->in.credentials);
 	cli_credentials_set_anonymous(state->conn->in.credentials);
 
-	ctx = smb_composite_connect_send(state->conn, s3call->call->event_ctx);
+	ctx = smb_composite_connect_send(state->conn, state,
+					 s3call->call->event_ctx);
 	if (ctx == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;

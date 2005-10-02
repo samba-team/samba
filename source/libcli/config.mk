@@ -20,6 +20,7 @@ ADD_OBJ_FILES = \
 	libcli/smb_composite/loadfile.o \
 	libcli/smb_composite/savefile.o \
 	libcli/smb_composite/connect.o \
+	libcli/smb_composite/connect_multi.o \
 	libcli/smb_composite/sesssetup.o \
 	libcli/smb_composite/fetchfile.o \
 	libcli/smb_composite/appendacl.o \
