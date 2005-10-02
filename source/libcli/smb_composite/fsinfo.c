@@ -156,7 +156,8 @@ struct composite_context *smb_composite_fsinfo_send(struct smbcli_tree *tree,
 	c->event_ctx = talloc_reference(c,  tree->session->transport->socket->event.ctx);
 	c->private_data = state;
 
-	state->creq = smb_composite_connect_send(state->connect, c->event_ctx);
+	state->creq = smb_composite_connect_send(state->connect, state,
+						 c->event_ctx);
 
 	if (state->creq == NULL) goto failed;
   
