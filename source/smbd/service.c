@@ -272,6 +272,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	SMB_STRUCT_STAT st;
 	fstring user;
 	fstring dev;
+	int ret;
 
 	*user = 0;
 	fstrcpy(dev, pdev);
@@ -554,7 +555,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	/* Preexecs are done here as they might make the dir we are to ChDir to below */
 	/* execute any "root preexec = " line */
 	if (*lp_rootpreexec(snum)) {
-		int ret;
 		pstring cmd;
 		pstrcpy(cmd,lp_rootpreexec(snum));
 		standard_sub_conn(conn,cmd,sizeof(cmd));
@@ -584,7 +584,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	/* Preexecs are done here as they might make the dir we are to ChDir to below */
 	/* execute any "preexec = " line */
 	if (*lp_preexec(snum)) {
-		int ret;
 		pstring cmd;
 		pstrcpy(cmd,lp_preexec(snum));
 		standard_sub_conn(conn,cmd,sizeof(cmd));
@@ -629,8 +628,13 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	   check during individual operations. To match this behaviour
 	   I have disabled this chdir check (tridge) */
 	/* the alternative is just to check the directory exists */
-	if (SMB_VFS_STAT(conn, conn->connectpath, &st) != 0 || !S_ISDIR(st.st_mode)) {
-		DEBUG(0,("'%s' does not exist or is not a directory, when connecting to [%s]\n", conn->connectpath, lp_servicename(snum)));
+	if ((ret = SMB_VFS_STAT(conn, conn->connectpath, &st)) != 0 || !S_ISDIR(st.st_mode)) {
+		if (ret == 0 && !S_ISDIR(st.st_mode)) {
+			DEBUG(0,("'%s' is not a directory, when connecting to [%s]\n", conn->connectpath, lp_servicename(snum)));
+		} else {
+			DEBUG(0,("'%s' does not exist or permission denied when connecting to [%s] "
+				"Error was %s\n", conn->connectpath, lp_servicename(snum), strerror(errno) ));
+		}
 		change_to_root_user();
 		/* Call VFS disconnect hook */    
 		SMB_VFS_DISCONNECT(conn);
