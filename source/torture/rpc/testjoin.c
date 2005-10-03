@@ -278,7 +278,7 @@ failed:
 
 struct test_join *torture_join_domain(const char *machine_name, 
 				      uint32_t acct_flags,
-				      const char **machine_password)
+				      struct cli_credentials **machine_credentials)
 {
 	NTSTATUS status;
 	struct libnet_context *libnet_ctx;
@@ -308,6 +308,9 @@ struct test_join *torture_join_domain(const char *machine_name,
 		
 	libnet_ctx->cred = cmdline_credentials;
 	libnet_r->in.binding = lp_parm_string(-1, "torture", "binding");
+	if (!libnet_r->in.binding) {
+		libnet_r->in.binding = talloc_asprintf(libnet_r, "ncacn_np:%s", lp_parm_string(-1, "torture", "host"));
+	}
 	libnet_r->in.level = LIBNET_JOINDOMAIN_SPECIFIED;
 	libnet_r->in.netbios_name = machine_name;
 	libnet_r->in.account_name = talloc_asprintf(libnet_r, "%s$", machine_name);
@@ -319,15 +322,33 @@ struct test_join *torture_join_domain(const char *machine_name,
 	libnet_r->in.acct_type = acct_flags;
 
 	status = libnet_JoinDomain(libnet_ctx, libnet_r, libnet_r);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
+		struct samr_DeleteUser d;
+		d.in.user_handle = &libnet_r->out.user_handle;
+		d.out.user_handle = &libnet_r->out.user_handle;
+		
+		/* Delete machine account */
+		status = dcerpc_samr_DeleteUser(libnet_r->out.samr_pipe, tj, &d);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("Delete of machine account failed\n");
+		} else {
+			printf("Delete of machine account was successful.\n");
+		}
+		status = libnet_JoinDomain(libnet_ctx, libnet_r, libnet_r);
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Domain join failed - %s.\n", nt_errstr(status)));
+		if (libnet_r->out.error_string) {
+			DEBUG(0, ("Domain join failed - %s.\n", libnet_r->out.error_string));
+		} else {
+			DEBUG(0, ("Domain join failed - %s.\n", nt_errstr(status)));
+		}
 		talloc_free(tj);
                 return NULL;
 	}
 	tj->p = libnet_r->out.samr_pipe;
 	tj->user_handle = *libnet_r->out.user_handle;
 	tj->dom_sid = dom_sid_string(tj, libnet_r->out.domain_sid);
-	*machine_password = libnet_r->out.join_password;
 
 	ZERO_STRUCT(u);
 	s.in.user_handle = &tj->user_handle;
@@ -357,6 +378,27 @@ struct test_join *torture_join_domain(const char *machine_name,
 		  libnet_r->in.netbios_name, 
 		  libnet_r->out.domain_name, 
 		  tj->dom_sid));
+
+	*machine_credentials = cli_credentials_init(tj);
+	cli_credentials_set_conf(*machine_credentials);
+	cli_credentials_set_workstation(*machine_credentials, machine_name, CRED_SPECIFIED);
+	cli_credentials_set_domain(*machine_credentials, libnet_r->out.domain_name, CRED_SPECIFIED);
+	if (libnet_r->out.realm) {
+		cli_credentials_set_realm(*machine_credentials, libnet_r->out.realm, CRED_SPECIFIED);
+	}
+	cli_credentials_set_username(*machine_credentials, libnet_r->in.account_name, CRED_SPECIFIED);
+	cli_credentials_set_password(*machine_credentials, libnet_r->out.join_password, CRED_SPECIFIED);
+	if (acct_flags & ACB_SVRTRUST) {
+		cli_credentials_set_secure_channel_type(*machine_credentials,
+						SEC_CHAN_BDC);
+	} else if (acct_flags & ACB_WSTRUST) {
+		cli_credentials_set_secure_channel_type(*machine_credentials,
+						SEC_CHAN_WKSTA);
+	} else {
+		DEBUG(0, ("Invalid account type specificed to torture_join_domain\n"));
+		talloc_free(*machine_credentials);
+		return NULL;
+	}
 
 	return tj;
 }
@@ -480,7 +522,7 @@ struct test_join_ads_dc {
 
 struct test_join_ads_dc *torture_join_domain_ads_dc(const char *machine_name, 
 						    const char *domain,
-						    const char **machine_password)
+						    struct cli_credentials **machine_credentials)
 {
 	struct test_join_ads_dc *join;
 
@@ -491,7 +533,7 @@ struct test_join_ads_dc *torture_join_domain_ads_dc(const char *machine_name,
 
 	join->join = torture_join_domain(machine_name, 
 					ACB_SVRTRUST,
-					machine_password);
+					machine_credentials);
 
 	if (!join->join) {
 		return NULL;

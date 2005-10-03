@@ -214,11 +214,11 @@ static BOOL nbt_test_ntlogon(TALLOC_CTX *mem_ctx,
 	struct timeval tv = timeval_current();
 	int replies = 0;
 	struct test_join *join_ctx;
-	const char *password;
+	struct cli_credentials *machine_credentials;
 	const char *dom_sid;
 
 	join_ctx = torture_join_domain(TEST_NAME, 
-				       ACB_WSTRUST, &password);
+				       ACB_WSTRUST, &machine_credentials);
 	if (join_ctx == NULL) {
 		printf("Failed to join domain %s as %s\n", lp_workgroup(), TEST_NAME);
 		talloc_free(dgmsock);
