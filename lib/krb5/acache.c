@@ -110,7 +110,7 @@ init_ccapi(krb5_context context)
     if (cc_handle == NULL) {
 	HEIMDAL_MUTEX_unlock(&acc_mutex);
 	krb5_set_error_string(context, "Failed to load %s", lib);
-	return ccErrServerUnavailable;
+	return KRB5_CC_NOSUPP;
     }
 
     init_func = dlsym(cc_handle, "cc_initialize");
@@ -119,14 +119,14 @@ init_ccapi(krb5_context context)
 	krb5_set_error_string(context, "Failed to find cc_initialize"
 			      "in %s: %s", lib, dlerror());
 	dlclose(cc_handle);
-	return ccErrServerUnavailable;
+	return KRB5_CC_NOSUPP;
     }
 
     return 0;
 #else
     HEIMDAL_MUTEX_unlock(&acc_mutex);
     krb5_set_error_string(context, "no support for shared object");
-    return ccErrServerUnavailable;
+    return KRB5_CC_NOSUPP;
 #endif
 }    
 
@@ -780,8 +780,10 @@ acc_get_cache_first(krb5_context context, krb5_cc_cursor *cursor)
 	return ret;
 
     iter = calloc(1, sizeof(*iter));
-    if (iter == NULL)
-	abort();
+    if (iter == NULL) {
+	krb5_set_error_string(context, "malloc - out of memory");
+	return ENOMEM;
+    }
 
     error = (*init_func)(&iter->context, ccapi_version_3, NULL, NULL);
     if (error) {
@@ -789,8 +791,10 @@ acc_get_cache_first(krb5_context context, krb5_cc_cursor *cursor)
 	return translate_cc_error(context, error);
     }
 
-    error = (*iter->context->func->new_ccache_iterator)(iter->context, &iter->iter);
+    error = (*iter->context->func->new_ccache_iterator)(iter->context,
+							&iter->iter);
     if (error) {
+	free(iter);
 	krb5_clear_error_string(context);
 	return ENOENT;
     }
