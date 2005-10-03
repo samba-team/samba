@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "libcli/composite/composite.h"
 
 /* transport private information used by SMB pipe transport */
 struct smb_private {
@@ -358,54 +359,92 @@ static NTSTATUS smb_session_key(struct dcerpc_connection *c, DATA_BLOB *session_
 	return NT_STATUS_NO_USER_SESSION_KEY;
 }
 
-/* 
-   open a rpc connection to a named pipe 
-*/
-NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_connection *c, 
-			      struct smbcli_tree *tree,
-			      const char *pipe_name)
+struct pipe_open_smb_state {
+	union smb_open *open;
+	struct dcerpc_connection *c;
+	struct smbcli_request *req;
+	struct smbcli_tree *tree;
+	struct composite_context *ctx;
+};
+
+static void pipe_open_recv(struct smbcli_request *req);
+
+struct composite_context *dcerpc_pipe_open_smb_send(struct dcerpc_connection *c, 
+						    struct smbcli_tree *tree,
+						    const char *pipe_name)
 {
-	struct smb_private *smb;
-        NTSTATUS status;
-	union smb_open io;
-	char *pipe_name_talloc;
+	struct composite_context *ctx;
+	struct pipe_open_smb_state *state;
 
-	if (!strncasecmp(pipe_name, "/pipe/", 6) || 
-	    !strncasecmp(pipe_name, "\\pipe\\", 6)) {
-		pipe_name += 6;
-	}
+	ctx = talloc_zero(NULL, struct composite_context);
+	if (ctx == NULL) goto failed;
+	ctx->state = COMPOSITE_STATE_IN_PROGRESS;
+	ctx->event_ctx = talloc_reference(c, c->event_ctx);
 
-	if (pipe_name[0] != '\\') {
-		pipe_name_talloc = talloc_asprintf(NULL, "\\%s", pipe_name);
-	} else {
-		pipe_name_talloc = talloc_strdup(NULL, pipe_name);
-	}
-	
-	io.ntcreatex.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.flags = 0;
-	io.ntcreatex.in.root_fid = 0;
-	io.ntcreatex.in.access_mask = 
+	state = talloc(ctx, struct pipe_open_smb_state);
+	if (state == NULL) goto failed;
+
+	state->c = c;
+	state->tree = tree;
+	state->ctx = ctx;
+
+	state->open = talloc(state, union smb_open);
+	if (state->open == NULL) goto failed;
+
+	state->open->ntcreatex.level = RAW_OPEN_NTCREATEX;
+	state->open->ntcreatex.in.flags = 0;
+	state->open->ntcreatex.in.root_fid = 0;
+	state->open->ntcreatex.in.access_mask = 
 		SEC_STD_READ_CONTROL |
 		SEC_FILE_WRITE_ATTRIBUTE |
 		SEC_FILE_WRITE_EA |
 		SEC_FILE_READ_DATA |
 		SEC_FILE_WRITE_DATA;
-	io.ntcreatex.in.file_attr = 0;
-	io.ntcreatex.in.alloc_size = 0;
-	io.ntcreatex.in.share_access = 
+	state->open->ntcreatex.in.file_attr = 0;
+	state->open->ntcreatex.in.alloc_size = 0;
+	state->open->ntcreatex.in.share_access = 
 		NTCREATEX_SHARE_ACCESS_READ |
 		NTCREATEX_SHARE_ACCESS_WRITE;
-	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
-	io.ntcreatex.in.create_options = 0;
-	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_IMPERSONATION;
-	io.ntcreatex.in.security_flags = 0;
-	io.ntcreatex.in.fname = pipe_name_talloc;
+	state->open->ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	state->open->ntcreatex.in.create_options = 0;
+	state->open->ntcreatex.in.impersonation =
+		NTCREATEX_IMPERSONATION_IMPERSONATION;
+	state->open->ntcreatex.in.security_flags = 0;
 
-	status = smb_raw_open(tree, tree, &io);
+	if ((strncasecmp(pipe_name, "/pipe/", 6) == 0) || 
+	    (strncasecmp(pipe_name, "\\pipe\\", 6) == 0)) {
+		pipe_name += 6;
+	}
+	state->open->ntcreatex.in.fname =
+		(pipe_name[0] == '\\') ?
+		talloc_strdup(state->open, pipe_name) :
+		talloc_asprintf(state->open, "\\%s", pipe_name);
+	if (state->open->ntcreatex.in.fname == NULL) goto failed;
 
-	talloc_free(pipe_name_talloc);
+	state->req = smb_raw_open_send(tree, state->open);
+	if (state->req == NULL) goto failed;
 
-	NT_STATUS_NOT_OK_RETURN(status);
+	state->req->async.fn = pipe_open_recv;
+	state->req->async.private = state;
+
+	return ctx;
+
+ failed:
+	talloc_free(ctx);
+	return NULL;
+}
+
+static void pipe_open_recv(struct smbcli_request *req)
+{
+	struct pipe_open_smb_state *state =
+		talloc_get_type(req->async.private,
+				struct pipe_open_smb_state);
+	struct composite_context *ctx = state->ctx;
+	struct dcerpc_connection *c = state->c;
+	struct smb_private *smb;
+	
+	ctx->status = smb_raw_open_recv(req, state, state->open);
+	if (!NT_STATUS_IS_OK(ctx->status)) goto done;
 
 	/*
 	  fill in the transport methods
@@ -423,16 +462,48 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_connection *c,
 	c->security_state.session_key = smb_session_key;
 
 	smb = talloc(c, struct smb_private);
-	NT_STATUS_HAVE_NO_MEMORY(smb);
+	if (smb == NULL) {
+		ctx->status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
-	smb->fnum	= io.ntcreatex.out.fnum;
-	smb->tree	= tree;
-	smb->server_name= strupper_talloc(smb, tree->session->transport->socket->hostname);
-	NT_STATUS_HAVE_NO_MEMORY(smb->server_name);
-
+	smb->fnum	= state->open->ntcreatex.out.fnum;
+	smb->tree	= talloc_reference(smb, state->tree);
+	smb->server_name= strupper_talloc(
+		smb, state->tree->session->transport->socket->hostname);
+	if (smb->server_name == NULL) {
+		ctx->status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 	c->transport.private = smb;
 
-        return NT_STATUS_OK;
+	ctx->status = NT_STATUS_OK;
+	ctx->state = COMPOSITE_STATE_DONE;
+
+ done:
+	if (!NT_STATUS_IS_OK(ctx->status)) {
+		ctx->state = COMPOSITE_STATE_ERROR;
+	}
+	if ((ctx->state >= COMPOSITE_STATE_DONE) &&
+	    (ctx->async.fn != NULL)) {
+		ctx->async.fn(ctx);
+	}
+}
+
+NTSTATUS dcerpc_pipe_open_smb_recv(struct composite_context *c)
+{
+	NTSTATUS status = composite_wait(c);
+	talloc_free(c);
+	return status;
+}
+
+NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_connection *c,
+			      struct smbcli_tree *tree,
+			      const char *pipe_name)
+{
+	struct composite_context *ctx =	dcerpc_pipe_open_smb_send(c, tree,
+								  pipe_name);
+	return dcerpc_pipe_open_smb_recv(ctx);
 }
 
 /*
