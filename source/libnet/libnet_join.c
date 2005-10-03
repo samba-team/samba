@@ -974,7 +974,6 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	talloc_steal(mem_ctx, cu.out.user_handle);
 	r->out.error_string = r2.samr_handle.out.error_string;
 	talloc_steal(mem_ctx, r2.samr_handle.out.error_string);
-	r->out.realm = NULL;
 	r->out.kvno = 0;
 	r->out.server_dn_str = NULL;
 	talloc_free(tmp_ctx); 
@@ -989,7 +988,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		return status;
 	}
 
-	return NT_STATUS_OK;
+	return cu_status;
 }
 
 static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx, 
