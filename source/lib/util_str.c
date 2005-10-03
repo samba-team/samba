@@ -705,6 +705,10 @@ char *strupper_talloc(TALLOC_CTX *ctx, const char *src)
 {
 	size_t size=0;
 	char *dest;
+	
+	if (!src) {
+		return NULL;
+	}
 
 	/* this takes advantage of the fact that upper/lower can't
 	   change the length of a character by more than 1 byte */
