@@ -311,3 +311,80 @@ static void wbsrv_samba3_check_machacc_receive_creds(struct composite_context *a
 		return;
 	}
 }
+
+struct lookupname_state {
+	struct wbsrv_samba3_call *s3call;
+	struct wb_get_lsa_pipe *getlsa;
+};
+
+static void lookupname_recv_lsa(struct composite_context *req);
+
+NTSTATUS wbsrv_samba3_lookupname(struct wbsrv_samba3_call *s3call)
+{
+	struct composite_context *ctx;
+	struct lookupname_state *state;
+	struct wbsrv_service *service =
+		s3call->call->wbconn->listen_socket->service;
+
+	DEBUG(5, ("wbsrv_samba3_lookupname called\n"));
+
+	talloc_free(service->lsa_pipe);
+	service->lsa_pipe = NULL;
+
+	state = talloc(s3call, struct lookupname_state);
+	NT_STATUS_HAVE_NO_MEMORY(state);
+
+	state->s3call = s3call;
+	state->getlsa = talloc(s3call, struct wb_get_lsa_pipe);
+	NT_STATUS_HAVE_NO_MEMORY(state->getlsa);
+
+	state->getlsa->in.msg_ctx = s3call->call->wbconn->conn->msg_ctx;
+	state->getlsa->in.event_ctx = s3call->call->event_ctx;
+	state->getlsa->in.domain = lp_workgroup();
+
+	ctx = wb_get_lsa_pipe_send(state->getlsa);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	/* setup the callbacks */
+	ctx->async.fn = lookupname_recv_lsa;
+	ctx->async.private_data	= state;
+
+	/* tell the caller we reply later */
+	s3call->call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
+	return NT_STATUS_OK;
+}
+
+static void lookupname_recv_lsa(struct composite_context *ctx)
+{
+	struct lookupname_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct lookupname_state);
+	struct wbsrv_service *service =
+		state->s3call->call->wbconn->listen_socket->service;
+	NTSTATUS status;
+
+	status = wb_get_lsa_pipe_recv(ctx, service);
+	if (!NT_STATUS_IS_OK(status)) goto done;
+
+	service->lsa_pipe = state->getlsa->out.pipe;
+
+ done:
+	if (!NT_STATUS_IS_OK(status)) {
+		struct winbindd_response *resp = &state->s3call->response;
+		resp->result = WINBINDD_ERROR;
+		WBSRV_SAMBA3_SET_STRING(resp->data.auth.nt_status_string,
+					nt_errstr(status));
+		WBSRV_SAMBA3_SET_STRING(resp->data.auth.error_string,
+					nt_errstr(status));
+		resp->data.auth.pam_error = nt_status_to_pam(status);
+
+	}
+
+	status = wbsrv_send_reply(state->s3call->call);
+	if (!NT_STATUS_IS_OK(status)) {
+		wbsrv_terminate_connection(state->s3call->call->wbconn,
+					   "wbsrv_queue_reply() failed");
+		return;
+	}
+
+}
