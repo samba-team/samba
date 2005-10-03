@@ -34,3 +34,13 @@ struct wb_finddcs {
 		} *dcs;
 	} out;
 };
+
+struct wb_get_schannel_creds {
+	struct {
+		struct cli_credentials *creds;
+		struct smbcli_tree *tree;
+	} in;
+	struct {
+		struct dcerpc_pipe *netlogon;
+	} out;
+};

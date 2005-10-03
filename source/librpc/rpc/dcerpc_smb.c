@@ -470,7 +470,7 @@ static void pipe_open_recv(struct smbcli_request *req)
 	smb->fnum	= state->open->ntcreatex.out.fnum;
 	smb->tree	= talloc_reference(smb, state->tree);
 	smb->server_name= strupper_talloc(
-		smb, state->tree->session->transport->socket->hostname);
+		smb, state->tree->session->transport->called.name);
 	if (smb->server_name == NULL) {
 		ctx->status = NT_STATUS_NO_MEMORY;
 		goto done;

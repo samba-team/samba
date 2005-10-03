@@ -32,6 +32,8 @@
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
 #include "include/version.h"
+#include "librpc/rpc/dcerpc_composite.h"
+#include "lib/events/events.h"
 
 NTSTATUS wbsrv_samba3_interface_version(struct wbsrv_samba3_call *s3call)
 {
@@ -77,46 +79,53 @@ NTSTATUS wbsrv_samba3_ping(struct wbsrv_samba3_call *s3call)
 	return NT_STATUS_OK;
 }
 
+#define null_no_memory_done(x) do { \
+	if ((x) == NULL) { status = NT_STATUS_NO_MEMORY; goto done; } \
+	} while (0)
+
 struct check_machacc_state {
 	struct wb_finddcs *io;
 	struct smb_composite_connect *conn;
+	struct wb_get_schannel_creds *getcreds;
 };
 
-static void wbsrv_samba3_check_machacc_receive_tree(struct composite_context *action)
+static void wbsrv_samba3_check_machacc_receive_creds(struct composite_context *action);
+static void wbsrv_samba3_check_machacc_receive_tree(struct composite_context *action);
+static void wbsrv_samba3_check_machacc_receive_dcs(struct composite_context *action);
+
+NTSTATUS wbsrv_samba3_check_machacc(struct wbsrv_samba3_call *s3call)
 {
-	struct wbsrv_samba3_call *s3call =
-		talloc_get_type(action->async.private_data,
-				struct wbsrv_samba3_call);
-	struct check_machacc_state *state =
-		talloc_get_type(s3call->private_data,
-				struct check_machacc_state);
-	NTSTATUS status;
+	struct composite_context *resolve_req;
+	struct check_machacc_state *state;
+	struct wbsrv_service *service =
+		s3call->call->wbconn->listen_socket->service;
 
-	status = smb_composite_connect_recv(action, state);
-	WBSRV_SAMBA3_SET_STRING(s3call->response.data.auth.nt_status_string,
-				nt_errstr(status));
-	WBSRV_SAMBA3_SET_STRING(s3call->response.data.auth.error_string,
-				nt_errstr(status));
-	s3call->response.data.auth.pam_error = nt_status_to_pam(status);
+	DEBUG(5, ("check_machacc called\n"));
 
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(5, ("Connect failed: %s\n", nt_errstr(status)));
-		goto done;
+	if (service->netlogon != NULL) {
+		talloc_free(service->netlogon);
 	}
 
-	s3call->response.result = WINBINDD_OK;
-	
- done:
-	if (!NT_STATUS_IS_OK(status)) {
-		s3call->response.result = WINBINDD_ERROR;
-	}
+	state = talloc(s3call, struct check_machacc_state);
+	NT_STATUS_HAVE_NO_MEMORY(state);
 
-	status = wbsrv_send_reply(s3call->call);
-	if (!NT_STATUS_IS_OK(status)) {
-		wbsrv_terminate_connection(s3call->call->wbconn,
-					   "wbsrv_queue_reply() failed");
-		return;
-	}
+	state->io = talloc(s3call, struct wb_finddcs);
+	NT_STATUS_HAVE_NO_MEMORY(state->io);
+	s3call->private_data = state;
+
+	state->io->in.msg_ctx = s3call->call->wbconn->conn->msg_ctx;
+	state->io->in.domain = lp_workgroup();
+
+	resolve_req = wb_finddcs_send(state->io, s3call->call->event_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(resolve_req);
+
+	/* setup the callbacks */
+	resolve_req->async.fn = wbsrv_samba3_check_machacc_receive_dcs;
+	resolve_req->async.private_data	= s3call;
+
+	/* tell the caller we reply later */
+	s3call->call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
+	return NT_STATUS_OK;
 }
 
 static void wbsrv_samba3_check_machacc_receive_dcs(struct composite_context *action)
@@ -188,31 +197,103 @@ static void wbsrv_samba3_check_machacc_receive_dcs(struct composite_context *act
 	}
 }
 
-NTSTATUS wbsrv_samba3_check_machacc(struct wbsrv_samba3_call *s3call)
+static void wbsrv_samba3_check_machacc_receive_tree(struct composite_context *action)
 {
-	struct composite_context *resolve_req;
-	struct check_machacc_state *state;
+	struct wbsrv_samba3_call *s3call =
+		talloc_get_type(action->async.private_data,
+				struct wbsrv_samba3_call);
+	struct check_machacc_state *state =
+		talloc_get_type(s3call->private_data,
+				struct check_machacc_state);
+	struct composite_context *ctx;
+	NTSTATUS status;
+	struct cli_credentials *creds;
 
-	DEBUG(5, ("check_machacc called\n"));
+	status = smb_composite_connect_recv(action, state);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5, ("Connect failed: %s\n", nt_errstr(status)));
+		goto done;
+	}
 
-	state = talloc(s3call, struct check_machacc_state);
-	NT_STATUS_HAVE_NO_MEMORY(state);
+	state->getcreds = talloc(state, struct wb_get_schannel_creds);
+	null_no_memory_done(state->getcreds);
 
-	state->io = talloc(s3call, struct wb_finddcs);
-	NT_STATUS_HAVE_NO_MEMORY(state->io);
-	s3call->private_data = state;
+	creds = cli_credentials_init(state);
+	null_no_memory_done(creds);
+	cli_credentials_set_conf(creds);
+	status = cli_credentials_set_machine_account(creds);
+	if (!NT_STATUS_IS_OK(status)) goto done;
 
-	state->io->in.msg_ctx = s3call->call->wbconn->conn->msg_ctx;
-	state->io->in.domain = lp_workgroup();
+	state->getcreds->in.tree = state->conn->out.tree;
+	state->getcreds->in.creds = creds;
 
-	resolve_req = wb_finddcs_send(state->io, s3call->call->event_ctx);
-	NT_STATUS_HAVE_NO_MEMORY(resolve_req);
+	ctx = wb_get_schannel_creds_send(state->getcreds,
+					 s3call->call->event_ctx);
+	null_no_memory_done(ctx);
 
-	/* setup the callbacks */
-	resolve_req->async.fn = wbsrv_samba3_check_machacc_receive_dcs;
-	resolve_req->async.private_data	= s3call;
+	ctx->async.fn = wbsrv_samba3_check_machacc_receive_creds;
+	ctx->async.private_data = s3call;
 
-	/* tell the caller we reply later */
-	s3call->call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
-	return NT_STATUS_OK;
+	return;
+	
+ done:
+	s3call->response.result = WINBINDD_OK;
+
+	if (!NT_STATUS_IS_OK(status)) {
+		s3call->response.result = WINBINDD_ERROR;
+		WBSRV_SAMBA3_SET_STRING(s3call->response.data.auth.nt_status_string,
+					nt_errstr(status));
+		WBSRV_SAMBA3_SET_STRING(s3call->response.data.auth.error_string,
+					nt_errstr(status));
+		s3call->response.data.auth.pam_error = nt_status_to_pam(status);
+
+	}
+
+	status = wbsrv_send_reply(s3call->call);
+	if (!NT_STATUS_IS_OK(status)) {
+		wbsrv_terminate_connection(s3call->call->wbconn,
+					   "wbsrv_queue_reply() failed");
+		return;
+	}
+}
+
+static void wbsrv_samba3_check_machacc_receive_creds(struct composite_context *action)
+{
+	struct wbsrv_samba3_call *s3call =
+		talloc_get_type(action->async.private_data,
+				struct wbsrv_samba3_call);
+	struct check_machacc_state *state =
+		talloc_get_type(s3call->private_data,
+				struct check_machacc_state);
+	struct wbsrv_service *service =
+		s3call->call->wbconn->listen_socket->service;
+	
+	NTSTATUS status;
+	
+	status = wb_get_schannel_creds_recv(action, service);
+	service->netlogon = state->getcreds->out.netlogon;
+
+	talloc_unlink(state, state->conn->out.tree); /* The pipe owns it now */
+	state->conn->out.tree = NULL;
+
+	if (!NT_STATUS_IS_OK(status)) goto done;
+
+	s3call->response.result = WINBINDD_OK;
+ done:
+	if (!NT_STATUS_IS_OK(status)) {
+		s3call->response.result = WINBINDD_ERROR;
+		WBSRV_SAMBA3_SET_STRING(s3call->response.data.auth.nt_status_string,
+					nt_errstr(status));
+		WBSRV_SAMBA3_SET_STRING(s3call->response.data.auth.error_string,
+					nt_errstr(status));
+		s3call->response.data.auth.pam_error = nt_status_to_pam(status);
+
+	}
+
+	status = wbsrv_send_reply(s3call->call);
+	if (!NT_STATUS_IS_OK(status)) {
+		wbsrv_terminate_connection(s3call->call->wbconn,
+					   "wbsrv_queue_reply() failed");
+		return;
+	}
 }
