@@ -31,7 +31,6 @@
 #include "librpc/gen_ndr/irpc.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "libcli/raw/libcliraw.h"
-#include "librpc/rpc/dcerpc_composite.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "libcli/auth/credentials.h"
 
