@@ -32,7 +32,6 @@
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
 #include "include/version.h"
-#include "librpc/rpc/dcerpc_composite.h"
 #include "lib/events/events.h"
 
 NTSTATUS wbsrv_samba3_interface_version(struct wbsrv_samba3_call *s3call)
