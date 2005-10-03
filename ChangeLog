@@ -1,3 +1,12 @@
+2005-10-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/kerberos.8: RFC 1510 was obsoleted by 4120.
+	
+	* lib/krb5/acache.c (init_ccapi): return kerberos errors, callers
+	expect it
+	(acc_get_cache_first): don't leak memory or abort on malloc
+	failure
+	
 2005-10-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/kerberos.8: Update text about Kerberos RFC's.
