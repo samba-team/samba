@@ -485,6 +485,8 @@ sub Union($$$)
 		$res.="\t\tbreak;\n";
 	}
 
+	my $switch_type = $e->{SWITCH_TYPE};
+
 	pidl_code "static int";
 	pidl_code "$dissectorname(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *parent_tree, guint8 *drep, int hf_index, guint32 param _U_)";
 	pidl_code "{";
@@ -492,7 +494,7 @@ sub Union($$$)
 	pidl_code "proto_item *item = NULL;";
 	pidl_code "proto_tree *tree = NULL;";
 	pidl_code "int old_offset;";
-	pidl_code "g$e->{SWITCH_TYPE} level;";
+	pidl_code "g$switch_type level;";
 	pidl_code "";
 
 	if ($e->{ALIGN} > 1) {
@@ -511,7 +513,7 @@ sub Union($$$)
 
 	pidl_code "";
 
-	pidl_code "offset = dissect_ndr_$e->{SWITCH_TYPE}(tvb, offset, pinfo, tree, drep, hf_index, &level);";
+	pidl_code "offset = dissect_ndr_$switch_type(tvb, offset, pinfo, tree, drep, hf_index, &level);";
 
 	pidl_code "switch(level) {$res\t}";
 	pidl_code "proto_item_set_len(item, offset-old_offset);\n";
