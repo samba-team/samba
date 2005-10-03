@@ -1379,13 +1379,11 @@ BOOL torture_rpc_samlogon(void)
 	TALLOC_CTX *mem_ctx = talloc_init("torture_rpc_netlogon");
 	BOOL ret = True;
 	struct test_join *join_ctx;
-#if 0
 	struct test_join *user_ctx;
 	const char *user_password;
-#endif
 	char *test_machine_account;
-	const char *machine_password;
 	const char *binding = lp_parm_string(-1, "torture", "binding");
+	const char *userdomain;
 	int i;
 	int ci;
 
@@ -1399,29 +1397,30 @@ BOOL torture_rpc_samlogon(void)
 
 	struct creds_CredentialState *creds;
 
-	machine_credentials = cli_credentials_init(mem_ctx);
-
 	test_machine_account = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
 	/* We only need to join as a workstation here, and in future,
 	 * if we wish to test against trusted domains, we must be a
 	 * workstation here */
-	join_ctx = torture_create_testuser(test_machine_account, lp_workgroup(), ACB_WSTRUST, 
-					   &machine_password);
+	join_ctx = torture_join_domain(TEST_MACHINE_NAME, ACB_WSTRUST, 
+				       &machine_credentials);
 	if (!join_ctx) {
 		printf("Failed to join as Workstation\n");
 		return False;
 	}
-#if 0
+
+	userdomain = lp_parm_string(-1, "torture", "userdomain");
+	if (!userdomain) {
+		userdomain = lp_workgroup();
+	}
+
 	user_ctx = torture_create_testuser(TEST_USER_NAME,
-					   lp_parm_string(-1, "torture", "userdomain"),
+					   userdomain,
 					   ACB_NORMAL, 
 					   &user_password);
 	if (!user_ctx) {
 		printf("Failed to join as Workstation\n");
 		return False;
 	}
-
-#endif
 
 	status = dcerpc_parse_binding(mem_ctx, binding, &b);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1435,14 +1434,6 @@ BOOL torture_rpc_samlogon(void)
 
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
 	b->flags |= DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_128;
-
-	cli_credentials_set_workstation(machine_credentials, TEST_MACHINE_NAME, CRED_SPECIFIED);
-	cli_credentials_set_domain(machine_credentials, lp_workgroup(), CRED_SPECIFIED);
-	cli_credentials_set_realm(machine_credentials, lp_realm(), CRED_SPECIFIED);
-	cli_credentials_set_username(machine_credentials, test_machine_account, CRED_SPECIFIED);
-	cli_credentials_set_password(machine_credentials, machine_password, CRED_SPECIFIED);
-	cli_credentials_set_secure_channel_type(machine_credentials,
-						SEC_CHAN_WKSTA);
 
 	status = dcerpc_pipe_connect_b(mem_ctx, &p, b, 
 				       DCERPC_NETLOGON_UUID,
@@ -1551,9 +1542,8 @@ BOOL torture_rpc_samlogon(void)
 				NT_STATUS_NO_SUCH_USER,
 				NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT
 			},
-#if 0
 			{	
-				lp_parm_string(-1, "torture", "userdomain"),
+				userdomain,
 				TEST_USER_NAME,
 				user_password,
 				True,
@@ -1576,13 +1566,12 @@ BOOL torture_rpc_samlogon(void)
 				talloc_asprintf(mem_ctx, 
 						"%s@%s", 
 						TEST_USER_NAME,
-						lp_parm_string(-1, "torture", "userdomain")),
+						userdomain),
 				user_password,
 				False,
 				NT_STATUS_OK,
 				NT_STATUS_OK
 			}
-#endif
 		};
 		
 		/* Try all the tests for different username forms */
@@ -1640,8 +1629,6 @@ failed:
 	talloc_free(mem_ctx);
 
 	torture_leave_domain(join_ctx);
-#if 0
 	torture_leave_domain(user_ctx);
-#endif
 	return ret;
 }
