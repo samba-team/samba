@@ -284,9 +284,9 @@ static void wbsrv_samba3_check_machacc_receive_creds(struct composite_context *a
 	if (!NT_STATUS_IS_OK(status)) {
 		/* Nasty hack awaiting a proper fix. So far we can not
 		 * delete a pipe from an async rpc callback which where we are
-		 * in right now, so delete the pipe in 5 seconds.... :-) */
+		 * in right now, so delete the pipe from an event handler.. */
 		event_add_timed(s3call->call->event_ctx, service,
-				timeval_current_ofs(5, 0),
+				timeval_zero(),
 				delete_pipe, state->getcreds->out.netlogon);
 		service->netlogon = NULL;
 		goto done;
