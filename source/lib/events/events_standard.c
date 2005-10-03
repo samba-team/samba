@@ -357,6 +357,7 @@ static void std_event_loop_timer(struct event_context *ev)
 
 	/* The destructor isn't necessary anymore, we've already removed the
 	 * event from the list. */
+	talloc_set_destructor(te, NULL);
 
 	talloc_free(te);
 }
