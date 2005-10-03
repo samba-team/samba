@@ -347,9 +347,17 @@ static void std_event_loop_timer(struct event_context *ev)
 
 	/* deny the handler to free the event */
 	talloc_set_destructor(te, std_event_timed_deny_destructor);
+
+	/* We need to remove the timer from the list before calling the
+	 * handler because in a semi-async inner event loop called from the
+	 * handler we don't want to come across this event again -- vl */
+	DLIST_REMOVE(std_ev->timed_events, te);
+
 	te->handler(ev, te, t, te->private_data);
 
-	talloc_set_destructor(te, std_event_timed_destructor);
+	/* The destructor isn't necessary anymore, we've already removed the
+	 * event from the list. */
+
 	talloc_free(te);
 }
 
