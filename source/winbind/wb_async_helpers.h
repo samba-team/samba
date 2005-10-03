@@ -44,3 +44,15 @@ struct wb_get_schannel_creds {
 		struct dcerpc_pipe *netlogon;
 	} out;
 };
+
+struct wb_get_lsa_pipe {
+	struct {
+		struct event_context *event_ctx;
+		struct messaging_context *msg_ctx;
+		const char *domain;
+	} in;
+	struct {
+		const struct dom_sid *domain_sid;
+		struct dcerpc_pipe *pipe;
+	} out;
+};

@@ -90,6 +90,9 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_call *call)
 
 	case WINBINDD_PRIV_PIPE_DIR:
 		return wbsrv_samba3_priv_pipe_dir(s3call);
+
+	case WINBINDD_LOOKUPNAME:
+		return wbsrv_samba3_lookupname(s3call);
 	}
 
 	s3call->response.result = WINBINDD_ERROR;
