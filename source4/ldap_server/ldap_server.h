@@ -38,6 +38,9 @@ struct ldapsrv_connection {
 	struct data_blob_list_item *send_queue;
 
 	BOOL processing;
+
+	/* connection should be terminated if non-null */
+	const char *terminate;
 };
 
 struct ldapsrv_call {
