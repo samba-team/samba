@@ -89,9 +89,11 @@ static void smb_read_callback(struct smbcli_request *req)
 	frag_length = dcerpc_get_frag_length(&state->data);
 
 	if (frag_length <= state->received) {
-		state->data.length = state->received;
-		state->c->transport.recv_data(state->c, &state->data, NT_STATUS_OK);
+		DATA_BLOB data = state->data;
+		data.length = state->received;
+		talloc_steal(state->c, data.data);
 		talloc_free(state);
+		state->c->transport.recv_data(state->c, &data, NT_STATUS_OK);
 		return;
 	}
 
@@ -204,8 +206,10 @@ static void smb_trans_callback(struct smbcli_request *req)
 	}
 
 	if (!NT_STATUS_EQUAL(status, STATUS_BUFFER_OVERFLOW)) {
-		c->transport.recv_data(c, &state->trans->out.data, NT_STATUS_OK);
+		DATA_BLOB data = state->trans->out.data;
+		talloc_steal(c, data.data);
 		talloc_free(state);
+		c->transport.recv_data(c, &data, NT_STATUS_OK);
 		return;
 	}
 
@@ -256,6 +260,8 @@ static NTSTATUS smb_send_trans_request(struct dcerpc_connection *c, DATA_BLOB *b
 
 	state->req->async.fn = smb_trans_callback;
 	state->req->async.private = state;
+
+	talloc_steal(state, state->req);
 
         return NT_STATUS_OK;
 }
@@ -322,6 +328,7 @@ static NTSTATUS smb_shutdown_pipe(struct dcerpc_connection *c)
 {
 	struct smb_private *smb = c->transport.private;
 	union smb_close io;
+	struct smbcli_request *req;
 
 	/* maybe we're still starting up */
 	if (!smb) return NT_STATUS_OK;
@@ -329,7 +336,11 @@ static NTSTATUS smb_shutdown_pipe(struct dcerpc_connection *c)
 	io.close.level = RAW_CLOSE_CLOSE;
 	io.close.in.fnum = smb->fnum;
 	io.close.in.write_time = 0;
-	smb_raw_close(smb->tree, &io);
+	req = smb_raw_close_send(smb->tree, &io);
+	if (req != NULL) {
+		/* we don't care if this fails, so just free it if it succeeds */
+		req->async.fn = (void (*)(struct smbcli_request *))talloc_free;
+	}
 
 	talloc_free(smb);
 

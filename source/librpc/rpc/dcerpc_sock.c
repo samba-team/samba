@@ -120,6 +120,7 @@ static void sock_process_recv(struct dcerpc_connection *p)
 	struct sock_private *sock = p->transport.private;
 	NTSTATUS status;
 	size_t nread;
+	DATA_BLOB data;
 
 	if (sock->recv.data.data == NULL) {
 		sock->recv.data = data_blob_talloc(sock, NULL, MIN_HDR_SIZE);
@@ -176,14 +177,15 @@ static void sock_process_recv(struct dcerpc_connection *p)
 	}
 
 	/* we have a full packet */
-	p->transport.recv_data(p, &sock->recv.data, NT_STATUS_OK);
-	talloc_free(sock->recv.data.data);
+	data = sock->recv.data;
 	sock->recv.data = data_blob(NULL, 0);
 	sock->recv.received = 0;
 	sock->recv.pending_count--;
 	if (sock->recv.pending_count == 0) {
 		EVENT_FD_NOT_READABLE(sock->fde);
 	}
+
+	p->transport.recv_data(p, &data, NT_STATUS_OK);
 }
 
 /*
