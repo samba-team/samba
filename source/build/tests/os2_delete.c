@@ -22,7 +22,7 @@
 
 #define TESTDIR "test.dir"
 
-#define FAILED() (fprintf(stderr, "Failed at %s:%d - %s\n", __FUNCTION__, __LINE__, strerror(errno)), exit(1), 1)
+#define FAILED(d) (fprintf(stderr, "Failed for %s - %s\n", d, strerror(errno)), exit(1), 1)
 
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
@@ -32,7 +32,7 @@ static void cleanup(void)
 {
 	/* I'm a lazy bastard */
 	system("rm -rf " TESTDIR);
-	mkdir(TESTDIR, 0700) == 0 || FAILED();
+	mkdir(TESTDIR, 0700) == 0 || FAILED("mkdir");
 }
 
 static void create_files()
@@ -41,7 +41,7 @@ static void create_files()
 	for (i=0;i<NUM_FILES;i++) {
 		char fname[40];
 		sprintf(fname, TESTDIR "/test%u.txt", i);
-		close(open(fname, O_CREAT|O_RDWR, 0600)) == 0 || FAILED();
+		close(open(fname, O_CREAT|O_RDWR, 0600)) == 0 || FAILED("close");
 	}
 }
 
@@ -68,7 +68,7 @@ static int os2_delete(DIR *d)
 	for (j=0; j<MIN(i, DELETE_SIZE); j++) {
 		char fname[40];
 		sprintf(fname, TESTDIR "/%s", names[j]);
-		unlink(fname) == 0 || FAILED();
+		unlink(fname) == 0 || FAILED("unlink");
 	}
 
 	/* seek to just after the deletion */
@@ -91,9 +91,9 @@ int main(void)
 
 	/* skip past . and .. */
 	de = readdir(d);
-	strcmp(de->d_name, ".") == 0 || FAILED();
+	strcmp(de->d_name, ".") == 0 || FAILED("match .");
 	de = readdir(d);
-	strcmp(de->d_name, "..") == 0 || FAILED();
+	strcmp(de->d_name, "..") == 0 || FAILED("match ..");
 
 	while (1) {
 		int n = os2_delete(d);
@@ -104,7 +104,7 @@ int main(void)
 
 	printf("Deleted %d files of %d\n", total_deleted, NUM_FILES);
 
-	rmdir(TESTDIR) == 0 || FAILED();
+	rmdir(TESTDIR) == 0 || FAILED("rmdir");
 
 	return 0;
 }
