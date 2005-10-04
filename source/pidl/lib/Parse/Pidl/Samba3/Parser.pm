@@ -23,8 +23,7 @@ sub fatal($$) { my ($e,$s) = @_; die("$e->{FILE}:$e->{LINE}: $s\n"); }
 
 #TODO:
 # - Different scalars / buffers functions for arrays + unions
-# - Register own types with Types::AddType()
-# - Find external types somehow?
+# - Memory allocation for arrays?
 
 sub DeclareArrayVariables($)
 {
@@ -78,7 +77,7 @@ sub ParseElementLevelPtr($$$$$)
 		fatal($e, "relative pointers not supported for Samba 3");
 	}
 
-	pidl "if (!prs_uint32(\"ptr_$e->{NAME}\",ps,depth,&" . ParseExpr("ptr_$e->{NAME}", $env) . ", ps, depth))";
+	pidl "if (!prs_uint32(\"ptr_$e->{NAME}\", ps, depth, &" . ParseExpr("ptr_$e->{NAME}", $env) . ", ps, depth))";
 	pidl "\treturn False;";
 	pidl "";
 	
@@ -138,7 +137,7 @@ sub InitLevel($$$$)
 		deindent;
 		pidl "}";
 	} elsif ($l->{TYPE} eq "DATA") {
-		pidl InitType($e, $l, $varname, $varname);
+		pidl InitType($e, $l, ParseExpr($e->{NAME}, $env), $varname);
 	} elsif ($l->{TYPE} eq "SWITCH") {
 		InitLevel($e, GetNextLevel($e,$l), $varname, $env);
 	}
@@ -149,20 +148,22 @@ sub CreateStruct($$$$)
 	my ($fn,$s,$es,$a) = @_;
 
 	my $args = "";
-	foreach my $e (@$es) {
+	foreach (@$es) {
 		$args .= ", " . DeclLong($_);
 	}
 
-	my $env = {};
+	my $env = { "this" => "v" };
 	foreach my $e (@$es) {
 		foreach my $l (@{$e->{LEVELS}}) {
 			if ($l->{TYPE} eq "DATA") {
-				$env->{"$e->{NAME}"} = $e->{"v->$e->{NAME}"};
+				$env->{$e->{NAME}} = "v->$e->{NAME}";
 			} elsif ($l->{TYPE} eq "POINTER") {
-				$env->{"ptr_$e->{NAME}"} = $e->{"v->ptr_$e->{NAME}"};
+				$env->{"ptr_$e->{NAME}"} = "v->ptr_$e->{NAME}";
 			} elsif ($l->{TYPE} eq "SWITCH") {
-				$env->{"level_$e->{NAME}"} = $e->{"v->level_$e->{NAME}"};
-			} 
+				$env->{"level_$e->{NAME}"} = "v->level_$e->{NAME}";
+			} elsif ($l->{TYPE} eq "ARRAY") {
+				$env->{"length_$e->{NAME}"} = "v->length_$e->{NAME}";
+			}
 		}
 	}
 
@@ -173,7 +174,7 @@ sub CreateStruct($$$$)
 	pidl "";
 	# Call init for all arguments
 	foreach (@$es) {
-		InitLevel($_, $_->{LEVELS}[0], ParseExpr($_->{NAME}, $env), $env);
+		InitLevel($_, $_->{LEVELS}[0], $_->{NAME}, $env);
 		pidl "";
 	}
 	pidl "return True;";
@@ -238,11 +239,13 @@ sub ParseUnion($$$)
 	foreach (@{$u->{ELEMENTS}}) {
 		pidl "$_->{CASE}:";
 		indent;
-		pidl "depth++;";
-		ParseElement($_, {});
+		if ($_->{TYPE} ne "EMPTY") {
+			pidl "depth++;";
+			ParseElement($_, {});
+			pidl "depth--;";
+		}
+		pidl "break;";
 		deindent;
-		pidl "depth--;";
-		pidl "break";
 		pidl "";
 	}
 
@@ -290,8 +293,8 @@ sub ParseInterface($)
 	# Structures first 
 	pidl "/* $if->{NAME} structures */";
 	foreach (@{$if->{TYPEDEFS}}) {
-		ParseStruct($if, $_->{DATA}, $_->{NAME}) if ($_->{TYPE} eq "STRUCT");
-		ParseUnion($if, $_->{DATA}, $_->{NAME}) if ($_->{TYPE} eq "UNION");
+		ParseStruct($if, $_->{DATA}, $_->{NAME}) if ($_->{DATA}->{TYPE} eq "STRUCT");
+		ParseUnion($if, $_->{DATA}, $_->{NAME}) if ($_->{DATA}->{TYPE} eq "UNION");
 	}
 
 	pidl "/* $if->{NAME} functions */";

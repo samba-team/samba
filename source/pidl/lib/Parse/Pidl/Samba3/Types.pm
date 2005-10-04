@@ -1,5 +1,5 @@
 ###################################################
-# Samba3 common helper functions
+# Samba3 type-specific declarations / initialization / marshalling
 # Copyright jelmer@samba.org 2005
 # released under the GNU GPL
 
@@ -15,6 +15,10 @@ use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
 
 use vars qw($VERSION);
 $VERSION = '0.01';
+
+# TODO: Find external types somehow?
+
+sub warning($$) { my ($e,$s) = @_; print STDERR "$e->{FILE}:$e->{LINE}: $s\n"; }
 
 sub init_scalar($$$$)
 {
@@ -36,6 +40,8 @@ sub decl_string($)
 {
 	my $e = shift;
 
+	# FIXME: More intelligent code here - select between UNISTR2 and other
+	# variants
 	return "UNISTR2";
 }
 
@@ -50,40 +56,67 @@ sub dissect_string($$$)
 {
 	my ($e,$l,$n) = @_;
 
-	return "FIXME";
+	return "prs_unistr2(True, \"$e->{NAME}\", ps, depth, &n)";
 }
 
-my $known_types = {
-	uint8 => {
+sub init_uuid($$$$)
+{
+	my ($e,$l,$n,$v) = @_;
+
+	return "";
+}
+
+sub dissect_uuid($$$)
+{
+	my ($e,$l,$n) = @_;
+
+	return "smb_io_uuid(\"$e->{NAME}\", &$n, ps, depth)";
+}
+
+my $known_types = 
+{
+	uint8 => 
+	{
 		DECL => "uint8",
 		INIT => \&init_scalar,
 		DISSECT => \&dissect_scalar,
 	},
-	uint16 => {
+	uint16 => 
+	{
 		DECL => "uint16",
 		INIT => \&init_scalar,
 		DISSECT => \&dissect_scalar,
 	},
-	uint32 => {
+	uint32 => 
+	{
 		DECL => "uint32",
 		INIT => \&init_scalar,
 		DISSECT => \&dissect_scalar,
 	},
-	string => {
+	string => 
+	{
 		DECL => \&decl_string,
 		INIT => \&init_string,
 		DISSECT => \&dissect_string,
 	},
-	NTSTATUS => {
+	NTSTATUS => 
+	{
 		DECL => "NTSTATUS",
 		INIT => \&init_scalar,
 		DISSECT => \&dissect_scalar,
 	},
-	WERROR => {
+	WERROR => 
+	{
 		DECL => "WERROR",
 		INIT => \&init_scalar,
 		DISSECT => \&dissect_scalar,
 	},
+	GUID => 
+	{
+		DECL => "struct uuid",
+		INIT => \&init_uuid,
+		DISSECT => \&dissect_uuid,
+	}
 };
 
 sub AddType($$)
@@ -101,7 +134,10 @@ sub GetType($)
 
 	my $t = $known_types->{$e->{TYPE}};
 
-	return undef if not $t;
+	if (not $t) {
+		warning($e, "Can't declare unknown type $e->{TYPE}");
+		return undef;
+	}
 
 	# DECL can be a function
 	if (ref($t->{DECL}) eq "CODE") {
@@ -131,7 +167,13 @@ sub DeclLong($)
 
 	return undef if not $t;
 
-	return "$t $e->{NAME}";
+	my $ptrs = "";
+
+	foreach my $l (@{$e->{LEVELS}}) {
+		($ptrs.="*") if ($l->{TYPE} eq "POINTER");
+	}
+	
+	return "$t $ptrs$e->{NAME}";
 }
 
 sub InitType($$$$)
@@ -140,7 +182,10 @@ sub InitType($$$$)
 
 	my $t = $known_types->{$l->{DATA_TYPE}};
 
-	return undef if not $t;
+	if (not $t) {
+		warning($e, "Don't know how to initialize type $l->{DATA_TYPE}");
+		return undef;
+	}
 
 	# INIT can be a function
 	if (ref($t->{INIT}) eq "CODE") {
@@ -156,13 +201,39 @@ sub DissectType($$$)
 
 	my $t = $known_types->{$l->{DATA_TYPE}};
 
-	return undef if not $t;
+	if (not $t) {
+		warning($e, "Don't know how to dissect type $l->{DATA_TYPE}");
+		return undef;
+	}
 
 	# DISSECT can be a function
 	if (ref($t->{DISSECT}) eq "CODE") {
 		return $t->{DISSECT}->($e, $l, $varname);
 	} else {
 		return $t->{DISSECT};
+	}
+}
+
+sub LoadTypes($)
+{
+	my $ndr = shift;
+	foreach my $if (@{$ndr}) {
+		next unless ($if->{TYPE} eq "INTERFACE");
+
+		foreach my $td (@{$if->{TYPEDEFS}}) {
+			AddType($td->{NAME}, {
+				DECL => uc("$if->{NAME}_$td->{NAME}"),
+				INIT => sub {
+					my ($e,$l,$n,$v) = @_;
+					return "init_$td->{NAME}(&$n/*FIXME:OTHER ARGS*/);";
+				},
+				DISSECT => sub {
+					my ($e,$l,$n) = @_;
+
+					return "$if->{NAME}_io_$td->{NAME}(\"$e->{NAME}\", &$n, ps, depth)";
+				}
+			});
+		}
 	}
 }
 
