@@ -187,9 +187,10 @@ check_subjectKeyIdentifier(hx509_validate_ctx ctx,
 }
 
 static int
-check_subjectAltName(hx509_validate_ctx ctx, 
-		     enum critical_flag cf,
-		     const Extension *e)
+check_altName(hx509_validate_ctx ctx,
+	      const char *name,
+	      enum critical_flag cf,
+	      const Extension *e)
 {
     GeneralNames gn;
     size_t size;
@@ -197,17 +198,42 @@ check_subjectAltName(hx509_validate_ctx ctx,
 
     check_Null(ctx, cf, e);
 
+    if (e->extnValue.length == 0) {
+	printf("%sAltName empty, not allowed", name);
+	return 1;
+    }
     ret = decode_GeneralNames(e->extnValue.data, e->extnValue.length,
 			      &gn, &size);
     if (ret) {
-	printf("\tret = %d while decoding GeneralNames\n", ret);
-	return 0;
+	printf("\tret = %d while decoding %s GeneralNames\n", ret, name);
+	return 1;
+    }
+    if (gn.len == 0) {
+	printf("%sAltName generalName empty, not allowed", name);
+	return 1;
     }
 
     free_GeneralNames(&gn);
 
     return 0;
 }
+
+static int
+check_subjectAltName(hx509_validate_ctx ctx,
+		     enum critical_flag cf,
+		     const Extension *e)
+{
+    return check_altName(ctx, "subject", cf, e);
+}
+
+static int
+check_issuerAltName(hx509_validate_ctx ctx,
+		     enum critical_flag cf,
+		     const Extension *e)
+{
+    return check_altName(ctx, "issuer", cf, e);
+}
+
 
 static int
 check_basicConstraints(hx509_validate_ctx ctx, 
@@ -251,7 +277,7 @@ struct {
     { ext(subjectKeyIdentifier, subjectKeyIdentifier), M_N_C },
     { ext(keyUsage, Null), S_C },
     { ext(subjectAltName, subjectAltName), M_N_C },
-    { ext(issuerAltName, Null), S_N_C },
+    { ext(issuerAltName, issuerAltName), S_N_C },
     { ext(basicConstraints, basicConstraints), M_C },
     { ext(cRLNumber, Null), M_N_C },
     { ext(cRLReasons, Null), M_N_C },
