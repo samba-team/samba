@@ -59,7 +59,7 @@
 		[in] astring my_accountname,
 		[in] uint32 account_control,
 		[in,ref] dom_sid *domain_sid,
-		[out] astring dcname
+		[out] astring *dcname
 		);
 
 	/******************************************************
