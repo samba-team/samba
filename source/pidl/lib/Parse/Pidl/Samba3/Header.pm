@@ -58,7 +58,7 @@ sub ParseFunction($$)
 	my @in = ();
 	my @out = ();
 
-	foreach (@{$_->{ELEMENTS}}) {
+	foreach (@{$fn->{ELEMENTS}}) {
 		push (@in, $_) if (grep(/in/, @{$_->{DIRECTION}}));
 		push (@out, $_) if (grep(/out/, @{$_->{DIRECTION}}));
 	}
@@ -93,10 +93,10 @@ sub ParseUnion($$$)
 {
 	my ($if,$u,$n) = @_;
 
-	pidl "typedef union {";
+	pidl "typedef union $if->{NAME}_$n {";
 	#FIXME: What about elements that require more then one variable?
 	ParseElement($_) foreach (@{$u->{ELEMENTS}});
-	pidl "} $n;";
+	pidl "} ".uc($if->{NAME}."_".$n) .";";
 	pidl "";
 }
 

@@ -143,9 +143,9 @@ sub InitLevel($$$$)
 	}
 }
 
-sub CreateStruct($$$$)
+sub CreateStruct($$$$$)
 {
-	my ($fn,$s,$es,$a) = @_;
+	my ($fn,$ifn, $s,$es,$a) = @_;
 
 	my $args = "";
 	foreach (@$es) {
@@ -167,10 +167,10 @@ sub CreateStruct($$$$)
 		}
 	}
 
-	pidl "BOOL init_$fn($s *v$args)";
+	pidl "BOOL $ifn($s *v$args)";
 	pidl "{";
 	indent;
-	pidl "DEBUG(5,(\"init_$fn\\n\"));";
+	pidl "DEBUG(5,(\"$ifn\\n\"));";
 	pidl "";
 	# Call init for all arguments
 	foreach (@$es) {
@@ -215,7 +215,7 @@ sub ParseStruct($$$)
 	my $fn = "$if->{NAME}_io_$n";
 	my $sn = uc("$if->{NAME}_$n");
 
-	CreateStruct($fn, $sn, $s->{ELEMENTS}, $s->{ALIGN});
+	CreateStruct($fn, "init_$if->{NAME}_$n", $sn, $s->{ELEMENTS}, $s->{ALIGN});
 }
 
 sub ParseUnion($$$)
@@ -282,8 +282,14 @@ sub ParseFunction($$)
 		} );
 	}
 
-	CreateStruct("$if->{NAME}_io_q_$fn->{NAME}", uc("$if->{NAME}_q_$fn->{NAME}"), \@in, 0);
-	CreateStruct("$if->{NAME}_io_r_$fn->{NAME}", uc("$if->{NAME}_r_$fn->{NAME}"), \@out, 0);
+	CreateStruct("$if->{NAME}_io_q_$fn->{NAME}", 
+				 "init_$if->{NAME}_q_$fn->{NAME}", 
+				 uc("$if->{NAME}_q_$fn->{NAME}"), 
+				 \@in, 0);
+	CreateStruct("$if->{NAME}_io_r_$fn->{NAME}", 
+				 "init_$if->{NAME}_r_$fn->{NAME}",
+				 uc("$if->{NAME}_r_$fn->{NAME}"), 
+				 \@out, 0);
 }
 
 sub ParseInterface($)

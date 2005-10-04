@@ -268,7 +268,7 @@ sub LoadTypes($)
 				DECL => uc("$if->{NAME}_$td->{NAME}"),
 				INIT => sub {
 					my ($e,$l,$n,$v) = @_;
-					return "init_$td->{NAME}(&$n/*FIXME:OTHER ARGS*/);";
+					return "$n = $v;";
 				},
 				DISSECT => sub {
 					my ($e,$l,$n) = @_;
