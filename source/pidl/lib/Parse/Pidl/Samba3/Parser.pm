@@ -9,7 +9,7 @@ use strict;
 use Parse::Pidl::Typelist qw(hasType getType mapType);
 use Parse::Pidl::Util qw(has_property ParseExpr);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
-use Parse::Pidl::Samba3::Util qw(MapSamba3Type);
+use Parse::Pidl::Samba3::Types qw(DeclShort DeclLong InitType DissectType);
 
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -21,24 +21,40 @@ sub deindent() { $tabs = substr($tabs, 1); }
 sub pidl($) { $res .= $tabs.(shift)."\n"; }
 sub fatal($$) { my ($e,$s) = @_; die("$e->{FILE}:$e->{LINE}: $s\n"); }
 
+#TODO:
+# - Different scalars / buffers functions for arrays + unions
+# - Register own types with Types::AddType()
+# - Find external types somehow?
+
+sub DeclareArrayVariables($)
+{
+	my $es = shift;
+
+	foreach my $e (@$es) {
+		foreach my $l (@{$e->{LEVELS}}) {
+			if ($l->{TYPE} eq "ARRAY") {
+				pidl "uint32 i_$e->{NAME}_$l->{LEVEL_INDEX};";
+			}
+		}
+	}
+}
+
 sub ParseElementLevelData($$$$$)
 {
 	my ($e,$l,$nl,$env,$varname) = @_;
 
-	#FIXME: This only works for scalar types
-	pidl "if (!prs_$l->{DATA_TYPE}(\"$e->{NAME}\", ps, depth, &$varname))";
+	pidl "if (!".DissectType($e, $l, $varname).")";
 	pidl "\treturn False;";
-	pidl "";
 }
 
 sub ParseElementLevelArray($$$$$)
 {
 	my ($e,$l,$nl,$env,$varname) = @_;
 
-	#FIXME
-	pidl "for (i=0; i<".ParseExpr("length_$e->{NAME}", $env) .";i++) {";
+	my $i = "i_$e->{NAME}_$l->{LEVEL_INDEX}";
+	pidl "for ($i=0; $i<".ParseExpr("length_$e->{NAME}", $env) .";$i++) {";
 	indent;
-	ParseElementLevel($e,$nl,$env,"$varname\[i]");
+	ParseElementLevel($e,$nl,$env,$varname."[$i]");
 	deindent;
 	pidl "}";
 }
@@ -58,8 +74,9 @@ sub ParseElementLevelPtr($$$$$)
 {
 	my ($e,$l,$nl,$env,$varname) = @_;
 
-	# No top-level ref pointers for Samba 3
-	return if ($l->{POINTER_TYPE} eq "ref" and $l->{LEVEL} eq "TOP");
+	if ($l->{POINTER_TYPE} eq "relative") {
+		fatal($e, "relative pointers not supported for Samba 3");
+	}
 
 	pidl "if (!prs_uint32(\"ptr_$e->{NAME}\",ps,depth,&" . ParseExpr("ptr_$e->{NAME}", $env) . ", ps, depth))";
 	pidl "\treturn False;";
@@ -99,41 +116,42 @@ sub ParseElement($$)
 	ParseElementLevel($e, $e->{LEVELS}[0], $env, ParseExpr($e->{NAME}, $env));
 }
 
-sub CreateStruct($$$)
+sub InitLevel($$$$);
+
+sub InitLevel($$$$)
 {
-	my ($fn,$s,$es) = @_;
+	my ($e,$l,$varname,$env) = @_;
+
+	if ($l->{TYPE} eq "POINTER") {
+		pidl "if ($varname) {";
+		indent;
+		pidl ParseExpr("ptr_$e->{NAME}", $env) . " = 1;";
+		InitLevel($e, GetNextLevel($e,$l), $varname, $env);
+		deindent;
+		pidl "} else {";
+		pidl "\t" . ParseExpr("ptr_$e->{NAME}", $env) . " = 0;";
+		pidl "}";
+	} elsif ($l->{TYPE} eq "ARRAY") {
+		pidl "for (i = 0; i < " . ParseExpr("len_$e->{NAME}", $env) . "; i++) {";
+		indent;
+		InitLevel($e, GetNextLevel($e,$l), $varname."[i]", $env);
+		deindent;
+		pidl "}";
+	} elsif ($l->{TYPE} eq "DATA") {
+		pidl InitType($e, $l, $varname, $varname);
+	} elsif ($l->{TYPE} eq "SWITCH") {
+		InitLevel($e, GetNextLevel($e,$l), $varname, $env);
+	}
+}
+
+sub CreateStruct($$$$)
+{
+	my ($fn,$s,$es,$a) = @_;
 
 	my $args = "";
 	foreach my $e (@$es) {
-		$args .= ", " . MapSamba3Type($_);
+		$args .= ", " . DeclLong($_);
 	}
-
-	pidl "BOOL init_$fn($s *v$args)";
-	pidl "{";
-	indent;
-	pidl "DEBUG(5,(\"init_$fn\\n\"));";
-	# Call init for all arguments
-	foreach my $e (@$es) {
-		foreach my $l (@{$e->{LEVELS}}) {
-			#FIXME
-		}
-	}
-	pidl "return True;";
-	deindent;
-	pidl "}";
-	pidl "";
-	
-	pidl "BOOL $fn(const char *desc, $s *v, prs_struct *ps, int depth)";
-	pidl "{";
-	indent;
-	pidl "if (v == NULL)";
-	pidl "\treturn False;";
-	pidl "";
-	pidl "prs_debug(ps, depth, desc, \"$fn\");";
-	pidl "depth++;";
-	pidl "if (!prs_align(ps))";
-	pidl "\treturn False;";
-	pidl "";
 
 	my $env = {};
 	foreach my $e (@$es) {
@@ -148,7 +166,40 @@ sub CreateStruct($$$)
 		}
 	}
 
-	ParseElement($_, $env) foreach (@$es);
+	pidl "BOOL init_$fn($s *v$args)";
+	pidl "{";
+	indent;
+	pidl "DEBUG(5,(\"init_$fn\\n\"));";
+	pidl "";
+	# Call init for all arguments
+	foreach (@$es) {
+		InitLevel($_, $_->{LEVELS}[0], ParseExpr($_->{NAME}, $env), $env);
+		pidl "";
+	}
+	pidl "return True;";
+	deindent;
+	pidl "}";
+	pidl "";
+	
+	pidl "BOOL $fn(const char *desc, $s *v, prs_struct *ps, int depth)";
+	pidl "{";
+	indent;
+	DeclareArrayVariables($es);
+	pidl "if (v == NULL)";
+	pidl "\treturn False;";
+	pidl "";
+	pidl "prs_debug(ps, depth, desc, \"$fn\");";
+	pidl "depth++;";
+	if ($a > 0) {
+		pidl "if (!prs_align(ps, $a))";
+		pidl "\treturn False;";
+		pidl "";
+	}
+
+	foreach (@$es) {
+		ParseElement($_, $env);
+		pidl "";
+	}
 
 	pidl "return True;";
 	deindent;
@@ -163,7 +214,7 @@ sub ParseStruct($$$)
 	my $fn = "$if->{NAME}_io_$n";
 	my $sn = uc("$if->{NAME}_$n");
 
-	CreateStruct($fn, $sn, $s->{ELEMENTS});
+	CreateStruct($fn, $sn, $s->{ELEMENTS}, $s->{ALIGN});
 }
 
 sub ParseUnion($$$)
@@ -176,6 +227,11 @@ sub ParseUnion($$$)
 	pidl "BOOL $fn(const char *desc, $sn* v, uint32 level, prs_struct *ps, int depth)";
 	pidl "{";
 	indent;
+	DeclareArrayVariables($u->{ELEMENTS});
+	pidl "if (!prs_align(ps, $u->{ALIGN}))";
+	pidl "\treturn False;";
+	pidl "";
+
 	pidl "switch (level) {";
 	indent;
 
@@ -187,6 +243,7 @@ sub ParseUnion($$$)
 		deindent;
 		pidl "depth--;";
 		pidl "break";
+		pidl "";
 	}
 
 	deindent;
@@ -222,8 +279,8 @@ sub ParseFunction($$)
 		} );
 	}
 
-	CreateStruct("$if->{NAME}_io_q_$fn->{NAME}", uc("$if->{NAME}_q_$fn->{NAME}"), \@in);
-	CreateStruct("$if->{NAME}_io_r_$fn->{NAME}", uc("$if->{NAME}_r_$fn->{NAME}"), \@out);
+	CreateStruct("$if->{NAME}_io_q_$fn->{NAME}", uc("$if->{NAME}_q_$fn->{NAME}"), \@in, 0);
+	CreateStruct("$if->{NAME}_io_r_$fn->{NAME}", uc("$if->{NAME}_r_$fn->{NAME}"), \@out, 0);
 }
 
 sub ParseInterface($)
