@@ -780,7 +780,7 @@ static void dump_pac_logon_info(PAC_LOGON_INFO *logon_info) {
 	PAC_SIGNATURE_DATA *kdc_sig = NULL;
 	PAC_LOGON_NAME *logon_name = NULL;
 	PAC_LOGON_INFO *logon_info = NULL;
-	krb5_principal client_principal_pac;
+	krb5_principal client_principal_pac = NULL;
 	NTTIME tgs_authtime_nttime;
 	int i, srv_sig_pos = 0, kdc_sig_pos = 0;
 	fstring username;
