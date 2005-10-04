@@ -10,7 +10,7 @@ require Exporter;
 @EXPORT_OK = qw(DeclShort DeclLong InitType DissectType AddType);
 
 use strict;
-use Parse::Pidl::Util qw(has_property ParseExpr);
+use Parse::Pidl::Util qw(has_property ParseExpr property_matches);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
 
 use vars qw($VERSION);
@@ -40,37 +40,44 @@ sub decl_string($)
 {
 	my $e = shift;
 
-	# FIXME: More intelligent code here - select between UNISTR2 and other
-	# variants
-	return "UNISTR2";
+	my $is_conformant = property_matches($e, "flag", ".*STR_SIZE4.*");
+	my $is_varying = property_matches($e, "flag", ".*STR_LEN4.*");
+	my $is_ascii = property_matches($e, "flag", ".*STR_ASCII.*");
+
+	return "STRING2" if ($is_conformant and $is_varying and $is_ascii);
+
+	return "UNISTR2" if ($is_conformant and $is_varying);
+	return "UNISTR3" if ($is_varying);
+	# We don't do UNISTR4, as we have lsa_String for that in Samba4's IDL
+
+	die("Don't know what string type to use");
 }
 
 sub init_string($$$$)
 {
 	my ($e,$l,$n,$v) = @_;
+
+	my $t = lc(decl_string($e));
+
+	my $flags;
+	if (property_matches($e, "flag", ".*STR_NULLTERM.*")) {
+		$flags = "UNI_STR_TERMINATE";
+	} elsif (property_matches($e, "flag", ".*STR_NOTERM.*")) {
+		$flags = "UNI_STR_NOTERM";
+	} else {
+		$flags = "UNI_FLAGS_NONE";
+	}
 	
-	return "init_unistr2(&$n, $v, UNI_FLAGS_NONE);";
+	return "init_$t(&$n, $v, $flags);";
 }
 
 sub dissect_string($$$)
 {
 	my ($e,$l,$n) = @_;
 
-	return "prs_unistr2(True, \"$e->{NAME}\", ps, depth, &n)";
-}
+	my $t = lc(decl_string($e));
 
-sub init_uuid($$$$)
-{
-	my ($e,$l,$n,$v) = @_;
-
-	return "";
-}
-
-sub dissect_uuid($$$)
-{
-	my ($e,$l,$n) = @_;
-
-	return "smb_io_uuid(\"$e->{NAME}\", &$n, ps, depth)";
+	return "prs_$t(True, \"$e->{NAME}\", ps, depth, &n)";
 }
 
 my $known_types = 
@@ -90,6 +97,12 @@ my $known_types =
 	uint32 => 
 	{
 		DECL => "uint32",
+		INIT => \&init_scalar,
+		DISSECT => \&dissect_scalar,
+	},
+	uint64 => 
+	{
+		DECL => "uint64",
 		INIT => \&init_scalar,
 		DISSECT => \&dissect_scalar,
 	},
@@ -114,9 +127,39 @@ my $known_types =
 	GUID => 
 	{
 		DECL => "struct uuid",
-		INIT => \&init_uuid,
-		DISSECT => \&dissect_uuid,
-	}
+		INIT => "",
+		DISSECT => sub { 
+			my ($e,$l,$n) = @_; 
+			return "smb_io_uuid(\"$e->{NAME}\", &$n, ps, depth)";
+		}
+	},
+	NTTIME => 
+	{
+		DECL => "NTTIME",
+		INIT => "",
+		DISSECT => sub { 
+			my ($e,$l,$n) = @_; 
+			return "smb_io_nttime(\"$e->{NAME}\", &n, ps, depth)"; 
+		}
+	},
+	dom_sid => 
+	{
+		DECL => "DOM_SID",
+		INIT => "",
+		DISSECT => sub {
+			my ($e,$l,$n) = @_;
+			return "smb_io_dom_sid(\"$e->{NAME}\", &n, ps, depth)";
+		}
+	},
+	policy_handle =>
+	{
+		DECL => "POLICY_HND",
+		INIT => "",
+		DISSECT => sub {
+			my ($e,$l,$n) = @_;
+			return "smb_io_pol_hnd(\"$e->{NAME}\", &n, ps, depth)";
+		}
+	},
 };
 
 sub AddType($$)
