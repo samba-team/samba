@@ -9,7 +9,7 @@ use strict;
 use Parse::Pidl::Typelist qw(hasType getType mapType);
 use Parse::Pidl::Util qw(has_property ParseExpr);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
-use Parse::Pidl::Samba3::Util qw(MapSamba3Type);
+use Parse::Pidl::Samba3::Types qw(DeclLong);
 
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -28,7 +28,7 @@ sub ParseFunction($$)
 	my $args = "";
 	my $defargs = "";
 	foreach (@{$fn->{ELEMENTS}}) {
-		$defargs .= ", " . MapSamba3Type($_);
+		$defargs .= ", " . DeclLong($_);
 		$args .= ", $_->{NAME}";
 	}
 

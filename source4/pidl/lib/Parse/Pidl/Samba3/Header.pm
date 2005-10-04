@@ -9,7 +9,7 @@ use strict;
 use Parse::Pidl::Typelist qw(hasType getType);
 use Parse::Pidl::Util qw(has_property ParseExpr);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
-use Parse::Pidl::Samba3::Util qw(MapSamba3Type);
+use Parse::Pidl::Samba3::Types qw(DeclShort);
 
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -17,24 +17,30 @@ $VERSION = '0.01';
 my $res = "";
 sub pidl($) { my $x = shift; $res .= "$x\n"; }
 sub fatal($$) { my ($e,$s) = @_; die("$e->{FILE}:$e->{LINE}: $s\n"); }
+sub warning($$) { my ($e,$s) = @_; warn("$e->{FILE}:$e->{LINE}: $s\n"); }
+
+sub ParseElement($)
+{
+	my $e = shift;
+
+	foreach my $l (@{$e->{LEVELS}}) {
+		if ($l->{TYPE} eq "POINTER") {
+			return if ($l->{POINTER_TYPE} eq "ref" and $l->{LEVEL} eq "top");
+			pidl "\tuint32 ptr_$e->{NAME};";
+		} elsif ($l->{TYPE} eq "SWITCH") {
+			pidl "\tuint32 level_$e->{NAME};";
+		} elsif ($l->{TYPE} eq "DATA") {
+			pidl "\t" . DeclShort($e) . ";";
+		}
+	}
+}
 
 sub CreateStruct($$$$)
 {
 	my ($if,$fn,$n,$t) = @_;
 
 	pidl "typedef struct $n {";
-	foreach my $e (@$t) {
-		foreach my $l (@{$e->{LEVELS}}) {
-			if ($l->{TYPE} eq "POINTER") {
-				return if ($l->{POINTER_TYPE} eq "ref" and $l->{LEVEL} eq "top");
-				pidl "\tuint32 ptr_$e->{NAME};";
-			} elsif ($l->{TYPE} eq "SWITCH") {
-				pidl "\tuint32 level_$e->{NAME};";
-			} elsif ($l->{TYPE} eq "DATA") {
-				pidl "\t" . MapSamba3Type($e) . ";";
-			}
-		}
-	}
+	ParseElement($_) foreach (@$t);
 
 	if (not @$t) {
 		# Some compilers don't like empty structs
@@ -83,16 +89,23 @@ sub ParseStruct($$$)
 	CreateStruct($if, $s, "$if->{NAME}_$n", $s->{ELEMENTS});
 }
 
+sub ParseUnion($$$)
+{
+	my ($if,$u,$n) = @_;
+
+	pidl "typedef union {";
+	#FIXME: What about elements that require more then one variable?
+	ParseElement($_) foreach (@{$u->{ELEMENTS}});
+	pidl "} $n;";
+	pidl "";
+}
+
 sub ParseEnum($$$)
 {
 	my ($if,$s,$n) = @_;
 
 	pidl "typedef enum {";
-
-	foreach (@{$s->{ELEMENTS}}) {
-		pidl "$_,";
-	}
-
+	pidl "$_," foreach (@{$s->{ELEMENTS}});
 	pidl "} $n;";
 }
 
@@ -122,14 +135,14 @@ sub ParseInterface($)
 
 	pidl "";
 
-	ParseFunction($if, $_) foreach (@{$if->{FUNCTIONS}});
-
 	foreach (@{$if->{TYPEDEFS}}) {
-		ParseStruct($if, $_->{DATA}, $_->{NAME}) if ($_->{TYPE} eq "STRUCT");
-		ParseEnum($if, $_->{DATA}, $_->{NAME}) if ($_->{TYPE} eq "ENUM");
-		ParseBitmap($if, $_->{DATA}, $_->{NAME}) if ($_->{TYPE} eq "BITMAP");
-		fatal($_, "Unions not supported for Samba3 yet") if ($_->{TYPE} eq "STRUCT");
+		ParseStruct($if, $_->{DATA}, $_->{NAME}) if ($_->{DATA}->{TYPE} eq "STRUCT");
+		ParseEnum($if, $_->{DATA}, $_->{NAME}) if ($_->{DATA}->{TYPE} eq "ENUM");
+		ParseBitmap($if, $_->{DATA}, $_->{NAME}) if ($_->{DATA}->{TYPE} eq "BITMAP");
+		ParseUnion($if, $_->{DATA}, $_->{NAME}) if ($_->{DATA}->{TYPE} eq "UNION");
 	}
+
+	ParseFunction($if, $_) foreach (@{$if->{FUNCTIONS}});
 
 	foreach (@{$if->{CONSTS}}) {
 		pidl "$_->{NAME} ($_->{VALUE})";
