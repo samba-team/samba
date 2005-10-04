@@ -813,6 +813,13 @@ $dcom
 		print Parse::Pidl::Samba::Template::Parse($pidl);
 	}
 
+	if (defined($opt_samba3_header) or defined($opt_samba3_parser) or
+		defined($opt_samba3_server) or defined($opt_samba3_client) or
+		defined($opt_samba3_template)) {
+		require Parse::Pidl::Samba3::Types;
+		Parse::Pidl::Samba3::Types::LoadTypes($ndr);
+	}
+
 	if (defined($opt_samba3_header)) {
 		my $header = ($opt_samba3_header or "$outputdir/rpc_$basename.h");
 		require Parse::Pidl::Samba3::Header;
