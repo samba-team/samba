@@ -756,6 +756,8 @@ NTSTATUS dcerpc_bind_byuuid(struct dcerpc_pipe *p,
 /*
   process a fragment received from the transport layer during a
   request
+
+  This function frees the data 
 */
 static void dcerpc_request_recv_data(struct dcerpc_connection *c, 
 				     DATA_BLOB *data,
@@ -766,6 +768,8 @@ static void dcerpc_request_recv_data(struct dcerpc_connection *c,
 	uint_t length;
 	
 	if (!NT_STATUS_IS_OK(status)) {
+		data_blob_free(data);
+
 		/* all pending requests get the error */
 		while (c->pending) {
 			req = c->pending;
@@ -781,7 +785,7 @@ static void dcerpc_request_recv_data(struct dcerpc_connection *c,
 
 	pkt.call_id = 0;
 
-	status = ncacn_pull_request_sign(c, data, (TALLOC_CTX *)data->data, &pkt);
+	status = ncacn_pull_request_sign(c, data, data->data, &pkt);
 
 	/* find the matching request. Notice we match before we check
 	   the status.  this is ok as a pending call_id can never be
@@ -792,29 +796,20 @@ static void dcerpc_request_recv_data(struct dcerpc_connection *c,
 
 	if (req == NULL) {
 		DEBUG(2,("dcerpc_request: unmatched call_id %u in response packet\n", pkt.call_id));
+		data_blob_free(data);
 		return;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		req->status = status;
-		req->state = RPC_REQUEST_DONE;
-		DLIST_REMOVE(c->pending, req);
-		if (req->async.callback) {
-			req->async.callback(req);
-		}
-		return;
+		goto req_done;
 	}
 
 	if (pkt.ptype == DCERPC_PKT_FAULT) {
 		DEBUG(5,("rpc fault: %s\n", dcerpc_errstr(c, pkt.u.fault.status)));
 		req->fault_code = pkt.u.fault.status;
 		req->status = NT_STATUS_NET_WRITE_FAULT;
-		req->state = RPC_REQUEST_DONE;
-		DLIST_REMOVE(c->pending, req);
-		if (req->async.callback) {
-			req->async.callback(req);
-		}
-		return;
+		goto req_done;
 	}
 
 	if (pkt.ptype != DCERPC_PKT_RESPONSE) {
@@ -822,12 +817,7 @@ static void dcerpc_request_recv_data(struct dcerpc_connection *c,
 			 (int)pkt.ptype)); 
 		req->fault_code = DCERPC_FAULT_OTHER;
 		req->status = NT_STATUS_NET_WRITE_FAULT;
-		req->state = RPC_REQUEST_DONE;
-		DLIST_REMOVE(c->pending, req);
-		if (req->async.callback) {
-			req->async.callback(req);
-		}
-		return;
+		goto req_done;
 	}
 
 	length = pkt.u.response.stub_and_verifier.length;
@@ -839,12 +829,7 @@ static void dcerpc_request_recv_data(struct dcerpc_connection *c,
 						   req->payload.length + length);
 		if (!req->payload.data) {
 			req->status = NT_STATUS_NO_MEMORY;
-			req->state = RPC_REQUEST_DONE;
-			DLIST_REMOVE(c->pending, req);
-			if (req->async.callback) {
-				req->async.callback(req);
-			}
-			return;
+			goto req_done;
 		}
 		memcpy(req->payload.data+req->payload.length, 
 		       pkt.u.response.stub_and_verifier.data, length);
@@ -853,12 +838,9 @@ static void dcerpc_request_recv_data(struct dcerpc_connection *c,
 
 	if (!(pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) {
 		c->transport.send_read(c);
+		data_blob_free(data);
 		return;
 	}
-
-	/* we've got the full payload */
-	req->state = RPC_REQUEST_DONE;
-	DLIST_REMOVE(c->pending, req);
 
 	if (!(pkt.drep[0] & DCERPC_DREP_LE)) {
 		req->flags |= DCERPC_PULL_BIGENDIAN;
@@ -866,6 +848,12 @@ static void dcerpc_request_recv_data(struct dcerpc_connection *c,
 		req->flags &= ~DCERPC_PULL_BIGENDIAN;
 	}
 
+
+req_done:
+	/* we've got the full payload */
+	req->state = RPC_REQUEST_DONE;
+	DLIST_REMOVE(c->pending, req);
+	data_blob_free(data);
 	if (req->async.callback) {
 		req->async.callback(req);
 	}
