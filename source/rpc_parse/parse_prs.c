@@ -511,6 +511,24 @@ BOOL prs_align_uint64(prs_struct *ps)
 	return ret;
 }
 
+/******************************************************************
+ Align on a specific byte boundary
+ *****************************************************************/
+ 
+BOOL prs_align_custom(prs_struct *ps, uint8 boundary)
+{
+	BOOL ret;
+	uint8 old_align = ps->align;
+
+	ps->align = boundary;
+	ret = prs_align(ps);
+	ps->align = old_align;
+	
+	return ret;
+}
+
+
+
 /*******************************************************************
  Align only if required (for the unistr2 string mainly)
  ********************************************************************/
