@@ -103,6 +103,7 @@ NTSTATUS wbsrv_samba3_check_machacc(struct wbsrv_samba3_call *s3call)
 
 	if (service->netlogon != NULL) {
 		talloc_free(service->netlogon);
+		service->netlogon = NULL;
 	}
 
 	state = talloc(s3call, struct check_machacc_state);
