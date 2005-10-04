@@ -33,13 +33,17 @@ sub ParseFunction($$)
 	indent;
 	pidl uc("$if->{NAME}_q_$fn->{NAME}") . " q_u;";
 	pidl uc("$if->{NAME}_r_$fn->{NAME}") . " r_u;";
-	pidl "prs_struct *data = &p->in_data.data";
-	pidl "prs_struct *rdata = &p->out_data.rdata";
+	pidl "prs_struct *data = &p->in_data.data;";
+	pidl "prs_struct *rdata = &p->out_data.rdata;";
 	pidl "";
 	pidl "if (!$if->{NAME}_io_q_$fn->{NAME}(\"\", &q_u, data, 0))";
 	pidl "\treturn False;";
 	pidl "";
-	pidl "r_u.status = _$fn->{NAME}(p, &q_u, &r_u);";
+	if ($fn->{RETURN_TYPE}) {
+		pidl "r_u.status = _$fn->{NAME}(p, &q_u, &r_u);";
+	} else {
+		pidl "_$fn->{NAME}(p, &q_u, &r_u);";
+	}
 	pidl "";
 	pidl "if (!$if->{NAME}_io_r_$fn->{NAME}(\"\", &r_u, rdata, 0))";
 	pidl "\treturn False;";
