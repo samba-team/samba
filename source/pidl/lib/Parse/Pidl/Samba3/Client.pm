@@ -58,6 +58,14 @@ sub ParseFunction($$)
 	pidl "\t$if->{NAME}_io_r_$fn->{NAME},";
 	pidl "\tNT_STATUS_UNSUCCESSFUL);";
 	pidl "";
+	pidl "/* Return variables */";
+	foreach (@{$fn->{ELEMENTS}}) {
+		next unless (grep(/out/, @{$_->{DIRECTION}}));
+
+		pidl "*$_->{NAME} = r.$_->{NAME};";
+	}
+
+	pidl"";
 	pidl "/* Return result */";
 	if (not $fn->{RETURN_TYPE}) {
 		pidl "return NT_STATUS_OK;";

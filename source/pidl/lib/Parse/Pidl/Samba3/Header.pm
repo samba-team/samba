@@ -31,6 +31,13 @@ sub ParseElement($)
 			pidl "\tuint32 level_$e->{NAME};";
 		} elsif ($l->{TYPE} eq "DATA") {
 			pidl "\t" . DeclShort($e) . ";";
+		} elsif ($l->{TYPE} eq "ARRAY") {
+			if ($l->{IS_CONFORMANT}) {
+				pidl "\tuint32 size_$e->{NAME};";
+			}
+			if ($l->{IS_VARYING}) {
+				pidl "\tuint32 length_$e->{NAME};";
+			}
 		}
 	}
 }

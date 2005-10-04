@@ -53,6 +53,26 @@ sub decl_string($)
 	die("Don't know what string type to use");
 }
 
+sub contains_pointer($)
+{
+	my $e = shift;
+	
+	foreach my $l (@{$e->{LEVELS}}) { 
+		return 1 if ($l->{TYPE} eq "POINTER");
+	}
+
+	return 0;
+}
+
+sub ext_decl_string($)
+{
+	my $e = shift;
+
+	# One pointer is sufficient..
+	return "const char" if (contains_pointer($e));
+	return "const char *";
+}
+
 sub init_string($$$$)
 {
 	my ($e,$l,$n,$v) = @_;
@@ -67,6 +87,9 @@ sub init_string($$$$)
 	} else {
 		$flags = "UNI_FLAGS_NONE";
 	}
+
+	# One pointer is sufficient
+	if (substr($v, 0, 1) eq "*") { $v = substr($v, 1); }
 	
 	return "init_$t(&$n, $v, $flags);";
 }
@@ -77,7 +100,7 @@ sub dissect_string($$$)
 
 	my $t = lc(decl_string($e));
 
-	return "prs_$t(True, \"$e->{NAME}\", ps, depth, &n)";
+	return "prs_$t(True, \"$e->{NAME}\", ps, depth, &$n)";
 }
 
 my $known_types = 
@@ -109,6 +132,7 @@ my $known_types =
 	string => 
 	{
 		DECL => \&decl_string,
+		EXT_DECL => \&ext_decl_string,
 		INIT => \&init_string,
 		DISSECT => \&dissect_string,
 	},
@@ -175,6 +199,14 @@ sub GetType($)
 {
 	my $e = shift;
 
+}
+
+# Return type without special stuff, as used in 
+# declarations for internal structs
+sub DeclShort($)
+{
+	my $e = shift;
+
 	my $t = $known_types->{$e->{TYPE}};
 
 	if (not $t) {
@@ -182,41 +214,66 @@ sub GetType($)
 		return undef;
 	}
 
+	my $p;
+
 	# DECL can be a function
 	if (ref($t->{DECL}) eq "CODE") {
-		return $t->{DECL}->($e);
+		$p = $t->{DECL}->($e);
 	} else {
-		return $t->{DECL};
+		$p = $t->{DECL};
 	}
-}
 
-# Return type without special stuff, as used in 
-# struct declarations
-sub DeclShort($)
-{
-	my $e = shift;
-
-	my $t = GetType($e);
-	return undef if not $t;
+	my $prefixes = "";
+	my $suffixes = "";
+	foreach my $l (@{$e->{LEVELS}}) {
+		if ($l->{TYPE} eq "ARRAY" and not $l->{IS_FIXED}) {
+			$prefixes = "*$prefixes";
+		} elsif ($l->{TYPE} eq "ARRAY" and $l->{IS_FIXED}) {
+			$suffixes.="[$l->{SIZE_IS}]";
+		}
+	}
 	
-	return "$t $e->{NAME}";
+	return "$p $prefixes$e->{NAME}$suffixes";
 }
 
+# Return type including special stuff (pointers, etc).
 sub DeclLong($)
 {
 	my $e = shift;
 
-	my $t = GetType($e);
+	my $t = $known_types->{$e->{TYPE}};
 
-	return undef if not $t;
+	if (not $t) {
+		warning($e, "Can't declare unknown type $e->{TYPE}");
+		return undef;
+	}
 
-	my $ptrs = "";
+	my $p;
+
+	if (defined($t->{EXT_DECL})) {
+		$p = $t->{EXT_DECL}
+	} else {
+		$p = $t->{DECL};
+	}
+
+	if (ref($p) eq "CODE") {
+		$p = $p->($e);
+	}
+
+	my $prefixes = "";
+	my $suffixes = "";
 
 	foreach my $l (@{$e->{LEVELS}}) {
-		($ptrs.="*") if ($l->{TYPE} eq "POINTER");
+		if ($l->{TYPE} eq "ARRAY" and not $l->{IS_FIXED}) {
+			$prefixes = "*$prefixes";
+		} elsif ($l->{TYPE} eq "ARRAY" and $l->{IS_FIXED}) {
+			$suffixes.="[$l->{SIZE_IS}]";
+		} elsif ($l->{TYPE} eq "POINTER") {
+			$prefixes = "*$prefixes";
+		}
 	}
 	
-	return "$t $ptrs$e->{NAME}";
+	return "$p $prefixes$e->{NAME}$suffixes";
 }
 
 sub InitType($$$$)
@@ -238,9 +295,12 @@ sub InitType($$$$)
 	}
 }
 
-sub DissectType($$$)
+sub DissectType
 {
-	my ($e, $l, $varname) = @_;
+	my @args = @_;
+	my $e = shift @_;
+	my $l = shift @_;
+	my $varname = shift @_;
 
 	my $t = $known_types->{$l->{DATA_TYPE}};
 
@@ -251,7 +311,7 @@ sub DissectType($$$)
 
 	# DISSECT can be a function
 	if (ref($t->{DISSECT}) eq "CODE") {
-		return $t->{DISSECT}->($e, $l, $varname);
+		return $t->{DISSECT}->(@args);
 	} else {
 		return $t->{DISSECT};
 	}
@@ -264,17 +324,31 @@ sub LoadTypes($)
 		next unless ($if->{TYPE} eq "INTERFACE");
 
 		foreach my $td (@{$if->{TYPEDEFS}}) {
-			AddType($td->{NAME}, {
-				DECL => uc("$if->{NAME}_$td->{NAME}"),
-				INIT => sub {
+			my $decl = uc("$if->{NAME}_$td->{NAME}");
+			my $init = sub {
 					my ($e,$l,$n,$v) = @_;
 					return "$n = $v;";
-				},
-				DISSECT => sub {
+			};
+			
+			my $dissect;
+			if ($td->{DATA}->{TYPE} eq "UNION") {
+				 $dissect = sub {
+					my ($e,$l,$n,$s) = @_;
+
+					return "$if->{NAME}_io_$td->{NAME}(\"$e->{NAME}\", &$n, $s, ps, depth)";
+				};
+			} else {
+				 $dissect = sub {
 					my ($e,$l,$n) = @_;
 
 					return "$if->{NAME}_io_$td->{NAME}(\"$e->{NAME}\", &$n, ps, depth)";
-				}
+				};
+			}
+
+			AddType($td->{NAME}, {
+				DECL => $decl,
+				INIT => $init,
+				DISSECT => $dissect			
 			});
 		}
 	}
