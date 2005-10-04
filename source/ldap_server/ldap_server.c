@@ -40,11 +40,12 @@
 static void ldapsrv_terminate_connection(struct ldapsrv_connection *conn, 
 					 const char *reason)
 {
-	if (conn->tls) {
-		talloc_free(conn->tls);
-		conn->tls = NULL;
-	}
-	stream_terminate_connection(conn->connection, reason);
+	/* we don't actually do the stream termination here as the
+	   recv/send functions dereference the connection after the
+	   packet processing callbacks. Instead we mark it for
+	   termination and do the real termination in the send/recv
+	   functions */
+	conn->terminate = reason;
 }
 
 /*
@@ -299,6 +300,14 @@ static void ldapsrv_recv(struct stream_connection *c, uint16_t flags)
 	conn->processing = False;
 
 	EVENT_FD_READABLE(c->event.fde);
+
+	if (conn->terminate) {
+		if (conn->tls) {
+			talloc_free(conn->tls);
+			conn->tls = NULL;
+		}
+		stream_terminate_connection(conn->connection, conn->terminate);
+	}
 }
 	
 /*
@@ -330,6 +339,14 @@ static void ldapsrv_send(struct stream_connection *c, uint16_t flags)
 	}
 	if (conn->send_queue == NULL) {
 		EVENT_FD_NOT_WRITEABLE(c->event.fde);
+	}
+
+	if (conn->terminate) {
+		if (conn->tls) {
+			talloc_free(conn->tls);
+			conn->tls = NULL;
+		}
+		stream_terminate_connection(conn->connection, conn->terminate);
 	}
 }
 
