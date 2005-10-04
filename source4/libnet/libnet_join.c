@@ -970,8 +970,8 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	talloc_steal(mem_ctx, samr_pipe);
 	r->out.samr_binding = samr_binding;
 	talloc_steal(mem_ctx, samr_binding);
-	r->out.user_handle = cu.out.user_handle;
-	talloc_steal(mem_ctx, cu.out.user_handle);
+	r->out.user_handle = u_handle;
+	talloc_steal(mem_ctx, u_handle);
 	r->out.error_string = r2.samr_handle.out.error_string;
 	talloc_steal(mem_ctx, r2.samr_handle.out.error_string);
 	r->out.kvno = 0;
