@@ -25,11 +25,13 @@ sub ParseFunction($$)
 {
 	my ($if,$fn) = @_;
 
-	my $args = "";
+	my $inargs = "";
 	my $defargs = "";
 	foreach (@{$fn->{ELEMENTS}}) {
 		$defargs .= ", " . DeclLong($_);
-		$args .= ", $_->{NAME}";
+		if (grep(/in/, @{$_->{DIRECTION}})) {
+			$inargs .= ", $_->{NAME}";
+		} 
 	}
 
 	my $uif = uc($if->{NAME});
@@ -47,13 +49,13 @@ sub ParseFunction($$)
 	pidl "";
 	pidl "/* Marshall data and send request */";
 	pidl "";
-	pidl "init_$if->{NAME}_q_$fn->{NAME}(&q$args);";
+	pidl "init_$if->{NAME}_q_$fn->{NAME}(&q$inargs);";
 	pidl "";
 	pidl "CLI_DO_RPC(cli, mem_ctx, PI_$uif, $ufn,";
 	pidl "\tq, r,";
 	pidl "\tqbuf, rbuf, ";
-	pidl "\t$if->{NAME}_q_$fn->{NAME},";
-	pidl "\t$if->{NAME}_r_$fn->{NAME},";
+	pidl "\t$if->{NAME}_io_q_$fn->{NAME},";
+	pidl "\t$if->{NAME}_io_r_$fn->{NAME},";
 	pidl "\tNT_STATUS_UNSUCCESSFUL);";
 	pidl "";
 	pidl "/* Return result */";
