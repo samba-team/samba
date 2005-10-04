@@ -256,12 +256,6 @@ static void wbsrv_samba3_check_machacc_receive_tree(struct composite_context *ac
 	}
 }
 
-static void delete_pipe(struct event_context *ctx, struct timed_event *te,
-			struct timeval tv, void *p)
-{
-	talloc_free(p);
-}
-
 static void wbsrv_samba3_check_machacc_receive_creds(struct composite_context *action)
 {
 	struct wbsrv_samba3_call *s3call =
@@ -281,12 +275,7 @@ static void wbsrv_samba3_check_machacc_receive_creds(struct composite_context *a
 	state->conn->out.tree = NULL;
 
 	if (!NT_STATUS_IS_OK(status)) {
-		/* Nasty hack awaiting a proper fix. So far we can not
-		 * delete a pipe from an async rpc callback which where we are
-		 * in right now, so delete the pipe from an event handler.. */
-		event_add_timed(s3call->call->event_ctx, service,
-				timeval_zero(),
-				delete_pipe, state->getcreds->out.netlogon);
+		talloc_free(service->netlogon);
 		service->netlogon = NULL;
 		goto done;
 	}
