@@ -76,7 +76,7 @@ int net_join(struct net_context *ctx, int argc, const char **argv)
 	/* do the domain join */
 	status = libnet_Join(libnetctx, r, r);
 	
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 		DEBUG(0,("libnet_Join returned %s: %s\n",
 			 nt_errstr(status),
 			 r->out.error_string));
