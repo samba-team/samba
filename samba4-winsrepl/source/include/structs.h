@@ -217,6 +217,7 @@ struct monitor_msg;
 struct smb_composite_loadfile;
 struct smb_composite_savefile;
 struct smb_composite_connect;
+struct smb_composite_connectmulti;
 struct smb_composite_sesssetup;
 struct smb_composite_fetchfile;
 struct smb_composite_appendacl;
@@ -238,6 +239,7 @@ struct nbt_name_release;
 struct nbt_name_register_bcast;
 struct nbt_name_refresh_wins;
 struct nbt_name_register_wins;
+struct nbt_name_request;
 
 struct nbt_peer_socket;
 
@@ -256,6 +258,8 @@ struct nbtd_interface;
 struct wins_server;
 
 struct wb_finddcs;
+struct wb_get_schannel_creds;
+struct wb_get_lsa_pipe;
 
 struct cldap_socket;
 struct cldapd_server;

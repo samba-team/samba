@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "libcli/composite/composite.h"
+#include "libcli/smb_composite/smb_composite.h"
 #include "winbind/wb_async_helpers.h"
 
 #include "librpc/gen_ndr/nbt.h"
@@ -30,6 +31,10 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/irpc.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
+#include "libcli/raw/libcliraw.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
+#include "librpc/gen_ndr/ndr_lsa.h"
+#include "libcli/auth/credentials.h"
 
 struct finddcs_state {
 	struct wb_finddcs *io;
@@ -66,6 +71,7 @@ static void finddcs_getdc(struct irpc_request *ireq)
 	    c->async.fn) {
 		c->async.fn(c);
 	}
+	talloc_free(ireq);
 }
 
 /*
@@ -163,7 +169,6 @@ struct composite_context *wb_finddcs_send(struct wb_finddcs *io,
 
 	state = talloc(c, struct finddcs_state);
 	if (state == NULL) goto failed;
-
 	state->io = io;
 
 	make_nbt_name(&name, io->in.domain, 0x1c);
@@ -202,4 +207,539 @@ NTSTATUS wb_finddcs(struct wb_finddcs *io, TALLOC_CTX *mem_ctx,
 {
 	struct composite_context *c = wb_finddcs_send(io, ev);
 	return wb_finddcs_recv(c, mem_ctx);
+}
+
+struct get_schannel_creds_state {
+	struct composite_context *ctx;
+	struct dcerpc_pipe *p;
+	struct wb_get_schannel_creds *io;
+	struct netr_ServerReqChallenge *r;
+
+	struct creds_CredentialState *creds_state;
+	struct netr_Credential netr_cred;
+	uint32_t negotiate_flags;
+	struct netr_ServerAuthenticate2 *a;
+};
+
+static void get_schannel_creds_recv_auth(struct rpc_request *req);
+static void get_schannel_creds_recv_chal(struct rpc_request *req);
+static void get_schannel_creds_recv_pipe(struct composite_context *ctx);
+
+struct composite_context *wb_get_schannel_creds_send(struct wb_get_schannel_creds *io,
+						     struct event_context *ev)
+{
+	struct composite_context *result, *ctx;
+	struct get_schannel_creds_state *state;
+
+	result = talloc_zero(NULL, struct composite_context);
+	if (result == NULL) goto failed;
+	result->state = COMPOSITE_STATE_IN_PROGRESS;
+	result->event_ctx = ev;
+
+	state = talloc(result, struct get_schannel_creds_state);
+	if (state == NULL) goto failed;
+	result->private_data = state;
+
+	state->io = io;
+
+	state->p = dcerpc_pipe_init(state, ev);
+	if (state->p == NULL) goto failed;
+
+	ctx = dcerpc_pipe_open_smb_send(state->p->conn, state->io->in.tree,
+					"\\netlogon");
+	if (ctx == NULL) goto failed;
+
+	ctx->async.fn = get_schannel_creds_recv_pipe;
+	ctx->async.private_data = state;
+	state->ctx = result;
+	return result;
+
+ failed:
+	talloc_free(result);
+	return NULL;
+}
+
+static void get_schannel_creds_recv_pipe(struct composite_context *ctx)
+{
+	struct get_schannel_creds_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct get_schannel_creds_state);
+	struct rpc_request *req;
+
+	state->ctx->status = dcerpc_pipe_open_smb_recv(ctx);
+	if (!NT_STATUS_IS_OK(state->ctx->status)) goto done;
+
+	state->ctx->status = dcerpc_bind_auth_none(state->p,
+						   DCERPC_NETLOGON_UUID,
+						   DCERPC_NETLOGON_VERSION);
+	if (!NT_STATUS_IS_OK(state->ctx->status)) goto done;
+
+	state->r = talloc(state, struct netr_ServerReqChallenge);
+	if (state->r == NULL) {
+		state->ctx->status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	state->r->in.computer_name =
+		cli_credentials_get_workstation(state->io->in.creds);
+	state->r->in.server_name =
+		talloc_asprintf(state->r, "\\\\%s",
+				dcerpc_server_name(state->p));
+	state->r->in.credentials = talloc(state->r, struct netr_Credential);
+	state->r->out.credentials = talloc(state->r, struct netr_Credential);
+
+	if ((state->r->in.server_name == NULL) ||
+	    (state->r->in.credentials == NULL) ||
+	    (state->r->out.credentials == NULL)) {
+		state->ctx->status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+	generate_random_buffer(state->r->in.credentials->data,
+			       sizeof(state->r->in.credentials->data));
+
+	req = dcerpc_netr_ServerReqChallenge_send(state->p, state, state->r);
+	if (req == NULL) {
+		state->ctx->status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	req->async.callback = get_schannel_creds_recv_chal;
+	req->async.private = state;
+	return;
+
+ done:
+	if (!NT_STATUS_IS_OK(state->ctx->status)) {
+		state->ctx->state = COMPOSITE_STATE_ERROR;
+	}
+	if ((state->ctx->state >= COMPOSITE_STATE_DONE) &&
+	    (state->ctx->async.fn != NULL)) {
+		state->ctx->async.fn(state->ctx);
+	}
+}
+
+static void get_schannel_creds_recv_chal(struct rpc_request *req)
+{
+	struct get_schannel_creds_state *state =
+		talloc_get_type(req->async.private,
+				struct get_schannel_creds_state);
+	const struct samr_Password *mach_pwd;
+
+	state->ctx->status = dcerpc_ndr_request_recv(req);
+	if (!NT_STATUS_IS_OK(state->ctx->status)) goto done;
+	state->ctx->status = state->r->out.result;
+	if (!NT_STATUS_IS_OK(state->ctx->status)) goto done;
+
+	state->creds_state = talloc(state, struct creds_CredentialState);
+	mach_pwd = cli_credentials_get_nt_hash(state->io->in.creds, state);
+	if ((state->creds_state == NULL) || (mach_pwd == NULL)) {
+		state->ctx->status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	state->negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
+
+	creds_client_init(state->creds_state, state->r->in.credentials,
+			  state->r->out.credentials, mach_pwd,
+			  &state->netr_cred, state->negotiate_flags);
+
+	state->a = talloc(state, struct netr_ServerAuthenticate2);
+	if (state->a == NULL) {
+		state->ctx->status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	state->a->in.server_name =
+		talloc_reference(state->a, state->r->in.server_name);
+	state->a->in.account_name =
+		cli_credentials_get_username(state->io->in.creds);
+	state->a->in.secure_channel_type =
+		cli_credentials_get_secure_channel_type(state->io->in.creds);
+	state->a->in.computer_name =
+		cli_credentials_get_workstation(state->io->in.creds);
+	state->a->in.negotiate_flags = &state->negotiate_flags;
+	state->a->out.negotiate_flags = &state->negotiate_flags;
+	state->a->in.credentials = &state->netr_cred;
+	state->a->out.credentials = &state->netr_cred;
+
+	req = dcerpc_netr_ServerAuthenticate2_send(state->p, state, state->a);
+	if (req == NULL) {
+		state->ctx->status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	req->async.callback = get_schannel_creds_recv_auth;
+	req->async.private = state;
+	return;
+
+	state->io->out.netlogon = state->p;
+	state->ctx->state = COMPOSITE_STATE_DONE;
+
+ done:
+	if (!NT_STATUS_IS_OK(state->ctx->status)) {
+		state->ctx->state = COMPOSITE_STATE_ERROR;
+	}
+	if ((state->ctx->state >= COMPOSITE_STATE_DONE) &&
+	    (state->ctx->async.fn != NULL)) {
+		state->ctx->async.fn(state->ctx);
+	}
+}
+
+static void get_schannel_creds_recv_auth(struct rpc_request *req)
+{
+	struct get_schannel_creds_state *state =
+		talloc_get_type(req->async.private,
+				struct get_schannel_creds_state);
+
+	state->ctx->status = dcerpc_ndr_request_recv(req);
+	if (!NT_STATUS_IS_OK(state->ctx->status)) goto done;
+	state->ctx->status = state->a->out.result;
+	if (!NT_STATUS_IS_OK(state->ctx->status)) goto done;
+
+	if (!creds_client_check(state->creds_state,
+				state->a->out.credentials)) {
+		DEBUG(5, ("Server got us invalid creds\n"));
+		state->ctx->status = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	cli_credentials_set_netlogon_creds(state->io->in.creds,
+					   state->creds_state);
+
+	state->ctx->state = COMPOSITE_STATE_DONE;
+
+ done:
+	if (!NT_STATUS_IS_OK(state->ctx->status)) {
+		state->ctx->state = COMPOSITE_STATE_ERROR;
+	}
+	if ((state->ctx->state >= COMPOSITE_STATE_DONE) &&
+	    (state->ctx->async.fn != NULL)) {
+		state->ctx->async.fn(state->ctx);
+	}
+}
+
+NTSTATUS wb_get_schannel_creds_recv(struct composite_context *c,
+				    TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status = composite_wait(c);
+	struct get_schannel_creds_state *state =
+		talloc_get_type(c->private_data,
+				struct get_schannel_creds_state);
+	state->io->out.netlogon = talloc_steal(mem_ctx, state->p);
+	talloc_free(c);
+	return status;
+}
+
+NTSTATUS wb_get_schannel_creds(struct wb_get_schannel_creds *io,
+			       TALLOC_CTX *mem_ctx,
+			       struct event_context *ev)
+{
+	struct composite_context *c = wb_get_schannel_creds_send(io, ev);
+	return wb_get_schannel_creds_recv(c, mem_ctx);
+}
+
+struct get_lsa_pipe_state {
+	struct composite_context *ctx;
+	struct wb_get_lsa_pipe *io;
+	struct wb_finddcs *finddcs;
+	struct smb_composite_connect *conn;
+	struct dcerpc_pipe *lsa_pipe;
+
+	struct lsa_ObjectAttribute objectattr;
+	struct lsa_OpenPolicy2 openpolicy;
+	struct policy_handle policy_handle;
+
+	struct lsa_QueryInfoPolicy queryinfo;
+
+	struct lsa_Close close;
+};
+
+static void get_lsa_pipe_recv_dcs(struct composite_context *ctx);
+static void get_lsa_pipe_recv_tree(struct composite_context *ctx);
+static void get_lsa_pipe_recv_pipe(struct composite_context *ctx);
+static void get_lsa_pipe_recv_openpol(struct rpc_request *req);
+static void get_lsa_pipe_recv_queryinfo(struct rpc_request *req);
+static void get_lsa_pipe_recv_close(struct rpc_request *req);
+
+struct composite_context *wb_get_lsa_pipe_send(struct wb_get_lsa_pipe *io)
+{
+	struct composite_context *result, *ctx;
+	struct get_lsa_pipe_state *state;
+
+	result = talloc_zero(NULL, struct composite_context);
+	if (result == NULL) goto failed;
+	result->state = COMPOSITE_STATE_IN_PROGRESS;
+	result->event_ctx = io->in.event_ctx;
+
+	state = talloc(result, struct get_lsa_pipe_state);
+	if (state == NULL) goto failed;
+	result->private_data = state;
+
+	state->io = io;
+
+	state->finddcs = talloc(state, struct wb_finddcs);
+	if (state->finddcs == NULL) goto failed;
+
+	state->finddcs->in.msg_ctx = io->in.msg_ctx;
+	state->finddcs->in.domain = lp_workgroup();
+
+	ctx = wb_finddcs_send(state->finddcs, io->in.event_ctx);
+	if (ctx == NULL) goto failed;
+
+	ctx->async.fn = get_lsa_pipe_recv_dcs;
+	ctx->async.private_data = state;
+	state->ctx = result;
+	return result;
+
+ failed:
+	talloc_free(result);
+	return NULL;
+}
+
+static void get_lsa_pipe_recv_dcs(struct composite_context *ctx)
+{
+	struct get_lsa_pipe_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct get_lsa_pipe_state);
+
+	state->ctx->status = wb_finddcs_recv(ctx, state);
+	if (!NT_STATUS_IS_OK(state->ctx->status)) goto done;
+
+	state->conn = talloc(state, struct smb_composite_connect);
+	if (state->conn == NULL) {
+		state->ctx->status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	state->conn->in.dest_host = state->finddcs->out.dcs[0].address;
+	state->conn->in.port = 0;
+	state->conn->in.called_name = state->finddcs->out.dcs[0].name;
+	state->conn->in.service = "IPC$";
+	state->conn->in.service_type = "IPC";
+	state->conn->in.workgroup = lp_workgroup();
+
+	state->conn->in.credentials = cli_credentials_init(state->conn);
+	if (state->conn->in.credentials == NULL) {
+		state->ctx->status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+	cli_credentials_set_conf(state->conn->in.credentials);
+	cli_credentials_set_anonymous(state->conn->in.credentials);
+
+	ctx = smb_composite_connect_send(state->conn, state, 
+					 state->ctx->event_ctx);
+	if (ctx == NULL) {
+		state->ctx->status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	ctx->async.fn = get_lsa_pipe_recv_tree;
+	ctx->async.private_data = state;
+	return;
+
+ done:
+	if (!NT_STATUS_IS_OK(state->ctx->status)) {
+		state->ctx->state = COMPOSITE_STATE_ERROR;
+	}
+	if ((state->ctx->state >= COMPOSITE_STATE_DONE) &&
+	    (state->ctx->async.fn != NULL)) {
+		state->ctx->async.fn(state->ctx);
+	}
+}
+
+static void get_lsa_pipe_recv_tree(struct composite_context *ctx)
+{
+	struct get_lsa_pipe_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct get_lsa_pipe_state);
+
+	state->ctx->status = smb_composite_connect_recv(ctx, state);
+	if (!NT_STATUS_IS_OK(state->ctx->status)) goto done;
+
+	state->lsa_pipe = dcerpc_pipe_init(state, state->ctx->event_ctx);
+	if (state->lsa_pipe == NULL) {
+		state->ctx->status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	ctx = dcerpc_pipe_open_smb_send(state->lsa_pipe->conn,
+					state->conn->out.tree, "\\lsarpc");
+	if (ctx == NULL) {
+		state->ctx->status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	ctx->async.fn = get_lsa_pipe_recv_pipe;
+	ctx->async.private_data = state;
+	return;
+
+ done:
+	if (!NT_STATUS_IS_OK(state->ctx->status)) {
+		state->ctx->state = COMPOSITE_STATE_ERROR;
+	}
+	if ((state->ctx->state >= COMPOSITE_STATE_DONE) &&
+	    (state->ctx->async.fn != NULL)) {
+		state->ctx->async.fn(state->ctx);
+	}
+}
+
+static void get_lsa_pipe_recv_pipe(struct composite_context *ctx)
+{
+	struct get_lsa_pipe_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct get_lsa_pipe_state);
+	struct rpc_request *req;
+
+	state->ctx->status = dcerpc_pipe_open_smb_recv(ctx);
+	if (!NT_STATUS_IS_OK(state->ctx->status)) goto done;
+
+	talloc_unlink(state, state->conn->out.tree); /* The pipe owns it now */
+	state->conn->out.tree = NULL;
+
+	state->ctx->status = dcerpc_bind_auth_none(state->lsa_pipe,
+						   DCERPC_LSARPC_UUID,
+						   DCERPC_LSARPC_VERSION);
+	if (!NT_STATUS_IS_OK(state->ctx->status)) goto done;
+
+	ZERO_STRUCT(state->openpolicy);
+	state->openpolicy.in.system_name =
+		talloc_asprintf(state, "\\\\%s",
+				dcerpc_server_name(state->lsa_pipe));
+	ZERO_STRUCT(state->objectattr);
+	state->openpolicy.in.attr = &state->objectattr;
+	state->openpolicy.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	state->openpolicy.out.handle = &state->policy_handle;
+
+	req = dcerpc_lsa_OpenPolicy2_send(state->lsa_pipe, state,
+					  &state->openpolicy);
+	if (req == NULL) {
+		state->ctx->status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	req->async.callback = get_lsa_pipe_recv_openpol;
+	req->async.private = state;
+	return;
+
+ done:
+	if (!NT_STATUS_IS_OK(state->ctx->status)) {
+		state->ctx->state = COMPOSITE_STATE_ERROR;
+	}
+	if ((state->ctx->state >= COMPOSITE_STATE_DONE) &&
+	    (state->ctx->async.fn != NULL)) {
+		state->ctx->async.fn(state->ctx);
+	}
+}
+
+static void get_lsa_pipe_recv_openpol(struct rpc_request *req)
+{
+	struct get_lsa_pipe_state *state =
+		talloc_get_type(req->async.private, struct get_lsa_pipe_state);
+
+	state->ctx->status = dcerpc_ndr_request_recv(req);
+	if (!NT_STATUS_IS_OK(state->ctx->status)) goto done;
+	state->ctx->status = state->openpolicy.out.result;
+	if (!NT_STATUS_IS_OK(state->ctx->status)) goto done;
+
+	ZERO_STRUCT(state->queryinfo);
+	state->queryinfo.in.handle = &state->policy_handle;
+	state->queryinfo.in.level = LSA_POLICY_INFO_ACCOUNT_DOMAIN;
+
+	req = dcerpc_lsa_QueryInfoPolicy_send(state->lsa_pipe, state,
+					      &state->queryinfo);
+	if (req == NULL) {
+		state->ctx->status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	req->async.callback = get_lsa_pipe_recv_queryinfo;
+	req->async.private = state;
+	return;
+
+ done:
+	if (!NT_STATUS_IS_OK(state->ctx->status)) {
+		state->ctx->state = COMPOSITE_STATE_ERROR;
+	}
+	if ((state->ctx->state >= COMPOSITE_STATE_DONE) &&
+	    (state->ctx->async.fn != NULL)) {
+		state->ctx->async.fn(state->ctx);
+	}
+}
+
+static void get_lsa_pipe_recv_queryinfo(struct rpc_request *req)
+{
+	struct get_lsa_pipe_state *state =
+		talloc_get_type(req->async.private, struct get_lsa_pipe_state);
+
+	state->ctx->status = dcerpc_ndr_request_recv(req);
+	if (!NT_STATUS_IS_OK(state->ctx->status)) goto done;
+	state->ctx->status = state->queryinfo.out.result;
+	if (!NT_STATUS_IS_OK(state->ctx->status)) goto done;
+
+	ZERO_STRUCT(state->close);
+	state->close.in.handle = &state->policy_handle;
+	state->close.out.handle = &state->policy_handle;
+
+	req = dcerpc_lsa_Close_send(state->lsa_pipe, state,
+				    &state->close);
+	if (req == NULL) {
+		state->ctx->status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	req->async.callback = get_lsa_pipe_recv_close;
+	req->async.private = state;
+	return;
+
+ done:
+	if (!NT_STATUS_IS_OK(state->ctx->status)) {
+		state->ctx->state = COMPOSITE_STATE_ERROR;
+	}
+	if ((state->ctx->state >= COMPOSITE_STATE_DONE) &&
+	    (state->ctx->async.fn != NULL)) {
+		state->ctx->async.fn(state->ctx);
+	}
+}
+
+static void get_lsa_pipe_recv_close(struct rpc_request *req)
+{
+	struct get_lsa_pipe_state *state =
+		talloc_get_type(req->async.private, struct get_lsa_pipe_state);
+
+	state->ctx->status = dcerpc_ndr_request_recv(req);
+	if (!NT_STATUS_IS_OK(state->ctx->status)) goto done;
+	state->ctx->status = state->close.out.result;
+	if (!NT_STATUS_IS_OK(state->ctx->status)) goto done;
+
+	state->ctx->state = COMPOSITE_STATE_DONE;
+
+ done:
+	if (!NT_STATUS_IS_OK(state->ctx->status)) {
+		state->ctx->state = COMPOSITE_STATE_ERROR;
+	}
+	if ((state->ctx->state >= COMPOSITE_STATE_DONE) &&
+	    (state->ctx->async.fn != NULL)) {
+		state->ctx->async.fn(state->ctx);
+	}
+}
+
+NTSTATUS wb_get_lsa_pipe_recv(struct composite_context *c,
+			      TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status = composite_wait(c);
+	struct get_lsa_pipe_state *state =
+		talloc_get_type(c->private_data,
+				struct get_lsa_pipe_state);
+	state->io->out.domain_sid =
+		talloc_steal(mem_ctx, state->queryinfo.out.info->domain.sid);
+	state->io->out.pipe =
+		talloc_steal(mem_ctx, state->lsa_pipe);
+	talloc_free(c);
+	return status;
+}
+
+NTSTATUS wb_get_lsa_pipe(struct wb_get_lsa_pipe *io,
+			 TALLOC_CTX *mem_ctx)
+{
+	struct composite_context *c = wb_get_lsa_pipe_send(io);
+	return wb_get_lsa_pipe_recv(c, mem_ctx);
 }

@@ -46,7 +46,8 @@ ADD_OBJ_FILES = \
 		nbt_server/query.o \
 		nbt_server/nodestatus.o \
 		nbt_server/defense.o \
-		nbt_server/packet.o
+		nbt_server/packet.o \
+		nbt_server/irpc.o
 REQUIRED_SUBSYSTEMS = \
 		LIBCLI_NBT NBTD_WINS NBTD_DGRAM
 # End SUBSYSTEM NBTD

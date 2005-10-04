@@ -33,7 +33,8 @@ uint32_t wbsrv_samba3_packet_length(DATA_BLOB blob)
 	return *len;
 }
 
-NTSTATUS wbsrv_samba3_pull_request(DATA_BLOB blob, TALLOC_CTX *mem_ctx, struct wbsrv_call **_call)
+NTSTATUS wbsrv_samba3_pull_request(DATA_BLOB blob, TALLOC_CTX *mem_ctx,
+				   struct wbsrv_call **_call)
 {
 	struct wbsrv_call *call;
 	struct wbsrv_samba3_call *s3_call;
@@ -89,6 +90,9 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_call *call)
 
 	case WINBINDD_PRIV_PIPE_DIR:
 		return wbsrv_samba3_priv_pipe_dir(s3call);
+
+	case WINBINDD_LOOKUPNAME:
+		return wbsrv_samba3_lookupname(s3call);
 	}
 
 	s3call->response.result = WINBINDD_ERROR;

@@ -25,6 +25,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
+#include "lib/events/events.h"
 
 /* the stages of this call */
 enum connect_stage {CONNECT_RESOLVE, 
@@ -39,6 +40,7 @@ struct connect_state {
 	struct smbcli_socket *sock;
 	struct smbcli_transport *transport;
 	struct smbcli_session *session;
+	struct smb_composite_connectmulti *conn;
 	struct smb_composite_connect *io;
 	union smb_tcon *io_tcon;
 	struct smb_composite_sesssetup *io_setup;
@@ -213,8 +215,10 @@ static NTSTATUS connect_socket(struct composite_context *c,
 	NTSTATUS status;
 	struct nbt_name calling, called;
 
-	status = smbcli_sock_connect_recv(state->creq);
+	status = smb_composite_connectmulti_recv(state->creq, state);
 	NT_STATUS_NOT_OK_RETURN(status);
+
+	state->sock = state->conn->out.socket;
 
 	/* the socket is up - we can initialise the smbcli transport layer */
 	state->transport = smbcli_transport_init(state->sock, state, True);
@@ -254,11 +258,33 @@ static NTSTATUS connect_resolve(struct composite_context *c,
 	struct connect_state *state = talloc_get_type(c->private_data, struct connect_state);
 	NTSTATUS status;
 	const char *address;
+	struct smb_composite_connectmulti *conn;
 
 	status = resolve_name_recv(state->creq, state, &address);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	state->creq = smbcli_sock_connect_send(state->sock, address, state->io->in.port, io->in.dest_host);
+	conn = talloc(state, struct smb_composite_connectmulti);
+	NT_STATUS_HAVE_NO_MEMORY(conn);
+	state->conn = conn;
+	conn->in.num_dests = 1;
+
+	conn->in.addresses = talloc_array(state->conn, const char *, 1);
+	NT_STATUS_HAVE_NO_MEMORY(conn->in.addresses);
+	conn->in.addresses[0] = address;
+
+	conn->in.hostnames = talloc_array(state->conn, const char *, 1);
+	NT_STATUS_HAVE_NO_MEMORY(conn->in.hostnames);
+	conn->in.hostnames[0] = state->io->in.dest_host;
+	
+	conn->in.ports = NULL;
+	if (state->io->in.port != 0) {
+		conn->in.ports = talloc_array(state->conn, int, 1);
+		NT_STATUS_HAVE_NO_MEMORY(conn->in.ports);
+		conn->in.ports[0] = state->io->in.port;
+	}
+
+	state->creq = smb_composite_connectmulti_send(conn, state,
+						      c->event_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(state->creq);
 
 	state->stage = CONNECT_SOCKET;
@@ -332,25 +358,27 @@ static void composite_handler(struct composite_context *creq)
   a function to establish a smbcli_tree from scratch
 */
 struct composite_context *smb_composite_connect_send(struct smb_composite_connect *io,
-						    struct event_context *event_ctx)
+						     TALLOC_CTX *mem_ctx,
+						     struct event_context *event_ctx)
 {
 	struct composite_context *c;
 	struct connect_state *state;
 	struct nbt_name name;
 
-	c = talloc_zero(NULL, struct composite_context);
+	c = talloc_zero(mem_ctx, struct composite_context);
 	if (c == NULL) goto failed;
 
 	state = talloc(c, struct connect_state);
 	if (state == NULL) goto failed;
 
-	state->sock = smbcli_sock_init(state, event_ctx);
-	if (state->sock == NULL) goto failed;
+	if (event_ctx == NULL) {
+		event_ctx = event_context_init(mem_ctx);
+	}
 
 	state->io = io;
 
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
-	c->event_ctx = talloc_reference(c, state->sock->event.ctx);
+	c->event_ctx = talloc_reference(c, event_ctx);
 	c->private_data = state;
 
 	state->stage = CONNECT_RESOLVE;
@@ -391,6 +419,6 @@ NTSTATUS smb_composite_connect_recv(struct composite_context *c, TALLOC_CTX *mem
 NTSTATUS smb_composite_connect(struct smb_composite_connect *io, TALLOC_CTX *mem_ctx,
 			       struct event_context *ev)
 {
-	struct composite_context *c = smb_composite_connect_send(io, ev);
+	struct composite_context *c = smb_composite_connect_send(io, mem_ctx, ev);
 	return smb_composite_connect_recv(c, mem_ctx);
 }

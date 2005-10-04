@@ -10,6 +10,6 @@ INIT_OBJ_FILES = \
 		winbind/wb_samba3_protocol.o \
 		winbind/wb_samba3_cmd.o \
 		winbind/wb_async_helpers.o
-REQUIRED_SUBSYSTEMS = 
+REQUIRED_SUBSYSTEMS = RPC_NDR_LSA
 # End MODULE server_service_winbind
 ################################################

@@ -37,6 +37,7 @@
 #define  rpc_close_user         (0x00000004)        /* userinfo.h */
 #define  rpc_lookup_name        (0x00000005)        /* userman.h */
 #define  rpc_delete_user        (0x00000006)        /* userman.h */
+#define  rpc_set_user           (0x00000007)        /* userman.h */
 
 struct monitor_msg {
 	uint32_t   type;

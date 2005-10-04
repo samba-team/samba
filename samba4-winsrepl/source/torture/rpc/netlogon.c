@@ -1358,16 +1358,19 @@ BOOL torture_rpc_netlogon(void)
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	struct test_join *join_ctx;
+	struct cli_credentials *machine_credentials;
 
 	mem_ctx = talloc_init("torture_rpc_netlogon");
 
 	join_ctx = torture_join_domain(TEST_MACHINE_NAME, ACB_SVRTRUST, 
-				       &machine_password);
+				       &machine_credentials);
 	if (!join_ctx) {
 		talloc_free(mem_ctx);
 		printf("Failed to join as BDC\n");
 		return False;
 	}
+
+	machine_password = cli_credentials_get_password(machine_credentials);
 
 	status = torture_rpc_connection(mem_ctx, &p, 
 					DCERPC_NETLOGON_NAME,

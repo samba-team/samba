@@ -147,7 +147,6 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 			  uint32_t schannel_type)
 {
 	void *join_ctx;
-	const char *machine_password;
 	NTSTATUS status;
 	const char *binding = lp_parm_string(-1, "torture", "binding");
 	struct dcerpc_binding *b;
@@ -157,10 +156,9 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	struct cli_credentials *credentials;
 
 	TALLOC_CTX *test_ctx = talloc_named(mem_ctx, 0, "test_schannel context");
-	char *test_machine_account = talloc_asprintf(NULL, "%s$", TEST_MACHINE_NAME);
 
 	join_ctx = torture_join_domain(TEST_MACHINE_NAME, 
-				       acct_flags, &machine_password);
+				       acct_flags, &credentials);
 	if (!join_ctx) {
 		printf("Failed to join domain with acct_flags=0x%x\n", acct_flags);
 		talloc_free(test_ctx);
@@ -175,24 +173,6 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
 	b->flags |= dcerpc_flags;
-
-	credentials = cli_credentials_init(mem_ctx);
-	cli_credentials_set_conf(credentials);
-
-	cli_credentials_set_domain(credentials, lp_workgroup(), CRED_SPECIFIED);
-	cli_credentials_set_workstation(credentials, TEST_MACHINE_NAME, CRED_SPECIFIED);
-	cli_credentials_set_username(credentials, test_machine_account, CRED_SPECIFIED);
-	cli_credentials_set_password(credentials, machine_password, CRED_SPECIFIED);
-
-	if (acct_flags == ACB_WSTRUST) {
-		cli_credentials_set_secure_channel_type(credentials,
-							SEC_CHAN_WKSTA);
-	} else if (acct_flags == ACB_SVRTRUST) {
-		cli_credentials_set_secure_channel_type(credentials,
-							SEC_CHAN_BDC);
-	} else {
-		goto failed;
-	}
 
 	status = dcerpc_pipe_connect_b(test_ctx, 
 				       &p, b, 
