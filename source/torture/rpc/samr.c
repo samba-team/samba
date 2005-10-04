@@ -1082,10 +1082,10 @@ static BOOL test_ChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
-static BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-				     struct policy_handle *handle, 
-				     int policy_min_pw_len,
-				     char **password)
+BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			      const char *account_string,
+			      int policy_min_pw_len,
+			      char **password)
 {
 	NTSTATUS status;
 	struct samr_ChangePasswordUser3 r;
@@ -1101,7 +1101,7 @@ static BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing ChangePasswordUser3\n");
 
 	server.string = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	init_lsa_String(&account, TEST_ACCOUNT_NAME);
+	init_lsa_String(&account, account_string);
 
 	E_md4hash(oldpass, old_nt_hash);
 	E_md4hash(newpass, new_nt_hash);
@@ -1133,7 +1133,7 @@ static BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			policy_min_pw_len = r.out.dominfo->min_password_length;
 		}
 		if (policy_min_pw_len) /* try again with the right min password length */ {
-			ret = test_ChangePasswordUser3(p, mem_ctx, handle, policy_min_pw_len, password);
+			ret = test_ChangePasswordUser3(p, mem_ctx, account_string, policy_min_pw_len, password);
 		} else {
 			printf("ChangePasswordUser3 failed - %s\n", nt_errstr(status));
 			ret = False;
@@ -1546,11 +1546,11 @@ static BOOL test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	/* we change passwords twice - this has the effect of verifying
 	   they were changed correctly for the final call */
-	if (!test_ChangePasswordUser3(p, mem_ctx, domain_handle, 0, password)) {
+	if (!test_ChangePasswordUser3(p, mem_ctx, TEST_ACCOUNT_NAME, 0, password)) {
 		ret = False;
 	}
 
-	if (!test_ChangePasswordUser3(p, mem_ctx, domain_handle, 0, password)) {
+	if (!test_ChangePasswordUser3(p, mem_ctx, TEST_ACCOUNT_NAME, 0, password)) {
 		ret = False;
 	}
 
@@ -1645,7 +1645,7 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}	
 		
 		/* check it was set right */
-		if (!test_ChangePasswordUser3(p, user_ctx, domain_handle, 0, &password)) {
+		if (!test_ChangePasswordUser3(p, user_ctx, TEST_ACCOUNT_NAME, 0, &password)) {
 			ret = False;
 		}
 	}		
@@ -1656,7 +1656,7 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}	
 		
 		/* check it was set right */
-		if (!test_ChangePasswordUser3(p, user_ctx, domain_handle, 0, &password)) {
+		if (!test_ChangePasswordUser3(p, user_ctx, TEST_ACCOUNT_NAME, 0, &password)) {
 			ret = False;
 		}
 	}		
