@@ -155,6 +155,11 @@ static int ildb_search_bytree(struct ldb_module *module, const struct ldb_dn *ba
 		search_base = ldb_dn_linearize(ildb, base);
 	}
 	if (search_base == NULL) {
+		ldb_set_errstring(module, talloc_asprintf(module, "Unable to determine baseDN"));
+		return -1;
+	}
+	if (tree == NULL) {
+		ldb_set_errstring(module, talloc_asprintf(module, "Invalid expression parse tree"));
 		return -1;
 	}
 
