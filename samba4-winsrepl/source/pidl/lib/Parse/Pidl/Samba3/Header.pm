@@ -31,6 +31,14 @@ sub ParseElement($)
 			pidl "\tuint32 level_$e->{NAME};";
 		} elsif ($l->{TYPE} eq "DATA") {
 			pidl "\t" . DeclShort($e) . ";";
+		} elsif ($l->{TYPE} eq "ARRAY") {
+			if ($l->{IS_CONFORMANT}) {
+				pidl "\tuint32 size_$e->{NAME};";
+			}
+			if ($l->{IS_VARYING}) {
+				pidl "\tuint32 length_$e->{NAME};";
+				pidl "\tuint32 offset_$e->{NAME};";
+			}
 		}
 	}
 }
@@ -58,7 +66,7 @@ sub ParseFunction($$)
 	my @in = ();
 	my @out = ();
 
-	foreach (@{$_->{ELEMENTS}}) {
+	foreach (@{$fn->{ELEMENTS}}) {
 		push (@in, $_) if (grep(/in/, @{$_->{DIRECTION}}));
 		push (@out, $_) if (grep(/out/, @{$_->{DIRECTION}}));
 	}
@@ -93,10 +101,10 @@ sub ParseUnion($$$)
 {
 	my ($if,$u,$n) = @_;
 
-	pidl "typedef union {";
+	pidl "typedef union $if->{NAME}_$n {";
 	#FIXME: What about elements that require more then one variable?
 	ParseElement($_) foreach (@{$u->{ELEMENTS}});
-	pidl "} $n;";
+	pidl "} ".uc($if->{NAME}."_".$n) .";";
 	pidl "";
 }
 
