@@ -80,6 +80,7 @@ sub GetElementLevelTable($)
 	my @bracket_array = ();
 	my @length_is = ();
 	my @size_is = ();
+	my $pointer_idx = 0;
 
 	if (has_property($e, "size_is")) {
 		@size_is = split /,/, has_property($e, "size_is");
@@ -153,9 +154,12 @@ sub GetElementLevelTable($)
 			TYPE => "POINTER",
 			# for now, there can only be one pointer type per element
 			POINTER_TYPE => pointer_type($e),
+			POINTER_INDEX => $pointer_idx,
 			IS_DEFERRED => "$is_deferred",
 			LEVEL => $level
 		});
+
+		$pointer_idx++;
 		
 		# everything that follows will be deferred
 		$is_deferred = 1 if ($e->{PARENT}->{TYPE} ne "FUNCTION");

@@ -20,6 +20,28 @@ sub indent() { $tabs.="\t"; }
 sub deindent() { $tabs = substr($tabs, 1); }
 sub pidl($) { $res .= $tabs.(shift)."\n"; }
 sub fatal($$) { my ($e,$s) = @_; die("$e->{FILE}:$e->{LINE}: $s\n"); }
+sub warning($$) { my ($e,$s) = @_; warn("$e->{FILE}:$e->{LINE}: $s\n"); }
+
+sub CopyLevel($$$$)
+{
+	sub CopyLevel($$$$);
+	my ($e,$l,$argument,$member) = @_;
+
+	if ($l->{TYPE} eq "DATA") {
+		pidl "*$argument = $member;";
+	} elsif ($l->{TYPE} eq "POINTER") {
+		pidl "if (r.ptr$l->{POINTER_INDEX}_$e->{NAME}) {";
+		indent;
+		pidl "*$argument = talloc_size(mem_ctx, sizeof(void *));";
+		CopyLevel($e,GetNextLevel($e,$l),"*$argument", $member);
+		deindent;
+		pidl "}";
+	} elsif ($l->{TYPE} eq "SWITCH") {
+		CopyLevel($e,GetNextLevel($e,$l),$argument,$member);	
+	} elsif ($l->{TYPE} eq "ARRAY") {
+		pidl "*$argument = $member;";
+	}
+}
 
 sub ParseFunction($$)
 {
@@ -59,10 +81,14 @@ sub ParseFunction($$)
 	pidl "\tNT_STATUS_UNSUCCESSFUL);";
 	pidl "";
 	pidl "/* Return variables */";
-	foreach (@{$fn->{ELEMENTS}}) {
-		next unless (grep(/out/, @{$_->{DIRECTION}}));
-
-		pidl "*$_->{NAME} = r.$_->{NAME};";
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		next unless (grep(/out/, @{$e->{DIRECTION}}));
+		
+		if ($e->{LEVELS}[0]->{TYPE} ne "POINTER") {
+			warning($e->{ORIGINAL}, "First element not a pointer for [out] argument");
+			next;
+		}
+		CopyLevel($e, $e->{LEVELS}[1], $e->{NAME}, "r.$e->{NAME}");
 	}
 
 	pidl"";
