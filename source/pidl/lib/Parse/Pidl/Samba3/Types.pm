@@ -184,6 +184,15 @@ my $known_types =
 			return "smb_io_pol_hnd(\"$e->{NAME}\", &n, ps, depth)";
 		}
 	},
+	hyper => 
+	{
+		DECL => "uint64",
+		INIT => "",
+		DISSECT_P => sub {
+			my ($e,$l,$n) = @_;
+			return "prs_uint64(\"$e->{NAME}\", ps, depth, &$n)";
+		}
+	},
 };
 
 sub AddType($$)
@@ -335,6 +344,7 @@ sub LoadTypes($)
 
 		foreach my $td (@{$if->{TYPEDEFS}}) {
 			my $decl = uc("$if->{NAME}_$td->{NAME}");
+
 			my $init = sub {
 					my ($e,$l,$n,$v) = @_;
 					return "$n = $v;";
@@ -343,6 +353,7 @@ sub LoadTypes($)
 			my $dissect_d;
 			my $dissect_p;
 			if ($td->{DATA}->{TYPE} eq "UNION") {
+				$decl.="_CTR";
 				 $dissect_p = sub {
 					my ($e,$l,$n,$w,$s) = @_;
 
