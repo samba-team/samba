@@ -1,7 +1,7 @@
-
 /* 
  *  Unix SMB/CIFS implementation.
  *  Virtual Windows Registry Layer
+ *  Copyright (C) Marcin Krzysztof Porwit    2005,
  *  Copyright (C) Brian Moran                2005.
  *  Copyright (C) Gerald (Jerry) Carter      2005.
  *  
