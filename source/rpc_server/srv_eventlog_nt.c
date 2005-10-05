@@ -2,6 +2,7 @@
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
  *  Copyright (C) Marcin Krzysztof Porwit    2005,
+ *  Copyright (C) Brian Moran                2005,
  *  Copyright (C) Gerald (Jerry) Carter      2005.
  *  
  *  This program is free software; you can redistribute it and/or modify
@@ -43,9 +44,12 @@ typedef struct {
 	uint32 flags;
 } EventlogInfo;
 
-#if 0
 
 
+#if 0 /* UNUSED */
+/********************************************************************
+ ********************************************************************/
+ 
 void test_eventlog_tdb( TDB_CONTEXT * the_tdb )
 {
 	Eventlog_entry ee;
@@ -94,46 +98,123 @@ void test_eventlog_tdb( TDB_CONTEXT * the_tdb )
 		write_eventlog_tdb( the_tdb, &ee );
 	}
 }
+#endif /* UNUSED */
 
-#endif
+/********************************************************************
+ ********************************************************************/
 
+static void refresh_eventlog_tdb_table( void )
+{
+	const char **elogs = lp_eventlog_list(  );
+	int i, j;
+
+	if ( !elogs )
+		return;
+
+	if ( !mem_ctx ) {
+		mem_ctx = talloc_init( "refresh_eventlog_tdb_table" );
+	}
+
+	if ( !mem_ctx ) {
+		DEBUG( 1, ( "Can't allocate memory\n" ) );
+		return;
+	}
+
+	/* count them */
+	for ( i = 0; elogs[i]; i++ ) {
+	}
+	/* number of logs in i */
+	DEBUG( 10, ( "Number of eventlogs %d\n", i ) );
+	/* check to see if we need to adjust our tables */
+
+	if ( ( ttdb != NULL ) ) {
+		if ( i != nlogs ) {
+			/* refresh the table, by closing and reconstructing */
+			DEBUG( 10, ( "Closing existing table \n" ) );
+			for ( j = 0; j < nlogs; j++ ) {
+				tdb_close( ttdb[j].log_tdb );
+			}
+			TALLOC_FREE( ttdb );
+			ttdb = NULL;
+		} else {	/* i == nlogs */
+
+			for ( j = 0; j < nlogs; j++ ) {
+				if ( StrCaseCmp( ttdb[j].logname, elogs[i] ) ) {
+					/* something changed, have to discard */
+					DEBUG( 10,
+					       ( "Closing existing table \n" ) );
+					for ( j = 0; j < nlogs; j++ ) {
+						tdb_close( ttdb[j].log_tdb );
+					}
+					TALLOC_FREE( ttdb );
+					ttdb = NULL;
+					break;
+				}
+			}
+		}
+	}
+
+	/* note that this might happen because of above */
+	if ( ( i > 0 ) && ( ttdb == NULL ) ) {
+		/* alloc the room */
+		DEBUG( 10, ( "Creating the table\n" ) );
+		ttdb = TALLOC( mem_ctx, sizeof( EventlogTDBInfo ) * i );
+		if ( !ttdb ) {
+			DEBUG( 10,
+			       ( "Can't allocate table for tdb handles \n" ) );
+			return;
+		}
+		for ( j = 0; j < i; j++ ) {
+			pstrcpy( ttdb[j].tdbfname,
+				 lock_path( mk_tdbfilename
+					    ( ttdb[j].tdbfname,
+					      ( char * ) elogs[j],
+					      sizeof( pstring ) ) ) );
+			pstrcpy( ttdb[j].logname, elogs[j] );
+			DEBUG( 10, ( "Opening tdb for %s\n", elogs[j] ) );
+			ttdb[j].log_tdb =
+				open_eventlog_tdb( ttdb[j].tdbfname );
+		}
+	}
+	nlogs = i;
+}
+
+/********************************************************************
+ ********************************************************************/
 
 TDB_CONTEXT *tdb_of( char *eventlog_name )
 {
 	int i;
 
-	if ( eventlog_name == NULL )
+	if ( !eventlog_name )
 		return NULL;
 
-
-	if ( ttdb == NULL ) {
+	if ( !ttdb ) {
 		DEBUG( 10, ( "Refreshing list of eventlogs\n" ) );
 		refresh_eventlog_tdb_table(  );
-	}
 
-	if ( ttdb == NULL ) {
-		DEBUG( 10,
-		       ( "eventlog tdb table is NULL after a refresh!\n" ) );
-		return NULL;
-	}
-	DEBUG( 10, ( "Number of eventlogs %d\n", nlogs ) );
-	for ( i = 0; i < nlogs; i++ ) {
-		/*DEBUG(8,("Comparing %s to %s\n",eventlog_name,ttdb[i].logname)); */
-		if ( !StrCaseCmp( eventlog_name, ttdb[i].logname ) ) {
-
-			return ttdb[i].log_tdb;
+		if ( !ttdb ) {
+			DEBUG( 10,
+			       ( "eventlog tdb table is NULL after a refresh!\n" ) );
+			return NULL;
 		}
 	}
+
+	DEBUG( 10, ( "Number of eventlogs %d\n", nlogs ) );
+
+	for ( i = 0; i < nlogs; i++ ) {
+		if ( strequal( eventlog_name, ttdb[i].logname ) ) 
+			return ttdb[i].log_tdb;
+	}
+
 	return NULL;
 }
 
 
-
-/*
-  For the given tdb, get the next eventlog record into the passed Eventlog_entry.
-  returns NULL if it can't get the record for some reason.
-*/
-
+/********************************************************************
+  For the given tdb, get the next eventlog record into the passed 
+  Eventlog_entry.  returns NULL if it can't get the record for some reason.
+ ********************************************************************/
 
 Eventlog_entry *get_eventlog_record( prs_struct * ps, TDB_CONTEXT * tdb,
 				     int recno, Eventlog_entry * ee )
@@ -233,82 +314,6 @@ Eventlog_entry *get_eventlog_record( prs_struct * ps, TDB_CONTEXT * tdb,
 	return ee;
 }
 
-void refresh_eventlog_tdb_table( void )
-{
-	const char **elogs = lp_eventlog_list(  );
-	int i, j;
-
-	if ( !elogs )
-		return;
-
-	if ( !mem_ctx ) {
-		mem_ctx = talloc_init( "refresh_eventlog_tdb_table" );
-	}
-
-	if ( !mem_ctx ) {
-		DEBUG( 1, ( "Can't allocate memory\n" ) );
-		return;
-	}
-
-	/* count them */
-	for ( i = 0; elogs[i]; i++ ) {
-	}
-	/* number of logs in i */
-	DEBUG( 10, ( "Number of eventlogs %d\n", i ) );
-	/* check to see if we need to adjust our tables */
-
-	if ( ( ttdb != NULL ) ) {
-		if ( i != nlogs ) {
-			/* refresh the table, by closing and reconstructing */
-			DEBUG( 10, ( "Closing existing table \n" ) );
-			for ( j = 0; j < nlogs; j++ ) {
-				tdb_close( ttdb[j].log_tdb );
-			}
-			TALLOC_FREE( ttdb );
-			ttdb = NULL;
-		} else {	/* i == nlogs */
-
-			for ( j = 0; j < nlogs; j++ ) {
-				if ( StrCaseCmp( ttdb[j].logname, elogs[i] ) ) {
-					/* something changed, have to discard */
-					DEBUG( 10,
-					       ( "Closing existing table \n" ) );
-					for ( j = 0; j < nlogs; j++ ) {
-						tdb_close( ttdb[j].log_tdb );
-					}
-					TALLOC_FREE( ttdb );
-					ttdb = NULL;
-					break;
-				}
-			}
-		}
-	}
-
-	/* note that this might happen because of above */
-	if ( ( i > 0 ) && ( ttdb == NULL ) ) {
-		/* alloc the room */
-		DEBUG( 10, ( "Creating the table\n" ) );
-		ttdb = TALLOC( mem_ctx, sizeof( EventlogTDBInfo ) * i );
-		if ( !ttdb ) {
-			DEBUG( 10,
-			       ( "Can't allocate table for tdb handles \n" ) );
-			return;
-		}
-		for ( j = 0; j < i; j++ ) {
-			pstrcpy( ttdb[j].tdbfname,
-				 lock_path( mk_tdbfilename
-					    ( ttdb[j].tdbfname,
-					      ( char * ) elogs[j],
-					      sizeof( pstring ) ) ) );
-			pstrcpy( ttdb[j].logname, elogs[j] );
-			DEBUG( 10, ( "Opening tdb for %s\n", elogs[j] ) );
-			ttdb[j].log_tdb =
-				open_eventlog_tdb( ttdb[j].tdbfname );
-		}
-	}
-	nlogs = i;
-}
-
 /********************************************************************
  ********************************************************************/
 
@@ -334,10 +339,12 @@ static EventlogInfo *find_eventlog_info_by_hnd( pipes_struct * p,
 	return info;
 }
 
-/* note that this can only be called AFTER the table is constructed, since it uses
-   the table to find the tdb handle */
+/********************************************************************
+ note that this can only be called AFTER the table is constructed, 
+ since it uses the table to find the tdb handle
+ ********************************************************************/
 
-BOOL sync_eventlog_params( const char *elogname )
+static BOOL sync_eventlog_params( const char *elogname )
 {
 	pstring path;
 	uint32 uiMaxSize;
@@ -408,7 +415,6 @@ static BOOL open_eventlog_hook( EventlogInfo * info )
 {
 	return True;
 }
-
 
 /********************************************************************
 ********************************************************************/
@@ -502,106 +508,8 @@ static BOOL close_eventlog_hook( EventlogInfo * info )
 	return True;
 }
 
-#if 0
-
 /********************************************************************
  ********************************************************************/
-
-/**
- * Callout to read entries from the specified event log
- *
- *   smbrun calling convention --
- *     INPUT: <read_cmd> <log name> <direction> <starting record> <buffer size> <policy handle>
- *            where direction is either "forward" or "backward", the starting record is somewhere
- *            between the oldest_record and oldest_record+num_records, and the buffer size is the
- *            maximum size of the buffer that the client can accomodate.
- *     OUTPUT: A buffer containing a set of entries, one to a line, of the format:
- *             Multiple log entries can be contained in the buffer, delimited by an empty line
- *               line type:line data
- *             These are the allowed line types:
- *               RS1:(uint32) - reserved. All M$ entries seem to have int(1699505740) for now
- *               RCN:(uint32) - record number of the record, however it may be calculated by the script
- *               TMG:(uint32) - time generated, seconds since January 1, 1970, 0000 UTC
- *               TMW:(uint32) - time written, seconds since January 1, 1970, 0000 UTC
- *               EID:(uint32) - eventlog source defined event identifier. If there's a stringfile for the event, it is an index into that
- *               ETP:(uint16) - eventlog type - one of ERROR, WARNING, INFO, AUDIT_SUCCESS, AUDIT_FAILURE
- *               ECT:(uint16) - event category - depends on the eventlog generator... 
- *               RS2:(uint16) - reserved, make it 0000
- *               CRN:(uint32) - reserved, make it 00000000 for now
- *               USL:(uint32) - user SID length. No sid? Make this 0. Must match SID below
- *               SRC:[(uint8)] - Name of the source, for example ccPwdSvc, in hex bytes. Can not be multiline.
- *               SRN:[(uint8)] - Name of the computer on which this is generated, the short hostname usually.
- *               SID:[(uint8)] - User sid if one exists. Must be present even if there is no SID.
- *               STR:[(uint8)] - String data. One string per line. Multiple strings can be specified using consecutive "STR" lines,
- *                               up to a total aggregate string length of 1024 characters.
- *               DAT:[(uint8)] - The user-defined data portion of the event log. Can not be multiple lines.
- *               <empty line>  - end-of-record indicator 
- */
-
-
-static BOOL read_eventlog_hook( EventlogInfo * info, Eventlog_entry * entry,
-				const char *direction, int starting_record,
-				int buffer_size, BOOL * eof,
-				char ***buffer, int *numlines )
-{
-	char *cmd = lp_eventlog_read_cmd(  );
-	pstring command;
-	int ret;
-	int fd = -1;
-
-	if ( !info )
-		return False;
-
-	if ( !cmd || !*cmd ) {
-		DEBUG( 0,
-		       ( "Must define an \"eventlog read command\" entry in the config.\n" ) );
-		return False;
-	}
-
-	pstr_sprintf( command, "%s \"%s\" %s %d %d",
-		      cmd, info->logname, direction, starting_record,
-		      buffer_size );
-
-
-	*numlines = 0;
-
-	DEBUG( 10, ( "Running [%s]\n", command ) );
-	ret = smbrun( command, &fd );
-	DEBUGADD( 10, ( "returned [%d]\n", ret ) );
-
-	if ( ret != 0 ) {
-		if ( fd != -1 ) {
-			close( fd );
-		}
-		return False;
-	}
-
-	*buffer = fd_lines_load( fd, numlines );
-	DEBUGADD( 10, ( "Lines returned = [%d]\n", *numlines ) );
-	close( fd );
-
-	if ( *numlines ) {
-		/*
-		   for(i = 0; i < numlines; i++)
-		   {
-		   DEBUGADD(10, ("Line[%d] = %s\n", i, qlines[i]));
-		   parse_logentry(qlines[i], entry);
-		   }
-		   file_lines_free(qlines);
-		 */
-		*eof = False;
-		return True;
-	}
-	*eof = True;
-
-/*    file_lines_free(qlines);*/
-	return False;
-}
-#endif
-
-/********************************************************************
- ********************************************************************/
-
 
 static Eventlog_entry *read_package_entry( prs_struct * ps,
 					   EVENTLOG_Q_READ_EVENTLOG * q_u,
@@ -771,8 +679,7 @@ static BOOL clear_eventlog_hook( EventlogInfo * info,
 /*******************************************************************
  *******************************************************************/
 
-
-int eventlog_size( char *eventlog_name )
+static int eventlog_size( char *eventlog_name )
 {
 	TDB_CONTEXT *tdb;
 
@@ -783,6 +690,9 @@ int eventlog_size( char *eventlog_name )
 		return 0;
 	return eventlog_tdb_size( tdb, NULL, NULL );
 }
+
+/********************************************************************
+ ********************************************************************/
 
 WERROR _eventlog_open_eventlog( pipes_struct * p,
 				EVENTLOG_Q_OPEN_EVENTLOG * q_u,
@@ -796,7 +706,6 @@ WERROR _eventlog_open_eventlog( pipes_struct * p,
 
 	fstrcpy( str, global_myname(  ) );
 	if ( q_u->servername.string ) {
-
 		rpcstr_pull( str, q_u->servername.string->buffer,
 			     sizeof( str ),
 			     q_u->servername.string->uni_str_len * 2, 0 );
@@ -806,14 +715,12 @@ WERROR _eventlog_open_eventlog( pipes_struct * p,
 
 	fstrcpy( str, "Application" );
 	if ( q_u->logname.string ) {
-
 		rpcstr_pull( str, q_u->logname.string->buffer,
 			     sizeof( str ),
 			     q_u->logname.string->uni_str_len * 2, 0 );
 	}
 
 	info->logname = talloc_strdup( info, str );
-
 
 	DEBUG( 1,
 	       ( "Size of %s is %d\n", info->logname,
@@ -835,7 +742,7 @@ WERROR _eventlog_open_eventlog( pipes_struct * p,
 		return WERR_NOMEM;
 	}
 
-	if ( !( open_eventlog_hook( info ) ) ) {
+	if ( !open_eventlog_hook( info ) ) {
 		close_policy_hnd( p, &r_u->handle );
 		return WERR_BADFILE;
 	}
