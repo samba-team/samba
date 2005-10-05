@@ -23,14 +23,14 @@
 
 #include "includes.h"
 
-struct internal_service_info {
+struct service_display_info {
 	const char *servicename;
 	const char *daemon;
 	const char *dispname;
 	const char *description;
 };
 
-struct internal_service_info builtin_svcs[] = {  
+struct service_display_info builtin_svcs[] = {  
   { "Spooler",	      "smbd", "Print Spooler",
   	"Internal service for spooling files to print devices" },
   { "NETLOGON",	      "smbd", "Net Logon",
@@ -41,6 +41,34 @@ struct internal_service_info builtin_svcs[] = {
   	"Internal service providing a NetBIOS point-to-point name server" },
   { NULL, NULL, NULL, NULL }
 };
+
+struct service_display_info common_unix_svcs[] = {  
+  { "cups",          NULL, "Common Unix Printing System", NULL },
+  { "postfix",       NULL, "Internet Mail Service", NULL },
+  { "sendmail",      NULL, "Internet Mail Service", NULL },
+  { "portmap",       NULL, "TCP Port to RPC PortMapper", NULL },
+  { "xinetd",        NULL, "Internet Meta-Daemon", NULL },
+  { "inet",          NULL, "Internet Meta-Daemon", NULL },
+  { "xntpd",         NULL, "Network Time Service", NULL },
+  { "ntpd",          NULL, "Network Time Service", NULL },
+  { "lpd",           NULL, "BSD Print Spooler", NULL },
+  { "nfsserver",     NULL, "Network File Service", NULL },
+  { "cron",          NULL, "Scheduling Service", NULL },
+  { "at",            NULL, "Scheduling Service", NULL },
+  { "nscd",          NULL, "Name Service Cache Daemon", NULL },
+  { "slapd",         NULL, "LDAP Directory Service", NULL },
+  { "ldap",          NULL, "LDAP DIrectory Service", NULL },
+  { "ypbind",        NULL, "NIS Directory Service", NULL },
+  { "courier-imap",  NULL, "NIS Directory Service", NULL },
+  { "named",         NULL, "Domain Name Service", NULL },
+  { "bind",          NULL, "Domain Name Service", NULL },
+  { "httpd",         NULL, "HTTP Server", NULL },
+  { "apache",        NULL, "HTTP Server", NULL },
+  { "autofs",        NULL, "Automounter", NULL },
+  { "squid",         NULL, "Web Cache Proxy ", NULL },
+  { NULL, NULL, NULL, NULL }
+};
+
 
 /********************************************************************
 ********************************************************************/
@@ -82,6 +110,31 @@ static SEC_DESC* construct_service_sd( TALLOC_CTX *ctx )
  Display name, Description, etc...
 ********************************************************************/
 
+static char *get_common_service_dispname( const char *servicename )
+{
+	static fstring dispname;
+	int i;
+	
+	for ( i=0; common_unix_svcs[i].servicename; i++ ) {
+		if ( strequal( servicename, common_unix_svcs[i].servicename ) ) {
+			fstr_sprintf( dispname, "%s (%s)", 
+				common_unix_svcs[i].dispname,
+				common_unix_svcs[i].servicename );
+				
+			return dispname;
+		}
+	} 
+	
+	fstrcpy( dispname, servicename );
+	
+	return dispname;
+}
+
+/********************************************************************
+ This is where we do the dirty work of filling in things like the
+ Display name, Description, etc...
+********************************************************************/
+
 static void fill_service_values( const char *name, REGVAL_CTR *values )
 {
 	UNISTR2 data, dname, ipath, description;
@@ -114,6 +167,7 @@ static void fill_service_values( const char *name, REGVAL_CTR *values )
 			init_unistr2( &ipath, pstr, UNI_STR_TERMINATE );
 			init_unistr2( &description, builtin_svcs[i].description, UNI_STR_TERMINATE );
 			init_unistr2( &dname, builtin_svcs[i].dispname, UNI_STR_TERMINATE );
+			break;
 		}
 	} 
 	
@@ -123,7 +177,7 @@ static void fill_service_values( const char *name, REGVAL_CTR *values )
 		pstr_sprintf( pstr, "%s/%s/%s",dyn_LIBDIR, SVCCTL_SCRIPT_DIR, name );
 		init_unistr2( &ipath, pstr, UNI_STR_TERMINATE );
 		init_unistr2( &description, "External Unix Service", UNI_STR_TERMINATE );
-		init_unistr2( &dname, name, UNI_STR_TERMINATE );
+		init_unistr2( &dname, get_common_service_dispname( name ), UNI_STR_TERMINATE );
 	}
 	
 	/* add the new values */

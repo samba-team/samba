@@ -21,6 +21,7 @@
 
 #include "includes.h"
 
+#if 0
 /* Implementation for LSB compliant init scripts */
 
 /*******************************************************************************
@@ -30,7 +31,7 @@
  Get the names of the services/scripts to read from the smb.conf file.
 *******************************************************************************/
 
-BOOL get_LSB_data(char *fname,Service_info *si )
+static BOOL get_LSB_data(char *fname,Service_info *si )
 {
 	pstring initdfile;
 	char mybuffer[256];
@@ -167,6 +168,7 @@ BOOL get_LSB_data(char *fname,Service_info *si )
 
 	return False;
 }
+#endif
 
 /*********************************************************************
 *********************************************************************/
