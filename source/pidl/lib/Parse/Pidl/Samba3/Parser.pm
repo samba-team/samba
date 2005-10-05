@@ -75,6 +75,7 @@ sub ParseElementLevelArray($$$$$$)
 
 	if ($l->{IS_ZERO_TERMINATED}) {
 		fatal($e, "[string] attribute not supported for Samba3 yet");
+		
 		#FIXME
 	}
 
@@ -122,12 +123,6 @@ sub ParseElementLevelArray($$$$$$)
 sub ParseElementLevelSwitch($$$$$$)
 {
 	my ($e,$l,$nl,$env,$varname,$what) = @_;
-
-	if ($what == PRIMITIVES) {
-		pidl "if (!prs_uint32(\"level\", ps, depth, &" . ParseExpr("level_$e->{NAME}", $env) . "))";
-		pidl "\treturn False;";
-		pidl "";
-	}
 
 	ParseElementLevel($e,$nl,$env,$varname,$what);
 }
@@ -352,6 +347,14 @@ sub ParseUnion($$$)
 	pidl "if (!prs_align_custom(ps, $u->{ALIGN}))";
 	pidl "\treturn False;";
 	pidl "";
+
+	if (has_property($u, "nodiscriminant")) {
+		pidl "if (!prs_uint32(\"switch_value\", ps, depth, &v->switch_value))";
+		pidl "\treturn False;";
+		pidl "";
+	}
+
+	# Maybe check here that level and v->switch_value are equal?
 
 	pidl "switch (level) {";
 	indent;
