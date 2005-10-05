@@ -162,7 +162,7 @@ static struct talloc_chunk *talloc_parent_chunk(const void *ptr)
 void *talloc_parent(const void *ptr)
 {
 	struct talloc_chunk *tc = talloc_parent_chunk(ptr);
-	return TC_PTR_FROM_CHUNK(tc);
+	return tc? TC_PTR_FROM_CHUNK(tc) : NULL;
 }
 
 /* 
