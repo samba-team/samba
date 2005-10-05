@@ -34,11 +34,19 @@ struct service_control_op {
 
 #define SVCCTL_NUM_INTERNAL_SERVICES	4
 
-extern SERVICE_CONTROL_OPS spoolss_svc_ops;
+/* handle external services */
 extern SERVICE_CONTROL_OPS rcinit_svc_ops;
+
+/* builtin services (see service_db.c and services/svc_*.c */
+extern SERVICE_CONTROL_OPS spoolss_svc_ops;
 extern SERVICE_CONTROL_OPS netlogon_svc_ops;
 extern SERVICE_CONTROL_OPS winreg_svc_ops;
 extern SERVICE_CONTROL_OPS wins_svc_ops;
+
+/* make sure this number patches the number of builtin
+   SERVICE_CONTROL_OPS structure listed above */
+
+#define SVCCTL_NUM_INTERNAL_SERVICES	4
 
 struct service_control_op *svcctl_ops;
 

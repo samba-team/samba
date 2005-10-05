@@ -23,6 +23,25 @@
 
 #include "includes.h"
 
+struct internal_service_info {
+	const char *servicename;
+	const char *daemon;
+	const char *dispname;
+	const char *description;
+};
+
+struct internal_service_info builtin_svcs[] = {  
+  { "Spooler",	      "smbd", "Print Spooler",
+  	"Internal service for spooling files to print devices" },
+  { "NETLOGON",	      "smbd", "Net Logon",
+  	"File service providing access to policy and profile data" },
+  { "RemoteRegistry", "smbd", "Remote Registry Service",
+  	"Internal service providing remote access to the Samba registry" },
+  { "WINS",           "nmbd", "Windows Internet Name Service (WINS)",
+  	"Internal service providing a NetBIOS point-to-point name server" },
+  { NULL, NULL, NULL, NULL }
+};
+
 /********************************************************************
 ********************************************************************/
 
@@ -68,6 +87,7 @@ static void fill_service_values( const char *name, REGVAL_CTR *values )
 	UNISTR2 data, dname, ipath, description;
 	uint32 dword;
 	pstring pstr;
+	int i;
 	
 	/* These values are hardcoded in all QueryServiceConfig() replies.
 	   I'm just storing them here for cosmetic purposes */
@@ -88,36 +108,26 @@ static void fill_service_values( const char *name, REGVAL_CTR *values )
 	
 	/* special considerations for internal services and the DisplayName value */
 	
-	if ( strequal(name, "Spooler") ) {
-		pstr_sprintf( pstr, "%s/%s/smbd",dyn_LIBDIR, SVCCTL_SCRIPT_DIR );
-		init_unistr2( &ipath, pstr, UNI_STR_TERMINATE );
-		init_unistr2( &description, "Internal service for spooling files to print devices", UNI_STR_TERMINATE );
-		init_unistr2( &dname, "Print Spooler", UNI_STR_TERMINATE );
+	for ( i=0; builtin_svcs[i].servicename; i++ ) {
+		if ( strequal( name, builtin_svcs[i].servicename ) ) {
+			pstr_sprintf( pstr, "%s/%s/%s",dyn_LIBDIR, SVCCTL_SCRIPT_DIR, builtin_svcs[i].daemon );
+			init_unistr2( &ipath, pstr, UNI_STR_TERMINATE );
+			init_unistr2( &description, builtin_svcs[i].description, UNI_STR_TERMINATE );
+			init_unistr2( &dname, builtin_svcs[i].dispname, UNI_STR_TERMINATE );
+		}
 	} 
-	else if ( strequal(name, "NETLOGON") ) {
-		pstr_sprintf( pstr, "%s/%s/smbd",dyn_LIBDIR, SVCCTL_SCRIPT_DIR );
-		init_unistr2( &ipath, pstr, UNI_STR_TERMINATE );
-		init_unistr2( &description, "File service providing access to policy and profile data", UNI_STR_TERMINATE );
-		init_unistr2( &dname, "Net Logon", UNI_STR_TERMINATE );
-	} 
-	else if ( strequal(name, "RemoteRegistry") ) {
-		pstr_sprintf( pstr, "%s/%s/smbd",dyn_LIBDIR, SVCCTL_SCRIPT_DIR );
-		init_unistr2( &ipath, pstr, UNI_STR_TERMINATE );
-		init_unistr2( &description, "Internal service providing remote access to the Samba registry", UNI_STR_TERMINATE );
-		init_unistr2( &dname, "Remote Registry Service", UNI_STR_TERMINATE );
-	} 
-	else if ( strequal(name, "WINS") ) {
-		pstr_sprintf( pstr, "%s/%s/nmbd",dyn_LIBDIR, SVCCTL_SCRIPT_DIR );
-		init_unistr2( &ipath, pstr, UNI_STR_TERMINATE );
-		init_unistr2( &description, "Internal service providing a NetBIOS point-to-point name server", UNI_STR_TERMINATE );
-		init_unistr2( &dname, "Windows Internet Name Service (WINS)", UNI_STR_TERMINATE );
-	} 
-	else {
+	
+	/* default to an external service if we haven't found a match */
+	
+	if ( builtin_svcs[i].servicename == NULL ) {
 		pstr_sprintf( pstr, "%s/%s/%s",dyn_LIBDIR, SVCCTL_SCRIPT_DIR, name );
 		init_unistr2( &ipath, pstr, UNI_STR_TERMINATE );
 		init_unistr2( &description, "External Unix Service", UNI_STR_TERMINATE );
 		init_unistr2( &dname, name, UNI_STR_TERMINATE );
 	}
+	
+	/* add the new values */
+	
 	regval_ctr_addvalue( values, "DisplayName", REG_SZ, (char*)dname.buffer, dname.uni_str_len*2);
 	regval_ctr_addvalue( values, "ImagePath", REG_SZ, (char*)ipath.buffer, ipath.uni_str_len*2);
 	regval_ctr_addvalue( values, "Description", REG_SZ, (char*)description.buffer, description.uni_str_len*2);
@@ -254,10 +264,8 @@ void svcctl_init_keys( void )
 	
 	/* the builting services exist */
 	
-	add_new_svc_name( key, subkeys, "Spooler" );
-	add_new_svc_name( key, subkeys, "NETLOGON" );
-	add_new_svc_name( key, subkeys, "RemoteRegistry" );
-	add_new_svc_name( key, subkeys, "WINS" );
+	for ( i=0; builtin_svcs[i].servicename; i++ )
+		add_new_svc_name( key, subkeys, builtin_svcs[i].servicename );
 		
 	for ( i=0; service_list[i]; i++ ) {
 	
