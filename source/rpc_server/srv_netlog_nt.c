@@ -436,10 +436,14 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	/* set up the LSA AUTH 2 response */
 	init_net_r_auth_2(r_u, &srv_chal_out, &srv_flgs, NT_STATUS_OK);
 
+	fstrcpy(p->dc->mach_acct, mach_acct);
+	fstrcpy(p->dc->remote_machine, remote_machine);
+
 	server_auth2_negotiated = True;
 	p->dc->authenticated = True;
 	last_dcinfo = *p->dc;
 
+	//secrets_store_schannel_session_info(p->dc);
 	return r_u->status;
 }
 
