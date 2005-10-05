@@ -37,6 +37,7 @@ sub ParseElement($)
 			}
 			if ($l->{IS_VARYING}) {
 				pidl "\tuint32 length_$e->{NAME};";
+				pidl "\tuint32 offset_$e->{NAME};";
 			}
 		}
 	}

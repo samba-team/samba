@@ -109,50 +109,50 @@ my $known_types =
 	{
 		DECL => "uint8",
 		INIT => \&init_scalar,
-		DISSECT => \&dissect_scalar,
+		DISSECT_P => \&dissect_scalar,
 	},
 	uint16 => 
 	{
 		DECL => "uint16",
 		INIT => \&init_scalar,
-		DISSECT => \&dissect_scalar,
+		DISSECT_P => \&dissect_scalar,
 	},
 	uint32 => 
 	{
 		DECL => "uint32",
 		INIT => \&init_scalar,
-		DISSECT => \&dissect_scalar,
+		DISSECT_P => \&dissect_scalar,
 	},
 	uint64 => 
 	{
 		DECL => "uint64",
 		INIT => \&init_scalar,
-		DISSECT => \&dissect_scalar,
+		DISSECT_P => \&dissect_scalar,
 	},
 	string => 
 	{
 		DECL => \&decl_string,
 		EXT_DECL => \&ext_decl_string,
 		INIT => \&init_string,
-		DISSECT => \&dissect_string,
+		DISSECT_P => \&dissect_string,
 	},
 	NTSTATUS => 
 	{
 		DECL => "NTSTATUS",
 		INIT => \&init_scalar,
-		DISSECT => \&dissect_scalar,
+		DISSECT_P => \&dissect_scalar,
 	},
 	WERROR => 
 	{
 		DECL => "WERROR",
 		INIT => \&init_scalar,
-		DISSECT => \&dissect_scalar,
+		DISSECT_P => \&dissect_scalar,
 	},
 	GUID => 
 	{
 		DECL => "struct uuid",
 		INIT => "",
-		DISSECT => sub { 
+		DISSECT_P => sub { 
 			my ($e,$l,$n) = @_; 
 			return "smb_io_uuid(\"$e->{NAME}\", &$n, ps, depth)";
 		}
@@ -161,7 +161,7 @@ my $known_types =
 	{
 		DECL => "NTTIME",
 		INIT => "",
-		DISSECT => sub { 
+		DISSECT_P => sub { 
 			my ($e,$l,$n) = @_; 
 			return "smb_io_nttime(\"$e->{NAME}\", &n, ps, depth)"; 
 		}
@@ -170,7 +170,7 @@ my $known_types =
 	{
 		DECL => "DOM_SID",
 		INIT => "",
-		DISSECT => sub {
+		DISSECT_P => sub {
 			my ($e,$l,$n) = @_;
 			return "smb_io_dom_sid(\"$e->{NAME}\", &n, ps, depth)";
 		}
@@ -179,7 +179,7 @@ my $known_types =
 	{
 		DECL => "POLICY_HND",
 		INIT => "",
-		DISSECT => sub {
+		DISSECT_P => sub {
 			my ($e,$l,$n) = @_;
 			return "smb_io_pol_hnd(\"$e->{NAME}\", &n, ps, depth)";
 		}
@@ -301,6 +301,7 @@ sub DissectType
 	my $e = shift @_;
 	my $l = shift @_;
 	my $varname = shift @_;
+	my $what = shift @_;
 
 	my $t = $known_types->{$l->{DATA_TYPE}};
 
@@ -309,11 +310,20 @@ sub DissectType
 		return undef;
 	}
 
+	my $dissect;
+	if ($what == 1) { #primitives
+		$dissect = $t->{DISSECT_P};
+	} elsif ($what == 2) {
+		$dissect = $t->{DISSECT_D};
+	}
+
+	return "" if not defined($dissect);
+
 	# DISSECT can be a function
-	if (ref($t->{DISSECT}) eq "CODE") {
-		return $t->{DISSECT}->(@args);
+	if (ref($dissect) eq "CODE") {
+		return $dissect->(@args);
 	} else {
-		return $t->{DISSECT};
+		return $dissect;
 	}
 }
 
@@ -330,25 +340,40 @@ sub LoadTypes($)
 					return "$n = $v;";
 			};
 			
-			my $dissect;
+			my $dissect_d;
+			my $dissect_p;
 			if ($td->{DATA}->{TYPE} eq "UNION") {
-				 $dissect = sub {
-					my ($e,$l,$n,$s) = @_;
+				 $dissect_p = sub {
+					my ($e,$l,$n,$w,$s) = @_;
 
-					return "$if->{NAME}_io_$td->{NAME}(\"$e->{NAME}\", &$n, $s, ps, depth)";
+					return "$if->{NAME}_io_$td->{NAME}_p(\"$e->{NAME}\", &$n, $s, ps, depth)";
 				};
+
+				 $dissect_d = sub {
+					my ($e,$l,$n,$w,$s) = @_;
+
+					return "$if->{NAME}_io_$td->{NAME}_d(\"$e->{NAME}\", &$n, $s, ps, depth)";
+				};
+
 			} else {
-				 $dissect = sub {
-					my ($e,$l,$n) = @_;
+				 $dissect_p = sub {
+					my ($e,$l,$n,$w) = @_;
 
-					return "$if->{NAME}_io_$td->{NAME}(\"$e->{NAME}\", &$n, ps, depth)";
+					return "$if->{NAME}_io_$td->{NAME}_p(\"$e->{NAME}\", &$n, ps, depth)";
 				};
+			 	$dissect_d = sub {
+					my ($e,$l,$n,$w) = @_;
+
+					return "$if->{NAME}_io_$td->{NAME}_d(\"$e->{NAME}\", &$n, ps, depth)";
+				};
+
 			}
 
 			AddType($td->{NAME}, {
 				DECL => $decl,
 				INIT => $init,
-				DISSECT => $dissect			
+				DISSECT_D => $dissect_d,
+				DISSECT_P => $dissect_p
 			});
 		}
 	}
