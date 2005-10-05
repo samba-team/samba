@@ -748,7 +748,7 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 	uint32 data_len = data ? prs_offset(data) : 0;
 	char *prdata = NULL;
 	uint32 rdata_len = 0;
-	uint32 max_data = cli->max_xmit_frag ? cli->max_xmit_frag : 1024;
+	uint32 max_data = cli->max_xmit_frag ? cli->max_xmit_frag : RPC_MAX_PDU_FRAG_LEN;
 	uint32 current_rbuf_offset = 0;
 	prs_struct current_pdu;
 	
@@ -2546,6 +2546,8 @@ static void kerberos_auth_struct_free(struct cli_pipe_auth_data *a)
 
 /****************************************************************************
  Open a named pipe to an SMB server and bind using krb5 (bind type 16).
+ The idea is this can be called with service_princ, username and password all
+ NULL so long as the caller has a TGT.
  ****************************************************************************/
 
 struct rpc_pipe_client *cli_rpc_pipe_open_krb5(struct cli_state *cli,
