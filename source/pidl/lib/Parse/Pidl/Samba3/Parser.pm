@@ -71,14 +71,7 @@ sub ParseElementLevelData($$$$$$$)
 {
 	my ($e,$l,$nl,$env,$varname,$what,$align) = @_;
 
-	my @args = ($e,$l,$varname,$what);
-
-	if (defined($e->{ALIGN})) {
-		Align($align, $e->{ALIGN});
-	} else {
-		# Default to 4
-		Align($align, 4);
-	}
+	my @args = ($e,$l,$varname,$what,$align);
 
 	# See if we need to add a level argument because we're parsing a union
 	foreach (@{$e->{LEVELS}}) {
@@ -88,6 +81,13 @@ sub ParseElementLevelData($$$$$$$)
 
 	my $c = DissectType(@args);
 	return if not $c;
+
+	if (defined($e->{ALIGN})) {
+		Align($align, $e->{ALIGN});
+	} else {
+		# Default to 4
+		Align($align, 4);
+	}
 
 	pidl "if (!$c)";
 	pidl "\treturn False;";
@@ -300,13 +300,15 @@ sub ParseStruct($$$)
 	pidl "prs_debug(ps, depth, desc, \"$pfn\");";
 	pidl "depth++;";
 
+	my $align = 8;
 	if ($s->{SURROUNDING_ELEMENT}) {
 		pidl "if (!prs_uint32(\"size_$s->{SURROUNDING_ELEMENT}->{NAME}\", ps, depth, &" . ParseExpr("size_$s->{SURROUNDING_ELEMENT}->{NAME}", $env) . "))";
 		pidl "\treturn False;";
 		pidl "";
+		$align = 4;
+		
 	}
 
-	my $align = 0;
 	foreach (@{$s->{ELEMENTS}}) {
 		ParseElement($_, $env, PRIMITIVES, \$align); 
 		pidl "";
@@ -393,7 +395,7 @@ sub ParseUnion($$$)
 		if ($_->{TYPE} ne "EMPTY") {
 			pidl "depth++;";
 			my $env = UnionGenerateEnvElement($_);
-			my $align = 0;
+			my $align = 8;
 			ParseElement($_, $env, PRIMITIVES, \$align); 
 			pidl "depth--;";
 		}

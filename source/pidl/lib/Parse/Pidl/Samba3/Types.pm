@@ -27,9 +27,9 @@ sub init_scalar($$$$)
 	return "$n = $v;";
 }
 
-sub dissect_scalar($$$)
+sub dissect_scalar($$$$$)
 {
-	my ($e,$l,$n) = @_;
+	my ($e,$l,$n,$w,$a) = @_;
 
 	my $t = lc($e->{TYPE});
 	
@@ -94,12 +94,13 @@ sub init_string($$$$)
 	return "init_$t(&$n, $v, $flags);";
 }
 
-sub dissect_string($$$)
+sub dissect_string($$$$$)
 {
-	my ($e,$l,$n) = @_;
+	my ($e,$l,$n,$w,$a) = @_;
 
 	my $t = lc(decl_string($e));
 
+	$$a = 1;
 	return "smb_io_$t(\"$e->{NAME}\", &$n, 1, ps, depth)";
 }
 
@@ -162,7 +163,7 @@ my $known_types =
 		DECL => "NTTIME",
 		INIT => "",
 		DISSECT_P => sub { 
-			my ($e,$l,$n) = @_; 
+			my ($e,$l,$n,$w,$a) = @_; 
 			return "smb_io_nttime(\"$e->{NAME}\", &n, ps, depth)"; 
 		}
 	},
@@ -171,7 +172,7 @@ my $known_types =
 		DECL => "DOM_SID",
 		INIT => "",
 		DISSECT_P => sub {
-			my ($e,$l,$n) = @_;
+			my ($e,$l,$n,$w,$a) = @_;
 			return "smb_io_dom_sid(\"$e->{NAME}\", &n, ps, depth)";
 		}
 	},
@@ -180,7 +181,7 @@ my $known_types =
 		DECL => "POLICY_HND",
 		INIT => "",
 		DISSECT_P => sub {
-			my ($e,$l,$n) = @_;
+			my ($e,$l,$n,$w,$a) = @_;
 			return "smb_io_pol_hnd(\"$e->{NAME}\", &n, ps, depth)";
 		}
 	},
@@ -189,7 +190,7 @@ my $known_types =
 		DECL => "uint64",
 		INIT => "",
 		DISSECT_P => sub {
-			my ($e,$l,$n) = @_;
+			my ($e,$l,$n,$w,$a) = @_;
 			return "prs_uint64(\"$e->{NAME}\", ps, depth, &$n)";
 		}
 	},
@@ -311,6 +312,7 @@ sub DissectType
 	my $l = shift @_;
 	my $varname = shift @_;
 	my $what = shift @_;
+	my $align = shift @_;
 
 	my $t = $known_types->{$l->{DATA_TYPE}};
 
@@ -355,25 +357,25 @@ sub LoadTypes($)
 			if ($td->{DATA}->{TYPE} eq "UNION") {
 				$decl.="_CTR";
 				 $dissect_p = sub {
-					my ($e,$l,$n,$w,$s) = @_;
+					my ($e,$l,$n,$w,$a,$s) = @_;
 
 					return "$if->{NAME}_io_$td->{NAME}_p(\"$e->{NAME}\", &$n, $s, ps, depth)";
 				};
 
 				 $dissect_d = sub {
-					my ($e,$l,$n,$w,$s) = @_;
+					my ($e,$l,$n,$w,$a,$s) = @_;
 
 					return "$if->{NAME}_io_$td->{NAME}_d(\"$e->{NAME}\", &$n, $s, ps, depth)";
 				};
 
 			} else {
 				 $dissect_p = sub {
-					my ($e,$l,$n,$w) = @_;
+					my ($e,$l,$n,$w,$a) = @_;
 
 					return "$if->{NAME}_io_$td->{NAME}_p(\"$e->{NAME}\", &$n, ps, depth)";
 				};
 			 	$dissect_d = sub {
-					my ($e,$l,$n,$w) = @_;
+					my ($e,$l,$n,$w,$a) = @_;
 
 					return "$if->{NAME}_io_$td->{NAME}_d(\"$e->{NAME}\", &$n, ps, depth)";
 				};
