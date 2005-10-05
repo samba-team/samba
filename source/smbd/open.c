@@ -1507,22 +1507,6 @@ files_struct *open_file_ntcreate(connection_struct *conn,
 	fsp_open = open_file(fsp,conn,fname,psbuf,flags|flags2,unx_mode,
 			     access_mask);
 
-	if (!fsp_open && (flags2 & O_EXCL) && (errno == EEXIST)) {
-		/*
-		 * Two smbd's tried to open exclusively, but only one of them
-		 * succeeded.
-		 */
-		file_free(fsp);
-		return NULL;
-	}
-
-	if (!fsp_open && (flags == O_RDWR) && (errno != ENOENT)) {
-		if((fsp_open = open_file(fsp,conn,fname,psbuf,
-					 O_RDONLY,unx_mode,access_mask)) == True) {
-			flags = O_RDONLY;
-		}
-	}
-
 	if (!fsp_open) {
 		if (lck != NULL) {
 			talloc_free(lck);
