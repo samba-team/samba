@@ -285,7 +285,8 @@ RPC_WKS_OBJ =  rpc_server/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o
 
 RPC_SVCCTL_OBJ =  rpc_server/srv_svcctl.o rpc_server/srv_svcctl_nt.o \
                   services/svc_spoolss.o services/svc_rcinit.o services/services_db.o \
-                  services/svc_netlogon.o services/svc_winreg.o
+                  services/svc_netlogon.o services/svc_winreg.o \
+                  services/svc_wins.o
 
 RPC_NTSVCS_OBJ = rpc_server/srv_ntsvcs.o rpc_server/srv_ntsvcs_nt.o
 

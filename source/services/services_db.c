@@ -106,6 +106,12 @@ static void fill_service_values( const char *name, REGVAL_CTR *values )
 		init_unistr2( &description, "Internal service providing remote access to the Samba registry", UNI_STR_TERMINATE );
 		init_unistr2( &dname, "Remote Registry Service", UNI_STR_TERMINATE );
 	} 
+	else if ( strequal(name, "WINS") ) {
+		pstr_sprintf( pstr, "%s/%s/nmbd",dyn_LIBDIR, SVCCTL_SCRIPT_DIR );
+		init_unistr2( &ipath, pstr, UNI_STR_TERMINATE );
+		init_unistr2( &description, "Internal service providing a NetBIOS point-to-point name server", UNI_STR_TERMINATE );
+		init_unistr2( &dname, "Windows Internet Name Service (WINS)", UNI_STR_TERMINATE );
+	} 
 	else {
 		pstr_sprintf( pstr, "%s/%s/%s",dyn_LIBDIR, SVCCTL_SCRIPT_DIR, name );
 		init_unistr2( &ipath, pstr, UNI_STR_TERMINATE );
@@ -251,6 +257,7 @@ void svcctl_init_keys( void )
 	add_new_svc_name( key, subkeys, "Spooler" );
 	add_new_svc_name( key, subkeys, "NETLOGON" );
 	add_new_svc_name( key, subkeys, "RemoteRegistry" );
+	add_new_svc_name( key, subkeys, "WINS" );
 		
 	for ( i=0; service_list[i]; i++ ) {
 	
@@ -352,28 +359,33 @@ char* svcctl_lookup_dispname( const char *name, NT_USER_TOKEN *token )
 	/* now add the security descriptor */
 
 	pstr_sprintf( path, "%s\\%s", KEY_SERVICES, name );
-	wresult = regkey_open_internal( &key, path, token, REG_KEY_ALL );
+	wresult = regkey_open_internal( &key, path, token, REG_KEY_READ );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_lookup_dispname: key lookup failed! [%s] (%s)\n", 
 			path, dos_errstr(wresult)));
-		return NULL;
+		goto fail;
 	}
 
 	if ( !(values = TALLOC_ZERO_P( key, REGVAL_CTR )) ) {
 		DEBUG(0,("svcctl_lookup_dispname: talloc() failed!\n"));
 		TALLOC_FREE( key );
-		return NULL;
+		goto fail;
 	}
 
 	fetch_reg_values( key, values );
 	
 	if ( !(val = regval_ctr_getvalue( values, "DisplayName" )) )
-		fstrcpy( display_name, name );
-	else
-		rpcstr_pull( display_name, regval_data_p(val), sizeof(display_name), regval_size(val), 0 );
+		goto fail;
+
+	rpcstr_pull( display_name, regval_data_p(val), sizeof(display_name), regval_size(val), 0 );
 
 	TALLOC_FREE( key );
 	
+	return display_name;
+
+fail:
+	/* default to returning the service name */
+	fstrcpy( display_name, name );
 	return display_name;
 }
 
@@ -392,7 +404,7 @@ char* svcctl_lookup_description( const char *name, NT_USER_TOKEN *token )
 	/* now add the security descriptor */
 
 	pstr_sprintf( path, "%s\\%s", KEY_SERVICES, name );
-	wresult = regkey_open_internal( &key, path, token, REG_KEY_ALL );
+	wresult = regkey_open_internal( &key, path, token, REG_KEY_READ );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_lookup_dispname: key lookup failed! [%s] (%s)\n", 
 			path, dos_errstr(wresult)));
@@ -431,7 +443,7 @@ REGVAL_CTR* svcctl_fetch_regvalues( const char *name, NT_USER_TOKEN *token )
 	/* now add the security descriptor */
 
 	pstr_sprintf( path, "%s\\%s", KEY_SERVICES, name );
-	wresult = regkey_open_internal( &key, path, token, REG_KEY_ALL );
+	wresult = regkey_open_internal( &key, path, token, REG_KEY_READ );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_fetch_regvalues: key lookup failed! [%s] (%s)\n", 
 			path, dos_errstr(wresult)));
