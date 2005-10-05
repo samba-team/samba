@@ -149,7 +149,6 @@ struct dcinfo {
 	fstring domain;
 
 	BOOL challenge_sent;
-	BOOL got_session_key;
 	BOOL authenticated;
 };
 
