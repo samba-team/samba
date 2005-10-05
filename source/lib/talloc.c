@@ -158,7 +158,7 @@ static struct talloc_chunk *talloc_parent_chunk(const void *ptr)
 void *talloc_parent(const void *ptr)
 {
 	struct talloc_chunk *tc = talloc_parent_chunk(ptr);
-	return (void *)(tc+1);
+	return tc ? (void *)(tc+1) : NULL;
 }
 
 /* 
