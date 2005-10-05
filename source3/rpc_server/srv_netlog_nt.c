@@ -443,7 +443,6 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	p->dc->authenticated = True;
 	last_dcinfo = *p->dc;
 
-	//secrets_store_schannel_session_info(p->dc);
 	return r_u->status;
 }
 
