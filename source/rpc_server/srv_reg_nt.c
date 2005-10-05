@@ -293,9 +293,11 @@ WERROR _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY 
                          SEC_RIGHTS_CREATE_SUBKEY|
 			 SEC_RIGHTS_QUERY_VALUE|
 			 SEC_RIGHTS_SET_VALUE);
-			 
-	if ( !(parent->access_granted & check_rights) )
+
+	if ( !(parent->access_granted & check_rights) ) {
+	        DEBUG(8,("Rights check failed, parent had %04x, check_rights %04x\n",parent->access_granted, check_rights));
 		return WERR_ACCESS_DENIED;
+	}
 	
 	/* 
 	 * very crazy, but regedit.exe on Win2k will attempt to call 
