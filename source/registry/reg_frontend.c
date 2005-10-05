@@ -38,7 +38,6 @@ REGISTRY_HOOK reg_hooks[] = {
   { KEY_PRINTING,    		&printing_ops },
   { KEY_PRINTING_2K, 		&printing_ops },
   { KEY_PRINTING_PORTS, 	&printing_ops },
-  { KEY_EVENTLOG,        	&eventlog_ops }, 
   { KEY_SHARES,      		&shares_reg_ops },
 #endif
   { NULL, NULL }
@@ -128,13 +127,10 @@ BOOL init_registry( void )
 	if ( DEBUGLEVEL >= 20 )
 		reghook_dump_cache(20);
 
-	/* inform the external eventlog machinery of the change */
-
-	eventlog_refresh_external_parameters( get_root_nt_token() );
-
-	/* add any services keys */
+	/* add any keys for other services */
 
 	svcctl_init_keys();
+	eventlog_init_keys();
 
 	return True;
 }
