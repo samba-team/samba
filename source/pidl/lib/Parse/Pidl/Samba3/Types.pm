@@ -100,7 +100,7 @@ sub dissect_string($$$)
 
 	my $t = lc(decl_string($e));
 
-	return "prs_$t(True, \"$e->{NAME}\", ps, depth, &$n)";
+	return "smb_io_$t(\"$e->{NAME}\", &$n, 1, ps, depth)";
 }
 
 my $known_types = 
