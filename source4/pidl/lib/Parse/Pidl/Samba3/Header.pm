@@ -15,7 +15,10 @@ use vars qw($VERSION);
 $VERSION = '0.01';
 
 my $res = "";
-sub pidl($) { my $x = shift; $res .= "$x\n"; }
+my $tabs = "";
+sub indent() { $tabs.="\t"; }
+sub deindent() { $tabs = substr($tabs, 1); }
+sub pidl($) { $res .= $tabs.(shift)."\n"; }
 sub fatal($$) { my ($e,$s) = @_; die("$e->{FILE}:$e->{LINE}: $s\n"); }
 sub warning($$) { my ($e,$s) = @_; warn("$e->{FILE}:$e->{LINE}: $s\n"); }
 
@@ -101,7 +104,11 @@ sub ParseUnion($$$)
 {
 	my ($if,$u,$n) = @_;
 
-	my $extra = {"switch_value" => 1};
+	my $extra = {};
+	
+	unless (has_property($u, "nodiscriminant")) {
+		$extra->{switch_value} = 1;
+	}
 
 	foreach my $e (@{$u->{ELEMENTS}}) {
 		foreach my $l (@{$e->{LEVELS}}) {
@@ -121,10 +128,17 @@ sub ParseUnion($$$)
 	}
 
 	pidl "typedef struct $if->{NAME}_$n\_ctr {";
-	pidl "\tuint32 $_;" foreach (keys %$extra);
-	pidl "\tunion {";
-	ParseElement($_) foreach (@{$u->{ELEMENTS}});
-	pidl "\t} u;";
+	indent;
+	pidl "uint32 $_;" foreach (keys %$extra);
+	pidl "union {";
+	indent;
+	foreach (@{$u->{ELEMENTS}}) {
+		next if ($_->{TYPE} eq "EMPTY");
+		pidl "\t" . DeclShort($_) . ";";
+	}
+	deindent;
+	pidl "} u;";
+	deindent;
 	pidl "} ".uc("$if->{NAME}_$n\_ctr") .";";
 	pidl "";
 }
@@ -185,6 +199,7 @@ sub Parse($$)
 	my($ndr,$filename) = @_;
 
 	$res = "";
+	$tabs = "";
 
 	pidl "/*";
 	pidl " * Unix SMB/CIFS implementation.";
