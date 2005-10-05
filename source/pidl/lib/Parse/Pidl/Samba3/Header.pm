@@ -29,7 +29,7 @@ sub ParseElement($)
 	foreach my $l (@{$e->{LEVELS}}) {
 		if ($l->{TYPE} eq "POINTER") {
 			return if ($l->{POINTER_TYPE} eq "ref" and $l->{LEVEL} eq "top");
-			pidl "\tuint32 ptr_$e->{NAME};";
+			pidl "\tuint32 ptr$l->{POINTER_INDEX}_$e->{NAME};";
 		} elsif ($l->{TYPE} eq "SWITCH") {
 			pidl "\tuint32 level_$e->{NAME};";
 		} elsif ($l->{TYPE} eq "DATA") {
@@ -120,7 +120,7 @@ sub ParseUnion($$$)
 					$extra->{"length"} = $extra->{"offset"} = 1;
 				}
 			} elsif ($l->{TYPE} eq "POINTER") {
-				$extra->{"ptr"} = 1;
+				$extra->{"ptr$l->{POINTER_INDEX}"} = 1;
 			} elsif ($l->{TYPE} eq "SWITCH") {
 				$extra->{"level"} = 1;
 			}

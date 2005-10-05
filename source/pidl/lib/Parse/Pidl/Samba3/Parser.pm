@@ -158,14 +158,16 @@ sub ParseElementLevelPtr($$$$$$$)
 	my ($e,$l,$nl,$env,$varname,$what,$align) = @_;
 
 	if ($what == PRIMITIVES) {
-		if ($l->{POINTER_TYPE} eq "ref" and 
-			$l->{LEVEL} eq "TOP") {
-			pidl "if (!" . ParseExpr("ptr_$e->{NAME}", $env) . ")";
+		if (($l->{POINTER_TYPE} eq "ref") and ($l->{LEVEL} eq "EMBEDDED")) {
+			# Ref pointers always have to be non-NULL
+			pidl "if (MARSHALLING(ps) && !" . ParseExpr("ptr$l->{POINTER_INDEX}_$e->{NAME}", $env) . ")";
 			pidl "\treturn False;";
 			pidl "";
-		} else {
+		} 
+		
+		unless ($l->{POINTER_TYPE} eq "ref" and $l->{LEVEL} eq "TOP") {
 			Align($align, 4);
-			pidl "if (!prs_uint32(\"ptr_$e->{NAME}\", ps, depth, &" . ParseExpr("ptr_$e->{NAME}", $env) . "))";
+			pidl "if (!prs_uint32(\"ptr$l->{POINTER_INDEX}_$e->{NAME}\", ps, depth, &" . ParseExpr("ptr$l->{POINTER_INDEX}_$e->{NAME}", $env) . "))";
 			pidl "\treturn False;";
 			pidl "";
 		}
@@ -177,12 +179,16 @@ sub ParseElementLevelPtr($$$$$$$)
 	}
 	
 	if ($what == DEFERRED) {
-		pidl "if (" . ParseExpr("ptr_$e->{NAME}", $env) . ") {";
-		indent;
+		if ($l->{POINTER_TYPE} ne "ref") {
+			pidl "if (" . ParseExpr("ptr$l->{POINTER_INDEX}_$e->{NAME}", $env) . ") {";
+			indent;
+		}
 		ParseElementLevel($e,$nl,$env,$varname,PRIMITIVES,$align);
 		ParseElementLevel($e,$nl,$env,$varname,DEFERRED,$align);
-		deindent;
-		pidl "}";
+		if ($l->{POINTER_TYPE} ne "ref") {
+			deindent;
+			pidl "}";
+		}
 		$$align = 0;
 	}
 }
@@ -221,14 +227,24 @@ sub InitLevel($$$$)
 	my ($e,$l,$varname,$env) = @_;
 
 	if ($l->{TYPE} eq "POINTER") {
-		pidl "if ($varname) {";
-		indent;
-		pidl ParseExpr("ptr_$e->{NAME}", $env) . " = 1;";
+		if ($l->{POINTER_TYPE} eq "ref") {
+			pidl "if (!$varname)";
+			pidl "\treturn False;";
+			pidl "";
+		} else {
+			pidl "if ($varname) {";
+			indent;
+		}
+
+		pidl ParseExpr("ptr$l->{POINTER_INDEX}_$e->{NAME}", $env) . " = 1;";
 		InitLevel($e, GetNextLevel($e,$l), "*$varname", $env);
-		deindent;
-		pidl "} else {";
-		pidl "\t" . ParseExpr("ptr_$e->{NAME}", $env) . " = 0;";
-		pidl "}";
+		
+		if ($l->{POINTER_TYPE} ne "ref") {
+			deindent;
+			pidl "} else {";
+			pidl "\t" . ParseExpr("ptr$l->{POINTER_INDEX}_$e->{NAME}", $env) . " = 0;";
+			pidl "}";
+		}
 	} elsif ($l->{TYPE} eq "ARRAY") {
 		pidl ParseExpr($e->{NAME}, $env) . " = $varname;";
 	} elsif ($l->{TYPE} eq "DATA") {
@@ -245,7 +261,7 @@ sub GenerateEnvElement($$)
 		if ($l->{TYPE} eq "DATA") {
 			$env->{$e->{NAME}} = "v->$e->{NAME}";
 		} elsif ($l->{TYPE} eq "POINTER") {
-			$env->{"ptr_$e->{NAME}"} = "v->ptr_$e->{NAME}";
+			$env->{"ptr$l->{POINTER_INDEX}_$e->{NAME}"} = "v->ptr$l->{POINTER_INDEX}_$e->{NAME}";
 		} elsif ($l->{TYPE} eq "SWITCH") {
 			$env->{"level_$e->{NAME}"} = "v->level_$e->{NAME}";
 		} elsif ($l->{TYPE} eq "ARRAY") {
@@ -350,7 +366,7 @@ sub UnionGenerateEnvElement($)
 		if ($l->{TYPE} eq "DATA") {
 			$env->{$e->{NAME}} = "v->u.$e->{NAME}";
 		} elsif ($l->{TYPE} eq "POINTER") {
-			$env->{"ptr_$e->{NAME}"} = "v->ptr";
+			$env->{"ptr$l->{POINTER_INDEX}_$e->{NAME}"} = "v->ptr$l->{POINTER_INDEX}";
 		} elsif ($l->{TYPE} eq "SWITCH") {
 			$env->{"level_$e->{NAME}"} = "v->level";
 		} elsif ($l->{TYPE} eq "ARRAY") {
@@ -480,7 +496,7 @@ sub CreateFnDirection($$$$)
 	pidl "prs_debug(ps, depth, desc, \"$fn\");";
 	pidl "depth++;";
 
-	my $align = 0;
+	my $align = 8;
 	foreach (@$es) {
 		ParseElement($_, $env, PRIMITIVES, \$align); 
 		ParseElement($_, $env, DEFERRED, \$align); 
