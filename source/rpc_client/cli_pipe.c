@@ -1467,11 +1467,6 @@ NTSTATUS rpc_api_pipe_req(struct rpc_pipe_client *cli,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (data_left == 0) {
-		/* Caller is screwed up ! */
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
 	prs_init(&outgoing_pdu, cli->max_xmit_frag, prs_get_mem_context(in_data), MARSHALL);
 
 	while (1) {
