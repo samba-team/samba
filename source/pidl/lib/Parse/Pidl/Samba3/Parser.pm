@@ -73,6 +73,11 @@ sub ParseElementLevelArray($$$$$$)
 {
 	my ($e,$l,$nl,$env,$varname,$what) = @_;
 
+	if ($l->{IS_ZERO_TERMINATED}) {
+		fatal($e, "[string] attribute not supported for Samba3 yet");
+		#FIXME
+	}
+
 	my $len = ParseExpr($l->{LENGTH_IS}, $env);
 	my $size = ParseExpr($l->{SIZE_IS}, $env);
 
@@ -308,12 +313,34 @@ sub ParseStruct($$$)
 	pidl "";
 }
 
+sub UnionGenerateEnvElement($)
+{
+	my $e = shift;
+	my $env = {};
+
+	foreach my $l (@{$e->{LEVELS}}) {
+		if ($l->{TYPE} eq "DATA") {
+			$env->{$e->{NAME}} = "v->u.$e->{NAME}";
+		} elsif ($l->{TYPE} eq "POINTER") {
+			$env->{"ptr_$e->{NAME}"} = "v->ptr";
+		} elsif ($l->{TYPE} eq "SWITCH") {
+			$env->{"level_$e->{NAME}"} = "v->level";
+		} elsif ($l->{TYPE} eq "ARRAY") {
+			$env->{"length_$e->{NAME}"} = "v->length";
+			$env->{"size_$e->{NAME}"} = "v->size";
+			$env->{"offset_$e->{NAME}"} = "v->offset";
+		}
+	}
+
+	return $env;
+}
+
 sub ParseUnion($$$)
 {
 	my ($if,$u,$n) = @_;
 
 	my $fn = "$if->{NAME}_io_$n";
-	my $sn = uc("$if->{NAME}_$n");
+	my $sn = uc("$if->{NAME}_$n\_ctr");
 
 	my $pfn = "$fn\_p";
 	my $dfn = "$fn\_d";
@@ -334,8 +361,7 @@ sub ParseUnion($$$)
 		indent;
 		if ($_->{TYPE} ne "EMPTY") {
 			pidl "depth++;";
-			my $env = {};
-			GenerateEnvElement($_, $env);
+			my $env = UnionGenerateEnvElement($_);
 			ParseElement($_, $env, PRIMITIVES); 
 			ParseElement($_, $env, DEFERRED); 
 			pidl "depth--;";
@@ -368,8 +394,7 @@ sub ParseUnion($$$)
 		indent;
 		if ($_->{TYPE} ne "EMPTY") {
 			pidl "depth++;";
-			my $env = {};
-			GenerateEnvElement($_, $env);
+			my $env = UnionGenerateEnvElement($_);
 			ParseElement($_, $env, DEFERRED); 
 			pidl "depth--;";
 		}

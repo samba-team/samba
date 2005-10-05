@@ -101,10 +101,31 @@ sub ParseUnion($$$)
 {
 	my ($if,$u,$n) = @_;
 
-	pidl "typedef union $if->{NAME}_$n {";
-	#FIXME: What about elements that require more then one variable?
+	my $extra = {"switch_value" => 1};
+
+	foreach my $e (@{$u->{ELEMENTS}}) {
+		foreach my $l (@{$e->{LEVELS}}) {
+			if ($l->{TYPE} eq "ARRAY") {
+				if ($l->{IS_CONFORMANT}) {
+					$extra->{"size"} = 1;
+				}
+				if ($l->{IS_VARYING}) {
+					$extra->{"length"} = $extra->{"offset"} = 1;
+				}
+			} elsif ($l->{TYPE} eq "POINTER") {
+				$extra->{"ptr"} = 1;
+			} elsif ($l->{TYPE} eq "SWITCH") {
+				$extra->{"level"} = 1;
+			}
+		}
+	}
+
+	pidl "typedef struct $if->{NAME}_$n\_ctr {";
+	pidl "\tuint32 $_;" foreach (keys %$extra);
+	pidl "\tunion {";
 	ParseElement($_) foreach (@{$u->{ELEMENTS}});
-	pidl "} ".uc($if->{NAME}."_".$n) .";";
+	pidl "\t} u;";
+	pidl "} ".uc("$if->{NAME}_$n\_ctr") .";";
 	pidl "";
 }
 
