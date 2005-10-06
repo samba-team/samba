@@ -2575,7 +2575,7 @@ static struct rpc_pipe_client *get_schannel_session_key_auth_ntlmssp(struct cli_
  uses an ntlmssp bind to get the session key.
  ****************************************************************************/
 
-struct rpc_pipe_client *cli_rpc_pipe_open_ntlmttp_auth_schannel(struct cli_state *cli,
+struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state *cli,
                                                 int pipe_idx,
 						enum pipe_auth_level auth_level,
                                                 const char *domain,
