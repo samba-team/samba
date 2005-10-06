@@ -1622,18 +1622,30 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 
 	if(!prs_align(ps))
 		return False;
-	if(!prs_uint32("num_groups2   ", ps, depth, &usr->num_groups2))        /* num groups */
-		return False;
 
-	if (UNMARSHALLING(ps) && usr->num_groups2 > 0) {
-		usr->gids = PRS_ALLOC_MEM(ps, DOM_GID, usr->num_groups2);
-		if (usr->gids == NULL)
-			return False;
-	}
+	if (usr->num_groups > 0) {
 
-	for (i = 0; i < usr->num_groups2; i++) {
-		if(!smb_io_gid("", &usr->gids[i], ps, depth)) /* group info */
+		if(!prs_uint32("num_groups2   ", ps, depth, &usr->num_groups2))        /* num groups2 */
 			return False;
+
+		if (usr->num_groups != usr->num_groups2) {
+			DEBUG(3,("net_io_user_info3: num_groups mismatch! (%d != %d)\n", 
+			usr->num_groups, usr->num_groups2));
+			return False;
+		}
+
+
+		if (UNMARSHALLING(ps)) {
+			usr->gids = PRS_ALLOC_MEM(ps, DOM_GID, usr->num_groups);
+			if (usr->gids == NULL)
+				return False;
+		}
+
+		for (i = 0; i < usr->num_groups; i++) {
+			if(!smb_io_gid("", &usr->gids[i], ps, depth)) /* group info */
+				return False;
+		}
+		
 	}
 
 	if(!smb_io_unistr2("uni_logon_srv", &usr->uni_logon_srv, usr->hdr_logon_srv.buffer, ps, depth)) /* logon server unicode string */
