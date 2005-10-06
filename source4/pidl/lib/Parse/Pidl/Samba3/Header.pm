@@ -130,7 +130,7 @@ sub ParseUnion($$$)
 	pidl "typedef struct $if->{NAME}_$n\_ctr {";
 	indent;
 	pidl "uint32 $_;" foreach (keys %$extra);
-	pidl "union {";
+	pidl "union $if->{NAME}_$n {";
 	indent;
 	foreach (@{$u->{ELEMENTS}}) {
 		next if ($_->{TYPE} eq "EMPTY");
