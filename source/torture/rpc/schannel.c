@@ -112,9 +112,9 @@ static BOOL test_lsa_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 				return False;
 			}
 
-			if (strcmp(r.out.account_name->string, "SYSTEM") != 0) {
+			if (strcmp(r.out.account_name->string, "ANONYMOUS LOGON") != 0) {
 				printf("GetUserName returned wrong user: %s, expected %s\n",
-				       r.out.account_name->string, "SYSTEM");
+				       r.out.account_name->string, "ANONYMOUS LOGON");
 				return False;
 			}
 			if (!r.out.authority_name || !r.out.authority_name->string) {
