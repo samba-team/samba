@@ -116,6 +116,7 @@ struct wreplsrv_out_connection {
 };
 
 enum winsrepl_partner_type {
+	WINSREPL_PARTNER_NONE = 0x0,
 	WINSREPL_PARTNER_PULL = 0x1,
 	WINSREPL_PARTNER_PUSH = 0x2,
 	WINSREPL_PARTNER_BOTH = (WINSREPL_PARTNER_PULL | WINSREPL_PARTNER_PUSH)
@@ -153,7 +154,7 @@ struct wreplsrv_partner {
 		/* the interval between 2 pull replications to the partner */
 		uint32_t interval;
 
-		/* the retry_interval if a push cycle failed to the partner */
+		/* the retry_interval if a pull cycle failed to the partner */
 		uint32_t retry_interval;
 
 		/* the error count till the last success */
@@ -177,6 +178,12 @@ struct wreplsrv_partner {
 		/* the current timed_event to the next pull cycle */
 		struct timed_event *te;
 	} pull;
+
+	/* push specific options */
+	struct {
+		/* the outgoing connection to the partner */
+		struct wreplsrv_out_connection *wreplconn;
+	} push;
 };
 
 struct wreplsrv_owner {

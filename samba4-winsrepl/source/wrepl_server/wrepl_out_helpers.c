@@ -46,6 +46,7 @@ struct wreplsrv_out_connect_state {
 	struct composite_context *c;
 	struct wrepl_request *req;
 	struct wrepl_associate assoc_io;
+	enum winsrepl_partner_type type;
 	struct wreplsrv_out_connection *wreplconn;
 };
 
@@ -78,8 +79,13 @@ static NTSTATUS wreplsrv_out_connect_wait_assoc_ctx(struct wreplsrv_out_connect_
 
 	state->wreplconn->assoc_ctx.peer_ctx = state->assoc_io.out.assoc_ctx;
 
-	state->wreplconn->partner->pull.wreplconn = state->wreplconn;
-	talloc_steal(state->wreplconn->partner, state->wreplconn);
+	if (state->type == WINSREPL_PARTNER_PUSH) {
+		state->wreplconn->partner->push.wreplconn = state->wreplconn;
+		talloc_steal(state->wreplconn->partner, state->wreplconn);
+	} else if (state->type == WINSREPL_PARTNER_PULL) {
+		state->wreplconn->partner->pull.wreplconn = state->wreplconn;
+		talloc_steal(state->wreplconn->partner, state->wreplconn);
+	}
 
 	state->stage = WREPLSRV_OUT_CONNECT_STAGE_DONE;
 
@@ -114,11 +120,14 @@ static void wreplsrv_out_connect_handler(struct wrepl_request *req)
 }
 
 static struct composite_context *wreplsrv_out_connect_send(struct wreplsrv_partner *partner,
+							   enum winsrepl_partner_type type,
 							   struct wreplsrv_out_connection *wreplconn)
 {
 	struct composite_context *c = NULL;
 	struct wreplsrv_service *service = partner->service;
 	struct wreplsrv_out_connect_state *state = NULL;
+	struct wreplsrv_out_connection **wreplconnp = &wreplconn;
+	BOOL cached_connection = False;
 
 	c = talloc_zero(partner, struct composite_context);
 	if (!c) goto failed;
@@ -126,32 +135,37 @@ static struct composite_context *wreplsrv_out_connect_send(struct wreplsrv_partn
 	state = talloc_zero(c, struct wreplsrv_out_connect_state);
 	if (!state) goto failed;
 	state->c	= c;
+	state->type	= type;
 
 	c->state	= COMPOSITE_STATE_IN_PROGRESS;
 	c->event_ctx	= service->task->event_ctx;
 	c->private_data	= state;
 
-	/* we have a connection given, so use it */
-	if (wreplconn) {
-		if (wreplconn->sock->dead) {
-			goto failed;
-		}
-		state->stage	= WREPLSRV_OUT_CONNECT_STAGE_DONE;
-		state->wreplconn= wreplconn;
-		composite_trigger_done(c);
-		return c;
+	if (type == WINSREPL_PARTNER_PUSH) {
+		cached_connection	= True;
+		wreplconn		= partner->push.wreplconn;
+		wreplconnp		= &partner->push.wreplconn;
+	} else if (type == WINSREPL_PARTNER_PULL) {
+		cached_connection	= True;
+		wreplconn		= partner->pull.wreplconn;
+		wreplconnp		= &partner->pull.wreplconn;
 	}
 
 	/* we have a connection already, so use it */
-	if (partner->pull.wreplconn) {
-		if (!partner->pull.wreplconn->sock->dead) {
+	if (wreplconn) {
+		if (!wreplconn->sock->dead) {
 			state->stage	= WREPLSRV_OUT_CONNECT_STAGE_DONE;
-			state->wreplconn= partner->pull.wreplconn;
+			state->wreplconn= wreplconn;
+			composite_trigger_done(c);
+			return c;
+		} else if (!cached_connection) {
+			state->stage	= WREPLSRV_OUT_CONNECT_STAGE_DONE;
+			state->wreplconn= NULL;
 			composite_trigger_done(c);
 			return c;
 		} else {
-			talloc_free(partner->pull.wreplconn);
-			partner->pull.wreplconn = NULL;
+			talloc_free(wreplconn);
+			*wreplconnp = NULL;
 		}
 	}
 
@@ -166,8 +180,8 @@ static struct composite_context *wreplsrv_out_connect_send(struct wreplsrv_partn
 	state->stage	= WREPLSRV_OUT_CONNECT_STAGE_WAIT_SOCKET;
 	state->wreplconn= wreplconn;
 	state->req	= wrepl_connect_send(wreplconn->sock,
-					     partner->address
-					     /*, partner->our_address */);
+					     partner->our_address,
+					     partner->address);
 	if (!state->req) goto failed;
 
 	state->req->async.fn		= wreplsrv_out_connect_handler;
@@ -189,8 +203,12 @@ static NTSTATUS wreplsrv_out_connect_recv(struct composite_context *c, TALLOC_CT
 	if (NT_STATUS_IS_OK(status)) {
 		struct wreplsrv_out_connect_state *state = talloc_get_type(c->private_data,
 							   struct wreplsrv_out_connect_state);
-		talloc_reference(mem_ctx, state->wreplconn);
-		*wreplconn = state->wreplconn;
+		if (state->wreplconn) {
+			*wreplconn = talloc_reference(mem_ctx, state->wreplconn);
+			if (!*wreplconn) status = NT_STATUS_NO_MEMORY;
+		} else {
+			status = NT_STATUS_INVALID_CONNECTION;
+		}
 	}
 
 	talloc_free(c);
@@ -315,7 +333,7 @@ struct composite_context *wreplsrv_pull_table_send(TALLOC_CTX *mem_ctx, struct w
 	}
 
 	state->stage    = WREPLSRV_PULL_TABLE_STAGE_WAIT_CONNECTION;
-	state->creq	= wreplsrv_out_connect_send(io->in.partner, NULL);
+	state->creq	= wreplsrv_out_connect_send(io->in.partner, WINSREPL_PARTNER_PULL, NULL);
 	if (!state->creq) goto failed;
 
 	state->creq->async.fn		= wreplsrv_pull_table_handler_creq;
@@ -442,6 +460,9 @@ struct composite_context *wreplsrv_pull_names_send(TALLOC_CTX *mem_ctx, struct w
 	struct composite_context *c = NULL;
 	struct wreplsrv_service *service = io->in.partner->service;
 	struct wreplsrv_pull_names_state *state = NULL;
+	enum winsrepl_partner_type partner_type = WINSREPL_PARTNER_PULL;
+
+	if (io->in.wreplconn) partner_type = WINSREPL_PARTNER_NONE;
 
 	c = talloc_zero(mem_ctx, struct composite_context);
 	if (!c) goto failed;
@@ -456,7 +477,7 @@ struct composite_context *wreplsrv_pull_names_send(TALLOC_CTX *mem_ctx, struct w
 	c->private_data	= state;
 
 	state->stage	= WREPLSRV_PULL_NAMES_STAGE_WAIT_CONNECTION;
-	state->creq	= wreplsrv_out_connect_send(io->in.partner, io->in.wreplconn);
+	state->creq	= wreplsrv_out_connect_send(io->in.partner, partner_type, io->in.wreplconn);
 	if (!state->creq) goto failed;
 
 	state->creq->async.fn		= wreplsrv_pull_names_handler_creq;
@@ -491,6 +512,7 @@ NTSTATUS wreplsrv_pull_names_recv(struct composite_context *c, TALLOC_CTX *mem_c
 enum wreplsrv_pull_cycle_stage {
 	WREPLSRV_PULL_CYCLE_STAGE_WAIT_TABLE_REPLY,
 	WREPLSRV_PULL_CYCLE_STAGE_WAIT_SEND_REPLIES,
+	WREPLSRV_PULL_CYCLE_STAGE_WAIT_STOP_ASSOC,
 	WREPLSRV_PULL_CYCLE_STAGE_DONE
 };
 
@@ -502,11 +524,14 @@ struct wreplsrv_pull_cycle_state {
 	uint32_t current;
 	struct wreplsrv_pull_names_io names_io;
 	struct composite_context *creq;
+	struct wrepl_associate_stop assoc_stop_io;
+	struct wrepl_request *req;
 };
 
 static void wreplsrv_pull_cycle_handler_creq(struct composite_context *creq);
+static void wreplsrv_pull_cycle_handler_req(struct wrepl_request *req);
 
-static NTSTATUS wreplsrv_pull_cycle_next_owner(struct wreplsrv_pull_cycle_state *state)
+static NTSTATUS wreplsrv_pull_cycle_next_owner_do_work(struct wreplsrv_pull_cycle_state *state)
 {
 	struct wreplsrv_owner *current_owner;
 	struct wreplsrv_owner *local_owner;
@@ -565,6 +590,33 @@ static NTSTATUS wreplsrv_pull_cycle_next_owner(struct wreplsrv_pull_cycle_state 
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS wreplsrv_pull_cycle_next_owner_wrapper(struct wreplsrv_pull_cycle_state *state)
+{
+	NTSTATUS status;
+
+	status = wreplsrv_pull_cycle_next_owner_do_work(state);
+	if (NT_STATUS_IS_OK(status)) {
+		state->stage = WREPLSRV_PULL_CYCLE_STAGE_DONE;
+	} else if (NT_STATUS_EQUAL(STATUS_MORE_ENTRIES, status)) {
+		state->stage = WREPLSRV_PULL_CYCLE_STAGE_WAIT_SEND_REPLIES;
+		status = NT_STATUS_OK;
+	}
+
+	if (state->stage == WREPLSRV_PULL_CYCLE_STAGE_DONE && state->io->in.wreplconn) {
+		state->assoc_stop_io.in.assoc_ctx	= state->io->in.wreplconn->assoc_ctx.peer_ctx;
+		state->assoc_stop_io.in.reason		= 0;
+		state->req = wrepl_associate_stop_send(state->io->in.wreplconn->sock, &state->assoc_stop_io);
+		NT_STATUS_HAVE_NO_MEMORY(state->req);
+
+		state->req->async.fn		= wreplsrv_pull_cycle_handler_req;
+		state->req->async.private	= state;
+
+		state->stage = WREPLSRV_PULL_CYCLE_STAGE_WAIT_STOP_ASSOC;
+	}
+
+	return status;
+}
+
 static NTSTATUS wreplsrv_pull_cycle_wait_table_reply(struct wreplsrv_pull_cycle_state *state)
 {
 	NTSTATUS status;
@@ -589,13 +641,8 @@ static NTSTATUS wreplsrv_pull_cycle_wait_table_reply(struct wreplsrv_pull_cycle_
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
-	status = wreplsrv_pull_cycle_next_owner(state);
-	if (NT_STATUS_IS_OK(status)) {
-		state->stage = WREPLSRV_PULL_CYCLE_STAGE_DONE;
-	} else if (NT_STATUS_EQUAL(STATUS_MORE_ENTRIES, status)) {
-		state->stage = WREPLSRV_PULL_CYCLE_STAGE_WAIT_SEND_REPLIES;
-		status = NT_STATUS_OK;	
-	}
+	status = wreplsrv_pull_cycle_next_owner_wrapper(state);
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	return status;
 }
@@ -628,13 +675,21 @@ static NTSTATUS wreplsrv_pull_cycle_wait_send_replies(struct wreplsrv_pull_cycle
 	status = wreplsrv_pull_cycle_apply_records(state);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	status = wreplsrv_pull_cycle_next_owner(state);
-	if (NT_STATUS_IS_OK(status)) {
-		state->stage = WREPLSRV_PULL_CYCLE_STAGE_DONE;
-	} else if (NT_STATUS_EQUAL(STATUS_MORE_ENTRIES, status)) {
-		state->stage = WREPLSRV_PULL_CYCLE_STAGE_WAIT_SEND_REPLIES;
-		status = NT_STATUS_OK;	
-	}
+	status = wreplsrv_pull_cycle_next_owner_wrapper(state);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	return status;
+}
+
+static NTSTATUS wreplsrv_pull_cycle_wait_stop_assoc(struct wreplsrv_pull_cycle_state *state)
+{
+	NTSTATUS status;
+
+	status = wrepl_associate_stop_recv(state->req, &state->assoc_stop_io);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	state->stage = WREPLSRV_PULL_CYCLE_STAGE_DONE;
+
 	return status;
 }
 
@@ -649,11 +704,14 @@ static void wreplsrv_pull_cycle_handler(struct wreplsrv_pull_cycle_state *state)
 	case WREPLSRV_PULL_CYCLE_STAGE_WAIT_SEND_REPLIES:
 		c->status = wreplsrv_pull_cycle_wait_send_replies(state);
 		break;
-	case WREPLSRV_PULL_NAMES_STAGE_DONE:
+	case WREPLSRV_PULL_CYCLE_STAGE_WAIT_STOP_ASSOC:
+		c->status = wreplsrv_pull_cycle_wait_stop_assoc(state);
+		break;
+	case WREPLSRV_PULL_CYCLE_STAGE_DONE:
 		c->status = NT_STATUS_INTERNAL_ERROR;
 	}
 
-	if (state->stage == WREPLSRV_PULL_NAMES_STAGE_DONE) {
+	if (state->stage == WREPLSRV_PULL_CYCLE_STAGE_DONE) {
 		c->state  = COMPOSITE_STATE_DONE;
 	}
 
@@ -669,6 +727,14 @@ static void wreplsrv_pull_cycle_handler(struct wreplsrv_pull_cycle_state *state)
 static void wreplsrv_pull_cycle_handler_creq(struct composite_context *creq)
 {
 	struct wreplsrv_pull_cycle_state *state = talloc_get_type(creq->async.private_data,
+						  struct wreplsrv_pull_cycle_state);
+	wreplsrv_pull_cycle_handler(state);
+	return;
+}
+
+static void wreplsrv_pull_cycle_handler_req(struct wrepl_request *req)
+{
+	struct wreplsrv_pull_cycle_state *state = talloc_get_type(req->async.private,
 						  struct wreplsrv_pull_cycle_state);
 	wreplsrv_pull_cycle_handler(state);
 	return;
@@ -716,5 +782,4 @@ NTSTATUS wreplsrv_pull_cycle_recv(struct composite_context *c)
 
 	talloc_free(c);
 	return status;
-	
 }
