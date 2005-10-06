@@ -509,35 +509,13 @@ static int schema_rename_record(struct ldb_module *module, const struct ldb_dn *
 	return ldb_next_rename_record(module, olddn, newdn);
 }
 
-static int schema_start_trans(struct ldb_module *module) {
-	return ldb_next_start_trans(module);
-}
-
-static int schema_end_trans(struct ldb_module *module) {
-	return ldb_next_end_trans(module);
-}
-
-static int schema_del_trans(struct ldb_module *module) {
-	return ldb_next_del_trans(module);
-}
-
-static int schema_destructor(void *module_ctx)
-{
-/* 	struct ldb_module *ctx = module_ctx; */
-	/* put your clean-up functions here */
-	return 0;
-}
-
 static const struct ldb_module_ops schema_ops = {
 	.name              = "schema",
 	.search_bytree     = schema_search_bytree,
 	.add_record        = schema_add_record,
 	.modify_record     = schema_modify_record,
 	.delete_record     = schema_delete_record,
-	.rename_record     = schema_rename_record,
-	.start_transaction = schema_start_trans,
-	.end_transaction   = schema_end_trans,
-	.del_transaction   = schema_del_trans
+	.rename_record     = schema_rename_record
 };
 
 #ifdef HAVE_DLOPEN_DISABLED
@@ -557,8 +535,6 @@ struct ldb_module *schema_module_init(struct ldb_context *ldb, const char *optio
 	ctx->ldb = ldb;
 	ctx->prev = ctx->next = NULL;
 	ctx->ops = &schema_ops;
-
-	talloc_set_destructor (ctx, schema_destructor);
 
 	return ctx;
 }
