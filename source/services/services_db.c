@@ -23,6 +23,10 @@
 
 #include "includes.h"
 
+struct rcinit_file_information {
+	char *description;
+};
+
 struct service_display_info {
 	const char *servicename;
 	const char *daemon;
@@ -59,7 +63,8 @@ struct service_display_info common_unix_svcs[] = {
   { "slapd",         NULL, "LDAP Directory Service", NULL },
   { "ldap",          NULL, "LDAP DIrectory Service", NULL },
   { "ypbind",        NULL, "NIS Directory Service", NULL },
-  { "courier-imap",  NULL, "NIS Directory Service", NULL },
+  { "courier-imap",  NULL, "IMAP4 Mail Service", NULL },
+  { "courier-pop3",  NULL, "POP3 Mail Service", NULL },
   { "named",         NULL, "Domain Name Service", NULL },
   { "bind",          NULL, "Domain Name Service", NULL },
   { "httpd",         NULL, "HTTP Server", NULL },
@@ -131,6 +136,91 @@ static char *get_common_service_dispname( const char *servicename )
 }
 
 /********************************************************************
+********************************************************************/
+
+static char* cleanup_string( const char *string )
+{
+	static pstring clean;
+	char *begin, *end;
+
+	pstrcpy( clean, string );
+	begin = clean;
+	
+	/* trim any beginning whilespace */
+	
+	while ( isspace(*begin) )
+		begin++;
+
+	if ( !begin )
+		return NULL;
+			
+	/* trim any trailing whitespace or carriage returns.
+	   Start at the end and move backwards */
+			
+	end = begin + strlen(begin) - 1;
+			
+	while ( isspace(*end) || *end=='\n' || *end=='\r' ) {
+		*end = '\0';
+		end--;
+	}
+
+	return begin;
+}
+
+/********************************************************************
+********************************************************************/
+
+static BOOL read_init_file( const char *servicename, struct rcinit_file_information **service_info )
+{
+	struct rcinit_file_information *info;
+	pstring filepath, str;
+	XFILE *f;
+	char *p, *s;
+		
+	if ( !(info = TALLOC_ZERO_P( NULL, struct rcinit_file_information ) ) )
+		return False;
+	
+	/* attempt the file open */
+		
+	pstr_sprintf( filepath, "%s/%s/%s", dyn_LIBDIR, SVCCTL_SCRIPT_DIR, servicename );
+	if ( !(f = x_fopen( filepath, O_RDONLY, 0 )) ) {
+		DEBUG(0,("read_init_file: failed to open [%s]\n", filepath));
+		TALLOC_FREE(info);
+		return False;
+	}
+	
+	while ( (s = x_fgets( str, sizeof(str)-1, f )) != NULL ) {
+		/* ignore everything that is not a full line 
+		   comment starting with a '#' */
+		   
+		if ( str[0] != '#' )
+			continue;
+		
+		/* Look for a line like '^#.*Description:' */
+		
+		if ( (p = strstr( str, "Description:" )) != NULL ) {
+			char *desc;
+
+			p += strlen( "Description:" ) + 1;
+			if ( !p ) 
+				break;
+				
+			if ( (desc = cleanup_string(p)) != NULL )
+				info->description = talloc_strdup( info, desc );
+		}
+	}
+	
+	x_fclose( f );
+	
+	if ( !info->description )
+		info->description = talloc_strdup( info, "External Unix Service" );
+	
+	*service_info = info;
+	
+	return True;
+}
+
+/********************************************************************
  This is where we do the dirty work of filling in things like the
  Display name, Description, etc...
 ********************************************************************/
@@ -174,10 +264,22 @@ static void fill_service_values( const char *name, REGVAL_CTR *values )
 	/* default to an external service if we haven't found a match */
 	
 	if ( builtin_svcs[i].servicename == NULL ) {
+		struct rcinit_file_information *init_info = NULL;
+
 		pstr_sprintf( pstr, "%s/%s/%s",dyn_LIBDIR, SVCCTL_SCRIPT_DIR, name );
 		init_unistr2( &ipath, pstr, UNI_STR_TERMINATE );
-		init_unistr2( &description, "External Unix Service", UNI_STR_TERMINATE );
+		
+		/* lookup common unix display names */
 		init_unistr2( &dname, get_common_service_dispname( name ), UNI_STR_TERMINATE );
+
+		/* get info from init file itself */		
+		if ( read_init_file( name, &init_info ) ) {
+			init_unistr2( &description, init_info->description, UNI_STR_TERMINATE );
+			TALLOC_FREE( init_info );
+		}
+		else {
+			init_unistr2( &description, "External Unix Service", UNI_STR_TERMINATE );
+		}
 	}
 	
 	/* add the new values */
