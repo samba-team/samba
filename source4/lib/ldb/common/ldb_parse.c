@@ -686,7 +686,8 @@ char *ldb_filter_from_tree(void *mem_ctx, struct ldb_parse_tree *tree)
 		talloc_free(s);
 		return ret;
 	case LDB_OP_SUBSTRING:
-		ret = talloc_strdup(mem_ctx, (tree->u.substring.start_with_wildcard)?"*":"");
+		ret = talloc_asprintf(mem_ctx, "(%s=%s", tree->u.substring.attr,
+				      tree->u.substring.start_with_wildcard?"*":"");
 		if (ret == NULL) return NULL;
 		for (i = 0; tree->u.substring.chunks[i]; i++) {
 			s2 = ldb_binary_encode(mem_ctx, *(tree->u.substring.chunks[i]));
@@ -704,6 +705,12 @@ char *ldb_filter_from_tree(void *mem_ctx, struct ldb_parse_tree *tree)
 		if ( ! tree->u.substring.end_with_wildcard ) {
 			ret[strlen(ret) - 1] = '\0'; /* remove last wildcard */
 		}
+		s = talloc_asprintf_append(ret, ")");
+		if (s == NULL) {
+			talloc_free(ret);
+			return NULL;
+		}
+		ret = s;
 		return ret;
 	case LDB_OP_GREATER:
 		s = ldb_binary_encode(mem_ctx, tree->u.equality.value);
