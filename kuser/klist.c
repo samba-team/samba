@@ -690,7 +690,7 @@ static struct getargs args[] = {
       "display AFS tokens", NULL },
     { "v5",			'5',	arg_flag, &do_v5,
       "display v5 cred cache", NULL},
-    { "list-caches",		'v', arg_flag, &do_list_caches,
+    { "list-caches",		'l', arg_flag, &do_list_caches,
       "verbose output", NULL },
     { "verbose",		'v', arg_flag, &do_verbose,
       "verbose output", NULL },
