@@ -191,53 +191,12 @@ static int timestamps_modify_record(struct ldb_module *module, const struct ldb_
 	return ret;
 }
 
-static int timestamps_delete_record(struct ldb_module *module, const struct ldb_dn *dn)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_delete_record\n");
-	return ldb_next_delete_record(module, dn);
-}
-
-static int timestamps_rename_record(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_rename_record\n");
-	return ldb_next_rename_record(module, olddn, newdn);
-}
-
-static int timestamps_start_trans(struct ldb_module *module)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_start_trans\n");
-	return ldb_next_start_trans(module);
-}
-
-static int timestamps_end_trans(struct ldb_module *module)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_end_trans\n");
-	return ldb_next_end_trans(module);
-}
-
-static int timestamps_del_trans(struct ldb_module *module)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_del_trans\n");
-	return ldb_next_del_trans(module);
-}
-
-static int timestamps_destructor(void *module_ctx)
-{
-	/* struct ldb_module *ctx = module_ctx; */
-	/* put your clean-up functions here */
-	return 0;
-}
 
 static const struct ldb_module_ops timestamps_ops = {
 	.name              = "timestamps",
 	.search_bytree     = timestamps_search_bytree,
 	.add_record        = timestamps_add_record,
-	.modify_record     = timestamps_modify_record,
-	.delete_record     = timestamps_delete_record,
-	.rename_record     = timestamps_rename_record,
-	.start_transaction = timestamps_start_trans,
-	.end_transaction   = timestamps_end_trans,
-	.del_transaction   = timestamps_del_trans
+	.modify_record     = timestamps_modify_record
 };
 
 
@@ -258,8 +217,6 @@ struct ldb_module *timestamps_module_init(struct ldb_context *ldb, const char *o
 	ctx->ldb = ldb;
 	ctx->prev = ctx->next = NULL;
 	ctx->ops = &timestamps_ops;
-
-	talloc_set_destructor (ctx, timestamps_destructor);
 
 	return ctx;
 }

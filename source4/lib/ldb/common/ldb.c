@@ -114,16 +114,25 @@ static void ldb_reset_err_string(struct ldb_context *ldb)
 	}
 }
 
+#define FIRST_OP(ldb, op) do { \
+	module = ldb->modules; \
+	while (module && module->ops->op == NULL) module = module->next; \
+	if (module == NULL) return -1; \
+} while (0)
+
 /*
   start a transaction
 */
 int ldb_transaction_start(struct ldb_context *ldb)
 {
+	struct ldb_module *module;
+	FIRST_OP(ldb, start_transaction);
+	
 	ldb->transaction_active++;
 
 	ldb_reset_err_string(ldb);
 
-	return ldb->modules->ops->start_transaction(ldb->modules);
+	return module->ops->start_transaction(module);
 }
 
 /*
@@ -131,6 +140,9 @@ int ldb_transaction_start(struct ldb_context *ldb)
 */
 int ldb_transaction_commit(struct ldb_context *ldb)
 {
+	struct ldb_module *module;
+	FIRST_OP(ldb, end_transaction);
+
 	if (ldb->transaction_active > 0) {
 		ldb->transaction_active--;
 	} else {
@@ -139,7 +151,7 @@ int ldb_transaction_commit(struct ldb_context *ldb)
 
 	ldb_reset_err_string(ldb);
 
-	return ldb->modules->ops->end_transaction(ldb->modules);
+	return module->ops->end_transaction(module);
 }
 
 /*
@@ -147,6 +159,9 @@ int ldb_transaction_commit(struct ldb_context *ldb)
 */
 int ldb_transaction_cancel(struct ldb_context *ldb)
 {
+	struct ldb_module *module;
+	FIRST_OP(ldb, del_transaction);
+
 	if (ldb->transaction_active > 0) {
 		ldb->transaction_active--;
 	} else {
@@ -155,7 +170,7 @@ int ldb_transaction_cancel(struct ldb_context *ldb)
 
 	ldb_reset_err_string(ldb);
 
-	return ldb->modules->ops->del_transaction(ldb->modules);
+	return module->ops->del_transaction(module);
 }
 
 /*
@@ -201,9 +216,12 @@ int ldb_search_bytree(struct ldb_context *ldb,
 		      struct ldb_parse_tree *tree,
 		      const char * const *attrs, struct ldb_message ***res)
 {
+	struct ldb_module *module;
+	FIRST_OP(ldb, search_bytree);
+
 	ldb_reset_err_string(ldb);
 
-	return ldb->modules->ops->search_bytree(ldb->modules, base, scope, tree, attrs, res);
+	return module->ops->search_bytree(module, base, scope, tree, attrs, res);
 }
 
 /*
@@ -213,7 +231,10 @@ int ldb_search_bytree(struct ldb_context *ldb,
 int ldb_add(struct ldb_context *ldb, 
 	    const struct ldb_message *message)
 {
+	struct ldb_module *module;
 	int status;
+
+	FIRST_OP(ldb, add_record);
 
 	ldb_reset_err_string(ldb);
 
@@ -224,12 +245,12 @@ int ldb_add(struct ldb_context *ldb,
 		status = ldb_transaction_start(ldb);
 		if (status != LDB_SUCCESS) return status;
 
-		status = ldb->modules->ops->add_record(ldb->modules, message);
+		status = module->ops->add_record(module, message);
 		if (status != LDB_SUCCESS) return ldb_transaction_cancel(ldb);
 		return ldb_transaction_commit(ldb);
 	}
 
-	return ldb->modules->ops->add_record(ldb->modules, message);
+	return module->ops->add_record(module, message);
 }
 
 /*
@@ -238,7 +259,10 @@ int ldb_add(struct ldb_context *ldb,
 int ldb_modify(struct ldb_context *ldb, 
 	       const struct ldb_message *message)
 {
+	struct ldb_module *module;
 	int status;
+
+	FIRST_OP(ldb, modify_record);
 
 	ldb_reset_err_string(ldb);
 
@@ -249,12 +273,12 @@ int ldb_modify(struct ldb_context *ldb,
 		status = ldb_transaction_start(ldb);
 		if (status != LDB_SUCCESS) return status;
 
-		status = ldb->modules->ops->modify_record(ldb->modules, message);
+		status = module->ops->modify_record(module, message);
 		if (status != LDB_SUCCESS) return ldb_transaction_cancel(ldb);
 		return ldb_transaction_commit(ldb);
 	}
 
-	return ldb->modules->ops->modify_record(ldb->modules, message);
+	return module->ops->modify_record(module, message);
 }
 
 
@@ -263,7 +287,10 @@ int ldb_modify(struct ldb_context *ldb,
 */
 int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
 {
+	struct ldb_module *module;
 	int status;
+
+	FIRST_OP(ldb, delete_record);
 
 	ldb_reset_err_string(ldb);
 
@@ -271,12 +298,12 @@ int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
 		status = ldb_transaction_start(ldb);
 		if (status != LDB_SUCCESS) return status;
 
-		status = ldb->modules->ops->delete_record(ldb->modules, dn);
+		status = module->ops->delete_record(module, dn);
 		if (status != LDB_SUCCESS) return ldb_transaction_cancel(ldb);
 		return ldb_transaction_commit(ldb);
 	}
 
-	return ldb->modules->ops->delete_record(ldb->modules, dn);
+	return module->ops->delete_record(module, dn);
 }
 
 /*
@@ -284,7 +311,10 @@ int ldb_delete(struct ldb_context *ldb, const struct ldb_dn *dn)
 */
 int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
 {
+	struct ldb_module *module;
 	int status;
+
+	FIRST_OP(ldb, rename_record);
 
 	ldb_reset_err_string(ldb);
 
@@ -292,12 +322,12 @@ int ldb_rename(struct ldb_context *ldb, const struct ldb_dn *olddn, const struct
 		status = ldb_transaction_start(ldb);
 		if (status != LDB_SUCCESS) return status;
 
-		status = ldb->modules->ops->rename_record(ldb->modules, olddn, newdn);
+		status = module->ops->rename_record(module, olddn, newdn);
 		if (status != LDB_SUCCESS) return ldb_transaction_cancel(ldb);
 		return ldb_transaction_commit(ldb);
 	}
 
-	return ldb->modules->ops->rename_record(ldb->modules, olddn, newdn);
+	return module->ops->rename_record(module, olddn, newdn);
 }
 
 
