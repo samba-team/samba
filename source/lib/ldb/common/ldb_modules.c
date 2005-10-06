@@ -213,6 +213,18 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 }
 
 /*
+  by using this we allow ldb modules to only implement the functions they care about,
+  which makes writing a module simpler, and makes it more likely to keep working
+  when ldb is extended
+*/
+#define FIND_OP(module, op) do { \
+	module = module->next; \
+	while (module && module->ops->op == NULL) module = module->next; \
+	if (module == NULL) return -1; \
+} while (0)
+
+
+/*
    helper functions to call the next module in chain
 */
 int ldb_next_search_bytree(struct ldb_module *module, 
@@ -221,10 +233,8 @@ int ldb_next_search_bytree(struct ldb_module *module,
 			   struct ldb_parse_tree *tree,
 			   const char * const *attrs, struct ldb_message ***res)
 {
-	if (!module->next) {
-		return -1;
-	}
-	return module->next->ops->search_bytree(module->next, base, scope, tree, attrs, res);
+	FIND_OP(module, search_bytree);
+	return module->ops->search_bytree(module, base, scope, tree, attrs, res);
 }
 
 int ldb_next_search(struct ldb_module *module, 
@@ -235,15 +245,13 @@ int ldb_next_search(struct ldb_module *module,
 {
 	struct ldb_parse_tree *tree;
 	int ret;
-	if (!module->next) {
-		return -1;
-	}
+	FIND_OP(module, search_bytree);
 	tree = ldb_parse_tree(module, expression);
 	if (tree == NULL) {
 		ldb_set_errstring(module, talloc_strdup(module, "Unable to parse search expression"));
 		return -1;
 	}
-	ret = module->next->ops->search_bytree(module->next, base, scope, tree, attrs, res);
+	ret = module->ops->search_bytree(module, base, scope, tree, attrs, res);
 	talloc_free(tree);
 	return ret;
 }
@@ -251,58 +259,44 @@ int ldb_next_search(struct ldb_module *module,
 
 int ldb_next_add_record(struct ldb_module *module, const struct ldb_message *message)
 {
-	if (!module->next) {
-		return -1;
-	}
-	return module->next->ops->add_record(module->next, message);
+	FIND_OP(module, add_record);
+	return module->ops->add_record(module, message);
 }
 
 int ldb_next_modify_record(struct ldb_module *module, const struct ldb_message *message)
 {
-	if (!module->next) {
-		return -1;
-	}
-	return module->next->ops->modify_record(module->next, message);
+	FIND_OP(module, modify_record);
+	return module->ops->modify_record(module, message);
 }
 
 int ldb_next_delete_record(struct ldb_module *module, const struct ldb_dn *dn)
 {
-	if (!module->next) {
-		return -1;
-	}
-	return module->next->ops->delete_record(module->next, dn);
+	FIND_OP(module, delete_record);
+	return module->ops->delete_record(module, dn);
 }
 
 int ldb_next_rename_record(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
 {
-	if (!module->next) {
-		return -1;
-	}
-	return module->next->ops->rename_record(module->next, olddn, newdn);
+	FIND_OP(module, rename_record);
+	return module->ops->rename_record(module, olddn, newdn);
 }
 
 int ldb_next_start_trans(struct ldb_module *module)
 {
-	if (!module->next) {
-		return -1;
-	}
-	return module->next->ops->start_transaction(module->next);
+	FIND_OP(module, start_transaction);
+	return module->ops->start_transaction(module);
 }
 
 int ldb_next_end_trans(struct ldb_module *module)
 {
-	if (!module->next) {
-		return -1;
-	}
-	return module->next->ops->end_transaction(module->next);
+	FIND_OP(module, end_transaction);
+	return module->ops->end_transaction(module);
 }
 
 int ldb_next_del_trans(struct ldb_module *module)
 {
-	if (!module->next) {
-		return -1;
-	}
-	return module->next->ops->del_transaction(module->next);
+	FIND_OP(module, del_transaction);
+	return module->ops->del_transaction(module);
 }
 
 void ldb_set_errstring(struct ldb_module *module, char *err_string)

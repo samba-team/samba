@@ -1233,31 +1233,13 @@ static int map_modify(struct ldb_module *module, const struct ldb_message *msg)
 	return (mp_ret == -1 || fb_ret == -1)?-1:0;
 }
 
-static int map_start_trans(struct ldb_module *module)
-{
-	return ldb_next_start_trans(module);
-}
-
-static int map_end_trans(struct ldb_module *module)
-{
-	return ldb_next_end_trans(module);
-}
-
-static int map_del_trans(struct ldb_module *module)
-{
-	return ldb_next_del_trans(module);
-}
-
 static const struct ldb_module_ops map_ops = {
 	.name              = "map",
 	.search_bytree     = map_search_bytree,
 	.add_record        = map_add,
 	.modify_record     = map_modify,
 	.delete_record     = map_delete,
-	.rename_record     = map_rename,
-	.start_transaction = map_start_trans,
-	.end_transaction   = map_end_trans,
-	.del_transaction   = map_del_trans
+	.rename_record     = map_rename
 };
 
 static char *map_find_url(struct ldb_context *ldb, const char *name)

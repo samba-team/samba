@@ -194,41 +194,10 @@ static int rdn_name_modify_record(struct ldb_module *module, const struct ldb_me
 	return ret;
 }
 
-static int rdn_name_delete_record(struct ldb_module *module, const struct ldb_dn *dn)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_name_delete_record\n");
-	return ldb_next_delete_record(module, dn);
-}
-
 static int rdn_name_rename_record(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
 {
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_name_rename_record\n");
 	return ldb_next_rename_record(module, olddn, newdn);
-}
-
-static int rdn_start_trans(struct ldb_module *module)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_start_trans\n");
-	return ldb_next_start_trans(module);
-}
-
-static int rdn_end_trans(struct ldb_module *module)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_end_trans\n");
-	return ldb_next_end_trans(module);
-}
-
-static int rdn_del_trans(struct ldb_module *module)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_del_trans\n");
-	return ldb_next_del_trans(module);
-}
-
-static int rdn_name_destructor(void *module_ctx)
-{
-	/* struct ldb_module *ctx = module_ctx; */
-	/* put your clean-up functions here */
-	return 0;
 }
 
 static const struct ldb_module_ops rdn_name_ops = {
@@ -236,11 +205,7 @@ static const struct ldb_module_ops rdn_name_ops = {
 	.search_bytree     = rdn_name_search_bytree,
 	.add_record        = rdn_name_add_record,
 	.modify_record     = rdn_name_modify_record,
-	.delete_record     = rdn_name_delete_record,
-	.rename_record     = rdn_name_rename_record,
-	.start_transaction = rdn_start_trans,
-	.end_transaction   = rdn_end_trans,
-	.del_transaction   = rdn_del_trans
+	.rename_record     = rdn_name_rename_record
 };
 
 
@@ -261,8 +226,6 @@ struct ldb_module *rdn_name_module_init(struct ldb_context *ldb, const char *opt
 	ctx->ldb = ldb;
 	ctx->prev = ctx->next = NULL;
 	ctx->ops = &rdn_name_ops;
-
-	talloc_set_destructor (ctx, rdn_name_destructor);
 
 	return ctx;
 }
