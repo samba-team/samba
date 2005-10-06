@@ -620,9 +620,8 @@ static struct ldb_parse_tree *ldb_parse_filter(void *mem_ctx, const char **s)
 */
 struct ldb_parse_tree *ldb_parse_tree(void *mem_ctx, const char *s)
 {
-	/* allowing NULL makes the _bytree() searches easier */
-	if (s == NULL) {
-		return NULL;
+	if (s == NULL || *s == 0) {
+		s = "(|(objectClass=*)(dn=*))";
 	}
 
 	while (isspace((unsigned char)*s)) s++;

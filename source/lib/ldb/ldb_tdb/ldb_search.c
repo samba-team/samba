@@ -95,7 +95,7 @@ static int msg_add_all_elements(struct ldb_module *module, struct ldb_message *r
 	for (i=0;i<msg->num_elements;i++) {
 		const struct ldb_attrib_handler *h;
 		h = ldb_attrib_handler(ldb, msg->elements[i].name);
-		if (ldb_dn_is_special(msg->dn) && (h->flags & LDB_ATTR_FLAG_HIDDEN)) {
+		if (h->flags & LDB_ATTR_FLAG_HIDDEN) {
 			continue;
 		}
 		if (msg_add_element(ldb, ret, &msg->elements[i]) != 0) {
@@ -501,17 +501,6 @@ int ltdb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 	if ((base == NULL || base->comp_num == 0) &&
 	    (scope == LDB_SCOPE_BASE || scope == LDB_SCOPE_ONELEVEL)) return -1;
 
-	/* check if we are looking for a simple dn */
-	if (scope == LDB_SCOPE_BASE && tree == NULL) {
-		return ltdb_search_dn(module, base, attrs, res);
-	}
-
-	if (tree == NULL) {
-		char *err_string = talloc_strdup(module, "expression parse failed");
-		if (err_string) ldb_set_errstring(module, err_string);
-		return -1;
-	}
-
 	/* it is important that we handle dn queries this way, and not
 	   via a full db search, otherwise ldb is horribly slow */
 	if (tree->operation == LDB_OP_EQUALITY &&
@@ -548,26 +537,4 @@ int ltdb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 	return ret;
 }
 
-
-/*
-  search the database with a LDAP-like expression.
-  choses a search method
-*/
-int ltdb_search(struct ldb_module *module, const struct ldb_dn *base,
-		enum ldb_scope scope, const char *expression,
-		const char * const attrs[], struct ldb_message ***res)
-{
-	struct ltdb_private *ltdb = module->private_data;
-	struct ldb_parse_tree *tree;
-	int ret;
-
-	if ((base == NULL || base->comp_num == 0) &&
-	    (scope == LDB_SCOPE_BASE || scope == LDB_SCOPE_ONELEVEL)) return -1;
-
-	tree = ldb_parse_tree(ltdb, expression);
-
-	ret = ltdb_search_bytree(module, base, scope, tree, attrs, res);
-	talloc_free(tree);
-	return ret;
-}
 

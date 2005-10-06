@@ -38,14 +38,6 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include <time.h>
 
-static int objectguid_search(struct ldb_module *module, const struct ldb_dn *base,
-				  enum ldb_scope scope, const char *expression,
-				  const char * const *attrs, struct ldb_message ***res)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectguid_search\n");
-	return ldb_next_search(module, base, scope, expression, attrs, res);
-}
-
 static int objectguid_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 				    enum ldb_scope scope, struct ldb_parse_tree *tree,
 				    const char * const *attrs, struct ldb_message ***res)
@@ -166,7 +158,6 @@ static int objectguid_destructor(void *module_ctx)
 
 static const struct ldb_module_ops objectguid_ops = {
 	.name          = "objectguid",
-	.search        = objectguid_search,
 	.search_bytree = objectguid_search_bytree,
 	.add_record    = objectguid_add_record,
 	.modify_record = objectguid_modify_record,
