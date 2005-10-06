@@ -160,22 +160,33 @@ NTSTATUS dcerpc_schannel_creds(struct gensec_security *gensec_security,
 		
 
 /** 
- * Return the credentials of a logged on user, including session keys
- * etc.
- *
- * Only valid after a successful authentication
- *
- * May only be called once per authentication.
+ * Returns anonymous credentials for schannel, matching Win2k3.
  *
  */
 
 static NTSTATUS schannel_session_info(struct gensec_security *gensec_security,
-				      struct auth_session_info **session_info)
+					 struct auth_session_info **_session_info) 
 {
-	(*session_info) = talloc(gensec_security, struct auth_session_info);
-	NT_STATUS_HAVE_NO_MEMORY(*session_info);
+	NTSTATUS nt_status;
+	struct schannel_state *state = gensec_security->private_data;
+	struct auth_serversupplied_info *server_info = NULL;
+	struct auth_session_info *session_info = NULL;
+	TALLOC_CTX *mem_ctx = talloc_new(state);
+	
+	nt_status = auth_anonymous_server_info(mem_ctx,
+					       &server_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(mem_ctx);
+		return nt_status;
+	}
 
-	ZERO_STRUCTP(*session_info);
+	/* references the server_info into the session_info */
+	nt_status = auth_generate_session_info(state, server_info, &session_info);
+	talloc_free(mem_ctx);
+
+	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	*_session_info = session_info;
 
 	return NT_STATUS_OK;
 }

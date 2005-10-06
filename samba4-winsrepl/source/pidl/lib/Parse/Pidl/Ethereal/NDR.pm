@@ -31,24 +31,6 @@ my %ptrtype_mappings = (
 	"ptr" => "NDR_POINTER_PTR"
 );
 
-sub type2ft($)
-{
-    my($t) = shift;
- 
-    return "FT_UINT$1" if $t =~ /uint(8|16|32|64)/;
-    return "FT_INT$1" if $t =~ /int(8|16|32|64)/;
-    return "FT_UINT64", if $t eq "HYPER_T" or $t eq "NTTIME_hyper" 
-	or $t eq "hyper";
-
-    # TODO: should NTTIME_hyper be a FT_ABSOLUTE_TIME as well?
-
-    return "FT_ABSOLUTE_TIME" if $t eq "NTTIME" or $t eq "NTTIME_1sec";
-
-    return "FT_STRING" if ($t eq "string");
-   
-    return "FT_NONE";
-}
-
 sub StripPrefixes($)
 {
 	my ($s) = @_;
@@ -156,7 +138,7 @@ sub Enum($$$)
 
 	my $enum_size = $e->{BASE_TYPE};
 	$enum_size =~ s/uint//g;
-	register_type($name, "offset = $dissectorname(tvb, offset, pinfo, tree, drep, \@HF\@, \@PARAM\@);", type2ft($e->{BASE_TYPE}), "BASE_DEC", "0", "VALS($valsstring)", $enum_size / 8);
+	register_type($name, "offset = $dissectorname(tvb, offset, pinfo, tree, drep, \@HF\@, \@PARAM\@);", "FT_UINT$enum_size", "BASE_DEC", "0", "VALS($valsstring)", $enum_size / 8);
 }
 
 sub Bitmap($$$)
@@ -230,7 +212,7 @@ sub Bitmap($$$)
 
 	my $size = $e->{BASE_TYPE};
 	$size =~ s/uint//g;
-	register_type($name, "offset = $dissectorname(tvb, offset, pinfo, tree, drep, \@HF\@, \@PARAM\@);", type2ft($e->{BASE_TYPE}), "BASE_DEC", "0", "NULL", $size/8);
+	register_type($name, "offset = $dissectorname(tvb, offset, pinfo, tree, drep, \@HF\@, \@PARAM\@);", "FT_UINT$size", "BASE_DEC", "0", "NULL", $size/8);
 }
 
 sub ElementLevel($$$$$)
@@ -330,7 +312,19 @@ sub Element($$$)
 
 	my $call_code = "offset = $dissectorname(tvb, offset, pinfo, tree, drep);";
 
-	my $hf = register_hf_field("hf_$ifname\_$pn\_$e->{NAME}", field2name($e->{NAME}), "$ifname.$pn.$e->{NAME}", type2ft($e->{TYPE}), "BASE_HEX", "NULL", 0, "");
+	my $type = find_type($e->{TYPE});
+
+	if (not defined($type)) {
+		# default settings
+		$type = {
+			MASK => 0,
+			VALSSTRING => "NULL",
+			FT_TYPE => "FT_NONE",
+			BASE_TYPE => "BASE_HEX"
+		};
+	}
+
+	my $hf = register_hf_field("hf_$ifname\_$pn\_$e->{NAME}", field2name($e->{NAME}), "$ifname.$pn.$e->{NAME}", $type->{FT_TYPE}, $type->{BASE_TYPE}, $type->{VALSSTRING}, $type->{MASK}, "");
 	$hf_used{$hf} = 1;
 
 	my $eltname = StripPrefixes($pn) . ".$e->{NAME}";
@@ -685,6 +679,12 @@ sub ProcessInterface($)
 	pidl_hdr "#endif /* $define */";
 }
 
+sub find_type($)
+{
+	my $n = shift;
+
+	return $conformance->{types}->{$n};
+}
 
 sub register_type($$$$$$$)
 {
