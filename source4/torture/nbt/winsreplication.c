@@ -53,18 +53,20 @@ static BOOL test_assoc_ctx1(TALLOC_CTX *mem_ctx, const char *address)
 	struct wrepl_socket *wrepl_socket2;
 	struct wrepl_associate associate2;
 	struct wrepl_pull_table pull_table;
+	struct wrepl_packet *rep_packet;
+	struct wrepl_associate_stop assoc_stop;
 	NTSTATUS status;
 
 	printf("Test if assoc_ctx is only valid on the conection it was created on\n");
 
 	wrepl_socket1 = wrepl_socket_init(mem_ctx, NULL);
 	wrepl_socket2 = wrepl_socket_init(mem_ctx, NULL);
-	
+
 	printf("Setup 2 wrepl connections\n");
-	status = wrepl_connect(wrepl_socket1, address);
+	status = wrepl_connect(wrepl_socket1, NULL, address);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	status = wrepl_connect(wrepl_socket2, address);
+	status = wrepl_connect(wrepl_socket2, NULL, address);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("Send a start association request (conn1)\n");
@@ -79,13 +81,37 @@ static BOOL test_assoc_ctx1(TALLOC_CTX *mem_ctx, const char *address)
 
 	printf("association context (conn2): 0x%x\n", associate2.out.assoc_ctx);
 
-	printf("Send a replication table query, with assoc 1 (conn2), should be ignored\n");
+	printf("Send a replication table query, with assoc 1 (conn2), the anwser should be on conn1\n");
 	pull_table.in.assoc_ctx = associate1.out.assoc_ctx;
 	req = wrepl_pull_table_send(wrepl_socket2, &pull_table);
-	talloc_free(req);
+	req->send_only = True;
+	status = wrepl_request_recv(req, mem_ctx, &rep_packet);
+	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("Send a association request (conn2), to make sure the last request was ignored\n");
 	status = wrepl_associate(wrepl_socket2, &associate2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("Send a replication table query, with invalid assoc (conn1), receive answer from conn2\n");
+	pull_table.in.assoc_ctx = 0;
+	req = wrepl_pull_table_send(wrepl_socket1, &pull_table);
+	status = wrepl_request_recv(req, mem_ctx, &rep_packet);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("Send a association request (conn1), to make sure the last request was handled correct\n");
+	status = wrepl_associate(wrepl_socket1, &associate2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	assoc_stop.in.assoc_ctx	= associate1.out.assoc_ctx;
+	assoc_stop.in.reason	= 4;
+	printf("Send a association stop request (conn1), reson: %u\n", assoc_stop.in.reason);
+	status = wrepl_associate_stop(wrepl_socket1, &assoc_stop);
+	CHECK_STATUS(status, NT_STATUS_END_OF_FILE);
+
+	assoc_stop.in.assoc_ctx	= associate2.out.assoc_ctx;
+	assoc_stop.in.reason	= 0;
+	printf("Send a association stop request (conn2), reson: %u\n", assoc_stop.in.reason);
+	status = wrepl_associate_stop(wrepl_socket2, &assoc_stop);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 done:
@@ -111,7 +137,7 @@ static BOOL test_assoc_ctx2(TALLOC_CTX *mem_ctx, const char *address)
 	wrepl_socket = wrepl_socket_init(mem_ctx, NULL);
 	
 	printf("Setup wrepl connections\n");
-	status = wrepl_connect(wrepl_socket, address);
+	status = wrepl_connect(wrepl_socket, NULL, address);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 
@@ -175,7 +201,7 @@ static BOOL test_wins_replication(TALLOC_CTX *mem_ctx, const char *address)
 	wrepl_socket = wrepl_socket_init(mem_ctx, NULL);
 	
 	printf("Setup wrepl connections\n");
-	status = wrepl_connect(wrepl_socket, address);
+	status = wrepl_connect(wrepl_socket, NULL, address);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("Send a start association request\n");
