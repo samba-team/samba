@@ -676,7 +676,8 @@ int ltdb_search_indexed(struct ldb_module *module,
 	struct dn_list *dn_list;
 	int ret;
 
-	if (ltdb->cache->indexlist->num_elements == 0) {
+	if (ltdb->cache->indexlist->num_elements == 0 && 
+	    scope != LDB_SCOPE_BASE) {
 		/* no index list? must do full search */
 		return -1;
 	}
@@ -686,7 +687,18 @@ int ltdb_search_indexed(struct ldb_module *module,
 		return -1;
 	}
 
-	ret = ltdb_index_dn(module, tree, ltdb->cache->indexlist, dn_list);
+	if (scope == LDB_SCOPE_BASE) {
+		/* with BASE searches only one DN can match */
+		char *dn = ldb_dn_linearize(dn_list, base);
+		if (dn == NULL) {
+			return -1;
+		}
+		dn_list->count = 1;
+		dn_list->dn = &dn;
+		ret = 1;
+	} else {
+		ret = ltdb_index_dn(module, tree, ltdb->cache->indexlist, dn_list);
+	}
 
 	if (ret == 1) {
 		/* we've got a candidate list - now filter by the full tree

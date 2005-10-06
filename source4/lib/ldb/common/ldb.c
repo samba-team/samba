@@ -172,13 +172,23 @@ int ldb_search(struct ldb_context *ldb,
 	       const char *expression,
 	       const char * const *attrs, struct ldb_message ***res)
 {
-	ldb_reset_err_string(ldb);
+	struct ldb_parse_tree *tree;
+	int ret;
 
-	return ldb->modules->ops->search(ldb->modules, base, scope, expression, attrs, res);
+	tree = ldb_parse_tree(ldb, expression);
+	if (tree == NULL) {
+		ldb_set_errstring(ldb->modules, talloc_strdup(ldb, "Unable to parse search expression"));
+		return -1;
+	}
+
+	ret = ldb_search_bytree(ldb, base, scope, tree, attrs, res);
+	talloc_free(tree);
+
+	return ret;
 }
 
 /*
-  search the database given a LDAP-like search expression
+  search the database given a search tree
 
   return the number of records found, or -1 on error
 

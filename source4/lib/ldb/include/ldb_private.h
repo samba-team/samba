@@ -56,8 +56,6 @@ struct ldb_module {
 */
 struct ldb_module_ops {
 	const char *name;
-	int (*search)(struct ldb_module *, const struct ldb_dn *, enum ldb_scope,
-		      const char *, const char * const [], struct ldb_message ***);
 	int (*search_bytree)(struct ldb_module *, const struct ldb_dn *, enum ldb_scope,
 			     struct ldb_parse_tree *, const char * const [], struct ldb_message ***);
 	int (*add_record)(struct ldb_module *, const struct ldb_message *);
@@ -126,10 +124,10 @@ typedef struct ldb_module *(*ldb_module_init_function)(struct ldb_context *ldb, 
 
 int ldb_load_modules(struct ldb_context *ldb, const char *options[]);
 int ldb_next_search(struct ldb_module *module, 
-	       const struct ldb_dn *base,
-	       enum ldb_scope scope,
-	       const char *expression,
-	       const char * const *attrs, struct ldb_message ***res);
+		    const struct ldb_dn *base,
+		    enum ldb_scope scope,
+		    const char *expression,
+		    const char * const *attrs, struct ldb_message ***res);
 int ldb_next_search_bytree(struct ldb_module *module, 
 			   const struct ldb_dn *base,
 			   enum ldb_scope scope,
