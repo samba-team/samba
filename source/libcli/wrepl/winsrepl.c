@@ -745,9 +745,8 @@ NTSTATUS wrepl_pull_names_recv(struct wrepl_request *req,
 		struct wrepl_wins_name *wname = &packet->message.replication.info.reply.names[i];
 		struct wrepl_name *name = &io->out.names[i];
 
-		name->name	= wname->name;
-		talloc_steal(io->out.names, wname->name.name);
-		talloc_steal(io->out.names, wname->name.scope);
+		name->name	= *wname->name;
+		talloc_steal(io->out.names, wname->name);
 		name->type	= WREPL_NAME_TYPE(wname->flags);
 		name->state	= WREPL_NAME_STATE(wname->flags);
 		name->node	= WREPL_NAME_NODE(wname->flags);
