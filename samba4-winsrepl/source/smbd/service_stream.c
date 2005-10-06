@@ -78,6 +78,39 @@ static void stream_io_handler(struct event_context *ev, struct fd_event *fde,
 	}
 }
 
+/*
+  this creates a stream_connection from an already existing connection,
+  used for protocols, where a client connection needs to switched into
+  a server connection
+*/
+NTSTATUS stream_new_connection_merge(struct event_context *ev,
+				     const struct model_ops *model_ops,
+				     struct socket_context *sock,
+				     const struct stream_server_ops *stream_ops,
+				     struct messaging_context *msg_ctx,
+				     void *private_data,
+				     struct stream_connection **_srv_conn)
+{
+	struct stream_connection *srv_conn;
+
+	srv_conn = talloc_zero(ev, struct stream_connection);
+	NT_STATUS_HAVE_NO_MEMORY(srv_conn);
+
+	talloc_steal(srv_conn, sock);
+
+	srv_conn->private       = private_data;
+	srv_conn->model_ops     = model_ops;
+	srv_conn->socket	= sock;
+	srv_conn->server_id	= 0;
+	srv_conn->ops           = stream_ops;
+	srv_conn->msg_ctx	= msg_ctx;
+	srv_conn->event.ctx	= ev;
+	srv_conn->event.fde	= event_add_fd(ev, srv_conn, socket_get_fd(sock),
+					       EVENT_FD_READ, 
+					       stream_io_handler, srv_conn);
+	*_srv_conn = srv_conn;
+	return NT_STATUS_OK;
+}
 
 /*
   called when a new socket connection has been established. This is called in the process
