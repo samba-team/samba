@@ -2404,7 +2404,7 @@ static NTSTATUS lsa_RetrievePrivateData(struct dcesrv_call_state *dce_call, TALL
   lsa_GetUserName
 */
 static NTSTATUS lsa_GetUserName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_GetUserName *r)
+				struct lsa_GetUserName *r)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	const char *account_name;
