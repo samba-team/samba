@@ -26,6 +26,7 @@
 #define DBGC_CLASS DBGC_RPC_SRV
 
 static TDB_CONTEXT *tdb_reg;
+static int tdb_refcount;
 
 #define VALUE_PREFIX	"SAMBA_REGVAL"
 
@@ -196,7 +197,7 @@ static BOOL init_registry_data( void )
  Open the registry database
  ***********************************************************************/
  
-BOOL init_registry_db( void )
+BOOL regdb_init( void )
 {
 	const char *vstring = "INFO/version";
 	uint32 vers_id;
@@ -208,13 +209,15 @@ BOOL init_registry_db( void )
 	{
 		tdb_reg = tdb_open_log(lock_path("registry.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 		if ( !tdb_reg ) {
-			DEBUG(0,("init_registry: Failed to open registry %s (%s)\n",
+			DEBUG(0,("regdb_init: Failed to open registry %s (%s)\n",
 				lock_path("registry.tdb"), strerror(errno) ));
 			return False;
 		}
 		
-		DEBUG(10,("init_registry: Successfully created registry tdb\n"));
+		DEBUG(10,("regdb_init: Successfully created registry tdb\n"));
 	}
+
+	tdb_refcount = 1;
 		
 
 	vers_id = tdb_fetch_int32(tdb_reg, vstring);
@@ -231,6 +234,59 @@ BOOL init_registry_db( void )
 	}
 
 	return True;
+}
+
+/***********************************************************************
+ Open the registry.  Must already have been initialized by regdb_init()
+ ***********************************************************************/
+
+WERROR regdb_open( void )
+{
+	WERROR result = WERR_OK;
+
+	if ( tdb_reg ) {
+		DEBUG(10,("regdb_open: incrementing refcount (%d)\n", tdb_refcount));
+		tdb_refcount++;
+		return WERR_OK;
+	}
+	
+	become_root();
+
+	tdb_reg = tdb_open_log(lock_path("registry.tdb"), 0, TDB_DEFAULT, O_RDWR, 0600);
+	if ( !tdb_reg ) {
+		result = ntstatus_to_werror( map_nt_error_from_unix( errno ) );
+		DEBUG(0,("regdb_open: Failed to open %s! (%s)\n", 
+			lock_path("registry.tdb"), strerror(errno) ));
+	}
+
+	unbecome_root();
+
+	tdb_refcount = 1;
+	DEBUG(10,("regdb_open: refcount reset (%d)\n", tdb_refcount));
+
+	return result;
+}
+
+/***********************************************************************
+ ***********************************************************************/
+
+int regdb_close( void )
+{
+	int ret;
+
+	tdb_refcount--;
+
+	DEBUG(10,("regdb_close: decrementing refcount (%d)\n", tdb_refcount));
+
+	if ( tdb_refcount > 0 )
+		return 0;
+
+	SMB_ASSERT( tdb_refcount >= 0 );
+
+	ret = tdb_close( tdb_reg );
+	tdb_reg = NULL;
+
+	return ret;
 }
 
 /***********************************************************************

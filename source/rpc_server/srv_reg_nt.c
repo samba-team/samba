@@ -43,7 +43,7 @@ static struct generic_mapping reg_generic_map =
  
 static void free_regkey_info(void *ptr)
 {
-	TALLOC_FREE( ptr );
+	regkey_close_internal( (REGISTRY_KEY*)ptr );
 }
 
 /******************************************************************
@@ -99,9 +99,8 @@ static WERROR open_registry_key( pipes_struct *p, POLICY_HND *hnd,
 	
 	if ( !create_policy_hnd( p, hnd, free_regkey_info, *keyinfo ) ) {
 		result = WERR_BADFILE; 
-		TALLOC_FREE( *keyinfo );
+		regkey_close_internal( *keyinfo );
 	}
-	
 	
 	return result;
 }
