@@ -1,12 +1,46 @@
+                   ==================================
+                   Release Notes for Samba 3.0.21pre1
+                              Oct XX, 2005
+                   ==================================
+
+This is a preview release of the Samba 3.0.21 code base and
+is provided for testing only.  This release is *not* intended
+for production servers.  There has been a substantial amount
+of development since the 3.0.20 series of stable releases.
+We would like to ask the Samba community for help in testing 
+these changes as we work towards the next significant production 
+upgrade Samba 3.0 release.  
+
+Common bugs fixed in 3.0.21pre1 include:
+
+  o 
+
+Additional features introduced in Samba 3.0.21pre1 include:
+
+  o 
+
+
+######################################################################
+Changes
+#######
+
+
+Changes since 3.0.20a
+--------------------
+
+commits
+-------
+
+
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
                    ===============================
                    Release Notes for Samba 3.0.20a
                              Sept 30, 2005
                    ===============================
-
-This is the latest stable release of Samba. This is the version
-that production Samba servers should be running for all current
-bug-fixes.  Please read the following important changes in this
-release.
 
 Common bugs fixed in 3.0.20a include:
 
@@ -153,8 +187,6 @@ o   Leo Weppelman <leo@wau.mis.ah.nl>
 o   Steve Williams <steve@celineandsteve.com>
     * BUG 3052: Fix compile issues on OpenBSD.
 
-
-Release Notes for older release follow:
 
       --------------------------------------------------
                    ==============================
