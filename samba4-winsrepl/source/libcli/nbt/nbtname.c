@@ -474,8 +474,9 @@ char *nbt_name_string(TALLOC_CTX *mem_ctx, const struct nbt_name *name)
 /*
   pull a nbt name, WINS Replication uses another on wire format for nbt name
 */
-NTSTATUS ndr_pull_wrepl_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name *r)
+NTSTATUS ndr_pull_wrepl_nbt_name(struct ndr_pull *ndr, int ndr_flags, const struct nbt_name **_r)
 {
+	struct nbt_name *r;
 	uint8_t *namebuf;
 	uint32_t namebuf_len;
 
@@ -491,6 +492,8 @@ NTSTATUS ndr_pull_wrepl_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt
 	NDR_PULL_ALLOC_N(ndr, namebuf, namebuf_len);
 	NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, namebuf, namebuf_len));
 
+	NDR_PULL_ALLOC(ndr, r);	
+
 	/* oh wow, what a nasty bug in windows ... */
 	if (namebuf[0] == 0x1b && namebuf_len >= 16) {
 		namebuf[0] = namebuf[15];
@@ -500,12 +503,13 @@ NTSTATUS ndr_pull_wrepl_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt
 	if (namebuf_len < 17) {
 		r->type	= 0x00;
 
-		r->name	= talloc_strndup(ndr->current_mem_ctx, (char *)namebuf, namebuf_len);
+		r->name	= talloc_strndup(r, (char *)namebuf, namebuf_len);
 		if (!r->name) return ndr_pull_error(ndr, NDR_ERR_ALLOC, "out of memory");
 
 		r->scope= NULL;
 
 		talloc_free(namebuf);
+		*_r = r;
 		return NT_STATUS_OK;
 	}
 
@@ -513,49 +517,52 @@ NTSTATUS ndr_pull_wrepl_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt
 
 	namebuf[15] = '\0';
 	trim_string((char *)namebuf, NULL, " ");
-	r->name = talloc_strdup(ndr->current_mem_ctx, (char *)namebuf);
+	r->name = talloc_strdup(r, (char *)namebuf);
 	if (!r->name) return ndr_pull_error(ndr, NDR_ERR_ALLOC, "out of memory");
 
 	if (namebuf_len > 18) {
-		r->scope = talloc_strndup(ndr->current_mem_ctx, (char *)(namebuf+17), namebuf_len-17);
+		r->scope = talloc_strndup(r, (char *)(namebuf+17), namebuf_len-17);
 		if (!r->scope) return ndr_pull_error(ndr, NDR_ERR_ALLOC, "out of memory");
 	} else {
 		r->scope = NULL;
 	}
 
 	talloc_free(namebuf);
+	*_r = r;
 	return NT_STATUS_OK;
 }
 
 /*
   push a nbt name, WINS Replication uses another on wire format for nbt name
 */
-NTSTATUS ndr_push_wrepl_nbt_name(struct ndr_push *ndr, int ndr_flags, const struct nbt_name r)
+NTSTATUS ndr_push_wrepl_nbt_name(struct ndr_push *ndr, int ndr_flags, const struct nbt_name *r)
 {
 	uint8_t *namebuf;
 	uint32_t namebuf_len;
 	uint32_t name_len;
 	uint32_t scope_len = 0;
 
+	if (r == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;
+
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
 	}
 
-	name_len = strlen(r.name);
+	name_len = strlen(r->name);
 	if (name_len > 15) {
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
-	if (r.scope) {
-		scope_len = strlen(r.scope);
+	if (r->scope) {
+		scope_len = strlen(r->scope);
 	}
 	if (scope_len > 238) {
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
 	namebuf = (uint8_t *)talloc_asprintf(ndr, "%-15s%c%s",
-					     r.name, 'X',
-					     (r.scope?r.scope:""));
+					     r->name, 'X',
+					     (r->scope?r->scope:""));
 	if (!namebuf) return ndr_push_error(ndr, NDR_ERR_ALLOC, "out of memory");
 
 	namebuf_len = strlen((char *)namebuf) + 1;
@@ -564,10 +571,10 @@ NTSTATUS ndr_push_wrepl_nbt_name(struct ndr_push *ndr, int ndr_flags, const stru
 	 * we need to set the type here, and use a place-holder in the talloc_asprintf()
 	 * as the type can be 0x00, and then the namebuf_len = strlen(namebuf); would give wrong results
 	 */
-	namebuf[15] = r.type;
+	namebuf[15] = r->type;
 
 	/* oh wow, what a nasty bug in windows ... */
-	if (r.type == 0x1b) {
+	if (r->type == 0x1b) {
 		namebuf[15] = namebuf[0];
 		namebuf[0] = 0x1b;
 	}
@@ -580,9 +587,9 @@ NTSTATUS ndr_push_wrepl_nbt_name(struct ndr_push *ndr, int ndr_flags, const stru
 	return NT_STATUS_OK;
 }
 
-void ndr_print_wrepl_nbt_name(struct ndr_print *ndr, const char *name, const struct nbt_name r)
+void ndr_print_wrepl_nbt_name(struct ndr_print *ndr, const char *name, const struct nbt_name *r)
 {
-	char *s = nbt_name_string(ndr, &r);
+	char *s = nbt_name_string(ndr, r);
 	ndr_print_string(ndr, name, s);
 	talloc_free(s);
 }

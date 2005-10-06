@@ -112,60 +112,11 @@ static int objectguid_add_record(struct ldb_module *module, const struct ldb_mes
 	return ret;
 }
 
-/* modify_record: change modifyTimestamp as well */
-static int objectguid_modify_record(struct ldb_module *module, const struct ldb_message *msg)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectguid_modify_record\n");
-	return ldb_next_modify_record(module, msg);
-}
-
-static int objectguid_delete_record(struct ldb_module *module, const struct ldb_dn *dn)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectguid_delete_record\n");
-	return ldb_next_delete_record(module, dn);
-}
-
-static int objectguid_rename_record(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectguid_rename_record\n");
-	return ldb_next_rename_record(module, olddn, newdn);
-}
-
-static int objectguid_start_trans(struct ldb_module *module)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectguid_start_trans\n");
-	return ldb_next_start_trans(module);
-}
-
-static int objectguid_end_trans(struct ldb_module *module)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectguid_end_trans\n");
-	return ldb_next_end_trans(module);
-}
-
-static int objectguid_del_trans(struct ldb_module *module)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectguid_del_trans\n");
-	return ldb_next_del_trans(module);
-}
-
-static int objectguid_destructor(void *module_ctx)
-{
-	/* struct ldb_module *ctx = module_ctx; */
-	/* put your clean-up functions here */
-	return 0;
-}
 
 static const struct ldb_module_ops objectguid_ops = {
 	.name          = "objectguid",
 	.search_bytree = objectguid_search_bytree,
-	.add_record    = objectguid_add_record,
-	.modify_record = objectguid_modify_record,
-	.delete_record = objectguid_delete_record,
-	.rename_record = objectguid_rename_record,
-	.start_transaction = objectguid_start_trans,
-	.end_transaction = objectguid_end_trans,
-	.del_transaction = objectguid_del_trans
+	.add_record    = objectguid_add_record
 };
 
 
@@ -186,8 +137,6 @@ struct ldb_module *objectguid_module_init(struct ldb_context *ldb, const char *o
 	ctx->ldb = ldb;
 	ctx->prev = ctx->next = NULL;
 	ctx->ops = &objectguid_ops;
-
-	talloc_set_destructor (ctx, objectguid_destructor);
 
 	return ctx;
 }
