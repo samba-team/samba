@@ -69,6 +69,10 @@ struct wrepl_request {
 
 	DATA_BLOB buffer;
 
+	BOOL disconnect_after_send;
+
+	BOOL send_only;
+
 	size_t num_read;
 
 	struct timed_event *te;
@@ -89,6 +93,16 @@ struct wrepl_associate {
 	struct {
 		uint32_t assoc_ctx;
 	} out;
+};
+
+/*
+  setup an association
+*/
+struct wrepl_associate_stop {
+	struct {
+		uint32_t assoc_ctx;
+		uint32_t reason;
+	} in;
 };
 
 /*
