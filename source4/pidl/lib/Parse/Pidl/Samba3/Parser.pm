@@ -394,7 +394,7 @@ sub ParseUnion($$$)
 	indent;
 	DeclareArrayVariables($u->{ELEMENTS});
 
-	if (has_property($u, "nodiscriminant")) {
+	unless (has_property($u, "nodiscriminant")) {
 		pidl "if (!prs_uint32(\"switch_value\", ps, depth, &v->switch_value))";
 		pidl "\treturn False;";
 		pidl "";
