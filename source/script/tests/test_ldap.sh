@@ -50,7 +50,7 @@ testit "CLDAP" bin/smbtorture $TORTURE_OPTIONS //$SERVER/_none_ LDAP-CLDAP || fa
 
 LDBDIR=lib/ldb
 export LDBDIR
-testit "ldb tests" $LDBDIR/tests/test-tdb.sh
+testit "ldb tests" $LDBDIR/tests/test-tdb.sh || failed=`expr $failed + 1`
 
 SCRIPTDIR=../testprogs/ejs
 
