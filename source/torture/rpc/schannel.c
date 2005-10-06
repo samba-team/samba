@@ -83,6 +83,57 @@ static BOOL test_samr_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 
 /*
+  do some lsa ops using the schannel connection
+ */
+static BOOL test_lsa_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	struct lsa_GetUserName r;
+	NTSTATUS status;
+	BOOL ret = True;
+	struct lsa_StringPointer authority_name_p;
+	int i;
+
+	printf("\nTesting GetUserName\n");
+
+	r.in.system_name = "\\";	
+	r.in.account_name = NULL;	
+	r.in.authority_name = &authority_name_p;
+	authority_name_p.string = NULL;
+
+	/* do several ops to test credential chaining */
+	for (i=0;i<5;i++) {
+		status = dcerpc_lsa_GetUserName(p, mem_ctx, &r);
+		
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("GetUserName failed - %s\n", nt_errstr(status));
+			return False;
+		} else {
+			if (!r.out.account_name) {
+				return False;
+			}
+
+			if (strcmp(r.out.account_name->string, "SYSTEM") != 0) {
+				printf("GetUserName returned wrong user: %s, expected %s\n",
+				       r.out.account_name->string, "SYSTEM");
+				return False;
+			}
+			if (!r.out.authority_name || !r.out.authority_name->string) {
+				return False;
+			}
+
+			if (strcmp(r.out.authority_name->string->string, "NT AUTHORITY") != 0) {
+				printf("GetUserName returned wrong user: %s, expected %s\n",
+				       r.out.authority_name->string->string, "NT AUTHORITY");
+				return False;
+			}
+		}
+	}
+
+	return ret;
+}
+
+
+/*
   try a netlogon SamLogon
 */
 static BOOL test_netlogon_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
@@ -146,12 +197,15 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 			  uint16_t acct_flags, uint32_t dcerpc_flags,
 			  uint32_t schannel_type)
 {
+	BOOL ret = True;
+
 	void *join_ctx;
 	NTSTATUS status;
 	const char *binding = lp_parm_string(-1, "torture", "binding");
 	struct dcerpc_binding *b;
 	struct dcerpc_pipe *p = NULL;
 	struct dcerpc_pipe *p_netlogon = NULL;
+	struct dcerpc_pipe *p_lsa = NULL;
 	struct creds_CredentialState *creds;
 	struct cli_credentials *credentials;
 
@@ -185,8 +239,8 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_samr_ops(p, test_ctx)) {
-		printf("Failed to process schannel secured ops\n");
-		goto failed;
+		printf("Failed to process schannel secured SAMR ops\n");
+		ret = False;
 	}
 
 	status = dcerpc_schannel_creds(p->conn->security_state.generic_state, test_ctx, &creds);
@@ -229,13 +283,42 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 
 	/* do a couple of logins */
 	if (!test_netlogon_ops(p_netlogon, test_ctx, creds)) {
-		printf("Failed to process schannel secured ops\n");
+		printf("Failed to process schannel secured NETLOGON ops\n");
+		ret = False;
+	}
+
+	/* Swap the binding details from SAMR to LSARPC */
+	status = dcerpc_epm_map_binding(test_ctx, b, DCERPC_LSARPC_UUID,
+					DCERPC_LSARPC_VERSION, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
+	}
+
+	status = dcerpc_secondary_connection(p, &p_lsa, 
+					     b);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	status = dcerpc_bind_auth_password(p_lsa, 
+					   DCERPC_LSARPC_UUID,
+					   DCERPC_LSARPC_VERSION, 
+					   credentials, DCERPC_AUTH_TYPE_SCHANNEL,
+					   NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	if (!test_lsa_ops(p_lsa, test_ctx)) {
+		printf("Failed to process schannel secured LSA ops\n");
+		ret = False;
 	}
 
 	torture_leave_domain(join_ctx);
 	talloc_free(test_ctx);
-	return True;
+	return ret;
 
 failed:
 	torture_leave_domain(join_ctx);
