@@ -1312,7 +1312,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	if (!map_open_params_to_ntcreate(fname, deny_mode, OPENX_FILE_EXISTS_OPEN,
 			&access_mask, &share_mode, &create_disposition, &create_options)) {
 		END_PROFILE(SMBopen);
-		return ERROR_DOS(ERRDOS, ERRbadaccess);
+		return ERROR_FORCE_DOS(ERRDOS, ERRbadaccess);
 	}
 
 	fsp = open_file_ntcreate(conn,fname,&sbuf,
@@ -1435,7 +1435,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 				&create_disposition,
 				&create_options)) {
 		END_PROFILE(SMBopenX);
-		return ERROR_DOS(ERRDOS, ERRbadaccess);
+		return ERROR_FORCE_DOS(ERRDOS, ERRbadaccess);
 	}
 
 	fsp = open_file_ntcreate(conn,fname,&sbuf,
