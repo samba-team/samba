@@ -40,14 +40,6 @@
 
 #define SAM_ACCOUNT_NAME_BASE "$000000-000000000000"
 
-static int samldb_search(struct ldb_module *module, const struct ldb_dn *base,
-				  enum ldb_scope scope, const char *expression,
-				  const char * const *attrs, struct ldb_message ***res)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_search\n");
-	return ldb_next_search(module, base, scope, expression, attrs, res);
-}
-
 static int samldb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 				enum ldb_scope scope, struct ldb_parse_tree *tree,
 				const char * const *attrs, struct ldb_message ***res)
@@ -602,7 +594,6 @@ static int samldb_destructor(void *module_ctx)
 
 static const struct ldb_module_ops samldb_ops = {
 	.name          = "samldb",
-	.search        = samldb_search,
 	.search_bytree = samldb_search_bytree,
 	.add_record    = samldb_add_record,
 	.modify_record = samldb_modify_record,

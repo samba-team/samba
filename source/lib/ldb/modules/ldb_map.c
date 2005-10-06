@@ -744,9 +744,9 @@ static int map_delete(struct ldb_module *module, const struct ldb_dn *dn)
 }
 
 /* search fallback database */
-static int map_search_bytree_fb(struct ldb_module *module, const struct ldb_dn *base,
-			      enum ldb_scope scope, struct ldb_parse_tree *tree,
-			      const char * const *attrs, struct ldb_message ***res)
+static int map_search_fb(struct ldb_module *module, const struct ldb_dn *base,
+			 enum ldb_scope scope, struct ldb_parse_tree *tree,
+			 const char * const *attrs, struct ldb_message ***res)
 {
 	int ret;
 	struct ldb_parse_tree t_and, t_not, t_present, *childs[2];
@@ -771,7 +771,7 @@ static int map_search_bytree_fb(struct ldb_module *module, const struct ldb_dn *
 }
 
 /* Search in the database against which we are mapping */
-static int map_search_bytree_mp(struct ldb_module *module, const struct ldb_dn *base,
+static int map_search_mp(struct ldb_module *module, const struct ldb_dn *base,
 			      enum ldb_scope scope, struct ldb_parse_tree *tree,
 			      const char * const *attrs, struct ldb_message ***res)
 {
@@ -869,14 +869,14 @@ static int map_search_bytree_mp(struct ldb_module *module, const struct ldb_dn *
   search for matching records using a ldb_parse_tree
 */
 static int map_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
-			      enum ldb_scope scope, struct ldb_parse_tree *tree,
-			      const char * const *attrs, struct ldb_message ***res)
+			     enum ldb_scope scope, struct ldb_parse_tree *tree,
+			     const char * const *attrs, struct ldb_message ***res)
 {
 	struct ldb_message **fbres, **mpres = NULL;
 	int i;
 	int ret_fb, ret_mp;
 
-	ret_fb = map_search_bytree_fb(module, base, scope, tree, attrs, &fbres);
+	ret_fb = map_search_fb(module, base, scope, tree, attrs, &fbres);
 	if (ret_fb == -1) 
 		return -1;
 
@@ -886,7 +886,7 @@ static int map_search_bytree(struct ldb_module *module, const struct ldb_dn *bas
 		return ret_fb;
 	}
 
-	ret_mp = map_search_bytree_mp(module, base, scope, tree, attrs, &mpres);
+	ret_mp = map_search_mp(module, base, scope, tree, attrs, &mpres);
 	if (ret_mp == -1) {
 		return -1;
 	}
@@ -900,26 +900,6 @@ static int map_search_bytree(struct ldb_module *module, const struct ldb_dn *bas
 	for (i = 0; i < ret_mp; i++) (*res)[ret_fb+i] = mpres[i];
 
 	return ret_fb + ret_mp;
-}
-/*
-  search for matching records
-*/
-static int map_search(struct ldb_module *module, const struct ldb_dn *base,
-		       enum ldb_scope scope, const char *expression,
-		       const char * const *attrs, struct ldb_message ***res)
-{
-	struct ldb_parse_tree *tree;
-	int ret;
-
-	tree = ldb_parse_tree(NULL, expression);
-	if (tree == NULL) {
-		ldb_set_errstring(module, talloc_strdup(module, "expression parse failed"));
-		return -1;
-	}
-
-	ret = map_search_bytree(module, base, scope, tree, attrs, res);
-	talloc_free(tree);
-	return ret;
 }
 
 static int msg_contains_objectclass(const struct ldb_message *msg, const char *name)
@@ -1270,7 +1250,6 @@ static int map_del_trans(struct ldb_module *module)
 
 static const struct ldb_module_ops map_ops = {
 	.name              = "map",
-	.search            = map_search,
 	.search_bytree     = map_search_bytree,
 	.add_record        = map_add,
 	.modify_record     = map_modify,

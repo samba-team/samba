@@ -283,13 +283,6 @@ static int get_attr_list_recursive(struct ldb_module *module, struct schema_stru
 }
 
 /* search */
-static int schema_search(struct ldb_module *module, const struct ldb_dn *base,
-		       enum ldb_scope scope, const char *expression,
-		       const char * const *attrs, struct ldb_message ***res)
-{
-	return ldb_next_search(module, base, scope, expression, attrs, res); 
-}
-
 static int schema_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 				enum ldb_scope scope, struct ldb_parse_tree *tree,
 				const char * const *attrs, struct ldb_message ***res)
@@ -537,7 +530,6 @@ static int schema_destructor(void *module_ctx)
 
 static const struct ldb_module_ops schema_ops = {
 	.name              = "schema",
-	.search            = schema_search,
 	.search_bytree     = schema_search_bytree,
 	.add_record        = schema_add_record,
 	.modify_record     = schema_modify_record,

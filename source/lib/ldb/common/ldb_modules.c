@@ -133,6 +133,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		{ "objectguid", objectguid_module_init },
 		{ "samldb", samldb_module_init },
 		{ "samba3sam", ldb_samba3sam_module_init },
+		{ "proxy", proxy_module_init },
 #endif
 		{ NULL, NULL }
 	};
@@ -170,7 +171,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 				return -1;
 			}
 			if (ret > 1) {
-				ldb_debug(ldb, LDB_DEBUG_FATAL, "Too many records found, bailing out\n");
+				ldb_debug(ldb, LDB_DEBUG_FATAL, "Too many records found (%d), bailing out\n", ret);
 				talloc_free(msg);
 				return -1;
 			}
@@ -215,19 +216,6 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 /*
    helper functions to call the next module in chain
 */
-
-int ldb_next_search(struct ldb_module *module, 
-		    const struct ldb_dn *base,
-		    enum ldb_scope scope,
-		    const char *expression,
-		    const char * const *attrs, struct ldb_message ***res)
-{
-	if (!module->next) {
-		return -1;
-	}
-	return module->next->ops->search(module->next, base, scope, expression, attrs, res);
-}
-
 int ldb_next_search_bytree(struct ldb_module *module, 
 			   const struct ldb_dn *base,
 			   enum ldb_scope scope,
@@ -239,6 +227,28 @@ int ldb_next_search_bytree(struct ldb_module *module,
 	}
 	return module->next->ops->search_bytree(module->next, base, scope, tree, attrs, res);
 }
+
+int ldb_next_search(struct ldb_module *module, 
+		    const struct ldb_dn *base,
+		    enum ldb_scope scope,
+		    const char *expression,
+		    const char * const *attrs, struct ldb_message ***res)
+{
+	struct ldb_parse_tree *tree;
+	int ret;
+	if (!module->next) {
+		return -1;
+	}
+	tree = ldb_parse_tree(module, expression);
+	if (tree == NULL) {
+		ldb_set_errstring(module, talloc_strdup(module, "Unable to parse search expression"));
+		return -1;
+	}
+	ret = module->next->ops->search_bytree(module->next, base, scope, tree, attrs, res);
+	talloc_free(tree);
+	return ret;
+}
+
 
 int ldb_next_add_record(struct ldb_module *module, const struct ldb_message *message)
 {

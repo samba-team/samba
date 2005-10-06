@@ -822,7 +822,7 @@ static int lsqlite3_search_bytree(struct ldb_module * module, const struct ldb_d
         int ret, i;
 
 	/* create a local ctx */
-	local_ctx = talloc_named(lsqlite3, 0, "lsqlite3_search_by_tree local context");
+	local_ctx = talloc_named(lsqlite3, 0, "lsqlite3_search_bytree local context");
 	if (local_ctx == NULL) {
 		return -1;
 	}
@@ -988,43 +988,6 @@ static int lsqlite3_search_bytree(struct ldb_module * module, const struct ldb_d
 failed:
         talloc_free(local_ctx);
 	return -1;
-}
-
-/* search for matching records, by expression */
-static int lsqlite3_search(struct ldb_module * module, const struct ldb_dn *basedn,
-			   enum ldb_scope scope, const char * expression,
-			   const char * const *attrs, struct ldb_message *** res)
-{
-        struct ldb_parse_tree * tree;
-        int ret;
-        
-        /* Handle tdb specials */
-        if (ldb_dn_is_special(basedn)) {
-#warning "handle tdb specials"
-                return 0;
-        }
-
-#if 0 
-/* (|(objectclass=*)(dn=*)) is  passed by the command line tool now instead */
-        /* Handle the special case of requesting all */
-        if (pExpression != NULL && *pExpression == '\0') {
-                pExpression = "dn=*";
-        }
-#endif
-
-        /* Parse the filter expression into a tree we can work with */
-	if ((tree = ldb_parse_tree(module->ldb, expression)) == NULL) {
-                return -1;
-	}
-        
-        /* Now use the bytree function for the remainder of processing */
-        ret = lsqlite3_search_bytree(module, basedn, scope, tree, attrs, res);
-        
-        /* Free the parse tree */
-	talloc_free(tree);
-        
-        /* All done. */
-        return ret;
 }
 
 
@@ -1820,7 +1783,6 @@ destructor(void *p)
  */
 static const struct ldb_module_ops lsqlite3_ops = {
 	.name              = "sqlite",
-	.search            = lsqlite3_search,
 	.search_bytree     = lsqlite3_search_bytree,
 	.add_record        = lsqlite3_add,
 	.modify_record     = lsqlite3_modify,

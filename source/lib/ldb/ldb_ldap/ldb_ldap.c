@@ -174,15 +174,16 @@ static int lldb_add_msg_attr(struct ldb_context *ldb,
 /*
   search for matching records
 */
-static int lldb_search(struct ldb_module *module, const struct ldb_dn *base,
-		       enum ldb_scope scope, const char *expression,
-		       const char * const *attrs, struct ldb_message ***res)
+static int lldb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
+			      enum ldb_scope scope, struct ldb_parse_tree *tree,
+			      const char * const *attrs, struct ldb_message ***res)
 {
 	struct ldb_context *ldb = module->ldb;
 	struct lldb_private *lldb = module->private_data;
-	int count, msg_count;
+	int count, msg_count, ldap_scope;
 	char *search_base;
 	LDAPMessage *ldapres, *msg;
+	char *expression;
 
 	search_base = ldb_dn_linearize(ldb, base);
 	if (base == NULL) {
@@ -192,11 +193,25 @@ static int lldb_search(struct ldb_module *module, const struct ldb_dn *base,
 		return -1;
 	}
 
-	if (expression == NULL || expression[0] == '\0') {
-		expression = "objectClass=*";
+	expression = ldb_filter_from_tree(search_base, tree);
+	if (expression == NULL) {
+		talloc_free(search_base);
+		return -1;
 	}
 
-	lldb->last_rc = ldap_search_s(lldb->ldap, search_base, (int)scope, 
+	switch (scope) {
+	case LDB_SCOPE_BASE:
+		ldap_scope = LDAP_SCOPE_BASE;
+		break;
+	case LDB_SCOPE_ONELEVEL:
+		ldap_scope = LDAP_SCOPE_ONELEVEL;
+		break;
+	default:
+		ldap_scope = LDAP_SCOPE_SUBTREE;
+		break;
+	}
+
+	lldb->last_rc = ldap_search_s(lldb->ldap, search_base, ldap_scope, 
 				      expression, 
 				      discard_const_p(char *, attrs), 
 				      0, &ldapres);
@@ -284,27 +299,6 @@ static int lldb_search(struct ldb_module *module, const struct ldb_dn *base,
 failed:
 	if (*res) talloc_free(*res);
 	return -1;
-}
-
-
-/*
-  search for matching records using a ldb_parse_tree
-*/
-static int lldb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
-			      enum ldb_scope scope, struct ldb_parse_tree *tree,
-			      const char * const *attrs, struct ldb_message ***res)
-{
-	struct lldb_private *lldb = module->private_data;
-	char *expression;
-	int ret;
-
-	expression = ldb_filter_from_tree(lldb, tree);
-	if (expression == NULL) {
-		return -1;
-	}
-	ret = lldb_search(module, base, scope, expression, attrs, res);
-	talloc_free(expression);
-	return ret;
 }
 
 
@@ -478,7 +472,6 @@ static int lldb_del_trans(struct ldb_module *module)
 
 static const struct ldb_module_ops lldb_ops = {
 	.name              = "ldap",
-	.search            = lldb_search,
 	.search_bytree     = lldb_search_bytree,
 	.add_record        = lldb_add,
 	.modify_record     = lldb_modify,

@@ -702,7 +702,6 @@ static int ltdb_del_trans(struct ldb_module *module)
 
 static const struct ldb_module_ops ltdb_ops = {
 	.name              = "tdb",
-	.search            = ltdb_search,
 	.search_bytree     = ltdb_search_bytree,
 	.add_record        = ltdb_add,
 	.modify_record     = ltdb_modify,
