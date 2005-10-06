@@ -181,8 +181,23 @@ struct wreplsrv_partner {
 
 	/* push specific options */
 	struct {
+		/* change count till push notification */
+		uint32_t change_count;
+
+		/* the status of the last push cycle */
+		NTSTATUS last_status;
+
 		/* the outgoing connection to the partner */
 		struct wreplsrv_out_connection *wreplconn;
+
+		/* the current push notification */
+		struct composite_context *creq;
+
+		/* the pull cycle io params */
+		struct wreplsrv_push_notify_io *notify_io;
+
+		/* the current timed_event to the next push notify */
+		struct timed_event *te;
 	} push;
 };
 

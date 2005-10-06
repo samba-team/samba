@@ -783,3 +783,261 @@ NTSTATUS wreplsrv_pull_cycle_recv(struct composite_context *c)
 	talloc_free(c);
 	return status;
 }
+
+enum wreplsrv_push_notify_stage {
+	WREPLSRV_PUSH_NOTIFY_STAGE_WAIT_CONNECT,
+	WREPLSRV_PUSH_NOTIFY_STAGE_WAIT_UPDATE,
+	WREPLSRV_PUSH_NOTIFY_STAGE_DONE
+};
+
+struct wreplsrv_push_notify_state {
+	enum wreplsrv_push_notify_stage stage;
+	struct composite_context *c;
+	struct wreplsrv_push_notify_io *io;
+	enum wrepl_replication_cmd command;
+	BOOL full_table;
+	struct wrepl_request *req;
+	struct wrepl_packet req_packet;
+	struct wrepl_packet *rep_packet;
+	struct composite_context *creq;
+	struct wreplsrv_out_connection *wreplconn;
+};
+
+static void wreplsrv_push_notify_handler_creq(struct composite_context *creq);
+static void wreplsrv_push_notify_handler_req(struct wrepl_request *req);
+
+static NTSTATUS wreplsrv_push_notify_update(struct wreplsrv_push_notify_state *state)
+{
+	struct wreplsrv_service *service = state->io->in.partner->service;
+	struct wrepl_packet *req = &state->req_packet;
+	struct wrepl_replication *repl_out = &state->req_packet.message.replication;
+	struct wrepl_table *table_out = &state->req_packet.message.replication.info.table;
+	struct wreplsrv_in_connection *wrepl_in;
+	NTSTATUS status;
+	struct socket_context *sock;
+	struct data_blob_list_item *update_rep;
+	const char *our_ip;
+	DATA_BLOB update_blob;
+
+	req->opcode	= WREPL_OPCODE_BITS;
+	req->assoc_ctx	= state->wreplconn->assoc_ctx.peer_ctx;
+	req->mess_type	= WREPL_REPLICATION;
+
+	repl_out->command = state->command;
+
+	our_ip = socket_get_my_addr(state->wreplconn->sock->sock, state);
+	NT_STATUS_HAVE_NO_MEMORY(our_ip);
+
+	status = wreplsrv_fill_wrepl_table(service, state, table_out,
+					   our_ip, our_ip, state->full_table);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	state->req = wrepl_request_send(state->wreplconn->sock, req);
+	NT_STATUS_HAVE_NO_MEMORY(state->req);
+
+	sock = state->wreplconn->sock->sock;
+	talloc_steal(state, state->wreplconn->sock->sock);
+	state->wreplconn->sock->sock = NULL;
+
+	update_blob = state->req->buffer;
+	talloc_steal(state, state->req->buffer.data);
+
+	talloc_free(state->wreplconn->sock);
+	state->wreplconn->sock = NULL;
+
+	status = wreplsrv_in_connection_merge(state->io->in.partner,
+					      sock, &wrepl_in);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	wrepl_in->assoc_ctx.peer_ctx	= state->wreplconn->assoc_ctx.peer_ctx;
+	wrepl_in->assoc_ctx.our_ctx	= 0;
+
+	update_rep = talloc(wrepl_in, struct data_blob_list_item);
+	NT_STATUS_HAVE_NO_MEMORY(update_rep);
+
+	update_rep->blob = update_blob;
+	talloc_steal(update_rep, update_blob.data);
+
+	talloc_free(state->wreplconn);
+	state->wreplconn = NULL;
+
+	if (!wrepl_in->send_queue) {
+		EVENT_FD_WRITEABLE(wrepl_in->conn->event.fde);
+	}
+	DLIST_ADD_END(wrepl_in->send_queue, update_rep, struct data_blob_list_item *);
+
+	state->stage = WREPLSRV_PUSH_NOTIFY_STAGE_DONE;
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS wreplsrv_push_notify_inform(struct wreplsrv_push_notify_state *state)
+{
+	struct wreplsrv_service *service = state->io->in.partner->service;
+	struct wrepl_packet *req = &state->req_packet;
+	struct wrepl_replication *repl_out = &state->req_packet.message.replication;
+	struct wrepl_table *table_out = &state->req_packet.message.replication.info.table;
+	NTSTATUS status;
+	const char *our_ip;
+
+	req->opcode	= WREPL_OPCODE_BITS;
+	req->assoc_ctx	= state->wreplconn->assoc_ctx.peer_ctx;
+	req->mess_type	= WREPL_REPLICATION;
+
+	repl_out->command = state->command;
+
+	our_ip = socket_get_my_addr(state->wreplconn->sock->sock, state);
+	NT_STATUS_HAVE_NO_MEMORY(our_ip);
+
+	status = wreplsrv_fill_wrepl_table(service, state, table_out,
+					   our_ip, our_ip, state->full_table);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	state->req = wrepl_request_send(state->wreplconn->sock, req);
+	NT_STATUS_HAVE_NO_MEMORY(state->req);
+
+	/* we won't get a reply to a inform message */
+	state->req->send_only		= True;
+	state->req->async.fn		= wreplsrv_push_notify_handler_req;
+	state->req->async.private	= state;
+
+	state->stage = WREPLSRV_PUSH_NOTIFY_STAGE_WAIT_UPDATE;
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS wreplsrv_push_notify_wait_connect(struct wreplsrv_push_notify_state *state)
+{
+	NTSTATUS status;
+
+	status = wreplsrv_out_connect_recv(state->creq, state, &state->wreplconn);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	switch (state->command) {
+	case WREPL_REPL_UPDATE:
+		state->full_table = True;
+		return wreplsrv_push_notify_update(state);
+	case WREPL_REPL_UPDATE2:
+		state->full_table = False;
+		return wreplsrv_push_notify_update(state);
+	case WREPL_REPL_INFORM:
+		state->full_table = True;
+		return wreplsrv_push_notify_inform(state);
+	case WREPL_REPL_INFORM2:
+		state->full_table = False;
+		return wreplsrv_push_notify_inform(state);
+	default:
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	return NT_STATUS_INTERNAL_ERROR;
+}
+
+static NTSTATUS wreplsrv_push_notify_wait_update(struct wreplsrv_push_notify_state *state)
+{
+	return NT_STATUS_FOOBAR;
+}
+
+static void wreplsrv_push_notify_handler(struct wreplsrv_push_notify_state *state)
+{
+	struct composite_context *c = state->c;
+
+	switch (state->stage) {
+	case WREPLSRV_PUSH_NOTIFY_STAGE_WAIT_CONNECT:
+		c->status = wreplsrv_push_notify_wait_connect(state);
+		break;
+	case WREPLSRV_PUSH_NOTIFY_STAGE_WAIT_UPDATE:
+		c->status = wreplsrv_push_notify_wait_update(state);
+		break;
+	case WREPLSRV_PUSH_NOTIFY_STAGE_DONE:
+		c->status = NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (state->stage == WREPLSRV_PUSH_NOTIFY_STAGE_DONE) {
+		c->state  = COMPOSITE_STATE_DONE;
+	}
+
+	if (!NT_STATUS_IS_OK(c->status)) {
+		c->state = COMPOSITE_STATE_ERROR;
+	}
+
+	if (c->state >= COMPOSITE_STATE_DONE && c->async.fn) {
+		c->async.fn(c);
+	}
+}
+
+static void wreplsrv_push_notify_handler_creq(struct composite_context *creq)
+{
+	struct wreplsrv_push_notify_state *state = talloc_get_type(creq->async.private_data,
+						   struct wreplsrv_push_notify_state);
+	wreplsrv_push_notify_handler(state);
+	return;
+}
+
+static void wreplsrv_push_notify_handler_req(struct wrepl_request *req)
+{
+	struct wreplsrv_push_notify_state *state = talloc_get_type(req->async.private,
+						   struct wreplsrv_push_notify_state);
+	wreplsrv_push_notify_handler(state);
+	return;
+}
+
+struct composite_context *wreplsrv_push_notify_send(TALLOC_CTX *mem_ctx, struct wreplsrv_push_notify_io *io)
+{
+	struct composite_context *c = NULL;
+	struct wreplsrv_service *service = io->in.partner->service;
+	struct wreplsrv_push_notify_state *state = NULL;
+	enum winsrepl_partner_type partner_type;
+
+	c = talloc_zero(mem_ctx, struct composite_context);
+	if (!c) goto failed;
+
+	state = talloc_zero(c, struct wreplsrv_push_notify_state);
+	if (!state) goto failed;
+	state->c	= c;
+	state->io	= io;
+
+	if (io->in.inform) {
+		/* we can cache the connection in partner->push->wreplconn */
+		partner_type = WINSREPL_PARTNER_PUSH;
+		if (io->in.propagate) {
+			state->command	= WREPL_REPL_INFORM2;
+		} else {
+			state->command	= WREPL_REPL_INFORM;
+		}
+	} else {
+		/* we can NOT cache the connection */
+		partner_type = WINSREPL_PARTNER_NONE;
+		if (io->in.propagate) {
+			state->command	= WREPL_REPL_UPDATE2;
+		} else {
+			state->command	= WREPL_REPL_UPDATE;
+		}	
+	}
+
+	c->state	= COMPOSITE_STATE_IN_PROGRESS;
+	c->event_ctx	= service->task->event_ctx;
+	c->private_data	= state;
+
+	state->stage	= WREPLSRV_PUSH_NOTIFY_STAGE_WAIT_CONNECT;
+	state->creq	= wreplsrv_out_connect_send(io->in.partner, partner_type, NULL);
+	if (!state->creq) goto failed;
+
+	state->creq->async.fn		= wreplsrv_push_notify_handler_creq;
+	state->creq->async.private_data	= state;
+
+	return c;
+failed:
+	talloc_free(c);
+	return NULL;
+}
+
+NTSTATUS wreplsrv_push_notify_recv(struct composite_context *c)
+{
+	NTSTATUS status;
+
+	status = composite_wait(c);
+
+	talloc_free(c);
+	return status;
+}

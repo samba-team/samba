@@ -277,6 +277,7 @@ struct wreplsrv_out_connection;
 struct wreplsrv_pull_table_io;
 struct wreplsrv_pull_names_io;
 struct wreplsrv_pull_cycle_io;
+struct wreplsrv_push_notify_io;
 
 struct winsdb_record;
 
