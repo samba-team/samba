@@ -332,7 +332,22 @@ send_next_request(nsd_file_t *rq, struct winbindd_request *request)
 	NSS_STATUS status;
 	long timeout;
 
-	timeout = 1000;
+        switch (rq->f_index) {
+                case LOOKUP:
+                        timeout = nsd_attr_fetch_long(rq->f_attrs,
+                                        "lookup_timeout", 10, 10 * 1000);
+                        break;
+                case LIST:
+                        timeout = nsd_attr_fetch_long(rq->f_attrs,
+                                        "list_timeout", 10, 10 * 1000);
+                        break;
+                default:
+	                nsd_logprintf(NSD_LOG_OPER,
+                                "send_next_request (winbind) "
+                                "invalid request type %d\n", rq->f_index);
+                        rq->f_status = NS_BADREQ;
+                        return NSD_NEXT;
+        }
 
 	nsd_logprintf(NSD_LOG_MIN, "send_next_request (winbind) %d to = %d\n",
 			rq->f_cmd_data, timeout);

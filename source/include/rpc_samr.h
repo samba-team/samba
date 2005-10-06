@@ -26,8 +26,6 @@
 #ifndef _RPC_SAMR_H /* _RPC_SAMR_H */
 #define _RPC_SAMR_H 
 
-#include "rpc_misc.h"
-
 /*******************************************************************
  the following information comes from a QuickView on samsrv.dll,
  and gives an idea of exactly what is needed:

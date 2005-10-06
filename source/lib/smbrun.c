@@ -55,7 +55,7 @@ run a command being careful about uid/gid handling and putting the output in
 outfd (or discard it if outfd is NULL).
 ****************************************************************************/
 
-int smbrun(char *cmd, int *outfd)
+int smbrun(const char *cmd, int *outfd)
 {
 	pid_t pid;
 	uid_t uid = current_user.uid;
@@ -186,7 +186,7 @@ outfd (or discard it if outfd is NULL).
 sends the provided secret to the child stdin.
 ****************************************************************************/
 
-int smbrunsecret(char *cmd, char *secret)
+int smbrunsecret(const char *cmd, const char *secret)
 {
 	pid_t pid;
 	uid_t uid = current_user.uid;
@@ -225,10 +225,16 @@ int smbrunsecret(char *cmd, char *secret)
 		 */
 		int status = 0;
 		pid_t wpid;
+		size_t towrite;
+		ssize_t wrote;
 		
 		close(ifd[0]);
 		/* send the secret */
-		write(ifd[1], secret, strlen(secret));
+		towrite = strlen(secret);
+		wrote = write(ifd[1], secret, towrite);
+		if ( wrote != towrite ) {
+		    DEBUG(0,("smbrunsecret: wrote %ld of %lu bytes\n",(long)wrote,(unsigned long)towrite));
+		}
 		fsync(ifd[1]);
 		close(ifd[1]);
 

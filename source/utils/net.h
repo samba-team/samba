@@ -23,16 +23,21 @@
  * include
  */
 
-typedef NTSTATUS (*rpc_command_fn)(const DOM_SID *, const char *, 
-				   struct cli_state *, TALLOC_CTX *, int, const char **);
-				   
+typedef NTSTATUS (*rpc_command_fn)(const DOM_SID *,
+				const char *, 
+				struct cli_state *cli,
+				struct rpc_pipe_client *,
+				TALLOC_CTX *,
+				int,
+				const char **);
+
 typedef struct copy_clistate {
 	TALLOC_CTX *mem_ctx;
 	struct cli_state *cli_share_src;
 	struct cli_state *cli_share_dst;
 	char *cwd;
 	uint16 attribute;
-}copy_clistate; 
+}copy_clistate;
 
 /* INCLUDE FILES */
 

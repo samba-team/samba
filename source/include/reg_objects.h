@@ -34,7 +34,6 @@ typedef struct {
 /* container for registry values */
 
 typedef struct {
-	TALLOC_CTX      *ctx;
 	uint32          num_values;
 	REGISTRY_VALUE	**values;
 } REGVAL_CTR;
@@ -42,7 +41,6 @@ typedef struct {
 /* container for registry subkey names */
 
 typedef struct {
-	TALLOC_CTX	*ctx;
 	uint32          num_subkeys;
 	char            **subkeys;
 } REGSUBKEY_CTR;

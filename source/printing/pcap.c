@@ -56,6 +56,9 @@
  *
  *  Modified to call CUPS support if printcap name is set to "cups"
  *  in smb.conf.
+ *
+ *  Modified to call iPrint support if printcap name is set to "iprint"
+ *  in smb.conf.
  */
 
 #include "includes.h"
@@ -125,6 +128,13 @@ void pcap_cache_reload(void)
 #ifdef HAVE_CUPS
 	if (strequal(pcap_name, "cups")) {
 		pcap_reloaded = cups_cache_reload();
+		goto done;
+	}
+#endif
+
+#ifdef HAVE_IPRINT
+	if (strequal(pcap_name, "iprint")) {
+		pcap_reloaded = iprint_cache_reload();
 		goto done;
 	}
 #endif

@@ -75,7 +75,7 @@ typedef struct _counter_printer_0 {
 
 static counter_printer_0 *counter_list;
 
-static struct cli_state notify_cli; /* print notify back-channel */
+static struct rpc_pipe_client *notify_cli_pipe; /* print notify back-channel pipe handle*/
 static uint32 smb_connections=0;
 
 
@@ -166,7 +166,7 @@ static void srv_spoolss_replycloseprinter(int snum, POLICY_HND *handle)
 		return;
 	}
 
-	result = cli_spoolss_reply_close_printer(&notify_cli, notify_cli.mem_ctx, handle);
+	result = rpccli_spoolss_reply_close_printer(notify_cli_pipe, notify_cli_pipe->cli->mem_ctx, handle);
 	
 	if (!W_ERROR_IS_OK(result))
 		DEBUG(0,("srv_spoolss_replycloseprinter: reply_close_printer failed [%s].\n",
@@ -174,9 +174,8 @@ static void srv_spoolss_replycloseprinter(int snum, POLICY_HND *handle)
 
 	/* if it's the last connection, deconnect the IPC$ share */
 	if (smb_connections==1) {
-		cli_nt_session_close(&notify_cli);
-		cli_ulogoff(&notify_cli);
-		cli_shutdown(&notify_cli);
+		cli_shutdown(notify_cli_pipe->cli);
+		notify_cli_pipe = NULL; /* The above call shuts downn the pipe also. */
 		message_deregister(MSG_PRINTER_NOTIFY2);
 
         	/* Tell the connections db we're no longer interested in
@@ -273,62 +272,6 @@ static Printer_entry *find_printer_index_by_hnd(pipes_struct *p, POLICY_HND *hnd
 
 	return find_printer;
 }
-
-#ifdef ENABLE_PRINT_HND_OBJECT_CACHE
-/****************************************************************************
- look for a printer object cached on an open printer handle
-****************************************************************************/
-
-WERROR find_printer_in_print_hnd_cache( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL_2 **info2, 
-                                        const char *servername, const char *printername )
-{
-	Printer_entry *p;
-	
-	DEBUG(10,("find_printer_in_print_hnd_cache: printer [\\\\%s\\%s]\n", 
-		servername, printername));
-
-	for ( p=printers_list; p; p=p->next )
-	{
-		if ( p->printer_type==PRINTER_HANDLE_IS_PRINTER 
-			&& p->printer_info
-			&& strequal( p->sharename, printername )
-			&& strequal( p->servername, servername ) )
-		{
-			DEBUG(10,("Found printer\n"));
-			*info2 = dup_printer_2( ctx, p->printer_info->info_2 );
-			if ( *info2 )
-				return WERR_OK;
-		}
-	}
-
-	return WERR_INVALID_PRINTER_NAME;
-}
-
-/****************************************************************************
-  destroy any cached printer_info_2 structures on open handles
-****************************************************************************/
-
-void invalidate_printer_hnd_cache( char *printername )
-{
-	Printer_entry *p;
-	
-	DEBUG(10,("invalidate_printer_hnd_cache: printer [%s]\n", printername));
-
-	for ( p=printers_list; p; p=p->next )
-	{
-		if ( p->printer_type==PRINTER_HANDLE_IS_PRINTER 
-			&& p->printer_info
-			&& StrCaseCmp(p->sharename, printername)==0)
-		{
-			DEBUG(10,("invalidating printer_info cache for handl:\n"));
-			free_a_printer( &p->printer_info, 2 );
-			p->printer_info = NULL;
-		}
-	}
-
-	return;
-}
-#endif
 
 /****************************************************************************
  Close printer index by handle.
@@ -744,7 +687,7 @@ static void notify_system_time(struct spoolss_notify_msg *msg,
 		return;
 	}
 
-	if (!prs_init(&ps, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
+	if (!prs_init(&ps, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
 		DEBUG(5, ("notify_system_time: prs_init() failed\n"));
 		return;
 	}
@@ -1077,7 +1020,7 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 		}
 
 		if ( sending_msg_count ) {
-			cli_spoolss_rrpcn( &notify_cli, mem_ctx, &p->notify.client_hnd, 
+			rpccli_spoolss_rrpcn( notify_cli_pipe, mem_ctx, &p->notify.client_hnd, 
 					data_len, data, p->notify.change, 0 );
 		}
 	}
@@ -1131,7 +1074,8 @@ static BOOL notify2_unpack_msg( SPOOLSS_NOTIFY_MSG *msg, struct timeval *tv, voi
  Receive a notify2 message list
  ********************************************************************/
 
-static void receive_notify2_message_list(int msg_type, pid_t src, void *msg, size_t len)
+static void receive_notify2_message_list(int msg_type, struct process_id src,
+					 void *msg, size_t len)
 {
 	size_t 			msg_count, i;
 	char 			*buf = (char *)msg;
@@ -1216,24 +1160,6 @@ static void receive_notify2_message_list(int msg_type, pid_t src, void *msg, siz
 	return;
 }
 
-#ifdef ENABLE_PRINT_HND_OBJECT_CACHE
-/********************************************************************
- callback to MSG_PRINTER_CHANGED.  When a printer is changed by 
- one smbd, all of processes must clear their printer cache immediately.
- ********************************************************************/
-
-void receive_printer_mod_msg(int msg_type, pid_t src, void *buf, size_t len)
-{
-	fstring printername;
-	
-	fstrcpy( printername, buf );
-	
-	DEBUG(10,("receive_printer_mod_msg: Printer change [%s]\n", printername ));
-	
-	invalidate_printer_hnd_cache( printername );
-}
-#endif
-
 /********************************************************************
  Send a message to ourself about new driver being installed
  so we can upgrade the information for each printer bound to this
@@ -1250,7 +1176,8 @@ static BOOL srv_spoolss_drv_upgrade_printer(char* drivername)
 	DEBUG(10,("srv_spoolss_drv_upgrade_printer: Sending message about driver upgrade [%s]\n",
 		drivername));
 		
-	message_send_pid(sys_getpid(), MSG_PRINTER_DRVUPGRADE, drivername, len+1, False);
+	message_send_pid(pid_to_procid(sys_getpid()),
+			 MSG_PRINTER_DRVUPGRADE, drivername, len+1, False);
 
 	return True;
 }
@@ -1260,7 +1187,7 @@ static BOOL srv_spoolss_drv_upgrade_printer(char* drivername)
  over all printers, upgrading ones as necessary 
  **********************************************************************/
  
-void do_drv_upgrade_printer(int msg_type, pid_t src, void *buf, size_t len)
+void do_drv_upgrade_printer(int msg_type, struct process_id src, void *buf, size_t len)
 {
 	fstring drivername;
 	int snum;
@@ -1346,7 +1273,8 @@ static BOOL srv_spoolss_reset_printerdata(char* drivername)
 	DEBUG(10,("srv_spoolss_reset_printerdata: Sending message about resetting printerdata [%s]\n",
 		drivername));
 		
-	message_send_pid(sys_getpid(), MSG_PRINTERDATA_INIT_RESET, drivername, len+1, False);
+	message_send_pid(pid_to_procid(sys_getpid()),
+			 MSG_PRINTERDATA_INIT_RESET, drivername, len+1, False);
 
 	return True;
 }
@@ -1356,7 +1284,8 @@ static BOOL srv_spoolss_reset_printerdata(char* drivername)
  over all printers, resetting printer data as neessary 
  **********************************************************************/
  
-void reset_all_printerdata(int msg_type, pid_t src, void *buf, size_t len)
+void reset_all_printerdata(int msg_type, struct process_id src,
+			   void *buf, size_t len)
 {
 	fstring drivername;
 	int snum;
@@ -1804,7 +1733,10 @@ static BOOL convert_printer_info(const SPOOL_PRINTER_INFO_LEVEL *uni,
 
 	switch (level) {
 		case 2:
-			ret = uni_2_asc_printer_info_2(uni->info_2, &printer->info_2);
+			/* printer->info_2  is already a valid printer */
+			ret = uni_2_asc_printer_info_2(uni->info_2, printer->info_2);
+			printer->info_2->setuptime = time(NULL);
+
 			break;
 		default:
 			break;
@@ -2072,7 +2004,10 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 		
 			/* this should not have failed---if it did, report to client */
 			if ( !W_ERROR_IS_OK(status_win2k) )
+			{
+				status = status_win2k;
 				goto done;
+			}
 		}
 	}
 	
@@ -2272,8 +2207,8 @@ static WERROR delete_printer_dataex( NT_PRINTER_INFO_LEVEL *printer, const char 
 WERROR set_printer_dataex( NT_PRINTER_INFO_LEVEL *printer, const char *key, const char *value, 
                                   uint32 type, uint8 *data, int real_len  )
 {
-	delete_printer_data( printer->info_2, key, value );
-	
+	/* the registry objects enforce uniqueness based on value name */
+
 	return add_printer_data( printer->info_2, key, value, type, data, real_len );
 }
 
@@ -2550,9 +2485,10 @@ done:
  Connect to the client machine.
 **********************************************************/
 
-static BOOL spoolss_connect_to_client(struct cli_state *the_cli, 
+static BOOL spoolss_connect_to_client(struct cli_state *the_cli, struct rpc_pipe_client **pp_pipe,
 			struct in_addr *client_ip, const char *remote_machine)
 {
+	NTSTATUS ret;
 	ZERO_STRUCTP(the_cli);
 	
 	if(cli_initialise(the_cli) == NULL) {
@@ -2634,10 +2570,10 @@ static BOOL spoolss_connect_to_client(struct cli_state *the_cli,
 	 * Now start the NT Domain stuff :-).
 	 */
 
-	if(cli_nt_session_open(the_cli, PI_SPOOLSS) == False) {
-		DEBUG(0,("spoolss_connect_to_client: unable to open the domain client session to machine %s. Error was : %s.\n", remote_machine, cli_errstr(the_cli)));
-		cli_nt_session_close(the_cli);
-		cli_ulogoff(the_cli);
+	*pp_pipe = cli_rpc_pipe_open_noauth(the_cli, PI_SPOOLSS, &ret);
+	if(!*pp_pipe) {
+		DEBUG(0,("spoolss_connect_to_client: unable to open the spoolss pipe on machine %s. Error was : %s.\n",
+			remote_machine, nt_errstr(ret)));
 		cli_shutdown(the_cli);
 		return False;
 	} 
@@ -2660,13 +2596,14 @@ static BOOL srv_spoolss_replyopenprinter(int snum, const char *printer,
 	 * and connect to the IPC$ share anonymously
 	 */
 	if (smb_connections==0) {
+		struct cli_state notify_cli; /* print notify back-channel */
 		fstring unix_printer;
 
 		fstrcpy(unix_printer, printer+2); /* the +2 is to strip the leading 2 backslashs */
 
 		ZERO_STRUCT(notify_cli);
 
-		if(!spoolss_connect_to_client(&notify_cli, client_ip, unix_printer))
+		if(!spoolss_connect_to_client(&notify_cli, &notify_cli_pipe, client_ip, unix_printer))
 			return False;
 			
 		message_register(MSG_PRINTER_NOTIFY2, receive_notify2_message_list);
@@ -2685,7 +2622,7 @@ static BOOL srv_spoolss_replyopenprinter(int snum, const char *printer,
 
 	smb_connections++;
 
-	result = cli_spoolss_reply_open_printer(&notify_cli, notify_cli.mem_ctx, printer, localprinter, 
+	result = rpccli_spoolss_reply_open_printer(notify_cli_pipe, notify_cli_pipe->cli->mem_ctx, printer, localprinter, 
 			type, handle);
 			
 	if (!W_ERROR_IS_OK(result))
@@ -4234,22 +4171,23 @@ static BOOL construct_printer_info_2(Printer_entry *print_hnd, PRINTER_INFO_2 *p
 	printer->cjobs = count;							/* jobs */
 	printer->averageppm = ntprinter->info_2->averageppm;			/* average pages per minute */
 			
-	if((printer->devmode = construct_dev_mode(snum)) == NULL) {
+	if ( !(printer->devmode = construct_dev_mode(snum)) )
 		DEBUG(8, ("Returning NULL Devicemode!\n"));
-	}
 
-	if (ntprinter->info_2->secdesc_buf && ntprinter->info_2->secdesc_buf->len != 0) {
-		/* steal the printer info sec_desc structure.  [badly done]. */
-		printer->secdesc = ntprinter->info_2->secdesc_buf->sec;
-		ntprinter->info_2->secdesc_buf->sec = NULL; /* Stolen memory. */
-		ntprinter->info_2->secdesc_buf->len = 0; /* Stolen memory. */
-		ntprinter->info_2->secdesc_buf->max_len = 0; /* Stolen memory. */
-	}
-	else {
-		printer->secdesc = NULL;
+	printer->secdesc = NULL;
+
+	if ( ntprinter->info_2->secdesc_buf 
+		&& ntprinter->info_2->secdesc_buf->len != 0 ) 
+	{
+		/* don't use talloc_steal() here unless you do a deep steal of all 
+		   the SEC_DESC members */
+
+		printer->secdesc = dup_sec_desc( get_talloc_ctx(), 
+			ntprinter->info_2->secdesc_buf->sec );
 	}
 
 	free_a_printer(&ntprinter, 2);
+
 	return True;
 }
 
@@ -4274,32 +4212,16 @@ static BOOL construct_printer_info_3(Printer_entry *print_hnd, PRINTER_INFO_3 **
 
 	ZERO_STRUCTP(printer);
 	
-	printer->flags = 4; /* These are the components of the SD we are returning. */
+	/* These are the components of the SD we are returning. */
+
+	printer->flags = 0x4; 
+
 	if (ntprinter->info_2->secdesc_buf && ntprinter->info_2->secdesc_buf->len != 0) {
-		/* steal the printer info sec_desc structure.  [badly done]. */
-		printer->secdesc = ntprinter->info_2->secdesc_buf->sec;
+		/* don't use talloc_steal() here unless you do a deep steal of all 
+		   the SEC_DESC members */
 
-#if 0
-		/*
-		 * Set the flags for the components we are returning.
-		 */
-
-		if (printer->secdesc->owner_sid)
-			printer->flags |= OWNER_SECURITY_INFORMATION;
-
-		if (printer->secdesc->grp_sid)
-			printer->flags |= GROUP_SECURITY_INFORMATION;
-
-		if (printer->secdesc->dacl)
-			printer->flags |= DACL_SECURITY_INFORMATION;
-
-		if (printer->secdesc->sacl)
-			printer->flags |= SACL_SECURITY_INFORMATION;
-#endif
-
-		ntprinter->info_2->secdesc_buf->sec = NULL; /* Stolen the malloced memory. */
-		ntprinter->info_2->secdesc_buf->len = 0; /* Stolen the malloced memory. */
-		ntprinter->info_2->secdesc_buf->max_len = 0; /* Stolen the malloced memory. */
+		printer->secdesc = dup_sec_desc( get_talloc_ctx(), 
+			ntprinter->info_2->secdesc_buf->sec );
 	}
 
 	free_a_printer(&ntprinter, 2);
@@ -4582,16 +4504,20 @@ static WERROR enum_all_printers_info_2(RPC_BUFFER *buffer, uint32 offered, uint3
 		if (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) {
 			DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
 				
-			if (construct_printer_info_2(NULL, &current_prt, snum)) {
-				if((tp=SMB_REALLOC_ARRAY(printers, PRINTER_INFO_2, *returned +1)) == NULL) {
+			if (construct_printer_info_2(NULL, &current_prt, snum)) 
+			{
+				if ( !(tp=SMB_REALLOC_ARRAY(printers, PRINTER_INFO_2, *returned +1)) ) {
 					DEBUG(2,("enum_all_printers_info_2: failed to enlarge printers buffer!\n"));
 					SAFE_FREE(printers);
 					*returned = 0;
 					return WERR_NOMEM;
 				}
-				else printers = tp;
+
 				DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_2\n", *returned));		
+
+				printers = tp;
 				memcpy(&printers[*returned], &current_prt, sizeof(PRINTER_INFO_2));
+
 				(*returned)++;
 			}
 		}
@@ -4617,9 +4543,10 @@ static WERROR enum_all_printers_info_2(RPC_BUFFER *buffer, uint32 offered, uint3
 	
 out:
 	/* clear memory */
-	for (i=0; i<*returned; i++) {
+
+	for (i=0; i<*returned; i++) 
 		free_devmode(printers[i].devmode);
-	}
+
 	SAFE_FREE(printers);
 
 	if ( !W_ERROR_IS_OK(result) )
@@ -6198,17 +6125,12 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 			|| !strequal(printer->info_2->portname, old_printer->info_2->portname)
 			|| !strequal(printer->info_2->location, old_printer->info_2->location)) )
 	{
+		/* add_printer_hook() will call reload_services() */
+
 		if ( !add_printer_hook(p->pipe_user.nt_user_token, printer) ) {
 			result = WERR_ACCESS_DENIED;
 			goto done;
 		}
-
-		/* 
-		 * make sure we actually reload the services after 
-		 * this as smb.conf could have a new section in it 
-		 * .... shouldn't .... but could
-		 */
-		reload_services(False);	
 	}
 	
 	/*
@@ -7905,8 +7827,6 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	int		i, key_index, num_values;
 	int		name_length;
 	
-	ZERO_STRUCT( printer );
-	
 	*out_type = 0;
 
 	*out_max_data_len = 0;
@@ -7927,7 +7847,7 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	if (!W_ERROR_IS_OK(result))
 		return result;
 		
-	p_data = &printer->info_2->data;	
+	p_data = printer->info_2->data;	
 	key_index = lookup_printerkey( p_data, SPOOL_PRINTERDATA_KEY );
 
 	result = WERR_OK;
@@ -7945,11 +7865,11 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 		biggest_valuesize = 0;
 		biggest_datasize  = 0;
 				
-		num_values = regval_ctr_numvals( &p_data->keys[key_index].values );
-		
+		num_values = regval_ctr_numvals( p_data->keys[key_index].values );
+	
 		for ( i=0; i<num_values; i++ )
 		{
-			val = regval_ctr_specific_value( &p_data->keys[key_index].values, i );
+			val = regval_ctr_specific_value( p_data->keys[key_index].values, i );
 			
 			name_length = strlen(val->valuename);
 			if ( strlen(val->valuename) > biggest_valuesize ) 
@@ -7979,7 +7899,7 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	 */
 	
 	if ( key_index != -1 )
-		val = regval_ctr_specific_value( &p_data->keys[key_index].values, idx );
+		val = regval_ctr_specific_value( p_data->keys[key_index].values, idx );
 
 	if ( !val ) 
 	{
@@ -8937,7 +8857,7 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 		goto done;
 	}
 	
-	if ( lookup_printerkey( &printer->info_2->data, keyname ) == -1 ) {
+	if ( lookup_printerkey( printer->info_2->data, keyname ) == -1 ) {
 		DEBUG(4,("_spoolss_getprinterdataex: Invalid keyname [%s]\n", keyname ));
 		free_a_printer( &printer, 2 );
 		status = WERR_BADFILE;
@@ -9158,7 +9078,7 @@ WERROR _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPO
 	/* get the list of subkey names */
 	
 	unistr2_to_ascii( key, &q_u->key, sizeof(key)-1 );
-	data = &printer->info_2->data;
+	data = printer->info_2->data;
 
 	num_keys = get_printer_subkeys( data, key, &keynames );
 
@@ -9301,7 +9221,7 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	
 	/* now look for a match on the key name */
 	
-	p_data = &printer->info_2->data;
+	p_data = printer->info_2->data;
 	
 	unistr2_to_ascii(key, &q_u->key, sizeof(key) - 1);
 	if ( (key_index = lookup_printerkey( p_data, key)) == -1  )
@@ -9316,7 +9236,7 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	
 	/* allocate the memory for the array of pointers -- if necessary */
 	
-	num_entries = regval_ctr_numvals( &p_data->keys[key_index].values );
+	num_entries = regval_ctr_numvals( p_data->keys[key_index].values );
 	if ( num_entries )
 	{
 		if ( (enum_values=TALLOC_ARRAY(p->mem_ctx, PRINTER_ENUM_VALUES, num_entries)) == NULL )
@@ -9339,7 +9259,7 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	{
 		/* lookup the registry value */
 		
-		val = regval_ctr_specific_value( &p_data->keys[key_index].values, i );
+		val = regval_ctr_specific_value( p_data->keys[key_index].values, i );
 		DEBUG(10,("retrieved value number [%d] [%s]\n", i, regval_name(val) ));
 
 		/* copy the data */

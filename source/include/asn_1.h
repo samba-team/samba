@@ -27,7 +27,7 @@ struct nesting {
 	struct nesting *next;
 };
 
-typedef struct {
+typedef struct asn1_data {
 	uint8 *data;
 	size_t length;
 	off_t ofs;
@@ -37,13 +37,16 @@ typedef struct {
 
 
 #define ASN1_APPLICATION(x) ((x)+0x60)
+#define ASN1_APPLICATION_SIMPLE(x) ((x)+0x40)
 #define ASN1_SEQUENCE(x) ((x)+0x30)
 #define ASN1_CONTEXT(x) ((x)+0xa0)
+#define ASN1_CONTEXT_SIMPLE(x) ((x)+0x80)
 #define ASN1_GENERAL_STRING 0x1b
 #define ASN1_OCTET_STRING 0x4
 #define ASN1_OID 0x6
 #define ASN1_BOOLEAN 0x1
 #define ASN1_INTEGER 0x2
+#define ASN1_BITFIELD 0x3
 #define ASN1_ENUMERATED 0xa
 #define ASN1_SET 0x31
 

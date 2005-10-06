@@ -671,7 +671,7 @@ BOOL net_io_q_trust_dom(const char *desc, NET_Q_TRUST_DOM_LIST *q_l, prs_struct 
 
 void init_q_req_chal(NET_Q_REQ_CHAL *q_c,
 		     const char *logon_srv, const char *logon_clnt,
-		     DOM_CHAL *clnt_chal)
+		     const DOM_CHAL *clnt_chal)
 {
 	DEBUG(5,("init_q_req_chal: %d\n", __LINE__));
 
@@ -860,7 +860,7 @@ BOOL net_io_r_auth_2(const char *desc, NET_R_AUTH_2 *r_a, prs_struct *ps, int de
 
 void init_q_auth_3(NET_Q_AUTH_3 *q_a,
 		const char *logon_srv, const char *acct_name, uint16 sec_chan, const char *comp_name,
-		DOM_CHAL *clnt_chal, uint32 clnt_flgs)
+		const DOM_CHAL *clnt_chal, uint32 clnt_flgs)
 {
 	DEBUG(5,("init_q_auth_3: %d\n", __LINE__));
 
@@ -1496,7 +1496,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 ********************************************************************/
 
 BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps, 
-		       int depth, uint16 validation_level)
+		       int depth, uint16 validation_level, BOOL kerb_validation_level)
 {
 	unsigned int i;
 
@@ -1595,6 +1595,18 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 		}
 	}
 		
+	/* get kerb validation info (not really part of user_info_3) - Guenther */
+
+	if (kerb_validation_level) {
+
+		if(!prs_uint32("ptr_res_group_dom_sid", ps, depth, &usr->ptr_res_group_dom_sid))
+			return False;
+		if(!prs_uint32("res_group_count", ps, depth, &usr->res_group_count))
+			return False;
+		if(!prs_uint32("ptr_res_groups", ps, depth, &usr->ptr_res_groups))
+			return False;
+	}
+
 	if(!smb_io_unistr2("uni_user_name", &usr->uni_user_name, usr->hdr_user_name.buffer, ps, depth)) /* username unicode string */
 		return False;
 	if(!smb_io_unistr2("uni_full_name", &usr->uni_full_name, usr->hdr_full_name.buffer, ps, depth)) /* user's full name unicode string */
@@ -1635,6 +1647,11 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 	if (usr->buffer_other_sids) {
 
 		uint32 num_other_sids = usr->num_other_sids;
+
+		if (!(usr->user_flgs & LOGON_EXTRA_SIDS)) {
+			DEBUG(10,("net_io_user_info3: user_flgs attribute does not have LOGON_EXTRA_SIDS\n"));
+			/* return False; */
+		}
 
 		if (!prs_uint32("num_other_sids", ps, depth,
 				&num_other_sids))
@@ -1724,8 +1741,10 @@ BOOL net_io_r_sam_logon(const char *desc, NET_R_SAM_LOGON *r_l, prs_struct *ps, 
 
 	if(!prs_uint32("buffer_creds", ps, depth, &r_l->buffer_creds)) /* undocumented buffer pointer */
 		return False;
-	if(!smb_io_cred("", &r_l->srv_creds, ps, depth)) /* server credentials.  server time stamp appears to be ignored. */
-		return False;
+	if (&r_l->buffer_creds) {
+		if(!smb_io_cred("", &r_l->srv_creds, ps, depth)) /* server credentials.  server time stamp appears to be ignored. */
+			return False;
+	}
 
 	if(!prs_uint16("switch_value", ps, depth, &r_l->switch_value))
 		return False;
@@ -1733,11 +1752,11 @@ BOOL net_io_r_sam_logon(const char *desc, NET_R_SAM_LOGON *r_l, prs_struct *ps, 
 		return False;
 
 #if 1 /* W2k always needs this - even for bad passwd. JRA */
-	if(!net_io_user_info3("", r_l->user, ps, depth, r_l->switch_value))
+	if(!net_io_user_info3("", r_l->user, ps, depth, r_l->switch_value, False))
 		return False;
 #else
 	if (r_l->switch_value != 0) {
-		if(!net_io_user_info3("", r_l->user, ps, depth, r_l->switch_value))
+		if(!net_io_user_info3("", r_l->user, ps, depth, r_l->switch_value, False))
 			return False;
 	}
 #endif
@@ -2139,9 +2158,8 @@ BOOL make_sam_account_info(SAM_ACCOUNT_INFO * info,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_account_info(const char *desc, uint8 sess_key[16],
-				    SAM_ACCOUNT_INFO * info, prs_struct *ps,
-				    int depth)
+static BOOL net_io_sam_account_info(const char *desc, SAM_ACCOUNT_INFO *info,
+				prs_struct *ps, int depth)
 {
 	BUFHDR2 hdr_priv_data;
 	uint32 i;
@@ -2295,7 +2313,7 @@ static BOOL net_io_sam_account_info(const char *desc, uint8 sess_key[16],
 			if (ps->io)
 			{
 				/* reading */
-                                if (!prs_hash1(ps, ps->data_offset, sess_key, len))
+                                if (!prs_hash1(ps, ps->data_offset, len))
                                         return False;
 			}
 			if (!net_io_sam_passwd_info("pass", &info->pass, 
@@ -2305,7 +2323,7 @@ static BOOL net_io_sam_account_info(const char *desc, uint8 sess_key[16],
 			if (!ps->io)
 			{
 				/* writing */
-                                if (!prs_hash1(ps, old_offset, sess_key, len))
+                                if (!prs_hash1(ps, old_offset, len))
                                         return False;
 			}
 		}
@@ -2834,7 +2852,7 @@ static BOOL net_io_sam_privs_info(const char *desc, SAM_DELTA_PRIVS *info,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_sam_delta_ctr(const char *desc, uint8 sess_key[16],
+static BOOL net_io_sam_delta_ctr(const char *desc,
 				 SAM_DELTA_CTR * delta, uint16 type,
 				 prs_struct *ps, int depth)
 {
@@ -2859,7 +2877,7 @@ static BOOL net_io_sam_delta_ctr(const char *desc, uint8 sess_key[16],
 			break;
 
 		case SAM_DELTA_ACCOUNT_INFO:
-			if (!net_io_sam_account_info("", sess_key, &delta->account_info, ps, depth))
+			if (!net_io_sam_account_info("", &delta->account_info, ps, depth))
                                 return False;
 			break;
 
@@ -2912,7 +2930,7 @@ static BOOL net_io_sam_delta_ctr(const char *desc, uint8 sess_key[16],
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL net_io_r_sam_sync(const char *desc, uint8 sess_key[16],
+BOOL net_io_r_sam_sync(const char *desc,
 		       NET_R_SAM_SYNC * r_s, prs_struct *ps, int depth)
 {
 	uint32 i;
@@ -2976,7 +2994,7 @@ BOOL net_io_r_sam_sync(const char *desc, uint8 sess_key[16],
 			for (i = 0; i < r_s->num_deltas2; i++)
 			{
 				if (!net_io_sam_delta_ctr(
-                                        "", sess_key, &r_s->deltas[i],
+                                        "", &r_s->deltas[i],
                                         r_s->hdr_deltas[i].type3,
                                         ps, depth)) {
                                         DEBUG(0, ("hmm, failed on i=%d\n", i));
@@ -3048,7 +3066,7 @@ BOOL net_io_q_sam_deltas(const char *desc, NET_Q_SAM_DELTAS *q_s, prs_struct *ps
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-BOOL net_io_r_sam_deltas(const char *desc, uint8 sess_key[16],
+BOOL net_io_r_sam_deltas(const char *desc,
                          NET_R_SAM_DELTAS *r_s, prs_struct *ps, int depth)
 {
         unsigned int i;
@@ -3104,7 +3122,7 @@ BOOL net_io_r_sam_deltas(const char *desc, uint8 sess_key[16],
 			for (i = 0; i < r_s->num_deltas; i++)
 			{
 				if (!net_io_sam_delta_ctr(
-                                        "", sess_key,
+                                        "",
                                         &r_s->deltas[i],
                                         r_s->hdr_deltas[i].type2,
                                         ps, depth))

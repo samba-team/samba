@@ -267,7 +267,11 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 		return; 
 
 	while ( list[i] ) {
-		SAFE_FREE( list[i] );
+		/* SAFE_FREE generates a warning here that can't be gotten rid
+		 * of with CONST_DISCARD */
+		if (list[i] != NULL) {
+			free(CONST_DISCARD(char *, list[i]));
+		}
 		i+=1;
 	}
 
@@ -1367,7 +1371,7 @@ static BOOL smbldap_check_root_dse(struct smbldap_state *ldap_state, const char 
 	}
 
 	rc = ldap_search_s(ldap_state->ldap_struct, "", LDAP_SCOPE_BASE, 
-			   "(objectclass=*)", attrs, 0 , &msg);
+			   "(objectclass=*)", CONST_DISCARD(char **, attrs), 0 , &msg);
 
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(3,("smbldap_check_root_dse: Could not search rootDSE\n"));

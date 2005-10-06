@@ -139,6 +139,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 				 int length, int bufsize,
 				 DATA_BLOB *secblob)
 {
+	TALLOC_CTX *mem_ctx;
 	DATA_BLOB ticket;
 	char *client, *p, *domain;
 	fstring netbios_domain_name;
@@ -146,7 +147,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	fstring user;
 	int sess_vuid;
 	NTSTATUS ret;
-	DATA_BLOB auth_data;
+	PAC_DATA *pac_data;
 	DATA_BLOB ap_rep, ap_rep_wrapped, response;
 	auth_serversupplied_info *server_info = NULL;
 	DATA_BLOB session_key = data_blob(NULL, 0);
@@ -154,18 +155,24 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	DATA_BLOB nullblob = data_blob(NULL, 0);
 	fstring real_username;
 	BOOL map_domainuser_to_guest = False;
+	PAC_LOGON_INFO *logon_info = NULL;
+	int i;
 
 	ZERO_STRUCT(ticket);
-	ZERO_STRUCT(auth_data);
+	ZERO_STRUCT(pac_data);
 	ZERO_STRUCT(ap_rep);
 	ZERO_STRUCT(ap_rep_wrapped);
 	ZERO_STRUCT(response);
+
+	mem_ctx = talloc_init("reply_spnego_kerberos");
+	if (mem_ctx == NULL)
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
 
 	if (!spnego_parse_krb5_wrap(*secblob, &ticket, tok_id)) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	ret = ads_verify_ticket(lp_realm(), &ticket, &client, &auth_data, &ap_rep, &session_key);
+	ret = ads_verify_ticket(mem_ctx, lp_realm(), &ticket, &client, &pac_data, &ap_rep, &session_key);
 
 	data_blob_free(&ticket);
 
@@ -174,7 +181,18 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	data_blob_free(&auth_data);
+	if (pac_data) {
+
+		/* get the logon_info */
+		for (i=0; i < pac_data->num_buffers; i++) {
+		
+			if (pac_data->pac_buffer[i].type != PAC_TYPE_LOGON_INFO)
+				continue;
+
+			logon_info = pac_data->pac_buffer[i].ctr->pac.logon_info;
+			break;
+		}
+	}
 
 	DEBUG(3,("Ticket name is [%s]\n", client));
 
@@ -203,7 +221,14 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	domain = p+1;
 
-	{
+	if (logon_info && logon_info->info3.hdr_logon_dom.uni_str_len) {
+
+		unistr2_to_ascii(netbios_domain_name, &logon_info->info3.uni_logon_dom, -1);
+		domain = netbios_domain_name;
+		DEBUG(10, ("Mapped to [%s] (using PAC)\n", domain));
+
+	} else {
+
 		/* If we have winbind running, we can (and must) shorten the
 		   username by using the short netbios name. Otherwise we will
 		   have inconsistent user names. With Kerberos, we get the
@@ -231,7 +256,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 				wb_response.data.domain_info.name);
 			domain = netbios_domain_name;
 
-			DEBUG(10, ("Mapped to [%s]\n", domain));
+			DEBUG(10, ("Mapped to [%s] (using Winbind)\n", domain));
 		} else {
 			DEBUG(3, ("Could not find short name -- winbind "
 				  "not running?\n"));
@@ -274,8 +299,21 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	reload_services(True);
 	if ( map_domainuser_to_guest ) {
 		make_server_info_guest(&server_info);
+	} else if (logon_info) {
+		ret = make_server_info_pac(&server_info, real_username, pw, logon_info);
+
+		if ( !NT_STATUS_IS_OK(ret) ) {
+			DEBUG(1,("make_server_info_pac failed!\n"));
+			SAFE_FREE(client);
+			data_blob_free(&ap_rep);
+			data_blob_free(&session_key);
+			passwd_free(&pw);
+			return ERROR_NT(ret);
+		}
+
 	} else {
 		ret = make_server_info_pw(&server_info, real_username, pw);
+
 		if ( !NT_STATUS_IS_OK(ret) ) {
 			DEBUG(1,("make_server_info_from_pw failed!\n"));
 			SAFE_FREE(client);
@@ -284,15 +322,17 @@ static int reply_spnego_kerberos(connection_struct *conn,
 			passwd_free(&pw);
 			return ERROR_NT(ret);
 		}
+
+	        /* make_server_info_pw does not set the domain. Without this we end up
+		 * with the local netbios name in substitutions for %D. */
+
+		if (server_info->sam_account != NULL) {
+			pdb_set_domain(server_info->sam_account, domain, PDB_SET);
+		}
 	}
+
+
 	passwd_free(&pw);
-
-        /* make_server_info_pw does not set the domain. Without this we end up
-	 * with the local netbios name in substitutions for %D. */
-
-        if (server_info->sam_account != NULL) {
-                pdb_set_domain(server_info->sam_account, domain, PDB_SET);
-        }
 
 	/* register_vuid keeps the server info */
 	/* register_vuid takes ownership of session_key, no need to free after this.
@@ -339,6 +379,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	data_blob_free(&ap_rep);
 	data_blob_free(&ap_rep_wrapped);
 	data_blob_free(&response);
+	talloc_destroy(mem_ctx);
 
 	return -1; /* already replied */
 }
@@ -348,6 +389,8 @@ static int reply_spnego_kerberos(connection_struct *conn,
  Send a session setup reply, wrapped in SPNEGO.
  Get vuid and check first.
  End the NTLMSSP exchange context if we are OK/complete fail
+ This should be split into two functions, one to handle each
+ leg of the NTLM auth steps.
 ***************************************************************************/
 
 static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *outbuf,
@@ -422,6 +465,7 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *inbuf, char *out
 	   and the other end, that we are not finished yet. */
 
 	if (!ret || !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		/* NB. This is *NOT* an error case. JRA */
 		auth_ntlmssp_end(auth_ntlmssp_state);
 		/* Kill the intermediate vuid */
 		invalidate_vuid(vuid);
@@ -660,7 +704,7 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 		return ret;
 	}
 
-	if (strncmp(blob1.data, "NTLMSSP", 7) == 0) {
+	if (strncmp((char *)(blob1.data), "NTLMSSP", 7) == 0) {
 		DATA_BLOB chal;
 		NTSTATUS nt_status;
 		if (!vuser->auth_ntlmssp_state) {

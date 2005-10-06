@@ -84,6 +84,11 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
        pam_sm_setcred(). */
     ret_data = SMB_MALLOC_P(int);
 
+    /* we need to do this before we call AUTH_RETURN */
+    /* Getting into places that might use LDAP -- protect the app
+       from a SIGPIPE it's not expecting */
+    oldsig_handler = CatchSignal(SIGPIPE, SIGNAL_CAST SIG_IGN);
+
     /* get the username */
     retval = pam_get_user( pamh, &name, "Username: " );
     if ( retval != PAM_SUCCESS ) {
@@ -95,10 +100,6 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
     if (on( SMB_DEBUG, ctrl )) {
         _log_err( LOG_DEBUG, "username [%s] obtained", name );
     }
-
-    /* Getting into places that might use LDAP -- protect the app
-       from a SIGPIPE it's not expecting */
-    oldsig_handler = CatchSignal(SIGPIPE, SIGNAL_CAST SIG_IGN);
 
     if (!initialize_password_db(True)) {
         _log_err( LOG_ALERT, "Cannot access samba password database" );

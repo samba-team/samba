@@ -43,7 +43,7 @@ typedef enum _spnego_negResult {
 } negResult_t;
 
 typedef struct spnego_negTokenInit {
-	char **mechTypes;
+	const char **mechTypes;
 	int reqFlags;
 	DATA_BLOB mechToken;
 	DATA_BLOB mechListMIC;

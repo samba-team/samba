@@ -448,19 +448,22 @@ BOOL debug_parse_levels(const char *params_str)
  Receive a "set debug level" message.
 ****************************************************************************/
 
-static void debug_message(int msg_type, pid_t src, void *buf, size_t len)
+static void debug_message(int msg_type, struct process_id src,
+			  void *buf, size_t len)
 {
 	const char *params_str = buf;
 
 	/* Check, it's a proper string! */
 	if (params_str[len-1] != '\0') {
 		DEBUG(1, ("Invalid debug message from pid %u to pid %u\n",
-			  (unsigned int)src, (unsigned int)getpid()));
+			  (unsigned int)procid_to_pid(&src),
+			  (unsigned int)getpid()));
 		return;
 	}
 
 	DEBUG(3, ("INFO: Remote set of debug to `%s'  (pid %u from pid %u)\n",
-		  params_str, (unsigned int)getpid(), (unsigned int)src));
+		  params_str, (unsigned int)getpid(),
+		  (unsigned int)procid_to_pid(&src)));
 
 	debug_parse_levels(params_str);
 }
@@ -473,7 +476,8 @@ void debug_message_send(pid_t pid, const char *params_str)
 {
 	if (!params_str)
 		return;
-	message_send_pid(pid, MSG_DEBUG, params_str, strlen(params_str) + 1,
+	message_send_pid(pid_to_procid(pid), MSG_DEBUG,
+			 params_str, strlen(params_str) + 1,
 			 False);
 }
 
@@ -481,11 +485,13 @@ void debug_message_send(pid_t pid, const char *params_str)
  Return current debug level.
 ****************************************************************************/
 
-static void debuglevel_message(int msg_type, pid_t src, void *buf, size_t len)
+static void debuglevel_message(int msg_type, struct process_id src,
+			       void *buf, size_t len)
 {
 	char *message = debug_list_class_names_and_levels();
 
-	DEBUG(1,("INFO: Received REQ_DEBUGLEVEL message from PID %u\n",(unsigned int)src));
+	DEBUG(1,("INFO: Received REQ_DEBUGLEVEL message from PID %u\n",
+		 (unsigned int)procid_to_pid(&src)));
 	message_send_pid(src, MSG_DEBUGLEVEL, message, strlen(message) + 1, True);
 
 	SAFE_FREE(message);

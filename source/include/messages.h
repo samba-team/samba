@@ -63,6 +63,11 @@
 #define MSG_SMB_SAM_SYNC     3003
 #define MSG_SMB_SAM_REPL     3004
 #define MSG_SMB_UNLOCK       3005
+#define MSG_SMB_BREAK_REQUEST 3006
+#define MSG_SMB_BREAK_RESPONSE 3007
+#define MSG_SMB_ASYNC_LEVEL2_BREAK 3008
+#define MSG_SMB_OPEN_RETRY   3009
+#define MSG_SMB_KERNEL_BREAK 3010
 
 /* winbind messages */
 #define MSG_WINBIND_FINISHED     4001
@@ -76,5 +81,9 @@
 #define FLAG_MSG_NMBD		0x0004
 #define FLAG_MSG_PRINT_NOTIFY	0x0008
 #define FLAG_MSG_PRINT_GENERAL	0x0010
+
+struct process_id {
+	pid_t pid;
+};
 
 #endif

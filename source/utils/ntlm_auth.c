@@ -465,6 +465,7 @@ static NTSTATUS ntlm_auth_start_ntlmssp_client(NTLMSSP_STATE **client_ntlmssp_st
 {
 	NTSTATUS status;
 	if ( (opt_username == NULL) || (opt_domain == NULL) ) {
+		status = NT_STATUS_UNSUCCESSFUL;
 		DEBUG(1, ("Need username and domain for NTLMSSP\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -693,7 +694,8 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 		data_blob_free(&reply);
 		DEBUG(10, ("NTLMSSP challenge\n"));
 	} else if (NT_STATUS_IS_OK(nt_status)) {
-		x_fprintf(x_stdout, "AF\n");
+		char *reply_base64 = base64_encode_data_blob(reply);
+		x_fprintf(x_stdout, "AF %s\n", reply_base64);
 		DEBUG(10, ("NTLMSSP OK!\n"));
 		if (ntlmssp_state)
 			ntlmssp_end(&ntlmssp_state);
@@ -753,7 +755,7 @@ static void offer_gss_spnego_mechs(void) {
 
 	/* Server negTokenInit (mech offerings) */
 	spnego.type = SPNEGO_NEG_TOKEN_INIT;
-	spnego.negTokenInit.mechTypes = SMB_XMALLOC_ARRAY(const char *, 3);
+	spnego.negTokenInit.mechTypes = SMB_XMALLOC_ARRAY(char *, 2);
 #ifdef HAVE_KRB5
 	spnego.negTokenInit.mechTypes[0] = smb_xstrdup(OID_KERBEROS5_OLD);
 	spnego.negTokenInit.mechTypes[1] = smb_xstrdup(OID_NTLMSSP);
@@ -793,6 +795,7 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 	DATA_BLOB token;
 	NTSTATUS status;
 	ssize_t len;
+	TALLOC_CTX *mem_ctx = talloc_init("manage_gss_spnego_request");
 
 	char *user = NULL;
 	char *domain = NULL;
@@ -857,6 +860,7 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 			return;
 		}
 
+		status = NT_STATUS_UNSUCCESSFUL;
 		if (strcmp(request.negTokenInit.mechTypes[0], OID_NTLMSSP) == 0) {
 
 			if ( request.negTokenInit.mechToken.data == NULL ) {
@@ -895,7 +899,6 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 		if (strcmp(request.negTokenInit.mechTypes[0], OID_KERBEROS5_OLD) == 0) {
 
 			char *principal;
-			DATA_BLOB auth_data;
 			DATA_BLOB ap_rep;
 			DATA_BLOB session_key;
 
@@ -910,10 +913,12 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 			response.negTokenTarg.mechListMIC = data_blob(NULL, 0);
 			response.negTokenTarg.responseToken = data_blob(NULL, 0);
 
-			status = ads_verify_ticket(lp_realm(),
+			status = ads_verify_ticket(mem_ctx, lp_realm(),
 						   &request.negTokenInit.mechToken,
-						   &principal, &auth_data, &ap_rep,
+						   &principal, NULL, &ap_rep,
 						   &session_key);
+
+			talloc_destroy(mem_ctx);
 
 			/* Now in "principal" we have the name we are
                            authenticated as. */
@@ -934,7 +939,6 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 				user = SMB_STRDUP(principal);
 
 				data_blob_free(&ap_rep);
-				data_blob_free(&auth_data);
 
 				SAFE_FREE(principal);
 			}
@@ -1052,15 +1056,16 @@ static BOOL manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 	}
 
 	spnego.type = SPNEGO_NEG_TOKEN_INIT;
-	spnego.negTokenInit.mechTypes = my_mechs;
+	spnego.negTokenInit.mechTypes = CONST_DISCARD(char **,my_mechs);
 	spnego.negTokenInit.reqFlags = 0;
 	spnego.negTokenInit.mechListMIC = null_blob;
 
 	status = ntlmssp_update(client_ntlmssp_state, null_blob,
 				       &spnego.negTokenInit.mechToken);
 
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		DEBUG(1, ("Expected MORE_PROCESSING_REQUIRED, got: %s\n",
+	if ( !(NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) ||
+			NT_STATUS_IS_OK(status)) ) {
+		DEBUG(1, ("Expected OK or MORE_PROCESSING_REQUIRED, got: %s\n",
 			  nt_errstr(status)));
 		ntlmssp_end(&client_ntlmssp_state);
 		return False;
@@ -1121,7 +1126,7 @@ static void manage_client_ntlmssp_targ(SPNEGO_DATA spnego)
 
 	spnego.type = SPNEGO_NEG_TOKEN_TARG;
 	spnego.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
-	spnego.negTokenTarg.supportedMech = OID_NTLMSSP;
+	spnego.negTokenTarg.supportedMech = (char *)OID_NTLMSSP;
 	spnego.negTokenTarg.responseToken = request;
 	spnego.negTokenTarg.mechListMIC = null_blob;
 	
@@ -1166,7 +1171,7 @@ static BOOL manage_client_krb5_init(SPNEGO_DATA spnego)
 	       spnego.negTokenInit.mechListMIC.length);
 	principal[spnego.negTokenInit.mechListMIC.length] = '\0';
 
-	retval = cli_krb5_get_ticket(principal, 0, &tkt, &session_key_krb5);
+	retval = cli_krb5_get_ticket(principal, 0, &tkt, &session_key_krb5, 0);
 
 	if (retval) {
 
@@ -1189,7 +1194,7 @@ static BOOL manage_client_krb5_init(SPNEGO_DATA spnego)
 			return False;
 		}
 
-		retval = cli_krb5_get_ticket(principal, 0, &tkt, &session_key_krb5);
+		retval = cli_krb5_get_ticket(principal, 0, &tkt, &session_key_krb5, 0);
 
 		if (retval) {
 			DEBUG(10, ("Kinit suceeded, but getting a ticket failed: %s\n", error_message(retval)));
@@ -1305,7 +1310,7 @@ static void manage_gss_spnego_client_request(enum stdio_helper_mode stdio_helper
 
 		/* The server offers a list of mechanisms */
 
-		const char **mechType = spnego.negTokenInit.mechTypes;
+		const char **mechType = (const char **)spnego.negTokenInit.mechTypes;
 
 		while (*mechType != NULL) {
 
@@ -1470,21 +1475,21 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 				if (ntlm_server_1_lm_session_key 
 				    && (memcmp(zeros, lm_key, 
 					       sizeof(lm_key)) != 0)) {
-					hex_encode((const unsigned char *)lm_key,
-						   sizeof(lm_key),
-						   &hex_lm_key);
+					hex_lm_key = hex_encode(NULL,
+								(const unsigned char *)lm_key,
+								sizeof(lm_key));
 					x_fprintf(x_stdout, "LANMAN-Session-Key: %s\n", hex_lm_key);
-					SAFE_FREE(hex_lm_key);
+					talloc_free(hex_lm_key);
 				}
 
 				if (ntlm_server_1_user_session_key 
 				    && (memcmp(zeros, user_session_key, 
 					       sizeof(user_session_key)) != 0)) {
-					hex_encode((const unsigned char *)user_session_key, 
-						   sizeof(user_session_key), 
-						   &hex_user_session_key);
+					hex_user_session_key = hex_encode(NULL,
+									  (const unsigned char *)user_session_key, 
+									  sizeof(user_session_key));
 					x_fprintf(x_stdout, "User-Session-Key: %s\n", hex_user_session_key);
-					SAFE_FREE(hex_user_session_key);
+					talloc_free(hex_user_session_key);
 				}
 			}
 		}
@@ -1533,7 +1538,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 	}
 
 	if (strequal(request, "LANMAN-Challenge")) {
-		challenge = strhex_to_data_blob(parameter);
+		challenge = strhex_to_data_blob(NULL, parameter);
 		if (challenge.length != 8) {
 			x_fprintf(x_stdout, "Error: hex decode of %s failed! (got %d bytes, expected 8)\n.\n", 
 				  parameter,
@@ -1541,7 +1546,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 			challenge = data_blob(NULL, 0);
 		}
 	} else if (strequal(request, "NT-Response")) {
-		nt_response = strhex_to_data_blob(parameter);
+		nt_response = strhex_to_data_blob(NULL, parameter);
 		if (nt_response.length < 24) {
 			x_fprintf(x_stdout, "Error: hex decode of %s failed! (only got %d bytes, needed at least 24)\n.\n", 
 				  parameter,
@@ -1549,7 +1554,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 			nt_response = data_blob(NULL, 0);
 		}
 	} else if (strequal(request, "LANMAN-Response")) {
-		lm_response = strhex_to_data_blob(parameter);
+		lm_response = strhex_to_data_blob(NULL, parameter);
 		if (lm_response.length != 24) {
 			x_fprintf(x_stdout, "Error: hex decode of %s failed! (got %d bytes, expected 24)\n.\n", 
 				  parameter,
@@ -1672,20 +1677,18 @@ static BOOL check_auth_crap(void)
 	if (request_lm_key 
 	    && (memcmp(zeros, lm_key, 
 		       sizeof(lm_key)) != 0)) {
-		hex_encode((const unsigned char *)lm_key,
-			   sizeof(lm_key),
-			   &hex_lm_key);
+		hex_lm_key = hex_encode(NULL, (const unsigned char *)lm_key,
+					sizeof(lm_key));
 		x_fprintf(x_stdout, "LM_KEY: %s\n", hex_lm_key);
-		SAFE_FREE(hex_lm_key);
+		talloc_free(hex_lm_key);
 	}
 	if (request_user_session_key 
 	    && (memcmp(zeros, user_session_key, 
 		       sizeof(user_session_key)) != 0)) {
-		hex_encode((const unsigned char *)user_session_key, 
-			   sizeof(user_session_key), 
-			   &hex_user_session_key);
+		hex_user_session_key = hex_encode(NULL, (const unsigned char *)user_session_key, 
+						  sizeof(user_session_key));
 		x_fprintf(x_stdout, "NT_KEY: %s\n", hex_user_session_key);
-		SAFE_FREE(hex_user_session_key);
+		talloc_free(hex_user_session_key);
 	}
 
         return True;
@@ -1775,7 +1778,7 @@ enum {
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case OPT_CHALLENGE:
-			opt_challenge = strhex_to_data_blob(hex_challenge);
+			opt_challenge = strhex_to_data_blob(NULL, hex_challenge);
 			if (opt_challenge.length != 8) {
 				x_fprintf(x_stderr, "hex decode of %s failed! (only got %d bytes)\n", 
 					  hex_challenge,
@@ -1784,7 +1787,7 @@ enum {
 			}
 			break;
 		case OPT_LM: 
-			opt_lm_response = strhex_to_data_blob(hex_lm_response);
+			opt_lm_response = strhex_to_data_blob(NULL, hex_lm_response);
 			if (opt_lm_response.length != 24) {
 				x_fprintf(x_stderr, "hex decode of %s failed! (only got %d bytes)\n", 
 					  hex_lm_response,
@@ -1794,7 +1797,7 @@ enum {
 			break;
 
 		case OPT_NT: 
-			opt_nt_response = strhex_to_data_blob(hex_nt_response);
+			opt_nt_response = strhex_to_data_blob(NULL, hex_nt_response);
 			if (opt_nt_response.length < 24) {
 				x_fprintf(x_stderr, "hex decode of %s failed! (only got %d bytes)\n", 
 					  hex_nt_response,

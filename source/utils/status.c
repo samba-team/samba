@@ -98,7 +98,7 @@ static BOOL Ucrit_addPid( pid_t pid )
 	return True;
 }
 
-static void print_share_mode(share_mode_entry *e, char *fname)
+static void print_share_mode(const struct share_mode_entry *e, char *fname)
 {
 	static int count;
 	if (count==0) {
@@ -108,8 +108,8 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 	}
 	count++;
 
-	if (Ucrit_checkPid(e->pid)) {
-		d_printf("%-5d  ",(int)e->pid);
+	if (Ucrit_checkPid(procid_to_pid(&e->pid))) {
+		d_printf("%s  ",procid_str_static(&e->pid));
 		switch (map_share_mode_to_deny_mode(e->share_access,
 						    e->private_options)) {
 			case DENY_NONE: d_printf("DENY_NONE  "); break;
@@ -154,7 +154,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 	}
 }
 
-static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, int pid, 
+static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, struct process_id pid, 
 		      enum brl_type lock_type,
 		      br_off start, br_off size)
 {
@@ -166,8 +166,8 @@ static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, int pid,
 	}
 	count++;
 
-	d_printf("%6d   %05x:%05x    %s  %9.0f   %9.0f\n", 
-	       (int)pid, (int)dev, (int)ino, 
+	d_printf("%s   %05x:%05x    %s  %9.0f   %9.0f\n", 
+	       procid_str_static(&pid), (int)dev, (int)ino, 
 	       lock_type==READ_LOCK?"R":"W",
 	       (double)start, (double)size);
 }
@@ -550,8 +550,8 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 		return 0;
 	}
 
-	d_printf("%-10s   %5d   %-12s  %s",
-	       crec.name,(int)crec.pid,
+	d_printf("%-10s   %s   %-12s  %s",
+	       crec.name,procid_str_static(&crec.pid),
 	       crec.machine,
 	       asctime(LocalTime(&crec.start)));
 
@@ -568,7 +568,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 
 	memcpy(&sessionid, dbuf.dptr, sizeof(sessionid));
 
-	if (!process_exists(sessionid.pid) || !Ucrit_checkUid(sessionid.uid)) {
+	if (!process_exists_by_pid(sessionid.pid) || !Ucrit_checkUid(sessionid.uid)) {
 		return 0;
 	}
 

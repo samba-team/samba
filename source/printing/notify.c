@@ -176,13 +176,15 @@ static void print_notify_send_messages_to_printer(const char *printer, unsigned 
 		return;
 
 	for (i = 0; i < num_pids; i++) {
-		unsigned int q_len = messages_pending_for_pid(pid_list[i]);
+		unsigned int q_len = messages_pending_for_pid(pid_to_procid(pid_list[i]));
 		if (q_len > 1000) {
 			DEBUG(5, ("print_notify_send_messages_to_printer: discarding notify to printer %s as queue length = %u\n",
 				printer, q_len ));
 			continue;
 		}
-		message_send_pid_with_timeout(pid_list[i], MSG_PRINTER_NOTIFY2, buf, offset, True, timeout);
+		message_send_pid_with_timeout(pid_to_procid(pid_list[i]),
+					      MSG_PRINTER_NOTIFY2,
+					      buf, offset, True, timeout);
 	}
 }
 
@@ -328,7 +330,7 @@ static void send_notify_field_values(const char *sharename, uint32 type,
 
 static void send_notify_field_buffer(const char *sharename, uint32 type,
 				     uint32 field, uint32 id, uint32 len,
-				     char *buffer)
+				     const char *buffer)
 {
 	struct spoolss_notify_msg *msg;
 
@@ -349,7 +351,7 @@ static void send_notify_field_buffer(const char *sharename, uint32 type,
 	msg->field = field;
 	msg->id = id;
 	msg->len = len;
-	msg->notify.data = buffer;
+	msg->notify.data = CONST_DISCARD(char *,buffer);
 
 	send_spoolss_notify2_msg(msg);
 }
@@ -484,7 +486,7 @@ void notify_printer_location(int snum, char *location)
 		snum, strlen(location) + 1, location);
 }
 
-void notify_printer_byname( const char *printername, uint32 change, char *value )
+void notify_printer_byname( const char *printername, uint32 change, const char *value )
 {
 	int snum = print_queue_snum(printername);
 	int type = PRINTER_NOTIFY_TYPE;

@@ -2,10 +2,10 @@
    Unix SMB/CIFS implementation.
    NT Domain Authentication SMB / MSRPC client
    Copyright (C) Andrew Tridgell 1994-2000
-   Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    Copyright (C) Tim Potter 2001
    Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002
-   
+   Copyright (C) Jeremy Allison  2005.
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -23,7 +23,7 @@
 
 #include "includes.h"
 
-WERROR cli_srvsvc_net_srv_get_info(struct cli_state *cli, 
+WERROR rpccli_srvsvc_net_srv_get_info(struct rpc_pipe_client *cli, 
 				   TALLOC_CTX *mem_ctx,
 				   uint32 switch_value, SRV_INFO_CTR *ctr)
 {
@@ -31,42 +31,33 @@ WERROR cli_srvsvc_net_srv_get_info(struct cli_state *cli,
 	SRV_Q_NET_SRV_GET_INFO q;
 	SRV_R_NET_SRV_GET_INFO r;
 	WERROR result = W_ERROR(ERRgeneral);
+	fstring server;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
-
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
 	/* Initialise input parameters */
 
-	init_srv_q_net_srv_get_info(&q, cli->srv_name_slash, switch_value);
+	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
+	strupper_m(server);
+
+	init_srv_q_net_srv_get_info(&q, server, switch_value);
+	r.ctr = ctr;
 
 	/* Marshall data and send request */
 
-	if (!srv_io_q_net_srv_get_info("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_SRVSVC, SRV_NET_SRV_GET_INFO, &qbuf, &rbuf))
-		goto done;
-
-	/* Unmarshall response */
-
-	r.ctr = ctr;
-
-	if (!srv_io_r_net_srv_get_info("", &r, &rbuf, 0))
-		goto done;
+	CLI_DO_RPC_WERR(cli, mem_ctx, PI_SRVSVC, SRV_NET_SRV_GET_INFO,
+		q, r,
+		qbuf, rbuf,
+		srv_io_q_net_srv_get_info,
+		srv_io_r_net_srv_get_info,
+		WERR_GENERAL_FAILURE);
 
 	result = r.status;
-
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;
 }
 
-WERROR cli_srvsvc_net_share_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_srvsvc_net_share_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				 uint32 info_level, SRV_SHARE_INFO_CTR *ctr,
 				 int preferred_len, ENUM_HND *hnd)
 {
@@ -74,31 +65,27 @@ WERROR cli_srvsvc_net_share_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SRV_Q_NET_SHARE_ENUM q;
 	SRV_R_NET_SHARE_ENUM r;
 	WERROR result = W_ERROR(ERRgeneral);
+	fstring server;
 	int i;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
-
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
 	/* Initialise input parameters */
 
-	init_srv_q_net_share_enum(
-		&q, cli->srv_name_slash, info_level, preferred_len, hnd);
+	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
+	strupper_m(server);
+
+	init_srv_q_net_share_enum(&q, server, info_level, preferred_len, hnd);
 
 	/* Marshall data and send request */
 
-	if (!srv_io_q_net_share_enum("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_SRVSVC, SRV_NET_SHARE_ENUM_ALL, &qbuf, &rbuf))
-		goto done;
-
-	/* Unmarshall response */
-
-	if (!srv_io_r_net_share_enum("", &r, &rbuf, 0))
-		goto done;
+	CLI_DO_RPC_WERR(cli, mem_ctx, PI_SRVSVC, SRV_NET_SHARE_ENUM_ALL,
+		q, r,
+		qbuf, rbuf,
+		srv_io_q_net_share_enum,
+		srv_io_r_net_share_enum,
+		WERR_GENERAL_FAILURE);
 
 	result = r.status;
 
@@ -215,14 +202,13 @@ WERROR cli_srvsvc_net_share_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		}
 		break;
 	}
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
+
+  done:
 
 	return result;
 }
 
-WERROR cli_srvsvc_net_share_get_info(struct cli_state *cli,
+WERROR rpccli_srvsvc_net_share_get_info(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     const char *sharename,
 				     uint32 info_level,
@@ -232,30 +218,26 @@ WERROR cli_srvsvc_net_share_get_info(struct cli_state *cli,
 	SRV_Q_NET_SHARE_GET_INFO q;
 	SRV_R_NET_SHARE_GET_INFO r;
 	WERROR result = W_ERROR(ERRgeneral);
+	fstring server;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
-
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
 	/* Initialise input parameters */
 
-	init_srv_q_net_share_get_info(&q, cli->srv_name_slash, sharename,
-				      info_level);
+	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
+	strupper_m(server);
+
+	init_srv_q_net_share_get_info(&q, server, sharename, info_level);
 
 	/* Marshall data and send request */
 
-	if (!srv_io_q_net_share_get_info("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_SRVSVC, SRV_NET_SHARE_GET_INFO, &qbuf, &rbuf))
-		goto done;
-
-	/* Unmarshall response */
-
-	if (!srv_io_r_net_share_get_info("", &r, &rbuf, 0))
-		goto done;
+	CLI_DO_RPC_WERR(cli, mem_ctx, PI_SRVSVC, SRV_NET_SHARE_GET_INFO,
+		q, r,
+		qbuf, rbuf,
+		srv_io_q_net_share_get_info,
+		srv_io_r_net_share_get_info,
+		WERR_GENERAL_FAILURE);
 
 	result = r.status;
 
@@ -363,14 +345,12 @@ WERROR cli_srvsvc_net_share_get_info(struct cli_state *cli,
 		break;
 	}
 
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
+  done:
 
 	return result;
 }
 
-WERROR cli_srvsvc_net_share_set_info(struct cli_state *cli,
+WERROR rpccli_srvsvc_net_share_set_info(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     const char *sharename,
 				     uint32 info_level,
@@ -380,84 +360,64 @@ WERROR cli_srvsvc_net_share_set_info(struct cli_state *cli,
 	SRV_Q_NET_SHARE_SET_INFO q;
 	SRV_R_NET_SHARE_SET_INFO r;
 	WERROR result = W_ERROR(ERRgeneral);
+	fstring server;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
-
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
 	/* Initialise input parameters */
 
-	init_srv_q_net_share_set_info(&q, cli->srv_name_slash, sharename,
-				      info_level, info);
+	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
+	strupper_m(server);
+
+	init_srv_q_net_share_set_info(&q, server, sharename, info_level, info);
 
 	/* Marshall data and send request */
 
-	if (!srv_io_q_net_share_set_info("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_SRVSVC, SRV_NET_SHARE_SET_INFO, &qbuf, &rbuf))
-		goto done;
-
-	/* Unmarshall response */
-
-	if (!srv_io_r_net_share_set_info("", &r, &rbuf, 0))
-		goto done;
+	CLI_DO_RPC_WERR(cli, mem_ctx, PI_SRVSVC, SRV_NET_SHARE_SET_INFO,
+		q, r,
+		qbuf, rbuf,
+		srv_io_q_net_share_set_info,
+		srv_io_r_net_share_set_info,
+		WERR_GENERAL_FAILURE);
 
 	result = r.status;
-
-	if (!W_ERROR_IS_OK(result))
-		goto done;
-
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;
 }
 
-WERROR cli_srvsvc_net_share_del(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_srvsvc_net_share_del(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				const char *sharename)
 {
 	prs_struct qbuf, rbuf;
 	SRV_Q_NET_SHARE_DEL q;
 	SRV_R_NET_SHARE_DEL r;
 	WERROR result = W_ERROR(ERRgeneral);
+	fstring server;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
-
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
 	/* Initialise input parameters */
 
-	init_srv_q_net_share_del(&q, cli->srv_name_slash, sharename);
+	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
+	strupper_m(server);
+
+	init_srv_q_net_share_del(&q, server, sharename);
 
 	/* Marshall data and send request */
 
-	if (!srv_io_q_net_share_del("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_SRVSVC, SRV_NET_SHARE_DEL, &qbuf, &rbuf))
-		goto done;
-
-	/* Unmarshall response */
-
-	if (!srv_io_r_net_share_del("", &r, &rbuf, 0))
-		goto done;
+	CLI_DO_RPC_WERR(cli, mem_ctx, PI_SRVSVC, SRV_NET_SHARE_DEL,
+		q, r,
+		qbuf, rbuf,
+		srv_io_q_net_share_del,
+		srv_io_r_net_share_del,
+		WERR_GENERAL_FAILURE);
 
 	result = r.status;
-
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;
 }
 
-WERROR cli_srvsvc_net_share_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_srvsvc_net_share_add(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				const char *netname, uint32 type, 
 				const char *remark, uint32 perms, 
 				uint32 max_uses, uint32 num_uses, 
@@ -468,85 +428,65 @@ WERROR cli_srvsvc_net_share_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SRV_Q_NET_SHARE_ADD q;
 	SRV_R_NET_SHARE_ADD r;
 	WERROR result = W_ERROR(ERRgeneral);
+	fstring server;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
+	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
+	strupper_m(server);
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
-	init_srv_q_net_share_add(&q,cli->srv_name_slash, netname, type, remark,
+	init_srv_q_net_share_add(&q,server, netname, type, remark,
 				 perms, max_uses, num_uses, path, passwd, 
 				 level, sd);
 
 	/* Marshall data and send request */
 
-	if (!srv_io_q_net_share_add("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_SRVSVC, SRV_NET_SHARE_ADD, &qbuf, &rbuf))
-		goto done;
-
-	/* Unmarshall response */
-
-	if (!srv_io_r_net_share_add("", &r, &rbuf, 0))
-		goto done;
+	CLI_DO_RPC_WERR(cli, mem_ctx, PI_SRVSVC, SRV_NET_SHARE_ADD,
+		q, r,
+		qbuf, rbuf,
+		srv_io_q_net_share_add,
+		srv_io_r_net_share_add,
+		WERR_GENERAL_FAILURE);
 
 	result = r.status;
-
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;	
 }
 
-WERROR cli_srvsvc_net_remote_tod(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_srvsvc_net_remote_tod(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				 char *server, TIME_OF_DAY_INFO *tod)
 {
 	prs_struct qbuf, rbuf;
 	SRV_Q_NET_REMOTE_TOD q;
 	SRV_R_NET_REMOTE_TOD r;
 	WERROR result = W_ERROR(ERRgeneral);
+	fstring server_slash;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
-
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
 	/* Initialise input parameters */
 
-	init_srv_q_net_remote_tod(&q, cli->srv_name_slash);
+	slprintf(server_slash, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
+	strupper_m(server_slash);
+
+	init_srv_q_net_remote_tod(&q, server_slash);
+	r.tod = tod;
 
 	/* Marshall data and send request */
 
-	if (!srv_io_q_net_remote_tod("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_SRVSVC, SRV_NET_REMOTE_TOD, &qbuf, &rbuf))
-		goto done;
-
-	/* Unmarshall response */
-
-	r.tod = tod;
-
-	if (!srv_io_r_net_remote_tod("", &r, &rbuf, 0))
-		goto done;
+	CLI_DO_RPC_WERR(cli, mem_ctx, PI_SRVSVC, SRV_NET_REMOTE_TOD,
+		q, r,
+		qbuf, rbuf,
+		srv_io_q_net_remote_tod,
+		srv_io_r_net_remote_tod,
+		WERR_GENERAL_FAILURE);
 
 	result = r.status;
-
-	if (!W_ERROR_IS_OK(result))
-		goto done;
-
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
 	return result;	
 }
 
-WERROR cli_srvsvc_net_file_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_srvsvc_net_file_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				uint32 file_level, const char *user_name,
 				SRV_FILE_INFO_CTR *ctr,	int preferred_len,
 				ENUM_HND *hnd)
@@ -555,31 +495,28 @@ WERROR cli_srvsvc_net_file_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SRV_Q_NET_FILE_ENUM q;
 	SRV_R_NET_FILE_ENUM r;
 	WERROR result = W_ERROR(ERRgeneral);
+	fstring server;
 	int i;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
-
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
 	/* Initialise input parameters */
 
-	init_srv_q_net_file_enum(&q, cli->srv_name_slash, NULL, user_name, 
+	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
+	strupper_m(server);
+
+	init_srv_q_net_file_enum(&q, server, NULL, user_name, 
 				 file_level, ctr, preferred_len, hnd);
 
 	/* Marshall data and send request */
 
-	if (!srv_io_q_net_file_enum("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_SRVSVC, SRV_NET_FILE_ENUM, &qbuf, &rbuf))
-		goto done;
-
-	/* Unmarshall response */
-
-	if (!srv_io_r_net_file_enum("", &r, &rbuf, 0))
-		goto done;
+	CLI_DO_RPC_WERR(cli, mem_ctx, PI_SRVSVC, SRV_NET_FILE_ENUM,
+		q, r,
+		qbuf, rbuf,
+		srv_io_q_net_file_enum,
+		srv_io_r_net_file_enum,
+		WERR_GENERAL_FAILURE);
 
 	result = r.status;
 
@@ -625,47 +562,38 @@ WERROR cli_srvsvc_net_file_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		break;
 	}
 
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
+  done:
 	return result;
 }
 
-WERROR cli_srvsvc_net_file_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_srvsvc_net_file_close(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				 uint32 file_id)
 {
 	prs_struct qbuf, rbuf;
 	SRV_Q_NET_FILE_CLOSE q;
 	SRV_R_NET_FILE_CLOSE r;
 	WERROR result = W_ERROR(ERRgeneral);
+	fstring server;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	/* Initialise parse structures */
-
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
 	/* Initialise input parameters */
 
-	init_srv_q_net_file_close(&q, cli->srv_name_slash, file_id);
+	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
+	strupper_m(server);
+
+	init_srv_q_net_file_close(&q, server, file_id);
 
 	/* Marshall data and send request */
 
-	if (!srv_io_q_net_file_close("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_SRVSVC, SRV_NET_FILE_CLOSE, &qbuf, &rbuf))
-		goto done;
-
-	/* Unmarshall response */
-
-	if (!srv_io_r_net_file_close("", &r, &rbuf, 0))
-		goto done;
+	CLI_DO_RPC_WERR(cli, mem_ctx, PI_SRVSVC, SRV_NET_FILE_CLOSE,
+		q, r,
+		qbuf, rbuf,
+		srv_io_q_net_file_close,
+		srv_io_r_net_file_close,
+		WERR_GENERAL_FAILURE);
 
 	result = r.status;
- done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
 	return result;
 }

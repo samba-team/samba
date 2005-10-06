@@ -80,21 +80,44 @@ static vfs_op_tuple audit_op_tuples[] = {
 
 static int audit_syslog_facility(vfs_handle_struct *handle)
 {
-	/* fix me: let this be configurable by:
-	 *	lp_param_enum(SNUM(handle->conn),(handle->param?handle->param:"extd_audit"),"syslog facility",
-	 *		audit_enum_facility,LOG_USER); 
-	 */
-	return LOG_USER;
+	static const struct enum_list enum_log_facilities[] = {
+		{ LOG_USER, "USER" },
+		{ LOG_LOCAL0, "LOCAL0" },
+		{ LOG_LOCAL1, "LOCAL1" },
+		{ LOG_LOCAL2, "LOCAL2" },
+		{ LOG_LOCAL3, "LOCAL3" },
+		{ LOG_LOCAL4, "LOCAL4" },
+		{ LOG_LOCAL5, "LOCAL5" },
+		{ LOG_LOCAL6, "LOCAL6" },
+		{ LOG_LOCAL7, "LOCAL7" }
+	};
+
+	int facility;
+
+	facility = lp_parm_enum(SNUM(handle->conn), "extd_audit", "facility", enum_log_facilities, LOG_USER);
+
+	return facility;
 }
 
 
 static int audit_syslog_priority(vfs_handle_struct *handle)
 {
-	/* fix me: let this be configurable by:
-	 *	lp_param_enum(SNUM(handle->conn),(handle->param?handle->param:"extd_audit"),"syslog priority",
-	 *		audit_enum_priority,LOG_NOTICE); 
-	 */
-	return LOG_NOTICE;
+	static const struct enum_list enum_log_priorities[] = {
+		{ LOG_EMERG, "EMERG" },
+		{ LOG_ALERT, "ALERT" },
+		{ LOG_CRIT, "CRIT" },
+		{ LOG_ERR, "ERR" },
+		{ LOG_WARNING, "WARNING" },
+		{ LOG_NOTICE, "NOTICE" },
+		{ LOG_INFO, "INFO" },
+		{ LOG_DEBUG, "DEBUG" }
+	};
+
+	int priority;
+
+	priority = lp_parm_enum(SNUM(handle->conn), "extd_audit", "priority", enum_log_priorities, LOG_NOTICE);
+
+	return priority;
 }
 
 /* Implementation of vfs_ops.  Pass everything on to the default

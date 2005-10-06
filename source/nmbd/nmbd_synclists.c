@@ -294,7 +294,7 @@ void sync_check_completion(void)
 
 	for (s=syncs;s;s=next) {
 		next = s->next;
-		if (!process_exists(s->pid)) {
+		if (!process_exists_by_pid(s->pid)) {
 			/* it has completed - grab the info */
 			complete_sync(s);
 			DLIST_REMOVE(syncs, s);

@@ -57,7 +57,7 @@ struct printif
                    print_status_struct *status);
   int (*queue_pause)(int snum);
   int (*queue_resume)(int snum);
-  int (*job_delete)(int snum, struct printjob *pjob);
+  int (*job_delete)(const char *sharename, const char *lprm_command, struct printjob *pjob);
   int (*job_pause)(int snum, struct printjob *pjob);
   int (*job_resume)(int snum, struct printjob *pjob);
   int (*job_submit)(int snum, struct printjob *pjob);
@@ -68,6 +68,10 @@ extern struct printif	generic_printif;
 #ifdef HAVE_CUPS
 extern struct printif	cups_printif;
 #endif /* HAVE_CUPS */
+
+#ifdef HAVE_IPRINT
+extern struct printif	iprint_printif;
+#endif /* HAVE_IPRINT */
 
 /* PRINT_MAX_JOBID is now defined in local.h */
 #define UNIX_JOB_START PRINT_MAX_JOBID

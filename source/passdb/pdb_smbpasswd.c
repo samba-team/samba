@@ -313,10 +313,11 @@ static struct smb_passwd *getsmbfilepwent(struct smbpasswd_privates *smbpasswd_s
 	unsigned char *smbpwd = smbpasswd_state->smbpwd;
 	unsigned char *smbntpwd = smbpasswd_state->smbntpwd;
 	char linebuf[256];
-	unsigned char c;
+	int c;
 	unsigned char *p;
 	long uidval;
 	size_t linebuf_len;
+	char *status;
 
 	if(fp == NULL) {
 		DEBUG(0,("getsmbfilepwent: Bad password file pointer.\n"));
@@ -329,11 +330,12 @@ static struct smb_passwd *getsmbfilepwent(struct smbpasswd_privates *smbpasswd_s
 	/*
 	 * Scan the file, a line at a time and check if the name matches.
 	 */
-	while (!feof(fp)) {
+	status = linebuf;
+	while (status && !feof(fp)) {
 		linebuf[0] = '\0';
 
-		fgets(linebuf, 256, fp);
-		if (ferror(fp)) {
+		status = fgets(linebuf, 256, fp);
+		if (status == NULL && ferror(fp)) {
 			return NULL;
 		}
 
@@ -651,7 +653,7 @@ Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("add_smbfilepwd_entry(%d): new_entry_len %d made line |%s|", 
-			fd, new_entry_length, new_entry));
+			fd, (int)new_entry_length, new_entry));
 #endif
 
 	if ((wr_len = write(fd, new_entry, new_entry_length)) != new_entry_length) {
@@ -689,9 +691,10 @@ static BOOL mod_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, con
 	/* Static buffers we will return. */
 	pstring user_name;
 
+	char *status;
 	char linebuf[256];
 	char readbuf[1024];
-	unsigned char c;
+	int c;
 	fstring ascii_p16;
 	fstring encode_bits;
 	unsigned char *p = NULL;
@@ -738,13 +741,14 @@ static BOOL mod_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, con
 	/*
 	 * Scan the file, a line at a time and check if the name matches.
 	 */
-	while (!feof(fp)) {
+	status = linebuf;
+	while (status && !feof(fp)) {
 		pwd_seekpos = sys_ftell(fp);
 
 		linebuf[0] = '\0';
 
-		fgets(linebuf, sizeof(linebuf), fp);
-		if (ferror(fp)) {
+		status = fgets(linebuf, sizeof(linebuf), fp);
+		if (status == NULL && ferror(fp)) {
 			pw_file_unlock(lockfd, &smbpasswd_state->pw_file_lock_depth);
 			fclose(fp);
 			return False;

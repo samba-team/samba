@@ -38,35 +38,48 @@
 
 /* Read some data from a client connection */
 
-static void dual_client_read(struct winbindd_cli_state *state)
+static void child_read_request(struct winbindd_cli_state *state)
 {
-	int n;
-    
+	ssize_t len;
+
 	/* Read data */
 
-	n = sys_read(state->sock, state->read_buf_len + 
-		 (char *)&state->request, 
-		 sizeof(state->request) - state->read_buf_len);
-	
-	DEBUG(10,("client_read: read %d bytes. Need %ld more for a full "
-		  "request.\n", n, (unsigned long)(sizeof(state->request) - n -
-						   state->read_buf_len) ));
+	len = read_data(state->sock, (char *)&state->request,
+			sizeof(state->request));
 
-	/* Read failed, kill client */
-	
-	if (n == -1 || n == 0) {
-		DEBUG(5,("read failed on sock %d, pid %lu: %s\n",
-			 state->sock, (unsigned long)state->pid, 
-			 (n == -1) ? strerror(errno) : "EOF"));
-		
+	if (len != sizeof(state->request)) {
+		DEBUG(0, ("Got invalid request length: %d\n", (int)len));
 		state->finished = True;
 		return;
 	}
-	
-	/* Update client state */
-	
-	state->read_buf_len += n;
-	state->last_access = time(NULL);
+
+	if (state->request.extra_len == 0) {
+		state->request.extra_data = NULL;
+		return;
+	}
+
+	DEBUG(10, ("Need to read %d extra bytes\n", (int)state->request.extra_len));
+
+	state->request.extra_data =
+		SMB_MALLOC_ARRAY(char, state->request.extra_len + 1);
+
+	if (state->request.extra_data == NULL) {
+		DEBUG(0, ("malloc failed\n"));
+		state->finished = True;
+		return;
+	}
+
+	/* Ensure null termination */
+	state->request.extra_data[state->request.extra_len] = '\0';
+
+	len = read_data(state->sock, state->request.extra_data,
+			state->request.extra_len);
+
+	if (len != state->request.extra_len) {
+		DEBUG(0, ("Could not read extra data\n"));
+		state->finished = True;
+		return;
+	}
 }
 
 /*
@@ -86,6 +99,7 @@ struct winbindd_async_request {
 	void *private_data;
 };
 
+static void async_main_request_sent(void *private_data, BOOL success);
 static void async_request_sent(void *private_data, BOOL success);
 static void async_reply_recv(void *private_data, BOOL success);
 static void schedule_async_request(struct winbindd_child *child);
@@ -122,10 +136,34 @@ void async_request(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 	return;
 }
 
-static void async_request_sent(void *private_data, BOOL success)
+static void async_main_request_sent(void *private_data, BOOL success)
 {
 	struct winbindd_async_request *state =
 		talloc_get_type_abort(private_data, struct winbindd_async_request);
+
+	if (!success) {
+		DEBUG(5, ("Could not send async request\n"));
+
+		state->response->length = sizeof(struct winbindd_response);
+		state->response->result = WINBINDD_ERROR;
+		state->continuation(state->private_data, False);
+		return;
+	}
+
+	if (state->request->extra_len == 0) {
+		async_request_sent(private_data, True);
+		return;
+	}
+
+	setup_async_write(&state->child->event, state->request->extra_data,
+			  state->request->extra_len,
+			  async_request_sent, state);
+}
+
+static void async_request_sent(void *private_data_data, BOOL success)
+{
+	struct winbindd_async_request *state =
+		talloc_get_type_abort(private_data_data, struct winbindd_async_request);
 
 	if (!success) {
 		DEBUG(5, ("Could not send async request\n"));
@@ -196,7 +234,7 @@ static void schedule_async_request(struct winbindd_child *child)
 
 	setup_async_write(&child->event, request->request,
 			  sizeof(*request->request),
-			  async_request_sent, request);
+			  async_main_request_sent, request);
 	return;
 }
 
@@ -205,31 +243,31 @@ struct domain_request_state {
 	struct winbindd_domain *domain;
 	struct winbindd_request *request;
 	struct winbindd_response *response;
-	void (*continuation)(void *private_data, BOOL success);
-	void *private_data;
+	void (*continuation)(void *private_data_data, BOOL success);
+	void *private_data_data;
 };
 
-static void domain_init_recv(void *private_data, BOOL success);
+static void domain_init_recv(void *private_data_data, BOOL success);
 
 void async_domain_request(TALLOC_CTX *mem_ctx,
 			  struct winbindd_domain *domain,
 			  struct winbindd_request *request,
 			  struct winbindd_response *response,
-			  void (*continuation)(void *private_data, BOOL success),
-			  void *private_data)
+			  void (*continuation)(void *private_data_data, BOOL success),
+			  void *private_data_data)
 {
 	struct domain_request_state *state;
 
 	if (domain->initialized) {
 		async_request(mem_ctx, &domain->child, request, response,
-			      continuation, private_data);
+			      continuation, private_data_data);
 		return;
 	}
 
 	state = TALLOC_P(mem_ctx, struct domain_request_state);
 	if (state == NULL) {
 		DEBUG(0, ("talloc failed\n"));
-		continuation(private_data, False);
+		continuation(private_data_data, False);
 		return;
 	}
 
@@ -238,15 +276,15 @@ void async_domain_request(TALLOC_CTX *mem_ctx,
 	state->request = request;
 	state->response = response;
 	state->continuation = continuation;
-	state->private_data = private_data;
+	state->private_data_data = private_data_data;
 
 	init_child_connection(domain, domain_init_recv, state);
 }
 
-static void recvfrom_child(void *private_data, BOOL success)
+static void recvfrom_child(void *private_data_data, BOOL success)
 {
 	struct winbindd_cli_state *state =
-		talloc_get_type_abort(private_data, struct winbindd_cli_state);
+		talloc_get_type_abort(private_data_data, struct winbindd_cli_state);
 	enum winbindd_result result = state->response.result;
 
 	/* This is an optimization: The child has written directly to the
@@ -278,20 +316,20 @@ void sendto_domain(struct winbindd_cli_state *state,
 			     recvfrom_child, state);
 }
 
-static void domain_init_recv(void *private_data, BOOL success)
+static void domain_init_recv(void *private_data_data, BOOL success)
 {
 	struct domain_request_state *state =
-		talloc_get_type_abort(private_data, struct domain_request_state);
+		talloc_get_type_abort(private_data_data, struct domain_request_state);
 
 	if (!success) {
 		DEBUG(5, ("Domain init returned an error\n"));
-		state->continuation(state->private_data, False);
+		state->continuation(state->private_data_data, False);
 		return;
 	}
 
 	async_request(state->mem_ctx, &state->domain->child,
 		      state->request, state->response,
-		      state->continuation, state->private_data);
+		      state->continuation, state->private_data_data);
 }
 
 struct winbindd_child_dispatch_table {
@@ -466,39 +504,34 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 		main_loop_talloc_free();
 
 		/* fetch a request from the main daemon */
-		dual_client_read(&state);
+		child_read_request(&state);
 
 		if (state.finished) {
 			/* we lost contact with our parent */
 			exit(0);
 		}
 
-		/* process full rquests */
-		if (state.read_buf_len == sizeof(state.request)) {
-			DEBUG(4,("child daemon request %d\n",
-				 (int)state.request.cmd));
+		DEBUG(4,("child daemon request %d\n", (int)state.request.cmd));
 
-			ZERO_STRUCT(state.response);
-			state.request.null_term = '\0';
-			child_process_request(child->domain, &state);
+		ZERO_STRUCT(state.response);
+		state.request.null_term = '\0';
+		child_process_request(child->domain, &state);
 
-			cache_store_response(sys_getpid(), &state.response);
+		SAFE_FREE(state.request.extra_data);
 
-			SAFE_FREE(state.response.extra_data);
+		cache_store_response(sys_getpid(), &state.response);
 
-			/* We just send the result code back, the result
-			 * structure needs to be fetched via the
-			 * winbindd_cache. Hmm. That needs fixing... */
+		SAFE_FREE(state.response.extra_data);
 
-			if (write_data(state.sock,
-				       (void *)&state.response.result,
-				       sizeof(state.response.result)) !=
-			    sizeof(state.response.result)) {
-				DEBUG(0, ("Could not write result\n"));
-				exit(1);
-			}
+		/* We just send the result code back, the result
+		 * structure needs to be fetched via the
+		 * winbindd_cache. Hmm. That needs fixing... */
 
-			state.read_buf_len = 0;
+		if (write_data(state.sock, (void *)&state.response.result,
+			       sizeof(state.response.result)) !=
+		    sizeof(state.response.result)) {
+			DEBUG(0, ("Could not write result\n"));
+			exit(1);
 		}
 	}
 }

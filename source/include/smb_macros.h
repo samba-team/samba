@@ -292,6 +292,7 @@ copy an IP address from one buffer to another
 #define TALLOC_REALLOC(ctx, ptr, count) _talloc_realloc(ctx, ptr, count, __location__)
 #define TALLOC_REALLOC_ARRAY(ctx, ptr, type, count) (type *)_talloc_realloc_array(ctx, ptr, sizeof(type), count, #type)
 #define talloc_destroy(ctx) talloc_free(ctx)
+#define TALLOC_FREE(ctx) do { if ((ctx) != NULL) {talloc_free(ctx); ctx=NULL;} } while(0)
 
 /* only define PARANOID_MALLOC_CHECKER with --enable-developer and not compiling
    the smbmount utils */

@@ -3,9 +3,7 @@
    RPC Pipe client
  
    Copyright (C) Andrew Tridgell              1992-2000,
-   Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
-   Copyright (C) Paul Ashton                  1997-2000.
-   Copyright (C) Jeremy Allison                    1999.
+   Copyright (C) Jeremy Allison                    1999 - 2005
    Copyright (C) Simo Sorce                        2001
    Copyright (C) Jeremy Cooper                     2004
    Copyright (C) Gerald (Jerry) Carter             2005
@@ -34,7 +32,7 @@
  internal connect to a registry hive root (open a registry policy)
 *******************************************************************/
 
-static WERROR cli_reg_open_hive_int(struct cli_state *cli,
+static WERROR rpccli_reg_open_hive_int(struct rpc_pipe_client *cli,
                                       TALLOC_CTX *mem_ctx, uint16 op_code,
                                       const char *op_name,
                                       uint32 access_mask, POLICY_HND *hnd)
@@ -48,7 +46,7 @@ static WERROR cli_reg_open_hive_int(struct cli_state *cli,
 
 	init_reg_q_open_hive(&in, access_mask);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, op_code, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_WINREG, op_code, 
 	            in, out, 
 	            qbuf, rbuf,
 	            reg_io_q_open_hive,
@@ -67,7 +65,7 @@ static WERROR cli_reg_open_hive_int(struct cli_state *cli,
  connect to a registry hive root (open a registry policy)
 *******************************************************************/
 
-WERROR cli_reg_connect(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_reg_connect(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                          uint32 reg_type, uint32 access_mask,
                          POLICY_HND *reg_hnd)
 {	uint16 op_code;
@@ -97,7 +95,7 @@ WERROR cli_reg_connect(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		return WERR_INVALID_PARAM;
 	}
 
-	return cli_reg_open_hive_int(cli, mem_ctx, op_code, op_name,
+	return rpccli_reg_open_hive_int(cli, mem_ctx, op_code, op_name,
                                      access_mask, reg_hnd);
 }
 
@@ -105,7 +103,7 @@ WERROR cli_reg_connect(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /*******************************************************************
 *******************************************************************/
 
-WERROR cli_reg_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_reg_shutdown(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                           const char *msg, uint32 timeout, BOOL do_reboot,
 			  BOOL force)
 {
@@ -123,7 +121,7 @@ WERROR cli_reg_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx,
 
 	init_reg_q_shutdown(&in, msg, timeout, do_reboot, force);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_SHUTDOWN, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_WINREG, REG_SHUTDOWN, 
 	            in, out, 
 	            qbuf, rbuf,
 	            reg_io_q_shutdown,
@@ -136,7 +134,7 @@ WERROR cli_reg_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx,
 /*******************************************************************
 *******************************************************************/
 
-WERROR cli_reg_abort_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx)
+WERROR rpccli_reg_abort_shutdown(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
 {
 	REG_Q_ABORT_SHUTDOWN in;
 	REG_R_ABORT_SHUTDOWN out;
@@ -145,7 +143,7 @@ WERROR cli_reg_abort_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx)
 	ZERO_STRUCT (in);
 	ZERO_STRUCT (out);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_ABORT_SHUTDOWN, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_WINREG, REG_ABORT_SHUTDOWN, 
 	            in, out, 
 	            qbuf, rbuf,
 	            reg_io_q_abort_shutdown,
@@ -161,7 +159,8 @@ do a REG Unknown 0xB command.  sent after a create key or create value.
 this might be some sort of "sync" or "refresh" command, sent after
 modification of the registry...
 ****************************************************************************/
-WERROR cli_reg_flush_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+
+WERROR rpccli_reg_flush_key(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                            POLICY_HND *hnd)
 {
 	REG_Q_FLUSH_KEY in;
@@ -173,7 +172,7 @@ WERROR cli_reg_flush_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	init_reg_q_flush_key(&in, hnd);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_FLUSH_KEY, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_WINREG, REG_FLUSH_KEY, 
 	            in, out, 
 	            qbuf, rbuf,
 	            reg_io_q_flush_key,
@@ -186,7 +185,8 @@ WERROR cli_reg_flush_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /****************************************************************************
 do a REG Query Key
 ****************************************************************************/
-WERROR cli_reg_query_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+
+WERROR rpccli_reg_query_key(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                            POLICY_HND *hnd,
                            char *key_class, uint32 *class_len,
                            uint32 *num_subkeys, uint32 *max_subkeylen,
@@ -204,7 +204,7 @@ WERROR cli_reg_query_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	init_reg_q_query_key( &in, hnd, key_class );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_QUERY_KEY, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_WINREG, REG_QUERY_KEY, 
 	            in, out, 
 	            qbuf, rbuf,
 	            reg_io_q_query_key,
@@ -227,7 +227,7 @@ WERROR cli_reg_query_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 		ZERO_STRUCT (out);
 
-		CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_QUERY_KEY, 
+		CLI_DO_RPC_WERR( cli, mem_ctx, PI_WINREG, REG_QUERY_KEY, 
 		            in, out, 
 		            qbuf, rbuf,
 		            reg_io_q_query_key,
@@ -255,7 +255,7 @@ WERROR cli_reg_query_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /****************************************************************************
 ****************************************************************************/
 
-WERROR cli_reg_getversion(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_reg_getversion(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                             POLICY_HND *hnd, uint32 *version)
 {
 	REG_Q_GETVERSION in;
@@ -267,7 +267,7 @@ WERROR cli_reg_getversion(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	init_reg_q_getversion(&in, hnd);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_GETVERSION, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_WINREG, REG_GETVERSION, 
 	            in, out, 
 	            qbuf, rbuf,
 	            reg_io_q_getversion,
@@ -286,7 +286,8 @@ WERROR cli_reg_getversion(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /****************************************************************************
 do a REG Query Info
 ****************************************************************************/
-WERROR cli_reg_query_value(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+
+WERROR rpccli_reg_query_value(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                            POLICY_HND *hnd, const char *val_name,
                            uint32 *type, REGVAL_BUFFER *buffer)
 {
@@ -299,7 +300,7 @@ WERROR cli_reg_query_value(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	init_reg_q_query_value(&in, hnd, val_name, buffer);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_QUERY_VALUE, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_WINREG, REG_QUERY_VALUE, 
 	            in, out, 
 	            qbuf, rbuf,
 	            reg_io_q_query_value,
@@ -319,7 +320,8 @@ WERROR cli_reg_query_value(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /****************************************************************************
 do a REG Set Key Security 
 ****************************************************************************/
-WERROR cli_reg_set_key_sec(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+
+WERROR rpccli_reg_set_key_sec(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                              POLICY_HND *hnd, uint32 sec_info,
                              size_t secdesc_size, SEC_DESC *sec_desc)
 {
@@ -338,7 +340,7 @@ WERROR cli_reg_set_key_sec(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		
 	init_reg_q_set_key_sec(&in, hnd, sec_info, sec_desc_buf);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_SET_KEY_SEC, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_WINREG, REG_SET_KEY_SEC, 
 	            in, out, 
 	            qbuf, rbuf,
 	            reg_io_q_set_key_sec,
@@ -353,7 +355,8 @@ WERROR cli_reg_set_key_sec(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /****************************************************************************
 do a REG Query Key Security 
 ****************************************************************************/
-WERROR cli_reg_get_key_sec(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+
+WERROR rpccli_reg_get_key_sec(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                              POLICY_HND *hnd, uint32 sec_info,
                              uint32 *sec_buf_size, SEC_DESC_BUF *sec_buf)
 {
@@ -366,7 +369,7 @@ WERROR cli_reg_get_key_sec(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	init_reg_q_get_key_sec(&in, hnd, sec_info, *sec_buf_size, sec_buf);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_GET_KEY_SEC, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_WINREG, REG_GET_KEY_SEC, 
 	            in, out, 
 	            qbuf, rbuf,
 	            reg_io_q_get_key_sec,
@@ -388,7 +391,8 @@ WERROR cli_reg_get_key_sec(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /****************************************************************************
 do a REG Delete Value
 ****************************************************************************/
-WERROR cli_reg_delete_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+
+WERROR rpccli_reg_delete_val(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                             POLICY_HND *hnd, char *val_name)
 {
 	REG_Q_DELETE_VALUE in;
@@ -400,7 +404,7 @@ WERROR cli_reg_delete_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	init_reg_q_delete_val(&in, hnd, val_name);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_DELETE_VALUE, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_WINREG, REG_DELETE_VALUE, 
 	            in, out, 
 	            qbuf, rbuf,
 	            reg_io_q_delete_value,
@@ -413,7 +417,8 @@ WERROR cli_reg_delete_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /****************************************************************************
 do a REG Delete Key
 ****************************************************************************/
-WERROR cli_reg_delete_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+
+WERROR rpccli_reg_delete_key(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                             POLICY_HND *hnd, char *key_name)
 {
 	REG_Q_DELETE_KEY in;
@@ -425,7 +430,7 @@ WERROR cli_reg_delete_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	init_reg_q_delete_key(&in, hnd, key_name);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_DELETE_KEY, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_WINREG, REG_DELETE_KEY, 
 	            in, out, 
 	            qbuf, rbuf,
 	            reg_io_q_delete_key,
@@ -438,7 +443,8 @@ WERROR cli_reg_delete_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /****************************************************************************
 do a REG Create Key
 ****************************************************************************/
-WERROR cli_reg_create_key_ex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+
+WERROR rpccli_reg_create_key_ex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                             POLICY_HND *hnd, char *key_name, char *key_class,
                             uint32 access_desired, POLICY_HND *key)
 {
@@ -453,8 +459,7 @@ WERROR cli_reg_create_key_ex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT (out);
 	
 	if ( !(sec = make_sec_desc(mem_ctx, 1, SEC_DESC_SELF_RELATIVE,
-		NULL, NULL, NULL, NULL, &sec_len)) )
-	{
+		NULL, NULL, NULL, NULL, &sec_len)) ) {
 		return WERR_GENERAL_FAILURE;
 	}
 				 
@@ -463,7 +468,7 @@ WERROR cli_reg_create_key_ex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	init_reg_q_create_key_ex(&in, hnd, key_name, key_class, access_desired, sec_buf);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_CREATE_KEY_EX, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_WINREG, REG_CREATE_KEY_EX, 
 	            in, out, 
 	            qbuf, rbuf,
 	            reg_io_q_create_key_ex,
@@ -482,7 +487,8 @@ WERROR cli_reg_create_key_ex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /****************************************************************************
 do a REG Enum Key
 ****************************************************************************/
-WERROR cli_reg_enum_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+
+WERROR rpccli_reg_enum_key(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                           POLICY_HND *hnd, int key_index, fstring key_name,
                           fstring class_name, time_t *mod_time)
 {
@@ -495,7 +501,7 @@ WERROR cli_reg_enum_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	init_reg_q_enum_key(&in, hnd, key_index);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_ENUM_KEY, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_WINREG, REG_ENUM_KEY, 
 	            in, out, 
 	            qbuf, rbuf,
 	            reg_io_q_enum_key,
@@ -523,7 +529,8 @@ WERROR cli_reg_enum_key(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /****************************************************************************
 do a REG Create Value
 ****************************************************************************/
-WERROR cli_reg_set_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+
+WERROR rpccli_reg_set_val(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                             POLICY_HND *hnd, char *val_name, uint32 type,
                             RPC_DATA_BLOB *data)
 {
@@ -536,7 +543,7 @@ WERROR cli_reg_set_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	init_reg_q_set_val(&in, hnd, val_name, type, data);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_SET_VALUE, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_WINREG, REG_SET_VALUE, 
 	            in, out, 
 	            qbuf, rbuf,
 	            reg_io_q_set_value,
@@ -549,7 +556,8 @@ WERROR cli_reg_set_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /****************************************************************************
 do a REG Enum Value
 ****************************************************************************/
-WERROR cli_reg_enum_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+
+WERROR rpccli_reg_enum_val(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                           POLICY_HND *hnd, int idx,
                           fstring val_name, uint32 *type, REGVAL_BUFFER *value)
 {
@@ -562,7 +570,7 @@ WERROR cli_reg_enum_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	init_reg_q_enum_val(&in, hnd, idx, 0x0100, 0x1000);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_ENUM_VALUE, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_WINREG, REG_ENUM_VALUE, 
 	            in, out, 
 	            qbuf, rbuf,
 	            reg_io_q_enum_val,
@@ -577,7 +585,7 @@ WERROR cli_reg_enum_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 		ZERO_STRUCT (out);
 
-		CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_ENUM_VALUE, 
+		CLI_DO_RPC_WERR( cli, mem_ctx, PI_WINREG, REG_ENUM_VALUE, 
 		            in, out, 
 		            qbuf, rbuf,
 		            reg_io_q_enum_val,
@@ -598,7 +606,7 @@ WERROR cli_reg_enum_val(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /****************************************************************************
 ****************************************************************************/
 
-WERROR cli_reg_open_entry(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_reg_open_entry(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                             POLICY_HND *hnd, char *key_name,
                             uint32 access_desired, POLICY_HND *key_hnd)
 {
@@ -611,7 +619,7 @@ WERROR cli_reg_open_entry(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	init_reg_q_open_entry(&in, hnd, key_name, access_desired);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_OPEN_ENTRY, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_WINREG, REG_OPEN_ENTRY, 
 	            in, out, 
 	            qbuf, rbuf,
 	            reg_io_q_open_entry,
@@ -629,7 +637,7 @@ WERROR cli_reg_open_entry(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /****************************************************************************
 ****************************************************************************/
 
-WERROR cli_reg_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR rpccli_reg_close(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                        POLICY_HND *hnd)
 {
 	REG_Q_CLOSE in;
@@ -641,7 +649,7 @@ WERROR cli_reg_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	init_reg_q_close(&in, hnd);
 
-	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_CLOSE, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_WINREG, REG_CLOSE, 
 	            in, out, 
 	            qbuf, rbuf,
 	            reg_io_q_close,
@@ -654,7 +662,8 @@ WERROR cli_reg_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /****************************************************************************
 do a REG Query Info
 ****************************************************************************/
-WERROR cli_reg_save_key( struct cli_state *cli, TALLOC_CTX *mem_ctx,
+
+WERROR rpccli_reg_save_key(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                          POLICY_HND *hnd, const char *filename )
 {
 	REG_Q_SAVE_KEY in;
@@ -666,7 +675,7 @@ WERROR cli_reg_save_key( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	init_q_reg_save_key( &in, hnd, filename );
 
-	CLI_DO_RPC( cli, mem_ctx, PI_WINREG, REG_SAVE_KEY, 
+	CLI_DO_RPC_WERR( cli, mem_ctx, PI_WINREG, REG_SAVE_KEY, 
 	            in, out, 
 	            qbuf, rbuf,
 	            reg_io_q_save_key,
@@ -720,5 +729,3 @@ BOOL reg_split_hive(const char *full_keyname, uint32 *reg_type, pstring key_name
 
 	return True;
 }
-
-

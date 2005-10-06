@@ -27,7 +27,8 @@
 
 #ifndef __cplusplus
 #define class #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
-#define private #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+/* allow to build with newer heimdal releases */
+/* #define private #error DONT_USE_CPLUSPLUS_RESERVED_NAMES */
 #define public #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
 #define protected #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
 #define template #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
@@ -287,6 +288,7 @@
 #ifdef HAVE_NET_IF_H
 #include <net/if.h>
 #endif
+
 
 #ifdef HAVE_SYS_MOUNT_H
 #include <sys/mount.h>
@@ -896,19 +898,17 @@ extern int errno;
 
 #include "privileges.h"
 
-#include "rpc_creds.h"
+#include "rpc_misc.h"
+
+#include "rpc_dce.h"
 
 #include "mapping.h"
 
 #include "passdb.h"
 
-#include "ntdomain.h"
-
-#include "rpc_misc.h"
-
 #include "rpc_secdes.h"
 
-#include "nt_printing.h"
+#include "authdata.h"
 
 #include "msdfs.h"
 
@@ -922,6 +922,28 @@ extern int errno;
 #include "ntlmssp.h"
 
 #include "auth.h"
+
+#include "ntdomain.h"
+
+#include "rpc_svcctl.h"
+#include "rpc_ntsvcs.h"
+#include "rpc_lsa.h"
+#include "rpc_netlogon.h"
+#include "reg_objects.h"
+#include "rpc_reg.h"
+#include "rpc_samr.h"
+#include "rpc_srvsvc.h"
+#include "rpc_wkssvc.h"
+#include "rpc_spoolss.h"
+#include "rpc_eventlog.h"
+#include "rpc_dfs.h"
+#include "rpc_ds.h"
+#include "rpc_echo.h"
+#include "rpc_shutdown.h"
+#include "rpc_perfcount.h"
+#include "rpc_perfcount_defs.h"
+
+#include "nt_printing.h"
 
 #include "idmap.h"
 
@@ -944,6 +966,8 @@ extern int errno;
 #include "nsswitch/winbind_client.h"
 
 #include "spnego.h"
+
+#include "rpc_client.h"
 
 /*
  * Type for wide character dirent structure.
@@ -994,6 +1018,8 @@ struct smb_ldap_privates;
 /* forward declarations from smbldap.c */
 
 #include "smbldap.h"
+
+#include "smb_ldap.h"
 
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H
@@ -1323,13 +1349,18 @@ extern int DEBUGLEVEL;
 #endif
 
 /* add varargs prototypes with printf checking */
+/*PRINTFLIKE2 */
 int fdprintf(int , const char *, ...) PRINTF_ATTRIBUTE(2,3);
+/*PRINTFLIKE1 */
 int d_printf(const char *, ...) PRINTF_ATTRIBUTE(1,2);
+/*PRINTFLIKE2 */
 int d_fprintf(FILE *f, const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #ifndef HAVE_SNPRINTF_DECL
+/*PRINTFLIKE3 */
 int snprintf(char *,size_t ,const char *, ...) PRINTF_ATTRIBUTE(3,4);
 #endif
 #ifndef HAVE_ASPRINTF_DECL
+/*PRINTFLIKE2 */
 int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #endif
 
@@ -1340,11 +1371,19 @@ int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #if !defined(HAVE_SNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
 #define snprintf smb_snprintf
 #define vsnprintf smb_vsnprintf
+
+/* PRINTFLIKE3 */
+int smb_snprintf(char *str,size_t count,const char *fmt,...);
+int smb_vsnprintf (char *str, size_t count, const char *fmt, va_list args);
+
 #endif
 
+/* PRINTFLIKE2 */
 void sys_adminlog(int priority, const char *format_str, ...) PRINTF_ATTRIBUTE(2,3);
 
+/* PRINTFLIKE2 */
 int pstr_sprintf(pstring s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
+/* PRINTFLIKE2 */
 int fstr_sprintf(fstring s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 
 int d_vfprintf(FILE *f, const char *format, va_list ap) PRINTF_ATTRIBUTE(2,0);
@@ -1355,7 +1394,6 @@ int smb_xvasprintf(char **ptr, const char *format, va_list ap) PRINTF_ATTRIBUTE(
    for snprintf and vsnprintf */
 #define slprintf snprintf
 #define vslprintf vsnprintf
-
 
 /* we need to use __va_copy() on some platforms */
 #ifdef HAVE_VA_COPY
@@ -1402,7 +1440,7 @@ void krb5_free_unparsed_name(krb5_context ctx, char *val);
 void setup_kaddr( krb5_address *pkaddr, struct sockaddr *paddr);
 int create_kerberos_key_from_string(krb5_context context, krb5_principal host_princ, krb5_data *password, krb5_keyblock *key, krb5_enctype enctype);
 int create_kerberos_key_from_string_direct(krb5_context context, krb5_principal host_princ, krb5_data *password, krb5_keyblock *key, krb5_enctype enctype);
-void get_auth_data_from_tkt(DATA_BLOB *auth_data, krb5_ticket *tkt);
+BOOL get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, krb5_ticket *tkt);
 krb5_const_principal get_principal_from_tkt(krb5_ticket *tkt);
 krb5_error_code krb5_locate_kdc(krb5_context ctx, const krb5_data *realm, struct sockaddr **addr_pp, int *naddrs, int get_masters);
 krb5_error_code get_kerberos_allowed_etypes(krb5_context context, krb5_enctype **enctypes);
@@ -1413,6 +1451,44 @@ krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context, kr
 void kerberos_set_creds_enctype(krb5_creds *pcreds, int enctype);
 BOOL kerberos_compatible_enctypes(krb5_context context, krb5_enctype enctype1, krb5_enctype enctype2);
 void kerberos_free_data_contents(krb5_context context, krb5_data *pdata);
+NTSTATUS decode_pac_data(TALLOC_CTX *mem_ctx,
+			 DATA_BLOB *pac_data_blob,
+			 krb5_context context, 
+			 krb5_keyblock *service_keyblock,
+			 krb5_const_principal client_principal,
+			 time_t tgs_authtime,
+			 PAC_DATA **pac_data);
+void smb_krb5_checksum_from_pac_sig(krb5_checksum *cksum, 
+				    PAC_SIGNATURE_DATA *sig);
+krb5_error_code smb_krb5_verify_checksum(krb5_context context,
+					 krb5_keyblock *keyblock,
+					 krb5_keyusage usage,
+					 krb5_checksum *cksum,
+					 uint8 *data,
+					 size_t length);
+time_t get_authtime_from_tkt(krb5_ticket *tkt);
+void smb_krb5_free_ap_req(krb5_context context, 
+			  krb5_ap_req *ap_req);
+krb5_error_code smb_krb5_get_keyinfo_from_ap_req(krb5_context context, 
+						 const krb5_data *inbuf, 
+						 krb5_kvno *kvno, 
+						 krb5_enctype *enctype);
+krb5_error_code krb5_rd_req_return_keyblock_from_keytab(krb5_context context,
+							krb5_auth_context *auth_context,
+							const krb5_data *inbuf,
+							krb5_const_principal server,
+							krb5_keytab keytab,
+							krb5_flags *ap_req_options,
+							krb5_ticket **ticket, 
+							krb5_keyblock **keyblock);
+krb5_error_code smb_krb5_parse_name_norealm(krb5_context context, 
+					    const char *name, 
+					    krb5_principal *principal);
+BOOL smb_krb5_principal_compare_any_realm(krb5_context context, 
+					  krb5_const_principal princ1, 
+					  krb5_const_principal princ2);
+int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
+			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, uint32 extra_ap_opts);
 #endif /* HAVE_KRB5 */
 
 

@@ -296,7 +296,7 @@ BOOL smb_io_dom_sid2_p(const char *desc, prs_struct *ps, int depth, DOM_SID2 **s
 
 	/* caputure the pointer value to stream */
 
-	data_p = (uint32) *sid2;
+	data_p = *sid2 ? 0xf000baaa : 0;
 
 	if ( !prs_uint32("dom_sid2_p", ps, depth, &data_p ))
 		return False;
@@ -830,6 +830,8 @@ void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags)
 	if (buf) {
 		/* We always null terminate the copy. */
 		len = strlen(buf) + 1;
+		if ( flags == UNI_STR_DBLTERMINATE )
+			len++;
 	} else {
 		/* no buffer -- nothing to do */
 		str->uni_max_len = 0;
@@ -859,6 +861,8 @@ void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags)
 		if (flags == UNI_STR_TERMINATE || flags == UNI_MAXLEN_TERMINATE) {
 			num_chars++;
 		}
+		if ( flags == UNI_STR_DBLTERMINATE )
+			num_chars += 2;
 	}
 
 	str->uni_max_len = num_chars;
@@ -1003,7 +1007,7 @@ BOOL prs_io_unistr2_p(const char *desc, prs_struct *ps, int depth, UNISTR2 **uni
 
 	/* caputure the pointer value to stream */
 
-	data_p = (uint32) *uni2;
+	data_p = *uni2 ? 0xf000baaa : 0;
 
 	if ( !prs_uint32("ptr", ps, depth, &data_p ))
 		return False;
@@ -1038,7 +1042,7 @@ BOOL prs_io_unistr2(const char *desc, prs_struct *ps, int depth, UNISTR2 *uni2 )
 	/* just pass off to smb_io_unstr2() passing the uni2 address as 
 	   the pointer (like you would expect) */
 
-	return smb_io_unistr2( desc, uni2, (uint32)uni2, ps, depth );
+	return smb_io_unistr2( desc, uni2, uni2 ? 1 : 0, ps, depth );
 }
 
 /*******************************************************************
@@ -1139,7 +1143,7 @@ BOOL prs_unistr4_str(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4)
 }
 
 /*******************************************************************
- Reads or writes a UNISTR2_ARRAY structure.
+ Reads or writes a UNISTR4_ARRAY structure.
 ********************************************************************/
 
 BOOL prs_unistr4_array(const char *desc, prs_struct *ps, int depth, UNISTR4_ARRAY *array )

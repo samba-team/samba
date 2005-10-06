@@ -55,6 +55,12 @@ struct smbdb_ctx *smb_share_mode_db_open(const char *db_path)
 	return smb_db;
 }
 
+/* key and data records in the tdb locking database */
+struct locking_key {
+        SMB_DEV_T dev;
+        SMB_INO_T inode;
+};
+
 int smb_share_mode_db_close(struct smbdb_ctx *db_ctx)
 {
 	int ret = tdb_close(db_ctx->smb_tdb);
@@ -102,10 +108,10 @@ struct locking_data {
 			int num_share_mode_entries;
 			BOOL delete_on_close;
 		} s;
-		share_mode_entry dummy; /* Needed for alignment. */
+		struct share_mode_entry dummy; /* Needed for alignment. */
 	} u;
 	/* the following two entries are implicit
-	   share_mode_entry modes[num_share_mode_entries];
+	   struct share_mode_entry modes[num_share_mode_entries];
 	   char file_name[];
 	*/
 };
@@ -114,9 +120,9 @@ struct locking_data {
  * Check if an external smb_share_mode_entry and an internal share_mode entry match.
  */
 
-static int share_mode_entry_equal(const struct smb_share_mode_entry *e_entry, const share_mode_entry *entry)
+static int share_mode_entry_equal(const struct smb_share_mode_entry *e_entry, const struct share_mode_entry *entry)
 {
-	return (e_entry->pid == entry->pid &&
+	return (procid_equal(&e_entry->pid, &entry->pid) &&
 		e_entry->file_id == (uint32_t)entry->share_file_id &&
 		e_entry->open_time.tv_sec == entry->time.tv_sec &&
 		e_entry->open_time.tv_usec == entry->time.tv_usec &&
@@ -130,9 +136,9 @@ static int share_mode_entry_equal(const struct smb_share_mode_entry *e_entry, co
  * Create an internal Samba share_mode entry from an external smb_share_mode_entry.
  */
 
-static void create_share_mode_entry(share_mode_entry *out, const struct smb_share_mode_entry *in)
+static void create_share_mode_entry(struct share_mode_entry *out, const struct smb_share_mode_entry *in)
 {
-	memset(out, '\0', sizeof(share_mode_entry));
+	memset(out, '\0', sizeof(struct share_mode_entry));
 
 	out->pid = in->pid;
 	out->share_file_id = (unsigned long)in->file_id;
@@ -159,7 +165,7 @@ int smb_get_share_mode_entries(struct smbdb_ctx *db_ctx,
 	struct smb_share_mode_entry *list = NULL;
 	int num_share_modes = 0;
 	struct locking_data *ld = NULL; /* internal samba db state. */
-	share_mode_entry *shares = NULL;
+	struct share_mode_entry *shares = NULL;
 	size_t i;
 	int list_num;
 
@@ -187,17 +193,22 @@ int smb_get_share_mode_entries(struct smbdb_ctx *db_ctx,
 
 	memset(list, '\0', num_share_modes * sizeof(struct smb_share_mode_entry));
 
-	shares = (share_mode_entry *)(db_data.dptr + sizeof(share_mode_entry));
+	shares = (struct share_mode_entry *)(db_data.dptr + sizeof(struct share_mode_entry));
 
 	list_num = 0;
 	for (i = 0; i < num_share_modes; i++) {
-		share_mode_entry *share = &shares[i];
+		struct share_mode_entry *share = &shares[i];
 		struct smb_share_mode_entry *sme = &list[list_num];
-		pid_t pid = share->pid;
+		struct process_id pid = share->pid;
 
 		/* Check this process really exists. */
-		if (kill(pid, 0) == -1 && (errno == ESRCH)) {
+		if (kill(procid_to_pid(&pid), 0) == -1 && (errno == ESRCH)) {
 			continue; /* No longer exists. */
+		}
+
+		/* Ignore deferred open entries. */
+		if (share->op_type == DEFERRED_OPEN_ENTRY) {
+			continue;
 		}
 
 		/* Copy into the external list. */
@@ -238,27 +249,27 @@ int smb_create_share_mode_entry(struct smbdb_ctx *db_ctx,
 	TDB_DATA locking_key =  get_locking_key(dev, ino);
 	int orig_num_share_modes = 0;
 	struct locking_data *ld = NULL; /* internal samba db state. */
-	share_mode_entry *shares = NULL;
+	struct share_mode_entry *shares = NULL;
 	char *new_data_p = NULL;
 	size_t new_data_size = 0;
 
 	db_data = tdb_fetch(db_ctx->smb_tdb, locking_key);
 	if (!db_data.dptr) {
 		/* We must create the entry. */
-		db_data.dptr = malloc((2*sizeof(share_mode_entry)) + strlen(filename) + 1);
+		db_data.dptr = malloc((2*sizeof(struct share_mode_entry)) + strlen(filename) + 1);
 		if (!db_data.dptr) {
 			return -1;
 		}
 		ld = (struct locking_data *)db_data.dptr;
 		ld->u.s.num_share_mode_entries = 1;
 		ld->u.s.delete_on_close = 0;
-		shares = (share_mode_entry *)(db_data.dptr + sizeof(share_mode_entry));
+		shares = (struct share_mode_entry *)(db_data.dptr + sizeof(struct share_mode_entry));
 		create_share_mode_entry(shares, new_entry);
-		memcpy(db_data.dptr + 2*sizeof(share_mode_entry),
+		memcpy(db_data.dptr + 2*sizeof(struct share_mode_entry),
 			filename,
 			strlen(filename) + 1);
 
-		db_data.dsize = 2*sizeof(share_mode_entry) + strlen(filename) + 1;
+		db_data.dsize = 2*sizeof(struct share_mode_entry) + strlen(filename) + 1;
 		if (tdb_store(db_ctx->smb_tdb, locking_key, db_data, TDB_INSERT) == -1) {
 			free(db_data.dptr);
 			return -1;
@@ -268,7 +279,7 @@ int smb_create_share_mode_entry(struct smbdb_ctx *db_ctx,
 	}
 
 	/* Entry exists, we must add a new entry. */
-	new_data_p = malloc(db_data.dsize + sizeof(share_mode_entry));
+	new_data_p = malloc(db_data.dsize + sizeof(struct share_mode_entry));
 	if (!new_data_p) {
 		free(db_data.dptr);
 		return -1;
@@ -278,11 +289,11 @@ int smb_create_share_mode_entry(struct smbdb_ctx *db_ctx,
 	orig_num_share_modes = ld->u.s.num_share_mode_entries;
 
 	/* Copy the original data. */
-	memcpy(new_data_p, db_data.dptr, (orig_num_share_modes+1)*sizeof(share_mode_entry));
+	memcpy(new_data_p, db_data.dptr, (orig_num_share_modes+1)*sizeof(struct share_mode_entry));
 
 	/* Add in the new share mode */
-	shares = (share_mode_entry *)(new_data_p +
-			((orig_num_share_modes+1)*sizeof(share_mode_entry)));
+	shares = (struct share_mode_entry *)(new_data_p +
+			((orig_num_share_modes+1)*sizeof(struct share_mode_entry)));
 
 	create_share_mode_entry(shares, new_entry);
 
@@ -290,11 +301,11 @@ int smb_create_share_mode_entry(struct smbdb_ctx *db_ctx,
 	ld->u.s.num_share_mode_entries++;
 
 	/* Append the original filename */
-	memcpy(new_data_p + ((ld->u.s.num_share_mode_entries+1)*sizeof(share_mode_entry)),
-		db_data.dptr + ((orig_num_share_modes+1)*sizeof(share_mode_entry)),
-		db_data.dsize - ((orig_num_share_modes+1) * sizeof(share_mode_entry)));
+	memcpy(new_data_p + ((ld->u.s.num_share_mode_entries+1)*sizeof(struct share_mode_entry)),
+		db_data.dptr + ((orig_num_share_modes+1)*sizeof(struct share_mode_entry)),
+		db_data.dsize - ((orig_num_share_modes+1) * sizeof(struct share_mode_entry)));
 
-	new_data_size = db_data.dsize + sizeof(share_mode_entry);
+	new_data_size = db_data.dsize + sizeof(struct share_mode_entry);
 
 	free(db_data.dptr);
 
@@ -318,7 +329,7 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 	TDB_DATA locking_key =  get_locking_key(dev, ino);
 	int orig_num_share_modes = 0;
 	struct locking_data *ld = NULL; /* internal samba db state. */
-	share_mode_entry *shares = NULL;
+	struct share_mode_entry *shares = NULL;
 	char *new_data_p = NULL;
 	size_t filename_size = 0;
 	size_t i, num_share_modes;
@@ -331,7 +342,7 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 
 	ld = (struct locking_data *)db_data.dptr;
 	orig_num_share_modes = ld->u.s.num_share_mode_entries;
-	shares = (share_mode_entry *)(db_data.dptr + sizeof(share_mode_entry));
+	shares = (struct share_mode_entry *)(db_data.dptr + sizeof(struct share_mode_entry));
 
 	if (orig_num_share_modes == 1) {
 		/* Only one entry - better be ours... */
@@ -346,22 +357,22 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 	}
 
 	/* More than one - allocate a new record minus the one we'll delete. */
-	new_data_p = malloc(db_data.dsize - sizeof(share_mode_entry));
+	new_data_p = malloc(db_data.dsize - sizeof(struct share_mode_entry));
 	if (!new_data_p) {
 		free(db_data.dptr);
 		return -1;
 	}
 
 	/* Copy the header. */
-	memcpy(new_data_p, db_data.dptr, sizeof(share_mode_entry));
+	memcpy(new_data_p, db_data.dptr, sizeof(struct share_mode_entry));
 
 	num_share_modes = 0;
 	for (i = 0; i < orig_num_share_modes; i++) {
-		share_mode_entry *share = &shares[i];
-		pid_t pid = share->pid;
+		struct share_mode_entry *share = &shares[i];
+		struct process_id pid = share->pid;
 
 		/* Check this process really exists. */
-		if (kill(pid, 0) == -1 && (errno == ESRCH)) {
+		if (kill(procid_to_pid(&pid), 0) == -1 && (errno == ESRCH)) {
 			continue; /* No longer exists. */
 		}
 
@@ -369,8 +380,8 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 			continue; /* This is our delete taget. */
 		}
 
-		memcpy(new_data_p + ((num_share_modes+1)*sizeof(share_mode_entry)),
-			share, sizeof(share_mode_entry) );
+		memcpy(new_data_p + ((num_share_modes+1)*sizeof(struct share_mode_entry)),
+			share, sizeof(struct share_mode_entry) );
 
 		num_share_modes++;
 	}
@@ -383,10 +394,10 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 	}
 
 	/* Copy the terminating filename. */
-	fname_ptr = db_data.dptr + ((orig_num_share_modes+1) * sizeof(share_mode_entry));
+	fname_ptr = db_data.dptr + ((orig_num_share_modes+1) * sizeof(struct share_mode_entry));
 	filename_size = db_data.dsize - (fname_ptr - db_data.dptr);
 
-	memcpy(new_data_p + ((num_share_modes+1)*sizeof(share_mode_entry)),
+	memcpy(new_data_p + ((num_share_modes+1)*sizeof(struct share_mode_entry)),
 		fname_ptr,
 		filename_size);
 
@@ -398,7 +409,7 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 	ld = (struct locking_data *)db_data.dptr;
 	ld->u.s.num_share_mode_entries = num_share_modes;
 
-	db_data.dsize = ((num_share_modes+1)*sizeof(share_mode_entry)) + filename_size;
+	db_data.dsize = ((num_share_modes+1)*sizeof(struct share_mode_entry)) + filename_size;
 
 	if (tdb_store(db_ctx->smb_tdb, locking_key, db_data, TDB_REPLACE) == -1) {
 		free(db_data.dptr);
@@ -418,7 +429,7 @@ int smb_change_share_mode_entry(struct smbdb_ctx *db_ctx,
 	TDB_DATA locking_key =  get_locking_key(dev, ino);
 	int num_share_modes = 0;
 	struct locking_data *ld = NULL; /* internal samba db state. */
-	share_mode_entry *shares = NULL;
+	struct share_mode_entry *shares = NULL;
 	size_t i;
 	int found_entry = 0;
 
@@ -429,14 +440,14 @@ int smb_change_share_mode_entry(struct smbdb_ctx *db_ctx,
 
 	ld = (struct locking_data *)db_data.dptr;
 	num_share_modes = ld->u.s.num_share_mode_entries;
-	shares = (share_mode_entry *)(db_data.dptr + sizeof(share_mode_entry));
+	shares = (struct share_mode_entry *)(db_data.dptr + sizeof(struct share_mode_entry));
 
 	for (i = 0; i < num_share_modes; i++) {
-		share_mode_entry *share = &shares[i];
-		pid_t pid = share->pid;
+		struct share_mode_entry *share = &shares[i];
+		struct process_id pid = share->pid;
 
 		/* Check this process really exists. */
-		if (kill(pid, 0) == -1 && (errno == ESRCH)) {
+		if (kill(procid_to_pid(&pid), 0) == -1 && (errno == ESRCH)) {
 			continue; /* No longer exists. */
 		}
 

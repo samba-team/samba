@@ -18,8 +18,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-
 #define srvstr_pull(base_ptr, dest, src, dest_len, src_len, flags) \
     pull_string(base_ptr, dest, src, dest_len, src_len, flags)
 

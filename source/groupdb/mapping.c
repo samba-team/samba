@@ -2,7 +2,7 @@
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
- *  Copyright (C) Jean FranÃ§ois Micouleau      1998-2001.
+ *  Copyright (C) Jean François Micouleau      1998-2001.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -365,7 +365,7 @@ static BOOL get_group_map_from_ntname(const char *name, GROUP_MAP *map)
  Remove a group mapping entry.
 ****************************************************************************/
 
-static BOOL group_map_remove(DOM_SID sid)
+static BOOL group_map_remove(const DOM_SID *sid)
 {
 	TDB_DATA kbuf, dbuf;
 	pstring key;
@@ -378,7 +378,7 @@ static BOOL group_map_remove(DOM_SID sid)
 
 	/* the key is the SID, retrieving is direct */
 
-	sid_to_string(string_sid, &sid);
+	sid_to_string(string_sid, sid);
 	slprintf(key, sizeof(key), "%s%s", GROUP_PREFIX, string_sid);
 
 	kbuf.dptr = key;
@@ -954,7 +954,6 @@ BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map)
 	return True;
 }
 
-
 /****************************************************************************
  Create a UNIX group on demand.
 ****************************************************************************/
@@ -988,8 +987,8 @@ int smb_create_group(char *unix_group, gid_t *new_gid)
 			close(fd);
 		}
 
-	} 
-	
+	}
+
 	if (*new_gid == 0) {
 		struct group *grp = getgrnam(unix_group);
 
@@ -1018,7 +1017,7 @@ int smb_delete_group(char *unix_group)
 		DEBUG(ret ? 0 : 3,("smb_delete_group: Running the command `%s' gave %d\n",del_script,ret));
 		return ret;
 	}
-
+		
 	return -1;
 }
 
@@ -1131,7 +1130,7 @@ NTSTATUS pdb_default_update_group_mapping_entry(struct pdb_methods *methods,
 NTSTATUS pdb_default_delete_group_mapping_entry(struct pdb_methods *methods,
 						   DOM_SID sid)
 {
-	return group_map_remove(sid) ?
+	return group_map_remove(&sid) ?
 		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -1173,17 +1172,11 @@ NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 	if (lookup_name(get_global_sam_name(), name, &sid, &type))
 		return NT_STATUS_ALIAS_EXISTS;
 
-	if (!winbind_allocate_rid(&new_rid))
+	if (!winbind_allocate_rid_and_gid(&new_rid, &gid))
 		return NT_STATUS_ACCESS_DENIED;
 
 	sid_copy(&sid, get_global_sam_sid());
 	sid_append_rid(&sid, new_rid);
-
-	/* Here we allocate the gid */
-	if (!winbind_sid_to_gid(&gid, &sid)) {
-		DEBUG(0, ("Could not get gid for new RID\n"));
-		return NT_STATUS_ACCESS_DENIED;
-	}
 
 	map.gid = gid;
 	sid_copy(&map.sid, &sid);
@@ -1282,7 +1275,7 @@ NTSTATUS pdb_default_alias_memberships(struct pdb_methods *methods,
 		return result;
 
 	*alias_rids = TALLOC_ARRAY(mem_ctx, uint32, num_alias_sids);
-	if ((alias_sids != 0) && (*alias_rids == NULL))
+	if (*alias_rids == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	*num_alias_rids = 0;
@@ -1346,4 +1339,39 @@ NTSTATUS pdb_nop_enum_group_mapping(struct pdb_methods *methods,
 {
 	return NT_STATUS_UNSUCCESSFUL;
 }
+
+/****************************************************************************
+ These need to be redirected through pdb_interface.c
+****************************************************************************/
+BOOL pdb_get_dom_grp_info(const DOM_SID *sid, struct acct_info *info)
+{
+	GROUP_MAP map;
+	BOOL res;
+
+	become_root();
+	res = get_domain_group_from_sid(*sid, &map);
+	unbecome_root();
+
+	if (!res)
+		return False;
+
+	fstrcpy(info->acct_name, map.nt_name);
+	fstrcpy(info->acct_desc, map.comment);
+	sid_peek_rid(sid, &info->rid);
+	return True;
+}
+
+BOOL pdb_set_dom_grp_info(const DOM_SID *sid, const struct acct_info *info)
+{
+	GROUP_MAP map;
+
+	if (!get_domain_group_from_sid(*sid, &map))
+		return False;
+
+	fstrcpy(map.nt_name, info->acct_name);
+	fstrcpy(map.comment, info->acct_desc);
+
+	return pdb_update_group_mapping_entry(&map);
+}
+
 

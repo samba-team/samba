@@ -122,6 +122,7 @@ typedef struct
 	char *szConfigFile;
 	char *szSMBPasswdFile;
 	char *szPrivateDir;
+        char *szCountersDir;
 	char **szPassdbBackend;
 	char **szPreloadModules;
 	char *szPasswordServer;
@@ -182,12 +183,6 @@ typedef struct
 	char *szAddShareCommand;
 	char *szChangeShareCommand;
 	char *szDeleteShareCommand;
-        char *szEventLogOpenCommand;
-        char *szEventLogReadCommand;
-        char *szEventLogClearCommand;
-        char *szEventLogNumRecordsCommand;
-        char *szEventLogOldestRecordCommand;
-	char *szEventLogCloseCommand;
         char **szEventLogs;
 	char *szGuestaccount;
 	char *szManglingMethod;
@@ -241,6 +236,7 @@ typedef struct
 	char *szLdapAdminDn;
 	char *szAclCompat;
 	char *szCupsServer;
+	char *szIPrintServer;
 	int ldap_passwd_sync; 
 	int ldap_replication_sleep;
 	int ldap_timeout; /* This is initialised in init_globals */
@@ -605,7 +601,6 @@ static BOOL handle_netbios_scope( int snum, const char *pszParmValue, char **ptr
 static BOOL handle_charset( int snum, const char *pszParmValue, char **ptr );
 static BOOL handle_acl_compatibility( int snum, const char *pszParmValue, char **ptr);
 static BOOL handle_printing( int snum, const char *pszParmValue, char **ptr);
-static BOOL handle_eventlog( int snum, const char *pszParmValue, char **ptr);
 
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
@@ -641,6 +636,7 @@ static const struct enum_list enum_printing[] = {
 	{PRINT_PLP, "plp"},
 	{PRINT_LPRNG, "lprng"},
 	{PRINT_CUPS, "cups"},
+	{PRINT_IPRINT, "iprint"},
 	{PRINT_LPRNT, "nt"},
 	{PRINT_LPROS2, "os2"},
 #ifdef DEVELOPER
@@ -831,6 +827,7 @@ static struct parm_struct parm_table[] = {
 	{"password server", P_STRING, P_GLOBAL, &Globals.szPasswordServer, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD}, 
 	{"smb passwd file", P_STRING, P_GLOBAL, &Globals.szSMBPasswdFile, NULL, NULL, FLAG_ADVANCED}, 
 	{"private dir", P_STRING, P_GLOBAL, &Globals.szPrivateDir, NULL, NULL, FLAG_ADVANCED}, 
+	{"counters dir", P_STRING, P_GLOBAL, &Globals.szCountersDir, NULL, NULL, FLAG_ADVANCED},
 	{"passdb backend", P_LIST, P_GLOBAL, &Globals.szPassdbBackend, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD}, 
 	{"algorithmic rid base", P_INTEGER, P_GLOBAL, &Globals.AlgorithmicRidBase, NULL, NULL, FLAG_ADVANCED}, 
 	{"root directory", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, FLAG_ADVANCED}, 
@@ -964,7 +961,7 @@ static struct parm_struct parm_table[] = {
 	{"client use spnego", P_BOOL, P_GLOBAL, &Globals.bClientUseSpnego, NULL, NULL, FLAG_ADVANCED}, 
 
 	{"enable asu support", P_BOOL, P_GLOBAL, &Globals.bASUSupport, NULL, NULL, FLAG_ADVANCED}, 
-	{"enable svcctl", P_LIST, P_GLOBAL, &Globals.szServicesList, NULL, NULL, FLAG_ADVANCED},
+	{"svcctl list", P_LIST, P_GLOBAL, &Globals.szServicesList, NULL, NULL, FLAG_ADVANCED},
 
 	{N_("Tuning Options"), P_SEP, P_SEPARATOR}, 
 
@@ -1007,6 +1004,7 @@ static struct parm_struct parm_table[] = {
 	{"printing", P_ENUM, P_LOCAL, &sDefault.iPrinting, handle_printing, enum_printing, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"cups options", P_STRING, P_LOCAL, &sDefault.szCupsOptions, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"cups server", P_STRING, P_GLOBAL, &Globals.szCupsServer, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
+	{"iprint server", P_STRING, P_GLOBAL, &Globals.szIPrintServer, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"print command", P_STRING, P_LOCAL, &sDefault.szPrintcommand, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"disable spoolss", P_BOOL, P_GLOBAL, &Globals.bDisableSpoolss, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL}, 
 	{"enable spoolss", P_BOOLREV, P_GLOBAL, &Globals.bDisableSpoolss, NULL, NULL, FLAG_HIDE}, 
@@ -1148,11 +1146,6 @@ static struct parm_struct parm_table[] = {
 	{"delete share command", P_STRING, P_GLOBAL, &Globals.szDeleteShareCommand, NULL, NULL, FLAG_ADVANCED}, 
 
 	{N_("EventLog Options"), P_SEP, P_SEPARATOR}, 
-	{"eventlog open command", P_STRING, P_GLOBAL, &Globals.szEventLogOpenCommand, handle_eventlog, NULL, FLAG_ADVANCED},
-	{"eventlog read command", P_STRING, P_GLOBAL, &Globals.szEventLogReadCommand, handle_eventlog, NULL, FLAG_ADVANCED}, 
-	{"eventlog clear command", P_STRING, P_GLOBAL, &Globals.szEventLogClearCommand, handle_eventlog, NULL, FLAG_ADVANCED},
-	{"eventlog num records command", P_STRING, P_GLOBAL, &Globals.szEventLogNumRecordsCommand, handle_eventlog, NULL, FLAG_ADVANCED},
-	{"eventlog oldest record command", P_STRING, P_GLOBAL, &Globals.szEventLogOldestRecordCommand, handle_eventlog, NULL, FLAG_ADVANCED},
 	{"eventlog list",  P_LIST, P_GLOBAL, &Globals.szEventLogs, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
 	
 	{"config file", P_STRING, P_GLOBAL, &Globals.szConfigFile, NULL, NULL, FLAG_HIDE}, 
@@ -1273,6 +1266,7 @@ static void init_printer_values(service *pService)
 			break;
 
 		case PRINT_CUPS:
+		case PRINT_IPRINT:
 #ifdef HAVE_CUPS
 			/* set the lpq command to contain the destination printer
 			   name only.  This is used by cups_queue_get() */
@@ -1424,6 +1418,7 @@ static void init_globals(void)
 
 	Globals.bLoadPrinters = True;
 	Globals.PrintcapCacheTime = 750; 	/* 12.5 minutes */
+
 	/* Was 65535 (0xFFFF). 0x4101 matches W2K and causes major speed improvements... */
 	/* Discovered by 2 days of pain by Don McCall @ HP :-). */
 	Globals.max_xmit = 0x4104;
@@ -1516,7 +1511,6 @@ static void init_globals(void)
 #else
 	Globals.szPassdbBackend = str_list_make("smbpasswd", NULL);
 #endif /* WITH_LDAP_SAMCONFIG */
-
 	string_set(&Globals.szLdapSuffix, "");
 	string_set(&Globals.szLdapMachineSuffix, "");
 	string_set(&Globals.szLdapUserSuffix, "");
@@ -1570,12 +1564,7 @@ static void init_globals(void)
 	string_set(&Globals.szWinbindSeparator, "\\");
 	string_set(&Globals.szAclCompat, "");
 	string_set(&Globals.szCupsServer, "");
-
-	string_set(&Globals.szEventLogOpenCommand, "");
-	string_set(&Globals.szEventLogReadCommand, "");
-	string_set(&Globals.szEventLogClearCommand, "");
-	string_set(&Globals.szEventLogNumRecordsCommand, "");
-	string_set(&Globals.szEventLogOldestRecordCommand, "");
+	string_set(&Globals.szIPrintServer, "");
 
 	Globals.winbind_cache_time = 300;	/* 5 minutes */
 	Globals.bWinbindEnumUsers = True;
@@ -1604,7 +1593,7 @@ static void init_globals(void)
 	   operations as root */
 
 	Globals.bEnablePrivileges = False;
-	
+
 	Globals.bASUSupport       = True;
 	
 	Globals.szServicesList = str_list_make( "Spooler NETLOGON", NULL );
@@ -1698,6 +1687,7 @@ FN_GLOBAL_STRING(lp_logfile, &Globals.szLogFile)
 FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
 FN_GLOBAL_STRING(lp_smb_passwd_file, &Globals.szSMBPasswdFile)
 FN_GLOBAL_STRING(lp_private_dir, &Globals.szPrivateDir)
+FN_GLOBAL_STRING(lp_counters_dir, &Globals.szCountersDir)
 FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
 FN_GLOBAL_INTEGER(lp_printcap_cache_time, &Globals.PrintcapCacheTime)
 FN_GLOBAL_STRING(lp_enumports_cmd, &Globals.szEnumPortsCommand)
@@ -1793,12 +1783,6 @@ FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand)
 FN_GLOBAL_STRING(lp_change_share_cmd, &Globals.szChangeShareCommand)
 FN_GLOBAL_STRING(lp_delete_share_cmd, &Globals.szDeleteShareCommand)
 
-FN_GLOBAL_STRING(lp_eventlog_open_cmd, &Globals.szEventLogOpenCommand)
-FN_GLOBAL_STRING(lp_eventlog_read_cmd, &Globals.szEventLogReadCommand)
-FN_GLOBAL_STRING(lp_eventlog_clear_cmd, &Globals.szEventLogClearCommand)
-FN_GLOBAL_STRING(lp_eventlog_num_records_cmd, &Globals.szEventLogNumRecordsCommand)
-FN_GLOBAL_STRING(lp_eventlog_oldest_record_cmd, &Globals.szEventLogOldestRecordCommand)
-FN_GLOBAL_STRING(lp_eventlog_close_cmd, &Globals.szEventLogCloseCommand)
 FN_GLOBAL_LIST(lp_eventlog_list, &Globals.szEventLogs)
 
 FN_GLOBAL_BOOL(lp_disable_netbios, &Globals.bDisableNetbios)
@@ -1899,9 +1883,10 @@ FN_LOCAL_STRING(lp_username, szUsername)
 FN_LOCAL_LIST(lp_invalid_users, szInvalidUsers)
 FN_LOCAL_LIST(lp_valid_users, szValidUsers)
 FN_LOCAL_LIST(lp_admin_users, szAdminUsers)
-FN_GLOBAL_LIST(lp_enable_svcctl, &Globals.szServicesList)
+FN_GLOBAL_LIST(lp_svcctl_list, &Globals.szServicesList)
 FN_LOCAL_STRING(lp_cups_options, szCupsOptions)
 FN_GLOBAL_STRING(lp_cups_server, &Globals.szCupsServer)
+FN_GLOBAL_STRING(lp_iprint_server, &Globals.szIPrintServer)
 FN_LOCAL_STRING(lp_printcommand, szPrintcommand)
 FN_LOCAL_STRING(lp_lpqcommand, szLpqcommand)
 FN_LOCAL_STRING(lp_lprmcommand, szLprmcommand)
@@ -2892,11 +2877,7 @@ static BOOL handle_charset(int snum, const char *pszParmValue, char **ptr)
 	return True;
 }
 
-static BOOL handle_eventlog(int snum, const char *pszParmValue, char **ptr)
-{
-	string_set(ptr, pszParmValue);
-	return True;
-}
+
 
 static BOOL handle_workgroup(int snum, const char *pszParmValue, char **ptr)
 {
@@ -3338,7 +3319,10 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			break;
 
 		case P_OCTAL:
-			sscanf(pszParmValue, "%o", (int *)parm_ptr);
+			i = sscanf(pszParmValue, "%o", (int *)parm_ptr);
+			if ( i != 1 ) {
+			    DEBUG ( 0, ("Invalid octal number %s\n", pszParmName ));
+			}
 			break;
 
 		case P_LIST:
@@ -3692,13 +3676,13 @@ static void dump_a_service(service * pService, FILE * f)
 		}
 	}
 
-	if (pService->param_opt != NULL) {
-		data = pService->param_opt;
-		while(data) {
-			fprintf(f, "\t%s = %s\n", data->key, data->value);
-			data = data->next;
-		}
-	}
+		if (pService->param_opt != NULL) {
+			data = pService->param_opt;
+			while(data) {
+				fprintf(f, "\t%s = %s\n", data->key, data->value);
+				data = data->next;
+			}
+        	}
 }
 
 /***************************************************************************
@@ -4122,7 +4106,7 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 		   are denied */
 		lp_add_ipc("IPC$", (lp_restrict_anonymous() < 2));
 		if ( lp_enable_asu_support() )
-		lp_add_ipc("ADMIN$", False);
+			lp_add_ipc("ADMIN$", False);
 	}
 
 	set_server_role();

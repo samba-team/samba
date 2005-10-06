@@ -6,6 +6,7 @@
    Copyright (C) Tim Potter 2001,2002
    Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2005
    Modified by Volker Lendecke 2002
+   Copyright (C) Jeremy Allison 2005.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -40,7 +41,6 @@ static void display_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *g)
 	}
 	d_printf("\n");
 }
-
 
 static const char *display_time(NTTIME *nttime)
 {
@@ -210,10 +210,9 @@ static void display_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta)
 	}
 }
 
-
-static void dump_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds)
+static void dump_database(struct rpc_pipe_client *pipe_hnd, uint32 db_type)
 {
-	unsigned sync_context = 0;
+	uint32 sync_context = 0;
         NTSTATUS result;
 	int i;
         TALLOC_CTX *mem_ctx;
@@ -241,13 +240,12 @@ static void dump_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret
 	}
 
 	do {
-		result = cli_netlogon_sam_sync(cli, mem_ctx, ret_creds, db_type,
+		result = rpccli_netlogon_sam_sync(pipe_hnd, mem_ctx, db_type,
 					       sync_context,
 					       &num_deltas, &hdr_deltas, &deltas);
 		if (NT_STATUS_IS_ERR(result))
 			break;
 
-		clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), ret_creds);
                 for (i = 0; i < num_deltas; i++) {
 			display_sam_entry(&hdr_deltas[i], &deltas[i]);
                 }
@@ -259,41 +257,47 @@ static void dump_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret
 
 /* dump sam database via samsync rpc calls */
 NTSTATUS rpc_samdump_internals(const DOM_SID *domain_sid, 
-			       const char *domain_name, 
-			       struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-			       int argc, const char **argv) 
+				const char *domain_name, 
+				struct cli_state *cli,
+				struct rpc_pipe_client *pipe_hnd,
+				TALLOC_CTX *mem_ctx, 
+				int argc,
+				const char **argv) 
 {
+#if 0
+	/* net_rpc.c now always tries to create an schannel pipe.. */
+
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	uchar trust_password[16];
-	DOM_CRED ret_creds;
-	uint32 sec_channel;
-
-	ZERO_STRUCT(ret_creds);
-
-	fstrcpy(cli->domain, domain_name);
+	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
+	uint32 sec_channel_type = 0;
 
 	if (!secrets_fetch_trust_account_password(domain_name,
 						  trust_password,
-						  NULL, &sec_channel)) {
+						  NULL, &sec_channel_type)) {
 		DEBUG(0,("Could not fetch trust account password\n"));
 		goto fail;
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status = cli_nt_establish_netlogon(cli, sec_channel,
-								   trust_password))) {
+	nt_status = rpccli_netlogon_setup_creds(pipe_hnd,
+						cli->desthost,
+						domain_name,
+                                                global_myname(),
+                                                trust_password,
+                                                sec_channel_type,
+                                                &neg_flags);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("Error connecting to NETLOGON pipe\n"));
 		goto fail;
 	}
+#endif
 
-	dump_database(cli, SAM_DATABASE_DOMAIN, &ret_creds);
-	dump_database(cli, SAM_DATABASE_BUILTIN, &ret_creds);
-	dump_database(cli, SAM_DATABASE_PRIVS, &ret_creds);
+	dump_database(pipe_hnd, SAM_DATABASE_DOMAIN);
+	dump_database(pipe_hnd, SAM_DATABASE_BUILTIN);
+	dump_database(pipe_hnd, SAM_DATABASE_PRIVS);
 
-        nt_status = NT_STATUS_OK;
-
-fail:
-	cli_nt_session_close(cli);
-	return nt_status;
+	return NT_STATUS_OK;
 }
 
 /* Convert a SAM_ACCOUNT_DELTA to a SAM_ACCOUNT. */
@@ -301,8 +305,7 @@ fail:
 		    (!old_string && new_string) ||\
 		(old_string && new_string && (strcmp(old_string, new_string) != 0))
 
-static NTSTATUS
-sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
+static NTSTATUS sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 {
 	const char *old_string, *new_string;
 	time_t unix_time, stored_time;
@@ -529,7 +532,7 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 			add_ret = smbrun(add_script,NULL);
 			DEBUG(add_ret ? 0 : 1,("fetch_account: Running the command `%s' "
 				 "gave %d\n", add_script, add_ret));
-		} 
+		}
 		
 		/* try and find the possible unix account again */
 		if ( !(passwd = Get_Pwnam(account)) ) {
@@ -590,8 +593,7 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	return nt_ret;
 }
 
-static NTSTATUS
-fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
+static NTSTATUS fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 {
 	fstring name;
 	fstring comment;
@@ -651,8 +653,7 @@ fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS
-fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
+static NTSTATUS fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 {
 	int i;
 	TALLOC_CTX *t = NULL;
@@ -832,8 +833,7 @@ static NTSTATUS fetch_alias_info(uint32 rid, SAM_ALIAS_INFO *delta,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS
-fetch_alias_mem(uint32 rid, SAM_ALIAS_MEM_INFO *delta, DOM_SID dom_sid)
+static NTSTATUS fetch_alias_mem(uint32 rid, SAM_ALIAS_MEM_INFO *delta, DOM_SID dom_sid)
 {
 #if 0 	/* 
 	 * commented out right now after talking to Volker.  Can't
@@ -998,42 +998,41 @@ static NTSTATUS fetch_domain_info(uint32 rid, SAM_DOMAIN_INFO *delta)
 	}
 
 
-	if (!account_policy_set(AP_PASSWORD_HISTORY, delta->pwd_history_len))
+	if (!pdb_set_account_policy(AP_PASSWORD_HISTORY, delta->pwd_history_len))
 		return nt_status;
 
-	if (!account_policy_set(AP_MIN_PASSWORD_LEN, delta->min_pwd_len))
+	if (!pdb_set_account_policy(AP_MIN_PASSWORD_LEN, delta->min_pwd_len))
 		return nt_status;
 
-	if (!account_policy_set(AP_MAX_PASSWORD_AGE, (uint32)u_max_age))
+	if (!pdb_set_account_policy(AP_MAX_PASSWORD_AGE, (uint32)u_max_age))
 		return nt_status;
 
-	if (!account_policy_set(AP_MIN_PASSWORD_AGE, (uint32)u_min_age))
+	if (!pdb_set_account_policy(AP_MIN_PASSWORD_AGE, (uint32)u_min_age))
 		return nt_status;
 
-	if (!account_policy_set(AP_TIME_TO_LOGOUT, (uint32)u_logout))
+	if (!pdb_set_account_policy(AP_TIME_TO_LOGOUT, (uint32)u_logout))
 		return nt_status;
 
-	if (!account_policy_set(AP_BAD_ATTEMPT_LOCKOUT, delta->account_lockout.bad_attempt_lockout))
+	if (!pdb_set_account_policy(AP_BAD_ATTEMPT_LOCKOUT, delta->account_lockout.bad_attempt_lockout))
 		return nt_status;
 
-	if (!account_policy_set(AP_RESET_COUNT_TIME, (uint32)u_lockoutreset/60))
+	if (!pdb_set_account_policy(AP_RESET_COUNT_TIME, (uint32)u_lockoutreset/60))
 		return nt_status;
 
 	if (u_lockouttime != -1)
 		u_lockouttime /= 60;
 
-	if (!account_policy_set(AP_LOCK_ACCOUNT_DURATION, (uint32)u_lockouttime))
+	if (!pdb_set_account_policy(AP_LOCK_ACCOUNT_DURATION, (uint32)u_lockouttime))
 		return nt_status;
 
-	if (!account_policy_set(AP_USER_MUST_LOGON_TO_CHG_PASS, delta->logon_chgpass))
+	if (!pdb_set_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS, delta->logon_chgpass))
 		return nt_status;
 
 	return NT_STATUS_OK;
 }
 
 
-static void
-fetch_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta,
+static void fetch_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta,
 		DOM_SID dom_sid)
 {
 	switch(hdr_delta->type) {
@@ -1098,11 +1097,9 @@ fetch_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta,
 	}
 }
 
-static NTSTATUS
-fetch_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds,
-	       DOM_SID dom_sid)
+static NTSTATUS fetch_database(struct rpc_pipe_client *pipe_hnd, uint32 db_type, DOM_SID dom_sid)
 {
-	unsigned sync_context = 0;
+	uint32 sync_context = 0;
         NTSTATUS result;
 	int i;
         TALLOC_CTX *mem_ctx;
@@ -1129,17 +1126,13 @@ fetch_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds,
 	}
 
 	do {
-		result = cli_netlogon_sam_sync(cli, mem_ctx, ret_creds,
+		result = rpccli_netlogon_sam_sync(pipe_hnd, mem_ctx,
 					       db_type, sync_context,
 					       &num_deltas,
 					       &hdr_deltas, &deltas);
 
 		if (NT_STATUS_IS_OK(result) ||
 		    NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
-
-			clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred),
-					     ret_creds);
-
 			for (i = 0; i < num_deltas; i++) {
 				fetch_sam_entry(&hdr_deltas[i], &deltas[i], dom_sid);
 			}
@@ -1154,8 +1147,7 @@ fetch_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds,
 	return result;
 }
 
-static NTSTATUS
-populate_ldap_for_ldif(fstring sid, const char *suffix, const char 
+static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const char 
 		       *builtin_sid, FILE *add_fd)
 {
 	char *user_suffix, *group_suffix, *machine_suffix, *idmap_suffix;
@@ -1448,8 +1440,7 @@ populate_ldap_for_ldif(fstring sid, const char *suffix, const char
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS
-map_populate_groups(GROUPMAP *groupmap, ACCOUNTMAP *accountmap, fstring sid, 
+static NTSTATUS map_populate_groups(GROUPMAP *groupmap, ACCOUNTMAP *accountmap, fstring sid, 
 		    const char *suffix, const char *builtin_sid)
 {
 	char *group_attr = sstring_sub(lp_ldap_group_suffix(), '=', ',');
@@ -1521,8 +1512,7 @@ map_populate_groups(GROUPMAP *groupmap, ACCOUNTMAP *accountmap, fstring sid,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS
-fetch_group_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupmap,
+static NTSTATUS fetch_group_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupmap,
 			 FILE *add_fd, fstring sid, char *suffix)
 {
 	fstring groupname;
@@ -1579,8 +1569,7 @@ fetch_group_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupmap,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS
-fetch_account_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupmap,
+static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupmap,
 		   	   ACCOUNTMAP *accountmap, FILE *add_fd,
 			   fstring sid, char *suffix, int alloced)
 {
@@ -1724,8 +1713,7 @@ fetch_account_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupmap,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS
-fetch_alias_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupmap,
+static NTSTATUS fetch_alias_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupmap,
 			 FILE *add_fd, fstring sid, char *suffix, 
 			 unsigned db_type)
 {
@@ -1798,8 +1786,7 @@ fetch_alias_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupmap,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS
-fetch_groupmem_info_to_ldif(SAM_DELTA_CTR *delta, SAM_DELTA_HDR *hdr_delta,
+static NTSTATUS fetch_groupmem_info_to_ldif(SAM_DELTA_CTR *delta, SAM_DELTA_HDR *hdr_delta,
 			    GROUPMAP *groupmap, ACCOUNTMAP *accountmap, 
 			    FILE *mod_fd, int alloced)
 {
@@ -1841,16 +1828,16 @@ fetch_groupmem_info_to_ldif(SAM_DELTA_CTR *delta, SAM_DELTA_HDR *hdr_delta,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS
-fetch_database_to_ldif(struct cli_state *cli, unsigned db_type, 
-                       DOM_CRED *ret_creds, DOM_SID dom_sid,
-		       const char *user_file)
+static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
+					uint32 db_type,
+					DOM_SID dom_sid,
+					const char *user_file)
 {
 	char *suffix;
 	const char *builtin_sid = "S-1-5-32";
 	char *ldif_file;
 	fstring sid, domainname;
-	unsigned sync_context = 0;
+	uint32 sync_context = 0;
 	NTSTATUS result;
 	int k;
 	TALLOC_CTX *mem_ctx;
@@ -1956,7 +1943,7 @@ fetch_database_to_ldif(struct cli_state *cli, unsigned db_type,
 	}
 
 	do {
-		result = cli_netlogon_sam_sync(cli, mem_ctx, ret_creds,
+		result = rpccli_netlogon_sam_sync(pipe_hnd, mem_ctx,
 					       db_type, sync_context,
 					       &num_deltas, &hdr_deltas, 
 					       &deltas);
@@ -1964,9 +1951,6 @@ fetch_database_to_ldif(struct cli_state *cli, unsigned db_type,
 		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
 			return NT_STATUS_OK;
 		}
-
-		clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred),
-				     ret_creds);
 
 		/* Re-allocate memory for groupmap and accountmap arrays */
 		groupmap = SMB_REALLOC_ARRAY(groupmap, GROUPMAP,
@@ -2138,18 +2122,16 @@ int rpc_vampire_usage(int argc, const char **argv)
 
 /* dump sam database via samsync rpc calls */
 NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid, 
-			       const char *domain_name, 
-			       struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-			       int argc, const char **argv) 
+				const char *domain_name, 
+				struct cli_state *cli,
+				struct rpc_pipe_client *pipe_hnd,
+				TALLOC_CTX *mem_ctx, 
+				int argc,
+				const char **argv) 
 {
         NTSTATUS result;
-	uchar trust_password[16];
-	DOM_CRED ret_creds;
 	fstring my_dom_sid_str;
 	fstring rem_dom_sid_str;
-	uint32 sec_channel;
-
-	ZERO_STRUCT(ret_creds);
 
 	if (!sid_equal(domain_sid, get_global_sam_sid())) {
 		d_printf("Cannot import users from %s at this time, "
@@ -2164,29 +2146,11 @@ NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	fstrcpy(cli->domain, domain_name);
-
-	if (!secrets_fetch_trust_account_password(domain_name,
-						  trust_password, NULL,
-						  &sec_channel)) {
-		result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-		d_printf("Could not retrieve domain trust secret\n");
-		goto fail;
-	}
-	
-	result = cli_nt_establish_netlogon(cli, sec_channel, trust_password);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		d_printf("Failed to setup BDC creds\n");
-		goto fail;
-	}
-
         if (argc >= 1 && (strcmp(argv[0], "ldif") == 0)) {
-		result = fetch_database_to_ldif(cli, SAM_DATABASE_DOMAIN,
-					&ret_creds, *domain_sid, argv[1]);
+		result = fetch_database_to_ldif(pipe_hnd, SAM_DATABASE_DOMAIN,
+					*domain_sid, argv[1]);
         } else {
-		result = fetch_database(cli, SAM_DATABASE_DOMAIN, &ret_creds,
-					*domain_sid);
+		result = fetch_database(pipe_hnd, SAM_DATABASE_DOMAIN, *domain_sid);
         }
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -2199,12 +2163,10 @@ NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
 	}
 
         if (argc >= 1 && (strcmp(argv[0], "ldif") == 0)) {
-		result = fetch_database_to_ldif(cli, SAM_DATABASE_BUILTIN, 
-                                            &ret_creds, global_sid_Builtin,
-					    argv[1]);
+		result = fetch_database_to_ldif(pipe_hnd, SAM_DATABASE_BUILTIN, 
+					global_sid_Builtin, argv[1]);
         } else {
-		result = fetch_database(cli, SAM_DATABASE_BUILTIN, &ret_creds, 
-	      				    global_sid_Builtin);
+		result = fetch_database(pipe_hnd, SAM_DATABASE_BUILTIN, global_sid_Builtin);
         }
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -2219,4 +2181,3 @@ NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
 fail:
 	return result;
 }
-

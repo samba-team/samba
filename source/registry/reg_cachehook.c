@@ -36,7 +36,7 @@ static REGISTRY_HOOK default_hook = { KEY_TREE_ROOT, &regdb_ops };
 
 BOOL reghook_cache_init( void )
 {
-	cache_tree = pathtree_init( &default_hook, NULL, NULL );
+	cache_tree = pathtree_init( &default_hook, NULL );
 
 	return ( cache_tree == NULL );
 }

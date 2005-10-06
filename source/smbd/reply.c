@@ -30,7 +30,6 @@
 extern enum protocol_types Protocol;
 extern int max_send;
 extern int max_recv;
-extern int global_oplock_break;
 unsigned int smb_echo_count = 0;
 extern uint32 global_client_caps;
 
@@ -1313,7 +1312,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	if (!map_open_params_to_ntcreate(fname, deny_mode, OPENX_FILE_EXISTS_OPEN,
 			&access_mask, &share_mode, &create_disposition, &create_options)) {
 		END_PROFILE(SMBopen);
-		return ERROR_DOS(ERRDOS, ERRbadaccess);
+		return ERROR_FORCE_DOS(ERRDOS, ERRbadaccess);
 	}
 
 	fsp = open_file_ntcreate(conn,fname,&sbuf,
@@ -1354,7 +1353,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 		put_dos_date3(outbuf,smb_vwv2,mtime);
 	}
 	SIVAL(outbuf,smb_vwv4,(uint32)size);
-	SSVAL(outbuf,smb_vwv6,GET_OPENX_MODE(deny_mode));
+	SSVAL(outbuf,smb_vwv6,deny_mode);
 
 	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
 		SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
@@ -1436,7 +1435,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 				&create_disposition,
 				&create_options)) {
 		END_PROFILE(SMBopenX);
-		return ERROR_DOS(ERRDOS, ERRbadaccess);
+		return ERROR_FORCE_DOS(ERRDOS, ERRbadaccess);
 	}
 
 	fsp = open_file_ntcreate(conn,fname,&sbuf,
@@ -1779,7 +1778,7 @@ static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype,
 	}
 
 	/* We need a better way to return NT status codes from open... */
-	set_saved_error_triple(0, 0, NT_STATUS_OK);
+	set_saved_ntstatus(NT_STATUS_OK);
 
 	fsp = open_file_ntcreate(conn, fname, pst,
 				DELETE_ACCESS,
@@ -1791,12 +1790,12 @@ static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype,
 				NULL);
 
 	if (!fsp) {
-		NTSTATUS ret;
-		if (get_saved_error_triple(NULL, NULL, &ret)) {
-			set_saved_error_triple(0, 0, NT_STATUS_OK);
+		NTSTATUS ret = get_saved_ntstatus();
+		if (!NT_STATUS_IS_OK(ret)) {
+			set_saved_ntstatus(NT_STATUS_OK);
 			return ret;
 		}
-		set_saved_error_triple(0, 0, NT_STATUS_OK);
+		set_saved_ntstatus(NT_STATUS_OK);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	close_file(fsp,False);
@@ -1860,7 +1859,7 @@ NTSTATUS can_delete(connection_struct *conn, char *fname, uint32 dirtype, BOOL b
 		   don't do it here as we'll get it wrong. */
 
 		/* We need a better way to return NT status codes from open... */
-		set_saved_error_triple(0, 0, NT_STATUS_OK);
+		set_saved_ntstatus(NT_STATUS_OK);
 
 		fsp = open_file_ntcreate(conn, fname, &sbuf,
 					DELETE_ACCESS,
@@ -1872,12 +1871,12 @@ NTSTATUS can_delete(connection_struct *conn, char *fname, uint32 dirtype, BOOL b
 					NULL);
 
 		if (!fsp) {
-			NTSTATUS ret;
-			if (get_saved_error_triple(NULL, NULL, &ret)) {
-				set_saved_error_triple(0, 0, NT_STATUS_OK);
+			NTSTATUS ret = get_saved_ntstatus();
+			if (!NT_STATUS_IS_OK(ret)) {
+				set_saved_ntstatus(NT_STATUS_OK);
 				return ret;
 			}
-			set_saved_error_triple(0, 0, NT_STATUS_OK);
+			set_saved_ntstatus(NT_STATUS_OK);
 			return NT_STATUS_ACCESS_DENIED;
 		}
 		close_file(fsp,False);
@@ -2209,15 +2208,6 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	 * return a zero length response here.
 	 */
 
-	if(global_oplock_break) {
-		_smb_setlen(header,0);
-		if (write_data(smbd_server_fd(),header,4) != 4)
-			fail_readraw();
-		DEBUG(5,("readbraw - oplock break finished\n"));
-		END_PROFILE(SMBreadbraw);
-		return -1;
-	}
-
 	fsp = file_fsp(inbuf,smb_vwv0);
 
 	if (!FNUM_OK(fsp,conn) || !fsp->can_read) {
@@ -2298,8 +2288,8 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 		nread = 0;
 #endif
   
-	DEBUG( 3, ( "readbraw fnum=%d start=%.0f max=%d min=%d nread=%d\n", fsp->fnum, (double)startpos,
-				(int)maxcount, (int)mincount, (int)nread ) );
+	DEBUG( 3, ( "readbraw fnum=%d start=%.0f max=%lu min=%lu nread=%lu\n", fsp->fnum, (double)startpos,
+				(unsigned long)maxcount, (unsigned long)mincount, (unsigned long)nread ) );
   
 	send_file_readbraw(conn, fsp, startpos, nread, mincount, outbuf, out_buffsize);
 
@@ -2786,8 +2776,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
  
 	SSVAL(outbuf,smb_vwv0,total_written);
 
-	if ((lp_syncalways(SNUM(conn)) || write_through) && lp_strict_sync(SNUM(conn)))
-		sync_file(conn,fsp);
+	sync_file(conn, fsp, write_through);
 
 	DEBUG(3,("writebraw2 fnum=%d start=%.0f num=%d wrote=%d\n",
 		fsp->fnum, (double)startpos, (int)numtowrite,(int)total_written));
@@ -2852,8 +2841,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf,
 		nwritten = write_file(fsp,data,startpos,numtowrite);
 	}
   
-	if (lp_syncalways(SNUM(conn)))
-		sync_file(conn,fsp);
+	sync_file(conn, fsp, False /* write through */);
 
 	if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
 		END_PROFILE(SMBwriteunlock);
@@ -2940,8 +2928,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
 	} else
 		nwritten = write_file(fsp,data,startpos,numtowrite);
   
-	if (lp_syncalways(SNUM(conn)))
-		sync_file(conn,fsp);
+	sync_file(conn, fsp, False);
 
 	if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
 		END_PROFILE(SMBwrite);
@@ -3068,8 +3055,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 	DEBUG(3,("writeX fnum=%d num=%d wrote=%d\n",
 		fsp->fnum, (int)numtowrite, (int)nwritten));
 
-	if (lp_syncalways(SNUM(conn)) || write_through)
-		sync_file(conn,fsp);
+	sync_file(conn, fsp, write_through);
 
 	END_PROFILE(SMBwriteX);
 	return chain_reply(inbuf,outbuf,length,bufsize);
@@ -3166,7 +3152,7 @@ int reply_flush(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	if (!fsp) {
 		file_sync_all(conn);
 	} else {
-		sync_file(conn,fsp);
+		sync_file(conn,fsp, True);
 	}
 	
 	DEBUG(3,("flush\n"));
@@ -3748,7 +3734,7 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	if( is_ntfs_stream_name(directory)) {
 		DEBUG(5,("reply_mkdir: failing create on filename %s with colon in name\n", directory));
 		END_PROFILE(SMBmkdir);
-		return ERROR_FORCE_DOS(ERRDOS, ERRinvalidname);
+		return ERROR_NT(NT_STATUS_NOT_A_DIRECTORY);
 	}
 
 	status = mkdir_internal(conn, directory,bad_path);
@@ -4080,6 +4066,35 @@ static void rename_open_files(connection_struct *conn, SMB_DEV_T dev, SMB_INO_T 
 }
 
 /****************************************************************************
+ We need to check if the source path is a parent directory of the destination
+ (ie. a rename of /foo/bar/baz -> /foo/bar/baz/bibble/bobble. If so we must
+ refuse the rename with a sharing violation. Under UNIX the above call can
+ *succeed* if /foo/bar/baz is a symlink to another area in the share. We
+ probably need to check that the client is a Windows one before disallowing
+ this as a UNIX client (one with UNIX extensions) can know the source is a
+ symlink and make this decision intelligently. Found by an excellent bug
+ report from <AndyLiebman@aol.com>.
+****************************************************************************/
+
+static BOOL rename_path_prefix_equal(const char *src, const char *dest)
+{
+	const char *psrc = src;
+	const char *pdst = dest;
+	size_t slen;
+
+	if (psrc[0] == '.' && psrc[1] == '/') {
+		psrc += 2;
+	}
+	if (pdst[0] == '.' && pdst[1] == '/') {
+		pdst += 2;
+	}
+	if ((slen = strlen(psrc)) > strlen(pdst)) {
+		return False;
+	}
+	return ((memcmp(psrc, pdst, slen) == 0) && pdst[slen] == '/');
+}
+
+/****************************************************************************
  Rename an open file - given an fsp.
 ****************************************************************************/
 
@@ -4172,6 +4187,10 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, char *
 		if (NT_STATUS_EQUAL(error,NT_STATUS_SHARING_VIOLATION))
 			error = NT_STATUS_ACCESS_DENIED;
 		return error;
+	}
+
+	if (rename_path_prefix_equal(fsp->fsp_name, newname)) {
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if(SMB_VFS_RENAME(conn,fsp->fsp_name, newname) == 0) {
@@ -4395,6 +4414,10 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 			return NT_STATUS_OBJECT_NAME_COLLISION;
 		}
 
+		if (rename_path_prefix_equal(directory, newname)) {
+			return NT_STATUS_SHARING_VIOLATION;
+		}
+
 		if(SMB_VFS_RENAME(conn,directory, newname) == 0) {
 			DEBUG(3,("rename_internals: succeeded doing rename on %s -> %s\n",
 				directory,newname));
@@ -4493,6 +4516,10 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 					continue;
 				}
 				
+				if (rename_path_prefix_equal(fname, destname)) {
+					return NT_STATUS_SHARING_VIOLATION;
+				}
+
 				if (!SMB_VFS_RENAME(conn,fname,destname)) {
 					rename_open_files(conn, sbuf1.st_dev, sbuf1.st_ino, newname);
 					count++;
@@ -5047,7 +5074,8 @@ SMB_BIG_UINT get_lock_offset( char *data, int data_offset, BOOL large_file_forma
  Reply to a lockingX request.
 ****************************************************************************/
 
-int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
+int reply_lockingX(connection_struct *conn, char *inbuf, char *outbuf,
+		   int length, int bufsize)
 {
 	files_struct *fsp = file_fsp(inbuf,smb_vwv2);
 	unsigned char locktype = CVAL(inbuf,smb_vwv3);
@@ -5059,7 +5087,8 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
 	int32 lock_timeout = IVAL(inbuf,smb_vwv4);
 	int i;
 	char *data;
-	BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES)?True:False;
+	BOOL large_file_format =
+		(locktype & LOCKING_ANDX_LARGE_FILES)?True:False;
 	BOOL err;
 	BOOL my_lock_ctx = False;
 	NTSTATUS status;
@@ -5088,19 +5117,25 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
 	if ((locktype & LOCKING_ANDX_OPLOCK_RELEASE)) {
 		/* Client can insist on breaking to none. */
 		BOOL break_to_none = (oplocklevel == 0);
-		
-		DEBUG(5,("reply_lockingX: oplock break reply (%u) from client for fnum = %d\n",
-			 (unsigned int)oplocklevel, fsp->fnum ));
+		BOOL result;
+
+		DEBUG(5,("reply_lockingX: oplock break reply (%u) from client "
+			 "for fnum = %d\n", (unsigned int)oplocklevel,
+			 fsp->fnum ));
 
 		/*
-		 * Make sure we have granted an exclusive or batch oplock on this file.
+		 * Make sure we have granted an exclusive or batch oplock on
+		 * this file.
 		 */
 		
-		if(!EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
-			DEBUG(0,("reply_lockingX: Error : oplock break from client for fnum = %d and \
-no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
+		if (fsp->oplock_type == 0) {
+			DEBUG(0,("reply_lockingX: Error : oplock break from "
+				 "client for fnum = %d (oplock=%d) and no "
+				 "oplock granted on this file (%s).\n",
+				 fsp->fnum, fsp->oplock_type, fsp->fsp_name));
 
-			/* if this is a pure oplock break request then don't send a reply */
+			/* if this is a pure oplock break request then don't
+			 * send a reply */
 			if (num_locks == 0 && num_ulocks == 0) {
 				END_PROFILE(SMBlockingX);
 				return -1;
@@ -5110,17 +5145,30 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 			}
 		}
 
-		if (remove_oplock(fsp, break_to_none) == False) {
-			DEBUG(0,("reply_lockingX: error in removing oplock on file %s\n",
-				 fsp->fsp_name ));
+		if ((fsp->sent_oplock_break == BREAK_TO_NONE_SENT) ||
+		    (break_to_none)) {
+			result = remove_oplock(fsp);
+		} else {
+			result = downgrade_oplock(fsp);
 		}
 		
-		/* if this is a pure oplock break request then don't send a reply */
+		if (!result) {
+			DEBUG(0, ("reply_lockingX: error in removing "
+				  "oplock on file %s\n", fsp->fsp_name));
+			/* Hmmm. Is this panic justified? */
+			smb_panic("internal tdb error");
+		}
+
+		reply_to_oplock_break_requests(fsp);
+
+		/* if this is a pure oplock break request then don't send a
+		 * reply */
 		if (num_locks == 0 && num_ulocks == 0) {
 			/* Sanity check - ensure a pure oplock break is not a
 			   chained request. */
 			if(CVAL(inbuf,smb_vwv0) != 0xff)
-				DEBUG(0,("reply_lockingX: Error : pure oplock break is a chained %d request !\n",
+				DEBUG(0,("reply_lockingX: Error : pure oplock "
+					 "break is a chained %d request !\n",
 					 (unsigned int)CVAL(inbuf,smb_vwv0) ));
 			END_PROFILE(SMBlockingX);
 			return -1;
@@ -5149,8 +5197,9 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 			return ERROR_DOS(ERRDOS,ERRnoaccess);
 		}
 
-		DEBUG(10,("reply_lockingX: unlock start=%.0f, len=%.0f for pid %u, file %s\n",
-			  (double)offset, (double)count, (unsigned int)lock_pid, fsp->fsp_name ));
+		DEBUG(10,("reply_lockingX: unlock start=%.0f, len=%.0f for "
+			  "pid %u, file %s\n", (double)offset, (double)count,
+			  (unsigned int)lock_pid, fsp->fsp_name ));
 		
 		status = do_unlock(fsp,conn,lock_pid,count,offset);
 		if (NT_STATUS_V(status)) {
@@ -5182,27 +5231,34 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 			return ERROR_DOS(ERRDOS,ERRnoaccess);
 		}
 		
-		DEBUG(10,("reply_lockingX: lock start=%.0f, len=%.0f for pid %u, file %s timeout = %d\n",
-			(double)offset, (double)count, (unsigned int)lock_pid,
-			fsp->fsp_name, (int)lock_timeout ));
+		DEBUG(10,("reply_lockingX: lock start=%.0f, len=%.0f for pid "
+			  "%u, file %s timeout = %d\n", (double)offset,
+			  (double)count, (unsigned int)lock_pid,
+			  fsp->fsp_name, (int)lock_timeout ));
 		
 		status = do_lock_spin(fsp,conn,lock_pid, count,offset, 
-				 ((locktype & 1) ? READ_LOCK : WRITE_LOCK), &my_lock_ctx);
+				      ((locktype & 1) ? READ_LOCK:WRITE_LOCK),
+				      &my_lock_ctx);
 		if (NT_STATUS_V(status)) {
 			/*
-			 * Interesting fact found by IFSTEST /t LockOverlappedTest...
-			 * Even if it's our own lock context, we need to wait here as
-			 * there may be an unlock on the way.
-			 * So I removed a "&& !my_lock_ctx" from the following
-			 * if statement. JRA.
+			 * Interesting fact found by IFSTEST /t
+			 * LockOverlappedTest...  Even if it's our own lock
+			 * context, we need to wait here as there may be an
+			 * unlock on the way.  So I removed a "&&
+			 * !my_lock_ctx" from the following if statement. JRA.
 			 */
-			if ((lock_timeout != 0) && lp_blocking_locks(SNUM(conn)) && ERROR_WAS_LOCK_DENIED(status)) {
+			if ((lock_timeout != 0) &&
+			    lp_blocking_locks(SNUM(conn)) &&
+			    ERROR_WAS_LOCK_DENIED(status)) {
 				/*
 				 * A blocking lock was requested. Package up
 				 * this smb into a queued request and push it
 				 * onto the blocking lock queue.
 				 */
-				if(push_blocking_lock_request(inbuf, length, lock_timeout, i, lock_pid, offset, count)) {
+				if(push_blocking_lock_request(inbuf, length,
+							      lock_timeout, i,
+							      lock_pid, offset,
+							      count)) {
 					END_PROFILE(SMBlockingX);
 					return -1;
 				}
@@ -5222,10 +5278,12 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 		for(i--; i >= 0; i--) {
 			lock_pid = get_lock_pid( data, i, large_file_format);
 			count = get_lock_count( data, i, large_file_format);
-			offset = get_lock_offset( data, i, large_file_format, &err);
+			offset = get_lock_offset( data, i, large_file_format,
+						  &err);
 			
 			/*
-			 * There is no error code marked "stupid client bug".... :-).
+			 * There is no error code marked "stupid client
+			 * bug".... :-).
 			 */
 			if(err) {
 				END_PROFILE(SMBlockingX);
@@ -5240,8 +5298,8 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 
 	set_message(outbuf,2,0,True);
 	
-	DEBUG( 3, ( "lockingX fnum=%d type=%d num_locks=%d num_ulocks=%d\n",
-		    fsp->fnum, (unsigned int)locktype, num_locks, num_ulocks ) );
+	DEBUG(3, ("lockingX fnum=%d type=%d num_locks=%d num_ulocks=%d\n",
+		  fsp->fnum, (unsigned int)locktype, num_locks, num_ulocks));
 	
 	END_PROFILE(SMBlockingX);
 	return chain_reply(inbuf,outbuf,length,bufsize);
@@ -5433,8 +5491,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
 
 	nwritten = write_file(fsp,data,startpos,numtowrite);
 
-	if(lp_syncalways(SNUM(conn)) || write_through)
-		sync_file(conn,fsp);
+	sync_file(conn, fsp, write_through);
   
 	if(nwritten < (ssize_t)numtowrite) {
 		END_PROFILE(SMBwriteBmpx);
@@ -5546,8 +5603,7 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
 
 	nwritten = write_file(fsp,data,startpos,numtowrite);
 
-	if(lp_syncalways(SNUM(conn)) || write_through)
-		sync_file(conn,fsp);
+	sync_file(conn, fsp, write_through);
   
 	if (nwritten < (ssize_t)numtowrite) {
 		if(write_through) {

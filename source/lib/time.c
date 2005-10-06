@@ -783,6 +783,15 @@ BOOL nt_time_is_zero(NTTIME *nt)
 }
 
 /****************************************************************************
+ Check if two NTTIMEs are the same.
+****************************************************************************/
+
+BOOL nt_time_equals(NTTIME *nt1, NTTIME *nt2)
+{
+	return (nt1->high == nt2->high && nt1->low == nt2->low);
+}
+
+/****************************************************************************
  Return a timeval difference in usec.
 ****************************************************************************/
 
@@ -792,6 +801,135 @@ SMB_BIG_INT usec_time_diff(const struct timeval *larget, const struct timeval *s
 	return (sec_diff * 1000000) + (SMB_BIG_INT)(larget->tv_usec - smallt->tv_usec);
 }
 
+/*
+  return a timeval struct with the given elements
+*/
+struct timeval timeval_set(uint32_t secs, uint32_t usecs)
+{
+	struct timeval tv;
+	tv.tv_sec = secs;
+	tv.tv_usec = usecs;
+	return tv;
+}
+
+/*
+  return a zero timeval
+*/
+struct timeval timeval_zero(void)
+{
+	return timeval_set(0,0);
+}
+
+/*
+  return True if a timeval is zero
+*/
+BOOL timeval_is_zero(const struct timeval *tv)
+{
+	return tv->tv_sec == 0 && tv->tv_usec == 0;
+}
+
+/*
+  return a timeval for the current time
+*/
+struct timeval timeval_current(void)
+{
+	struct timeval tv;
+	GetTimeOfDay(&tv);
+	return tv;
+}
+
+/*
+  return a timeval ofs microseconds after tv
+*/
+struct timeval timeval_add(const struct timeval *tv,
+			   uint32_t secs, uint32_t usecs)
+{
+	struct timeval tv2 = *tv;
+	tv2.tv_sec += secs;
+	tv2.tv_usec += usecs;
+	tv2.tv_sec += tv2.tv_usec / 1000000;
+	tv2.tv_usec = tv2.tv_usec % 1000000;
+	return tv2;
+}
+
+/*
+  return the sum of two timeval structures
+*/
+struct timeval timeval_sum(const struct timeval *tv1,
+			   const struct timeval *tv2)
+{
+	return timeval_add(tv1, tv2->tv_sec, tv2->tv_usec);
+}
+
+/*
+  return a timeval secs/usecs into the future
+*/
+struct timeval timeval_current_ofs(uint32_t secs, uint32_t usecs)
+{
+	struct timeval tv = timeval_current();
+	return timeval_add(&tv, secs, usecs);
+}
+
+/*
+  compare two timeval structures. 
+  Return -1 if tv1 < tv2
+  Return 0 if tv1 == tv2
+  Return 1 if tv1 > tv2
+*/
+int timeval_compare(const struct timeval *tv1, const struct timeval *tv2)
+{
+	if (tv1->tv_sec  > tv2->tv_sec)  return 1;
+	if (tv1->tv_sec  < tv2->tv_sec)  return -1;
+	if (tv1->tv_usec > tv2->tv_usec) return 1;
+	if (tv1->tv_usec < tv2->tv_usec) return -1;
+	return 0;
+}
+
+/*
+  return the difference between two timevals as a timeval
+  if tv1 comes after tv2, then return a zero timeval
+  (this is *tv2 - *tv1)
+*/
+struct timeval timeval_until(const struct timeval *tv1,
+			     const struct timeval *tv2)
+{
+	struct timeval t;
+	if (timeval_compare(tv1, tv2) >= 0) {
+		return timeval_zero();
+	}
+	t.tv_sec = tv2->tv_sec - tv1->tv_sec;
+	if (tv1->tv_usec > tv2->tv_usec) {
+		t.tv_sec--;
+		t.tv_usec = 1000000 - (tv1->tv_usec - tv2->tv_usec);
+	} else {
+		t.tv_usec = tv2->tv_usec - tv1->tv_usec;
+	}
+	return t;
+}
+
+/*
+  return the lesser of two timevals
+*/
+struct timeval timeval_min(const struct timeval *tv1,
+			   const struct timeval *tv2)
+{
+	if (tv1->tv_sec < tv2->tv_sec) return *tv1;
+	if (tv1->tv_sec > tv2->tv_sec) return *tv2;
+	if (tv1->tv_usec < tv2->tv_usec) return *tv1;
+	return *tv2;
+}
+
+/*
+  return the greater of two timevals
+*/
+struct timeval timeval_max(const struct timeval *tv1,
+			   const struct timeval *tv2)
+{
+	if (tv1->tv_sec > tv2->tv_sec) return *tv1;
+	if (tv1->tv_sec < tv2->tv_sec) return *tv2;
+	if (tv1->tv_usec > tv2->tv_usec) return *tv1;
+	return *tv2;
+}
 
 /****************************************************************************
  convert ASN.1 GeneralizedTime string to unix-time

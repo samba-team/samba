@@ -550,7 +550,7 @@ static int nmasldap_get_password(
 	LDAP	 *ld,
 	char     *objectDN,
 	size_t   *pwdSize,	/* in bytes */
-	char     *pwd )
+	unsigned char     *pwd )
 {
 	int err = 0;
 

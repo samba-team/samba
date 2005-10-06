@@ -665,6 +665,65 @@ static NTSTATUS context_lookup_rids(struct pdb_context *context,
 						 rids, names, attrs);
 }
 
+static NTSTATUS context_get_account_policy(struct pdb_context *context,
+					   int policy_index, uint32 *value)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if ((!context) || (!context->pdb_methods)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+
+	return context->pdb_methods->get_account_policy(context->pdb_methods,
+							policy_index, value);
+}
+
+static NTSTATUS context_set_account_policy(struct pdb_context *context,
+					   int policy_index, uint32 value)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if ((!context) || (!context->pdb_methods)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+
+	return context->pdb_methods->set_account_policy(context->pdb_methods,
+							policy_index, value);
+}
+
+static NTSTATUS context_get_seq_num(struct pdb_context *context, time_t *seq_num)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if ((!context) || (!context->pdb_methods)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+
+	return context->pdb_methods->get_seq_num(context->pdb_methods, seq_num);
+}
+	
+/******************************************************************
+  Free and cleanup a pdb context, any associated data and anything
+  that the attached modules might have associated.
+ *******************************************************************/
+
+static void free_pdb_context(struct pdb_context **context)
+{
+	struct pdb_methods *pdb_selected = (*context)->pdb_methods;
+
+	while (pdb_selected){
+		if(pdb_selected->free_private_data)
+			pdb_selected->free_private_data(&(pdb_selected->private_data));
+		pdb_selected = pdb_selected->next;
+	}
+
+	talloc_destroy((*context)->mem_ctx);
+	*context = NULL;
+}
+
 static BOOL context_search_users(struct pdb_context *context,
 				 struct pdb_search *search, uint16 acct_flags)
 {
@@ -700,25 +759,6 @@ static BOOL context_search_aliases(struct pdb_context *context,
 
 	return context->pdb_methods->search_aliases(context->pdb_methods,
 						    search, sid);
-}
-
-/******************************************************************
-  Free and cleanup a pdb context, any associated data and anything
-  that the attached modules might have associated.
- *******************************************************************/
-
-static void free_pdb_context(struct pdb_context **context)
-{
-	struct pdb_methods *pdb_selected = (*context)->pdb_methods;
-
-	while (pdb_selected){
-		if(pdb_selected->free_private_data)
-			pdb_selected->free_private_data(&(pdb_selected->private_data));
-		pdb_selected = pdb_selected->next;
-	}
-
-	talloc_destroy((*context)->mem_ctx);
-	*context = NULL;
 }
 
 /******************************************************************
@@ -831,6 +871,11 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 	(*context)->pdb_enum_aliasmem = context_enum_aliasmem;
 	(*context)->pdb_enum_alias_memberships = context_enum_alias_memberships;
 	(*context)->pdb_lookup_rids = context_lookup_rids;
+
+	(*context)->pdb_get_account_policy = context_get_account_policy;
+	(*context)->pdb_set_account_policy = context_set_account_policy;
+
+	(*context)->pdb_get_seq_num = context_get_seq_num;
 
 	(*context)->pdb_search_users = context_search_users;
 	(*context)->pdb_search_groups = context_search_groups;
@@ -1318,6 +1363,41 @@ NTSTATUS pdb_lookup_rids(TALLOC_CTX *mem_ctx,
 					    num_rids, rids, names, attrs);
 }
 
+BOOL pdb_get_account_policy(int policy_index, uint32 *value)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return False;
+	}
+
+	return NT_STATUS_IS_OK(pdb_context->
+			       pdb_get_account_policy(pdb_context, policy_index, value));
+}
+
+BOOL pdb_set_account_policy(int policy_index, uint32 value)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return False;
+	}
+
+	return NT_STATUS_IS_OK(pdb_context->
+			       pdb_set_account_policy(pdb_context, policy_index, value));
+}
+
+BOOL pdb_get_seq_num(time_t *seq_num)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return False;
+	}
+
+	return NT_STATUS_IS_OK(pdb_context->
+			       pdb_get_seq_num(pdb_context, seq_num));
+}
 /***************************************************************
   Initialize the static context (at smbd startup etc). 
 
@@ -1378,6 +1458,22 @@ static NTSTATUS pdb_default_getsampwent(struct pdb_methods *methods, SAM_ACCOUNT
 static void pdb_default_endsampwent(struct pdb_methods *methods)
 {
 	return; /* NT_STATUS_NOT_IMPLEMENTED; */
+}
+
+static NTSTATUS pdb_default_get_account_policy(struct pdb_methods *methods, int policy_index, uint32 *value)
+{
+	return account_policy_get(policy_index, value) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+static NTSTATUS pdb_default_set_account_policy(struct pdb_methods *methods, int policy_index, uint32 value)
+{
+	return account_policy_set(policy_index, value) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+static NTSTATUS pdb_default_get_seq_num(struct pdb_methods *methods, time_t *seq_num)
+{
+	*seq_num = time(NULL);
+	return NT_STATUS_OK;
 }
 
 static void add_uid_to_array_unique(TALLOC_CTX *mem_ctx,
@@ -1908,6 +2004,10 @@ NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods)
 	(*methods)->enum_aliasmem = pdb_default_enum_aliasmem;
 	(*methods)->enum_alias_memberships = pdb_default_alias_memberships;
 	(*methods)->lookup_rids = pdb_default_lookup_rids;
+	(*methods)->get_account_policy = pdb_default_get_account_policy;
+	(*methods)->set_account_policy = pdb_default_set_account_policy;
+	(*methods)->get_seq_num = pdb_default_get_seq_num;
+
 	(*methods)->search_users = pdb_default_search_users;
 	(*methods)->search_groups = pdb_default_search_groups;
 	(*methods)->search_aliases = pdb_default_search_aliases;

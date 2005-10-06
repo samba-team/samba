@@ -21,9 +21,6 @@
 #ifndef _RPC_DS_H /* _RPC_LSA_H */
 #define _RPC_DS_H 
 
-#include "rpc_misc.h"
-
-
 /* Opcodes available on PIPE_LSARPC_DS */
 
 #define DS_GETPRIMDOMINFO      0x00

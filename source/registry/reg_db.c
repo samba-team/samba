@@ -31,7 +31,7 @@ static TDB_CONTEXT *tdb_reg;
 
 /* List the deepest path into the registry.  All part components will be created.*/
 
-/* If you want to have a part of the path controlled by the tdb abd part by
+/* If you want to have a part of the path controlled by the tdb and part by
    a virtual registry db (e.g. printing), then you have to list the deepest path.
    For example,"HKLM/SOFTWARE/Microsoft/Windows NT/CurrentVersion/Print" 
    allows the reg_db backend to handle everything up to 
@@ -90,8 +90,8 @@ static BOOL init_registry_data( void )
 {
 	pstring path, base, remaining;
 	fstring keyname, subkeyname;
-	REGSUBKEY_CTR	subkeys;
-	REGVAL_CTR values;
+	REGSUBKEY_CTR *subkeys;
+	REGVAL_CTR *values;
 	int i;
 	const char *p, *p2;
 	UNISTR2 data;
@@ -132,32 +132,38 @@ static BOOL init_registry_data( void )
 			   we are about to update the record.  We just want any 
 			   subkeys already present */
 			
-			regsubkey_ctr_init( &subkeys );
-						   
-			regdb_fetch_keys( base, &subkeys );
+			if ( !(subkeys = TALLOC_ZERO_P( NULL, REGSUBKEY_CTR )) ) {
+				DEBUG(0,("talloc() failure!\n"));
+				return False;
+			}
+
+			regdb_fetch_keys( base, subkeys );
 			if ( *subkeyname ) 
-				regsubkey_ctr_addkey( &subkeys, subkeyname );
-			if ( !regdb_store_keys( base, &subkeys ))
+				regsubkey_ctr_addkey( subkeys, subkeyname );
+			if ( !regdb_store_keys( base, subkeys ))
 				return False;
 			
-			regsubkey_ctr_destroy( &subkeys );
+			TALLOC_FREE( subkeys );
 		}
 	}
 
 	/* loop over all of the predefined values and add each component */
 	
 	for ( i=0; builtin_registry_values[i].path != NULL; i++ ) {
-		regval_ctr_init( &values );
-		
-		regdb_fetch_values( builtin_registry_values[i].path, &values );
+		if ( !(values = TALLOC_ZERO_P( NULL, REGVAL_CTR )) ) {
+			DEBUG(0,("talloc() failure!\n"));
+			return False;
+		}
+
+		regdb_fetch_values( builtin_registry_values[i].path, values );
 
 		/* preserve existing values across restarts.  Only add new ones */
 
-		if ( !regval_ctr_key_exists( &values, builtin_registry_values[i].valuename ) )
+		if ( !regval_ctr_key_exists( values, builtin_registry_values[i].valuename ) ) 
 		{
-		switch( builtin_registry_values[i].type ) {
+			switch( builtin_registry_values[i].type ) {
 			case REG_DWORD:
-				regval_ctr_addvalue( &values, 
+				regval_ctr_addvalue( values, 
 				                     builtin_registry_values[i].valuename,
 						     REG_DWORD,
 						     (char*)&builtin_registry_values[i].data.dw_value,
@@ -166,7 +172,7 @@ static BOOL init_registry_data( void )
 				
 			case REG_SZ:
 				init_unistr2( &data, builtin_registry_values[i].data.string, UNI_STR_TERMINATE);
-				regval_ctr_addvalue( &values, 
+				regval_ctr_addvalue( values, 
 				                     builtin_registry_values[i].valuename,
 						     REG_SZ,
 						     (char*)data.buffer,
@@ -176,11 +182,11 @@ static BOOL init_registry_data( void )
 			default:
 				DEBUG(0,("init_registry_data: invalid value type in builtin_registry_values [%d]\n",
 					builtin_registry_values[i].type));
-		}
-		regdb_store_values( builtin_registry_values[i].path, &values );
+			}
+			regdb_store_values( builtin_registry_values[i].path, values );
 		}
 		
-		regval_ctr_destroy( &values );
+		TALLOC_FREE( values );
 	}
 	
 	return True;
@@ -219,10 +225,10 @@ BOOL init_registry_db( void )
 
 	/* always setup the necessary keys and values */
 
-		if ( !init_registry_data() ) {
-			DEBUG(0,("init_registry: Failed to initiailize data in registry!\n"));
-			return False;
-		}
+	if ( !init_registry_data() ) {
+		DEBUG(0,("init_registry: Failed to initiailize data in registry!\n"));
+		return False;
+	}
 
 	return True;
 }
@@ -303,13 +309,17 @@ BOOL regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
 {
 	int num_subkeys, i;
 	pstring path;
-	REGSUBKEY_CTR subkeys, old_subkeys;
+	REGSUBKEY_CTR *subkeys, *old_subkeys;
 	char *oldkeyname;
 	
 	/* fetch a list of the old subkeys so we can determine if any were deleted */
 	
-	regsubkey_ctr_init( &old_subkeys );
-	regdb_fetch_keys( key, &old_subkeys );
+	if ( !(old_subkeys = TALLOC_ZERO_P( ctr, REGSUBKEY_CTR )) ) {
+		DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
+		return False;
+	}
+
+	regdb_fetch_keys( key, old_subkeys );
 	
 	/* store the subkey list for the parent */
 	
@@ -320,9 +330,9 @@ BOOL regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
 	
 	/* now delete removed keys */
 	
-	num_subkeys = regsubkey_ctr_numkeys( &old_subkeys );
+	num_subkeys = regsubkey_ctr_numkeys( old_subkeys );
 	for ( i=0; i<num_subkeys; i++ ) {
-		oldkeyname = regsubkey_ctr_specific_key( &old_subkeys, i );
+		oldkeyname = regsubkey_ctr_specific_key( old_subkeys, i );
 		if ( !regsubkey_ctr_key_exists( ctr, oldkeyname ) ) {
 			pstr_sprintf( path, "%s%c%s", key, '/', oldkeyname );
 			normalize_reg_path( path );
@@ -330,23 +340,29 @@ BOOL regdb_store_keys( const char *key, REGSUBKEY_CTR *ctr )
 		}
 	}
 
-	regsubkey_ctr_destroy( &old_subkeys );
+	TALLOC_FREE( old_subkeys );
 	
 	/* now create records for any subkeys that don't already exist */
 	
 	num_subkeys = regsubkey_ctr_numkeys( ctr );
 	for ( i=0; i<num_subkeys; i++ ) {
 		pstr_sprintf( path, "%s%c%s", key, '/', regsubkey_ctr_specific_key( ctr, i ) );
-		regsubkey_ctr_init( &subkeys );
-		if ( regdb_fetch_keys( path, &subkeys ) == -1 ) {
+
+		if ( !(subkeys = TALLOC_ZERO_P( ctr, REGSUBKEY_CTR )) ) {
+			DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
+			return False;
+		}
+
+		if ( regdb_fetch_keys( path, subkeys ) == -1 ) {
 			/* create a record with 0 subkeys */
-			if ( !regdb_store_keys_internal( path, &subkeys ) ) {
+			if ( !regdb_store_keys_internal( path, subkeys ) ) {
 				DEBUG(0,("regdb_store_keys: Failed to store new record for key [%s}\n", path ));
-				regsubkey_ctr_destroy( &subkeys );
+				TALLOC_FREE( subkeys );
 				return False;
 			}
 		}
-		regsubkey_ctr_destroy( &subkeys );
+
+		TALLOC_FREE( subkeys );
 	}
 	
 	return True;

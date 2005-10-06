@@ -1150,10 +1150,10 @@ enum winbindd_result winbindd_dual_getuserdomgroups(struct winbindd_domain *doma
 	DOM_SID user_sid;
 	NTSTATUS status;
 
-	int i, num_groups;
-	size_t bufsize;
-	ssize_t len;
+	char *sidstring;
+	size_t len;
 	DOM_SID *groups;
+	int num_groups;
 
 	/* Ensure null termination */
 	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
@@ -1176,22 +1176,15 @@ enum winbindd_result winbindd_dual_getuserdomgroups(struct winbindd_domain *doma
 		return WINBINDD_OK;
 	}
 
-	len=bufsize=0;
-	state->response.extra_data = NULL;
-
-	for (i=0; i<num_groups; i++) {
-		sprintf_append(NULL, (char **)&state->response.extra_data,
-			       &len, &bufsize,
-			       "%s\n", sid_string_static(&groups[i]));
-	}
-
-	if (state->response.extra_data == NULL) {
-		/* Hmmm. Allocation failed somewhere */
+	if (!print_sidlist(NULL, groups, num_groups, &sidstring, &len)) {
+		DEBUG(0, ("malloc failed\n"));
 		return WINBINDD_ERROR;
 	}
 
-	state->response.data.num_entries = num_groups;
+	state->response.extra_data = sidstring;
 	state->response.length += len+1;
+	state->response.data.num_entries = num_groups;
 
 	return WINBINDD_OK;
 }
+

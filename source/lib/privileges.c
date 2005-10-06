@@ -38,6 +38,7 @@ const SE_PRIV se_add_users       = SE_ADD_USERS;
 const SE_PRIV se_disk_operators  = SE_DISK_OPERATOR;
 const SE_PRIV se_remote_shutdown = SE_REMOTE_SHUTDOWN;
 const SE_PRIV se_restore         = SE_RESTORE;
+const SE_PRIV se_take_ownership  = SE_TAKE_OWNERSHIP;
 
 /********************************************************************
  This is a list of privileges reported by a WIndows 2000 SP4 AD DC
@@ -396,6 +397,8 @@ static BOOL privilege_set_add(PRIVILEGE_SET *priv_set, LUID_ATTR set)
 
 /*********************************************************************
  Generate the LUID_ATTR structure based on a bitmask
+ The assumption here is that the privilege has already been validated
+ so we are guaranteed to find it in the list. 
 *********************************************************************/
 
 LUID_ATTR get_privilege_luid( SE_PRIV *mask )
@@ -403,8 +406,7 @@ LUID_ATTR get_privilege_luid( SE_PRIV *mask )
 	LUID_ATTR priv_luid;
 	int i;
 
-	priv_luid.attr = 0;
-	priv_luid.luid.high = 0;
+	ZERO_STRUCT( priv_luid );
 	
 	for ( i=0; !se_priv_equal(&privs[i].se_priv, &se_priv_end); i++ ) {
 	
