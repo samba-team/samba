@@ -129,8 +129,8 @@ my $scalars = {
 				IS_REFERENCE	=> 1,
 			},
 	"wrepl_nbt_name"=> {
-				C_TYPE		=> "struct nbt_name",
-				IS_REFERENCE	=> 0,
+				C_TYPE		=> "struct nbt_name *",
+				IS_REFERENCE	=> 1,
 			},
 	"ipv4address"	=> {
 				C_TYPE		=> "const char *",
