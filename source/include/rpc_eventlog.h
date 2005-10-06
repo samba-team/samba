@@ -46,6 +46,14 @@
 #define EVENTLOG_AUDIT_SUCCESS        0x0008
 #define EVENTLOG_AUDIT_FAILURE        0x0010
 
+/* Defines for TDB keys */
+#define  VN_oldest_entry  "INFO/oldest_entry"
+#define  VN_next_record   "INFO/next_record"
+#define  VN_version       "INFO/version"
+#define  VN_maxsize       "INFO/maxsize"
+#define  VN_retention     "INFO/retention"
+
+#define  EVENTLOG_DATABASE_VERSION_V1    1
 
 /***********************************/
 
