@@ -23,6 +23,58 @@
 
 #include "includes.h"
 
+struct rcinit_file_information {
+	char *description;
+};
+
+struct service_display_info {
+	const char *servicename;
+	const char *daemon;
+	const char *dispname;
+	const char *description;
+};
+
+struct service_display_info builtin_svcs[] = {  
+  { "Spooler",	      "smbd", "Print Spooler",
+  	"Internal service for spooling files to print devices" },
+  { "NETLOGON",	      "smbd", "Net Logon",
+  	"File service providing access to policy and profile data" },
+  { "RemoteRegistry", "smbd", "Remote Registry Service",
+  	"Internal service providing remote access to the Samba registry" },
+  { "WINS",           "nmbd", "Windows Internet Name Service (WINS)",
+  	"Internal service providing a NetBIOS point-to-point name server" },
+  { NULL, NULL, NULL, NULL }
+};
+
+struct service_display_info common_unix_svcs[] = {  
+  { "cups",          NULL, "Common Unix Printing System", NULL },
+  { "postfix",       NULL, "Internet Mail Service", NULL },
+  { "sendmail",      NULL, "Internet Mail Service", NULL },
+  { "portmap",       NULL, "TCP Port to RPC PortMapper", NULL },
+  { "xinetd",        NULL, "Internet Meta-Daemon", NULL },
+  { "inet",          NULL, "Internet Meta-Daemon", NULL },
+  { "xntpd",         NULL, "Network Time Service", NULL },
+  { "ntpd",          NULL, "Network Time Service", NULL },
+  { "lpd",           NULL, "BSD Print Spooler", NULL },
+  { "nfsserver",     NULL, "Network File Service", NULL },
+  { "cron",          NULL, "Scheduling Service", NULL },
+  { "at",            NULL, "Scheduling Service", NULL },
+  { "nscd",          NULL, "Name Service Cache Daemon", NULL },
+  { "slapd",         NULL, "LDAP Directory Service", NULL },
+  { "ldap",          NULL, "LDAP DIrectory Service", NULL },
+  { "ypbind",        NULL, "NIS Directory Service", NULL },
+  { "courier-imap",  NULL, "IMAP4 Mail Service", NULL },
+  { "courier-pop3",  NULL, "POP3 Mail Service", NULL },
+  { "named",         NULL, "Domain Name Service", NULL },
+  { "bind",          NULL, "Domain Name Service", NULL },
+  { "httpd",         NULL, "HTTP Server", NULL },
+  { "apache",        NULL, "HTTP Server", NULL },
+  { "autofs",        NULL, "Automounter", NULL },
+  { "squid",         NULL, "Web Cache Proxy ", NULL },
+  { NULL, NULL, NULL, NULL }
+};
+
+
 /********************************************************************
 ********************************************************************/
 
@@ -63,11 +115,122 @@ static SEC_DESC* construct_service_sd( TALLOC_CTX *ctx )
  Display name, Description, etc...
 ********************************************************************/
 
+static char *get_common_service_dispname( const char *servicename )
+{
+	static fstring dispname;
+	int i;
+	
+	for ( i=0; common_unix_svcs[i].servicename; i++ ) {
+		if ( strequal( servicename, common_unix_svcs[i].servicename ) ) {
+			fstr_sprintf( dispname, "%s (%s)", 
+				common_unix_svcs[i].dispname,
+				common_unix_svcs[i].servicename );
+				
+			return dispname;
+		}
+	} 
+	
+	fstrcpy( dispname, servicename );
+	
+	return dispname;
+}
+
+/********************************************************************
+********************************************************************/
+
+static char* cleanup_string( const char *string )
+{
+	static pstring clean;
+	char *begin, *end;
+
+	pstrcpy( clean, string );
+	begin = clean;
+	
+	/* trim any beginning whilespace */
+	
+	while ( isspace(*begin) )
+		begin++;
+
+	if ( !begin )
+		return NULL;
+			
+	/* trim any trailing whitespace or carriage returns.
+	   Start at the end and move backwards */
+			
+	end = begin + strlen(begin) - 1;
+			
+	while ( isspace(*end) || *end=='\n' || *end=='\r' ) {
+		*end = '\0';
+		end--;
+	}
+
+	return begin;
+}
+
+/********************************************************************
+********************************************************************/
+
+static BOOL read_init_file( const char *servicename, struct rcinit_file_information **service_info )
+{
+	struct rcinit_file_information *info;
+	pstring filepath, str;
+	XFILE *f;
+	char *p, *s;
+		
+	if ( !(info = TALLOC_ZERO_P( NULL, struct rcinit_file_information ) ) )
+		return False;
+	
+	/* attempt the file open */
+		
+	pstr_sprintf( filepath, "%s/%s/%s", dyn_LIBDIR, SVCCTL_SCRIPT_DIR, servicename );
+	if ( !(f = x_fopen( filepath, O_RDONLY, 0 )) ) {
+		DEBUG(0,("read_init_file: failed to open [%s]\n", filepath));
+		TALLOC_FREE(info);
+		return False;
+	}
+	
+	while ( (s = x_fgets( str, sizeof(str)-1, f )) != NULL ) {
+		/* ignore everything that is not a full line 
+		   comment starting with a '#' */
+		   
+		if ( str[0] != '#' )
+			continue;
+		
+		/* Look for a line like '^#.*Description:' */
+		
+		if ( (p = strstr( str, "Description:" )) != NULL ) {
+			char *desc;
+
+			p += strlen( "Description:" ) + 1;
+			if ( !p ) 
+				break;
+				
+			if ( (desc = cleanup_string(p)) != NULL )
+				info->description = talloc_strdup( info, desc );
+		}
+	}
+	
+	x_fclose( f );
+	
+	if ( !info->description )
+		info->description = talloc_strdup( info, "External Unix Service" );
+	
+	*service_info = info;
+	
+	return True;
+}
+
+/********************************************************************
+ This is where we do the dirty work of filling in things like the
+ Display name, Description, etc...
+********************************************************************/
+
 static void fill_service_values( const char *name, REGVAL_CTR *values )
 {
 	UNISTR2 data, dname, ipath, description;
 	uint32 dword;
 	pstring pstr;
+	int i;
 	
 	/* These values are hardcoded in all QueryServiceConfig() replies.
 	   I'm just storing them here for cosmetic purposes */
@@ -88,30 +251,39 @@ static void fill_service_values( const char *name, REGVAL_CTR *values )
 	
 	/* special considerations for internal services and the DisplayName value */
 	
-	if ( strequal(name, "Spooler") ) {
-		pstr_sprintf( pstr, "%s/%s/smbd",dyn_LIBDIR, SVCCTL_SCRIPT_DIR );
-		init_unistr2( &ipath, pstr, UNI_STR_TERMINATE );
-		init_unistr2( &description, "Internal service for spooling files to print devices", UNI_STR_TERMINATE );
-		init_unistr2( &dname, "Print Spooler", UNI_STR_TERMINATE );
+	for ( i=0; builtin_svcs[i].servicename; i++ ) {
+		if ( strequal( name, builtin_svcs[i].servicename ) ) {
+			pstr_sprintf( pstr, "%s/%s/%s",dyn_LIBDIR, SVCCTL_SCRIPT_DIR, builtin_svcs[i].daemon );
+			init_unistr2( &ipath, pstr, UNI_STR_TERMINATE );
+			init_unistr2( &description, builtin_svcs[i].description, UNI_STR_TERMINATE );
+			init_unistr2( &dname, builtin_svcs[i].dispname, UNI_STR_TERMINATE );
+			break;
+		}
 	} 
-	else if ( strequal(name, "NETLOGON") ) {
-		pstr_sprintf( pstr, "%s/%s/smbd",dyn_LIBDIR, SVCCTL_SCRIPT_DIR );
-		init_unistr2( &ipath, pstr, UNI_STR_TERMINATE );
-		init_unistr2( &description, "File service providing access to policy and profile data", UNI_STR_TERMINATE );
-		init_unistr2( &dname, "Net Logon", UNI_STR_TERMINATE );
-	} 
-	else if ( strequal(name, "RemoteRegistry") ) {
-		pstr_sprintf( pstr, "%s/%s/smbd",dyn_LIBDIR, SVCCTL_SCRIPT_DIR );
-		init_unistr2( &ipath, pstr, UNI_STR_TERMINATE );
-		init_unistr2( &description, "Internal service providing remote access to the Samba registry", UNI_STR_TERMINATE );
-		init_unistr2( &dname, "Remote Registry Service", UNI_STR_TERMINATE );
-	} 
-	else {
+	
+	/* default to an external service if we haven't found a match */
+	
+	if ( builtin_svcs[i].servicename == NULL ) {
+		struct rcinit_file_information *init_info = NULL;
+
 		pstr_sprintf( pstr, "%s/%s/%s",dyn_LIBDIR, SVCCTL_SCRIPT_DIR, name );
 		init_unistr2( &ipath, pstr, UNI_STR_TERMINATE );
-		init_unistr2( &description, "External Unix Service", UNI_STR_TERMINATE );
-		init_unistr2( &dname, name, UNI_STR_TERMINATE );
+		
+		/* lookup common unix display names */
+		init_unistr2( &dname, get_common_service_dispname( name ), UNI_STR_TERMINATE );
+
+		/* get info from init file itself */		
+		if ( read_init_file( name, &init_info ) ) {
+			init_unistr2( &description, init_info->description, UNI_STR_TERMINATE );
+			TALLOC_FREE( init_info );
+		}
+		else {
+			init_unistr2( &description, "External Unix Service", UNI_STR_TERMINATE );
+		}
 	}
+	
+	/* add the new values */
+	
 	regval_ctr_addvalue( values, "DisplayName", REG_SZ, (char*)dname.buffer, dname.uni_str_len*2);
 	regval_ctr_addvalue( values, "ImagePath", REG_SZ, (char*)ipath.buffer, ipath.uni_str_len*2);
 	regval_ctr_addvalue( values, "Description", REG_SZ, (char*)description.buffer, description.uni_str_len*2);
@@ -248,9 +420,8 @@ void svcctl_init_keys( void )
 	
 	/* the builting services exist */
 	
-	add_new_svc_name( key, subkeys, "Spooler" );
-	add_new_svc_name( key, subkeys, "NETLOGON" );
-	add_new_svc_name( key, subkeys, "RemoteRegistry" );
+	for ( i=0; builtin_svcs[i].servicename; i++ )
+		add_new_svc_name( key, subkeys, builtin_svcs[i].servicename );
 		
 	for ( i=0; service_list[i]; i++ ) {
 	
@@ -352,28 +523,33 @@ char* svcctl_lookup_dispname( const char *name, NT_USER_TOKEN *token )
 	/* now add the security descriptor */
 
 	pstr_sprintf( path, "%s\\%s", KEY_SERVICES, name );
-	wresult = regkey_open_internal( &key, path, token, REG_KEY_ALL );
+	wresult = regkey_open_internal( &key, path, token, REG_KEY_READ );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_lookup_dispname: key lookup failed! [%s] (%s)\n", 
 			path, dos_errstr(wresult)));
-		return NULL;
+		goto fail;
 	}
 
 	if ( !(values = TALLOC_ZERO_P( key, REGVAL_CTR )) ) {
 		DEBUG(0,("svcctl_lookup_dispname: talloc() failed!\n"));
 		TALLOC_FREE( key );
-		return NULL;
+		goto fail;
 	}
 
 	fetch_reg_values( key, values );
 	
 	if ( !(val = regval_ctr_getvalue( values, "DisplayName" )) )
-		fstrcpy( display_name, name );
-	else
-		rpcstr_pull( display_name, regval_data_p(val), sizeof(display_name), regval_size(val), 0 );
+		goto fail;
+
+	rpcstr_pull( display_name, regval_data_p(val), sizeof(display_name), regval_size(val), 0 );
 
 	TALLOC_FREE( key );
 	
+	return display_name;
+
+fail:
+	/* default to returning the service name */
+	fstrcpy( display_name, name );
 	return display_name;
 }
 
@@ -392,7 +568,7 @@ char* svcctl_lookup_description( const char *name, NT_USER_TOKEN *token )
 	/* now add the security descriptor */
 
 	pstr_sprintf( path, "%s\\%s", KEY_SERVICES, name );
-	wresult = regkey_open_internal( &key, path, token, REG_KEY_ALL );
+	wresult = regkey_open_internal( &key, path, token, REG_KEY_READ );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_lookup_dispname: key lookup failed! [%s] (%s)\n", 
 			path, dos_errstr(wresult)));
@@ -431,7 +607,7 @@ REGVAL_CTR* svcctl_fetch_regvalues( const char *name, NT_USER_TOKEN *token )
 	/* now add the security descriptor */
 
 	pstr_sprintf( path, "%s\\%s", KEY_SERVICES, name );
-	wresult = regkey_open_internal( &key, path, token, REG_KEY_ALL );
+	wresult = regkey_open_internal( &key, path, token, REG_KEY_READ );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_fetch_regvalues: key lookup failed! [%s] (%s)\n", 
 			path, dos_errstr(wresult)));
