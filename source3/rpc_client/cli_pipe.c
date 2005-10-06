@@ -2500,6 +2500,112 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel_with_key(struct cli_state *cl
 
 /****************************************************************************
  Open a named pipe to an SMB server and bind using schannel (bind type 68).
+ Fetch the session key ourselves using a temporary netlogon pipe. This
+ version uses an ntlmssp auth bound netlogon pipe to get the key.
+ ****************************************************************************/
+
+static struct rpc_pipe_client *get_schannel_session_key_auth_ntlmssp(struct cli_state *cli,
+							const char *domain,
+							const char *username,
+							const char *password,
+							NTSTATUS *perr)
+{
+	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
+	struct rpc_pipe_client *netlogon_pipe = NULL;
+	uint32 sec_chan_type = 0;
+	char machine_pwd[16];
+	fstring machine_account;
+
+	netlogon_pipe = cli_rpc_pipe_open_spnego_ntlmssp(cli, PI_NETLOGON, PIPE_AUTH_LEVEL_PRIVACY, domain, username, password, perr);
+	if (!netlogon_pipe) {
+		return NULL;
+	}
+
+	/* Get the machine account credentials from secrets.tdb. */
+	if (!get_trust_pw(domain, machine_pwd, &sec_chan_type)) {
+		DEBUG(0, ("get_schannel_session_key_auth_ntlmssp: could not fetch "
+			"trust account password for domain '%s'\n",
+			domain));
+		cli_rpc_pipe_close(netlogon_pipe);
+		*perr = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		return NULL;
+	}
+
+	if ( IS_DC ) {
+		fstrcpy( machine_account, lp_workgroup() );
+        } else {
+                /* Hmmm. Is this correct for trusted domains when we're a member server ? JRA. */
+                if (strequal(domain, lp_workgroup())) {
+                        fstrcpy(machine_account, global_myname());
+                } else {
+                        fstrcpy(machine_account, domain);
+                }
+        }
+
+	*perr = rpccli_netlogon_setup_creds(netlogon_pipe,
+					cli->desthost,
+					domain,
+					machine_account,
+					machine_pwd,
+					sec_chan_type,
+					&neg_flags);
+
+	if (!NT_STATUS_IS_OK(*perr)) {
+		DEBUG(3,("get_schannel_session_key_auth_ntlmssp: rpccli_netlogon_setup_creds "
+			"failed with result %s\n",
+			nt_errstr(*perr) ));
+		cli_rpc_pipe_close(netlogon_pipe);
+		return NULL;
+	}
+
+	if ((neg_flags & NETLOGON_NEG_SCHANNEL) == 0) {
+		DEBUG(3, ("get_schannel_session_key_auth_ntlmssp: Server %s did not offer schannel\n",
+			cli->desthost));
+		cli_rpc_pipe_close(netlogon_pipe);
+		*perr = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		return NULL;
+	}
+
+	return netlogon_pipe;
+}
+
+/****************************************************************************
+ Open a named pipe to an SMB server and bind using schannel (bind type 68).
+ Fetch the session key ourselves using a temporary netlogon pipe. This version
+ uses an ntlmssp bind to get the session key.
+ ****************************************************************************/
+
+struct rpc_pipe_client *cli_rpc_pipe_open_ntlmttp_auth_schannel(struct cli_state *cli,
+                                                int pipe_idx,
+						enum pipe_auth_level auth_level,
+                                                const char *domain,
+						const char *username,
+						const char *password,
+						NTSTATUS *perr)
+{
+	struct rpc_pipe_client *netlogon_pipe = NULL;
+	struct rpc_pipe_client *result = NULL;
+
+	netlogon_pipe = get_schannel_session_key_auth_ntlmssp(cli, domain, username, password, perr);
+	if (!netlogon_pipe) {
+		DEBUG(0,("cli_rpc_pipe_open_ntlmssp_auth_schannel: failed to get schannel session "
+			"key from server %s for domain %s.\n",
+			cli->desthost, domain ));
+		return NULL;
+	}
+
+	result = cli_rpc_pipe_open_schannel_with_key(cli, pipe_idx,
+				auth_level,
+				domain, netlogon_pipe->dc, perr);
+
+	/* Now we've bound using the session key we can close the netlog pipe. */
+	cli_rpc_pipe_close(netlogon_pipe);
+
+	return result;
+}
+
+/****************************************************************************
+ Open a named pipe to an SMB server and bind using schannel (bind type 68).
  Fetch the session key ourselves using a temporary netlogon pipe.
  ****************************************************************************/
 
