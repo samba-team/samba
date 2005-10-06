@@ -27,6 +27,23 @@ sub fatal($$) { my ($e,$s) = @_; die("$e->{FILE}:$e->{LINE}: $s\n"); }
 #TODO:
 # - Add some security checks (array sizes, memory alloc == NULL, etc)
 # - Don't add seperate _p and _d functions if there is no deferred data
+# - [string]
+# - subcontext()
+# - DATA_BLOB
+
+sub Align($$)
+{
+	my ($a,$b) = @_;
+
+	# Only align if previous element was smaller then current one
+	if ($$a < $b) {
+		pidl "if (!prs_align_custom(ps, $b))";
+		pidl "\treturn False;";
+		pidl "";
+	}
+
+	$$a = $b;
+}
 
 sub DeclareArrayVariables
 {
@@ -50,11 +67,11 @@ sub DeclareArrayVariables
 	pidl "" if $output;
 }
 
-sub ParseElementLevelData($$$$$$)
+sub ParseElementLevelData($$$$$$$)
 {
-	my ($e,$l,$nl,$env,$varname,$what) = @_;
+	my ($e,$l,$nl,$env,$varname,$what,$align) = @_;
 
-	my @args = ($e,$l,$varname,$what);
+	my @args = ($e,$l,$varname,$what,$align);
 
 	# See if we need to add a level argument because we're parsing a union
 	foreach (@{$e->{LEVELS}}) {
@@ -65,13 +82,26 @@ sub ParseElementLevelData($$$$$$)
 	my $c = DissectType(@args);
 	return if not $c;
 
+	if (defined($e->{ALIGN})) {
+		Align($align, $e->{ALIGN});
+	} else {
+		# Default to 4
+		Align($align, 4);
+	}
+
 	pidl "if (!$c)";
 	pidl "\treturn False;";
 }
 
-sub ParseElementLevelArray($$$$$$)
+sub ParseElementLevelArray($$$$$$$)
 {
-	my ($e,$l,$nl,$env,$varname,$what) = @_;
+	my ($e,$l,$nl,$env,$varname,$what,$align) = @_;
+
+	if ($l->{IS_ZERO_TERMINATED}) {
+		fatal($e, "[string] attribute not supported for Samba3 yet");
+		
+		#FIXME
+	}
 
 	my $len = ParseExpr($l->{LENGTH_IS}, $env);
 	my $size = ParseExpr($l->{SIZE_IS}, $env);
@@ -79,12 +109,14 @@ sub ParseElementLevelArray($$$$$$)
 	if ($what == PRIMITIVES) {
 		# Fetch headers
 		if ($l->{IS_CONFORMANT} and not $l->{IS_SURROUNDING}) {
+			Align($align, 4);
 			pidl "if (!prs_uint32(\"size_$e->{NAME}\", ps, depth, &" . ParseExpr("size_$e->{NAME}", $env) . "))";
 			pidl "\treturn False;";
 			pidl "";
 		}
 	
 		if ($l->{IS_VARYING}) {
+			Align($align, 4);
 			pidl "if (!prs_uint32(\"offset_$e->{NAME}\", ps, depth, &" . ParseExpr("offset_$e->{NAME}", $env) . "))";
 			pidl "\treturn False;";
 			pidl "";
@@ -109,32 +141,36 @@ sub ParseElementLevelArray($$$$$$)
 	my $i = "i_$e->{NAME}_$l->{LEVEL_INDEX}";
 	pidl "for ($i=0; $i<$len;$i++) {";
 	indent;
-	ParseElementLevel($e,$nl,$env,$varname."[$i]",$what);
+	ParseElementLevel($e,$nl,$env,$varname."[$i]",$what,$align);
 	deindent;
 	pidl "}";
 }
 
-sub ParseElementLevelSwitch($$$$$$)
+sub ParseElementLevelSwitch($$$$$$$)
 {
-	my ($e,$l,$nl,$env,$varname,$what) = @_;
+	my ($e,$l,$nl,$env,$varname,$what,$align) = @_;
 
-	if ($what == PRIMITIVES) {
-		pidl "if (!prs_uint32(\"level\", ps, depth, &" . ParseExpr("level_$e->{NAME}", $env) . "))";
-		pidl "\treturn False;";
-		pidl "";
-	}
-
-	ParseElementLevel($e,$nl,$env,$varname,$what);
+	ParseElementLevel($e,$nl,$env,$varname,$what,$align);
 }
 
-sub ParseElementLevelPtr($$$$$$)
+sub ParseElementLevelPtr($$$$$$$)
 {
-	my ($e,$l,$nl,$env,$varname,$what) = @_;
+	my ($e,$l,$nl,$env,$varname,$what,$align) = @_;
 
 	if ($what == PRIMITIVES) {
-		pidl "if (!prs_uint32(\"ptr_$e->{NAME}\", ps, depth, &" . ParseExpr("ptr_$e->{NAME}", $env) . "))";
-		pidl "\treturn False;";
-		pidl "";
+		if (($l->{POINTER_TYPE} eq "ref") and ($l->{LEVEL} eq "EMBEDDED")) {
+			# Ref pointers always have to be non-NULL
+			pidl "if (MARSHALLING(ps) && !" . ParseExpr("ptr$l->{POINTER_INDEX}_$e->{NAME}", $env) . ")";
+			pidl "\treturn False;";
+			pidl "";
+		} 
+		
+		unless ($l->{POINTER_TYPE} eq "ref" and $l->{LEVEL} eq "TOP") {
+			Align($align, 4);
+			pidl "if (!prs_uint32(\"ptr$l->{POINTER_INDEX}_$e->{NAME}\", ps, depth, &" . ParseExpr("ptr$l->{POINTER_INDEX}_$e->{NAME}", $env) . "))";
+			pidl "\treturn False;";
+			pidl "";
+		}
 	}
 
 	if ($l->{POINTER_TYPE} eq "relative") {
@@ -143,26 +179,31 @@ sub ParseElementLevelPtr($$$$$$)
 	}
 	
 	if ($what == DEFERRED) {
-		pidl "if (" . ParseExpr("ptr_$e->{NAME}", $env) . ") {";
-		indent;
-		ParseElementLevel($e,$nl,$env,$varname,PRIMITIVES);
-		ParseElementLevel($e,$nl,$env,$varname,DEFERRED);
-		deindent;
-		pidl "}";
+		if ($l->{POINTER_TYPE} ne "ref") {
+			pidl "if (" . ParseExpr("ptr$l->{POINTER_INDEX}_$e->{NAME}", $env) . ") {";
+			indent;
+		}
+		ParseElementLevel($e,$nl,$env,$varname,PRIMITIVES,$align);
+		ParseElementLevel($e,$nl,$env,$varname,DEFERRED,$align);
+		if ($l->{POINTER_TYPE} ne "ref") {
+			deindent;
+			pidl "}";
+		}
+		$$align = 0;
 	}
 }
 
-sub ParseElementLevelSubcontext($$$$$$)
+sub ParseElementLevelSubcontext($$$$$$$)
 {
-	my ($e,$l,$nl,$env,$varname,$what) = @_;
+	my ($e,$l,$nl,$env,$varname,$what,$align) = @_;
 
 	fatal($e, "subcontext() not supported for Samba 3");
 	#FIXME
 }
 
-sub ParseElementLevel($$$$$)
+sub ParseElementLevel($$$$$$)
 {
-	my ($e,$l,$env,$varname,$what) = @_;
+	my ($e,$l,$env,$varname,$what,$align) = @_;
 
 	{
 		DATA => \&ParseElementLevelData,
@@ -170,14 +211,14 @@ sub ParseElementLevel($$$$$)
 		POINTER => \&ParseElementLevelPtr,
 		SWITCH => \&ParseElementLevelSwitch,
 		ARRAY => \&ParseElementLevelArray
-	}->{$l->{TYPE}}->($e,$l,GetNextLevel($e,$l),$env,$varname,$what);
+	}->{$l->{TYPE}}->($e,$l,GetNextLevel($e,$l),$env,$varname,$what,$align);
 }
 
-sub ParseElement($$$)
+sub ParseElement($$$$)
 {
-	my ($e,$env,$what) = @_;
+	my ($e,$env,$what,$align) = @_;
 
-	ParseElementLevel($e, $e->{LEVELS}[0], $env, ParseExpr($e->{NAME}, $env), $what);
+	ParseElementLevel($e, $e->{LEVELS}[0], $env, ParseExpr($e->{NAME}, $env), $what, $align);
 }
 
 sub InitLevel($$$$)
@@ -186,14 +227,24 @@ sub InitLevel($$$$)
 	my ($e,$l,$varname,$env) = @_;
 
 	if ($l->{TYPE} eq "POINTER") {
-		pidl "if ($varname) {";
-		indent;
-		pidl ParseExpr("ptr_$e->{NAME}", $env) . " = 1;";
+		if ($l->{POINTER_TYPE} eq "ref") {
+			pidl "if (!$varname)";
+			pidl "\treturn False;";
+			pidl "";
+		} else {
+			pidl "if ($varname) {";
+			indent;
+		}
+
+		pidl ParseExpr("ptr$l->{POINTER_INDEX}_$e->{NAME}", $env) . " = 1;";
 		InitLevel($e, GetNextLevel($e,$l), "*$varname", $env);
-		deindent;
-		pidl "} else {";
-		pidl "\t" . ParseExpr("ptr_$e->{NAME}", $env) . " = 0;";
-		pidl "}";
+		
+		if ($l->{POINTER_TYPE} ne "ref") {
+			deindent;
+			pidl "} else {";
+			pidl "\t" . ParseExpr("ptr$l->{POINTER_INDEX}_$e->{NAME}", $env) . " = 0;";
+			pidl "}";
+		}
 	} elsif ($l->{TYPE} eq "ARRAY") {
 		pidl ParseExpr($e->{NAME}, $env) . " = $varname;";
 	} elsif ($l->{TYPE} eq "DATA") {
@@ -210,7 +261,7 @@ sub GenerateEnvElement($$)
 		if ($l->{TYPE} eq "DATA") {
 			$env->{$e->{NAME}} = "v->$e->{NAME}";
 		} elsif ($l->{TYPE} eq "POINTER") {
-			$env->{"ptr_$e->{NAME}"} = "v->ptr_$e->{NAME}";
+			$env->{"ptr$l->{POINTER_INDEX}_$e->{NAME}"} = "v->ptr$l->{POINTER_INDEX}_$e->{NAME}";
 		} elsif ($l->{TYPE} eq "SWITCH") {
 			$env->{"level_$e->{NAME}"} = "v->level_$e->{NAME}";
 		} elsif ($l->{TYPE} eq "ARRAY") {
@@ -264,18 +315,18 @@ sub ParseStruct($$$)
 	pidl "";
 	pidl "prs_debug(ps, depth, desc, \"$pfn\");";
 	pidl "depth++;";
-	pidl "if (!prs_align_custom(ps, $s->{ALIGN}))";
-	pidl "\treturn False;";
-	pidl "";
 
+	my $align = 8;
 	if ($s->{SURROUNDING_ELEMENT}) {
 		pidl "if (!prs_uint32(\"size_$s->{SURROUNDING_ELEMENT}->{NAME}\", ps, depth, &" . ParseExpr("size_$s->{SURROUNDING_ELEMENT}->{NAME}", $env) . "))";
 		pidl "\treturn False;";
 		pidl "";
+		$align = 4;
+		
 	}
 
 	foreach (@{$s->{ELEMENTS}}) {
-		ParseElement($_, $env, PRIMITIVES); 
+		ParseElement($_, $env, PRIMITIVES, \$align); 
 		pidl "";
 	}
 
@@ -293,12 +344,10 @@ sub ParseStruct($$$)
 	pidl "";
 	pidl "prs_debug(ps, depth, desc, \"$dfn\");";
 	pidl "depth++;";
-	pidl "if (!prs_align_custom(ps, $s->{ALIGN}))";
-	pidl "\treturn False;";
-	pidl "";
 
+	$align = 0;
 	foreach (@{$s->{ELEMENTS}}) {
-		ParseElement($_, $env, DEFERRED); 
+		ParseElement($_, $env, DEFERRED, \$align); 
 		pidl "";
 	}
 
@@ -308,12 +357,34 @@ sub ParseStruct($$$)
 	pidl "";
 }
 
+sub UnionGenerateEnvElement($)
+{
+	my $e = shift;
+	my $env = {};
+
+	foreach my $l (@{$e->{LEVELS}}) {
+		if ($l->{TYPE} eq "DATA") {
+			$env->{$e->{NAME}} = "v->u.$e->{NAME}";
+		} elsif ($l->{TYPE} eq "POINTER") {
+			$env->{"ptr$l->{POINTER_INDEX}_$e->{NAME}"} = "v->ptr$l->{POINTER_INDEX}";
+		} elsif ($l->{TYPE} eq "SWITCH") {
+			$env->{"level_$e->{NAME}"} = "v->level";
+		} elsif ($l->{TYPE} eq "ARRAY") {
+			$env->{"length_$e->{NAME}"} = "v->length";
+			$env->{"size_$e->{NAME}"} = "v->size";
+			$env->{"offset_$e->{NAME}"} = "v->offset";
+		}
+	}
+
+	return $env;
+}
+
 sub ParseUnion($$$)
 {
 	my ($if,$u,$n) = @_;
 
 	my $fn = "$if->{NAME}_io_$n";
-	my $sn = uc("$if->{NAME}_$n");
+	my $sn = uc("$if->{NAME}_$n\_ctr");
 
 	my $pfn = "$fn\_p";
 	my $dfn = "$fn\_d";
@@ -322,9 +393,14 @@ sub ParseUnion($$$)
 	pidl "{";
 	indent;
 	DeclareArrayVariables($u->{ELEMENTS});
-	pidl "if (!prs_align_custom(ps, $u->{ALIGN}))";
-	pidl "\treturn False;";
-	pidl "";
+
+	if (has_property($u, "nodiscriminant")) {
+		pidl "if (!prs_uint32(\"switch_value\", ps, depth, &v->switch_value))";
+		pidl "\treturn False;";
+		pidl "";
+	}
+
+	# Maybe check here that level and v->switch_value are equal?
 
 	pidl "switch (level) {";
 	indent;
@@ -334,10 +410,9 @@ sub ParseUnion($$$)
 		indent;
 		if ($_->{TYPE} ne "EMPTY") {
 			pidl "depth++;";
-			my $env = {};
-			GenerateEnvElement($_, $env);
-			ParseElement($_, $env, PRIMITIVES); 
-			ParseElement($_, $env, DEFERRED); 
+			my $env = UnionGenerateEnvElement($_);
+			my $align = 8;
+			ParseElement($_, $env, PRIMITIVES, \$align); 
 			pidl "depth--;";
 		}
 		pidl "break;";
@@ -356,9 +431,6 @@ sub ParseUnion($$$)
 	pidl "{";
 	indent;
 	DeclareArrayVariables($u->{ELEMENTS});
-	pidl "if (!prs_align_custom(ps, $u->{ALIGN}))";
-	pidl "\treturn False;";
-	pidl "";
 
 	pidl "switch (level) {";
 	indent;
@@ -368,9 +440,9 @@ sub ParseUnion($$$)
 		indent;
 		if ($_->{TYPE} ne "EMPTY") {
 			pidl "depth++;";
-			my $env = {};
-			GenerateEnvElement($_, $env);
-			ParseElement($_, $env, DEFERRED); 
+			my $env = UnionGenerateEnvElement($_);
+			my $align = 0;
+			ParseElement($_, $env, DEFERRED, \$align); 
 			pidl "depth--;";
 		}
 		pidl "break;";
@@ -424,9 +496,10 @@ sub CreateFnDirection($$$$)
 	pidl "prs_debug(ps, depth, desc, \"$fn\");";
 	pidl "depth++;";
 
+	my $align = 8;
 	foreach (@$es) {
-		ParseElement($_, $env, PRIMITIVES); 
-		ParseElement($_, $env, DEFERRED); 
+		ParseElement($_, $env, PRIMITIVES, \$align); 
+		ParseElement($_, $env, DEFERRED, \$align); 
 		pidl "";
 	}
 

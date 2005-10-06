@@ -43,10 +43,10 @@ struct private_data {
 
 /* search */
 static int skel_search(struct ldb_module *module, const struct ldb_dn *base,
-		       enum ldb_scope scope, const char *expression,
+		       enum ldb_scope scope, struct ldb_parse_tree *tree,
 		       const char * const *attrs, struct ldb_message ***res)
 {
-	return ldb_next_search(module, base, scope, expression, attrs, res); 
+	return ldb_next_search(module, base, scope, tree, attrs, res); 
 }
 
 /* add_record */
@@ -102,8 +102,7 @@ static int skel_destructor(void *module_ctx)
 
 static const struct ldb_module_ops skel_ops = {
 	.name		   = "skel",
-	.search		   = skel_search,
-	.search_bytree	   = skel_search_bytree,
+	.search_bytree     = skel_search_bytree,
 	.add_record	   = skel_add_record,
 	.modify_record	   = skel_modify_record,
 	.delete_record	   = skel_delete_record,

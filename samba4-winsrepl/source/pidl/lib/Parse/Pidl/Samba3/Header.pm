@@ -15,7 +15,10 @@ use vars qw($VERSION);
 $VERSION = '0.01';
 
 my $res = "";
-sub pidl($) { my $x = shift; $res .= "$x\n"; }
+my $tabs = "";
+sub indent() { $tabs.="\t"; }
+sub deindent() { $tabs = substr($tabs, 1); }
+sub pidl($) { $res .= $tabs.(shift)."\n"; }
 sub fatal($$) { my ($e,$s) = @_; die("$e->{FILE}:$e->{LINE}: $s\n"); }
 sub warning($$) { my ($e,$s) = @_; warn("$e->{FILE}:$e->{LINE}: $s\n"); }
 
@@ -26,7 +29,7 @@ sub ParseElement($)
 	foreach my $l (@{$e->{LEVELS}}) {
 		if ($l->{TYPE} eq "POINTER") {
 			return if ($l->{POINTER_TYPE} eq "ref" and $l->{LEVEL} eq "top");
-			pidl "\tuint32 ptr_$e->{NAME};";
+			pidl "\tuint32 ptr$l->{POINTER_INDEX}_$e->{NAME};";
 		} elsif ($l->{TYPE} eq "SWITCH") {
 			pidl "\tuint32 level_$e->{NAME};";
 		} elsif ($l->{TYPE} eq "DATA") {
@@ -101,10 +104,42 @@ sub ParseUnion($$$)
 {
 	my ($if,$u,$n) = @_;
 
-	pidl "typedef union $if->{NAME}_$n {";
-	#FIXME: What about elements that require more then one variable?
-	ParseElement($_) foreach (@{$u->{ELEMENTS}});
-	pidl "} ".uc($if->{NAME}."_".$n) .";";
+	my $extra = {};
+	
+	unless (has_property($u, "nodiscriminant")) {
+		$extra->{switch_value} = 1;
+	}
+
+	foreach my $e (@{$u->{ELEMENTS}}) {
+		foreach my $l (@{$e->{LEVELS}}) {
+			if ($l->{TYPE} eq "ARRAY") {
+				if ($l->{IS_CONFORMANT}) {
+					$extra->{"size"} = 1;
+				}
+				if ($l->{IS_VARYING}) {
+					$extra->{"length"} = $extra->{"offset"} = 1;
+				}
+			} elsif ($l->{TYPE} eq "POINTER") {
+				$extra->{"ptr$l->{POINTER_INDEX}"} = 1;
+			} elsif ($l->{TYPE} eq "SWITCH") {
+				$extra->{"level"} = 1;
+			}
+		}
+	}
+
+	pidl "typedef struct $if->{NAME}_$n\_ctr {";
+	indent;
+	pidl "uint32 $_;" foreach (keys %$extra);
+	pidl "union {";
+	indent;
+	foreach (@{$u->{ELEMENTS}}) {
+		next if ($_->{TYPE} eq "EMPTY");
+		pidl "\t" . DeclShort($_) . ";";
+	}
+	deindent;
+	pidl "} u;";
+	deindent;
+	pidl "} ".uc("$if->{NAME}_$n\_ctr") .";";
 	pidl "";
 }
 
@@ -164,6 +199,7 @@ sub Parse($$)
 	my($ndr,$filename) = @_;
 
 	$res = "";
+	$tabs = "";
 
 	pidl "/*";
 	pidl " * Unix SMB/CIFS implementation.";

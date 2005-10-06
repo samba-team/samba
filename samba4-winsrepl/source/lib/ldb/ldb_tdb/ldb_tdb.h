@@ -83,9 +83,6 @@ int ltdb_add_attr_results(struct ldb_module *module, struct ldb_message *msg,
 			  const char * const attrs[], 
 			  int *count, 
 			  struct ldb_message ***res);
-int ltdb_search(struct ldb_module *module, const struct ldb_dn *base,
-		enum ldb_scope scope, const char *expression,
-		const char * const attrs[], struct ldb_message ***res);
 int ltdb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 		       enum ldb_scope scope, struct ldb_parse_tree *tree,
 		       const char * const attrs[], struct ldb_message ***res);

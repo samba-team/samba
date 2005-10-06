@@ -218,30 +218,6 @@ failed:
 
 
 /*
-  search for matching records
-*/
-static int ildb_search(struct ldb_module *module, const struct ldb_dn *base,
-		       enum ldb_scope scope, const char *expression,
-		       const char * const *attrs, struct ldb_message ***res)
-{
-	struct ildb_private *ildb = module->private_data;
-	int ret;
-	struct ldb_parse_tree *tree;
-
-	if (expression == NULL || expression[0] == '\0') {
-		expression = "objectClass=*";
-	}
-
-	tree = ldb_parse_tree(ildb, expression);
-
-	ret = ildb_search_bytree(module, base, scope, tree, attrs, res);
-
-	talloc_free(tree);
-	return ret;
-}
-
-
-/*
   convert a ldb_message structure to a list of ldap_mod structures
   ready for ildap_add() or ildap_modify()
 */
@@ -394,7 +370,6 @@ static int ildb_del_trans(struct ldb_module *module)
 
 static const struct ldb_module_ops ildb_ops = {
 	.name              = "ldap",
-	.search            = ildb_search,
 	.search_bytree     = ildb_search_bytree,
 	.add_record        = ildb_add,
 	.modify_record     = ildb_modify,
@@ -415,7 +390,9 @@ static void ildb_rootdse(struct ldb_module *module)
 	struct ldb_message **res = NULL;
 	struct ldb_dn *empty_dn = ldb_dn_new(ildb);
 	int ret;
-	ret = ildb_search(module, empty_dn, LDB_SCOPE_BASE, "dn=dc=rootDSE", NULL, &res);
+	ret = ildb_search_bytree(module, empty_dn, LDB_SCOPE_BASE, 
+				 ldb_parse_tree(empty_dn, "dn=dc=rootDSE"), 
+				 NULL, &res);
 	if (ret == 1) {
 		ildb->rootDSE = talloc_steal(ildb, res[0]);
 	}

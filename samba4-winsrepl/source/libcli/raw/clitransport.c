@@ -385,7 +385,7 @@ static void smbcli_transport_finish_recv(struct smbcli_transport *transport)
 {
 	uint8_t *buffer, *hdr, *vwv;
 	int len;
-	uint16_t wct=0, mid = 0;
+	uint16_t wct=0, mid = 0, op = 0;
 	struct smbcli_request *req;
 
 	buffer = transport->recv_buffer.buffer;
@@ -424,6 +424,7 @@ static void smbcli_transport_finish_recv(struct smbcli_transport *transport)
 		/* extract the mid for matching to pending requests */
 		mid = SVAL(hdr, HDR_MID);
 		wct = CVAL(hdr, HDR_WCT);
+		op  = CVAL(hdr, HDR_COM);
 	}
 
 	/* match the incoming request against the list of pending requests */
@@ -432,8 +433,7 @@ static void smbcli_transport_finish_recv(struct smbcli_transport *transport)
 	}
 
 	if (!req) {
-		DEBUG(1,("Discarding unmatched reply with mid %d op %d\n", 
-			 mid, CVAL(hdr, HDR_COM)));
+		DEBUG(1,("Discarding unmatched reply with mid %d op %d\n", mid, op));
 		goto error;
 	}
 
