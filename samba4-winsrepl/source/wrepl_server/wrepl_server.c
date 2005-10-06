@@ -160,6 +160,49 @@ failed:
 	return maxVersion;
 }
 
+NTSTATUS wreplsrv_fill_wrepl_table(struct wreplsrv_service *service,
+				   TALLOC_CTX *mem_ctx,
+				   struct wrepl_table *table_out,
+				   const char *our_ip,
+				   const char *initiator,
+				   BOOL full_table)
+{
+	struct wreplsrv_owner *cur;
+	uint64_t local_max_version;
+	uint32_t i = 0;
+
+	table_out->partner_count	= 0;
+	table_out->partners		= NULL;
+	table_out->initiator		= initiator;
+
+	local_max_version = wreplsrv_local_max_version(service);
+	if (local_max_version > 0) {
+		table_out->partner_count++;
+	}
+
+	for (cur = service->table; full_table && cur; cur = cur->next) {
+		table_out->partner_count++;
+	}
+
+	table_out->partners = talloc_array(mem_ctx, struct wrepl_wins_owner, table_out->partner_count);
+	NT_STATUS_HAVE_NO_MEMORY(table_out->partners);
+
+	if (local_max_version > 0) {
+		table_out->partners[i].address		= our_ip;
+		table_out->partners[i].min_version	= 0;
+		table_out->partners[i].max_version	= local_max_version;
+		table_out->partners[i].type		= 1;
+		i++;
+	}
+
+	for (cur = service->table; full_table && cur; cur = cur->next) {
+		table_out->partners[i] = cur->owner;
+		i++;
+	}
+
+	return NT_STATUS_OK;
+}
+
 struct wreplsrv_owner *wreplsrv_find_owner(struct wreplsrv_owner *table, const char *wins_owner)
 {
 	struct wreplsrv_owner *cur;

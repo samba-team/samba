@@ -114,42 +114,12 @@ static NTSTATUS wreplsrv_in_table_query(struct wreplsrv_in_call *call)
 	struct wreplsrv_service *service = call->wreplconn->service;
 	struct wrepl_replication *repl_out = &call->rep_packet.message.replication;
 	struct wrepl_table *table_out = &call->rep_packet.message.replication.info.table;
-	struct wreplsrv_owner *cur;
-	uint64_t local_max_version;
-	uint32_t i = 0;
+	const char *our_ip = call->wreplconn->our_ip;
 
 	repl_out->command = WREPL_REPL_TABLE_REPLY;
 
-	table_out->partner_count	= 0;
-	table_out->partners		= NULL;
-	table_out->initiator		= WINSDB_OWNER_LOCAL;
-
-	local_max_version = wreplsrv_local_max_version(service);
-	if (local_max_version > 0) {
-		table_out->partner_count++;
-	}
-
-	for (cur = service->table; cur; cur = cur->next) {
-		table_out->partner_count++;
-	}
-
-	table_out->partners = talloc_array(call, struct wrepl_wins_owner, table_out->partner_count);
-	NT_STATUS_HAVE_NO_MEMORY(table_out->partners);
-
-	if (local_max_version > 0) {
-		table_out->partners[i].address		= call->wreplconn->our_ip;
-		table_out->partners[i].min_version	= 0;
-		table_out->partners[i].max_version	= local_max_version;
-		table_out->partners[i].type		= 1;
-		i++;
-	}
-
-	for (cur = service->table; cur; cur = cur->next) {
-		table_out->partners[i] = cur->owner;
-		i++;
-	}
-
-	return NT_STATUS_OK;
+	return wreplsrv_fill_wrepl_table(service, call, table_out,
+					 our_ip, our_ip, True);
 }
 
 static int wreplsrv_in_sort_wins_name(struct wrepl_wins_name *n1,
@@ -168,9 +138,8 @@ static NTSTATUS wreplsrv_record2wins_name(TALLOC_CTX *mem_ctx,
 	uint32_t num_ips, i;
 	struct wrepl_ip *ips;
 
-	name->name		= *rec->name;
-	talloc_steal(mem_ctx, rec->name->name);
-	talloc_steal(mem_ctx, rec->name->scope);
+	name->name		= rec->name;
+	talloc_steal(mem_ctx, rec->name);
 
 	name->id		= rec->version;
 	name->unknown		= WINSDB_GROUP_ADDRESS;
@@ -317,15 +286,15 @@ struct wreplsrv_in_update_state {
 
 static void wreplsrv_in_update_handler(struct composite_context *creq)
 {
-	struct wreplsrv_in_update_state *state= talloc_get_type(creq->async.private_data,
-								struct wreplsrv_in_update_state);
+	struct wreplsrv_in_update_state *update_state = talloc_get_type(creq->async.private_data,
+							struct wreplsrv_in_update_state);
 	NTSTATUS status;
 
 	status = wreplsrv_pull_cycle_recv(creq);
 
-	talloc_free(state->wrepl_out);
+	talloc_free(update_state->wrepl_out);
 
-	wreplsrv_terminate_in_connection(state->wrepl_in, nt_errstr(status));
+	wreplsrv_terminate_in_connection(update_state->wrepl_in, nt_errstr(status));
 }
 
 static NTSTATUS wreplsrv_in_update(struct wreplsrv_in_call *call)
