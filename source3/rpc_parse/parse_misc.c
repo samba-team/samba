@@ -830,6 +830,8 @@ void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags)
 	if (buf) {
 		/* We always null terminate the copy. */
 		len = strlen(buf) + 1;
+		if ( flags == UNI_STR_DBLTERMINATE )
+			len++;
 	} else {
 		/* no buffer -- nothing to do */
 		str->uni_max_len = 0;
@@ -859,6 +861,8 @@ void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags)
 		if (flags == UNI_STR_TERMINATE || flags == UNI_MAXLEN_TERMINATE) {
 			num_chars++;
 		}
+		if ( flags == UNI_STR_DBLTERMINATE )
+			num_chars += 2;
 	}
 
 	str->uni_max_len = num_chars;

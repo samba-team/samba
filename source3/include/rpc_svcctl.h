@@ -175,23 +175,6 @@ typedef struct {
         SC_ACTION *actions;
 } SERVICE_FAILURE_ACTIONS;
 
-typedef struct Service_info_struct {
-	uint32  type;		/* should be SVC_HANDLE_IS_SERVICE */
-	pstring servicename;	/* the name of the service */
-	pstring servicetype;	/* internal or external */
-	pstring filename;	/* what file name we can find this in, 
-				   as well as the "index" for what the 
-				   service name is */
-	pstring provides;
-	pstring dependencies;
-	pstring shouldstart;
-	pstring shouldstop;
-	pstring requiredstart;
-	pstring	requiredstop;
-	pstring shortdescription;
-	pstring description;
-} Service_info;
-
 /* 
  * dispatch table of functions to handle the =ServiceControl API
  */ 
