@@ -695,15 +695,17 @@ char *ldb_filter_from_tree(void *mem_ctx, struct ldb_parse_tree *tree)
 				talloc_free(ret);
 				return NULL;
 			}
-			s = talloc_asprintf_append(ret, "%s*", s2);
+			if (tree->u.substring.chunks[i+1] ||
+			    tree->u.substring.end_with_wildcard) {
+				s = talloc_asprintf_append(ret, "%s*", s2);
+			} else {
+				s = talloc_asprintf_append(ret, "%s", s2);
+			}
 			if (s == NULL) {
 				talloc_free(ret);
 				return NULL;
 			}
 			ret = s;
-		}
-		if ( ! tree->u.substring.end_with_wildcard ) {
-			ret[strlen(ret) - 1] = '\0'; /* remove last wildcard */
 		}
 		s = talloc_asprintf_append(ret, ")");
 		if (s == NULL) {
