@@ -31,6 +31,7 @@
 */
 static void wrepl_socket_dead(struct wrepl_socket *wrepl_socket, NTSTATUS status)
 {
+	talloc_set_destructor(wrepl_socket, NULL);
 	wrepl_socket->dead = True;
 
 	if (wrepl_socket->fde) {
@@ -96,9 +97,31 @@ static void wrepl_handler_send(struct wrepl_socket *wrepl_socket)
 			return;
 		}
 
-		DLIST_REMOVE(wrepl_socket->send_queue, req);
-		DLIST_ADD_END(wrepl_socket->recv_queue, req, struct wrepl_request *);
-		req->state = WREPL_REQUEST_RECV;
+		if (req->disconnect_after_send) {
+			DLIST_REMOVE(wrepl_socket->send_queue, req);
+			req->status = NT_STATUS_OK;
+			req->state = WREPL_REQUEST_DONE;
+			wrepl_socket_dead(wrepl_socket, NT_STATUS_LOCAL_DISCONNECT);
+			if (req->async.fn) {
+				req->async.fn(req);
+			}
+			return;
+		}
+
+		if (req->send_only) {
+			DLIST_REMOVE(wrepl_socket->send_queue, req);
+			req->status = NT_STATUS_OK;
+			req->state = WREPL_REQUEST_DONE;
+			if (req->async.fn) {
+				EVENT_FD_READABLE(wrepl_socket->fde);
+				req->async.fn(req);
+				return;
+			}
+		} else {
+			DLIST_REMOVE(wrepl_socket->send_queue, req);
+			DLIST_ADD_END(wrepl_socket->recv_queue, req, struct wrepl_request *);
+			req->state = WREPL_REQUEST_RECV;
+		}
 
 		EVENT_FD_READABLE(wrepl_socket->fde);
 	}
@@ -289,7 +312,7 @@ failed:
 static int wrepl_socket_destructor(void *ptr)
 {
 	struct wrepl_socket *sock = talloc_get_type(ptr, struct wrepl_socket);
-	wrepl_socket_dead(sock, NT_STATUS_CONNECTION_DISCONNECTED);
+	wrepl_socket_dead(sock, NT_STATUS_LOCAL_DISCONNECT);
 	return 0;
 }
 
@@ -415,7 +438,7 @@ static NTSTATUS wrepl_request_wait(struct wrepl_request *req)
   connect a wrepl_socket to a WINS server
 */
 struct wrepl_request *wrepl_connect_send(struct wrepl_socket *wrepl_socket,
-					 const char *address)
+					 const char *our_ip, const char *peer_ip)
 {
 	struct wrepl_request *req;
 	NTSTATUS status;
@@ -429,8 +452,12 @@ struct wrepl_request *wrepl_connect_send(struct wrepl_socket *wrepl_socket,
 	DLIST_ADD(wrepl_socket->recv_queue, req);
 
 	talloc_set_destructor(req, wrepl_request_destructor);
-	
-	status = socket_connect(wrepl_socket->sock, iface_best_ip(address), 0, address, 
+
+	if (!our_ip) {
+		our_ip = iface_best_ip(peer_ip);
+	}
+
+	status = socket_connect(wrepl_socket->sock, our_ip, 0, peer_ip, 
 				WINS_REPLICATION_PORT, 0);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) goto failed;
 
@@ -453,9 +480,9 @@ NTSTATUS wrepl_connect_recv(struct wrepl_request *req)
 /*
   connect a wrepl_socket to a WINS server - sync API
 */
-NTSTATUS wrepl_connect(struct wrepl_socket *wrepl_socket, const char *address)
+NTSTATUS wrepl_connect(struct wrepl_socket *wrepl_socket, const char *our_ip, const char *peer_ip)
 {
-	struct wrepl_request *req = wrepl_connect_send(wrepl_socket, address);
+	struct wrepl_request *req = wrepl_connect_send(wrepl_socket, our_ip, peer_ip);
 	return wrepl_connect_recv(req);
 }
 
@@ -619,6 +646,59 @@ NTSTATUS wrepl_associate(struct wrepl_socket *wrepl_socket,
 
 
 /*
+  stop an association - send
+*/
+struct wrepl_request *wrepl_associate_stop_send(struct wrepl_socket *wrepl_socket,
+						struct wrepl_associate_stop *io)
+{
+	struct wrepl_packet *packet;
+	struct wrepl_request *req;
+
+	packet = talloc_zero(wrepl_socket, struct wrepl_packet);
+	if (packet == NULL) return NULL;
+
+	packet->opcode			= WREPL_OPCODE_BITS;
+	packet->assoc_ctx		= io->in.assoc_ctx;
+	packet->mess_type		= WREPL_STOP_ASSOCIATION;
+	packet->message.stop.reason	= io->in.reason;
+
+	req = wrepl_request_send(wrepl_socket, packet);
+
+	if (req && io->in.reason == 0) {
+		req->send_only			= True;
+		req->disconnect_after_send	= True;
+	}
+
+	talloc_free(packet);
+
+	return req;	
+}
+
+/*
+  stop an association - recv
+*/
+NTSTATUS wrepl_associate_stop_recv(struct wrepl_request *req,
+				   struct wrepl_associate_stop *io)
+{
+	struct wrepl_packet *packet=NULL;
+	NTSTATUS status;
+	status = wrepl_request_recv(req, req->wrepl_socket, &packet);
+	NT_STATUS_NOT_OK_RETURN(status);
+	talloc_free(packet);
+	return status;
+}
+
+/*
+  setup an association - sync api
+*/
+NTSTATUS wrepl_associate_stop(struct wrepl_socket *wrepl_socket,
+			      struct wrepl_associate_stop *io)
+{
+	struct wrepl_request *req = wrepl_associate_stop_send(wrepl_socket, io);
+	return wrepl_associate_stop_recv(req, io);
+}
+
+/*
   fetch the partner tables - send
 */
 struct wrepl_request *wrepl_pull_table_send(struct wrepl_socket *wrepl_socket,
@@ -734,8 +814,6 @@ NTSTATUS wrepl_pull_names_recv(struct wrepl_request *req,
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	io->out.num_names = packet->message.replication.info.reply.num_names;
-
-	status = NT_STATUS_NO_MEMORY;
 
 	io->out.names = talloc_array(packet, struct wrepl_name, io->out.num_names);
 	if (io->out.names == NULL) goto nomem;
