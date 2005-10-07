@@ -942,3 +942,212 @@ void secrets_fetch_ipc_userpass(char **username, char **domain, char **password)
 	}
 }
 
+/******************************************************************************
+ Open or create the schannel session store tdb.
+*******************************************************************************/
+
+static TDB_CONTEXT *open_schannel_session_store(TALLOC_CTX *mem_ctx)
+{
+	TDB_DATA vers;
+	uint32 ver;
+	TDB_CONTEXT *tdb_sc = NULL;
+	char *fname = talloc_asprintf(mem_ctx, "%s/schannel_store.tdb", lp_private_dir());
+
+	if (!fname) {
+		return NULL;
+	}
+
+        tdb_sc = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+
+        if (!tdb_sc) {
+                DEBUG(0,("open_schannel_session_store: Failed to open %s\n", fname));
+		talloc_free(fname);
+                return NULL;
+        }
+
+	vers = tdb_fetch_bystring(tdb_sc, "SCHANNEL_STORE_VERSION");
+	if (vers.dptr == NULL) {
+		/* First opener, no version. */
+		SIVAL(&ver,0,1);
+		vers.dptr = (char *)&ver;
+		vers.dsize = 4;
+		tdb_store_bystring(tdb_sc, "SCHANNEL_STORE_VERSION", vers, TDB_REPLACE);
+		vers.dptr = NULL;
+	} else if (vers.dsize == 4) {
+		ver = IVAL(vers.dptr,0);
+		if (ver != 1) {
+			tdb_close(tdb_sc);
+			tdb_sc = NULL;
+			DEBUG(0,("open_schannel_session_store: wrong version number %d in %s\n",
+				(int)ver, fname ));
+		}
+	} else {
+		tdb_close(tdb_sc);
+		tdb_sc = NULL;
+		DEBUG(0,("open_schannel_session_store: wrong version number size %d in %s\n",
+			(int)vers.dsize, fname ));
+	}
+
+	SAFE_FREE(vers.dptr);
+	talloc_free(fname);
+
+	return tdb_sc;
+}
+
+/******************************************************************************
+ Store the schannel state after an AUTH2 call.
+ Note we must be root here.
+*******************************************************************************/
+
+BOOL secrets_store_schannel_session_info(TALLOC_CTX *mem_ctx, const struct dcinfo *pdc)
+{
+	TDB_CONTEXT *tdb_sc = NULL;
+	TDB_DATA value;
+	BOOL ret;
+	char *keystr = talloc_asprintf(mem_ctx, "%s/%s", SECRETS_SCHANNEL_STATE,
+				pdc->remote_machine);
+	if (!keystr) {
+		return False;
+	}
+
+	strupper_m(keystr);
+
+	/* Work out how large the record is. */
+	value.dsize = tdb_pack(NULL, 0, "dBBBBBfff",
+				pdc->sequence,
+				8, pdc->seed_chal.data,
+				8, pdc->clnt_chal.data,
+				8, pdc->srv_chal.data,
+				8, pdc->sess_key,
+				16, pdc->mach_pw,
+				pdc->mach_acct,
+				pdc->remote_machine,
+				pdc->domain);
+
+	value.dptr = TALLOC(mem_ctx, value.dsize);
+	if (!value.dptr) {
+		talloc_free(keystr);
+		return False;
+	}
+
+	value.dsize = tdb_pack(value.dptr, value.dsize, "dBBBBBfff",
+				pdc->sequence,
+				8, pdc->seed_chal.data,
+				8, pdc->clnt_chal.data,
+				8, pdc->srv_chal.data,
+				8, pdc->sess_key,
+				16, pdc->mach_pw,
+				pdc->mach_acct,
+				pdc->remote_machine,
+				pdc->domain);
+
+	tdb_sc = open_schannel_session_store(mem_ctx);
+	if (!tdb_sc) {
+		talloc_free(keystr);
+		talloc_free(value.dptr);
+		return False;
+	}
+
+	ret = (tdb_store_bystring(tdb_sc, keystr, value, TDB_REPLACE) == 0 ? True : False);
+
+	DEBUG(3,("secrets_store_schannel_session_info: stored schannel info with key %s\n",
+		keystr ));
+
+	tdb_close(tdb_sc);
+	talloc_free(keystr);
+	talloc_free(value.dptr);
+	return ret;
+}
+
+/******************************************************************************
+ Restore the schannel state on a client reconnect.
+ Note we must be root here.
+*******************************************************************************/
+
+BOOL secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
+				const char *remote_machine,
+				struct dcinfo *pdc)
+{
+	TDB_CONTEXT *tdb_sc = NULL;
+	TDB_DATA value;
+	unsigned char *pseed_chal = NULL;
+	unsigned char *pclnt_chal = NULL;
+	unsigned char *psrv_chal = NULL;
+	unsigned char *psess_key = NULL;
+	unsigned char *pmach_pw = NULL;
+	uint32 l1, l2, l3, l4, l5;
+	int ret;
+	char *keystr = talloc_asprintf(mem_ctx, "%s/%s", SECRETS_SCHANNEL_STATE,
+				remote_machine);
+
+	ZERO_STRUCTP(pdc);
+
+	if (!keystr) {
+		return False;
+	}
+
+	strupper_m(keystr);
+
+	tdb_sc = open_schannel_session_store(mem_ctx);
+	if (!tdb_sc) {
+		talloc_free(keystr);
+		return False;
+	}
+
+	value = tdb_fetch_bystring(tdb_sc, keystr);
+	if (!value.dptr) {
+		DEBUG(0,("secrets_restore_schannel_session_info: Failed to find entry with key %s\n",
+			keystr ));
+		tdb_close(tdb_sc);
+		return False;
+	}
+
+	tdb_close(tdb_sc);
+
+	/* Retrieve the record. */
+	ret = tdb_unpack(value.dptr, value.dsize, "dBBBBBfff",
+				&pdc->sequence,
+				&l1, &pseed_chal,
+				&l2, &pclnt_chal,
+				&l3, &psrv_chal,
+				&l4, &psess_key,
+				&l5, &pmach_pw,
+				&pdc->mach_acct,
+				&pdc->remote_machine,
+				&pdc->domain);
+
+	if (ret == -1 || l1 != 8 || l2 != 8 || l3 != 8 || l4 != 8 || l5 != 16) {
+		talloc_free(keystr);
+		SAFE_FREE(pseed_chal);
+		SAFE_FREE(pclnt_chal);
+		SAFE_FREE(psrv_chal);
+		SAFE_FREE(psess_key);
+		SAFE_FREE(pmach_pw);
+		SAFE_FREE(value.dptr);
+		ZERO_STRUCTP(pdc);
+		return False;
+	}
+
+	memcpy(pdc->seed_chal.data, pseed_chal, 8);
+	memcpy(pdc->clnt_chal.data, pclnt_chal, 8);
+	memcpy(pdc->srv_chal.data, psrv_chal, 8);
+	memcpy(pdc->sess_key, psess_key, 8);
+	memcpy(pdc->mach_pw, pmach_pw, 16);
+
+	/* We know these are true so didn't bother to store them. */
+	pdc->challenge_sent = True;
+	pdc->authenticated = True;
+
+	DEBUG(3,("secrets_store_schannel_session_info: restored schannel info key %s\n",
+		keystr ));
+
+	SAFE_FREE(pseed_chal);
+	SAFE_FREE(pclnt_chal);
+	SAFE_FREE(psrv_chal);
+	SAFE_FREE(psess_key);
+	SAFE_FREE(pmach_pw);
+
+	talloc_free(keystr);
+	SAFE_FREE(value.dptr);
+	return True;
+}
