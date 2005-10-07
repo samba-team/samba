@@ -456,6 +456,32 @@ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx, 
+				     struct auth_session_info **_session_info) 
+{
+	NTSTATUS nt_status;
+	struct auth_serversupplied_info *server_info = NULL;
+	struct auth_session_info *session_info = NULL;
+	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
+	
+	nt_status = auth_anonymous_server_info(mem_ctx,
+					       &server_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(mem_ctx);
+		return nt_status;
+	}
+
+	/* references the server_info into the session_info */
+	nt_status = auth_generate_session_info(parent_ctx, server_info, &session_info);
+	talloc_free(mem_ctx);
+
+	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	*_session_info = session_info;
+
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  prints a struct auth_session_info security token to debug output.
 ****************************************************************************/
