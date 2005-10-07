@@ -1,3 +1,42 @@
+2005-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/Makefile.am: Install krb5.moduli in sysconfdir.
+
+	* lib/krb5/krb5_locl.h: rename moduli file to SYSCONFDIR
+	"/krb5.moduli"
+
+	* lib/krb5/krb5_locl.h: Add forward declaration for
+	krb5_dh_moduli.  Add define for MODULI_FILE.
+
+	* kdc/pkinit.c: Removing PK-INIT-19 support.
+
+	* lib/krb5/pkinit.c: Removing PK-INIT-19 support.
+
+	* lib/krb5/pkinit.c (_krb5_dh_group_ok): return DH group name on
+	success.
+	(krb5_get_init_creds_opt_set_pkinit): use moduli file if it exists
+
+	* kdc/pkinit.c: Save DH group name and print it on success.
+
+	* lib/krb5/pkinit.c (_krb5_dh_group_ok): if q is zero, ignore it.
+
+	* kdc/pkinit.c: Check dh group parameters from client.
+
+	* lib/krb5/krb5_err.et: Match error code with pk-init-27.
+
+	* lib/krb5/pkinit.c: Update error codes. Add name to group. Change
+	return value of _krb5_dh_group_ok.
+
+	* lib/krb5/pkinit.c: Add support for reading a moduli-file for DH
+	parameters.
+	
+2005-10-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kuser/klist.1: Document --list-caches
+
+	* kuser/klist.c: Change short flag of --list-caches to -l (-v is
+	already used).
+
 2005-10-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/kerberos.8: RFC 1510 was obsoleted by 4120.
