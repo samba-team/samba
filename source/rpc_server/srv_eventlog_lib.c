@@ -1,8 +1,8 @@
-
 /* 
  *  Unix SMB/CIFS implementation.
  *  Eventlog utility  routines
  *  Copyright (C) Marcin Krzysztof Porwit    2005,
+ *  Copyright (C) Brian Moran                2005.
  *  Copyright (C) Gerald (Jerry) Carter      2005.
  *  
  *  This program is free software; you can redistribute it and/or modify
