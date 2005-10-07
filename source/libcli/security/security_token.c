@@ -165,3 +165,28 @@ void security_token_debug(int dbg_lev, const struct security_token *token)
 
 	talloc_free(mem_ctx);
 }
+
+/* These really should be cheaper... */
+
+BOOL is_system_token(struct security_token *token) 
+{
+	TALLOC_CTX *mem_ctx = talloc_new(token);
+	if (dom_sid_equal(token->user_sid, dom_sid_parse_talloc(mem_ctx, SID_NT_SYSTEM))) {
+		talloc_free(mem_ctx);
+		return True;
+	}
+	talloc_free(mem_ctx);
+	return False;
+}
+
+BOOL is_anonymous_token(struct security_token *token) 
+{
+	TALLOC_CTX *mem_ctx = talloc_new(token);
+	if (dom_sid_equal(token->user_sid, dom_sid_parse_talloc(mem_ctx, SID_NT_ANONYMOUS))) {
+		talloc_free(mem_ctx);
+		return True;
+	}
+	talloc_free(mem_ctx);
+	return False;
+}
+

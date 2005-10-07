@@ -521,7 +521,7 @@ NTSTATUS sam_get_server_info(TALLOC_CTX *mem_ctx, const char *account_name, cons
 	struct ldb_message **domain_msgs;
 	void *sam_ctx;
 
-	sam_ctx = samdb_connect(mem_ctx);
+	sam_ctx = samdb_connect(mem_ctx, system_session(mem_ctx));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -558,7 +558,7 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	sam_ctx = samdb_connect(mem_ctx);
+	sam_ctx = samdb_connect(mem_ctx, system_session(mem_ctx));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}

@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "ldap_server/ldap_server.h"
 #include "lib/ldb/include/ldb.h"
+#include "auth/auth.h"
 #include "db_wrap.h"
 
 #define VALID_DN_SYNTAX(dn,i) do {\
@@ -34,8 +35,61 @@
 	}\
 } while(0)
 
+/*
+  connect to the sam database
+*/
+NTSTATUS sldb_Init(struct ldapsrv_partition *partition, struct ldapsrv_connection *conn) 
+{
+	TALLOC_CTX *mem_ctx = talloc_new(partition);
+	struct ldb_context *ldb;
+	const char *url;
+	url = lp_parm_string(-1, "ldapsrv", "samdb");
+	if (url) {
+
+		ldb = ldb_wrap_connect(mem_ctx, url, 0, NULL);
+		if (ldb == NULL) {
+			talloc_free(mem_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+		if (ldb_set_opaque(ldb, "sessionInfo", conn->session_info)) {
+			talloc_free(mem_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+		talloc_steal(partition, ldb);
+		partition->private = ldb;
+		talloc_free(mem_ctx);
+		return NT_STATUS_OK;
+	}
+	
+	ldb = samdb_connect(mem_ctx, conn->session_info);
+	if (ldb == NULL) {
+		talloc_free(mem_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	talloc_steal(partition, ldb);
+	partition->private = ldb;
+	talloc_free(mem_ctx);
+	return NT_STATUS_OK;
+}
+
+/*
+  Re-connect to the ldb after a bind (this does not handle the bind
+  itself, but just notes the change in credentials)
+*/
+NTSTATUS sldb_Bind(struct ldapsrv_partition *partition, struct ldapsrv_connection *conn) 
+{
+	struct ldb_context *samdb = partition->private;
+	NTSTATUS status;
+	status = sldb_Init(partition, conn);
+	if (NT_STATUS_IS_OK(status)) {
+		/* don't leak the old LDB */
+		talloc_free(samdb);
+	}
+	return status;
+}
+
 static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
-				     struct ldap_SearchRequest *r)
+			    struct ldap_SearchRequest *r)
 {
 	void *local_ctx;
 	struct ldb_dn *basedn;
@@ -54,8 +108,7 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 	local_ctx = talloc_named(call, 0, "sldb_Search local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
-	samdb = ldapsrv_sam_connect(call);
-	NT_STATUS_HAVE_NO_MEMORY(samdb);
+	samdb = partition->private;
 
 	basedn = ldb_dn_explode(local_ctx, r->basedn);
 	VALID_DN_SYNTAX(basedn, 0);
@@ -182,8 +235,7 @@ static NTSTATUS sldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_cal
 	local_ctx = talloc_named(call, 0, "sldb_Add local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
-	samdb = ldapsrv_sam_connect(call);
-	NT_STATUS_HAVE_NO_MEMORY(samdb);
+	samdb = partition->private;
 
 	dn = ldb_dn_explode(local_ctx, r->dn);
 	VALID_DN_SYNTAX(dn,1);
@@ -280,8 +332,7 @@ static NTSTATUS sldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_cal
 	local_ctx = talloc_named(call, 0, "sldb_Del local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
-	samdb = ldapsrv_sam_connect(call);
-	NT_STATUS_HAVE_NO_MEMORY(samdb);
+	samdb = partition->private;
 
 	dn = ldb_dn_explode(local_ctx, r->dn);
 	VALID_DN_SYNTAX(dn,1);
@@ -335,8 +386,7 @@ static NTSTATUS sldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_
 	local_ctx = talloc_named(call, 0, "sldb_Modify local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
-	samdb = ldapsrv_sam_connect(call);
-	NT_STATUS_HAVE_NO_MEMORY(samdb);
+	samdb = partition->private;
 
 	dn = ldb_dn_explode(local_ctx, r->dn);
 	VALID_DN_SYNTAX(dn, 1);
@@ -447,8 +497,7 @@ static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 	local_ctx = talloc_named(call, 0, "sldb_Compare local_memory_context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
-	samdb = ldapsrv_sam_connect(call);
-	NT_STATUS_HAVE_NO_MEMORY(samdb);
+	samdb = partition->private;
 
 	dn = ldb_dn_explode(local_ctx, r->dn);
 	VALID_DN_SYNTAX(dn, 1);
@@ -515,8 +564,7 @@ static NTSTATUS sldb_ModifyDN(struct ldapsrv_partition *partition, struct ldapsr
 	local_ctx = talloc_named(call, 0, "sldb_ModifyDN local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
-	samdb = ldapsrv_sam_connect(call);
-	NT_STATUS_HAVE_NO_MEMORY(samdb);
+	samdb = partition->private;
 
 	olddn = ldb_dn_explode(local_ctx, r->dn);
 	VALID_DN_SYNTAX(olddn, 2);
@@ -591,6 +639,8 @@ reply:
 }
 
 static const struct ldapsrv_partition_ops sldb_ops = {
+	.Init           = sldb_Init,
+	.Bind           = sldb_Bind,
 	.Search		= sldb_Search,
 	.Add		= sldb_Add,
 	.Del		= sldb_Del,

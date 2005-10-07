@@ -75,6 +75,11 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 	if (r != 0) {
 		goto failed;
 	}
+
+	if (ldb_set_opaque(ldb, "securityToken", system_session(ldb))) {
+		goto failed;
+	}
+
 #endif
 
 	ret = talloc_zero(ldb, struct ldb_cmdline);

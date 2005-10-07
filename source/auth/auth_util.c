@@ -427,6 +427,73 @@ NTSTATUS auth_anonymous_server_info(TALLOC_CTX *mem_ctx, struct auth_serversuppl
 	return NT_STATUS_OK;
 }
 
+NTSTATUS auth_system_server_info(TALLOC_CTX *mem_ctx, struct auth_serversupplied_info **_server_info) 
+{
+	struct auth_serversupplied_info *server_info;
+	server_info = talloc(mem_ctx, struct auth_serversupplied_info);
+	NT_STATUS_HAVE_NO_MEMORY(server_info);
+
+	server_info->account_sid = dom_sid_parse_talloc(server_info, SID_NT_SYSTEM);
+	NT_STATUS_HAVE_NO_MEMORY(server_info->account_sid);
+
+	/* is this correct? */
+	server_info->primary_group_sid = dom_sid_parse_talloc(server_info, SID_BUILTIN_ADMINISTRATORS);
+	NT_STATUS_HAVE_NO_MEMORY(server_info->primary_group_sid);
+
+	server_info->n_domain_groups = 0;
+	server_info->domain_groups = NULL;
+
+	/* annoying, but the Anonymous really does have a session key, 
+	   and it is all zeros! */
+	server_info->user_session_key = data_blob_talloc(server_info, NULL, 16);
+	NT_STATUS_HAVE_NO_MEMORY(server_info->user_session_key.data);
+
+	server_info->lm_session_key = data_blob_talloc(server_info, NULL, 16);
+	NT_STATUS_HAVE_NO_MEMORY(server_info->lm_session_key.data);
+
+	data_blob_clear(&server_info->user_session_key);
+	data_blob_clear(&server_info->lm_session_key);
+
+	server_info->account_name = talloc_strdup(server_info, "sYSTEM");
+	NT_STATUS_HAVE_NO_MEMORY(server_info->account_name);
+
+	server_info->domain_name = talloc_strdup(server_info, "NT AUTHORITY");
+	NT_STATUS_HAVE_NO_MEMORY(server_info->domain_name);
+
+	server_info->full_name = talloc_strdup(server_info, "System");
+	NT_STATUS_HAVE_NO_MEMORY(server_info->full_name);
+
+	server_info->logon_script = talloc_strdup(server_info, "");
+	NT_STATUS_HAVE_NO_MEMORY(server_info->logon_script);
+
+	server_info->profile_path = talloc_strdup(server_info, "");
+	NT_STATUS_HAVE_NO_MEMORY(server_info->profile_path);
+
+	server_info->home_directory = talloc_strdup(server_info, "");
+	NT_STATUS_HAVE_NO_MEMORY(server_info->home_directory);
+
+	server_info->home_drive = talloc_strdup(server_info, "");
+	NT_STATUS_HAVE_NO_MEMORY(server_info->home_drive);
+
+	server_info->last_logon = 0;
+	server_info->last_logoff = 0;
+	server_info->acct_expiry = 0;
+	server_info->last_password_change = 0;
+	server_info->allow_password_change = 0;
+	server_info->force_password_change = 0;
+
+	server_info->logon_count = 0;
+	server_info->bad_password_count = 0;
+
+	server_info->acct_flags = ACB_NORMAL;
+
+	server_info->authenticated = False;
+
+	*_server_info = server_info;
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx, 
 				    struct auth_serversupplied_info *server_info, 
 				    struct auth_session_info **_session_info) 
@@ -480,6 +547,54 @@ NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx,
 	*_session_info = session_info;
 
 	return NT_STATUS_OK;
+}
+
+struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx) 
+{
+	NTSTATUS nt_status;
+	struct auth_session_info *session_info = NULL;
+	nt_status = auth_anonymous_session_info(mem_ctx, &session_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return NULL;
+	}
+	return session_info;
+}
+
+NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx, 
+				  struct auth_session_info **_session_info) 
+{
+	NTSTATUS nt_status;
+	struct auth_serversupplied_info *server_info = NULL;
+	struct auth_session_info *session_info = NULL;
+	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
+	
+	nt_status = auth_system_server_info(mem_ctx,
+					    &server_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(mem_ctx);
+		return nt_status;
+	}
+
+	/* references the server_info into the session_info */
+	nt_status = auth_generate_session_info(parent_ctx, server_info, &session_info);
+	talloc_free(mem_ctx);
+
+	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	*_session_info = session_info;
+
+	return NT_STATUS_OK;
+}
+
+struct auth_session_info *system_session(TALLOC_CTX *mem_ctx) 
+{
+	NTSTATUS nt_status;
+	struct auth_session_info *session_info = NULL;
+	nt_status = auth_system_session_info(mem_ctx, &session_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return NULL;
+	}
+	return session_info;
 }
 
 /****************************************************************************

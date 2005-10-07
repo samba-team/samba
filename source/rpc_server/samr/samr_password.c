@@ -38,6 +38,7 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 {
 	struct dcesrv_handle *h;
 	struct samr_account_state *a_state;
+	struct ldb_context *sam_ctx;
 	struct ldb_message **res, *msg;
 	int ret;
 	struct samr_Password new_lmPwdHash, new_ntPwdHash, checkHash;
@@ -49,8 +50,14 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	a_state = h->data;
 
+	/* To change a password we need to open as system */
+	sam_ctx = samdb_connect(mem_ctx, system_session(mem_ctx));
+	if (sam_ctx == NULL) {
+		return NT_STATUS_INVALID_SYSTEM_SERVICE;
+	}
+
 	/* fetch the old hashes */
-	ret = gendb_search_dn(a_state->sam_ctx, mem_ctx,
+	ret = gendb_search_dn(sam_ctx, mem_ctx,
 			      a_state->account_dn, &res, attrs);
 	if (ret != 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -113,7 +120,7 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = samdb_set_password(a_state->sam_ctx, mem_ctx,
+	status = samdb_set_password(sam_ctx, mem_ctx,
 				    a_state->account_dn, a_state->domain_state->domain_dn,
 				    msg, NULL, &new_lmPwdHash, &new_ntPwdHash, 
 				    True, /* this is a user password change */
@@ -124,7 +131,7 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	}
 
 	/* modify the samdb record */
-	ret = samdb_replace(a_state->sam_ctx, mem_ctx, msg);
+	ret = samdb_replace(sam_ctx, mem_ctx, msg);
 	if (ret != 0) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -142,7 +149,7 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 	char new_pass[512];
 	uint32_t new_pass_len;
 	struct samr_CryptPassword *pwbuf = r->in.password;
-	void *sam_ctx;
+	struct ldb_context *sam_ctx;
 	const struct ldb_dn *user_dn, *domain_dn;
 	int ret;
 	struct ldb_message **res, *mod;
@@ -157,9 +164,8 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
-	/* this call doesn't take a policy handle, so we need to open
-	   the sam db from scratch */
-	sam_ctx = samdb_connect(mem_ctx);
+	/* To change a password we need to open as system */
+	sam_ctx = samdb_connect(mem_ctx, system_session(mem_ctx));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -260,7 +266,7 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	NTSTATUS status;
 	char new_pass[512];
 	uint32_t new_pass_len;
-	void *sam_ctx = NULL;
+	struct ldb_context *sam_ctx;
 	const struct ldb_dn *user_dn, *domain_dn = NULL;
 	int ret;
 	struct ldb_message **res, *mod;
@@ -285,11 +291,10 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 		goto failed;
 	}
 
-	/* this call doesn't take a policy handle, so we need to open
-	   the sam db from scratch */
-	sam_ctx = samdb_connect(mem_ctx);
+	/* To change a password we need to open as system */
+	sam_ctx = samdb_connect(mem_ctx, system_session(mem_ctx));
 	if (sam_ctx == NULL) {
-		status = NT_STATUS_INVALID_SYSTEM_SERVICE;
+		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 		goto failed;
 	}
 

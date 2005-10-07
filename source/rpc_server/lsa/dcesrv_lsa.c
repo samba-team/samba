@@ -27,9 +27,9 @@
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/common/common.h"
 #include "lib/ldb/include/ldb.h"
-#include "auth/auth.h"
 #include "system/time.h"
 #include "db_wrap.h"
+#include "auth/auth.h"
 
 /*
   this type allows us to distinguish handle types
@@ -220,9 +220,6 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 				     struct lsa_policy_state **_state)
 {
 	struct lsa_policy_state *state;
-	const char *domain_attrs[] =  {"nETBIOSName", "nCName", NULL};
-	int ret_domain;
-	struct ldb_message **msgs_domain;
 
 	state = talloc(mem_ctx, struct lsa_policy_state);
 	if (!state) {
@@ -230,7 +227,7 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	/* make sure the sam database is accessible */
-	state->sam_ldb = samdb_connect(state);
+	state->sam_ldb = samdb_connect(state, dce_call->conn->auth_state.session_info); 
 	if (state->sam_ldb == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -247,16 +244,14 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 		return NT_STATUS_NO_MEMORY;		
 	}
 
-	ret_domain = gendb_search(state->sam_ldb, mem_ctx, NULL, &msgs_domain, domain_attrs,
-				  "(&(objectclass=crossRef)(ncName=%s))", ldb_dn_linearize(mem_ctx, state->domain_dn));
+	state->domain_name
+		= samdb_search_string(state->sam_ldb, mem_ctx, NULL, "nETBIOSName", 
+				      "(&(objectclass=crossRef)(ncName=%s))", ldb_dn_linearize(mem_ctx, state->domain_dn));
 	
-	if (ret_domain == -1) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-		
-	if (ret_domain != 1) {
+	if (!state->domain_name) {
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
+	talloc_steal(state, state->domain_name);
 
 	/* work out the builtin_dn - useful for so many calls its worth
 	   fetching here */
@@ -273,22 +268,19 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
 
-	state->domain_sid = talloc_steal(state, 
-					 samdb_search_dom_sid(state->sam_ldb, state,
-							      state->domain_dn, "objectSid", "dn=%s",
-							      ldb_dn_linearize(mem_ctx, state->domain_dn)));
+	state->domain_sid = samdb_search_dom_sid(state->sam_ldb, state,
+						 state->domain_dn, "objectSid", "dn=%s",
+						 ldb_dn_linearize(mem_ctx, state->domain_dn));
 	if (!state->domain_sid) {
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
+
+	talloc_steal(state, state->domain_sid);
 
 	state->builtin_sid = dom_sid_parse_talloc(state, SID_BUILTIN);
 	if (!state->builtin_sid) {
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
-
-	state->domain_name = talloc_strdup(state, 
-					   samdb_result_string(msgs_domain[0], "nETBIOSName", 
-							       lp_workgroup()));
 
 	*_state = state;
 
@@ -2424,14 +2416,6 @@ static NTSTATUS lsa_GetUserName(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	    r->in.authority_name->string &&
 	    r->in.authority_name->string->string) {
 		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/* TODO: this check should go and we should rely on the calling code that this is valid */
-	if (!dce_call->conn->auth_state.session_info ||
-	    !dce_call->conn->auth_state.session_info->server_info ||
-	    !dce_call->conn->auth_state.session_info->server_info->account_name ||
-	    !dce_call->conn->auth_state.session_info->server_info->domain_name) {
-	    	return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	account_name = talloc_reference(mem_ctx, dce_call->conn->auth_state.session_info->server_info->account_name);

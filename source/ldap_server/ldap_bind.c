@@ -32,6 +32,8 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 
 	DEBUG(10, ("BindSimple dn: %s\n",req->dn));
 
+	/* When we add authentication here, we also need to handle telling the backends */
+
 	reply = ldapsrv_init_reply(call, LDAP_TAG_BindResponse);
 	if (!reply) {
 		return NT_STATUS_NO_MEMORY;
@@ -102,14 +104,33 @@ reply:
 		result = LDAP_SASL_BIND_IN_PROGRESS;
 		errstr = NULL;
 	} else if (NT_STATUS_IS_OK(status)) {
+		struct ldapsrv_partition *part;
+
 		result = LDAP_SUCCESS;
 		errstr = NULL;
 		if (gensec_have_feature(call->conn->gensec, GENSEC_FEATURE_SEAL) ||
 		    gensec_have_feature(call->conn->gensec, GENSEC_FEATURE_SIGN)) {
 			call->conn->enable_wrap = True;
 		}
+		status = gensec_session_info(call->conn->gensec, &call->conn->session_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			result = LDAP_OPERATIONS_ERROR;
+			errstr = talloc_asprintf(reply, "SASL:[%s]: Failed to get session info: %s", req->creds.SASL.mechanism, nt_errstr(status));
+		} else {
+			for (part = call->conn->partitions; part; part = part->next) {
+				if (!part->ops->Bind) {
+					continue;
+				}
+				status = part->ops->Bind(part, conn);
+				if (!NT_STATUS_IS_OK(status)) {
+					result = LDAP_OPERATIONS_ERROR;
+					errstr = talloc_asprintf(reply, "SASL:[%s]: Failed to advise partition %s of new credentials: %s", req->creds.SASL.mechanism, part->base_dn, nt_errstr(status));
+				}
+			}
+		}
 	} else {
-		result = 49;
+		status = auth_nt_status_squash(status);
+		result = LDAP_INVALID_CREDENTIALS;
 		errstr = talloc_asprintf(reply, "SASL:[%s]: %s", req->creds.SASL.mechanism, nt_errstr(status));
 	}
 
