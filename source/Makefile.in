@@ -617,8 +617,7 @@ SMBCQUOTAS_OBJ = utils/smbcquotas.o $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 		$(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ)
 
 WR_EVENTLOG_OBJ	= utils/wr_eventlog.o rpc_server/srv_eventlog_lib.o \
-		$(PARAM_OBJ) \
-		$(LIB_NONSMBD_OBJ) \
+		$(PARAM_OBJ) $(LIB_NONSMBD_OBJ) 
 
 TALLOCTORT_OBJ = lib/talloctort.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) libsmb/nterr.o
 
