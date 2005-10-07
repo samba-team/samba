@@ -2796,14 +2796,17 @@ _krb5_parse_moduli(krb5_context context, const char *file,
 krb5_error_code
 _krb5_dh_group_ok(krb5_context context, unsigned long bits,
 		  heim_integer *p, heim_integer *g, heim_integer *q,
-		  struct krb5_dh_moduli **moduli)
+		  struct krb5_dh_moduli **moduli,
+		  char **name)
 {
     int i;
     for (i = 0; moduli[i] != NULL; i++) {
 	if (heim_integer_cmp(&moduli[i]->g, g) == 0 &&
 	    heim_integer_cmp(&moduli[i]->p, p) == 0 &&
-	    (moduli[i]->q->length == 0 || heim_integer_cmp(&moduli[i]->q, q) == 0))
+	    (moduli[i]->q.length == 0 || heim_integer_cmp(&moduli[i]->q, q) == 0))
 	{
+	    if (name)
+		*name = strdup(moduli[i]->name);
 	    return 0;
 	}
     }
@@ -2929,7 +2932,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 	moduli_file = krb5_config_get_string(context, NULL,
 					     "libdefaults", "moduli", NULL);
 
-	ret = _krb5_parse_moduli(context, NULL, 
+	ret = _krb5_parse_moduli(context, moduli_file, 
 				 &opt->private->pk_init_ctx->m);
 	if (ret) {
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
