@@ -304,8 +304,7 @@ TDB_CONTEXT *open_eventlog_tdb( char *tdbfilename )
 	TDB_CONTEXT *the_tdb;
 
 	the_tdb =
-		tdb_open_log( tdbfilename, 0, TDB_DEFAULT, O_RDWR | O_CREAT,
-			      0664 );
+		tdb_open_log( tdbfilename, 0, TDB_DEFAULT, O_RDONLY,0664 );
 	if ( the_tdb == NULL ) {
 		return init_eventlog_tdb( tdbfilename );
 	}
