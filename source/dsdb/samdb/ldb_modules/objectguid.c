@@ -2,6 +2,7 @@
    ldb database library
 
    Copyright (C) Simo Sorce  2004
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -36,7 +37,6 @@
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
 #include "librpc/gen_ndr/ndr_misc.h"
-#include <time.h>
 
 static int objectguid_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 				    enum ldb_scope scope, struct ldb_parse_tree *tree,
@@ -59,7 +59,7 @@ static struct ldb_message_element *objectguid_find_attribute(const struct ldb_me
 	return NULL;
 }
 
-/* add_record: add crateTimestamp/modifyTimestamp attributes */
+/* add_record: add objectGUID attribute */
 static int objectguid_add_record(struct ldb_module *module, const struct ldb_message *msg)
 {
 	struct ldb_val v;
@@ -111,7 +111,6 @@ static int objectguid_add_record(struct ldb_module *module, const struct ldb_mes
 
 	return ret;
 }
-
 
 static const struct ldb_module_ops objectguid_ops = {
 	.name          = "objectguid",
