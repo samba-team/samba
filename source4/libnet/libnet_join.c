@@ -701,6 +701,8 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	domain_sid = lsa_query_info.out.info->domain.sid;
 	domain_name = lsa_query_info.out.info->domain.name.string;
 
+	DEBUG(0, ("Joining domain %s\n", domain_name));
+
 	/*
 	  establish a SAMR connection, on the same CIFS transport
 	*/

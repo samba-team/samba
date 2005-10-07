@@ -26,8 +26,8 @@
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/common/common.h"
 #include "librpc/gen_ndr/ndr_dcom.h"
-#include "auth/auth.h"
 #include "lib/ldb/include/ldb.h"
+#include "auth/auth.h"
 
 struct server_pipe_state {
 	struct netr_Credential client_challenge;
@@ -147,7 +147,7 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	sam_ctx = samdb_connect(mem_ctx);
+	sam_ctx = samdb_connect(mem_ctx, system_session(mem_ctx));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -159,7 +159,7 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 	if (num_records == 0) {
 		DEBUG(3,("Couldn't find user [%s] in samdb.\n", 
 			 r->in.account_name));
-		return NT_STATUS_NO_SUCH_USER;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (num_records > 1) {
@@ -322,7 +322,7 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 	nt_status = netr_creds_server_step_check(pipe_state, &r->in.credential, &r->out.return_authenticator);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	sam_ctx = samdb_connect(mem_ctx);
+	sam_ctx = samdb_connect(mem_ctx, system_session(mem_ctx));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -937,7 +937,7 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 		return status;
 	}
 
-	sam_ctx = samdb_connect(mem_ctx);
+	sam_ctx = samdb_connect(mem_ctx, dce_call->conn->auth_state.session_info);
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -1034,7 +1034,7 @@ static NTSTATUS netr_ServerPasswordSet2(struct dcesrv_call_state *dce_call, TALL
 	nt_status = netr_creds_server_step_check(pipe_state, &r->in.credential, &r->out.return_authenticator);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	sam_ctx = samdb_connect(mem_ctx);
+	sam_ctx = samdb_connect(mem_ctx, system_session(mem_ctx));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -1167,7 +1167,7 @@ static WERROR netr_DrsGetDCNameEx2(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 	ZERO_STRUCT(r->out);
 
-	sam_ctx = samdb_connect(mem_ctx);
+	sam_ctx = samdb_connect(mem_ctx, dce_call->conn->auth_state.session_info);
 	if (sam_ctx == NULL) {
 		return WERR_DS_SERVICE_UNAVAILABLE;
 	}
@@ -1256,13 +1256,12 @@ static WERROR netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce_call, 
 
 	ZERO_STRUCT(r->out);
 
-	sam_ctx = samdb_connect(mem_ctx);
+	sam_ctx = samdb_connect(mem_ctx, dce_call->conn->auth_state.session_info);
 	if (sam_ctx == NULL) {
 		return WERR_GENERAL_FAILURE;
 	}
 
-	ret = gendb_search(sam_ctx, mem_ctx, NULL, &dom_res, dom_attrs,
-			   "(&(objectClass=domainDNS)(dnsDomain=%s))", lp_realm());
+	ret = gendb_search_dn(sam_ctx, mem_ctx, samdb_base_dn(mem_ctx), &dom_res, dom_attrs);
 	if (ret == -1) {
 		return WERR_GENERAL_FAILURE;		
 	}

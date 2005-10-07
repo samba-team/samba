@@ -356,6 +356,8 @@ static void ldapsrv_send(struct stream_connection *c, uint16_t flags)
 */
 static void ldapsrv_accept(struct stream_connection *c)
 {
+	struct ldapsrv_partition *rootDSE_part;
+	struct ldapsrv_partition *part;
 	struct ldapsrv_service *ldapsrv_service = 
 		talloc_get_type(c->private, struct ldapsrv_service);
 	struct ldapsrv_connection *conn;
@@ -385,6 +387,42 @@ static void ldapsrv_accept(struct stream_connection *c)
 		ldapsrv_terminate_connection(conn, "ldapsrv_accept: tls_init_server() failed");
 		return;
 	}
+
+	/* Connections start out anonymous */
+	if (!NT_STATUS_IS_OK(auth_anonymous_session_info(conn, &conn->session_info))) {
+		ldapsrv_terminate_connection(conn, "failed to setup anonymous session info");
+		return;
+	}
+
+	rootDSE_part = talloc(conn, struct ldapsrv_partition);
+	if (rootDSE_part == NULL) {
+		ldapsrv_terminate_connection(conn, "talloc failed");
+		return;
+	}
+
+	rootDSE_part->base_dn = ""; /* RootDSE */
+	rootDSE_part->ops = ldapsrv_get_rootdse_partition_ops();
+	if (!NT_STATUS_IS_OK(rootDSE_part->ops->Init(rootDSE_part, conn))) {
+		ldapsrv_terminate_connection(conn, "rootDSE Init failed");
+	}
+
+	conn->rootDSE = rootDSE_part;
+	DLIST_ADD_END(conn->partitions, rootDSE_part, struct ldapsrv_partition *);
+
+	part = talloc(conn, struct ldapsrv_partition);
+	if (part == NULL) {
+		ldapsrv_terminate_connection(conn, "talloc failed");
+		return;
+	}
+
+	part->base_dn = "*"; /* default partition */
+	part->ops = ldapsrv_get_sldb_partition_ops();
+	if (!NT_STATUS_IS_OK(part->ops->Init(part, conn))) {
+		ldapsrv_terminate_connection(conn, "default partition Init failed");
+	}
+
+	conn->default_partition = part;
+	DLIST_ADD_END(conn->partitions, part, struct ldapsrv_partition *);
 
 	irpc_add_name(c->msg_ctx, "ldap_server");
 }
@@ -433,8 +471,6 @@ static NTSTATUS add_socket(struct event_context *event_context,
 static void ldapsrv_task_init(struct task_server *task)
 {	
 	struct ldapsrv_service *ldap_service;
-	struct ldapsrv_partition *rootDSE_part;
-	struct ldapsrv_partition *part;
 	NTSTATUS status;
 
 	ldap_service = talloc_zero(task, struct ldapsrv_service);
@@ -442,28 +478,6 @@ static void ldapsrv_task_init(struct task_server *task)
 
 	ldap_service->tls_params = tls_initialise(ldap_service);
 	if (ldap_service->tls_params == NULL) goto failed;
-
-	rootDSE_part = talloc(ldap_service, struct ldapsrv_partition);
-	if (rootDSE_part == NULL) goto failed;
-
-	rootDSE_part->base_dn = ""; /* RootDSE */
-	rootDSE_part->ops = ldapsrv_get_rootdse_partition_ops();
-
-	ldap_service->rootDSE = rootDSE_part;
-	DLIST_ADD_END(ldap_service->partitions, rootDSE_part, struct ldapsrv_partition *);
-
-	part = talloc(ldap_service, struct ldapsrv_partition);
-	if (part == NULL) goto failed;
-
-	part->base_dn = "*"; /* default partition */
-	if (lp_parm_bool(-1, "ldapsrv", "hacked", False)) {
-		part->ops = ldapsrv_get_hldb_partition_ops();
-	} else {
-		part->ops = ldapsrv_get_sldb_partition_ops();
-	}
-
-	ldap_service->default_partition = part;
-	DLIST_ADD_END(ldap_service->partitions, part, struct ldapsrv_partition *);
 
 	if (lp_interfaces() && lp_bind_interfaces_only()) {
 		int num_interfaces = iface_count();

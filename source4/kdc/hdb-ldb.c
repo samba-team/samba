@@ -1040,7 +1040,7 @@ krb5_error_code hdb_ldb_create(TALLOC_CTX *mem_ctx,
 	(*db)->hdb_db = NULL;
 
 	/* Setup the link to LDB */
-	(*db)->hdb_db = samdb_connect(db);
+	(*db)->hdb_db = samdb_connect(db, system_session(db));
 	if ((*db)->hdb_db == NULL) {
 		krb5_warnx(context, "hdb_ldb_create: samdb_connect failed!");
 		krb5_set_error_string(context, "samdb_connect failed!");
