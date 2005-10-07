@@ -67,8 +67,8 @@ PyObject *spoolss_hnd_addform(PyObject *self, PyObject *args, PyObject *kw)
 		return NULL;
 	}
 		
-	werror = cli_spoolss_addform(hnd->cli, hnd->mem_ctx, &hnd->pol,
-				     level, &form);
+	werror = rpccli_spoolss_addform(hnd->cli, hnd->mem_ctx, &hnd->pol,
+					level, &form);
 
 
 	if (!W_ERROR_IS_OK(werror)) {
@@ -90,7 +90,6 @@ PyObject *spoolss_hnd_getform(PyObject *self, PyObject *args, PyObject *kw)
 	char *form_name;
 	int level = 1;
 	static char *kwlist[] = {"form_name", "level", NULL};
-	uint32 needed;
 	FORM_1 form;
 
 	/* Parse parameters */
@@ -101,8 +100,8 @@ PyObject *spoolss_hnd_getform(PyObject *self, PyObject *args, PyObject *kw)
 	
 	/* Call rpc function */
 
-	werror = cli_spoolss_getform(hnd->cli, hnd->mem_ctx, 
-				     &hnd->pol, form_name, level, &form);
+	werror = rpccli_spoolss_getform(
+		hnd->cli, hnd->mem_ctx, &hnd->pol, form_name, level, &form);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
@@ -157,7 +156,7 @@ PyObject *spoolss_hnd_setform(PyObject *self, PyObject *args, PyObject *kw)
 
 	form_name = PyDict_GetItemString(info, "name");
 
-	werror = cli_spoolss_setform(
+	werror = rpccli_spoolss_setform(
 		hnd->cli, hnd->mem_ctx, &hnd->pol, level, 
 		PyString_AsString(form_name), &form);
 
@@ -187,7 +186,7 @@ PyObject *spoolss_hnd_deleteform(PyObject *self, PyObject *args, PyObject *kw)
 	
 	/* Call rpc function */
 
-	werror = cli_spoolss_deleteform(
+	werror = rpccli_spoolss_deleteform(
 		hnd->cli, hnd->mem_ctx, &hnd->pol, form_name);
 
 	if (!W_ERROR_IS_OK(werror)) {
@@ -218,9 +217,8 @@ PyObject *spoolss_hnd_enumforms(PyObject *self, PyObject *args, PyObject *kw)
 	
 	/* Call rpc function */
 
-	werror = cli_spoolss_enumforms(
-		hnd->cli, hnd->mem_ctx, &hnd->pol, level,
-		&num_forms, &forms);
+	werror = rpccli_spoolss_enumforms(
+		hnd->cli, hnd->mem_ctx, &hnd->pol, level, &num_forms, &forms);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));

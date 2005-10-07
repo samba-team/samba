@@ -122,7 +122,7 @@ PyObject *spoolss_hnd_getprinterdata(PyObject *self, PyObject *args, PyObject *k
 
 	/* Call rpc function */
 
-	werror = cli_spoolss_getprinterdata(
+	werror = rpccli_spoolss_getprinterdata(
 		hnd->cli, hnd->mem_ctx, &hnd->pol, valuename,
 		&value);
 
@@ -160,7 +160,7 @@ PyObject *spoolss_hnd_setprinterdata(PyObject *self, PyObject *args, PyObject *k
 	
 	/* Call rpc function */
 
-	werror = cli_spoolss_setprinterdata(
+	werror = rpccli_spoolss_setprinterdata(
 		hnd->cli, hnd->mem_ctx, &hnd->pol, &value);
 
 	if (!W_ERROR_IS_OK(werror)) {
@@ -186,7 +186,7 @@ PyObject *spoolss_hnd_enumprinterdata(PyObject *self, PyObject *args, PyObject *
 
 	/* Get max buffer sizes for value and data */
 
-	werror = cli_spoolss_enumprinterdata(
+	werror = rpccli_spoolss_enumprinterdata(
 		hnd->cli, hnd->mem_ctx, &hnd->pol, ndx, 0, 0,
 		&value_needed, &data_needed, NULL);
 
@@ -202,7 +202,7 @@ PyObject *spoolss_hnd_enumprinterdata(PyObject *self, PyObject *args, PyObject *
 	while (W_ERROR_IS_OK(werror)) {
 		PyObject *obj;
 
-		werror = cli_spoolss_enumprinterdata(
+		werror = rpccli_spoolss_enumprinterdata(
 			hnd->cli, hnd->mem_ctx, &hnd->pol, ndx,
 			value_needed, data_needed, NULL, NULL, &value);
 
@@ -231,7 +231,7 @@ PyObject *spoolss_hnd_deleteprinterdata(PyObject *self, PyObject *args, PyObject
 
 	/* Call rpc function */
 
-	werror = cli_spoolss_deleteprinterdata(
+	werror = rpccli_spoolss_deleteprinterdata(
 		hnd->cli, hnd->mem_ctx, &hnd->pol, value);
 
 	if (!W_ERROR_IS_OK(werror)) {
@@ -259,7 +259,7 @@ PyObject *spoolss_hnd_getprinterdataex(PyObject *self, PyObject *args, PyObject 
 
 	/* Call rpc function */
 
-	werror = cli_spoolss_getprinterdataex(
+	werror = rpccli_spoolss_getprinterdataex(
 		hnd->cli, hnd->mem_ctx, &hnd->pol, key,
 		valuename, &value);
 
@@ -295,7 +295,7 @@ PyObject *spoolss_hnd_setprinterdataex(PyObject *self, PyObject *args, PyObject 
 
 	/* Call rpc function */
 
-	werror = cli_spoolss_setprinterdataex(
+	werror = rpccli_spoolss_setprinterdataex(
 		hnd->cli, hnd->mem_ctx, &hnd->pol, keyname, &value);
 
 	if (!W_ERROR_IS_OK(werror)) {
@@ -322,7 +322,8 @@ PyObject *spoolss_hnd_enumprinterdataex(PyObject *self, PyObject *args, PyObject
 
 	/* Get max buffer sizes for value and data */
 
-	werror = cli_spoolss_enumprinterdataex(hnd->cli, hnd->mem_ctx, &hnd->pol, key, &ctr);
+	werror = rpccli_spoolss_enumprinterdataex(
+		hnd->cli, hnd->mem_ctx, &hnd->pol, key, &ctr);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
@@ -363,7 +364,7 @@ PyObject *spoolss_hnd_deleteprinterdataex(PyObject *self, PyObject *args, PyObje
 
 	/* Call rpc function */
 
-	werror = cli_spoolss_deleteprinterdataex(
+	werror = rpccli_spoolss_deleteprinterdataex(
 		hnd->cli, hnd->mem_ctx, &hnd->pol, key, value);
 
 	if (!W_ERROR_IS_OK(werror)) {
@@ -393,9 +394,9 @@ PyObject *spoolss_hnd_enumprinterkey(PyObject *self, PyObject *args,
 
 	/* Call rpc function */
 
-	werror = cli_spoolss_enumprinterkey(
-		hnd->cli, hnd->mem_ctx, &hnd->pol,
-		keyname, &keylist, &keylist_len);
+	werror = rpccli_spoolss_enumprinterkey(
+		hnd->cli, hnd->mem_ctx, &hnd->pol, keyname, &keylist, 
+		&keylist_len);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
