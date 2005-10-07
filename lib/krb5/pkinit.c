@@ -2802,7 +2802,7 @@ _krb5_dh_group_ok(krb5_context context, unsigned long bits,
     for (i = 0; moduli[i] != NULL; i++) {
 	if (heim_integer_cmp(&moduli[i]->g, g) == 0 &&
 	    heim_integer_cmp(&moduli[i]->p, p) == 0 &&
-	    heim_integer_cmp(&moduli[i]->q, q) == 0)
+	    (moduli[i]->q->length == 0 || heim_integer_cmp(&moduli[i]->q, q) == 0))
 	{
 	    return 0;
 	}
