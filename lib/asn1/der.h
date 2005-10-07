@@ -240,4 +240,7 @@ int		der_get_type_num(const char *);
 const char *	der_get_tag_name(unsigned);
 int		der_get_tag_num(const char *);
 
+int		der_parse_hex_heim_integer(const char *, heim_integer *);
+int		der_print_hex_heim_integer(const heim_integer *, char **);
+
 #endif /* __DER_H__ */
