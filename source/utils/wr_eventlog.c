@@ -119,7 +119,7 @@ int main( int argc, char *argv[] )
 	}
 
 
-	if ( !(elog_tdb = open_eventlog_tdb( tdbname ) ) ) {
+	if ( !(elog_tdb = elog_open_tdb( tdbname ) ) ) {
 		printf( "can't open the eventlog TDB (%s)\n", tdbname );
 		return -1;
 	}

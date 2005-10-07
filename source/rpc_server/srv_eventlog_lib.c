@@ -28,29 +28,31 @@
  happened.
 ********************************************************************/
 
-TDB_CONTEXT *init_eventlog_tdb( char *tdbfilename )
+TDB_CONTEXT *elog_init_tdb( char *tdbfilename )
 {
-	TDB_CONTEXT *the_tdb;
+	TDB_CONTEXT *tdb;
 
-	unlink( tdbfilename );
+	DEBUG(10,("elog_init_tdb: Initializing eventlog tdb (%s)\n",
+		tdbfilename));
 
-	the_tdb =
-		tdb_open_log( tdbfilename, 0, TDB_DEFAULT, O_RDWR | O_CREAT,
-			      0664 );
-	if ( the_tdb == NULL ) {
-		DEBUG( 1, ( "Can't open tdb for [%s]\n", tdbfilename ) );
+	tdb = tdb_open_log( tdbfilename, 0, TDB_DEFAULT, 
+		O_RDWR|O_CREAT|O_TRUNC, 0660 );
+
+	if ( !tdb ) {
+		DEBUG( 0, ( "Can't open tdb for [%s]\n", tdbfilename ) );
 		return NULL;
 	}
-	tdb_store_int32( the_tdb, VN_oldest_entry, 1 );
-	tdb_store_int32( the_tdb, VN_next_record, 1 );
 
 	/* initialize with defaults, copy real values in here from registry */
 
-	tdb_store_int32( the_tdb, VN_maxsize, 0x80000 );
-	tdb_store_int32( the_tdb, VN_retention, 0x93A80 );
+	tdb_store_int32( tdb, VN_oldest_entry, 1 );
+	tdb_store_int32( tdb, VN_next_record, 1 );
+	tdb_store_int32( tdb, VN_maxsize, 0x80000 );
+	tdb_store_int32( tdb, VN_retention, 0x93A80 );
 
-	tdb_store_int32( the_tdb, VN_version, EVENTLOG_DATABASE_VERSION_V1 );
-	return the_tdb;
+	tdb_store_int32( tdb, VN_version, EVENTLOG_DATABASE_VERSION_V1 );
+
+	return tdb;
 }
 
 /********************************************************************
@@ -79,7 +81,7 @@ static int eventlog_tdbcount;
 static int eventlog_tdbsize;
 
 /* this function is used to count up the number of bytes in a particular TDB */
-int eventlog_tdb_size_fn( TDB_CONTEXT * tdb, TDB_DATA key, TDB_DATA data,
+static int eventlog_tdb_size_fn( TDB_CONTEXT * tdb, TDB_DATA key, TDB_DATA data,
 			  void *state )
 {
 	eventlog_tdbsize += data.dsize;
@@ -91,7 +93,7 @@ int eventlog_tdb_size_fn( TDB_CONTEXT * tdb, TDB_DATA key, TDB_DATA data,
    the MaxSize there. This is purely a way not to have yet another function that solely
    reads the maxsize of the eventlog. Yeah, that's it.  */
 
-int eventlog_tdb_size( TDB_CONTEXT * tdb, int *MaxSize, int *Retention )
+int elog_tdb_size( TDB_CONTEXT * tdb, int *MaxSize, int *Retention )
 {
 	if ( !tdb )
 		return 0;
@@ -240,7 +242,7 @@ BOOL prune_eventlog( TDB_CONTEXT * tdb )
 		return False;
 	}
 
-	CalcdSize = eventlog_tdb_size( tdb, &MaxSize, &Retention );
+	CalcdSize = elog_tdb_size( tdb, &MaxSize, &Retention );
 	DEBUG( 3,
 	       ( "Calculated size [%d] MaxSize [%d]\n", CalcdSize,
 		 MaxSize ) );
@@ -268,7 +270,7 @@ BOOL can_write_to_eventlog( TDB_CONTEXT * tdb, int32 needed )
 	MaxSize = 0;
 	Retention = 0;
 
-	calcd_size = eventlog_tdb_size( tdb, &MaxSize, &Retention );
+	calcd_size = elog_tdb_size( tdb, &MaxSize, &Retention );
 
 	if ( calcd_size <= MaxSize )
 		return True;	/* you betcha */
@@ -293,21 +295,29 @@ BOOL can_write_to_eventlog( TDB_CONTEXT * tdb, int32 needed )
 	return make_way_for_eventlogs( tdb, calcd_size - MaxSize, False );
 }
 
-TDB_CONTEXT *open_eventlog_tdb( char *tdbfilename )
-{
-	TDB_CONTEXT *the_tdb;
+/*******************************************************************
+*******************************************************************/
 
-	the_tdb =
-		tdb_open_log( tdbfilename, 0, TDB_DEFAULT, O_RDONLY,0664 );
-	if ( the_tdb == NULL ) {
-		return init_eventlog_tdb( tdbfilename );
+TDB_CONTEXT *elog_open_tdb( char *tdbfilename )
+{
+	TDB_CONTEXT *tdb;
+	uint32 vers_id;
+
+	DEBUG(7,("elog_open_tdb: Opening %s...\n", tdbfilename));
+
+	if ( !(tdb = tdb_open_log( tdbfilename, 0, TDB_DEFAULT, O_RDONLY, 0 )) ) 
+		return elog_init_tdb( tdbfilename );
+
+	vers_id = tdb_fetch_int32( tdb, VN_version );
+
+	if ( vers_id == EVENTLOG_DATABASE_VERSION_V1 ) {
+		DEBUG(1,("elog_open_tdb: Invalid version [%d] on file [%s].\n",
+			vers_id, tdbfilename));
+		tdb_close( tdb );
+		return elog_init_tdb( tdbfilename );
 	}
-	if ( EVENTLOG_DATABASE_VERSION_V1 !=
-	     tdb_fetch_int32( the_tdb, VN_version ) ) {
-		tdb_close( the_tdb );
-		return init_eventlog_tdb( tdbfilename );
-	}
-	return the_tdb;
+
+	return tdb;
 }
 
 /* write an eventlog entry. Note that we have to lock, read next eventlog, increment, write, write the record, unlock */

@@ -53,6 +53,10 @@
 #define  VN_maxsize       "INFO/maxsize"
 #define  VN_retention     "INFO/retention"
 
+#define ELOG_APPL	"Application"
+#define ELOG_SYS	"System"
+#define ELOG_SEC	"Security"
+
 #define  EVENTLOG_DATABASE_VERSION_V1    1
 
 /***********************************/
