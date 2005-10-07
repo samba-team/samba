@@ -57,15 +57,15 @@ int main( int argc, char *argv[] )
 	FILE *f1;
 
 	/* fixed constants are bad bad bad  */
-	char linein[1024];
-	char fname[1024];
+	pstring linein;
 	BOOL is_eor;
 	int pret, opt;
 	int rcnum;
 	char *argfname, *exename;
+	char *tdbname;
 
 
-	TDB_CONTEXT *the_tdb;
+	TDB_CONTEXT *elog_tdb;
 
 	opt_debug = 0;		/* todo set this from getopts */
 
@@ -113,39 +113,47 @@ int main( int argc, char *argv[] )
 
 	argfname = argv[0];
 
-	if ( mk_tdbfilename( ( char * ) &fname, argfname, sizeof( fname ) ) ) {
-		the_tdb = open_eventlog_tdb( lock_path( ( char * ) &fname ) );
-	} else {
-		printf( "can't open filename [%s]\n", fname );
+	if ( !(tdbname = elog_tdbname( argfname )) ) {
+		fprintf( stderr, "Unable to create eventlog tdb filename!\n");
 		return -1;
 	}
 
-	if ( the_tdb == NULL ) {
-		printf( "can't open the eventlog TDB\n" );
+
+	if ( !(elog_tdb = open_eventlog_tdb( tdbname ) ) ) {
+		printf( "can't open the eventlog TDB (%s)\n", tdbname );
 		return -1;
 	}
+
+	SAFE_FREE( tdbname );
+
 	ZERO_STRUCT( ee );	/* MUST initialize between records */
+
 	while ( !feof( f1 ) ) {
 		fgets( linein, sizeof( linein ) - 1, f1 );
 		linein[strlen( linein ) - 1] = 0;	/* whack the line delimiter */
+
 		if ( opt_debug )
 			printf( "Read line [%s]\n", linein );
 
 		is_eor = False;
 
 		pret = parse_logentry( ( char * ) &linein, &ee, &is_eor );
+
 		if ( is_eor ) {
 			fixup_eventlog_entry( &ee );
 
 			if ( opt_debug )
-				printf( "record number [%d], tg [%d] , tw [%d]\n", ee.record.record_number, ee.record.time_generated, ee.record.time_written );
+				printf( "record number [%d], tg [%d] , tw [%d]\n", 
+					ee.record.record_number, 
+					ee.record.time_generated, 
+					ee.record.time_written );
 
 			if ( ee.record.time_generated != 0 ) {
+
 				/* printf("Writing to the event log\n"); */
-				if ( !
-				     ( rcnum =
-				       write_eventlog_tdb( the_tdb,
-							   &ee ) ) ) {
+
+				rcnum = write_eventlog_tdb( elog_tdb, &ee ); 
+				if ( !rcnum ) {
 					printf( "Can't write to the event log\n" );
 				} else {
 					if ( opt_debug )
@@ -159,6 +167,8 @@ int main( int argc, char *argv[] )
 			ZERO_STRUCT( ee );	/* MUST initialize between records */
 		}
 	}
+
+	tdb_close( elog_tdb );
 
 	return 0;
 }

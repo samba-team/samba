@@ -165,15 +165,15 @@ static void refresh_eventlog_tdb_table( void )
 			return;
 		}
 		for ( j = 0; j < i; j++ ) {
-			pstrcpy( ttdb[j].tdbfname,
-				 lock_path( mk_tdbfilename
-					    ( ttdb[j].tdbfname,
-					      ( char * ) elogs[j],
-					      sizeof( pstring ) ) ) );
+			char *tdbname = elog_tdbname( elogs[j] );
+
+			pstrcpy( ttdb[j].tdbfname, tdbname );
 			pstrcpy( ttdb[j].logname, elogs[j] );
 			DEBUG( 10, ( "Opening tdb for %s\n", elogs[j] ) );
 			ttdb[j].log_tdb =
 				open_eventlog_tdb( ttdb[j].tdbfname );
+
+			SAFE_FREE( tdbname );
 		}
 	}
 	nlogs = i;
@@ -405,14 +405,6 @@ static BOOL sync_eventlog_params( const char *elogname )
 	tdb_store_int32( the_tdb, VN_maxsize, uiMaxSize );
 	tdb_store_int32( the_tdb, VN_retention, uiRetention );
 
-	return True;
-}
-
-/********************************************************************
- ********************************************************************/
-
-static BOOL open_eventlog_hook( EventlogInfo * info )
-{
 	return True;
 }
 
@@ -722,7 +714,7 @@ WERROR _eventlog_open_eventlog( pipes_struct * p,
 
 	info->logname = talloc_strdup( info, str );
 
-	DEBUG( 1,
+	DEBUG( 10,
 	       ( "Size of %s is %d\n", info->logname,
 		 eventlog_size( info->logname ) ) );
 
@@ -740,11 +732,6 @@ WERROR _eventlog_open_eventlog( pipes_struct * p,
 	     ( p, &r_u->handle, free_eventlog_info, ( void * ) info ) ) {
 		free_eventlog_info( info );
 		return WERR_NOMEM;
-	}
-
-	if ( !open_eventlog_hook( info ) ) {
-		close_policy_hnd( p, &r_u->handle );
-		return WERR_BADFILE;
 	}
 
 	sync_eventlog_params( info->logname );

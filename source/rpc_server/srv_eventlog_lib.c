@@ -23,9 +23,11 @@
 #include "includes.h"
 
 
-/****************************************************************
-Init an Eventlog TDB, and return it. If null, something bad happened.
-****************************************************************/
+/********************************************************************
+ Init an Eventlog TDB, and return it. If null, something bad 
+ happened.
+********************************************************************/
+
 TDB_CONTEXT *init_eventlog_tdb( char *tdbfilename )
 {
 	TDB_CONTEXT *the_tdb;
@@ -51,29 +53,20 @@ TDB_CONTEXT *init_eventlog_tdb( char *tdbfilename )
 	return the_tdb;
 }
 
-/* make the tdb file name for an event log, given destination buffer and size */
-char *mk_tdbfilename( char *dest_buffer, char *eventlog_name, int size_dest )
+/********************************************************************
+ make the tdb file name for an event log, given destination buffer 
+ and size. Caller must free memory.
+********************************************************************/
+
+char *elog_tdbname( const char *name )
 {
-	pstring ondisk_name;
+	fstring path;
+	char *tdb_fullpath;
 
-	if ( !dest_buffer )
-		return NULL;
-
-	pstrcpy( ondisk_name, "EV" );
-	pstrcat( ondisk_name, eventlog_name );
-	pstrcat( ondisk_name, ".tdb" );
-
-	memset( dest_buffer, 0, size_dest );
-
-	/* BAD things could happen if the dest_buffer is not large enough... */
-	if ( strlen( ondisk_name ) > size_dest ) {
-		DEBUG( 3, ( "Buffer not big enough for filename\n" ) );
-		return NULL;
-	}
-
-	strncpy( dest_buffer, ondisk_name, size_dest );
-
-	return dest_buffer;
+	pstr_sprintf( path, "eventlog/%s.tdb", name );
+	tdb_fullpath = SMB_STRDUP( lock_path(path) );
+	
+	return tdb_fullpath;
 }
 
 
