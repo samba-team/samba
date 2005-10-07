@@ -1019,7 +1019,6 @@ struct smb_ldap_privates;
 /* forward declarations from smbldap.c */
 
 #include "smbldap.h"
-#include "modconf.h"
 
 #include "smb_ldap.h"
 
