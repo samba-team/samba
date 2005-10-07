@@ -282,7 +282,7 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 	local_ctx = talloc_named(call, 0, "rootdse_Search local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
-	ldb = partition->private;
+	ldb = talloc_get_type(partition->private, struct ldb_context);
 
 	if (r->num_attributes >= 1) {
 		attrs = talloc_array(ldb, const char *, r->num_attributes+1);
