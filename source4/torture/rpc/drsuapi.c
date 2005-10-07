@@ -526,33 +526,6 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL;
-	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
-	names[0].str = talloc_asprintf(mem_ctx, "krbtgt/%s", dns_domain);
-
-	printf("testing DsCrackNames with name '%s' desired format:%d\n",
-			names[0].str, r.in.req.req1.format_desired);
-
-	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		const char *errstr = nt_errstr(status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
-		}
-		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
-		ret = False;
-	} else if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
-		ret = False;
-	} else if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY) {
-		printf("DsCrackNames failed on name - %d\n", r.out.ctr.ctr1->array[0].status);
-		ret = False;
-	}
-
-	if (!ret) {
-		return ret;
-	}
-
 	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_CANONICAL;
 	names[0].str = FQDN_1779_name;
@@ -608,6 +581,33 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_GUID;
 
 	printf("testing DsCrackNames with name '%s' desired format:%d\n",
+			names[0].str, r.in.req.req1.format_desired);
+
+	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *errstr = nt_errstr(status);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
+			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
+		}
+		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
+		ret = False;
+	} else if (r.out.ctr.ctr1->array[0].status != DRSUAPI_DS_NAME_STATUS_OK) {
+		printf("DsCrackNames failed on name - %d\n", r.out.ctr.ctr1->array[0].status);
+		ret = False;
+	}
+
+	if (!ret) {
+		return ret;
+	}
+
+	r.in.req.req1.format_offered	= DRSUAPI_DS_NAME_FORMAT_DISPLAY;
+	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
+	names[0].str = "CN=Microsoft Corporation,L=Redmond,S=Washington,C=US";
+
+	printf("testing DsCrackNames with DISPAY NAME '%s' desired format:%d\n",
 			names[0].str, r.in.req.req1.format_desired);
 
 	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
