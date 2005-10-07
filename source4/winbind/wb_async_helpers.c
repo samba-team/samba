@@ -241,6 +241,7 @@ struct composite_context *wb_get_schannel_creds_send(struct wb_get_schannel_cred
 	result->private_data = state;
 
 	state->io = io;
+	state->ctx = result;
 
 	state->p = dcerpc_pipe_init(state, ev);
 	if (state->p == NULL) goto failed;
@@ -251,7 +252,6 @@ struct composite_context *wb_get_schannel_creds_send(struct wb_get_schannel_cred
 
 	ctx->async.fn = get_schannel_creds_recv_pipe;
 	ctx->async.private_data = state;
-	state->ctx = result;
 	return result;
 
  failed:
@@ -475,6 +475,7 @@ struct composite_context *wb_get_lsa_pipe_send(struct wb_get_lsa_pipe *io)
 	result->private_data = state;
 
 	state->io = io;
+	state->ctx = result;
 
 	state->finddcs = talloc(state, struct wb_finddcs);
 	if (state->finddcs == NULL) goto failed;
@@ -487,7 +488,6 @@ struct composite_context *wb_get_lsa_pipe_send(struct wb_get_lsa_pipe *io)
 
 	ctx->async.fn = get_lsa_pipe_recv_dcs;
 	ctx->async.private_data = state;
-	state->ctx = result;
 	return result;
 
  failed:
@@ -729,10 +729,14 @@ NTSTATUS wb_get_lsa_pipe_recv(struct composite_context *c,
 	struct get_lsa_pipe_state *state =
 		talloc_get_type(c->private_data,
 				struct get_lsa_pipe_state);
-	state->io->out.domain_sid =
-		talloc_steal(mem_ctx, state->queryinfo.out.info->domain.sid);
-	state->io->out.pipe =
-		talloc_steal(mem_ctx, state->lsa_pipe);
+	if (NT_STATUS_IS_OK(status)) {
+		state->io->out.domain_sid =
+			talloc_steal(mem_ctx,
+				     state->queryinfo.out.info->domain.sid);
+		state->io->out.pipe =
+			talloc_steal(mem_ctx,
+				     state->lsa_pipe);
+	}
 	talloc_free(c);
 	return status;
 }
@@ -743,3 +747,310 @@ NTSTATUS wb_get_lsa_pipe(struct wb_get_lsa_pipe *io,
 	struct composite_context *c = wb_get_lsa_pipe_send(io);
 	return wb_get_lsa_pipe_recv(c, mem_ctx);
 }
+
+struct lsa_lookupnames_state {
+	struct composite_context *ctx;
+	uint32_t num_names;
+	struct lsa_LookupNames r;
+	struct lsa_TransSidArray sids;
+	uint32_t count;
+	struct wb_sid_object **result;
+};
+
+static void lsa_lookupnames_recv_sids(struct rpc_request *req);
+
+struct composite_context *wb_lsa_lookupnames_send(struct dcerpc_pipe *lsa_pipe,
+						  struct policy_handle *handle,
+						  int num_names,
+						  const char **names)
+{
+	struct composite_context *result;
+	struct rpc_request *req;
+	struct lsa_lookupnames_state *state;
+
+	struct lsa_String *lsa_names;
+	int i;
+
+	result = talloc_zero(NULL, struct composite_context);
+	if (result == NULL) goto failed;
+	result->state = COMPOSITE_STATE_IN_PROGRESS;
+	result->event_ctx = lsa_pipe->conn->event_ctx;
+
+	state = talloc(result, struct lsa_lookupnames_state);
+	if (state == NULL) goto failed;
+	result->private_data = state;
+
+	state->sids.count = 0;
+	state->sids.sids = NULL;
+	state->num_names = num_names;
+	state->count = 0;
+
+	lsa_names = talloc_array(state, struct lsa_String, num_names);
+	if (lsa_names == NULL) goto failed;
+
+	for (i=0; i<num_names; i++) {
+		lsa_names[i].string = names[i];
+	}
+
+	state->r.in.handle = handle;
+	state->r.in.num_names = num_names;
+	state->r.in.names = lsa_names;
+	state->r.in.sids = &state->sids;
+	state->r.in.level = 1;
+	state->r.in.count = &state->count;
+	state->r.out.count = &state->count;
+	state->r.out.sids = &state->sids;
+
+	req = dcerpc_lsa_LookupNames_send(lsa_pipe, state, &state->r);
+	if (req == NULL) goto failed;
+
+	req->async.callback = lsa_lookupnames_recv_sids;
+	req->async.private = state;
+	state->ctx = result;
+	return result;
+
+ failed:
+	talloc_free(result);
+	return NULL;
+}
+
+static void lsa_lookupnames_recv_sids(struct rpc_request *req)
+{
+	struct lsa_lookupnames_state *state =
+		talloc_get_type(req->async.private,
+				struct lsa_lookupnames_state);
+	int i;
+
+	state->ctx->status = dcerpc_ndr_request_recv(req);
+	if (!NT_STATUS_IS_OK(state->ctx->status)) goto done;
+	state->ctx->status = state->r.out.result;
+	if (!NT_STATUS_IS_OK(state->ctx->status) &&
+	    !NT_STATUS_EQUAL(state->ctx->status, STATUS_SOME_UNMAPPED)) {
+		goto done;
+	}
+
+	state->result = talloc_array(state, struct wb_sid_object *,
+				     state->num_names);
+	if (state->result == NULL) {
+		state->ctx->status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	for (i=0; i<state->num_names; i++) {
+		struct lsa_TranslatedSid *sid = &state->r.out.sids->sids[i];
+		struct lsa_TrustInformation *dom;
+
+		state->result[i] = talloc_zero(state->result,
+					       struct wb_sid_object);
+		if (state->result[i] == NULL) {
+			state->ctx->status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		state->result[i]->type = sid->sid_type;
+		if (state->result[i]->type == SID_NAME_UNKNOWN) {
+			continue;
+		}
+
+		if (sid->sid_index >= state->r.out.domains->count) {
+			state->ctx->status = NT_STATUS_INVALID_PARAMETER;
+			goto done;
+		}
+
+		dom = &state->r.out.domains->domains[sid->sid_index];
+
+		state->result[i]->sid = dom_sid_add_rid(state->result[i],
+							dom->sid, sid->rid);
+	}
+
+	state->ctx->state = COMPOSITE_STATE_DONE;
+
+ done:
+	if (!NT_STATUS_IS_OK(state->ctx->status)) {
+		state->ctx->state = COMPOSITE_STATE_ERROR;
+	}
+	if ((state->ctx->state >= COMPOSITE_STATE_DONE) &&
+	    (state->ctx->async.fn != NULL)) {
+		state->ctx->async.fn(state->ctx);
+	}
+}
+
+NTSTATUS wb_lsa_lookupnames_recv(struct composite_context *c,
+				 TALLOC_CTX *mem_ctx,
+				 struct wb_sid_object ***sids)
+{
+	NTSTATUS status = composite_wait(c);
+	if (NT_STATUS_IS_OK(status)) {
+		struct lsa_lookupnames_state *state =
+			talloc_get_type(c->private_data,
+					struct lsa_lookupnames_state);
+		*sids = talloc_steal(mem_ctx, state->result);
+	}
+	talloc_free(c);
+	return status;
+}
+
+NTSTATUS wb_lsa_lookupnames(struct dcerpc_pipe *lsa_pipe, 
+			    struct policy_handle *handle,
+			    int num_names, const char **names,
+			    TALLOC_CTX *mem_ctx,
+			    struct wb_sid_object ***sids)
+{
+	struct composite_context *c =
+		wb_lsa_lookupnames_send(lsa_pipe, handle, num_names, names);
+	return wb_lsa_lookupnames_recv(c, mem_ctx, sids);
+}
+
+struct lsa_lookupname_state {
+	struct composite_context *ctx;
+	struct dcerpc_pipe *lsa_pipe;
+	const char *name;
+	struct wb_sid_object *sid;
+
+	struct lsa_ObjectAttribute objectattr;
+	struct lsa_OpenPolicy2 openpolicy;
+	struct policy_handle policy_handle;
+	struct lsa_Close close;
+};
+
+static void lsa_lookupname_recv_open(struct rpc_request *req);
+static void lsa_lookupname_recv_sids(struct composite_context *ctx);
+
+struct composite_context *wb_lsa_lookupname_send(struct dcerpc_pipe *lsa_pipe,
+						 const char *name)
+{
+	struct composite_context *result;
+	struct rpc_request *req;
+	struct lsa_lookupname_state *state;
+
+	result = talloc_zero(NULL, struct composite_context);
+	if (result == NULL) goto failed;
+	result->state = COMPOSITE_STATE_IN_PROGRESS;
+	result->event_ctx = lsa_pipe->conn->event_ctx;
+
+	state = talloc(result, struct lsa_lookupname_state);
+	if (state == NULL) goto failed;
+	result->private_data = state;
+
+	state->lsa_pipe = lsa_pipe;
+	state->name = talloc_strdup(state, name);
+	if (state->name == NULL) goto failed;
+	state->ctx = result;
+
+	ZERO_STRUCT(state->openpolicy);
+	state->openpolicy.in.system_name =
+		talloc_asprintf(state, "\\\\%s",
+				dcerpc_server_name(state->lsa_pipe));
+	ZERO_STRUCT(state->objectattr);
+	state->openpolicy.in.attr = &state->objectattr;
+	state->openpolicy.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	state->openpolicy.out.handle = &state->policy_handle;
+
+	req = dcerpc_lsa_OpenPolicy2_send(state->lsa_pipe, state,
+					  &state->openpolicy);
+	if (req == NULL) goto failed;
+
+	req->async.callback = lsa_lookupname_recv_open;
+	req->async.private = state;
+	return result;
+
+ failed:
+	talloc_free(result);
+	return NULL;
+}
+
+static void lsa_lookupname_recv_open(struct rpc_request *req)
+{
+	struct lsa_lookupname_state *state =
+		talloc_get_type(req->async.private,
+				struct lsa_lookupname_state);
+	struct composite_context *ctx;
+
+	state->ctx->status = dcerpc_ndr_request_recv(req);
+	if (!NT_STATUS_IS_OK(state->ctx->status)) goto done;
+	state->ctx->status = state->openpolicy.out.result;
+	if (!NT_STATUS_IS_OK(state->ctx->status)) goto done;
+
+	ctx = wb_lsa_lookupnames_send(state->lsa_pipe, &state->policy_handle,
+				      1, &state->name);
+	if (ctx == NULL) {
+		state->ctx->status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	ctx->async.fn = lsa_lookupname_recv_sids;
+	ctx->async.private_data = state;
+	return;
+
+ done:
+	if (!NT_STATUS_IS_OK(state->ctx->status)) {
+		state->ctx->state = COMPOSITE_STATE_ERROR;
+	}
+	if ((state->ctx->state >= COMPOSITE_STATE_DONE) &&
+	    (state->ctx->async.fn != NULL)) {
+		state->ctx->async.fn(state->ctx);
+	}
+}
+
+static void lsa_lookupname_recv_sids(struct composite_context *ctx)
+{
+	struct lsa_lookupname_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct lsa_lookupname_state);
+	struct rpc_request *req;
+	struct wb_sid_object **sids;
+
+	state->ctx->status = wb_lsa_lookupnames_recv(ctx, state, &sids);
+
+	if (NT_STATUS_IS_OK(state->ctx->status)) {
+		state->sid = NULL;
+		if (sids != NULL) {
+			state->sid = sids[0];
+		}
+	}
+
+	ZERO_STRUCT(state->close);
+	state->close.in.handle = &state->policy_handle;
+	state->close.out.handle = &state->policy_handle;
+
+	req = dcerpc_lsa_Close_send(state->lsa_pipe, state,
+				    &state->close);
+	if (req != NULL) {
+		req->async.callback =
+			(void(*)(struct rpc_request *))talloc_free;
+	}
+
+	state->ctx->state = COMPOSITE_STATE_DONE;
+
+	if (!NT_STATUS_IS_OK(state->ctx->status)) {
+		state->ctx->state = COMPOSITE_STATE_ERROR;
+	}
+	if ((state->ctx->state >= COMPOSITE_STATE_DONE) &&
+	    (state->ctx->async.fn != NULL)) {
+		state->ctx->async.fn(state->ctx);
+	}
+}
+
+NTSTATUS wb_lsa_lookupname_recv(struct composite_context *c,
+				TALLOC_CTX *mem_ctx,
+				struct wb_sid_object **sid)
+{
+	NTSTATUS status = composite_wait(c);
+	if (NT_STATUS_IS_OK(status)) {
+		struct lsa_lookupname_state *state =
+			talloc_get_type(c->private_data,
+					struct lsa_lookupname_state);
+		*sid = talloc_steal(mem_ctx, state->sid);
+	}
+	talloc_free(c);
+	return status;
+}
+
+NTSTATUS wb_lsa_lookupname(struct dcerpc_pipe *lsa_pipe, const char *name,
+			   TALLOC_CTX *mem_ctx, struct wb_sid_object **sid)
+{
+	struct composite_context *c =
+		wb_lsa_lookupname_send(lsa_pipe, name);
+	return wb_lsa_lookupname_recv(c, mem_ctx, sid);
+}
+

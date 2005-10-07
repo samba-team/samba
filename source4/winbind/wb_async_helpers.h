@@ -20,6 +20,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "librpc/gen_ndr/lsa.h"
+
 struct wb_finddcs {
 	struct {
 		struct messaging_context *msg_ctx;
@@ -55,4 +57,11 @@ struct wb_get_lsa_pipe {
 		const struct dom_sid *domain_sid;
 		struct dcerpc_pipe *pipe;
 	} out;
+};
+
+struct wb_sid_object {
+	enum lsa_SidType type;
+	struct dom_sid *sid;
+	const char *domain;
+	const char *name;
 };
