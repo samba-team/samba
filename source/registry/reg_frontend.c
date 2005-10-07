@@ -110,7 +110,7 @@ BOOL init_registry( void )
 	int i;
 	
 	
-	if ( !init_registry_db() ) {
+	if ( !regdb_init() ) {
 		DEBUG(0,("init_registry: failed to initialize the registry tdb!\n"));
 		return False;
 	}
@@ -131,6 +131,10 @@ BOOL init_registry( void )
 
 	svcctl_init_keys();
 	eventlog_init_keys();
+
+	/* close and let each smbd open up as necessary */
+
+	regdb_close();
 
 	return True;
 }
@@ -348,10 +352,15 @@ WERROR regkey_open_internal( REGISTRY_KEY **regkey, const char *path,
 	REGSUBKEY_CTR	*subkeys = NULL;
 	uint32 access_granted;
 	
+	if ( !(W_ERROR_IS_OK(result = regdb_open()) ) )
+		return result;
+
 	DEBUG(7,("regkey_open_internal: name = [%s]\n", path));
 
-	if ( !(*regkey = TALLOC_ZERO_P(NULL, REGISTRY_KEY)) )
+	if ( !(*regkey = TALLOC_ZERO_P(NULL, REGISTRY_KEY)) ) {
+		regdb_close();
 		return WERR_NOMEM;
+	}
 		
 	keyinfo = *regkey;
 		
@@ -399,8 +408,19 @@ WERROR regkey_open_internal( REGISTRY_KEY **regkey, const char *path,
 
 done:
 	if ( !W_ERROR_IS_OK(result) ) {
-		TALLOC_FREE( *regkey );
+		regkey_close_internal( *regkey );
 	}
 
 	return result;
+}
+
+/*******************************************************************
+*******************************************************************/
+
+WERROR regkey_close_internal( REGISTRY_KEY *key )
+{
+	TALLOC_FREE( key );
+	regdb_close();
+
+	return WERR_OK;
 }

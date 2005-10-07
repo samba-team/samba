@@ -400,7 +400,7 @@ static BOOL sync_eventlog_params( const char *elogname )
 	if ( ( val = regval_ctr_getvalue( values, "MaxSize" ) ) != NULL )
 		uiMaxSize = IVAL( regval_data_p( val ), 0 );
 
-	TALLOC_FREE( keyinfo );
+	regkey_close_internal( keyinfo );
 
 	tdb_store_int32( the_tdb, VN_maxsize, uiMaxSize );
 	tdb_store_int32( the_tdb, VN_retention, uiRetention );
