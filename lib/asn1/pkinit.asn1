@@ -108,7 +108,7 @@ ReplyKeyPack ::= SEQUENCE {
 TD-DH-PARAMETERS ::= SEQUENCE OF AlgorithmIdentifier
 
 
--- Windows and pk-init-19 compat glue --
+-- Windows compat glue --
 
 PKAuthenticator-Win2k ::= SEQUENCE {
 	kdcName			[0] PrincipalName,
