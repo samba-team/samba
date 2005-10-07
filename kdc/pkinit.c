@@ -76,6 +76,7 @@ struct pk_client_params {
     unsigned nonce;
     DH *dh;
     EncryptionKey reply_key;
+    char *dh_group_name;
 };
 
 struct pk_principal_mapping {
@@ -282,15 +283,10 @@ _kdc_pk_free_client_param(krb5_context context,
     if (client_params->dh_public_key)
 	BN_free(client_params->dh_public_key);
     krb5_free_keyblock_contents(context, &client_params->reply_key);
+    if (client_params->dh_group_name)
+	free(client_params->dh_group_name);
     memset(client_params, 0, sizeof(*client_params));
     free(client_params);
-}
-
-static krb5_error_code
-check_dh_params(DH *dh)
-{
-    /* XXX check the DH parameters come from 1st or 2nd Oeakley Group */
-    return 0;
 }
 
 static krb5_error_code
@@ -411,7 +407,8 @@ get_dh_param(krb5_context context, SubjectPublicKeyInfo *dh_key_info,
 
 
     ret = _krb5_dh_group_ok(context, 0, 
-			    &dhparam.p, &dhparam.g, &dhparam.q, moduli);
+			    &dhparam.p, &dhparam.g, &dhparam.q, moduli,
+			    &client_params->dh_group_name);
     if (ret)
 	goto out;
 
@@ -552,13 +549,12 @@ _kdc_pk_rd_padata(krb5_context context,
 	return 0;
     }
 
-    client_params = malloc(sizeof(*client_params));
+    client_params = calloc(1, sizeof(*client_params));
     if (client_params == NULL) {
 	krb5_clear_error_string(context);
 	ret = ENOMEM;
 	goto out;
     }
-    memset(client_params, 0, sizeof(*client_params));
 
     if (pa->padata_type == KRB5_PADATA_PK_AS_REQ_WIN) {
 	PA_PK_AS_REQ_Win2k r;
@@ -1278,6 +1274,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 
     if (client_params->type == PKINIT_COMPAT_27) {
 	PA_PK_AS_REP rep;
+	const char *type, *other = "";
 
 	memset(&rep, 0, sizeof(rep));
 
@@ -1285,6 +1282,8 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 
 	if (client_params->dh == NULL) {
 	    ContentInfo info;
+
+	    type = "enckey";
 
 	    rep.element = choice_PA_PK_AS_REP_encKeyPack;
 
@@ -1316,11 +1315,11 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	} else {
 	    ContentInfo info;
 
-	    rep.element = choice_PA_PK_AS_REP_dhInfo;
+	    type = "dh";
+	    if (client_params->dh_group_name)
+		other = client_params->dh_group_name;
 
-	    ret = check_dh_params(client_params->dh);
-	    if (ret)
-		return ret;
+	    rep.element = choice_PA_PK_AS_REP_dhInfo;
 
 	    ret = generate_dh_keyblock(context, client_params, enctype,
 				       &client_params->reply_key);
@@ -1360,6 +1359,8 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	}
 	if (len != size)
 	    krb5_abortx(context, "Internal ASN.1 encoder error");
+
+	kdc_log(context, config, 0, "PK-INIT using %s %s", type, other);
 
     } else if (client_params->type == PKINIT_COMPAT_19) {
 	PA_PK_AS_REP_19 rep;
@@ -1636,7 +1637,7 @@ _kdc_pk_initialize(krb5_context context,
     file = krb5_config_get_string(context, NULL,
 				  "libdefaults", "moduli", NULL);
 
-    ret = _krb5_parse_moduli(context, NULL, &moduli);
+    ret = _krb5_parse_moduli(context, file, &moduli);
     if (ret)
 	krb5_err(context, 1, ret, "PKINIT: failed to load modidi file");
 
