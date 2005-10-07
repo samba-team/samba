@@ -64,6 +64,7 @@ char *elog_tdbname( const char *name )
 	char *tdb_fullpath;
 
 	pstr_sprintf( path, "eventlog/%s.tdb", name );
+	strlower_m( path );
 	tdb_fullpath = SMB_STRDUP( lock_path(path) );
 	
 	return tdb_fullpath;
