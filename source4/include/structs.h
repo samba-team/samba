@@ -81,6 +81,8 @@ struct drsuapi_DsCrackNames;
 struct drsuapi_DsReplicaObjectListItem;
 struct drsuapi_DsReplicaObjectListItemEx;
 
+struct DsPrivate;
+
 struct MULTI_QI;
 struct COSERVERINFO;
 
