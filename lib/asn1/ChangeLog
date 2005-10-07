@@ -1,4 +1,4 @@
-2005-10-07  Love Hörnquist Åstrand <lha@it.su.se>
+2005-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* check-der.c: Add tests for parse and print functions for
 	heim_integer.
