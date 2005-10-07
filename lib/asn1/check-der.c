@@ -581,6 +581,80 @@ check_fail_bitstring(void)
 			       (generic_decode)der_get_bit_string);
 }
 
+static int
+check_heim_integer_same(const char *p, const char *norm_p, heim_integer *i)
+{
+    heim_integer i2;
+    char *str;
+    int ret;
+
+    ret = der_print_hex_heim_integer(i, &str);
+    if (ret)
+	errx(1, "der_print_hex_heim_integer: %d", ret);
+
+    if (strcmp(str, norm_p) != 0)
+	errx(1, "der_print_hex_heim_integer: %s != %s", str, p);
+
+    ret = der_parse_hex_heim_integer(str, &i2);
+    if (ret)
+	errx(1, "der_parse_hex_heim_integer: %d", ret);
+
+    if (heim_integer_cmp(i, &i2) != 0)
+	errx(1, "heim_integer_cmp: p %s", p);
+
+    free_heim_integer(&i2);
+    free(str);
+
+    ret = der_parse_hex_heim_integer(p, &i2);
+    if (ret)
+	errx(1, "der_parse_hex_heim_integer: %d", ret);
+
+    if (heim_integer_cmp(i, &i2) != 0)
+	errx(1, "heim_integer_cmp: norm");
+
+    return 0;
+}
+
+static int
+test_heim_int_format(void)
+{
+    heim_integer i = { 1, "\x10", 0 };
+    heim_integer i2 = { 1, "\x10", 1 };
+    heim_integer i3 = { 1, "\01", 0 };
+    char *p =
+	"FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
+	"29024E08" "8A67CC74" "020BBEA6" "3B139B22" "514A0879" "8E3404DD"
+	"EF9519B3" "CD3A431B" "302B0A6D" "F25F1437" "4FE1356D" "6D51C245"
+	"E485B576" "625E7EC6" "F44C42E9" "A637ED6B" "0BFF5CB6" "F406B7ED"
+	"EE386BFB" "5A899FA5" "AE9F2411" "7C4B1FE6" "49286651" "ECE65381"
+	"FFFFFFFF" "FFFFFFFF";
+    heim_integer bni = {
+	128, 
+	"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xC9\x0F\xDA\xA2"
+	"\x21\x68\xC2\x34\xC4\xC6\x62\x8B\x80\xDC\x1C\xD1"
+	"\x29\x02\x4E\x08\x8A\x67\xCC\x74\x02\x0B\xBE\xA6"
+	"\x3B\x13\x9B\x22\x51\x4A\x08\x79\x8E\x34\x04\xDD"
+	"\xEF\x95\x19\xB3\xCD\x3A\x43\x1B\x30\x2B\x0A\x6D"
+	"\xF2\x5F\x14\x37\x4F\xE1\x35\x6D\x6D\x51\xC2\x45"
+	"\xE4\x85\xB5\x76\x62\x5E\x7E\xC6\xF4\x4C\x42\xE9"
+	"\xA6\x37\xED\x6B\x0B\xFF\x5C\xB6\xF4\x06\xB7\xED"
+	"\xEE\x38\x6B\xFB\x5A\x89\x9F\xA5\xAE\x9F\x24\x11"
+	"\x7C\x4B\x1F\xE6\x49\x28\x66\x51\xEC\xE6\x53\x81"
+	"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF",
+	0
+    };
+    int ret = 0;
+
+    ret += check_heim_integer_same(p, p, &bni);
+    ret += check_heim_integer_same("10", "10", &i);
+    ret += check_heim_integer_same("00000010", "10", &i);
+    ret += check_heim_integer_same("-10", "-10", &i2);
+    ret += check_heim_integer_same("-00000010", "-10", &i2);
+    ret += check_heim_integer_same("01", "01", &i3);
+
+    return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -606,7 +680,7 @@ main(int argc, char **argv)
     ret += check_fail_generalized_time();
     ret += check_fail_oid();
     ret += check_fail_bitstring();
-
+    ret += test_heim_int_format();
 
     return ret;
 }
