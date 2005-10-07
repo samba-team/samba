@@ -57,7 +57,6 @@ RCSID("$Id$");
 
 enum {
     COMPAT_WIN2K = 1,
-    COMPAT_19 = 2,
     COMPAT_27 = 3
 };
 
@@ -493,46 +492,6 @@ build_auth_pack_win2k(krb5_context context,
 }
 
 static krb5_error_code
-build_auth_pack_19(krb5_context context,
-		   unsigned nonce,
-		   const KDC_REQ_BODY *body,
-		   AuthPack_19 *a)
-{
-    size_t buf_size, len;
-    krb5_cksumtype cksum;
-    krb5_error_code ret;
-    void *buf;
-    krb5_timestamp sec;
-    int32_t usec;
-
-    krb5_clear_error_string(context);
-
-    /* XXX some PACKETCABLE needs implemetations need md5 */
-    cksum = CKSUMTYPE_RSA_MD5;
-
-    krb5_us_timeofday(context, &sec, &usec);
-    a->pkAuthenticator.ctime = sec;
-    a->pkAuthenticator.nonce = nonce;
-
-    ASN1_MALLOC_ENCODE(KDC_REQ_BODY, buf, buf_size, body, &len, ret);
-    if (ret)
-	return ret;
-    if (buf_size != len)
-	krb5_abortx(context, "internal error in ASN.1 encoder");
-
-    ret = krb5_create_checksum(context,
-			       NULL,
-			       0,
-			       cksum,
-			       buf,
-			       len,
-			       &a->pkAuthenticator.paChecksum);
-    free(buf);
-
-    return ret;
-}
-
-static krb5_error_code
 build_auth_pack(krb5_context context,
 		unsigned nonce,
 		krb5_pk_init_ctx ctx,
@@ -728,27 +687,6 @@ pk_mk_padata(krb5_context context,
 	    krb5_abortx(context, "internal ASN1 encoder error");
 
 	oid = oid_id_pkcs7_data();
-    } else if (compat == COMPAT_19) {
-	AuthPack_19 ap;
-	
-	memset(&ap, 0, sizeof(ap));
-
-	ret = build_auth_pack_19(context, nonce, req_body, &ap);
-	if (ret) {
-	    free_AuthPack_19(&ap);
-	    goto out;
-	}
-
-	ASN1_MALLOC_ENCODE(AuthPack_19, buf.data, buf.length, &ap, &size, ret);
-	free_AuthPack_19(&ap);
-	if (ret) {
-	    krb5_set_error_string(context, "AuthPack_19: %d", ret);
-	    goto out;
-	}
-	if (buf.length != size)
-	    krb5_abortx(context, "internal ASN1 encoder error");
-
-	oid = oid_id_pkauthdata();
     } else if (compat == COMPAT_27) {
 	AuthPack ap;
 	
@@ -814,27 +752,6 @@ pk_mk_padata(krb5_context context,
 			   &winreq, &size, ret);
 	free_PA_PK_AS_REQ_Win2k(&winreq);
 
-    } else if (compat == COMPAT_19) {
-	PA_PK_AS_REQ_19 req_19;
-
-	pa_type = KRB5_PADATA_PK_AS_REQ_19;
-
-	memset(&req_19, 0, sizeof(req_19));
-
-	ret = copy_ContentInfo(&content_info, &req_19.signedAuthPack);
-	if (ret) {
-	    krb5_clear_error_string(context);
-	    goto out;
-	}
-	req_19.kdcCert = NULL;
-	req_19.trustedCertifiers = NULL;
-	req_19.encryptionCert = NULL;
-
-	ASN1_MALLOC_ENCODE(PA_PK_AS_REQ_19, buf.data, buf.length,
-			   &req_19, &size, ret);
-
-	free_PA_PK_AS_REQ_19(&req_19);
-
     } else if (compat == COMPAT_27) {
 
 	pa_type = KRB5_PADATA_PK_AS_REQ;
@@ -881,9 +798,6 @@ _krb5_pk_mk_padata(krb5_context context,
 {
     krb5_pk_init_ctx ctx = c;
     krb5_error_code ret;
-    size_t size;
-    krb5_data buf;
-    const char *provisioning_server;
     int win2k_compat;
 
     win2k_compat = krb5_config_get_bool_default(context, NULL,
@@ -900,39 +814,11 @@ _krb5_pk_mk_padata(krb5_context context,
 	if (ret)
 	    goto out;
     } else {
-#if 0
-	ret = pk_mk_padata(context, COMPAT_19, ctx, req_body, nonce, md);
-	if (ret)
-	    goto out;
-#endif
 	ret = pk_mk_padata(context, COMPAT_27, ctx, req_body, nonce, md);
 	if (ret)
 	    goto out;
     }
 
-    provisioning_server =
-	krb5_config_get_string(context, NULL,
-			       "realms",
-			       req_body->realm,
-			       "packet-cable-provisioning-server",
-			       NULL);
-
-    if (provisioning_server) {
-	/* PacketCable requires the PROV-SRV-LOCATION authenticator */
-	const PROV_SRV_LOCATION prov_server = rk_UNCONST(provisioning_server);
-
-	ASN1_MALLOC_ENCODE(PROV_SRV_LOCATION, buf.data, buf.length,
-			   &prov_server, &size, ret);
-	if (ret)
-	    goto out;
-	if (buf.length != size)
-	    krb5_abortx(context, "Internal ASN1 encoder error");
-
-	/* PacketCable uses -1 (application specific) as the auth data type */
-	ret = krb5_padata_add(context, md, -1, buf.data, buf.length);
-	if (ret)
-	    free(buf.data);
-    }
  out:
     return ret;
 }
@@ -1312,42 +1198,42 @@ _krb5_pk_verify_sign(krb5_context context,
     return ret;
 }
 
-static krb5_error_code
-get_reply_key_19(krb5_context context,
-		 const krb5_data *content,
-		 unsigned nonce,
-		 krb5_keyblock **key)
+ static krb5_error_code
+get_reply_key_win(krb5_context context,
+		  const krb5_data *content,
+		  unsigned nonce,
+		  krb5_keyblock **key)
 {
-    ReplyKeyPack_19 key_pack;
+    ReplyKeyPack_Win2k key_pack;
     krb5_error_code ret;
     size_t size;
 
-    ret = decode_ReplyKeyPack_19(content->data,
-				 content->length,
-				 &key_pack,
-				 &size);
+    ret = decode_ReplyKeyPack_Win2k(content->data,
+				    content->length,
+				    &key_pack,
+				    &size);
     if (ret) {
 	krb5_set_error_string(context, "PKINIT decoding reply key failed");
-	free_ReplyKeyPack_19(&key_pack);
+	free_ReplyKeyPack_Win2k(&key_pack);
 	return ret;
     }
      
     if (key_pack.nonce != nonce) {
 	krb5_set_error_string(context, "PKINIT enckey nonce is wrong");
-	free_ReplyKeyPack_19(&key_pack);
+	free_ReplyKeyPack_Win2k(&key_pack);
 	return KRB5KRB_AP_ERR_MODIFIED;
     }
 
     *key = malloc (sizeof (**key));
     if (*key == NULL) {
 	krb5_set_error_string(context, "PKINIT failed allocating reply key");
-	free_ReplyKeyPack_19(&key_pack);
+	free_ReplyKeyPack_Win2k(&key_pack);
 	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
     }
 
     ret = copy_EncryptionKey(&key_pack.replyKey, *key);
-    free_ReplyKeyPack_19(&key_pack);
+    free_ReplyKeyPack_Win2k(&key_pack);
     if (ret) {
 	krb5_set_error_string(context, "PKINIT failed copying reply key");
 	free(*key);
@@ -1633,8 +1519,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 
     switch(type) {
     case COMPAT_WIN2K:
-    case COMPAT_19:
-	ret = get_reply_key_19(context, &content, nonce, key);
+	ret = get_reply_key_win(context, &content, nonce, key);
 	break;
     case COMPAT_27:
 	ret = get_reply_key(context, &content, req_buffer, key);
@@ -1906,41 +1791,6 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 	}
 	if (ret == 0)
 	    return ret;
-    }
-
-    /* Check for PK-INIT -19 */
-    {
-	PA_PK_AS_REP_19 rep19;
-
-	memset(&rep19, 0, sizeof(rep19));
-
-	ret = decode_PA_PK_AS_REP_19(pa->padata_value.data,
-				     pa->padata_value.length,
-				     &rep19,
-				     &size);
-	if (ret == 0) {
-	    krb5_clear_error_string(context);
-	    switch(rep19.element) {
-	    case choice_PA_PK_AS_REP_19_dhSignedData:
-		ret = pk_rd_pa_reply_dh(context, &rep19.u.dhSignedData, ctx,
-					etype, NULL, NULL, 
-					nonce, pa, key);
-		break;
-	    case choice_PA_PK_AS_REP_19_encKeyPack:
-		ret = pk_rd_pa_reply_enckey(context, COMPAT_19,
-					    &rep19.u.encKeyPack, ctx,
-					    etype, nonce, NULL, pa, key);
-		break;
-	    default:
-		krb5_set_error_string(context, "PKINIT: -19 reply invalid "
-				      "content type");
-		ret = EINVAL;
-		break;
-	    }
-	    free_PA_PK_AS_REP_19(&rep19);
-	    if (ret == 0)
-		return 0;
-	}
     }
 
     /* Check for Windows encoding of the AS-REP pa data */ 
