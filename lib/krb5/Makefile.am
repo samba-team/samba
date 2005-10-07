@@ -234,6 +234,8 @@ CLEANFILES = krb5_err.c krb5_err.h heim_err.c heim_err.h k524_err.c k524_err.h
 
 $(libkrb5_la_OBJECTS): krb5_err.h heim_err.h k524_err.h
 
+sysconf_DATA = krb5.moduli
+
 # to help stupid solaris make
 
 krb5_err.h: krb5_err.et
