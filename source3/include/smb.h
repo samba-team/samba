@@ -27,6 +27,10 @@
 #ifndef _SMB_H
 #define _SMB_H
 
+/* logged when starting the various Samba daemons */
+#define COPYRIGHT_STARTUP_MESSAGE	"Copyright Andrew Tridgell and the Samba Team 1992-2005"
+
+
 #if defined(LARGE_SMB_OFF_T)
 #define BUFFER_SIZE (128*1024)
 #else /* no large readwrite possible */
