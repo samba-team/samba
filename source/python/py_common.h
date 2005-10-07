@@ -32,13 +32,6 @@
 
 #include "Python.h"
 
-/* Return a cli_state struct opened on the specified pipe.  If credentials
-   are passed use them. */
-
-typedef struct cli_state *(cli_pipe_fn)(
-	struct cli_state *cli, char *system_name,
-	struct ntuser_creds *creds);
-
 /* The following definitions come from python/py_common.c  */
 
 PyObject *py_werror_tuple(WERROR werror);

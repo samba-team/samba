@@ -39,9 +39,9 @@ PyObject *spoolss_hnd_enumjobs(PyObject *self, PyObject *args, PyObject *kw)
 	
 	/* Call rpc function */
 	
-	werror = cli_spoolss_enumjobs(
-		hnd->cli, hnd->mem_ctx, &hnd->pol, level, 0,
-		1000, &num_jobs, &ctr);
+	werror = rpccli_spoolss_enumjobs(
+		hnd->cli, hnd->mem_ctx, &hnd->pol, level, 0, 1000, 
+		&num_jobs, &ctr);
 
 	/* Return value */
 	
@@ -99,8 +99,8 @@ PyObject *spoolss_hnd_setjob(PyObject *self, PyObject *args, PyObject *kw)
 	
 	/* Call rpc function */
 	
-	werror = cli_spoolss_setjob(hnd->cli, hnd->mem_ctx, &hnd->pol,
-				    jobid, level, command);
+	werror = rpccli_spoolss_setjob(
+		hnd->cli, hnd->mem_ctx, &hnd->pol, jobid, level, command);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
@@ -130,8 +130,8 @@ PyObject *spoolss_hnd_getjob(PyObject *self, PyObject *args, PyObject *kw)
 	
 	/* Call rpc function */
 	
-	werror = cli_spoolss_getjob(hnd->cli, hnd->mem_ctx, 
-				    &hnd->pol, jobid, level, &ctr);
+	werror = rpccli_spoolss_getjob(
+		hnd->cli, hnd->mem_ctx, &hnd->pol, jobid, level, &ctr);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
@@ -166,7 +166,7 @@ PyObject *spoolss_hnd_startpageprinter(PyObject *self, PyObject *args, PyObject 
 	
 	/* Call rpc function */
 	
-	werror = cli_spoolss_startpageprinter(
+	werror = rpccli_spoolss_startpageprinter(
 		hnd->cli, hnd->mem_ctx, &hnd->pol);
 
 	if (!W_ERROR_IS_OK(werror)) {
@@ -194,7 +194,7 @@ PyObject *spoolss_hnd_endpageprinter(PyObject *self, PyObject *args, PyObject *k
 	
 	/* Call rpc function */
 	
-	werror = cli_spoolss_endpageprinter(
+	werror = rpccli_spoolss_endpageprinter(
 		hnd->cli, hnd->mem_ctx, &hnd->pol);
 
 	if (!W_ERROR_IS_OK(werror)) {
@@ -286,7 +286,7 @@ PyObject *spoolss_hnd_startdocprinter(PyObject *self, PyObject *args, PyObject *
 
 	/* Call rpc function */
 	
-	werror = cli_spoolss_startdocprinter(
+	werror = rpccli_spoolss_startdocprinter(
 		hnd->cli, hnd->mem_ctx, &hnd->pol, document_name,
 		output_file, data_type, &jobid);
 
@@ -318,7 +318,8 @@ PyObject *spoolss_hnd_enddocprinter(PyObject *self, PyObject *args, PyObject *kw
 	
 	/* Call rpc function */
 	
-	werror = cli_spoolss_enddocprinter(hnd->cli, hnd->mem_ctx, &hnd->pol);
+	werror = rpccli_spoolss_enddocprinter(
+		hnd->cli, hnd->mem_ctx, &hnd->pol);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
@@ -347,7 +348,7 @@ PyObject *spoolss_hnd_writeprinter(PyObject *self, PyObject *args, PyObject *kw)
 	
 	/* Call rpc function */
 	
-	werror = cli_spoolss_writeprinter(
+	werror = rpccli_spoolss_writeprinter(
 		hnd->cli, hnd->mem_ctx, &hnd->pol, PyString_Size(data),
 		PyString_AsString(data), &num_written);
 

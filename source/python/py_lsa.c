@@ -89,8 +89,8 @@ static PyObject *lsa_open_policy(PyObject *self, PyObject *args,
 		goto done;
 	}
 
-	ntstatus = cli_lsa_open_policy(cli, mem_ctx, True,
-				       desired_access, &hnd);
+	ntstatus = rpccli_lsa_open_policy(
+		cli, mem_ctx, True, desired_access, &hnd);
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		PyErr_SetObject(lsa_ntstatus, py_ntstatus_tuple(ntstatus));
@@ -125,7 +125,7 @@ static PyObject *lsa_close(PyObject *self, PyObject *args, PyObject *kw)
 
 	/* Call rpc function */
 
-	result = cli_lsa_close(hnd->cli, hnd->mem_ctx, &hnd->pol);
+	result = rpccli_lsa_close(hnd->cli, hnd->mem_ctx, &hnd->pol);
 
 	/* Cleanup samba stuff */
 
@@ -185,8 +185,9 @@ static PyObject *lsa_lookup_names(PyObject *self, PyObject *args)
 		names[0] = PyString_AsString(py_names);
 	}
 
-	ntstatus = cli_lsa_lookup_names(hnd->cli, mem_ctx, &hnd->pol,
-					num_names, names, &sids, &name_types);
+	ntstatus = rpccli_lsa_lookup_names(
+		hnd->cli, mem_ctx, &hnd->pol, num_names, names, &sids, 
+		&name_types);
 
 	if (!NT_STATUS_IS_OK(ntstatus) && NT_STATUS_V(ntstatus) != 0x107) {
 		PyErr_SetObject(lsa_ntstatus, py_ntstatus_tuple(ntstatus));
@@ -267,9 +268,9 @@ static PyObject *lsa_lookup_sids(PyObject *self, PyObject *args,
 		}
 	}
 
-	ntstatus = cli_lsa_lookup_sids(hnd->cli, mem_ctx, &hnd->pol,
-				       num_sids, sids, &domains, &names, 
-				       &types);
+	ntstatus = rpccli_lsa_lookup_sids(
+		hnd->cli, mem_ctx, &hnd->pol, num_sids, sids, &domains, 
+		&names, &types);
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		PyErr_SetObject(lsa_ntstatus, py_ntstatus_tuple(ntstatus));
@@ -306,7 +307,7 @@ static PyObject *lsa_enum_trust_dom(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, ""))
 		return NULL;
 	
-	ntstatus = cli_lsa_enum_trust_dom(
+	ntstatus = rpccli_lsa_enum_trust_dom(
 		hnd->cli, hnd->mem_ctx, &hnd->pol, &enum_ctx,
 		&num_domains, &domain_names, &domain_sids);
 
