@@ -68,7 +68,7 @@ PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw)
 		goto done;
 	}
 
-	werror = cli_spoolss_open_printer_ex(
+	werror = rpccli_spoolss_open_printer_ex(
 		cli, mem_ctx, unc_name, "", desired_access, server, 
 		"", &hnd);
 
@@ -110,7 +110,8 @@ PyObject *spoolss_closeprinter(PyObject *self, PyObject *args)
 
 	/* Call rpc function */
 
-	result = cli_spoolss_close_printer(hnd->cli, hnd->mem_ctx, &hnd->pol);
+	result = rpccli_spoolss_close_printer(
+		hnd->cli, hnd->mem_ctx, &hnd->pol);
 
 	/* Return value */
 
@@ -138,7 +139,7 @@ PyObject *spoolss_hnd_getprinter(PyObject *self, PyObject *args, PyObject *kw)
 
 	/* Call rpc function */
 	
-	werror = cli_spoolss_getprinter(
+	werror = rpccli_spoolss_getprinter(
 		hnd->cli, hnd->mem_ctx, &hnd->pol, level, &ctr);
 
 	/* Return value */
@@ -249,8 +250,8 @@ PyObject *spoolss_hnd_setprinter(PyObject *self, PyObject *args, PyObject *kw)
 
 	/* Call rpc function */
 	
-	werror = cli_spoolss_setprinter(hnd->cli, hnd->mem_ctx, &hnd->pol,
-					level, &ctr, 0);
+	werror = rpccli_spoolss_setprinter(
+		hnd->cli, hnd->mem_ctx, &hnd->pol, level, &ctr, 0);
 
 	/* Return value */
 
@@ -325,8 +326,8 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 
 	/* Call rpc function */
 	
-	werror = cli_spoolss_enum_printers(cli, mem_ctx, name, flags, level,
-		&num_printers, &ctr);
+	werror = rpccli_spoolss_enum_printers(
+		cli, mem_ctx, name, flags, level, &num_printers, &ctr);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
@@ -447,7 +448,7 @@ PyObject *spoolss_addprinterex(PyObject *self, PyObject *args, PyObject *kw)
 
 	ctr.printers_2 = &info2;
 
-	werror = cli_spoolss_addprinterex(cli, mem_ctx, 2, &ctr);
+	werror = rpccli_spoolss_addprinterex(cli, mem_ctx, 2, &ctr);
 
 	Py_INCREF(Py_None);
 	result = Py_None;
