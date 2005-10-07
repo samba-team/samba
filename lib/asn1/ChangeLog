@@ -1,3 +1,18 @@
+2005-10-07  Love  <lha@kth.se>
+
+	* check-der.c: Add tests for parse and print functions for
+	heim_integer.
+
+	* Makefile.am: Add parse and print functions for heim_integer.
+	
+2005-10-07 Love Hörnquist Åstrand <lha@it.su.se>
+	
+	* Makefile.am: Add parse and print functions for heim_integer.
+	
+	* der_format.c: Add parse and print functions for heim_integer.
+
+	* der.h: Add parse and print functions for heim_integer.
+	
 2005-09-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am (gen_files_rfc2459) += asn1_DHPublicKey.x
