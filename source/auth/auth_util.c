@@ -454,7 +454,7 @@ NTSTATUS auth_system_server_info(TALLOC_CTX *mem_ctx, struct auth_serversupplied
 	data_blob_clear(&server_info->user_session_key);
 	data_blob_clear(&server_info->lm_session_key);
 
-	server_info->account_name = talloc_strdup(server_info, "sYSTEM");
+	server_info->account_name = talloc_strdup(server_info, "SYSTEM");
 	NT_STATUS_HAVE_NO_MEMORY(server_info->account_name);
 
 	server_info->domain_name = talloc_strdup(server_info, "NT AUTHORITY");
