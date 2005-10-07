@@ -53,10 +53,10 @@ struct ldapsrv_partition *ldapsrv_get_partition(struct ldapsrv_connection *conn,
 {
 	if (scope == LDAP_SEARCH_SCOPE_BASE
 	    && strcasecmp("", dn) == 0) {
-		return conn->service->rootDSE;
+		return conn->rootDSE;
 	}
 
-	return conn->service->default_partition;
+	return conn->default_partition;
 }
 
 NTSTATUS ldapsrv_unwilling(struct ldapsrv_call *call, int error)
@@ -257,15 +257,3 @@ NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 }
 
 
-/*
-  connect to the sam database
-*/
-struct ldb_context *ldapsrv_sam_connect(struct ldapsrv_call *call)
-{
-	const char *url;
-	url = lp_parm_string(-1, "ldapsrv", "samdb");
-	if (url) {
-		return ldb_wrap_connect(call, url, 0, NULL);
-	}
-	return samdb_connect(call);
-}

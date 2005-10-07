@@ -25,6 +25,7 @@
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/common/common.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
+#include "auth/auth.h"
 
 /* 
   drsuapi_DsBind 
@@ -43,7 +44,7 @@ static WERROR drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 	b_state = talloc(dce_call->conn, struct drsuapi_bind_state);
 	WERR_TALLOC_CHECK(b_state);
 
-	b_state->sam_ctx = samdb_connect(b_state);
+	b_state->sam_ctx = samdb_connect(b_state, dce_call->conn->auth_state.session_info); 
 	if (!b_state->sam_ctx) {
 		talloc_free(b_state);
 		return WERR_FOOBAR;

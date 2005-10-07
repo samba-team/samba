@@ -27,6 +27,9 @@ struct ldapsrv_connection {
 	struct auth_session_info *session_info;
 	struct ldapsrv_service *service;
 	struct tls_context *tls;
+	struct ldapsrv_partition *rootDSE;
+	struct ldapsrv_partition *default_partition;
+	struct ldapsrv_partition *partitions;
 
 	/* partially received request */
 	DATA_BLOB partial;
@@ -58,6 +61,7 @@ struct ldapsrv_partition;
 struct ldapsrv_partition_ops {
 	const char *name;
 	NTSTATUS (*Init)(struct ldapsrv_partition *partition, struct ldapsrv_connection *conn);
+	NTSTATUS (*Bind)(struct ldapsrv_partition *partition, struct ldapsrv_connection *conn);
 	NTSTATUS (*Search)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_SearchRequest *r);
 	NTSTATUS (*Modify)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_ModifyRequest *r);
 	NTSTATUS (*Add)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_AddRequest *r);
@@ -71,15 +75,12 @@ struct ldapsrv_partition_ops {
 struct ldapsrv_partition {
 	struct ldapsrv_partition *prev,*next;
 
-	void *private_data;
+	void *private;
 	const struct ldapsrv_partition_ops *ops;
 
 	const char *base_dn;
 };
 
 struct ldapsrv_service {
-	struct ldapsrv_partition *rootDSE;
-	struct ldapsrv_partition *default_partition;
-	struct ldapsrv_partition *partitions;
 	struct tls_params *tls_params;
 };

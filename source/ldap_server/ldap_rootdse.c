@@ -52,25 +52,28 @@ static void rootdse_db_debug(void *context, enum ldb_debug_level level, const ch
 /*
   connect to the SAM database
  */
-static struct ldb_context *rootdse_db_connect(TALLOC_CTX *mem_ctx)
+NTSTATUS rootdse_Init(struct ldapsrv_partition *partition, struct ldapsrv_connection *conn)
 {
 	char *db_path;
 	struct ldb_context *ldb;
+	TALLOC_CTX *mem_ctx = talloc_new(partition);
 
 	db_path = talloc_asprintf(mem_ctx, "tdb://%s", 
 				  private_path(mem_ctx, "rootdse.ldb"));
 	if (db_path == NULL) {
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	ldb = ldb_wrap_connect(mem_ctx, db_path, 0, NULL);
 	if (ldb == NULL) {
-		return NULL;
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	ldb_set_debug(ldb, rootdse_db_debug, NULL);
 
-	return ldb;
+	talloc_steal(partition, ldb);
+	partition->private = ldb;
+	return NT_STATUS_OK;
 }
 
 
@@ -258,7 +261,7 @@ static NTSTATUS fill_dynamic_values(void *mem_ctx, struct ldb_message_element *a
 }
 
 static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
-				     struct ldap_SearchRequest *r)
+			       struct ldap_SearchRequest *r)
 {
 	NTSTATUS status;
 	void *local_ctx;
@@ -279,8 +282,7 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 	local_ctx = talloc_named(call, 0, "rootdse_Search local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
-	ldb = rootdse_db_connect(local_ctx);
-	NT_STATUS_HAVE_NO_MEMORY(ldb);
+	ldb = partition->private;
 
 	if (r->num_attributes >= 1) {
 		attrs = talloc_array(ldb, const char *, r->num_attributes+1);
@@ -359,6 +361,7 @@ queue_reply:
 }
 
 static const struct ldapsrv_partition_ops rootdse_ops = {
+	.Init           = rootdse_Init,
 	.Search		= rootdse_Search
 };
 

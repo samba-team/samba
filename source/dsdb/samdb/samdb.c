@@ -32,9 +32,14 @@
   connect to the SAM database
   return an opaque context pointer on success, or NULL on failure
  */
-struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx)
+struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx, struct auth_session_info *session_info)
 {
-	return ldb_wrap_connect(mem_ctx, lp_sam_url(), 0, NULL);
+	struct ldb_context *ldb;
+	ldb = ldb_wrap_connect(mem_ctx, lp_sam_url(), 0, NULL);
+	if (ldb_set_opaque(ldb, "sessionInfo", session_info)) {
+		return NULL;
+	}
+	return ldb;
 }
 
 /*

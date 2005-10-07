@@ -75,11 +75,23 @@ static NTSTATUS samdb_privilege_setup_sid(void *samctx, TALLOC_CTX *mem_ctx,
 NTSTATUS samdb_privilege_setup(struct security_token *token)
 {
 	void *samctx;
-	TALLOC_CTX *mem_ctx = talloc_new(token);
+	TALLOC_CTX *mem_ctx;
 	int i;
 	NTSTATUS status;
 
-	samctx = samdb_connect(mem_ctx);
+	/* Shortcuts to prevent recursion and avoid lookups */
+	if (is_system_token(token)) {
+		token->privilege_mask = ~0;
+		return NT_STATUS_OK;
+	}
+
+	if (is_anonymous_token(token)) {
+		token->privilege_mask = 0;
+		return NT_STATUS_OK;
+	}
+
+	mem_ctx = talloc_new(token);
+	samctx = samdb_connect(mem_ctx, system_session(mem_ctx));
 	if (samctx == NULL) {
 		talloc_free(mem_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;

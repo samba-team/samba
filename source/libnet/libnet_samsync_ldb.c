@@ -1069,9 +1069,7 @@ static NTSTATUS libnet_samsync_ldb_netlogon(struct libnet_context *ctx, TALLOC_C
 	state->secrets = NULL;
 	state->trusted_domains = NULL;
 
-	state->sam_ldb = samdb_connect(state);
-
-	
+	state->sam_ldb = samdb_connect(state, system_session(state));
 
 	r2.error_string = NULL;
 	r2.delta_fn = libnet_samsync_ldb_fn;

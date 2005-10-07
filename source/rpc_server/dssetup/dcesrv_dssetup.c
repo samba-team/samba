@@ -25,8 +25,7 @@
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "librpc/gen_ndr/ndr_dssetup.h"
 #include "rpc_server/common/common.h"
-
-
+#include "ldb/include/ldb.h"
 /* 
   dssetup_DsRoleGetPrimaryDomainInformation 
 */
@@ -82,13 +81,12 @@ static WERROR dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_call_state
 			break;
 		case ROLE_DOMAIN_BDC:
 		case ROLE_DOMAIN_PDC:
-			sam_ctx = samdb_connect(mem_ctx);
+			sam_ctx = samdb_connect(mem_ctx, dce_call->conn->auth_state.session_info); 
 			if (!sam_ctx) {
 				return WERR_SERVER_UNAVAILABLE;
 			}
 
-			ret = gendb_search(sam_ctx, mem_ctx, NULL, &res, attrs,
-					   "(&(objectClass=domainDNS)(!(objectClass=builtinDomain)))");
+			ret = gendb_search_dn(sam_ctx, mem_ctx, samdb_base_dn(mem_ctx), &res, attrs);
 			if (ret != 1) {
 				return WERR_SERVER_UNAVAILABLE;
 			}
@@ -96,15 +94,18 @@ static WERROR dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_call_state
 			flags		= DS_ROLE_PRIMARY_DS_RUNNING;
 
 			if (samdb_result_uint(res[0], "nTMixedDomain", 0) == 1) {
-				flags		|= DS_ROLE_PRIMARY_DS_MIXED_MODE;
+				flags	|= DS_ROLE_PRIMARY_DS_MIXED_MODE;
 			}
-
-			domain		= samdb_result_string(res[0], "name", NULL);
+			
+			domain		= samdb_search_string(sam_ctx, mem_ctx, NULL, "nETBIOSName", 
+							      "(&(objectclass=crossRef)(ncName=%s))", 
+							      ldb_dn_linearize(mem_ctx, samdb_base_dn(mem_ctx)));
+	
 			dns_domain	= samdb_result_string(res[0], "dnsDomain", NULL);
 			forest		= samdb_result_string(res[0], "dnsDomain", NULL);
 
-			flags		|= DS_ROLE_PRIMARY_DOMAIN_GUID_PRESENT;
 			domain_guid	= samdb_result_guid(res[0], "objectGUID");
+			flags	|= DS_ROLE_PRIMARY_DOMAIN_GUID_PRESENT;
 			break;
 		}
 

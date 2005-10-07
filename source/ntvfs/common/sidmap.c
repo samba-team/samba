@@ -52,7 +52,7 @@ struct sidmap_context *sidmap_open(TALLOC_CTX *mem_ctx)
 	if (sidmap == NULL) {
 		return NULL;
 	}
-	sidmap->samctx = samdb_connect(sidmap);
+	sidmap->samctx = samdb_connect(sidmap, system_session(sidmap));
 	if (sidmap->samctx == NULL) {
 		talloc_free(sidmap);
 		return NULL;
