@@ -54,9 +54,10 @@ TDB_CONTEXT *init_eventlog_tdb( char *tdbfilename )
 /* make the tdb file name for an event log, given destination buffer and size */
 char *mk_tdbfilename( char *dest_buffer, char *eventlog_name, int size_dest )
 {
+	pstring ondisk_name;
+
 	if ( !dest_buffer )
 		return NULL;
-	pstring ondisk_name;
 
 	pstrcpy( ondisk_name, "EV" );
 	pstrcat( ondisk_name, eventlog_name );
