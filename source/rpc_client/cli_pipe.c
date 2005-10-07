@@ -2636,6 +2636,8 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel(struct cli_state *cli,
 	return result;
 }
 
+#ifdef HAVE_KRB5
+
 /****************************************************************************
  Free function for the kerberos spcific data.
  ****************************************************************************/
@@ -2644,6 +2646,8 @@ static void kerberos_auth_struct_free(struct cli_pipe_auth_data *a)
 {
 	data_blob_free(&a->a_u.kerberos_auth->session_key);
 }
+
+#endif
 
 /****************************************************************************
  Open a named pipe to an SMB server and bind using krb5 (bind type 16).
