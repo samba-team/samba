@@ -310,7 +310,7 @@ TDB_CONTEXT *elog_open_tdb( char *tdbfilename )
 
 	vers_id = tdb_fetch_int32( tdb, VN_version );
 
-	if ( vers_id == EVENTLOG_DATABASE_VERSION_V1 ) {
+	if ( vers_id != EVENTLOG_DATABASE_VERSION_V1 ) {
 		DEBUG(1,("elog_open_tdb: Invalid version [%d] on file [%s].\n",
 			vers_id, tdbfilename));
 		tdb_close( tdb );
