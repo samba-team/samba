@@ -1,5 +1,7 @@
 Changes in release 0.8
 
+ * HDB extensions
+
  * New ASN.1 compiler
 
  * Libkafs defaults to use 2b tokens
