@@ -390,10 +390,10 @@ struct test_join *torture_join_domain(const char *machine_name,
 	cli_credentials_set_password(*machine_credentials, libnet_r->out.join_password, CRED_SPECIFIED);
 	if (acct_flags & ACB_SVRTRUST) {
 		cli_credentials_set_secure_channel_type(*machine_credentials,
-						SEC_CHAN_BDC);
+							SEC_CHAN_BDC);
 	} else if (acct_flags & ACB_WSTRUST) {
 		cli_credentials_set_secure_channel_type(*machine_credentials,
-						SEC_CHAN_WKSTA);
+							SEC_CHAN_WKSTA);
 	} else {
 		DEBUG(0, ("Invalid account type specificed to torture_join_domain\n"));
 		talloc_free(*machine_credentials);

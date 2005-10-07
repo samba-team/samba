@@ -1529,135 +1529,135 @@ BOOL torture_rpc_samlogon(void)
 			NTSTATUS expected_network_error;
 		} usercreds[] = {
 			{
-				"domain\\user",
-				cli_credentials_get_domain(cmdline_credentials),
-				cli_credentials_get_username(cmdline_credentials),
-				cli_credentials_get_password(cmdline_credentials),
-				True,
-				NT_STATUS_OK,
-				NT_STATUS_OK
+				.comment       = "domain\\user",
+				.domain        = cli_credentials_get_domain(cmdline_credentials),
+				.username      = cli_credentials_get_username(cmdline_credentials),
+				.password      = cli_credentials_get_password(cmdline_credentials),
+				.network_login = True,
+				.expected_interactive_error = NT_STATUS_OK,
+				.expected_network_error     = NT_STATUS_OK
 			},
 			{
-				"realm\\user",
-				cli_credentials_get_realm(cmdline_credentials),
-				cli_credentials_get_username(cmdline_credentials),
-				cli_credentials_get_password(cmdline_credentials),
-				True,
-				NT_STATUS_OK,
-				NT_STATUS_OK
+				.comment       = "realm\\user",
+				.domain        = cli_credentials_get_realm(cmdline_credentials),
+				.username      = cli_credentials_get_username(cmdline_credentials),
+				.password      = cli_credentials_get_password(cmdline_credentials),
+				.network_login = True,
+				.expected_interactive_error = NT_STATUS_OK,
+				.expected_network_error     = NT_STATUS_OK
 			},
 			{
-				"user@domain",
-				NULL,
-				talloc_asprintf(mem_ctx, 
+				.comment       = "user@domain",
+				.domain        = NULL,
+				.username      = talloc_asprintf(mem_ctx, 
 						"%s@%s", 
 						cli_credentials_get_username(cmdline_credentials),
 						cli_credentials_get_domain(cmdline_credentials)
 					),
-				cli_credentials_get_password(cmdline_credentials),
-				False,
-				NT_STATUS_OK,
-				NT_STATUS_OK
+				.password      = cli_credentials_get_password(cmdline_credentials),
+				.network_login = False,
+				.expected_interactive_error = NT_STATUS_OK,
+				.expected_network_error     = NT_STATUS_OK
 			},
 			{
-				"user@realm",
-				NULL,
-				talloc_asprintf(mem_ctx, 
+				.comment       = "user@realm",
+				.domain        = NULL,
+				.username      = talloc_asprintf(mem_ctx, 
 						"%s@%s", 
 						cli_credentials_get_username(cmdline_credentials),
 						cli_credentials_get_realm(cmdline_credentials)
 					),
-				cli_credentials_get_password(cmdline_credentials),
-				True,
-				NT_STATUS_OK,
-				NT_STATUS_OK
+				.password      = cli_credentials_get_password(cmdline_credentials),
+				.network_login = True,
+				.expected_interactive_error = NT_STATUS_OK,
+				.expected_network_error     = NT_STATUS_OK
 			},
 			{
-				"machine domain\\user",
-				cli_credentials_get_domain(machine_credentials),
-				cli_credentials_get_username(machine_credentials),
-				cli_credentials_get_password(machine_credentials),
-				True,
-				NT_STATUS_NO_SUCH_USER,
-				NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT
+				.comment      = "machine domain\\user",
+				.domain       = cli_credentials_get_domain(machine_credentials),
+				.username     = cli_credentials_get_username(machine_credentials),
+				.password     = cli_credentials_get_password(machine_credentials),
+				.network_login = True,
+				.expected_interactive_error = NT_STATUS_NO_SUCH_USER,
+				.expected_network_error     = NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT
 			},
 			{
-				"machine realm\\user",
-				cli_credentials_get_realm(machine_credentials),
-				cli_credentials_get_username(machine_credentials),
-				cli_credentials_get_password(machine_credentials),
-				True,
-				NT_STATUS_NO_SUCH_USER,
-				NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT
+				.comment       = "machine realm\\user",
+				.domain        = cli_credentials_get_realm(machine_credentials),
+				.username      = cli_credentials_get_username(machine_credentials),
+				.password      = cli_credentials_get_password(machine_credentials),
+				.network_login = True,
+				.expected_interactive_error = NT_STATUS_NO_SUCH_USER,
+				.expected_network_error     = NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT
 			},
 			{
-				"machine user@domain",
-				NULL,
-				talloc_asprintf(mem_ctx, 
-						"%s@%s", 
-						cli_credentials_get_username(machine_credentials),
-						cli_credentials_get_domain(machine_credentials)
+				.comment       = "machine user@domain",
+				.domain        = NULL,
+				.username      = talloc_asprintf(mem_ctx, 
+								"%s@%s", 
+								cli_credentials_get_username(machine_credentials),
+								cli_credentials_get_domain(machine_credentials)
+					), 
+				.password      = cli_credentials_get_password(machine_credentials),
+				.network_login = False,
+				.expected_interactive_error = NT_STATUS_NO_SUCH_USER,
+				.expected_network_error     = NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT
+			},
+			{
+				.comment       = "machine user@realm",
+				.domain        = NULL,
+				.username      = talloc_asprintf(mem_ctx, 
+								"%s@%s", 
+								cli_credentials_get_username(machine_credentials),
+								cli_credentials_get_realm(machine_credentials)
 					),
-				cli_credentials_get_password(machine_credentials),
-				False,
-				NT_STATUS_NO_SUCH_USER,
-				NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT
-			},
-			{
-				"machine user@realm",
-				NULL,
-				talloc_asprintf(mem_ctx, 
-						"%s@%s", 
-						cli_credentials_get_username(machine_credentials),
-						cli_credentials_get_realm(machine_credentials)
-					),
-				cli_credentials_get_password(machine_credentials),
-				True,
-				NT_STATUS_NO_SUCH_USER,
-				NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT
+				.password      = cli_credentials_get_password(machine_credentials),
+				.network_login = True,
+				.expected_interactive_error = NT_STATUS_NO_SUCH_USER,
+				.expected_network_error     = NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT
 			},
 			{	
-				"test user (long pw): domain\\user",
-				userdomain,
-				TEST_USER_NAME,
-				user_password,
-				True,
-				NT_STATUS_OK,
-				NT_STATUS_OK
+				.comment       = "test user (long pw): domain\\user",
+				.domain        = userdomain,
+				.username      = TEST_USER_NAME,
+				.password      = user_password,
+				.network_login = True,
+				.expected_interactive_error = NT_STATUS_OK,
+				.expected_network_error     = NT_STATUS_OK
 			},
 			{
-				"test user (long pw): user@realm", 
-				NULL,
-				talloc_asprintf(mem_ctx, 
-						"%s@%s", 
-						TEST_USER_NAME,
-						lp_realm()),
-				user_password,
-				True,
-				NT_STATUS_OK,
-				NT_STATUS_OK
+				.comment       = "test user (long pw): user@realm", 
+				.domain        = NULL,
+				.username      = talloc_asprintf(mem_ctx, 
+								 "%s@%s", 
+								 TEST_USER_NAME,
+								 lp_realm()),
+				.password      = user_password,
+				.network_login = True,
+				.expected_interactive_error = NT_STATUS_OK,
+				.expected_network_error     = NT_STATUS_OK
 			},
 			{
-				"test user (long pw): user@domain",
-				NULL,
-				talloc_asprintf(mem_ctx, 
-						"%s@%s", 
-						TEST_USER_NAME,
-						userdomain),
-				user_password,
-				False,
-				NT_STATUS_OK,
-				NT_STATUS_OK
+				.comment       = "test user (long pw): user@domain",
+				.domain        = NULL,
+				.username      = talloc_asprintf(mem_ctx, 
+								 "%s@%s", 
+								 TEST_USER_NAME,
+								 userdomain),
+				.password      = user_password,
+				.network_login = False,
+				.expected_interactive_error = NT_STATUS_OK,
+				.expected_network_error     = NT_STATUS_OK
 			},
 			/* Oddball, can we use the old password ? */
 			{	
-				"test user: user\\domain OLD PASSWORD",
-				userdomain,
-				TEST_USER_NAME,
-				old_user_password,
-				True,
-				NT_STATUS_WRONG_PASSWORD,
-				NT_STATUS_OK
+				.comment       = "test user: user\\domain OLD PASSWORD",
+				.domain        = userdomain,
+				.username      = TEST_USER_NAME,
+				.password      = old_user_password,
+				.network_login = True,
+				.expected_interactive_error = NT_STATUS_WRONG_PASSWORD,
+				.expected_network_error     = NT_STATUS_OK
 			}
 		};
 		

@@ -71,7 +71,8 @@ sub ParseFunction($$)
 	pidl "";
 	pidl "/* Marshall data and send request */";
 	pidl "";
-	pidl "init_$if->{NAME}_q_$fn->{NAME}(&q$inargs);";
+	pidl "if (!init_$if->{NAME}_q_$fn->{NAME}(&q$inargs))";
+	pidl "\treturn NT_STATUS_INVALID_PARAMETER;";
 	pidl "";
 	pidl "CLI_DO_RPC(cli, mem_ctx, PI_$uif, $ufn,";
 	pidl "\tq, r,";
