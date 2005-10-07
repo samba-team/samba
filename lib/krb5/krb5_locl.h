@@ -162,7 +162,7 @@ struct _krb5_krb_auth_data;
 #define KEYTAB_DEFAULT "ANY:FILE:" SYSCONFDIR "/krb5.keytab,krb4:" SYSCONFDIR "/srvtab"
 #define KEYTAB_DEFAULT_MODIFY "FILE:" SYSCONFDIR "/krb5.keytab"
 
-#define MODULI_FILE SYSCONFDIR "/moduli.krb5"
+#define MODULI_FILE SYSCONFDIR "/krb5.moduli"
 
 #ifndef O_BINARY
 #define O_BINARY 0
