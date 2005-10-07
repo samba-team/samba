@@ -61,8 +61,6 @@ enum {
     COMPAT_27 = 3
 };
 
-
-
 #define OPENSSL_ASN1_MALLOC_ENCODE(T, B, BL, S, R)			\
 {									\
   unsigned char *p;							\
@@ -107,10 +105,18 @@ struct krb5_pk_cert {
     X509 *cert;
 };
 
+struct krb5_dh_moduli {
+    unsigned long bits;
+    heim_integer p;
+    heim_integer g;
+    heim_integer q;
+};
+
 struct krb5_pk_init_ctx_data {
     struct krb5_pk_identity *id;
     DH *dh;
     krb5_data *clientDHNonce;
+    struct krb5_dh_moduli **m;
 };
 
 
@@ -134,6 +140,20 @@ BN_to_integer(krb5_context context, BIGNUM *bn, heim_integer *integer)
     BN_bn2bin(bn, integer->data);
     integer->negative = bn->neg;
     return 0;
+}
+
+static BIGNUM *
+integer_to_BN(krb5_context context, const char *field, const heim_integer *f)
+{
+    BIGNUM *bn;
+
+    bn = BN_bin2bn((const unsigned char *)f->data, f->length, NULL);
+    if (bn == NULL) {
+	krb5_set_error_string(context, "PKINIT: parsing BN failed %s", field);
+	return NULL;
+    }
+    bn->neg = f->negative;
+    return bn;
 }
 
 /*
@@ -252,7 +272,8 @@ _krb5_pk_create_sign(krb5_context context,
     krb5_data buf;
     SignedData sd;
     EVP_MD_CTX md;
-    int len, i;
+    int i;
+    unsigned len;
     size_t size;
     
     X509_NAME *issuer_name;
@@ -1142,7 +1163,7 @@ cert_to_X509(krb5_context context, CertificateSet *set,
 
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_pk_verify_sign(krb5_context context,
-		     const char *data,
+		     const void *data,
 		     size_t length,
 		     struct krb5_pk_identity *id,
 		     heim_oid *contentType,
@@ -1424,7 +1445,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
     int length;
     size_t size;
     X509 *user_cert;
-    char *p;
+    void *p;
     krb5_boolean bret;
     krb5_data content;
     heim_oid contentType = { 0, NULL };
@@ -2566,6 +2587,230 @@ _krb5_pk_load_openssl_id(krb5_context context,
     return ret;
 }
 
+static int
+parse_integer(krb5_context context, char **p, const char *file, int lineno, 
+	      const char *name, heim_integer *integer)
+{
+    int ret;
+    char *p1;
+    p1 = strsep(p, " \t");
+    if (p1 == NULL) {
+	krb5_set_error_string(context, "moduli file %s missing %s on line %d",
+			      file, name, lineno);
+	return EINVAL;
+    }
+    ret = der_parse_hex_heim_integer(p1, integer);
+    if (ret) {
+	krb5_set_error_string(context, "moduli file %s failed parsing %s "
+			      "on line %d",
+			      file, name, lineno);
+	return ret;
+    }
+    return 0;
+}
+
+krb5_error_code
+_krb5_parse_moduli_line(krb5_context context, 
+			const char *file,
+			int lineno,
+			char *p,
+			struct krb5_dh_moduli **m)
+{
+    struct krb5_dh_moduli *m1;
+    char *p1;
+    int ret;
+
+    *m = NULL;
+
+    m1 = calloc(1, sizeof(*m1));
+    if (m1 == NULL) {
+	krb5_set_error_string(context, "malloc - out of memory");
+	return ENOMEM;
+    }
+
+    while (isspace((unsigned char)*p))
+	p++;
+    if (*p  == '#')
+	return 0;
+    ret = EINVAL;
+
+    p1 = strsep(&p, " \t");
+    if (p1 == NULL) {
+	krb5_set_error_string(context, "moduli file %s missing bits on line %d",
+			      file, lineno);
+	goto out;
+    }
+
+    m1->bits = atoi(p1);
+    if (m1->bits == 0) {
+	krb5_set_error_string(context, "moduli file %s have un-parsable "
+			      "bits on line %d", file, lineno);
+	goto out;
+    }
+	
+    ret = parse_integer(context, &p, file, lineno, "p", &m1->p);
+    if (ret)
+	goto out;
+    ret = parse_integer(context, &p, file, lineno, "g", &m1->g);
+    if (ret)
+	goto out;
+    ret = parse_integer(context, &p, file, lineno, "q", &m1->q);
+    if (ret)
+	goto out;
+
+    *m = m1;
+
+    return 0;
+out:
+    free_heim_integer(&m1->p);
+    free_heim_integer(&m1->g);
+    free_heim_integer(&m1->q);
+    free(m1);
+    return ret;
+}
+
+static void
+_krb5_free_moduli(struct krb5_dh_moduli **moduli)
+{
+    int i;
+    for (i = 0; moduli[i] != NULL; i++) {
+	free_heim_integer(&moduli[i]->p);
+	free_heim_integer(&moduli[i]->g);
+	free_heim_integer(&moduli[i]->q);
+	free(moduli[i]);
+    }
+    free(moduli);
+}
+
+static const char *default_moduli =
+    /* bits */
+    "1024 "
+    /* p */
+    "FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
+    "29024E08" "8A67CC74" "020BBEA6" "3B139B22" "514A0879" "8E3404DD"
+    "EF9519B3" "CD3A431B" "302B0A6D" "F25F1437" "4FE1356D" "6D51C245"
+    "E485B576" "625E7EC6" "F44C42E9" "A637ED6B" "0BFF5CB6" "F406B7ED"
+    "EE386BFB" "5A899FA5" "AE9F2411" "7C4B1FE6" "49286651" "ECE65381"
+    "FFFFFFFF" "FFFFFFFF "
+    /* g */
+    "02 "
+    /* q */
+    "7FFFFFFF" "FFFFFFFF" "E487ED51" "10B4611A" "62633145" "C06E0E68"
+    "94812704" "4533E63A" "0105DF53" "1D89CD91" "28A5043C" "C71A026E"
+    "F7CA8CD9" "E69D218D" "98158536" "F92F8A1B" "A7F09AB6" "B6A8E122"
+    "F242DABB" "312F3F63" "7A262174" "D31BF6B5" "85FFAE5B" "7A035BF6"
+    "F71C35FD" "AD44CFD2" "D74F9208" "BE258FF3" "24943328" "F67329C0"
+    "FFFFFFFF" "FFFFFFFF";
+
+
+krb5_error_code
+_krb5_parse_moduli(krb5_context context, const char *file,
+		   struct krb5_dh_moduli ***moduli)
+{
+    /* bits P G Q */
+    krb5_error_code ret;
+    struct krb5_dh_moduli **m = NULL, **m2;
+    char buf[4096];
+    FILE *f;
+    int lineno = 0, n = 0;
+
+    *moduli = NULL;
+
+    m = calloc(1, sizeof(m[0]) * 2);
+    if (m == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	return ENOMEM;
+    }
+
+    strlcpy(buf, default_moduli, sizeof(buf));
+    ret = _krb5_parse_moduli_line(context, "builtin", 1, buf,  &m[0]);
+    if (ret) {
+	_krb5_free_moduli(m);
+	return ret;
+    }
+    n = 1;
+
+    if (file == NULL) {
+	*moduli = m;
+	return 0;
+    }
+
+    f = fopen(file, "r");
+    if (f == NULL)
+	return 0;
+
+    while(fgets(buf, sizeof(buf), f) != NULL) {
+	struct krb5_dh_moduli *element;
+
+	buf[strcspn(buf, "\n")] = '\0';
+	lineno++;
+
+	m2 = realloc(m, (n + 2) * sizeof(m[0]));
+	if (m2 == NULL) {
+	    krb5_set_error_string(context, "malloc: out of memory");
+	    _krb5_free_moduli(m);
+	    return ENOMEM;
+	}
+	m = m2;
+	
+	m[n] = NULL;
+
+	ret = _krb5_parse_moduli_line(context, file, lineno, buf,  &element);
+	if (ret) {
+	    _krb5_free_moduli(m);
+	    return ret;
+	}
+	if (element == NULL)
+	    continue;
+
+	m[n] = element;
+	m[n + 1] = NULL;
+	n++;
+    }
+    *moduli = m;
+    return 0;
+}
+
+krb5_boolean
+_krb5_dh_group_ok(krb5_context context, unsigned long bits,
+		  heim_integer *p, heim_integer *g, heim_integer *q,
+		  struct krb5_dh_moduli **moduli)
+{
+    int i;
+    for (i = 0; moduli[i] != NULL; i++) {
+	if (heim_integer_cmp(&moduli[i]->g, g) == 0 &&
+	    heim_integer_cmp(&moduli[i]->p, p) == 0 &&
+	    heim_integer_cmp(&moduli[i]->q, q) == 0)
+	{
+	    return TRUE;
+	}
+    }
+
+    return FALSE;
+}
+
+static krb5_error_code
+select_dh_group(krb5_context context, DH *dh, unsigned long bits, 
+		struct krb5_dh_moduli **moduli)
+{
+    const struct krb5_dh_moduli *m;
+
+    m = moduli[0]; /* XXX */
+
+    dh->p = integer_to_BN(context, "p", &m->p);
+    if (dh->p == NULL)
+	return ENOMEM;
+    dh->g = integer_to_BN(context, "p", &m->g);
+    if (dh->g == NULL)
+	return ENOMEM;
+    dh->q = integer_to_BN(context, "p", &m->q);
+    if (dh->q == NULL)
+	return ENOMEM;
+
+    return 0;
+}
+
+
 #endif /* PKINIT */
 
 void KRB5_LIB_FUNCTION
@@ -2596,6 +2841,8 @@ _krb5_get_init_creds_opt_free_pkinit(krb5_get_init_creds_opt *opt)
 	    krb5_free_data(NULL, ctx->clientDHNonce);
 	    ctx->clientDHNonce = NULL;
 	}
+	if (ctx->m)
+	    _krb5_free_moduli(ctx->m);
 	free(ctx->id);
 	ctx->id = NULL;
     }
@@ -2622,7 +2869,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 	return EINVAL;
     }
 
-    opt->private->pk_init_ctx = malloc(sizeof(*opt->private->pk_init_ctx));
+    opt->private->pk_init_ctx = calloc(1, sizeof(*opt->private->pk_init_ctx));
     if (opt->private->pk_init_ctx == NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
@@ -2640,26 +2887,12 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
     if (ret) {
 	free(opt->private->pk_init_ctx);
 	opt->private->pk_init_ctx = NULL;
+	return ret;
     }
 
-    /* XXX */
-    if (ret == 0 && (flags & 1) && !(flags & 2)) { 
+    if (1) {
+	const char *moduli_file;
 	DH *dh;
-	const char *P =
-            "FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
-            "29024E08" "8A67CC74" "020BBEA6" "3B139B22" "514A0879" "8E3404DD"
-            "EF9519B3" "CD3A431B" "302B0A6D" "F25F1437" "4FE1356D" "6D51C245"
-            "E485B576" "625E7EC6" "F44C42E9" "A637ED6B" "0BFF5CB6" "F406B7ED"
-            "EE386BFB" "5A899FA5" "AE9F2411" "7C4B1FE6" "49286651" "ECE65381"
-            "FFFFFFFF" "FFFFFFFF";
-	const char *G = "2";
-	const char *Q =
-	    "7FFFFFFF" "FFFFFFFF" "E487ED51" "10B4611A" "62633145" "C06E0E68"
-	    "94812704" "4533E63A" "0105DF53" "1D89CD91" "28A5043C" "C71A026E"
-	    "F7CA8CD9" "E69D218D" "98158536" "F92F8A1B" "A7F09AB6" "B6A8E122"
-	    "F242DABB" "312F3F63" "7A262174" "D31BF6B5" "85FFAE5B" "7A035BF6"
-	    "F71C35FD" "AD44CFD2" "D74F9208" "BE258FF3" "24943328" "F67329C0"
-	    "FFFFFFFF" "FFFFFFFF";
 
 	dh = DH_new();
 	if (dh == NULL) {
@@ -2668,21 +2901,23 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 	    return ENOMEM;
 	}
 	opt->private->pk_init_ctx->dh = dh;
-	if (!BN_hex2bn(&dh->p, P)) {
-	    krb5_set_error_string(context, "malloc: out of memory");
+
+	moduli_file = krb5_config_get_string(context, NULL,
+					     "libdefaults", "moduli", NULL);
+
+	ret = _krb5_parse_moduli(context, NULL, 
+				 &opt->private->pk_init_ctx->m);
+	if (ret) {
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
-	    return ENOMEM;
+	    return ret;
 	}
-	if (!BN_hex2bn(&dh->g, G)) {
-	    krb5_set_error_string(context, "malloc: out of memory");
+	
+	ret = select_dh_group(context, dh, 0, opt->private->pk_init_ctx->m);
+	if (ret) {
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
-	    return ENOMEM;
+	    return ret;
 	}
-	if (!BN_hex2bn(&dh->q, Q)) {
-	    krb5_set_error_string(context, "malloc: out of memory");
-	    _krb5_get_init_creds_opt_free_pkinit(opt);
-	    return ENOMEM;
-	}
+
 	/* XXX generate a new key for each request ? */
 	if (DH_generate_key(dh) != 1) {
 	    krb5_set_error_string(context, "malloc: out of memory");
@@ -2690,7 +2925,8 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 	    return ENOMEM;
 	}
     }
-    return ret;
+
+    return 0;
 #else
     krb5_set_error_string(context, "no support for PKINIT compiled in");
     return EINVAL;
