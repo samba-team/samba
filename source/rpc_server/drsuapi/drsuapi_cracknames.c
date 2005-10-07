@@ -41,11 +41,6 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 				 uint32_t format_flags, uint32_t format_offered, uint32_t format_desired,
 				 const char *name, struct drsuapi_DsNameInfo1 *info1);
 
-static WERROR DsCrackNameOneSyntactical(TALLOC_CTX *mem_ctx,
-					uint32_t format_offered, uint32_t format_desired,
-					const struct ldb_dn *name_dn, const char *name, 
-					struct drsuapi_DsNameInfo1 *info1);
-
 static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, struct ldb_context *ldb_ctx, 
 				   TALLOC_CTX *mem_ctx,
 				   const char *alias_from,
@@ -354,14 +349,6 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 		WERR_TALLOC_CHECK(result_filter);
 		break;
 	}
-	case DRSUAPI_DS_NAME_FORMAT_DISPLAY: {
-		domain_filter = NULL;
-
-		result_filter = talloc_asprintf(mem_ctx, "(|(displayName=%s)(samAccountName=%s))",
-						name, name);
-		WERR_TALLOC_CHECK(result_filter);
-		break;
-	}
 	
 	case DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY: {
 		struct dom_sid *sid = dom_sid_parse_talloc(mem_ctx, name);
@@ -437,11 +424,6 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 	}
 
 	}
-
-	if (format_flags & DRSUAPI_DS_NAME_FLAG_SYNTACTICAL_ONLY) {
-		return DsCrackNameOneSyntactical(mem_ctx, format_offered, format_desired,
-						 name_dn, name, info1);
-	}
 	
 	return DsCrackNameOneFilter(b_state, mem_ctx, 
 				    smb_krb5_context, 
@@ -449,32 +431,6 @@ static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX 
 				    name_dn, name, 
 				    domain_filter, result_filter, 
 				    info1);
-}
-
-static WERROR DsCrackNameOneSyntactical(TALLOC_CTX *mem_ctx,
-					uint32_t format_offered, uint32_t format_desired,
-					const struct ldb_dn *name_dn, const char *name, 
-					struct drsuapi_DsNameInfo1 *info1)
-{
-	if (format_offered != DRSUAPI_DS_NAME_FORMAT_FQDN_1779) {
-		info1->status = DRSUAPI_DS_NAME_STATUS_NO_SYNTACTICAL_MAPPING;
-		return WERR_OK;
-	}
-
-	switch (format_desired) {
-	case DRSUAPI_DS_NAME_FORMAT_CANONICAL: 
-		break;
-	case DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX:
-		break;
-	default:
-		info1->status = DRSUAPI_DS_NAME_STATUS_NO_SYNTACTICAL_MAPPING;
-		return WERR_OK;
-	}
-
-	
-	
-	return WERR_OK;	
-	
 }
 
 static WERROR DsCrackNameOneFilter(struct drsuapi_bind_state *b_state, TALLOC_CTX *mem_ctx,
@@ -659,17 +615,6 @@ static WERROR DsCrackNameOneFilter(struct drsuapi_bind_state *b_state, TALLOC_CT
 		
 		info1->status		= DRSUAPI_DS_NAME_STATUS_OK;
 		return WERR_OK;
-	}
-	case DRSUAPI_DS_NAME_FORMAT_DISPLAY: {
-		info1->result_name	= samdb_result_string(result_res[0], "displayName", NULL);
-		if (!info1->result_name) {
-			info1->result_name	= samdb_result_string(result_res[0], "sAMAccountName", NULL);
-		} 
-		if (!info1->result_name) {
-			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
-		} else {
-			info1->status = DRSUAPI_DS_NAME_STATUS_OK;
-		}
 	}
 	default:
 		return WERR_OK;
