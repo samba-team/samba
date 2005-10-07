@@ -106,6 +106,7 @@ struct krb5_pk_cert {
 };
 
 struct krb5_dh_moduli {
+    char *name;
     unsigned long bits;
     heim_integer p;
     heim_integer g;
@@ -1029,7 +1030,7 @@ pk_verify_chain_standard(krb5_context context,
     int i;
     int ret;
 
-    ret = KRB5_KDC_ERROR_CLIENT_NAME_MISMATCH;
+    ret = KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
     for (i = 0; i < sk_X509_num(chain); i++) {
 	cert = sk_X509_value(chain, i);
 	if (pk_peer_compare(context, client, cert) == TRUE) {
@@ -1069,7 +1070,7 @@ pk_verify_chain_standard(krb5_context context,
 	ret = 0;
 	break;
     case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY:
-	ret = KRB5_KDC_ERROR_CANT_VERIFY_CERTIFICATE;
+	ret = KRB5_KDC_ERR_CANT_VERIFY_CERTIFICATE;
 	krb5_set_error_string(context, "PKINIT: failed to verify "
 			      "certificate: %s ",
 			      X509_verify_cert_error_string(store_ctx->error));
@@ -1080,7 +1081,7 @@ pk_verify_chain_standard(krb5_context context,
     case X509_V_ERR_CERT_NOT_YET_VALID:
     case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
     case X509_V_ERR_CERT_HAS_EXPIRED:
-	ret = KRB5_KDC_ERROR_INVALID_CERTIFICATE;
+	ret = KRB5_KDC_ERR_INVALID_CERTIFICATE;
 	krb5_set_error_string(context, "PKINIT: invalid certificate: %s ",
 			      X509_verify_cert_error_string(store_ctx->error));
 	break;
@@ -1090,13 +1091,13 @@ pk_verify_chain_standard(krb5_context context,
     case X509_V_ERR_CERT_CHAIN_TOO_LONG:
     case X509_V_ERR_PATH_LENGTH_EXCEEDED:
     case X509_V_ERR_INVALID_CA:
-	ret = KRB5_KDC_ERROR_INVALID_CERTIFICATE;
+	ret = KRB5_KDC_ERR_INVALID_CERTIFICATE;
 	krb5_set_error_string(context, "PKINIT: unknown CA or can't "
 			      "verify certificate: %s",
 			      X509_verify_cert_error_string(store_ctx->error));
 	break;
     default:
-	ret = KRB5_KDC_ERROR_INVALID_CERTIFICATE; /* XXX */
+	ret = KRB5_KDC_ERR_INVALID_CERTIFICATE; /* XXX */
 	krb5_set_error_string(context, "PKINIT: failed to verify "
 			      "certificate: %s (%ld) ",
 			      X509_verify_cert_error_string(store_ctx->error),
@@ -2599,13 +2600,18 @@ parse_integer(krb5_context context, char **p, const char *file, int lineno,
 			      file, name, lineno);
 	return EINVAL;
     }
-    ret = der_parse_hex_heim_integer(p1, integer);
-    if (ret) {
-	krb5_set_error_string(context, "moduli file %s failed parsing %s "
-			      "on line %d",
-			      file, name, lineno);
-	return ret;
+    if (strcmp(p1, "-") == 0) {
+	memset(integer, 0, sizeof(*integer));
+    } else {
+	ret = der_parse_hex_heim_integer(p1, integer);
+	if (ret) {
+	    krb5_set_error_string(context, "moduli file %s failed parsing %s "
+				  "on line %d",
+				  file, name, lineno);
+	    return ret;
+	}
     }
+
     return 0;
 }
 
@@ -2636,6 +2642,19 @@ _krb5_parse_moduli_line(krb5_context context,
 
     p1 = strsep(&p, " \t");
     if (p1 == NULL) {
+	krb5_set_error_string(context, "moduli file %s missing name "
+			      "on line %d", file, lineno);
+	goto out;
+    }
+    m1->name = strdup(p1);
+    if (p1 == NULL) {
+	krb5_set_error_string(context, "malloc - out of memeory");
+	ret = ENOMEM;
+	goto out;
+    }
+
+    p1 = strsep(&p, " \t");
+    if (p1 == NULL) {
 	krb5_set_error_string(context, "moduli file %s missing bits on line %d",
 			      file, lineno);
 	goto out;
@@ -2662,6 +2681,7 @@ _krb5_parse_moduli_line(krb5_context context,
 
     return 0;
 out:
+    free(m1->name);
     free_heim_integer(&m1->p);
     free_heim_integer(&m1->g);
     free_heim_integer(&m1->q);
@@ -2674,6 +2694,7 @@ _krb5_free_moduli(struct krb5_dh_moduli **moduli)
 {
     int i;
     for (i = 0; moduli[i] != NULL; i++) {
+	free(moduli[i]->name);
 	free_heim_integer(&moduli[i]->p);
 	free_heim_integer(&moduli[i]->g);
 	free_heim_integer(&moduli[i]->q);
@@ -2684,6 +2705,7 @@ _krb5_free_moduli(struct krb5_dh_moduli **moduli)
 
 static const char *default_moduli =
     /* bits */
+    "RFC2412-MODP-group2 "
     "1024 "
     /* p */
     "FFFFFFFF" "FFFFFFFF" "C90FDAA2" "2168C234" "C4C6628B" "80DC1CD1"
@@ -2707,7 +2729,7 @@ krb5_error_code
 _krb5_parse_moduli(krb5_context context, const char *file,
 		   struct krb5_dh_moduli ***moduli)
 {
-    /* bits P G Q */
+    /* comment bits P G Q */
     krb5_error_code ret;
     struct krb5_dh_moduli **m = NULL, **m2;
     char buf[4096];
@@ -2771,7 +2793,7 @@ _krb5_parse_moduli(krb5_context context, const char *file,
     return 0;
 }
 
-krb5_boolean
+krb5_error_code
 _krb5_dh_group_ok(krb5_context context, unsigned long bits,
 		  heim_integer *p, heim_integer *g, heim_integer *q,
 		  struct krb5_dh_moduli **moduli)
@@ -2782,11 +2804,11 @@ _krb5_dh_group_ok(krb5_context context, unsigned long bits,
 	    heim_integer_cmp(&moduli[i]->p, p) == 0 &&
 	    heim_integer_cmp(&moduli[i]->q, q) == 0)
 	{
-	    return TRUE;
+	    return 0;
 	}
     }
-
-    return FALSE;
+    krb5_set_error_string(context, "PKINIT: DH group parameter no ok");
+    return KRB5_KDC_ERR_DH_KEY_PARAMETERS_NOT_ACCEPTED;
 }
 
 static krb5_error_code
@@ -2795,7 +2817,9 @@ select_dh_group(krb5_context context, DH *dh, unsigned long bits,
 {
     const struct krb5_dh_moduli *m;
 
-    m = moduli[0]; /* XXX */
+    m = moduli[1]; /* XXX */
+    if (m == NULL)
+	m = moduli[0]; /* XXX */
 
     dh->p = integer_to_BN(context, "p", &m->p);
     if (dh->p == NULL)
