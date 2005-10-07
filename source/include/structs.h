@@ -260,6 +260,7 @@ struct wins_server;
 struct wb_finddcs;
 struct wb_get_schannel_creds;
 struct wb_get_lsa_pipe;
+struct wb_sid_object;
 
 struct cldap_socket;
 struct cldapd_server;
