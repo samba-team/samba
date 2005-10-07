@@ -33,6 +33,132 @@ typedef struct {
 	uint32 flags;
 } EVENTLOG_INFO;
 
+
+/********************************************************************
+ ********************************************************************/
+
+static void free_eventlog_info( void *ptr )
+{
+	EVENTLOG_INFO *elog = (EVENTLOG_INFO *)ptr;
+	
+	if ( elog->tdb )
+		tdb_close( elog->tdb );
+	
+	TALLOC_FREE( elog );
+}
+
+/********************************************************************
+ ********************************************************************/
+
+static EVENTLOG_INFO *find_eventlog_info_by_hnd( pipes_struct * p,
+						POLICY_HND * handle )
+{
+	EVENTLOG_INFO *info;
+
+	if ( !find_policy_by_hnd( p, handle, ( void ** ) &info ) ) {
+		DEBUG( 2,
+		       ( "find_eventlog_info_by_hnd: eventlog not found.\n" ) );
+		return NULL;
+	}
+
+	return info;
+}
+
+/********************************************************************
+ ********************************************************************/
+
+static BOOL elog_validate_logname( const char *name )
+{
+	int i;
+	const char **elogs = lp_eventlog_list();
+	
+	for ( i=0; elogs[i]; i++ ) {
+		if ( strequal( name, elogs[i] ) )
+			return True;
+	}
+	
+	return False;
+}
+
+/********************************************************************
+ ********************************************************************/
+
+static WERROR elog_open( pipes_struct * p, const char *logname, POLICY_HND *hnd )
+{
+	WERROR wresult;
+	EVENTLOG_INFO *elog;
+	char *tdbname;
+	
+	/* first thing is to validate the eventlog name */
+	
+	if ( !elog_validate_logname( logname ) )
+		return WERR_OBJECT_PATH_INVALID;
+	
+	if ( !(elog = TALLOC_ZERO_P( NULL, EVENTLOG_INFO )) )
+		return WERR_NOMEM;
+		
+	elog->logname = talloc_strdup( elog, logname );
+
+	tdbname = elog_tdbname( logname );
+	elog->tdb = elog_open_tdb( tdbname );
+	SAFE_FREE( tdbname );
+	
+	if ( !elog->tdb ) {
+		/* according to MSDN, if the logfile cannot be found, we should
+		  default to the "Application" log */
+	
+		if ( !strequal( logname, ELOG_APPL ) ) {
+		
+			TALLOC_FREE( elog->logname );
+			elog->logname = talloc_strdup( elog, ELOG_APPL );
+			
+			tdbname = elog_tdbname( ELOG_APPL );
+			elog->tdb = elog_open_tdb( tdbname );
+			SAFE_FREE( tdbname );
+		}	
+		
+		if ( !elog->tdb ) {
+			TALLOC_FREE( elog );
+			return WERR_OBJECT_PATH_INVALID;	/* ??? */		
+		}
+	}	
+	
+	/* create the policy handle */
+	
+	if ( !create_policy_hnd
+	     ( p, hnd, free_eventlog_info, ( void * ) elog ) ) {
+		free_eventlog_info( elog );
+		return WERR_NOMEM;
+	}
+
+	return wresult;
+}
+
+/********************************************************************
+ ********************************************************************/
+
+static WERROR elog_close( pipes_struct *p, POLICY_HND *hnd )
+{
+        if ( !( close_policy_hnd( p, hnd ) ) ) {
+                return WERR_BADFID;
+        }
+
+	return WERR_OK;
+}
+
+/*******************************************************************
+ *******************************************************************/
+
+static int elog_size( EVENTLOG_INFO *info )
+{
+	if ( !info || !info->tdb ) {
+		DEBUG(0,("elog_size: Invalid info* structure!\n"));
+		return 0;
+	}
+
+	return elog_tdb_size( info->tdb, NULL, NULL );
+}
+
 /********************************************************************
   For the given tdb, get the next eventlog record into the passed 
   Eventlog_entry.  returns NULL if it can't get the record for some reason.
@@ -134,36 +260,6 @@ Eventlog_entry *get_eventlog_record( prs_struct * ps, TDB_CONTEXT * tdb,
 		 ee->data_record.computer_name_len ) );
 	SAFE_FREE( ret.dptr );
 	return ee;
-}
-
-/********************************************************************
- ********************************************************************/
-
-static void free_eventlog_info( void *ptr )
-{
-	EVENTLOG_INFO *elog = (EVENTLOG_INFO *)ptr;
-	
-	if ( elog->tdb )
-		tdb_close( elog->tdb );
-	
-	TALLOC_FREE( elog );
-}
-
-/********************************************************************
- ********************************************************************/
-
-static EVENTLOG_INFO *find_eventlog_info_by_hnd( pipes_struct * p,
-						POLICY_HND * handle )
-{
-	EVENTLOG_INFO *info;
-
-	if ( !find_policy_by_hnd( p, handle, ( void ** ) &info ) ) {
-		DEBUG( 2,
-		       ( "find_eventlog_info_by_hnd: eventlog not found.\n" ) );
-		return NULL;
-	}
-
-	return info;
 }
 
 /********************************************************************
@@ -391,101 +487,6 @@ static BOOL add_record_to_resp( EVENTLOG_R_READ_EVENTLOG * r_u,
 	r_u->num_bytes_in_resp += ee_new->record.length;
 
 	return True;
-}
-
-/********************************************************************
- ********************************************************************/
-
-static BOOL elog_validate_logname( const char *name )
-{
-	int i;
-	const char **elogs = lp_eventlog_list();
-	
-	for ( i=0; elogs[i]; i++ ) {
-		if ( strequal( name, elogs[i] ) )
-			return True;
-	}
-	
-	return False;
-}
-
-/********************************************************************
- ********************************************************************/
-
-static WERROR elog_open( pipes_struct * p, const char *logname, POLICY_HND *hnd )
-{
-	WERROR wresult;
-	EVENTLOG_INFO *elog;
-	char *tdbname;
-	
-	/* first thing is to validate the eventlog name */
-	
-	if ( !elog_validate_logname( logname ) )
-		return WERR_OBJECT_PATH_INVALID;
-	
-	if ( !(elog = TALLOC_ZERO_P( NULL, EVENTLOG_INFO )) )
-		return WERR_NOMEM;
-		
-	elog->logname = talloc_strdup( elog, logname );
-
-	tdbname = elog_tdbname( logname );
-	elog->tdb = elog_open_tdb( tdbname );
-	SAFE_FREE( tdbname );
-	
-	if ( !elog->tdb ) {
-		/* according to MSDN, if the logfile cannot be found, we should
-		  default to the "Application" log */
-	
-		if ( !strequal( logname, ELOG_APPL ) ) {
-		
-			TALLOC_FREE( elog->logname );
-			elog->logname = talloc_strdup( elog, ELOG_APPL );
-			
-			tdbname = elog_tdbname( ELOG_APPL );
-			elog->tdb = elog_open_tdb( tdbname );
-			SAFE_FREE( tdbname );
-		}	
-		
-		if ( !elog->tdb ) {
-			TALLOC_FREE( elog );
-			return WERR_OBJECT_PATH_INVALID;	/* ??? */		
-		}
-	}	
-	
-	/* create the policy handle */
-	
-	if ( !create_policy_hnd
-	     ( p, hnd, free_eventlog_info, ( void * ) elog ) ) {
-		free_eventlog_info( elog );
-		return WERR_NOMEM;
-	}
-
-	return wresult;
-}
-
-/********************************************************************
- ********************************************************************/
-
-static WERROR elog_close( pipes_struct *p, POLICY_HND *hnd )
-{
-        if ( !( close_policy_hnd( p, hnd ) ) ) {
-                return WERR_BADFID;
-        }
-
-	return WERR_OK;
-}
-
-/*******************************************************************
- *******************************************************************/
-
-static int elog_size( EVENTLOG_INFO *info )
-{
-	if ( !info || !info->tdb ) {
-		DEBUG(0,("elog_size: Invalid info* structure!\n"));
-		return 0;
-	}
-
-	return elog_tdb_size( info->tdb, NULL, NULL );
 }
 
 /********************************************************************
