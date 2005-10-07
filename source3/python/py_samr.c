@@ -197,7 +197,7 @@ static PyObject *samr_set_user_info2(PyObject *self, PyObject *args,
 		goto done;
 	}
 
-	ntstatus = cli_samr_set_userinfo2(
+	ntstatus = rpccli_samr_set_userinfo2(
 		user_hnd->cli, mem_ctx, &user_hnd->user_pol, level,
 		sess_key, &ctr);
 
@@ -233,7 +233,7 @@ static PyObject *samr_delete_dom_user(PyObject *self, PyObject *args,
 		return NULL;
 	}
 
-	ntstatus = cli_samr_delete_dom_user(
+	ntstatus = rpccli_samr_delete_dom_user(
 		user_hnd->cli, mem_ctx, &user_hnd->user_pol);
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
@@ -344,7 +344,7 @@ static PyObject *samr_open_domain(PyObject *self, PyObject *args, PyObject *kw)
 		return NULL;
 	}
 
-	ntstatus = cli_samr_open_domain(
+	ntstatus = rpccli_samr_open_domain(
 		connect_hnd->cli, mem_ctx, &connect_hnd->connect_pol,
 		desired_access, &sid, &domain_pol);
 					
@@ -441,7 +441,7 @@ static PyObject *samr_enum_dom_groups(PyObject *self, PyObject *args,
 	size = 0xffff;
 
 	do {
-		result = cli_samr_enum_dom_groups(
+		result = rpccli_samr_enum_dom_groups(
 			domain_hnd->cli, mem_ctx, &domain_hnd->domain_pol,
 			&start_idx, size, &dom_groups, &num_dom_groups);
 
@@ -479,7 +479,7 @@ static PyObject *samr_create_dom_user(PyObject *self, PyObject *args,
 		return NULL;
 	}
 
-	ntstatus = cli_samr_create_dom_user(
+	ntstatus = rpccli_samr_create_dom_user(
 		domain_hnd->cli, mem_ctx, &domain_hnd->domain_pol,
 		account_name, acb_info, unknown, &user_pol, &user_rid);
 
@@ -569,7 +569,7 @@ static PyObject *samr_connect(PyObject *self, PyObject *args, PyObject *kw)
 		goto done;
 	}
 
-	ntstatus = cli_samr_connect(cli, mem_ctx, desired_access, &hnd);
+	ntstatus = rpccli_samr_connect(cli, mem_ctx, desired_access, &hnd);
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		cli_shutdown(cli);
