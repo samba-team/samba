@@ -111,6 +111,7 @@ struct pk_principal_mapping {
 
 static struct krb5_pk_identity *kdc_identity;
 static struct pk_principal_mapping principal_mappings;
+static struct krb5_dh_moduli **moduli;
 
 /*
  *
@@ -408,6 +409,12 @@ get_dh_param(krb5_context context, SubjectPublicKeyInfo *dh_key_info,
 	goto out;
     }
 
+
+    ret = _krb5_dh_group_ok(context, 0, 
+			    &dhparam.p, &dhparam.g, &dhparam.q, moduli);
+    if (ret)
+	goto out;
+
     dh = DH_new();
     if (dh == NULL) {
 	krb5_set_error_string(context, "Cannot create DH structure (%s)",
@@ -450,7 +457,7 @@ get_dh_param(krb5_context context, SubjectPublicKeyInfo *dh_key_info,
     if (DH_check(dh, &dhret) != 1) {
 	krb5_set_error_string(context, "PKINIT DH data not ok: %s",
 			      ERR_error_string(ERR_get_error(), NULL));
-	ret = KRB5_KDC_ERR_KEY_SIZE;
+	ret = KRB5_KDC_ERR_DH_KEY_PARAMETERS_NOT_ACCEPTED;
 	goto out;
     }
 
@@ -1579,7 +1586,7 @@ _kdc_pk_check_client(krb5_context context,
     free(*subject_name);
     *subject_name = NULL;
     krb5_set_error_string(context, "PKINIT no matching principals");
-    return KRB5_KDC_ERROR_CLIENT_NAME_MISMATCH;
+    return KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
 }
 
 static krb5_error_code
@@ -1620,11 +1627,18 @@ _kdc_pk_initialize(krb5_context context,
 		   const char *user_id,
 		   const char *x509_anchors)
 {
-    const char *mapping_file; 
+    const char *file; 
     krb5_error_code ret;
     char buf[1024];
     unsigned long lineno = 0;
     FILE *f;
+
+    file = krb5_config_get_string(context, NULL,
+				  "libdefaults", "moduli", NULL);
+
+    ret = _krb5_parse_moduli(context, NULL, &moduli);
+    if (ret)
+	krb5_err(context, 1, ret, "PKINIT: failed to load modidi file");
 
     principal_mappings.len = 0;
     principal_mappings.val = NULL;
@@ -1642,16 +1656,15 @@ _kdc_pk_initialize(krb5_context context,
 	return ret;
     }
 
-    mapping_file = krb5_config_get_string_default(context, 
-						  NULL,
-						  HDB_DB_DIR "/pki-mapping",
-						  "kdc",
-						  "pki-mappings-file",
-						  NULL);
-    f = fopen(mapping_file, "r");
+    file = krb5_config_get_string_default(context, 
+					  NULL,
+					  HDB_DB_DIR "/pki-mapping",
+					  "kdc",
+					  "pki-mappings-file",
+					  NULL);
+    f = fopen(file, "r");
     if (f == NULL) {
-	krb5_warnx(context, "PKINIT: failed to load mappings file %s",
-		   mapping_file);
+	krb5_warnx(context, "PKINIT: failed to load mappings file %s", file);
 	return 0;
     }
 
