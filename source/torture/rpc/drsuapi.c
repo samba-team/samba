@@ -24,10 +24,10 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
-#include "torture/rpc/drsupai.h"
+#include "torture/rpc/drsuapi.h"
 
-static BOOL test_DsBind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-		      struct DsPrivate *priv)
+BOOL test_DsBind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+		 struct DsPrivate *priv)
 {
 	NTSTATUS status;
 	struct drsuapi_DsBind r;
@@ -590,8 +590,8 @@ static BOOL test_DsGetNCChanges(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-static BOOL test_DsUnbind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			struct DsPrivate *priv)
+BOOL test_DsUnbind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+		   struct DsPrivate *priv)
 {
 	NTSTATUS status;
 	struct drsuapi_DsUnbind r;

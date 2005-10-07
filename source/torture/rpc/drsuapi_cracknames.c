@@ -24,7 +24,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
-#include "torture/rpc/drsupai.h"
+#include "torture/rpc/drsuapi.h"
 
 static BOOL test_DsCrackNamesMatrix(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 				    struct DsPrivate *priv, const char *dn,
@@ -198,7 +198,7 @@ static BOOL test_DsCrackNamesMatrix(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			      struct DsPrivate *priv, const char *test_dc)
 {
 	NTSTATUS status;
