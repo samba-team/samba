@@ -86,7 +86,7 @@ NTSTATUS wbsrv_samba3_check_machacc(struct wbsrv_samba3_call *s3call)
 
 	DEBUG(5, ("wbsrv_samba3_check_machacc called\n"));
 
-	ctx = wb_cmd_checkmachacc_send(s3call->call);
+	ctx = wb_get_netlogon_pipe_send(s3call->call);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 
 	ctx->async.fn = checkmachacc_recv_creds;
@@ -102,7 +102,7 @@ static void checkmachacc_recv_creds(struct composite_context *ctx)
 				struct wbsrv_samba3_call);
 	NTSTATUS status;
 
-	status = wb_cmd_checkmachacc_recv(ctx);
+	status = wb_get_netlogon_pipe_recv(ctx);
 	if (NT_STATUS_IS_OK(status)) {
 		s3call->response.result = WINBINDD_OK;
 	} else {

@@ -1012,7 +1012,6 @@ NTSTATUS wb_cmd_lookupname(struct wbsrv_call *call, const char *name,
 struct cmd_checkmachacc_state {
 	struct composite_context *ctx;
 	struct wbsrv_call *call;
-	struct cli_credentials *wks_creds;
 };
 
 static void cmd_checkmachacc_recv_lsa(struct composite_context *ctx);
@@ -1035,18 +1034,22 @@ struct composite_context *wb_cmd_checkmachacc_send(struct wbsrv_call *call)
 	result->private_data = state;
 	state->call = call;
 
-	state->wks_creds = cli_credentials_init(state);
-	if (state->wks_creds == NULL) goto failed;
+	if (service->schannel_creds != NULL) {
+		talloc_free(service->schannel_creds);
+	}
 
-	cli_credentials_set_conf(state->wks_creds);
+	service->schannel_creds = cli_credentials_init(service);
+	if (service->schannel_creds == NULL) goto failed;
+
+	cli_credentials_set_conf(service->schannel_creds);
 
 	state->ctx->status =
-		cli_credentials_set_machine_account(state->wks_creds);
+		cli_credentials_set_machine_account(service->schannel_creds);
 	if (!NT_STATUS_IS_OK(state->ctx->status)) goto failed;
 
-	if (service->netlogon_pipe != NULL) {
-		talloc_free(service->netlogon_pipe);
-		service->netlogon_pipe = NULL;
+	if (service->netlogon_auth2_pipe != NULL) {
+		talloc_free(service->netlogon_auth2_pipe);
+		service->netlogon_auth2_pipe = NULL;
 	}
 
 	if (service->lsa_pipe != NULL) {
@@ -1055,7 +1058,7 @@ struct composite_context *wb_cmd_checkmachacc_send(struct wbsrv_call *call)
 
 		if (tree == NULL) goto failed;
 
-		ctx = wb_get_schannel_creds_send(state->wks_creds, tree,
+		ctx = wb_get_schannel_creds_send(service->schannel_creds, tree,
 						 result->event_ctx);
 		if (ctx == NULL) goto failed;
 
@@ -1104,7 +1107,7 @@ static void cmd_checkmachacc_recv_lsa(struct composite_context *ctx)
 		return;
 	}
 
-	ctx = wb_get_schannel_creds_send(state->wks_creds, tree,
+	ctx = wb_get_schannel_creds_send(service->schannel_creds, tree,
 					 state->ctx->event_ctx);
 	comp_cont(state->ctx, ctx, cmd_checkmachacc_recv_creds, state);
 }
@@ -1121,13 +1124,13 @@ static void cmd_checkmachacc_recv_creds(struct composite_context *ctx)
 	state->ctx->status = wb_get_schannel_creds_recv(ctx, state, &pipe);
 	if (!comp_is_ok(state->ctx)) return;
 
-	if (service->netlogon_pipe != NULL) {
+	if (service->netlogon_auth2_pipe != NULL) {
 		/* Someone else was faster, we need to replace it with our
 		 * pipe */
-		talloc_free(service->netlogon_pipe);
+		talloc_free(service->netlogon_auth2_pipe);
 	}
 
-	service->netlogon_pipe = talloc_steal(service, pipe);
+	service->netlogon_auth2_pipe = talloc_steal(service, pipe);
 
 	comp_done(state->ctx);
 }
@@ -1141,4 +1144,111 @@ NTSTATUS wb_cmd_checkmachacc(struct wbsrv_call *call)
 {
 	struct composite_context *c = wb_cmd_checkmachacc_send(call);
 	return wb_cmd_checkmachacc_recv(c);
+}
+
+struct get_netlogon_pipe_state {
+	struct composite_context *ctx;
+	struct wbsrv_call *call;
+	struct dcerpc_pipe *p;
+};
+
+static void get_netlogon_pipe_recv_machacc(struct composite_context *ctx);
+static void get_netlogon_pipe_recv_pipe(struct composite_context *ctx);
+
+struct composite_context *wb_get_netlogon_pipe_send(struct wbsrv_call *call)
+{
+	struct composite_context *result, *ctx;
+	struct get_netlogon_pipe_state *state;
+	struct wbsrv_service *service = call->wbconn->listen_socket->service;
+
+	result = talloc(call, struct composite_context);
+	if (result == NULL) goto failed;
+	result->state = COMPOSITE_STATE_IN_PROGRESS;
+	result->event_ctx = call->event_ctx;
+
+	state = talloc(result, struct get_netlogon_pipe_state);
+	if (state == NULL) goto failed;
+	state->ctx = result;
+	result->private_data = state;
+	state->call = call;
+
+	if (service->netlogon_pipe != NULL) {
+		talloc_free(service->netlogon_pipe);
+		service->netlogon_pipe = NULL;
+	}
+
+	ctx = wb_cmd_checkmachacc_send(call);
+	if (ctx == NULL) goto failed;
+	ctx->async.fn = get_netlogon_pipe_recv_machacc;
+	ctx->async.private_data = state;
+	return result;
+
+ failed:
+	talloc_free(result);
+	return NULL;
+}
+
+static void get_netlogon_pipe_recv_machacc(struct composite_context *ctx)
+{
+	struct get_netlogon_pipe_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct get_netlogon_pipe_state);
+	struct wbsrv_service *service =
+		state->call->wbconn->listen_socket->service;
+	
+	struct smbcli_tree *tree = NULL;
+
+	state->ctx->status = wb_cmd_checkmachacc_recv(ctx);
+	if (!comp_is_ok(state->ctx)) return;
+
+	state->p = dcerpc_pipe_init(state, state->ctx->event_ctx);
+	if (comp_nomem(state->p, state->ctx)) return;
+
+	if (service->lsa_pipe != NULL) {
+		tree = dcerpc_smb_tree(service->lsa_pipe->conn);
+	}
+
+	if (tree == NULL) {
+		comp_error(state->ctx, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+
+	ctx = dcerpc_pipe_open_smb_send(state->p->conn, tree, "\\netlogon");
+	comp_cont(state->ctx, ctx, get_netlogon_pipe_recv_pipe, state);
+}
+
+static void get_netlogon_pipe_recv_pipe(struct composite_context *ctx)
+{
+	struct get_netlogon_pipe_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct get_netlogon_pipe_state);
+	struct wbsrv_service *service =
+		state->call->wbconn->listen_socket->service;
+	
+	state->ctx->status = dcerpc_pipe_open_smb_recv(ctx);
+	if (!comp_is_ok(state->ctx)) return;
+
+	state->p->conn->flags |= (DCERPC_SIGN | DCERPC_SEAL);
+	state->ctx->status =
+		dcerpc_bind_auth_password(state->p,
+					  DCERPC_NETLOGON_UUID,
+					  DCERPC_NETLOGON_VERSION, 
+					  service->schannel_creds,
+					  DCERPC_AUTH_TYPE_SCHANNEL,
+					  NULL);
+	if (!comp_is_ok(state->ctx)) return;
+
+	service->netlogon_pipe = talloc_steal(service, state->p);
+	comp_done(state->ctx);
+}
+
+NTSTATUS wb_get_netlogon_pipe_recv(struct composite_context *c)
+{
+	return composite_wait(c);
+}
+
+NTSTATUS wb_get_netlogon_pipe(struct wbsrv_call *call)
+{
+	struct composite_context *c = wb_get_netlogon_pipe_send(call);
+	return wb_get_netlogon_pipe_recv(c);
 }
