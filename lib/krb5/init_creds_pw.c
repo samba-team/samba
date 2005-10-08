@@ -1014,10 +1014,10 @@ pa_data_to_md_pkinit(krb5_context context,
 	return 0;
 #ifdef PKINIT
     return _krb5_pk_mk_padata(context,
-			      ctx->pk_init_ctx,
-			      &a->req_body,
-			      ctx->pk_nonce,
-			      md);
+			     ctx->pk_init_ctx,
+			     &a->req_body,
+			     ctx->pk_nonce,
+			     md);
 #else
     krb5_set_error_string(context, "no support for PKINIT compiled in");
     return EINVAL;
@@ -1114,6 +1114,7 @@ process_pa_data_to_key(krb5_context context,
 		       krb5_creds *creds,
 		       AS_REQ *a,
 		       krb5_kdc_rep *rep,
+		       const krb5_krbhst_info *hi,
 		       krb5_keyblock **key)
 {
     struct pa_info_data paid, *ppaid = NULL;
@@ -1158,6 +1159,7 @@ process_pa_data_to_key(krb5_context context,
 	ret = _krb5_pk_rd_pa_reply(context,
 				   ctx->pk_init_ctx,
 				   etype,
+				   hi,
 				   ctx->pk_nonce,
 				   &ctx->req_buffer,
 				   pa,
@@ -1194,6 +1196,8 @@ init_cred_loop(krb5_context context,
     size_t len;
     size_t size;
     int send_to_kdc_flags = 0;
+    krb5_krbhst_info *hi = NULL;
+
 
     memset(&md, 0, sizeof(md));
     memset(&rep, 0, sizeof(rep));
@@ -1321,7 +1325,7 @@ init_cred_loop(krb5_context context,
 	krb5_keyblock *key = NULL;
 
 	ret = process_pa_data_to_key(context, ctx, creds, 
-				     &ctx->as_req, &rep, &key);
+				     &ctx->as_req, &rep, hi, &key);
 	if (ret)
 	    goto out;
 	
