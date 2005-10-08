@@ -31,7 +31,6 @@ sub ParseElement($)
 			return if ($l->{POINTER_TYPE} eq "ref" and $l->{LEVEL} eq "top");
 			pidl "\tuint32 ptr$l->{POINTER_INDEX}_$e->{NAME};";
 		} elsif ($l->{TYPE} eq "SWITCH") {
-			pidl "\tuint32 level_$e->{NAME};";
 		} elsif ($l->{TYPE} eq "DATA") {
 			pidl "\t" . DeclShort($e) . ";";
 		} elsif ($l->{TYPE} eq "ARRAY") {
@@ -106,30 +105,28 @@ sub ParseUnion($$$)
 
 	my $extra = {};
 	
-	unless (has_property($u, "nodiscriminant")) {
-		$extra->{switch_value} = 1;
-	}
+	$extra->{switch_value} = $u->{SWITCH_TYPE};
 
 	foreach my $e (@{$u->{ELEMENTS}}) {
 		foreach my $l (@{$e->{LEVELS}}) {
 			if ($l->{TYPE} eq "ARRAY") {
 				if ($l->{IS_CONFORMANT}) {
-					$extra->{"size"} = 1;
+					$extra->{"size"} = "uint32";
 				}
 				if ($l->{IS_VARYING}) {
-					$extra->{"length"} = $extra->{"offset"} = 1;
+					$extra->{"length"} = $extra->{"offset"} = "uint32";
 				}
 			} elsif ($l->{TYPE} eq "POINTER") {
-				$extra->{"ptr$l->{POINTER_INDEX}"} = 1;
+				$extra->{"ptr$l->{POINTER_INDEX}"} = "uint32";
 			} elsif ($l->{TYPE} eq "SWITCH") {
-				$extra->{"level"} = 1;
+				$extra->{"level"} = "uint32";
 			}
 		}
 	}
 
 	pidl "typedef struct $if->{NAME}_$n\_ctr {";
 	indent;
-	pidl "uint32 $_;" foreach (keys %$extra);
+	pidl "$extra->{$_} $_;" foreach (keys %$extra);
 	pidl "union $if->{NAME}_$n {";
 	indent;
 	foreach (@{$u->{ELEMENTS}}) {

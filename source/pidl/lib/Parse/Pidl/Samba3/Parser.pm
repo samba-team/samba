@@ -75,8 +75,18 @@ sub ParseElementLevelData($$$$$$$)
 
 	# See if we need to add a level argument because we're parsing a union
 	foreach (@{$e->{LEVELS}}) {
-		push (@args, ParseExpr("level_$e->{NAME}", $env)) 
-			if ($_->{TYPE} eq "SWITCH");
+		next unless ($_->{TYPE} eq "SWITCH");
+		my $t = getType($l->{DATA_TYPE});
+
+		# Set 0 here because one of the variables referenced in SWITCH_IS 
+		# might be an in variable while this one is [out]
+		if (grep(/in/, @{$e->{DIRECTION}}) or 
+			not defined($t) or 
+			has_property($t->{DATA}, "nodiscriminant")) {
+			push (@args, ParseExpr($_->{SWITCH_IS}, $env));
+		} else {
+			push (@args, -1);
+		}	
 	}
 
 	my $c = DissectType(@args);
@@ -263,7 +273,6 @@ sub GenerateEnvElement($$)
 		} elsif ($l->{TYPE} eq "POINTER") {
 			$env->{"ptr$l->{POINTER_INDEX}_$e->{NAME}"} = "v->ptr$l->{POINTER_INDEX}_$e->{NAME}";
 		} elsif ($l->{TYPE} eq "SWITCH") {
-			$env->{"level_$e->{NAME}"} = "v->level_$e->{NAME}";
 		} elsif ($l->{TYPE} eq "ARRAY") {
 			$env->{"length_$e->{NAME}"} = "v->length_$e->{NAME}";
 			$env->{"size_$e->{NAME}"} = "v->size_$e->{NAME}";
@@ -368,7 +377,6 @@ sub UnionGenerateEnvElement($)
 		} elsif ($l->{TYPE} eq "POINTER") {
 			$env->{"ptr$l->{POINTER_INDEX}_$e->{NAME}"} = "v->ptr$l->{POINTER_INDEX}";
 		} elsif ($l->{TYPE} eq "SWITCH") {
-			$env->{"level_$e->{NAME}"} = "v->level";
 		} elsif ($l->{TYPE} eq "ARRAY") {
 			$env->{"length_$e->{NAME}"} = "v->length";
 			$env->{"size_$e->{NAME}"} = "v->size";
@@ -394,15 +402,20 @@ sub ParseUnion($$$)
 	indent;
 	DeclareArrayVariables($u->{ELEMENTS});
 
-	unless (has_property($u, "nodiscriminant")) {
-		pidl "if (!prs_uint32(\"switch_value\", ps, depth, &v->switch_value))";
+	if (defined ($u->{SWITCH_TYPE})) {
+		pidl "if (MARSHALLING(ps)) ";
+		pidl "\tv->switch_value = level;";
+		pidl "";
+		pidl "if (!prs_$u->{SWITCH_TYPE}(\"switch_value\", ps, depth, &v->switch_value))";
 		pidl "\treturn False;";
 		pidl "";
+	} else {
+		pidl "v->switch_value = level;";
 	}
 
 	# Maybe check here that level and v->switch_value are equal?
 
-	pidl "switch (level) {";
+	pidl "switch (v->switch_value) {";
 	indent;
 
 	foreach (@{$u->{ELEMENTS}}) {
@@ -420,19 +433,30 @@ sub ParseUnion($$$)
 		pidl "";
 	}
 
+	unless ($u->{HAS_DEFAULT}) {
+		pidl "default:";
+		pidl "\treturn False;";
+		pidl "";
+	}
+
 	deindent;
 	pidl "}";
 	pidl "";
 	pidl "return True;";
 	deindent;
 	pidl "}";
+	pidl "";
 
 	pidl "BOOL $dfn(const char *desc, $sn* v, uint32 level, prs_struct *ps, int depth)";
 	pidl "{";
 	indent;
 	DeclareArrayVariables($u->{ELEMENTS});
 
-	pidl "switch (level) {";
+	if (defined($u->{SWITCH_TYPE})) {
+		pidl "switch (v->switch_value) {";
+	} else {
+		pidl "switch (level) {";
+	}
 	indent;
 
 	foreach (@{$u->{ELEMENTS}}) {
