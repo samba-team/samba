@@ -1,3 +1,12 @@
+2005-10-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/init_creds_pw.c: Prepare to pass down a
+	krb5_krbhst_info into the pre-auth mechs
+
+	* lib/krb5/pkinit.c: Inline short functions, share more code,
+	rename COMPAT_27 to COMPAT_IETF, pass down a krb5_krbhst_info for
+	verification of KDC info, and general cleaning up.
+	
 2005-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/Makefile.am: Install krb5.moduli in sysconfdir.
