@@ -205,12 +205,6 @@ sub AddType($$)
 	$known_types->{$t} = $d;
 }
 
-sub GetType($)
-{
-	my $e = shift;
-
-}
-
 # Return type without special stuff, as used in 
 # declarations for internal structs
 sub DeclShort($)
@@ -305,14 +299,9 @@ sub InitType($$$$)
 	}
 }
 
-sub DissectType
+sub DissectType($$$$$)
 {
-	my @args = @_;
-	my $e = shift @_;
-	my $l = shift @_;
-	my $varname = shift @_;
-	my $what = shift @_;
-	my $align = shift @_;
+	my ($e,$l,$varname,$what,$align) = @_;
 
 	my $t = $known_types->{$l->{DATA_TYPE}};
 
@@ -332,7 +321,7 @@ sub DissectType
 
 	# DISSECT can be a function
 	if (ref($dissect) eq "CODE") {
-		return $dissect->(@args);
+		return $dissect->($e,$l,$varname,$what,$align);
 	} else {
 		return $dissect;
 	}
@@ -356,31 +345,18 @@ sub LoadTypes($)
 			my $dissect_p;
 			if ($td->{DATA}->{TYPE} eq "UNION") {
 				$decl.="_CTR";
-				 $dissect_p = sub {
-					my ($e,$l,$n,$w,$a,$s) = @_;
+			} 
 
-					return "$if->{NAME}_io_$td->{NAME}_p(\"$e->{NAME}\", &$n, $s, ps, depth)";
-				};
+			 $dissect_p = sub {
+				my ($e,$l,$n,$w,$a) = @_;
 
-				 $dissect_d = sub {
-					my ($e,$l,$n,$w,$a,$s) = @_;
+				return "$if->{NAME}_io_$td->{NAME}_p(\"$e->{NAME}\", &$n, ps, depth)";
+			};
+		 	$dissect_d = sub {
+				my ($e,$l,$n,$w,$a) = @_;
 
-					return "$if->{NAME}_io_$td->{NAME}_d(\"$e->{NAME}\", &$n, $s, ps, depth)";
-				};
-
-			} else {
-				 $dissect_p = sub {
-					my ($e,$l,$n,$w,$a) = @_;
-
-					return "$if->{NAME}_io_$td->{NAME}_p(\"$e->{NAME}\", &$n, ps, depth)";
-				};
-			 	$dissect_d = sub {
-					my ($e,$l,$n,$w,$a) = @_;
-
-					return "$if->{NAME}_io_$td->{NAME}_d(\"$e->{NAME}\", &$n, ps, depth)";
-				};
-
-			}
+				return "$if->{NAME}_io_$td->{NAME}_d(\"$e->{NAME}\", &$n, ps, depth)";
+			};
 
 			AddType($td->{NAME}, {
 				DECL => $decl,
