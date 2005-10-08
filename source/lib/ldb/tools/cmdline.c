@@ -76,7 +76,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 		goto failed;
 	}
 
-	if (ldb_set_opaque(ldb, "securityToken", system_session(ldb))) {
+	if (ldb_set_opaque(ldb, "sessionInfo", system_session(ldb))) {
 		goto failed;
 	}
 
