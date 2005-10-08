@@ -249,19 +249,15 @@ gen_files_pkinit =					\
 	asn1_DHRepInfo.x				\
 	asn1_PA_PK_AS_REP.x				\
 	asn1_KDCDHKeyInfo.x				\
+	asn1_TrustedCA_Win2k.x				\
 	asn1_ReplyKeyPack.x				\
 	asn1_TD_DH_PARAMETERS.x				\
 	asn1_PKAuthenticator_Win2k.x			\
 	asn1_AuthPack_Win2k.x				\
 	asn1_PA_PK_AS_REP_Win2k.x			\
 	asn1_KDCDHKeyInfo_Win2k.x			\
-	asn1_TrustedCA_19.x				\
-	asn1_PA_PK_AS_REQ_19.x				\
 	asn1_PA_PK_AS_REQ_Win2k.x			\
-	asn1_PKAuthenticator_19.x			\
-	asn1_AuthPack_19.x				\
-	asn1_PA_PK_AS_REP_19.x				\
-	asn1_ReplyKeyPack_19.x
+	asn1_ReplyKeyPack_Win2k.x
 
 gen_files_pkcs12 =					\
 	asn1_id_pkcs_12.x				\
