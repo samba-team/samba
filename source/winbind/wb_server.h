@@ -32,8 +32,12 @@
 /* this struct stores global data for the winbind task */
 struct wbsrv_service {
 	struct task_server *task;
-	struct dcerpc_pipe *netlogon_pipe;
+
+	struct dcerpc_pipe *netlogon_auth2_pipe;
+	struct cli_credentials *schannel_creds;
+
 	struct dcerpc_pipe *lsa_pipe;
+	struct dcerpc_pipe *netlogon_pipe;
 };
 
 /* 
