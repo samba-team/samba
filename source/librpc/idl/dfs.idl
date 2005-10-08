@@ -7,33 +7,32 @@
 [ uuid("4fc742e0-4a10-11cf-8273-00aa004ae673"),
   version(3.0),
   pointer_default(unique),
-  pointer_default_top(unique),
   helpstring("Settings for Microsoft Distributed File System")
 ] interface netdfs
 {
 	/******************/
 	/* Function: 0x00 */
 	void dfs_GetManagerVersion(
-		[out,ref] uint32 *exist_flag
+		[out] uint32 *exist_flag
 		);
 
 
 	/******************/
 	/* Function: 0x01 */
 	WERROR dfs_Add (
-		[in,ref]     unistr *path,
-		[in,ref]     unistr *server,
-		[in]         unistr *share,
-		[in]         unistr *comment,
-		[in]         uint32  flags
+		[in]     	 unistr *path,
+		[in]     	 unistr *server,
+		[in,unique]         unistr *share,
+		[in,unique]         unistr *comment,
+		[in]         uint32 flags
 		);
 
 	/******************/
 	/* Function: 0x02 */
 	WERROR dfs_Remove (
-		[in,ref] unistr *path,
-		[in]     unistr *server,
-		[in]     unistr *share
+		[in] 	 		unistr *path,
+		[in,unique]     unistr *server,
+		[in,unique]     unistr *share
 		);
 
 	/******************/
@@ -42,6 +41,9 @@
 
 	/******************/
 	/* Function: 0x04 */
+
+	typedef struct {
+	} dfs_Info0;
 
 	typedef struct {
 		unistr *path;
@@ -100,6 +102,7 @@
 	} dfs_Info300;
 
 	typedef union {
+		[case(0)]	dfs_Info0 *info0;
 		[case(1)]   dfs_Info1 *info1;
 		[case(2)]   dfs_Info2 *info2;
 		[case(3)]   dfs_Info3 *info3;
@@ -107,15 +110,14 @@
 		[case(100)] dfs_Info100 *info100;
 		[case(101)] dfs_Info101 *info101;
 		[case(102)] dfs_Info102 *info102;
-		[default] ;
 	} dfs_Info;
 
 	WERROR dfs_GetInfo (
-		[in,ref] unistr *path,
-		[in]     unistr *server,
-		[in]     unistr *share,
+		[in] 	 unistr *path,
+		[in,unique]     unistr *server,
+		[in,unique]     unistr *share,
 		[in]     uint32 level,
-		[out,switch_is(level)] dfs_Info info
+		[out,switch_is(level)] dfs_Info *info
 		);
 
 	/******************/
@@ -169,9 +171,9 @@
 	WERROR dfs_Enum (
 		[in] uint32 level,
 		[in] uint32 bufsize,
-		[in,out] dfs_EnumStruct *info,
-		[in]     uint32 *unknown,
-		[in,out] uint32 *total
+		[in,out,unique] dfs_EnumStruct *info,
+		[in,unique]     uint32 *unknown,
+		[in,out,unique] uint32 *total
 		);
 
 	/* Function 0x06 */
