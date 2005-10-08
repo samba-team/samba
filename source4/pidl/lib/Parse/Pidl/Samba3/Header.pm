@@ -103,9 +103,13 @@ sub ParseUnion($$$)
 {
 	my ($if,$u,$n) = @_;
 
-	my $extra = {};
-	
-	$extra->{switch_value} = $u->{SWITCH_TYPE};
+	my $extra = {
+		switch_value => $u->{SWITCH_TYPE}
+	};
+
+	if (not defined($extra->{switch_value})) {
+		$extra->{switch_value} = "uint32";
+	}
 
 	foreach my $e (@{$u->{ELEMENTS}}) {
 		foreach my $l (@{$e->{LEVELS}}) {
