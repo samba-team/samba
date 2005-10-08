@@ -433,6 +433,7 @@ static NTSTATUS wrepl_request_wait(struct wrepl_request *req)
 	return req->status;
 }
 
+static void wrepl_request_trigger(struct wrepl_request *req);
 
 /*
   connect a wrepl_socket to a WINS server
@@ -459,7 +460,13 @@ struct wrepl_request *wrepl_connect_send(struct wrepl_socket *wrepl_socket,
 
 	status = socket_connect(wrepl_socket->sock, our_ip, 0, peer_ip, 
 				WINS_REPLICATION_PORT, 0);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) goto failed;
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		req->wrepl_socket = wrepl_socket;
+		req->state        = WREPL_REQUEST_ERROR;
+		req->status       = status;
+		wrepl_request_trigger(req);
+		return req;
+	}
 
 	return req;
 
