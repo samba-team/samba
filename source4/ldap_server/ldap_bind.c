@@ -105,6 +105,7 @@ reply:
 		errstr = NULL;
 	} else if (NT_STATUS_IS_OK(status)) {
 		struct ldapsrv_partition *part;
+		struct auth_session_info *old_session_info;
 
 		result = LDAP_SUCCESS;
 		errstr = NULL;
@@ -112,11 +113,15 @@ reply:
 		    gensec_have_feature(call->conn->gensec, GENSEC_FEATURE_SIGN)) {
 			call->conn->enable_wrap = True;
 		}
+		old_session_info = call->conn->session_info;
+		call->conn->session_info = NULL;
 		status = gensec_session_info(call->conn->gensec, &call->conn->session_info);
 		if (!NT_STATUS_IS_OK(status)) {
+			call->conn->session_info = old_session_info;
 			result = LDAP_OPERATIONS_ERROR;
 			errstr = talloc_asprintf(reply, "SASL:[%s]: Failed to get session info: %s", req->creds.SASL.mechanism, nt_errstr(status));
 		} else {
+			talloc_free(old_session_info);
 			for (part = call->conn->partitions; part; part = part->next) {
 				if (!part->ops->Bind) {
 					continue;
