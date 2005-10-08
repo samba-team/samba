@@ -307,7 +307,8 @@ struct lookupname_state {
 	struct wb_get_lsa_pipe *getlsa;
 };
 
-static void lookupname_recv_lsa(struct composite_context *req);
+static void lookupname_recv_lsa(struct composite_context *ctx);
+static void lookupname_recv_sid(struct composite_context *ctx);
 
 NTSTATUS wbsrv_samba3_lookupname(struct wbsrv_samba3_call *s3call)
 {
@@ -318,13 +319,20 @@ NTSTATUS wbsrv_samba3_lookupname(struct wbsrv_samba3_call *s3call)
 
 	DEBUG(5, ("wbsrv_samba3_lookupname called\n"));
 
-	talloc_free(service->lsa_pipe);
-	service->lsa_pipe = NULL;
-
 	state = talloc(s3call, struct lookupname_state);
 	NT_STATUS_HAVE_NO_MEMORY(state);
-
 	state->s3call = s3call;
+
+	if (service->lsa_pipe != NULL) {
+		ctx = wb_lsa_lookupname_send(service->lsa_pipe,
+					     s3call->request.data.name.name);
+		NT_STATUS_HAVE_NO_MEMORY(ctx);
+		ctx->async.fn = lookupname_recv_sid;
+		ctx->async.private_data = state;
+		s3call->call->flags |= WBSRV_CALL_FLAGS_REPLY_ASYNC;
+		return NT_STATUS_OK;
+	}
+
 	state->getlsa = talloc(s3call, struct wb_get_lsa_pipe);
 	NT_STATUS_HAVE_NO_MEMORY(state->getlsa);
 
@@ -356,7 +364,18 @@ static void lookupname_recv_lsa(struct composite_context *ctx)
 	status = wb_get_lsa_pipe_recv(ctx, service);
 	if (!NT_STATUS_IS_OK(status)) goto done;
 
-	service->lsa_pipe = state->getlsa->out.pipe;
+	service->lsa_pipe = talloc_steal(service, state->getlsa->out.pipe);
+
+	ctx = wb_lsa_lookupname_send(service->lsa_pipe,
+				     state->s3call->request.data.name.name);
+	if (ctx == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	ctx->async.fn = lookupname_recv_sid;
+	ctx->async.private_data = state;
+	return;
 
  done:
 	if (!NT_STATUS_IS_OK(status)) {
@@ -377,4 +396,40 @@ static void lookupname_recv_lsa(struct composite_context *ctx)
 		return;
 	}
 
+}
+
+static void lookupname_recv_sid(struct composite_context *ctx)
+{
+	struct lookupname_state *state =
+		talloc_get_type(ctx->async.private_data,
+				struct lookupname_state);
+	NTSTATUS status;
+	struct wb_sid_object *sid;
+
+	status = wb_lsa_lookupname_recv(ctx, state, &sid);
+	if (!NT_STATUS_IS_OK(status)) goto done;
+
+	state->s3call->response.result = WINBINDD_OK;
+	state->s3call->response.data.sid.type = sid->type;
+	WBSRV_SAMBA3_SET_STRING(state->s3call->response.data.sid.sid,
+				dom_sid_string(state, sid->sid));
+
+ done:
+	if (!NT_STATUS_IS_OK(status)) {
+		struct winbindd_response *resp = &state->s3call->response;
+		resp->result = WINBINDD_ERROR;
+		WBSRV_SAMBA3_SET_STRING(resp->data.auth.nt_status_string,
+					nt_errstr(status));
+		WBSRV_SAMBA3_SET_STRING(resp->data.auth.error_string,
+					nt_errstr(status));
+		resp->data.auth.pam_error = nt_status_to_pam(status);
+
+	}
+
+	status = wbsrv_send_reply(state->s3call->call);
+	if (!NT_STATUS_IS_OK(status)) {
+		wbsrv_terminate_connection(state->s3call->call->wbconn,
+					   "wbsrv_queue_reply() failed");
+		return;
+	}
 }

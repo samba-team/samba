@@ -81,6 +81,8 @@ struct drsuapi_DsCrackNames;
 struct drsuapi_DsReplicaObjectListItem;
 struct drsuapi_DsReplicaObjectListItemEx;
 
+struct DsPrivate;
+
 struct MULTI_QI;
 struct COSERVERINFO;
 
@@ -260,6 +262,7 @@ struct wins_server;
 struct wb_finddcs;
 struct wb_get_schannel_creds;
 struct wb_get_lsa_pipe;
+struct wb_sid_object;
 
 struct cldap_socket;
 struct cldapd_server;

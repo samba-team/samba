@@ -5,6 +5,26 @@
 # Copyright jelmer@samba.org 2004-2005
 # released under the GNU GPL
 
+=pod
+
+=head1 NAME
+
+Parse::Pidl::NDR - NDR parsing information generator
+
+=head1 DESCRIPTION
+
+#####################################################################
+# return a table describing the order in which the parts of an element
+# should be parsed
+# Possible level types:
+#  - POINTER
+#  - ARRAY
+#  - SUBCONTEXT
+#  - SWITCH
+#  - DATA
+
+=cut
+
 package Parse::Pidl::NDR;
 
 require Exporter;
@@ -62,15 +82,6 @@ sub fatal($$)
 	die("$pos->{FILE}:$pos->{LINE}:$s\n");
 }
 
-#####################################################################
-# return a table describing the order in which the parts of an element
-# should be parsed
-# Possible level types:
-#  - POINTER
-#  - ARRAY
-#  - SUBCONTEXT
-#  - SWITCH
-#  - DATA
 sub GetElementLevelTable($)
 {
 	my $e = shift;
@@ -394,6 +405,7 @@ sub ParseUnion($)
 
 	if (has_property($e, "nodiscriminant")) { $switch_type = undef; }
 	
+	my $hasdefault = 0;
 	foreach my $x (@{$e->{ELEMENTS}}) 
 	{
 		my $t;
@@ -404,6 +416,7 @@ sub ParseUnion($)
 		}
 		if (has_property($x, "default")) {
 			$t->{CASE} = "default";
+			$hasdefault = 1;
 		} elsif (defined($x->{PROPERTIES}->{case})) {
 			$t->{CASE} = "case $x->{PROPERTIES}->{case}";
 		} else {
@@ -417,6 +430,7 @@ sub ParseUnion($)
 		SWITCH_TYPE => $switch_type,
 		ELEMENTS => \@elements,
 		PROPERTIES => $e->{PROPERTIES},
+		HAS_DEFAULT => $hasdefault,
 		ORIGINAL => $e
 	};
 }
