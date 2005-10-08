@@ -6,6 +6,14 @@
 # Portions based on idl2eth.c by Ronnie Sahlberg
 # released under the GNU GPL
 
+=pod
+
+=head1 NAME
+
+Parse::Pidl::Ethereal::NDR - Parser generator for Ethereal
+
+=cut
+
 package Parse::Pidl::Ethereal::NDR;
 
 use strict;
