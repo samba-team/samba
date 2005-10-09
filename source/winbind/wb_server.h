@@ -36,16 +36,28 @@ struct wbsrv_service {
 	struct wbsrv_domain *domains;
 };
 
+struct wbsrv_samconn {
+	struct wbsrv_domain *domain;
+	void *private_data;
+
+	struct composite_context (*seqnum_send)(struct wbsrv_samconn *);
+	NTSTATUS (*seqnum_recv)(struct composite_context *, uint64_t *);
+};
+
 struct wbsrv_domain {
 	struct wbsrv_domain *next, *prev;
+
+	BOOL initialized;
 
 	const char *name;
 	const struct dom_sid *sid;
 
 	struct dcerpc_pipe *lsa_pipe;
+	struct policy_handle *lsa_policy;
+
 	struct dcerpc_pipe *netlogon_auth2_pipe;
-	struct cli_credentials *schannel_creds;
 	struct dcerpc_pipe *netlogon_pipe;
+	struct cli_credentials *schannel_creds;
 };
 
 /* 

@@ -25,7 +25,7 @@
 #include "lib/events/events.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
-
+#include "lib/messaging/irpc.h"
 
 /*
   block until a composite function has completed, then return the status
@@ -68,3 +68,75 @@ void composite_trigger_done(struct composite_context *c)
 	/* a zero timeout means immediate */
 	event_add_timed(c->event_ctx, c, timeval_zero(), composite_trigger, c);
 }
+
+
+/*
+ * Some composite helpers that are handy if you write larger composite
+ * functions.
+ */
+
+BOOL comp_is_ok(struct composite_context *ctx)
+{
+	if (NT_STATUS_IS_OK(ctx->status)) {
+		return True;
+	}
+	ctx->state = COMPOSITE_STATE_ERROR;
+	if (ctx->async.fn != NULL) {
+		ctx->async.fn(ctx);
+	}
+	return False;
+}
+
+void comp_error(struct composite_context *ctx, NTSTATUS status)
+{
+	ctx->status = status;
+	SMB_ASSERT(!comp_is_ok(ctx));
+}
+
+BOOL comp_nomem(const void *p, struct composite_context *ctx)
+{
+	if (p != NULL) {
+		return False;
+	}
+	comp_error(ctx, NT_STATUS_NO_MEMORY);
+	return True;
+}
+
+void comp_done(struct composite_context *ctx)
+{
+	ctx->state = COMPOSITE_STATE_DONE;
+	if (ctx->async.fn != NULL) {
+		ctx->async.fn(ctx);
+	}
+}
+
+void comp_cont(struct composite_context *ctx,
+	       struct composite_context *new_ctx,
+	       void (*continuation)(struct composite_context *),
+	       void *private_data)
+{
+	if (comp_nomem(new_ctx, ctx)) return;
+	new_ctx->async.fn = continuation;
+	new_ctx->async.private_data = private_data;
+}
+
+void rpc_cont(struct composite_context *ctx,
+	      struct rpc_request *new_req,
+	      void (*continuation)(struct rpc_request *),
+	      void *private_data)
+{
+	if (comp_nomem(new_req, ctx)) return;
+	new_req->async.callback = continuation;
+	new_req->async.private = private_data;
+}
+
+void irpc_cont(struct composite_context *ctx,
+	       struct irpc_request *new_req,
+	       void (*continuation)(struct irpc_request *),
+	       void *private_data)
+{
+	if (comp_nomem(new_req, ctx)) return;
+	new_req->async.fn = continuation;
+	new_req->async.private = private_data;
+}
+

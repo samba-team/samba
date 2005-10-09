@@ -215,6 +215,8 @@ struct lsa_RightSet;
 
 struct composite_context;
 struct monitor_msg;
+struct irpc_request;
+struct rpc_request;
 
 struct smb_composite_loadfile;
 struct smb_composite_savefile;
@@ -292,6 +294,7 @@ struct samba3_share_info;
 struct samba3;
 
 struct wbsrv_service;
+struct wbsrv_domain;
 struct wbsrv_protocol_ops;
 struct wbsrv_listen_socket;
 struct wbsrv_connection;
