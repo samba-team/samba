@@ -151,9 +151,13 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 			if (error_string) {
 				*error_string = strdup(nt_errstr(status));
 			}
+			return status;
 		}
 
 		validation_level = r->in.validation_level;
+
+		creds_decrypt_samlogon(samlogon_state->creds, validation_level, &r->out.validation);
+
 		switch (validation_level) {
 		case 2:
 			base = &r->out.validation.sam2->base;
@@ -172,9 +176,13 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 			if (error_string) {
 				*error_string = strdup(nt_errstr(status));
 			}
+			return status;
 		}
 
 		validation_level = r_ex->in.validation_level;
+
+		creds_decrypt_samlogon(samlogon_state->creds, validation_level, &r_ex->out.validation);
+
 		switch (validation_level) {
 		case 2:
 			base = &r_ex->out.validation.sam2->base;
@@ -201,9 +209,13 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 			if (error_string) {
 				*error_string = strdup(nt_errstr(status));
 			}
+			return status;
 		}
-
+		
 		validation_level = r_flags->in.validation_level;
+
+		creds_decrypt_samlogon(samlogon_state->creds, validation_level, &r_flags->out.validation);
+
 		switch (validation_level) {
 		case 2:
 			base = &r_flags->out.validation.sam2->base;
@@ -218,68 +230,18 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 		break;
 	}
 		
-
-	if (!NT_STATUS_IS_OK(status)) {
-		/* we cannot check the session key, if the logon failed... */
-		return status;
-	}
-
 	if (!base) {
 		printf("No user info returned from 'successful' SamLogon*() call!\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* find and decyrpt the session keys, return in parameters above */
-	if (validation_level == 6) {
-		/* they aren't encrypted! */
-		if (user_session_key) {
-			memcpy(user_session_key, base->key.key, 16);
-		}
-		if (lm_key) {
-			memcpy(lm_key, base->LMSessKey.key, 8);
-		}
-	} else if (samlogon_state->creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
-		static const char zeros[16];
-			
-		if (memcmp(base->key.key, zeros,  
-			   sizeof(base->key.key)) != 0) {
-			creds_arcfour_crypt(samlogon_state->creds, 
-					    base->key.key, 
-					    sizeof(base->key.key));
-		}
-			
-		if (user_session_key) {
-			memcpy(user_session_key, base->key.key, 16);
-		}
-			
-		if (memcmp(base->LMSessKey.key, zeros,  
-			   sizeof(base->LMSessKey.key)) != 0) {
-			creds_arcfour_crypt(samlogon_state->creds, 
-					    base->LMSessKey.key, 
-					    sizeof(base->LMSessKey.key));
-		}
-			
-		if (lm_key) {
-			memcpy(lm_key, base->LMSessKey.key, 8);
-		}
-	} else {
-		static const char zeros[16];
-			
-		if (user_session_key) {
-			memcpy(user_session_key, base->key.key, 16);
-		}
-
-		if (memcmp(base->LMSessKey.key, zeros,  
-			   sizeof(base->LMSessKey.key)) != 0) {
-			creds_des_decrypt_LMKey(samlogon_state->creds, 
-						&base->LMSessKey);
-		}
-			
-		if (lm_key) {
-			memcpy(lm_key, base->LMSessKey.key, 8);
-		}
+	if (user_session_key) {
+		memcpy(user_session_key, base->key.key, 16);
 	}
-	
+	if (lm_key) {
+		memcpy(lm_key, base->LMSessKey.key, 8);
+	}
+			
 	return status;
 } 
 
