@@ -315,3 +315,47 @@ NTSTATUS creds_server_step_check(struct creds_CredentialState *creds,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 }
+
+void creds_decrypt_samlogon(struct creds_CredentialState *creds,
+			    uint16_t validation_level,
+			    union netr_Validation *validation) 
+{
+	static const char zeros[16];
+
+	struct netr_SamBaseInfo *base;
+	switch (validation_level) {
+	case 2:
+		base = &validation->sam2->base;
+		break;
+	case 3:
+		base = &validation->sam3->base;
+		break;
+	case 6:
+		base = &validation->sam6->base;
+		break;
+	}
+	/* find and decyrpt the session keys, return in parameters above */
+	if (validation_level == 6) {
+		/* they aren't encrypted! */
+	} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
+		if (memcmp(base->key.key, zeros,  
+			   sizeof(base->key.key)) != 0) {
+			creds_arcfour_crypt(creds, 
+					    base->key.key, 
+					    sizeof(base->key.key));
+		}
+			
+		if (memcmp(base->LMSessKey.key, zeros,  
+			   sizeof(base->LMSessKey.key)) != 0) {
+			creds_arcfour_crypt(creds, 
+					    base->LMSessKey.key, 
+					    sizeof(base->LMSessKey.key));
+		}
+	} else {
+		if (memcmp(base->LMSessKey.key, zeros,  
+			   sizeof(base->LMSessKey.key)) != 0) {
+			creds_des_decrypt_LMKey(creds, 
+						&base->LMSessKey);
+		}
+	}
+}	
