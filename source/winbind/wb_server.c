@@ -42,13 +42,14 @@ void wbsrv_terminate_connection(struct wbsrv_connection *wbconn, const char *rea
 */
 static void wbsrv_accept(struct stream_connection *conn)
 {
-	struct wbsrv_listen_socket *listen_socket = talloc_get_type(conn->private,
-								    struct wbsrv_listen_socket);
+	struct wbsrv_listen_socket *listen_socket =
+		talloc_get_type(conn->private, struct wbsrv_listen_socket);
 	struct wbsrv_connection *wbconn;
 
 	wbconn = talloc_zero(conn, struct wbsrv_connection);
 	if (!wbconn) {
-		stream_terminate_connection(conn, "wbsrv_accept: out of memory");
+		stream_terminate_connection(conn,
+					    "wbsrv_accept: out of memory");
 		return;
 	}
 	wbconn->conn		= conn;
@@ -61,7 +62,8 @@ static void wbsrv_accept(struct stream_connection *conn)
 */
 static void wbsrv_recv(struct stream_connection *conn, uint16_t flags)
 {
-	struct wbsrv_connection *wbconn = talloc_get_type(conn->private, struct wbsrv_connection);
+	struct wbsrv_connection *wbconn =
+		talloc_get_type(conn->private, struct wbsrv_connection);
 	const struct wbsrv_protocol_ops *ops = wbconn->listen_socket->ops;
 	struct wbsrv_call *call;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
@@ -73,7 +75,8 @@ static void wbsrv_recv(struct stream_connection *conn, uint16_t flags)
 		return;
 	}
 
-	/* if the used protocol doesn't support pending requests disallow them */
+	/* if the used protocol doesn't support pending requests disallow
+	 * them */
 	if (wbconn->pending_calls && !ops->allow_pending_calls) {
 		EVENT_FD_NOT_READABLE(conn->event.fde);
 		return;
@@ -91,7 +94,7 @@ static void wbsrv_recv(struct stream_connection *conn, uint16_t flags)
 		uint32_t packet_length;
 
 		status = socket_recv(conn->socket, 
-				     wbconn->partial.data + wbconn->partial_read,
+				     wbconn->partial.data+wbconn->partial_read,
 				     4 - wbconn->partial_read,
 				     &nread, 0);
 		if (NT_STATUS_IS_ERR(status)) goto failed;
@@ -102,8 +105,9 @@ static void wbsrv_recv(struct stream_connection *conn, uint16_t flags)
 
 		packet_length = ops->packet_length(wbconn->partial);
 
-		wbconn->partial.data = talloc_realloc(wbconn, wbconn->partial.data, 
-						      uint8_t, packet_length);
+		wbconn->partial.data =
+			talloc_realloc(wbconn, wbconn->partial.data, uint8_t,
+				       packet_length);
 		if (!wbconn->partial.data) goto nomem;
 
 		wbconn->partial.length = packet_length;
@@ -127,9 +131,9 @@ static void wbsrv_recv(struct stream_connection *conn, uint16_t flags)
 	call->event_ctx	= conn->event.ctx;
 
 	/*
-	 * we have parsed the request, so we can reset the wbconn->partial_read,
-	 * maybe we could also free wbconn->partial, but for now we keep it,
-	 * and overwrite it the next time
+	 * we have parsed the request, so we can reset the
+	 * wbconn->partial_read, maybe we could also free wbconn->partial, but
+	 * for now we keep it, and overwrite it the next time
 	 */
 	wbconn->partial_read = 0;
 
@@ -260,7 +264,8 @@ static void winbind_task_init(struct task_server *task)
 	   stream_setup_socket() call. */
 	model_ops = process_model_byname("single");
 	if (!model_ops) {
-		task_server_terminate(task, "Can't find 'single' process model_ops");
+		task_server_terminate(task,
+				      "Can't find 'single' process model_ops");
 		return;
 	}
 
@@ -283,20 +288,24 @@ static void winbind_task_init(struct task_server *task)
 	listen_socket->ops		= &wbsrv_samba3_protocol_ops;
 	status = stream_setup_socket(task->event_ctx, model_ops,
 				     &wbsrv_ops, "unix",
-				     listen_socket->socket_path, &port, listen_socket);
+				     listen_socket->socket_path, &port,
+				     listen_socket);
 	if (!NT_STATUS_IS_OK(status)) goto listen_failed;
 
 	/* setup the privileged samba3 socket */
 	listen_socket = talloc(service, struct wbsrv_listen_socket);
 	if (!listen_socket) goto nomem;
-	listen_socket->socket_path	= smbd_tmp_path(listen_socket, WINBINDD_SAMBA3_PRIVILEGED_SOCKET);
+	listen_socket->socket_path	=
+		smbd_tmp_path(listen_socket,
+			      WINBINDD_SAMBA3_PRIVILEGED_SOCKET);
 	if (!listen_socket->socket_path) goto nomem;
 	listen_socket->service		= service;
 	listen_socket->privileged	= True;
 	listen_socket->ops		= &wbsrv_samba3_protocol_ops;
 	status = stream_setup_socket(task->event_ctx, model_ops,
 				     &wbsrv_ops, "unix",
-				     listen_socket->socket_path, &port, listen_socket);
+				     listen_socket->socket_path, &port,
+				     listen_socket);
 	if (!NT_STATUS_IS_OK(status)) goto listen_failed;
 
 	return;
@@ -314,7 +323,8 @@ nomem:
 /*
   initialise the winbind server
  */
-static NTSTATUS winbind_init(struct event_context *event_ctx, const struct model_ops *model_ops)
+static NTSTATUS winbind_init(struct event_context *event_ctx,
+			     const struct model_ops *model_ops)
 {
 	return task_server_startup(event_ctx, model_ops, winbind_task_init);
 }
