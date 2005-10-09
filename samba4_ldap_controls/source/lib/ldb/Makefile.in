@@ -1,0 +1,180 @@
+CC = @CC@
+GCOV = @GCOV@
+XSLTPROC = @XSLTPROC@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+includedir = @includedir@
+libdir = @libdir@
+bindir = @bindir@
+WITH_GCOV = @WITH_GCOV@
+WITH_LDAP = @WITH_LDAP@
+WITH_SQLITE3 = @WITH_SQLITE3@
+
+ifeq ($(WITH_LDAP),yes)
+OPENLDAP_PREFIX=/usr
+LDAP_LIBS=-L$(OPENLDAP_PREFIX)/lib -llber -lldap
+LDAP_FLAGS=-DHAVE_LDAP=1
+LDB_LDAP_OBJ=ldb_ldap/ldb_ldap.o
+endif
+
+ifeq ($(WITH_SQLITE3),yes)
+SQLITE3_PREFIX=/usr
+SQLITE3_LIBS=-L$(SQLITE3_PREFIX)/lib -lsqlite3
+SQLITE3_FLAGS=-DHAVE_SQLITE3=1
+LDB_SQLITE3_OBJ=ldb_sqlite3/ldb_sqlite3.o
+endif
+
+TDBDIR=../tdb
+TALLOCDIR=../talloc
+
+CFLAGS1=-Wall -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith \
+       -Wcast-qual -Wcast-align -Wwrite-strings -g -Iinclude -I. -I.. \
+       -I$(TDBDIR)/include -I$(TALLOCDIR) -DUSE_MMAP=1 $(LDAP_FLAGS)
+
+# enable the following two lines to build with gcov code coverage support
+ifeq ($(WITH_GCOV),1)
+GCOV_FLAGS = -ftest-coverage -fprofile-arcs 
+GCOV_LIBS = -lgcov
+endif
+
+CFLAGS = $(CFLAGS1) $(GCOV_FLAGS) @CFLAGS@
+
+LIB_FLAGS=-Llib -lldb $(LDAP_LIBS) $(SQLITE3_LIBS) $(GCOV_LIBS) @LIBS@
+
+TDB_OBJ=$(TDBDIR)/common/tdb.o $(TDBDIR)/common/dump.o \
+	$(TDBDIR)/common/io.o $(TDBDIR)/common/lock.o \
+	$(TDBDIR)/common/open.o $(TDBDIR)/common/traverse.o \
+	$(TDBDIR)/common/freelist.o $(TDBDIR)/common/error.o \
+	$(TDBDIR)/common/transaction.o 
+TALLOC_OBJ=$(TALLOCDIR)/talloc.o
+
+LDB_TDB_OBJ=ldb_tdb/ldb_tdb.o \
+	ldb_tdb/ldb_pack.o ldb_tdb/ldb_search.o ldb_tdb/ldb_index.o \
+	ldb_tdb/ldb_cache.o ldb_tdb/ldb_tdb_wrap.o
+
+
+COMMON_OBJ=common/ldb.o common/ldb_ldif.o \
+	   common/ldb_parse.o common/ldb_msg.o common/ldb_utf8.o \
+	   common/ldb_debug.o common/ldb_modules.o \
+	   common/ldb_dn.o common/ldb_match.o common/ldb_attributes.o \
+	   common/attrib_handlers.o
+
+MODULES_OBJ=modules/timestamps.o modules/schema.o modules/rdn_name.o \
+			modules/ldb_map.o
+
+OBJS =  $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LDAP_OBJ) $(LDB_SQLITE3_OBJ)
+
+LDB_LIB = lib/libldb.a
+
+BINS = bin/ldbadd bin/ldbsearch bin/ldbdel bin/ldbmodify bin/ldbedit bin/ldbrename bin/ldbtest bin/oLschema2ldif
+
+LIBS = $(LDB_LIB)($(OBJS))
+
+DIRS = lib bin
+
+all: $(DIRS) $(BINS) $(LIBS) manpages
+
+.c.o:
+	@echo Compiling $*.c
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+lib:
+	mkdir -p lib
+
+bin:
+	mkdir -p bin
+
+lib/libldb.a: $(OBJS)
+
+bin/ldbadd: tools/ldbadd.o tools/cmdline.o $(LIBS)
+	$(CC) -o bin/ldbadd tools/ldbadd.o tools/cmdline.o $(LIB_FLAGS)
+
+bin/ldbsearch: tools/ldbsearch.o tools/cmdline.o $(LIBS)
+	$(CC) -o bin/ldbsearch tools/ldbsearch.o tools/cmdline.o $(LIB_FLAGS)
+
+bin/ldbdel: tools/ldbdel.o tools/cmdline.o $(LIBS)
+	$(CC) -o bin/ldbdel tools/ldbdel.o tools/cmdline.o $(LIB_FLAGS)
+
+bin/ldbmodify: tools/ldbmodify.o tools/cmdline.o $(LIBS)
+	$(CC) -o bin/ldbmodify tools/ldbmodify.o tools/cmdline.o $(LIB_FLAGS)
+
+bin/ldbedit: tools/ldbedit.o tools/cmdline.o $(LIBS)
+	$(CC) -o bin/ldbedit tools/ldbedit.o tools/cmdline.o $(LIB_FLAGS)
+
+bin/ldbrename: tools/ldbrename.o tools/cmdline.o $(LIBS)
+	$(CC) -o bin/ldbrename tools/ldbrename.o tools/cmdline.o $(LIB_FLAGS)
+
+bin/ldbtest: tools/ldbtest.o tools/cmdline.o $(LIBS)
+	$(CC) -o bin/ldbtest tools/ldbtest.o tools/cmdline.o $(LIB_FLAGS)
+
+bin/oLschema2ldif: tools/oLschema2ldif.o tools/cmdline.o $(LIBS)
+	$(CC) -o bin/oLschema2ldif tools/oLschema2ldif.o tools/cmdline.o $(LIB_FLAGS)
+
+.SUFFIXES: .1 .2 .3 .yo
+
+%.3: %.3.xml
+	test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
+
+%.1: %.1.xml
+	test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
+
+%.html: %.xml
+	test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl $<
+
+manpages: $(patsubst %.xml,%,$(wildcard man/*.xml))
+
+clean:
+	rm -f */*.o *.gcov */*.gc?? *~ */*~ $(BINS) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LIB) man/man?/*.[13]
+
+distclean:	clean
+	rm -rf autom4te.cache bin lib
+	rm -f configure config.log config.status ldb.pc \
+	    Makefile.ldb include/config.h include/config.h.in
+	rm -f Makefile
+
+etags:
+	etags */*.[ch]
+
+test-tdb: $(BINS)
+	@echo "STARTING TDB BACKEND TEST"
+	tests/test-tdb.sh
+
+ifeq ($(WITH_LDAP),yes)
+test-ldap:
+	@echo "STARTING LDAP BACKEND TEST"
+	tests/test-ldap.sh
+else
+test-ldap:
+	@echo "SKIP LDAP TEST - NO LDAP SUPPORT"
+endif
+
+ifeq ($(WITH_SQLITE3),yes)
+test-sqlite3:
+	@echo "STARTING SQLITE3 BACKEND TEST"
+	tests/test-sqlite3.sh
+else
+test-sqlite3:
+	@echo "SKIP SQLITE3 TEST - NO SQLITE3 SUPPORT"
+endif
+
+ifeq (1,0)
+test-schema:
+	@echo "STARTING SCHEMA MODULE TEST"
+	tests/test-schema.sh
+endif
+
+test: $(BINS) test-tdb test-ldap test-sqlite3 test-schema
+
+install: all
+	cp include/ldb.h $(includedir)
+	cp $(LDB_LIB) $(libdir)
+	cp $(BINS) $(bindir)
+	cp ldb.pc $(libdir)/pkgconfig
+
+gcov:
+	$(GCOV) -po ldb_sqlite3 ldb_sqlite3/*.c 2| tee ldb_sqlite3.report.gcov
+	$(GCOV) -po ldb_ldap ldb_ldap/*.c 2| tee ldb_ldap.report.gcov
+	$(GCOV) -po ldb_tdb ldb_tdb/*.c 2| tee ldb_tdb.report.gcov
+	$(GCOV) -po common common/*.c 2| tee common.report.gcov
+	$(GCOV) -po modules modules/*.c 2| tee modules.report.gcov
+	$(GCOV) -po tools tools/*.c 2| tee tools.report.gcov

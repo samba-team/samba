@@ -1,0 +1,74 @@
+#!/bin/sh
+exec smbscript "$0" ${1+"$@"}
+/*
+	add a new user to a Samba4 server
+	Copyright Andrew Tridgell 2005
+	Released under the GNU GPL v2 or later
+*/
+
+options = GetOptions(ARGV,
+		"POPT_AUTOHELP",
+		"POPT_COMMON_SAMBA",
+		"POPT_COMMON_VERSION",
+		'username=s',
+		'unixname=s',
+		'password=s',
+		'quiet');
+
+if (options == undefined) {
+   println("Failed to parse options: " + options.ERROR);
+   return -1;
+}
+
+libinclude("base.js");
+libinclude("provision.js");
+
+
+/*
+  print a message if quiet is not set
+*/
+function message() 
+{
+	if (options["quiet"] == undefined) {
+		print(vsprintf(arguments));
+	}
+}
+
+/*
+ show some help
+*/
+function ShowHelp()
+{
+	print("
+Samba4 newuser
+
+newuser [options]
+  --username  USERNAME     choose new username
+  --unixname  USERNAME     choose unix name of new user
+  --password  PASSWORD     set password
+
+You must provide at least a username
+");
+	exit(1);
+}
+
+if (options['username'] == undefined) {
+	ShowHelp();
+}
+if (options['password'] == undefined) {
+	options.password = randpass(12);
+	printf("chose random password %s\n", options.password);
+}
+if (options['unixname'] == undefined) {
+	options.unixname = options.username;
+}
+
+var nss = nss_init();
+if (nss.getpwnam(options.unixname) == undefined) {
+	printf("ERROR: Unix user '%s' does not exist\n", options.unixname);
+	exit(1);
+}
+
+newuser(options.username, options.unixname, options.password, message);
+
+return 0;

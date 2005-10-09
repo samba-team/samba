@@ -1,0 +1,11 @@
+AC_PREREQ(2.50)
+AC_INIT(talloc.h)
+AC_PROG_CC
+if test "x$GCC" = "xyes"; then
+	CFLAGS="$CFLAGS -Wall -W"
+fi
+AC_PROG_INSTALL
+AC_PATH_PROG(XSLTPROC,xsltproc)
+AC_CONFIG_HEADER(config.h)
+sinclude(config.m4)
+AC_OUTPUT(Makefile talloc.pc)

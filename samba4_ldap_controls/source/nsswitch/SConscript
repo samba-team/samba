@@ -1,0 +1,2 @@
+Import('hostenv')
+hostenv.Library('cli_winbind',['wb_common.c'])

@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: winregistry
+Description: Windows registry library
+Version: @PACKAGE_VERSION@
+Libs: @LIBS@ @REG_LIBS@ -L${prefix}/lib -lwinregistry
+Cflags: -I${includedir} @CFLAGS@ @CFLAGS@

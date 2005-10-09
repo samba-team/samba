@@ -1,0 +1,2 @@
+Import('hostenv')
+hostenv.Library('cldap_server',['cldap_server.c','netlogon.c'])

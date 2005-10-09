@@ -1,0 +1,3 @@
+Import('hostenv')
+
+SConscript(dirs=['ejs'],exports='hostenv')

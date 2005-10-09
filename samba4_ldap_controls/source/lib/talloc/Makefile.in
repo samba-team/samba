@@ -1,0 +1,47 @@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+includedir = @includedir@
+libdir = @libdir@
+mandir = @mandir@
+XSLTPROC = @XSLTPROC@
+INSTALLCMD = @INSTALL@
+CC = @CC@
+CFLAGS = @CFLAGS@ -DHAVE_CONFIG_H=
+
+LIBOBJ = talloc.o
+
+all: libtalloc.a testsuite 
+
+testsuite: $(LIBOBJ) testsuite.o
+	$(CC) $(CFLAGS) -o testsuite testsuite.o $(LIBOBJ) $(LIBS)
+
+libtalloc.a: libtalloc.a($(LIBOBJ))
+
+install: all doc
+	${INSTALLCMD} -d ${libdir}
+	${INSTALLCMD} -m 755 libtalloc.a $(libdir)
+	${INSTALLCMD} -d ${includedir}
+	${INSTALLCMD} -m 644 talloc.h $(includedir)
+	${INSTALLCMD} -m 644 talloc.pc $(libdir)/pkgconfig
+	${INSTALLCMD} -d ${mandir}/man3
+	test -z "$(XSLTPROC)" || ${INSTALLCMD} -m 644 talloc.3 $(mandir)/man3
+
+doc: talloc.3
+
+%.3: %.3.xml
+	test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
+
+%.html: %.xml
+	test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl $<
+
+clean:
+	rm -f *~ *.o testsuite *.gc??
+
+test: testsuite
+	./testsuite
+
+gcov:
+	gcov talloc.c
+
+installcheck: 
+	$(MAKE) test

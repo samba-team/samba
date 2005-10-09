@@ -1,0 +1,100 @@
+#!/bin/sh
+exec smbscript "$0" ${1+"$@"}
+/*
+  tool to manipulate a remote registry
+  Copyright Andrew Tridgell 2005
+  Released under the GNU GPL v2 or later
+*/	
+
+var options = GetOptions(ARGV,
+			 "POPT_AUTOHELP",
+			 "POPT_COMMON_SAMBA",
+			 "POPT_COMMON_CREDENTIALS",
+			 "createkey=s");
+if (options == undefined) {
+	println("Failed to parse options");
+	return -1;
+}
+
+libinclude("base.js");
+libinclude("winreg.js");
+
+if (options.ARGV.length < 1) {
+	println("Usage: winreg.js <BINDING> [path]");
+	return -1;
+}
+var binding = options.ARGV[0];
+reg = winregObj();
+
+print("Connecting to " + binding + "\n");
+status = reg.connect(binding);
+if (status.is_ok != true) {
+	print("Failed to connect to " + binding + " - " + status.errstr + "\n");
+	return -1;
+}
+
+function list_values(path) {
+	var list = reg.enum_values(path);
+	var i;
+	if (list == undefined) {
+		return;
+	}
+	for (i=0;i<list.length;i++) {
+		var v = list[i];
+		printf("\ttype=%-30s size=%4d  '%s'\n", reg.typestring(v.type), v.size, v.name);
+		if (v.type == reg.REG_SZ || v.type == reg.REG_EXPAND_SZ) {
+			printf("\t\t'%s'\n", v.value);
+		}
+		if (v.type == reg.REG_MULTI_SZ) {
+			var j;
+			for (j in v.value) {
+				printf("\t\t'%s'\n", v.value[j]);
+			}
+		}
+		if (v.type == reg.REG_DWORD || v.type == reg.REG_DWORD_BIG_ENDIAN) {
+			printf("\t\t0x%08x (%d)\n", v.value, v.value);
+		}
+		if (v.type == reg.REG_QWORD) {
+			printf("\t\t0x%llx (%lld)\n", v.value, v.value);
+		}
+	}
+}
+
+function list_path(path) {
+	var list = reg.enum_path(path);
+	if (list == undefined) {
+		println("Unable to list " + path);
+		return;
+	}
+	var i;
+	list_values(path);
+	for (i=0;i<list.length;i++) {
+		var npath;
+		if (path) {
+			npath = path + "\\" + list[i];
+		} else {
+			npath = list[i];
+		}
+		println(npath);
+		list_path(npath);
+	}
+}
+
+var root;
+
+if (options.ARGV.length > 1) {
+	root = options.ARGV[1];
+} else {
+	root = '';
+}
+
+if (options.createkey) {
+	var ok = reg.create_key("HKLM\\SOFTWARE", options.createkey);
+	if (!ok) {
+		println("Failed to create key");
+	}
+} else {
+	printf("Listing registry tree '%s'\n", root);
+	list_path(root);
+}
+return 0;

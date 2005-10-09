@@ -1,0 +1,27 @@
+[
+	uuid("45f52c28-7f9f-101a-b52b-08002b2efabe"),
+	version(1.0),
+	helpstring("Server-to-Server WINS")
+] interface WinsPipe
+{
+	void WinsRecordAction();
+	void WinsStatus();
+	void WinsTrigger();
+	void WinsDoStaticInit();
+	void WinsDoScavenging();
+	void WinsGetDbRecs();
+	void WinsTerm();
+	void WinsBackup();
+	void WinsDelDbRecs();
+	void WinsPullRange();
+	void WinsSetPriorityClass();
+	void WinsResetCounters();
+	void WinsWorkerThreadUpdate();
+	void WinsGetNameAndAdd();
+	void WinsGetBrowserNames_Old();
+	void WinsDeleteWins();
+	void WinsSetFlags();
+	void WinsGetDbRecsByName();
+	void WinsStatusWHdl();
+	void WinsDoScanvenging2();
+}

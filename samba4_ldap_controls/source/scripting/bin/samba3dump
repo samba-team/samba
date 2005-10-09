@@ -1,0 +1,234 @@
+#!/bin/sh
+exec smbscript "$0" ${1+"$@"}
+/*
+	Dump Samba3 data
+	Copyright Jelmer Vernooij 2005
+	Released under the GNU GPL v2 or later
+*/
+
+options = GetOptions(ARGV,
+		"POPT_AUTOHELP",
+		"POPT_COMMON_SAMBA",
+		"POPT_COMMON_VERSION",
+		'format=s',
+		'quiet', 'blank');
+
+if (options == undefined) {
+   println("Failed to parse options");
+   return -1;
+}
+
+if (options.format == undefined) {
+	options.format = "summary";
+}
+
+if (options.format != "summary" && options.format != "full") {
+	printf("Unknown format %s\n", options.format);
+	return -1;
+}
+
+libinclude("base.js");
+
+if (options.ARGV.length != 2) {
+	println("Usage: samba3dump <libdir> <smb.conf>");
+	return -1;
+}
+
+function print_header(txt)
+{
+	printf("\n%s\n", txt);
+	println("==========================================");
+}
+
+function print_samba3_policy(pol)
+{
+	print_header("Account Policies");
+	printf("Min password length: %d\n", pol.min_password_length);
+	printf("Password history length: %d\n", pol.password_history);
+	printf("User must logon to change password: %d\n", pol.user_must_logon_to_change_password);
+	printf("Maximum password age: %d\n", pol.maximum_password_age);
+	printf("Minimum password age: %d\n", pol.minimum_password_age);
+	printf("Lockout duration: %d\n", pol.lockout_duration);
+	printf("Reset Count Minutes: %d\n", pol.reset_count_minutes);
+	printf("Bad Lockout Minutes: %d\n", pol.bad_lockout_minutes);
+	printf("Disconnect Time: %d\n", pol.disconnect_time);
+	printf("Refuse Machine Password Change: %d\n", pol.refuse_machine_password_change);
+}
+
+function print_samba3_sam(samba3)
+{
+	var i;
+	print_header("SAM Database");
+	
+	for (i in samba3.samaccounts) {
+		var a = samba3.samaccounts[i];
+		printf("%d: %s\n", a.user_rid, a.username);
+	}
+}
+
+function print_samba3_shares(samba3)
+{
+	var i, j;
+	print_header("Configured shares");
+	for (i in samba3.shares) {
+		var s = samba3.shares[i];
+		printf("--- %s ---\n", s.name);
+
+		for (j in s.parameters) {
+			var p = s.parameters[j];
+			printf("\t%s = %s\n", p.name, p.value);
+		}
+
+		println("");
+	}
+}
+
+function print_samba3_secrets(secrets)
+{
+	var i;
+	print_header("Secrets");
+
+	println("IPC Credentials:");
+	if (secrets.ipc_cred.username_obtained) 
+		printf("	User: %s\n", secrets.ipc_cred.get_username);
+	if (secrets.ipc_cred.password_obtained)
+		printf("	Password: %s\n", secrets.ipc_cred.get_password);
+
+	if (secrets.ipc_cred.domain_obtained)
+		printf("	Domain: %s\n\n", secrets.ipc_cred.get_domain);
+
+	println("LDAP passwords:");
+	for (i in secrets.ldappws) {
+		var pw = secrets.ldappws[i];
+		printf("\t%s -> %s\n", pw.dn, pw.password);
+	}
+	println("");
+
+	println("Domains:");
+	for (i in secrets.domains) {
+		var d = secrets.domains[i];
+		printf("\t--- %s ---\n", d.name);
+		printf("\tSID: %s\n", d.sid);
+		printf("\tGUID: %s\n", d.guid);
+		printf("\tPlaintext pwd: %s\n", d.plaintext_pw);
+		printf("\tLast Changed: %lu\n", d.last_change_time);
+		printf("\tSecure Channel Type: %d\n\n", d.sec_channel_type);
+	}
+
+	println("Trusted domains:");
+	for (i in secrets.trusted_domains) {
+		var td = secrets.trusted_domains[i];
+		for (j = 0; j < td.uni_name_len; j++) {
+			printf("\t--- %s ---\n", td.uni_name[j]);
+		}
+		printf("\tPassword: %s\n", td.pass);
+		printf("\tModified: %lu\n", td.mod_time);
+		printf("\tSID: %s\n", td.domain_sid);
+	}
+}
+
+function print_samba3_regdb(regdb)
+{
+	var i, j;
+	print_header("Registry");
+
+	for (i in regdb.keys) {
+		var k = regdb.keys[i];
+		printf("%s\n", k.name);
+		for (j in k.values) {
+			var v = k.values[j];
+			printf("\t%s: type %d, length %d\n", v.name, v.type, v.data.length);
+		}
+	}
+}
+
+function print_samba3_winsdb(samba3)
+{
+	var i;
+	print_header("WINS Database");
+
+	for (i in samba3.winsentries) {
+		var e = samba3.winsentries[i];
+		printf("%s, nb_flags: %x, type: %d, ttl: %lu, %d ips, fst: %s\n", e.name, e.nb_flags, e.type, e.ttl, e.ips.length, e.ips[0]);
+	}
+}
+
+function print_samba3_groupmappings(groupdb)
+{
+	print_header("Group Mappings");
+	
+	for (var i in groupdb.groupmappings) {
+		var g = groupdb.groupmappings[i];
+		printf("\t--- Group: %s ---\n", g.nt_name);
+		printf("\tComment: %s\n", g.comment);
+		printf("\tGID: %d\n", g.gid);
+		printf("\tSID Name Use: %d\n", g.sid_name_use);
+		printf("\tSID: %s\n\n", g.sid);
+	}
+}
+
+function print_samba3_aliases(groupdb)
+{
+	var i, j;
+	for (i in groupdb.aliases) {
+		var a = groupdb.aliases[i];
+		printf("\t--- Alias: %s ---\n", a.sid);
+		for (j in a.members) {
+			printf("\t%s\n", a.members[j]);
+		}
+	}
+}
+
+function print_samba3_idmapdb(idmapdb)
+{
+	var i;
+	print_header("Winbindd SID<->GID/UID mappings");
+
+	printf("User High Water Mark: %d\n", idmapdb.user_hwm);
+	printf("Group High Water Mark: %d\n\n", idmapdb.group_hwm);
+
+	for (i in idmapdb.mappings) {
+		var e = idmapdb.mappings[i];
+		printf("%s -> ", e.sid);
+
+		if (e.type == e.IDMAP_GROUP) { 
+			printf("GID %d\n", e.unix_id);
+		} else {
+			printf("UID %d\n", e.unix_id);
+		}
+	}
+}
+
+function print_samba3(samba3)
+{
+	print_samba3_sam(samba3);
+	print_samba3_policy(samba3.policy);
+	print_samba3_shares(samba3);
+	print_samba3_winsdb(samba3);
+	print_samba3_regdb(samba3.registry);
+	print_samba3_secrets(samba3.secrets);
+	print_samba3_groupmappings(samba3);
+	print_samba3_aliases(samba3);
+	print_samba3_idmapdb(samba3.idmapdb);
+}
+
+function print_samba3_summary(samba3)
+{
+	printf("WINS db entries: %d\n", samba3.winsentries.length);
+	printf("SAM Accounts: %d\n", samba3.samaccounts.length);
+	printf("Registry key count: %d\n", samba3.registry.keys.length);
+	printf("Shares (including [global]): %d\n", samba3.shares.length);
+	printf("Groupmap count: %d\n", samba3.groupmappings.length);
+	printf("Alias count: %d\n", samba3.aliases.length);
+	printf("Idmap count: %d\n", samba3.idmapdb.mappings.length);
+}
+
+samba3 = samba3_read(options.ARGV[0], options.ARGV[1]);
+
+if (options.format == "summary") {
+	print_samba3_summary(samba3);
+} else if (options.format == "full") {
+	print_samba3(samba3);
+}
+
+return 0;

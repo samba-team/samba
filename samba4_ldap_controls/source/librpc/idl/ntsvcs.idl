@@ -1,0 +1,77 @@
+/*
+  plug and play services
+*/
+
+[
+  uuid("8d9f4e40-a03d-11ce-8f69-08003e30051b"),
+  version(1.0),
+  helpstring("Plug and Play services")
+]
+interface ntsvcs
+{
+	void PNP_Disconnect();
+	void PNP_Connect();
+	void PNP_GetVersion();
+	void PNP_GetGlobalState();
+	void PNP_InitDetection();
+	void PNP_ReportLogOn();
+	void PNP_ValidateDeviceInstance();
+	void PNP_GetRootDeviceInstance();
+	void PNP_GetRelatedDeviceInstance();
+	void PNP_EnumerateSubKeys();
+	void PNP_GetDeviceList();
+	void PNP_GetDeviceListSize();
+	void PNP_GetDepth();
+	void PNP_GetDeviceRegProp();
+	void PNP_SetDeviceRegProp();
+	void PNP_GetClassInstance();
+	void PNP_CreateKey();
+	void PNP_DeleteRegistryKey();
+	void PNP_GetClassCount();
+	void PNP_GetClassName();
+	void PNP_DeleteClassKey();
+	void PNP_GetInterfaceDeviceAlias();
+	void PNP_GetInterfaceDeviceList();
+	void PNP_GetInterfaceDeviceListSize();
+	void PNP_RegisterDeviceClassAssociation();
+	void PNP_UnregisterDeviceClassAssociation();
+	void PNP_GetClassRegProp();
+	void PNP_SetClassRegProp();
+	void PNP_CreateDevInst();
+	void PNP_DeviceInstanceAction();
+	void PNP_GetDeviceStatus();
+	void PNP_SetDeviceProblem();
+	void PNP_DisableDevInst();
+	void PNP_UninstallDevInst();
+	void PNP_AddID();
+	void PNP_RegisterDriver();
+	void PNP_QueryRemove();
+	void PNP_RequestDeviceEject();
+	void PNP_IsDockStationPresent();
+	void PNP_RequestEjectPC();
+	void PNP_HwProfFlags();
+	void PNP_GetHwProfInfo();
+	void PNP_AddEmptyLogConf();
+	void PNP_FreeLogConf();
+	void PNP_GetFirstLogConf();
+	void PNP_GetNextLogConf();
+	void PNP_GetLogConfPriority();
+	void PNP_AddResDes();
+	void PNP_FreeResDes();
+	void PNP_GetNextResDes();
+	void PNP_GetResDesData();
+	void PNP_GetResDesDataSize();
+	void PNP_ModifyResDes();
+	void PNP_DetectResourceLimit();
+	void PNP_QueryResConfList();
+	void PNP_SetHwProf();
+	void PNP_QueryArbitratorFreeData();
+	void PNP_QueryArbitratorFreeSize();
+	void PNP_RunDetection();
+	void PNP_RegisterNotification();
+	void PNP_UnregisterNotification();
+	void PNP_GetCustomDevProp();
+	void PNP_GetVersionInternal();
+	void PNP_GetBlockedDriverInfo();
+	void PNP_GetServerSideDeviceInstallFlags();
+}

@@ -1,0 +1,55 @@
+/* This is a generated file */
+#ifndef __hdb_private_h__
+#define __hdb_private_h__
+
+#include <stdarg.h>
+
+krb5_error_code
+_hdb_fetch (
+	krb5_context /*context*/,
+	HDB */*db*/,
+	unsigned /*flags*/,
+	krb5_const_principal /*principal*/,
+	enum hdb_ent_type /*ent_type*/,
+	hdb_entry */*entry*/);
+
+hdb_master_key
+_hdb_find_master_key (
+	u_int32_t */*mkvno*/,
+	hdb_master_key /*mkey*/);
+
+int
+_hdb_mkey_decrypt (
+	krb5_context /*context*/,
+	hdb_master_key /*key*/,
+	krb5_key_usage /*usage*/,
+	void */*ptr*/,
+	size_t /*size*/,
+	krb5_data */*res*/);
+
+int
+_hdb_mkey_encrypt (
+	krb5_context /*context*/,
+	hdb_master_key /*key*/,
+	krb5_key_usage /*usage*/,
+	const void */*ptr*/,
+	size_t /*size*/,
+	krb5_data */*res*/);
+
+int
+_hdb_mkey_version (hdb_master_key /*mkey*/);
+
+krb5_error_code
+_hdb_remove (
+	krb5_context /*context*/,
+	HDB */*db*/,
+	hdb_entry */*entry*/);
+
+krb5_error_code
+_hdb_store (
+	krb5_context /*context*/,
+	HDB */*db*/,
+	unsigned /*flags*/,
+	hdb_entry */*entry*/);
+
+#endif /* __hdb_private_h__ */

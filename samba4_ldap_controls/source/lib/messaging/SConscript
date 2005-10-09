@@ -1,0 +1,2 @@
+Import('hostenv')
+hostenv.Library('messaging','messaging.c')

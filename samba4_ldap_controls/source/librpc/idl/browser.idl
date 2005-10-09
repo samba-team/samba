@@ -1,0 +1,59 @@
+[ 
+  uuid("6bffd098-a112-3610-9833-012892020162"),
+  version(0.0), 
+  helpstring("Browsing"),
+  pointer_default(unique),
+  pointer_default_top(unique),
+  endpoint("ncacn_np:[\\pipe\\browser]", "ncacn_ip_tcp:", "ncalrpc:")
+] 
+interface browser
+{
+	/******************/
+	/* Function  0x00 */
+	NTSTATUS BrowserrServerEnum();
+
+	/******************/
+	/* Function  0x01 */
+	NTSTATUS BrowserrDebugCall();
+
+	/******************/
+	/* Function  0x02 */
+	NTSTATUS BrowserrQueryOtherDomains();
+
+	/******************/
+	/* Function  0x03 */
+	NTSTATUS BrowserrResetNetlogonState();
+
+	/******************/
+	/* Function  0x04 */
+	NTSTATUS BrowserrDebugTrace();
+
+	/******************/
+	/* Function  0x05 */
+	NTSTATUS BrowserrQueryStatistics();
+
+	/******************/
+	/* Function  0x06 */
+	NTSTATUS BrowserResetStatistics();
+
+	/******************/
+	/* Function  0x07 */
+	NTSTATUS NetrBrowserStatisticsClear();
+
+	/******************/
+	/* Function  0x08 */
+	NTSTATUS NetrBrowserStatisticsGet();
+
+	/******************/
+	/* Function  0x09 */
+	NTSTATUS BrowserrSetNetlogonState();
+
+	/******************/
+	/* Function  0x0a */
+	NTSTATUS BrowserrQueryEmulatedDomains();
+
+	/******************/
+	/* Function  0x0b */
+	NTSTATUS BrowserrServerEnumEx();
+
+}

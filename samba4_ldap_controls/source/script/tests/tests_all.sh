@@ -1,0 +1,10 @@
+ $SRCDIR/script/tests/test_ejs.sh $SERVER $USERNAME $PASSWORD || failed=`expr $failed + $?`
+ $SRCDIR/script/tests/test_ldap.sh $SERVER $USERNAME $PASSWORD || failed=`expr $failed + $?`
+ $SRCDIR/script/tests/test_nbt.sh $SERVER || failed=`expr $failed + $?`
+ $SRCDIR/script/tests/test_quick.sh //$SERVER/cifs $USERNAME $PASSWORD "" || failed=`expr $failed + $?`
+ $SRCDIR/script/tests/test_rpc.sh $SERVER $USERNAME $PASSWORD $DOMAIN || failed=`expr $failed + $?`
+ $SRCDIR/script/tests/test_session_key.sh $SERVER $USERNAME $PASSWORD $DOMAIN || failed=`expr $failed + $?`
+ $SRCDIR/script/tests/test_binding_string.sh $SERVER $USERNAME $PASSWORD $DOMAIN || failed=`expr $failed + $?`
+ $SRCDIR/script/tests/test_echo.sh $SERVER $USERNAME $PASSWORD $DOMAIN || failed=`expr $failed + $?`
+ $SRCDIR/script/tests/test_posix.sh //$SERVER/tmp $USERNAME $PASSWORD "" || failed=`expr $failed + $?`
+ $SRCDIR/script/tests/test_local.sh || failed=`expr $failed + $?`
