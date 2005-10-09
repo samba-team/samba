@@ -248,6 +248,30 @@ static const struct wbsrv_protocol_ops wbsrv_samba3_protocol_ops = {
 	.push_reply		= wbsrv_samba3_push_reply
 };
 
+static NTSTATUS init_my_domain(TALLOC_CTX *mem_ctx,
+			       struct wbsrv_domain **domain)
+{
+	struct wbsrv_domain *result;
+
+	result = talloc_zero(mem_ctx, struct wbsrv_domain);
+	NT_STATUS_HAVE_NO_MEMORY(result);
+
+	result->name = talloc_strdup(result, lp_workgroup());
+	if (result->name == NULL) {
+		talloc_free(result);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	result->sid = secrets_get_domain_sid(result, lp_workgroup());
+	if (result->sid == NULL) {
+		talloc_free(result);
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+
+	*domain = result;
+	return NT_STATUS_OK;
+}
+
 /*
   startup the winbind task
 */
@@ -277,6 +301,14 @@ static void winbind_task_init(struct task_server *task)
 	service = talloc_zero(task, struct wbsrv_service);
 	if (!service) goto nomem;
 	service->task	= task;
+
+	status = init_my_domain(service, &service->domains);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Could not init my domain: %s\n",
+			  nt_errstr(status)));
+		task_server_terminate(task, nt_errstr(status));
+		return;
+	}
 
 	/* setup the unprivileged samba3 socket */
 	listen_socket = talloc(service, struct wbsrv_listen_socket);
