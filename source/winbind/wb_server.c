@@ -268,6 +268,8 @@ static NTSTATUS init_my_domain(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
+	result->initialized = False;
+
 	*domain = result;
 	return NT_STATUS_OK;
 }
