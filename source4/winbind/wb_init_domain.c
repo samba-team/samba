@@ -248,6 +248,18 @@ struct composite_context *wb_init_domain_send(struct wbsrv_domain *domain,
 
 	state->domain = domain;
 
+	if (state->domain->schannel_creds != NULL) {
+		talloc_free(state->domain->schannel_creds);
+	}
+
+	state->domain->schannel_creds = cli_credentials_init(state->domain);
+	if (state->domain->schannel_creds == NULL) goto failed;
+	cli_credentials_set_conf(state->domain->schannel_creds);
+	state->ctx->status =
+		cli_credentials_set_machine_account(state->domain->
+						    schannel_creds);
+	if (!NT_STATUS_IS_OK(state->ctx->status)) goto failed;
+
 	ctx = wb_finddcs_send(domain->name, domain->sid, event_ctx, msg_ctx);
 	if (ctx == NULL) goto failed;
 
