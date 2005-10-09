@@ -93,136 +93,146 @@ static void rpc_cont(struct composite_context *ctx,
 	new_req->async.private = private_data;
 }
 
-struct finddcs_state {
-	struct wb_finddcs *io;
-	struct composite_context *creq;
+static void irpc_cont(struct composite_context *ctx,
+		      struct irpc_request *new_req,
+		      void (*continuation)(struct irpc_request *),
+		      void *private_data)
+{
+	if (comp_nomem(new_req, ctx)) return;
+	new_req->async.fn = continuation;
+	new_req->async.private = private_data;
+}
 
-	struct nbtd_getdcname *r;
-	struct irpc_request *ireq;
+struct finddcs_state {
+	struct composite_context *ctx;
+	struct messaging_context *msg_ctx;
+
+	const char *domain_name;
+	const struct dom_sid *domain_sid;
+
+	struct nbtd_getdcname r;
+
+	int num_dcs;
+	struct nbt_dc_name *dcs;
 };
 
-static void finddcs_getdc(struct irpc_request *ireq)
+static void finddcs_resolve(struct composite_context *ctx);
+static void finddcs_getdc(struct irpc_request *ireq);
+
+struct composite_context *wb_finddcs_send(const char *domain_name,
+					  const struct dom_sid *domain_sid,
+					  struct event_context *event_ctx,
+					  struct messaging_context *msg_ctx)
 {
-	struct composite_context *c = talloc_get_type(ireq->async.private,
-						      struct composite_context);
-	struct finddcs_state *state = talloc_get_type(c->private_data,
-						      struct finddcs_state);
-
-	c->status = irpc_call_recv(ireq);
-	if (!comp_is_ok(c)) return;
-
-	state->io->out.dcs[0].name = talloc_steal(state->io->out.dcs,
-						  state->r->out.dcname);
-	comp_done(c);
-}
-
-/*
-  called when name resolution is finished
-*/
-static void finddcs_resolve(struct composite_context *res_ctx)
-{
-	struct composite_context *c = talloc_get_type(res_ctx->async.private_data,
-						      struct composite_context);
-	struct finddcs_state *state = talloc_get_type(c->private_data,
-						      struct finddcs_state);
-	uint32_t *nbt_servers;
-
-	state->io->out.num_dcs = 1;
-	state->io->out.dcs = talloc_array(state, struct nbt_dc_name,
-					  state->io->out.num_dcs);
-	if (comp_nomem(state->io->out.dcs, c)) return;
-
-	c->status = resolve_name_recv(res_ctx, state->io->out.dcs,
-				      &state->io->out.dcs[0].address);
-	if (!comp_is_ok(c)) return;
-
-	nbt_servers = irpc_servers_byname(state->io->in.msg_ctx, "nbt_server");
-	if ((nbt_servers == NULL) || (nbt_servers[0] == 0)) {
-		comp_error(c, NT_STATUS_NO_LOGON_SERVERS);
-		return;
-	}
-
-	state->r = talloc(state, struct nbtd_getdcname);
-	if (comp_nomem(state->r, c)) return;
-
-	state->r->in.domainname = talloc_strdup(state->r, lp_workgroup());
-	if (comp_nomem(state->r->in.domainname, c)) return;
-	state->r->in.ip_address = state->io->out.dcs[0].address;
-	state->r->in.my_computername = lp_netbios_name();
-	state->r->in.my_accountname =
-		talloc_asprintf(state->r, "%s$", lp_netbios_name());
-	if (comp_nomem(state->r->in.my_accountname, c)) return;
-	state->r->in.account_control = ACB_WSTRUST;
-	state->r->in.domain_sid =
-		secrets_get_domain_sid(state->r, lp_workgroup());
-
-	if (state->r->in.domain_sid == NULL) {
-		comp_error(c, NT_STATUS_CANT_ACCESS_DOMAIN_INFO);
-		return;
-	}
-
-	state->ireq = irpc_call_send(state->io->in.msg_ctx, nbt_servers[0],
-				     &dcerpc_table_irpc, DCERPC_NBTD_GETDCNAME,
-				     state->r, state);
-	if (comp_nomem(state->ireq, c)) return;
-
-	c->status = NT_STATUS_OK;
-	state->ireq->async.fn = finddcs_getdc;
-	state->ireq->async.private = c;
-}
-
-struct composite_context *wb_finddcs_send(struct wb_finddcs *io,
-					  struct event_context *event_ctx)
-{
-	struct composite_context *c;
+	struct composite_context *result, *ctx;
 	struct finddcs_state *state;
 	struct nbt_name name;
 
-	c = talloc_zero(NULL, struct composite_context);
-	if (c == NULL) goto failed;
-	c->state = COMPOSITE_STATE_IN_PROGRESS;
-	c->event_ctx = event_ctx;
+	result = talloc_zero(NULL, struct composite_context);
+	if (result == NULL) goto failed;
+	result->state = COMPOSITE_STATE_IN_PROGRESS;
+	result->event_ctx = event_ctx;
 
-	state = talloc(c, struct finddcs_state);
+	state = talloc(result, struct finddcs_state);
 	if (state == NULL) goto failed;
-	state->io = io;
+	state->ctx = result;
+	result->private_data = state;
 
-	make_nbt_name(&name, io->in.domain, 0x1c);
-	state->creq = resolve_name_send(&name, c->event_ctx,
-					lp_name_resolve_order());
+	state->domain_name = talloc_strdup(state, domain_name);
+	if (state->domain_name == NULL) goto failed;
+	state->domain_sid = dom_sid_dup(state, domain_sid);
+	if (state->domain_sid == NULL) goto failed;
+	state->msg_ctx = msg_ctx;
 
-	if (state->creq == NULL) goto failed;
-	state->creq->async.private_data = c;
-	state->creq->async.fn = finddcs_resolve;
-	c->private_data = state;
+	make_nbt_name(&name, state->domain_name, 0x1c);
+	ctx = resolve_name_send(&name, result->event_ctx,
+				lp_name_resolve_order());
 
-	return c;
+	if (ctx == NULL) goto failed;
+	ctx->async.fn = finddcs_resolve;
+	ctx->async.private_data = state;
+
+	return result;
+
 failed:
-	talloc_free(c);
+	talloc_free(result);
 	return NULL;
 }
 
-NTSTATUS wb_finddcs_recv(struct composite_context *c, TALLOC_CTX *mem_ctx)
+static void finddcs_resolve(struct composite_context *ctx)
 {
-	NTSTATUS status;
+	struct finddcs_state *state =
+		talloc_get_type(ctx->async.private_data, struct finddcs_state);
+	struct irpc_request *ireq;
+	uint32_t *nbt_servers;
+	const char *address;
 
-	status = composite_wait(c);
+	state->ctx->status = resolve_name_recv(ctx, state, &address);
+	if (!comp_is_ok(state->ctx)) return;
 
-	if (NT_STATUS_IS_OK(status)) {
-		struct finddcs_state *state = talloc_get_type(c->private_data,
-							      struct finddcs_state);
-		talloc_steal(mem_ctx, state->io->out.dcs);
+	state->num_dcs = 1;
+	state->dcs = talloc_array(state, struct nbt_dc_name, state->num_dcs);
+	if (comp_nomem(state->dcs, state->ctx)) return;
+
+	state->dcs[0].address = talloc_steal(state->dcs, address);
+
+	nbt_servers = irpc_servers_byname(state->msg_ctx, "nbt_server");
+	if ((nbt_servers == NULL) || (nbt_servers[0] == 0)) {
+		comp_error(state->ctx, NT_STATUS_NO_LOGON_SERVERS);
+		return;
 	}
 
+	state->r.in.domainname = state->domain_name;
+	state->r.in.ip_address = state->dcs[0].address;
+	state->r.in.my_computername = lp_netbios_name();
+	state->r.in.my_accountname = talloc_asprintf(state, "%s$",
+						     lp_netbios_name());
+	if (comp_nomem(state->r.in.my_accountname, state->ctx)) return;
+	state->r.in.account_control = ACB_WSTRUST;
+	state->r.in.domain_sid = dom_sid_dup(state, state->domain_sid);
+	if (comp_nomem(state->r.in.domain_sid, state->ctx)) return;
+
+	ireq = irpc_call_send(state->msg_ctx, nbt_servers[0],
+			      &dcerpc_table_irpc, DCERPC_NBTD_GETDCNAME,
+			      &state->r, state);
+	irpc_cont(state->ctx, ireq, finddcs_getdc, state);
+}
+
+static void finddcs_getdc(struct irpc_request *ireq)
+{
+	struct finddcs_state *state =
+		talloc_get_type(ireq->async.private, struct finddcs_state);
+
+	state->ctx->status = irpc_call_recv(ireq);
+	if (!comp_is_ok(state->ctx)) return;
+
+	state->dcs[0].name = talloc_steal(state->dcs, state->r.out.dcname);
+	comp_done(state->ctx);
+}
+
+NTSTATUS wb_finddcs_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
+			 int *num_dcs, struct nbt_dc_name **dcs)
+{
+	NTSTATUS status =composite_wait(c);
+	if (NT_STATUS_IS_OK(status)) {
+		struct finddcs_state *state =
+			talloc_get_type(c->private_data, struct finddcs_state);
+		*num_dcs = state->num_dcs;
+		*dcs = talloc_steal(mem_ctx, state->dcs);
+	}
 	talloc_free(c);
 	return status;
 }
 
-NTSTATUS wb_finddcs(struct wb_finddcs *io, TALLOC_CTX *mem_ctx,
-		    struct event_context *ev)
+NTSTATUS wb_finddcs(const char *domain_name, const struct dom_sid *domain_sid,
+		    struct event_context *event_ctx,
+		    struct messaging_context *msg_ctx,
+		    TALLOC_CTX *mem_ctx,
+		    int *num_dcs, struct nbt_dc_name **dcs)
 {
-	struct composite_context *c = wb_finddcs_send(io, ev);
-	return wb_finddcs_recv(c, mem_ctx);
+	struct composite_context *c = wb_finddcs_send(domain_name, domain_sid,
+						      event_ctx, msg_ctx);
+	return wb_finddcs_recv(c, mem_ctx, num_dcs, dcs);
 }
 
 struct get_schannel_creds_state {
@@ -290,7 +300,6 @@ static void get_schannel_creds_recv_pipe(struct composite_context *ctx)
 						   DCERPC_NETLOGON_VERSION);
 	if (!comp_is_ok(state->ctx)) return;
 
-	ZERO_STRUCT(state->r);
 	state->r.in.computer_name =
 		cli_credentials_get_workstation(state->wks_creds);
 	state->r.in.server_name =
@@ -335,7 +344,6 @@ static void get_schannel_creds_recv_chal(struct rpc_request *req)
 			  state->r.out.credentials, mach_pwd,
 			  &state->netr_cred, state->negotiate_flags);
 
-	ZERO_STRUCT(state->a);
 	state->a.in.server_name =
 		talloc_reference(state, state->r.in.server_name);
 	state->a.in.account_name =
@@ -413,10 +421,10 @@ NTSTATUS wb_get_schannel_creds(struct cli_credentials *wks_creds,
 
 struct get_lsa_pipe_state {
 	struct composite_context *ctx;
-	const char *domain;
+	const char *domain_name;
+	const struct dom_sid *domain_sid;
 
-	struct wb_finddcs *finddcs;
-	struct smb_composite_connect *conn;
+	struct smb_composite_connect conn;
 	struct dcerpc_pipe *lsa_pipe;
 
 	struct lsa_ObjectAttribute objectattr;
@@ -437,7 +445,8 @@ static void get_lsa_pipe_recv_close(struct rpc_request *req);
 
 struct composite_context *wb_get_lsa_pipe_send(struct event_context *event_ctx,
 					       struct messaging_context *msg_ctx,
-					       const char *domain)
+					       const char *domain_name,
+					       const struct dom_sid *domain_sid)
 {
 	struct composite_context *result, *ctx;
 	struct get_lsa_pipe_state *state;
@@ -452,15 +461,10 @@ struct composite_context *wb_get_lsa_pipe_send(struct event_context *event_ctx,
 	result->private_data = state;
 	state->ctx = result;
 
-	state->domain = domain;
+	state->domain_name = domain_name;
+	state->domain_sid = domain_sid;
 
-	state->finddcs = talloc(state, struct wb_finddcs);
-	if (state->finddcs == NULL) goto failed;
-
-	state->finddcs->in.msg_ctx = msg_ctx;
-	state->finddcs->in.domain = lp_workgroup();
-
-	ctx = wb_finddcs_send(state->finddcs, event_ctx);
+	ctx = wb_finddcs_send(domain_name, domain_sid, event_ctx, msg_ctx);
 	if (ctx == NULL) goto failed;
 
 	ctx->async.fn = get_lsa_pipe_recv_dcs;
@@ -478,25 +482,30 @@ static void get_lsa_pipe_recv_dcs(struct composite_context *ctx)
 		talloc_get_type(ctx->async.private_data,
 				struct get_lsa_pipe_state);
 
-	state->ctx->status = wb_finddcs_recv(ctx, state);
+	int num_dcs;
+	struct nbt_dc_name *dcs;
+
+	state->ctx->status = wb_finddcs_recv(ctx, state, &num_dcs, &dcs);
 	if (!comp_is_ok(state->ctx)) return;
 
-	state->conn = talloc(state, struct smb_composite_connect);
-	if (comp_nomem(state->conn, state->ctx)) return;
+	if (num_dcs < 1) {
+		comp_error(state->ctx, NT_STATUS_NO_LOGON_SERVERS);
+		return;
+	}
 
-	state->conn->in.dest_host = state->finddcs->out.dcs[0].address;
-	state->conn->in.port = 0;
-	state->conn->in.called_name = state->finddcs->out.dcs[0].name;
-	state->conn->in.service = "IPC$";
-	state->conn->in.service_type = "IPC";
-	state->conn->in.workgroup = lp_workgroup();
+	state->conn.in.dest_host = dcs[0].address;
+	state->conn.in.port = 0;
+	state->conn.in.called_name = dcs[0].name;
+	state->conn.in.service = "IPC$";
+	state->conn.in.service_type = "IPC";
+	state->conn.in.workgroup = state->domain_name;
 
-	state->conn->in.credentials = cli_credentials_init(state->conn);
-	if (comp_nomem(state->conn->in.credentials, state->ctx)) return;
-	cli_credentials_set_conf(state->conn->in.credentials);
-	cli_credentials_set_anonymous(state->conn->in.credentials);
+	state->conn.in.credentials = cli_credentials_init(state);
+	if (comp_nomem(state->conn.in.credentials, state->ctx)) return;
+	cli_credentials_set_conf(state->conn.in.credentials);
+	cli_credentials_set_anonymous(state->conn.in.credentials);
 
-	ctx = smb_composite_connect_send(state->conn, state, 
+	ctx = smb_composite_connect_send(&state->conn, state, 
 					 state->ctx->event_ctx);
 	comp_cont(state->ctx, ctx, get_lsa_pipe_recv_tree, state);
 }
@@ -514,7 +523,7 @@ static void get_lsa_pipe_recv_tree(struct composite_context *ctx)
 	if (comp_nomem(state->lsa_pipe, state->ctx)) return;
 
 	ctx = dcerpc_pipe_open_smb_send(state->lsa_pipe->conn,
-					state->conn->out.tree, "\\lsarpc");
+					state->conn.out.tree, "\\lsarpc");
 	comp_cont(state->ctx, ctx, get_lsa_pipe_recv_pipe, state);
 }
 
@@ -528,15 +537,14 @@ static void get_lsa_pipe_recv_pipe(struct composite_context *ctx)
 	state->ctx->status = dcerpc_pipe_open_smb_recv(ctx);
 	if (!comp_is_ok(state->ctx)) return;
 
-	talloc_unlink(state, state->conn->out.tree); /* The pipe owns it now */
-	state->conn->out.tree = NULL;
+	talloc_unlink(state, state->conn.out.tree); /* The pipe owns it now */
+	state->conn.out.tree = NULL;
 
 	state->ctx->status = dcerpc_bind_auth_none(state->lsa_pipe,
 						   DCERPC_LSARPC_UUID,
 						   DCERPC_LSARPC_VERSION);
 	if (!comp_is_ok(state->ctx)) return;
 
-	ZERO_STRUCT(state->openpolicy);
 	state->openpolicy.in.system_name =
 		talloc_asprintf(state, "\\\\%s",
 				dcerpc_server_name(state->lsa_pipe));
@@ -562,7 +570,6 @@ static void get_lsa_pipe_recv_openpol(struct rpc_request *req)
 	state->ctx->status = state->openpolicy.out.result;
 	if (!comp_is_ok(state->ctx)) return;
 
-	ZERO_STRUCT(state->queryinfo);
 	state->queryinfo.in.handle = &state->policy_handle;
 	state->queryinfo.in.level = LSA_POLICY_INFO_ACCOUNT_DOMAIN;
 
@@ -575,13 +582,33 @@ static void get_lsa_pipe_recv_queryinfo(struct rpc_request *req)
 {
 	struct get_lsa_pipe_state *state =
 		talloc_get_type(req->async.private, struct get_lsa_pipe_state);
+	struct lsa_DomainInfo *dominfo;
 
 	state->ctx->status = dcerpc_ndr_request_recv(req);
 	if (!comp_is_ok(state->ctx)) return;
 	state->ctx->status = state->queryinfo.out.result;
 	if (!comp_is_ok(state->ctx)) return;
 
-	ZERO_STRUCT(state->close);
+	dominfo = &state->queryinfo.out.info->account_domain;
+
+	if (strcasecmp(state->domain_name, dominfo->name.string) != 0) {
+		DEBUG(2, ("Expected domain name %s, DC %s said %s\n",
+			  state->domain_name,
+			  dcerpc_server_name(state->lsa_pipe),
+			  dominfo->name.string));
+		comp_error(state->ctx, NT_STATUS_INVALID_DOMAIN_STATE);
+		return;
+	}
+
+	if (!dom_sid_equal(state->domain_sid, dominfo->sid)) {
+		DEBUG(2, ("Expected domain sid %s, DC %s said %s\n",
+			  dom_sid_string(state, state->domain_sid),
+			  dcerpc_server_name(state->lsa_pipe),
+			  dom_sid_string(state, dominfo->sid)));
+		comp_error(state->ctx, NT_STATUS_INVALID_DOMAIN_STATE);
+		return;
+	}
+
 	state->close.in.handle = &state->policy_handle;
 	state->close.out.handle = &state->policy_handle;
 
@@ -604,15 +631,13 @@ static void get_lsa_pipe_recv_close(struct rpc_request *req)
 }
 
 NTSTATUS wb_get_lsa_pipe_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
-			      struct dom_sid **sid, struct dcerpc_pipe **pipe)
+			      struct dcerpc_pipe **pipe)
 {
 	NTSTATUS status = composite_wait(c);
 	if (NT_STATUS_IS_OK(status)) {
 		struct get_lsa_pipe_state *state =
 			talloc_get_type(c->private_data,
 					struct get_lsa_pipe_state);
-		*sid = talloc_steal(mem_ctx,
-				    state->queryinfo.out.info->domain.sid);
 		*pipe = talloc_steal(mem_ctx, state->lsa_pipe);
 	}
 	talloc_free(c);
@@ -621,14 +646,15 @@ NTSTATUS wb_get_lsa_pipe_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 
 NTSTATUS wb_get_lsa_pipe(struct event_context *event_ctx,
 			 struct messaging_context *msg_ctx,
-			 const char *domain,
+			 const char *domain_name,
+			 const struct dom_sid *domain_sid,
 			 TALLOC_CTX *mem_ctx,
-			 struct dom_sid **sid,
 			 struct dcerpc_pipe **pipe)
 {
 	struct composite_context *c =
-		wb_get_lsa_pipe_send(event_ctx, msg_ctx, domain);
-	return wb_get_lsa_pipe_recv(c, mem_ctx, sid, pipe);
+		wb_get_lsa_pipe_send(event_ctx, msg_ctx, domain_name,
+				     domain_sid);
+	return wb_get_lsa_pipe_recv(c, mem_ctx, pipe);
 }
 
 struct lsa_lookupnames_state {
@@ -806,7 +832,6 @@ struct composite_context *wb_lsa_lookupname_send(struct dcerpc_pipe *lsa_pipe,
 	if (state->name == NULL) goto failed;
 	state->ctx = result;
 
-	ZERO_STRUCT(state->openpolicy);
 	state->openpolicy.in.system_name =
 		talloc_asprintf(state, "\\\\%s",
 				dcerpc_server_name(state->lsa_pipe));
@@ -862,7 +887,6 @@ static void lsa_lookupname_recv_sids(struct composite_context *ctx)
 		}
 	}
 
-	ZERO_STRUCT(state->close);
 	state->close.in.handle = &state->policy_handle;
 	state->close.out.handle = &state->policy_handle;
 
@@ -902,6 +926,7 @@ NTSTATUS wb_lsa_lookupname(struct dcerpc_pipe *lsa_pipe, const char *name,
 struct cmd_lookupname_state {
 	struct composite_context *ctx;
 	struct wbsrv_call *call;
+	struct wbsrv_domain *domain;
 	const char *name;
 	struct wb_sid_object *result;
 };
@@ -929,8 +954,10 @@ struct composite_context *wb_cmd_lookupname_send(struct wbsrv_call *call,
 	state->call = call;
 	state->name = talloc_strdup(state, name);
 
-	if (service->lsa_pipe != NULL) {
-		ctx = wb_lsa_lookupname_send(service->lsa_pipe, name);
+	state->domain = service->domains;
+
+	if (state->domain->lsa_pipe != NULL) {
+		ctx = wb_lsa_lookupname_send(state->domain->lsa_pipe, name);
 		if (ctx == NULL) goto failed;
 		ctx->async.fn = cmd_lookupname_recv_sid;
 		ctx->async.private_data = state;
@@ -939,7 +966,8 @@ struct composite_context *wb_cmd_lookupname_send(struct wbsrv_call *call,
 
 	ctx = wb_get_lsa_pipe_send(result->event_ctx, 
 				   call->wbconn->conn->msg_ctx,
-				   lp_workgroup());
+				   state->domain->name,
+				   state->domain->sid);
 	if (ctx == NULL) goto failed;
 	ctx->async.fn = cmd_lookupname_recv_lsa;
 	ctx->async.private_data = state;
@@ -958,18 +986,17 @@ static void cmd_lookupname_recv_lsa(struct composite_context *ctx)
 	struct wbsrv_service *service =
 		state->call->wbconn->listen_socket->service;
 
-	struct dom_sid *sid;
 	struct dcerpc_pipe *pipe;
 
-	state->ctx->status = wb_get_lsa_pipe_recv(ctx, state, &sid, &pipe);
+	state->ctx->status = wb_get_lsa_pipe_recv(ctx, state, &pipe);
 	if (!comp_is_ok(state->ctx)) return;
 
-	if (service->lsa_pipe == NULL) {
+	if (state->domain->lsa_pipe == NULL) {
 		/* Only put the new pipe in if nobody else was faster. */
-		service->lsa_pipe = talloc_steal(service, pipe);
+		state->domain->lsa_pipe = talloc_steal(service, pipe);
 	}
 
-	ctx = wb_lsa_lookupname_send(service->lsa_pipe, state->name);
+	ctx = wb_lsa_lookupname_send(state->domain->lsa_pipe, state->name);
 	comp_cont(state->ctx, ctx, cmd_lookupname_recv_sid, state);
 }
 
@@ -1012,6 +1039,7 @@ NTSTATUS wb_cmd_lookupname(struct wbsrv_call *call, const char *name,
 struct cmd_checkmachacc_state {
 	struct composite_context *ctx;
 	struct wbsrv_call *call;
+	struct wbsrv_domain *domain;
 };
 
 static void cmd_checkmachacc_recv_lsa(struct composite_context *ctx);
@@ -1034,32 +1062,35 @@ struct composite_context *wb_cmd_checkmachacc_send(struct wbsrv_call *call)
 	result->private_data = state;
 	state->call = call;
 
-	if (service->schannel_creds != NULL) {
-		talloc_free(service->schannel_creds);
+	state->domain = service->domains;
+
+	if (state->domain->schannel_creds != NULL) {
+		talloc_free(state->domain->schannel_creds);
 	}
 
-	service->schannel_creds = cli_credentials_init(service);
-	if (service->schannel_creds == NULL) goto failed;
+	state->domain->schannel_creds = cli_credentials_init(service);
+	if (state->domain->schannel_creds == NULL) goto failed;
 
-	cli_credentials_set_conf(service->schannel_creds);
+	cli_credentials_set_conf(state->domain->schannel_creds);
 
 	state->ctx->status =
-		cli_credentials_set_machine_account(service->schannel_creds);
+		cli_credentials_set_machine_account(state->domain->
+						    schannel_creds);
 	if (!NT_STATUS_IS_OK(state->ctx->status)) goto failed;
 
-	if (service->netlogon_auth2_pipe != NULL) {
-		talloc_free(service->netlogon_auth2_pipe);
-		service->netlogon_auth2_pipe = NULL;
+	if (state->domain->netlogon_auth2_pipe != NULL) {
+		talloc_free(state->domain->netlogon_auth2_pipe);
+		state->domain->netlogon_auth2_pipe = NULL;
 	}
 
-	if (service->lsa_pipe != NULL) {
+	if (state->domain->lsa_pipe != NULL) {
 		struct smbcli_tree *tree =
-			dcerpc_smb_tree(service->lsa_pipe->conn);
+			dcerpc_smb_tree(state->domain->lsa_pipe->conn);
 
 		if (tree == NULL) goto failed;
 
-		ctx = wb_get_schannel_creds_send(service->schannel_creds, tree,
-						 result->event_ctx);
+		ctx = wb_get_schannel_creds_send(state->domain->schannel_creds,
+						 tree, result->event_ctx);
 		if (ctx == NULL) goto failed;
 
 		ctx->async.fn = cmd_checkmachacc_recv_creds;
@@ -1069,7 +1100,8 @@ struct composite_context *wb_cmd_checkmachacc_send(struct wbsrv_call *call)
 
 	ctx = wb_get_lsa_pipe_send(result->event_ctx, 
 				   call->wbconn->conn->msg_ctx,
-				   lp_workgroup());
+				   state->domain->name,
+				   state->domain->sid);
 	if (ctx == NULL) goto failed;
 	ctx->async.fn = cmd_checkmachacc_recv_lsa;
 	ctx->async.private_data = state;
@@ -1089,25 +1121,25 @@ static void cmd_checkmachacc_recv_lsa(struct composite_context *ctx)
 	struct wbsrv_service *service =
 		state->call->wbconn->listen_socket->service;
 
-	struct dom_sid *sid;
 	struct dcerpc_pipe *pipe;
 	struct smbcli_tree *tree;
 
-	state->ctx->status = wb_get_lsa_pipe_recv(ctx, state, &sid, &pipe);
+	state->ctx->status = wb_get_lsa_pipe_recv(ctx, state, &pipe);
 	if (!comp_is_ok(state->ctx)) return;
 
-	if (service->lsa_pipe == NULL) {
-		service->lsa_pipe = talloc_steal(service, pipe);
+	if (state->domain->lsa_pipe == NULL) {
+		/* We gonna drop "our" pipe if someone else was faster */
+		state->domain->lsa_pipe = talloc_steal(service, pipe);
 	}
 
-	tree = dcerpc_smb_tree(service->lsa_pipe->conn);
+	tree = dcerpc_smb_tree(state->domain->lsa_pipe->conn);
 
 	if (tree == NULL) {
 		comp_error(state->ctx, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
-	ctx = wb_get_schannel_creds_send(service->schannel_creds, tree,
+	ctx = wb_get_schannel_creds_send(state->domain->schannel_creds, tree,
 					 state->ctx->event_ctx);
 	comp_cont(state->ctx, ctx, cmd_checkmachacc_recv_creds, state);
 }
@@ -1124,13 +1156,13 @@ static void cmd_checkmachacc_recv_creds(struct composite_context *ctx)
 	state->ctx->status = wb_get_schannel_creds_recv(ctx, state, &pipe);
 	if (!comp_is_ok(state->ctx)) return;
 
-	if (service->netlogon_auth2_pipe != NULL) {
+	if (state->domain->netlogon_auth2_pipe != NULL) {
 		/* Someone else was faster, we need to replace it with our
 		 * pipe */
-		talloc_free(service->netlogon_auth2_pipe);
+		talloc_free(state->domain->netlogon_auth2_pipe);
 	}
 
-	service->netlogon_auth2_pipe = talloc_steal(service, pipe);
+	state->domain->netlogon_auth2_pipe = talloc_steal(service, pipe);
 
 	comp_done(state->ctx);
 }
@@ -1149,6 +1181,7 @@ NTSTATUS wb_cmd_checkmachacc(struct wbsrv_call *call)
 struct get_netlogon_pipe_state {
 	struct composite_context *ctx;
 	struct wbsrv_call *call;
+	struct wbsrv_domain *domain;
 	struct dcerpc_pipe *p;
 };
 
@@ -1172,9 +1205,11 @@ struct composite_context *wb_get_netlogon_pipe_send(struct wbsrv_call *call)
 	result->private_data = state;
 	state->call = call;
 
-	if (service->netlogon_pipe != NULL) {
-		talloc_free(service->netlogon_pipe);
-		service->netlogon_pipe = NULL;
+	state->domain = service->domains;
+
+	if (state->domain->netlogon_pipe != NULL) {
+		talloc_free(state->domain->netlogon_pipe);
+		state->domain->netlogon_pipe = NULL;
 	}
 
 	ctx = wb_cmd_checkmachacc_send(call);
@@ -1193,8 +1228,6 @@ static void get_netlogon_pipe_recv_machacc(struct composite_context *ctx)
 	struct get_netlogon_pipe_state *state =
 		talloc_get_type(ctx->async.private_data,
 				struct get_netlogon_pipe_state);
-	struct wbsrv_service *service =
-		state->call->wbconn->listen_socket->service;
 	
 	struct smbcli_tree *tree = NULL;
 
@@ -1204,8 +1237,8 @@ static void get_netlogon_pipe_recv_machacc(struct composite_context *ctx)
 	state->p = dcerpc_pipe_init(state, state->ctx->event_ctx);
 	if (comp_nomem(state->p, state->ctx)) return;
 
-	if (service->lsa_pipe != NULL) {
-		tree = dcerpc_smb_tree(service->lsa_pipe->conn);
+	if (state->domain->lsa_pipe != NULL) {
+		tree = dcerpc_smb_tree(state->domain->lsa_pipe->conn);
 	}
 
 	if (tree == NULL) {
@@ -1233,12 +1266,12 @@ static void get_netlogon_pipe_recv_pipe(struct composite_context *ctx)
 		dcerpc_bind_auth_password(state->p,
 					  DCERPC_NETLOGON_UUID,
 					  DCERPC_NETLOGON_VERSION, 
-					  service->schannel_creds,
+					  state->domain->schannel_creds,
 					  DCERPC_AUTH_TYPE_SCHANNEL,
 					  NULL);
 	if (!comp_is_ok(state->ctx)) return;
 
-	service->netlogon_pipe = talloc_steal(service, state->p);
+	state->domain->netlogon_pipe = talloc_steal(service, state->p);
 	comp_done(state->ctx);
 }
 

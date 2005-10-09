@@ -201,7 +201,7 @@ NTSTATUS wbsrv_samba3_pam_auth_crap(struct wbsrv_samba3_call *s3call)
 	}
 
 	ZERO_STRUCT(auth2);
-	creds_state = cli_credentials_get_netlogon_creds(service->schannel_creds);
+	creds_state = cli_credentials_get_netlogon_creds(service->domains->schannel_creds);
 	
 	creds_client_authenticator(creds_state, &auth);
 
@@ -218,8 +218,8 @@ NTSTATUS wbsrv_samba3_pam_auth_crap(struct wbsrv_samba3_call *s3call)
 	ninfo.lm.length = s3call->request.data.auth_crap.lm_resp_len;
 	ninfo.lm.data = s3call->request.data.auth_crap.lm_resp;
 
-	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(service->netlogon_pipe));
-	r.in.workstation = cli_credentials_get_workstation(service->schannel_creds);
+	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(service->domains->netlogon_pipe));
+	r.in.workstation = cli_credentials_get_workstation(service->domains->schannel_creds);
 	r.in.credential = &auth;
 	r.in.return_authenticator = &auth2;
 	r.in.logon_level = 2;
@@ -227,7 +227,7 @@ NTSTATUS wbsrv_samba3_pam_auth_crap(struct wbsrv_samba3_call *s3call)
 	r.in.logon.network = &ninfo;
 
 	r.out.return_authenticator = NULL;
-	status = dcerpc_netr_LogonSamLogon(service->netlogon_pipe, mem_ctx, &r);
+	status = dcerpc_netr_LogonSamLogon(service->domains->netlogon_pipe, mem_ctx, &r);
 	if (!r.out.return_authenticator || 
 	    !creds_client_check(creds_state, &r.out.return_authenticator->cred)) {
 		DEBUG(0, ("Credentials check failed!\n"));
