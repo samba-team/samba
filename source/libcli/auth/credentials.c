@@ -322,18 +322,32 @@ void creds_decrypt_samlogon(struct creds_CredentialState *creds,
 {
 	static const char zeros[16];
 
-	struct netr_SamBaseInfo *base;
+	struct netr_SamBaseInfo *base = NULL;
 	switch (validation_level) {
 	case 2:
-		base = &validation->sam2->base;
+		if (validation->sam2) {
+			base = &validation->sam2->base;
+		}
 		break;
 	case 3:
-		base = &validation->sam3->base;
+		if (validation->sam3) {
+			base = &validation->sam3->base;
+		}
 		break;
 	case 6:
-		base = &validation->sam6->base;
+		if (validation->sam6) {
+			base = &validation->sam6->base;
+		}
 		break;
+	default:
+		/* If we can't find it, we can't very well decrypt it */
+		return;
 	}
+
+	if (!base) {
+		return;
+	}
+
 	/* find and decyrpt the session keys, return in parameters above */
 	if (validation_level == 6) {
 		/* they aren't encrypted! */
