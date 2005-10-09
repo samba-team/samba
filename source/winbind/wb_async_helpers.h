@@ -22,19 +22,9 @@
 
 #include "librpc/gen_ndr/lsa.h"
 
-struct wb_finddcs {
-	struct {
-		struct messaging_context *msg_ctx;
-		const char *domain;
-	} in;
-
-	struct {
-		int num_dcs;
-		struct nbt_dc_name {
-			const char *address;
-			const char *name;
-		} *dcs;
-	} out;
+struct nbt_dc_name {
+	const char *address;
+	const char *name;
 };
 
 struct wb_sid_object {

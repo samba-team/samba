@@ -33,10 +33,18 @@
 struct wbsrv_service {
 	struct task_server *task;
 
-	struct dcerpc_pipe *netlogon_auth2_pipe;
-	struct cli_credentials *schannel_creds;
+	struct wbsrv_domain *domains;
+};
+
+struct wbsrv_domain {
+	struct wbsrv_domain *next, *prev;
+
+	const char *name;
+	const struct dom_sid *sid;
 
 	struct dcerpc_pipe *lsa_pipe;
+	struct dcerpc_pipe *netlogon_auth2_pipe;
+	struct cli_credentials *schannel_creds;
 	struct dcerpc_pipe *netlogon_pipe;
 };
 
