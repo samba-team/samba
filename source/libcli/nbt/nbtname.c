@@ -474,7 +474,7 @@ char *nbt_name_string(TALLOC_CTX *mem_ctx, const struct nbt_name *name)
 /*
   pull a nbt name, WINS Replication uses another on wire format for nbt name
 */
-NTSTATUS ndr_pull_wrepl_nbt_name(struct ndr_pull *ndr, int ndr_flags, const struct nbt_name **_r)
+NTSTATUS ndr_pull_wrepl_nbt_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_name **_r)
 {
 	struct nbt_name *r;
 	uint8_t *namebuf;
