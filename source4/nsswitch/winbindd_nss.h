@@ -186,7 +186,6 @@ struct winbindd_request {
 	pid_t pid;               /* pid of calling process */
 	uint32_t flags;            /* flags relavant to a given request */
 	winbind_string domain_name;	/* name of domain for which the request applies */
-	int msgid;
 
 	union {
 		winbind_string winsreq;     /* WINS request */
@@ -247,6 +246,8 @@ struct winbindd_request {
 			winbind_string cache_key;
 		} dual_sidaliases;
 	} data;
+	char *extra_data;
+	size_t extra_len;
 	char null_term;
 };
 

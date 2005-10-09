@@ -93,6 +93,12 @@ NTSTATUS wbsrv_samba3_handle_call(struct wbsrv_call *call)
 
 	case WINBINDD_LOOKUPNAME:
 		return wbsrv_samba3_lookupname(s3call);
+
+	case WINBINDD_PAM_AUTH:
+		return wbsrv_samba3_pam_auth(s3call);
+
+	case WINBINDD_PAM_AUTH_CRAP:
+		return wbsrv_samba3_pam_auth_crap(s3call);
 	}
 
 	s3call->response.result = WINBINDD_ERROR;
