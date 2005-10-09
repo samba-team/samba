@@ -334,7 +334,7 @@ uSNCreated: ${USN}
 uSNChanged: ${USN}
 showInAdvancedViewOnly: TRUE
 objectCategory: CN=NTDS-Service,CN=Schema,CN=Configuration,${BASEDN}
-sPNMappings: host=ldap,dns,cifs
+sPNMappings: host=ldap,dns,cifs,http
 
 
 ###############################
