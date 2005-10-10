@@ -575,8 +575,7 @@ sub ParseElementPushLevel
 
 	my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
 
-	if ($l->{TYPE} eq "ARRAY" and ($l->{IS_CONFORMANT} or $l->{IS_VARYING} 
-		or is_charset_array($e, $l))) {
+	if ($l->{TYPE} eq "ARRAY" and ($l->{IS_CONFORMANT} or $l->{IS_VARYING})) {
 		$var_name = get_pointer_to($var_name);
 	}
 
@@ -721,8 +720,7 @@ sub ParseElementPrint($$$)
 		} elsif ($l->{TYPE} eq "ARRAY") {
 			my $length;
 
-			if ($l->{IS_CONFORMANT} or $l->{IS_VARYING} or 
-				is_charset_array($e,$l)) { 
+			if ($l->{IS_CONFORMANT} or $l->{IS_VARYING}) {
 				$var_name = get_pointer_to($var_name); 
 			}
 			
@@ -927,8 +925,7 @@ sub ParseElementPullLevel
 
 	my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
 
-	if ($l->{TYPE} eq "ARRAY" and ($l->{IS_VARYING} or $l->{IS_CONFORMANT} 
-		or is_charset_array($e,$l))) {
+	if ($l->{TYPE} eq "ARRAY" and ($l->{IS_VARYING} or $l->{IS_CONFORMANT})) {
 		$var_name = get_pointer_to($var_name);
 	}
 

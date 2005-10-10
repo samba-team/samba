@@ -1,0 +1,355 @@
+###############################
+# Domain Naming Context
+###############################
+dn: ${BASEDN}
+objectClass: top
+objectClass: domain
+objectClass: domainDNS
+dnsDomain: ${DNSDOMAIN}
+dc: ${RDN_DC}
+objectGUID: ${DOMAINGUID}
+creationTime: ${NTTIME}
+forceLogoff: 0x8000000000000000
+lockoutDuration: -18000000000
+lockOutObservationWindow: -18000000000
+lockoutThreshold: 0
+uSNCreated: 1
+uSNChanged: 1
+maxPwdAge: -37108517437440
+minPwdAge: 0
+minPwdLength: 7
+modifiedCountAtLastProm: 0
+nextRid: 1001
+pwdProperties: 1
+pwdHistoryLength: 24
+objectSid: ${DOMAINSID}
+oEMInformation: Provisioned by Samba4: ${LDAPTIME}
+serverState: 1
+nTMixedDomain: 1
+msDS-Behavior-Version: 0
+ridManagerReference: CN=RID Manager$,CN=System,${BASEDN}
+uASCompat: 1
+modifiedCount: 1
+objectCategory: CN=Domain-DNS,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+subRefs: CN=Configuration,${BASEDN}
+subRefs: CN=Schema,CN=Configuration,${BASEDN}
+canonicalName: ${REALM}/
+
+dn: CN=Users,${BASEDN}
+objectClass: top
+objectClass: container
+cn: Users
+description: Default container for upgraded user accounts
+instanceType: 4
+uSNCreated: 1
+uSNChanged: 1
+showInAdvancedViewOnly: FALSE
+systemFlags: 0x8c000000
+objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Computers,${BASEDN}
+objectClass: top
+objectClass: container
+cn: Computers
+description: Default container for upgraded computer accounts
+instanceType: 4
+uSNCreated: 1
+uSNChanged: 1
+showInAdvancedViewOnly: FALSE
+systemFlags: 0x8c000000
+objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: OU=Domain Controllers,${BASEDN}
+objectClass: top
+objectClass: organizationalUnit
+ou: Domain Controllers
+description: Default container for domain controllers
+instanceType: 4
+uSNCreated: 1
+uSNChanged: 1
+showInAdvancedViewOnly: FALSE
+systemFlags: 0x8c000000
+objectCategory: CN=Organizational-Unit,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=ForeignSecurityPrincipals,${BASEDN}
+objectClass: top
+objectClass: container
+cn: ForeignSecurityPrincipals
+description: Default container for security identifiers (SIDs) associated with objects from external, trusted domains
+instanceType: 4
+uSNCreated: 1
+uSNChanged: 1
+showInAdvancedViewOnly: FALSE
+systemFlags: 0x8c000000
+objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=System,${BASEDN}
+objectClass: top
+objectClass: container
+cn: System
+description: Builtin system settings
+instanceType: 4
+uSNCreated: 1
+uSNChanged: 1
+showInAdvancedViewOnly: TRUE
+systemFlags: 0x8c000000
+objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=RID Manager$,CN=System,${BASEDN}
+objectclass: top
+objectclass: rIDManager
+cn: RID Manager$
+instanceType: 4
+uSNCreated: 1
+uSNChanged: 1
+showInAdvancedViewOnly: TRUE
+systemFlags: 0x8c000000
+objectCategory: CN=RID-Manager,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+rIDAvailablePool: 4611686014132423217
+
+dn: CN=DomainUpdates,CN=System,${BASEDN}
+objectClass: top
+objectClass: container
+cn: DomainUpdates
+instanceType: 4
+uSNCreated: 1
+uSNChanged: 1
+showInAdvancedViewOnly: TRUE
+objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+
+dn: CN=Windows2003Update,CN=DomainUpdates,CN=System,${BASEDN}
+objectClass: top
+objectClass: container
+cn: Windows2003Update
+instanceType: 4
+uSNCreated: 1
+uSNChanged: 1
+showInAdvancedViewOnly: TRUE
+objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+revision: 8
+
+dn: CN=Infrastructure,${BASEDN}
+objectclass: top
+objectclass: infrastructureUpdate
+cn: Infrastructure
+instanceType: 4
+uSNCreated: 1
+uSNChanged: 1
+showInAdvancedViewOnly: TRUE
+systemFlags: 0x8c000000
+objectCategory: CN=Infrastructure-Update,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+
+dn: CN=Builtin,${BASEDN}
+objectClass: top
+objectClass: builtinDomain
+cn: Builtin
+instanceType: 4
+showInAdvancedViewOnly: FALSE
+forceLogoff: 0x8000000000000000
+lockoutDuration: -18000000000
+lockOutObservationWindow: -18000000000
+lockoutThreshold: 0
+maxPwdAge: -37108517437440
+minPwdAge: 0
+minPwdLength: 0
+modifiedCountAtLastProm: 0
+nextRid: 1000
+pwdProperties: 0
+pwdHistoryLength: 0
+objectSid: S-1-5-32
+serverState: 1
+uASCompat: 1
+modifiedCount: 1
+objectCategory: CN=Builtin-Domain,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+###############################
+# Configuration Naming Context
+###############################
+dn: CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: configuration
+cn: Configuration
+instanceType: 13
+uSNCreated: ${USN}
+uSNChanged: ${USN}
+showInAdvancedViewOnly: TRUE
+objectCategory: CN=Configuration,CN=Schema,CN=Configuration,${BASEDN}
+subRefs: CN=Schema,CN=Configuration,${BASEDN}
+masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+msDs-masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+
+dn: CN=Partitions,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: crossRefContainer
+cn: Partitions
+instanceType: 4
+uSNCreated: ${USN}
+uSNChanged: ${USN}
+showInAdvancedViewOnly: TRUE
+systemFlags: 0x80000000
+objectCategory: CN=Cross-Ref-Container,CN=Schema,CN=Configuration,${BASEDN}
+msDS-Behavior-Version: 0
+fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+
+dn: CN=Enterprise Configuration,CN=Partitions,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: crossRef
+cn: Enterprise Configuration
+instanceType: 4
+uSNCreated: ${USN}
+uSNChanged: ${USN}
+showInAdvancedViewOnly: TRUE
+systemFlags: 0x00000001
+objectCategory: CN=Cross-Ref,CN=Schema,CN=Configuration,${BASEDN}
+nCName: CN=Configuration,${BASEDN}
+dnsRoot: ${DNSDOMAIN}
+
+dn: CN=Enterprise Schema,CN=Partitions,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: crossRef
+cn: Enterprise Schema
+instanceType: 4
+uSNCreated: ${USN}
+uSNChanged: ${USN}
+showInAdvancedViewOnly: TRUE
+systemFlags: 0x00000001
+objectCategory: CN=Cross-Ref,CN=Schema,CN=Configuration,${BASEDN}
+nCName: CN=Schema,CN=Configuration,${BASEDN}
+dnsRoot: ${DNSDOMAIN}
+
+dn: CN=${DOMAIN},CN=Partitions,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: crossRef
+cn: ${DOMAIN}
+instanceType: 4
+uSNCreated: ${USN}
+uSNChanged: ${USN}
+showInAdvancedViewOnly: TRUE
+systemFlags: 0x00000003
+objectCategory: CN=Cross-Ref,CN=Schema,CN=Configuration,${BASEDN}
+nCName: ${BASEDN}
+nETBIOSName: ${DOMAIN}
+dnsRoot: ${DNSDOMAIN}
+
+dn: CN=Sites,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: sitesContainer
+cn: Sites
+instanceType: 4
+uSNCreated: ${USN}
+uSNChanged: ${USN}
+showInAdvancedViewOnly: TRUE
+systemFlags: 0x82000000
+objectCategory: CN=Sites-Container,CN=Schema,CN=Configuration,${BASEDN}
+
+dn: CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: site
+cn: ${DEFAULTSITE}
+instanceType: 4
+uSNCreated: ${USN}
+uSNChanged: ${USN}
+showInAdvancedViewOnly: TRUE
+systemFlags: 0x82000000
+objectCategory: CN=Site,CN=Schema,CN=Configuration,${BASEDN}
+
+dn: CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: serversContainer
+cn: Servers
+instanceType: 4
+uSNCreated: ${USN}
+uSNChanged: ${USN}
+showInAdvancedViewOnly: TRUE
+systemFlags: 0x82000000
+objectCategory: CN=Servers-Container,CN=Schema,CN=Configuration,${BASEDN}
+
+dn: CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: server
+cn: ${NETBIOSNAME}
+instanceType: 4
+uSNCreated: ${USN}
+uSNChanged: ${USN}
+showInAdvancedViewOnly: TRUE
+systemFlags: 0x52000000
+objectCategory: CN=Server,CN=Schema,CN=Configuration,${BASEDN}
+dNSHostName: ${DNSNAME}
+serverReference: CN=${NETBIOSNAME},OU=Domain Controllers,${BASEDN}
+
+dn: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: applicationSettings
+objectClass: nTDSDSA
+cn: NTDS Settings
+instanceType: 4
+uSNCreated: ${USN}
+uSNChanged: ${USN}
+showInAdvancedViewOnly: TRUE
+systemFlags: 0x02000000
+objectCategory: CN=NTDS-DSA,CN=Schema,CN=Configuration,${BASEDN}
+dMDLocation: CN=Schema,CN=Configuration,${BASEDN}
+objectGUID: ${INVOCATIONID}
+invocationId: ${INVOCATIONID}
+msDS-Behavior-Version: 2
+
+dn: CN=Services,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: container
+cn: Services
+instanceType: 4
+uSNCreated: ${USN}
+uSNChanged: ${USN}
+showInAdvancedViewOnly: TRUE
+systemFlags: 0x80000000
+objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+
+dn: CN=Windows NT,CN=Services,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: container
+cn: Windows NT
+instanceType: 4
+uSNCreated: ${USN}
+uSNChanged: ${USN}
+showInAdvancedViewOnly: TRUE
+objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+
+dn: CN=Directory Service,CN=Windows NT,CN=Services,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: nTDSService
+cn: Directory Service
+instanceType: 4
+uSNCreated: ${USN}
+uSNChanged: ${USN}
+showInAdvancedViewOnly: TRUE
+objectCategory: CN=NTDS-Service,CN=Schema,CN=Configuration,${BASEDN}
+sPNMappings: host=ldap,dns,cifs,http
+
+
+###############################
+# Schema Naming Context
+###############################
+dn: CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: dMD
+cn: Schema
+instanceType: 13
+uSNCreated: ${USN}
+uSNChanged: ${USN}
+showInAdvancedViewOnly: TRUE
+objectCategory: CN=DMD,CN=Schema,CN=Configuration,${BASEDN}
+masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+msDs-masteredBy: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,CN=Configuration,${BASEDN}
+objectVersion: 30

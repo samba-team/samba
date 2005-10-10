@@ -71,25 +71,7 @@ sub ParseElementLevelData($$$$$$$)
 {
 	my ($e,$l,$nl,$env,$varname,$what,$align) = @_;
 
-	my @args = ($e,$l,$varname,$what,$align);
-
-	# See if we need to add a level argument because we're parsing a union
-	foreach (@{$e->{LEVELS}}) {
-		next unless ($_->{TYPE} eq "SWITCH");
-		my $t = getType($l->{DATA_TYPE});
-
-		# Set 0 here because one of the variables referenced in SWITCH_IS 
-		# might be an in variable while this one is [out]
-		if (grep(/in/, @{$e->{DIRECTION}}) or 
-			not defined($t) or 
-			has_property($t->{DATA}, "nodiscriminant")) {
-			push (@args, ParseExpr($_->{SWITCH_IS}, $env));
-		} else {
-			push (@args, -1);
-		}	
-	}
-
-	my $c = DissectType(@args);
+	my $c = DissectType($e,$l,$varname,$what,$align);
 	return if not $c;
 
 	if (defined($e->{ALIGN})) {
@@ -261,6 +243,7 @@ sub InitLevel($$$$)
 		pidl InitType($e, $l, ParseExpr($e->{NAME}, $env), $varname);
 	} elsif ($l->{TYPE} eq "SWITCH") {
 		InitLevel($e, GetNextLevel($e,$l), $varname, $env);
+		pidl ParseExpr($e->{NAME}, $env) . ".switch_value = " . ParseExpr($l->{SWITCH_IS}, $env) . ";";
 	}
 }
 
@@ -397,20 +380,15 @@ sub ParseUnion($$$)
 	my $pfn = "$fn\_p";
 	my $dfn = "$fn\_d";
 	
-	pidl "BOOL $pfn(const char *desc, $sn* v, uint32 level, prs_struct *ps, int depth)";
+	pidl "BOOL $pfn(const char *desc, $sn* v, prs_struct *ps, int depth)";
 	pidl "{";
 	indent;
 	DeclareArrayVariables($u->{ELEMENTS});
 
 	if (defined ($u->{SWITCH_TYPE})) {
-		pidl "if (MARSHALLING(ps)) ";
-		pidl "\tv->switch_value = level;";
-		pidl "";
 		pidl "if (!prs_$u->{SWITCH_TYPE}(\"switch_value\", ps, depth, &v->switch_value))";
 		pidl "\treturn False;";
 		pidl "";
-	} else {
-		pidl "v->switch_value = level;";
 	}
 
 	# Maybe check here that level and v->switch_value are equal?
@@ -447,7 +425,7 @@ sub ParseUnion($$$)
 	pidl "}";
 	pidl "";
 
-	pidl "BOOL $dfn(const char *desc, $sn* v, uint32 level, prs_struct *ps, int depth)";
+	pidl "BOOL $dfn(const char *desc, $sn* v, prs_struct *ps, int depth)";
 	pidl "{";
 	indent;
 	DeclareArrayVariables($u->{ELEMENTS});
@@ -483,16 +461,14 @@ sub ParseUnion($$$)
 
 }
 
-sub CreateFnDirection($$$$)
+sub CreateFnDirection($$$$$)
 {
-	my ($fn,$ifn, $s,$es) = @_;
+	my ($fn,$ifn,$s,$all,$es) = @_;
 
 	my $args = "";
-	foreach (@$es) {
-		$args .= ", " . DeclLong($_);
-	}
+	foreach (@$all) { $args .= ", " . DeclLong($_); }
 
-	my $env = { "this" => "v" };
+	my $env = { };
 	GenerateEnvElement($_, $env) foreach (@$es);
 
 	pidl "BOOL $ifn($s *v$args)";
@@ -539,6 +515,7 @@ sub ParseFunction($$)
 
 	my @in = ();
 	my @out = ();
+	my @all = @{$fn->{ELEMENTS}};
 
 	foreach (@{$fn->{ELEMENTS}}) {
 		push (@in, $_) if (grep(/in/, @{$_->{DIRECTION}}));
@@ -546,7 +523,7 @@ sub ParseFunction($$)
 	}
 
 	if (defined($fn->{RETURN_TYPE})) {
-		push (@out, { 
+		my $status = { 
 			NAME => "status", 
 			TYPE => $fn->{RETURN_TYPE},
 			LEVELS => [
@@ -555,17 +532,20 @@ sub ParseFunction($$)
 					DATA_TYPE => $fn->{RETURN_TYPE}
 				}
 			]
-		} );
+		};
+
+		push (@out, $status);
+		push (@all, $status);
 	}
 
 	CreateFnDirection("$if->{NAME}_io_q_$fn->{NAME}", 
 				 "init_$if->{NAME}_q_$fn->{NAME}", 
 				 uc("$if->{NAME}_q_$fn->{NAME}"), 
-				 \@in);
+				 \@in, \@in);
 	CreateFnDirection("$if->{NAME}_io_r_$fn->{NAME}", 
 				 "init_$if->{NAME}_r_$fn->{NAME}",
 				 uc("$if->{NAME}_r_$fn->{NAME}"), 
-				 \@out);
+				 \@all, \@out);
 }
 
 sub ParseInterface($)
