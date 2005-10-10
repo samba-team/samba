@@ -130,6 +130,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	io.in.port = 0;
 	io.in.called_name = host;
 	io.in.credentials = credentials;
+	io.in.fallback_to_anonymous = False;
 	io.in.workgroup = lp_workgroup();
 	io.in.service = remote_share;
 	io.in.service_type = "?????";
