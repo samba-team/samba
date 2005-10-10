@@ -170,7 +170,8 @@ enum ndr_err_code {
 };
 
 enum ndr_compression_alg {
-	NDR_COMPRESSION_MSZIP
+	NDR_COMPRESSION_MSZIP	= 2,
+	NDR_COMPRESSION_XPRESS	= 3
 };
 
 /*
