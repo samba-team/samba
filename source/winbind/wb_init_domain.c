@@ -418,18 +418,17 @@ static void init_domain_openlsa(struct init_domain_state *state)
 {
 	struct composite_context *ctx;
 
-	if (state->domain->schannel_creds != NULL) {
+	if (state->domain->schannel_creds == NULL) {
 		ctx = wb_init_lsa_send(state->conn.out.tree,
-				       DCERPC_AUTH_TYPE_NTLMSSP,
-				       state->domain->schannel_creds);
-		comp_cont(state->ctx, ctx,
-			  init_domain_recv_lsa_ntlmssp, state);
+				       DCERPC_AUTH_TYPE_NONE,
+				       NULL);
+		comp_cont(state->ctx, ctx, init_domain_recv_lsa_none, state);
 		return;
 	}
 
-	ctx = wb_init_lsa_send(state->conn.out.tree, DCERPC_AUTH_TYPE_NONE,
-			       NULL);
-	comp_cont(state->ctx, ctx, init_domain_recv_lsa_none, state);
+	ctx = wb_init_lsa_send(state->conn.out.tree, DCERPC_AUTH_TYPE_NTLMSSP,
+			       state->domain->schannel_creds);
+	comp_cont(state->ctx, ctx, init_domain_recv_lsa_ntlmssp, state);
 }
 
 static void init_domain_recv_lsa_ntlmssp(struct composite_context *ctx)
