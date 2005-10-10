@@ -111,9 +111,37 @@ static struct DsSyncTest *test_create_context(TALLOC_CTX *mem_ctx)
 
 	our_bind_info					= &ctx->new_dc.drsuapi.our_bind_info;
 	our_bind_info->length				= 28;
-	our_bind_info->info.info28.supported_extensions	= 0x1ffffb7f;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_BASE;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ASYNC_REPLICATION;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_REMOVEAPI;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_MOVEREQ_V2;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHG_COMPRESS;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V1;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_RESTORE_USN_OPTIMIZATION;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_KCC_EXECUTE;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRY_V2;
 	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_LINKED_VALUE_REPLICATION;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V2;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_INSTANCE_TYPE_NOT_REQ_ON_MOD;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_CRYPTO_BIND;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GET_REPL_INFO;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_STRONG_ENCRYPTION;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V01;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_TRANSITIVE_MEMBERSHIP;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADD_SID_HISTORY;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_POST_BETA3;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GET_MEMBERSHIPS2;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V6;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_NONDOMAIN_NCS;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V5;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V6;
 	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRYREPLY_V3;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V7;
+	our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_VERIFY_OBJECT;
+	if (lp_parm_bool(-1,"dssync","xpress",False)) {
+		our_bind_info->info.info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_XPRESS_COMPRESS;
+	}
 	our_bind_info->info.info28.site_guid		= GUID_zero();
 	our_bind_info->info.info28.u1			= 508;
 	our_bind_info->info.info28.repl_epoch		= 0;
