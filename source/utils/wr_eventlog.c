@@ -113,18 +113,10 @@ int main( int argc, char *argv[] )
 
 	argfname = argv[0];
 
-	if ( !(tdbname = elog_tdbname( argfname )) ) {
-		fprintf( stderr, "Unable to create eventlog tdb filename!\n");
-		return -1;
-	}
-
-
-	if ( !(elog_tdb = elog_open_tdb( tdbname ) ) ) {
+	if ( !(elog_tdb = elog_open_tdb( argfname ) ) ) {
 		printf( "can't open the eventlog TDB (%s)\n", tdbname );
 		return -1;
 	}
-
-	SAFE_FREE( tdbname );
 
 	ZERO_STRUCT( ee );	/* MUST initialize between records */
 

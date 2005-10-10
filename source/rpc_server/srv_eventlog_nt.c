@@ -326,8 +326,8 @@ static BOOL sync_eventlog_params( EVENTLOG_INFO *info )
 
 	regkey_close_internal( keyinfo );
 
-	tdb_store_int32( info->tdb, VN_maxsize, uiMaxSize );
-	tdb_store_int32( info->tdb, VN_retention, uiRetention );
+	tdb_store_int32( info->tdb, EVT_MAXSIZE, uiMaxSize );
+	tdb_store_int32( info->tdb, EVT_RETENTION, uiRetention );
 
 	return True;
 }
@@ -347,10 +347,10 @@ static BOOL get_num_records_hook( EVENTLOG_INFO * info )
 
 	/* lock the tdb since we have to get 2 records */
 
-	tdb_lock_bystring( info->tdb, VN_next_record, 1 );
-	next_record = tdb_fetch_int32( info->tdb, VN_next_record );
-	oldest_record = tdb_fetch_int32( info->tdb, VN_oldest_entry );
-	tdb_unlock_bystring( info->tdb, VN_next_record );
+	tdb_lock_bystring( info->tdb, EVT_NEXT_RECORD, 1 );
+	next_record = tdb_fetch_int32( info->tdb, EVT_NEXT_RECORD);
+	oldest_record = tdb_fetch_int32( info->tdb, EVT_OLDEST_ENTRY);
+	tdb_unlock_bystring( info->tdb, EVT_NEXT_RECORD);
 
 	DEBUG( 8,
 	       ( "Oldest Record %d; Next Record %d\n", oldest_record,
@@ -621,27 +621,29 @@ WERROR _eventlog_read_eventlog( pipes_struct * p,
 		     ( ps, tdb, record_number, &entry ) ) {
 			DEBUG( 8,
 			       ( "Retrieved record %d\n", record_number ) );
+			       
 			/* Now see if there is enough room to add */
-			if ( ( ee_new =
-			       read_package_entry( ps, q_u, r_u,
-						   &entry ) ) == NULL ) {
+			ee_new = read_package_entry( ps, q_u, r_u,&entry );
+			if ( !ee_new )
 				return WERR_NOMEM;
-
-			}
 
 			if ( r_u->num_bytes_in_resp + ee_new->record.length >
 			     q_u->max_read_size ) {
 				r_u->bytes_in_next_record =
 					ee_new->record.length;
+					
 				/* response would be too big to fit in client-size buffer */
+				
 				bytes_left = 0;
 				break;
 			}
+			
 			add_record_to_resp( r_u, ee_new );
 			bytes_left -= ee_new->record.length;
 			ZERO_STRUCT( entry );
 			num_records_read =
 				r_u->num_records - num_records_read;
+				
 			DEBUG( 10,
 			       ( "_eventlog_read_eventlog: read [%d] records for a total of [%d] records using [%d] bytes out of a max of [%d].\n",
 				 num_records_read, r_u->num_records,
@@ -653,13 +655,12 @@ WERROR _eventlog_read_eventlog( pipes_struct * p,
 		}
 
 
-		if ( info->flags & EVENTLOG_FORWARDS_READ ) {
+		if ( info->flags & EVENTLOG_FORWARDS_READ )
 			record_number++;
-		} else {
+		else
 			record_number--;
-		}
-
 	}
+	
 	return WERR_OK;
 }
 

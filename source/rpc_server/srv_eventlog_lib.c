@@ -55,12 +55,12 @@ TDB_CONTEXT *elog_init_tdb( char *tdbfilename )
 
 	/* initialize with defaults, copy real values in here from registry */
 
-	tdb_store_int32( tdb, VN_oldest_entry, 1 );
-	tdb_store_int32( tdb, VN_next_record, 1 );
-	tdb_store_int32( tdb, VN_maxsize, 0x80000 );
-	tdb_store_int32( tdb, VN_retention, 0x93A80 );
+	tdb_store_int32( tdb, EVT_OLDEST_ENTRY, 1 );
+	tdb_store_int32( tdb, EVT_NEXT_RECORD, 1 );
+	tdb_store_int32( tdb, EVT_MAXSIZE, 0x80000 );
+	tdb_store_int32( tdb, EVT_RETENTION, 0x93A80 );
 
-	tdb_store_int32( tdb, VN_version, EVENTLOG_DATABASE_VERSION_V1 );
+	tdb_store_int32( tdb, EVT_VERSION, EVENTLOG_DATABASE_VERSION_V1 );
 
 	return tdb;
 }
@@ -120,11 +120,11 @@ int elog_tdb_size( TDB_CONTEXT * tdb, int *MaxSize, int *Retention )
 	tdb_traverse( tdb, eventlog_tdb_size_fn, &tsize );
 
 	if ( MaxSize != NULL ) {
-		*MaxSize = tdb_fetch_int32( tdb, VN_maxsize );
+		*MaxSize = tdb_fetch_int32( tdb, EVT_MAXSIZE );
 	}
 
 	if ( Retention != NULL ) {
-		*Retention = tdb_fetch_int32( tdb, VN_retention );
+		*Retention = tdb_fetch_int32( tdb, EVT_RETENTION );
 	}
 
 	DEBUG( 1,
@@ -168,12 +168,12 @@ BOOL make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32 needed,
 	if ( mem_ctx == NULL )
 		return False;	/* can't allocate memory indicates bigger problems */
 	/* lock */
-	tdb_lock_bystring( the_tdb, VN_next_record, 1 );
+	tdb_lock_bystring( the_tdb, EVT_NEXT_RECORD, 1 );
 	/* read */
-	end_record = tdb_fetch_int32( the_tdb, VN_next_record );
-	start_record = tdb_fetch_int32( the_tdb, VN_oldest_entry );
-	Retention = tdb_fetch_int32( the_tdb, VN_retention );
-	MaxSize = tdb_fetch_int32( the_tdb, VN_maxsize );
+	end_record = tdb_fetch_int32( the_tdb, EVT_NEXT_RECORD );
+	start_record = tdb_fetch_int32( the_tdb, EVT_OLDEST_ENTRY );
+	Retention = tdb_fetch_int32( the_tdb, EVT_RETENTION );
+	MaxSize = tdb_fetch_int32( the_tdb, EVT_MAXSIZE );
 
 	time( &current_time );
 
@@ -199,7 +199,7 @@ BOOL make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32 needed,
 			DEBUG( 8,
 			       ( "Can't find a record for the key, record [%d]\n",
 				 i ) );
-			tdb_unlock_bystring( the_tdb, VN_next_record );
+			tdb_unlock_bystring( the_tdb, EVT_NEXT_RECORD );
 			return False;
 		}
 		nbytes += ret.dsize;	/* note this includes overhead */
@@ -236,9 +236,9 @@ BOOL make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32 needed,
 			tdb_delete( the_tdb, key );
 		}
 
-		tdb_store_int32( the_tdb, VN_oldest_entry, new_start );
+		tdb_store_int32( the_tdb, EVT_OLDEST_ENTRY, new_start );
 	}
-	tdb_unlock_bystring( the_tdb, VN_next_record );
+	tdb_unlock_bystring( the_tdb, EVT_NEXT_RECORD );
 	return True;
 }
 
@@ -340,7 +340,7 @@ TDB_CONTEXT *elog_open_tdb( char *logname )
 
 	tdb = tdb_open_log( tdbpath, 0, TDB_DEFAULT, O_RDWR , 0 );	
 	if ( tdb ) {
-		vers_id = tdb_fetch_int32( tdb, VN_version );
+		vers_id = tdb_fetch_int32( tdb, EVT_VERSION );
 
 		if ( vers_id != EVENTLOG_DATABASE_VERSION_V1 ) {
 			DEBUG(1,("elog_open_tdb: Invalid version [%d] on file [%s].\n",
@@ -466,9 +466,9 @@ int write_eventlog_tdb( TDB_CONTEXT * the_tdb, Eventlog_entry * ee )
 	/* need to read the record number and insert it into the entry here */
 
 	/* lock */
-	tdb_lock_bystring( the_tdb, VN_next_record, 1 );
+	tdb_lock_bystring( the_tdb, EVT_NEXT_RECORD, 1 );
 	/* read */
-	next_record = tdb_fetch_int32( the_tdb, VN_next_record );
+	next_record = tdb_fetch_int32( the_tdb, EVT_NEXT_RECORD );
 
 	n_packed =
 		tdb_pack( packed_ee, ee->record.length + MARGIN,
@@ -507,13 +507,13 @@ int write_eventlog_tdb( TDB_CONTEXT * the_tdb, Eventlog_entry * ee )
 
 	if ( tdb_store( the_tdb, kbuf, ebuf, 0 ) ) {
 		/* DEBUG(1,("write_eventlog_tdb: Can't write record %d to eventlog\n",next_record)); */
-		tdb_unlock_bystring( the_tdb, VN_next_record );
+		tdb_unlock_bystring( the_tdb, EVT_NEXT_RECORD );
 		talloc_destroy( mem_ctx );
 		return 0;
 	}
 	next_record++;
-	tdb_store_int32( the_tdb, VN_next_record, next_record );
-	tdb_unlock_bystring( the_tdb, VN_next_record );
+	tdb_store_int32( the_tdb, EVT_NEXT_RECORD, next_record );
+	tdb_unlock_bystring( the_tdb, EVT_NEXT_RECORD );
 	talloc_destroy( mem_ctx );
 	return ( next_record - 1 );
 }
