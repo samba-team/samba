@@ -257,12 +257,11 @@ enum ldb_request_type {
 	LDB_REQ_SEARCH,
 	LDB_REQ_ADD,
 	LDB_REQ_MODIFY,
-	LDB_REQ_RENAME,
-	LDB_REQ_DELETE
+	LDB_REQ_DELETE,
+	LDB_REQ_RENAME
 };
 
 struct ldb_search {
-	struct ldb_context *ldb;
 	const struct ldb_dn *base;
 	enum ldb_scope scope;
 	struct ldb_parse_tree *tree;
@@ -271,24 +270,20 @@ struct ldb_search {
 };
 
 struct ldb_add {
-	struct ldb_context *ldb;
 	const struct ldb_message *message;
 };
 
 struct  ldb_modify {
-	struct ldb_context *ldb;
 	const struct ldb_message *message;
 };
 
-struct ldb_rename {
-	struct ldb_context *ldb;
-	const struct ldb_dn *olddn;
-	const struct ldb_dn *newdn;
+struct ldb_delete {
+	const struct ldb_dn *dn;
 };
 
-struct ldb_delete {
-	struct ldb_context *ldb;
-	const struct ldb_dn *dn;
+struct ldb_rename {
+	const struct ldb_dn *olddn;
+	const struct ldb_dn *newdn;
 };
 
 struct ldb_request {
@@ -296,11 +291,11 @@ struct ldb_request {
 	int operation;
 
 	union {
-		struct ldb_search	search;
-		struct ldb_add		add;
-		struct ldb_modify	modify;
-		struct ldb_rename	rename;
-		struct ldb_delete	delete;
+		struct ldb_search search;
+		struct ldb_add    add;
+		struct ldb_modify mod;
+		struct ldb_delete del;
+		struct ldb_rename rename;
 	} op;
 
 	struct ldb_controls *controls;

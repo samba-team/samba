@@ -282,17 +282,10 @@ static int get_attr_list_recursive(struct ldb_module *module, struct schema_stru
 	return 0;
 }
 
-/* search */
-static int schema_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
-				enum ldb_scope scope, struct ldb_parse_tree *tree,
-				const char * const *attrs, struct ldb_message ***res)
-{
-	return ldb_next_search_bytree(module, base, scope, tree, attrs, res); 
-}
-
 /* add_record */
-static int schema_add_record(struct ldb_module *module, const struct ldb_message *msg)
+static int schema_add(struct ldb_module *module, struct ldb_request *req)
 {
+	const struct ldb_message *msg = req->op.add.message;
 	struct schema_structures *entry_structs;
 	char *error_string;
 	unsigned int i;
@@ -308,7 +301,7 @@ static int schema_add_record(struct ldb_module *module, const struct ldb_message
 
 	/* do not check on our control entries */
 	if (ldb_dn_is_special(msg->dn)) {
-		return ldb_next_add_record(module, msg);
+		return ldb_next_request(module, req);
 	}
 
 	/* TODO: check parent exists */
@@ -378,12 +371,13 @@ static int schema_add_record(struct ldb_module *module, const struct ldb_message
 
 	talloc_free(entry_structs);
 
-	return ldb_next_add_record(module, msg);
+	return ldb_next_request(module, req);
 }
 
 /* modify_record */
-static int schema_modify_record(struct ldb_module *module, const struct ldb_message *msg)
+static int schema_modify(struct ldb_module *module, struct ldb_request *req)
 {
+	const struct ldb_message *msg = req->op.mod.message;
 	struct schema_structures *entry_structs;
 	char *error_string;
 	unsigned int i;
@@ -400,7 +394,7 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 
 	/* do not check on our control entries */
 	if (ldb_dn_is_special(msg->dn)) {
-		return ldb_next_add_record(module, msg);
+		return ldb_next_request(module, req);
 	}
 
 	/* allocate object structs */
@@ -493,29 +487,28 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 
 	talloc_free(entry_structs);
 
-	return ldb_next_modify_record(module, msg);
+	return ldb_next_request(module, req);
 }
 
-/* delete_record */
-static int schema_delete_record(struct ldb_module *module, const struct ldb_dn *dn)
+static int schema_request(struct ldb_module *module, struct ldb_request *req)
 {
-/*	struct private_data *data = (struct private_data *)module->private_data; */
-	return ldb_next_delete_record(module, dn);
-}
+	switch (req->operation) {
 
-/* rename_record */
-static int schema_rename_record(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
-{
-	return ldb_next_rename_record(module, olddn, newdn);
+	case LDB_REQ_ADD:
+		return schema_add(module, req);
+
+	case LDB_REQ_MODIFY:
+		return schema_modify(module, req);
+
+	default:
+		return ldb_next_request(module, req);
+
+	}
 }
 
 static const struct ldb_module_ops schema_ops = {
 	.name              = "schema",
-	.search_bytree     = schema_search_bytree,
-	.add_record        = schema_add_record,
-	.modify_record     = schema_modify_record,
-	.delete_record     = schema_delete_record,
-	.rename_record     = schema_rename_record
+	.request           = schema_request
 };
 
 #ifdef HAVE_DLOPEN_DISABLED

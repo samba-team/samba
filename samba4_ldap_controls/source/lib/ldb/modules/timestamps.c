@@ -37,14 +37,6 @@
 #include "ldb/include/ldb_private.h"
 #include <time.h>
 
-static int timestamps_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
-				    enum ldb_scope scope, struct ldb_parse_tree *tree,
-				    const char * const *attrs, struct ldb_message ***res)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_search\n");
-	return ldb_next_search_bytree(module, base, scope, tree, attrs, res);
-}
-
 static int add_time_element(struct ldb_module *module, struct ldb_message *msg, 
 			    const char *attr_name, const char *time_string, unsigned int flags)
 {
@@ -78,9 +70,10 @@ static int add_time_element(struct ldb_module *module, struct ldb_message *msg,
 	return 0;
 }
 
-/* add_record: add crateTimestamp/modifyTimestamp attributes */
-static int timestamps_add_record(struct ldb_module *module, const struct ldb_message *msg)
+/* timestamps_add: add crateTimestamp/modifyTimestamp attributes */
+static int timestamps_add(struct ldb_module *module, struct ldb_request *req)
 {
+	const struct ldb_message *msg = req->op.add.message;
 	struct ldb_message *msg2 = NULL;
 	struct tm *tm;
 	char *timestr;
@@ -91,7 +84,7 @@ static int timestamps_add_record(struct ldb_module *module, const struct ldb_mes
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(msg->dn)) {
-		return ldb_next_add_record(module, msg);
+		return ldb_next_request(module, req);
 	}
 
 	timeval = time(NULL);
@@ -128,18 +121,22 @@ static int timestamps_add_record(struct ldb_module *module, const struct ldb_mes
 	add_time_element(module, msg2, "whenChanged", timestr, LDB_FLAG_MOD_ADD);
 
 	if (msg2) {
-		ret = ldb_next_add_record(module, msg2);
+		req->op.add.message = msg2;
+		ret = ldb_next_request(module, req);
+		req->op.add.message = msg;
+
 		talloc_free(msg2);
 	} else {
-		ret = ldb_next_add_record(module, msg);
+		ret = ldb_next_request(module, req);
 	}
 
 	return ret;
 }
 
-/* modify_record: change modifyTimestamp as well */
-static int timestamps_modify_record(struct ldb_module *module, const struct ldb_message *msg)
+/* timestamps_modify: change modifyTimestamp as well */
+static int timestamps_modify(struct ldb_module *module, struct ldb_request *req)
 {
+	const struct ldb_message *msg = req->op.mod.message;
 	struct ldb_message *msg2 = NULL;
 	struct tm *tm;
 	char *timestr;
@@ -150,7 +147,7 @@ static int timestamps_modify_record(struct ldb_module *module, const struct ldb_
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(msg->dn)) {
-		return ldb_next_modify_record(module, msg);
+		return ldb_next_request(module, req);
 	}
 
 	timeval = time(NULL);
@@ -185,18 +182,35 @@ static int timestamps_modify_record(struct ldb_module *module, const struct ldb_
 	add_time_element(module, msg2, "modifyTimestamp", timestr, LDB_FLAG_MOD_REPLACE);
 	add_time_element(module, msg2, "whenChanged", timestr, LDB_FLAG_MOD_REPLACE);
 
-	ret = ldb_next_modify_record(module, msg2);
+	req->op.mod.message = msg2;
+	ret = ldb_next_request(module, req);
+	req->op.mod.message = msg;
+
 	talloc_free(msg2);
 
 	return ret;
 }
 
+static int timestamps_request(struct ldb_module *module, struct ldb_request *req)
+{
+	switch (req->operation) {
+
+	case LDB_REQ_ADD:
+		return timestamps_add(module, req);
+
+	case LDB_REQ_MODIFY:
+		return timestamps_modify(module, req);
+
+	default:
+		return ldb_next_request(module, req);
+
+	}
+}
+
 
 static const struct ldb_module_ops timestamps_ops = {
 	.name              = "timestamps",
-	.search_bytree     = timestamps_search_bytree,
-	.add_record        = timestamps_add_record,
-	.modify_record     = timestamps_modify_record
+	.request           = timestamps_request
 };
 
 

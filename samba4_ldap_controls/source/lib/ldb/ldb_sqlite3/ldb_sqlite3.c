@@ -1777,17 +1777,45 @@ destructor(void *p)
 }
 
 
+static int lsqlite3_request(struct ldb_module *module, struct ldb_request *req)
+{
+	switch (req->operation) {
+
+	case LDB_REQ_SEARCH:
+		return lsqlite3_search_bytree(module,
+					  req->op.search.base,
+					  req->op.search.scope, 
+					  req->op.search.tree, 
+					  req->op.search.attrs, 
+					  req->op.search.res);
+
+	case LDB_REQ_ADD:
+		return lsqlite3_add(module, req->op.add.message);
+
+	case LDB_REQ_MODIFY:
+		return lsqlite3_modify(module, req->op.mod.message);
+
+	case LDB_REQ_DELETE:
+		return lsqlite3_delete(module, req->op.del.dn);
+
+	case LDB_REQ_RENAME:
+		return lsqlite3_rename(module,
+					req->op.rename.olddn,
+					req->op.rename.newdn);
+
+	default:
+		return LDB_ERR_OPERATIONS_ERROR;
+
+	}
+}
+
 
 /*
  * Table of operations for the sqlite3 backend
  */
 static const struct ldb_module_ops lsqlite3_ops = {
 	.name              = "sqlite",
-	.search_bytree     = lsqlite3_search_bytree,
-	.add_record        = lsqlite3_add,
-	.modify_record     = lsqlite3_modify,
-	.delete_record     = lsqlite3_delete,
-	.rename_record     = lsqlite3_rename,
+	.request           = lsqlite3_request,
 	.start_transaction = lsqlite3_start_trans,
 	.end_transaction   = lsqlite3_end_trans,
 	.del_transaction   = lsqlite3_del_trans

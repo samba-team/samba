@@ -470,13 +470,41 @@ static int lldb_del_trans(struct ldb_module *module)
 	return 0;
 }
 
+static int lldb_request(struct ldb_module *module, struct ldb_request *req)
+{
+	switch (req->operation) {
+
+	case LDB_REQ_SEARCH:
+		return lldb_search_bytree(module,
+					  req->op.search.base,
+					  req->op.search.scope, 
+					  req->op.search.tree, 
+					  req->op.search.attrs, 
+					  req->op.search.res);
+
+	case LDB_REQ_ADD:
+		return lldb_add(module, req->op.add.message);
+
+	case LDB_REQ_MODIFY:
+		return lldb_modify(module, req->op.mod.message);
+
+	case LDB_REQ_DELETE:
+		return lldb_delete(module, req->op.del.dn);
+
+	case LDB_REQ_RENAME:
+		return lldb_rename(module,
+					req->op.rename.olddn,
+					req->op.rename.newdn);
+
+	default:
+		return -1;
+
+	}
+}
+
 static const struct ldb_module_ops lldb_ops = {
 	.name              = "ldap",
-	.search_bytree     = lldb_search_bytree,
-	.add_record        = lldb_add,
-	.modify_record     = lldb_modify,
-	.delete_record     = lldb_delete,
-	.rename_record     = lldb_rename,
+	.request           = lldb_request,
 	.start_transaction = lldb_start_trans,
 	.end_transaction   = lldb_end_trans,
 	.del_transaction   = lldb_del_trans

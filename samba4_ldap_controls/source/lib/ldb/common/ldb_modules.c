@@ -227,58 +227,10 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 /*
    helper functions to call the next module in chain
 */
-int ldb_next_search_bytree(struct ldb_module *module, 
-			   const struct ldb_dn *base,
-			   enum ldb_scope scope,
-			   struct ldb_parse_tree *tree,
-			   const char * const *attrs, struct ldb_message ***res)
+int ldb_next_request(struct ldb_module *module, struct ldb_request *request)
 {
-	FIND_OP(module, search_bytree);
-	return module->ops->search_bytree(module, base, scope, tree, attrs, res);
-}
-
-int ldb_next_search(struct ldb_module *module, 
-		    const struct ldb_dn *base,
-		    enum ldb_scope scope,
-		    const char *expression,
-		    const char * const *attrs, struct ldb_message ***res)
-{
-	struct ldb_parse_tree *tree;
-	int ret;
-	FIND_OP(module, search_bytree);
-	tree = ldb_parse_tree(module, expression);
-	if (tree == NULL) {
-		ldb_set_errstring(module, talloc_strdup(module, "Unable to parse search expression"));
-		return -1;
-	}
-	ret = module->ops->search_bytree(module, base, scope, tree, attrs, res);
-	talloc_free(tree);
-	return ret;
-}
-
-
-int ldb_next_add_record(struct ldb_module *module, const struct ldb_message *message)
-{
-	FIND_OP(module, add_record);
-	return module->ops->add_record(module, message);
-}
-
-int ldb_next_modify_record(struct ldb_module *module, const struct ldb_message *message)
-{
-	FIND_OP(module, modify_record);
-	return module->ops->modify_record(module, message);
-}
-
-int ldb_next_delete_record(struct ldb_module *module, const struct ldb_dn *dn)
-{
-	FIND_OP(module, delete_record);
-	return module->ops->delete_record(module, dn);
-}
-
-int ldb_next_rename_record(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
-{
-	FIND_OP(module, rename_record);
-	return module->ops->rename_record(module, olddn, newdn);
+	FIND_OP(module, request);
+	return module->ops->request(module, request);
 }
 
 int ldb_next_start_trans(struct ldb_module *module)
