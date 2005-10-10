@@ -553,13 +553,17 @@ static BOOL test_DsGetNCChanges(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			r.in.req.req8.highwatermark.reserved_usn	= 0;
 			r.in.req.req8.highwatermark.highest_usn		= 0;
 			r.in.req.req8.uptodateness_vector		= NULL;
-			r.in.req.req8.replica_flags			= 0
-									| DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE
-									| DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
+			r.in.req.req8.replica_flags			= 0;
+			if (lp_parm_bool(-1,"drsuapi","compression",False)) {
+				r.in.req.req8.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES;
+			}
+			if (lp_parm_bool(-1,"drsuapi","neighbour_writeable",True)) {
+				r.in.req.req8.replica_flags		|= DRSUAPI_DS_REPLICA_NEIGHBOUR_WRITEABLE;
+			}
+			r.in.req.req8.replica_flags			|= DRSUAPI_DS_REPLICA_NEIGHBOUR_SYNC_ON_STARTUP
 									| DRSUAPI_DS_REPLICA_NEIGHBOUR_DO_SCHEDULED_SYNCS
 									| DRSUAPI_DS_REPLICA_NEIGHBOUR_RETURN_OBJECT_PARENTS
 									| DRSUAPI_DS_REPLICA_NEIGHBOUR_NEVER_SYNCED
-									| DRSUAPI_DS_REPLICA_NEIGHBOUR_COMPRESS_CHANGES
 									;
 			r.in.req.req8.unknown2				= 402;
 			r.in.req.req8.unknown3				= 402116;
