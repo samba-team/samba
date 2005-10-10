@@ -116,12 +116,20 @@ static NTSTATUS ndr_pull_compression_mszip(struct ndr_pull *subndr,
 	NDR_CHECK(ndr_pull_uint32(comndr, NDR_SCALARS, &payload_header[2]));
 	NDR_CHECK(ndr_pull_uint32(comndr, NDR_SCALARS, &payload_header[3]));
 
-	payload_size = payload_header[2];
-
-	/* TODO: check the first 4 bytes of the header */
+	if (payload_header[0] != 0x00081001) {
+		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION, "Bad MSZIP payload_header[0] [0x%08X] != [0x00081001] (PULL)",
+				      payload_header[0]);
+	}
 	if (payload_header[1] != 0xCCCCCCCC) {
 		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION, "Bad MSZIP payload_header[1] [0x%08X] != [0xCCCCCCCC] (PULL)",
 				      payload_header[1]);
+	}
+
+	payload_size = payload_header[2];
+
+	if (payload_header[3] != 0x00000000) {
+		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION, "Bad MSZIP payload_header[3] [0x%08X] != [0x00000000] (PULL)",
+				      payload_header[3]);
 	}
 
 	payload_offset = comndr->offset;
