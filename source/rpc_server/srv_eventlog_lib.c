@@ -22,6 +22,16 @@
 
 #include "includes.h"
 
+/* maintain a list of open eventlog tdbs with reference counts */
+
+struct elog_open_tdb {
+	struct elog_open_tdb *prev, *next;
+	char *name;
+	TDB_CONTEXT *tdb;
+	int ref_count;
+};
+
+static struct elog_open_tdb *open_elog_list;
 
 /********************************************************************
  Init an Eventlog TDB, and return it. If null, something bad 
@@ -73,19 +83,24 @@ char *elog_tdbname( const char *name )
 }
 
 
-/* count the number of bytes in the TDB */
+/********************************************************************
+ this function is used to count up the number of bytes in a 
+ particular TDB
+********************************************************************/
 
-/* Arg! Static Globals! */
+struct trav_size_struct {
+	int size;
+	int rec_count;
+};
 
-static int eventlog_tdbcount;
-static int eventlog_tdbsize;
-
-/* this function is used to count up the number of bytes in a particular TDB */
 static int eventlog_tdb_size_fn( TDB_CONTEXT * tdb, TDB_DATA key, TDB_DATA data,
 			  void *state )
 {
-	eventlog_tdbsize += data.dsize;
-	eventlog_tdbcount++;
+	struct trav_size_struct	 *tsize = state;
+	
+	tsize->size += data.dsize;
+	tsize->rec_count++;
+	
 	return 0;
 }
 
@@ -95,12 +110,14 @@ static int eventlog_tdb_size_fn( TDB_CONTEXT * tdb, TDB_DATA key, TDB_DATA data,
 
 int elog_tdb_size( TDB_CONTEXT * tdb, int *MaxSize, int *Retention )
 {
+	struct trav_size_struct tsize;
+	
 	if ( !tdb )
 		return 0;
-	eventlog_tdbcount = 0;
-	eventlog_tdbsize = 0;
+		
+	ZERO_STRUCT( tsize );
 
-	tdb_traverse( tdb, eventlog_tdb_size_fn, NULL );
+	tdb_traverse( tdb, eventlog_tdb_size_fn, &tsize );
 
 	if ( MaxSize != NULL ) {
 		*MaxSize = tdb_fetch_int32( tdb, VN_maxsize );
@@ -111,9 +128,9 @@ int elog_tdb_size( TDB_CONTEXT * tdb, int *MaxSize, int *Retention )
 	}
 
 	DEBUG( 1,
-	       ( "eventlog size: [%d] for [%d] records\n", eventlog_tdbsize,
-		 eventlog_tdbcount ) );
-	return eventlog_tdbsize;
+	       ( "eventlog size: [%d] for [%d] records\n", tsize.size,
+		 tsize.rec_count ) );
+	return tsize.size;
 }
 
 
@@ -136,12 +153,9 @@ BOOL make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32 needed,
 	int start_record, i, new_start;
 	int end_record;
 	int nbytes, reclen, len, Retention, MaxSize;
-
 	int tresv1, trecnum, timegen, timewr;
-
 	TDB_DATA key, ret;
 	TALLOC_CTX *mem_ctx = NULL;
-
 	time_t current_time, exp_time;
 
 	/* discard some eventlogs */
@@ -298,33 +312,118 @@ BOOL can_write_to_eventlog( TDB_CONTEXT * tdb, int32 needed )
 /*******************************************************************
 *******************************************************************/
 
-TDB_CONTEXT *elog_open_tdb( char *tdbfilename )
+TDB_CONTEXT *elog_open_tdb( char *logname )
 {
 	TDB_CONTEXT *tdb;
 	uint32 vers_id;
+	struct elog_open_tdb *ptr;
+	char *tdbfilename;
+	pstring tdbpath;
+	struct elog_open_tdb *tdb_node;
+	
+	/* first see if we have an open context */
+	
+	for ( ptr=open_elog_list; ptr; ptr=ptr->next ) {
+		if ( strequal( ptr->name, logname ) ) {
+			ptr->ref_count++;
+			return ptr->tdb;		
+		}
+	}
+	
+	/* get the path on disk */
+	
+	tdbfilename = elog_tdbname( logname );
+	pstrcpy( tdbpath, tdbfilename );
+	SAFE_FREE( tdbfilename );
 
-	DEBUG(7,("elog_open_tdb: Opening %s...\n", tdbfilename));
+	DEBUG(7,("elog_open_tdb: Opening %s...\n", tdbpath ));
 
-	if ( !(tdb = tdb_open_log( tdbfilename, 0, TDB_DEFAULT, O_RDONLY, 0 )) ) 
-		return elog_init_tdb( tdbfilename );
+	tdb = tdb_open_log( tdbpath, 0, TDB_DEFAULT, O_RDWR , 0 );	
+	if ( tdb ) {
+		vers_id = tdb_fetch_int32( tdb, VN_version );
 
-	vers_id = tdb_fetch_int32( tdb, VN_version );
-
-	if ( vers_id != EVENTLOG_DATABASE_VERSION_V1 ) {
-		DEBUG(1,("elog_open_tdb: Invalid version [%d] on file [%s].\n",
-			vers_id, tdbfilename));
-		tdb_close( tdb );
-		return elog_init_tdb( tdbfilename );
+		if ( vers_id != EVENTLOG_DATABASE_VERSION_V1 ) {
+			DEBUG(1,("elog_open_tdb: Invalid version [%d] on file [%s].\n",
+				vers_id, tdbpath));
+			tdb_close( tdb );
+			tdb = elog_init_tdb( tdbpath );
+		}
+	}
+	else {
+		tdb = elog_init_tdb( tdbpath );
+	}
+	
+	/* if we got a valid context, then add it to the list */
+	
+	if ( tdb ) {
+		if ( !(tdb_node = TALLOC_ZERO_P( NULL, struct elog_open_tdb )) ) {
+			DEBUG(0,("elog_open_tdb: talloc() failure!\n"));
+			tdb_close( tdb );
+			return NULL;
+		}
+		
+		tdb_node->name = talloc_strdup( tdb_node, logname );
+		tdb_node->tdb = tdb;
+		tdb_node->ref_count = 1;
+		
+		DLIST_ADD( open_elog_list, tdb_node );
 	}
 
 	return tdb;
 }
 
-/* write an eventlog entry. Note that we have to lock, read next eventlog, increment, write, write the record, unlock */
+/*******************************************************************
+ Wrapper to handle reference counts to the tdb
+*******************************************************************/
 
-/* coming into this, ee has the eventlog record, and the auxilliary date (computer name, etc.) 
-   filled into the other structure. Before packing into a record, this routine will calc the 
-   appropriate padding, etc., and then blast out the record in a form that can be read back in */
+int elog_close_tdb( TDB_CONTEXT *tdb )
+{
+	struct elog_open_tdb *ptr;
+
+	if ( !tdb )
+		return 0;
+		
+	/* See if we can just decrement the ref_count.
+	   Just compare pointer values (not names ) */
+	
+	for ( ptr=open_elog_list; ptr; ptr=ptr->next ) {
+		if ( tdb == ptr->tdb ) {
+			ptr->ref_count--;
+			break;
+		}
+	}
+	
+	/* if we have a NULL pointer; it means we are trying to 
+	   close a tdb not in the list of open eventlogs */
+	   
+	SMB_ASSERT( ptr != NULL );
+	if ( !ptr )
+		return tdb_close( tdb );
+	
+	SMB_ASSERT( ptr->ref_count >= 0 );
+
+	if ( ptr->ref_count == 0 ) {
+		DLIST_REMOVE( open_elog_list, ptr );
+		TALLOC_FREE( ptr );
+		return tdb_close( tdb );
+	}
+
+	return 0;
+}
+
+
+/*******************************************************************
+ write an eventlog entry. Note that we have to lock, read next 
+ eventlog, increment, write, write the record, unlock 
+ 
+ coming into this, ee has the eventlog record, and the auxilliary date 
+ (computer name, etc.) filled into the other structure. Before packing 
+ into a record, this routine will calc the appropriate padding, etc., 
+ and then blast out the record in a form that can be read back in
+*******************************************************************/
+ 
+#define MARGIN 512
+
 int write_eventlog_tdb( TDB_CONTEXT * the_tdb, Eventlog_entry * ee )
 {
 	int32 next_record;
@@ -346,8 +445,6 @@ int write_eventlog_tdb( TDB_CONTEXT * the_tdb, Eventlog_entry * ee )
 	/* discard any entries that have bogus time, which usually indicates a bogus entry as well. */
 	if ( ee->record.time_generated == 0 )
 		return 0;
-
-#define MARGIN 512
 
 	/* todo - check for sanity in next_record */
 
@@ -421,7 +518,9 @@ int write_eventlog_tdb( TDB_CONTEXT * the_tdb, Eventlog_entry * ee )
 	return ( next_record - 1 );
 }
 
-/* calculate the correct fields etc for an eventlog entry */
+/*******************************************************************
+ calculate the correct fields etc for an eventlog entry
+*******************************************************************/
 
 void fixup_eventlog_entry( Eventlog_entry * ee )
 {
@@ -457,10 +556,11 @@ void fixup_eventlog_entry( Eventlog_entry * ee )
 }
 
 /********************************************************************
-Note that it's a pretty good idea to initialize the Eventlog_entry structure to zero's before
-calling parse_logentry on an batch of lines that may resolve to a record.
-ALSO, it's a good idea to remove any linefeeds (that's EOL to you and me) on the lines going in.
-
+ Note that it's a pretty good idea to initialize the Eventlog_entry 
+ structure to zero's before calling parse_logentry on an batch of 
+ lines that may resolve to a record.  ALSO, it's a good idea to 
+ remove any linefeeds (that's EOL to you and me) on the lines 
+ going in.
 ********************************************************************/
 
 BOOL parse_logentry( char *line, Eventlog_entry * entry, BOOL * eor )

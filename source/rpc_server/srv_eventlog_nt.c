@@ -33,7 +33,6 @@ typedef struct {
 	uint32 flags;
 } EVENTLOG_INFO;
 
-
 /********************************************************************
  ********************************************************************/
 
@@ -42,7 +41,7 @@ static void free_eventlog_info( void *ptr )
 	EVENTLOG_INFO *elog = (EVENTLOG_INFO *)ptr;
 	
 	if ( elog->tdb )
-		tdb_close( elog->tdb );
+		elog_close_tdb( elog->tdb );
 	
 	TALLOC_FREE( elog );
 }
@@ -85,9 +84,7 @@ static BOOL elog_validate_logname( const char *name )
 
 static WERROR elog_open( pipes_struct * p, const char *logname, POLICY_HND *hnd )
 {
-	WERROR wresult;
 	EVENTLOG_INFO *elog;
-	char *tdbname;
 	
 	/* first thing is to validate the eventlog name */
 	
@@ -99,9 +96,14 @@ static WERROR elog_open( pipes_struct * p, const char *logname, POLICY_HND *hnd 
 		
 	elog->logname = talloc_strdup( elog, logname );
 
-	tdbname = elog_tdbname( logname );
-	elog->tdb = elog_open_tdb( tdbname );
-	SAFE_FREE( tdbname );
+	/* having done the nexessary access checks, surround the
+	   tdb open with a {un}become_root() pair since we can
+	   only have one tdb context per eventlog per process */
+
+	
+	become_root();
+	elog->tdb = elog_open_tdb( elog->logname );
+	unbecome_root();
 	
 	if ( !elog->tdb ) {
 		/* according to MSDN, if the logfile cannot be found, we should
@@ -110,11 +112,12 @@ static WERROR elog_open( pipes_struct * p, const char *logname, POLICY_HND *hnd 
 		if ( !strequal( logname, ELOG_APPL ) ) {
 		
 			TALLOC_FREE( elog->logname );
-			elog->logname = talloc_strdup( elog, ELOG_APPL );
 			
-			tdbname = elog_tdbname( ELOG_APPL );
-			elog->tdb = elog_open_tdb( tdbname );
-			SAFE_FREE( tdbname );
+			elog->logname = talloc_strdup( elog, ELOG_APPL );			
+
+			become_root();
+			elog->tdb = elog_open_tdb( elog->logname );
+			unbecome_root();
 		}	
 		
 		if ( !elog->tdb ) {
@@ -131,7 +134,7 @@ static WERROR elog_open( pipes_struct * p, const char *logname, POLICY_HND *hnd 
 		return WERR_NOMEM;
 	}
 
-	return wresult;
+	return WERR_OK;
 }
 
 /********************************************************************
