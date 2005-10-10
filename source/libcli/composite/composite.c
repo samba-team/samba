@@ -75,7 +75,7 @@ void composite_trigger_done(struct composite_context *c)
  * functions.
  */
 
-BOOL comp_is_ok(struct composite_context *ctx)
+BOOL composite_is_ok(struct composite_context *ctx)
 {
 	if (NT_STATUS_IS_OK(ctx->status)) {
 		return True;
@@ -87,22 +87,22 @@ BOOL comp_is_ok(struct composite_context *ctx)
 	return False;
 }
 
-void comp_error(struct composite_context *ctx, NTSTATUS status)
+void composite_error(struct composite_context *ctx, NTSTATUS status)
 {
 	ctx->status = status;
-	SMB_ASSERT(!comp_is_ok(ctx));
+	SMB_ASSERT(!composite_is_ok(ctx));
 }
 
-BOOL comp_nomem(const void *p, struct composite_context *ctx)
+BOOL composite_nomem(const void *p, struct composite_context *ctx)
 {
 	if (p != NULL) {
 		return False;
 	}
-	comp_error(ctx, NT_STATUS_NO_MEMORY);
+	composite_error(ctx, NT_STATUS_NO_MEMORY);
 	return True;
 }
 
-void comp_done(struct composite_context *ctx)
+void composite_done(struct composite_context *ctx)
 {
 	ctx->state = COMPOSITE_STATE_DONE;
 	if (ctx->async.fn != NULL) {
@@ -110,32 +110,32 @@ void comp_done(struct composite_context *ctx)
 	}
 }
 
-void comp_cont(struct composite_context *ctx,
-	       struct composite_context *new_ctx,
-	       void (*continuation)(struct composite_context *),
-	       void *private_data)
+void composite_continue(struct composite_context *ctx,
+			struct composite_context *new_ctx,
+			void (*continuation)(struct composite_context *),
+			void *private_data)
 {
-	if (comp_nomem(new_ctx, ctx)) return;
+	if (composite_nomem(new_ctx, ctx)) return;
 	new_ctx->async.fn = continuation;
 	new_ctx->async.private_data = private_data;
 }
 
-void rpc_cont(struct composite_context *ctx,
-	      struct rpc_request *new_req,
-	      void (*continuation)(struct rpc_request *),
-	      void *private_data)
+void composite_continue_rpc(struct composite_context *ctx,
+			    struct rpc_request *new_req,
+			    void (*continuation)(struct rpc_request *),
+			    void *private_data)
 {
-	if (comp_nomem(new_req, ctx)) return;
+	if (composite_nomem(new_req, ctx)) return;
 	new_req->async.callback = continuation;
 	new_req->async.private = private_data;
 }
 
-void irpc_cont(struct composite_context *ctx,
-	       struct irpc_request *new_req,
-	       void (*continuation)(struct irpc_request *),
-	       void *private_data)
+void composite_continue_irpc(struct composite_context *ctx,
+			     struct irpc_request *new_req,
+			     void (*continuation)(struct irpc_request *),
+			     void *private_data)
 {
-	if (comp_nomem(new_req, ctx)) return;
+	if (composite_nomem(new_req, ctx)) return;
 	new_req->async.fn = continuation;
 	new_req->async.private = private_data;
 }

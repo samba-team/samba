@@ -179,6 +179,7 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 	io.in.service = service;
 	io.in.service_type = service_type;
 	io.in.credentials = credentials;
+	io.in.fallback_to_anonymous = False;
 	io.in.workgroup = lp_workgroup();
 	
 	status = smb_composite_connect(&io, parent_ctx, ev);
