@@ -30,9 +30,10 @@
 /* the stages of this call */
 enum connect_stage {CONNECT_RESOLVE, 
 		    CONNECT_SOCKET, 
-		    CONNECT_SESSION_REQUEST, 
+		    CONNECT_SESSION_REQUEST,
 		    CONNECT_NEGPROT,
 		    CONNECT_SESSION_SETUP,
+		    CONNECT_SESSION_SETUP_ANON,
 		    CONNECT_TCON};
 
 struct connect_state {
@@ -101,7 +102,59 @@ static NTSTATUS connect_tcon(struct composite_context *c,
 
 
 /*
-  a session setup request has competed
+  a session setup request with anonymous fallback has completed
+*/
+static NTSTATUS connect_session_setup_anon(struct composite_context *c, 
+					   struct smb_composite_connect *io)
+{
+	struct connect_state *state = talloc_get_type(c->private_data, struct connect_state);
+	NTSTATUS status;
+
+	status = smb_composite_sesssetup_recv(state->creq);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	io->out.anonymous_fallback_done = True;
+	
+	state->session->vuid = state->io_setup->out.vuid;
+	
+	/* setup for a tconx */
+	io->out.tree = smbcli_tree_init(state->session, state, True);
+	NT_STATUS_HAVE_NO_MEMORY(io->out.tree);
+
+	state->io_tcon = talloc(c, union smb_tcon);
+	NT_STATUS_HAVE_NO_MEMORY(state->io_tcon);
+
+	/* connect to a share using a tree connect */
+	state->io_tcon->generic.level = RAW_TCON_TCONX;
+	state->io_tcon->tconx.in.flags = 0;
+	state->io_tcon->tconx.in.password = data_blob(NULL, 0);	
+	
+	state->io_tcon->tconx.in.path = talloc_asprintf(state->io_tcon, 
+						 "\\\\%s\\%s", 
+						 io->in.called_name, 
+						 io->in.service);
+	NT_STATUS_HAVE_NO_MEMORY(state->io_tcon->tconx.in.path);
+	if (!io->in.service_type) {
+		state->io_tcon->tconx.in.device = "?????";
+	} else {
+		state->io_tcon->tconx.in.device = io->in.service_type;
+	}
+
+	state->req = smb_raw_tcon_send(io->out.tree, state->io_tcon);
+	NT_STATUS_HAVE_NO_MEMORY(state->req);
+	if (state->req->state == SMBCLI_REQUEST_ERROR) {
+		return state->req->status;
+	}
+
+	state->req->async.fn = request_handler;
+	state->req->async.private = c;
+	state->stage = CONNECT_TCON;
+
+	return NT_STATUS_OK;
+}
+
+/*
+  a session setup request has completed
 */
 static NTSTATUS connect_session_setup(struct composite_context *c, 
 				      struct smb_composite_connect *io)
@@ -110,6 +163,29 @@ static NTSTATUS connect_session_setup(struct composite_context *c,
 	NTSTATUS status;
 
 	status = smb_composite_sesssetup_recv(state->creq);
+
+	if (!NT_STATUS_IS_OK(status) &&
+	    !cli_credentials_is_anonymous(state->io->in.credentials) &&
+	    io->in.fallback_to_anonymous) {
+
+		state->io_setup->in.credentials = cli_credentials_init(state);
+		NT_STATUS_HAVE_NO_MEMORY(state->io_setup->in.credentials);
+		cli_credentials_set_conf(state->io_setup->in.credentials);
+		cli_credentials_set_anonymous(state->io_setup->in.credentials);
+
+		state->creq = smb_composite_sesssetup_send(state->session,
+							   state->io_setup);
+		NT_STATUS_HAVE_NO_MEMORY(state->creq);
+		if (state->creq->state == COMPOSITE_STATE_ERROR) {
+			return state->creq->status;
+		}
+		state->creq->async.fn = composite_handler;
+		state->creq->async.private_data = c;
+		state->stage = CONNECT_SESSION_SETUP_ANON;
+
+		return NT_STATUS_OK;
+	}
+
 	NT_STATUS_NOT_OK_RETURN(status);
 	
 	state->session->vuid = state->io_setup->out.vuid;
@@ -317,6 +393,9 @@ static void state_handler(struct composite_context *c)
 		break;
 	case CONNECT_SESSION_SETUP:
 		c->status = connect_session_setup(c, state->io);
+		break;
+	case CONNECT_SESSION_SETUP_ANON:
+		c->status = connect_session_setup_anon(c, state->io);
 		break;
 	case CONNECT_TCON:
 		c->status = connect_tcon(c, state->io);

@@ -103,17 +103,17 @@ static void finddcs_resolve(struct composite_context *ctx)
 	const char *address;
 
 	state->ctx->status = resolve_name_recv(ctx, state, &address);
-	if (!comp_is_ok(state->ctx)) return;
+	if (!composite_is_ok(state->ctx)) return;
 
 	state->num_dcs = 1;
 	state->dcs = talloc_array(state, struct nbt_dc_name, state->num_dcs);
-	if (comp_nomem(state->dcs, state->ctx)) return;
+	if (composite_nomem(state->dcs, state->ctx)) return;
 
 	state->dcs[0].address = talloc_steal(state->dcs, address);
 
 	nbt_servers = irpc_servers_byname(state->msg_ctx, "nbt_server");
 	if ((nbt_servers == NULL) || (nbt_servers[0] == 0)) {
-		comp_error(state->ctx, NT_STATUS_NO_LOGON_SERVERS);
+		composite_error(state->ctx, NT_STATUS_NO_LOGON_SERVERS);
 		return;
 	}
 
@@ -122,15 +122,15 @@ static void finddcs_resolve(struct composite_context *ctx)
 	state->r.in.my_computername = lp_netbios_name();
 	state->r.in.my_accountname = talloc_asprintf(state, "%s$",
 						     lp_netbios_name());
-	if (comp_nomem(state->r.in.my_accountname, state->ctx)) return;
+	if (composite_nomem(state->r.in.my_accountname, state->ctx)) return;
 	state->r.in.account_control = ACB_WSTRUST;
 	state->r.in.domain_sid = dom_sid_dup(state, state->domain_sid);
-	if (comp_nomem(state->r.in.domain_sid, state->ctx)) return;
+	if (composite_nomem(state->r.in.domain_sid, state->ctx)) return;
 
 	ireq = irpc_call_send(state->msg_ctx, nbt_servers[0],
 			      &dcerpc_table_irpc, DCERPC_NBTD_GETDCNAME,
 			      &state->r, state);
-	irpc_cont(state->ctx, ireq, finddcs_getdc, state);
+	composite_continue_irpc(state->ctx, ireq, finddcs_getdc, state);
 }
 
 static void finddcs_getdc(struct irpc_request *ireq)
@@ -139,10 +139,10 @@ static void finddcs_getdc(struct irpc_request *ireq)
 		talloc_get_type(ireq->async.private, struct finddcs_state);
 
 	state->ctx->status = irpc_call_recv(ireq);
-	if (!comp_is_ok(state->ctx)) return;
+	if (!composite_is_ok(state->ctx)) return;
 
 	state->dcs[0].name = talloc_steal(state->dcs, state->r.out.dcname);
-	comp_done(state->ctx);
+	composite_done(state->ctx);
 }
 
 NTSTATUS wb_finddcs_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
@@ -228,31 +228,32 @@ static void get_schannel_creds_recv_pipe(struct composite_context *ctx)
 	struct rpc_request *req;
 
 	state->ctx->status = dcerpc_pipe_open_smb_recv(ctx);
-	if (!comp_is_ok(state->ctx)) return;
+	if (!composite_is_ok(state->ctx)) return;
 
 	state->ctx->status = dcerpc_bind_auth_none(state->p,
 						   DCERPC_NETLOGON_UUID,
 						   DCERPC_NETLOGON_VERSION);
-	if (!comp_is_ok(state->ctx)) return;
+	if (!composite_is_ok(state->ctx)) return;
 
 	state->r.in.computer_name =
 		cli_credentials_get_workstation(state->wks_creds);
 	state->r.in.server_name =
 		talloc_asprintf(state, "\\\\%s",
 				dcerpc_server_name(state->p));
-	if (comp_nomem(state->r.in.server_name, state->ctx)) return;
+	if (composite_nomem(state->r.in.server_name, state->ctx)) return;
 
 	state->r.in.credentials = talloc(state, struct netr_Credential);
-	if (comp_nomem(state->r.in.credentials, state->ctx)) return;
+	if (composite_nomem(state->r.in.credentials, state->ctx)) return;
 
 	state->r.out.credentials = talloc(state, struct netr_Credential);
-	if (comp_nomem(state->r.out.credentials, state->ctx)) return;
+	if (composite_nomem(state->r.out.credentials, state->ctx)) return;
 
 	generate_random_buffer(state->r.in.credentials->data,
 			       sizeof(state->r.in.credentials->data));
 
 	req = dcerpc_netr_ServerReqChallenge_send(state->p, state, &state->r);
-	rpc_cont(state->ctx, req, get_schannel_creds_recv_chal, state);
+	composite_continue_rpc(state->ctx, req,
+			       get_schannel_creds_recv_chal, state);
 }
 
 static void get_schannel_creds_recv_chal(struct rpc_request *req)
@@ -263,15 +264,15 @@ static void get_schannel_creds_recv_chal(struct rpc_request *req)
 	const struct samr_Password *mach_pwd;
 
 	state->ctx->status = dcerpc_ndr_request_recv(req);
-	if (!comp_is_ok(state->ctx)) return;
+	if (!composite_is_ok(state->ctx)) return;
 	state->ctx->status = state->r.out.result;
-	if (!comp_is_ok(state->ctx)) return;
+	if (!composite_is_ok(state->ctx)) return;
 
 	state->creds_state = talloc(state, struct creds_CredentialState);
-	if (comp_nomem(state->creds_state, state->ctx)) return;
+	if (composite_nomem(state->creds_state, state->ctx)) return;
 
 	mach_pwd = cli_credentials_get_nt_hash(state->wks_creds, state);
-	if (comp_nomem(mach_pwd, state->ctx)) return;
+	if (composite_nomem(mach_pwd, state->ctx)) return;
 
 	state->negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
 
@@ -293,7 +294,8 @@ static void get_schannel_creds_recv_chal(struct rpc_request *req)
 	state->a.out.credentials = &state->netr_cred;
 
 	req = dcerpc_netr_ServerAuthenticate2_send(state->p, state, &state->a);
-	rpc_cont(state->ctx, req, get_schannel_creds_recv_auth, state);
+	composite_continue_rpc(state->ctx, req,
+			       get_schannel_creds_recv_auth, state);
 }
 
 static void get_schannel_creds_recv_auth(struct rpc_request *req)
@@ -314,7 +316,8 @@ static void get_schannel_creds_recv_auth(struct rpc_request *req)
 		goto done;
 	}
 
-	cli_credentials_set_netlogon_creds(state->wks_creds, state->creds_state);
+	cli_credentials_set_netlogon_creds(state->wks_creds,
+					   state->creds_state);
 
 	state->ctx->state = COMPOSITE_STATE_DONE;
 
@@ -428,17 +431,17 @@ static void lsa_lookupnames_recv_sids(struct rpc_request *req)
 	int i;
 
 	state->ctx->status = dcerpc_ndr_request_recv(req);
-	if (!comp_is_ok(state->ctx)) return;
+	if (!composite_is_ok(state->ctx)) return;
 	state->ctx->status = state->r.out.result;
 	if (!NT_STATUS_IS_OK(state->ctx->status) &&
 	    !NT_STATUS_EQUAL(state->ctx->status, STATUS_SOME_UNMAPPED)) {
-		comp_error(state->ctx, state->ctx->status);
+		composite_error(state->ctx, state->ctx->status);
 		return;
 	}
 
 	state->result = talloc_array(state, struct wb_sid_object *,
 				     state->num_names);
-	if (comp_nomem(state->result, state->ctx)) return;
+	if (composite_nomem(state->result, state->ctx)) return;
 
 	for (i=0; i<state->num_names; i++) {
 		struct lsa_TranslatedSid *sid = &state->r.out.sids->sids[i];
@@ -446,7 +449,7 @@ static void lsa_lookupnames_recv_sids(struct rpc_request *req)
 
 		state->result[i] = talloc_zero(state->result,
 					       struct wb_sid_object);
-		if (comp_nomem(state->result[i], state->ctx)) return;
+		if (composite_nomem(state->result[i], state->ctx)) return;
 
 		state->result[i]->type = sid->sid_type;
 		if (state->result[i]->type == SID_NAME_UNKNOWN) {
@@ -454,7 +457,8 @@ static void lsa_lookupnames_recv_sids(struct rpc_request *req)
 		}
 
 		if (sid->sid_index >= state->r.out.domains->count) {
-			comp_error(state->ctx, NT_STATUS_INVALID_PARAMETER);
+			composite_error(state->ctx,
+					NT_STATUS_INVALID_PARAMETER);
 			return;
 		}
 
@@ -464,7 +468,7 @@ static void lsa_lookupnames_recv_sids(struct rpc_request *req)
 							dom->sid, sid->rid);
 	}
 
-	comp_done(state->ctx);
+	composite_done(state->ctx);
 }
 
 NTSTATUS wb_lsa_lookupnames_recv(struct composite_context *c,
@@ -556,12 +560,12 @@ static void cmd_lookupname_recv_init(struct composite_context *ctx)
 				struct cmd_lookupname_state);
 
 	state->ctx->status = wb_init_domain_recv(ctx);
-	if (!comp_is_ok(state->ctx)) return;
+	if (!composite_is_ok(state->ctx)) return;
 
 	ctx = wb_lsa_lookupnames_send(state->domain->lsa_pipe,
 				      state->domain->lsa_policy,
 				      1, &state->name);
-	comp_cont(state->ctx, ctx, cmd_lookupname_recv_sid, state);
+	composite_continue(state->ctx, ctx, cmd_lookupname_recv_sid, state);
 }
 
 static void cmd_lookupname_recv_sid(struct composite_context *ctx)
@@ -574,9 +578,9 @@ static void cmd_lookupname_recv_sid(struct composite_context *ctx)
 	state->ctx->status = wb_lsa_lookupnames_recv(ctx, state, &sids);
 	state->result = sids[0];
 
-	if (!comp_is_ok(state->ctx)) return;
+	if (!composite_is_ok(state->ctx)) return;
 
-	comp_done(state->ctx);
+	composite_done(state->ctx);
 }
 
 NTSTATUS wb_cmd_lookupname_recv(struct composite_context *c,
@@ -649,9 +653,9 @@ static void cmd_checkmachacc_recv_init(struct composite_context *ctx)
 				struct cmd_checkmachacc_state);
 
 	state->ctx->status = wb_init_domain_recv(ctx);
-	if (!comp_is_ok(state->ctx)) return;
+	if (!composite_is_ok(state->ctx)) return;
 
-	comp_done(state->ctx);
+	composite_done(state->ctx);
 }
 
 NTSTATUS wb_cmd_checkmachacc_recv(struct composite_context *c)
