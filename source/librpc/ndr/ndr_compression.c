@@ -161,7 +161,7 @@ static NTSTATUS ndr_pull_compression_xpress_chunk(struct ndr_pull *ndrpull,
 	NDR_CHECK(ndr_pull_uint32(ndrpull, NDR_SCALARS, &comp_chunk_size));
 
 	NDR_CHECK(ndr_pull_advance(ndrpull, comp_chunk_size));
-	comp_chunk.length = comp_chunk_size;
+	comp_chunk.length = comp_chunk_size + 8;
 	comp_chunk.data = ndrpull->data + comp_chunk_offset;
 
 	DEBUG(10,("XPRESS plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u)\n",
