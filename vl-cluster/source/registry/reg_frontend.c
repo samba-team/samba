@@ -38,7 +38,6 @@ REGISTRY_HOOK reg_hooks[] = {
   { KEY_PRINTING,    		&printing_ops },
   { KEY_PRINTING_2K, 		&printing_ops },
   { KEY_PRINTING_PORTS, 	&printing_ops },
-  { KEY_EVENTLOG,        	&eventlog_ops }, 
   { KEY_SHARES,      		&shares_reg_ops },
 #endif
   { NULL, NULL }
@@ -111,7 +110,7 @@ BOOL init_registry( void )
 	int i;
 	
 	
-	if ( !init_registry_db() ) {
+	if ( !regdb_init() ) {
 		DEBUG(0,("init_registry: failed to initialize the registry tdb!\n"));
 		return False;
 	}
@@ -128,13 +127,14 @@ BOOL init_registry( void )
 	if ( DEBUGLEVEL >= 20 )
 		reghook_dump_cache(20);
 
-	/* inform the external eventlog machinery of the change */
-
-	eventlog_refresh_external_parameters( get_root_nt_token() );
-
-	/* add any services keys */
+	/* add any keys for other services */
 
 	svcctl_init_keys();
+	eventlog_init_keys();
+
+	/* close and let each smbd open up as necessary */
+
+	regdb_close();
 
 	return True;
 }
@@ -352,10 +352,15 @@ WERROR regkey_open_internal( REGISTRY_KEY **regkey, const char *path,
 	REGSUBKEY_CTR	*subkeys = NULL;
 	uint32 access_granted;
 	
+	if ( !(W_ERROR_IS_OK(result = regdb_open()) ) )
+		return result;
+
 	DEBUG(7,("regkey_open_internal: name = [%s]\n", path));
 
-	if ( !(*regkey = TALLOC_ZERO_P(NULL, REGISTRY_KEY)) )
+	if ( !(*regkey = TALLOC_ZERO_P(NULL, REGISTRY_KEY)) ) {
+		regdb_close();
 		return WERR_NOMEM;
+	}
 		
 	keyinfo = *regkey;
 		
@@ -403,8 +408,19 @@ WERROR regkey_open_internal( REGISTRY_KEY **regkey, const char *path,
 
 done:
 	if ( !W_ERROR_IS_OK(result) ) {
-		TALLOC_FREE( *regkey );
+		regkey_close_internal( *regkey );
 	}
 
 	return result;
+}
+
+/*******************************************************************
+*******************************************************************/
+
+WERROR regkey_close_internal( REGISTRY_KEY *key )
+{
+	TALLOC_FREE( key );
+	regdb_close();
+
+	return WERR_OK;
 }

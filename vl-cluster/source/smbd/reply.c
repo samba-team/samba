@@ -1312,7 +1312,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	if (!map_open_params_to_ntcreate(fname, deny_mode, OPENX_FILE_EXISTS_OPEN,
 			&access_mask, &share_mode, &create_disposition, &create_options)) {
 		END_PROFILE(SMBopen);
-		return ERROR_DOS(ERRDOS, ERRbadaccess);
+		return ERROR_FORCE_DOS(ERRDOS, ERRbadaccess);
 	}
 
 	fsp = open_file_ntcreate(conn,fname,&sbuf,
@@ -1353,7 +1353,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 		put_dos_date3(outbuf,smb_vwv2,mtime);
 	}
 	SIVAL(outbuf,smb_vwv4,(uint32)size);
-	SSVAL(outbuf,smb_vwv6,GET_OPENX_MODE(deny_mode));
+	SSVAL(outbuf,smb_vwv6,deny_mode);
 
 	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
 		SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
@@ -1435,7 +1435,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 				&create_disposition,
 				&create_options)) {
 		END_PROFILE(SMBopenX);
-		return ERROR_DOS(ERRDOS, ERRbadaccess);
+		return ERROR_FORCE_DOS(ERRDOS, ERRbadaccess);
 	}
 
 	fsp = open_file_ntcreate(conn,fname,&sbuf,

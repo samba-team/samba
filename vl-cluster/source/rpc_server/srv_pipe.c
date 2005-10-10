@@ -36,15 +36,6 @@ extern struct current_user current_user;
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-/*************************************************************
- HACK Alert!
- We need to transfer the session key from one rpc bind to the
- next. This is the way the netlogon schannel works.
-**************************************************************/
-
-struct dcinfo last_dcinfo;
-BOOL server_auth2_negotiated = False;
-
 static void free_pipe_ntlmssp_auth_data(struct pipe_auth_data *auth)
 {
 	AUTH_NTLMSSP_STATE *a = auth->a_u.auth_ntlmssp_state;
@@ -1218,15 +1209,23 @@ static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	RPC_HDR_AUTH auth_info;
 	RPC_AUTH_SCHANNEL_NEG neg;
 	RPC_AUTH_VERIFIER auth_verifier;
+	BOOL ret;
+	struct dcinfo stored_dcinfo;
 	uint32 flags;
-
-	if (!server_auth2_negotiated) {
-		DEBUG(0, ("pipe_schannel_auth_bind: Attempt to bind using schannel without successful serverauth2\n"));
-		return False;
-	}
 
 	if (!smb_io_rpc_auth_schannel_neg("", &neg, rpc_in_p, 0)) {
 		DEBUG(0,("pipe_schannel_auth_bind: Could not unmarshal SCHANNEL auth neg\n"));
+		return False;
+	}
+
+	ZERO_STRUCT(stored_dcinfo);
+
+	become_root();
+	ret = secrets_restore_schannel_session_info(p->mem_ctx, neg.myname, &stored_dcinfo);
+	unbecome_root();
+
+	if (!ret) {
+		DEBUG(0, ("pipe_schannel_auth_bind: Attempt to bind using schannel without successful serverauth2\n"));
 		return False;
 	}
 
@@ -1236,7 +1235,7 @@ static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	}
 
 	memset(p->auth.a_u.schannel_auth->sess_key, 0, sizeof(p->auth.a_u.schannel_auth->sess_key));
-	memcpy(p->auth.a_u.schannel_auth->sess_key, last_dcinfo.sess_key, sizeof(last_dcinfo.sess_key));
+	memcpy(p->auth.a_u.schannel_auth->sess_key, stored_dcinfo.sess_key, sizeof(stored_dcinfo.sess_key));
 
 	p->auth.a_u.schannel_auth->seq_num = 0;
 
@@ -1253,7 +1252,7 @@ static BOOL pipe_schannel_auth_bind(pipes_struct *p, prs_struct *rpc_in_p,
 	if (!p->dc) {
 		return False;
 	}
-	*p->dc = last_dcinfo;
+	*p->dc = stored_dcinfo;
 
 	init_rpc_hdr_auth(&auth_info, RPC_SCHANNEL_AUTH_TYPE, pauth_info->auth_level, RPC_HDR_AUTH_LEN, 1);
 	if(!smb_io_rpc_hdr_auth("", &auth_info, pout_auth, 0)) {

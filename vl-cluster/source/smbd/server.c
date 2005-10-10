@@ -247,7 +247,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 				continue;
 			}
 
-			for (ptr=ports; next_token(&ptr, tok, NULL, sizeof(tok)); ) {
+			for (ptr=ports; next_token(&ptr, tok, " \t,", sizeof(tok)); ) {
 				unsigned port = atoi(tok);
 				if (port == 0) {
 					continue;
@@ -287,7 +287,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 
 		num_interfaces = 1;
 		
-		for (ptr=ports; next_token(&ptr, tok, NULL, sizeof(tok)); ) {
+		for (ptr=ports; next_token(&ptr, tok, " \t,", sizeof(tok)); ) {
 			unsigned port = atoi(tok);
 			if (port == 0) continue;
 			/* open an incoming socket */
@@ -807,7 +807,7 @@ void build_options(BOOL screen);
 	reopen_logs();
 
 	DEBUG(0,( "smbd version %s started.\n", SAMBA_VERSION_STRING));
-	DEBUGADD(0,( "Copyright Andrew Tridgell and the Samba Team 1992-2004\n"));
+	DEBUGADD( 0, ( "%s\n", COPYRIGHT_STARTUP_MESSAGE ) );
 
 	DEBUG(2,("uid=%d gid=%d euid=%d egid=%d\n",
 		 (int)getuid(),(int)getgid(),(int)geteuid(),(int)getegid()));

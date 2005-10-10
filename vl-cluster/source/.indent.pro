@@ -1,0 +1,15 @@
+-bad
+-bap
+-bbb
+-br
+-ce
+-ut
+-ts8
+-i8
+-di1
+-brs
+-npsl
+-npcs
+-prs
+-bbo
+-hnl

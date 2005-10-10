@@ -32,10 +32,21 @@ struct service_control_op {
 	SERVICE_CONTROL_OPS *ops;
 };
 
-extern SERVICE_CONTROL_OPS spoolss_svc_ops;
+#define SVCCTL_NUM_INTERNAL_SERVICES	4
+
+/* handle external services */
 extern SERVICE_CONTROL_OPS rcinit_svc_ops;
+
+/* builtin services (see service_db.c and services/svc_*.c */
+extern SERVICE_CONTROL_OPS spoolss_svc_ops;
 extern SERVICE_CONTROL_OPS netlogon_svc_ops;
 extern SERVICE_CONTROL_OPS winreg_svc_ops;
+extern SERVICE_CONTROL_OPS wins_svc_ops;
+
+/* make sure this number patches the number of builtin
+   SERVICE_CONTROL_OPS structure listed above */
+
+#define SVCCTL_NUM_INTERNAL_SERVICES	4
 
 struct service_control_op *svcctl_ops;
 
@@ -51,7 +62,7 @@ static struct generic_mapping svc_generic_map =
 BOOL init_service_op_table( void )
 {
 	const char **service_list = lp_svcctl_list();
-	int num_services = 3 + str_list_count( service_list );
+	int num_services = SVCCTL_NUM_INTERNAL_SERVICES + str_list_count( service_list );
 	int i;
 	
 	if ( !(svcctl_ops = TALLOC_ARRAY( NULL, struct service_control_op, num_services+1)) ) {
@@ -78,6 +89,10 @@ BOOL init_service_op_table( void )
 	
 	svcctl_ops[i].name = talloc_strdup( svcctl_ops, "RemoteRegistry" );
 	svcctl_ops[i].ops  = &winreg_svc_ops;
+	i++;
+	
+	svcctl_ops[i].name = talloc_strdup( svcctl_ops, "WINS" );
+	svcctl_ops[i].ops  = &wins_svc_ops;
 	i++;
 	
 	/* NULL terminate the array */

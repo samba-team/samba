@@ -27,7 +27,7 @@
 #define SMB_RPC_INTERFACE_VERSION 1
 #define PRS_POINTER_CAST BOOL (*)(const char*, prs_struct*, int, void*)
 
-enum unistr2_term_codes { UNI_FLAGS_NONE = 0, UNI_STR_TERMINATE = 1, UNI_MAXLEN_TERMINATE = 2, UNI_BROKEN_NON_NULL = 3 };
+enum unistr2_term_codes { UNI_FLAGS_NONE = 0, UNI_STR_TERMINATE = 1, UNI_MAXLEN_TERMINATE = 2, UNI_BROKEN_NON_NULL = 3, UNI_STR_DBLTERMINATE = 4 };
 
 
 

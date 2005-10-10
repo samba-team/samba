@@ -26,8 +26,6 @@
 
 #include "includes.h"
 
-extern struct dcinfo last_dcinfo;
-extern BOOL server_auth2_negotiated;
 extern userdom_struct current_user_info;
 
 #undef DBGC_CLASS
@@ -436,9 +434,16 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	/* set up the LSA AUTH 2 response */
 	init_net_r_auth_2(r_u, &srv_chal_out, &srv_flgs, NT_STATUS_OK);
 
-	server_auth2_negotiated = True;
+	fstrcpy(p->dc->mach_acct, mach_acct);
+	fstrcpy(p->dc->remote_machine, remote_machine);
+	fstrcpy(p->dc->domain, lp_workgroup() );
+
 	p->dc->authenticated = True;
-	last_dcinfo = *p->dc;
+
+	/* Store off the state so we can continue after client disconnect. */
+	become_root();
+	secrets_store_schannel_session_info(p->mem_ctx, p->dc);
+	unbecome_root();
 
 	return r_u->status;
 }
