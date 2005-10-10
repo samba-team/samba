@@ -104,6 +104,7 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 	enum ldb_scope scope = LDB_SCOPE_DEFAULT;
 	const char **attrs = NULL;
 	const char *errstr = NULL;
+	struct ldb_request lreq;
 
 	local_ctx = talloc_named(call, 0, "sldb_Search local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
@@ -145,10 +146,18 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 		attrs[i] = NULL;
 	}
 
-	DEBUG(5,("ldb_search_bytree dn=%s filter=%s\n", 
+	DEBUG(5,("ldb_request dn=%s filter=%s\n", 
 		 r->basedn, ldb_filter_from_tree(call, r->tree)));
 
-	count = ldb_search_bytree(samdb, basedn, scope, r->tree, attrs, &res);
+	ZERO_STRUCT(lreq);
+	lreq.operation = LDB_REQ_SEARCH;
+	lreq.op.search.base = basedn;
+	lreq.op.search.scope = scope;
+	lreq.op.search.tree = r->tree;
+	lreq.op.search.attrs = attrs;
+	lreq.op.search.res = &res;
+
+	count = ldb_request(samdb, &lreq);
 	talloc_steal(samdb, res);
 
 	for (i=0; i < count; i++) {

@@ -784,6 +784,7 @@ static int map_search_mp(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_parse_tree *tree = req->op.search.tree;
 	const char * const *attrs = req->op.search.attrs;
 	struct ldb_message ***res = req->op.search.res;
+	struct ldb_request new_req;
 	struct ldb_parse_tree *new_tree;
 	struct ldb_dn *new_base;
 	struct ldb_message **newres;
@@ -808,7 +809,14 @@ static int map_search_mp(struct ldb_module *module, struct ldb_request *req)
 	newattrs = ldb_map_attrs(module, attrs); 
 	new_base = map_local_dn(module, module, base);
 
-	mpret = ldb_search_bytree(privdat->mapped_ldb, new_base, scope, new_tree, newattrs, &newres);
+	memset((char *)&(new_req), 0, sizeof(new_req));
+	new_req.operation = LDB_REQ_SEARCH;
+	new_req.op.search.base = new_base;
+	new_req.op.search.scope = scope;
+	new_req.op.search.tree = new_tree;
+	new_req.op.search.attrs = newattrs;
+	new_req.op.search.res = &newres;
+	mpret = ldb_request(privdat->mapped_ldb, req);
 
 	talloc_free(new_base);
 	talloc_free(new_tree);

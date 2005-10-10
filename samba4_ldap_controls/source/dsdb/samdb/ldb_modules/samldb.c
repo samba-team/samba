@@ -40,14 +40,6 @@
 
 #define SAM_ACCOUNT_NAME_BASE "$000000-000000000000"
 
-static int samldb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
-				enum ldb_scope scope, struct ldb_parse_tree *tree,
-				const char * const *attrs, struct ldb_message ***res)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_search\n");
-	return ldb_next_search_bytree(module, base, scope, tree, attrs, res);
-}
-
 /*
   allocate a new id, attempting to do it atomically
   return 0 on failure, the id on success
@@ -514,8 +506,9 @@ static struct ldb_message *samldb_fill_foreignSecurityPrincipal_object(struct ld
 }
 
 /* add_record */
-static int samldb_add_record(struct ldb_module *module, const struct ldb_message *msg)
+static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 {
+	const struct ldb_message *msg = req->op.add.message;
 	struct ldb_message *msg2 = NULL;
 	int ret;
 
@@ -523,7 +516,7 @@ static int samldb_add_record(struct ldb_module *module, const struct ldb_message
 
 	
 	if (ldb_dn_is_special(msg->dn)) { /* do not manipulate our control entries */
-		return ldb_next_add_record(module, msg);
+		return ldb_next_request(module, req);
 	}
 
 	/* is user or computer?  add all relevant missing objects */
@@ -540,31 +533,14 @@ static int samldb_add_record(struct ldb_module *module, const struct ldb_message
 	}
 
 	if (msg2) {
-		ret = ldb_next_add_record(module, msg2);
+		req->op.add.message = msg2;
+		ret = ldb_next_request(module, req);
+		req->op.add.message = msg;
 	} else {
-		ret = ldb_next_add_record(module, msg);
+		ret = ldb_next_request(module, req);
 	}
 
 	return ret;
-}
-
-/* modify_record: change modifyTimestamp as well */
-static int samldb_modify_record(struct ldb_module *module, const struct ldb_message *msg)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_modify_record\n");
-	return ldb_next_modify_record(module, msg);
-}
-
-static int samldb_delete_record(struct ldb_module *module, const struct ldb_dn *dn)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_delete_record\n");
-	return ldb_next_delete_record(module, dn);
-}
-
-static int samldb_rename_record(struct ldb_module *module, const struct ldb_dn *olddn, const struct ldb_dn *newdn)
-{
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "samldb_rename_record\n");
-	return ldb_next_rename_record(module, olddn, newdn);
 }
 
 static int samldb_destructor(void *module_ctx)
@@ -574,13 +550,22 @@ static int samldb_destructor(void *module_ctx)
 	return 0;
 }
 
+static int samldb_request(struct ldb_module *module, struct ldb_request *req)
+{
+	switch (req->operation) {
+
+	case LDB_REQ_ADD:
+		return samldb_add(module, req);
+
+	default:
+		return ldb_next_request(module, req);
+
+	}
+}
+
 static const struct ldb_module_ops samldb_ops = {
 	.name          = "samldb",
-	.search_bytree = samldb_search_bytree,
-	.add_record    = samldb_add_record,
-	.modify_record = samldb_modify_record,
-	.delete_record = samldb_delete_record,
-	.rename_record = samldb_rename_record
+	.request       = samldb_request
 };
 
 
