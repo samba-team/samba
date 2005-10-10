@@ -1624,14 +1624,16 @@ sub ParseUnionPrint($$)
 	my ($e,$name) = @_;
 	my $have_default = 0;
 
-	pidl "int level = ndr_print_get_switch_value(ndr, r);";
-
+	pidl "int level;";
 	foreach my $el (@{$e->{ELEMENTS}}) {
 		DeclareArrayVariables($el);
 	}
 
-	pidl "ndr_print_union(ndr, name, level, \"$name\");";
 	start_flags($e);
+
+	pidl "level = ndr_print_get_switch_value(ndr, r);";
+
+	pidl "ndr_print_union(ndr, name, level, \"$name\");";
 
 	pidl "switch (level) {";
 	indent;
