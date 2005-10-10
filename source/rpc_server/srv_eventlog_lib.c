@@ -104,9 +104,12 @@ static int eventlog_tdb_size_fn( TDB_CONTEXT * tdb, TDB_DATA key, TDB_DATA data,
 	return 0;
 }
 
-/* returns the size of the eventlog, and if MaxSize is a non-null ptr, puts 
-   the MaxSize there. This is purely a way not to have yet another function that solely
-   reads the maxsize of the eventlog. Yeah, that's it.  */
+/********************************************************************
+ returns the size of the eventlog, and if MaxSize is a non-null 
+ ptr, puts the MaxSize there. This is purely a way not to have yet 
+ another function that solely reads the maxsize of the eventlog. 
+ Yeah, that's it.
+********************************************************************/
 
 int elog_tdb_size( TDB_CONTEXT * tdb, int *MaxSize, int *Retention )
 {
@@ -133,19 +136,17 @@ int elog_tdb_size( TDB_CONTEXT * tdb, int *MaxSize, int *Retention )
 	return tsize.size;
 }
 
+/********************************************************************
+ Discard early event logs until we have enough for 'needed' bytes...
+ NO checking done beforehand to see that we actually need to do 
+ this, and it's going to pluck records one-by-one. So, it's best 
+ to determine that this needs to be done before doing it.  
 
-/* 
-   Discard early event logs until we have enough for 'needed' bytes...
-   NO checking done beforehand to see that we actually need to do this, and
-   it's going to pluck records one-by-one. So, it's best to determine that this 
-   needs to be done before doing it.  
-
-   Setting whack_by_date to True indicates that eventlogs falling outside of the 
-   retention range need to go...
-
-*/
-
-/* return True if we made enough room to accommodate needed bytes */
+ Setting whack_by_date to True indicates that eventlogs falling 
+ outside of the retention range need to go...
+ 
+ return True if we made enough room to accommodate needed bytes
+********************************************************************/
 
 BOOL make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32 needed,
 			     BOOL whack_by_date )
@@ -242,10 +243,10 @@ BOOL make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32 needed,
 	return True;
 }
 
-/*
+/********************************************************************
   some hygiene for an eventlog - see how big it is, and then 
   calculate how many bytes we need to remove                   
-*/
+********************************************************************/
 
 BOOL prune_eventlog( TDB_CONTEXT * tdb )
 {
@@ -268,6 +269,9 @@ BOOL prune_eventlog( TDB_CONTEXT * tdb )
 
 	return make_way_for_eventlogs( tdb, 0, True );
 }
+
+/********************************************************************
+********************************************************************/
 
 BOOL can_write_to_eventlog( TDB_CONTEXT * tdb, int32 needed )
 {
