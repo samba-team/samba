@@ -598,22 +598,6 @@ interface drsuapi
 	} drsuapi_DsGetNCChangesCtr1;
 
 	typedef struct {
-		uint32 decompressed_length;
-		uint32 compressed_length;
-		[subcontext(4),subcontext_size(r->compressed_length),compression(NDR_COMPRESSION_MSZIP,compressed_length,decompressed_length)] drsuapi_DsGetNCChangesCtr1 *ctr1;
-	} drsuapi_DsGetNCChangesCompressedInfo;
-
-	typedef struct {
-		uint32 decompressed_length;
-		uint32 compressed_length;
-		[subcontext(4),subcontext_size(r->compressed_length),flag(NDR_REMAINING)] DATA_BLOB *decompressed;
-	} drsuapi_DsGetNCChangesCompressedInfo_Test;
-
-	typedef struct {
-		drsuapi_DsGetNCChangesCompressedInfo info;
-	} drsuapi_DsGetNCChangesCtr2;
-
-	typedef struct {
 		drsuapi_DsReplicaObjectIdentifier *dn;
 		drsuapi_DsAttributeId attid;
 		/* this dn_string, depends on the attid, maybe could be another
@@ -646,9 +630,63 @@ interface drsuapi
 	} drsuapi_DsGetNCChangesCtr6;
 
 	typedef struct {
-		uint32 unknown1;
-		uint16 unknown2; /* enum */
-		drsuapi_DsGetNCChangesCompressedInfo_Test info;
+		uint32 decompressed_length;
+		uint32 compressed_length;
+		[subcontext(4),subcontext_size(r->compressed_length),
+		 compression(NDR_COMPRESSION_MSZIP,compressed_length,decompressed_length)]
+		 drsuapi_DsGetNCChangesCtr1 *ctr1;
+	} drsuapi_DsGetNCChangesMSZIPCtr1;
+
+	typedef struct {
+		uint32 decompressed_length;
+		uint32 compressed_length;
+		[subcontext(4),subcontext_size(r->compressed_length),
+		 compression(NDR_COMPRESSION_MSZIP,compressed_length,decompressed_length)]
+		 drsuapi_DsGetNCChangesCtr6 *ctr6;
+	} drsuapi_DsGetNCChangesMSZIPCtr6;
+
+	typedef struct {
+		uint32 decompressed_length;
+		uint32 compressed_length;
+		[subcontext(4),subcontext_size(r->compressed_length),
+		 compression(NDR_COMPRESSION_XPRESS,compressed_length,decompressed_length),
+		 flag(NDR_REMAINING)] DATA_BLOB *decompressed;
+	} drsuapi_DsGetNCChangesXPRESSCtr1;
+
+	typedef struct {
+		uint32 decompressed_length;
+		uint32 compressed_length;
+		[subcontext(4),subcontext_size(r->compressed_length),
+		 compression(NDR_COMPRESSION_XPRESS,compressed_length,decompressed_length),
+		 flag(NDR_REMAINING)] DATA_BLOB *decompressed;
+	} drsuapi_DsGetNCChangesXPRESSCtr6;
+
+	typedef [enum16bit] enum {
+		DRSUAPI_COMPRESSION_TYPE_MSZIP	= 2,
+		DRSUAPI_COMPRESSION_TYPE_XPRESS	= 3
+	} drsuapi_DsGetNCChangesCompressionType;
+
+	typedef [nodiscriminant,flag(NDR_PAHEX)] union {
+		[case(1|(DRSUAPI_COMPRESSION_TYPE_MSZIP<<16))]	drsuapi_DsGetNCChangesMSZIPCtr1 mszip1;
+		[case(6|(DRSUAPI_COMPRESSION_TYPE_MSZIP<<16))]	drsuapi_DsGetNCChangesMSZIPCtr6 mszip6;
+		[case(1|(DRSUAPI_COMPRESSION_TYPE_XPRESS<<16))]	drsuapi_DsGetNCChangesXPRESSCtr1 xpress1;
+		[case(6|(DRSUAPI_COMPRESSION_TYPE_XPRESS<<16))]	drsuapi_DsGetNCChangesXPRESSCtr6 xpress6;
+	} drsuapi_DsGetNCChangesCompressedCtr;
+
+	typedef struct {
+		/* 
+		 * this is a bit ugly, as the compression depends on the flags
+		 * in the DsBind(), but only w2k uses DsGetNCChangesReq5
+		 * and will get DsGetNCChangesCtr2 replies, and w2k only knowns
+		 * about MSZIP and level 1 replies
+		 */
+		[switch_is(1|(DRSUAPI_COMPRESSION_TYPE_MSZIP<<16))] drsuapi_DsGetNCChangesCompressedCtr ctr;
+	} drsuapi_DsGetNCChangesCtr2;
+
+	typedef struct {
+		[range(0,6)] int32 level;
+		[range(2,3)] drsuapi_DsGetNCChangesCompressionType type;
+		[switch_is(level | (type<<16))] drsuapi_DsGetNCChangesCompressedCtr ctr;
 	} drsuapi_DsGetNCChangesCtr7;
 
 	typedef [switch_type(int32)] union {
