@@ -31,6 +31,7 @@ typedef struct {
 	uint32 num_records;
 	uint32 oldest_entry;
 	uint32 flags;
+	uint32 access_granted;
 } EVENTLOG_INFO;
 
 /********************************************************************
@@ -61,6 +62,14 @@ static EVENTLOG_INFO *find_eventlog_info_by_hnd( pipes_struct * p,
 	}
 
 	return info;
+}
+
+/********************************************************************
+********************************************************************/
+
+static BOOL elog_check_access( EVENTLOG_INFO *info )
+{
+	return True;
 }
 
 /********************************************************************
@@ -95,11 +104,16 @@ static WERROR elog_open( pipes_struct * p, const char *logname, POLICY_HND *hnd 
 		return WERR_NOMEM;
 		
 	elog->logname = talloc_strdup( elog, logname );
+	
+	/* do the access check */
+	if ( !elog_check_access( elog ) ) {
+		TALLOC_FREE( elog );
+		return WERR_ACCESS_DENIED;
+	}
 
 	/* having done the nexessary access checks, surround the
 	   tdb open with a {un}become_root() pair since we can
 	   only have one tdb context per eventlog per process */
-
 	
 	become_root();
 	elog->tdb = elog_open_tdb( elog->logname );
@@ -115,6 +129,12 @@ static WERROR elog_open( pipes_struct * p, const char *logname, POLICY_HND *hnd 
 			
 			elog->logname = talloc_strdup( elog, ELOG_APPL );			
 
+			/* do the access check */
+			if ( !elog_check_access( elog ) ) {
+				TALLOC_FREE( elog );
+				return WERR_ACCESS_DENIED;
+			}
+	
 			become_root();
 			elog->tdb = elog_open_tdb( elog->logname );
 			unbecome_root();
@@ -124,7 +144,7 @@ static WERROR elog_open( pipes_struct * p, const char *logname, POLICY_HND *hnd 
 			TALLOC_FREE( elog );
 			return WERR_OBJECT_PATH_INVALID;	/* ??? */		
 		}
-	}	
+	}
 	
 	/* create the policy handle */
 	
