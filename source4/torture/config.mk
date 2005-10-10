@@ -79,6 +79,7 @@ ADD_OBJ_FILES = \
 		torture/rpc/dfs.o \
 		torture/rpc/drsuapi.o \
 		torture/rpc/drsuapi_cracknames.o \
+		torture/rpc/dssync.o \
 		torture/rpc/spoolss.o \
 		torture/rpc/unixinfo.o \
 		torture/rpc/samr.o \
