@@ -1,4 +1,4 @@
-AC_CHECK_FUNCS(mmap pread pwrite getpagesize)
+AC_CHECK_FUNCS(mmap pread pwrite getpagesize utime)
 AC_CHECK_HEADERS(getopt.h sys/select.h sys/time.h)
 
 AC_DEFINE([_GNU_SOURCE],[],[Pull in GNU extensions])
