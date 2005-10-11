@@ -479,7 +479,7 @@ int file_utime(connection_struct *conn, const char *fname, struct utimbuf *times
 	 */
 
 	/* Check if we have write access. */
-	if (CAN_WRITE(conn) && can_write_to_file(conn, fname, &sbuf)) {
+	if (can_write_to_file(conn, fname, &sbuf)) {
 		/* We are allowed to become root and change the filetime. */
 		become_root();
 		ret = SMB_VFS_UTIME(conn,fname, times);
