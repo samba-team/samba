@@ -33,6 +33,10 @@ o   Jeremy Allison <jra@samba.org>
       which cannot be read due to permissions.
 
 
+o   Marc Balmer <marc@msys.ch>
+    * Build fixes when builddir != srcdir
+
+
 o   Alex Deiter <tiamat@komi.mts.ru>
     * BUG 3145: Fix build issue regarding quota support on Solaris.
 
