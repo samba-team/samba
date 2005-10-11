@@ -467,8 +467,7 @@ NTTIME samdb_result_allow_password_change(struct ldb_context *sam_ldb,
 		return 0;
 	}
 
-	minPwdAge = samdb_search_int64(sam_ldb, mem_ctx, 0,
-				       domain_dn, "minPwdAge", "dn=%s", ldb_dn_linearize(mem_ctx, domain_dn));
+	minPwdAge = samdb_search_int64(sam_ldb, mem_ctx, 0, domain_dn, "minPwdAge", NULL);
 
 	/* yes, this is a -= not a += as minPwdAge is stored as the negative
 	   of the number of 100-nano-seconds */
@@ -494,8 +493,7 @@ NTTIME samdb_result_force_password_change(struct ldb_context *sam_ldb,
 		return 0;
 	}
 
-	maxPwdAge = samdb_search_int64(sam_ldb, mem_ctx, 0, domain_dn, 
-				       "maxPwdAge", "dn=%s", ldb_dn_linearize(mem_ctx, domain_dn));
+	maxPwdAge = samdb_search_int64(sam_ldb, mem_ctx, 0, domain_dn, "maxPwdAge", NULL);
 	if (maxPwdAge == 0) {
 		return 0;
 	} else {
