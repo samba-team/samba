@@ -4610,9 +4610,9 @@ static NTSTATUS rpc_init_shutdown_internals(const DOM_SID *domain_sid,
 	if (NT_STATUS_IS_OK(result)) {
 		d_printf("\nShutdown of remote machine succeeded\n");
 		DEBUG(5,("Shutdown of remote machine succeeded\n"));
-	} else
-		DEBUG(0,("Shutdown of remote machine failed!\n"));
-
+	} else {
+		DEBUG(1,("Shutdown of remote machine failed!\n"));
+	}
 	return result;
 }
 
@@ -4640,7 +4640,7 @@ static NTSTATUS rpc_reg_shutdown_internals(const DOM_SID *domain_sid,
 						int argc,
 						const char **argv) 
 {
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	WERROR result;
         const char *msg = "This machine will be shutdown shortly";
 	uint32 timeout = 20;
 #if 0
@@ -4676,16 +4676,19 @@ static NTSTATUS rpc_reg_shutdown_internals(const DOM_SID *domain_sid,
 	}
 
 	/* create an entry */
-	result = werror_to_ntstatus(rpccli_reg_shutdown(pipe_hnd, mem_ctx, msg, timeout, opt_reboot, opt_force));
+	result = rpccli_reg_shutdown(pipe_hnd, mem_ctx, msg, timeout, opt_reboot, opt_force);
 
-	if (NT_STATUS_IS_OK(result)) {
+	if (W_ERROR_IS_OK(result)) {
 		d_printf("\nShutdown of remote machine succeeded\n");
-		DEBUG(5,("Shutdown of remote machine succeeded\n"));
+	} else {
+		d_printf("\nShutdown of remote machine failed\n");
+		if (W_ERROR_EQUAL(result,WERR_MACHINE_LOCKED))
+			d_printf("\nMachine locked, use -f switch to force\n");
+		else
+			d_printf("\nresult was: %s\n", dos_errstr(result));
 	}
-	else
-		DEBUG(0,("Shutdown of remote machine failed!\n"));
 
-	return result;
+	return werror_to_ntstatus(result);
 }
 
 /** 
@@ -4703,13 +4706,14 @@ static int rpc_shutdown(int argc, const char **argv)
 	int rc = run_rpc_command(NULL, PI_SHUTDOWN, 0, 
 				 rpc_init_shutdown_internals,
 				 argc, argv);
-	if (rc == 0)
-		return rc;
 
-	DEBUG(1, ("initshutdown pipe didn't work, trying winreg pipe\n"));
+	if (rc) {
+		DEBUG(1, ("initshutdown pipe failed, trying winreg pipe\n"));
+		rc = run_rpc_command(NULL, PI_WINREG, 0, 
+				     rpc_reg_shutdown_internals, argc, argv);
+	}
 
-	return run_rpc_command(NULL, PI_WINREG, 0, rpc_reg_shutdown_internals,
-				       argc, argv);
+	return rc;
 }
 
 /***************************************************************************
