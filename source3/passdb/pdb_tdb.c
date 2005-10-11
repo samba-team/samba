@@ -6,6 +6,7 @@
  * Copyright (C) Gerald Carter     2000
  * Copyright (C) Jeremy Allison    2001
  * Copyright (C) Andrew Bartlett   2002
+ * Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2005
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -515,6 +516,32 @@ static NTSTATUS tdbsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT *
 	return tdbsam_getsampwrid(my_methods, user, rid);
 }
 
+static BOOL tdb_delete_samacct_only(TDB_CONTEXT *pwd_tdb,
+				    struct pdb_methods *my_methods,
+				    SAM_ACCOUNT *sam_pass)
+{
+	TDB_DATA 	key;
+	fstring 	keystr;
+	fstring		name;
+
+	fstrcpy(name, pdb_get_username(sam_pass));
+	strlower_m(name);
+	
+  	/* set the search key */
+	slprintf(keystr, sizeof(keystr)-1, "%s%s", USERPREFIX, name);
+	key.dptr = keystr;
+	key.dsize = strlen (keystr) + 1;
+	
+	/* it's outaa here!  8^) */
+	if (tdb_delete(pwd_tdb, key) != TDB_SUCCESS) {
+		DEBUG(5, ("Error deleting entry from tdb passwd database!\n"));
+		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
+		tdb_close(pwd_tdb); 
+		return False;
+	}
+	return True;
+}
+
 /***************************************************************************
  Delete a SAM_ACCOUNT
 ****************************************************************************/
@@ -573,6 +600,93 @@ static NTSTATUS tdbsam_delete_sam_account(struct pdb_methods *my_methods, SAM_AC
 	return NT_STATUS_OK;
 }
 
+
+/***************************************************************************
+ Update the TDB SAM account record only
+****************************************************************************/
+static BOOL tdb_update_samacct_only(TDB_CONTEXT *pwd_tdb, 
+				    struct pdb_methods *my_methods, 
+				    SAM_ACCOUNT* newpwd, int flag)
+{
+	TDB_DATA 	key, data;
+	uint8		*buf = NULL;
+	fstring 	keystr;
+	fstring		name;
+	BOOL		ret = True;
+
+	/* copy the SAM_ACCOUNT struct into a BYTE buffer for storage */
+	if ((data.dsize=init_buffer_from_sam (&buf, newpwd, False)) == -1) {
+		DEBUG(0,("tdb_update_sam: ERROR - Unable to copy SAM_ACCOUNT info BYTE buffer!\n"));
+		ret = False;
+		goto done;
+	}
+	data.dptr = (char *)buf;
+
+	fstrcpy(name, pdb_get_username(newpwd));
+	strlower_m(name);
+	
+	DEBUG(5, ("Storing %saccount %s with RID %d\n", 
+		  flag == TDB_INSERT ? "(new) " : "", name, 
+		  pdb_get_user_rid(newpwd)));
+
+  	/* setup the USER index key */
+	slprintf(keystr, sizeof(keystr)-1, "%s%s", USERPREFIX, name);
+	key.dptr = keystr;
+	key.dsize = strlen(keystr) + 1;
+
+	/* add the account */
+	if (tdb_store(pwd_tdb, key, data, flag) != TDB_SUCCESS) {
+		DEBUG(0, ("Unable to modify passwd TDB!"));
+		DEBUGADD(0, (" Error: %s", tdb_errorstr(pwd_tdb)));
+		DEBUGADD(0, (" occured while storing the main record (%s)\n",
+			     keystr));
+		ret = False;
+		goto done;
+	}
+
+done:	
+	/* cleanup */
+	SAFE_FREE(buf);
+	
+	return (ret);
+}
+
+/***************************************************************************
+ Update the TDB SAM RID record only
+****************************************************************************/
+static BOOL tdb_update_ridrec_only(TDB_CONTEXT *pwd_tdb, 
+				   struct pdb_methods *my_methods, 
+				   SAM_ACCOUNT* newpwd, int flag)
+{
+	TDB_DATA 	key, data;
+	fstring 	keystr;
+	fstring		name;
+
+	fstrcpy(name, pdb_get_username(newpwd));
+	strlower_m(name);
+
+	/* setup RID data */
+	data.dsize = strlen(name) + 1;
+	data.dptr = name;
+
+	/* setup the RID index key */
+	slprintf(keystr, sizeof(keystr)-1, "%s%.8x", RIDPREFIX, 
+		 pdb_get_user_rid(newpwd));
+	key.dptr = keystr;
+	key.dsize = strlen (keystr) + 1;
+	
+	/* add the reference */
+	if (tdb_store(pwd_tdb, key, data, flag) != TDB_SUCCESS) {
+		DEBUG(0, ("Unable to modify TDB passwd !"));
+		DEBUGADD(0, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
+		DEBUGADD(0, (" occured while storing the RID index (%s)\n", keystr));
+		return False;
+	}
+
+	return True;
+
+}
+
 /***************************************************************************
  Update the TDB SAM
 ****************************************************************************/
@@ -581,10 +695,6 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, SAM_ACCOUNT* newpwd, 
 {
 	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
 	TDB_CONTEXT 	*pwd_tdb = NULL;
-	TDB_DATA 	key, data;
-	uint8		*buf = NULL;
-	fstring 	keystr;
-	fstring		name;
 	BOOL		ret = True;
 	uint32		user_rid;
 
@@ -618,47 +728,8 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, SAM_ACCOUNT* newpwd, 
 		goto done;
 	}
 
-	/* copy the SAM_ACCOUNT struct into a BYTE buffer for storage */
-	if ((data.dsize=init_buffer_from_sam (&buf, newpwd, False)) == -1) {
-		DEBUG(0,("tdb_update_sam: ERROR - Unable to copy SAM_ACCOUNT info BYTE buffer!\n"));
-		ret = False;
-		goto done;
-	}
-	data.dptr = (char *)buf;
-
-	fstrcpy(name, pdb_get_username(newpwd));
-	strlower_m(name);
-	
-	DEBUG(5, ("Storing %saccount %s with RID %d\n", flag == TDB_INSERT ? "(new) " : "", name, user_rid));
-
-  	/* setup the USER index key */
-	slprintf(keystr, sizeof(keystr)-1, "%s%s", USERPREFIX, name);
-	key.dptr = keystr;
-	key.dsize = strlen(keystr) + 1;
-
-	/* add the account */
-	if (tdb_store(pwd_tdb, key, data, flag) != TDB_SUCCESS) {
-		DEBUG(0, ("Unable to modify passwd TDB!"));
-		DEBUGADD(0, (" Error: %s", tdb_errorstr(pwd_tdb)));
-		DEBUGADD(0, (" occured while storing the main record (%s)\n", keystr));
-		ret = False;
-		goto done;
-	}
-	
-	/* setup RID data */
-	data.dsize = strlen(name) + 1;
-	data.dptr = name;
-
-	/* setup the RID index key */
-	slprintf(keystr, sizeof(keystr)-1, "%s%.8x", RIDPREFIX, user_rid);
-	key.dptr = keystr;
-	key.dsize = strlen (keystr) + 1;
-	
-	/* add the reference */
-	if (tdb_store(pwd_tdb, key, data, flag) != TDB_SUCCESS) {
-		DEBUG(0, ("Unable to modify TDB passwd !"));
-		DEBUGADD(0, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
-		DEBUGADD(0, (" occured while storing the RID index (%s)\n", keystr));
+	if (!tdb_update_samacct_only(pwd_tdb, my_methods, newpwd, flag) ||
+	    !tdb_update_ridrec_only(pwd_tdb, my_methods, newpwd, flag)) {
 		ret = False;
 		goto done;
 	}
@@ -666,7 +737,6 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, SAM_ACCOUNT* newpwd, 
 done:	
 	/* cleanup */
 	tdb_close (pwd_tdb);
-	SAFE_FREE(buf);
 	
 	return (ret);	
 }
@@ -695,6 +765,103 @@ static NTSTATUS tdbsam_add_sam_account (struct pdb_methods *my_methods, SAM_ACCO
 		return NT_STATUS_UNSUCCESSFUL;
 }
 
+/***************************************************************************
+ Renames a SAM_ACCOUNT
+ - check for the posix user/rename user script
+ - Add and lock the new user record
+ - rename the posix user
+ - rewrite the rid->username record
+ - delete the old user
+ - unlock the new user record
+***************************************************************************/
+static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
+					  SAM_ACCOUNT *oldname, const char *newname)
+{
+	struct tdbsam_privates *tdb_state = 
+		(struct tdbsam_privates *)my_methods->private_data;
+	SAM_ACCOUNT *new_acct = NULL;
+	pstring rename_script;
+	TDB_CONTEXT 	*pwd_tdb = NULL;
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	BOOL interim_account = False;
+
+	if (!*(lp_renameuser_script()))
+		goto done;
+
+	if (!pdb_copy_sam_account(oldname, &new_acct) ||
+	    !pdb_set_username(new_acct, newname, PDB_CHANGED))
+		goto done;
+
+	/* invalidate the existing TDB iterator if it is open */
+	
+	if (tdb_state->passwd_tdb) {
+		tdb_close(tdb_state->passwd_tdb);
+		tdb_state->passwd_tdb = NULL;
+	}
+
+ 	/* open the account TDB passwd */
+	
+	pwd_tdb = tdbsam_tdbopen(tdb_state->tdbsam_location, O_RDWR | O_CREAT);
+	
+  	if (!pwd_tdb) {
+		DEBUG(0, ("tdb_update_sam: Unable to open TDB passwd (%s)!\n", 
+			tdb_state->tdbsam_location));
+		goto done;
+	}
+
+	/* add the new account and lock it */
+	if (!tdb_update_samacct_only(pwd_tdb, my_methods, new_acct, 
+				     TDB_INSERT))
+		goto done;
+	interim_account = True;
+
+	if (tdb_lock_bystring(pwd_tdb, newname, 30) == -1) {
+		goto done;
+	}
+
+	/* rename the posix user */
+	pstrcpy(rename_script, lp_renameuser_script());
+
+	if (*rename_script) {
+	        int rename_ret;
+
+		pstring_sub(rename_script, "%unew", newname);
+		pstring_sub(rename_script, "%uold", pdb_get_username(oldname));
+		rename_ret = smbrun(rename_script, NULL);
+
+		DEBUG(rename_ret ? 0 : 3,("Running the command `%s' gave %d\n", rename_script, rename_ret));
+
+		if (rename_ret) 
+			goto done; 
+        } else {
+		goto done;
+	}
+
+	/* rewrite the rid->username record */
+	if (!tdb_update_ridrec_only(pwd_tdb, my_methods, new_acct, TDB_MODIFY))
+		goto done;
+	interim_account = False;
+	tdb_unlock_bystring(pwd_tdb, newname);
+
+	tdb_delete_samacct_only(pwd_tdb, my_methods, oldname);
+
+	ret = NT_STATUS_OK;
+
+
+done:	
+	/* cleanup */
+	if (interim_account) {
+		tdb_unlock_bystring(pwd_tdb, newname);
+		tdb_delete_samacct_only(pwd_tdb, my_methods, new_acct);
+	}
+	if (pwd_tdb)
+		tdb_close (pwd_tdb);
+	if (new_acct)
+		pdb_free_sam(&new_acct);
+	
+	return (ret);	
+}
+	
 static void free_private_data(void **vp) 
 {
 	struct tdbsam_privates **tdb_state = (struct tdbsam_privates **)vp;
@@ -736,6 +903,7 @@ static NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_meth
 	(*pdb_method)->add_sam_account = tdbsam_add_sam_account;
 	(*pdb_method)->update_sam_account = tdbsam_update_sam_account;
 	(*pdb_method)->delete_sam_account = tdbsam_delete_sam_account;
+	(*pdb_method)->rename_sam_account = tdbsam_rename_sam_account;
 
 	tdb_state = TALLOC_ZERO_P(pdb_context->mem_ctx, struct tdbsam_privates);
 

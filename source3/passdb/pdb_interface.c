@@ -325,6 +325,41 @@ static NTSTATUS context_delete_sam_account(struct pdb_context *context, SAM_ACCO
 	return sam_acct->methods->delete_sam_account(sam_acct->methods, sam_acct);
 }
 
+static NTSTATUS context_rename_sam_account(struct pdb_context *context, SAM_ACCOUNT *oldname, const char *newname)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	struct pdb_methods *pdb_selected;
+	if (!context) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+
+	if (!oldname->methods){
+		pdb_selected = context->pdb_methods;
+		/* There's no passdb backend specified for this account.
+		 * Try to delete it in every passdb available 
+		 * Needed to delete accounts in smbpasswd that are not
+		 * in /etc/passwd.
+		 */
+		while (pdb_selected){
+			if (NT_STATUS_IS_OK(ret = pdb_selected->rename_sam_account(pdb_selected, oldname, newname))) {
+				return ret;
+			}
+			pdb_selected = pdb_selected->next;
+		}
+		return ret;
+	}
+
+	if (!oldname->methods->rename_sam_account){
+		DEBUG(0,("invalid oldname->methods->rename_sam_account\n"));
+		return ret;
+	}
+	
+	return oldname->methods->rename_sam_account(oldname->methods, oldname, newname);
+}
+
+
 static NTSTATUS context_update_login_attempts(struct pdb_context *context,
 						SAM_ACCOUNT *sam_acct, BOOL success)
 {
@@ -850,6 +885,7 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 	(*context)->pdb_add_sam_account = context_add_sam_account;
 	(*context)->pdb_update_sam_account = context_update_sam_account;
 	(*context)->pdb_delete_sam_account = context_delete_sam_account;
+	(*context)->pdb_rename_sam_account = context_rename_sam_account;
 	(*context)->pdb_update_login_attempts = context_update_login_attempts;
 	(*context)->pdb_getgrsid = context_getgrsid;
 	(*context)->pdb_getgrgid = context_getgrgid;
@@ -1101,6 +1137,22 @@ BOOL pdb_delete_sam_account(SAM_ACCOUNT *sam_acct)
 	}
 
 	return NT_STATUS_IS_OK(pdb_context->pdb_delete_sam_account(pdb_context, sam_acct));
+}
+
+NTSTATUS pdb_rename_sam_account(SAM_ACCOUNT *oldname, const char *newname)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	if (sam_account_cache != NULL) {
+		pdb_free_sam(&sam_account_cache);
+		sam_account_cache = NULL;
+	}
+
+	return pdb_context->pdb_rename_sam_account(pdb_context, oldname, newname);
 }
 
 NTSTATUS pdb_update_login_attempts(SAM_ACCOUNT *sam_acct, BOOL success)
@@ -1436,6 +1488,11 @@ static NTSTATUS pdb_default_update_sam_account (struct pdb_methods *methods, SAM
 }
 
 static NTSTATUS pdb_default_delete_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *pwd)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS pdb_default_rename_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *pwd, const char *newname)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
@@ -1983,6 +2040,7 @@ NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods)
 	(*methods)->add_sam_account = pdb_default_add_sam_account;
 	(*methods)->update_sam_account = pdb_default_update_sam_account;
 	(*methods)->delete_sam_account = pdb_default_delete_sam_account;
+	(*methods)->rename_sam_account = pdb_default_rename_sam_account;
 	(*methods)->update_login_attempts = pdb_default_update_login_attempts;
 
 	(*methods)->getgrsid = pdb_default_getgrsid;
