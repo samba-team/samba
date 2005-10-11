@@ -319,6 +319,13 @@ static int ltdb_index_dn_leaf(struct ldb_module *module,
 	if (ldb_attr_cmp(tree->u.equality.attr, LTDB_OBJECTCLASS) == 0) {
 		return ltdb_index_dn_objectclass(module, tree, index_list, list);
 	}
+	if (ldb_attr_cmp(tree->u.equality.attr, "distinguishedName") == 0 ||
+	    ldb_attr_cmp(tree->u.equality.attr, "dn") == 0) {
+		char *dn = talloc_strdup(list, (char *)tree->u.equality.value.data);
+		list->count = 1;
+		list->dn = &dn;
+		return 1;
+	}
 	return ltdb_index_dn_simple(module, tree, index_list, list);
 }
 

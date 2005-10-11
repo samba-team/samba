@@ -501,21 +501,6 @@ int ltdb_search_bytree(struct ldb_module *module, const struct ldb_dn *base,
 	if ((base == NULL || base->comp_num == 0) &&
 	    (scope == LDB_SCOPE_BASE || scope == LDB_SCOPE_ONELEVEL)) return -1;
 
-	/* it is important that we handle dn queries this way, and not
-	   via a full db search, otherwise ldb is horribly slow */
-	if (tree->operation == LDB_OP_EQUALITY &&
-	    (ldb_attr_cmp(tree->u.equality.attr, "dn") == 0 ||
-	     ldb_attr_cmp(tree->u.equality.attr, "distinguishedName") == 0)) {
-		struct ldb_dn *dn;
-		dn = ldb_dn_explode(module->ldb, tree->u.equality.value.data);
-		if (dn == NULL) {
-			return LDB_ERR_INVALID_DN_SYNTAX;
-		}
-		ret = ltdb_search_dn(module, dn, attrs, res);
-		talloc_free(dn);
-		return ret;
-	}
-
 	if (ltdb_lock_read(module) != 0) {
 		return -1;
 	}
