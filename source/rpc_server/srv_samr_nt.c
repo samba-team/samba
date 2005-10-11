@@ -2424,6 +2424,32 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
 }
 
 /*******************************************************************
+ set_user_info_7
+ ********************************************************************/
+static NTSTATUS set_user_info_7(const SAM_USER_INFO_7 *id7, SAM_ACCOUNT *pwd)
+{
+	fstring new_name;
+	NTSTATUS rc;
+
+	if (id7 == NULL) {
+		DEBUG(5, ("set_user_info_7: NULL id7\n"));
+		pdb_free_sam(&pwd);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if(!rpcstr_pull(new_name, id7->uni_name.buffer, sizeof(new_name), id7->uni_name.uni_str_len*2, 0)) {
+	        DEBUG(5, ("set_user_info_7: failed to get new username\n"));
+		pdb_free_sam(&pwd);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	rc = pdb_rename_sam_account(pwd, new_name);
+
+	pdb_free_sam(&pwd);
+	return rc;
+}
+
+/*******************************************************************
  set_user_info_16
  ********************************************************************/
 
@@ -2924,6 +2950,9 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
 	
 	switch (switch_value) {
+		case 7:
+			r_u->status = set_user_info_7(ctr->info.id7, pwd);
+			break;
 		case 16:
 			if (!set_user_info_16(ctr->info.id16, pwd))
 				r_u->status = NT_STATUS_ACCESS_DENIED;
