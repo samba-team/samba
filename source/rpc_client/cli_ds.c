@@ -85,7 +85,7 @@ NTSTATUS rpccli_ds_enum_domain_trusts(struct rpc_pipe_client *cli,
 
 	init_q_ds_enum_domain_trusts( &q, server, flags );
 		
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC_DS, DS_ENUM_DOM_TRUSTS,
+	CLI_DO_RPC( cli, mem_ctx, PI_NETLOGON, DS_ENUM_DOM_TRUSTS,
 		q, r,
 		qbuf, rbuf,
 		ds_io_q_enum_domain_trusts,
