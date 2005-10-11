@@ -689,6 +689,12 @@ failed:
 					     &input, 
 					     cksum,
 					     &checksum_valid);
+		if (ret) {
+			DEBUG(3,("smb_krb5_verify_checksum: krb5_c_verify_checksum() failed: %s\n", 
+				error_message(ret)));
+			return ret;
+		}
+
 		if (!checksum_valid)
 			ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
 	}
