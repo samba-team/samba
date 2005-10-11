@@ -10,7 +10,10 @@ release.
 
 Common bugs fixed in 3.0.20b include:
 
-  o 
+  o A crash bug in winbindd
+  o Reporting files as read-only instead of returning the 
+    correct error code of "access denied"
+  
 
 
 
@@ -26,8 +29,13 @@ commits
 -------
 
 o   Jeremy Allison <jra@samba.org>
-o   Gerald (Jerry) Carter <jerry@samba.org>
+    * BUG 3088: Fix error condition for files on a read-write share 
+      which cannot be read due to permissions.
+
+
 o   Volker Lendecke <vl@samba.org>
+    * BUG 3068: Fix for winbindd crashed by empty DC alternative 
+      name.
 
 
 Release Notes for older release follow:
