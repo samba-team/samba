@@ -32,6 +32,16 @@ INIT_OBJ_FILES = \
 ################################################
 
 ################################################
+# Start MODULE libldb_proxy
+[MODULE::libldb_proxy]
+SUBSYSTEM = LIBLDB
+INIT_OBJ_FILES = \
+		dsdb/samdb/ldb_modules/proxy.o
+#
+# End MODULE libldb_proxy
+################################################
+
+################################################
 # Start SUBSYSTEM SAMDB
 [SUBSYSTEM::SAMDB]
 INIT_OBJ_FILES = \
