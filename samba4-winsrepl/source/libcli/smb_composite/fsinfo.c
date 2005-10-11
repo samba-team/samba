@@ -149,6 +149,7 @@ struct composite_context *smb_composite_fsinfo_send(struct smbcli_tree *tree,
 	state->connect->in.service      = io->in.service;
 	state->connect->in.service_type = io->in.service_type;
 	state->connect->in.credentials  = io->in.credentials;
+	state->connect->in.fallback_to_anonymous = False;
 	state->connect->in.workgroup    = io->in.workgroup;
 
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
