@@ -151,6 +151,7 @@ typedef struct
 	char *szNameResolveOrder;
 	char *szPanicAction;
 	char *szAddUserScript;
+        char *szRenameUserScript;
 	char *szDelUserScript;
 	char *szAddGroupScript;
 	char *szDelGroupScript;
@@ -1061,6 +1062,7 @@ static struct parm_struct parm_table[] = {
 	{N_("Logon Options"), P_SEP, P_SEPARATOR}, 
 
 	{"add user script", P_STRING, P_GLOBAL, &Globals.szAddUserScript, NULL, NULL, FLAG_ADVANCED}, 
+        {"rename user script", P_STRING, P_GLOBAL, &Globals.szRenameUserScript, NULL, NULL, FLAG_ADVANCED},
 	{"delete user script", P_STRING, P_GLOBAL, &Globals.szDelUserScript, NULL, NULL, FLAG_ADVANCED}, 
 	{"add group script", P_STRING, P_GLOBAL, &Globals.szAddGroupScript, NULL, NULL, FLAG_ADVANCED}, 
 	{"delete group script", P_STRING, P_GLOBAL, &Globals.szDelGroupScript, NULL, NULL, FLAG_ADVANCED}, 
@@ -1734,6 +1736,7 @@ FN_GLOBAL_LIST(lp_passdb_backend, &Globals.szPassdbBackend)
 FN_GLOBAL_LIST(lp_preload_modules, &Globals.szPreloadModules)
 FN_GLOBAL_STRING(lp_panic_action, &Globals.szPanicAction)
 FN_GLOBAL_STRING(lp_adduser_script, &Globals.szAddUserScript)
+FN_GLOBAL_STRING(lp_renameuser_script, &Globals.szRenameUserScript)
 FN_GLOBAL_STRING(lp_deluser_script, &Globals.szDelUserScript)
 
 FN_GLOBAL_CONST_STRING(lp_guestaccount, &Globals.szGuestaccount)
