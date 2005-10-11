@@ -414,7 +414,7 @@ BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB
 
 static int quotastat;
 
-static int xdr_getquota_args(XDR *xdrsp, struct getquota_args *args)
+static int my_xdr_getquota_args(XDR *xdrsp, struct getquota_args *args)
 {
 	if (!xdr_string(xdrsp, &args->gqa_pathp, RQ_PATHLEN ))
 		return(0);
@@ -423,7 +423,7 @@ static int xdr_getquota_args(XDR *xdrsp, struct getquota_args *args)
 	return (1);
 }
 
-static int xdr_getquota_rslt(XDR *xdrsp, struct getquota_rslt *gqr)
+static int my_xdr_getquota_rslt(XDR *xdrsp, struct getquota_rslt *gqr)
 {
 	if (!xdr_int(xdrsp, &quotastat)) {
 		DEBUG(6,("nfs_quotas: Status bad or zero\n"));
@@ -493,7 +493,7 @@ static BOOL nfs_quotas(char *nfspath, uid_t euser_id, SMB_BIG_UINT *bsize, SMB_B
 	clnt->cl_auth = authunix_create_default();
 	DEBUG(9,("nfs_quotas: auth_success\n"));
 
-	clnt_stat=clnt_call(clnt, RQUOTAPROC_GETQUOTA, xdr_getquota_args, (caddr_t)&args, xdr_getquota_rslt, (caddr_t)&gqr, timeout);
+	clnt_stat=clnt_call(clnt, RQUOTAPROC_GETQUOTA, my_xdr_getquota_args, (caddr_t)&args, my_xdr_getquota_rslt, (caddr_t)&gqr, timeout);
 
 	if (clnt_stat != RPC_SUCCESS) {
 		DEBUG(9,("nfs_quotas: clnt_call fail\n"));
