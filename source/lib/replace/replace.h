@@ -84,6 +84,10 @@ int setenv(const char *name, const char *value, int overwrite);
 int rename(const char *zfrom, const char *zto);
 #endif
 
+#ifndef HAVE_STRCASESTR
+char *strcasestr(const char *haystack, const char *needle);
+#endif
+
 #ifndef HAVE_FTRUNCATE
 int ftruncate(int f,long l);
 #endif
