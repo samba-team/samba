@@ -4149,15 +4149,12 @@ BOOL can_delete_file_in_directory(connection_struct *conn, const char *fname)
 /****************************************************************************
  Actually emulate the in-kernel access checking for write access. We need
  this to successfully check for ability to write for dos filetimes.
+ Note this doesn't take into account share write permissions.
 ****************************************************************************/
 
 BOOL can_write_to_file(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf)
 {
 	int ret;
-
-	if (!CAN_WRITE(conn)) {
-		return False;
-	}
 
 	if (current_user.uid == 0 || conn->admin_user) {
 		/* I'm sorry sir, I didn't know you were root... */
