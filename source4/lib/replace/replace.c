@@ -22,6 +22,7 @@
 #include "system/wait.h"
 #include "system/time.h"
 #include "system/network.h"
+#include "system/iconv.h"
 
  void replace_dummy(void);
  void replace_dummy(void) {}
@@ -534,4 +535,17 @@ static ssize_t pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offs
 }
 #endif
 
-
+#ifndef HAVE_STRCASESTR
+char *strcasestr(const char *haystack, const char *needle)
+{
+	const char *s;
+	size_t nlen = strlen(needle);
+	for (s=haystack;*s;s++) {
+		if (toupper(*needle) == toupper(*s) &&
+		    strncasecmp(s, needle, nlen) == 0) {
+			return discard_const_p(char, s);
+		}
+	}
+	return NULL;
+}
+#endif
