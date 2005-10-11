@@ -272,6 +272,7 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 			   DATA_BLOB *session_key)
 {
 	NTSTATUS sret = NT_STATUS_LOGON_FAILURE;
+	NTSTATUS pac_ret;
 	DATA_BLOB auth_data;
 	krb5_context context = NULL;
 	krb5_auth_context auth_context = NULL;
@@ -400,7 +401,8 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 #endif
 
 	/* continue when no PAC is retrieved 
-	   (like accounts that have the UF_NO_AUTH_DATA_REQUIRED flag set) */
+	   (like accounts that have the UF_NO_AUTH_DATA_REQUIRED flag set, 
+	   or Kerberos tickets encryped using a DES key) - Guenther */
 
 	got_auth_data = get_auth_data_from_tkt(mem_ctx, &auth_data, tkt);
 	if (!got_auth_data) {
@@ -409,10 +411,10 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 
 	if (got_auth_data && pac_data != NULL) {
 
-		sret = decode_pac_data(mem_ctx, &auth_data, context, keyblock, client_principal, authtime, pac_data);
-		if (!NT_STATUS_IS_OK(sret)) {
-			DEBUG(0,("ads_verify_ticket: failed to decode PAC_DATA: %s\n", nt_errstr(sret)));
-			goto out;
+		pac_ret = decode_pac_data(mem_ctx, &auth_data, context, keyblock, client_principal, authtime, pac_data);
+		if (!NT_STATUS_IS_OK(pac_ret)) {
+			DEBUG(3,("ads_verify_ticket: failed to decode PAC_DATA: %s\n", nt_errstr(pac_ret)));
+			*pac_data = NULL;
 		}
 		data_blob_free(&auth_data);
 	}
