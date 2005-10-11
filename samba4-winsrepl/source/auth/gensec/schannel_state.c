@@ -118,6 +118,7 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 	seed.data = creds->seed.data;
 	seed.length = sizeof(creds->seed.data);
 
+	ldb_msg_add_string(ldb, msg, "objectClass", "schannelState");
 	ldb_msg_add_value(ldb, msg, "sessionKey", &val);
 	ldb_msg_add_value(ldb, msg, "seed", &seed);
 	ldb_msg_add_string(ldb, msg, "negotiateFlags", f);

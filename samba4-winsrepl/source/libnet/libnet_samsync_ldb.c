@@ -117,7 +117,6 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 		const char *domain_attrs[] =  {"nETBIOSName", "nCName", NULL};
 		struct ldb_message **msgs_domain;
 		int ret_domain;
-		char *base_dn;
 
 		ret_domain = gendb_search(state->sam_ldb, mem_ctx, NULL, &msgs_domain, domain_attrs,
 					  "(&(&(nETBIOSName=%s)(objectclass=crossRef))(ncName=*))", 
@@ -132,16 +131,14 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 
 		state->base_dn[database] = samdb_result_dn(state, msgs_domain[0], "nCName", NULL);
 
-		base_dn = ldb_dn_linearize(mem_ctx, state->base_dn[database]);
-
 		state->dom_sid[database] = samdb_search_dom_sid(state->sam_ldb, state,
 								state->base_dn[database], 
-								"objectSid", "dn=%s", base_dn);
+								"objectSid", NULL);
 	} else if (database == SAM_DATABASE_BUILTIN) {
 		/* work out the builtin_dn - useful for so many calls its worth
 		   fetching here */
 		const char *dnstring = samdb_search_string(state->sam_ldb, mem_ctx, NULL,
-							   "dn", "objectClass=builtinDomain");
+							   "distinguishedName", "objectClass=builtinDomain");
 		state->base_dn[database] = ldb_dn_explode(state, dnstring);
 		state->dom_sid[database] = dom_sid_parse_talloc(state, SID_BUILTIN);
 	} else {

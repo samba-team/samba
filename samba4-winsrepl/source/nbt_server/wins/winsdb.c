@@ -67,6 +67,10 @@ static uint64_t winsdb_allocate_version(struct wins_server *winssrv)
 	msg->dn = dn;
 
 
+	ret = ldb_msg_add_empty(ldb, msg, "objectClass", LDB_FLAG_MOD_REPLACE);
+	if (ret != 0) goto failed;
+	ret = ldb_msg_add_string(ldb, msg, "objectClass", "winsMaxVersion");
+	if (ret != 0) goto failed;
 	ret = ldb_msg_add_empty(ldb, msg, "maxVersion", LDB_FLAG_MOD_REPLACE);
 	if (ret != 0) goto failed;
 	ret = ldb_msg_add_fmt(ldb, msg, "maxVersion", "%llu", maxVersion);

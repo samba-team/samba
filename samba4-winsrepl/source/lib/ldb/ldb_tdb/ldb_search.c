@@ -42,10 +42,17 @@
   add one element to a message
 */
 static int msg_add_element(struct ldb_context *ldb, 
-			   struct ldb_message *ret, const struct ldb_message_element *el)
+			   struct ldb_message *ret, 
+			   const struct ldb_message_element *el,
+			   int check_duplicates)
 {
 	unsigned int i;
 	struct ldb_message_element *e2, *elnew;
+
+	if (check_duplicates && ldb_msg_find_element(ret, el->name)) {
+		/* its already there */
+		return 0;
+	}
 
 	e2 = talloc_realloc(ret, ret->elements, struct ldb_message_element, ret->num_elements+1);
 	if (!e2) {
@@ -84,6 +91,30 @@ static int msg_add_element(struct ldb_context *ldb,
 }
 
 /*
+  add the special distinguishedName element
+*/
+static int msg_add_distinguished_name(struct ldb_module *module, struct ldb_message *msg)
+{
+	struct ldb_message_element el;
+	struct ldb_val val;
+	int ret;
+
+	el.flags = 0;
+	el.name = talloc_strdup(msg, "distinguishedName");
+	if (!el.name) {
+		return -1;
+	}
+	el.num_values = 1;
+	el.values = &val;
+	val.data = ldb_dn_linearize(msg, msg->dn);
+	val.length = strlen(val.data);
+	
+	ret = msg_add_element(module->ldb, msg, &el, 1);
+	talloc_free(el.name);
+	return ret;
+}
+
+/*
   add all elements from one message into another
  */
 static int msg_add_all_elements(struct ldb_module *module, struct ldb_message *ret,
@@ -91,6 +122,11 @@ static int msg_add_all_elements(struct ldb_module *module, struct ldb_message *r
 {
 	struct ldb_context *ldb = module->ldb;
 	unsigned int i;
+	int check_duplicates = (ret->num_elements != 0);
+
+	if (msg_add_distinguished_name(module, ret) != 0) {
+		return -1;
+	}
 
 	for (i=0;i<msg->num_elements;i++) {
 		const struct ldb_attrib_handler *h;
@@ -98,7 +134,8 @@ static int msg_add_all_elements(struct ldb_module *module, struct ldb_message *r
 		if (h->flags & LDB_ATTR_FLAG_HIDDEN) {
 			continue;
 		}
-		if (msg_add_element(ldb, ret, &msg->elements[i]) != 0) {
+		if (msg_add_element(ldb, ret, &msg->elements[i],
+				    check_duplicates) != 0) {
 			return -1;
 		}
 	}
@@ -151,27 +188,10 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
 			continue;
 		}
 
-		if (ldb_attr_cmp(attrs[i], "dn") == 0 ||
-		    ldb_attr_cmp(attrs[i], "distinguishedName") == 0) {
-			struct ldb_message_element el2;
-			struct ldb_val val;
-
-			el2.flags = 0;
-			el2.name = talloc_strdup(ret, attrs[i]);
-			if (!el2.name) {
-				talloc_free(ret);
-				return NULL;				
+		if (ldb_attr_cmp(attrs[i], "distinguishedName") == 0) {
+			if (msg_add_distinguished_name(module, ret) != 0) {
+				return -1;
 			}
-			el2.num_values = 1;
-			el2.values = &val;
-			val.data = ldb_dn_linearize(ret, ret->dn);
-			val.length = strlen(val.data);
-
-			if (msg_add_element(ldb, ret, &el2) != 0) {
-				talloc_free(ret);
-				return NULL;				
-			}
-			talloc_free(discard_const_p(char, el2.name));
 			continue;
 		}
 
@@ -179,7 +199,7 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
 		if (!el) {
 			continue;
 		}
-		if (msg_add_element(ldb, ret, el) != 0) {
+		if (msg_add_element(ldb, ret, el, 1) != 0) {
 			talloc_free(ret);
 			return NULL;				
 		}
@@ -276,68 +296,6 @@ static int ltdb_unlock_read(struct ldb_module *module)
 
 	return tdb_chainunlock_read(ltdb->tdb, key);
 }
-
-
-
-/*
-  search the database for a single simple dn
-*/
-static int ltdb_search_dn(struct ldb_module *module, const struct ldb_dn *dn,
-			  const char * const attrs[], struct ldb_message ***res)
-{
-	struct ldb_context *ldb = module->ldb;
-	int ret;
-	struct ldb_message *msg, *msg2;
-
-	*res = NULL;
-
-	if (ltdb_lock_read(module) != 0) {
-		return -1;
-	}
-
-	if (ltdb_cache_load(module) != 0) {
-		ltdb_unlock_read(module);
-		return -1;
-	}
-
-	*res = talloc_array(ldb, struct ldb_message *, 2);
-	if (! *res) {
-		goto failed;
-	}
-
-	msg = talloc(*res, struct ldb_message);
-	if (msg == NULL) {
-		goto failed;
-	}
-
-	ret = ltdb_search_dn1(module, dn, msg);
-	if (ret != 1) {
-		talloc_free(*res);
-		*res = NULL;
-		ltdb_unlock_read(module);
-		return 0;
-	}
-
-	msg2 = ltdb_pull_attrs(module, msg, attrs);
-
-	talloc_free(msg);
-	if (!msg2) {
-		goto failed;
-	}
-
-	(*res)[0] = talloc_steal(*res, msg2);
-	(*res)[1] = NULL;
-
-	ltdb_unlock_read(module);
-
-	return 1;
-
-failed:
-	talloc_free(*res);
-	ltdb_unlock_read(module);
-	return -1;
-}
-
 
 /*
   add a set of attributes from a record to a set of results
