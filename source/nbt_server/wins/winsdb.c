@@ -41,6 +41,7 @@ static BOOL winsdb_save_version(struct wins_server *winssrv)
 	msg->dn = ldb_dn_explode(msg, "CN=VERSION");
 	if (msg->dn == NULL) goto failed;
 
+	ret |= ldb_msg_add_string(ldb, msg, "objectClass", "winsEntry");
 	ret |= ldb_msg_add_fmt(ldb, msg, "minVersion", "%llu", winssrv->min_version);
 	ret |= ldb_msg_add_fmt(ldb, msg, "maxVersion", "%llu", winssrv->max_version);
 	if (ret != 0) goto failed;

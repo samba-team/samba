@@ -575,8 +575,7 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 
 	/* retrieve the sid for the group just created */
 	sid = samdb_search_dom_sid(d_state->sam_ctx, a_state,
-				   msg->dn, "objectSid", "dn=%s",
-				   ldb_dn_linearize(mem_ctx, msg->dn));
+				   msg->dn, "objectSid", NULL);
 	if (sid == NULL) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -811,7 +810,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	/* retrieve the sid for the user just created */
 	sid = samdb_search_dom_sid(d_state->sam_ctx, a_state,
-				   msg->dn, "objectSid", "dn=%s", ldb_dn_linearize(mem_ctx, msg->dn));
+				   msg->dn, "objectSid", NULL);
 	if (sid == NULL) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -1012,8 +1011,7 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 
 	/* retrieve the sid for the alias just created */
 	sid = samdb_search_dom_sid(d_state->sam_ctx, a_state,
-				   msg->dn, "objectSid", "dn=%s",
-				   ldb_dn_linearize(mem_ctx, msg->dn));
+				   msg->dn, "objectSid", NULL);
 
 	a_state->account_name = talloc_strdup(a_state, alias_name);
 	if (!a_state->account_name) {
@@ -1167,7 +1165,7 @@ static NTSTATUS samr_GetAliasMembership(struct dcesrv_call_state *dce_call, TALL
 
 			memberdn = 
 				samdb_search_string(d_state->sam_ctx,
-						    mem_ctx, NULL, "dn",
+						    mem_ctx, NULL, "distinguishedName",
 						    "(objectSid=%s)",
 						    ldap_encode_ndr_dom_sid(mem_ctx, 
 									    r->in.sids->sids[i].sid));
@@ -1625,7 +1623,7 @@ static NTSTATUS samr_AddGroupMember(struct dcesrv_call_state *dce_call, TALLOC_C
 	struct dom_sid *membersid;
 	const char *memberdn;
 	struct ldb_message **msgs;
-	const char * const attrs[2] = { "dn", NULL };
+	const char * const attrs[2] = { "distinguishedName", NULL };
 	int ret;
 
 	DCESRV_PULL_HANDLE(h, r->in.group_handle, SAMR_HANDLE_GROUP);
@@ -1649,7 +1647,7 @@ static NTSTATUS samr_AddGroupMember(struct dcesrv_call_state *dce_call, TALLOC_C
 	if (ret > 1)
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 
-	memberdn = samdb_result_string(msgs[0], "dn", NULL);
+	memberdn = samdb_result_string(msgs[0], "distinguishedName", NULL);
 
 	if (memberdn == NULL)
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -1712,7 +1710,7 @@ static NTSTATUS samr_DeleteGroupMember(struct dcesrv_call_state *dce_call, TALLO
 	struct dom_sid *membersid;
 	const char *memberdn;
 	struct ldb_message **msgs;
-	const char * const attrs[2] = { "dn", NULL };
+	const char * const attrs[2] = { "distinguishedName", NULL };
 	int ret;
 
 	DCESRV_PULL_HANDLE(h, r->in.group_handle, SAMR_HANDLE_GROUP);
@@ -1736,7 +1734,7 @@ static NTSTATUS samr_DeleteGroupMember(struct dcesrv_call_state *dce_call, TALLO
 	if (ret > 1)
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 
-	memberdn = samdb_result_string(msgs[0], "dn", NULL);
+	memberdn = samdb_result_string(msgs[0], "distinguishedName", NULL);
 
 	if (memberdn == NULL)
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -2068,7 +2066,7 @@ static NTSTATUS samr_AddAliasMember(struct dcesrv_call_state *dce_call, TALLOC_C
 	struct samr_domain_state *d_state;
 	struct ldb_message *mod;
 	struct ldb_message **msgs;
-	const char * const attrs[2] = { "dn", NULL };
+	const char * const attrs[2] = { "distinguishedName", NULL };
 	struct ldb_dn *memberdn = NULL;
 	int ret;
 
@@ -2082,7 +2080,7 @@ static NTSTATUS samr_AddAliasMember(struct dcesrv_call_state *dce_call, TALLOC_C
 			   ldap_encode_ndr_dom_sid(mem_ctx, r->in.sid));
 
 	if (ret == 1) {
-		memberdn = ldb_dn_explode(mem_ctx, ldb_msg_find_string(msgs[0], "dn", NULL));
+		memberdn = ldb_dn_explode(mem_ctx, ldb_msg_find_string(msgs[0], "distinguishedName", NULL));
 	} else 	if (ret > 1) {
 		DEBUG(0,("Found %d records matching sid %s\n", 
 			 ret, dom_sid_string(mem_ctx, r->in.sid)));
@@ -2183,7 +2181,7 @@ static NTSTATUS samr_DeleteAliasMember(struct dcesrv_call_state *dce_call, TALLO
 	d_state = a_state->domain_state;
 
 	memberdn = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL,
-				       "dn", "(objectSid=%s)", 
+				       "distinguishedName", "(objectSid=%s)", 
 				       ldap_encode_ndr_dom_sid(mem_ctx, r->in.sid));
 
 	if (memberdn == NULL)
@@ -3111,12 +3109,10 @@ static NTSTATUS samr_GetUserPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 	r->out.info.min_password_length = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0,
 							    a_state->domain_state->domain_dn, "minPwdLength", 
-							    "dn=%s", 
-							    ldb_dn_linearize(mem_ctx, a_state->domain_state->domain_dn));
+							    NULL);
 	r->out.info.password_properties = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0,
 							    a_state->account_dn, 
-							    "pwdProperties", "dn=%s",
-							    ldb_dn_linearize(mem_ctx, a_state->account_dn));
+							    "pwdProperties", NULL);
 	return NT_STATUS_OK;
 }
 
@@ -3131,7 +3127,7 @@ static NTSTATUS samr_RemoveMemberFromForeignDomain(struct dcesrv_call_state *dce
 	struct samr_domain_state *d_state;
 	const char *memberdn;
 	struct ldb_message **res;
-	const char * const attrs[3] = { "dn", "objectSid", NULL };
+	const char * const attrs[3] = { "distinguishedName", "objectSid", NULL };
 	int i, count;
 
 	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
@@ -3139,7 +3135,7 @@ static NTSTATUS samr_RemoveMemberFromForeignDomain(struct dcesrv_call_state *dce
 	d_state = h->data;
 
 	memberdn = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL,
-				       "dn", "(objectSid=%s)", 
+				       "distinguishedName", "(objectSid=%s)", 
 				       ldap_encode_ndr_dom_sid(mem_ctx, r->in.sid));
 	if (memberdn == NULL)
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -3169,7 +3165,7 @@ static NTSTATUS samr_RemoveMemberFromForeignDomain(struct dcesrv_call_state *dce
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		mod->dn = samdb_result_dn(mod, res[i], "dn", NULL);
+		mod->dn = samdb_result_dn(mod, res[i], "distinguishedName", NULL);
 		if (mod->dn == NULL) {
 			talloc_free(mod);
 			continue;

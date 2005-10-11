@@ -621,7 +621,7 @@ static struct ldb_parse_tree *ldb_parse_filter(void *mem_ctx, const char **s)
 struct ldb_parse_tree *ldb_parse_tree(void *mem_ctx, const char *s)
 {
 	if (s == NULL || *s == 0) {
-		s = "(|(objectClass=*)(dn=*))";
+		s = "(|(objectClass=*)(distinguishedName=*))";
 	}
 
 	while (isspace((unsigned char)*s)) s++;

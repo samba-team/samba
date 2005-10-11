@@ -88,7 +88,7 @@ static int ldb_match_present(struct ldb_context *ldb,
 			    enum ldb_scope scope)
 {
 
-	if (ldb_attr_cmp(tree->u.present.attr, "dn") == 0) {
+	if (ldb_attr_cmp(tree->u.present.attr, "distinguishedName") == 0) {
 		return 1;
 	}
 
@@ -151,8 +151,13 @@ static int ldb_match_equality(struct ldb_context *ldb,
 	struct ldb_dn *valuedn;
 	int ret;
 
+	/* catch the old method of dn matching */
 	if (ldb_attr_cmp(tree->u.equality.attr, "dn") == 0) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "attempt to match on 'dn' - should use distinguishedName");
+		return 0;
+	}
 
+	if (ldb_attr_cmp(tree->u.equality.attr, "distinguishedName") == 0) {
 		valuedn = ldb_dn_explode_casefold(ldb, tree->u.equality.value.data);
 		if (valuedn == NULL) {
 			return 0;

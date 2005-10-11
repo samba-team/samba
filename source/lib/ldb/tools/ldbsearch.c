@@ -124,7 +124,7 @@ static int do_search(struct ldb_context *ldb,
 	const char * const * attrs = NULL;
 	struct ldb_cmdline *options;
 	int ret = -1;
-	const char *expression = "(|(objectclass=*)(dn=*))";
+	const char *expression = "(objectclass=*)";
 
 	ldb = ldb_init(NULL);
 

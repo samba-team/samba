@@ -269,8 +269,7 @@ static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	state->domain_sid = samdb_search_dom_sid(state->sam_ldb, state,
-						 state->domain_dn, "objectSid", "dn=%s",
-						 ldb_dn_linearize(mem_ctx, state->domain_dn));
+						 state->domain_dn, "objectSid", NULL);
 	if (!state->domain_sid) {
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}

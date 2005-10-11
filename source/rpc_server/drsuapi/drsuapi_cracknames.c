@@ -451,7 +451,7 @@ static WERROR DsCrackNameOneFilter(struct drsuapi_bind_state *b_state, TALLOC_CT
 	switch (format_desired) {
 		case DRSUAPI_DS_NAME_FORMAT_FQDN_1779: {
 			const char * const _domain_attrs[] = { "ncName", "dnsRoot", NULL};
-			const char * const _result_attrs[] = { "dn", NULL};
+			const char * const _result_attrs[] = { "distinguishedName", NULL};
 			
 			domain_attrs = _domain_attrs;
 			result_attrs = _result_attrs;
